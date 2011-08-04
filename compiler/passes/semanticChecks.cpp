@@ -56,6 +56,11 @@ check_functions(FnSymbol* fn) {
     USR_FATAL_CONT(fn, "Not all returns in this function return a value");
   if (isIterator && numYields == 0)
     USR_FATAL_CONT(fn, "iterator does not yield a value");
+  if (!isIterator &&
+      fn->retTag == RET_VAR && 
+      numNonVoidReturns == 0) {
+    USR_FATAL_CONT(fn, "function declared 'var' but does not return anything");
+  }
 }
 
 
@@ -195,22 +200,32 @@ isDefinedAllPaths(Expr* expr, Symbol* ret) {
 
 static void
 checkReturnPaths(FnSymbol* fn) {
+  // Check to see if the function returns a value.
   if (fn->hasFlag(FLAG_ITERATOR_FN) ||
       !strcmp(fn->name, "=") ||
       !strcmp(fn->name, "chpl__buildArrayRuntimeType") ||
       fn->retType == dtVoid ||
       fn->retTag == RET_TYPE ||
       fn->hasFlag(FLAG_EXTERN) ||
+      fn->hasFlag(FLAG_FUNCTION_PROTOTYPE) ||
       fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR) ||
       fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) ||
       fn->hasFlag(FLAG_AUTO_II))
-    return;
+    return; // No.
+
+  // Check to see if the returned value is initialized.
   Symbol* ret = fn->getReturnSymbol();
-  if (VarSymbol* var = toVarSymbol(ret))
+  VarSymbol* var = toVarSymbol(ret);
+  if (var)
+  {
+    // If it has an immediate initializer, it is initialized.
     if (var->immediate)
       return;
+  }
+
   if (isEnumSymbol(ret))
     return;
+
   int result = isDefinedAllPaths(fn->body, ret);
 
   //
@@ -253,8 +268,8 @@ checkResolved(void) {
     if (call->isPrimitive(PRIM_CHPL_FREE)) {
       // Statements of the form 'delete x' (PRIM_DELETE) are replace
       //  during the normalize pass with a call to the destructor
-      //  followed by a call to chpl_free(), so here we just check
-      //  if the type of the variable being passed to chpl_free()
+      //  followed by a call to chpl_mem_free(), so here we just check
+      //  if the type of the variable being passed to chpl_mem_free()
       //  is a record.
       if (isRecord(call->get(1)->typeInfo()))
         USR_FATAL_CONT(call, "delete not allowed on records");

@@ -4,7 +4,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include "chpllaunch.h"
-#include "chpl_mem.h"
+#include "chpl-mem.h"
 #include "error.h"
 
 // from ../gasnetrun_ibv/launch-gasnetrun_ibv.c:
@@ -30,7 +30,7 @@ static char _nlbuf[16];
 static char** chpl_launch_create_argv(int argc, char* argv[],
                                       int32_t numLocales) {
   int len = strlen(WRAP_TO_STR(LAUNCH_PATH)) + strlen("gasnetrun_ibv") + 1;
-  char *cmd = chpl_malloc(len, sizeof(char), CHPL_RT_MD_COMMAND_BUFFER, -1, "");
+  char *cmd = chpl_mem_allocMany(len, sizeof(char), CHPL_RT_MD_COMMAND_BUFFER, -1, "");
   sprintf(cmd, "%sgasnetrun_ibv", WRAP_TO_STR(LAUNCH_PATH));
 
   const int largc = 9;

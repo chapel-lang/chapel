@@ -85,9 +85,11 @@ Makefiles support the following targets:
 
      depend     : Compute dependences for targets and subdirectories
 
-     clean      : Remove target files built by the Makefiles
+     clean      : Remove target files built by the Makefiles,
+                  such as object, library, and executable files
 
      clobber    : Remove everything created by the Makefiles
+                  including target files and dependency files
 
 
 --------------------------

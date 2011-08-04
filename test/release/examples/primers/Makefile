@@ -11,6 +11,7 @@ TARGETS = \
 	fileIO \
 	genericClasses \
 	iterators \
+	leaderfollower \
 	locales \
 	opaque \
 	procedures \

@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "chpllaunch.h"
-#include "chpl_mem.h"
+#include "chpl-mem.h"
 #include "error.h"
 
 static int numTeams = 0;

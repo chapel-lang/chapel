@@ -42,8 +42,10 @@ endif
 ifneq ($(CHPL_MAKE_LAUNCHER),none)
 	$(MAKE) -f $(CHAPEL_ROOT)/runtime/etc/Makefile.launcher all CHAPEL_ROOT=$(CHAPEL_ROOT) TMPBINNAME=$(TMPBINNAME) BINNAME=$(BINNAME) TMPDIRNAME=$(TMPDIRNAME)
 endif
+ifneq ($(TMPBINNAME),$(BINNAME))
 	cp $(TMPBINNAME) $(BINNAME)
 	rm $(TMPBINNAME)
+endif
 	$(TAGS_COMMAND)
 
 FORCE:

@@ -1949,11 +1949,11 @@ void CallExpr::codegen(FILE* outfile) {
       } 
       fprintf( outfile, ")");
 
-      // target: void* chpl_alloc(size_t size, char* description);
+      // target: void* chpl_mem_alloc(size_t size, char* description);
       fprintf(outfile, "%s(sizeof(",
               (primitive->tag == PRIM_CHPL_ALLOC ?
-               "chpl_alloc" : 
-               "CHPL_ALLOC_PERMIT_ZERO"));
+               "chpl_mem_alloc" :
+               "chpl_mem_allocPermitZero"));
       if (is_struct) fprintf( outfile, "_");          // need struct of class
       typeInfo()->symbol->codegen( outfile);
       fprintf( outfile, "), ");

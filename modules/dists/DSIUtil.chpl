@@ -109,15 +109,20 @@ proc _computeChunkStartEnd(numElems, numChunks, myChunk) {
   var div = numElems / numChunks;
   var rem = numElems % numChunks;
 
+  // Caller's responsibility.
+  assert(1 <= myChunk && myChunk <= numChunks);
+
   if myChunk <= rem then {
     // (div+1) elements per chunk
     var endIx = myChunk * (div + 1);
-    //writeln("yielding ", endIx - div, "..", endIx);
+    //writeln("_computeChunkStartEnd", (numElems, numChunks, myChunk),
+    // " = ", endIx - div, "..", endIx);
     return (endIx - div, endIx);
   } else {
     // (div) elements per chunk
     var startIx1 = numElems - (numChunks - myChunk + 1) * div;
-    //writeln("yielding ", startIx1 + 1, "..", startIx1 + div);
+    //writeln("_computeChunkStartEnd", (numElems, numChunks, myChunk),
+    // " = ", startIx1 + 1, "..", startIx1 + div);
     return (startIx1 + 1, startIx1 + div);
   }
 }

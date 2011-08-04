@@ -2,7 +2,7 @@
 // MTA implementation of Chapel tasking interface
 //
 
-#include "chpl_mem.h"
+#include "chpl-mem.h"
 #include "chplrt.h"
 #include "chpl-tasks.h"
 #include "config.h"
@@ -150,7 +150,7 @@ void chpl_task_setSerial(chpl_bool state) {
   chpl_bool *p = NULL;
   p = (chpl_bool*) mta_register_task_data(p);
   if (p == NULL)
-    p = (chpl_bool*) chpl_alloc(sizeof(chpl_bool), CHPL_RT_MD_SERIAL_FLAG, 0, 0);
+    p = (chpl_bool*) chpl_mem_alloc(sizeof(chpl_bool), CHPL_RT_MD_SERIAL_FLAG, 0, 0);
   if (p) {
     *p = state;
     mta_register_task_data(p);

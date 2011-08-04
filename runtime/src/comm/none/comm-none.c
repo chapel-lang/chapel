@@ -7,7 +7,7 @@
 #include "chpl-comm.h"
 #include "chplexit.h"
 #include "error.h"
-#include "chpl_mem.h"
+#include "chpl-mem.h"
 #include "chpl-tasks.h"
 
 // Helper functions
@@ -40,6 +40,8 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
   chpl_localeID = 0;
 }
 
+void chpl_comm_post_mem_init(void) { }
+
 int chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status) {
   int i;
   char* command = chpl_glom_strings(2, "gdb -q -ex 'break gdbShouldBreakHere' --args ",
@@ -54,12 +56,13 @@ int chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status) {
   return 1;
 }
 
-void chpl_comm_init_shared_heap(void) {
-  chpl_initHeap(NULL, 0);
-}
-
 void chpl_comm_rollcall(void) {
   chpl_msg(2, "executing on a single locale\n");
+}
+
+void chpl_comm_desired_shared_heap(void** start_p, size_t* size_p) {
+  *start_p = NULL;
+  *size_p  = 0;
 }
 
 void chpl_comm_alloc_registry(int numGlobals) { 
@@ -99,7 +102,7 @@ static void fork_nb_wrapper(fork_t* f) {
     (*chpl_ftable[f->fid])(&f->arg);
   else
     (*chpl_ftable[f->fid])(0);
-  chpl_free(f, 0, 0);
+  chpl_mem_free(f, 0, 0);
 }
 
 void chpl_comm_fork_nb(int locale, chpl_fn_int_t fid, void *arg,
@@ -108,7 +111,7 @@ void chpl_comm_fork_nb(int locale, chpl_fn_int_t fid, void *arg,
   int     info_size;
 
   info_size = sizeof(fork_t) + arg_size;
-  info = (fork_t*)chpl_malloc(info_size, sizeof(char), CHPL_RT_MD_REMOTE_NB_FORK_DATA, 0, 0);
+  info = (fork_t*)chpl_mem_allocMany(info_size, sizeof(char), CHPL_RT_MD_REMOTE_NB_FORK_DATA, 0, 0);
   info->fid = fid;
   info->arg_size = arg_size;
   if (arg_size)

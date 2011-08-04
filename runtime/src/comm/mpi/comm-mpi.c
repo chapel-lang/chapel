@@ -6,7 +6,7 @@
 #include <pthread.h>
 #include "chplexit.h"
 #include "chpl-comm.h"
-#include "chpl_mem.h"
+#include "chpl-mem.h"
 #include "chplrt.h"
 #include "chpl-tasks.h"
 #include "error.h"
@@ -114,7 +114,7 @@ static int makeTag(void) {
   int* tag = (int*)pthread_getspecific(tag_count_key);
   const int maxtag = (TAGMASK/chpl_numLocales)*(1+chpl_localeID) - 1;
   if (tag == NULL) {
-    tag = chpl_malloc(1, sizeof(int), 0, 0, 0);
+    tag = chpl_mem_allocMany(1, sizeof(int), 0, 0, 0);
     chpl_sync_lock(&tag_count_sync);
     *tag = tag_count;
     tag_count += 1;
@@ -134,8 +134,8 @@ static void chplExecForkedTask(_chplForkedTaskArg* arg) {
   if (arg->blockingCall)
     chpl_mpi_send(NULL, 0, MPI_BYTE, arg->joinLocale, arg->replyTag, MPI_COMM_WORLD);
   if (arg->arg != NULL)
-    chpl_free(arg->arg, 0, 0);
-  chpl_free(arg, 0, 0);
+    chpl_mem_free(arg->arg, 0, 0);
+  chpl_mem_free(arg, 0, 0);
 }
 
 
@@ -210,13 +210,13 @@ static void chpl_mpi_polling_thread(void* arg) {
       }
       case ChplCommFork: {
         void* args;
-        _chplForkedTaskArg* rpcArg = chpl_malloc(1, sizeof(_chplForkedTaskArg), CHPL_RT_MD_REMOTE_FORK_DATA, 0, 0);
+        _chplForkedTaskArg* rpcArg = chpl_mem_allocMany(1, sizeof(_chplForkedTaskArg), CHPL_RT_MD_REMOTE_FORK_DATA, 0, 0);
 #if CHPL_DIST_DEBUG
         sprintf(debugMsg, "Fulfilling ChplCommFork(fromloc=%d, tag=%d)", status.MPI_SOURCE, msg_info.replyTag);
         PRINTF(debugMsg);
 #endif
         if (msg_info.size != 0) {
-          args = chpl_malloc(1, msg_info.size, CHPL_RT_MD_REMOTE_FORK_ARG, 0, 0);
+          args = chpl_mem_allocMany(1, msg_info.size, CHPL_RT_MD_REMOTE_FORK_ARG, 0, 0);
         } else {
           args = NULL;
         }
@@ -234,13 +234,13 @@ static void chpl_mpi_polling_thread(void* arg) {
       }
       case ChplCommForkNB: {
         void* args;
-        _chplForkedTaskArg* rpcArg = chpl_malloc(1, sizeof(_chplForkedTaskArg), CHPL_RT_MD_REMOTE_FORK_DATA, 0, 0);
+        _chplForkedTaskArg* rpcArg = chpl_mem_allocMany(1, sizeof(_chplForkedTaskArg), CHPL_RT_MD_REMOTE_FORK_DATA, 0, 0);
 #if CHPL_DIST_DEBUG
         sprintf(debugMsg, "Fulfilling ChplCommForkNB(fromloc=%d, tag=%d)", status.MPI_SOURCE, msg_info.replyTag);
         PRINTF(debugMsg);
 #endif
         if (msg_info.size != 0) {
-          args = chpl_malloc(1, msg_info.size, CHPL_RT_MD_REMOTE_FORK_ARG, 0, 0);
+          args = chpl_mem_allocMany(1, msg_info.size, CHPL_RT_MD_REMOTE_FORK_ARG, 0, 0);
         } else {
           args = NULL;
         }
@@ -306,9 +306,19 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
 }
 
 
+void chpl_comm_post_mem_init(void) { }
+
+
 void chpl_comm_rollcall(void) {
   chpl_msg(2, "executing on locale %d of %d locale(s): %s\n", chpl_localeID,
             chpl_numLocales, chpl_localeName());
+}
+
+
+void chpl_comm_desired_shared_heap(void** start_p, size_t* size_p) {
+  // Use the regular malloc/free implementation
+  *start_p = NULL;
+  *size_p  = 0;
 }
 
 
@@ -341,12 +351,6 @@ void chpl_comm_broadcast_private(int id, int32_t size, int32_t tid) {
       chpl_comm_put(chpl_private_broadcast_table[id], i, chpl_private_broadcast_table[id], size, -1, 1, 0, 0);
     }
   }
-}
-
-
-void chpl_comm_init_shared_heap(void) {
-  // Use the regular malloc/free implementation
-  chpl_initHeap(NULL, 0);
 }
 
 
@@ -470,8 +474,8 @@ void  chpl_comm_fork(int locale, chpl_fn_int_t fid, void *arg,
 void  chpl_comm_fork_nb(int locale, chpl_fn_int_t fid, void *arg,
                         int32_t arg_size, int32_t arg_tid) {
   if (chpl_localeID == locale) {
-    void* argCopy = chpl_malloc(1, arg_size, CHPL_RT_MD_REMOTE_NB_FORK_DATA, 0, 0);
-    _chplForkedTaskArg* rpcArg = chpl_malloc(1, sizeof(_chplForkedTaskArg), CHPL_RT_MD_REMOTE_FORK_DATA, 0, 0);
+    void* argCopy = chpl_mem_allocMany(1, arg_size, CHPL_RT_MD_REMOTE_NB_FORK_DATA, 0, 0);
+    _chplForkedTaskArg* rpcArg = chpl_mem_allocMany(1, sizeof(_chplForkedTaskArg), CHPL_RT_MD_REMOTE_FORK_DATA, 0, 0);
     memmove(argCopy, arg, arg_size);
     rpcArg->fid = fid;
     rpcArg->arg = argCopy;

@@ -1,1 +1,1 @@
-compilerErrorOnSetter.chpl:8: error: foo() used in value context!
+compilerErrorOnSetter.chpl:9: error: foo() used in value context!

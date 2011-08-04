@@ -90,7 +90,7 @@ void cullOverReferences() {
             se->var = tmp;
           }
         } else
-          INT_FATAL("unexpected case");
+          INT_FATAL(call, "unexpected case");
       }
     }
   }

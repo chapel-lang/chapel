@@ -422,11 +422,11 @@ err_t qbuffer_memset(qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, u
 
 #ifdef _chplrt_H_
 
-#include "chpl_mem.h"
-#define qio_malloc(size) chpl_malloc( 1, size, CHPL_RT_MD_IO_BUFFER, __LINE__, __FILE__ )
-#define qio_calloc(nmemb, size) chpl_calloc( nmemb, size, CHPL_RT_MD_IO_BUFFER, __LINE__, __FILE__ )
-#define qio_realloc(ptr, size) chpl_realloc(ptr, 1, size, CHPL_RT_MD_IO_BUFFER, __LINE__, __FILE__)
-#define qio_free(ptr) chpl_free(ptr, __LINE__, __FILE__)
+#include "chpl-mem.h"
+#define qio_malloc(size) chpl_mem_allocMany( 1, size, CHPL_RT_MD_IO_BUFFER, __LINE__, __FILE__ )
+#define qio_calloc(nmemb, size) chpl_mem_allocManyZero( nmemb, size, CHPL_RT_MD_IO_BUFFER, __LINE__, __FILE__ )
+#define qio_realloc(ptr, size) chpl_mem_realloc(ptr, 1, size, CHPL_RT_MD_IO_BUFFER, __LINE__, __FILE__)
+#define qio_free(ptr) chpl_mem_free(ptr, __LINE__, __FILE__)
 
 static inline char* qio_strdup(const char* ptr)
 {

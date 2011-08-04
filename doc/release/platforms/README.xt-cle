@@ -8,7 +8,7 @@ Environment (TM) (CLE).  If you are not familiar with Chapel, it is
 recommended that you try the instructions in the top-level README
 first to get started with the language.
 
-Chapel is available as a module for Cray XE running CLE.  When it is
+Chapel is available as a module for Cray XT running CLE.  When it is
 installed on your system, you do not need to build the compiler.
 Simply load the module with:
 

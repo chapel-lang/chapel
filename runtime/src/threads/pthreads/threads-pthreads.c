@@ -7,7 +7,7 @@
 #define NDEBUG
 #endif
 
-#include "chpl_mem.h"
+#include "chpl-mem.h"
 #include "chplcast.h"
 #include "chplrt.h"
 #include "chpl-tasks.h"
@@ -77,8 +77,8 @@ void chpl_thread_mutexInit(chpl_thread_mutex_p mutex) {
 
 chpl_thread_mutex_p chpl_thread_mutexNew(void) {
   chpl_thread_mutex_p m;
-  m = (chpl_thread_mutex_p) chpl_alloc(sizeof(chpl_thread_mutex_t),
-                                       CHPL_RT_MD_MUTEX, 0, 0);
+  m = (chpl_thread_mutex_p) chpl_mem_alloc(sizeof(chpl_thread_mutex_t),
+                                           CHPL_RT_MD_MUTEX, 0, 0);
   chpl_thread_mutexInit(m);
   return m;
 }
@@ -243,7 +243,7 @@ void chpl_thread_exit(void) {
       chpl_internal_error("thread join failed");
     tlp = thread_list_head;
     thread_list_head = thread_list_head->next;
-    chpl_free(tlp, 0, 0);
+    chpl_mem_free(tlp, 0, 0);
   }
 
   if (pthread_key_delete(thread_id_key) != 0)
@@ -313,8 +313,8 @@ static void* pthread_func(void* arg) {
   pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, NULL); 
 
   // add us to the list of threads
-  tlp = (thread_list_p) chpl_alloc(sizeof(struct thread_list),
-                                   CHPL_RT_MD_THREAD_LIST_DESCRIPTOR, 0, 0);
+  tlp = (thread_list_p) chpl_mem_alloc(sizeof(struct thread_list),
+                                       CHPL_RT_MD_THREAD_LIST_DESCRIPTOR, 0, 0);
 
   tlp->thread = pthread_self();
   tlp->next   = NULL;
@@ -323,7 +323,7 @@ static void* pthread_func(void* arg) {
 
   if (exiting) {
     pthread_mutex_unlock(&thread_info_lock);
-    chpl_free(tlp, 0, 0);
+    chpl_mem_free(tlp, 0, 0);
     return NULL;
   }
 

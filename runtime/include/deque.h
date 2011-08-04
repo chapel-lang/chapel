@@ -19,9 +19,9 @@
 #include <errno.h>
 
 #ifdef _chplrt_H_
-#include "chpl_mem.h"
-#define deque_calloc(nmemb, size) chpl_calloc( nmemb, size, CHPL_RT_MD_IO_BUFFER, __LINE__, __FILE__ )
-#define deque_free(ptr) chpl_free(ptr, __LINE__, __FILE__)
+#include "chpl-mem.h"
+#define deque_calloc(nmemb, size) chpl_mem_allocManyZero( nmemb, size, CHPL_RT_MD_IO_BUFFER, __LINE__, __FILE__ )
+#define deque_free(ptr) chpl_mem_free(ptr, __LINE__, __FILE__)
 #else
 #define deque_calloc(nmemb, size) calloc(nmemb,size)
 #define deque_free(ptr) free(ptr)

@@ -16,9 +16,6 @@ Multiloop Tuples
 Tree Data
 b d e c a
 
-Data parallel iteration
-bb dd ee cc aa
-
 Task parallel iteration
-node_bb node_dd node_ee node_cc node_aa
+node_b node_d node_e node_c node_a
 

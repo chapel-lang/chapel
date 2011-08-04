@@ -14,7 +14,7 @@
 #include <machine/runtime.h>
 #endif
 #include "chplrt.h"
-#include "chpl_mem.h"
+#include "chpl-mem.h"
 #include "chplsys.h"
 #include "chpl-tasks.h"
 #include "chpl-comm.h"
@@ -119,8 +119,8 @@ chpl_string chpl_localeName(void) {
   newnamelen = strlen(utsinfo.nodename)+1;
   if (newnamelen > namelen) {
     namelen = newnamelen;
-    namespace = chpl_realloc(namespace, newnamelen, sizeof(char), 
-                             CHPL_RT_MD_LOCALE_NAME_BUFFER, 0, NULL);
+    namespace = chpl_mem_realloc(namespace, newnamelen, sizeof(char), 
+                                 CHPL_RT_MD_LOCALE_NAME_BUFFER, 0, NULL);
   }
   strcpy(namespace, utsinfo.nodename);
   return namespace;

@@ -66,7 +66,47 @@ writeln(BA);
 writeln();
 
 //
-// Next, we'll do the same thing with a Cyclic-distributed array.
+// Most of Chapel's standard distributions support an optional
+// targetLocales argument that permits you to pass in your own
+// array of locales to be targeted.  In general, the targetLocales
+// argument should match the rank of the distribution.  So for
+// example, to map a Block to a [numLocales x 1] view of the
+// locale set, one could do something like this:
+
+//
+// We start by creating our own array of the locale values.  Here
+// we use the standard array reshape function for convenience,
+// but more generally, this array could be accessed/assigned like any
+// other.
+//
+
+const MyLocaleView = [0..#numLocales, 1..1];
+const MyLocales: [MyLocaleView] locale = reshape(Locales, MyLocaleView);
+
+//
+// Then we'll declare a distributed domain/array that targets
+// this view of the locales:
+// 
+
+const BlockSpace2 = Space dmapped Block(boundingBox=Space,
+                                        targetLocales=MyLocales);
+var BA2: [BlockSpace2] int;
+
+//
+// Then we'll do a similar computation as before to verify where
+// everything ended up:
+//
+forall ba in BA2 do
+  ba = here.id;
+
+writeln("Block Array Index Map");
+writeln(BA2);
+writeln();
+
+
+
+//
+// Next, we'll perform a similar computation for the Cyclic distribution.
 // Cyclic distributions start at a designated n-dimensional index and
 // distribute the n-dimensional space across an n-dimensional array
 // of locales in a round-robin fashion (in each dimension).  As with

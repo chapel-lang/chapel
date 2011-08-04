@@ -57,9 +57,9 @@ Features/limitations:
 * The array of locales passed to the ReplicatedDist constructor, if any,
   must be "consistent".
 * A is "consistent" if for each ix in A.domain, A[ix].id == ix.
-* Tip: the desired set of locales does not correspond to a rectangular
-  (perhaps strided and/or multi-dimensional) domain, make the array's
-  domain associative over int.
+* Tip: if the domain of the desired array of locales cannot be described
+  as a rectangular domain (which could be strided, multi-dimensional,
+  and/or sparse), make that array's domain associative over int.
 
 Examples:
 
@@ -85,10 +85,6 @@ Arepl = Abase;
 // (if multiple locales)
 for (b,r) in (Abase,Arepl) ... // error
 for (r,b) in (Arepl,Abase) ... // error
-
-TODO:
-- implement privatization
-- implement the rest of the DSI methods
 
 Potential extensions:
 - support other kinds of domains
@@ -116,6 +112,7 @@ Limitations:
    var replArray: [YOUR DOMAIN dmapped ReplicatedDist()] YOUR ELEMENT TYPE;
 
 How to use replicated variables:
+(Note: names that start with 'rc' are provided by this module.)
 
     use ReplicatedDist;
 
@@ -216,11 +213,15 @@ proc ReplicatedDist.dsiPrivatize(privatizeData: this.targetLocales.type)
   : this.type
 {
   if traceReplicatedDist then writeln("ReplicatedDist.dsiPrivatize on ", here);
+
+  const pdTargetLocales = privatizeData;
   // make private copy of targetLocales and its domain
-  // no need to privatize the domain map of 'privdom' - it's the default one
-  var privdom = privatizeData.domain;
-  var privarray: [privdom] locale = privatizeData;
-  return new ReplicatedDist(privarray, "used during privatization");
+  const privTargetIds: domain(pdTargetLocales.domain.rank,
+                              pdTargetLocales.domain.idxType,
+                              pdTargetLocales.domain.stridable
+                              ) = pdTargetLocales.domain;
+  const privTargetLocales: [privTargetIds] locale = pdTargetLocales;
+  return new ReplicatedDist(privTargetLocales, "used during privatization");
 }
 
 
@@ -246,6 +247,7 @@ class ReplicatedDom : BaseRectangularDom {
   // local domain objects
   // NOTE: 'dist' must be initialized prior to 'localDoms'
   // => currently have to use the default constructor
+  // NOTE: if they ever change after the constructor - Reprivatize them
   var localDoms: [dist.targetIds] LocReplicatedDom(rank, idxType, stridable);
 
   proc numReplicands return localDoms.numElements;
@@ -308,8 +310,7 @@ proc ReplicatedDom.dsiPrivatize(privatizeData): this.type {
 }
 
 proc ReplicatedDom.dsiGetReprivatizeData() {
-  // TODO: does localDoms need to be updated?
-  return (domRep, localDoms);
+  return tuple(domRep);
 }
 
 proc ReplicatedDom.dsiReprivatize(other, reprivatizeData): void {
@@ -318,7 +319,6 @@ proc ReplicatedDom.dsiReprivatize(other, reprivatizeData): void {
          this.stridable == other.stridable);
 
   this.domRep = reprivatizeData(1);
-  this.localDoms = reprivatizeData(2);
 }
 
 

@@ -214,7 +214,7 @@ void VarSymbol::codegen(FILE* outfile) {
   } else if (immediate &&
              immediate->const_kind == NUM_KIND_UINT) {
     uint64_t uconst = immediate->uint_value();
-    if( uconst <= INT32_MAX ) {
+    if( uconst <= (uint64_t) INT32_MAX ) {
       fprintf(outfile, "%"PRIu64, uconst);
     } else {
       fprintf(outfile, "UINT64(%"PRIu64")", uconst);
@@ -479,6 +479,12 @@ FnSymbol::~FnSymbol() {
     delete calledBy;
 }
 
+
+void FnSymbol::parseCheck() {
+  // For now, just checks that flags are consistent.
+  if (hasFlag(FLAG_INLINE) && (hasFlag(FLAG_EXPORT) || hasFlag(FLAG_EXTERN)))
+    USR_FATAL_CONT(this, "External and exported functions cannot be inlined.");
+}
 
 void FnSymbol::verify() {
   Symbol::verify();
@@ -762,11 +768,19 @@ hasGenericArgs(FnSymbol* fn) {
 }
 
 
+// Tag the given function as generic.
+// Returns true if there was a change, false otherwise.
 bool FnSymbol::tag_generic() {
   if (hasFlag(FLAG_GENERIC))
-    return false;
+    return false;  // Already generic, no change.
+
   if (int result = hasGenericArgs(this)) {
+    // This function has generic arguments, so mark it as generic.
     addFlag(FLAG_GENERIC);
+
+    // If the return type is not completely unknown (which is generic enough)
+    // and this function is a type constructor function,
+    // then mark its return type as generic.
     if (retType != dtUnknown && hasFlag(FLAG_TYPE_CONSTRUCTOR)) {
       retType->symbol->addFlag(FLAG_GENERIC);
       if (result == 2)
@@ -861,7 +875,7 @@ void ModuleSymbol::codegenDef(FILE* outfile) {
   for_alist(expr, block->body) {
     if (DefExpr* def = toDefExpr(expr))
       if (FnSymbol* fn = toFnSymbol(def->sym))
-        if (!fn->hasFlag(FLAG_EXTERN))
+        if ((!fn->hasFlag(FLAG_EXTERN))&&(!fn->hasFlag(FLAG_FUNCTION_PROTOTYPE)))
           fns.add(fn);
   }
   qsort(fns.v, fns.n, sizeof(fns.v[0]), compareLineno);

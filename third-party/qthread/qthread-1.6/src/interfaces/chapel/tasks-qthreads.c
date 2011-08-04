@@ -18,7 +18,7 @@
 #include "chplrt.h"
 #include "tasks-qthreads.h"
 #include "chpl-tasks.h"
-#include "chpl_mem.h" // for chpl_malloc(), mandatory malloc() replacement
+#include "chpl-mem.h" // for chpl_malloc(), mandatory malloc() replacement
 #include "config.h"   // for chpl_config_get_value()
 #include "error.h"    // for chpl_warning()
 #include <stdio.h>
@@ -252,7 +252,7 @@ void chpl_task_setSerial(chpl_bool state)
     /*chpl_bool *p = NULL;
      * p = (chpl_bool*) mta_register_task_data(p);
      * if (p == NULL)
-     * p = (chpl_bool*) chpl_alloc(sizeof(chpl_bool), CHPL_RT_MD_SERIAL_FLAG, 0, 0);
+     * p = (chpl_bool*) chpl_mem_alloc(sizeof(chpl_bool), CHPL_RT_MD_SERIAL_FLAG, 0, 0);
      * if (p) {
      * *p = state;
      * mta_register_task_data(p);

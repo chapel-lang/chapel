@@ -1,0 +1,4 @@
+perfkeys: Time elapsed :
+graphkeys: PARACR-BC
+graphtitle: PARACR Block to Cyclic redistribution
+ylabel: Time (seconds)

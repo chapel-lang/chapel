@@ -1,13 +1,39 @@
-There are six environments for use in the spec:
+Each chapter on a feature (e.g. a data type) should have this structure:
+
+* The first one or a couple of paragraphs are a high-level introduction
+and/or summary of the feature. It could include, for example:
+
+  - compare and/or contrast this feature in Chapel vs. other languages,
+  - give insights into how the compiler uses the feature(s).
+
+* The next paragraph is the road map, stating the organization of
+the chapter and/or how the feature is presented in the spec.
+
+* The first section is optional and contains a more in-depth
+introduction of the feature.
+
+* For a data type, these sections should follow:
+
+  - types
+  - values, with subsections on
+      - literals
+         - specify the literal's type first, the literal's value second
+      - default values
+  - common operations - all of the following that applies:
+      - the assignment statement
+      - equality and other comparisons
+      - iterating
+      - implicit/explicit conversions?
+      - printing behavior?
+
+* Then a section describing operations specific to this feature follows.
+
+
+The following environments are available for use in the spec:
 
 - example    
   Example Chapel programs, along with explanation text
   should be contained in the example environment.
-
-- status
-  If a feature is not fully implemented, it is helpful
-  to write a status note that is contained in the
-  status environment.
 
 - note
   To make a note to future implementors of Chapel, or those
@@ -36,21 +62,6 @@ Guidelines for updating the spec:
   the feature and any implementation details.  Also explain the
   impact of the feature and how it is used when programming.
 
-- Try to keep the sections of a chapter relatively consistent
-  with each other.  Start out a chapter or section with a summary
-  paragraph.  This paragraph could:
-
-  -  compare and/or contrast Chapel with other languages in the areas
-     covered by the chapter or section
-  -  give insights into how the compiler uses the feature(s) in that 
-     chapter or section
-  -  state the organization and flow of the chapter or section (aka roadmap)
-
-- After the introduction, have a section on types followed by a section
-  on values. (If applicable - e.g. ranges, domains, arrays, etc.)
-  The section on values should include literals and default values,
-  by convention.
-
 [Some general principles highlighted by the spec review 8/10/2010:]
 
 - Group material into chapters by theme.
@@ -59,7 +70,6 @@ Guidelines for updating the spec:
     into the chapter on the enclosing theme (e.g. classes).
 
 - Implementation limitations go into the status file for the release.
-  (And also the "status" environment? - see above.)
 
 - Use examples in lieu of a user's guide/gentle introduction.
 

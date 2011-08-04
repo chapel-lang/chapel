@@ -727,7 +727,7 @@ proc chpl__count(r:rangeBase(?), i:integral)
     halt("bounded range is too small to access ", abs(i), " elements");
 
   // The distance between the first and last indices.
-  var s = r._stride : strType;
+  var s = r.stride : strType;
   var diff = i : strType * s;
 
   var lo : resultType =
@@ -745,7 +745,7 @@ proc chpl__count(r:rangeBase(?), i:integral)
                        stridable = r.stridable,
                        _low = lo,
                        _high = hi,
-                       _stride = r._stride : strType,
+                       _stride = r.stride : strType,
                        _alignment = r._alignment);
 }
 

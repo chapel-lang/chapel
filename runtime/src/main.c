@@ -5,7 +5,7 @@
 #include "chpl-comm.h"
 #include "chplexit.h"
 #include "chplio.h"
-#include "chpl_mem.h"
+#include "chpl-mem.h"
 #include "chplmemtrack.h"
 #include "chplrt.h"
 #include "chpl-tasks.h"
@@ -35,7 +35,7 @@ static void recordExecutionCommand(int argc, char *argv[]) {
   for (i = 0; i < argc; i++) {
     length += strlen(argv[i]) + 1;
   }
-  chpl_executionCommand = (char*)chpl_malloc(length+1, sizeof(char), CHPL_RT_EXECUTION_COMMAND, 0, 0);
+  chpl_executionCommand = (char*)chpl_mem_allocMany(length+1, sizeof(char), CHPL_RT_EXECUTION_COMMAND, 0, 0);
   sprintf(chpl_executionCommand, "%s", argv[0]);
   for (i = 1; i < argc; i++) {
     strcat(chpl_executionCommand, " ");
@@ -49,7 +49,8 @@ int main(int argc, char* argv[]) {
   int runInGDB;
 
   chpl_comm_init(&argc, &argv);
-  chpl_comm_init_shared_heap();
+  chpl_mem_init();
+  chpl_comm_post_mem_init();
 
   chpl_comm_barrier("about to leave comm init code");
   chpl__heapAllocateGlobals(); // allocate global vars on heap for multilocale

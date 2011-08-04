@@ -134,59 +134,16 @@ writeln();
 
 //
 // Iterators get more interesting in a parallel context.
-// When invoked in a forall statement or forall expression,
-// the iterator may yield up several values which are used simultaneously.
-//
-// The forall statement supports data parallelism.
-// In the current implementation, leader and follower iterators must be supplied
-// explicitly to support parallel iteration.  This requirement may be removed in
-// future versions. 
-//
+// When invoked in a forall loop (or semantically equivalent context),
+// iterators that create parallel tasks and assign work to
+// those tasks are required.  These are known as leader/follower
+// iterators in Chapel, and they are a fairly big topic of their
+// own.  See the leaderfollower.chpl test in this directory for
+// an extended example of defining and using leader/follower
+// iterators.
 
 //
-// This is the leader, it orchestrates how the iteration task is divided up.
-// The follower is run with each chunk it yields.
-//
-iter postorder(param tag: iterator, tree : Tree): Tree 
-  where tag == iterator.leader
-{
-  if tree == nil then return;
-
-  // This leader just returns the whole tree as a chunk. (Very boring.)
-  yield tree;
-}
-
-//
-// This is the follower.
-// It performs the fine-grained execution under control of the leader.
-// The follower is called once with each chunk returned by the leader.
-// The chunk contains whatever was yielded by the leader (in this case, a subtree).
-// The last parameter provides global context which the follower may require.
-//
-iter postorder(param tag: iterator, follower, tree: Tree)
-  where tag == iterator.follower
-{
-  var chunk = follower;
-  // The follower does normal postorder traversal on each chunk.
-  for node in postorder(chunk) do yield node;
-}
-
-// Do something noticeable with a string, like repeating it twice.
-proc echo(s:string) return s + s;
-
-writeln("Data parallel iteration");
-
-// This doubles the data in the tree.
-// The nodes of the tree can be visited in any order.
-forall node in postorder(tree) do
-  node.data = echo(node.data);
-
-writeln(tree);
-writeln();
-
-
-//
-// The coforall statement uses the serial version iterator 
+// The coforall loop uses the serial version iterator 
 // to spawn a separate task for each of the values it yields.
 // If you use coforall, you are asserting that the manipulations
 // done with each yielded value can be done in parallel 

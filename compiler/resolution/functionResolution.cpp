@@ -2202,21 +2202,39 @@ resolveCall(CallExpr* call, bool errorCheck) {
   }
 }
 
+// Returns true if the formal needs an internal temporary, false otherwise.
 static bool
 formalRequiresTemp(ArgSymbol* formal) {
+// We mostly just weed out the negative cases.
+
+  // Look at intents.  No temporaries for param, type or ref intents.
   if (formal->intent == INTENT_PARAM ||
       formal->intent == INTENT_TYPE ||
       formal->intent == INTENT_REF ||
-      !strcmp("this", formal->name) ||
-      formal->hasFlag(FLAG_IS_MEME) ||
-      (formal == toFnSymbol(formal->defPoint->parentSymbol)->_outer) ||
+      (formal->intent == INTENT_BLANK &&
+       formal->type->symbol->hasFlag(FLAG_REF)))
+    return false;
+
+  // Some more obscure call-by-ref cases.
+  if (formal->hasFlag(FLAG_IS_MEME) ||
       formal->hasFlag(FLAG_TYPE_VARIABLE) ||
-      formal->instantiatedParam ||
-      formal->type == dtMethodToken ||
-      (formal->type->symbol->hasFlag(FLAG_REF) &&
-       formal->intent == INTENT_BLANK) ||
       formal->hasFlag(FLAG_NO_FORMAL_TMP))
     return false;
+  // The fLibraryCompile flag was added to support separate compilation.
+  // Several code generation functions crash if it is not there.
+  // This makes exported object arguments read-only which is not what we want.
+  if (!strcmp("this", formal->name)) 
+    // hilde sez: This shouldn't be special-cased.
+    // We ought to tag "this" variables as call-by-ref.
+    if (!fLibraryCompile)
+      // So call-by-ref is cancelled if we are compiling an exported function.
+      return false;
+
+  if (formal == toFnSymbol(formal->defPoint->parentSymbol)->_outer ||
+      formal->instantiatedParam ||
+      formal->type == dtMethodToken)
+    return false;
+
   return true;
 }
 
@@ -2494,6 +2512,7 @@ static ClassType* createAndInsertFunParentClass(CallExpr *call, const char *name
 static FnSymbol* createAndInsertFunParentMethod(CallExpr *call, ClassType *parent, AList &arg_list, bool isFormal, Type *retType) {
   FnSymbol *parent_method = new FnSymbol("this");
   ArgSymbol *thisParentSymbol = new ArgSymbol(INTENT_BLANK, "this", parent);
+  parent_method->addFlag(FLAG_FUNCTION_THIS);
   parent_method->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
   parent_method->insertFormalAtTail(thisParentSymbol);
   parent_method->_this = thisParentSymbol;
@@ -2700,6 +2719,7 @@ createFunctionAsValue(CallExpr *call) {
   build_type_constructor(ct);
 
   FnSymbol *thisMethod = new FnSymbol("this");
+  thisMethod->addFlag(FLAG_FUNCTION_THIS);
   ArgSymbol *thisSymbol = new ArgSymbol(INTENT_BLANK, "this", ct);
   thisMethod->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
   thisMethod->insertFormalAtTail(thisSymbol);
@@ -4099,7 +4119,7 @@ resolveFns(FnSymbol* fn) {
     return;
   resolvedFns.put(fn, true);
 
-  if (fn->hasFlag(FLAG_EXTERN))
+  if ((fn->hasFlag(FLAG_EXTERN))||(fn->hasFlag(FLAG_FUNCTION_PROTOTYPE)))
     return;
 
   if (fn->hasFlag(FLAG_AUTO_II))
@@ -4626,12 +4646,11 @@ resolve() {
   resolveFns(chpl_main);
   USR_STOP();
 
-  if (fRuntime) {
-    forv_Vec(FnSymbol, fn, gFnSymbols) {
-      if (fn->hasFlag(FLAG_EXPORT)) {
-        resolveFormals(fn);
-        resolveFns(fn);
-      }
+  // We need to resolve functions that will be exported.
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    if (fn->hasFlag(FLAG_EXPORT)) {
+      resolveFormals(fn);
+      resolveFns(fn);
     }
   }
 
@@ -4786,6 +4805,11 @@ resolve() {
           resolveCall(distCall);
           resolveFns(distCall->isResolved());
         } else if (type->symbol->hasFlag(FLAG_EXTERN)) {
+          // We don't expect initialization code for an externally defined type,
+          // so remove the flag which tells checkReturnPaths() to expect it.
+          FnSymbol* fn = toFnSymbol(init->parentSymbol);
+          if (fn)
+            fn->removeFlag(FLAG_SPECIFIED_RETURN_TYPE);
           init->replace(init->get(1)->remove());
         } else {
           INT_ASSERT(type->defaultConstructor);

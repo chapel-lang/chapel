@@ -7,7 +7,7 @@
 #include "chplcgfns.h"
 #include "chplexit.h"
 #include "chplio.h"
-#include "chpl_mem.h"
+#include "chpl-mem.h"
 #include "chplmemtrack.h"
 #include "chplrt.h"
 #include "chpl-tasks.h"
@@ -120,10 +120,12 @@ void parseLocalesPerRealm(const char* arrPtr, int32_t lineno,
   const char* startPtr = arrPtr;
   int32_t baseID = 0;
   int i;
-  chpl_arg_LocalesPerRealm = chpl_malloc(chpl_numRealms, sizeof(int32_t),
-                                         CHPL_RT_MD_LOCALES_PER_REALM, 0, NULL);
-  chpl_base_unique_localeID = chpl_malloc(chpl_numRealms, sizeof(int32_t),
-                                          CHPL_RT_MD_LOCALES_PER_REALM, 0, NULL);
+  chpl_arg_LocalesPerRealm =
+    chpl_mem_allocMany(chpl_numRealms, sizeof(int32_t),
+                       CHPL_RT_MD_LOCALES_PER_REALM, 0, NULL);
+  chpl_base_unique_localeID =
+    chpl_mem_allocMany(chpl_numRealms, sizeof(int32_t),
+                       CHPL_RT_MD_LOCALES_PER_REALM, 0, NULL);
   for (i=0; i<chpl_numRealms; i++) {
     int charsRead;
     int numRead = sscanf(startPtr, "%"SCNd32"%n", &chpl_arg_LocalesPerRealm[i],

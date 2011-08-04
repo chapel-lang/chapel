@@ -643,10 +643,10 @@
   proc file.open() {
     compilerError(_oldioerr);
   }
-  proc file.filename var : string {
+  proc file.filename : string {
     compilerError(_oldioerr + "file.filename is no longer supported");
   }
-  proc file.mode var {
+  proc file.mode {
     compilerError(_oldioerr + "file.mode is no longer supported");
   }
   proc file.isOpen: bool {

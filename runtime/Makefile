@@ -7,6 +7,8 @@ depend: depend.helpme
 
 clean: clean.helpme
 
+cleandeps: cleandeps.helpme
+
 clobber: clobber.helpme
 
 %.helpme:

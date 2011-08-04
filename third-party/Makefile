@@ -6,7 +6,7 @@ THIRD_PARTY_ABS_DIR = $(shell pwd)
 
 default: all
 
-all: dlmalloc gasnet gmp nanox qthread
+all: dlmalloc gasnet gmp nanox qthread tcmalloc
 
 clean: FORCE
 	cd gasnet && $(MAKE) clean
@@ -34,6 +34,10 @@ qthread: FORCE
 	cd qthread && $(MAKE)
 
 qthreads: qthread
+
+tcmalloc: FORCE
+	echo third-party/Makefile rule to make tcmalloc
+	cd tcmalloc && $(MAKE)
 
 -include Makefile.devel
 

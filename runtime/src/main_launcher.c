@@ -10,7 +10,7 @@
 #include "chplcgfns.h"
 #include "chpl-comm-locales.h"
 #include "chpllaunch.h"
-#include "chpl_mem.h"
+#include "chpl-mem.h"
 #include "chpltypes.h"
 #include "error.h"
 
@@ -158,8 +158,8 @@ chpl_run_utility1K(const char *command, char *const argv[], char *outbuf, int ou
 char** chpl_bundle_exec_args(int argc, char *const argv[],
                               int largc, char *const largv[]) {
   int len = argc+largc+1;
-  char **newargv = chpl_malloc(len, sizeof(char*),
-                               CHPL_RT_MD_COMMAND_BUFFER, -1, "");
+  char **newargv = chpl_mem_allocMany(len, sizeof(char*),
+                                      CHPL_RT_MD_COMMAND_BUFFER, -1, "");
   if (!newargv) {
     chpl_internal_error("Could not allocate memory");
   }

@@ -30,11 +30,17 @@ as follows.
 \begin{itemize}
 
 \index{ranges!low bound}
-\item The \emph{low bound} is either an integer or negative infinity.
+\item The \emph{low bound} is either an integer or -$\infty$.
 
 \index{ranges!high bound}
-\item The \emph{high bound} is either an integer or positive infinity.
+\item The \emph{high bound} is either an integer or +$\infty$.
   The low and high bounds determine the span of the represented sequence.
+%
+  Chapel does not represent $\infty$ explicitly. Instead, infinite
+  bound(s) are represented implicitly in the range's type
+  (\rsec{Range_Types}).
+  When the low and/or high bound is $\infty$, the represented sequence
+  is unbounded in the corresponding direction(s).
 
 \index{ranges!stride}
 \item The \emph{stride} is a non-zero integer.
@@ -59,7 +65,7 @@ as follows.
 
 \begin{openissue}
 We consider disallowing ambiguous alignment for ranges whose both bounds
-are integers (not infinities), in order to enable more efficient
+are integers (not $\infty$), in order to enable more efficient
 implementation.
 \end{openissue}
 
@@ -95,7 +101,7 @@ if:
 \item $alignmt$ is not ambiguous and $ix \equiv alignmt \pmod{|stride|}$, or
 \item $stride$ is 1 or -1.
 \end{itemize}
-\noindent Furthermore, infinity is never aligned.
+\noindent Furthermore, $\infty$ is never aligned.
 
 Ranges have the following additional properties.
 \begin{itemize}
@@ -114,8 +120,9 @@ Ranges have the following additional properties.
   that is, in the following cases:
   \begin{itemize}
   \item the range is ambiguously aligned,
-  \item the represented sequence is increasing and the low bound is infinity,
-  \item the represented sequence is decreasing and the high bound is infinity.
+  \item the represented sequence is empty,
+  \item the represented sequence is increasing and the low bound is -$\infty$,
+  \item the represented sequence is decreasing and the high bound is +$\infty$.
   \end{itemize}
 
 \index{ranges!last index}
@@ -125,8 +132,9 @@ Ranges have the following additional properties.
   that is, in the following cases:
   \begin{itemize}
   \item it is ambiguously aligned,
-  \item the represented sequence is increasing and the high bound is infinity,
-  \item the represented sequence is decreasing and the low bound is infinity.
+  \item the represented sequence is empty,
+  \item the represented sequence is increasing and the high bound is +$\infty$,
+  \item the represented sequence is decreasing and the low bound is -$\infty$.
   \end{itemize}
 
 \index{ranges!aligned low bound}
@@ -185,14 +193,19 @@ The type of a range is characterized by three parameters:
 \begin{itemize}
 
 \index{ranges!idxType}
-\item \chpl{idxType} is the type of the range's low bound and high bound
-  (when they are not infinity) and alignment. \chpl{idxType} must be an
-  integral type and is \chpl{int} by default.
-  The type of the range's stride is the signed integer
-  of the same bit size as \emph{idxType}.
+\item \chpl{idxType} is the type of the indices of the range's
+  represented sequence. However, when the range's low and/or high
+  bound is $\infty$, the represented sequence also contains indices
+  that are not representable by \chpl{idxType}.
+
+  \chpl{idxType} must be an integral type and is \chpl{int} by default.
+%
+  The range's low bound and high bound (when they are not $\infty$)
+  and alignment are of the type \chpl{idxType}. The range's stride
+  is of the signed integer type that has the same bit size as \emph{idxType}.
 
 \index{ranges!boundedType}
-\item \chpl{boundedType} indicates which of the range's bounds are not infinity.
+\item \chpl{boundedType} indicates which of the range's bounds are not $\infty$.
   \chpl{boundedType} is an enumeration constant of the type
   \chpl{BoundedRangeType}. It is discussed further below.
 
@@ -212,7 +225,8 @@ enum BoundedRangeType { bounded, boundedLow, boundedHigh, boundedNone };
 \end{chapel}
 
 The value of \chpl{boundedType} determines which bounds of the range
-are integers (making the range ``bounded'', as opposed to infinity)
+are integers (making the range ``bounded'', as opposed to infinite,
+in the corresponding direction(s))
 as follows:
 
 \begin{itemize}
@@ -223,25 +237,23 @@ as follows:
 
 \index{ranges!boundedLow}
 \item \chpl{boundedLow}:
-  the low bound is an integer (the high bound is infinity).
+  the low bound is an integer (the high bound is +$\infty$).
 
 \index{ranges!boundedHigh}
 \item \chpl{boundedHigh}:
-  the high bound is an integer (the low bound is infinity).
+  the high bound is an integer (the low bound is -$\infty$).
 
 \index{ranges!boundedNone}
 \item \chpl{boundedNone}:
-  neither bound is an integer (both bounds are infinity).
+  neither bound is an integer (both bounds are $\infty$).
 
 \end{itemize}
 
 \noindent \chpl{boundedType} is \chpl{BoundedRangeType.bounded} by default.
 
-%REVIEW: vass: while the following is arguably trivial,
-% I feel it is useful to remind the reader about it.
 The parameters \chpl{idxType}, \chpl{boundedType} and \chpl{stridable}
-affect \emph{all} values of the corresponding range type.
-For example, the range's low bound is infinity if and only if
+affect all values of the corresponding range type.
+For example, the range's low bound is -$\infty$ if and only if
 the \chpl{boundedType} of that range's type is either \chpl{boundedHigh}
 or \chpl{boundedNone}.
 
@@ -257,16 +269,27 @@ cases and the specialized code more aggressively.
 
 %REVIEW: vass: we need to come up with a common way to define
 % generic types prior to the generics chapter.
-% (As well as the ``is summarized as follows'' phrase.)
-% This presentation is an almost-copy of rectangular-domain-type.
-The syntax of a range type is summarized as follows:
+
+% gotta specify syntax for 'range-type' because it's refererenced in Types.tex
+A range type has the following syntax:
 \begin{syntax}
 range-type:
   `range' ( named-expression-list )
 \end{syntax}
-\noindent where \sntx{named-expression-list} permits the values of
-\chpl{idxType}, \chpl{boundedType}, and \chpl{stridable} to be specified
-using standard type signature.
+
+That is, a range type is obtained as if by invoking the range type constructor
+(\rsec{Type_Constructors}) that has the following header:
+
+\begin{chapel}
+  proc range(type idxType = int,
+             param boundedType = BoundedRangeType.bounded,
+             param stridable = false) type
+\end{chapel}
+
+As a special case, the keyword \chpl{range} without a parenthesized
+argument list refers to the range type with the default values
+of all its parameters, i.e.,
+\chpl{range(int, BoundedRangeType.bounded, false)}.
 
 \begin{chapelexample}{rangeVariable.chpl}
 The following declaration declares a variable \chpl{r}
@@ -310,15 +333,64 @@ range-literal:
   ..
 \end{syntax}
 
+The expressions to the left and to the right of \chpl{..}, when given,
+are called the low bound and the high bound expression, respectively.
+
+The type of a range literal is a range with the following parameters:
+
+\begin{itemize}
+
+\item \chpl{idxType} is determined as follows:
+  \begin{itemize}
+
+  \item If both the low bound and the high bound expressions are given
+        and have the same integral type, then \chpl{idxType} is that type.
+
+%REVIEW: not precise. E.g. it does not allow one bound to be converted
+% to another bound's type. Also, should be the most specific such type.
+  \item If both the low bound and the high bound expressions are given
+        and an implicit conversion is allowed from each expression's type
+        to the same integral type, then \chpl{idxType} is that
+        integral type.
+
+%REVIEW: should be the most specific integral type.
+  \item If only one bound expression is given and it has an integral type
+        or an implicit conversion is allowed from that expression's type
+        to an integral type, then \chpl{idxType} is that integral type.
+
+  \item If neither bound expression is given, then \chpl{idxType} is
+        \chpl{int}.
+
+  \item Otherwise, the range literal is not legal.
+  \end{itemize}
+
+\item \chpl{boundedType} is a value of the type \chpl{BoundedRangeType}
+that is determined as follows:
+  \begin{itemize}
+
+  \item \chpl{bounded}, if both the low bound and the high bound expressions
+         are given,
+
+  \item \chpl{boundedLow}, if only the high bound expression is given,
+
+  \item \chpl{boundedHigh}, if only the low bound expression is given,
+
+  \item \chpl{boundedNone}, if neither bound expression is given.
+  \end{itemize}
+
+\item \chpl{stridable} is \chpl{false}.
+
+\end{itemize}
+
 The value of a range literal is as follows:
 
 \begin{itemize}
 
-\item The low bound is given by the expression to the left of \chpl{..},
-if present, and is negative infinity otherwise.
+\item The low bound is given by the low bound expression,
+if present, and is -$\infty$ otherwise.
 
-\item The high bound is given by the expression to the right of \chpl{..},
-if present, and is positive infinity otherwise.
+\item The high bound is given by the upper bound expression,
+if present, and is +$\infty$ otherwise.
 
 \item The stride is 1.
 
@@ -326,32 +398,79 @@ if present, and is positive infinity otherwise.
 
 \end{itemize}
 
-The type of a range literal is a range with the following parameters:
+
+\subsection{Default Values}
+\label{Range_Default_Values}
+\index{ranges!default values}
+
+The default value for a range type depends on the type's
+\chpl{boundedType} parameter as follows:
 
 \begin{itemize}
 
-%REVIEW: clarify what happens when (a) the bounds' types are different, or
-% (b) both bounds are infinity.
-\item \chpl{idxType} is determined by the types of the
-low and high bound expressions.
-It is either \chpl{int}, \chpl{uint},
-\chpl{int(64)}, or \chpl{uint(64)}.
-It is obtained by
-applying integral promotions to the low and high bounds.
+\item \chpl{1..0} (an empty range) if \chpl{boundedType} is \chpl{bounded}
 
-\item \chpl{boundedType} is chosen to reflect
-which of the bounds are not infinity (\rsec{Range_Types}).
+\item \chpl{1..} if \chpl{boundedType} is \chpl{boundedLow}
 
-\item \chpl{stridable} is \chpl{false}.
+\item \chpl{..0} if \chpl{boundedType} is \chpl{boundedHigh}
+
+\item \chpl{..} if \chpl{boundedType} is \chpl{boundedNone}
 
 \end{itemize}
 
-\subsection{Range Bounds in Zippered Iterations}
+\begin{rationale}
+We use 0 and 1 to represent an empty range because these values
+are available for any \chpl{idxType}.
 
-%REVIEW: vass: this might not be the best place for the following.
-% I created the subsection to separate this from the surrounding matter.
-% The right place is perhaps in Concepts, but there we cannot give
-% a code example. (Exemplifying this without Chapel code would not be fun.)
+We have not found the natural choice of the default value for
+\chpl{boundedLow} and \chpl{boundedHigh} ranges.
+The values indicated above are distinguished by the following property.
+Slicing the default value for a \chpl{boundedLow} range with
+the default value for a \chpl{boundedHigh} range (or visa versa)
+produces an empty range, matching the default value for a
+\chpl{bounded} range
+\end{rationale}
+
+
+\section{Common Operations}
+
+\subsection{Range Assignment}
+\label{Range_Assignment}
+\index{ranges!assignment}
+
+Assigning one range to another results in the target range
+copying the low and high bounds, stride, and alignment
+from the source range.
+
+Range assignment is legal when:
+\begin{itemize}
+\item \chpl{idxType} of the source range type is implicitly coercible
+       to \chpl{idxType} of the destination range type,
+\item the two range types have the same \chpl{boundedType}, and
+\item either the destination range is stridable or the source range's
+      stride is 1.
+\end{itemize}
+
+\subsection{Range Comparisons}
+
+\begin{protohead}
+proc ==(r1: range(?), r2: range(?)): bool
+\end{protohead}
+\begin{protobody}
+Returns \chpl{true} if the two ranges have the same represented sequence
+and \chpl{false} otherwise.  The high and low bounds can differ between the two
+ranges, and they will still compare equal as long as the same sequence is
+represented by each.
+\end{protobody}
+
+\subsection{Iterating over Ranges}
+
+A range can be used as an iterator expression in a loop. This is legal
+only if the range is iterable. In this case the loop iterates over the
+members of the range's represented sequence, in the order defined by
+the sequence.
+
+\subsubsection{Iterating over Unbounded Ranges in Zippered Iterations}
 
 When a range without the last index is used
 in a zippered iteration (~\rsec{Zipper_Iteration}),
@@ -373,42 +492,8 @@ produces the output
 \end{chapelprintoutput}
 \end{chapelexample}
 
-\subsection{Default Values}
-\label{Range_Default_Values}
-\index{ranges!default values}
-
-The default value for a range type depends on the type's
-\chpl{boundedType} parameter as follows:
-
-\begin{itemize}
-
-\item \chpl{1..0} (an empty range) if \chpl{boundedType} is \chpl{bounded}
-
-\item \chpl{1..} if \chpl{boundedType} is \chpl{boundedLow}
-
-\item \chpl{..0} if \chpl{boundedType} is \chpl{boundedHigh}
-
-\item \chpl{..} if \chpl{boundedType} is \chpl{boundedNone}
-
-\end{itemize}
-
-
-\section{Range Assignment}
-\label{Range_Assignment}
-\index{ranges!assignment}
-
-Assigning one range to another results in the target range
-copying the low and high bounds, stride, and alignment
-from the source range.
-
-Range assignment is legal when:
-\begin{itemize}
-\item \chpl{idxType} of the source range type is implicitly coercible
-       to \chpl{idxType} of the destination range type,
-\item the two range types have the same \chpl{boundedType}, and
-\item either the destination range is stridable or the source range's
-      stride is 1.
-\end{itemize}
+%REVIEW: perhaps define implicit/explicit conversions as well
+% under "Common Operations"?
 
 
 \section{Range Operators}
@@ -437,26 +522,33 @@ range-expression:
 \index{ranges!by operator}
 \index{by@\chpl{by}}
 
-The \chpl{by} operator can be applied to any range to select
-a subsequence of its represented sequence and optionally reverse
-the sequence's direction.
+The \chpl{by} operator takes a range and a stride
+and selects a subsequence of the range's represented sequence,
+optionally reversing its direction.
+
 Its syntax is given by:
 \begin{syntax}
 strided-range-expression:
   range-expression `by' expression
 \end{syntax}
 
-The expression following \chpl{by} is the \chpl{by} operator's stride argument.
-It must be an integer that can be coersed to a signed integer value of the same
-bit size as \chpl{idxType}.  
+The type of the stride argument must be a signed integer of the same
+bit size as \chpl{idxType}, or an implicit conversion must be allowed
+to that type from the stride argument's type.
 
-The type of the resulting range has the same
-\chpl{idxType} and \chpl{boundedType} as the
-argument type, but has its \chpl{stridable} parameter set to \chpl{true}.
+The type of the result of the \chpl{by} operator is the type of its range
+argument, but with the \chpl{stridable} parameter set to \chpl{true}.
 
-The low and high bounds of the operand range are preserved in the result.
-The stride of the result is a product of the stride argument and
-the stride of the range argument.
+The result of the \chpl{by} operator is as follows:
+
+\begin{itemize}
+
+\item The low and upper bounds are the same as those of the range argument.
+
+\item The stride is a product of the stride argument and
+      the stride of the range argument.
+
+\item 
 
 %REVIEW: the alignment is defined using two "as follows" lists.
 % Should be just one.
@@ -491,6 +583,8 @@ than 1 and its \chpl{first} value is defined (i.e.
 \end{itemize}
 See the definition of \chpl{hasFirst}.
 
+\end{itemize}
+
 \begin{chapelexample}{rangeByOperator.chpl}
 In the following declarations, range \chpl{r1} represents the odd integers
 between 1 and 20. Range \chpl{r2} strides \chpl{r1} by two and represents
@@ -509,6 +603,7 @@ writeln(r2);
 \end{chapeloutput}
 \end{chapelexample}
 
+%REVIEW we were not happy with this rationale at 7/19/2011 spec review
 \begin{rationale}
 {\it Why isn't the high bound specified first if the stride is
 negative?}  The reason for this choice is that the \chpl{by} operator
@@ -799,7 +894,7 @@ by iterating over the range in a for loop \rsec{The_For_Loop}.
 
 \begin{openissue}
 The behavior of the methods that report properties that may be
-undefined, infinity, or ambiguous, may change.
+undefined, $\infty$, or ambiguous, may change.
 \end{openissue}
 
 \begin{protohead}
@@ -868,7 +963,7 @@ Reports whether the range has the first index.
 proc $range$.hasHighBound() param: bool
 \end{protohead}
 \begin{protobody}
-Reports whether the range's high bound is \emph{not} infinity.
+Reports whether the range's high bound is \emph{not} +$\infty$.
 \end{protobody}
 
 \begin{protohead}
@@ -882,7 +977,7 @@ Reports whether the range has the last index.
 proc $range$.hasLowBound() param: bool
 \end{protohead}
 \begin{protobody}
-Reports whether the range's low bound is \emph{not} infinity.
+Reports whether the range's low bound is \emph{not} -$\infty$.
 \end{protobody}
 
 \begin{protohead}
@@ -890,7 +985,7 @@ proc $range$.high : idxType
 \end{protohead}
 \begin{protobody}
 Returns the range's high bound.
-If the high bound is infinity, the behavior is undefined.
+If the high bound is +$\infty$, the behavior is undefined.
 See also \chpl{hasHighBound}.
 \end{protobody}
 
@@ -932,7 +1027,7 @@ proc $range$.low : idxType
 \end{protohead}
 \begin{protobody}
 Returns the range's low bound.
-If the low bound is infinity, the behavior is undefined.
+If the low bound is -$\infty$, the behavior is undefined.
 See also \chpl{hasLowBound}.
 \end{protobody}
 
@@ -946,16 +1041,6 @@ If the range is not stridable, this will always return 1.
 
 \subsection{Other Queries}
 \label{Range_Queries}
-
-\begin{protohead}
-proc ==(r1: range(?), r2: range(?)): bool
-\end{protohead}
-\begin{protobody}
-Returns \chpl{true} if the two ranges have the same represented sequence
-and \chpl{false} otherwise.  The high and low bounds can differ between the two
-ranges, and they will still compare equal as long as the same sequence is
-represented by each.
-\end{protobody}
 
 \begin{protohead}
 proc $range$.boundsCheck(r2: range(?)): bool

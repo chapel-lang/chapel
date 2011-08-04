@@ -44,13 +44,16 @@ enum ModTag {
   MOD_MAIN       // a module from a file listed on the compiler command line
 };
 
+typedef std::bitset<NUM_FLAGS> FlagSet;
+
+
 class Symbol : public BaseAST {
  public:
   const char* name;
   const char* cname; // Name of symbol for generating C code
   Type* type;
   DefExpr* defPoint; // Point of definition
-  std::bitset<NUM_FLAGS> flags;
+  FlagSet flags;
 
   Symbol(AstTag astTag, const char* init_name, Type* init_type = dtUnknown);
   virtual ~Symbol();
@@ -162,6 +165,7 @@ class FnSymbol : public Symbol {
   FnSymbol(const char* initName);
   ~FnSymbol();
            
+  void parseCheck();    // Check a FnSymbol for input errors.
   void verify(); 
   DECLARE_SYMBOL_COPY(FnSymbol);
   FnSymbol* getFnSymbol(void);

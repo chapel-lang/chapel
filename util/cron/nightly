@@ -52,6 +52,7 @@ while (@ARGV) {
         $dist = shift @ARGV;
     } elsif ($flag eq "-memleaks") {
         $memleaks = shift @ARGV;
+        $examples = 1;
     } elsif ($flag eq "-suppress") {
         $suppressions = shift @ARGV;
     } elsif ($flag eq "-componly") {
@@ -499,8 +500,8 @@ if ($valgrind == 0) {
     $testflags = "$testflags -futures";
 }
 if ($examples == 1) {
+    mysystem("cd $chapeldir && $make spectests", "making spec tests", 0, 1);
     if ($parnodefile eq "") {
-        mysystem("cd $chapeldir && $make spectests", "making spec tests", 0, 1);
         $testflags = "$testflags release/examples";
     } else {
         mysystem("cd $testdir && find release/examples -type d > DIRFILE", 
@@ -510,9 +511,6 @@ if ($examples == 1) {
 }
 if (!($dist eq "")) {
     $testflags = "$testflags distributions/robust/arithmetic";
-}
-if (!($memleaks eq "")) {
-    $testflags = "$testflags release/examples";
 }
 if ($parnodefile eq "") {
 } else {
@@ -551,6 +549,7 @@ if (!($memleaks eq "")) {
 }
 if ($nolocal == 1) {
     $testflags = "$testflags -compopts --no-local";
+    $ENV{'CHPL_TEST_NO_LOCAL'} = true;
 }
 if (!($suppressions eq "")) {
     $testflags = "$testflags -suppress $suppressions";
@@ -640,13 +639,14 @@ if ($runtests == 0) {
     if ($status == 0) {
         $newfailures = `comm -13 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep -v "$futuremarker" | wc -l`; chomp($newfailures);
         $newresolved = `comm -23 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep -v "$futuremarker" | wc -l`; chomp($newresolved);
+        $passingfutures = `grep "$futuremarker" $sortedsummary | grep "Success" | wc -l`; chomp($passingfutures);
         $newfailures += 0;
         $shortstatus = "$newfailures/$curfail";
     } else {
         $shortstatus = "build/test failed";
     }
 
-    if ($newfailures == 0 && $newresolved == 0) {
+    if ($newfailures == 0 && $newresolved == 0 && $passingfutures == 0) {
         print "Mailing to minimal group\n";
         $recipient = $nochangerecipient;
     } else {

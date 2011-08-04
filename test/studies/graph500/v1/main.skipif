@@ -1,4 +1,2 @@
-# Under comm=none:
-# * this does not crash
-# * it does not feel important to run this test - we run ../v2 instead
-CHPL_COMM != gasnet
+# Intermittent failures for all other cases
+CHPL_TEST_VGRND_EXE!=on

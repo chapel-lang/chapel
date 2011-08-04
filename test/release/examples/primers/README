@@ -12,6 +12,7 @@ demonstrate Chapel feature area in detail.
      fileIO.chpl            : File I/O example using arrays
      genericClasses.chpl    : Defining and using generic classes
      iterators.chpl         : Iterator examples
+     leaderfollower.chpl    : Introduction to leader/follower iterators
      locales.chpl           : Chapel Locale types
      opaque.chpl            : Opaque arrays
      procedures.chpl        : Procedure examples

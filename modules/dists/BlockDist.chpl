@@ -194,10 +194,10 @@ proc Block.Block(boundingBox: domain,
                 dataParIgnoreRunningTasks=getDataParIgnoreRunningTasks(),
                 dataParMinGranularity=getDataParMinGranularity(),
                 param rank = boundingBox.rank,
-                type idxType = boundingBox.dim(1).idxType) {
+                type idxType = boundingBox.idxType) {
   if rank != boundingBox.rank then
     compilerError("specified Block rank != rank of specified bounding box");
-  if idxType != boundingBox.dim(1).idxType then
+  if idxType != boundingBox.idxType then
     compilerError("specified Block index type != index type of specified bounding box");
 
   this.boundingBox = boundingBox;
@@ -805,15 +805,15 @@ iter BlockArr.these(param tag: iterator, follower, param fast: bool = false) var
     followThis(i) = (low..high by stride) + dom.whole.dim(i).low by follower(i).stride;
     lowIdx(i) = followThis(i).low;
   }
-  const followThisDom = [(...followThis)];
 
-  //
-  // TODO: The following is a buggy hack that will only work when we're
-  // distributing across the entire Locales array.  I still think the
-  // locArr/locDoms arrays should be associative over locale values.
-  //
-  var arrSection = locArr(dom.dist.targetLocsIdx(lowIdx));
   if fast {
+    //
+    // TODO: The following is a buggy hack that will only work when we're
+    // distributing across the entire Locales array.  I still think the
+    // locArr/locDoms arrays should be associative over locale values.
+    //
+    var arrSection = locArr(dom.dist.targetLocsIdx(lowIdx));
+
     //
     // if arrSection is not local and we're using the fast follower,
     // it means that followThisDom is empty; make arrSection local so
@@ -822,12 +822,12 @@ iter BlockArr.these(param tag: iterator, follower, param fast: bool = false) var
     if arrSection.locale.uid != here.uid then
       arrSection = myLocArr;
     local {
-      for e in arrSection.myElems(followThisDom) do
+      for e in arrSection.myElems((...followThis)) do
         yield e;
     }
   } else {
     //
-    // we don't own all the elements we're following
+    // we don't necessarily own all the elements we're following
     //
     proc accessHelper(i) var {
       if myLocArr then local {
@@ -836,6 +836,7 @@ iter BlockArr.these(param tag: iterator, follower, param fast: bool = false) var
       }
       return dsiAccess(i);
     }
+    const followThisDom = [(...followThis)];
     for i in followThisDom {
       yield accessHelper(i);
     }

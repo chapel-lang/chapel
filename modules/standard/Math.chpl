@@ -216,3 +216,19 @@ proc log2(in val: int(?w)) {
 proc log2(in val: uint(?w)) {
   return logBasePow2(val, 1);
 }
+
+proc ceil(m: integral, n: integral) return
+  if m >= 0 then
+    if n >= 0 then (m + n - 1) / n
+    else           m / n
+  else
+    if n >= 0 then m / n
+    else           (m + n + 1) / n;
+
+proc ceil(param m: integral, param n: integral) param return
+  if m >= 0 then
+    if n >= 0 then (m + n - 1) / n
+    else           m / n
+  else
+    if n >= 0 then m / n
+    else           (m + n + 1) / n;

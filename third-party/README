@@ -72,3 +72,17 @@ qthread/
            http://www.cs.sandia.gov/qthreads/
 
   See also: qthread/qthread-*/README
+
+
+tcmalloc/
+  Summary: the Google perf-tools memory allocator (tcmalloc) which we
+           use to support malloc/free calls when running programs using
+           Cray's Gemini network interconnect chip
+
+  License: Google-perftools is released under the New BSD License (see
+           tcmalloc/google-perftools-*/COPYING)
+
+  Contact: For more information, please refer to:
+           http://code.google.com/p/google-perftools/
+
+  See also: tcmalloc/README

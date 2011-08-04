@@ -542,12 +542,12 @@ there are no user-defined constructors for \chpl{C}, so \chpl{new} operators
 will invoke \chpl{C}'s compiler-generated constructor. The \chpl{x} argument
 of the compiler-generated constructor has the default value \chpl{0}.
 The \chpl{y} and \chpl{z} arguments have the default values \chpl{3.14} and
-\chpl{"Hello, World!"}, respectively.
+\chpl{"Hello, World\!"}, respectively.
 
 \chpl{C} instances can be created by calling the compiler-generated constructor as follows:
 \begin{itemize}
-\item The call \chpl{new C()} is equivalent to \chpl{C(0,3.14,"Hello, World!")}.
-\item The call \chpl{new C(2)} is equivalent to \chpl{C(2,3.14,"Hello, World!")}.
+\item The call \chpl{new C()} is equivalent to \chpl{C(0,3.14,"Hello, World\!")}.
+\item The call \chpl{new C(2)} is equivalent to \chpl{C(2,3.14,"Hello, World\!")}.
 \item The call \chpl{new C(z="")} is equivalent to \chpl{C(0,3.14,"")}.
 \item The call \chpl{new C(2, z="")} is equivalent to \chpl{C(2,3.14,"")}.
 \item The call \chpl{new C(0,0.0,"")} specifies the initial values for all fields explicitly.

@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "chpllaunch.h"
-#include "chpl_mem.h"
+#include "chpl-mem.h"
 #include "error.h"
 
 #define LAUNCH_PATH_HELP WRAP_TO_STR(LAUNCH_PATH)
@@ -28,7 +28,7 @@ static char** chpl_launch_create_argv(const char *launch_cmd,
 
 int chpl_launch(int argc, char* argv[], int32_t numLocales) {
   int len = strlen(WRAP_TO_STR(LAUNCH_PATH)) + strlen("gasnetrun_ibv") + 1;
-  char *cmd = chpl_malloc(len, sizeof(char), CHPL_RT_MD_COMMAND_BUFFER, -1, "");
+  char *cmd = chpl_mem_allocMany(len, sizeof(char), CHPL_RT_MD_COMMAND_BUFFER, -1, "");
   sprintf(cmd, "%sgasnetrun_ibv", WRAP_TO_STR(LAUNCH_PATH));
 
   return chpl_launch_using_exec(cmd,

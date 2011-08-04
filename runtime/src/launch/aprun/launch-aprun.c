@@ -5,7 +5,7 @@
 #include <unistd.h>
 #include <errno.h>
 #include "chpllaunch.h"
-#include "chpl_mem.h"
+#include "chpl-mem.h"
 #include "error.h"
 
 #define baseSysFilename ".chpl-sys-"

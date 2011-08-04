@@ -1,0 +1,1 @@
+--fast --ccflags -D_BSD_SOURCE

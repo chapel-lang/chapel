@@ -511,6 +511,10 @@
 #    script.  (other such commands can be added to various
 #    stages of the sub_test script on request).
 #
+#  - it is also possible to add a PRECOMP file which is run prior to
+#    running the main test.  This can be used to set up certain files
+#    which are used in the test itself.
+#
 #  - if the subdirectory contains a TIMEOUT file, then that file
 #    will be read to determine the number of seconds that the tests
 #    in the directory should be allowed to run before being killed.
@@ -646,66 +650,66 @@ set suppressions = ""
 set optionerr = 0
 
 while ( $#argv > 0 )
-	switch ( $argv[1] )
-	case -execopts:
-	case --execopts:
-		shift
-		set execopts = "$execopts $argv[1]"
-		shift
-		breaksw
-	case -compiler:
-	case --compiler:
-		shift
-		set compiler = $argv[1]
-		shift
-		breaksw
+    switch ( $argv[1] )
+    case -execopts:
+    case --execopts:
+        shift
+        set execopts = "$execopts $argv[1]"
+        shift
+        breaksw
+    case -compiler:
+    case --compiler:
+        shift
+        set compiler = $argv[1]
+        shift
+        breaksw
         case -launchcmd:
         case --launchcmd:
                 shift
                 set launchcmd = "$argv[1]"
                 shift
                 breaksw
-	case -cleanonly:
-	case --cleanonly:
-	case -clean-only:
-	case --clean-only:
-		shift
-		set clean_only = 1
-		breaksw
-	case -compopts:
-	case --compopts:
-		shift
-		set compopts = "$compopts $argv[1]"
-		shift
-		breaksw
-	case -logfile:
-	case --logfile:
-		shift
-		set logfile = $argv[1]
-		shift
-		breaksw
-	case -memleaks:
-	case --memleaks:
-		shift
+    case -cleanonly:
+    case --cleanonly:
+    case -clean-only:
+    case --clean-only:
+        shift
+        set clean_only = 1
+        breaksw
+    case -compopts:
+    case --compopts:
+        shift
+        set compopts = "$compopts $argv[1]"
+        shift
+        breaksw
+    case -logfile:
+    case --logfile:
+        shift
+        set logfile = $argv[1]
+        shift
+        breaksw
+    case -memleaks:
+    case --memleaks:
+        shift
                 if ($argv[1] =~ "/*") then
                     set execopts = "$execopts --memLeaksLog=$argv[1]"
                 else
                     set execopts = "$execopts --memLeaksLog=$cwd/$argv[1]"
                 endif
-		setenv CHPL_MEM_LEAK_TESTING true
-		shift
-		breaksw
-	case -valgrind:
-	case --valgrind:
-		shift
-		set valgrind = 1
-		breaksw
-	case -sysprediff:
-	case --sysprediff:
-		shift
+        setenv CHPL_MEM_LEAK_TESTING true
+        shift
+        breaksw
+    case -valgrind:
+    case --valgrind:
+        shift
+        set valgrind = 1
+        breaksw
+    case -sysprediff:
+    case --sysprediff:
+        shift
                 setenv CHPL_SYSTEM_PREDIFF "$argv[1]"
-		shift
-		breaksw
+        shift
+        breaksw
         case -futures:
         case --futures:
                 shift
@@ -735,12 +739,12 @@ while ( $#argv > 0 )
                 shift
                 set gengraphs = 1
                 breaksw
-	case --startdate:
-	case -startdate:
-		shift
-		set startdate = $argv[1]
-		shift
-		breaksw
+    case --startdate:
+    case -startdate:
+        shift
+        set startdate = $argv[1]
+        shift
+        breaksw
         case -norecurse:
         case --norecurse:
         case -no-recurse:
@@ -748,11 +752,11 @@ while ( $#argv > 0 )
                 shift
                 set recurse = 0
                 breaksw
-	case -comp-only:
-	case --comp-only:
-		shift
-		setenv CHPL_COMPONLY true
-		breaksw
+    case -comp-only:
+    case --comp-only:
+        shift
+        setenv CHPL_COMPONLY true
+        breaksw
         case -valgrindexe:
         case --valgrindexe:
                 shift
@@ -784,24 +788,24 @@ while ( $#argv > 0 )
                 setenv CHPL_LAUNCHER_TIMEOUT $argv[1]
                 shift
                 breaksw
-	case -h:
-	case -help:
+    case -h:
+    case -help:
         case --help:
-		echo Usage and defaults\:
-		echo "     start_test <options> <files> <directories>"
+        echo Usage and defaults\:
+        echo "     start_test <options> <files> <directories>"
                 echo "          -clean-only"
-		echo "          -compiler <path>      (currently: $CHPL_HOME/bin/$platform/chpl)"
-		echo "          -compopts <options>   (currently: '--cc-warnings')"
-		echo "          -execopts <options>   (currently: '')"
+        echo "          -compiler <path>      (currently: $CHPL_HOME/bin/$platform/chpl)"
+        echo "          -compopts <options>   (currently: '--cc-warnings')"
+        echo "          -execopts <options>   (currently: '')"
                 echo "          -launchcmd <command>  (currently: '')"
                 echo "          -norecurse"
-		echo "          -comp-only"
+        echo "          -comp-only"
                 echo "          -performance"
                 echo "          -generate-graphs"
-		echo "          -startdate <MM/DD/YY> (currently: '')"
+        echo "          -startdate <MM/DD/YY> (currently: '')"
                 echo "          -futures"
                 echo "          -futuresonly"
-		echo "          -valgrind"
+        echo "          -valgrind"
                 echo "          -valgrindexe"
                 echo "          -sysprediff <path>"
                 echo "          -comm [none|gasnet|pvm]  (currently: $comm)"
@@ -809,12 +813,12 @@ while ( $#argv > 0 )
                 echo "          -nostdinredirect"
                 echo "          -launchertimeout pbs"
 #                echo "          -interpret (or -i)"
-		echo "          -logfile <file>      (currently: $testdir/Logs/$user.$platform.log)"
-		echo "          -memleaks <file>"
-		echo "          -h, -help"
-		exit 0
-		breaksw
-	default:
+        echo "          -logfile <file>      (currently: $testdir/Logs/$user.$platform.log)"
+        echo "          -memleaks <file>"
+        echo "          -h, -help"
+        exit 0
+        breaksw
+    default:
                 if ( -d "$argv[1]" && -x "$argv[1]") then
 #                    echo "$argv[1] is a directory"
                     set dirlist = "$dirlist $argv[1]"
@@ -828,9 +832,9 @@ while ( $#argv > 0 )
                 else
                     echo \[ERROR: Unknown command line parameter \"$argv[1]\", aborting.\]
                     shift
-		set optionerr = 1
-		breaksw
-	endsw
+        set optionerr = 1
+        breaksw
+    endsw
 end
 
 if ($optionerr == 1) then
@@ -858,8 +862,8 @@ if ($valgrind) then
     setenv CHPL_TEST_VGRND_EXE on
     which valgrind > /dev/null
     if ( $status != 0 ) then
-	echo ERROR: can\'t find valgrind |& $tee -a $logtmp
-	exit 1
+    echo ERROR: can\'t find valgrind |& $tee -a $logtmp
+    exit 1
     endif
 else
     setenv CHPL_TEST_VGRND_COMP off
@@ -901,14 +905,14 @@ endif
 
 # if compiler exists then get absolute path name for
 if ( -f $compiler && -x $compiler ) then
-	pushd `dirname $compiler` >& /dev/null
-	set compiler = $cwd/`basename $compiler`
-	popd >& /dev/null
+    pushd `dirname $compiler` >& /dev/null
+    set compiler = $cwd/`basename $compiler`
+    popd >& /dev/null
 
-	echo \[compiler: \"$compiler\"\] |& $tee -a $logtmp
+    echo \[compiler: \"$compiler\"\] |& $tee -a $logtmp
 else
-	echo \[Cannot find or execute compiler: \"$compiler\"\] \
-		|& $tee -a $logtmp
+    echo \[Cannot find or execute compiler: \"$compiler\"\] \
+        |& $tee -a $logtmp
         exit 1
 endif
 
@@ -940,8 +944,8 @@ if ($?CHPL_SYSTEM_PREDIFF) then
 
         echo \[system-wide prediff: \"$CHPL_SYSTEM_PREDIFF\"\] |& $tee -a $logtmp
     else
-	echo \[Cannot find or execute system-wide prediff: \"$CHPL_SYSTEM_PREDIFF\"\] \
-		|& $tee -a $logtmp
+    echo \[Cannot find or execute system-wide prediff: \"$CHPL_SYSTEM_PREDIFF\"\] \
+        |& $tee -a $logtmp
         exit 1
     endif
 endif
@@ -951,7 +955,7 @@ if ($performance || $gengraphs) then
     if ($?CHPL_TEST_PERF_DIR) then
         set perfdir = $CHPL_TEST_PERF_DIR
     else
-	set perfdir = ./perfdat/`uname -n`
+    set perfdir = ./perfdat/`uname -n`
     endif
     set createGraphs = $utildir/createGraphs
     set viewGraphs = $utildir/viewGraphs
@@ -1034,21 +1038,21 @@ endif
 
 #if logfile directory exists, then get absolute path for
 if ( -d `dirname $logfile` && -x `dirname $logfile` ) then
-	pushd `dirname $logfile` >& /dev/null
-	set logfile = `pwd`/`basename $logfile`
-	popd >& /dev/null
+    pushd `dirname $logfile` >& /dev/null
+    set logfile = `pwd`/`basename $logfile`
+    popd >& /dev/null
 
-	echo \[logfile: \"$logfile\"\] |& $tee -a $logtmp
+    echo \[logfile: \"$logfile\"\] |& $tee -a $logtmp
 else
-	echo \[Permission denied for logfile directory: \"`dirname $logfile`\"\] \
-		|& $tee -a $logtmp
-	exit 1
+    echo \[Permission denied for logfile directory: \"`dirname $logfile`\"\] \
+        |& $tee -a $logtmp
+    exit 1
 endif
 
 if ( -w $logfile ) then
-	echo ""
-	echo \[Removing log file with duplicate name \"$logfile\"\]
-	rm -f $logfile
+    echo ""
+    echo \[Removing log file with duplicate name \"$logfile\"\]
+    rm -f $logfile
 endif
 
 # Move temp log file ($logtmp) we have been accumulating to actual log file
@@ -1297,9 +1301,14 @@ foreach testType ($testTypes)
     end
 end
 
-if ($gengraphs) then
+if ($gengraphs && $?CHPL_TEST_PERF_DIR) then
     echo "[Executing viewGraphs for $graphfile in $perfdir]" |& $tee -a $logfile
     $viewGraphs "$perfdir" |& $tee -a $logfile
+    if ($? == 0) then
+        echo "[Success generating graph views in $perfdir]" |& $tee -a $logfile
+    else
+        echo "[Error generating graph views in $perfdir]" |& $tee -a $logfile
+    endif
 endif
 
 # return to where we started
@@ -1352,5 +1361,5 @@ endif
 echo \[END\] |& $tee -a $logfile.summary
 cat $logfile.summary >> $logfile
 
-echo ''
+echo ''
 echo
