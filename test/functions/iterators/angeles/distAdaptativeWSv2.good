@@ -1,0 +1,65 @@
+Working with 4 Threads
+
+Grain size: fine. Working with Adaptative v2 BS and Stealing with BS
+
+Correct
+
+Grain size: fine. Working with Adaptative v2 BS and Stealing with GS
+
+Correct
+
+Grain size: fine. Working with Adaptative v2 GS and Stealing with BS
+
+Correct
+
+Grain size: fine. Working with Adaptative v2 GS and Stealing with GS
+
+Correct
+
+Grain size: coarse. Working with Adaptative v2 BS and Stealing with BS
+
+Correct
+
+Grain size: coarse. Working with Adaptative v2 BS and Stealing with GS
+
+Correct
+
+Grain size: coarse. Working with Adaptative v2 GS and Stealing with BS
+
+Correct
+
+Grain size: coarse. Working with Adaptative v2 GS and Stealing with GS
+
+Correct
+
+Grain size: tri. Working with Adaptative v2 BS and Stealing with BS
+
+Correct
+
+Grain size: tri. Working with Adaptative v2 BS and Stealing with GS
+
+Correct
+
+Grain size: tri. Working with Adaptative v2 GS and Stealing with BS
+
+Correct
+
+Grain size: tri. Working with Adaptative v2 GS and Stealing with GS
+
+Correct
+
+Grain size: rand. Working with Adaptative v2 BS and Stealing with BS
+
+Correct
+
+Grain size: rand. Working with Adaptative v2 BS and Stealing with GS
+
+Correct
+
+Grain size: rand. Working with Adaptative v2 GS and Stealing with BS
+
+Correct
+
+Grain size: rand. Working with Adaptative v2 GS and Stealing with GS
+
+Correct
