@@ -67,8 +67,11 @@ typedef struct qio_style_s {
   uint8_t leftjustify; // 1 == left, 0 == right
 
   // floating point options
-  uint8_t showpoint; // floating point values always include decimal point
-                  // (only supported with realtype == 1 or 2).
+  uint8_t showpoint; // integer floating point values include a decimal point
+                     // with some level of precision (maybe just . or maybe .00000 for %g)
+  uint8_t showpointzero;  // integer floating point values get a .0
+                          // if they would otherwise have be printed without a .0
+
   int32_t precision; // for floating point, number after decimal point.
   int32_t significant_digits; // maximum display precision for floating point.
   uint8_t realtype; // 0 -> print with %g; 1 -> print with %f; 2 -> print with %
@@ -153,6 +156,7 @@ void qio_style_init_default(qio_style_t* s)
   s->leftjustify = 0;
 
   s->showpoint = 0;
+  s->showpointzero = 1;
   s->precision = -1; // use default printf values; usually 6 but more for base 16
   s->significant_digits = -1;
 

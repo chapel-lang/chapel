@@ -1424,6 +1424,42 @@ int _ftoa(char* dst, size_t size, double num, int base, const qio_style_t* style
       }
     }
 
+    if( style->showpointzero && style->base != 16 ) {
+      // .. but if it ended in just . we add a .0
+      if( got > 0 && buf[got-1] == '.' ) {
+        int period = got - 1;
+        got += 1;
+        if( got < buf_sz ) {
+          buf[period] = '.'; // (redundant)
+          buf[period+1] = '0';
+        }
+        // otherwise buf will be reallocated and we try again.
+      } else { // maybe it was an integer than needs a .0 ?
+        int needspoint;
+        int i;
+
+        needspoint = 1;
+        for( i = 0; i < got; i++ ) {
+          if( isdigit(buf[i]) ) {
+           // maybe still need decimal point!
+          } else {
+           // . e E inf etc. don't need decimal point.
+           needspoint = 0;
+          }
+        }
+
+        if( needspoint ) {
+          int period = got; // '\0' at end of string.
+          got += 2;
+          if( got < buf_sz ) {
+            buf[period] = '.';
+            buf[period+1] = '0';
+          }
+          // otherwise, buf will be reallocated and we try again.
+        }
+      }
+    }
+
     if( got < 0 ) {
       MAYBE_STACK_FREE(buf, buf_onstack);
       return -1;
