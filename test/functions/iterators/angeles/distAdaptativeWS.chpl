@@ -219,6 +219,8 @@ proc splitRange(inout rangeToSplit:range, splitFactor:int, inout itleft:bool):ra
 // Adding timing
 use Time;
 config const quiet: bool = true;
+config const nIterTimesF, nIterTimesC, nIterTimesT, nIterTimesR:int=1;
+config const chunkTimesF, chunkTimesC, chunkTimesT, chunkTimesR:int=1;
 var t: Timer;
 
 var grainsize:string; // "fine", "coarse", "tri", "ran"
@@ -280,9 +282,9 @@ proc CheckCorrectness(mWorking:bool, mStealing:bool, grainsize:string)
  
   select grainsize {
     when "fine" do {
-	n=1000000;
+	n=100*nIterTimesF;
 	delay=1;
-	chunk=10000;
+	chunk=10*chunkTimesF;
 	r=1..n;
 	var A:[r] int=0;
 	var TestA:[r] int=1;
@@ -299,8 +301,8 @@ proc CheckCorrectness(mWorking:bool, mStealing:bool, grainsize:string)
 	t.stop();
 	if !quiet then {
 	  writeln();
-	  writeln("Total time ", t.elapsed(TimeUnits.milliseconds), " milliseconds");
-	  writeln("Average time per it. ", t.elapsed(TimeUnits.milliseconds)/(n), " milliseconds");
+	  writeln("Total time ", grainsize, " (", mW, ",", mS,") ", t.elapsed(TimeUnits.milliseconds), " milliseconds");
+//	  writeln("Average time per it. ", t.elapsed(TimeUnits.milliseconds)/(n), " milliseconds");
 	  writeln();
 	}
 	for i in r do {
@@ -315,9 +317,9 @@ proc CheckCorrectness(mWorking:bool, mStealing:bool, grainsize:string)
 	  writeln("Correct");
     } 
     when "coarse" do {
-	n=100;
+	n=10*nIterTimesC;
 	delay=10000;
-	chunk=2;
+	chunk=2*chunkTimesC;
 	r=1..n;    
 	var B:[r] int=0;
 	var TestB:[r] int=1;
@@ -334,8 +336,8 @@ proc CheckCorrectness(mWorking:bool, mStealing:bool, grainsize:string)
 	t.stop();
 	if !quiet then {
 	  writeln();
-	  writeln("Total time ", t.elapsed(TimeUnits.milliseconds), " milliseconds");
-	  writeln("Average time per it. ", t.elapsed(TimeUnits.milliseconds)/(n), " milliseconds");
+	  writeln("Total time ", grainsize, " (", mW, ",", mS,") ", t.elapsed(TimeUnits.milliseconds), " milliseconds");
+//	  writeln("Average time per it. ", t.elapsed(TimeUnits.milliseconds)/(n), " milliseconds");
 	  writeln();
 	}
 	for i in r do {
@@ -351,9 +353,9 @@ proc CheckCorrectness(mWorking:bool, mStealing:bool, grainsize:string)
     }
       
     when "tri" do {
-      n=1000;
+      n=10*nIterTimesT;
       delay=100;
-      chunk=20;
+      chunk=2*chunkTimesT;
       r=1..n;
       m=(n+1)/2;    
       var C:[r,r] int=0;
@@ -374,8 +376,8 @@ proc CheckCorrectness(mWorking:bool, mStealing:bool, grainsize:string)
       t.stop();
       if !quiet then {
 	writeln();
-	writeln("Total time ", t.elapsed(TimeUnits.milliseconds), " milliseconds");
-	writeln("Average time per it. ", t.elapsed(TimeUnits.milliseconds)/(n*m), " milliseconds");
+	writeln("Total time ", grainsize, " (", mW, ",", mS,") ", t.elapsed(TimeUnits.milliseconds), " milliseconds");
+//	writeln("Average time per it. ", t.elapsed(TimeUnits.milliseconds)/(n*m), " milliseconds");
 	writeln();
       }
       for i in r do {
@@ -401,9 +403,9 @@ proc CheckCorrectness(mWorking:bool, mStealing:bool, grainsize:string)
     }
 
     otherwise {
-      n=1000;
+      n=10*nIterTimesR;
       delay=100000;
-      chunk=20;
+      chunk=2*chunkTimesR;
       r=1..n;    
       var ran:[r] real; // for "irregular computation" 
       fillRandom(ran);
@@ -425,8 +427,8 @@ proc CheckCorrectness(mWorking:bool, mStealing:bool, grainsize:string)
 
       if !quiet then {      
 	writeln();
-	writeln("Total time ", t.elapsed(TimeUnits.milliseconds), " milliseconds");
-	writeln("Average time per it. ", t.elapsed(TimeUnits.milliseconds)/(n), " milliseconds");
+	writeln("Total time ", grainsize, " (", mW, ",", mS,") ", t.elapsed(TimeUnits.milliseconds), " milliseconds");
+//	writeln("Average time per it. ", t.elapsed(TimeUnits.milliseconds)/(n), " milliseconds");
 	writeln();
       }
       for i in r do {
