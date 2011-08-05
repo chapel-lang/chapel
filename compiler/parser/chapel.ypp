@@ -137,7 +137,7 @@
 %type <pblockstmt> select_stmt assignment_stmt class_level_stmt
 %type <pblockstmt> type_select_stmt return_stmt
 
-%type <pblockstmt> type_alias_decl_stmt type_alias_decl_stmt_inner fn_decl_stmt class_decl_stmt module_decl_stmt extern_fn_decl_stmt
+%type <pblockstmt> type_alias_decl_stmt type_alias_decl_stmt_inner fn_decl_stmt class_decl_stmt module_decl_stmt
 %type <pblockstmt> enum_decl_stmt
 
 %type <pblockstmt> var_decl_stmt var_decl_stmt_inner_ls
@@ -166,7 +166,7 @@
 
 %type <pfnsymbol> fn_decl_stmt_inner formal_ls opt_formal_ls req_formal_ls
 %type <procIter> proc_or_iter_or_def
-%type <flagSet> fn_decl_flags
+%type <flag> fn_decl_flag
 
 %% 
 
@@ -418,17 +418,14 @@ lambda_decl_expr:
     }
 ;
 
-fn_decl_flags:
-            { $$ = new FlagSet(); }
-| fn_decl_flags TINLINE { $1->set(FLAG_INLINE); $$ = $1; }
-| fn_decl_flags TEXPORT { $1->set(FLAG_EXPORT); $$ = $1; }
-
-// hilde sez: How come we capture tokens from fn_decl_stmt_inner 
-// when parsing a full-up function but not an extern?
+fn_decl_flag:
+        { $$ = FLAG_UNKNOWN; }
+| TINLINE   { $$ = FLAG_INLINE; }
+| TEXPORT   { $$ = FLAG_EXPORT; }
+| TEXTERN   { $$ = FLAG_EXTERN; }
 
 fn_decl_stmt:
-  extern_fn_decl_stmt
-| fn_decl_flags proc_or_iter_or_def
+  fn_decl_flag proc_or_iter_or_def
     {
       // Sets up to capture tokens while parsing the next grammar nonterminal.
       captureTokens = 1;
@@ -444,48 +441,22 @@ fn_decl_stmt:
     {
       FnSymbol* fn = $4;
 
-      fn->flags |= *$1; delete $1; $1 = 0;
+      if ($1 != FLAG_UNKNOWN)
+    fn->addFlag($1);
 
-      // ProcIter: remove this entire 'if-else' clause
-      // after transition is complete (Mar 2012 or thereafter).
-      if ($2 == ProcIter_DEF) {
-          // nothing
-      } else {
-          fn->addFlag(FLAG_PROC_ITER_KW_USED);
-          if ($2 == ProcIter_ITER)
-            fn->addFlag(FLAG_ITERATOR_FN);
-      }
-      fn->retTag = $6;
-      if ($6 == RET_VAR)
-        fn->setter = new DefExpr(new ArgSymbol(INTENT_BLANK, "setter", dtBool));
-      if ($7)
-        fn->retExprType = new BlockStmt($7, BLOCK_SCOPELESS);
-      if ($8)
-        fn->where = new BlockStmt($8);
-      if ($9)
-        fn->insertAtTail($9);
-      else
-        fn->addFlag(FLAG_FUNCTION_PROTOTYPE);
-      fn->parseCheck();
-      $$ = buildChapelStmt(new DefExpr(fn));
-    }
-;
-
-extern_fn_decl_stmt:
-  TEXTERN proc_or_iter_or_def fn_decl_stmt_inner opt_type TSEMI
-    {
-      FnSymbol* fn = $3;
-      fn->addFlag(FLAG_EXTERN);
       if ($2 == ProcIter_ITER)
-        USR_FATAL_CONT(fn, "'iter' is not legal with 'extern'");
-      // ProcIter: remove this 'if' altogether after transition
-      if ($2 == ProcIter_PROC)
+      {
+        if (fn->hasFlag(FLAG_EXTERN))
+          USR_FATAL_CONT(fn, "'iter' is not legal with 'extern'");
         fn->addFlag(FLAG_PROC_ITER_KW_USED);
-      if ($4)
-        fn->retExprType = new BlockStmt($4, BLOCK_SCOPELESS);
-      else
-        fn->retType = dtVoid;
-      $$ = buildChapelStmt(new DefExpr(fn));
+        fn->addFlag(FLAG_ITERATOR_FN);
+      }
+      if ($2 == ProcIter_PROC)
+      {
+        fn->addFlag(FLAG_PROC_ITER_KW_USED);
+      }
+
+      $$ = buildFunctionDecl($4, $6, $7, $8, $9);
     }
 ;
 

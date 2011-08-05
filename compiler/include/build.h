@@ -81,9 +81,9 @@ DefExpr* buildClassDefExpr(const char* name, Type* type, Expr* inherit, BlockStm
 DefExpr* buildArgDefExpr(IntentTag tag, const char* ident, Expr* type, Expr* init, Expr* variable);
 DefExpr* buildTupleArgDefExpr(IntentTag tag, BlockStmt* tuple, Expr* type, Expr* init);
 FnSymbol* buildFunctionFormal(FnSymbol* fn, DefExpr* def);
-
 FnSymbol* buildLambda(FnSymbol *fn);
-
+BlockStmt* buildFunctionDecl(FnSymbol* fn, RetTag optRetTag, Expr* optRetType,
+                             Expr* optWhere, BlockStmt* optFnBody);
 BlockStmt* buildLocalStmt(Expr* stmt);
 BlockStmt* buildOnStmt(Expr* expr, Expr* stmt);
 BlockStmt* buildBeginStmt(Expr* stmt);

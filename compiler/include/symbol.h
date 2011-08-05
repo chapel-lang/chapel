@@ -105,7 +105,7 @@ class VarSymbol : public Symbol {
 class ArgSymbol : public Symbol {
  public:
   IntentTag intent;
-  BlockStmt* typeExpr;
+  BlockStmt* typeExpr;  // A type expression for the argument type, or NULL.
   BlockStmt* defaultExpr;
   BlockStmt* variableExpr;
   Type* instantiatedFrom;
