@@ -348,9 +348,13 @@ void ArgSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 
 
 bool ArgSymbol::requiresCPtr(void) {
-  if (intent == INTENT_REF ||
-      (!strcmp(name, "this") && is_complex_type(type)))
+  if (intent == INTENT_REF)
     return true;
+  if (!strcmp(name, "this")) {
+      INT_ASSERT(hasFlag(FLAG_ARG_THIS));
+      if (is_complex_type(type))
+        return true;
+  }
   if (isRecord(type) || isUnion(type))
     return true;
   return false;

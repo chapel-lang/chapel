@@ -159,8 +159,9 @@ static void build_getter(ClassType* ct, Symbol *field) {
     fn->addFlag(FLAG_SYNC);
   if (ct->symbol->hasFlag(FLAG_SINGLE)) 
     fn->addFlag(FLAG_SINGLE);
-  ArgSymbol* _this = new ArgSymbol(INTENT_BLANK, "this", ct);
   fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
+  ArgSymbol* _this = new ArgSymbol(INTENT_BLANK, "this", ct);
+  _this->addFlag(FLAG_ARG_THIS);
   fn->insertFormalAtTail(_this);
   if (field->isParameter())
     fn->retTag = RET_PARAM;
@@ -702,6 +703,7 @@ static void buildDefaultReadFunction(ClassType* ct) {
   ArgSymbol* arg = new ArgSymbol(INTENT_INOUT, "x", ct);
   arg->markedGeneric = true;
   fn->_this = new ArgSymbol(INTENT_BLANK, "this", dtChapelFile);
+  fn->_this->addFlag(FLAG_ARG_THIS);
   fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
   fn->insertFormalAtTail(fn->_this);
   fn->insertFormalAtTail(arg);
@@ -769,6 +771,7 @@ static void buildDefaultReadFunction(EnumType* et) {
   fn->cname = astr("_auto_", et->symbol->name, "_read");
   ArgSymbol* arg = new ArgSymbol(INTENT_INOUT, "x", et);
   fn->_this = new ArgSymbol(INTENT_BLANK, "this", dtChapelFile);
+  fn->_this->addFlag(FLAG_ARG_THIS);
   fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
   fn->insertFormalAtTail(fn->_this);
   fn->insertFormalAtTail(arg);
@@ -833,6 +836,7 @@ static void buildDefaultWriteFunction(ClassType* ct) {
   FnSymbol* fn = new FnSymbol("writeThis");
   fn->cname = astr("_auto_", ct->symbol->name, "_write");
   fn->_this = new ArgSymbol(INTENT_BLANK, "this", ct);
+  fn->_this->addFlag(FLAG_ARG_THIS);
   ArgSymbol* fileArg = new ArgSymbol(INTENT_BLANK, "f", dtWriter);
   fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
   fn->insertFormalAtTail(fn->_this);
@@ -913,6 +917,7 @@ static void buildStringCastFunction(EnumType* et) {
   t->addFlag(FLAG_TYPE_VARIABLE);
   fn->insertFormalAtTail(t);
   ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "this", et);
+  arg->addFlag(FLAG_ARG_THIS);
   fn->insertFormalAtTail(arg);
   fn->where = new BlockStmt(new CallExpr("==", t, dtString->symbol));
 
@@ -947,6 +952,7 @@ static void buildDefaultDestructor(ClassType* ct) {
   fn->cname = astr("chpl__auto_destroy_", ct->symbol->name);
   fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
   fn->_this = new ArgSymbol(INTENT_BLANK, "this", ct);
+  fn->_this->addFlag(FLAG_ARG_THIS);
   fn->insertFormalAtTail(fn->_this);
   fn->retType = dtVoid;
   fn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));

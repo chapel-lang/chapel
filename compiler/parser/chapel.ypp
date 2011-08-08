@@ -419,7 +419,7 @@ lambda_decl_expr:
 ;
 
 fn_decl_flag:
-        { $$ = FLAG_UNKNOWN; }
+            { $$ = FLAG_UNKNOWN; }
 | TINLINE   { $$ = FLAG_INLINE; }
 | TEXPORT   { $$ = FLAG_EXPORT; }
 | TEXTERN   { $$ = FLAG_EXTERN; }
@@ -442,7 +442,7 @@ fn_decl_stmt:
       FnSymbol* fn = $4;
 
       if ($1 != FLAG_UNKNOWN)
-    fn->addFlag($1);
+        fn->addFlag($1);
 
       if ($2 == ProcIter_ITER)
       {
@@ -479,6 +479,7 @@ fn_decl_stmt_inner:
       if ($4[0] == '~' && $4[1] != '\0')
         $$->addFlag(FLAG_DESTRUCTOR);
       $$->_this = new ArgSymbol($1, "this", dtUnknown, new UnresolvedSymExpr($2));
+      $$->_this->addFlag(FLAG_ARG_THIS);
       $$->insertFormalAtHead(new DefExpr($$->_this));
       $$->insertFormalAtHead(new DefExpr(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken)));
     }

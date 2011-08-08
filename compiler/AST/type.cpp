@@ -267,6 +267,7 @@ addDeclaration(ClassType* ct, DefExpr* def, bool tail) {
       USR_FATAL_CONT(fn->_this, "Type binding clauses ('%s.' in this case) are not supported in declarations within a class, record or union", name);
     } else {
       fn->_this = new ArgSymbol(fn->thisTag, "this", ct);
+      fn->_this->addFlag(FLAG_ARG_THIS);
       fn->insertFormalAtHead(new DefExpr(fn->_this));
       fn->insertFormalAtHead(new DefExpr(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken)));
       fn->addFlag(FLAG_METHOD);

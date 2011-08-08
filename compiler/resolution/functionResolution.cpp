@@ -270,9 +270,11 @@ const char* toString(FnSymbol* fn) {
     str = astr(fn->name+11);
   } else if (fn->hasFlag(FLAG_METHOD)) {
     if (!strcmp(fn->name, "this")) {
+      INT_ASSERT(fn->hasFlag(FLAG_FUNCTION_THIS));
       str = astr(toString(fn->getFormal(2)->type));
       start = 1;
     } else {
+      INT_ASSERT(! fn->hasFlag(FLAG_FUNCTION_THIS));
       str = astr(toString(fn->getFormal(2)->type), ".", fn->name);
       start = 2;
     }
@@ -361,6 +363,7 @@ protoIteratorMethod(IteratorInfo* ii, const char* name, Type* retType) {
     fn->addFlag(FLAG_INLINE);
   fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
   fn->_this = new ArgSymbol(INTENT_BLANK, "this", ii->iclass);
+  fn->_this->addFlag(FLAG_ARG_THIS);
   fn->retType = retType;
   fn->insertFormalAtTail(fn->_this);
   ii->iterator->defPoint->insertBefore(new DefExpr(fn));
@@ -2223,12 +2226,14 @@ formalRequiresTemp(ArgSymbol* formal) {
   // The fLibraryCompile flag was added to support separate compilation.
   // Several code generation functions crash if it is not there.
   // This makes exported object arguments read-only which is not what we want.
-  if (!strcmp("this", formal->name)) 
+  if (!strcmp("this", formal->name)) {
     // hilde sez: This shouldn't be special-cased.
     // We ought to tag "this" variables as call-by-ref.
+    INT_ASSERT(formal->hasFlag(FLAG_ARG_THIS));
     if (!fLibraryCompile)
       // So call-by-ref is cancelled if we are compiling an exported function.
       return false;
+  }
 
   if (formal == toFnSymbol(formal->defPoint->parentSymbol)->_outer ||
       formal->instantiatedParam ||
@@ -2510,10 +2515,11 @@ static ClassType* createAndInsertFunParentClass(CallExpr *call, const char *name
   The function is put at the highest scope so that all functions of a given type will share the same parent class.
 */
 static FnSymbol* createAndInsertFunParentMethod(CallExpr *call, ClassType *parent, AList &arg_list, bool isFormal, Type *retType) {
-  FnSymbol *parent_method = new FnSymbol("this");
-  ArgSymbol *thisParentSymbol = new ArgSymbol(INTENT_BLANK, "this", parent);
+  FnSymbol* parent_method = new FnSymbol("this");
   parent_method->addFlag(FLAG_FUNCTION_THIS);
   parent_method->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
+  ArgSymbol* thisParentSymbol = new ArgSymbol(INTENT_BLANK, "this", parent);
+  thisParentSymbol->addFlag(FLAG_ARG_THIS);
   parent_method->insertFormalAtTail(thisParentSymbol);
   parent_method->_this = thisParentSymbol;
 
@@ -2720,8 +2726,9 @@ createFunctionAsValue(CallExpr *call) {
 
   FnSymbol *thisMethod = new FnSymbol("this");
   thisMethod->addFlag(FLAG_FUNCTION_THIS);
-  ArgSymbol *thisSymbol = new ArgSymbol(INTENT_BLANK, "this", ct);
   thisMethod->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
+  ArgSymbol *thisSymbol = new ArgSymbol(INTENT_BLANK, "this", ct);
+  thisSymbol->addFlag(FLAG_ARG_THIS);
   thisMethod->insertFormalAtTail(thisSymbol);
   thisMethod->_this = thisSymbol;
 
