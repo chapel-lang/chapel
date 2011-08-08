@@ -1096,6 +1096,7 @@ static void change_method_into_constructor(FnSymbol* fn) {
   }
 
   fn->_this = new VarSymbol("this");
+  fn->_this->addFlag(FLAG_ARG_THIS);
   fn->insertAtHead(new CallExpr(PRIM_MOVE, fn->_this, call));
   fn->insertAtHead(new DefExpr(fn->_this));
   fn->insertAtTail(new CallExpr(PRIM_RETURN, new SymExpr(fn->_this)));

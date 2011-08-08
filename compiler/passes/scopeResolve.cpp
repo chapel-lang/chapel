@@ -448,6 +448,7 @@ void build_type_constructor(ClassType* ct) {
   }
 
   fn->_this = new VarSymbol("this", ct);
+  fn->_this->addFlag(FLAG_ARG_THIS);
   fn->insertAtTail(new DefExpr(fn->_this));
 
   Vec<const char*> fieldNamesSet;
@@ -593,6 +594,7 @@ void build_constructor(ClassType* ct) {
   }
 
   fn->_this = new VarSymbol("this", ct);
+  fn->_this->addFlag(FLAG_ARG_THIS);
   fn->insertAtTail(new DefExpr(fn->_this));
 
   Map<VarSymbol*,ArgSymbol*> fieldArgMap;
