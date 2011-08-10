@@ -2848,6 +2848,18 @@ usesOuterVars(FnSymbol* fn, Vec<FnSymbol*> &seen) {
   return false;
 }
 
+static bool
+isNormalField(Symbol* field)
+{
+  if( field->hasFlag(FLAG_IMPLICIT_ALIAS_FIELD) ) return false;
+  if( field->hasFlag(FLAG_TYPE_VARIABLE) ) return false;
+  if( field->hasFlag(FLAG_SUPER_CLASS) ) return false;
+  // TODO -- this will break user fields named outer!
+  if( 0 == strcmp("outer", field->name)) return false;
+
+  return true;
+}
+
 static Expr*
 preFold(Expr* expr) {
   Expr* result = expr;
@@ -3332,10 +3344,17 @@ preFold(Expr* expr) {
       call->replace(result);
     } else if (call->isPrimitive(PRIM_NUM_FIELDS)) {
       ClassType* classtype = toClassType(toSymExpr(call->get(1))->var->type);
+      int fieldcount = 0;
 
       INT_ASSERT( classtype != NULL );
 
-      result = new SymExpr(new_IntSymbol(classtype->fields.length));
+      for_fields(field, classtype) {
+        if( ! isNormalField(field) ) continue;
+
+        fieldcount++;
+      }
+ 
+      result = new SymExpr(new_IntSymbol(fieldcount));
 
       call->replace(result);
     } else if (call->isPrimitive(PRIM_FIELD_NUM_TO_NAME)) {
@@ -3351,6 +3370,8 @@ preFold(Expr* expr) {
       int fieldcount = 0;
       const char* name = NULL;
       for_fields(field, classtype) {
+        if( ! isNormalField(field) ) continue;
+
         fieldcount++;
         if (fieldcount == fieldnum) {
           name = field->name;
@@ -3370,6 +3391,8 @@ preFold(Expr* expr) {
       int fieldnum = var->immediate->int_value();
       int fieldcount = 0;
       for_fields(field, classtype) {
+        if( ! isNormalField(field) ) continue;
+
         fieldcount++;
         if (fieldcount == fieldnum) {
           result = new CallExpr(PRIM_GET_MEMBER, call->get(1)->copy(), 
@@ -3392,6 +3415,8 @@ preFold(Expr* expr) {
       const char* fieldname = imm->v_string;
       int fieldcount = 0;
       for_fields(field, classtype) {
+        if( ! isNormalField(field) ) continue;
+
         fieldcount++;
         if ( 0 == strcmp(field->name,  fieldname) ) {
           result = new CallExpr(PRIM_GET_MEMBER, call->get(1)->copy(), 

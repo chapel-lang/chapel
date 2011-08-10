@@ -24,7 +24,7 @@ static void build_enum_enumerate_function(EnumType* et);
 //static void buildDefaultReadFunction(ClassType* type);
 //static void buildDefaultReadFunction(EnumType* type);
 
-//static void buildDefaultWriteFunction(ClassType* type);
+static void buildDefaultWriteFunction(ClassType* type);
 static void buildStringCastFunction(EnumType* type);
 
 static void buildDefaultDestructor(ClassType* ct);
@@ -58,10 +58,10 @@ void buildDefaultFunctions(void) {
       if (EnumType* et = toEnumType(type->type)) {
         //buildDefaultReadFunction(et);
         buildStringCastFunction(et);
-      } /* else if (ClassType* ct = toClassType(type->type)) {
+      } else if (ClassType* ct = toClassType(type->type)) {
         //buildDefaultReadFunction(ct);
-        //buildDefaultWriteFunction(ct);
-      }*/
+        buildDefaultWriteFunction(ct);
+      }
       if (ClassType* ct = toClassType(type->type)) {
         if (isRecord(ct)) {
           if (!isRecordWrappedType(ct)) {
@@ -446,38 +446,6 @@ static void build_enum_enumerate_function(EnumType* et) {
   normalize(fn);
 }
 
-/*
-static Type* get_enum_inttype(EnumType* et) {
-  
-}
-
-static void build_enum_inttype_function(EnumType* et) {
-  // Build a function that returns the integer type
-  //  in which to store the enum.
-  FnSymbol* fn = new FnSymbol("_enum_inttype");
-  ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "t", dtAny);
-  arg->addFlag(FLAG_TYPE_VARIABLE);
-  fn->insertFormalAtTail(arg);
-  fn->where = new BlockStmt(new CallExpr("==", arg, et->symbol));
-
-  et->symbol->defPoint->insertAfter(new DefExpr(fn));
-
-  // Generate the tuple of enum values for the given enum type
-  CallExpr* call = new CallExpr("_construct__tuple");
-  for_enums(constant, et) {
-    printf("_enum_inttype enum symbol name %s cname %s\n", constant->name, constant->cname);
-  }
-
-  fn->insertAtTail(new CallExpr(PRIM_RETURN, call));
-  fn->retTag = RET_TYPE;
-
-  printf("_enum_inttype ret tag is %i\n", fn->retTag);
-
-  normalize(fn);
-}
-*/
-
-
 static void build_enum_cast_function(EnumType* et) {
   // integral value to enumerated type cast function
   FnSymbol* fn = new FnSymbol("_cast");
@@ -724,18 +692,19 @@ static void build_record_hash_function(ClassType *ct) {
   normalize(fn);
 }
 
-#if 0
-use recorderator for default read/write functions
-
+/* 
+ * TODO -- read function needs to possibly instanciate a class?
+ *         maybe want ClassType.readThis vs Reader.readThis
+ *
 static void buildDefaultReadFunction(ClassType* ct) {
-  if (function_exists("read", 3, dtMethodToken, dtChapelFile, ct))
+  if (function_exists("readThis", 3, dtMethodToken, dtReader, ct))
     return;
 
-  FnSymbol* fn = new FnSymbol("read");
+  FnSymbol* fn = new FnSymbol("readThis");
   fn->cname = astr("_auto_", ct->symbol->name, "_read");
   ArgSymbol* arg = new ArgSymbol(INTENT_INOUT, "x", ct);
   arg->markedGeneric = true;
-  fn->_this = new ArgSymbol(INTENT_BLANK, "this", dtChapelFile);
+  fn->_this = new ArgSymbol(INTENT_BLANK, "this", dtReader);
   fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
   fn->insertFormalAtTail(fn->_this);
   fn->insertFormalAtTail(arg);
@@ -796,10 +765,10 @@ static void buildDefaultReadFunction(ClassType* ct) {
 
 
 static void buildDefaultReadFunction(EnumType* et) {
-  if (function_exists("read", 3, dtMethodToken, dtChapelFile, et))
+  if (function_exists("readThis", 3, dtMethodToken, dtReader, et))
     return;
 
-  FnSymbol* fn = new FnSymbol("read");
+  FnSymbol* fn = new FnSymbol("readThis");
   fn->cname = astr("_auto_", et->symbol->name, "_read");
   ArgSymbol* arg = new ArgSymbol(INTENT_INOUT, "x", et);
   fn->_this = new ArgSymbol(INTENT_BLANK, "this", dtChapelFile);
@@ -831,7 +800,8 @@ static void buildDefaultReadFunction(EnumType* et) {
   normalize(fn);
   et->methods.add(fn);
 }
-
+*/
+/*
 static bool buildWriteSuperClass(ArgSymbol* fileArg, FnSymbol* fn, Expr* dot, Type* type, bool first=true) {
   ClassType* ct = toClassType(type);
   bool printedSomething = false;
@@ -860,6 +830,7 @@ static bool buildWriteSuperClass(ArgSymbol* fileArg, FnSymbol* fn, Expr* dot, Ty
   }
   return printedSomething;
 }
+*/
 static void buildDefaultWriteFunction(ClassType* ct) {
   if (function_exists("writeThis", 3, dtMethodToken, ct, dtWriter))
     return;
@@ -873,6 +844,8 @@ static void buildDefaultWriteFunction(ClassType* ct) {
   fn->insertFormalAtTail(fileArg);
   fn->retType = dtVoid;
 
+  fn->insertAtTail(new CallExpr(buildDotExpr(fileArg, "writeThisDefaultImpl"), fn->_this));
+  /*
   if (isClass(ct)) {
     fn->insertAtTail(new CallExpr(buildDotExpr(fileArg, "write"), new_StringSymbol("{")));
   } else {
@@ -928,6 +901,7 @@ static void buildDefaultWriteFunction(ClassType* ct) {
   } else {
     fn->insertAtTail(new CallExpr(buildDotExpr(fileArg, "write"), new_StringSymbol(")")));
   }
+  */
 
   DefExpr* def = new DefExpr(fn);
   ct->symbol->defPoint->insertBefore(def);
@@ -936,7 +910,6 @@ static void buildDefaultWriteFunction(ClassType* ct) {
   normalize(fn);
   ct->methods.add(fn);
 }
-#endif
 
 static void buildStringCastFunction(EnumType* et) {
   if (function_exists("_cast", 2, dtString, et))

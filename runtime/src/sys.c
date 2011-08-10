@@ -16,6 +16,17 @@
 #include <stdio.h>
 #include <string.h>
 
+// preadv/pwritev are available
+// only on linux/glibc 2.10 or later
+#ifdef __GLIBC__
+#ifdef __GLIBC_PREREQ
+#if __GLIBC_PREREQ(2,10)
+// Glibc > 2.10 has preadv, pwritev
+#define HAS_PREADV
+#define HAS_PWRITEV
+#endif
+#endif
+#endif
 
 void sys_init_sys_sockaddr(sys_sockaddr_t* addr)
 {
@@ -619,6 +630,7 @@ err_t sys_writev(fd_t fd, const struct iovec* iov, int iovcnt, ssize_t* num_writ
   return err_out;
 }
 
+#ifdef HAS_PREADV
 err_t sys_preadv(fd_t fd, struct iovec* iov, int iovcnt, off_t seek_to_offset, ssize_t* num_read_out)
 {
   ssize_t got;
@@ -639,6 +651,42 @@ err_t sys_preadv(fd_t fd, struct iovec* iov, int iovcnt, off_t seek_to_offset, s
   return err_out;
 }
 
+#else
+
+err_t sys_preadv(fd_t fd, struct iovec* iov, int iovcnt, off_t seek_to_offset, ssize_t* num_read_out)
+{
+  ssize_t got;
+  err_t err_out;
+  int i;
+  ssize_t total_written;
+
+  STARTING_SLOW_SYSCALL;
+
+  total_written = 0;
+
+  for( i = 0; i < iovcnt; i++ ) {
+    got = pread(fd, iov[i].iov_base, iov[i].iov_len, seek_to_offset + total_written);
+    if( got != -1 ) {
+      total_written += got;
+    }
+    if( got != iov[i].iov_len ) break;
+  }
+
+  if( got != -1 ) {
+    *num_read_out = total_written;
+    if( got == 0 && _iov_total_bytes(iov, iovcnt) != 0 ) err_out = EEOF;
+    else err_out = 0;
+  } else {
+    *num_read_out = 0;
+    err_out = errno;
+  }
+  DONE_SLOW_SYSCALL;
+
+  return err_out;
+}
+#endif
+
+#ifdef HAS_PWRITEV
 err_t sys_pwritev(fd_t fd, const struct iovec* iov, int iovcnt, off_t seek_to_offset, ssize_t* num_written_out)
 {
   ssize_t got;
@@ -657,6 +705,40 @@ err_t sys_pwritev(fd_t fd, const struct iovec* iov, int iovcnt, off_t seek_to_of
 
   return err_out;
 }
+
+#else
+
+err_t sys_pwritev(fd_t fd, const struct iovec* iov, int iovcnt, off_t seek_to_offset, ssize_t* num_written_out)
+{
+  ssize_t got;
+  err_t err_out;
+  int i;
+  ssize_t total_written;
+
+  STARTING_SLOW_SYSCALL;
+
+  total_written = 0;
+
+  for( i = 0; i < iovcnt; i++ ) {
+    got = pwrite(fd, iov[i].iov_base, iov[i].iov_len, seek_to_offset + total_written);
+    if( got != -1 ) {
+      total_written += got;
+    }
+    if( got != iov[i].iov_len ) break;
+  }
+
+  if( got != -1 ) {
+    *num_written_out = total_written;
+    err_out = 0;
+  } else {
+    *num_written_out = 0;
+    err_out = errno;
+  }
+  DONE_SLOW_SYSCALL;
+
+  return err_out;
+}
+#endif
 
 err_t sys_fsync(fd_t fd)
 {

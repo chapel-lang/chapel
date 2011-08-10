@@ -358,7 +358,7 @@ void test_printscan_float(void)
   qio_style_t styles[NSTYLES];
 
   const char* zero[] = { // writing 0
-                        "0", // default style
+                        "0.0", // default style
                         "0.000", // %f precision 3
                         "0.000e+00", // %e precision 3
                         "+0.00000", // showpoint, showplus
@@ -370,7 +370,7 @@ void test_printscan_float(void)
                        };
 
   const char* one[] = { // writing 1
-                        "1", // default style
+                        "1.0", // default style
                         "1.000", // %f precision 3
                         "1.000e+00", // %e precision 3
                         "+1.00000", // showpoint, showplus
@@ -474,9 +474,11 @@ void test_printscan_float(void)
 
   for( i = 0; i < NSTYLES; i++ ) {
     qio_style_init_default(&styles[i]);
+    styles[i].showpointzero = 0;
   }
   // Set up the styles
   // 0 is default.
+  styles[0].showpointzero = 1;
 
   // 1 has %f, precision 3
   styles[1].precision = 3;
@@ -1005,11 +1007,11 @@ void test_scanmatch()
   err = qio_channel_create(&reading, f, QIO_CH_BUFFERED, 1, 0, 0, INT64_MAX, NULL);
   assert(!err);
 
-  err = qio_channel_scan_match(true, reading, "test", 1);
+  err = qio_channel_scan_literal(true, reading, "test", 4, 1);
   assert(err == EFORMAT);
-  err = qio_channel_scan_match(true, reading, "match", 1);
+  err = qio_channel_scan_literal(true, reading, "match", 5, 1);
   assert(err == 0);
-  err = qio_channel_scan_match(true, reading, "match", 1);
+  err = qio_channel_scan_literal(true, reading, "match", 5, 1);
   assert(err == EEOF);
 
   qio_channel_release(reading);

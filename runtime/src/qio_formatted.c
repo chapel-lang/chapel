@@ -419,43 +419,59 @@ unlock:
   return err;
 }
 
-err_t qio_channel_scan_match(const int threadsafe, qio_channel_t* ch, const char* match, int skipws)
+err_t qio_channel_scan_literal(const int threadsafe, qio_channel_t* ch, const char* match, ssize_t len, int skipws)
 {
   err_t err;
-  wchar_t chr = -1;
+  wchar_t wchr = -1;
+  char chr = -1;
   ssize_t nread = 0;
+  int64_t lastwspos = 0;
 
-  if( match[0] == '\0' ) return EINVAL;
+
+  if( len == 0 ) return EINVAL;
 
   if( threadsafe ) {
     err = qio_lock(&ch->lock);
     if( err ) return err;
   }
 
-
   err = qio_channel_mark(false, ch);
   if( err ) goto unlock;
 
   if( skipws ) {
+    err = qio_channel_mark(false, ch);
+    if( err ) goto revert;
+
     while( 1 ) {
-      err = qio_channel_read_char(false, ch, &chr);
+      lastwspos = qio_channel_offset_unlocked(ch);
+      err = qio_channel_read_char(false, ch, &wchr);
       if( err ) break;
-      if( ! iswspace(chr) ) break;
+      if( ! iswspace(wchr) ) break;
     }
-  } else {
-    err = qio_channel_read_char(false, ch, &chr);
+
+    // ignore EOF when looking for whitespace.
+    if( err == EEOF ) err = 0;
+
+    qio_channel_revert_unlocked(ch);
+
+    if( ! err ) {
+      // We've exited the loop because the last
+      // one we read wasn't whitespace, so seek
+      // back to lastwspos. 
+      qio_channel_advance_unlocked(ch, lastwspos - qio_channel_offset_unlocked(ch));
+    }
   }
 
-  if( err == 0 && chr == match[0] ) {
-    for( nread = 1; match[nread]; nread++ ) {
-      err = qio_channel_read_char(false, ch, &chr);
+  if( err == 0 ) {
+    for( nread = 0; nread < len; nread++ ) {
+      err = qio_channel_read_amt(false, ch, &chr, 1);
       if( err ) break;
       if( chr != match[nread]) break;
     }
   }
 
   if( err == 0 ) {
-    if( match[nread] == '\0' ) {
+    if( nread == len ) {
       // we matched the whole thing!
       err = 0;
     } else {
@@ -463,6 +479,32 @@ err_t qio_channel_scan_match(const int threadsafe, qio_channel_t* ch, const char
     }
   }
 
+  if( skipws && !err ) {
+    // skip whitespace after the pattern.
+    err = qio_channel_mark(false, ch);
+    if( err ) goto revert;
+
+    while( 1 ) {
+      lastwspos = qio_channel_offset_unlocked(ch);
+      err = qio_channel_read_char(false, ch, &wchr);
+      if( err ) break;
+      if( ! iswspace(wchr) ) break;
+    }
+
+    // ignore EOF when looking for whitespace.
+    if( err == EEOF ) err = 0;
+
+    qio_channel_revert_unlocked(ch);
+
+    if( ! err ) {
+      // We've exited the loop because the last
+      // one we read wasn't whitespace, so seek
+      // back to lastwspos. 
+      qio_channel_advance_unlocked(ch, lastwspos - qio_channel_offset_unlocked(ch));
+    }
+  }
+
+revert:
   if( err ) {
     qio_channel_revert_unlocked(ch);
   } else {
@@ -474,6 +516,11 @@ unlock:
   }
 
   return err;
+}
+
+err_t qio_channel_print_literal(const int threadsafe, qio_channel_t* ch, const char* ptr, ssize_t len)
+{
+  return qio_channel_write_amt(threadsafe, ch, ptr, len);
 }
 
 // string binary style:

@@ -567,10 +567,13 @@ err_t qio_channel_write_newline(const int threadsafe, qio_channel_t* ch)
 err_t qio_channel_scan_string(const int threadsafe, qio_channel_t* ch, const char** out, ssize_t* len_out, ssize_t maxlen);
 
 // returns 0 if it matched, or EFORMAT if it did not.
-err_t qio_channel_scan_match(const int threadsafe, qio_channel_t* ch, const char* match, int skipws);
+err_t qio_channel_scan_literal(const int threadsafe, qio_channel_t* ch, const char* match, ssize_t len, int skipws);
 
+// Prints a string according to the style.
 err_t qio_channel_print_string(const int threadsafe, qio_channel_t* ch, const char* ptr, ssize_t len);
 
+// Prints a string as-is (this really just calls qio_channel_write_amt).
+err_t qio_channel_print_literal(const int threadsafe, qio_channel_t* ch, const char* ptr, ssize_t len);
 
 #endif
 

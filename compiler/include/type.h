@@ -173,11 +173,8 @@ TYPE_EXTERN PrimitiveType* dtTaskList;
 
 // standard module types
 TYPE_EXTERN ClassType* dtArray;
-#if 0
-using recorderator instead.
-TYPE_EXTERN ClassType* dtChapelFile;
+TYPE_EXTERN ClassType* dtReader;
 TYPE_EXTERN ClassType* dtWriter;
-#endif
 TYPE_EXTERN ClassType* dtBaseArr;
 TYPE_EXTERN ClassType* dtBaseDom;
 TYPE_EXTERN ClassType* dtDist;

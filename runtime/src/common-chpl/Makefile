@@ -32,7 +32,8 @@ $(RUNTIME_OBJ_DIR)/chpl_rt_utils.o: $(RUNTIME_OBJ_DIR)/chpl_rt_utils.c ../../inc
 
 $(RUNTIME_OBJ_DIR)/chpl_rt_utils.c $(RUNTIME_OBJ_DIR)/chpl_rt_utils.h: chpl_rt_utils.chpl $(CHPL) $(CHAPEL_ROOT)/modules/internal/*.chpl $(RUNTIME_OBJ_DIR_STAMP)
 	export CHPL_HOME && CHPL_HOME=$(CHAPEL_ROOT) && $(CHPL) $(RUNTIME_CHPL_FLAGS) ../../include/chpl_rt_utils_static.h $<
-	mv chpl_rt_utils.c $(RUNTIME_OBJ_DIR)
+	perl -e 'while (<>) { if(/static (static )+/) { s/static //g; print "static int32_t chpl_localeID; static " . $$_; } else { print $$_; } }' chpl_rt_utils.c > $(RUNTIME_OBJ_DIR)/chpl_rt_utils.c
+	rm chpl_rt_utils.c
 	mv chpl_rt_utils.h $(RUNTIME_OBJ_DIR)
 
 OTHER_DEPEND_RULES = \

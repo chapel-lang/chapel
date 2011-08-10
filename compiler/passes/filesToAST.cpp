@@ -105,20 +105,17 @@ void parse(void) {
       }
       dtDist = toClassType(ts->type);
     }
-#if 0
-    using recorderator instead of generate default functions for read/write.
     else if (!strcmp(ts->name, "Writer")) {
       if (dtWriter) {
         USR_WARN("'Writer' defined more than once in Chapel Internal modules.");
       }
       dtWriter = toClassType(ts->type);
-    } else if (!strcmp(ts->name, "file")) {
-      if (dtChapelFile) {
-        USR_WARN("'file' defined more than once in Chapel Internal modules.");
+    } else if (!strcmp(ts->name, "Reader")) {
+      if (dtReader) {
+        USR_WARN("'Reader' defined more than once in Chapel Internal modules.");
       }
-      dtChapelFile = toClassType(ts->type);
+      dtReader = toClassType(ts->type);
     }
-#endif
   }
 
   if (!dtArray) {
@@ -139,15 +136,12 @@ void parse(void) {
   if (!dtDist) {
     USR_FATAL_CONT("'BaseDist' not defined in Chapel Internal modules.");
   }
-#if 0
-  using recorderator instead
   if (!dtWriter) {
     USR_FATAL_CONT("'Writer' not defined in Chapel Internal modules.");
   }
-  if (!dtChapelFile) {
-    USR_FATAL_CONT("'file' not defined in Chapel Internal modules.");
+  if (!dtReader) {
+    USR_FATAL_CONT("'Reader' not defined in Chapel Internal modules.");
   }
-#endif
   USR_STOP();
 
   int filenum = 0;
