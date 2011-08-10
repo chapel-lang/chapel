@@ -33,10 +33,10 @@ endif
 #
 COMP_CFLAGS = $(CFLAGS)
 COMP_CFLAGS_NONCHPL = -Wno-error
-RUNTIME_CFLAGS = -std=c99 -fPIC $(CFLAGS)
+RUNTIME_CFLAGS = -std=c99 $(CFLAGS)
 RUNTIME_GEN_CFLAGS = $(RUNTIME_CFLAGS)
-RUNTIME_CXXFLAGS = -fPIC $(CFLAGS)
-GEN_CFLAGS = -std=c99 -fPIC
+RUNTIME_CXXFLAGS = $(CFLAGS)
+GEN_CFLAGS = -std=c99
 
 ifeq ($(CHPL_MAKE_PLATFORM), darwin)
 # build 64-bit binaries when on a 64-bit capable PowerPC
