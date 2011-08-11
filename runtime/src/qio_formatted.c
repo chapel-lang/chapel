@@ -1937,6 +1937,8 @@ unlock:
 
 err_t qio_channel_print_complex(const int threadsafe, qio_channel_t* ch, const void* re_ptr, const void* im_ptr, size_t len)
 {
+  double num8;
+  float num4;
   err_t err;
   int isnegative = 0;
 
@@ -1954,32 +1956,49 @@ err_t qio_channel_print_complex(const int threadsafe, qio_channel_t* ch, const v
     if( err ) goto rewind;
 
     { // is im_ptr positive or negative?
-      double num;
       err = 0;
       switch (len) {
         case 4:
-          num = *(float*)im_ptr;
+          num4 = *(float*)im_ptr;
+          num8 = num4;
           break;
         case 8:
-          num = *(double*)im_ptr;
+          num8 = *(double*)im_ptr;
+          num4 = num8;
           break;
         default:
           err = EINVAL;
       }
 
-      if( num < 0 ) isnegative = 1;
+      if( num8 < 0 ) {
+        isnegative = 1;
+        num4 = -num4;
+        num8 = -num8;
+      }
       else isnegative = 0;
     }
 
-    if( ! isnegative ) {
-      err = qio_channel_write_char(false, ch, '+');
-      if( err ) goto rewind;
-    } else {
-      // sign will be written in print_float.
-    } 
-
-    err = qio_channel_print_float(false, ch, im_ptr, len);
+    err = qio_channel_write_char(false, ch, ' ');
     if( err ) goto rewind;
+
+    err = qio_channel_write_char(false, ch, isnegative?'-':'+');
+    if( err ) goto rewind;
+
+    err = qio_channel_write_char(false, ch, ' ');
+    if( err ) goto rewind;
+  
+    switch (len) {
+      case 4:
+        err = qio_channel_print_float(false, ch, &num4, len);
+        break;
+      case 8:
+        err = qio_channel_print_float(false, ch, &num8, len);
+        break;
+      default:
+        err = EINVAL;
+    }
+    if( err ) goto rewind;
+    
 
     // write the i...
     err = qio_channel_write_char(false, ch, 'i');
@@ -1994,6 +2013,9 @@ err_t qio_channel_print_complex(const int threadsafe, qio_channel_t* ch, const v
     if( err ) goto rewind;
 
     err = qio_channel_write_char(false, ch, ',');
+    if( err ) goto rewind;
+
+    err = qio_channel_write_char(false, ch, ' ');
     if( err ) goto rewind;
 
     err = qio_channel_print_float(false, ch, im_ptr, len);

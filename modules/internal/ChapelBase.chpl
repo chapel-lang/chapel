@@ -1760,4 +1760,7 @@ proc fieldValueByName(x, param name) {
 proc isClassType(type t) param where t:object return true;
 proc isClassType(type t) param return false;
 
+proc isUnionType(type t) param {
+  return __primitive("is union type", t);
+}
 

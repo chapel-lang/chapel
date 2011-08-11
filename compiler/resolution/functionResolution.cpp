@@ -3401,6 +3401,27 @@ preFold(Expr* expr) {
         }
       }
       call->replace(result);
+    } else if (call->isPrimitive(PRIM_FIELD_ID_BY_NUM)) {
+      ClassType* classtype = toClassType(call->get(1)->typeInfo());
+
+      INT_ASSERT( classtype != NULL );
+
+      VarSymbol* var = toVarSymbol(toSymExpr(call->get(2))->var);
+
+      INT_ASSERT( var != NULL );
+
+      int fieldnum = var->immediate->int_value();
+      int fieldcount = 0;
+      for_fields(field, classtype) {
+        if( ! isNormalField(field) ) continue;
+
+        fieldcount++;
+        if (fieldcount == fieldnum) {
+          result = new SymExpr(new_IntSymbol(field->id));
+          break;
+        }
+      }
+      call->replace(result);
     } else if (call->isPrimitive(PRIM_FIELD_VALUE_BY_NAME)) {
       ClassType* classtype = toClassType(call->get(1)->typeInfo());
       VarSymbol* var = toVarSymbol(toSymExpr(call->get(2))->var);
@@ -3479,6 +3500,15 @@ preFold(Expr* expr) {
           result = new SymExpr(gFalse);
       }
       call->replace(result);
+    } else if (call->isPrimitive(PRIM_IS_UNION_TYPE)) {
+      ClassType* classtype = toClassType(call->get(1)->typeInfo());
+
+      if( isUnion(classtype) ) 
+        result = new SymExpr(gTrue);
+      else
+        result = new SymExpr(gFalse);
+      call->replace(result);
+
     } else if (call->isPrimitive(PRIM_IS_STAR_TUPLE_TYPE)) {
       Type* tupleType = call->get(1)->typeInfo();
       INT_ASSERT(tupleType->symbol->hasFlag(FLAG_TUPLE));

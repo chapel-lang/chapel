@@ -654,30 +654,6 @@
     compilerError(_oldioerr + "file.isOpen is no longer supported");
   }
 
-/* TODO
-  // The Writer class exists to throw an error for old I/O code.
-  class Writer {
-    proc writeIt(s:string) {
-      compilerError(_oldioerr + "Writer no longer supported");
-    }
-    proc lockWrite() {
-      compilerError(_oldioerr + "Writer no longer supported");
-    }
-    proc unlockWrite() {
-      compilerError(_oldioerr + "Writer no longer supported");
-    }
-    proc write(args ...?n) {
-      compilerError(_oldioerr + "Writer no longer supported");
-    }
-    proc writeln(args ...?n) {
-      compilerError(_oldioerr + "Writer no longer supported");
-    }
-    proc writeln() {
-      compilerError(_oldioerr + "Writer no longer supported");
-    }
-  }
-*/
-
   // TODO -- shouldn't have to write this this way!
   proc chpl__initCopy(x: file) {
     on __primitive("chpl_on_locale_num", x.home_uid) {
@@ -1668,12 +1644,6 @@
     return stdin.read((...t));
   }
 
-  // TODO -- we need to replace Writer with channel!
-  /*class Writer {
-    proc write(args ...?n) { }
-    proc writeln(args ...?n) { }
-    proc writeln() { }
-  }*/
   class Writer {
     var ch:channel(true, iokind.dynamic);
     var err:err_t;
@@ -1698,10 +1668,42 @@
       var nl = new ioNewline();
       if err == 0 then err = ch._write_one_internal(iokind.dynamic, nl);
     }
+
+    proc writeThisFieldsDefaultImpl(x:?t, inout first:bool, binary:bool) {
+      param num_fields = __primitive("num fields", t);
+
+      if (isClassType(t)) {
+        if t != object {
+          // only write parent fields for subclasses of object
+          // since object has no .super field.
+          writeThisFieldsDefaultImpl(x.super, first, binary);
+        }
+      }
+
+      // print out all fields for classes and records,
+      // or just the set field for a union.
+      for param i in 1..num_fields {
+
+        // if statement selects all fields if it's not a union,
+        // or just the selected field if it is a union.
+        if( !isUnionType(t) || (__primitive("field id by num", t, i) == __primitive("get_union_id", x)  )) {
+            if binary==0 {
+            if !first then write(new ioLiteral(", "));
+            write(new ioLiteral(__primitive("field num to name", t, i) + " = "));
+          }
+
+          write(__primitive("field value by num", x, i));
+          first = false;
+        }
+      }
+    }
+    // Note; this is not a multi-method and so must be called
+    // with the appropriate *concrete* type of x; that's what
+    // happens now with buildDefaultWriteFunction
+    // since it has the concrete type and then calls this method.
     proc writeThisDefaultImpl(x:?t) {
       var binary:uint(8) = qio_channel_binary(ch._channel_internal);
 
-      param num_fields = __primitive("num fields", t);
 
       if binary==0 {
         if isClassType(t) {
@@ -1711,18 +1713,10 @@
         }
       }
 
-      // default writeThis method.
-      // TODO -- handle unions and superclass
-      for param i in 1..num_fields {
-        if binary==0 {
-          write(new ioLiteral(__primitive("field num to name", t, i)));
-          write(new ioLiteral(" = "));
-        }
-        write(__primitive("field value by num", x, i));
-        if binary==0 {
-          if i < num_fields then write(new ioLiteral(", "));
-        }
-      }
+      var first = true;
+
+      writeThisFieldsDefaultImpl(x, first, binary>0);
+
       if binary==0 {
        if isClassType(t) then write(new ioLiteral("}"));
        else write(new ioLiteral(")"));
@@ -1778,6 +1772,8 @@
         return true;
       }
     }
+
+    // default readThis
     proc readThisDefaultImpl(inout x:?t) {
       var binary:uint(8) = qio_channel_binary(ch._channel_internal);
 
