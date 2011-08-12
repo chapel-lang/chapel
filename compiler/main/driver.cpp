@@ -39,6 +39,7 @@ static char log_flags[512] = "";
 static bool rungdb = false;
 bool fRuntime = false;
 bool fLibraryCompile = false;
+bool fLibraryShared = false;
 bool no_codegen = false;
 int debugParserLevel = 0;
 bool developer = false;
@@ -201,6 +202,12 @@ static void recordCodeGenStrings(int argc, char* argv[]) {
       compileCommand = astr(compileCommand, arg, " ");
   }
   get_version(compileVersion);
+}
+
+
+static void setLibraryShared(ArgumentState* arg_state, char* arg_unused) {
+  fLibraryShared = true;
+  fLibraryCompile = true;   // --shared implies --library.
 }
 
 
@@ -547,6 +554,7 @@ static ArgumentDescription arg_desc[] = {
  {"local-temp-names", ' ', NULL, "[Don't] Generate locally-unique temp names", "N", &localTempNames, "CHPL_LOCAL_TEMP_NAMES", NULL},
  {"runtime", ' ', NULL, "compile Chapel runtime file", "F", &fRuntime, NULL, NULL},
  {"library", ' ', NULL, "compile Chapel library file", "F", &fLibraryCompile, NULL, NULL},
+ {"shared", ' ', NULL, "compile a shared library file", "F", &fLibraryShared, NULL, setLibraryShared},
  {"timers", ' ', NULL, "Enable general timers one to five", "F", &fEnableTimers, "CHPL_ENABLE_TIMERS", NULL},
  {"warn-promotion", ' ', NULL, "Warn about scalar promotion", "F", &fWarnPromotion, NULL, NULL},
  {0}

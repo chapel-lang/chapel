@@ -171,6 +171,9 @@ TYPE_EXTERN PrimitiveType* dtSyncVarAuxFields;
 TYPE_EXTERN PrimitiveType* dtSingleVarAuxFields;
 TYPE_EXTERN PrimitiveType* dtTaskList;
 
+// a fairly special wide type
+extern ClassType* wideStringType;
+
 // standard module types
 TYPE_EXTERN ClassType* dtArray;
 TYPE_EXTERN ClassType* dtReader;

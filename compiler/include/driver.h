@@ -69,6 +69,7 @@ extern bool fieeefloat;
 extern int debugParserLevel;
 extern bool fRuntime;
 extern bool fLibraryCompile;
+extern bool fLibraryShared;     // Compile a shared library (DLL).
 extern bool no_codegen;
 extern bool developer;
 extern int num_constants_per_variable;

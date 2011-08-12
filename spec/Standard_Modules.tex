@@ -28,6 +28,7 @@ are as follows:
              & \chpl{Search} & Generic searching routines \\
              & \chpl{Sort} & Generic sorting routines \\
              & \chpl{Time} & Types and routines related to time \\
+             & \chpl{UtilMath} & Math-related utilities \\
 \end{tabular}
 
 There is an expectation that each of these modules will be extended
@@ -805,6 +806,7 @@ Sorts the 1D array \chpl{Data} in-place using a sequential
 implementation of the QuickSort algorithm.
 \end{protobody}
 
+
 \subsection{Time}
 \label{Time}
 \index{optional modules!Time}
@@ -854,7 +856,6 @@ proc getCurrentDayOfWeek(): Day
 Returns the current day of the week.
 \end{protobody}
 
-
 \begin{protohead}
 proc getCurrentTime(unit: TimeUnits = TimeUnits.seconds): real
 \end{protohead}
@@ -901,3 +902,32 @@ proc sleep(t: uint)
 Delays a task for \chpl{t} seconds.
 \end{protobody}
 
+
+\subsection{UtilMath}
+\label{StdModules_UtilMath}
+\index{optional modules!UtilMath}
+
+The optional module \chpl{UtilMath} provides various math-related functions.
+It supplements the automatic \chpl{Math} module (\rsec{Math}).
+
+\begin{protohead}
+proc divceilpos(m: int(?), n: int(?))
+\end{protohead}
+\begin{protobody}
+Computes
+$\lceil\frac{n}{m}\rceil$
+for two strictly positive integers $m>0$, $n>0$.
+For other $m$ and $n$ the behavior is undefined.
+This function is expected to be faster than \chpl{divceil}.
+\end{protobody}
+
+\begin{protohead}
+proc divfloorpos(m: int(?), n: int(?))
+\end{protohead}
+\begin{protobody}
+Computes
+$\lfloor\frac{n}{m}\rfloor$
+for two strictly positive integers $m>0$, $n>0$.
+For other $m$ and $n$ the behavior is undefined.
+This function is expected to be faster than \chpl{divfloor}.
+\end{protobody}

@@ -80,7 +80,8 @@ domain           processToken(TDOMAIN);
 else             processToken(TELSE);
 enum             processToken(TENUM);
 export           processToken(TEXPORT);
-_extern          processToken(TEXTERN);
+_extern          processToken(TEXTERN); // Deprecated
+extern           processToken(TEXTERN);
 for              processToken(TFOR);
 forall           processToken(TFORALL);
 if               processToken(TIF);

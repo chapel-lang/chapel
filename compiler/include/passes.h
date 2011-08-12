@@ -46,4 +46,11 @@ void scalarReplace();
 void scopeResolve();
 void verify();
 
+//
+// utility functions in pass-containing code files
+//
+
+// parallel.cpp
+bool passingWideStringToExtern(Type* t);
+
 #endif

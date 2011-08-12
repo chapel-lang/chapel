@@ -763,6 +763,8 @@ parallel(void) {
   }
 }
 
+ClassType* wideStringType = NULL;
+
 
 static void
 buildWideClass(Type* type) {
@@ -776,8 +778,13 @@ buildWideClass(Type* type) {
   //
   // Strings need an extra field in their wide class to hold their length
   //
-  if (type == dtString)
+  if (type == dtString) {
     wide->fields.insertAtTail(new DefExpr(new VarSymbol("size", dtInt[INT_SIZE_32])));
+    if (wideStringType) {
+      INT_FATAL("Created two wide string types");
+    }
+    wideStringType = wide;
+  }
 
   //
   // set reference type of wide class to reference type of class since
@@ -789,6 +796,21 @@ buildWideClass(Type* type) {
   wideClassMap.put(type, wide);
 }
 
+//
+// This is a utility function that handles a case when wide strings
+// are passed to extern functions.  If strings were a little better
+// behaved, it arguably wouldn't/shouldn't be required.
+//
+bool passingWideStringToExtern(Type* t) {
+  ClassType* ct = toClassType(t);
+  if (ct) {
+    Symbol* valField = ct->getField("_val", false);
+    if (valField && valField->type == wideStringType) {
+      return true;
+    }
+  }
+  return false;
+}
 
 //
 // The argument expr is a use of a wide reference. Insert a check to ensure
@@ -1215,13 +1237,17 @@ insertWideReferences(void) {
       for_alist(arg, call->argList) {
         SymExpr* sym = toSymExpr(arg);
         INT_ASSERT(sym);
-        if (sym->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) ||
-            sym->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
-          VarSymbol* var = newTemp(sym->typeInfo()->getField("addr")->type);
+        Type* symType = sym->typeInfo();
+        if (symType->symbol->hasFlag(FLAG_WIDE_CLASS) ||
+            symType->symbol->hasFlag(FLAG_WIDE)) {
+          Type* narrowType = symType->getField("addr")->type;
+          
+          VarSymbol* var = newTemp(narrowType);
           SET_LINENO(call);
           call->getStmtExpr()->insertBefore(new DefExpr(var));
-          if (sym->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) &&
-              var->type->symbol->hasFlag(FLAG_EXTERN)) {
+          if ((symType->symbol->hasFlag(FLAG_WIDE_CLASS) &&
+               var->type->symbol->hasFlag(FLAG_EXTERN)) ||
+              passingWideStringToExtern(narrowType)) {
             // Insert a local check because we cannot reflect any changes
             // made to the class back to another locale
             if (!fNoLocalChecks)

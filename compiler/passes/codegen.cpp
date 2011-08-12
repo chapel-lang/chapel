@@ -122,6 +122,8 @@ static void legalizeName(Symbol* sym) {
     default: break;
     }
   }
+
+  // hilde sez:  This is very kludgy.  What do we really mean?
   if ((!strncmp("chpl_", sym->cname, 5) && (strcmp("chpl_main", sym->cname) && strcmp("chpl_user_main", sym->cname))  && sym->cname[5] != '_') ||
       (sym->cname[0] == '_' && (sym->cname[1] == '_' || (sym->cname[1] >= 'A' && sym->cname[1] <= 'Z')))) {
     sym->cname = astr("chpl__", sym->cname);
@@ -145,6 +147,7 @@ genClassTagEnum(FILE* outfile, Vec<TypeSymbol*> typeSymbols) {
   if (!comma)
     fprintf(outfile, "  chpl__cid_placeholder");
   fprintf(outfile, "\n} chpl__class_id;\n\n");
+  fprintf(outfile, "#define CHPL__CLASS_ID_DEFINED\n\n");
 }
 
 
@@ -296,7 +299,7 @@ static void codegen_header(FILE* hdrfile, FILE* codefile=NULL) {
   // global variables, or other functions
   //
   forv_Vec(FnSymbol, fn, functions) {
-    if (!fn->hasFlag(FLAG_EXPORT) && !fn->hasFlag(FLAG_EXTERN))
+    if (!fn->hasFlag(FLAG_USER_NAMED))
       fn->cname = uniquifyName(fn->cname, &cnames);
   }
   uniquifyNameCounts.clear();
@@ -364,14 +367,16 @@ static void codegen_header(FILE* hdrfile, FILE* codefile=NULL) {
     fprintf(hdrfile, "#define _%s_H_\n", mainModules.v[0]->name);
     fprintf(hdrfile, "#include \"stdchplrt.h\"\n");
     forv_Vec(FnSymbol, fnSymbol, functions) {
-      if (fnSymbol->hasFlag(FLAG_EXPORT) || fnSymbol == chpl_main)
+      if (fnSymbol->hasFlag(FLAG_EXPORT))
         fnSymbol->codegenPrototype(hdrfile);
     }
     fprintf(hdrfile, "#endif\n");
     // For the runtime, generate the rest of the things that normally
     // go into the hdrfile into the codefile
     hdrfile = codefile;
-  } else {
+  }
+
+  if (!fRuntime) {
     fprintf(hdrfile, "/*** Compilation Info ***/\n\n");
     if (fGPU)
       fprintf(hdrfile, "#ifndef ENABLE_GPU\n");
@@ -584,17 +589,13 @@ static void codegen_header(FILE* hdrfile, FILE* codefile=NULL) {
       }
     }
   }
-
   fprintf(hdrfile, "\n};\n");
-
-
   
   if (fGPU)
     fprintf(hdrfile, "\n#ifndef ENABLE_GPU\n");
 
   fprintf(hdrfile, "\n/*** Global Variables ***/\n\n");
   forv_Vec(VarSymbol, varSymbol, globals) {
-
 // hilde sez: No reason to suppose that the runtime can link without these in general.
     // Globals in the runtime are marked static
     // And those in ChapelBase are not emitted at all :-(
@@ -755,6 +756,7 @@ void codegen(void) {
   else
     codegen_makefile(&mainfile);
 
+  // This dumps the generated sources into the build directory.
   if (fRuntime) {
     openCFile(&runtimeheader, mainModules.v[0]->name, "h", true);
     openCFile(&runtimecode, mainModules.v[0]->name, "c", true);

@@ -1,1 +1,1 @@
-bothKeywords.chpl:2: error: External and exported functions cannot be inlined.
+bothKeywords.chpl:2: syntax error: near 'export'

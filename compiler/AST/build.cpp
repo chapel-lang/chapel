@@ -1612,6 +1612,46 @@ FnSymbol* buildLambda(FnSymbol *fn) {
   return fn;
 }
 
+// Called like:
+// buildFunctionDecl($4, $6, $7, $8, $9);
+BlockStmt*
+buildFunctionDecl(FnSymbol* fn, RetTag optRetTag, Expr* optRetType,
+                  Expr* optWhere, BlockStmt* optFnBody)
+{
+  fn->retTag = optRetTag;
+  if (optRetTag == RET_VAR)
+  {
+    if (fn->hasFlag(FLAG_EXTERN))
+      USR_FATAL_CONT(fn, "Extern functions cannot be setters.");
+    fn->setter = new DefExpr(new ArgSymbol(INTENT_BLANK, "setter", dtBool));
+  }
+
+  if (optRetType)
+    fn->retExprType = new BlockStmt(optRetType, BLOCK_SCOPELESS);
+  else
+    if (fn->hasFlag(FLAG_EXTERN))
+      fn->retType = dtVoid;
+
+  if (optWhere)
+  {
+    if (fn->hasFlag(FLAG_EXTERN))
+      USR_FATAL_CONT(fn, "Extern functions cannot have where clauses.");
+    fn->where = new BlockStmt(optWhere);
+  }
+
+  if (optFnBody)
+  {
+    if (fn->hasFlag(FLAG_EXTERN))
+      USR_FATAL_CONT(fn, "Extern functions cannot have a body.");
+    fn->insertAtTail(optFnBody);
+  }
+  else
+    // Looks like this flag is redundant with FLAG_EXTERN. <hilde>
+    fn->addFlag(FLAG_FUNCTION_PROTOTYPE);
+
+  return buildChapelStmt(new DefExpr(fn));
+}
+
 
 FnSymbol*
 buildFunctionFormal(FnSymbol* fn, DefExpr* def) {

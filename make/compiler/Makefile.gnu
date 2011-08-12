@@ -17,9 +17,6 @@ RANLIB = ranlib
 # General Flags
 #
 
-# Position Independent Code for everyone.
-CFLAGS += -fPIC
-
 DEBUG_CFLAGS = -g
 # DEBUG_LFLAGS = -g
 OPT_CFLAGS = -O3
@@ -40,7 +37,8 @@ COMP_CFLAGS_NONCHPL = -Wno-error
 RUNTIME_CFLAGS = -std=c99 $(CFLAGS)
 RUNTIME_GEN_CFLAGS = $(RUNTIME_CFLAGS)
 RUNTIME_CXXFLAGS = $(CFLAGS)
-GEN_CFLAGS = -std=c99 $(CFLAGS)
+SHARED_LIB_CFLAGS = -fPIC
+GEN_CFLAGS = -std=c99
 
 ifeq ($(CHPL_MAKE_PLATFORM), darwin)
 # build 64-bit binaries when on a 64-bit capable PowerPC
