@@ -21,6 +21,6 @@ ifneq ($(TMPBINNAME),$(BINNAME))
 	cp $(TMPBINNAME) $(BINNAME)
 	rm $(TMPBINNAME)
 endif
-    $(TAGS_COMMAND)
+	$(TAGS_COMMAND)
 
 FORCE:
