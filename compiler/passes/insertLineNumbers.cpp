@@ -90,6 +90,8 @@ insertLineNumber(CallExpr* call) {
              ((mod->modTag == MOD_USER || mod->modTag == MOD_MAIN) && 
               !fn->hasFlag(FLAG_TEMP) && !fn->hasFlag(FLAG_INLINE)) ||
              (developer == true && strcmp(fn->name, "halt"))) {
+    // hilde sez: This special casing is suspect.  Can't we key off a flag?
+
     // call is in user code; insert AST line number and filename
     // or developer flag is on and the call is not the halt() call
     if (call->isResolved() &&

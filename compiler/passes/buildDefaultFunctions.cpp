@@ -343,6 +343,7 @@ static void build_chpl_entry_points(void) {
   chpl_main = new FnSymbol("chpl_main");
   chpl_main->cname = "chpl_main";
   chpl_main->retType = dtVoid;
+  chpl_main->addFlag(FLAG_EXPORT);  // chpl_main is always exported.
   chpl_main->addFlag(FLAG_TEMP);
   mainModule->block->insertAtTail(new DefExpr(chpl_main));
   normalize(chpl_main);

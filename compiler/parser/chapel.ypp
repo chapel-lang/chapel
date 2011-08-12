@@ -441,9 +441,13 @@ fn_decl_stmt:
     {
       FnSymbol* fn = $4;
 
-      if ($1 != FLAG_UNKNOWN)
+      if ($1 != FLAG_UNKNOWN) {
         fn->addFlag($1);
-
+        // The user explicitly named this function (controls mangling).
+        if ($1 == FLAG_EXPORT || $1 == FLAG_EXTERN)
+          fn->addFlag(FLAG_USER_NAMED);
+      }
+        
       if ($2 == ProcIter_ITER)
       {
         if (fn->hasFlag(FLAG_EXTERN))

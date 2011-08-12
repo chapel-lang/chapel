@@ -342,6 +342,7 @@ const char* runUtilScript(const char* script) {
 
 
 void makeBinary(void) {
+  // If building the runtime sources, we stop after that step.
   if (fRuntime || no_codegen)
     return;
 
@@ -367,7 +368,8 @@ static void genCFiles(FILE* makefile) {
       fprintf(makefile, "\t%s \\\n", inputFilename);
     }
   }
-  fprintf(makefile, "\n");
+  if (!first)
+    fprintf(makefile, "\n");
 }
 
 static void genCFileBuildRules(FILE* makefile) {
@@ -405,7 +407,8 @@ static void genObjFiles(FILE* makefile) {
       }
     }
   }
-  fprintf(makefile, "\n");
+  if (!first)
+    fprintf(makefile, "\n");
 }
 
 
@@ -424,6 +427,28 @@ void codegen_makefile(fileinfo* mainfile, fileinfo *gpusrcfile) {
   openCFile(&makefile, "Makefile");
   const char* tmpDirName = intDirName;
   const char* strippedExeFilename = stripdirectories(executableFilename);
+  const char* exeExt = "";
+
+  fprintf(makefile.fptr, "CHAPEL_ROOT = %s\n\n", CHPL_HOME);
+  fprintf(makefile.fptr, "TMPDIRNAME = %s\n", tmpDirName);
+
+  if (fLibraryCompile) {
+    if (fLibraryShared) exeExt = ".so";
+    else exeExt = ".a";
+  }
+  fprintf(makefile.fptr, "BINNAME = %s%s\n\n", executableFilename, exeExt);
+  // BLC: This munging is done so that cp won't complain if the source
+  // and destination are the same file (e.g., a.out and ./a.out)
+  fprintf(makefile.fptr, "TMPBINNAME = $(TMPDIRNAME)/%s.tmp%s\n", 
+          strippedExeFilename, exeExt);  
+  // BLC: We generate a TMPBINNAME which is the name that will be used
+  // by the C compiler in creating the executable, and is in the
+  // --savec directory (a /tmp directory by default).  We then copy it
+  // over to BINNAME -- the name given by the user, or a.out by
+  // default -- after linking is done.  As it turns out, this saves a
+  // factor of 5 or so in time in running the test system, as opposed
+  // to specifying BINNAME on the C compiler command line.
+
   fprintf(makefile.fptr, "COMP_GEN_CFLAGS =");
   if (ccwarnings) {
     fprintf(makefile.fptr, " $(WARN_GEN_CFLAGS)");
@@ -439,34 +464,18 @@ void codegen_makefile(fileinfo* mainfile, fileinfo *gpusrcfile) {
   } else {
     fprintf(makefile.fptr, " $(NO_IEEE_FLOAT_GEN_CFLAGS)");
   }
+  if (fLibraryShared)
+    fprintf(makefile.fptr, " $(SHARED_LIB_CFLAGS)");
   forv_Vec(const char*, dirName, incDirs) {
     fprintf(makefile.fptr, " -I%s", dirName);
   }
   fprintf(makefile.fptr, " %s\n", ccflags);
+
   fprintf(makefile.fptr, "COMP_GEN_LFLAGS =");
-  if (fLibraryCompile) {
-    fprintf(makefile.fptr, " -shared" );
-    fprintf(makefile.fptr, " %s\n", ldflags);
-    fprintf(makefile.fptr, "BINNAME = %s\n", executableFilename);
-    fprintf(makefile.fptr, "TMPBINNAME = $(BINNAME)\n");  
-  }
-  else {
-    fprintf(makefile.fptr, " %s\n", ldflags);
-    fprintf(makefile.fptr, "BINNAME = %s\n", executableFilename);
-    fprintf(makefile.fptr, "TMPDIRNAME = %s\n", tmpDirName);
-    // BLC: This munging is done so that cp won't complain if the source
-    // and destination are the same file (e.g., a.out and ./a.out)
-    fprintf(makefile.fptr, "TMPBINNAME = $(TMPDIRNAME)/%s.tmp\n", 
-          strippedExeFilename);  
-  }
-  // BLC: We generate a TMPBINNAME which is the name that will be used
-  // by the C compiler in creating the executable, and is in the
-  // --savec directory (a /tmp directory by default).  We then copy it
-  // over to BINNAME -- the name given by the user, or a.out by
-  // default -- after linking is done.  As it turns out, this saves a
-  // factor of 5 or so in time in running the test system, as opposed
-  // to specifying BINNAME on the C compiler command line.
-  fprintf(makefile.fptr, "CHAPEL_ROOT = %s\n", CHPL_HOME);
+  if (fLibraryShared)
+      fprintf(makefile.fptr, " -shared" );
+  fprintf(makefile.fptr, " %s\n", ldflags);
+
   fprintf(makefile.fptr, "TAGS_COMMAND = ");
   if (developer && saveCDir[0] && !printCppLineno) {
     fprintf(makefile.fptr,
@@ -478,6 +487,7 @@ void codegen_makefile(fileinfo* mainfile, fileinfo *gpusrcfile) {
             saveCDir);
   }
   fprintf(makefile.fptr, "\n");
+
   fprintf(makefile.fptr, "CHPLSRC = \\\n");
   fprintf(makefile.fptr, "\t%s \\\n\n", mainfile->pathname);
   if (fGPU) {
@@ -491,7 +501,14 @@ void codegen_makefile(fileinfo* mainfile, fileinfo *gpusrcfile) {
     fprintf(makefile.fptr, " %s", libFlag[i]);
   fprintf(makefile.fptr, "\n");
   fprintf(makefile.fptr, "\n");
-  fprintf(makefile.fptr, "include $(CHAPEL_ROOT)/runtime/etc/Makefile.include\n");
+  if (fLibraryCompile) {
+    if (fLibraryShared)
+      fprintf(makefile.fptr, "include $(CHAPEL_ROOT)/runtime/etc/Makefile.shared\n");
+    else
+      fprintf(makefile.fptr, "include $(CHAPEL_ROOT)/runtime/etc/Makefile.static\n");
+  }
+  else
+    fprintf(makefile.fptr, "include $(CHAPEL_ROOT)/runtime/etc/Makefile.exe\n");
   fprintf(makefile.fptr, "\n");
   genCFileBuildRules(makefile.fptr);
   closeCFile(&makefile, false);

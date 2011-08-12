@@ -165,7 +165,6 @@ class FnSymbol : public Symbol {
   FnSymbol(const char* initName);
   ~FnSymbol();
            
-  void parseCheck();    // Check a FnSymbol for input errors.
   void verify(); 
   DECLARE_SYMBOL_COPY(FnSymbol);
   FnSymbol* getFnSymbol(void);

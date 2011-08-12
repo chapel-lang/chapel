@@ -479,12 +479,6 @@ FnSymbol::~FnSymbol() {
 }
 
 
-void FnSymbol::parseCheck() {
-  // For now, just checks that flags are consistent.
-  if (hasFlag(FLAG_INLINE) && (hasFlag(FLAG_EXPORT) || hasFlag(FLAG_EXTERN)))
-    USR_FATAL_CONT(this, "External and exported functions cannot be inlined.");
-}
-
 void FnSymbol::verify() {
   Symbol::verify();
   if (astTag != E_FnSymbol) {
@@ -873,9 +867,18 @@ void ModuleSymbol::codegenDef(FILE* outfile) {
   Vec<FnSymbol*> fns;
   for_alist(expr, block->body) {
     if (DefExpr* def = toDefExpr(expr))
-      if (FnSymbol* fn = toFnSymbol(def->sym))
-        if ((!fn->hasFlag(FLAG_EXTERN))&&(!fn->hasFlag(FLAG_FUNCTION_PROTOTYPE)))
-          fns.add(fn);
+      if (FnSymbol* fn = toFnSymbol(def->sym)) {
+        // Ignore external and prototype functions.
+        if (fn->hasFlag(FLAG_EXTERN) || fn->hasFlag(FLAG_FUNCTION_PROTOTYPE))
+          continue;
+#if 0
+        // In the runtime, we pick up the definition for exported functions
+        // from the main routine.
+        if (fRuntime && fn->hasFlag(FLAG_EXPORT))
+          continue;
+#endif
+        fns.add(fn);
+      }
   }
   qsort(fns.v, fns.n, sizeof(fns.v[0]), compareLineno);
   forv_Vec(FnSymbol, fn, fns) {
