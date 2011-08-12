@@ -2405,6 +2405,7 @@ void CallExpr::codegen(FILE* outfile) {
   bool first_actual = true;
   int count = 0;
   for_formals_actuals(formal, actual, this) {
+    Type* actualType = actual->typeInfo();
     bool closeDeRefParens = false;
     if (fn->hasFlag(FLAG_GPU_ON) && count < 2) {
       count++;
@@ -2414,31 +2415,41 @@ void CallExpr::codegen(FILE* outfile) {
       first_actual = false;
     else
       fprintf(outfile, ", ");
-    if (fn->hasFlag(FLAG_EXTERN) && actual->typeInfo()->symbol->hasFlag(FLAG_WIDE))
+
+    if (fn->hasFlag(FLAG_EXTERN) && actualType->symbol->hasFlag(FLAG_WIDE))
       fprintf(outfile, "(");
-    else if (fn->hasFlag(FLAG_EXTERN) && actual->typeInfo()->symbol->hasFlag(FLAG_FIXED_STRING))
+    else if (fn->hasFlag(FLAG_EXTERN) && actualType->symbol->hasFlag(FLAG_FIXED_STRING))
       fprintf(outfile, "(");
     else if (fn->hasFlag(FLAG_EXTERN)) {
       if (formal->type->symbol->hasFlag(FLAG_REF) &&
           formal->type->symbol->getValType()->symbol->hasFlag(FLAG_STAR_TUPLE) &&
-          actual->typeInfo()->symbol->hasFlag(FLAG_REF)) {
+          actualType->symbol->hasFlag(FLAG_REF)) {
         fprintf(outfile, "*(");
         closeDeRefParens = true;
       }
     } else if (formal->requiresCPtr() && 
-               !actual->typeInfo()->symbol->hasFlag(FLAG_REF)) {
+               !actualType->symbol->hasFlag(FLAG_REF)) {
       fprintf(outfile, "&(");
       closeDeRefParens = true;
     }
-    if (fn->hasFlag(FLAG_EXTERN) && actual->typeInfo() == dtString)
-      fprintf(outfile, "((char*)");
+    // Handle passing strings to externs
+    if (fn->hasFlag(FLAG_EXTERN)) {
+      if (actualType == dtString)
+        fprintf(outfile, "((char*)");
+      else if (passingWideStringToExtern(actualType))
+        fprintf(outfile, "&(");
+    }
     SymExpr* se = toSymExpr(actual);
     if (se && isFnSymbol(se->var))
       fprintf(outfile, "(chpl_fn_p)&");
     actual->codegen(outfile);
-    if (fn->hasFlag(FLAG_EXTERN) && actual->typeInfo() == dtString)
-      fprintf(outfile, ")");
-    if (fn->hasFlag(FLAG_EXTERN) && actual->typeInfo()->symbol->hasFlag(FLAG_WIDE))
+    if (fn->hasFlag(FLAG_EXTERN)) {
+      if (actualType == dtString)
+        fprintf(outfile, ")");
+      else if (passingWideStringToExtern(actualType))
+        fprintf(outfile,"->addr)");
+    }
+    if (fn->hasFlag(FLAG_EXTERN) && actualType->symbol->hasFlag(FLAG_WIDE))
       fprintf(outfile, ").addr");
     else if (closeDeRefParens)
       fprintf(outfile, ")");
