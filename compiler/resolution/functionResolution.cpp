@@ -2676,7 +2676,8 @@ createFunctionAsValue(CallExpr *call) {
   getVisibleFunctions(getVisibilityBlock(call), fname, visibleFns, visited);
 
   if (visibleFns.n > 1) {
-    USR_FATAL(call, "Can not capture overloaded functions as values");
+    USR_FATAL(call, "%s: can not capture overloaded functions as values",
+                    visibleFns.v[0]->name);
   }
 
   INT_ASSERT(visibleFns.n == 1);
