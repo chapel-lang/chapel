@@ -123,6 +123,7 @@ module Scalable_Graph_Generator
          skip = Rand_Gen.getNext ();
          Rand_Gen.fillRandom ( Unif_Random2 );
 
+         serial (SHUFFLE_DETERMINISTICALLY) {
          forall j in ArrD do
          { 
 //          Choose two locations at random
@@ -148,6 +149,7 @@ module Scalable_Graph_Generator
             };
 
           }; 
+         }
       };
  
       graph_gen_time.stop();
@@ -267,6 +269,7 @@ module Scalable_Graph_Generator
      skip = Rand_Gen.getNext ();
      Rand_Gen.fillRandom ( Unif_Random2 );
 
+     serial (SHUFFLE_DETERMINISTICALLY) {
      forall j in ArrD do
      { 
 
@@ -300,6 +303,7 @@ module Scalable_Graph_Generator
          Edge_lock$ (ndx2).writeEF(true);
        };
      };
+     }
 
      graph_gen_time.stop();
 

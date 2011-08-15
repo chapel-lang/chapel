@@ -8,6 +8,7 @@ module Graph500_defs
   config param PRINT_LOCALE_INFORMATION = true;
   config param RMAT_WITH_NOISE = true;
   config param RMAT_WITH_SHUFFLE = true;
+  config param SHUFFLE_DETERMINISTICALLY = false;
   config param DEBUG_GRAPH_GENERATOR = false;
   config const SCALE = 6;
   config const EDGEFACTOR = 8;
