@@ -1,7 +1,9 @@
-//use BlockCycDist; //BC
-use BlockDist;  //BD
-use d, r; //DIM
-use Time, Random;
+//use BlockCycDist; //MBC - not using for now
+use BlockDist;  //MBD
+use d; //DIM
+use r; //BD (with DIM)
+//use f; //BC (with DIM)
+use UtilMath, Time, Random;
 
 config param reproducible = false;
 config var verbose = true;
@@ -35,15 +37,25 @@ config const n = 62,
 
 // The bounding box for our Block distributions.
 // We arbitrarily choose to round up, rather than down.
-const nbb1 = ceil(n, blkSize * tl1) * blkSize * tl1, //BD
-      nbb2 = ceil(n, blkSize * tl2) * blkSize * tl2; //BD
+const nbb1 = divceilpos(n, blkSize * tl1) * blkSize * tl1, //BD
+      nbb2 = divceilpos(n, blkSize * tl2) * blkSize * tl2; //BD
 
 // non-distributed version
 const MatVectSpace = [1..n, 1..n+1];
 
+const
+  bdim1 =
+    new sdist(tl1, 1, nbb1), //BD
+  rdim1 = new vdist(tl1),
+
+  bdim2 =
+    new sdist(tl2, 1, nbb2), //BD
+  rdim2 = new vdist(tl2);
+
 const AbD: domain(2, indexType)
-  // dmapped BlockCyclic(startIdx=(1,1), (blkSize,blkSize), targetLocales=tla)//BC
-     dmapped Block(boundingBox=[1..nbb1, 1..nbb2], targetLocales=tla) //BD
+  // dmapped BlockCyclic(startIdx=(1,1), (blkSize,blkSize), targetLocales=tla)//MBC
+   dmapped Block(boundingBox=[1..nbb1, 1..nbb2], targetLocales=tla) //MBD
+  //   dmapped DimensionalDist(tla, bdim1, bdim2, "dim") //DIM
   = MatVectSpace;
 
 var Ab: [AbD] elemType;  // the matrix A and vector b
@@ -54,8 +66,11 @@ var Abref: [MatVectSpace] elemType;
 var refsuccess = true;
 
 // the domains for the arrays used for replication
-const replAD = [1..n, 1..blkSize]  dmapped DimensionalDist(tla, new sdist(tl1, 1, nbb1), new vdist(tl2), "distBR"),
-      replBD = [1..blkSize, 1..n+1] dmapped DimensionalDist(tla, new vdist(tl1), new sdist(tl2, 1, nbb2), "distRB");
+const
+  replAD = [1..n, 1..blkSize] dmapped
+    DimensionalDist(tla, bdim1, rdim2, "distBR"), //DIM
+  replBD = [1..blkSize, 1..n+1] dmapped
+    DimensionalDist(tla, rdim1, bdim2, "distRB"); //DIM
 
 var replA: [replAD] elemType,
     replB: [replBD] elemType;
@@ -147,9 +162,6 @@ writeln("  dgemm(", (Rest.dim(1))(row..#blkSize), ",",
     }
   }
 }
-
-// should be in Math: ceiling of x/y.  Assume for now x,y are positive.
-proc ceil(x:int, y:int):int return (x + y - 1) / y;
 
 proc setupTargetLocales() {
   writeln("setting up for ", tl1, "*", tl2, " locales");
