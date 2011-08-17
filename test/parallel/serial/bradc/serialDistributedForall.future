@@ -1,7 +1,0 @@
-bug: serial distributed forall loops are not serial
-
-This test demonstrates that 'serial' is not currently serializing
-forall loops that iterate over distributed domains/arrays.  My
-hypothesis is that this is because of the optimization we have to
-handle coforall + on loops with lower overhead.  We're probably
-ignoring the serial state in this case...  Investigating now.

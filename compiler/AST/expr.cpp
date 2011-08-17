@@ -2375,7 +2375,7 @@ void CallExpr::codegen(FILE* outfile) {
     return;
   } else if (fn->hasFlag(FLAG_ON_BLOCK)) {
     if (fn->hasFlag(FLAG_NON_BLOCKING))
-      fprintf(outfile, "chpl_comm_fork_nb");
+      fprintf(outfile, "CHPL_COMM_NONBLOCKING_ON");
     else if (fn->hasFlag(FLAG_FAST_ON))
       fprintf(outfile, "chpl_comm_fork_fast");
     else
