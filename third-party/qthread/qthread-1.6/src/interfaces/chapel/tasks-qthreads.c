@@ -143,6 +143,10 @@ void chpl_task_init(int32_t  maxThreadsPerLocale,
      *  putenv(newenv);
      * }*/
 
+    if (callStackSize == 0) {
+      callStackSize = 32*1024*sizeof(size_t);
+    }
+
     if (callStackSize != 0) {
         char newenv[100] = { 0 };
         snprintf(newenv, 99, "QTHREAD_STACK_SIZE=%lu", (unsigned long)callStackSize);
