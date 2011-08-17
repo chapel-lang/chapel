@@ -35,3 +35,13 @@ the runtime checks to see if the reference is remote (which it will
 never will be), and if the generated code is correct, the program will
 execute without issue.  If the program does not complete as expected,
 you can use the --gdb flags to debug in gdb (see README.executing).
+
+DEBUGGING WITH VALGRIND
+=======================
+
+To debug using valgrind, use the following command
+
+    % valgrind --trace-children=yes --suppressions=$CHPL_HOME/third-party/gasnet/<GASNET_VERSION>/other/contrib/gasnet.supp
+
+where <GASNET_VERSION> can be found in $CHPL_HOME/make/Makefile.base.
+
