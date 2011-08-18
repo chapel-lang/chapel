@@ -49,7 +49,8 @@ const char* runUtilScript(const char* script);
 
 void setupModulePaths(void);
 void addStdRealmsPath(void);
-void addUserModulePath(const char* newpath);
+void addFlagModulePath(const char* newpath);
+void addDashMsToUserPath(void);
 void addModulePathFromFilename(const char* filename);
 
 const char* modNameToFilename(const char* modName, bool isInternal, 

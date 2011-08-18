@@ -291,7 +291,7 @@ static void readConfig(ArgumentState* arg_state, char* arg_unused) {
 
 
 static void addModulePath(ArgumentState* arg_state, char* newpath) {
-  addUserModulePath(newpath);
+  addFlagModulePath(newpath);
 }
 
 Vec<const char*> realms;

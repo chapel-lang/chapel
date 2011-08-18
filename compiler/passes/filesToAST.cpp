@@ -152,6 +152,8 @@ void parse(void) {
     }
   }
 
+  addDashMsToUserPath();
+
   if (printSearchDirs) {
     printModuleSearchPath();
   }

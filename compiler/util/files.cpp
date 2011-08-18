@@ -535,11 +535,54 @@ static const char* searchPath(Vec<const char*> path, const char* filename,
   return foundfile;
 }
 
+//
+// These are lists representing the internal, standard, user, and
+// flag-based (and envvar-based) paths respectively.  The last is
+// treated somewhat differently than the others in that -M flags are
+// handled first by the compiler, but should come after the user
+// paths, so are added into usrModPath as a post-processing pass.
+//
 static Vec<const char*> intModPath;
 static Vec<const char*> stdModPath;
 static Vec<const char*> usrModPath;
-static Vec<const char*> fileModPath;
-static Vec<const char*> fileModPathSet;
+static Vec<const char*> flagModPath;
+
+
+static void addUsrDirToModulePath(const char* dir) {
+  //
+  // a set representing the unique directories added to the path to
+  // avoid duplicates (for efficiency and clarity of error messages)
+  //
+  static Vec<const char*> modPathSet;
+
+  const char* uniquedir = astr(dir);
+  if (!modPathSet.set_in(uniquedir)) {
+    usrModPath.add(uniquedir);
+    modPathSet.set_add(uniquedir);
+  }
+}
+
+
+//
+// track directories specified via -M and CHPL_MODULE_PATH.
+//
+void addFlagModulePath(const char* newpath) {
+  const char* uniquedir = astr(newpath);
+  flagModPath.add(uniquedir);
+}
+
+
+//
+// Once we've added all filename-based directories to the user module
+// search path, we'll add all unique directories specified via -M and
+// CHPL_MODULE_PATH.
+//
+void addDashMsToUserPath(void) {
+  forv_Vec(const char*, dirname, flagModPath) {
+    addUsrDirToModulePath(dirname);
+  }
+}
+
 
 void setupModulePaths(void) {
   intModPath.add(astr(CHPL_HOME, "/modules/internal/", CHPL_THREADS));
@@ -559,7 +602,7 @@ void setupModulePaths(void) {
       if (colon) {
         *colon = '\0';
       }
-      addUserModulePath(start);
+      addFlagModulePath(start);
     } while (colon);
   }
 }
@@ -572,33 +615,16 @@ void addStdRealmsPath(void) {
 }
 
 
-void addUserModulePath(const char* newpath) {
-  const char* uniquedir = astr(newpath);
-  usrModPath.add(uniquedir);
-}
-
-
-static void addModulePathFromFilenameHelp(const char* name) {
-  const char* uniquename = astr(name);
-  if (!fileModPathSet.set_in(uniquename)) {
-    fileModPath.add(uniquename);
-    fileModPathSet.set_add(uniquename);
-  }
-}
-
-
 void addModulePathFromFilename(const char* origfilename) {
   char dirname[FILENAME_MAX+1];
   strncpy(dirname, origfilename, FILENAME_MAX);
   char* lastslash = strrchr(dirname, '/');
-  bool addedDot = false;
   if (lastslash != NULL) {
     *lastslash = '\0';
-    addModulePathFromFilenameHelp(dirname);
+    addUsrDirToModulePath(dirname);
     *lastslash = '/';
-  } else if (!addedDot) {
-    addModulePathFromFilenameHelp(".");
-    addedDot = true;
+  } else {
+    addUsrDirToModulePath(".");
   }
 }
 
@@ -610,8 +636,7 @@ const char* modNameToFilename(const char* modName, bool isInternal,
   if (isInternal) {
     fullfilename = searchPath(intModPath, filename, NULL, true);
   } else {
-    fullfilename = searchPath(fileModPath, filename);
-    fullfilename = searchPath(usrModPath, filename, fullfilename);
+    fullfilename = searchPath(usrModPath, filename);
     *isStandard = (fullfilename == NULL);
     fullfilename = searchPath(stdModPath, filename, fullfilename);
   }
@@ -636,7 +661,6 @@ static void helpPrintPath(Vec<const char*> path) {
 
 void printModuleSearchPath(void) {
   fprintf(stderr, "module search dirs:\n");
-  helpPrintPath(fileModPath);
   helpPrintPath(usrModPath);
   helpPrintPath(stdModPath);
   fprintf(stderr, "end of module search dirs\n");
