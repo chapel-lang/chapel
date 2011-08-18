@@ -312,6 +312,11 @@ module SSCA2_kernels
 	    // ------------------------------------------------
       
 	    current_distance += 1;
+
+            // barrier
+            var count: sync int = numLocales;
+            var barrier: single bool;
+
             // for remote value forwarding
             const current_distance_c = current_distance;
             coforall loc in Locales do on loc {
@@ -355,6 +360,15 @@ module SSCA2_kernels
 	      }
 	    };
   
+            // barrier needed to insure all updates to Next_Level are complete
+            var myc = count;
+            if myc==1 {
+              barrier=true;
+            } else {
+              count = myc-1;
+              barrier;
+            }
+
             rcLocal(Active_Level) = rcLocal(Next_Level);
             rcLocal(Next_Level)   = new Level_Set (Sparse_Vertex_List);
         
@@ -381,6 +395,10 @@ module SSCA2_kernels
 	if DEBUG_KERNEL4 then 
 	  writeln ( " graph diameter from starting node ", s, 
 		    "  is ", graph_diameter );
+
+        // barrier
+        var count: sync int = numLocales;
+        var barrier: [2..graph_diameter] single bool;
 
         coforall loc in Locales do on loc {
           delete rcLocal(Next_Level);	               // it's empty
@@ -412,6 +430,15 @@ module SSCA2_kernels
 
                 Between_Cent$ (u) += depend (u);
               }
+            // barrier needed to insure all updates to depend are completed
+            var myc = count;
+            if myc==1 {
+              count = numLocales;
+              barrier[current_distance] = true;
+            } else {
+              count = myc-1;
+              barrier[current_distance];
+            }
           };
           delete rcLocal(Active_Level);
         }
