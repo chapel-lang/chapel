@@ -143,16 +143,6 @@ Returns the value of the argument rounded up to the nearest integer.
 \end{protobody}
 
 \begin{protohead}
-proc ceil(n: integral, m: integral)
-proc ceil(param n: integral, param m: integral) param
-\end{protohead}
-\begin{protobody}
-Returns
-$\lceil\frac{n}{m}\rceil$,
-i.e., the fraction $n/m$ rounded up to the nearest integer.
-\end{protobody}
-
-\begin{protohead}
 proc conjg(a: complex(?w)): complex(w)
 \end{protohead}
 \begin{protobody}
@@ -173,6 +163,26 @@ proc cosh(x: real(32)): real(32)
 \end{protohead}
 \begin{protobody}
 Returns the hyperbolic cosine of the argument.
+\end{protobody}
+
+\begin{protohead}
+proc divceil(m: integral, n: integral)
+proc divceil(param m: integral, param n: integral) param
+\end{protohead}
+\begin{protobody}
+Returns
+$\lceil\frac{m}{n}\rceil$,
+i.e., the fraction $m/n$ rounded up to the nearest integer.
+\end{protobody}
+
+\begin{protohead}
+proc divfloor(m: integral, n: integral)
+proc divfloor(param m: integral, param n: integral) param
+\end{protohead}
+\begin{protobody}
+Returns
+$\lfloor\frac{m}{n}\rfloor$,
+i.e., the fraction $m/n$ rounded down to the nearest integer.
 \end{protobody}
 
 \begin{protohead}
@@ -302,6 +312,16 @@ proc log2(x: real(32)): real(32)
 \begin{protobody}
 Returns the base 2 logarithm of the argument.  It is an error if the
 argument is less than or equal to zero.
+\end{protobody}
+
+\begin{protohead}
+proc mod(x: real(?w), y: real(w)): real(w)
+proc mod(m: integral, n: integral)
+proc mod(param m: integral, param n: integral) param
+\end{protohead}
+\begin{protobody}
+Computes the mod operator on the two numbers, defined as
+\chpl{mod(x,y)} = $x - y \lfloor\frac{m}{n}\rfloor$.
 \end{protobody}
 
 \begin{protohead}

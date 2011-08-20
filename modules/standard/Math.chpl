@@ -217,18 +217,74 @@ proc log2(in val: uint(?w)) {
   return logBasePow2(val, 1);
 }
 
-proc ceil(m: integral, n: integral) return
-  if m >= 0 then
-    if n >= 0 then (m + n - 1) / n
-    else           m / n
+// Performance note: if argument(s) is(are) of unsigned type(s),
+// fewer condititionals will be evaluated at run time.
+proc divceil(m: integral, n: integral) return
+  if isNonnegative(m) then
+    if isNonnegative(n) then (m + n - 1) / n
+    else                     m / n
   else
-    if n >= 0 then m / n
-    else           (m + n + 1) / n;
+    if isNonnegative(n) then m / n
+    else                     (m + n + 1) / n;
 
-proc ceil(param m: integral, param n: integral) param return
-  if m >= 0 then
-    if n >= 0 then (m + n - 1) / n
-    else           m / n
+proc divceil(param m: integral, param n: integral) param return
+  if isNonnegative(m) then
+    if isNonnegative(n) then (m + n - 1) / n
+    else                     m / n
   else
-    if n >= 0 then m / n
-    else           (m + n + 1) / n;
+    if isNonnegative(n) then m / n
+    else                     (m + n + 1) / n;
+
+// Performance note: if argument(s) is(are) of unsigned type(s),
+// fewer condititionals will be evaluated at run time.
+proc divfloor(m: integral, n: integral) return
+  if isNonnegative(m) then
+    if isNonnegative(n) then m / n
+    else                     (m - n - 1) / n
+  else
+    if isNonnegative(n) then (m - n + 1) / n
+    else                     m / n;
+
+proc divfloor(param m: integral, param n: integral) param return
+  if isNonnegative(m) then
+    if isNonnegative(n) then m / n
+    else                     (m - n - 1) / n
+  else
+    if isNonnegative(n) then (m - n + 1) / n
+    else                     m / n;
+
+// This codes up the standard definition, according to Wikipedia.
+// Is there a more efficient implementation for reals?
+proc mod(x: real(?w), y: real(w)): real(w) {
+  return x - y*floor(x/y);
+}
+
+// Performance note: if argument(s) is(are) of unsigned type(s),
+// fewer condititionals will be evaluated at run time.
+proc mod(m: integral, n: integral) {
+  const temp = m % n;
+
+  // eliminate some run-time tests if input(s) is(are) unsigned
+  return
+    if isNonnegative(n) then
+      if _isUnsignedType(m.type)
+      then temp
+      else ( if temp >= 0 then temp else temp + n )
+    else
+      // n < 0
+      ( if temp <= 0 then temp else temp + n );
+}
+
+proc mod(param m: integral, param n: integral) param {
+  param temp = m % n;
+
+  // verbatim copy from the other 'mod', to simplify maintenance
+  return
+    if isNonnegative(n) then
+      if _isUnsignedType(m.type)
+      then temp
+      else ( if temp >= 0 then temp else temp + n )
+    else
+      // n < 0
+      ( if temp <= 0 then temp else temp + n );
+}
