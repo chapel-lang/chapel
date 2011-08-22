@@ -37,39 +37,43 @@ record chpldev_Task {
 var chpldev_taskTableD : domain(chpl_taskID_t, parSafe=false);
 var chpldev_taskTable : [chpldev_taskTableD] chpldev_Task;
 
-pragma "export" proc chpldev_taskTable_add(taskID   : chpl_taskID_t,
-                                          lineno   : uint(32),
-                                          filename : string,
-                                          tl_info  : uint(64))
+export proc chpldev_taskTable_add(taskID   : chpl_taskID_t,
+                                  lineno   : uint(32),
+                                  filename : string,
+                                  tl_info  : uint(64))
 {
   if(!chpldev_taskTableD.member(taskID)) {
-    chpldev_taskTableD.add(taskID);
+    // This must be serial to avoid deadlock in a coforall. <hilde>
+    serial true do
+      chpldev_taskTableD.add(taskID);
   }
   chpldev_taskTable[taskID] = new chpldev_Task(taskState.pending,
                                                lineno, filename, tl_info);
 }
 
-pragma "export" proc chpldev_taskTable_remove(taskID : chpl_taskID_t)
+export proc chpldev_taskTable_remove(taskID : chpl_taskID_t)
 {
-  chpldev_taskTableD.remove(taskID);
+  // This must also be serial
+  serial true do
+    chpldev_taskTableD.remove(taskID);
 }
 
-pragma "export" proc chpldev_taskTable_set_active(taskID : chpl_taskID_t)
+export proc chpldev_taskTable_set_active(taskID : chpl_taskID_t)
 {
   chpldev_taskTable[taskID].state = taskState.active;
 }
 
-pragma "export" proc chpldev_taskTable_set_suspended(taskID : chpl_taskID_t)
+export proc chpldev_taskTable_set_suspended(taskID : chpl_taskID_t)
 {
   chpldev_taskTable[taskID].state = taskState.suspended;
 }
 
-pragma "export" proc chpldev_taskTable_get_tl_info(taskID : chpl_taskID_t)
+export proc chpldev_taskTable_get_tl_info(taskID : chpl_taskID_t)
 {
   return chpldev_taskTable[taskID].tl_info;
 }
 
-pragma "export" proc chpldev_taskTable_print() 
+export proc chpldev_taskTable_print() 
 {
   for taskID in chpldev_taskTableD {
     stderr.writeln("- ", chpldev_taskTable[taskID].filename,
