@@ -1,8 +1,6 @@
 #ifndef _tasks_none_h_
 #define _tasks_none_h_
 
-#include "chpl-threads.h"
-
 typedef chpl_bool chpl_sync_aux_t; // only needs to store the full/empty bit
 
 // type (and default value) used to communicate task identifiers

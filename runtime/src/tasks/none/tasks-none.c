@@ -14,6 +14,7 @@
 #include <sys/resource.h>
 #include <unistd.h>
 #include <stdio.h>
+#include <pthread.h>
 
 //
 // task pool: linked list of tasks
@@ -46,7 +47,7 @@ void chpl_sync_waitFullAndLock(chpl_sync_aux_t *s,
   while (!*s && launch_next_task())
     /* do nothing! */;
   if (!*s)
-    chpl_error("sync var empty (running in single-threaded mode)",
+    chpl_error("sync var empty (running in CHPL_TASKS=none mode)",
                lineno, filename);
 }
 
@@ -56,7 +57,7 @@ void chpl_sync_waitEmptyAndLock(chpl_sync_aux_t *s,
   while (*s && launch_next_task())
     /* do nothing! */;
   if (*s)
-    chpl_error("sync var full (running in single-threaded mode)",
+    chpl_error("sync var full (running in CHPL_TASKS=none mode)",
                lineno, filename);
 }
 
@@ -128,7 +129,8 @@ void chpl_task_init(int32_t maxThreadsPerLocale, uint64_t callStackSize) {
 void chpl_task_exit(void) { }
 
 int chpl_task_createCommTask(chpl_fn_p fn, void* arg) {
-  chpl_thread_createCommThread(fn, arg);
+  pthread_t thread;
+  return pthread_create(&thread, NULL, (void* (*)(void*)) fn, arg);
 }
 
 void chpl_task_callMain(void (*chpl_main)(void)) {
