@@ -353,9 +353,13 @@ static void build_chpl_entry_points(void) {
     chpl_main->insertAtHead(new CallExpr("main"));
   }
 
+  // Creation of stdInits must precede usrInits, because it invokes 
+  // function resolution.  The standard module inits are carefully ordered
+  // to avoid the "Dependency Ordering" bug.  (Learned the hard way.) <hilde>
   BlockStmt* stdInits = createModuleInitBlock(standardModule);
   BlockStmt* usrInits = createModuleInitBlock(mainModule);
   chpl_main->insertAtHead(usrInits);
+
   if (!fRuntime) {
     VarSymbol* endCount = newTemp("_endCount");
     chpl_main->insertAtHead(new CallExpr("chpl_startTrackingMemory"));
@@ -366,7 +370,7 @@ static void build_chpl_entry_points(void) {
     //chpl_main->insertBeforeReturn(new CallExpr("_endCountFree", endCount));
   }
 
-  theProgram->initFn->insertAtHead(stdInits);
+  theProgram->initFn->insertBeforeReturn(stdInits);
   chpl_main->insertAtHead(new CallExpr(theProgram->initFn));
 }
 

@@ -8,6 +8,7 @@ use ChapelIO;
 use ChapelTuple;
 use ChapelRange;
 use ChapelReduce;
+use ChapelRT;
 use ChapelArray;
 use ChapelDistribution;
 use ChapelLocale;

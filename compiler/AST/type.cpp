@@ -581,7 +581,7 @@ void initChplProgram(void) {
   rootModule->block->insertAtTail(new DefExpr(theProgram));
 }
 
-// This should probably be renamed since it create primitive types, as
+// This should probably be renamed since it creates primitive types, as
 //  well as internal types and other types used in the generated code
 void initPrimitiveTypes(void) {
   dtNil = createInternalType ("_nilType", "_nilType");
@@ -595,39 +595,9 @@ void initPrimitiveTypes(void) {
 
   dtBool = createPrimitiveTypePlusVol ("bool", "chpl_bool");
 
-  // The base object class looks like this:
-  //
-  //   class object {
-  //     chpl__class_id chpl__cid;
-  //   }
-  //
-  // chpl__class_id is an enumerated type identifying the classes
-  //  in the program.  We never create the actual field or the
-  //  enumerated type (it is directly generated in the C code).  It might
-  //  be the right thing to do, so I made an attempt at adding the
-  //  field.  Unfortunately, we would need some significant changes
-  //  throughout compilation, and it seemed to me that the it might result
-  //  in possibly more special case code.
-  //
-  DefExpr* objectDef = buildClassDefExpr("object", new ClassType(CLASS_CLASS),
-                                         NULL, new BlockStmt(), false);
-  objectDef->sym->addFlag(FLAG_OBJECT_CLASS);
-  objectDef->sym->addFlag(FLAG_NO_OBJECT);
-  dtObject = objectDef->sym->type;
-
+  dtObject = new ClassType(CLASS_CLASS);
   dtValue = createInternalType("value", "_chpl_value");
 
-  createInitFn(theProgram);
-  if (!fRuntime) {
-    theProgram->initFn->insertAtHead(new CallExpr(PRIM_USE,
-                                       new UnresolvedSymExpr("ChapelBase")));
-    // it may be better to add the following use after parsing
-    // to simplify insertion of module guard sync var defs
-    theProgram->initFn->insertAtTail(new CallExpr(PRIM_USE,
-                                       new UnresolvedSymExpr("ChapelStandard")));
-  }
-
-  theProgram->initFn->insertAtHead(objectDef);
   CREATE_DEFAULT_SYMBOL (dtBool, gFalse, "false");
   gFalse->immediate = new Immediate;
   gFalse->immediate->v_bool = false;
@@ -727,7 +697,38 @@ void initPrimitiveTypes(void) {
 
   dtAnyEnumerated = createInternalType ("enumerated", "enumerated");
   dtAnyEnumerated->symbol->addFlag(FLAG_GENERIC);
+}
 
+void initTheProgram(void) {
+  createInitFn(theProgram);
+  if (!fRuntime) {
+    theProgram->initFn->insertAtTail(new CallExpr(PRIM_USE,
+                                       new UnresolvedSymExpr("ChapelBase")));
+    // it may be better to add the following use after parsing
+    // to simplify insertion of module guard sync var defs
+    theProgram->initFn->insertAtTail(new CallExpr(PRIM_USE,
+                                       new UnresolvedSymExpr("ChapelStandard")));
+  }
+
+  // The base object class looks like this:
+  //
+  //   class object {
+  //     chpl__class_id chpl__cid;
+  //   }
+  //
+  // chpl__class_id is an enumerated type identifying the classes
+  //  in the program.  We never create the actual field or the
+  //  enumerated type (it is directly generated in the C code).  It might
+  //  be the right thing to do, so I made an attempt at adding the
+  //  field.  Unfortunately, we would need some significant changes
+  //  throughout compilation, and it seemed to me that the it might result
+  //  in possibly more special case code.
+  //
+  DefExpr* objectDef = buildClassDefExpr("object", dtObject,
+                                         NULL, new BlockStmt(), false);
+  objectDef->sym->addFlag(FLAG_OBJECT_CLASS);
+  objectDef->sym->addFlag(FLAG_NO_OBJECT);
+  theProgram->initFn->insertAtHead(objectDef);
 }
 
 void initCompilerGlobals(void) {

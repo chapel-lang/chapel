@@ -340,8 +340,7 @@ fixupDestructors() {
 
 
 static void insertGlobalAutoDestroyCalls() {
-  const char* name = (!fRuntime)
-    ? "chpl__autoDestroyGlobals" : "chpl__autoDestroyRuntimeGlobals";
+  const char* name = "chpl__autoDestroyGlobals";
   FnSymbol* fn = new FnSymbol(name);
   fn->retType = dtVoid;
   chpl_main->defPoint->insertBefore(new DefExpr(fn));

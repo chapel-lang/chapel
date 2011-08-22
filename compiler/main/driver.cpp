@@ -39,7 +39,7 @@ static char log_flags[512] = "";
 static bool rungdb = false;
 bool fRuntime = false;
 bool fLibraryCompile = false;
-bool fLibraryShared = false;
+bool fLibraryShared = false;    // Compile a shared library.
 bool no_codegen = false;
 int debugParserLevel = 0;
 bool developer = false;
@@ -204,12 +204,10 @@ static void recordCodeGenStrings(int argc, char* argv[]) {
   get_version(compileVersion);
 }
 
-
 static void setLibraryShared(ArgumentState* arg_state, char* arg_unused) {
   fLibraryShared = true;
   fLibraryCompile = true;   // --shared implies --library.
 }
-
 
 static void setChapelDebug(ArgumentState* arg_state, char* arg_unused) {
   printCppLineno = true;
@@ -628,6 +626,7 @@ int main(int argc, char *argv[]) {
   initChplProgram();
   initPrimitive();
   initPrimitiveTypes();
+  initTheProgram();
   setupOrderedGlobals();
   compute_program_name_loc(argv[0], &(arg_state.program_name),
                            &(arg_state.program_loc));

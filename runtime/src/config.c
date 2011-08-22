@@ -428,8 +428,8 @@ void parseConfigFile(const char* configFilename,
               initSetValue(varName, configValBuffer, moduleName, 0, configFilename);
             }
           }
-        }        
-      } 
+        }
+      }
     }
   }
   fclose(argFile);

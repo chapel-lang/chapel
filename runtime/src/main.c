@@ -78,6 +78,11 @@ int main(int argc, char* argv[]) {
   chpl_comm_verify_num_locales(execNumLocales);
   chpl_comm_rollcall();
 
+  //
+  // This just sets all of the initialization predicates to false.
+  // Must occur before any other call to a chpl__init_<foo> function.
+  //
+  chpl__init_preInit(1, "<internal>");
  
   //
   // initialize the task management layer
@@ -85,14 +90,15 @@ int main(int argc, char* argv[]) {
   //
   // This is an early call to initialize the ChapelThreads module so
   // that its config consts (maxThreadsPerLocale and callStackSize)
-  // can be used to initialize the tasking layer.  It assumes that the
-  // ChapelThreads module can be initialized multiple times without
-  // harm (currently true).
+  // can be used to initialize the tasking layer.  
   //
   chpl__init_ChapelThreads(1, "<internal>");
   //
-  chpl_task_init(maxThreadsPerLocale, callStackSize); 
-  chpl_init_chpl_rt_utils();
+  chpl_task_init(maxThreadsPerLocale, callStackSize);
+  // We need to initialize the runtime support 
+  // before calling chpl_task_callMain().
+  chpl__init_DefaultRectangular(1, "<internal>");   // for defaultDist.
+  chpl__init_ChapelRT(1, "<internal>");
 
   //
   // start communication tasks as necessary
