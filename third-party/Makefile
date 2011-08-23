@@ -10,9 +10,11 @@ all: dlmalloc gasnet gmp nanox qthread tcmalloc
 
 clean: FORCE
 	cd gasnet && $(MAKE) clean
+	cd tcmalloc && $(MAKE) clean
 
 clobber: FORCE
 	cd gasnet && $(MAKE) clobber
+	cd tcmalloc && $(MAKE) clobber
 
 depend:
 
@@ -36,7 +38,6 @@ qthread: FORCE
 qthreads: qthread
 
 tcmalloc: FORCE
-	echo third-party/Makefile rule to make tcmalloc
 	cd tcmalloc && $(MAKE)
 
 -include Makefile.devel
