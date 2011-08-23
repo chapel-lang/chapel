@@ -20,6 +20,7 @@ static Vec<const char*> modNameList;
 static Vec<const char*> modDoneSet;
 static Vec<CallExpr*> modReqdByInt;  // modules required by internal ones
 
+static bool handlingInternalModulesNow = false;
 
 void addModuleToParseList(const char* name, CallExpr* useExpr) {
   const char* modName = astr(name);
@@ -27,7 +28,7 @@ void addModuleToParseList(const char* name, CallExpr* useExpr) {
     //    printf("We've already seen %s\n", modName);
   } else {
     //    printf("Need to parse %s\n", modName);
-    if (currentModuleType == MOD_INTERNAL) {
+    if (currentModuleType == MOD_INTERNAL || handlingInternalModulesNow) {
       modReqdByInt.add(useExpr);
     }
     modNameSet.set_add(modName);
@@ -183,8 +184,14 @@ void parseDependentModules(ModTag modtype) {
   // if we've just finished parsing the dependent modules for the
   // user, let's make sure that we've parsed all the standard modules
   // required for the internal modules require
-  if (modtype == MOD_USER) {
-    forv_Vec(CallExpr*, moduse, modReqdByInt) {
+  if (modtype != MOD_USER) {
+    return;
+  }
+  do {
+    handlingInternalModulesNow = true;
+    Vec<CallExpr*> modReqdByIntCopy = modReqdByInt;
+    modReqdByInt.clear();
+    forv_Vec(CallExpr*, moduse, modReqdByIntCopy) {
       BaseAST* moduleExpr = moduse->argList.first();
       UnresolvedSymExpr* oldModNameExpr = toUnresolvedSymExpr(moduleExpr);
       if (oldModNameExpr == NULL) {
@@ -216,5 +223,5 @@ void parseDependentModules(ModTag modtype) {
         }
       }
     }
-  }
+  } while (modReqdByInt.n != 0);
 }
