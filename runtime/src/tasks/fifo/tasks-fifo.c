@@ -239,6 +239,41 @@ void chpl_task_init(int32_t maxThreadsPerLocale, uint64_t callStackSize) {
     chpl_thread_mutexInit(&block_report_lock);
   }
 
+  //
+  // Set main thread private data, so that things that require access
+  // to it, like chpl_task_getID() and chpl_task_setSerial(), can be
+  // called early (notably during standard module initialization).
+  //
+  // This needs to be done after the threading layer initialization,
+  // because it's based on thread layer capabilities, but before we
+  // install the signal handlers, because when those are invoked they
+  // may use the thread private data.
+  //
+  {
+    thread_private_data_t* tp;
+
+    tp = (thread_private_data_t*) chpl_mem_alloc(sizeof(thread_private_data_t),
+                                                 CHPL_RT_MD_THREAD_PRIVATE_DATA,
+                                                 0, 0);
+
+    tp->ptask = (task_pool_p) chpl_mem_alloc(sizeof(task_pool_t),
+                                             CHPL_RT_MD_TASK_POOL_DESCRIPTOR,
+                                             0, 0);
+    tp->ptask->id           = get_next_task_id();
+    tp->ptask->fun          = NULL;
+    tp->ptask->arg          = NULL;
+    tp->ptask->serial_state = false;
+    tp->ptask->ltask        = NULL;
+    tp->ptask->begun        = true;
+    tp->ptask->filename     = "main program";
+    tp->ptask->lineno       = 0;
+    tp->ptask->next         = NULL;
+
+    tp->lockRprt = NULL;
+
+    chpl_thread_setPrivateData(tp);
+  }
+
   if (blockreport || taskreport) {
     signal(SIGINT, SIGINT_handler);
   }
@@ -256,29 +291,9 @@ void chpl_task_exit(void) {
 
 
 void chpl_task_callMain(void (*chpl_main)(void)) {
-  thread_private_data_t *tp = (thread_private_data_t*)
-                                chpl_mem_alloc(sizeof(thread_private_data_t),
-                                               CHPL_RT_MD_THREAD_PRIVATE_DATA,
-                                               0, 0);
-
-  tp->ptask = (task_pool_p) chpl_mem_alloc(sizeof(task_pool_t),
-                                           CHPL_RT_MD_TASK_POOL_DESCRIPTOR,
-                                           0, 0);
-  tp->ptask->id           = get_next_task_id();
-  tp->ptask->fun          = NULL;
-  tp->ptask->arg          = NULL;
-  tp->ptask->serial_state = false;
-  tp->ptask->ltask        = NULL;
-  tp->ptask->begun        = true;
-  tp->ptask->filename     = "main program";
-  tp->ptask->lineno       = 0;
-  tp->ptask->next         = NULL;
-
-  tp->lockRprt = NULL;
-
-  chpl_thread_setPrivateData(tp);
-
   if (taskreport) {
+    thread_private_data_t* tp = chpl_thread_getPrivateData();
+
     chpldev_taskTable_add(tp->ptask->id,
                           tp->ptask->lineno, tp->ptask->filename,
                           (uint64_t) (intptr_t) tp->ptask);
