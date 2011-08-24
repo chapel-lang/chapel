@@ -88,7 +88,8 @@ static chpl_taskID_t curr_taskID;
 static chpl_bool serial_state;
 static uint64_t taskCallStackSize = 0;
 
-void chpl_task_init(int32_t maxThreadsPerLocale, uint64_t callStackSize) {
+void chpl_task_init(int32_t numThreadsPerLocale, int32_t maxThreadsPerLocale, 
+                    int numCommTasks, uint64_t callStackSize) {
   //
   // If a value was specified for the call stack size config const, use
   // that (rounded up to a whole number of pages) to set the system
@@ -259,10 +260,6 @@ launch_next_task(void) {
 
 
 // Threads
-
-int32_t chpl_task_getMaxThreads(void) { return 1; }
-
-int32_t chpl_task_getMaxThreadsLimit(void) { return 1; }
 
 uint32_t chpl_task_getNumThreads(void) { return 1; }
 

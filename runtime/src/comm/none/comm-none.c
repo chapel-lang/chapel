@@ -31,10 +31,6 @@ int32_t chpl_comm_getMaxThreads(void) {
   return 0;
 }
 
-int32_t chpl_comm_maxThreadsLimit(void) {
-  return 0;
-}
-
 void chpl_comm_init(int *argc_p, char ***argv_p) {
   chpl_numLocales = 1;
   chpl_localeID = 0;
@@ -130,6 +126,7 @@ void chpl_comm_fork_fast(int locale, chpl_fn_int_t fid, void *arg,
   (*chpl_ftable[fid])(arg);
 }
 
+int chpl_comm_numPollingTasks(void) { return 0; }
 void chpl_comm_startPollingTask(void) { }
 void chpl_comm_stopPollingTask(void) { }
 

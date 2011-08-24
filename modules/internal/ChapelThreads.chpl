@@ -3,34 +3,38 @@
 // initialization phase, and therefore must only contain
 // initialization code that is safe to call early and twice.
 //
+// numThreadsPerLocale is used to tell the task layer how many threads
+// to use to execute the user's tasks.  The interpretation of the
+// value varies depending on task layer and is documented in README.tasks
+// in the release documentation directory.  The sentinel value of 0
+// indicates that the tasking layer can determine the number of
+// threads to use.
+//
+config const numThreadsPerLocale = 0;
+const chpl__maxThreadsPerLocale = chpl__initMaxThreadsPerLocale();
 
-// maxThreadsPerLocale the maximum number of threads that can be live
-// at any given time
 //
-// NOTE: The current implementation assumes that all locales will return
-// the same values for chpl_comm_getMaxThreads() and 
-// chpl_threads_getMaxThreads().  If/when this is no longer a safe
-// assumption, this variable should be replaced with a 0 sentinel value
-// and the locale should support a maxThreads query to find out what
-// the actual limit per locale is.  Arguably this could/should be done
-// now, but I'm not prepared to take it on right now.
+// Legality check for numThreadsPerLocale
 //
-config const maxThreadsPerLocale: int = __primitive("chpl_maxThreads");
-const maxThreadsPerLocaleLimit: int = __primitive("chpl_maxThreadsLimit");
-if maxThreadsPerLocale < 0 {
-  halt("maxThreadsPerLocale must be >= 0");
+if numThreadsPerLocale < 0 {
+  halt("numThreadsPerLocale must be >= 0");
 }
-if maxThreadsPerLocaleLimit != 0 {
-  if (maxThreadsPerLocale > maxThreadsPerLocaleLimit) then
+if chpl__maxThreadsPerLocale != 0 then
+  if (numThreadsPerLocale > chpl__maxThreadsPerLocale) then
     __primitive("chpl_warning",
-                "specified value of " + maxThreadsPerLocale
-                  + " for maxThreadsPerLocale is too high; limit is " + maxThreadsPerLocaleLimit);
-  else if (maxThreadsPerLocale == 0) then
-    __primitive("chpl_warning",
-                "maxThreadsPerLocale is unbounded; however, the limit is " + maxThreadsPerLocaleLimit);
-}
+                "specified value of " + numThreadsPerLocale
+                + " for numThreadsPerLocale is too high; limit is " 
+                + chpl__maxThreadsPerLocale);
+
 
 //
 // the size of a call stack
 //
 config const callStackSize: uint(64) = 0;
+
+
+proc chpl__initMaxThreadsPerLocale() {
+  extern proc chpl_maxThreads(): int(32);
+
+  return chpl_maxThreads();
+}

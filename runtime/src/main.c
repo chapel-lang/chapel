@@ -47,6 +47,7 @@ static void recordExecutionCommand(int argc, char *argv[]) {
 int main(int argc, char* argv[]) {
   int32_t execNumLocales;
   int runInGDB;
+  int numPollingTasks;
 
   chpl_comm_init(&argc, &argv);
   chpl_mem_init();
@@ -89,12 +90,17 @@ int main(int argc, char* argv[]) {
   //
   //
   // This is an early call to initialize the ChapelThreads module so
-  // that its config consts (maxThreadsPerLocale and callStackSize)
+  // that its config consts (numThreadsPerLocale and callStackSize)
   // can be used to initialize the tasking layer.  
   //
   chpl__init_ChapelThreads(1, "<internal>");
   //
-  chpl_task_init(maxThreadsPerLocale, callStackSize);
+  numPollingTasks = chpl_comm_numPollingTasks();
+  if (numPollingTasks != 0 && numPollingTasks != 1) {
+    chpl_internal_error("chpl_comm_numPollingTasks() returned illegal value");
+  }
+  chpl_task_init(numThreadsPerLocale, chpl__maxThreadsPerLocale, 
+                 numPollingTasks, callStackSize); 
   // We need to initialize the runtime support 
   // before calling chpl_task_callMain().
   chpl__init_DefaultRectangular(1, "<internal>");   // for defaultDist.

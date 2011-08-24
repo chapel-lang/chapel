@@ -72,13 +72,14 @@ void chpl_sync_destroyAux(chpl_sync_aux_t *s) { }
 
 // Tasks
 
-void chpl_task_init(int32_t maxThreadsPerLocale, uint64_t callStackSize) {
+void chpl_task_init(int32_t numThreadsPerLocale, int32_t maxThreadsPerLocale, 
+                    int numCommTasks, uint64_t callStackSize) {
   //
   // If a value was specified for the call stack size or max threads
   // config consts, warn the user that it's ignored on this system.
   //
-  if (maxThreadsPerLocale != 0)
-    chpl_warning("the maxThreadsPerLocale config constant has no effect "
+  if (numThreadsPerLocale != 0)
+    chpl_warning("the numThreadsPerLocale config constant has no effect "
                  "on XMT systems", 0, NULL);
 
   if (callStackSize != 0)
@@ -171,14 +172,6 @@ int32_t  chpl_task_getNumBlockedTasks(void) { return -1; }
 
 
 // Threads
-
-int32_t chpl_task_getMaxThreads(void) {
-  return 0;
-}
-
-int32_t chpl_task_getMaxThreadsLimit(void) {
-  return 0;
-}
 
 // not sure what the correct value should be here!
 uint32_t chpl_task_getNumThreads(void) { return 1; }

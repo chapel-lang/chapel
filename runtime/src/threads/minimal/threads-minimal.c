@@ -64,7 +64,8 @@ void chpl_thread_yield(void)
 }
 
 
-void chpl_thread_init(int32_t maxThreadsPerLocale,
+void chpl_thread_init(int32_t numThreadsPerLocale,
+                      int32_t maxThreadsPerLocale,
                       uint64_t callStackSize,
                       void(*threadBeginFn)(void*),
                       void(*threadEndFn)(void)) {

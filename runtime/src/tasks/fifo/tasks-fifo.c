@@ -214,7 +214,8 @@ void chpl_sync_destroyAux(chpl_sync_aux_t *s) { }
 
 // Tasks
 
-void chpl_task_init(int32_t maxThreadsPerLocale, uint64_t callStackSize) {
+void chpl_task_init(int32_t numThreadsPerLocale, int32_t maxThreadsPerLocale, 
+                    int numCommTasks, uint64_t callStackSize) {
   chpl_thread_mutexInit(&threading_lock);
   chpl_thread_mutexInit(&extra_task_lock);
   chpl_thread_mutexInit(&task_id_lock);
@@ -227,7 +228,7 @@ void chpl_task_init(int32_t maxThreadsPerLocale, uint64_t callStackSize) {
   extra_task_cnt = 0;
   task_pool_head = task_pool_tail = NULL;
 
-  chpl_thread_init(maxThreadsPerLocale, callStackSize,
+  chpl_thread_init(numThreadsPerLocale, maxThreadsPerLocale, callStackSize,
                    thread_begin, thread_end);
 
   if (taskreport) {
@@ -1213,14 +1214,6 @@ static task_pool_p add_to_task_pool(chpl_fn_p fp,
 
 
 // Threads
-
-int32_t  chpl_task_getMaxThreads(void) {
-  return 0;
-}
-
-int32_t  chpl_task_getMaxThreadsLimit(void) {
-  return 0;
-}
 
 uint32_t chpl_task_getNumThreads(void) {
   return chpl_thread_getNumThreads();

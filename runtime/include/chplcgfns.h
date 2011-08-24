@@ -8,7 +8,8 @@
 
 /* defined in chpl__header.h: */
 
-extern int32_t maxThreadsPerLocale;
+extern int32_t numThreadsPerLocale;
+extern int32_t chpl__maxThreadsPerLocale;
 extern uint64_t callStackSize;
 extern int32_t chpl_numRealms;
 
