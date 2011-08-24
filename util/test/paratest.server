@@ -258,7 +258,7 @@ sub feed_nodes {
 
     # wait for everyone to finish;
     @readyidv = free_workers ();
-    while (($#readyidv != $#node_list) &&
+    while (($#readyidv < 2 * $#node_list + 1) &&
            !(-e "PARAHALT")) {
         sleep $sleep_time;
         @readyidv = free_workers ();
@@ -293,8 +293,13 @@ sub nodes_free {
 
     systemd ("rm -f $synchdir/*");
     # signal that all nodes are free
-    for ($id=0; $id<=$#node_list; $id++) {
+    # Launch two clients on each node, numbered $id and $id + $nodeCount.
+    my $nodeCount = $#node_list + 1;
+    for ($id=0; $id<$nodeCount; $id++) {
         $fname = "$node_list[$id].$id";
+        systemd ("echo feed me > $synchdir/$fname");
+        my $upperId = $id + $nodeCount;
+        $fname = "$node_list[$id].$upperId";
         systemd ("echo feed me > $synchdir/$fname");
     }
 }
