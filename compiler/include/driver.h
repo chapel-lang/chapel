@@ -6,6 +6,8 @@
 #include "chpl.h"
 
 extern FILE* html_index_file;
+extern FILE* deletedIdHandle;
+extern char deletedIdFilename[FILENAME_MAX+1];
 
 extern int instantiation_limit;
 
@@ -13,6 +15,9 @@ extern int fdump_html;
 extern bool fdump_html_incude_system_modules;
 
 extern int trace_level;
+
+extern int currentPassNo;
+extern const char* currentPassName;
 
 // optimization control flags
 extern int fConditionalDynamicDispatchLimit;
@@ -102,6 +107,7 @@ extern bool fNoMemoryFrees;
 extern int numGlobalsOnHeap;
 
 extern int breakOnID;
+extern int breakOnDeleteID;
 
 // code generation strings
 extern const char* compileCommand;

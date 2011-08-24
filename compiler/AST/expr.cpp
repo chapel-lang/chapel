@@ -82,7 +82,9 @@ Expr* Expr::remove(void) {
     callReplaceChild(this, NULL);
   }
   if (parentSymbol)
-    remove_help(this);
+    remove_help(this, 'r');
+  else
+    trace_remove(this, 'R');
   return this;
 }
 
@@ -113,7 +115,7 @@ void Expr::replace(Expr* new_ast) {
 
   Symbol* myParentSymbol = parentSymbol;
   Expr* myParentExpr = parentExpr;
-  remove_help(this);
+  remove_help(this, 'p');
   insert_help(new_ast, myParentExpr, myParentSymbol);
 }
 

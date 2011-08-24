@@ -324,9 +324,10 @@ void insert_help(BaseAST* ast,
 }
 
 
-void remove_help(BaseAST* ast, int dummy) {
-  AST_CHILDREN_CALL(ast, remove_help, dummy);
+void remove_help(BaseAST* ast, int flag) {
+  AST_CHILDREN_CALL(ast, remove_help, flag);
   if (Expr* expr = toExpr(ast)) {
+    trace_remove(ast, flag);
     expr->parentSymbol = NULL;
     expr->parentExpr = NULL;
   }

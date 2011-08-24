@@ -540,6 +540,8 @@ html_view_ast(BaseAST* ast, FILE* html_file, int pass) {
 
 void html_view(const char* passName) {
   static int uid = 1;
+  INT_ASSERT(uid == currentPassNo); //we could use latter for former
+  INT_ASSERT(passName == currentPassName);
   FILE* html_file;
   const char* filename;
 

@@ -18,7 +18,12 @@
 #include "config.h"
 
 FILE* html_index_file = NULL;
+FILE* deletedIdHandle = NULL;
+char deletedIdFilename[FILENAME_MAX+1] = "";
 
+// for logging
+int currentPassNo = 0;
+const char* currentPassName = "starting up";
 
 char CHPL_HOME[FILENAME_MAX] = "";
 
@@ -540,7 +545,9 @@ static ArgumentDescription arg_desc[] = {
 
  {"", ' ', NULL, "Misc. Developer Flags", NULL, NULL, NULL, NULL},
  {"break-on-id", ' ', NULL, "Break when AST id is created", "I", &breakOnID, "CHPL_BREAK_ON_ID", NULL},
+ {"break-on-delete-id", ' ', NULL, "Break when AST id is deleted", "I", &breakOnDeleteID, "CHPL_BREAK_ON_DELETE_ID", NULL},
  {"print-id-on-error", ' ', NULL, "Print AST id in error messages, when available", "F", &fPrintIDonError, "CHPL_PRINT_ID_ON_ERROR", NULL},
+ {"log-deleted-ids-to", ' ', "<filename>", "Log AST id and memory address of each deleted node to the specified file", "P", deletedIdFilename, "CHPL_DELETED_ID_FILENAME", NULL},
  {"default-dist", ' ', "<distribution>", "Change the default distribution", "S256", defaultDist, "CHPL_DEFAULT_DIST", NULL},
  {"gdb", ' ', NULL, "Run compiler in gdb", "F", &rungdb, NULL, NULL},
  {"heterogeneous", ' ', NULL, "Compile for heterogeneous nodes", "F", &fHeterogeneous, "", NULL},
