@@ -293,14 +293,12 @@ sub nodes_free {
 
     systemd ("rm -f $synchdir/*");
     # signal that all nodes are free
-    # Launch two clients on each node, numbered $id and $id + $nodeCount.
+    # Launch two clients on each node, numbered $id and $id.2
     my $nodeCount = $#node_list + 1;
     for ($id=0; $id<$nodeCount; $id++) {
         $fname = "$node_list[$id].$id";
         systemd ("echo feed me > $synchdir/$fname");
-        my $upperId = $id + $nodeCount;
-        $fname = "$node_list[$id].$upperId";
-        systemd ("echo feed me > $synchdir/$fname");
+        systemd ("echo feed me > $synchdir/$fname.2");
     }
 }
 
