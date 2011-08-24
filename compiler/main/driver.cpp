@@ -42,7 +42,6 @@ static char incFilename[FILENAME_MAX] = "";
 static char moduleSearchPath[FILENAME_MAX] = "";
 static char log_flags[512] = "";
 static bool rungdb = false;
-bool fRuntime = false;
 bool fLibraryCompile = false;
 bool fLibraryShared = false;    // Compile a shared library.
 bool no_codegen = false;
@@ -557,7 +556,6 @@ static ArgumentDescription arg_desc[] = {
  {"remove-empty-records", ' ', NULL, "Enable [disable] removal of empty records", "n", &fNoRemoveEmptyRecords, "CHPL_DISABLE_REMOVE_EMPTY_RECORDS", NULL},
  {"reposition-def-expressions", ' ', NULL, "Enable [disable] repositioning def expressions to usage points", "n", &fNoRepositionDefExpr, "CHPL_DISABLE_REPOSITION_DEF_EXPR", NULL},
  {"local-temp-names", ' ', NULL, "[Don't] Generate locally-unique temp names", "N", &localTempNames, "CHPL_LOCAL_TEMP_NAMES", NULL},
- {"runtime", ' ', NULL, "compile Chapel runtime file", "F", &fRuntime, NULL, NULL},
  {"library", ' ', NULL, "compile Chapel library file", "F", &fLibraryCompile, NULL, NULL},
  {"shared", ' ', NULL, "compile a shared library file", "F", &fLibraryShared, NULL, setLibraryShared},
  {"timers", ' ', NULL, "Enable general timers one to five", "F", &fEnableTimers, "CHPL_ENABLE_TIMERS", NULL},

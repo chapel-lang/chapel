@@ -1022,9 +1022,6 @@ static void handleLocalBlocks() {
 //
 void
 insertWideReferences(void) {
-  if (fRuntime)
-    return;
-
   FnSymbol* heapAllocateGlobals = new FnSymbol("chpl__heapAllocateGlobals");
   heapAllocateGlobals->retType = dtVoid;
   theProgram->block->insertAtTail(new DefExpr(heapAllocateGlobals));

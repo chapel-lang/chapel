@@ -258,10 +258,8 @@ static void addModuleInits(BlockStmt* block, ModuleSymbol* mod) {
   if (ModuleSymbol* parent = mod->defPoint->getModule()) {
     addModuleInits(block, parent);
   }
-  if (!fRuntime || mod->modTag != MOD_INTERNAL) {
-    forv_Vec(ModuleSymbol*, usedmod, mod->modUseList) {
-      addModuleInits(block, usedmod);
-    }
+  forv_Vec(ModuleSymbol*, usedmod, mod->modUseList) {
+    addModuleInits(block, usedmod);
   }
   //  printf("---stop %s\n", mod->name);
 
@@ -287,7 +285,7 @@ static void build_chpl_entry_points(void) {
   //                                                                          
   FnSymbol* chpl_user_main = chpl_main_exists();                              
 
-  if (fRuntime || fLibraryCompile) {
+  if (fLibraryCompile) {
     if (chpl_user_main)                                                       
       INT_FATAL(chpl_user_main, "'main' found when compiling a library");
     if (mainModules.n != 1)
@@ -331,10 +329,8 @@ static void build_chpl_entry_points(void) {
     mainModule = chpl_user_main->getModule();
   }
 
-  if (!fRuntime) {
-    SET_LINENO(chpl_user_main);
-    chpl_user_main->cname = "chpl_user_main";
-  }
+  SET_LINENO(chpl_user_main);
+  chpl_user_main->cname = "chpl_user_main";
 
   //
   // chpl_main accounts for the initialization and memory tracking of
@@ -348,7 +344,7 @@ static void build_chpl_entry_points(void) {
   mainModule->block->insertAtTail(new DefExpr(chpl_main));
   normalize(chpl_main);
 
-  if (!(fRuntime || fLibraryCompile)) {
+  if (!fLibraryCompile) {
     SET_LINENO(chpl_main);
     chpl_main->insertAtHead(new CallExpr("main"));
   }
@@ -360,15 +356,13 @@ static void build_chpl_entry_points(void) {
   BlockStmt* usrInits = createModuleInitBlock(mainModule);
   chpl_main->insertAtHead(usrInits);
 
-  if (!fRuntime) {
-    VarSymbol* endCount = newTemp("_endCount");
-    chpl_main->insertAtHead(new CallExpr("chpl_startTrackingMemory"));
-    chpl_main->insertAtHead(new CallExpr(PRIM_SET_END_COUNT, endCount));
-    chpl_main->insertAtHead(new CallExpr(PRIM_MOVE, endCount, new CallExpr("_endCountAlloc")));
-    chpl_main->insertAtHead(new DefExpr(endCount));
-    chpl_main->insertBeforeReturn(new CallExpr("_waitEndCount"));
-    //chpl_main->insertBeforeReturn(new CallExpr("_endCountFree", endCount));
-  }
+  VarSymbol* endCount = newTemp("_endCount");
+  chpl_main->insertAtHead(new CallExpr("chpl_startTrackingMemory"));
+  chpl_main->insertAtHead(new CallExpr(PRIM_SET_END_COUNT, endCount));
+  chpl_main->insertAtHead(new CallExpr(PRIM_MOVE, endCount, new CallExpr("_endCountAlloc")));
+  chpl_main->insertAtHead(new DefExpr(endCount));
+  chpl_main->insertBeforeReturn(new CallExpr("_waitEndCount"));
+  //chpl_main->insertBeforeReturn(new CallExpr("_endCountFree", endCount));
 
   theProgram->initFn->insertBeforeReturn(stdInits);
   chpl_main->insertAtHead(new CallExpr(theProgram->initFn));

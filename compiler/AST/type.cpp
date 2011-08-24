@@ -701,15 +701,15 @@ void initPrimitiveTypes(void) {
 
 void initTheProgram(void) {
   createInitFn(theProgram);
-  if (!fRuntime) {
-    theProgram->initFn->insertAtTail(new CallExpr(PRIM_USE,
-                                       new UnresolvedSymExpr("ChapelBase")));
-    // it may be better to add the following use after parsing
-    // to simplify insertion of module guard sync var defs
-    theProgram->initFn->insertAtTail(new CallExpr(PRIM_USE,
-                                       new UnresolvedSymExpr("ChapelStandard")));
-  }
 
+  theProgram->initFn->insertAtTail(
+    new CallExpr(PRIM_USE, new UnresolvedSymExpr("ChapelBase")));
+
+  // it may be better to add the following use after parsing
+  // to simplify insertion of module guard sync var defs
+  theProgram->initFn->insertAtTail(
+    new CallExpr(PRIM_USE, new UnresolvedSymExpr("ChapelStandard")));
+  
   // The base object class looks like this:
   //
   //   class object {

@@ -72,7 +72,6 @@ extern bool fHeterogeneous;
 extern bool fieeefloat;
 
 extern int debugParserLevel;
-extern bool fRuntime;
 extern bool fLibraryCompile;
 extern bool fLibraryShared;     // Compile a shared library (DLL).
 extern bool no_codegen;

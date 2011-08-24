@@ -683,29 +683,27 @@ fix_def_expr(VarSymbol* var) {
   //
   if (var->hasFlag(FLAG_CONFIG)) {
     if (!var->hasFlag(FLAG_PARAM)) {
-      if (!fRuntime) {
-        Expr* noop = new CallExpr(PRIM_NOOP);
-        Symbol* module_name = (var->getModule()->modTag != MOD_INTERNAL ?
-                               new_StringSymbol(var->getModule()->name) :
-                               new_StringSymbol("Built-in"));
-        CallExpr* strToValExpr =
-          new CallExpr("_command_line_cast",
-                       new SymExpr(new_StringSymbol(var->name)),
-                       new CallExpr(PRIM_TYPEOF, constTemp),
-                       new CallExpr("chpl_config_get_value",
+      Expr* noop = new CallExpr(PRIM_NOOP);
+      Symbol* module_name = (var->getModule()->modTag != MOD_INTERNAL ?
+                             new_StringSymbol(var->getModule()->name) :
+                             new_StringSymbol("Built-in"));
+      CallExpr* strToValExpr =
+        new CallExpr("_command_line_cast",
+                     new SymExpr(new_StringSymbol(var->name)),
+                     new CallExpr(PRIM_TYPEOF, constTemp),
+                     new CallExpr("chpl_config_get_value",
+                                  new_StringSymbol(var->name),
+                                  module_name));
+      stmt->insertAfter(
+        new CondStmt(
+          new CallExpr("!",
+                       new CallExpr("chpl_config_has_value",
                                     new_StringSymbol(var->name),
-                                    module_name));
-        stmt->insertAfter(
-          new CondStmt(
-            new CallExpr("!",
-                         new CallExpr("chpl_config_has_value",
-                                      new_StringSymbol(var->name),
-                                      module_name)),
-            noop,
-            new CallExpr(PRIM_MOVE, constTemp, strToValExpr)));
+                                    module_name)),
+          noop,
+          new CallExpr(PRIM_MOVE, constTemp, strToValExpr)));
 
-        stmt = noop; // insert regular definition code in then block
-      }
+      stmt = noop; // insert regular definition code in then block
     }
   }
 

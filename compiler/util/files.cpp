@@ -178,27 +178,23 @@ void closefile(fileinfo* thefile) {
 }
 
 
-void openCFile(fileinfo* fi, const char* name, const char* ext, bool runtime) {
+void openCFile(fileinfo* fi, const char* name, const char* ext) {
   if (ext)
     fi->filename = astr(name, ".", ext);
   else
     fi->filename = astr(name);
-  if (runtime)
-    fi->pathname = fi->filename;
-  else
-    fi->pathname = genIntFilename(fi->filename);
+
+  fi->pathname = genIntFilename(fi->filename);
   fi->fptr = fopen(fi->pathname, "w");
 }
 
-void appendCFile(fileinfo* fi, const char* name, const char* ext, bool runtime) {
+void appendCFile(fileinfo* fi, const char* name, const char* ext) {
   if (ext)
     fi->filename = astr(name, ".", ext);
   else
     fi->filename = astr(name);
-  if (runtime)
-    fi->pathname = fi->filename;
-  else
-    fi->pathname = genIntFilename(fi->filename);
+  
+  fi->pathname = genIntFilename(fi->filename);
   fi->fptr = fopen(fi->pathname, "a+");
 }
 void closeCFile(fileinfo* fi, bool beautifyIt) {
@@ -342,8 +338,7 @@ const char* runUtilScript(const char* script) {
 
 
 void makeBinary(void) {
-  // If building the runtime sources, we stop after that step.
-  if (fRuntime || no_codegen)
+  if (no_codegen)
     return;
 
   if (chplmake[0] == '\0') {

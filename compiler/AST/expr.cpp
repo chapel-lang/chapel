@@ -1959,12 +1959,8 @@ void CallExpr::codegen(FILE* outfile) {
       if (is_struct) fprintf( outfile, "_");          // need struct of class
       typeInfo()->symbol->codegen( outfile);
       fprintf( outfile, "), ");
-      if (fRuntime) {
-        fprintf( outfile, "CHPL_RT_MD_CHAPEL_CODE");
-      } else {
-        get(2)->codegen( outfile);
-        fprintf( outfile, " + CHPL_RT_MD_NUM");
-      }
+      get(2)->codegen( outfile);
+      fprintf( outfile, " + CHPL_RT_MD_NUM");
       fprintf( outfile, ", ");
       get(3)->codegen( outfile);
       fprintf( outfile, ", ");
@@ -2215,10 +2211,7 @@ void CallExpr::codegen(FILE* outfile) {
           gen(outfile, "*");
       }
       gen(outfile, "))(*CHPL_VMT_CALL(");
-      if (fRuntime)
-        gen(outfile, "chpl_rt_vmtable, ");
-      else
-        gen(outfile, "chpl_vmtable, ");
+      gen(outfile, "chpl_vmtable, ");
       gen(outfile, "%A, ", get(2));
       fprintf(outfile, "%d)))(", virtualMethodMap.get(fn));
       int i = 3;

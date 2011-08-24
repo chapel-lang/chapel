@@ -344,10 +344,7 @@ static void insertGlobalAutoDestroyCalls() {
   FnSymbol* fn = new FnSymbol(name);
   fn->retType = dtVoid;
   chpl_main->defPoint->insertBefore(new DefExpr(fn));
-  if (!fRuntime)
-    chpl_main->insertBeforeReturnAfterLabel(new CallExpr(fn));
-  else
-    fn->addFlag(FLAG_EXPORT);
+  chpl_main->insertBeforeReturnAfterLabel(new CallExpr(fn));
   forv_Vec(DefExpr, def, gDefExprs) {
     if (isModuleSymbol(def->parentSymbol))
       if (def->parentSymbol != rootModule)

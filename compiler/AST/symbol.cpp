@@ -871,12 +871,6 @@ void ModuleSymbol::codegenDef(FILE* outfile) {
         // Ignore external and prototype functions.
         if (fn->hasFlag(FLAG_EXTERN) || fn->hasFlag(FLAG_FUNCTION_PROTOTYPE))
           continue;
-#if 0
-        // In the runtime, we pick up the definition for exported functions
-        // from the main routine.
-        if (fRuntime && fn->hasFlag(FLAG_EXPORT))
-          continue;
-#endif
         fns.add(fn);
       }
   }
