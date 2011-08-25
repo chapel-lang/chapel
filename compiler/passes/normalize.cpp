@@ -348,7 +348,7 @@ static void insertRetMove(FnSymbol* fn, VarSymbol* retval, CallExpr* ret) {
 static void normalize_returns(FnSymbol* fn) {
   SET_LINENO(fn);
 
-  CallExpr* theRet; // Contains the return if it is unique.
+  CallExpr* theRet = NULL; // Contains the return if it is unique.
   Vec<CallExpr*> rets;
   Vec<CallExpr*> calls;
   int numVoidReturns = 0;
