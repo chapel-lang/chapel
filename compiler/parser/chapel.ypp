@@ -166,7 +166,7 @@
 
 %type <pfnsymbol> fn_decl_stmt_inner formal_ls opt_formal_ls req_formal_ls
 %type <procIter> proc_or_iter_or_def
-%type <flag> fn_decl_flag
+%type <pfnsymbol> linkage_spec
 
 %% 
 
@@ -418,14 +418,17 @@ lambda_decl_expr:
     }
 ;
 
-fn_decl_flag:
-            { $$ = FLAG_UNKNOWN; }
-| TINLINE   { $$ = FLAG_INLINE; }
-| TEXPORT   { $$ = FLAG_EXPORT; }
-| TEXTERN   { $$ = FLAG_EXTERN; }
+// The FnSymbol is just used as a struct to carry the flag and
+// (for exports only) the cname of the function.
+linkage_spec:
+         	{ $$ = new FnSymbol(""); }
+| TINLINE	{ $$ = new FnSymbol(""); $$->addFlag(FLAG_INLINE); }
+| TEXPORT	{ $$ = new FnSymbol(""); $$->addFlag(FLAG_EXPORT); }
+| TEXPORT ident	{ $$ = new FnSymbol($2);   $$->addFlag(FLAG_EXPORT); }
+| TEXTERN	{ $$ = new FnSymbol(""); $$->addFlag(FLAG_EXTERN); }
 
 fn_decl_stmt:
-  fn_decl_flag proc_or_iter_or_def
+  linkage_spec proc_or_iter_or_def
     {
       // Sets up to capture tokens while parsing the next grammar nonterminal.
       captureTokens = 1;
@@ -441,13 +444,13 @@ fn_decl_stmt:
     {
       FnSymbol* fn = $4;
 
-      if ($1 != FLAG_UNKNOWN) {
-        fn->addFlag($1);
-        // The user explicitly named this function (controls mangling).
-        if ($1 == FLAG_EXPORT || $1 == FLAG_EXTERN)
-          fn->addFlag(FLAG_USER_NAMED);
-      }
-        
+      fn->copyFlags($1);
+      // The user explicitly named this function (controls mangling).
+      if ($1->hasFlag(FLAG_EXPORT) || $1->hasFlag(FLAG_EXTERN))
+        fn->addFlag(FLAG_USER_NAMED);
+      if (*$1->name)
+        fn->cname = $1->name;
+
       if ($2 == ProcIter_ITER)
       {
         if (fn->hasFlag(FLAG_EXTERN))

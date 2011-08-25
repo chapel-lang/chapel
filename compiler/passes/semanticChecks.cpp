@@ -102,6 +102,24 @@ check_named_arguments(CallExpr* call) {
 }
 
 
+static void
+check_exported_names()
+{
+  // The right side of the map is a dummy Boolean.
+  // We are just using the map to implement a set.
+  HashMap<const char*, StringHashFns, bool> names;
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    if (!fn->hasFlag(FLAG_EXPORT))
+      continue;
+
+    const char* name = fn->cname;
+    if (names.get(name))
+      USR_FATAL_CONT(fn, "The name %s cannot be exported twice from the same module.", name);
+    names.put(name, true);
+  }
+}
+
+
 void
 checkParsed(void) {
   forv_Vec(CallExpr, call, gCallExprs) {
@@ -126,6 +144,9 @@ checkParsed(void) {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     check_functions(fn);
   }
+
+  check_exported_names();
+
   markNewFnSymbolsWithProcIter = true; // ProcIter: remove
 }
 
