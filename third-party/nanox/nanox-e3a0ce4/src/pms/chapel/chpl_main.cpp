@@ -91,7 +91,7 @@ void nanos_chpl_task_init(int32_t numThreadsPerLocale,
    fatal_cond0(!chapel_hooked, "Chapel layer has not been correctly initialized");
 
    if (numThreadsPerLocale == 0) {
-     numThreadsPerLocale = chpl_numCoresOnThisLocale();
+     numThreadsPerLocale = chpl_numCoresOnThisLocale() + numCommTasks;
    }
 
    sys.setInitialMode( System::POOL );
