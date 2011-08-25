@@ -59,6 +59,7 @@ $summary_len = 2;
 $sleep_time = 1;                       # polling time (sec) to distribute work
 $incl_futures = 0;
 $filedist = 0;
+$duplex = 0;				# run two tasks on each node.
 $valgrind = 0;
 $memleaks = "/dev/null";
 $memleaksflag = 0;
@@ -182,6 +183,9 @@ sub free_workers {
 # manually.
 sub feed_nodes {
     local (@readyidv, $logfile, @logs, $testdir, $node, $rem_cmd);
+    my $taskCount = $#node_list + 1;
+    $taskCount = $taskCount * 2 if $duplex;
+
     $| = 1;    # autoflush stdout
 
     print "about to start distributing work\n" if $debug;
@@ -258,7 +262,7 @@ sub feed_nodes {
 
     # wait for everyone to finish;
     @readyidv = free_workers ();
-    while (($#readyidv < 2 * $#node_list + 1) &&
+    while (($#readyidv < $taskCount) &&
            !(-e "PARAHALT")) {
         sleep $sleep_time;
         @readyidv = free_workers ();
@@ -298,7 +302,7 @@ sub nodes_free {
     for ($id=0; $id<$nodeCount; $id++) {
         $fname = "$node_list[$id].$id";
         systemd ("echo feed me > $synchdir/$fname");
-        systemd ("echo feed me > $synchdir/$fname.2");
+        systemd ("echo feed me > $synchdir/$fname.2") if $duplex;
     }
 }
 
@@ -378,7 +382,7 @@ sub find_files {
 
 
 sub print_help {
-    print "Usage: paratest.server [-comm] [-compopts] [-execopts] [-dirfile d] [-filedist] [-futures] [-logfile l] [-nodefile n] [-valgrind] [-help|-h]\n";
+    print "Usage: paratest.server [-comm] [-compopts] [-execopts] [-dirfile d] [-filedist] [-futures] [-logfile l] [-nodefile n] [-duplex] [-valgrind] [-help|-h]\n";
     print "    -compopts s: s is a string that is passed with -compopts to start_test.\n";
     print "    -execopts s: s is a string that is passed with -execopts to start_test.\n";
     print "    -comm s    : s is a setting for CHPL_COMM, e.g., none or gasnet.\n";
@@ -387,6 +391,7 @@ sub print_help {
     print "    -futures   : include .future tests (default is none).\n";
     print "    -logfile  l: l is the output log file. Default is \"user\".\"platform\".log. in the Logs subdirectory.\n";
     print "    -nodefile n: n is a file listing nodes to run on. Default is current node.\n";
+    print "    -duplex    : Run two paratest.client tasks on each node.\n";
     print "    -memleaks f: pass -memleaks to start_test; aggregate all output.\n";
     print "    -valgrind  : pass -valgrind to start_test.\n";
 }
@@ -465,6 +470,8 @@ sub main {
                 print "missing -nodefile arg\n";
                 exit (8);
             }
+        } elsif (/^-duplex/) {
+            $duplex = 1;
         } elsif (/^-memleaks/) {
             shift @ARGV;
             if ($#ARGV >= 0) {
