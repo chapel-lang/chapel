@@ -6,12 +6,12 @@ distAdaptativeWS.chpl). In addition, there are other two versions for the
 adaptative work-stealing iterator (distAdaptativeWSv1.chpl and
 distAdaptativeWSv2.chpl). 
 
-Each file contains one iterator and four workloads to test the correctness and
-performance of each iterator: fine (n=1e6 it., delay=1 microsec.); coarse
-(n=100 it., delay=10000 microsec.); tri (triangular loop with n=1000,
-delay=(n-i)*100 microsec.); and ran (random workload per iteration with n=1000
-and delay=100000*rand() microsec.). For the performance results presented in
-the mentioned paper, the array references that appear on each workload are
+Each file contains four workloads to test the correctness and performance of
+each iterator: fine (n=1e6 it., delay=1 microsec.); coarse (n=100 it.,
+delay=10000 microsec.); tri (triangular loop with n=1000, delay=(n-i)*100
+microsec.); and ran (random workload per iteration with n=1000 and
+delay=100000*rand() microsec.). For the performance results presented in the
+mentioned paper, the array references that appear on each workload are
 commented, but here we leave them to perform the correctness check. These
 workloads are executed under the performance run (see .perfexecopts files and
 the corresponding config variables).
@@ -30,13 +30,9 @@ the corresponding config variables).
  (tasks). Then it performs adaptative splitting locally on each thread. When a
  Threads exhausts its local range, it steals and splits from another thread
  (victim). It keeps stealing from the victim until it exhausts the victim's
- range. The Splitting method on the local range and on the stolen range can
- be Binary/Guided (two config var allows to select the splitting
- strategy). The Binary  strategy computes the size of each chunk as the number
- of unassigned iterations  divided by 2. The Guided strategy is the same as in
- OpenMP guided case. The four  combinations of splitting are checked on each
- workload by default.
-
+ range. The Splitting method on the local range and on the stolen range 
+ is Binary. The Binary  strategy computes the size of each chunk as the number
+ of unassigned iterations  divided by 2. 
 
 - distAdaptativeWSv1 represents other version of adaptative work-stealing
  leader iterator: it works similarly to distAdaptativeWS, but now the

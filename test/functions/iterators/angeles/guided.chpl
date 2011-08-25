@@ -5,125 +5,11 @@
 // divided by the number of threads. These sizes decrease approximately exponentially to 1
 
 // Contributed by Angeles Navarro 
-
+use AdvancedIters;
 _extern proc usleep(val:uint);
-config const MaxThreadsPerLocale:int=4; //here.numCores;
-writeln("Working with ", MaxThreadsPerLocale, " Threads");
+config const nTasks:int=4; //here.numCores;
+writeln("Working with ", nTasks, " Threads");
 
-
-config const verbose:bool=false;
-
-
-
-//Serial iterator 
-iter guided(c:range) {
-  var remain=c;
-  var current: range;
-
-  const splitFactor=MaxThreadsPerLocale;
-  var undone=true;
-  // While there are remaining iterations do spliting 
-  while undone do {
-      current=splitRange(remain, splitFactor, undone); 	
-      if verbose then {
-	writeRange(current);
-      }
-      for i in current do yield i;    
-    }    	      
-}
-
-
-
-if verbose then {
-  // Printing ranges for Serial Spliting
-  writeln("Working with serial guided scheduling ");
-  // The initial range
-  config const lo:int=0;
-  config const hi:int=63;
-  config const chunksize=4;
-  var r=lo..hi;
-  writeln("Initial range ", r," and chunksize ", chunksize);
-
-  for c in guided(r) do{
-    //do work
-  }
- }
-
-
-// Parallel iterator
-
-// Leader iterator
-iter guided(param tag:iterator, c:range)
-where tag == iterator.leader
-{   
-
-  var remain=c;
-  
-
-  // While there are remaining iterations do spliting 
-  var splitFactor=MaxThreadsPerLocale;
-  var undone=true;
-  // synnc variables to control the splitting action
-  var split_lock$:sync bool=true; 
-
-  coforall tid in 0..#MaxThreadsPerLocale do { 
-    var current: range;
-    while undone do {
-	// There is local work in remain(tid)
-	split_lock$; // Perform the splitting in a critical section
-	current=splitRange(remain, splitFactor, undone); 
-	split_lock$=true;
-	yield current;
-	if verbose then {
-	  writeln("Working at tid ", tid);
-	  writeRange(current);
-	}
-
-      }    	      
-  }
-
-
-}
-
-// Follower
-iter guided(param tag:iterator, c:range, follower)
-where tag == iterator.follower
-{
-  var current=follower;
-  for i in current do {
-    yield i;
-  }
-}
-
-
-proc splitRange(inout rangeToSplit:range, splitFactor:int, inout itleft:bool):range
-{
-  var totlen: int;   
-  var sizechunk: int;
-  var firstRange:range;
-  const profThreshold=1; 
-
-  totlen=rangeToSplit.length;
-  if totlen > profThreshold then 
-    sizechunk=max(totlen/splitFactor, profThreshold);
-  else {
-    sizechunk=totlen;
-    itleft=false;}
-  firstRange=rangeToSplit#sizechunk;
-  rangeToSplit=rangeToSplit#(sizechunk-totlen);	  
-  return firstRange;
-}
-
-
-
-
-proc writeRange(r: range) 
-{
-  writeln("Range ", r);
-}
-
-
-//// Perform a correctness check for  this splitting method
 // Adding timing
 use Time;
 config const quiet: bool = true;
@@ -135,7 +21,7 @@ var grainsize:string; // "fine", "coarse", "tri", "rand"
 use Random; 
 
 t.start();
-forall i in 0..#MaxThreadsPerLocale do {
+forall i in 0..#nTasks do {
   //initialize pool of threads
  }
 t.stop();
@@ -180,7 +66,7 @@ proc CheckCorrectness(grainsize:string)
 	writeln("Grain size: ", grainsize,". Working with guided scheduling");
 	writeln();
 	t.start();
-	forall c in guided(r) do {
+	forall c in guided(r,nTasks) do {
 	  usleep(delay);
 	  A[c]=A[c]+1;
 	}
@@ -215,7 +101,7 @@ proc CheckCorrectness(grainsize:string)
 	writeln("Grain size: ", grainsize,". Working with guided scheduling");
 	writeln();
 	t.start();
-	forall c in guided(r) do {
+	forall c in guided(r,nTasks) do {
 	  usleep(delay);
 	  B[c]=B[c]+1;
 	}
@@ -253,7 +139,7 @@ proc CheckCorrectness(grainsize:string)
       writeln();
   
       t.start();
-      forall c in guided(r) do {
+      forall c in guided(r,nTasks) do {
 	for j in c..n do{
 	  usleep(delay);
 	  C[c,j]=C[c,j]+1;
@@ -306,7 +192,7 @@ proc CheckCorrectness(grainsize:string)
       writeln();
   
       t.start();
-      forall c in guided(r) do {
+      forall c in guided(r,nTasks) do {
 	usleep(delayran(c));
 	D[c]=D[c]+1;
       }
