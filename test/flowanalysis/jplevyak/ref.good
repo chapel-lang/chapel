@@ -1,4 +1,0 @@
-function __init ref.v:2
-globals
-user::a(ref.v:2) ( int32 )
-user::b(ref.v:4) ( ref )

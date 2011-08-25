@@ -1,7 +1,0 @@
- called from 2 in __init at cs2.v:1
-aa::a(cs2.v:1) ( int32 )
-aa::x(cs2.v:1) ( int32 )
-function __init cs2.v:1
-function aa cs2.v:1
-globals
-user::a1(cs2.v:2) ( tuple )

@@ -1,5 +1,0 @@
- called from 4 in __init at dispatch1.v:1
-f::x(dispatch1.v:3) ( int32 )
-function __init dispatch1.v:1
-function f dispatch1.v:3
-globals

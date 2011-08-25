@@ -1,7 +1,0 @@
-::__init_pareninit ( __init_pareninit (<internal>:-1) )
-::_defTmp(pareninit.chpl:2) ( int64 )
-::_tmp(pareninit.chpl:2) ( int64 )
-::main ( main (<internal>:-1) )
-::x(pareninit.chpl:1) ( int64 )
-::y(pareninit.chpl:2) ( int64 )
-globals
