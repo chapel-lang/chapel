@@ -13,7 +13,7 @@ the specification will be expanded regarding parallel iterators soon.
 \section{Iterator Definitions}
 \label{Iterator_Function_Definitions}
 \index{iterator definitions}
-\index{iterator!definition}
+\index{iterators!definition}
 
 The syntax to declare an iterator is given
 by:
@@ -67,10 +67,12 @@ An iterator need not contain any yield statements.
 
 \section{Iterator Calls}
 \label{Iterator_Calls}
+\index{iterator calls}
+\index{iterators!calls}
 
 Iterators are invoked using regular call expressions:
 \begin{syntax}
-iterator-call-expression:
+iteratable-call-expression:
   call-expression
 \end{syntax}
 
@@ -180,6 +182,8 @@ b d e c a
 
 \section{Parallel Iterators}
 \label{Parallel_Iterators}
+\index{parallel iterators}
+\index{iterators!parallel}
 
 Iterators used in explicit forall-statements or -expressions must be
 parallel iterators.  Reductions, scans and promotion over serial

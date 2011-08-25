@@ -9,6 +9,7 @@ expression:
   variable-expression
   enum-constant-expression
   call-expression
+  iteratable-call-expression
   member-access-expression
   constructor-call-expression
   query-expression
@@ -1294,14 +1295,14 @@ Half of 1000 is 500
 A for expression is given by the following syntax:
 \begin{syntax}
 for-expression:
-  `for' index-var-declaration `in' iterator-expression `do' expression
-  `for' iterator-expression `do' expression
+  `for' index-var-declaration `in' iteratable-expression `do' expression
+  `for' iteratable-expression `do' expression
 \end{syntax}
 The for expression executes a for loop (\rsec{The_For_Loop}),
 evaluates the body expression on each iteration of the loop,
 and returns the resulting values as a collection.
 The size and shape of that collection
-are determined by the iterator-expression.
+are determined by the iteratable-expression.
 
 \subsection{Filtering Predicates in For Expressions}
 \label{Filtering_Predicates_For}

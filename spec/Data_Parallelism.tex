@@ -2,6 +2,8 @@
 \label{Data_Parallelism}
 \index{data parallelism}
 
+Chapel's data parallel contructs XXXX.
+
 Chapel provides two explicit data-parallel constructs (the
 forall-statement and the forall-expression) and several idioms that
 support data parallelism implicitly (whole-array assignment, function
@@ -11,6 +13,7 @@ and operator promotion, reductions, and scans).
 \label{Forall}
 \index{forall@\chpl{forall}}
 \index{forall loops}
+\index{data parallelism!forall}
 
 The forall statement is a concurrent variant of the for statement
 described in~\rsec{The_For_Loop}.
@@ -21,26 +24,26 @@ described in~\rsec{The_For_Loop}.
 The syntax of the forall statement is given by
 \begin{syntax}
 forall-statement:
-  `forall' index-var-declaration `in' iterator-expression `do' statement
-  `forall' index-var-declaration `in' iterator-expression block-statement
-  `forall' iterator-expression `do' statement
-  `forall' iterator-expression block-statement
-  [ index-var-declaration `in' iterator-expression ] statement
-  [ iterator-expression ] statement
+  `forall' index-var-declaration `in' iteratable-expression `do' statement
+  `forall' index-var-declaration `in' iteratable-expression block-statement
+  `forall' iteratable-expression `do' statement
+  `forall' iteratable-expression block-statement
+  [ index-var-declaration `in' iteratable-expression ] statement
+  [ iteratable-expression ] statement
 \end{syntax}
 As with the for statement, the indices may be omitted if they are
 unnecessary and the \chpl{do} keyword may be omitted before a block
-statement.  The bracketed form is a syntactic convenience.
+statement.  The square bracketed form is a syntactic convenience.
 
 \subsection{Execution and Serializability}
 \label{forall_semantics}
 
-The forall statement evaluates the loop body once for each element in
-the \sntx{iterator-expression}.  Each instance of the forall loop's
-statement may be executed concurrently with each other, but this is
-not guaranteed.  The loop must be serializable.  The definition of the
-iterator determines the actual concurrency based on the specification
-of the iterator of the loop.
+The forall statement evaluates the loop body once for each element
+yielded by the \sntx{iteratable-expression}.  Each instance of the
+forall loop's body may be executed concurrently with the others, but
+this is not guaranteed.  In particular, te loop must be serializable.
+Details regarding concurrency and iterator implementation are
+described in~\ref{Parallel_Iterators}.
 
 This differs from the semantics of the \chpl{coforall} loop, discussed
 in~\rsec{Coforall}, where each iteration is guaranteed to run using
@@ -49,7 +52,9 @@ overhead than a forall loop, but in cases where concurrency is
 required for correctness, it is essential.
 
 Control continues with the statement following the forall loop only
-after every iteration has been completely evaluated.
+after every iteration has been completely evaluated.  At this point,
+all data accesses within the body of the forall loop will be
+guaranteed to be completed.
 
 The following statements may not be lexically enclosed in forall
 statements: break statements, continue statements, and return
@@ -121,6 +126,7 @@ constant \chpl{dataParIgnoreRunningTasks}~(\rsec{data_parallel_knobs}).
 
 \section{The Forall Expression}
 \label{Forall_Expressions}
+\index{data parallelism!forall expressions}
 \index{forall expressions}
 
 The forall expression is a concurrent variant of the for expression
@@ -132,10 +138,10 @@ described in~\rsec{For_Expressions}.
 The syntax of a forall expression is given by
 \begin{syntax}
 forall-expression:
-  `forall' index-var-declaration `in' iterator-expression `do' expression
-  `forall' iterator-expression `do' expression
-  [ index-var-declaration `in' iterator-expression ] expression
-  [ iterator-expression ] expression
+  `forall' index-var-declaration `in' iteratable-expression `do' expression
+  `forall' iteratable-expression `do' expression
+  [ index-var-declaration `in' iteratable-expression ] expression
+  [ iteratable-expression ] expression
 \end{syntax}
 As with the for expression, the indices may be omitted if they are
 unnecessary.  The \chpl{do} keyword is always required.  The bracketed
@@ -147,7 +153,7 @@ The forall expression executes a forall loop (\rsec{Forall}),
 evaluates the body expression on each iteration of the loop,
 and returns the resulting values as a collection.
 The size and shape of that collection
-are determined by the iterator-expression.
+are determined by the iteratable-expression.
 
 As with the forall statement, the forall expression must be
 serializable.  In addition, the iterator expression determines the
@@ -325,6 +331,8 @@ then the output is
 \label{Reductions_and_Scans}
 \index{reductions}
 \index{scans}
+\index{data parallelism!reductions}
+\index{data parallelism!scans}
 
 Chapel provides reduction and scan expressions that apply operators to
 aggregate expressions in stylized ways.  Reduction expressions

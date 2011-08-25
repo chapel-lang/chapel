@@ -364,17 +364,16 @@ class that implements an iterator named \chpl{these}.  The syntax of
 the for loop is given by:
 \begin{syntax}
 for-statement:
-  `for' index-var-declaration `in' iterator-expression `do' statement
-  `for' index-var-declaration `in' iterator-expression block-statement
-  `for' iterator-expression `do' statement
-  `for' iterator-expression block-statement
+  `for' index-var-declaration `in' iteratable-expression `do' statement
+  `for' index-var-declaration `in' iteratable-expression block-statement
+  `for' iteratable-expression `do' statement
+  `for' iteratable-expression block-statement
 
 index-var-declaration:
   identifier
   tuple-grouped-identifier-list
 
-iterator-expression:
-  iterator-call-expression
+iteratable-expression:
   expression
 \end{syntax}
 
@@ -387,11 +386,11 @@ in~\rsec{Indices_in_a_Tuple}.
 The \sntx{index-var-declaration} is optional and may be omitted if the
 indices do not need to be referenced in the loop.
 
-If the iterator-expression is a tuple delimited by parentheses, the
+If the iteratable-expression is a tuple delimited by parentheses, the
 components of the tuple must support iteration, e.g., a tuple of
 arrays, and those components are iterated over using a zipper
 iteration defined in~\rsec{Zipper_Iteration}.  If the
-iterator-expression is a tuple delimited by brackets, the components
+iteratable-expression is a tuple delimited by brackets, the components
 of the tuple must support iteration and these components are iterated
 over using a tensor product iteration defined
 in~\rsec{Tensor_Product_Iteration}.
@@ -466,13 +465,13 @@ Parameter for loops are unrolled by the compiler so that the index
 variable is a parameter rather than a variable.  The syntax for a
 parameter for loop statement is given by:
 \begin{syntax}
-param-iterator-expression:
+param-iteratable-expression:
   range-literal
   range-literal `by' integer-literal
 
 param-for-statement:
-  `for' `param' identifier `in' param-iterator-expression `do' statement
-  `for' `param' identifier `in' param-iterator-expression block-statement
+  `for' `param' identifier `in' param-iteratable-expression `do' statement
+  `for' `param' identifier `in' param-iteratable-expression block-statement
 \end{syntax}
 Parameter for loops are restricted to iteration over range literals
 with an optional by expression where the bounds and stride must be
