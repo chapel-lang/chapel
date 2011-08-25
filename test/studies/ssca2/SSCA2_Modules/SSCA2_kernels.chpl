@@ -211,7 +211,16 @@ module SSCA2_kernels
     var Members  : Sparse_Vertex_List;
     var previous : Level_Set (Sparse_Vertex_List);
   }
-  
+
+  // sungeun: 8/2011
+  // Added replicated level sets
+  //
+  // Each locale will have its own level sets.  A locale's level set
+  // will only contain nodes that are physically allocated on that
+  // particular locale.  We implement this using the replicated
+  // distribution.
+  //
+  use ReplicatedDist;
 
   // ==================================================================
   //                              KERNEL 4
@@ -243,7 +252,9 @@ module SSCA2_kernels
     {       
       const vertex_domain = G.vertices;
 
-      // Use an associative domain to represent the sparse vertex list
+      // Had to change declaration below
+      //    type Sparse_Vertex_List = sparse subdomain ( G.vertices );
+      // to accommodate block distribution of G.vertices
 
       type Sparse_Vertex_List = domain(index(vertex_domain));
 
@@ -262,6 +273,10 @@ module SSCA2_kernels
 
 	if DEBUG_KERNEL4 then writeln ( "expanding from starting node ", s );
 
+        // sungeun: 8/2011
+        // Privatization of the following distributed arrays may
+        // be of concern.
+
 	// --------------------------------------------------
 	// all locally declared variables become private data 
 	// for each instance of the parallel for loop
@@ -279,24 +294,38 @@ module SSCA2_kernels
 	// paths from s to this node.  The number of paths in moderate
 	// sized tori exceeds 2**64.
   
-	var Active_Level = new Level_Set (Sparse_Vertex_List);
-	var Next_Level   = new Level_Set (Sparse_Vertex_List);
-  
+        // Used to check termination of the forward pass
+        //
+        // sungeun: 8/2011
+        // Can possibly use a replicated bool with rcCollect(), but
+        // not sure of the performance implications for large numbers
+        // of locales.
+        var Active_Remaining: [LocaleSpace] bool = true;
+        var remaining = true;
+
+        // Replicated level sets
+	var Active_Level    : [rcDomain] Level_Set (Sparse_Vertex_List);
+        var Next_Level      : [rcDomain] Level_Set (Sparse_Vertex_List);
+        coforall loc in Locales do on loc {
+          rcLocal(Active_Level) = new Level_Set (Sparse_Vertex_List);
+          rcLocal(Active_Level).previous = nil;
+          rcLocal(Next_Level) = new Level_Set (Sparse_Vertex_List);
+          rcLocal(Next_Level).previous = rcLocal(Active_Level);
+        }
+
 	var current_distance : int = 0;
   
 	// establish the initial level sets for the
 	// breadth-first traversal from s
 
-	Active_Level.Members.add ( s );
-	Next_Level.Members.clear ();
+        on s {
+          rcLocal(Active_Level).Members.add ( s );
+          rcLocal(Next_Level).Members.clear ();
+          min_distance$ (s) . writeFF (0);
+          path_count$ (s) . writeFF (1);
+        }
 
-	min_distance$ (s) . writeFF (0);
-	Active_Level.previous = nil;
-	Next_Level.previous   = Active_Level;
-  
-	path_count$ (s) . writeFF (1);
-  
-	while Active_Level.Members.numIndices > 0 do { 
+	while remaining do { 
   
 	    // ------------------------------------------------
 	    // expand the neighbor sets for all vertices at the
@@ -305,9 +334,19 @@ module SSCA2_kernels
       
 	    current_distance += 1;
 
-	    forall u in Active_Level.Members do { // sparse
+            // sungeun: 8/2011
+            // basic single use barrier
+            var count: sync int = numLocales;
+            var barrier: single bool;
 
-              forall (v, w) in ( G.Neighbors (u), G.edge_weight (u) ) do {
+            // sungeun: 8/2011
+            // Copy this value to a constant to enable remote value
+            // forwarding optimization.
+            const current_distance_c = current_distance;
+            coforall loc in Locales do on loc {
+             forall u in rcLocal(Active_Level).Members do { // sparse
+
+              forall (v, w) in ( G.Neighbors (u), G.edge_weight (u) ) do on v {
 
 		// should be forall, requires a custom parallel iterator in the
 		// random graph case and zippering for associative domains
@@ -321,14 +360,14 @@ module SSCA2_kernels
 		    { 
 		      if  min_distance$ (v) . readFE () < 0  then
 			{ 
-			  min_distance$ (v).writeEF (current_distance);
-			  Next_Level.Members.add (v);
+			  min_distance$ (v).writeEF (current_distance_c);
+			  rcLocal(Next_Level).Members.add (v);
 			  if VALIDATE_BC then
-			    Lcl_Sum_Min_Dist += current_distance;
+			    Lcl_Sum_Min_Dist += current_distance_c;
 			}
 		      else
                         // could min_distance$(v) be < current_distance?
-			min_distance$ (v) . writeEF (current_distance);
+			min_distance$ (v) . writeEF (current_distance_c);
 		    }
 
 		// ------------------------------------------------
@@ -339,19 +378,38 @@ module SSCA2_kernels
 		// the previous, the current or the next level.
 		// ------------------------------------------------
   
-		if  min_distance$ (v).readFF () == current_distance  
+		if  min_distance$ (v).readFF () == current_distance_c  
 		  then
 		    path_count$ (v) += path_count$ (u).readFF ();
 	      }
 	    };
   
-	    Active_Level = Next_Level;
-	    Next_Level   = new Level_Set (Sparse_Vertex_List);
-        
-	    Next_Level.Members.clear ();
-	    Next_Level.previous = Active_Level;
+            // sungeun: 8/2011
+            // This (split-phase) barrier is needed to insure all updates
+            // to Next_Level are completed before creating the next
+            // Next_Level.
+            var myc = count;
+            if myc!=1 {
+              count = myc-1; // release the lock
+              // do some work while we wait
+              rcLocal(Active_Level) = rcLocal(Next_Level);
 
-	  };  // end forward pass
+              barrier;       // wait for everyone
+            } else {         // last one here
+              barrier=true;  // release everyone first
+              rcLocal(Active_Level) = rcLocal(Next_Level);
+            }
+
+            rcLocal(Next_Level)   = new Level_Set (Sparse_Vertex_List);
+	    rcLocal(Next_Level).previous = rcLocal(Active_Level);
+            Active_Remaining[here.id] =
+              rcLocal(Active_Level).Members.numIndices:bool;
+
+          }
+
+          remaining = || reduce Active_Remaining;
+
+	};  // end forward pass
 
 	if VALIDATE_BC then
 	  Sum_Min_Dist$ += Lcl_Sum_Min_Dist;
@@ -368,41 +426,60 @@ module SSCA2_kernels
 	  writeln ( " graph diameter from starting node ", s, 
 		    "  is ", graph_diameter );
 
-	delete Next_Level;	               // it's empty
-	Next_Level   = Active_Level.previous;  // back up to last level
-	delete Active_Level;
-	Active_Level = Next_Level;
+        // sungeun: 8/2011
+        // basic single use barrier
+        var count: sync int = numLocales;
+        // to simplify synchronization between multiple barriers
+        var barrier: [2..graph_diameter] single bool;
+
+        coforall loc in Locales do on loc {
+          delete rcLocal(Next_Level);	               // it's empty
+          rcLocal(Next_Level)   = rcLocal(Active_Level).previous;  // back up to last level
+          delete rcLocal(Active_Level);
+          rcLocal(Active_Level) = rcLocal(Next_Level);
   
-	for current_distance in 2 .. graph_diameter by -1 do {
+          for current_distance in 2 .. graph_diameter by -1 do {
 
-	  Next_Level   = Active_Level.previous;
-	  delete Active_Level;
-	  Active_Level = Next_Level;
+            rcLocal(Next_Level)   = rcLocal(Active_Level).previous;
+            delete rcLocal(Active_Level);
+            rcLocal(Active_Level) = rcLocal(Next_Level);
 
-	  // inner reduction should parallelize eventually; compiler
-	  // serializes it today (and warns us that it did)
+            // inner reduction should parallelize eventually; compiler
+            // serializes it today (and warns us that it did)
 
-	  forall u in Active_Level.Members do
-	    {
-	      depend (u) = + reduce 
-		[ (v, w)  in ( G.Neighbors (u), G.edge_weight (u) ) ]
-		if ( min_distance$ (v).readFF () == current_distance ) && 
-		( ( FILTERING && w % 8 != 0 || !FILTERING ) )
-		then
-		  ( path_count$ (u) . readFF () / 
-		    path_count$ (v) . readFF () )      *
-		    ( 1.0 + depend (v) );
+            forall u in rcLocal(Active_Level).Members do
+              {
+                depend (u) = + reduce 
+                  [ (v, w)  in ( G.Neighbors (u), G.edge_weight (u) ) ]
+                  if ( min_distance$ (v).readFF () == current_distance ) && 
+                  ( ( FILTERING && w % 8 != 0 || !FILTERING ) )
+                  then
+                    ( path_count$ (u) . readFF () / 
+                      path_count$ (v) . readFF () )      *
+                      ( 1.0 + depend (v) );
 
-	      // do not need conditional u != s
+                // do not need conditional u != s
 
-	      Between_Cent$ (u) += depend (u);
-	    }
-	};
-	delete Active_Level;
+                Between_Cent$ (u) += depend (u);
+              }
+            // sungeun: 8/2011
+            // This barrier is needed to insure all updates to depend are
+            // complete before the next pass.
+            var myc = count;
+            if myc==1 {
+              count = numLocales;
+              barrier[current_distance] = true;
+            } else {
+              count = myc-1;
+              barrier[current_distance];
+            }
+          };
+          delete rcLocal(Active_Level);
+        }
 
       }; // closure of outer embarassingly parallel forall
-  
 
+  
       if PRINT_TIMING_STATISTICS then {
 	stopwatch.stop ();
 	var K4_time = stopwatch.elapsed ();
