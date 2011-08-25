@@ -6,8 +6,8 @@ config param verbose:bool=false;
 
 iter dynamic(c:range(?), chunkSize:int, numTasks:int) {
 
-  compilerWarning("Working with serial dynamic Iterator");	
   if verbose then 
+    compilerWarning("Working with serial dynamic Iterator");	
     writeln("Serial dynamic Iterator. Working with range ", c);
   
   for i in c do yield i;    
@@ -74,8 +74,8 @@ where tag == iterator.follower
 //Serial iterator 
 iter guided(c:range(?), numTasks:int) {
 
-  compilerWarning("Working with serial guided Iterator");
   if verbose then 
+    compilerWarning("Working with serial guided Iterator");
     writeln("Serial guided Iterator. Working with range ", c);
   
   for i in c do yield i;        	      
@@ -91,7 +91,7 @@ where tag == iterator.leader
   type rType=c.type;
   // Check the size and do it serial if not enough work
   if c.length == 0 then halt("The range is empty");
-  if c.length/numTasks < numTasks then {
+  if c.length < numTasks then {
     writeln("Guided Iterator: serial execution because there is not enoguh work");
     const totalRange:rType= densify(c,c);
     yield tuple(totalRange); 
@@ -138,8 +138,8 @@ where tag == iterator.follower
 //Serial iterator 
 iter adaptive(c:range(?), numTasks:int) {  
 
-  compilerWarning("Working with serial adaptive Iterator"); 
   if verbose then 
+    compilerWarning("Working with serial adaptive Iterator"); 
     writeln("Serial adaptive work-stealing Iterator. Working with range ", c);
   
   for i in c do yield i;
@@ -166,7 +166,6 @@ where tag == iterator.leader
   if c.length < numTasks then {
     writeln("Adaptive work-stealing Iterator: serial execution because there is not enough work");
     const totalRange:rType = densify(c,c);
-    //    compilerWarning("First yield type:", typeToString(totalRange.type));
     yield tuple(totalRange);
     
   }
