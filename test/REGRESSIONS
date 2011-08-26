@@ -157,7 +157,7 @@ nondet. execution timeout
 [Error: Timed out executing program studies/sudoku/dinan/sudoku] (06/19/11)
 [Error: Timed out executing program studies/hpcc/HPL/bradc/hpl-blc-noreindex] (04/11/11, 04/15/11, 04/22/11, 04/29/11, 05/03/11, 05/08/11)
 [Error: Timed out executing program studies/madness/aniruddha/madchap/test_likepy] (04/22/11, 05/06/11, 05/19/11)
-[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct] (05/23/11, 05/25/11, 06/06/11, 06/08/11)
+[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct] (05/23/11, 05/25/11, 06/06/11, 06/08/11, 08/24/11)
 [Error: Timed out executing program studies/madness/aniruddha/madchap/test_gaxpy] (06/02/11)
 
 too many warnings/different warning format?
@@ -201,6 +201,43 @@ block distribution regressions
 ===============================
 cyclic distribution regressions
 ===============================
+
+nondet. timeouts (since moving to chap07)
+-----------------------------------------
+[Error: Timed out executing program distributions/robust/arithmetic/basics/test_array_swap] (08/26/11)
+[Error: Timed out executing program distributions/robust/arithmetic/basics/test_distributed_array_of_array2] (08/26/11)
+[Error: Timed out executing program distributions/robust/arithmetic/basics/test_reduce1] (08/26/11)
+[Error: Timed out executing program distributions/robust/arithmetic/composite/test_composite2] (08/26/11)
+[Error: Timed out executing program distributions/robust/arithmetic/basics/test_domain_iteration1] (08/24/11)
+[Error: Timed out executing program distributions/robust/arithmetic/basics/test_infer_array_type] (08/24/11, 08/26/11)
+[Error: Timed out executing program distributions/robust/arithmetic/reindexing/test_reindexing1] (08/24/11, 08/26/11)
+[Error: Timed out executing program distributions/robust/arithmetic/basics/test_array_accesses1] (08/25/11)
+[Error: Timed out executing program distributions/robust/arithmetic/basics/test_array_assignment] (08/25/11)
+[Error: Timed out executing program distributions/robust/arithmetic/basics/test_scan1] (08/25/11)
+[Error: Timed out executing program distributions/robust/arithmetic/composite/test_composite1] (08/25/11)
+[Error: Timed out executing program distributions/robust/arithmetic/reindexing/test_array_alias4] (08/25/11)
+[Error: Timed out executing program distributions/robust/arithmetic/reindexing/test_reindexing2] (08/25/11)
+
+new timeouts (since moving to chap07?)
+--------------------------------------
+[Error: Timed out executing program distributions/robust/arithmetic/basics/test_array_iteration1]
+[Error: Timed out executing program distributions/robust/arithmetic/basics/test_array_of_distributed_array2]
+[Error: Timed out executing program distributions/robust/arithmetic/basics/test_zipper_default]
+[Error: Timed out executing program distributions/robust/arithmetic/kernels/hpl]
+[Error: Timed out executing program distributions/robust/arithmetic/modules/test_module_Norm]
+[Error: Timed out executing program distributions/robust/arithmetic/modules/test_module_Random]
+[Error: Timed out executing program distributions/robust/arithmetic/modules/test_module_Search]
+[Error: Timed out executing program distributions/robust/arithmetic/modules/test_module_Sort]
+[Error: Timed out executing program distributions/robust/arithmetic/reindexing/test_array_alias2]
+[Error: Timed out executing program distributions/robust/arithmetic/reindexing/test_reindexing3]
+[Error: Timed out executing program distributions/robust/arithmetic/reindexing/test_reindexing4]
+[Error: Timed out executing program distributions/robust/arithmetic/reindexing/test_reindexing5]
+[Error: Timed out executing program distributions/robust/arithmetic/reindexing/test_reindexing6]
+[Error: Timed out executing program distributions/robust/arithmetic/resizing/test_domain_resize1]
+[Error: Timed out executing program distributions/robust/arithmetic/slicing/test_array_slicing1]
+[Error: Timed out executing program distributions/robust/arithmetic/slicing/test_array_slicing3]
+[Error: Timed out executing program distributions/robust/arithmetic/stress/test_many_domains]
+
 
 timeouts
 --------
@@ -249,9 +286,9 @@ gdb output differences
 xt-cle-specific failures
 ========================
 
-'non-zero time to write a line' failure
----------------------------------------
-[Error matching program output for release/examples/spec/Statements/use]
+nondet. 'non-zero time to write a line' failure
+-----------------------------------------------
+[Error matching program output for release/examples/spec/Statements/use] (08/21/11)
 
 redeclaration of identifier in scope (01/24/11)
 -----------------------------------------------
@@ -473,7 +510,7 @@ unresolved sync variable calls (04/09/11 -- once spec examples added)
 
 nondet. compilation timeout
 ---------------------------
-[Error: Timed out compilation for release/examples/hello] (04/10/11, 04/12/11, 04/14/11, 04/19/11, 04/23/11, 04/26/11, 04/30/11, 05/07/11, 05/14/11, 05/15/11, 05/17/11, 05/21/11, 05/25/11, 05/27/11)
+[Error: Timed out compilation for release/examples/hello] (04/10/11, 04/12/11, 04/14/11, 04/19/11, 04/23/11, 04/26/11, 04/30/11, 05/07/11, 05/14/11, 05/15/11, 05/17/11, 05/21/11, 05/25/11, 05/27/11, 08/21/11, 08/24/11, 08/26/11)
 
 
 =======================================================
@@ -487,7 +524,7 @@ warning: full/empty bit modified on less than word-sized data (05/24/11)
 
 nondet. compilation timeout
 ---------------------------
-[Error: Timed out compilation for release/examples/primers/arrays] (05/27/11, 05/31/11)
+[Error: Timed out compilation for release/examples/primers/arrays] (05/27/11, 05/31/11, 08/21/11, 08/26/11)
 
 array index out of bounds due to bug in XMT compiler
 ----------------------------------------------------
@@ -513,15 +550,15 @@ nanox-specific tests
 
 nondet. core dump
 -----------------
-[Error matching program output for release/examples/primers/taskParallel] (06/23/11, 07/02/11, 07/08/11, 07/15/11)
+[Error matching program output for release/examples/primers/taskParallel] (06/23/11, 07/02/11, 07/08/11, 07/15/11, 08/19/11)
 
 nondet. incorrect output
 ------------------------
-[Error matching program output for release/examples/spec/Task_Parallelism_and_Synchronization/serialStmt2] (06/23/11, 06/26/11, 06/30/11, 07/04/11, 07/07/11, 07/13/11, 07/15/11)
+[Error matching program output for release/examples/spec/Task_Parallelism_and_Synchronization/serialStmt2] (06/23/11, 06/26/11, 06/30/11, 07/04/11, 07/07/11, 07/13/11, 07/15/11, 08/18/11)
 
 nondet. execution timeouts (ever since switching to 4 shepherds)
 --------------------------------------------------------
-[Error: Timed out executing program release/examples/primers/taskParallel] (06/24/11, 07/03/11, 07/16/11)
+[Error: Timed out executing program release/examples/primers/taskParallel] (06/24/11, 07/03/11, 07/16/11, 08/20/11)
 [Error: Timed out executing program release/examples/spec/Task_Parallelism_and_Synchronization/serialStmt2] (07/03/11)
 
 
@@ -529,13 +566,19 @@ nondet. execution timeouts (ever since switching to 4 shepherds)
 nanox+gasnet-specific tests
 ===========================
 
+execution timeouts (since making default # shepherds follow #cores)
+-------------------------------------------------------------------
+[Error: Timed out executing program release/examples/hello6-taskpar-dist]
+[Error: Timed out executing program release/examples/hpcc/ptrans]
+[Error: Timed out executing program release/examples/primers/distributions]
+
 nondet. execution timeouts
 --------------------------
 [Error: Timed out executing program release/examples/hello6-taskpar-dist] (07/02/11)
-[Error: Timed out executing program release/examples/hpcc/stream] (06/26/11, 07/05/11)
+[Error: Timed out executing program release/examples/hpcc/stream] (06/26/11, 07/05/11, 08/18/11)
 [Error: Timed out executing program release/examples/hpcc/ra] (07/18/11)
 [Error: Timed out executing program release/examples/hpcc/variants/ra-cleanloop] (07/02/11, 07/13/11, 07/16/11)
-[Error: Timed out executing program release/examples/hpcc/variants/stream-promoted] (06/27/11, 07/01/11)
+[Error: Timed out executing program release/examples/hpcc/variants/stream-promoted] (06/27/11, 07/01/11, 08/20/11)
 
 execution timeouts (ever since switching to 4 shepherds)
 --------------------------------------------------------
@@ -550,52 +593,27 @@ qthreads-specific tests
 
 failed since testing started (likely call stack size issues)
 ------------------------------------------------------------
-[Error matching program output for release/examples/hello4-datapar-dist]
-[Error matching program output for release/examples/hpcc/fft]
-[Error matching program output for release/examples/hpcc/hpl]
-[Error matching program output for release/examples/hpcc/ptrans]
-[Error matching program output for release/examples/hpcc/stream-ep]
-[Error matching program output for release/examples/hpcc/stream]
-[Error matching program output for release/examples/hpcc/variants/stream-promoted]
-[Error matching program output for release/examples/primers/arrays]
-[Error matching program output for release/examples/primers/distributions]
-[Error matching program output for release/examples/primers/fileIO]
-[Error matching program output for release/examples/primers/reductions]
-[Error matching program output for release/examples/programs/jacobi]
-[Error matching program output for release/examples/programs/norm]
-[Error matching program output for release/examples/spec/Arrays/slicing]
 [Error matching program output for release/examples/spec/Arrays/sparse-error]
-[Error matching program output for release/examples/spec/Arrays/whole-array-ops]
 [Error matching program output for release/examples/spec/Classes/thisMethod]
-[Error matching program output for release/examples/spec/Data_Parallelism/forallFilter]
-[Error matching program output for release/examples/spec/Data_Parallelism/promotion]
 [Error matching program output for release/examples/spec/Functions/variable-functions]
+
+deadlock/livelock issue
+-----------------------
 [Error: Timed out executing program release/examples/spec/Task_Parallelism_and_Synchronization/syncSpinWait]
 
 
-==============================
-qthreads+gasnet-specific tests
-==============================
+=========================================================
+qthreads+gasnet-specific tests (in addition to the above)
+=========================================================
 
-[Error matching program output for release/examples/hello2-module]
-[Error matching program output for release/examples/hello3-datapar]
-[Error matching program output for release/examples/hello5-taskpar]
-[Error matching program output for release/examples/hello6-taskpar-dist]
-[Error matching program output for release/examples/hello]
-[Error matching program output for release/examples/hpcc/ra]
-[Error matching program output for release/examples/hpcc/variants/ra-cleanloop]
-[Error matching program output for release/examples/primers/locales]
-[Error matching program output for release/examples/primers/sparse]
-[Error matching program output for release/examples/programs/beer]
-[Error matching program output for release/examples/programs/genericStack]
-[Error matching program output for release/examples/programs/prodCons]
-[Error matching program output for release/examples/programs/quicksort]
-[Error matching program output for release/examples/spec/Arrays/assign]
-[Error matching program output for release/examples/spec/Data_Parallelism/reduce-loc]
-[Error matching program output for release/examples/spec/Task_Parallelism_and_Synchronization/beginOrdered]
-[Error matching program output for release/examples/spec/Task_Parallelism_and_Synchronization/beginUnordered]
-[Error matching program output for release/examples/spec/Task_Parallelism_and_Synchronization/serialStmt2]
-[Error matching program output for release/examples/spec/Tuples/aliasing]
+nondet. timeout starting when #shepherds based on #cores
+--------------------------------------------------------
+[Error: Timed out executing program release/examples/hpcc/ptrans] (08/25/11)
+
+timeouts when #shepherds started getting based on #cores
+--------------------------------------------------------
+[Error: Timed out executing program release/examples/hpcc/hpl]
+[Error: Timed out executing program release/examples/primers/distributions]
 
 
 =======================
