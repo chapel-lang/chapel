@@ -8,6 +8,7 @@
 #endif
 
 #include "chpl_rt_utils_static.h"
+#include "chplcgfns.h"
 #include "chpl-comm.h"
 #include "chplexit.h"
 #include "chpl-mem.h"
@@ -292,6 +293,13 @@ void chpl_task_exit(void) {
 
 
 void chpl_task_callMain(void (*chpl_main)(void)) {
+  if (taskreport) {
+    // We need to initialize chpldev_taskTable and its domain
+    // before calling chpl_task_callMain(),
+    // but only if we are tracking tasks.
+    chpl__init_DefaultRectangular(1, "<internal>");   // for defaultDist.
+    chpl__init_ChapelRT(1, "<internal>");
+  }
   if (taskreport) {
     thread_private_data_t* tp = chpl_thread_getPrivateData();
 

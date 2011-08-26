@@ -421,11 +421,11 @@ lambda_decl_expr:
 // The FnSymbol is just used as a struct to carry the flag and
 // (for exports only) the cname of the function.
 linkage_spec:
-         	{ $$ = new FnSymbol(""); }
-| TINLINE	{ $$ = new FnSymbol(""); $$->addFlag(FLAG_INLINE); }
-| TEXPORT	{ $$ = new FnSymbol(""); $$->addFlag(FLAG_EXPORT); }
-| TEXPORT ident	{ $$ = new FnSymbol($2);   $$->addFlag(FLAG_EXPORT); }
-| TEXTERN	{ $$ = new FnSymbol(""); $$->addFlag(FLAG_EXTERN); }
+                { $$ = new FnSymbol(""); }
+| TINLINE       { $$ = new FnSymbol(""); $$->addFlag(FLAG_INLINE); }
+| TEXPORT       { $$ = new FnSymbol(""); $$->addFlag(FLAG_EXPORT); }
+| TEXPORT ident { $$ = new FnSymbol($2);   $$->addFlag(FLAG_EXPORT); }
+| TEXTERN       { $$ = new FnSymbol(""); $$->addFlag(FLAG_EXTERN); }
 
 fn_decl_stmt:
   linkage_spec proc_or_iter_or_def

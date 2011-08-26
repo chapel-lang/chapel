@@ -101,10 +101,6 @@ int main(int argc, char* argv[]) {
   }
   chpl_task_init(numThreadsPerLocale, chpl__maxThreadsPerLocale, 
                  numPollingTasks, callStackSize); 
-  // We need to initialize the runtime support 
-  // before calling chpl_task_callMain().
-  chpl__init_DefaultRectangular(1, "<internal>");   // for defaultDist.
-  chpl__init_ChapelRT(1, "<internal>");
 
   //
   // start communication tasks as necessary
