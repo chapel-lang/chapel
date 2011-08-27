@@ -189,8 +189,25 @@ Iterators used in explicit forall-statements or -expressions must be
 parallel iterators.  Reductions, scans and promotion over serial
 iterators will be serialized.
 
-The definition of parallel iterators is forthcoming.  Parallel
-iterators are defined over standard constructs in Chapel such as
-ranges, domains, and arrays (including Block- and Cyclic-distributed
-domains and arrays), thereby allowing these constructs to be used with
-forall-statements and -expressions.
+Parallel iterators are defined for standard constructs in Chapel such
+as ranges, domains, and arrays, thereby allowing these constructs to
+be used with forall-statements and -expressions.
+
+The left-most iteratable expression in a forall-statement or
+-expression determines the number of tasks, the iterations each task
+executes, and the locales on which these tasks execute.  For ranges,
+default domains, and default arrays, these values can be controlled
+via configuration constants~(\rsec{data_parallel_knobs}).
+
+Domains and arrays defined using distributed domain maps will
+typically implement forall loops with multiple tasks on multiple
+locales.  For ranges, default domains, and default arrays, all tasks
+are executed on the current locale.
+
+A more detailed definition of parallel iterators is forthcoming.  The
+following paper sketches out the parallel iterator interface:
+\begin{quote}
+B.~L.~Chamberlain, S.~Choi, ~S.~J.~Deitz, and A.~Navarro.  {\bf
+Composable Parallel Iterators in Chapel}. 2011.
+\end{quote}
+
