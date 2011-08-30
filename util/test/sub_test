@@ -815,7 +815,7 @@ for testname in testsrc:
             # sys.stdout.write('default checkfile=%s\n'%(checkfile))
                 
             if not os.access(checkfile, os.R_OK):
-                sys.stdout.write('%s[Error cannot locate compiler output comparison file %s/%s]\n'%(futuretest, localdir, checkfile))
+                sys.stdout.write('[Error cannot locate compiler output comparison file %s/%s]\n'%(localdir, checkfile))
                 sys.stdout.write('[Compiler output was as follows:]\n')
                 sys.stdout.write(origoutput)
                 cleanup(execname)
@@ -1064,7 +1064,7 @@ for testname in testsrc:
                                         execcheckfile=execname+'.good'
 
                     if not os.access(execcheckfile, os.R_OK):
-                        sys.stdout.write('%s[Error cannot locate program output comparison file %s/%s]\n'%(futuretest, localdir, execcheckfile))
+                        sys.stdout.write('[Error cannot locate program output comparison file %s/%s]\n'%(localdir, execcheckfile))
                         sys.stdout.write('[Execution output was as follows:]\n')
                         sys.stdout.write(subprocess.Popen(['cat', execlog],
                                                           stdout=subprocess.PIPE).
