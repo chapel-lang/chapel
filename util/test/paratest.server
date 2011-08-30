@@ -183,15 +183,14 @@ sub free_workers {
 # manually.
 sub feed_nodes {
     local (@readyidv, $logfile, @logs, $testdir, $node, $rem_cmd);
-    my $taskCount = $#node_list + 1;
-    $taskCount = $taskCount * 2 if $duplex;
+    my $nodeCount = $#node_list + 1;
 
     $| = 1;    # autoflush stdout
 
     print "about to start distributing work\n" if $debug;
 
     @testdir_list = sort @testdir_list;
-    print $#node_list+1; print " worker(s) (@node_list)\n";
+    print $nodeCount; print " worker(s) (@node_list)\n";
     print $#testdir_list+1; print " test(s) (@testdir_list)\n";
 
     while (($#testdir_list >= 0) &&       # while still have work to do
@@ -262,7 +261,7 @@ sub feed_nodes {
 
     # wait for everyone to finish;
     @readyidv = free_workers ();
-    while (($#readyidv < $taskCount) &&
+    while (($#readyidv + 1 < $nodeCount) &&
            !(-e "PARAHALT")) {
         sleep $sleep_time;
         @readyidv = free_workers ();
@@ -302,7 +301,6 @@ sub nodes_free {
     for ($id=0; $id<$nodeCount; $id++) {
         $fname = "$node_list[$id].$id";
         systemd ("echo feed me > $synchdir/$fname");
-        systemd ("echo feed me > $synchdir/$fname.2") if $duplex;
     }
 }
 
@@ -501,9 +499,11 @@ sub main {
             next if /^$|^\#/;
             chomp;
             push @node_list, $_;
+            push @node_list, $_ if $duplex;
         }
     } else { # else, just current node
         push @node_list, $localnode;
+        push @node_list, $localnode if $duplex;
     }
 
     if (defined $dirfile) {
