@@ -55,7 +55,8 @@ record range
   
   pragma "inline" proc low return _base.low;       // public getter for low bound
   pragma "inline" proc high return _base.high;     // public getter for high bound
-  pragma "inline" proc stride return _base.stride; // public getter for stride
+  pragma "inline" proc stride where stridable return _base.stride; // public getter for stride
+  proc stride param where !stridable return 1;
   // public getter for alignment
   pragma "inline" proc alignment return _base.alignment;
   // public getter for the ambiguous alignment flag.
@@ -165,12 +166,31 @@ proc range.hasHighBound() param
   return boundedType == BoundedRangeType.bounded ||
          boundedType == BoundedRangeType.boundedHigh;
 
+// If the represented sequence is defined, reports whether it is empty.
+// If it is not defined but one or both bounds is infinity, returns false.
+// Otherwise the behavior is undefined.
+inline
+proc range.isEmpty()       where isBoundedRange(this) {
+  if isAmbiguous() then
+    halt("isEmpty() is invoked on an ambiguously-aligned range");
+  else
+    return this.alignedLow > this.alignedHigh;
+}
+proc range.isEmpty() param where !isBoundedRange(this)
+  return false;
+
+proc range.hasFirst() param where !stridable
+  return hasLowBound();
+
 pragma "inline" 
-proc range.hasFirst() 
+proc range.hasFirst() where stridable
   return if isAmbiguous() then false else _base.hasFirst();
     
+proc range.hasLast() param where !stridable
+  return hasHighBound();
+
 pragma "inline"
-proc range.hasLast()
+proc range.hasLast() where stridable
   return if isAmbiguous() then false else _base.hasLast();
 
 // Returns true if this range is naturally aligned, false otherwise.
@@ -179,17 +199,11 @@ pragma "inline"
 proc range.isNaturallyAligned()
   return _base.isNaturallyAligned();
 
-// Returns true if the alignment of this range is ambiguous.
-// After a stride whose absolute value is 2 or greater is applied, 
-// the alignment must be positively established as evidenced by the _aligned
-// flag being set to "true".
-pragma "inline"
-proc range.isAmbiguous()
-{
-  // If the range is not strided, then its alignment is unambiguously zero.
-  if !stridable then return false;
-  else return abs(stride) >= 2 && !aligned;
-}
+// Returns true if the range is ambiguously aligned.
+proc range.isAmbiguous() param where !stridable
+  return false;
+proc range.isAmbiguous()       where stridable
+  return !aligned && (stride > 1 || stride < -1);
 
 // Returns true if i is in this range.
 pragma "inline" proc range.member(i: idxType) 
