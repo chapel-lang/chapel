@@ -7,10 +7,10 @@
 #define NDEBUG
 #endif
 
-#include "chpl_mem.h"
+#include "chpl-mem.h"
 #include "chplcast.h"
 #include "chplrt.h"
-#include "chpltasks.h"
+#include "chpl-tasks.h"
 #include "config.h"
 #include "error.h"
 #include <assert.h>
@@ -44,7 +44,7 @@ static chpl_bool       exiting = false;         // are we shutting down?
 
 static pthread_mutex_t thread_info_lock;        // mutual exclusion lock
 
-static int64_t         curr_thread_id = threadlayer_nullThreadID;
+static int64_t         curr_thread_id = 0;
 
 static thread_list_p   thread_list_head = NULL; // head of thread_list
 static thread_list_p   thread_list_tail = NULL; // tail of thread_list
@@ -69,45 +69,43 @@ static void*           pthread_func(void*);
 
 // Mutexes
 
-void threadlayer_mutex_init(threadlayer_mutex_p mutex) {
+void chpl_thread_mutexInit(chpl_thread_mutex_p mutex) {
   // WAW: how to explicitly specify blocking-type?
   if (pthread_mutex_init((pthread_mutex_t*) mutex, NULL))
     chpl_internal_error("pthread_mutex_init() failed");
 }
 
-threadlayer_mutex_p threadlayer_mutex_new(void) {
-  threadlayer_mutex_p m;
-  m = (threadlayer_mutex_p) chpl_alloc(sizeof(threadlayer_mutex_t),
-                                       CHPL_RT_MD_MUTEX, 0, 0);
-  threadlayer_mutex_init(m);
+chpl_thread_mutex_p chpl_thread_mutexNew(void) {
+  chpl_thread_mutex_p m;
+  m = (chpl_thread_mutex_p) chpl_mem_alloc(sizeof(chpl_thread_mutex_t),
+                                           CHPL_RT_MD_MUTEX, 0, 0);
+  chpl_thread_mutexInit(m);
   return m;
 }
 
-void threadlayer_mutex_lock(threadlayer_mutex_p mutex) {
+void chpl_thread_mutexLock(chpl_thread_mutex_p mutex) {
   if (pthread_mutex_lock((pthread_mutex_t*) mutex))
     chpl_internal_error("pthread_mutex_lock() failed");
 }
 
-void threadlayer_mutex_unlock(threadlayer_mutex_p mutex) {
+void chpl_thread_mutexUnlock(chpl_thread_mutex_p mutex) {
   if (pthread_mutex_unlock((pthread_mutex_t*) mutex))
     chpl_internal_error("pthread_mutex_unlock() failed");
 }
 
 
-// Thread id
+// Thread management
 
-threadlayer_threadID_t threadlayer_thread_id(void) {
+chpl_thread_id_t chpl_thread_getId(void) {
   void* val = pthread_getspecific(thread_id_key);
 
   if (val == NULL)
-    return threadlayer_nullThreadID;
-  return (threadlayer_threadID_t) (intptr_t) val;
+    return chpl_thread_nullThreadId;
+  return (chpl_thread_id_t) (intptr_t) val;
 }
 
 
-// Thread yield
-
-void threadlayer_yield(void) {
+void chpl_thread_yield(void) {
   int last_cancel_state;
 
   //
@@ -122,16 +120,22 @@ void threadlayer_yield(void) {
 }
 
 
-// Thread callbacks for the FIFO tasking layer
-
-void threadlayer_init(int32_t maxThreadsPerLocale,
+void chpl_thread_init(int32_t numThreadsPerLocale,
+                      int32_t maxThreadsPerLocale,
                       uint64_t callStackSize,
                       void(*threadBeginFn)(void*),
                       void(*threadEndFn)(void)) {
   //
-  // Tuck maxThreadsPerLocale away in a static global for use by other routines
+  // Tuck maxThreadsPerLocale away in a static global for use by other
+  // routines.  This threading layer uses a user-specified (non-zero)
+  // numThreadsPerLocale as the max.
   //
-  threadMaxThreadsPerLocale = maxThreadsPerLocale;
+
+  if (numThreadsPerLocale != 0) {
+    threadMaxThreadsPerLocale = numThreadsPerLocale;
+  } else {
+    threadMaxThreadsPerLocale = maxThreadsPerLocale;
+  }
 
   //
   // If a value was specified for the call stack size config const, use
@@ -212,7 +216,7 @@ void threadlayer_init(int32_t maxThreadsPerLocale,
 
 //
 // The initial pthread just waits to be canceled.  See the comment in
-// threadlayer_init() for the purpose of this.
+// chpl_thread_init() for the purpose of this.
 //
 static void* initial_pthread_func(void* ignore) {
   while (1) {
@@ -222,9 +226,12 @@ static void* initial_pthread_func(void* ignore) {
   return NULL;
 }
 
-void threadlayer_perPthreadInit(void) { }
+int chpl_thread_createCommThread(chpl_fn_p fn, void* arg) {
+  pthread_t polling_thread;
+  return pthread_create(&polling_thread, NULL, (void*(*)(void*))fn, arg);
+}
 
-void threadlayer_exit(void) {
+void chpl_thread_exit(void) {
   chpl_bool debug = false;
   thread_list_p tlp;
 
@@ -244,7 +251,7 @@ void threadlayer_exit(void) {
       chpl_internal_error("thread join failed");
     tlp = thread_list_head;
     thread_list_head = thread_list_head->next;
-    chpl_free(tlp, 0, 0);
+    chpl_mem_free(tlp, 0, 0);
   }
 
   if (pthread_key_delete(thread_id_key) != 0)
@@ -260,12 +267,12 @@ void threadlayer_exit(void) {
     fprintf(stderr, "A total of %u threads were created\n", threadNumThreads);
 }
 
-chpl_bool threadlayer_can_start_thread(void) {
+chpl_bool chpl_thread_canCreate(void) {
   return (threadMaxThreadsPerLocale == 0 ||
           threadNumThreads < (uint32_t) threadMaxThreadsPerLocale);
 }
 
-int threadlayer_thread_create(void* arg)
+int chpl_thread_create(void* arg)
 {
   //
   // An implementation note:
@@ -306,7 +313,7 @@ int threadlayer_thread_create(void* arg)
 }
 
 static void* pthread_func(void* arg) {
-  threadlayer_threadID_t my_thread_id;
+  chpl_thread_id_t my_thread_id;
   thread_list_p          tlp;
 
   // disable cancellation immediately
@@ -314,8 +321,8 @@ static void* pthread_func(void* arg) {
   pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, NULL); 
 
   // add us to the list of threads
-  tlp = (thread_list_p) chpl_alloc(sizeof(struct thread_list),
-                                   CHPL_RT_MD_THREAD_LIST_DESCRIPTOR, 0, 0);
+  tlp = (thread_list_p) chpl_mem_alloc(sizeof(struct thread_list),
+                                       CHPL_RT_MD_THREAD_LIST_DESCRIPTOR, 0, 0);
 
   tlp->thread = pthread_self();
   tlp->next   = NULL;
@@ -324,7 +331,7 @@ static void* pthread_func(void* arg) {
 
   if (exiting) {
     pthread_mutex_unlock(&thread_info_lock);
-    chpl_free(tlp, 0, 0);
+    chpl_mem_free(tlp, 0, 0);
     return NULL;
   }
 
@@ -352,7 +359,7 @@ static void* pthread_func(void* arg) {
   return NULL;
 }
 
-void threadlayer_thread_destroy(void) {
+void chpl_thread_destroy(void) {
   int last_cancel_state;
 
   //
@@ -371,23 +378,23 @@ void threadlayer_thread_destroy(void) {
   (void) pthread_setcancelstate(last_cancel_state, NULL);
 }
 
-void* threadlayer_get_thread_private_data(void) {
+void* chpl_thread_getPrivateData(void) {
   return pthread_getspecific(thread_private_key);
 }
 
-void threadlayer_set_thread_private_data(void* p) {
+void chpl_thread_setPrivateData(void* p) {
   if (pthread_setspecific(thread_private_key, p))
     chpl_internal_error("thread private data key doesn't work");
 }
 
-uint32_t threadlayer_get_max_threads(void) {
+uint32_t chpl_thread_getMaxThreads(void) {
   return threadMaxThreadsPerLocale;
 }
 
-uint32_t threadlayer_get_num_threads(void) {
+uint32_t chpl_thread_getNumThreads(void) {
   return threadNumThreads;
 }
 
-uint64_t threadlayer_call_stack_size(void) {
+uint64_t chpl_thread_getCallStackSize(void) {
     return (uint64_t) threadCallStackSize;
 }

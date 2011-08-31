@@ -1,0 +1,7 @@
+
+fpga_sources = \
+	$(END)
+
+pe_fpga_sources = \
+	$(END)
+

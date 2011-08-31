@@ -52,7 +52,8 @@ module Edges {
         v = temp;
       }
 
-      Edges[i] = new Edge(id = i, dupl = 1, n1 = u - 1, n2 = v - 1, vb = 0.0, distance = if (w > 0.0) then w else -w);
+      Edges[i] = new Edge(id = i, dupl = 1, n1 = u - 1, n2 = v - 1, distance = if (w > 0.0) then w else -w);
+      Edges[i].vb$.writeEF(0.0);
 
       var lm: int;
       lm = if (u > v) then u else v;

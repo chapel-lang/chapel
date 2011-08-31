@@ -2,7 +2,7 @@
 
 use File::Basename;
 use strict;
-die "[Error (createGraphs): Incorrect number of arguments]\n" unless ($#ARGV >= 2);
+die "[Error (createGraphs): Incorrect number of arguments]\n" unless ($#ARGV >= 1);
 
 my $format_file = $ARGV[0]; 
 my $outputdir = $ARGV[1]; 

@@ -20,7 +20,7 @@ var A4 = reshape(A3, [1..24]);
 
 writeln(A4);
 
-writeln(A1.domain.dist == D1.dist);
-writeln(A2.domain.dist == D2.dist);
-writeln(A3.domain.dist == D3.dist);
-writeln(A4.domain.dist != D1.dist);
+writeln(dist_eq(A1.domain.dist, D1.dist));
+writeln(dist_eq(A2.domain.dist, D2.dist));
+writeln(dist_eq(A3.domain.dist, D3.dist));
+writeln(dist_neq(A4.domain.dist, D1.dist));

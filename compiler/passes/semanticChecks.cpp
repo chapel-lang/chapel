@@ -15,6 +15,9 @@ check_functions(FnSymbol* fn) {
   if (!strcmp(fn->name, "these") && fn->hasFlag(FLAG_NO_PARENS))
     USR_FATAL_CONT(fn, "method 'these' must have parentheses");
 
+  if (fn->retTag == RET_PARAM && fn->retExprType != NULL)
+    USR_WARN(fn, "providing an explicit return type on a 'param' function currently leads to incorrect results; as a workaround, remove the return type specification in function '%s'", fn->name);
+
   Vec<CallExpr*> calls;
   collectMyCallExprs(fn, calls, fn);
   bool isIterator = fn->hasFlag(FLAG_ITERATOR_FN);
@@ -53,6 +56,11 @@ check_functions(FnSymbol* fn) {
     USR_FATAL_CONT(fn, "Not all returns in this function return a value");
   if (isIterator && numYields == 0)
     USR_FATAL_CONT(fn, "iterator does not yield a value");
+  if (!isIterator &&
+      fn->retTag == RET_VAR && 
+      numNonVoidReturns == 0) {
+    USR_FATAL_CONT(fn, "function declared 'var' but does not return anything");
+  }
 }
 
 
@@ -94,6 +102,24 @@ check_named_arguments(CallExpr* call) {
 }
 
 
+static void
+check_exported_names()
+{
+  // The right side of the map is a dummy Boolean.
+  // We are just using the map to implement a set.
+  HashMap<const char*, StringHashFns, bool> names;
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    if (!fn->hasFlag(FLAG_EXPORT))
+      continue;
+
+    const char* name = fn->cname;
+    if (names.get(name))
+      USR_FATAL_CONT(fn, "The name %s cannot be exported twice from the same module.", name);
+    names.put(name, true);
+  }
+}
+
+
 void
 checkParsed(void) {
   forv_Vec(CallExpr, call, gCallExprs) {
@@ -118,6 +144,9 @@ checkParsed(void) {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     check_functions(fn);
   }
+
+  check_exported_names();
+
   markNewFnSymbolsWithProcIter = true; // ProcIter: remove
 }
 
@@ -192,22 +221,32 @@ isDefinedAllPaths(Expr* expr, Symbol* ret) {
 
 static void
 checkReturnPaths(FnSymbol* fn) {
+  // Check to see if the function returns a value.
   if (fn->hasFlag(FLAG_ITERATOR_FN) ||
       !strcmp(fn->name, "=") ||
       !strcmp(fn->name, "chpl__buildArrayRuntimeType") ||
       fn->retType == dtVoid ||
       fn->retTag == RET_TYPE ||
       fn->hasFlag(FLAG_EXTERN) ||
+      fn->hasFlag(FLAG_FUNCTION_PROTOTYPE) ||
       fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR) ||
       fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) ||
       fn->hasFlag(FLAG_AUTO_II))
-    return;
+    return; // No.
+
+  // Check to see if the returned value is initialized.
   Symbol* ret = fn->getReturnSymbol();
-  if (VarSymbol* var = toVarSymbol(ret))
+  VarSymbol* var = toVarSymbol(ret);
+  if (var)
+  {
+    // If it has an immediate initializer, it is initialized.
     if (var->immediate)
       return;
+  }
+
   if (isEnumSymbol(ret))
     return;
+
   int result = isDefinedAllPaths(fn->body, ret);
 
   //
@@ -243,6 +282,18 @@ checkResolved(void) {
             USR_FATAL_CONT(def, "enumerator '%s' is not an int parameter", def->sym->name);
         }
       }
+    }
+  }
+
+  forv_Vec(CallExpr, call, gCallExprs) {
+    if (call->isPrimitive(PRIM_CHPL_FREE)) {
+      // Statements of the form 'delete x' (PRIM_DELETE) are replace
+      //  during the normalize pass with a call to the destructor
+      //  followed by a call to chpl_mem_free(), so here we just check
+      //  if the type of the variable being passed to chpl_mem_free()
+      //  is a record.
+      if (isRecord(call->get(1)->typeInfo()))
+        USR_FATAL_CONT(call, "delete not allowed on records");
     }
   }
 }

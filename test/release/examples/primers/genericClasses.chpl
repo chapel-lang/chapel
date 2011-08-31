@@ -1,7 +1,7 @@
 /*
- * Generic Classes Example
+ * Generic Classes Primer
  *
- * This example demonstrates generic class types.
+ * This primer covers generic class types.
  *
  */
 

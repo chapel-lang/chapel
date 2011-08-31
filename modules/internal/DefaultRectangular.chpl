@@ -6,16 +6,16 @@ class DefaultDist: BaseDist {
   proc dsiNewRectangularDom(param rank: int, type idxType, param stridable: bool)
     return new DefaultRectangularDom(rank, idxType, stridable, this);
 
-  proc dsiNewAssociativeDom(type idxType)
-    return new DefaultAssociativeDom(idxType, this);
+  proc dsiNewAssociativeDom(type idxType, param parSafe: bool)
+    return new DefaultAssociativeDom(idxType, parSafe, this);
 
-  proc dsiNewOpaqueDom(type idxType)
-    return new DefaultOpaqueDom(this);
+  proc dsiNewOpaqueDom(type idxType, param parSafe: bool)
+    return new DefaultOpaqueDom(this, parSafe);
 
   proc dsiNewSparseDom(param rank: int, type idxType, dom: domain)
     return new DefaultSparseDom(rank, idxType, this, dom);
 
-  proc dsiIndexLocale(ind) return this.locale;
+  proc dsiIndexToLocale(ind) return this.locale;
 
   proc dsiClone() return this;
 
@@ -121,8 +121,6 @@ class DefaultRectangularDom: BaseRectangularDom {
 
     if debugDataPar then writeln("### numChunks=", numChunks, " (parDim=", parDim, ")");
 
-    if numChunks == 0 then return;	// Avoid problems with 0:uint(64) - 1 below.
-
     if (CHPL_TARGET_PLATFORM != "xmt") {
       if numChunks == 1 {
         if rank == 1 {
@@ -139,7 +137,7 @@ class DefaultRectangularDom: BaseRectangularDom {
           locBlock(i) = 0:ranges(i).low.type..#(ranges(i).length);
         if debugDefaultDist then
           writeln("*** DI: locBlock = ", locBlock);
-        coforall chunk in 0..numChunks-1 {
+        coforall chunk in 0..#numChunks {
           var tuple: rank*range(idxType) = locBlock;
           const (lo,hi) = _computeBlock(locBlock(parDim).length,
                                         numChunks, chunk,
@@ -300,22 +298,22 @@ class DefaultRectangularDom: BaseRectangularDom {
 
   proc dsiStride {
     if rank == 1 {
-      return ranges(1)._stride;
+      return ranges(1).stride;
     } else {
       var result: rank*chpl__signedType(idxType);
       for param i in 1..rank do
-        result(i) = ranges(i)._stride;
+        result(i) = ranges(i).stride;
       return result;
     }
   }
 
   proc dsiAlignment {
     if rank == 1 {
-      return ranges(1)._alignment;
+      return ranges(1).alignment;
     } else {
       var result: rank*idxType;
       for param i in 1..rank do
-        result(i) = ranges(i)._alignment;
+        result(i) = ranges(i).alignment;
       return result;
     }
   }
@@ -373,6 +371,7 @@ class DefaultRectangularArr: BaseArr {
   var factoredOffs: idxType;
   var data : _ddata(eltType);
   var noinit: bool = false;
+  //var numelm: int = -1; // for correctness checking
 
   proc canCopyFromDevice param return true;
 
@@ -414,11 +413,11 @@ class DefaultRectangularArr: BaseArr {
           yield data(i);
       } else {
         const stride = dom.ranges(1).stride: idxType,
-              start  = if stride > 0 then dom.dsiLow else dom.dsiHigh,
+              start  = dom.ranges(1).first,
               first  = getDataIndex(start),
               second = getDataIndex(start + stride),
               step   = (second-first):chpl__signedType(idxType),
-              last   = first + (dom.dsiNumIndices-1) * step:idxType;
+              last   = first + (dom.ranges(1).length-1) * step:idxType;
         if step > 0 then
           for i in first..last by step do
             yield data(i);
@@ -448,7 +447,7 @@ class DefaultRectangularArr: BaseArr {
 
   proc computeFactoredOffs() {
     factoredOffs = 0:idxType;
-    for i in 1..rank do {
+    for param i in 1..rank do {
       factoredOffs = factoredOffs + blk(i) * off(i);
     }
   }
@@ -458,8 +457,8 @@ class DefaultRectangularArr: BaseArr {
   proc initialize() {
     if noinit == true then return;
     for param dim in 1..rank {
-      off(dim) = dom.dsiDim(dim)._low;
-      str(dim) = dom.dsiDim(dim)._stride;
+      off(dim) = dom.dsiDim(dim).alignedLow;
+      str(dim) = dom.dsiDim(dim).stride;
     }
     blk(rank) = 1:idxType;
     for param dim in 1..rank-1 by -1 do
@@ -467,6 +466,9 @@ class DefaultRectangularArr: BaseArr {
     computeFactoredOffs();
     var size = blk(1) * dom.dsiDim(1).length;
     data = new _ddata(eltType);
+    //assert(size >= 0);
+    //assert(size:int(64) <= max(int):int(64));
+    //numelm = size: int;
     data.init(size);
   }
 
@@ -498,7 +500,11 @@ class DefaultRectangularArr: BaseArr {
     if boundsChecking then
       if !dom.dsiMember(ind) then
         halt("array index out of bounds: ", ind);
-    return data(getDataIndex(ind));
+    var dataInd = getDataIndex(ind);
+    //assert(dataInd >= 0);
+    //assert(numelm >= 0); // ensure it has been initialized
+    //assert(dataInd: uint(64) < numelm: uint(64));
+    return data(dataInd);
   }
 
   proc dsiReindex(d: DefaultRectangularDom) {
@@ -507,10 +513,11 @@ class DefaultRectangularArr: BaseArr {
                                          stridable=d.stridable,
                                          dom=d, noinit=true);
     alias.data = data;
+    //alias.numelm = numelm;
     for param i in 1..rank {
-      alias.off(i) = d.dsiDim(i)._low;
-      alias.blk(i) = (blk(i) * dom.dsiDim(i)._stride / str(i)) : d.idxType;
-      alias.str(i) = d.dsiDim(i)._stride;
+      alias.off(i) = d.dsiDim(i).low;
+      alias.blk(i) = (blk(i) * dom.dsiDim(i).stride / str(i)) : d.idxType;
+      alias.str(i) = d.dsiDim(i).stride;
     }
     alias.origin = origin:d.idxType;
     alias.computeFactoredOffs();
@@ -523,12 +530,13 @@ class DefaultRectangularArr: BaseArr {
                                          stridable=d.stridable,
                                          dom=d, noinit=true);
     alias.data = data;
+    //alias.numelm = numelm;
     alias.blk = blk;
     alias.str = str;
     alias.origin = origin;
     for param i in 1..rank {
-      alias.off(i) = d.dsiDim(i)._low;
-      alias.origin += blk(i) * (d.dsiDim(i)._low - off(i)) / str(i);
+      alias.off(i) = d.dsiDim(i).low;
+      alias.origin += blk(i) * (d.dsiDim(i).low - off(i)) / str(i);
     }
     alias.computeFactoredOffs();
     return alias;
@@ -543,12 +551,13 @@ class DefaultRectangularArr: BaseArr {
                                          stridable=newStridable,
                                          dom=d, noinit=true);
     alias.data = data;
+    //alias.numelm = numelm;
     var i = 1;
     alias.origin = origin;
     for param j in 1..args.size {
       if isRange(args(j)) {
-        alias.off(i) = d.dsiDim(i)._low;
-        alias.origin += blk(j) * (d.dsiDim(i)._low - off(j)) / str(j);
+        alias.off(i) = d.dsiDim(i).low;
+        alias.origin += blk(j) * (d.dsiDim(i).low - off(j)) / str(j);
         alias.blk(i) = blk(j);
         alias.str(i) = str(j);
         i += 1;
@@ -575,6 +584,7 @@ class DefaultRectangularArr: BaseArr {
       factoredOffs = copy.factoredOffs;
       dsiDestroyData();
       data = copy.data;
+      //numelm = copy.numelm;
       delete copy;
     } else {
       halt("illegal reallocation");

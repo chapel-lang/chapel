@@ -115,6 +115,8 @@ class ClassType : public Type {
 
 class PrimitiveType : public Type {
  public:
+  PrimitiveType* volType; 
+  PrimitiveType* nonvolType;
   bool isInternalType;
   PrimitiveType(Symbol *init_defaultVal = NULL, bool internalType=false);
   void verify(); 
@@ -162,6 +164,9 @@ TYPE_EXTERN PrimitiveType* dtSyncVarAuxFields;
 TYPE_EXTERN PrimitiveType* dtSingleVarAuxFields;
 TYPE_EXTERN PrimitiveType* dtTaskList;
 
+// a fairly special wide type
+extern ClassType* wideStringType;
+
 // standard module types
 TYPE_EXTERN ClassType* dtArray;
 TYPE_EXTERN ClassType* dtChapelFile;
@@ -180,6 +185,7 @@ TYPE_EXTERN Map<Type*,Type*> wideRefMap;   // reference -> wide reference
 
 void initChplProgram(void);
 void initPrimitiveTypes(void);
+void initTheProgram(void);
 void initCompilerGlobals(void);
 
 bool is_bool_type(Type*);
@@ -196,6 +202,13 @@ bool isRecord(Type* t);
 bool isUnion(Type* t);
 
 bool isReferenceType(Type* t);
+
+bool isRefCountedType(Type* t);
+bool isRecordWrappedType(Type* t);
+
+bool isDistClass(Type* type);
+bool isDomainClass(Type* type);
+bool isArrayClass(Type* type);
 
 void registerTypeToStructurallyCodegen(TypeSymbol* type);
 void genTypeStructureIndex(FILE *outfile, TypeSymbol* typesym);

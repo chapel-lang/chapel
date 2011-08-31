@@ -1,3 +1,4 @@
+
 #include "astutil.h"
 #include "bb.h"
 #include "expr.h"
@@ -5,6 +6,17 @@
 #include "passes.h"
 #include "stmt.h"
 #include "view.h"
+
+
+//
+// Static function declarations.
+//
+static bool deadBlockElimination(FnSymbol* fn);
+// static void deadGotoElimination(FnSymbol* fn);
+
+// Static variables.
+static unsigned deadBlockCount;
+
 
 //
 // Removes local variables that are only targets for moves, but are
@@ -82,7 +94,10 @@ void deadExpressionElimination(FnSymbol* fn) {
   }
 }
 
-void deadCodeElimination(FnSymbol* fn) {
+void deadCodeElimination(FnSymbol* fn)
+{
+  buildBasicBlocks(fn);
+
   Map<SymExpr*,Vec<SymExpr*>*> DU;
   Map<SymExpr*,Vec<SymExpr*>*> UD;
   buildDefUseChains(fn, DU, UD);
@@ -141,6 +156,7 @@ void deadCodeElimination(FnSymbol* fn) {
     }
   }
 
+  // This removes dead expressions from each block.
   forv_Vec(BasicBlock, bb, *fn->basicBlocks) {
     forv_Vec(Expr, expr, bb->exprs) {
       if (isSymExpr(expr) || isCallExpr(expr))
@@ -150,15 +166,103 @@ void deadCodeElimination(FnSymbol* fn) {
   }
 
   freeDefUseChains(DU, UD);
-
-  deadVariableElimination(fn);
-  deadExpressionElimination(fn);
 }
 
 void deadCodeElimination() {
   if (!fNoDeadCodeElimination) {
+    deadBlockCount = 0;
     forv_Vec(FnSymbol, fn, gFnSymbols) {
+      bool change = false;
+      do {
+        change = deadBlockElimination(fn);
+      } while (change);
+//      deadGotoElimination(fn);
       deadCodeElimination(fn);
+      deadVariableElimination(fn);
+      deadExpressionElimination(fn);
     }
+
+    if (fReportDeadBlocks)
+      printf("\tRemoved %d dead blocks.\n", deadBlockCount);
   }
 }
+
+// Look for and remove unreachable blocks.
+static bool deadBlockElimination(FnSymbol* fn)
+{
+  // We need the basic block information to be right here.
+  buildBasicBlocks(fn);
+
+  bool change = false;
+  forv_Vec(BasicBlock, bb, *fn->basicBlocks)
+  {
+    // Ignore the first block.
+    if (bb == fn->basicBlocks->v[0])
+      continue;
+
+    // If this block has no predecessors, then it is dead.
+    if (bb->ins.count() == 0)
+    {
+      if (bb->exprs.n > 0)
+      {
+        change = true;
+        ++deadBlockCount;
+
+        // Remove all of its expressions.
+        forv_Vec(Expr, expr, bb->exprs)
+        {
+          if (! expr->parentExpr)
+            continue;   // This node is no longer in the tree.
+
+          CondStmt* cond = toCondStmt(expr->parentExpr);
+          if (cond && cond->condExpr == expr)
+            // If expr is the condition expression in an if statement,
+            // then remove the entire if.
+            cond->remove();
+          else
+            expr->remove();
+        }
+      }
+
+      // Get more out of one pass by removing this BB from the predecessor
+      // lists of its successors.
+      forv_Vec(BasicBlock, succ, bb->outs)
+        succ->ins.set_remove(bb); 
+
+      // We leave the "dead" bb structure in place.
+      // The next time we construct basic blocks for this fn, it should be gone.
+    }
+  }
+
+  return change;
+}
+
+// Look for pointless gotos and remove them.
+// Probably the best way to do this is to scan the AST and remove gotos
+// whose target labels follow immediately.
+#if 0
+static void deadGotoElimination(FnSymbol* fn)
+{
+  // We recompute basic blocks because deadBlockElimination may cause them
+  // to be out of sequence.
+  buildBasicBlocks(fn);
+  forv_Vec(BasicBlock, bb, *fn->basicBlocks)
+  {
+    // Get the last expression in the block as a goto.
+    int last = bb->exprs.length() - 1;
+    if (last < 0)
+      continue;
+
+    Expr* e = bb->exprs.v[last];
+    GotoStmt* s = toGotoStmt(e);
+    if (!s)
+      continue;
+
+    // If there is only one successor to this block and it is the next block,
+    // then the goto must point to it and is therefore pointless [sts].
+    // This test should be more foolproof using the structure of the AST.
+    if (bb->outs.n == 1 && bb->outs.v[0]->id == bb->id + 1)
+      e->remove();
+  }
+}
+#endif

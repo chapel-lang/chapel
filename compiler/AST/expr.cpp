@@ -82,7 +82,9 @@ Expr* Expr::remove(void) {
     callReplaceChild(this, NULL);
   }
   if (parentSymbol)
-    remove_help(this);
+    remove_help(this, 'r');
+  else
+    trace_remove(this, 'R');
   return this;
 }
 
@@ -113,7 +115,7 @@ void Expr::replace(Expr* new_ast) {
 
   Symbol* myParentSymbol = parentSymbol;
   Expr* myParentExpr = parentExpr;
-  remove_help(this);
+  remove_help(this, 'p');
   insert_help(new_ast, myParentExpr, myParentSymbol);
 }
 
@@ -208,11 +210,12 @@ void SymExpr::codegen(FILE* outfile) {
 }
 
 
-UnresolvedSymExpr::UnresolvedSymExpr(const char* iunresolved) :
+UnresolvedSymExpr::UnresolvedSymExpr(const char* i_unresolved, bool i_is_volatile) :
   Expr(E_UnresolvedSymExpr),
-  unresolved(astr(iunresolved))
+  unresolved(astr(i_unresolved)),
+  isVolatile(i_is_volatile)
 {
-  if (!iunresolved)
+  if (!i_unresolved)
     INT_FATAL(this, "bad call to UnresolvedSymExpr");
   gUnresolvedSymExprs.add(this);
 }
@@ -236,7 +239,7 @@ UnresolvedSymExpr::verify() {
 
 UnresolvedSymExpr*
 UnresolvedSymExpr::copyInner(SymbolMap* map) {
-  return new UnresolvedSymExpr(unresolved);
+  return new UnresolvedSymExpr(unresolved, isVolatile);
 }
 
 
@@ -1948,20 +1951,16 @@ void CallExpr::codegen(FILE* outfile) {
       } 
       fprintf( outfile, ")");
 
-      // target: void* chpl_alloc(size_t size, char* description);
+      // target: void* chpl_mem_alloc(size_t size, char* description);
       fprintf(outfile, "%s(sizeof(",
               (primitive->tag == PRIM_CHPL_ALLOC ?
-               "chpl_alloc" : 
-               "CHPL_ALLOC_PERMIT_ZERO"));
+               "chpl_mem_alloc" :
+               "chpl_mem_allocPermitZero"));
       if (is_struct) fprintf( outfile, "_");          // need struct of class
       typeInfo()->symbol->codegen( outfile);
       fprintf( outfile, "), ");
-      if (fRuntime) {
-        fprintf( outfile, "CHPL_RT_MD_CHAPEL_CODE");
-      } else {
-        get(2)->codegen( outfile);
-        fprintf( outfile, " + CHPL_RT_MD_NUM");
-      }
+      get(2)->codegen( outfile);
+      fprintf( outfile, " + CHPL_RT_MD_NUM");
       fprintf( outfile, ", ");
       get(3)->codegen( outfile);
       fprintf( outfile, ", ");
@@ -2011,8 +2010,27 @@ void CallExpr::codegen(FILE* outfile) {
           get(2)->codegen(outfile);
           fprintf(outfile, "))");
       } else if (dst == dtString || src == dtString) {
+        // 
+        // hh: is it okay to drop volatile type on the floor here?
+        //     should we instead of avoiding to print out the volatile type 
+        //     (which we do because of the space between volatile and the type
+        //     expr), print out the volatile type but just replace the space
+        //     with an underscore?
+        //
+        const char* dst_cname = dst->symbol->cname;
+        const char* src_cname = src->symbol->cname;
+        if (PrimitiveType* p_dst = toPrimitiveType(dst)) {
+          if (p_dst->nonvolType && !p_dst->volType) {
+            dst_cname = p_dst->nonvolType->symbol->cname;  
+          }
+        }
+        if (PrimitiveType* p_src = toPrimitiveType(src)) {
+          if (p_src->nonvolType && !p_src->volType) {
+            src_cname = p_src->nonvolType->symbol->cname;  
+          }
+        }
         fprintf(outfile, *dst->symbol->cname == '_' ? "%s_to%s(" : "%s_to_%s(",
-                src->symbol->cname, dst->symbol->cname);
+                src_cname, dst_cname);
         get(2)->codegen(outfile);
         if (src == dtString) {
           fprintf(outfile, ", ");
@@ -2193,10 +2211,7 @@ void CallExpr::codegen(FILE* outfile) {
           gen(outfile, "*");
       }
       gen(outfile, "))(*CHPL_VMT_CALL(");
-      if (fRuntime)
-        gen(outfile, "chpl_rt_vmtable, ");
-      else
-        gen(outfile, "chpl_vmtable, ");
+      gen(outfile, "chpl_vmtable, ");
       gen(outfile, "%A, ", get(2));
       fprintf(outfile, "%d)))(", virtualMethodMap.get(fn));
       int i = 3;
@@ -2355,7 +2370,7 @@ void CallExpr::codegen(FILE* outfile) {
     return;
   } else if (fn->hasFlag(FLAG_ON_BLOCK)) {
     if (fn->hasFlag(FLAG_NON_BLOCKING))
-      fprintf(outfile, "chpl_comm_fork_nb");
+      fprintf(outfile, "CHPL_COMM_NONBLOCKING_ON");
     else if (fn->hasFlag(FLAG_FAST_ON))
       fprintf(outfile, "chpl_comm_fork_fast");
     else
@@ -2385,6 +2400,7 @@ void CallExpr::codegen(FILE* outfile) {
   bool first_actual = true;
   int count = 0;
   for_formals_actuals(formal, actual, this) {
+    Type* actualType = actual->typeInfo();
     bool closeDeRefParens = false;
     if (fn->hasFlag(FLAG_GPU_ON) && count < 2) {
       count++;
@@ -2394,31 +2410,41 @@ void CallExpr::codegen(FILE* outfile) {
       first_actual = false;
     else
       fprintf(outfile, ", ");
-    if (fn->hasFlag(FLAG_EXTERN) && actual->typeInfo()->symbol->hasFlag(FLAG_WIDE))
+
+    if (fn->hasFlag(FLAG_EXTERN) && actualType->symbol->hasFlag(FLAG_WIDE))
       fprintf(outfile, "(");
-    else if (fn->hasFlag(FLAG_EXTERN) && actual->typeInfo()->symbol->hasFlag(FLAG_FIXED_STRING))
+    else if (fn->hasFlag(FLAG_EXTERN) && actualType->symbol->hasFlag(FLAG_FIXED_STRING))
       fprintf(outfile, "(");
     else if (fn->hasFlag(FLAG_EXTERN)) {
       if (formal->type->symbol->hasFlag(FLAG_REF) &&
           formal->type->symbol->getValType()->symbol->hasFlag(FLAG_STAR_TUPLE) &&
-          actual->typeInfo()->symbol->hasFlag(FLAG_REF)) {
+          actualType->symbol->hasFlag(FLAG_REF)) {
         fprintf(outfile, "*(");
         closeDeRefParens = true;
       }
     } else if (formal->requiresCPtr() && 
-               !actual->typeInfo()->symbol->hasFlag(FLAG_REF)) {
+               !actualType->symbol->hasFlag(FLAG_REF)) {
       fprintf(outfile, "&(");
       closeDeRefParens = true;
     }
-    if (fn->hasFlag(FLAG_EXTERN) && actual->typeInfo() == dtString)
-      fprintf(outfile, "((char*)");
+    // Handle passing strings to externs
+    if (fn->hasFlag(FLAG_EXTERN)) {
+      if (actualType == dtString)
+        fprintf(outfile, "((char*)");
+      else if (passingWideStringToExtern(actualType))
+        fprintf(outfile, "&(");
+    }
     SymExpr* se = toSymExpr(actual);
     if (se && isFnSymbol(se->var))
       fprintf(outfile, "(chpl_fn_p)&");
     actual->codegen(outfile);
-    if (fn->hasFlag(FLAG_EXTERN) && actual->typeInfo() == dtString)
-      fprintf(outfile, ")");
-    if (fn->hasFlag(FLAG_EXTERN) && actual->typeInfo()->symbol->hasFlag(FLAG_WIDE))
+    if (fn->hasFlag(FLAG_EXTERN)) {
+      if (actualType == dtString)
+        fprintf(outfile, ")");
+      else if (passingWideStringToExtern(actualType))
+        fprintf(outfile,"->addr)");
+    }
+    if (fn->hasFlag(FLAG_EXTERN) && actualType->symbol->hasFlag(FLAG_WIDE))
       fprintf(outfile, ").addr");
     else if (closeDeRefParens)
       fprintf(outfile, ")");

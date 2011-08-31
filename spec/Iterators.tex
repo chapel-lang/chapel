@@ -13,7 +13,7 @@ the specification will be expanded regarding parallel iterators soon.
 \section{Iterator Definitions}
 \label{Iterator_Function_Definitions}
 \index{iterator definitions}
-\index{iterator!definition}
+\index{iterators!definition}
 
 The syntax to declare an iterator is given
 by:
@@ -67,15 +67,14 @@ An iterator need not contain any yield statements.
 
 \section{Iterator Calls}
 \label{Iterator_Calls}
+\index{iterator calls}
+\index{iterators!calls}
 
 Iterators are invoked using regular call expressions:
 \begin{syntax}
-iterator-call-expression:
+iteratable-call-expression:
   call-expression
 \end{syntax}
-
-%REVIEW: hilde
-% Can iterator definitions and uses have field syntax?
 
 All details of iterator calls, including argument passing, function
 resolution, the use of parentheses versus brackets to delimit the parameter
@@ -99,7 +98,7 @@ If an iterator function is captured into a new variable declaration or
 assigned to an array, the iterator is iterated over in total and the
 expression evaluates to a one-dimensional arithmetic array that
 contains the values returned by the iterator on each iteration.
-\begin{example}
+\begin{chapelexample}{as-arrays.chpl}
 Given an iterator
 \begin{chapel}
 iter squares(n: int): int {
@@ -110,11 +109,11 @@ iter squares(n: int): int {
 \begin{chapelpost}
 writeln(squares(5));
 \end{chapelpost}
-\begin{chapeloutput}
+\begin{chapelprintoutput}
 1 4 9 16 25
-\end{chapeloutput}
+\end{chapelprintoutput}
 the expression \chpl{squares(5)} evaluates to the array \chpl{1, 4, 9, 16, 25}.
-\end{example}
+\end{chapelexample}
 
 \subsection{Iterators and Generics}
 \label{Iterators_and_Generics}
@@ -137,8 +136,16 @@ Recursive iterators are allowed. A recursive iterator invocation is
 typically made by iterating over it in a loop.
 
 
-\begin{example}
+\begin{chapelexample}{recursive.chpl}
 A post-order traversal of a tree data structure could be written like this:
+\begin{chapelnoprint}
+class Tree {
+  var data: string;
+  var left, right: Tree;
+}
+
+var tree = new Tree("a", new Tree("b"), new Tree("c", new Tree("d"), new Tree("e")));
+\end{chapelnoprint}
 \begin{chapel}
 iter postorder(tree: Tree): string {
   if tree != nil {
@@ -150,21 +157,57 @@ iter postorder(tree: Tree): string {
   }
 }
 \end{chapel}
+\begin{chapelnoprint}
+proc Tree.writeThis(x: Writer)
+{
+  var first = true;
+  for node in postorder(tree) {
+    if first then first = false;
+      else " ".writeThis(x);
+    write(node);
+  }
+}
+writeln("Tree Data");
+writeln(tree);
+\end{chapelnoprint}
 By contrast, using calls \chpl{postorder(tree.left)}
 and \chpl{postorder(tree.right)} as stand-alone statements would
 result in generating temporary arrays containing the outcomes of these
 recursive calls, which would then be discarded.
-\end{example}
+\begin{chapeloutput}
+Tree Data
+b d e c a
+\end{chapeloutput}
+\end{chapelexample}
 
 \section{Parallel Iterators}
 \label{Parallel_Iterators}
+\index{parallel iterators}
+\index{iterators!parallel}
 
 Iterators used in explicit forall-statements or -expressions must be
 parallel iterators.  Reductions, scans and promotion over serial
 iterators will be serialized.
 
-The definition of parallel iterators is forthcoming.  Parallel
-iterators are defined over standard constructs in Chapel such as
-ranges, domains, and arrays (including Block- and Cyclic-distributed
-domains and arrays), thereby allowing these constructs to be used with
-forall-statements and -expressions.
+Parallel iterators are defined for standard constructs in Chapel such
+as ranges, domains, and arrays, thereby allowing these constructs to
+be used with forall-statements and -expressions.
+
+The left-most iteratable expression in a forall-statement or
+-expression determines the number of tasks, the iterations each task
+executes, and the locales on which these tasks execute.  For ranges,
+default domains, and default arrays, these values can be controlled
+via configuration constants~(\rsec{data_parallel_knobs}).
+
+Domains and arrays defined using distributed domain maps will
+typically implement forall loops with multiple tasks on multiple
+locales.  For ranges, default domains, and default arrays, all tasks
+are executed on the current locale.
+
+A more detailed definition of parallel iterators is forthcoming.  The
+following paper sketches out the parallel iterator interface:
+\begin{quote}
+B.~L.~Chamberlain, S.~Choi, ~S.~J.~Deitz, and A.~Navarro.  {\bf
+Composable Parallel Iterators in Chapel}. 2011.
+\end{quote}
+

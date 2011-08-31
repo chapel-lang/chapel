@@ -8,7 +8,7 @@ Environment (TM) (CLE).  If you are not familiar with Chapel, it is
 recommended that you try the instructions in the top-level README
 first to get started with the language.
 
-Chapel is available as a module for Cray XE running CLE.  When it is
+Chapel is available as a module for Cray XT running CLE.  When it is
 installed on your system, you do not need to build the compiler.
 Simply load the module with:
 
@@ -117,11 +117,11 @@ let us know at chapel_info@cray.com.
 10) Compile your Chapel program as usual.  See README.compiling for
     details.  For example:
 
-      chpl -o hello-multiloc $CHPL_HOME/examples/hello-multiloc.chpl
+      chpl -o hello6-taskpar-dist $CHPL_HOME/examples/hello6-taskpar-dist.chpl
 
 
 11) When you compile a Chapel program for the Cray XT, you should see
-    two binaries (e.g., hello-multiloc and hello-multiloc_real).  The
+    two binaries (e.g., hello6-taskpar-dist and hello6-taskpar-dist_real).  The
     first binary contains code to launch the Chapel program onto the
     compute nodes, as specified by your CHPL_LAUNCHER setting.  The
     second contains the program code itself; it is not intended to be
@@ -132,7 +132,7 @@ let us know at chapel_info@cray.com.
     specified on the command line.  Other than this, execute your
     Chapel program as usual.  For example:
 
-      ./hello-multiloc -nl 2
+      ./hello6-taskpar-dist -nl 2
 
    You can use the -v flag to see the commands used to launch your
    program.  See README.launcher for further details.
@@ -162,7 +162,8 @@ Dynamic linking with the Cray Programming Environment
   static or dynamic linking.  The current default for the Cray
   Programming Environment compilers is static linking.  If you wish to
   override this, set the environment variable CHPL_ASYNCPE_USE_DYNAMIC
-  to 'true'.
+  to 'true'.  Note that it may not be possible to link dynamically
+  depending on your particular system configuration.
 
 
 --------------------------

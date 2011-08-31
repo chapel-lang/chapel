@@ -3,7 +3,7 @@
 #include "chpl_rt_utils_static.h"
 #include "chpl-comm.h"
 #include "chplexit.h"
-#include "chpl_mem.h"
+#include "chpl-mem.h"
 #include "chplmemtrack.h"
 #include "chplrt.h"
 #include "gdb.h"
@@ -18,12 +18,13 @@ static void chpl_exit_common(int status, int all) {
   }
   if (all) {
     chpl_comm_barrier("chpl_comm_exit_all");
+    chpl_comm_stopPollingTask();
     chpl_task_exit();
-    if (!_runInGDB())
-      chpl__autoDestroyRuntimeGlobals();
     chpl_reportMemInfo();
+    chpl_mem_exit();
     chpl_comm_exit_all(status);
   } else {
+    chpl_mem_exit();
     chpl_comm_exit_any(status);
   }
   exit(status);

@@ -75,10 +75,16 @@ puts, remote blocking forks, and remote non-blocking forks are
 counted.  The following function then returns an array of 5-tuples
 that contains these counts for each locale:
 
-  getCommDiagnostics(): [LocaleSpace] 5*int - Return an array of
-    5-tuples of remote gets, remote puts, remote blocking forks,
-    remote blocking fast forks, and remote non-blocking forks, each
-    element corresponding to its locale.
+  getCommDiagnostics(): [LocaleSpace] commDiagnostics - Return an
+    array of records of type commDiagnostics.  The fields correspond
+    to various type of communication performed
+
+To reset the communication counts, use the following functions:
+
+  resetCommDiagnostics() - Reset the communication counts on all locales.
+
+  resetCommDiagnosticsHere() - Reset the communication counts on
+    the locale on which it is called.
 
 For example, given a program mytest.chpl:
 
@@ -94,7 +100,7 @@ For example, given a program mytest.chpl:
 
 Executing as "a.out -nl 2" results in the following output:
 
-  (0, 0, 1, 0, 0) (1, 1, 0, 0, 0)
+  (get = 0, get_nb = 0, get_nb_test = 0, get_nb_wait = 0, put = 0, fork = 1, fork_fast = 0, fork_nb = 0) (get = 1, get_nb = 0, get_nb_test = 0, get_nb_wait = 0, put = 1, fork = 0, fork_fast = 0, fork_nb = 0)
 
 So we can say that a remote blocking fork was executed on locale 0,
 and a remote get and a remote put was executed on locale 1.

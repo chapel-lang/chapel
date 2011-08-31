@@ -1,3 +1,7 @@
+Types
+-----
+* add volatile types
+
 Classes
 -------
 * add destructors description
@@ -72,6 +76,11 @@ TODOs from email:
   believe.
 
 
+Data Parallelism
+----------------
+* clarify what it means to say that a forall loop is serializable.
+
+
 Generics
 --------
 * add mention of the new 'depth' argument for compilerWarning/Error
@@ -89,6 +98,10 @@ Task Parallelism and Synchronization
   evaluate some/all of the statement that follows it
 * make clear that stack variables can outlive parent scope in the
   presence of begins that escape
+* make clear that sync variables are passed by reference
+* fix race condition in coforall -- task can escape if count goes to 0
+  before all tasks are created?  (see Mark Potts mail to
+  chapel_info@cray on March 2, 2011)
 
 Standard Modules
 ----------------

@@ -42,7 +42,7 @@ proc main {
 //| >    List    | >
 //|/_____________|/
 
-record List
+class List
 {
   
   type data_type;
@@ -54,6 +54,9 @@ record List
     var data: outer.data_type;
     var next: Node;
   }
+  
+  
+  proc ~List () { clear(); }
   
   
   iter these ()
@@ -101,12 +104,11 @@ record List
 //| >    Stack    | >
 //|/______________|/
 
-record Stack
+class Stack
 {
 
   type data_type;
   var top:  Node;
-  var size: int=0;
 
   
   class Node {
@@ -114,11 +116,16 @@ record Stack
     var next: Node;
   }
 
+
+  proc ~Stack ()
+  {
+    while top do pop();
+  }
+  
   
   proc push ( data: data_type )
   {
     top = new Node(data, top);
-    size += 1;
   }
 
   
@@ -126,11 +133,13 @@ record Stack
   {
     if isEmpty() then halt("Attempting to pop off an empty stack.");
     
-    var old_top = top;
-    top = old_top.next;
-    size -= 1;
+    var data_out = top.data;
+    var new_top  = top.next;
+    delete top;
+    top = new_top;
 
-    return old_top.data;
+    return data_out;
+
   }
 
   
@@ -151,7 +160,7 @@ record Stack
 //| >    Queue    | >
 //|/______________|/
 
-record Queue
+class Queue
 {
   
   type data_type;
@@ -162,6 +171,13 @@ record Queue
     var data: outer.data_type;
     var prev: Node;
     var next: Node;
+  }
+
+
+
+  proc ~Queue ()
+  {
+    while head do dequeue();
   }
 
 
@@ -231,79 +247,3 @@ record Queue
 // /|""""""""""""""/|
 //< |    Queue    < |
 // \|______________\|
-
-
-
-
-
-
-//|\"""""""""""""""""""""""|\
-//| >    ArrayBasedList    | >
-//|/_______________________|/
-
-//-------------------------------------------------------------------
-// This class shouldn't be necessary, but I'm currently encountering
-// a mystery bug when trying to use a plain old List as the return
-// type of the PartitionFlags routine.
-//-------------------------------------------------------------------
-
-class ArrayBasedList
-{
-  
-  type data_type;
-  
-  var subindices: domain(1);
-  var data_array: [subindices] data_type;
-  
-  
-  iter these ()
-  {
-    for datum in data_array do yield datum;
-  }
-  
-  
-  proc add ( datum: data_type )
-  {
-    subindices = 1..subindices.high+1;
-    data_array(subindices.high) = datum: data_type;
-  }
-  
-  
-  proc clear () { subindices = 1..0; }
-  
-  proc isEmpty () { return subindices.numIndices==0; }  
-    
-}
-
-// /|"""""""""""""""""""""""/|
-//< |    ArrayBasedList    < |
-// \|_______________________\|
-
-
-
-// //|\""""""""""""""""""""|\
-// //| >    ArrayWrapper   | >
-// //|/____________________|/
-// 
-// //----------------------------------------------------------------
-// // This class is designed to enable an "array of arrays". It
-// // wraps an array and its domain into a single object, preventing
-// // the array from being typed by its domain.
-// //----------------------------------------------------------------
-// 
-// class ArrayWrapper
-// {
-//   
-//   param rank: int;
-//   param stridable: bool;
-//   type  eltType;
-//   
-//   var Domain: domain(rank=rank, stridable=stridable);
-//   var array: [Domain] eltType;
-//   
-//   proc clear () { Domain.clear(); }
-//   
-// }
-// // /|"""""""""""""""""""""/|
-// //< |    ArrayWrapper    < |
-// // \|_____________________\|

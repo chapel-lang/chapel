@@ -38,14 +38,11 @@ must be passed to the function at the call site.  A copy of the
 function is instantiated for each unique type that is passed to this
 function at a call site.  The formal argument has the semantics of a
 type alias.
-\begin{example}
+\begin{chapelexample}{build2tuple.chpl}
 The following code defines a function that takes two types at the call
 site and returns a 2-tuple where the types of the components of the
 tuple are defined by the two type arguments and the values are
 specified by the types default values.
-\begin{chapelpre}
-% build2tuple.chpl
-\end{chapelpre}
 \begin{chapel}
 proc build2Tuple(type t, type tt) {
   var x1: t;
@@ -65,7 +62,7 @@ writeln(t2);
 \begin{chapeloutput}
 (1, hello)
 \end{chapeloutput}
-\end{example}
+\end{chapelexample}
 
 \subsection{Formal Parameter Arguments}
 \label{Formal_Parameter_Arguments}
@@ -75,15 +72,12 @@ If a formal argument is specified with intent \chpl{param}, then a
 parameter must be passed to the function at the call site.  A copy of
 the function is instantiated for each unique parameter that is passed
 to this function at a call site.  The formal argument is a parameter.
-\begin{example}
+\begin{chapelexample}{fillTuple.chpl}
 The following code defines a function that takes an integer parameter
 \chpl{p} at the call site as well as a regular actual argument of
 integer type \chpl{x}.  The function returns a homogeneous tuple of
 size \chpl{p} where each component in the tuple has the value of
 \chpl{x}.
-\begin{chapelpre}
-% fillTuple.chpl
-\end{chapelpre}
 \begin{chapel}
 proc fillTuple(param p: int, x: int) {
   var result: p*int;
@@ -100,7 +94,7 @@ writeln(fillTuple(3,3));
 \end{chapeloutput}
 The function call \chpl{fillTuple(3, 3)} returns a 3-tuple where each
 component contains the value \chpl{3}.
-\end{example}
+\end{chapelexample}
 
 \subsection{Formal Arguments without Types}
 \label{Formal_Arguments_without_Types}
@@ -110,15 +104,12 @@ If the type of a formal argument is omitted, the type of the formal
 argument is taken to be the type of the actual argument passed to the
 function at the call site.  A copy of the function is instantiated for
 each unique actual type.
-\begin{example}
+\begin{chapelexample}{fillTuple2.chpl}
 The example from the previous section can be extended to be generic on
 a parameter as well as the actual argument that is passed to it by
 omitting the type of the formal argument \chpl{x}.  The following code
 defines a function that returns a homogeneous tuple of size \chpl{p}
 where each component in the tuple is initialized to \chpl{x}:
-\begin{chapelpre}
-% fillTuple2.chpl
-\end{chapelpre}
 \begin{chapel}
 proc fillTuple(param p: int, x) {
   var result: p*x.type;
@@ -140,7 +131,7 @@ In this function, the type of the tuple is taken to be the type of the
 actual argument.  The call \chpl{fillTuple(3, 3.14)} returns a 3-tuple
 of real values \chpl{(3.14, 3.14, 3.14)}.  The return type is
 \chpl{(real, real, real)}.
-\end{example}
+\end{chapelexample}
 
 \subsection{Formal Arguments with Queried Types}
 \label{Formal_Arguments_with_Queried_Types}
@@ -151,12 +142,9 @@ type of the formal argument is taken to be the type of the actual
 argument passed to the function at the call site.  A copy of the
 function is instantiated for each unique actual type.  The queried
 type has the semantics of a type alias.
-\begin{example}
+\begin{chapelexample}{fillTuple3.chpl}
 The example from the previous section can be rewritten to use a
 queried type for clarity:
-\begin{chapelpre}
-% fillTuple3.chpl
-\end{chapelpre}
 \begin{chapel}
 proc fillTuple(param p: int, x: ?t) {
   var result: p*t;
@@ -174,7 +162,7 @@ writeln(typeToString(x.type));
 (3.14, 3.14, 3.14)
 3*real
 \end{chapeloutput}
-\end{example}
+\end{chapelexample}
 
 \subsection{Formal Arguments of Generic Type}
 \label{Formal_Arguments_of_Generic_Type}
@@ -268,14 +256,11 @@ proc f(tuple: (?t,?tt)) where tuple.size == 2 && tt == real {
 \end{chapel}
 \end{example}
 
-\begin{example}
+\begin{chapelexample}{query.chpl}
 Type queries can also be used to constrain the types of other function arguments
 and/or the return type.  In this example, the type query on the first argument
 establishes type constraints on the other arguments and also determines the
 return type.
-\begin{chapelpre}
-% query.chpl
-\end{chapelpre}
 \begin{chapel}
 writeln(sumOfThree(1,2,3));
 writeln(sumOfThree(4.0,5.0,3.0));
@@ -287,11 +272,11 @@ proc sumOfThree(x: ?t, y:t, z:t):t {
    return sum;
 }
 \end{chapel}
-\begin{chapeloutput}
+\begin{chapelprintoutput}
 6
 12.0
-\end{chapeloutput}
-\end{example}
+\end{chapelprintoutput}
+\end{chapelexample}
 
 \index{integral@\chpl{integral}}
 \index{numeric@\chpl{numeric}}
@@ -329,12 +314,9 @@ For function calls that specify the module
 explicitly~(\rsec{Explicit_Naming}), an implicit use of the specified
 module exists at the call site.
 
-\begin{example}
+\begin{chapelexample}{point-of-instantiation.chpl}
 Consider the following code which defines a generic
 function \chpl{bar}:
-\begin{chapelpre}
-% point_of_instantiation.chpl
-\end{chapelpre}
 \begin{chapel}
 module M1 {
   record R {
@@ -368,7 +350,7 @@ argument \chpl{x} is of type \chpl{R}.  Therefore, the call to
 the \chpl{foo} method in \chpl{bar} is resolved by looking for visible
 functions from within \chpl{main} and going through the use of
 module \chpl{M1}.
-\end{example}
+\end{chapelexample}
 
 If the generic function is only called indirectly through dynamic
 dispatch, the point of instantiation is defined as the point at which
@@ -470,13 +452,10 @@ or compiler-generated constructor or type constructor.
 If that argument has a default, the actual type can be omitted, in
 which case the default will be used instead.
 
-\begin{example}
+\begin{chapelexample}{NodeClass.chpl}
 The following code defines a class called \chpl{Node} that implements
 a linked list data structure.  It is generic over the type of the
 element contained in the linked list.
-\begin{chapelpre}
-% NodeClass.chpl
-\end{chapelpre}
 \begin{chapel}
 class Node {
   type eltType;
@@ -503,7 +482,7 @@ denotes the type of the \chpl{Node} class instantiated over
 \chpl{real}.  Note that the type of the \chpl{next} field is specified
 as \chpl{Node(eltType)}; the type of \chpl{next} is the same type as
 the type of the object that it is a field of.
-\end{example}
+\end{chapelexample}
 
 \subsection{Parameters in Generic Types}
 \label{Parameters_in_Generic_Types}
@@ -529,13 +508,10 @@ or compiler-generated constructor or type constructor.
 If that argument has a default, the actual value can be omitted, in
 which case the default will be used instead.
 
-\begin{example}
+\begin{chapelexample}{IntegerTuple.chpl}
 The following code defines a class called \chpl{IntegerTuple} that is
 generic over an integer parameter which defines the number of
 components in the class.
-\begin{chapelpre}
-% IntegerTuple.chpl
-\end{chapelpre}
 \begin{chapel}
 class IntegerTuple {
   param size: int;
@@ -554,7 +530,7 @@ The call \chpl{new IntegerTuple(3)} creates an instance of the
 \chpl{3}.  The field \chpl{data} becomes a 3-tuple of integers.  The
 type of this class instance is \chpl{IntegerTuple(3)}.  The type
 specified by \chpl{IntegerTuple} is a generic type.
-\end{example}
+\end{chapelexample}
 
 \subsection{Fields without Types}
 \label{Fields_without_Types}
@@ -580,15 +556,12 @@ When the type constructor is invoked, the class or record is instantiated
 by binding the type of the field to the actual type passed to
 the corresponding argument.
 
-\begin{example}
+\begin{chapelexample}{fieldWithoutType.chpl}
 The following code defines another class called \chpl{Node} that
 implements a linked list data structure.  It is generic over the type
 of the element contained in the linked list.  This code does not
 specify the element type directly in the class as a type alias but
 rather omits the type from the \chpl{data} field.
-\begin{chapelpre}
-% fieldWithoutType.chpl
-\end{chapelpre}
 \begin{chapel}
 class Node {
   var data;
@@ -613,7 +586,7 @@ writeln(list.next.data);
 defines a two-element list with nodes containing the values \chpl{1}
 and \chpl{2}.  The type of each object could be specified
 as \chpl{Node(int)}.
-\end{example}
+\end{chapelexample}
 
 \subsection{The Type Constructor}
 \label{Type_Constructors}
@@ -714,11 +687,8 @@ of the compiler-generated constructor during default-initialization (\rsec{Defau
 %such a matching formal argument must be provided in each constructor
 %for that class.
 
-\begin{example}
+\begin{chapelexample}{constructorsForGenericFields.chpl}
 In the following code:
-\begin{chapelpre}
-% constructorsForGenericFields.chpl
-\end{chapelpre}
 \begin{chapel}
 class MyGenericClass {
   type t1;
@@ -760,7 +730,7 @@ and a parameter field. It does not initialize the fields \chpl{c5}
 and \chpl{v5} because they have initialization expressions, or
 the fields \chpl{x1} and \chpl{x5} because they are not generic fields
 (even though they are of generic types).
-\end{example}
+\end{chapelexample}
 
 \begin{openissue}
 The design of constructors, especially for generic classes, is
@@ -780,11 +750,8 @@ expression and must evaluate to either \chpl{true} or \chpl{false}.
 If it evaluates to \chpl{false}, the instantiation is rejected and the
 function is not a possible candidate for function resolution.
 Otherwise, the function is instantiated.
-\begin{example}
+\begin{chapelexample}{whereClause.chpl}
 Given two overloaded function definitions
-\begin{chapelpre}
-% whereClause.chpl
-\end{chapelpre}
 \begin{chapel}
 proc foo(x) where x.type == int { writeln("int"); }
 proc foo(x) where x.type == real { writeln("real"); }
@@ -799,7 +766,7 @@ real
 \end{chapeloutput}
 the call foo(3) resolves to the first definition because when the
 second function is instantiated the where clause evaluates to false.
-\end{example}
+\end{chapelexample}
 
 \section{User-Defined Compiler Diagnostics}
 \label{User_Defined_Compiler_Errors}
@@ -827,12 +794,9 @@ variable function are resolved by the compiler.  Consequently,
 the \chpl{setter} argument cannot be effectively used to guard a
 compiler diagnostic statements.
 
-\begin{example}
+\begin{chapelexample}{compilerDiagnostics.chpl}
 The following code shows an example of using user-defined compiler
 diagnostics to generate warnings and errors:
-\begin{chapelpre}
-% compilerDiagnostics.chpl
-\end{chapelpre}
 \begin{chapel}
 proc foo(x, y) {
   if (x.type != y.type) then
@@ -889,13 +853,11 @@ foo.chpl:2: warning: 1-argument version of foo called with type: string
 foo.chpl:6: error: foo() called with non-matching types: int != real
 \end{commandline}
 
-\end{example}
+\end{chapelexample}
 
 \section{Example: A Generic Stack}
 \label{Example_Generic_Stack}
-\begin{chapelpre}
-% genericStack.chpl
-\end{chapelpre}
+\begin{chapelexample}{genericStack.chpl}
 \begin{chapel}
 class MyNode {
   type itemType;              // type of item
@@ -935,3 +897,4 @@ while !s.isEmpty do
 2
 1
 \end{chapeloutput}
+\end{chapelexample}

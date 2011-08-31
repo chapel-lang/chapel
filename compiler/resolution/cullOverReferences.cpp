@@ -51,6 +51,7 @@ static bool
 isDerefType(Type* type) {
   return (type->symbol->hasFlag(FLAG_ARRAY) ||
           type->symbol->hasFlag(FLAG_DOMAIN) ||
+          type->symbol->hasFlag(FLAG_DISTRIBUTION) ||
           type->symbol->hasFlag(FLAG_ITERATOR_RECORD));
 }
 
@@ -89,7 +90,7 @@ void cullOverReferences() {
             se->var = tmp;
           }
         } else
-          INT_FATAL("unexpected case");
+          INT_FATAL(call, "unexpected case");
       }
     }
   }

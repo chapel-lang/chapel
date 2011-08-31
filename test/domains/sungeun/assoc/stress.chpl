@@ -1,7 +1,8 @@
-config const doSerial = true;
+config param parSafe = true;
+config const doSerial = false;
 
 config const seed: int(64) = 23;
-config const numAdds = 1000;
+config const numAdds = 1000000;
 config const numRemoves = numAdds;
 config const numSwaps = 10;
 config const stride = 7;
@@ -13,7 +14,7 @@ fillRandom(elems, seed);
 
 var inserted: [1..numAdds] bool;
 
-var D: domain(real);
+var D: domain(real, parSafe=parSafe);
 
 var removeOrder: [1..numAdds] int;
 [i in 1..numAdds] removeOrder[i] = i;
@@ -25,7 +26,7 @@ for p in 1..numSwapPasses {
 }
 
 writeln(D.sorted());
-sync serial doSerial {
+sync serial doSerial || (!doSerial && !parSafe) {
   writeln("Start adding..");
   begin forall i in 1..numAdds {
     D += elems[i];

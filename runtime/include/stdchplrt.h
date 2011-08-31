@@ -14,9 +14,9 @@
 
 #include "chplcast.h"
 #include "chplio.h"
-#include "chpl_mem.h"
+#include "chpl-mem.h"
 #include "chplrt.h"
-#include "chpltasks.h"
+#include "chpl-tasks.h"
 #include "chpltimers.h"
 #include "chpltypes.h"
 #include "error.h"

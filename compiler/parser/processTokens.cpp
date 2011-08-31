@@ -49,25 +49,27 @@ char* eatStringLiteral(const char* startChar) {
   register int c;
   
   newString();
-  while (1) {
     while ((c = getNextYYChar()) != *startChar && c != 0) {
+      if (c == '\n')
+        processNewline();
       if (*startChar == '\'' && c == '\"') {
         addChar('\\');
       }
-    FORCE_NEXT:
       addChar(c);
       if (c == '\\') {
         c = getNextYYChar();
+        if (c == '\n')
+          processNewline();
         if (c != 0) {
-          goto FORCE_NEXT;
+          addChar(c);
         }
+        else
+          break;
       }
     } /* eat up string */
     if (c == 0) {
       yyerror("EOF in string");
     }
-    break;
-  }
   return stringBuffer;
 }
 

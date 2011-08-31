@@ -2,6 +2,7 @@ GEN_HEADERS = \
 	reservedSymbolNames.h
 
 PASSES_SRCS = \
+        addInitGuards.cpp \
         buildDefaultFunctions.cpp \
         cleanup.cpp \
         codegen.cpp \

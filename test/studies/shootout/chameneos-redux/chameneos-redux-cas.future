@@ -1,3 +1,0 @@
-bug: reading from place.state supposed to read from a volatile uint,
-     but really reads from a uint.  still issues with getting volatile qualifier
-     from C

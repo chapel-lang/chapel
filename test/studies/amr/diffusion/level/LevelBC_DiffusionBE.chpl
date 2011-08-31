@@ -15,7 +15,7 @@ class ZeroFluxDiffusionBC: LevelBC {
     
     for grid in level.grids {
     
-      for ghost_domain in grid.ghost_multidomain {
+      for ghost_domain in grid.ghost_domains {
         var loc   = grid.relativeLocation(ghost_domain);
         var shift = -1*loc;
         

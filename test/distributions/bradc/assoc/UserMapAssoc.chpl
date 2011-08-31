@@ -101,7 +101,7 @@ class UserMapAssoc : BaseDist {
   //
   // TODO: What should we do if domIdxType did not match idxType?
   //
-  proc dsiNewAssociativeDom(type domIdxType) where domIdxType != idxType {
+  proc dsiNewAssociativeDom(type domIdxType, param parSafe: bool) where domIdxType != idxType {
     compilerError("Trying to create a domain whose index type does not match the distribution's");
   }
 
@@ -110,7 +110,7 @@ class UserMapAssoc : BaseDist {
   // initial index set if one exists?  If not, we should rewrite the
   // global domain construction to not do anything with whole...
   //
-  proc dsiNewAssociativeDom(type idxType) {
+  proc dsiNewAssociativeDom(type idxType, param parSafe: bool) {
     var dom = new UserMapAssocDom(idxType=idxType, dist=this);
     dom.setup();
     return dom;
@@ -205,6 +205,8 @@ class LocUserMapAssocDist {
 // The global domain class
 //
 class UserMapAssocDom: BaseAssociativeDom {
+  param parSafe: bool=true; // we need this because of the wrapper interface
+
   // GENERICS:
 
   //
@@ -434,7 +436,7 @@ class LocUserMapAssocDom {
   //
   // UP: a reference to the parent global domain class
   //
-  const wholeDom: UserMapAssocDom(idxType);
+  const wholeDom: UserMapAssocDom(idxType, parSafe=true);
 
 
   // STATE:
@@ -449,7 +451,7 @@ class LocUserMapAssocDom {
   // require a glbIdxType offset in order to get from the global
   // indices back to the local index type.
   //
-  var myInds: domain(idxType);
+  var myInds: domain(idxType, parSafe=true);
 
 
   // LOCAL DOMAIN INTERFACE:
@@ -526,7 +528,7 @@ class UserMapAssocArr: BaseArr {
   //
   // LEFT: the global domain descriptor for this array
   //
-  var dom: UserMapAssocDom(idxType);
+  var dom: UserMapAssocDom(idxType, parSafe=true);
 
   //
   // DOWN: an array of local array classes
@@ -554,9 +556,7 @@ class UserMapAssocArr: BaseArr {
   proc dsiSupportsPrivatization() param return true;
   proc dsiGetPrivatizeData() return 0;
   proc dsiPrivatize(privatizeData) {
-    var dompid = dom.pid;
-    var thisdom = dom;
-    var privdom = __primitive("chpl_getPrivatizedClass", thisdom, dompid);
+    var privdom = chpl_getPrivatizedCopy(dom.type, dom.pid);
     var c = new UserMapAssocArr(idxType=idxType, eltType=eltType, dom=privdom);
     c.locArrs = locArrs;
     return c;

@@ -47,7 +47,7 @@ proc _reprivatize(value) {
   proc _reprivatizeHelp(parentValue, originalValue, pid, hereID, reprivatizeData) {
     var newValue = originalValue;
     if hereID != here.uid {
-      newValue = __primitive("chpl_getPrivatizedClass", newValue, pid);
+      newValue = chpl_getPrivatizedCopy(newValue.type, pid);
       newValue.dsiReprivatize(parentValue, reprivatizeData);
     }
     cobegin {
@@ -133,13 +133,15 @@ proc chpl__buildDomainRuntimeType(d: _distribution, param rank: int,
   return _newDomain(d.newRectangularDom(rank, idxType, stridable));
 
 pragma "has runtime type"
-proc chpl__buildDomainRuntimeType(d: _distribution, type idxType) type
-  return _newDomain(d.newAssociativeDom(idxType));
+proc chpl__buildDomainRuntimeType(d: _distribution, type idxType,
+                                  param parSafe: bool = true) type
+  return _newDomain(d.newAssociativeDom(idxType, parSafe));
 
 pragma "has runtime type"
-proc chpl__buildDomainRuntimeType(d: _distribution, type idxType) type
+proc chpl__buildDomainRuntimeType(d: _distribution, type idxType,
+                                  param parSafe: bool = true) type
  where idxType == _OpaqueIndex
-  return _newDomain(d.newOpaqueDom(idxType));
+  return _newDomain(d.newOpaqueDom(idxType, parSafe));
 
 // This function has no 'has runtime type' pragma since the idxType of
 // opaque domains is _OpaqueIndex, not opaque.  This function is
@@ -159,7 +161,11 @@ proc chpl__convertValueToRuntimeType(dom: domain) type
                             dom._value.idxType, dom._value.stridable);
 
 proc chpl__convertValueToRuntimeType(dom: domain) type
- where dom._value:BaseAssociativeDom || dom._value:BaseOpaqueDom
+ where dom._value:BaseAssociativeDom
+  return chpl__buildDomainRuntimeType(dom.dist, dom._value.idxType, dom._value.parSafe);
+
+proc chpl__convertValueToRuntimeType(dom: domain) type
+ where dom._value:BaseOpaqueDom
   return chpl__buildDomainRuntimeType(dom.dist, dom._value.idxType);
 
 proc chpl__convertValueToRuntimeType(dom: domain) type
@@ -261,7 +267,7 @@ proc chpl__distributed(d: _distribution, type domainType) type {
     return chpl__buildSparseDomainRuntimeType(d, dom._value.parentDom);
   } else {
     var dom: domainType;
-    return chpl__buildDomainRuntimeType(d, dom._value.idxType);
+    return chpl__buildDomainRuntimeType(d, dom._value.idxType, dom._value.parSafe);
   }
 }
 
@@ -366,10 +372,7 @@ record _distribution {
   pragma "inline"
   proc _value {
     if _isPrivatized(_valueType) {
-      var tc = _valueType;
-      var id = _value;
-      var pc = __primitive("chpl_getPrivatizedClass", tc, id);
-      return pc;
+      return chpl_getPrivatizedCopy(_valueType.type, _value);
     } else {
       return _value;
     }
@@ -406,8 +409,8 @@ record _distribution {
     return x;
   }
 
-  proc newAssociativeDom(type idxType) {
-    var x = _value.dsiNewAssociativeDom(idxType);
+  proc newAssociativeDom(type idxType, param parSafe: bool=true) {
+    var x = _value.dsiNewAssociativeDom(idxType, parSafe);
     if x.linksDistribution() {
       var cnt = _value._distCnt$;
       _value._doms.append(x);
@@ -419,8 +422,9 @@ record _distribution {
     return x;
   }
 
-  proc newAssociativeDom(type idxType) where _isEnumeratedType(idxType) {
-    var x = _value.dsiNewAssociativeDom(idxType);
+  proc newAssociativeDom(type idxType, param parSafe: bool=true)
+  where _isEnumeratedType(idxType) {
+    var x = _value.dsiNewAssociativeDom(idxType, parSafe);
     if x.linksDistribution() {
       var cnt = _value._distCnt$;
       _value._doms.append(x);
@@ -435,8 +439,8 @@ record _distribution {
     return x;
   }
 
-  proc newOpaqueDom(type idxType) {
-    var x = _value.dsiNewOpaqueDom(idxType);
+  proc newOpaqueDom(type idxType, param parSafe: bool=true) {
+    var x = _value.dsiNewOpaqueDom(idxType, parSafe);
     if x.linksDistribution() {
       var cnt = _value._distCnt$;
       _value._doms.append(x);
@@ -461,7 +465,7 @@ record _distribution {
     return x;
   }
 
-  proc idxToLocale(ind) return _value.dsiIndexLocale(ind);
+  proc idxToLocale(ind) return _value.dsiIndexToLocale(ind);
 
   proc writeThis(x: Writer) {
     _value.writeThis(x);
@@ -484,10 +488,7 @@ record _domain {
   pragma "inline"
   proc _value {
     if _isPrivatized(_valueType) {
-      var tc = _valueType;
-      var id = _value;
-      var pc = __primitive("chpl_getPrivatizedClass", tc, id);
-      return pc;
+      return chpl_getPrivatizedCopy(_valueType.type, _value);
     } else {
       return _value;
     }
@@ -511,6 +512,12 @@ record _domain {
       return _value.rank;
     else
       return 1;
+  }
+
+  proc idxType type {
+    if isOpaqueDom(this) then
+      compilerError("opaque domains do not currently support .idxType");
+    return _value.idxType;
   }
 
   proc stridable param where isRectangularDom(this) {
@@ -671,7 +678,7 @@ record _domain {
     var ranges = dims();
     for i in 1..rank do {
       ranges(i) = ranges(i).expand(off(i));
-      if (ranges(i)._low > ranges(i)._high) {
+      if (ranges(i).low > ranges(i).high) {
         halt("***Error: Degenerate dimension created in dimension ", i, "***");
       }
     }
@@ -732,8 +739,8 @@ record _domain {
   proc interior(off: rank*_value.idxType) {
     var ranges = dims();
     for i in 1..rank do {
-      if ((off(i) > 0) && (dim(i)._high+1-off(i) < dim(i)._low) ||
-          (off(i) < 0) && (dim(i)._low-1-off(i) > dim(i)._high)) {
+      if ((off(i) > 0) && (dim(i).high+1-off(i) < dim(i).low) ||
+          (off(i) < 0) && (dim(i).low-1-off(i) > dim(i).high)) {
         halt("***Error: Argument to 'interior' function out of range in dimension ", i, "***");
       } 
       ranges(i) = _value.dsiDim(i).interior(off(i));
@@ -766,7 +773,7 @@ record _domain {
   proc translate(off: ?t ...rank) return translate(off);
   proc translate(off) where isTuple(off) {
     if off.size != rank then
-      compilerError("must be same size");
+      compilerError("the domain and offset arguments of translate() must be of the same rank");
     var ranges = dims();
     for i in 1..rank do
       ranges(i) = _value.dsiDim(i).translate(off(i));
@@ -822,6 +829,34 @@ record _domain {
 
   proc displayRepresentation() { _value.dsiDisplayRepresentation(); }
 }  // record _domain
+
+proc chpl_countDomHelp(dom, counts) {
+  var ranges = dom.dims();
+  for param i in 1..dom.rank do
+    ranges(i) = ranges(i) # counts(i);
+  return dom[(...ranges)];
+}  
+
+proc #(dom: domain, counts: integral) where isRectangularDom(dom) && dom.rank == 1 {
+  return chpl_countDomHelp(dom, tuple(counts));
+}
+
+proc #(dom: domain, counts) where isRectangularDom(dom) && isTuple(counts) {
+  if (counts.size != dom.rank) then
+    compilerError("the domain and tuple arguments of # must have the same rank");
+  return chpl_countDomHelp(dom, counts);
+}
+
+proc #(arr: [], counts: integral) where isRectangularArr(arr) && arr.rank == 1 {
+  return arr[arr.domain#counts];
+}
+
+proc #(arr: [], counts) where isRectangularArr(arr) && isTuple(counts) {
+  if (counts.size != arr.rank) then
+    compilerError("the domain and array arguments of # must have the same rank");
+  return arr[arr.domain#counts];
+}
+
 
 proc _getNewDist(value) {
   return new dmap(value);
@@ -901,7 +936,7 @@ pragma "inline" proc ==(d1: domain, d2: domain) where isRectangularDom(d1) &&
                                                       isRectangularDom(d2) {
   if d1._value.rank != d2._value.rank then return false;
   for param i in 1..d1._value.rank do
-    if (d1.dims() != d2.dims()) then return false;
+    if (d1.dim(i) != d2.dim(i)) then return false;
   return true;
 }
 
@@ -909,7 +944,7 @@ pragma "inline" proc !=(d1: domain, d2: domain) where isRectangularDom(d1) &&
                                                       isRectangularDom(d2) {
   if d1._value.rank != d2._value.rank then return true;
   for param i in 1..d1._value.rank do
-    if (d1.dims() != d2.dims()) then return true;
+    if (d1.dim(i) != d2.dim(i)) then return true;
   return false;
 }
 
@@ -947,6 +982,8 @@ pragma "inline" proc !=(d1: domain, d2: domain) where (isSparseDom(d1) &&
   return false;
 }
 
+// any combinations not handled by the above
+
 pragma "inline" proc ==(d1: domain, d2: domain) param {
   return false;
 }
@@ -969,10 +1006,7 @@ record _array {
   pragma "inline"
   proc _value {
     if _isPrivatized(_valueType) {
-      var tc = _valueType;
-      var id = _value;
-      var pc = __primitive("chpl_getPrivatizedClass", tc, id);
-      return pc;
+      return chpl_getPrivatizedCopy(_valueType.type, _value);
     } else {
       return _value;
     }
@@ -994,7 +1028,7 @@ record _array {
   proc rank param return this.domain.rank;
 
   pragma "inline"
-  proc this(i: rank*_value.idxType) var {
+  proc this(i: rank*_value.dom.idxType) var {
     if isRectangularArr(this) || isSparseArr(this) then
       return _value.dsiAccess(i);
     else
@@ -1002,7 +1036,7 @@ record _array {
   }
 
   pragma "inline"
-  proc this(i: _value.idxType ...rank) var
+  proc this(i: _value.dom.idxType ...rank) var
     return this(i);
 
   //
@@ -1039,7 +1073,7 @@ record _array {
     return _newArray(a);
   }
 
-  proc this(args ...rank) where _validRankChangeArgs(args, _value.idxType) {
+  proc this(args ...rank) where _validRankChangeArgs(args, _value.dom.idxType) {
     if boundsChecking then
       checkRankChange(args);
     var ranges = _getRankChangeRanges(args);
@@ -1404,14 +1438,16 @@ pragma "inline" proc =(a: [], b) {
   return a;
 }
 
-proc =(a: [], b: _tuple) where isEnumArr(a) || isRectangularArr(a) {
-  if isEnumArr(a) {
+proc =(a: [], b: _tuple) where isEnumArr(a) {
     if b.size != a.numElements then
       halt("tuple array initializer size mismatch");
     for (i,j) in (chpl_enumerate(index(a.domain)), 1..) {
       a(i) = b(j);
     }
-  } else {
+    return a;
+}
+
+proc =(a: [], b: _tuple) where isRectangularArr(a) {
     proc chpl__tupleInit(j, param rank: int, b: _tuple) {
       const stride = a.domain.dim(a.rank-rank+1).stride,
             start = a.domain.dim(a.rank-rank+1).first;
@@ -1430,8 +1466,7 @@ proc =(a: [], b: _tuple) where isEnumArr(a) || isRectangularArr(a) {
     }
     var j: a.rank*int;
     chpl__tupleInit(j, a.rank, b);
-  }
-  return a;
+    return a;
 }
 
 proc _desync(type t) where t: _syncvar || t: _singlevar {
@@ -1449,7 +1484,7 @@ proc =(a: [], b: _desync(a.eltType)) {
     forall e in a do
       e = b;
   } else {
-    compilerWarning("whole array assignment has been serialized (see note in $CHPL_HOME/STATUS)");
+    compilerWarning("Whole array assignment has been serialized (see note in $CHPL_HOME/STATUS)");
     for e in a do
       e = b;
   }
@@ -1589,7 +1624,7 @@ pragma "inline" proc _checkIterator(x) {
 
 pragma "inline"
 proc _freeIterator(ic: _iteratorClass) {
-  __primitive("chpl_free", ic);
+  __primitive("chpl_mem_free", ic);
 }
 
 pragma "inline"
@@ -1807,12 +1842,13 @@ proc chpl__initCopy(ir: _iteratorRecord) {
   var A: [D] iteratorIndexType(irc);
 
   for e in irc {
-    pragma "no copy" pragma "insert auto destroy" var ee = e;
+    //pragma "no copy" /*pragma "insert auto destroy"*/ var ee = e;
     if i > size {
       size = size * 2;
       D = [1..size];
     }
-    A(i) = ee;
+    //A(i) = ee;
+    A(i) = e;
     i = i + 1;
   }
   D = [1..i-1];

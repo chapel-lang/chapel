@@ -4,7 +4,7 @@
 //
 #include "chplrt.h"
 #include "chpl-comm.h"
-#include "chpl_mem.h"
+#include "chpl-mem.h"
 
 #include <stdint.h>
 #include <string.h>
@@ -24,12 +24,12 @@ void chpl_newPrivatizedClass(void* v) {
   chpl_numPrivateObjects += 1;
   if (chpl_numPrivateObjects == 1) {
     chpl_capPrivateObjects = 8;
-    chpl_privateObjects = chpl_malloc(chpl_capPrivateObjects, sizeof(void*), CHPL_RT_MD_PRIVATE_OBJECTS_ARRAY, 0, "");
+    chpl_privateObjects = chpl_mem_allocMany(chpl_capPrivateObjects, sizeof(void*), CHPL_RT_MD_PRIVATE_OBJECTS_ARRAY, 0, "");
   } else {
     if (chpl_numPrivateObjects > chpl_capPrivateObjects) {
       void** tmp;
       chpl_capPrivateObjects *= 2;
-      tmp = chpl_malloc(chpl_capPrivateObjects, sizeof(void*), CHPL_RT_MD_PRIVATE_OBJECTS_ARRAY, 0, "");
+      tmp = chpl_mem_allocMany(chpl_capPrivateObjects, sizeof(void*), CHPL_RT_MD_PRIVATE_OBJECTS_ARRAY, 0, "");
       memcpy((void*)tmp, (void*)chpl_privateObjects, (chpl_numPrivateObjects-1)*sizeof(void*));
       chpl_privateObjects = tmp;
       // purposely leak old copies of chpl_privateObject to avoid the need to

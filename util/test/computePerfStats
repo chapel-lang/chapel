@@ -15,21 +15,21 @@ my $outputdir = $ARGV[1];
 
 my $argc = @ARGV+1;
 my $key_file;
-if ($argc >= 2) {
+if ($argc >= 4) {
     $key_file = $ARGV[2];
 } else {
     $key_file = "$testname.perfkeys";
 }
 
 my $test_output_file;
-if ($argc >= 3) {
+if ($argc >= 5) {
     $test_output_file = $ARGV[3];
 } else {
     $test_output_file = "$testname.exec.out.tmp";
 }
 
 my $exec_time_out;
-if ($argc >= 4) {
+if ($argc >= 6) {
     $exec_time_out = $ARGV[4];
 } else {
     $exec_time_out = "False";
@@ -42,10 +42,10 @@ my $fatal_errors = 0;
 if (-e "$errors_file") {
     system("rm $errors_file");
 }
-open ERRORS, ">$errors_file" or die "can't open $errors_file for creating $!";
+open ERRORS, ">$errors_file" or die "can't open $errors_file for creating: $!";
 
 # get keys from .perfkeys
-open KEYS, "$key_file" or die "can't open $key_file $!";
+open KEYS, "$key_file" or die "can't open $key_file: $!";
 my @keys;
 my @tmp_keys = <KEYS>;
 close (KEYS);
@@ -67,7 +67,7 @@ print ERRORS "processed $key_file\n";
 # get lines from output file
 my @file_lines;
 # if ($exec_time_out eq "False") {
-    open TEST, "$test_output_file" or die "can't open $test_output_file $!";
+    open TEST, "$test_output_file" or die "can't open $test_output_file: $!";
     @file_lines = <TEST>;
     close (TEST);
     print ERRORS "processed $test_output_file\n";
@@ -78,7 +78,7 @@ my @file_lines;
 # if this is first performance run, create the .dat
 if (! -e "$data_file") {
 # } else {
-    open STATS, ">$data_file" or die "can't open $data_file for creating $!";
+    open STATS, ">$data_file" or die "can't open $data_file for creating: $!";
     print ERRORS "created $data_file\n";
     print STATS "# Date";
     foreach my $key (@keys) {
@@ -89,7 +89,7 @@ if (! -e "$data_file") {
 }
 
 # write new data to the .dat
-open STATS, ">>$data_file" or die "can't open $data_file for appending $!";
+open STATS, ">>$data_file" or die "can't open $data_file for appending: $!";
 print ERRORS "appending $data_file\n";
 
 my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime time;

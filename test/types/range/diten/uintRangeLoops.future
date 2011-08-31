@@ -1,9 +1,0 @@
-bug: range op overflow
-
-Was:
-
-bug: range with uint elements and negative stride has bad parallel iterator
-
-In the leader iterator for ranges, the stride gets cast to eltType. When
-stride is negative, this results in a very large stride, so the number of
-elements in the resulting range is 1.

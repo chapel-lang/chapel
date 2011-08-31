@@ -73,6 +73,10 @@ double elapsedSeconds = gettimer(&mytimer) - start;
 Debugging the generated code
 ----------------------------
 
+Using gdb and other debugging features are also discussed in:
+
+      $CHPL_HOME/doc/release/README.executing
+
 * If you want to debug the runtime library as well, build your runtime so:
 
       cd $CHPL_HOME/runtime
@@ -108,6 +112,11 @@ define sdirs
 * To have gdb refer to the actual generated C code, compile with:
 
       -g --savec DIRECTORY2 --c-line-numbers
+
+
+* GDB's TUI mode is discussed in CompilerDebugging.txt and, e.g., here:
+
+      http://davis.lbl.gov/Manuals/GDB/gdb_21.html
 
 
 * To see the IDs of the AST nodes in the generated code

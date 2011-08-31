@@ -1,8 +1,0 @@
-bug: a newline in a string literal makes the parser's line counter 1 off
-
-The error message about 'x' should point to Line 3 (where the declaration
-actually occurs), but it currently points to Line 2 instead.
-(What error message it is does not matter.)
-
-It seems that's because the parser does not increment its line counter
-upon the newline within the string argument to write().

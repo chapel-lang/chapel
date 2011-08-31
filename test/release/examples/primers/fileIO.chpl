@@ -1,6 +1,9 @@
 /*
- * This test shows a simple example of using file I/O in Chapel.  It
- * initializes an array and writes its size and data to a file.  It
+ * File I/O Primer
+ *
+ * This is a simple example of using file I/O in Chapel.
+ *
+ * It initializes an array and writes its size and data to a file.  It
  * then opens the file, uses the size in the file to declare a new
  * domain and array, and reads in the array data.
  */
@@ -38,7 +41,7 @@ proc main {
 
 
 //
-// this function writes a square array out to a file
+// this procedure writes a square array out to a file
 //
 proc writeSquareArray(n, X, filename) {
   // Create an output file with the specified filename in write mode
@@ -59,7 +62,7 @@ proc writeSquareArray(n, X, filename) {
 
 
 //
-// This function reads a new array out of a file and returns it
+// This procedure reads a new array out of a file and returns it
 //
 proc readArray(filename) {
    // Create an input file with the specified filename in read mode

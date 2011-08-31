@@ -195,8 +195,9 @@ static int isDefAndOrUse(SymExpr* se) {
       if (arg->intent == INTENT_REF ||
           arg->intent == INTENT_INOUT ||
           (!strcmp(fn->name, "=") && fn->getFormal(1) == arg && isRecord(arg->type)) ||
-          arg->type->symbol->hasFlag(FLAG_ARRAY) || // pass by reference
-          arg->type->symbol->hasFlag(FLAG_DOMAIN)) { // pass by reference
+          arg->type->symbol->hasFlag(FLAG_ARRAY) ||
+          arg->type->symbol->hasFlag(FLAG_DOMAIN) ||
+          arg->type->symbol->hasFlag(FLAG_DISTRIBUTION)) { // pass by reference
         return 3;
         // also use; do not "continue"
       } else if (arg->intent == INTENT_OUT) {
@@ -323,9 +324,10 @@ void insert_help(BaseAST* ast,
 }
 
 
-void remove_help(BaseAST* ast, int dummy) {
-  AST_CHILDREN_CALL(ast, remove_help, dummy);
+void remove_help(BaseAST* ast, int flag) {
+  AST_CHILDREN_CALL(ast, remove_help, flag);
   if (Expr* expr = toExpr(ast)) {
+    trace_remove(ast, flag);
     expr->parentSymbol = NULL;
     expr->parentExpr = NULL;
   }
@@ -404,70 +406,71 @@ pruneVisit(FnSymbol* fn, Vec<FnSymbol*>& fns, Vec<TypeSymbol*>& types) {
 }
 
 
-void
-prune() {
-  Vec<FnSymbol*> fns;     // set of used functions
-  Vec<TypeSymbol*> types; // set of used types
-
-  //
-  // determine sets of used functions and types
-  //
+// Visit and mark functions (and types) which are reachable from
+// externally visible symbols.
+static void
+visitVisibleFunctions(Vec<FnSymbol*>& fns, Vec<TypeSymbol*>& types)
+{
+  // chpl_main is always visible (if it exists).
   pruneVisit(chpl_main, fns, types);
+
+  // Functions appearing the function pointer table are visible.
+  // These are blocks that can be started through a forall, coforall or on statement.
   forv_Vec(FnSymbol, fn, ftableVec)
     pruneVisit(fn, fns, types);
+
+  // Mark VFT entries as visible.
   for (int i = 0; i < virtualMethodTable.n; i++)
     if (virtualMethodTable.v[i].key)
       for (int j = 0; j < virtualMethodTable.v[i].value->n; j++)
         pruneVisit(virtualMethodTable.v[i].value->v[j], fns, types);
-  if (fRuntime) {
-    forv_Vec(FnSymbol, fn, gFnSymbols) {
-      if (fn->hasFlag(FLAG_EXPORT))
-        pruneVisit(fn, fns, types);
-    }
-  }
 
-  //
-  // delete unused functions
-  //
-  forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (!fns.set_in(fn))
-      fn->defPoint->remove();
-  }
+  // Mark exported symbols as visible.
+  forv_Vec(FnSymbol, fn, gFnSymbols)
+    if (fn->hasFlag(FLAG_EXPORT))
+      pruneVisit(fn, fns, types);
+}
 
+
+static void
+pruneUnusedTypes(Vec<TypeSymbol*>& types)
+{
   //
   // delete unused ClassType types, only deleting references to such
   // types when the value types are deleted
   //
   forv_Vec(TypeSymbol, ts, gTypeSymbols) {
-    if (!types.set_in(ts)) {
-      if (isClassType(ts->type)) {
-        //
-        // delete reference types for classes/records/unions only if
-        // deleting value types
-        //
-        if (ts->hasFlag(FLAG_REF) && isClassType(ts->getValType()))
-          continue;
+    // Visit only those types not marked as visible.
+    if (types.set_in(ts))
+      continue;
 
-        //
-        // delete reference type if type is not used
-        //
-        if (!ts->hasFlag(FLAG_REF))
-          if (Type* refType = ts->getRefType())
-            refType->symbol->defPoint->remove();
+    if (isClassType(ts->type)) {
+      //
+      // delete reference types for classes/records/unions only if
+      // deleting value types
+      //
+      if (ts->hasFlag(FLAG_REF) && isClassType(ts->getValType()))
+        continue;
 
-        //
-        // unlink reference type from value type
-        //
-        if (ts->hasFlag(FLAG_REF)) {
-          if (Type* vt = ts->getValType()) {
-            if (vt == dtNil) // don't delete nil ref as it is used when widening
-              continue;
-            vt->refType = NULL;
-          }
+      //
+      // delete reference type if type is not used
+      //
+      if (!ts->hasFlag(FLAG_REF))
+        if (Type* refType = ts->getRefType())
+          refType->symbol->defPoint->remove();
+
+      //
+      // unlink reference type from value type
+      //
+      if (ts->hasFlag(FLAG_REF)) {
+        if (Type* vt = ts->getValType()) {
+          if (vt == dtNil) // don't delete nil ref as it is used when widening
+            continue;
+          vt->refType = NULL;
         }
-
-        ts->defPoint->remove();
       }
+
+      ts->defPoint->remove();
     }
   }
 
@@ -479,3 +482,26 @@ prune() {
       def->sym->type = dtVoid;
   }
 }
+
+
+// Determine sets of used functions and types, and then delete
+// functions which are not visible and classes which are not used.
+void
+prune() {
+  Vec<FnSymbol*> fns;     // This receives the set of used functions.
+  Vec<TypeSymbol*> types; // This receives the set of used types.
+
+  visitVisibleFunctions(fns, types);
+
+  //
+  // delete unused functions
+  //
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    if (!fns.set_in(fn))
+      fn->defPoint->remove();
+  }
+
+  pruneUnusedTypes(types);
+}
+
+

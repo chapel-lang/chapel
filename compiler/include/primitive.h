@@ -103,7 +103,7 @@ enum PrimitiveTag {
   PRIM_SET_SERIAL,                // set serial state to true or false
 
   PRIM_CHPL_ALLOC,
-  PRIM_CHPL_ALLOC_PERMIT_ZERO,  // chpl_alloc wrapper that permits size 0
+  PRIM_CHPL_ALLOC_PERMIT_ZERO,  // chpl_mem_alloc wrapper that permits size 0
   PRIM_CHPL_FREE,               // only for variables on heap?
   PRIM_INIT_FIELDS, // initialize fields of a temporary record
   PRIM_PTR_EQUAL,

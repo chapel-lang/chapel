@@ -110,22 +110,23 @@ please contact your system administrator.
 10) Compile your Chapel program as usual.  See README.compiling for
     details.  For example:
 
-      chpl -o hello-multiloc $CHPL_HOME/examples/hello-multiloc.chpl
+      chpl -o hello6-taskpar-dist $CHPL_HOME/examples/hello6-taskpar-dist.chpl
 
 
 11) When you compile a Chapel program for the Cray XE, you should see
-    two binaries (e.g., hello-multiloc and hello-multiloc_real).  The
-    first binary contains code to launch the Chapel program onto the
-    compute nodes, as specified by your CHPL_LAUNCHER setting.  The
-    second contains the program code itself; it is not intended to be
-    executed directly from the shell prompt.
+    two binaries (e.g., hello6-taskpar-dist and
+    hello6-taskpar-dist_real).  The first binary contains code to
+    launch the Chapel program onto the compute nodes, as specified by
+    your CHPL_LAUNCHER setting.  The second contains the program code
+    itself; it is not intended to be executed directly from the shell
+    prompt.
 
 
 12) Multi-locale executions require the number of locales to be
     specified on the command line.  Other than this, execute your
     Chapel program as usual.  For example:
 
-      ./hello-multiloc -nl 2
+      ./hello6-taskpar-dist -nl 2
 
    You can use the -v flag to see the commands used to launch your
    program.  See README.launcher for further details.
@@ -155,7 +156,9 @@ Dynamic linking with the Cray Programming Environment
   static or dynamic linking.  The current default for the Cray
   Programming Environment compilers is dynamic linking.  If you wish
   to override this, set the environment variable
-  CHPL_ASYNCPE_USE_DYNAMIC to 'false'.
+  CHPL_ASYNCPE_USE_DYNAMIC to 'false'.  Note that it may not be
+  possible to link statically depending on your particular system
+  configuration.
 
 
 --------------------------
@@ -166,14 +169,6 @@ Known Constraints and Bugs
   GASNet over the MPI conduit (no other conduits exists).  As such,
   the implementation does not take full advantage of some of the high
   performance hardware instructions.
-
-* There is a known issue with the Cray MPI release for XE systems that
-  causes some programs to hit an MPI assertion and then possibly hang
-  during exit.  A workaround is to set the environment variable,
-  MPICH_GNI_DYNAMIC_CONN to 'disabled.'  Setting this environment
-  variable may affect memory usage for all MPI programs linked against
-  the Cray MPI release.  In addition, an additional performance
-  penalty may be paid at start up time for thousands of MPI ranks.
 
 * Redirecting stdin when executing a Chapel program under PBS/qsub
   may not work due to limitations of qsub.

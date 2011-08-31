@@ -412,10 +412,10 @@ initPrimitive() {
   prim_def(PRIM_GET_SERIAL, "task_get_serial", returnInfoBool);
   prim_def(PRIM_SET_SERIAL, "task_set_serial", returnInfoVoid, true);
 
-  prim_def(PRIM_CHPL_ALLOC, "chpl_alloc", returnInfoChplAlloc, true, true);
-  prim_def(PRIM_CHPL_ALLOC_PERMIT_ZERO, "chpl_alloc_permit_zero",
+  prim_def(PRIM_CHPL_ALLOC, "chpl_mem_alloc", returnInfoChplAlloc, true, true);
+  prim_def(PRIM_CHPL_ALLOC_PERMIT_ZERO, "chpl_mem_allocPermitZero",
            returnInfoChplAlloc, true, true);
-  prim_def(PRIM_CHPL_FREE, "chpl_free", returnInfoVoid, true, true);
+  prim_def(PRIM_CHPL_FREE, "chpl_mem_free", returnInfoVoid, true, true);
   prim_def(PRIM_INIT_FIELDS, "chpl_init_record", returnInfoVoid, true);
   prim_def(PRIM_PTR_EQUAL, "ptr_eq", returnInfoBool);
   prim_def(PRIM_PTR_NOTEQUAL, "ptr_neq", returnInfoBool);
@@ -517,10 +517,7 @@ initPrimitive() {
   prim_def("real2int", returnInfoInt64);
   prim_def("object2int", returnInfoInt64);
   prim_def("chpl_exit_any", returnInfoVoid, true);
-  prim_def("chpl_coresPerLocale", returnInfoInt32);
   prim_def("chpl_localeName", returnInfoString);
-  prim_def("chpl_maxThreads", returnInfoInt32);
-  prim_def("chpl_maxThreadsLimit", returnInfoInt32);
   prim_def(PRIM_chpl_numThreads, "chpl_numThreads", returnInfoUInt32);
   prim_def(PRIM_chpl_numIdleThreads, "chpl_numIdleThreads", returnInfoUInt32);
   prim_def(PRIM_chpl_numQueuedTasks, "chpl_numQueuedTasks", returnInfoUInt32);

@@ -15,17 +15,6 @@ class LevelSolution {
   var current_time: real;
 
 
-  //|\''''''''''''''''|\
-  //| >    clear()    | >
-  //|/................|/
-  proc clear() {
-    delete old_data;
-    delete current_data;
-  }
-  // /|''''''''''''''''/|
-  //< |    clear()    < |
-  // \|................\|
-
 
   //|\''''''''''''''''''''|\
   //| >    constructor    | >
@@ -38,6 +27,21 @@ class LevelSolution {
   // /|''''''''''''''''''''/|
   //< |    constructor    < |
   // \|....................\|
+
+
+
+  //|\'''''''''''''''''''|\
+  //| >    destructor    | >
+  //|/...................|/
+  
+  proc ~LevelSolution
+  {
+    delete old_data;
+    delete current_data;
+  }
+  // /|'''''''''''''''''''/|
+  //< |    destructor    < |
+  // \|...................\|
 
 }
 // /|""""""""""""""""""""""""""""/|

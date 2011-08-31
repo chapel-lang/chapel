@@ -178,27 +178,23 @@ void closefile(fileinfo* thefile) {
 }
 
 
-void openCFile(fileinfo* fi, const char* name, const char* ext, bool runtime) {
+void openCFile(fileinfo* fi, const char* name, const char* ext) {
   if (ext)
     fi->filename = astr(name, ".", ext);
   else
     fi->filename = astr(name);
-  if (runtime)
-    fi->pathname = fi->filename;
-  else
-    fi->pathname = genIntFilename(fi->filename);
+
+  fi->pathname = genIntFilename(fi->filename);
   fi->fptr = fopen(fi->pathname, "w");
 }
 
-void appendCFile(fileinfo* fi, const char* name, const char* ext, bool runtime) {
+void appendCFile(fileinfo* fi, const char* name, const char* ext) {
   if (ext)
     fi->filename = astr(name, ".", ext);
   else
     fi->filename = astr(name);
-  if (runtime)
-    fi->pathname = fi->filename;
-  else
-    fi->pathname = genIntFilename(fi->filename);
+  
+  fi->pathname = genIntFilename(fi->filename);
   fi->fptr = fopen(fi->pathname, "a+");
 }
 void closeCFile(fileinfo* fi, bool beautifyIt) {
@@ -342,7 +338,7 @@ const char* runUtilScript(const char* script) {
 
 
 void makeBinary(void) {
-  if (fRuntime || no_codegen)
+  if (no_codegen)
     return;
 
   if (chplmake[0] == '\0') {
@@ -367,7 +363,8 @@ static void genCFiles(FILE* makefile) {
       fprintf(makefile, "\t%s \\\n", inputFilename);
     }
   }
-  fprintf(makefile, "\n");
+  if (!first)
+    fprintf(makefile, "\n");
 }
 
 static void genCFileBuildRules(FILE* makefile) {
@@ -405,7 +402,8 @@ static void genObjFiles(FILE* makefile) {
       }
     }
   }
-  fprintf(makefile, "\n");
+  if (!first)
+    fprintf(makefile, "\n");
 }
 
 
@@ -424,6 +422,28 @@ void codegen_makefile(fileinfo* mainfile, fileinfo *gpusrcfile) {
   openCFile(&makefile, "Makefile");
   const char* tmpDirName = intDirName;
   const char* strippedExeFilename = stripdirectories(executableFilename);
+  const char* exeExt = "";
+
+  fprintf(makefile.fptr, "CHAPEL_ROOT = %s\n\n", CHPL_HOME);
+  fprintf(makefile.fptr, "TMPDIRNAME = %s\n", tmpDirName);
+
+  if (fLibraryCompile) {
+    if (fLibraryShared) exeExt = ".so";
+    else exeExt = ".a";
+  }
+  fprintf(makefile.fptr, "BINNAME = %s%s\n\n", executableFilename, exeExt);
+  // BLC: This munging is done so that cp won't complain if the source
+  // and destination are the same file (e.g., a.out and ./a.out)
+  fprintf(makefile.fptr, "TMPBINNAME = $(TMPDIRNAME)/%s.tmp%s\n", 
+          strippedExeFilename, exeExt);  
+  // BLC: We generate a TMPBINNAME which is the name that will be used
+  // by the C compiler in creating the executable, and is in the
+  // --savec directory (a /tmp directory by default).  We then copy it
+  // over to BINNAME -- the name given by the user, or a.out by
+  // default -- after linking is done.  As it turns out, this saves a
+  // factor of 5 or so in time in running the test system, as opposed
+  // to specifying BINNAME on the C compiler command line.
+
   fprintf(makefile.fptr, "COMP_GEN_CFLAGS =");
   if (ccwarnings) {
     fprintf(makefile.fptr, " $(WARN_GEN_CFLAGS)");
@@ -439,26 +459,18 @@ void codegen_makefile(fileinfo* mainfile, fileinfo *gpusrcfile) {
   } else {
     fprintf(makefile.fptr, " $(NO_IEEE_FLOAT_GEN_CFLAGS)");
   }
+  if (fLibraryShared)
+    fprintf(makefile.fptr, " $(SHARED_LIB_CFLAGS)");
   forv_Vec(const char*, dirName, incDirs) {
     fprintf(makefile.fptr, " -I%s", dirName);
   }
   fprintf(makefile.fptr, " %s\n", ccflags);
+
   fprintf(makefile.fptr, "COMP_GEN_LFLAGS =");
+  if (fLibraryShared)
+      fprintf(makefile.fptr, " -shared" );
   fprintf(makefile.fptr, " %s\n", ldflags);
-  fprintf(makefile.fptr, "BINNAME = %s\n", executableFilename);
-  fprintf(makefile.fptr, "TMPDIRNAME = %s\n", tmpDirName);
-  // BLC: This munging is done so that cp won't complain if the source
-  // and destination are the same file (e.g., a.out and ./a.out)
-  fprintf(makefile.fptr, "TMPBINNAME = $(TMPDIRNAME)/%s.tmp\n", 
-          strippedExeFilename);
-  // BLC: We generate a TMPBINNAME which is the name that will be used
-  // by the C compiler in creating the executable, and is in the
-  // --savec directory (a /tmp directory by default).  We then copy it
-  // over to BINNAME -- the name given by the user, or a.out by
-  // default -- after linking is done.  As it turns out, this saves a
-  // factor of 5 or so in time in running the test system, as opposed
-  // to specifying BINNAME on the C compiler command line.
-  fprintf(makefile.fptr, "CHAPEL_ROOT = %s\n", CHPL_HOME);
+
   fprintf(makefile.fptr, "TAGS_COMMAND = ");
   if (developer && saveCDir[0] && !printCppLineno) {
     fprintf(makefile.fptr,
@@ -470,6 +482,7 @@ void codegen_makefile(fileinfo* mainfile, fileinfo *gpusrcfile) {
             saveCDir);
   }
   fprintf(makefile.fptr, "\n");
+
   fprintf(makefile.fptr, "CHPLSRC = \\\n");
   fprintf(makefile.fptr, "\t%s \\\n\n", mainfile->pathname);
   if (fGPU) {
@@ -483,7 +496,14 @@ void codegen_makefile(fileinfo* mainfile, fileinfo *gpusrcfile) {
     fprintf(makefile.fptr, " %s", libFlag[i]);
   fprintf(makefile.fptr, "\n");
   fprintf(makefile.fptr, "\n");
-  fprintf(makefile.fptr, "include $(CHAPEL_ROOT)/runtime/etc/Makefile.include\n");
+  if (fLibraryCompile) {
+    if (fLibraryShared)
+      fprintf(makefile.fptr, "include $(CHAPEL_ROOT)/runtime/etc/Makefile.shared\n");
+    else
+      fprintf(makefile.fptr, "include $(CHAPEL_ROOT)/runtime/etc/Makefile.static\n");
+  }
+  else
+    fprintf(makefile.fptr, "include $(CHAPEL_ROOT)/runtime/etc/Makefile.exe\n");
   fprintf(makefile.fptr, "\n");
   genCFileBuildRules(makefile.fptr);
   closeCFile(&makefile, false);
@@ -510,11 +530,54 @@ static const char* searchPath(Vec<const char*> path, const char* filename,
   return foundfile;
 }
 
+//
+// These are lists representing the internal, standard, user, and
+// flag-based (and envvar-based) paths respectively.  The last is
+// treated somewhat differently than the others in that -M flags are
+// handled first by the compiler, but should come after the user
+// paths, so are added into usrModPath as a post-processing pass.
+//
 static Vec<const char*> intModPath;
 static Vec<const char*> stdModPath;
 static Vec<const char*> usrModPath;
-static Vec<const char*> fileModPath;
-static Vec<const char*> fileModPathSet;
+static Vec<const char*> flagModPath;
+
+
+static void addUsrDirToModulePath(const char* dir) {
+  //
+  // a set representing the unique directories added to the path to
+  // avoid duplicates (for efficiency and clarity of error messages)
+  //
+  static Vec<const char*> modPathSet;
+
+  const char* uniquedir = astr(dir);
+  if (!modPathSet.set_in(uniquedir)) {
+    usrModPath.add(uniquedir);
+    modPathSet.set_add(uniquedir);
+  }
+}
+
+
+//
+// track directories specified via -M and CHPL_MODULE_PATH.
+//
+void addFlagModulePath(const char* newpath) {
+  const char* uniquedir = astr(newpath);
+  flagModPath.add(uniquedir);
+}
+
+
+//
+// Once we've added all filename-based directories to the user module
+// search path, we'll add all unique directories specified via -M and
+// CHPL_MODULE_PATH.
+//
+void addDashMsToUserPath(void) {
+  forv_Vec(const char*, dirname, flagModPath) {
+    addUsrDirToModulePath(dirname);
+  }
+}
+
 
 void setupModulePaths(void) {
   intModPath.add(astr(CHPL_HOME, "/modules/internal/", CHPL_THREADS));
@@ -534,7 +597,7 @@ void setupModulePaths(void) {
       if (colon) {
         *colon = '\0';
       }
-      addUserModulePath(start);
+      addFlagModulePath(start);
     } while (colon);
   }
 }
@@ -547,33 +610,16 @@ void addStdRealmsPath(void) {
 }
 
 
-void addUserModulePath(const char* newpath) {
-  const char* uniquedir = astr(newpath);
-  usrModPath.add(uniquedir);
-}
-
-
-static void addModulePathFromFilenameHelp(const char* name) {
-  const char* uniquename = astr(name);
-  if (!fileModPathSet.set_in(uniquename)) {
-    fileModPath.add(uniquename);
-    fileModPathSet.set_add(uniquename);
-  }
-}
-
-
 void addModulePathFromFilename(const char* origfilename) {
   char dirname[FILENAME_MAX+1];
   strncpy(dirname, origfilename, FILENAME_MAX);
   char* lastslash = strrchr(dirname, '/');
-  bool addedDot = false;
   if (lastslash != NULL) {
     *lastslash = '\0';
-    addModulePathFromFilenameHelp(dirname);
+    addUsrDirToModulePath(dirname);
     *lastslash = '/';
-  } else if (!addedDot) {
-    addModulePathFromFilenameHelp(".");
-    addedDot = true;
+  } else {
+    addUsrDirToModulePath(".");
   }
 }
 
@@ -585,8 +631,7 @@ const char* modNameToFilename(const char* modName, bool isInternal,
   if (isInternal) {
     fullfilename = searchPath(intModPath, filename, NULL, true);
   } else {
-    fullfilename = searchPath(fileModPath, filename);
-    fullfilename = searchPath(usrModPath, filename, fullfilename);
+    fullfilename = searchPath(usrModPath, filename);
     *isStandard = (fullfilename == NULL);
     fullfilename = searchPath(stdModPath, filename, fullfilename);
   }
@@ -611,7 +656,6 @@ static void helpPrintPath(Vec<const char*> path) {
 
 void printModuleSearchPath(void) {
   fprintf(stderr, "module search dirs:\n");
-  helpPrintPath(fileModPath);
   helpPrintPath(usrModPath);
   helpPrintPath(stdModPath);
   fprintf(stderr, "end of module search dirs\n");

@@ -33,8 +33,8 @@ proc writelnFragArray(startStr, X, endStr) {
 
 
 proc BlockPartition(D, myBlock, numBlocks) {
-  const lo = D.dim(1)._low;
-  const hi = D.dim(1)._high;
+  const lo = D.dim(1).low;
+  const hi = D.dim(1).high;
   const numelems = hi - lo + 1;
   const nbAsIndexType = numBlocks:index(D);
   const myBlockAsIndexType:index(D) = myBlock;

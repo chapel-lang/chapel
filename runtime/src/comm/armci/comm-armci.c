@@ -9,7 +9,7 @@
 
 #include "chpl-comm.h"
 #include "chpl-comm-heap-macros.h"
-#include "chpl_mem.h"
+#include "chpl-mem.h"
 #include "chplrt.h"
 #include "error.h"
 
@@ -82,11 +82,6 @@ int32_t chpl_comm_getMaxThreads(void) {
             // threads that can be running on a process
 }
 
-int32_t chpl_comm_maxThreadsLimit(void) {
-  return 0; // set to 0 assuming ARMCI does not limit the number of
-            // threads that can be running on a process
-}
-
 //
 // initializes the communications package
 //   set chpl_localeID and chpl_numLocales
@@ -143,16 +138,12 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
   ghndl = ARMCI_Gpc_register(gpc_call_handler);
 }
 
+void chpl_comm_post_mem_init(void) { }
+
 int chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status) {
   chpl_error("--gdb not yet implemented for ARMCI", gdbArgnum, 
              "<command-line>");
   return 0;
-}
-
-void chpl_comm_init_shared_heap(void) {
-  void* heapStart = chpl_numGlobalsOnHeap*sizeof(void*) + (char*)globalPtrs[chpl_localeID];
-  size_t heapSize = _MAX_ARMCI_MEMSZ - chpl_numGlobalsOnHeap*sizeof(void*);
-  chpl_initHeap(heapStart, heapSize);
 }
 
 //
@@ -166,6 +157,12 @@ void chpl_comm_rollcall(void) {
   // Something like the following should work:
   chpl_msg(2, "executing on locale %d of %d locale(s)\n", chpl_localeID, 
             chpl_numLocales);
+}
+
+void chpl_comm_desired_shared_heap(void** start_p, size_t* size_p) {
+  *start_p = chpl_numGlobalsOnHeap * sizeof(void*)
+             + (char*)globalPtrs[chpl_localeID];
+  *size_p  = _MAX_ARMCI_MEMSZ - chpl_numGlobalsOnHeap * sizeof(void*);
 }
 
 void chpl_comm_alloc_registry(int numGlobals) {
@@ -201,7 +198,7 @@ void chpl_comm_broadcast_private(int id, int32_t size, int32_t tid) {
   _broadcast_private_helper bph;
   void* heapAddr = NULL;
 
-  heapAddr = chpl_malloc(1, size, CHPL_RT_MD_PRIVATE_BROADCAST_DATA, 0, 0);
+  heapAddr = chpl_mem_allocMany(1, size, CHPL_RT_MD_PRIVATE_BROADCAST_DATA, 0, 0);
   bcopy(chpl_private_broadcast_table[id], heapAddr, size);
   for (i = 0; i < chpl_numLocales; i++)
     if (i != chpl_localeID) {
@@ -348,7 +345,7 @@ static void chpl_comm_fork_common(int locale, chpl_fn_int_t fid, void *arg, int 
   }
 
   info_size = sizeof(dist_fork_t) + arg_size;
-  info = (dist_fork_t *)chpl_malloc(info_size, sizeof(char), CHPL_RT_MD_REMOTE_FORK_DATA, 0, 0);
+  info = (dist_fork_t *)chpl_mem_allocMany(info_size, sizeof(char), CHPL_RT_MD_REMOTE_FORK_DATA, 0, 0);
 
   info->caller = chpl_localeID;
   info->serial_state = chpl_task_getSerial();
@@ -359,15 +356,15 @@ static void chpl_comm_fork_common(int locale, chpl_fn_int_t fid, void *arg, int 
     bcopy(arg, &(info->arg), arg_size);
 
   if (arg_size > 0)
-    rdata = chpl_malloc(arg_size, sizeof(char), CHPL_RT_MD_REMOTE_GPC_DATA, 0, 0);
+    rdata = chpl_mem_allocMany(arg_size, sizeof(char), CHPL_RT_MD_REMOTE_GPC_DATA, 0, 0);
   else
     rdata = NULL;
   rdlen = arg_size;
 
-  header = chpl_malloc(sizeof(void *), sizeof(char),
-                       CHPL_RT_MD_REMOTE_GPC_HEADER_ADDR, 0, 0);
-  rheader = chpl_malloc(rhdr_size, sizeof(char), CHPL_RT_MD_REMOTE_GPC_HEADER,
-                        0, 0);
+  header = chpl_mem_allocMany(sizeof(void *), sizeof(char),
+                              CHPL_RT_MD_REMOTE_GPC_HEADER_ADDR, 0, 0);
+  rheader = chpl_mem_allocMany(rhdr_size, sizeof(char),
+                               CHPL_RT_MD_REMOTE_GPC_HEADER, 0, 0);
   // must be non-empty  
 
   *(intptr_t *)header = (intptr_t)rheader;
@@ -382,11 +379,11 @@ static void chpl_comm_fork_common(int locale, chpl_fn_int_t fid, void *arg, int 
 
   if (ret != 0) {
     chpl_internal_error("ARMCI_Gpc_exec() failed");
-    chpl_free(info, 0, 0);
+    chpl_mem_free(info, 0, 0);
     if (rdata)
-      chpl_free(rdata, 0, 0);
-    chpl_free(header, 0, 0);
-    chpl_free((void *)rheader, 0, 0);
+      chpl_mem_free(rdata, 0, 0);
+    chpl_mem_free(header, 0, 0);
+    chpl_mem_free((void *)rheader, 0, 0);
     return;
   }
 
@@ -396,14 +393,14 @@ static void chpl_comm_fork_common(int locale, chpl_fn_int_t fid, void *arg, int 
 #endif
   }
 
-  chpl_free(info, 0, 0);
+  chpl_mem_free(info, 0, 0);
   if (rdata) {
     if (block)
       bcopy(rdata, arg, rdlen);
-    chpl_free(rdata, 0, 0);
+    chpl_mem_free(rdata, 0, 0);
   }
-  chpl_free(header, 0, 0);
-  chpl_free((void *)rheader, 0, 0);
+  chpl_mem_free(header, 0, 0);
+  chpl_mem_free((void *)rheader, 0, 0);
 }
 
 void  chpl_comm_fork(int locale, chpl_fn_int_t fid,
@@ -422,6 +419,12 @@ void  chpl_comm_fork_fast(int locale, chpl_fn_int_t fid,
   chpl_comm_fork_common(locale, fid, arg, arg_size, true);
 }
 
+int chpl_comm_numPollingTasks(void) { return 0; }
+
+void chpl_comm_startPollingTask(void) { }
+
+void chpl_comm_stopPollingTask(void) { }
+
 void chpl_startVerboseComm() { }
 void chpl_stopVerboseComm() { }
 void chpl_startVerboseCommHere() { }
@@ -432,7 +435,22 @@ void chpl_stopCommDiagnostics() { }
 void chpl_startCommDiagnosticsHere() { }
 void chpl_stopCommDiagnosticsHere() { }
 
+void chpl_resetCommDiagnosticsHere() { }
+void chpl_getCommDiagnosticsHere(chpl_commDiagnostics *cd) {
+  cd->put = -1;
+  cd->get = -1;
+  cd->get_nb = -1;
+  cd->get_nb_test = -1;
+  cd->get_nb_wait = -1;
+  cd->fork = -1;
+  cd->fork_fast = -1;
+  cd->fork_nb = -1;
+}
+
 int32_t chpl_numCommGets(void) { return -1; }
+int32_t chpl_numCommNBGets(void) { return -1; }
+int32_t chpl_numCommTestNBGets(void) { return -1; }
+int32_t chpl_numCommWaitNBGets(void) { return -1; }
 int32_t chpl_numCommPuts(void) { return -1; }
 int32_t chpl_numCommForks(void) { return -1; }
 int32_t chpl_numCommFastForks(void) { return -1; }
@@ -450,10 +468,10 @@ int gpc_call_handler(int to, int from, void *hdr, int hlen,
   gpc_info_t *ginfo;
   intptr_t prhdr;
 
-  finfo = chpl_malloc(dlen, sizeof(char), CHPL_RT_MD_REMOTE_GPC_COPY_OF_DATA, 0, 0);
+  finfo = chpl_mem_allocMany(dlen, sizeof(char), CHPL_RT_MD_REMOTE_GPC_COPY_OF_DATA, 0, 0);
   bcopy(data, finfo, dlen);
 
-  ginfo = chpl_malloc(sizeof(gpc_info_t), sizeof(char), CHPL_RT_MD_REMOTE_GPC_FORK_DATA, 0, 0);
+  ginfo = chpl_mem_allocMany(sizeof(gpc_info_t), sizeof(char), CHPL_RT_MD_REMOTE_GPC_FORK_DATA, 0, 0);
   ginfo->info = finfo;
   prhdr = *(intptr_t *)hdr;
   ginfo->rhdr = (int *)prhdr;
@@ -491,8 +509,8 @@ void _gpc_thread_handler(void *arg)
 
   ARMCI_Free_local(done);
 
-  chpl_free(ginfo->info, 0, 0);
-  chpl_free(ginfo, 0, 0);
+  chpl_mem_free(ginfo->info, 0, 0);
+  chpl_mem_free(ginfo, 0, 0);
 } /* _gpc_thread_handler */
 
 

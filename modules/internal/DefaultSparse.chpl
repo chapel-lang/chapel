@@ -44,7 +44,7 @@ class DefaultSparseDom: BaseSparseDom {
 
   iter these(param tag: iterator) where tag == iterator.leader {
     const numElems = nnz;
-    const numChunks = _computeNumChunks(numElems);
+    const numChunks = _computeNumChunks(numElems): numElems.type;
     if debugDefaultSparse then
       writeln("DefaultSparseDom leader: ", numChunks, " chunks, ",
               numElems, " elems");

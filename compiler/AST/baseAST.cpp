@@ -113,12 +113,26 @@ static inline bool isAlive(Symbol* symbol) {
   return symbol == rootModule || (symbol->defPoint && symbol->defPoint->parentSymbol);
 }
 
+// for debugging purposes only
+void trace_remove(BaseAST* ast, char flag) {
+  // crash if deletedIdHandle is not initialized but deletedIdFilename is
+  if (deletedIdFilename[0]) {
+    fprintf(deletedIdHandle, "%d %c %p %d\n",
+            currentPassNo, flag, ast, ast->id);
+  }
+  if (ast->id == breakOnDeleteID) {
+    fflush(deletedIdHandle);
+    gdbShouldBreakHere();
+  }
+}
+
 #define clean_gvec(type)                        \
   int i##type = 0;                              \
   forv_Vec(type, ast, g##type##s) {             \
     if (isAlive(ast)) {                         \
       g##type##s.v[i##type++] = ast;            \
     } else {                                    \
+      trace_remove(ast, 'x');                   \
       delete ast;                               \
     }                                           \
   }                                             \
@@ -157,6 +171,7 @@ void cleanAst() {
 void destroyAst() {
   #define destroy_gvec(type)                    \
     forv_Vec(type, ast, g##type##s) {           \
+      trace_remove(ast, 'z');                   \
       delete ast;                               \
     }
   foreach_ast(destroy_gvec);
@@ -174,6 +189,7 @@ verify() {
 
 
 int breakOnID = -1;
+int breakOnDeleteID = -1;
 
 int lastNodeIDUsed() {
   return uid - 1;

@@ -13,7 +13,7 @@ on functionality tested:
   trivial/     trivial domain and array functionality, e.g., A.eltType
 
 Each directory should contain a NUMLOCALES file with the value 4 (or
-some other appropriate value) and a compopts directory with the line
+some other appropriate value) and a COMPOPTS file with the line
 "-M../" so that the test can use the driver module located in this
 directory.
 
@@ -25,11 +25,10 @@ Currently, default, block, cyclic, and blockcylic are supported.  To
 test a new distribution, add a new enum type and add the appropriate
 initialization for your distribution in the procedure
 setupDistributions().  When compiling a test, specify
-'-sDistType=myNewDist' on the command line, where myNewDist is the
+'-sdistType=myNewDist' on the command line, where myNewDist is the
 name of the enum type for your new distribution.  To run the entire
 suite using your new distribution with start_test, specify -compopts
-'-sDistType=DistType.myNewDist' on the command line.
+'-sdistType=DistType.myNewDist' on the command line.
 
-By default, the test suite uses the default (single locale)
-distribution.
+By default, the test suite uses the default (single locale) distribution.
 

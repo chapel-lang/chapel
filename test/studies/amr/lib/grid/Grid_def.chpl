@@ -43,33 +43,21 @@ class Grid {
   const extended_cells: domain(dimension, stridable=true);
   const cells:          subdomain(extended_cells);
   
-  // const ghost_multidomain: MultiDomain(dimension, stridable=true);
-  const ghost_multidomain: List( domain(dimension, stridable=true) );
+  // const ghost_domains: MultiDomain(dimension, stridable=true);
+  const ghost_domains: List( domain(dimension, stridable=true) );
 
-
-  //|\''''''''''''''|\
-  //| >    clear    | >
-  //|/..............|/
-
-  proc clear () {
-    ghost_multidomain.clear();
-    delete ghost_multidomain;
-  }
-  // /|''''''''''''''/|
-  //< |    clear    < |
-  // \|..............\|
 
 
   //|\''''''''''''''''''''|\
-  //| >    Constructor    | >
+  //| >    constructor    | >
   //|/....................|/
   
-  proc Grid(
+  proc Grid (
     x_low:         dimension*real,
     x_high:        dimension*real,
     i_low:         dimension*int,
     n_cells:       dimension*int,
-    n_ghost_cells: dimension*int)
+    n_ghost_cells: dimension*int )
   {
 
     //==== Assign inputs to fields ====
@@ -109,17 +97,12 @@ class Grid {
 
 
     //===> Ghost cells ===>
-    //----------------------------------------------------------------
-    // Blocks of ghost cells are placed in ghost_multidomain, grouped
-    // by their position relative to the grid.  For example, in 2d,
-    // there are 8 blocks:
-    //   (lower,lower), (lower,inner), (lower,upper)
-    //   (inner,lower), (inner,upper),
-    //   (upper,lower), (upper,inner), (upper,upper)
-    //----------------------------------------------------------------
+    //-------------------------------------------------------------
+    // Ghost cells split into chunks based on relative location to
+    // the grid and stored in a linked list.
+    //-------------------------------------------------------------
 
-    // ghost_multidomain = new MultiDomain(dimension, stridable=true);
-    ghost_multidomain = new List( domain(dimension,stridable=true) );
+    ghost_domains = new List( domain(dimension,stridable=true) );
 
     var inner_location: dimension*int;
     for d in dimensions do inner_location(d) = loc1d.inner;
@@ -127,15 +110,18 @@ class Grid {
     var ghost_domain: domain(dimension, stridable=true);
     for loc in (loc1d.below .. loc1d.above by 2)**dimension {
       if loc != inner_location {
-        for d in dimensions do
-          ranges(d) = if loc(d) == loc1d.below then 
-                        ((extended_cells.low(d).. by 2) #n_ghost_cells(d)).alignHigh()
-                      else if loc(d) == loc1d.inner then
-                        cells.dim(d)
-                      else
-                        ((..extended_cells.high(d) by 2) #-n_ghost_cells(d)).alignLow();
+        for d in dimensions {
+          if loc(d) == loc1d.below then 
+            ranges(d) = ((extended_cells.low(d).. by 2) #n_ghost_cells(d)).alignHigh();
+          else if loc(d) == loc1d.inner then
+            ranges(d) = cells.dim(d);
+          else
+            // ((..extended_cells.high(d) by 2) #-n_ghost_cells(d)).alignLow();
+            // hilde sez: Mathematical precision meets ease of use
+            ranges(d) = ((..extended_cells.high(d) by 2 align extended_cells.high(d)) #-n_ghost_cells(d)).alignLow();
+        }
         ghost_domain = ranges;
-        ghost_multidomain.add(ghost_domain);
+        ghost_domains.add(ghost_domain);
       }
     }
     //<=== Ghost cells <===
@@ -144,6 +130,18 @@ class Grid {
   // /|''''''''''''''''''''/|
   //< |    Constructor    < |
   // \|....................\|
+
+
+
+  //|\'''''''''''''''''''|\
+  //| >    destructor    | >
+  //|/...................|/
+
+  proc ~Grid () { delete ghost_domains; }
+  
+  // /|'''''''''''''''''''/|
+  //< |    destructor    < |
+  // \|...................\|
 
 
 
@@ -257,7 +255,7 @@ proc Grid.xValue (point_index: dimension*int) {
     coord(1) = x_low(1) + (point_index(1) - i_low(1)) * dx(1)/2.0;
   }
   else {
-    forall d in dimensions do
+    for d in dimensions do
       coord(d) = x_low(d) + (point_index(d) - i_low(d)) * dx(d)/2.0;
   }
 

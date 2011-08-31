@@ -76,7 +76,9 @@ Symbol* Type::getField(const char* name, bool fatal) {
 
 
 PrimitiveType::PrimitiveType(Symbol *init, bool internalType) :
-  Type(E_PrimitiveType, init)
+  Type(E_PrimitiveType, init),
+  volType(NULL),
+  nonvolType(NULL)
 {
   isInternalType = internalType;
   gPrimitiveTypes.add(this);
@@ -104,9 +106,19 @@ void PrimitiveType::verify() {
 }
 
 int PrimitiveType::codegenStructure(FILE* outfile, const char* baseoffset) {
-  if (!isInternalType)
-    fprintf(outfile, "{CHPL_TYPE_%s, %s},\n", symbol->cname, baseoffset);
-  else
+  if (!isInternalType) {
+    Symbol* cgsym = symbol;
+
+    // codegen volatile types as non-volatile equivalents
+    // (Alternatively, we could add new enums to the runtime header files
+    // for all volatile types if there was a reason to distinguish them)
+    //
+    if (nonvolType) {
+      cgsym = nonvolType->symbol;
+    }
+      
+    fprintf(outfile, "{CHPL_TYPE_%s, %s},\n", cgsym->cname, baseoffset);
+  } else
     INT_FATAL(this, "Cannot codegen an internal type");
   return 1;
 }
@@ -255,6 +267,7 @@ addDeclaration(ClassType* ct, DefExpr* def, bool tail) {
       USR_FATAL_CONT(fn->_this, "Type binding clauses ('%s.' in this case) are not supported in declarations within a class, record or union", name);
     } else {
       fn->_this = new ArgSymbol(fn->thisTag, "this", ct);
+      fn->_this->addFlag(FLAG_ARG_THIS);
       fn->insertFormalAtHead(new DefExpr(fn->_this));
       fn->insertFormalAtHead(new DefExpr(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken)));
       fn->addFlag(FLAG_METHOD);
@@ -325,7 +338,8 @@ void ClassType::codegenDef(FILE* outfile) {
     fprintf(outfile, "chpl__class_id chpl__cid;\n");
   } else if (classTag == CLASS_UNION) {
     fprintf(outfile, "int64_t _uid;\n");
-    fprintf(outfile, "union {\n");
+    if (this->fields.length != 0)
+      fprintf(outfile, "union {\n");
   } else if (this->fields.length == 0) {
     fprintf(outfile, "int dummyFieldToAvoidWarning;\n");
   }
@@ -337,7 +351,8 @@ void ClassType::codegenDef(FILE* outfile) {
   }
 
   if (classTag == CLASS_UNION) {
-    fprintf(outfile, "} _u;\n");
+    if (this->fields.length != 0)
+      fprintf(outfile, "} _u;\n");
   }
   if (symbol->hasFlag(FLAG_DATA_CLASS)) {
     getDataClassType(symbol)->codegen(outfile);
@@ -503,35 +518,51 @@ createInternalType(const char *name, const char *cname) {
   return createPrimitiveType(name, cname, true /* internalType */);
 }
 
+static PrimitiveType* 
+createPrimitiveTypePlusVol(const char *name, const char *cname) {
+  PrimitiveType* pt = createPrimitiveType(name, cname);
+  PrimitiveType* vpt = createPrimitiveType(astr("volatile ", name), 
+                                           astr("chpl_volatile_", cname));
+  pt->volType = vpt;
+  vpt->nonvolType = pt;
+
+  return pt;
+}
+
 
 // Create new primitive type for integers. Specify name for now. Though it will 
 // probably be something like int1, int8, etc. in the end. In that case
 // we can just specify the width (i.e., size).
 #define INIT_PRIM_BOOL(name, width)                                \
-  dtBools[BOOL_SIZE_##width] = createPrimitiveType(name, "chpl_bool" #width); \
-  dtBools[BOOL_SIZE_##width]->defaultValue = new_BoolSymbol( false, BOOL_SIZE_##width)
+  dtBools[BOOL_SIZE_##width] = createPrimitiveTypePlusVol(name, "chpl_bool" #width); \
+  dtBools[BOOL_SIZE_##width]->defaultValue = new_BoolSymbol( false, BOOL_SIZE_##width); \
+  dtBools[BOOL_SIZE_##width]->volType->defaultValue = new_BoolSymbol( false, BOOL_SIZE_##width, true)
 
 #define INIT_PRIM_INT( name, width)                                 \
-  dtInt[INT_SIZE_ ## width] = createPrimitiveType (name, "int" #width "_t"); \
-  dtInt[INT_SIZE_ ## width]->defaultValue = new_IntSymbol( 0, INT_SIZE_ ## width)
+  dtInt[INT_SIZE_ ## width] = createPrimitiveTypePlusVol (name, "int" #width "_t"); \
+  dtInt[INT_SIZE_ ## width]->defaultValue = new_IntSymbol( 0, INT_SIZE_ ## width); \
+  dtInt[INT_SIZE_ ## width]->volType->defaultValue = new_IntSymbol( 0, INT_SIZE_ ## width, true)
 
 #define INIT_PRIM_UINT( name, width)                                  \
-  dtUInt[INT_SIZE_ ## width] = createPrimitiveType (name, "uint" #width "_t"); \
-  dtUInt[INT_SIZE_ ## width]->defaultValue = new_UIntSymbol( 0, INT_SIZE_ ## width)
+  dtUInt[INT_SIZE_ ## width] = createPrimitiveTypePlusVol (name, "uint" #width "_t"); \
+  dtUInt[INT_SIZE_ ## width]->defaultValue = new_UIntSymbol( 0, INT_SIZE_ ## width); \
+  dtUInt[INT_SIZE_ ## width]->volType->defaultValue = new_UIntSymbol( 0, INT_SIZE_ ## width, true)
 
 #define INIT_PRIM_REAL( name, width)                                     \
-  dtReal[FLOAT_SIZE_ ## width] = createPrimitiveType (name, "_real" #width); \
-  dtReal[FLOAT_SIZE_ ## width]->defaultValue = new_RealSymbol( "0.0", 0.0, FLOAT_SIZE_ ## width)
+  dtReal[FLOAT_SIZE_ ## width] = createPrimitiveTypePlusVol (name, "_real" #width); \
+  dtReal[FLOAT_SIZE_ ## width]->defaultValue = new_RealSymbol( "0.0", 0.0, FLOAT_SIZE_ ## width); \
+  dtReal[FLOAT_SIZE_ ## width]->volType->defaultValue = new_RealSymbol( "0.0", 0.0, FLOAT_SIZE_ ## width, true)
   
 #define INIT_PRIM_IMAG( name, width)                               \
-  dtImag[FLOAT_SIZE_ ## width] = createPrimitiveType (name, "_imag" #width); \
-  dtImag[FLOAT_SIZE_ ## width]->defaultValue = new_ImagSymbol( "0.0", 0.0, FLOAT_SIZE_ ## width)
+  dtImag[FLOAT_SIZE_ ## width] = createPrimitiveTypePlusVol (name, "_imag" #width); \
+  dtImag[FLOAT_SIZE_ ## width]->defaultValue = new_ImagSymbol( "0.0", 0.0, FLOAT_SIZE_ ## width); \
+  dtImag[FLOAT_SIZE_ ## width]->volType->defaultValue = new_ImagSymbol( "0.0", 0.0, FLOAT_SIZE_ ## width, true)
   
 #define INIT_PRIM_COMPLEX( name, width)                                   \
   dtComplex[COMPLEX_SIZE_ ## width]= createPrimitiveType (name, "_complex" #width); \
   dtComplex[COMPLEX_SIZE_ ## width]->defaultValue = new_ComplexSymbol(         \
                                   "_chpl_complex" #width "(0.0, 0.0)",         \
-                                   0.0, 0.0, COMPLEX_SIZE_ ## width)
+                                   0.0, 0.0, COMPLEX_SIZE_ ## width);
 
 #define CREATE_DEFAULT_SYMBOL(primType, gSym, name)     \
   gSym = new VarSymbol (name, primType);                \
@@ -550,7 +581,7 @@ void initChplProgram(void) {
   rootModule->block->insertAtTail(new DefExpr(theProgram));
 }
 
-// This should probably be renamed since it create primitive types, as
+// This should probably be renamed since it creates primitive types, as
 //  well as internal types and other types used in the generated code
 void initPrimitiveTypes(void) {
   dtNil = createInternalType ("_nilType", "_nilType");
@@ -562,41 +593,11 @@ void initPrimitiveTypes(void) {
   dtVoid = createInternalType ("void", "void");
   CREATE_DEFAULT_SYMBOL (dtVoid, gVoid, "_void");
 
-  dtBool = createPrimitiveType ("bool", "chpl_bool");
+  dtBool = createPrimitiveTypePlusVol ("bool", "chpl_bool");
 
-  // The base object class looks like this:
-  //
-  //   class object {
-  //     chpl__class_id chpl__cid;
-  //   }
-  //
-  // chpl__class_id is an enumerated type identifying the classes
-  //  in the program.  We never create the actual field or the
-  //  enumerated type (it is directly generated in the C code).  It might
-  //  be the right thing to do, so I made an attempt at adding the
-  //  field.  Unfortunately, we would need some significant changes
-  //  throughout compilation, and it seemed to me that the it might result
-  //  in possibly more special case code.
-  //
-  DefExpr* objectDef = buildClassDefExpr("object", new ClassType(CLASS_CLASS),
-                                         NULL, new BlockStmt(), false);
-  objectDef->sym->addFlag(FLAG_OBJECT_CLASS);
-  objectDef->sym->addFlag(FLAG_NO_OBJECT);
-  dtObject = objectDef->sym->type;
-
+  dtObject = new ClassType(CLASS_CLASS);
   dtValue = createInternalType("value", "_chpl_value");
 
-  createInitFn(theProgram);
-  if (!fRuntime) {
-    theProgram->initFn->insertAtHead(new CallExpr(PRIM_USE,
-                                       new UnresolvedSymExpr("ChapelBase")));
-    // it may be better to add the following use after parsing
-    // to simplify insertion of module guard sync var defs
-    theProgram->initFn->insertAtTail(new CallExpr(PRIM_USE,
-                                       new UnresolvedSymExpr("ChapelStandard")));
-  }
-
-  theProgram->initFn->insertAtHead(objectDef);
   CREATE_DEFAULT_SYMBOL (dtBool, gFalse, "false");
   gFalse->immediate = new Immediate;
   gFalse->immediate->v_bool = false;
@@ -604,6 +605,7 @@ void initPrimitiveTypes(void) {
   gFalse->immediate->num_index = INT_SIZE_1;
   uniqueConstantsHash.put(gFalse->immediate, gFalse);
   dtBool->defaultValue = gFalse;
+  dtBool->volType->defaultValue = gFalse;
 
   gTrue = new VarSymbol("true", dtBool);
   gTrue->addFlag(FLAG_CONST);
@@ -695,7 +697,38 @@ void initPrimitiveTypes(void) {
 
   dtAnyEnumerated = createInternalType ("enumerated", "enumerated");
   dtAnyEnumerated->symbol->addFlag(FLAG_GENERIC);
+}
 
+void initTheProgram(void) {
+  createInitFn(theProgram);
+
+  theProgram->initFn->insertAtTail(
+    new CallExpr(PRIM_USE, new UnresolvedSymExpr("ChapelBase")));
+
+  // it may be better to add the following use after parsing
+  // to simplify insertion of module guard sync var defs
+  theProgram->initFn->insertAtTail(
+    new CallExpr(PRIM_USE, new UnresolvedSymExpr("ChapelStandard")));
+  
+  // The base object class looks like this:
+  //
+  //   class object {
+  //     chpl__class_id chpl__cid;
+  //   }
+  //
+  // chpl__class_id is an enumerated type identifying the classes
+  //  in the program.  We never create the actual field or the
+  //  enumerated type (it is directly generated in the C code).  It might
+  //  be the right thing to do, so I made an attempt at adding the
+  //  field.  Unfortunately, we would need some significant changes
+  //  throughout compilation, and it seemed to me that the it might result
+  //  in possibly more special case code.
+  //
+  DefExpr* objectDef = buildClassDefExpr("object", dtObject,
+                                         NULL, new BlockStmt(), false);
+  objectDef->sym->addFlag(FLAG_OBJECT_CLASS);
+  objectDef->sym->addFlag(FLAG_NO_OBJECT);
+  theProgram->initFn->insertAtHead(objectDef);
 }
 
 void initCompilerGlobals(void) {
@@ -735,7 +768,19 @@ void initCompilerGlobals(void) {
 
 }
 
+static Type* getNonVolType(Type *t) {
+  if (PrimitiveType* pt = toPrimitiveType(t)) {
+    if (pt->nonvolType && !pt->volType)
+      return pt->nonvolType;
+    return pt;
+  }  
+  INT_FATAL(t, "No base type exists for non-primitive type: %s", t->symbol->name);
+  return NULL;
+}
+
 bool is_bool_type(Type* t) {
+  if isPrimitiveType(t)
+    t = getNonVolType(t);
   return 
     t == dtBools[BOOL_SIZE_SYS] ||
     t == dtBools[BOOL_SIZE_8] ||
@@ -746,6 +791,8 @@ bool is_bool_type(Type* t) {
 
 
 bool is_int_type(Type *t) {
+  if isPrimitiveType(t)
+    t = getNonVolType(t);
   return
     t == dtInt[INT_SIZE_32] ||
     t == dtInt[INT_SIZE_8] ||
@@ -755,6 +802,8 @@ bool is_int_type(Type *t) {
 
 
 bool is_uint_type(Type *t) {
+  if isPrimitiveType(t)
+    t = getNonVolType(t);
   return
     t == dtUInt[INT_SIZE_32] ||
     t == dtUInt[INT_SIZE_8] ||
@@ -764,6 +813,8 @@ bool is_uint_type(Type *t) {
 
 
 bool is_real_type(Type *t) {
+  if isPrimitiveType(t)
+    t = getNonVolType(t);
   return
     t == dtReal[FLOAT_SIZE_64] ||
     t == dtReal[FLOAT_SIZE_32];
@@ -771,6 +822,8 @@ bool is_real_type(Type *t) {
 
 
 bool is_imag_type(Type *t) {
+  if isPrimitiveType(t)
+    t = getNonVolType(t);
   return
     t == dtImag[FLOAT_SIZE_64] ||
     t == dtImag[FLOAT_SIZE_32];
@@ -778,6 +831,10 @@ bool is_imag_type(Type *t) {
 
 
 bool is_complex_type(Type *t) {
+  /*
+  if isPrimitiveType(t)
+    t = getNonVolType(t);
+  */
   return
     t == dtComplex[COMPLEX_SIZE_128] ||
     t == dtComplex[COMPLEX_SIZE_64];
@@ -790,6 +847,8 @@ bool is_enum_type(Type *t) {
 
 
 int get_width(Type *t) {
+  if isPrimitiveType(t)
+    t = getNonVolType(t);
   if (t == dtBools[BOOL_SIZE_SYS]) {
     return 1; 
     // BLC: This is a lie, but one I'm hoping we can get away with
@@ -847,6 +906,53 @@ bool isUnion(Type* t) {
 
 bool isReferenceType(Type* t) {
   return t->symbol->hasFlag(FLAG_REF);
+}
+
+bool isRefCountedType(Type* t) {
+  // We may eventually want to add a separate flag and provide users
+  //  with an interface to declare reference counted types that will
+  //  be "automatically" reference counted when needed
+  return (t->symbol->hasFlag(FLAG_ARRAY) ||
+          t->symbol->hasFlag(FLAG_DOMAIN) ||
+          t->symbol->hasFlag(FLAG_DISTRIBUTION));
+}
+
+bool isRecordWrappedType(Type* t) {
+  // Same deal as with isRefCountedType()
+  // Currently this is the same as isRefCountedType()
+  return (t->symbol->hasFlag(FLAG_ARRAY) ||
+          t->symbol->hasFlag(FLAG_DOMAIN) ||
+          t->symbol->hasFlag(FLAG_DISTRIBUTION));
+}
+
+bool
+isDistClass(Type* type) {
+  if (type->symbol->hasFlag(FLAG_BASE_DIST))
+    return true;
+  forv_Vec(Type, pt, type->dispatchParents)
+    if (isDistClass(pt))
+      return true;
+  return false;
+}
+
+bool
+isDomainClass(Type* type) {
+  if (type->symbol->hasFlag(FLAG_BASE_DOMAIN))
+    return true;
+  forv_Vec(Type, pt, type->dispatchParents)
+    if (isDomainClass(pt))
+      return true;
+  return false;
+}
+
+bool
+isArrayClass(Type* type) {
+  if (type->symbol->hasFlag(FLAG_BASE_ARRAY))
+    return true;
+  forv_Vec(Type, t, type->dispatchParents)
+    if (isArrayClass(t))
+      return true;
+  return false;
 }
 
 

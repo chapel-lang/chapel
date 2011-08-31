@@ -37,15 +37,16 @@ class BaseDist {
     compilerError("rectangular domains not supported by this distribution");
   }
 
-  proc dsiNewAssociativeDom(type idxType) {
+  proc dsiNewAssociativeDom(type idxType, param parSafe: bool) {
     compilerError("associative domains not supported by this distribution");
   }
 
-  proc dsiNewAssociativeDom(type idxType) where _isEnumeratedType(idxType) {
+  proc dsiNewAssociativeDom(type idxType, param parSafe: bool)
+  where _isEnumeratedType(idxType) {
     compilerError("enumerated domains not supported by this distribution");
   }
 
-  proc dsiNewOpaqueDom(type idxType) {
+  proc dsiNewOpaqueDom(type idxType, param parSafe: bool) {
     compilerError("opaque domains not supported by this distribution");
   }
 
@@ -62,6 +63,7 @@ class BaseDist {
 //
 // Abstract domain classes
 //
+pragma "base domain"
 class BaseDom {
   var _domCnt$: sync int = 0; // domain reference count and lock
   var _arrs: list(BaseArr);   // arrays declared over this domain
@@ -188,6 +190,7 @@ class BaseArr {
   proc canCopyFromHost param return false;
 
   proc dsiGetBaseDom(): BaseDom {
+    halt("internal error: dsiGetBaseDom is not implemented");
     return nil;
   }
 

@@ -1612,6 +1612,46 @@ FnSymbol* buildLambda(FnSymbol *fn) {
   return fn;
 }
 
+// Called like:
+// buildFunctionDecl($4, $6, $7, $8, $9);
+BlockStmt*
+buildFunctionDecl(FnSymbol* fn, RetTag optRetTag, Expr* optRetType,
+                  Expr* optWhere, BlockStmt* optFnBody)
+{
+  fn->retTag = optRetTag;
+  if (optRetTag == RET_VAR)
+  {
+    if (fn->hasFlag(FLAG_EXTERN))
+      USR_FATAL_CONT(fn, "Extern functions cannot be setters.");
+    fn->setter = new DefExpr(new ArgSymbol(INTENT_BLANK, "setter", dtBool));
+  }
+
+  if (optRetType)
+    fn->retExprType = new BlockStmt(optRetType, BLOCK_SCOPELESS);
+  else
+    if (fn->hasFlag(FLAG_EXTERN))
+      fn->retType = dtVoid;
+
+  if (optWhere)
+  {
+    if (fn->hasFlag(FLAG_EXTERN))
+      USR_FATAL_CONT(fn, "Extern functions cannot have where clauses.");
+    fn->where = new BlockStmt(optWhere);
+  }
+
+  if (optFnBody)
+  {
+    if (fn->hasFlag(FLAG_EXTERN))
+      USR_FATAL_CONT(fn, "Extern functions cannot have a body.");
+    fn->insertAtTail(optFnBody);
+  }
+  else
+    // Looks like this flag is redundant with FLAG_EXTERN. <hilde>
+    fn->addFlag(FLAG_FUNCTION_PROTOTYPE);
+
+  return buildChapelStmt(new DefExpr(fn));
+}
+
 
 FnSymbol*
 buildFunctionFormal(FnSymbol* fn, DefExpr* def) {
@@ -1645,7 +1685,7 @@ BlockStmt* buildLocalStmt(Expr* stmt) {
 }
 
 
-static Expr* buildOnExpr(Expr* expr) {
+static Expr* extractLocaleID(Expr* expr) {
   // If the on <x> expression is a primitive_on_locale_num, we just want
   // to strip off the primitive and have the naked integer value be the
   // locale ID.
@@ -1679,7 +1719,7 @@ buildOnStmt(Expr* expr, Expr* stmt) {
     }
   }
 
-  CallExpr* onExpr = new CallExpr(PRIM_GET_REF, buildOnExpr(expr));
+  CallExpr* onExpr = new CallExpr(PRIM_GET_REF, extractLocaleID(expr));
 
   BlockStmt* body = toBlockStmt(stmt);
 
@@ -1710,6 +1750,7 @@ buildOnStmt(Expr* expr, Expr* stmt) {
   }
 
   if (beginBlock) {
+    // Execute the construct "on x begin ..." asynchronously.
     Symbol* tmp = newTemp();
     body->insertAtHead(new CallExpr(PRIM_MOVE, tmp, onExpr));
     body->insertAtHead(new DefExpr(tmp));
@@ -1717,6 +1758,7 @@ buildOnStmt(Expr* expr, Expr* stmt) {
     beginBlock->blockInfo->primitive = primitives[PRIM_BLOCK_ON_NB];
     return body;
   } else {
+    // Otherwise, wait for the "on" statement to complete.
     BlockStmt* block = buildChapelStmt();
     Symbol* tmp = newTemp();
     block->insertAtTail(new DefExpr(tmp));

@@ -34,9 +34,7 @@ insertAutoDestroyTemps() {
           if (var->hasFlag(FLAG_INSERT_AUTO_DESTROY) ||
               (var->hasFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW) &&
                !var->type->symbol->hasFlag(FLAG_ITERATOR_RECORD) &&
-               !var->type->symbol->hasFlag(FLAG_ARRAY) &&
-               !var->type->symbol->hasFlag(FLAG_DISTRIBUTION) &&
-               !var->type->symbol->hasFlag(FLAG_DOMAIN)))
+               !isRefCountedType(var->type)))
             if (!var->hasFlag(FLAG_TYPE_VARIABLE))
               vars.add(var);
 
@@ -160,7 +158,7 @@ changeRetToArgAndClone(CallExpr* move, Symbol* lhs,
                 CallExpr* move = toCallExpr(se->parentExpr);
                 if (move && move->isPrimitive(PRIM_MOVE) && move->get(1) == se) {
                   if (!strcmp(useFn->name, "=")) {
-                    Symbol* tmp = newTemp(useFn->retType);
+                    Symbol* tmp = newTemp("_ret_to_arg_tmp_", useFn->retType);
                     move->insertBefore(new DefExpr(tmp));
                     move->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_REF, arg)));
                     move->insertAfter(new CallExpr(PRIM_MOVE, arg, new CallExpr(useFn, tmp, ret)));
@@ -168,7 +166,7 @@ changeRetToArgAndClone(CallExpr* move, Symbol* lhs,
                     move->insertAfter(new CallExpr(PRIM_MOVE, arg, new CallExpr(useFn, ret)));
                   }
                 } else {
-                  Symbol* tmp = newTemp(useFn->retType);
+                  Symbol* tmp = newTemp("ret_to_arg_tmp_", useFn->retType);
                   se->getStmtExpr()->insertBefore(new DefExpr(tmp));
                   se->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_REF, arg)));
                   se->var = tmp;
@@ -194,7 +192,7 @@ changeRetToArgAndClone(CallExpr* move, Symbol* lhs,
 
           Symbol* useLhs = toSymExpr(useMove->get(1))->var;
           if (!useLhs->type->symbol->hasFlag(FLAG_REF)) {
-            useLhs = newTemp(useFn->retType->refType);
+            useLhs = newTemp("ret_to_arg_ref_tmp_", useFn->retType->refType);
             move->insertBefore(new DefExpr(useLhs));
             move->insertBefore(new CallExpr(PRIM_MOVE, useLhs, new CallExpr(PRIM_SET_REF, useMove->get(1)->remove())));
           }
@@ -264,27 +262,55 @@ fixupDestructors() {
         if (field->type->destructor) {
           ClassType* fct = toClassType(field->type);
           INT_ASSERT(fct);
-          if (!isClass(fct) || fct->symbol->hasFlag(FLAG_SYNC)) {
-            //INT_ASSERT(autoDestroyMap.get(field->type));
-            bool useRefType = !fct->symbol->hasFlag(FLAG_ARRAY) && !fct->symbol->hasFlag(FLAG_DOMAIN) &&
-              !fct->symbol->hasFlag(FLAG_SYNC);
-            VarSymbol* tmp = useRefType ? newTemp(fct->refType) : newTemp(fct);
+          if (!isClass(fct) ||
+              fct->symbol->hasFlag(FLAG_SYNC) ||
+              fct->symbol->hasFlag(FLAG_SINGLE)) {
+            bool useRefType = !isRefCountedType(fct) &&
+              !fct->symbol->hasFlag(FLAG_SYNC) &&
+              !fct->symbol->hasFlag(FLAG_SINGLE);
+            VarSymbol* tmp = newTemp("_field_destructor_tmp_", useRefType ? fct->refType : fct);
             fn->insertBeforeReturnAfterLabel(new DefExpr(tmp));
             fn->insertBeforeReturnAfterLabel(new CallExpr(PRIM_MOVE, tmp,
               new CallExpr(useRefType ? PRIM_GET_MEMBER : PRIM_GET_MEMBER_VALUE, fn->_this, field)));
             fn->insertBeforeReturnAfterLabel(new CallExpr(field->type->destructor, tmp));
-            if (fct->symbol->hasFlag(FLAG_SYNC))
+            // WORKAROUND:
+            // This is a temporary bug fix that results in leaked memory
+            //  for sync and single vars in user defined records.
+            //
+            // We can only free a sync or single field that is part of a
+            //  reference counted type because they are currently
+            //  implemented as classes and thus can be copied as references.
+            //  i.e.,
+            //    isArrayClass(ct) || isDomainClass(ct) || isDistClass(ct)
+            // We'll also will allow syncs that are declared in the standard
+            //  and internal modules to be freed, assuming this will be okay.
+            //  Since the reference counted types are declared within the
+            //  standard and internal modules, we don't need to to the above
+            //  check unless the assumptions proves incorrect.
+            //
+            // The problem is related to that of records with classes 
+            //  described in insertFormalTemps() in functionResolution.cpp.
+            //  Specifically, we do not call constructors for records,
+            //  so if a record has sync or single fields, the memory
+            //  for the fields is not allocated and the pointer to the
+            //  field is copied in the autocopy.  The corresponding
+            //  autodestroys may delete the data twice.
+            //
+            if ((fct->symbol->hasFlag(FLAG_SYNC) ||
+                 fct->symbol->hasFlag(FLAG_SINGLE)) &&
+                ((ct->getModule()->modTag==MOD_INTERNAL) ||
+                 (ct->getModule()->modTag==MOD_STANDARD)))
               fn->insertBeforeReturnAfterLabel(new CallExpr(PRIM_CHPL_FREE, tmp));
           }
         } else if (FnSymbol* autoDestroyFn = autoDestroyMap.get(field->type)) {
-          VarSymbol* tmp = newTemp(field->type);
+          VarSymbol* tmp = newTemp("_field_destructor_tmp_", field->type);
           fn->insertBeforeReturnAfterLabel(new DefExpr(tmp));
           fn->insertBeforeReturnAfterLabel(
                 new CallExpr(PRIM_MOVE, tmp,
                   new CallExpr(PRIM_GET_MEMBER_VALUE, fn->_this, field)));
           fn->insertBeforeReturnAfterLabel(new CallExpr(autoDestroyFn, tmp));
         } else if (field->type == dtString && !ct->symbol->hasFlag(FLAG_TUPLE)) {
-          VarSymbol* tmp = newTemp(dtString);
+          VarSymbol* tmp = newTemp("_field_destructor_tmp_", dtString);
           fn->insertBeforeReturnAfterLabel(new DefExpr(tmp));
           fn->insertBeforeReturnAfterLabel(new CallExpr(PRIM_MOVE, tmp,
             new CallExpr(PRIM_GET_MEMBER_VALUE, fn->_this, field)));
@@ -299,10 +325,9 @@ fixupDestructors() {
       if (ct->dispatchParents.n >= 1 && isClass(ct)) {
         // avoid destroying record fields more than once
         if (FnSymbol* parentDestructor = ct->dispatchParents.v[0]->destructor) {
-          Type* tmpType = isClass(ct) // || ct->symbol->hasFlag(FLAG_ARRAY) || ct->symbol->hasFlag(FLAG_DOMAIN)
-            ?
+          Type* tmpType = isClass(ct) ?
             ct->dispatchParents.v[0] : ct->dispatchParents.v[0]->refType;
-          VarSymbol* tmp = newTemp(tmpType);
+          VarSymbol* tmp = newTemp("_parent_destructor_tmp_", tmpType);
           fn->insertBeforeReturnAfterLabel(new DefExpr(tmp));
           fn->insertBeforeReturnAfterLabel(new CallExpr(PRIM_MOVE, tmp,
             new CallExpr(PRIM_CAST, tmpType->symbol, fn->_this)));
@@ -315,15 +340,11 @@ fixupDestructors() {
 
 
 static void insertGlobalAutoDestroyCalls() {
-  const char* name = (!fRuntime)
-    ? "chpl__autoDestroyGlobals" : "chpl__autoDestroyRuntimeGlobals";
+  const char* name = "chpl__autoDestroyGlobals";
   FnSymbol* fn = new FnSymbol(name);
   fn->retType = dtVoid;
   chpl_main->defPoint->insertBefore(new DefExpr(fn));
-  if (!fRuntime)
-    chpl_main->insertBeforeReturnAfterLabel(new CallExpr(fn));
-  else
-    fn->addFlag(FLAG_EXPORT);
+  chpl_main->insertBeforeReturnAfterLabel(new CallExpr(fn));
   forv_Vec(DefExpr, def, gDefExprs) {
     if (isModuleSymbol(def->parentSymbol))
       if (def->parentSymbol != rootModule)
@@ -347,11 +368,13 @@ callDestructors() {
       if (!type->destructor) {
         call->remove();
       } else if (call->get(1)->typeInfo()->refType == type->destructor->_this->type) {
-        VarSymbol* tmp = newTemp(type->destructor->_this->type);
+        SET_LINENO(call);
+        VarSymbol* tmp = newTemp("_destructor_tmp_", type->destructor->_this->type);
         call->insertBefore(new DefExpr(tmp));
         call->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_SET_REF, call->get(1)->remove())));
         call->replace(new CallExpr(type->destructor, tmp));
       } else {
+        SET_LINENO(call);
         call->replace(new CallExpr(type->destructor, call->get(1)->remove()));
       }
     }
@@ -375,7 +398,7 @@ callDestructors() {
         }
       }
       INT_ASSERT(move);
-      Symbol* tmp = newTemp(sym->type);
+      Symbol* tmp = newTemp("_autoCopy_tmp_", sym->type);
       move->insertBefore(new DefExpr(tmp));
       move->insertAfter(new CallExpr(PRIM_MOVE, sym, new CallExpr(autoCopyMap.get(sym->type), tmp)));
       move->get(1)->replace(new SymExpr(tmp));
@@ -400,7 +423,7 @@ callDestructors() {
         if (isRecord(type) &&
             !type->symbol->hasFlag(FLAG_ITERATOR_RECORD) &&
             !type->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE)) {
-          Symbol* tmp = newTemp(type);
+          Symbol* tmp = newTemp("_yield_expr_tmp_", type);
           move->insertBefore(new DefExpr(tmp));
           move->insertAfter(new CallExpr(PRIM_MOVE, yieldExpr->var, new CallExpr(autoCopyMap.get(tmp->type), tmp)));
           lhs->var = tmp;

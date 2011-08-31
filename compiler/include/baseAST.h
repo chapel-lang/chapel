@@ -77,6 +77,9 @@ typedef MapElem<Symbol*,Symbol*> SymbolMapElem;
 // get the current AST node id
 extern int lastNodeIDUsed();
 
+// trace various AST node removals
+extern void trace_remove(BaseAST* ast, char flag);
+
 // mark all FnSymbols created after the parser with FLAG_PROC_ITER_KW_USED
 // ProcIter: remove this
 extern bool markNewFnSymbolsWithProcIter;

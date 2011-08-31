@@ -12,9 +12,9 @@
 #include "chplcgfns.h"
 #include "chplrt.h"
 #include "chpl-comm.h"
-#include "chpl_mem.h"
+#include "chpl-mem.h"
 #include "chplsys.h"
-#include "chpltasks.h"
+#include "chpl-tasks.h"
 #include "error.h"
 
 #include "chpllaunch.h"
@@ -79,13 +79,13 @@ static void hosts_cleanup(void) {
 
 static void memory_cleanup(void) {
   int i;
-  if (memalloced & M_ARGV2) chpl_free(argv2, -1, "");
-  if (memalloced & M_HOSTFILE) chpl_free(hostfile, -1, "");
-  if (memalloced & M_MULTIREALMENVNAME) chpl_free(multirealmenvname, -1, "");
-  if (memalloced & M_MULTIREALMPATHTOADD) for (i = 0; i < totalalloced; i++) chpl_free(multirealmpathtoadd[i], -1, "");
-  if (memalloced & M_PVMNODESTOADD) for (i = 0; i < totalalloced; i++) chpl_free(pvmnodestoadd[i], -1, "");
-  if (memalloced & M_REALMTOADD) for (i = 0; i < totalalloced; i++) chpl_free(realmtoadd[i], -1, "");
-  if (memalloced & M_REALMTYPE) chpl_free(realmtype, -1, "");
+  if (memalloced & M_ARGV2) chpl_mem_free(argv2, -1, "");
+  if (memalloced & M_HOSTFILE) chpl_mem_free(hostfile, -1, "");
+  if (memalloced & M_MULTIREALMENVNAME) chpl_mem_free(multirealmenvname, -1, "");
+  if (memalloced & M_MULTIREALMPATHTOADD) for (i = 0; i < totalalloced; i++) chpl_mem_free(multirealmpathtoadd[i], -1, "");
+  if (memalloced & M_PVMNODESTOADD) for (i = 0; i < totalalloced; i++) chpl_mem_free(pvmnodestoadd[i], -1, "");
+  if (memalloced & M_REALMTOADD) for (i = 0; i < totalalloced; i++) chpl_mem_free(realmtoadd[i], -1, "");
+  if (memalloced & M_REALMTYPE) chpl_mem_free(realmtype, -1, "");
   return;
 }
 
@@ -257,7 +257,7 @@ int chpl_launch(int argc, char* argv[], int32_t init_numLocales) {
   // The last argument needs to be the number of locations for the PVM
   // comm layer to use it. The comm layer strips this off.
 
-  argv2 = chpl_malloc(((argc+3) * sizeof(char *)), sizeof(char*), CHPL_RT_MD_PVM_SPAWN_THING, -1, "");
+  argv2 = chpl_mem_allocMany(((argc+3) * sizeof(char *)), sizeof(char*), CHPL_RT_MD_PVM_SPAWN_THING, -1, "");
   memalloced |= M_ARGV2;
   for (i=0; i < (argc-1); i++) {
     argv2[i] = argv[i+1];
@@ -281,11 +281,11 @@ int chpl_launch(int argc, char* argv[], int32_t init_numLocales) {
     } else {
       lpr = numLocales;
     }
-    hostfile = chpl_malloc(1024, sizeof(char*), CHPL_RT_MD_PVM_LIST_OF_NODES, -1, "");
+    hostfile = chpl_mem_allocMany(1024, sizeof(char*), CHPL_RT_MD_PVM_LIST_OF_NODES, -1, "");
     memalloced |= M_HOSTFILE;
-    realmtype = chpl_malloc(1024, sizeof(char*), CHPL_RT_MD_PVM_LIST_OF_NODES, -1, "");
+    realmtype = chpl_mem_allocMany(1024, sizeof(char*), CHPL_RT_MD_PVM_LIST_OF_NODES, -1, "");
     memalloced |= M_REALMTYPE;
-    multirealmenvname = chpl_malloc(1024, sizeof(char*), CHPL_RT_MD_PVM_LIST_OF_NODES, -1, "");
+    multirealmenvname = chpl_mem_allocMany(1024, sizeof(char*), CHPL_RT_MD_PVM_LIST_OF_NODES, -1, "");
     memalloced |= M_MULTIREALMENVNAME;
     sprintf(realmtype, "%s", chpl_realmType(k));
     sprintf(multirealmenvname, "CHPL_MULTIREALM_LAUNCH_DIR_%s", realmtype);
@@ -293,22 +293,22 @@ int chpl_launch(int argc, char* argv[], int32_t init_numLocales) {
     if (multirealmenv == NULL) {
       multirealmenv = "";
     }
-    chpl_free(multirealmenvname, -1, "");
+    chpl_mem_free(multirealmenvname, -1, "");
     memalloced &= ~M_MULTIREALMENVNAME;
     sprintf(hostfile, "%s%s%s", CHPL_HOME, "/hostfile.", realmtype);
     
     if ((nodelistfile = fopen(hostfile, "r")) == NULL) {
       missing_file_error(hostfile);
     }
-    chpl_free(hostfile, -1, "");
+    chpl_mem_free(hostfile, -1, "");
     memalloced &= ~M_HOSTFILE;
     j = 0;
     while (((fscanf(nodelistfile, "%s", pvmnodetoadd)) == 1) && (j < lpr)) {
-      pvmnodestoadd[i] = chpl_malloc((strlen(pvmnodetoadd)+1), sizeof(char *), CHPL_RT_MD_PVM_LIST_OF_NODES, -1, "");
+      pvmnodestoadd[i] = chpl_mem_allocMany((strlen(pvmnodetoadd)+1), sizeof(char *), CHPL_RT_MD_PVM_LIST_OF_NODES, -1, "");
       memalloced |= M_PVMNODESTOADD;
-      realmtoadd[i] = chpl_malloc((strlen(realmtype)+1), sizeof(char *), CHPL_RT_MD_PVM_LIST_OF_NODES, -1, "");
+      realmtoadd[i] = chpl_mem_allocMany((strlen(realmtype)+1), sizeof(char *), CHPL_RT_MD_PVM_LIST_OF_NODES, -1, "");
       memalloced |= M_REALMTOADD;
-      multirealmpathtoadd[i] = chpl_malloc((strlen(multirealmenv)+1), sizeof(char *), CHPL_RT_MD_PVM_LIST_OF_NODES, -1, "");
+      multirealmpathtoadd[i] = chpl_mem_allocMany((strlen(multirealmenv)+1), sizeof(char *), CHPL_RT_MD_PVM_LIST_OF_NODES, -1, "");
       memalloced |= M_MULTIREALMPATHTOADD;
       strcpy(pvmnodestoadd[i], pvmnodetoadd);
       strcpy(realmtoadd[i], realmtype);
@@ -317,7 +317,7 @@ int chpl_launch(int argc, char* argv[], int32_t init_numLocales) {
       i++;
       j++;
     }
-    chpl_free(realmtype, -1, "");
+    chpl_mem_free(realmtype, -1, "");
     memalloced &= ~M_REALMTYPE;
     // Check to make sure user hasn't specified more nodes (-nl <n>) than
     // what's included in the hostfile.
@@ -356,7 +356,7 @@ int chpl_launch(int argc, char* argv[], int32_t init_numLocales) {
     }
   }
   if (!usingbaserealm) {
-    realmtype = chpl_malloc(1024, sizeof(char*), CHPL_RT_MD_PVM_LIST_OF_NODES, -1, "");
+    realmtype = chpl_mem_allocMany(1024, sizeof(char*), CHPL_RT_MD_PVM_LIST_OF_NODES, -1, "");
     memalloced |= M_REALMTYPE;
     sprintf(realmtype, "%s", getenv((char *)"CHPL_HOST_PLATFORM"));
   }
@@ -436,7 +436,7 @@ int chpl_launch(int argc, char* argv[], int32_t init_numLocales) {
   //      line.
   // Failing that, try the current working directory with executable_real.
   // If this doesn't work, error out with the debug message.
-  commandtopvm = chpl_malloc(1024, sizeof(char*), CHPL_RT_MD_PVM_SPAWN_THING, -1, "");
+  commandtopvm = chpl_mem_allocMany(1024, sizeof(char*), CHPL_RT_MD_PVM_SPAWN_THING, -1, "");
   memalloced |= M_COMMANDTOPVM;
   for (i = 0; i < numLocales; i++) {
     //    fprintf(stderr, "Loop i=%d (iteration %d of %d)\n", i, i+1, numLocales);
@@ -472,15 +472,15 @@ int chpl_launch(int argc, char* argv[], int32_t init_numLocales) {
                          "* re-run with --verbose to see more details");
     }
   }
-  chpl_free(argv2, -1, "");
+  chpl_mem_free(argv2, -1, "");
   memalloced &= ~M_ARGV2;
   if (!usingbaserealm) {
-    chpl_free(realmtype, -1, "");
+    chpl_mem_free(realmtype, -1, "");
     memalloced &= ~M_REALMTYPE;
   }
-  for (i = 0; i < totalalloced; i++) chpl_free(multirealmpathtoadd[i], -1, "");
+  for (i = 0; i < totalalloced; i++) chpl_mem_free(multirealmpathtoadd[i], -1, "");
   memalloced &= ~M_MULTIREALMPATHTOADD;
-  for (i = 0; i < totalalloced; i++) chpl_free(realmtoadd[i], -1, "");
+  for (i = 0; i < totalalloced; i++) chpl_mem_free(realmtoadd[i], -1, "");
   memalloced &= ~M_REALMTOADD;
 
   // We have a working configuration. What follows is the communication

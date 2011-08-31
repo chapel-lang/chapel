@@ -1,0 +1,8 @@
+semantic: blank intent for volatiles
+
+This future asks whether the blank intent for volatiles should imply
+pass-by-ref.  Rationale would be so that a callsite and callee could
+share a single volatile variable.  Potential downside is that because
+we coerce between non-volatiles and volatiles, it's not entirely clear
+to me what would/should happen in the event of passing a normal
+integer to a volatile formal.

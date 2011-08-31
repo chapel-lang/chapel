@@ -23,12 +23,12 @@ are as follows:
 
 \begin{tabular}{lll}
 \hspace{1pc} & \chpl{BitOps} & Bit manipulation routines \\
-             & \chpl{Functions}   & Common higher-order functions \\
              & \chpl{Norm}   & Routines for computing vector and matrix norms \\
              & \chpl{Random} & Random number generation routines \\
              & \chpl{Search} & Generic searching routines \\
              & \chpl{Sort} & Generic sorting routines \\
              & \chpl{Time} & Types and routines related to time \\
+             & \chpl{UtilMath} & Math-related utilities \\
 \end{tabular}
 
 There is an expectation that each of these modules will be extended
@@ -166,6 +166,26 @@ Returns the hyperbolic cosine of the argument.
 \end{protobody}
 
 \begin{protohead}
+proc divceil(m: integral, n: integral)
+proc divceil(param m: integral, param n: integral) param
+\end{protohead}
+\begin{protobody}
+Returns
+$\lceil\frac{m}{n}\rceil$,
+i.e., the fraction $m/n$ rounded up to the nearest integer.
+\end{protobody}
+
+\begin{protohead}
+proc divfloor(m: integral, n: integral)
+proc divfloor(param m: integral, param n: integral) param
+\end{protohead}
+\begin{protobody}
+Returns
+$\lfloor\frac{m}{n}\rfloor$,
+i.e., the fraction $m/n$ rounded down to the nearest integer.
+\end{protobody}
+
+\begin{protohead}
 proc erf(x: real): real
 proc erf(x: real(32)): real(32)
 \end{protohead}
@@ -217,12 +237,43 @@ Returns the value of the argument rounded down to the nearest integer.
 \end{protobody}
 
 \begin{protohead}
+const INFINITY: real(64);
+\end{protohead}
+\begin{protobody}
+Supplies the floating point constant for infinity.
+\end{protobody}
+
+\begin{protohead}
+proc isfinite(x: real): real
+proc isfinite(x: real(32)): real(32)
+\end{protohead}
+\begin{protobody}
+Returns whether or not a particular value is finite.
+\end{protobody}
+
+\begin{protohead}
+proc isinf(x: real): real
+proc isinf(x: real(32)): real(32)
+\end{protohead}
+\begin{protobody}
+Returns whether or not a particular value is infinite.
+\end{protobody}
+
+\begin{protohead}
+proc isnan(x: real): real
+proc isnan(x: real(32)): real(32)
+\end{protohead}
+\begin{protobody}
+Returns whether or not a particular value is not a number.
+\end{protobody}
+
+\begin{protohead}
 proc lgamma(x: real): real
 proc lgamma(x: real(32)): real(32)
 \end{protohead}
 \begin{protobody}
-Returns the natural logarithm of the absolute value of the gamma
-function of the argument.
+Returns the natural logarithm of the absolute value
+of the gamma function of the argument.
 \end{protobody}
 
 \begin{protohead}
@@ -261,6 +312,23 @@ proc log2(x: real(32)): real(32)
 \begin{protobody}
 Returns the base 2 logarithm of the argument.  It is an error if the
 argument is less than or equal to zero.
+\end{protobody}
+
+\begin{protohead}
+proc mod(x: real(?w), y: real(w)): real(w)
+proc mod(m: integral, n: integral)
+proc mod(param m: integral, param n: integral) param
+\end{protohead}
+\begin{protobody}
+Computes the mod operator on the two numbers, defined as
+\chpl{mod(x,y)} = $x - y \lfloor\frac{m}{n}\rfloor$.
+\end{protobody}
+
+\begin{protohead}
+const NAN: real(64);
+\end{protohead}
+\begin{protobody}
+Supplies the floating point constant for not a number.
 \end{protobody}
 
 \begin{protohead}
@@ -758,6 +826,7 @@ Sorts the 1D array \chpl{Data} in-place using a sequential
 implementation of the QuickSort algorithm.
 \end{protobody}
 
+
 \subsection{Time}
 \label{Time}
 \index{optional modules!Time}
@@ -807,7 +876,6 @@ proc getCurrentDayOfWeek(): Day
 Returns the current day of the week.
 \end{protobody}
 
-
 \begin{protohead}
 proc getCurrentTime(unit: TimeUnits = TimeUnits.seconds): real
 \end{protohead}
@@ -854,3 +922,32 @@ proc sleep(t: uint)
 Delays a task for \chpl{t} seconds.
 \end{protobody}
 
+
+\subsection{UtilMath}
+\label{StdModules_UtilMath}
+\index{optional modules!UtilMath}
+
+The optional module \chpl{UtilMath} provides various math-related functions.
+It supplements the automatic \chpl{Math} module (\rsec{Math}).
+
+\begin{protohead}
+proc divceilpos(m: int(?), n: int(?))
+\end{protohead}
+\begin{protobody}
+Computes
+$\lceil\frac{n}{m}\rceil$
+for two strictly positive integers $m>0$, $n>0$.
+For other $m$ and $n$ the behavior is undefined.
+This function is expected to be faster than \chpl{divceil}.
+\end{protobody}
+
+\begin{protohead}
+proc divfloorpos(m: int(?), n: int(?))
+\end{protohead}
+\begin{protobody}
+Computes
+$\lfloor\frac{n}{m}\rfloor$
+for two strictly positive integers $m>0$, $n>0$.
+For other $m$ and $n$ the behavior is undefined.
+This function is expected to be faster than \chpl{divfloor}.
+\end{protobody}

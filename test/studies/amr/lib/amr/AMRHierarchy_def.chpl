@@ -1,6 +1,6 @@
 use CoarseningTransfer;
 use RefiningTransfer;
-use Partitioning;
+use BergerRigoutsosClustering;
 
 
 
@@ -11,59 +11,59 @@ use Partitioning;
 
 class AMRHierarchy {
 
-  const x_low, x_high:     dimension*real;
-  const n_coarsest_cells:  dimension*int;
-  const n_ghost_cells:     dimension*int;
-
-  const max_n_levels: int;
-  const ref_ratio:    dimension*int;
-
-  const initialCondition: func(dimension*real, real);
+  //---- Geometric descriptors ----
   
-  const flagger:  Flagger;  // Flagger class is defined below
+  const x_low, x_high:    dimension*real;
+  const n_coarsest_cells: dimension*int;
+  const n_ghost_cells:    dimension*int;
+  const ref_ratio:        dimension*int;
+
+
+
+  //---- Level indexing ----
   
-  const target_efficiency: real;
+  var level_indices:   domain(1) = [1..1];
+  const max_n_levels:  int;
 
 
-  var time: real;
 
-  var level_indices: domain(1) = [1..1];
+  //---- Spatial structure ----
 
-  var levels:                   [level_indices] Level;
-  var level_solutions:          [level_indices] LevelSolution;
-
-
-  //==== Boundary structures ====
-  // var coarse_boundaries:        [level_indices] CFBoundary;  // Index 1 will be unused
-  // var coarse_overlap_solutions: [level_indices] RefiningTransferSolution;
+  var levels:              [level_indices] Level;
   var invalid_regions:     [level_indices] LevelInvalidRegion;
   var cf_ghost_regions:    [level_indices] LevelCFGhostRegion;
-  var cf_ghost_solutions:  [level_indices] LevelCFGhostSolution;
   var physical_boundaries: [level_indices] PhysicalBoundary;
 
 
-  const steps_before_regrid = 2;
-  var regrid_counters: [level_indices] int;
+
+  //---- Solution information ----
+
+  var level_solutions:    [level_indices] LevelSolution;
+  var cf_ghost_solutions: [level_indices] LevelCFGhostSolution;
+  var time:               real;
+
+
+
+  //---- Regridding ----
+  
+  const flagger:             Flagger;  // Flagger class is defined below  
+  const target_efficiency:   real;
+  const steps_before_regrid: int = 2;
+  var   regrid_counters:     [level_indices] int;
+
+
+
+
   
 
-  //|\''''''''''''''''''''''''''''''''''''|\
-  //| >    Basic methods and iterators    | >
-  //|/....................................|/
   proc n_levels { return level_indices.high; };
-  
-  // proc fine_boundaries(i: int) var {
-  //   return coarse_boundaries(i+1);
-  // }
-  // /|''''''''''''''''''''''''''''''''''''/|
-  //< |    Basic methods and iterators    < |
-  // \|....................................\|
     
 
 
   //|\''''''''''''''''''''|\
   //| >    constructor    | >
   //|/....................|/
-  proc AMRHierarchy(
+  proc AMRHierarchy (
     x_low:             dimension*real,
     x_high:            dimension*real,
     n_coarsest_cells:  dimension*int,
@@ -72,7 +72,7 @@ class AMRHierarchy {
     ref_ratio:         dimension*int,
     target_efficiency: real,
     flagger:           Flagger,
-    initialCondition:  func(dimension*real, real))
+    initialCondition:  func(dimension*real, real) )
   {
 
     this.x_low             = x_low;
@@ -83,10 +83,10 @@ class AMRHierarchy {
     this.ref_ratio         = ref_ratio;
     this.target_efficiency = target_efficiency;
     this.flagger           = flagger;
-    this.initialCondition  = initialCondition;
 
 
-    //==== Create the top level ====
+    //---- Create the base level ----
+    
     levels(1) = new Level(x_low = x_low,  x_high = x_high,
                           n_cells       = n_coarsest_cells,
                           n_ghost_cells = n_ghost_cells);
@@ -96,7 +96,8 @@ class AMRHierarchy {
     physical_boundaries(1) = new PhysicalBoundary(levels(1));
 
 
-    //==== Create top solution ====
+    //---- Create base solution ----
+    
     level_solutions(1) = new LevelSolution(levels(1));
     level_solutions(1).setToFunction(initialCondition, time);
     
@@ -123,12 +124,10 @@ class AMRHierarchy {
 
         //---- Create new solution ----
         level_solutions(i_finest) = new LevelSolution(new_level);
-        level_solutions(i_finest).setToFunction(initialCondition, time);
+        level_solutions(i_finest).setToFunction( initialCondition, time );
         
       
         //---- Create new boundary structures ----
-        // coarse_boundaries(i_finest)        = new CFBoundary(levels(i_finest-1), new_level);
-        // coarse_overlap_solutions(i_finest) = new RefiningTransferSolution(coarse_boundaries(i_finest));      
         createBoundaryStructures(i_finest);
       
       
@@ -140,6 +139,8 @@ class AMRHierarchy {
         writeln("Refinement unnecessary.");
         break;
       }
+      
+      writeln("Done with initial refinement.");
       
     }
     //<=== Create refined levels and solutions as needed <===
@@ -161,6 +162,7 @@ class AMRHierarchy {
 //|\""""""""""""""""""""""""""""|\
 //| >    AMRHierarchy.regrid    | >
 //|/____________________________|/
+
 //------------------------------------------------------------------
 // This method regrids the AMRHierarchy, allowing the adjustment
 // of all levels finer than that with the specified index 'i_base'.
@@ -168,6 +170,7 @@ class AMRHierarchy {
 
 proc AMRHierarchy.regrid ( i_base: int )
 {
+
 
   writeln("regrid called from base level ", i_base, ".");
 
@@ -187,7 +190,7 @@ proc AMRHierarchy.regrid ( i_base: int )
 
 
     //---- Create new level ----
-    const new_level = buildRefinedLevel(i_finest_old);
+    const new_level = buildRefinedLevel( i_finest_old );
 
   
     //==== If level is nonempty, then add it to the hierarchy ====
@@ -201,19 +204,17 @@ proc AMRHierarchy.regrid ( i_base: int )
       
       //---- Add new level ----
       levels(i_finest) = new_level;
+      
 
 
       //---- Create and fill new solution ----
-      level_solutions(i_finest) = new LevelSolution(new_level);
+      level_solutions(i_finest) = new LevelSolution( new_level );
       level_solutions(i_finest+1).initialFill( level_solutions(i_finest) );
 
 
       //---- Create new boundary structures ----
-      // coarse_boundaries(i_finest)        = new CFBoundary(levels(i_finest-1), new_level);
-      // coarse_overlap_solutions(i_finest) = new RefiningTransferSolution( coarse_boundaries(i_finest) );
-      // physical_boundaries(i_finest)      = new PhysicalBoundary(new_level);
       createBoundaryStructures( i_finest );
-
+      
       
       //---- Set regrid counter ----
       regrid_counters(i_finest) = steps_before_regrid;    
@@ -222,6 +223,7 @@ proc AMRHierarchy.regrid ( i_base: int )
     }
     else
       writeln("Refinement unnecessary.");
+
   }
   //<=== Create new level of refinement, if possible and necessary <===
   
@@ -248,14 +250,7 @@ proc AMRHierarchy.regrid ( i_base: int )
     
     //---- Remove old boundary structures ----
     deleteBoundaryStructures(i_regridding);
-    // coarse_boundaries(i_regridding).clear();
-    // delete coarse_boundaries(i_regridding);
-    // 
-    // coarse_overlap_solutions(i_regridding).clear();
-    // delete coarse_overlap_solutions(i_regridding);
-    //     
-    // physical_boundaries(i_regridding).clear();
-    // delete physical_boundaries(i_regridding);
+    
 
     
     //---- Create new level ----
@@ -268,22 +263,24 @@ proc AMRHierarchy.regrid ( i_base: int )
     if regridded_level.grids.numIndices > 0 {
       
       //---- Update the finest level index ----
+      
       i_finest = max(i_finest, i_regridding);
             
             
       //---- Create solution on regridded level ----
+
       var regridded_level_solution = new LevelSolution(regridded_level);
       regridded_level_solution.initialFill( level_solutions(i_regridding), 
                                             level_solutions(i_regridding-1) );
 
       //---- Replace the old LevelSolution ----                                          
-      level_solutions(i_regridding).clear();
+
       delete level_solutions(i_regridding);
       level_solutions(i_regridding) = regridded_level_solution;
 
             
       //---- Replace the level ----
-      levels(i_regridding).clear();
+
       delete levels(i_regridding);
       levels(i_regridding) = regridded_level;
 
@@ -299,12 +296,12 @@ proc AMRHierarchy.regrid ( i_base: int )
     else {
 
       //---- Clear old solution ----
-      level_solutions(i_regridding).clear();
+
       delete level_solutions(i_regridding);
       
       
       //---- Delete the old level ----
-      levels(i_regridding).clear();
+
       delete levels(i_regridding);
       
       
@@ -326,13 +323,10 @@ proc AMRHierarchy.regrid ( i_base: int )
   
   
   //---- Create new boundary structures ----
-  for i in i_base+1..i_finest {
-    createBoundaryStructures(i);
-    // coarse_boundaries(i)        = new CFBoundary( levels(i-1), levels(i) );
-    // coarse_overlap_solutions(i) = new RefiningTransferSolution( coarse_boundaries(i) );
-    // physical_boundaries(i)      = new PhysicalBoundary( levels(i) );
-  }
   
+  for i in i_base+1..i_finest do createBoundaryStructures(i);
+ 
+   
 }
 // /|""""""""""""""""""""""""""""/|
 //< |    AMRHierarchy.regrid    < |
@@ -349,7 +343,7 @@ proc AMRHierarchy.regrid ( i_base: int )
 // Builds a refined level below level i_refining.
 //--------------------------------------------------------
 
-proc AMRHierarchy.buildRefinedLevel(i_refining: int)
+proc AMRHierarchy.buildRefinedLevel ( i_refining: int )
 {
   
   proc buffer(flags: [?cells] bool) {
@@ -370,12 +364,16 @@ proc AMRHierarchy.buildRefinedLevel(i_refining: int)
   
   
   //---- Flag the level being refined ----
-  var flags: [levels(i_refining).possible_cells] bool;
+  
+  const coarse_level = levels(i_refining);
+  var flags: [coarse_level.possible_cells] bool;
   flagger.setFlags(level_solutions(i_refining), flags);
   
   
   //---- Add flags for the level below the new one, if needed ----
-  if i_refining+2 <= n_levels {    
+
+  if i_refining+2 <= n_levels 
+  {    
     for super_fine_grid in levels(i_refining+2).grids {
       var cells_to_flag = coarsen( coarsen(super_fine_grid.cells, ref_ratio), ref_ratio);
       flags(cells_to_flag) = true;
@@ -383,106 +381,84 @@ proc AMRHierarchy.buildRefinedLevel(i_refining: int)
   }
   
   
-  
   //---- Add buffer region ----
+
   var buffered_flags = buffer(flags);
   
-  
-  
-  // //###TEMP
-  // writeln("Flagged cells:");
-  // for cell in buffered_flags.domain do
-  //   if buffered_flags(cell) then
-  //     writeln(cell);
-  // writeln("----------------");
-  
-  
-  //---- Partition ----
+    
+  //---- Cluster ----
+
   const min_width: dimension*int = 2;
-  var partitioned_domains = partitionFlags(buffered_flags, target_efficiency, min_width);
+  var cluster_domains = clusterFlags( buffered_flags, target_efficiency, min_width );
   
-  
-  // //###TEMP
-  // writeln("Partitioned domains:");
-  // for D in partitioned_domains do
-  //   writeln(D);
-  // writeln("--------------------");
-  
+    
   
   //===> Ensure proper nesting ===>
-  //------------------------------------------------------------------------
-  // Every domain to refine must be at least one cell away from the level's
-  // boundary with a coarser level (physical boundary is OK).  So for each
-  // partitioned domain, we locate the "adjacent coarse region," in terms
-  // of cells sized by the refining level that spill into the next-coarser
-  // level.
-  //
-  // This is done by growing the partitioned domain by 1 cell, and then
-  // subtracting the (interior) cells of every grid on the level.  The
-  // level's physical boundary is also removed.  Then
-  // this adjacent coarse region is expanded by 1 cell and removed from
-  // the original partitioned domain.
-  //
-  // (You'll probably want to draw a picture.  Verbal explanation doesn't
-  // do it justice.) 
-  //------------------------------------------------------------------------
 
-  // var domains_to_refine = new MultiDomainNew(dimension,stridable=true);
-  var domains_to_refine = new ArrayBasedList( domain(dimension,stridable=true) );
-
-  for D in partitioned_domains
+  var domains_to_refine = new List( domain(dimension,stridable=true) );  
+  
+  
+  //---- Form exterior of coarse level ----
+  
+  var coarse_exterior = new MultiDomain(dimension,stridable=true);
+  coarse_exterior.add( coarse_level.possible_cells );
+  
+  for grid in coarse_level.grids do
+    coarse_exterior.subtract( grid.cells );
+    
+    
+    
+  for D in cluster_domains
   {
-    var adjacent_coarse_region = new MultiDomainNew(dimension,stridable=true);
     
-    //==== Initialize to D expanded by one cell ====
-    adjacent_coarse_region.add( D.expand(2) );
-
-    //==== Physical boundary is OK; this trims it off ====
-    adjacent_coarse_region.intersect( levels(i_refining).possible_cells );
-
-    //==== Remove all grid cells from the level ====
-    for grid in levels(i_refining).grids do
-      adjacent_coarse_region.subtract(grid.cells);
-      
-    var properly_nested_domains = new MultiDomainNew(dimension,stridable=true);
+    //---- Remove any portion of D within 1 cell of coarse_exterior ----
+    
+    var properly_nested_domains = new MultiDomain(dimension,stridable=true);
     properly_nested_domains.add(D);
-    
-    for adjacent_coarse_domain in adjacent_coarse_region do
-      properly_nested_domains.subtract( adjacent_coarse_domain.expand(2) );
-    
-    for D in properly_nested_domains {
-      domains_to_refine.add( D );
-    }
 
-    adjacent_coarse_region.clear();
-    delete adjacent_coarse_region;
+    for exterior_D in coarse_exterior do 
+      properly_nested_domains.subtract( exterior_D.expand(2) );
     
-    properly_nested_domains.clear();
+    
+    
+    //---- Add results to the list of domains to refine ----
+    
+    for E in properly_nested_domains do
+      domains_to_refine.add( E );
+      
+      
+    //---- Clean up ----
+      
     delete properly_nested_domains;
-  }
     
-  partitioned_domains.clear();
-  delete partitioned_domains;
+  }
+
+    
+  delete cluster_domains;
+
   //<=== Ensure proper nesting <===
   
   
+  
   //===> Create new level, and return ===>
+  
   var new_level = new Level(x_low   = this.x_low,
                             x_high  = this.x_high,
                             n_cells = levels(i_refining).n_cells * ref_ratio,
                             n_ghost_cells = this.n_ghost_cells);
                             
   for domain_to_refine in domains_to_refine do
-    new_level.addGrid( refine(domain_to_refine, ref_ratio) ); //# need to add this method to the level
+    new_level.addGrid( refine(domain_to_refine, ref_ratio) );
   
   
-  domains_to_refine.clear();
   delete domains_to_refine;
-    
+  
+  
   new_level.complete();
   
-  
+
   return new_level;
+  
   //<=== Create new level, and return <===
   
   
@@ -540,16 +516,12 @@ proc AMRHierarchy.createBoundaryStructures( i: int )
 proc AMRHierarchy.deleteBoundaryStructures( i: int )
 {
   
-  invalid_regions(i-1).clear();
   delete invalid_regions(i-1);
   
-  cf_ghost_regions(i).clear();
   delete cf_ghost_regions(i);
   
-  cf_ghost_solutions(i).clear();
   delete cf_ghost_solutions(i);
   
-  physical_boundaries(i).clear();
   delete physical_boundaries(i);
 
 }
@@ -570,10 +542,12 @@ proc AMRHierarchy.deleteBoundaryStructures( i: int )
 // the rectangular (mathematical) domain of the full hierarchy.
 //--------------------------------------------------------------
 
-class PhysicalBoundary {
+class PhysicalBoundary
+{
+
   const level:        Level;
   const grids:        domain(Grid);
-  const multidomains: [grids] MultiDomainNew(dimension,stridable=true);
+  const multidomains: [grids] MultiDomain(dimension,stridable=true);
 
 
 
@@ -585,10 +559,9 @@ class PhysicalBoundary {
   {
     for grid in level.grids {
 
-      var boundary_multidomain = new MultiDomainNew(dimension,stridable=true);
+      var boundary_multidomain = new MultiDomain(dimension,stridable=true);
 
-      //## boundary_multidomain.add(grid.ghost_multidomain);
-      for D in grid.ghost_multidomain do boundary_multidomain.add( D );
+      for D in grid.ghost_domains do boundary_multidomain.add( D );
 
       boundary_multidomain.subtract(level.possible_cells);
 
@@ -605,19 +578,17 @@ class PhysicalBoundary {
 
 
 
-  //|\''''''''''''''''''''''|\
-  //| >    method: clear    | >
-  //|/......................|/
-  proc clear () 
+  //|\'''''''''''''''''''|\
+  //| >    destructor    | >
+  //|/...................|/
+  
+  proc ~PhysicalBoundary () 
   {
-    for multidomain in multidomains {
-      multidomain.clear();
-      delete multidomain;
-    }
+    for multidomain in multidomains do delete multidomain;
   }
-  // /|''''''''''''''''/|
-  //< |    clear()    < |
-  // \|................\|
+  // /|'''''''''''''''''''/|
+  //< |    destructor    < |
+  // \|...................\|
 
 
   
@@ -653,8 +624,8 @@ class PhysicalBoundary {
 //----------------------------------------------------------
 
 class Flagger {
-  proc setFlags(level_solution: LevelSolution, 
-               flags: [level_solution.level.possible_cells] bool) {}
+  proc setFlags( level_solution: LevelSolution, 
+                 flags: [level_solution.level.possible_cells] bool ) {}
 }
 // /|""""""""""""""""""""""/|
 //< |    Flagger class    < |
@@ -672,7 +643,7 @@ class Flagger {
 // parameters to be changed without recompiling the code.
 //-----------------------------------------------------------------
 
-proc AMRHierarchy.AMRHierarchy(
+proc AMRHierarchy.AMRHierarchy (
   file_name:  string,
   flagger:    Flagger,
   inputIC:    func(dimension*real,real))
@@ -759,10 +730,9 @@ proc LevelSolution.initialFill (
 // This version purely interpolates data from 'coarse_solution'.
 //--------------------------------------------------------------------------
 
-proc LevelSolution.initialFill (
-  coarse_solution: LevelSolution )
+proc LevelSolution.initialFill ( coarse_solution: LevelSolution )
 {
-  current_data.initialFill(coarse_solution.current_data);
+  current_data.initialFill( coarse_solution.current_data );
   current_time = coarse_solution.current_time;
   old_time     = current_time;
 }
@@ -793,12 +763,13 @@ proc LevelVariable.initialFill (
   q_coarse:  LevelVariable)
 {
 
-  //---- Safety check ====
-  if q_old != nil then
-    assert(this.level.n_cells == q_old.level.n_cells);
+  //---- Safety check ----
+
+  if q_old != nil then assert(this.level.n_cells == q_old.level.n_cells);
 
   
-  //---- Refinement ratio ====
+  //---- Refinement ratio ----
+  
   const ref_ratio = refinementRatio(q_coarse.level, this.level);
 
   
@@ -806,9 +777,10 @@ proc LevelVariable.initialFill (
 
   for grid in level.grids {
 
-    //---- Initialize unfilled cell blocks ----
-    var unfilled_cell_blocks = new MultiDomainNew(dimension, true);
-    unfilled_cell_blocks.add( grid.cells );
+    //---- Initialize structure of unfilled cell blocks ----
+    
+    var unfilled_region = new MultiDomain(dimension, true);
+    unfilled_region.add( grid.cells );
 
 
     //===> Copy from q_old where possible ===>
@@ -817,7 +789,8 @@ proc LevelVariable.initialFill (
     // as a MultiDomain. #inefficiency
     //-------------------------------------------------------
 
-    if q_old != nil {
+    if q_old != nil
+    {
 
       for old_grid in q_old.level.grids
       {
@@ -827,9 +800,11 @@ proc LevelVariable.initialFill (
         if overlap.numIndices > 0 
         {
           this(grid,overlap) = q_old(old_grid, overlap);
-          unfilled_cell_blocks.subtract( overlap );
+          unfilled_region.subtract( overlap );
         }
+        
       }
+      
     }
 
     //<=== Copy from q_old where possible <===
@@ -838,34 +813,53 @@ proc LevelVariable.initialFill (
     //===> Interpolate from q_coarse everywhere else ===>
     //------------------------------------------------
     // This looks really inefficient... #inefficiency
-    //------------------------------------------------
+    //------------------------------------------------------------------
+    // Yep, the part that begins 'for block in unfilled_region'
+    // is exactly the kind of comprehensive iteration I've been trying
+    // to avoid.  Ideally, I'd like a combined intersect/subtract
+    // operation on MultiDomains.  Can I make sense out of that?
+    //------------------------------------------------------------------
 
     for coarse_grid in q_coarse.level.grids {
       
       //---- Calculate full overlap on the fine grid ----
-      var overlap = grid.cells( refine(coarse_grid.cells, ref_ratio) );
+      
+      var refined_coarse = grid.cells( refine(coarse_grid.cells, ref_ratio) );
       
       
-      //----If there is an overlap, remove fragments that coincide with unfilled_cell_blocks ----
-      if overlap.numIndices > 0 {        
+      //----If there is an overlap, remove fragments that coincide with unfilled_region ----
+      
+      if refined_coarse.numIndices > 0 
+      {
         
-        for block in unfilled_cell_blocks {
-
-          var unfilled_overlap = overlap(block);
-
-          if unfilled_overlap.numIndices > 0 {
-            this(grid,unfilled_overlap) 
-                = q_coarse(coarse_grid).refineValues(unfilled_overlap, ref_ratio);          
-          }
-        }
+        var unfilled_intersection = unfilled_region.copy();
+        unfilled_intersection.intersect( refined_coarse );
         
-        unfilled_cell_blocks.subtract(overlap);
+        for D in unfilled_intersection do
+          this(grid,D) = q_coarse(coarse_grid).refineValues(D, ref_ratio);
+        
+        delete unfilled_intersection;  unfilled_intersection=nil;
+        
+        unfilled_region.subtract( refined_coarse );
+        if unfilled_region.isEmpty() then break;
+        
+        
+        // for block in unfilled_region {
+        // 
+        //   var unfilled_overlap = refined_coarse(block);
+        // 
+        //   if unfilled_overlap.numIndices > 0 then
+        //     this(grid,unfilled_overlap) 
+        //         = q_coarse(coarse_grid).refineValues( unfilled_overlap, ref_ratio );
+        // }
+        // 
+        // unfilled_region.subtract(refined_coarse);
       }
       
     }
     
-    unfilled_cell_blocks.clear();
-    delete unfilled_cell_blocks;
+    delete unfilled_region;  unfilled_region = nil;
+    
     //<=== Interpolate from q_coarse everywhere else <===
 
   }
@@ -881,7 +875,7 @@ proc LevelVariable.initialFill (
 // LevelVariable.initialFill defined above
 //----------------------------------------------------------------------
 
-proc LevelVariable.initialFill( q_coarse: LevelVariable )
+proc LevelVariable.initialFill ( q_coarse: LevelVariable )
 {
   const q_old: LevelVariable;
   initialFill( q_old, q_coarse );
@@ -899,23 +893,26 @@ proc LevelVariable.initialFill( q_coarse: LevelVariable )
 //|\""""""""""""""""""""""""""""""""""""|\
 //| >    AMRHierarchy output methods    | >
 //|/____________________________________|/
+
 //------------------------------------------------------------------------
 // Writes full Clawpack output at a given time.  Most of the work is done
 // by the "write" method, which handles output of the spatial data.
 //------------------------------------------------------------------------
+
 proc AMRHierarchy.clawOutput(frame_number: int)
 {
 
-  //==== Names of output files ====
+  //---- Names of output files ----
+  
   var frame_string:       string = format("%04i", frame_number);
   var time_file_name:     string = "_output/fort.t" + frame_string;
   var solution_file_name: string = "_output/fort.q" + frame_string;
 
 
-  //==== Time file ====
+  //---- Time file ----
+
   var n_grids: int = 0;
-  for level in levels do
-    n_grids += level.grids.numIndices;
+  for level in levels do n_grids += level.grids.numIndices;
 
   const time_file = new file(time_file_name, FileAccessMode.write);
   time_file.open();
@@ -923,7 +920,8 @@ proc AMRHierarchy.clawOutput(frame_number: int)
   time_file.close();
 
 
-  //==== Solution file ====
+  //---- Solution file ----
+  
   const solution_file = new file(solution_file_name, FileAccessMode.write);
   solution_file.open();
   this.writeData(solution_file);

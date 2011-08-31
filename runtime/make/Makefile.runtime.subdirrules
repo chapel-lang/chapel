@@ -9,7 +9,7 @@ depend: $(DEPENDSUBDIRS) echoruntimedir $(DEPEND_STAMP) $(DEPEND_DEPS)
 	@$(MAKE) filedepend
 	@mv -f $(SVN_DEPENDS).tmp $(SVN_DEPENDS)
 
-SVN_DEPS= $(SVN_SRCS:%.c=%.depend)
+SVN_DEPS = $(addsuffix .depend,$(basename $(SVN_SRCS)))
 
 filedepend: $(SVN_DEPS)
 	@true

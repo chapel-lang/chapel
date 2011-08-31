@@ -22,8 +22,9 @@ Setting Configuration Variables
 Configuration constants and variables defined in a Chapel program can
 have their default values overridden on the command line using the -s
 or -- flags.  Either flag takes the name of the configuration variable
-followed by an equals ("=") character and the value to assign to it.
-This value must be a legal Chapel literal for the type of variable.
+followed by an equals character '=' and the value to assign to it.
+This value must be a legal Chapel literal for the type of the variable.
+(Exception: for a string literal, the surrounding quotes are implicit.)
 In our current implementation, no extra spaces may appear between
 these elements.  Thus, the general form is:
 
@@ -32,18 +33,30 @@ or:
     ./a.out -s<cfgVar>=<val>
 
 
-As an example, compile the hello-module.chpl example which prints a
+As an example, compile the hello2-module.chpl example which prints a
 user-definable message:
 
-     chpl -o hello-module $CHPL_HOME/examples/hello-module.chpl
+     chpl -o hello2-module $CHPL_HOME/examples/hello2-module.chpl
 
 This program defines a configuration constant -- message -- indicating
 the string to print to the console, set to "Hello, world!" by default.
 To override the default, you can use:
 
-     ./hello-module --message='Hello, Chapel users!'
+     ./hello2-module --message='Hello, Chapel users!'
 or:
-     ./hello-module -smessage='Hello, Chapel users!'
+     ./hello2-module -smessage='Hello, Chapel users!'
+
+The default value of a configuration constant or variable can also be
+overridden at compilation time with a -s option. (The surrounding
+quotes must be provided for a string literal.) For example:
+
+     cd $CHPL_HOME/examples
+     chpl -smessage='"Hello from the Chapel compiler"' hello2-module.chpl
+or
+     chpl -s message="'Hello from the Chapel compiler'" hello2-module.chpl
+
+The compiler-established default can still be overridden when
+executing the program, as shown above.
 
 
 -----------------------------
@@ -74,37 +87,45 @@ README.launcher for more information about the launcher executable.
 Limiting the number of threads
 ------------------------------
 
-For multithreaded Chapel executions, a built-in configuration constant
-named maxThreadsPerLocale is used to control the maximum number of
-threads that may be used per locale to implement the program.  See
-README.tasks for more information on the role of this variable in
-creating threads and executing tasks.
+For multithreaded Chapel executions, the following built-in
+configuration constant can be used:
 
--------------------------------------
-Controlling single locale parallelism
--------------------------------------
+  numThreadsPerLocale  : Controls the number of threads used on each
+                         locale when running the program.
+
+See README.tasks for more information on the role of this variable in
+creating threads and executing tasks for the various tasking layers.
+
+
+--------------------------------------
+Controlling degree of data parallelism
+--------------------------------------
 
 Data parallel operations over ranges, default domains, and default
-arrays support single locale parallelism via the following built-in
-configuration constants:
+arrays permit the number of tasks used to implement the data
+parallelism to be specified using the following built-in configuration
+constants:
 
- --dataParTasksPerLocale      : Number of Chapel tasks to use to execute
+  dataParTasksPerLocale       : Number of Chapel tasks to use to execute
                                 forall loops (default: number of cores on
                                 the CPU).
- --dataParIgnoreRunningTasks  : If true, always use dataParTasksPerLocale
+
+  dataParIgnoreRunningTasks   : If true, always use dataParTasksPerLocale
                                 tasks to execute forall loops.  If false,
                                 reduce the number of tasks used by the
-                                number of running tasks (default: true).
- --dataParMinGranularity      : The number of tasks used to execute forall
-                                loops may be reduced such that the number
+                                number of tasks already running 
+                                (default: true).
+
+  dataParMinGranularity       : The number of tasks used to execute forall
+                                loops should be reduced such that the number
                                 of iterations per task is never less than
-                                the specified value (default: one).
+                                the specified value (default: 1).
 
 The Chapel standard distributions Block and Cyclic also use
-identically named constructor arguments to to control parallelism
-within a locale.  The default values for these arguments are set to
-their corresponding configuration constants for default data
-parallelism.
+identically named constructor arguments to control the degree of data
+parallelism within each locale.  The default values for these
+arguments are set to the corresponding global configuration constants.
+
 
 ------------------------
 Limiting Per-Task Memory
@@ -117,17 +138,19 @@ the system stack limit, which for example on Linux-based systems is
 typically 8 mb.  If the system doesn't specify a stack size limit, the
 tasking layer chooses a call stack size itself.  Again for example, this
 is typically 8 mb for tasking layers which use pthreads-based threading
-layers.  However, this automatically selected call stack size may not be
+layers. (README.tasks discusses tasking and threading layers.)
+
+However, this automatically selected call stack size may not be
 appropriate in all cases.  For programs in which some tasks have deep
 call trees it may be too small, leading to stack overflow.  For programs
 which use tasks only for data parallelism it may be unnecessarily large.
-The following built-in configuration constants can be used to change the
+
+The following built-in configuration constant can be used to change the
 task call stack size:
 
- --callStackSize : Size, in bytes, of the call stack for a task.
-
-If the size is set to 0, the implication is that the default system
-stack size should be used.
+  callStackSize  : Size, in bytes, of the call stack for a task.
+                   If the size is 0, the default system stack size
+                   will be used.
 
 
 -----------------------------------------

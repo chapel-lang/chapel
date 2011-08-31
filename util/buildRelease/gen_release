@@ -71,6 +71,7 @@ system("cd $rootdir && svn export -q $svnroot chapel");
     "compiler/etc",
     "doc",
     "etc/emacs",
+    "etc/source-highlight",
     "etc/vim",
     "examples",
     "make",
@@ -79,9 +80,9 @@ system("cd $rootdir && svn export -q $svnroot chapel");
     "third-party/dlmalloc",
     "third-party/gasnet",
     "third-party/gmp",
-    "third-party/pvm",
+    "third-party/nanox",
+    "third-party/qthread",
     "util/chplenv",
-    "util/multirealm",
     "util/test"
 );
 
@@ -97,6 +98,7 @@ system("cd chapel/compiler/parser && make lex.yy.cpp > /dev/null");
 print "Creating the examples directory...\n";
 system("cd chapel && cp -r test/release/examples .");
 system("cd chapel/util && cp start_test ../examples/");
+system("cd chapel && ./util/devel/test/extract_tests --no-futures -o ./examples/spec spec/*.tex");
 
 print "Building the man page...\n";
 system("cd chapel && make man");

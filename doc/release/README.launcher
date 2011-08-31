@@ -33,6 +33,10 @@ The goals of the launcher binary are:
 Executing a Chapel program using the verbose (-v) flag will typically
 print out the command(s) used to launch the program.  
 
+Executing using the help (-h/--help) flag will typically print out any
+launcher-specific options in addition to the normal help message for
+the program itself.
+
 Currently-supported launchers include:
 
   amudprun          : GASNet launcher for programs running over UDP
@@ -44,7 +48,6 @@ Currently-supported launchers include:
   mtarun            : Cray XMT application launcher using mtarun
   pbs-aprun         : Cray XT application launcher using PBS (qsub) + aprun
   pbs-gasnetrun_ibv : GASNet launcher using PBS (qsub) over Infiniband
-  pvm               : PVM launcher using pvm_spawn
   none              : do not use a launcher
 
 A specific launcher can be requested by setting the CHPL_LAUNCHER
@@ -65,8 +68,6 @@ environment variable.  If left unset, a default is picked as follows:
     (otherwise)                 -> gasnetrun_ibv
   + CHPL_COMM_SUBSTRATE=udp     -> amudprun
   (otherwise)                   -> none
-
-  CHPL_COMM=pvm                 -> pvm
 
   (otherwise)                   -> none
 

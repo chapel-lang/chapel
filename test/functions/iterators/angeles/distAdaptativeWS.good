@@ -1,0 +1,17 @@
+Working with 4 Threads
+
+Grain size: fine. Working with Adaptive BS and Stealing with BS
+
+Correct
+
+Grain size: coarse. Working with Adaptive BS and Stealing with BS
+
+Correct
+
+Grain size: tri. Working with Adaptive BS and Stealing with BS
+
+Correct
+
+Grain size: rand. Working with Adaptive BS and Stealing with BS
+
+Correct

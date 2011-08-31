@@ -10,6 +10,7 @@ extern bool resolved;
 //
 // prototypes of functions that are called as passes (alphabetical)
 //
+void addInitGuards();
 void buildDefaultFunctions();
 void callDestructors();
 void checkNormalized();
@@ -46,5 +47,12 @@ void resolve();
 void scalarReplace();
 void scopeResolve();
 void verify();
+
+//
+// utility functions in pass-containing code files
+//
+
+// parallel.cpp
+bool passingWideStringToExtern(Type* t);
 
 #endif

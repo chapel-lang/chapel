@@ -5,6 +5,11 @@ pragma "inline" proc abs(i : int(?w)) return if i < 0 then -i else i;
 pragma "inline" proc abs(i : uint(?w)) return i;
 pragma "inline" proc abs(x : complex(?w)) return sqrt(x.re*x.re + x.im*x.im);
 
+// We can't use "numeric" here because signum is not defined on a complex type.
+// It might be good to have a "scalar" class to encompass integral and real but not complex.
+pragma "inline" proc sgn(i : integral) return (i > 0) : i.type - (i < 0) : i.type;
+pragma "inline" proc sgn(x : real(?w)) return (x > 0.0) : x.type - (x < 0.0) : x.type;
+
 pragma "inline" proc conjg(a: complex(?w)) return (a.re, -a.im):complex;
 
 _extern proc isinf(x: real(64)): bool;
@@ -210,4 +215,76 @@ proc log2(in val: int(?w)) {
 
 proc log2(in val: uint(?w)) {
   return logBasePow2(val, 1);
+}
+
+// Performance note: if argument(s) is(are) of unsigned type(s),
+// fewer condititionals will be evaluated at run time.
+proc divceil(m: integral, n: integral) return
+  if isNonnegative(m) then
+    if isNonnegative(n) then (m + n - 1) / n
+    else                     m / n
+  else
+    if isNonnegative(n) then m / n
+    else                     (m + n + 1) / n;
+
+proc divceil(param m: integral, param n: integral) param return
+  if isNonnegative(m) then
+    if isNonnegative(n) then (m + n - 1) / n
+    else                     m / n
+  else
+    if isNonnegative(n) then m / n
+    else                     (m + n + 1) / n;
+
+// Performance note: if argument(s) is(are) of unsigned type(s),
+// fewer condititionals will be evaluated at run time.
+proc divfloor(m: integral, n: integral) return
+  if isNonnegative(m) then
+    if isNonnegative(n) then m / n
+    else                     (m - n - 1) / n
+  else
+    if isNonnegative(n) then (m - n + 1) / n
+    else                     m / n;
+
+proc divfloor(param m: integral, param n: integral) param return
+  if isNonnegative(m) then
+    if isNonnegative(n) then m / n
+    else                     (m - n - 1) / n
+  else
+    if isNonnegative(n) then (m - n + 1) / n
+    else                     m / n;
+
+// This codes up the standard definition, according to Wikipedia.
+// Is there a more efficient implementation for reals?
+proc mod(x: real(?w), y: real(w)): real(w) {
+  return x - y*floor(x/y);
+}
+
+// Performance note: if argument(s) is(are) of unsigned type(s),
+// fewer condititionals will be evaluated at run time.
+proc mod(m: integral, n: integral) {
+  const temp = m % n;
+
+  // eliminate some run-time tests if input(s) is(are) unsigned
+  return
+    if isNonnegative(n) then
+      if _isUnsignedType(m.type)
+      then temp
+      else ( if temp >= 0 then temp else temp + n )
+    else
+      // n < 0
+      ( if temp <= 0 then temp else temp + n );
+}
+
+proc mod(param m: integral, param n: integral) param {
+  param temp = m % n;
+
+  // verbatim copy from the other 'mod', to simplify maintenance
+  return
+    if isNonnegative(n) then
+      if _isUnsignedType(m.type)
+      then temp
+      else ( if temp >= 0 then temp else temp + n )
+    else
+      // n < 0
+      ( if temp <= 0 then temp else temp + n );
 }

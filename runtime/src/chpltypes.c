@@ -8,7 +8,7 @@
 #include <sys/time.h>
 #include <time.h>
 #include <chplfp.h>
-#include "chpl_mem.h"
+#include "chpl-mem.h"
 #include "chplrt.h"
 #include "chpltimers.h"
 #include "chpltypes.h"
@@ -34,7 +34,8 @@ char* chpl_glom_strings(int numstrings, ...) {
     len += strlen(va_arg(ap, char*));
   va_end(ap);
 
-  str = (char*)chpl_malloc(len+1, sizeof(char), CHPL_RT_MD_GLOM_STRINGS_DATA, 0, 0);
+  str = (char*)chpl_mem_allocMany(len+1, sizeof(char),
+                                  CHPL_RT_MD_GLOM_STRINGS_DATA, 0, 0);
 
   va_start(ap, numstrings);
   str[0] = '\0';
@@ -80,16 +81,26 @@ chpl_wide_string_copy(struct __chpl____wide_chpl_string* x, int32_t lineno, chpl
 
 
 chpl_string
-string_copy(chpl_string x, int32_t lineno, chpl_string filename) {
-  char *z = (char*)chpl_malloc(strlen(x)+1, sizeof(char), CHPL_RT_MD_STRING_COPY_DATA, lineno, filename);
+string_copy(chpl_string x, int32_t lineno, chpl_string filename)
+{
+  char *z;
+
+  // hilde sez: if the input string is null, just return null.
+  if (x == NULL)
+    return NULL;
+
+  z = (char*)chpl_mem_allocMany(strlen(x)+1, sizeof(char),
+                                      CHPL_RT_MD_STRING_COPY_DATA,
+                                      lineno, filename);
   return strcpy(z, x);
 }
 
 
 chpl_string
 string_concat(chpl_string x, chpl_string y, int32_t lineno, chpl_string filename) {
-  char *z = (char*)chpl_malloc(strlen(x)+strlen(y)+1, sizeof(char),
-                               CHPL_RT_MD_STRING_CONCAT_DATA, lineno, filename);
+  char *z = (char*)chpl_mem_allocMany(strlen(x)+strlen(y)+1, sizeof(char),
+                                      CHPL_RT_MD_STRING_CONCAT_DATA,
+                                      lineno, filename);
   z[0] = '\0';
   strcat(z, x);
   strcat(z, y);
@@ -107,7 +118,9 @@ string_strided_select(chpl_string x, int low, int high, int stride, int32_t line
   if (low < 1 || low > length || high > length) {
     chpl_error("string index out of bounds", lineno, filename);
   }
-  result = chpl_malloc(size + 2, sizeof(char), CHPL_RT_MD_STRING_STRIDED_SELECT_DATA, lineno, filename);
+  result = chpl_mem_allocMany(size + 2, sizeof(char),
+                              CHPL_RT_MD_STRING_STRIDED_SELECT_DATA,
+                              lineno, filename);
   dst = result;
   if (stride > 0) {
     while (src - x <= high - 1) {

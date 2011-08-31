@@ -6,6 +6,8 @@
 #include "chpl.h"
 
 extern FILE* html_index_file;
+extern FILE* deletedIdHandle;
+extern char deletedIdFilename[FILENAME_MAX+1];
 
 extern int instantiation_limit;
 
@@ -13,6 +15,9 @@ extern int fdump_html;
 extern bool fdump_html_incude_system_modules;
 
 extern int trace_level;
+
+extern int currentPassNo;
+extern const char* currentPassName;
 
 // optimization control flags
 extern int fConditionalDynamicDispatchLimit;
@@ -67,7 +72,8 @@ extern bool fHeterogeneous;
 extern bool fieeefloat;
 
 extern int debugParserLevel;
-extern bool fRuntime;
+extern bool fLibraryCompile;
+extern bool fLibraryShared;     // Compile a shared library (DLL).
 extern bool no_codegen;
 extern bool developer;
 extern int num_constants_per_variable;
@@ -84,6 +90,7 @@ extern int squelch_header_errors;
 extern bool fWarnPromotion;
 extern bool fReportOptimizedOn;
 extern bool fReportScalarReplace;
+extern bool fReportDeadBlocks;
 
 extern bool debugCCode, optimizeCCode;
 
@@ -99,6 +106,7 @@ extern bool fNoMemoryFrees;
 extern int numGlobalsOnHeap;
 
 extern int breakOnID;
+extern int breakOnDeleteID;
 
 // code generation strings
 extern const char* compileCommand;

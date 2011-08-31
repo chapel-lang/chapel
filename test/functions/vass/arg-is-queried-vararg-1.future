@@ -1,0 +1,8 @@
+feature request: for a vararg formal with each formal's type being generic, allow querying of that generic type's parameters, in addition to the number of vararg actuals
+
+While the sample code looks reasonable to me, currently I get:
+
+arg-is-queried-vararg-1.chpl:1: In function 'test':
+arg-is-queried-vararg-1.chpl:4: error: illegal access to query type or parameter [normalize.cpp:877]
+
+This is simlar to arg-is-queried-tuple-1.chpl.

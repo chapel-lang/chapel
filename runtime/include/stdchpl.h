@@ -26,11 +26,11 @@
 #include <chplfp.h>
 #include "chplio.h"
 #include "chplmath.h"
-#include "chpl_mem.h"
+#include "chpl-mem.h"
 #include "chplmemtrack.h"
 #include "chplrt.h"
 #include "chplsys.h"
-#include "chpltasks.h"
+#include "chpl-tasks.h"
 #include "chpltimers.h"
 #include "chpltypes.h"
 #include "chplgpu.h"

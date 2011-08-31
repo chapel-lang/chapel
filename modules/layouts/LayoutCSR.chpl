@@ -79,10 +79,6 @@ class CSRDom: BaseSparseDom {
   iter these(param tag: iterator) where tag == iterator.leader {
     // same as DefaultSparseDom's leader
     const numElems = nnz;
-    if numElems <= 0 then {
-      if debugCSR then writeln("CSRDom leader: nothing to do (", numElems,
-                               " elements)");
-    } else {
       const numChunks = _computeNumChunks(numElems);
       //writeln("leader- rowRange=", rowRange, " colRange=", colRange, "\n",
       //        "        rowStart=", rowStart, " colIdx=", colIdx);
@@ -90,7 +86,7 @@ class CSRDom: BaseSparseDom {
         writeln("CSRDom leader: ", numChunks, " chunks, ", numElems, " elems");
 
       // split our numElems elements over numChunks tasks
-      if numChunks <= 1 then
+      if numChunks == 1 then
         yield (this, 1, numElems);
       else
         coforall chunk in 1..numChunks do
@@ -98,7 +94,6 @@ class CSRDom: BaseSparseDom {
       // TODO: to handle large numElems and numChunks faster, it would be great
       // to run the binary search in _private_findStartRow smarter, e.g.
       // pass to the tasks created in 'coforall' smaller ranges to search over.
-    }  // if numElems
   }
 
   iter these(param tag: iterator, follower: (?,?,?)) where tag == iterator.follower {

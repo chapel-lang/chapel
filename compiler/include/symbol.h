@@ -44,13 +44,16 @@ enum ModTag {
   MOD_MAIN       // a module from a file listed on the compiler command line
 };
 
+typedef std::bitset<NUM_FLAGS> FlagSet;
+
+
 class Symbol : public BaseAST {
  public:
   const char* name;
   const char* cname; // Name of symbol for generating C code
   Type* type;
   DefExpr* defPoint; // Point of definition
-  std::bitset<NUM_FLAGS> flags;
+  FlagSet flags;
 
   Symbol(AstTag astTag, const char* init_name, Type* init_type = dtUnknown);
   virtual ~Symbol();
@@ -102,7 +105,7 @@ class VarSymbol : public Symbol {
 class ArgSymbol : public Symbol {
  public:
   IntentTag intent;
-  BlockStmt* typeExpr;
+  BlockStmt* typeExpr;  // A type expression for the argument type, or NULL.
   BlockStmt* defaultExpr;
   BlockStmt* variableExpr;
   Type* instantiatedFrom;
@@ -232,13 +235,13 @@ class LabelSymbol : public Symbol {
 };
 
 
-VarSymbol *new_StringSymbol(const char *s);
-VarSymbol *new_BoolSymbol(bool b, IF1_bool_type size=BOOL_SIZE_SYS);
-VarSymbol *new_IntSymbol(int64_t b, IF1_int_type size=INT_SIZE_32);
-VarSymbol *new_UIntSymbol(uint64_t b, IF1_int_type size=INT_SIZE_32);
-VarSymbol *new_RealSymbol(const char *n, long double b, IF1_float_type size=FLOAT_SIZE_64);
-VarSymbol *new_ImagSymbol(const char *n, long double b, IF1_float_type size=FLOAT_SIZE_64);
-VarSymbol *new_ComplexSymbol(const char *n, long double r, long double i, IF1_complex_type size=COMPLEX_SIZE_128);
+VarSymbol *new_StringSymbol(const char *s, bool hasVolatileType=false);
+VarSymbol *new_BoolSymbol(bool b, IF1_bool_type size=BOOL_SIZE_SYS, bool hasVolatileType=false);
+VarSymbol *new_IntSymbol(int64_t b, IF1_int_type size=INT_SIZE_32, bool hasVolatileType=false);
+VarSymbol *new_UIntSymbol(uint64_t b, IF1_int_type size=INT_SIZE_32, bool hasVolatileType=false);
+VarSymbol *new_RealSymbol(const char *n, long double b, IF1_float_type size=FLOAT_SIZE_64, bool hasVolatileType=false);
+VarSymbol *new_ImagSymbol(const char *n, long double b, IF1_float_type size=FLOAT_SIZE_64, bool hasVolatileType=false);
+VarSymbol *new_ComplexSymbol(const char *n, long double r, long double i, IF1_complex_type size=COMPLEX_SIZE_128, bool hasVolatileType=false);
 VarSymbol *new_ImmediateSymbol(Immediate *imm);
 
 VarSymbol* newTemp(const char* name = NULL, Type* type = dtUnknown);

@@ -5,10 +5,26 @@
 A \emph{domain} is a first-class representation of an index set.
 Domains are used to specify iteration spaces, to define the size and
 shape of arrays (\rsec{Arrays}), and to specify aggregate operations
-like slicing.  A domain's
+like slicing.
+A domain can specify a single- or multi-dimensional
+rectangular iteration space or represent a set of indices of
+a given type.  Domains can also represent a subset of another domain's index set,
+using either a dense or sparse representation.
+A domain's
 indices may potentially be distributed across multiple locales as
 described in~\rsec{Domain_Maps}, thus supporting global-view data
 structures.
+
+In the next subsection, we introduce the key characteristics of domains.
+In~\rsec{Base_Domains}, we discuss the types and values that
+can be associated with a base domain.  In~\rsec{Simple_Subdomains}, we discuss the
+types and values of simple subdomains that can be created from those base
+domains.  In~\rsec{Sparse_Subdomains}, we discuss the types and values of sparse
+subdomains.  The remaining sections describe the important manipulations
+that can be perfomed with domains, as well as the predefined operators and
+functions defined for domains.
+
+\section{Domain Overview}
 
 There are three \emph{kinds} of domain, distinguished by their subset
 dependencies: \emph{base domains}, \emph{subdomains} and \emph{sparse
@@ -18,33 +34,18 @@ a base domain or another subdomain.  Sparse subdomains are subdomains which can
 represent sparse index subsets efficiently.  Simple subdomains are subdomains
 that are not sparse.  These relationships can be represented as follows:
 
-
 \begin{syntax}
 domain-type:
   base-domain-type
-  subdomain-type
-
-subdomain-type:
   simple-subdomain-type
   sparse-subdomain-type
 \end{syntax}
 
-In the next subsection, we introduce additional characteristics of domains.
-In~\rsec{Base_Domains}, we discuss the types and values that
-can be associated with a base domain.  In~\rsec{Simple_Subdomains}, we discuss the
-types and values of simple subdomains that can be created from those base
-domains.  In~\rsec{Sparse_Subdomains}, we discuss the types and values of sparse
-subdomains.  The remainder sections describe the important manipulations
-that can be perfomed with domains, as well as the built-in operators and
-functions defined for domains.
-
-\section{Domain Roadmap}
-
 Domains can be further classified according to whether they are \emph{regular}
-or \emph{irregular}.  A regular domain has a compact representation consisting
-of a range for each dimension.  The representation of a regular domain therefore
-requires only O(1) space.  Dense and strided rectangular domains are
-regular domains.
+or \emph{irregular}.  A regular domain represents a rectangular iteration
+space and can have a compact representation whose size is independent
+of the number of indices. Rectangular domains, with the exception of
+sparse subdomains, are regular.
 
 An irregular domain can store an arbitrary set of indices of an arbitrary but
 homogeneous index type.  Irregular domains typically require space proportional
@@ -69,6 +70,9 @@ and arrays~(\rsec{Association_of_Arrays_to_Domains}).
 In the future, it is likely that we will support a means of creating
 domain aliases, much as we support array aliases currently.
 \end{openissue}
+
+The runtime representation of a domain is controlled by its domain map.
+Domain maps are presented in \rsec{Domain_Maps}.
 
 
 \section{Base Domains}
@@ -132,26 +136,23 @@ rectangular-domain-type:
 \chpl{rank}, \chpl{idxType}, and \chpl{stridable} to be specified
 using standard type signature.
 
-\begin{example}
+\begin{chapelexample}{typeFunctionDomain.chpl}
 The following declarations both create an unintialized rectangular domain with three dimensions, with \chpl{int} indices:
-\begin{chapelpre}
-% typeFunctionDomain.chpl
-\end{chapelpre}
 \begin{chapel}
 var D1 : domain(rank=3, idxType=int, stridable=false);
 var D2 : domain(3*int);
 \end{chapel}
 \begin{chapeloutput}
 \end{chapeloutput}
-\end{example}
+\end{chapelexample}
 
 \subsubsection{Rectangular Domain Values}
 \label{Rectangular_Domain_Values}
 \index{rectangular domains!values}
 \index{domains!values!rectangular}
 
-A rectangular domain's value is represented as \chpl{rank} ranges of
-type \chpl{range(idxType,} \chpl{ BoundedRangeType.bounded,} \chpl{
+Each dimension of a rectangular domain is a range of
+type \chpl{range(idxType,} \chpl{BoundedRangeType.bounded,} \chpl{
 stridable)}.  The index set for a rank~1 domain is the set of indices
 described by its singleton range.  The index set for a rank~$n$
 domain is the set of all \chpl{n*idxType} tuples described by the
@@ -205,8 +206,10 @@ Otherwise, the domain literal is invalid.
 \begin{example}
 The expression \chpl{[1..5, 1..5]} defines a rectangular domain with
 type \chpl{domain(rank=2,} \chpl{ idxType=int,} \chpl{ strided=false)}.
-It is a $5 \times 5$ 
-domain with the indices $(1, 1), (1, 2), \ldots, (1, 5), (2, 1), \ldots (5, 5)$.
+It is a $5 \times 5$ domain with the indices:
+\begin{equation}
+(1, 1), (1, 2), \ldots, (1, 5), (2, 1), \ldots (5, 5).
+\end{equation}
 \end{example}
 
 A domain expression may contain bounds which are evaluated at runtime.
@@ -231,8 +234,23 @@ values for type:
 \chpl{range(idxType, BoundedRangeType.bounded, stridable)}
 \end{quote}
 
-% TODO: example here
-% I need a hint on what you want here. -- THH
+\begin{chapelexample}{rectangularDomain.chpl}
+The following creates a two-dimensional rectangular domain and then uses this to
+declare an array.  The domain's \chpl{dim()} accessor is used to fill the array with
+some values.  Then it is printed out.
+\begin{chapel}
+var D : domain(2) = [1..2, 1..7];
+var A : [D] int;
+for i in D.dim(1) do
+  for j in D.dim(2) do
+    A[i,j] = 7 * i**2 + j;
+writeln(A);
+\end{chapel}
+\begin{chapelprintoutput}
+8 9 10 11 12 13 14
+29 30 31 32 33 34 35
+\end{chapelprintoutput}
+\end{chapelexample}
 
 \subsection{Associative Domains}
 
@@ -286,8 +304,8 @@ representational name or value.
 
 When an associative domain is used as the index set of an array, the relation
 between the indices and the array elements can be thought of as a map between
-the elements of the index set and the values stored in the array.
-For enumerated domains, the mapping is between elements of the enumeration and
+the values of the index set and the elements stored in the array.
+For enumerated domains, the mapping is between values of the enumeration and
 the associated array values.  For opaque domains, the
 indices have no inherent names and are therefore anonymous.  Opaque domains can
 be used to represent sets and to build unstructured arrays (similar to
@@ -334,8 +352,8 @@ enumeration.
 \begin{rationale}
 The decision to have enumerated domains start fully populated was
 based on the observation that enumerations have a finite, typically
-small number of elements and that it would be common to declare arrays
-with values corresponding to each identifier in the enumeration.
+small number of values and that it would be common to declare arrays
+with elements corresponding to each identifier in the enumeration.
 Further, in terms of usability it is simpler to clear a fully-populated
 domain than to fully populate an empty one.
 
@@ -523,7 +541,7 @@ also afford the opportunity to represent that index using an optimized
 format that doesn't simply store the index variable's value.  This fact could be
 used to support accelerated access to arrays declared over that domain.  For
 example, iteration over an index type could be implemented using memory pointers
-and strides, rather than explicitly calculating the offset of each element
+and strides, rather than explicitly calculating the offset of each index
 within the domain.
 
 These potential optimizations may make it less expensive to
@@ -564,8 +582,8 @@ indices in order.
 
 \section{Domains as Arguments}
 \label{Domain_Arguments}
-\index{domains!function arguments}
-\index{function arguments!domains}
+\index{domains!as arguments to functions}
+\index{argument passing!domains}
 
 This section describes the semantics of passing domains as arguments
 to functions.
@@ -610,7 +628,7 @@ forall (a,i) in (A,D) do
 
 \section{Domain Operations}
 
-Chapel supplies built-in operators and functions that can be used to manipulate
+Chapel supplies predefined operators and functions that can be used to manipulate
 domains.  Unless otherwise noted, these operations are applicable to a domain of
 any type, whether a base domain or a subdomain.
 
@@ -695,7 +713,7 @@ variable using either parentheses or square brackets.
 
 \begin{syntax}
 domain-slice-expression:
-  domain-slice-expression \[ domain-expression \]
+  domain-slice-expression [ domain-expression ]
   domain-slice-expression ( domain-expression )
 \end{syntax}
 
@@ -714,7 +732,7 @@ the intersection of the domain's index set and the slicing index set.
 The type and domain map of the result match the domain being sliced.
 
 \begin{openissue}
-Ccan we say that it is an alias in the case of sparse/associative?
+Can we say that it is an alias in the case of sparse/associative?
 \end{openissue}
 
 \subsubsection{Range-based Slicing}
@@ -763,6 +781,18 @@ a \chpl{rank} equal to the number of dimensions that were sliced by
 ranges rather than integers.
 
 
+\subsection{Count Operator}
+\label{Count_Operator_Domains}
+\index{domains!count operator}
+
+The \chpl{#} operator can be applied to dense rectangular domains with
+a tuple argument whose size matches the rank of the domain (or
+optionally an integer in the case of a 1D domain).  The operator is
+equivalent to applying the \chpl{#} operator to the component ranges
+of the domain and then using them to slice the domain as in
+Section~\ref{Range_Based_Slicing}.
+
+
 \subsection{Adding and Removing Domain Indices}
 \label{Adding_and_Removing_Domain_Indices}
 \index{domains!adding indices}
@@ -806,12 +836,9 @@ proc $Domain$.clear()
 Resets this domain's index set to the empty set.
 \end{protobody}
 
-\begin{example}
+\begin{chapelexample}{emptyEnumeratedDomain}
 In the case of an enumerated domain, this function provides a way to produce an
 empty index set.
-\begin{chapelpre}
-% emptyEnumeratedDomain
-\end{chapelpre}
 \begin{chapel}
 enum Counter { one, two, three };
 var D : domain ( Counter );
@@ -819,22 +846,30 @@ writeln("D has ", D.numIndices, " indices.");
 D.clear();
 writeln("D has ", D.numIndices, " indices.");
 \end{chapel}
-\begin{chapeloutput}
+\begin{chapelprintoutput}
 D has 3 indices.
 D has 0 indices.
-\end{chapeloutput}
-\end{example}
+\end{chapelprintoutput}
+\end{chapelexample}
 
 \begin{protohead}
-proc $Domain$.indexOrder(i: index($Domain$)): dim_type
+proc $Domain$.idxType type
+\end{protohead}
+\begin{protobody}
+Returns the domain type's \chpl{idxType}.
+This function is not available on opaque domains.
+\end{protobody}
+
+\begin{protohead}
+proc $Domain$.indexOrder(i: index($Domain$)): idxType
 \end{protohead}
 \begin{protobody}
 If \chpl{i} is a member of the domain, returns the ordinal value of
 \chpl{i} using a total ordering of the domain's indices using 0-based
-indexing.  Otherwise, it returns \chpl{(-1):dim_type}.  For rectangular
+indexing.  Otherwise, it returns \chpl{(-1):idxType}.  For rectangular
 domains, this ordering will be based on a row-major ordering of the
 indices; for other domains, the ordering may be
-implementation-defined and unstable as elements are added and
+implementation-defined and unstable as indices are added and
 removed from the domain.
 \end{protobody}
 
@@ -986,14 +1021,14 @@ type.
 proc $Domain$.rank param : int
 \end{protohead}
 \begin{protobody}
-Returns the rank of the domain as a parameter int.
+Returns the rank of the domain.
 \end{protobody}
 
 \begin{protohead}
 proc $Domain$.stridable param : bool
 \end{protohead}
 \begin{protobody}
-Returns whether or not the domain is stridable as a parameter bool.
+Returns whether or not the domain is stridable.
 \end{protobody}
 
 \begin{protohead}
@@ -1016,7 +1051,7 @@ by \chpl{off} or \chpl{off(d)} for each dimension \chpl{d}.
 \end{protobody}
 
 %% \begin{protohead} **/
-%% proc $Domain$.position(i: index($Domain$)): rank*dim_type **/
+%% proc $Domain$.position(i: index($Domain$)): rank*idxType **/
 %% \end{protohead} **/
 %% \begin{protobody} **/
 %% Returns a tuple holding the order of index i in each range defining **/

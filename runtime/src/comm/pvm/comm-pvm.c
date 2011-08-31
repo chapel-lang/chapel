@@ -13,9 +13,9 @@
 #include "chplcgfns.h"
 #include "chplrt.h"
 #include "chpl-comm.h"
-#include "chpl_mem.h"
+#include "chpl-mem.h"
 #include "chplsys.h"
-#include "chpltasks.h"
+#include "chpl-tasks.h"
 #include "chpltypes.h"
 #include "error.h"
 
@@ -119,10 +119,6 @@ int32_t chpl_comm_getMaxThreads(void) {
   return 0;
 }
 
-int32_t chpl_comm_maxThreadsLimit(void) {
-  return 0;
-}
-
 typedef enum {
   ChplCommPut,
   ChplCommGet,
@@ -191,9 +187,9 @@ static void chpl_RPC(_chpl_RPC_arg* arg) {
   PRINTF("Did task");
   chpl_pvm_send(arg->joinLocale, arg->replyTag, NULL, 0);
   if (arg->arg != NULL) {
-    chpl_free(arg->arg, 0, 0);
+    chpl_mem_free(arg->arg, 0, 0);
   }
-  chpl_free(arg, 0, 0);
+  chpl_mem_free(arg, 0, 0);
 }
 
 //
@@ -1058,7 +1054,7 @@ static void polling(void* x) {
       // fork works similarly, but runs it from polling thread.
     case ChplCommFork: {
       void* args;
-      _chpl_RPC_arg* rpcArg = chpl_malloc(1, sizeof(_chpl_RPC_arg), CHPL_RT_MD_REMOTE_FORK_DATA, 0, 0);
+      _chpl_RPC_arg* rpcArg = chpl_mem_allocMany(1, sizeof(_chpl_RPC_arg), CHPL_RT_MD_REMOTE_FORK_DATA, 0, 0);
 #if CHPL_DIST_DEBUG
       sprintf(debugMsg, "Fulfilling ChplCommFork(fromloc=%d, tag=%d, fnid=%d)", source, msg_info.replyTag, msg_info.u.fid);
       PRINTF(debugMsg);
@@ -1070,7 +1066,7 @@ static void polling(void* x) {
         mallocsize = msg_info.size;
 
       if (mallocsize != 0) {
-        args = chpl_malloc(1, mallocsize, CHPL_RT_MD_REMOTE_FORK_ARG, 0, 0);
+        args = chpl_mem_allocMany(1, mallocsize, CHPL_RT_MD_REMOTE_FORK_ARG, 0, 0);
       } else {
         args = NULL;
       }
@@ -1098,7 +1094,7 @@ static void polling(void* x) {
         mallocsize = msg_info.size;
 
       if (mallocsize != 0) {
-        args = chpl_malloc(1, mallocsize, CHPL_RT_MD_REMOTE_FORK_ARG, 0, 0);
+        args = chpl_mem_allocMany(1, mallocsize, CHPL_RT_MD_REMOTE_FORK_ARG, 0, 0);
       } else {
         args = NULL;
       }
@@ -1182,7 +1178,7 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
   if (max != chpl_numLocales) {
     chpl_internal_error("PVM group configuration failed");
   }
-  tids = chpl_malloc(chpl_numLocales, sizeof(int), CHPL_RT_MD_PVM_LIST_OF_NODES, 0, 0);
+  tids = chpl_mem_allocMany(chpl_numLocales, sizeof(int), CHPL_RT_MD_PVM_LIST_OF_NODES, 0, 0);
   for (i=0; i < chpl_numLocales; i++) {
     PVM_LOCK_UNLOCK_SAFE(tids[i] = pvm_gettid((char *)jobname, i), "pvm_gettid", "chpl_comm_init");
   }
@@ -1213,6 +1209,8 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
   *argc_p = *argc_p - 3;
   return;
 }
+
+void chpl_comm_post_mem_init(void) { }
 
 //
 // No support for gdb for now
@@ -1286,8 +1284,9 @@ void chpl_comm_rollcall(void) {
   return;
 }
 
-void chpl_comm_init_shared_heap(void) {
-  chpl_initHeap(NULL, 0);
+void chpl_comm_desired_shared_heap(void** start_p, size_t* size_p) {
+  *start_p = NULL;
+  *size_p  = 0;
   return;
 }
 
@@ -1490,7 +1489,7 @@ void chpl_comm_exit_all(int status) {
     PVM_UNLOCK_SAFE(pvm_send(parent, NOTIFYTAG), "pvm_pksend", "chpl_comm_exit_all");
   }
 
-  chpl_free(tids, 0, 0);
+  chpl_mem_free(tids, 0, 0);
   pvm_exit();
   return;
 }
@@ -1537,7 +1536,7 @@ void chpl_comm_exit_any(int status) {
     PVM_UNLOCK_SAFE(pvm_send(parent, NOTIFYTAG), "pvm_pksend", "chpl_comm_exit_all");
   }
 
-  chpl_free(tids, 0, 0);
+  chpl_mem_free(tids, 0, 0);
   pvm_exit();
   return;
 }
@@ -1715,7 +1714,7 @@ void chpl_comm_fork_nb(int locale, chpl_fn_int_t fid,
   }
 
   if (chpl_localeID == locale) {
-    void* argCopy = chpl_malloc(1, mallocsize, CHPL_RT_MD_REMOTE_NB_FORK_DATA, 0, 0);
+    void* argCopy = chpl_mem_allocMany(1, mallocsize, CHPL_RT_MD_REMOTE_NB_FORK_DATA, 0, 0);
     memmove(argCopy, arg, mallocsize);
     chpl_task_begin((chpl_fn_p)chpl_ftable[fid], argCopy, true, false, NULL);
   } else {
@@ -1747,6 +1746,18 @@ void chpl_comm_fork_nb(int locale, chpl_fn_int_t fid,
 void chpl_comm_fork_fast(int locale, chpl_fn_int_t fid, void *arg,
                          int32_t arg_size, int32_t arg_tid) {
   chpl_comm_fork(locale, fid, arg, arg_size, arg_tid);
+}
+
+int chpl_comm_numPollingTasks(void) { return 0; }
+
+void chpl_comm_startPollingTask(void) {
+  // Ultimately, pthread_create() stuff from chpl_comm_init should be
+  // moved here;  once it is, the previous routine should
+  // be changed to return 1.
+}
+
+void chpl_comm_stopPollingTask(void) {
+  // And similarly, cleanup stuff should go here.
 }
 
 void chpl_startVerboseComm() {
@@ -1797,6 +1808,24 @@ void chpl_stopCommDiagnosticsHere() {
   chpl_comm_diagnostics = 0;
 }
 
+void chpl_resetCommDiagnosticsHere() {
+  chpl_sync_lock(&chpl_comm_diagnostics_sync);
+  chpl_comm_gets = 0;
+  chpl_comm_puts = 0;
+  chpl_comm_forks = 0;
+  chpl_comm_nb_forks = 0;
+  chpl_sync_unlock(&chpl_comm_diagnostics_sync);
+}
+
+void chpl_getCommDiagnosticsHere(chpl_commDiagnostics *cd) {
+  chpl_sync_lock(&chpl_comm_diagnostics_sync);
+  cd->get = chpl_comm_gets;
+  cd->put = chpl_comm_puts;
+  cd->fork = chpl_comm_forks;
+  cd->fork_nb = chpl_comm_nb_forks;
+  chpl_sync_unlock(&chpl_comm_diagnostics_sync);
+}
+
 int32_t chpl_numCommGets(void) {
   return chpl_comm_gets;
 }
@@ -1817,6 +1846,11 @@ int32_t chpl_numCommNBForks(void) {
   return chpl_comm_nb_forks;
 }
 
+
+// This are not supported in this comm layer
+int32_t chpl_numCommNBGets(void) { return -1; }
+int32_t chpl_numCommTestNBGets(void) { return -1; }
+int32_t chpl_numCommWaitNBGets(void) { return -1; }
 
 /* TODO: eventually make this a bit more clever, as with the
    make_message call on the vsprintf man page, in order to remove the

@@ -26,6 +26,7 @@ module Nodes {
     // Initialize node list
     for i in D1 {
       Nodes[i] = new Node(id = i, NeighborD = [0..(counts[i] - 1)], EdgeIndexD = [0..(counts[i] - 1)], nodeType = 2);
+      Nodes[i].vb$.writeEF(0.0);
     }
 
     for i in [0..(nEdges-1)] {

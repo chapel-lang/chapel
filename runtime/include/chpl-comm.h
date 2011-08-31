@@ -6,7 +6,7 @@
 #include <stdint.h>
 #include "chpltypes.h"
 #include <chpl-comm-heap-macros.h>
-#include "chpltasks.h"
+#include "chpl-tasks.h"
 #include <chpl-comm-task-decls.h>
 #include "chpl-comm-locales.h"
 
@@ -42,20 +42,13 @@ extern const int chpl_heterogeneous;
 //
 
 //
-// returns the default maximum number of threads that can be handled by this
-// communication layer (initial value of maxThreadsPerLocale); use the sentinel value 0
-// if the maximum number of threads is limited only by the system's available
-// resources.
+// returns the maximum number of threads that can be handled
+// by this communication layer (used to ensure numThreadsPerLocale is
+// legal); should return the sentinel value of 0 if the communication
+// layer imposes no particular limit on the number of threads.
 //
-
 int32_t chpl_comm_getMaxThreads(void);
 
-//
-// returns the upper limit on the maximum number of threads that can be handled
-// by this communication layer; use the sentinel value 0 if the maximum number
-// of threads is limited only by the system's available resources.
-//
-int32_t chpl_comm_maxThreadsLimit(void);
 
 //
 // initializes the communications package
@@ -65,6 +58,11 @@ int32_t chpl_comm_maxThreadsLimit(void);
 //
 void chpl_comm_init(int *argc_p, char ***argv_p);
 
+//
+// Allow the communication layer to do any secondary initialization it needs
+// to, after the memory layer is initialized.
+//
+void chpl_comm_post_mem_init(void);
 
 //
 // if possible, run in gdb (because the user threw the --gdb flag)
@@ -84,7 +82,11 @@ int chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status);
 //
 void chpl_comm_rollcall(void);
 
-void chpl_comm_init_shared_heap(void);
+//
+// Inform callers as to the communication layer's desired starting address
+// and length for the shared heap, if any.
+//
+void chpl_comm_desired_shared_heap(void** start_p, size_t* size_p);
 
 //
 // allocate chpl_globals_registry or make it point to
@@ -186,6 +188,46 @@ void chpl_comm_fork_nb(int locale, chpl_fn_int_t fid,
 void chpl_comm_fork_fast(int locale, chpl_fn_int_t fid, void *arg,
                          int32_t arg_size, int32_t arg_tid);
 
+
+//
+// This call specifies the number of polling tasks that the
+// communication layer will need (see just below for a definition).
+// It's called beffore chpl_comm_startPollingTask() to forewarn the
+// task layer.  In the current implementation, it should only return
+// 0 or 1.
+//
+int chpl_comm_numPollingTasks(void);
+//
+// This is a hook that's called after the Chapel tasking layer has
+// been set up which permits the communication layer to start a
+// polling/progress task if necessary.  If not, this can be a no-op.
+// One of the goals of this call is to avoid having to put
+// pthread_create() style calls into the communication code in order
+// to have all tasking/threading owned by the task layer.
+//
+void chpl_comm_startPollingTask(void);
+//
+// This call is made before exiting to stop the polling task.
+//
+void chpl_comm_stopPollingTask(void);
+//
+
+
+
+//
+// Comm diagnostics stuff
+//
+typedef struct _chpl_commDiagnostics {
+  int32_t get;
+  int32_t get_nb;
+  int32_t get_nb_test;
+  int32_t get_nb_wait;
+  int32_t put;
+  int32_t fork;
+  int32_t fork_fast;
+  int32_t fork_nb;
+} chpl_commDiagnostics;
+
 void chpl_startVerboseComm(void);
 void chpl_stopVerboseComm(void);
 void chpl_startVerboseCommHere(void);
@@ -195,7 +237,13 @@ void chpl_startCommDiagnostics(void);
 void chpl_stopCommDiagnostics(void);
 void chpl_startCommDiagnosticsHere(void);
 void chpl_stopCommDiagnosticsHere(void);
+void chpl_resetCommDiagnosticsHere(void);
+void chpl_getCommDiagnosticsHere(chpl_commDiagnostics *cd);
 
+//
+// These are still supported because our extern record support is
+//  still a bit lacking.
+//
 int32_t chpl_numCommGets(void);
 int32_t chpl_numCommNBGets(void);
 int32_t chpl_numCommTestNBGets(void);

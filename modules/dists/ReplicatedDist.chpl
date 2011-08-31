@@ -20,7 +20,9 @@ Replication over locales is observable:
 - when printing with write() et al.
 - when zippering and the replicated domain/array is
   the first among the zippered items
+- when assigning into the replicated array
 - when inquiring about the domain's numIndices
+  or the array's numElements
 - when accessing array element(s) from a locale that was not included
   in the array passed explicitly to the ReplicatedDist constructor,
   an out-of-bounds error will result
@@ -33,11 +35,15 @@ Only the replicand *on the current locale* is accessed
 - when indexing into an array
 - when slicing an array  TODO: right?
 - when zippering and the first zippered item is not replicated
-- when there is only a single locale (trivially)
+- when assigning to a non-replicated array,
+  i.e. the replicated array is on the right-hand side of the assignment
+- when there is only a single locale (trivially: only one replicand)
 
 E.g. when iterating, the number of iterations will be (the number of
 locales involved) times (the number of iterations over this domain if
 it were distributed with the default distribution).
+
+Note that the above behavior may change in the future.
 
 Features/limitations:
 * Consistency/coherence among replicands' array elements is NOT maintained.
@@ -51,9 +57,9 @@ Features/limitations:
 * The array of locales passed to the ReplicatedDist constructor, if any,
   must be "consistent".
 * A is "consistent" if for each ix in A.domain, A[ix].id == ix.
-* Tip: the desired set of locales does not correspond to a rectangular
-  (perhaps strided and/or multi-dimensional) domain, make the array's
-  domain associative over int.
+* Tip: if the domain of the desired array of locales cannot be described
+  as a rectangular domain (which could be strided, multi-dimensional,
+  and/or sparse), make that array's domain associative over int.
 
 Examples:
 
@@ -79,10 +85,6 @@ Arepl = Abase;
 // (if multiple locales)
 for (b,r) in (Abase,Arepl) ... // error
 for (r,b) in (Arepl,Abase) ... // error
-
-TODO:
-- implement privatization
-- implement the rest of the DSI methods
 
 Potential extensions:
 - support other kinds of domains
@@ -110,6 +112,7 @@ Limitations:
    var replArray: [YOUR DOMAIN dmapped ReplicatedDist()] YOUR ELEMENT TYPE;
 
 How to use replicated variables:
+(Note: names that start with 'rc' are provided by this module.)
 
     use ReplicatedDist;
 
@@ -210,11 +213,15 @@ proc ReplicatedDist.dsiPrivatize(privatizeData: this.targetLocales.type)
   : this.type
 {
   if traceReplicatedDist then writeln("ReplicatedDist.dsiPrivatize on ", here);
+
+  const pdTargetLocales = privatizeData;
   // make private copy of targetLocales and its domain
-  // no need to privatize the domain map of 'privdom' - it's the default one
-  var privdom = privatizeData.domain;
-  var privarray: [privdom] locale = privatizeData;
-  return new ReplicatedDist(privarray, "used during privatization");
+  const privTargetIds: domain(pdTargetLocales.domain.rank,
+                              pdTargetLocales.domain.idxType,
+                              pdTargetLocales.domain.stridable
+                              ) = pdTargetLocales.domain;
+  const privTargetLocales: [privTargetIds] locale = pdTargetLocales;
+  return new ReplicatedDist(privTargetLocales, "used during privatization");
 }
 
 
@@ -240,6 +247,7 @@ class ReplicatedDom : BaseRectangularDom {
   // local domain objects
   // NOTE: 'dist' must be initialized prior to 'localDoms'
   // => currently have to use the default constructor
+  // NOTE: if they ever change after the constructor - Reprivatize them
   var localDoms: [dist.targetIds] LocReplicatedDom(rank, idxType, stridable);
 
   proc numReplicands return localDoms.numElements;
@@ -294,7 +302,7 @@ proc ReplicatedDom.dsiGetPrivatizeData() {
 proc ReplicatedDom.dsiPrivatize(privatizeData): this.type {
   if traceReplicatedDist then writeln("ReplicatedDom.dsiPrivatize on ", here);
 
-  var privdist = chpl_privateInstance(this.dist.type, privatizeData(1));
+  var privdist = chpl_getPrivatizedCopy(this.dist.type, privatizeData(1));
   return new ReplicatedDom(rank=rank, idxType=idxType, stridable=stridable,
                            dist = privdist,
                            domRep = privatizeData(2),
@@ -302,8 +310,7 @@ proc ReplicatedDom.dsiPrivatize(privatizeData): this.type {
 }
 
 proc ReplicatedDom.dsiGetReprivatizeData() {
-  // TODO: does localDoms need to be updated?
-  return (domRep, localDoms);
+  return tuple(domRep);
 }
 
 proc ReplicatedDom.dsiReprivatize(other, reprivatizeData): void {
@@ -312,7 +319,6 @@ proc ReplicatedDom.dsiReprivatize(other, reprivatizeData): void {
          this.stridable == other.stridable);
 
   this.domRep = reprivatizeData(1);
-  this.localDoms = reprivatizeData(2);
 }
 
 
@@ -362,7 +368,7 @@ proc ReplicatedDom.dsiBuildRectangularDom(param rank: int,
 // Given an index, this should return the locale that owns that index.
 // (This is the implementation of dmap.idxToLocale().)
 // For ReplicatedDist, we point it to the current locale.
-proc ReplicatedDist.dsiIndexLocale(indexx): locale {
+proc ReplicatedDist.dsiIndexToLocale(indexx): locale {
   return here;
 }
 
@@ -514,9 +520,6 @@ proc ReplicatedArr.ReplicatedArr(type eltType, dom: ReplicatedDom) {
   // initializes the fields 'eltType', 'dom' by name
 }
 
-// could store as a field in ReplicatedArr
-proc ReplicatedArr.idxType type return dom.idxType;
-
 // The same across all domain maps
 proc ReplicatedArr.dsiGetBaseDom() return dom;
 
@@ -536,7 +539,7 @@ proc ReplicatedArr.dsiGetPrivatizeData() {
 proc ReplicatedArr.dsiPrivatize(privatizeData) {
   if traceReplicatedDist then writeln("ReplicatedArr.dsiPrivatize on ", here);
 
-  var privdom = chpl_privateInstance(this.dom.type, privatizeData(1));
+  var privdom = chpl_getPrivatizedCopy(this.dom.type, privatizeData(1));
   var result = new ReplicatedArr(eltType, privdom);
   result.localArrs = privatizeData(2);
   return result;

@@ -194,10 +194,10 @@ proc Block.Block(boundingBox: domain,
                 dataParIgnoreRunningTasks=getDataParIgnoreRunningTasks(),
                 dataParMinGranularity=getDataParMinGranularity(),
                 param rank = boundingBox.rank,
-                type idxType = boundingBox.dim(1).idxType) {
+                type idxType = boundingBox.idxType) {
   if rank != boundingBox.rank then
     compilerError("specified Block rank != rank of specified bounding box");
-  if idxType != boundingBox.dim(1).idxType then
+  if idxType != boundingBox.idxType then
     compilerError("specified Block index type != index type of specified bounding box");
 
   this.boundingBox = boundingBox;
@@ -297,11 +297,11 @@ proc Block.writeThis(x:Writer) {
     x.writeln("  [", locid, "] locale ", locDist(locid).locale.uid, " owns chunk: ", locDist(locid).myChunk);
 }
 
-proc Block.dsiIndexLocale(ind: idxType) where rank == 1 {
+proc Block.dsiIndexToLocale(ind: idxType) where rank == 1 {
   return targetLocales(targetLocsIdx(ind));
 }
 
-proc Block.dsiIndexLocale(ind: rank*idxType) where rank > 1 {
+proc Block.dsiIndexToLocale(ind: rank*idxType) where rank > 1 {
   return targetLocales(targetLocsIdx(ind));
 }
 
@@ -413,21 +413,21 @@ proc Block.dsiCreateReindexDist(newSpace, oldSpace) {
 
   var myNewBbox = boundingBox.dims();
   for param r in 1..rank {
-    var oldLow = oldSpace(r)._low;
-    var newLow = newSpace(r)._low;
-    var oldHigh = oldSpace(r)._high;
-    var newHigh = newSpace(r)._high;
+    var oldLow = oldSpace(r).low;
+    var newLow = newSpace(r).low;
+    var oldHigh = oldSpace(r).high;
+    var newHigh = newSpace(r).high;
     var valid: bool;
     if oldLow != newLow {
-      (myNewBbox(r)._low,valid) = adjustBound(myNewBbox(r).low,oldLow,newLow);
+      (myNewBbox(r)._base._low,valid) = adjustBound(myNewBbox(r).low,oldLow,newLow);
       if !valid then // try with high
-        (myNewBbox(r)._low,valid) = adjustBound(myNewBbox(r).low,oldHigh,newHigh);
+        (myNewBbox(r)._base._low,valid) = adjustBound(myNewBbox(r).low,oldHigh,newHigh);
       if !valid then
         halt("invalid reindex for Block: distribution bounding box (low) out of range in dimension ", r);
 
-      (myNewBbox(r)._high,valid) = adjustBound(myNewBbox(r).high,oldHigh,newHigh);
+      (myNewBbox(r)._base._high,valid) = adjustBound(myNewBbox(r).high,oldHigh,newHigh);
       if !valid then
-        (myNewBbox(r)._high,valid) = adjustBound(myNewBbox(r).high,oldLow,newLow);
+        (myNewBbox(r)._base._high,valid) = adjustBound(myNewBbox(r).high,oldLow,newLow);
       if !valid then // try with low
         halt("invalid reindex for Block: distribution bounding box (high) out of range in dimension ", r);
     }
@@ -560,17 +560,22 @@ iter BlockDom.these(param tag: iterator) where tag == iterator.leader {
                          locDom.myBlock.dims());
     var locBlock: rank*range(idxType);
     for param i in 1..tmpBlock.rank {
-      locBlock(i) = (tmpBlock.dim(i).low/tmpBlock.dim(i).stride:idxType)..#(tmpBlock.dim(i).length);
+      locBlock(i) = (tmpBlock.dim(i).first/tmpBlock.dim(i).stride:idxType)..#(tmpBlock.dim(i).length);
     }
     if (numTasks == 1) {
       yield locBlock;
     } else {
-      coforall taskid in 0:uint(64)..#numTasks {
+      coforall taskid in 0..#numTasks {
         var tuple: rank*range(idxType) = locBlock;
         const (lo,hi) = _computeBlock(locBlock(parDim).length, numTasks, taskid,
                                       locBlock(parDim).high,
                                       locBlock(parDim).low,
                                       locBlock(parDim).low);
+        // If the following fails, we should make _computeChunkStuff()
+        // return smaller numTasks in that case - for more even partitioning
+        // of indices over tasks. Also, do not yield a tuple of ranges
+        // if the cart. product of those ranges is the empty set (of indices).
+        assert(lo <= hi);
         tuple(parDim) = lo..hi;
         yield tuple;
       }
@@ -800,15 +805,15 @@ iter BlockArr.these(param tag: iterator, follower, param fast: bool = false) var
     followThis(i) = (low..high by stride) + dom.whole.dim(i).low by follower(i).stride;
     lowIdx(i) = followThis(i).low;
   }
-  const followThisDom = [(...followThis)];
 
-  //
-  // TODO: The following is a buggy hack that will only work when we're
-  // distributing across the entire Locales array.  I still think the
-  // locArr/locDoms arrays should be associative over locale values.
-  //
-  var arrSection = locArr(dom.dist.targetLocsIdx(lowIdx));
   if fast {
+    //
+    // TODO: The following is a buggy hack that will only work when we're
+    // distributing across the entire Locales array.  I still think the
+    // locArr/locDoms arrays should be associative over locale values.
+    //
+    var arrSection = locArr(dom.dist.targetLocsIdx(lowIdx));
+
     //
     // if arrSection is not local and we're using the fast follower,
     // it means that followThisDom is empty; make arrSection local so
@@ -817,12 +822,12 @@ iter BlockArr.these(param tag: iterator, follower, param fast: bool = false) var
     if arrSection.locale.uid != here.uid then
       arrSection = myLocArr;
     local {
-      for e in arrSection.myElems(followThisDom) do
+      for e in arrSection.myElems((...followThis)) do
         yield e;
     }
   } else {
     //
-    // we don't own all the elements we're following
+    // we don't necessarily own all the elements we're following
     //
     proc accessHelper(i) var {
       if myLocArr then local {
@@ -831,6 +836,7 @@ iter BlockArr.these(param tag: iterator, follower, param fast: bool = false) var
       }
       return dsiAccess(i);
     }
+    const followThisDom = [(...followThis)];
     for i in followThisDom {
       yield accessHelper(i);
     }
@@ -844,19 +850,19 @@ proc BlockArr.dsiSerialWrite(f: Writer) {
   if dom.dsiNumIndices == 0 then return;
   var i : rank*idxType;
   for dim in 1..rank do
-    i(dim) = dom.dsiDim(dim)._low;
+    i(dim) = dom.dsiDim(dim).low;
   label next while true {
     f.write(dsiAccess(i));
-    if i(rank) <= (dom.dsiDim(rank)._high - dom.dsiDim(rank)._stride:idxType) {
+    if i(rank) <= (dom.dsiDim(rank).high - dom.dsiDim(rank).stride:idxType) {
       f.write(" ");
-      i(rank) += dom.dsiDim(rank)._stride:idxType;
+      i(rank) += dom.dsiDim(rank).stride:idxType;
     } else {
       for dim in 1..rank-1 by -1 {
-        if i(dim) <= (dom.dsiDim(dim)._high - dom.dsiDim(dim)._stride:idxType) {
-          i(dim) += dom.dsiDim(dim)._stride:idxType;
+        if i(dim) <= (dom.dsiDim(dim).high - dom.dsiDim(dim).stride:idxType) {
+          i(dim) += dom.dsiDim(dim).stride:idxType;
           for dim2 in dim+1..rank {
             f.writeln();
-            i(dim2) = dom.dsiDim(dim2)._low;
+            i(dim2) = dom.dsiDim(dim2).low;
           }
           continue next;
         }
@@ -1064,9 +1070,7 @@ proc BlockDom.dsiSupportsPrivatization() param return true;
 proc BlockDom.dsiGetPrivatizeData() return (dist.pid, whole.dims());
 
 proc BlockDom.dsiPrivatize(privatizeData) {
-  var distpid = privatizeData(1);
-  var thisdist = dist;
-  var privdist = __primitive("chpl_getPrivatizedClass", thisdist, distpid);
+  var privdist = chpl_getPrivatizedCopy(dist.type, privatizeData(1));
   var c = new BlockDom(rank=rank, idxType=idxType, stridable=stridable, dist=privdist);
   for i in c.dist.targetLocDom do
     c.locDoms(i) = locDoms(i);
@@ -1087,9 +1091,7 @@ proc BlockArr.dsiSupportsPrivatization() param return true;
 proc BlockArr.dsiGetPrivatizeData() return dom.pid;
 
 proc BlockArr.dsiPrivatize(privatizeData) {
-  var dompid = privatizeData;
-  var thisdom = dom;
-  var privdom = __primitive("chpl_getPrivatizedClass", thisdom, dompid);
+  var privdom = chpl_getPrivatizedCopy(dom.type, privatizeData);
   var c = new BlockArr(eltType=eltType, rank=rank, idxType=idxType, stridable=stridable, dom=privdom);
   for localeIdx in c.dom.dist.targetLocDom {
     c.locArr(localeIdx) = locArr(localeIdx);

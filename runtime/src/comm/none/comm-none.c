@@ -7,8 +7,8 @@
 #include "chpl-comm.h"
 #include "chplexit.h"
 #include "error.h"
-#include "chpl_mem.h"
-#include "chpltasks.h"
+#include "chpl-mem.h"
+#include "chpl-tasks.h"
 
 // Helper functions
 
@@ -31,14 +31,12 @@ int32_t chpl_comm_getMaxThreads(void) {
   return 0;
 }
 
-int32_t chpl_comm_maxThreadsLimit(void) {
-  return 0;
-}
-
 void chpl_comm_init(int *argc_p, char ***argv_p) {
   chpl_numLocales = 1;
   chpl_localeID = 0;
 }
+
+void chpl_comm_post_mem_init(void) { }
 
 int chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status) {
   int i;
@@ -54,12 +52,13 @@ int chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status) {
   return 1;
 }
 
-void chpl_comm_init_shared_heap(void) {
-  chpl_initHeap(NULL, 0);
-}
-
 void chpl_comm_rollcall(void) {
   chpl_msg(2, "executing on a single locale\n");
+}
+
+void chpl_comm_desired_shared_heap(void** start_p, size_t* size_p) {
+  *start_p = NULL;
+  *size_p  = 0;
 }
 
 void chpl_comm_alloc_registry(int numGlobals) { 
@@ -99,7 +98,7 @@ static void fork_nb_wrapper(fork_t* f) {
     (*chpl_ftable[f->fid])(&f->arg);
   else
     (*chpl_ftable[f->fid])(0);
-  chpl_free(f, 0, 0);
+  chpl_mem_free(f, 0, 0);
 }
 
 void chpl_comm_fork_nb(int locale, chpl_fn_int_t fid, void *arg,
@@ -108,7 +107,7 @@ void chpl_comm_fork_nb(int locale, chpl_fn_int_t fid, void *arg,
   int     info_size;
 
   info_size = sizeof(fork_t) + arg_size;
-  info = (fork_t*)chpl_malloc(info_size, sizeof(char), CHPL_RT_MD_REMOTE_NB_FORK_DATA, 0, 0);
+  info = (fork_t*)chpl_mem_allocMany(info_size, sizeof(char), CHPL_RT_MD_REMOTE_NB_FORK_DATA, 0, 0);
   info->fid = fid;
   info->arg_size = arg_size;
   if (arg_size)
@@ -127,6 +126,10 @@ void chpl_comm_fork_fast(int locale, chpl_fn_int_t fid, void *arg,
   (*chpl_ftable[fid])(arg);
 }
 
+int chpl_comm_numPollingTasks(void) { return 0; }
+void chpl_comm_startPollingTask(void) { }
+void chpl_comm_stopPollingTask(void) { }
+
 void chpl_startVerboseComm() { }
 void chpl_stopVerboseComm() { }
 void chpl_startVerboseCommHere() { }
@@ -137,8 +140,13 @@ void chpl_stopCommDiagnostics() { }
 void chpl_startCommDiagnosticsHere() { }
 void chpl_stopCommDiagnosticsHere() { }
 
+void chpl_resetCommDiagnosticsHere() { }
+void chpl_getCommDiagnosticsHere(chpl_commDiagnostics *cd) { }
 
 int32_t chpl_numCommGets(void) { return 0; }
+int32_t chpl_numCommNBGets(void) { return 0; }
+int32_t chpl_numCommTestNBGets(void) { return 0; }
+int32_t chpl_numCommWaitNBGets(void) { return 0; }
 int32_t chpl_numCommPuts(void) { return 0; }
 int32_t chpl_numCommForks(void) { return 0; }
 int32_t chpl_numCommFastForks(void) { return 0; }

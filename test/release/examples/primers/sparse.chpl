@@ -1,7 +1,9 @@
 /*
- * This test shows off some of Chapel's initial support for sparse
- * domains and arrays.  These features are still under development,
- * so your feedback on them is particularly valuable.
+ * Sparse Primer
+ *
+ * This primer shows off some of Chapel's support for sparse domains
+ * and arrays.
+ *
  */
 
 
@@ -18,7 +20,7 @@ config var n = 9;
 // Sparse domains in Chapel are defined in terms of a bounding domain.
 // The role of this bounding domain is to define the range of legal
 // indices for the sparse domain.  Here we declare a dense 2D
-// arithmetic bounding domain of n x n indices which will serve as the
+// rectangular bounding domain of n x n indices which will serve as the
 // index space for the sparse domain/array in our example.  As we will
 // see, it will also be useful for operations that want to treat our
 // sparse domain as though it was a dense n x n set of values.
@@ -69,7 +71,7 @@ proc writeSpsArr() {
 
 
 //
-// Let's try that function we just wrote:
+// Let's try that procedure we just wrote:
 //
 writeln("Printing spsArr with a dense representation:");
 writeSpsArr();
@@ -121,7 +123,7 @@ writeln();
 
 //
 // Or by assigning the array elements corresponding to the corners
-// and using our dense printing function:
+// and using our dense printing procedure:
 //
 proc computeVal(row, col) return row + col/10.0;
 

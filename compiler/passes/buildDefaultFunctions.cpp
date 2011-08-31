@@ -64,8 +64,7 @@ void buildDefaultFunctions(void) {
       }
       if (ClassType* ct = toClassType(type->type)) {
         if (isRecord(ct)) {
-          if (!(ct->symbol->hasFlag(FLAG_DOMAIN) ||
-                ct->symbol->hasFlag(FLAG_ARRAY))) {
+          if (!isRecordWrappedType(ct)) {
             build_record_equality_function(ct);
             build_record_inequality_function(ct);
           }
@@ -158,8 +157,11 @@ static void build_getter(ClassType* ct, Symbol *field) {
   fn->addFlag(FLAG_TEMP);
   if (ct->symbol->hasFlag(FLAG_SYNC)) 
     fn->addFlag(FLAG_SYNC);
-  ArgSymbol* _this = new ArgSymbol(INTENT_BLANK, "this", ct);
+  if (ct->symbol->hasFlag(FLAG_SINGLE)) 
+    fn->addFlag(FLAG_SINGLE);
   fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
+  ArgSymbol* _this = new ArgSymbol(INTENT_BLANK, "this", ct);
+  _this->addFlag(FLAG_ARG_THIS);
   fn->insertFormalAtTail(_this);
   if (field->isParameter())
     fn->retTag = RET_PARAM;
@@ -256,10 +258,8 @@ static void addModuleInits(BlockStmt* block, ModuleSymbol* mod) {
   if (ModuleSymbol* parent = mod->defPoint->getModule()) {
     addModuleInits(block, parent);
   }
-  if (!fRuntime || mod->modTag != MOD_INTERNAL) {
-    forv_Vec(ModuleSymbol*, usedmod, mod->modUseList) {
-      addModuleInits(block, usedmod);
-    }
+  forv_Vec(ModuleSymbol*, usedmod, mod->modUseList) {
+    addModuleInits(block, usedmod);
   }
   //  printf("---stop %s\n", mod->name);
 
@@ -285,11 +285,11 @@ static void build_chpl_entry_points(void) {
   //                                                                          
   FnSymbol* chpl_user_main = chpl_main_exists();                              
 
-  if (fRuntime) {
+  if (fLibraryCompile) {
     if (chpl_user_main)                                                       
-      INT_FATAL(chpl_user_main, "'main' found when compiling runtime file");
+      INT_FATAL(chpl_user_main, "'main' found when compiling a library");
     if (mainModules.n != 1)
-      INT_FATAL("expected one module when compiling runtime file");
+      INT_FATAL("expected one module when compiling a library");
   }
 
   if (!chpl_user_main) {
@@ -329,10 +329,8 @@ static void build_chpl_entry_points(void) {
     mainModule = chpl_user_main->getModule();
   }
 
-  if (!fRuntime) {
-    SET_LINENO(chpl_user_main);
-    chpl_user_main->cname = "chpl_user_main";
-  }
+  SET_LINENO(chpl_user_main);
+  chpl_user_main->cname = "chpl_user_main";
 
   //
   // chpl_main accounts for the initialization and memory tracking of
@@ -341,29 +339,32 @@ static void build_chpl_entry_points(void) {
   chpl_main = new FnSymbol("chpl_main");
   chpl_main->cname = "chpl_main";
   chpl_main->retType = dtVoid;
+  chpl_main->addFlag(FLAG_EXPORT);  // chpl_main is always exported.
   chpl_main->addFlag(FLAG_TEMP);
   mainModule->block->insertAtTail(new DefExpr(chpl_main));
   normalize(chpl_main);
 
-  if (!fRuntime) {
+  if (!fLibraryCompile) {
     SET_LINENO(chpl_main);
     chpl_main->insertAtHead(new CallExpr("main"));
   }
 
+  // Creation of stdInits must precede usrInits, because it invokes 
+  // function resolution.  The standard module inits are carefully ordered
+  // to avoid the "Dependency Ordering" bug.  (Learned the hard way.) <hilde>
   BlockStmt* stdInits = createModuleInitBlock(standardModule);
   BlockStmt* usrInits = createModuleInitBlock(mainModule);
   chpl_main->insertAtHead(usrInits);
-  if (!fRuntime) {
-    VarSymbol* endCount = newTemp("_endCount");
-    chpl_main->insertAtHead(new CallExpr("chpl_startTrackingMemory"));
-    chpl_main->insertAtHead(new CallExpr(PRIM_SET_END_COUNT, endCount));
-    chpl_main->insertAtHead(new CallExpr(PRIM_MOVE, endCount, new CallExpr("_endCountAlloc")));
-    chpl_main->insertAtHead(new DefExpr(endCount));
-    chpl_main->insertBeforeReturn(new CallExpr("_waitEndCount"));
-    //chpl_main->insertBeforeReturn(new CallExpr("_endCountFree", endCount));
-  }
 
-  theProgram->initFn->insertAtHead(stdInits);
+  VarSymbol* endCount = newTemp("_endCount");
+  chpl_main->insertAtHead(new CallExpr("chpl_startTrackingMemory"));
+  chpl_main->insertAtHead(new CallExpr(PRIM_SET_END_COUNT, endCount));
+  chpl_main->insertAtHead(new CallExpr(PRIM_MOVE, endCount, new CallExpr("_endCountAlloc")));
+  chpl_main->insertAtHead(new DefExpr(endCount));
+  chpl_main->insertBeforeReturn(new CallExpr("_waitEndCount"));
+  //chpl_main->insertBeforeReturn(new CallExpr("_endCountFree", endCount));
+
+  theProgram->initFn->insertBeforeReturn(stdInits);
   chpl_main->insertAtHead(new CallExpr(theProgram->initFn));
 }
 
@@ -701,6 +702,7 @@ static void buildDefaultReadFunction(ClassType* ct) {
   ArgSymbol* arg = new ArgSymbol(INTENT_INOUT, "x", ct);
   arg->markedGeneric = true;
   fn->_this = new ArgSymbol(INTENT_BLANK, "this", dtChapelFile);
+  fn->_this->addFlag(FLAG_ARG_THIS);
   fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
   fn->insertFormalAtTail(fn->_this);
   fn->insertFormalAtTail(arg);
@@ -768,6 +770,7 @@ static void buildDefaultReadFunction(EnumType* et) {
   fn->cname = astr("_auto_", et->symbol->name, "_read");
   ArgSymbol* arg = new ArgSymbol(INTENT_INOUT, "x", et);
   fn->_this = new ArgSymbol(INTENT_BLANK, "this", dtChapelFile);
+  fn->_this->addFlag(FLAG_ARG_THIS);
   fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
   fn->insertFormalAtTail(fn->_this);
   fn->insertFormalAtTail(arg);
@@ -832,6 +835,7 @@ static void buildDefaultWriteFunction(ClassType* ct) {
   FnSymbol* fn = new FnSymbol("writeThis");
   fn->cname = astr("_auto_", ct->symbol->name, "_write");
   fn->_this = new ArgSymbol(INTENT_BLANK, "this", ct);
+  fn->_this->addFlag(FLAG_ARG_THIS);
   ArgSymbol* fileArg = new ArgSymbol(INTENT_BLANK, "f", dtWriter);
   fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
   fn->insertFormalAtTail(fn->_this);
@@ -912,6 +916,7 @@ static void buildStringCastFunction(EnumType* et) {
   t->addFlag(FLAG_TYPE_VARIABLE);
   fn->insertFormalAtTail(t);
   ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "this", et);
+  arg->addFlag(FLAG_ARG_THIS);
   fn->insertFormalAtTail(arg);
   fn->where = new BlockStmt(new CallExpr("==", t, dtString->symbol));
 
@@ -946,6 +951,7 @@ static void buildDefaultDestructor(ClassType* ct) {
   fn->cname = astr("chpl__auto_destroy_", ct->symbol->name);
   fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
   fn->_this = new ArgSymbol(INTENT_BLANK, "this", ct);
+  fn->_this->addFlag(FLAG_ARG_THIS);
   fn->insertFormalAtTail(fn->_this);
   fn->retType = dtVoid;
   fn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
