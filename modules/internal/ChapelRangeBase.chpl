@@ -1,7 +1,7 @@
 // ChapelRangeBase.chpl
 //
 
-use DSIUtil;
+//use DSIUtil;
 
 // Turns on range iterator debugging.
 config param debugChapelRange = false;
@@ -39,7 +39,8 @@ record rangeBase
   proc strType type return chpl__signedType(idxType);
   pragma "inline" proc low return _low;       // public getter for low bound
   pragma "inline" proc high return _high;     // public getter for high bound
-  pragma "inline" proc stride return if stridable then _stride else 1:_stride.type;
+  pragma "inline" proc stride where stridable return _stride;
+  proc stride param where !stridable return 1;
   pragma "inline" proc alignment return _alignment;        // public getter for alignment
 
 }
@@ -165,24 +166,26 @@ proc rangeBase.hasLowBound() param
 proc rangeBase.hasHighBound() param
   return boundedType == BoundedRangeType.bounded || boundedType == BoundedRangeType.boundedHigh;
 
-pragma "inline"
-proc rangeBase.isEmpty()
-where boundedType == BoundedRangeType.bounded
+inline
+proc rangeBase.isEmpty()       where isBoundedRangeB(this)
   return this.alignedLow > this.alignedHigh;
 
-pragma "inline"
-proc rangeBase.isEmpty()
+proc rangeBase.isEmpty() param where !isBoundedRangeB(this)
   return false;
 
+proc rangeBase.hasFirst() param where !stridable return hasLowBound();
+
 pragma "inline" 
-proc rangeBase.hasFirst()
+proc rangeBase.hasFirst() where stridable
 {
   if this.isEmpty() then return false;
   return if stride > 0 then hasLowBound() else hasHighBound();
 }
     
+proc rangeBase.hasLast() param where !stridable return hasHighBound();
+
 pragma "inline" 
-proc rangeBase.hasLast()
+proc rangeBase.hasLast() where stridable
 {
   if this.isEmpty() then return false;
   return if stride > 0 then hasHighBound() else hasLowBound();
@@ -719,16 +722,15 @@ proc chpl__count(r:rangeBase(?), i:integral)
                      _stride = r._stride,
                      _alignment = 1);
 
-  if i > 0 && !r.hasFirst() then
+  if !r.hasFirst() && i > 0 then
     halt("With a positive count, the range must have a first index.");
-  if i < 0 && !r.hasLast() then
+  if !r.hasLast()  && i < 0 then
     halt("With a negative count, the range must have a last index.");
   if r.boundedType == BoundedRangeType.bounded && abs(i) > r.length then
     halt("bounded range is too small to access ", abs(i), " elements");
 
   // The distance between the first and last indices.
-  var s = r.stride : strType;
-  var diff = i : strType * s;
+  var diff = i : strType * r.stride : strType;
 
   var lo : resultType =
     if diff > 0 then r._low
@@ -737,8 +739,10 @@ proc chpl__count(r:rangeBase(?), i:integral)
     if diff < 0 then r._high
     else chpl__add(r._low : resultType, diff : resultType - 1);
 
-  if r.hasLowBound() && lo < r._low then lo = r._low;
-  if r.hasHighBound() && hi > r._high then hi = r._high;
+  if r.stridable {
+    if r.hasLowBound() && lo < r._low then lo = r._low;
+    if r.hasHighBound() && hi > r._high then hi = r._high;
+  }
 
   return new rangeBase(idxType = resultType,
                        boundedType = BoundedRangeType.bounded,
@@ -852,10 +856,24 @@ iter rangeBase.these(param tag: iterator, follower) where tag == iterator.follow
   if debugChapelRange then
     writeln("Range = ", followThis);
 
-  if ! this.hasFirst() then
-    halt("iteration over a range with no first index");
-  if ! followThis.hasFirst() then
-    halt("zippered iteration over a range with no first index");
+  if ! this.hasFirst() {
+    if this.isEmpty() {
+      if followThis.isEmpty() then
+        // nothing to do
+        return;
+      else
+        halt("zippered iteration with a range has non-equal lengths");
+    } else {
+      halt("iteration over a range with no first index");
+    }
+  }
+  if ! followThis.hasFirst() {
+    if !followThis.isAmbiguous() && followThis.isEmpty() then
+      // nothing to do
+      return;
+    else
+      halt("zippered iteration over a range with no first index");
+  }
 
   if (isBoundedRangeB(followThis) && !followThis.stridable) ||
      followThis.hasLast()
