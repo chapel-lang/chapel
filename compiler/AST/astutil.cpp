@@ -324,12 +324,15 @@ void insert_help(BaseAST* ast,
 }
 
 
-void remove_help(BaseAST* ast, int flag) {
-  AST_CHILDREN_CALL(ast, remove_help, flag);
+void remove_help(BaseAST* ast, int trace_flag) {
+  trace_remove(ast, trace_flag);
+  AST_CHILDREN_CALL(ast, remove_help, trace_flag);
   if (Expr* expr = toExpr(ast)) {
-    trace_remove(ast, flag);
     expr->parentSymbol = NULL;
     expr->parentExpr = NULL;
+  } else if (LabelSymbol* labsym = toLabelSymbol(ast)) {
+    if (labsym->iterResumeGoto)
+      removedIterResumeLabels.add(labsym);
   }
 }
 

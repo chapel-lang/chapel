@@ -898,7 +898,8 @@ void ModuleSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 
 
 LabelSymbol::LabelSymbol(const char* init_name) :
-  Symbol(E_LabelSymbol, init_name, NULL)
+  Symbol(E_LabelSymbol, init_name, NULL),
+  iterResumeGoto(NULL)
 { 
   gLabelSymbols.add(this);
 }
@@ -909,12 +910,38 @@ void LabelSymbol::verify() {
   if (astTag != E_LabelSymbol) {
     INT_FATAL(this, "Bad LabelSymbol::astTag");
   }
+  if (GotoStmt* igs = iterResumeGoto) {
+    if (!isAlive(igs))
+      INT_FATAL(this, "label's iterResumeGoto is not in AST");
+    if (igs->gotoTag != GOTO_ITER_RESUME)
+      INT_FATAL(this, "label's iterResumeGoto has unexpected gotoTag");
+    if (getGotoLabelSymbol(igs) != this)
+      INT_FATAL(this, "label's iterResumeGoto does not point back to the label");
+  }
 }
 
 LabelSymbol* 
 LabelSymbol::copyInner(SymbolMap* map) {
   LabelSymbol* copy = new LabelSymbol(name);
   copy->cname = cname;
+  if (iterResumeGoto) {
+    MapElem<GotoStmt*,GotoStmt*>* rec =
+      copiedIterResumeGotos.get_record(iterResumeGoto);
+    if (rec) {
+      // we gotta have the mapping because we handle each goto exactly once
+      INT_ASSERT(rec->value);
+      // update the copy
+      copy->iterResumeGoto = rec->value;
+      // indicate we are done with it
+      rec->value = NULL;
+      // printf("LabelSymbol-copy %d > %d  irg %d > %d\n", this->id, copy->id,
+      //        iterResumeGoto->id, copy->iterResumeGoto->id);
+    } else {
+      // to be handled later - in GotoStmt::copyInner
+      // printf("LabelSymbol-copy %d > %d  irg %d no action\n",
+      //        this->id, copy->id, iterResumeGoto->id);
+    }
+  }
   return copy;
 }
 

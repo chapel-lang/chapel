@@ -140,6 +140,34 @@ class NamedExpr : public Expr {
   void codegen(FILE* outfile);
 };
 
+
+// Determines whether a node is in the AST (vs. has been removed
+// from the AST). Used e.g. by cleanAst().
+// Exception: 'n' is also live if isRootModule(n).
+
+static inline bool isAlive(Expr* expr) {
+  return expr->parentSymbol;
+}
+
+static inline bool isAliveQuick(Symbol* symbol) {
+  return isAlive(symbol->defPoint);
+}
+
+static inline bool isAlive(Symbol* symbol) {
+  return symbol->defPoint && isAliveQuick(symbol);
+}
+
+static inline bool isAlive(Type* type) {
+  return isAliveQuick(type->symbol);
+}
+
+#define isRootModule(ast)  \
+  ((ast) == rootModule)
+
+#define isRootModuleWithType(ast, type)  \
+  (E_##type == E_ModuleSymbol && ((ModuleSymbol*)(ast)) == rootModule)
+
+
 bool get_int(Expr *e, long *i); // false is failure
 bool get_uint(Expr *e, unsigned long *i); // false is failure
 bool get_string(Expr *e, const char **s); // false is failure

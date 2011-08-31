@@ -336,7 +336,7 @@ extern Vec<ModuleSymbol*> mainModules; // contains main modules
 //
 // clean IR between passes by clearing some back pointers to dead AST
 // nodes and removing dead AST nodes from the global vectors of AST
-// nodes
+// nodes. "dead" means !isAlive && !isRootModule.
 //
 void cleanAst(void);
 

@@ -460,7 +460,7 @@ static void normalize_returns(FnSymbol* fn) {
           ret->remove();
       else {    // Cases 2 and 3.
         if (ret->next != label->defPoint) {
-          ret->replace(new GotoStmt(GOTO_NORMAL, label));
+          ret->replace(new GotoStmt(GOTO_RETURN, label));
           label_is_used = true;
         } else {
           ret->remove();
@@ -474,7 +474,7 @@ static void normalize_returns(FnSymbol* fn) {
       }
       // replace with GOTO(label)
       if (ret->next != label->defPoint) {
-        ret->replace(new GotoStmt(GOTO_NORMAL, label));
+        ret->replace(new GotoStmt(GOTO_RETURN, label));
         label_is_used = true;
       } else {
         ret->remove();
