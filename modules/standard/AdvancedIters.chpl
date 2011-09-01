@@ -6,8 +6,8 @@ config param verbose:bool=false;
 
 iter dynamic(c:range(?), chunkSize:int, numTasks:int) {
 
-  compilerWarning("Working with serial dynamic Iterator");	
   if verbose then 
+    compilerWarning("Working with serial dynamic Iterator");	
     writeln("Serial dynamic Iterator. Working with range ", c);
   
   for i in c do yield i;    
@@ -19,13 +19,15 @@ iter dynamic(c:range(?), chunkSize:int, numTasks:int) {
 
 // Leader iterator
 
-iter dynamic(param tag:iterator, c:range(?), chunkSize:int, numTasks:int= if dataParTasksPerLocale==0 then here.numCores else dataParTasksPerLocale) 
+iter dynamic(param tag:iterator, c:range(?), chunkSize:int, numTasks:int=0) 
 where tag == iterator.leader
 {   
+  // Check if the number of tasks is 0, in that case it returns a default value  
+  const nTasks=defaultNumTasks(numTasks);
   type rType=c.type;
   // Check the size and do it serial if not enough work
   if c.length == 0 then halt("The range is empty");
-  if c.length/chunkSize < numTasks then {
+  if c.length/chunkSize < nTasks then {
     writeln("Dynamic Iterator: serial execution because there is not enough work");
     const totalRange:rType= densify(c,c);
     //yield tuple(c.translate(-c.low)) ;
@@ -37,7 +39,7 @@ where tag == iterator.leader
     var moreWork=true;
     var splitLock$:sync bool=true;   // sync variables to control the splitting 
 
-    coforall tid in 0..#numTasks do { 
+    coforall tid in 0..#nTasks do { 
       while moreWork do {
 	  // There is local work in remain
 	  splitLock$; // Perform the splitting in a critical section
@@ -45,7 +47,6 @@ where tag == iterator.leader
 	  splitLock$=true;
 	  if current.length !=0 then {
 	    const zeroBasedIters:rType= densify(current,c);
-	    //const zeroBasedIters= current.translate(-c.low);
 	    if verbose then 
 	      writeln("Parallel dynamic Iterator. Working at tid ", tid, " with range ", current, " yielded as ", zeroBasedIters);
 	
@@ -61,7 +62,6 @@ where tag == iterator.follower
 {
   type rType=c.type;
   const current:rType=unDensify(follower(1),c);
-  //follower(1).translate(c.low);
   if (verbose) then
     writeln("Follower received range ", follower, " ; shifting to ", current);
   for i in current do {
@@ -74,8 +74,8 @@ where tag == iterator.follower
 //Serial iterator 
 iter guided(c:range(?), numTasks:int) {
 
-  compilerWarning("Working with serial guided Iterator");
   if verbose then 
+    compilerWarning("Working with serial guided Iterator");
     writeln("Serial guided Iterator. Working with range ", c);
   
   for i in c do yield i;        	      
@@ -85,13 +85,15 @@ iter guided(c:range(?), numTasks:int) {
 // Parallel iterator
 
 // Leader iterator
-iter guided(param tag:iterator, c:range(?), numTasks:int = if dataParTasksPerLocale==0 then here.numCores else dataParTasksPerLocale)
+iter guided(param tag:iterator, c:range(?), numTasks:int=0)
 where tag == iterator.leader 
 {   
+  // Check if the number of tasks is 0, in that case it returns a default value  
+  const nTasks=defaultNumTasks(numTasks);
   type rType=c.type;
   // Check the size and do it serial if not enough work
   if c.length == 0 then halt("The range is empty");
-  if c.length/numTasks < numTasks then {
+  if c.length < nTasks then {
     writeln("Guided Iterator: serial execution because there is not enoguh work");
     const totalRange:rType= densify(c,c);
     yield tuple(totalRange); 
@@ -100,10 +102,10 @@ where tag == iterator.leader
   else {
     var remain:rType=c;
     var undone=true;
-    const factor=numTasks;
+    const factor=nTasks;
     var splitLock$:sync bool=true;  // synnc variables to control the splitting
 
-    coforall tid in 0..#numTasks do { 
+    coforall tid in 0..#nTasks do { 
       while undone do {
 	  // There is local work in remain(tid)
 	  splitLock$; // Perform the splitting in a critical section
@@ -138,8 +140,8 @@ where tag == iterator.follower
 //Serial iterator 
 iter adaptive(c:range(?), numTasks:int) {  
 
-  compilerWarning("Working with serial adaptive Iterator"); 
   if verbose then 
+    compilerWarning("Working with serial adaptive Iterator"); 
     writeln("Serial adaptive work-stealing Iterator. Working with range ", c);
   
   for i in c do yield i;
@@ -153,26 +155,27 @@ config param methodStealing:int=0;
 
 
 // Leader iterator
-iter adaptive(param tag:iterator, c:range(?), numTasks:int = if dataParTasksPerLocale==0 then here.numCores else dataParTasksPerLocale)
+iter adaptive(param tag:iterator, c:range(?), numTasks:int=0)
 where tag == iterator.leader
   
 {   
   if (methodStealing > 2 || methodStealing < 0) then
     halt("methodStealing value must be between 0 and 2");
 
+  // Check if the number of tasks is 0, in that case it returns a default value  
+  const nTasks=defaultNumTasks(numTasks);
   type rType=c.type;
   // Check the size and do it serial if not enough work
   if c.length == 0 then halt("The range is empty");
-  if c.length < numTasks then {
+  if c.length < nTasks then {
     writeln("Adaptive work-stealing Iterator: serial execution because there is not enough work");
     const totalRange:rType = densify(c,c);
-    //    compilerWarning("First yield type:", typeToString(totalRange.type));
     yield tuple(totalRange);
     
   }
   else {
     const r:rType=densify(c,c);
-    const SpaceThreads:domain(1)=0..#numTasks;
+    const SpaceThreads:domain(1)=0..#nTasks;
     var localWork:[SpaceThreads] rType; // The remaining range to split on each Thread
     var moreLocalWork:[SpaceThreads] bool=true; // bool var to signal there is still work on each local range    
     var splitLock$:[SpaceThreads] sync bool=true; // sync var to control the splitting on each Thread
@@ -188,7 +191,7 @@ where tag == iterator.leader
 
 
     // Start the parallel work
-    coforall tid in 0..#numTasks do { 
+    coforall tid in 0..#nTasks do { 
 
       // Step 1: Initial range per Thread/Task
 
@@ -212,7 +215,7 @@ where tag == iterator.leader
 
       // Step3: Task tid finished its work, so it will try to steal from a neighbor
 
-      var victim=(tid+1) % numTasks; 
+      var victim=(tid+1) % nTasks; 
       var stealFailed:bool=false;
 
       while moreWork do {
@@ -276,22 +279,22 @@ where tag == iterator.leader
 	    stealFailed=false; 
 	  }
 	  // Check if there is no more work
-	  if nVisitedVictims >= numTasks-1 then
+	  if nVisitedVictims >= nTasks-1 then
 	    moreWork=false; // Signal that there is no more work in any victim
 	  else {  // There can be still work in other victim
-	    victim=(victim+1) % numTasks; // New victim to steal
+	    victim=(victim+1) % nTasks; // New victim to steal
 	    if methodStealing==1 then
-	      if victim==tid then victim=(victim+1) % numTasks;
+	      if victim==tid then victim=(victim+1) % nTasks;
 	  } 
 	}
     }  
 
     proc splitRange(c:range(?),tid:int)
   {
-    const size= c.length/numTasks;  
+    const size= c.length/nTasks;  
     var rLocal:rType=(c+tid*size)#size;
-    if tid==numTasks-1 then 
-      rLocal=c#(size*(numTasks-1)-c.length); 
+    if tid==nTasks-1 then 
+      rLocal=c#(size*(nTasks-1)-c.length); 
     return rLocal;
   }    
 
@@ -299,13 +302,12 @@ where tag == iterator.leader
   {
     var tmp=barrierCount$;
     barrierCount$=tmp+1;
-    if tmp+1==numTasks then wait$=true;
+    if tmp+1==nTasks then wait$=true;
     wait$; 
   }
  
     proc splitWork(taskid:int, splitTail:bool=false)
   {
-    //var current:rType;
     if splitTail then { // Splitting from the tail of the remaining range (method 2)
       splitLock$[taskid]; // Perform the splitting in a critical section
       const current:rType=adaptSplit(localWork[taskid], factorSteal, moreLocalWork[taskid], splitTail);
@@ -317,7 +319,6 @@ where tag == iterator.leader
       splitLock$[taskid]; // Perform the splitting in a critical section
       const current:rType=adaptSplit(localWork[taskid], factorSteal, moreLocalWork[taskid]);
       splitLock$[taskid]=true;
-      //const zeroBasedCurrent = densify(current,c);
       const zeroBasedCurrent:rType=current;
       return zeroBasedCurrent;  
       }
@@ -332,7 +333,6 @@ where tag == iterator.follower
 {
   type rType=c.type;
   var current:rType=unDensify(follower(1),c);
-  //follower(1).translate(c.low);
   if (verbose) then
     writeln("Follower received range ", follower, " ; shifting to ", current);
   for i in current do {
@@ -341,6 +341,16 @@ where tag == iterator.follower
 }
 
 //************************* Helper functions
+proc defaultNumTasks(nTasks:int)
+{
+  var dnTasks=nTasks;
+  if nTasks==0 then {
+    if dataParTasksPerLocale==0 then dnTasks=here.numCores; 
+      else dnTasks=dataParTasksPerLocale;
+  }
+  return dnTasks;
+}
+
 proc splitChunk(inout rangeToSplit:range(?), chunkSize:int, inout itLeft:bool)
 {
   type rType=rangeToSplit.type;

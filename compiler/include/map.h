@@ -47,6 +47,8 @@ _dupstr(char *s, char *e = 0) {
 }
 
 // Simple direct mapped Map (pointer hash table) and Environment
+// The key ((K)0) has a special meaning and so should not be used.
+// The removal operation is not provided.
 
 template <class K, class C> class MapElem {
  public:
@@ -70,6 +72,7 @@ template <class K, class C> class Map : public Vec<MapElem<K,C> > {
   void get_keys(Vec<K> &keys);
   void get_keys_set(Vec<K> &keys);
   void get_values(Vec<C> &values);
+  MapElem<K,C> *get_record(K akey);
   void map_union(Map<K,C> &m);
   int some_disjunction(Map<K,C> &m);
 };
@@ -231,6 +234,13 @@ Map<K,C>::get_values(Vec<C> &values) {
     if (v[i].key)
       values.set_add(v[i].value);
   values.set_to_vec();
+}
+
+template <class K, class C> inline MapElem<K,C> *
+Map<K,C>::get_record(K akey) {
+  MapElem<K,C> e(akey, (C)0);
+  MapElem<K,C> *x = set_in(e);
+  return x;
 }
 
 template <class K, class C> inline void

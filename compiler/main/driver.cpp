@@ -18,7 +18,12 @@
 #include "config.h"
 
 FILE* html_index_file = NULL;
+FILE* deletedIdHandle = NULL;
+char deletedIdFilename[FILENAME_MAX+1] = "";
 
+// for logging
+int currentPassNo = 0;
+const char* currentPassName = "starting up";
 
 char CHPL_HOME[FILENAME_MAX] = "";
 
@@ -37,9 +42,8 @@ static char incFilename[FILENAME_MAX] = "";
 static char moduleSearchPath[FILENAME_MAX] = "";
 static char log_flags[512] = "";
 static bool rungdb = false;
-bool fRuntime = false;
 bool fLibraryCompile = false;
-bool fLibraryShared = false;
+bool fLibraryShared = false;    // Compile a shared library.
 bool no_codegen = false;
 int debugParserLevel = 0;
 bool developer = false;
@@ -204,12 +208,10 @@ static void recordCodeGenStrings(int argc, char* argv[]) {
   get_version(compileVersion);
 }
 
-
 static void setLibraryShared(ArgumentState* arg_state, char* arg_unused) {
   fLibraryShared = true;
   fLibraryCompile = true;   // --shared implies --library.
 }
-
 
 static void setChapelDebug(ArgumentState* arg_state, char* arg_unused) {
   printCppLineno = true;
@@ -542,7 +544,9 @@ static ArgumentDescription arg_desc[] = {
 
  {"", ' ', NULL, "Misc. Developer Flags", NULL, NULL, NULL, NULL},
  {"break-on-id", ' ', NULL, "Break when AST id is created", "I", &breakOnID, "CHPL_BREAK_ON_ID", NULL},
+ {"break-on-delete-id", ' ', NULL, "Break when AST id is deleted", "I", &breakOnDeleteID, "CHPL_BREAK_ON_DELETE_ID", NULL},
  {"print-id-on-error", ' ', NULL, "Print AST id in error messages, when available", "F", &fPrintIDonError, "CHPL_PRINT_ID_ON_ERROR", NULL},
+ {"log-deleted-ids-to", ' ', "<filename>", "Log AST id and memory address of each deleted node to the specified file", "P", deletedIdFilename, "CHPL_DELETED_ID_FILENAME", NULL},
  {"default-dist", ' ', "<distribution>", "Change the default distribution", "S256", defaultDist, "CHPL_DEFAULT_DIST", NULL},
  {"gdb", ' ', NULL, "Run compiler in gdb", "F", &rungdb, NULL, NULL},
  {"heterogeneous", ' ', NULL, "Compile for heterogeneous nodes", "F", &fHeterogeneous, "", NULL},
@@ -552,7 +556,6 @@ static ArgumentDescription arg_desc[] = {
  {"remove-empty-records", ' ', NULL, "Enable [disable] removal of empty records", "n", &fNoRemoveEmptyRecords, "CHPL_DISABLE_REMOVE_EMPTY_RECORDS", NULL},
  {"reposition-def-expressions", ' ', NULL, "Enable [disable] repositioning def expressions to usage points", "n", &fNoRepositionDefExpr, "CHPL_DISABLE_REPOSITION_DEF_EXPR", NULL},
  {"local-temp-names", ' ', NULL, "[Don't] Generate locally-unique temp names", "N", &localTempNames, "CHPL_LOCAL_TEMP_NAMES", NULL},
- {"runtime", ' ', NULL, "compile Chapel runtime file", "F", &fRuntime, NULL, NULL},
  {"library", ' ', NULL, "compile Chapel library file", "F", &fLibraryCompile, NULL, NULL},
  {"shared", ' ', NULL, "compile a shared library file", "F", &fLibraryShared, NULL, setLibraryShared},
  {"timers", ' ', NULL, "Enable general timers one to five", "F", &fEnableTimers, "CHPL_ENABLE_TIMERS", NULL},
@@ -628,6 +631,7 @@ int main(int argc, char *argv[]) {
   initChplProgram();
   initPrimitive();
   initPrimitiveTypes();
+  initTheProgram();
   setupOrderedGlobals();
   compute_program_name_loc(argv[0], &(arg_state.program_name),
                            &(arg_state.program_loc));

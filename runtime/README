@@ -21,7 +21,6 @@ The directory structure of the runtime/ directory is as follows:
   make/             : Makefiles for the runtime sources
   src/              : source code for the runtime
     comm/           : source code for the runtime's communication layers
-    common-chpl/    : Chapel source code for the runtime
     launch/         : source code for Chapel program launchers
     mem/            : source code for memory allocators
     tasks/          : source code for the runtime's tasking layers

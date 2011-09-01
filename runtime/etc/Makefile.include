@@ -15,12 +15,12 @@ GEN_CFLAGS += $(HEADER_CFLAGS)
 
 
 CHAPEL_RT_INC_DIR = \
-    $(CHAPEL_ROOT)/runtime/include/tasks/$(CHPL_MAKE_TASKS) \
-    -I$(CHAPEL_ROOT)/runtime/include/threads/$(CHPL_MAKE_THREADS) \
-    -I$(CHAPEL_ROOT)/runtime/include/comm/$(CHPL_MAKE_COMM) \
-    -I$(CHAPEL_ROOT)/runtime/include/comp-$(CHPL_MAKE_COMPILER) \
-    -I$(CHAPEL_ROOT)/runtime/include/$(subst -sim,,$(CHPL_MAKE_TARGET_PLATFORM)) \
-    -I$(CHAPEL_ROOT)/runtime/include
+        $(CHAPEL_ROOT)/runtime/include/tasks/$(CHPL_MAKE_TASKS) \
+        -I$(CHAPEL_ROOT)/runtime/include/threads/$(CHPL_MAKE_THREADS) \
+        -I$(CHAPEL_ROOT)/runtime/include/comm/$(CHPL_MAKE_COMM) \
+        -I$(CHAPEL_ROOT)/runtime/include/comp-$(CHPL_MAKE_COMPILER) \
+        -I$(CHAPEL_ROOT)/runtime/include/$(subst -sim,,$(CHPL_MAKE_TARGET_PLATFORM)) \
+        -I$(CHAPEL_ROOT)/runtime/include
 CHAPEL_RT_LIB_DIR = $(CHAPEL_ROOT)/$(LIB_RT_DIR)
 
 ifdef NVCC

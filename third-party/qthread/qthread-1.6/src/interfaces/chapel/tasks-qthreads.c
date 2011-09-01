@@ -16,6 +16,7 @@
 #endif
 
 #include "chplrt.h"
+#include "chplsys.h"
 #include "tasks-qthreads.h"
 #include "chpl-tasks.h"
 #include "chpl-mem.h" // for chpl_malloc(), mandatory malloc() replacement
@@ -128,8 +129,8 @@ static void *initializer(void *junk)
     return NULL;
 }
 
-void chpl_task_init(int32_t  maxThreadsPerLocale,
-                    uint64_t callStackSize)
+void chpl_task_init(int32_t  numThreadsPerLocale, int32_t maxThreadsPerLocale,
+                    int numCommTasks, uint64_t callStackSize)
 {
     //
     // If a value was specified for the call stack size config const, warn
@@ -137,11 +138,15 @@ void chpl_task_init(int32_t  maxThreadsPerLocale,
     //
     pthread_t initer;
 
-    /*if (maxThreadsPerLocale != 0) {
-     *  char newenv[100] = { 0 };
-     *  snprintf(newenv, 99, "QTHREAD_NUM_SHEPHERDS=%i", (int)maxThreadsPerLocale);
-     *  putenv(newenv);
-     * }*/
+    if (numThreadsPerLocale == 0) {
+      numThreadsPerLocale = chpl_numCoresOnThisLocale();
+    }
+
+    if (numThreadsPerLocale != 0) {
+      char newenv[100] = { 0 };
+      snprintf(newenv, 99, "QTHREAD_NUM_SHEPHERDS=%i", (int)numThreadsPerLocale);
+      putenv(newenv);
+    }
 
     if (callStackSize == 0) {
       callStackSize = 32*1024*sizeof(size_t);
@@ -152,6 +157,12 @@ void chpl_task_init(int32_t  maxThreadsPerLocale,
         snprintf(newenv, 99, "QTHREAD_STACK_SIZE=%lu", (unsigned long)callStackSize);
         putenv(newenv);
     }
+
+    /*
+    printf("numThreadsPerLocale = %d, callStackSize = %d\n", 
+           numThreadsPerLocale, 
+           callStackSize);
+    */
 
     pthread_create(&initer, NULL, initializer, NULL);
     while (done_initializing == 0) ;
@@ -291,18 +302,6 @@ int32_t chpl_task_getNumBlockedTasks(void)
 }
 
 // Threads
-
-// XXX: what does this mean?
-int32_t chpl_task_getMaxThreads(void)
-{
-    return 0;
-}
-
-// XXX: what's the difference between this and the previous function?
-int32_t chpl_task_getMaxThreadsLimit(void)
-{
-    return 0;
-}
 
 uint32_t chpl_task_getNumThreads(void)
 {

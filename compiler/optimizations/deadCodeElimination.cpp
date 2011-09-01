@@ -237,6 +237,30 @@ static bool deadBlockElimination(FnSymbol* fn)
   return change;
 }
 
+//
+// See if any iterator resume labels have been remove (and not re-inserted).
+// If so, remove the matching gotos, if they haven't been yet.
+//
+void removeDeadIterResumeGotos() {
+  forv_Vec(LabelSymbol, labsym, removedIterResumeLabels) {
+    if (!isAlive(labsym) && isAlive(labsym->iterResumeGoto))
+      labsym->iterResumeGoto->remove();
+  }
+  removedIterResumeLabels.clear();
+}
+
+//
+// Make sure there are no iterResumeGotos to remove.
+// Reset removedIterResumeLabels.
+//
+void verifyNcleanRemovedIterResumeGotos() {
+  forv_Vec(LabelSymbol, labsym, removedIterResumeLabels) {
+    if (!isAlive(labsym) && isAlive(labsym->iterResumeGoto))
+      INT_FATAL("unexpected live goto for a dead removedIterResumeLabels label - missing a call to removeDeadIterResumeGotos?");
+  }
+  removedIterResumeLabels.clear();
+}
+
 // Look for pointless gotos and remove them.
 // Probably the best way to do this is to scan the AST and remove gotos
 // whose target labels follow immediately.

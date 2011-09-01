@@ -211,6 +211,15 @@ module SSCA2_kernels
     var Members  : Sparse_Vertex_List;
     var previous : Level_Set (Sparse_Vertex_List);
   }
+
+  // sungeun: 8/2011
+  // Added replicated level sets
+  //
+  // Each locale will have its own level sets.  A locale's level set
+  // will only contain nodes that are physically allocated on that
+  // particular locale.  We implement this using the replicated
+  // distribution.
+  //
   use ReplicatedDist;
 
   // ==================================================================
@@ -260,16 +269,20 @@ module SSCA2_kernels
   
       if PRINT_TIMING_STATISTICS then stopwatch.start ();
 
-      for/*all*/ s in starting_vertices do {
+      forall s in starting_vertices do {
 
 	if DEBUG_KERNEL4 then writeln ( "expanding from starting node ", s );
+
+        // sungeun: 8/2011
+        // Privatization of the following distributed arrays may
+        // be of concern.
 
 	// --------------------------------------------------
 	// all locally declared variables become private data 
 	// for each instance of the parallel for loop
 	// --------------------------------------------------
   
-  	var min_distance$  : [vertex_domain] sync int       = -1; //why?
+  	var min_distance$  : [vertex_domain] sync int       = -1;
 	var path_count$    : [vertex_domain] sync real (64) = 0.0;
 	var depend         : [vertex_domain] real           = 0.0;
 	var Lcl_Sum_Min_Dist: sync real                     = 0.0;
@@ -281,10 +294,18 @@ module SSCA2_kernels
 	// paths from s to this node.  The number of paths in moderate
 	// sized tori exceeds 2**64.
   
-	var Active_Level: [rcDomain] Level_Set (Sparse_Vertex_List);
-        var Next_Level: [rcDomain] Level_Set (Sparse_Vertex_List);
+        // Used to check termination of the forward pass
+        //
+        // sungeun: 8/2011
+        // Can possibly use a replicated bool with rcCollect(), but
+        // not sure of the performance implications for large numbers
+        // of locales.
         var Active_Remaining: [LocaleSpace] bool = true;
+        var remaining = true;
 
+        // Replicated level sets
+	var Active_Level    : [rcDomain] Level_Set (Sparse_Vertex_List);
+        var Next_Level      : [rcDomain] Level_Set (Sparse_Vertex_List);
         coforall loc in Locales do on loc {
           rcLocal(Active_Level) = new Level_Set (Sparse_Vertex_List);
           rcLocal(Active_Level).previous = nil;
@@ -304,7 +325,7 @@ module SSCA2_kernels
           path_count$ (s) . writeFF (1);
         }
 
-	while || reduce Active_Remaining do { 
+	while remaining do { 
   
 	    // ------------------------------------------------
 	    // expand the neighbor sets for all vertices at the
@@ -313,11 +334,14 @@ module SSCA2_kernels
       
 	    current_distance += 1;
 
-            // barrier
+            // sungeun: 8/2011
+            // basic single use barrier
             var count: sync int = numLocales;
             var barrier: single bool;
 
-            // for remote value forwarding
+            // sungeun: 8/2011
+            // Copy this value to a constant to enable remote value
+            // forwarding optimization.
             const current_distance_c = current_distance;
             coforall loc in Locales do on loc {
              forall u in rcLocal(Active_Level).Members do { // sparse
@@ -360,26 +384,32 @@ module SSCA2_kernels
 	      }
 	    };
   
-            // barrier needed to insure all updates to Next_Level are complete
+            // sungeun: 8/2011
+            // This (split-phase) barrier is needed to insure all updates
+            // to Next_Level are completed before creating the next
+            // Next_Level.
             var myc = count;
-            if myc==1 {
-              barrier=true;
-            } else {
-              count = myc-1;
-              barrier;
+            if myc!=1 {
+              count = myc-1; // release the lock
+              // do some work while we wait
+              rcLocal(Active_Level) = rcLocal(Next_Level);
+
+              barrier;       // wait for everyone
+            } else {         // last one here
+              barrier=true;  // release everyone first
+              rcLocal(Active_Level) = rcLocal(Next_Level);
             }
 
-            rcLocal(Active_Level) = rcLocal(Next_Level);
             rcLocal(Next_Level)   = new Level_Set (Sparse_Vertex_List);
-        
-	    // rcLocal(Next_Level).Members.clear ();
 	    rcLocal(Next_Level).previous = rcLocal(Active_Level);
+            Active_Remaining[here.id] =
+              rcLocal(Active_Level).Members.numIndices:bool;
 
-            Active_Remaining[here.id] = rcLocal(Active_Level).Members.numIndices:bool;
+          }
 
-            }
+          remaining = || reduce Active_Remaining;
 
-	  };  // end forward pass
+	};  // end forward pass
 
 	if VALIDATE_BC then
 	  Sum_Min_Dist$ += Lcl_Sum_Min_Dist;
@@ -396,8 +426,10 @@ module SSCA2_kernels
 	  writeln ( " graph diameter from starting node ", s, 
 		    "  is ", graph_diameter );
 
-        // barrier
+        // sungeun: 8/2011
+        // basic single use barrier
         var count: sync int = numLocales;
+        // to simplify synchronization between multiple barriers
         var barrier: [2..graph_diameter] single bool;
 
         coforall loc in Locales do on loc {
@@ -430,7 +462,9 @@ module SSCA2_kernels
 
                 Between_Cent$ (u) += depend (u);
               }
-            // barrier needed to insure all updates to depend are completed
+            // sungeun: 8/2011
+            // This barrier is needed to insure all updates to depend are
+            // complete before the next pass.
             var myc = count;
             if myc==1 {
               count = numLocales;

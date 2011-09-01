@@ -42,20 +42,13 @@ extern const int chpl_heterogeneous;
 //
 
 //
-// returns the default maximum number of threads that can be handled by this
-// communication layer (initial value of maxThreadsPerLocale); use the sentinel value 0
-// if the maximum number of threads is limited only by the system's available
-// resources.
+// returns the maximum number of threads that can be handled
+// by this communication layer (used to ensure numThreadsPerLocale is
+// legal); should return the sentinel value of 0 if the communication
+// layer imposes no particular limit on the number of threads.
 //
-
 int32_t chpl_comm_getMaxThreads(void);
 
-//
-// returns the upper limit on the maximum number of threads that can be handled
-// by this communication layer; use the sentinel value 0 if the maximum number
-// of threads is limited only by the system's available resources.
-//
-int32_t chpl_comm_maxThreadsLimit(void);
 
 //
 // initializes the communications package
@@ -195,6 +188,15 @@ void chpl_comm_fork_nb(int locale, chpl_fn_int_t fid,
 void chpl_comm_fork_fast(int locale, chpl_fn_int_t fid, void *arg,
                          int32_t arg_size, int32_t arg_tid);
 
+
+//
+// This call specifies the number of polling tasks that the
+// communication layer will need (see just below for a definition).
+// It's called beffore chpl_comm_startPollingTask() to forewarn the
+// task layer.  In the current implementation, it should only return
+// 0 or 1.
+//
+int chpl_comm_numPollingTasks(void);
 //
 // This is a hook that's called after the Chapel tasking layer has
 // been set up which permits the communication layer to start a
@@ -204,7 +206,13 @@ void chpl_comm_fork_fast(int locale, chpl_fn_int_t fid, void *arg,
 // to have all tasking/threading owned by the task layer.
 //
 void chpl_comm_startPollingTask(void);
+//
+// This call is made before exiting to stop the polling task.
+//
 void chpl_comm_stopPollingTask(void);
+//
+
+
 
 //
 // Comm diagnostics stuff

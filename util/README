@@ -14,5 +14,4 @@ to end-users.  The current contents of the directory are as follows:
    start_test      : the kickoff script for the Chapel testing system
 
    chplenv/        : helper scripts for inferring CHPL_* variables if unset
-   multirealm/     : helper scripts for multi-realm execution
    test/           : helper scripts for the testing system

@@ -47,6 +47,7 @@ static void recordExecutionCommand(int argc, char *argv[]) {
 int main(int argc, char* argv[]) {
   int32_t execNumLocales;
   int runInGDB;
+  int numPollingTasks;
 
   chpl_comm_init(&argc, &argv);
   chpl_mem_init();
@@ -78,21 +79,31 @@ int main(int argc, char* argv[]) {
   chpl_comm_verify_num_locales(execNumLocales);
   chpl_comm_rollcall();
 
+  //
+  // This just sets all of the initialization predicates to false.
+  // Must occur before any other call to a chpl__init_<foo> function.
+  //
+  chpl__init_preInit(1, "<internal>");
  
   //
   // initialize the task management layer
   //
   //
   // This is an early call to initialize the ChapelThreads module so
-  // that its config consts (maxThreadsPerLocale and callStackSize)
-  // can be used to initialize the tasking layer.  It assumes that the
-  // ChapelThreads module can be initialized multiple times without
-  // harm (currently true).
+  // that its config consts (numThreadsPerLocale and callStackSize)
+  // can be used to initialize the tasking layer.  
   //
   chpl__init_ChapelThreads(1, "<internal>");
   //
-  chpl_task_init(maxThreadsPerLocale, callStackSize); 
-  chpl_init_chpl_rt_utils();
+  numPollingTasks = chpl_comm_numPollingTasks();
+  if (numPollingTasks != 0 && numPollingTasks != 1) {
+    chpl_internal_error("chpl_comm_numPollingTasks() returned illegal value");
+  }
+  chpl_task_init(numThreadsPerLocale, chpl__maxThreadsPerLocale, 
+                 numPollingTasks, callStackSize); 
+
+  // Now initialize the rest of the standard modules.
+  chpl__init_chpl__Program(1, "<internal>");
 
   //
   // start communication tasks as necessary

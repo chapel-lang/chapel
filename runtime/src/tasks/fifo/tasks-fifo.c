@@ -8,6 +8,7 @@
 #endif
 
 #include "chpl_rt_utils_static.h"
+#include "chplcgfns.h"
 #include "chpl-comm.h"
 #include "chplexit.h"
 #include "chpl-mem.h"
@@ -214,7 +215,8 @@ void chpl_sync_destroyAux(chpl_sync_aux_t *s) { }
 
 // Tasks
 
-void chpl_task_init(int32_t maxThreadsPerLocale, uint64_t callStackSize) {
+void chpl_task_init(int32_t numThreadsPerLocale, int32_t maxThreadsPerLocale, 
+                    int numCommTasks, uint64_t callStackSize) {
   chpl_thread_mutexInit(&threading_lock);
   chpl_thread_mutexInit(&extra_task_lock);
   chpl_thread_mutexInit(&task_id_lock);
@@ -227,7 +229,7 @@ void chpl_task_init(int32_t maxThreadsPerLocale, uint64_t callStackSize) {
   extra_task_cnt = 0;
   task_pool_head = task_pool_tail = NULL;
 
-  chpl_thread_init(maxThreadsPerLocale, callStackSize,
+  chpl_thread_init(numThreadsPerLocale, maxThreadsPerLocale, callStackSize,
                    thread_begin, thread_end);
 
   if (taskreport) {
@@ -237,6 +239,41 @@ void chpl_task_init(int32_t maxThreadsPerLocale, uint64_t callStackSize) {
   if (blockreport) {
     progress_cnt = 0;
     chpl_thread_mutexInit(&block_report_lock);
+  }
+
+  //
+  // Set main thread private data, so that things that require access
+  // to it, like chpl_task_getID() and chpl_task_setSerial(), can be
+  // called early (notably during standard module initialization).
+  //
+  // This needs to be done after the threading layer initialization,
+  // because it's based on thread layer capabilities, but before we
+  // install the signal handlers, because when those are invoked they
+  // may use the thread private data.
+  //
+  {
+    thread_private_data_t* tp;
+
+    tp = (thread_private_data_t*) chpl_mem_alloc(sizeof(thread_private_data_t),
+                                                 CHPL_RT_MD_THREAD_PRIVATE_DATA,
+                                                 0, 0);
+
+    tp->ptask = (task_pool_p) chpl_mem_alloc(sizeof(task_pool_t),
+                                             CHPL_RT_MD_TASK_POOL_DESCRIPTOR,
+                                             0, 0);
+    tp->ptask->id           = get_next_task_id();
+    tp->ptask->fun          = NULL;
+    tp->ptask->arg          = NULL;
+    tp->ptask->serial_state = true;     // Set to true in chpl_task_callMain().
+    tp->ptask->ltask        = NULL;
+    tp->ptask->begun        = true;
+    tp->ptask->filename     = "main program";
+    tp->ptask->lineno       = 0;
+    tp->ptask->next         = NULL;
+
+    tp->lockRprt = NULL;
+
+    chpl_thread_setPrivateData(tp);
   }
 
   if (blockreport || taskreport) {
@@ -256,29 +293,9 @@ void chpl_task_exit(void) {
 
 
 void chpl_task_callMain(void (*chpl_main)(void)) {
-  thread_private_data_t *tp = (thread_private_data_t*)
-                                chpl_mem_alloc(sizeof(thread_private_data_t),
-                                               CHPL_RT_MD_THREAD_PRIVATE_DATA,
-                                               0, 0);
-
-  tp->ptask = (task_pool_p) chpl_mem_alloc(sizeof(task_pool_t),
-                                           CHPL_RT_MD_TASK_POOL_DESCRIPTOR,
-                                           0, 0);
-  tp->ptask->id           = get_next_task_id();
-  tp->ptask->fun          = NULL;
-  tp->ptask->arg          = NULL;
-  tp->ptask->serial_state = false;
-  tp->ptask->ltask        = NULL;
-  tp->ptask->begun        = true;
-  tp->ptask->filename     = "main program";
-  tp->ptask->lineno       = 0;
-  tp->ptask->next         = NULL;
-
-  tp->lockRprt = NULL;
-
-  chpl_thread_setPrivateData(tp);
-
   if (taskreport) {
+    thread_private_data_t* tp = chpl_thread_getPrivateData();
+
     chpldev_taskTable_add(tp->ptask->id,
                           tp->ptask->lineno, tp->ptask->filename,
                           (uint64_t) (intptr_t) tp->ptask);
@@ -289,6 +306,7 @@ void chpl_task_callMain(void (*chpl_main)(void)) {
     initializeLockReportForThread();
   }
 
+  chpl_task_setSerial(false);
   chpl_main();
 }
 
@@ -1198,14 +1216,6 @@ static task_pool_p add_to_task_pool(chpl_fn_p fp,
 
 
 // Threads
-
-int32_t  chpl_task_getMaxThreads(void) {
-  return 0;
-}
-
-int32_t  chpl_task_getMaxThreadsLimit(void) {
-  return 0;
-}
 
 uint32_t chpl_task_getNumThreads(void) {
   return chpl_thread_getNumThreads();

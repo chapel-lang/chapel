@@ -2,7 +2,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 // Add initialization guards to the module init functions.
 //
-// This pass must be run after buildDefaultFunctions().
+// This pass must be run after parallel().
 //
 // This makes the initialization functions idempotent -- meaning that they can
 // be executed any number of times, but the net effect is as if they were only 
@@ -46,30 +46,36 @@ void addInitGuards(void) {
 
     // Alright then, add the guard.
 
-    // Add:
-    //  bool <init_fn_name>_p = false;
-    // to the preInit function.
+    // The declaration:
+    //      var <init_fn_name>_p : bool;
+    // is added to the end of the program block.
     const char* init_p = astr(fn->name, "_p"); // Add _p to make it a predicate.
     Symbol* var = new VarSymbol(init_p, dtBool);
     Expr* declExpr = new DefExpr(var);
     theProgram->block->insertAtTail(declExpr);
 
-    // <init_fn_name>_p = true;
-    // Is added to the preInit function.
+    // The assignment:
+    //      <init_fn_name>_p = false;
+    // is added at the end of chpl__init_preInit().
+    // This means the module has not yet been initialized.
     Expr* asgnExprFalse = new CallExpr(PRIM_MOVE, var, new SymExpr(gFalse));
     initFn->insertBeforeReturn(asgnExprFalse);
 
-    // <init_fn_name>_p = true;
-    // Precedes the body.
+    // The assignment:
+    //      <init_fn_name>_p = true;
+    // is added to the start of the module initialization function.
+    // This means that the module has been initialized.
     Expr* asgnExprTrue = new CallExpr(PRIM_MOVE, var, new SymExpr(gTrue));
     fn->insertAtHead(asgnExprTrue);
 
-    // if (<init_fn_name>_p) return;
-    // Precedes everything, including the assignment we just added.
-    Expr* thenExpr = new CallExpr(PRIM_RETURN, gVoid);
-    BlockStmt* ifStmt = buildIfStmt(new SymExpr(var), thenExpr);
+    // The guard:
+    //      if (<init_fn_name>_p) goto _exit_<init_fn_name>.
+    // Precedes everything in the module initialization function,
+    // including the assignment we just added.
+    LabelSymbol* label = new LabelSymbol(astr("_exit_", fn->name));
+    fn->insertBeforeReturnAfterLabel(new DefExpr(label));
+    Expr* gotoExit = new GotoStmt(GOTO_NORMAL, label);
+    Expr* ifStmt = new CondStmt(new SymExpr(var), gotoExit);
     fn->insertAtHead(ifStmt);
-
-    normalize(fn);
   }
 }

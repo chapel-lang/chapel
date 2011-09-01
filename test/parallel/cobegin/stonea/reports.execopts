@@ -1,4 +1,4 @@
---maxThreadsPerLocale=2 -b -t
---maxThreadsPerLocale=2 -b -t
---maxThreadsPerLocale=2 -b -t
---maxThreadsPerLocale=2 -b -t
+--numThreadsPerLocale=2 -b -t
+--numThreadsPerLocale=2 -b -t
+--numThreadsPerLocale=2 -b -t
+--numThreadsPerLocale=2 -b -t

@@ -1,3 +1,0 @@
-function __init var.v:1
-globals
-user::x(var.v:1) ( int32 )

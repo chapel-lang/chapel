@@ -5,8 +5,10 @@ __attribute__((weak, section( "nanos_init" ))) nanos_init_desc_t __chpl_init = {
 
 extern int32_t chpl_localeID;
 
-void chpl_task_init(int32_t maxThreadsPerLocale, uint64_t callStackSize) 
+void chpl_task_init(int32_t numThreadsPerLocale, int32_t maxThreadsPerLocale,
+                    int numCommTasks, uint64_t callStackSize) 
 {
-  nanos_chpl_task_init(maxThreadsPerLocale, callStackSize, chpl_localeID);
+  nanos_chpl_task_init(numThreadsPerLocale, maxThreadsPerLocale, numCommTasks,
+                       callStackSize, chpl_localeID);
 }
 

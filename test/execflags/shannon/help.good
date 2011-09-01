@@ -18,7 +18,7 @@ CONFIG VAR FLAGS:
 CONFIG VARS:
 ============
                  numLocales: int (configured to 1)
-        maxThreadsPerLocale: int
+        numThreadsPerLocale: int
               callStackSize: uint(64)
       dataParTasksPerLocale: int
   dataParIgnoreRunningTasks: bool

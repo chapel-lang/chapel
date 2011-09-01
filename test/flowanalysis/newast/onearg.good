@@ -1,6 +1,0 @@
-::__init_onearg ( __init_onearg (<internal>:-1) )
-::a(onearg.chpl:1) ( int64 )
-::foo(onearg.chpl:1) ( foo )
-::main ( main (<internal>:-1) )
-function foo onearg.chpl:1
-globals

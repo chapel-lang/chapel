@@ -53,15 +53,22 @@ typedef chpl_sync_aux_t chpl_single_aux_t;
 //
 // chpl_task_init() is called by the main task on each locale to initialize
 //   the tasking layer
-//   - maxThreadsPerLocale is the maximum number of threads the tasking
-//     layer should use; 0 means unlimited
-//   - callStackSize is the size of the callstack each task should use;
-//     0 means use the system default
+//
+// - numThreadsPerLocale is a user-specified limit on the number of
+//   threads the tasking layer should use; 0 means unlimited
+// - maxThreadsPerLocale is the maximum number of threads the tasking
+//   layer should use; 0 means unlimited
+// - numCommTasks indicates the number of communication tasks that the
+//   communication layer is going to request through chpl_task_createCommTask()
+// - callStackSize is the user-specified size of the callstack each
+//   task should use; 0 means use the default
+//
 // These values should be checked for legality and tucked away for later use
 // by the tasking layer as necessary.  This is a reasonable place to print
 // out warnings about bad values.
 //
-void chpl_task_init(int32_t maxThreadsPerLocale, uint64_t callStackSize);
+void chpl_task_init(int32_t numThreadsPerLocale, int32_t maxThreadsPerLocale,
+                    int numCommTasks, uint64_t callStackSize);
 void chpl_task_exit(void);        // called by the main task
 
 //
@@ -164,21 +171,6 @@ int32_t chpl_task_getNumBlockedTasks(void);
 
 
 // Threads
-
-//
-// returns the default maximum number of threads that can be handled by this
-// threading layer (initial value of maxThreadsPerLocale); use the sentinel value 0
-// if the maximum number of threads is limited only by the system's available
-// resources.
-//
-int32_t chpl_task_getMaxThreads(void);
-
-//
-// returns the upper limit on the maximum number of threads that can be handled
-// by this threading layer; use the sentinel value 0 if the maximum number of
-// threads is limited only by the system's available resources.
-//
-int32_t chpl_task_getMaxThreadsLimit(void);
 
 //
 // returns the total number of threads that currently exist, whether running,

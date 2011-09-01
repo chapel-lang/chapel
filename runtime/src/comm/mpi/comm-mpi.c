@@ -53,10 +53,6 @@ int32_t chpl_comm_getMaxThreads(void) {
   return 0;
 }
 
-int32_t chpl_comm_maxThreadsLimit(void) {
-  return 0;
-}
-
 int chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status) {
   return 0;
 }
@@ -510,9 +506,13 @@ void  chpl_comm_fork_fast(int locale, chpl_fn_int_t fid, void *arg,
   chpl_comm_fork(locale, fid, arg, arg_size, arg_tid);
 }
 
+
+int chpl_comm_numPollingTasks(void) { return 0; }
+
 void chpl_comm_startPollingTask(void) {
   // Ultimately the pthread code from above to create the polling thread
-  // should be moved down here
+  // should be moved down here;  once it is, the previous routine should
+  // be changed to return 1.
 }
 
 void chpl_comm_stopPollingTask(void) {

@@ -20,7 +20,6 @@ TARGETS = \
 	$(MAIN_OBJS) \
 
 SUBDIRS = \
-	common-chpl \
 	comm \
 	mem \
 	tasks \

@@ -227,6 +227,7 @@ class ModuleSymbol : public Symbol {
 
 class LabelSymbol : public Symbol {
  public:
+  GotoStmt* iterResumeGoto;
   LabelSymbol(const char* init_name);
   void verify(); 
   DECLARE_SYMBOL_COPY(LabelSymbol);

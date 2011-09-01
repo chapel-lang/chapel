@@ -82,15 +82,21 @@ void chpl_task_begin(chpl_fn_p fp,
 
 // Tasks
 
-void nanos_chpl_task_init(int32_t maxThreadsPerLocale, uint64_t callStackSize, 
+void nanos_chpl_task_init(int32_t numThreadsPerLocale, 
+                          int32_t maxThreadsPerLocale, int numCommTasks, 
+                          uint64_t callStackSize, 
                           int32_t init_chpl_localeID) {
    NANOX_SANITY_CHECK(init);
 
    fatal_cond0(!chapel_hooked, "Chapel layer has not been correctly initialized");
 
+   if (numThreadsPerLocale == 0) {
+     numThreadsPerLocale = chpl_numCoresOnThisLocale() + numCommTasks;
+   }
+
    sys.setInitialMode( System::POOL );
    sys.setUntieMaster(true);
-   sys.setNumPEs(4);
+   sys.setNumPEs(numThreadsPerLocale);
    sys.start();
 
    NANOX_SANITY_CHECK(init);
@@ -199,20 +205,6 @@ chpl_taskID_t chpl_task_getId(void)
 }
 
 // Threads stat routines
-
-int32_t  chpl_task_getMaxThreads(void)
-{
-  NANOX_SANITY_CHECK(getMaxThreads);
-   // TODO: Alex
-   return 0;
-}
-
-int32_t  chpl_task_getMaxThreadsLimit(void)
-{
-  NANOX_SANITY_CHECK(getMaxThreadsLimit);
-   // TODO: Alex
-   return 0;
-}
 
 uint32_t chpl_task_getNumThreads(void)
 {

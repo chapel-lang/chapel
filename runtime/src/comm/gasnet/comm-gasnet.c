@@ -224,10 +224,6 @@ int32_t chpl_comm_getMaxThreads(void) {
   return GASNETI_MAX_THREADS-1;
 }
 
-int32_t chpl_comm_maxThreadsLimit(void) {
-  return GASNETI_MAX_THREADS-1;
-}
-
 static volatile int alldone = 0;
 static volatile int pollingdone = 0;
 
@@ -291,6 +287,10 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
 }
 
 void chpl_comm_post_mem_init(void) { }
+
+int chpl_comm_numPollingTasks(void) {
+  return (chpl_localeID == 0);
+}
 
 void chpl_comm_startPollingTask(void) {
   //
