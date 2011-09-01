@@ -179,18 +179,18 @@ proc range.isEmpty()       where isBoundedRange(this) {
 proc range.isEmpty() param where !isBoundedRange(this)
   return false;
 
-proc range.hasFirst() param where !stridable
+proc range.hasFirst() param where !stridable && !hasHighBound()
   return hasLowBound();
 
 pragma "inline" 
-proc range.hasFirst() where stridable
+proc range.hasFirst()
   return if isAmbiguous() then false else _base.hasFirst();
     
-proc range.hasLast() param where !stridable
+proc range.hasLast() param where !stridable && !hasLowBound()
   return hasHighBound();
 
 pragma "inline"
-proc range.hasLast() where stridable
+proc range.hasLast()
   return if isAmbiguous() then false else _base.hasLast();
 
 // Returns true if this range is naturally aligned, false otherwise.
