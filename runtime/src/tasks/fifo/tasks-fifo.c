@@ -264,7 +264,7 @@ void chpl_task_init(int32_t numThreadsPerLocale, int32_t maxThreadsPerLocale,
     tp->ptask->id           = get_next_task_id();
     tp->ptask->fun          = NULL;
     tp->ptask->arg          = NULL;
-    tp->ptask->serial_state = false;
+    tp->ptask->serial_state = true;     // Set to true in chpl_task_callMain().
     tp->ptask->ltask        = NULL;
     tp->ptask->begun        = true;
     tp->ptask->filename     = "main program";
@@ -294,13 +294,6 @@ void chpl_task_exit(void) {
 
 void chpl_task_callMain(void (*chpl_main)(void)) {
   if (taskreport) {
-    // We need to initialize chpldev_taskTable and its domain
-    // before calling chpl_task_callMain(),
-    // but only if we are tracking tasks.
-    chpl__init_DefaultRectangular(1, "<internal>");   // for defaultDist.
-    chpl__init_ChapelRT(1, "<internal>");
-  }
-  if (taskreport) {
     thread_private_data_t* tp = chpl_thread_getPrivateData();
 
     chpldev_taskTable_add(tp->ptask->id,
@@ -313,6 +306,7 @@ void chpl_task_callMain(void (*chpl_main)(void)) {
     initializeLockReportForThread();
   }
 
+  chpl_task_setSerial(false);
   chpl_main();
 }
 

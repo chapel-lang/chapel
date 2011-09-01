@@ -701,6 +701,7 @@ void initPrimitiveTypes(void) {
 
 void initTheProgram(void) {
   createInitFn(theProgram);
+  theProgram->initFn->addFlag(FLAG_EXPORT);     // Called from main.c
 
   theProgram->initFn->insertAtTail(
     new CallExpr(PRIM_USE, new UnresolvedSymExpr("ChapelBase")));

@@ -4527,10 +4527,18 @@ resolve() {
     }
   }
 
+  // We resolve the program initialization function first.
+  // This resolves module initialization functions and their dependencies in
+  // the order specified in ChapelStandard.chpl,
+  // subject to the proviso that the immediate dependencies of an entry
+  // in that file are resolved prior to the entry itself.
+  resolveFormals(theProgram->initFn);
+  resolveFns(theProgram->initFn);
+
   resolveFns(chpl_main);
   USR_STOP();
 
-  // We need to resolve functions that will be exported.
+  // We need to resolve any additional functions that will be exported.
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->hasFlag(FLAG_EXPORT)) {
       resolveFormals(fn);

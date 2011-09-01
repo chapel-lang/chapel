@@ -365,7 +365,8 @@ static void build_chpl_entry_points(void) {
   //chpl_main->insertBeforeReturn(new CallExpr("_endCountFree", endCount));
 
   theProgram->initFn->insertBeforeReturn(stdInits);
-  chpl_main->insertAtHead(new CallExpr(theProgram->initFn));
+  // Moved to main.c:
+  //  chpl_main->insertAtHead(new CallExpr(theProgram->initFn));
 }
 
 static void build_record_equality_function(ClassType* ct) {

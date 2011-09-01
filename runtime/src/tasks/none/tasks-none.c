@@ -121,7 +121,7 @@ void chpl_task_init(int32_t numThreadsPerLocale, int32_t maxThreadsPerLocale,
   taskCallStackSize = callStackSize;
 
   curr_taskID = next_taskID++;
-  serial_state = false;
+  serial_state = true;  // Likely makes no difference, except for testing/debugging.
 
   task_pool_head = task_pool_tail = NULL;
   queued_cnt = 0;
@@ -135,6 +135,7 @@ int chpl_task_createCommTask(chpl_fn_p fn, void* arg) {
 }
 
 void chpl_task_callMain(void (*chpl_main)(void)) {
+  serial_state = false;
   chpl_main();
 }
 
