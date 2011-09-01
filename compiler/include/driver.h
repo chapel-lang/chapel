@@ -8,6 +8,7 @@
 extern FILE* html_index_file;
 extern FILE* deletedIdHandle;
 extern char deletedIdFilename[FILENAME_MAX+1];
+#define deletedIdON (deletedIdFilename[0] != '\0')
 
 extern int instantiation_limit;
 

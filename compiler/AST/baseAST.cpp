@@ -103,12 +103,12 @@ void printStatistics(const char* pass) {
 // for debugging purposes only
 void trace_remove(BaseAST* ast, char flag) {
   // crash if deletedIdHandle is not initialized but deletedIdFilename is
-  if (deletedIdFilename[0]) {
+  if (deletedIdON) {
     fprintf(deletedIdHandle, "%d %c %p %d\n",
             currentPassNo, flag, ast, ast->id);
   }
   if (ast->id == breakOnDeleteID) {
-    fflush(deletedIdHandle);
+    if (deletedIdON) fflush(deletedIdHandle);
     gdbShouldBreakHere();
   }
 }
@@ -148,6 +148,10 @@ void cleanAst() {
     }
   }
 
+  // check iterator-resume-label/goto data before nodes are free'd
+  verifyNcleanRemovedIterResumeGotos();
+  verifyNcleanCopiedIterResumeGotos();
+
   //
   // clean global vectors and delete dead ast instances
   //
@@ -167,9 +171,6 @@ void destroyAst() {
 
 void
 verify() {
-  verifyNcleanRemovedIterResumeGotos();
-  verifyNcleanCopiedIterResumeGotos();
-
   #define verify_gvec(type)                       \
     forv_Vec(type, ast, g##type##s) {             \
       ast->verify();                              \
