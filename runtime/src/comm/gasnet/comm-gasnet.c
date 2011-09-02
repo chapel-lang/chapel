@@ -225,12 +225,12 @@ int32_t chpl_comm_getMaxThreads(void) {
 }
 
 static volatile int alldone = 0;
-static volatile int pollingdone = 1;
+static volatile int pollingRunning = 0;
 
 static void polling(void* x) {
-  pollingdone = 0;
+  pollingRunning = 1;
   GASNET_BLOCKUNTIL(alldone);
-  pollingdone = 1;
+  pollingRunning = 0;
 }
 
 #ifdef GASNET_NEEDS_MAX_SEGSIZE
@@ -302,7 +302,6 @@ void chpl_comm_startPollingTask(void) {
     int status = chpl_task_createCommTask(polling, NULL);
     if (status) {
       alldone = 1;
-      pollingdone = 1;
       chpl_internal_error("unable to start polling thread for gasnet");
     }
   }
@@ -325,7 +324,7 @@ void chpl_comm_stopPollingTask(void) {
   // polling thread is done before going on
   //
   if (chpl_localeID == 0) {
-    while (!pollingdone) {}
+    while (pollingRunning) {}
   }
 }
 
