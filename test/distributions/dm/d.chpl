@@ -102,12 +102,13 @@ class DimensionalDom : BaseRectangularDom {
   // This is the idxType of the "storage index ranges" to be produced
   // by dsiSetLocalIndices1d(). It needs to be uniform across dimensions,
   // and 'idxType' is the easiest choice (although not the most general).
+  // NB it's also computed in DimensionalDist.dsiNewRectangularDom().
   proc stoIndexT type  return idxType;
 
   // helper for locDdescType: any of storage index ranges can be stridable
   proc stoStridable param {
     proc stoStridable1d(dom1d) param {
-      const dummy = dom1d.dsiNewLocalDom1d(0:locIdT)
+      const dummy = dom1d.dsiNewLocalDom1d(stoIndexT, 0:locIdT)
         .dsiSetLocalIndices1d(dom1d, 0:locIdT);
       return dummy.stridable;
     }
@@ -119,8 +120,8 @@ class DimensionalDom : BaseRectangularDom {
 
   // convenience - our instantiation of LocDimensionalDom
   proc locDdescType type  return LocDimensionalDom(stoDomainT,
-                                         dom1.dsiNewLocalDom1d(0:locIdT).type,
-                                         dom2.dsiNewLocalDom1d(0:locIdT).type);
+                                         dom1.dsiNewLocalDom1d(stoIndexT, 0:locIdT).type,
+                                         dom2.dsiNewLocalDom1d(stoIndexT, 0:locIdT).type);
 
   // local domain descriptors
   var localDdescs: [dist.targetIds] locDdescType; // not reprivatized
@@ -197,13 +198,12 @@ proc DimensionalDist.DimensionalDist(
                      this.targetLocales, true, this.targetLocales.domain.low);
 }
 
-// Check all things that must be provided by the user
+// Check all restrictions/assumptions that must be satisfied by the user
 // when constructing a DimensionalDist.
 proc DimensionalDist.checkInvariants(): void {
   assert(targetLocales.eltType == locale, "DimensionalDist-targetLocales.eltType");
   assert(targetIds.idxType == locIdT, "DimensionalDist-targetIdx.idxType");
-  assert(targetIds == [0..#numLocs1, 0..#numLocs2],
-         "DimensionalDist-targetIds");
+  assert(targetIds == [0..#numLocs1, 0..#numLocs2], "DimensionalDist-targetIds");
   assert(di1.numLocales == numLocs1, "DimensionalDist-numLocales-1");
   assert(di2.numLocales == numLocs2, "DimensionalDist-numLocales-2");
   assert(rank == targetLocales.rank, "DimensionalDist-rank");
@@ -531,6 +531,8 @@ proc DimensionalDist.dsiNewRectangularDom(param rank: int,
     compilerError("DimensionalDist presently supports only 2 dimensions,",
                   " got ", rank, " dimensions");
 
+  // todo: ideally, this will not be required;
+  // furthermore, DimensionalDist shouldn't be specific to idxType.
   if idxType != this.idxType then
     compilerError("The domain index type ", typeToString(idxType),
                   " does not match the index type ",typeToString(this.idxType),
@@ -539,23 +541,30 @@ proc DimensionalDist.dsiNewRectangularDom(param rank: int,
     compilerError("The rank of the domain (", rank,
                   ") does not match the rank (", this.rank,
                   ") of the DimensionalDist used to map that domain");
-  
-  const dom1 = di1.dsiNewRectangularDom1d(idxType, stridable);
+
+  // need this for dsiNewRectangularDom1d()
+  type stoIndexT = this.idxType;
+
+  const dom1 = di1.dsiNewRectangularDom1d(idxType, stridable, stoIndexT);
   _passLocalLocIDsDom1d(dom1, di1);
 
-  const dom2 = di2.dsiNewRectangularDom1d(idxType, stridable);
+  const dom2 = di2.dsiNewRectangularDom1d(idxType, stridable, stoIndexT);
   _passLocalLocIDsDom1d(dom2, di2);
 
   const result = new DimensionalDom(rank=rank, idxType=idxType,
                                   stridable=stridable, dist=this,
                                   dom1 = dom1, dom2 = dom2);
   // result.whole is initialized to the default value (empty domain)
+
+  if stoIndexT != result.stoIndexT then
+    compilerError("bug in DimensionalDist: inconsistent stoIndexT");
+
   coforall (loc, locIds, locDdesc)
    in (targetLocales, targetIds, result.localDdescs) do
     on loc do
       locDdesc = new LocDimensionalDom(result.stoDomainT,
-                                     doml1 = dom1.dsiNewLocalDom1d(locIds(1)),
-                                     doml2 = dom2.dsiNewLocalDom1d(locIds(2)));
+                       doml1 = dom1.dsiNewLocalDom1d(stoIndexT, locIds(1)),
+                       doml2 = dom2.dsiNewLocalDom1d(stoIndexT, locIds(2)));
   return result;
 }
 
@@ -581,13 +590,14 @@ proc DimensionalDom._dsiSetIndicesHelper(newRanges: rank * rangeT): void {
 
   coforall (locId, locDD) in (dist.targetIds, localDdescs) do
     on locDD do
-      locDD._dsiLocalSetIndicesHelper(stoRangeT, (dom1, dom2), locId);
+     locDD._dsiLocalSetIndicesHelper(stoRangeT, (dom1,dom2), locId);
 }
 
 // not part of DSI
 // TODO: need to preserve the old contents
 // in the intersection of the old and new domains' index sets
-proc LocDimensionalDom._dsiLocalSetIndicesHelper(type stoRangeT, globDD, locId) {
+proc LocDimensionalDom._dsiLocalSetIndicesHelper(type stoRangeT, globDD, locId)
+{
   var myRange1: stoRangeT = doml1.dsiSetLocalIndices1d(globDD(1),locId(1));
   var myRange2: stoRangeT = doml2.dsiSetLocalIndices1d(globDD(2),locId(2));
 
@@ -803,7 +813,9 @@ iter DimensionalDom.these(param tag: iterator) where tag == iterator.leader {
         _traceddc(traceDimensionalDist || traceDimensionalDistIterators,
                   "  leader on ", here.id, " ", lls, " - no tasks");
 
-      type followT = densify(myDims, whole.dims()).type;
+      const followDummy: (locDdesc.doml1.dsiMyDensifiedRangeType1d(dom1),
+                          locDdesc.doml2.dsiMyDensifiedRangeType1d(dom2));
+      type followT = followDummy.type;
 
       if numTasks == 1 then {
 
@@ -841,8 +853,9 @@ iter DimensionalDom.these(param tag: iterator) where tag == iterator.leader {
           iter iter1dCheck(param dd, dom1d, loc1d, myDim) {
             for myPiece in iter1d(dd, dom1d, loc1d) {
 
-              // ensure we got a subset
-              assert(densify(myDim, whole.dim(dd))(myPiece) == myPiece);
+              // ensure we got a subset, if applicable
+              if dom1d.dsiStorageUsesUserIndices() then
+                assert(densify(myDim, whole.dim(dd))(myPiece) == myPiece);
 
               // Similar to the assert 'lo <= hi' in BlockDom leader.
               // Upon a second thought, if there is a legitimate reason
@@ -924,7 +937,7 @@ iter DimensionalArr.these(param tag: iterator) where tag == iterator.leader {
 }
 
 
-//== follower iterator - array   (similar to the serial iterator)
+//== follower iterator - array   (somewhat similar to the serial iterator)
 
 iter DimensionalArr.these(param tag: iterator, follower) var where tag == iterator.follower {
   const dom = this.dom;

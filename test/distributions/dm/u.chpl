@@ -7,11 +7,12 @@ use d;
 
 var pfx = "# ";
 var phase = 0;
+var no_pfx = false;
 
 // to preserve coarse ordering ("phases") when sorting the output
 proc nextphase() {
   phase += 1;
-  pfx = format("####", phase) + "  ";
+  pfx = if no_pfx then "" else format("####", phase) + "  ";
   traceDimensionalDistPrefix = pfx;
 }
 
