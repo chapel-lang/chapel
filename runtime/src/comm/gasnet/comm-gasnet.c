@@ -225,9 +225,10 @@ int32_t chpl_comm_getMaxThreads(void) {
 }
 
 static volatile int alldone = 0;
-static volatile int pollingdone = 0;
+static volatile int pollingdone = 1;
 
 static void polling(void* x) {
+  pollingdone = 0;
   GASNET_BLOCKUNTIL(alldone);
   pollingdone = 1;
 }
