@@ -1319,12 +1319,11 @@ module GMP {
 
 
   proc BigInt.writeThis(writer:Writer) {
-    var f=writer:file;
-    on f {
-      var (acopy,a_) = this.maybeCopy();
-      gmp_fprintf(f._fp, "%Zd", a_.mpz);
-      if acopy then delete a_;
-    }
+    var (acopy,a_) = this.maybeCopy();
+    var s:string;
+    gmp_asprintf(s, "%Zd", a_.mpz);
+    writer.write(s);
+    if acopy then delete a_;
   }
 
 
