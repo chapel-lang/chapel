@@ -1,3 +1,0 @@
-#!/usr/bin/env tcsh
-source ~/.chapelcshrc-cron
-$CHPL_HOME/test/Bin/nightly -debug
