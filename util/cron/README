@@ -1,0 +1,21 @@
+chap01 : linux64 correctness
+chap02 : qthreads (none + gasnet)
+chap03 : linux64 performance
+chap04 : mpi
+chap05 : --no-local
+chap06 : --baseline
+chap07 : cyclic
+chap08 : XMT
+chap09 : valgrind
+chap10 : gasnet
+chpbld01 : XT/XE PrgEnvs
+chpbld02 : unused (parallel performance testing planned)
+gold: 32-bit linux
+lnx-vass : block, memory leaks
+lnx-hilde : nanox (none + gasnet)
+lnx-bradc : release testing, performance, token count, tab check
+macchapel-mac : mac (currently waiting for replacement Mac)
+(windows laptop) : cygwin
+
+
+stale : opts testing (used to run on chap02 -- see nightly.week*.chap02
