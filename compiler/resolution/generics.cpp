@@ -1,4 +1,5 @@
 #define __STDC_FORMAT_MACROS
+#include <cstdlib>
 #include <inttypes.h>
 #include "astutil.h"
 #include "caches.h"

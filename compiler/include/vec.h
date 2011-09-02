@@ -34,7 +34,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <cstring>
 #include <stdint.h>
 #include <cstdlib>
-#include <sys/types.h>
 
 // Simple Vector class, also supports open hashed sets
 

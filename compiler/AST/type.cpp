@@ -381,14 +381,11 @@ int ClassType::codegenStructure(FILE* outfile, const char* baseoffset) {
   case CLASS_CLASS:
     fprintf(outfile, "{CHPL_TYPE_CLASS_REFERENCE, %s},\n", baseoffset);
     return 1;
-    break;
   case CLASS_RECORD:
     return codegenFieldStructure(outfile, true, baseoffset);
-    break;
   case CLASS_UNION:
     INT_FATAL(this, "Don't know how to codegenStructure for unions yet");
     return 0;
-    break;
   default:
     INT_FATAL(this, "Unexpected case in ClassType::codegenStructure");
     return 0;

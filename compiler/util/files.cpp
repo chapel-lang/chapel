@@ -9,7 +9,6 @@
 #include <pwd.h>
 #include <cerrno>
 #include <unistd.h>
-#include <sys/types.h>
 
 char executableFilename[FILENAME_MAX+1] = "a.out";
 char saveCDir[FILENAME_MAX+1] = "";
