@@ -14,6 +14,13 @@
 #include <stdint.h>
 #include <string.h>
 
+const char myFilename[] = 
+#ifdef CHPL_DEVELOPER
+  __FILE__;
+#else
+  "<internal>";
+#endif
+
 
 char* chpl_executionCommand;
 
@@ -48,7 +55,6 @@ int main(int argc, char* argv[]) {
   int32_t execNumLocales;
   int runInGDB;
   int numPollingTasks;
-
   chpl_comm_init(&argc, &argv);
   chpl_mem_init();
   chpl_comm_post_mem_init();
@@ -83,7 +89,7 @@ int main(int argc, char* argv[]) {
   // This just sets all of the initialization predicates to false.
   // Must occur before any other call to a chpl__init_<foo> function.
   //
-  chpl__init_preInit(1, "<internal>");
+  chpl__init_preInit(0, myFilename);
  
   //
   // initialize the task management layer
@@ -93,7 +99,8 @@ int main(int argc, char* argv[]) {
   // that its config consts (numThreadsPerLocale and callStackSize)
   // can be used to initialize the tasking layer.  
   //
-  chpl__init_ChapelThreads(1, "<internal>");
+  chpl__init_ChapelThreads(0, myFilename);
+  // (Can we grab those constants directly, and stay out of the module code?)
   //
   numPollingTasks = chpl_comm_numPollingTasks();
   if (numPollingTasks != 0 && numPollingTasks != 1) {
@@ -101,9 +108,6 @@ int main(int argc, char* argv[]) {
   }
   chpl_task_init(numThreadsPerLocale, chpl__maxThreadsPerLocale, 
                  numPollingTasks, callStackSize); 
-
-  // Now initialize the rest of the standard modules.
-  chpl__init_chpl__Program(1, "<internal>");
 
   //
   // start communication tasks as necessary
@@ -115,6 +119,13 @@ int main(int argc, char* argv[]) {
   chpl_comm_barrier("barrier before main");
 
   if (chpl_localeID == 0) {      // have locale #0 run the user's main function
+
+    // These initialization calls are needed early so entries can be added to the taskTable
+    // in chpl_task_callMain().  But it appears here to make it task-layer-independent.
+    // Ideally, module initialization code should not be called before we reach chpl_main. <hilde>
+    chpl__init_DefaultRectangular(0, myFilename);
+    chpl__init_ChapelTaskTable(0, myFilename);
+
     chpl_task_callMain(chpl_main);
   }
 
