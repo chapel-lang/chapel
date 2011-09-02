@@ -1,9 +1,0 @@
-ARCHCFLAGS		=	-DNOSTRCASE -DSYSVSIGNAL -DNOWAIT3 -DSYSVSTR \
-					-DRSHCOMMAND=\"/usr/bin/rsh\" -DNOUNIXDOM
-ARCHDLIB		=	-lnsl -lsocket
-ARCHDOBJ		=	
-ARCHLIB			=	-lnsl -lsocket
-HASRANLIB		=	f
-AR				=	ar
-PVM_ARCH		=	DGIX
-MAKE			=	make

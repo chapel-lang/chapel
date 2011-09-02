@@ -39,5 +39,8 @@ GASNetOnDesktops.txt
 CHPL_DEVELOPER.txt
   The most important environment variable you want to set, and what it does.
 
+TestSystem.txt
+  All about the Chapel testing system.
+
 Potpourri.txt
   Notes not in any of the above categories.

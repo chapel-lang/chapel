@@ -9,7 +9,7 @@ DESCRIPTION
   The Chapel compiler, chpl, converts one or more Chapel source files
   into an executable. It does this by compiling Chapel to ISO C code
   and then invoking the target platform's C compiler to create the
-  executable.  However, most users will not need to be aware of the
+  executable. However, most users will not need to be aware of the
   use of C as an intermediate format during compilation.
 
   The current implementation of chpl supports the creation of multiple
@@ -49,9 +49,9 @@ OPTIONS
 
   Module Processing Options
 
-  -M, --module-dir <dir>   Add the specified directory to the search path used
-                    to find Chapel source files to fulfill module use 
-                    statements.
+  -M, --module-dir <dir>   Add the specified directory to the module search 
+                    path. See the description of $CHPL_MODULE_PATH in the 
+                    ENVIRONMENT section of this man page for more details.
 
   --main-module <module>   For programs that supply multiple possible entry
                      points (main() functions or module initializers that
@@ -59,11 +59,10 @@ OPTIONS
                      to specify which module should serve as the starting 
                      point for program execution.
 
-  --print-search-dirs   Print the module search path used to resolve module
-                    use statements. This is the list of directories
-                    named by Chapel source files on the command line followed
-                    by those specified with the -M option followed by those
-                    specified by the $CHPL_MODULE_PATH environment variable.
+  --print-search-dirs   Print the module search path used to resolve module 'use'
+                    statements. See the description of $CHPL_MODULE_PATH
+                    in the ENVIRONMENT section of this man page for more 
+                    details.
 
   --print-module-files   Prints the Chapel module source files parsed by
                     the Chapel compiler.
@@ -221,7 +220,7 @@ OPTIONS
 
   --savec <dir>      Saves the compiler-generated C code in the specified 
                     directory, creating the directory if it does not already
-                    exist.  This option may overwrite existing files in the
+                    exist. This option may overwrite existing files in the
                     directory.
 
   C Code Compilation Options
@@ -321,9 +320,25 @@ ENVIRONMENT
 
   CHPL_HOME           Specifies the location of the Chapel installation directory
 
-  CHPL_MODULE_PATH    Specifies a search path for Chapel source files that
-                      satisfy module use statements as a colon-separated
-                      list of directories
+  CHPL_MODULE_PATH    Specifies a list of colon-separated directories to be 
+                      added to the module search path. The module search path
+                      is used to satisfy module 'use' statements. In the current
+                      implementation, the compiler tries to locate unresolved
+                      modules by searching for a filename whose name matches
+                      that of the module. For example, if the user program
+                      contains 'use foo' and the .chpl files listed by the
+                      programmer on the compiler's command line do not define
+                      a module named 'foo', the compiler will search for files 
+                      named 'foo.chpl' in the module search path.
+
+                      The complete path that will be searched can be displayed
+                      using the --print-search-dirs flag and is composed of
+                      (1) the directories containing the .chpl files that were
+                      specified on the compiler command-line (in left-to-right 
+                      order), (2) all directories specified by -M flags (in 
+                      left-to-right order), (3) all directories specified by the
+                      $CHPL_MODULE_PATH environment variable, (4) the
+                      compiler's standard module search path. 
 
   CHPL_HOST_PLATFORM  Specifies the platform on which the Chapel compiler is
                       running (defaults to our best guess)

@@ -192,6 +192,7 @@ TYPE_EXTERN Map<Type*,Type*> wideRefMap;   // reference -> wide reference
 
 void initChplProgram(void);
 void initPrimitiveTypes(void);
+void initTheProgram(void);
 void initCompilerGlobals(void);
 
 bool is_bool_type(Type*);

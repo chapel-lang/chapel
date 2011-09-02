@@ -34,7 +34,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <cstring>
 #include <stdint.h>
 #include <cstdlib>
-#include <sys/types.h>
 
 // Simple Vector class, also supports open hashed sets
 
@@ -104,7 +103,11 @@ class Vec {
   void addx();
 };
 
-// c -- class, p -- pointer to elements of v, v -- vector
+// forv_Vec: iterate over all elements of a Vec vector
+// _c -- type that vector elements are pointers to
+// _p -- loop variable to be declared by the macro
+// _v -- vector to be iterated over
+//
 #define forv_Vec(_c, _p, _v) if ((_v).n) for (_c *qq__##_p = (_c*)0, *_p = (_v).v[0]; \
                     ((intptr_t)(qq__##_p) < (_v).length()) && ((_p = (_v).v[(intptr_t)qq__##_p]) || 1); qq__##_p = (_c*)(((intptr_t)qq__##_p) + 1))
 

@@ -15,8 +15,9 @@ if [ -d "util" ] && [ -d "compiler" ] && [ -d "runtime" ] && [ -d "modules" ]
       echo "to $CHPL_HOST_PLATFORM"
 
       echo -n "Updating PATH to include "
-      export PATH="$PATH":"$CHPL_HOME"/bin/$CHPL_HOST_PLATFORM
+      export PATH="$PATH":"$CHPL_HOME"/bin/$CHPL_HOST_PLATFORM:"$CHPL_HOME"/util
       echo "$CHPL_HOME"/bin/$CHPL_HOST_PLATFORM
+      echo    "                     and ""$CHPL_HOME"/util
 
       echo -n "Updating MANPATH to include "
       export MANPATH="$MANPATH":"$CHPL_HOME"/man

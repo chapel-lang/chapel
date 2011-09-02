@@ -1,5 +1,0 @@
- called from 5 in __init at dispatch4.v:1
-class::self(dispatch4.v:3) ( A (dispatch4.v:1) )
-function __init dispatch4.v:1
-function class dispatch4.v:3
-globals

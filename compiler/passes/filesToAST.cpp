@@ -153,6 +153,8 @@ void parse(void) {
     }
   }
 
+  addDashMsToUserPath();
+
   if (printSearchDirs) {
     printModuleSearchPath();
   }
@@ -167,8 +169,7 @@ void parse(void) {
   parseDependentModules(MOD_USER);
 
   forv_Vec(ModuleSymbol, mod, allModules) {
-    if (mod != standardModule && mod != theProgram && mod != rootModule &&
-        (!fRuntime || mod->modTag != MOD_MAIN)) {
+    if (mod != standardModule && mod != theProgram && mod != rootModule) {
       mod->block->addUse(standardModule);
       mod->modUseSet.clear();
       mod->modUseList.clear();

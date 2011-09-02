@@ -1,0 +1,2 @@
+WARN ME, PLEASE!
+useExtraSemicolon.chpl:4: error: 'blah' undeclared (first use this function)

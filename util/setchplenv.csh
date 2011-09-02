@@ -17,8 +17,9 @@ setenv CHPL_HOST_PLATFORM `"$CHPL_HOME/util/chplenv/platform"`
 echo "to $CHPL_HOST_PLATFORM"
 
 echo -n "Updating PATH "
-setenv PATH "$PATH":"$CHPL_HOME"/bin/$CHPL_HOST_PLATFORM
+setenv PATH "$PATH":"$CHPL_HOME/bin/$CHPL_HOST_PLATFORM":"$CHPL_HOME/util"
 echo "to include $CHPL_HOME/bin/$CHPL_HOST_PLATFORM"
+echo    "                     and $CHPL_HOME/util"
 
 echo -n "Updating MANPATH "
 setenv MANPATH "$MANPATH":"$CHPL_HOME"/man

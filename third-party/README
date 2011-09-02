@@ -12,7 +12,7 @@ dlmalloc/
            using segment fast.
 
   License: dlmalloc has been placed in the public domain as explained
-           at http://creativecommons.org/licenses/publicdomain
+           at http://creativecommons.org/publicdomain/zero/1.0/
 
   Contact: For more information, please refer to:
            http://g.oswego.edu/dl/html/malloc.html

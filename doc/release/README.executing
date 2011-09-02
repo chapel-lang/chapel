@@ -90,11 +90,11 @@ Limiting the number of threads
 For multithreaded Chapel executions, the following built-in
 configuration constant can be used:
 
-  maxThreadsPerLocale  : The maximum number of threads that may be used
-                         on each locale when running the program.
+  numThreadsPerLocale  : Controls the number of threads used on each
+                         locale when running the program.
 
-See README.tasks for more information on the role of this variable
-in creating threads and executing tasks.
+See README.tasks for more information on the role of this variable in
+creating threads and executing tasks for the various tasking layers.
 
 
 --------------------------------------

@@ -30,7 +30,6 @@ printstuff:
 # include source subdirectories here
 #
 include src/Makefile.include
-include src/common-chpl/Makefile.include
 include src/tasks/$(CHPL_MAKE_TASKS)/Makefile.include
 include src/threads/$(CHPL_MAKE_THREADS)/Makefile.include
 include src/timers/$(CHPL_MAKE_TIMERS)/Makefile.include
@@ -50,7 +49,6 @@ SVN_SRCS =
 
 RUNTIME_OBJS = \
 	$(COMMON_OBJS) \
-	$(COMMON_CHPL_OBJS) \
 	$(TASKS_OBJS) \
 	$(THREADS_OBJS) \
         $(TIMERS_OBJS) \

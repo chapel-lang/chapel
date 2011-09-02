@@ -397,6 +397,10 @@ html_view_ast(BaseAST* ast, FILE* html_file, int pass) {
       case GOTO_NORMAL: fprintf(html_file, "<B>goto</B> "); break;
       case GOTO_BREAK: fprintf(html_file, "<B>break</B> "); break;
       case GOTO_CONTINUE: fprintf(html_file, "<B>continue</B> "); break;
+      case GOTO_RETURN: fprintf(html_file, "<B>gotoReturn</B> "); break;
+      case GOTO_GETITER_END: fprintf(html_file, "<B>gotoGetiterEnd</B> "); break;
+      case GOTO_ITER_RESUME: fprintf(html_file, "<B>gotoIterResume</B> "); break;
+      case GOTO_ITER_END: fprintf(html_file, "<B>gotoIterEnd</B> "); break;
       }
       if (SymExpr* label = toSymExpr(s->label))
         if (label->var != gNil)
@@ -540,6 +544,8 @@ html_view_ast(BaseAST* ast, FILE* html_file, int pass) {
 
 void html_view(const char* passName) {
   static int uid = 1;
+  INT_ASSERT(uid == currentPassNo); //we could use latter for former
+  INT_ASSERT(passName == currentPassName);
   FILE* html_file;
   const char* filename;
 

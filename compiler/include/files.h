@@ -20,10 +20,8 @@ void codegen_makefile(fileinfo* mainfile, fileinfo *gpusrcfile = NULL);
 void ensureDirExists(const char* /* dirname */, const char* /* explanation */);
 void deleteTmpDir(void);
 
-void openCFile(fileinfo* fi, const char* name, const char* ext = NULL,
-               bool runtime=false);
-void appendCFile(fileinfo* fi, const char* name, const char* ext = NULL,
-               bool runtime=false);
+void openCFile(fileinfo* fi, const char* name, const char* ext = NULL);
+void appendCFile(fileinfo* fi, const char* name, const char* ext = NULL);
 void closeCFile(fileinfo* fi, bool beautifyIt=true);
 
 fileinfo* openTmpFile(const char* tmpfilename, const char* mode = "w");
@@ -49,7 +47,8 @@ const char* runUtilScript(const char* script);
 
 void setupModulePaths(void);
 void addStdRealmsPath(void);
-void addUserModulePath(const char* newpath);
+void addFlagModulePath(const char* newpath);
+void addDashMsToUserPath(void);
 void addModulePathFromFilename(const char* filename);
 
 const char* modNameToFilename(const char* modName, bool isInternal, 

@@ -316,6 +316,19 @@
     CHPL_HEAP_REGISTER_GLOBAL_VAR_EXTRA(i, wide)          \
   } while (0)
 
+//
+// If we're in serial mode, we should use blocking rather than
+// non-blocking comm forks in order to serialize the forks.
+// See test/parallel/serial/bradc/serialDistributedForall.chpl
+// for a motivating example that didn't work before this change.
+//
+#define CHPL_COMM_NONBLOCKING_ON(locale, fid, arg, arg_size, arg_tid) \
+  if (chpl_task_getSerial()) {                                        \
+    chpl_comm_fork(locale, fid, arg, arg_size, arg_tid);              \
+  } else {                                                            \
+    chpl_comm_fork_nb(locale, fid, arg, arg_size, arg_tid);           \
+  }
+
 #ifdef DEBUG_COMM_INIT
 #define CHPL_COMM_DEBUG_BROADCAST_GLOBAL_VARS(numGlobals) \
   for (int i = 0; i < numGlobals; i++) \

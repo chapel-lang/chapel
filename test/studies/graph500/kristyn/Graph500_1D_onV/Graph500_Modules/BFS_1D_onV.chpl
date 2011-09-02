@@ -43,6 +43,10 @@ proc BFS ( root : vertex_id, ParentTree, G )
 
   while || reduce Active_Remaining do {
 
+    // barrier
+    var count: sync int = numLocales;
+    var barrier: single bool;
+
     coforall loc in Locales do on loc {
       forall u in rcLocal(Active_Level).Members do {
 
@@ -64,6 +68,17 @@ proc BFS ( root : vertex_id, ParentTree, G )
         }
 
       }
+
+// barrier needed to insure all updates to Next_Level are complete
+
+      var myc = count;
+      if myc==1 {
+        barrier=true;
+      } else {
+        count = myc-1;
+        barrier;
+      }
+
 
       rcLocal(Active_Level) = rcLocal(Next_Level);
       rcLocal(Next_Level) = new Level_Set (Vertex_List);

@@ -61,22 +61,24 @@ compilers="gnu pgi cray intel" # pathscale
 
 # Test using $compiler as TARGET compiler
 for compiler in $compilers ; do
+(  # fire up a new shell
   module load PrgEnv-${compiler}${PrgEnv_Version}
   export CHPL_TARGET_PLATFORM=xt-cle
   export LD_LIBRARY_PATH="/data/cf/chapelopt/alps/:$LD_LIBRARY_PATH"
   $NIGHTLY -combinedir -cron $EXAMPLES
-  module unload PrgEnv-${compiler}${PrgEnv_Version}
+)
 done
 
 
 # Test using $compiler as HOST and TARGET compiler
 for compiler in $compilers ; do
+(  # fire up a new shell
   module load PrgEnv-${compiler}${PrgEnv_Version}
   export CHPL_HOST_PLATFORM=xt-cle
   export CHPL_TARGET_PLATFORM=xt-cle
   export CHPL_HOST_COMPILER=cray-xt-$compiler
   $NIGHTLY -combinedir -cron $EXAMPLES
-  module unload PrgEnv-${compiler}${PrgEnv_Version}
+)
 done
 
 # Test using $compiler as HOST and TARGET compiler without the Cray wrapper scripts
@@ -84,12 +86,13 @@ done
 compilers="gnu pgi intel" # pathscale"
 
 for compiler in $compilers ; do
+(  # fire up a new shell
   module load $compiler
   unset CHPL_HOST_PLATFORM
   unset CHPL_TARGET_PLATFORM
   export LD_LIBRARY_PATH="/data/cf/chapelopt/alps/:$LD_LIBRARY_PATH"
   export CHPL_HOST_COMPILER=$compiler
   $NIGHTLY -combinedir -cron $EXAMPLES
-  module unload $compiler
+)
 done
 

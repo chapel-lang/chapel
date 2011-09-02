@@ -364,17 +364,16 @@ class that implements an iterator named \chpl{these}.  The syntax of
 the for loop is given by:
 \begin{syntax}
 for-statement:
-  `for' index-var-declaration `in' iterator-expression `do' statement
-  `for' index-var-declaration `in' iterator-expression block-statement
-  `for' iterator-expression `do' statement
-  `for' iterator-expression block-statement
+  `for' index-var-declaration `in' iteratable-expression `do' statement
+  `for' index-var-declaration `in' iteratable-expression block-statement
+  `for' iteratable-expression `do' statement
+  `for' iteratable-expression block-statement
 
 index-var-declaration:
   identifier
   tuple-grouped-identifier-list
 
-iterator-expression:
-  iterator-call-expression
+iteratable-expression:
   expression
 \end{syntax}
 
@@ -387,14 +386,11 @@ in~\rsec{Indices_in_a_Tuple}.
 The \sntx{index-var-declaration} is optional and may be omitted if the
 indices do not need to be referenced in the loop.
 
-If the iterator-expression is a tuple delimited by parentheses, the
-components of the tuple must support iteration, e.g., a tuple of
-arrays, and those components are iterated over using a zipper
-iteration defined in~\rsec{Zipper_Iteration}.  If the
-iterator-expression is a tuple delimited by brackets, the components
-of the tuple must support iteration and these components are iterated
-over using a tensor product iteration defined
-in~\rsec{Tensor_Product_Iteration}.
+%
+% sungeun: Will we allow square brackets also?
+%
+If the iteratable-expression is a tuple delimited by parentheses, the
+components of the tuple must support zipper iteration.
 
 \subsection{Zipper Iteration}
 \label{Zipper_Iteration}
@@ -402,7 +398,7 @@ in~\rsec{Tensor_Product_Iteration}.
 
 When multiple iterators are iterated over in a zipper context, on each
 iteration, each expression is iterated over, the values are returned
-by the iterators in a tuple and assigned to the index, and the
+by the iterators in a tuple and assigned to the index, and then
 statement is executed.
 
 The shape of each iterator, the rank and the extents in each
@@ -423,38 +419,6 @@ is
 \end{chapelprintoutput}
 \end{chapelexample}
 
-\subsection{Tensor Product Iteration}
-\label{Tensor_Product_Iteration}
-\index{tensor product iteration}
-When multiple iterators are iterated over in a tensor product context,
-they are iterated over as if they were nested in distinct for loops.
-There is no constraint on the iterators as there is in the zipper
-context.
-
-\begin{chapelexample}{tensor.chpl}
-The output of
-\begin{chapel}
-for (i, j) in [1..3, 4..6] do
-  write(i, " ", j, " ");
-\end{chapel}
-\begin{chapelpost}
-writeln();
-\end{chapelpost}
-is
-\begin{chapelprintoutput}
-1 4 1 5 1 6 2 4 2 5 2 6 3 4 3 5 3 6 1 4 1 5 1 6 2 4 2 5 2 6 3 4 3 5 3 6 
-\end{chapelprintoutput}
-The statement is equivalent to
-\begin{chapel}
-for i in 1..3 do
-  for j in 4..6 do
-    write(i, " ", j, " ");
-\end{chapel}
-\begin{chapeloutput}
-1 4 1 5 1 6 2 4 2 5 2 6 3 4 3 5 3 6 1 4 1 5 1 6 2 4 2 5 2 6 3 4 3 5 3 6 
-\end{chapeloutput}
-\end{chapelexample}
-
 \subsection{Parameter For Loops}
 \label{Parameter_For_Loops}
 
@@ -466,13 +430,13 @@ Parameter for loops are unrolled by the compiler so that the index
 variable is a parameter rather than a variable.  The syntax for a
 parameter for loop statement is given by:
 \begin{syntax}
-param-iterator-expression:
+param-iteratable-expression:
   range-literal
   range-literal `by' integer-literal
 
 param-for-statement:
-  `for' `param' identifier `in' param-iterator-expression `do' statement
-  `for' `param' identifier `in' param-iterator-expression block-statement
+  `for' `param' identifier `in' param-iteratable-expression `do' statement
+  `for' `param' identifier `in' param-iteratable-expression block-statement
 \end{syntax}
 Parameter for loops are restricted to iteration over range literals
 with an optional by expression where the bounds and stride must be

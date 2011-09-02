@@ -1,0 +1,3 @@
+-M modules/d5 -M modules/d6 modules/d5/a.chpl --main-module ambiguous3 --print-search-dirs
+-M modules/d6 -M modules/d5 modules/d5/a.chpl --main-module ambiguous3 --print-search-dirs
+

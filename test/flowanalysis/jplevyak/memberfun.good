@@ -1,8 +1,0 @@
- called from 4 in __init at memberfun.v:1
-__init::self(memberfun.v:1) ( A (memberfun.v:1) )
-f::self(memberfun.v:2) ( A (memberfun.v:1) )
-function __init memberfun.v:1
-function __init memberfun.v:1
-function f memberfun.v:2
-globals
-user::a(memberfun.v:3) ( A (memberfun.v:1) )

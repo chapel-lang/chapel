@@ -4,17 +4,18 @@ class locale {
   const myRealm: realm;
   const chpl_id: int;
   const chpl_uid: int;
-  const myNumCores: int;
+  const numCores: int(32);
 
-  proc locale(r: realm = nil, id = -1, uid = -1,
-             numCores = __primitive("chpl_coresPerLocale")) {
+  proc locale(r: realm = nil, id = -1, uid = -1) {
     if doneCreatingLocales {
       halt("locales cannot be created");
     }
     myRealm = r;
     chpl_id = id;
     chpl_uid = uid;
-    myNumCores = numCores;
+
+    extern proc chpl_numCoresOnThisLocale(): int(32);
+    numCores = chpl_numCoresOnThisLocale();
   }
 
   proc id {
@@ -33,7 +34,7 @@ class locale {
 
   proc callStackSize: uint(64) {
     // Locales may have differing call stack sizes.
-    _extern proc chpl_task_getCallStackSize(): uint(64);
+    extern proc chpl_task_getCallStackSize(): uint(64);
     var retval: uint(64);
     on this do retval = chpl_task_getCallStackSize();
     return retval;
@@ -58,10 +59,6 @@ proc chpl_setupLocale(uid) {
     }
   }
   return tmp;
-}
-
-proc locale.numCores {
-  return myNumCores;
 }
 
 proc chpl_int_to_locale(in id) {
@@ -126,7 +123,7 @@ proc chpl_getPrivatizedCopy(type objectType, objectPid:int): objectType
 // There should be a type like this declared in chpl-comm.h with a single
 // function that returns the C struct.  We're not doing it that way yet
 // due to some shortcomings in our extern records implementation.
-// Once that gets sorted out, we can turn this into an _extern record,
+// Once that gets sorted out, we can turn this into an extern record,
 // and remove the 8 or so individual functions below that return the
 // various counters.
 record chpl_commDiagnostics {
@@ -142,16 +139,16 @@ record chpl_commDiagnostics {
 
 type commDiagnostics = chpl_commDiagnostics;
 
-_extern proc chpl_startVerboseComm();
-_extern proc chpl_stopVerboseComm();
-_extern proc chpl_startVerboseCommHere();
-_extern proc chpl_stopVerboseCommHere();
-_extern proc chpl_startCommDiagnostics();
-_extern proc chpl_stopCommDiagnostics();
-_extern proc chpl_startCommDiagnosticsHere();
-_extern proc chpl_stopCommDiagnosticsHere();
-_extern proc chpl_resetCommDiagnosticsHere();
-_extern proc chpl_getCommDiagnosticsHere(out cd: commDiagnostics);
+extern proc chpl_startVerboseComm();
+extern proc chpl_stopVerboseComm();
+extern proc chpl_startVerboseCommHere();
+extern proc chpl_stopVerboseCommHere();
+extern proc chpl_startCommDiagnostics();
+extern proc chpl_stopCommDiagnostics();
+extern proc chpl_startCommDiagnosticsHere();
+extern proc chpl_stopCommDiagnosticsHere();
+extern proc chpl_resetCommDiagnosticsHere();
+extern proc chpl_getCommDiagnosticsHere(out cd: commDiagnostics);
 
 proc startVerboseComm() { chpl_startVerboseComm(); }
 proc stopVerboseComm() { chpl_stopVerboseComm(); }
@@ -175,14 +172,14 @@ proc resetCommDiagnosticsHere(realmID: int(32) = 0) {
 // TODO: generalize this for multiple realms by returning a manhattan
 // array
 // See note above regarding extern records
-_extern proc chpl_numCommGets(): int(32);
-_extern proc chpl_numCommNBGets(): int(32);
-_extern proc chpl_numCommTestNBGets(): int(32);
-_extern proc chpl_numCommWaitNBGets(): int(32);
-_extern proc chpl_numCommPuts(): int(32);
-_extern proc chpl_numCommForks(): int(32);
-_extern proc chpl_numCommFastForks(): int(32);
-_extern proc chpl_numCommNBForks(): int(32);
+extern proc chpl_numCommGets(): int(32);
+extern proc chpl_numCommNBGets(): int(32);
+extern proc chpl_numCommTestNBGets(): int(32);
+extern proc chpl_numCommWaitNBGets(): int(32);
+extern proc chpl_numCommPuts(): int(32);
+extern proc chpl_numCommForks(): int(32);
+extern proc chpl_numCommFastForks(): int(32);
+extern proc chpl_numCommNBForks(): int(32);
 
 proc getCommDiagnostics(realmID: int(32) = 0) {
   var D: [Realms(realmID).LocaleSpace] commDiagnostics;

@@ -1,8 +1,0 @@
-COMPILER_ROOT=../../../compiler
-COMPILER_SUBDIR = 
-include $(COMPILER_ROOT)/make/Makefile.compiler.head
-
-# we duplicate some of the GC includes here in case the compiler
-# isn't being built with GC
-all: $(CG_FILES)
-	@$(CC) $(CFLAGS) $(LDFLAGS) -o $(CG_TARGET) $(CG_FILES) -I../../../compiler/etc -I$(GC_ROOT)/include/gc $(LIBS) $(GC_ROOT)/lib/libgc.a

@@ -53,6 +53,7 @@ PassInfo passlist[] = {
   RUN(insertWideReferences), // inserts wide references for on clauses
   RUN(optimizeOnClauses),    // Optimize on clauses
   // AST to C
+  RUN(addInitGuards),       // Add initialization guards.  
   RUN(insertLineNumbers), // insert line numbers for error messages
   RUN(repositionDefExpressions), // put defPoints just before first usage
   RUN(codegen),           // generate C code

@@ -1,0 +1,11 @@
+bug: Failed assertion in replaceLocalsWithField() for tuple of tuples.
+
+This is a simplified version of a function that Brandon Holt wrote for
+his Lulesh code.  It appears that the tuple of tuple causes the
+following assertion:
+
+            INT_ASSERT(tmp->type->refType);
+
+The refType is NULL because the type itself is a reference.
+
+Brandon replace the the tuple of tuples with a 2D array as a workaround.

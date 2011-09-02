@@ -100,25 +100,26 @@ void printStatistics(const char* pass) {
   last_nasts = nasts;
 }
 
-
-static inline bool isAlive(Expr* expr) {
-  return expr->parentSymbol;
-}
-
-static inline bool isAlive(Type* type) {
-  return type->symbol->defPoint->parentSymbol;
-}
-
-static inline bool isAlive(Symbol* symbol) {
-  return symbol == rootModule || (symbol->defPoint && symbol->defPoint->parentSymbol);
+// for debugging purposes only
+void trace_remove(BaseAST* ast, char flag) {
+  // crash if deletedIdHandle is not initialized but deletedIdFilename is
+  if (deletedIdON) {
+    fprintf(deletedIdHandle, "%d %c %p %d\n",
+            currentPassNo, flag, ast, ast->id);
+  }
+  if (ast->id == breakOnDeleteID) {
+    if (deletedIdON) fflush(deletedIdHandle);
+    gdbShouldBreakHere();
+  }
 }
 
 #define clean_gvec(type)                        \
   int i##type = 0;                              \
   forv_Vec(type, ast, g##type##s) {             \
-    if (isAlive(ast)) {                         \
+    if (isAlive(ast) || isRootModuleWithType(ast, type)) { \
       g##type##s.v[i##type++] = ast;            \
     } else {                                    \
+      trace_remove(ast, 'x');                   \
       delete ast;                               \
     }                                           \
   }                                             \
@@ -131,21 +132,25 @@ void cleanAst() {
   forv_Vec(TypeSymbol, ts, gTypeSymbols) {
     for(int i = 0; i < ts->type->methods.n; i++) {
       FnSymbol* method = ts->type->methods.v[i];
-      if (method && !method->defPoint->parentSymbol)
+      if (method && !isAliveQuick(method))
         ts->type->methods.v[i] = NULL;
       if (ClassType* ct = toClassType(ts->type)) {
-        if (ct->defaultConstructor && !ct->defaultConstructor->defPoint->parentSymbol)
+        if (ct->defaultConstructor && !isAliveQuick(ct->defaultConstructor))
           ct->defaultConstructor = NULL;
-        if (ct->destructor && !ct->destructor->defPoint->parentSymbol)
+        if (ct->destructor && !isAliveQuick(ct->destructor))
           ct->destructor = NULL;
       }
     }
     for(int i = 0; i < ts->type->dispatchChildren.n; i++) {
       Type* type = ts->type->dispatchChildren.v[i];
-      if (type && !type->symbol->defPoint->parentSymbol)
+      if (type && !isAlive(type))
         ts->type->dispatchChildren.v[i] = NULL;
     }
   }
+
+  // check iterator-resume-label/goto data before nodes are free'd
+  verifyNcleanRemovedIterResumeGotos();
+  verifyNcleanCopiedIterResumeGotos();
 
   //
   // clean global vectors and delete dead ast instances
@@ -157,6 +162,7 @@ void cleanAst() {
 void destroyAst() {
   #define destroy_gvec(type)                    \
     forv_Vec(type, ast, g##type##s) {           \
+      trace_remove(ast, 'z');                   \
       delete ast;                               \
     }
   foreach_ast(destroy_gvec);
@@ -174,6 +180,7 @@ verify() {
 
 
 int breakOnID = -1;
+int breakOnDeleteID = -1;
 
 int lastNodeIDUsed() {
   return uid - 1;

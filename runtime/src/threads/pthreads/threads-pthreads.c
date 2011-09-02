@@ -120,14 +120,22 @@ void chpl_thread_yield(void) {
 }
 
 
-void chpl_thread_init(int32_t maxThreadsPerLocale,
+void chpl_thread_init(int32_t numThreadsPerLocale,
+                      int32_t maxThreadsPerLocale,
                       uint64_t callStackSize,
                       void(*threadBeginFn)(void*),
                       void(*threadEndFn)(void)) {
   //
-  // Tuck maxThreadsPerLocale away in a static global for use by other routines
+  // Tuck maxThreadsPerLocale away in a static global for use by other
+  // routines.  This threading layer uses a user-specified (non-zero)
+  // numThreadsPerLocale as the max.
   //
-  threadMaxThreadsPerLocale = maxThreadsPerLocale;
+
+  if (numThreadsPerLocale != 0) {
+    threadMaxThreadsPerLocale = numThreadsPerLocale;
+  } else {
+    threadMaxThreadsPerLocale = maxThreadsPerLocale;
+  }
 
   //
   // If a value was specified for the call stack size config const, use

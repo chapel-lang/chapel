@@ -119,10 +119,6 @@ int32_t chpl_comm_getMaxThreads(void) {
   return 0;
 }
 
-int32_t chpl_comm_maxThreadsLimit(void) {
-  return 0;
-}
-
 typedef enum {
   ChplCommPut,
   ChplCommGet,
@@ -1752,9 +1748,12 @@ void chpl_comm_fork_fast(int locale, chpl_fn_int_t fid, void *arg,
   chpl_comm_fork(locale, fid, arg, arg_size, arg_tid);
 }
 
+int chpl_comm_numPollingTasks(void) { return 0; }
+
 void chpl_comm_startPollingTask(void) {
   // Ultimately, pthread_create() stuff from chpl_comm_init should be
-  // moved here.
+  // moved here;  once it is, the previous routine should
+  // be changed to return 1.
 }
 
 void chpl_comm_stopPollingTask(void) {

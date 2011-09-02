@@ -268,13 +268,13 @@ buildAdvance(FnSymbol* fn,
 
   // change yields to labels and gotos
   int i = 2; // 1 = not started, 0 = finished
-  Vec<Symbol*> labels;
+  Vec<LabelSymbol*> labels;
   forv_Vec(BaseAST, ast, asts) {
     if (CallExpr* call = toCallExpr(ast)) {
       if (call->isPrimitive(PRIM_YIELD)) {
         call->insertBefore(new CallExpr(PRIM_SET_MEMBER, ic, ii->iclass->getField("more"), new_IntSymbol(i)));
-        call->insertBefore(new GotoStmt(GOTO_NORMAL, end));
-        Symbol* label = new LabelSymbol(astr("_jump_", istr(i)));
+        call->insertBefore(new GotoStmt(GOTO_ITER_END, end));
+        LabelSymbol* label = new LabelSymbol(astr("_jump_", istr(i)));
         call->insertBefore(new DefExpr(label));
         labels.add(label);
         call->remove();
@@ -291,8 +291,10 @@ buildAdvance(FnSymbol* fn,
   Symbol* tmp = newTemp(dtBool);
   Symbol* more = new VarSymbol("more", dtInt[INT_SIZE_32]);
 
-  forv_Vec(Symbol, label, labels) {
-    ii->advance->insertAtHead(new CondStmt(new SymExpr(tmp), new GotoStmt(GOTO_NORMAL, label)));
+  forv_Vec(LabelSymbol, label, labels) {
+    GotoStmt* igs = new GotoStmt(GOTO_ITER_RESUME, label);
+    label->iterResumeGoto = igs;
+    ii->advance->insertAtHead(new CondStmt(new SymExpr(tmp), igs));
     ii->advance->insertAtHead(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_EQUAL, more, new_IntSymbol(i++))));
   }
   ii->advance->insertAtHead(new CallExpr(PRIM_MOVE, more, new CallExpr(PRIM_GET_MEMBER_VALUE, ic, ii->iclass->getField("more"))));

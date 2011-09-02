@@ -317,58 +317,90 @@ processSyntacticDistributions(CallExpr* call) {
 static bool is_void_return(CallExpr* call) {
   if (call->isPrimitive(PRIM_RETURN)) {
     SymExpr* arg = toSymExpr(call->argList.first());
-    if (arg) {
+    if (arg)
       // NB false for 'return void' in type functions, as it should be
       if (arg->var == gVoid)
         return true;
-    }
   }
   return false;
 }
 
+static void insertRetMove(FnSymbol* fn, VarSymbol* retval, CallExpr* ret) {
+  Expr* ret_expr = ret->get(1);
+  ret_expr->remove();
+  if (fn->retTag == RET_VAR)
+    ret->insertBefore(new CallExpr(PRIM_MOVE, retval, new CallExpr(PRIM_SET_REF, ret_expr)));
+  else if (fn->retExprType)
+    ret->insertBefore(new CallExpr(PRIM_MOVE, retval, new CallExpr("=", retval, ret_expr)));
+  else if (!fn->hasFlag(FLAG_WRAPPER) && strcmp(fn->name, "iteratorIndex") &&
+           strcmp(fn->name, "iteratorIndexHelp"))
+    ret->insertBefore(new CallExpr(PRIM_MOVE, retval, new CallExpr(PRIM_GET_REF, ret_expr)));
+  else
+    ret->insertBefore(new CallExpr(PRIM_MOVE, retval, ret_expr));
+}
+
+// Following normalization, each function contains only one return statement
+// preceded by a label.  The first half of the function counts the 
+// total number of returns and the number of void returns.
+// The big IF beginning with if (rets.n == 1) determines if the function
+// is already normal.
+// The last half of the function performs the normalization steps.
 static void normalize_returns(FnSymbol* fn) {
   SET_LINENO(fn);
 
+  CallExpr* theRet = NULL; // Contains the return if it is unique.
   Vec<CallExpr*> rets;
   Vec<CallExpr*> calls;
   int numVoidReturns = 0;
+  int numYields = 0;
   bool isIterator = fn->hasFlag(FLAG_ITERATOR_FN);
   collectMyCallExprs(fn, calls, fn); // ones not in a nested function
   forv_Vec(CallExpr, call, calls) {
-    if (call->isPrimitive(PRIM_RETURN) ||
-        call->isPrimitive(PRIM_YIELD))
-      {
-        rets.add(call);
-        if (is_void_return(call)) {
+    if (call->isPrimitive(PRIM_RETURN)) {
+      rets.add(call);
+      theRet = call;
+      if (is_void_return(call))
           numVoidReturns++;
-        } else if (isIterator && call->isPrimitive(PRIM_RETURN)) {
-          // return with an expression
-          // ProcIter: remove the entire enclosing 'else if'
-          INT_ASSERT(!fn->hasFlag(FLAG_PROC_ITER_KW_USED)); // done in semanticChecks
+      else if (isIterator) {
+        // Expect that all returns from an iterator are void returns.
+        // ProcIter: remove the entire enclosing 'else if'
+        if (!fn->hasFlag(FLAG_PROC_ITER_KW_USED))
           USR_WARN(call, "returning a value in an iterator is deprecated; replace it with a yield of that value, followed by a return with no expression");
-        }
       }
+    }
+    else if (call->isPrimitive(PRIM_YIELD)) {
+      rets.add(call);
+      ++numYields;
+    }
   }
+
+  // If an iterator, then there is at least one nonvoid return-or-yield.
   INT_ASSERT(!isIterator || rets.n > numVoidReturns); // done in semanticChecks
+
+  // Add a void return if needed.
+  // Note this is a bit heavy-handed in view of the code below,
+  // marked "Handle declared return type".
   if (rets.n == 0) {
     fn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
     return;
   }
-  if (rets.n == 1) {
-    CallExpr* ret = rets.v[0];
-    if (ret == fn->body->body.last()) {
-      if (SymExpr* se = toSymExpr(ret->get(1))) {
+
+  // Check if this function's returns are already normal.
+  if (rets.n - numYields == 1) {
+    if (theRet == fn->body->body.last()) {
+      if (SymExpr* se = toSymExpr(theRet->get(1))) {
         if (fn->hasFlag(FLAG_CONSTRUCTOR) ||
             fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) ||
             !strncmp("_if_fn", fn->name, 6) ||
             !strcmp("=", fn->name) ||
             !strcmp("_init", fn->name) ||
             !strcmp("_ret", se->var->name)) {
-          return;
+          return;   // Yup.
         }
       }
     }
   }
+
   LabelSymbol* label = new LabelSymbol(astr("_end_", fn->name));
   fn->insertAtTail(new DefExpr(label));
   VarSymbol* retval = NULL;
@@ -378,6 +410,7 @@ static void normalize_returns(FnSymbol* fn) {
   if (!isIterator && (numVoidReturns != 0)) {
     fn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
   } else {
+    // Handle declared return type.
     retval = newTemp("_ret", fn->retType);
     if (fn->retTag == RET_PARAM)
       retval->addFlag(FLAG_PARAM);
@@ -408,36 +441,44 @@ static void normalize_returns(FnSymbol* fn) {
   bool label_is_used = false;
   forv_Vec(CallExpr, ret, rets) {
     SET_LINENO(ret);
-    bool void_return = isIterator && is_void_return(ret);
-    if (retval && !void_return) {
-      // insert MOVE(retval,ret_expr)
-      Expr* ret_expr = ret->get(1);
-      ret_expr->remove();
-      if (fn->retTag == RET_VAR)
-        ret->insertBefore(new CallExpr(PRIM_MOVE, retval, new CallExpr(PRIM_SET_REF, ret_expr)));
-      else if (fn->retExprType)
-        ret->insertBefore(new CallExpr(PRIM_MOVE, retval, new CallExpr("=", retval, ret_expr)));
-      else if (!fn->hasFlag(FLAG_WRAPPER) && strcmp(fn->name, "iteratorIndex") &&
-               strcmp(fn->name, "iteratorIndexHelp"))
-        ret->insertBefore(new CallExpr(PRIM_MOVE, retval, new CallExpr(PRIM_GET_REF, ret_expr)));
-      else
-        ret->insertBefore(new CallExpr(PRIM_MOVE, retval, ret_expr));
-    }
-    if (isIterator && !void_return) {
-      // insert YIELD(retval)
-      ret->insertBefore(new CallExpr(PRIM_YIELD, retval));
-    }
-    if (!isIterator || !ret->isPrimitive(PRIM_YIELD)) {
+    if (isIterator) {
+      INT_ASSERT(!!retval);
+
+      // Three cases: 
+      // (1) yield expr; => mov _ret expr; yield _ret;
+      // (2) return; => goto end_label;
+      // (3) return expr; -> mov _ret expr; yield _ret; goto end_label;
+      // Notice how (3) is the composition of (1) and (2).
+      if (!is_void_return(ret)) { // Cases 1 and 3
+        // insert MOVE(retval,ret_expr)
+        insertRetMove(fn, retval, ret);
+        // insert YIELD(retval)
+        ret->insertBefore(new CallExpr(PRIM_YIELD, retval));
+      }
+      if (ret->isPrimitive(PRIM_YIELD)) // Case 1 only.
+          // it's a yield => no goto; need to remove the original node
+          ret->remove();
+      else {    // Cases 2 and 3.
+        if (ret->next != label->defPoint) {
+          ret->replace(new GotoStmt(GOTO_RETURN, label));
+          label_is_used = true;
+        } else {
+          ret->remove();
+        }
+      }
+    } else {
+      // Not an iterator
+      if (retval) {
+        // insert MOVE(retval,ret_expr)
+        insertRetMove(fn, retval, ret);
+      }
       // replace with GOTO(label)
       if (ret->next != label->defPoint) {
-        ret->replace(new GotoStmt(GOTO_NORMAL, label));
+        ret->replace(new GotoStmt(GOTO_RETURN, label));
         label_is_used = true;
       } else {
         ret->remove();
       }
-    } else {
-      // it's a yield => no goto; need to remove the original node
-      ret->remove();
     }
   }
   if (!label_is_used)
@@ -642,29 +683,27 @@ fix_def_expr(VarSymbol* var) {
   //
   if (var->hasFlag(FLAG_CONFIG)) {
     if (!var->hasFlag(FLAG_PARAM)) {
-      if (!fRuntime) {
-        Expr* noop = new CallExpr(PRIM_NOOP);
-        Symbol* module_name = (var->getModule()->modTag != MOD_INTERNAL ?
-                               new_StringSymbol(var->getModule()->name) :
-                               new_StringSymbol("Built-in"));
-        CallExpr* strToValExpr =
-          new CallExpr("_command_line_cast",
-                       new SymExpr(new_StringSymbol(var->name)),
-                       new CallExpr(PRIM_TYPEOF, constTemp),
-                       new CallExpr("chpl_config_get_value",
+      Expr* noop = new CallExpr(PRIM_NOOP);
+      Symbol* module_name = (var->getModule()->modTag != MOD_INTERNAL ?
+                             new_StringSymbol(var->getModule()->name) :
+                             new_StringSymbol("Built-in"));
+      CallExpr* strToValExpr =
+        new CallExpr("_command_line_cast",
+                     new SymExpr(new_StringSymbol(var->name)),
+                     new CallExpr(PRIM_TYPEOF, constTemp),
+                     new CallExpr("chpl_config_get_value",
+                                  new_StringSymbol(var->name),
+                                  module_name));
+      stmt->insertAfter(
+        new CondStmt(
+          new CallExpr("!",
+                       new CallExpr("chpl_config_has_value",
                                     new_StringSymbol(var->name),
-                                    module_name));
-        stmt->insertAfter(
-          new CondStmt(
-            new CallExpr("!",
-                         new CallExpr("chpl_config_has_value",
-                                      new_StringSymbol(var->name),
-                                      module_name)),
-            noop,
-            new CallExpr(PRIM_MOVE, constTemp, strToValExpr)));
+                                    module_name)),
+          noop,
+          new CallExpr(PRIM_MOVE, constTemp, strToValExpr)));
 
-        stmt = noop; // insert regular definition code in then block
-      }
+      stmt = noop; // insert regular definition code in then block
     }
   }
 

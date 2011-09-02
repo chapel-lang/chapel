@@ -54,9 +54,11 @@ static void runPass(const char *passName, void (*pass)(void)) {
   (*pass)();
   if (printPasses) {
     gettimeofday(&stopTime, &timezone);
-    fprintf(stderr, "%8.3f seconds\n",  
+    fprintf(stderr, "%8.3f seconds",
             ((double)((stopTime.tv_sec*1e6+stopTime.tv_usec) - 
                       (startTime.tv_sec*1e6+startTime.tv_usec))) / 1e6);
+    if (developer) fprintf(stderr, "  [%d]", lastNodeIDUsed());
+    fprintf(stderr, "\n");
     totalTime += ((double)((stopTime.tv_sec*1e6+stopTime.tv_usec) - 
                            (startTime.tv_sec*1e6+startTime.tv_usec))) / 1e6;
     if (!strcmp(passName, "makeBinary")) {
@@ -99,8 +101,7 @@ static void dump_index_footer(FILE* f) {
   fprintf(f, "</HTML>\n");
 }
 
-
-void runPasses(void) {
+static void setupLogfiles() {
   if (fdump_html) {
     ensureDirExists(log_dir, "ensuring directory for html files exists");
     if (!(html_index_file = fopen(astr(log_dir, "index.html"), "w"))) {
@@ -109,16 +110,41 @@ void runPasses(void) {
     dump_index_header(html_index_file);
     fprintf(html_index_file, "<TABLE CELLPADDING=\"0\" CELLSPACING=\"0\">");
   }
-  PassInfo* pass = passlist+1;  // skip over FIRST
-  while (pass->name != NULL) {
-    runPass(pass->name, pass->fn);
-    USR_STOP(); // quit if fatal errors were encountered in pass
-    pass++;
+  if (deletedIdFilename[0] != '\0') {
+    deletedIdHandle = fopen(deletedIdFilename, "w");
+    if (!deletedIdHandle) {
+      USR_FATAL("cannot open file to log deleted AST ids\"%s\" for writing", deletedIdFilename);
+    }
   }
+}
+
+static void teardownLogfiles() {
   if (fdump_html) {
     fprintf(html_index_file, "</TABLE>");
     dump_index_footer(html_index_file);
     fclose(html_index_file);
   }
+  if (deletedIdON) {
+    fclose(deletedIdHandle);
+    deletedIdHandle = NULL;
+  }
+}
+
+static void advanceCurrentPass(const char* passName) {
+  currentPassNo++;
+  currentPassName = passName;
+}
+
+void runPasses(void) {
+  setupLogfiles();
+  PassInfo* pass = passlist+1;  // skip over FIRST
+  while (pass->name != NULL) {
+    advanceCurrentPass(pass->name);
+    runPass(pass->name, pass->fn);
+    USR_STOP(); // quit if fatal errors were encountered in pass
+    pass++;
+  }
+  advanceCurrentPass("finishing up");
   destroyAst();
+  teardownLogfiles();
 }

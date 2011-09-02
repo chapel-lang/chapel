@@ -585,6 +585,12 @@ proc _cond_invalid(x: bool) param return false;
 proc _cond_invalid(x: integral) param return false;
 proc _cond_invalid(x) param return true;
 
+//
+// isNonnegative(i) == (i>=0), but is a param value if i is unsigned.
+//
+inline proc isNonnegative(i: int(?)) return i >= 0;
+inline proc isNonnegative(i: uint(?)) param return true;
+inline proc isNonnegative(param i) param return i >= 0;
 
 
 //
