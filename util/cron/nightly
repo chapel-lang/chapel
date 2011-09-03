@@ -443,7 +443,7 @@ if ($hostplatform eq "cygwin") {
 #
 # build stuff
 #
-if ($tasks && !($tasks eq "fifo" || $tasks eq "none")) {
+if ($tasks && ($tasks eq "qthreads" || $tasks eq "nanox")) {
     mysystem("cd $chapeldir/third-party && $make $tasks", "making task layer", 1, 1);
 }
 
