@@ -11,6 +11,7 @@ $debug = 1;
 $runtests = 1;
 $buildruntime = 1;
 $hello = 0;
+$allhellos = 0;
 $examples = 0;
 $componly = 0;
 $suppressions = "";
@@ -40,6 +41,9 @@ while (@ARGV) {
 	$buildruntime = 0;
     } elsif ($flag eq "-hello") {
 	$hello = 1;
+    } elsif ($flag eq "-hellos") {
+	$hello = 1;
+	$allhellos = 1;
     } elsif ($flag eq "-examples") {
         $examples = 1;
     } elsif ($flag eq "-performance") {
@@ -78,8 +82,6 @@ if ($debug == 0 && $svnrevopt eq "") {
 
 if ($ENV{'CHPL_COMM'} eq "gasnet") {
     $gasnet = 1;
-} elsif ($ENV{'CHPL_COMM'} eq "pvm") {
-    $pvm = 1;
 } elsif ($ENV{'CHPL_COMM'} eq "mpi") {
     $mpi = 1;
 }
@@ -98,6 +100,7 @@ if ($printusage == 1) {
     print "\t-noruntime   : don't build the runtime or run the tests\n";
     print "\t-examples    : run the release/examples tests only\n";
     print "\t-hello       : run the release/examples/hello.chpl test only\n";
+    print "\t-hellos      : run the release/examples/hello*.chpl tests only\n";
     print "\t-valgrind    : run tests in valgrind mode\n";
 #    print "\t-interpret   : run tests in interpreted mode\n";
     print "\t-performance : run performance tests\n";
@@ -188,13 +191,14 @@ $hostplatform = `$utildir/chplenv/platform --host`; chomp($hostplatform);
 $targetplatform = `$utildir/chplenv/platform --target`; chomp($targetplatform);
 $hostcompiler = `$utildir/chplenv/compiler --host`; chomp($hostcompiler);
 $targetcompiler = `$utildir/chplenv/compiler --target`; chomp($targetcompiler);
+$tasks = `$utildir/chplenv/tasks`; chomp($tasks);
 $threads = `$utildir/chplenv/threads`; chomp($threads);
 $comm = `$utildir/chplenv/comm`; chomp($comm);
 if ($comm eq "gasnet" && $ENV{'CHPL_GASNET_SEGMENT'} ne "") {
     $comm = "$comm-$ENV{'CHPL_GASNET_SEGMENT'}";
 }
 
-$fullplatform = "$targetplatform.$targetcompiler.$comm.$threads";
+$fullplatform = "$targetplatform.$targetcompiler.$comm.$tasks.$threads";
 if ($hostplatform ne $targetplatform) {
     $fullplatform = "$fullplatform--$hostplatform";
     if ($hostcompiler ne $targetcompiler) {
@@ -439,18 +443,10 @@ if ($hostplatform eq "cygwin") {
 #
 # build stuff
 #
-
-if ($pvm == 1) {
-    mysystem("cd $chapeldir/third-party && $make pvm", "making PVM", 1, 1);
-    mysystem("uname -n > $chapeldir/hostfile.$hostplatform");
-    mysystem("uname -n >> $chapeldir/hostfile.$hostplatform");
-    mysystem("uname -n >> $chapeldir/hostfile.$hostplatform");
-    mysystem("uname -n >> $chapeldir/hostfile.$hostplatform");
-    mysystem("uname -n >> $chapeldir/hostfile.$hostplatform");
-    mysystem("uname -n >> $chapeldir/hostfile.$hostplatform");
-    mysystem("uname -n >> $chapeldir/hostfile.$hostplatform");
-    mysystem("uname -n >> $chapeldir/hostfile.$hostplatform");
+if ($tasks && !($tasks eq "fifo" || $tasks eq "none")) {
+    mysystem("cd $chapeldir/third-party && $make $tasks", "making task layer", 1, 1);
 }
+
 $makestat = mysystem("cd $chapeldir && $make DEBUG=0 OPTIMIZE=1 compiler", "making chapel compiler", 0, 1);
 if ($makestat != 0) {
     mysystem("cd $chapeldir && $make DEBUG=0 compiler", "making chapel compiler", 1, 1);
@@ -516,8 +512,6 @@ if ($parnodefile eq "") {
 } else {
     if ($gasnet == 1) {
         $testflags = "$testflags -comm gasnet";
-    } elsif ($pvm == 1) {
-        $testflags = "$testflags -comm pvm";
     } elsif ($mpi == 1) {
         $testflags = "$testflags -comm mpi";
     }
@@ -525,9 +519,13 @@ if ($parnodefile eq "") {
     
 if ($hello == 1) {
     if ($parnodefile eq "") {
-	$testflags = "$testflags release/examples/hello.chpl";
+	if ($allhellos == 1) {
+	    $testflags = "$testflags --no-recurse release/examples";
+	} else {
+	    $testflags = "$testflags release/examples/hello.chpl";
+	}
     } else {
-	print("Error: Can't yet run the parallel tests with --hello");
+	print("Error: Can't yet run the parallel tests with --hello[s]");
 	exit(1);
     }
 }
