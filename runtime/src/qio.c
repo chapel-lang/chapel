@@ -636,7 +636,7 @@ qio_chtype_t qio_choose_io_type(qio_hint_t hints)
 */
 
 static
-qio_hint_t choose_io_method(qio_fdflag_t fdflags, qio_hint_t hints, qio_hint_t default_hints, int64_t file_size, int reading, int writing)
+qio_hint_t choose_io_method(qio_fdflag_t fdflags, qio_hint_t hints, qio_hint_t default_hints, int64_t file_size, int reading, int writing, int isfilestar)
 {
   qio_hint_t method = hints & QIO_METHODMASK;
   qio_chtype_t type = hints & QIO_CHTYPEMASK;
@@ -648,13 +648,15 @@ qio_hint_t choose_io_method(qio_fdflag_t fdflags, qio_hint_t hints, qio_hint_t d
   ret |= (default_hints & ~(QIO_METHODMASK|QIO_CHTYPEMASK));
 
   if( method < QIO_MIN_METHOD || method > QIO_MAX_METHOD ) {
-
     // bad method number. Use default, or choose one.
     if( default_hints & QIO_METHODMASK ) {
       method = default_hints & QIO_METHODMASK;
     } else {
       // Choose one.
-      if( fdflags & QIO_FDFLAG_SEEKABLE ) {
+      if( isfilestar ) {
+        // Always default to fread/fwrite with FILE* file pointers.
+        method = QIO_METHOD_FREADFWRITE;
+      } else if( fdflags & QIO_FDFLAG_SEEKABLE ) {
         if( hints & QIO_HINT_NOREUSE ) method = QIO_METHOD_PREADPWRITE;
         else if( hints & QIO_HINT_CACHED ) method = QIO_METHOD_MMAP;
         else {
@@ -749,7 +751,7 @@ err_t qio_fadvise_for_hints(qio_file_t* file)
 }
 
 
-err_t qio_file_init(qio_file_t** file_out, FILE* fp, fd_t fd, qio_hint_t iohints, qio_style_t* style)
+err_t qio_file_init(qio_file_t** file_out, FILE* fp, fd_t fd, qio_hint_t iohints, qio_style_t* style, int usefilestar)
 {
   off_t initial_pos = 0;
   off_t initial_length = 0;
@@ -812,13 +814,16 @@ err_t qio_file_init(qio_file_t** file_out, FILE* fp, fd_t fd, qio_hint_t iohints
   file->ref_cnt = 1;
   file->fp = fp;
   file->fd = fd;
+  file->use_fp = usefilestar;
   file->buf = NULL;
   file->fdflags = fdflags;
   file->initial_length = initial_length;
   file->initial_pos = initial_pos;
   file->hints = choose_io_method(fdflags, iohints, 0, initial_length,
                                  (fdflags & QIO_FDFLAG_READABLE) > 0,
-                                 (fdflags & QIO_FDFLAG_WRITEABLE) > 0);
+                                 (fdflags & QIO_FDFLAG_WRITEABLE) > 0,
+                                 file->fp != 0 && file->use_fp );
+
   file->mmap = NULL;
   err = qio_lock_init(&file->lock);
   if( err ) goto error;
@@ -951,7 +956,7 @@ err_t qio_file_open(qio_file_t** file_out, const char* pathname, int flags, mode
     return err;
   }
 
-  return qio_file_init(file_out, NULL, fd, iohints, style);
+  return qio_file_init(file_out, NULL, fd, iohints, style, 0);
 }
 
 // If buf is NULL, we create a new buffer. flags indicates readable/writeable/seekable.
@@ -982,7 +987,8 @@ err_t qio_file_open_mem_ext(qio_file_t** file_out, qbuffer_t* buf, qio_fdflag_t 
   file->fdflags = fdflags;
   file->hints = choose_io_method(fdflags, iohints, 0, qbuffer_len(file->buf),
                                  (fdflags & QIO_FDFLAG_READABLE) > 0,
-                                 (fdflags & QIO_FDFLAG_WRITEABLE) > 0);
+                                 (fdflags & QIO_FDFLAG_WRITEABLE) > 0,
+                                 0);
   // force method to be QIO_METHOD_MEMORY.
   // force type to be buffered.
   // leave old hints, but for a memory channel we're almost
@@ -1091,7 +1097,7 @@ err_t qio_file_open_tmp(qio_file_t** file_out, qio_hint_t iohints, qio_style_t* 
     return errno;
   }
 
-  err = qio_file_init(file_out, fp, -1, iohints, style);
+  err = qio_file_init(file_out, fp, -1, iohints, style, 0);
   return err;
 }
 
@@ -1189,7 +1195,8 @@ err_t _qio_channel_init_file_internal(qio_channel_t* ch, qio_file_t* file, qio_h
 
   // now normalize it!
   use_hints = choose_io_method(file->fdflags, hints, file->hints,
-                               file->initial_length, readable, writeable);
+                               file->initial_length, readable, writeable,
+                               file->fp != NULL && file->use_fp);
   //method = use_hints & QIO_METHODMASK;
   type = use_hints & QIO_CHTYPEMASK;
 
@@ -1331,6 +1338,7 @@ err_t _qio_channel_final_flush_unlocked(qio_channel_t* ch)
   struct stat stats;
 
   if( type == QIO_CHTYPE_CLOSED ) return 0;
+  if( ! ch->file ) return 0;
 
   err = _qio_channel_flush_unlocked(ch);
   if( err ) {
@@ -1396,6 +1404,9 @@ err_t _qio_channel_final_flush_unlocked(qio_channel_t* ch)
 
 
   ch->hints |= QIO_CHTYPE_CLOSED; // set to invalid type so funcs return EINVAL
+
+  qio_file_release(ch->file);
+  ch->file = NULL;
 
   return 0;
 }

@@ -19,6 +19,7 @@
   _extern type c_ulonglong = uint(64);
   _extern type c_double = real(64);
   _extern type c_wchar_t = uint(32);
+  _extern type c_char_t = uint(8);
   _extern type c_ptr; // opaque; no ptr arithmetic in Chapel code!
   _extern type ssize_t = int(64);
   _extern type size_t = uint(64);
@@ -336,13 +337,13 @@
   _extern type qio_channel_ptr_t;
   _extern const QIO_CHANNEL_PTR_NULL:qio_channel_ptr_t;
 
-  _extern type style_char_t = uint(8);
+  _extern type style_char_t = c_char_t;
 
   //_extern record qio_style_t {
   _extern record iostyle {
     var binary:uint(8);
     // binary style choices
-    var byteorder:iokind;
+    var byteorder:uint(8);
     // string binary style:
     // -1 -- 1 byte of length before
     // -2 -- 2 bytes of length before
@@ -380,11 +381,11 @@
     var uppercase:uint(8);
     var leftjustify:uint(8);
     var showpoint:uint(8);
-    var precision:uint(32);
-    var significant_digits:uint(32);
+    var precision:int(32);
+    var significant_digits:int(32);
     var realtype:uint(8);
 
-    var imag_style:uint(8);
+    var complex_style:uint(8);
     var spaces_after_sep:uint(8);
     var array_start_char:style_char_t;
     var array_end_char:style_char_t;
@@ -430,7 +431,7 @@
   _extern proc qio_file_retain(f:qio_file_ptr_t);
   _extern proc qio_file_release(f:qio_file_ptr_t);
 
-  _extern proc qio_file_init(inout file_out:qio_file_ptr_t, fp:_file, fd:fd_t, iohints:c_int, inout style:iostyle):err_t;
+  _extern proc qio_file_init(inout file_out:qio_file_ptr_t, fp:_file, fd:fd_t, iohints:c_int, inout style:iostyle, usefilestar:c_int):err_t;
   _extern proc qio_file_open_access(inout file_out:qio_file_ptr_t, path:string, access:string, iohints:c_int, inout style:iostyle):err_t;
   _extern proc qio_file_open_tmp(inout file_out:qio_file_ptr_t, iohints:c_int, inout style:iostyle):err_t;
 
@@ -493,6 +494,7 @@
   _extern proc qio_channel_str_style(ch:qio_channel_ptr_t):int(64);
 
   _extern proc qio_channel_flush(threadsafe:c_int, ch:qio_channel_ptr_t):err_t;
+  _extern proc qio_channel_close(threadsafe:c_int, ch:qio_channel_ptr_t):err_t;
 
   _extern proc qio_channel_read(threadsafe:c_int, ch:qio_channel_ptr_t, inout ptr, len:ssize_t, inout amt_read:ssize_t):err_t;
   _extern proc qio_channel_read_amt(threadsafe:c_int, ch:qio_channel_ptr_t, inout ptr, len:ssize_t):err_t;
@@ -501,8 +503,8 @@
   _extern proc qio_channel_write_amt(threadsafe:c_int, ch:qio_channel_ptr_t, inout ptr, len:ssize_t):err_t;
 
   _extern proc qio_channel_mark(threadsafe:c_int, ch:qio_channel_ptr_t):err_t;
-  _extern proc qio_channel_revert(threadsafe:c_int, ch:qio_channel_ptr_t):err_t;
-  _extern proc qio_channel_commit(threadsafe:c_int, ch:qio_channel_ptr_t):err_t;
+  _extern proc qio_channel_revert_unlocked(ch:qio_channel_ptr_t);
+  _extern proc qio_channel_commit_unlocked(ch:qio_channel_ptr_t);
 
   /*
   _extern proc qio_scanf(threadsafe:c_int, ch:qio_channel_ptr_t, inout nmatched:c_int, fmt:string, inout args...?numargs):err_t;
@@ -631,9 +633,9 @@
   param _oldioerr="This program is using old-style I/O which is no longer supported.\n" +
                   "See doc/README.io.\n" +
                   "You'll probably want something like:\n" +
-                  "var f = open(filename).writing()\n" + 
+                  "var f = open(filename, \"w\").writer()\n" + 
                   "or\n" + 
-                  "var f = open(filename).reading()\n";
+                  "var f = open(filename, \"r\").reader()\n";
  
   // This file constructor exists to throw an error for old I/O code.
   proc file.file(filename:string="",
@@ -775,7 +777,7 @@
   proc openfd(fd: fd_t, hints:iohint_t=0, style:iostyle = defaultStyle(), onErr:ErrorHandler=nil) {
     var local_style = style;
     var ret = new file(onErr);
-    var e = qio_file_init(ret._file_internal, chpl_cnullfile(), fd, hints, local_style);
+    var e = qio_file_init(ret._file_internal, chpl_cnullfile(), fd, hints, local_style, 0);
     if e != 0 {
       var path:string;
       qio_file_path_for_fd(fd, path);
@@ -786,7 +788,7 @@
   proc openfp(fp: _file, hints:iohint_t=0, style:iostyle = defaultStyle(), onErr:ErrorHandler=nil):file {
     var local_style = style;
     var ret = new file(onErr);
-    var e = qio_file_init(ret._file_internal, fp, -1, hints, local_style);
+    var e = qio_file_init(ret._file_internal, fp, -1, hints, local_style, 1);
     if e != 0 {
       var path:string;
       qio_file_path_for_fp(fp, path);
@@ -885,6 +887,15 @@
   }
 
   // you should have a lock before you use these...
+  proc channel._mark():err_t {
+    return qio_channel_mark(false, _channel_internal);
+  }
+  proc channel._revert() {
+    qio_channel_revert(false, _channel_internal);
+  }
+  proc channel._commit() {
+    qio_channel_commit(false, _channel_internal);
+  }
   proc channel._style():iostyle {
     var ret:iostyle;
     on __primitive("chpl_on_locale_num", this.home_uid) {
@@ -980,9 +991,23 @@
     } else if _isIntegralType(t) {
       // handles bool (as unsigned), int types
       return qio_channel_scan_int(false, _channel_internal, x, numBytes(t), _isSignedType(t));
-    } else if _isFloatType(t) {
-      // handles real, imag
+    } else if _isRealType(t) {
+      // handles real
       return qio_channel_scan_float(false, _channel_internal, x, numBytes(t));
+    } else if _isImagType(t) {
+      var err = qio_channel_mark(false, _channel_internal);
+      if err then return err;
+
+      err = qio_channel_scan_float(false, _channel_internal, x, numBytes(t));
+      if err == 0 {
+        err = qio_channel_scan_literal(false, _channel_internal, "i", 1, false);
+      }
+      if err == 0 {
+        qio_channel_commit_unlocked(_channel_internal);
+      } else {
+        qio_channel_revert_unlocked(_channel_internal);
+      }
+      return err;
     } else if _isComplexType(t)  {
       // handle complex types
       var re:x.re.type;
@@ -1016,9 +1041,23 @@
       // handles bool (as unsigned), int types
       return qio_channel_print_int(false, _channel_internal, x, numBytes(t), _isSignedType(t));
  
-    } else if _isFloatType(t) {
-      // handles real, imag
+    } else if _isRealType(t) {
+      // handles real
       return qio_channel_print_float(false, _channel_internal, x, numBytes(t));
+    } else if _isImagType(t) {
+      var err = qio_channel_mark(false, _channel_internal);
+      if err then return err;
+
+      err = qio_channel_print_float(false, _channel_internal, x, numBytes(t));
+      if err == 0 {
+        err = qio_channel_print_literal(false, _channel_internal, "i", 1);
+      }
+      if err == 0 {
+        qio_channel_commit_unlocked(_channel_internal);
+      } else {
+        qio_channel_revert_unlocked(_channel_internal);
+      }
+      return err;
     } else if _isComplexType(t)  {
       // handle complex types
       var re = x.re;
@@ -1450,6 +1489,14 @@
     }
     seterr(onErr, this.onErr, e); // TODO -- include path and offset
   }
+  proc channel.close(onErr:ErrorHandler = nil) {
+    var e:err_t;
+    on __primitive("chpl_on_locale_num", this.home_uid) {
+      e = qio_channel_close(true, _channel_internal);
+    }
+    seterr(onErr, this.onErr, e); // TODO -- include path and offset
+  }
+
 
   proc channel.modifyStyle(f:func(iostyle, void))
   {
@@ -1596,15 +1643,12 @@
 
   proc write(args ...?n) {
     stdout.write((...args));
-    stdout.flush();
   }
   proc writeln(args ...?n) {
     stdout.writeln((...args));
-    stdout.flush();
   }
   proc writeln() {
     stdout.writeln();
-    stdout.flush();
   }
 
   proc read(inout args ...?n) {
@@ -1615,6 +1659,9 @@
   }
   proc readln() {
     stdin.readln();
+  }
+  proc read(type t) {
+    return stdin.read(t);
   }
   proc readln(type t) {
     return stdin.readln(t);
@@ -1839,7 +1886,7 @@ proc halt(s:string) {
 proc halt(args ...?numArgs) {
   //chpl_error_noexit("halt reached - ", -1, "");
   __primitive("chpl_error_noexit", "halt reached - ");
-  stderr.writeln(args);
+  stderr.writeln((...args));
   chpl_exit_backtrace(1);
   //exit(1);
   //__primitive("chpl_error", "halt reached");

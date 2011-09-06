@@ -10,7 +10,7 @@ proc testio(param typ:iokind, style:iostyle, x)
     var ch = f.writer(typ, style=style);
     if noisy then writeln("Writing ", x);
     ch.write(x);
-    ch.flush();
+    ch.close();
   }
   {
     var ch = f.reader(typ, style=style);
@@ -24,7 +24,10 @@ proc testio(param typ:iokind, style:iostyle, x)
     // Try reading another item -- should get EOF
     got = ch.read(z);
     assert( !got );
+
+    ch.close();
   }
+  f.close();
 }
 
 /*
@@ -129,7 +132,7 @@ proc test_readlines()
 proc main() {
   //testio(dynamic, defaultStyle().text(), 100:uint(8));
   //testio(dynamic, defaultStyle().text(), 57.24e23:real(32));
-  testio(dynamic, defaultStyle().text(), 997.89+200.124i);
+  //testio(dynamic, defaultStyle().text(), 997.89+200.124i);
 
   testio(true);
   testio(false);
@@ -157,6 +160,8 @@ proc main() {
   testio("test string");
   testio(997.89+200.124i);
   testio(-997.89-200.124i);
+  testio(1.0:imag(32));
+  testio(1.0:imag(64));
   //testio(100:uint(8));
 
   test_readlines();

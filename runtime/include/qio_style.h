@@ -9,7 +9,7 @@
 #define QIO_BIG 2
 #define QIO_LITTLE 3
 
-typedef char style_char_t;
+typedef uint8_t style_char_t;
 
 typedef struct qio_style_s {
   uint8_t binary;

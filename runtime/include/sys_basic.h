@@ -28,6 +28,7 @@ typedef void* c_ptr;
 typedef int err_t;
 typedef int fd_t;
 typedef wchar_t c_wchar_t;
+typedef char c_char_t;
 typedef FILE* c_file;
 
 static inline c_file chpl_cstdin(void) { return stdin; }

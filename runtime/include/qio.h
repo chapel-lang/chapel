@@ -76,7 +76,6 @@ static inline void qio_unlock(qio_lock_t* x) {
 
   // recursive mutex based on glibc pthreads implementation
   if( x->owner != id ) {
-    assert(0);
     abort();
   }
 
@@ -312,8 +311,9 @@ typedef struct qio_file_s {
   // that handled pread/pwrite by calling some routine,
   // but mostly 
   // An (arguably) better solution is to put 
-  FILE* fp; // if fp is set, fd == fileno(fp)
+  FILE* fp; // set if this file wraps a FILE*
   fd_t fd; // -1 if not set
+  int use_fp; // we only default to FREADFWRITE if this and fp are set.
   qbuffer_t* buf; // NULL if not set.
                   // if set, fp==NULL, fd==-1, is memory-only file.
                   // Note a qbuffer is not thread-safe, and
@@ -370,7 +370,7 @@ typedef qio_file_t* qio_file_ptr_t;
 #define QIO_FILE_PTR_NULL NULL
 
 // if fp is not null, fd is ignored; if fp is null, we use fd.
-err_t qio_file_init(qio_file_t** file_out, FILE* fp, fd_t fd, qio_hint_t iohints, qio_style_t* style);
+err_t qio_file_init(qio_file_t** file_out, FILE* fp, fd_t fd, qio_hint_t iohints, qio_style_t* style, int usefilestar);
 err_t qio_file_open(qio_file_t** file_out, const char* path, int flags, mode_t mode, qio_hint_t iohints, qio_style_t* style);
 err_t qio_file_open_access(qio_file_t** file_out, const char* pathname, const char* access, qio_hint_t iohints, qio_style_t* style);
 err_t qio_file_open_mem_ext(qio_file_t** file_out, qbuffer_t* buf, qio_fdflag_t fdflags, qio_hint_t iohints, qio_style_t* style);
@@ -623,13 +623,13 @@ void _qio_channel_destroy(qio_channel_t* ch);
 
 static inline
 void qio_channel_retain(qio_channel_t* ch) {
-  if( DEBUG_QIO ) fprintf(stdout, "Channel retain %p\n", ch);
+  //if( DEBUG_QIO ) fprintf(stdout, "Channel retain %p\n", ch);
   DO_RETAIN(ch);
 }
 
 static inline
 void qio_channel_release(qio_channel_t* ch) {
-  if( DEBUG_QIO ) fprintf(stdout, "Channel release %p\n", ch);
+  //if( DEBUG_QIO ) fprintf(stdout, "Channel release %p\n", ch);
   DO_RELEASE(ch, _qio_channel_destroy);
 }
 
@@ -752,6 +752,16 @@ err_t qio_channel_write(const int threadsafe, qio_channel_t* ch, const void* ptr
     err = 0;
   } else {
     err = _qio_slow_write(ch, ptr, len, amt_written);
+  }
+
+  // If we are a FILE* type buffer, we want to automatically
+  // flush after every write, so that C I/O can be intermixed
+  // with QIO calls. This is (obviously) not the most perfomant way to do
+  // it, but we expect this to be used with stdout/stderr mostly,
+  // where timely updating (e.g. line-buffering) is more important
+  // than total speed.
+  if( !err && ((ch->hints & QIO_METHODMASK) == QIO_METHOD_FREADFWRITE) ) {
+    err = _qio_channel_flush_unlocked(ch);
   }
 
   if( threadsafe ) {

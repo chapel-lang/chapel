@@ -14,6 +14,15 @@
 
 int verbosity = 1;
 
+// mpf: I added a (hacky,terrible) chunk of code
+// here to get backtraces, but it breaks lots and lots
+// of test cases since it changes output of the program
+// from the no-backtrace case. Also, it probably doesn't
+// work right under GASNet, but I havn't tried yet.
+// So it's disabled for now.
+#define CHPL_SHOW_BACKTRACES 0
+
+#if CHPL_SHOW_BACKTRACES
 // returns 0 for no error, and stores into dst a C string with
 // the path to the running executable.
 int chpl_getexe_path(char* dst, size_t max_dst)
@@ -121,12 +130,20 @@ void chpl_exit_backtrace(int exit_code)
 {
   fflush(stdout);
   fflush(stderr);
-
-  fprintf(stderr, "backtrace not available\n");
   chpl_exit_any(exit_code);
 }
 #endif
 
+#else
+
+void chpl_exit_backtrace(int exit_code)
+{
+  fflush(stdout);
+  fflush(stderr);
+  chpl_exit_any(exit_code);
+}
+
+#endif
 
 void chpl_warning(const char* message, int32_t lineno, chpl_string filename) {
   // squash warnings if --quiet flag is used
@@ -171,11 +188,11 @@ void chpl_error_noexit(const char* message, int32_t lineno, chpl_string filename
   spinhaltIfAlreadyExiting();
   fflush(stdout);
   if (lineno > 0)
-    fprintf(stderr, "%s:%" PRId32 ": error: %s\n", filename, lineno, message);
+    fprintf(stderr, "%s:%" PRId32 ": error: %s", filename, lineno, message);
   else if (filename)
-    fprintf(stderr, "%s: error: %s\n", filename, message);
+    fprintf(stderr, "%s: error: %s", filename, message);
   else
-    fprintf(stderr, "error: %s\n", message);
+    fprintf(stderr, "error: %s", message);
 }
 
 

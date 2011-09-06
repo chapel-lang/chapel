@@ -83,7 +83,27 @@ COMP_CFLAGS += $(WARN_CXXFLAGS)
 RUNTIME_CFLAGS += $(WARN_CFLAGS)
 RUNTIME_CXXFLAGS += $(WARN_CXXFLAGS)
 RUNTIME_GEN_CFLAGS += -Wno-unused
-WARN_GEN_CFLAGS += -Wunreachable-code
+
+# mpf - turning off unreachable code warning
+# because it is unavoidable in some situations
+# with macros/inline functions with some values
+# known at compile time. From the gcc manual:
+#     It is possible for this option to produce a warning even though
+#     there are circumstances under which part of the affected line can
+#     be executed, so care should be taken when removing
+#     apparently-unreachable code.
+#
+#     For instance, when a function is inlined, a warning may mean that
+#     the line is unreachable in only one inlined copy of the function.
+#
+#     This option is not made part of `-Wall' because in a debugging
+#     version of a program there is often substantial code which checks
+#     correct functioning of the program and is, hopefully, unreachable
+#     because the program does work.  Another common use of unreachable
+#     code is to provide behavior which is selectable at compile-time.
+#
+#WARN_GEN_CFLAGS += -Wunreachable-code
+
 # GEN_CFLAGS gets warnings added via WARN_GEN_CFLAGS in comp-generated Makefile
 
 
