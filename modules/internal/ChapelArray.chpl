@@ -9,28 +9,19 @@ proc _isPrivatized(value) param
 proc _newPrivatizedClass(value) {
   privatizeLock$.writeEF(true);
   var n = __primitive("chpl_numPrivatizedClasses");
-  var hereID = here.uid;
+  var hereID = here.id;
   const privatizeData = value.dsiGetPrivatizeData();
-  on Realms(0) do
-    _newPrivatizedClassHelp(value, value, n, hereID, privatizeData);
+  _newPrivatizedClassHelp(value, value, n, hereID, privatizeData);
 
   proc _newPrivatizedClassHelp(parentValue, originalValue, n, hereID, privatizeData) {
     var newValue = originalValue;
-    if hereID != here.uid {
+    if hereID != here.id {
       newValue = parentValue.dsiPrivatize(privatizeData);
       __primitive("chpl_newPrivatizedClass", newValue);
       newValue.pid = n;
     } else {
       __primitive("chpl_newPrivatizedClass", newValue);
       newValue.pid = n;
-    }
-    cobegin {
-      if chpl_localeTree.left then
-        on chpl_localeTree.left do
-          _newPrivatizedClassHelp(newValue, originalValue, n, hereID, privatizeData);
-      if chpl_localeTree.right then
-        on chpl_localeTree.right do
-          _newPrivatizedClassHelp(newValue, originalValue, n, hereID, privatizeData);
     }
   }
 
@@ -40,23 +31,14 @@ proc _newPrivatizedClass(value) {
 
 proc _reprivatize(value) {
   var pid = value.pid;
-  var hereID = here.uid;
+  var hereID = here.id;
   const reprivatizeData = value.dsiGetReprivatizeData();
-  on Realms(0) do
-    _reprivatizeHelp(value, value, pid, hereID, reprivatizeData);
+  _reprivatizeHelp(value, value, pid, hereID, reprivatizeData);
   proc _reprivatizeHelp(parentValue, originalValue, pid, hereID, reprivatizeData) {
     var newValue = originalValue;
-    if hereID != here.uid {
+    if hereID != here.id {
       newValue = chpl_getPrivatizedCopy(newValue.type, pid);
       newValue.dsiReprivatize(parentValue, reprivatizeData);
-    }
-    cobegin {
-      if chpl_localeTree.left then
-        on chpl_localeTree.left do
-          _reprivatizeHelp(newValue, originalValue, pid, hereID, reprivatizeData);
-      if chpl_localeTree.right then
-        on chpl_localeTree.right do
-          _reprivatizeHelp(newValue, originalValue, pid, hereID, reprivatizeData);
     }
   }
 }

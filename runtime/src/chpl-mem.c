@@ -100,7 +100,6 @@ const char* chpl_mem_descString(chpl_mem_descInt_t mdi) {
     "lock report data",
     "task pool descriptor",
     "task list descriptor",
-    "arrays for localesPerRealm",
     "thread private data",
     "thread callee function pointer and argument",
     "thread list descriptor"

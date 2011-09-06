@@ -45,7 +45,6 @@ static void parseInternalModules(void) {
 
   setIteratorTags();
 
-  addStdRealmsPath();
   standardModule = parseInternalModule("ChapelStandard"); 
 }
 

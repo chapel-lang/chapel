@@ -55,6 +55,7 @@ int main(int argc, char* argv[]) {
   int32_t execNumLocales;
   int runInGDB;
   int numPollingTasks;
+
   chpl_comm_init(&argc, &argv);
   chpl_mem_init();
   chpl_comm_post_mem_init();
@@ -123,6 +124,10 @@ int main(int argc, char* argv[]) {
     // These initialization calls are needed early so entries can be added to the taskTable
     // in chpl_task_callMain().  But it appears here to make it task-layer-independent.
     // Ideally, module initialization code should not be called before we reach chpl_main. <hilde>
+    // Note that in general, module code can contain "on" clauses
+    // and should therefore not be called before the call to chpl_comm_startPollingTask().
+    // The call to chpl_comm_barrier makes sure that all locales are listening before an attempt
+    // is made to run tasks "on" them.
     chpl__init_DefaultRectangular(0, myFilename);
     chpl__init_ChapelTaskTable(0, myFilename);
 

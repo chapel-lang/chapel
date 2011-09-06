@@ -12,8 +12,6 @@ use ChapelTaskTable;
 use ChapelArray;
 use ChapelDistribution;
 use ChapelLocale;
-use ChapelRealmSpace;
-use ChapelRealm;
 use DefaultRectangular;
 use DefaultAssociative;
 use DefaultSparse;

@@ -189,7 +189,7 @@ class LocBlockArr {
 // Block constructor for clients of the Block distribution
 //
 proc Block.Block(boundingBox: domain,
-                targetLocales: [] locale = thisRealm.Locales,
+                targetLocales: [] locale = Locales,
                 dataParTasksPerLocale=getDataParTasksPerLocale(),
                 dataParIgnoreRunningTasks=getDataParIgnoreRunningTasks(),
                 dataParMinGranularity=getDataParMinGranularity(),
@@ -294,7 +294,7 @@ proc Block.writeThis(x:Writer) {
   x.writeln("indexed via: ", targetLocDom);
   x.writeln("resulting in: ");
   for locid in targetLocDom do
-    x.writeln("  [", locid, "] locale ", locDist(locid).locale.uid, " owns chunk: ", locDist(locid).myChunk);
+    x.writeln("  [", locid, "] locale ", locDist(locid).locale.id, " owns chunk: ", locDist(locid).myChunk);
 }
 
 proc Block.dsiIndexToLocale(ind: idxType) where rank == 1 {
@@ -731,12 +731,12 @@ proc BlockArr.dsiDisplayRepresentation() {
 proc BlockArr.dsiGetBaseDom() return dom;
 
 proc BlockArr.setup() {
-  var thisid = this.locale.uid;
+  var thisid = this.locale.id;
   coforall localeIdx in dom.dist.targetLocDom {
     on dom.dist.targetLocales(localeIdx) {
       const locDom = dom.getLocDom(localeIdx);
       locArr(localeIdx) = new LocBlockArr(eltType, rank, idxType, stridable, locDom);
-      if thisid == here.uid then
+      if thisid == here.id then
         myLocArr = locArr(localeIdx);
     }
   }
@@ -819,7 +819,7 @@ iter BlockArr.these(param tag: iterator, follower, param fast: bool = false) var
     // it means that followThisDom is empty; make arrSection local so
     // that we can use the local block below
     //
-    if arrSection.locale.uid != here.uid then
+    if arrSection.locale.id != here.id then
       arrSection = myLocArr;
     local {
       for e in arrSection.myElems((...followThis)) do
@@ -874,11 +874,11 @@ proc BlockArr.dsiSerialWrite(f: Writer) {
 
 proc BlockArr.dsiSlice(d: BlockDom) {
   var alias = new BlockArr(eltType=eltType, rank=rank, idxType=idxType, stridable=d.stridable, dom=d, pid=pid);
-  var thisid = this.locale.uid;
+  var thisid = this.locale.id;
   coforall i in d.dist.targetLocDom {
     on d.dist.targetLocales(i) {
       alias.locArr[i] = new LocBlockArr(eltType=eltType, rank=rank, idxType=idxType, stridable=d.stridable, locDom=d.locDoms[i], myElems=>locArr[i].myElems[d.locDoms[i].myBlock]);
-      if thisid == here.uid then
+      if thisid == here.id then
         alias.myLocArr = alias.locArr[i];
     }
   }
@@ -929,7 +929,7 @@ proc _extendTuple(type t, idx, args) {
 
 proc BlockArr.dsiRankChange(d, param newRank: int, param stridable: bool, args) {
   var alias = new BlockArr(eltType=eltType, rank=newRank, idxType=idxType, stridable=stridable, dom=d);
-  var thisid = this.locale.uid;
+  var thisid = this.locale.id;
   coforall ind in d.dist.targetLocDom {
     on d.dist.targetLocales(ind) {
       const locDom = d.getLocDom(ind);
@@ -974,7 +974,7 @@ proc BlockArr.dsiRankChange(d, param newRank: int, param stridable: bool, args) 
                         stridable=d.stridable, locDom=locDom,
                         myElems=>locArr[(...locArrInd)].myElems[(...locSlice)]);
 
-      if thisid == here.uid then
+      if thisid == here.id then
         alias.myLocArr = alias.locArr[ind];
     }
   }
@@ -985,7 +985,7 @@ proc BlockArr.dsiReindex(d: BlockDom) {
   var alias = new BlockArr(eltType=eltType, rank=d.rank, idxType=d.idxType,
                            stridable=d.stridable, dom=d);
 
-  var thisid = this.locale.uid;
+  var thisid = this.locale.id;
   coforall i in d.dist.targetLocDom {
     on d.dist.targetLocales(i) {
       const locDom = d.getLocDom(i);
@@ -995,7 +995,7 @@ proc BlockArr.dsiReindex(d: BlockDom) {
                                         stridable=d.stridable,
                                         locDom=locDom,
                                         myElems=>locAlias);
-      if thisid == here.uid then
+      if thisid == here.id then
         alias.myLocArr = alias.locArr[i];
     }
   }
@@ -1095,7 +1095,7 @@ proc BlockArr.dsiPrivatize(privatizeData) {
   var c = new BlockArr(eltType=eltType, rank=rank, idxType=idxType, stridable=stridable, dom=privdom);
   for localeIdx in c.dom.dist.targetLocDom {
     c.locArr(localeIdx) = locArr(localeIdx);
-    if c.locArr(localeIdx).locale.uid == here.uid then
+    if c.locArr(localeIdx).locale.id == here.id then
       c.myLocArr = c.locArr(localeIdx);
   }
   return c;

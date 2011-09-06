@@ -537,8 +537,6 @@ initPrimitive() {
   prim_def(PRIM_GET_USER_LINE, "_get_user_line", returnInfoInt32, true, true);
   prim_def(PRIM_GET_USER_FILE, "_get_user_file", returnInfoString, true, true);
 
-  prim_def(PRIM_COUNT_NUM_REALMS, "get num realms", returnInfoInt32);
-
   prim_def(PRIM_FTABLE_CALL, "call ftable function", returnInfoVoid, true);
 
   prim_def(PRIM_IS_STAR_TUPLE_TYPE, "is star tuple type", returnInfoBool);
