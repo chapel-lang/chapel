@@ -56,7 +56,6 @@ while (@ARGV) {
         $dist = shift @ARGV;
     } elsif ($flag eq "-memleaks") {
         $memleaks = shift @ARGV;
-        $examples = 1;
     } elsif ($flag eq "-suppress") {
         $suppressions = shift @ARGV;
     } elsif ($flag eq "-componly") {
@@ -495,6 +494,12 @@ if ($valgrind == 1) {
 if ($valgrind == 0) {
     $testflags = "$testflags -futures";
 }
+
+#
+# don't bother making the spec tests if we're only testing hello, world programs;
+# and they'll get made automatically if we're testing everything; so we only need
+# to make them if we're testing the examples directory.
+#
 if ($examples == 1) {
     mysystem("cd $chapeldir && $make spectests", "making spec tests", 0, 1);
     if ($parnodefile eq "") {
