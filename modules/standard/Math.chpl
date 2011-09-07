@@ -3,6 +3,7 @@ _extern const NAN: real(64);
 
 pragma "inline" proc abs(i : int(?w)) return if i < 0 then -i else i;
 pragma "inline" proc abs(i : uint(?w)) return i;
+proc abs(param i : integral) param return if i < 0 then -i else i;
 pragma "inline" proc abs(x : complex(?w)) return sqrt(x.re*x.re + x.im*x.im);
 
 // We can't use "numeric" here because signum is not defined on a complex type.
