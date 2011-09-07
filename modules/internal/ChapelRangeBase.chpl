@@ -256,7 +256,6 @@ proc rangeBase.member(other: rangeBase(?))
 
 // ==(r1,r2) returns true if the two ranges produce the same index sequence.
 
-inline
 proc ==(r1: rangeBase(?), r2: rangeBase(?)) param where
   r1.boundedType != r2.boundedType
 {
