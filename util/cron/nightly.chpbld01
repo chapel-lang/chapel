@@ -63,6 +63,10 @@ compilers="gnu pgi cray intel" # pathscale
 for compiler in $compilers ; do
 (  # fire up a new shell
   module load PrgEnv-${compiler}${PrgEnv_Version}
+  if [ ${compiler} == "cray" ] ; then
+      echo "Swapping in newer cce module"
+      module swap cce cce/80.newest
+  fi
   export CHPL_TARGET_PLATFORM=xt-cle
   export LD_LIBRARY_PATH="/data/cf/chapelopt/alps/:$LD_LIBRARY_PATH"
   $NIGHTLY -combinedir -cron $EXAMPLES
@@ -74,6 +78,10 @@ done
 for compiler in $compilers ; do
 (  # fire up a new shell
   module load PrgEnv-${compiler}${PrgEnv_Version}
+  if [ ${compiler} == "cray" ] ; then
+      echo "Swapping in newer cce module"
+      module swap cce cce/80.newest
+  fi
   export CHPL_HOST_PLATFORM=xt-cle
   export CHPL_TARGET_PLATFORM=xt-cle
   export CHPL_HOST_COMPILER=cray-xt-$compiler

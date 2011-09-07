@@ -6,5 +6,4 @@ module load subversion
 
 export CHPL_COMM=mpi
 
-$NIGHTLY -examples -cron
-
+~/chapel/util/cron/nightly -examples -cron
