@@ -11,31 +11,13 @@ use ChapelRangeBase;
 //        2) whether low and/or high bounds exist, and
 //        3) whether the stride is one or not.
 //
-// A range can only be aligned if it is strided.  Since alignments are taken
-// modulo the stride, if the stride is one, even a nonzero alignment has no effect.
-// The alignment of a range is relative to the low bound if it exists, otherwise
-// relative to the high bound if it exists, otherwise absolute.
-//
 // The type of the stride is a signed type with the same number of bits as the
 // index type.  This means that for an unsigned index type, a maximal range can
 // be reached in no less than two strides.
 //
-// Ranges are usually naturally aligned; the _unaligned flag indicates when the
-// alignment has been set explicitly -- thus making it "unaligned" w.r.t. its
-// natural alignment.
-//
-// Some ranges have ambiguous alignment -- by definition:
-//  Those which lack an upper bound and have a stride less than -1; or
-//  Those which lack a lower bound and have a stride greater than 1.
-// Ambiguous alignment is propagated by some operations, such as striding and slicing.
-// Ambiguous alignment is erased if the alignment is set explicitly.
-//
-// The _aligned flag is used to track whether a range has been explicitly aligned.
-// Initially, all ranges are unaligned, but since they have a stride of 1
-// their alignment is not ambiguous.
-// When a stride is applied, we check to see if any of the above cases is created.
-// If not, the _aligned flag is set indicating that the alignment for that range
-// has been determined.  Further applications of the "by" operator preserve that bit.
+// The _aligned flag is used to track whether a range has a non-ambiguous alignment.
+// All range literals have ambiguous alignment, but since they have a stride of 1
+// their isAmbiguous() is false.
 // The _aligned bit can also be set through the application of an explicit alignment.
 //
 
@@ -52,11 +34,12 @@ record range
   // TODO: hilde 2011/03/31
   // This should be a pragma and not a var declaration.  
   var _promotionType: idxType;                   // enables promotion
+  proc strType type return chpl__signedType(idxType);
   
   pragma "inline" proc low return _base.low;       // public getter for low bound
   pragma "inline" proc high return _base.high;     // public getter for high bound
   pragma "inline" proc stride where stridable return _base.stride; // public getter for stride
-  proc stride param where !stridable return 1;
+  proc stride param where !stridable return 1 : strType;
   // public getter for alignment
   pragma "inline" proc alignment return _base.alignment;
   // public getter for the ambiguous alignment flag.
@@ -103,6 +86,15 @@ proc range.range(type idxType = int,
 {
   this._base = _base;
   this._aligned = _aligned;
+}
+
+/////////////////////////////////
+// for debugging
+
+proc range.displayRepresentation(msg: string = ""): void {
+  writeln(msg, "(", typeToString(idxType), ",", boundedType, ",", stridable,
+          " : ", low, ",", high, ",", stride, ",",
+          if aligned then alignment:string else "?", ")");
 }
  
 
@@ -219,9 +211,14 @@ pragma "inline" proc range.member(other: range(?))
   return _base.member(other);
 }
 
-// Returns true if this range is equivalent to the other.
-// Equivalent ranges produce the same index set.
-proc ==(r1: range(?), r2: range(?))
+// Returns true if the two ranges have the same represented sequence, or if
+// both sequences are undefined but all four primary properties are identical.
+proc ==(r1: range(?), r2: range(?)) param
+  where r1.boundedType != r2.boundedType
+return false;
+
+proc ==(r1: range(?), r2: range(?)): bool
+  where r1.boundedType == r2.boundedType
 {
   // An ambiguous ranges cannot equal an unambiguous one
   //  even if all their parameters match.
@@ -250,7 +247,7 @@ proc ident(r1: range(?), r2: range(?))
 }
 
 // If the parameters don't match, then the two ranges cannot be identical.
-proc ident(r1: range(?), r2: range(?))
+proc ident(r1: range(?), r2: range(?)) param
   return false;
 
 
@@ -405,15 +402,74 @@ proc -(r: range(?e,?b,?s), i: integral)
   return new range(temp.idxType, b, s, temp, r._aligned);
 }
 
-// This is the syntax processing routine for the "by" keyword.
-// The by operator always clobbers an existing alignment.
-proc by(r : range(?), str)
+
+proc by(r : range(?i,?b,?s), step)
 {
-  var temp = chpl__by(r._base, str);
-  var result = new range(temp.idxType, temp.boundedType, temp.stridable);
-  result._base = temp;
-  result._aligned = r._aligned || !r.isAmbiguous() && chpl__hasAlignment(result);
-  return result;
+  if step == 0 then
+    __primitive("chpl_error", "the step argument of the 'by' operator is zero");
+
+  if step.type != r.idxType && !chpl__legalIntCoerce(step.type, r.strType) then
+    compilerError("in the 'by' operator, there is no implicit conversion from the type of the step argument, ", typeToString(step.type), ", to the type required by the range argument, ", typeToString(r.strType));
+
+  const lw: i = r.low,
+        hh: i = r.high,
+        st: r.strType = r.stride * step:r.strType;
+
+  const (ald, alt): (bool, i) =
+    if r.isAmbiguous() then                   (false, r.alignment)
+    else
+      // we could talk about aligned bounds
+      if      r.hasLowBound()  && st > 0 then (true, r.alignedLow)
+      else if r.hasHighBound() && st < 0 then (true, r.alignedHigh)
+      else                                    (r.aligned, r.alignment);
+
+  return new range(i, b, true,  lw, hh, st, alt, ald);
+}
+
+proc by(r : range(?i,?b,true), param step)
+{
+  if step == 0 then
+    compilerError("the step argument of the 'by' operator is zero");
+
+  if step.type != r.idxType && !chpl__legalIntCoerce(step.type, r.strType) then
+    compilerError("in the 'by' operator, there is no implicit conversion from the type of the step argument, ", typeToString(step.type), ", to the type required by the range argument, ", typeToString(r.strType));
+
+  const lw: i = r.low,
+        hh: i = r.high,
+        st: r.strType = r.stride * step:r.strType;
+
+  const (ald, alt): (bool, i) =
+    if r.isAmbiguous() then                   (false, r.alignment)
+    else
+      // we could talk about aligned bounds
+      if      r.hasLowBound()  && st > 0 then (true, r.alignedLow)
+      else if r.hasHighBound() && st < 0 then (true, r.alignedHigh)
+      else                                    (r.aligned, r.alignment);
+
+  return new range(i, b, true,  lw, hh, st, alt, ald);
+}
+
+proc by(r : range(?i,?b,false), param step)
+{
+  if step == 0 then
+    compilerError("the step argument of the 'by' operator is zero");
+
+  if step.type != r.idxType && !chpl__legalIntCoerce(step.type, r.strType) then
+    compilerError("in the 'by' operator, there is no implicit conversion from the type of the step argument, ", typeToString(step.type), ", to the type required by the range argument, ", typeToString(r.strType));
+
+  const lw: i = r.low,
+        hh: i = r.high;
+  param st: r.strType = r.stride * step:r.strType;
+
+  const (ald, alt): (bool, i) =
+    if r.isAmbiguous() then                   (false, r.alignment)
+    else
+      // we could talk about aligned bounds
+      if      r.hasLowBound()  && st > 0 then (true, r.alignedLow)
+      else if r.hasHighBound() && st < 0 then (true, r.alignedHigh)
+      else                                    (r.aligned, r.alignment);
+
+  return new range(i, b, true,  lw, hh, st, alt, ald);
 }
 
 // This is the syntax processing routine for the "align" keyword.
@@ -455,10 +511,8 @@ proc range.this(other: range(?))
   }
 
   var temp = _base.this(other._base);
-  var result = new range(temp.idxType, temp.boundedType, temp.stridable);
-  result._base = temp;
-  result._aligned = !ambig && (this._aligned || other._aligned);
-  return result;
+  return new range(temp.idxType, temp.boundedType, temp.stridable,
+                   temp, !ambig && (this._aligned || other._aligned));
 }
 
 
@@ -480,10 +534,8 @@ proc #(r:range(?), i:integral)
     __primitive("chpl_error", "count -- Cannot count off elements from a range which is ambiguously aligned.");
 
   var temp = chpl__count(r._base, i);
-  var result = new range(temp.idxType, temp.boundedType, temp.stridable);
-  result._base = temp;
-  result._aligned = r._aligned;
-  return result;
+  return new range(temp.idxType, temp.boundedType, temp.stridable,
+                   temp, r._aligned);
 }
 
 
@@ -497,7 +549,7 @@ iter range.these()
   // TODO: hilde
   // Does this test nesting affect performance?
   // Inline and remove the test if so.
-  if this.isAmbiguous() then 
+  if this.isAmbiguous() then
     __primitive("chpl_error", "these -- Attempt to iterate over a range with ambiguous alignment.");
   for i in _base.these() do yield i;
 }
