@@ -11,15 +11,15 @@ if [ $# == 0 ] ; then
 else
   if [ $1 == "weekend" ] ; then
     EXAMPLES=
-    dayType="weekend"
+    dayType="/weekend"
   else
     EXAMPLES="-examples"
     dayType=""
   fi
 fi
 
-export CHPL_NIGHTLY_LOGDIR=/data/sea/cascade/chapel/Nightly/${dayType}
-export CHPL_NIGHTLY_STATDIR=/data/sea/cascade/chapel/Nightly/${dayType}/Stats
+export CHPL_NIGHTLY_LOGDIR=/data/sea/cascade/chapel/Nightly${dayType}
+export CHPL_NIGHTLY_STATDIR=/data/sea/cascade/chapel/Nightly${dayType}/Stats
 export CHPL_NIGHTLY_CRON_LOGDIR="$CHPL_NIGHTLY_LOGDIR"
 
 CHPL_HOME="/users/chapelu/chapel"
