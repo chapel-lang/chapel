@@ -11,6 +11,12 @@
 
 typedef uint8_t style_char_t;
 
+#define QIO_STRING_FORMAT_WORD 0
+#define QIO_STRING_FORMAT_BASIC 1
+#define QIO_STRING_FORMAT_CHPL 2
+#define QIO_STRING_FORMAT_JSON 3
+#define QIO_STRING_FORMAT_TOEND 4
+
 typedef struct qio_style_s {
   uint8_t binary;
   // binary style choices:
@@ -34,13 +40,15 @@ typedef struct qio_style_s {
   // string_end is used when scanning format==0.
   style_char_t string_start;
   style_char_t string_end;
-  uint8_t string_format; /* if 0: (none) string is as-is
-                         if 1: (basic) only escape string_end and \ with \
-                         if 2: (Chapel) escape string_end \ ' " \n with \
+      /* QIO_STRING_FORMAT_WORD  string is as-is; reading reads until whitespace.
+       QIO_STRING_FORMAT_BASIC only escape string_end and \ with \
+       QIO_STRING_FORMAT_CHPL  escape string_end \ ' " \n with \
                                and nonprinting characters c = 0xXY with \xXY
-                         if 3: (JSON) escape string_end " and \ with \,
+       QIO_STRING_FORMAT_JSON  escape string_end " and \ with \,
                                and nonprinting characters c = \uABCD
-                       */
+       QIO_STRING_FORMAT_TOEND string is as-is; reading reads until string_end
+     */
+  uint8_t string_format;
 
   // numeric scanning/printing choices
   uint8_t base; // 0 is %i; other valid values are 2 8 10 16

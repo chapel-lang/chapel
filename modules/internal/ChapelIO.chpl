@@ -43,6 +43,7 @@
 
   // NULL
   _extern const c_nil:c_ptr;
+  _extern proc is_c_nil(x):c_int;
 
   // error numbers
 
@@ -339,6 +340,12 @@
 
   _extern type style_char_t = c_char_t;
 
+  _extern const QIO_STRING_FORMAT_WORD:uint(8);
+  _extern const QIO_STRING_FORMAT_BASIC:uint(8);
+  _extern const QIO_STRING_FORMAT_CHPL:uint(8);
+  _extern const QIO_STRING_FORMAT_JSON:uint(8);
+  _extern const QIO_STRING_FORMAT_TOEND:uint(8);
+
   //_extern record qio_style_t {
   _extern record iostyle {
     var binary:uint(8);
@@ -359,12 +366,13 @@
     var string_start:style_char_t;
     var string_end:style_char_t;
 
-    /* if 0: (none) string is as-is
-       if 1: (basic) only escape string_end and \ with \
-       if 2: (Chapel) escape string_end \ ' " \n with \
-             and nonprinting characters c = 0xXY with \xXY
-       if 3: (JSON) escape string_end " and \ with \,
-             and nonprinting characters c = \uABCD
+    /* QIO_STRING_FORMAT_WORD  string is as-is; reading reads until whitespace.
+       QIO_STRING_FORMAT_BASIC only escape string_end and \ with \
+       QIO_STRING_FORMAT_CHPL  escape string_end \ ' " \n with \
+                               and nonprinting characters c = 0xXY with \xXY
+       QIO_STRING_FORMAT_JSON  escape string_end " and \ with \,
+                               and nonprinting characters c = \uABCD
+       QIO_STRING_FORMAT_TOEND string is as-is; reading reads until string_end
      */
     var string_format:uint(8);
     // numeric scanning/printing choices
@@ -563,21 +571,21 @@
   proc iostyle.native(str_style:int(64)=stringStyleWithVariableLength()):iostyle {
     var ret = this;
     ret.binary = 1;
-    ret.byteorder = iokind.native;
+    ret.byteorder = iokind.native:uint(8);
     ret.str_style = str_style;
     return ret;
   }
   proc iostyle.big(str_style:int(64)=stringStyleWithVariableLength()):iostyle {
     var ret = this;
     ret.binary = 1;
-    ret.byteorder = iokind.big;
+    ret.byteorder = iokind.big:uint(8);
     ret.str_style = str_style;
     return ret;
   }
   proc iostyle.little(str_style:int(64)=stringStyleWithVariableLength()):iostyle  {
     var ret = this;
     ret.binary = 1;
-    ret.byteorder = iokind.little;
+    ret.byteorder = iokind.little:uint(8);
     ret.str_style = str_style;
     return ret;
   }
@@ -688,6 +696,11 @@
   proc file.file(path:string, access:string, hints:iohint_t=0, err:ErrorHandler=nil) {
     seterr(err, qio_file_open_access(_file_internal, path, access, hints), path);
   }*/
+  proc file.check() {
+    if(1 == is_c_nil(_file_internal)) {
+      halt("Operation attempted on an invalid file");
+    }
+  }
 
   proc file.file(onErr:ErrorHandler=nil) {
     var tmp:int;
@@ -720,6 +733,8 @@
   // this prevents race conditions;
   // channel style is protected by channel lock, can be modified.
   proc file._style:iostyle {
+    check();
+
     var ret:iostyle;
     on __primitive("chpl_on_locale_num", this.home_uid) {
       var local_style:iostyle;
@@ -741,6 +756,7 @@
   /* Close a file.
      Alternately, file will be closed when it is no longer referred to */
   proc file.close(onErr:ErrorHandler=nil) {
+    check();
     on __primitive("chpl_on_locale_num", this.home_uid) {
       seterr(onErr, this.onErr, qio_file_close(_file_internal));
     }
@@ -748,6 +764,7 @@
 
   /* Sync a file to disk. */
   proc file.fsync(onErr:ErrorHandler=nil) {
+    check();
     on __primitive("chpl_on_locale_num", this.home_uid) {
       seterr(onErr, this.onErr, qio_file_sync(_file_internal));
     }
@@ -755,6 +772,7 @@
 
   /* Get the path to a file. */
   proc file.getPath(onErr:ErrorHandler=nil) : string {
+    check();
     var ret:string;
     on __primitive("chpl_on_locale_num", this.home_uid) {
       var tmp:string;
@@ -920,6 +938,8 @@
   */
 
   proc file.reader(param kind=iokind.dynamic, start:int(64) = 0, end:int(64) = max(int(64)), hints:c_int = 0, style:iostyle = this._style, onErr:ErrorHandler = nil): channel(false, kind) {
+    check();
+
     var ret:channel(false, kind);
     on __primitive("chpl_on_locale_num", this.home_uid) {
       ret = new channel(false, kind, this, hints, start, end, style, onErr);
@@ -928,7 +948,9 @@
   }
   // for convenience..
   proc file.lines(start:int(64) = 0, end:int(64) = max(int(64)), hints:c_int = 0, style:iostyle = this._style, onErr:ErrorHandler = nil) {
-    style.string_format = 0;
+    check();
+
+    style.string_format = QIO_STRING_FORMAT_TOEND;
     style.string_end = 0x0a; // '\n'
 
     param kind = iokind.dynamic;
@@ -941,6 +963,8 @@
 
 
   proc file.writer(param kind=iokind.dynamic, start:int(64) = 0, end:int(64) = max(int(64)), hints:c_int = 0, style:iostyle = this._style, onErr:ErrorHandler = nil): channel(true,kind) {
+    check();
+
     var ret:channel(true, kind);
     on __primitive("chpl_on_locale_num", this.home_uid) {
       ret = new channel(true, kind, this, hints, start, end, style, onErr);
@@ -1158,7 +1182,7 @@
     if t == ioNewline {
       return qio_channel_skip_past_newline(false, _channel_internal);
     } else if t == ioLiteral {
-      return qio_chanel_scan_literal(false, _channel_internal, x.val, x.val.length, x.ignoreWhiteSpace);
+      return qio_channel_scan_literal(false, _channel_internal, x.val, x.val.length, x.ignoreWhiteSpace);
     } else if kind == iokind.dynamic {
       var binary:uint(8) = qio_channel_binary(_channel_internal);
       var byteorder:uint(8) = qio_channel_byteorder(_channel_internal);
@@ -1257,7 +1281,8 @@
       // method in Chapel, but that seems to be a bit of a challenge
       // right now and I'm having trouble with scoping/modules.
       // So I'll go back to writeThis being generated by the
-      // compiler....
+      // compiler.... the writeThis generated by the compiler
+      // calls writeThisDefaultImpl.
       x.writeThis(writer);
       err = writer.err;
       delete writer;
@@ -1346,7 +1371,7 @@
       this.lock();
       var save_style = this._style();
       var mystyle = defaultStyle().text();
-      mystyle.string_format = 0;
+      mystyle.string_format = QIO_STRING_FORMAT_TOEND;
       mystyle.string_end = 0x0a; // ascii newline.
       this._set_style(mystyle);
       e = _read_one_internal(kind, arg);
@@ -1769,6 +1794,12 @@
        else write(new ioLiteral(")"));
       }
     }
+
+    proc writeThis(w:Writer) {
+      // MPF - I don't understand why I had to add this,
+      // but without it test/modules/diten/returnClassDiffModule5.chpl fails.
+      compilerError("writeThis on writer called");
+    }
   }
 
 
@@ -1942,6 +1973,7 @@ proc chpl_taskID_t.writeThis(f: Writer) {
   f.write(tmp);
 }
 
+_extern proc chpl_format(fmt: string, x): string;
 
 proc format(fmt: string, x:?t) where _isIntegralType(t) || _isFloatType(t) {
   if fmt.substring(1) == "#" {

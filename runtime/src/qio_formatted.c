@@ -95,6 +95,7 @@ err_t _peek_until_char(qio_channel_t* ch, wchar_t term_chr, int64_t* amt_read_ou
   return err;
 }*/
 
+// always appends room for a NULL byte at the end.
 static
 err_t _append_char(char** buf, size_t* buf_len, size_t* buf_max, wchar_t chr)
 {
@@ -281,9 +282,12 @@ err_t qio_channel_scan_string(const int threadsafe, qio_channel_t* ch, const cha
   int handle_back;
   int handle_0x;
   int handle_u;
+  int stop_space;
   unsigned long conv;
   qio_style_t* style;
   ssize_t nread = 0;
+  int64_t mark_offset;
+  int64_t end_offset;
 
   if( maxlen <= 0 ) maxlen = SSIZE_MAX - 1;
 
@@ -299,51 +303,70 @@ err_t qio_channel_scan_string(const int threadsafe, qio_channel_t* ch, const cha
   if( err ) goto unlock;
   ret_len = 0;
 
+  mark_offset = qio_channel_offset_unlocked(ch);
+
   err = qio_channel_mark(false, ch);
   if( err ) goto unlock;
 
   term_chr = style->string_end;
-  if( style->string_format == 0 ) {
+  if( style->string_format == QIO_STRING_FORMAT_WORD ) {
     handle_back = 0;
     handle_0x = 0;
     handle_u = 0;
-  } else if( style->string_format == 1 ) {
+    stop_space = 1;
+  } else if( style->string_format == QIO_STRING_FORMAT_BASIC ) {
     handle_back = 1;
     handle_0x = 0;
     handle_u = 0;
-  } else if( style->string_format == 2 ) {
+    stop_space = 0;
+  } else if( style->string_format == QIO_STRING_FORMAT_CHPL ) {
     handle_back = 1;
     handle_0x = 1;
     handle_u = 0;
-  } else if( style->string_format == 3 ) {
+    stop_space = 0;
+  } else if( style->string_format == QIO_STRING_FORMAT_JSON ) {
     handle_back = 1;
     handle_0x = 0;
     handle_u = 1;
+    stop_space = 0;
+  } else if( style->string_format == QIO_STRING_FORMAT_TOEND ) {
+    handle_back = 0;
+    handle_0x = 0;
+    handle_u = 0;
+    stop_space = 0;
   } else {
     handle_back = 1;
     handle_0x = 1;
     handle_u = 0;
-  }
-
-  // Look for the string-start character if
-  // we're not using format 0.
-  if( style->string_format != 0 ) {
-    while( 1 ) {
-      err = qio_channel_read_char(false, ch, &chr);
-      if( err ) break;
-      if( chr == style->string_start ) break;
-      if( ! iswspace(chr) ) break;
-    }
-    if( chr != style->string_start ) {
-      err = EFORMAT;
-      goto rewind;
-    }
+    stop_space = 0;
   }
 
   err = 0;
   for( nread = 0; nread < maxlen && !err; nread++ ) {
     err = qio_channel_read_char(false, ch, &chr);
     if( err ) break;
+
+    // If we're using FORMAT_WORD, skip any whitespace at the beginning
+    if( nread == 0 ) {
+      while( style->string_format != QIO_STRING_FORMAT_TOEND &&
+             iswspace(chr) ) {
+        // Read the next character!
+        err = qio_channel_read_char(false, ch, &chr);
+        if( err ) break;
+      }
+      if( style->string_format == QIO_STRING_FORMAT_WORD ||
+          style->string_format == QIO_STRING_FORMAT_TOEND ) {
+        // OK, use the character we have
+      } else if( chr == style->string_start ) {
+        // Read the next character!
+        err = qio_channel_read_char(false, ch, &chr);
+        if( err ) break;
+      } else {
+        // Format error.
+        err = EFORMAT;
+        break;
+      }
+    }
 
     // if it's a \ we'll probably do something special.
     if( handle_back && chr == '\\' ) {
@@ -385,19 +408,34 @@ err_t qio_channel_scan_string(const int threadsafe, qio_channel_t* ch, const cha
         // a backslash'd character.
         err = _append_char(&ret, &ret_len, &ret_max, chr);
       }
-    } else if( chr == term_chr ) {
+    } else if((stop_space && iswspace(chr)) || ((!stop_space) && (chr == term_chr )) ) {
       break;
     } else {
       err = _append_char(&ret, &ret_len, &ret_max, chr);
     }
   }
 
-  // Add the NULL...
+  // Add the NULL... space for this is allocated in _append_char.
   ret[ret_len] = '\0';
 
-  if( ret_len > 0 && err == EEOF && style->string_format == 0 ) err = 0;
+  end_offset = qio_channel_offset_unlocked(ch);
 
-rewind:
+  if(style->string_format == QIO_STRING_FORMAT_WORD ||
+     style->string_format == QIO_STRING_FORMAT_TOEND) {
+
+    // Unget the terminating character - there must
+    // be one (or else err!=0)
+    if( err == 0 ) {
+      // Unget the terminating character.
+      qio_channel_revert_unlocked(ch);
+      qio_channel_advance_unlocked(ch, end_offset - mark_offset - 1);
+      goto unlock;
+    }
+
+    // Not an error to reach EOF with these ones.
+    if( ret_len > 0 && err == EEOF ) err = 0;
+  }
+
   if( err ) {
     qio_channel_revert_unlocked(ch);
   } else {
@@ -640,7 +678,8 @@ err_t qio_channel_print_string(const int threadsafe, qio_channel_t* ch, const ch
   if( err ) goto unlock;
 
   // write the string itself, possible with some escape-handling.
-  if( style->string_format == 0 ) {
+  if( style->string_format == QIO_STRING_FORMAT_WORD ||
+      style->string_format == QIO_STRING_FORMAT_TOEND ) {
     // Do not interpret the string in any way... just write it.
     err = qio_channel_write_amt(false, ch, ptr, len);
     if( err ) goto rewind;
@@ -669,14 +708,14 @@ err_t qio_channel_print_string(const int threadsafe, qio_channel_t* ch, const ch
 
       // handle escaping for the different formats.
       switch (style->string_format) {
-        case 1:
+        case QIO_STRING_FORMAT_BASIC:
           if( chr == style->string_end || chr == '\\' ) {
             cbuf[0] = '\\';
             cbuf[1] = chr;
             clen = 2;
           }
           break;
-        case 2:
+        case QIO_STRING_FORMAT_CHPL:
           if( chr == style->string_end || chr == '\\' || chr == '\'' || chr == '"' || chr == '\n' ) {
             cbuf[0] = '\\';
             cbuf[1] = chr;
@@ -690,7 +729,7 @@ err_t qio_channel_print_string(const int threadsafe, qio_channel_t* ch, const ch
             }
           }
           break;
-        case 3:
+        case QIO_STRING_FORMAT_JSON:
           if( chr == style->string_end || chr == '\\' || chr == '"' ) {
             cbuf[0] = '\\';
             cbuf[1] = chr;
@@ -1334,6 +1373,7 @@ int _ftoa(char* dst, size_t size, double num, int base, const qio_style_t* style
   int got;
   int width;
   int isnegative;
+  int shownegative;
   int ret_width;
   int i;
   int precision, sigdigits;
@@ -1346,11 +1386,17 @@ int _ftoa(char* dst, size_t size, double num, int base, const qio_style_t* style
     isnegative = 0;
   }
 
+  if( isnan(num) ) {
+    shownegative = 0;
+  } else {
+    shownegative = isnegative;
+  }
+
   precision = style->precision;
   sigdigits = style->significant_digits;
 
   adjust_width = 0;
-  if( style->showplus || isnegative ) adjust_width++;
+  if( style->showplus || shownegative ) adjust_width++;
   if( !style->prefix_base && base != 10 ) {
     if( !isnan(num) && !isinf(num) ) adjust_width -= 2; // remove 0x
   }
@@ -1554,7 +1600,7 @@ int _ftoa(char* dst, size_t size, double num, int base, const qio_style_t* style
     }
   }
 
-  if( style->showplus || isnegative ) {
+  if( style->showplus || shownegative ) {
     char pluschar = (style->showplus==2)?style->pad_char:style->positive_char;
     // put the '+' or '-' sign.
     dst[i++] = isnegative?style->negative_char:pluschar;

@@ -1,8 +1,6 @@
 config var inputfile = "test.dat";
 
-var infile = new file(inputfile, path='./', mode=FileAccessMode.read);
-
-infile.open();
+var infile = open(inputfile, "r").reader();
 
 var n1, n2: int;
 

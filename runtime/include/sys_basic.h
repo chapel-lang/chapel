@@ -51,5 +51,6 @@ enum { EXTEND_ERROR_NUM = 3 };
 
 #define PTR_DIFFBYTES(end_ptr,start_ptr) (((unsigned char*)end_ptr) - ((unsigned char*)start_ptr))
 
+static inline int is_c_nil(void* x) { return x==NULL; }
 
 #endif

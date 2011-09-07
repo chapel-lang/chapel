@@ -1,5 +1,4 @@
-var outfile = new file("out.dat", FileAccessMode.write, "subdir");
+var outfile = open("subdir/out.dat", "w").writer();
 
-outfile.open();
 outfile.writeln("Hello, world!");
 outfile.close();

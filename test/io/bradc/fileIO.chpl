@@ -2,16 +2,14 @@ var x: int;
 var y: string;
 var z: bool;
 
-var f: file = new file("fileIO.in.txt", FileAccessMode.read);
+var r = open("fileIO.in.txt", "r").reader();
 
-f.open();
-f.readln(x);
-f.readln(y);
-f.readln(z);
-f.close();
+r.readln(x);
+r.readln(y);
+r.readln(z);
+r.close();
 
-f = new file("fileIO.out.txt", FileAccessMode.write);
+var w = open("fileIO.out.txt", "w").writer();
 
-f.open();
-f.writeln("(x,y,z) is: ", (x,y,z));
-f.close();
+w.writeln("(x,y,z) is: ", (x,y,z));
+w.close();

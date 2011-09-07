@@ -1,5 +1,6 @@
 #include "qio_formatted.h"
 #include <assert.h>
+#include <math.h>
 
 void test_endian(void)
 {
@@ -414,6 +415,17 @@ void test_printscan_float(void)
                         "nan", // %f, showpoint, precision 4
                         "nan", // %e, showpoint, precision 4
                        };
+  const char* nnan[] = { // writing nan
+                        "nan", // default style
+                        "nan", // %f precision 3
+                        "nan", // %e precision 3
+                        "-nan", // showpoint, showplus
+                        "nan", // hex
+                        "NAN", // hex, uppercase, showpoint, prec 3
+                        "nan", // %g, 4 significant digits
+                        "nan", // %f, showpoint, precision 4
+                        "nan", // %e, showpoint, precision 4
+                       };
   const char* x[] = { // writing 1.125e+300
                         "1.125e+300", // default style
                         "1124999999999999984717009863215819639889402246251651042717325796981054812448928754462634938945285169790751774504176833459124149130131831874871128930639759966162906545922666490056516990646142904182469580674455306426256469801266735686696548991733655898546719119989659797590624855449025294035374384873472.000", // %f precision 3
@@ -458,19 +470,24 @@ void test_printscan_float(void)
                         "0.0000", // %f, showpoint, precision 4
                         "2.2251e-308", // %e, showpoint, precision 4
                        };
+  double mynan = 0.0*(1.0/0.0);
+  double posnan = (mynan>0)?(mynan):(-mynan);
+  double negnan = -posnan;
   double nums[] = {0.0, 1.0,
-                   1.0/0.0 /*+inf*/, -1.0/0.0 /*-inf*/, 0.0*(1.0/0.0), /*nan*/
+                   1.0/0.0 /*+inf*/, -1.0/0.0 /*-inf*/,
+                   posnan,
+                   negnan,
                    1.125e+300, 6.125e-300,
                    1.7976931348623157e+308, 2.2250738585072014e-308 };
 
-  const char** expect_arr[] = { zero, one, plusinf, minusinf, nan,
+  const char** expect_arr[] = { zero, one, plusinf, minusinf, nan, nnan,
                                 x,y,large,small, NULL };
   char got[500];
   char sep[4] = {0,0,0,0};
   ssize_t amt_read;
   int i,j;
 
-  printf("Testing text float I/O\n");
+  //printf("Testing text float I/O\n");
 
   for( i = 0; i < NSTYLES; i++ ) {
     qio_style_init_default(&styles[i]);
@@ -526,8 +543,6 @@ void test_printscan_float(void)
       double num = nums[i];
       qio_style_t* style = &styles[j];
       double got_num;
-
-      if( isnan(num) && signbit(num) ) num = - num;
 
       //printf("Expect '%s' testing %e style %i\n", expect, num, j);
 
@@ -585,6 +600,7 @@ void test_printscan_float(void)
   qio_file_release(f);
   f = NULL;
 
+  printf("PASS: text float I/O\n");
 #undef NSTYLES
 }
 
@@ -672,7 +688,7 @@ void string_escape_tests()
      
             qio_channel_release(reading);
 
-            printf("Got %s expect %s\n", buf, expect);
+            //printf("Got %s expect %s\n", buf, expect);
             assert( memcmp(buf, expect, expect_len) == 0 );
 
             // Check that we can read it in again.
@@ -685,7 +701,7 @@ void string_escape_tests()
               err = qio_channel_scan_string(true, reading, &got, &got_len, -1);
               assert(!err);
 
-              printf("Read back %s expect %s\n", got, input);
+              //printf("Read back %s expect %s\n", got, input);
               assert( got_len == input_len );
               assert( memcmp(got, input, got_len) == 0 );
 
@@ -905,11 +921,11 @@ void basicstring_test()
         styles[8].binary = 1;
         styles[8].str_style = 0xffff; // updated below for STYLE 8!
 
-        styles[9].string_format = 1;
+        styles[9].string_format = QIO_STRING_FORMAT_BASIC;
         styles[9].string_start = '|';
         styles[9].string_end = '+';
-        styles[10].string_format = 2;
-        styles[11].string_format = 3;
+        styles[10].string_format = QIO_STRING_FORMAT_CHPL;
+        styles[11].string_format = QIO_STRING_FORMAT_JSON;
 
 
 	for(x=0;x<NUM_STR_STYLES;x++){
@@ -923,7 +939,7 @@ void basicstring_test()
         		err = qio_channel_create(&writing, f, QIO_CH_BUFFERED, 0, 1, 0, INT64_MAX, style);
 			assert(!err);
 
-                        printf("Writing string '%s' with style %i\n", string->string, x);
+                        //printf("Writing string '%s' with style %i\n", string->string, x);
 
                         if( style->binary ) 
                           err = qio_channel_write_string(true, style->byteorder, style->str_style, writing, string->string, string->length);
@@ -936,7 +952,7 @@ void basicstring_test()
 			err = qio_channel_create(&reading, f, QIO_CH_BUFFERED, 1, 0, 0, INT64_MAX, style);
 			assert(!err);
 
-                        printf("Reading string '%s' with style %i\n", string->string, x);
+                        //printf("Reading string '%s' with style %i\n", string->string, x);
                         if( style->binary ) 
                           err = qio_channel_read_string(true, style->byteorder, style->str_style, reading, &out, &out_len, -1);
                         else
@@ -944,7 +960,7 @@ void basicstring_test()
 			assert(!err);
 			qio_channel_release(reading);
 
-                        printf("Got '%s' expect '%s'\n", out, string->string);
+                        //printf("Got '%s' expect '%s'\n", out, string->string);
 
 			if(memcmp(out, string->string, string->length) != 0){
 				printf("FAIL: style %d, string='%s'\n", x, string->string);
@@ -952,13 +968,15 @@ void basicstring_test()
 				assert(0);
 			}
 
-			printf("PASS: style %d\n", x);
+			//printf("PASS: style %d\n", x);
 			if(out){ free((void*) out); out=NULL; }
 		}
 	}
 
         qio_file_release(f);
         f = NULL;
+       
+        printf("PASS: basic string test\n");
 #undef NUM_STR_STYLES
 #define NUM_STRINGS 1
 }

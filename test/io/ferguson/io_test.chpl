@@ -100,7 +100,7 @@ proc test_readlines()
   if noisy then writeln("Testing readlines: itemReader");
   {
     var style = defaultStyle();
-    style.string_format = 0;
+    style.string_format = QIO_STRING_FORMAT_TOEND;
     style.string_end = 0x0a;
     var ch = f.reader(style=style);
     for (line,i) in (ch.itemReader(string),1..) {
@@ -157,7 +157,7 @@ proc main() {
   testio(57.24e23:real(64));
   testio(-57.24e23:real(32));
   testio(-57.24e23:real(64));
-  testio("test string");
+  testio("teststring");
   testio(997.89+200.124i);
   testio(-997.89-200.124i);
   testio(1.0:imag(32));
