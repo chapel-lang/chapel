@@ -12,11 +12,14 @@
 #include <endian.h>
 #endif
 
-#ifdef __GLIBC__
+#ifdef htobe64
 // we should have htobe etc.
 
 #else
 
+#ifdef __bswap_64
+// OK, we have __bswap_64
+#else
 // slow compatability method.
 // stolen from glibc bits/byteswap.h
 #define __bswap_16(x) \
@@ -33,6 +36,8 @@
       | (((x) & 0x0000000000ff0000ull) << 24)                                 \
       | (((x) & 0x000000000000ff00ull) << 40)                                 \
       | (((x) & 0x00000000000000ffull) << 56))
+#endif
+
 
 // stolen from glibc endian.h
 # if __BYTE_ORDER == __LITTLE_ENDIAN
