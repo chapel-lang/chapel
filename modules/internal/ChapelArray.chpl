@@ -23,6 +23,14 @@ proc _newPrivatizedClass(value) {
       __primitive("chpl_newPrivatizedClass", newValue);
       newValue.pid = n;
     }
+    cobegin {
+      if chpl_localeTree.left then
+        on chpl_localeTree.left do
+          _newPrivatizedClassHelp(newValue, originalValue, n, hereID, privatizeData);
+      if chpl_localeTree.right then
+        on chpl_localeTree.right do
+          _newPrivatizedClassHelp(newValue, originalValue, n, hereID, privatizeData);
+    }
   }
 
   privatizeLock$.readFE();
@@ -39,6 +47,14 @@ proc _reprivatize(value) {
     if hereID != here.id {
       newValue = chpl_getPrivatizedCopy(newValue.type, pid);
       newValue.dsiReprivatize(parentValue, reprivatizeData);
+    }
+    cobegin {
+      if chpl_localeTree.left then
+        on chpl_localeTree.left do
+          _reprivatizeHelp(newValue, originalValue, pid, hereID, reprivatizeData);
+      if chpl_localeTree.right then
+        on chpl_localeTree.right do
+          _reprivatizeHelp(newValue, originalValue, pid, hereID, reprivatizeData);
     }
   }
 }
