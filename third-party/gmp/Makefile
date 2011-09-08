@@ -14,24 +14,23 @@ GMP_DIR = $(GMP_ABS_DIR)
 
 default: all
 
-all: nanox
+all: gmp
 
 clean: FORCE
-	cd $(GMP_SUBDIR) && make clean
+	rm -rf $(GMP_BUILD_DIR)
 
 clobber: FORCE
-	rm -r $(GMP_INSTALL_DIR)
+	rm -rf build install
 
-
-nanox-config: FORCE
+gmp-config: FORCE
 	mkdir -p $(GMP_BUILD_DIR)
 	cd $(GMP_BUILD_DIR) && $(GMP_SUBDIR)/configure CC='$(CC)' CXX='$(CXX)' --prefix=$(GMP_INSTALL_DIR)
 
-nanox-build: FORCE
+gmp-build: FORCE
 	cd $(GMP_BUILD_DIR) && $(MAKE)
 	cd $(GMP_BUILD_DIR) && $(MAKE) check
 	cd $(GMP_BUILD_DIR) && $(MAKE) install
 
-nanox: nanox-config nanox-build
+gmp: gmp-config gmp-build
 
 FORCE:

@@ -1,8 +1,12 @@
 CHAPEL_ROOT = ../..
+CHAPEL_SUBDIR = third-party/tcmalloc
 CHPL_MAKE_HOST_TARGET = --target
-include $(CHPL_HOME)/make/Makefile.base
+include $(CHAPEL_ROOT)/make/Makefile.base
 
-TCMALLOC_DIR = $(shell pwd)
+TCMALLOC_ABS_DIR = $(shell pwd)
+TCMALLOC_INSTALL_DIR=$(TCMALLOC_ABS_DIR)/$(TCMALLOC_INSTALL_SUBDIR)
+TCMALLOC_BUILD_DIR = $(TCMALLOC_ABS_DIR)/$(TCMALLOC_BUILD_SUBDIR)
+TCMALLOC_DIR = $(TCMALLOC_ABS_DIR)
 
 CONFIG_FLAGS = --config-cache \
                --enable-shared=no \
@@ -17,24 +21,22 @@ default: all
 all: tcmalloc
 
 clean: FORCE
-	cd $(TCMALLOC_SUBDIR) && make clean
+	rm -rf $(TCMALLOC_BUILD_DIR)
 
 clobber: FORCE
-	cd $(TCMALLOC_SUBDIR) && make distclean
-	rm -rf $(TCMALLOC_INSTALL_DIR)
-
+	rm -rf build install
 
 tcmalloc: configure-tcmalloc build-tcmalloc install-tcmalloc
 
 configure-tcmalloc: FORCE
-	cd $(TCMALLOC_SUBDIR) \
-	  && CC='$(CC)' CXX='$(CXX)' ./configure $(CONFIG_FLAGS)
+	mkdir -p $(TCMALLOC_BUILD_DIR)
+	cd $(TCMALLOC_BUILD_DIR) && $(TCMALLOC_SUBDIR)/configure CC='$(CC)' CXX='$(CXX)' $(CONFIG_FLAGS)
 
 build-tcmalloc: FORCE
-	cd $(TCMALLOC_SUBDIR) && XTPE_LINK_TYPE=dynamic $(MAKE)
+	cd $(TCMALLOC_BUILD_DIR) && XTPE_LINK_TYPE=dynamic $(MAKE)
 
 install-tcmalloc: FORCE
-	cd $(TCMALLOC_SUBDIR) && $(MAKE) install
+	cd $(TCMALLOC_BUILD_DIR) && $(MAKE) install
 
 
 FORCE:

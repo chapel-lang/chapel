@@ -48,10 +48,10 @@ default: all
 all: gasnet
 
 clean: FORCE
-	cd $(GASNET_SUBDIR) && make clean
+	rm -rf $(QTHREAD_BUILD_DIR)
 
 clobber: FORCE
-	rm -r $(GASNET_INSTALL_DIR)
+	rm -rf build install
 
 
 gasnet-config: FORCE

@@ -9,11 +9,19 @@ default: all
 all: dlmalloc gasnet gmp nanox qthread tcmalloc
 
 clean: FORCE
+	cd dlmalloc && $(MAKE) clean
 	cd gasnet && $(MAKE) clean
+	cd gmp && $(MAKE) clean
+	cd nanox && $(MAKE) clean
+	cd qthread && $(MAKE) clean
 	cd tcmalloc && $(MAKE) clean
 
 clobber: FORCE
+	cd dlmalloc && $(MAKE) clobber
 	cd gasnet && $(MAKE) clobber
+	cd gmp && $(MAKE) clobber
+	cd nanox && $(MAKE) clobber
+	cd qthread && $(MAKE) clobber
 	cd tcmalloc && $(MAKE) clobber
 
 depend:
