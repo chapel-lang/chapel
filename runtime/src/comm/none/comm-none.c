@@ -78,13 +78,13 @@ void chpl_comm_exit_all(int status) { }
 void  chpl_comm_put(void* addr, int32_t locale, void* raddr,
                     int32_t size, int32_t typeIndex, int32_t len,
                     int ln, chpl_string fn) {
-  memcpy(raddr, addr, size);
+  memcpy(raddr, addr, size*len);
 }
 
 void  chpl_comm_get(void* addr, int32_t locale, void* raddr,
                     int32_t size, int32_t typeIndex, int32_t len,
                     int ln, chpl_string fn) {
-  memcpy(addr, raddr, size);
+  memcpy(addr, raddr, size*len);
 }
 
 typedef struct {
