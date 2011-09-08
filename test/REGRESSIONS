@@ -155,9 +155,10 @@ seg fault (?)
 gasnet-everything regressions (other than the above)
 ====================================================
 
-seg fault in generated code (09/07/11)
---------------------------------------
-**88 new failures***
+possibly failing since 09/08/11 due to localeTree changes
+---------------------------------------------------------
+[Error matching program output for multilocale/deitz/needMultiLocales/dist/test_private_space]
+[Error matching program output for multilocale/deitz/needMultiLocales/streamCommCheck]
 
 nondet. execution timeout
 -------------------------
@@ -205,18 +206,10 @@ nondet. execution timeout
 block distribution regressions
 ==============================
 
-seg fault in executing code (09/07/11)
---------------------------------------
-*all*
-
 
 ===============================
 cyclic distribution regressions
 ===============================
-
-seg fault in executing code (09/07/11)
---------------------------------------
-*all*
 
 timeouts
 --------
@@ -277,10 +270,6 @@ redeclaration of identifier in scope (01/24/11)
 =====================================
 cray-xt-cray/cce-specific regressions
 =====================================
-
-seg fault during Chapel compilation (07/10/11)
-----------------------------------------------
-*all*
 
 new unreachable loop warning (05/29/11)
 ---------------------------------------
@@ -535,7 +524,7 @@ nondet. core dump
 
 nondet. incorrect output
 ------------------------
-[Error matching program output for release/examples/spec/Task_Parallelism_and_Synchronization/serialStmt2] (06/23/11, 06/26/11, 06/30/11, 07/04/11, 07/07/11, 07/13/11, 07/15/11, 08/18/11)
+[Error matching program output for release/examples/spec/Task_Parallelism_and_Synchronization/serialStmt2] (06/23/11, 06/26/11, 06/30/11, 07/04/11, 07/07/11, 07/13/11, 07/15/11, 08/18/11, 09/08/11)
 
 nondet. execution timeouts (ever since switching to 4 shepherds)
 --------------------------------------------------------
@@ -589,18 +578,6 @@ deadlock/livelock issue
 =========================================================
 qthreads+gasnet-specific tests (in addition to the above)
 =========================================================
-
-seg fault in generated code (09/07/11)
---------------------------------------
-[Error matching program output for release/examples/hello4-datapar-dist]
-[Error matching program output for release/examples/hpcc/fft]
-[Error matching program output for release/examples/hpcc/hpl]
-[Error matching program output for release/examples/hpcc/ptrans]
-[Error matching program output for release/examples/hpcc/ra]
-[Error matching program output for release/examples/hpcc/stream]
-[Error matching program output for release/examples/hpcc/variants/ra-cleanloop]
-[Error matching program output for release/examples/hpcc/variants/stream-promoted]
-[Error matching program output for release/examples/primers/distributions]
 
 nondet. timeout (09/06/11)
 --------------------------
