@@ -102,6 +102,9 @@ enum PrimitiveTag {
   PRIM_GET_SERIAL,                // get serial state
   PRIM_SET_SERIAL,                // set serial state to true or false
 
+  PRIM_CHPL_COMM_GET,   // Direct calls to the Chapel comm layer
+  PRIM_CHPL_COMM_PUT,   //  may eventually add others (e.g., non-blocking)
+
   PRIM_CHPL_ALLOC,
   PRIM_CHPL_ALLOC_PERMIT_ZERO,  // chpl_mem_alloc wrapper that permits size 0
   PRIM_CHPL_FREE,               // only for variables on heap?

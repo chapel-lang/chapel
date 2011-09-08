@@ -722,6 +722,37 @@ isTupleOfTuple(Expr *e) {
           toDefExpr(toClassType(e->typeInfo())->fields.head)->sym->type->symbol->hasFlag(FLAG_TUPLE));
 }
 
+static void
+genValue(FILE *outfile, Expr *e) {
+  SymExpr *sym = toSymExpr(e);
+  INT_ASSERT(sym);
+  if (sym->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
+    if (sym->typeInfo()->getField("addr", true)->typeInfo()->symbol->hasFlag(FLAG_REF)) {
+      gen(outfile, "*");
+    }
+    gen(outfile, "%A.addr, ", sym);
+  } else {
+    if (sym->typeInfo()->symbol->hasFlag(FLAG_REF)) {
+      gen(outfile, "*");
+    }
+    gen(outfile, "%A, ", sym);
+  }
+}
+
+static void
+genRef(FILE *outfile, Expr *e) {
+  SymExpr *sym = toSymExpr(e);
+  INT_ASSERT(sym);
+  if (sym->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
+    gen(outfile, "%A.addr, ", sym);
+  } else {
+    if (!sym->typeInfo()->symbol->hasFlag(FLAG_REF)) {
+      gen(outfile, "&");
+    }
+    gen(outfile, "%A, ", sym);
+  }
+}
+
 void CallExpr::codegen(FILE* outfile) {
   if (getStmtExpr() && getStmtExpr() == this)
     codegenStmt(outfile, this);
@@ -1049,8 +1080,11 @@ void CallExpr::codegen(FILE* outfile) {
             genTypeStructureIndex(outfile, eltType->symbol);
             gen(outfile, ", %A, %A)", call->get(3), call->get(4));
           } else {
-            gen(outfile, "%A = _ARRAY_GET(%A, %A)",
-                get(1), call->get(1), call->get(2));
+            gen(outfile, "%A = _ARRAY_GET(%A, ", get(1), call->get(1));
+            if (call->get(2)->typeInfo()->symbol->hasFlag(FLAG_REF)) {
+              gen(outfile, "*");
+            }
+            gen(outfile, "%A)", call->get(2));
           }
           break;
         }
@@ -1932,6 +1966,80 @@ void CallExpr::codegen(FILE* outfile) {
     case PRIM_SET_SERIAL:
       gen(outfile, "chpl_task_setSerial(%A)", get(1));
       break;
+    case PRIM_CHPL_COMM_GET:
+    case PRIM_CHPL_COMM_PUT: {
+      if (primitive->tag == PRIM_CHPL_COMM_GET) {
+        gen(outfile, "CHPL_COMM_GET(");
+      } else {
+        gen(outfile, "CHPL_COMM_PUT(");
+      }
+      // THIS IS YUCKY!!!
+      TypeSymbol *dt;
+      // destination data array
+      if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
+        Symbol *sym = get(1)->typeInfo()->getField("addr", true);
+        INT_ASSERT(sym);
+        dt = sym->typeInfo()->getValType()->symbol;
+        gen(outfile, "*%A.addr, ", get(1));
+      } else {
+        dt = get(1)->typeInfo()->getValType()->symbol;
+        if (get(1)->typeInfo()->symbol->hasFlag(FLAG_REF)) {
+          gen(outfile, "*");
+        }
+        gen(outfile, "%A, ", get(1));
+      }
+      // locale id
+      genValue(outfile, get(2));
+      /*
+      if (get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
+        if (get(2)->typeInfo()->getField("addr", true)->typeInfo()->symbol->hasFlag(FLAG_REF)) {
+          gen(outfile, "*");
+        }
+        gen(outfile, "%A.addr, ", get(2));
+      } else {
+        if (get(2)->typeInfo()->symbol->hasFlag(FLAG_REF)) {
+          gen(outfile, "*");
+        }
+        gen(outfile, "%A, ", get(2));
+      }
+      */
+      // source data array
+      genRef(outfile, get(3));
+      /*
+      if (get(3)->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
+        gen(outfile, "%A.addr, ", get(3));
+      } else {
+        if (!get(3)->typeInfo()->symbol->hasFlag(FLAG_REF)) {
+          gen(outfile, "&");
+        }
+        gen(outfile, "%A, ", get(3));
+      }
+      */
+      // data type
+      dt->codegen(outfile);
+      gen(outfile, ", ");
+      // type index
+      genTypeStructureIndex(outfile, dt);
+      gen(outfile, ", ");
+      // length
+      genValue(outfile, get(4));
+      /*
+      if (get(4)->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
+        if (get(4)->typeInfo()->getField("addr", true)->typeInfo()->symbol->hasFlag(FLAG_REF)) {
+          gen(outfile, "*");
+        }
+        gen(outfile, "%A.addr, ", get(4));
+      } else {
+        if (get(4)->typeInfo()->symbol->hasFlag(FLAG_REF)) {
+          gen(outfile, "*");
+        }
+        gen(outfile, "%A, ", get(4));
+      }
+      */
+      // line and filename
+      gen(outfile, "%A, %A)", get(5), get(6));
+      break;
+    }
     case PRIM_CHPL_ALLOC:
     case PRIM_CHPL_ALLOC_PERMIT_ZERO: {
       bool is_struct = false;
