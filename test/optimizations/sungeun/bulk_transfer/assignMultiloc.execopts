@@ -1,0 +1,3 @@
+--ttype=localGet
+--ttype=localPut
+--ttype=remoteGet

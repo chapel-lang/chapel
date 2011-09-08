@@ -30,6 +30,8 @@ use ChapelUtil;
 // modules, perhaps called debugDists and checkDists.
 //
 config param debugBlockDist = false;
+config param debugBlockDistBulkTransfer = false;
+
 config param sanityCheckDistribution = false;
 
 //
@@ -1100,3 +1102,120 @@ proc BlockArr.dsiPrivatize(privatizeData) {
   }
   return c;
 }
+
+proc BlockArr.dsiSupportsBulkTransfer() param return true;
+
+proc BlockArr.doiCanBulkTransfer() {
+  if dom.stridable then
+    for param i in 1..rank do
+      if dom.whole.dim(i).stride != 1 then return false;
+
+  return true;
+}
+
+proc BlockArr.doiBulkTransfer(B) {
+  if debugBlockDistBulkTransfer then resetCommDiagnostics();
+  coforall i in dom.dist.targetLocDom do // for all locales
+    on dom.dist.targetLocales(i)  {
+      if debugBlockDistBulkTransfer then startCommDiagnosticsHere();
+      if (rank==1) {
+        var lo=dom.locDoms[i].myBlock.low;
+        const start=lo;
+        //use divCeilPos(i,j) to know the limits
+        //but i and j has to be possitive.
+        for (rid, rlo, size) in ConsecutiveChunks(dom,B._value.dom,i,start) {
+          if debugBlockDistBulkTransfer then writeln("Local Locale id=",i,
+                                            "; Remote locale id=", rid,
+                                            "; size=", size,
+                                            "; lo=", lo,
+                                            "; rlo=", rlo
+                                            );
+          // NOTE: This does not work with --heterogeneous, but heterogeneous
+          // compilation does not work right now.  This call should be changed
+          // once that is fixed.
+          var dest = locArr[i].myElems._value.data; // can this be myLocArr?
+          var src = B._value.locArr[rid].myElems._value.data;
+          __primitive("chpl_comm_get",
+                      __primitive("array_get", dest,
+                                  locArr[i].myElems._value.getDataIndex(lo)),
+                      rid,
+                      __primitive("array_get", src,
+                                  B._value.locArr[rid].myElems._value.getDataIndex(rlo)),
+                      size);
+          lo+=size;
+        }
+      } else {
+        var orig=dom.locDoms[i].myBlock.low(dom.rank);
+        for coord in dropDims(dom.locDoms[i].myBlock, dom.locDoms[i].myBlock.rank) {
+          var lo=if rank==2 then (coord,orig) else ((...coord), orig);
+          const start=lo;
+          for (rid, rlo, size) in ConsecutiveChunksD(dom,B._value.dom,i,start) {
+            if debugBlockDistBulkTransfer then writeln("Local Locale id=",i,
+                                        "; Remote locale id=", rid,
+                                        "; size=", size,
+                                        "; lo=", lo,
+                                        "; rlo=", rlo
+                                        );
+          var dest = locArr[i].myElems._value.data; // can this be myLocArr?
+          var src = B._value.locArr[rid].myElems._value.data;
+          __primitive("chpl_comm_get",
+                      __primitive("array_get", dest,
+                                  locArr[i].myElems._value.getDataIndex(lo)),
+                      dom.dist.targetLocales(rid).id,
+                      __primitive("array_get", src,
+                                  B._value.locArr[rid].myElems._value.getDataIndex(rlo)),
+                      size);
+            lo(rank)+=size;
+          }
+        }
+      }
+      if debugBlockDistBulkTransfer then stopCommDiagnosticsHere();
+    }
+  if debugBlockDistBulkTransfer then writeln("Comms:",getCommDiagnostics());
+}
+
+iter ConsecutiveChunks(d1,d2,lid,lo) {
+  var elemsToGet = d1.locDoms[lid].myBlock.numIndices;
+  const offset   = d2.whole.low - d1.whole.low;
+  var rlo=lo+offset;
+  var rid  = d2.dist.targetLocsIdx(rlo);
+  while (elemsToGet>0) {
+    const size = min(d2.locDoms[rid].myBlock.numIndices,elemsToGet):int;
+    yield (rid,rlo,size);
+    rid +=1;
+    rlo += size;
+    elemsToGet -= size;
+  }
+}
+
+iter ConsecutiveChunksD(d1,d2,i,lo) {
+  var rank=d1.rank;
+  var elemsToGet = d1.locDoms[i].myBlock.dim(rank).length;
+  const offset   = d2.whole.low - d1.whole.low;
+  var rlo = lo+offset;
+  var rid = d2.dist.targetLocsIdx(rlo);
+  while (elemsToGet>0) {
+    const size = min(d2.locDoms[rid].myBlock.dim(rank).length,elemsToGet);
+    yield (rid,rlo,size);
+    rid(rank) +=1;
+    rlo(rank) += size;
+    elemsToGet -= size;
+  }
+}
+
+//Brad's utility function. It drops from Domain D de dimensions
+//indicated by the subsequent parammeters dims...
+proc dropDims(D: domain, dims...) {
+  var r = D.dims();
+  var r2: (D.rank-dims.size)*r(1).type;
+  var j = 1;
+  for i in 1..D.rank do
+    for k in 1..dims.size do
+      if dims(k) != i {
+        r2(j) = r(i);
+        j+=1;
+      }
+  var DResult = [(...r2)];
+  return DResult;
+}
+

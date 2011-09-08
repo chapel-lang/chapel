@@ -283,4 +283,10 @@ class BaseArr {
 
   proc dsiSupportsPrivatization() param return false;
   proc dsiRequiresPrivatization() param return false;
+
+  proc dsiSupportsBulkTransfer() param return false;
+  proc doiCanBulkTransfer() param return false;
+  proc doiBulkTransfer(B){ 
+    halt("This array type does not support bulk transfer.");
+  }
 }
