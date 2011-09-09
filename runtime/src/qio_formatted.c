@@ -409,6 +409,9 @@ err_t qio_channel_scan_string(const int threadsafe, qio_channel_t* ch, const cha
         err = _append_char(&ret, &ret_len, &ret_max, chr);
       }
     } else if((stop_space && iswspace(chr)) || ((!stop_space) && (chr == term_chr )) ) {
+      if(style->string_format == QIO_STRING_FORMAT_TOEND) {
+        err = _append_char(&ret, &ret_len, &ret_max, chr);
+      }
       break;
     } else {
       err = _append_char(&ret, &ret_len, &ret_max, chr);
@@ -420,8 +423,7 @@ err_t qio_channel_scan_string(const int threadsafe, qio_channel_t* ch, const cha
 
   end_offset = qio_channel_offset_unlocked(ch);
 
-  if(style->string_format == QIO_STRING_FORMAT_WORD ||
-     style->string_format == QIO_STRING_FORMAT_TOEND) {
+  if(style->string_format == QIO_STRING_FORMAT_WORD) {
 
     // Unget the terminating character - there must
     // be one (or else err!=0)
@@ -1870,7 +1872,6 @@ error:
 
 err_t qio_channel_scan_complex(const int threadsafe, qio_channel_t* ch, void* re_out, void* im_out, size_t len)
 {
-  //int64_t mark_offset = 0;
   wchar_t chr;
   err_t err;
 
@@ -1888,7 +1889,7 @@ err_t qio_channel_scan_complex(const int threadsafe, qio_channel_t* ch, void* re
   err = _getc_after_whitespace(ch, &chr);
   if( err ) goto rewind;
 
-  if( chr == '(' && ch->style.complex_style == 1 ) {
+  if( chr == '(' && ch->style.complex_style == (QIO_COMPLEX_FORMAT_READ_STRICT | QIO_COMPLEX_FORMAT_ABI) ) {
     err = EFORMAT;
     goto rewind;
   }
@@ -1917,46 +1918,79 @@ err_t qio_channel_scan_complex(const int threadsafe, qio_channel_t* ch, void* re
       goto rewind;
     }
   } else {
+    int64_t start;
+    int64_t after_real;
+    int64_t after_nextc;
+
     // We'll skip the whitespace again...
     qio_channel_revert_unlocked(ch);
 
     err = qio_channel_mark(false, ch);
     if( err ) goto unlock;
 
+    start = qio_channel_offset_unlocked(ch);
+
     // read the real part
     err = qio_channel_scan_float(false, ch, re_out, len);
     if( err ) goto rewind;
 
+    after_real = qio_channel_offset_unlocked(ch);
+
     err = _getc_after_whitespace(ch, &chr);
     if( err ) goto rewind;
 
-    if( ! (chr == '+' || chr == '-') ) {
-      err = EFORMAT;
-      goto rewind;
-    }
+    after_nextc = qio_channel_offset_unlocked(ch);
 
-
-    {
-      double im_part = 0.0;
-
-      err = qio_channel_scan_float(false, ch, &im_part, sizeof(double));
-      if( err ) goto rewind;
-
-      if( chr == '-' ) im_part = - im_part;
-
-      err = 0;
+    // is the character after the real number an i?
+    if( chr == 'i' && after_real + 1 == after_nextc ) {
       switch ( len ) {
         case 8:
-          *(double*) im_out = im_part;
+          *(double*) im_out = *(double*)re_out;
+          *(double*) re_out = 0.0;
           break;
         case 4:
-          *(float*) im_out = im_part;
+          *(float*) im_out = *(float*)re_out;
+          *(float*) re_out = 0.0;
+          break;
+      }
+    } else if( chr == '+' || chr == '-' ) {
+      err = qio_channel_scan_float(false, ch, im_out, len);
+      if( chr == '-' ) {
+        switch ( len ) {
+          case 8:
+            *(double*) im_out = - *(double*) im_out;
+            break;
+          case 4:
+            *(float*) im_out = - *(float*) im_out;
+            break;
+          default:
+            err = EINVAL;
+        }
+      }
+      if( err ) goto rewind;
+    } else {
+      // One element complex. Could just be real, or could be nan.
+      // If the real part is nan, copy it to the imaginary part.
+      // Otherwise, set the imaginary part to 0.
+      switch ( len ) {
+        case 8:
+          if( isnan(*(double*) re_out) ) *(double*) im_out = *(double*) re_out;
+          else *(double*) im_out = 0.0;
+          err = 0;
+          break;
+        case 4:
+          if( isnan(*(float*) re_out) ) *(float*) im_out = *(float*) re_out;
+          else *(float*) im_out = 0.0;
+          err = 0;
           break;
         default:
           err = EINVAL;
       }
 
-      if( err ) goto rewind;
+      // unget that character.
+      qio_channel_revert_unlocked(ch);
+      qio_channel_advance_unlocked(ch, after_real - start);
+      goto unlock;
     }
 
     err = qio_channel_read_char(false, ch, &chr);
@@ -1986,7 +2020,11 @@ err_t qio_channel_print_complex(const int threadsafe, qio_channel_t* ch, const v
   double num8;
   float num4;
   err_t err;
+  int re_isnan = 0;
+  int im_isnan = 0;
   int isnegative = 0;
+  style_char_t pos_char = ch->style.positive_char;
+  style_char_t neg_char = ch->style.negative_char;
 
   if( threadsafe ) {
     err = qio_lock(&ch->lock);
@@ -1996,27 +2034,27 @@ err_t qio_channel_print_complex(const int threadsafe, qio_channel_t* ch, const v
   err = qio_channel_mark(false, ch);
   if( err ) goto unlock;
 
-  if( ch->style.complex_style == 0 || ch->style.complex_style == 1 ) {
-    // write a + bi
-    err = qio_channel_print_float(false, ch, re_ptr, len);
-    if( err ) goto rewind;
-
-    { // is im_ptr positive or negative?
+  if( (ch->style.complex_style & QIO_COMPLEX_FORMAT_PART) == QIO_COMPLEX_FORMAT_ABI ) {
+    { // is im_ptr positive or negative? are either nan?
       err = 0;
       switch (len) {
         case 4:
           num4 = *(float*)im_ptr;
           num8 = num4;
+          re_isnan = isnan(*(float*)re_ptr);
+          im_isnan = isnan(num4);
           break;
         case 8:
           num8 = *(double*)im_ptr;
           num4 = num8;
+          re_isnan = isnan(*(double*)re_ptr);
+          im_isnan = isnan(num8);
           break;
         default:
           err = EINVAL;
       }
 
-      if( num8 < 0 ) {
+      if( signbit(num8) ) {
         isnegative = 1;
         num4 = -num4;
         num8 = -num8;
@@ -2024,33 +2062,45 @@ err_t qio_channel_print_complex(const int threadsafe, qio_channel_t* ch, const v
       else isnegative = 0;
     }
 
-    err = qio_channel_write_char(false, ch, ' ');
-    if( err ) goto rewind;
+    if( re_isnan ) {
+      err = qio_channel_print_float(false, ch, re_ptr, len);
+      if( err ) goto rewind;
+    } else if( im_isnan ) {
+      err = qio_channel_print_float(false, ch, im_ptr, len);
+      if( err ) goto rewind;
+    } else {
+      // write a + bi
+      err = qio_channel_print_float(false, ch, re_ptr, len);
+      if( err ) goto rewind;
 
-    err = qio_channel_write_char(false, ch, isnegative?'-':'+');
-    if( err ) goto rewind;
+      err = qio_channel_write_char(false, ch, ' ');
+      if( err ) goto rewind;
 
-    err = qio_channel_write_char(false, ch, ' ');
-    if( err ) goto rewind;
-  
-    switch (len) {
-      case 4:
-        err = qio_channel_print_float(false, ch, &num4, len);
-        break;
-      case 8:
-        err = qio_channel_print_float(false, ch, &num8, len);
-        break;
-      default:
-        err = EINVAL;
+      err = qio_channel_write_char(false, ch, isnegative?neg_char:pos_char);
+      if( err ) goto rewind;
+
+      err = qio_channel_write_char(false, ch, ' ');
+      if( err ) goto rewind;
+       
+      switch (len) {
+        case 4:
+          err = qio_channel_print_float(false, ch, &num4, len);
+          break;
+        case 8:
+          err = qio_channel_print_float(false, ch, &num8, len);
+          break;
+        default:
+          err = EINVAL;
+      }
+      if( err ) goto rewind;
+      
+
+      // write the i...
+      err = qio_channel_write_char(false, ch, 'i');
+      if( err ) goto rewind;
     }
-    if( err ) goto rewind;
-    
 
-    // write the i...
-    err = qio_channel_write_char(false, ch, 'i');
-    if( err ) goto rewind;
-
-  } else {
+  } else if( (ch->style.complex_style & QIO_COMPLEX_FORMAT_PART) == QIO_COMPLEX_FORMAT_PARENS ) {
     // write (a,b)
     err = qio_channel_write_char(false, ch, '(');
     if( err ) goto rewind;
@@ -2061,14 +2111,17 @@ err_t qio_channel_print_complex(const int threadsafe, qio_channel_t* ch, const v
     err = qio_channel_write_char(false, ch, ',');
     if( err ) goto rewind;
 
-    err = qio_channel_write_char(false, ch, ' ');
-    if( err ) goto rewind;
+    //err = qio_channel_write_char(false, ch, ' ');
+    //if( err ) goto rewind;
 
     err = qio_channel_print_float(false, ch, im_ptr, len);
     if( err ) goto rewind;
 
     err = qio_channel_write_char(false, ch, ')');
     if( err ) goto rewind;
+  } else {
+    err = EINVAL;
+    goto rewind;
   }
 
 rewind:

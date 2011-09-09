@@ -90,10 +90,13 @@ proc test_readlines()
     var line:string;
     var got:bool;
     got = ch.readline(line);
-    assert( got && line == "a b" );
+    if noisy then writeln("got ", got, " line ", line);
+    assert( got && line == "a b\n" );
     got = ch.readline(line);
-    assert( got && line == "c d" );
+    if noisy then writeln("got ", got, " line ", line);
+    assert( got && line == "c d\n" );
     got = ch.readline(line);
+    if noisy then writeln("got ", got, " line ", line);
     assert( !got );
   }
 
@@ -105,9 +108,9 @@ proc test_readlines()
     var ch = f.reader(style=style);
     for (line,i) in (ch.itemReader(string),1..) {
       if i == 1 {
-        assert(line == "a b");
+        assert(line == "a b\n");
       } else if i == 2 {
-        assert(line == "c d");
+        assert(line == "c d\n");
       } else {
         assert(false);
       }
@@ -119,9 +122,9 @@ proc test_readlines()
   {
     for (line,i) in (f.lines(),1..) {
       if i == 1 {
-        assert(line == "a b");
+        assert(line == "a b\n");
       } else if i == 2 {
-        assert(line == "c d");
+        assert(line == "c d\n");
       } else {
         assert(false);
       }

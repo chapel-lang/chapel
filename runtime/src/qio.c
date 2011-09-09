@@ -1931,6 +1931,15 @@ err_t _qio_buffered_behind(qio_channel_t* ch, int flushall)
   int64_t num_written;
   qio_method_t method = ch->hints & QIO_METHODMASK;
 
+  // If we are a FILE* type buffer, we want to automatically
+  // flush after every write, so that C I/O can be intermixed
+  // with QIO calls. This is (obviously) not the most perfomant way to do
+  // it, but we expect this to be used with stdout/stderr mostly,
+  // where timely updating (e.g. line-buffering) is more important
+  // than total speed.
+  if( (ch->hints & QIO_METHODMASK) == QIO_METHOD_FREADFWRITE ) {
+    flushall = 1;
+  }
 
   write_start = qbuffer_begin(&heavy->buf);
   write_end = _av_start_iter(heavy);

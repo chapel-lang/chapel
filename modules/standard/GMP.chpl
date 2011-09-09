@@ -254,6 +254,8 @@ module GMP {
   // printf/scanf
   _extern proc gmp_printf(fmt: string, arg...);
   _extern proc gmp_fprintf(fp: _file, fmt: string, arg...);
+  _extern proc gmp_fprintf(fp: _file, fmt: string, arg...);
+  _extern proc gmp_asprintf(inout ret: string, fmt: string, arg...);
 
 
 

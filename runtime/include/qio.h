@@ -750,18 +750,13 @@ err_t qio_channel_write(const int threadsafe, qio_channel_t* ch, const void* ptr
     ch->cached_cur = VOID_PTR_ADD(ch->cached_cur, len);
     *amt_written = len;
     err = 0;
+    // Flush FILE* buffers after every write, so that C I/O
+    // can be intermixed with QIO calls.
+    if( (ch->hints & QIO_METHODMASK) == QIO_METHOD_FREADFWRITE) {
+      err = _qio_channel_flush_unlocked(ch);
+    }
   } else {
     err = _qio_slow_write(ch, ptr, len, amt_written);
-  }
-
-  // If we are a FILE* type buffer, we want to automatically
-  // flush after every write, so that C I/O can be intermixed
-  // with QIO calls. This is (obviously) not the most perfomant way to do
-  // it, but we expect this to be used with stdout/stderr mostly,
-  // where timely updating (e.g. line-buffering) is more important
-  // than total speed.
-  if( !err && ((ch->hints & QIO_METHODMASK) == QIO_METHOD_FREADFWRITE) ) {
-    err = _qio_channel_flush_unlocked(ch);
   }
 
   if( threadsafe ) {

@@ -193,9 +193,9 @@
       var strerror_err:err_t;
       errstr = sys_strerror_str(syserr, strerror_err); 
       if path == "" {
-        __primitive("chpl_error", "Unhandled system error " + syserr:string + " " + errstr);
+        __primitive("chpl_error", "Unhandled system error: " + errstr + " (" + syserr:string + ")");
       } else {
-        __primitive("chpl_error", "Unhandled system error " + syserr:string + " " + errstr); // TODO file:offset
+        __primitive("chpl_error", "Unhandled system error: " + errstr + " (" + syserr:string + ")");
       }
     }
   }
@@ -221,10 +221,10 @@
         var strerror_err:err_t;
         errstr = sys_strerror_str(syserr, strerror_err); 
         if path == "" {
-          __primitive("chpl_error", "Unhandled system error " + syserr + " " + errstr);
+          __primitive("chpl_error", "Unhandled system error: " + errstr + " (" + syserr:string + ")");
         } else {
-          __primitive("chpl_error", "Unhandled system error " + syserr:string + " " + errstr); // TODO file:offset
-          //__primitive("chpl_error", "Unhandled system error " + syserr + " " +
+          __primitive("chpl_error", "Unhandled system error: " + errstr + " (" + syserr:string + ")");
+          //__primitive("chpl_error", "Unhandled system error: " + syserr + " " +
           //            errstr + " with file " + path " : " + offset);
         }
       }
@@ -242,9 +242,9 @@
         var strerror_err:err_t;
         errstr = sys_strerror_str(syserr, strerror_err); 
         if path == "" {
-          __primitive("chpl_error", "Unhandled system error " + syserr + " " + errstr);
+          __primitive("chpl_error", "Unhandled system error: " + errstr + " (" + syserr:string + ")");
         } else {
-          __primitive("chpl_error", "Unhandled system error " + syserr + " " + errstr); // TODO file:offset
+          __primitive("chpl_error", "Unhandled system error: " + errstr + " (" + syserr:string + ")"); // TODO file:offset
         }
       }
     }
@@ -879,8 +879,8 @@
   // Used to represent "\n", but never escaped...
   record ioNewline {
     proc writeThis(f: Writer) {
-      // because this is handled explicitly in read/write.
-      halt("ioNewline writeThis should never be reached");
+      // Normally this is handled explicitly in read/write.
+      f.write("\n");
     }
   }
   // Used to represent a constant string we want to read or write...
@@ -888,8 +888,8 @@
     var val: string;
     var ignoreWhiteSpace: bool = true;
     proc writeThis(f: Writer) {
-      // because this is handled explicitly in read/write.
-      halt("ioLiteral writeThis should never be reached");
+      // Normally this is handled explicitly in read/write.
+      f.write(val);
     }
   }
 
@@ -1045,7 +1045,17 @@
       var len:ssize_t;
       return qio_channel_scan_string(false, _channel_internal, x, len, -1);
     } else if _isEnumeratedType(t) {
-      compilerError("Enumerated types not yet supported in text channel.read (_read_text_internal)");
+      var err:err_t;
+      for i in chpl_enumerate(t) {
+        var str:string = i:string;
+        var slen:ssize_t = str.length;
+        err = qio_channel_scan_literal(false, _channel_internal, str, slen, 1);
+        if err == 0 {
+          x = i;
+          break;
+        } else if err != EFORMAT then break;
+      }
+      return err;
     } else {
       compilerError("Unknown primitive type in _read_text_internal ", typeToString(t));
     }
@@ -1136,7 +1146,7 @@
       var i:enum_mintype(t);
       var err:err_t;
       err = qio_channel_read_int(false, byteorder, _channel_internal, i, numBytes(i.type), _isSignedType(i.type));
-      x = i;
+      x = i:t;
       return err;
     } else {
       compilerError("Unknown primitive type in _read_binary_internal ", typeToString(t));
@@ -1276,7 +1286,7 @@
       return _write_one_internal(kind, new ioLiteral("nil", binary==0));
     } else {
       var err:err_t;
-      var writer = new Writer(ch=this, err=0);
+      var writer = new ChannelWriter(ch=this, err=0);
       // MPF: We would like to entirely write the default writeThis
       // method in Chapel, but that seems to be a bit of a challenge
       // right now and I'm having trouble with scoping/modules.
@@ -1370,11 +1380,11 @@
     on __primitive("chpl_on_locale_num", this.home_uid) {
       this.lock();
       var save_style = this._style();
-      var mystyle = defaultStyle().text();
+      var mystyle = save_style.text();
       mystyle.string_format = QIO_STRING_FORMAT_TOEND;
       mystyle.string_end = 0x0a; // ascii newline.
       this._set_style(mystyle);
-      e = _read_one_internal(kind, arg);
+      e = _read_one_internal(iokind.dynamic, arg);
       this._set_style(save_style);
       this.unlock();
     }
@@ -1717,30 +1727,29 @@
   }
 
   class Writer {
-    var ch:channel(true, iokind.dynamic);
-    var err:err_t;
+    proc writeIt(x) {
+      //compilerError("Generic Writer.writeIt called");
+      halt("Generic Writer.writeIt called");
+    }
+    // if it's binary, we don't decorate class/record fields and values
+    proc binary:bool { return false; }
+
     proc write(args ...?k) {
       for param i in 1..k {
-        if err == 0 {
-          err = ch._write_one_internal(iokind.dynamic, args(i));
-        }
+        writeIt(args(i));
       }
     }
     proc writeln(args ...?k) {
       for param i in 1..k {
-        if err == 0 {
-          err = ch._write_one_internal(iokind.dynamic, args(i));
-        }
+        writeIt(args(i));
       }
-
       var nl = new ioNewline();
-      if err == 0 then err = ch._write_one_internal(iokind.dynamic, nl);
+      writeIt(nl);
     }
     proc writeln() {
       var nl = new ioNewline();
-      if err == 0 then err = ch._write_one_internal(iokind.dynamic, nl);
+      writeIt(nl);
     }
-
     proc writeThisFieldsDefaultImpl(x:?t, inout first:bool, binary:bool) {
       param num_fields = __primitive("num fields", t);
 
@@ -1774,10 +1783,9 @@
     // happens now with buildDefaultWriteFunction
     // since it has the concrete type and then calls this method.
     proc writeThisDefaultImpl(x:?t) {
-      var binary:uint(8) = qio_channel_binary(ch._channel_internal);
+      var isbinary:bool = binary;
 
-
-      if binary==0 {
+      if !isbinary {
         if isClassType(t) {
           write(new ioLiteral("{"));
         } else {
@@ -1787,14 +1795,27 @@
 
       var first = true;
 
-      writeThisFieldsDefaultImpl(x, first, binary>0);
+      writeThisFieldsDefaultImpl(x, first, isbinary);
 
-      if binary==0 {
+      if !isbinary {
        if isClassType(t) then write(new ioLiteral("}"));
        else write(new ioLiteral(")"));
       }
     }
+  }
 
+  class ChannelWriter : Writer {
+    var ch:channel(true, iokind.dynamic);
+    var err:err_t;
+    proc writeIt(x) {
+      if err == 0 {
+        err = ch._write_one_internal(iokind.dynamic, x);
+      }
+    }
+    proc binary:bool{
+      var ret:uint(8) = qio_channel_binary(ch._channel_internal);
+      return ret != 0;
+    }
     proc writeThis(w:Writer) {
       // MPF - I don't understand why I had to add this,
       // but without it test/modules/diten/returnClassDiffModule5.chpl fails.
@@ -1899,7 +1920,7 @@ proc assert(test: bool, args ...?numArgs) {
   if !test {
     //chpl_error_noexit("assert failed - ", -1, "");
     __primitive("chpl_error_noexit", "assert failed - ");
-    stderr.writeln(args);
+    stderr.writeln((...args));
     chpl_exit_backtrace(1);
     //exit(1);
     //__primitive("chpl_error", "assert failed");

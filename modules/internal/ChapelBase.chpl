@@ -1042,17 +1042,20 @@ proc _isSimpleScalarType(type t) param return
   _isBooleanType(t) | _isIntegralType(t) | _isFloatType(t);
 
 proc _isBooleanType(type t) param return
-  (t == bool) | (t == bool(8)) | (t == bool(16)) | (t == bool(32)) | (t == bool(64));
+  (t == bool) | (t == bool(8)) | (t == bool(16)) | (t == bool(32)) | (t == bool(64)) |
+  (_isVolatileType(t) && _isBooleanType(_volToNon(t)));
 
 proc _isIntegralType(type t) param return
   _isSignedType(t) || _isUnsignedType(t);
 
 proc _isSignedType(type t) param return
-  (t == int(8)) || (t == int(16)) || (t == int(32)) || (t == int(64));
+  (t == int(8)) || (t == int(16)) || (t == int(32)) || (t == int(64)) |
+  (_isVolatileType(t) && _isSignedType(_volToNon(t)));
 
 
 proc _isUnsignedType(type t) param return
-  (t == uint(8)) || (t == uint(16)) || (t == uint(32)) || (t == uint(64));
+  (t == uint(8)) || (t == uint(16)) || (t == uint(32)) || (t == uint(64)) |
+  (_isVolatileType(t) && _isUnsignedType(_volToNon(t)));
 
 proc _isEnumeratedType(type t) param {
   proc isEnum(type t: enumerated) param return true;
@@ -1065,13 +1068,16 @@ proc _isComplexType(type t) param return
 
 proc _isFloatType(type t) param return
   (t == real(32)) | (t == real(64)) |
-  (t == imag(32)) | (t == imag(64));
+  (t == imag(32)) | (t == imag(64)) |
+  (_isVolatileType(t) && _isFloatType(_volToNon(t)));
 
 proc _isRealType(type t) param return
-  (t == real(32)) | (t == real(64));
+  (t == real(32)) | (t == real(64)) |
+  (_isVolatileType(t) && _isRealType(_volToNon(t)));
 
 proc _isImagType(type t) param return
-  (t == imag(32)) | (t == imag(64));
+  (t == imag(32)) | (t == imag(64)) |
+  (_isVolatileType(t) && _isImagType(_volToNon(t)));
 
 proc _isVolatileType(type t) param
   return ((t == volatile bool) | (t == volatile bool(8)) | 
@@ -1761,7 +1767,6 @@ proc fieldValueByName(x, param name) {
   compilerError("Not yet implemented");
   return __primitive("field value by name", x, name);
 }
-
 
 proc isClassType(type t) param where t:object return true;
 proc isClassType(type t) param return false;

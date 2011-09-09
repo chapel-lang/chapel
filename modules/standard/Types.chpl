@@ -77,6 +77,7 @@ proc numBits(type t) param where t == imag(32) return 32;
 proc numBits(type t) param where t == imag(64) return 64;
 proc numBits(type t) param where t == complex(64) return 64;
 proc numBits(type t) param where t == complex(128) return 128;
+proc numBits(type t) param where _isVolatileType(t) return numBits(_volToNon(t));
 
 //
 // numBytes(type) -- returns the number of bytes in a type

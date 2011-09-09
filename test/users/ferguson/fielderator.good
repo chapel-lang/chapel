@@ -4,7 +4,7 @@ y
 hi
 z
 17.23
-has .something 1
-has .nothing 0
+has .something true
+has .nothing false
 Calling .something
 got z 17.23
