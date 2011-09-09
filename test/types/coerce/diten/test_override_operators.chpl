@@ -1,14 +1,22 @@
-proc +(a: uint(64), b: int(64)) {
-  writeln("Found my plus");
-  return a + b:uint(64);
+record myr {
+  var x:int;
 }
 
-proc ==(a: int, b: int) {
-  writeln("Found my ==, but it's going to give != instead");
+proc +(a: myr, b: myr) {
+  writeln("Found my plus");
+  return new myr(a.x + b.x);
+}
+
+proc ==(a: myr, b: myr) {
+  writeln("Found my ==, returning !=");
   return a != b;
-} 
-var m: uint(64) = 1;
-var n: int = 2;
-var a: int = 1;
-writeln(m + n);
-writeln(a == n);
+}
+
+var a = new myr(1);
+var b = new myr(2);
+
+
+writeln(a + b);
+writeln(a == b);
+
+
