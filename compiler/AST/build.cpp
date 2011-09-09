@@ -192,12 +192,21 @@ Expr* buildStringLiteral(const char* pch) {
 
 
 Expr* buildDotExpr(BaseAST* base, const char* member) {
-  if (!strcmp("uid", member))
+  // The following optimization was added to avoid calling chpl_int_to_locale
+  // when all we end up doing is extracting the locale id, thus:
+  // chpl_int_to_locale(_get_locale(x)).id ==> _get_locale(x)
+
+  // This broke when realms were removed and uid was renamed as id.
+  // It might be better coding practice to label very special module code
+  // (i.e. types, fields, values known to the compiler) using pragmas. <hilde>
+  if (!strcmp("id", member))
     if (CallExpr* intToLocale = toCallExpr(base))
       if (intToLocale->isNamed("chpl_int_to_locale"))
         if (CallExpr* getLocale = toCallExpr(intToLocale->get(1)))
           if (getLocale->isPrimitive(PRIM_GET_LOCALEID))
             return getLocale->remove();
+
+  // "x.locale" member access expressions are rendered as chpl_int_to_locale(_get_locale(x)).
   if (!strcmp("locale", member))
     return new CallExpr("chpl_int_to_locale", 
                         new CallExpr(PRIM_GET_LOCALEID, base));
