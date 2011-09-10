@@ -127,7 +127,8 @@ getVisibleFunctions(BlockStmt* block,
 static void buildVisibleFunctionMap2() {
   for (int i = nVisibleFunctions; i < gFnSymbols.n; i++) {
     FnSymbol* fn = gFnSymbols.v[i];
-    if (!fn->hasFlag(FLAG_INVISIBLE_FN) && fn->defPoint->parentSymbol && !isArgSymbol(fn->defPoint->parentSymbol)) {
+    if (!fn->hasFlag(FLAG_INVISIBLE_FN) && fn->defPoint->parentSymbol &&
+        !isArgSymbol(fn->defPoint->parentSymbol)) {
       BlockStmt* block = NULL;
       if (fn->hasFlag(FLAG_AUTO_II)) {
         block = theProgram->block;
@@ -165,9 +166,11 @@ bool compareTypeExprs(Expr *lhs, Expr *rhs) {
 
   if (SymExpr *lhs_se = toSymExpr(lhs)) {
     if (SymExpr *rhs_se = toSymExpr(rhs)) {
-      printf("Both are sym exprs: %s %s\n", lhs_se->var->cname, rhs_se->var->cname);
+      printf("Both are sym exprs: %s %s\n", lhs_se->var->cname,
+             rhs_se->var->cname);
       if (VarSymbol *v = toVarSymbol(lhs_se->var)) {
-        if (v->immediate && v->immediate->const_kind == NUM_KIND_INT && v->immediate->num_index == INT_SIZE_32) {
+        if (v->immediate && v->immediate->const_kind == NUM_KIND_INT &&
+            v->immediate->num_index == INT_SIZE_32) {
           return (!strcmp(rhs_se->var->cname, "int32_t"));
         }
       }
@@ -178,21 +181,25 @@ bool compareTypeExprs(Expr *lhs, Expr *rhs) {
     if (CallExpr *rhs_call = toCallExpr(rhs)) {
       bool result = true;
       if ((lhs_call->baseExpr) && (rhs_call->baseExpr)) {
-        result = result && compareTypeExprs(lhs_call->baseExpr, rhs_call->baseExpr);
+        result = result && compareTypeExprs(lhs_call->baseExpr,
+                                            rhs_call->baseExpr);
       }
-      for (Expr *e_lhs = lhs_call->argList.head, *e_rhs = rhs_call->argList.head; e_lhs; e_lhs = e_lhs->next, e_rhs = e_rhs->next) {
+      for (Expr *e_lhs = lhs_call->argList.head,
+             *e_rhs = rhs_call->argList.head; e_lhs; e_lhs = e_lhs->next,
+             e_rhs = e_rhs->next) {
         if (!e_rhs) {
           return false;
         }
         result = result && compareTypeExprs(e_lhs, e_rhs);
       }
-      return result;      
+      return result;
     }
   }
   else if (BlockStmt *lhs_block = toBlockStmt(lhs)) {
     if (BlockStmt *rhs_block = toBlockStmt(rhs)) {
       bool result = true;
-      for (Expr *e_lhs = lhs_block->body.head, *e_rhs = rhs_block->body.head; e_lhs; e_lhs = e_lhs->next, e_rhs = e_rhs->next) {
+      for (Expr *e_lhs = lhs_block->body.head, *e_rhs = rhs_block->body.head;
+           e_lhs; e_lhs = e_lhs->next, e_rhs = e_rhs->next) {
         if (!e_rhs) {
           return false;
         }
@@ -204,23 +211,43 @@ bool compareTypeExprs(Expr *lhs, Expr *rhs) {
   return false;
 }
 
-Expr *typeCheckExpr(Expr *expr, Expr *retTypeExpr) {
-  if (SymExpr* se = toSymExpr(expr)) {
-    printf("  SymExpr: %s\n", se->var->name);
-    if (ArgSymbol *argSym = toArgSymbol(se->var)) {
+Expr *typeCheckExpr(Expr *actualTypeExpr, Expr *expectedTypeExpr) {
+  if (SymExpr *se_actual = toSymExpr(actualTypeExpr)) {
+    printf("  ActualSymExpr: %s (type: %p)\n", se_actual->var->name,
+        se_actual->var->type);
+    if (Type *actualType = se_actual->var->type) {
+      if (SymExpr *se_expected = toSymExpr(expectedTypeExpr)) {
+        printf("  ExpectedSymExpr: %s (type: %p)\n", se_expected->var->name,
+            se_expected->var->type);
+      }
+      else if (BlockStmt *block = toBlockStmt(expectedTypeExpr)) {
+        printf("  Expected is block stmt\n", expectedTypeExpr->astTag);
+        if (Expr *contents = block->body.head) {
+          if (SymExpr *se_contents = toSymExpr(contents)) {
+            printf("  ExpectedSymExpr: %s (type: %p)\n", se_contents->var->name,
+                se_contents->var->type);
+          }
+        }
+      }
+      else {
+        printf("  Expected not a sym expression: %i\n", expectedTypeExpr->astTag);
+      }
+    }
+    if (ArgSymbol *argSym = toArgSymbol(se_actual->var)) {
       printf ("     Arg->%p\n", argSym->typeExpr);
       return argSym->typeExpr;
     }
-    else if (DefExpr *defPt = se->var->defPoint) {
-      printf ("     Arg(defexpr)->%p %i\n", defPt->exprType, defPt->sym->astTag);
+    else if (DefExpr *defPt = se_actual->var->defPoint) {
+      printf ("     Arg(defexpr)->%p %p %i\n", defPt->exprType, defPt->init,
+              defPt->sym->astTag);
       return defPt->exprType;
     }
   }
-  else if (CallExpr* call = toCallExpr(expr)) {
+  else if (CallExpr* call = toCallExpr(actualTypeExpr)) {
     printf("  CallExpr: %p\n", call);
     if (call->baseExpr) {
       printf("  BaseExpr:\n");
-      typeCheckExpr(call->baseExpr, retTypeExpr);
+      typeCheckExpr(call->baseExpr, expectedTypeExpr);
     }
     else {
       printf("  Primitive: %s\n", call->primitive->name);
@@ -229,25 +256,29 @@ Expr *typeCheckExpr(Expr *expr, Expr *retTypeExpr) {
 
     for_alist(e, call->argList) {
       printf("  PRE-TYPECHECK:\n");
-      Expr *e_typeExpr = typeCheckExpr(e, retTypeExpr);
+      Expr *e_typeExpr = typeCheckExpr(e, expectedTypeExpr);
       printf("  TYPECHECKED: %p\n", e_typeExpr);
       if (call->primitive && (call->primitive->tag == PRIM_RETURN)) {
-        if ((!isBlockStmt(e_typeExpr)) && (isBlockStmt(retTypeExpr))) {
-          BlockStmt *retBody = toBlockStmt(retTypeExpr);
+        if ((!isBlockStmt(e_typeExpr)) && (isBlockStmt(expectedTypeExpr))) {
+          BlockStmt *retBody = toBlockStmt(expectedTypeExpr);
           if (!compareTypeExprs(e_typeExpr, retBody->body.head)) {
             printf("**********ERROR: Mismatched type expressions in return\n");
           }
           else {
-            printf("**********SUCCESS: Return expressions match: %p\n", e_typeExpr);
+            printf("**********SUCCESS: Return expressions match: %p\n",
+                   e_typeExpr);
+
             return e_typeExpr;
           }
         }
         else{
-          if (!compareTypeExprs(e_typeExpr, retTypeExpr)) {
+          if (!compareTypeExprs(e_typeExpr, expectedTypeExpr)) {
             printf("**********ERROR: Mismatched type expressions in return\n");
           }
           else {
-            printf("**********SUCCESS: Return expressions match: %p\n", e_typeExpr);
+            printf("**********SUCCESS: Return expressions match: %p\n",
+                   e_typeExpr);
+
             return e_typeExpr;
           }
         }
@@ -267,7 +298,8 @@ Expr *typeCheckExpr(Expr *expr, Expr *retTypeExpr) {
         if (!call->isResolved()) {
           if (!info.scope) {
             Vec<BlockStmt*> visited;
-            getVisibleFunctions(getVisibilityBlock(call), info.name, visibleFns, visited);
+            getVisibleFunctions(getVisibilityBlock(call), info.name, visibleFns,
+                                visited);
           } else {
             if (VisibleFunctionBlock2* vfb = visibleFunctionMap.get(info.scope))
               if (Vec<FnSymbol*>* fns = vfb->visibleFunctions.get(info.name))
@@ -276,18 +308,24 @@ Expr *typeCheckExpr(Expr *expr, Expr *retTypeExpr) {
         } else {
           visibleFns.add(call->isResolved());
         }
-        
+
         forv_Vec(FnSymbol, visibleFn, visibleFns) {
-          printf("$$$ Checking against: %s %s\n", visibleFn->name, visibleFn->cname);
+          printf("$$$ Checking against: %s %s\n", visibleFn->name,
+                 visibleFn->cname);
           bool mismatch = false;
           Expr *e_actual = call->argList.head;
-          ArgSymbol *s_formal = ((visibleFn)->formals.head) ? toArgSymbol(toDefExpr((visibleFn)->formals.head)->sym) : NULL;
-          for (; e_actual; e_actual = e_actual->next, s_formal = (s_formal && s_formal->defPoint->next) ? toArgSymbol(toDefExpr((s_formal)->defPoint->next)->sym) : NULL) {
+          ArgSymbol *s_formal = ((visibleFn)->formals.head) ?
+            toArgSymbol(toDefExpr((visibleFn)->formals.head)->sym) : NULL;
+          for (; e_actual; e_actual = e_actual->next,
+                 s_formal = (s_formal && s_formal->defPoint->next) ?
+                 toArgSymbol(toDefExpr((s_formal)->defPoint->next)->sym) :
+                 NULL) {
             if (!s_formal) {
               mismatch = true;
               break;
             }
-            printf("Comparing %i to %i\n", e_actual->astTag, s_formal->typeExpr->astTag);
+            printf("Comparing %i to %i\n", e_actual->astTag,
+                   s_formal->typeExpr->astTag);
             if ((!isBlockStmt(e_actual)) && (isBlockStmt(s_formal->typeExpr))) {
               printf("Looking inside of body\n");
               BlockStmt *retBody = toBlockStmt(s_formal->typeExpr);
@@ -314,32 +352,33 @@ Expr *typeCheckExpr(Expr *expr, Expr *retTypeExpr) {
 
     printf("  END ARGS\n");    
   }
-  else if (UnresolvedSymExpr *use = toUnresolvedSymExpr(expr)) {
+  else if (UnresolvedSymExpr *use = toUnresolvedSymExpr(actualTypeExpr)) {
     printf("  Unresolved SymExpr: %s\n", use->unresolved);
   }
-  else if (DefExpr *de = toDefExpr(expr)) {
+  else if (DefExpr *de = toDefExpr(actualTypeExpr)) {
     printf("  DefExpr: %p\n", de);
     }
-  else if (NamedExpr *ne = toNamedExpr(expr)) {
+  else if (NamedExpr *ne = toNamedExpr(actualTypeExpr)) {
     printf("  NamedExpr: %p\n", ne);
   }
-  else if (BlockStmt *block = toBlockStmt(expr)) {
+  else if (BlockStmt *block = toBlockStmt(actualTypeExpr)) {
     printf("  BlockStmt: %p\n", block);
     Expr *ret = NULL;
     for_alist(e, block->body) {
-      ret = typeCheckExpr(e, retTypeExpr);
+      ret = typeCheckExpr(e, expectedTypeExpr);
     }
     return ret;
   }
-  else if (CondStmt *cond = toCondStmt(expr)) {
+  else if (CondStmt *cond = toCondStmt(actualTypeExpr)) {
     printf("  CondStmt: %p\n", cond);
   }
-  else if (GotoStmt *gotoStmt = toGotoStmt(expr)) {
+  else if (GotoStmt *gotoStmt = toGotoStmt(actualTypeExpr)) {
     printf("  GotoStmt: %p\n", gotoStmt);
   }
   else {
-    if (expr) {
-      printf("  <expr type unknown: %i %i %i %i>\n", expr->astTag, E_Expr, E_Symbol, E_Type);
+    if (actualTypeExpr) {
+      printf("  <expr type unknown: %i %i %i %i>\n", actualTypeExpr->astTag, E_Expr,
+             E_Symbol, E_Type);
     }
     else {
       printf("  <expr is NULL\n");
