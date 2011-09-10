@@ -677,50 +677,43 @@ proc DefaultRectangularArr.doiBulkTransfer(B) {
 
   const len = dom.dsiNumIndices:int(32);
   _extern proc sizeof(type x): int(32);
-  const elemSize: int(32)=sizeof(B._value.eltType);
-  _extern proc chpl_comm_get(inout addr, localeID:int(32), 
-                             inout raddr, elemSize, typeIndex:int(32),
-                             len:int(32), ln:int(32), fn:string);
-
-  _extern proc chpl_comm_put(inout addr, localeID:int(32), 
-                             inout raddr, elemSize, typeIndex:int(32),
-                             len:int(32), ln:int(32), fn:string);
-
-  if debugBulkTransfer then
+  if debugBulkTransfer {
+    const elemSize: int(32)=sizeof(B._value.eltType);
     writeln("In doiBulkTransfer(): Alo=", Alo, ", Blo=", Blo,
             ", len=", len, ", elemSize=", elemSize);
+  }
 
   // NOTE: This does not work with --heterogeneous, but heterogeneous
   // compilation does not work right now.  The calls to chpl_comm_get
   // and chpl_comm_put should be changed once that is fixed.
-  if this.locale==here {
+  if this.data.locale==here {
     if debugDefaultDistBulkTransfer then
       writeln("\tlocal get() from ", B.locale.id);
     var dest = this.data;
     var src = B._value.data;
     __primitive("chpl_comm_get",
                 __primitive("array_get", dest, getDataIndex(Alo)),
-                B.locale.id,
+                B._value.data.locale.id,
                 __primitive("array_get", src, B._value.getDataIndex(Blo)),
                 len);
-  } else if B.locale==here {
+  } else if B._value.data.locale==here {
     if debugDefaultDistBulkTransfer then
       writeln("\tlocal put() to ", this.locale.id);
     var dest = this.data;
     var src = B._value.data;
     __primitive("chpl_comm_put",
                 __primitive("array_get", src, B._value.getDataIndex(Blo)),
-                this.locale.id,
+                this.data.locale.id,
                 __primitive("array_get", dest, getDataIndex(Alo)),
                 len);
-  } else on this.locale {
+  } else on this.data.locale {
     if debugDefaultDistBulkTransfer then
       writeln("\tremote get() on ", here.id, " from ", B.locale.id);
     var dest = this.data;
     var src = B._value.data;
     __primitive("chpl_comm_get",
                 __primitive("array_get", dest, getDataIndex(Alo)),
-                B.locale.id,
+                B._value.data.locale.id,
                 __primitive("array_get", src, B._value.getDataIndex(Blo)),
                 len);
   }
