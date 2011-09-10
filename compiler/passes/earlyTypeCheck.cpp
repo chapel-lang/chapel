@@ -166,14 +166,37 @@ bool compareTypeExprs(Expr *lhs, Expr *rhs) {
 
   if (SymExpr *lhs_se = toSymExpr(lhs)) {
     if (SymExpr *rhs_se = toSymExpr(rhs)) {
+      if (lhs_se->var->type && rhs_se->var->type) {
+        printf("Both are resolved types: %s %s %p %p\n", lhs_se->var->cname,
+            rhs_se->var->cname, lhs_se->var->type, rhs_se->var->type);
+
+        //FIXME: Why do we special case rhs here?  Refactor to make more
+        //flexible.
+        if (VarSymbol *rhs_v = toVarSymbol(rhs_se->var)) {
+          printf("  rhs is a var symbol\n");
+          if (/*lhs_v->immediate && */ rhs_v->immediate) {
+            printf("  rhs is an immediate\n");
+            //If we've already resolved to a type, just use that
+            return lhs_se->var->type == rhs_se->var->type;
+          }
+        }
+        else if (TypeSymbol *rhs_ts = toTypeSymbol(rhs_se->var)) {
+          printf("  rhs is a type symbol\n");
+          //If we've already resolved to a type, just use that
+          return lhs_se->var->type == rhs_ts->type;
+        }
+
+      }
       printf("Both are sym exprs: %s %s\n", lhs_se->var->cname,
              rhs_se->var->cname);
+      /*
       if (VarSymbol *v = toVarSymbol(lhs_se->var)) {
         if (v->immediate && v->immediate->const_kind == NUM_KIND_INT &&
             v->immediate->num_index == INT_SIZE_32) {
           return (!strcmp(rhs_se->var->cname, "int32_t"));
         }
       }
+      */
       return (lhs_se->var == rhs_se->var);
     }
   }
@@ -211,17 +234,50 @@ bool compareTypeExprs(Expr *lhs, Expr *rhs) {
   return false;
 }
 
-Expr *typeCheckExpr(Expr *actualTypeExpr, Expr *expectedTypeExpr) {
-  if (SymExpr *se_actual = toSymExpr(actualTypeExpr)) {
-    printf("  ActualSymExpr: %s (type: %p)\n", se_actual->var->name,
+Expr *typeCheckExpr(Expr *currentExpr, Expr *expectedReturnTypeExpr) {
+  if (SymExpr *se_actual = toSymExpr(currentExpr)) {
+    printf("  CurrentSymExpr: %s (type: %p)\n", se_actual->var->name,
         se_actual->var->type);
-    if (Type *actualType = se_actual->var->type) {
-      if (SymExpr *se_expected = toSymExpr(expectedTypeExpr)) {
+    ArgSymbol *argSym;
+    DefExpr *defPt;
+    if ((argSym = toArgSymbol(se_actual->var)) && argSym->typeExpr) {
+      printf ("     Arg->%p\n", argSym->typeExpr);
+      return argSym->typeExpr;
+    }
+    else if ((defPt = se_actual->var->defPoint)) {
+      printf ("     Arg(defexpr)->%p %p %i\n", defPt->exprType, defPt->init,
+              defPt->sym->astTag);
+      if (defPt->exprType && defPt->init) {
+        if (compareTypeExprs(defPt->exprType, defPt->init)) {
+          printf("Declared variable type matches initialization expression\n");
+        }
+        else {
+          printf("ERROR: Declared variable type does not match initialization expression\n");
+        }
+      }
+      else if (defPt->exprType) {
+        return defPt->exprType;
+      }
+      else if (defPt->init) {
+        return defPt->init;
+      }
+      else if (se_actual->var->type) {
+        return currentExpr;
+      }
+      else {
+        printf("ERROR: Generic variable without initializing expression\n");
+      }
+    }
+    else if (Type *actualType = se_actual->var->type) {
+      // Stop here, we've hit an expression that's been resolved already
+      return currentExpr;
+      /*
+      if (SymExpr *se_expected = toSymExpr(expectedReturnTypeExpr)) {
         printf("  ExpectedSymExpr: %s (type: %p)\n", se_expected->var->name,
             se_expected->var->type);
       }
-      else if (BlockStmt *block = toBlockStmt(expectedTypeExpr)) {
-        printf("  Expected is block stmt\n", expectedTypeExpr->astTag);
+      else if (BlockStmt *block = toBlockStmt(expectedReturnTypeExpr)) {
+        printf("  Expected is block stmt\n", expectedReturnTypeExpr->astTag);
         if (Expr *contents = block->body.head) {
           if (SymExpr *se_contents = toSymExpr(contents)) {
             printf("  ExpectedSymExpr: %s (type: %p)\n", se_contents->var->name,
@@ -230,24 +286,16 @@ Expr *typeCheckExpr(Expr *actualTypeExpr, Expr *expectedTypeExpr) {
         }
       }
       else {
-        printf("  Expected not a sym expression: %i\n", expectedTypeExpr->astTag);
+        printf("  Expected not a sym expression: %i\n", expectedReturnTypeExpr->astTag);
       }
-    }
-    if (ArgSymbol *argSym = toArgSymbol(se_actual->var)) {
-      printf ("     Arg->%p\n", argSym->typeExpr);
-      return argSym->typeExpr;
-    }
-    else if (DefExpr *defPt = se_actual->var->defPoint) {
-      printf ("     Arg(defexpr)->%p %p %i\n", defPt->exprType, defPt->init,
-              defPt->sym->astTag);
-      return defPt->exprType;
+      */
     }
   }
-  else if (CallExpr* call = toCallExpr(actualTypeExpr)) {
+  else if (CallExpr* call = toCallExpr(currentExpr)) {
     printf("  CallExpr: %p\n", call);
     if (call->baseExpr) {
       printf("  BaseExpr:\n");
-      typeCheckExpr(call->baseExpr, expectedTypeExpr);
+      typeCheckExpr(call->baseExpr, expectedReturnTypeExpr);
     }
     else {
       printf("  Primitive: %s\n", call->primitive->name);
@@ -256,11 +304,11 @@ Expr *typeCheckExpr(Expr *actualTypeExpr, Expr *expectedTypeExpr) {
 
     for_alist(e, call->argList) {
       printf("  PRE-TYPECHECK:\n");
-      Expr *e_typeExpr = typeCheckExpr(e, expectedTypeExpr);
+      Expr *e_typeExpr = typeCheckExpr(e, expectedReturnTypeExpr);
       printf("  TYPECHECKED: %p\n", e_typeExpr);
       if (call->primitive && (call->primitive->tag == PRIM_RETURN)) {
-        if ((!isBlockStmt(e_typeExpr)) && (isBlockStmt(expectedTypeExpr))) {
-          BlockStmt *retBody = toBlockStmt(expectedTypeExpr);
+        if ((!isBlockStmt(e_typeExpr)) && (isBlockStmt(expectedReturnTypeExpr))) {
+          BlockStmt *retBody = toBlockStmt(expectedReturnTypeExpr);
           if (!compareTypeExprs(e_typeExpr, retBody->body.head)) {
             printf("**********ERROR: Mismatched type expressions in return\n");
           }
@@ -272,7 +320,7 @@ Expr *typeCheckExpr(Expr *actualTypeExpr, Expr *expectedTypeExpr) {
           }
         }
         else{
-          if (!compareTypeExprs(e_typeExpr, expectedTypeExpr)) {
+          if (!compareTypeExprs(e_typeExpr, expectedReturnTypeExpr)) {
             printf("**********ERROR: Mismatched type expressions in return\n");
           }
           else {
@@ -352,32 +400,32 @@ Expr *typeCheckExpr(Expr *actualTypeExpr, Expr *expectedTypeExpr) {
 
     printf("  END ARGS\n");    
   }
-  else if (UnresolvedSymExpr *use = toUnresolvedSymExpr(actualTypeExpr)) {
+  else if (UnresolvedSymExpr *use = toUnresolvedSymExpr(currentExpr)) {
     printf("  Unresolved SymExpr: %s\n", use->unresolved);
   }
-  else if (DefExpr *de = toDefExpr(actualTypeExpr)) {
+  else if (DefExpr *de = toDefExpr(currentExpr)) {
     printf("  DefExpr: %p\n", de);
     }
-  else if (NamedExpr *ne = toNamedExpr(actualTypeExpr)) {
+  else if (NamedExpr *ne = toNamedExpr(currentExpr)) {
     printf("  NamedExpr: %p\n", ne);
   }
-  else if (BlockStmt *block = toBlockStmt(actualTypeExpr)) {
+  else if (BlockStmt *block = toBlockStmt(currentExpr)) {
     printf("  BlockStmt: %p\n", block);
     Expr *ret = NULL;
     for_alist(e, block->body) {
-      ret = typeCheckExpr(e, expectedTypeExpr);
+      ret = typeCheckExpr(e, expectedReturnTypeExpr);
     }
     return ret;
   }
-  else if (CondStmt *cond = toCondStmt(actualTypeExpr)) {
+  else if (CondStmt *cond = toCondStmt(currentExpr)) {
     printf("  CondStmt: %p\n", cond);
   }
-  else if (GotoStmt *gotoStmt = toGotoStmt(actualTypeExpr)) {
+  else if (GotoStmt *gotoStmt = toGotoStmt(currentExpr)) {
     printf("  GotoStmt: %p\n", gotoStmt);
   }
   else {
-    if (actualTypeExpr) {
-      printf("  <expr type unknown: %i %i %i %i>\n", actualTypeExpr->astTag, E_Expr,
+    if (currentExpr) {
+      printf("  <expr type unknown: %i %i %i %i>\n", currentExpr->astTag, E_Expr,
              E_Symbol, E_Type);
     }
     else {
