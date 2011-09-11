@@ -102,9 +102,6 @@ int main(int argc, char* argv[]) {
   chpl_task_init(numThreadsPerLocale, chpl__maxThreadsPerLocale, 
                  numPollingTasks, callStackSize); 
 
-  // Now initialize the rest of the standard modules.
-  chpl__init_chpl__Program(1, "<internal>");
-
   //
   // start communication tasks as necessary
   //

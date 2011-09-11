@@ -1722,10 +1722,21 @@ buildOnStmt(Expr* expr, Expr* stmt) {
   CallExpr* onExpr = new CallExpr(PRIM_GET_REF, extractLocaleID(expr));
 
   BlockStmt* body = toBlockStmt(stmt);
+  //body->insertAtHead(new CallExpr(PRIM_MOVE, new CallExpr(PRIM_HERE), onExpr));
+    //Symbol* tmp1 = newTemp();
+    //body->insertAtHead(new DefExpr(tmp1));
+  //body->insertAtHead(new CallExpr(PRIM_MOVE, new UnresolvedSymExpr("_here"), new CallExpr(".", expr, new UnresolvedSymExpr("locale"))));
+  //body->insertAtHead(new CallExpr("set_here", extractLocaleID(expr)));
+
+
+  ///////////body->insertAtHead(new CallExpr("set_here", new_IntSymbol(0)));//extractLocaleID(expr)));
+  // This incurs ``defaultDist'' initialization bug ... 
+
 
   //
   // detect begin statement directly inside on-statement
   //
+  //allExpr* memberAccess = new CallExpr(".", new UnresolvedSymExpr("here")
   BlockStmt* beginBlock = NULL;
   BlockStmt* tmp = body;
   while (tmp) {

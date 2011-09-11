@@ -1,5 +1,3 @@
-config param noRefCount = false;
-
 var privatizeLock$: sync int;
 
 pragma "privatized class"
@@ -338,8 +336,8 @@ proc isSparseArr(a: []) param return isSparseDom(a.domain);
 //
 // Support for distributions
 //
-pragma "syntactic distribution"
-record dmap { }
+//pragma "syntactic distribution"
+//record dmap { }
 
 proc chpl__buildDistType(type t) type where t: BaseDist {
   var x: t;

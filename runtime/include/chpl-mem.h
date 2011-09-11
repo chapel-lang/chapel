@@ -79,11 +79,16 @@ void chpl_mem_exit(void);
 //
 void chpl_mem_actualSharedHeap(void** start_p, size_t* size_p);
 
+// Defined in ChapelLocale.chpl as here.alloc(...).
+//chpl_opaque here_alloc(int32_t nbytes, int32_t mem_type, int32_t lineno, chpl_string filename);
+
 #define chpl_mem_allocPermitZero(s,d,l,f) ((s == 0) \
                                            ? NULL \
-                                           : chpl_mem_alloc(s,d,l,f))
+					   : chpl_mem_alloc(s,d,l,f))
+
 #define chpl_mem_alloc(size, description, lineno, filename) \
-  chpl_mem_allocMany(1, size, description, lineno, filename)
+	chpl_mem_allocMany(1, size, description, lineno, filename)
+
 void* chpl_mem_allocMany(size_t number, size_t size,
                          chpl_mem_descInt_t description,
                          int32_t lineno, chpl_string filename);

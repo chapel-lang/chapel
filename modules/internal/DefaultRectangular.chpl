@@ -1,6 +1,4 @@
 use DSIUtil;
-config param debugDefaultDist = false;
-config param debugDataPar = false;
 
 class DefaultDist: BaseDist {
   proc dsiNewRectangularDom(param rank: int, type idxType, param stridable: bool)
@@ -24,12 +22,6 @@ class DefaultDist: BaseDist {
   proc dsiCreateReindexDist(newSpace, oldSpace) return this;
   proc dsiCreateRankChangeDist(param newRank, args) return this;
 }
-
-//
-// Note that the replicated copies are set up in ChapelLocale on the
-// other locales.  This just sets it up on this locale.
-//
-pragma "private" var defaultDist = new dmap(new DefaultDist());
 
 class DefaultRectangularDom: BaseRectangularDom {
   param rank : int;

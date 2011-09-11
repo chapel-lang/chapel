@@ -1,16 +1,35 @@
-// These three variables would be more logical in ChapelLocale.chpl,
-// but I ran into the nasty "sensitive to function resolution order"
-// bug when I did that.
-//
-var doneCreatingLocales: bool;
+use ChapelBaseLocale;
 
-pragma "private" var _here: locale;
-proc here return _here;
+// <2011-07-06 hilde> These variables would make better sense in DefaultRectangular.chpl
+// but they need to go here to avoid the "initialization sequencing" bug.
+config param debugDefaultDist = false;
+config param debugDataPar = false;
+
 
 // End comment
+//var myrealm : realm = chpl_setupRealm(1, 1, 0);
 
+
+
+const RealmSpace: domain(1) = [0..0];
+const Realms: [RealmSpace] realm;
 pragma "private" var chpl_thisRealm: realm;
-proc thisRealm return chpl_thisRealm;
+
+const totNumLocales = chpl_computeTotNumLocalesWithoutWarning();
+const AllLocaleSpace = [0..#totNumLocales];
+const AllLocales: [AllLocaleSpace] locale;
+// We cannot use a forall here because the default leader iterator will
+// access data structures that are not yet initialized (i.e., Locales
+// array/here).  An alternative would be to use a coforall+on and refactor
+// chpl_setupLocale().
+for loc in AllLocaleSpace do
+  AllLocales(loc) = chpl_setupLocale(loc) : locale;
+
+const AllSubLocales: [AllLocaleSpace] locale;
+
+
+for loc in AllLocaleSpace do  // This should turn into a tree traversal
+  AllSubLocales(loc) = AllLocales(loc).getChild();
 
 //
 // Using the obvious reduction in the initialization of totNumLocales
@@ -23,17 +42,11 @@ proc chpl_computeTotNumLocalesWithoutWarning() {
   return retval;
 }
 
-const totNumLocales = chpl_computeTotNumLocalesWithoutWarning();
-const AllLocaleSpace = [0..#totNumLocales];
-const AllLocales: [AllLocaleSpace] locale;
-// We cannot use a forall here because the default leader iterator will
-// access data structures that are not yet initialized (i.e., Locales
-// array/here).  An alternative would be to use a coforall+on and refactor
-// chpl_setupLocale().
-for loc in AllLocaleSpace do
-  AllLocales(loc) = chpl_setupLocale(loc);
 
-const Realms: [RealmSpace] realm;
+
+
+
+////////////////const Realms: [RealmSpace] realm;
 // TODO: Will eventually want to make this parallel, but it causes a warning
 // today
 for r in RealmSpace do
@@ -67,14 +80,27 @@ proc chpl_initLocaleTree() {
   }
 }
 
+
+proc thisRealm() : realm{
+  return chpl_thisRealm : realm;
+}
+
+
+proc set_here(loc : int) {
+ // _here = chpl_int_to_locale(loc);
+ //task-private accessor here ...
+  _here = thisRealm().Locales[loc];
+}
+
 chpl_initLocaleTree();
 
-class realm {
+pragma "initialize prelocale" class realm {
   const chpl_id: int(32);
   const rtype: string;
   const numLocales: int;
   const LocaleSpace: domain(1);
   const Locales: [LocaleSpace] locale;
+  const SubLocales: [LocaleSpace] locale;
 
   proc initialize() {
     if doneCreatingLocales {
@@ -95,9 +121,9 @@ proc chpl_setupRealm(id, numLocales, baseID) {
     if (defaultDist._value == nil) {
       defaultDist = new dmap(new DefaultDist());
     }
-    tmp = new realm(id, chpl_getRealmType(id), numLocales, [0..numLocales-1], Locales=>AllLocales[baseID..#numLocales]);
+    tmp = new realm(id, chpl_getRealmType(id), numLocales, [0..numLocales-1], Locales=>AllLocales[baseID..#numLocales], SubLocales=>AllSubLocales[baseID..#numLocales]);
     forall (loc, id) in (tmp.Locales, 0..) do on loc {
-      loc.myRealm = tmp;
+      //loc.myRealm = tmp;
       loc.chpl_id = id;
       chpl_thisRealm = tmp;
     }

@@ -114,7 +114,7 @@ check_exported_names()
 
     const char* name = fn->cname;
     if (names.get(name))
-      USR_FATAL_CONT(fn, "The name %s cannot be exported twice from the same compilation unit.", name);
+      USR_FATAL_CONT(fn, "The name %s cannot be exported twice from the same module.", name);
     names.put(name, true);
   }
 }

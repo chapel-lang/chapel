@@ -1,23 +1,14 @@
-use DefaultRectangular;
 
-class locale {
-  const myRealm: realm;
+
+pragma "initialize prelocale" class locale {
+  //const myRealm: realm;
   const chpl_id: int;
   const chpl_uid: int;
-  const numCores: int(32);
+  const myNumCores: int;
 
-  proc locale(r: realm = nil, id = -1, uid = -1) {
-    if doneCreatingLocales {
-      halt("locales cannot be created");
-    }
-    myRealm = r;
-    chpl_id = id;
-    chpl_uid = uid;
 
-    extern proc chpl_numCoresOnThisLocale(): int(32);
-    numCores = chpl_numCoresOnThisLocale();
-  }
-
+//    extern proc chpl_numCoresOnThisLocale(): int(32);
+//    numCores = chpl_numCoresOnThisLocale();
   proc id {
     return chpl_id;
   }
@@ -41,36 +32,42 @@ class locale {
   }
 
   proc writeThis(f: Writer) {
-    if (numRealms == 1) {
+    //if (numRealms == 1) {
       f.write("LOCALE", id);
-    } else {
-      f.write("LOCALE", myRealm.id, "-", id);
-    }
+    //} else {
+    //  f.write("LOCALE", myRealm.id, "-", id);
+    //}
+  }
+
+  proc getChild() : locale {
+    writeln("Cannot get sublocale from locale"); //should we halt?
+    return nil;
   }
 }
 
-proc chpl_setupLocale(uid) {
-  var tmp: locale;
-  on __primitive("chpl_on_locale_num", uid) {
-    tmp = new locale(uid=uid);
-    _here = tmp;
-    if (defaultDist._value == nil) {
-      defaultDist = new dmap(new DefaultDist());
-    }
-  }
-  return tmp;
+// Prototype for chpl_malloc functions implemented in the runtime.
+_extern proc chpl_mem_allocMany(l:int(32), size:int(32), description:int(32), lineno:int(32), filename:string):opaque;
+_extern proc chpl_mem_realloc(ptr:opaque, number:int(32), size:int(32), description:int(32), lineno:int(32), filename:string):opaque;
+_extern proc chpl_mem_free(ptr:opaque, lineno:int(32), filename:string);
+_extern proc sizeof(t) : int(32);
+
+proc locale.numCores {
+  return myNumCores;
 }
 
-proc chpl_int_to_locale(in id) {
-  for r in Realms {
-    if id < r.numLocales then
-      return r.Locales[id];
-    id -= r.numLocales;
-  }
-  halt("id out of range in chpl_int_to_locale()");
-  return Realms[0].Locales[0];
+proc locale.alloc(nbytes:int(32), mem_type:int(32), lineno:int(32), filename:string) : opaque { 
+  _extern proc printf(str: string);
+  printf("l");
+  return chpl_mem_allocMany(1, nbytes, mem_type, lineno, filename);
 }
 
+proc locale.realloc(ptr: opaque, nbytes:int(32), size:int(32), mem_type:int(32), lineno:int(32), filename:string) : opaque { 
+  chpl_mem_realloc(ptr, nbytes, size, mem_type, lineno, filename);
+}
+
+proc locale.free(ptr: opaque, lineno:int(32), filename:string) { 
+  chpl_mem_free(ptr, lineno, filename);
+}
 
 proc locale.totalThreads() {
   var totalThreads: uint;
@@ -112,9 +109,10 @@ proc locale.blockedTasks() {
   return blockedTasks;
 }
 
+
+
 proc chpl_getPrivatizedCopy(type objectType, objectPid:int): objectType
   return __primitive("chpl_getPrivatizedClass", nil:objectType, objectPid);
-
 
 //
 // multi-locale diagnostics/debugging support

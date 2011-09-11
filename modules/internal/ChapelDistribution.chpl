@@ -12,6 +12,7 @@ if dataParMinGranularity<=0 then halt("dataParMinGranularity must be > 0");
 // Abstract distribution class
 //
 pragma "base dist"
+pragma "initialize prelocale"
 class BaseDist {
   var _distCnt$: sync int = 0; // distribution reference count and lock
   var _doms: list(BaseDom);    // arrays declared over this domain

@@ -86,15 +86,12 @@ void chpl_task_init(int32_t numThreadsPerLocale, int32_t maxThreadsPerLocale,
     chpl_warning("the callStackSize config constant has no effect "
                  "on XMT systems",
                  0, NULL);
-
-  chpl_task_setSerial(true);
 }
 
 void chpl_task_exit(void) {
 }
 
 void chpl_task_callMain(void (*chpl_main)(void)) {
-  chpl_task_setSerial(false);
   chpl_main();
 }
 
@@ -154,7 +151,7 @@ void chpl_task_setSerial(chpl_bool state) {
   chpl_bool *p = NULL;
   p = (chpl_bool*) mta_register_task_data(p);
   if (p == NULL)
-    p = (chpl_bool*) chpl_mem_alloc(sizeof(chpl_bool), CHPL_RT_MD_SERIAL_FLAG, 0, 0);
+    p = (chpl_bool*) chpl_mem_allocMany(1,sizeof(chpl_bool), CHPL_RT_MD_SERIAL_FLAG, 0, 0);
   if (p) {
     *p = state;
     mta_register_task_data(p);

@@ -173,21 +173,19 @@ proc rangeBase.isEmpty()       where isBoundedRangeB(this)
 proc rangeBase.isEmpty() param where !isBoundedRangeB(this)
   return false;
 
-proc rangeBase.hasFirst() param where !stridable && !hasHighBound()
-  return hasLowBound();
+proc rangeBase.hasFirst() param where !stridable return hasLowBound();
 
 pragma "inline" 
-proc rangeBase.hasFirst()
+proc rangeBase.hasFirst() where stridable
 {
   if this.isEmpty() then return false;
   return if stride > 0 then hasLowBound() else hasHighBound();
 }
     
-proc rangeBase.hasLast() param where !stridable && !hasLowBound()
-  return hasHighBound();
+proc rangeBase.hasLast() param where !stridable return hasHighBound();
 
 pragma "inline" 
-proc rangeBase.hasLast()
+proc rangeBase.hasLast() where stridable
 {
   if this.isEmpty() then return false;
   return if stride > 0 then hasHighBound() else hasLowBound();

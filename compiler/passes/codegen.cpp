@@ -560,6 +560,8 @@ static void codegen_header(FILE* hdrfile, FILE* codefile=NULL) {
     fprintf(hdrfile, "\n#ifndef ENABLE_GPU\n");
 
   fprintf(hdrfile, "\n/*** Global Variables ***/\n\n");
+
+
   forv_Vec(VarSymbol, varSymbol, globals) {
     varSymbol->codegenDef(hdrfile);
   }
