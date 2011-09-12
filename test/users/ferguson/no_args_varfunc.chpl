@@ -6,5 +6,5 @@ proc myfun(x ...?k) {
   writeln("done myfun");
 }
 
-myfun(0);
+myfun();
 
