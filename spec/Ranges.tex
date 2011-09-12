@@ -86,12 +86,14 @@ the represented sequence is undefined &
 
 \end{tabular}
 
-The sequence is increasing if $stride > 0$ and decreasing if $stride < 0$.
+\index{ranges!represented sequence!increasing}
+\index{ranges!represented sequence!decreasing}
+The sequence, if defined, is increasing if $stride > 0$ and decreasing if $stride < 0$.
 
 \index{ranges!empty}
-If there are no indices satisfying the above equation that is applicable,
+If the represented sequence is defined but
+there are no indices satisfying the applicable equation(s) above,
 the range and its represented sequence are \emph{empty}.
-%REVIEW: vass: If needed, call such ranges "degenerate" instead of "empty".
 
 \index{ranges!aligned integer}
 We will say that an integer $ix$ is \emph{aligned}
@@ -193,6 +195,7 @@ The type of a range is characterized by three parameters:
 \begin{itemize}
 
 \index{ranges!idxType}
+\index{ranges!stride type}
 \item \chpl{idxType} is the type of the indices of the range's
   represented sequence. However, when the range's low and/or high
   bound is $\infty$, the represented sequence also contains indices
@@ -202,7 +205,7 @@ The type of a range is characterized by three parameters:
 %
   The range's low bound and high bound (when they are not $\infty$)
   and alignment are of the type \chpl{idxType}. The range's stride
-  is of the signed integer type that has the same bit size as \emph{idxType}.
+  is of the signed integer type that has the same bit size as \chpl{idxType}.
 
 \index{ranges!boundedType}
 \item \chpl{boundedType} indicates which of the range's bounds are not $\infty$.
@@ -453,14 +456,17 @@ Range assignment is legal when:
 
 \subsection{Range Comparisons}
 
+Ranges can be compared using equality and inequality.
+
 \begin{protohead}
 proc ==(r1: range(?), r2: range(?)): bool
 \end{protohead}
 \begin{protobody}
 Returns \chpl{true} if the two ranges have the same represented sequence
-and \chpl{false} otherwise.  The high and low bounds can differ between the two
-ranges, and they will still compare equal as long as the same sequence is
-represented by each.
+or the same four primary properties,
+and \chpl{false} otherwise.
+%REVIEW: present examples of equal ranges whose low/high bounds differ
+% or one is ambiguously aligned (with low>high) and the other is not.
 \end{protobody}
 
 \subsection{Iterating over Ranges}
@@ -468,11 +474,11 @@ represented by each.
 A range can be used as an iterator expression in a loop. This is legal
 only if the range is iterable. In this case the loop iterates over the
 members of the range's represented sequence, in the order defined by
-the sequence.
+the sequence. If the range is empty, no iterations are executed.
 
 \subsubsection{Iterating over Unbounded Ranges in Zippered Iterations}
 
-When a range without the last index is used
+When a range with the first index but without the last index is used
 in a zippered iteration (~\rsec{Zipper_Iteration}),
 it generates as many indices as needed
 to match the other iterator(s).
@@ -522,66 +528,70 @@ range-expression:
 \index{ranges!by operator}
 \index{by@\chpl{by}}
 
-The \chpl{by} operator takes a range and a stride
-and selects a subsequence of the range's represented sequence,
+The \chpl{by} operator selects a subsequence of the range's represented sequence,
 optionally reversing its direction.
+The operator takes two arguments, a base range and an integral step.
+It produces a new range whose represented sequence contains
+each $|$step$|$-th element of the base range's represented sequence.
+The operator reverses the direction of the represented sequence if step$<$0.
+If the resulting sequence is increasing,
+it starts at the base range's aligned low bound, if it exists.
+If the resulting sequence is decreasing,
+it starts at the base range's aligned high bound, if it exists.
+%
+Otherwise, the base range's alignment is used to determine
+which members of the represented sequence to retain.
+%
+If the base range's represented sequence is undefined,
+the resulting sequence is undefined, too.
 
-Its syntax is given by:
+The syntax of the \chpl{by} operator is:
 \begin{syntax}
 strided-range-expression:
-  range-expression `by' expression
+  range-expression `by' step-expression
+
+step-expression:
+  expression
 \end{syntax}
 
-The type of the stride argument must be a signed integer of the same
-bit size as \chpl{idxType}, or an implicit conversion must be allowed
-to that type from the stride argument's type.
+The type of the step must be a signed integer of the same
+bit size as the base range's \chpl{idxType}, or an implicit conversion must be allowed
+to that type from the step's type.
+The type of the step is also allowed to be
+the base range's \chpl{idxType} itself.
+It is an error for the step to be zero.
 
-The type of the result of the \chpl{by} operator is the type of its range
-argument, but with the \chpl{stridable} parameter set to \chpl{true}.
+\begin{future}
+We consider allowing the step to be of any integer type,
+for maximum flexibility.
+\end{future}
 
-The result of the \chpl{by} operator is as follows:
+The type of the result of the \chpl{by} operator is the type of the
+base range, but with the \chpl{stridable} parameter set to \chpl{true}.
+
+Formally, the result of the \chpl{by} operator is a range with the following
+primary properties:
 
 \begin{itemize}
 
-\item The low and upper bounds are the same as those of the range argument.
+\item The low and upper bounds are the same as those of the base range.
 
-\item The stride is a product of the stride argument and
-      the stride of the range argument.
+\item The stride is the product of the base range's stride
+      and the step, cast to the base range's stride type before multiplying.
 
-\item 
+\item The alignment is:
 
-%REVIEW: the alignment is defined using two "as follows" lists.
-% Should be just one.
-The alignment of the new range depends on the \chpl{boundedType} of the range
-and the sign of the resulting stride, as follows:
-%REVIEW: vass: need to define what it means for a range to be "aligned" on smth
-% Better yet, rephrase it to use already-defined terminology.
-\begin{itemize}
-\item If the range is \chpl{bounded} or \chpl{boundedLow} and  the resulting stride is positive, the new range is aligned on
-the \chpl{alignedLow} value of the operand range.  
-\item If the range
-is \chpl{bounded} or \chpl{boundedHigh} and  the resulting stride is
-negative, it is aligned with respect to the operand's \chpl{alignedHigh} value.
-\item Otherwise, it has the same alignment as the operand range.
-\end{itemize}
+  \begin{itemize}
+ 
+  \item the aligned low bound of the base range, if such exists
+        and the stride is positive;
 
-The alignment of the result is determined as follows:
-\begin{itemize}
-\item If the operand range is ambiguously aligned, then the result alignment is ambiguous.
-%REVIEW: bradc: Is this right?
-%REVIEW: hilde: I think so ... .  It expresses the "poison bit" interpretation of
-%ambiguous alignment, so you can't turn an ambiguously aligned range into an
-%unambiguously aligned one by simply applying "by -1", for example.
-\item If the alignment of the operand is not ambiguous, then
-it is preserved in the result.
-%REVIEW: vass: need to rephrase (the resulting range cannot have
-% a first value before its alignment is defined).
-% Also, remove references to hasFirst (replace with e.g. "has first index").
-\item Otherwise, if stride of the resulting range has an absolute value greater
-than 1 and its \chpl{first} value is defined (i.e.
-\chpl{r.hasFirst() == true}), then \chpl{first} is used.
-\end{itemize}
-See the definition of \chpl{hasFirst}.
+  \item the aligned high bound of the base range, if such exists
+        and the stride is negative;
+
+  \item the same as that of the base range, otherwise.
+
+  \end{itemize}
 
 \end{itemize}
 
