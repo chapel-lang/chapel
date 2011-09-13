@@ -23,6 +23,7 @@ sub help {
 This script is provided so the Chapel users can semi-automatically
 adjust their code to certain changes in the Chapel language presently
 being implemented. A brief summary of changes is:
+- 'ref' is now a reserved keyword;
 - instead of the 'def' keyword, use:
    - 'proc' for non-iterator functions,
    - 'iter' for iterators;
@@ -46,6 +47,7 @@ The latter are indicated as "errors".
 The present limitations or the script are:
 - the following idioms are flagged as "unimplemented" errors but not converted:
    - uses of 'iter' as an identifier,
+   - uses of 'ref' as an identifier,
    - 'return EXPR' in iterators;
 - source code may not be converted when:
    - there are compilation errors,
@@ -199,7 +201,7 @@ my (%PROCESSED_FILES, %MODULE_FILES);
 my ($numMessagesTotal, $numMessagesNotErrorFormat, $numIrrelevantMessages,
     $numModuleFiles, $numModuleMessages, $numSkippedFileMessages,
     $numFilesModified, $numDef2proc, $numDef2iter,
-    $numRet2yield, $numIterAsIdent, $numMessagesBadFileOrLineno,
+    $numRet2yield, $numRefAsIdent, $numIterAsIdent, $numMessagesBadFileOrLineno,
     $numIOskippedMessages, $numNonMatched, $numCompiles, $numDef2ProcFiles) =
    (0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0);
 # reset for each line of compiler output
@@ -312,6 +314,9 @@ sub handleOneCompMsg {
    } elsif ($msgMsg eq "warning: returning a value in an iterator is deprecated; replace it with a yield of that value, followed by a return with no expression" or $msgMsg eq "error: returning a value in an iterator") {
       $msgAction = "unimplemented (return->yield)";
       $msgCounterVar = \$numRet2yield;
+   } elsif ($msgMsg eq "syntax error: near 'ref'") {
+      $msgAction = "unimplemented ('ref' identifier)";
+      $msgCounterVar = \$numRefAsIdent;
    } elsif ($msgMsg eq "syntax error: near 'iter'") {
       $msgAction = "unimplemented ('iter' identifier)";
       $msgCounterVar = \$numIterAsIdent;
@@ -371,12 +376,13 @@ sub printStats {
    printf "  modified files: %d\n", $numFilesModified;
    printf "%8d  def->proc\n", $numDef2proc;
    printf "%8d  def->iter\n", $numDef2iter;
-if ($numRet2yield or $numIterAsIdent or $numMessagesBadFileOrLineno or
+if ($numRet2yield or $numRefAsIdent or $numIterAsIdent or $numMessagesBadFileOrLineno or
     $numNonMatched or $numIOskippedMessages)
 {
    printf "  could not handle\n";
    printf "%8d  return->yield\n", $numRet2yield;
    printf "%8d  'iter' identifier\n", $numIterAsIdent;
+   printf "%8d  'ref' identifier\n", $numRefAsIdent;
    printf "%8d  bad file name or line number\n", $numMessagesBadFileOrLineno;
    printf "%8d  source line contents not as expected\n", $numNonMatched;
    printf "%8d  I/O-related issues\n", $numIOskippedMessages;
@@ -396,7 +402,7 @@ if ($numMessagesNotErrorFormat or $numIrrelevantMessages) {
    print "\n";
 
    my $sumItemized = $numDef2proc + $numDef2iter + $numRet2yield +
-      $numIterAsIdent + $numMessagesNotErrorFormat + $numNonMatched +
+      $numRefAsIdent + $numIterAsIdent + $numMessagesNotErrorFormat + $numNonMatched +
       $numIOskippedMessages + $numSkippedFileMessages +
       $numModuleMessages + $numIrrelevantMessages;
    if ($numMessagesTotal != $sumItemized) {

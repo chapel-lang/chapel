@@ -1472,7 +1472,7 @@ pragma "inline" proc func(type t...?n, type rettype) type { return __primitive("
 // to be special-cased in functionResolution.cpp such that the inout
 // does not actually result in temps.
 //
-proc chpldev_refToString(inout ref) {
+proc chpldev_refToString(inout arg) {
 
   //
   // print out the address of class references as well
@@ -1481,7 +1481,7 @@ proc chpldev_refToString(inout ref) {
     return " (class = " + __primitive("ref to string", x) + ")";
   proc chpldev_classToString(x) return "";
 
-  return __primitive("ref to string", ref) + chpldev_classToString(ref);
+  return __primitive("ref to string", arg) + chpldev_classToString(arg);
 }
 
 

@@ -63,7 +63,7 @@
 but they don't build a type of themselves.  Unlike the keywords on
 `c-primitive-type-kwds', they are fontified with the keyword face and
 not the type face."
-  chpl '("const" "config" "iter" "module" "param" "proc" "type" "use" "var" "_extern"))
+  chpl '("const" "config" "iter" "module" "param" "proc" "ref" "type" "use" "var" "_extern"))
 
 ;; Class-style declarations
 (c-lang-defconst c-class-decl-kwds
@@ -106,7 +106,7 @@ will be handled."
   ;; Default to `c-class-decl-kwds' and `c-brace-list-decl-kwds'
   ;; (since e.g. "Foo" is the identifier being defined in "class Foo
   ;; {...}").
-  chpl '("const" "iter" "module" "param" "proc" "type" "var" "_extern"))
+  chpl '("const" "iter" "module" "param" "proc" "ref" "type" "var" "_extern"))
 
 (c-lang-defconst c-ref-list-kwds
   "Keywords that may be followed by a comma separated list of
