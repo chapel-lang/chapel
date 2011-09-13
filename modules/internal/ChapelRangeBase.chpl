@@ -580,8 +580,8 @@ proc rangeBase.offset(offs : integral)
       this._alignment = offs;
   }
   else
-    compilerError("type mismatch applying 'absAlign' to range(",
-              typeToString(idxType), ") with ", typeToString(argType));
+    compilerError("type mismatch applying 'offset' to range(",
+              typeToString(idxType), ") and ", typeToString(argType));
 
   if ! stridable then
   {
