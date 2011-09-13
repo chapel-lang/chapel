@@ -155,11 +155,6 @@ seg fault (?)
 gasnet-everything regressions (other than the above)
 ====================================================
 
-possibly failing since 09/08/11 due to localeTree changes
----------------------------------------------------------
-[Error matching program output for multilocale/deitz/needMultiLocales/dist/test_private_space]
-[Error matching program output for multilocale/deitz/needMultiLocales/streamCommCheck]
-
 nondet. execution timeout
 -------------------------
 [Error: Timed out executing program multilocale/diten/needMultiLocales/coforallon_maxThreads] (06/25/11)
@@ -479,7 +474,7 @@ unresolved sync variable calls (04/09/11 -- once spec examples added)
 
 nondet. compilation timeout
 ---------------------------
-[Error: Timed out compilation for release/examples/hello] (04/10/11, 04/12/11, 04/14/11, 04/19/11, 04/23/11, 04/26/11, 04/30/11, 05/07/11, 05/14/11, 05/15/11, 05/17/11, 05/21/11, 05/25/11, 05/27/11, 08/21/11, 08/24/11, 08/26/11, 08/27/11, 09/04/11, 09/07/11)
+[Error: Timed out compilation for release/examples/hello] (04/10/11, 04/12/11, 04/14/11, 04/19/11, 04/23/11, 04/26/11, 04/30/11, 05/07/11, 05/14/11, 05/15/11, 05/17/11, 05/21/11, 05/25/11, 05/27/11, 08/21/11, 08/24/11, 08/26/11, 08/27/11, 09/04/11, 09/07/11, 09/11/11)
 [Error: Timed out compilation for release/examples/primers/distributions] (08/30/11, 09/05/11)
 
 
@@ -494,7 +489,7 @@ warning: full/empty bit modified on less than word-sized data (05/24/11)
 
 nondet. compilation timeout
 ---------------------------
-[Error: Timed out compilation for release/examples/primers/arrays] (05/27/11, 05/31/11, 08/21/11, 08/26/11, 09/01/11)
+[Error: Timed out compilation for release/examples/primers/arrays] (05/27/11, 05/31/11, 08/21/11, 08/26/11, 09/01/11, 09/10/11)
 
 array index out of bounds due to bug in XMT compiler
 ----------------------------------------------------
@@ -524,12 +519,12 @@ nondet. core dump
 
 nondet. incorrect output
 ------------------------
-[Error matching program output for release/examples/spec/Task_Parallelism_and_Synchronization/serialStmt2] (06/23/11, 06/26/11, 06/30/11, 07/04/11, 07/07/11, 07/13/11, 07/15/11, 08/18/11, 09/08/11)
+[Error matching program output for release/examples/spec/Task_Parallelism_and_Synchronization/serialStmt2] (06/23/11, 06/26/11, 06/30/11, 07/04/11, 07/07/11, 07/13/11, 07/15/11, 08/18/11, 09/08/11, 09/11/11)
 
 nondet. execution timeouts (ever since switching to 4 shepherds)
 --------------------------------------------------------
 [Error: Timed out executing program release/examples/primers/taskParallel] (06/24/11, 07/03/11, 07/16/11, 08/20/11)
-[Error: Timed out executing program release/examples/spec/Task_Parallelism_and_Synchronization/serialStmt2] (07/03/11)
+[Error: Timed out executing program release/examples/spec/Task_Parallelism_and_Synchronization/serialStmt2] (07/03/11, 09/10/11)
 
 
 ===========================
@@ -585,7 +580,7 @@ nondet. timeout (09/06/11)
 
 nondet. timeout starting when #shepherds based on #cores
 --------------------------------------------------------
-[Error: Timed out executing program release/examples/hpcc/ptrans] (08/25/11)
+[Error: Timed out executing program release/examples/hpcc/ptrans] (08/25/11, 09/12/11)
 
 timeouts when #shepherds started getting based on #cores
 --------------------------------------------------------
