@@ -21,9 +21,8 @@ var phi_initialized = false;
  */
 proc hg_readCoeffs(inputfile) {
     var max_k: int;
-    var coeffData = new file(inputfile, path='./', mode=FileAccessMode.read);
+    var coeffData = open(inputfile, "r").reader();
 
-    coeffData.open();
     coeffData.read(max_k);
     hg_MaxK = max_k;
 
@@ -39,7 +38,6 @@ proc hg_readCoeffs(inputfile) {
     }
 
     coeffData.close();
-    delete coeffData;
 }
 
 

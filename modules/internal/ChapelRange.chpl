@@ -524,7 +524,7 @@ iter range.these(param tag: iterator, follower) where tag == iterator.follower
 // Write implementation for ranges
 proc range.writeThis(f: Writer)
 {
-  _base.writeThis(f);
+  f.write(_base);
 }
 
 // Return a substring of a string with a range of indices.

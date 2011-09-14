@@ -882,6 +882,9 @@
       // Normally this is handled explicitly in read/write.
       f.write("\n");
     }
+    proc readThis(f: Writer) {
+      halt("ioNewline.readThis must be implemented in channel");
+    }
   }
   // Used to represent a constant string we want to read or write...
   record ioLiteral {
@@ -891,6 +894,10 @@
       // Normally this is handled explicitly in read/write.
       f.write(val);
     }
+    proc readThis(f: Writer) {
+      halt("ioLiteral.readThis must be implemented in channel");
+    }
+
   }
 
   proc channel.lock() {
@@ -980,9 +987,7 @@
     _isIoPrimitiveType(t) || t == ioNewline || t == ioLiteral;
 
   // Read routines for all primitive types.
-  proc channel._read_text_internal(out x:?t):err_t where _isIoPrimitiveType(t) {
-    if writing then compilerError("read on write-only channel");
-
+  proc _read_text_internal(_channel_internal:qio_channel_ptr_t, out x:?t):err_t where _isIoPrimitiveType(t) {
     if _isBooleanType(t) {
       var err:err_t;
       var got:bool;
@@ -1062,9 +1067,7 @@
     return EINVAL;
   }
 
-  proc channel._write_text_internal(x:?t):err_t where _isIoPrimitiveType(t) {
-    if !writing then compilerError("write on read-only channel");
-
+  proc _write_text_internal(_channel_internal:qio_channel_ptr_t, x:?t):err_t where _isIoPrimitiveType(t) {
     if _isBooleanType(t) {
       if x {
         return qio_channel_print_string(false, _channel_internal, "true", 4);
@@ -1109,9 +1112,7 @@
     return EINVAL;
   }
 
-  proc channel._read_binary_internal(param byteorder:iokind, out x:?t):err_t where _isIoPrimitiveType(t) {
-    if writing then compilerError("read on write-only channel");
-
+  proc _read_binary_internal(_channel_internal:qio_channel_ptr_t, param byteorder:iokind, out x:?t):err_t where _isIoPrimitiveType(t) {
     if _isBooleanType(t) {
       var zero_one:uint(8);
       var err:err_t;
@@ -1153,9 +1154,7 @@
     }
   }
 
-  proc channel._write_binary_internal(param byteorder:iokind, x:?t):err_t where _isIoPrimitiveType(t) {
-    if !writing then compilerError("write on read-only channel");
-
+  proc _write_binary_internal(_channel_internal:qio_channel_ptr_t, param byteorder:iokind, x:?t):err_t where _isIoPrimitiveType(t) {
     if _isBooleanType(t) {
       var zero_one:uint(8);
       if x {
@@ -1187,7 +1186,7 @@
 
   // Channel must be locked, must be running on this.home
   // x is inout because it might contain a literal string.
-  proc channel._read_one_internal(param kind:iokind, inout x:?t):err_t where _isIoPrimitiveTypeOrNewline(t) {
+  proc _read_one_internal(_channel_internal:qio_channel_ptr_t, param kind:iokind, inout x:?t):err_t where _isIoPrimitiveTypeOrNewline(t) {
     var e:err_t = EINVAL;
     if t == ioNewline {
       return qio_channel_skip_past_newline(false, _channel_internal);
@@ -1198,31 +1197,21 @@
       var byteorder:uint(8) = qio_channel_byteorder(_channel_internal);
       if binary {
         select byteorder {
-          when big    do e = _read_binary_internal(big, x);
-          when little do e = _read_binary_internal(little, x);
-          otherwise      e = _read_binary_internal(native, x);
+          when big    do e = _read_binary_internal(_channel_internal, big, x);
+          when little do e = _read_binary_internal(_channel_internal, little, x);
+          otherwise      e = _read_binary_internal(_channel_internal, native, x);
         }
       } else {
-        e = _read_text_internal(x);
+        e = _read_text_internal(_channel_internal, x);
       }
     } else {
-      e = _read_binary_internal(kind, x);
+      e = _read_binary_internal(_channel_internal, kind, x);
     }
     return e;
   }
-  /*
-  proc channel.read_one(param kind:iokind, err:ErrorHandler, out x:?t) where _isPrimitiveType(t) {
-    var e:err_t;
-    on __primitive("chpl_on_locale_num", this.home_uid) {
-      this.lock();
-      e = this._read_one_internal(kind, x);
-      this.unlock();
-    }
-    seterr(err, e);
-  }*/
 
   // Channel must be locked, must be running on this.home
-  proc channel._write_one_internal(param kind:iokind, x:?t):err_t where _isIoPrimitiveTypeOrNewline(t) {
+  proc _write_one_internal(_channel_internal:qio_channel_ptr_t, param kind:iokind, x:?t):err_t where _isIoPrimitiveTypeOrNewline(t) {
     var e:err_t = EINVAL;
     if t == ioNewline {
       return qio_channel_write_newline(false, _channel_internal);
@@ -1233,20 +1222,20 @@
       var byteorder:uint(8) = qio_channel_byteorder(_channel_internal);
       if binary {
         select byteorder {
-          when big    do e = _write_binary_internal(big, x);
-          when little do e = _write_binary_internal(little, x);
-          otherwise      e = _write_binary_internal(native, x);
+          when big    do e = _write_binary_internal(_channel_internal, big, x);
+          when little do e = _write_binary_internal(_channel_internal, little, x);
+          otherwise      e = _write_binary_internal(_channel_internal, native, x);
         }
       } else {
-        e = _write_text_internal(x);
+        e = _write_text_internal(_channel_internal, x);
       }
     } else {
-      e = _write_binary_internal(kind, x);
+      e = _write_binary_internal(_channel_internal, kind, x);
     }
     return e;
   }
 
-  proc channel._read_one_internal(param kind:iokind, inout x:?t):err_t {
+  proc _read_one_internal(_channel_internal:qio_channel_ptr_t, param kind:iokind, inout x:?t):err_t {
     proc isObject(val) {
       proc helper(o: object) return true;
       proc helper(o)         return false;
@@ -1257,7 +1246,8 @@
 
     if isObject(x) {
       var binary:uint(8) = qio_channel_binary(_channel_internal);
-      err = _read_one_internal(kind, new ioLiteral("nil", binary==0));
+      var iolit = new ioLiteral("nil", binary==0);
+      err = _read_one_internal(_channel_internal, kind, iolit);
       if err == 0 {
         // we read 'nil'.
         x = nil;
@@ -1267,14 +1257,14 @@
       }
     }
 
-    var reader = new Reader(ch=this, err=0);
+    var reader = new ChannelReader(_channel_internal=_channel_internal, err=0);
     reader.readThis(x);
     err = writer.err;
     delete writer;
     return err;
   }
 
-  proc channel._write_one_internal(param kind:iokind, x:?t):err_t {
+  proc _write_one_internal(_channel_internal:qio_channel_ptr_t, param kind:iokind, x:?t):err_t {
     proc isNilObject(val) {
       proc helper(o: object) return o == nil;
       proc helper(o)         return false;
@@ -1283,44 +1273,33 @@
 
     if isNilObject(x) {
       var binary:uint(8) = qio_channel_binary(_channel_internal);
-      return _write_one_internal(kind, new ioLiteral("nil", binary==0));
+      return _write_one_internal(_channel_internal, kind, new ioLiteral("nil", binary==0));
     } else {
       var err:err_t;
-      var writer = new ChannelWriter(ch=this, err=0);
+      var writer = new ChannelWriter(_channel_internal=_channel_internal, err=0);
       // MPF: We would like to entirely write the default writeThis
       // method in Chapel, but that seems to be a bit of a challenge
       // right now and I'm having trouble with scoping/modules.
       // So I'll go back to writeThis being generated by the
       // compiler.... the writeThis generated by the compiler
       // calls writeThisDefaultImpl.
-      x.writeThis(writer);
+      x.writeThis(writer : Writer);
       err = writer.err;
       delete writer;
       return err;
     }
   }
 
-  /*
-  proc channel.write_one(param kind:iokind, err:error, x:?t) where _isPrimitiveType(t) {
-    var e:err_t;
-    on __primitive("chpl_on_locale_num", this.home_uid) {
-      this.lock();
-      e = this._write_one_internal(kind, x);
-      this.unlock();
-    }
-    seterr(err, e);
-  }*/
-
-
   /* Returns true if we read all the args,
      false if we encountered EOF (or possibly another error and didn't halt)*/
   proc channel.read(inout args ...?k):bool {
+    if writing then compilerError("read on write-only channel");
     var e:err_t = 0;
     on __primitive("chpl_on_locale_num", this.home_uid) {
       this.lock();
       for param i in 1..k {
         if e == 0 {
-          e = _read_one_internal(kind, args[i]);
+          e = _read_one_internal(_channel_internal, kind, args[i]);
         }
       }
       this.unlock();
@@ -1334,12 +1313,13 @@
   }
   proc channel.read(inout args ...?k,
                     onErr:ErrorHandler):bool {
+    if writing then compilerError("read on write-only channel");
     var e:err_t = 0;
     on __primitive("chpl_on_locale_num", this.home_uid) {
       this.lock();
       for param i in 1..k {
         if e == 0 {
-          e = _read_one_internal(kind, args[i]);
+          e = _read_one_internal(_channel_internal, kind, args[i]);
         }
       }
       this.unlock();
@@ -1354,6 +1334,7 @@
   proc channel.read(inout args ...?k,
                     style:iostyle,
                     onErr:ErrorHandler=nil):bool {
+    if writing then compilerError("read on write-only channel");
     var e:err_t = 0;
     on __primitive("chpl_on_locale_num", this.home_uid) {
       this.lock();
@@ -1361,7 +1342,7 @@
       this._set_style(style);
       for param i in 1..k {
         if e == 0 {
-          e = _read_one_internal(kind, args[i]);
+          e = _read_one_internal(_channel_internal, kind, args[i]);
         }
       }
       this._set_style(save_style);
@@ -1376,6 +1357,7 @@
   }
 
   proc channel.readline(inout arg:string, onErr:ErrorHandler=nil):bool {
+    if writing then compilerError("read on write-only channel");
     var e:err_t = 0;
     on __primitive("chpl_on_locale_num", this.home_uid) {
       this.lock();
@@ -1384,7 +1366,7 @@
       mystyle.string_format = QIO_STRING_FORMAT_TOEND;
       mystyle.string_end = 0x0a; // ascii newline.
       this._set_style(mystyle);
-      e = _read_one_internal(iokind.dynamic, arg);
+      e = _read_one_internal(_channel_internal, iokind.dynamic, arg);
       this._set_style(save_style);
       this.unlock();
     }
@@ -1443,12 +1425,13 @@
   }
 
   proc channel.write(args ...?k):bool {
+    if !writing then compilerError("write on read-only channel");
     var e:err_t = 0;
     on __primitive("chpl_on_locale_num", this.home_uid) {
       this.lock();
       for param i in 1..k {
         if e == 0 {
-          e = _write_one_internal(kind, args(i));
+          e = _write_one_internal(_channel_internal, kind, args(i));
         }
       }
       this.unlock();
@@ -1461,6 +1444,7 @@
   }
   proc channel.write(args ...?k,
                      onErr:ErrorHandler):bool {
+    if !writing then compilerError("write on read-only channel");
     var e:err_t = 0;
     on __primitive("chpl_on_locale_num", this.home_uid) {
       this.lock();
@@ -1481,6 +1465,7 @@
   proc channel.write(args ...?k,
                      style:iostyle,
                      onErr:ErrorHandler = nil):bool {
+    if !writing then compilerError("write on read-only channel");
     var e:err_t = 0;
     on __primitive("chpl_on_locale_num", this.home_uid) {
       this.lock();
@@ -1726,14 +1711,31 @@
     return stdin.read((...t));
   }
 
+/* Future interface
+   interface ReaderWriter {
+     proc writing: bool param;
+     proc binary: bool;
+
+     // generic routines use ioLiteral and check for EFORMAT
+     proc error(): err_t; // error code
+     proc clearError(): err_t; // error code
+     proc serialize(x);
+   }
+   */
+  
   class Writer {
+    proc writing param return true;
+    // if it's binary, we don't decorate class/record fields and values
+    proc binary:bool { return false; }
+    proc error():err_t { return 0; }
+    proc clearError() { }
     proc writeIt(x) {
       //compilerError("Generic Writer.writeIt called");
       halt("Generic Writer.writeIt called");
     }
-    // if it's binary, we don't decorate class/record fields and values
-    proc binary:bool { return false; }
-
+    proc serialize(x) {
+      writeIt(x);
+    }
     proc write(args ...?k) {
       for param i in 1..k {
         writeIt(args(i));
@@ -1750,31 +1752,47 @@
       var nl = new ioNewline();
       writeIt(nl);
     }
-    proc writeThisFieldsDefaultImpl(x:?t, inout first:bool, binary:bool) {
+    proc writeThisFieldsDefaultImpl(x:?t, inout first:bool) {
       param num_fields = __primitive("num fields", t);
 
       if (isClassType(t)) {
         if t != object {
           // only write parent fields for subclasses of object
           // since object has no .super field.
-          writeThisFieldsDefaultImpl(x.super, first, binary);
+          writeThisFieldsDefaultImpl(x.super, first);
         }
       }
 
-      // print out all fields for classes and records,
-      // or just the set field for a union.
-      for param i in 1..num_fields {
+      if !isUnionType(t) {
+        // print out all fields for classes and records
+        for param i in 1..num_fields {
+          if !binary {
+            var comma = new ioLiteral(", ");
+            if !first then write(comma);
 
-        // if statement selects all fields if it's not a union,
-        // or just the selected field if it is a union.
-        if( !isUnionType(t) || (__primitive("field id by num", t, i) == __primitive("get_union_id", x)  )) {
-            if binary==0 {
-            if !first then write(new ioLiteral(", "));
-            write(new ioLiteral(__primitive("field num to name", t, i) + " = "));
+            var eq = new ioLiteral(__primitive("field num to name", t, i) + " = ");
+            write(eq);
           }
 
           write(__primitive("field value by num", x, i));
+
           first = false;
+        }
+      } else {
+        // Handle unions.
+        // print out just the set field for a union.
+        var id = __primitive("get_union_id", x);
+        for param i in 1..num_fields {
+          if __primitive("field id by num", t, i) == id {
+            if binary {
+              // store the union ID
+              write(id);
+            } else {
+              var eq = new ioLiteral(__primitive("field num to name", t, i) + " = ");
+              write(eq);
+            }
+            write(__primitive("field value by num", x, i));
+          }
         }
       }
     }
@@ -1783,123 +1801,212 @@
     // happens now with buildDefaultWriteFunction
     // since it has the concrete type and then calls this method.
     proc writeThisDefaultImpl(x:?t) {
-      var isbinary:bool = binary;
-
-      if !isbinary {
+      if !binary {
         if isClassType(t) {
-          write(new ioLiteral("{"));
+          var start = new ioLiteral("{");
+          write(start);
         } else {
-          write(new ioLiteral("("));
+          var start = new ioLiteral("(");
+          write(start);
         }
       }
 
       var first = true;
 
-      writeThisFieldsDefaultImpl(x, first, isbinary);
+      writeThisFieldsDefaultImpl(x, first);
 
-      if !isbinary {
-       if isClassType(t) then write(new ioLiteral("}"));
-       else write(new ioLiteral(")"));
+      if !binary {
+        if isClassType(t) {
+          var end = new ioLiteral("}");
+          write(end);
+        } else {
+          var end = new ioLiteral(")");
+          write(end);
+        }
       }
     }
   }
 
-  class ChannelWriter : Writer {
-    var ch:channel(true, iokind.dynamic);
-    var err:err_t;
-    proc writeIt(x) {
-      if err == 0 {
-        err = ch._write_one_internal(iokind.dynamic, x);
+
+  class Reader {
+    proc writing param return false;
+    // if it's binary, we don't decorate class/record fields and values
+    proc binary:bool { return false; }
+    proc error():err_t { return 0; }
+    proc clearError() { }
+    proc readIt(inout x):bool {
+      halt("Generic Reader.readIt called");
+    }
+    proc serialize(inout x) {
+      readIt(x);
+    }
+    proc read(inout args ...?k):bool {
+      for param i in 1..k {
+        readIt(args(i));
+      }
+
+      if error() == EEOF {
+        clearError();
+        return false;
+      } else {
+        return true;
       }
     }
-    proc binary:bool{
-      var ret:uint(8) = qio_channel_binary(ch._channel_internal);
+    proc readln(inout args ...?k) {
+      for param i in 1..k {
+        readIt(args(i));
+      }
+      var nl = new ioNewline();
+      readIt(nl);
+      if error() == EEOF {
+        clearError();
+        return false;
+      } else {
+        return true;
+      }
+    }
+    proc readln() {
+      var nl = new ioNewline();
+      readIt(nl);
+      if error() == EEOF {
+        clearError();
+        return false;
+      } else {
+        return true;
+      }
+    }
+    proc readThisFieldsDefaultImpl(inout x:?t, inout first:bool) {
+      param num_fields = __primitive("num fields", t);
+
+      if (isClassType(t)) {
+        if t != object {
+          // only write parent fields for subclasses of object
+          // since object has no .super field.
+          readThisFieldsDefaultImpl(x.super, first);
+        }
+      }
+
+      if !isUnionType(t) {
+        // read all fields for classes and records
+        for param i in 1..num_fields {
+          if !binary {
+            var comma = new ioLiteral(", ");
+            if !first then read(comma);
+
+            var eq = new ioLiteral(__primitive("field num to name", t, i) + " = ");
+            read(eq);
+          }
+
+          read(__primitive("field value by num", x, i));
+
+          first = false;
+        }
+      } else {
+        // Handle unions.
+        if binary {
+          var id = __primitive("get_union_id", x);
+          // Read the ID
+          read(id);
+          for param i in 1..num_fields {
+            if __primitive("field id by num", t, i) == id {
+              read(__primitive("field value by num", x, i));
+            }
+          }
+        } else {
+          // Read the field name = part until we get one that worked.
+          for param i in 1..num_fields {
+            var eq = new ioLiteral(__primitive("field num to name", t, i) + " = ");
+            read(eq);
+            if error() == EFORMAT {
+              clearError();
+            } else {
+              // We read the 'name = ', so now read the value!
+              read(__primitive("field value by num", x, i));
+            }
+          }
+        }
+      }
+    }
+    // Note; this is not a multi-method and so must be called
+    // with the appropriate *concrete* type of x; that's what
+    // happens now with buildDefaultWriteFunction
+    // since it has the concrete type and then calls this method.
+    proc readThisDefaultImpl(inout x:?t) {
+      if !binary {
+        if isClassType(t) {
+          var start = new ioLiteral("{");
+          read(start);
+        } else {
+          var start = new ioLiteral("(");
+          read(start);
+        }
+      }
+
+      var first = true;
+
+      readThisFieldsDefaultImpl(x, first);
+
+      if !binary {
+        if isClassType(t) {
+          var end = new ioLiteral("}");
+          read(end);
+        } else {
+          var end = new ioLiteral(")");
+          read(end);
+        }
+      }
+    }
+  }
+
+  proc &(w: Writer, x) {
+    w.serialize(x);
+  }
+  proc &(r: Reader, x) {
+    r.serialize(x);
+  }
+
+  class ChannelWriter : Writer {
+    var _channel_internal:qio_channel_ptr_t;
+    var err:err_t;
+    proc binary:bool {
+      var ret:uint(8) = qio_channel_binary(_channel_internal);
       return ret != 0;
+    }
+    proc error():err_t {
+      return err;
+    }
+    proc clearError() {
+      err = 0;
+    }
+    proc writeIt(x) {
+      if err == 0 {
+        err = _write_one_internal(_channel_internal, iokind.dynamic, x);
+      }
     }
     proc writeThis(w:Writer) {
       // MPF - I don't understand why I had to add this,
       // but without it test/modules/diten/returnClassDiffModule5.chpl fails.
-      compilerError("writeThis on writer called");
+      compilerError("writeThis on ChannelWriter called");
     }
   }
 
 
-
-  class Reader {
-    var ch:channel(false, iokind.dynamic);
+  class ChannelReader : Reader {
+    var _channel_internal:qio_channel_ptr_t;
     var err:err_t;
-    proc read(inout args ...?k):bool {
-      for param i in 1..k {
-        if err == 0 {
-          err = ch._read_one_internal(iokind.dynamic, args(i));
-        }
-      }
-
-      if err == EEOF {
-        err = 0;
-        return false;
-      } else {
-        return true;
-      }
+    proc binary:bool {
+      var ret:uint(8) = qio_channel_binary(_channel_internal);
+      return ret != 0;
     }
-    proc readln(inout args ...?k):bool {
-      for param i in 1..k {
-        if err == 0 {
-          err = ch._read_one_internal(iokind.dynamic, args(i));
-        }
-      }
-
-      var nl = new ioNewline();
-      if err == 0 then err = ch._read_one_internal(iokind.dynamic, nl);
-
-      if err == EEOF {
-        err = 0;
-        return false;
-      } else {
-        return true;
-      }
+    proc error():err_t {
+      return err;
     }
-
-    proc readln():bool {
-      var nl = new ioNewline();
-      if err == 0 then err = ch._read_one_internal(iokind.dynamic, nl);
-
-      if err == EEOF {
-        err = 0;
-        return false;
-      } else {
-        return true;
-      }
+    proc clearError() {
+      err = 0;
     }
-
-    // default readThis
-    proc readThisDefaultImpl(inout x:?t) {
-      var binary:uint(8) = qio_channel_binary(ch._channel_internal);
-
-      param num_fields = __primitive("num fields", t);
-
-      if binary==0 {
-        if isClassType(t) {
-          read(new ioLiteral("{"));
-        } else {
-          read(new ioLiteral("("));
-        }
-      }
-
-      // default writeThis method.
-      for param i in 1..num_fields {
-        if binary==0 {
-          read(new ioLiteral(__primitive("field num to name", t, i)));
-          read(new ioLiteral("="));
-        }
-        read(__primitive("field value by num", x, i));
-        if binary==0 {
-          if i < num_fields then read(new ioLiteral(","));
-        }
-      }
-      if binary==0 {
-       if isClassType(t) then read(new ioLiteral("}"));
-       else read(new ioLiteral(")"));
+    proc readIt(inout x) {
+      if err == 0 {
+        err = _read_one_internal(_channel_internal, iokind.dynamic, x);
       }
     }
   }
@@ -1945,6 +2052,8 @@ proc halt(args ...?numArgs) {
 }
 
 proc _debugWrite(args...?n) {
+  _extern proc fprintf(f: _file, fmt: string, vals...?numvals): int;
+  _extern proc fflush(f: _file): int;
   proc getString(a: ?t) {
     if t == bool(8) || t == bool(16) || t == bool(32) || t == bool(64) ||
        t == int(8) || t == int(16) || t == int(32) || t == int(64) ||
@@ -1958,13 +2067,13 @@ proc _debugWrite(args...?n) {
                     typeToString(t));
   }
   for param i in 1..n {
-    var status = chpl_fprintf(chpl_cstdout(), getString(args(i)));
+    var status = fprintf(chpl_cstdout(), "%s", getString(args(i)));
     if status < 0 {
-      const err = chpl_cerrno();
-      halt("_debugWrite failed with status ", err);
+      //const err = chpl_cerrno();
+      halt("_debugWrite failed");
     }
   }
-  chpl_fflush(chpl_cstdout());
+  fflush(chpl_cstdout());
 }
 
 proc _debugWriteln(args...?n) {
@@ -1993,6 +2102,12 @@ proc chpl_taskID_t.writeThis(f: Writer) {
   var tmp : uint(64) = this : uint(64);
   f.write(tmp);
 }
+proc chpl_taskID_t.readThis(f: Reader) {
+  var tmp : uint(64);
+  f.read(tmp);
+  this = tmp;
+}
+
 
 _extern proc chpl_format(fmt: string, x): string;
 

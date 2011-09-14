@@ -1,14 +1,24 @@
 #ifndef _SYS_BASIC_H
 #define _SYS_BASIC_H
 
+#ifndef _BSD_SOURCE
 // get endian.h htobe16, etc
 #define _BSD_SOURCE
+#endif
 
 // get posix_memalign
+#ifndef _XOPEN_SOURCE
 #define _XOPEN_SOURCE 600
+#endif
+#ifndef _POSIX_C_SOURCE
 #define _POSIX_C_SOURCE 200112L
+#endif
+#ifndef _POSIX_SOURCE
 #define _POSIX_SOURCE 200112L
+#endif
+#ifndef _FILE_OFFSET_BITS
 #define _FILE_OFFSET_BITS 64
+#endif
 
 #include <sys/types.h>
 #include <unistd.h>

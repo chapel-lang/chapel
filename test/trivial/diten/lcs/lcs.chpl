@@ -30,9 +30,8 @@ proc main() {
 }
 
 proc get_strings(out s1: string, out s2: string) {
-  var infile = new file(filename, FileAccessMode.read, ".");
+  var infile = open(filename, "r").reader();
 
-  infile.open();
   infile.read(s1);
   infile.read(s2);
   infile.close();

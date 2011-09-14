@@ -4,8 +4,7 @@ use MatrixOps;
 config const inputfile = "Amagic10.dat";
 
 proc main() {
-  var Adat = new file(inputfile,path='./',mode=FileAccessMode.read);
-  Adat.open();
+  var Adat = open(inputfile, "r").reader();
 
   const n = readSize(Adat);
   var blk = readBlk(Adat);

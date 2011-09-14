@@ -31,18 +31,17 @@ proc main {
 //
 proc writeSquareArray(n, X, filename) {
   // Create an output file with the specified filename in write (FileAccessMode.write) mode
-  var outfile = new file(filename, FileAccessMode.write);
-
-  // Open the file
-  outfile.open();
+  var outfile = open(filename, "w");
+  var writer = outfile.writer();
 
   // Write the problem size in each dimension to the file
-  outfile.writeln(n, " ", n);
+  writer.writeln(n, " ", n);
 
   // write out the array itself
-  outfile.write(X);
+  writer.write(X);
 
   // close the file
+  writer.close();
   outfile.close();
 }
 
@@ -52,14 +51,12 @@ proc writeSquareArray(n, X, filename) {
 //
 proc readArray(filename) {
   // Create an input file with the specified filename in read (FileAccessMode.read) mode
-  var infile = new file(filename, FileAccessMode.read);
-
-  // Open the file
-  infile.open();
+  var infile = open(filename, "r");
+  var reader = infile.reader();
 
   // Read the number of rows and columns in the array in from the file
-  var m = infile.read(int), 
-      n = infile.read(int);
+  var m = reader.read(int), 
+      n = reader.read(int);
 
   // Declare an array of the specified dimensions
   var X: [1..m, 1..n] real;
@@ -71,9 +68,10 @@ proc readArray(filename) {
   //
   for i in 1..m do
     for j in 1..n do
-      infile.read(X(i,j));
+      reader.read(X(i,j));
 
   // Close the file
+  reader.close();
   infile.close();
 
   // Return the array

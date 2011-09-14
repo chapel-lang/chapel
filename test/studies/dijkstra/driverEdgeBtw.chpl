@@ -10,15 +10,14 @@ proc main() {
   var nEdges: int;  // represents first line in file -- the number of entries
   var nNodes: int;
 
-  var fin: file = new file(input_file, FileAccessMode.read);
-  var fout: file = new file("RtsGraph_out.txt", FileAccessMode.write);
-  var fin2: file = new file(gen_file, FileAccessMode.read);
-  var fin3: file = new file(load_file, FileAccessMode.read);
+  var fin = open(input_file, "r").reader();
+  var fout = open("RtsGraph_out.txt", "w").writer();
+  var fin2 = open(gen_file, "r").reader();
+  var fin3 = open(load_file, "r").reader();
 
   var init_tm: real;
   const init_t0 = getCurrentTime();
 
-  fin.open();
   fin.readln(nEdges);
 
   var D1 = [0..(nEdges-1)];
@@ -44,7 +43,6 @@ proc main() {
   var ignoreWt: real;  
 
   //Initialize Generators/Sources:
-  fin2.open();
   fin2.readln(nSources);
 
   writeln("Reading Sources: ", nSources);
@@ -61,7 +59,6 @@ proc main() {
   fin2.close();
   
   var nSinks: int;
-  fin3.open();
   fin3.readln(nSinks);
 
   writeln("Reading Sinks: ", nSinks);

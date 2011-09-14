@@ -24,7 +24,8 @@ static void build_enum_enumerate_function(EnumType* et);
 //static void buildDefaultReadFunction(ClassType* type);
 //static void buildDefaultReadFunction(EnumType* type);
 
-static void buildDefaultWriteFunction(ClassType* type);
+static void buildDefaultReadWriteFunctions(ClassType* type);
+
 static void buildStringCastFunction(EnumType* type);
 
 static void buildDefaultDestructor(ClassType* ct);
@@ -59,8 +60,7 @@ void buildDefaultFunctions(void) {
         //buildDefaultReadFunction(et);
         buildStringCastFunction(et);
       } else if (ClassType* ct = toClassType(type->type)) {
-        //buildDefaultReadFunction(ct);
-        buildDefaultWriteFunction(ct);
+        buildDefaultReadWriteFunctions(ct);
       }
       if (ClassType* ct = toClassType(type->type)) {
         if (isRecord(ct)) {
@@ -834,86 +834,101 @@ static bool buildWriteSuperClass(ArgSymbol* fileArg, FnSymbol* fn, Expr* dot, Ty
   return printedSomething;
 }
 */
-static void buildDefaultWriteFunction(ClassType* ct) {
-  if (function_exists("writeThis", 3, dtMethodToken, ct, dtWriter))
+static void buildDefaultReadWriteFunctions(ClassType* ct) {
+  if ( function_exists("serializeThis", 3, dtMethodToken, ct) ) {
+    // If they provided a serializeThis function, we always use that.
+    // They will get errors if their serializeThis function does not handle
+    // the right types, and we do not create readThis and writeThis.
     return;
-
-  FnSymbol* fn = new FnSymbol("writeThis");
-  fn->cname = astr("_auto_", ct->symbol->name, "_write");
-  fn->_this = new ArgSymbol(INTENT_BLANK, "this", ct);
-  fn->_this->addFlag(FLAG_ARG_THIS);
-  ArgSymbol* fileArg = new ArgSymbol(INTENT_BLANK, "f", dtWriter);
-  fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
-  fn->insertFormalAtTail(fn->_this);
-  fn->insertFormalAtTail(fileArg);
-  fn->retType = dtVoid;
-
-  fn->insertAtTail(new CallExpr(buildDotExpr(fileArg, "writeThisDefaultImpl"), fn->_this));
-  /*
-  if (isClass(ct)) {
-    fn->insertAtTail(new CallExpr(buildDotExpr(fileArg, "write"), new_StringSymbol("{")));
-  } else {
-    fn->insertAtTail(new CallExpr(buildDotExpr(fileArg, "write"), new_StringSymbol("(")));
   }
+  // Otherwise, we make a pair of serializeThis functions
+  // (one taking a Reader argument, one taking a Writer argument)
+  // that call readThis and writeThis. So first, we make sure
+  // that we have a readThis and a writeThis.
+  if (! function_exists("writeThis", 3, dtMethodToken, ct, dtWriter)) {
+    FnSymbol* fn = new FnSymbol("writeThis");
+    fn->cname = astr("_auto_", ct->symbol->name, "_write");
+    fn->_this = new ArgSymbol(INTENT_BLANK, "this", ct);
+    fn->_this->addFlag(FLAG_ARG_THIS);
+    ArgSymbol* fileArg = new ArgSymbol(INTENT_BLANK, "f", dtWriter);
+    fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
+    fn->insertFormalAtTail(fn->_this);
+    fn->insertFormalAtTail(fileArg);
+    fn->retType = dtVoid;
 
-  if (isUnion(ct)) {
-    CondStmt* cond = NULL;
-    for_fields(tmp, ct) {
-      if (tmp->hasFlag(FLAG_IMPLICIT_ALIAS_FIELD))
-        continue;
-      BlockStmt* writeFieldBlock = new BlockStmt();
-      writeFieldBlock->insertAtTail(new CallExpr(buildDotExpr(fileArg, "write"), new_StringSymbol(tmp->name)));
-      writeFieldBlock->insertAtTail(new CallExpr(buildDotExpr(fileArg, "write"), new_StringSymbol(" = ")));
-      writeFieldBlock->insertAtTail(new CallExpr(buildDotExpr(fileArg, "write"), 
-                                                 buildDotExpr(fn->_this, tmp->name)));
-      cond = new CondStmt(new CallExpr("==", new CallExpr(PRIM_UNION_GETID, fn->_this), new_IntSymbol(tmp->id)), writeFieldBlock, cond);
-    }
-    if (cond) {
-      fn->insertAtTail(cond);
-    } else {
-      // no fields in this union => do not write anything
-    }
-  } else {
-    bool first = true;
-    for_fields(tmp, ct) {
-      if (tmp->hasFlag(FLAG_IMPLICIT_ALIAS_FIELD))
-        continue;
-      if (tmp->hasFlag(FLAG_TYPE_VARIABLE))
-        continue;
-      if (!strcmp("outer", tmp->name))
-        continue;
-      if (tmp->hasFlag(FLAG_SUPER_CLASS)) {
-        bool printedSomething =
-          buildWriteSuperClass(fileArg, fn, buildDotExpr(fn->_this, tmp->name), fn->_this->type->dispatchParents.v[0]);
-        if (printedSomething)
-          first = false;
-        continue;
-      }
-      if (!first) {
-        fn->insertAtTail(new CallExpr(buildDotExpr(fileArg, "write"), new_StringSymbol(", ")));
-      }
-      fn->insertAtTail(new CallExpr(buildDotExpr(fileArg, "write"), new_StringSymbol(tmp->name)));
-      fn->insertAtTail(new CallExpr(buildDotExpr(fileArg, "write"), new_StringSymbol(" = ")));
-      fn->insertAtTail(new CallExpr(buildDotExpr(fileArg, "write"), 
-                                      buildDotExpr(fn->_this, tmp->name)));
-      first = false;
-    }
+    fn->insertAtTail(new CallExpr(buildDotExpr(fileArg, "writeThisDefaultImpl"), fn->_this));
+
+    DefExpr* def = new DefExpr(fn);
+    ct->symbol->defPoint->insertBefore(def);
+    fn->addFlag(FLAG_METHOD);
+    reset_line_info(def, ct->symbol->lineno);
+    normalize(fn);
+    ct->methods.add(fn);
   }
+  if (!function_exists("readThis", 3, dtMethodToken, ct, dtReader)) {
+    FnSymbol* fn = new FnSymbol("readThis");
+    fn->cname = astr("_auto_", ct->symbol->name, "_read");
+    fn->_this = new ArgSymbol(INTENT_BLANK, "this", ct);
+    fn->_this->addFlag(FLAG_ARG_THIS);
+    ArgSymbol* fileArg = new ArgSymbol(INTENT_BLANK, "f", dtReader);
+    fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
+    fn->insertFormalAtTail(fn->_this);
+    fn->insertFormalAtTail(fileArg);
+    fn->retType = dtVoid;
 
-  if (isClass(ct)) {
-    fn->insertAtTail(new CallExpr(buildDotExpr(fileArg, "write"), new_StringSymbol("}")));
-  } else {
-    fn->insertAtTail(new CallExpr(buildDotExpr(fileArg, "write"), new_StringSymbol(")")));
+    fn->insertAtTail(new CallExpr(buildDotExpr(fileArg, "readThisDefaultImpl"), fn->_this));
+
+    DefExpr* def = new DefExpr(fn);
+    ct->symbol->defPoint->insertBefore(def);
+    fn->addFlag(FLAG_METHOD);
+    reset_line_info(def, ct->symbol->lineno);
+    normalize(fn);
+    ct->methods.add(fn);
   }
-  */
+  // Create serializeThis(x:Writer) to just do this.writeThis(x)
+  {
+    FnSymbol* fn = new FnSymbol("serializeThis");
+    fn->cname = astr("_auto_", ct->symbol->name, "_swrite");
+    fn->_this = new ArgSymbol(INTENT_BLANK, "this", ct);
+    fn->_this->addFlag(FLAG_ARG_THIS);
+    ArgSymbol* fileArg = new ArgSymbol(INTENT_BLANK, "f", dtWriter);
+    fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
+    fn->insertFormalAtTail(fn->_this);
+    fn->insertFormalAtTail(fileArg);
+    fn->retType = dtVoid;
 
-  DefExpr* def = new DefExpr(fn);
-  ct->symbol->defPoint->insertBefore(def);
-  fn->addFlag(FLAG_METHOD);
-  reset_line_info(def, ct->symbol->lineno);
-  normalize(fn);
-  ct->methods.add(fn);
+    fn->insertAtTail(new CallExpr(buildDotExpr(fn->_this, "writeThis"), fileArg));
+
+    DefExpr* def = new DefExpr(fn);
+    ct->symbol->defPoint->insertBefore(def);
+    fn->addFlag(FLAG_METHOD);
+    reset_line_info(def, ct->symbol->lineno);
+    normalize(fn);
+    ct->methods.add(fn);
+  }
+  // Create serializeThis(x:Reader) to just do this.readThis(x)
+  {
+    FnSymbol* fn = new FnSymbol("serializeThis");
+    fn->cname = astr("_auto_", ct->symbol->name, "_sread");
+    fn->_this = new ArgSymbol(INTENT_BLANK, "this", ct);
+    fn->_this->addFlag(FLAG_ARG_THIS);
+    ArgSymbol* fileArg = new ArgSymbol(INTENT_BLANK, "f", dtReader);
+    fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
+    fn->insertFormalAtTail(fn->_this);
+    fn->insertFormalAtTail(fileArg);
+    fn->retType = dtVoid;
+
+    fn->insertAtTail(new CallExpr(buildDotExpr(fn->_this, "readThis"), fileArg));
+
+    DefExpr* def = new DefExpr(fn);
+    ct->symbol->defPoint->insertBefore(def);
+    fn->addFlag(FLAG_METHOD);
+    reset_line_info(def, ct->symbol->lineno);
+    normalize(fn);
+    ct->methods.add(fn);
+  }
 }
+
 
 static void buildStringCastFunction(EnumType* et) {
   if (function_exists("_cast", 2, dtString, et))

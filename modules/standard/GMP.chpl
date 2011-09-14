@@ -1509,7 +1509,7 @@ module GMP {
     proc set(val:bigint) { this.num.set(val.num); }
     proc set(num:BigInt) { this.num.set(num); }
     proc writeThis(writer:Writer) {
-      this.num.writeThis(writer);
+      writer.write(this.num);
     }
 
   }

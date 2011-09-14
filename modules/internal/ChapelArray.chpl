@@ -468,7 +468,7 @@ record _distribution {
   proc idxToLocale(ind) return _value.dsiIndexToLocale(ind);
 
   proc writeThis(x: Writer) {
-    _value.writeThis(x);
+    x.write(_value);
   }
 
   proc displayRepresentation() { _value.dsiDisplayRepresentation(); }
