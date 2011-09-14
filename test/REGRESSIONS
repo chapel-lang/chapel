@@ -253,10 +253,6 @@ gdb output differences
 xt-cle-specific failures
 ========================
 
-nondet. 'non-zero time to write a line' failure
------------------------------------------------
-[Error matching program output for release/examples/spec/Statements/use] (08/21/11)
-
 redeclaration of identifier in scope (01/24/11)
 -----------------------------------------------
 [Error matching compiler output for associative/waynew/indef2]
@@ -427,7 +423,6 @@ cygwin-specific failures
 incorrect output (06/24/11 -- first cygwin test in ages)
 --------------------------------------------------------
 [Error matching program output for release/examples/hello3-datapar]
-[Error matching program output for release/examples/spec/Statements/use]
 
 undiagnosed problems that started showing up 10/14/10 after lack of testing
 ---------------------------------------------------------------------------
