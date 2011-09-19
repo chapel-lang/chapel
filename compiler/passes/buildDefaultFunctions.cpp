@@ -835,16 +835,9 @@ static bool buildWriteSuperClass(ArgSymbol* fileArg, FnSymbol* fn, Expr* dot, Ty
 }
 */
 static void buildDefaultReadWriteFunctions(ClassType* ct) {
-  if ( function_exists("serializeThis", 3, dtMethodToken, ct) ) {
-    // If they provided a serializeThis function, we always use that.
-    // They will get errors if their serializeThis function does not handle
-    // the right types, and we do not create readThis and writeThis.
-    return;
-  }
-  // Otherwise, we make a pair of serializeThis functions
-  // (one taking a Reader argument, one taking a Writer argument)
-  // that call readThis and writeThis. So first, we make sure
-  // that we have a readThis and a writeThis.
+  // Always make readThis/writeThis if they don't exist.
+  // If there is a readWriteThis, readThis/writeThis call readWriteThis;
+  // otherwise, they call readThisDefaultImpl/writeThisDefaultImpl.
   if (! function_exists("writeThis", 3, dtMethodToken, ct, dtWriter)) {
     FnSymbol* fn = new FnSymbol("writeThis");
     fn->cname = astr("_auto_", ct->symbol->name, "_write");
@@ -856,7 +849,11 @@ static void buildDefaultReadWriteFunctions(ClassType* ct) {
     fn->insertFormalAtTail(fileArg);
     fn->retType = dtVoid;
 
-    fn->insertAtTail(new CallExpr(buildDotExpr(fileArg, "writeThisDefaultImpl"), fn->_this));
+    if ( function_exists("readWriteThis", 3, dtMethodToken, ct) ) {
+      fn->insertAtTail(new CallExpr(buildDotExpr(fn->_this, "readWriteThis"), fileArg));
+    } else {
+      fn->insertAtTail(new CallExpr(buildDotExpr(fileArg, "writeThisDefaultImpl"), fn->_this));
+    }
 
     DefExpr* def = new DefExpr(fn);
     ct->symbol->defPoint->insertBefore(def);
@@ -876,49 +873,11 @@ static void buildDefaultReadWriteFunctions(ClassType* ct) {
     fn->insertFormalAtTail(fileArg);
     fn->retType = dtVoid;
 
-    fn->insertAtTail(new CallExpr(buildDotExpr(fileArg, "readThisDefaultImpl"), fn->_this));
-
-    DefExpr* def = new DefExpr(fn);
-    ct->symbol->defPoint->insertBefore(def);
-    fn->addFlag(FLAG_METHOD);
-    reset_line_info(def, ct->symbol->lineno);
-    normalize(fn);
-    ct->methods.add(fn);
-  }
-  // Create serializeThis(x:Writer) to just do this.writeThis(x)
-  {
-    FnSymbol* fn = new FnSymbol("serializeThis");
-    fn->cname = astr("_auto_", ct->symbol->name, "_swrite");
-    fn->_this = new ArgSymbol(INTENT_BLANK, "this", ct);
-    fn->_this->addFlag(FLAG_ARG_THIS);
-    ArgSymbol* fileArg = new ArgSymbol(INTENT_BLANK, "f", dtWriter);
-    fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
-    fn->insertFormalAtTail(fn->_this);
-    fn->insertFormalAtTail(fileArg);
-    fn->retType = dtVoid;
-
-    fn->insertAtTail(new CallExpr(buildDotExpr(fn->_this, "writeThis"), fileArg));
-
-    DefExpr* def = new DefExpr(fn);
-    ct->symbol->defPoint->insertBefore(def);
-    fn->addFlag(FLAG_METHOD);
-    reset_line_info(def, ct->symbol->lineno);
-    normalize(fn);
-    ct->methods.add(fn);
-  }
-  // Create serializeThis(x:Reader) to just do this.readThis(x)
-  {
-    FnSymbol* fn = new FnSymbol("serializeThis");
-    fn->cname = astr("_auto_", ct->symbol->name, "_sread");
-    fn->_this = new ArgSymbol(INTENT_BLANK, "this", ct);
-    fn->_this->addFlag(FLAG_ARG_THIS);
-    ArgSymbol* fileArg = new ArgSymbol(INTENT_BLANK, "f", dtReader);
-    fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
-    fn->insertFormalAtTail(fn->_this);
-    fn->insertFormalAtTail(fileArg);
-    fn->retType = dtVoid;
-
-    fn->insertAtTail(new CallExpr(buildDotExpr(fn->_this, "readThis"), fileArg));
+    if ( function_exists("readWriteThis", 3, dtMethodToken, ct) ) {
+      fn->insertAtTail(new CallExpr(buildDotExpr(fn->_this, "readWriteThis"), fileArg));
+    } else {
+      fn->insertAtTail(new CallExpr(buildDotExpr(fileArg, "readThisDefaultImpl"), fn->_this));
+    }
 
     DefExpr* def = new DefExpr(fn);
     ct->symbol->defPoint->insertBefore(def);
