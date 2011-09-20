@@ -1,9 +1,7 @@
-#!/usr/bin/env sh
+#!/usr/bin/tcsh
 
-. /etc/modules/sh
-module use /opt/cpkg/current/modulefiles
-module load subversion
+source ~/.chapelcshrc-cron
 
-export CHPL_COMM=mpi
+setenv CHPL_COMM mpi
 
 ~/chapel/util/cron/nightly -examples -cron
