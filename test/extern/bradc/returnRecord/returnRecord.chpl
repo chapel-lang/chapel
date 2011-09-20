@@ -1,8 +1,8 @@
-_extern record R {
+extern record R {
   var x: int;
 }
 
-_extern proc foo(): R;
+extern proc foo(): R;
 
 var myR: R;
 

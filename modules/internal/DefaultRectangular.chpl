@@ -676,7 +676,7 @@ proc DefaultRectangularArr.doiBulkTransfer(B) {
     Blo(i) = Bdims(i).first;
 
   const len = dom.dsiNumIndices:int(32);
-  _extern proc sizeof(type x): int(32);
+  extern proc sizeof(type x): int(32);
   if debugBulkTransfer {
     const elemSize: int(32)=sizeof(B._value.eltType);
     writeln("In doiBulkTransfer(): Alo=", Alo, ", Blo=", Blo,

@@ -1,7 +1,7 @@
 use Memory;
 
-_extern proc chpl_mem_allocMany(number, size, description, lineno=-1, filename=""): opaque;
-_extern proc chpl_mem_free(ptr, lineno=-1, filename="");
+extern proc chpl_mem_allocMany(number, size, description, lineno=-1, filename=""): opaque;
+extern proc chpl_mem_free(ptr, lineno=-1, filename="");
 
 config var linenum: int = 0;
 config var filename: string = "";

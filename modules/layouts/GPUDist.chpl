@@ -1,13 +1,13 @@
-_extern proc chpl_init_accelerator();
-_extern proc getThreadID_x() : int(32);
-_extern proc getThreadID_y() : int(32);
-_extern proc getThreadID_z() : int(32);
-_extern proc getBlockID_x() : int(32);
-_extern proc getBlockID_y() : int(32);
-_extern proc getBlockID_z() : int(32);
-_extern proc getBlockSize_x() : int(32);
-_extern proc getBlockSize_y() : int(32);
-_extern proc getBlockSize_z() : int(32);
+extern proc chpl_init_accelerator();
+extern proc getThreadID_x() : int(32);
+extern proc getThreadID_y() : int(32);
+extern proc getThreadID_z() : int(32);
+extern proc getBlockID_x() : int(32);
+extern proc getBlockID_y() : int(32);
+extern proc getBlockID_z() : int(32);
+extern proc getBlockSize_x() : int(32);
+extern proc getBlockSize_y() : int(32);
+extern proc getBlockSize_z() : int(32);
 
 // Initialize the accelerator device from the beginning
 chpl_init_accelerator();

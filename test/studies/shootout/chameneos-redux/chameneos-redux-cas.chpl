@@ -1,7 +1,7 @@
-_extern proc __sync_val_compare_and_swap(inout state_p : volatile uint(32), 
+extern proc __sync_val_compare_and_swap(inout state_p : volatile uint(32), 
                                          state : uint(32), 
                                          xchg : uint(32)) : uint(32);
-_extern proc sched_yield();
+extern proc sched_yield();
 
 use Time;
 

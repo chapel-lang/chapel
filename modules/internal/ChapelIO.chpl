@@ -1,13 +1,13 @@
-_extern proc chpl_cstdin(): _file;
-_extern proc chpl_cstdout(): _file;
-_extern proc chpl_cstderr(): _file;
-_extern proc chpl_cerrno(): string;
-_extern proc chpl_cnullfile(): _file;
-_extern proc chpl_fopen(filename: string, modestring: string): _file;
-_extern proc chpl_fclose(file: _file): int;
-_extern proc chpl_fflush(file: _file): int;
-_extern proc chpl_fprintf(file: _file, s: string): int;
-_extern proc chpl_format(fmt: string, x): string;
+extern proc chpl_cstdin(): _file;
+extern proc chpl_cstdout(): _file;
+extern proc chpl_cstderr(): _file;
+extern proc chpl_cerrno(): string;
+extern proc chpl_cnullfile(): _file;
+extern proc chpl_fopen(filename: string, modestring: string): _file;
+extern proc chpl_fclose(file: _file): int;
+extern proc chpl_fflush(file: _file): int;
+extern proc chpl_fprintf(file: _file, s: string): int;
+extern proc chpl_format(fmt: string, x): string;
 
 // class file
 //
@@ -125,7 +125,7 @@ proc file.flush() {
 }
 
 proc file.eof {
-  _extern proc feof(fp: _file): int;  // This should be a c_int not Chapel 'int'
+  extern proc feof(fp: _file): int;  // This should be a c_int not Chapel 'int'
   return (feof(_fp) != 0);
 }
 

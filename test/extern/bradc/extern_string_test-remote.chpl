@@ -1,5 +1,5 @@
-_extern proc return_string_test():string;
-_extern proc return_string_arg_test(inout string);
+extern proc return_string_test():string;
+extern proc return_string_arg_test(inout string);
 
 writeln("returned string ",return_string_test());
 var s:string;

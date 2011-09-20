@@ -1,4 +1,4 @@
-_extern proc sizeof(x): int(64);
+extern proc sizeof(x): int(64);
 
 //var b  : bool     = true;  NOT PORTABLE
 var b8 : bool(8)  = true;

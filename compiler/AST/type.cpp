@@ -723,7 +723,7 @@ void initTheProgram(void) {
   //  in possibly more special case code.
   //
   DefExpr* objectDef = buildClassDefExpr("object", dtObject,
-                                         NULL, new BlockStmt(), false);
+                                         NULL, new BlockStmt(), FLAG_UNKNOWN);
   objectDef->sym->addFlag(FLAG_OBJECT_CLASS);
   objectDef->sym->addFlag(FLAG_NO_OBJECT);
   theProgram->initFn->insertAtHead(objectDef);

@@ -2,7 +2,7 @@ proc myfun(x:int) {
   writeln("Called myfun ", x);
 }
 
-_extern proc c_func(inout x):int(32);
+extern proc c_func(inout x):int(32);
 
 var x:volatile int;
 x = 5;

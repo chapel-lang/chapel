@@ -23,6 +23,7 @@ sub help {
 This script is provided so the Chapel users can semi-automatically
 adjust their code to certain changes in the Chapel language presently
 being implemented. A brief summary of changes is:
+- 'extern' is now a reserved keyword and '_extern' is deprecated;
 - 'ref' is now a reserved keyword;
 - instead of the 'def' keyword, use:
    - 'proc' for non-iterator functions,
@@ -62,7 +63,7 @@ necessary to run the compiler again and follow up on its diagnostic messages.
 eom1;
 
    print <<'eom2;';
-Usage:  convert-defs  FILE|DIR|OPTION...
+Usage:  update-sources  FILE|DIR|OPTION...
   FILE - depending on the suffix:
     .chpl  - a Chapel source file to be converted
              based on diagnostics from running the compiler on that file
@@ -200,10 +201,10 @@ my ($curOpenFile, $curLine, $curModFile, $curBakFile,
 my (%PROCESSED_FILES, %MODULE_FILES);
 my ($numMessagesTotal, $numMessagesNotErrorFormat, $numIrrelevantMessages,
     $numModuleFiles, $numModuleMessages, $numSkippedFileMessages,
-    $numFilesModified, $numDef2proc, $numDef2iter,
+    $numFilesModified, $numDef2proc, $numDef2iter, $numOldExtern,
     $numRet2yield, $numRefAsIdent, $numIterAsIdent, $numMessagesBadFileOrLineno,
     $numIOskippedMessages, $numNonMatched, $numCompiles, $numDef2ProcFiles) =
-   (0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0);
+   (0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0);
 # reset for each line of compiler output
 my ($msgAll, $msgFile, $msgLineno, $msgMsg, $msgAction, $msgCounterVar);
 
@@ -320,6 +321,9 @@ sub handleOneCompMsg {
    } elsif ($msgMsg eq "syntax error: near 'iter'") {
       $msgAction = "unimplemented ('iter' identifier)";
       $msgCounterVar = \$numIterAsIdent;
+   } elsif ($msgMsg eq "warning: The _extern keyword is deprecated. Use extern (no leading underscore) instead.") {
+     $msgAction = "trimExtern";
+     $msgCounterVar = \$numOldExtern;
    } else {
       verb(1, "ignored message c2: $msgAll");
       $numIrrelevantMessages++;
@@ -376,6 +380,7 @@ sub printStats {
    printf "  modified files: %d\n", $numFilesModified;
    printf "%8d  def->proc\n", $numDef2proc;
    printf "%8d  def->iter\n", $numDef2iter;
+   printf "%8d  _extern->extern\n", $numOldExtern;
 if ($numRet2yield or $numRefAsIdent or $numIterAsIdent or $numMessagesBadFileOrLineno or
     $numNonMatched or $numIOskippedMessages)
 {
@@ -401,7 +406,7 @@ if ($numMessagesNotErrorFormat or $numIrrelevantMessages) {
    printf "%8d  lines\n", $numMessagesTotal;
    print "\n";
 
-   my $sumItemized = $numDef2proc + $numDef2iter + $numRet2yield +
+   my $sumItemized = $numDef2proc + $numDef2iter + $numOldExtern + $numRet2yield +
       $numRefAsIdent + $numIterAsIdent + $numMessagesNotErrorFormat + $numNonMatched +
       $numIOskippedMessages + $numSkippedFileMessages +
       $numModuleMessages + $numIrrelevantMessages;
@@ -465,6 +470,8 @@ sub convertLine {
       $substitute = "proc";
    } elsif ($msgAction eq "def2iter") {
       $substitute = "iter";
+   } elsif ($msgAction eq "trimExtern") {
+      $substitute = "extern";
    }
    if (!$substitute) {
       bug("unexpected action '$msgAction' in convertLine()");
@@ -475,6 +482,8 @@ sub convertLine {
    # finally, handle the line
    $lineToEdit =~ s/^()def(\s)/$1$substitute$2/ or
    $lineToEdit =~ s/(\s)def(\s)/$1$substitute$2/ or
+   $lineToEdit =~ s/^()_extern(\s)/$1$substitute$2/ or
+   $lineToEdit =~ s/(\s)_extern(\s)/$1$substitute$2/ or
    $success = 0;
    if ($success) {
       ${$msgCounterVar}++;

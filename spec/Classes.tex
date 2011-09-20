@@ -28,7 +28,7 @@ are discussed in~\rsec{Generic_Types}.
 A class is defined with the following syntax:
 \begin{syntax}
 class-declaration-statement:
-  `class' identifier class-inherit-list[OPT] {
+  `extern'[OPT] `class' identifier class-inherit-list[OPT] {
     class-statement-list[OPT] }
 
 class-inherit-list:
@@ -71,6 +71,14 @@ If a class declaration contains a type alias or a parameter field, or it contain
 constant without a specified type and without an initialization
 expression, then it declares a generic class type.  Generic classes are described
 in~\rsec{Generic_Types}.
+
+If the \chpl{extern} keyword appears before the \chpl{class} keyword, then an
+external class type is declared.  An external class type declaration must not
+contain a \sntx{class-inherit-list}.  An external class is used within Chapel
+for type and field resolution, but no corresponding backend definition is
+generated.  It is presumed that the definition of an external class is supplied
+by a library or the execution environment.
+% External class inheritance is not currently supported.
 
 \subsection{Class Types}
 \label{Class_Types}
@@ -162,10 +170,12 @@ A class method is a procedure or iterator that is bound to a class.
 Methods are declared with the following syntax:
 \begin{syntax}
 method-declaration-statement:
-  `proc' param-clause[OPT] type-binding function-name argument-list[OPT] return-intent[OPT] return-type[OPT]
-    where-clause[OPT] function-body
-  `iter' param-clause[OPT] type-binding function-name argument-list[OPT] return-intent[OPT] return-type[OPT]
-    where-clause[OPT] function-body
+  linkage-specifier[OPT] proc-or-iter param-clause[OPT] type-binding function-name argument-list[OPT] 
+    return-intent[OPT] return-type[OPT] where-clause[OPT] function-body
+
+proc-or-iter:
+  `proc'
+  `iter'
 
 param-clause:
   `param'

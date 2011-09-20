@@ -1,8 +1,8 @@
-_extern proc fopen(name: string, mode: string): _file;
-_extern proc fread(inout data, size: int, n: int, f: _file): int;
-_extern proc fwrite(inout data, size: int, n: int, f: _file): int;
-_extern proc fclose(f: _file);
-_extern proc sizeof(x): int;
+extern proc fopen(name: string, mode: string): _file;
+extern proc fread(inout data, size: int, n: int, f: _file): int;
+extern proc fwrite(inout data, size: int, n: int, f: _file): int;
+extern proc fclose(f: _file);
+extern proc sizeof(x): int;
 
 var i = 1, j = 2.0;
 

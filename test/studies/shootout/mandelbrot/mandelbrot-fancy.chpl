@@ -4,7 +4,7 @@ use BlockDist;
 config const size : uint = 200;
 
 // for binary output
-_extern proc putchar(i : int) : int;
+extern proc putchar(i : int) : int;
 
 proc main()
 {

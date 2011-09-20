@@ -1,4 +1,4 @@
-_extern class C { var x: int; }
+extern class C { var x: int; }
 proc my_foo(c: C, x: int) {
   c.x = x;
 }

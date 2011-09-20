@@ -13,4 +13,4 @@ def c13() { // def->iter
   return "13"; // return expr -> { yield expr; return; }
 }
 
-_extern def c14(); // def->proc
+extern def c14(); // def->proc

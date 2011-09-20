@@ -1,4 +1,4 @@
-_extern enum color {
+extern enum color {
   red,
   green,
   blue

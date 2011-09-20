@@ -1515,16 +1515,18 @@ buildVarDecls(BlockStmt* stmts, Flag externconfig, Flag varconst) {
 
 
 DefExpr*
-buildClassDefExpr(const char* name, Type* type, Expr* inherit, BlockStmt* decls, bool isExtern) {
+buildClassDefExpr(const char* name, Type* type, Expr* inherit, BlockStmt* decls, Flag isExtern) {
   ClassType* ct = toClassType(type);
   INT_ASSERT(ct);
   TypeSymbol* ts = new TypeSymbol(name, ct);
   DefExpr* def = new DefExpr(ts);
   ct->addDeclarations(decls);
-  if (isExtern) {
+  if (isExtern == FLAG_EXTERN || isExtern == FLAG_OLD_EXTERN_KW_USED) {
     ts->addFlag(FLAG_EXTERN);
     if (inherit)
       USR_FATAL_CONT(inherit, "External types do not currently support inheritance");
+    if (isExtern == FLAG_OLD_EXTERN_KW_USED)
+      USR_WARN(type, "The _extern keyword is deprecated. Use extern (no leading underscore) instead.");
   }
   if (inherit)
     ct->inherits.insertAtTail(inherit);
@@ -1627,6 +1629,10 @@ BlockStmt*
 buildFunctionDecl(FnSymbol* fn, RetTag optRetTag, Expr* optRetType,
                   Expr* optWhere, BlockStmt* optFnBody)
 {
+  // This clause can be removed when the old _extern keyword is obsoleted. <hilde>
+  if (fn->hasFlag(FLAG_OLD_EXTERN_KW_USED))
+    USR_WARN(fn, "The _extern keyword is deprecated. Use extern (no leading underscore) instead.");
+
   fn->retTag = optRetTag;
   if (optRetTag == RET_VAR)
   {

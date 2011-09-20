@@ -14,7 +14,7 @@ by its type.
 Variables are declared with the following syntax:
 \begin{syntax}
 variable-declaration-statement:
-  `config'[OPT] variable-kind variable-declaration-list ;
+  config-or-extern[OPT] variable-kind variable-declaration-list ;
 
 variable-kind: one of
   `param' `const' `var'
@@ -51,7 +51,10 @@ in~\rsec{Local_Variables}.
 
 The optional keyword \chpl{config} specifies that the variables are
 configuration variables, described in
-Section~\rsec{Configuration_Variables}.
+Section~\rsec{Configuration_Variables}.  The optional keyword \chpl{extern}
+indicates that the variable is externally defined.  Its name and type are used
+within the Chapel program for resolution, but no space is allocated for it and
+no initialization code emitted.
 
 The \sntx{variable-kind} specifies whether the variables are
 parameters (\chpl{param}), constants (\chpl{const}), or regular

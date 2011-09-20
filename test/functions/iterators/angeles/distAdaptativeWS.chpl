@@ -8,7 +8,7 @@
 
 // Contributed by Angeles Navarro 
 use AdvancedIters;
-_extern proc usleep(val:uint);
+extern proc usleep(val:uint);
 config const nTasks:int=4; //here.numCores;
 writeln("Working with ", nTasks, " Threads");
 

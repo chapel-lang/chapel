@@ -1,4 +1,4 @@
-_extern proc system(command: string): int;
+extern proc system(command: string): int;
 
 writeln("about to execute system command");
 system("echo hi > externSystem.appendme");

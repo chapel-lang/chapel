@@ -1,8 +1,8 @@
 // ChapelBase.chpl
 //
 
-_extern proc chpl_config_has_value(name, module_name): bool;
-_extern proc chpl_config_get_value(name, module_name): string;
+extern proc chpl_config_has_value(name, module_name): bool;
+extern proc chpl_config_get_value(name, module_name): string;
 
 config param CHPL_HOST_PLATFORM: string = "unset";
 config param CHPL_TARGET_PLATFORM: string = "unset";
