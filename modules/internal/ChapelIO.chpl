@@ -886,6 +886,10 @@
       halt("ioNewline.readThis must be implemented in channel");
     }
   }
+  pragma "inline" proc _cast(type t, x: ioNewline) where t == string {
+    return "\n";
+  }
+
   // Used to represent a constant string we want to read or write...
   record ioLiteral {
     var val: string;
@@ -897,7 +901,9 @@
     proc readThis(f: Writer) {
       halt("ioLiteral.readThis must be implemented in channel");
     }
-
+  }
+  pragma "inline" proc _cast(type t, x: ioLiteral) where t == string {
+    return x.val;
   }
 
   proc channel.lock() {
@@ -989,36 +995,31 @@
   // Read routines for all primitive types.
   proc _read_text_internal(_channel_internal:qio_channel_ptr_t, out x:?t):err_t where _isIoPrimitiveType(t) {
     if _isBooleanType(t) {
+      var trues = ("true", "1", "yes");
+      var falses = ("false", "0", "no");
+      var num = trues.size;
       var err:err_t;
       var got:bool;
 
-      err = qio_channel_scan_literal(false, _channel_internal, "true", 4, 1);
-      if err == 0 then got = true;
-      else {
-        err = qio_channel_scan_literal(false, _channel_internal, "false", 5, 1);
-        if err == 0 then got = false;
-        else {
-          err = qio_channel_scan_literal(false, _channel_internal, "1", 1, 1);
-          if err == 0 then got = true;
-          else {
-            err = qio_channel_scan_literal(false, _channel_internal, "0", 1, 1);
-            if err == 0 then got = false;
-            else {
-              err = qio_channel_scan_literal(false, _channel_internal, "yes", 3, 1);
-              if err == 0 then got = true;
-              else {
-                err = qio_channel_scan_literal(false, _channel_internal, "no", 2, 1);
-                if err == 0 then got = false;
-              }
-            }
-          }
+      err = EFORMAT;
+
+      for i in 1..num {
+        err = qio_channel_scan_literal(false, _channel_internal, trues(i), trues(i).length, 1);
+        if err == 0 {
+          got = true;
+          break;
+        }
+        err = qio_channel_scan_literal(false, _channel_internal, falses(i), falses(i).length, 1);
+        if err == 0 {
+          got = false;
+          break;
         }
       }
 
       if err == 0 then x = got;
       return err;
     } else if _isIntegralType(t) {
-      // handles bool (as unsigned), int types
+      // handles int types
       return qio_channel_scan_int(false, _channel_internal, x, numBytes(t), _isSignedType(t));
     } else if _isRealType(t) {
       // handles real
@@ -1075,7 +1076,7 @@
         return qio_channel_print_string(false, _channel_internal, "false", 5);
       }
     } else if _isIntegralType(t) {
-      // handles bool (as unsigned), int types
+      // handles int types
       return qio_channel_print_int(false, _channel_internal, x, numBytes(t), _isSignedType(t));
  
     } else if _isRealType(t) {
@@ -1236,31 +1237,11 @@
   }
 
   proc _read_one_internal(_channel_internal:qio_channel_ptr_t, param kind:iokind, inout x:?t):err_t {
-    proc isObject(val) {
-      proc helper(o: object) return true;
-      proc helper(o)         return false;
-      return helper(val);
-    }
- 
-    var err:err_t = 0;
-
-    if isObject(x) {
-      var binary:uint(8) = qio_channel_binary(_channel_internal);
-      var iolit = new ioLiteral("nil", binary==0);
-      err = _read_one_internal(_channel_internal, kind, iolit);
-      if err == 0 {
-        // we read 'nil'.
-        x = nil;
-        return 0;
-      } else if err == EFORMAT {
-        err = 0; // continue on...
-      }
-    }
-
     var reader = new ChannelReader(_channel_internal=_channel_internal, err=0);
-    reader.readThis(x);
-    err = writer.err;
-    delete writer;
+    var err:err_t;
+    reader.read(x);
+    err = reader.err;
+    delete reader;
     return err;
   }
 
@@ -1740,7 +1721,7 @@
         x.writeThis(this);
       }
     }
-    proc serialize(x) {
+    proc readwrite(x) {
       writeIt(x);
     }
     proc write(args ...?k) {
@@ -1871,7 +1852,7 @@
 
       x.readThis(this);
     }
-    proc serialize(inout x) {
+    proc readwrite(inout x) {
       readIt(x);
     }
     proc read(inout args ...?k):bool {
@@ -1993,10 +1974,10 @@
   }
 
   proc &(w: Writer, x) {
-    w.serialize(x);
+    w.readwrite(x);
   }
   proc &(r: Reader, x) {
-    r.serialize(x);
+    r.readwrite(x);
   }
 
   class ChannelWriter : Writer {
@@ -2128,16 +2109,6 @@ proc _ddata.writeThis(f: Writer) {
   halt("cannot write the _ddata class");
 }
 
-/* these should not be needed
-proc enumerated.writeThis(f: Writer) {
-  f.write(this:string);
-}
-
-proc bool.writeThis(f: Writer) {
-  f.write(this:string);
-}
-*/
-
 proc chpl_taskID_t.writeThis(f: Writer) {
   var tmp : uint(64) = this : uint(64);
   f.write(tmp);
@@ -2146,6 +2117,20 @@ proc chpl_taskID_t.readThis(f: Reader) {
   var tmp : uint(64);
   f.read(tmp);
   this = tmp;
+}
+
+
+class StringWriter: Writer {
+  var s: string;
+  proc writePrimitive(x) { this.s += (x:string); }
+}
+
+pragma "ref this" pragma "dont disable remote value forwarding"
+proc string.write(args ...?n) {
+  var sc = new StringWriter(this);
+  sc.write((...args));
+  this = sc.s;
+  delete sc;
 }
 
 

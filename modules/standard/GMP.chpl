@@ -264,6 +264,7 @@ module GMP {
   _extern proc chpl_gmp_get_randstate(not_inited_state:gmp_randstate_t, src_locale:int(32), from:__gmp_randstate_struct);
   _extern proc chpl_gmp_mpz_nlimbs(from:__mpz_struct):uint(64);
   _extern proc chpl_gmp_mpz_print(x:mpz_t);
+  _extern proc chpl_gmp_mpz_get_str(base: int(32), x:mpz_t):string;
 
 
   enum Round {
@@ -413,7 +414,7 @@ module GMP {
     {
       var ret:string;
       on this {
-       ret = mpz_get_str(nil, base, this.mpz);
+        ret = chpl_gmp_mpz_get_str(base, this.mpz);
       }
       return ret;
     }
@@ -1322,8 +1323,8 @@ module GMP {
 
   proc BigInt.writeThis(writer:Writer) {
     var (acopy,a_) = this.maybeCopy();
-    var s:string;
-    gmp_asprintf(s, "%Zd", a_.mpz);
+    var s:string = a_.get_str();
+    //gmp_asprintf(s, "%Zd", a_.mpz);
     writer.write(s);
     if acopy then delete a_;
   }

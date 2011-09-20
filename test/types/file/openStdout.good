@@ -1,1 +1,0 @@
-openStdout.chpl:3: error: halt reached - ***Error: It is not necessary to open "stdout"***

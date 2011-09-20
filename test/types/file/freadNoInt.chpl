@@ -1,5 +1,4 @@
 var myInt: int;
-var f: file = new file(filename = "freadNoInt.txt", mode = FileAccessMode.read);
+var f = open("freadNoInt.txt", "r").reader();
 
-f.open();
 f.read(myInt);

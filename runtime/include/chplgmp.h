@@ -14,3 +14,6 @@ void chpl_gmp_get_randstate(gmp_randstate_t not_inited_state, int32_t src_locale
 uint64_t chpl_gmp_mpz_nlimbs(__mpz_struct from);
 
 void chpl_gmp_mpz_print(mpz_t x);
+
+chpl_string chpl_gmp_mpz_get_str(int32_t base, mpz_t x);
+

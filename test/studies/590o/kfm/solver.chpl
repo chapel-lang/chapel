@@ -21,8 +21,8 @@ for ij in TableSpace {
    }
 }
 
-infile.close();
 reader.close();
+infile.close();
 
 
 //---------------------- Print out the puzzle that was given as input -----

@@ -1,4 +1,3 @@
-var f = open(filename, "r");
+var f = open("_test_cannotOpenMe.txt", "r");
 
-f.open();
 f.close();

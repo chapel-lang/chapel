@@ -975,6 +975,7 @@ err_t _peek_number_unlocked(qio_channel_t* ch, number_reading_state_t* s, int64_
 done:
   err = 0;
   *amount = s->end - mark_offset;
+  if( *amount == 0 ) err = EFORMAT;
 error:
   qio_channel_revert_unlocked(ch);
   return err;
@@ -1994,6 +1995,7 @@ err_t qio_channel_scan_complex(const int threadsafe, qio_channel_t* ch, void* re
     }
 
     err = qio_channel_read_char(false, ch, &chr);
+    if( err ) goto rewind;
     if( chr != 'i' ) {
       err = EFORMAT;
       goto rewind;

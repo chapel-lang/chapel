@@ -2,6 +2,7 @@ var myFirstInt = 123;
 var mySecondInt = 456;
 var myThirdInt = 789;
 
-var f: file = new file(filename = "_test_fwriteMultipleInts.txt", mode = FileAccessMode.write);
-f.open();
+var f = open("_test_fwriteMultipleInts.txt", "w").writer();
 f.write(myFirstInt, mySecondInt, myThirdInt);
+f.close();
+

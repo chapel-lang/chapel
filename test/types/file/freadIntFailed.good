@@ -1,1 +1,1 @@
-freadIntFailed.chpl:5: error: read failed: eof
+freadIntFailed.chpl:4: error: Unhandled system error: Invalid argument (22)

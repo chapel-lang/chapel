@@ -1,5 +1,6 @@
 var myString = "You wear a nice shirt for a phone interview?";
-var f: file = new file(filename = "_test_fwritelnStringFile.txt", mode = FileAccessMode.write);
+var f = open("_test_fwritelnStringFile.txt", "w").writer();
 
-f.open();
 f.writeln(myString);
+f.close();
+

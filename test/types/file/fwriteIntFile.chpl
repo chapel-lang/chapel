@@ -1,5 +1,6 @@
 var myInt = 123;
-var f: file = new file(filename = "_test_fwriteIntFile.txt", mode = FileAccessMode.write);
+var f = open("_test_fwriteIntFile.txt", "w").writer();
 
-f.open();
 f.write(myInt);
+
+f.close();

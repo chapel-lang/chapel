@@ -1,1 +1,1 @@
-fwriteIntFailed.chpl:5: error: halt reached - ***Error: ./fwriteIntFailed.txt not open for writing***
+fwriteIntFailed.chpl:4: error: Unhandled system error: Invalid argument (22)

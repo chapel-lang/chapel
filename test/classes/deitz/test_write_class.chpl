@@ -1,6 +1,6 @@
 class C: Writer {
   var data: string;
-  proc writeIt(x) {
+  proc writePrimitive(x) {
     var s = x:string;
     data += s.substring(1);
   }

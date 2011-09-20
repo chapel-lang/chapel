@@ -62,3 +62,17 @@ void chpl_gmp_mpz_print(mpz_t x)
   gmp_printf("x=%Zd\n", x);
 }
 
+
+chpl_string chpl_gmp_mpz_get_str(int32_t base, mpz_t x)
+{
+  size_t len = mpz_sizeinbase(x, base);
+
+  char* str = (char*)chpl_mem_allocMany(len+1, sizeof(char),
+                                        CHPL_RT_MD_GLOM_STRINGS_DATA, 0, 0);
+
+  mpz_get_str(str, base, x);
+
+  return str;
+}
+
+

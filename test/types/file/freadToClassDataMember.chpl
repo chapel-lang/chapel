@@ -8,16 +8,15 @@ class myClass {
 
 var a: myClass = new myClass(x = 1, y = 2.3);
 var myInt: int = 9;
-var myFile: file = new file(filename = "_test_freadToClassDataMember.txt", mode = FileAccessMode.write);
+var myFile = open("_test_freadToClassDataMember.txt", "w+");
+var w = myFile.writer();
 
-myFile.open();
-myFile.writeln(myInt);
-myFile.close();
+w.writeln(myInt);
+w.close();
 
-myFile.mode = FileAccessMode.read;
-myFile.open();
-myFile.read(a.x);
-myFile.close();
+var r = myFile.reader();
+r.read(a.x);
+r.close();
 
 writeln("a.x should be equal to 9");
 writeln("a.x = ", a.x);
