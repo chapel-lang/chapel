@@ -55,7 +55,15 @@
 ;; Define chpl primitive types
 
 (c-lang-defconst c-primitive-type-kwds
-  chpl '("bool" "complex" "domain" "imag" "index" "int" "locale" "opaque" "range" "real" "string" "subdomain" "uint"))
+  chpl '("bool"
+         "complex"
+         "domain"
+         "imag" "index" "int"
+         "locale"
+         "opaque"
+         "range" "real"
+         "string" "subdomain"
+         "uint"))
 
 ;; Define chpl type modifiers
 (c-lang-defconst c-type-modifier-kwds
@@ -63,7 +71,14 @@
 but they don't build a type of themselves.  Unlike the keywords on
 `c-primitive-type-kwds', they are fontified with the keyword face and
 not the type face."
-  chpl '("const" "config" "iter" "module" "param" "proc" "ref" "type" "use" "var" "_extern"))
+  chpl '("const" "config"
+         "export" "extern"
+         "inline" "iter"
+         "module"
+         "param" "proc"
+         "type"
+         "use"
+         "var" "volatile"))
 
 ;; Class-style declarations
 (c-lang-defconst c-class-decl-kwds
@@ -79,6 +94,10 @@ Note that presence on this list does not automatically treat the
 following identifier as a type; the keyword must also be present on
 `c-type-prefix-kwds' or `c-type-list-kwds' to accomplish that."
   chpl '("class" "record" "union"))
+
+(c-lang-defconst c-type-start-kwds
+  "Keywords that can start a type."
+  chpl '("class" "enum" "record" "type" "union"))
 
 ;; Type aliases
 (c-lang-defconst c-typedef-decl-kwds
@@ -106,7 +125,7 @@ will be handled."
   ;; Default to `c-class-decl-kwds' and `c-brace-list-decl-kwds'
   ;; (since e.g. "Foo" is the identifier being defined in "class Foo
   ;; {...}").
-  chpl '("const" "iter" "module" "param" "proc" "ref" "type" "var" "_extern"))
+  chpl '("const" "iter" "module" "param" "proc" "type" "var"))
 
 (c-lang-defconst c-ref-list-kwds
   "Keywords that may be followed by a comma separated list of
@@ -149,7 +168,7 @@ or variable identifier (that's being defined)."
 
 (c-lang-defconst c-other-kwds
   "Keywords not accounted for by any other `*-kwds' language constant."
-  chpl '("begin" "cobegin" "coforall" "dmapped" "for" "forall" "if" "in" "inout" "local" "on" "out" "reduce" "scan" "serial" "single" "sparse" "sync" "where"))
+  chpl '("begin" "cobegin" "coforall" "dmapped" "for" "forall" "if" "in" "inout" "local" "on" "out" "reduce" "ref" "scan" "serial" "single" "sparse" "sync" "where"))
 
 ;;; Chpl.
 

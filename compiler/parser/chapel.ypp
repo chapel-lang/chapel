@@ -427,8 +427,8 @@ linkage_spec:
 | TEXPORT       { $$ = new FnSymbol(""); $$->addFlag(FLAG_EXPORT); }
 | TEXPORT ident { $$ = new FnSymbol($2); $$->addFlag(FLAG_EXPORT); }
 | TEXTERN       { $$ = new FnSymbol(""); $$->addFlag(FLAG_EXTERN); }
-| T_EXTERN		{ $$ = new FnSymbol(""); $$->addFlag(FLAG_EXTERN);
-		  		$$->addFlag(FLAG_OLD_EXTERN_KW_USED); }
+| T_EXTERN      { $$ = new FnSymbol(""); $$->addFlag(FLAG_EXTERN);
+                  $$->addFlag(FLAG_OLD_EXTERN_KW_USED); }
 
 fn_decl_stmt:
   linkage_spec proc_or_iter_or_def
@@ -623,9 +623,9 @@ type_alias_decl_stmt:
 | TEXTERN TTYPE type_alias_decl_stmt_inner TSEMI 
     { $$ = convertTypesToExtern($3); }
 | T_EXTERN TTYPE type_alias_decl_stmt_inner TSEMI
-	{ $$ = convertTypesToExtern($3);
-          USR_WARN($$, "The _extern keyword is deprecated. Use extern (no leading underscore) instead.");
-	}
+    { $$ = convertTypesToExtern($3);
+      USR_WARN($$, "The _extern keyword is deprecated. Use extern (no leading underscore) instead.");
+    }
 ;
 
 type_alias_decl_stmt_inner:
