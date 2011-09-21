@@ -198,7 +198,11 @@ proc stopCommDiagnosticsHere() { chpl_stopCommDiagnosticsHere(); }
 
 proc resetCommDiagnostics() {
   for loc in Locales do on loc do
-    chpl_resetCommDiagnosticsHere();
+    resetCommDiagnosticsHere();
+}
+
+inline proc resetCommDiagnosticsHere() {
+  chpl_resetCommDiagnosticsHere();
 }
 
 // See note above regarding extern records
