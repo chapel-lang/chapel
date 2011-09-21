@@ -576,6 +576,20 @@ iter range.these(param tag: iterator, follower) where tag == iterator.follower
 // Write implementation for ranges
 proc range.writeThis(f: Writer)
 {
+  if !aligned {
+    // set things up so alignment does not get printed out
+    _base._alignment =
+      if isBoundedRange(this) then
+        (if stride > 0 then _base._low else _base._high)
+      else if this.boundedType == BoundedRangeType.boundedLow then
+        _base._low
+      else if this.boundedType == BoundedRangeType.boundedHigh then
+        _base._high
+      else
+        0;
+    // could verify that we succeeded:
+    //assert(_base.isNaturallyAligned());
+  }
   _base.writeThis(f);
 }
 

@@ -1,9 +1,0 @@
-bug: ambiguously-aligned ranges are printed with 'align 0'
-
-Note: this bug is exposed (but arguably not introduced) by the commit
-that adds this .future file.
-Note: there is likely another .future for the same bug.
-
-E.g. the range (-1.. by -2), which is ambiguously aligned
-(regardless of the aforementioned commit),
-is printed as "-1.. by -2 align 0".
