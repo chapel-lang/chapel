@@ -4011,19 +4011,30 @@ resolveFns(FnSymbol* fn) {
   //
   if (fn->retTag == RET_VAR) {
     if (!fn->hasFlag(FLAG_ITERATOR_FN)) {
-      FnSymbol* copy = fn->copy();
-      copy->addFlag(FLAG_INVISIBLE_FN);
-      if (fn->hasFlag(FLAG_NO_IMPLICIT_COPY))
-        copy->addFlag(FLAG_NO_IMPLICIT_COPY);
-      copy->retTag = RET_VALUE;
-      fn->defPoint->insertBefore(new DefExpr(copy));
-      fn->valueFunction = copy;
-      Symbol* ret = copy->getReturnSymbol();
-      replaceSetterArgWithFalse(copy, copy, ret);
+      FnSymbol* copy;
+      bool valueFunctionExists = fn->valueFunction!=NULL;
+      if (!valueFunctionExists) {
+        copy = fn->copy();
+        copy->addFlag(FLAG_INVISIBLE_FN);
+        if (fn->hasFlag(FLAG_NO_IMPLICIT_COPY))
+          copy->addFlag(FLAG_NO_IMPLICIT_COPY);
+        copy->retTag = RET_VALUE;
+        fn->defPoint->insertBefore(new DefExpr(copy));
+        fn->valueFunction = copy;
+        Symbol* ret = copy->getReturnSymbol();
+        replaceSetterArgWithFalse(copy, copy, ret);
+      } else {
+        copy = fn->valueFunction;
+      }
       resolveFns(copy);
+      // If the value function existed, then this function was
+      //  already flattened in a previous call to resolveFns()
+      if (!valueFunctionExists) {
+        replaceSetterArgWithTrue(fn, fn);
+      }
+    } else {
+      replaceSetterArgWithTrue(fn, fn);
     }
-
-    replaceSetterArgWithTrue(fn, fn);
   }
 
   insertFormalTemps(fn);
