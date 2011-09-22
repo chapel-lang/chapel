@@ -143,6 +143,14 @@ void* chpl_mem_allocMany(size_t number, size_t size,
   return memAlloc;
 }
 
+void* chpl_mem_allocManyZero(size_t number, size_t size,
+                             chpl_mem_descInt_t description,
+                             int32_t lineno, chpl_string filename)
+{
+  void* ptr = chpl_mem_allocMany(number, size, description, lineno, filename);
+  memset(ptr, 0, number*size);
+  return ptr;
+}
 
 void* chpl_mem_realloc(void* memAlloc, size_t number, size_t size, 
                        chpl_mem_descInt_t description,

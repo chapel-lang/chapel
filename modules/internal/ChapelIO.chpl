@@ -11,167 +11,167 @@
 //module SysBasic {
 
   /* BASIC TYPES */
-  _extern type c_uint = uint(32);
-  _extern type c_int = int(32);
-  _extern type c_long = int(64);
-  _extern type c_ulong = uint(64);
-  _extern type c_longlong = int(64);
-  _extern type c_ulonglong = uint(64);
-  _extern type c_double = real(64);
-  _extern type c_wchar_t = uint(32);
-  _extern type c_char_t = uint(8);
-  _extern type c_ptr; // opaque; no ptr arithmetic in Chapel code!
-  _extern type ssize_t = int(64);
-  _extern type size_t = uint(64);
-  _extern type off_t = int(64);
-  _extern type mode_t = uint(32);
-  _extern type socklen_t = int(32);
+  extern type c_uint = uint(32);
+  extern type c_int = int(32);
+  extern type c_long = int(64);
+  extern type c_ulong = uint(64);
+  extern type c_longlong = int(64);
+  extern type c_ulonglong = uint(64);
+  extern type c_double = real(64);
+  extern type c_wchar_t = uint(32);
+  extern type c_char_t = uint(8);
+  extern type c_ptr; // opaque; no ptr arithmetic in Chapel code!
+  extern type ssize_t = int(64);
+  extern type size_t = uint(64);
+  extern type off_t = int(64);
+  extern type mode_t = uint(32);
+  extern type socklen_t = int(32);
 
   // C File type
   //type c_file = _file;
 
   // stdin/stdout/sterr
-  _extern proc chpl_cstdin():_file;
-  _extern proc chpl_cstdout():_file;
-  _extern proc chpl_cstderr():_file;
+  extern proc chpl_cstdin():_file;
+  extern proc chpl_cstdout():_file;
+  extern proc chpl_cstderr():_file;
 
   // system error number.
-  _extern type err_t = c_int;
+  extern type err_t = c_int;
 
   // system file descriptor.
-  _extern type fd_t = c_int;
+  extern type fd_t = c_int;
 
   // NULL
-  _extern const c_nil:c_ptr;
-  _extern proc is_c_nil(x):c_int;
+  extern const c_nil:c_ptr;
+  extern proc is_c_nil(x):c_int;
 
   // error numbers
 
   // end of file
-  _extern const EEOF:err_t;
-  _extern const ESHORT:err_t;
-  _extern const EFORMAT:err_t;
+  extern const EEOF:err_t;
+  extern const ESHORT:err_t;
+  extern const EFORMAT:err_t;
 
   // system error numbers
-  _extern const E2BIG:err_t;
-  _extern const EACCES:err_t;
-  _extern const EADDRINUSE:err_t;
-  _extern const EADDRNOTAVAIL:err_t;
-  _extern const EAFNOSUPPORT:err_t;
-  _extern const EAGAIN:err_t;
-  _extern const EALREADY:err_t;
-  _extern const EBADE:err_t;
-  _extern const EBADF:err_t;
-  _extern const EBADFD:err_t;
-  _extern const EBADMSG:err_t;
-  _extern const EBADR:err_t;
-  _extern const EBADRQC:err_t;
-  _extern const EBADSLT:err_t;
-  _extern const EBUSY:err_t;
-  _extern const ECANCELED:err_t;
-  _extern const ECHILD:err_t;
-  _extern const ECHRNG:err_t;
-  _extern const ECOMM:err_t;
-  _extern const ECONNABORTED:err_t;
-  _extern const ECONNREFUSED:err_t;
-  _extern const ECONNRESET:err_t;
-  _extern const EDEADLK:err_t;
-  _extern const EDESTADDRREQ:err_t;
-  _extern const EDOM:err_t;
-  _extern const EDQUOT:err_t;
-  _extern const EEXIST:err_t;
-  _extern const EFAULT:err_t;
-  _extern const EFBIG:err_t;
-  _extern const EHOSTDOWN:err_t;
-  _extern const EHOSTUNREACH:err_t;
-  _extern const EIDRM:err_t;
-  _extern const EILSEQ:err_t;
-  _extern const EINPROGRESS:err_t;
-  _extern const EINTR:err_t;
-  _extern const EINVAL:err_t;
-  _extern const EIO:err_t;
-  _extern const EISCONN:err_t;
-  _extern const EISDIR:err_t;
-  _extern const EISNAM:err_t;
-  _extern const EKEYEXPIRED:err_t;
-  _extern const EKEYREJECTED:err_t;
-  _extern const EKEYREVOKED:err_t;
-  _extern const EL2HLT:err_t;
-  _extern const EL2NSYNC:err_t;
-  _extern const EL3HLT:err_t;
-  _extern const EL3RST:err_t;
-  _extern const ELIBACC:err_t;
-  _extern const ELIBBAD:err_t;
-  _extern const ELIBMAX:err_t;
-  _extern const ELIBSCN:err_t;
-  _extern const ELIBEXEC:err_t;
-  _extern const ELOOP:err_t;
-  _extern const EMEDIUMTYPE:err_t;
-  _extern const EMFILE:err_t;
-  _extern const EMLINK:err_t;
-  _extern const EMSGSIZE:err_t;
-  _extern const EMULTIHOP:err_t;
-  _extern const ENAMETOOLONG:err_t;
-  _extern const ENETDOWN:err_t;
-  _extern const ENETRESET:err_t;
-  _extern const ENETUNREACH:err_t;
-  _extern const ENFILE:err_t;
-  _extern const ENOBUFS:err_t;
-  _extern const ENODATA:err_t;
-  _extern const ENODEV:err_t;
-  _extern const ENOENT:err_t;
-  _extern const ENOEXEC:err_t;
-  _extern const ENOKEY:err_t;
-  _extern const ENOLCK:err_t;
-  _extern const ENOLINK:err_t;
-  _extern const ENOMEDIUM:err_t;
-  _extern const ENOMEM:err_t;
-  _extern const ENOMSG:err_t;
-  _extern const ENONET:err_t;
-  _extern const ENOPKG:err_t;
-  _extern const ENOPROTOOPT:err_t;
-  _extern const ENOSPC:err_t;
-  _extern const ENOSR:err_t;
-  _extern const ENOSTR:err_t;
-  _extern const ENOSYS:err_t;
-  _extern const ENOTBLK:err_t;
-  _extern const ENOTCONN:err_t;
-  _extern const ENOTDIR:err_t;
-  _extern const ENOTEMPTY:err_t;
-  _extern const ENOTSOCK:err_t;
-  _extern const ENOTSUP:err_t;
-  _extern const ENOTTY:err_t;
-  _extern const ENOTUNIQ:err_t;
-  _extern const ENXIO:err_t;
-  _extern const EOPNOTSUPP:err_t;
-  _extern const EOVERFLOW:err_t;
-  _extern const EPERM:err_t;
-  _extern const EPFNOSUPPORT:err_t;
-  _extern const EPIPE:err_t;
-  _extern const EPROTO:err_t;
-  _extern const EPROTONOSUPPORT:err_t;
-  _extern const EPROTOTYPE:err_t;
-  _extern const ERANGE:err_t;
-  _extern const EREMCHG:err_t;
-  _extern const EREMOTE:err_t;
-  _extern const EREMOTEIO:err_t;
-  _extern const ERESTART:err_t;
-  _extern const EROFS:err_t;
-  _extern const ESHUTDOWN:err_t;
-  _extern const ESPIPE:err_t;
-  _extern const ESOCKTNOSUPPORT:err_t;
-  _extern const ESRCH:err_t;
-  _extern const ESTALE:err_t;
-  _extern const ESTRPIPE:err_t;
-  _extern const ETIME:err_t;
-  _extern const ETIMEDOUT:err_t;
-  _extern const ETXTBSY:err_t;
-  _extern const EUCLEAN:err_t;
-  _extern const EUNATCH:err_t;
-  _extern const EUSERS:err_t;
-  _extern const EWOULDBLOCK:err_t;
-  _extern const EXDEV:err_t;
-  _extern const EXFULL:err_t;
+  extern const E2BIG:err_t;
+  extern const EACCES:err_t;
+  extern const EADDRINUSE:err_t;
+  extern const EADDRNOTAVAIL:err_t;
+  extern const EAFNOSUPPORT:err_t;
+  extern const EAGAIN:err_t;
+  extern const EALREADY:err_t;
+  extern const EBADE:err_t;
+  extern const EBADF:err_t;
+  extern const EBADFD:err_t;
+  extern const EBADMSG:err_t;
+  extern const EBADR:err_t;
+  extern const EBADRQC:err_t;
+  extern const EBADSLT:err_t;
+  extern const EBUSY:err_t;
+  extern const ECANCELED:err_t;
+  extern const ECHILD:err_t;
+  extern const ECHRNG:err_t;
+  extern const ECOMM:err_t;
+  extern const ECONNABORTED:err_t;
+  extern const ECONNREFUSED:err_t;
+  extern const ECONNRESET:err_t;
+  extern const EDEADLK:err_t;
+  extern const EDESTADDRREQ:err_t;
+  extern const EDOM:err_t;
+  extern const EDQUOT:err_t;
+  extern const EEXIST:err_t;
+  extern const EFAULT:err_t;
+  extern const EFBIG:err_t;
+  extern const EHOSTDOWN:err_t;
+  extern const EHOSTUNREACH:err_t;
+  extern const EIDRM:err_t;
+  extern const EILSEQ:err_t;
+  extern const EINPROGRESS:err_t;
+  extern const EINTR:err_t;
+  extern const EINVAL:err_t;
+  extern const EIO:err_t;
+  extern const EISCONN:err_t;
+  extern const EISDIR:err_t;
+  extern const EISNAM:err_t;
+  extern const EKEYEXPIRED:err_t;
+  extern const EKEYREJECTED:err_t;
+  extern const EKEYREVOKED:err_t;
+  extern const EL2HLT:err_t;
+  extern const EL2NSYNC:err_t;
+  extern const EL3HLT:err_t;
+  extern const EL3RST:err_t;
+  extern const ELIBACC:err_t;
+  extern const ELIBBAD:err_t;
+  extern const ELIBMAX:err_t;
+  extern const ELIBSCN:err_t;
+  extern const ELIBEXEC:err_t;
+  extern const ELOOP:err_t;
+  extern const EMEDIUMTYPE:err_t;
+  extern const EMFILE:err_t;
+  extern const EMLINK:err_t;
+  extern const EMSGSIZE:err_t;
+  extern const EMULTIHOP:err_t;
+  extern const ENAMETOOLONG:err_t;
+  extern const ENETDOWN:err_t;
+  extern const ENETRESET:err_t;
+  extern const ENETUNREACH:err_t;
+  extern const ENFILE:err_t;
+  extern const ENOBUFS:err_t;
+  extern const ENODATA:err_t;
+  extern const ENODEV:err_t;
+  extern const ENOENT:err_t;
+  extern const ENOEXEC:err_t;
+  extern const ENOKEY:err_t;
+  extern const ENOLCK:err_t;
+  extern const ENOLINK:err_t;
+  extern const ENOMEDIUM:err_t;
+  extern const ENOMEM:err_t;
+  extern const ENOMSG:err_t;
+  extern const ENONET:err_t;
+  extern const ENOPKG:err_t;
+  extern const ENOPROTOOPT:err_t;
+  extern const ENOSPC:err_t;
+  extern const ENOSR:err_t;
+  extern const ENOSTR:err_t;
+  extern const ENOSYS:err_t;
+  extern const ENOTBLK:err_t;
+  extern const ENOTCONN:err_t;
+  extern const ENOTDIR:err_t;
+  extern const ENOTEMPTY:err_t;
+  extern const ENOTSOCK:err_t;
+  extern const ENOTSUP:err_t;
+  extern const ENOTTY:err_t;
+  extern const ENOTUNIQ:err_t;
+  extern const ENXIO:err_t;
+  extern const EOPNOTSUPP:err_t;
+  extern const EOVERFLOW:err_t;
+  extern const EPERM:err_t;
+  extern const EPFNOSUPPORT:err_t;
+  extern const EPIPE:err_t;
+  extern const EPROTO:err_t;
+  extern const EPROTONOSUPPORT:err_t;
+  extern const EPROTOTYPE:err_t;
+  extern const ERANGE:err_t;
+  extern const EREMCHG:err_t;
+  extern const EREMOTE:err_t;
+  extern const EREMOTEIO:err_t;
+  extern const ERESTART:err_t;
+  extern const EROFS:err_t;
+  extern const ESHUTDOWN:err_t;
+  extern const ESPIPE:err_t;
+  extern const ESOCKTNOSUPPORT:err_t;
+  extern const ESRCH:err_t;
+  extern const ESTALE:err_t;
+  extern const ESTRPIPE:err_t;
+  extern const ETIME:err_t;
+  extern const ETIMEDOUT:err_t;
+  extern const ETXTBSY:err_t;
+  extern const EUCLEAN:err_t;
+  extern const EUNATCH:err_t;
+  extern const EUSERS:err_t;
+  extern const EWOULDBLOCK:err_t;
+  extern const EXDEV:err_t;
+  extern const EXFULL:err_t;
 //}
 
 // END SysBasic.chpl
@@ -183,7 +183,7 @@
 //  use SysBasic;
 
   // here's what we need from Sys
-  _extern proc sys_strerror_str(error:err_t, inout err_in_strerror:err_t):string;
+  extern proc sys_strerror_str(error:err_t, inout err_in_strerror:err_t):string;
 
   class ErrorHandler {
     // override this method to get error handling other
@@ -309,45 +309,45 @@
     return x;
   }
 
-  _extern const QIO_FDFLAG_UNK:c_int;
-  _extern const QIO_FDFLAG_READABLE:c_int;
-  _extern const QIO_FDFLAG_WRITEABLE:c_int;
-  _extern const QIO_FDFLAG_SEEKABLE:c_int;
+  extern const QIO_FDFLAG_UNK:c_int;
+  extern const QIO_FDFLAG_READABLE:c_int;
+  extern const QIO_FDFLAG_WRITEABLE:c_int;
+  extern const QIO_FDFLAG_SEEKABLE:c_int;
 
-  _extern const QIO_CH_UNBUFFERED:c_int;
-  _extern const QIO_CH_BUFFERED:c_int;
+  extern const QIO_CH_UNBUFFERED:c_int;
+  extern const QIO_CH_BUFFERED:c_int;
 
-  _extern const QIO_METHOD_DEFAULT:c_int;
-  _extern const QIO_METHOD_READWRITE:c_int;
-  _extern const QIO_METHOD_PREADPWRITE:c_int;
-  _extern const QIO_METHOD_FREADFWRITE:c_int;
-  _extern const QIO_METHOD_MMAP:c_int;
-  _extern const QIO_METHODNUM:c_int;
-  _extern const QIO_METHODMASK:c_int;
-  _extern const QIO_HINT_RANDOM:c_int;
-  _extern const QIO_HINT_SEQUENTIAL:c_int;
-  _extern const QIO_HINT_LATENCY:c_int;
-  _extern const QIO_HINT_BANDWIDTH:c_int;
-  _extern const QIO_HINT_CACHED:c_int;
-  _extern const QIO_HINT_DIRECT:c_int;
-  _extern const QIO_HINT_NOREUSE:c_int;
+  extern const QIO_METHOD_DEFAULT:c_int;
+  extern const QIO_METHOD_READWRITE:c_int;
+  extern const QIO_METHOD_PREADPWRITE:c_int;
+  extern const QIO_METHOD_FREADFWRITE:c_int;
+  extern const QIO_METHOD_MMAP:c_int;
+  extern const QIO_METHODNUM:c_int;
+  extern const QIO_METHODMASK:c_int;
+  extern const QIO_HINT_RANDOM:c_int;
+  extern const QIO_HINT_SEQUENTIAL:c_int;
+  extern const QIO_HINT_LATENCY:c_int;
+  extern const QIO_HINT_BANDWIDTH:c_int;
+  extern const QIO_HINT_CACHED:c_int;
+  extern const QIO_HINT_DIRECT:c_int;
+  extern const QIO_HINT_NOREUSE:c_int;
 
-  _extern type qio_file_ptr_t;
-  _extern const QIO_FILE_PTR_NULL:qio_file_ptr_t;
+  extern type qio_file_ptr_t;
+  extern const QIO_FILE_PTR_NULL:qio_file_ptr_t;
 
-  _extern type qio_channel_ptr_t;
-  _extern const QIO_CHANNEL_PTR_NULL:qio_channel_ptr_t;
+  extern type qio_channel_ptr_t;
+  extern const QIO_CHANNEL_PTR_NULL:qio_channel_ptr_t;
 
-  _extern type style_char_t = c_char_t;
+  extern type style_char_t = c_char_t;
 
-  _extern const QIO_STRING_FORMAT_WORD:uint(8);
-  _extern const QIO_STRING_FORMAT_BASIC:uint(8);
-  _extern const QIO_STRING_FORMAT_CHPL:uint(8);
-  _extern const QIO_STRING_FORMAT_JSON:uint(8);
-  _extern const QIO_STRING_FORMAT_TOEND:uint(8);
+  extern const QIO_STRING_FORMAT_WORD:uint(8);
+  extern const QIO_STRING_FORMAT_BASIC:uint(8);
+  extern const QIO_STRING_FORMAT_CHPL:uint(8);
+  extern const QIO_STRING_FORMAT_JSON:uint(8);
+  extern const QIO_STRING_FORMAT_TOEND:uint(8);
 
-  //_extern record qio_style_t {
-  _extern record iostyle {
+  //extern record qio_style_t {
+  extern record iostyle {
     var binary:uint(8);
     // binary style choices
     var byteorder:uint(8);
@@ -423,140 +423,140 @@
     var class_print_name:uint(8);
   }
 
-  _extern const QIO_STYLE_SIZE:size_t;
+  extern const QIO_STYLE_SIZE:size_t;
 
-  _extern proc qio_style_init_default(inout s: iostyle);
+  extern proc qio_style_init_default(inout s: iostyle);
 
 
   /*
-  _extern proc qio_style_copy(dst:qio_style_ptr_t, src:qio_style_ptr_t);
-  _extern proc qio_style_dup(src:qio_style_ptr_t):qio_style_ptr_t;
-  _extern proc qio_style_free(style:qio_style_ptr_t);
-  _extern proc bulk_get_style(src_locale:int, dst_addr:qio_style_ptr_t, src_addr:qio_style_ptr_t);
+  extern proc qio_style_copy(dst:qio_style_ptr_t, src:qio_style_ptr_t);
+  extern proc qio_style_dup(src:qio_style_ptr_t):qio_style_ptr_t;
+  extern proc qio_style_free(style:qio_style_ptr_t);
+  extern proc bulk_get_style(src_locale:int, dst_addr:qio_style_ptr_t, src_addr:qio_style_ptr_t);
   */
 
   /* Extern functions */
-  _extern proc qio_file_retain(f:qio_file_ptr_t);
-  _extern proc qio_file_release(f:qio_file_ptr_t);
+  extern proc qio_file_retain(f:qio_file_ptr_t);
+  extern proc qio_file_release(f:qio_file_ptr_t);
 
-  _extern proc qio_file_init(inout file_out:qio_file_ptr_t, fp:_file, fd:fd_t, iohints:c_int, inout style:iostyle, usefilestar:c_int):err_t;
-  _extern proc qio_file_open_access(inout file_out:qio_file_ptr_t, path:string, access:string, iohints:c_int, inout style:iostyle):err_t;
-  _extern proc qio_file_open_tmp(inout file_out:qio_file_ptr_t, iohints:c_int, inout style:iostyle):err_t;
+  extern proc qio_file_init(inout file_out:qio_file_ptr_t, fp:_file, fd:fd_t, iohints:c_int, inout style:iostyle, usefilestar:c_int):err_t;
+  extern proc qio_file_open_access(inout file_out:qio_file_ptr_t, path:string, access:string, iohints:c_int, inout style:iostyle):err_t;
+  extern proc qio_file_open_tmp(inout file_out:qio_file_ptr_t, iohints:c_int, inout style:iostyle):err_t;
 
   /* Close a file (asserts ref count==1)
      This is not usually necessary to call, but a program will
      halt if it isn't called.
    */
-  _extern proc qio_file_close(f:qio_file_ptr_t):err_t;
+  extern proc qio_file_close(f:qio_file_ptr_t):err_t;
 
-  _extern proc qio_file_lock(f:qio_file_ptr_t):err_t;
-  _extern proc qio_file_unlock(f:qio_file_ptr_t);
+  extern proc qio_file_lock(f:qio_file_ptr_t):err_t;
+  extern proc qio_file_unlock(f:qio_file_ptr_t);
 
   /* The general way to make sure data is written without error */
-  _extern proc qio_file_sync(f:qio_file_ptr_t):err_t;
+  extern proc qio_file_sync(f:qio_file_ptr_t):err_t;
 
-  //_extern proc qio_file_style_ptr(f:qio_file_ptr_t):qio_style_ptr_t;
-  _extern proc qio_file_get_style(f:qio_file_ptr_t, inout style:iostyle);
-  _extern proc qio_file_set_style(f:qio_file_ptr_t, inout style:iostyle);
+  //extern proc qio_file_style_ptr(f:qio_file_ptr_t):qio_style_ptr_t;
+  extern proc qio_file_get_style(f:qio_file_ptr_t, inout style:iostyle);
+  extern proc qio_file_set_style(f:qio_file_ptr_t, inout style:iostyle);
 
   /* our wrapper for the read function;
      calls readv to read into our buffer.
      Will read data into buf (overwriting,
       not allocating) and advance the file descriptor's offset.
    */
-  //_extern proc qio_readv(fd:fd_t, inout buf:qbuffer_t, start:qbuffer_iter_t, end:qbuffer_iter_t, inout num_read:int(64)):err_t;
+  //extern proc qio_readv(fd:fd_t, inout buf:qbuffer_t, start:qbuffer_iter_t, end:qbuffer_iter_t, inout num_read:int(64)):err_t;
   /* our wrapper for the write function;
      calls writev to write our buffer.
      Will write data from buf and not change it.
      Will advance the file descriptor's offset.
    */
-  //_extern proc qio_writev(fd:fd_t, inout buf:qbuffer_t, start:qbuffer_iter_t, end:qbuffer_iter_t, inout num_read:int(64)):err_t;
+  //extern proc qio_writev(fd:fd_t, inout buf:qbuffer_t, start:qbuffer_iter_t, end:qbuffer_iter_t, inout num_read:int(64)):err_t;
 
   /* calls preadv where it exists;
      otherwise, will do a series of pread calls
      Will read data into buf (overwriting, not allocating).
      Will not advance the file descriptor's position.
    */
-  //_extern proc qio_preadv(fd:fd_t, inout buf:qbuffer_t, start:qbuffer_iter_t, end:qbuffer_iter_t, offset:int(64), inout num_read:int(64)):err_t;
+  //extern proc qio_preadv(fd:fd_t, inout buf:qbuffer_t, start:qbuffer_iter_t, end:qbuffer_iter_t, offset:int(64), inout num_read:int(64)):err_t;
   /* calls pwritev where it exists;
      otherwise, will do a series of pwrite calls
      Will write data from buf and not change it.
      Will not advance the file descriptor's position.
    */
-  //_extern proc qio_pwritev(fd:fd_t, inout buf:qbuffer_t, start:qbuffer_iter_t, end:qbuffer_iter_t, offset:int(64), inout num_read:int(64)):err_t;
+  //extern proc qio_pwritev(fd:fd_t, inout buf:qbuffer_t, start:qbuffer_iter_t, end:qbuffer_iter_t, offset:int(64), inout num_read:int(64)):err_t;
 
-  _extern proc qio_channel_create(inout ch:qio_channel_ptr_t, file:qio_file_ptr_t, hints:c_int, readable:c_int, writeable:c_int, start:int(64), end:int(64), inout style:iostyle):err_t;
+  extern proc qio_channel_create(inout ch:qio_channel_ptr_t, file:qio_file_ptr_t, hints:c_int, readable:c_int, writeable:c_int, start:int(64), end:int(64), inout style:iostyle):err_t;
 
-  _extern proc qio_channel_retain(ch:qio_channel_ptr_t);
-  _extern proc qio_channel_release(ch:qio_channel_ptr_t);
+  extern proc qio_channel_retain(ch:qio_channel_ptr_t);
+  extern proc qio_channel_release(ch:qio_channel_ptr_t);
 
-  _extern proc qio_channel_lock(ch:qio_channel_ptr_t):err_t;
-  _extern proc qio_channel_unlock(ch:qio_channel_ptr_t);
+  extern proc qio_channel_lock(ch:qio_channel_ptr_t):err_t;
+  extern proc qio_channel_unlock(ch:qio_channel_ptr_t);
 
-  //_extern proc qio_channel_style_ptr(ch:qio_channel_ptr_t):qio_style_ptr_t;
-  _extern proc qio_channel_get_style(ch:qio_channel_ptr_t, inout style:iostyle);
-  _extern proc qio_channel_set_style(ch:qio_channel_ptr_t, inout style:iostyle);
+  //extern proc qio_channel_style_ptr(ch:qio_channel_ptr_t):qio_style_ptr_t;
+  extern proc qio_channel_get_style(ch:qio_channel_ptr_t, inout style:iostyle);
+  extern proc qio_channel_set_style(ch:qio_channel_ptr_t, inout style:iostyle);
 
-  _extern proc qio_channel_binary(ch:qio_channel_ptr_t):uint(8);
-  _extern proc qio_channel_byteorder(ch:qio_channel_ptr_t):uint(8);
-  _extern proc qio_channel_str_style(ch:qio_channel_ptr_t):int(64);
+  extern proc qio_channel_binary(ch:qio_channel_ptr_t):uint(8);
+  extern proc qio_channel_byteorder(ch:qio_channel_ptr_t):uint(8);
+  extern proc qio_channel_str_style(ch:qio_channel_ptr_t):int(64);
 
-  _extern proc qio_channel_flush(threadsafe:c_int, ch:qio_channel_ptr_t):err_t;
-  _extern proc qio_channel_close(threadsafe:c_int, ch:qio_channel_ptr_t):err_t;
+  extern proc qio_channel_flush(threadsafe:c_int, ch:qio_channel_ptr_t):err_t;
+  extern proc qio_channel_close(threadsafe:c_int, ch:qio_channel_ptr_t):err_t;
 
-  _extern proc qio_channel_read(threadsafe:c_int, ch:qio_channel_ptr_t, inout ptr, len:ssize_t, inout amt_read:ssize_t):err_t;
-  _extern proc qio_channel_read_amt(threadsafe:c_int, ch:qio_channel_ptr_t, inout ptr, len:ssize_t):err_t;
+  extern proc qio_channel_read(threadsafe:c_int, ch:qio_channel_ptr_t, inout ptr, len:ssize_t, inout amt_read:ssize_t):err_t;
+  extern proc qio_channel_read_amt(threadsafe:c_int, ch:qio_channel_ptr_t, inout ptr, len:ssize_t):err_t;
 
-  _extern proc qio_channel_write(threadsafe:c_int, ch:qio_channel_ptr_t, inout ptr, len:ssize_t, inout amt_written:ssize_t):err_t;
-  _extern proc qio_channel_write_amt(threadsafe:c_int, ch:qio_channel_ptr_t, inout ptr, len:ssize_t):err_t;
+  extern proc qio_channel_write(threadsafe:c_int, ch:qio_channel_ptr_t, inout ptr, len:ssize_t, inout amt_written:ssize_t):err_t;
+  extern proc qio_channel_write_amt(threadsafe:c_int, ch:qio_channel_ptr_t, inout ptr, len:ssize_t):err_t;
 
-  _extern proc qio_channel_mark(threadsafe:c_int, ch:qio_channel_ptr_t):err_t;
-  _extern proc qio_channel_revert_unlocked(ch:qio_channel_ptr_t);
-  _extern proc qio_channel_commit_unlocked(ch:qio_channel_ptr_t);
+  extern proc qio_channel_mark(threadsafe:c_int, ch:qio_channel_ptr_t):err_t;
+  extern proc qio_channel_revert_unlocked(ch:qio_channel_ptr_t);
+  extern proc qio_channel_commit_unlocked(ch:qio_channel_ptr_t);
 
   /*
-  _extern proc qio_scanf(threadsafe:c_int, ch:qio_channel_ptr_t, inout nmatched:c_int, fmt:string, inout args...?numargs):err_t;
-  _extern proc qio_scanf1(threadsafe:c_int, ch:qio_channel_ptr_t, fmt:string, inout arg):err_t;
-  _extern proc qio_printf(threadsafe:c_int, qio_channel_ptr_t, fmt:string, args...?numargs):err_t;
-  _extern proc qio_choose_io_type(hints:c_int):c_int;
+  extern proc qio_scanf(threadsafe:c_int, ch:qio_channel_ptr_t, inout nmatched:c_int, fmt:string, inout args...?numargs):err_t;
+  extern proc qio_scanf1(threadsafe:c_int, ch:qio_channel_ptr_t, fmt:string, inout arg):err_t;
+  extern proc qio_printf(threadsafe:c_int, qio_channel_ptr_t, fmt:string, args...?numargs):err_t;
+  extern proc qio_choose_io_type(hints:c_int):c_int;
   */
 
-  _extern proc qio_file_path_for_fd(fd:fd_t, inout path:string):err_t;
-  _extern proc qio_file_path_for_fp(fp:_file, inout path:string):err_t;
-  _extern proc qio_file_path(f:qio_file_ptr_t, inout path:string):err_t;
+  extern proc qio_file_path_for_fd(fd:fd_t, inout path:string):err_t;
+  extern proc qio_file_path_for_fp(fp:_file, inout path:string):err_t;
+  extern proc qio_file_path(f:qio_file_ptr_t, inout path:string):err_t;
 
-  _extern proc qio_channel_read_int(threadsafe:c_int, byteorder:c_int, ch:qio_channel_ptr_t, inout ptr, len:size_t, issigned:c_int):err_t;
-  _extern proc qio_channel_write_int(threadsafe:c_int, byteorder:c_int, ch:qio_channel_ptr_t, inout ptr, len:size_t, issigned:c_int):err_t;
+  extern proc qio_channel_read_int(threadsafe:c_int, byteorder:c_int, ch:qio_channel_ptr_t, inout ptr, len:size_t, issigned:c_int):err_t;
+  extern proc qio_channel_write_int(threadsafe:c_int, byteorder:c_int, ch:qio_channel_ptr_t, inout ptr, len:size_t, issigned:c_int):err_t;
 
-  _extern proc qio_channel_read_float(threadsafe:c_int, byteorder:c_int, ch:qio_channel_ptr_t, inout ptr, len:size_t):err_t;
-  _extern proc qio_channel_write_float(threadsafe:c_int, byteorder:c_int, ch:qio_channel_ptr_t, inout ptr, len:size_t):err_t;
+  extern proc qio_channel_read_float(threadsafe:c_int, byteorder:c_int, ch:qio_channel_ptr_t, inout ptr, len:size_t):err_t;
+  extern proc qio_channel_write_float(threadsafe:c_int, byteorder:c_int, ch:qio_channel_ptr_t, inout ptr, len:size_t):err_t;
 
-  _extern proc qio_channel_read_complex(threadsafe:c_int, byteorder:c_int, ch:qio_channel_ptr_t, inout re_ptr, inout im_ptr, len:size_t):err_t;
-  _extern proc qio_channel_write_complex(threadsafe:c_int, byteorder:c_int, ch:qio_channel_ptr_t, inout re_ptr, inout im_ptr, len:size_t):err_t;
+  extern proc qio_channel_read_complex(threadsafe:c_int, byteorder:c_int, ch:qio_channel_ptr_t, inout re_ptr, inout im_ptr, len:size_t):err_t;
+  extern proc qio_channel_write_complex(threadsafe:c_int, byteorder:c_int, ch:qio_channel_ptr_t, inout re_ptr, inout im_ptr, len:size_t):err_t;
 
-  _extern proc qio_channel_read_string(threadsafe:c_int, byteorder:c_int, str_style:int(64), ch:qio_channel_ptr_t, inout s:string, inout len:ssize_t, maxlen:ssize_t):err_t;
-  _extern proc qio_channel_write_string(threadsafe:c_int, byteorder:c_int, str_style:int(64), ch:qio_channel_ptr_t, s:string, len:ssize_t):err_t;
+  extern proc qio_channel_read_string(threadsafe:c_int, byteorder:c_int, str_style:int(64), ch:qio_channel_ptr_t, inout s:string, inout len:ssize_t, maxlen:ssize_t):err_t;
+  extern proc qio_channel_write_string(threadsafe:c_int, byteorder:c_int, str_style:int(64), ch:qio_channel_ptr_t, s:string, len:ssize_t):err_t;
 
-  _extern proc qio_channel_scan_int(threadsafe:c_int, ch:qio_channel_ptr_t, inout ptr, len:size_t, issigned:c_int):err_t;
-  _extern proc qio_channel_print_int(threadsafe:c_int, ch:qio_channel_ptr_t, inout ptr, len:size_t, issigned:c_int):err_t;
+  extern proc qio_channel_scan_int(threadsafe:c_int, ch:qio_channel_ptr_t, inout ptr, len:size_t, issigned:c_int):err_t;
+  extern proc qio_channel_print_int(threadsafe:c_int, ch:qio_channel_ptr_t, inout ptr, len:size_t, issigned:c_int):err_t;
 
-  _extern proc qio_channel_scan_float(threadsafe:c_int, ch:qio_channel_ptr_t, inout ptr, len:size_t):err_t;
-  _extern proc qio_channel_print_float(threadsafe:c_int, ch:qio_channel_ptr_t, inout ptr, len:size_t):err_t;
+  extern proc qio_channel_scan_float(threadsafe:c_int, ch:qio_channel_ptr_t, inout ptr, len:size_t):err_t;
+  extern proc qio_channel_print_float(threadsafe:c_int, ch:qio_channel_ptr_t, inout ptr, len:size_t):err_t;
 
-  _extern proc qio_channel_scan_complex(threadsafe:c_int, ch:qio_channel_ptr_t, inout re_ptr, inout im_ptr, len:size_t):err_t;
-  _extern proc qio_channel_print_complex(threadsafe:c_int, ch:qio_channel_ptr_t, inout re_ptr, inout im_ptr, len:size_t):err_t;
+  extern proc qio_channel_scan_complex(threadsafe:c_int, ch:qio_channel_ptr_t, inout re_ptr, inout im_ptr, len:size_t):err_t;
+  extern proc qio_channel_print_complex(threadsafe:c_int, ch:qio_channel_ptr_t, inout re_ptr, inout im_ptr, len:size_t):err_t;
 
 
-  _extern proc qio_channel_read_char(threadsafe:c_int, ch:qio_channel_ptr_t, inout char:c_wchar_t):err_t;
-  _extern proc qio_channel_write_char(threadsafe:c_int, ch:qio_channel_ptr_t, char:c_wchar_t):err_t;
-  _extern proc qio_channel_skip_past_newline(threadsafe:c_int, ch:qio_channel_ptr_t):err_t;
-  _extern proc qio_channel_write_newline(threadsafe:c_int, ch:qio_channel_ptr_t):err_t;
+  extern proc qio_channel_read_char(threadsafe:c_int, ch:qio_channel_ptr_t, inout char:c_wchar_t):err_t;
+  extern proc qio_channel_write_char(threadsafe:c_int, ch:qio_channel_ptr_t, char:c_wchar_t):err_t;
+  extern proc qio_channel_skip_past_newline(threadsafe:c_int, ch:qio_channel_ptr_t):err_t;
+  extern proc qio_channel_write_newline(threadsafe:c_int, ch:qio_channel_ptr_t):err_t;
 
-  _extern proc qio_channel_scan_string(threadsafe:c_int, ch:qio_channel_ptr_t, inout ptr:string, inout len:ssize_t, maxlen:ssize_t):err_t;
-  _extern proc qio_channel_print_string(threadsafe:c_int, ch:qio_channel_ptr_t, ptr:string, len:ssize_t):err_t;
+  extern proc qio_channel_scan_string(threadsafe:c_int, ch:qio_channel_ptr_t, inout ptr:string, inout len:ssize_t, maxlen:ssize_t):err_t;
+  extern proc qio_channel_print_string(threadsafe:c_int, ch:qio_channel_ptr_t, ptr:string, len:ssize_t):err_t;
  
-  _extern proc qio_channel_scan_literal(threadsafe:c_int, ch:qio_channel_ptr_t, match:string, len:ssize_t, skipws:c_int):err_t;
-  _extern proc qio_channel_print_literal(threadsafe:c_int, ch:qio_channel_ptr_t, match:string, len:ssize_t):err_t;
+  extern proc qio_channel_scan_literal(threadsafe:c_int, ch:qio_channel_ptr_t, match:string, len:ssize_t, skipws:c_int):err_t;
+  extern proc qio_channel_print_literal(threadsafe:c_int, ch:qio_channel_ptr_t, match:string, len:ssize_t):err_t;
   //type iostyle = qio_style_t;
 
   proc defaultStyle():iostyle {
@@ -604,7 +604,7 @@
     QIO_FDFLAG_SEEKABLE
   */
 
-  _extern type fdflag_t = c_int;
+  extern type fdflag_t = c_int;
 //  type fdflag_t = qio_fdflag_t; commented out because of too many statics
 
   /* Access hints describe how a file will be used.
@@ -624,7 +624,7 @@
   }
   */
 
-  _extern type iohint_t = c_int;
+  extern type iohint_t = c_int;
   //type iohint_t = qio_hint_t;
 
   record file {
@@ -2037,7 +2037,7 @@
 //use IO;
 
 
-_extern proc chpl_exit_backtrace(exit_code:c_int);
+extern proc chpl_exit_backtrace(exit_code:c_int);
 
 proc assert(test: bool) {
   if !test then
@@ -2073,8 +2073,8 @@ proc halt(args ...?numArgs) {
 }
 
 proc _debugWrite(args...?n) {
-  _extern proc fprintf(f: _file, fmt: string, vals...?numvals): int;
-  _extern proc fflush(f: _file): int;
+  extern proc fprintf(f: _file, fmt: string, vals...?numvals): int;
+  extern proc fflush(f: _file): int;
   proc getString(a: ?t) {
     if t == bool(8) || t == bool(16) || t == bool(32) || t == bool(64) ||
        t == int(8) || t == int(16) || t == int(32) || t == int(64) ||
@@ -2134,7 +2134,7 @@ proc string.write(args ...?n) {
 }
 
 
-_extern proc chpl_format(fmt: string, x): string;
+extern proc chpl_format(fmt: string, x): string;
 
 proc format(fmt: string, x:?t) where _isIntegralType(t) || _isFloatType(t) {
   if fmt.substring(1) == "#" {

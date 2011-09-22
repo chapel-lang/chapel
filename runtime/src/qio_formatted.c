@@ -5,6 +5,95 @@
 
 #include "qio_formatted.h"
 
+#include <wctype.h>
+
+err_t qio_channel_read_uvarint(const int threadsafe, qio_channel_t* ch, uint64_t* ptr) {
+  err_t err;
+  uint8_t byte;
+  long part;
+  uint64_t num;
+  int i;
+
+  if( threadsafe ) {
+    err = qio_lock(&ch->lock);
+    if( err ) {
+      *ptr = 0;
+      return err;
+    }
+  }
+
+  num = 0;
+
+  for( i = 0; i < 10; i++ ) {
+    err = qio_channel_read_uint8(false, ch, &byte);
+    if( err ) goto error;
+    part = byte & 0x7f;
+    num |= part << (7*i);
+    if( byte & 0x80 ) { // continue.
+    } else {
+      break; // all done.
+    }
+  }
+
+  if( !err && (byte & 0x80) ) err = EOVERFLOW;
+
+error:
+  *ptr = num;
+
+  if( threadsafe ) {
+    qio_unlock(&ch->lock);
+  }
+
+  return err;
+}
+
+err_t qio_channel_read_svarint(const int threadsafe, qio_channel_t* ch, int64_t* ptr) {
+  err_t err;
+  uint64_t u_num;
+  err = qio_channel_read_uvarint(threadsafe, ch, &u_num);
+  *ptr = (u_num >> 1) ^ -((int64_t)(u_num & 1));
+  return err;
+}
+err_t qio_channel_write_uvarint(const int threadsafe, qio_channel_t* ch, uint64_t num) {
+  err_t err;
+  uint8_t byte;
+  int i;
+
+  if( threadsafe ) {
+    err = qio_lock(&ch->lock);
+    if( err ) {
+      return err;
+    }
+  }
+
+  for( i = 0; i < 10; i++ ) {
+    byte = num & 0x7f;
+    num >>= 7;
+    if( num != 0 ) byte |= 0x80;
+    err = qio_channel_write_uint8(false, ch, byte);
+    if( err ) goto error;
+    if( byte & 0x80 ) {
+      // OK, continue;
+    } else {
+      break;
+    }
+  }
+
+error:
+  if( threadsafe ) {
+    qio_unlock(&ch->lock);
+  }
+
+  return err;
+}
+
+err_t qio_channel_write_svarint(const int threadsafe, qio_channel_t* ch, int64_t num) {
+  uint64_t u_num = (num << 1) ^ (num >> 63);
+  return qio_channel_write_uvarint(threadsafe, ch, u_num);
+}
+
+
+
 static
 err_t _peek_until_byte(qio_channel_t* ch, uint8_t term_byte, int64_t* amt_read_out, int* found_term_out)
 {
@@ -2017,6 +2106,33 @@ unlock:
   return err;
 }
 
+err_t qio_channel_skip_past_newline(const int threadsafe, qio_channel_t* ch)
+{
+  wchar_t c;
+  err_t err;
+
+  if( threadsafe ) {
+    err = qio_lock(&ch->lock);
+    if( err ) return err;
+  }
+
+  while( 1 ) {
+    err = qio_channel_read_char(threadsafe, ch, &c);
+    if( err  || c == '\n' ) break;
+  }
+
+  if( threadsafe ) {
+    qio_unlock(&ch->lock);
+  }
+  return err;
+}
+
+err_t qio_channel_write_newline(const int threadsafe, qio_channel_t* ch)
+{
+  char c = '\n';
+  return qio_channel_write_amt(threadsafe, ch, &c, 1);
+}
+
 err_t qio_channel_print_complex(const int threadsafe, qio_channel_t* ch, const void* re_ptr, const void* im_ptr, size_t len)
 {
   double num8;
@@ -2141,6 +2257,78 @@ unlock:
   return err;
 }
 
+
+err_t qio_channel_read_char(const int threadsafe, qio_channel_t* ch, wchar_t* chr) {
+  char mbs[MB_LEN_MAX];
+  mbstate_t ps;
+  size_t n;
+  size_t got;
+  wchar_t tmp_chr;
+  err_t err;
+
+  if( threadsafe ) {
+    err = qio_lock(&ch->lock);
+    if( err ) return err;
+  }
+
+  // We always read 1 character at least.
+  n = 0;
+  err = qio_channel_read_amt(threadsafe, ch, &mbs[n], 1);
+  if( err ) {
+    if( err == EEOF ) *chr = -1;
+    goto unlock;
+  }
+  n++;
+
+  err = qio_channel_mark(false, ch);
+  if( err ) goto unlock;
+
+  while( 1 ) {
+    memset(&ps, 0, sizeof(mbstate_t));
+    got = mbrtowc(&tmp_chr, mbs, n, &ps);
+    if( got == 0 ) {
+      *chr = 0;
+      n = 1;
+      break;
+    } else if( got == (size_t) -1 ) {
+      *chr = 0xfffd;
+      err = errno;
+      break;
+    } else if( got == (size_t) -2 ) {
+      // continue the loop.
+      err = qio_channel_read_amt(threadsafe, ch, &mbs[n], 1);
+      if( err == EEOF ) err = ESHORT;
+      if( err ) break;
+      n++;
+    } else {
+      *chr = tmp_chr;
+      n = got;
+      break;
+    }
+  }
+
+  // Now adjust the buffer to pass the number of characters we used.
+  qio_channel_revert_unlocked(ch);
+  qio_channel_advance_unlocked(ch, n-1);
+
+unlock:
+  if( threadsafe ) {
+    qio_unlock(&ch->lock);
+  }
+
+  return err;
+}
+err_t qio_channel_write_char(const int threadsafe, qio_channel_t* ch, wchar_t chr) {
+  char mbs[MB_LEN_MAX];
+  mbstate_t ps;
+  size_t got;
+
+  memset(&ps, 0, sizeof(mbstate_t));
+  got = wcrtomb(mbs, chr, &ps);
+  if( got == (size_t) -1 ) return errno; // EILSEQ.
+
+  return qio_channel_write_amt(threadsafe, ch, mbs, got);
+}
 
 /*
 void free_conv_spec(conv_spec_t* spec)

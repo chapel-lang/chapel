@@ -1,12 +1,14 @@
 #define _QIO_C
 
+#ifndef _DARWIN_C_SOURCE
 // get fcntl(F_GETPATH)
 #define _DARWIN_C_SOURCE
+#endif
 
-
+#ifndef _GNU_SOURCE
 // get O_DIRECT, fopencookie
 #define _GNU_SOURCE
-
+#endif
 
 #include "sys_basic.h"
 
@@ -56,6 +58,46 @@ static inline int do_unlock(syncvar_t* x)
 #define DESTROY_LOCK(v) (TAKE_LOCK(v))
 */
 
+#ifdef _chplrt_H_
+err_t qio_lock(qio_lock_t* x) {
+  // recursive mutex based on glibc pthreads implementation
+  int64_t id = chpl_task_getId();
+
+  assert( id != NULL_OWNER );
+
+  // check whether we already hold the mutex.
+  if( x->owner == id ) {
+    // just bump the counter.
+    ++x->count;
+    return 0;
+  }
+
+  // we have to get the mutex.
+  chpl_sync_lock(&x->sv);
+
+  assert( x->owner == NULL_OWNER );
+  x->count = 1;
+  x->owner = id;
+
+  return 0;
+}
+void qio_unlock(qio_lock_t* x) {
+  int64_t id = chpl_task_getId();
+
+  // recursive mutex based on glibc pthreads implementation
+  if( x->owner != id ) {
+    abort();
+  }
+
+  if (--x->count != 0 ) {
+    // we still hold the mutex.
+    return;
+  }
+
+  x->owner = NULL_OWNER;
+  chpl_sync_unlock(&x->sv);
+}
+#endif
 
 err_t qio_readv(fd_t fd, qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, int64_t* num_read)
 {
@@ -811,7 +853,7 @@ err_t qio_file_init(qio_file_t** file_out, FILE* fp, fd_t fd, qio_hint_t iohints
     return ENOMEM;
   }
 
-  file->ref_cnt = 1;
+  DO_INIT_REFCNT(file);
   file->fp = fp;
   file->fd = fd;
   file->use_fp = usefilestar;
@@ -900,9 +942,15 @@ err_t _qio_file_do_close(qio_file_t* f)
 
   return err;
 }
+
 err_t qio_file_close(qio_file_t* f)
 {
-  if( f->ref_cnt > 1 ) return EINVAL;
+  // TODO - we could check to see if
+  // there are references to the file
+  // but we'd have to do it with gasnet
+  // atomics...
+  //
+  //if( f->ref_cnt > 1 ) return EINVAL;
 
   return _qio_file_do_close(f);
 }
@@ -981,7 +1029,7 @@ err_t qio_file_open_mem_ext(qio_file_t** file_out, qbuffer_t* buf, qio_fdflag_t 
     qbuffer_retain(file->buf);
   }
 
-  file->ref_cnt = 1;
+  DO_INIT_REFCNT(file);
   file->fp = NULL;
   file->fd = -1;
   file->fdflags = fdflags;
@@ -1323,7 +1371,7 @@ err_t qio_channel_create(qio_channel_t** ch_out, qio_file_t* file, qio_hint_t hi
     qio_free(ret);
     return err;
   } else {
-    ret->ref_cnt = 1;
+    DO_INIT_REFCNT(ret);
     if( DEBUG_QIO ) printf("Creating channel %p\n", ret);
     *ch_out = ret;
     return 0;
@@ -1477,9 +1525,7 @@ void _set_right_mark_start(qio_buffered_channel_t* heavy, int64_t pos)
   else heavy->mark_stack[heavy->mark_next-1] = pos;
 }
 
-
-
-static inline
+static
 qbuffer_iter_t _right_mark_start_iter(qio_buffered_channel_t* heavy)
 {
   int64_t right_mark_start;
@@ -2823,6 +2869,74 @@ error:
   return err;
 }
 
+err_t qio_channel_mark(const int threadsafe, qio_channel_t* ch)
+{
+  err_t err;
+  qio_buffered_channel_t* heavy;
+  int64_t pos = -1;
+  size_t new_size;
+  size_t i;
+  int64_t* new_buf;
+
+  if( (ch->hints & QIO_CHTYPEMASK) != QIO_CH_BUFFERED ) return EINVAL;
+
+  heavy = & ch->u.buffered;
+
+  if( threadsafe ) {
+    err = qio_lock(&ch->lock);
+    if( err ) {
+      return err;
+    }
+  }
+  
+  // calls qio_buffered_advance_cached
+  pos = qio_channel_offset_unlocked(ch);
+  
+  if( heavy->mark_next >= heavy->mark_stack_size ) {
+    new_size = 2 * heavy->mark_next;
+    if( new_size == 0 ) new_size = 2;
+
+    // Reallocate the mark buffer.
+    if( heavy->mark_stack == heavy->mark_space ) {
+      new_buf = qio_malloc(new_size*sizeof(int64_t));
+      if( ! new_buf ) {
+        err = ENOMEM;
+        goto error;
+      }
+      // Copy the values from our old stack.
+      for( i = 0; i < heavy->mark_next; i++ ) new_buf[i] = heavy->mark_stack[i];
+    } else {
+      new_buf = qio_realloc(heavy->mark_space, new_size*sizeof(int64_t));
+      if( ! new_buf ) {
+        err = ENOMEM;
+        goto error;
+      }
+      // Realloc already copies the values if necessary.
+    }
+    // Now clear out the new elements.
+    for( i = heavy->mark_next + 1; i < new_size; i++ ) {
+      new_buf[i] = -1;
+    }
+
+    heavy->mark_stack = new_buf;
+    heavy->mark_stack_size = new_size;
+  }
+
+  // Now set the current value.
+  heavy->mark_stack[heavy->mark_next] = pos;
+  heavy->mark_next++;
+
+  err = 0;
+
+error:
+  if( threadsafe ) {
+    qio_unlock(&ch->lock);
+  }
+
+  return err;
+}
+
+
 /* Always advances, calls qio_buffered_behind, but ignores an
  * error if there is one. The error will come up again in a call
  * to read/write/flush.
@@ -2845,6 +2959,64 @@ void qio_channel_advance_unlocked(qio_channel_t* ch, int64_t nbytes)
   // error code.
   err = _qio_buffered_behind(ch, false);
   if( err ) fprintf(stderr, "Warning: qio_buffered_behind returned error %i in qio_channel_advance_unlocked\n", err);
+}
+
+void qio_channel_revert_unlocked(qio_channel_t* ch)
+{
+  qio_buffered_channel_t* heavy;
+
+  assert( (ch->hints & QIO_CHTYPEMASK) == QIO_CH_BUFFERED );
+
+  heavy = & ch->u.buffered;
+
+  assert(heavy->mark_next > 0);
+
+  // Might need to call advance_cached if there was
+  // writes before we marked...
+  _qio_buffered_advance_cached(ch);
+
+  heavy->mark_next--;
+  heavy->mark_stack[heavy->mark_next] = -1;
+
+  // Now we just have lots of extra buffer space. No need
+  // to call write-behind.
+
+  // Set up the buffered pointers again.
+  _qio_buffered_setup_cached(ch);
+}
+
+void qio_channel_commit_unlocked(qio_channel_t* ch)
+{
+  qio_buffered_channel_t* heavy;
+  int64_t pos = -1;
+  int64_t mark = -1;
+
+  assert( (ch->hints & QIO_CHTYPEMASK) == QIO_CH_BUFFERED );
+
+  heavy = & ch->u.buffered;
+
+  assert(heavy->mark_next > 0);
+
+  // For sure we need to save any data written to
+  // the cached pointers
+  _qio_buffered_advance_cached(ch);
+
+  heavy->mark_next--;
+  mark = heavy->mark_stack[heavy->mark_next];
+  heavy->mark_stack[heavy->mark_next] = -1;
+ 
+  // If we're at the end of the mark stack, advance
+  // av_end and call read/write-behind.
+  if( heavy->mark_next == 0 ) {
+    // calls advance_cached
+    pos = qio_channel_offset_unlocked(ch);
+
+    assert( mark >= pos );
+
+    qio_channel_advance_unlocked(ch, mark - pos);
+  }
+  // Otherwise, we just keep going with the mark stack,
+  // until we get to the end.
 }
 
 err_t qio_channel_advance(const int threadsafe, qio_channel_t* ch, int64_t nbytes)

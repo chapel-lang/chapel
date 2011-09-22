@@ -40,11 +40,8 @@ extern void chpl_free(void* ptr, int32_t lineno, const char* filename);
 
 void _qbytes_free_qbytes(qbytes_t* b)
 {
-  assert( b->ref_cnt <= 1 );
-
   b->data = NULL;
   b->len = 0;
-  b->ref_cnt = -1;
   b->free_function = NULL;
   qio_free(b);
 }
@@ -82,7 +79,7 @@ void qbytes_free_iobuf(qbytes_t* b) {
 void debug_print_bytes(qbytes_t* b)
 {
   fprintf(stderr, "bytes %p: data=%p len=%lli ref_cnt=%li free_function=%p flags=%i\n",
-          b, b->data, (long long int) b->len, (long int) b->ref_cnt,
+          b, b->data, (long long int) b->len, (long int) DO_GET_REFCNT(b),
           b->free_function, b->flags);
 }
 
@@ -90,7 +87,7 @@ void _qbytes_init_generic(qbytes_t* ret, void* give_data, int64_t len, qbytes_fr
 {
   ret->data = give_data;
   ret->len = len;
-  ret->ref_cnt = 1;
+  DO_INIT_REFCNT(ret);
   ret->flags = 0;
   ret->free_function = free_function;
 }
@@ -254,7 +251,7 @@ void debug_print_qbuffer(qbuffer_t* buf)
 err_t qbuffer_init(qbuffer_t* buf)
 {
   memset(buf, 0, sizeof(qbuffer_t));
-  buf->ref_cnt = 1;
+  DO_INIT_REFCNT(buf);
   return deque_init(sizeof(qbuffer_part_t), & buf->deque, 0);
 }
 
@@ -263,8 +260,6 @@ err_t qbuffer_destroy(qbuffer_t* buf)
   err_t err = 0;
   deque_iterator_t cur = deque_begin(& buf->deque);
   deque_iterator_t end = deque_end(& buf->deque);
-
-  assert( buf->ref_cnt <= 1 );
 
   while( ! deque_it_equals(cur, end) ) {
     qbuffer_part_t* qbp = deque_it_get_cur_ptr(sizeof(qbuffer_part_t), cur);
@@ -654,6 +649,52 @@ void qbuffer_iter_ceil_part(qbuffer_t* buf, qbuffer_iter_t* iter)
   }
 }
 
+
+/* Advances an iterator using linear search. 
+ */
+void qbuffer_iter_advance(qbuffer_t* buf, qbuffer_iter_t* iter, int64_t amt)
+{
+  deque_iterator_t d_begin = deque_begin( & buf->deque );
+  deque_iterator_t d_end = deque_end( & buf->deque );
+
+  if( amt >= 0 ) {
+    // forward search.
+    iter->offset += amt;
+    while( ! deque_it_equals(iter->iter, d_end) ) {
+      qbuffer_part_t* qbp = (qbuffer_part_t*) deque_it_get_cur_ptr(sizeof(qbuffer_part_t), iter->iter);
+      if( iter->offset < qbp->end_offset ) {
+        // it's in this one.
+        return;
+      }
+      deque_it_forward_one(sizeof(qbuffer_part_t), & iter->iter);
+    }
+  } else {
+    // backward search.
+    iter->offset += amt; // amt is negative
+
+    if( ! deque_it_equals( iter->iter, d_end ) ) {
+      // is it within the current buffer?
+      qbuffer_part_t* qbp = (qbuffer_part_t*) deque_it_get_cur_ptr(sizeof(qbuffer_part_t), iter->iter);
+      if( iter->offset >= qbp->end_offset - qbp->len_bytes ) {
+        // it's in this one.
+        return;
+      }
+    }
+
+    // now we have a valid deque element.
+    do {
+      qbuffer_part_t* qbp;
+
+      deque_it_back_one(sizeof(qbuffer_part_t), & iter->iter);
+
+      qbp = (qbuffer_part_t*) deque_it_get_cur_ptr(sizeof(qbuffer_part_t), iter->iter);
+      if( iter->offset >= qbp->end_offset - qbp->len_bytes ) {
+        // it's in this one.
+        return;
+      }
+    } while( ! deque_it_equals(iter->iter, d_begin) );
+  }
+}
 
 
 

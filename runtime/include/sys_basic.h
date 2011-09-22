@@ -20,6 +20,71 @@
 #define _FILE_OFFSET_BITS 64
 #endif
 
+#ifdef __GNUC__
+#define always_inline inline __attribute__((__always_inline__))
+#else
+#define always_inline inline
+#endif
+
+#define GASNETT_THREAD_SAFE 1
+#define GASNETI_THREAD_SAFE 1
+
+// If gasnet.h and gasnet_tools.h are both included,
+// we're supposed to include gasnet.h first.
+#ifdef PLEASE_INCLUDE_GASNET_H
+#include "gasnet.h"
+#endif
+
+#ifndef _GASNET_TOOLS_H
+#ifdef _chplrt_H_
+// GASNet manuals say they want this to be the 1st thing included.
+// If we're not compiling chapel codes, we'll fall back on
+// e.g. __sync_fetch_add
+#include "gasnet_tools.h"
+#else
+
+#include <limits.h> // for LONG_MAX.
+// We make some wrappers using GCC intrinsics for easy C test cases.
+typedef long gasnett_atomic_val_t;
+typedef long gasnett_atomic_t;
+#define GASNETT_ATOMIC_MAX LONG_MAX
+#define GASNETT_ATOMIC_MB_PRE 0
+#define GASNETT_ATOMIC_MB_POST 0
+static always_inline
+void gasnett_atomic_set(gasnett_atomic_t *p,
+                        gasnett_atomic_val_t v,
+                        int flags) {
+  __sync_synchronize();
+  *p = v;
+  __sync_synchronize();
+}
+static always_inline
+gasnett_atomic_val_t gasnett_atomic_read(gasnett_atomic_t *p, int flags) {
+  gasnett_atomic_val_t ret;
+  __sync_synchronize();
+  ret = *p;
+  __sync_synchronize();
+  return ret;
+}
+static always_inline
+gasnett_atomic_val_t gasnett_atomic_add(gasnett_atomic_t *p,
+                                        gasnett_atomic_val_t op,
+                                        int flags) {
+  return __sync_add_and_fetch(p, op);
+}
+
+static always_inline
+gasnett_atomic_val_t gasnett_atomic_subtract(gasnett_atomic_t *p,
+                                             gasnett_atomic_val_t op,
+                                             int flags) {
+  return __sync_sub_and_fetch(p, op);
+}
+// end not in _chplrt_H_
+#endif
+
+// No gasnet tools.
+#endif
+
 #include <sys/types.h>
 #include <unistd.h>
 #include <errno.h>

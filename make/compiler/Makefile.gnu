@@ -120,7 +120,14 @@ RUNTIME_GEN_CFLAGS += -Wno-unused
 # -Wno-unused has to be used due to _dummy_checkalign variables in
 # -gasnet_atomicops.h
 #
-CHPL_GASNET_MORE_CFLAGS = -Wno-strict-prototypes -Wno-missing-prototypes
+# -Wunused-function because gasnet_tools.h creates a static _gasnett_trace_printf_noop
+#
+# MPF - Since these can be useful errors, it's better to use -Wno-error
+#       so that a warning is still printed out. Since GASNet Tools will
+#       be used for atomics, the GASNET_MORE_CFLAGS will have to apply
+#       to *all* our code, not just GASNet comms support.
+CHPL_GASNET_MORE_CFLAGS = -Wno-error=strict-prototypes -Wno-error=missing-prototypes -Wno-error=unused-function
+
 ifndef CHPL_COMM_DEBUG
 CHPL_GASNET_MORE_CFLAGS += -Wno-unused
 endif

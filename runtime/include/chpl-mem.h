@@ -90,15 +90,9 @@ void* chpl_mem_allocMany(size_t number, size_t size,
                          chpl_mem_descInt_t description,
                          int32_t lineno, chpl_string filename);
 // mpf -- nice to have an equivalent of calloc
-static inline
 void* chpl_mem_allocManyZero(size_t number, size_t size,
                              chpl_mem_descInt_t description,
-                             int32_t lineno, chpl_string filename)
-{
-  void* ptr = chpl_mem_allocMany(number, size, description, lineno, filename);
-  memset(ptr, 0, number*size);
-  return ptr;
-}
+                             int32_t lineno, chpl_string filename);
 
 void* chpl_mem_realloc(void* ptr, size_t number, size_t size, 
                        chpl_mem_descInt_t description,

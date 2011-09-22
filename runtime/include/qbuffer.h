@@ -1,11 +1,50 @@
 #ifndef _QBUFFER_H_
 #define _QBUFFER_H_
 
+// sys_basic includes gasnet's atomics
+// or makes pretend with GCC atomics.
 #include "sys_basic.h"
+
 #include <inttypes.h>
 #include <sys/uio.h>
 #include <alloca.h>
 #include "deque.h"
+
+// We should have gasnett_atomic_t from sys_basic
+typedef gasnett_atomic_t qbytes_refcnt_t;
+#define DO_INIT_REFCNT(ptr) \
+{ \
+  gasnett_atomic_set(&ptr->ref_cnt, 1, GASNETT_ATOMIC_MB_PRE | GASNETT_ATOMIC_MB_POST); \
+}
+#define DO_GET_REFCNT(ptr) ( \
+  gasnett_atomic_read(&ptr->ref_cnt, GASNETT_ATOMIC_MB_PRE | GASNETT_ATOMIC_MB_POST) \
+)
+
+#define DO_RETAIN(ptr) \
+{ \
+  /* do nothing to NULL */ \
+  if( ptr ) { \
+    gasnett_atomic_val_t new_cnt = gasnett_atomic_add(&ptr->ref_cnt, 1, GASNETT_ATOMIC_MB_PRE | GASNETT_ATOMIC_MB_POST); \
+    /* if it is now 0, we overflowed the number */ \
+    /* if it is now 1, it was 0 a moment ago, which means we couldn't have had a ref to it */ \
+    if( new_cnt <= 1 ) *(int *)(0) = 0; /* deliberately segfault. */ \
+  } \
+}
+
+#define DO_RELEASE(ptr, free_function) \
+{ \
+  /* do nothing to NULL */ \
+  if( ptr ) { \
+    gasnett_atomic_val_t new_cnt = gasnett_atomic_subtract(&ptr->ref_cnt, 1, GASNETT_ATOMIC_MB_PRE | GASNETT_ATOMIC_MB_POST); \
+    if( new_cnt == 0 ) { \
+      /* that means, after we decremented it, the count is 0. */ \
+      free_function(ptr); \
+    } else { \
+      /* new_cnt == GASNETT_ATOMIC_MAX is a fatal error (underflow) */ \
+      if( new_cnt == GASNETT_ATOMIC_MAX ) *(int *)(0) = 0; /* deliberately segfault. */ \
+    } \
+  } \
+}
 
 // how large is an iobuf?
 extern size_t qbytes_iobuf_size;
@@ -32,7 +71,7 @@ typedef struct qbytes_s {
   int64_t len;
   // reference count which is atomically updated
   // all of the other fields 
-  long ref_cnt;
+  qbytes_refcnt_t ref_cnt;
   qbytes_free_t free_function;
   uint8_t flags; // is it const?
   uint8_t unused1;
@@ -44,33 +83,6 @@ typedef struct qbytes_s {
 typedef qbytes_t _qbytes_ptr_t;
 typedef qbytes_t* qbytes_ptr_t;
 #define QBYTES_PTR_NULL NULL
-
-#define fetch_and_add_long(ADDR, INCR) __sync_fetch_and_add(ADDR, INCR)
-
-#define DO_RETAIN(ptr) \
-{ \
-  /* do nothing to NULL */ \
-  if( ptr ) { \
-    long old_cnt = fetch_and_add_long(&ptr->ref_cnt, 1); \
-    /* old_cnt should be at least 1. */ \
-    if( old_cnt < 1 ) *(int *)(0) = 0; /* deliberately segfault. */ \
-  } \
-}
-
-#define DO_RELEASE(ptr, free_function) \
-{ \
-  /* do nothing to NULL */ \
-  if( ptr ) { \
-    long old_cnt = fetch_and_add_long(&ptr->ref_cnt, -1); \
-    if( old_cnt == 1 ) { \
-      /* that means, after we decremented it, the count is 0. */ \
-      free_function(ptr); \
-    } else { \
-      /* old_cnt <= 0 is a fatal error. */ \
-      if( old_cnt <= 0 ) *(int *)(0) = 0; /* deliberately segfault. */ \
-    } \
-  } \
-}
 
 // increment the reference count
 static inline
@@ -143,7 +155,7 @@ typedef struct qbuffer_part_s {
  * should be called when it goes out of scope.
  */
 typedef struct qbuffer_s {
-  long ref_cnt;
+  qbytes_refcnt_t ref_cnt;
   deque_t deque; // contains qbuffer_part_t s 
   int64_t offset_start;
   int64_t offset_end;
@@ -256,50 +268,7 @@ void qbuffer_iter_ceil_part(qbuffer_t* buf, qbuffer_iter_t* iter);
 
 /* Advances an iterator using linear search. 
  */
-static inline
-void qbuffer_iter_advance(qbuffer_t* buf, qbuffer_iter_t* iter, int64_t amt)
-{
-  deque_iterator_t d_begin = deque_begin( & buf->deque );
-  deque_iterator_t d_end = deque_end( & buf->deque );
-
-  if( amt >= 0 ) {
-    // forward search.
-    iter->offset += amt;
-    while( ! deque_it_equals(iter->iter, d_end) ) {
-      qbuffer_part_t* qbp = (qbuffer_part_t*) deque_it_get_cur_ptr(sizeof(qbuffer_part_t), iter->iter);
-      if( iter->offset < qbp->end_offset ) {
-        // it's in this one.
-        return;
-      }
-      deque_it_forward_one(sizeof(qbuffer_part_t), & iter->iter);
-    }
-  } else {
-    // backward search.
-    iter->offset += amt; // amt is negative
-
-    if( ! deque_it_equals( iter->iter, d_end ) ) {
-      // is it within the current buffer?
-      qbuffer_part_t* qbp = (qbuffer_part_t*) deque_it_get_cur_ptr(sizeof(qbuffer_part_t), iter->iter);
-      if( iter->offset >= qbp->end_offset - qbp->len_bytes ) {
-        // it's in this one.
-        return;
-      }
-    }
-
-    // now we have a valid deque element.
-    do {
-      qbuffer_part_t* qbp;
-
-      deque_it_back_one(sizeof(qbuffer_part_t), & iter->iter);
-
-      qbp = (qbuffer_part_t*) deque_it_get_cur_ptr(sizeof(qbuffer_part_t), iter->iter);
-      if( iter->offset >= qbp->end_offset - qbp->len_bytes ) {
-        // it's in this one.
-        return;
-      }
-    } while( ! deque_it_equals(iter->iter, d_begin) );
-  }
-}
+void qbuffer_iter_advance(qbuffer_t* buf, qbuffer_iter_t* iter, int64_t amt);
 
 /* Find offset in window in logarithmic time.
  * Note these offsets start at buf->offset_start, not 0.

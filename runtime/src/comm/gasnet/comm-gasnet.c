@@ -1,10 +1,13 @@
+
+#define PLEASE_INCLUDE_GASNET_H
 #include "sys_basic.h"
 
 #include <signal.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-#include "gasnet.h"
+//#include "gasnet.h" included is sys_basic
+//when PLEASE_INCLUDE_GASNET_H is defined.
 #include "chplrt.h"
 #include "chpl-comm.h"
 #include "chpl-mem.h"

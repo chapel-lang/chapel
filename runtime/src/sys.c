@@ -1,3 +1,4 @@
+#define _POSIX_C_SOURCE 20112L
 
 #ifndef SIMPLE_TEST
 #include "chplrt.h"
@@ -27,6 +28,9 @@
 #endif
 #endif
 #endif
+
+// Should be available in sys_xsi_strerror_r.c
+extern int sys_xsi_strerror_r(int errnum, char* buf, size_t buflen);
 
 void sys_init_sys_sockaddr(sys_sockaddr_t* addr)
 {
@@ -214,6 +218,7 @@ const char* extended_errors[] = {
   NULL
 };
 
+
 // allocates and returns an error string in *string_out
 // which must be freed.
 err_t sys_strerror(err_t error, const char** string_out)
@@ -242,7 +247,7 @@ err_t sys_strerror(err_t error, const char** string_out)
       return ENOMEM;
     }
     buf = newbuf;
-    got = strerror_r(error, buf, buf_sz);
+    got = sys_xsi_strerror_r(error, buf, buf_sz);
     if( got == 0 ) break;
     if( got == -1 && errno != ERANGE ) {
       err_out = errno;

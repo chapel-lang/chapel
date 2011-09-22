@@ -4,10 +4,10 @@ RINC=$CHPL_HOME/runtime/include
 RSRC=$CHPL_HOME/runtime/src
 
 gcc -o deque_test -g deque_test.c -DSIMPLE_TEST -I $RINC $RSRC/deque.c -Wall &&
-gcc -o qbuffer_test -g qbuffer_test.c -DSIMPLE_TEST -I $RINC $RSRC/qbuffer.c $RSRC/sys.c $RSRC/deque.c -Wall &&
-gcc -o qio_test -g qio_test.c -DSIMPLE_TEST -I $RINC $RSRC/qio.c $RSRC/sys.c $RSRC/qbuffer.c $RSRC/deque.c -Wall -pthread &&
-gcc -o qio_formatted_test -g qio_formatted_test.c -DSIMPLE_TEST -I $RINC $RSRC/qio.c $RSRC/qio_formatted.c $RSRC/sys.c $RSRC/qbuffer.c $RSRC/deque.c -Wall -pthread &&
-gcc -o qio_memfile_test -g qio_memfile_test.c -DSIMPLE_TEST -I $RINC $RSRC/qio.c $RSRC/qio_formatted.c $RSRC/sys.c $RSRC/qbuffer.c $RSRC/deque.c -Wall -pthread
+gcc -o qbuffer_test -g qbuffer_test.c -DSIMPLE_TEST -I $RINC $RSRC/qbuffer.c $RSRC/sys.c $RSRC/sys_xsi_strerror_r.c $RSRC/deque.c -Wall &&
+gcc -o qio_test -g qio_test.c -DSIMPLE_TEST -I $RINC $RSRC/qio.c $RSRC/sys.c $RSRC/sys_xsi_strerror_r.c $RSRC/qbuffer.c $RSRC/deque.c -Wall -pthread &&
+gcc -o qio_formatted_test -g qio_formatted_test.c -DSIMPLE_TEST -I $RINC $RSRC/qio.c $RSRC/qio_formatted.c $RSRC/sys.c $RSRC/sys_xsi_strerror_r.c $RSRC/qbuffer.c $RSRC/deque.c -Wall -pthread &&
+gcc -o qio_memfile_test -g qio_memfile_test.c -DSIMPLE_TEST -I $RINC $RSRC/qio.c $RSRC/qio_formatted.c $RSRC/sys.c $RSRC/sys_xsi_strerror_r.c $RSRC/qbuffer.c $RSRC/deque.c -Wall -pthread
 
 RETVAL=$?
 
