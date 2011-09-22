@@ -172,10 +172,6 @@ static void setupOrderedGlobals(void) {
   fNoRepositionDefExpr = strcmp(CHPL_TARGET_PLATFORM, "xmt");
   // Enable if we are going to use Nvidia's NVCC compiler
   fGPU = !strcmp(CHPL_TARGET_COMPILER, "nvidia");
-  // Eventually, we should only generate structural definitions when
-  // doing multirealm compilations.  However, we don't have the mechanism
-  // in place to support two communication interfaces yet...
-  fHeterogeneous = (strcmp(CHPL_COMM, "pvm") == 0);
 }
 
 
@@ -295,60 +291,6 @@ static void readConfig(ArgumentState* arg_state, char* arg_unused) {
 static void addModulePath(ArgumentState* arg_state, char* newpath) {
   addFlagModulePath(newpath);
 }
-
-Vec<const char*> realms;
-
-int32_t getNumRealms(void) {
-  INT_ASSERT(realms.n);
-  return (int32_t)realms.n;
-}
-
-static void processRealmArgs(void) {
-  const char *allrealms = NULL;
-  if (Expr *al = getCmdLineConfig(astr("realmTypes"))) {
-    if (!isSymExpr(al)) {
-      USR_FATAL("realmTypes must be a string");
-    }
-    VarSymbol *var = toVarSymbol(toSymExpr(al)->var);
-    INT_ASSERT(var);
-    if (!var->isImmediate()) {
-      USR_FATAL("realmTypes must be a string");
-    }
-    if (var->immediate->const_kind!=CONST_KIND_STRING) {
-      USR_FATAL("realmTypes must be a string");
-    }
-    allrealms = var->immediate->v_string;
-  }
-  if (allrealms == NULL) {
-    realms.add(CHPL_TARGET_PLATFORM);
-  } else {
-    const char* start = allrealms;
-    int numRealms = 0;
-    const char* space;
-    do {
-      space = strchr(start, ' ');
-      if (space == NULL) {
-        realms.add(start);
-      } else {
-        int len = space-start+1;
-        //        printf("len = %d\n", len);
-        char* realmStr = (char*)malloc(sizeof(char)*len);
-        strncpy(realmStr, start, len);
-        realmStr[len-1] = '\0';
-        //        printf("realmstr = '%s'\n", realmStr);
-        realms.add(realmStr);
-        start = space+1;
-      }
-      numRealms += 1;
-    } while (space != NULL);
-    numRealms = 0;
-    forv_Vec(const char*, realm, realms) {
-      //      printf("realm %d = %s\n", numRealms, realm);
-      numRealms += 1;
-    }
-  }
-}
-
 
 static void noteCppLinesSet(ArgumentState* arg, char* unused) {
   userSetCppLineno = true;
@@ -576,7 +518,6 @@ static void setupDependentVars(void) {
   if (developer && !userSetCppLineno) {
     printCppLineno = false;
   }
-  processRealmArgs();
 }
 
 

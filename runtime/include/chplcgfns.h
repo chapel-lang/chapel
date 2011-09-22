@@ -11,16 +11,12 @@
 extern int32_t numThreadsPerLocale;
 extern int32_t chpl__maxThreadsPerLocale;
 extern uint64_t callStackSize;
-extern int32_t chpl_numRealms;
 
 /* generated */
 void chpl__init_preInit(int32_t _ln, chpl_string _fn);
 void chpl__init_ChapelThreads(int32_t _ln, chpl_string _fn);
 void chpl__init_DefaultRectangular(int32_t _ln, chpl_string _fn);
 void chpl__init_ChapelTaskTable(int32_t _ln, chpl_string _fn);
-
-/* defined in _config.c: */
-const char* chpl_realmType(int32_t r);
 
 /* used for entry point: */
 extern void chpl_main(void);

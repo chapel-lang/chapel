@@ -3,268 +3,268 @@ module GMP {
   use Error;
 
 
-  _extern type __mpf_struct;
-  _extern type mpf_t = 1*__mpf_struct;
-  _extern type __mpz_struct;
-  _extern type mpz_t = 1*__mpz_struct;
+  extern type __mpf_struct;
+  extern type mpf_t = 1*__mpf_struct;
+  extern type __mpz_struct;
+  extern type mpz_t = 1*__mpz_struct;
 
-  _extern type __gmp_randstate_struct;
-  _extern type gmp_randstate_t = 1*__gmp_randstate_struct;
+  extern type __gmp_randstate_struct;
+  extern type gmp_randstate_t = 1*__gmp_randstate_struct;
 
-  _extern type mp_bitcnt_t = c_ulong;
-  _extern type mp_size_t = size_t;
-  _extern type mp_limb_t=uint(64);
-  _extern type mp_ptr; // mp_limb_t *
+  extern type mp_bitcnt_t = c_ulong;
+  extern type mp_size_t = size_t;
+  extern type mp_limb_t=uint(64);
+  extern type mp_ptr; // mp_limb_t *
 
-  //_extern type size_t = int(64); from sys_basic
-
-
-  //_extern type double = real(64); from sys_basic
+  //extern type size_t = int(64); from sys_basic
 
 
-  _extern const mp_bits_per_limb: c_int;
+  //extern type double = real(64); from sys_basic
+
+
+  extern const mp_bits_per_limb: c_int;
 
   // Why do these need inout? It seems not to work without
   // inout...
 
   // initializing rng
-  _extern proc gmp_randinit_default(inout STATE: gmp_randstate_t);
-  _extern proc gmp_randinit_mt(inout STATE: gmp_randstate_t);
-  _extern proc gmp_randinit_lc_2exp(inout STATE: gmp_randstate_t, inout A:mpz_t, C: c_ulong, M2EXP: c_ulong);
-  _extern proc gmp_randinit_lc_2exp_size(inout STATE: gmp_randstate_t, SIZE: c_ulong);
-  _extern proc gmp_randinit_set(inout ROP: gmp_randstate_t, inout OP: gmp_randstate_t);
-  _extern proc gmp_randclear(inout STATE: gmp_randstate_t);
+  extern proc gmp_randinit_default(inout STATE: gmp_randstate_t);
+  extern proc gmp_randinit_mt(inout STATE: gmp_randstate_t);
+  extern proc gmp_randinit_lc_2exp(inout STATE: gmp_randstate_t, inout A:mpz_t, C: c_ulong, M2EXP: c_ulong);
+  extern proc gmp_randinit_lc_2exp_size(inout STATE: gmp_randstate_t, SIZE: c_ulong);
+  extern proc gmp_randinit_set(inout ROP: gmp_randstate_t, inout OP: gmp_randstate_t);
+  extern proc gmp_randclear(inout STATE: gmp_randstate_t);
 
   // Initializing integers
-  _extern proc mpz_init2(inout X: mpz_t, N: c_ulong);
-  _extern proc mpz_init(inout X: mpz_t);
-  _extern proc mpz_clear(inout X: mpz_t);
-  _extern proc mpz_realloc2(inout X: mpz_t, NBITS: c_ulong);
+  extern proc mpz_init2(inout X: mpz_t, N: c_ulong);
+  extern proc mpz_init(inout X: mpz_t);
+  extern proc mpz_clear(inout X: mpz_t);
+  extern proc mpz_realloc2(inout X: mpz_t, NBITS: c_ulong);
 
   // Assignment functions
-  _extern proc mpz_set(inout ROP: mpz_t, OP: mpz_t);
-  _extern proc mpz_set_ui(inout ROP: mpz_t, OP: c_ulong);
-  _extern proc mpz_set_si(inout ROP: mpz_t, OP: c_long);
-  _extern proc mpz_set_d(inout ROP: mpz_t, OP: c_double);
+  extern proc mpz_set(inout ROP: mpz_t, OP: mpz_t);
+  extern proc mpz_set_ui(inout ROP: mpz_t, OP: c_ulong);
+  extern proc mpz_set_si(inout ROP: mpz_t, OP: c_long);
+  extern proc mpz_set_d(inout ROP: mpz_t, OP: c_double);
   // mpz_set_q once rationals are supported
   // mpz_set_f once mpf supported
-  _extern proc mpz_set_str(inout ROP: mpz_t, STR: string, BASE: int);
-  _extern proc mpz_swap(inout ROP1: mpz_t, inout ROP2: mpz_t);
+  extern proc mpz_set_str(inout ROP: mpz_t, STR: string, BASE: int);
+  extern proc mpz_swap(inout ROP1: mpz_t, inout ROP2: mpz_t);
 
   // Combined initialization and setting
-  _extern proc mpz_init_set(inout ROP: mpz_t, inout OP:mpz_t);
-  _extern proc mpz_init_set_ui(inout ROP: mpz_t, OP:c_ulong);
-  _extern proc mpz_init_set_si(inout ROP: mpz_t, OP:c_long);
-  _extern proc mpz_init_set_d(inout ROP: mpz_t, OP:c_double);
-  _extern proc mpz_init_set_str(inout ROP: mpz_t, STR: string, BASE:c_int):c_int;
+  extern proc mpz_init_set(inout ROP: mpz_t, inout OP:mpz_t);
+  extern proc mpz_init_set_ui(inout ROP: mpz_t, OP:c_ulong);
+  extern proc mpz_init_set_si(inout ROP: mpz_t, OP:c_long);
+  extern proc mpz_init_set_d(inout ROP: mpz_t, OP:c_double);
+  extern proc mpz_init_set_str(inout ROP: mpz_t, STR: string, BASE:c_int):c_int;
 
   // Conversion functions
-  _extern proc mpz_get_ui(inout OP: mpz_t): c_ulong;
-  _extern proc mpz_get_si(inout OP: mpz_t): c_long;
-  _extern proc mpz_get_d(inout OP: mpz_t): c_double;
-  _extern proc mpz_get_d_2exp(inout exp:c_long, inout OP: mpz_t): c_double;
-  _extern proc mpz_get_str(STR:string, BASE:c_int, inout OP: mpz_t): string;
+  extern proc mpz_get_ui(inout OP: mpz_t): c_ulong;
+  extern proc mpz_get_si(inout OP: mpz_t): c_long;
+  extern proc mpz_get_d(inout OP: mpz_t): c_double;
+  extern proc mpz_get_d_2exp(inout exp:c_long, inout OP: mpz_t): c_double;
+  extern proc mpz_get_str(STR:string, BASE:c_int, inout OP: mpz_t): string;
 
 
   // Arithmetic functions
-  _extern proc mpz_add(inout ROP: mpz_t, inout OP1: mpz_t, inout OP2: mpz_t);
-  _extern proc mpz_add_ui(inout ROP: mpz_t, inout OP1: mpz_t, OP2: c_ulong);
+  extern proc mpz_add(inout ROP: mpz_t, inout OP1: mpz_t, inout OP2: mpz_t);
+  extern proc mpz_add_ui(inout ROP: mpz_t, inout OP1: mpz_t, OP2: c_ulong);
 
-  _extern proc mpz_sub(inout ROP: mpz_t, inout OP1: mpz_t, inout OP2: mpz_t);
-  _extern proc mpz_sub_ui(inout ROP: mpz_t, inout OP1: mpz_t, OP2: c_ulong);
-  _extern proc mpz_ui_sub(inout ROP: mpz_t, OP1: c_ulong, inout OP2: mpz_t);
+  extern proc mpz_sub(inout ROP: mpz_t, inout OP1: mpz_t, inout OP2: mpz_t);
+  extern proc mpz_sub_ui(inout ROP: mpz_t, inout OP1: mpz_t, OP2: c_ulong);
+  extern proc mpz_ui_sub(inout ROP: mpz_t, OP1: c_ulong, inout OP2: mpz_t);
 
-  _extern proc mpz_mul(inout ROP: mpz_t, inout OP1: mpz_t, inout OP2: mpz_t);
-  _extern proc mpz_mul_si(inout ROP: mpz_t, inout OP1: mpz_t, OP2: c_long);
-  _extern proc mpz_mul_ui(inout ROP: mpz_t, inout OP1: mpz_t, OP2: c_ulong);
+  extern proc mpz_mul(inout ROP: mpz_t, inout OP1: mpz_t, inout OP2: mpz_t);
+  extern proc mpz_mul_si(inout ROP: mpz_t, inout OP1: mpz_t, OP2: c_long);
+  extern proc mpz_mul_ui(inout ROP: mpz_t, inout OP1: mpz_t, OP2: c_ulong);
 
-  _extern proc mpz_addmul(inout ROP: mpz_t, inout OP1: mpz_t, inout OP2: mpz_t);
-  _extern proc mpz_addmul_ui(inout ROP: mpz_t, inout OP1: mpz_t, inout OP2: c_ulong);
+  extern proc mpz_addmul(inout ROP: mpz_t, inout OP1: mpz_t, inout OP2: mpz_t);
+  extern proc mpz_addmul_ui(inout ROP: mpz_t, inout OP1: mpz_t, inout OP2: c_ulong);
 
-  _extern proc mpz_submul(inout ROP: mpz_t, inout OP1: mpz_t, inout OP2: mpz_t);
-  _extern proc mpz_submul_ui(inout ROP: mpz_t, inout OP1: mpz_t, OP2: c_ulong);
+  extern proc mpz_submul(inout ROP: mpz_t, inout OP1: mpz_t, inout OP2: mpz_t);
+  extern proc mpz_submul_ui(inout ROP: mpz_t, inout OP1: mpz_t, OP2: c_ulong);
 
-  _extern proc mpz_mul_2exp(inout ROP: mpz_t, inout OP1: mpz_t, OP2: c_ulong);
+  extern proc mpz_mul_2exp(inout ROP: mpz_t, inout OP1: mpz_t, OP2: c_ulong);
 
-  _extern proc mpz_neg(inout ROP: mpz_t, inout OP: mpz_t);
-  _extern proc mpz_abs(inout ROP: mpz_t, inout OP: mpz_t);
+  extern proc mpz_neg(inout ROP: mpz_t, inout OP: mpz_t);
+  extern proc mpz_abs(inout ROP: mpz_t, inout OP: mpz_t);
 
   // Division Functions
-  _extern proc mpz_cdiv_q(inout Q: mpz_t, inout N: mpz_t, inout D: mpz_t);
-  _extern proc mpz_fdiv_q(inout Q: mpz_t, inout N: mpz_t, inout D: mpz_t);
-  _extern proc mpz_tdiv_q(inout Q: mpz_t, inout N: mpz_t, inout D: mpz_t);
+  extern proc mpz_cdiv_q(inout Q: mpz_t, inout N: mpz_t, inout D: mpz_t);
+  extern proc mpz_fdiv_q(inout Q: mpz_t, inout N: mpz_t, inout D: mpz_t);
+  extern proc mpz_tdiv_q(inout Q: mpz_t, inout N: mpz_t, inout D: mpz_t);
 
-  _extern proc mpz_cdiv_r(inout R: mpz_t, inout N: mpz_t, inout D: mpz_t);
-  _extern proc mpz_fdiv_r(inout R: mpz_t, inout N: mpz_t, inout D: mpz_t);
-  _extern proc mpz_tdiv_r(inout R: mpz_t, inout N: mpz_t, inout D: mpz_t);
+  extern proc mpz_cdiv_r(inout R: mpz_t, inout N: mpz_t, inout D: mpz_t);
+  extern proc mpz_fdiv_r(inout R: mpz_t, inout N: mpz_t, inout D: mpz_t);
+  extern proc mpz_tdiv_r(inout R: mpz_t, inout N: mpz_t, inout D: mpz_t);
 
-  _extern proc mpz_cdiv_qr(inout Q: mpz_t, inout R: mpz_t, inout N: mpz_t, inout D: mpz_t);
-  _extern proc mpz_fdiv_qr(inout Q: mpz_t, inout R: mpz_t, inout N: mpz_t, inout D: mpz_t);
-  _extern proc mpz_tdiv_qr(inout Q: mpz_t, inout R: mpz_t, inout N: mpz_t, inout D: mpz_t);
+  extern proc mpz_cdiv_qr(inout Q: mpz_t, inout R: mpz_t, inout N: mpz_t, inout D: mpz_t);
+  extern proc mpz_fdiv_qr(inout Q: mpz_t, inout R: mpz_t, inout N: mpz_t, inout D: mpz_t);
+  extern proc mpz_tdiv_qr(inout Q: mpz_t, inout R: mpz_t, inout N: mpz_t, inout D: mpz_t);
 
-  _extern proc mpz_cdiv_q_ui(inout Q: mpz_t, inout N: mpz_t, D: c_ulong):c_ulong;
-  _extern proc mpz_fdiv_q_ui(inout Q: mpz_t, inout N: mpz_t, D: c_ulong):c_ulong;
-  _extern proc mpz_tdiv_q_ui(inout Q: mpz_t, inout N: mpz_t, D: c_ulong):c_ulong;
+  extern proc mpz_cdiv_q_ui(inout Q: mpz_t, inout N: mpz_t, D: c_ulong):c_ulong;
+  extern proc mpz_fdiv_q_ui(inout Q: mpz_t, inout N: mpz_t, D: c_ulong):c_ulong;
+  extern proc mpz_tdiv_q_ui(inout Q: mpz_t, inout N: mpz_t, D: c_ulong):c_ulong;
 
-  _extern proc mpz_cdiv_r_ui(inout R: mpz_t, inout N: mpz_t, D: c_ulong):c_ulong;
-  _extern proc mpz_fdiv_r_ui(inout R: mpz_t, inout N: mpz_t, D: c_ulong):c_ulong;
-  _extern proc mpz_tdiv_r_ui(inout R: mpz_t, inout N: mpz_t, D: c_ulong):c_ulong;
+  extern proc mpz_cdiv_r_ui(inout R: mpz_t, inout N: mpz_t, D: c_ulong):c_ulong;
+  extern proc mpz_fdiv_r_ui(inout R: mpz_t, inout N: mpz_t, D: c_ulong):c_ulong;
+  extern proc mpz_tdiv_r_ui(inout R: mpz_t, inout N: mpz_t, D: c_ulong):c_ulong;
 
 
-  _extern proc mpz_cdiv_qr_ui(inout Q: mpz_t, inout R: mpz_t, inout N: mpz_t, D: c_ulong):c_ulong;
-  _extern proc mpz_fdiv_qr_ui(inout Q: mpz_t, inout R: mpz_t, inout N: mpz_t, D: c_ulong):c_ulong;
-  _extern proc mpz_tdiv_qr_ui(inout Q: mpz_t, inout R: mpz_t, inout N: mpz_t, D: c_ulong):c_ulong;
+  extern proc mpz_cdiv_qr_ui(inout Q: mpz_t, inout R: mpz_t, inout N: mpz_t, D: c_ulong):c_ulong;
+  extern proc mpz_fdiv_qr_ui(inout Q: mpz_t, inout R: mpz_t, inout N: mpz_t, D: c_ulong):c_ulong;
+  extern proc mpz_tdiv_qr_ui(inout Q: mpz_t, inout R: mpz_t, inout N: mpz_t, D: c_ulong):c_ulong;
 
-  _extern proc mpz_cdiv_ui(inout N: mpz_t, D: c_ulong):c_ulong;
-  _extern proc mpz_fdiv_ui(inout N: mpz_t, D: c_ulong):c_ulong;
-  _extern proc mpz_tdiv_ui(inout N: mpz_t, D: c_ulong):c_ulong;
+  extern proc mpz_cdiv_ui(inout N: mpz_t, D: c_ulong):c_ulong;
+  extern proc mpz_fdiv_ui(inout N: mpz_t, D: c_ulong):c_ulong;
+  extern proc mpz_tdiv_ui(inout N: mpz_t, D: c_ulong):c_ulong;
 
-  _extern proc mpz_cdiv_q_2exp(inout Q:mpz_t, inout N: mpz_t, B: c_ulong);
-  _extern proc mpz_fdiv_q_2exp(inout Q:mpz_t, inout N: mpz_t, B: c_ulong);
-  _extern proc mpz_tdiv_q_2exp(inout Q:mpz_t, inout N: mpz_t, B: c_ulong);
+  extern proc mpz_cdiv_q_2exp(inout Q:mpz_t, inout N: mpz_t, B: c_ulong);
+  extern proc mpz_fdiv_q_2exp(inout Q:mpz_t, inout N: mpz_t, B: c_ulong);
+  extern proc mpz_tdiv_q_2exp(inout Q:mpz_t, inout N: mpz_t, B: c_ulong);
 
-  _extern proc mpz_cdiv_r_2exp(inout R:mpz_t, inout N: mpz_t, B: c_ulong);
-  _extern proc mpz_fdiv_r_2exp(inout R:mpz_t, inout N: mpz_t, B: c_ulong);
-  _extern proc mpz_tdiv_r_2exp(inout R:mpz_t, inout N: mpz_t, B: c_ulong);
+  extern proc mpz_cdiv_r_2exp(inout R:mpz_t, inout N: mpz_t, B: c_ulong);
+  extern proc mpz_fdiv_r_2exp(inout R:mpz_t, inout N: mpz_t, B: c_ulong);
+  extern proc mpz_tdiv_r_2exp(inout R:mpz_t, inout N: mpz_t, B: c_ulong);
 
-  _extern proc mpz_mod(inout R: mpz_t, inout N: mpz_t, inout D:mpz_t);
-  _extern proc mpz_mod_ui(inout R: mpz_t, inout N: mpz_t, D:c_ulong):c_ulong;
+  extern proc mpz_mod(inout R: mpz_t, inout N: mpz_t, inout D:mpz_t);
+  extern proc mpz_mod_ui(inout R: mpz_t, inout N: mpz_t, D:c_ulong):c_ulong;
 
-  _extern proc mpz_divexact(inout Q: mpz_t, inout N: mpz_t, inout D:mpz_t);
-  _extern proc mpz_divexact_ui(inout Q: mpz_t, inout N: mpz_t, D:c_ulong);
+  extern proc mpz_divexact(inout Q: mpz_t, inout N: mpz_t, inout D:mpz_t);
+  extern proc mpz_divexact_ui(inout Q: mpz_t, inout N: mpz_t, D:c_ulong);
 
-  _extern proc mpz_divisible_p(inout N: mpz_t, inout D:mpz_t):c_int;
-  _extern proc mpz_divisible_ui_p(inout N: mpz_t, D:c_ulong):c_int;
-  _extern proc mpz_divisible_2exp_p(inout N: mpz_t, B:c_ulong):c_int;
+  extern proc mpz_divisible_p(inout N: mpz_t, inout D:mpz_t):c_int;
+  extern proc mpz_divisible_ui_p(inout N: mpz_t, D:c_ulong):c_int;
+  extern proc mpz_divisible_2exp_p(inout N: mpz_t, B:c_ulong):c_int;
 
-  _extern proc mpz_conguent_p(inout N: mpz_t, inout C:mpz_t, inout D:mpz_t):c_int;
-  _extern proc mpz_congruent_ui_p(inout N: mpz_t, inout C:c_ulong, D:c_ulong):c_int;
-  _extern proc mpz_congruent_2exp_p(inout N: mpz_t, inout C:mpz_t, B:c_int):c_int;
+  extern proc mpz_conguent_p(inout N: mpz_t, inout C:mpz_t, inout D:mpz_t):c_int;
+  extern proc mpz_congruent_ui_p(inout N: mpz_t, inout C:c_ulong, D:c_ulong):c_int;
+  extern proc mpz_congruent_2exp_p(inout N: mpz_t, inout C:mpz_t, B:c_int):c_int;
 
   // Exponentiation Functions
-  _extern proc mpz_powm(inout ROP: mpz_t, inout BASE: mpz_t, inout EXP: mpz_t, inout MOD: mpz_t);
-  _extern proc mpz_powm_ui(inout ROP: mpz_t, inout BASE: mpz_t, EXP: c_ulong, inout MOD: mpz_t);
-  _extern proc mpz_pow_ui(inout ROP: mpz_t, inout BASE: mpz_t, EXP: c_ulong);
-  _extern proc mpz_ui_pow_ui(inout ROP: mpz_t, inout BASE: c_ulong, EXP: c_ulong);
+  extern proc mpz_powm(inout ROP: mpz_t, inout BASE: mpz_t, inout EXP: mpz_t, inout MOD: mpz_t);
+  extern proc mpz_powm_ui(inout ROP: mpz_t, inout BASE: mpz_t, EXP: c_ulong, inout MOD: mpz_t);
+  extern proc mpz_pow_ui(inout ROP: mpz_t, inout BASE: mpz_t, EXP: c_ulong);
+  extern proc mpz_ui_pow_ui(inout ROP: mpz_t, inout BASE: c_ulong, EXP: c_ulong);
 
   // Root Extraction Functions
-  _extern proc mpz_root(inout ROP: mpz_t, inout OP: mpz_t, N: c_ulong): c_int;
-  _extern proc mpz_rootrem(inout ROOT: mpz_t, inout REM: mpz_t, inout U: mpz_t, N: c_ulong);
-  _extern proc mpz_sqrt(inout ROP: mpz_t, inout OP: mpz_t);
-  _extern proc mpz_sqrtrem(inout ROP1: mpz_t, inout ROP2: mpz_t, inout OP: mpz_t);
-  _extern proc mpz_perfect_power_p(inout OP: mpz_t):c_int;
-  _extern proc mpz_perfect_square_p(inout OP: mpz_t):c_int;
+  extern proc mpz_root(inout ROP: mpz_t, inout OP: mpz_t, N: c_ulong): c_int;
+  extern proc mpz_rootrem(inout ROOT: mpz_t, inout REM: mpz_t, inout U: mpz_t, N: c_ulong);
+  extern proc mpz_sqrt(inout ROP: mpz_t, inout OP: mpz_t);
+  extern proc mpz_sqrtrem(inout ROP1: mpz_t, inout ROP2: mpz_t, inout OP: mpz_t);
+  extern proc mpz_perfect_power_p(inout OP: mpz_t):c_int;
+  extern proc mpz_perfect_square_p(inout OP: mpz_t):c_int;
 
   // Number Theoretic Functions
-  _extern proc mpz_probab_prime_p(inout N: mpz_t, REPS: c_int): c_int;
-  _extern proc mpz_nextprime(inout ROP: mpz_t, inout OP: mpz_t);
-  _extern proc mpz_gcd(inout ROP: mpz_t, inout OP1: mpz_t, inout OP2: mpz_t);
-  _extern proc mpz_gcd_ui(inout ROP: mpz_t, inout OP1: mpz_t, OP2: c_ulong);
+  extern proc mpz_probab_prime_p(inout N: mpz_t, REPS: c_int): c_int;
+  extern proc mpz_nextprime(inout ROP: mpz_t, inout OP: mpz_t);
+  extern proc mpz_gcd(inout ROP: mpz_t, inout OP1: mpz_t, inout OP2: mpz_t);
+  extern proc mpz_gcd_ui(inout ROP: mpz_t, inout OP1: mpz_t, OP2: c_ulong);
 
-  _extern proc mpz_gcdext(inout G: mpz_t, inout S: mpz_t, inout T: mpz_t, inout A: mpz_t, inout B: mpz_t);
-  _extern proc mpz_lcm(inout ROP: mpz_t, inout OP1: mpz_t, inout OP2: mpz_t);
-  _extern proc mpz_lcm_ui(inout ROP: mpz_t, inout OP1: mpz_t, OP2: c_ulong);
-  _extern proc mpz_invert(inout ROP: mpz_t, inout OP1: mpz_t, inout OP2: mpz_t):c_int;
-  _extern proc mpz_jacobi(inout A: mpz_t, inout B: mpz_t):c_int;
-  _extern proc mpz_legendre(inout A: mpz_t, inout P: mpz_t):c_int;
-  _extern proc mpz_kronecker(inout A: mpz_t, inout B: mpz_t):c_int;
-  _extern proc mpz_kronecker_si(inout A: mpz_t, B: c_long):c_int;
-  _extern proc mpz_kronecker_ui(inout A: mpz_t, B: c_ulong):c_int;
-  _extern proc mpz_si_kronecker(A: c_long, inout B: mpz_t):c_int;
-  _extern proc mpz_ui_kronecker(A: c_ulong, inout B: mpz_t):c_int;
+  extern proc mpz_gcdext(inout G: mpz_t, inout S: mpz_t, inout T: mpz_t, inout A: mpz_t, inout B: mpz_t);
+  extern proc mpz_lcm(inout ROP: mpz_t, inout OP1: mpz_t, inout OP2: mpz_t);
+  extern proc mpz_lcm_ui(inout ROP: mpz_t, inout OP1: mpz_t, OP2: c_ulong);
+  extern proc mpz_invert(inout ROP: mpz_t, inout OP1: mpz_t, inout OP2: mpz_t):c_int;
+  extern proc mpz_jacobi(inout A: mpz_t, inout B: mpz_t):c_int;
+  extern proc mpz_legendre(inout A: mpz_t, inout P: mpz_t):c_int;
+  extern proc mpz_kronecker(inout A: mpz_t, inout B: mpz_t):c_int;
+  extern proc mpz_kronecker_si(inout A: mpz_t, B: c_long):c_int;
+  extern proc mpz_kronecker_ui(inout A: mpz_t, B: c_ulong):c_int;
+  extern proc mpz_si_kronecker(A: c_long, inout B: mpz_t):c_int;
+  extern proc mpz_ui_kronecker(A: c_ulong, inout B: mpz_t):c_int;
 
-  _extern proc mpz_remove(inout ROP: mpz_t, inout OP: mpz_t, inout F: mpz_t):c_ulong;
-  _extern proc mpz_fac_ui(inout ROP: mpz_t, OP: c_ulong);
-  _extern proc mpz_bin_ui(inout ROP: mpz_t, N: mpz_t, K: c_ulong);
-  _extern proc mpz_bin_uiui(inout ROP: mpz_t, N: c_ulong, K: c_ulong);
-  _extern proc mpz_fib_ui(inout FN: mpz_t, N: c_ulong);
-  _extern proc mpz_fib2_ui(inout FN: mpz_t, FNSUB1: mpz_t, N: c_ulong);
-  _extern proc mpz_lucnum_ui(inout LN: mpz_t, N: c_ulong);
-  _extern proc mpz_lucnum2_ui(inout LN: mpz_t, LNSUB1: mpz_t, N: c_ulong);
+  extern proc mpz_remove(inout ROP: mpz_t, inout OP: mpz_t, inout F: mpz_t):c_ulong;
+  extern proc mpz_fac_ui(inout ROP: mpz_t, OP: c_ulong);
+  extern proc mpz_bin_ui(inout ROP: mpz_t, N: mpz_t, K: c_ulong);
+  extern proc mpz_bin_uiui(inout ROP: mpz_t, N: c_ulong, K: c_ulong);
+  extern proc mpz_fib_ui(inout FN: mpz_t, N: c_ulong);
+  extern proc mpz_fib2_ui(inout FN: mpz_t, FNSUB1: mpz_t, N: c_ulong);
+  extern proc mpz_lucnum_ui(inout LN: mpz_t, N: c_ulong);
+  extern proc mpz_lucnum2_ui(inout LN: mpz_t, LNSUB1: mpz_t, N: c_ulong);
 
   // Comparison Functions
-  _extern proc mpz_cmp(inout OP1: mpz_t, inout OP2: mpz_t) : int;
-  _extern proc mpz_cmp_d(inout OP1: mpz_t, OP2: c_double) : int;
-  _extern proc mpz_cmp_si(inout OP1: mpz_t, OP2: c_long) : int;
-  _extern proc mpz_cmp_ui(inout OP1: mpz_t, OP2: c_ulong) : int;
-  _extern proc mpz_cmpabs(inout OP1: mpz_t, inout OP2: mpz_t) : int;
-  _extern proc mpz_cmpabs_d(inout OP1: mpz_t, OP2: c_double) : int;
-  _extern proc mpz_cmpabs_ui(inout OP1: mpz_t, OP2: c_ulong) : int;
+  extern proc mpz_cmp(inout OP1: mpz_t, inout OP2: mpz_t) : int;
+  extern proc mpz_cmp_d(inout OP1: mpz_t, OP2: c_double) : int;
+  extern proc mpz_cmp_si(inout OP1: mpz_t, OP2: c_long) : int;
+  extern proc mpz_cmp_ui(inout OP1: mpz_t, OP2: c_ulong) : int;
+  extern proc mpz_cmpabs(inout OP1: mpz_t, inout OP2: mpz_t) : int;
+  extern proc mpz_cmpabs_d(inout OP1: mpz_t, OP2: c_double) : int;
+  extern proc mpz_cmpabs_ui(inout OP1: mpz_t, OP2: c_ulong) : int;
   
-  _extern proc mpz_sgn(inout OP: mpz_t): int;
+  extern proc mpz_sgn(inout OP: mpz_t): int;
 
   // Logical and Bit Manipulation Functions
-  _extern proc mpz_and(inout ROP: mpz_t, inout OP1: mpz_t, inout OP2: mpz_t);
-  _extern proc mpz_ior(inout ROP: mpz_t, inout OP1: mpz_t, inout OP2: mpz_t);
-  _extern proc mpz_xor(inout ROP: mpz_t, inout OP1: mpz_t, inout OP2: mpz_t);
-  _extern proc mpz_com(inout ROP: mpz_t, inout OP: mpz_t);
-  _extern proc mpz_popcount(inout OP: mpz_t):c_ulong;
-  _extern proc mpz_hamdist(inout OP1: mpz_t, inout OP2: mpz_t):c_ulong;
-  _extern proc mpz_scan0(inout OP: mpz_t, STARTING_BIT:c_ulong):c_ulong;
-  _extern proc mpz_scan1(inout OP: mpz_t, STARTING_BIT:c_ulong):c_ulong;
-  _extern proc mpz_setbit(inout ROP: mpz_t, BIT_INDEX:c_ulong);
-  _extern proc mpz_clrbit(inout ROP: mpz_t, BIT_INDEX:c_ulong);
-  _extern proc mpz_combit(inout ROP: mpz_t, BIT_INDEX:c_ulong);
-  _extern proc mpz_tstbit(inout OP: mpz_t, BIT_INDEX:c_ulong):c_int;
+  extern proc mpz_and(inout ROP: mpz_t, inout OP1: mpz_t, inout OP2: mpz_t);
+  extern proc mpz_ior(inout ROP: mpz_t, inout OP1: mpz_t, inout OP2: mpz_t);
+  extern proc mpz_xor(inout ROP: mpz_t, inout OP1: mpz_t, inout OP2: mpz_t);
+  extern proc mpz_com(inout ROP: mpz_t, inout OP: mpz_t);
+  extern proc mpz_popcount(inout OP: mpz_t):c_ulong;
+  extern proc mpz_hamdist(inout OP1: mpz_t, inout OP2: mpz_t):c_ulong;
+  extern proc mpz_scan0(inout OP: mpz_t, STARTING_BIT:c_ulong):c_ulong;
+  extern proc mpz_scan1(inout OP: mpz_t, STARTING_BIT:c_ulong):c_ulong;
+  extern proc mpz_setbit(inout ROP: mpz_t, BIT_INDEX:c_ulong);
+  extern proc mpz_clrbit(inout ROP: mpz_t, BIT_INDEX:c_ulong);
+  extern proc mpz_combit(inout ROP: mpz_t, BIT_INDEX:c_ulong);
+  extern proc mpz_tstbit(inout OP: mpz_t, BIT_INDEX:c_ulong):c_int;
 
   // Input and Output Functions
 
   // Random Number Functions
-  _extern proc mpz_urandomb(inout ROP: mpz_t, STATE: gmp_randstate_t, N: c_ulong);
-  _extern proc mpz_urandomm(inout ROP: mpz_t, STATE: gmp_randstate_t, N: mpz_t);
-  _extern proc mpz_urandomb(inout ROP: mpz_t, STATE: gmp_randstate_t, N: c_ulong);
+  extern proc mpz_urandomb(inout ROP: mpz_t, STATE: gmp_randstate_t, N: c_ulong);
+  extern proc mpz_urandomm(inout ROP: mpz_t, STATE: gmp_randstate_t, N: mpz_t);
+  extern proc mpz_urandomb(inout ROP: mpz_t, STATE: gmp_randstate_t, N: c_ulong);
 
   // Integer import and export
 
 
   // Miscellaneous Functions
-  _extern proc mpz_fits_ulong_p(inout OP: mpz_t): c_int;
-  _extern proc mpz_fits_slong_p(inout OP: mpz_t): c_int;
-  _extern proc mpz_fits_uint_p(inout OP: mpz_t): c_int;
-  _extern proc mpz_fits_sint_p(inout OP: mpz_t): c_int;
-  _extern proc mpz_fits_ushort_p(inout OP: mpz_t): c_int;
-  _extern proc mpz_fits_sshort_p(inout OP: mpz_t): c_int;
+  extern proc mpz_fits_ulong_p(inout OP: mpz_t): c_int;
+  extern proc mpz_fits_slong_p(inout OP: mpz_t): c_int;
+  extern proc mpz_fits_uint_p(inout OP: mpz_t): c_int;
+  extern proc mpz_fits_sint_p(inout OP: mpz_t): c_int;
+  extern proc mpz_fits_ushort_p(inout OP: mpz_t): c_int;
+  extern proc mpz_fits_sshort_p(inout OP: mpz_t): c_int;
 
-  _extern proc mpz_odd_p(inout OP: mpz_t): c_int;
-  _extern proc mpz_even_p(inout OP: mpz_t): c_int;
-  _extern proc mpz_sizeinbase(inout OP: mpz_t, BASE: c_int): size_t;
+  extern proc mpz_odd_p(inout OP: mpz_t): c_int;
+  extern proc mpz_even_p(inout OP: mpz_t): c_int;
+  extern proc mpz_sizeinbase(inout OP: mpz_t, BASE: c_int): size_t;
 
-  _extern proc mpf_set_default_prec(PREC: mp_bitcnt_t);
+  extern proc mpf_set_default_prec(PREC: mp_bitcnt_t);
 
-  _extern proc mpz_addmul_ui(inout ROP: mpz_t, inout OP1: mpz_t, OPT2: c_ulong);
+  extern proc mpz_addmul_ui(inout ROP: mpz_t, inout OP1: mpz_t, OPT2: c_ulong);
 
   // floating-point functions
-  _extern proc mpf_init(inout X: mpf_t);
-  _extern proc mpf_set_z(inout ROP: mpf_t, inout OP: mpz_t);
-  _extern proc mpf_get_prec(inout OP: mpf_t): mp_bitcnt_t;
-  _extern proc mpf_get_d(inout OP: mpf_t): c_double;
-  _extern proc mpf_set_d(inout ROP: mpf_t, OP: c_double);
-  _extern proc mpf_set_prec_raw(inout ROP: mpf_t, PREC: mp_bitcnt_t);
-  _extern proc mpf_ui_div(inout ROP: mpf_t, OP1: c_ulong, inout OP2: mpf_t);
-  _extern proc mpf_mul(inout ROP: mpf_t, inout OP1: mpf_t, inout OP2: mpf_t);
-  _extern proc mpf_ui_sub(inout ROP: mpf_t, OP1: c_ulong, inout OP2: mpf_t);
-  _extern proc mpf_add(inout ROP: mpf_t, inout OP1: mpf_t, inout OP2: mpf_t);
-  _extern proc mpf_sub(inout ROP: mpf_t, inout OP1: mpf_t, inout OP2: mpf_t);
-  _extern proc mpf_mul_ui(inout ROP: mpf_t, inout OP1: mpf_t, OP2: c_ulong);
-  _extern proc mpf_div_2exp(inout ROP: mpf_t, inout OP1: mpf_t, OP2: mp_bitcnt_t);
-  _extern proc mpf_out_str(STREAM: _file, BASE: c_int, N_DIGITS: size_t, inout OP: mpf_t);
-  _extern proc mpf_clear(inout X: mpf_t);
+  extern proc mpf_init(inout X: mpf_t);
+  extern proc mpf_set_z(inout ROP: mpf_t, inout OP: mpz_t);
+  extern proc mpf_get_prec(inout OP: mpf_t): mp_bitcnt_t;
+  extern proc mpf_get_d(inout OP: mpf_t): c_double;
+  extern proc mpf_set_d(inout ROP: mpf_t, OP: c_double);
+  extern proc mpf_set_prec_raw(inout ROP: mpf_t, PREC: mp_bitcnt_t);
+  extern proc mpf_ui_div(inout ROP: mpf_t, OP1: c_ulong, inout OP2: mpf_t);
+  extern proc mpf_mul(inout ROP: mpf_t, inout OP1: mpf_t, inout OP2: mpf_t);
+  extern proc mpf_ui_sub(inout ROP: mpf_t, OP1: c_ulong, inout OP2: mpf_t);
+  extern proc mpf_add(inout ROP: mpf_t, inout OP1: mpf_t, inout OP2: mpf_t);
+  extern proc mpf_sub(inout ROP: mpf_t, inout OP1: mpf_t, inout OP2: mpf_t);
+  extern proc mpf_mul_ui(inout ROP: mpf_t, inout OP1: mpf_t, OP2: c_ulong);
+  extern proc mpf_div_2exp(inout ROP: mpf_t, inout OP1: mpf_t, OP2: mp_bitcnt_t);
+  extern proc mpf_out_str(STREAM: _file, BASE: c_int, N_DIGITS: size_t, inout OP: mpf_t);
+  extern proc mpf_clear(inout X: mpf_t);
 
 
   // printf/scanf
-  _extern proc gmp_printf(fmt: string, arg...);
-  _extern proc gmp_fprintf(fp: _file, fmt: string, arg...);
-  _extern proc gmp_fprintf(fp: _file, fmt: string, arg...);
-  _extern proc gmp_asprintf(inout ret: string, fmt: string, arg...);
+  extern proc gmp_printf(fmt: string, arg...);
+  extern proc gmp_fprintf(fp: _file, fmt: string, arg...);
+  extern proc gmp_fprintf(fp: _file, fmt: string, arg...);
+  extern proc gmp_asprintf(inout ret: string, fmt: string, arg...);
 
 
 
-  _extern proc chpl_gmp_init();
-  _extern proc chpl_gmp_get_mpz(inout ret:mpz_t,src_local:int(32),from:__mpz_struct);
-  _extern proc chpl_gmp_get_randstate(not_inited_state:gmp_randstate_t, src_locale:int(32), from:__gmp_randstate_struct);
-  _extern proc chpl_gmp_mpz_nlimbs(from:__mpz_struct):uint(64);
-  _extern proc chpl_gmp_mpz_print(x:mpz_t);
-  _extern proc chpl_gmp_mpz_get_str(base: int(32), x:mpz_t):string;
+  extern proc chpl_gmp_init();
+  extern proc chpl_gmp_get_mpz(inout ret:mpz_t,src_local:int(32),from:__mpz_struct);
+  extern proc chpl_gmp_get_randstate(not_inited_state:gmp_randstate_t, src_locale:int(32), from:__gmp_randstate_struct);
+  extern proc chpl_gmp_mpz_nlimbs(from:__mpz_struct):uint(64);
+  extern proc chpl_gmp_mpz_print(x:mpz_t);
+  extern proc chpl_gmp_mpz_get_str(base: int(32), x:mpz_t):string;
 
 
   enum Round {

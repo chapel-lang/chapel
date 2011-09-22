@@ -18,7 +18,7 @@ module Graph500_main
   const D: real = 0.05;
 
 
-  _extern proc output_results (scale: int, NV: int, edgefactor:int,
+  extern proc output_results (scale: int, NV: int, edgefactor:int,
                 const A: real, const B: real, const C: real, const D: real,
                 generation_time: real, construction_time: real,
                 nbfs: int, 

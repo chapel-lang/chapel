@@ -1,4 +1,0 @@
-#!/bin/sh
-
-mv $1.exec.out.tmp $1.prediff.tmp
-./sortN.pl -n 5 $1.prediff.tmp > $1.exec.out.tmp

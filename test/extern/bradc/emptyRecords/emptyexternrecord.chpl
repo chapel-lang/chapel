@@ -1,10 +1,10 @@
-_extern record R {
+extern record R {
   // WORKAROUND (uncomment:)
   //  var dummy: int;
 }
 
 var myR: R;
 
-_extern proc foo(myR:R);
+extern proc foo(myR:R);
 
 foo(myR);

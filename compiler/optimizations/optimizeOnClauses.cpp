@@ -100,7 +100,6 @@ isFastPrimitive(CallExpr *call) {
   case PRIM_GET_USER_LINE:
   case PRIM_GET_USER_FILE:
   
-  case PRIM_COUNT_NUM_REALMS:
 #ifdef DEBUG
     printf(" *** OK (default): %s\n", call->primitive->name);
 #endif

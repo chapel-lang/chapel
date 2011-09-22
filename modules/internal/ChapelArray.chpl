@@ -2,6 +2,9 @@ config param noRefCount = false;
 
 var privatizeLock$: sync int;
 
+config param debugBulkTransfer = false;
+config param useBulkTransfer = true;
+
 pragma "privatized class"
 proc _isPrivatized(value) param
   return !_local & ((_privatization & value.dsiSupportsPrivatization()) | value.dsiRequiresPrivatization());
@@ -9,14 +12,14 @@ proc _isPrivatized(value) param
 proc _newPrivatizedClass(value) {
   privatizeLock$.writeEF(true);
   var n = __primitive("chpl_numPrivatizedClasses");
-  var hereID = here.uid;
+  var hereID = here.id;
   const privatizeData = value.dsiGetPrivatizeData();
-  on Realms(0) do
+  on Locales[0] do
     _newPrivatizedClassHelp(value, value, n, hereID, privatizeData);
 
   proc _newPrivatizedClassHelp(parentValue, originalValue, n, hereID, privatizeData) {
     var newValue = originalValue;
-    if hereID != here.uid {
+    if hereID != here.id {
       newValue = parentValue.dsiPrivatize(privatizeData);
       __primitive("chpl_newPrivatizedClass", newValue);
       newValue.pid = n;
@@ -40,13 +43,14 @@ proc _newPrivatizedClass(value) {
 
 proc _reprivatize(value) {
   var pid = value.pid;
-  var hereID = here.uid;
+  var hereID = here.id;
   const reprivatizeData = value.dsiGetReprivatizeData();
-  on Realms(0) do
+  on Locales[0] do
     _reprivatizeHelp(value, value, pid, hereID, reprivatizeData);
+
   proc _reprivatizeHelp(parentValue, originalValue, pid, hereID, reprivatizeData) {
     var newValue = originalValue;
-    if hereID != here.uid {
+    if hereID != here.id {
       newValue = chpl_getPrivatizedCopy(newValue.type, pid);
       newValue.dsiReprivatize(parentValue, reprivatizeData);
     }
@@ -1418,11 +1422,66 @@ proc chpl__serializeAssignment(a: [], b) param {
   return false;
 }
 
+// This must be a param function
+proc chpl__compatibleForBulkTransfer(a:[], b:[]) param {
+  if a.eltType != b.eltType then return false;
+  if !chpl__supportedDataTypeForBulkTransfer(a.eltType) then return false;
+  if a._value.type != b._value.type then return false;
+  if !a._value.dsiSupportsBulkTransfer() then return false;
+  return true;
+}
+
+// This must be a param function
+proc chpl__supportedDataTypeForBulkTransfer(type t) param {
+  var x:t;
+  if !_isPrimitiveType(t) then return false;
+  if t==string then return false;
+  return true;
+  return chpl__supportedDataTypeForBulkTransfer(x);
+}
+proc chpl__supportedDataTypeForBulkTransfer(x: string) param return false;
+proc chpl__supportedDataTypeForBulkTransfer(x: sync) param return false;
+proc chpl__supportedDataTypeForBulkTransfer(x: single) param return false;
+proc chpl__supportedDataTypeForBulkTransfer(x: domain) param return false;
+proc chpl__supportedDataTypeForBulkTransfer(x: []) param return false;
+proc chpl__supportedDataTypeForBulkTransfer(x: _distribution) param return false;
+proc chpl__supportedDataTypeForBulkTransfer(x: object) param return false;
+proc chpl__supportedDataTypeForBulkTransfer(x) param return true;
+
+
+proc chpl__useBulkTransfer(a:[], b:[]) {
+
+  // constraints specific to a particular domain map array type
+  if !a._value.doiCanBulkTransfer() then return false;
+  if !b._value.doiCanBulkTransfer() then return false;
+
+  for param i in 1..a._value.rank {
+    // size must be the same in each dimension
+    if a._value.dom.dsiDim(i).length !=
+       b._value.dom.dsiDim(i).length then return false;
+  }
+
+  return true;
+}
+
+proc chpl__useBulkTransfer(a: [], b) param return false;
+
 pragma "inline" proc =(a: [], b) {
   if (chpl__isArray(b) || chpl__isDomain(b)) && a.rank != b.rank then
     compilerError("rank mismatch in array assignment");
   if chpl__isArray(b) && b._value == nil then
     return a;
+
+  // This outer conditional must result in a param
+  if useBulkTransfer && chpl__isArray(b) &&
+     chpl__compatibleForBulkTransfer(a, b) &&
+    !chpl__serializeAssignment(a, b) {
+    if chpl__useBulkTransfer(a, b) {
+      a._value.doiBulkTransfer(b);
+      return a;
+    }
+  }
+
   if chpl__serializeAssignment(a, b) {
     compilerWarning("whole array assignment has been serialized (see note in $CHPL_HOME/STATUS)");
     for (aa,bb) in (a,b) do
@@ -1484,7 +1543,7 @@ proc =(a: [], b: _desync(a.eltType)) {
     forall e in a do
       e = b;
   } else {
-    compilerWarning("Whole array assignment has been serialized (see note in $CHPL_HOME/STATUS)");
+    compilerWarning("whole array assignment has been serialized (see note in $CHPL_HOME/STATUS)");
     for e in a do
       e = b;
   }
@@ -1854,3 +1913,4 @@ proc chpl__initCopy(ir: _iteratorRecord) {
   D = [1..i-1];
   return A;
 }
+

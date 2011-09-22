@@ -2,7 +2,7 @@
 
 
 // for binary output
-_extern proc putchar(i : int) : int;
+extern proc putchar(i : int) : int;
 
 config const size: int(64) = 200;
 config const iters : uint = 50;

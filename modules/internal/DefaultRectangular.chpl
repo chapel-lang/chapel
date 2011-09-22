@@ -1,5 +1,6 @@
 use DSIUtil;
 config param debugDefaultDist = false;
+config param debugDefaultDistBulkTransfer = false;
 config param debugDataPar = false;
 
 class DefaultDist: BaseDist {
@@ -628,3 +629,93 @@ proc DefaultRectangularArr.dsiSerialWrite(f: Writer) {
   const zeroTup: rank*idxType;
   recursiveArrayWriter(zeroTup);
 }
+
+
+// This is very conservative.  For example, it will return false for
+// 1-d array aliases that are shifted from the aliased array.
+proc DefaultRectangularArr.isDataContiguous() {
+  if debugDefaultDistBulkTransfer then
+    writeln("isDataContiguous(): origin=", origin, " off=", off, " blk=", blk);
+  if origin != 0 then return false;
+
+  for param dim in 1..rank do
+    if off(dim)!= dom.dsiDim(dim).first then return false;
+
+  if blk(rank) != 1 then return false;
+
+  for param dim in 1..rank-1 by -1 do
+    if blk(dim) != blk(dim+1)*dom.dsiDim(dim+1).length then return false;
+
+  if debugDefaultDistBulkTransfer then
+    writeln("\tYES!");
+
+  return true;
+}
+
+proc DefaultRectangularArr.dsiSupportsBulkTransfer() param return true;
+
+proc DefaultRectangularArr.doiCanBulkTransfer() {
+  if dom.stridable then
+    for param i in 1..rank do
+      if dom.ranges(i).stride != 1 then return false;
+
+  if !isDataContiguous() then return false;
+
+  return true;
+}
+
+proc DefaultRectangularArr.doiBulkTransfer(B) {
+  const Adims = dom.dsiDims();
+  var Alo: rank*dom.idxType;
+  for param i in 1..rank do
+    Alo(i) = Adims(i).first;
+
+  const Bdims = B.domain.dims();
+  var Blo: rank*dom.idxType;
+  for param i in 1..rank do
+    Blo(i) = Bdims(i).first;
+
+  const len = dom.dsiNumIndices:int(32);
+  extern proc sizeof(type x): int(32);
+  if debugBulkTransfer {
+    const elemSize: int(32)=sizeof(B._value.eltType);
+    writeln("In doiBulkTransfer(): Alo=", Alo, ", Blo=", Blo,
+            ", len=", len, ", elemSize=", elemSize);
+  }
+
+  // NOTE: This does not work with --heterogeneous, but heterogeneous
+  // compilation does not work right now.  The calls to chpl_comm_get
+  // and chpl_comm_put should be changed once that is fixed.
+  if this.data.locale==here {
+    if debugDefaultDistBulkTransfer then
+      writeln("\tlocal get() from ", B.locale.id);
+    var dest = this.data;
+    var src = B._value.data;
+    __primitive("chpl_comm_get",
+                __primitive("array_get", dest, getDataIndex(Alo)),
+                B._value.data.locale.id,
+                __primitive("array_get", src, B._value.getDataIndex(Blo)),
+                len);
+  } else if B._value.data.locale==here {
+    if debugDefaultDistBulkTransfer then
+      writeln("\tlocal put() to ", this.locale.id);
+    var dest = this.data;
+    var src = B._value.data;
+    __primitive("chpl_comm_put",
+                __primitive("array_get", src, B._value.getDataIndex(Blo)),
+                this.data.locale.id,
+                __primitive("array_get", dest, getDataIndex(Alo)),
+                len);
+  } else on this.data.locale {
+    if debugDefaultDistBulkTransfer then
+      writeln("\tremote get() on ", here.id, " from ", B.locale.id);
+    var dest = this.data;
+    var src = B._value.data;
+    __primitive("chpl_comm_get",
+                __primitive("array_get", dest, getDataIndex(Alo)),
+                B._value.data.locale.id,
+                __primitive("array_get", src, B._value.getDataIndex(Blo)),
+                len);
+  }
+}
+

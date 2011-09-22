@@ -130,11 +130,6 @@ void initConfigVarTable(void) {
   for (i = 0; i < HASHSIZE; i++) {
     configVarTable[i] = NULL;
   }
-  if (chpl_numRealms > 1) {
-    /* This should be a true configuration variable, but we can't
-       handle array configuration variables yet */
-    installConfigVar("localesPerRealm", "array-of-int", "Built-In");
-  }
 }
 
 
@@ -253,9 +248,6 @@ void initSetValue(const char* varName, const char* value,
   }
   if (strcmp(varName, "numLocales") == 0) {
     parseNumLocales(value, lineno, filename);
-  }
-  if (strcmp(varName, "localesPerRealm") == 0) {
-    parseLocalesPerRealm(value, lineno, filename);
   }
   configVar->setValue = chpl_glom_strings(1, value);
 }

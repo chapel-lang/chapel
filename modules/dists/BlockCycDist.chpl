@@ -43,7 +43,7 @@ class BlockCyclic : BaseDist {
 
   proc BlockCyclic(startIdx,  // ?nd*?idxType
                    blocksize,     // nd*int
-                   targetLocales: [] locale = thisRealm.Locales, 
+                   targetLocales: [] locale = Locales, 
                    tasksPerLocale = 0,
                    param rank = startIdx.size,
                    type idxType = startIdx(1).type) {

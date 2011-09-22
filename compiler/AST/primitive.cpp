@@ -438,6 +438,9 @@ initPrimitive() {
   prim_def(PRIM_ARRAY_GET, "array_get", returnInfoArrayIndex, false, true);
   prim_def(PRIM_ARRAY_GET_VALUE, "array_get_value", returnInfoArrayIndexValue, false, true);
 
+  prim_def(PRIM_CHPL_COMM_GET, "chpl_comm_get", returnInfoVoid, true, true);
+  prim_def(PRIM_CHPL_COMM_PUT, "chpl_comm_put", returnInfoVoid, true, true);
+
   prim_def(PRIM_GPU_GET_ARRAY, "get_gpu_array", returnInfoArrayIndex, false, true);
   prim_def(PRIM_GPU_GET_VALUE, "get_gpu_value", returnInfoArrayIndex, false, true);
   prim_def(PRIM_GPU_GET_VAL, "get_gpu_val", returnInfoArrayIndex, false, true);
@@ -537,8 +540,6 @@ initPrimitive() {
   prim_def(PRIM_NEXT_UINT32, "_next_uint32", returnInfoUInt32);
   prim_def(PRIM_GET_USER_LINE, "_get_user_line", returnInfoInt32, true, true);
   prim_def(PRIM_GET_USER_FILE, "_get_user_file", returnInfoString, true, true);
-
-  prim_def(PRIM_COUNT_NUM_REALMS, "get num realms", returnInfoInt32);
 
   prim_def(PRIM_FTABLE_CALL, "call ftable function", returnInfoVoid, true);
 

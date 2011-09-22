@@ -17,10 +17,10 @@ default: all
 all: qthread
 
 clean: FORCE
-	cd $(QTHREAD_SUBDIR) && make clean
+	rm -rf $(QTHREAD_BUILD_DIR)
 
 clobber: FORCE
-	rm -r $(QTHREAD_INSTALL_DIR)
+	rm -rf build install
 
 
 qthread-config: FORCE

@@ -102,19 +102,21 @@ mysystem("$chplhome/util/buildRelease/gen_release test", "creating release", 1, 
 mysystem("cp $chplhome/tar/chapel-test.tar.gz $tmpdir", "copying release", 1, 1);
 mysystem("cd $tmpdir && gunzip chapel-test.tar.gz", "unzipping release", 1, 1);
 mysystem("cd $tmpdir && tar xf chapel-test.tar", "untarring release", 1, 1);
-mysystem("cp $chplhome/util/buildRelease/testReleaseHelp $tmpdir/chapel-test/chapel", "copying testReleaseHelp script", 1, 1);
-$teststatus = mysystem("cd $tmpdir/chapel-test/chapel && ./testReleaseHelp `$chplhome/util/chplenv/chplmake`", "running testReleaseHelp script", 1, 1);
+mysystem("cp $chplhome/util/buildRelease/testReleaseHelp $tmpdir/chapel-test/", "copying testReleaseHelp script", 1, 1);
+$teststatus = mysystem("cd $tmpdir/chapel-test && ./testReleaseHelp `$chplhome/util/chplenv/chplmake`", "running testReleaseHelp script", 1, 1);
 
 
 #
 # send mail
 #
 if ($teststatus == 0) {
-    $failures = `grep Error $tmpdir/chapel-test/chapel/examples/Logs/testReleaseHelp.log | wc -l`; chomp($failures);
+    $failures = `grep Error $tmpdir/chapel-test/examples/Logs/testReleaseHelp.log | wc -l`; chomp($failures);
     if ($failures == "0") {
         $shortstatus = "Passed";
+        $successmail = "chapel_cronmail_all\@cray.com";
     } else {
         $shortstatus = "Failed: Tests";
+        $successmail = "chapel_cronmail\@cray.com";
     }
 } else {
     $shortstatus = "Failed: Something";
@@ -128,12 +130,12 @@ if ($debug == 1) {
 if ($debug == 1) {
     $mailcommand = "| $mailer -s \"$mailsubject \" $debugmail";
 } else {
-    $mailcommand = "| $mailer -s \"$mailsubject \" chapel_cronmail\@cray.com";
+    $mailcommand = "| $mailer -s \"$mailsubject \" $successmail";
 }
     
 open(MAIL, $mailcommand);
 
-print MAIL `cat $tmpdir/chapel-test/chapel/examples/Logs/testReleaseHelp.log.summary`;
+print MAIL `cat $tmpdir/chapel-test/examples/Logs/testReleaseHelp.log.summary`;
     
 close(MAIL);
     

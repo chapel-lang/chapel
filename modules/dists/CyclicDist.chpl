@@ -36,7 +36,7 @@ class Cyclic: BaseDist {
   var pid: int = -1;
 
   proc Cyclic(startIdx,
-             targetLocales: [] locale = thisRealm.Locales,
+             targetLocales: [] locale = Locales,
              dataParTasksPerLocale=getDataParTasksPerLocale(),
              dataParIgnoreRunningTasks=getDataParIgnoreRunningTasks(),
              dataParMinGranularity=getDataParMinGranularity(),
@@ -554,14 +554,14 @@ class CyclicArr: BaseArr {
 proc CyclicArr.dsiSlice(d: CyclicDom) {
   var alias = new CyclicArr(eltType=eltType, rank=rank, idxType=idxType,
                             stridable=d.stridable, dom=d, pid=pid);
-  var thisid = this.locale.uid;
+  var thisid = this.locale.id;
   for i in dom.dist.targetLocDom {
     on dom.dist.targetLocs(i) {
       alias.locArr[i] =
         new LocCyclicArr(eltType=eltType, rank=rank, idxType=idxType,
                          stridable=d.stridable, locDom=d.locDoms[i],
                          myElems=>locArr[i].myElems[d.locDoms[i].myBlock]);
-      if thisid == here.uid then
+      if thisid == here.id then
         alias.myLocArr = alias.locArr[i];
     }
   }
@@ -570,7 +570,7 @@ proc CyclicArr.dsiSlice(d: CyclicDom) {
 
 proc CyclicArr.dsiRankChange(d, param newRank: int, param stridable: bool, args) {
   var alias = new CyclicArr(eltType=eltType, rank=newRank, idxType=idxType, stridable=stridable, dom = d);
-  var thisid = this.locale.uid;
+  var thisid = this.locale.id;
   coforall ind in d.dist.targetLocDom {
     on d.dist.targetLocs(ind) {
       const locDom = d.getLocDom(ind);
@@ -604,7 +604,7 @@ proc CyclicArr.dsiRankChange(d, param newRank: int, param stridable: bool, args)
         new LocCyclicArr(eltType=eltType, rank=newRank, idxType=d.idxType,
                          stridable=d.stridable, locDom=locDom,
                          myElems=>locArr[(...locArrInd)].myElems[(...locSlice)]);
-      if here.uid == thisid then
+      if here.id == thisid then
         alias.myLocArr = alias.locArr[ind];
     }
   }
@@ -614,7 +614,7 @@ proc CyclicArr.dsiRankChange(d, param newRank: int, param stridable: bool, args)
 proc CyclicArr.dsiReindex(d: CyclicDom) {
   var alias = new CyclicArr(eltType=eltType, rank=rank, idxType=d.idxType,
                             stridable=d.stridable, dom=d);
-  var thisid = this.locale.uid;
+  var thisid = this.locale.id;
   coforall i in dom.dist.targetLocDom {
     on dom.dist.targetLocs(i) {
       const locDom = d.getLocDom(i);
@@ -622,7 +622,7 @@ proc CyclicArr.dsiReindex(d: CyclicDom) {
       alias.locArr[i] = new LocCyclicArr(eltType=eltType, idxType=idxType,
                                          locDom=locDom, stridable=d.stridable,
                                          rank=rank, myElems=>locAlias);
-      if thisid == here.uid then
+      if thisid == here.id then
         alias.myLocArr = alias.locArr[i];
     }
   }
@@ -714,7 +714,7 @@ iter CyclicArr.these(param tag: iterator, follower, param fast: bool = false) va
   const followThis = [(...t)];
   if fast {
     const arrSection = locArr(dom.dist.idxToLocaleInd(followThis.low));
-    if arrSection.locale.uid == here.uid then local {
+    if arrSection.locale.id == here.id then local {
       for e in arrSection.myElems(followThis) do
         yield e;
     } else {

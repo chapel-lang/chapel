@@ -1,5 +1,5 @@
-_extern type smallCArr = 3*int(32);
-_extern proc initCArr(inout x: smallCArr);
+extern type smallCArr = 3*int(32);
+extern proc initCArr(inout x: smallCArr);
 
 var x: smallCArr;
 

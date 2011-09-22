@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+
+
+if [ $# -lt 1 ] ; then
+    blah=`basename $0`
+    echo "usage: $blah filename"
+    exit -1
+fi
+
+errstring="^\[Error matching "
+
+if [ $# -ge 2 ] ; then
+    errstring=${errstring}$2
+fi
+
+# sort+uniq gets rid of tests for which multiple compopts/execopts were used
+grep "$errstring" $1 | awk '{ print $6 }' | sort | uniq | sed s/]*$/.chpl/g

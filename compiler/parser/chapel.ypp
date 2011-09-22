@@ -65,12 +65,12 @@
 //
 %token TALIGN TATOMIC TBEGIN TBREAK TBY
 %token TCLASS TCOBEGIN TCOFORALL TCONFIG TCONST TCONTINUE
-%token TDEF TDELETE TDMAPPED TDO TDOMAIN TELSE TENUM TEXPORT TEXTERN
+%token TDEF TDELETE TDMAPPED TDO TDOMAIN TELSE TENUM TEXPORT TEXTERN T_EXTERN
 %token TFOR TFORALL TIF TIN TINDEX TINLINE TINOUT TITER
 %token TLABEL TLAMBDA TLET TLOCAL TMINUSMINUS TMODULE
 %token TNEW TNIL TON TOTHERWISE TOUT
 %token TPARAM TPLUSPLUS TPRAGMA TPRIMITIVE TPRIMITIVELOOP TPROC
-%token TRECORD TREDUCE TRETURN
+%token TRECORD TREDUCE TREF TRETURN
 %token TSCAN TSELECT TSERIAL TSINGLE TSPARSE TSUBDOMAIN
 %token TSYNC TTHEN TTYPE TUNION TUSE TVAR TVOLATILE
 %token TWHEN TWHERE TWHILE TYIELD
@@ -119,8 +119,8 @@
 %left TDOT TLP TLSBR
 
 %type <flag> opt_config
-%type <b> opt_extern
- 
+%type <flag> opt_extern
+
 %type <pt> opt_intent_tag opt_this_intent_tag
 
 %type <retTag> opt_ret_tag
@@ -333,8 +333,9 @@ class_decl_stmt:
 ;
 
 opt_extern:
-           { $$ = false; }
-| TEXTERN  { $$ = true; }
+           { $$ = FLAG_UNKNOWN; }
+| TEXTERN  { $$ = FLAG_EXTERN; }
+| T_EXTERN { $$ = FLAG_OLD_EXTERN_KW_USED; }
 ;
 
 class_tag:
@@ -424,8 +425,10 @@ linkage_spec:
                 { $$ = new FnSymbol(""); }
 | TINLINE       { $$ = new FnSymbol(""); $$->addFlag(FLAG_INLINE); }
 | TEXPORT       { $$ = new FnSymbol(""); $$->addFlag(FLAG_EXPORT); }
-| TEXPORT ident { $$ = new FnSymbol($2);   $$->addFlag(FLAG_EXPORT); }
+| TEXPORT ident { $$ = new FnSymbol($2); $$->addFlag(FLAG_EXPORT); }
 | TEXTERN       { $$ = new FnSymbol(""); $$->addFlag(FLAG_EXTERN); }
+| T_EXTERN      { $$ = new FnSymbol(""); $$->addFlag(FLAG_EXTERN);
+                  $$->addFlag(FLAG_OLD_EXTERN_KW_USED); }
 
 fn_decl_stmt:
   linkage_spec proc_or_iter_or_def
@@ -619,6 +622,10 @@ type_alias_decl_stmt:
     { $$ = handleConfigTypes($3); }
 | TEXTERN TTYPE type_alias_decl_stmt_inner TSEMI 
     { $$ = convertTypesToExtern($3); }
+| T_EXTERN TTYPE type_alias_decl_stmt_inner TSEMI
+    { $$ = convertTypesToExtern($3);
+      USR_WARN($$, "The _extern keyword is deprecated. Use extern (no leading underscore) instead.");
+    }
 ;
 
 type_alias_decl_stmt_inner:
@@ -644,19 +651,53 @@ opt_init_type:
 | TASSIGN expr  { $$ = $2; }
 ;
 
+// The ugliness added by FLAG_OLD_EXTERN_KW_USED can be eliminated
+// once the "_extern" keyword moves from being deprecated to being
+// obsolete. <hilde>
 var_decl_stmt:
   opt_config TPARAM var_decl_stmt_inner_ls TSEMI
-    { $$ = buildVarDecls($3, $1, FLAG_PARAM); }
+    {
+      /* Begin part to delete when "_extern" is obsoleted. */
+      if ($1 == FLAG_OLD_EXTERN_KW_USED)
+      {
+        $$ = buildVarDecls($3, FLAG_EXTERN, FLAG_PARAM);
+        USR_WARN($$, "The _extern keyword is deprecated. Use extern (no leading underscore) instead.");
+      }
+      else
+      /* End part to delete when "_extern" is obsoleted. */
+      $$ = buildVarDecls($3, $1, FLAG_PARAM);
+    }
 | opt_config TCONST var_decl_stmt_inner_ls TSEMI
-    { $$ = buildVarDecls($3, $1, FLAG_CONST); }
+    {
+      /* Begin part to delete when "_extern" is obsoleted. */
+      if ($1 == FLAG_OLD_EXTERN_KW_USED)
+      {
+        $$ = buildVarDecls($3, FLAG_EXTERN, FLAG_CONST);
+        USR_WARN($$, "The _extern keyword is deprecated. Use extern (no leading underscore) instead.");
+      }
+      else
+      /* End part to delete when "_extern" is obsoleted. */
+      $$ = buildVarDecls($3, $1, FLAG_CONST);
+    }
 | opt_config TVAR var_decl_stmt_inner_ls TSEMI
-    { $$ = buildVarDecls($3, $1, FLAG_UNKNOWN); }
+    {
+      /* Begin part to delete when "_extern" is obsoleted. */
+      if ($1 == FLAG_OLD_EXTERN_KW_USED)
+      {
+        $$ = buildVarDecls($3, FLAG_EXTERN, FLAG_UNKNOWN);
+        USR_WARN($$, "The _extern keyword is deprecated. Use extern (no leading underscore) instead.");
+      }
+      else
+      /* End part to delete when "_extern" is obsoleted. */
+      $$ = buildVarDecls($3, $1, FLAG_UNKNOWN);
+    }
 ;
 
 opt_config:
-           { $$ = FLAG_UNKNOWN; }
-| TCONFIG  { $$ = FLAG_CONFIG; }
-| TEXTERN  { $$ = FLAG_EXTERN; }
+            { $$ = FLAG_UNKNOWN; }
+| TCONFIG   { $$ = FLAG_CONFIG; }
+| TEXTERN   { $$ = FLAG_EXTERN; }
+| T_EXTERN  { $$ = FLAG_OLD_EXTERN_KW_USED; }
 ;
  
 var_decl_stmt_inner_ls:

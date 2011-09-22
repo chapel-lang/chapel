@@ -511,9 +511,11 @@ label outer for i in 1..n {
 \index{use@\chpl{use}}
 \index{modules!using}
 
-The use statement makes symbols in modules available without accessing
-them via the module name.  The syntax of the use statement is given
-by:
+The use statement makes the symbols defined by a module available
+within the scope containing the use statement without requiring them
+to be prefixed by the module's name.  The syntax of the use statement
+is given by:
+
 \begin{syntax}
 use-statement:
   `use' module-name-list ;
@@ -541,27 +543,35 @@ variables, types, or modules to be defined at the same depth.
 \begin{openissue}
 There is an expectation that this statement will be extended to allow
 the programmer to restrict which symbols are 'used' as well as to
-rename symbols that are used.
+rename symbols that are 'used.'
 \end{openissue}
 
 \begin{chapelexample}{use.chpl}
-The following example illustrates how the use statement brings in the definition
-of the \chpl{Timer} class, so it can be used to time program execution.
+  The following example illustrates how the use statement makes
+  symbols declared in \chpl{M1}'s global scope (like procedure
+  \chpl{foo()}) visible within the scope of \chpl{M2}'s \chpl{main}
+  function.  Without the \chpl{use} statement, the procedure call to
+  \chpl{foo} could not be resolved since \chpl{M2} would not have
+  access to symbols in \chpl{M1}.
 \begin{chapel}
-use Time;
+module M1 {
+  proc foo() {
+    writeln("In M1's foo.");
+  }
+}
 
-var programTimer:Timer;
+module M2 {
+  proc main() {
+    use M1;
 
-programTimer.start();
-writeln("Write one line.");
-programTimer.stop();
-var totalTime = programTimer.elapsed();
-
-if (totalTime > 0) then writeln("Non-zero time for writing one line.");
+    writeln("In M2's main.");
+    foo();
+  }
+}
 \end{chapel}
 \begin{chapelprintoutput}
-Write one line.
-Non-zero time for writing one line.
+In M2's main.\\
+In M1's foo.
 \end{chapelprintoutput}
 \end{chapelexample}
 

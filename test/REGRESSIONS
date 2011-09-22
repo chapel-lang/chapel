@@ -1,4 +1,4 @@
-i# USAGE: the intent of this file is to keep track of current
+# USAGE: the intent of this file is to keep track of current
 # regressions and to keep notes about why they are failing.  We start
 # with general regressions that are seen across a wide variety of
 # platforms, and then move onto linux64 regressions since those are
@@ -67,6 +67,10 @@ memory leaks regressions
 valgrind-specific regressions
 =============================
 
+invalid read on distribution distructor
+---------------------------------------
+[Error matching program output for distributions/vass/dmap-var-decl]
+
 nondet. output reordering
 -------------------------
 [Error matching program output for exits/bradc/child_remains_after_parent] (05/29/11)
@@ -99,7 +103,7 @@ internal valgrind stuff 'the impossible has happened'
 
 ====================
 no-local regressions
-====================
+===================
 
 warning about serialized assignment (06/14/11)
 ----------------------------------------------
@@ -159,6 +163,7 @@ nondet. execution timeout
 [Error: Timed out executing program studies/madness/aniruddha/madchap/test_likepy] (04/22/11, 05/06/11, 05/19/11)
 [Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct] (05/23/11, 05/25/11, 06/06/11, 06/08/11, 08/24/11)
 [Error: Timed out executing program studies/madness/aniruddha/madchap/test_gaxpy] (06/02/11)
+[Error: Timed out executing program studies/madness/aniruddha/madchap/test_diff] (09/03/11, 09/05/11)
 
 too many warnings/different warning format?
 -------------------------------------------
@@ -167,7 +172,6 @@ too many warnings/different warning format?
 
 execution timeouts
 ------------------
-[Error: Timed out executing program studies/madness/aniruddha/madchap/test_diff]
 [Error: Timed out executing program studies/madness/aniruddha/madchap/test_mul]
 
 memory stuff
@@ -201,43 +205,6 @@ block distribution regressions
 ===============================
 cyclic distribution regressions
 ===============================
-
-nondet. timeouts (since moving to chap07)
------------------------------------------
-[Error: Timed out executing program distributions/robust/arithmetic/basics/test_array_swap] (08/26/11)
-[Error: Timed out executing program distributions/robust/arithmetic/basics/test_distributed_array_of_array2] (08/26/11)
-[Error: Timed out executing program distributions/robust/arithmetic/basics/test_reduce1] (08/26/11)
-[Error: Timed out executing program distributions/robust/arithmetic/composite/test_composite2] (08/26/11)
-[Error: Timed out executing program distributions/robust/arithmetic/basics/test_domain_iteration1] (08/24/11)
-[Error: Timed out executing program distributions/robust/arithmetic/basics/test_infer_array_type] (08/24/11, 08/26/11)
-[Error: Timed out executing program distributions/robust/arithmetic/reindexing/test_reindexing1] (08/24/11, 08/26/11)
-[Error: Timed out executing program distributions/robust/arithmetic/basics/test_array_accesses1] (08/25/11)
-[Error: Timed out executing program distributions/robust/arithmetic/basics/test_array_assignment] (08/25/11)
-[Error: Timed out executing program distributions/robust/arithmetic/basics/test_scan1] (08/25/11)
-[Error: Timed out executing program distributions/robust/arithmetic/composite/test_composite1] (08/25/11)
-[Error: Timed out executing program distributions/robust/arithmetic/reindexing/test_array_alias4] (08/25/11)
-[Error: Timed out executing program distributions/robust/arithmetic/reindexing/test_reindexing2] (08/25/11)
-
-new timeouts (since moving to chap07?)
---------------------------------------
-[Error: Timed out executing program distributions/robust/arithmetic/basics/test_array_iteration1]
-[Error: Timed out executing program distributions/robust/arithmetic/basics/test_array_of_distributed_array2]
-[Error: Timed out executing program distributions/robust/arithmetic/basics/test_zipper_default]
-[Error: Timed out executing program distributions/robust/arithmetic/kernels/hpl]
-[Error: Timed out executing program distributions/robust/arithmetic/modules/test_module_Norm]
-[Error: Timed out executing program distributions/robust/arithmetic/modules/test_module_Random]
-[Error: Timed out executing program distributions/robust/arithmetic/modules/test_module_Search]
-[Error: Timed out executing program distributions/robust/arithmetic/modules/test_module_Sort]
-[Error: Timed out executing program distributions/robust/arithmetic/reindexing/test_array_alias2]
-[Error: Timed out executing program distributions/robust/arithmetic/reindexing/test_reindexing3]
-[Error: Timed out executing program distributions/robust/arithmetic/reindexing/test_reindexing4]
-[Error: Timed out executing program distributions/robust/arithmetic/reindexing/test_reindexing5]
-[Error: Timed out executing program distributions/robust/arithmetic/reindexing/test_reindexing6]
-[Error: Timed out executing program distributions/robust/arithmetic/resizing/test_domain_resize1]
-[Error: Timed out executing program distributions/robust/arithmetic/slicing/test_array_slicing1]
-[Error: Timed out executing program distributions/robust/arithmetic/slicing/test_array_slicing3]
-[Error: Timed out executing program distributions/robust/arithmetic/stress/test_many_domains]
-
 
 timeouts
 --------
@@ -286,10 +253,6 @@ gdb output differences
 xt-cle-specific failures
 ========================
 
-nondet. 'non-zero time to write a line' failure
------------------------------------------------
-[Error matching program output for release/examples/spec/Statements/use] (08/21/11)
-
 redeclaration of identifier in scope (01/24/11)
 -----------------------------------------------
 [Error matching compiler output for associative/waynew/indef2]
@@ -298,10 +261,6 @@ redeclaration of identifier in scope (01/24/11)
 =====================================
 cray-xt-cray/cce-specific regressions
 =====================================
-
-seg fault during Chapel compilation (07/10/11)
-----------------------------------------------
-*all*
 
 new unreachable loop warning (05/29/11)
 ---------------------------------------
@@ -464,7 +423,6 @@ cygwin-specific failures
 incorrect output (06/24/11 -- first cygwin test in ages)
 --------------------------------------------------------
 [Error matching program output for release/examples/hello3-datapar]
-[Error matching program output for release/examples/spec/Statements/use]
 
 undiagnosed problems that started showing up 10/14/10 after lack of testing
 ---------------------------------------------------------------------------
@@ -499,6 +457,7 @@ xmt-specific regressions
 
 assertion failed: f.is_FILBlock() || f.is_FILScope() || f.is_FILEndScope()
 --------------------------------------------------------------------------
+[Error matching compiler output for release/examples/hpcc/fft]
 [Error matching compiler output for release/examples/primers/arrays]
 
 unresolved sync variable calls (04/09/11 -- once spec examples added)
@@ -510,7 +469,8 @@ unresolved sync variable calls (04/09/11 -- once spec examples added)
 
 nondet. compilation timeout
 ---------------------------
-[Error: Timed out compilation for release/examples/hello] (04/10/11, 04/12/11, 04/14/11, 04/19/11, 04/23/11, 04/26/11, 04/30/11, 05/07/11, 05/14/11, 05/15/11, 05/17/11, 05/21/11, 05/25/11, 05/27/11, 08/21/11, 08/24/11, 08/26/11)
+[Error: Timed out compilation for release/examples/hello] (04/10/11, 04/12/11, 04/14/11, 04/19/11, 04/23/11, 04/26/11, 04/30/11, 05/07/11, 05/14/11, 05/15/11, 05/17/11, 05/21/11, 05/25/11, 05/27/11, 08/21/11, 08/24/11, 08/26/11, 08/27/11, 09/04/11, 09/07/11, 09/11/11)
+[Error: Timed out compilation for release/examples/primers/distributions] (08/30/11, 09/05/11)
 
 
 =======================================================
@@ -524,7 +484,7 @@ warning: full/empty bit modified on less than word-sized data (05/24/11)
 
 nondet. compilation timeout
 ---------------------------
-[Error: Timed out compilation for release/examples/primers/arrays] (05/27/11, 05/31/11, 08/21/11, 08/26/11)
+[Error: Timed out compilation for release/examples/primers/arrays] (05/27/11, 05/31/11, 08/21/11, 08/26/11, 09/01/11, 09/10/11)
 
 array index out of bounds due to bug in XMT compiler
 ----------------------------------------------------
@@ -554,12 +514,12 @@ nondet. core dump
 
 nondet. incorrect output
 ------------------------
-[Error matching program output for release/examples/spec/Task_Parallelism_and_Synchronization/serialStmt2] (06/23/11, 06/26/11, 06/30/11, 07/04/11, 07/07/11, 07/13/11, 07/15/11, 08/18/11)
+[Error matching program output for release/examples/spec/Task_Parallelism_and_Synchronization/serialStmt2] (06/23/11, 06/26/11, 06/30/11, 07/04/11, 07/07/11, 07/13/11, 07/15/11, 08/18/11, 09/08/11, 09/11/11)
 
 nondet. execution timeouts (ever since switching to 4 shepherds)
 --------------------------------------------------------
 [Error: Timed out executing program release/examples/primers/taskParallel] (06/24/11, 07/03/11, 07/16/11, 08/20/11)
-[Error: Timed out executing program release/examples/spec/Task_Parallelism_and_Synchronization/serialStmt2] (07/03/11)
+[Error: Timed out executing program release/examples/spec/Task_Parallelism_and_Synchronization/serialStmt2] (07/03/11, 09/10/11)
 
 
 ===========================
@@ -574,7 +534,6 @@ execution timeouts (since making default # shepherds follow #cores)
 
 nondet. execution timeouts
 --------------------------
-[Error: Timed out executing program release/examples/hello6-taskpar-dist] (07/02/11)
 [Error: Timed out executing program release/examples/hpcc/stream] (06/26/11, 07/05/11, 08/18/11)
 [Error: Timed out executing program release/examples/hpcc/ra] (07/18/11)
 [Error: Timed out executing program release/examples/hpcc/variants/ra-cleanloop] (07/02/11, 07/13/11, 07/16/11)
@@ -591,10 +550,14 @@ execution timeouts (ever since switching to 4 shepherds)
 qthreads-specific tests
 =======================
 
+recently became a nondet. failure (since increasing the callstack; used to
+fail consistently prior to that)
+--------------------------------------------------------------------------
+[Error matching program output for release/examples/spec/Classes/thisMethod] (08/30/11)
+
 failed since testing started (likely call stack size issues)
 ------------------------------------------------------------
 [Error matching program output for release/examples/spec/Arrays/sparse-error]
-[Error matching program output for release/examples/spec/Classes/thisMethod]
 [Error matching program output for release/examples/spec/Functions/variable-functions]
 
 deadlock/livelock issue
@@ -606,9 +569,13 @@ deadlock/livelock issue
 qthreads+gasnet-specific tests (in addition to the above)
 =========================================================
 
+nondet. timeout (09/06/11)
+--------------------------
+[Error: Timed out executing program release/examples/hpcc/ra]
+
 nondet. timeout starting when #shepherds based on #cores
 --------------------------------------------------------
-[Error: Timed out executing program release/examples/hpcc/ptrans] (08/25/11)
+[Error: Timed out executing program release/examples/hpcc/ptrans] (08/25/11, 09/12/11)
 
 timeouts when #shepherds started getting based on #cores
 --------------------------------------------------------
@@ -619,6 +586,10 @@ timeouts when #shepherds started getting based on #cores
 =======================
 baseline-specific tests
 =======================
+
+memory utilization changed (08/??/11)
+-------------------------------------
+[Error matching program output for memory/shannon/printFinalMemStat]
 
 .good assumes dead code elimination has run (since added)
 ---------------------------------------------------------

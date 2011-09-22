@@ -2,8 +2,8 @@ type chpl_clock_t = int(32);
 
 config const printTimings = true;
 
-_extern proc clock(): chpl_clock_t;
-_extern proc get_CLOCKS_PER_SEC(): chpl_clock_t;
+extern proc clock(): chpl_clock_t;
+extern proc get_CLOCKS_PER_SEC(): chpl_clock_t;
 
 use Time;  // to get sleep() function
 

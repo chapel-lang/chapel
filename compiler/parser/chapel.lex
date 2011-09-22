@@ -23,6 +23,7 @@
         t == TIN ||                             \
         t == TINOUT ||                          \
         t == TOUT ||                            \
+        t == TREF ||                            \
         t == TCOLON ||                          \
         t == TASSIGN ||                         \
         t == TRSBR)                             \
@@ -80,7 +81,7 @@ domain           processToken(TDOMAIN);
 else             processToken(TELSE);
 enum             processToken(TENUM);
 export           processToken(TEXPORT);
-_extern          processToken(TEXTERN); // Deprecated
+_extern          processToken(T_EXTERN); // Deprecated
 extern           processToken(TEXTERN);
 for              processToken(TFOR);
 forall           processToken(TFORALL);
@@ -107,6 +108,7 @@ __primitive_loop processToken(TPRIMITIVELOOP);
 proc             processToken(TPROC);
 record           processToken(TRECORD);
 reduce           processToken(TREDUCE);
+ref              processToken(TREF);
 return           processToken(TRETURN);
 scan             processToken(TSCAN);
 select           processToken(TSELECT);

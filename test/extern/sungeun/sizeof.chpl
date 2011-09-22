@@ -1,7 +1,7 @@
 config const n = 10;
 config type myType = int;
 
-_extern proc sizeof(type sizeofType): int(64);
+extern proc sizeof(type sizeofType): int(64);
 
 var a, b: [0..n-1] myType;
 

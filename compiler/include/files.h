@@ -46,7 +46,6 @@ void makeBinary(void);
 const char* runUtilScript(const char* script);
 
 void setupModulePaths(void);
-void addStdRealmsPath(void);
 void addFlagModulePath(const char* newpath);
 void addDashMsToUserPath(void);
 void addModulePathFromFilename(const char* filename);

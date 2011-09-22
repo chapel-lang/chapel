@@ -18,11 +18,10 @@ default: all
 all: nanox
 
 clean: FORCE
-	cd $(NANOX_SUBDIR) && make clean
+	rm -rf $(NANOX_BUILD_DIR)
 
 clobber: FORCE
-	rm -r $(NANOX_INSTALL_DIR)
-
+	rm -rf build install
 
 nanox-config: FORCE
 	mkdir -p $(NANOX_BUILD_DIR)

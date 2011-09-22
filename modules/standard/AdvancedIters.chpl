@@ -183,7 +183,7 @@ where tag == iterator.leader
   
     const factorSteal:int=2;
     var moreWork:bool=true; // A global var to control the termination
-    var nVisitedVictims: int=0; 
+
  
     // Variables to put a barrier to ensure the initial range is computed on each Thread
     var barrierCount$:sync int=0;
@@ -215,6 +215,7 @@ where tag == iterator.leader
 
       // Step3: Task tid finished its work, so it will try to steal from a neighbor
 
+      var nVisitedVictims:int=0; 
       var victim=(tid+1) % nTasks; 
       var stealFailed:bool=false;
 
@@ -272,7 +273,7 @@ where tag == iterator.leader
 	  // If here, then it can have failed the stealing intent at the victim (method 1), 
 	  // or we have exhausted the victim range (methods 0, 2)
 
-	  if (methodStealing==0 || methodStealing==2 || methodStealing==1 && stealFailed) then { 
+	  if (methodStealing==0 || methodStealing==2 || (methodStealing==1 && stealFailed)) then { 
 	    nVisitedVictims += 1; // Signal that there is no more work in victim
 	    if verbose then 
 	      writeln("Failed Stealing intent at tid ", tid," with victim ", victim, " and total no. of visited victims ", nVisitedVictims);

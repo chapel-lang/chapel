@@ -15,7 +15,7 @@ def c13() {
   return "13b.";
 }
 
-_extern def c14();
+extern def c14();
 
 c11a();
 c11b();

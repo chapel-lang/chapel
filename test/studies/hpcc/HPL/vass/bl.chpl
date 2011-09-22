@@ -84,13 +84,18 @@ LUFactorize();
 
 const execTime = getCurrentTime() - startTime;  // store the elapsed time
 
-write("DONE ", if verify then "with" else "without", " verification");
+write("DONE ");
 if reproducible {
   writeln();
 } else {
   writeln("  time = ", execTime);
 }
-if !refsuccess then writeln("verification FAILED");
+writeln(
+  if verify then
+    if refsuccess then "verification OK"
+    else               "verification FAILED"
+  else "not verified"
+);
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -114,20 +119,20 @@ proc LUFactorize() {
 }
 
 proc schurComplement(AD, BD, Rest) {
-writeln("schurComplement(", BD.dim(1).low, ",", AD.dim(2).low, ")",
-        //"  [2] ", Rest.low, "\n", "  AD ", AD, "  BD ", BD,
-        if BD.dim(1).low < 10 then "  " else "",
-        "  Rest ", Rest);
+vwln("schurComplement(", BD.dim(1).low, ",", AD.dim(2).low, ")",
+     //"  [2] ", Rest.low, "\n", "  AD ", AD, "  BD ", BD,
+     if BD.dim(1).low < 10 then "  " else "",
+     "  Rest ", Rest);
 
 // If Rest is empty, panelSolve and updateBlockRow are still meaningful?
 // Otherwise don't invoke schurComplement at all.
 if Rest.numIndices == 0 {
-  writeln("  Rest is empty");
+  vwln("  Rest is empty");
   return;
 }
 
-writeln("  replA", replA.domain, " = Ab", AD, "  ", [1..n, AD.dim(2)]);
-writeln("  replB", replB.domain, " = Ab", BD, "  ", [BD.dim(1), 1..n+1]);
+vwln("  replA", replA.domain, " = Ab", AD, "  ", [1..n, AD.dim(2)]);
+vwln("  replB", replB.domain, " = Ab", BD, "  ", [BD.dim(1), 1..n+1]);
 
   // TODO later: only assign from Ab[AD] and Ab[BD], resp.
   // Note: AD.dim(2)  and BD.dim(1) are always blkSize wide;
@@ -137,19 +142,19 @@ writeln("  replB", replB.domain, " = Ab", BD, "  ", [BD.dim(1), 1..n+1]);
   // replicating into replA, replB
   coforall dest in tla[tla.domain.dim(1).high, tla.domain.dim(2)] do
     on dest do
-      { writeln("copying to replA on ", here.id);
+      { vwln("copying to replA on ", here.id);
       replA = Ab[1..n, AD.dim(2)];
       }
   coforall dest in tla[tla.domain.dim(1), tla.domain.dim(2).high] do
     on dest do
-      { writeln("copying to replB on ", here.id);
+      { vwln("copying to replB on ", here.id);
       replB = Ab[BD.dim(1), 1..n+1];
       }
 
   forall (row,col) in Rest by (blkSize, blkSize) {
 
-writeln("  dgemm(", (Rest.dim(1))(row..#blkSize), ",",
-                    (Rest.dim(2))(col..#blkSize), ")  on ", here.id);
+vwln("  dgemm(", (Rest.dim(1))(row..#blkSize), ",",
+                 (Rest.dim(2))(col..#blkSize), ")  on ", here.id);
 
     // This might be an implementation bug, as 'Rest' supports privatization.
     const RestLcl = Rest;
@@ -170,10 +175,10 @@ proc setupTargetLocales() {
     var i = 0;
     for l in tla { l = Locales[i]; i += 1; }
   } else {
-    writeln("oversubscribing Locales(0)");
+    vwln("oversubscribing Locales(0)");
     tla = Locales(0);
   }
-  writeln("target locales =\n", tla, "\n");
+  vwln("target locales =\n", tla, "\n");
 }
 
 // random initialization
@@ -208,8 +213,8 @@ proc doverify(blk) {
 
   const OK = && reduce (Ab == Abref);
   if !OK then refsuccess = false;
-  writeln("verification for blk=", blk,
-          if OK then " succeeded" else " FAILED", "\n");
+  vwln("verification for blk=", blk,
+       if OK then " succeeded" else " FAILED", "\n");
 }
 
 proc schurComplementRefWrapper(blk:int):void {

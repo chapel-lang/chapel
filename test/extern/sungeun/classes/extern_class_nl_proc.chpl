@@ -2,7 +2,7 @@ config const l = numLocales-1;
 config const rl = 0;
 
 on Locales(l) {
-  _extern class C { var x: int; }
+  extern class C { var x: int; }
   proc my_foo(c: C, x: int) {
     c.x = x;
   }

@@ -602,13 +602,6 @@ void setupModulePaths(void) {
 }
 
 
-void addStdRealmsPath(void) {
-  int32_t numRealms = getNumRealms();
-  intModPath.add(astr(CHPL_HOME, "/modules/internal/",
-                      numRealms == 1 ? "singlerealm" : "multirealm"));
-}
-
-
 void addModulePathFromFilename(const char* origfilename) {
   char dirname[FILENAME_MAX+1];
   strncpy(dirname, origfilename, FILENAME_MAX);

@@ -1,8 +1,8 @@
 // ChapelBase.chpl
 //
 
-_extern proc chpl_config_has_value(name, module_name): bool;
-_extern proc chpl_config_get_value(name, module_name): string;
+extern proc chpl_config_has_value(name, module_name): bool;
+extern proc chpl_config_get_value(name, module_name): string;
 
 config param CHPL_HOST_PLATFORM: string = "unset";
 config param CHPL_TARGET_PLATFORM: string = "unset";
@@ -75,9 +75,6 @@ proc +(param s: string, param x: bool) param
 
 proc +(param x: bool, param s: string) param
   return x:string + s;
-
-config param realmTypes: string = CHPL_TARGET_PLATFORM;
-param numRealms: int(32) = __primitive("get num realms"); // defined by realmTypes
 
 proc _throwOpError(param op: string) {
     compilerError("illegal use of '", op, "' on operands of type uint(64) and signed integer");
@@ -1481,7 +1478,7 @@ pragma "inline" proc func(type t...?n, type rettype) type { return __primitive("
 // to be special-cased in functionResolution.cpp such that the inout
 // does not actually result in temps.
 //
-proc chpldev_refToString(inout ref) {
+proc chpldev_refToString(inout arg) {
 
   //
   // print out the address of class references as well
@@ -1490,7 +1487,7 @@ proc chpldev_refToString(inout ref) {
     return " (class = " + __primitive("ref to string", x) + ")";
   proc chpldev_classToString(x) return "";
 
-  return __primitive("ref to string", ref) + chpldev_classToString(ref);
+  return __primitive("ref to string", arg) + chpldev_classToString(arg);
 }
 
 

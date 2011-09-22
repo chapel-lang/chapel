@@ -192,12 +192,21 @@ Expr* buildStringLiteral(const char* pch) {
 
 
 Expr* buildDotExpr(BaseAST* base, const char* member) {
-  if (!strcmp("uid", member))
+  // The following optimization was added to avoid calling chpl_int_to_locale
+  // when all we end up doing is extracting the locale id, thus:
+  // chpl_int_to_locale(_get_locale(x)).id ==> _get_locale(x)
+
+  // This broke when realms were removed and uid was renamed as id.
+  // It might be better coding practice to label very special module code
+  // (i.e. types, fields, values known to the compiler) using pragmas. <hilde>
+  if (!strcmp("id", member))
     if (CallExpr* intToLocale = toCallExpr(base))
       if (intToLocale->isNamed("chpl_int_to_locale"))
         if (CallExpr* getLocale = toCallExpr(intToLocale->get(1)))
           if (getLocale->isPrimitive(PRIM_GET_LOCALEID))
             return getLocale->remove();
+
+  // "x.locale" member access expressions are rendered as chpl_int_to_locale(_get_locale(x)).
   if (!strcmp("locale", member))
     return new CallExpr("chpl_int_to_locale", 
                         new CallExpr(PRIM_GET_LOCALEID, base));
@@ -1506,16 +1515,18 @@ buildVarDecls(BlockStmt* stmts, Flag externconfig, Flag varconst) {
 
 
 DefExpr*
-buildClassDefExpr(const char* name, Type* type, Expr* inherit, BlockStmt* decls, bool isExtern) {
+buildClassDefExpr(const char* name, Type* type, Expr* inherit, BlockStmt* decls, Flag isExtern) {
   ClassType* ct = toClassType(type);
   INT_ASSERT(ct);
   TypeSymbol* ts = new TypeSymbol(name, ct);
   DefExpr* def = new DefExpr(ts);
   ct->addDeclarations(decls);
-  if (isExtern) {
+  if (isExtern == FLAG_EXTERN || isExtern == FLAG_OLD_EXTERN_KW_USED) {
     ts->addFlag(FLAG_EXTERN);
     if (inherit)
       USR_FATAL_CONT(inherit, "External types do not currently support inheritance");
+    if (isExtern == FLAG_OLD_EXTERN_KW_USED)
+      USR_WARN(type, "The _extern keyword is deprecated. Use extern (no leading underscore) instead.");
   }
   if (inherit)
     ct->inherits.insertAtTail(inherit);
@@ -1618,6 +1629,10 @@ BlockStmt*
 buildFunctionDecl(FnSymbol* fn, RetTag optRetTag, Expr* optRetType,
                   Expr* optWhere, BlockStmt* optFnBody)
 {
+  // This clause can be removed when the old _extern keyword is obsoleted. <hilde>
+  if (fn->hasFlag(FLAG_OLD_EXTERN_KW_USED))
+    USR_WARN(fn, "The _extern keyword is deprecated. Use extern (no leading underscore) instead.");
+
   fn->retTag = optRetTag;
   if (optRetTag == RET_VAR)
   {
