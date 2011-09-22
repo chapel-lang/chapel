@@ -76,6 +76,10 @@ proc rangeBase.rangeBase(type idxType = int,
         "Try using a wider index type.");
     }
   }
+
+  // todo: remove the check for boundsChecking once assert is no-op upon --fast
+  if !stridable && boundsChecking then
+    assert(_stride == 1);
 }
 
 
@@ -565,35 +569,9 @@ proc chpl__align(r : rangeBase(?e, ?b, ?s), algn)
                   ") with ", typeToString(argType));
 }
 
-// Apply a natural alignment to an existing range.
-proc rangeBase.offset(offs : integral)
-{
-  type argType = offs.type;
-
-  if argType == idxType || chpl__legalIntCoerce(argType, idxType)
-  {
-    if this.hasLowBound() then
-      this._alignment = _low + offs;
-    else if this.boundedType == BoundedRangeType.boundedHigh then
-      this._alignment = _high + offs;
-    else
-      this._alignment = offs;
-  }
-  else
-    compilerError("type mismatch applying 'offset' to range(",
-              typeToString(idxType), ") and ", typeToString(argType));
-
-  if ! stridable then
-  {
-    compilerWarning("Applying an alignment to an unstrided range has no effect."); 
-    this._alignment = 0; // Maintain the invariant.
-  }
-  return this;
-}
-
 // Composition
 // Return the intersection of this and other.
-proc rangeBase.this(other: rangeBase(?idxType2, ?boundedType, ?stridable))
+proc rangeBase.this(other: rangeBase(?))
 {
   // Determine the boundedType of result
   proc computeBoundedType(r1, r2) param
@@ -624,25 +602,40 @@ proc rangeBase.this(other: rangeBase(?idxType2, ?boundedType, ?stridable))
   // This is a kludge.  We should really obey type coercion rules. (hilde)
   if (_isUnsignedType(idxType)) { if (lo1 < 0) then lo1 = 0; }
 
-  var (g, x) = chpl__extendedEuclid(st1, st2);
-  var lcm = st1 / g * st2;        // The LCM of the two strides.
+  // We inherit the sign of the stride from this.stride.
+  var newStride: strType = this.stride;
+  var lcm: strType = abs(this.stride);
+  var (g, x): 2*strType = (lcm, 0);
+
+  if this.stride != other.stride && this.stride != -other.stride {
+
+    (g, x) = chpl__extendedEuclid(st1, st2);
+    lcm = st1 / g * st2;        // The LCM of the two strides.
   // The division must be done first to prevent overflow.
+
+    newStride = if this.stride > 0 then lcm else -lcm;
+  }
 
   var result = new rangeBase(idxType,
                          computeBoundedType(this, other),
                          this.stridable | other.stridable,
                          max(lo1, lo2):idxType,
                          min(hi1, hi2):idxType,
-                         lcm:chpl__signedType(idxType));
+                         newStride);
 
+ if result.stridable {
   var al1 = (this._alignment % st1:idxType):int;
   var al2 = (other._alignment % st2:other.idxType):int;
 
   if (al2 - al1) % g != 0 then
+  {
     // empty intersection, return degenerate result
+    if !isBoundedRangeB(result) then
+      halt("could not represent range slice - it needs to be empty, but the slice type is not bounded");
     (result._low, result._high, result._alignment) =
-    (1:idxType, 0:idxType, 1:idxType);
+    (1:idxType, 0:idxType, if this.stride > 0 then 1:idxType else 0:idxType);
     // _alignment == _low, so it won't print.
+  }
   else
   { // non-empty intersection
 
@@ -653,11 +646,11 @@ proc rangeBase.this(other: rangeBase(?idxType2, ?boundedType, ?stridable))
 
     // Now offset can be safely cast to idxType.
     result._alignment = al1:idxType + offset:idxType * st1:idxType / g:idxType;
-
-    // We inherit the sign of the stride from the operand.
-    if other.stride < 0 then 
-      result._stride = -result._stride;
   }
+ } else {
+    // !(result.stridable)
+    result._alignment = 0;
+ }
 
   return result;
 }

@@ -432,7 +432,7 @@ proc sdom._dsiComputeMyRange(locId): rangeT {
            locId, max(dom.idxType), min(dom.idxType), dist.bbStart);
   const myChunk = blo..bhi;
   // see Block.getChunk()
-  const chunk = myChunk(dom.wholeR);
+  const chunk = dom.wholeR(myChunk);
   return chunk;
 }
 
