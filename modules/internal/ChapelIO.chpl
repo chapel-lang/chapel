@@ -31,9 +31,10 @@
   //type c_file = _file;
 
   // stdin/stdout/sterr
-  extern proc chpl_cstdin():_file;
+  //extern proc chpl_cstdin():_file;
   extern proc chpl_cstdout():_file;
   extern proc chpl_cstderr():_file;
+  extern proc chpl_cnullfile():_file;
 
   // system error number.
   extern type err_t = c_int;
@@ -1621,7 +1622,7 @@
   */
 
 
-  const stdin:channel(false, iokind.dynamic) = openfp(chpl_cstdin()).reader(); 
+  const stdin:channel(false, iokind.dynamic) = openfd(0).reader(); 
   const stdout:channel(true, iokind.dynamic) = openfp(chpl_cstdout()).writer(); 
   const stderr:channel(true, iokind.dynamic) = openfp(chpl_cstderr()).writer(); 
 

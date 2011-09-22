@@ -223,6 +223,18 @@ static void setupStdSocket(SOCKET& ls, SocketList& list, SocketList& allList) {
     }
   } else AMUDP_Err("master detected some unrecognized activity on a std listener");
 }
+static void setupStdinSocket(SOCKET& ls, SOCKET& stdinSocket, SocketList& allList) {
+  if (stdinSocket == INVALID_SOCKET) {
+    SockAddr remoteAddr;
+    SOCKET newsock = accept_socket(ls, remoteAddr);
+    stdinSocket = newsock;
+    allList.insert(newsock);
+    // close listener
+    close_socket(ls);
+    allList.remove(ls);
+    ls = INVALID_SOCKET;
+  } else AMUDP_Err("master detected some unrecognized activity on a stdin listener");
+}
 //------------------------------------------------------------------------------------
 static void handleStdOutput(FILE *fd, fd_set *psockset, SocketList& list, SocketList& allList, int nproc) {
   int numset;
@@ -422,12 +434,25 @@ extern int AMUDP_SPMDStartup(int *argc, char ***argv,
       printf("master host name: %s\n", masterHostname); fflush(stdout);
 
     // TCP socket lists
-    SocketList allList(AMUDP_SPMDNUMPROCS*4+10); // a list of all active sockets
+    SocketList allList(AMUDP_SPMDNUMPROCS*4+11); // a list of all active sockets
     SocketList coordList(AMUDP_SPMDNUMPROCS);    // a list of all coordination sockets
-    SocketList stdinList(AMUDP_SPMDNUMPROCS);    // a list of all stdin routing sockets
+    //SocketList stdinList(AMUDP_SPMDNUMPROCS);    // a list of all stdin routing sockets
+    SOCKET stdinSocket = INVALID_SOCKET; // just compute node 0 gets stdin.
     SocketList stdoutList(AMUDP_SPMDNUMPROCS);   // a list of all stdout routing sockets
     SocketList stderrList(AMUDP_SPMDNUMPROCS);   // a list of all stderr routing sockets
     AMUDP_SPMDSlaveSocket = (SOCKET*)AMUDP_malloc(AMUDP_SPMDNUMPROCS * sizeof(SOCKET));
+
+    // Make FD_STDIN nonblocking.
+    {
+      int flags = 0;
+      flags = fcntl(FD_STDIN, F_GETFL);
+      if (flags == -1) AMUDP_Err("fcntl FD_STDIN failed");
+      else {
+        flags |= O_NONBLOCK;
+        flags = fcntl(FD_STDIN, F_SETFL, flags);
+        if (flags == -1) AMUDP_Err("fcntl FD_STDIN failed");
+      }
+    }
 
     try {
       // create our TCP listen ports 
@@ -447,6 +472,7 @@ extern int AMUDP_SPMDStartup(int *argc, char ***argv,
     allList.insert(AMUDP_SPMDStdinListenSocket);
     allList.insert(AMUDP_SPMDStdoutListenSocket);
     allList.insert(AMUDP_SPMDStderrListenSocket);
+    allList.insert(FD_STDIN);
 
     { /* flatten a snapshot of the master's environment for transmission to slaves
        * here we assume the standard representation where a pointer to the environment 
@@ -581,7 +607,7 @@ extern int AMUDP_SPMDStartup(int *argc, char ***argv,
         // stdin/stderr/stdout listeners - incoming connections
         if (AMUDP_SPMDStdinListenSocket != INVALID_SOCKET &&
             FD_ISSET(AMUDP_SPMDStdinListenSocket, psockset))  
-          setupStdSocket(AMUDP_SPMDStdinListenSocket, stdinList, allList);
+          setupStdinSocket(AMUDP_SPMDStdinListenSocket, stdinSocket, allList);
         if (AMUDP_SPMDStdoutListenSocket != INVALID_SOCKET &&
             FD_ISSET(AMUDP_SPMDStdoutListenSocket, psockset)) 
           setupStdSocket(AMUDP_SPMDStdoutListenSocket, stdoutList, allList);
@@ -592,20 +618,67 @@ extern int AMUDP_SPMDStartup(int *argc, char ***argv,
         // stdout/err sockets - must come before possible exit to drain output
         handleStdOutput(stdout, psockset, stdoutList, allList, AMUDP_SPMDNUMPROCS);
         handleStdOutput(stderr, psockset, stderrList, allList, AMUDP_SPMDNUMPROCS);
-        // stdin (illegal to receive anything here)
-        if ((numset = stdinList.getIntersection(psockset, tempSockArr, AMUDP_SPMDNUMPROCS))) {
-          for (int i=0; i < numset; i++) {
-            SOCKET s = tempSockArr[i];
-            AMUDP_assert(FD_ISSET(s, psockset));
-            if (isClosed(s)) {
-              DEBUG_MASTER("dropping a stdinList socket...");
-              stdinList.remove(s);
+        // stdinSocket (illegal to receive anything here)
+        if (stdinSocket != INVALID_SOCKET && FD_ISSET(stdinSocket, psockset)) {
+          SOCKET s = stdinSocket;
+          if (isClosed(s)) {
+            DEBUG_MASTER("dropping a stdinSocket...");
+            stdinSocket = INVALID_SOCKET;
+            allList.remove(s);
+          } else {
+            AMUDP_Err("Master got illegal input on a stdin socket");
+            stdinSocket = INVALID_SOCKET; // prevent subsequent warnings
+            allList.remove(s);
+          }
+        }
+        // handle incoming data on stdin (ie file descriptor 0)
+        if (stdinSocket != INVALID_SOCKET && FD_ISSET(FD_STDIN, psockset)) {
+          SOCKET s = FD_STDIN;
+          fd_set writeset;
+          fd_set* pwriteset = &writeset;
+          struct timeval zero;
+          zero.tv_sec = 0;
+          zero.tv_usec = 0;
+
+          FD_ZERO(pwriteset);
+          FD_SET(stdinSocket, pwriteset);
+          // check to see if stdinSocket is ready to be written to.
+          if(select(stdinSocket+1, NULL, pwriteset, NULL, &zero) == -1 ) {
+            perror("select 2");
+            exit(1);
+          }
+          if( FD_ISSET(stdinSocket, pwriteset) ) {
+            ssize_t got;
+            int written;
+            int amtread;
+            int bufsz = 8*1024;
+            char *buf = (char *)AMUDP_malloc(bufsz);
+            int doclose = 0;
+
+            amtread = 0;
+            got = read(s, buf, bufsz - 1);
+            if (got > 0) {
+              amtread = got;
+            } else if( got == 0 ) {
+              // end of file. We need to close the stdin socket.
+              close_socket(stdinSocket);
+              allList.remove(stdinSocket);
               allList.remove(s);
             } else {
-              AMUDP_Err("Master got illegal input on a stdin socket");
-              stdinList.remove(s); // prevent subsequent warnings
-              allList.remove(s);
+              if (errno == EAGAIN || errno == EWOULDBLOCK ) {
+                // do nothing; EOF or EAGAIN or EWOULDBLOCK.
+              } else {
+                AMUDP_Err("Error on read forwarding stdin: %d", errno);
+              }
             }
+            if( amtread > 0 ) {
+              buf[amtread] = '\0';
+              #if AMUDP_DEBUG_VERBOSE
+                fprintf(stdout, "got some stdin: %s%s", buf, (buf[amtread-1]=='\n'?"":"\n"));
+              #endif
+              sendAll(stdinSocket, buf, amtread);
+            }
+            AMUDP_free(buf);
           }
         }
         //------------------------------------------------------------------------------------
@@ -1024,7 +1097,11 @@ extern int AMUDP_SPMDStartup(int *argc, char ***argv,
       #if !DISABLE_STDSOCKET_REDIRECT
         if (bootstrapinfo.stdinMaster) {
             // perform stdin/out/err redirection
-            newstdin  = connect_socket(SockAddr(masterAddr.IP(),ntoh16(bootstrapinfo.stdinMaster)));
+            if( AMUDP_SPMDMYPROC == 0 ) {
+              newstdin  = connect_socket(SockAddr(masterAddr.IP(),ntoh16(bootstrapinfo.stdinMaster)));
+            } else {
+              newstdin = INVALID_SOCKET;
+            }
             newstdout = connect_socket(SockAddr(masterAddr.IP(),ntoh16(bootstrapinfo.stdoutMaster)));
             newstderr = connect_socket(SockAddr(masterAddr.IP(),ntoh16(bootstrapinfo.stderrMaster)));
             #if 0
@@ -1057,9 +1134,13 @@ extern int AMUDP_SPMDStartup(int *argc, char ***argv,
               #endif
             #else
               /* UNIX */
-              if (dup2(newstdin, FD_STDIN) < 0) { // redirect stdout to socket
-                perror("dup2(stdin)");
-                _exit(1); 
+              if( newstdin != INVALID_SOCKET ) {
+                if (dup2(newstdin, FD_STDIN) < 0) { // redirect stdout to socket
+                  perror("dup2(stdin)");
+                  _exit(1); 
+                }
+              } else {
+                close(FD_STDIN);
               }
               if (dup2(newstdout, FD_STDOUT) < 0) { // redirect stdout to socket
                 perror("dup2(stdout)");
