@@ -72,9 +72,11 @@ extern bool fGPU;
 extern bool fHeterogeneous;
 extern bool fieeefloat;
 
+enum { LS_DEFAULT=0, LS_STATIC, LS_DYNAMIC };
+extern int fLinkStyle;
+
 extern int debugParserLevel;
 extern bool fLibraryCompile;
-extern bool fLibraryShared;     // Compile a shared library (DLL).
 extern bool no_codegen;
 extern bool developer;
 extern int num_constants_per_variable;

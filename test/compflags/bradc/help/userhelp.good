@@ -61,6 +61,7 @@ C Code Generation Options:
 
 C Code Compilation Options:
       --ccflags <flags>                  Back-end C compiler flags
+      --dynamic                          Generate a dynamically linked binary
       --ldflags <flags>                  Back-end C linker flags
   -I, --hdr-search-path <directory>      C header search path
   -l, --lib-linkage <library>            C library linkage
@@ -74,6 +75,7 @@ C Code Compilation Options:
 Compilation Trace Options:
       --print-commands                   Print system commands
       --print-passes                     Print compiler passes
+      --static                           Generate a statically linked binary
 
 Miscellaneous Options:
       --[no-]devel                       Compile as a developer [user]

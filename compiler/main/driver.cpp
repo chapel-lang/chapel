@@ -43,7 +43,6 @@ static char moduleSearchPath[FILENAME_MAX] = "";
 static char log_flags[512] = "";
 static bool rungdb = false;
 bool fLibraryCompile = false;
-bool fLibraryShared = false;    // Compile a shared library.
 bool no_codegen = false;
 int debugParserLevel = 0;
 bool developer = false;
@@ -80,6 +79,7 @@ int tuple_copy_limit = scalar_replace_limit;
 bool fGenIDS = false;
 bool fSerialForall = false;
 bool fSerial;  // initialized in setupOrderedGlobals() below
+int fLinkStyle = LS_DEFAULT; // use backend compiler's default
 bool fLocal;   // initialized in setupOrderedGlobals() below
 bool fHeterogeneous = false; // re-initialized in setupOrderedGlobals() below
 bool fGPU;
@@ -204,9 +204,12 @@ static void recordCodeGenStrings(int argc, char* argv[]) {
   get_version(compileVersion);
 }
 
-static void setLibraryShared(ArgumentState* arg_state, char* arg_unused) {
-  fLibraryShared = true;
-  fLibraryCompile = true;   // --shared implies --library.
+static void setStaticLink(ArgumentState* arg_state, char* arg_unused) {
+  fLinkStyle = LS_STATIC;
+}
+
+static void setDynamicLink(ArgumentState* arg_state, char* arg_unused) {
+  fLinkStyle = LS_DYNAMIC;
 }
 
 static void setChapelDebug(ArgumentState* arg_state, char* arg_unused) {
@@ -437,6 +440,7 @@ static ArgumentDescription arg_desc[] = {
 
  {"", ' ', NULL, "C Code Compilation Options", NULL, NULL, NULL, NULL},
  {"ccflags", ' ', "<flags>", "Back-end C compiler flags", "S256", ccflags, "CHPL_CC_FLAGS", NULL},
+ {"dynamic", ' ', NULL, "Generate a dynamically linked binary", "F", &fLinkStyle, NULL, setDynamicLink},
  {"ldflags", ' ', "<flags>", "Back-end C linker flags", "S256", ldflags, "CHPL_LD_FLAGS", NULL},
  {"hdr-search-path", 'I', "<directory>", "C header search path", "P", incFilename, NULL, handleIncDir},
  {"lib-linkage", 'l', "<library>", "C library linkage", "P", libraryFilename, "CHPL_LIB_NAME", handleLibrary},
@@ -449,6 +453,7 @@ static ArgumentDescription arg_desc[] = {
  {"", ' ', NULL, "Compilation Trace Options", NULL, NULL, NULL, NULL},
  {"print-commands", ' ', NULL, "Print system commands", "F", &printSystemCommands, "CHPL_PRINT_COMMANDS", NULL},
  {"print-passes", ' ', NULL, "Print compiler passes", "F", &printPasses, "CHPL_PRINT_PASSES", NULL},
+ {"static", ' ', NULL, "Generate a statically linked binary", "F", &fLinkStyle, NULL, setStaticLink},
 
  {"", ' ', NULL, "Miscellaneous Options", NULL, NULL, NULL, NULL},
  {"devel", ' ', NULL, "Compile as a developer [user]", "N", &developer, "CHPL_DEVELOPER", setDevelSettings},
@@ -498,8 +503,7 @@ static ArgumentDescription arg_desc[] = {
  {"remove-empty-records", ' ', NULL, "Enable [disable] removal of empty records", "n", &fNoRemoveEmptyRecords, "CHPL_DISABLE_REMOVE_EMPTY_RECORDS", NULL},
  {"reposition-def-expressions", ' ', NULL, "Enable [disable] repositioning def expressions to usage points", "n", &fNoRepositionDefExpr, "CHPL_DISABLE_REPOSITION_DEF_EXPR", NULL},
  {"local-temp-names", ' ', NULL, "[Don't] Generate locally-unique temp names", "N", &localTempNames, "CHPL_LOCAL_TEMP_NAMES", NULL},
- {"library", ' ', NULL, "compile Chapel library file", "F", &fLibraryCompile, NULL, NULL},
- {"shared", ' ', NULL, "compile a shared library file", "F", &fLibraryShared, NULL, setLibraryShared},
+ {"library", ' ', NULL, "Generate a Chapel library file", "F", &fLibraryCompile, NULL, NULL},
  {"timers", ' ', NULL, "Enable general timers one to five", "F", &fEnableTimers, "CHPL_ENABLE_TIMERS", NULL},
  {"warn-promotion", ' ', NULL, "Warn about scalar promotion", "F", &fWarnPromotion, NULL, NULL},
  {0}

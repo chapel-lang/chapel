@@ -30,6 +30,10 @@ COMP_CFLAGS_NONCHPL = -DYYINCLUDED_STDLIB_H
 RUNTIME_CFLAGS = $(CFLAGS)
 RUNTIME_GEN_CFLAGS = $(RUNTIME_CFLAGS)
 GEN_CFLAGS = -qsuppress=1506-229
+GEN_STATIC_FLAG = -bstatic
+GEN_DYNAMIC_FLAG = -bdynamic
+LIB_STATIC_FLAG =
+LIB_DYNAMIC_FLAG = -qmkshrobj -X64
 #
 # YYINCLUDED_STDLIB_H: was needed to avoid duplicate malloc/free errors
 # 1506-229: warns about empty files
