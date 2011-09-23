@@ -1,0 +1,12 @@
+This ... gives us problems because the inout is not propogated.
+
+cc1: warnings being treated as errors
+In file included from /tmp/chpl-mppf-18071.deleteme/_main.c:24:
+/tmp/chpl-mppf-18071.deleteme/override_overload2.c: In function 'read2':
+/tmp/chpl-mppf-18071.deleteme/override_overload2.c:82: error: passing argument 2 of '(void (*)(struct __BaseReader *, int32_t *))(chpl_vmtable[_virtual_method_tmp_][2])' makes pointer from integer without a cast
+/tmp/chpl-mppf-18071.deleteme/override_overload2.c:82: note: expected '_ref_int32_t' but argument is of type 'int32_t'
+/tmp/chpl-mppf-18071.deleteme/override_overload2.c: In function 'read3':
+/tmp/chpl-mppf-18071.deleteme/override_overload2.c:93: error: incompatible type for argument 2 of '(void (*)(struct __BaseReader *, _real64 *))(chpl_vmtable[_virtual_method_tmp_][1])'
+/tmp/chpl-mppf-18071.deleteme/override_overload2.c:93: note: expected '_ref__real64' but argument is of type '_real64'
+gmake: *** [/tmp/chpl-mppf-18071.deleteme/override_overload2.tmp] Error 1
+error: compiling generated source
