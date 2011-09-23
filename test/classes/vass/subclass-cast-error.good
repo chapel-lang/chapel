@@ -1,0 +1,1 @@
+subclass-cast-error.chpl:5: error: casting an object to a class that is not its superclass
