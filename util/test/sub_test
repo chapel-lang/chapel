@@ -789,15 +789,16 @@ for testname in testsrc:
                 sys.stdout.flush()
                 subprocess.Popen(['./PREDIFF',
                                   execname,complog,compiler,
-                                  ' '.join(globalCompopts)+
-                                  ' '+compopts,
+                                  ' '.join(globalCompopts)+' '+compopts,
                                   ' '.join(args)]).wait()
 
             if prediff:
                 sys.stdout.write('[Executing prediff %s.prediff]\n'%(execname))
                 sys.stdout.flush()
                 subprocess.Popen(['./'+execname+'.prediff',
-                                  execname,complog,compiler]).wait()
+                                  execname,complog,compiler,
+                                  ' '.join(globalCompopts)+' '+compopts,
+                                  ' '.join(args)]).wait()
 
             # Find the default 'golden' output file
             if len(clist) != 0:
@@ -830,7 +831,7 @@ for testname in testsrc:
             sys.stdout.write('matching compiler output for %s/%s'%
                                  (localdir, execname))
             if len(compoptslist) > 1:
-                sys.stdout.write('(%s %s)'%(' '.join(globalCompopts),compopts))
+                sys.stdout.write(' (%s %s)'%(' '.join(globalCompopts),compopts))
             sys.stdout.write(']\n')
 
             cleanup(execname)
