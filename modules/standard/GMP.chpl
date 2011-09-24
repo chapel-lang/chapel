@@ -297,7 +297,7 @@ module GMP {
       } else {
         mpz_init(this.mpz);
         var mpz_struct = num.mpzStruct(); 
-        chpl_gmp_get_mpz(this.mpz, num.locale.uid, mpz_struct);
+        chpl_gmp_get_mpz(this.mpz, num.locale.chpl_id, mpz_struct);
       }
     }
     proc BigInt() { mpz_init(this.mpz); }
@@ -327,7 +327,7 @@ module GMP {
       } else {
         var mpz_struct = this.mpz[1];
         var tmp = new BigInt(true, (mp_bits_per_limb:uint(64))*chpl_gmp_mpz_nlimbs(mpz_struct));
-        chpl_gmp_get_mpz(tmp.mpz, this.locale.uid, mpz_struct); 
+        chpl_gmp_get_mpz(tmp.mpz, this.locale.chpl_id, mpz_struct); 
         return (true, tmp);
       }
     }
@@ -340,7 +340,7 @@ module GMP {
           mpz_set(this.mpz, a.mpz);
         } else {
           var mpz_struct = a.mpzStruct(); 
-          chpl_gmp_get_mpz(this.mpz, a.locale.uid, mpz_struct);
+          chpl_gmp_get_mpz(this.mpz, a.locale.chpl_id, mpz_struct);
         }
       }
     }
@@ -1419,7 +1419,7 @@ module GMP {
       if a.locale == here {
         gmp_randinit_set(this.state, a.state);
       } else {
-        chpl_gmp_get_randstate(this.state, a.locale.uid, a.state[1]);
+        chpl_gmp_get_randstate(this.state, a.locale.chpl_id, a.state[1]);
       }
     }
     proc ~GMPRandom()
@@ -1570,7 +1570,7 @@ module GMP {
       mpz_set(tmp.mpz, x.mpz.mpz);
     } else {
       var mpz_struct = x.mpzStruct();
-      chpl_gmp_get_mpz(tmp.mpz, x.mpz.locale.uid, mpz_struct); 
+      chpl_gmp_get_mpz(tmp.mpz, x.mpz.locale.chpl_id, mpz_struct); 
     }
     this.mpz = tmp;
   }
@@ -1579,7 +1579,7 @@ module GMP {
       mpz_set(tmp.mpz, x.mpz.mpz);
     } else {
       var mpz_struct = x.mpzStruct();
-      chpl_gmp_get_mpz(this.mpz.mpz, x.mpz.locale.uid, mpz_struct); 
+      chpl_gmp_get_mpz(this.mpz.mpz, x.mpz.locale.chpl_id, mpz_struct); 
     }
  
     on this.mpz {

@@ -62,6 +62,8 @@ GNU_GPP_MAJOR_VERSION = $(shell $(CC) -dumpversion | awk '{split($$1,a,"."); pri
 GNU_GPP_MINOR_VERSION = $(shell $(CC) -dumpversion | awk '{split($$1,a,"."); printf("%s", a[2]);}')
 GNU_GPP_SUPPORTS_MISSING_DECLS = $(shell test $(GNU_GPP_MAJOR_VERSION) -lt 4 || (test $(GNU_GPP_MAJOR_VERSION) -eq 4 && test $(GNU_GPP_MINOR_VERSION) -le 2); echo "$$?")
 
+GNU_GPP_SUPPORTS_WERROR = $(shell test $(GNU_GPP_MAJOR_VERSION) -lt 4 || (test $(GNU_GPP_MAJOR_VERSION) -eq 4 && test $(GNU_GPP_MINOR_VERSION) -le 3); echo "$$?")
+
 #
 # Flags for turning on warnings for C++/C code
 #
@@ -126,7 +128,11 @@ RUNTIME_GEN_CFLAGS += -Wno-unused
 #       so that a warning is still printed out. Since GASNet Tools will
 #       be used for atomics, the GASNET_MORE_CFLAGS will have to apply
 #       to *all* our code, not just GASNet comms support.
+ifeq ($(GNU_GPP_SUPPORTS_WERROR),1)
 CHPL_GASNET_MORE_CFLAGS = -Wno-error=strict-prototypes -Wno-error=missing-prototypes -Wno-error=unused-function
+else
+CHPL_GASNET_MORE_CFLAGS = -Wno-strict-prototypes -Wno-missing-prototypes -Wno-unused-function
+endif
 
 ifndef CHPL_COMM_DEBUG
 CHPL_GASNET_MORE_CFLAGS += -Wno-unused

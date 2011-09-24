@@ -56,6 +56,9 @@ int main(int argc, char* argv[]) {
   int runInGDB;
   int numPollingTasks;
 
+  // MPF - initialize GASNet's backtrace facility.
+  gasneti_backtrace_init(argv[0]);
+
   chpl_comm_init(&argc, &argv);
   chpl_mem_init();
   chpl_comm_post_mem_init();

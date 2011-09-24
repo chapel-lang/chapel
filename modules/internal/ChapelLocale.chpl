@@ -241,6 +241,9 @@ config const
   memThreshold: uint(64) = 0,
   memLog: string = "";
 
+config const backtrace:bool = false;
+extern proc chpl_set_backtrace_config(show:bool);
+
 pragma "no auto destroy"
 config const
   memLeaksLog: string = "";
@@ -250,8 +253,10 @@ proc chpl_startTrackingMemory() {
     coforall loc in Locales {
       if loc == here {
         __primitive("chpl_setMemFlags", memTrack, memStats, memLeaks, memLeaksTable, memMax, memThreshold, memLog, memLeaksLog);
+        chpl_set_backtrace_config(backtrace);
       } else on loc {
           __primitive("chpl_setMemFlags", memTrack, memStats, memLeaks, memLeaksTable, memMax, memThreshold, memLog, memLeaksLog);
+        chpl_set_backtrace_config(backtrace);
       }
     }
   }

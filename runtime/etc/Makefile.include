@@ -21,6 +21,7 @@ CHAPEL_RT_INC_DIR = \
         -I$(CHAPEL_ROOT)/runtime/include/comp-$(CHPL_MAKE_COMPILER) \
         -I$(CHAPEL_ROOT)/runtime/include/$(subst -sim,,$(CHPL_MAKE_TARGET_PLATFORM)) \
         -I$(CHAPEL_ROOT)/runtime/include \
+        -I$(GASNET_TOOLS_INCLUDE_DIR) \
         -I$(GMP_INCLUDE_DIR)
 
 CHAPEL_RT_LIB_DIR = $(CHAPEL_ROOT)/$(LIB_RT_DIR)

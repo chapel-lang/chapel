@@ -35,14 +35,34 @@
 #include "gasnet.h"
 #endif
 
-#ifndef _GASNET_TOOLS_H
+
 #ifdef _chplrt_H_
+#ifndef PLEASE_INCLUDE_GASNET_TOOLS_H
+#define PLEASE_INCLUDE_GASNET_TOOLS_H 1
+#endif
+#endif
+
+#ifdef CHPL_GEN_CODE
+#ifndef PLEASE_INCLUDE_GASNET_TOOLS_H
+#define PLEASE_INCLUDE_GASNET_TOOLS_H 1
+#endif
+#endif
+
+#ifdef CHPL_RUNTIME
+#ifndef PLEASE_INCLUDE_GASNET_TOOLS_H
+#define PLEASE_INCLUDE_GASNET_TOOLS_H 1
+#endif
+#endif
+
+
+#ifdef PLEASE_INCLUDE_GASNET_TOOLS_H
 // GASNet manuals say they want this to be the 1st thing included.
 // If we're not compiling chapel codes, we'll fall back on
 // e.g. __sync_fetch_add
 #include "gasnet_tools.h"
-#else
+#endif
 
+#ifndef _GASNET_TOOLS_H
 #include <limits.h> // for LONG_MAX.
 // We make some wrappers using GCC intrinsics for easy C test cases.
 typedef long gasnett_atomic_val_t;
@@ -79,10 +99,7 @@ gasnett_atomic_val_t gasnett_atomic_subtract(gasnett_atomic_t *p,
                                              int flags) {
   return __sync_sub_and_fetch(p, op);
 }
-// end not in _chplrt_H_
-#endif
-
-// No gasnet tools.
+// Workaround gasnet tools.
 #endif
 
 #include <sys/types.h>

@@ -25,3 +25,17 @@ endif
 
 gasnet_tools.h: $(GASNET_TOOLS_FILE)
 
+# We might need to make GMP because we use GMP in header files
+#
+# don't remake GMP if we're making depend from the parent directory
+#
+ifeq ($(CHPL_MAKE_RULE),depend)
+$(GMP_FILE):
+else
+$(GMP_FILE):
+	cd $(THIRD_PARTY_DIR) && $(MAKE) gmp
+endif
+
+
+gmp.h: $(GMP_FILE)
+

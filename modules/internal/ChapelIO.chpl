@@ -339,6 +339,10 @@
   extern type qio_channel_ptr_t;
   extern const QIO_CHANNEL_PTR_NULL:qio_channel_ptr_t;
 
+  // also the type for a buffer for qio_file_open_mem.
+  extern type qbuffer_ptr_t;
+  extern const QBUFFER_PTR_NULL:qbuffer_ptr_t;
+
   extern type style_char_t = c_char_t;
 
   extern const QIO_STRING_FORMAT_WORD:uint(8);
@@ -443,6 +447,7 @@
   extern proc qio_file_init(inout file_out:qio_file_ptr_t, fp:_file, fd:fd_t, iohints:c_int, inout style:iostyle, usefilestar:c_int):err_t;
   extern proc qio_file_open_access(inout file_out:qio_file_ptr_t, path:string, access:string, iohints:c_int, inout style:iostyle):err_t;
   extern proc qio_file_open_tmp(inout file_out:qio_file_ptr_t, iohints:c_int, inout style:iostyle):err_t;
+  extern proc qio_file_open_mem(inout file_out:qio_file_ptr_t, buf:qbuffer_ptr_t, inout style:iostyle):err_t;
 
   /* Close a file (asserts ref count==1)
      This is not usually necessary to call, but a program will
@@ -823,6 +828,14 @@
     return ret;
   }
 
+  proc openmem(style:iostyle = defaultStyle(), onErr:ErrorHandler=nil) {
+    var local_style = style;
+    var ret = new file(onErr);
+    seterr(onErr, qio_file_open_mem(ret._file_internal, QBUFFER_PTR_NULL, local_style));
+    return ret;
+  }
+
+
 
   /* in the future, this will be an interface.
      */
@@ -883,9 +896,10 @@
       // Normally this is handled explicitly in read/write.
       f.write("\n");
     }
-    proc readThis(f: Writer) {
-      halt("ioNewline.readThis must be implemented in channel");
-    }
+  }
+  proc Reader.readType(inout x:ioNewline):bool {
+    halt("ioNewline.readType must be implemented in Reader subclasses.");
+    return false;
   }
   pragma "inline" proc _cast(type t, x: ioNewline) where t == string {
     return "\n";
@@ -899,10 +913,12 @@
       // Normally this is handled explicitly in read/write.
       f.write(val);
     }
-    proc readThis(f: Writer) {
-      halt("ioLiteral.readThis must be implemented in channel");
-    }
   }
+  proc Reader.readType(inout x:ioLiteral):bool {
+    halt("readType(ioLiteral) must be implemented in Reader subclasses.");
+    return false;
+  }
+
   pragma "inline" proc _cast(type t, x: ioLiteral) where t == string {
     return x.val;
   }
@@ -996,8 +1012,10 @@
   // Read routines for all primitive types.
   proc _read_text_internal(_channel_internal:qio_channel_ptr_t, out x:?t):err_t where _isIoPrimitiveType(t) {
     if _isBooleanType(t) {
-      var trues = ("true", "1", "yes");
-      var falses = ("false", "0", "no");
+      //var trues = ("true", "1", "yes");
+      //var falses = ("false", "0", "no");
+      var trues = tuple("true");
+      var falses = tuple("false");
       var num = trues.size;
       var err:err_t;
       var got:bool;
@@ -1193,6 +1211,7 @@
     if t == ioNewline {
       return qio_channel_skip_past_newline(false, _channel_internal);
     } else if t == ioLiteral {
+      writeln("in scan literal ", x.val);
       return qio_channel_scan_literal(false, _channel_internal, x.val, x.val.length, x.ignoreWhiteSpace);
     } else if kind == iokind.dynamic {
       var binary:uint(8) = qio_channel_binary(_channel_internal);
@@ -1675,19 +1694,6 @@
   proc read(type t ...?numTypes) where numTypes > 1 {
     return stdin.read((...t));
   }
-
-  // readThis and writeThis methods for the basic types
-  // these just need to call writer.writePrimitive or reader.readPrimitive
-  proc numeric.readThis(r: Reader) { r.readPrimitive(this); }
-  proc enumerated.readThis(r: Reader) { r.readPrimitive(this); }
-  proc bool.readThis(r: Reader) { r.readPrimitive(this); }
-  proc string.readThis(r: Reader) { r.readPrimitive(this); }
-
-  proc numeric.writeThis(r: Writer) { r.writePrimitive(this); }
-  proc enumerated.writeThis(r: Writer) { r.writePrimitive(this); }
-  proc bool.writeThis(r: Writer) { r.writePrimitive(this); }
-  proc string.writeThis(r: Writer) { r.writePrimitive(this); }
-
   proc _isNilObject(val) {
     proc helper(o: object) return o == nil;
     proc helper(o)         return false;
@@ -1706,19 +1712,19 @@
       halt("Generic Writer.writePrimitive called");
     }
     proc writeIt(x:?t) {
-      if isClassType(t) {
-        // FUTURE -- write the class name/ID?
-
-        if x == nil {
-          var iolit = new ioLiteral("nil", !binary);
-          writePrimitive(iolit);
-          return;
-        }
-      }
-
       if _isIoPrimitiveTypeOrNewline(t) {
         writePrimitive(x);
       } else {
+        if isClassType(t) {
+          // FUTURE -- write the class name/ID?
+
+          if x == nil {
+            var iolit = new ioLiteral("nil", !binary);
+            writePrimitive(iolit);
+            return;
+          }
+        }
+
         x.writeThis(this);
       }
     }
@@ -1823,6 +1829,10 @@
     }
   }
 
+  record maybe {
+    var hasit:bool;
+    var it;
+  }
 
   class Reader {
     proc writing param return false;
@@ -1831,27 +1841,48 @@
     proc error():err_t { return 0; }
     proc setError(e:err_t) { }
     proc clearError() { }
-    proc readPrimitive(inout x):bool {
+
+    //proc readPrimitive(type t):maybe(t) where _isIoPrimitiveTypeOrNewline(t) {
+    proc readPrimitive(inout x:?t):bool where _isIoPrimitiveTypeOrNewline(t) {
       halt("Generic Reader.readPrimitive called");
+      /*var ret:maybe(t);
+      ret.hasit = false;
+      return ret;*/
+      return false;
     }
     proc readIt(inout x:?t):bool {
-      if isClassType(t) {
-        // FUTURE -- write the class name/ID?
+      if _isIoPrimitiveTypeOrNewline(t) {
+        /*var m = readPrimitive(t);
+        x = m.it;
+        return m.hasit;*/
+        return readPrimitive(x);
+      } else {
+        if isClassType(t) {
+          // FUTURE -- write the class name/ID?
 
-        // Handle reading nil.
-        var iolit = new ioLiteral("nil", !binary);
-        readPrimitive(iolit);
-        if error() == 0 {
-          // Return nil.
-          delete x;
-          x = nil;
-          return true;
-        } else {
-          clearError();
+          // Handle reading nil.
+          var iolit = new ioLiteral("nil", !binary);
+          var got:bool;
+          writeln("Reading iolit ", iolit.val);
+          /*var m = readPrimitive(iolit.type);
+          iolit = m.it;
+          got = m.hasit;*/
+          got = readPrimitive(iolit);
+          if got && error() == 0 {
+            // Return nil.
+            delete x;
+            x = nil;
+            return true;
+          } else {
+            clearError();
+          }
         }
-      }
 
-      x.readThis(this);
+        var got: bool;
+        got = this.readType(x);
+        return got;
+      }
+      return false;
     }
     proc readwrite(inout x) {
       readIt(x);
@@ -1891,14 +1922,14 @@
         return true;
       }
     }
-    proc readThisFieldsDefaultImpl(inout x:?t, inout first:bool) {
+    proc readThisFieldsDefaultImpl(type t, inout x, inout first:bool) {
       param num_fields = __primitive("num fields", t);
 
       if (isClassType(t)) {
         if t != object {
           // only write parent fields for subclasses of object
           // since object has no .super field.
-          readThisFieldsDefaultImpl(x.super, first);
+          readThisFieldsDefaultImpl(x.super.type, x, first);
         }
       }
 
@@ -1947,7 +1978,7 @@
     // with the appropriate *concrete* type of x; that's what
     // happens now with buildDefaultWriteFunction
     // since it has the concrete type and then calls this method.
-    proc readThisDefaultImpl(inout x:?t) {
+    proc readThisDefaultImpl(inout x:?t):bool {
       if !binary {
         if isClassType(t) {
           var start = new ioLiteral("{");
@@ -1960,7 +1991,7 @@
 
       var first = true;
 
-      readThisFieldsDefaultImpl(x, first);
+      //readThisFieldsDefaultImpl(t, x, first);
 
       if !binary {
         if isClassType(t) {
@@ -1971,6 +2002,13 @@
           read(end);
         }
       }
+
+      if error() == EEOF {
+        clearError();
+        return false;
+      } else {
+        return true;
+      }
     }
   }
 
@@ -1980,6 +2018,39 @@
   proc &(r: Reader, x) {
     r.readwrite(x);
   }
+
+  // readType and writeThis methods for the basic types
+  // these just need to call writer.writePrimitive or reader.readPrimitive
+  proc Reader.readType(inout x:numeric):bool {
+    return this.readPrimitive(x);
+    /*var m = this.readPrimitive(x.type);
+    x = m.it;
+    return m.hasit;*/
+  }
+  proc Reader.readType(inout x:enumerated):bool {
+    return this.readPrimitive(x);
+    /*var m = this.readPrimitive(x.type);
+    x = m.it;
+    return m.hasit;*/
+  }
+  proc Reader.readType(inout x:bool):bool {
+     return this.readPrimitive(x);
+    /*var m = this.readPrimitive(x.type);
+    x = m.it;
+    return m.hasit;*/
+  }
+  proc Reader.readType(inout x:string):bool {
+    return this.readPrimitive(x);
+    /*var m = this.readPrimitive(x.type);
+    x = m.it;
+    return m.hasit;*/
+  }
+
+  proc numeric.writeThis(r: Writer) { r.writePrimitive(this); }
+  proc enumerated.writeThis(r: Writer) { r.writePrimitive(this); }
+  proc bool.writeThis(r: Writer) { r.writePrimitive(this); }
+  proc string.writeThis(r: Writer) { r.writePrimitive(this); }
+
 
   class ChannelWriter : Writer {
     var _channel_internal:qio_channel_ptr_t;
@@ -2026,10 +2097,25 @@
     proc clearError() {
       err = 0;
     }
-    proc readIt(inout x) {
+    //proc readPrimitive(type t):maybe(t) where _isIoPrimitiveTypeOrNewline(t) {
+    proc readPrimitive(inout x:?t):bool where _isIoPrimitiveTypeOrNewline(t) {
+      //var ret:maybe(t);
       if err == 0 {
+        //err = _read_one_internal(_channel_internal, iokind.dynamic, ret.it);
         err = _read_one_internal(_channel_internal, iokind.dynamic, x);
+        if err == EEOF {
+          clearError();
+          return false;
+          //ret.hasit = false;
+        } else {
+          return true;
+          //ret.hasit = true;
+        }
+      } else {
+        //ret.hasit = false;
+        return false;
       }
+      //return ret;
     }
   }
 //}
@@ -2114,10 +2200,12 @@ proc chpl_taskID_t.writeThis(f: Writer) {
   var tmp : uint(64) = this : uint(64);
   f.write(tmp);
 }
-proc chpl_taskID_t.readThis(f: Reader) {
+proc Reader.readType(inout x:chpl_taskID_t):bool {
   var tmp : uint(64);
-  f.read(tmp);
-  this = tmp;
+  var got : bool;
+  got = this.read(tmp);
+  x = tmp;
+  return got;
 }
 
 

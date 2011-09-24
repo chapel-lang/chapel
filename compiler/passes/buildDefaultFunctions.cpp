@@ -849,11 +849,7 @@ static void buildDefaultReadWriteFunctions(ClassType* ct) {
     fn->insertFormalAtTail(fileArg);
     fn->retType = dtVoid;
 
-    if ( function_exists("readWriteThis", 3, dtMethodToken, ct) ) {
-      fn->insertAtTail(new CallExpr(buildDotExpr(fn->_this, "readWriteThis"), fileArg));
-    } else {
-      fn->insertAtTail(new CallExpr(buildDotExpr(fileArg, "writeThisDefaultImpl"), fn->_this));
-    }
+    fn->insertAtTail(new CallExpr(buildDotExpr(fileArg, "writeThisDefaultImpl"), fn->_this));
 
     DefExpr* def = new DefExpr(fn);
     ct->symbol->defPoint->insertBefore(def);
@@ -862,29 +858,29 @@ static void buildDefaultReadWriteFunctions(ClassType* ct) {
     normalize(fn);
     ct->methods.add(fn);
   }
-  if (!function_exists("readThis", 3, dtMethodToken, ct, dtReader)) {
-    FnSymbol* fn = new FnSymbol("readThis");
+  if (!function_exists("readType", 3, dtMethodToken, dtReader, ct)) {
+    FnSymbol* fn = new FnSymbol("readType");
     fn->cname = astr("_auto_", ct->symbol->name, "_read");
-    fn->_this = new ArgSymbol(INTENT_BLANK, "this", ct);
+    ArgSymbol* arg = new ArgSymbol(INTENT_INOUT, "x", ct);
+    arg->markedGeneric = true;
+    fn->_this = new ArgSymbol(INTENT_BLANK, "this", dtReader);
     fn->_this->addFlag(FLAG_ARG_THIS);
-    ArgSymbol* fileArg = new ArgSymbol(INTENT_BLANK, "f", dtReader);
     fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
     fn->insertFormalAtTail(fn->_this);
-    fn->insertFormalAtTail(fileArg);
-    fn->retType = dtVoid;
+    fn->insertFormalAtTail(arg);
+    fn->retType = dtBool;
 
-    if ( function_exists("readWriteThis", 3, dtMethodToken, ct) ) {
-      fn->insertAtTail(new CallExpr(buildDotExpr(fn->_this, "readWriteThis"), fileArg));
-    } else {
-      fn->insertAtTail(new CallExpr(buildDotExpr(fileArg, "readThisDefaultImpl"), fn->_this));
-    }
+    CallExpr* call = new CallExpr(buildDotExpr(fn->_this, "readThisDefaultImpl"), arg);
+    fn->insertAtTail(new CallExpr(PRIM_RETURN, call));
 
     DefExpr* def = new DefExpr(fn);
     ct->symbol->defPoint->insertBefore(def);
+    // ? ct->methods.add(fn) ? in old code
     fn->addFlag(FLAG_METHOD);
     reset_line_info(def, ct->symbol->lineno);
     normalize(fn);
     ct->methods.add(fn);
+    // ? need to add it to Writer?
   }
 }
 

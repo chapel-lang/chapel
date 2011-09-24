@@ -31,5 +31,6 @@ Built-in config vars:
                      memMax: uint(64)
                memThreshold: uint(64)
                      memLog: string
+                  backtrace: bool 
                 memLeaksLog: string
 

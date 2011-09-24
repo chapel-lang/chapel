@@ -1641,6 +1641,11 @@ err_t _buffered_get_memory_file_lock_held(qio_channel_t* ch, int64_t amt, int wr
       qbytes_release(iobuf);
       if( err ) goto error;
     }
+  } else {
+    // When reading, do not go past end of buffer.
+    if( end > qbuffer_end_offset(ch->file->buf) ) {
+      end = qbuffer_end_offset(ch->file->buf);
+    }
   }
 
   // Set fstart and fend to the position of start/end in the
