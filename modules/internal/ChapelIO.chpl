@@ -1211,8 +1211,11 @@
     if t == ioNewline {
       return qio_channel_skip_past_newline(false, _channel_internal);
     } else if t == ioLiteral {
-      writeln("in scan literal ", x.val);
+      //writeln("in scan literal ", x.val);
       return qio_channel_scan_literal(false, _channel_internal, x.val, x.val.length, x.ignoreWhiteSpace);
+      //e = qio_channel_scan_literal(false, _channel_internal, x.val, x.val.length, x.ignoreWhiteSpace);
+      //writeln("Scanning literal ", x.val,  " yeilded error ", e);
+      //return e;
     } else if kind == iokind.dynamic {
       var binary:uint(8) = qio_channel_binary(_channel_internal);
       var byteorder:uint(8) = qio_channel_byteorder(_channel_internal);
@@ -1257,7 +1260,8 @@
   }
 
   proc _read_one_internal(_channel_internal:qio_channel_ptr_t, param kind:iokind, inout x:?t):err_t {
-    var reader = new ChannelReader(_channel_internal=_channel_internal, err=0);
+    //var reader = new ChannelReader(_channel_internal=_channel_internal, err=0);
+    var reader = new Reader(_channel_internal=_channel_internal, err=0);
     var err:err_t;
     reader.read(x);
     err = reader.err;
@@ -1837,7 +1841,7 @@
   class Reader {
     proc writing param return false;
     // if it's binary, we don't decorate class/record fields and values
-    proc binary:bool { return false; }
+    /*proc binary:bool { return false; }
     proc error():err_t { return 0; }
     proc setError(e:err_t) { }
     proc clearError() { }
@@ -1845,11 +1849,11 @@
     //proc readPrimitive(type t):maybe(t) where _isIoPrimitiveTypeOrNewline(t) {
     proc readPrimitive(inout x:?t):bool where _isIoPrimitiveTypeOrNewline(t) {
       halt("Generic Reader.readPrimitive called");
-      /*var ret:maybe(t);
-      ret.hasit = false;
-      return ret;*/
+      //var ret:maybe(t);
+      //ret.hasit = false;
+      //return ret;
       return false;
-    }
+    }*/
     proc readIt(inout x:?t):bool {
       if _isIoPrimitiveTypeOrNewline(t) {
         /*var m = readPrimitive(t);
@@ -1863,7 +1867,7 @@
           // Handle reading nil.
           var iolit = new ioLiteral("nil", !binary);
           var got:bool;
-          writeln("Reading iolit ", iolit.val);
+          //writeln("Reading iolit ", iolit.val);
           /*var m = readPrimitive(iolit.type);
           iolit = m.it;
           got = m.hasit;*/
@@ -1925,6 +1929,8 @@
     proc readThisFieldsDefaultImpl(type t, inout x, inout first:bool) {
       param num_fields = __primitive("num fields", t);
 
+      //writeln("Scanning fields for ", typeToString(t));
+
       if (isClassType(t)) {
         if t != object {
           // only write parent fields for subclasses of object
@@ -1935,12 +1941,16 @@
 
       if !isUnionType(t) {
         // read all fields for classes and records
+
         for param i in 1..num_fields {
           if !binary {
-            var comma = new ioLiteral(", ");
+            var comma = new ioLiteral(",", true);
             if !first then read(comma);
 
-            var eq = new ioLiteral(__primitive("field num to name", t, i) + " = ");
+            var fname = new ioLiteral(__primitive("field num to name", t, i), true);
+            read(fname);
+
+            var eq = new ioLiteral("=", true);
             read(eq);
           }
 
@@ -1991,7 +2001,7 @@
 
       var first = true;
 
-      //readThisFieldsDefaultImpl(t, x, first);
+      readThisFieldsDefaultImpl(t, x, first);
 
       if !binary {
         if isClassType(t) {
@@ -2009,6 +2019,43 @@
       } else {
         return true;
       }
+    }
+  //}
+  //class ChannelReader : Reader {
+    var _channel_internal:qio_channel_ptr_t;
+    var err:err_t;
+    proc binary:bool {
+      var ret:uint(8) = qio_channel_binary(_channel_internal);
+      return ret != 0;
+    }
+    proc error():err_t {
+      return err;
+    }
+    proc setError(e:err_t) {
+      err = e;
+    }
+    proc clearError() {
+      err = 0;
+    }
+    //proc readPrimitive(type t):maybe(t) where _isIoPrimitiveTypeOrNewline(t) {
+    proc readPrimitive(inout x:?t):bool where _isIoPrimitiveTypeOrNewline(t) {
+      //var ret:maybe(t);
+      if err == 0 {
+        //err = _read_one_internal(_channel_internal, iokind.dynamic, ret.it);
+        err = _read_one_internal(_channel_internal, iokind.dynamic, x);
+        if err == EEOF {
+          clearError();
+          return false;
+          //ret.hasit = false;
+        } else {
+          return true;
+          //ret.hasit = true;
+        }
+      } else {
+        //ret.hasit = false;
+        return false;
+      }
+      //return ret;
     }
   }
 
@@ -2081,43 +2128,7 @@
   }
 
 
-  class ChannelReader : Reader {
-    var _channel_internal:qio_channel_ptr_t;
-    var err:err_t;
-    proc binary:bool {
-      var ret:uint(8) = qio_channel_binary(_channel_internal);
-      return ret != 0;
-    }
-    proc error():err_t {
-      return err;
-    }
-    proc setError(e:err_t) {
-      err = e;
-    }
-    proc clearError() {
-      err = 0;
-    }
-    //proc readPrimitive(type t):maybe(t) where _isIoPrimitiveTypeOrNewline(t) {
-    proc readPrimitive(inout x:?t):bool where _isIoPrimitiveTypeOrNewline(t) {
-      //var ret:maybe(t);
-      if err == 0 {
-        //err = _read_one_internal(_channel_internal, iokind.dynamic, ret.it);
-        err = _read_one_internal(_channel_internal, iokind.dynamic, x);
-        if err == EEOF {
-          clearError();
-          return false;
-          //ret.hasit = false;
-        } else {
-          return true;
-          //ret.hasit = true;
-        }
-      } else {
-        //ret.hasit = false;
-        return false;
-      }
-      //return ret;
-    }
-  }
+
 //}
 
 // END IO.chpl
