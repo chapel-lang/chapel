@@ -121,6 +121,9 @@ struct CongruenceClosure {
     else if (VarSymbol *vs = toVarSymbol(ast)) {
       return vs->type->id;
     }
+    else if (TypeSymbol *ts = toTypeSymbol(ast)) {
+      return ts->type->id;
+    }
     else if (Symbol *s = toSymbol(ast)) {
       return s->id;
     }
@@ -251,7 +254,7 @@ struct CongruenceClosure {
 CongruenceClosure cclosure;
 
 
-Expr *typeCheckFn(FnSymbol *fn);
+BaseAST *typeCheckFn(FnSymbol *fn);
 
 class VisibleFunctionBlock2 {
  public:
@@ -496,10 +499,14 @@ Expr *translateToTypeExpr(Type *type) {
 
 }
 
-Expr *typeCheckExpr(Expr *currentExpr, Expr *expectedReturnTypeExpr) {
+BaseAST *typeCheckExpr(BaseAST *currentExpr, BaseAST *expectedReturnTypeExpr) {
   if (SymExpr *se_actual = toSymExpr(currentExpr)) {
     printf("  CurrentSymExpr: %s (type: %p)\n", se_actual->var->name,
         se_actual->var->type);
+
+    if (se_actual->var->type && se_actual->var->type != dtUnknown)
+      return se_actual->var->type;
+
     ArgSymbol *argSym;
     DefExpr *defPt;
     if ((argSym = toArgSymbol(se_actual->var)) && argSym->typeExpr) {
@@ -576,29 +583,29 @@ Expr *typeCheckExpr(Expr *currentExpr, Expr *expectedReturnTypeExpr) {
     */
     if (call->primitive && (call->primitive->tag == PRIM_RETURN)) {
       printf("-->Expression check of return argument\n");
-      Expr *e_typeExpr = typeCheckExpr(call->argList.head, expectedReturnTypeExpr);
+      BaseAST *e_typeAST = typeCheckExpr(call->argList.head, expectedReturnTypeExpr);
       printf("<--Done with expression check of return argument\n");
-      if ((!isBlockStmt(e_typeExpr)) && (isBlockStmt(expectedReturnTypeExpr))) {
+      if ((!isBlockStmt(e_typeAST)) && (isBlockStmt(expectedReturnTypeExpr))) {
         BlockStmt *retBody = toBlockStmt(expectedReturnTypeExpr);
-        if (!cclosure.is_equal(e_typeExpr, retBody->body.head)) {
+        if (!cclosure.is_equal(e_typeAST, retBody->body.head)) {
           printf("**********ERROR: Mismatched type expressions in return\n");
         }
         else {
           printf("**********SUCCESS: Return expressions match: %p\n",
-                 e_typeExpr);
+              e_typeAST);
 
-          return e_typeExpr;
+          return e_typeAST;
         }
       }
       else{
-        if (!cclosure.is_equal(e_typeExpr, expectedReturnTypeExpr)) {
+        if (!cclosure.is_equal(e_typeAST, expectedReturnTypeExpr)) {
           printf("**********ERROR: Mismatched type expressions in return\n");
         }
         else {
           printf("**********SUCCESS: Return expressions match: %p\n",
-                 e_typeExpr);
+              e_typeAST);
 
-          return e_typeExpr;
+          return e_typeAST;
         }
       }
     }
@@ -711,7 +718,7 @@ Expr *typeCheckExpr(Expr *currentExpr, Expr *expectedReturnTypeExpr) {
     printf("  BlockStmt: %p\n", block);
     Expr *ret = NULL;
     for_alist(e, block->body) {
-      ret = typeCheckExpr(e, expectedReturnTypeExpr);
+      ret = toExpr(typeCheckExpr(e, expectedReturnTypeExpr));
     }
     return ret;
   }
@@ -734,7 +741,7 @@ Expr *typeCheckExpr(Expr *currentExpr, Expr *expectedReturnTypeExpr) {
   return NULL;
 }
 
-Expr *typeCheckFn(FnSymbol *fn) {
+BaseAST *typeCheckFn(FnSymbol *fn) {
   printf("Checking function: %s\n", fn->cname);
 
   // Look through our formal arguments
@@ -773,9 +780,16 @@ Expr *typeCheckFn(FnSymbol *fn) {
 }
 
 void earlyTypeCheck(void) { 
+  bool found_early_type_checked = false;
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->hasFlag(FLAG_SEPARATELY_TYPE_CHECKED)) {
+      found_early_type_checked = true;
       typeCheckFn(fn);
     }
   }  
+  if (found_early_type_checked) {
+    //Hackish workaround to stop early when we're early type-checking until we
+    //tie into the rest of the passes
+    INT_FATAL("Done");
+  }
 }
