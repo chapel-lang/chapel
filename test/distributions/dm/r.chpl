@@ -34,8 +34,10 @@ class vdom {
 }
 
 class vlocdom {
+  type stoIndexT;
+  param stridable;
   // our copy of wholeR
-  var locWholeR;
+  var locWholeR: range(stoIndexT, stridable=stridable);
 }
 
 
@@ -163,9 +165,7 @@ proc vdom.dsiIsReplicated1d() param return true;
 // stoIndexT must be the index type of the range returned by
 // dsiSetLocalIndices1d().
 proc vdom.dsiNewLocalDom1d(type stoIndexT, locId: locIdT) {
-  // dsiSetLocalIndices1d() returns locWholeR; here we define its type.
-  const locWholeR: range(stoIndexT, stridable=wholeR.stridable) = wholeR;
-  return new vlocdom(locWholeR);
+  return new vlocdom(stoIndexT, wholeR.stridable);
 }
 
 // REQ given our dimension of the array index, on which locale is it located?
@@ -198,6 +198,55 @@ proc vdom.dsiSetIndices1d(rangeArg: rangeT): void {
 proc vlocdom.dsiSetLocalIndices1d(globDD, locId: locIdT) {
   locWholeR = globDD.wholeR;
   return locWholeR;
+}
+
+// REQ-2 - like dsiBuildRectangularDom: create a new global domain descriptor
+// for our dimension when the corresponding domain is created as a modification
+// of an existing domain, preserving the domain map.
+//
+// 'rangeArg' is what dsiSetIndices1d would be invoked on.
+// 'DD' is the distribution descriptor for 'this' (a 'vdist', in this case).
+// 'idxType' and 'stoIndexT' of the result are the same as for 'this'.
+//
+// Just like in the multi-dimensional case, we show here how to write
+// dsiBuildRectangularDom1d from existing methods.
+//
+proc vdom.dsiBuildRectangularDom1d(DD,
+                                   param stridable:bool,
+                                   rangeArg: range(idxType,
+                                                   BoundedRangeType.bounded,
+                                                   stridable))
+{
+  type dummy_stoIndexT = int; // use 'this.stoIndexT' when needed
+  const result = DD.dsiNewRectangularDom1d(this.idxType, stridable,
+                                           dummy_stoIndexT);
+  result.dsiSetIndices1d(rangeArg);
+  return result;
+}
+
+// REQ-2 - the local-descriptor companion to dsiBuildRectangularDom1d.
+//
+// Just like
+//   dsiBuildRectangularDom1d = dsiNewRectangularDom1d + dsiSetIndices1d,
+// we show here
+//   dsiBuildLocalDom1d       = dsiNewLocalDom1d       + dsiSetLocalIndices1d.
+//
+// 'idxType' and 'stoIndexT' of the result are the same as for 'this'.
+// 'newGlobDD' is the global domain descriptor (a 'vdom', in this case)
+// whose local descriptor is to be created.
+//
+// Returns (new local 1-d domain descriptor, new storage range),
+// which could be the results of dsiNewLocalDom1d() and
+// dsiSetLocalIndices1d(), resp.
+//
+proc vlocdom.dsiBuildLocalDom1d(newGlobDD) {
+  const old_stoIndexT = this.locWholeR.idxType; // essentially 'this.stoIndexT'
+  const dummy_old_locId = 0:locIdT;             // use 'this.locId' when needed
+
+  const newLocDD = newGlobDD.dsiNewLocalDom1d(old_stoIndexT, dummy_old_locId);
+  const newStoRng = newLocDD.dsiSetLocalIndices1d(newGlobDD, dummy_old_locId);
+
+  return (newLocDD, newStoRng);
 }
 
 // REQ indicate whether "storage indices" returned by dsiSetLocalIndices1d()
@@ -437,9 +486,6 @@ proc sdom._dsiComputeMyRange(locId): rangeT {
 }
 
 proc slocdom.dsiSetLocalIndices1d(globDD, locId: locIdT) {
-  // todo: create local *distribution* descriptors for sdist, and
-  // store myChunk there, like it's done in BlockDist?
-
   myRange = globDD._dsiComputeMyRange(locId);
   return myRange;
 }

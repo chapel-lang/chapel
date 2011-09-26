@@ -48,6 +48,20 @@ tl();
 fphase(20);
 showDom(dmdom);
 
+hd("dmdom slice 1");
+const slicedom1 = dmdom(1..3, 4..5);
+msg(slicedom1);
+msgserial(slicedom1);
+forall i in slicedom1 do msg(i);
+tl();
+
+hd("dmdom slice 2");
+const slicedom2 = dmdom(1..4 by 2, 2..7 by 3);
+msg(slicedom2);
+msgserial(slicedom2);
+forall i in slicedom2 do msg(i);
+tl();
+
 
 /////////// array
 
