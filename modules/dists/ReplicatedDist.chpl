@@ -619,10 +619,10 @@ proc ReplicatedArr.dsiReallocate(d: domain): void {
 // array slicing
 proc ReplicatedArr.dsiSlice(sliceDef: ReplicatedDom) {
   if traceReplicatedDist then writeln("ReplicatedArr.dsiSlice on ", sliceDef);
-  var result = new ReplicatedArr(eltType, sliceDef);
-  var slicee = this;
+  const slicee = this;
+  const result = new ReplicatedArr(slicee.eltType, sliceDef);
 
-  // ensure 'dom' and 'slicee' are over the same set of locales/targetIds
+  // ensure sliceDef and slicee are over the same set of locales/targetIds
   assert(sliceDef.localDoms.domain == slicee.localArrs.domain);
 
   coforall (loc, sliceDefLocDom, sliceeLocArr, resultLocArr)
