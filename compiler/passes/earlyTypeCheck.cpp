@@ -154,7 +154,6 @@ struct CongruenceClosure {
       }
     }
     else {
-      printf("TAG: %i\n", ast->astTag);
       INT_FATAL("Unimplemented case in getSymbolId(ast)");
     }
     INT_FATAL("Unimplemented case in getSymbolId");
@@ -208,7 +207,6 @@ struct CongruenceClosure {
     // Do the rest of the closure.
 
     // Step #1, equate all contained nodes
-
     if (!node1->contains.empty() && !node2->contains.empty())
       INT_ASSERT(node1->contains.size() == node2->contains.size() && "Mismatched shape during union");
 
@@ -219,6 +217,7 @@ struct CongruenceClosure {
       }
     }
 
+    // Step #2, equate contained_by nodes which match by id
     if (!node1->contained_by.empty() && !node2->contained_by.empty()) {
       for (unsigned i = 0; i < node1->contained_by.size(); ++i) {
         for (unsigned j = 0; j < node2->contained_by.size(); ++j) {
@@ -232,29 +231,29 @@ struct CongruenceClosure {
     if (representative(node1) == representative(node2))
       return;
 
-    if (node1->contains.size() == node2->contains.size()) {
-      for (unsigned i = 0; i < node1->contains.size(); ++i) {
-        if (!is_equal_helper(node1->contains[i], node2->contains[i]))
-          return;
-      }
+    if (node1->unique_id != node2->unique_id)
+      return;
 
-      //std::cout << "Found matching children" << std::endl;
-      CCNode *pnode1 = get_node(node1->unique_id);
-      CCNode *pnode2 = get_node(node2->unique_id);
+    if (node1->contains.size() != node2->contains.size())
+      return;
 
-      if (pnode1 && (pnode1 == pnode2)) {
-        equate_helper(node1, node2);
-      }
-      else
+    for (unsigned i = 0; i < node1->contains.size(); ++i) {
+      if (!is_equal_helper(node1->contains[i], node2->contains[i]))
         return;
     }
+
+    equate_helper(node1, node2);
   }
 };
 
 CongruenceClosure cclosure;
 
-
 BaseAST *typeCheckFn(FnSymbol *fn);
+
+/*
+ * BEGIN DUPLICATE CODE
+ * FIXME: Need to refactor once we know what we need here
+ */
 
 class VisibleFunctionBlock2 {
  public:
@@ -402,107 +401,15 @@ static void buildVisibleFunctionMap2() {
   }
   nVisibleFunctions = gFnSymbols.n;
 }
+
 /*
-bool compareTypeExprs(Expr *lhs, Expr *rhs) {
-  if (lhs && rhs) {
-    printf("Checking %p (%i) %p (%i)\n", lhs, lhs->astTag, rhs, rhs->astTag);
-  }
-  else {
-    printf("Checking NULL lhs/rhs: %p %p\n", lhs, rhs);
-  }
+ * END DUPLICATE CODE
+ */
 
-  if (SymExpr *lhs_se = toSymExpr(lhs)) {
-    if (SymExpr *rhs_se = toSymExpr(rhs)) {
-      if (lhs_se->var->type && rhs_se->var->type) {
-        printf("Both are resolved types: %s %s %p %p\n", lhs_se->var->cname,
-            rhs_se->var->cname, lhs_se->var->type, rhs_se->var->type);
-
-        //FIXME: Why do we special case rhs here?  Refactor to make more
-        //flexible.
-        if (VarSymbol *rhs_v = toVarSymbol(rhs_se->var)) {
-          printf("  rhs is a var symbol\n");
-          if (lhs_v->immediate &&  rhs_v->immediate) {
-            printf("  rhs is an immediate\n");
-            //If we've already resolved to a type, just use that
-            return lhs_se->var->type == rhs_se->var->type;
-          }
-        }
-        else if (TypeSymbol *rhs_ts = toTypeSymbol(rhs_se->var)) {
-          printf("  rhs is a type symbol\n");
-          //If we've already resolved to a type, just use that
-          return lhs_se->var->type == rhs_ts->type;
-        }
-
-      }
-      printf("Both are sym exprs: %s %s\n", lhs_se->var->cname,
-             rhs_se->var->cname);
-
-      //if (VarSymbol *v = toVarSymbol(lhs_se->var)) {
-      //  if (v->immediate && v->immediate->const_kind == NUM_KIND_INT &&
-      //      v->immediate->num_index == INT_SIZE_32) {
-      //    return (!strcmp(rhs_se->var->cname, "int32_t"));
-      //  }
-      }
-
-      return (lhs_se->var == rhs_se->var);
-    }
-  }
-  else if (CallExpr *lhs_call = toCallExpr(lhs)) {
-    if (CallExpr *rhs_call = toCallExpr(rhs)) {
-      bool result = true;
-      if ((lhs_call->baseExpr) && (rhs_call->baseExpr)) {
-        result = result && compareTypeExprs(lhs_call->baseExpr,
-                                            rhs_call->baseExpr);
-      }
-      for (Expr *e_lhs = lhs_call->argList.head,
-             *e_rhs = rhs_call->argList.head; e_lhs; e_lhs = e_lhs->next,
-             e_rhs = e_rhs->next) {
-        if (!e_rhs) {
-          return false;
-        }
-        result = result && compareTypeExprs(e_lhs, e_rhs);
-      }
-      return result;
-    }
-  }
-  else if (BlockStmt *lhs_block = toBlockStmt(lhs)) {
-    if (BlockStmt *rhs_block = toBlockStmt(rhs)) {
-      bool result = true;
-      for (Expr *e_lhs = lhs_block->body.head, *e_rhs = rhs_block->body.head;
-           e_lhs; e_lhs = e_lhs->next, e_rhs = e_rhs->next) {
-        if (!e_rhs) {
-          return false;
-        }
-        result = result && compareTypeExprs(e_lhs, e_rhs);
-      }
-      return result;
-    }
-  }
-  return false;
-}
-*/
-Type *translateToType(Expr *type_expr) {
-  //if it already has a type, use that
-  if (type_expr->getValType() != dtUnknown) {
-    return type_expr->getValType();
-  }
-  else {
-    //Do something
-    return NULL;
-  }
-}
-
-Expr *translateToTypeExpr(Type *type) {
-  if (type == dtBool) {
-  }
-  return NULL;
-
-}
-
+// Typechecks the given ast node with the expected return (in case a return
+// is encountered)
 BaseAST *typeCheckExpr(BaseAST *currentExpr, BaseAST *expectedReturnTypeExpr) {
   if (SymExpr *se_actual = toSymExpr(currentExpr)) {
-    printf("  CurrentSymExpr: %s (type: %p)\n", se_actual->var->name,
-        se_actual->var->type);
 
     if (se_actual->var->type && se_actual->var->type != dtUnknown)
       return se_actual->var->type;
@@ -510,141 +417,43 @@ BaseAST *typeCheckExpr(BaseAST *currentExpr, BaseAST *expectedReturnTypeExpr) {
     ArgSymbol *argSym;
     DefExpr *defPt;
     if ((argSym = toArgSymbol(se_actual->var)) && argSym->typeExpr) {
-      printf ("     Arg->%p\n", argSym->typeExpr);
       return argSym->typeExpr;
     }
     else if ((defPt = se_actual->var->defPoint)) {
-      printf ("     Arg(defexpr)->%p %p %i\n", defPt->exprType, defPt->init,
-              defPt->sym->astTag);
-      if (defPt->exprType && defPt->init) {
-        if (cclosure.is_equal(defPt->exprType, defPt->init)) {
-          printf("Declared variable type matches initialization expression\n");
-        }
-        else {
-          printf("ERROR: Declared variable type does not match initialization expression\n");
-        }
-      }
-      else if (defPt->exprType) {
-        return defPt->exprType;
-      }
-      else if (defPt->init) {
-        return defPt->init;
-      }
-      else if (se_actual->var->type) {
-        return currentExpr;
-      }
-      else {
-        printf("ERROR: Generic variable without initializing expression\n");
-      }
-    }
-    else if (/*Type *actualType =*/ se_actual->var->type) {
-      // Stop here, we've hit an expression that's been resolved already
-      return currentExpr;
-      /*
-      if (SymExpr *se_expected = toSymExpr(expectedReturnTypeExpr)) {
-        printf("  ExpectedSymExpr: %s (type: %p)\n", se_expected->var->name,
-            se_expected->var->type);
-      }
-      else if (BlockStmt *block = toBlockStmt(expectedReturnTypeExpr)) {
-        printf("  Expected is block stmt\n", expectedReturnTypeExpr->astTag);
-        if (Expr *contents = block->body.head) {
-          if (SymExpr *se_contents = toSymExpr(contents)) {
-            printf("  ExpectedSymExpr: %s (type: %p)\n", se_contents->var->name,
-                se_contents->var->type);
-          }
-        }
-      }
-      else {
-        printf("  Expected not a sym expression: %i\n", expectedReturnTypeExpr->astTag);
-      }
-      */
+      return typeCheckExpr(defPt, expectedReturnTypeExpr);
     }
   }
   else if (CallExpr* call = toCallExpr(currentExpr)) {
-    printf("  CallExpr: %p\n", call);
-    if (call->baseExpr) {
-      printf("  BaseExpr:\n");
-      typeCheckExpr(call->baseExpr, expectedReturnTypeExpr);
-    }
-    else {
-      printf("  Primitive: %s\n", call->primitive->name);
-    }
-    //printf("  BEGIN ARGS\n");
-
     Vec<Expr*> checked_arg_exprs;
-    /*
-    //for_alist(e, call->argList) {
-    for_actuals(e, call) {
-      printf("  PRE-TYPECHECK:\n");
-      Expr *e_typeExpr = typeCheckExpr(e, expectedReturnTypeExpr);
-      printf("  TYPECHECKED: %p\n", e_typeExpr);
-      checked_arg_exprs.add(e_typeExpr);
-    }
-    */
+
     if (call->primitive && (call->primitive->tag == PRIM_RETURN)) {
-      printf("-->Expression check of return argument\n");
       BaseAST *e_typeAST = typeCheckExpr(call->argList.head, expectedReturnTypeExpr);
-      printf("<--Done with expression check of return argument\n");
-      if ((!isBlockStmt(e_typeAST)) && (isBlockStmt(expectedReturnTypeExpr))) {
-        BlockStmt *retBody = toBlockStmt(expectedReturnTypeExpr);
-        if (!cclosure.is_equal(e_typeAST, retBody->body.head)) {
-          printf("**********ERROR: Mismatched type expressions in return\n");
-        }
-        else {
-          printf("**********SUCCESS: Return expressions match: %p\n",
-              e_typeAST);
 
-          return e_typeAST;
-        }
+      if (!cclosure.is_equal(e_typeAST, expectedReturnTypeExpr)) {
+        INT_FATAL("Mismatched type expressions in return\n");
       }
-      else{
-        if (!cclosure.is_equal(e_typeAST, expectedReturnTypeExpr)) {
-          printf("**********ERROR: Mismatched type expressions in return\n");
-        }
-        else {
-          printf("**********SUCCESS: Return expressions match: %p\n",
-              e_typeAST);
-
-          return e_typeAST;
-        }
+      else {
+        return e_typeAST;
       }
     }
     else if (call->primitive) {
-      printf("  PRIMITIVE OP\n");
+      printf("UNIMPLEMENTED: PRIMITIVE OP\n");
     }
     else if (!call->primitive) {
       //First, check to see if it should be a primitive but it hasn't been
       //resolved yet
 
       if (UnresolvedSymExpr *use = toUnresolvedSymExpr(call->baseExpr)) {
-        printf("  Unresolved SymExpr: %s\n", use->unresolved);
         if (PrimitiveOp *op = primitives_map.get(use->unresolved)) {
-          printf("Found a matching primitive op.  Type: %p\n",
-              op->returnInfo(call));
           //FIXME: Come up with a better way to resolve here.
-          if (BlockStmt *block = toBlockStmt(expectedReturnTypeExpr)) {
-            expectedReturnTypeExpr = block->body.head;
-          }
-          if (SymExpr *expectedReturn_se = toSymExpr(expectedReturnTypeExpr)) {
-            printf("  Expected type: %s %p\n", expectedReturn_se->var->cname,
-                expectedReturn_se->var->type);
-            printf("  Op type: %s %p\n", op->returnInfo(call)->symbol->cname,
-                op->returnInfo(call));
-            if (expectedReturn_se->var->type == op->returnInfo(call)) {
-              return expectedReturnTypeExpr;
-            }
-          }
-
+          //This doens't respect type equality
+          return op->returnInfo(call);
         }
       }
 
       CallInfo2 info(call);
 
       Vec<FnSymbol*> visibleFns;                    // visible functions
-      /*
-      Vec<FnSymbol*> candidateFns;
-      Vec<Vec<ArgSymbol*>*> candidateActualFormals; // candidate functions
-      */
 
       if (gFnSymbols.n != nVisibleFunctions)
         buildVisibleFunctionMap2();
@@ -664,8 +473,6 @@ BaseAST *typeCheckExpr(BaseAST *currentExpr, BaseAST *expectedReturnTypeExpr) {
       }
 
       forv_Vec(FnSymbol, visibleFn, visibleFns) {
-        printf("$$$ Checking against: %s %s\n", visibleFn->name,
-               visibleFn->cname);
         bool mismatch = false;
         Expr *e_actual = call->argList.head;
         ArgSymbol *s_formal = ((visibleFn)->formals.head) ?
@@ -678,102 +485,98 @@ BaseAST *typeCheckExpr(BaseAST *currentExpr, BaseAST *expectedReturnTypeExpr) {
             mismatch = true;
             break;
           }
-          printf("Comparing %i to %i\n", e_actual->astTag,
-                 s_formal->typeExpr->astTag);
-          if ((!isBlockStmt(e_actual)) && (isBlockStmt(s_formal->typeExpr))) {
-            printf("Looking inside of body\n");
-            BlockStmt *retBody = toBlockStmt(s_formal->typeExpr);
-            if (!cclosure.is_equal(e_actual, retBody->body.head)) {
-              mismatch = true;
-              break;
-            }
-          }
-          else {
-            printf("NOT looking inside of body\n");
-            if (!cclosure.is_equal(e_actual, s_formal->typeExpr)) {
-              mismatch = true;
-              break;
-            }
+          if (!cclosure.is_equal(e_actual, s_formal->typeExpr)) {
+            mismatch = true;
+            break;
           }
         }
         if (!mismatch) {
-          printf("!Found matching function to check!\n");
           return typeCheckFn(visibleFn);
         }
       }
+      INT_FATAL("No matching functions at call");
     }
-
-    //printf("  END ARGS\n");
   }
   else if (UnresolvedSymExpr *use = toUnresolvedSymExpr(currentExpr)) {
-    printf("  Unresolved SymExpr: %s\n", use->unresolved);
+    printf("UNIMPLEMENTED: Unresolved SymExpr: %s\n", use->unresolved);
   }
   else if (DefExpr *de = toDefExpr(currentExpr)) {
-    printf("  DefExpr: %p\n", de);
+    if (de->exprType && de->init) {
+      if (!cclosure.is_equal(de->exprType, de->init)) {
+        INT_FATAL("Declared variable type does not match initialization expression\n");
+      }
     }
+    else if (de->exprType) {
+      return de->exprType;
+    }
+    else if (de->init) {
+      return de->init;
+    }
+    else {
+      INT_FATAL("Generic variable without initializing expression\n");
+    }
+  }
   else if (NamedExpr *ne = toNamedExpr(currentExpr)) {
-    printf("  NamedExpr: %p\n", ne);
+    printf("UNIMPLEMENTED: NamedExpr: %p\n", ne);
   }
   else if (BlockStmt *block = toBlockStmt(currentExpr)) {
-    printf("  BlockStmt: %p\n", block);
-    Expr *ret = NULL;
+    BaseAST *ret = NULL;
     for_alist(e, block->body) {
-      ret = toExpr(typeCheckExpr(e, expectedReturnTypeExpr));
+      ret = typeCheckExpr(e, expectedReturnTypeExpr);
     }
     return ret;
   }
   else if (CondStmt *cond = toCondStmt(currentExpr)) {
-    printf("  CondStmt: %p\n", cond);
+    printf("UNIMPLEMENTED: CondStmt: %p\n", cond);
   }
   else if (GotoStmt *gotoStmt = toGotoStmt(currentExpr)) {
-    printf("  GotoStmt: %p\n", gotoStmt);
+    printf("UNIMPLEMENTED: GotoStmt: %p\n", gotoStmt);
   }
   else {
     if (currentExpr) {
-      printf("  <expr type unknown: %i %i %i %i>\n", currentExpr->astTag, E_Expr,
-             E_Symbol, E_Type);
+      printf("UNIMPLEMENTED: <expr type unknown: %i %i %i %i>\n",
+          currentExpr->astTag, E_Expr, E_Symbol, E_Type);
     }
     else {
-      printf("  <expr is NULL\n");
+      printf("UNIMPLEMENTED: <expr is NULL\n");
     }
   }
-  printf("## RETURNING NULL\n");
   return NULL;
 }
 
-BaseAST *typeCheckFn(FnSymbol *fn) {
-  printf("Checking function: %s\n", fn->cname);
+void handle_where_clause_expr(BaseAST *ast) {
+  if (CallExpr *ce = toCallExpr(ast)) {
+    if (UnresolvedSymExpr *callsymexpr = toUnresolvedSymExpr(ce->baseExpr)) {
+      if (!strcmp(callsymexpr->unresolved, "==")) {
+        //Equality constraint, let's add it
+        BaseAST *arg1 = ce->argList.get(1);
+        BaseAST *arg2 = ce->argList.get(2);
+        cclosure.equate(arg1, arg2);
+      }
+      else if (!strcmp(callsymexpr->unresolved, "&&")) {
+        handle_where_clause_expr(ce->argList.get(1));
+        handle_where_clause_expr(ce->argList.get(2));
+      }
+    }
+  }
+}
 
+BaseAST *typeCheckFn(FnSymbol *fn) {
   // Look through our formal arguments
   for_formals(formal, fn) {
-    printf("  Formal: %s %p\n", formal->cname, formal->typeExpr);
-    if (!formal->typeExpr) {
-      printf("  ERROR: formal is missing explicit type annotation\n");
+    if (!formal->typeExpr && (!formal->flags.test(FLAG_TYPE_VARIABLE))) {
+      INT_FATAL("Formal is missing explicit type annotation\n");
     }
   }
   if (!fn->retExprType) {
-    printf("  ERROR: function missing explicit return type annotation\n");
-  }
-  else {
-    printf("  Return: %p\n", fn->retExprType);
+    INT_FATAL("function missing explicit return type annotation\n");
   }
   
   if (fn->where) {
     for_alist(expr, fn->where->body) {
-      if (CallExpr *ce = toCallExpr(expr)) {
-        if (UnresolvedSymExpr *callsymexpr = toUnresolvedSymExpr(ce->baseExpr)) {
-          if (!strcmp(callsymexpr->unresolved, "==")) {
-            //Equality constraint, let's add it
-            BaseAST *arg1 = ce->argList.get(1);
-            BaseAST *arg2 = ce->argList.get(2);
-            cclosure.equate(arg1, arg2);
-          }
-        }
-      }
+      handle_where_clause_expr(expr);
     }
   }
-
-  printf("Body:\n");
 
   // Now, look through the function body
   return typeCheckExpr(fn->body, fn->retExprType);
@@ -790,6 +593,6 @@ void earlyTypeCheck(void) {
   if (found_early_type_checked) {
     //Hackish workaround to stop early when we're early type-checking until we
     //tie into the rest of the passes
-    INT_FATAL("Done");
+    INT_FATAL("SUCCESS");
   }
 }
