@@ -250,6 +250,9 @@
   90  dmarr - subordinate1dDist()
   90  {lowIdx = -10, blockSize = 2, numLocales = 3, name = D2, cycleSizePos = 6}
   90  {lowIdx = -100, blockSize = 3, numLocales = 1, name = D1, cycleSizePos = 3}
+  91  
+  91  privatization tests
+  91  skipped because of oversubscribing Locales(0)
 11 12 13 14 15 16 17
 21 22 23 24 25 26 27
 31 32 33 34 35 36 37

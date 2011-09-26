@@ -97,7 +97,7 @@ tl();
 
 
 /////////// privatization
-if false {
+
 hd("privatization tests");
 if manylocs {
   if traceDimensionalDist {
@@ -120,15 +120,22 @@ if manylocs {
     }  // proc test
 
     test((0,0), (1,2), 12);
-    test((0,1), (2,3), 23);
-    test((1,0), (3,1), 0);
-    test((1,1), (3,3), 0);
+    test((0,0), (1,3), 13);
+    test((0,0), (3,2), 32);
+
+    test((0,1), (2,4), 24);
+    test((0,1), (1,5), 15);
+    test((0,1), (3,4), 34);
+
+    test((0,2), (2,7), 27);
+    test((0,2), (4,6), 46);
+    test((0,2), (5,1), 51);
   }
 } else {
   msg("skipped because of oversubscribing Locales(0)");
 }
 tl();
-} // if false
+
 // Does not presently work (see t3.future). Once it does, replace the above.
 //
 //hd("privatization tests");

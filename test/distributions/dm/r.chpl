@@ -89,6 +89,7 @@ proc vdom.dsiGetPrivatizeData1d() {
 // 'privDist' is the corresponding 1-d distribution descriptor,
 // privatized (if it supports privatization).
 proc vdom.dsiPrivatize1d(privDist, privatizeData) {
+  assert(privDist.locale == here); // sanity check
   return new vdom(idxType   = this.idxType,
                   stridable = this.stridable);
 }
@@ -100,8 +101,9 @@ proc vdom.dsiGetReprivatizeData1d() {
 
 // REQ if privatization is supported - same purpose as dsiReprivatize()
 proc vdom.dsiReprivatize1d(other, reprivatizeData) {
-  assert(other.idxType   == this.idxType,
-         other.stridable == this.stridable);
+  if other.idxType   != this.idxType ||
+     other.stridable != this.stridable then
+    compilerError("inconsistent types in privatization");
 
   this.wholeR = reprivatizeData(1);
 }
@@ -399,8 +401,9 @@ proc sdom.dsiGetReprivatizeData1d() {
 }
 
 proc sdom.dsiReprivatize1d(other, reprivatizeData) {
-  assert(other.idxType   == this.idxType,
-         other.stridable == this.stridable);
+  if other.idxType   != this.idxType ||
+     other.stridable != this.stridable then
+    compilerError("inconsistent types in privatization");
 
   this.wholeR = reprivatizeData(1);
 }
