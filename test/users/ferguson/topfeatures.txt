@@ -35,6 +35,20 @@ First categorized by difficulty and then by priority.
   an associative domain. All of these could be type functions wrapping
   existing domain() declarations, for example; or the domain type could change.
   It does make sense for domains to in some sense share a type.
+- Automatically unroll forall loops in order to emphasize to lower-level
+  code generation that parallelism is possible. See "2 easy optimizations" 7/28/2011.
+- Remove performance penalties from over-enthusiastic expression of parallelism
+  (ie, inner forall loops only paralellize if not busy enough/not already parallel)
+  See "2 easy optimizations" 7/28/2011
+- Allow Chapel programmers to override low-level code generation for a block of
+  iteration space - for example, they might know how to write the efficient
+  assembly for running 4 loop bodies at once, but that's awkward to use by
+  programming directly (instead of e.g. ints, all loops would operate on
+  blocks of 4 ints, and edge cases have to be handled manually). The goal here
+  would be to allow the (slower) general-purpose code be written in Chapel,
+  but to allow a faster version for some number of loop iterations be written
+  in assembly and be able to 'drop in' easily. See "SIMD vectorization" sent to
+  chapport 4/25/2011.
 
 === Harder things ===
 - Ability to write a merge pass using iterators
