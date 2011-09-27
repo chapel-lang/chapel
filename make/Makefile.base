@@ -42,6 +42,10 @@ ifndef CHPL_MAKE_MEM
 include $(CHAPEL_ROOT)/make/Makefile.mem
 endif
 
+ifndef CHPL_MAKE_ATOMICS
+include $(CHAPEL_ROOT)/make/Makefile.atomics
+endif
+
 #
 # default CFLAGS, based on other settings
 #
@@ -223,6 +227,7 @@ printplatform:
 	@echo "CHPL_MAKE_COMM_SUBSTRATE  = $(CHPL_MAKE_COMM_SUBSTRATE)"    
 	@echo "CHPL_MAKE_LAUNCHER        = $(CHPL_MAKE_LAUNCHER)"
 	@echo "CHPL_MAKE_MEM             = $(CHPL_MAKE_MEM)"
+	@echo "CHPL_MAKE_ATOMICS         = $(CHPL_MAKE_ATOMICS)"
 
 #
 # use: make print-X to print the value of the variable X
@@ -306,9 +311,21 @@ EXE_SUFFIX =
 -include $(CHAPEL_ROOT)/make/tasks/Makefile.$(CHPL_MAKE_TASKS)
 
 # Since GASNet headers will be included on a large
-# scale in order to support atomics... we need to disable
+# scale in order to support backtrace... we need to disable
 # some warnings-as-errors.
+ifndef CHPL_NO_GASNET
 RUNTIME_CFLAGS += $(GASNET_TOOLS_CFLAGS) $(CHPL_GASNET_MORE_CFLAGS)
 RUNTIME_CXXFLAGS += $(GASNET_TOOLS_CFLAGS) $(CHPL_GASNET_MORE_CFLAGS)
-RUNTIME_GEN_CFLAGS += $(GASNET_TOOLS_CFLAGS) $(CHPL_GASNET_MORE_CFLAGS)
+GEN_CFLAGS += $(GASNET_TOOLS_CFLAGS) $(CHPL_GASNET_MORE_CFLAGS)
+else
+RUNTIME_CFLAGS += -DCHPL_NO_GASNET
+RUNTIME_CXXFLAGS += -DCHPL_NO_GASNET
+GEN_CFLAGS += -DCHPL_NO_GASNET
+endif
+
+ifdef CHPL_NO_GMP
+RUNTIME_CFLAGS += -DCHPL_NO_GMP
+RUNTIME_CXXFLAGS += -DCHPL_NO_GMP
+GEN_CFLAGS += -DCHPL_NO_GMP
+endif
 

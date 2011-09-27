@@ -1,9 +1,8 @@
 #ifndef _QBUFFER_H_
 #define _QBUFFER_H_
 
-// sys_basic includes gasnet's atomics
-// or makes pretend with GCC atomics.
 #include "sys_basic.h"
+#include "chpl-atomics.h"
 
 #include <inttypes.h>
 #include <sys/uio.h>
@@ -11,23 +10,22 @@
 #include "deque.h"
 
 // We should have gasnett_atomic_t from sys_basic
-typedef gasnett_atomic_t qbytes_refcnt_t;
-#define DO_INIT_REFCNT(ptr) \
-{ \
-  gasnett_atomic_set(&ptr->ref_cnt, 1, GASNETT_ATOMIC_MB_PRE | GASNETT_ATOMIC_MB_POST); \
-}
-#define DO_GET_REFCNT(ptr) ( \
-  gasnett_atomic_read(&ptr->ref_cnt, GASNETT_ATOMIC_MB_PRE | GASNETT_ATOMIC_MB_POST) \
-)
+
+typedef uint_least64_t qb_refcnt_base_t;
+typedef atomic_uint_least64_t qbytes_refcnt_t;
+
+#define DO_INIT_REFCNT(ptr) atomic_init_uint_least64_t (&ptr->ref_cnt, 1)
+#define DO_GET_REFCNT(ptr) atomic_load_uint_least64_t (&ptr->ref_cnt)
 
 #define DO_RETAIN(ptr) \
 { \
   /* do nothing to NULL */ \
   if( ptr ) { \
-    gasnett_atomic_val_t new_cnt = gasnett_atomic_add(&ptr->ref_cnt, 1, GASNETT_ATOMIC_MB_PRE | GASNETT_ATOMIC_MB_POST); \
+    qb_refcnt_base_t old_cnt = atomic_fetch_add_uint_least64_t (&ptr->ref_cnt, 1); \
+    /* if it was 0, we couldn't have had a ref to it */ \
+    if( old_cnt == 0 ) *(int *)(0) = 0; /* deliberately segfault. */ \
     /* if it is now 0, we overflowed the number */ \
-    /* if it is now 1, it was 0 a moment ago, which means we couldn't have had a ref to it */ \
-    if( new_cnt <= 1 ) *(int *)(0) = 0; /* deliberately segfault. */ \
+    if( old_cnt + 1 == 0 ) *(int *)(0) = 0; /* deliberately segfault. */ \
   } \
 }
 
@@ -35,16 +33,18 @@ typedef gasnett_atomic_t qbytes_refcnt_t;
 { \
   /* do nothing to NULL */ \
   if( ptr ) { \
-    gasnett_atomic_val_t new_cnt = gasnett_atomic_subtract(&ptr->ref_cnt, 1, GASNETT_ATOMIC_MB_PRE | GASNETT_ATOMIC_MB_POST); \
-    if( new_cnt == 0 ) { \
+    qb_refcnt_base_t old_cnt = atomic_fetch_sub_uint_least64_t (&ptr->ref_cnt, 1); \
+    if( old_cnt == 1 ) { \
       /* that means, after we decremented it, the count is 0. */ \
       free_function(ptr); \
     } else { \
-      /* new_cnt == GASNETT_ATOMIC_MAX is a fatal error (underflow) */ \
-      if( new_cnt == GASNETT_ATOMIC_MAX ) *(int *)(0) = 0; /* deliberately segfault. */ \
+      /* old_cnt == 0 is a fatal error (underflow) */ \
+      if( old_cnt == 0 ) *(int *)(0) = 0; /* deliberately segfault. */ \
     } \
   } \
 }
+
+#define DO_DESTROY_REFCNT(ptr) atomic_destroy_uint_least64_t (&ptr->ref_cnt)
 
 // how large is an iobuf?
 extern size_t qbytes_iobuf_size;

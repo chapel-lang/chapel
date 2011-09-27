@@ -1,0 +1,21 @@
+#!/usr/bin/env perl
+
+use File::Basename;
+
+$utildirname = dirname($0);
+
+$preset_atomics   = $ENV{'CHPL_ATOMICS'};
+
+if ($preset_atomics eq "") {
+    $compiler = `$utildirname/compiler --target`;
+    if ($compiler =~ /^(gnu|clang)$/) {
+	$atomics = "intrinsics";
+    } else {
+	$atomics = "locks";
+    }
+} else {
+    $atomics = $preset_atomics;
+}
+
+print "$atomics\n";
+exit(0);

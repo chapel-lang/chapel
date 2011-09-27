@@ -988,6 +988,8 @@ void _qio_file_destroy(qio_file_t* f)
 
   qio_lock_destroy(&f->lock);
 
+  DO_DESTROY_REFCNT(f);
+
   qio_free(f);
 }
 
@@ -1476,6 +1478,8 @@ void _qio_channel_destroy(qio_channel_t* ch)
   ch->file = NULL;
 
   qio_lock_destroy(&ch->lock);
+
+  DO_DESTROY_REFCNT(ch);
 
   qio_free(ch);
 }

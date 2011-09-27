@@ -1,0 +1,6 @@
+#
+# CHPL_MAKE_ATOMICS
+#
+#
+#
+CHPL_MAKE_ATOMICS = $(shell $(CHAPEL_ROOT)/util/chplenv/atomics $(CHPL_MAKE_HOST_TARGET))

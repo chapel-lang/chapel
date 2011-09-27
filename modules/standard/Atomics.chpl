@@ -1,201 +1,186 @@
 module Atomics {
-  // Wrapping these GASNet macros
-  // See GASNet's README-tools.
-  extern proc gasnett_local_wmb();
-  extern proc gasnett_local_rmb();
-  extern proc gasnett_local_mb();
-  extern proc gasnett_compiler_fence();
 
-  extern type gasnett_atomic_t;
-  extern type gasnett_atomic_val_t = c_long;
+  extern type memory_order;
 
-  extern const GASNETT_ATOMIC_MAX:c_long;
-  extern const GASNETT_ATOMIC_SIGNED_MIN:c_long;
-  extern const GASNETT_ATOMIC_SIGNED_MAX:c_long;
+  extern const memory_order_relaxed:memory_order;
+  extern const memory_order_consume:memory_order;
+  extern const memory_order_acquire:memory_order;
+  extern const memory_order_release:memory_order;
+  extern const memory_order_acq_rel:memory_order;
+  extern const memory_order_seq_cst:memory_order;
 
-  extern const GASNETT_ATOMIC_NONE:c_int;
-  extern const GASNETT_ATOMIC_RMB_PRE:c_int;
-  extern const GASNETT_ATOMIC_WMB_PRE:c_int;
-  extern const GASNETT_ATOMIC_MB_PRE:c_int;
+  extern type atomic_uint_least8_t;
+  extern type atomic_uint_least16_t;
+  extern type atomic_uint_least32_t;
+  extern type atomic_uint_least64_t;
+  extern type atomic_uintptr_t;
 
-  extern const GASNETT_ATOMIC_RMB_POST:c_int;
-  extern const GASNETT_ATOMIC_WMB_POST:c_int;
-  extern const GASNETT_ATOMIC_MB_POST:c_int;
+  extern type atomic_flag;
 
-  extern const GASNETT_ATOMIC_RMB_POST_IF_TRUE:c_int;
-  extern const GASNETT_ATOMIC_WMB_POST_IF_FALSE:c_int;
+  extern proc atomic_thread_fence(order:memory_order);
+  extern proc atomic_signal_thread_fence(order:memory_order);
 
-  extern const GASNETT_ATOMIC_REL:c_int;
-  extern const GASNETT_ATOMIC_ACQ:c_int;
-  extern const GASNETT_ATOMIC_ACQ_IF_TRUE:c_int;
-  extern const GASNETT_ATOMIC_ACQ_IF_FALSE:c_int;
+  extern proc atomic_flag_test_and_set_explicit(inout obj:atomic_flag, order:memory_order);
+  extern proc atomic_flag_test_and_set(inout obj:atomic_flag);
 
-  extern proc gasnett_atomic_set(inout p:gasnett_atomic_t, v:gasnett_atomic_val_t, flags:c_int);
-  extern proc gasnett_atomic_read(inout p:gasnett_atomic_t, flags:c_int):gasnett_atomic_val_t;
-  extern proc gasnett_atomic_increment(inout p:gasnett_atomic_t, flags:c_int);
-  extern proc gasnett_atomic_decrement(inout p:gasnett_atomic_t, flags:c_int);
-  extern proc gasnett_atomic_decrement_and_test(inout p:gasnett_atomic_t, flags:c_int):c_int;
-  extern proc gasnett_atomic_add(inout p:gasnett_atomic_t, op:gasnett_atomic_val_t, flags:c_int):gasnett_atomic_val_t;
-  extern proc gasnett_atomic_subtract(inout p:gasnett_atomic_t, op:gasnett_atomic_val_t, flags:c_int):gasnett_atomic_val_t;
-  extern proc gasnett_atomic_compare_and_swap(inout p:gasnett_atomic_t, oldval:gasnett_atomic_val_t, newval:gasnett_atomic_val_t, flags:c_int):c_int;
+  extern proc atomic_flag_clear_explicit(inout obj:atomic_flag, order:memory_order);
+  extern proc atomic_flag_clear(inout obj:atomic_flag);
 
-  extern type gasnett_atomic32_t = uint(32);
-  extern type gasnett_atomic64_t = uint(64);
+  extern proc atomic_is_lock_free_uint_least8_t(inout obj:atomic_uint_least8_t):bool;
+  extern proc atomic_init_uint_least8_t(inout obj:atomic_uint_least8_t, value:uint(8));
+  extern proc atomic_destroy_uint_least8_t(inout obj:atomic_uint_least8_t);
+  extern proc atomic_store_explicit_uint_least8_t(inout obj:atomic_uint_least8_t, value:uint(8), order:memory_order);
+  extern proc atomic_load_explicit_uint_least8_t(inout obj:atomic_uint_least8_t, order:memory_order):uint(8);
+  extern proc atomic_exchange_explicit_uint_least8_t(inout obj:atomic_uint_least8_t, value:uint(8), order:memory_order):uint(8);
+  extern proc atomic_compare_exchange_strong_explicit_uint_least8_t(inout obj:atomic_uint_least8_t, expected:uint(8), desired:uint(8), order:memory_order):bool;
+  extern proc atomic_compare_exchange_weak_explicit_uint_least8_t(inout obj:atomic_uint_least8_t, expected:uint(8), desired:uint(8), order:memory_order):bool;
+  extern proc atomic_fetch_add_explicit_uint_least8_t(inout obj:atomic_uint_least8_t, operand:uint(8), order:memory_order):uint(8);
+  extern proc atomic_fetch_sub_explicit_uint_least8_t(inout obj:atomic_uint_least8_t, operand:uint(8), order:memory_order):uint(8);
+  extern proc atomic_fetch_or_explicit_uint_least8_t(inout obj:atomic_uint_least8_t, operand:uint(8), order:memory_order):uint(8);
+  extern proc atomic_fetch_xor_explicit_uint_least8_t(inout obj:atomic_uint_least8_t, operand:uint(8), order:memory_order):uint(8);
+  extern proc atomic_fetch_and_explicit_uint_least8_t(inout obj:atomic_uint_least8_t, operand:uint(8), order:memory_order):uint(8);
 
-  extern proc gasnett_atomic32_set(inout p:gasnett_atomic32_t, v:uint(32), flags:c_int);
-  extern proc gasnett_atomic64_set(inout p:gasnett_atomic64_t, v:uint(64), flags:c_int);
+  extern proc atomic_is_lock_free_uint_least16_t(inout obj:atomic_uint_least16_t):bool;
+  extern proc atomic_init_uint_least16_t(inout obj:atomic_uint_least16_t, value:uint(16));
+  extern proc atomic_destroy_uint_least16_t(inout obj:atomic_uint_least16_t);
+  extern proc atomic_store_explicit_uint_least16_t(inout obj:atomic_uint_least16_t, value:uint(16), order:memory_order);
+  extern proc atomic_load_explicit_uint_least16_t(inout obj:atomic_uint_least16_t, order:memory_order):uint(16);
+  extern proc atomic_exchange_explicit_uint_least16_t(inout obj:atomic_uint_least16_t, value:uint(16), order:memory_order):uint(16);
+  extern proc atomic_compare_exchange_strong_explicit_uint_least16_t(inout obj:atomic_uint_least16_t, expected:uint(16), desired:uint(16), order:memory_order):bool;
+  extern proc atomic_compare_exchange_weak_explicit_uint_least16_t(inout obj:atomic_uint_least16_t, expected:uint(16), desired:uint(16), order:memory_order):bool;
+  extern proc atomic_fetch_add_explicit_uint_least16_t(inout obj:atomic_uint_least16_t, operand:uint(16), order:memory_order):uint(16);
+  extern proc atomic_fetch_sub_explicit_uint_least16_t(inout obj:atomic_uint_least16_t, operand:uint(16), order:memory_order):uint(16);
+  extern proc atomic_fetch_or_explicit_uint_least16_t(inout obj:atomic_uint_least16_t, operand:uint(16), order:memory_order):uint(16);
+  extern proc atomic_fetch_xor_explicit_uint_least16_t(inout obj:atomic_uint_least16_t, operand:uint(16), order:memory_order):uint(16);
+  extern proc atomic_fetch_and_explicit_uint_least16_t(inout obj:atomic_uint_least16_t, operand:uint(16), order:memory_order):uint(16);
 
-  extern proc gasnett_atomic32_read(inout p:gasnett_atomic32_t, flags:c_int):uint(32);
-  extern proc gasnett_atomic64_read(inout p:gasnett_atomic64_t, flags:c_int):uint(64);
 
-  extern proc gasnett_atomic32_compare_and_swap(inout p:gasnett_atomic32_t, oldval:uint(32), newval:uint(32), flags:c_int):c_int;
-  extern proc gasnett_atomic64_compare_and_swap(inout p:gasnett_atomic64_t, oldval:uint(64), newval:uint(64), flags:c_int):c_int;
+  extern proc atomic_is_lock_free_uint_least32_t(inout obj:atomic_uint_least32_t):bool;
+  extern proc atomic_init_uint_least32_t(inout obj:atomic_uint_least32_t, value:uint(32));
+  extern proc atomic_destroy_uint_least32_t(inout obj:atomic_uint_least32_t);
+  extern proc atomic_store_explicit_uint_least32_t(inout obj:atomic_uint_least32_t, value:uint(32), order:memory_order);
+  extern proc atomic_load_explicit_uint_least32_t(inout obj:atomic_uint_least32_t, order:memory_order):uint(32);
+  extern proc atomic_exchange_explicit_uint_least32_t(inout obj:atomic_uint_least32_t, value:uint(32), order:memory_order):uint(32);
+  extern proc atomic_compare_exchange_strong_explicit_uint_least32_t(inout obj:atomic_uint_least32_t, expected:uint(32), desired:uint(32), order:memory_order):bool;
+  extern proc atomic_compare_exchange_weak_explicit_uint_least32_t(inout obj:atomic_uint_least32_t, expected:uint(32), desired:uint(32), order:memory_order):bool;
+  extern proc atomic_fetch_add_explicit_uint_least32_t(inout obj:atomic_uint_least32_t, operand:uint(32), order:memory_order):uint(32);
+  extern proc atomic_fetch_sub_explicit_uint_least32_t(inout obj:atomic_uint_least32_t, operand:uint(32), order:memory_order):uint(32);
+  extern proc atomic_fetch_or_explicit_uint_least32_t(inout obj:atomic_uint_least32_t, operand:uint(32), order:memory_order):uint(32);
+  extern proc atomic_fetch_xor_explicit_uint_least32_t(inout obj:atomic_uint_least32_t, operand:uint(32), order:memory_order):uint(32);
+  extern proc atomic_fetch_and_explicit_uint_least32_t(inout obj:atomic_uint_least32_t, operand:uint(32), order:memory_order):uint(32);
+
+  extern proc atomic_is_lock_free_uint_least64_t(inout obj:atomic_uint_least64_t):bool;
+  extern proc atomic_init_uint_least64_t(inout obj:atomic_uint_least64_t, value:uint(64));
+  extern proc atomic_destroy_uint_least64_t(inout obj:atomic_uint_least64_t);
+  extern proc atomic_store_explicit_uint_least64_t(inout obj:atomic_uint_least64_t, value:uint(64), order:memory_order);
+  extern proc atomic_load_explicit_uint_least64_t(inout obj:atomic_uint_least64_t, order:memory_order):uint(64);
+  extern proc atomic_exchange_explicit_uint_least64_t(inout obj:atomic_uint_least64_t, value:uint(64), order:memory_order):uint(64);
+  extern proc atomic_compare_exchange_strong_explicit_uint_least64_t(inout obj:atomic_uint_least64_t, expected:uint(64), desired:uint(64), order:memory_order):bool;
+  extern proc atomic_compare_exchange_weak_explicit_uint_least64_t(inout obj:atomic_uint_least64_t, expected:uint(64), desired:uint(64), order:memory_order):bool;
+  extern proc atomic_fetch_add_explicit_uint_least64_t(inout obj:atomic_uint_least64_t, operand:uint(64), order:memory_order):uint(64);
+  extern proc atomic_fetch_sub_explicit_uint_least64_t(inout obj:atomic_uint_least64_t, operand:uint(64), order:memory_order):uint(64);
+  extern proc atomic_fetch_or_explicit_uint_least64_t(inout obj:atomic_uint_least64_t, operand:uint(64), order:memory_order):uint(64);
+  extern proc atomic_fetch_xor_explicit_uint_least64_t(inout obj:atomic_uint_least64_t, operand:uint(64), order:memory_order):uint(64);
+  extern proc atomic_fetch_and_explicit_uint_least64_t(inout obj:atomic_uint_least64_t, operand:uint(64), order:memory_order):uint(64);
+
+  extern proc atomic_is_lock_free_uintptr_t(inout obj:atomic_uintptr_t):bool;
+  extern proc atomic_init_uintptr_t(inout obj:atomic_uintptr_t, value:c_ptr);
+  extern proc atomic_destroy_uintptr_t(inout obj:atomic_uintptr_t);
+  extern proc atomic_store_explicit_uintptr_t(inout obj:atomic_uintptr_t, value:c_ptr, order:memory_order);
+  extern proc atomic_load_explicit_uintptr_t(inout obj:atomic_uintptr_t, order:memory_order):c_ptr;
+  extern proc atomic_exchange_explicit_uintptr_t(inout obj:atomic_uintptr_t, value:c_ptr, order:memory_order):c_ptr;
+  extern proc atomic_compare_exchange_strong_explicit_uintptr_t(inout obj:atomic_uintptr_t, expected:c_ptr, desired:c_ptr, order:memory_order):bool;
+  extern proc atomic_compare_exchange_weak_explicit_uintptr_t(inout obj:atomic_uintptr_t, expected:c_ptr, desired:c_ptr, order:memory_order):bool;
+  extern proc atomic_fetch_add_explicit_uintptr_t(inout obj:atomic_uintptr_t, operand:c_ptr, order:memory_order):c_ptr;
+  extern proc atomic_fetch_sub_explicit_uintptr_t(inout obj:atomic_uintptr_t, operand:c_ptr, order:memory_order):c_ptr;
+  extern proc atomic_fetch_or_explicit_uintptr_t(inout obj:atomic_uintptr_t, operand:c_ptr, order:memory_order):c_ptr;
+  extern proc atomic_fetch_xor_explicit_uintptr_t(inout obj:atomic_uintptr_t, operand:c_ptr, order:memory_order):c_ptr;
+  extern proc atomic_fetch_and_explicit_uintptr_t(inout obj:atomic_uintptr_t, operand:c_ptr, order:memory_order):c_ptr;
+
 
   // Begin Chapel interface for atomic integers.
+  // it would be nice to create records wrapping these data types
+  // or create methods for these data types, but right now I'm
+  // not up to it.
 
-  pragma "inline"
-  proc localWriteBarrier() {
-    gasnett_local_wmb();
-  }
-  pragma "inline"
-  proc localReadBarrier() {
-    gasnett_local_rmb();
-  }
-  pragma "inline"
-  proc localMemoryBarrier() {
-    gasnett_local_mb();
-  }
-  pragma "inline"
-  proc compilerFence() {
-    gasnett_compiler_fence();
-  }
-
-  const FULL_BARRIER        = GASNETT_ATOMIC_MB_PRE | GASNETT_ATOMIC_MB_POST;
-  const WRITE_BARRIER_BEFORE= GASNETT_ATOMIC_WMB_PRE;
-  const READ_BARRIER_BEFORE = GASNETT_ATOMIC_RMB_PRE;
-  const FULL_BARRIER_BEFORE = GASNETT_ATOMIC_MB_PRE;
-
-  const WRITE_BARRIER_AFTER = GASNETT_ATOMIC_WMB_POST;
-  const READ_BARRIER_AFTER  = GASNETT_ATOMIC_RMB_POST;
-  const FULL_BARRIER_AFTER  = GASNETT_ATOMIC_MB_POST;
-
-  record atomicuint {
-    var _v:gasnett_atomic_t;
-    pragma "inline"
-    proc set(v: gasnett_atomic_val_t, barrier=FULL_BARRIER) {
-      on this do gasnett_atomic_set(this._v, v, barrier);
+  record atomic_uint32 {
+    var _v:atomic_uint_least32_t;
+    proc init(value:uint(32)) {
+      atomic_init_uint_least32_t(_v, value);
     }
-    pragma "inline"
-    proc read(barrier=FULL_BARRIER):gasnett_atomic_val_t {
-      var ret:gasnett_atomic_val_t;
-      on this do ret = gasnett_atomic_read(this._v, barrier);
-      return ret;
+    proc destroy() {
+      atomic_destroy_uint_least32_t(_v);
     }
-    pragma "inline"
-    proc increment(barrier=FULL_BARRIER) {
-      on this do gasnett_atomic_increment(this._v, barrier);
+    proc load(order = memory_order_seq_cst):uint(32) {
+      return atomic_load_explicit_uint_least32_t(_v, order);
     }
-    pragma "inline"
-    proc decrement(barrier=FULL_BARRIER) {
-      on this do gasnett_atomic_decrement(this._v, barrier);
+    proc store(value:uint(32), order = memory_order_seq_cst) {
+      atomic_store_explicit_uint_least32_t(_v, value, order);
     }
-    // Returns true if the new value is 0.
-    pragma "inline"
-    proc decrementAndTest(barrier=FULL_BARRIER):bool {
-      var ret:c_int;
-      on this do ret = gasnett_atomic_decrement_and_test(this._v, barrier);
-      return ret!=0;
+    proc exchange(value:uint(32), order = memory_order_seq_cst):uint(32) {
+      return atomic_exchange_explicit_uint_least32_t(_v, value, order);
     }
-    // Returns the value after addition, v must be positive.
-    pragma "inline"
-    proc add(v: gasnett_atomic_val_t, barrier=FULL_BARRIER):gasnett_atomic_val_t {
-      var ret:gasnett_atomic_val_t;
-      on this do ret = gasnett_atomic_add(this._v, v, barrier);
-      return ret;
+    proc compareExchangeWeak(expected:uint(32), desired:uint(32), order = memory_order_seq_cst):bool {
+      return atomic_compare_exchange_weak_explicit_uint_least32_t(_v, expected, desired, order);
     }
-    // Returns the value after subtraction, v must be positive.
-    pragma "inline"
-    proc subtract(v: gasnett_atomic_val_t, barrier=FULL_BARRIER):gasnett_atomic_val_t {
-      var ret:gasnett_atomic_val_t;
-      on this do ret = gasnett_atomic_subtract(this._v, v, barrier);
-      return ret;
+    proc compareExchangeStrong(expected:uint(32), desired:uint(32), order = memory_order_seq_cst):bool {
+      return atomic_compare_exchange_strong_explicit_uint_least32_t(_v, expected, desired, order);
     }
-    /* Atomic equivalent of
-       if (*p == oldval) {
-         *p = newval;
-         return true;
-       } else {
-         return false;
-       }
-   */
-    proc compareAndSwap(oldval:gasnett_atomic_val_t, newval:gasnett_atomic_val_t, barrier=FULL_BARRIER):bool {
-      var ret:c_int;
-      on this do ret = gasnett_atomic_compare_and_swap(this._v, oldval, newval, barrier);
-      return ret != 0;
+    proc fetchAdd(value:uint(32), order = memory_order_seq_cst):uint(32) {
+      return atomic_fetch_add_explicit_uint_least32_t(_v, value, order);
+    }
+    proc fetchSub(value:uint(32), order = memory_order_seq_cst):uint(32) {
+      return atomic_fetch_sub_explicit_uint_least32_t(_v, value, order);
+    }
+    proc fetchOr(value:uint(32), order = memory_order_seq_cst):uint(32) {
+      return atomic_fetch_or_explicit_uint_least32_t(_v, value, order);
+    }
+    proc fetchXor(value:uint(32), order = memory_order_seq_cst):uint(32) {
+      return atomic_fetch_xor_explicit_uint_least32_t(_v, value, order);
+    }
+    proc fetchAnd(value:uint(32), order = memory_order_seq_cst):uint(32) {
+      return atomic_fetch_and_explicit_uint_least32_t(_v, value, order);
     }
   }
 
-  proc max(type t) where t == atomicuint {
-    return GASNETT_ATOMIC_MAX;
-  }
-
-  proc min(type t) where t == atomicuint {
-    return 0:c_long;
-  }
-
-  record atomicuint32 {
-    var _v:uint(32);
-    pragma "inline"
-    proc set(v: uint(32), barrier=FULL_BARRIER) {
-      on this do gasnett_atomic32_set(this._v, v, barrier);
+  record atomic_uint64 {
+    var _v:atomic_uint_least64_t;
+    proc init(value:uint(64)) {
+      atomic_init_uint_least64_t(_v, value);
     }
-    pragma "inline"
-    proc read(barrier=FULL_BARRIER):uint(32) {
-      var ret:uint(32);
-      on this do ret = gasnett_atomic32_read(this._v, barrier);
-      return ret;
+    proc destroy() {
+      atomic_destroy_uint_least64_t(_v);
     }
-    /* Atomic equivalent of
-       if (*p == oldval) {
-         *p = newval;
-         return true;
-       } else {
-         return false;
-       }
-   */
-    proc compareAndSwap(oldval:uint(32), newval:uint(32), barrier=FULL_BARRIER):bool {
-      var ret:c_int;
-      on this do ret = gasnett_atomic32_compare_and_swap(this._v, oldval, newval, barrier);
-      return ret != 0;
+    proc load(order = memory_order_seq_cst):uint(64) {
+      return atomic_load_explicit_uint_least64_t(_v, order);
     }
-  }
-
-  record atomicuint64 {
-    var _v:uint(64);
-    pragma "inline"
-    proc set(v: uint(64), barrier=FULL_BARRIER) {
-      on this do gasnett_atomic64_set(this._v, v, barrier);
+    proc store(value:uint(64), order = memory_order_seq_cst) {
+      atomic_store_explicit_uint_least64_t(_v, value, order);
     }
-    pragma "inline"
-    proc read(barrier=FULL_BARRIER):uint(64) {
-      var ret:uint(64);
-      on this do ret = gasnett_atomic64_read(this._v, barrier);
-      return ret;
+    proc exchange(value:uint(64), order = memory_order_seq_cst):uint(64) {
+      return atomic_exchange_explicit_uint_least64_t(_v, value, order);
     }
-    /* Atomic equivalent of
-       if (*p == oldval) {
-         *p = newval;
-         return true;
-       } else {
-         return false;
-       }
-   */
-    proc compareAndSwap(oldval:uint(64), newval:uint(64), barrier=FULL_BARRIER):bool {
-      var ret:c_int;
-      on this do ret = gasnett_atomic64_compare_and_swap(this._v, oldval, newval, barrier);
-      return ret != 0;
+    proc compareExchangeWeak(expected:uint(64), desired:uint(64), order = memory_order_seq_cst):bool {
+      return atomic_compare_exchange_weak_explicit_uint_least64_t(_v, expected, desired, order);
+    }
+    proc compareExchangeStrong(expected:uint(64), desired:uint(64), order = memory_order_seq_cst):bool {
+      return atomic_compare_exchange_strong_explicit_uint_least64_t(_v, expected, desired, order);
+    }
+    proc fetchAdd(value:uint(64), order = memory_order_seq_cst):uint(64) {
+      return atomic_fetch_add_explicit_uint_least64_t(_v, value, order);
+    }
+    proc fetchSub(value:uint(64), order = memory_order_seq_cst):uint(64) {
+      return atomic_fetch_sub_explicit_uint_least64_t(_v, value, order);
+    }
+    proc fetchOr(value:uint(64), order = memory_order_seq_cst):uint(64) {
+      return atomic_fetch_or_explicit_uint_least64_t(_v, value, order);
+    }
+    proc fetchXor(value:uint(64), order = memory_order_seq_cst):uint(64) {
+      return atomic_fetch_xor_explicit_uint_least64_t(_v, value, order);
+    }
+    proc fetchAnd(value:uint(64), order = memory_order_seq_cst):uint(64) {
+      return atomic_fetch_and_explicit_uint_least64_t(_v, value, order);
     }
   }
-
 }
 

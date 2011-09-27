@@ -1,6 +1,9 @@
 
 #include <stdarg.h>
 #include <stdio.h>
+
+
+#ifndef CHPL_NO_GMP
 #include <gmp.h>
 
 
@@ -16,4 +19,6 @@ uint64_t chpl_gmp_mpz_nlimbs(__mpz_struct from);
 void chpl_gmp_mpz_print(mpz_t x);
 
 chpl_string chpl_gmp_mpz_get_str(int32_t base, mpz_t x);
+
+#endif
 

@@ -43,6 +43,7 @@ void _qbytes_free_qbytes(qbytes_t* b)
   b->data = NULL;
   b->len = 0;
   b->free_function = NULL;
+  DO_DESTROY_REFCNT(b);
   qio_free(b);
 }
 
@@ -275,6 +276,8 @@ err_t qbuffer_destroy(qbuffer_t* buf)
 
   // destroy the deque
   deque_destroy(& buf->deque);
+
+  DO_DESTROY_REFCNT(buf);
 
   return err;
 }

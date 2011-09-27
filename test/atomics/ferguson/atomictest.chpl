@@ -1,53 +1,58 @@
-config const n = 100000;
+config const n:uint(32) = 100000;
 config const showRace = false;
+const mult:uint(32) = 10;
+const one:uint(32) = 1;
 
 use Atomics;
 
 
 if showRace {
-  var x:int;
+  var x:uint(32);
   x = 0;
-  forall i in 1..n {
-    x += 1;
+  forall i in one..n {
+    x += one;
   }
   writeln("X is ", x," (vs. ", n, ")");
 }
 
-var aint:atomicuint;
+var aint:atomic_uint32;
 
-aint.set(0);
+aint.init(0);
 
-forall i in 1..n {
-  aint.increment();
+forall i in one..n {
+  aint.fetchAdd(one);
 }
 
-assert(aint.read() == n);
+assert(aint.load() == n);
 writeln("Increment OK");
 
-forall i in 1..n {
-  aint.decrement();
+forall i in one..n {
+  aint.fetchSub(one);
 }
 
-assert(aint.read() == 0);
+assert(aint.load() == 0);
 
 writeln("Decrement OK");
 
-forall i in 1..n {
-  aint.add(10);
+forall i in one..n {
+  aint.fetchAdd(mult);
 }
 
-assert(aint.read() == 10*n);
+assert(aint.load() == mult*n);
 writeln("Add OK");
 
-forall i in 1..n {
-  aint.subtract(10);
+forall i in one..n {
+  aint.fetchSub(mult);
 }
 
-assert(aint.read() == 0);
+assert(aint.load() == 0);
 writeln("Subtract OK");
 
-aint.compareAndSwap(0, 10);
+aint.compareExchangeStrong(0, mult);
 
-assert(aint.read() == 10);
+assert(aint.load() == mult);
 
 writeln("Compare and Swap OK");
+
+aint.destroy();
+

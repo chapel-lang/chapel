@@ -19,8 +19,12 @@ norecurse: echoruntimedir $(TARGETS)
 ifeq ($(CHPL_MAKE_RULE),depend)
 $(GASNET_TOOLS_FILE):
 else
+ifdef $(CHPL_NO_GASNET)
+$(GASNET_TOOLS_FILE):
+else
 $(GASNET_TOOLS_FILE):
 	cd $(THIRD_PARTY_DIR) && $(MAKE) gasnet
+endif
 endif
 
 gasnet_tools.h: $(GASNET_TOOLS_FILE)
@@ -32,8 +36,12 @@ gasnet_tools.h: $(GASNET_TOOLS_FILE)
 ifeq ($(CHPL_MAKE_RULE),depend)
 $(GMP_FILE):
 else
+ifdef $(CHPL_NO_GMP)
+$(GMP_FILE):
+else
 $(GMP_FILE):
 	cd $(THIRD_PARTY_DIR) && $(MAKE) gmp
+endif
 endif
 
 

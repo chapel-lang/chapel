@@ -23,6 +23,9 @@ OPT_CFLAGS =
 
 CFLAGS = 
 
+CHPL_NO_GASNET=1
+CHPL_NO_GMP=1
+
 #
 # -WR 682 says ignore full/empty on less than word-sized data; the theory
 # being that we've padded things appropriately
