@@ -220,7 +220,15 @@ void EnumType::sizeAndNormalize() {
       } else if( get_uint( constant->init, &uv ) ) {
         // OK!
       } else {
-        INT_FATAL(constant, "Not an integer in an enum");
+        // If we get here, then the initializer does not have an immediate
+        // value associated with it....
+        SymExpr* sym = toSymExpr(constant->init);
+        // We think that all params should have init values by now.
+        INT_ASSERT(sym && !sym->var->hasFlag(FLAG_PARAM));
+        // So we're going to blame this on the user.
+        USR_FATAL(constant, "enumerator '%s' is not an integer constant", constant->sym->name);
+        // And unfortunately, if we get here, we don't know how to proceed,
+        // which is why no USR_FATAL_CONT().
       }
     }
   }
