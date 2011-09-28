@@ -257,9 +257,6 @@ void chpl_thread_exit(void) {
   if (pthread_key_delete(thread_id_key) != 0)
     chpl_internal_error("pthread_key_delete(thread_id_key) failed");
 
-  if (pthread_key_delete(thread_private_key) != 0)
-    chpl_internal_error("pthread_key_delete(thread_private_key) failed");
-
   if (pthread_attr_destroy(&thread_attributes) != 0)
     chpl_internal_error("pthread_attr_destroy() failed");
 
