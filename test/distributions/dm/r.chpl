@@ -311,8 +311,7 @@ iter vdom.dsiSerialArrayIterator1d() {
 // REQ for array follower iterator.
 //
 // Yield pairs (locId, storageOffset) that traverse storage for
-// the array elements corresponding to the indices given by:
-//   unDensify(denseRange, wholeRangeInMyDimension)
+// the array elements corresponding to the indices given by undensRange,
 // preserving the order in which those indices occur.
 //
 // This is similar to dsiSerialArrayIterator1d(), except
@@ -322,9 +321,9 @@ iter vdom.dsiSerialArrayIterator1d() {
 // The latter is chosen to simplify dsiFollowerArrayIterator1d implementations.
 // It also eliminates one loop nest per dimension in DimensionalArr follower.
 //
-iter vdom.dsiFollowerArrayIterator1d(denseRange): (locIdT, idxType) {
+iter vdom.dsiFollowerArrayIterator1d(undensRange): (locIdT, idxType) {
   assert(localLocIDlegit);
-  for i in unDensify(denseRange, wholeR) do
+  for i in undensRange do
     yield (localLocID, i);
 }
 
@@ -540,8 +539,7 @@ iter sdom.dsiSerialArrayIterator1d() {
   }
 }
 
-iter sdom.dsiFollowerArrayIterator1d(denseRange): (locIdT, idxType) {
-  const undensRange = unDensify(denseRange, wholeR);
+iter sdom.dsiFollowerArrayIterator1d(undensRange): (locIdT, idxType) {
 //writeln("sdom.dsiFollowerArrayIterator1d  undensRange ", undensRange);
 
   const heuristic_weight_rangepoint = 2; // measure of work in (a) below

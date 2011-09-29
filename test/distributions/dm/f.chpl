@@ -528,9 +528,7 @@ iter idom._dsiSerialArrayIterator1dStridable() {
     yield (_dsiLocNo_formula(ind), _dsiStorageIdx(ind)..#(1:stoIndexT));
 }
 
-iter idom.dsiFollowerArrayIterator1d(denseRange): (locIdT, idxType) {
-  const undensRange = unDensify(denseRange, wholeR);
-
+iter idom.dsiFollowerArrayIterator1d(undensRange): (locIdT, idxType) {
   if undensRange.stridable {
     // the simplest way out
     for ix in undensRange do

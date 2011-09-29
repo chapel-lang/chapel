@@ -794,12 +794,13 @@ proc DimensionalArr.dsiSerialWrite(f: Writer): void {
 
   iter iHelp(param d) {
     if this.isAlias {
-      const alDom = this.allocDom;
-      const ixDom = this.dom;
-      const denseR = densify(ixDom.whole.dim(d), alDom.whole.dim(d));
-      const dom1d = if d == 1 then alDom.dom1 else alDom.dom2;
-      for l_and_i in dom1d.dsiFollowerArrayIterator1d(denseR) do
-        yield l_and_i;
+       // Go to the original array and invoke the follower iterator on it,
+       // giving the alias's entire domain as the index set to follow.
+       // (NB dsiFollowerArrayIterator1d's argument is not densified.)
+      const dom1d = if d == 1 then this.allocDom.dom1 else this.allocDom.dom2;
+      for l_i in dom1d.dsiFollowerArrayIterator1d(this.dom.whole.dim(d)) do
+        yield l_i;
+
     } else {
       const alDom = this.dom;
       const dom1d = if d == 1 then alDom.dom1 else alDom.dom2;
@@ -1044,12 +1045,10 @@ iter DimensionalArr.these() var {
   assert(this.rank == 2);
 
   if this.isAlias {
-    const alDom = this.allocDom;
-    const ixDom = this.dom;
-    inline proc mkFollower(param d)
-      return densify(ixDom.whole.dim(d), alDom.whole.dim(d));
-
-    for v in this._dsiIteratorHelper(alDom, (mkFollower(1), mkFollower(2))) do
+     // Go to the original array and invoke the follower iterator on it,
+     // giving the alias's entire domain as the index set to follow.
+     // (NB dsiFollowerArrayIterator1d's argument is not densified.)
+    for v in this._dsiIteratorHelper(this.allocDom, this.dom.whole.dims()) do
       yield v;
 
     return;
@@ -1100,24 +1099,15 @@ iter DimensionalArr.these(param tag: iterator, follower) var where tag == iterat
             if this.isAlias then "  (alias)" else "");
   assert(this.rank == 2);
 
-  // Re-densify our ranges w.r.t. the original domain, if this is an alias.
-  //
-  // TODO: short-cicruit (with a flag?) densify() here and unDensify() in
-  // dsiFollowerArrayIterator1d(). Means an extra conditional in common case,
-  // but fewer densify/unDensify in the case this array is an alias.
-  //
-  inline proc adjustedFlwr(param d) {
-    const aliasDenseR = follower(d);
-    const userR       = unDensify(aliasDenseR, this.dom.whole.dim(d));
-    const origDenseR  = densify(userR, this.allocDom.whole.dim(d));
-    return origDenseR;
-  }
+  // Convert the follower ranges to user index space.
+  const f1 = unDensify(follower(1), this.dom.whole.dim(1));
+  const f2 = unDensify(follower(2), this.dom.whole.dim(2));
 
-  // If this array is an alias, redirect to the original domain.
-  const (alDom, f1, f2) =
-    if this.mustbeAlias || this.isAlias
-    then (this.allocDom, adjustedFlwr(1), adjustedFlwr(2))
-    else (this.dom,      follower(1),     follower(2));
+  // If this is an alias, we will invoke dsiFollowerArrayIterator1d
+  // on the original array's domain descriptors.
+  const alDom = if this.mustbeAlias || this.isAlias
+                then this.allocDom
+                else this.dom;
 
   for v in this._dsiIteratorHelper(alDom, (f1, f2)) do
     yield v;
