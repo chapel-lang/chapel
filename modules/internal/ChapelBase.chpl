@@ -96,6 +96,39 @@ proc compilerWarning(param x:string ...?n) {
   __primitive("warning", (...x));
 }
 
+// for compilerAssert, as param tuples do not de-tuple into params yet,
+// we handle only up to 5 message args and omit the rest
+
+proc compilerAssert(param test: bool)
+{ if !test then compilerError("assert failed"); }
+
+proc compilerAssert(param test: bool, param arg1:integral)
+{ if !test then compilerError("assert failed", arg1:int); }
+
+proc compilerAssert(param test: bool, param arg1) where !_isIntegralType(arg1.type)
+{ if !test then compilerError("assert failed - ", arg1); }
+
+proc compilerAssert(param test: bool, param arg1, param arg2)
+{ if !test then compilerError("assert failed - ", arg1, arg2); }
+
+proc compilerAssert(param test: bool, param arg1, param arg2, param arg3)
+{ if !test then compilerError("assert failed - ", arg1, arg2, arg3); }
+
+proc compilerAssert(param test: bool, param arg1, param arg2, param arg3, param arg4)
+{ if !test then compilerError("assert failed - ", arg1, arg2, arg3, arg4); }
+
+proc compilerAssert(param test: bool, param arg1, param arg2, param arg3, param arg4, param arg5)
+{ if !test then compilerError("assert failed - ", arg1, arg2, arg3, arg4, arg5); }
+
+proc compilerAssert(param test: bool, param arg1, param arg2, param arg3, param arg4, param arg5, param arg6: integral)
+{ if !test then compilerError("assert failed - ", arg1, arg2, arg3, arg4, arg5, arg6:int); }
+
+proc compilerAssert(param test: bool, param arg1, param arg2, param arg3, param arg4, param arg5, argrest..., param arglast: integral)
+{ if !test then compilerError("assert failed - ", arg1, arg2, arg3, arg4, arg5, " [...]", arglast:int); }
+
+proc compilerAssert(param test: bool, param arg1, param arg2, param arg3, param arg4, param arg5, argrest...)
+{ if !test then compilerError("assert failed - ", arg1, arg2, arg3, arg4, arg5, " [...]"); }
+
 proc typeToString(type t) param {
   return __primitive("typeToString", t);
 }
