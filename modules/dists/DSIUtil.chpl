@@ -129,10 +129,10 @@ proc _computeChunkStartEnd(numElems, numChunks, myChunk) {
 //
 // helper function for blocking index ranges
 //
+proc intCeilXDivByY(x, y) return 1 + (x - 1)/y;
+
 proc _computeBlock(numelems, numblocks, blocknum, wayhi,
                   waylo=0:wayhi.type, lo=0:wayhi.type) {
-  proc intCeilXDivByY(x, y) return 1 + (x - 1)/y;
-
   if numelems == 0 then
     return (1:lo.type, 0:lo.type);
 

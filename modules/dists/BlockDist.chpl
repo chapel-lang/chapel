@@ -1180,7 +1180,7 @@ iter ConsecutiveChunks(d1,d2,lid,lo) {
   var rlo=lo+offset;
   var rid  = d2.dist.targetLocsIdx(rlo);
   while (elemsToGet>0) {
-    const size = min(d2.locDoms[rid].myBlock.numIndices,elemsToGet):int;
+    const size = min(d2.numRemoteElems(rlo,rid),elemsToGet):int;
     yield (rid,rlo,size);
     rid +=1;
     rlo += size;
@@ -1195,12 +1195,24 @@ iter ConsecutiveChunksD(d1,d2,i,lo) {
   var rlo = lo+offset;
   var rid = d2.dist.targetLocsIdx(rlo);
   while (elemsToGet>0) {
-    const size = min(d2.locDoms[rid].myBlock.dim(rank).length,elemsToGet);
+    const size = min(d2.numRemoteElems(rlo(rank):int,rid(rank):int),elemsToGet);
     yield (rid,rlo,size);
     rid(rank) +=1;
     rlo(rank) += size;
     elemsToGet -= size;
   }
+}
+
+proc BlockDom.numRemoteElems(rlo,rid){
+  var blo,bhi:int;
+  if rid==(dist.targetLocDom.dim(rank).length - 1) then
+    bhi=whole.dim(rank).high;
+  else
+      bhi=dist.boundingBox.dim(rank).low +
+	intCeilXDivByY((dist.boundingBox.dim(rank).high - dist.boundingBox.dim(rank).low +1)*(rid+1),
+                   dist.targetLocDom.dim(rank).length) - 1;
+  
+  return(bhi - rlo + 1);
 }
 
 //Brad's utility function. It drops from Domain D de dimensions
