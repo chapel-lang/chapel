@@ -1,3 +1,3 @@
 
-writeln('Wrong backslash 2\');
+writeln('Wrong backslash 2\'); \
 writeln('DONE.');
