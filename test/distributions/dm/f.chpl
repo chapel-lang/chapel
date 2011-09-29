@@ -521,7 +521,7 @@ iter idom._dsiSerialArrayIterator1dUnitstride(rangeToIterateOver) {
 
 iter idom._dsiSerialArrayIterator1dStridable() {
   assert(stridable);
-  compilerWarning("array iterator over stridable arrays is presently not efficient", 4);
+  compilerWarning("array iterator over stridable block-cyclic-dim arrays is presently not efficient", 4);
 
   // the simplest way out
   for ind in wholeR do

@@ -172,6 +172,7 @@ proc vdom.dsiNewLocalDom1d(type stoIndexT, locId: locIdT) {
 
 // REQ given our dimension of the array index, on which locale is it located?
 proc vdist.dsiIndexToLocale1d(indexx): locIdT {
+  assert(localLocIDlegit);
   return localLocID;
 }
 
@@ -322,6 +323,7 @@ iter vdom.dsiSerialArrayIterator1d() {
 // It also eliminates one loop nest per dimension in DimensionalArr follower.
 //
 iter vdom.dsiFollowerArrayIterator1d(denseRange): (locIdT, idxType) {
+  assert(localLocIDlegit);
   for i in unDensify(denseRange, wholeR) do
     yield (localLocID, i);
 }
@@ -417,12 +419,12 @@ proc sdom.dsiLocalDescUsesPrivatizedGlobalDesc1d() param return false;
 
 // Constructor. idxType is inferred from the 'bbLow' argument
 // (alternative: default to 'int' instead).
-proc sdist.sdist(nLocales, bbLow, bbHigh, type idxType = bbLow.type) {
-  if !(bbLow <= bbHigh) then halt("'sdist' distribution must have a non-empty bounding box between bbLow and bbHigh; got ", bbLow, " .. ", bbHigh);
-  assert(nLocales > 0); // so we can cast it to any int type
-  this.numLocales = nLocales;
-  this.bbStart = bbLow;
-  this.bbLength = (bbHigh - bbLow + 1):idxType;
+proc sdist.sdist(numLocales, boundingBoxLow, boundingBoxHigh, type idxType = boundingBoxLow.type) {
+  if !(boundingBoxLow <= boundingBoxHigh) then halt("'sdist' distribution must have a non-empty bounding box between boundingBoxLow and boundingBoxHigh; got ", boundingBoxLow, " .. ", boundingBoxHigh);
+  assert(numLocales > 0); // so we can cast it to any int type
+  this.numLocales = numLocales;
+  this.bbStart = boundingBoxLow;
+  this.bbLength = (boundingBoxHigh - boundingBoxLow + 1):idxType;
   assert(this.bbLength > 0);
 }
 
