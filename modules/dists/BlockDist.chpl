@@ -1204,7 +1204,7 @@ iter ConsecutiveChunksD(d1,d2,i,lo) {
 }
 
 proc BlockDom.numRemoteElems(rlo,rid){
-  var blo,bhi:int;
+  var blo,bhi:dist.idxType;
   if rid==(dist.targetLocDom.dim(rank).length - 1) then
     bhi=whole.dim(rank).high;
   else
