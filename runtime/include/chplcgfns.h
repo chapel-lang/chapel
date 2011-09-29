@@ -16,6 +16,7 @@ extern uint64_t callStackSize;
 void chpl__init_preInit(int32_t _ln, chpl_string _fn);
 void chpl__init_ChapelThreads(int32_t _ln, chpl_string _fn);
 void chpl__init_DefaultRectangular(int32_t _ln, chpl_string _fn);
+void chpl__init_ChapelNumLocales(int32_t _ln, chpl_string _fn);
 void chpl__init_ChapelTaskTable(int32_t _ln, chpl_string _fn);
 
 /* used for entry point: */

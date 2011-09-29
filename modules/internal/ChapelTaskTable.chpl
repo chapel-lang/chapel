@@ -34,50 +34,85 @@ record chpldev_Task {
   var tl_info   : uint(64);
 }
 
-var chpldev_taskTableD : domain(chpl_taskID_t, parSafe=false);
-var chpldev_taskTable : [chpldev_taskTableD] chpldev_Task;
+class chpldev_taskTable_t {
+  var dom : domain(chpl_taskID_t, parSafe=false);
+  var map : [dom] chpldev_Task;
+}
+
+pragma "private"
+var chpldev_taskTable : chpldev_taskTable_t;
+
+//----------------------------------------------------------------------{
+//- Code to initialize the task table on each locale.
+//-
+proc chpldev_taskTable_init() {
+  for locid in 0..numLocales-1 do
+    on __primitive("chpl_on_locale_num", locid) {
+      // Task tables require that the local default distribution be initialized first.
+      if (defaultDist._value == nil) then
+        defaultDist = new dmap(new DefaultDist());
+      chpldev_taskTable = new chpldev_taskTable_t();
+    }
+}
+
+chpldev_taskTable_init();
+//-
+//----------------------------------------------------------------------}
 
 export proc chpldev_taskTable_add(taskID   : chpl_taskID_t,
                                   lineno   : uint(32),
                                   filename : string,
                                   tl_info  : uint(64))
 {
-  if(!chpldev_taskTableD.member(taskID)) {
+  if (chpldev_taskTable == nil) then return;
+
+  if (!chpldev_taskTable.dom.member(taskID)) then
     // This must be serial to avoid deadlock in a coforall. <hilde>
     serial true do
-      chpldev_taskTableD.add(taskID);
-  }
-  chpldev_taskTable[taskID] = new chpldev_Task(taskState.pending,
+      chpldev_taskTable.dom.add(taskID);
+
+  chpldev_taskTable.map[taskID] = new chpldev_Task(taskState.pending,
                                                lineno, filename, tl_info);
 }
 
 export proc chpldev_taskTable_remove(taskID : chpl_taskID_t)
 {
-  // This must also be serial
-  serial true do
-    chpldev_taskTableD.remove(taskID);
+  if (chpldev_taskTable == nil) then return;
+
+  if (chpldev_taskTable.dom.member(taskID)) then
+    // This must also be serial
+    serial true do
+      chpldev_taskTable.dom.remove(taskID);
 }
 
 export proc chpldev_taskTable_set_active(taskID : chpl_taskID_t)
 {
-  chpldev_taskTable[taskID].state = taskState.active;
+  if (chpldev_taskTable == nil) then return;
+
+  chpldev_taskTable.map[taskID].state = taskState.active;
 }
 
 export proc chpldev_taskTable_set_suspended(taskID : chpl_taskID_t)
 {
-  chpldev_taskTable[taskID].state = taskState.suspended;
+  if (chpldev_taskTable == nil) then return;
+
+  chpldev_taskTable.map[taskID].state = taskState.suspended;
 }
 
 export proc chpldev_taskTable_get_tl_info(taskID : chpl_taskID_t)
 {
-  return chpldev_taskTable[taskID].tl_info;
+  if (chpldev_taskTable == nil) then return 0:uint(64);
+
+  return chpldev_taskTable.map[taskID].tl_info;
 }
 
 export proc chpldev_taskTable_print() 
 {
-  for taskID in chpldev_taskTableD {
-    stderr.writeln("- ", chpldev_taskTable[taskID].filename,
-                   ":",  chpldev_taskTable[taskID].lineno,
-                   " is ", chpldev_taskTable[taskID].state);
+  if (chpldev_taskTable == nil) then return;
+
+  for taskID in chpldev_taskTable.dom {
+    stderr.writeln("- ", chpldev_taskTable.map[taskID].filename,
+                   ":",  chpldev_taskTable.map[taskID].lineno,
+                   " is ", chpldev_taskTable.map[taskID].state);
   }
 }
