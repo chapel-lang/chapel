@@ -133,7 +133,7 @@ proc typeToString(type t) param {
   return __primitive("typeToString", t);
 }
 
-enum iterator {leader, follower};
+enum iterKind {leader, follower};
 
 //
 // assignment on primitive types

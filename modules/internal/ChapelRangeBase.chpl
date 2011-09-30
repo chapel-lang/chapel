@@ -759,7 +759,7 @@ iter rangeBase.these()
   }
 }
 
-iter rangeBase.these(param tag: iterator) where tag == iterator.leader
+iter rangeBase.these(param tag: iterKind) where tag == iterKind.leader
 {
   if ! isBoundedRangeB(this) then
     compilerError("parallel iteration is not supported over unbounded ranges");
@@ -804,27 +804,27 @@ iter rangeBase.these(param tag: iterator) where tag == iterator.leader
   }
 }
 
-iter rangeBase.these(param tag: iterator, follower) where tag == iterator.follower
+iter rangeBase.these(param tag: iterKind, followThis) where tag == iterKind.follower
 {
   if boundedType == BoundedRangeType.boundedNone then
     compilerError("iteration over a range with no bounds");
   if ! stridable && boundedType == BoundedRangeType.boundedHigh then
     compilerError("iteration over a range with no first index");
 
-  if follower.size != 1 then
+  if followThis.size != 1 then
     compilerError("iteration over a range with multi-dimensional iterator");
 
   if debugChapelRange then
-    writeln("In range follower code: Following ", follower);
+    writeln("In range follower code: Following ", followThis);
 
-  var followThis = follower(1);
+  var myFollowThis = followThis(1);
 
   if debugChapelRange then
-    writeln("Range = ", followThis);
+    writeln("Range = ", myFollowThis);
 
   if ! this.hasFirst() {
     if this.isEmpty() {
-      if followThis.isEmpty() then
+      if myFollowThis.isEmpty() then
         // nothing to do
         return;
       else
@@ -833,18 +833,18 @@ iter rangeBase.these(param tag: iterator, follower) where tag == iterator.follow
       halt("iteration over a range with no first index");
     }
   }
-  if ! followThis.hasFirst() {
-    if !followThis.isAmbiguous() && followThis.isEmpty() then
+  if ! myFollowThis.hasFirst() {
+    if !myFollowThis.isAmbiguous() && myFollowThis.isEmpty() then
       // nothing to do
       return;
     else
       halt("zippered iteration over a range with no first index");
   }
 
-  if (isBoundedRangeB(followThis) && !followThis.stridable) ||
-     followThis.hasLast()
+  if (isBoundedRangeB(myFollowThis) && !myFollowThis.stridable) ||
+     myFollowThis.hasLast()
   {
-    const flwlen = followThis.length;
+    const flwlen = myFollowThis.length;
     if flwlen == 0 then
       return; // nothing to do
     if boundsChecking && this.hasLast() {
@@ -856,8 +856,8 @@ iter rangeBase.these(param tag: iterator, follower) where tag == iterator.follow
         assert(false, "hasFirst && hasLast do not imply isBoundedRangeB");
     }    
 
-    // same as undensifyBounded(this, followThis), but on a rangeBase
-    var low: idxType  = this.orderToIndex(followThis.first);
+    // same as undensifyBounded(this, myFollowThis), but on a rangeBase
+    var low: idxType  = this.orderToIndex(myFollowThis.first);
     if flwlen == 1
     {
       if debugChapelRange then
@@ -866,9 +866,9 @@ iter rangeBase.these(param tag: iterator, follower) where tag == iterator.follow
       return;
     }
 
-    const stride = this.stride * followThis.stride;
+    const stride = this.stride * myFollowThis.stride;
     var high: idxType = ( low + stride * (flwlen - 1) ):idxType;
-    assert(high == this.orderToIndex(followThis.last));
+    assert(high == this.orderToIndex(myFollowThis.last));
     if stride < 0 then low <=> high;
     assert(low <= high);
 
@@ -883,14 +883,14 @@ iter rangeBase.these(param tag: iterator, follower) where tag == iterator.follow
       yield i;
     }
   }
-  else // ! followThis.hasLast()
+  else // ! myFollowThis.hasLast()
   {
     // WARNING: this case has not been tested
     if boundsChecking && this.hasLast() then
       halt("zippered iteration where a bounded range follows an unbounded iterator");
 
-    const first  = this.orderToIndex(followThis.first);
-    const stride = this.stride * followThis.stride;
+    const first  = this.orderToIndex(myFollowThis.first);
+    const stride = this.stride * myFollowThis.stride;
 
     if stride > 0
     {
@@ -916,7 +916,7 @@ iter rangeBase.these(param tag: iterator, follower) where tag == iterator.follow
           yield i;
         }
     }
-  } // if followThis.hasLast()
+  } // if myFollowThis.hasLast()
 }
 
 

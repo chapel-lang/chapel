@@ -3321,7 +3321,7 @@ preFold(Expr* expr) {
       else
         followerCall = new CallExpr(iterator->name);
       followerCall->insertAtTail(new NamedExpr("tag", new SymExpr(gFollowerTag)));
-      followerCall->insertAtTail(new NamedExpr("follower", call->get(2)->remove()));
+      followerCall->insertAtTail(new NamedExpr(iterFollowthisArgname, call->get(2)->remove()));
       for_formals(formal, iterator) {
         followerCall->insertAtTail(new NamedExpr(formal->name, new SymExpr(formal)));
       }

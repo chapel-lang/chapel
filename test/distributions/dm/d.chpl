@@ -869,7 +869,7 @@ iter DimensionalDom.these() {
 
 //== leader iterator - domain
 
-iter DimensionalDom.these(param tag: iterator) where tag == iterator.leader {
+iter DimensionalDom.these(param tag: iterKind) where tag == iterKind.leader {
   _traceddd(this, ".leader");
   assert(rank == 2);
 
@@ -1025,13 +1025,13 @@ iter DimensionalDom.these(param tag: iterator) where tag == iterator.leader {
 
 //== follower iterator - domain
 
-iter DimensionalDom.these(param tag: iterator, follower) where tag == iterator.follower {
-  _traceddd(this, ".follower on ", here.id, "  got ", follower);
+iter DimensionalDom.these(param tag: iterKind, followThis) where tag == iterKind.follower {
+  _traceddd(this, ".follower on ", here.id, "  got ", followThis);
 
   // This is pre-defined by DSI, so no need to consult
   // the subordinate 1-d distributions.
 
-  for i in [(...unDensify(follower, whole.dims()))] do
+  for i in [(...unDensify(followThis, whole.dims()))] do
     yield i;
 }
 
@@ -1086,22 +1086,22 @@ iter DimensionalArr.these() var {
 
 //== leader iterator - array
 
-iter DimensionalArr.these(param tag: iterator) where tag == iterator.leader {
-  for follower in dom.these(tag) do
-    yield follower;
+iter DimensionalArr.these(param tag: iterKind) where tag == iterKind.leader {
+  for followThis in dom.these(tag) do
+    yield followThis;
 }
 
 
 //== follower iterator - array   (somewhat similar to the serial iterator)
 
-iter DimensionalArr.these(param tag: iterator, follower) var where tag == iterator.follower {
-  _traceddd(this, ".follower on ", here.id, "  got ", follower,
+iter DimensionalArr.these(param tag: iterKind, followThis) var where tag == iterKind.follower {
+  _traceddd(this, ".follower on ", here.id, "  got ", followThis,
             if this.isAlias then "  (alias)" else "");
   assert(this.rank == 2);
 
-  // Convert the follower ranges to user index space.
-  const f1 = unDensify(follower(1), this.dom.whole.dim(1));
-  const f2 = unDensify(follower(2), this.dom.whole.dim(2));
+  // Convert the followThis ranges to user index space.
+  const f1 = unDensify(followThis(1), this.dom.whole.dim(1));
+  const f2 = unDensify(followThis(2), this.dom.whole.dim(2));
 
   // If this is an alias, we will invoke dsiFollowerArrayIterator1d
   // on the original array's domain descriptors.

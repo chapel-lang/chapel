@@ -113,7 +113,7 @@ class DefaultAssociativeDom: BaseAssociativeDom {
     }
   }
 
-  iter these(param tag: iterator) where tag == iterator.leader {
+  iter these(param tag: iterKind) where tag == iterKind.leader {
     if debugDefaultAssoc then
       writeln("*** In domain leader code:");
     const numTasks = if dataParTasksPerLocale==0 then here.numCores
@@ -157,16 +157,16 @@ class DefaultAssociativeDom: BaseAssociativeDom {
     }
   }
 
-  iter these(param tag: iterator, follower) where tag == iterator.follower {
-    var (chunk, followerDom) = follower;
-    if followerDom != this {
+  iter these(param tag: iterKind, followThis) where tag == iterKind.follower {
+    var (chunk, followThisDom) = followThis;
+    if followThisDom != this {
       // check to see if domains match
-      var followerTab = followerDom.table;
+      var followThisTab = followThisDom.table;
       var myTab = table;
       var mismatch = false;
       // could use a reduction
       for slot in chunk.low..chunk.high do
-        if followerTab(slot).status != myTab(slot).status {
+        if followThisTab(slot).status != myTab(slot).status {
           mismatch = true;
           break;
         }
@@ -367,21 +367,21 @@ class DefaultAssociativeArr: BaseArr {
     }
   }
 
-  iter these(param tag: iterator) where tag == iterator.leader {
-    for follower in dom.these(tag) do
-      yield follower;
+  iter these(param tag: iterKind) where tag == iterKind.leader {
+    for followThis in dom.these(tag) do
+      yield followThis;
   }
 
-  iter these(param tag: iterator, follower) var where tag == iterator.follower {
-    var (chunk, followerDom) = follower;
-    if followerDom != dom {
+  iter these(param tag: iterKind, followThis) var where tag == iterKind.follower {
+    var (chunk, followThisDom) = followThis;
+    if followThisDom != dom {
       // check to see if domains match
-      var followerTab = followerDom.table;
+      var followThisTab = followThisDom.table;
       var myTab = dom.table;
       var mismatch = false;
       // could use a reduction
       for slot in chunk.low..chunk.high do
-        if followerTab(slot).status != myTab(slot).status {
+        if followThisTab(slot).status != myTab(slot).status {
           mismatch = true;
           break;
         }

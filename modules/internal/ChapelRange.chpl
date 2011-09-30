@@ -557,18 +557,18 @@ iter range.these()
   for i in _base.these() do yield i;
 }
 
-iter range.these(param tag: iterator) where tag == iterator.leader
+iter range.these(param tag: iterKind) where tag == iterKind.leader
 {
   if this.isAmbiguous() then
     __primitive("chpl_error", "these -- Attempt to iterate over a range with ambiguous alignment.");
-  for i in _base.these(iterator.leader) do yield i;
+  for i in _base.these(iterKind.leader) do yield i;
 }
 
-iter range.these(param tag: iterator, follower) where tag == iterator.follower
+iter range.these(param tag: iterKind, followThis) where tag == iterKind.follower
 {
   if this.isAmbiguous() then
     __primitive("chpl_error", "these -- Attempt to iterate over a range with ambiguous alignment.");
-  for i in _base.these(iterator.follower, follower) do yield i;
+  for i in _base.these(iterKind.follower, followThis) do yield i;
 }
 
 

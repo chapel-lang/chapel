@@ -7,7 +7,7 @@ class C {
       yield e;
   }
 
-  iter these(param tag: iterator) where tag == iterator.leader {
+  iter these(param tag: iterKind) where tag == iterKind.leader {
     writeln("leader method invoked");
     cobegin {
       on Locales(0) do yield 1..n/2;
@@ -15,8 +15,8 @@ class C {
     }
   }
 
-  iter these(param tag: iterator, follower) var where tag == iterator.follower {
-    for i in follower do
+  iter these(param tag: iterKind, followThis) var where tag == iterKind.follower {
+    for i in followThis do
       yield A(i);
   }
 }

@@ -329,7 +329,7 @@ class Block1DDom: BaseArithmeticDomain {
   // clause interact with a loop that used an on clause explicitly
   // within its body?  How would it be done efficiently?
   //
-  proc these(param tag: iterator) where tag == iterator.leader {
+  proc these(param tag: iterKind) where tag == iterKind.leader {
     //
     // TODO: This currently only results in a single level of
     // per-locale parallelism -- no per-core parallelism; maybe
@@ -360,7 +360,7 @@ class Block1DDom: BaseArithmeticDomain {
       }
   }
 
-  proc these(param tag: iterator, follower) where tag == iterator.follower {
+  proc these(param tag: iterKind, followThis) where tag == iterKind.follower {
     //
     // TODO: Abstract this addition of low into a function?
     // Note relationship between this operation and the
@@ -372,7 +372,7 @@ class Block1DDom: BaseArithmeticDomain {
     // parallelism is expressed at that level?  Seems like a nice
     // natural composition and might help with my fears about how
     // stencil communication will be done on a per-locale basis.
-    for i in follower {
+    for i in followThis {
       yield i + whole.low;
     }
   }
@@ -533,12 +533,12 @@ class LocBlock1DDom {
   // this is the parallel iterator for the local domain, see global
   // domain parallel iterators for general notes on the approach
   //
-  proc these(param tag: iterator) where tag == iterator.leader {
+  proc these(param tag: iterKind) where tag == iterKind.leader {
     halt("This is bogus");
     yield [1..100];
   }
 
-  proc these(param tag: iterator, follower) where tag == iterator.follower {
+  proc these(param tag: iterKind, followThis) where tag == iterKind.follower {
     halt("This is bogus");
     yield 2;
   }
@@ -661,7 +661,7 @@ class Block1DArr: BaseArray {
   // this is the parallel iterator for the global array, see the
   // example for general notes on the approach
   //
-  proc these(param tag: iterator) where tag == iterator.leader {
+  proc these(param tag: iterKind) where tag == iterKind.leader {
     //
     // TODO: Rewrite this to reuse more of the global domain iterator
     // logic?  (e.g., can we forward the forall to the global domain
@@ -674,11 +674,11 @@ class Block1DArr: BaseArray {
 
   proc supportsAlignedFollower() param return true;
 
-  proc these(param tag: iterator, follower, param aligned: bool = false) var where tag == iterator.follower {
+  proc these(param tag: iterKind, followThis, param aligned: bool = false) var where tag == iterKind.follower {
     //
-    // TODO: Would like to write this as follower += dom.low;
+    // TODO: Would like to write this as followThis += dom.low;
     //
-    const followThis = follower + dom.low;
+    const myFollowThis = followThis + dom.low;
 
     //
     // TODO: The following is a buggy hack that will only work when we're
@@ -688,7 +688,7 @@ class Block1DArr: BaseArray {
     const myLocArr = locArr(here.id);
     if aligned {
       local {
-        for i in followThis {
+        for i in myFollowThis {
           yield myLocArr.this(i);
         }
       }
@@ -705,7 +705,7 @@ class Block1DArr: BaseArray {
         }
         return this(i);
       }
-      for i in followThis {
+      for i in myFollowThis {
         yield accessHelper(i);
       }
     }
@@ -719,7 +719,7 @@ class Block1DArr: BaseArray {
     // locArr/locDoms arrays should be associative over locale values.
     //
     const myLocArr = locArr(here.id);
-    if (myLocArr.owns(followThis)) {
+    if (myLocArr.owns(myFollowThis)) {
       // we own all the elements we're following
       //
 
@@ -728,7 +728,7 @@ class Block1DArr: BaseArray {
       // follower iterators:
       //
       //      local {
-        for i in followThis {
+        for i in myFollowThis {
           yield myLocArr.this(i);
         }
         //      }
@@ -740,7 +740,7 @@ class Block1DArr: BaseArray {
       //
       // TODO: could do something smarter to only bring the non-local
       // elements over.
-      for i in followThis {
+      for i in myFollowThis {
         yield this(i);
       }
     }
@@ -838,12 +838,12 @@ class LocBlock1DArr {
   // this is the parallel iterator for the local array, see global
   // domain parallel iterators for general notes on the approach
   //
-  proc these(param tag: iterator) where tag == iterator.leader {
+  proc these(param tag: iterKind) where tag == iterKind.leader {
     halt("This is bogus");
     yield [1..100];
   }
 
-  proc these(param tag: iterator, follower) var where tag == iterator.follower {
+  proc these(param tag: iterKind, followThis) var where tag == iterKind.follower {
     yield myElems(0);
   }
 

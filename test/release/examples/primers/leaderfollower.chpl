@@ -209,8 +209,8 @@ writeln();
 // learning about leader/follower iterators, it's useful to turn
 // this debugging output on by compiling  with -sverbose=true
 //
-iter count(param tag: iterator, n: int, low: int=1) 
-       where tag == iterator.leader {
+iter count(param tag: iterKind, n: int, low: int=1) 
+       where tag == iterKind.leader {
 
   if (verbose) then
     writeln("In count() leader, creating ", numTasks, " tasks");
@@ -238,12 +238,12 @@ iter count(param tag: iterator, n: int, low: int=1)
 // time taking the iterator.follower param enumeration as its first
 // argument.  The next arguments should match the leader and serial
 // iterators exactly again (so, n and low for our example).  The
-// final argument is called 'follower' (another name that could
+// final argument is called 'followThis' (another name that could
 // stand to be improved) which represents the data yielded by the
 // leader (in our case, the 1-tuple of ranges).
 //
 // The goal of the follower is to do the iteration specified by the
-// 'follower' argument, serially yielding the elements corresponding
+// 'followThis' argument, serially yielding the elements corresponding
 // to those iterations.  In our case, this involves plucking the
 // range back out of the tuple of ranges, and shifting it back to
 // our low-based coordinate system.  We then use a standard for loop
@@ -254,12 +254,12 @@ iter count(param tag: iterator, n: int, low: int=1)
 // As with the leader, this follower has been authored to support
 // debugging output when compiled with -sverbose=true.
 //
-iter count(param tag: iterator, n: int, low: int=1, follower)
-       where tag == iterator.follower && follower.size == 1 {
-  const lowBasedIters = follower(1).translate(low);
+iter count(param tag: iterKind, n: int, low: int=1, followThis)
+       where tag == iterKind.follower && followThis.size == 1 {
+  const lowBasedIters = followThis(1).translate(low);
 
   if (verbose) then
-    writeln("Follower received ", follower, " as work chunk; shifting to ",
+    writeln("Follower received ", followThis, " as work chunk; shifting to ",
             lowBasedIters);
 
   for i in lowBasedIters do

@@ -550,7 +550,7 @@ iter BlockDom.these() {
     yield i;
 }
 
-iter BlockDom.these(param tag: iterator) where tag == iterator.leader {
+iter BlockDom.these(param tag: iterKind) where tag == iterKind.leader {
   const maxTasks = dist.dataParTasksPerLocale;
   const ignoreRunning = dist.dataParIgnoreRunningTasks;
   const minSize = dist.dataParMinGranularity;
@@ -599,18 +599,18 @@ iter BlockDom.these(param tag: iterator) where tag == iterator.leader {
 // natural composition and might help with my fears about how
 // stencil communication will be done on a per-locale basis.
 //
-iter BlockDom.these(param tag: iterator, follower) where tag == iterator.follower {
+iter BlockDom.these(param tag: iterKind, followThis) where tag == iterKind.follower {
   proc anyStridable(rangeTuple, param i: int = 1) param
       return if i == rangeTuple.size then rangeTuple(i).stridable
              else rangeTuple(i).stridable || anyStridable(rangeTuple, i+1);
 
-  chpl__testPar("Block domain follower invoked on ", follower);
-  var t: rank*range(idxType, stridable=stridable||anyStridable(follower));
+  chpl__testPar("Block domain follower invoked on ", followThis);
+  var t: rank*range(idxType, stridable=stridable||anyStridable(followThis));
   for param i in 1..rank {
     var stride = whole.dim(i).stride: idxType;
-    var low = stride * follower(i).low;
-    var high = stride * follower(i).high;
-    t(i) = (low..high by stride:int) + whole.dim(i).low by follower(i).stride;
+    var low = stride * followThis(i).low;
+    var high = stride * followThis(i).high;
+    t(i) = (low..high by stride:int) + whole.dim(i).low by followThis(i).stride;
   }
   for i in [(...t)] {
     yield i;
@@ -824,9 +824,9 @@ iter BlockArr.these() var {
 // logic?  (e.g., can we forward the forall to the global domain
 // somehow?
 //
-iter BlockArr.these(param tag: iterator) where tag == iterator.leader {
-  for follower in dom.these(tag) do
-    yield follower;
+iter BlockArr.these(param tag: iterKind) where tag == iterKind.leader {
+  for followThis in dom.these(tag) do
+    yield followThis;
 }
 
 proc BlockArr.dsiStaticFastFollowCheck(type leadType) param
@@ -838,28 +838,28 @@ proc BlockArr.dsiDynamicFastFollowCheck(lead: [])
 proc BlockArr.dsiDynamicFastFollowCheck(lead: domain)
   return lead._value == this.dom;
 
-iter BlockArr.these(param tag: iterator, follower, param fast: bool = false) var where tag == iterator.follower {
+iter BlockArr.these(param tag: iterKind, followThis, param fast: bool = false) var where tag == iterKind.follower {
   proc anyStridable(rangeTuple, param i: int = 1) param
       return if i == rangeTuple.size then rangeTuple(i).stridable
              else rangeTuple(i).stridable || anyStridable(rangeTuple, i+1);
 
   if fast then
-    chpl__testPar("Block array fast follower invoked on ", follower);
+    chpl__testPar("Block array fast follower invoked on ", followThis);
   else
-    chpl__testPar("Block array non-fast follower invoked on ", follower);
+    chpl__testPar("Block array non-fast follower invoked on ", followThis);
 
   if testFastFollowerOptimization then
     writeln((if fast then "fast" else "regular") + " follower invoked for Block array");
 
-  var followThis: rank*range(idxType=idxType, stridable=stridable || anyStridable(follower));
+  var myFollowThis: rank*range(idxType=idxType, stridable=stridable || anyStridable(followThis));
   var lowIdx: rank*idxType;
 
   for param i in 1..rank {
     var stride = dom.whole.dim(i).stride;
-    var low = follower(i).low * stride;
-    var high = follower(i).high * stride;
-    followThis(i) = (low..high by stride) + dom.whole.dim(i).low by follower(i).stride;
-    lowIdx(i) = followThis(i).low;
+    var low = followThis(i).low * stride;
+    var high = followThis(i).high * stride;
+    myFollowThis(i) = (low..high by stride) + dom.whole.dim(i).low by followThis(i).stride;
+    lowIdx(i) = myFollowThis(i).low;
   }
 
   if fast {
@@ -872,13 +872,13 @@ iter BlockArr.these(param tag: iterator, follower, param fast: bool = false) var
 
     //
     // if arrSection is not local and we're using the fast follower,
-    // it means that followThisDom is empty; make arrSection local so
+    // it means that myFollowThisDom is empty; make arrSection local so
     // that we can use the local block below
     //
     if arrSection.locale.id != here.id then
       arrSection = myLocArr;
     local {
-      for e in arrSection.myElems((...followThis)) do
+      for e in arrSection.myElems((...myFollowThis)) do
         yield e;
     }
   } else {
@@ -892,8 +892,8 @@ iter BlockArr.these(param tag: iterator, follower, param fast: bool = false) var
       }
       return dsiAccess(i);
     }
-    const followThisDom = [(...followThis)];
-    for i in followThisDom {
+    const myFollowThisDom = [(...myFollowThis)];
+    for i in myFollowThisDom {
       yield accessHelper(i);
     }
   }

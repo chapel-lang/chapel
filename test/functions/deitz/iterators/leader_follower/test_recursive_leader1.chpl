@@ -3,13 +3,13 @@ iter foo(lo: int, hi: int) {
     yield i;
 }
 
-iter foo(param tag: iterator, lo: int, hi: int) where tag == iterator.leader {
+iter foo(param tag: iterKind, lo: int, hi: int) where tag == iterKind.leader {
   coforall i in lo..hi do
     yield i;
 }
 
-iter foo(param tag: iterator, follower, lo: int, hi: int) where tag == iterator.follower {
-  yield follower;
+iter foo(param tag: iterKind, followThis, lo: int, hi: int) where tag == iterKind.follower {
+  yield followThis;
 }
 
 iter bar(lo: int, hi: int) {
@@ -17,7 +17,7 @@ iter bar(lo: int, hi: int) {
     yield i;
 }
 
-iter bar(param tag: iterator, lo: int, hi: int): int where tag == iterator.leader {
+iter bar(param tag: iterKind, lo: int, hi: int): int where tag == iterKind.leader {
   if lo < hi {
     var mid = (lo + hi) / 2;
     cobegin {
@@ -31,8 +31,8 @@ iter bar(param tag: iterator, lo: int, hi: int): int where tag == iterator.leade
   }
 }
 
-iter bar(param tag: iterator, follower, lo: int, hi: int) where tag == iterator.follower {
-  yield follower;
+iter bar(param tag: iterKind, followThis, lo: int, hi: int) where tag == iterKind.follower {
+  yield followThis;
 }
 
 config const n: int = 8;

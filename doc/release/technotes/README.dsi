@@ -176,7 +176,7 @@ iter GlobalDomain.these()
   Yields values of the type idxType if rank==1, rank*idxType otherwise.
 
 iter GlobalDomain.these(param tag: iterator) where tag == iterator.leader
-iter GlobalDomain.these(param tag: iterator, follower) where tag == iterator.follower
+iter GlobalDomain.these(param tag: iterator, followThis) where tag == iterator.follower
   The "leader" and "follower" iterators (defined below). They are
   invoked implicitly to implement parallel ("forall") loops over this domain.
   The serial iterator must also be defined for "forall" loops to work.
@@ -202,13 +202,13 @@ iter GlobalDomain.these(param tag: iterator, follower) where tag == iterator.fol
   over a subdomain whose description is yielded by the leader iterator,
   yielding all indices in that subdomain.
   Each time the leader yields a description, the follower is invoked
-  (implicitly) with that description passed to its 'follower' argument.
-  (The argument name must be exactly "follower".)
+  (implicitly) with that description passed to its 'followThis' argument.
+  (The argument name must be exactly "followThis".)
 
   For a zippered loop, only the leader for the first of the zippered
   items is invoked. Each time that leader yields a description,
   all followers are invoked in a zippered manner, with that description
-  passed to their 'follower' arguments.
+  passed to their 'followThis' arguments.
 
   In general, it is up to the implementer of the leaders/followers
   whether and how to support their interoperability in this situation.
@@ -354,13 +354,13 @@ iter GlobalArray.these() var: eltType
   The serial iterator over the elements of this array.
 
 iter GlobalArray.these(param tag: iterator) where tag == iterator.leader
-iter GlobalArray.these(param tag: iterator, follower)  var  where tag == iterator.follower
+iter GlobalArray.these(param tag: iterator, followThis)  var  where tag == iterator.follower
   The leader and follower iterators.
 
   These are defined in the same way as the leader and follower for
   GlobalDomain, except the follower must yield array locations.
 
-  Given a subdomain description passed to the 'follower' argument,
+  Given a subdomain description passed to the 'followThis' argument,
   the GlobalArray follower iterator must yield array locations
   corresponding to the indicies yielded by the GlobalDomain follower,
   in the same order.

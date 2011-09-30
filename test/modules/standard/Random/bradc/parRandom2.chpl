@@ -31,15 +31,15 @@ class C {
       yield A(i);
   }
 
-  iter these(param tag: iterator) where tag == iterator.leader {
+  iter these(param tag: iterKind) where tag == iterKind.leader {
     cobegin {
       yield [n/2+1..n-1];
       yield [0..n/2];
     }
   }
 
-  iter these(param tag: iterator, follower) var where tag == iterator.follower {
-    for i in follower do
+  iter these(param tag: iterKind, followThis) var where tag == iterKind.follower {
+    for i in followThis do
       yield A(i+1);
   }
 

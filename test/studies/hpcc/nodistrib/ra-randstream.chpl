@@ -30,11 +30,11 @@ module RARandomStream {
   // corresponding to those indices.  Follower iterators like these
   // are required for parallel zippered iteration.
   //
-  iter RAStream(param tag: iterator, follower) where tag == iterator.follower {
-    if follower.size != 1 then
+  iter RAStream(param tag: iterKind, followThis) where tag == iterKind.follower {
+    if followThis.size != 1 then
       halt("RAStream cannot use multi-dimensional iterator");
-    var val = getNthRandom(follower(1).low);
-    for follower {
+    var val = getNthRandom(followThis(1).low);
+    for followThis {
       getNextRandom(val);
       yield val;
     }

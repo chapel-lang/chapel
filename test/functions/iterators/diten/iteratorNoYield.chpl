@@ -3,8 +3,8 @@ iter itr() {
     yield i;
 }
 
-proc itr(param tag: iterator) where tag == iterator.leader { }
-proc itr(param tag: iterator, follower) where tag == iterator.follower { }
+proc itr(param tag: iterKind) where tag == iterKind.leader { }
+proc itr(param tag: iterKind, followThis) where tag == iterKind.follower { }
 
 forall i in itr() do
   writeln(i);

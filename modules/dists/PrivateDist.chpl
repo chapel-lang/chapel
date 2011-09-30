@@ -21,7 +21,7 @@ class PrivateDom: BaseRectangularDom {
 
   iter these() { for i in 0..numLocales-1 do yield i; }
 
-  iter these(param tag: iterator) where tag == iterator.leader {
+  iter these(param tag: iterKind) where tag == iterKind.leader {
     coforall loc in Locales do on loc {
       var t: 1*range(idxType);
       t(1) = here.id..here.id;
@@ -29,8 +29,8 @@ class PrivateDom: BaseRectangularDom {
     }
   }
 
-  iter these(param tag: iterator, follower) where tag == iterator.follower {
-    for i in follower(1) do
+  iter these(param tag: iterKind, followThis) where tag == iterKind.follower {
+    for i in followThis(1) do
       yield i;
   }
 
@@ -108,7 +108,7 @@ iter PrivateArr.these() var {
     yield dsiAccess(i);
 }
 
-iter PrivateArr.these(param tag: iterator) where tag == iterator.leader {
+iter PrivateArr.these(param tag: iterKind) where tag == iterKind.leader {
   coforall loc in Locales do on loc {
     var t: 1*range(idxType);
     t(1) = here.id..here.id;
@@ -116,8 +116,8 @@ iter PrivateArr.these(param tag: iterator) where tag == iterator.leader {
   }
 }
 
-iter PrivateArr.these(param tag: iterator, follower) var where tag == iterator.follower {
-  for i in follower(1) do
+iter PrivateArr.these(param tag: iterKind, followThis) var where tag == iterKind.follower {
+  for i in followThis(1) do
     yield dsiAccess(i);
 }
 

@@ -3,13 +3,13 @@ iter foo(n: int) {
     yield i;
 }
 
-iter foo(param tag: iterator, n: int) where tag == iterator.leader {
+iter foo(param tag: iterKind, n: int) where tag == iterKind.leader {
   yield 0..n-1;
 }
 
-iter foo(param tag: iterator, follower, n: int) where tag == iterator.follower {
+iter foo(param tag: iterKind, followThis, n: int) where tag == iterKind.follower {
   writeln("foo range follower called");
-  for i in follower+1 do
+  for i in followThis+1 do
     yield i;
 }
 
@@ -18,19 +18,19 @@ iter bar(n: int) {
     yield i;
 }
 
-iter bar(param tag: iterator, n: int) where tag == iterator.leader {
+iter bar(param tag: iterKind, n: int) where tag == iterKind.leader {
   yield n-1;
 }
 
-iter bar(param tag: iterator, follower: range, n: int) where tag == iterator.follower {
+iter bar(param tag: iterKind, followThis: range, n: int) where tag == iterKind.follower {
   writeln("bar range follower called");
-  for i in follower+1 do
+  for i in followThis+1 do
     yield i;
 }
 
-iter bar(param tag: iterator, follower: int, n: int) where tag == iterator.follower {
+iter bar(param tag: iterKind, followThis: int, n: int) where tag == iterKind.follower {
   writeln("bar int follower called");
-  for i in 1..follower+1 do
+  for i in 1..followThis+1 do
     yield i;
 }
 

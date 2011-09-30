@@ -417,7 +417,7 @@ iter CyclicDom.these() {
     yield i;
 }
 
-iter CyclicDom.these(param tag: iterator) where tag == iterator.leader {
+iter CyclicDom.these(param tag: iterKind) where tag == iterKind.leader {
   const maxTasks = dist.dataParTasksPerLocale;
   const ignoreRunning = dist.dataParIgnoreRunningTasks;
   const minSize = dist.dataParMinGranularity;
@@ -469,14 +469,14 @@ iter CyclicDom.these(param tag: iterator) where tag == iterator.leader {
   }
 }
 
-iter CyclicDom.these(param tag: iterator, follower) where tag == iterator.follower {
+iter CyclicDom.these(param tag: iterKind, followThis) where tag == iterKind.follower {
   var t: rank*range(idxType, stridable=true);
   if debugCyclicDist then
     writeln(here.id, ": follower whole is: ", whole,
-                     " follower is: ", follower);
+                     " follower is: ", followThis);
   for param i in 1..rank {
     const wholestride = whole.dim(i).stride;
-    t(i) = ((follower(i).low*wholestride)..(follower(i).high*wholestride) by (follower(i).stride*wholestride)) + whole.dim(i).low;
+    t(i) = ((followThis(i).low*wholestride)..(followThis(i).high*wholestride) by (followThis(i).stride*wholestride)) + whole.dim(i).low;
   }
   if debugCyclicDist then
     writeln(here.id, ": follower maps to: ", t);
@@ -751,9 +751,9 @@ iter CyclicArr.these() var {
     yield dsiAccess(i);
 }
 
-iter CyclicArr.these(param tag: iterator) where tag == iterator.leader {
-  for follower in dom.these(tag) do
-    yield follower;
+iter CyclicArr.these(param tag: iterKind) where tag == iterKind.leader {
+  for followThis in dom.these(tag) do
+    yield followThis;
 }
 
 proc CyclicArr.dsiStaticFastFollowCheck(type leadType) param
@@ -765,23 +765,23 @@ proc CyclicArr.dsiDynamicFastFollowCheck(lead: [])
 proc CyclicArr.dsiDynamicFastFollowCheck(lead: domain)
   return lead._value == this.dom;
 
-iter CyclicArr.these(param tag: iterator, follower, param fast: bool = false) var where tag == iterator.follower {
+iter CyclicArr.these(param tag: iterKind, followThis, param fast: bool = false) var where tag == iterKind.follower {
   if testFastFollowerOptimization then
     writeln((if fast then "fast" else "regular") + " follower invoked for Cyclic array");
 
   var t: rank*range(idxType=idxType, stridable=true);
   for param i in 1..rank {
     const wholestride = dom.whole.dim(i).stride;
-    t(i) = ((follower(i).low*wholestride)..(follower(i).high*wholestride) by (follower(i).stride*wholestride)) + dom.whole.dim(i).low;
+    t(i) = ((followThis(i).low*wholestride)..(followThis(i).high*wholestride) by (followThis(i).stride*wholestride)) + dom.whole.dim(i).low;
   }
-  const followThis = [(...t)];
+  const myFollowThis = [(...t)];
   if fast {
-    const arrSection = locArr(dom.dist.targetLocsIdx(followThis.low));
+    const arrSection = locArr(dom.dist.targetLocsIdx(myFollowThis.low));
     if arrSection.locale.id == here.id then local {
-      for e in arrSection.myElems(followThis) do
+      for e in arrSection.myElems(myFollowThis) do
         yield e;
     } else {
-      for e in arrSection.myElems(followThis) do
+      for e in arrSection.myElems(myFollowThis) do
         yield e;
     }
   } else {
@@ -793,7 +793,7 @@ iter CyclicArr.these(param tag: iterator, follower, param fast: bool = false) va
       return dsiAccess(i);
     }
 
-    for i in followThis {
+    for i in myFollowThis {
       yield accessHelper(i);
     }
   }
