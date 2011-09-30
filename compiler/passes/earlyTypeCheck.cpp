@@ -14,6 +14,53 @@
 #include <string>
 #include <utility>
 
+//FIXME: This probably already exists in Chapel, but I couldn't find it
+int get_symbol_id(BaseAST *ast) {
+  if (isType(ast)) {
+    return ast->id;
+  }
+  else if (VarSymbol *vs = toVarSymbol(ast)) {
+    return vs->type->id;
+  }
+  else if (TypeSymbol *ts = toTypeSymbol(ast)) {
+    return ts->type->id;
+  }
+  else if (Symbol *s = toSymbol(ast)) {
+    return s->id;
+  }
+  else if (isExpr(ast)) {
+    if (DefExpr *de = toDefExpr(ast)) {
+      if (de->init) {
+        return get_symbol_id(de->init);
+      }
+      else if (de->exprType) {
+        return get_symbol_id(de->exprType);
+      }
+      else if (de->sym) {
+        return get_symbol_id(de->sym);
+      }
+    }
+    else if (SymExpr *se = toSymExpr(ast)) {
+      return get_symbol_id(se->var);
+    }
+    else if (CallExpr *ce = toCallExpr(ast)) {
+      return get_symbol_id(ce->baseExpr);
+    }
+    else if (BlockStmt *bs = toBlockStmt(ast)) {
+      //FIXME: This is a shortcut, it isn't strictly correct
+      return get_symbol_id(bs->body.head);
+    }
+    else {
+      INT_FATAL("Unimplemented case in getSymbolId(expr)");
+    }
+  }
+  else {
+    INT_FATAL("Unimplemented case in getSymbolId(ast)");
+  }
+  INT_FATAL("Unimplemented case in getSymbolId");
+  return 0;
+}
+
 struct CCNode {
   CCNode* parent;
 
@@ -74,7 +121,8 @@ struct CongruenceClosure {
       }
     }
 
-    for (CCNodeAssocListRIter i = node_assoc_list.rbegin(), e = node_assoc_list.rend(); i != e; ++i) {
+    for (CCNodeAssocListRIter i = node_assoc_list.rbegin(),
+        e = node_assoc_list.rend(); i != e; ++i) {
       if (unique_id == i->first) {
         CCNode *current_node = i->second;
 
@@ -102,10 +150,6 @@ struct CongruenceClosure {
       // Set up the bi-directional link between containing type and contained type
       children_nodes[i]->contained_by.push_back(new_node);
       new_node->contains.push_back(children_nodes[i]);
-
-      for (unsigned j = 0; j < children_nodes[i]->contained_by.size(); ++j) {
-        equate_if_children_match(new_node, children_nodes[i]->contained_by[j]);
-      }
     }
 
     node_assoc_list.push_back(std::make_pair(unique_id, new_node));
@@ -113,55 +157,9 @@ struct CongruenceClosure {
     return new_node;
   }
 
-  //FIXME: This probably already exists in Chapel, but I couldn't find it
-  int get_symbol_id(BaseAST *ast) {
-    if (isType(ast)) {
-      return ast->id;
-    }
-    else if (VarSymbol *vs = toVarSymbol(ast)) {
-      return vs->type->id;
-    }
-    else if (TypeSymbol *ts = toTypeSymbol(ast)) {
-      return ts->type->id;
-    }
-    else if (Symbol *s = toSymbol(ast)) {
-      return s->id;
-    }
-    else if (isExpr(ast)) {
-      if (DefExpr *de = toDefExpr(ast)) {
-        if (de->init) {
-          return get_symbol_id(de->init);
-        }
-        else if (de->exprType) {
-          return get_symbol_id(de->exprType);
-        }
-        else if (de->sym) {
-          return get_symbol_id(de->sym);
-        }
-      }
-      else if (SymExpr *se = toSymExpr(ast)) {
-        return get_symbol_id(se->var);
-      }
-      else if (CallExpr *ce = toCallExpr(ast)) {
-        return get_symbol_id(ce->baseExpr);
-      }
-      else if (BlockStmt *bs = toBlockStmt(ast)) {
-        //FIXME: This is a shortcut, it isn't strictly correct
-        return get_symbol_id(bs->body.head);
-      }
-      else {
-        INT_FATAL("Unimplemented case in getSymbolId(expr)");
-      }
-    }
-    else {
-      INT_FATAL("Unimplemented case in getSymbolId(ast)");
-    }
-    INT_FATAL("Unimplemented case in getSymbolId");
-    return 0;
-  }
-
   CCNode *get_node(int id) {
-    for (CCNodeAssocListRIter i = node_assoc_list.rbegin(), e = node_assoc_list.rend(); i != e; ++i) {
+    for (CCNodeAssocListRIter i = node_assoc_list.rbegin(),
+        e = node_assoc_list.rend(); i != e; ++i) {
       if (id == i->first) {
         return i->second;
       }
@@ -437,7 +435,7 @@ BaseAST *typeCheckExpr(BaseAST *currentExpr, BaseAST *expectedReturnTypeExpr) {
       }
     }
     else if (call->primitive) {
-      printf("UNIMPLEMENTED: PRIMITIVE OP\n");
+      INT_FATAL("UNIMPLEMENTED: PRIMITIVE OP\n");
     }
     else if (!call->primitive) {
       //First, check to see if it should be a primitive but it hasn't been
@@ -498,7 +496,7 @@ BaseAST *typeCheckExpr(BaseAST *currentExpr, BaseAST *expectedReturnTypeExpr) {
     }
   }
   else if (UnresolvedSymExpr *use = toUnresolvedSymExpr(currentExpr)) {
-    printf("UNIMPLEMENTED: Unresolved SymExpr: %s\n", use->unresolved);
+    INT_FATAL("UNIMPLEMENTED: Unresolved SymExpr: %s\n", use->unresolved);
   }
   else if (DefExpr *de = toDefExpr(currentExpr)) {
     if (de->exprType && de->init) {
@@ -517,7 +515,7 @@ BaseAST *typeCheckExpr(BaseAST *currentExpr, BaseAST *expectedReturnTypeExpr) {
     }
   }
   else if (NamedExpr *ne = toNamedExpr(currentExpr)) {
-    printf("UNIMPLEMENTED: NamedExpr: %p\n", ne);
+    return typeCheckExpr(ne->actual, expectedReturnTypeExpr);
   }
   else if (BlockStmt *block = toBlockStmt(currentExpr)) {
     BaseAST *ret = NULL;
@@ -527,18 +525,21 @@ BaseAST *typeCheckExpr(BaseAST *currentExpr, BaseAST *expectedReturnTypeExpr) {
     return ret;
   }
   else if (CondStmt *cond = toCondStmt(currentExpr)) {
-    printf("UNIMPLEMENTED: CondStmt: %p\n", cond);
+    INT_FATAL("UNIMPLEMENTED: ContStmt\n");
+    typeCheckExpr(cond->condExpr, expectedReturnTypeExpr);
+    typeCheckExpr(cond->thenStmt, expectedReturnTypeExpr);
+    typeCheckExpr(cond->elseStmt, expectedReturnTypeExpr);
   }
   else if (GotoStmt *gotoStmt = toGotoStmt(currentExpr)) {
-    printf("UNIMPLEMENTED: GotoStmt: %p\n", gotoStmt);
+    typeCheckExpr(gotoStmt->label, expectedReturnTypeExpr);
   }
   else {
     if (currentExpr) {
-      printf("UNIMPLEMENTED: <expr type unknown: %i %i %i %i>\n",
+      INT_FATAL("UNIMPLEMENTED: <expr type unknown: %i %i %i %i>\n",
           currentExpr->astTag, E_Expr, E_Symbol, E_Type);
     }
     else {
-      printf("UNIMPLEMENTED: <expr is NULL\n");
+      INT_FATAL("UNIMPLEMENTED: <expr is NULL\n");
     }
   }
   return NULL;

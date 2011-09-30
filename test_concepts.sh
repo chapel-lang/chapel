@@ -2,7 +2,7 @@
 
 success=0
 total=0
-finalmsg=""
+finalmsg="\n"
 
 for file in concept_tests/jonathan/*.chpl
 do
@@ -25,5 +25,5 @@ do
 		fi
 	fi
 done
-echo
+echo -e $finalmsg
 echo "${success} out of ${total} passed."
