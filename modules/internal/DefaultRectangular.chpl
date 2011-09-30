@@ -3,6 +3,8 @@ config param debugDefaultDist = false;
 config param debugDefaultDistBulkTransfer = false;
 config param debugDataPar = false;
 
+config param defaultDoRADOpt = true;
+
 class DefaultDist: BaseDist {
   proc dsiNewRectangularDom(param rank: int, type idxType, param stridable: bool)
     return new DefaultRectangularDom(rank, idxType, stridable, this);
@@ -357,6 +359,35 @@ class DefaultRectangularDom: BaseRectangularDom {
   }
 }
 
+record _remoteAccessData {
+  type eltType;
+  param rank : int;
+  type idxType;
+  var off: rank*idxType;
+  var blk: rank*idxType;
+  var str: rank*chpl__signedType(idxType);
+  var origin: idxType;
+  var factoredOffs: idxType;
+}
+
+//
+// Local cache of remote ddata access info
+//
+class LocRADCache {
+  type eltType;
+  param rank: int;
+  type idxType;
+  var targetLocDom: domain(rank);
+  var RAD: [targetLocDom] _remoteAccessData(eltType, rank, idxType);
+  var ddata: [targetLocDom] _ddata(eltType);
+
+  proc LocRADCache(type eltType, param rank: int, type idxType,
+                   newTargetLocDom: domain(rank)) {
+    // This should resize the arrays
+    targetLocDom=newTargetLocDom;
+  }
+}
+
 class DefaultRectangularArr: BaseArr {
   type eltType;
   param rank : int;
@@ -594,6 +625,16 @@ class DefaultRectangularArr: BaseArr {
 
   proc dsiLocalSlice(ranges) {
     halt("all dsiLocalSlice calls on DefaultRectangulars should be handled in ChapelArray.chpl");
+  }
+
+  proc dsiGetRAD() {
+    var rad: _remoteAccessData(eltType, rank, idxType);
+    rad.off = off;
+    rad.blk = blk;
+    rad.str = str;
+    rad.origin = origin;
+    rad.factoredOffs = factoredOffs;
+    return rad;
   }
 }
 

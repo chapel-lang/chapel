@@ -241,7 +241,7 @@ proc Cyclic.dsiCreateRankChangeDist(param newRank: int, args) {
       j += 1;
     }
   }
-  const partialLocIdx = idxToLocaleInd(collapsedDimInds);
+  const partialLocIdx = targetLocsIdx(collapsedDimInds);
 
 
   for param i in 1..args.size {
@@ -262,7 +262,7 @@ proc Cyclic.writeThis(x: Writer) {
     x.writeln(" [", locid, "=", targetLocs(locid), "] owns chunk: ", locDist(locid).myChunk); 
 }
 
-proc Cyclic.idxToLocaleInd(i: idxType) {
+proc Cyclic.targetLocsIdx(i: idxType) {
   const numLocs:idxType = targetLocDom.numIndices:idxType;
   // this is wrong if i is less than startIdx
   //return ((i - startIdx(1)) % numLocs):int;
@@ -270,7 +270,7 @@ proc Cyclic.idxToLocaleInd(i: idxType) {
   return chpl__diffMod(i, startIdx(1), numLocs):int;
 }
 
-proc Cyclic.idxToLocaleInd(ind: rank*idxType) {
+proc Cyclic.targetLocsIdx(ind: rank*idxType) {
   var x: rank*int;
   for param i in 1..rank {
     var dimLen = targetLocDom.dim(i).length;
@@ -284,11 +284,11 @@ proc Cyclic.idxToLocaleInd(ind: rank*idxType) {
 }
 
 proc Cyclic.dsiIndexToLocale(i: idxType) where rank == 1 {
-  return targetLocs(idxToLocaleInd(i));
+  return targetLocs(targetLocsIdx(i));
 }
 
 proc Cyclic.dsiIndexToLocale(i: rank*idxType) {
-  return targetLocs(idxToLocaleInd(i));
+  return targetLocs(targetLocsIdx(i));
 }
 
 
@@ -544,6 +544,7 @@ class CyclicArr: BaseArr {
   param rank: int;
   type idxType;
   param stridable: bool;
+  var doRADOpt: bool = defaultDoRADOpt;
   var dom: CyclicDom(rank, idxType, stridable);
 
   var locArr: [dom.dist.targetLocDom] LocCyclicArr(eltType, rank, idxType, stridable);
@@ -565,6 +566,7 @@ proc CyclicArr.dsiSlice(d: CyclicDom) {
         alias.myLocArr = alias.locArr[i];
     }
   }
+  if doRADOpt then alias.setupRADOpt();
   return alias;
 }
 
@@ -587,7 +589,7 @@ proc CyclicArr.dsiRankChange(d, param newRank: int, param stridable: bool, args)
           j += 1;
         }
       }
-      locArrInd = dom.dist.idxToLocaleInd(collapsedDims);
+      locArrInd = dom.dist.targetLocsIdx(collapsedDims);
       j = 1;
       // Now that the locArrInd values are known for the collapsed dimensions
       // Pull the rest of the dimensions values from ind
@@ -608,6 +610,7 @@ proc CyclicArr.dsiRankChange(d, param newRank: int, param stridable: bool, args)
         alias.myLocArr = alias.locArr[ind];
     }
   }
+  if doRADOpt then alias.setupRADOpt();
   return alias;
 }
 
@@ -626,6 +629,7 @@ proc CyclicArr.dsiReindex(d: CyclicDom) {
         alias.myLocArr = alias.locArr[i];
     }
   }
+  if doRADOpt then alias.setupRADOpt();
   return alias;
 }
 
@@ -635,17 +639,42 @@ proc CyclicArr.dsiLocalSlice(ranges) {
     low(i) = ranges(i).low;
   }
 
-  var A => locArr(dom.dist.idxToLocaleInd(low)).myElems((...ranges));
+  var A => locArr(dom.dist.targetLocsIdx(low)).myElems((...ranges));
   return A;
 }
 
 proc CyclicArr.dsiDisplayRepresentation() {
+  if debugCyclicDist && doRADOpt then
+    for loc in dom.dist.targetLocDom do on loc do
+      for l in dom.dist.targetLocDom do
+        if l != here.id then
+          writeln(loc, ": myRADCache(", l,"): ", locArr(l).myRADCache);
+
   for tli in dom.dist.targetLocDom do
     writeln("locArr[", tli, "].myElems = ", for e in locArr[tli].myElems do e);
   dom.dsiDisplayRepresentation();
 }
 
 proc CyclicArr.dsiGetBaseDom() return dom;
+
+proc CyclicArr.setupRADOpt() {
+  if !stridable { // for now, no support for strided cyclic arrays
+    for localeIdx in dom.dist.targetLocDom {
+      on dom.dist.targetLocs(localeIdx) {
+        if locArr(localeIdx).locRAD != nil then
+          delete locArr(localeIdx).locRAD;
+        locArr(localeIdx).locRAD = new LocRADCache(eltType, rank, idxType, dom.dist.targetLocDom);
+        locArr(localeIdx).locCyclicRAD = new LocCyclicRADCache(rank, idxType, dom.dist.startIdx, dom.dist.targetLocDom);
+        for l in dom.dist.targetLocDom {
+          if l != localeIdx {
+            locArr(localeIdx).locRAD.RAD(l) = locArr(l).myElems._value.dsiGetRAD();
+            locArr(localeIdx).locRAD.ddata(l) = locArr(l).myElems._value.data;
+          }
+        }
+      }
+    }
+  }
+}
 
 proc CyclicArr.setup() {
   coforall localeIdx in dom.dist.targetLocDom {
@@ -655,6 +684,8 @@ proc CyclicArr.setup() {
         myLocArr = locArr(localeIdx);
     }
   }
+
+  if doRADOpt then setupRADOpt();
 }
 
 proc CyclicArr.dsiSupportsPrivatization() param return true;
@@ -671,17 +702,49 @@ proc CyclicArr.dsiPrivatize(privatizeData) {
   return c;
 }
 
-proc CyclicArr.dsiAccess(i: idxType) var where rank == 1 {
-  local {
-    if myLocArr != nil && myLocArr.locDom.myBlock.member(i) then
-      return myLocArr.this(i);
+
+pragma "inline"
+proc _remoteAccessData.getDataIndex(param stridable, myStr: rank*idxType, ind: rank*idxType, startIdx, dimLen) {
+  // modified from DefaultRectangularArr
+  var sum = origin;
+  if stridable {
+    halt("RADOpt not supported for strided cyclic arrays.");
+  } else {
+    for param i in 1..rank do {
+      sum += (((ind(i) - off(i)) * blk(i))-startIdx(i))/dimLen(i);
+    }
   }
-  return locArr(dom.dist.idxToLocaleInd(i))(i);
+  return sum;
 }
 
 proc CyclicArr.dsiAccess(i:rank*idxType) var {
-  return locArr(dom.dist.idxToLocaleInd(i))(i);
+  local {
+    if myLocArr != nil && myLocArr.locDom.member(i) then
+      return myLocArr.this(i);
+  }
+  if doRADOpt {
+    if myLocArr!=nil && myLocArr.locRAD!=nil {
+      if boundsChecking then
+        if !dom.dsiMember(i) then
+          halt("array index out of bounds: ", i);
+      var rloc = dom.dist.targetLocsIdx(i);
+      if myLocArr.locRAD.ddata(rloc) != nil {
+        var radata = myLocArr.locRAD.RAD(rloc);
+        const startIdx = myLocArr.locCyclicRAD.startIdx;
+        const dimLength = myLocArr.locCyclicRAD.targetLocDomDimLength;
+        var str: rank*idxType;
+        for param i in 1..rank do
+          str(i) = dom.whole.dim(i).stride;
+        var dataIdx = radata.getDataIndex(stridable, str, i, startIdx, dimLength);
+        return myLocArr.locRAD.ddata(rloc)(dataIdx);
+      }
+    }
+  }
+  return locArr(dom.dist.targetLocsIdx(i))(i);
 }
+
+proc CyclicArr.dsiAccess(i: idxType...rank) var
+  return dsiAccess(i);
 
 iter CyclicArr.these() var {
   for i in dom do
@@ -713,7 +776,7 @@ iter CyclicArr.these(param tag: iterator, follower, param fast: bool = false) va
   }
   const followThis = [(...t)];
   if fast {
-    const arrSection = locArr(dom.dist.idxToLocaleInd(followThis.low));
+    const arrSection = locArr(dom.dist.targetLocsIdx(followThis.low));
     if arrSection.locale.id == here.id then local {
       for e in arrSection.myElems(followThis) do
         yield e;
@@ -771,6 +834,15 @@ proc CyclicArr.dsiReallocate(d: domain) {
   // in CyclicDom.setup(). Nothing more needs to happen here.
 }
 
+proc CyclicArr.dsiPostReallocate() {
+  // Call this *after* the domain has been reallocated
+  if doRADOpt then setupRADOpt();
+}
+
+proc CyclicArr.setRADOpt(val=true) {
+  doRADOpt = val;
+  if doRADOpt then setupRADOpt();
+}
 
 class LocCyclicArr {
   type eltType;
@@ -780,17 +852,14 @@ class LocCyclicArr {
 
   const locDom: LocCyclicDom(rank, idxType, stridable);
 
+  var locRAD: LocRADCache(eltType, rank, idxType); // non-nil if doRADOpt=true
+  var locCyclicRAD: LocCyclicRADCache(rank, idxType); // see below for why
   var myElems: [locDom.myBlock] eltType;
 
 }
 
-
-proc LocCyclicArr.this(i:idxType) var {
+proc LocCyclicArr.this(i) var {
   return myElems(i);
-}
-
-proc LocCyclicArr.this(i:rank*idxType) var {
-  return myElems((...i));
 }
 
 iter LocCyclicArr.these() var {
@@ -798,3 +867,19 @@ iter LocCyclicArr.these() var {
     yield elem;
   }
 }
+
+// NOTE: I'd rather have this be a subclass of LocRADCache, but I
+// couldn't find a way to use rank (param) and idxType (type) from the
+// parent class in declarations in the subclass does not work.
+class LocCyclicRADCache /* : LocRADCache */ {
+  param rank: int;
+  type idxType;
+  var startIdx: rank*idxType;
+  var targetLocDomDimLength: rank*idxType;
+
+  proc LocCyclicRADCache(param rank: int, type idxType, startIdx, targetLocDom) {
+    for param i in 1..rank do
+      targetLocDomDimLength(i) = targetLocDom.dim(i).length;
+  }
+}
+

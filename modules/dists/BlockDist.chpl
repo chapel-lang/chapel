@@ -162,6 +162,7 @@ class BlockArr: BaseArr {
   param rank: int;
   type idxType;
   param stridable: bool;
+  var doRADOpt: bool = defaultDoRADOpt;
   var dom: BlockDom(rank, idxType, stridable);
   var locArr: [dom.dist.targetLocDom] LocBlockArr(eltType, rank, idxType, stridable);
   var myLocArr: LocBlockArr(eltType, rank, idxType, stridable);
@@ -184,6 +185,7 @@ class LocBlockArr {
   type idxType;
   param stridable: bool;
   const locDom: LocBlockDom(rank, idxType, stridable);
+  var locRAD: LocRADCache(eltType, rank, idxType); // non-nil if doRADOpt=true
   var myElems: [locDom.myBlock] eltType;
 }
 
@@ -537,8 +539,8 @@ proc Block.dsiCreateRankChangeDist(param newRank: int, args) {
   }
 
   const newBbox = boundingBox[(...collapsedBbox)];
-  const newTargetLocs = targetLocales((...collapsedLocs));
-  return new Block(newBbox, newTargetLocs,
+  const newTargetLocales = targetLocales((...collapsedLocs));
+  return new Block(newBbox, newTargetLocales,
                    dataParTasksPerLocale, dataParIgnoreRunningTasks,
                    dataParMinGranularity);
 }
@@ -726,11 +728,33 @@ proc BlockDom.dsiBuildRectangularDom(param rank: int, type idxType,
 proc LocBlockDom.member(i) return myBlock.member(i);
 
 proc BlockArr.dsiDisplayRepresentation() {
+  if debugBlockDist && doRADOpt then
+    for loc in dom.dist.targetLocDom do on loc do
+      for l in dom.dist.targetLocDom do
+        if l != here.id then
+          writeln(loc, ": myRADCache(", l,"): ", locArr(l).myRADCache);
+
   for tli in dom.dist.targetLocDom do
     writeln("locArr[", tli, "].myElems = ", for e in locArr[tli].myElems do e);
 }
 
 proc BlockArr.dsiGetBaseDom() return dom;
+
+proc BlockArr.setupRADOpt() {
+  for localeIdx in dom.dist.targetLocDom {
+    on dom.dist.targetLocales(localeIdx) {
+      if locArr(localeIdx).locRAD != nil then
+        delete locArr(localeIdx).locRAD;
+      locArr(localeIdx).locRAD = new LocRADCache(eltType, rank, idxType, dom.dist.targetLocDom);
+      for l in dom.dist.targetLocDom {
+        if l != localeIdx {
+          locArr(localeIdx).locRAD.RAD(l) = locArr(l).myElems._value.dsiGetRAD();
+          locArr(localeIdx).locRAD.ddata(l) = locArr(l).myElems._value.data;
+        }
+      }
+    }
+  }
+}
 
 proc BlockArr.setup() {
   var thisid = this.locale.id;
@@ -742,6 +766,23 @@ proc BlockArr.setup() {
         myLocArr = locArr(localeIdx);
     }
   }
+
+  if doRADOpt then setupRADOpt();
+}
+
+pragma "inline"
+proc _remoteAccessData.getDataIndex(param stridable, ind: rank*idxType) {
+  // modified from DefaultRectangularArr below
+  var sum = origin;
+  if stridable {
+    for param i in 1..rank do
+      sum += (ind(i) - off(i)) * blk(i) / abs(str(i)):idxType;
+  } else {
+    for param i in 1..rank do
+      sum += ind(i) * blk(i);
+    sum -= factoredOffs;
+  }
+  return sum;
 }
 
 //
@@ -750,9 +791,22 @@ proc BlockArr.setup() {
 // TODO: Do we need a global bounds check here or in targetLocsIdx?
 //
 proc BlockArr.dsiAccess(i: rank*idxType) var {
-  if myLocArr then local {
-    if myLocArr.locDom.member(i) then
+  local {
+    if myLocArr != nil && myLocArr.locDom.member(i) then
       return myLocArr.this(i);
+  }
+  if doRADOpt {
+    if myLocArr {
+      if boundsChecking then
+        if !dom.dsiMember(i) then
+          halt("array index out of bounds: ", i);
+      var rloc = dom.dist.targetLocsIdx(i);
+      if myLocArr.locRAD.ddata(rloc) != nil {
+        var radata = myLocArr.locRAD.RAD(rloc);
+        var dataIdx = radata.getDataIndex(stridable, i);
+        return myLocArr.locRAD.ddata(rloc)(dataIdx);
+      }
+    }
   }
   return locArr(dom.dist.targetLocsIdx(i))(i);
 }
@@ -884,7 +938,7 @@ proc BlockArr.dsiSlice(d: BlockDom) {
         alias.myLocArr = alias.locArr[i];
     }
   }
-
+  if doRADOpt then alias.setupRADOpt();
   return alias;
 }
 
@@ -980,6 +1034,7 @@ proc BlockArr.dsiRankChange(d, param newRank: int, param stridable: bool, args) 
         alias.myLocArr = alias.locArr[ind];
     }
   }
+  if doRADOpt then alias.setupRADOpt();
   return alias;
 }
 
@@ -1002,6 +1057,8 @@ proc BlockArr.dsiReindex(d: BlockDom) {
     }
   }
 
+  if doRADOpt then alias.setupRADOpt();
+
   return alias;
 }
 
@@ -1017,6 +1074,16 @@ proc BlockArr.dsiReallocate(d: domain) {
   // assignment is defined so that only the indices are transferred.
   // The distribution remains unchanged.
   //
+}
+
+proc BlockArr.dsiPostReallocate() {
+  // Call this *after* the domain has been reallocated
+  if doRADOpt then setupRADOpt();
+}
+
+proc BlockArr.setRADOpt(val=true) {
+  doRADOpt = val;
+  if doRADOpt then setupRADOpt();
 }
 
 //

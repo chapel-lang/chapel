@@ -1300,6 +1300,9 @@ proc =(a: domain, b: domain) {
       on e do e.dsiReallocate(b);
     }
     a.setIndices(b.getIndices());
+    for e in a._value._arrs do {
+      on e do e.dsiPostReallocate();
+    }
   } else {
     //
     // BLC: It's tempting to do a clear + add here, but because
