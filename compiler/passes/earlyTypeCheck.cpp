@@ -6,6 +6,7 @@
 #include "scopeResolve.h"
 #include "stringutil.h"
 #include "symbol.h"
+#include "view.h"
 
 //FIXME: Convert these over to the Chapel structures
 #include <iostream>
@@ -95,6 +96,12 @@ struct CongruenceClosure {
     while (node_assoc_list.size() != last_scope_stop) {
       node_assoc_list.pop_back();
     }
+  }
+
+  BaseAST *get_representative_ast(BaseAST *ast) {
+    CCNode *rep = find_or_insert(ast);
+    rep = representative(rep);
+    return aid(rep->unique_id);
   }
 
   CCNode *representative(CCNode *node) {
@@ -194,8 +201,12 @@ struct CongruenceClosure {
     if (node1_tmp == node2_tmp)
       return;
 
-    // Union the two trees
-    node2_tmp->parent = node1_tmp;
+    // Union the two trees, favoring the earlier ids
+    // this favors symbols over exprs, and types over symbols (I think, please check)
+    if (node1_tmp->unique_id < node2_tmp->unique_id)
+      node2_tmp->parent = node1_tmp;
+    else
+      node1_tmp->parent = node2_tmp;
 
     // Then, make sure that the "contained by" information is propagated to representative
     for (unsigned i = 0; i < node2->contained_by.size(); ++i) {
@@ -415,7 +426,7 @@ BaseAST *typeCheckExpr(BaseAST *currentExpr, BaseAST *expectedReturnTypeExpr) {
     ArgSymbol *argSym;
     DefExpr *defPt;
     if ((argSym = toArgSymbol(se_actual->var)) && argSym->typeExpr) {
-      return argSym->typeExpr;
+      return cclosure.get_representative_ast(argSym->typeExpr);
     }
     else if ((defPt = se_actual->var->defPoint)) {
       return typeCheckExpr(defPt, expectedReturnTypeExpr);
@@ -445,6 +456,7 @@ BaseAST *typeCheckExpr(BaseAST *currentExpr, BaseAST *expectedReturnTypeExpr) {
         if (PrimitiveOp *op = primitives_map.get(use->unresolved)) {
           //FIXME: Come up with a better way to resolve here.
           //This doens't respect type equality
+
           return op->returnInfo(call);
         }
       }
