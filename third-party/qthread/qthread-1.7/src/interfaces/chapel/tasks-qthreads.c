@@ -16,6 +16,7 @@
 #endif
 
 #include "chplrt.h"
+#include "chplsys.h"
 #include "tasks-qthreads.h"
 #include "chpl-tasks.h"
 #include "chpl-mem.h" // for chpl_malloc(), mandatory malloc() replacement
@@ -34,6 +35,7 @@
 
 #include <pthread.h>
 
+static chpl_bool initial_serial_state = true;
 static syncvar_t exit_ret = SYNCVAR_STATIC_EMPTY_INITIALIZER;
 
 void chpl_task_yield(void)
@@ -210,6 +212,8 @@ static aligned_t chapel_wrapper(void *arg)
 
 void chpl_task_callMain(void (*chpl_main)(void))
 {
+    chpl_task_setSerial(false);
+
     void *const wrapper_args[2] = { chpl_main, NULL };
 
     qthread_fork_syncvar(chapel_wrapper, wrapper_args, &exit_ret);
@@ -263,6 +267,7 @@ void chpl_task_begin(chpl_fn_p        fp,
     }
 }
 
+// Returns '(unsigned int)-1' if called outside of the tasking layer.
 chpl_taskID_t chpl_task_getId(void)
 {
     return (chpl_taskID_t)qthread_id();
@@ -289,11 +294,7 @@ chpl_bool chpl_task_getSerial(void)
 {
     chpl_bool *state = (chpl_bool *)qthread_get_tasklocal(sizeof(chpl_bool));
 
-    if (NULL == state) {
-        chpl_internal_error("could not access serial state");
-    }
-
-    return *state;
+    return state == NULL ? initial_serial_state : *state;
 }
 
 void chpl_task_setSerial(chpl_bool state)
@@ -303,7 +304,7 @@ void chpl_task_setSerial(chpl_bool state)
     if (NULL != data) {
         *data = state;
     } else {
-        chpl_internal_error("could not access serial state");
+        initial_serial_state = state;
     }
 }
 
