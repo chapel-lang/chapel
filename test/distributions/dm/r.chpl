@@ -242,12 +242,11 @@ proc vdom.dsiBuildRectangularDom1d(DD,
 // which could be the results of dsiNewLocalDom1d() and
 // dsiSetLocalIndices1d(), resp.
 //
-proc vlocdom.dsiBuildLocalDom1d(newGlobDD) {
-  const old_stoIndexT = this.locWholeR.idxType; // essentially 'this.stoIndexT'
-  const dummy_old_locId = 0:locIdT;             // use 'this.locId' when needed
+proc vlocdom.dsiBuildLocalDom1d(newGlobDD, locId: locIdT) {
+  type  old_stoIndexT = this.stoIndexT;
 
-  const newLocDD = newGlobDD.dsiNewLocalDom1d(old_stoIndexT, dummy_old_locId);
-  const newStoRng = newLocDD.dsiSetLocalIndices1d(newGlobDD, dummy_old_locId);
+  const newLocDD = newGlobDD.dsiNewLocalDom1d(old_stoIndexT, locId);
+  const newStoRng = newLocDD.dsiSetLocalIndices1d(newGlobDD, locId);
 
   return (newLocDD, newStoRng);
 }
@@ -332,12 +331,12 @@ iter vdom.dsiFollowerArrayIterator1d(undensRange): (locIdT, idxType) {
 // 1-d distribution - block
 
 class sdist {
-  const numLocales: int;
-
   // the type of bbStart, bbLength
   // (also (ab)used as the idxType of the domains created over this dist.)
   // (todo - straighten that out)
   type idxType;
+
+  const numLocales: int;
 
   // the .low and .length of BlockDist's 'boundingBox' for our dimension
   const bbStart: idxType;
@@ -493,6 +492,33 @@ proc slocdom.dsiSetLocalIndices1d(globDD, locId: locIdT) {
   myRange = globDD._dsiComputeMyRange(locId);
   return myRange;
 }
+
+/////////////////////////////////
+
+proc sdom.dsiBuildRectangularDom1d(DD,
+                                   param stridable:bool,
+                                   rangeArg: range(idxType,
+                                                   BoundedRangeType.bounded,
+                                                   stridable))
+{
+  // There does not seem to be any optimizations from merging the two calls.
+  type dummy_stoIndexT = int;
+  const result = DD.dsiNewRectangularDom1d(this.idxType, stridable,
+                                           dummy_stoIndexT);
+  result.dsiSetIndices1d(rangeArg);
+  return result;
+}
+
+proc slocdom.dsiBuildLocalDom1d(newGlobDD, locId: locIdT) {
+  type  old_stoIndexT = this.myRange.idxType; // essentially 'this.stoIndexT'
+
+  const newLocDD = newGlobDD.dsiNewLocalDom1d(old_stoIndexT, locId);
+  const newStoRng = newLocDD.dsiSetLocalIndices1d(newGlobDD, locId);
+
+  return (newLocDD, newStoRng);
+}
+
+/////////////////////////////////
 
 proc sdom.dsiStorageUsesUserIndices() param return true;
 

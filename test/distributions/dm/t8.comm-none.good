@@ -2785,8 +2785,8 @@
  970  zippered iterator over (domain, array)
  971  
  971  zippered iterator over (array, domain)
-./f.chpl:461: In iterator 'dsiSerialArrayIterator1d':
-./f.chpl:464: warning: array iterator over stridable block-cyclic-dim arrays is presently not efficient
+./f.chpl:462: In iterator 'dsiSerialArrayIterator1d':
+./f.chpl:465: warning: array iterator over stridable block-cyclic-dim arrays is presently not efficient
 ./u.chpl:37: In function 'msgserial':
 ./u.chpl:37: warning: array iterator over stridable block-cyclic-dim arrays is presently not efficient
 ./u.chpl:37: warning: array iterator over stridable block-cyclic-dim arrays is presently not efficient

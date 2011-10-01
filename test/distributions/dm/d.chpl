@@ -88,6 +88,7 @@ class DimensionalDom : BaseRectangularDom {
   const dist; // not reprivatized
 
   // convenience
+  proc targetIds return localDdescs.domain;
   proc rangeT  type  return range(idxType, BoundedRangeType.bounded, stridable);
   proc domainT type  return domain(rank, idxType, stridable);
   proc indexT  type  return dist.indexT;
@@ -156,12 +157,13 @@ class DimensionalArr : BaseArr {
   const allocDom; // must be a DimensionalDom
 
   proc rank param return dom.rank;
+  proc targetIds return localAdescs.domain;
 
   // no subordinate 1-d array descriptors - we handle storage ourselves
 
   // local array descriptors (from the original array, if this is an alias)
   // NOTE: 'dom' must be initialized prior to initializing 'localAdescs'
-  var localAdescs: [dom.dist.targetIds]
+  var localAdescs: [dom.targetIds]
                       LocDimensionalArr(eltType, allocDom.locDdescType);
 
   // for privatization
@@ -600,7 +602,7 @@ proc DimensionalDom._dsiSetIndicesHelper(newRanges: rank * rangeT): void {
   dom1.dsiSetIndices1d(newRanges(1));
   dom2.dsiSetIndices1d(newRanges(2));
 
-  coforall (locId, locDD) in (dist.targetIds, localDdescs) do
+  coforall (locId, locDD) in (targetIds, localDdescs) do
     on locDD do
      locDD._dsiLocalSetIndicesHelper(stoRangeT, (dom1,dom2), locId);
 }
@@ -668,14 +670,14 @@ proc DimensionalDom.dsiBuildRectangularDom(param rank: int,
                                     dom1 = dom1, dom2 = dom2,
                                     whole = [(...ranges)]);
 
-  // Not including 'targetLocales' and 'targetIds' in zippering for now -
+  // Not including 'targetLocales' in zippering for now -
   // obtain the locale/locId from 'this' and its components instead.
   // (Is that more efficient?)
-  coforall (oldLocDdesc, newLocDdesc)
-   in (this.localDdescs, result.localDdescs) do
+  coforall (oldLocDdesc, newLocDdesc, locIds)
+   in (this.localDdescs, result.localDdescs, this.targetIds) do
     on oldLocDdesc {
-      var (doml1, myRange1) = oldLocDdesc.doml1.dsiBuildLocalDom1d(dom1);
-      var (doml2, myRange2) = oldLocDdesc.doml2.dsiBuildLocalDom1d(dom2);
+      var (doml1, myRange1) = oldLocDdesc.doml1.dsiBuildLocalDom1d(dom1, locIds(1));
+      var (doml2, myRange2) = oldLocDdesc.doml2.dsiBuildLocalDom1d(dom2, locIds(2));
 
       newLocDdesc = new LocDimensionalDom(result.stoDomainT,
                                           myStorageDom = [myRange1, myRange2],
@@ -889,17 +891,17 @@ iter DimensionalDom.these(param tag: iterKind) where tag == iterKind.leader {
       assert(legit);
       return ix..ix;
     } else
-      return dist.targetIds.dim(dd);
+      return targetIds.dim(dd);
   }
   const overTargetIds = if dom1.dsiIsReplicated1d() || dom2.dsiIsReplicated1d()
     then [helpTargetIds(dom1,1), helpTargetIds(dom2,2)]
-    else dist.targetIds; // in this case, avoid re-building the domain
+    else targetIds; // in this case, avoid re-building the domain
 
   // todo: lls is needed only for debugging printing?
   //   may be needed by the subordinate 1-d distributions (esp. replicated)?
   //
   //   Bug note: if we change coforall as follows:
-  //     coforall ((l1,l2), locDdesc) in (dist.targetIds, localDdescs) do
+  //     coforall ((l1,l2), locDdesc) in (targetIds, localDdescs) do
   //   presently it will crash the compiler on an assertion.
   //
   coforall (lls, locDdesc) in (overTargetIds, localDdescs[overTargetIds]) do
@@ -957,6 +959,8 @@ iter DimensionalDom.these(param tag: iterKind) where tag == iterKind.leader {
 
       if numTasks == 1 then {
 
+        // TODO: pass locId to dsiMyDensifiedRangeType1d,
+        // then ilocdom will not need to keep it locally!!!
         for r1 in locDdesc.doml1.dsiMyDensifiedRangeForSingleTask1d(dom1) do
           for r2 in locDdesc.doml2.dsiMyDensifiedRangeForSingleTask1d(dom2) do
           {

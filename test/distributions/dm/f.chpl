@@ -8,9 +8,9 @@ type cycSizeTuser = int(32);  // for versatility
 
 class idist {
   // distribution parameters
+  const numLocales: cycSizeTuser;
   const lowIdx: int(64); // ensure we can always subtract it
   const blockSize: cycSizeTuser;
-  const numLocales: cycSizeTuser;
 
   // for debugging
   const name:string;
@@ -194,22 +194,23 @@ proc idom.dsiNewLocalDom1d(type stoIndexT, locId: locIdT) {
   return result;
 }
 
-// There does not seem to be any optimizations from merging the two calls.
 proc idom.dsiBuildRectangularDom1d(DD,
                                    param stridable:bool,
                                    rangeArg: range(idxType,
                                                    BoundedRangeType.bounded,
                                                    stridable))
 {
+  // There does not seem to be any optimizations from merging the two calls.
   const result = DD.dsiNewRectangularDom1d(idxType, stridable, stoIndexT);
   result.dsiSetIndices1d(rangeArg);
   return result;
 }
 
-// There does not seem to be any optimizations from merging the two calls.
-proc ilocdom.dsiBuildLocalDom1d(newGlobDD) {
-  const newLocDD = newGlobDD.dsiNewLocalDom1d(this.stoIndexT, this.locId);
-  const newStoRng = newLocDD.dsiSetLocalIndices1d(newGlobDD, this.locId);
+proc ilocdom.dsiBuildLocalDom1d(newGlobDD, locId: locIdT) {
+  assert(locId == this.locId);
+  // There does not seem to be any optimizations from merging the two calls.
+  const newLocDD = newGlobDD.dsiNewLocalDom1d(this.stoIndexT, locId);
+  const newStoRng = newLocDD.dsiSetLocalIndices1d(newGlobDD, locId);
   return (newLocDD, newStoRng);
 }
 
