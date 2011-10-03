@@ -801,10 +801,13 @@ proc BlockArr.dsiAccess(i: rank*idxType) var {
         if !dom.dsiMember(i) then
           halt("array index out of bounds: ", i);
       var rloc = dom.dist.targetLocsIdx(i);
-      if myLocArr.locRAD.ddata(rloc) != nil {
-        var radata = myLocArr.locRAD.RAD(rloc);
-        var dataIdx = radata.getDataIndex(stridable, i);
-        return myLocArr.locRAD.ddata(rloc)(dataIdx);
+      pragma "no copy" pragma "no auto destroy" var myLocRAD = myLocArr.locRAD;
+      pragma "no copy" pragma "no auto destroy" var myLocRADdata = myLocRAD.ddata;
+      if myLocRADdata(rloc) != nil {
+        pragma "no copy" pragma "no auto destroy" var radata = myLocRAD.RAD;
+        var dataIdx = radata(rloc).getDataIndex(stridable, i);
+        pragma "no copy" pragma "no auto destroy" var retVal = myLocRADdata(rloc)(dataIdx);
+        return retVal;
       }
     }
   }

@@ -728,15 +728,20 @@ proc CyclicArr.dsiAccess(i:rank*idxType) var {
         if !dom.dsiMember(i) then
           halt("array index out of bounds: ", i);
       var rloc = dom.dist.targetLocsIdx(i);
-      if myLocArr.locRAD.ddata(rloc) != nil {
-        var radata = myLocArr.locRAD.RAD(rloc);
+      pragma "no copy" pragma "no auto destroy" var myLocRAD = myLocArr.locRAD;
+      pragma "no copy" pragma "no auto destroy" var myLocRADdata = myLocRAD.ddata;
+      if myLocRADdata(rloc) != nil {
+        pragma "no copy" pragma "no auto destroy" var radata = myLocRAD.RAD;
         const startIdx = myLocArr.locCyclicRAD.startIdx;
         const dimLength = myLocArr.locCyclicRAD.targetLocDomDimLength;
         var str: rank*idxType;
-        for param i in 1..rank do
-          str(i) = dom.whole.dim(i).stride;
-        var dataIdx = radata.getDataIndex(stridable, str, i, startIdx, dimLength);
-        return myLocArr.locRAD.ddata(rloc)(dataIdx);
+        for param i in 1..rank {
+          pragma "no copy" pragma "no auto destroy" var whole = dom.whole;
+          str(i) = whole.dim(i).stride;
+        }
+        var dataIdx = radata(rloc).getDataIndex(stridable, str, i, startIdx, dimLength);
+        pragma "no copy" pragma "no auto destroy" var retVal = myLocRADdata(rloc)(dataIdx);
+        return retVal;
       }
     }
   }
