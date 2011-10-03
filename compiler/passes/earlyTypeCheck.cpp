@@ -15,6 +15,11 @@
 #include <string>
 #include <utility>
 
+//Predeclare recursive functions
+int get_symbol_id(BaseAST *ast);
+BaseAST *typeCheckExpr(BaseAST *currentExpr, BaseAST *expectedReturnTypeExpr);
+void handle_where_clause_expr(BaseAST *ast);
+
 //FIXME: This probably already exists in Chapel, but I couldn't find it
 int get_symbol_id(BaseAST *ast) {
   if (isType(ast)) {
@@ -566,10 +571,16 @@ void handle_where_clause_expr(BaseAST *ast) {
         BaseAST *arg2 = ce->argList.get(2);
         cclosure.equate(arg1, arg2);
       }
-      else if (!strcmp(callsymexpr->unresolved, "&&")) {
-        handle_where_clause_expr(ce->argList.get(1));
-        handle_where_clause_expr(ce->argList.get(2));
+      else if (!strcmp(callsymexpr->unresolved, "_build_tuple")) {
+        for_alist(arg, ce->argList) {
+          handle_where_clause_expr(arg);
+        }
+        //handle_where_clause_expr(ce->argList.get(1));
+        //handle_where_clause_expr(ce->argList.get(2));
       }
+    }
+    else {
+    	printf("Not unresolved\n");
     }
   }
 }
