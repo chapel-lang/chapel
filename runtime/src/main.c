@@ -129,7 +129,7 @@ int main(int argc, char* argv[]) {
     // The call to chpl_comm_barrier makes sure that all locales are listening before an attempt
     // is made to run tasks "on" them.
     chpl__init_DefaultRectangular(0, myFilename);
-    chpl__init_ChapelNumLocales(0, myFilename);	// Need numLocales for chpldev_taskTable_init().
+    chpl__init_ChapelNumLocales(0, myFilename); // Need numLocales for chpldev_taskTable_init().
     chpl__init_ChapelTaskTable(0, myFilename);
 
     chpl_task_callMain(chpl_main);
