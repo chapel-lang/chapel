@@ -71,11 +71,11 @@ C Code Compilation Options:
                                          generated C code
   -O, --[no-]optimize                    [Don't] Optimize generated C code
   -o, --output <filename>                Name output executable
+      --static                           Generate a statically linked binary
 
 Compilation Trace Options:
       --print-commands                   Print system commands
       --print-passes                     Print compiler passes
-      --static                           Generate a statically linked binary
 
 Miscellaneous Options:
       --[no-]devel                       Compile as a developer [user]
