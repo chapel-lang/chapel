@@ -1,0 +1,8 @@
+bug: Seg fault for simple case of inheritance.
+
+This test is exactly like inheritance_noUse_param1.chpl, except it
+calls writeln(a) before delaring b.  The seg fault is during the prune
+pass.
+
+This test seg faults during the prune pass (during collect_asts),
+similar to others in this directory.
