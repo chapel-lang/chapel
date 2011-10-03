@@ -1,5 +1,12 @@
 #!/bin/bash
 
+unamestr=`uname`
+if [[ "$unamestr" == 'Linux' ]]; then
+   chplbin='./bin/linux64/chpl'
+elif [[ "$unamestr" == 'Darwin' ]]; then
+   chplbin='./bin/darwin/chpl'
+fi
+
 success=0
 total=0
 finalmsg="\n"
@@ -8,7 +15,7 @@ for file in concept_tests/jonathan/*.chpl
 do
 	total=$((total+1))
 	# echo "------[${file}]------"
-	output=`./bin/darwin/chpl ${file} 2>&1`
+	output=`${chplbin} ${file} 2>&1`
 	if [[ $output == *SUCCESS* ]]
         then
 		echo -n "."		

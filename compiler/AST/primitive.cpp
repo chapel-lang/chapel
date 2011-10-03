@@ -4,91 +4,94 @@
 #include "type.h"
 
 static Type*
-returnInfoBool(CallExpr* call) {
+returnInfoBool(CallExpr *call, BaseAST *arg1, BaseAST *arg2) {
   return dtBool;
 }
 
 static Type*
-returnInfoVoid(CallExpr* call) {
+returnInfoVoid(CallExpr *call, BaseAST *arg1, BaseAST *arg2) {
   return dtVoid;
 }
 
 static Type*
-returnInfoUnknown(CallExpr* call) {
+returnInfoUnknown(CallExpr *call, BaseAST *arg1, BaseAST *arg2) {
   return dtUnknown;
 }
 
 static Type*
-returnInfoString(CallExpr* call) {
+returnInfoString(CallExpr *call, BaseAST *arg1, BaseAST *arg2) {
   return dtString;
 }
 
 static Type*
-returnInfoInt32(CallExpr* call) {
+returnInfoInt32(CallExpr *call, BaseAST *arg1, BaseAST *arg2) {
   return dtInt[INT_SIZE_32];
 }
 
 static Type*
-returnInfoInt64(CallExpr* call) {
+returnInfoInt64(CallExpr *call, BaseAST *arg1, BaseAST *arg2) {
   return dtInt[INT_SIZE_64];
 }
 
 static Type*
-returnInfoUInt32(CallExpr* call) { // unexecuted none/gasnet on 4/25/08
+returnInfoUInt32(CallExpr *call, BaseAST *arg1, BaseAST *arg2) { // unexecuted none/gasnet on 4/25/08
   return dtUInt[INT_SIZE_32];
 }
 
 /* Currently unused
 static Type*
-returnInfoUInt64(CallExpr* call) {
+returnInfoUInt64(CallExpr *call, BaseAST *arg1, BaseAST *arg2) {
   return dtUInt[INT_SIZE_64];
 }
 */
 
 static Type*
-returnInfoReal64(CallExpr* call) {
+returnInfoReal64(CallExpr *call, BaseAST *arg1, BaseAST *arg2) {
   return dtReal[FLOAT_SIZE_64];
 }
 
 static Type*
-returnInfoTaskID(CallExpr* call) {
+returnInfoTaskID(CallExpr *call, BaseAST *arg1, BaseAST *arg2) {
   return dtTaskID;
 }
 
 static Type*
-returnInfoComplexField(CallExpr* call) {  // for get real/imag primitives
-  Type *t = call->get(1)->getValType();
+returnInfoComplexField(CallExpr *call, BaseAST *arg1, BaseAST *arg2) {  // for get real/imag primitives
+  Type *t = arg1->getValType();
   if (t == dtComplex[COMPLEX_SIZE_64]) {
     return dtReal[FLOAT_SIZE_32]->refType;
   } else if (t == dtComplex[COMPLEX_SIZE_128]) {
     return dtReal[FLOAT_SIZE_64]->refType;
   } else {
-    INT_FATAL( call, "unsupported complex size");
+    //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    //FIXME: After congruence this won't point to the correct place
+    //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    INT_FATAL( arg1, "unsupported complex size");
   }
   return dtUnknown;
 }
 
 static Type*
-returnInfoFirst(CallExpr* call) {
-  return call->get(1)->typeInfo();
+returnInfoFirst(CallExpr *call, BaseAST *arg1, BaseAST *arg2) {
+  return arg1->typeInfo();
 }
 
 static Type*
-returnInfoFirstDeref(CallExpr* call) {
-  return call->get(1)->getValType();
+returnInfoFirstDeref(CallExpr *call, BaseAST *arg1, BaseAST *arg2) {
+  return arg1->getValType();
 }
 
 static Type*
-returnIteratorType(CallExpr* call) {
-  Type* ict = call->get(1)->typeInfo();
+returnIteratorType(CallExpr *call, BaseAST *arg1, BaseAST *arg2) {
+  Type* ict = arg1->typeInfo();
   INT_ASSERT(ict->symbol->hasFlag(FLAG_ITERATOR_CLASS));
   return ict->defaultConstructor->getReturnSymbol()->type;
 }
 
 static Type*
-returnInfoCast(CallExpr* call) {
-  Type* t1 = call->get(1)->typeInfo();
-  Type* t2 = call->get(2)->typeInfo();
+returnInfoCast(CallExpr *call, BaseAST *arg1, BaseAST *arg2) {
+  Type* t1 = arg1->typeInfo();
+  Type* t2 = arg2->typeInfo();
   if (t2->symbol->hasFlag(FLAG_WIDE_CLASS))
     if (wideClassMap.get(t1))
       t1 = wideClassMap.get(t1);
@@ -99,16 +102,16 @@ returnInfoCast(CallExpr* call) {
 }
 
 static Type*
-returnInfoVal(CallExpr* call) {
-  ClassType* ct = toClassType(call->get(1)->typeInfo());
+returnInfoVal(CallExpr *call, BaseAST *arg1, BaseAST *arg2) {
+  ClassType* ct = toClassType(arg1->typeInfo());
   if (!ct || !ct->symbol->hasFlag(FLAG_REF))
     INT_FATAL(call, "attempt to get value type of non-reference type");
   return ct->getField(1)->type;
 }
 
 static Type*
-returnInfoRef(CallExpr* call) {
-  Type* t = call->get(1)->typeInfo();
+returnInfoRef(CallExpr *call, BaseAST *arg1, BaseAST *arg2) {
+  Type* t = arg1->typeInfo();
   if (!t->refType)
     INT_FATAL(call, "invalid attempt to get reference type");
   return t->refType;
@@ -116,9 +119,9 @@ returnInfoRef(CallExpr* call) {
 
 // NEEDS TO BE FINISHED WHEN PRIMITIVES ARE REDONE
 static Type*
-returnInfoNumericUp(CallExpr* call) {
-  Type* t1 = call->get(1)->typeInfo();
-  Type* t2 = call->get(2)->typeInfo();
+returnInfoNumericUp(CallExpr *call, BaseAST *arg1, BaseAST *arg2) {
+  Type* t1 = arg1->typeInfo();
+  Type* t2 = arg2->typeInfo();
   if (is_int_type(t1) && is_real_type(t2))
     return t2;
   if (is_real_type(t1) && is_int_type(t2))
@@ -131,8 +134,8 @@ returnInfoNumericUp(CallExpr* call) {
 }
 
 static Type*
-returnInfoArrayIndexValue(CallExpr* call) {
-  SymExpr* sym = toSymExpr(call->get(1));
+returnInfoArrayIndexValue(CallExpr *call, BaseAST *arg1, BaseAST *arg2) {
+  SymExpr* sym = toSymExpr(arg1);
   INT_ASSERT(sym);
   Type* type = sym->var->type;
   if (type->symbol->hasFlag(FLAG_WIDE_CLASS))
@@ -149,13 +152,13 @@ returnInfoArrayIndexValue(CallExpr* call) {
 }
 
 static Type*
-returnInfoArrayIndex(CallExpr* call) {
-  return returnInfoArrayIndexValue(call)->refType;
+returnInfoArrayIndex(CallExpr *call, BaseAST *arg1, BaseAST *arg2) {
+  return returnInfoArrayIndexValue(call, arg1, arg2)->refType;
 }
 
 static Type*
-returnInfoChplAlloc(CallExpr* call) {
-  SymExpr* sym = toSymExpr(call->get(1));
+returnInfoChplAlloc(CallExpr *call, BaseAST *arg1, BaseAST *arg2) {
+  SymExpr* sym = toSymExpr(arg1);
   INT_ASSERT(sym);
   Type* type = sym->var->type;
   if (type->symbol->hasFlag(FLAG_WIDE_CLASS))
@@ -164,8 +167,8 @@ returnInfoChplAlloc(CallExpr* call) {
 }
 
 static Type*
-returnInfoGetMember(CallExpr* call) {
-  SymExpr* sym1 = toSymExpr(call->get(1));
+returnInfoGetMember(CallExpr *call, BaseAST *arg1, BaseAST *arg2) {
+  SymExpr* sym1 = toSymExpr(arg1);
   if (!sym1)
     INT_FATAL(call, "bad member primitive");
   ClassType* ct = toClassType(sym1->var->type);
@@ -173,7 +176,7 @@ returnInfoGetMember(CallExpr* call) {
     ct = toClassType(ct->getValType());
   if (!ct)
     INT_FATAL(call, "bad member primitive");
-  SymExpr* sym = toSymExpr(call->get(2));
+  SymExpr* sym = toSymExpr(arg2);
   if (!sym)
     INT_FATAL(call, "bad member primitive");
   VarSymbol* var = toVarSymbol(sym->var);
@@ -192,23 +195,23 @@ returnInfoGetMember(CallExpr* call) {
 }
 
 static Type*
-returnInfoGetTupleMember(CallExpr* call) {
-  ClassType* ct = toClassType(call->get(1)->getValType());
+returnInfoGetTupleMember(CallExpr *call, BaseAST *arg1, BaseAST *arg2) {
+  ClassType* ct = toClassType(arg1->getValType());
   INT_ASSERT(ct && ct->symbol->hasFlag(FLAG_STAR_TUPLE));
   return ct->getField("x1")->type;
 }
 
 static Type*
-returnInfoGetTupleMemberRef(CallExpr* call) {
-  Type* type = returnInfoGetTupleMember(call);
+returnInfoGetTupleMemberRef(CallExpr *call, BaseAST *arg1, BaseAST *arg2) {
+  Type* type = returnInfoGetTupleMember(call, arg1, arg2);
   return (type->refType) ? type->refType : type;
 }
 
 static Type*
-returnInfoGetMemberRef(CallExpr* call) {
-  ClassType* ct = toClassType(call->get(1)->getValType());
+returnInfoGetMemberRef(CallExpr *call, BaseAST *arg1, BaseAST *arg2) {
+  ClassType* ct = toClassType(arg1->getValType());
   INT_ASSERT(ct);
-  SymExpr* se = toSymExpr(call->get(2));
+  SymExpr* se = toSymExpr(arg2);
   INT_ASSERT(se);
   VarSymbol* var = toVarSymbol(se->var);
   INT_ASSERT(var);
@@ -225,7 +228,7 @@ returnInfoGetMemberRef(CallExpr* call) {
 }
 
 static Type*
-returnInfoEndCount(CallExpr* call) {
+returnInfoEndCount(CallExpr *call, BaseAST *arg1, BaseAST *arg2) {
   static Type* endCountType = NULL;
   if (endCountType == NULL) {
     forv_Vec(TypeSymbol, ts, gTypeSymbols) {
@@ -239,8 +242,8 @@ returnInfoEndCount(CallExpr* call) {
 }
 
 static Type*
-returnInfoVirtualMethodCall(CallExpr* call) {
-  SymExpr* se = toSymExpr(call->get(1));
+returnInfoVirtualMethodCall(CallExpr *call, BaseAST *arg1, BaseAST *arg2) {
+  SymExpr* se = toSymExpr(arg1);
   INT_ASSERT(se);
   FnSymbol* fn = toFnSymbol(se->var);
   INT_ASSERT(fn);
@@ -278,7 +281,7 @@ PrimitiveOp* primitives[NUM_KNOWN_PRIMS];
 
 PrimitiveOp::PrimitiveOp(PrimitiveTag atag,
                          const char *aname,
-                         Type *(*areturnInfo)(CallExpr*)) :
+                         Type *(*areturnInfo)(CallExpr*, BaseAST*, BaseAST*)) :
   tag(atag),
   name(aname),
   returnInfo(areturnInfo),
@@ -289,7 +292,7 @@ PrimitiveOp::PrimitiveOp(PrimitiveTag atag,
 }
 
 static void
-prim_def(PrimitiveTag tag, const char* name, Type *(*returnInfo)(CallExpr*),
+prim_def(PrimitiveTag tag, const char* name, Type *(*returnInfo)(CallExpr*, BaseAST*, BaseAST*),
          bool isEssential = false, bool passLineno = false) {
   primitives[tag] = new PrimitiveOp(tag, name, returnInfo);
   primitives[tag]->isEssential = isEssential;
@@ -297,7 +300,7 @@ prim_def(PrimitiveTag tag, const char* name, Type *(*returnInfo)(CallExpr*),
 }
 
 static void
-prim_def(const char* name, Type *(*returnInfo)(CallExpr*),
+prim_def(const char* name, Type *(*returnInfo)(CallExpr*, BaseAST*, BaseAST*),
          bool isEssential = false, bool passLineno = false) {
   PrimitiveOp* prim = new PrimitiveOp(PRIM_UNKNOWN, name, returnInfo);
   prim->isEssential = isEssential;

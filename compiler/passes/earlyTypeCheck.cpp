@@ -16,45 +16,54 @@
 #include <utility>
 
 //Predeclare recursive functions
-int get_symbol_id(BaseAST *ast);
+BaseAST *get_root_type_or_type_expr(BaseAST *ast);
 BaseAST *typeCheckExpr(BaseAST *currentExpr, BaseAST *expectedReturnTypeExpr);
 void handle_where_clause_expr(BaseAST *ast);
 
 //FIXME: This probably already exists in Chapel, but I couldn't find it
-int get_symbol_id(BaseAST *ast) {
+BaseAST *get_root_type_or_type_expr(BaseAST *ast) {
   if (isType(ast)) {
-    return ast->id;
+    return ast;
   }
   else if (VarSymbol *vs = toVarSymbol(ast)) {
-    return vs->type->id;
+    return vs->type;
   }
   else if (TypeSymbol *ts = toTypeSymbol(ast)) {
-    return ts->type->id;
+    return ts->type;
+  }
+  else if (ArgSymbol *as = toArgSymbol(ast)) {
+    if (as->typeExpr)
+      return get_root_type_or_type_expr(as->typeExpr);
+    return as->type;
   }
   else if (Symbol *s = toSymbol(ast)) {
-    return s->id;
+    return s;
+  }
+  else if (BlockStmt *bs = toBlockStmt(ast)) {
+    //FIXME: This is a shortcut but isn't strictly correct
+    return get_root_type_or_type_expr(bs->body.head);
   }
   else if (isExpr(ast)) {
     if (DefExpr *de = toDefExpr(ast)) {
       if (de->init) {
-        return get_symbol_id(de->init);
+        return get_root_type_or_type_expr(de->init);
       }
       else if (de->exprType) {
-        return get_symbol_id(de->exprType);
+        return get_root_type_or_type_expr(de->exprType);
       }
       else if (de->sym) {
-        return get_symbol_id(de->sym);
+        return get_root_type_or_type_expr(de->sym);
       }
     }
     else if (SymExpr *se = toSymExpr(ast)) {
-      return get_symbol_id(se->var);
+      return get_root_type_or_type_expr(se->var);
     }
     else if (CallExpr *ce = toCallExpr(ast)) {
-      return get_symbol_id(ce->baseExpr);
+      return get_root_type_or_type_expr(ce->baseExpr);
     }
     else if (BlockStmt *bs = toBlockStmt(ast)) {
       //FIXME: This is a shortcut, it isn't strictly correct
-      return get_symbol_id(bs->body.head);
+      return get_root_type_or_type_expr(bs->body.head);
     }
     else {
       INT_FATAL("Unimplemented case in getSymbolId(expr)");
@@ -117,14 +126,13 @@ struct CongruenceClosure {
   }
 
   CCNode *find_or_insert(BaseAST *ast) {
-    int unique_id = get_symbol_id(ast);
+    //int unique_id = get_symbol_id(ast);
+    ast = get_root_type_or_type_expr(ast);
+    int unique_id = ast->id;
+
     std::vector<CCNode *> children_nodes;
 
-    if (BlockStmt *bs = toBlockStmt(ast)) {
-      //FIXME: This is a shortcut but isn't strictly correct
-      find_or_insert(bs->body.head);
-    }
-    else if (CallExpr *call = toCallExpr(ast)) {
+    if (CallExpr *call = toCallExpr(ast)) {
       //Collect all the children first
 
       for_alist(arg, call->argList) {
@@ -462,7 +470,16 @@ BaseAST *typeCheckExpr(BaseAST *currentExpr, BaseAST *expectedReturnTypeExpr) {
           //FIXME: Come up with a better way to resolve here.
           //This doens't respect type equality
 
-          return op->returnInfo(call);
+          if (call->argList.length == 0) {
+            return op->returnInfo(call, NULL, NULL);
+          }
+          else if (call->argList.length == 1) {
+            return op->returnInfo(call, cclosure.get_representative_ast(call->argList.get(1)), NULL);
+          }
+          else {
+            return op->returnInfo(call, cclosure.get_representative_ast(call->argList.get(1)),
+                cclosure.get_representative_ast(call->argList.get(2)));
+          }
         }
       }
 
@@ -572,11 +589,10 @@ void handle_where_clause_expr(BaseAST *ast) {
         cclosure.equate(arg1, arg2);
       }
       else if (!strcmp(callsymexpr->unresolved, "_build_tuple")) {
+        //We have multiple constraints, handle them
         for_alist(arg, ce->argList) {
           handle_where_clause_expr(arg);
         }
-        //handle_where_clause_expr(ce->argList.get(1));
-        //handle_where_clause_expr(ce->argList.get(2));
       }
     }
     else {

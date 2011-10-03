@@ -603,12 +603,22 @@ FnSymbol* CallExpr::findFnSymbol(void) {
 
 
 Type* CallExpr::typeInfo(void) {
-  if (primitive)
-    return primitive->returnInfo(this);
+  if (primitive) {
+    if (this->argList.length == 0)
+      return primitive->returnInfo(this, NULL, NULL);
+    else if (this->argList.length == 1)
+      return primitive->returnInfo(this, this->argList.get(1),
+          NULL);
+    else
+      return primitive->returnInfo(this, this->argList.get(1),
+          this->argList.get(2));
+  }
   else if (isResolved())
     return isResolved()->retType;
   else
     return dtUnknown;
+
+  return dtUnknown;
 }
 
 
