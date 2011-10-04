@@ -332,6 +332,10 @@ redeclaration of identifier in scope (01/24/11)
 -----------------------------------------------
 [Error matching compiler output for associative/waynew/indef2]
 
+count test gets wrong answer (09/26/11 -- first run in ages)
+------------------------------------------------------------
+[Error matching program output for types/range/hilde/count]
+
 new unreachable loop warning (05/29/11)
 ---------------------------------------
 [Error matching program output for arrays/deitz/jacobi-unoptimized]
