@@ -82,14 +82,14 @@ class AList {
 
 #define for_actuals(actual, call)                                       \
   for (Expr *actual = (call)->argList.head,                             \
-         *_alist_next = actual ? actual->next : NULL;               \
+         *_alist_next = actual ? actual->next : NULL;                   \
        actual;                                                          \
        actual = _alist_next,                                            \
          _alist_next = actual ? actual->next : NULL)
 
 #define for_actuals_backward(actual, call)                              \
   for (Expr *actual = (call)->argList.tail,                             \
-         *_alist_prev = actual ? actual->prev : NULL;               \
+         *_alist_prev = actual ? actual->prev : NULL;                   \
        actual;                                                          \
        actual = _alist_prev,                                            \
          _alist_prev = actual ? actual->prev : NULL)
@@ -105,7 +105,7 @@ class AList {
   FnSymbol* _alist_fn = (call)->isResolved();                           \
   Expr * actual = (call)->argList.head;                                 \
   if (_alist_fn) {                                                      \
-     if (_alist_fn->numFormals() != (call)->argList.length)              \
+    if (_alist_fn->numFormals() != (call)->argList.length)              \
       INT_FATAL(call, "number of actuals does not match number of formals"); \
   } else if ((call)->isPrimitive(PRIM_VMT_CALL)) {                      \
     _alist_fn = toFnSymbol(toSymExpr(call->get(1))->var);               \
