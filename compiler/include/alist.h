@@ -105,7 +105,7 @@ class AList {
   FnSymbol* _alist_fn = (call)->isResolved();                           \
   Expr * actual = (call)->argList.head;                                 \
   if (_alist_fn) {                                                      \
-     (_alist_fn->numFormals() != (call)->argList.length)              \
+     if (_alist_fn->numFormals() != (call)->argList.length)              \
       INT_FATAL(call, "number of actuals does not match number of formals"); \
   } else if ((call)->isPrimitive(PRIM_VMT_CALL)) {                      \
     _alist_fn = toFnSymbol(toSymExpr(call->get(1))->var);               \
