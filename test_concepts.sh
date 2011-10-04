@@ -18,8 +18,15 @@ do
 	output=`${chplbin} ${file} 2>&1`
 	if [[ $output == *SUCCESS* ]]
         then
-		echo -n "."		
-		success=$((success+1))
+		if [[ $file == *mismatch* ]]
+		then
+			msg="${file} failed: ${output}\n"
+			finalmsg=$finalmsg$msg
+                	echo -n "E"
+                else
+		 	echo -n "."		
+			success=$((success+1))
+		fi
 	else
 		if [[ $file == *mismatch* ]]
 		then

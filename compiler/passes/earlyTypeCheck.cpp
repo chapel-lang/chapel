@@ -19,29 +19,43 @@
 BaseAST *get_root_type_or_type_expr(BaseAST *ast);
 BaseAST *typeCheckExpr(BaseAST *currentExpr, BaseAST *expectedReturnTypeExpr);
 void handle_where_clause_expr(BaseAST *ast);
+BaseAST *typeCheckFn(FnSymbol *fn);
 
 //FIXME: This probably already exists in Chapel, but I couldn't find it
+//FIXME: A more optimized approach would be to use the congruence closure to find all representative types at
+//        the beginning of a compile, and keep the information in the AST instead of looking it up like this once and
+//        then forgetting it in later passes
 BaseAST *get_root_type_or_type_expr(BaseAST *ast) {
+  BaseAST *retval;
+
   if (isType(ast)) {
-    return ast;
+    if ((ast == dtUnknown) || (ast == dtAny))
+      return NULL;
+    else
+      return ast;
   }
   else if (VarSymbol *vs = toVarSymbol(ast)) {
-    return vs->type;
+    if (vs->type && (retval = get_root_type_or_type_expr(vs->type)))
+      return retval;
+    else
+      return vs;
   }
   else if (TypeSymbol *ts = toTypeSymbol(ast)) {
-    return ts->type;
+    if (ts->type && (retval = get_root_type_or_type_expr(ts->type)))
+      return retval;
+    else
+      return ts;
   }
   else if (ArgSymbol *as = toArgSymbol(ast)) {
     if (as->typeExpr)
       return get_root_type_or_type_expr(as->typeExpr);
-    return as->type;
+    else if (as->type && get_root_type_or_type_expr(as->type))
+      return as->type;
+    else
+      return as;
   }
   else if (Symbol *s = toSymbol(ast)) {
     return s;
-  }
-  else if (BlockStmt *bs = toBlockStmt(ast)) {
-    //FIXME: This is a shortcut but isn't strictly correct
-    return get_root_type_or_type_expr(bs->body.head);
   }
   else if (isExpr(ast)) {
     if (DefExpr *de = toDefExpr(ast)) {
@@ -59,10 +73,10 @@ BaseAST *get_root_type_or_type_expr(BaseAST *ast) {
       return get_root_type_or_type_expr(se->var);
     }
     else if (CallExpr *ce = toCallExpr(ast)) {
-      return get_root_type_or_type_expr(ce->baseExpr);
+      return ce;
     }
     else if (BlockStmt *bs = toBlockStmt(ast)) {
-      //FIXME: This is a shortcut, it isn't strictly correct
+      //FIXME: is this strictly correct?
       return get_root_type_or_type_expr(bs->body.head);
     }
     else {
@@ -79,12 +93,14 @@ BaseAST *get_root_type_or_type_expr(BaseAST *ast) {
 struct CCNode {
   CCNode* parent;
 
+  BaseAST *actualExprOrType;
+
   int unique_id;
 
   std::vector<CCNode*> contains;
   std::vector<CCNode*> contained_by;
 
-  CCNode() : parent(0) {}
+  CCNode() : parent(0), actualExprOrType(0) {}
 };
 
 typedef std::vector<std::pair<int, CCNode *> > CCNodeAssocList;
@@ -113,9 +129,18 @@ struct CongruenceClosure {
   }
 
   BaseAST *get_representative_ast(BaseAST *ast) {
-    CCNode *rep = find_or_insert(ast);
-    rep = representative(rep);
-    return aid(rep->unique_id);
+    /*
+    if (!isCallExpr(ast)) {
+      CCNode *rep = find_or_insert(ast);
+      rep = representative(rep);
+      return aid(rep->unique_id);
+    }
+    else {
+      return ast;
+    }
+    */
+    CCNode *rep = representative(find_or_insert(ast));
+    return rep->actualExprOrType;
   }
 
   CCNode *representative(CCNode *node) {
@@ -125,16 +150,41 @@ struct CongruenceClosure {
     return node;
   }
 
+  void print_map() {
+    for (CCNodeAssocListRIter i = node_assoc_list.rbegin(),
+        e = node_assoc_list.rend(); i != e; ++i) {
+
+      printf("%i[%p]: ", i->first, i->second);
+
+      CCNode *cc = i->second;
+
+      while (cc) {
+        printf("%i[%p %p] ", cc->unique_id, cc, cc->parent);
+        if (!cc->parent) {
+          for (unsigned j = 0; j < cc->contains.size(); ++j) {
+            printf("(%i)", cc->contains[j]->unique_id);
+          }
+        }
+        cc = cc->parent;
+      }
+      printf("\n");
+    }
+  }
+
   CCNode *find_or_insert(BaseAST *ast) {
     //int unique_id = get_symbol_id(ast);
-    ast = get_root_type_or_type_expr(ast);
+    if (BaseAST *rootAST = get_root_type_or_type_expr(ast))
+      ast = rootAST;
+
     int unique_id = ast->id;
 
     std::vector<CCNode *> children_nodes;
 
     if (CallExpr *call = toCallExpr(ast)) {
-      //Collect all the children first
+      //Insert the baseExpr
+      unique_id = representative(find_or_insert(call->baseExpr))->unique_id;
 
+      //Collect all the children
       for_alist(arg, call->argList) {
         //FIXME: Not sure if this is strictly correct to use the representative here
         children_nodes.push_back(representative(find_or_insert(arg)));
@@ -146,9 +196,10 @@ struct CongruenceClosure {
       if (unique_id == i->first) {
         CCNode *current_node = i->second;
 
-        bool found_match = true;
+        bool found_match = false;
 
         if (children_nodes.size() == current_node->contains.size()) {
+          found_match = true;
           for (unsigned j = 0; j < children_nodes.size(); ++j) {
             if (children_nodes[j] != current_node->contains[j]) {
               found_match = false;
@@ -166,6 +217,7 @@ struct CongruenceClosure {
     // Not found, so we insert and return that
     CCNode *new_node = new CCNode();
     new_node->unique_id = unique_id;
+    new_node->actualExprOrType = ast;
     for (unsigned i = 0; i < children_nodes.size(); ++i) {
       // Set up the bi-directional link between containing type and contained type
       children_nodes[i]->contained_by.push_back(new_node);
@@ -269,8 +321,6 @@ struct CongruenceClosure {
 };
 
 CongruenceClosure cclosure;
-
-BaseAST *typeCheckFn(FnSymbol *fn);
 
 /*
  * BEGIN DUPLICATE CODE
@@ -440,6 +490,7 @@ BaseAST *typeCheckExpr(BaseAST *currentExpr, BaseAST *expectedReturnTypeExpr) {
     DefExpr *defPt;
     if ((argSym = toArgSymbol(se_actual->var)) && argSym->typeExpr) {
       return cclosure.get_representative_ast(argSym->typeExpr);
+      //return argSym->typeExpr;
     }
     else if ((defPt = se_actual->var->defPoint)) {
       return typeCheckExpr(defPt, expectedReturnTypeExpr);
@@ -452,9 +503,11 @@ BaseAST *typeCheckExpr(BaseAST *currentExpr, BaseAST *expectedReturnTypeExpr) {
       BaseAST *e_typeAST = typeCheckExpr(call->argList.head, expectedReturnTypeExpr);
 
       if (!cclosure.is_equal(e_typeAST, expectedReturnTypeExpr)) {
+        cclosure.print_map();
         INT_FATAL("Mismatched type expressions in return\n");
       }
       else {
+        cclosure.print_map();
         return e_typeAST;
       }
     }
@@ -475,8 +528,10 @@ BaseAST *typeCheckExpr(BaseAST *currentExpr, BaseAST *expectedReturnTypeExpr) {
           }
           else if (call->argList.length == 1) {
             return op->returnInfo(call, cclosure.get_representative_ast(call->argList.get(1)), NULL);
+            //return op->returnInfo(call, call->argList.get(1), NULL);
           }
           else {
+            //return op->returnInfo(call, call->argList.get(1), call->argList.get(2));
             return op->returnInfo(call, cclosure.get_representative_ast(call->argList.get(1)),
                 cclosure.get_representative_ast(call->argList.get(2)));
           }
