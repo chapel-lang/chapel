@@ -94,17 +94,32 @@ class AList {
        actual = _alist_prev,                                            \
          _alist_prev = actual ? actual->prev : NULL)
 
+// Visits the formal and actual parameters of a normal call or a virtual method call.
+// Virtual method calls are represented by the PRIM_VMT_CALL primitive.
+// In this case, the first actual argument contains the FnSymbol representing the 
+// function being called, and the second argument contains the call id (cid).
+// These two initial arguments are elided when the actuals list is traversed.
+// There can be fewer formals than actuals if some of the formals are param
+// arguments.  But we'll get a null reference error if there are too few actuals.
 #define for_formals_actuals(formal, actual, call)                       \
   FnSymbol* _alist_fn = (call)->isResolved();                           \
-  if (_alist_fn->numFormals() != (call)->argList.length)                \
-    INT_FATAL(call, "number of actuals does not match number of formals"); \
-  Expr* actual = ((call)->argList.head);                                \
+  Expr * actual = (call)->argList.head;                                 \
+  if (_alist_fn) {                                                      \
+	if (_alist_fn->numFormals() != (call)->argList.length)              \
+      INT_FATAL(call, "number of actuals does not match number of formals"); \
+  } else if ((call)->isPrimitive(PRIM_VMT_CALL)) {                      \
+    _alist_fn = toFnSymbol(toSymExpr(call->get(1))->var);               \
+    actual = actual->next->next;                                        \
+  }																		\
   Expr* _alist_actual_next = (actual) ? actual->next : NULL;            \
-  for (ArgSymbol *formal = (_alist_fn->formals.head) ? toArgSymbol(toDefExpr(_alist_fn->formals.head)->sym) : NULL, \
-         *_alist_formal_next = (formal && formal->defPoint->next) ? toArgSymbol(toDefExpr((formal)->defPoint->next)->sym) : NULL; \
+  for (ArgSymbol *formal = (_alist_fn->formals.head) ?                  \
+         toArgSymbol(toDefExpr(_alist_fn->formals.head)->sym) : NULL,   \
+         *_alist_formal_next = (formal && formal->defPoint->next) ?     \
+         toArgSymbol(toDefExpr((formal)->defPoint->next)->sym) : NULL;  \
        (formal);                                                        \
        formal = _alist_formal_next,                                     \
-         _alist_formal_next = (formal && formal->defPoint->next) ? toArgSymbol(toDefExpr((formal)->defPoint->next)->sym) : NULL, \
+         _alist_formal_next = (formal && formal->defPoint->next) ?      \
+         toArgSymbol(toDefExpr((formal)->defPoint->next)->sym) : NULL,  \
          actual = _alist_actual_next,                                   \
          _alist_actual_next = (actual) ? actual->next : NULL)
 

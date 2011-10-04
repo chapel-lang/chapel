@@ -5274,7 +5274,8 @@ pruneResolvedTree() {
   }
 
   forv_Vec(CallExpr, call, gCallExprs) {
-    if (call->parentSymbol && call->isResolved()) {
+    if ((call->parentSymbol && call->isResolved()) ||
+        call->isPrimitive(PRIM_VMT_CALL)) {
       //
       // Insert reference temps for function arguments that expect them.
       //
