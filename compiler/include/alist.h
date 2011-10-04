@@ -105,12 +105,12 @@ class AList {
   FnSymbol* _alist_fn = (call)->isResolved();                           \
   Expr * actual = (call)->argList.head;                                 \
   if (_alist_fn) {                                                      \
-	if (_alist_fn->numFormals() != (call)->argList.length)              \
+     (_alist_fn->numFormals() != (call)->argList.length)              \
       INT_FATAL(call, "number of actuals does not match number of formals"); \
   } else if ((call)->isPrimitive(PRIM_VMT_CALL)) {                      \
     _alist_fn = toFnSymbol(toSymExpr(call->get(1))->var);               \
     actual = actual->next->next;                                        \
-  }																		\
+  }                                                                     \
   Expr* _alist_actual_next = (actual) ? actual->next : NULL;            \
   for (ArgSymbol *formal = (_alist_fn->formals.head) ?                  \
          toArgSymbol(toDefExpr(_alist_fn->formals.head)->sym) : NULL,   \
