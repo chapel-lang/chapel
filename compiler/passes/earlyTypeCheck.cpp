@@ -129,16 +129,6 @@ struct CongruenceClosure {
   }
 
   BaseAST *get_representative_ast(BaseAST *ast) {
-    /*
-    if (!isCallExpr(ast)) {
-      CCNode *rep = find_or_insert(ast);
-      rep = representative(rep);
-      return aid(rep->unique_id);
-    }
-    else {
-      return ast;
-    }
-    */
     CCNode *rep = representative(find_or_insert(ast));
     return rep->actualExprOrType;
   }
@@ -490,7 +480,6 @@ BaseAST *typeCheckExpr(BaseAST *currentExpr, BaseAST *expectedReturnTypeExpr) {
     DefExpr *defPt;
     if ((argSym = toArgSymbol(se_actual->var)) && argSym->typeExpr) {
       return cclosure.get_representative_ast(argSym->typeExpr);
-      //return argSym->typeExpr;
     }
     else if ((defPt = se_actual->var->defPoint)) {
       return typeCheckExpr(defPt, expectedReturnTypeExpr);
@@ -503,11 +492,9 @@ BaseAST *typeCheckExpr(BaseAST *currentExpr, BaseAST *expectedReturnTypeExpr) {
       BaseAST *e_typeAST = typeCheckExpr(call->argList.head, expectedReturnTypeExpr);
 
       if (!cclosure.is_equal(e_typeAST, expectedReturnTypeExpr)) {
-        cclosure.print_map();
         INT_FATAL("Mismatched type expressions in return\n");
       }
       else {
-        cclosure.print_map();
         return e_typeAST;
       }
     }
@@ -520,18 +507,13 @@ BaseAST *typeCheckExpr(BaseAST *currentExpr, BaseAST *expectedReturnTypeExpr) {
 
       if (UnresolvedSymExpr *use = toUnresolvedSymExpr(call->baseExpr)) {
         if (PrimitiveOp *op = primitives_map.get(use->unresolved)) {
-          //FIXME: Come up with a better way to resolve here.
-          //This doens't respect type equality
-
           if (call->argList.length == 0) {
             return op->returnInfo(call, NULL, NULL);
           }
           else if (call->argList.length == 1) {
             return op->returnInfo(call, cclosure.get_representative_ast(call->argList.get(1)), NULL);
-            //return op->returnInfo(call, call->argList.get(1), NULL);
           }
           else {
-            //return op->returnInfo(call, call->argList.get(1), call->argList.get(2));
             return op->returnInfo(call, cclosure.get_representative_ast(call->argList.get(1)),
                 cclosure.get_representative_ast(call->argList.get(2)));
           }
