@@ -32,6 +32,15 @@ use ChapelUtil;
 config param debugBlockDist = false;
 config param debugBlockDistBulkTransfer = false;
 
+// This flag is used to enable bulk transfer when aliased arrays are
+// involved.  Currently, aliased arrays are not eligible for the
+// optimization due to a bug in bulk transfer for rank changed arrays
+// in which the last (right-most) dimension is collapsed.  Disabling
+// the optimization for all aliased arrays is very conservative, so
+// we provide this flag to allow the user to override the decision,
+// with the caveat that it will likely not work for the above case.
+config const disableAliasedBulkTransfer = true;
+
 config param sanityCheckDistribution = false;
 
 //
@@ -1180,6 +1189,10 @@ proc BlockArr.doiCanBulkTransfer() {
     for param i in 1..rank do
       if dom.whole.dim(i).stride != 1 then return false;
 
+  // See above note regarding aliased arrays
+  if disableAliasedBulkTransfer then
+    if _arrAlias != nil then return false;
+
   return true;
 }
 
@@ -1259,7 +1272,7 @@ iter ConsecutiveChunks(d1,d2,lid,lo) {
 }
 
 iter ConsecutiveChunksD(d1,d2,i,lo) {
-  var rank=d1.rank;
+  const rank=d1.rank;
   var elemsToGet = d1.locDoms[i].myBlock.dim(rank).length;
   const offset   = d2.whole.low - d1.whole.low;
   var rlo = lo+offset;
