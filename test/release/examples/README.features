@@ -39,6 +39,7 @@ primers/
   reductions     : minloc, maxloc, + and && array reductions
   slices         : array slicing and reindexing; iterators
   sparse         : sparse domains and arrays; operations on them
+  syncsingle     : sync and single variables
   taskParallel   : begin, cobegin, coforall
   timers         : Timer record in Time module
   varargs        : variable argument functions, tuples
