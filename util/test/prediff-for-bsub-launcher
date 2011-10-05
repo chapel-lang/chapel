@@ -25,6 +25,10 @@ to the test output three lines that start like this:
 If so, they are removed from the test output file.
 Otherwise, the output file remains unchanged.
 
+This script has the shortcoming of doing nothing if there is any
+compiler diagnostics in a test. That's because the above three lines
+no longer start the combined compiler+runtime output file.
+
 END
 exit();
 }
