@@ -1,6 +1,12 @@
-
-#include "chpltypes.h" // chpl_bool
-
+#ifdef SIMPLE_TEST
+#include "sys_basic.h"
+#include <stdint.h>
+#include <stdbool.h>
+typedef bool chpl_bool;
+#else
+#include "chpltypes.h" // chpl_bool -- but that undefines printf, which
+                       // causes problems with the C test cases.
+#endif
 
 typedef uint_least8_t atomic_uint_least8_t;
 typedef uint_least16_t atomic_uint_least16_t;

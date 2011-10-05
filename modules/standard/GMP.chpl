@@ -214,6 +214,14 @@ module GMP {
   extern proc mpz_urandomm(inout ROP: mpz_t, STATE: gmp_randstate_t, N: mpz_t);
   extern proc mpz_urandomb(inout ROP: mpz_t, STATE: gmp_randstate_t, N: c_ulong);
 
+  extern proc gmp_randinit_default(STATE: gmp_randstate_t);
+  extern proc gmp_randinit_mt(STATE: gmp_randstate_t);
+  extern proc gmp_randseed(STATE: gmp_randstate_t, SEED: mpz_t);
+  extern proc gmp_randseed_ui(STATE: gmp_randstate_t, SEED: c_ulong);
+
+  extern proc gmp_urandomb_ui(STATE: gmp_randstate_t, N: c_ulong):c_ulong;
+  extern proc gmp_urandomm_ui(STATE: gmp_randstate_t, N: c_ulong):c_ulong;
+
   // Integer import and export
 
 
@@ -1448,11 +1456,11 @@ module GMP {
       }
       return ret;
     }
-    proc urandomn_ui(n: c_ulong):c_ulong
+    proc urandomm_ui(n: c_ulong):c_ulong
     {
       var ret: c_ulong;
       on this {
-        ret=gmp_urandomn_ui(this.state, n);
+        ret=gmp_urandomm_ui(this.state, n);
       }
       return ret;
     }

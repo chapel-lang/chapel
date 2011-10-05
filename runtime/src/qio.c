@@ -1311,6 +1311,9 @@ err_t _qio_channel_init_buffered(qio_channel_t* ch, qio_file_t* file, qio_hint_t
   start += file->initial_pos;
   end += file->initial_pos;
 
+  heavy->bit_buffer = 0;
+  heavy->bit_buffer_bits = 0;
+
   heavy->mark_next = 0;
   heavy->mark_stack_size = MARK_INITIAL_STACK_SZ;
   heavy->mark_stack = heavy->mark_space;
@@ -2378,12 +2381,23 @@ err_t _qio_channel_flush_unlocked(qio_channel_t* ch)
   err_t err;
   qio_method_t method = ch->hints & QIO_METHODMASK;
   qio_chtype_t type = ch->hints & QIO_CHTYPEMASK;
+  qio_buffered_channel_t* heavy;
 
   switch (type) {
     case QIO_CH_UNBUFFERED:
       err = 0; // no user buffer, nothing to flush
       break;
     case QIO_CH_BUFFERED:
+      // if writing, write anything in the bits...
+      heavy = & ch->u.buffered;
+      if( (ch->flags & QIO_FDFLAG_WRITEABLE) && heavy->bit_buffer_bits > 0 ) {
+        err = qio_channel_write_amt(false, ch, &heavy->bit_buffer, 1);
+        if( err ) return err;
+      }
+      heavy->bit_buffer = 0;
+      heavy->bit_buffer_bits = 0;
+
+      // Handle flushing any buffers.
       _qio_buffered_advance_cached(ch);
       err = _qio_buffered_behind(ch, true);
       if( err ) return err;
@@ -3059,6 +3073,179 @@ err_t qio_channel_advance(const int threadsafe, qio_channel_t* ch, int64_t nbyte
   }
 
   return err;
+}
+
+/* Handle I/O of bits at a time */
+err_t qio_channel_write_bits(const int threadsafe, qio_channel_t* ch, uint64_t v, int8_t nbits)
+{
+  qio_buffered_channel_t* heavy;
+  err_t err = 0;
+  qio_chtype_t type = ch->hints & QIO_CHTYPEMASK;
+  uint64_t tmp_bits;
+  uint64_t top;
+  int8_t tmp_live;
+
+  if( type != QIO_CH_BUFFERED ) {
+    return EINVAL;
+  }
+  if( nbits < 0 ) return EINVAL;
+  if( nbits == 0 ) return 0;
+
+  if( threadsafe ) {
+    err = qio_lock(&ch->lock);
+    if( err ) {
+      return err;
+    }
+  }
+
+  err = qio_channel_mark(false, ch);
+  if( err ) goto unlock;
+
+  heavy = & ch->u.buffered;
+  tmp_live = heavy->bit_buffer_bits;
+  tmp_bits = ((uint64_t)heavy->bit_buffer) << (64 - tmp_live);
+
+#define WRITESOME \
+{ \
+  int i; \
+  for( i = 0; i < 8 && tmp_live >= 8; i++ ) { \
+    uint8_t byte = (uint8_t) (tmp_bits >> 56); \
+    err = qio_channel_write_amt(false, ch, &byte, 1); \
+    if( err ) goto error; \
+    tmp_bits <<= 8; \
+    tmp_live -= 8; \
+  } \
+}
+
+  // we have to fit up to 7 bits from bit_buffer in as well,
+  // so if we're writing more than 56 bits we have to do it
+  // in two parts.
+  if( nbits > 56 ) {
+    // Extract 56 top bits from v into top.
+    top = v >> (nbits - 56);
+    nbits -= 56;
+
+    // Clear the top 56 bits of v.
+    v <<= 56;
+    v >>= 56;
+
+    // Put these 56 bits, now in top, into tmp_bits and update tmp_live.
+    tmp_bits |= top << (64 - tmp_live - 56);
+    tmp_live += 56;
+    // Write to the channel.
+    WRITESOME;
+  }
+
+  // OK, now write whatever is left or all of it for <= 56 bits.
+  tmp_bits |= v << (64 - tmp_live - nbits);
+  tmp_live += nbits;
+
+  // Write to the channel.
+  WRITESOME;
+
+error:
+  if( err == 0 ) {
+    // Save what's left in tmp_bits back in our structure.
+    heavy->bit_buffer = (uint8_t) (tmp_bits >> (64 - tmp_live));
+    heavy->bit_buffer_bits = tmp_live;
+    qio_channel_commit_unlocked(ch);
+  } else {
+    qio_channel_revert_unlocked(ch);
+  }
+
+unlock:
+  if( threadsafe ) {
+    qio_unlock(&ch->lock);
+  }
+
+  return err;
+
+#undef WRITESOME
+}
+
+err_t qio_channel_read_bits(const int threadsafe, qio_channel_t* ch, uint64_t* v, int8_t nbits)
+{
+  qio_buffered_channel_t* heavy;
+  err_t err = 0;
+  qio_chtype_t type = ch->hints & QIO_CHTYPEMASK;
+  uint64_t tmp_bits;
+  int8_t tmp_live;
+  uint64_t ret;
+  uint64_t got;
+  uint64_t one = 1;
+
+  if( type != QIO_CH_BUFFERED ) {
+    return EINVAL;
+  }
+  if( nbits < 0 ) return EINVAL;
+  if( nbits == 0 ) return 0;
+
+  if( threadsafe ) {
+    err = qio_lock(&ch->lock);
+    if( err ) {
+      return err;
+    }
+  }
+
+  err = qio_channel_mark(false, ch);
+  if( err ) goto unlock;
+
+  heavy = & ch->u.buffered;
+  tmp_live = heavy->bit_buffer_bits;
+  tmp_bits = heavy->bit_buffer;
+
+#define READSOME(n) \
+{ \
+  int i; \
+  for( i = 0; i < 8 && tmp_live < n; i++ ) { \
+    uint8_t byte = 0; \
+    err = qio_channel_read_amt(false, ch, &byte, 1); \
+    if( err ) goto error; \
+    tmp_bits = (tmp_bits << 8) | ((uint64_t)byte); \
+    tmp_live += 8; \
+  } \
+  got = (tmp_bits >> (tmp_live - n)) & ((one << n)-one); \
+  tmp_live -= n; \
+}
+
+  ret = 0;
+
+  // we have to fit up to 7 bits from bit_buffer in as well,
+  // so if we're reading more than 56 bits we have to do it
+  // in two parts.
+  if( nbits > 56 ) {
+    // Read 56 bits into ret.
+    READSOME(56);
+    ret = got;
+    nbits -= 56;
+  }
+
+  // OK, now read whatever is left or all of it for <= 56 bits.
+  READSOME(nbits);
+  ret <<= nbits;
+  ret |= got;
+
+error:
+  if( err == 0 ) {
+    // Now save the remaining bits in tmp_bits
+    // back in our structure.
+    heavy->bit_buffer = tmp_bits & ((one << tmp_live)-one);
+    heavy->bit_buffer_bits = tmp_live;
+
+    // Set the result.
+    *v = ret;
+    qio_channel_commit_unlocked(ch);
+  } else {
+    qio_channel_revert_unlocked(ch);
+  }
+
+unlock:
+  if( threadsafe ) {
+    qio_unlock(&ch->lock);
+  }
+
+  return err;
+#undef READSOME
 }
 
 

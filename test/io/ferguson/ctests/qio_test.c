@@ -1,5 +1,6 @@
 #include "qio.h"
 #include <assert.h>
+#include <stdio.h>
 
 unsigned char data_at(int64_t offset)
 {

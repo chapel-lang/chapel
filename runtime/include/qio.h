@@ -537,6 +537,10 @@ typedef struct qio_buffered_channel_s {
 
   qbuffer_t buf;
 
+  // For reading/writing bits (ie less than a byte) at a time
+  uint8_t bit_buffer;
+  int8_t bit_buffer_bits;
+
   size_t mark_next;
   size_t mark_stack_size;
   int64_t* mark_stack;
@@ -974,6 +978,10 @@ err_t qio_channel_commit(const int threadsafe, qio_channel_t* ch)
 
   return 0;
 }
+
+/* Handle I/O of bits at a time */
+err_t qio_channel_write_bits(const int threadsafe, qio_channel_t* ch, uint64_t v, int8_t nbits);
+err_t qio_channel_read_bits(const int threadsafe, qio_channel_t* ch, uint64_t* v, int8_t nbits);
 
 /*
 err_t qio_channel_fopen(const int threadsafe, qio_channel_t* ch, int reading, int writing, FILE** out);

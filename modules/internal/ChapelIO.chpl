@@ -211,8 +211,22 @@
       this.offset = offset;
     }
   }
-
-  proc seterr(err:ErrorHandler, syserr:err_t, path="", offset:int(64)=-1)
+  proc seterr(err:ErrorHandler, syserr:err_t)
+  {
+    if( syserr ) {
+      if( err != nil ) {
+        err.onError(syserr, "", -1);
+      } else {
+        var errstr:string;
+        var strerror_err:err_t;
+        errstr = sys_strerror_str(syserr, strerror_err); 
+        __primitive("chpl_error", "Unhandled system error: " + errstr + " (" + syserr:string + ")");
+          //__primitive("chpl_error", "Unhandled system error: " + syserr + " " +
+          //            errstr + " with file " + path " : " + offset);
+      }
+    }
+  }
+  proc seterr(err:ErrorHandler, syserr:err_t, path:string, offset:int(64)=-1)
   {
     if( syserr ) {
       if( err != nil ) {
@@ -231,7 +245,22 @@
       }
     }
   }
-  proc seterr(err:ErrorHandler, err2:ErrorHandler, syserr:err_t, path="", offset:int(64)=-1)
+  proc seterr(err:ErrorHandler, err2:ErrorHandler, syserr:err_t)
+  {
+    if( syserr ) {
+      if( err != nil ) {
+        err.onError(syserr, "", -1);
+      } else if( err2 != nil ){
+        err2.onError(syserr, "", -1);
+      } else {
+        var errstr:string;
+        var strerror_err:err_t;
+        errstr = sys_strerror_str(syserr, strerror_err); 
+          __primitive("chpl_error", "Unhandled system error: " + errstr + " (" + syserr:string + ")");
+      }
+    }
+  }
+  proc seterr(err:ErrorHandler, err2:ErrorHandler, syserr:err_t, path:string, offset:int(64)=-1)
   {
     if( syserr ) {
       if( err != nil ) {
@@ -842,6 +871,7 @@
   record channel {
     param writing:bool;
     param kind:iokind;
+    param locking:bool;
     var home_uid:int;
     var _channel_internal:qio_channel_ptr_t = QIO_CHANNEL_PTR_NULL;
     var onErr:ErrorHandler; /* starts out as file.onErr, but can be set to something else */
@@ -871,7 +901,7 @@
     return ret;
   }
 
-  proc channel.channel(param writing:bool, param kind:iokind, f:file, hints:c_int, start:int(64), end:int(64), style:iostyle, onErr:ErrorHandler) {
+  proc channel.channel(param writing:bool, param kind:iokind, param locking:bool, f:file, hints:c_int, start:int(64), end:int(64), style:iostyle, onErr:ErrorHandler) {
     on __primitive("chpl_on_locale_num", f.home_uid) {
       this.home_uid = f.home_uid;
       this.onErr = onErr;
@@ -924,13 +954,17 @@
   }
 
   proc channel.lock() {
-    on __primitive("chpl_on_locale_num", this.home_uid) {
-      seterr(this.onErr, qio_channel_lock(_channel_internal));
+    if locking {
+      on __primitive("chpl_on_locale_num", this.home_uid) {
+        seterr(this.onErr, qio_channel_lock(_channel_internal));
+      }
     }
   }
   proc channel.unlock() {
-    on __primitive("chpl_on_locale_num", this.home_uid) {
-      qio_channel_unlock(_channel_internal);
+    if locking {
+      on __primitive("chpl_on_locale_num", this.home_uid) {
+        qio_channel_unlock(_channel_internal);
+      }
     }
   }
 
@@ -967,12 +1001,12 @@
   }
   */
 
-  proc file.reader(param kind=iokind.dynamic, start:int(64) = 0, end:int(64) = max(int(64)), hints:c_int = 0, style:iostyle = this._style, onErr:ErrorHandler = nil): channel(false, kind) {
+  proc file.reader(param kind=iokind.dynamic, param locking=true, start:int(64) = 0, end:int(64) = max(int(64)), hints:c_int = 0, style:iostyle = this._style, onErr:ErrorHandler = nil): channel(false, kind, locking) {
     check();
 
-    var ret:channel(false, kind);
+    var ret:channel(false, kind, locking);
     on __primitive("chpl_on_locale_num", this.home_uid) {
-      ret = new channel(false, kind, this, hints, start, end, style, onErr);
+      ret = new channel(false, kind, locking, this, hints, start, end, style, onErr);
     }
     return ret;
   }
@@ -992,12 +1026,12 @@
   }
 
 
-  proc file.writer(param kind=iokind.dynamic, start:int(64) = 0, end:int(64) = max(int(64)), hints:c_int = 0, style:iostyle = this._style, onErr:ErrorHandler = nil): channel(true,kind) {
+  proc file.writer(param kind=iokind.dynamic, param locking=true, start:int(64) = 0, end:int(64) = max(int(64)), hints:c_int = 0, style:iostyle = this._style, onErr:ErrorHandler = nil): channel(true,kind,locking) {
     check();
 
-    var ret:channel(true, kind);
+    var ret:channel(true, kind, locking);
     on __primitive("chpl_on_locale_num", this.home_uid) {
-      ret = new channel(true, kind, this, hints, start, end, style, onErr);
+      ret = new channel(true, kind, locking, this, hints, start, end, style, onErr);
     }
     return ret;
   }
@@ -1645,9 +1679,9 @@
   */
 
 
-  const stdin:channel(false, iokind.dynamic) = openfd(0).reader(); 
-  const stdout:channel(true, iokind.dynamic) = openfp(chpl_cstdout()).writer(); 
-  const stderr:channel(true, iokind.dynamic) = openfp(chpl_cstderr()).writer(); 
+  const stdin:channel(false, iokind.dynamic, true) = openfd(0).reader(); 
+  const stdout:channel(true, iokind.dynamic, true) = openfp(chpl_cstdout()).writer(); 
+  const stderr:channel(true, iokind.dynamic, true) = openfp(chpl_cstderr()).writer(); 
 
   proc write(args ...?n) {
     stdout.write((...args));
