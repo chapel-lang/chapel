@@ -1476,7 +1476,12 @@ void CallExpr::codegen(FILE* outfile) {
         if (is_arithmetic_type( t)) {
           if (is_int_type( t) || is_uint_type( t) || is_real_type( t) ||
               is_imag_type(t)) {
-            fprintf( outfile, "MAX_UINT%d", get_width( t));
+            // MAX_UINT(size) cast to appropriate target type.
+            fprintf(outfile, "((");
+            t->codegen(outfile);
+            fprintf(outfile, ")(");
+            fprintf(outfile, "MAX_UINT%d", get_width( t));
+            fprintf(outfile, "))");
           } else {   // must be (is_complex_type( t))
             // WAW: needs fixing?
             fprintf( outfile, "_chpl_complex%d( MAX_UINT%d, MAX_UINT%d)", 
