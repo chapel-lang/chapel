@@ -1,38 +1,42 @@
 //
-// This example shows how to use leader/follower iterators in Chapel.
-// Leader/follower iterators are used to implement zippered (and
+// This example shows how to use leader-follower iterators in Chapel.
+// leader-follower iterators are used to implement zippered (and
 // currently, non-zippered) forall loops in Chapel over data
-// structures or standalone iterators.  We expect the leader/follower
+// structures or standalone iterators.  We expect the leader-follower
 // interface to change and improve over time, so this should be
 // considered a snapshot of their use in the current implementation.
+//
+// For a more thorough introduction to leader-follower iterators,
+// refer to our PGAS 2011 paper, "User-Defined Parallel Zippered
+// Iterators in Chapel".
 //
 
 //
 // Any zippered forall loop in Chapel will be implemented using
-// leader/follower iterators.  Generally speaking, a forall loop
+// leader-follower iterators.  Generally speaking, a forall loop
 // of the following form:
 //
 //   forall (a, b, c) in (A, B, C) do
 //     ...loop body...
 //
 // is semantically defined such that the first thing being iterated
-// over -- in this case, A -- is the leader.  All things being
-// iterated over are followers (so for this loop, A, B, and C would
-// be).
+// over -- in this case, A -- is designated the 'leader.'  All things
+// being iterated over are 'followers' (so for this loop, A, B, and C
+// would be).
 //
 // Given such a loop, the compiler will roughly translate it into
 // the following loop structure:
 //
-//   for work in A.lead() do
+//   for work in A.lead() do   // implemented by inlining the leader
 //     for (a, b, c) in (A.follow(work), B.follow(work), C.follow(work)) do
 //       ...loop body...
 //
-// where .lead() and .follow() are conceptually intended to represent
-// the leader/follower iterators (using a simplified naming scheme).
+// where .lead() and .follow() represent the leader-follower iterators
+// using a simplified naming scheme.
 //
 // Note that since Chapel's implicitly parallel semantics are defined
 // in terms of zippered iteration, such cases are also implemented using
-// leader/follower iterators.  For example:
+// leader-follower iterators.  For example:
 // 
 //   A = B + C;
 //
@@ -41,8 +45,9 @@
 //   foo(A, B, C)
 //
 // (where foo() is defined to take scalar arguments and is promoted
-// in this function call) will be converted to the equivalent zippered
-// parallel loops and then to the leader/follower idiom shown above.
+// in this function call) will be converted to their equivalent
+// zippered parallel loops and then to the leader-follower idiom shown
+// above.
 
 //
 // At a high level, the role of a leader iterator is to:
@@ -54,13 +59,17 @@
 //
 //   (c) assign work (e.g., iterations) to each parallel task
 //
-// The leader specifies work for tasks by having each task it creates
-// yield some representation of what the work is.
+
+// It typically creates the parallelism using normal task parallel
+// features like coforall loops; and it associates tasks with locales
+// using normal locality features like on-clauses.  The leader
+// specifies work for tasks by having each task it creates yield some
+// representation of the work it owns.
 //
 // The role of the follower iterator is to take as an input argument
-// a chunk of work (as yielded by its leader) and to serially iterate
-// over and yield the corresponding elements/values corresponding to
-// those iterations.
+// a chunk of work (as yielded by a leader) and to serially iterate
+// over and yield the elements/values corresponding to those
+// iterations in order.
 //
 
 // Let's go to some code:
@@ -69,16 +78,16 @@
 // For this example, we're going to create a simple iterator named
 // 'count' that will be able to be invoked in 'for' or 'forall' loops.
 // Count will be defined to take an argument 'n' as input and an
-// optional argument 'low' (set to 1 by default) and will yield n
+// optional argument 'low' (set to 1 by default), and it will yield n
 // integers starting with low.
 //
 
 //
-// In this example, we'll use this config const 'numTasks' to indicate
-// the degree of parallelism to use in the leader to implement forall
-// loops.  By default we've set it to the number of cores on the
-// current locale, but it can be overridden on the executable
-// command-line using the --numTasks=<n> option.
+// In this example, we'll use the following config const 'numTasks' to
+// indicate the degree of parallelism to use in the leader to
+// implement forall loops.  By default we've set it to the number of
+// cores on the current locale, but it can be overridden on the
+// executable command-line using the --numTasks=<n> option.
 //
 config const numTasks = here.numCores;
 
@@ -103,7 +112,7 @@ config param verbose = false;
 // problem size to make the output readable.  To use the parallelism
 // effectively, you'd want to use a much larger problem size of
 // course (override on the execution command-line using the
-// --probSize=<n> option.
+// --probSize=<n> option).
 //
 config const probSize = 15;
 
@@ -115,11 +124,12 @@ var A: [1..probSize] real;
 
 
 //
-// when defining a leader/follower iterator, our current
+// when defining a leader-follower iterator pair, our current
 // implementation requires that you also define a serial iterator
 // of the same name and that it yields the same type as the follower
 // iterator does.  In this case, the serial iterator is simple:  We
-// simply yield the integers 1..n:
+// simply yield the integers low..low+n-1 (computed using the count
+// operator, #):
 //
 iter count(n: int, low: int=1) {
   for i in low..#n do
@@ -128,7 +138,7 @@ iter count(n: int, low: int=1) {
 
 
 //
-// Here are some simple iterations over this iterator to demonstrate
+// Here are some simple loops using this iterator to demonstrate
 // it.  First we iterate over all indices in our problem size to
 // initialize A:
 //
@@ -169,15 +179,14 @@ writeln();
 //
 // The leader and follower iterators are defined as overloads of the
 // serial version of the iterator, distinguished by an initial
-// param argument of the (poorly named) built-in enumerated type
-// 'iterator'.  To invoke the leader iterator and differentiate it
-// from the other overloads, the compiler will pass in the value
-// 'iterator.leader' to this argument.  The author of the leader
-// iterator should use a where clause to distinguish this overload
-// from the others.  After this 'tag' argument, the rest of the
-// argument list should match that of the serial iterator exactly.
-// For our example, this means providing the same n and low arguments
-// as before.
+// param argument of the built-in enumerated type 'iterKind'.  To
+// invoke the leader iterator and differentiate it from the other
+// overloads, the compiler will pass in the value 'iterKind.leader' to
+// this argument.  The author of the leader iterator should use a
+// 'where' clause to distinguish this overload from the others.  After
+// this 'tag' argument, the rest of the argument list should match
+// that of the serial iterator exactly.  For our example, this means
+// providing the same n and low arguments as before.
 //
 // The implementation of this leader iterator is relatively simple and
 // static.  It uses a coforall loop to create a number of tasks equal
@@ -191,12 +200,14 @@ writeln();
 // 
 // To be a legal leader iterator, we could simply yield this range as
 // a representation of the work we want the follower to perform.
-// However, to support zippering with follower iterators other than
-// our own, dense rectangular iterators yield tuples of ranges shifted
-// to 0-based coordinates by convention.  In this way, our iterator
-// will be able to be zippered with iterators for dense rectangular
-// domains and arrays, as well as other iterators that follow this
-// convention.
+// However, to support zippering our leader with follower iterators
+// written by others, we typically take the convention of having
+// iterators over 1D or dense rectangular index spaces yield tuples
+// of ranges shifted to a 0-based coordinate system.  In this way, the
+// leader-follower iterators have a common representation for the
+// work even though each may use its own indexing system.  This
+// permits, for example, arrays of the same size/shape to be zippered
+// together even if they have different domains.
 // 
 // To this end, rather than yielding subranges of low..#n, we'll yield
 // subranges of 0..n-1 and rely on the follower to shift it back to
@@ -206,7 +217,7 @@ writeln();
 // to make a 1-tuple out of it.
 // 
 // Note the debugging output inserted into this iterator.  While
-// learning about leader/follower iterators, it's useful to turn
+// learning about leader-follower iterators, it's useful to turn
 // this debugging output on by compiling  with -sverbose=true
 //
 iter count(param tag: iterKind, n: int, low: int=1) 
@@ -229,18 +240,19 @@ iter count(param tag: iterKind, n: int, low: int=1)
 // As mentioned at the outset, this leader is fairly static and
 // simple.  More generally, a leader can introduce tasks more
 // dynamically, partition work between the tasks more dynamically,
-// etc.
+// etc.  See $CHPL_HOME/modules/standard/AdvancedIters.chpl for
+// some more interesting examples of leader iterators, including
+// those that use dynamic partitioning.
 //
 
 
 //
 // The follower is another overload of the same iterator name, this
-// time taking the iterator.follower param enumeration as its first
+// time taking the iterKind.follower param enumeration as its first
 // argument.  The next arguments should match the leader and serial
 // iterators exactly again (so, n and low for our example).  The
-// final argument is called 'followThis' (another name that could
-// stand to be improved) which represents the data yielded by the
-// leader (in our case, the 1-tuple of ranges).
+// final argument must be called 'followThis' which represents the data
+// yielded by the leader (in our case, the 1-tuple of ranges).
 //
 // The goal of the follower is to do the iteration specified by the
 // 'followThis' argument, serially yielding the elements corresponding
@@ -268,7 +280,7 @@ iter count(param tag: iterKind, n: int, low: int=1, followThis)
 
 
 //
-// Now that we've defined leader/follower iterators, we can execute
+// Now that we've defined leader-follower iterators, we can execute
 // the same loops we did before, only this time using forall loops
 // to make the execution parallel.  We start with some simple
 // invocations as before.  In these invocations, the count() iterator
@@ -321,7 +333,7 @@ writeln();
 // in which case count() no longer controls the degree of parallelism
 // and work assignment since it is no longer the leader.  Instead,
 // A's leader iterator (defined as part of its domain map) is invoked.
-// For standard Chapel arrays and domain maps, these leader/follower
+// For standard Chapel arrays and domain maps, these leader-follower
 // iterators are controlled by the dataPar* configuration constants
 // as described in doc/README.executing.
 //
@@ -335,7 +347,7 @@ writeln();
 
 //
 // Finally, as mentioned at the outset, operations that are equivalent
-// to zippering also use leader/follower iterators, so for example
+// to zippering also use leader-follower iterators, so for example
 // the following whole-array assignment will use A's leader and
 // count()'s follower:
 //
@@ -352,13 +364,13 @@ writeln();
 // * Chapel data types like records and classes can support iteration
 //   by defining iterator methods (invoked by name) or these() iterators
 //   which support iterating over variables of that type directly.  Such
-//   iterator methods can be overloaded to support leader/follower
+//   iterator methods can be overloaded to support leader-follower
 //   versions as well to permit parallel iteration over the variable.
 //
-// * As mentioned at the outset, our leader/follower scheme has a number
+// * As mentioned at the outset, our leader-follower scheme has a number
 //   of improvements planned for it, including the ability to specify
 //   a standalone parallel iterator for non-zippered forall loops to
-//   avoid the overhead of using a leader/follower pair and better error
+//   avoid the overhead of using a leader-follower pair and better error
 //   checking.  We'll update this primer as we improve these features.
 //
 
@@ -367,7 +379,8 @@ writeln();
 // This is a poor-man's partitioning algorithm.  It gives
 // floor(numElements/NumChunks) work items to the first numChunks-1
 // chunks and the remainder to the last chunk.  For simplicity it only
-// works for non-strided ranges.
+// works for non-strided, default index type ranges.  More work would
+// be required to generalize it for strided or unbounded ranges.
 //
 proc computeChunk(r: range, myChunk, numChunks) where r.stridable == false {
   const numElems = r.length;
