@@ -12,6 +12,7 @@ use Random;
 config var 
    n = 100,           // Size of computational grid
    max_iter = 100,    // max_iter
+   eps = 1.0e-6,      // Error tolerance [back-ported from v3]
    verbose = false;   // printing control
 
 config var initial_spike = 1000.0;
@@ -86,10 +87,11 @@ proc computeNextApproximation(ProblemSpace, newGrid, oldGrid, iteration) {
        if ( iteration < ( n / 2 ) )
           {
             const sum = + reduce newGrid[ProblemSpace];
-            if ( sum != initial_spike )
+            const err = abs(initial_spike - sum);
+            if ( err > eps )
                {
                  writeln ( " ** Error ** diffuse2d: grid sum != initial_spike.",
-                           " (by ", abs(initial_spike - sum), ")");
+                           " (by ", err, ")");
                }
           }
      }
