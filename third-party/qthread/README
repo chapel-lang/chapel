@@ -13,5 +13,6 @@ directed to the Chapel team at chapel-bugs@lists.sourceforge.net.
 The local modifications that we have made to the official Qthreads 1.7
 release are as follows:
 
-* modified the implementation of the serial state to support calls
-  to get/setSerial prior to initialization.
+* modified the implementation of the serial state to support calls to
+  get/setSerial prior to initialization.  This corresponds to commit
+  r2444 to the Qthreads tree (made after the 1.7 release).
