@@ -53,6 +53,15 @@ GEN_CFLAGS += -D_POSIX_C_SOURCE $(ARCH)
 GEN_LFLAGS += $(ARCH)
 endif
 
+#ensure that 64 bit binaries are made on AIX
+ifeq ($(CHPL_MAKE_PLATFORM), aix)
+GEN_CFLAGS += -maix64
+RUNTIME_CFLAGS += -maix64
+RUNTIME_GEN_CFLAGS += -maix64
+GEN_CFLAGS += -maix64
+COMP_GEN_LFLAGS += -maix64
+endif
+
 #
 # a hacky flag necessary currently due to our use of setenv in the runtime code
 #
