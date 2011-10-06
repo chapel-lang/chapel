@@ -54,3 +54,9 @@ programs/
   prodCons       : synchronization variables; task parallelism using cobegin
   quicksort      : bounded task parallelism using cobegin and serial
   tree           : unbounded task parallelism using cobegin
+
+ssca2/
+ssca2/SSCA2_Modules/
+                : graph algorithms, generic programming, distributed
+                  data structures, replicated distribution
+

@@ -16,26 +16,6 @@ module SSCA2_kernels
 //  |  evaluated at compile time.  Dead code is eliminated by the compiler.    |
 //  +==========================================================================+
 
-//  +==========================================================================+
-//  |  Parallelism note -- March 2010                                          |
-//  |                                                                          |
-//  |  A common motif in all three kernels is a pair of loops of the form      |
-//  |      forall vertices in some_set do                                      |
-//  |         forall neighbors of each vertex do ....                          |
-//  |  Even when this appears inside an enclosing embarrassingly parallel      |
-//  |  outer loop, it will be important to parallelize this pair of loops.     |
-//  |  In the most important cases, the size of the set of vertices varies     |
-//  |  considerably during the execution of the kernel and there can be wide   |
-//  |  variation in the number of neighbors.  So parallelization should        |
-//  |  consider both loops together.                                           |
-//  |                                                                          |
-//  |  That said, currently Chapel cannot parallelize the innermost loops,     |
-//  |  even when the innermost loop is a reduction.  Some or all of the        |
-//  |  iterators that appear in this inner loop do not have parallel forms     |
-//  |  at present; they use sparse or associative domains.  So the inner loops |
-//  |  all appear in this code as "for" rather than "forall".  They are all    |
-//  |  parallelizable and should become parallel loops eventually.             |
-//  +==========================================================================+
 { 
   use SSCA2_compilation_config_params, Time;
 
