@@ -77,11 +77,7 @@ system("cd $tmpdir && svn export -q $svnroot $reldir");
     "make",
     "modules",
     "runtime",
-    "third-party/dlmalloc",
-    "third-party/gasnet",
-    "third-party/gmp",
-    "third-party/nanox",
-    "third-party/qthread",
+    "third-party",
     "util/chplenv",
     "util/test"
 );
