@@ -487,6 +487,7 @@ proc GlobalDomain.dsiBuildRectangularDom(param rank: int,
   domain is known (it is defined by the 'ranges' argument). For example,
   it is invoked upon domain slicing and when applying domain operations
   such as expand, exterior, interior, translate.
+  The GlobalDistribution of the result is the same as that of 'this'.
 
   This method returns a new instance of GlobalDomain(rank, idxType, stridable)
   that will be the runtime representation of a Chapel domain whose index set
