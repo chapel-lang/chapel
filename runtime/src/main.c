@@ -14,7 +14,7 @@
 #include <stdint.h>
 #include <string.h>
 
-const char myFilename[] = 
+static const char myFilename[] = 
 #ifdef CHPL_DEVELOPER
   __FILE__;
 #else
@@ -118,19 +118,19 @@ int main(int argc, char* argv[]) {
   recordExecutionCommand(argc, argv);
 
   chpl_comm_barrier("barrier before main");
+  // The call to chpl_comm_barrier makes sure that all locales are listening
+  // before an attempt is made to run tasks "on" them.
 
   if (chpl_localeID == 0) {      // have locale #0 run the user's main function
 
-    // These initialization calls are needed early so entries can be added to the taskTable
-    // in chpl_task_callMain().  But it appears here to make it task-layer-independent.
-    // Ideally, module initialization code should not be called before we reach chpl_main. <hilde>
+    // OK, we can create tasks now.
+    chpl_task_setSerial(false);
+
+    // Initialize the internal modules.
+    chpl__init_chpl__Program(0, myFilename);
     // Note that in general, module code can contain "on" clauses
-    // and should therefore not be called before the call to chpl_comm_startPollingTask().
-    // The call to chpl_comm_barrier makes sure that all locales are listening before an attempt
-    // is made to run tasks "on" them.
-    chpl__init_DefaultRectangular(0, myFilename);
-    chpl__init_ChapelNumLocales(0, myFilename); // Need numLocales for chpldev_taskTable_init().
-    chpl__init_ChapelTaskTable(0, myFilename);
+    // and should therefore not be called before the call to
+    // chpl_comm_startPollingTask().
 
     chpl_task_callMain(chpl_main);
   }

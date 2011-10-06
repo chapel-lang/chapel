@@ -8,14 +8,14 @@ use ChapelIO;
 use ChapelTuple;
 use ChapelRange;
 use ChapelReduce;
-use ChapelTaskTable;
 use ChapelArray;
 use ChapelDistribution;
 use ChapelLocale;
-use DefaultRectangular;
+use DefaultRectangular; // Must precede ChapelTaskTable.
 use DefaultAssociative;
 use DefaultSparse;
 use DefaultOpaque;
+use ChapelTaskTable;
 use ChapelUtil;
 
 // Standard modules.

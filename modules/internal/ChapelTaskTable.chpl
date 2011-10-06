@@ -59,6 +59,18 @@ chpldev_taskTable_init();
 //-
 //----------------------------------------------------------------------}
 
+
+////////////////////////////////////////////////////////////////////////{
+//
+// Exported task table code.
+//
+// In general, tasks may have been created before the task table was initialized.
+// In that case, operations may be attempted on the task table using
+// taskIDs that are unknown to it.  That is why we check
+// for membership on all operations.
+//
+////////////////////////////////////////////////////////////////////////}
+
 export proc chpldev_taskTable_add(taskID   : chpl_taskID_t,
                                   lineno   : uint(32),
                                   filename : string,
@@ -77,31 +89,34 @@ export proc chpldev_taskTable_add(taskID   : chpl_taskID_t,
 
 export proc chpldev_taskTable_remove(taskID : chpl_taskID_t)
 {
-  if (chpldev_taskTable == nil) then return;
+  if (chpldev_taskTable == nil ||
+      !chpldev_taskTable.dom.member(taskID)) then return;
 
-  if (chpldev_taskTable.dom.member(taskID)) then
-    // This must also be serial
-    serial true do
-      chpldev_taskTable.dom.remove(taskID);
+  // This must also be serial
+  serial true do
+    chpldev_taskTable.dom.remove(taskID);
 }
 
 export proc chpldev_taskTable_set_active(taskID : chpl_taskID_t)
 {
-  if (chpldev_taskTable == nil) then return;
+  if (chpldev_taskTable == nil ||
+      !chpldev_taskTable.dom.member(taskID)) then return;
 
   chpldev_taskTable.map[taskID].state = taskState.active;
 }
 
 export proc chpldev_taskTable_set_suspended(taskID : chpl_taskID_t)
 {
-  if (chpldev_taskTable == nil) then return;
+  if (chpldev_taskTable == nil ||
+      !chpldev_taskTable.dom.member(taskID)) then return;
 
   chpldev_taskTable.map[taskID].state = taskState.suspended;
 }
 
 export proc chpldev_taskTable_get_tl_info(taskID : chpl_taskID_t)
 {
-  if (chpldev_taskTable == nil) then return 0:uint(64);
+  if (chpldev_taskTable == nil ||
+      !chpldev_taskTable.dom.member(taskID)) then return 0:uint(64);
 
   return chpldev_taskTable.map[taskID].tl_info;
 }
