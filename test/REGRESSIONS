@@ -19,6 +19,10 @@ incorrectly retired future (06/25/11)
 -------------------------------------
 [Error matching program output for distributions/vass/dmap-var-decl]
 
+timeouts
+--------
+[Error: Timed out executing program release/examples/ssca2/SSCA2_main]
+
 
 ========================================================================
 general nondeterministic regressions (could happen in any configuration)
@@ -113,6 +117,12 @@ internal valgrind stuff 'the impossible has happened'
 no-local regressions
 ===================
 
+never worked with --no-local (10/04/11)
+---------------------------------------
+[Error matching program output for distributions/robust/arithmetic/optimizations/optimizeOnClauses_basic]
+[Error matching program output for distributions/robust/arithmetic/optimizations/optimizeOnClauses_basic_record]
+[Error matching program output for distributions/robust/arithmetic/optimizations/optimizeOnClauses_basic_tuple]
+
 warning about serialized assignment (06/14/11)
 ----------------------------------------------
 [Error matching program output for domains/sungeun/assoc/minus_equals (--cc-warnings --no-local -sparSafe=true) (1-0)]
@@ -168,15 +178,10 @@ nondet. execution timeout
 [Error: Timed out executing program multilocale/diten/needMultiLocales/coforallon_maxThreads] (06/25/11, 09/19/11)
 [Error: Timed out executing program studies/sudoku/dinan/sudoku] (06/19/11, 10/02/11)
 [Error: Timed out executing program studies/hpcc/HPL/bradc/hpl-blc-noreindex] (04/11/11, 04/15/11, 04/22/11, 04/29/11, 05/03/11, 05/08/11)
-[Error: Timed out executing program studies/madness/aniruddha/madchap/test_likepy] (04/22/11, 05/06/11, 05/19/11, 09/13/11, 09/24/11)
+[Error: Timed out executing program studies/madness/aniruddha/madchap/test_likepy] (04/22/11, 05/06/11, 05/19/11, 09/13/11, 09/24/11, 10/05/11)
 [Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct] (05/23/11, 05/25/11, 06/06/11, 06/08/11, 08/24/11, 09/15/11, 09/20/11)
 [Error: Timed out executing program studies/madness/aniruddha/madchap/test_gaxpy] (06/02/11)
 [Error: Timed out executing program studies/madness/aniruddha/madchap/test_diff] (09/03/11, 09/05/11)
-
-too many warnings/different warning format?
--------------------------------------------
-[Error matching program output for multilocale/gasnet/bradc/257threads]
-[Error matching program output for parallel/taskPool/figueroa/ManyThreads]
 
 execution timeouts
 ------------------
@@ -209,10 +214,6 @@ nondet. execution timeout
 ==============================
 block distribution regressions
 ==============================
-
-seg fault (10/04/11)
---------------------
-[Error: Timed out executing program distributions/robust/arithmetic/modules/test_module_Sort]
 
 execution timeouts (09/30/11)
 -----------------------------
@@ -539,7 +540,7 @@ warning: full/empty bit modified on less than word-sized data (05/24/11)
 
 nondet. compilation timeout
 ---------------------------
-[Error: Timed out compilation for release/examples/primers/arrays] (05/27/11, 05/31/11, 08/21/11, 08/26/11, 09/01/11, 09/10/11, 09/15/11, 09/19/11, 09/28/11, 10/01/11)
+[Error: Timed out compilation for release/examples/primers/arrays] (05/27/11, 05/31/11, 08/21/11, 08/26/11, 09/01/11, 09/10/11, 09/15/11, 09/19/11, 09/28/11, 10/01/11, 10/06/11)
 
 array index out of bounds due to bug in XMT compiler
 ----------------------------------------------------
@@ -573,7 +574,7 @@ nondet. incorrect output
 
 nondet. execution timeouts (ever since switching to 4 shepherds)
 --------------------------------------------------------
-[Error: Timed out executing program release/examples/primers/taskParallel] (06/24/11, 07/03/11, 07/16/11, 08/20/11, 09/13/11, 09/19/11, 09/20/11, 09/22/11)
+[Error: Timed out executing program release/examples/primers/taskParallel] (06/24/11, 07/03/11, 07/16/11, 08/20/11, 09/13/11, 09/19/11, 09/20/11, 09/22/11, 10/06/11)
 [Error: Timed out executing program release/examples/spec/Task_Parallelism_and_Synchronization/serialStmt2] (07/03/11, 09/10/11, 09/13/11, 09/17/11, 09/23/11, 09/26/11)
 
 
