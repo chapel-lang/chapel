@@ -20,10 +20,10 @@ Recommended Settings
    For example:
 
         (if your shell is tcsh - assumed in all examples:)
-        setenv CHPL_HOME ~/chapel-1.3.0/chapel
+        setenv CHPL_HOME ~/chapel-1.4.0/chapel
 
         (if your shell is bash:)
-        export CHPL_HOME=~/chapel-1.3.0/chapel
+        export CHPL_HOME=~/chapel-1.4.0/chapel
 
         (use appropriate commands for other shells)
 
