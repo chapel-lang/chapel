@@ -1,0 +1,9 @@
+======================================
+Chapel SSCA #2 Benchmark (version 2.2)
+======================================
+
+This directory contains the Chapel version of the Scalable Synthetic
+Compact Applications #2 benchmark (version 2.2).  More information on
+the benchmark as well as the benchmark specification can be found at
+http://www.graphanalysis.org/benchmark/.
+
