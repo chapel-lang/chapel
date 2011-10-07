@@ -64,10 +64,10 @@ outfile=$2
 sort $outfile > $outfile.2
 mv $outfile.2 $outfile
 \end{chapelprediff}
-\begin{chapelprintoutput}
+\begin{chapeloutput}
 output from main task
 output from spawned task
-\end{chapelprintoutput}
+\end{chapeloutput}
 executes two \chpl{writeln} statements that output the strings to the
 terminal, but the ordering is purposely unspecified.  There is no
 guarantee as to which statement will execute first.  When the
@@ -119,24 +119,39 @@ sync-type:
 If a sync variable declaration has an initialization expression, then
 the variable is initially full, otherwise it is initially empty.
 
-\begin{chapelexample}{beginOrdered.chpl}
+\begin{chapelexample}{beginWithSyncVar.chpl}
 The code
 \begin{chapel}
-var finishedMainOutput$\mbox{{\bf \$}}$: sync bool;
-begin {
-  finishedMainOutput$\mbox{{\bf \$}}$;
-  writeln("output from spawned task");
+class Tree {
+  var isLeaf: bool;
+  var left, right: Tree;
+  var value: int;
+
+  proc sum():int {
+    if (isLeaf) then 
+       return value;
+
+    var x$\mbox{{\bf \$}}$: sync int;
+    begin x$\mbox{{\bf \$}}$ = left.sum();
+    var y = right.sum();
+    return x$\mbox{{\bf \$}}$+y;
+  }
 }
-writeln("output from main task");
-finishedMainOutput$\mbox{{\bf \$}}$ = true;
 \end{chapel}
-\begin{chapelprintoutput}
-output from main task
-output from spawned task
-\end{chapelprintoutput}
-modifies the example in~\rsec{Begin}.  When the read of the sync
-variable is encountered in the spawned task, the task waits until the
-sync variable is assigned in the main task.
+\begin{chapelpost}
+var tree: Tree = new Tree(false, new Tree(false, new Tree(true, nil, nil, 1),
+                                                 new Tree(true, nil, nil, 1), 1),
+                                 new Tree(false, new Tree(true, nil, nil, 1),
+                                                 new Tree(true, nil, nil, 1), 1), 1);
+writeln(tree.sum());
+\end{chapelpost}
+\begin{chapeloutput}
+4
+\end{chapeloutput}
+the sync variable \chpl{x$\mbox{{\bf \$}}$} is assigned by an
+asynchronous task created with the begin statement.  The task
+returning the sum waits on the reading of \chpl{x$\mbox{{\bf \$}}$}
+until it has been assigned.
 \end{chapelexample}
 
 \begin{chapelexample}{syncCounter.chpl}
@@ -146,17 +161,17 @@ during an update so the full-empty semantics make these updates atomic
 when used in a stylized way.  The code
 \begin{chapel}
 var count$\mbox{{\bf \$}}$: sync int = 0;
-begin count$\mbox{{\bf \$}}$ += 1;
-begin count$\mbox{{\bf \$}}$ += 1;
-begin count$\mbox{{\bf \$}}$ += 1;
+begin count$\mbox{{\bf \$}}$ = count$\mbox{{\bf \$}}$ + 1;
+begin count$\mbox{{\bf \$}}$ = count$\mbox{{\bf \$}}$ + 1;
+begin count$\mbox{{\bf \$}}$ = count$\mbox{{\bf \$}}$ + 1;
 \end{chapel}
 \begin{chapelpost}
 while count$\mbox{{\bf \$}}$.readFF() != 3 do ;
 writeln("count is: ", count$\mbox{{\bf \$}}$);
 \end{chapelpost}
-\begin{chapelprintoutput}
+\begin{chapeloutput}
 count is: 3
-\end{chapelprintoutput}
+\end{chapeloutput}
 spawns three tasks to increment \chpl{count$\mbox{{\bf \$}}$}.
 If \chpl{count$\mbox{{\bf \$}}$} was not a sync variable, this code
 would be unsafe because between the points at which one task
@@ -201,38 +216,43 @@ single-type:
 \end{syntax}
 
 \begin{chapelexample}{singleVar.chpl}
-In the code
+The following code implements a simple split-phase barrier using a
+single variable.
+\begin{chapelpre}
+config const n = 44;
+proc work(i) {
+  // do nothing
+}
+\end{chapelpre}
 \begin{chapel}
-class Tree {
-  var isLeaf: bool;
-  var left, right: Tree;
-  var value: int;
+var count$\mbox{{\bf \$}}$: sync int = n;  // counter which also serves as a lock
+var release$\mbox{{\bf \$}}$: single bool; // barrier release
 
-  proc sum():int {
-    if (isLeaf) then 
-       return value;
-
-    var x$\mbox{{\bf \$}}$: single int;
-    begin x$\mbox{{\bf \$}}$ = left.sum();
-    var y = right.sum();
-    return x$\mbox{{\bf \$}}$+y;
+forall t in 1..n do begin {
+  work(t);
+  var myc = count$\mbox{{\bf \$}}$;  // read the count, set state to empty
+  if myc!=1 {         // still waiting for others
+    write(".");
+    count$\mbox{{\bf \$}}$ = myc-1;  // update the count, set state to full
+    // we could also do some work here
+    release$\mbox{{\bf \$}}$;         // wait for everyone
+  } else {            // last one here
+    release$\mbox{{\bf \$}}$ = true;  // release everyone first
+    writeln("done");
   }
 }
 \end{chapel}
-\begin{chapelpost}
-var tree: Tree = new Tree(false, new Tree(false, new Tree(true, nil, nil, 1),
-                                                 new Tree(true, nil, nil, 1), 1),
-                                 new Tree(false, new Tree(true, nil, nil, 1),
-                                                 new Tree(true, nil, nil, 1), 1), 1);
-writeln(tree.sum());
-\end{chapelpost}
 \begin{chapeloutput}
-4
+...........................................done
 \end{chapeloutput}
-the single variable \chpl{x$\mbox{{\bf \$}}$} is assigned by an
-asynchronous task created with the begin statement.  The task
-returning the sum waits on the reading of \chpl{x$\mbox{{\bf \$}}$}
-until it has been assigned.
+In each iteration of the for loop, a new task is created do to some
+work.  After each task has completed its work it, reads the
+count$\mbox{{\bf \$}}$ variable, which is used to tally the number of
+tasks that have arrived.  All tasks except the last task to arrive
+will block while trying to read the variable
+release$\mbox{{\bf \$}}$.  The last task to arrive will write to
+release$\mbox{{\bf \$}}$, setting its state to full at which time all
+the other tasks can be unblocked and run.
 \end{chapelexample}
 
 \subsection{Predefined Single and Sync Methods}
@@ -532,44 +552,25 @@ sync statements in parallel iterators~\rsec{Parallel_Iterators}.
 
 \begin{chapelexample}{syncStmt1.chpl}
 The sync statement can be used to wait for many dynamically spawned
-tasks.  Given the \chpl{Tree} class defined in the example
-in~\rsec{Single_Variables} and an instance of this class
-called \chpl{tree}, the code
+tasks.
 \begin{chapelpre}
-use singleVar;
-proc requiresUpdate(tree: Tree) {
-  return tree.value == 1;
-}
-proc update(tree: Tree) {
-  tree.value = 2;
+config const n = 9;
+proc work(i) {
+  write(".");
 }
 \end{chapelpre}
 \begin{chapel}
-proc concurrentUpdate(tree: Tree) {
-  if requiresUpdate(tree) then
-    begin update(tree);
-  if !tree.isLeaf {
-    concurrentUpdate(tree.left);
-    concurrentUpdate(tree.right);
-  }
-}
-
-sync concurrentUpdate(tree);
+sync for i in 1..n do begin work(i);
 \end{chapel}
 \begin{chapelpost}
-writeln(tree.sum());
+writeln("done");
 \end{chapelpost}
 \begin{chapeloutput}
-4
-8
+.........done
 \end{chapeloutput}
-defines a function \chpl{concurrentUpdate} that recursively walks over
-a tree and spawns a new task to update a node if the
-function \chpl{requiresUpdate} evaluates to true.
-(Both \chpl{requiresUpdate} and \chpl{update} are omitted as
-irrelevant.)  The call to \chpl{concurrentUpdate} is made within
-a \chpl{sync} statement to ensure that each of the spawned update
-tasks finishes before execution continues.
+The for loop is within a sync statement and thus the tasks created
+in each iteration of the loop must complete before the continuing past
+the syns statment.
 \end{chapelexample}
 
 \begin{chapelexample}{syncStmt2.chpl}
@@ -617,38 +618,32 @@ executed without spawning any new tasks.  In effect, execution is
 serialized.
 
 \begin{chapelexample}{serialStmt1.chpl}
-Given the \chpl{Tree} class defined in the example
-in~\rsec{Single_Variables} and an instance of this class
-called \chpl{tree}, the code
+In the code
 \begin{chapelpre}
-use singleVar;
-proc requiresUpdate(tree: Tree) {
-  return tree.value == 1;
-}
-proc update(tree: Tree) {
-  tree.value = 2;
+config const lo = 9;
+config const hi = 23;
+proc work(i) {
+  if \_\_primitive("task\_get\_serial") then
+    writeln("serial ", i);
 }
 \end{chapelpre}
 \begin{chapel}
-proc concurrentUpdate(tree: Tree, depth: int = 1) {
-  if requiresUpdate(tree) then
-    update(tree);
-  if !tree.isLeaf {
-    serial depth > 4 do cobegin {
-      concurrentUpdate(tree.left, depth+1);
-      concurrentUpdate(tree.right, depth+1);
-    }
+for i in lo..hi {
+  serial i<10 {
+    cobegin {
+     work(i);
+     work(i);
+   }
   }
 }
 \end{chapel}
 \begin{chapelpost}
-concurrentUpdate(tree);
-writeln(tree.sum());
 \end{chapelpost}
 \begin{chapeloutput}
-4
-8
+serial 9
+serial 9
 \end{chapeloutput}
+
 defines a function \chpl{concurrentUpdate} that recursively walks over
 a tree using cobegin statements to update the left and right subtrees
 in parallel.  The serial statement inhibits concurrent execution on
