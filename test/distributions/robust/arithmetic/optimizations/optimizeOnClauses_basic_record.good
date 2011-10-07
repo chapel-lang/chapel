@@ -1,0 +1,6 @@
+Optimized on clause (wrapon_fn) in module optimizeOnClauses_basic_record (optimizeOnClauses_basic_record.chpl:13)
+(r = 100)
+(r = 20)
+(r = 5)
+(r = 3)
+(r = 8)

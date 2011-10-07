@@ -5,7 +5,7 @@ iter leadfollow() {
     yield i;
 }
 
-iter leadfollow(param tag: iterator) where tag == iterator.leader {
+iter leadfollow(param tag: iterKind) where tag == iterKind.leader {
   coforall loc in Locales {
     on loc {
       coforall taskid in 0..#numTasks {
@@ -16,8 +16,8 @@ iter leadfollow(param tag: iterator) where tag == iterator.leader {
   }
 }
 
-iter leadfollow(param tag: iterator, follower) where tag == iterator.follower {
-  yield follower;
+iter leadfollow(param tag: iterKind, followThis) where tag == iterKind.follower {
+  yield followThis;
 }
 
 

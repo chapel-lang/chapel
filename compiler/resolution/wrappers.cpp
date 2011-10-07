@@ -571,7 +571,7 @@ buildPromotionWrapper(FnSymbol* fn,
       }
       ArgSymbol* fifnTag = new ArgSymbol(INTENT_PARAM, "tag", gFollowerTag->type);
       fifn->insertFormalAtTail(fifnTag);
-      ArgSymbol* fifnFollower = new ArgSymbol(INTENT_BLANK, "follower", dtAny);
+      ArgSymbol* fifnFollower = new ArgSymbol(INTENT_BLANK, iterFollowthisArgname, dtAny);
       fifn->insertFormalAtTail(fifnFollower);
       fifn->where = new BlockStmt(new CallExpr("==", fifnTag, gFollowerTag));
       VarSymbol* followerIterator = newTemp("_followerIterator");

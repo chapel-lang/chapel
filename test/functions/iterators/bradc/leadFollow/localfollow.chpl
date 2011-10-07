@@ -4,15 +4,15 @@ class C {
       yield i: real;
   }
 
-  iter these(param tag: iterator) where tag == iterator.leader {
+  iter these(param tag: iterKind) where tag == iterKind.leader {
     yield [1..3];
     yield [4..7];
     yield [8..10];
   }
 
-  iter these(param tag: iterator, follower) where tag == iterator.follower {
+  iter these(param tag: iterKind, followThis) where tag == iterKind.follower {
     local {
-      for i in follower do
+      for i in followThis do
         yield i: real;
     }
   }

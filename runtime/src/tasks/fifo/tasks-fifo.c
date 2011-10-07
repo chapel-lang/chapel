@@ -107,6 +107,9 @@ static lockReport_t* lockReportTail = NULL;
 
 static chpl_string idleTaskName = "|idle|";
 
+static chpl_fn_p comm_task_fn;
+
+static void                    comm_task_wrapper(void*);
 static chpl_taskID_t           get_next_task_id(void);
 static thread_private_data_t*  get_thread_private_data(void);
 static task_pool_p             get_current_ptask(void);
@@ -338,7 +341,36 @@ void chpl_task_callMain(void (*chpl_main)(void)) {
 
 
 int chpl_task_createCommTask(chpl_fn_p fn, void* arg) {
-  return chpl_thread_createCommThread(fn, arg);
+  comm_task_fn = fn;
+  return chpl_thread_createCommThread(comm_task_wrapper, arg);
+}
+
+
+static void comm_task_wrapper(void* arg) {
+  thread_private_data_t* tp;
+
+  tp = (thread_private_data_t*) chpl_mem_alloc(sizeof(thread_private_data_t),
+                                               CHPL_RT_MD_THREAD_PRIVATE_DATA,
+                                               0, 0);
+
+  tp->ptask = (task_pool_p) chpl_mem_alloc(sizeof(task_pool_t),
+                                           CHPL_RT_MD_TASK_POOL_DESCRIPTOR,
+                                           0, 0);
+  tp->ptask->id           = get_next_task_id();
+  tp->ptask->fun          = comm_task_fn;
+  tp->ptask->arg          = arg;
+  tp->ptask->serial_state = true;
+  tp->ptask->ltask        = NULL;
+  tp->ptask->begun        = true;
+  tp->ptask->filename     = "communication task";
+  tp->ptask->lineno       = 0;
+  tp->ptask->next         = NULL;
+
+  tp->lockRprt = NULL;
+
+  chpl_thread_setPrivateData(tp);
+
+  (*comm_task_fn)(arg);
 }
 
 

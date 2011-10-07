@@ -16,12 +16,12 @@ config const myLow = 4, myHigh = 12; // iterator arguments (config for testing)
 // only to capture the range that the leader identifies that we should
 // iterate over.
 //
-iter singleLocaleIterator(low: int, high: int, param leader: bool, follower) {
+iter singleLocaleIterator(low: int, high: int, param leader: bool, followThis) {
   if leader {
     for i in 1..parallelFactor do
       yield 1+(high-low+1)*(i-1)/parallelFactor..(high-low+1)*i/parallelFactor;
   } else {
-    for i in follower do
+    for i in followThis do
       yield low+i-1;
   }
 }
@@ -57,7 +57,7 @@ coforall block in singleLocaleIterator(myLow, myHigh, true, 0) {
 //
 // More notes:
 //
-// I've made 'leader' and 'follower' explicit arguments, but we can
+// I've made 'leader' and 'followThis' explicit arguments, but we can
 // make them implicit too.  Then we only need a way to distinguish
 // between parallel iterators that use the leader-follower mechanism
 // and serial iterators that do not.  One way to do this would be to

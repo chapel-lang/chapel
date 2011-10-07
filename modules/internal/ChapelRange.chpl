@@ -159,17 +159,14 @@ proc range.hasHighBound() param
          boundedType == BoundedRangeType.boundedHigh;
 
 // If the represented sequence is defined, reports whether it is empty.
-// If it is not defined but one or both bounds is infinity, returns false.
-// Otherwise the behavior is undefined.
+// Otherwise an error is reported.
 inline
-proc range.isEmpty()       where isBoundedRange(this) {
+proc range.isEmpty() {
   if isAmbiguous() then
     halt("isEmpty() is invoked on an ambiguously-aligned range");
   else
-    return this.alignedLow > this.alignedHigh;
+    return isBoundedRange(this) && this.alignedLow > this.alignedHigh;
 }
-proc range.isEmpty() param where !isBoundedRange(this)
-  return false;
 
 proc range.hasFirst() param where !stridable && !hasHighBound()
   return hasLowBound();
@@ -479,12 +476,18 @@ pragma "inline"
 proc align(r : range(?e, ?b, ?s), algn)
   return new range(e, b, s, chpl__align(r._base, algn), true);
 
-// Apply a natural alignment to an existing range.
-proc range.offset(offs : integral)
+// Set the alignment as an offset off the first element of the sequence.
+proc range.offset(offs : idxType)
 {
-  _base.offset(offs);
-  this._aligned = true;
-  return this;
+  if !stridable then
+    compilerWarning("invoking 'offset' on an unstrided range has no effect."); 
+
+  if !hasFirst() then
+    halt("invoking 'offset' on a range without the first index");
+
+  return new range(idxType, boundedType, stridable, low, high, stride,
+                   // here's the new alignment
+                   first + offs, true);
 }
 
 // Composition
@@ -554,18 +557,18 @@ iter range.these()
   for i in _base.these() do yield i;
 }
 
-iter range.these(param tag: iterator) where tag == iterator.leader
+iter range.these(param tag: iterKind) where tag == iterKind.leader
 {
   if this.isAmbiguous() then
     __primitive("chpl_error", "these -- Attempt to iterate over a range with ambiguous alignment.");
-  for i in _base.these(iterator.leader) do yield i;
+  for i in _base.these(iterKind.leader) do yield i;
 }
 
-iter range.these(param tag: iterator, follower) where tag == iterator.follower
+iter range.these(param tag: iterKind, followThis) where tag == iterKind.follower
 {
   if this.isAmbiguous() then
     __primitive("chpl_error", "these -- Attempt to iterate over a range with ambiguous alignment.");
-  for i in _base.these(iterator.follower, follower) do yield i;
+  for i in _base.these(iterKind.follower, followThis) do yield i;
 }
 
 

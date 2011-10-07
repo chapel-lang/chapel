@@ -2,11 +2,17 @@
 Qthreads README for Chapel
 ==========================
 
-Local modifications:
+This copy of Qthreads is being released with Chapel for convenience
+and uses a snapshot of obtained from the Qthreads team at:
 
-* Added chpl_task_createCommTask() in place of
-  chpl_task_perPthreadInit() to reflect interface change on Chapel's
-  part.
+  https://code.google.com/p/qthreads/downloads/list
 
-* Changed the default callStackSize to 32k * sizeof(size_t) since most
-  Chapel tasks are longer-lived than qthreads' default.
+Any Chapel issues that seem to be related to Qthreads should be
+directed to the Chapel team at chapel-bugs@lists.sourceforge.net.
+
+The local modifications that we have made to the official Qthreads 1.7
+release are as follows:
+
+* modified the implementation of the serial state to support calls to
+  get/setSerial prior to initialization.  This corresponds to commit
+  r2444 to the Qthreads tree (made after the 1.7 release).

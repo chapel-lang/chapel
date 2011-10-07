@@ -1,0 +1,7 @@
+bug: Seg fault for simple case of inheritance.
+
+This test declares a class A with a param x and another class B that
+is a subclass of A.  B has a function foo() that declares a variable
+y that is initialized to x.
+
+This test seg faults during the prune pass in getDataClassType.

@@ -206,7 +206,7 @@ on Locales(LocaleSpace.high) do
   writeln("on ", here, ": ", RA(Space.low));
 writeln();
 
-// ...or an individual element is written...
+// ...or an individual element is written;
 on Locales(LocaleSpace.high) do
   RA(Space.low) = 7777;
 
@@ -224,6 +224,9 @@ writeln(A);
 writeln();
 
 //
-// (c) does not appear first in a zippered forall loop:
-//       forall (a, ra) in (A, RA) do ...;
+// (c) ...or, generally, the replicated array or domain participates
+//     in a zippered forall loop, but not in the first position.
+//     The loop could look like:
+//
+//       forall (a, (i,j), ra) in (A, ReplicatedSpace, RA) do ...;
 //

@@ -8,13 +8,13 @@ iter foo() {
       yield j;
 }
 
-iter foo(param tag: iterator) where tag == iterator.leader {
+iter foo(param tag: iterKind) where tag == iterKind.leader {
   for i in 1..3 do
     yield A(i);
 }
 
-iter foo(param tag: iterator, follower) where tag == iterator.follower {
-  for j in follower do
+iter foo(param tag: iterKind, followThis) where tag == iterKind.follower {
+  for j in followThis do
     yield j;
 }
 

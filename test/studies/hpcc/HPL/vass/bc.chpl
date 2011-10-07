@@ -165,12 +165,12 @@ vwln("  replB", replB.domain, " = Ab", BD, "  ", [BD.dim(1), 1..n+1]);
     // This might be an implementation bug, as 'Rest' supports privatization.
     const RestLcl = Rest;
 
-    //not yet: local {
+    local {
       for a in (RestLcl.dim(1))(row..#blkSize) do
         for w in 1..blkSize do
           for b in (RestLcl.dim(2))(col..#blkSize) do
             Ab[a,b] -= replA[a,w] * replB[w,b];
-    //}
+    }
   }
 }
 

@@ -45,10 +45,10 @@ The following environments are available for use in the spec:
   section.   
 
 - openissue
-  Unresolved issues can be noted in the openissue environment.
+    Issues that we do not know how to handle.
 
 - future
-  Architectural suggestions or notes on language features which are not yet
+    Issues or features that we have a story about, but which are not yet
   fully-designed or have not yet been implemented. 
 
 

@@ -3,7 +3,7 @@ iter foo(n: int) {
     yield i;
 }
 
-iter foo(n: int, param tag: iterator) where tag == iterator.leader {
+iter foo(n: int, param tag: iterKind) where tag == iterKind.leader {
   writeln("running leader iterator");
   cobegin {
     yield 0..n/2-1;
@@ -11,8 +11,8 @@ iter foo(n: int, param tag: iterator) where tag == iterator.leader {
   }
 }
 
-iter foo(n: int, follower, param tag: iterator) where tag == iterator.follower{
-  for i in follower+1 do
+iter foo(n: int, followThis, param tag: iterKind) where tag == iterKind.follower{
+  for i in followThis+1 do
     yield i;
 }
 

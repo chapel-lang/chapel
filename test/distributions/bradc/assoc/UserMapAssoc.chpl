@@ -285,7 +285,7 @@ class UserMapAssocDom: BaseAssociativeDom {
   // clause interact with a loop that used an on clause explicitly
   // within its body?  How would it be done efficiently?
   //
-  iter these(param tag: iterator) where tag == iterator.leader {
+  iter these(param tag: iterKind) where tag == iterKind.leader {
     //
     // TODO: This currently only results in a single level of
     // per-locale parallelism -- no per-core parallelism; maybe
@@ -316,7 +316,7 @@ class UserMapAssocDom: BaseAssociativeDom {
       }
   }
 
-  iter these(param tag: iterator, follower) where tag == iterator.follower {
+  iter these(param tag: iterKind, followThis) where tag == iterKind.follower {
     //
     // TODO: Abstract this addition of low into a function?
     // Note relationship between this operation and the
@@ -329,7 +329,7 @@ class UserMapAssocDom: BaseAssociativeDom {
     // natural composition and might help with my fears about how
     // stencil communication will be done on a per-locale basis.
 
-    for i in follower {
+    for i in followThis {
       yield i;
     }
   }
@@ -475,12 +475,12 @@ class LocUserMapAssocDom {
   // this is the parallel iterator for the local domain, see global
   // domain parallel iterators for general notes on the approach
   //
-  iter these(param tag: iterator) where tag == iterator.leader {
+  iter these(param tag: iterKind) where tag == iterKind.leader {
     halt("This is bogus");
     yield [1..100];
   }
 
-  iter these(param tag: iterator, follower) where tag == iterator.follower {
+  iter these(param tag: iterKind, followThis) where tag == iterKind.follower {
     halt("This is bogus");
     yield 2;
   }
@@ -597,7 +597,7 @@ class UserMapAssocArr: BaseArr {
   // this is the parallel iterator for the global array, see the
   // example for general notes on the approach
   //
-  iter these(param tag: iterator) where tag == iterator.leader {
+  iter these(param tag: iterKind) where tag == iterKind.leader {
     //
     // TODO: Rewrite this to reuse more of the global domain iterator
     // logic?  (e.g., can we forward the forall to the global domain
@@ -611,10 +611,11 @@ class UserMapAssocArr: BaseArr {
 
   proc supportsAlignedFollower() param return true;
 
-  iter these(param tag: iterator, follower, param aligned: bool = false) var where tag == iterator.follower {
+  iter these(param tag: iterKind, followThis, param aligned: bool = false) var where tag == iterKind.follower {
     //
-    // TODO: Would like to write this as follower += dom.low;
+    // TODO: Would like to write this as followThis += dom.low;
     //
+    const myFollowThis = followThis;
 
     //
     // TODO: The following is a buggy hack that will only work when we're
@@ -624,7 +625,7 @@ class UserMapAssocArr: BaseArr {
     const myLocArr = locArrs(here.id);
     if aligned {
       local {
-        for i in follower {
+        for i in myFollowThis {
           yield myLocArr.this(i);
         }
       }
@@ -641,7 +642,7 @@ class UserMapAssocArr: BaseArr {
         }
         return this(i);
       }
-      for i in follower {
+      for i in myFollowThis {
         yield accessHelper(i);
       }
     }
@@ -655,7 +656,7 @@ class UserMapAssocArr: BaseArr {
     // locArrs/locDoms arrays should be associative over locale values.
     //
     const myLocArr = locArrs(here.id);
-    if (myLocArr.owns(followThis)) {
+    if (myLocArr.owns(myFollowThis)) {
       // we own all the elements we're following
       //
 
@@ -664,7 +665,7 @@ class UserMapAssocArr: BaseArr {
       // follower iterators:
       //
       //      local {
-        for i in followThis {
+        for i in myFollowThis {
           yield myLocArr.this(i);
         }
         //      }
@@ -676,7 +677,7 @@ class UserMapAssocArr: BaseArr {
       //
       // TODO: could do something smarter to only bring the non-local
       // elements over.
-      for i in followThis {
+      for i in myFollowThis {
         yield this(i);
       }
     }
@@ -768,12 +769,12 @@ class LocUserMapAssocArr {
   // this is the parallel iterator for the local array, see global
   // domain parallel iterators for general notes on the approach
   //
-  iter these(param tag: iterator) where tag == iterator.leader {
+  iter these(param tag: iterKind) where tag == iterKind.leader {
     halt("This is bogus");
     yield [1..100];
   }
 
-  iter these(param tag: iterator, follower) var where tag == iterator.follower {
+  iter these(param tag: iterKind, followThis) var where tag == iterKind.follower {
     yield myElems(0);
   }
 

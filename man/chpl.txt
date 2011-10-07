@@ -259,6 +259,14 @@ OPTIONS
   -o, --output <filename>   Specify the name of the compiler-generated
                      executable (defaults to a.out if unspecified).
 
+  --dynamic  Use dynamic linking when generating the final binary.  If 
+             neither --dynamic or --static are specified, use the
+             backend compiler's default.
+
+  --static  Use static linking when generating the final binary.  If 
+             neither --static or --dynamic are specified, use the
+             backend compiler's default.
+
   Compilation Trace Options
 
   --print-commands  Prints the system commands that the compiler 

@@ -392,7 +392,7 @@ record _square_tuple {
     }
   }
 
-  iter these(param tag: iterator) where tag == iterator.leader {
+  iter these(param tag: iterKind) where tag == iterKind.leader {
     if size == 1 {
       for i in _toLeader(tuple(1)) do
         yield i;
@@ -403,24 +403,24 @@ record _square_tuple {
   }
 
   pragma "expand tuples with values"
-  iter follow_help(param dim: int, follower) {
+  iter follow_help(param dim: int, followThis) {
     if dim == size - 1 {
-      for i in _toFollower(tuple(dim), follower(dim)) do
-        for j in _toFollower(tuple(size), follower(size)) do
+      for i in _toFollower(tuple(dim), followThis(dim)) do
+        for j in _toFollower(tuple(size), followThis(size)) do
           yield _build_tuple_always_allow_ref(i, j);
     } else {
-      for i in _toFollower(tuple(dim), follower(dim)) do
+      for i in _toFollower(tuple(dim), followThis(dim)) do
         for j in follow_help(dim+1) do
           yield _build_tuple_always_allow_ref(i, (...j));
     }
   }
 
-  iter these(param tag: iterator, follower) where tag == iterator.follower {
+  iter these(param tag: iterKind, followThis) where tag == iterKind.follower {
     if size == 1 {
-      for i in _toFollower(tuple(1), follower) do
+      for i in _toFollower(tuple(1), followThis) do
         yield i;
     } else {
-      for i in follow_help(1, follower) do
+      for i in follow_help(1, followThis) do
         yield i;
     }
   }

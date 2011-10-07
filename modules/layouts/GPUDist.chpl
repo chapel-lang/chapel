@@ -129,7 +129,7 @@ class GPURectangularDom: BaseRectangularDom {
     }
   }
 
-  iter these(param tag: iterator) where tag == iterator.leader {
+  iter these(param tag: iterKind) where tag == iterKind.leader {
     if rank == 1 {
       var nBlocks = numBlocks;
       var threadsPerBlock = threadPerBlock;
@@ -145,9 +145,9 @@ class GPURectangularDom: BaseRectangularDom {
     }
   }
 
-  iter these(param tag: iterator, follower) where tag == iterator.follower {
+  iter these(param tag: iterKind, followThis) where tag == iterKind.follower {
     if rank == 1 {
-      yield follower + low_val;
+      yield followThis + low_val;
     } 
     else {
       compilerError("No support for multi-dimensional arrays (yet)");
@@ -336,7 +336,7 @@ class GPURectangularArr: BaseArr {
       yield dsiAccess(i);
   }
 
-  iter these(param tag: iterator) where tag == iterator.leader {
+  iter these(param tag: iterKind) where tag == iterKind.leader {
       var nBlocks = dom.numBlocks;
       var threadsPerBlock = dom.threadPerBlock;
       var highval = size;
@@ -347,8 +347,8 @@ class GPURectangularArr: BaseArr {
       }
   }
 
-  iter these(param tag: iterator, follower) var where tag == iterator.follower {
-      yield dsiAccess(follower + low_val);
+  iter these(param tag: iterKind, followThis) var where tag == iterKind.follower {
+      yield dsiAccess(followThis + low_val);
   }
 
   proc computeFactoredOffs() {

@@ -682,7 +682,7 @@ writeln();
 \end{chapeloutput}
 \end{chapelexample}
 
-To align a range relative to its \chpl{first} index, use
+To create a range aligned relative to its \chpl{first} index, use
 the \chpl{offset} method (\rsec{Range_Offset_Method}).
 
 
@@ -819,8 +819,12 @@ writeln((r, r2));
 
 Ranges can be \emph{sliced} using other ranges to create new
 sub-ranges.  The resulting range represents the intersection between
-the two ranges.  The stride and alignment of the resulting range are adjusted as
-needed to make this true.  Range slicing is specified by the syntax:
+the two ranges' represented sequences.  The stride and alignment of the resulting range are adjusted as
+needed to make this true.
+\chpl{idxType} and the sign of the stride of the result are determined
+by the first operand.
+
+Range slicing is specified by the syntax:
 \begin{syntax}
 sliced-range-expression:
   range-expression ( range-expression )
@@ -843,6 +847,12 @@ If the strides are not relatively prime, then the result of the slicing
 operation would be completely ambiguous.  The only reasonable action for the
 implementation is to generate an error.
 \end{rationale}
+
+If the resulting represented sequence cannot be expressed as a range of the
+expected type, an error is generated. This can happen, for example, when
+the operands represent all odd and all even numbers, or when the first
+operand is an unbounded range with unsigned \chpl{idxType} and the second
+operand represents only negative numbers.
 
 \begin{chapelexample}{rangeSlicing.chpl}
 In the following example, \chpl{r} represents the integers from 1 to
@@ -1187,7 +1197,7 @@ proc $range$.offset(n: idxType)
 \end{protohead}
 \label{Range_Offset_Method}
 \begin{protobody}
-Changes the alignment of this range to be its former first index plus
+Returns a new range whose alignment is this range's first index plus
 \chpl{n}. The new alignment, therefore, is not ambiguous.
 If the range has no first index, a run-time error is generated.
 \end{protobody}

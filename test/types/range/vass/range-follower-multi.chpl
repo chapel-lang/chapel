@@ -36,16 +36,16 @@ iter it(N:int) {
 //  writeln("it serial: 1..", N);
   for i in 1..N do yield i;
 }
-iter it(param tag: iterator, N:int) where tag == iterator.leader {
+iter it(param tag: iterKind, N:int) where tag == iterKind.leader {
   const result = 0..#N;
 //  writeln("it leader: ", result);
   yield tuple(result);
 }
-iter it(param tag: iterator, follower, N:int) where tag == iterator.follower {
-//  writeln("it follower: ", follower);
-  if !(isTuple(follower) && follower.size == 1) then
+iter it(param tag: iterKind, followThis, N:int) where tag == iterKind.follower {
+//  writeln("it follower: ", followThis);
+  if !(isTuple(followThis) && followThis.size == 1) then
     halt("it follower: argument is not a tuple or its size is not 1");
-  for i in follower(1)+1 do yield i;
+  for i in followThis(1)+1 do yield i;
 }
 
 /////////////////////////////////

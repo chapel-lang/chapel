@@ -8,9 +8,9 @@ type cycSizeTuser = int(32);  // for versatility
 
 class idist {
   // distribution parameters
+  const numLocales: cycSizeTuser;
   const lowIdx: int(64); // ensure we can always subtract it
   const blockSize: cycSizeTuser;
-  const numLocales: cycSizeTuser;
 
   // for debugging
   const name:string;
@@ -52,26 +52,18 @@ class ilocdom {
 
 
 /////////// privatization - start
-proc idist.dsiSupportsPrivatization1d() param return false;
-proc idom.dsiSupportsPrivatization1d() param return false;
-proc idist.dsiUsesLocalLocID1d() param return false;
-proc idom.dsiUsesLocalLocID1d() param return false;
-/*
+
 proc idist.dsiSupportsPrivatization1d() param return true;
 
 proc idist.dsiGetPrivatizeData1d() {
-  return (numLocales, bbStart, bbLength);
+  return (lowIdx, blockSize, numLocales, name);
 }
 
 proc idist.dsiPrivatize1d(privatizeData) {
-  return new idist(privatizeData, this.idxType);
-}
-
-// constructor for privatization
-proc idist.idist(privatizeData, type idxType) {
-  numLocales = privatizeData(1);
-  bbStart = privatizeData(2);
-  bbLength = privatizeData(3);
+  return new idist(lowIdx = privatizeData(1),
+                   blockSize = privatizeData(2),
+                   numLocales = privatizeData(3),
+                   name = privatizeData(4));
 }
 
 proc idist.dsiUsesLocalLocID1d() param return false;
@@ -79,36 +71,44 @@ proc idist.dsiUsesLocalLocID1d() param return false;
 proc idom.dsiSupportsPrivatization1d() param return true;
 
 proc idom.dsiGetPrivatizeData1d() {
-  return 0;  // no data
+  return tuple(name, lowIdxAdj);
 }
 
 proc idom.dsiPrivatize1d(privDist, privatizeData) {
   assert(privDist.locale == here); // sanity check
   return new idom(idxType   = this.idxType,
+                  stoIndexT = this.stoIndexT,
                   stridable = this.stridable,
-                  pdist     = privDist);
+                  name = privatizeData(1),
+                  // wholeR to be set in dsiReprivatize1d()
+                  lowIdxAdj = privatizeData(2),
+                  // could include these in privatizeData
+                  blockSizePos  = privDist.blockSizePos,
+                  numLocalesPos = privDist.numLocalesPos,
+                  cycleSizePos  = privDist.cycleSizePos);
 }
 
 proc idom.dsiGetReprivatizeData1d() {
-  return tuple(wholeR);
+  return tuple(wholeR, wholeRstrideAbs, storagePerCycle);
 }
 
 proc idom.dsiReprivatize1d(other, reprivatizeData) {
-  assert(other.idxType   == this.idxType,
-         other.stridable == this.stridable);
+  if other.idxType   != this.idxType ||
+     other.stoIndexT != this.stoIndexT ||
+     other.stridable != this.stridable then
+    compilerError("inconsistent types in privatization");
 
-  this.wholeR = reprivatizeData(1);
+  this.wholeR          = reprivatizeData(1);
+  this.wholeRstrideAbs = reprivatizeData(2);
+  this.storagePerCycle = reprivatizeData(3);
 }
 
 proc idom.dsiUsesLocalLocID1d() param return false;
 
 proc idom.dsiLocalDescUsesPrivatizedGlobalDesc1d() param return false;
-*/
+
 /////////// privatization - end
 
-
-// Constructor: use the default one for now.
-//proc idist.idist(...)
 
 // Check all restrictions/assumptions that must be satisfied by the user
 // when constructing a 1-d BlockCyclic distribution.
@@ -181,8 +181,6 @@ proc idist.dsiNewRectangularDom1d(type idxType, param stridable: bool,
                   numLocalesPos = this.numLocalesPos,
                   cycleSizePos  = this.cycleSizePos,
                   name = this.name);
-//writeln();
-//writeln("dsiNewRectangularDom1d ", result);
 
   return result;
 }
@@ -194,6 +192,26 @@ proc idom.dsiNewLocalDom1d(type stoIndexT, locId: locIdT) {
                              stoIndexT = stoIndexT,
                              locId = locId);
   return result;
+}
+
+proc idom.dsiBuildRectangularDom1d(DD,
+                                   param stridable:bool,
+                                   rangeArg: range(idxType,
+                                                   BoundedRangeType.bounded,
+                                                   stridable))
+{
+  // There does not seem to be any optimizations from merging the two calls.
+  const result = DD.dsiNewRectangularDom1d(idxType, stridable, stoIndexT);
+  result.dsiSetIndices1d(rangeArg);
+  return result;
+}
+
+proc ilocdom.dsiBuildLocalDom1d(newGlobDD, locId: locIdT) {
+  assert(locId == this.locId);
+  // There does not seem to be any optimizations from merging the two calls.
+  const newLocDD = newGlobDD.dsiNewLocalDom1d(this.stoIndexT, locId);
+  const newStoRng = newLocDD.dsiSetLocalIndices1d(newGlobDD, locId);
+  return (newLocDD, newStoRng);
 }
 
 
@@ -504,16 +522,14 @@ iter idom._dsiSerialArrayIterator1dUnitstride(rangeToIterateOver) {
 
 iter idom._dsiSerialArrayIterator1dStridable() {
   assert(stridable);
-  compilerWarning("array iterator over stridable arrays is presently not efficient", 4);
+  compilerWarning("array iterator over stridable block-cyclic-dim arrays is presently not efficient", 4);
 
   // the simplest way out
   for ind in wholeR do
     yield (_dsiLocNo_formula(ind), _dsiStorageIdx(ind)..#(1:stoIndexT));
 }
 
-iter idom.dsiFollowerArrayIterator1d(denseRange): (locIdT, idxType) {
-  const undensRange = unDensify(denseRange, wholeR);
-
+iter idom.dsiFollowerArrayIterator1d(undensRange): (locIdT, idxType) {
   if undensRange.stridable {
     // the simplest way out
     for ix in undensRange do

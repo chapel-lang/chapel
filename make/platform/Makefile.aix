@@ -1,0 +1,2 @@
+AR = /usr/bin/ar -X 64
+RANLIB = /usr/bin/ranlib

@@ -19,6 +19,7 @@ TARGETS = \
 	reductions \
 	slices \
 	sparse \
+	syncsingle \
 	taskParallel \
 	timers \
 	varargs \

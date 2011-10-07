@@ -2,12 +2,12 @@
 Chapel Compiler Release: README
 ===============================
 
-This is the 1.3.0 release of the Chapel compiler, intended to give
+This is the 1.4.0 release of the Chapel compiler, intended to give
 potential users a look at what we're doing and the opportunity to
 provide us with feedback.  See the AGREEMENT file for the release's
 user agreement and the LICENSE file for its licensing terms.  Source
-code contained within the third-party directory may contain its own
-licenses -- see third-party/README for details.
+files contained within the third-party directory are distributed under
+their own licenses -- see third-party/README for details.
 
 
 
@@ -18,7 +18,7 @@ Quick Start
 1) Make sure that your shell is in the directory containing this
    README file.  For example:
 
-        cd ~/chapel-1.3.0/chapel
+        cd ~/chapel-1.4.0/chapel
 
 
 2) Build the compiler and runtime libraries using:
@@ -34,8 +34,8 @@ Quick Start
 
    If you use...                               then type...
 
-     ...a csh-compatible shell (csh, tcsh)     source util/setchplenv.csh
      ...a bash-compatible shell (bash)         source util/setchplenv.bash
+     ...a csh-compatible shell (csh, tcsh)     source util/setchplenv.csh
      ...the Bourne shell (sh)                  . util/setchplenv.sh
 
    You must be in the "chapel" directory for these command scripts to

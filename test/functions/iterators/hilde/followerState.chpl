@@ -72,8 +72,8 @@ writeln();
 // This is the leader, it orchestrates how the iteration task is divided up.
 // The follower is run with each chunk it yields.
 //
-iter postorder(param tag: iterator, tree : Tree): Tree 
-  where tag == iterator.leader
+iter postorder(param tag: iterKind, tree : Tree): Tree 
+  where tag == iterKind.leader
 {
   if tree == nil then return;
 
@@ -89,8 +89,8 @@ iter postorder(param tag: iterator, tree : Tree): Tree
 // The last parameter provides global context which the follower may require.
 //
 //### Allow the follower state to be called anything, such as "chunk". ###
-iter postorder(param tag: iterator, chunk, tree: Tree)
-  where tag == iterator.follower
+iter postorder(param tag: iterKind, chunk, tree: Tree)
+  where tag == iterKind.follower
 {
   // The follower does normal postorder traversal on each chunk.
   for node in postorder(chunk) do yield node;

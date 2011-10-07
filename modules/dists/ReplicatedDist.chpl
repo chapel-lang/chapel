@@ -421,7 +421,7 @@ iter ReplicatedDom.these() {
       yield i;
 }
 
-iter ReplicatedDom.these(param tag: iterator) where tag == iterator.leader {
+iter ReplicatedDom.these(param tag: iterKind) where tag == iterKind.leader {
   coforall locDom in localDoms do
     on locDom do
       // there, for simplicity, redirect to DefaultRectangular's leader
@@ -429,9 +429,9 @@ iter ReplicatedDom.these(param tag: iterator) where tag == iterator.leader {
         yield follow;
 }
 
-iter ReplicatedDom.these(param tag: iterator, follower) where tag == iterator.follower {
+iter ReplicatedDom.these(param tag: iterKind, followThis) where tag == iterKind.follower {
   // redirect to DefaultRectangular
-  for i in redirectee()._value.these(tag, follower) do
+  for i in redirectee()._value.these(tag, followThis) do
     yield i;
 }
 
@@ -588,15 +588,15 @@ iter ReplicatedArr.these() var: eltType {
         yield a;
 }
 
-iter ReplicatedArr.these(param tag: iterator) where tag == iterator.leader {
+iter ReplicatedArr.these(param tag: iterKind) where tag == iterKind.leader {
   // redirect to ReplicatedDom's leader
   for follow in dom.these(tag) do
     yield follow;
 }
 
-iter ReplicatedArr.these(param tag: iterator, follower) var where tag == iterator.follower {
+iter ReplicatedArr.these(param tag: iterKind, followThis) var where tag == iterKind.follower {
   // redirect to DefaultRectangular
-  for a in localArrs[here.id].arrLocalRep._value.these(tag, follower) do
+  for a in localArrs[here.id].arrLocalRep._value.these(tag, followThis) do
     yield a;
 }
 
@@ -619,10 +619,10 @@ proc ReplicatedArr.dsiReallocate(d: domain): void {
 // array slicing
 proc ReplicatedArr.dsiSlice(sliceDef: ReplicatedDom) {
   if traceReplicatedDist then writeln("ReplicatedArr.dsiSlice on ", sliceDef);
-  var result = new ReplicatedArr(eltType, sliceDef);
-  var slicee = this;
+  const slicee = this;
+  const result = new ReplicatedArr(slicee.eltType, sliceDef);
 
-  // ensure 'dom' and 'slicee' are over the same set of locales/targetIds
+  // ensure sliceDef and slicee are over the same set of locales/targetIds
   assert(sliceDef.localDoms.domain == slicee.localArrs.domain);
 
   coforall (loc, sliceDefLocDom, sliceeLocArr, resultLocArr)

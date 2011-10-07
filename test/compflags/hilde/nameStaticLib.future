@@ -1,0 +1,6 @@
+feature request: Chapel should recognize static and dynamic libraries on its command line.
+
+chpl nameStaticLib.chpl gmp.h libgmp.a
+
+Gives:
+> error: file 'libgmp.a' does not have a recognized suffix

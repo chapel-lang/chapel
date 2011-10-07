@@ -235,6 +235,9 @@ class BaseArr {
     halt("reallocating not supported for this array type");
   }
 
+  proc dsiPostReallocate() {
+  }
+
   // This method is unsatisfactory -- see bradc's commit entries of
   // 01/02/08 around 14:30 for details
   proc _purge( ind: int) {

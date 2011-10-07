@@ -313,7 +313,7 @@ iter BlockCyclicDom.these() {
     yield i;
 }
 
-iter BlockCyclicDom.these(param tag: iterator) where tag == iterator.leader {
+iter BlockCyclicDom.these(param tag: iterKind) where tag == iterKind.leader {
   const precomputedNumTasks = dist.tasksPerLocale;
   const precomputedWholeLow = whole.low;
   if (precomputedNumTasks != 1) then
@@ -367,13 +367,13 @@ iter BlockCyclicDom.these(param tag: iterator) where tag == iterator.leader {
 // natural composition and might help with my fears about how
 // stencil communication will be done on a per-locale basis.
 //
-iter BlockCyclicDom.these(param tag: iterator, follower) where tag == iterator.follower {
+iter BlockCyclicDom.these(param tag: iterKind, followThis) where tag == iterKind.follower {
   //  writeln(here.id, ": Domain follower following ", follower);
   var t: rank*range(idxType, stridable=stridable);
   for param i in 1..rank {
     var stride = whole.dim(i).stride: idxType;
-    var low = stride * follower(i).low;
-    var high = stride * follower(i).high;
+    var low = stride * followThis(i).low;
+    var high = stride * followThis(i).high;
     t(i) = (low..high by stride:int) + whole.dim(i).low;
   }
   //  writeln(here.id, ": Changed it into: ", t);
@@ -668,23 +668,23 @@ iter BlockCyclicArr.these() var {
     yield dsiAccess(i);
 }
 
-iter BlockCyclicArr.these(param tag: iterator) where tag == iterator.leader {
+iter BlockCyclicArr.these(param tag: iterKind) where tag == iterKind.leader {
   for yieldThis in dom.these(tag) do
     yield yieldThis;
 }
 
-iter BlockCyclicArr.these(param tag: iterator, follower) var where tag == iterator.follower {
-  var followThis: rank*range(idxType=idxType, stridable=stridable);
+iter BlockCyclicArr.these(param tag: iterKind, followThis) var where tag == iterKind.follower {
+  var myFollowThis: rank*range(idxType=idxType, stridable=stridable);
   var lowIdx: rank*idxType;
 
   for param i in 1..rank {
     var stride = dom.whole.dim(i).stride;
-    var low = follower(i).low * stride;
-    var high = follower(i).high * stride;
-    followThis(i) = (low..high by stride) + dom.whole.dim(i).low;
-    lowIdx(i) = followThis(i).low;
+    var low = followThis(i).low * stride;
+    var high = followThis(i).high * stride;
+    myFollowThis(i) = (low..high by stride) + dom.whole.dim(i).low;
+    lowIdx(i) = myFollowThis(i).low;
   }
-  const followThisDom = [(...followThis)];
+  const myFollowThisDom = [(...myFollowThis)];
 
   //
   // TODO: The following is a buggy hack that will only work when we're
@@ -705,7 +705,7 @@ iter BlockCyclicArr.these(param tag: iterator, follower) var where tag == iterat
 //      }
     return dsiAccess(i);
   }
-  for i in followThisDom {
+  for i in myFollowThisDom {
     yield accessHelper(i);
   }
 }

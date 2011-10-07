@@ -24,13 +24,13 @@ static ModuleSymbol* parseInternalModule(const char* name) {
 
 static void setIteratorTags(void) {
   forv_Vec(TypeSymbol, ts, gTypeSymbols) {
-    if (!strcmp(ts->name, "iterator")) {
+    if (!strcmp(ts->name, iterKindTypename)) {
       if (EnumType* enumType = toEnumType(ts->type)) {
         for_alist(expr, enumType->constants) {
           if (DefExpr* def = toDefExpr(expr)) {
-            if (!strcmp(def->sym->name, "leader"))
+            if (!strcmp(def->sym->name, iterKindLeaderTagname))
               gLeaderTag = def->sym;
-            else if (!strcmp(def->sym->name, "follower"))
+            else if (!strcmp(def->sym->name, iterKindFollowerTagname))
               gFollowerTag = def->sym;
           }
         }

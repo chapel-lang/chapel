@@ -20,6 +20,7 @@ demonstrate Chapel feature area in detail.
      reductions.chpl        : Reduction examples
      slices.chpl            : Array slicing and reindexing examples
      sparse.chpl            : Sparse domains and arrays
+     syncsingle.chpl        : Sync and single variables
      taskParallel.chpl      : Task parallel language concepts
      timers.chpl            : Time standard module
      varargs.chpl           : Variable argument procedures

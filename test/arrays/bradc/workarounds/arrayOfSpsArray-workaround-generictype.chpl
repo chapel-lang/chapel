@@ -31,11 +31,11 @@ iter SpsStencDom() {
       yield (i,j);
 }
 
-iter SpsStencDom(param tag: iterator) where tag == iterator.leader {
+iter SpsStencDom(param tag: iterKind) where tag == iterKind.leader {
   yield true;
 }
 
-iter SpsStencDom(param tag: iterator, follower) where tag == iterator.follower {
+iter SpsStencDom(param tag: iterKind, followThis) where tag == iterKind.follower {
   for (i,j) in [-1..1, -1..1] do
     if (i != j) then
       yield (i,j);

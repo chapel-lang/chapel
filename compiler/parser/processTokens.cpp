@@ -47,20 +47,26 @@ void processNewline(void) {
 
 char* eatStringLiteral(const char* startChar) {
   register int c;
+  const char startCh = *startChar;
   
   newString();
-    while ((c = getNextYYChar()) != *startChar && c != 0) {
+    while ((c = getNextYYChar()) != startCh && c != 0) {
       if (c == '\n')
-        processNewline();
-      if (*startChar == '\'' && c == '\"') {
+     {
+        yytext[0] = '\0'; yyerror(
+          "end-of-line in a string literal without a preceeding backslash");
+     } else {
+      if (startCh == '\'' && c == '\"') {
         addChar('\\');
       }
       addChar(c);
+     }
       if (c == '\\') {
         c = getNextYYChar();
         if (c == '\n')
-          processNewline();
-        if (c != 0) {
+        {
+          processNewline(); addChar('n');
+        } else if (c != 0) {
           addChar(c);
         }
         else

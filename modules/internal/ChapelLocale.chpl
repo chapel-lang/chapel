@@ -47,6 +47,9 @@ pragma "private" var _here: locale;
 
 proc here return _here;
 
+// Perform locale-specific initialization.
+// This is where global variables declared 'pragma "private"' are initialized.
+// That initialization is not currently arranged automatically by the compiler.
 proc chpl_setupLocale(id) {
   var tmp: locale;
   on __primitive("chpl_on_locale_num", id) {

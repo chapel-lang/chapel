@@ -39,6 +39,7 @@ primers/
   reductions     : minloc, maxloc, + and && array reductions
   slices         : array slicing and reindexing; iterators
   sparse         : sparse domains and arrays; operations on them
+  syncsingle     : sync and single variables
   taskParallel   : begin, cobegin, coforall
   timers         : Timer record in Time module
   varargs        : variable argument functions, tuples
@@ -53,3 +54,9 @@ programs/
   prodCons       : synchronization variables; task parallelism using cobegin
   quicksort      : bounded task parallelism using cobegin and serial
   tree           : unbounded task parallelism using cobegin
+
+ssca2/
+ssca2/SSCA2_Modules/
+                : graph algorithms, generic programming, distributed
+                  data structures, replicated distribution
+

@@ -42,7 +42,7 @@ class DefaultSparseDom: BaseSparseDom {
     }
   }
 
-  iter these(param tag: iterator) where tag == iterator.leader {
+  iter these(param tag: iterKind) where tag == iterKind.leader {
     const numElems = nnz;
     const numChunks = _computeNumChunks(numElems): numElems.type;
     if debugDefaultSparse then
@@ -58,10 +58,10 @@ class DefaultSparseDom: BaseSparseDom {
         yield (this, (..._computeChunkStartEnd(numElems, numChunks, chunk)));
   }
 
-  iter these(param tag: iterator, follower:(?,?,?)) where tag == iterator.follower {
-    var (followerDom, startIx, endIx) = follower;
+  iter these(param tag: iterKind, followThis:(?,?,?)) where tag == iterKind.follower {
+    var (followThisDom, startIx, endIx) = followThis;
 
-    if (followerDom != this) then
+    if (followThisDom != this) then
       halt("Sparse domains can't be zippered with anything other than themselves and their arrays");
     if debugDefaultSparse then
       writeln("DefaultSparseDom follower: ", startIx, "..", endIx);
@@ -70,7 +70,7 @@ class DefaultSparseDom: BaseSparseDom {
       yield indices(i);
   }
 
-  iter these(param tag: iterator, follower) where tag == iterator.follower {
+  iter these(param tag: iterKind, followThis) where tag == iterKind.follower {
     compilerError("Sparse iterators can't yet be zippered with others");
     yield 0;	// dummy.
   }
@@ -246,17 +246,17 @@ class DefaultSparseArr: BaseArr {
     for e in data[1..dom.nnz] do yield e;
   }
 
-  iter these(param tag: iterator) where tag == iterator.leader {
+  iter these(param tag: iterKind) where tag == iterKind.leader {
     // forward to the leader iterator on our domain
-    for follower in dom.these(tag) do
-      yield follower;
+    for followThis in dom.these(tag) do
+      yield followThis;
   }
 
   // same as DefaultSparseDom's follower, except here we index into 'data'
-  iter these(param tag: iterator, follower:(?,?,?)) var where tag == iterator.follower {
-    var (followerDom, startIx, endIx) = follower;
+  iter these(param tag: iterKind, followThis:(?,?,?)) var where tag == iterKind.follower {
+    var (followThisDom, startIx, endIx) = followThis;
 
-    if (followerDom != this.dom) then
+    if (followThisDom != this.dom) then
       halt("Sparse arrays can't be zippered with anything other than their domains and sibling arrays");
     if debugDefaultSparse then
       writeln("DefaultSparseArr follower: ", startIx, "..", endIx);
@@ -264,7 +264,7 @@ class DefaultSparseArr: BaseArr {
     for e in data[startIx..endIx] do yield e;
   }
 
-  iter these(param tag: iterator, follower) where tag == iterator.follower {
+  iter these(param tag: iterKind, followThis) where tag == iterKind.follower {
     compilerError("Sparse iterators can't yet be zippered with others");
     yield 0;	// dummy
   }

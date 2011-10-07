@@ -28,13 +28,13 @@ record FakeLeader {
       yield i;
   }
 
-  iter these(param tag: iterator) where tag == iterator.leader {
+  iter these(param tag: iterKind) where tag == iterKind.leader {
     yield tuple(0:indexType..#N_U);
   }
   
-  iter these(param tag: iterator, follower) where tag == iterator.follower {
-    for i in follower(1) do
-      yield follower;
+  iter these(param tag: iterKind, followThis) where tag == iterKind.follower {
+    for i in followThis(1) do
+      yield followThis;
   }
 }
 
