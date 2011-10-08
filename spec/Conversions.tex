@@ -62,9 +62,9 @@ An implicit conversion may occur at the following locations in the program:
 
 \end{itemize}
 
-Implicit conversions are allowed between numeric
-types~(\rsec{Implicit_Numeric_Conversions}), from enumerated types to
-numeric types~(\rsec{Implicit_Enumeration_Conversions}), between class
+Implicit conversions are allowed between
+numeric, boolean, and enumerated types~(\rsec{Implicit_NumBoolEnum_Conversions}),
+between class
 types~(\rsec{Implicit_Class_Conversions}), and between record
 types~(\rsec{Implicit_Record_Conversions}).  A special set of implicit
 conversions are allowed from compile-time constants of type \chpl{int}
@@ -72,26 +72,25 @@ to other smaller numeric types if the value is in
 the range of the smaller numeric
 type~(\rsec{Implicit_Compile_Time_Constant_Conversions}).  Lastly,
 implicit conversions are supported from integral and class types to
-bool in the context of a
-statement~(\rsec{Implicit_Statement_Bool_Conversions}).
+\chpl{bool} in the context of a statement~(\rsec{Implicit_Statement_Bool_Conversions}).
 
-\subsection{Implicit Bool and Numeric Conversions}
-\label{Implicit_Numeric_Conversions}
+%VASS TODO: add forward ref for bools to the above.
+
+\subsection{Implicit Numeric, Bool and Enumeration Conversions}
+\label{Implicit_NumBoolEnum_Conversions}
+
 \index{conversions!numeric}
-\index{conversions!bool}
 \index{conversions!implicit!numeric}
-\index{conversions!implicit!bool}
-
 Implicit conversions among numeric types are allowed when
 all values representable in the source type can also be represented
 in the target type, retaining their full precision.
-
+%
 %REVIEW: vass: I did not understand the point of the following,
 % so I am commenting it out for now.
 %When the implicit conversion is from an integral to a real type, source
 %types are converted to type \chpl{int} before determining if the
 %conversion is valid.
-
+%
 In addition, implicit conversions from
 types \chpl{int(64)} and \chpl{uint(64)} to types \chpl{real(64)}
 and \chpl{complex(128)} are allowed, even though they may result in a loss of
@@ -107,19 +106,21 @@ precision.
 % Explicit conversions, below.  One or the other should be fixed.
 
 \begin{rationale}
-We allow these implicit conversions because they are an important
+We allow these additional conversions because they are an important
 convenience for application programmers. Therefore we are willing to
 lose precision in these cases. The largest real and complex types
 are chosen to retain precision as often as as possible.
 \end{rationale}
 
+\index{conversions!bool}
+\index{conversions!implicit!bool}
 Any boolean type can be implicitly converted to any other boolean type,
 retaining the boolean value.
 Any boolean type can be implicitly converted to any integral type
-by representing \chpl{false} as 0 and \chpl{true} as 1.
-A boolean cannot be converted to \chpl{int(1)} (if this type is
-available) because 1 cannot be represented by \chpl{int(1)}.
-A boolean cannot be converted to a real, imaginary, or complex type.
+by representing \chpl{false} as 0 and \chpl{true} as 1,
+except (if applicable)
+a boolean cannot be converted to \chpl{int(1)}.
+% Rationale: because 1 cannot be represented by \chpl{int(1)}.
 
 \begin{rationale}
 We disallow implicit conversion of a boolean to
@@ -127,42 +128,57 @@ a real, imaginary, or complex type because of the following.
 We expect that the cases where such a conversion is needed
 will more likely be unitended by the programmer.
 Marking those cases as errors will draw the programmer's attention.
-If a conversion is actually needed, a cast \rsec{Explicit_Conversions}
+If such a conversion is actually desired, a cast \rsec{Explicit_Conversions}
 can be inserted.
 \end{rationale}
 
-Implicit numeric conversions may thus be tabulated as follows:
-% VASS: coming up...Conversions.tp1
-\begin{center}
-\begin{tabular}{l|llllll|}
-\cline{2-7}
-& \multicolumn{6}{c|}{Target Type} \\
-Source Type & bool($j$) & int($j$) & uint($j$) & real($j$) & imag($j$) & complex($j$) \\ \cline{2-7}
-bool($i$) & all $i,j$ & all $i,j>=2$ & all $i,j$ & all $i,j$ & all $i,j$ & all $i,j$ \\
-int($i$) & & $i<=j$ & $i<j$ & $i<=mant(j)$ & & $i<=mant(j)$ \\
-uint($i$) & & $i<j$ & $i<=j$ & $i<smant(j)$ & & $i<mant(j)$ \\
-real($i$) & & $mant(i)<=j$ & $mant(i)<j$ & $i<=j$ & & $2i<=j$ \\
-imag($i$) & & & & & $i<=j$ & $2i<=j$ \\
-complex($i$) & & & & & & $i<=j$ \\ \cline{2-7}
-\end{tabular}
-\end{center}
-where $mant(i)$ represents the effective number of bits in the signed mantissa
-of the corresponding floating-point type.  In this table the
-default \chpl{int}, \chpl{uint} and \chpl{real} types map to their corresponding
-explicitly-sized types.
-
-\subsection{Implicit Enumeration Conversions}
-\label{Implicit_Enumeration_Conversions}
-\index{conversions!enumeration}
-\index{conversions!implicit!enumeration}
-
+\index{conversions!enumerated types}
+\index{conversions!implicit!enumerated types}
 An expression of an enumerated type can be implicitly converted
 to an integral type, provided that all of the constants defined by the
 enumerated type are representable by the integral type.
 
-% Note that the inverse conversion in not implicit, an explicit cast is required
-% to convert an integer to an enumerated type.
-% This is consistent with C# and later versions of C++.
+% Requiring an explicit cast to convert an integer to an enumerated type
+% is consistent with C# and later versions of C++.
+
+Legal implicit conversions with numeric, boolean and enumerated types
+may thus be tabulated as follows:
+
+\begin{center}
+\begin{tabular}{l|llllll}
+& \multicolumn{6}{c}{Target Type} \\ [4pt]
+
+Source Type  & bool($t$) & uint($t$) & int($t$) & real($t$) & imag($t$) & complex($t$) \\  [3pt]
+
+\cline{1-7} \\
+
+bool($s$)    & all $s,t$ & all $s,t$   & all $s$; $2 \le t$ & & & \\ [7pt]
+
+enum         &           & (see rules) & (see rules)        & & & \\ [7pt]
+
+uint($s$)    & & $s \le t$ & $s < t$   & $s \le mant(t)$   & & $s \le mant(t/2)$   \\ [7pt]
+
+uint(64)     & &           &           & real(64)          & & complex(128)        \\ [7pt]
+
+int($s$)     & &           & $s \le t$ & $s \le mant(t)+1$ & & $s \le mant(t/2)+1$ \\ [7pt]
+
+int(64)      & &           &           & real(64)          & & complex(128)        \\ [7pt]
+
+real($s$)    & & & & $s \le t$ &           & $s \le t/2$ \\ [7pt]
+
+imag($s$)    & & & &           & $s \le t$ & $s \le t/2$ \\ [7pt]
+
+complex($s$) & & & &           &           & $s \le t$   \\ [5pt]
+
+\end{tabular}
+\end{center}
+Here, $mant(i)$ is the number of bits in the (unsigned) mantissa of
+the $i$-bit floating-point type.\footnote{The IEEE 754 representation
+defines $mant(32)=24$ and $mant(64)=53$.}
+%
+Conversions for the default integral and real types (\chpl{uint},
+\chpl{complex}, etc.) are the same as for their
+explicitly-sized counterparts.
 
 \subsection{Implicit Class Conversions}
 \label{Implicit_Class_Conversions}
