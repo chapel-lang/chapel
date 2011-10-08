@@ -1,19 +1,66 @@
 \sekshun{Conversions}
 \label{Conversions}
 
-A conversion allows an expression of one type to be converted into
-another type.  Conversions can be either
+A \emph{conversion} converts an expression of one type to another type.
+Conversions can be either
 implicit~(\rsec{Implicit_Conversions}) or
 explicit~(\rsec{Explicit_Conversions}).
+\index{conversions!source expression}
+We refer to the expression being converted as the \emph{source expression}.
+A conversion may or may not change the value of the source expression.
+
 
 \section{Implicit Conversions}
 \label{Implicit_Conversions}
 \index{conversions!implicit}
 
-Implicit conversions can occur during an assignment (from the
-expression on the right-hand side to the variable on the left-hand
-side) or during a function call (from the actual expression to the
-formal argument).  An implicit conversion does not require a cast.
+An \emph{implicit conversion} is a conversion that occurs implicitly,
+that is, not due to an explicit specification in the program.  An
+implicit conversion occurs
+(a) at one of the locations in the program that are listed below,
+provided that
+(b) it is allowed from the type of the source expression to the type
+expected or acceptable in the context where that expression is used.
+%
+An implicit conversion also occurs in certain special cases.
+
+Implicit conversion is not transitive. That is, if an implicit conversion
+is allowed from type \chpl{T1} to \chpl{T2} and from \chpl{T2} to \chpl{T3},
+that by itself does not allow an implicit conversion
+from \chpl{T1} to \chpl{T3}.
+
+An implicit conversion from a type to the same type is allowed for any type.
+Such conversion does not change the value of the source expression.
+
+\index{conversions!implicit!may occur at}
+An implicit conversion may occur at the following locations in the program:
+
+\begin{itemize}
+\item In an assignment, the expression on the right-hand side of
+      the assignment may be converted to the type of the variable
+      or another lvalue on the left-hand side of the assignment.
+
+\item The actual argument of a function call or an operator may be converted
+      to the type of the corresponding formal argument, if the formal's
+      intent is \chpl{in} or the blank intent with the semantics of
+      \chpl{in}.
+
+\item The formal argument of a function call may be converted
+      to the type of the corresponding actual argument, if the formal's
+      intent is \chpl{out}.
+
+\item The return or yield expression within a function may be converted
+      to the return type of that function.
+
+\item As a special case, the condition of a conditional expression,
+      conditional statement, while-do or do-while loop statement
+      may be converted to the boolean type~(\rsec{Implicit_Compile_Time_Constant_Conversions}).
+
+%VASS - move to "types"
+\item As a special case, a parameter expression of an integral type
+      may be converted to a certain different integral type~(\rsec{Implicit_Compile_Time_Constant_Conversions}).
+
+\end{itemize}
 
 Implicit conversions are allowed between numeric
 types~(\rsec{Implicit_Numeric_Conversions}), from enumerated types to
@@ -32,13 +79,18 @@ statement~(\rsec{Implicit_Statement_Bool_Conversions}).
 \label{Implicit_Numeric_Conversions}
 \index{conversions!numeric}
 \index{conversions!bool}
+\index{conversions!implicit!numeric}
+\index{conversions!implicit!bool}
 
-Implicit conversions among fundamental numeric types are always allowed, so long
-as all values that can be represented in the source type can also be represented
-in the target type without loss of precision.
-When the implicit conversion is from an integral to a real type, source
-types are converted to type \chpl{int} before determining if the
-conversion is valid.
+Implicit conversions among numeric types are allowed when
+all values representable in the source type can also be represented
+in the target type, retaining their full precision.
+
+%REVIEW: vass: I did not understand the point of the following,
+% so I am commenting it out for now.
+%When the implicit conversion is from an integral to a real type, source
+%types are converted to type \chpl{int} before determining if the
+%conversion is valid.
 
 In addition, implicit conversions from
 types \chpl{int(64)} and \chpl{uint(64)} to types \chpl{real(64)}
@@ -55,19 +107,32 @@ precision.
 % Explicit conversions, below.  One or the other should be fixed.
 
 \begin{rationale}
-In C\#, implicit conversions from \chpl{int(32)} or \chpl{int(64)}
-to \chpl{real(32)} are supported and allow for a loss of precision.
-Since the default \chpl{real} size is 64 and the default \chpl{int}
-size is 32 in Chapel, we did not follow the lead of C\# in this regard
-since it seemed unfortunate to favor \chpl{real(32)} over \chpl{real}
-in the default case.  That is, given the \chpl{sqrt} function defined
-over \chpl{real(32)} and \chpl{real}, it is preferable to choose the
-\chpl{int} version over the \chpl{real} version when calling with an actual of
-type \chpl{int} rather than lose precision and half of the bits to
-call the \chpl{real(32)} version.
+We allow these implicit conversions because they are an important
+convenience for application programmers. Therefore we are willing to
+lose precision in these cases. The largest real and complex types
+are chosen to retain precision as often as as possible.
+\end{rationale}
+
+Any boolean type can be implicitly converted to any other boolean type,
+retaining the boolean value.
+Any boolean type can be implicitly converted to any integral type
+by representing \chpl{false} as 0 and \chpl{true} as 1.
+A boolean cannot be converted to \chpl{int(1)} (if this type is
+available) because 1 cannot be represented by \chpl{int(1)}.
+A boolean cannot be converted to a real, imaginary, or complex type.
+
+\begin{rationale}
+We disallow implicit conversion of a boolean to
+a real, imaginary, or complex type because of the following.
+We expect that the cases where such a conversion is needed
+will more likely be unitended by the programmer.
+Marking those cases as errors will draw the programmer's attention.
+If a conversion is actually needed, a cast \rsec{Explicit_Conversions}
+can be inserted.
 \end{rationale}
 
 Implicit numeric conversions may thus be tabulated as follows:
+% VASS: coming up...Conversions.tp1
 \begin{center}
 \begin{tabular}{l|llllll|}
 \cline{2-7}
@@ -89,10 +154,11 @@ explicitly-sized types.
 \subsection{Implicit Enumeration Conversions}
 \label{Implicit_Enumeration_Conversions}
 \index{conversions!enumeration}
+\index{conversions!implicit!enumeration}
 
-An expression that is an enumerated type can be implicitly converted
-to any integral type as long as all of the constants defined by the
-enumerated type are within range of the integral type.
+An expression of an enumerated type can be implicitly converted
+to an integral type, provided that all of the constants defined by the
+enumerated type are representable by the integral type.
 
 % Note that the inverse conversion in not implicit, an explicit cast is required
 % to convert an integer to an enumerated type.
@@ -101,6 +167,7 @@ enumerated type are within range of the integral type.
 \subsection{Implicit Class Conversions}
 \label{Implicit_Class_Conversions}
 \index{conversions!class}
+\index{conversions!implicit!class}
 
 An expression of class type \chpl{D} can be implicitly converted to
 another class type \chpl{C} provided that \chpl{D} is a subclass
@@ -109,6 +176,7 @@ of \chpl{C}.
 \subsection{Implicit Record Conversions}
 \label{Implicit_Record_Conversions}
 \index{conversions!record}
+\index{conversions!implicit!record}
 
 An expression of record type \chpl{D} can be implicitly converted to
 another record type \chpl{C} provided that \chpl{D} is a nominal
@@ -116,7 +184,8 @@ subtype of \chpl{C}.
 
 \subsection{Implicit Compile-Time Constant Conversions}
 \label{Implicit_Compile_Time_Constant_Conversions}
-\index{conversions!parameter}
+\index{conversions!numeric!parameter}
+\index{conversions!implicit!parameter}
 
 The following two implicit conversions of parameters are supported:
 \begin{itemize}
@@ -129,7 +198,8 @@ to \chpl{uint(64)} if the value of the parameter is nonnegative.
 
 \subsection{Implicit Statement Bool Conversions}
 \label{Implicit_Statement_Bool_Conversions}
-\index{conversions!bool}
+\index{conversions!bool!in a statement}
+\index{conversions!implicit!bool}
 
 In the condition of an if-statement, while-loop, and do-while-loop,
 the following implicit conversions are supported:
@@ -152,6 +222,7 @@ The explicit conversions are a superset of the implicit conversions.
 \subsection{Explicit Numeric Conversions}
 \label{Explicit_Numeric_Conversions}
 \index{conversions!numeric}
+\index{conversions!explicit!numeric}
 
 Explicit conversions are allowed from any numeric type, bool, or
 string to any other numeric type, bool, or string.  
@@ -230,6 +301,7 @@ the input value, and the real part of the result is set to zero.
 \subsection{Explicit Enumeration Conversions}
 \label{Explicit_Enumeration_Conversions}
 \index{conversions!enumeration}
+\index{conversions!explicit!enumeration}
 
 Explicit conversions are allowed from any enumerated type to any
 integer or real type, \chpl{bool}, or \chpl{string}, and vice versa.
@@ -273,6 +345,7 @@ string is selected.  If no such enumerator exists, a runtime error occurs.
 \subsection{Explicit Class Conversions}
 \label{Explicit_Class_Conversions}
 \index{conversions!class}
+\index{conversions!explicit!class}
 
 An expression of static class type \chpl{C} can be explicitly
 converted to a class type \chpl{D} provided that \chpl{C} is derived
@@ -284,6 +357,7 @@ to \chpl{D}.
 \subsection{Explicit Record Conversions}
 \label{Explicit_Record_Conversions}
 \index{conversions!record}
+\index{conversions!explicit!record}
 
 An expression of record type \chpl{C} can be explicitly converted to
 another record type \chpl{D} provided that \chpl{C} is derived
