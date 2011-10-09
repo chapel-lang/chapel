@@ -8,15 +8,14 @@ language:
 
 Contributors to the current release
 -----------------------------------
+Rafael Asenjo
+Matthew Baker
 Brad Chamberlain
 Sung-Eun Choi
 Michael Ferguson
-Hannah Hemmaplardh
 Tom Hildebrandt
 Vassily Litvinov
-Lee Prokowich
-Srinivas Sridharan
-Chris Swenson
+Maria Angeles Navarro
 Greg Titus
 
 Contributors to previous releases
@@ -30,6 +29,7 @@ Roxana Diaconescu
 James Dinan
 Samuel Figueroa
 Paul Hargrove
+Hannah Hemmaplardh
 Shannon Hoffswell
 Mary Beth Hribar
 David Iten
@@ -37,20 +37,16 @@ Mark James
 Mackale Joyner
 Jacob Nelson
 John Plevyak
+Lee Prokowich
 Albert Sidelnik
+Srinivas Sridharan
 Andy Stone
+Chris Swenson
 Jonathan Turner
 Wayne Wong
 Hans Zima
 
 
-We are grateful to the following users for helping us to test and
-improve the quality of this release:
-
-Jonathan Claridge
-John Lewis
-Mark Potts
-George M. Sigut
-
-Thanks also to our many enthusiastic and vocal users for helping us
-continually improve the quality of the Chapel language and compiler.
+We are grateful to our many enthusiastic and vocal users for helping
+us continually improve the quality of the Chapel language and
+compiler.

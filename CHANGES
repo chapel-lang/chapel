@@ -3,6 +3,185 @@ Release Changes List
 ====================
 
 =============
+version 1.4.0
+=============
+
+Seventh public release of Chapel, October 20, 2011
+
+Highlights (see below for details)
+----------------------------------
+- added 'extern', 'export', and 'inline' keywords
+- optimizations for whole-array assignments and remote array accesses
+- improved support for Qthreads and Nanos++ tasking including multi-locale
+- added dynamic range iterators via an 'AdvancedIters' module
+- continued improving range semantics and implementation
+- added support for # operator on dense rectangular domains and arrays
+- made associative domain index adding/removing parallel-safe
+- --static/--dynamic linking flags
+- improved communication diagnostics
+- new example codes: SSCA2; primers on sync vars, leader-follower iterators
+- updated documentation
+- many bug fixes
+
+Syntactic/Naming Changes
+------------------------
+- renamed '_extern' keyword to 'extern'
+- renamed 'maxThreadsPerLocale' to 'numThreadsPerLocale'
+  (see doc/README.tasks and doc/README.executing for new definitions)
+- made it illegal for a string literal to contain an unescaped newline
+- renamed dsiIndexLocale to dsiIndexToLocale in domain map standard interface
+  (see doc/technotes/README.dsi)
+- renamed 'iterator' enumeration to 'iterKind' for leader-follower iterators
+- renamed 'follower' argument to follower iterators 'followThis'
+- reserved 'ref' as a keyword for future use
+
+Semantic Changes / Changes to Chapel Language
+---------------------------------------------
+- added 'export' keyword to support calling Chapel functions from C
+- added 'inline' keyword to force a function to be inlined
+- added support to # operator for dense rectangular domains and arrays
+- removed support for tensor iteration from the language definition
+- removed the concept of 'realms' from the language
+- ranges are now == even if ambiguous if their representations match
+- disabled promotion of the '..' operator
+
+Newly Implemented Features
+--------------------------
+- added support for multilocale execution using qthreads and nanox task layers
+- adding and removing indices from associative domains is now parallel-safe
+- updated communication diagnostics interface
+  (see doc/technotes/README.comm-diagnostics)
+
+Standard Modules
+----------------
+- added an 'AdvancedIters' module with various dynamic scheduling algorithms
+- added integer floor/ceiling/mod functions to 'Math' module
+  (see 'Standard Modules' in spec)
+- added a 'UtilMath' module with other integer ceiling/floor functions
+- added a param version of abs() for integers to 'Math' module
+- added new sorting routines to standard 'Sort' module
+
+Documentation
+-------------
+- spec updates:
+  - refreshed Data Parallelism, Task Parallelism, and Conversions chapters
+  - updated Ranges chapter
+  - minor updates to Domains and Classes chapters
+- updated man page to explain use of compiler's module search path
+- added note about parallel safety to doc/technotes/README.extern
+- generally refreshed README and other text documentation files
+
+Example Codes
+-------------
+- added an in-progress implementation of SSCA2 to the release examples
+  (see examples/ssca2)
+- added a primer for sync and single variables
+  (see examples/primers/syncsingle.chpl)
+- added a primer on leader-follower iterators (user-defined forall scheduling)
+  (see examples/primers/leaderfollower.chpl)
+- added an example of creating a private locale view to distributions primer
+  (see examples/primers/distributions.chpl)
+- improved the ranges primer
+  (see examples/primers/ranges.chpl)
+- added a description of subdomains to the domains primer
+  (see examples/primers/domains.chpl)
+- minor wordsmithing for the procedures primer
+  (see examples/primers/procedures.chpl)
+
+Platform-specific Notes
+-----------------------
+- improved Makefile settings for IBM/AIX platforms and compilers
+
+Feature Improvements
+--------------------
+- several improvements to the implementation of ranges
+  (see 'Ranges' chapter of spec for details)
+- made casts-to-string produce the same string as write() does
+
+Compiler Flags
+--------------
+- added --static/--dynamic flags to specify how the binary should be linked
+
+Interoperability Changes
+------------------------
+- made 'extern' a keyword; '_extern' is deprecated
+
+Error Message Improvements
+--------------------------
+- added a compiler warning for param functions with declared return types
+- improved a few other difficult compiler error messages
+
+Bug Fixes / New Semantic Checks (for old semantics)
+---------------------------------------------------
+- fixed the result widths of complex math operations
+- improved parsing of escaped characters in string literals
+- deleting a record now generates an error
+- added a variety of bug fixes for range operations
+- fixed a bug with passing strings to external functions for --no-local cases
+- fixed a bug for var functions that returned nothing
+- fixed a bug related to terminating a CHPL_COMM=gasnet program early
+- fixed a bug in which ref temps were not inserted for virtual method calls
+- fixed a bug related to removing a label from the AST but not its goto
+- fixed bug with applying serial statement to optimized coforall+on loops
+- fixed bugs regarding single variables not being treated like sync
+- fixed a bug related to incorrect complaints about ambiguous module paths
+- fixed a bug related to followers accepting empty ranges
+- fixed a few reference-after-deallocation bugs in the compiler
+- fixed a bug related to flattening var functions multiple times
+
+Packaging Changes
+-----------------
+- removed the second-level 'chapel/' directory that releases used to have
+- updated emacs/vim modes to bring syntax up-to-date
+- util/setchplenv.* scripts now permit $CHPL_HOME to be other than 'chapel'
+- added the util/ directory to PATH in the setchplenv.* scripts
+- improved make 'clean' and 'clobber' rules for third-party directories
+
+Third-Party Software Changes
+----------------------------
+- removed requirement to specify LD_LIBRARY_PATHs for qthreads and nanox tasks
+- updated to GASNet version 1.16.2 (see third-party/gasnet/README)
+- updated to Qthreads version 1.7 (see third-party/qthreads/README)
+- added tcmalloc version 1.7 (see third-party/tcmalloc/README)
+- updated to dlmalloc version 2.8.5
+
+Runtime Library Changes
+-----------------------
+- split the 'none' task layer into 'none' and 'minimal'
+  (see doc/README.tasks)
+- added a tcmalloc-based memory layer to the runtime
+- improved program initialization order and sequence
+- made nanox/qthreads task layers use a #threads==#cores by default
+- increased the default callstack size for qthreads tasks
+- removed pthread calls from the gasnet communication layer
+- began process of unifying runtime file and directory names
+- standardized our threading layer interface
+- made tasking layers more robust to early calls during program setup
+- moved Chapel code in the runtime/ directory into internal modules
+
+Compiler Analysis and Optimizations/Performance of Generated Code
+-----------------------------------------------------------------
+- added a block transfer optimization for whole-array assignment
+- reduced the number of communications for remote Block or Cyclic array access
+- added an optimization to remove dead code blocks
+
+Testing System
+--------------
+- valgrind testing with CHPL_COMM!=none now valgrinds the child processes
+
+Internal
+--------
+- the threading layer of the runtime now has its own header file
+- added a --library flag for creation of a standalone Chapel library
+- made normalize_returns() able to be called multiple times
+- fixed a bug related to internal module dependences of depth > 2
+- added capabilities to help debug deleted AST nodes
+  (see --break-on-delete-id and --log-deleted-ids-to)
+- removed --runtime flag from compiler
+- added a compilerAssert() capability
+
+
+=============
 version 1.3.0
 =============
 
