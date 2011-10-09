@@ -95,8 +95,11 @@ AD += "Ringo";
 writeln(AD);
 
 //
-// ##### SUBDOMAINS #####
-//
+// A subdomain is a domain that is declared in terms of a parent
+// domain, causing it to have the same type as their parent.  A
+// subdomain represents a subset of its parent domain's index set,
+// though this constraint is not currently enforced by the
+// implementation.
 
 //
 // Create rectangular subdomains.
