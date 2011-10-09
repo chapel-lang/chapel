@@ -8,15 +8,7 @@ and are available to every Chapel program.
 The functions and other definitions of automatic modules are always
 available to a Chapel program.
 Optional modules can be accessed via use statements
-(\rsec{Using_Modules}).  Both automatic and optional standard modules can be
-overridden by a user-supplied version having the same name.
-See~\rsec{Module_Search_Paths} for details on how
-module overriding is accomplished.
-
-Internal modules are always loaded by a chapel program \emph{as if} the
-statement \chpl{use ChapelStandard;} has been inserted ahead of the first
-statement in the main module.  Unlike standard modules, internal modules cannot
-be overridden.  
+(\rsec{Using_Modules}).  
 
 The automatic modules
 are as follows:
@@ -961,33 +953,3 @@ For other $m$ and $n$ the behavior is undefined.
 This function is expected to be faster than \chpl{divfloor}.
 \end{protobody}
 
-\section{Modules Search Paths}
-\label{Module_Search_Paths}
-\index{modules!overriding}
-\index{modules!search paths}
-
-The compiler uses four module search paths: one for internal modules, one for
-standard modules and one for user modules.  The user path first includes all the
-paths used to specify module files directly on the \chpl{chpl} command line and
-then includes the paths specified via \chpl{-M} commands or through
-the \chpl{CHPL_MODULE_PATH} environment variable.
-
-The module search paths are initialized as follows:
-\begin{tabular}{ll}
-Internal & \$CHPL\_HOME/modules/internal/\$CHPL\_THREADS \\ 
-& \$CHPL\_HOME/modules/internal/\$CHPL\_TASKS \\ 
-& \$CHPL\_HOME/modules/internal \\ 
-Standard & \$CHPL\_HOME/modules/standard \\
-& \$CHPL\_HOME/modules/layouts \\
-& \$CHPL\_HOME/modules/dists \\
-User & (User paths) \\
-\end{tabular}
-
-When the root internal module \chpl{ChapelStandard} and its dependencies are
-loaded, the internal module path is searched first.  If a module is found there,
-it is marked as internal.  Otherwise, it is skipped.
-
-The users modules are parsed next.  If a module named in use statement is not
-found, the standard version is loaded instead if it exists.  Otherwise, a
-file-not-found error will be issued.  If both user and standard versions of a
-module exist, the user is warned that the standard version is being overridden.
