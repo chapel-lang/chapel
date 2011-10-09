@@ -2,3 +2,5 @@ bug: compiler crashes with an assertion: Cannot call insertAfter on Expr not in 
 
 It trips over something in missing_plus() in the normalize pass.
 (This currently happens even if missing_plus() is not invoked from anywhere.)
+
+NOTE: What is missing_plus()?  It's not the test program or any of the Chapel source files.
