@@ -67,7 +67,8 @@ Documentation
   - refreshed Data Parallelism, Task Parallelism, and Conversions chapters
   - updated Ranges chapter
   - minor updates to Domains and Classes chapters
-- updated man page to explain use of compiler's module search path
+- added documentation about the compiler's module search path to man page/README
+  (see 'man chpl' and doc/technotes/README.module_search)
 - added note about parallel safety to doc/technotes/README.extern
 - generally refreshed README and other text documentation files
 
