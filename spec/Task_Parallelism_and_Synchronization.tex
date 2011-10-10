@@ -628,13 +628,17 @@ proc work(i) {
 }
 \end{chapelpre}
 \begin{chapel}
-for i in lo..hi {
-  serial i<10 {
+proc f(i) {
+  serial i<13 {
     cobegin {
-     work(i);
-     work(i);
-   }
+      work(i);
+      work(i);
+    }
   }
+}
+
+for i in lo..hi {
+  f(i);
 }
 \end{chapel}
 \begin{chapelpost}
@@ -642,13 +646,15 @@ for i in lo..hi {
 \begin{chapeloutput}
 serial 9
 serial 9
+serial 10
+serial 10
+serial 11
+serial 11
+serial 12
+serial 12
 \end{chapeloutput}
-
-defines a function \chpl{concurrentUpdate} that recursively walks over
-a tree using cobegin statements to update the left and right subtrees
-in parallel.  The serial statement inhibits concurrent execution on
-the tree for nodes that are deeper than four levels in the tree.  This
-constrains the number of tasks that will be used for the update.
+the serial statement in procedure f() inhibits concurrent execution of
+work() if the variable i is less than 13.
 \end{chapelexample}
 
 \begin{chapelexample}{serialStmt2.chpl}
