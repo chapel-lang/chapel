@@ -41,11 +41,6 @@ module SSCA2_execution_config_consts
 
   const testing_type : [graph_type_domain] bool = false;
 
-  // The normal default for booleans is to initialize to false, which will be
-  // the likely long term state of this code.  At present, the code is set to
-  // test all possible representations.  Individual types can be overwritten
-  // with the boolean assignments below.
-
   config const TEST_RMAT_ASSOCIATIVE = true,
                TEST_TORUS_1D         = false,
 	       TEST_TORUS_2D         = false,

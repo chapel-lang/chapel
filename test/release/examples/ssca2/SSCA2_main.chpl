@@ -4,7 +4,7 @@ module SSCA2_main
 
         Chapel Implementation of SSCA #2 Benchmark Version 2.2
 
-             Implementation version 0.7, October 2011
+             Version 0.7, October 2011
              Originally written by John G. Lewis, March 2010
 
   Primary characteristics demonstrated:
@@ -31,7 +31,7 @@ module SSCA2_main
        - dense array representations of regular tori
        - sparse array stencil representations of regular tori
 
-   o The dense array versions of regular tori do run in parallel.
+   o Only the dense array versions of regular tori run in parallel.
 
    o Not much tuning for locality has been done to date.
 
