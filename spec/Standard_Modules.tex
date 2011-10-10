@@ -812,6 +812,14 @@ routines.  The current interface is minimal and should be expected to
 grow and evolve over time.
 
 \begin{protohead}
+proc BubbleSort(Data: [?Dom]) where Dom.rank == 1
+\end{protohead}
+\begin{protobody}
+Sorts the 1D array \chpl{Data} in-place using a sequential bubble sort
+algorithm.
+\end{protobody}
+
+\begin{protohead}
 proc InsertionSort(Data: [?Dom]) where Dom.rank == 1
 \end{protohead}
 \begin{protobody}
@@ -820,11 +828,33 @@ sort algorithm.
 \end{protobody}
 
 \begin{protohead}
-proc QuickSort(Data: [?Dom]) where Dom.rank == 1
+proc MergeSort(Data: [?Dom], minlen=16) where Dom.rank == 1
+\end{protohead}
+\begin{protobody}
+Sorts the 1D array \chpl{Data} using a parallel merge sort algorithm.
+The optional minlen argument is the minimum sized array that will be
+sorted using merge sort.  If the size is less than minlen, the
+insertion sort algorithm will be used.
+
+\end{protobody}
+
+\begin{protohead}
+proc QuickSort(Data: [?Dom], minlen=16) where Dom.rank == 1
 \end{protohead}
 \begin{protobody}
 Sorts the 1D array \chpl{Data} in-place using a sequential
-implementation of the QuickSort algorithm.
+implementation of the QuickSort algorithm.  The optional minlen
+argument is the minimum sized array that will be sorted using
+QuickSort.  If the size is less than minlen, the insertion sort
+algorithm will be used.
+\end{protobody}
+
+\begin{protohead}
+proc SelectionSort(Data: [?Dom]) where Dom.rank == 1
+\end{protohead}
+\begin{protobody}
+Sorts the 1D array \chpl{Data} in-place using a sequential selection
+sort algorithm.
 \end{protobody}
 
 
