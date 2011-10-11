@@ -2,7 +2,7 @@
 \label{Task_Parallelism_and_Synchronization}
 
 Chapel supports both task parallelism and data parallelism.  This
-chapter details tasks parallelism in four parts:
+chapter details task parallelism as follows:
 \begin{itemize}
 \item \rsec{Task_parallelism} introduces tasks and task parallelism.
 \item \rsec{Begin} describes the begin statement, an unstructured way
@@ -78,7 +78,7 @@ terminal, but the ordering is purposely unspecified.  There is no
 guarantee as to which statement will execute first.  When the
 begin statement is executed, a new task is created that will execute
 the \chpl{writeln} statement within it.  However, execution will
-continue immediately with the next statement.
+continue immediately after task creation with the next statement.
 \end{chapelexample}
 
 Yield and return statements are not allowed in begin blocks.  Break
@@ -109,7 +109,7 @@ read, its state does not change.  When either type of synchronization
 variable is written, its state transitions to full.
 
 Sync and single are type qualifiers and preceed the variable's type in
-the declaration.  Sync and single are only supported for Chapel all
+the declaration.  Sync and single are only supported for all Chapel
 primitive types (~\rsec{Primitive_Types}) except strings and complex.
 
 If a task attempts to read or write a synchronization variable that is
@@ -170,51 +170,11 @@ end in $\mbox{{\bf \$}}$ to provide a visual cue to the programmer
 indicating that the task may block.
 \end{chapelexample}
 
-\begin{chapelexample}{singleVar.chpl}
-The following code implements a simple split-phase barrier using a
-single variable.
-\begin{chapelpre}
-config const n = 44;
-proc work(i) {
-  // do nothing
-}
-\end{chapelpre}
-\begin{chapel}
-var count$\mbox{{\bf \$}}$: sync int = n;  // counter which also serves as a lock
-var release$\mbox{{\bf \$}}$: single bool; // barrier release
-
-forall t in 1..n do begin {
-  work(t);
-  var myc = count$\mbox{{\bf \$}}$;  // read the count, set state to empty
-  if myc!=1 {         // still waiting for others
-    write(".");
-    count$\mbox{{\bf \$}}$ = myc-1;  // update the count, set state to full
-    // we could also do some work here
-    release$\mbox{{\bf \$}}$;         // wait for everyone
-  } else {            // last one here
-    release$\mbox{{\bf \$}}$ = true;  // release everyone first
-    writeln("done");
-  }
-}
-\end{chapel}
-\begin{chapeloutput}
-...........................................done
-\end{chapeloutput}
-In each iteration of the for loop, a new task is created do to some
-work.  After each task has completed its work it, reads the
-count$\mbox{{\bf \$}}$ variable, which is used to tally the number of
-tasks that have arrived.  All tasks except the last task to arrive
-will block while trying to read the variable
-release$\mbox{{\bf \$}}$.  The last task to arrive will write to
-release$\mbox{{\bf \$}}$, setting its state to full at which time all
-the other tasks can be unblocked and run.
-\end{chapelexample}
-
 \begin{chapelexample}{syncCounter.chpl}
 Sync variables are useful for tallying data from multiple tasks as
 well.  A sync variable of type \chpl{int} is read and then written
-during an update so the full-empty semantics make these updates atomic
-when used in a stylized way.  The code
+during an update so the full-empty semantics make these updates
+atomic.  The code
 \begin{chapel}
 var count$\mbox{{\bf \$}}$: sync int = 0;
 begin count$\mbox{{\bf \$}}$ = count$\mbox{{\bf \$}}$ + 1;
@@ -235,6 +195,45 @@ reads \chpl{count$\mbox{{\bf \$}}$} and
 writes \chpl{count$\mbox{{\bf \$}}$}, another task may increment it.
 \end{chapelexample}
 
+\begin{chapelexample}{singleVar.chpl}
+The following code implements a simple split-phase barrier using a
+single variable.
+\begin{chapelpre}
+config const n = 44;
+proc work(i) {
+  // do nothing
+}
+\end{chapelpre}
+\begin{chapel}
+var count$\mbox{{\bf \$}}$: sync int = n;  // counter which also serves as a lock
+var release$\mbox{{\bf \$}}$: single bool; // barrier release
+
+forall t in 1..n do begin {
+  work(t);
+  var myc = count$\mbox{{\bf \$}}$;  // read the count, set state to empty
+  if myc!=1 {
+    write(".");
+    count$\mbox{{\bf \$}}$ = myc-1;  // update the count, set state to full
+    // we could also do some work here before blocking
+    release$\mbox{{\bf \$}}$;
+  } else {
+    release$\mbox{{\bf \$}}$ = true;  // last one here, release everyone
+    writeln("done");
+  }
+}
+\end{chapel}
+\begin{chapeloutput}
+...........................................done
+\end{chapeloutput}
+In each iteration of the forall loop after the work is completed, the
+task reads the count$\mbox{{\bf \$}}$ variable, which is used to tally
+the number of tasks that have arrived.  All tasks except the last task
+to arrive will block while trying to read the variable
+release$\mbox{{\bf \$}}$.  The last task to arrive will write to
+release$\mbox{{\bf \$}}$, setting its state to full at which time all
+the other tasks can be unblocked and run.
+\end{chapelexample}
+
 \index{synchronization types!formal arguments}
 If a formal argument is a synchronization type, the actual is passed
 by reference and the argument itself is a valid lvalue.  The
@@ -244,7 +243,7 @@ sync or single variable and it is passed by reference.
 
 For generic formal arguments with unspecified types
 (\rsec{Formal_Arguments_of_Generic_Type}), an actual that
-is \chpl{sync} or \chpl{single} is ``read'' before being passed to the
+is \chpl{sync} or \chpl{single} is read before being passed to the
 function and the generic formal argument's type is set to the base
 type of the actual.
 
@@ -341,12 +340,9 @@ otherwise.  This method is non-blocking and the state of the sync or single
 variable is unchanged when this method completes.
 \end{protobody}
 
-Note that the implicitly-invoked \chpl{writeEF}
-and \chpl{readFE}/\chpl{readFF} methods (for \chpl{sync}
-and \chpl{single} variables, respectively) could be considered
-unnecessary due to their implicit invocations, yet are provided to
-support programmers who wish to make the semantics of these operations
-more explicit.
+Note that \chpl{writeEF} and \chpl{readFE}/\chpl{readFF} methods
+(for \chpl{sync} and \chpl{single} variables, respectively) are
+implicitly invoked for writes and reads of synchronization variables.
 
 
 \begin{chapelexample}{syncMethods.chpl}
@@ -399,13 +395,12 @@ block.  The \chpl{cobegin} statement syntax is
 cobegin-statement:
   `cobegin' block-statement
 \end{syntax}
-A new task is created for each statement in the block.  There are no
-guarantees of concurrency, and control continues when all of the tasks
-have finished.
+A new task is created for each statement in the block.  Control
+continues when all of the tasks have finished.
 
 Return statements are not allowed in cobegin blocks.  Yield statement
 may only be lexically enclosed in cobegin blocks in parallel
-iterators~\rsec{Parallel_Iterators}.  Break and continue statements
+iterators~(\rsec{Parallel_Iterators}).  Break and continue statements
 may not be used to exit a cobegin block.
 
 
@@ -462,7 +457,7 @@ iterations of the loop have completed.
 
 Return statements are not allowed in coforall blocks.  Yield statement
 may only be lexically enclosed in coforall blocks in parallel
-iterators~\rsec{Parallel_Iterators}.  Break and continue statements
+iterators~(\rsec{Parallel_Iterators}).  Break and continue statements
 may not be used to exit a coforall block.
 
 \begin{chapelexample}{coforallAndEquivalent.chpl}
@@ -518,11 +513,12 @@ given by
 \begin{syntax}
 sync-statement:
   `sync' statement
+  `sync' block-statement
 \end{syntax}
 
 Return statements are not allowed in sync statement blocks.  Yield
 statement may only be lexically enclosed in sync statement blocks in
-parallel iterators~\rsec{Parallel_Iterators}.  Break and continue
+parallel iterators~(\rsec{Parallel_Iterators}).  Break and continue
 statements may not be used to exit a sync statement block.
 
 \begin{chapelexample}{syncStmt1.chpl}

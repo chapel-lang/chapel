@@ -7,13 +7,15 @@ forall-statement and the forall-expression) and several idioms that
 support data parallelism implicitly (whole-array assignment, function
 and operator promotion, reductions, and scans).
 
-The forall statement is presented in~\rsec{Forall}.  The forall
-expression is presented in~\rsec{Forall_Expressions}.  Promotion is
-presented in~\rsec{Promotion}.  Reductions and scans are presented
-in~\rsec{Reductions_and_Scans}.  Configuration constants for
-controlling default data parallelism are presented
-in~\rsec{data_parallel_knobs}.
-
+This chapter details data parallelism as follows:
+\begin{itemize}
+\item \rsec{Forall} describes the forall statement.
+\item \rsec{Forall_Expressions} describes forall expressions
+\item \rsec{Promotion} describes promotion.
+\item \rsec{Reductions_and_Scans} describes reductions and scans
+\item \rsec{data_parallel_knobs} describes the configuration constants for
+controlling default data parallelism.
+\end{itemize}       
 
 \section{The Forall Statement}
 \label{Forall}
@@ -65,7 +67,7 @@ guaranteed to be completed.
 The following statements may not be lexically enclosed in forall
 statements: break statements, and return statements.  Yield statement
 may only be lexically enclosed in forall statements in parallel
-iterators~\rsec{Parallel_Iterators}.
+iterators~(\rsec{Parallel_Iterators}).
 
 \begin{chapelexample}{forallStmt.chpl}
 In the code
@@ -244,7 +246,9 @@ rather than functions.
 \label{Zipper_Promotion}
 \index{promotion!zipper iteration}
 
-Zipper promotion blah blah blah FIX ME!
+Promotion also supports zippered iteration semantics as described
+in~\rsec{Zipper_Iteration} and~\rsec{Parallel_Iterators} for parallel
+iteration.
 
 Consider a function \chpl{f} with formal
 arguments \chpl{s1}, \chpl{s2},~... that are promoted and formal
@@ -279,8 +283,8 @@ then the output is
 \subsection{Whole Array Assignment}
 \index{whole array assignment}
 
-Whole array assignment is implicitly parallel.  The assignment
-statement
+Whole array assignment is a considered a degenerate case of promotion
+and is implicitly parallel.  The assignment statement
 \begin{chapel}
 LHS = RHS;
 \end{chapel}
