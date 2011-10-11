@@ -32,8 +32,6 @@ chapel-bugs@lists.sourceforge.net or chapel_info@cray.com.  Please
 feel encouraged to err on the side of mailing us with any issues you
 run into.
 
-# OMITTED: studies/shootout/chameneos-redux/chameneos-redux-multiple-meeting-places.future
-#  b/c this is possibly a program bug
 # OMITTED: users/wmikanik/test1.future
 #  b/c the bug seems to have gone away, but we don't know the story behind it
 # OMITTED: arrays/sungeun/multilocale/aliasWithDomOnDifferentLocale.future
@@ -72,12 +70,10 @@ General (see also portability section at the bottom of this file)
 - Compiler and runtime and errors don't always report useful line
   numbers and may not be formatted correctly.
   Workaround: Please ask us for help finding the line in question.
-  # parsing/vass/line-numbers-after-newline-in-string.future
   # trivial/vass/line-number-for-toplevel-compilerError.future
   # parsing/vass/newline-in-string-compiletime-1.future
 - Back-end compilers may emit warning messages.
   # memory/sungeun/no_unreachable_autoDestroy.future
-  # optimizations/hilde/removeUnreachable.future
 - Names in a Chapel program can collide with names used internally.
   # classes/vass/duplicate-virtual-method-ok-1.future
   # trivial/figueroa/UnmangledSymbols.future
@@ -159,8 +155,6 @@ Modules and Functions
   # modules/diten/mutualuse.future
   # modules/diten/mutualuse2.future
   # modules/diten/mutualuse3.future
-- Where clauses on non-generic functions are ignored.
-  # functions/diten/whereClauseIgnored.future
 - Invalid where clauses may result in compiler seg fault.
   # functions/vass/where-clause-bug-1.future
 - Array-of-array formal argument declarations do not work
@@ -238,9 +232,6 @@ Tuples, Classes, Records, and Unions
   # classes/hilde/alwaysOverrideCopyInit.future
 - Constant checking for components of constant tuples is incomplete.
 - Constant checking for fields of constant records is incomplete.
-- Constant checking for constant fields of records or classes is incomplete.
-  # classes/deitz/test_const_field_error.future
-  # classes/dinan/user_def_unique_constructor_const_multipleassign.future
 - Incorrect casting of a class variable to a type that is not its
   superclass does not report an error.
   # classes/vass/subclass-cast-error.future
@@ -267,7 +258,6 @@ Tuples, Classes, Records, and Unions
   compiler assertion.
   # functions/diten/fnGenericTupleArg.future
   # functions/vass/arg-is-tuple-with-generic-class.future
-  # functions/vass/arg-is-tuple-with-no-type.future (maybe?)
 - Specifying the type of a tuple of domains results in a runtime
   error.  It may be possible to work around this by implicitly
   specifying the type by using an assignment at the declaration.
@@ -286,10 +276,6 @@ Tuples, Classes, Records, and Unions
   # classes/vass/generic-parenthesesless-big1.future
 - Generic domain types in field declarations result in a compile time error.
   # domains/vass/generic-domain-field.future
-- Records in class may result in memory errors that can have
-  unexpected results (run with valgrind to confirm).
-  # classes/claridge/recordInClass2.future
-  # classes/claridge/recordInClass1.future
 - Invalid use of tuple expansion as an expression results in the
   expression evaluating to the first element of the tuple.
   # functions/vass/return-of-tuple-expansion-1.future
@@ -304,9 +290,7 @@ Ranges, Domains, and Arrays
 - Arrays of arrays where the inner arrays vary in size are not supported.
   # arrays/deitz/test_skyline_array.future
   # studies/590o/wk3/02arrOfArr-irregular.future
-- Modifications to Associative and Sparse domains are not thread-safe.
-  # domains/sungeun/assoc/forall.future
-  # domains/sungeun/assoc/stress.future
+- Modifications to Sparse domains are not thread-safe.
   # domains/sungeun/sparse/forall.future
   # domains/sungeun/sparse/stress.future
 - Sparse domain/array slicing is not supported.
@@ -315,7 +299,6 @@ Ranges, Domains, and Arrays
 - Constant checking for domains and arrays is not implemented.
   # domains/bradc/assignConstDom2.future
   # domains/bradc/assignConstDom.future
-  # arrays/bradc/constArray.future
 # FIX ME?
   # types/range/hilde/countError.future
 - Subset checks on subdomains is not implemented.
@@ -348,17 +331,13 @@ Ranges, Domains, and Arrays
   # domains/claridge/domainOfDomains.future
 - Range operations can result in overflow.
     e.g., (0:uint..5 by -1).length
-  # ranges/sungeun/length.future
-  # types/range/diten/testRangeLength.future
   # types/range/diten/testRangeSlice.future
   # types/range/diten/testRangeSlice2.future
   # types/range/diten/testRangeSlice3.future
-  # types/range/diten/uintRangeLoops.future
   # types/range/sungeun/length_broken.future
 - Ranges that span the entire representable range of the index type
   do not work.
   # types/range/hilde/noCountBigUint.future
-  # types/range/hilde/rangeLimitPromotion.future
 - Ranges that are sliced with another range with a different index
   type do not work.
   # types/range/vass/slice-1.future
@@ -386,20 +365,15 @@ Iterators and Generics
 #  b/c it is an issue only with --no-live-analysis
 # OMITTED: functions/iterators/diten/arrEltIter.future
 #  b/c it is an issue only with --no-live-analysis
-- Anonymous array types are not implemented.
-  # classes/bradc/arrayInClass/genericClassArray-anon.future
 - Recursive iterators may not work correctly.
   # functions/iterators/vass/recursive-iterator-in-expr-context.future
   # functions/iterators/claridge/recursiveIterTypeBug.future
 - Iterators in records cannot change fields in that record.
   # functions/deitz/iterators/test_record_iterator.future
-  # studies/shootout/nbody/nbody_recorditerator.future
 - Nested 'var' iterators may not work correctly.
 - The implicit 'setter' argument does not work in var iterators.
   # functions/deitz/iterators/iterator_uses_setter.future
   # functions/deitz/iterators/test_promote_var_function_and_iterate.future
-- Records cannot be generic over real parameters.
-  # classes/diten/paramRealInRecord.future
 - Type and parameter functions are not checked for side effects.
 - Subclassing uninstantiated generic classes should be prohibited but is not.
 - Errors from calls to 'compilerError' may be incorrect due to dynamic dispatch.
@@ -429,7 +403,6 @@ Task Parallelism and Synchronization
 #   I think what is wanted here is a multi-plexing tasking layer
 - Atomic statements are not implemented.
 - Deadlocks may occur due to an insufficient number of threads.
-  # multilocale/diten/needMultiLocales/coforallon_maxThreads.future
   # parallel/cobegin/deitz/test_many_threads.future (other issues too)
 - Arrays may not be moved to the heap due to begin statements or
   other indirect array element accesses.
@@ -472,19 +445,14 @@ Data Parallelism
 - Parallel zippered iteration does not perform runtime size/shape checks
   # arrays/bradc/badParZip.future
   # arrays/claridge/arraySizeMismatch.future
-- Whole-domain assignment operations on sparse and associative domains
-  are not all serialized as they should be.
-  # domains/sungeun/assoc/minus_equals.future
+- Whole-domain assignment operations on sparse domains are not all
+  serialized as they should be.
   # domains/sungeun/sparse/minus_equals.future
   # domains/sungeun/sparse/plus_equals.future
 
 
 Locales and Domain Maps
 -----------------------
-- Domain maps may be prematurely freed, resulting in a runtime error
-  message.
-  Workaround: This may be in the declaration. Try eliding the type.
-  # distributions/vass/dmap-var-decl.future
 - The default value for locale types is incorrect.
   # types/locale/bradc/defaultLocaleVal.future
   # multilocale/sungeun/locale_default.future
@@ -508,7 +476,6 @@ User-Defined Reductions and Scans and User-Defined Domain Maps
 - User-defined reductions and scans are not yet implemented.
 - User-defined domain maps are not yet implemented.
   # Someone might run into this if they were implementing a domain map
-  # distributions/diten/domainMethodNewDist.future
 
 
 Standard Modules, Standard Distributions, and Standard Layouts
@@ -521,9 +488,6 @@ Standard Modules, Standard Distributions, and Standard Layouts
   # users/jglewis/test_cyclic_dist.future
 - Block and Cyclic domains containing indices near the minimum or
   maximum integral type may overflow.
-- Array reindexing on some Block, Cyclic, and BlockCyclic arrays is
-  not supported.
-  # distributions/robust/arithmetic/reindexing/test_strided_reindex3.future
 - Array assignment fails for Block distributions with bounding boxes
   that do not overlap with the bounds of the domain.
   # arrays/sungeun/multilocale/weird_bbox_block.future
@@ -549,8 +513,6 @@ Miscellaneous
 - Overloading operations such as multiplication for domain literals not
   supported.
   # domains/claridge/multiplicationSyntaxCheck.future
-- Name mangling for generics may result in errors during C compilation.
-  # classes/vass/instantiated_name_for_real_param.future
 - Integer constants should be 64-bit.
   # types/range/hilde/align64.future
   # types/range/hilde/needRangeCountType.future
@@ -558,8 +520,6 @@ Miscellaneous
   # users/vass/param-uint-to-param-string.future
 - Leaving off () when calling exit results in an internal error.
   # exits/sungeun/exitWithNoParensNoArgs.future
-- Multi-locale halt may not exit cleanly.
-  # exits/bradc/multipleHalts.future
 - Extern support is not robust.
   # extern/bradc/emptyRecords/emptyrecordexternfn.future
   # users/ferguson/extern_class_test.future
@@ -567,7 +527,6 @@ Miscellaneous
   # trivial/jturner/fixedStringEquals.future
 - Types composed of runtime types are not runtime types
   # arrays/deitz/part3/test_record_of_array_type.future
-  # arrays/deitz/part3/test_record_of_array_type3.future
   # arrays/deitz/part3/test_record_of_domain_type.future
   # arrays/deitz/part6/test_tuple_of_array.future
   # types/tuple/diten/runtimeTypeInTuple.future
