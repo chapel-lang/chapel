@@ -12,13 +12,13 @@ Highlights (see below for details)
 ----------------------------------
 - added 'extern', 'export', and 'inline' keywords
 - new optimizations for whole-array assignments and remote array accesses
-- improved support for Qthreads and Nanos++ tasking including multi-locale
+- improved support for Qthreads and Nanos++ tasking, including multi-locale
 - added dynamic range iterators via an 'AdvancedIters' module
 - continued improving range semantics and implementation
 - added support for # operator on dense rectangular domains and arrays
-- made associative domain index adding/removing parallel-safe
-- --static/--dynamic linking flags
-- improved communication diagnostics
+- made associative domain index modifications parallel-safe
+- added --static/--dynamic linking flags
+- improved communication diagnostics capabilities
 - new example codes: SSCA2; primers on sync vars, leader-follower iterators
 - updated documentation
 - many bug fixes
@@ -31,9 +31,9 @@ Syntactic/Naming Changes
 - made it illegal for a string literal to contain an unescaped newline
 - renamed dsiIndexLocale to dsiIndexToLocale in domain map standard interface
   (see doc/technotes/README.dsi)
+- reserved 'ref' as a keyword for future use
 - renamed 'iterator' enumeration to 'iterKind' for leader-follower iterators
 - renamed 'follower' argument to follower iterators 'followThis'
-- reserved 'ref' as a keyword for future use
 
 Semantic Changes / Changes to Chapel Language
 ---------------------------------------------
@@ -41,40 +41,43 @@ Semantic Changes / Changes to Chapel Language
 - added 'inline' keyword to force a function to be inlined
 - added support to # operator for dense rectangular domains and arrays
 - removed support for tensor iteration from the language definition
-- removed the concept of 'realms' from the language
-- ranges are now == even if ambiguous if their representations match
+- removed the realm concept from the language
+- ambiguous ranges are now == if their representations match
 - disabled promotion of the '..' operator
 
 Newly Implemented Features
 --------------------------
-- added support for multilocale execution using qthreads and nanox task layers
+- improved qthreads and nanox task layers to support multilocale execution
+  (see doc/README.tasks)
 - adding and removing indices from associative domains is now parallel-safe
-- updated communication diagnostics interface
+- updated the communication diagnostics interface
   (see doc/technotes/README.comm-diagnostics)
 
 Standard Modules
 ----------------
 - added an 'AdvancedIters' module with various dynamic scheduling algorithms
-- added integer floor/ceiling/mod functions to 'Math' module
-  (see 'Standard Modules' in spec)
+- added floor/ceiling/mod functions for integers to 'Math' module
+- added new sorting routines to standard 'Sort' module
 - added a 'UtilMath' module with other integer ceiling/floor functions
 - added a param version of abs() for integers to 'Math' module
-- added new sorting routines to standard 'Sort' module
 
 Documentation
 -------------
 - spec updates:
-  - refreshed Data Parallelism, Task Parallelism, and Conversions chapters
-  - updated Ranges chapter
-  - minor updates to Domains and Classes chapters
-- added documentation about the compiler's module search path to man page/README
+  - added a new chapter on 'Interoperability'
+  - refreshed 'Data Parallelism', 'Task Parallelism', and 'Conversions' chapters
+  - updated 'Ranges' chapter significantly
+  - minor updates to 'Domains', 'Arrays', and 'Classes' chapters
+  - split 'Memory Consistency Model' into its own chapter (still poorly defined)
+  - documented new Advanced Iterators and Sort routines in 'Standard Modules'
+- added documentation about the compiler's module search path to man page/technotes
   (see 'man chpl' and doc/technotes/README.module_search)
 - added note about parallel safety to doc/technotes/README.extern
-- generally refreshed README and other text documentation files
+- generally refreshed README* and other text-based documentation files
 
 Example Codes
 -------------
-- added an in-progress implementation of SSCA2 to the release examples
+- added a(n in-progress) implementation of SSCA2 to the release examples
   (see examples/ssca2)
 - added a primer for sync and single variables
   (see examples/primers/syncsingle.chpl)
@@ -142,9 +145,9 @@ Third-Party Software Changes
 ----------------------------
 - removed requirement to specify LD_LIBRARY_PATHs for qthreads and nanox tasks
 - updated to GASNet version 1.16.2 (see third-party/gasnet/README)
-- updated to Qthreads version 1.7 (see third-party/qthreads/README)
+- updated Qthreads to version 1.7 (see third-party/qthreads/README)
 - added tcmalloc version 1.7 (see third-party/tcmalloc/README)
-- updated to dlmalloc version 2.8.5
+- updated dlmalloc to version 2.8.5
 
 Runtime Library Changes
 -----------------------
