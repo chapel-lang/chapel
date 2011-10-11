@@ -11,7 +11,7 @@ Seventh public release of Chapel, October 20, 2011
 Highlights (see below for details)
 ----------------------------------
 - added 'extern', 'export', and 'inline' keywords
-- optimizations for whole-array assignments and remote array accesses
+- new optimizations for whole-array assignments and remote array accesses
 - improved support for Qthreads and Nanos++ tasking including multi-locale
 - added dynamic range iterators via an 'AdvancedIters' module
 - continued improving range semantics and implementation

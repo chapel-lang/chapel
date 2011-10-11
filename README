@@ -18,7 +18,7 @@ Quick Start
 1) Make sure that your shell is in the directory containing this
    README file.  For example:
 
-        cd ~/chapel-1.4.0/chapel
+        cd ~/chapel-1.4.0
 
 
 2) Build the compiler and runtime libraries using:
@@ -39,13 +39,16 @@ Quick Start
      ...the Bourne shell (sh)                  . util/setchplenv.sh
 
    You must be in the "chapel" directory for these command scripts to
-   work properly.
+   work properly.  Note that there is no requirement to use these
+   scripts, they are merely designed to get users up and running
+   quickly.
 
    If you use a different shell, refer to doc/README.chplenv for
-   information about what environment settings you'll need to use
-   Chapel satisfactorily (and if you're able to create an equivalent
-   util/setchplenv.* script for your shell, please mail a copy of it
-   to us at chapel_info@cray.com for inclusion in our next release).
+   information about what environment settings you'll need to make in
+   order to use Chapel satisfactorily (and if you're able to create an
+   equivalent util/setchplenv.* script for your shell, please mail a
+   copy of it to us at chapel_info@cray.com for inclusion in our next
+   release).
 
 
 4) Compile an example program using:
