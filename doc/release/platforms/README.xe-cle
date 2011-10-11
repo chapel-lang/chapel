@@ -76,7 +76,6 @@ please contact your system administrator.
      - PrgEnv-cray
      - PrgEnv-gnu
      - PrgEnv-intel
-     - PrgEnv-pathscale
      - PrgEnv-pgi
 
 
@@ -88,7 +87,6 @@ please contact your system administrator.
      gnu       : the GNU compiler suite -- gcc and g++
      cray      : the Cray compiler suite -- cc and CC
      intel     : the Intel compiler suite -- icc and icpc
-     pathscale : the Pathscale compiler suite -- pathcc and pathCC
      pgi       : the PGI compiler suite -- pgcc and pgCC
 
 
@@ -146,19 +144,6 @@ Cray XE File Systems and Chapel execution
   the compute node's file system rather than the login node's.  To
   avoid wrestling with such issues, we recommend executing Chapel
   programs from a Lustre file system directory.
-
-
------------------------------------------------------
-Dynamic linking with the Cray Programming Environment
------------------------------------------------------
-
-* By default, Chapel programs built for the Cray XE do not specify
-  static or dynamic linking.  The current default for the Cray
-  Programming Environment compilers is dynamic linking.  If you wish
-  to override this, set the environment variable
-  CHPL_ASYNCPE_USE_DYNAMIC to 'false'.  Note that it may not be
-  possible to link statically depending on your particular system
-  configuration.
 
 
 --------------------------

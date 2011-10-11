@@ -83,7 +83,6 @@ let us know at chapel_info@cray.com.
      - PrgEnv-cray
      - PrgEnv-gnu
      - PrgEnv-intel
-     - PrgEnv-pathscale
      - PrgEnv-pgi
 
 
@@ -95,7 +94,6 @@ let us know at chapel_info@cray.com.
      gnu       : the GNU compiler suite -- gcc and g++
      cray      : the Cray compiler suite -- cc and CC
      intel     : the Intel compiler suite -- icc and icpc
-     pathscale : the Pathscale compiler suite -- pathcc and pathCC
      pgi       : the PGI compiler suite -- pgcc and pgCC
 
 
@@ -152,18 +150,6 @@ Cray XT File Systems and Chapel execution
   the compute node's file system rather than the login node's.  To
   avoid wrestling with such issues, we recommend executing Chapel
   programs from a Lustre file system directory.
-
-
------------------------------------------------------
-Dynamic linking with the Cray Programming Environment
------------------------------------------------------
-
-* By default, Chapel programs built for the Cray XT do not specify
-  static or dynamic linking.  The current default for the Cray
-  Programming Environment compilers is static linking.  If you wish to
-  override this, set the environment variable CHPL_ASYNCPE_USE_DYNAMIC
-  to 'true'.  Note that it may not be possible to link dynamically
-  depending on your particular system configuration.
 
 
 --------------------------
@@ -251,11 +237,9 @@ WARNING: if communication performance is at all important in this program run.
   To squelch this message, you can set the environment variable
   GASNET_QUIET=yes.
 
-  The reason Chapel defaults to the non-native conduit is because we
-  have noticed performance problems for certain Chapel programs using
-  the Portals conduit.  We have not had the resources to devote to
-  this problem yet, so for now we are assuming that the problems lie
-  either in our GASNet port or our GASNet build configuration.
+  The reason Chapel defaults to the non-native conduit is because
+  portals problems are difficult to diagnose and debug, and we have
+  not had the resources to devote to thorough testing.
 
 * Redirecting stdin when executing a Chapel program under PBS/qsub
   may not work due to limitations of qsub.
