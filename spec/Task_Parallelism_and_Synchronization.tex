@@ -1,49 +1,54 @@
 \sekshun{Task Parallelism and Synchronization}
 \label{Task_Parallelism_and_Synchronization}
 
-Chapel supports both task parallelism and data parallelism, and the
-mixing thereof.  This chapter details tasks parallelism in four parts:
+Chapel supports both task parallelism and data parallelism.  This
+chapter details tasks parallelism in four parts:
 \begin{itemize}
-\item \rsec{unstructured_task_parallelism}
-describes the begin statement, an unstructured way to introduce
-concurrency into a program, and synchronization variables, an
-unstructured mechanism for synchronizing a program.
-\item \rsec{structured_task_parallelism}
-describes the cobegin and coforall statement, structured ways to
-introduce concurrency into a program, and the sync- and
-serial statement, structured ways to control and suppress parallelism.
-\item \rsec{atomicity}
-describes the atomic statement, a construct to support atomic
-transactions.
+\item \rsec{Task_parallelism} introduces tasks and task parallelism.
+\item \rsec{Begin} describes the begin statement, an unstructured way
+to introduce concurrency into a program.
+\item \rsec{Synchronization_Variables} describes synchronization
+variables, an unstructured mechanism for synchronizing tasks.
+\item \rsec{Cobegin} describes the cobegin statement, a structured way to
+introduce concurrency into a program.
+\item \rsec{Coforall} describes the coforall loop, another structured way to
+introduce concurrency into a program.
+\item \rsec{Sync_Statement} describes the sync statement, a structured
+way to control parallelism.
+\item \rsec{Serial} describes the serial statement, a structured way to suppress
+parallelism.
+\item \rsec{atomicity} describes the atomic statement, a construct to
+support atomic transactions.
 \item \rsec{Memory_Consistency}
 describes the memory consistency model.
 \end{itemize}
 
-The term \emph{task} is used to refer to a distinct context of
-execution that may be running concurrently.
+\section{Tasks and Task Parallelism}
+\label{Task_parallelism}
 
-\section{Unstructured Task-Parallel Constructs}
-\label{unstructured_task_parallelism}
+A Chapel \emph{task} is a distinct context of execution that maybe
+running concurrently with other tasks.  Chapel provides a simple
+construct, the begin statement, to create tasks, introducing
+concurrency into a program in an unstructured way.  In addition,
+Chapel introduces two type qualifiers, \chpl{sync} and \chpl{single},
+for synchronization between tasks.
 
-Chapel provides a simple construct, the begin statement, to spawn
-tasks, thus introducing concurrency into a program in an unstructured
-way.  In addition, Chapel introduces two type qualifiers, \chpl{sync}
-and \chpl{single}, for synchronization of tasks.
+Chapel provides two constructs, the cobegin and coforall statements,
+to introduce concurrency in a more structured way.  These constructs
+create multiple tasks but do not continue until the tasks have
+completed.  In addition, Chapel provides two constructs, the sync- and
+serial statements, to suppress parallelism and insert synchronization.
+All four of these constructs can be implemented through judicious uses
+of the unstructured task-parallel constructs described in the previous
+section.
 
-More structured ways to achieve concurrency are discussed
-in~\rsec{structured_task_parallelism}.  These structured ways to
-introduce concurrency may be easier to use in many common cases.  They
-can be implemented using only the unstructured constructs described in
-this section.
 
-\subsection{The Begin Statement}
+\section{The Begin Statement}
 \label{Begin}
 \index{begin@\chpl{begin}}
 
-The begin statement spawns a task to execute a statement.  The
-begin statement is thus an unstructured way to create a new task that
-is executed only for its side-effects.  The syntax for the begin
-statement is given by
+The begin statement creates a task to execute a statement.  The syntax
+for the begin statement is given by
 \begin{syntax}
 begin-statement:
   `begin' statement
@@ -74,50 +79,59 @@ guarantee as to which statement will execute first.  When the
 begin statement is executed, a new task is created that will execute
 the \chpl{writeln} statement within it.  However, execution will
 continue immediately with the next statement.
-In~\rsec{Sync_Variables}, this same example will be synchronized so
-that the output from the spawned task always happens second.
 \end{chapelexample}
 
-The following statements may not be lexically enclosed in
-begin statements: break statements, continue statements,
-yield statements, and return statements.
+Yield and return statements are not allowed in begin blocks.  Break
+and continue statements may not be used to exit a begin block.
 
-\subsection{Sync Variables}
-\label{Sync_Variables}
+%
+% TODO: Future environment about task teams.
+%
+
+\section{Synchronization Variables}
+\label{Synchronization_Variables}
 \index{synchronization variables!sync@\chpl{sync}}
+\index{synchronization variables!sync@\chpl{single}}
 \index{sync@\chpl{sync}}
+\index{single@\chpl{single}}
 
-The use of and assignment to variables of \chpl{sync} type implicitly
-control the execution order of a task, making them well-suited to
-producer-consumer data sharing.
+Synchronization variables have a logical state associated with the
+value.  The state of the variable is either {\em full} or {\em empty}.
+Normal reads of a synchronization variable cannot proceed until the
+variable's state is full.  Normal writes of a synchronization variable
+cannot proceed until the variable's state is empty.
 
-A sync variable is logically either {\em full} or {\em empty}.  When
-it is empty, tasks that attempt to read that variable are suspended
-until the variable becomes full by the next assignment to it, which
-atomically changes the state to full.  When the variable is full, a
-read of that variable consumes the value and atomically transitions
-the state to empty.  If there is more than one task waiting on a sync
-variable, one is non-deterministically selected to use the variable
-and resume execution.  The other tasks continue to wait for the next
-assignment.
+Chapel supports two types of synchronization variables: sync and
+single.  Both types behave similarly, expect that a single variable
+may only be written once.  Consequently, when a sync variable is read,
+its state transitions to empty, where as when a single variable is
+read, its state does not change.  When either type of synchronization
+variable is written, its state transitions to full.
 
-If a task attempts to assign to a sync variable that is full, the task
-is suspended and the assignment is delayed.  When the sync variable
-becomes empty, the task is resumed and the assignment proceeds,
-transitioning the state back to full.  If there are multiple tasks
-attempting such an assignment, one is non-deterministically selected
-to proceed and the other assignments continue to wait until the sync
-variable is emptied again.
+Sync and single are type qualifiers and preceed the variable's type in
+the declaration.  Sync and single are only supported for Chapel all
+primitive types (~\rsec{Primitive_Types}) except strings and complex.
 
-A sync variable is specified with a sync type given by the following
-syntax:
+If a task attempts to read or write a synchronization variable that is
+not in the correct state, the task is suspended.  When the variable
+transitions to the correct state, the task is resumed.  If there are
+multiple tasks blocked waiting for the state transition, one is
+non-deterministically selected to proceed and the others continue to
+wait.
+
+A synchronization variable is specified with a sync or single type
+given by the following syntax:
 \begin{syntax}
 sync-type:
   `sync' type-specifier
+
+single-type:
+  `single' type-specifier
 \end{syntax}
 
-If a sync variable declaration has an initialization expression, then
-the variable is initially full, otherwise it is initially empty.
+If a synchronization variable declaration has an initialization
+expression, then the variable is initially full, otherwise it is
+initially empty.
 
 \begin{chapelexample}{beginWithSyncVar.chpl}
 The code
@@ -151,69 +165,10 @@ writeln(tree.sum());
 the sync variable \chpl{x$\mbox{{\bf \$}}$} is assigned by an
 asynchronous task created with the begin statement.  The task
 returning the sum waits on the reading of \chpl{x$\mbox{{\bf \$}}$}
-until it has been assigned.
+until it has been assigned.  By convention, synchronization variables
+end in $\mbox{{\bf \$}}$ to provide a visual cue to the programmer
+indicating that the task may block.
 \end{chapelexample}
-
-\begin{chapelexample}{syncCounter.chpl}
-Sync variables are useful for tallying data from multiple tasks as
-well.  A sync variable of type \chpl{int} is read and then written
-during an update so the full-empty semantics make these updates atomic
-when used in a stylized way.  The code
-\begin{chapel}
-var count$\mbox{{\bf \$}}$: sync int = 0;
-begin count$\mbox{{\bf \$}}$ = count$\mbox{{\bf \$}}$ + 1;
-begin count$\mbox{{\bf \$}}$ = count$\mbox{{\bf \$}}$ + 1;
-begin count$\mbox{{\bf \$}}$ = count$\mbox{{\bf \$}}$ + 1;
-\end{chapel}
-\begin{chapelpost}
-while count$\mbox{{\bf \$}}$.readFF() != 3 do ;
-writeln("count is: ", count$\mbox{{\bf \$}}$);
-\end{chapelpost}
-\begin{chapeloutput}
-count is: 3
-\end{chapeloutput}
-spawns three tasks to increment \chpl{count$\mbox{{\bf \$}}$}.
-If \chpl{count$\mbox{{\bf \$}}$} was not a sync variable, this code
-would be unsafe because between the points at which one task
-reads \chpl{count$\mbox{{\bf \$}}$} and
-writes \chpl{count$\mbox{{\bf \$}}$}, another task may increment it.
-\end{chapelexample}
-
-\index{sync types!records and classes}
-If the base type of a sync type is a class or a record, the sync
-semantics only apply to the class or record, not to its individual
-fields or methods.  A record or class type may have fields of sync
-type to get sync semantics on individual field accesses.
-
-\index{sync types!formal arguments}
-If a formal argument is a sync type, the actual is passed by reference
-and the argument itself is a valid lvalue.  The unqualified
-type \chpl{sync} can also be used to specify a generic formal
-argument.  In this case, the actual must be a sync variable and it is
-passed by reference.
-
-For generic formal arguments with unspecified types
-(\rsec{Formal_Arguments_of_Generic_Type}), an actual that
-is \chpl{sync} is ``read'' before being passed to the function and the
-generic formal argument's type is set to the base type of the actual.
-
-\subsection{Single Variables}
-\label{Single_Variables}
-\index{synchronization variables!single@\chpl{single}}
-\index{single@\chpl{single}}
-
-A single (assignment) variable specializes sync variables by
-restricting the number of times it can be assigned to no more than one
-during its lifetime.  A use of a single variable before it is assigned
-causes the task's execution to suspend until the variable is assigned.
-Otherwise, the use proceeds as with normal variables and the task
-continues.  After a single assignment variable is assigned, all tasks
-with pending uses resume in an unspecified order.  A single variable
-is specified with a single type given by the following syntax:
-\begin{syntax}
-single-type:
-  `single' type-specifier
-\end{syntax}
 
 \begin{chapelexample}{singleVar.chpl}
 The following code implements a simple split-phase barrier using a
@@ -255,6 +210,45 @@ release$\mbox{{\bf \$}}$, setting its state to full at which time all
 the other tasks can be unblocked and run.
 \end{chapelexample}
 
+\begin{chapelexample}{syncCounter.chpl}
+Sync variables are useful for tallying data from multiple tasks as
+well.  A sync variable of type \chpl{int} is read and then written
+during an update so the full-empty semantics make these updates atomic
+when used in a stylized way.  The code
+\begin{chapel}
+var count$\mbox{{\bf \$}}$: sync int = 0;
+begin count$\mbox{{\bf \$}}$ = count$\mbox{{\bf \$}}$ + 1;
+begin count$\mbox{{\bf \$}}$ = count$\mbox{{\bf \$}}$ + 1;
+begin count$\mbox{{\bf \$}}$ = count$\mbox{{\bf \$}}$ + 1;
+\end{chapel}
+\begin{chapelpost}
+while count$\mbox{{\bf \$}}$.readFF() != 3 do ;
+writeln("count is: ", count$\mbox{{\bf \$}}$);
+\end{chapelpost}
+\begin{chapeloutput}
+count is: 3
+\end{chapeloutput}
+creates three tasks to increment \chpl{count$\mbox{{\bf \$}}$}.
+If \chpl{count$\mbox{{\bf \$}}$} was not a sync variable, this code
+would be unsafe because between the points at which one task
+reads \chpl{count$\mbox{{\bf \$}}$} and
+writes \chpl{count$\mbox{{\bf \$}}$}, another task may increment it.
+\end{chapelexample}
+
+\index{synchronization types!formal arguments}
+If a formal argument is a synchronization type, the actual is passed
+by reference and the argument itself is a valid lvalue.  The
+unqualified types \chpl{sync} or \chpl{single} can also be used to
+specify a generic formal argument.  In this case, the actual must be a
+sync or single variable and it is passed by reference.
+
+For generic formal arguments with unspecified types
+(\rsec{Formal_Arguments_of_Generic_Type}), an actual that
+is \chpl{sync} or \chpl{single} is ``read'' before being passed to the
+function and the generic formal argument's type is set to the base
+type of the actual.
+
+
 \subsection{Predefined Single and Sync Methods}
 \label{Functions_on_Synchronization_Variables}
 \index{synchronization variables!predefined methods on}
@@ -267,9 +261,9 @@ type.
 proc (sync t).readFE(): t
 \end{protohead}
 \begin{protobody}
-Wait for full, leave empty, and return the value of the sync variable.
-This method blocks until the sync variable is full.  The state of the
-sync variable is set to empty when this method completes.
+Returns the value of the sync variable.  This method blocks until the
+sync variable is full.  The state of the sync variable is set to empty
+when this method completes.
 \end{protobody}
 
 \index{readFF@\chpl{readFF}}
@@ -347,20 +341,13 @@ otherwise.  This method is non-blocking and the state of the sync or single
 variable is unchanged when this method completes.
 \end{protobody}
 
-\begin{rationale}
-In general, these methods are provided such that other traditional
-synchronization primitives, such as semaphores and mutexes, can be
-constructed.
-
 Note that the implicitly-invoked \chpl{writeEF}
 and \chpl{readFE}/\chpl{readFF} methods (for \chpl{sync}
 and \chpl{single} variables, respectively) could be considered
 unnecessary due to their implicit invocations, yet are provided to
 support programmers who wish to make the semantics of these operations
-more explicit.  It might be desirable to have a compiler option that
-disables the implicit application of these methods.
+more explicit.
 
-\end{rationale}
 
 \begin{chapelexample}{syncMethods.chpl}
 Given the following declarations
@@ -402,19 +389,7 @@ writeln((x$\mbox{{\bf \$}}$.readXX(), y$\mbox{{\bf \$}}$, z));
 \end{chapeloutput}
 \end{chapelexample}
 
-\section{Structured Task-Parallel Constructs}
-\label{structured_task_parallelism}
-
-Chapel provides two constructs, the cobegin and coforall statements,
-to introduce concurrency in a more structured way.  These constructs
-spawn multiple tasks but do not continue until the tasks have
-completed.  In addition, Chapel provides two constructs, the sync- and
-serial statements, to suppress parallelism and insert synchronization.
-All four of these constructs can be implemented through judicious uses
-of the unstructured task-parallel constructs described in the previous
-section.
-
-\subsection{The Cobegin Statement}
+\section{The Cobegin Statement}
 \label{Cobegin}
 \index{cobegin@\chpl{cobegin}}
 
@@ -424,14 +399,15 @@ block.  The \chpl{cobegin} statement syntax is
 cobegin-statement:
   `cobegin' block-statement
 \end{syntax}
-Each statement within the block statement is executed concurrently and
-is considered a separate task.  Control continues when all of the
-tasks have finished.
+A new task is created for each statement in the block.  There are no
+guarantees of concurrency, and control continues when all of the tasks
+have finished.
 
-The following statements may not be lexically enclosed in
-cobegin statements: break statements, continue statements, and
-return statements.  Yield statement may only be lexically enclosed in
-cobegin statements in parallel iterators~\rsec{Parallel_Iterators}.
+Return statements are not allowed in cobegin blocks.  Yield statement
+may only be lexically enclosed in cobegin blocks in parallel
+iterators~\rsec{Parallel_Iterators}.  Break and continue statements
+may not be used to exit a cobegin block.
+
 
 \begin{chapelexample}{cobeginAndEquivalent.chpl}
 The cobegin statement
@@ -464,12 +440,12 @@ continue past the final line above until each of the single variables
 is written, thereby ensuring that each of the functions has finished.
 \end{chapelexample}
 
-\subsection{The Coforall Loop}
+\section{The Coforall Loop}
 \label{Coforall}
 \index{coforall@\chpl{coforall}}
 \index{coforall loops}
 
-The coforall loop is a variant of the cobegin statement and a loop.
+The coforall loop is a variant of the cobegin statement in loop form.
 The syntax for the coforall loop is given by
 \begin{syntax}
 coforall-statement:
@@ -479,17 +455,15 @@ coforall-statement:
   `coforall' iteratable-expression block-statement
 \end{syntax}
 
-The semantics of the \chpl{coforall} loop are identical to
-a \chpl{cobegin} statement where each iteration of the \chpl{coforall}
-loop is equivalent to a separate statement in a \chpl{cobegin} block.
+The \chpl{coforall} loop creates a separate task for each iteration of
+the loop.  Control continues with the statement following
+the \chpl{coforall} loop after all tasks corresponding to the
+iterations of the loop have completed.
 
-Control continues with the statement following the \chpl{coforall}
-loop only after all iterations have been completely evaluated.
-
-The following statements may not be lexically enclosed in
-coforall statements: break statements, continue statements, and
-return statements.  Yield statement may only be lexically enclosed in
-coforall statements in parallel iterators~\rsec{Parallel_Iterators}.
+Return statements are not allowed in coforall blocks.  Yield statement
+may only be lexically enclosed in coforall blocks in parallel
+iterators~\rsec{Parallel_Iterators}.  Break and continue statements
+may not be used to exit a coforall block.
 
 \begin{chapelexample}{coforallAndEquivalent.chpl}
 The coforall statement
@@ -534,7 +508,7 @@ of the tasks have completed.  Thus control does not continue past the
 last line until all of the tasks have completed.
 \end{chapelexample}
 
-\subsection{The Sync Statement}
+\section{The Sync Statement}
 \label{Sync_Statement}
 \index{sync@\chpl{sync}}
 
@@ -545,22 +519,23 @@ given by
 sync-statement:
   `sync' statement
 \end{syntax}
-The following statements may not be lexically enclosed in
-sync statements: break statements, continue statements, and
-return statements.  Yield statement may only be lexically enclosed in
-sync statements in parallel iterators~\rsec{Parallel_Iterators}.
+
+Return statements are not allowed in sync statement blocks.  Yield
+statement may only be lexically enclosed in sync statement blocks in
+parallel iterators~\rsec{Parallel_Iterators}.  Break and continue
+statements may not be used to exit a sync statement block.
 
 \begin{chapelexample}{syncStmt1.chpl}
-The sync statement can be used to wait for many dynamically spawned
+The sync statement can be used to wait for many dynamically created
 tasks.
 \begin{chapelpre}
 config const n = 9;
-proc work(i) {
+proc work() {
   write(".");
 }
 \end{chapelpre}
 \begin{chapel}
-sync for i in 1..n do begin work(i);
+sync for i in 1..n do begin work();
 \end{chapel}
 \begin{chapelpost}
 writeln("done");
@@ -570,7 +545,7 @@ writeln("done");
 \end{chapeloutput}
 The for loop is within a sync statement and thus the tasks created
 in each iteration of the loop must complete before the continuing past
-the syns statment.
+the sync statement.
 \end{chapelexample}
 
 \begin{chapelexample}{syncStmt2.chpl}
@@ -600,7 +575,7 @@ code will wait for these begin statements to complete whereas the
 latter code will not.
 \end{chapelexample}
 
-\subsection{The Serial Statement}
+\section{The Serial Statement}
 \label{Serial}
 \index{serial@\chpl{serial}}
 
@@ -614,7 +589,7 @@ serial-statement:
 where the expression evaluates to a bool type.  Independent of that
 value, the \sntx{statement} is evaluated. If the expression is true,
 any dynamically encountered code that would result in new tasks is
-executed without spawning any new tasks.  In effect, execution is
+executed without creating any new tasks.  In effect, execution is
 serialized.
 
 \begin{chapelexample}{serialStmt1.chpl}
@@ -664,7 +639,6 @@ proc stmt1() { write(1); }
 proc stmt2() { write(2); }
 proc stmt3() { write(3); }
 proc stmt4() { write(4); }
-proc stmt5() { write(5); }
 var n = 3;
 \end{chapelpre}
 \begin{chapel}
@@ -675,7 +649,6 @@ serial true {
     stmt3();
   }
   coforall i in 1..n do stmt4();
-  forall i in 1..n do stmt5();
 }
 \end{chapel}
 is equivalent to
@@ -686,13 +659,12 @@ stmt1();
   stmt3();
 }
 for i in 1..n do stmt4();
-for i in 1..n do stmt5();
 \end{chapel}
 \begin{chapelpost}
 writeln();
 \end{chapelpost}
 \begin{chapeloutput}
-123444555123444555
+123444123444
 \end{chapeloutput}
 because the expression evaluated to determine whether to serialize
 always evaluates to true.
