@@ -33,6 +33,7 @@
 #      '/_' becomes '_'
 #      '/&' becomes '&'
 #      '$\mbox{{\bf \$}}$' becomes '$'
+#      '(*\texttt{\$}*)' becomes '$'
 #
 #   If this becomes too unwieldy, we'll probably have to find a better
 #   way to do it.
@@ -67,6 +68,7 @@ def RemoveLaTeXFormatting(line, nlrepl):
     dline = dline.replace('\\_', '_')
     dline = dline.replace('\\\\', nlrepl)
     dline = dline.replace('$\\mbox{{\\bf \\$}}$', '$')
+    dline = dline.replace('(*\\texttt{\\$}*)', '$')
     return dline
 
 # Helper for writing test files
