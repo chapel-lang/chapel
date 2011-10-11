@@ -649,8 +649,8 @@ iter adaptive(r:range(?), numTasks:int = 0)
   Then, each task performs adaptive splitting on its local
   sub-range's iterations. When a task exhausts its local iterations,
   it steals and splits from the range of another task (the
-  victim). The Splitting method on the local range and on the victim
-  range is Binary: i.e. the size of each chunk is computed as the
+  victim). The splitting method on the local range and on the victim
+  range is binary: i.e. the size of each chunk is computed as the
   number of unassigned iterations divided by 2. There are three
   stealing strategies that can be selected at compile time using the
   config param \chpl{methodStealing}:
