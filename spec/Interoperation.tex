@@ -1,18 +1,21 @@
-\sekshun{Interoperation}
-\label{Interoperation}
-\index{interoperation}
+\sekshun{Interoperability}
+\label{Interoperability}
+\index{interoperability}
 
-Interoperation is the cooperation between Chapel and other languages.  It
-provides the ability to create software systems which incorporate both Chapel
-and non-Chapel components.  Thus, it supports the reuse of existing software
-components while leveraging the unique features of the Chapel language.
+Chapel's interoperability features support cooperation between Chapel
+and other languages.  They provide the ability to create software
+systems that incorporate both Chapel and non-Chapel components.
+Thus, they support the reuse of existing software components while
+leveraging the unique features of the Chapel language.
 
-Interoperation can be broken down in terms of the exchange of types, variables
+Interoperability can be broken down in terms of the exchange of types, variables
 and procedures, and whether these are imported or exported.  An overview of
 procedure importing and exporting is provided in~\rsec{Interop_Overview}.
 Details on sharing types, variables and procedures are supplied
-in \rsec{Shared_Language_Elements}.  The creation and use of Chapel libraries is
-treated in~\rsec{Interop_Libraries}.  For information on specific packages which
+in \rsec{Shared_Language_Elements}.
+%  The creation and use of Chapel libraries is
+%treated in~\rsec{Interop_Libraries}.  
+For information on specific packages which
 have been integrated with Chapel, consult the associated README file
 under \chpl{CHPL_HOME/doc/technotes}.
 
@@ -32,12 +35,12 @@ migration.
 
 \end{future}
 
-The remainder of this chapter documents Chapel support of interoperation through
+The remainder of this chapter documents Chapel support of interoperability through
 the existing C-language backend.
 
-\section{Interoperation Overview}
+\section{Interoperability Overview}
 \label{Interop_Overview}
-\index{interoperation!overview}
+\index{interoperability!overview}
 
 The following two subsections provide an overview of calling externally-defined
 (C) routines in Chapel, and setting up Chapel routines so they can be called
@@ -134,7 +137,7 @@ the given \chpl{param} values and argument types.
 
 \section{Shared Language Elements}
 \label{Shared_Language_Elements}
-\index{interoperation!sharing}
+\index{interoperability!sharing}
 
 This section provides details on how to share Chapel types, variables and
 procedures with external code.  It is written assuming that the intermediate
