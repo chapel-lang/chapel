@@ -36,8 +36,11 @@ are discussed in detail in~\rsec{Generic_Types}.
 A record is defined with the following syntax:
 \begin{syntax}
 record-declaration-statement:
-  `extern'[OPT] `record' identifier record-inherit-list[OPT] {
-    record-statement-list }
+  simple-record-declaration-statement
+  external-record-declaration-statement
+
+simple-record-declaration-statement:
+  `record' identifier record-inherit-list[OPT] { record-statement-list }
 
 record-inherit-list:
   : record-type-list
@@ -94,7 +97,8 @@ external record type is declared.  An external record type declaration must not
 contain a \sntx{record-inherit-list}.  An external record is used within Chapel
 for type and field resolution, but no corresponding backend definition is
 generated.  It is presumed that the definition of an external record is supplied
-by a library or the execution environment.
+by a library or the execution environment.  See the chapter on interoperability
+(\rsec{Interoperation}) for more information on external records.
 % External record inheritance is not currently supported.
 
 \subsection{Record Types}

@@ -28,8 +28,11 @@ are discussed in~\rsec{Generic_Types}.
 A class is defined with the following syntax:
 \begin{syntax}
 class-declaration-statement:
-  `extern'[OPT] `class' identifier class-inherit-list[OPT] {
-    class-statement-list[OPT] }
+  external-class-declaration-statement
+  simple-class-declaration-statement
+
+simple-class-declaration-statement:
+  `class' identifier class-inherit-list[OPT] { class-statement-list[OPT] }
 
 class-inherit-list:
   : class-type-list
@@ -77,7 +80,8 @@ external class type is declared.  An external class type declaration must not
 contain a \sntx{class-inherit-list}.  An external class is used within Chapel
 for type and field resolution, but no corresponding backend definition is
 generated.  It is presumed that the definition of an external class is supplied
-by a library or the execution environment.
+by a library or the execution environment.  See the chapter on interoperability
+(\rsec{Interoperation}) for more information on external classes.
 % External class inheritance is not currently supported.
 
 \subsection{Class Types}

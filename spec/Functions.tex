@@ -212,19 +212,15 @@ discussed in~\rsec{Function_Overloading}.
 Operator overloading is supported on the operators listed
 above (see \sntx{operator-name}).
 
-Linkage specifiers are optional and mutually exclusive.
-The linkage specifier \chpl{inline} indicates that the function body should be
-inlined at every call site.  
-The linkage specifier \chpl{export} indicates that this function may be called
-from outside the current Chapel program.  If the optional identifier is
-supplied, then it is used verbatim as the exported function symbol.  Otherwise,
-the Chapel name of the function is exported.  Exported functions may not be generic
-The linkage specifier \chpl{extern} indicates that this function is defined
-outside the Chapel program.  If used, it is not permissible to supply
-a \sntx{where-clause} or a \sntx{function-body}.  The function signature
-supplied is used for resolution within Chapel code, but no function definition
-is generated.  It is assumed that the definition is supplied by a library or the
-execution environment.
+Linkage specifiers are optional and mutually exclusive.  The linkage
+specifier \chpl{inline} indicates that the function body should be inlined at
+every call site for improved performance. 
+The linkage specifier \chpl{export} indicates that this
+function may be called from outside the current Chapel program.  The linkage
+specifier \chpl{extern} indicates that this function is defined outside the
+Chapel program.  See the chapter on interoperability (\rsec{Interoperation})
+for details on exported and imported functions.
+
 
 \section{Functions without Parentheses}
 \label{Functions_without_Parentheses}
