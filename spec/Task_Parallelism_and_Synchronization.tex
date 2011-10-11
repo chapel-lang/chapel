@@ -17,10 +17,8 @@ introduce concurrency into a program.
 way to control parallelism.
 \item \rsec{Serial} describes the serial statement, a structured way to suppress
 parallelism.
-\item \rsec{atomicity} describes the atomic statement, a construct to
+\item \rsec{Atomic_Statement} describes the atomic statement, a construct to
 support atomic transactions.
-\item \rsec{Memory_Consistency}
-describes the memory consistency model.
 \end{itemize}
 
 \section{Tasks and Task Parallelism}
@@ -667,24 +665,30 @@ always evaluates to true.
 \end{chapelexample}
 
 \section{Atomic Statements}
-\label{Atomic_Transactions}
-\label{atomicity}
+\label{Atomic_Statement}
 \index{atomic transactions}
+\index{atomic statement}
 \index{atomic@\chpl{atomic}}
 
-The atomic statement creates an atomic transaction of a statement. The
-statement is executed with transaction semantics in that the statement
-executes entirely, the statement appears to have completed in a single
-order and serially with respect to other atomic statements, and no
-variable assignment is visible until the statement has completely
-executed.
+\begin{openissue}
+  This section describes a feature that is a work-in-progress.  We seek feedback
+  and collaboration in this area from the broader community.
+\end{openissue}
+
+The \emph{atomic statement} is used to specify that a statement should appear
+to execute atomically from other tasks' point of view.
+In particular, no task will see memory in a state that would reflect that
+the atomic statement had begun executing but had not yet completed.
 
 \begin{openissue}
-This definition of an atomic statement is sometimes called {\em strong
-atomicity} because the semantics are atomic to the entire program.
-{\em Weak atomicity} is defined so that an atomic statement is atomic
-only with respect to other atomic statements.  Chapel semantics are
-still under design.
+  This definition of the atomic statement provides a notion of {\em
+    strong atomicity} since the action will appear atomic to any task
+  at any point in its execution.  For performance reasons, it could be
+  more practical to support {\em weak atomicity} in which the
+  statement's atomicity is only guaranteed with respect to other
+  atomic statements.  We may also pursue using atomic type qualifiers
+  as a means of marking data that should be accessed atomically inside
+  or outside an atomic section.
 \end{openissue}
 
 The syntax for the atomic statement is given by:
@@ -693,137 +697,43 @@ atomic-statement:
   `atomic' statement
 \end{syntax}
 
-\begin{chapelexample}{atomicStmt1.chpl}
-The following code illustrates one possible use of atomic statements:
+%\begin{chapelexample}{atomicStmt}
+\begin{example}
+The following code illustrates the use of an atomic statement
+to perform an insertion into a doubly-linked list:
+
 \begin{chapelpre}
-class MyList {
-  var val: int;
-  var next: MyList;
-  proc remove(i: MyList) {
-    /* Fake remove method */
-    return i.val == 3;
-  }
+class Node {
+  var data: int;
+  var next: Node;
+  var prev: Node;
 }
-var obj = new MyList(3);
-var head = new MyList(1, new MyList(2, obj));
-head.next.next.next = new MyList(4);
+var head = new Node(1);
+head.insertAfter(new Node(4));
+head.insertAfter(new Node(2));
+
+var obj = new Node(3);
+head.next.insertAfter(obj);
 \end{chapelpre}
 \begin{chapel}
-var found = false;
-atomic {
-  if head == obj {
-    found = true;
-    head = obj.next;
-  } else {
-    var last = head;
-    while last != nil {
-      if last.next == obj {
-        found = true;
-        last.next = obj.next;
-        break;
-      }
-      last = last.next;
-    }
+proc Node.insertAfter(newNode: Node) {
+  atomic {
+    newNode.prev = this;
+    newNode.next = this.next;
+    if this.next then this.next.prev = newNode;
+    this.next = newNode;
   }
 }
 \end{chapel}
 \begin{chapelpost}
-writeln(found);
+writeln(head.data, head.next.data, head.next.next.data, head.next.next.next.data);
 \end{chapelpost}
-\begin{chapelcompopts}
---no-warnings
-\end{chapelcompopts}
 \begin{chapeloutput}
-true
+atomic.chpl:13: warning: atomic keyword is ignored (not implemented)
+1234
 \end{chapeloutput}
-Inside the atomic statement is a sequential implementation of removing
-a particular object denoted by \chpl{obj} from a singly linked list.
-This is an operation that is well-defined, assuming only one task is
-attempting it at a time. The atomic statement ensures that, for
-example, the value of \chpl{head} does not change after it is first in
-the first comparison and subsequently read to
-initialize \chpl{last}. The variables eventually owned by this task
-are \chpl{found}, \chpl{head}, \chpl{obj}, and the various \chpl{next}
-fields on examined objects.
-\end{chapelexample}
-
-The effect of an atomic statement is dynamic.
-
-\begin{chapelexample}{atomicStmt2.chpl}
-If there is a method associated with a list that removes an object,
-that method may not be parallel safe, but could be invoked safely inside an
-atomic statement:
-\begin{chapelpre}
-use atomicStmt1;
-found = false;
-\end{chapelpre}
-\begin{chapel}
-atomic found = head.remove(obj);
-\end{chapel}
-\begin{chapelpost}
-writeln(found);
-\end{chapelpost}
-\begin{chapelcompopts}
---no-warnings
-\end{chapelcompopts}
-\begin{chapeloutput}
-true
-true
-\end{chapeloutput}
-\end{chapelexample}
-
-\section{Memory Consistency Model}
-\label{Memory_Consistency}
-\index{memory consistency model}
-
-\begin{openissue}
-This section is largely forthcoming.
-\end{openissue}
-
-The Chapel memory consistency model is defined for programs that are
-{\em data-race-free}.  Programs that are {\em data-race-free} are
-sequentially consistent.  Otherwise, the program is incorrect and no
-guarantees are made.  In this design choice, Chapel differs from Java
-because the set of dynamic security concerns is different.
-
-Writing and reading \chpl{sync} and \chpl{single} variables as well as
-executing atomic statements are the only ways in Chapel to correctly
-synchronize a program.  It is an error to write to the same memory
-location or read from and write to the same memory location in two
-different tasks without any intervening synchronization.
-
-\begin{chapelexample}{syncSpinWait.chpl}
-This has the direct consequence that one task cannot spin-wait on a
-variable while another task writes to that variable.  The behavior of
-the following code is undefined:
-\begin{chapelpre}
-if false { // }
-\end{chapelpre}
-\begin{chapel}
-var x: int;
-cobegin {
-  while x != 1 do ;  // spin wait
-  x = 1;
-}
-\end{chapel}
-\begin{chapelnoprint}
-// {
-}
-\end{chapelnoprint}
-While codes are more efficient in most cases if one avoids
-spin-waiting altogether, this code could be rewritten with defined
-behavior as follows:
-\begin{chapel}
-var x$\mbox{{\bf \$}}$: sync int;
-cobegin {
-  while x$\mbox{{\bf \$}}$.readXX() != 1 do ;  // spin wait
-  x$\mbox{{\bf \$}}$.writeXF(1);
-}
-\end{chapel}
-\begin{chapeloutput}
-\end{chapeloutput}
-In this code, the first statement in the cobegin statement executes a
-loop until the variable is set to one.  The second statement in the
-cobegin statement sets the variable to one.  Neither of these
-statements block.
-\end{chapelexample}
+The use of the atomic statement in this routine prevents other tasks
+from viewing the list in a partially-updated state in which the
+pointers might not be self-consistent.
+\end{example}
+%\end{chapelexample}
