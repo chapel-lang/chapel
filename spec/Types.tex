@@ -136,7 +136,8 @@ The integral types and their ranges are given in the following table:
 
 The unary and binary operators that are pre-defined over the integral
 types operate with 32- and 64-bit precision.  Using these operators on
-integral types represented with fewer bits results in a coercion
+integral types represented with fewer bits results in an implicit
+conversion to the corresponding 32-bit types
 according to the rules defined in~\rsec{Implicit_Conversions}.
 
 \begin{openissue}
@@ -167,7 +168,7 @@ usually include \chpl{imag(32)} and \chpl{imag(64)}.
 
 \begin{rationale}
 The imaginary type is included to avoid numeric instabilities and
-under-optimized code stemming from always coercing real values to
+under-optimized code stemming from always converting real values to
 complex values with a zero imaginary part.
 \end{rationale}
 

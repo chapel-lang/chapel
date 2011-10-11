@@ -437,6 +437,9 @@ produces an empty range, matching the default value for a
 
 \section{Common Operations}
 
+%REVIEW: vass: this should really be implicit conversion
+% and apply uniformly, like e.g. numeric implicit conversions.
+%If needed, define also explicit range conversions.
 \subsection{Range Assignment}
 \label{Range_Assignment}
 \index{ranges!assignment}
@@ -447,7 +450,7 @@ from the source range.
 
 Range assignment is legal when:
 \begin{itemize}
-\item \chpl{idxType} of the source range type is implicitly coercible
+\item An implicit conversion is allowed from \chpl{idxType} of the source range
        to \chpl{idxType} of the destination range type,
 \item the two range types have the same \chpl{boundedType}, and
 \item either the destination range is stridable or the source range's
@@ -638,8 +641,9 @@ aligned-range-expression:
   range-expression `align' expression
 \end{syntax}
 \noindent The type of the resulting range expression is the same as that of the
-range appearing as the left operand.  The type of the right operand must be
-coercible to the index type of the operand range.  
+range appearing as the left operand.  An implicit conversion from
+the type of the right operand to the index type of the operand range
+must be allowed.
 The resulting range has the
 same low and high bounds and stride as the source range. The
 alignment equals the \chpl{align} operator's right operand

@@ -873,7 +873,7 @@ An actual argument of type $T_A$ can be mapped to a formal argument of
 type $T_F$ if any of the following conditions hold:
 \begin{itemize}
 \item $T_A$ and $T_F$ are the same type.
-\item There is an implicit coercion from $T_A$ to $T_F$.
+\item There is an implicit conversion from $T_A$ to $T_F$.
 \item $T_A$ is derived from $T_F$.
 \item $T_A$ is scalar promotable to $T_F$.
 \end{itemize}
@@ -949,10 +949,10 @@ is determined by the following steps:
 \item
  If $T_{F2}$ is derived from $T_{F1}$, then $M_2$ is more specific.
 \item
- If there is an implicit coercion from $T_{F1}$ to $T_{F2}$, then
+ If there is an implicit conversion from $T_{F1}$ to $T_{F2}$, then
  $M_1$ is more specific.
 \item
- If there is an implicit coercion from $T_{F2}$ to $T_{F1}$, then
+ If there is an implicit conversion from $T_{F2}$ to $T_{F1}$, then
  $M_2$ is more specific.
 \item
  If $T_{F1}$ is any \chpl{int} type and $T_{F2}$ is any \chpl{uint}
