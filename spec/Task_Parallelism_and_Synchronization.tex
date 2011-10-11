@@ -143,10 +143,10 @@ class Tree {
     if (isLeaf) then 
        return value;
 
-    var x$\mbox{{\bf \$}}$: sync int;
-    begin x$\mbox{{\bf \$}}$ = left.sum();
+    var x(*\texttt{\$}*): sync int;
+    begin x(*\texttt{\$}*) = left.sum();
     var y = right.sum();
-    return x$\mbox{{\bf \$}}$+y;
+    return x(*\texttt{\$}*) + y;
   }
 }
 \end{chapel}
@@ -160,11 +160,11 @@ writeln(tree.sum());
 \begin{chapeloutput}
 4
 \end{chapeloutput}
-the sync variable \chpl{x$\mbox{{\bf \$}}$} is assigned by an
+the sync variable \chpl{x$\mbox{\texttt{\$}}$} is assigned by an
 asynchronous task created with the begin statement.  The task
-returning the sum waits on the reading of \chpl{x$\mbox{{\bf \$}}$}
+returning the sum waits on the reading of \chpl{x$\mbox{\texttt{\$}}$}
 until it has been assigned.  By convention, synchronization variables
-end in $\mbox{{\bf \$}}$ to provide a visual cue to the programmer
+end in \texttt{\$} to provide a visual cue to the programmer
 indicating that the task may block.
 \end{chapelexample}
 
@@ -174,23 +174,24 @@ well.  A sync variable of type \chpl{int} is read and then written
 during an update so the full-empty semantics make these updates
 atomic.  The code
 \begin{chapel}
-var count$\mbox{{\bf \$}}$: sync int = 0;
-begin count$\mbox{{\bf \$}}$ = count$\mbox{{\bf \$}}$ + 1;
-begin count$\mbox{{\bf \$}}$ = count$\mbox{{\bf \$}}$ + 1;
-begin count$\mbox{{\bf \$}}$ = count$\mbox{{\bf \$}}$ + 1;
+var count(*\texttt{\$}*): sync int = 0;
+begin count(*\texttt{\$}*) = count(*\texttt{\$}*) + 1;
+begin count(*\texttt{\$}*) = count(*\texttt{\$}*) + 1;
+begin count(*\texttt{\$}*) = count(*\texttt{\$}*) + 1;
 \end{chapel}
 \begin{chapelpost}
-while count$\mbox{{\bf \$}}$.readFF() != 3 do ;
-writeln("count is: ", count$\mbox{{\bf \$}}$);
+while count(*\texttt{\$}*).readFF() != 3 do ;
+writeln("count is: ", count(*\texttt{\$}*));
 \end{chapelpost}
 \begin{chapeloutput}
 count is: 3
 \end{chapeloutput}
-creates three tasks to increment \chpl{count$\mbox{{\bf \$}}$}.
-If \chpl{count$\mbox{{\bf \$}}$} was not a sync variable, this code
+creates three tasks to increment \chpl{count$\mbox{\texttt{\$}}$}.
+If \chpl{count$\mbox{\texttt{\$}}$} was not a sync variable, this code
 would be unsafe because between the points at which one task
-reads \chpl{count$\mbox{{\bf \$}}$} and
-writes \chpl{count$\mbox{{\bf \$}}$}, another task may increment it.
+reads \chpl{count$\mbox{\texttt{\$}}$} and
+writes \chpl{count$\mbox{\texttt{\$}}$}, another task may increment
+it.
 \end{chapelexample}
 
 \begin{chapelexample}{singleVar.chpl}
@@ -203,19 +204,19 @@ proc work(i) {
 }
 \end{chapelpre}
 \begin{chapel}
-var count$\mbox{{\bf \$}}$: sync int = n;  // counter which also serves as a lock
-var release$\mbox{{\bf \$}}$: single bool; // barrier release
+var count(*\texttt{\$}*): sync int = n;  // counter which also serves as a lock
+var release(*\texttt{\$}*): single bool; // barrier release
 
 forall t in 1..n do begin {
   work(t);
-  var myc = count$\mbox{{\bf \$}}$;  // read the count, set state to empty
+  var myc = count(*\texttt{\$}*);  // read the count, set state to empty
   if myc!=1 {
     write(".");
-    count$\mbox{{\bf \$}}$ = myc-1;  // update the count, set state to full
+    count(*\texttt{\$}*) = myc-1;  // update the count, set state to full
     // we could also do some work here before blocking
-    release$\mbox{{\bf \$}}$;
+    release(*\texttt{\$}*);
   } else {
-    release$\mbox{{\bf \$}}$ = true;  // last one here, release everyone
+    release(*\texttt{\$}*) = true;  // last one here, release everyone
     writeln("done");
   }
 }
@@ -224,12 +225,12 @@ forall t in 1..n do begin {
 ...........................................done
 \end{chapeloutput}
 In each iteration of the forall loop after the work is completed, the
-task reads the count$\mbox{{\bf \$}}$ variable, which is used to tally
-the number of tasks that have arrived.  All tasks except the last task
-to arrive will block while trying to read the variable
-release$\mbox{{\bf \$}}$.  The last task to arrive will write to
-release$\mbox{{\bf \$}}$, setting its state to full at which time all
-the other tasks can be unblocked and run.
+task reads the \chpl{count$\mbox{\texttt{\$}}$} variable, which is
+used to tally the number of tasks that have arrived.  All tasks except
+the last task to arrive will block while trying to read the
+variable \chpl{release$\mbox{\texttt{\$}}$}.  The last task to arrive
+will write to \chpl{release$\mbox{\texttt{\$}}$}, setting its state to
+full at which time all the other tasks can be unblocked and run.
 \end{chapelexample}
 
 \index{synchronization types!formal arguments}
@@ -347,33 +348,33 @@ implicitly invoked for writes and reads of synchronization variables.
 Given the following declarations
 \begin{chapel}
 { // }
-var x$\mbox{{\bf \$}}$: sync int;
-var y$\mbox{{\bf \$}}$: single int;
+var x(*\texttt{\$}*): sync int;
+var y(*\texttt{\$}*): single int;
 var z: int;
 \end{chapel}
 the code
 \begin{chapel}
-x$\mbox{{\bf \$}}$ = 5;
-y$\mbox{{\bf \$}}$ = 6;
-z = x$\mbox{{\bf \$}}$ + y$\mbox{{\bf \$}}$;
+x(*\texttt{\$}*) = 5;
+y(*\texttt{\$}*) = 6;
+z = x(*\texttt{\$}*) + y(*\texttt{\$}*);
 \end{chapel}
 \begin{chapelnoprint}
-writeln((x$\mbox{{\bf \$}}$.readXX(), y$\mbox{{\bf \$}}$, z));
+writeln((x(*\texttt{\$}*).readXX(), y(*\texttt{\$}*), z));
 // {
 }
 { // }
-var x$\mbox{{\bf \$}}$: sync int;
-var y$\mbox{{\bf \$}}$: single int;
+var x(*\texttt{\$}*): sync int;
+var y(*\texttt{\$}*): single int;
 var z: int;
 \end{chapelnoprint}
 is equivalent to
 \begin{chapel}
-x$\mbox{{\bf \$}}$.writeEF(5);
-y$\mbox{{\bf \$}}$.writeEF(6);
-z = x$\mbox{{\bf \$}}$.readFE() + y$\mbox{{\bf \$}}$.readFF();
+x(*\texttt{\$}*).writeEF(5);
+y(*\texttt{\$}*).writeEF(6);
+z = x(*\texttt{\$}*).readFE() + y(*\texttt{\$}*).readFF();
 \end{chapel}
 \begin{chapelpost}
-writeln((x$\mbox{{\bf \$}}$.readXX(), y$\mbox{{\bf \$}}$, z));
+writeln((x(*\texttt{\$}*).readXX(), y(*\texttt{\$}*), z));
 // {
 }
 \end{chapelpost}
@@ -420,11 +421,11 @@ cobegin {
 is equivalent to the following code that uses only begin statements
 and single variables to introduce concurrency and synchronize:
 \begin{chapel}
-var s1$\mbox{{\bf \$}}$, s2$\mbox{{\bf \$}}$, s3$\mbox{{\bf \$}}$: single bool;
-begin { stmt1(); s1$\mbox{{\bf \$}}$ = true; }
-begin { stmt2(); s2$\mbox{{\bf \$}}$ = true; }
-begin { stmt3(); s3$\mbox{{\bf \$}}$ = true; }
-s1$\mbox{{\bf \$}}$; s2$\mbox{{\bf \$}}$; s3$\mbox{{\bf \$}}$;
+var s1(*\texttt{\$}*), s2(*\texttt{\$}*), s3(*\texttt{\$}*): single bool;
+begin { stmt1(); s1(*\texttt{\$}*) = true; }
+begin { stmt2(); s2(*\texttt{\$}*) = true; }
+begin { stmt3(); s3(*\texttt{\$}*) = true; }
+s1(*\texttt{\$}*); s2(*\texttt{\$}*); s3(*\texttt{\$}*);
 \end{chapel}
 \begin{chapeloutput}
 \end{chapeloutput}
@@ -473,32 +474,32 @@ is equivalent to the following code that uses only begin statements
 and sync and single variables to introduce concurrency and
 synchronize:
 \begin{chapel}
-var runningCount$\mbox{{\bf \$}}$: sync int = 1;
-var finished$\mbox{{\bf \$}}$: single bool;
+var runningCount(*\texttt{\$}*): sync int = 1;
+var finished(*\texttt{\$}*): single bool;
 for i in iterator() {
-  runningCount$\mbox{{\bf \$}}$ += 1;
+  runningCount(*\texttt{\$}*) += 1;
   begin {
     body();
-    var tmp = runningCount$\mbox{{\bf \$}}$;
-    runningCount$\mbox{{\bf \$}}$ = tmp-1;
-    if tmp == 1 then finished$\mbox{{\bf \$}}$ = true;
+    var tmp = runningCount(*\texttt{\$}*);
+    runningCount(*\texttt{\$}*) = tmp-1;
+    if tmp == 1 then finished(*\texttt{\$}*) = true;
   }
 }
-var tmp = runningCount$\mbox{{\bf \$}}$;
-runningCount$\mbox{{\bf \$}}$ = tmp-1;
-if tmp == 1 then finished$\mbox{{\bf \$}}$ = true;
-finished$\mbox{{\bf \$}}$;
+var tmp = runningCount(*\texttt{\$}*);
+runningCount(*\texttt{\$}*) = tmp-1;
+if tmp == 1 then finished(*\texttt{\$}*) = true;
+finished(*\texttt{\$}*);
 \end{chapel}
 \begin{chapeloutput}
 \end{chapeloutput}
 Each call to \chpl{body()} executes concurrently because it is in a
 begin statement.  The sync
-variable \chpl{runningCount$\mbox{{\bf \$}}$} is used to keep track of
-the number of executing tasks plus one for the main task.  When this
-variable reaches zero, the single
-variable \chpl{finished$\mbox{{\bf \$}}$} is used to signal that all
-of the tasks have completed.  Thus control does not continue past the
-last line until all of the tasks have completed.
+variable \chpl{runningCount$\mbox{\texttt{\$}}$} is used to keep track
+of the number of executing tasks plus one for the main task.  When
+this variable reaches zero, the single
+variable \chpl{finished$\mbox{\texttt{\$}}$} is used to signal that
+all of the tasks have completed.  Thus control does not continue past
+the last line until all of the tasks have completed.
 \end{chapelexample}
 
 \section{The Sync Statement}

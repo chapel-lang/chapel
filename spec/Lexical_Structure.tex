@@ -83,7 +83,7 @@ legal-identifier-char:
   letter
   digit
   `_'
-  `$\mbox{{\bf \$}}$'
+  `(*\texttt{\$}*)'
 
 letter: one of
   `A' `B' `C' `D' `E' `F' `G' `H' `I' `J' `K' `L' `M' `N' `O' `P' `Q' `R' `S' `T' `U' `V' `W' `X' `Y' `Z' `a' `b' `c' `d' `e' `f' `g' `h' `i' `j' `k' `l' `m'
@@ -104,7 +104,7 @@ deadlocks.
 
 \begin{example}
 The following are legal
-identifiers: \chpl{Cray1}, \chpl{syncvar$\mbox{{\tt \$}}$},
+identifiers: \chpl{Cray1}, \chpl{syncvar$\mbox{\texttt{\$}}$},
 \chpl{legalIdentifier}, and \chpl{legal_identifier}.
 \end{example}
 
