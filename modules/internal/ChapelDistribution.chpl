@@ -58,6 +58,8 @@ class BaseDist {
   proc dsiRequiresPrivatization() param return false;
 
   proc dsiDestroyDistClass() { }
+
+  proc dsiDisplayRepresentation() { }
 }
 
 //
@@ -126,6 +128,8 @@ class BaseDom {
 
   // dynamically-dispatched counterpart of linksDistribution
   proc dsiLinksDistribution() return true;
+
+  proc dsiDisplayRepresentation() { }
 }
 
 class BaseRectangularDom : BaseDom {
@@ -292,4 +296,6 @@ class BaseArr {
   proc doiBulkTransfer(B){ 
     halt("This array type does not support bulk transfer.");
   }
+
+  proc dsiDisplayRepresentation() { }
 }
