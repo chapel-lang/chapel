@@ -170,6 +170,7 @@ int main(int argc, char** argv)
     check_mark("abc", "MabcRabc");
     check_mark("abc", "MabcC");
     check_mark("abc", "MMabRabCc");
+    check_mark("abc", "MabMcRcC");
 
     check_mark("a", "MaRa");
     check_mark("aa", "MaaRaa");

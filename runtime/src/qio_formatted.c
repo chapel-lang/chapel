@@ -8,17 +8,41 @@
 #include <wctype.h>
 #include <langinfo.h>
 
+// 0 means not set
+// 1 means use faster, hard-coded UTF-8 decode/encoder
+// -1 means use C multibyte functions (e.g. mbtowc)
+// -2 means use C locale (ie 1 byte per character)
 int glocale_utf8 = 0;
+#define GLOCALE_UTF8 1
+#define GLOCALE_ASCII -2
+#define GLOCALE_OTHER -1
+
+static
+void set_glocale(void) {
+  char* codeset = nl_langinfo(CODESET);
+
+  if( 0 == strcmp(codeset, "UTF-8") ) {
+    glocale_utf8 = GLOCALE_UTF8;
+  } else if( 0 == strcmp(codeset, "ANSI_X3.4-1968") ) {
+    glocale_utf8 = GLOCALE_ASCII;
+  } else {
+    glocale_utf8 = GLOCALE_OTHER;
+  }
+
+}
 
 static inline int locale_utf8(void) {
   if( glocale_utf8 == 0 ) {
-    if( 0 == strcmp(nl_langinfo(CODESET), "UTF-8") ) {
-      glocale_utf8 = 1;
-    } else {
-      glocale_utf8 = -1;
-    }
+    set_glocale();
   }
-  return glocale_utf8 > 0;
+  return glocale_utf8 == GLOCALE_UTF8;
+}
+
+static inline int locale_ascii(void) {
+  if( glocale_utf8 == 0 ) {
+    set_glocale();
+  }
+  return glocale_utf8 == GLOCALE_ASCII;
 }
 
 err_t qio_channel_read_uvarint(const int threadsafe, qio_channel_t* restrict ch, uint64_t* restrict ptr) {
@@ -2085,6 +2109,14 @@ err_t qio_channel_scan_complex(const int threadsafe, qio_channel_t* restrict ch,
         }
       }
       if( err ) goto rewind;
+
+      // Read the 'i'
+      err = qio_channel_read_char(false, ch, &chr);
+      if( err ) goto rewind;
+      if( chr != 'i' ) {
+        err = EFORMAT;
+        goto rewind;
+      }
     } else {
       // One element complex. Could just be real, or could be nan.
       // If the real part is nan, copy it to the imaginary part.
@@ -2108,13 +2140,6 @@ err_t qio_channel_scan_complex(const int threadsafe, qio_channel_t* restrict ch,
       qio_channel_revert_unlocked(ch);
       qio_channel_advance_unlocked(ch, after_real - start);
       goto unlock;
-    }
-
-    err = qio_channel_read_char(false, ch, &chr);
-    if( err ) goto rewind;
-    if( chr != 'i' ) {
-      err = EFORMAT;
-      goto rewind;
     }
   }
 
@@ -2358,6 +2383,16 @@ err_t qio_channel_read_char(const int threadsafe, qio_channel_t* restrict ch, in
       err = 0;
     }
 
+  } else if( locale_ascii() ) {
+    // character == byte.
+    gotch = qio_channel_read_byte(false, ch);
+    if( gotch < 0 ) {
+      err = -gotch;
+      *chr = -1;
+    } else {
+      *chr = gotch;
+      err = 0;
+    }
   } else {
     // Use C functions, probably not UTF-8.
     memset(&ps, 0, sizeof(mbstate_t));
@@ -2468,6 +2503,8 @@ err_t qio_channel_write_char(const int threadsafe, qio_channel_t* restrict ch, i
 
       err = qio_channel_write_amt(false, ch, mbs, 4);
     }
+  } else if( locale_ascii() ) {
+    err = qio_channel_write_byte(false, ch, chr);
   } else {
     memset(&ps, 0, sizeof(mbstate_t));
     got = wcrtomb(mbs, chr, &ps);

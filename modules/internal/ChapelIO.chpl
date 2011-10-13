@@ -193,7 +193,7 @@
       var errstr:string;
       var strerror_err:err_t;
       errstr = sys_strerror_str(syserr, strerror_err); 
-      __primitive("chpl_error", "Unhandled system error: " + errstr + " (" + syserr:string + ") ", msg);
+      __primitive("chpl_error", "Unhandled system error: " + errstr + " (" + syserr:string + ") " + msg);
           //__primitive("chpl_error", "Unhandled system error: " + syserr + " " +
           //            errstr + " with file " + path " : " + offset);
     }
@@ -206,7 +206,7 @@
       var errstr:string;
       var strerror_err:err_t;
       errstr = sys_strerror_str(syserr, strerror_err); 
-      __primitive("chpl_error", "Unhandled system error: " + errstr + " (" + syserr:string + ") ", msg, " with path ", path);
+      __primitive("chpl_error", "Unhandled system error: " + errstr + " (" + syserr:string + ") " + msg + " with path " + path);
           //__primitive("chpl_error", "Unhandled system error: " + syserr + " " +
           //            errstr + " with file " + path " : " + offset);
     }
@@ -219,7 +219,7 @@
       var errstr:string;
       var strerror_err:err_t;
       errstr = sys_strerror_str(syserr, strerror_err); 
-      __primitive("chpl_error", "Unhandled system error: " + errstr + " (" + syserr:string + ") ", msg, " with path ", path, " offset ", offset:string);
+      __primitive("chpl_error", "Unhandled system error: " + errstr + " (" + syserr:string + ") " + msg + " with path " + path + " offset " + offset:string);
           //__primitive("chpl_error", "Unhandled system error: " + syserr + " " +
           //            errstr + " with file " + path " : " + offset);
     }
@@ -467,7 +467,7 @@
 
   extern proc qio_channel_create(inout ch:qio_channel_ptr_t, file:qio_file_ptr_t, hints:c_int, readable:c_int, writeable:c_int, start:int(64), end:int(64), inout style:iostyle):err_t;
 
-  extern proc qio_channel_path_offset(threadsafe:c_int, ch:qio_channel_ptr_t, inout path:string, inout offset:int(64));
+  extern proc qio_channel_path_offset(threadsafe:c_int, ch:qio_channel_ptr_t, inout path:string, inout offset:int(64)):err_t;
 
   extern proc qio_channel_retain(ch:qio_channel_ptr_t);
   extern proc qio_channel_release(ch:qio_channel_ptr_t);
@@ -1075,19 +1075,20 @@
     param kind = iokind.dynamic;
     var ret:ItemReader(string, kind, locking);
     on __primitive("chpl_on_locale_num", this.home_uid) {
-      ret = new ItemReader(error, string, kind, locking, new channel(false, kind, locking, this, hints, start, end, style));
+      var ch = new channel(false, kind, locking, this, error, hints, start, end, style);
+      ret = new ItemReader(string, kind, locking, ch);
     }
     return ret;
   }
   proc file.lines(param locking:bool = true, start:int(64) = 0, end:int(64) = max(int(64)), hints:c_int = 0, style:iostyle = this._style) {
     var err:err_t;
-    var ret = file.lines(locking, start, end, hints, style);
+    var ret = this.lines(err, locking, start, end, hints, style);
     if err then ioerror(err, "in file.lines", this.tryGetPath());
     return ret;
   }
 
 
-  proc file.mkwritere(inout error:err_t, param kind:iokind, param locking:bool, start:int(64), end:int(64), hints:c_int, style:iostyle): channel(true,kind,locking) {
+  proc file.writer(inout error:err_t, param kind:iokind, param locking:bool, start:int(64), end:int(64), hints:c_int, style:iostyle): channel(true,kind,locking) {
 
     check();
 
@@ -1097,10 +1098,10 @@
     }
     return ret;
   }
-  proc file.mkwriter(param kind=iokind.dynamic, param locking=true, start:int(64) = 0, end:int(64) = max(int(64)), hints:c_int = 0, style:iostyle = this._style): channel(true,kind,locking) 
+  proc file.writer(param kind=iokind.dynamic, param locking=true, start:int(64) = 0, end:int(64) = max(int(64)), hints:c_int = 0, style:iostyle = this._style): channel(true,kind,locking) 
   {
     var err:err_t;
-    var ret = file.mkwritere(err, kind, locking, start, end, hints, style);
+    var ret = this.writer(err, kind, locking, start, end, hints, style);
 
     if err then ioerror(err, "in file.writer", this.tryGetPath());
     return ret;
@@ -1113,28 +1114,34 @@
    proc _isIoPrimitiveTypeOrNewline(type t) param return
     _isIoPrimitiveType(t) || t == ioNewline || t == ioLiteral || t == ioChar;
 
+      //var trues = ("true", "1", "yes");
+      //var falses = ("false", "0", "no");
+  var _trues = tuple("true");
+  var _falses = tuple("false");
+  var _i = "i";
+
   // Read routines for all primitive types.
   proc _read_text_internal(_channel_internal:qio_channel_ptr_t, out x:?t):err_t where _isIoPrimitiveType(t) {
     if _isBooleanType(t) {
-      //var trues = ("true", "1", "yes");
-      //var falses = ("false", "0", "no");
-      var trues = tuple("true");
-      var falses = tuple("false");
-      var num = trues.size;
+      var num = _trues.size;
       var err:err_t;
       var got:bool;
 
       err = EFORMAT;
 
       for i in 1..num {
-        err = qio_channel_scan_literal(false, _channel_internal, trues(i), trues(i).length, 1);
+        err = qio_channel_scan_literal(false, _channel_internal, _trues(i), _trues(i).length, 1);
         if err == 0 {
           got = true;
           break;
+        } else if err == EEOF {
+          break;
         }
-        err = qio_channel_scan_literal(false, _channel_internal, falses(i), falses(i).length, 1);
+        err = qio_channel_scan_literal(false, _channel_internal, _falses(i), _falses(i).length, 1);
         if err == 0 {
           got = false;
+          break;
+        } else if err == EEOF {
           break;
         }
       }
@@ -1153,7 +1160,7 @@
 
       err = qio_channel_scan_float(false, _channel_internal, x, numBytes(t));
       if err == 0 {
-        err = qio_channel_scan_literal(false, _channel_internal, "i", 1, false);
+        err = qio_channel_scan_literal(false, _channel_internal, _i, 1, false);
       }
       if err == 0 {
         qio_channel_commit_unlocked(_channel_internal);
@@ -1194,9 +1201,9 @@
   proc _write_text_internal(_channel_internal:qio_channel_ptr_t, x:?t):err_t where _isIoPrimitiveType(t) {
     if _isBooleanType(t) {
       if x {
-        return qio_channel_print_string(false, _channel_internal, "true", 4);
+        return qio_channel_print_string(false, _channel_internal, _trues(1), _trues(1).length);
       } else {
-        return qio_channel_print_string(false, _channel_internal, "false", 5);
+        return qio_channel_print_string(false, _channel_internal, _falses(1), _falses(1).length);
       }
     } else if _isIntegralType(t) {
       // handles int types
@@ -1211,7 +1218,7 @@
 
       err = qio_channel_print_float(false, _channel_internal, x, numBytes(t));
       if err == 0 {
-        err = qio_channel_print_literal(false, _channel_internal, "i", 1);
+        err = qio_channel_print_literal(false, _channel_internal, _i, 1);
       }
       if err == 0 {
         qio_channel_commit_unlocked(_channel_internal);
@@ -1488,7 +1495,7 @@
   }
   proc channel.readline(inout arg:string):bool {
     var e:err_t = 0;
-    this.readline(error=e);
+    this.readline(arg, error=e);
     if e == 0 then return true;
     else if e == EEOF then return false;
     else {
@@ -1767,8 +1774,8 @@
 // And now, the toplevel items.
 
   const stdin:channel(false, iokind.dynamic, true) = openfd(0).reader(); 
-  const stdout:channel(true, iokind.dynamic, true) = openfp(chpl_cstdout()).mkwriter(); 
-  const stderr:channel(true, iokind.dynamic, true) = openfp(chpl_cstderr()).mkwriter(); 
+  const stdout:channel(true, iokind.dynamic, true) = openfp(chpl_cstdout()).writer(); 
+  const stderr:channel(true, iokind.dynamic, true) = openfp(chpl_cstderr()).writer(); 
 
   proc write(args ...?n) {
     stdout.write((...args));

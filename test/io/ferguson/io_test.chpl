@@ -16,12 +16,14 @@ proc testio(param typ:iokind, style:iostyle, x)
     var ch = f.reader(typ, style=style);
     var y = x;
     var z = x;
+    if noisy then writeln("Reading element");
     var got = ch.read(y);
     if noisy then writeln("Read ", y);
     assert( got );
     assert( y == x );
 
     // Try reading another item -- should get EOF
+    if noisy then writeln("Reading another - should get EOF");
     got = ch.read(z);
     assert( !got );
 

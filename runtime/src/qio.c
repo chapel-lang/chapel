@@ -2983,7 +2983,13 @@ err_t qio_channel_mark(const int threadsafe, qio_channel_t* ch)
     heavy->mark_stack_size = new_size;
   }
 
-  // Now set the current value.
+  // Set the current mark stack value to the current offset
+  // (since it could have advanced with the cached pointers)
+  // That way, if we revert to it, we go back to
+  // this point.
+  heavy->mark_stack[heavy->mark_cur] = pos;
+  // Now create the new position on the mark stack
+  // with the same position.
   heavy->mark_stack[heavy->mark_cur+1] = pos;
   heavy->mark_cur++;
 

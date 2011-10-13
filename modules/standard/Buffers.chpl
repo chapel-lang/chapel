@@ -125,19 +125,34 @@ module Buffers {
     this._internal = c_nil;
     this.home_uid = __primitive("_get_locale", tmp);
   }
+  proc bytes.bytes(len:int(64), inout error:err_t) {
+    var tmp:int;
+    error = qbytes_create_calloc(this._bytes_internal, len);
+    this.home_uid = __primitive("_get_locale", tmp);
+  }
   proc bytes.bytes(len:int(64)) {
     var tmp:int;
-    seterr(nil, qbytes_create_calloc(this._bytes_internal, len));
+    var error:err_t;
+    error = qbytes_create_calloc(this._bytes_internal, len);
+    ioerror(error, "in bytes constructor");
     this.home_uid = __primitive("_get_locale", tmp);
   }
 
-  proc create_iobuf():bytes {
+
+  proc create_iobuf(inout error:err_t):bytes {
     var ret:bytes;
     var tmp:int;
-    seterr(nil, qbytes_create_iobuf(ret._bytes_internal));
+    error = qbytes_create_iobuf(ret._bytes_internal);
     ret.home_uid = __primitive("_get_locale", tmp);
     return ret;
   }
+  proc create_iobuf():bytes {
+    var err:err_t; 
+    var ret = create_iobuf(err);
+    ioerror(err, "in create_iobuf");
+    return ret;
+  }
+
 
   // TODO -- shouldn't have to write this this way!
   proc chpl__initCopy(x: bytes) {
@@ -210,22 +225,31 @@ module Buffers {
   */
 
   // buffer methods.
-  proc buffer.buffer() {
+  proc buffer.buffer(inout error:err_t) {
     var tmp:int;
     var here_uid = __primitive("_get_locale", tmp);
     this.home_uid = here_uid;
-    seterr(nil, qbuffer_create(this._buf_internal));
+    error = qbuffer_create(this._buf_internal);
   }
+  proc buffer.buffer() {
+    var tmp:int;
+    var here_uid = __primitive("_get_locale", tmp);
+    var error:err_t;
+    this.home_uid = here_uid;
+    error = qbuffer_create(this._buf_internal);
+    ioerror(error, "in buffer constructor");
+  }
+
 
   // buffer.flatten is special in that it creates a 
   // bytes object wherever it is called (and communicates it 
   // intelligently). It is use in buffer's initCopy.
-  proc buffer.flatten(range:buffer_range, err:ErrorHandler = nil):bytes {
+  proc buffer.flatten(range:buffer_range, inout error:err_t):bytes {
     var tmp:int;
     var here_uid = __primitive("_get_locale", tmp);
     var ret:bytes;
     if this.home_uid == here_uid {
-      seterr(err,qbuffer_flatten(this._buf_internal, range.start._bufit_internal, range.end._bufit_internal, ret));
+      error = qbuffer_flatten(this._buf_internal, range.start._bufit_internal, range.end._bufit_internal, ret);
     } else {
       var dst_locale = here;
       var dst_len:int(64) = range.len;
@@ -233,10 +257,10 @@ module Buffers {
       var dst_addr = qbytes_data(ret._bytes_internal);
       on __primitive("chpl_on_locale_num", this.home_uid) {
         // Copy the buffer to the bytes...
-        seterr(err, bulk_put_buffer(dst_locale.uid, dst_addr, dst_len,
-                                    this._buf_internal,
-                                    range.start._bufit_internal,
-                                    range.end._bufit_internal) );
+        error = bulk_put_buffer(dst_locale.uid, dst_addr, dst_len,
+                                this._buf_internal,
+                                range.start._bufit_internal,
+                                range.end._bufit_internal);
       }
     }
     return ret;
@@ -270,9 +294,11 @@ module Buffers {
       var there_uid = here_uid;
 
       on __primitive("chpl_on_locale_num", x.home_uid) {
-        seterr(nil, bulk_put_buffer(there_uid, ptr, len, x._buf_internal,
-                                    qbuffer_begin(x._buf_internal),
-                                    qbuffer_end(x._buf_internal)));
+        var err:err_t;
+        err = bulk_put_buffer(there_uid, ptr, len, x._buf_internal,
+                              qbuffer_begin(x._buf_internal),
+                              qbuffer_end(x._buf_internal));
+        ioerror(err, "in buffer init copy");
       }
 
       ret.append(b);
@@ -320,9 +346,11 @@ module Buffers {
       var there_uid = here_uid;
 
       on __primitive("chpl_on_locale_num", x.home_uid) {
-        seterr(nil, bulk_put_buffer(there_uid, ptr, len, x._buf_internal,
-                                    qbuffer_begin(x._buf_internal),
-                                    qbuffer_end(x._buf_internal)));
+        var err:err_t;
+        err = bulk_put_buffer(there_uid, ptr, len, x._buf_internal,
+                              qbuffer_begin(x._buf_internal),
+                              qbuffer_end(x._buf_internal));
+        ioerror(err, "in buffer assignment");
       }
 
       ret.append(b);
@@ -345,23 +373,40 @@ module Buffers {
     return ret;
   }
 
-  proc buffer.append(b:bytes, skip_bytes:int(64) = 0, len_bytes:int(64) = b.len, err:ErrorHandler = nil) {
+  proc buffer.append(b:bytes, skip_bytes:int(64) = 0, len_bytes:int(64) = b.len, inout error:err_t) {
     on __primitive("chpl_on_locale_num", this.home_uid) {
-      seterr(err, qbuffer_append(this._buf_internal, b._bytes_internal, skip_bytes, len_bytes));
+      error = qbuffer_append(this._buf_internal, b._bytes_internal, skip_bytes, len_bytes);
     }
+  }
+  proc buffer.append(b:bytes, skip_bytes:int(64) = 0, len_bytes:int(64) = b.len) {
+    var err:err_t;
+    this.append(b, skip_bytes, len_bytes, err);
+    ioerror(err, "in buffer.append");
   }
 
-  proc buffer.append(buf:buffer, part:buffer_range = buf.all(), err:ErrorHandler = nil) {
+
+  proc buffer.append(buf:buffer, part:buffer_range = buf.all(), inout error:err_t) {
     on __primitive("chpl_on_locale_num", this.home_uid) {
-      seterr(err, qbuffer_append_buffer(this._buf_internal, buf._buf_internal, part.start._bufit_internal, part.end._bufit_internal));
+      error = qbuffer_append_buffer(this._buf_internal, buf._buf_internal, part.start._bufit_internal, part.end._bufit_internal);
     }
+  }
+  proc buffer.append(buf:buffer, part:buffer_range = buf.all()) {
+    var err:err_t;
+    this.append(buf, part, err);
+    ioerror(err, "in buffer.append");
   }
 
-  proc buffer.prepend(b:bytes, skip_bytes:int(64) = 0, len_bytes:int(64) = b.len, err:ErrorHandler = nil) {
+  proc buffer.prepend(b:bytes, skip_bytes:int(64) = 0, len_bytes:int(64) = b.len, inout error:err_t) {
     on __primitive("chpl_on_locale_num", this.home_uid) {
-      seterr(err, qbuffer_prepend(this._buf_internal, b._bytes_internal, skip_bytes, len_bytes));
+      qbuffer_prepend(this._buf_internal, b._bytes_internal, skip_bytes, len_bytes);
     }
   }
+  proc buffer.prepend(b:bytes, skip_bytes:int(64) = 0, len_bytes:int(64) = b.len) {
+    var err:err_t;
+    this.prepend(b, skip_bytes, len_bytes, err);
+    ioerror(err, "in buffer.prepend");
+  }
+
   proc buffer.start():buffer_iterator {
     var ret:buffer_iterator;
     ret.home_uid = this.home_uid;
@@ -421,7 +466,7 @@ module Buffers {
   }*/
 
   // methods to read/write basic types.
-  proc buffer.copyout(it:buffer_iterator, out value, err:ErrorHandler = nil):buffer_iterator {
+  proc buffer.copyout(it:buffer_iterator, out value, inout error:err_t):buffer_iterator {
     var ret:buffer_iterator;
     ret.home_uid = this.home_uid;
     on __primitive("chpl_on_locale_num", this.home_uid) {
@@ -429,15 +474,19 @@ module Buffers {
       var tmp:value.type;
       var sz = numBytes(value.type);
       this.advance(end, sz);
-      seterr(err, qbuffer_copyout(this._buf_internal, it._bufit_internal, end._bufit_internal, tmp, sz));
+      error = qbuffer_copyout(this._buf_internal, it._bufit_internal, end._bufit_internal, tmp, sz);
       value = tmp;
       ret = end;
     }
     return ret;
   }
+  proc buffer.copyout(it:buffer_iterator, out value):buffer_iterator {
+    var err:err_t;
+    this.copyout(it, value, err);
+    ioerror(err, "in buffer.copyout");
+  }
 
-  //proc buffer.copyin(inout it:buffer_iterator, value, inout err:err_t) {
-  proc buffer.copyin( it:buffer_iterator, value, err:ErrorHandler = nil):buffer_iterator {
+  proc buffer.copyin( it:buffer_iterator, value, inout error:err_t):buffer_iterator {
     var ret:buffer_iterator;
     ret.home_uid = this.home_uid;
     on __primitive("chpl_on_locale_num", this.home_uid) {
@@ -452,10 +501,15 @@ module Buffers {
       //writeln("sz is ", sz);
       this.advance(end, sz);
       //debug_print_qbuffer_iter(end._bufit_internal);
-      seterr(err, qbuffer_copyin(this._buf_internal, it._bufit_internal, end._bufit_internal, tmp, sz));
+      error = qbuffer_copyin(this._buf_internal, it._bufit_internal, end._bufit_internal, tmp, sz);
       ret = end;
     }
     return ret;
+  }
+  proc buffer.copyin( it:buffer_iterator, value):buffer_iterator {
+    var err:err_t;
+    this.copyin(it, value, err);
+    ioerror(err, "in buffer.copyin");
   }
 }
 
