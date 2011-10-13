@@ -196,3 +196,17 @@ DECLARE_ATOMICS(uintptr_t);
  
 #define atomic_flag_clear(obj) (atomic_flag_clear_explicit(obj, memory_order_seq_cst))
 */
+
+static inline int leadz8(uint8_t x) {
+  return __builtin_clz((unsigned int) x) - 8*(sizeof(unsigned int)-sizeof(uint8_t));
+}
+static inline int leadz16(uint16_t x) {
+  return __builtin_clz((unsigned int) x) - 8*(sizeof(unsigned int)-sizeof(uint16_t));
+}
+static inline int leadz32(uint32_t x) {
+  return __builtin_clz((unsigned int) x);
+}
+static inline int leadz64(uint64_t x) {
+  return __builtin_clzll((unsigned long long) x);
+}
+

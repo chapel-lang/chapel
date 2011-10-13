@@ -16,6 +16,7 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <string.h>
+#include <limits.h>
 
 // preadv/pwritev are available
 // only on linux/glibc 2.10 or later
@@ -586,10 +587,10 @@ err_t sys_pwrite(int fd, const void* buf, size_t count, off_t offset, ssize_t* n
   return err_out;
 }
 
+// Return the total number of bytes in an IO vector
 static
-int64_t _iov_total_bytes(struct iovec* iov, int iovcnt)
+int64_t _iov_total_bytes(const struct iovec* iov, int iovcnt)
 {
-  // Check for EOF. Only return EEOF if some bytes were requested.
   int64_t tot = 0;
   int i;
   for( i = 0; i < iovcnt; i++ ) tot += iov[i].iov_len;
@@ -599,18 +600,35 @@ int64_t _iov_total_bytes(struct iovec* iov, int iovcnt)
 err_t sys_readv(fd_t fd, struct iovec* iov, int iovcnt, ssize_t* num_read_out)
 {
   ssize_t got;
+  ssize_t got_total;
   err_t err_out;
+  int i;
+  int niovs = IOV_MAX;
 
   STARTING_SLOW_SYSCALL;
-  got = readv(fd, iov, iovcnt);
-  if( got != -1 ) {
-    *num_read_out = got;
-    if( got == 0 && _iov_total_bytes(iov, iovcnt) != 0 ) err_out = EEOF;
-    else err_out = 0;
-  } else {
-    *num_read_out = 0;
-    err_out = errno;
+
+  err_out = 0;
+  got_total = 0;
+  for( i = 0; i < iovcnt; i += niovs ) {
+    niovs = iovcnt - i;
+    if( niovs > IOV_MAX ) niovs = IOV_MAX;
+
+    got = readv(fd, &iov[i], niovs);
+    if( got != -1 ) {
+      got_total += got;
+    } else {
+      err_out = errno;
+      break;
+    }
+    if( got != _iov_total_bytes(&iov[i], niovs) ) {
+      break;
+    }
   }
+
+  if( err_out == 0 && got_total == 0 && _iov_total_bytes(iov, iovcnt) != 0 ) err_out = EEOF;
+
+  *num_read_out = got_total;
+
   DONE_SLOW_SYSCALL;
 
   return err_out;
@@ -619,17 +637,33 @@ err_t sys_readv(fd_t fd, struct iovec* iov, int iovcnt, ssize_t* num_read_out)
 err_t sys_writev(fd_t fd, const struct iovec* iov, int iovcnt, ssize_t* num_written_out)
 {
   ssize_t got;
+  ssize_t got_total;
   err_t err_out;
+  int i;
+  int niovs = IOV_MAX;
 
   STARTING_SLOW_SYSCALL;
-  got = writev(fd, iov, iovcnt);
-  if( got != -1 ) {
-    *num_written_out = got;
-    err_out = 0;
-  } else {
-    *num_written_out = 0;
-    err_out = errno;
+
+  err_out = 0;
+  got_total = 0;
+  for( i = 0; i < iovcnt; i += niovs ) {
+    niovs = iovcnt - i;
+    if( niovs > IOV_MAX ) niovs = IOV_MAX;
+
+    got = writev(fd, &iov[i], niovs);
+    if( got != -1 ) {
+      got_total += got;
+    } else {
+      err_out = errno;
+      break;
+    }
+    if( got != _iov_total_bytes(&iov[i], niovs) ) {
+      break;
+    }
   }
+
+  *num_written_out = got_total;
+
   DONE_SLOW_SYSCALL;
 
   return err_out;
@@ -639,18 +673,35 @@ err_t sys_writev(fd_t fd, const struct iovec* iov, int iovcnt, ssize_t* num_writ
 err_t sys_preadv(fd_t fd, struct iovec* iov, int iovcnt, off_t seek_to_offset, ssize_t* num_read_out)
 {
   ssize_t got;
+  ssize_t got_total;
   err_t err_out;
+  int i;
+  int niovs = IOV_MAX;
 
   STARTING_SLOW_SYSCALL;
-  got = preadv(fd, iov, iovcnt, seek_to_offset);
-  if( got != -1 ) {
-    *num_read_out = got;
-    if( got == 0 && _iov_total_bytes(iov, iovcnt) != 0 ) err_out = EEOF;
-    else err_out = 0;
-  } else {
-    *num_read_out = 0;
-    err_out = errno;
+
+  err_out = 0;
+  got_total = 0;
+  for( i = 0; i < iovcnt; i += niovs ) {
+    niovs = iovcnt - i;
+    if( niovs > IOV_MAX ) niovs = IOV_MAX;
+
+    got = preadv(fd, &iov[i], niovs, seek_to_offset + got_total);
+    if( got != -1 ) {
+      got_total += got;
+    } else {
+      err_out = errno;
+      break;
+    }
+    if( got != _iov_total_bytes(&iov[i], niovs) ) {
+      break;
+    }
   }
+
+  if( err_out == 0 && got_total == 0 && _iov_total_bytes(iov, iovcnt) != 0 ) err_out = EEOF;
+
+  *num_read_out = got_total;
+
   DONE_SLOW_SYSCALL;
 
   return err_out;
@@ -661,51 +712,68 @@ err_t sys_preadv(fd_t fd, struct iovec* iov, int iovcnt, off_t seek_to_offset, s
 err_t sys_preadv(fd_t fd, struct iovec* iov, int iovcnt, off_t seek_to_offset, ssize_t* num_read_out)
 {
   ssize_t got;
+  ssize_t got_total;
   err_t err_out;
   int i;
-  ssize_t total_written;
 
   STARTING_SLOW_SYSCALL;
 
-  total_written = 0;
-
+  err_out = 0;
+  got_total = 0;
   for( i = 0; i < iovcnt; i++ ) {
-    got = pread(fd, iov[i].iov_base, iov[i].iov_len, seek_to_offset + total_written);
+    got = pread(fd, iov[i].iov_base, iov[i].iov_len, seek_to_offset + got_total);
     if( got != -1 ) {
-      total_written += got;
+      got_total += got;
+    } else {
+      err_out = errno;
+      break;
     }
-    if( got != iov[i].iov_len ) break;
+    if( got != iov[i].iov_len ) {
+      break;
+    }
   }
 
-  if( got != -1 ) {
-    *num_read_out = total_written;
-    if( got == 0 && _iov_total_bytes(iov, iovcnt) != 0 ) err_out = EEOF;
-    else err_out = 0;
-  } else {
-    *num_read_out = 0;
-    err_out = errno;
-  }
+  if( err_out == 0 && got_total == 0 && _iov_total_bytes(iov, iovcnt) != 0 ) err_out = EEOF;
+
+  *num_read_out = got_total;
+
   DONE_SLOW_SYSCALL;
 
   return err_out;
 }
-#endif
 
+#endif
 #ifdef HAS_PWRITEV
 err_t sys_pwritev(fd_t fd, const struct iovec* iov, int iovcnt, off_t seek_to_offset, ssize_t* num_written_out)
 {
   ssize_t got;
+  ssize_t got_total;
   err_t err_out;
+  int i;
+  int niovs = IOV_MAX;
 
   STARTING_SLOW_SYSCALL;
-  got = pwritev(fd, iov, iovcnt, seek_to_offset);
-  if( got != -1 ) {
-    *num_written_out = got;
-    err_out = 0;
-  } else {
-    *num_written_out = 0;
-    err_out = errno;
+
+  err_out = 0;
+  got_total = 0;
+  for( i = 0; i < iovcnt; i += niovs ) {
+    niovs = iovcnt - i;
+    if( niovs > IOV_MAX ) niovs = IOV_MAX;
+
+    got = pwritev(fd, &iov[i], niovs, seek_to_offset + got_total);
+    if( got != -1 ) {
+      got_total += got;
+    } else {
+      err_out = errno;
+      break;
+    }
+    if( got != _iov_total_bytes(&iov[i], niovs) ) {
+      break;
+    }
   }
+
+  *num_written_out = got_total;
+
   DONE_SLOW_SYSCALL;
 
   return err_out;
@@ -716,33 +784,35 @@ err_t sys_pwritev(fd_t fd, const struct iovec* iov, int iovcnt, off_t seek_to_of
 err_t sys_pwritev(fd_t fd, const struct iovec* iov, int iovcnt, off_t seek_to_offset, ssize_t* num_written_out)
 {
   ssize_t got;
+  ssize_t got_total;
   err_t err_out;
   int i;
-  ssize_t total_written;
 
   STARTING_SLOW_SYSCALL;
 
-  total_written = 0;
-
+  err_out = 0;
+  got_total = 0;
   for( i = 0; i < iovcnt; i++ ) {
-    got = pwrite(fd, iov[i].iov_base, iov[i].iov_len, seek_to_offset + total_written);
+    got = pwrite(fd, iov[i].iov_base, iov[i].iov_len, seek_to_offset + got_total);
     if( got != -1 ) {
-      total_written += got;
+      got_total += got;
+    } else {
+      err_out = errno;
+      break;
     }
-    if( got != iov[i].iov_len ) break;
+    if( got != iov[i].iov_len ) {
+      break;
+    }
   }
 
-  if( got != -1 ) {
-    *num_written_out = total_written;
-    err_out = 0;
-  } else {
-    *num_written_out = 0;
-    err_out = errno;
-  }
+  *num_written_out = got_total;
+
   DONE_SLOW_SYSCALL;
 
   return err_out;
 }
+
+
 #endif
 
 err_t sys_fsync(fd_t fd)

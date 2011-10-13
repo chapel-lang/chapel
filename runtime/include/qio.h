@@ -487,8 +487,13 @@ err_t qio_file_length(qio_file_t* f, int64_t *len_out);
  *
  *  If both the channel lock and the file lock are needed, always
  *  lock the channel first.
+ *
+ *  Channels have cached start/cur/end pointers
+ *  to specify the region in which it's easy to read/write
+ *  a chunk. The channel offset is computed as
+ *  (cached_cur - cached_start) + cached_start_pos
  */
-#define MARK_INITIAL_STACK_SZ 2
+#define MARK_INITIAL_STACK_SZ 4
 typedef struct qio_buffered_channel_s {
   /* When reading, we 'require' then read from
    * right_mark_start to (potentially) heavy->av_end
@@ -514,16 +519,22 @@ typedef struct qio_buffered_channel_s {
    * we allocate bufferspace (appending without updating av_end)
    * and then update av_end to be the end of the buffer.
    *
-   * right_mark_start is av_start or mark_space[mark_next-1].
+   * right_mark_start is mark_space[mark_next-1] or av_start if mark_next==0.
+   *
+   * How does marking interact with cached_cur/start/end?
+   *  - mark positions are always offsets from get_offset which includes cached_cur.
+   *  - commit/revert functions use differences
    */
 
   /* Each buffer is divided into these sections:
    * _________________________________________________________________
    * |write-behind | user writeable/readable | read-ahead/buffer space|
-   *             av_start                  av_end
-   *                  right_mark_start
+   *             mark_stack[0]              av_end
+   *             "av_start"
+   *                  mark_stack[mark_next-1] 
+   *                  "right_mark_start"
    * the available section is ready for user read/write.
-   * Space to the right of av_end is allocated but not yet read
+   * Space to the right of av_end is allocated but not yet read from disk
    * (if we're reading). When writing, av_end == end of buf,
    * and so there is no extra space on the right. If one day
    * we do read-modify-write (which isn't supported in the initial version),
@@ -532,7 +543,6 @@ typedef struct qio_buffered_channel_s {
    * by coupling together 2 channels with the zero-copy capabilities.
    */
 
-  int64_t av_start;
   int64_t av_end;
 
   qbuffer_t buf;
@@ -541,10 +551,10 @@ typedef struct qio_buffered_channel_s {
   uint8_t bit_buffer;
   int8_t bit_buffer_bits;
 
-  size_t mark_next;
+  ssize_t mark_cur;
   size_t mark_stack_size;
   int64_t* mark_stack;
-  // initial 2 entries so we don't have to malloc
+  // initial few entries so we don't have to malloc
   // for the common case of very few marks.
   int64_t mark_space[MARK_INITIAL_STACK_SZ];
 } qio_buffered_channel_t;
@@ -557,12 +567,22 @@ typedef struct qio_channel_s {
   // frequently used data:
   void* cached_cur; // current offset in a buffer.
   void* cached_end; // end offset in a buffer; we don't exceed this.
+  void* cached_start; // start offset in a buffer; when mark/commit/reverting we
+                      // might back up to this point.
+  int64_t cached_start_pos; // what position does cached_start correspond to?
 
   // reference count which is atomically updated
   qbytes_refcnt_t ref_cnt;
 
-  // for a buffered channel, cur is in part pointed to by av_start.
-  
+  // sticky channel error. Channel I/O functions generally return
+  // an error code, which if set, will also be stored here.
+  // This error code can only be cleared by qio_channel_clear_error().
+  // This error code can be checked with qio_channel_error().
+  // Operations on the channel (besides qio_channel_error()) do not
+  // check this error code and only write to it if there is an error.
+  // Thus, the behavior is similar to the global errno.
+  err_t error;
+
   qio_file_t* file;
   qio_lock_t lock;
 
@@ -601,6 +621,23 @@ void qio_channel_release(qio_channel_t* ch) {
   DO_RELEASE(ch, _qio_channel_destroy);
 }
 
+static inline
+void qio_channel_clear_error(qio_channel_t* ch) {
+  ch->error = 0;
+}
+
+static inline
+void _qio_channel_set_error_unlocked(qio_channel_t* ch, err_t err) {
+  if( err ) ch->error = err;
+}
+
+
+static inline
+err_t qio_channel_error(qio_channel_t* ch) {
+  return ch->error;
+}
+
+
 err_t _qio_channel_init_unbuffered(qio_channel_t* ch, qio_file_t* file, qio_hint_t hints, int readable, int writeable, int64_t start, int64_t end, qio_style_t* style);
 err_t _qio_channel_init_buffered(qio_channel_t* ch, qio_file_t* file, qio_hint_t hints, int readable, int writeable, int64_t start, int64_t end, qio_style_t* style);
 err_t _qio_channel_init_file(qio_channel_t* ch, qio_file_t* file, qio_hint_t hints, int readable, int writeable, int64_t start, int64_t end, qio_style_t* style);
@@ -609,6 +646,7 @@ err_t _qio_channel_init_file(qio_channel_t* ch, qio_file_t* file, qio_hint_t hin
 // maybe want to use INT64_MAX for end if it's not to be restricted.
 err_t qio_channel_create(qio_channel_t** ch_out, qio_file_t* file, qio_hint_t hints, int readable, int writeable, int64_t start, int64_t end, qio_style_t* style);
 
+err_t qio_channel_path_offset(const int threadsafe, qio_channel_t* ch, const char** string_out, int64_t* offset_out);
 
 err_t _qio_slow_read(qio_channel_t* ch, void* ptr, ssize_t len, ssize_t* amt_read);
 err_t _qio_slow_write(qio_channel_t* ch, const void* ptr, ssize_t len, ssize_t* amt_written);
@@ -621,7 +659,7 @@ err_t _qio_channel_flush_unlocked(qio_channel_t* ch);
 //
 // On a read, returns EEOF and *amt_read=some amount for EOF.
 static always_inline
-err_t qio_channel_read(const int threadsafe, qio_channel_t* ch, void* ptr, ssize_t len, ssize_t* amt_read)
+err_t qio_channel_read(const int threadsafe, qio_channel_t* restrict ch, void* restrict ptr, ssize_t len, ssize_t* restrict amt_read)
 {
   err_t err;
 
@@ -641,6 +679,86 @@ err_t qio_channel_read(const int threadsafe, qio_channel_t* ch, void* ptr, ssize
     err = 0;
   } else {
     err = _qio_slow_read(ch, ptr, len, amt_read);
+    _qio_channel_set_error_unlocked(ch, err);
+  }
+
+  if( threadsafe ) {
+    qio_unlock(&ch->lock);
+  }
+
+  return err;
+}
+
+// returns a character >= 0 or negative for an error code.
+// This function exists for performance reasons.
+static always_inline
+int32_t qio_channel_read_byte(const int threadsafe, qio_channel_t* restrict ch)
+{
+  int32_t ret;
+
+  if( threadsafe ) {
+    err_t err;
+    err = qio_lock(&ch->lock);
+    if( err ) {
+      ret = err < 0 ? err : - err;
+      return ret;
+    }
+  }
+
+  // Is there room in our fast path buffer?
+  if( 1 <= VOID_PTR_DIFF(ch->cached_end, ch->cached_cur) ) {
+    ret = *(unsigned char*) ch->cached_cur;
+    ch->cached_cur = VOID_PTR_ADD(ch->cached_cur, 1);
+  } else {
+    ssize_t amt_read;
+    err_t err;
+    uint8_t tmp;
+    err = _qio_slow_read(ch, &tmp, 1, &amt_read);
+    if( err == 0 && amt_read != 1 ) err = ESHORT;
+    if( err == 0 ) ret = tmp;
+    else {
+      _qio_channel_set_error_unlocked(ch, err);
+      // Return an error, but make sure that it is negative.
+      ret = err < 0 ? err : - err;
+    }
+  }
+
+  if( threadsafe ) {
+    qio_unlock(&ch->lock);
+  }
+
+  return ret;
+}
+
+// This function exists for performance reasons.
+static always_inline
+err_t qio_channel_write_byte(const int threadsafe, qio_channel_t* restrict ch, uint8_t byte) {
+  err_t err;
+
+  if( threadsafe ) {
+    err = qio_lock(&ch->lock);
+    if( err ) {
+      return err;
+    }
+  }
+
+  // Is there room in our fast path buffer?
+  if( 1 <= VOID_PTR_DIFF(ch->cached_end, ch->cached_cur) ) {
+    *(unsigned char*) ch->cached_cur = byte;
+    ch->cached_cur = VOID_PTR_ADD(ch->cached_cur, 1);
+    err = 0;
+    // Flush FILE* buffers after every write, so that C I/O
+    // can be intermixed with QIO calls.
+    if( (ch->hints & QIO_METHODMASK) == QIO_METHOD_FREADFWRITE) {
+      err = _qio_channel_flush_unlocked(ch);
+      _qio_channel_set_error_unlocked(ch, err);
+    }
+  } else {
+    ssize_t amt_written = 0;
+    uint8_t tmp = byte;
+    err = _qio_slow_write(ch, &tmp, 1, &amt_written);
+    if( err == 0 && amt_written != 1 ) err = ESHORT;
+    _qio_channel_set_error_unlocked(ch, err);
   }
 
   if( threadsafe ) {
@@ -700,7 +818,7 @@ int64_t qio_channel_str_style(qio_channel_t* ch)
 
  
 static always_inline
-err_t qio_channel_write(const int threadsafe, qio_channel_t* ch, const void* ptr, ssize_t len, ssize_t* amt_written )
+err_t qio_channel_write(const int threadsafe, qio_channel_t* restrict ch, const void* restrict ptr, ssize_t len, ssize_t* restrict amt_written )
 {
   err_t err;
 
@@ -722,9 +840,11 @@ err_t qio_channel_write(const int threadsafe, qio_channel_t* ch, const void* ptr
     // can be intermixed with QIO calls.
     if( (ch->hints & QIO_METHODMASK) == QIO_METHOD_FREADFWRITE) {
       err = _qio_channel_flush_unlocked(ch);
+      _qio_channel_set_error_unlocked(ch, err);
     }
   } else {
     err = _qio_slow_write(ch, ptr, len, amt_written);
+    _qio_channel_set_error_unlocked(ch, err);
   }
 
   if( threadsafe ) {
@@ -736,23 +856,69 @@ err_t qio_channel_write(const int threadsafe, qio_channel_t* ch, const void* ptr
 
 
 static always_inline
-err_t qio_channel_read_amt(const int threadsafe, qio_channel_t* ch, void* ptr, ssize_t len) {
+err_t qio_channel_read_amt(const int threadsafe, qio_channel_t* restrict ch, void* restrict ptr, ssize_t len) {
   err_t err;
-  ssize_t amt = 0;
-  err = qio_channel_read(threadsafe, ch, ptr, len, &amt);
-  if( err ) return err;
-  if( amt != len ) return ESHORT;
-  return 0;
+
+  if( threadsafe ) {
+    err = qio_lock(&ch->lock);
+    if( err ) {
+      return err;
+    }
+  }
+
+  // Is there room in our fast path buffer?
+  if( len <= VOID_PTR_DIFF(ch->cached_end, ch->cached_cur) ) {
+    memcpy( ptr, ch->cached_cur, len );
+    ch->cached_cur = VOID_PTR_ADD(ch->cached_cur, len);
+    err = 0;
+  } else {
+    ssize_t amt_read = 0;
+    err = _qio_slow_read(ch, ptr, len, &amt_read);
+    if( err == 0 && amt_read != len ) err = ESHORT;
+    _qio_channel_set_error_unlocked(ch, err);
+  }
+
+  if( threadsafe ) {
+    qio_unlock(&ch->lock);
+  }
+
+  return err;
 }
 
 static always_inline
-err_t qio_channel_write_amt(const int threadsafe, qio_channel_t* ch, const void* ptr, ssize_t len) {
+err_t qio_channel_write_amt(const int threadsafe, qio_channel_t* restrict ch, const void* restrict ptr, ssize_t len) {
   err_t err;
-  ssize_t amt = 0;
-  err = qio_channel_write(threadsafe, ch, ptr, len, &amt);
-  if( err ) return err;
-  if( amt != len ) return ESHORT;
-  return 0;
+
+  if( threadsafe ) {
+    err = qio_lock(&ch->lock);
+    if( err ) {
+      return err;
+    }
+  }
+
+  // Is there room in our fast path buffer?
+  if( len <= VOID_PTR_DIFF(ch->cached_end, ch->cached_cur) ) {
+    memcpy( ch->cached_cur, ptr, len );
+    ch->cached_cur = VOID_PTR_ADD(ch->cached_cur, len);
+    err = 0;
+    // Flush FILE* buffers after every write, so that C I/O
+    // can be intermixed with QIO calls.
+    if( (ch->hints & QIO_METHODMASK) == QIO_METHOD_FREADFWRITE) {
+      err = _qio_channel_flush_unlocked(ch);
+      _qio_channel_set_error_unlocked(ch, err);
+    }
+  } else {
+    ssize_t amt_written = 0;
+    err = _qio_slow_write(ch, ptr, len, &amt_written);
+    if( err == 0 && amt_written != len ) err = ESHORT;
+    _qio_channel_set_error_unlocked(ch, err);
+  }
+
+  if( threadsafe ) {
+    qio_unlock(&ch->lock);
+  }
+
+  return err;
 }
 
 err_t _qio_channel_require_unlocked(qio_channel_t* ch, int64_t space, int writing);
@@ -770,6 +936,7 @@ err_t qio_channel_require_read(const int threadsafe, qio_channel_t* ch, int64_t 
   }
 
   err = _qio_channel_require_unlocked(ch, space, 0);
+  _qio_channel_set_error_unlocked(ch, err);
 
   if( threadsafe ) {
     qio_unlock(&ch->lock);
@@ -791,6 +958,7 @@ err_t qio_channel_require_write(const int threadsafe, qio_channel_t* ch, int64_t
   }
 
   err = _qio_channel_require_unlocked(ch, space, 1);
+  _qio_channel_set_error_unlocked(ch, err);
 
   if( threadsafe ) {
     qio_unlock(&ch->lock);
@@ -822,6 +990,7 @@ err_t qio_channel_begin_peek_cached(const int threadsafe, qio_channel_t* ch, voi
   *start_out = ch->cached_cur;
   *end_out = ch->cached_end;
   err = 0;
+  _qio_channel_set_error_unlocked(ch, err);
 
   return err;
 }
@@ -833,6 +1002,7 @@ err_t qio_channel_end_peek_cached(const int threadsafe, qio_channel_t* ch, void*
 
   ch->cached_cur = new_start;
   err = 0;
+  _qio_channel_set_error_unlocked(ch, err);
 
   if( threadsafe ) {
     qio_unlock(&ch->lock);
@@ -878,6 +1048,7 @@ err_t qio_channel_flush(const int threadsafe, qio_channel_t* ch)
   }
 
   err = _qio_channel_flush_unlocked(ch);
+  _qio_channel_set_error_unlocked(ch, err);
 
   if( threadsafe ) {
     qio_unlock(&ch->lock);
@@ -914,6 +1085,7 @@ err_t qio_channel_close(const int threadsafe, qio_channel_t* ch)
   }
 
   err = _qio_channel_final_flush_unlocked(ch);
+  _qio_channel_set_error_unlocked(ch, err);
 
   if( threadsafe ) {
     qio_unlock(&ch->lock);
@@ -924,7 +1096,8 @@ err_t qio_channel_close(const int threadsafe, qio_channel_t* ch)
 
 err_t qio_channel_mark(const int threadsafe, qio_channel_t* ch);
 
-void qio_channel_advance_unlocked(qio_channel_t* ch, int64_t nbytes);
+// Returns an error, but that error can safely be ignored.
+err_t qio_channel_advance_unlocked(qio_channel_t* ch, int64_t nbytes);
 
 void qio_channel_revert_unlocked(qio_channel_t* ch);
 
@@ -948,7 +1121,7 @@ err_t qio_channel_revert(const int threadsafe, qio_channel_t* ch)
     qio_unlock(&ch->lock);
   }
 
-  return err;
+  return 0;
 }
 
 
@@ -980,8 +1153,8 @@ err_t qio_channel_commit(const int threadsafe, qio_channel_t* ch)
 }
 
 /* Handle I/O of bits at a time */
-err_t qio_channel_write_bits(const int threadsafe, qio_channel_t* ch, uint64_t v, int8_t nbits);
-err_t qio_channel_read_bits(const int threadsafe, qio_channel_t* ch, uint64_t* v, int8_t nbits);
+err_t qio_channel_write_bits(const int threadsafe, qio_channel_t* restrict ch, uint64_t v, int8_t nbits);
+err_t qio_channel_read_bits(const int threadsafe, qio_channel_t* restrict ch, uint64_t* restrict v, int8_t nbits);
 
 /*
 err_t qio_channel_fopen(const int threadsafe, qio_channel_t* ch, int reading, int writing, FILE** out);

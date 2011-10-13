@@ -1,6 +1,8 @@
 #include "qio_formatted.h"
 #include <assert.h>
 #include <math.h>
+#include <locale.h>
+#include <langinfo.h>
 
 void test_endian(void)
 {
@@ -915,7 +917,7 @@ void basicstring_test()
         styles[5].binary = 1;
         styles[5].str_style = -10;
         styles[6].binary = 1;
-        styles[6].str_style = -0x0100;
+        styles[6].str_style = -0x0100; // zero-terminated.
         styles[7].binary = 1;
         styles[7].str_style = -0x01ff;
         styles[8].binary = 1;
@@ -984,7 +986,7 @@ void basicstring_test()
 
 void test_readwritestring()
 {
-	basicstring_test();
+	//basicstring_test(); in main.
 	write_65k_test();   //write 65k then read it back.
 
 	//min_width_test();  //test min_width              
@@ -1038,22 +1040,101 @@ void test_scanmatch()
   f = NULL;
 }
 
+void do_test_utf8(int wchar, char* utf8)
+{
+  err_t err;
+  qio_file_t *f = NULL;
+  qio_channel_t *reading = NULL;
+  qio_channel_t *writing = NULL;
+  int32_t got_wchar;
+  int i;
+
+  err = qio_file_open_tmp(&f, 0, NULL);
+  assert(!err);
+
+  err = qio_channel_create(&writing, f, QIO_CH_BUFFERED, 0, 1, 0, INT64_MAX, NULL);
+  assert(!err);
+
+  err = qio_channel_write_char(true, writing, wchar);
+  assert(!err);
+
+  qio_channel_release(writing);
+
+  err = qio_channel_create(&reading, f, QIO_CH_BUFFERED, 1, 0, 0, INT64_MAX, NULL);
+  assert(!err);
+
+  err = qio_channel_read_char(true, reading, &got_wchar);
+  assert(!err);
+
+  assert(got_wchar == wchar);
+
+  qio_channel_release(reading);
+
+  err = qio_channel_create(&reading, f, QIO_CH_BUFFERED, 1, 0, 0, INT64_MAX, NULL);
+  assert(!err);
+
+  for( i = 0; utf8[i]; i++ ) {
+   got_wchar = qio_channel_read_byte(true, reading);
+   assert(got_wchar == (unsigned char) utf8[i]);
+  }
+  assert( -EEOF == qio_channel_read_byte(true, reading) );
+
+  qio_channel_release(reading);
+ 
+  qio_file_release(f);
+  f = NULL;
+
+}
+
+void test_utf8(void)
+{
+  printf("Testing UTF-8 glocale_utf8=%i qbytes_iobuf_size=%i\n",
+         glocale_utf8, (int) qbytes_iobuf_size);
+
+  do_test_utf8(0x0024, "\x24");
+  do_test_utf8(0x00A2, "\xC2\xA2");
+  do_test_utf8(0x20AC, "\xE2\x82\xAC");
+  do_test_utf8(0x024B62, "\xF0\xA4\xAD\xA2");
+}
+
 int main(int argc, char** argv)
 {
+  int sizes[] = {qbytes_iobuf_size, 1, 2, 0};
+
+  setlocale(LC_CTYPE,"");
+
   printf("Sizeof of qio_style_t is %i\n", (int) sizeof(qio_style_t));
   printf("Sizeof of qio_channel_t is %i\n", (int) sizeof(qio_channel_t));
 
-  basicstring_test();
+  for( int i = 0; sizes[i] != 0; i++ ) {
+    char* codeset = nl_langinfo(CODESET); 
+    qbytes_iobuf_size = sizes[i];
 
-  test_verybasic();
-  test_readwriteint();
-  test_endian();
-  test_printscan_int();
-  test_printscan_float();
+    if( 0 == strcmp(codeset, "UTF-8") ) {
+      glocale_utf8 = -1;
+      test_utf8();
+      glocale_utf8 = 1;
+      test_utf8();
+    }
+  }
 
-  test_readwritestring();
+  for( int i = 0; sizes[i] != 0; i++ ) {
+    qbytes_iobuf_size = sizes[i];
 
-  test_scanmatch();
+    printf("Testing formatted I/O qbytes_iobuf_size=%i\n",
+          (int) qbytes_iobuf_size);
+    basicstring_test();
+
+    test_verybasic();
+    test_readwriteint();
+    test_endian();
+    test_printscan_int();
+    test_printscan_float();
+
+    test_readwritestring();
+
+    test_scanmatch();
+  }
 
   return 0;
 }

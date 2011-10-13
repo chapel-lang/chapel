@@ -67,6 +67,7 @@
 // end of ifndef CHPL_NO_GASNET
 #endif
 
+#include <features.h>
 #include <sys/types.h>
 #include <unistd.h>
 #include <errno.h>

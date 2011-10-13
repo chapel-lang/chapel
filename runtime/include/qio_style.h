@@ -41,7 +41,7 @@ typedef struct qio_style_s {
   // text style choices
   uint32_t min_width; // minimum field width; default is 1.
   uint32_t max_width; // maxiumum field width; default is UINT_MAX.
-
+                    
   // string_start, string_end, string_format ignored for binary
   // string_start/string_end only used with format>=1 when printing
   // string_end is used when scanning format==0.
@@ -101,6 +101,7 @@ typedef struct qio_style_s {
   // QIO_COMPLEX_FORMAT_READ_STRICT -- do not accept the other format when reading
   uint8_t complex_style;
 
+  /*
   uint8_t spaces_after_sep; // automatically add/consume spaces after a
                             // delimiter other than '\n' and around
                             // record_after_field_name
@@ -132,7 +133,7 @@ typedef struct qio_style_s {
   style_char_t class_after_field_name_char; // normally ' = '
   uint8_t class_print_field_names; // print class fields names? normally 1
   uint8_t class_print_name; // print class name? normally 0
-
+  */
 } qio_style_t;
 
 typedef qio_style_t _qio_style_ptr_t;
@@ -185,6 +186,7 @@ void qio_style_init_default(qio_style_t* s)
 
   s->complex_style = 0;
 
+  /*
   s->spaces_after_sep = 1;
 
   s->array_start_char = '\0';
@@ -213,6 +215,7 @@ void qio_style_init_default(qio_style_t* s)
   s->class_after_field_name_char = '=';
   s->class_print_field_names = 1;
   s->class_print_name = 0;
+  */
 }
 
 static inline

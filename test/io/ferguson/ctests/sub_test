@@ -1,6 +1,6 @@
 #!/bin/sh
 
-RINC="-I$CHPL_HOME/runtime/include -I$CHPL_HOME/runtime/include/atomics/intrinsics"
+RINC="--std=c99 -I$CHPL_HOME/runtime/include -I$CHPL_HOME/runtime/include/atomics/intrinsics"
 RSRC="$CHPL_HOME/runtime/src"
 
 T1="gcc -o deque_test -g deque_test.c -DSIMPLE_TEST $RINC $RSRC/deque.c -Wall"
@@ -9,6 +9,7 @@ T3="gcc -o qio_test -g qio_test.c -DSIMPLE_TEST $RINC $RSRC/qio.c $RSRC/sys.c $R
 T4="gcc -o qio_formatted_test -g qio_formatted_test.c -DSIMPLE_TEST $RINC $RSRC/qio.c $RSRC/qio_formatted.c $RSRC/sys.c $RSRC/sys_xsi_strerror_r.c $RSRC/qbuffer.c $RSRC/deque.c -Wall -pthread"
 T5="gcc -o qio_memfile_test -g qio_memfile_test.c -DSIMPLE_TEST $RINC $RSRC/qio.c $RSRC/qio_formatted.c $RSRC/sys.c $RSRC/sys_xsi_strerror_r.c $RSRC/qbuffer.c $RSRC/deque.c -Wall -pthread"
 T6="gcc -o qio_bits_test -g qio_bits_test.c -DSIMPLE_TEST $RINC $RSRC/qio.c $RSRC/sys.c $RSRC/sys_xsi_strerror_r.c $RSRC/qbuffer.c $RSRC/deque.c -Wall -pthread"
+T7="gcc -o qio_mark_test -g qio_mark_test.c -DSIMPLE_TEST $RINC $RSRC/qio.c $RSRC/sys.c $RSRC/sys_xsi_strerror_r.c $RSRC/qbuffer.c $RSRC/deque.c -Wall -pthread"
 
 echo $T1
 echo $T2
@@ -16,14 +17,16 @@ echo $T3
 echo $T4
 echo $T5
 echo $T6
+echo $T7
 
-$T1 && $T2 && $T3 && $T4 && $T5 && $T6
+$T1 && $T2 && $T3 && $T4 && $T5 && $T6 && $T7
 
 RETVAL=$?
 
 runtest() {
   EXE=$1
   DESC=$2
+  echo Running $EXE
   $EXE > /dev/null
   RETVAL=$?
   if [ $RETVAL -eq 0 ]
@@ -44,6 +47,7 @@ then
   runtest ./qio_formatted_test "Formatted I/O Test"
   runtest ./qio_memfile_test "Memory File Test"
   runtest ./qio_bits_test "Bit I/O Test"
+  runtest ./qio_mark_test "Bit I/O Test"
 else
   echo "[Error compiling C I/O tests]"
 fi
