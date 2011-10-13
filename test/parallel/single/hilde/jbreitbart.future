@@ -1,5 +1,4 @@
-bug: Crash on initialization of single array.
+bug: Single qualifier on arrays is not legal, but it compiles and crashes during init.
 
-Array of single ints initializes fine, but single array of ints crashes during initialization.
-
-Probably the right fix for this is to disallow that syntax.
+Sync and single should only be allowed on primitive types excluding
+string and complex.

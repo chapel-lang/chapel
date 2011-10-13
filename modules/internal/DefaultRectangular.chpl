@@ -48,6 +48,10 @@ class DefaultRectangularDom: BaseRectangularDom {
     this.dist = dist;
   }
 
+  proc dsiDisplayRepresentation() {
+    writeln("ranges = ", ranges);
+  }
+
   proc dsiClear() {
     var emptyRange: range(idxType, BoundedRangeType.bounded, stridable);
     for param i in 1..rank do
@@ -408,6 +412,15 @@ class DefaultRectangularArr: BaseArr {
   proc canCopyFromDevice param return true;
 
   // end class definition here, then defined secondary methods below
+
+  proc dsiDisplayRepresentation() {
+    writeln("off=", off);
+    writeln("blk=", blk);
+    writeln("str=", str);
+    writeln("origin=", origin);
+    writeln("factoredOffs=", factoredOffs);
+    writeln("noinit=", noinit);
+  }
 
   // can the compiler create this automatically?
   proc dsiGetBaseDom() return dom;

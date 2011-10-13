@@ -12,8 +12,6 @@ module SSCA2_kernels
 //  |  These are the only requirements on the representation of the graph.     |
 //  |                                                                          |
 //  |  Filtering in Kernel 4 is turned on or off by a compilation time param.  |
-//  |  The equivalent of "ifdef" is provided by conditionals that are          |
-//  |  evaluated at compile time.  Dead code is eliminated by the compiler.    |
 //  +==========================================================================+
 
 { 

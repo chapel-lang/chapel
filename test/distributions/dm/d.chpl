@@ -419,7 +419,7 @@ proc DimensionalDom.dsiGetPrivatizeData() {
     then dom2.dsiGetPrivatizeData1d()
     else 0;
 
-  return (dist.pid, dom1, dom1pd, dom2, dom2pd, localDdescs);
+  return (dist.pid, dom1, dom1pd, dom2, dom2pd, whole.dims(), localDdescs);
 }
 
 proc DimensionalDom.dsiPrivatize(privatizeData) {
@@ -449,8 +449,9 @@ proc DimensionalDom.dsiPrivatize(privatizeData) {
                                     stridable = this.stridable,
                                     dist = privdist,
                                     dom1 = dom1new,
-                                    dom2 = dom2new);
-  result.localDdescs = privatizeData(6);
+                                    dom2 = dom2new,
+                                    whole       = [(...privatizeData(6))],
+                                    localDdescs = privatizeData(7));
 
   // update local-to-global pointers as needed
   param lg1 = dom1orig.dsiSupportsPrivatization1d() &&

@@ -1087,7 +1087,8 @@
   }
 
 
-  proc file.writer(inout error:err_t, param kind=iokind.dynamic, param locking=true, start:int(64) = 0, end:int(64) = max(int(64)), hints:c_int = 0, style:iostyle = this._style): channel(true,kind,locking) {
+  //proc file.mkwritere(inout error:err_t, param kind=iokind.dynamic, param locking=true, start:int(64) = 0, end:int(64) = max(int(64)), hints:c_int = 0, style:iostyle = this._style): channel(true,kind,locking) {
+  proc file.mkwritere(inout error:err_t, param kind:iokind, param locking:bool, start:int(64), end:int(64), hints:c_int, style:iostyle): channel(true,kind,locking) {
 
     check();
 
@@ -1097,10 +1098,10 @@
     }
     return ret;
   }
-  proc file.writer(param kind=iokind.dynamic, param locking=true, start:int(64) = 0, end:int(64) = max(int(64)), hints:c_int = 0, style:iostyle = this._style)//: channel(true,kind,locking) 
+  proc file.mkwriter(param kind=iokind.dynamic, param locking=true, start:int(64) = 0, end:int(64) = max(int(64)), hints:c_int = 0, style:iostyle = this._style)//: channel(true,kind,locking) 
   {
     var err:err_t;
-    var ret = file.writer(err, kind, locking, start, end, hints, style);
+    var ret = file.mkwritere(err, kind, locking, start, end, hints, style);
 
     if err then ioerror(err, "in file.writer", this.tryGetPath());
     return ret;
@@ -1767,7 +1768,7 @@
 // And now, the toplevel items.
 
   const stdin:channel(false, iokind.dynamic, true) = openfd(0).reader(); 
-  const stdout:channel(true, iokind.dynamic, true) = openfp(chpl_cstdout()).writer(); 
+  const stdout:channel(true, iokind.dynamic, true) = openfp(chpl_cstdout()).mkwriter(); 
   const stderr:channel(true, iokind.dynamic, true) = openfp(chpl_cstderr()).writer(); 
 
   proc write(args ...?n) {

@@ -1,45 +1,93 @@
 \sekshun{Conversions}
 \label{Conversions}
 
-A conversion allows an expression of one type to be converted into
-another type.  Conversions can be either
+A \emph{conversion} converts an expression of one type to another type,
+possibly changing its value.
+\index{conversions!source type}
+\index{conversions!target type}
+We refer to these two types the \emph{source} and \emph{target} types.
+Conversions can be either
 implicit~(\rsec{Implicit_Conversions}) or
 explicit~(\rsec{Explicit_Conversions}).
+
 
 \section{Implicit Conversions}
 \label{Implicit_Conversions}
 \index{conversions!implicit}
 
-Implicit conversions can occur during an assignment (from the
-expression on the right-hand side to the variable on the left-hand
-side) or during a function call (from the actual expression to the
-formal argument).  An implicit conversion does not require a cast.
+An \emph{implicit conversion} is a conversion that occurs implicitly,
+that is, not due to an explicit specification in the program.
+Implicit conversions occur at the locations in the program listed below.
+Each location determines the target type.
+The source and target types of an implicit conversion must be allowed.
+They determine whether and how the expression's value changes.
 
-Implicit conversions are allowed between numeric
-types~(\rsec{Implicit_Numeric_Conversions}), from enumerated types to
-numeric types~(\rsec{Implicit_Enumeration_Conversions}), between class
-types~(\rsec{Implicit_Class_Conversions}), and between record
-types~(\rsec{Implicit_Record_Conversions}).  A special set of implicit
-conversions are allowed from compile-time constants of type \chpl{int}
-to other smaller numeric types if the value is in
-the range of the smaller numeric
-type~(\rsec{Implicit_Compile_Time_Constant_Conversions}).  Lastly,
-implicit conversions are supported from integral and class types to
-bool in the context of a
-statement~(\rsec{Implicit_Statement_Bool_Conversions}).
+\index{conversions!implicit!occurs at}
+An implicit conversion occurs at each of the following program locations:
 
-\subsection{Implicit Bool and Numeric Conversions}
-\label{Implicit_Numeric_Conversions}
+\begin{itemize}
+\item In an assignment, the expression on the right-hand side of
+      the assignment is converted to the type of the variable
+      or another lvalue on the left-hand side of the assignment.
+
+\item The actual argument of a function call or an operator is converted
+      to the type of the corresponding formal argument, if the formal's
+      intent is \chpl{in} or the blank intent with the semantics of
+      \chpl{in}.
+
+\item The formal argument of a function call is converted
+      to the type of the corresponding actual argument, if the formal's
+      intent is \chpl{out}.
+
+\item The return or yield expression within a function is converted
+      to the return type of that function.
+
+\item The condition of a conditional expression,
+      conditional statement, while-do or do-while loop statement
+      is converted to the boolean type~(\rsec{Implicit_Statement_Bool_Conversions}).
+      A special rule defines the allowed source types and
+      how the expression's value changes in this case.
+\end{itemize}
+
+\index{conversions!implicit!allowed types}
+Implicit conversions \emph{are allowed} between
+the following source and target types,
+as defined in the referenced subsections:
+
+\begin{itemize}
+\item numeric, boolean, and enumerated types~(\rsec{Implicit_NumBoolEnum_Conversions}),
+\item class types~(\rsec{Implicit_Class_Conversions}),
+\item record types~(\rsec{Implicit_Record_Conversions}),
+\item integral types in the special case when the expression's value
+      is a compile-time constant~(\rsec{Implicit_Compile_Time_Constant_Conversions}), and
+\item from an integral or class type to \chpl{bool}
+      in certain cases~(\rsec{Implicit_Statement_Bool_Conversions}).
+\end{itemize}
+
+In addition,
+an implicit conversion from a type to the same type is allowed for any type.
+Such conversion does not change the value of the expression.
+
+Implicit conversion is not transitive. That is, if an implicit conversion
+is allowed from type \chpl{T1} to \chpl{T2} and from \chpl{T2} to \chpl{T3},
+that by itself does not allow an implicit conversion
+from \chpl{T1} to \chpl{T3}.
+
+\subsection{Implicit Numeric, Bool and Enumeration Conversions}
+\label{Implicit_NumBoolEnum_Conversions}
+
 \index{conversions!numeric}
-\index{conversions!bool}
-
-Implicit conversions among fundamental numeric types are always allowed, so long
-as all values that can be represented in the source type can also be represented
-in the target type without loss of precision.
-When the implicit conversion is from an integral to a real type, source
-types are converted to type \chpl{int} before determining if the
-conversion is valid.
-
+\index{conversions!implicit!numeric}
+Implicit conversions among numeric types are allowed when
+all values representable in the source type can also be represented
+in the target type, retaining their full precision.
+%
+%REVIEW: vass: I did not understand the point of the following,
+% so I am commenting it out for now.
+%When the implicit conversion is from an integral to a real type, source
+%types are converted to type \chpl{int} before determining if the
+%conversion is valid.
+%
 In addition, implicit conversions from
 types \chpl{int(64)} and \chpl{uint(64)} to types \chpl{real(64)}
 and \chpl{complex(128)} are allowed, even though they may result in a loss of
@@ -51,74 +99,88 @@ precision.
 % consistent behavior that does not lead to surprising results.  EVERY ``if''
 % costs money: which is to say that if a behavior can be described simply, it can
 % be implemented simply.
-% The ``In addition'' clause above is inconsistent with the section on
-% Explicit conversions, below.  One or the other should be fixed.
 
 \begin{rationale}
-In C\#, implicit conversions from \chpl{int(32)} or \chpl{int(64)}
-to \chpl{real(32)} are supported and allow for a loss of precision.
-Since the default \chpl{real} size is 64 and the default \chpl{int}
-size is 32 in Chapel, we did not follow the lead of C\# in this regard
-since it seemed unfortunate to favor \chpl{real(32)} over \chpl{real}
-in the default case.  That is, given the \chpl{sqrt} function defined
-over \chpl{real(32)} and \chpl{real}, it is preferable to choose the
-\chpl{int} version over the \chpl{real} version when calling with an actual of
-type \chpl{int} rather than lose precision and half of the bits to
-call the \chpl{real(32)} version.
+We allow these additional conversions because they are an important
+convenience for application programmers. Therefore we are willing to
+lose precision in these cases. The largest real and complex types
+are chosen to retain precision as often as as possible.
 \end{rationale}
 
-Implicit numeric conversions may thus be tabulated as follows:
+\index{conversions!bool}
+\index{conversions!implicit!bool}
+Any boolean type can be implicitly converted to any other boolean type,
+retaining the boolean value.
+Any boolean type can be implicitly converted to any integral type
+by representing \chpl{false} as 0 and \chpl{true} as 1,
+except (if applicable)
+a boolean cannot be converted to \chpl{int(1)}.
+% Rationale: because 1 cannot be represented by \chpl{int(1)}.
+
+\begin{rationale}
+We disallow implicit conversion of a boolean to
+a real, imaginary, or complex type because of the following.
+We expect that the cases where such a conversion is needed
+will more likely be unitended by the programmer.
+Marking those cases as errors will draw the programmer's attention.
+If such a conversion is actually desired, a cast \rsec{Explicit_Conversions}
+can be inserted.
+\end{rationale}
+
+\index{conversions!enumerated types}
+\index{conversions!implicit!enumerated types}
+An expression of an enumerated type can be implicitly converted
+to an integral type, provided that all of the constants defined by the
+enumerated type are representable by the integral type.
+
+% Requiring an explicit cast to convert an integer to an enumerated type
+% is consistent with C# and later versions of C++.
+
+Legal implicit conversions with numeric, boolean and enumerated types
+may thus be tabulated as follows:
+
 \begin{center}
-\begin{tabular}{l|llllll|}
-\cline{2-7}
-& \multicolumn{6}{c|}{Target Type} \\
-Source Type & bool($j$) & int($j$) & uint($j$) & real($j$) & imag($j$) & complex($j$) \\ \cline{2-7}
-bool($i$) & all $i,j$ & all $i,j>=2$ & all $i,j$ & all $i,j$ & all $i,j$ & all $i,j$ \\
-int($i$) & & $i<=j$ & $i<j$ & $i<=mant(j)$ & & $i<=mant(j)$ \\
-uint($i$) & & $i<j$ & $i<=j$ & $i<smant(j)$ & & $i<mant(j)$ \\
-real($i$) & & $mant(i)<=j$ & $mant(i)<j$ & $i<=j$ & & $2i<=j$ \\
-imag($i$) & & & & & $i<=j$ & $2i<=j$ \\
-complex($i$) & & & & & & $i<=j$ \\ \cline{2-7}
+\begin{tabular}{l|llllll}
+& \multicolumn{6}{c}{Target Type} \\ [4pt]
+
+Source Type  & bool($t$) & uint($t$) & int($t$) & real($t$) & imag($t$) & complex($t$) \\  [3pt]
+
+\cline{1-7} \\
+
+bool($s$)    & all $s,t$ & all $s,t$   & all $s$; $2 \le t$ & & & \\ [7pt]
+
+enum         &           & (see rules) & (see rules)        & & & \\ [7pt]
+
+uint($s$)    & & $s \le t$ & $s < t$   & $s \le mant(t)$   & & $s \le mant(t/2)$   \\ [7pt]
+
+uint(64)     & &           &           & real(64)          & & complex(128)        \\ [7pt]
+
+int($s$)     & &           & $s \le t$ & $s \le mant(t)+1$ & & $s \le mant(t/2)+1$ \\ [7pt]
+
+int(64)      & &           &           & real(64)          & & complex(128)        \\ [7pt]
+
+real($s$)    & & & & $s \le t$ &           & $s \le t/2$ \\ [7pt]
+
+imag($s$)    & & & &           & $s \le t$ & $s \le t/2$ \\ [7pt]
+
+complex($s$) & & & &           &           & $s \le t$   \\ [5pt]
+
 \end{tabular}
 \end{center}
-where $mant(i)$ represents the effective number of bits in the signed mantissa
-of the corresponding floating-point type.  In this table the
-default \chpl{int}, \chpl{uint} and \chpl{real} types map to their corresponding
-explicitly-sized types.
-
-\subsection{Implicit Enumeration Conversions}
-\label{Implicit_Enumeration_Conversions}
-\index{conversions!enumeration}
-
-An expression that is an enumerated type can be implicitly converted
-to any integral type as long as all of the constants defined by the
-enumerated type are within range of the integral type.
-
-% Note that the inverse conversion in not implicit, an explicit cast is required
-% to convert an integer to an enumerated type.
-% This is consistent with C# and later versions of C++.
-
-\subsection{Implicit Class Conversions}
-\label{Implicit_Class_Conversions}
-\index{conversions!class}
-
-An expression of class type \chpl{D} can be implicitly converted to
-another class type \chpl{C} provided that \chpl{D} is a subclass
-of \chpl{C}.
-
-\subsection{Implicit Record Conversions}
-\label{Implicit_Record_Conversions}
-\index{conversions!record}
-
-An expression of record type \chpl{D} can be implicitly converted to
-another record type \chpl{C} provided that \chpl{D} is a nominal
-subtype of \chpl{C}.
+Here, $mant(i)$ is the number of bits in the (unsigned) mantissa of
+the $i$-bit floating-point type.\footnote{For the IEEE 754 format,
+$mant(32)=24$ and $mant(64)=53$.}
+%
+Conversions for the default integral and real types (\chpl{uint},
+\chpl{complex}, etc.) are the same as for their
+explicitly-sized counterparts.
 
 \subsection{Implicit Compile-Time Constant Conversions}
 \label{Implicit_Compile_Time_Constant_Conversions}
-\index{conversions!parameter}
+\index{conversions!numeric!parameter}
+\index{conversions!implicit!parameter}
 
-The following two implicit conversions of parameters are supported:
+The following two implicit conversions of parameters are allowed:
 \begin{itemize}
 \item A parameter of type \chpl{int(32)} can be implicitly converted
 to \chpl{int(8)}, \chpl{int(16)}, or any unsigned integral type if the
@@ -129,10 +191,11 @@ to \chpl{uint(64)} if the value of the parameter is nonnegative.
 
 \subsection{Implicit Statement Bool Conversions}
 \label{Implicit_Statement_Bool_Conversions}
-\index{conversions!bool}
+\index{conversions!bool!in a statement}
+\index{conversions!implicit!bool}
 
 In the condition of an if-statement, while-loop, and do-while-loop,
-the following implicit conversions are supported:
+the following implicit conversions to \chpl{bool} are supported:
 \begin{itemize}
 \item An expression of integral type is taken to be false if it is zero and is true otherwise.
 \item An expression of a class type is taken to be false if it is nil and is true otherwise.
@@ -152,6 +215,7 @@ The explicit conversions are a superset of the implicit conversions.
 \subsection{Explicit Numeric Conversions}
 \label{Explicit_Numeric_Conversions}
 \index{conversions!numeric}
+\index{conversions!explicit!numeric}
 
 Explicit conversions are allowed from any numeric type, bool, or
 string to any other numeric type, bool, or string.  
@@ -230,6 +294,7 @@ the input value, and the real part of the result is set to zero.
 \subsection{Explicit Enumeration Conversions}
 \label{Explicit_Enumeration_Conversions}
 \index{conversions!enumeration}
+\index{conversions!explicit!enumeration}
 
 Explicit conversions are allowed from any enumerated type to any
 integer or real type, \chpl{bool}, or \chpl{string}, and vice versa.
@@ -273,6 +338,7 @@ string is selected.  If no such enumerator exists, a runtime error occurs.
 \subsection{Explicit Class Conversions}
 \label{Explicit_Class_Conversions}
 \index{conversions!class}
+\index{conversions!explicit!class}
 
 An expression of static class type \chpl{C} can be explicitly
 converted to a class type \chpl{D} provided that \chpl{C} is derived
@@ -284,6 +350,7 @@ to \chpl{D}.
 \subsection{Explicit Record Conversions}
 \label{Explicit_Record_Conversions}
 \index{conversions!record}
+\index{conversions!explicit!record}
 
 An expression of record type \chpl{C} can be explicitly converted to
 another record type \chpl{D} provided that \chpl{C} is derived

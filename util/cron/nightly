@@ -294,6 +294,9 @@ if ($debug == 1) {
 } else {
     $subjectid = "Cron$subjectid";
     $recipient = "chapel_cronmail\@cray.com chapel_cronmail_all\@cray.com";
+    if ($tasks eq "qthreads") {
+      $recipient = "$recipient qthreads-chapel\@googlegroups.com";
+    }
     $nochangerecipient = "$user\@cray.com chapel_cronmail_all\@cray.com";
 }
 

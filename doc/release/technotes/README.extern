@@ -48,42 +48,16 @@ or:    chpl foo.h -lfoo myProgram.chpl (if foo.c had been archived in libfoo.a)
      and runtime libraries.
 
 
-Thread Safety
--------------
+Parallel Safety
+---------------
 
-If external routines are to be used in chapel constructs which can be
-run in parallel, they should be thread-safe.  It is also the
-responsibility of Chapel code to call external routines in a manner
-which preserves the integrity of objects accessible to those routines.
-Simply put, objects shared across Chapel threads must be made
-thread-safe within Chapel.
-
-If a Chapel program shares an object across threads, then calls
-to the external code must be wrapped in a critical section (using a
-sync variable).  For example:
-
-    // These overwrite characters in the string with their lowercase
-    // and uppercase equivalents, respectively.
-    // Internally, they are thread-safe.
-    extern proc strlower(s: string) : void;
-    extern proc strupper(s: string) : void;
-
-    var myString : string;
-    sync var lock$ = true;
-
-    proc lowerCaseIt() {
-      lock$;	// Grab the token.
-      strlower(myString);
-      lock$ = true;	// Release the token.
-    }
-
-    proc upperCaseIt() {
-      lock$;		// Grab the token.
-      strupper(myString);
-      lock$ = true;	// Release the token.
-    }
-
-This must be done even if the external library is known to be thread-safe.
+If external routines are to be called from Chapel within parallel
+execution contexts, they should be parallel-safe.  As with internal
+Chapel routines, it is also the responsibility of the Chapel
+programmer to call external routines in a manner that preserves the
+integrity of objects accessible to those routines.  Simply put,
+objects shared across Chapel tasks must be kept parallel-safe within
+Chapel.
 
 
 Referring to Standard C Types

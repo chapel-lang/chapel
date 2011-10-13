@@ -121,6 +121,7 @@ system("cd runtime/src/launch && rm -r dummy");
 system("cd runtime/src/launch && rm -r mpirun");
 system("cd runtime/src/launch && rm -r zebra");
 system("cd runtime/include && rm -r sunos_old");
+system("cd third-party && rm -rf txt2man");
 
 chdir "$tmpdir";
 
