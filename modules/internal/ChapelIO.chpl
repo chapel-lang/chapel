@@ -1087,7 +1087,6 @@
   }
 
 
-  //proc file.mkwritere(inout error:err_t, param kind=iokind.dynamic, param locking=true, start:int(64) = 0, end:int(64) = max(int(64)), hints:c_int = 0, style:iostyle = this._style): channel(true,kind,locking) {
   proc file.mkwritere(inout error:err_t, param kind:iokind, param locking:bool, start:int(64), end:int(64), hints:c_int, style:iostyle): channel(true,kind,locking) {
 
     check();
@@ -1098,7 +1097,7 @@
     }
     return ret;
   }
-  proc file.mkwriter(param kind=iokind.dynamic, param locking=true, start:int(64) = 0, end:int(64) = max(int(64)), hints:c_int = 0, style:iostyle = this._style)//: channel(true,kind,locking) 
+  proc file.mkwriter(param kind=iokind.dynamic, param locking=true, start:int(64) = 0, end:int(64) = max(int(64)), hints:c_int = 0, style:iostyle = this._style): channel(true,kind,locking) 
   {
     var err:err_t;
     var ret = file.mkwritere(err, kind, locking, start, end, hints, style);
@@ -1769,7 +1768,7 @@
 
   const stdin:channel(false, iokind.dynamic, true) = openfd(0).reader(); 
   const stdout:channel(true, iokind.dynamic, true) = openfp(chpl_cstdout()).mkwriter(); 
-  const stderr:channel(true, iokind.dynamic, true) = openfp(chpl_cstderr()).writer(); 
+  const stderr:channel(true, iokind.dynamic, true) = openfp(chpl_cstderr()).mkwriter(); 
 
   proc write(args ...?n) {
     stdout.write((...args));
