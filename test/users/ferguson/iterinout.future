@@ -1,0 +1,5 @@
+inout argument in iterator gives compiler error
+
+$ chpl iterinout.chpl 
+iterinout.chpl:1: error: formal argument of iterator cannot have intent [semanticChecks.cpp:163]
+
