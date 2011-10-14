@@ -1,0 +1,2 @@
+writeln("Hello");
+write("hi");

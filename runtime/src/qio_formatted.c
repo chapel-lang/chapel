@@ -1859,8 +1859,9 @@ err_t qio_channel_print_int(const int threadsafe, qio_channel_t* restrict ch, co
       goto error;
     } else if( got < VOID_PTR_DIFF(ch->cached_end,ch->cached_cur) ) {
       ch->cached_cur = VOID_PTR_ADD(ch->cached_cur, got);
+      err = _qio_channel_post_cached_write(ch);
       // OK!
-      goto success;
+      goto error;
     } else {
       // There was not enough room, but we can set the
       // amount of room needed.
@@ -1886,8 +1887,7 @@ err_t qio_channel_print_int(const int threadsafe, qio_channel_t* restrict ch, co
       goto error;
     } else if( got < max ) {
       err = qio_channel_write_amt(false, ch, tmp, got);
-      if( err ) goto error;
-      goto success;
+      goto error;
     } else {
       // Not enough room... try again. 
       MAYBE_STACK_FREE(tmp, tmp_onstack);
@@ -1896,9 +1896,6 @@ err_t qio_channel_print_int(const int threadsafe, qio_channel_t* restrict ch, co
       max = got + 1;
     }
   }
-
-success:
-  err = 0;
 
 error:
   MAYBE_STACK_FREE(tmp, tmp_onstack);
@@ -1958,8 +1955,9 @@ err_t qio_channel_print_float(const int threadsafe, qio_channel_t* restrict ch, 
       goto error;
     } else if( got < VOID_PTR_DIFF(ch->cached_end, ch->cached_cur) ) {
       ch->cached_cur = VOID_PTR_ADD(ch->cached_cur, got);
+      err = _qio_channel_post_cached_write(ch);
       // OK!
-      goto success;
+      goto error;
     } else {
       // There was not enough room, but we can set the
       // amount of room needed.
@@ -1984,8 +1982,7 @@ err_t qio_channel_print_float(const int threadsafe, qio_channel_t* restrict ch, 
       goto error;
     } else if( got < max ) {
       err = qio_channel_write_amt(false, ch, buf, got);
-      if( err ) goto error;
-      goto success;
+      goto error;
     } else {
       // Not enough room... try again. 
       MAYBE_STACK_FREE(buf, buf_onstack);
@@ -1995,9 +1992,6 @@ err_t qio_channel_print_float(const int threadsafe, qio_channel_t* restrict ch, 
     }
   }
 
-
-success:
-  err = 0;
 
 error:
   MAYBE_STACK_FREE(buf, buf_onstack);

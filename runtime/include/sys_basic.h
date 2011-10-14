@@ -98,6 +98,12 @@ static inline c_file chpl_cstderr(void) { return stderr; }
 enum { EXTEND_ERROR_OFFSET = 1000 };
 enum { GAI_ERROR_OFFSET = (EXTEND_ERROR_OFFSET+10000) };
 
+//enum { ENOERR = 0 };
+
+static inline int chpl_err_eq(err_t a, err_t b) { return a == b; }
+static inline int32_t chpl_err_to_int(err_t a) { return a; }
+static inline err_t chpl_int_to_err(int32_t a) { return a; }
+
 // EEOF 
 enum { EEOF = (EXTEND_ERROR_OFFSET+0),
        ESHORT = (EXTEND_ERROR_OFFSET+1),

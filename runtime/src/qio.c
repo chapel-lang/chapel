@@ -2404,10 +2404,9 @@ err_t _qio_unbuffered_read(qio_channel_t* ch, void* ptr, ssize_t len_in, ssize_t
   else return 0;
 }
 
-err_t _qio_channel_flush_unlocked(qio_channel_t* ch)
+err_t _qio_channel_flush_qio_unlocked(qio_channel_t* ch)
 {
-  err_t err;
-  qio_method_t method = ch->hints & QIO_METHODMASK;
+  err_t err, saved_err;
   qio_chtype_t type = ch->hints & QIO_CHTYPEMASK;
   qio_buffered_channel_t* heavy;
 
@@ -2434,17 +2433,32 @@ err_t _qio_channel_flush_unlocked(qio_channel_t* ch)
     // No default; hope for useful errors if any added
   }
 
-  if( err ) return err;
+  // If there was an error saved earlier, report it now.
+  // We don't report EILSEQ, EEOF, or EFORMAT on a flush.
+  saved_err = qio_channel_error(ch);
+  if( !err &&
+      !(saved_err == EILSEQ || saved_err == EEOF || saved_err == EFORMAT) ) {
+    err = saved_err;
+  }
+  return err;
+}
+
+err_t _qio_channel_flush_unlocked(qio_channel_t* ch)
+{
+  qio_method_t method = ch->hints & QIO_METHODMASK;
+  err_t err;
+
+  err = _qio_channel_flush_qio_unlocked(ch);
 
   // Also flush cstdio buffer if we're using fread/fwrite.
   if( method == QIO_METHOD_FREADFWRITE ) {
     int got = fflush(ch->file->fp);
-    if( got ) err = errno;
-    else err = 0;
+    if( got && err == 0 ) err = errno;
   }
 
   return err;
 }
+
 
 /* _qio_slow_write does the I/O passed itself, and also
  * sets ch->write_cur and ch->write_end appropriately (if possible)
@@ -3098,6 +3112,14 @@ void qio_channel_commit_unlocked(qio_channel_t* ch)
   heavy->mark_stack[heavy->mark_cur] = -1;
   heavy->mark_cur--;
   heavy->mark_stack[heavy->mark_cur] = pos;
+
+  // We wrote it to our buffer.. in some way
+  // the write succeeded. 
+  // So we ignore an error code from 
+  // post cached write.
+  // (that way, functions that return an error
+  //  indicate nothing was written)
+  _qio_channel_post_cached_write(ch);
 }
 
 err_t qio_channel_advance(const int threadsafe, qio_channel_t* ch, int64_t nbytes)

@@ -651,7 +651,35 @@ err_t qio_channel_path_offset(const int threadsafe, qio_channel_t* ch, const cha
 err_t _qio_slow_read(qio_channel_t* ch, void* ptr, ssize_t len, ssize_t* amt_read);
 err_t _qio_slow_write(qio_channel_t* ch, const void* ptr, ssize_t len, ssize_t* amt_written);
 
+// Flush any QIO buffers (does not flush a FILE* if there is one)
+err_t _qio_channel_flush_qio_unlocked(qio_channel_t* ch);
+// Flush any QIO buffers and flush a FILE* if there is one
 err_t _qio_channel_flush_unlocked(qio_channel_t* ch);
+
+// Returns an error code... but it always returns 0
+// because the data will already be in the buffer.
+// The actual error in flushing, if there was one,
+// will be returned in a qio_channel_flush
+static always_inline
+err_t _qio_channel_post_cached_write(qio_channel_t* restrict ch)
+{
+  err_t err = 0;
+  // Flush FILE* buffers after every write, so that C I/O
+  // can be intermixed with QIO calls.
+  if( (ch->hints & QIO_METHODMASK) == QIO_METHOD_FREADFWRITE) {
+    if( (ch->hints & QIO_CHTYPEMASK) == QIO_CH_BUFFERED ) {
+      qio_buffered_channel_t* heavy;
+      heavy = & ch->u.buffered;
+      if( heavy->mark_cur == 0 ) {
+        err = _qio_channel_flush_unlocked(ch);
+        _qio_channel_set_error_unlocked(ch, err);
+      }
+    }
+  }
+
+  // see note above -- never returns an error.
+  return 0;
+}
 
 // qio_channel_read does not handle text (since we don't know
 // when to stop reading) - only fixed-size elements.
@@ -746,13 +774,7 @@ err_t qio_channel_write_byte(const int threadsafe, qio_channel_t* restrict ch, u
   if( 1 <= VOID_PTR_DIFF(ch->cached_end, ch->cached_cur) ) {
     *(unsigned char*) ch->cached_cur = byte;
     ch->cached_cur = VOID_PTR_ADD(ch->cached_cur, 1);
-    err = 0;
-    // Flush FILE* buffers after every write, so that C I/O
-    // can be intermixed with QIO calls.
-    if( (ch->hints & QIO_METHODMASK) == QIO_METHOD_FREADFWRITE) {
-      err = _qio_channel_flush_unlocked(ch);
-      _qio_channel_set_error_unlocked(ch, err);
-    }
+    err = _qio_channel_post_cached_write(ch);
   } else {
     ssize_t amt_written = 0;
     uint8_t tmp = byte;
@@ -835,13 +857,7 @@ err_t qio_channel_write(const int threadsafe, qio_channel_t* restrict ch, const 
     memcpy( ch->cached_cur, ptr, len );
     ch->cached_cur = VOID_PTR_ADD(ch->cached_cur, len);
     *amt_written = len;
-    err = 0;
-    // Flush FILE* buffers after every write, so that C I/O
-    // can be intermixed with QIO calls.
-    if( (ch->hints & QIO_METHODMASK) == QIO_METHOD_FREADFWRITE) {
-      err = _qio_channel_flush_unlocked(ch);
-      _qio_channel_set_error_unlocked(ch, err);
-    }
+    err = _qio_channel_post_cached_write(ch);
   } else {
     err = _qio_slow_write(ch, ptr, len, amt_written);
     _qio_channel_set_error_unlocked(ch, err);
@@ -900,13 +916,7 @@ err_t qio_channel_write_amt(const int threadsafe, qio_channel_t* restrict ch, co
   if( len <= VOID_PTR_DIFF(ch->cached_end, ch->cached_cur) ) {
     memcpy( ch->cached_cur, ptr, len );
     ch->cached_cur = VOID_PTR_ADD(ch->cached_cur, len);
-    err = 0;
-    // Flush FILE* buffers after every write, so that C I/O
-    // can be intermixed with QIO calls.
-    if( (ch->hints & QIO_METHODMASK) == QIO_METHOD_FREADFWRITE) {
-      err = _qio_channel_flush_unlocked(ch);
-      _qio_channel_set_error_unlocked(ch, err);
-    }
+    err = _qio_channel_post_cached_write(ch);
   } else {
     ssize_t amt_written = 0;
     err = _qio_slow_write(ch, ptr, len, &amt_written);
@@ -1125,12 +1135,11 @@ err_t qio_channel_revert(const int threadsafe, qio_channel_t* ch)
 }
 
 
-// Only returns threading errors; guaranteed not to return
-// an error if threadsafe == false (it asserts instead on bad cases)
 void qio_channel_commit_unlocked(qio_channel_t* ch);
 
-// Only returns threading errors; guaranteed not to return
-// an error if threadsafe == false (it asserts instead on bad cases)
+// Only returns threading errors.
+// Generally, if the data is already in the buffer, we postpone the
+// error until later...
 static inline
 err_t qio_channel_commit(const int threadsafe, qio_channel_t* ch)
 {
