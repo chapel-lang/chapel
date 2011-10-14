@@ -1048,6 +1048,12 @@ void do_test_utf8(int wchar, char* utf8)
   qio_channel_t *writing = NULL;
   int32_t got_wchar;
   int i;
+  int len;
+
+  len = strlen(utf8);
+  if( len == 0 && wchar == 0 ) len = 1; // read 1-byte null
+
+  //printf("Testing character %x len %i \n", wchar, len);
 
   err = qio_file_open_tmp(&f, 0, NULL);
   assert(!err);
@@ -1063,21 +1069,22 @@ void do_test_utf8(int wchar, char* utf8)
   err = qio_channel_create(&reading, f, QIO_CH_BUFFERED, 1, 0, 0, INT64_MAX, NULL);
   assert(!err);
 
-  err = qio_channel_read_char(true, reading, &got_wchar);
-  assert(!err);
-
-  assert(got_wchar == wchar);
+  for( i = 0; i < len; i++ ) {
+   got_wchar = qio_channel_read_byte(true, reading);
+   //printf("Read byte %x\n", got_wchar);
+   assert(got_wchar == (unsigned char) utf8[i]);
+  }
+  assert( -EEOF == qio_channel_read_byte(true, reading) );
 
   qio_channel_release(reading);
 
   err = qio_channel_create(&reading, f, QIO_CH_BUFFERED, 1, 0, 0, INT64_MAX, NULL);
   assert(!err);
 
-  for( i = 0; utf8[i]; i++ ) {
-   got_wchar = qio_channel_read_byte(true, reading);
-   assert(got_wchar == (unsigned char) utf8[i]);
-  }
-  assert( -EEOF == qio_channel_read_byte(true, reading) );
+  err = qio_channel_read_char(true, reading, &got_wchar);
+  assert(!err);
+
+  assert(got_wchar == wchar);
 
   qio_channel_release(reading);
  
@@ -1095,6 +1102,31 @@ void test_utf8(void)
   do_test_utf8(0x00A2, "\xC2\xA2");
   do_test_utf8(0x20AC, "\xE2\x82\xAC");
   do_test_utf8(0x024B62, "\xF0\xA4\xAD\xA2");
+
+  // from Unicode manual D92 UTF-8
+  do_test_utf8(0x4D, "\x4D");
+  do_test_utf8(0x430, "\xD0\xB0");
+  do_test_utf8(0x4E8C, "\xE4\xBA\x8C");
+  do_test_utf8(0x10302, "\xF0\x90\x8C\x82");
+
+  do_test_utf8(0x0000, "\x00");
+  do_test_utf8(0x007F, "\x7F");
+  do_test_utf8(0x0080, "\xC2\x80");
+  do_test_utf8(0x07FF, "\xDF\xBF");
+  do_test_utf8(0x0800, "\xE0\xA0\x80");
+  do_test_utf8(0x0FFF, "\xE0\xBF\xBF");
+  do_test_utf8(0x1000, "\xE1\x80\x80");
+  do_test_utf8(0xCFFF, "\xEC\xBF\xBF");
+  do_test_utf8(0xD000, "\xED\x80\x80");
+  do_test_utf8(0xD7FF, "\xED\x9F\xBF");
+  do_test_utf8(0xE000, "\xEE\x80\x80");
+  do_test_utf8(0xFFFF, "\xEF\xBF\xBF");
+  do_test_utf8(0x010000, "\xF0\x90\x80\x80");
+  do_test_utf8(0x03FFFF, "\xF0\xBF\xBF\xBF");
+  do_test_utf8(0x040000, "\xF1\x80\x80\x80");
+  do_test_utf8(0x0FFFFF, "\xF3\xBF\xBF\xBF");
+  do_test_utf8(0x100000, "\xF4\x80\x80\x80");
+  do_test_utf8(0x10FFFF, "\xF4\x8F\xBF\xBF");
 }
 
 int main(int argc, char** argv)
