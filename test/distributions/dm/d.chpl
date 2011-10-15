@@ -663,8 +663,11 @@ proc DimensionalDom.dsiBuildRectangularDom(param rank: int,
 
   const dom1 = this.dom1.dsiBuildRectangularDom1d(dist.di1,
                                                   stridable, ranges(1));
+  _passLocalLocIDsDom1d(dom1, dist.di1);
+
   const dom2 = this.dom2.dsiBuildRectangularDom1d(dist.di2,
                                                   stridable, ranges(2));
+  _passLocalLocIDsDom1d(dom2, dist.di2);
 
   const result = new DimensionalDom(rank=rank, idxType=idxType,
                                     stridable=stridable, dist=dist,

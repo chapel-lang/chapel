@@ -82,7 +82,7 @@ proc vdom.dsiSupportsPrivatization1d() param return true;
 
 // REQ if privatization is supported - same purpose as dsiGetPrivatizeData()
 proc vdom.dsiGetPrivatizeData1d() {
-  return 0; // no data
+  return tuple(wholeR);
 }
 
 // REQ if privatization is supported - same purpose as dsiPrivatize()
@@ -91,7 +91,8 @@ proc vdom.dsiGetPrivatizeData1d() {
 proc vdom.dsiPrivatize1d(privDist, privatizeData) {
   assert(privDist.locale == here); // sanity check
   return new vdom(idxType   = this.idxType,
-                  stridable = this.stridable);
+                  stridable = this.stridable,
+                  wholeR    = privatizeData(1));
 }
 
 // REQ if privatization is supported - same purpose as dsiGetReprivatizeData()
@@ -113,6 +114,8 @@ proc vdom.dsiReprivatize1d(other, reprivatizeData) {
 proc vdom.dsiUsesLocalLocID1d() param return true;
 
 // REQ if dsiUsesLocalLocID1d: store the localLocID
+// This is invoked when a DimensionalDom is created, including
+// from DimensionalDom.dsiPrivatize(), but not DimensionalDom.dsiReprivatize()
 proc vdom.dsiStoreLocalLocID1d((localLocID, legit): (locIdT, bool)) {
   // no big deal, but currently we intend to update this just once
   assert(this.localLocID == invalidLocID);
@@ -156,6 +159,11 @@ proc vdist.dsiNewRectangularDom1d(type idxType, param stridable: bool,
   // ignore stoIndexT - all we need is for other places to work out
   return new vdom(idxType, stridable);
 }
+
+// A nicety: produce a string showing the parameters.
+// This might get renamed in the future.
+proc vdist.toString()
+  return "ReplicatedDim(" + numLocales:string + ")";
 
 // REQ is this a replicated distribution?
 proc vdom.dsiIsReplicated1d() param return true;
@@ -341,6 +349,8 @@ class sdist {
   // the .low and .length of BlockDist's 'boundingBox' for our dimension
   const bbStart: idxType;
   const bbLength: idxType;
+
+  proc boundingBox return bbStart .. (bbStart + bbLength - 1);
 }
 
 class sdom {
@@ -386,13 +396,14 @@ proc sdist.dsiUsesLocalLocID1d() param return false;
 proc sdom.dsiSupportsPrivatization1d() param return true;
 
 proc sdom.dsiGetPrivatizeData1d() {
-  return 0;  // no data
+  return tuple(wholeR);
 }
 
 proc sdom.dsiPrivatize1d(privDist, privatizeData) {
   assert(privDist.locale == here); // sanity check
   return new sdom(idxType   = this.idxType,
                   stridable = this.stridable,
+                  wholeR    = privatizeData(1),
                   pdist     = privDist);
 }
 
@@ -425,6 +436,9 @@ proc sdist.sdist(numLocales, boundingBoxLow, boundingBoxHigh, type idxType = bou
   this.bbLength = (boundingBoxHigh - boundingBoxLow + 1):idxType;
   assert(this.bbLength > 0);
 }
+
+proc sdist.toString()
+  return "BlockDim(" + numLocales:string + ", " + boundingBox:string + ")";
 
 proc sdist.dsiNewRectangularDom1d(type idxType, param stridable: bool,
                                   type stoIndexT)
