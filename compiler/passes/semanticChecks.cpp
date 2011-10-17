@@ -155,14 +155,7 @@ void
 checkNormalized(void) {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->hasFlag(FLAG_ITERATOR_FN)) {
-      for_formals(formal, fn) {
-        if (formal->intent == INTENT_IN ||
-            formal->intent == INTENT_INOUT ||
-            formal->intent == INTENT_OUT ||
-            formal->intent == INTENT_REF) {
-          USR_FATAL_CONT(formal, "formal argument of iterator cannot have intent");
-        }
-      }
+      // <hilde:2011-10-13> Removed check that iterator formals have no intents.
       if (fn->retTag == RET_TYPE)
         USR_FATAL_CONT(fn, "iterators may not yield or return types");
       if (fn->retTag == RET_PARAM)
