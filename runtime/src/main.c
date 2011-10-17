@@ -13,6 +13,7 @@
 #include "error.h"
 #include <stdint.h>
 #include <string.h>
+#include <locale.h>
 
 static const char myFilename[] = 
 #ifdef CHPL_DEVELOPER
@@ -56,8 +57,15 @@ int main(int argc, char* argv[]) {
   int runInGDB;
   int numPollingTasks;
 
+#ifndef CHPL_NO_GASNET
   // MPF - initialize GASNet's backtrace facility.
   gasneti_backtrace_init(argv[0]);
+#endif
+
+  // Declare that we are 'locale aware' so that
+  // UTF-8 functions (e.g. wcrtomb) work as
+  // indicated by the locale environment variables.
+  setlocale(LC_CTYPE,"");
 
   chpl_comm_init(&argc, &argv);
   chpl_mem_init();

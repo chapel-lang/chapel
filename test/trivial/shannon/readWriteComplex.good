@@ -3,4 +3,4 @@
 1.2 + 2.3i
 1.2 + 2.3i
 1.2 + 2.3i
-readWriteComplex.chpl:6: error: Unhandled system error: bad format (1002)
+readWriteComplex.chpl:6: error: Unhandled system error: bad format (1002) in channel.read(inout a:complex) with path /home/mppf/chapel/svn_ferguson/test/trivial/shannon/readWriteComplex.stdin offset 50

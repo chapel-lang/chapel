@@ -291,12 +291,20 @@ module GMP {
     proc BigInt(num:c_long) {
       mpz_init_set_si(this.mpz, num);
     }
-    proc BigInt(str:string, base=0, err:ErrorHandler=nil) {
+    proc BigInt(str:string, base=0) {
       var e:c_int;
       e = mpz_init_set_str(this.mpz, str, base);
       if e {
         mpz_clear(this.mpz);
-        seterr(err, EFORMAT);
+        halt("Error initializing big integer: bad format");
+      }
+    }
+    proc BigInt(str:string, base=0, inout error:err_t) {
+      var e:c_int;
+      e = mpz_init_set_str(this.mpz, str, base);
+      if e {
+        mpz_clear(this.mpz);
+        error = EFORMAT;
       }
     }
     proc BigInt(num:BigInt) {

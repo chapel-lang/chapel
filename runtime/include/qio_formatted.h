@@ -18,7 +18,12 @@
 
 #include "qio_style.h"
 
-extern int glocale_utf8; // for testing use.
+extern int qio_glocale_utf8; // for testing use.
+#define QIO_GLOCALE_UTF8 1
+#define QIO_GLOCALE_ASCII -2
+#define QIO_GLOCALE_OTHER -1
+
+void qio_set_glocale(void);
 
 // Read/Write methods for Binary I/O
 
@@ -385,8 +390,169 @@ err_t qio_channel_scan_complex(const int threadsafe, qio_channel_t* restrict ch,
 err_t qio_channel_print_complex(const int threadsafe, qio_channel_t* restrict ch, const void* restrict re_ptr, const void* im_ptr, size_t len);
 
 // These methods read or write UTF-8 characters (code points).
-err_t qio_channel_read_char(const int threadsafe, qio_channel_t* restrict ch, int32_t* restrict chr);
-err_t qio_channel_write_char(const int threadsafe, qio_channel_t* restrict ch, int32_t chr);
+//err_t qio_channel_read_char(const int threadsafe, qio_channel_t* restrict ch, int32_t* restrict chr);
+
+
+/* BEGIN UTF-8 decoder from http://bjoern.hoehrmann.de/utf-8/decoder/dfa */
+// Copyright (c) 2008-2009 Bjoern Hoehrmann <bjoern@hoehrmann.de>
+// See http://bjoern.hoehrmann.de/utf-8/decoder/dfa/ for details.
+
+#define UTF8_ACCEPT 0
+#define UTF8_REJECT 1
+
+static const uint8_t qio_utf8d[] = {
+  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, // 00..1f
+  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, // 20..3f
+  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, // 40..5f
+  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, // 60..7f
+  1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9, // 80..9f
+  7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7, // a0..bf
+  8,8,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2, // c0..df
+  0xa,0x3,0x3,0x3,0x3,0x3,0x3,0x3,0x3,0x3,0x3,0x3,0x3,0x4,0x3,0x3, // e0..ef
+  0xb,0x6,0x6,0x6,0x5,0x8,0x8,0x8,0x8,0x8,0x8,0x8,0x8,0x8,0x8,0x8, // f0..ff
+  0x0,0x1,0x2,0x3,0x5,0x8,0x7,0x1,0x1,0x1,0x4,0x6,0x1,0x1,0x1,0x1, // s0..s0
+  1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,0,1,0,1,1,1,1,1,1, // s1..s2
+  1,2,1,1,1,1,1,2,1,2,1,1,1,1,1,1,1,1,1,1,1,1,1,2,1,1,1,1,1,1,1,1, // s3..s4
+  1,2,1,1,1,1,1,1,1,2,1,1,1,1,1,1,1,1,1,1,1,1,1,3,1,3,1,1,1,1,1,1, // s5..s6
+  1,3,1,1,1,1,1,3,1,3,1,1,1,1,1,1,1,3,1,1,1,1,1,1,1,1,1,1,1,1,1,1, // s7..s8
+};
+
+static inline
+uint32_t qio_utf8_decode(uint32_t* restrict state,
+                     uint32_t* restrict codep,
+                     uint32_t byte) {
+  uint32_t type = qio_utf8d[byte];
+
+  *codep = (*state != UTF8_ACCEPT) ?
+    (byte & 0x3fu) | (*codep << 6) :
+    (0xff >> type) & (byte);
+
+  *state = qio_utf8d[256 + *state*16 + type];
+  return *state;
+}
+/* END UTF-8 decoder from http://bjoern.hoehrmann.de/utf-8/decoder/dfa */
+
+err_t _qio_channel_read_char_slow_unlocked(qio_channel_t* restrict ch, int32_t* restrict chr);
+
+static inline
+err_t qio_channel_read_char(const int threadsafe, qio_channel_t* restrict ch, int32_t* restrict chr) {
+  err_t err;
+  uint32_t codepoint, state;
+  
+  if( qio_glocale_utf8 == 0 ) {
+    qio_set_glocale();
+  }
+
+  if( threadsafe ) {
+    err = qio_lock(&ch->lock);
+    if( err ) return err;
+  }
+
+  err = 0;
+
+  // Fast path: an entire multi-byte sequence
+  // is stored in the buffers.
+  if( qio_glocale_utf8 > 0 &&
+      4 <= VOID_PTR_DIFF(ch->cached_end, ch->cached_cur) ) {
+    if( qio_glocale_utf8 == QIO_GLOCALE_UTF8 ) {
+      state = 0;
+      while( 1 ) {
+        qio_utf8_decode(&state,
+                        &codepoint,
+                        *(unsigned char*)ch->cached_cur);
+        ch->cached_cur = VOID_PTR_ADD(ch->cached_cur,1);
+        if (state <= 1) {
+          break;
+        }
+      }
+      if( state == UTF8_ACCEPT ) {
+        *chr = codepoint;
+      } else {
+        *chr = 0xfffd; // replacement character
+        err = EILSEQ;
+      }
+    } else if( qio_glocale_utf8 == QIO_GLOCALE_ASCII ) {
+      // character == byte.
+      *chr = *(unsigned char*)ch->cached_cur;
+      ch->cached_cur = VOID_PTR_ADD(ch->cached_cur,1);
+    }
+  } else {
+    err = _qio_channel_read_char_slow_unlocked(ch, chr);
+  }
+
+ //unlock:
+  _qio_channel_set_error_unlocked(ch, err);
+  if( threadsafe ) {
+    qio_unlock(&ch->lock);
+  }
+
+  return err;
+}
+
+
+err_t _qio_channel_write_char_slow_unlocked(qio_channel_t* restrict ch, int32_t chr);
+
+static inline
+err_t qio_channel_write_char(const int threadsafe, qio_channel_t* restrict ch, int32_t chr)
+{
+  err_t err;
+
+  if( qio_glocale_utf8 == 0 ) {
+    qio_set_glocale();
+  }
+
+  if( threadsafe ) {
+    err = qio_lock(&ch->lock);
+    if( err ) return err;
+  }
+
+  err = 0;
+
+  if( qio_glocale_utf8 > 0 &&
+      4 <= VOID_PTR_DIFF(ch->cached_end, ch->cached_cur) ) {
+    if( qio_glocale_utf8 == QIO_GLOCALE_UTF8 ) {
+      if( chr < 0 ) {
+        err = EILSEQ;
+      } else if( chr < 0x80 ) {
+        // OK, we got a 1-byte character; case #1
+        *(unsigned char*)ch->cached_cur = (unsigned char) chr;
+        ch->cached_cur = VOID_PTR_ADD(ch->cached_cur,1);
+      } else if( chr < 0x800 ) {
+        // OK, we got a fits-in-2-bytes character; case #2
+        *(unsigned char*)ch->cached_cur = (0xc0 | (chr >> 6));
+        *(((unsigned char*)ch->cached_cur)+1) = (0x80 | (chr & 0x3f));
+        ch->cached_cur = VOID_PTR_ADD(ch->cached_cur,2);
+      } else if( chr < 0x10000 ) {
+        // OK, we got a fits-in-3-bytes character; case #3
+        *(unsigned char*)ch->cached_cur = (0xe0 | (chr >> 12));
+        *(((unsigned char*)ch->cached_cur)+1) = (0x80 | ((chr >> 6) & 0x3f));
+        *(((unsigned char*)ch->cached_cur)+2) = (0x80 | (chr & 0x3f));
+        ch->cached_cur = VOID_PTR_ADD(ch->cached_cur,3);
+      } else {
+        // OK, we got a fits-in-4-bytes character; case #4
+        *(unsigned char*)ch->cached_cur = (0xf0 | (chr >> 18));
+        *(((unsigned char*)ch->cached_cur)+1) = (0x80 | ((chr >> 12) & 0x3f));
+        *(((unsigned char*)ch->cached_cur)+2) = (0x80 | ((chr >> 6) & 0x3f));
+        *(((unsigned char*)ch->cached_cur)+3) = (0x80 | (chr & 0x3f));
+        ch->cached_cur = VOID_PTR_ADD(ch->cached_cur,4);
+      }
+    } else if( qio_glocale_utf8 == QIO_GLOCALE_ASCII ) {
+      *(unsigned char*)ch->cached_cur = (unsigned char) chr;
+      ch->cached_cur = VOID_PTR_ADD(ch->cached_cur,1);
+    }
+  } else {
+    err = _qio_channel_write_char_slow_unlocked(ch, chr);
+  }
+
+//unlock:
+  _qio_channel_set_error_unlocked(ch, err);
+  if( threadsafe ) {
+    qio_unlock(&ch->lock);
+  }
+
+  return err;
+}
+
 
 err_t qio_channel_skip_past_newline(const int threadsafe, qio_channel_t* restrict ch);
 

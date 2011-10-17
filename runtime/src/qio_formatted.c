@@ -12,37 +12,19 @@
 // 1 means use faster, hard-coded UTF-8 decode/encoder
 // -1 means use C multibyte functions (e.g. mbtowc)
 // -2 means use C locale (ie 1 byte per character)
-int glocale_utf8 = 0;
-#define GLOCALE_UTF8 1
-#define GLOCALE_ASCII -2
-#define GLOCALE_OTHER -1
+int qio_glocale_utf8 = 0;
 
-static
-void set_glocale(void) {
+void qio_set_glocale(void) {
   char* codeset = nl_langinfo(CODESET);
 
   if( 0 == strcmp(codeset, "UTF-8") ) {
-    glocale_utf8 = GLOCALE_UTF8;
+    qio_glocale_utf8 = QIO_GLOCALE_UTF8;
   } else if( 0 == strcmp(codeset, "ANSI_X3.4-1968") ) {
-    glocale_utf8 = GLOCALE_ASCII;
+    qio_glocale_utf8 = QIO_GLOCALE_ASCII;
   } else {
-    glocale_utf8 = GLOCALE_OTHER;
+    qio_glocale_utf8 = QIO_GLOCALE_OTHER;
   }
 
-}
-
-static inline int locale_utf8(void) {
-  if( glocale_utf8 == 0 ) {
-    set_glocale();
-  }
-  return glocale_utf8 == GLOCALE_UTF8;
-}
-
-static inline int locale_ascii(void) {
-  if( glocale_utf8 == 0 ) {
-    set_glocale();
-  }
-  return glocale_utf8 == GLOCALE_ASCII;
 }
 
 err_t qio_channel_read_uvarint(const int threadsafe, qio_channel_t* restrict ch, uint64_t* restrict ptr) {
@@ -2306,6 +2288,7 @@ unlock:
   return err;
 }
 
+#if 0
 /* BEGIN UTF-8 decoder from http://bjoern.hoehrmann.de/utf-8/decoder/dfa */
 // Copyright (c) 2008-2009 Bjoern Hoehrmann <bjoern@hoehrmann.de>
 // See http://bjoern.hoehrmann.de/utf-8/decoder/dfa/ for details.
@@ -2552,19 +2535,191 @@ err_t qio_channel_read_char(const int threadsafe, qio_channel_t* restrict ch, in
 
   return err;
 }
+#endif
 
-err_t qio_channel_write_char(const int threadsafe, qio_channel_t* restrict ch, int32_t chr) {
+err_t _qio_channel_read_char_slow_unlocked(qio_channel_t* restrict ch, int32_t* restrict chr) {
+  mbstate_t ps;
+  size_t got;
+  char mb;
+  wchar_t tmp_chr;
+  err_t err;
+  int32_t gotch;
+  uint32_t codepoint, state;
+
+  if( qio_glocale_utf8 == QIO_GLOCALE_UTF8 ) {
+    /* This decoder was written and tested... but it doesn't
+     * check for all the UTF-8 miscodings... so using a DFA version.
+     *
+    // #1           00000000 0xxxxxxx <-> 0xxxxxxx
+    // #2           00000yyy yyxxxxxx <-> 110yyyyy 10xxxxxx
+    // #3           zzzzyyyy yyxxxxxx <-> 1110zzzz 10yyyyyy 10xxxxxx
+    // #4  000uuuzz zzzzyyyy yyxxxxxx <-> 11110uuu 10zzzzzz 10yyyyyy 10xxxxxx
+
+    // We always read 1 character at least.
+    gotch = qio_channel_read_byte(false, ch);
+
+    if( gotch >= 0 ) {
+      if( gotch < 0x80 ) { // starts 0
+        // OK, we got a 1-byte character; case #1
+      } else if( gotch < 0xc2 ) { // starts 10
+        // It's a misplaced continuation character.
+        gotch = - EILSEQ;
+      } else if( gotch < 0xe0 ) { // starts 110
+        // We read this and one byte; case #2
+        tmp1 = qio_channel_read_byte(false, ch);
+        if( tmp1 > 0 && (tmp1 & 0xc0) == 0x80 ) {
+          gotch = ((((unsigned int) gotch) & 0x1f) << 6) |
+                  (((unsigned int)tmp1) & 0x3f);
+        } else {
+          if( tmp1 == - EEOF ) gotch = - ESHORT; // error code
+          else if( tmp1 < 0 ) gotch = tmp1; // error code
+          else gotch = - EILSEQ; // must have 10 after 110
+        }
+      } else if( gotch < 0xf0 ) {
+        // Read this and two bytes; case #3
+        tmp1 = qio_channel_read_amt(false, ch, tmp, 2);
+        if (tmp1 == 0 &&
+            (tmp[0] & 0xc0) == 0x80 &&
+            (tmp[1] & 0xc0) == 0x80 ) {
+          gotch = ((((unsigned int) gotch) & 0x0f) << 12) |
+                  ((((unsigned int)tmp[0]) & 0x3f) << 6 ) |
+                  (((unsigned int)tmp[1]) & 0x3f);
+
+        } else {
+          if( tmp1 == EEOF ) gotch = - ESHORT; // error code
+          else if( tmp1 ) gotch = - tmp1; // error code.
+          else gotch = -EILSEQ;
+        }
+      } else {
+        // Read this and three bytes; case #4
+        tmp1 = qio_channel_read_amt(false, ch, tmp, 3);
+        if( tmp1 != 0 ) gotch = - tmp1; // error code.
+        if( tmp1 == 0 &&
+            (tmp[0] & 0xc0) == 0x80 && 
+            (tmp[1] & 0xc0) == 0x80 && 
+            (tmp[2] & 0xc0) == 0x80 ) {
+          gotch = ((((unsigned int) gotch) & 0x07) << 18) |
+                  ((((unsigned int)tmp[0]) & 0x3f) << 12 ) |
+                  ((((unsigned int)tmp[1]) & 0x3f) << 6 ) |
+                  (((unsigned int)tmp[2]) & 0x3f);
+        } else {
+          if( tmp1 == EEOF ) gotch = -ESHORT; // error code
+          else if( tmp1 != 0 ) gotch = - tmp1; // error code
+          else gotch = -EILSEQ;
+        }
+      }
+    }
+
+    if( gotch < 0 ) {
+      *chr = 0xfffd;
+      err = -gotch;
+    } else {
+      *chr = gotch;
+      err = 0;
+    }
+    */
+
+    state = 0;
+
+    // Slow path.
+    while( 1 ) {
+      gotch = qio_channel_read_byte(false, ch);
+      if(gotch < 0 ||
+         qio_utf8_decode(&state,
+                         &codepoint,
+                         gotch) <= 1){
+        break;
+      }
+    }
+    if( gotch >= 0 && state == UTF8_ACCEPT ) {
+      *chr = codepoint;
+      err = 0;
+    } else if( gotch < 0 ) {
+      *chr = -1; // ie like EOF.
+      err = -gotch;
+    } else {
+      *chr = 0xfffd; // replacement character
+      err = EILSEQ;
+    }
+  } else if( qio_glocale_utf8 == QIO_GLOCALE_ASCII ) {
+    // character == byte.
+    gotch = qio_channel_read_byte(false, ch);
+    if( gotch < 0 ) {
+      err = -gotch;
+      *chr = -1;
+    } else {
+      *chr = gotch;
+      err = 0;
+    }
+  } else {
+    // Use C functions, probably not UTF-8.
+    memset(&ps, 0, sizeof(mbstate_t));
+
+    // Fast path: an entire multi-byte sequence
+    // is stored in the buffers.
+    if( MB_LEN_MAX <= VOID_PTR_DIFF(ch->cached_end, ch->cached_cur) ) {
+      got = mbrtowc(&tmp_chr, ch->cached_cur, MB_LEN_MAX, &ps);
+      if( got == 0 ) {
+        *chr = 0;
+      } else if( got == (size_t) -1 || got == (size_t) -2 ) {
+        // it contains an invalid multibyte sequence.
+        // or it claims we don't have a complete character
+        // (even though we had MB_LEN_MAX!).
+        // errno should be EILSEQ.
+        *chr = -3; // invalid character... think 0xfffd for unicode
+        err = EILSEQ;
+      } else {
+        *chr = tmp_chr;
+        err = 0;
+        ch->cached_cur = VOID_PTR_ADD(ch->cached_cur,got);
+      }
+    } else {
+      // Slow path: we might need to read 1 byte at a time.
+
+      while( 1 ) {
+        // We always read 1 character at least.
+        gotch = qio_channel_read_byte(false, ch);
+        if( gotch < 0 ) {
+          err = -got;
+          *chr = -1;
+          break;
+        }
+        mb = gotch;
+
+        got = mbrtowc(&tmp_chr, &mb, 1, &ps);
+        if( got == 0 ) {
+          // We read a NUL.
+          *chr = 0;
+          err = 0;
+          break;
+        } else if( got == 1 ) {
+          // OK!
+          *chr = tmp_chr;
+          err = 0;
+          break;
+        } else if( got == (size_t) -1 ) {
+          // it contains an invalid multibyte sequence.
+          // errno should be EILSEQ.
+          *chr = -3; // invalid character... think 0xfffd for unicode
+          err = EILSEQ;
+          break;
+        } else if( got == (size_t) -2 ) {
+          // continue as long as we have an incomplete char.
+        }
+      }
+    }
+  }
+
+  return err;
+}
+
+err_t _qio_channel_write_char_slow_unlocked(qio_channel_t* restrict ch, int32_t chr) {
   char mbs[MB_LEN_MAX];
   mbstate_t ps;
   size_t got;
   err_t err;
 
-  if( threadsafe ) {
-    err = qio_lock(&ch->lock);
-    if( err ) return err;
-  }
-
-  if( locale_utf8() ) {
+  if( qio_glocale_utf8 == QIO_GLOCALE_UTF8 ) {
     // #1           00000000 0xxxxxxx <-> 0xxxxxxx
     // #2           00000yyy yyxxxxxx <-> 110yyyyy 10xxxxxx
     // #3           zzzzyyyy yyxxxxxx <-> 1110zzzz 10yyyyyy 10xxxxxx
@@ -2597,7 +2752,7 @@ err_t qio_channel_write_char(const int threadsafe, qio_channel_t* restrict ch, i
 
       err = qio_channel_write_amt(false, ch, mbs, 4);
     }
-  } else if( locale_ascii() ) {
+  } else if( qio_glocale_utf8 == QIO_GLOCALE_ASCII ) {
     err = qio_channel_write_byte(false, ch, chr);
   } else {
     memset(&ps, 0, sizeof(mbstate_t));
@@ -2607,12 +2762,6 @@ err_t qio_channel_write_char(const int threadsafe, qio_channel_t* restrict ch, i
     } else {
       err = qio_channel_write_amt(false, ch, mbs, got);
     }
-  }
-
-//unlock:
-  _qio_channel_set_error_unlocked(ch, err);
-  if( threadsafe ) {
-    qio_unlock(&ch->lock);
   }
 
   return err;

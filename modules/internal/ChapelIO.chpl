@@ -430,6 +430,8 @@ proc _debugWriteln() {
     var realtype:uint(8);
 
     var complex_style:uint(8);
+
+    /*
     var spaces_after_sep:uint(8);
     var array_start_char:style_char_t;
     var array_end_char:style_char_t;
@@ -457,6 +459,7 @@ proc _debugWriteln() {
     var class_after_field_name_char:style_char_t;
     var class_print_field_names:uint(8);
     var class_print_name:uint(8);
+    */
   }
 
   extern const QIO_STYLE_SIZE:size_t;
@@ -1480,13 +1483,30 @@ proc _debugWriteln() {
       return false;
     }
   }
+  var _arg_to_proto_names = ("a", "b", "c", "d", "e", "f");
+  proc _args_to_proto(inout args ...?k,
+                      preArg:string) {
+    var err_args:string = "";
+    for param i in 1..k {
+      var name:string;
+      if i <= _arg_to_proto_names.size then name = _arg_to_proto_names(i);
+      else name = "x" + i:string;
+      err_args += preArg + name + ":" + typeToString(args(i).type);
+      if i != k then err_args += ", ";
+    }
+    return err_args;
+  }
+
+  inline
   proc channel.read(inout args ...?k):bool {
     var e:err_t = ENOERR;
     this.read((...args), error=e);
     if !e then return true;
     else if e == EEOF then return false;
     else {
-      this._ch_ioerror(e, "in channel.read");
+      this._ch_ioerror(e, "in channel.read(" +
+                          _args_to_proto((...args), preArg="inout ") +
+                          ")");
       return false;
     }
   }
@@ -1520,7 +1540,9 @@ proc _debugWriteln() {
     if !e then return true;
     else if e == EEOF then return false;
     else {
-      this._ch_ioerror(e, "in channel.read");
+      this._ch_ioerror(e, "in channel.read(" +
+                          _args_to_proto((...args), preArg="inout ") +
+                          "style:iostyle)");
       return false;
     }
   }
@@ -1551,7 +1573,7 @@ proc _debugWriteln() {
     if !e then return true;
     else if e == EEOF then return false;
     else {
-      this._ch_ioerror(e, "in channel.readline");
+      this._ch_ioerror(e, "in channel.readline(inout arg:string)");
       return false;
     }
   }
@@ -1625,6 +1647,7 @@ proc _debugWriteln() {
     _debugWriteln();
   }*/
 
+  inline
   proc channel.write(args ...?k, inout error:err_t):bool {
     if !writing then compilerError("write on read-only channel");
     var e:err_t = ENOERR;
@@ -1643,12 +1666,16 @@ proc _debugWriteln() {
       return false;
     }
   }
+
+  inline
   proc channel.write(args ...?k):bool {
     var e:err_t = ENOERR;
     this.write((...args), error=e);
     if !e then return true;
     else {
-      this._ch_ioerror(e, "in channel.write");
+      this._ch_ioerror(e, "in channel.write(" +
+                          _args_to_proto((...args), preArg="") +
+                          ")");
       return false;
     }
   }
@@ -1682,7 +1709,9 @@ proc _debugWriteln() {
     this.write((...args), style=style, error=e);
     if !e then return true;
     else {
-      this._ch_ioerror(e, "in channel.write");
+      this._ch_ioerror(e, "in channel.write(" +
+                          _args_to_proto((...args), preArg="") +
+                          "style:iostyle)");
       return false;
     }
   }
@@ -2009,7 +2038,7 @@ proc _debugWriteln() {
     proc writing param return false;
     // if it's binary, we don't decorate class/record fields and values
     proc binary:bool { return false; }
-    proc error():err_t { return 0; }
+    proc error():err_t { return ENOERR; }
     proc setError(e:err_t) { }
     proc clearError() { }
 
@@ -2202,7 +2231,7 @@ proc _debugWriteln() {
       err = e;
     }
     proc clearError() {
-      err = 0;
+      err = ENOERR;
     }
     //proc readPrimitive(type t):maybe(t) where _isIoPrimitiveTypeOrNewline(t) {
     proc readPrimitive(inout x:?t):bool where _isIoPrimitiveTypeOrNewline(t) {

@@ -32,6 +32,7 @@ runtest() {
   if [ $RETVAL -eq 0 ]
   then
     echo "[Success matching C I/O test $EXE $DESC]"
+    rm $EXE
   else
     echo "[Error matching C I/O test $EXE $DESC]"
   fi

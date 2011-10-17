@@ -1,3 +1,3 @@
 true
 false
-readWriteBool.chpl:9: error: halt reached - read of bool value that is neither true nor false
+readWriteBool.chpl:9: error: Unhandled system error: bad format (1002) in channel.read(inout a:bool) with path /home/mppf/chapel/svn_ferguson/test/trivial/shannon/readWriteBool.stdin offset 11
