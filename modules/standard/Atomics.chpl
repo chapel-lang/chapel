@@ -100,15 +100,101 @@ module Atomics {
 
   // Begin Chapel interface for atomic integers.
   // it would be nice to create records wrapping these data types
-  // or create methods for these data types, but right now I'm
-  // not up to it.
+  proc create_atomic_uint_least8():atomic_uint_least8_t {
+    var ret:atomic_uint_least8_t;
+    atomic_init_uint_least8_t(ret, 0);
+    return ret;
+  }
+
+  record atomic_uint8 {
+    var _v:atomic_uint_least8_t = create_atomic_uint_least8();
+    proc ~atomic_uint8() {
+      atomic_destroy_uint_least8_t(_v);
+    }
+    proc load(order = memory_order_seq_cst):uint(8) {
+      return atomic_load_explicit_uint_least8_t(_v, order);
+    }
+    proc store(value:uint(8), order = memory_order_seq_cst) {
+      atomic_store_explicit_uint_least8_t(_v, value, order);
+    }
+    proc exchange(value:uint(8), order = memory_order_seq_cst):uint(8) {
+      return atomic_exchange_explicit_uint_least8_t(_v, value, order);
+    }
+    proc compareExchangeWeak(expected:uint(8), desired:uint(8), order = memory_order_seq_cst):bool {
+      return atomic_compare_exchange_weak_explicit_uint_least8_t(_v, expected, desired, order);
+    }
+    proc compareExchangeStrong(expected:uint(8), desired:uint(8), order = memory_order_seq_cst):bool {
+      return atomic_compare_exchange_strong_explicit_uint_least8_t(_v, expected, desired, order);
+    }
+    proc fetchAdd(value:uint(8), order = memory_order_seq_cst):uint(8) {
+      return atomic_fetch_add_explicit_uint_least8_t(_v, value, order);
+    }
+    proc fetchSub(value:uint(8), order = memory_order_seq_cst):uint(8) {
+      return atomic_fetch_sub_explicit_uint_least8_t(_v, value, order);
+    }
+    proc fetchOr(value:uint(8), order = memory_order_seq_cst):uint(8) {
+      return atomic_fetch_or_explicit_uint_least8_t(_v, value, order);
+    }
+    proc fetchXor(value:uint(8), order = memory_order_seq_cst):uint(8) {
+      return atomic_fetch_xor_explicit_uint_least8_t(_v, value, order);
+    }
+    proc fetchAnd(value:uint(8), order = memory_order_seq_cst):uint(8) {
+      return atomic_fetch_and_explicit_uint_least8_t(_v, value, order);
+    }
+  }
+
+  proc create_atomic_uint_least16():atomic_uint_least16_t {
+    var ret:atomic_uint_least16_t;
+    atomic_init_uint_least16_t(ret, 0);
+    return ret;
+  }
+
+  record atomic_uint16 {
+    var _v:atomic_uint_least16_t = create_atomic_uint_least16();
+    proc ~atomic_uint16() {
+      atomic_destroy_uint_least16_t(_v);
+    }
+    proc load(order = memory_order_seq_cst):uint(16) {
+      return atomic_load_explicit_uint_least16_t(_v, order);
+    }
+    proc store(value:uint(16), order = memory_order_seq_cst) {
+      atomic_store_explicit_uint_least16_t(_v, value, order);
+    }
+    proc exchange(value:uint(16), order = memory_order_seq_cst):uint(16) {
+      return atomic_exchange_explicit_uint_least16_t(_v, value, order);
+    }
+    proc compareExchangeWeak(expected:uint(16), desired:uint(16), order = memory_order_seq_cst):bool {
+      return atomic_compare_exchange_weak_explicit_uint_least16_t(_v, expected, desired, order);
+    }
+    proc compareExchangeStrong(expected:uint(16), desired:uint(16), order = memory_order_seq_cst):bool {
+      return atomic_compare_exchange_strong_explicit_uint_least16_t(_v, expected, desired, order);
+    }
+    proc fetchAdd(value:uint(16), order = memory_order_seq_cst):uint(16) {
+      return atomic_fetch_add_explicit_uint_least16_t(_v, value, order);
+    }
+    proc fetchSub(value:uint(16), order = memory_order_seq_cst):uint(16) {
+      return atomic_fetch_sub_explicit_uint_least16_t(_v, value, order);
+    }
+    proc fetchOr(value:uint(16), order = memory_order_seq_cst):uint(16) {
+      return atomic_fetch_or_explicit_uint_least16_t(_v, value, order);
+    }
+    proc fetchXor(value:uint(16), order = memory_order_seq_cst):uint(16) {
+      return atomic_fetch_xor_explicit_uint_least16_t(_v, value, order);
+    }
+    proc fetchAnd(value:uint(16), order = memory_order_seq_cst):uint(16) {
+      return atomic_fetch_and_explicit_uint_least16_t(_v, value, order);
+    }
+  }
+
+  proc create_atomic_uint_least32():atomic_uint_least32_t {
+    var ret:atomic_uint_least32_t;
+    atomic_init_uint_least32_t(ret, 0);
+    return ret;
+  }
 
   record atomic_uint32 {
-    var _v:atomic_uint_least32_t;
-    proc init(value:uint(32)) {
-      atomic_init_uint_least32_t(_v, value);
-    }
-    proc destroy() {
+    var _v:atomic_uint_least32_t = create_atomic_uint_least32();
+    proc ~atomic_uint32() {
       atomic_destroy_uint_least32_t(_v);
     }
     proc load(order = memory_order_seq_cst):uint(32) {
@@ -143,12 +229,15 @@ module Atomics {
     }
   }
 
+  proc create_atomic_uint_least64():atomic_uint_least64_t {
+    var ret:atomic_uint_least64_t;
+    atomic_init_uint_least64_t(ret, 0);
+    return ret;
+  }
+
   record atomic_uint64 {
-    var _v:atomic_uint_least64_t;
-    proc init(value:uint(64)) {
-      atomic_init_uint_least64_t(_v, value);
-    }
-    proc destroy() {
+    var _v:atomic_uint_least64_t = create_atomic_uint_least64();
+    proc ~atomic_uint64() {
       atomic_destroy_uint_least64_t(_v);
     }
     proc load(order = memory_order_seq_cst):uint(64) {
@@ -182,5 +271,15 @@ module Atomics {
       return atomic_fetch_and_explicit_uint_least64_t(_v, value, order);
     }
   }
+
+  proc atomicuint(param width) type {
+    if width == 8 then return atomic_uint8;
+    else if width == 16 then return atomic_uint16;
+    else if width == 32 then return atomic_uint32;
+    else if width == 64 then return atomic_uint64;
+    else compilerError("Illegal width in atomicuint:" + width:string);
+  }
+
+
 }
 
