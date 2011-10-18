@@ -4,9 +4,9 @@
 //MBC   multi-dimensional BlockCycDist; Dimensional(replicated, block-cyclic)
 //BC    Dimensional(block-cyclic, b-c); Dimensional(replicated, block-cyclic)
 
-// This version: //MBD.
+// This version: //BD.
 
-use BlockDist;      //MBD
+//use BlockDist;    //MBD
 //use BlockCycDist; //MBC
 use d;
 use r;
@@ -66,9 +66,9 @@ const
   rdim2 = new vdist(tl2);
 
 const AbD: domain(2, indexType)
-   dmapped Block(boundingBox=[1..nbb1, 1..nbb2], targetLocales=tla) //MBD
+// dmapped Block(boundingBox=[1..nbb1, 1..nbb2], targetLocales=tla) //MBD
 // dmapped BlockCyclic(startIdx=(st1,st2), blocksize=(blkSize,blkSize), targetLocales=tla) //MBC
-// dmapped DimensionalDist(tla, bdim1, bdim2, "dim") //BD //BC
+   dmapped DimensionalDist(tla, bdim1, bdim2, "dim") //BD //BC
   = MatVectSpace;
 
 var Ab: [AbD] elemType;  // the matrix A and vector b

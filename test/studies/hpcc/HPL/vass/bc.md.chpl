@@ -4,6 +4,8 @@
 //MBC   multi-dimensional BlockCycDist; Dimensional(replicated, block-cyclic)
 //BC    Dimensional(block-cyclic, b-c); Dimensional(replicated, block-cyclic)
 
+// This version: //MBC.
+
 //use BlockDist;  //MBD
 use BlockCycDist; //MBC
 use d;
