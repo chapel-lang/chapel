@@ -1,5 +1,6 @@
 CHPL_MAKE_HOST_TARGET = --host
 MAKE_LAUNCHER = 1
+REAL_SUFFIX = _real
 
 include $(CHAPEL_ROOT)/make/Makefile.base
 
@@ -13,13 +14,16 @@ CHAPEL_LN_INCS = -I$(CHAPEL_ROOT)/runtime/include/$(subst -sim,,$(CHPL_MAKE_TARG
 CHAPEL_LN_LIB_DIR = $(CHAPEL_ROOT)/$(LIB_LN_DIR)
 
 LAUNCHER_SRC_NAME = $(TMPDIRNAME)/config.c
+REAL_BINARY_NAME = $(BINNAME:%$(EXE_SUFFIX)=%)$(REAL_SUFFIX)
 
 all: FORCE
-	cp $(TMPBINNAME) $(BINNAME)_real
+	cp $(TMPBINNAME) $(REAL_BINARY_NAME)
 	rm $(TMPBINNAME)
 	echo "#include \"chplcgfns.h\"" > $(LAUNCHER_SRC_NAME)
 	echo "#include \"config.h\"" >> $(LAUNCHER_SRC_NAME)
 	echo "#include \"_config.c\"" >> $(LAUNCHER_SRC_NAME)
+	echo "const char launcher_real_suffix[] = \"$(REAL_SUFFIX)\";" >> $(LAUNCHER_SRC_NAME)
+	echo "const char launcher_exe_suffix[] = \"$(EXE_SUFFIX)\";" >> $(LAUNCHER_SRC_NAME)
 	$(CC) $(GEN_CFLAGS) $(COMP_GEN_CFLAGS) -c -o $(TMPBINNAME)_launcher.o $(CHAPEL_LN_INCS) -I. $(LAUNCHER_SRC_NAME)
 	$(LD) $(GEN_LFLAGS) $(COMP_GEN_LFLAGS) -o $(TMPBINNAME)_launcher -L$(CHAPEL_LN_LIB_DIR) $(TMPBINNAME)_launcher.o $(CHAPEL_LN_LIB_DIR)/main_launcher.o -lchpllaunch -lm $(LAUNCH_LIBS)
 	cp $(TMPBINNAME)_launcher $(TMPBINNAME)
