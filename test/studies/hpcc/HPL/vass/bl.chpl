@@ -1,8 +1,14 @@
-//use BlockCycDist; //MBC - not using for now
-use BlockDist;  //MBD
-use d; //DIM
-use r; //BD (with DIM)
-//use f; //BC (with DIM)
+// Key:
+//MBD   multi-dimensional BlockDist; Dimensional(replicated, block)
+//BD    Dimensional(block, block);   Dimensional(replicated, block)
+//MBC   multi-dimensional BlockCycDist; Dimensional(replicated, block-cyclic)
+//BC    Dimensional(block-cyclic, b-c); Dimensional(replicated, block-cyclic)
+
+use BlockDist;      //MBD
+//use BlockCycDist; //MBC
+use d;
+use r;
+//use f; //MBC //BC
 use UtilMath, Time, Random;
 
 config param reproducible = false;
@@ -35,27 +41,32 @@ config const useRandomSeed = true,
 config const n = 62,
              blkSize = 8;
 
-// The bounding box for our Block distributions.
+// The bounding box for the Block distributions.
 // We arbitrarily choose to round up, rather than down.
-const nbb1 = divceilpos(n, blkSize * tl1) * blkSize * tl1, //BD
-      nbb2 = divceilpos(n, blkSize * tl2) * blkSize * tl2; //BD
+const nbb1 = divceilpos(n, blkSize * tl1) * blkSize * tl1, //MBD //BD
+      nbb2 = divceilpos(n, blkSize * tl2) * blkSize * tl2; //MBD //BD
+
+// The starting indices for the Block-Cyclic distributions.
+//const st1=1, st2=1; //MBC //BC
 
 // non-distributed version
 const MatVectSpace = [1..n, 1..n+1];
 
 const
   bdim1 =
-    new sdist(tl1, 1, nbb1), //BD
+    new sdist(tl1, 1, nbb1), //MBD //BD
+//  new idist(lowIdx=st1, blockSize=blkSize, numLocales=tl1, name="D1"), //MBC //BC
   rdim1 = new vdist(tl1),
 
   bdim2 =
-    new sdist(tl2, 1, nbb2), //BD
+    new sdist(tl2, 1, nbb2), //MBD //BD
+//  new idist(lowIdx=st2, blockSize=blkSize, numLocales=tl2, name="D2"), //MBC //BC
   rdim2 = new vdist(tl2);
 
 const AbD: domain(2, indexType)
-  // dmapped BlockCyclic(startIdx=(1,1), (blkSize,blkSize), targetLocales=tla)//MBC
    dmapped Block(boundingBox=[1..nbb1, 1..nbb2], targetLocales=tla) //MBD
-  //   dmapped DimensionalDist(tla, bdim1, bdim2, "dim") //DIM
+// dmapped BlockCyclic(startIdx=(st1,st2), blocksize=(blkSize,blkSize), targetLocales=tla) //MBC
+// dmapped DimensionalDist(tla, bdim1, bdim2, "dim") //BD //BC
   = MatVectSpace;
 
 var Ab: [AbD] elemType;  // the matrix A and vector b
@@ -76,7 +87,9 @@ var replA: [replAD] elemType,
     replB: [replBD] elemType;
 
 writeln("n = ", n, "\n", "blkSize = ", blkSize, "\n", "AbD = ", AbD, "\n",
-        "bounding box = ", [1..nbb1, 1..nbb2], "\n");
+        "bounding box = ", [1..nbb1, 1..nbb2], //MBD //BD
+      //"starting offsets = ", st1, ", ", st2, //MBC //BC
+        "\n");
 
 const startTime = getCurrentTime();     // capture the start time
 
@@ -119,20 +132,20 @@ proc LUFactorize() {
 }
 
 proc schurComplement(AD, BD, Rest) {
-vwln("schurComplement(", BD.dim(1).low, ",", AD.dim(2).low, ")",
-     //"  [2] ", Rest.low, "\n", "  AD ", AD, "  BD ", BD,
-     if BD.dim(1).low < 10 then "  " else "",
-     "  Rest ", Rest);
+  vwln("schurComplement(", BD.dim(1).low, ",", AD.dim(2).low, ")",
+       //"  [2] ", Rest.low, "\n", "  AD ", AD, "  BD ", BD,
+       if BD.dim(1).low < 10 then "  " else "",
+       "  Rest ", Rest);
 
 // If Rest is empty, panelSolve and updateBlockRow are still meaningful?
 // Otherwise don't invoke schurComplement at all.
-if Rest.numIndices == 0 {
-  vwln("  Rest is empty");
-  return;
-}
+  if Rest.numIndices == 0 {
+    vwln("  Rest is empty");
+    return;
+  }
 
-vwln("  replA", replA.domain, " = Ab", AD, "  ", [1..n, AD.dim(2)]);
-vwln("  replB", replB.domain, " = Ab", BD, "  ", [BD.dim(1), 1..n+1]);
+  vwln("  replA", replA.domain, " = Ab", AD, "  ", [1..n, AD.dim(2)]);
+  vwln("  replB", replB.domain, " = Ab", BD, "  ", [BD.dim(1), 1..n+1]);
 
   // TODO later: only assign from Ab[AD] and Ab[BD], resp.
   // Note: AD.dim(2)  and BD.dim(1) are always blkSize wide;
@@ -153,8 +166,8 @@ vwln("  replB", replB.domain, " = Ab", BD, "  ", [BD.dim(1), 1..n+1]);
 
   forall (row,col) in Rest by (blkSize, blkSize) {
 
-vwln("  dgemm(", (Rest.dim(1))(row..#blkSize), ",",
-                 (Rest.dim(2))(col..#blkSize), ")  on ", here.id);
+    vwln("  dgemm(", (Rest.dim(1))(row..#blkSize), ",",
+                     (Rest.dim(2))(col..#blkSize), ")  on ", here.id);
 
     // This might be an implementation bug, as 'Rest' supports privatization.
     const RestLcl = Rest;
