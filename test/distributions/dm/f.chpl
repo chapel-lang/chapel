@@ -71,7 +71,7 @@ proc idist.dsiUsesLocalLocID1d() param return false;
 proc idom.dsiSupportsPrivatization1d() param return true;
 
 proc idom.dsiGetPrivatizeData1d() {
-  return tuple(name, lowIdxAdj);
+  return tuple(wholeR, wholeRstrideAbs, storagePerCycle, lowIdxAdj, name);
 }
 
 proc idom.dsiPrivatize1d(privDist, privatizeData) {
@@ -79,9 +79,11 @@ proc idom.dsiPrivatize1d(privDist, privatizeData) {
   return new idom(idxType   = this.idxType,
                   stoIndexT = this.stoIndexT,
                   stridable = this.stridable,
-                  name = privatizeData(1),
-                  // wholeR to be set in dsiReprivatize1d()
-                  lowIdxAdj = privatizeData(2),
+                  name            = privatizeData(5),
+                  wholeR          = privatizeData(1),
+                  wholeRstrideAbs = privatizeData(2),
+                  storagePerCycle = privatizeData(3),
+                  lowIdxAdj       = privatizeData(4),
                   // could include these in privatizeData
                   blockSizePos  = privDist.blockSizePos,
                   numLocalesPos = privDist.numLocalesPos,
@@ -116,6 +118,10 @@ inline proc idist.checkInvariants() {
   assert(blockSize > 0, "BlockCyclic1d-blockSize");
   assert(numLocales > 0, "BlockCyclic1d-numLocales");
 }
+
+proc idist.toString()
+  return "BlockCyclicDim(" + numLocales:string + ", " +
+         lowIdx:string + ", " + blockSize:string + ")";
 
 // Assert that the value of 'src' is preserved when casting it to 'destT'.
 inline proc _checkFitsWithin(src: integral, type destT)

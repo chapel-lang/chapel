@@ -1,5 +1,3 @@
-
-
 iter test(inout x:int) {
   for i in 1..10 {
     yield i;
@@ -7,9 +5,10 @@ iter test(inout x:int) {
   x = 100;
 }
 
-var x:int;
+var x:int = 5;
 
 for i in test(x) {
-  writeln(i);
+  writeln((i, x));
 }
+
 writeln(x);
