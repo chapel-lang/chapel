@@ -44,6 +44,17 @@ class BlockStmt : public Expr {
   void addUse(ModuleSymbol* mod);
 };
 
+class ImplementsStmt : public Expr {
+public:
+	Expr* type;
+	Expr* interfaceName;
+
+	ImplementsStmt(Expr* type, Expr* interfaceName);
+	DECLARE_COPY(ImplementsStmt);
+	void replaceChild(Expr* old_ast, Expr* new_ast);
+
+	void codegen(FILE* outfile);
+};
 
 class CondStmt : public Expr {
  public:

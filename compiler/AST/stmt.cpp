@@ -205,6 +205,36 @@ BlockStmt::addUse(ModuleSymbol* mod) {
   modUses->insertAtTail(mod);
 }
 
+ImplementsStmt::ImplementsStmt(Expr* type, Expr* interfaceName) :
+		Expr(E_ImplementsStmt),
+		type(type),
+		interfaceName(interfaceName)
+{}
+
+ImplementsStmt*
+ImplementsStmt::copyInner(SymbolMap* map) {
+  return new ImplementsStmt(COPY_INT(type),
+		  COPY_INT(interfaceName));
+}
+
+
+void ImplementsStmt::replaceChild(Expr* old_ast, Expr* new_ast) {
+  if (old_ast == type) {
+    type = new_ast;
+  } else if (old_ast == interfaceName) {
+    interfaceName = new_ast;
+  } else {
+    INT_FATAL(this, "Unexpected case in ImplementsStmt::replaceChild");
+  }
+}
+
+void ImplementsStmt::codegen(FILE* outfile) {
+  codegenStmt(outfile, this);
+  type->codegen(outfile);
+  fprintf(outfile, " implements ");
+  interfaceName->codegen(outfile);
+}
+
 
 CondStmt::CondStmt(Expr* iCondExpr, BaseAST* iThenStmt, BaseAST* iElseStmt) :
   Expr(E_CondStmt),

@@ -11,7 +11,7 @@
 #include <cstdlib>
 #include <sys/time.h>
 
-bool printPasses = false;
+bool printPasses = true;
 
 struct PassInfo {
   void (*fn)(void);

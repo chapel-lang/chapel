@@ -435,6 +435,49 @@ void TypeSymbol::codegenDef(FILE* outfile) {
   }
 }
 
+InterfaceSymbol::InterfaceSymbol(const char* initName) :
+		Symbol(E_InterfaceSymbol,initName)
+{
+}
+
+InterfaceSymbol::~InterfaceSymbol(){
+
+}
+
+void InterfaceSymbol::replaceChild(BaseAST* old_ast,BaseAST* new_ast){
+
+}
+
+InterfaceSymbol*
+InterfaceSymbol::copyInner(SymbolMap* map) {
+  InterfaceSymbol* copy = new InterfaceSymbol(name);
+  return copy;
+}
+
+static void
+addDeclaration(InterfaceSymbol* cs, DefExpr* def, bool tail) {
+  if (FnSymbol* fn = toFnSymbol(def->sym)) {
+    cs->functionSignatures.add(fn);
+  }
+  if (def->parentSymbol || def->list)
+    def->remove();
+  if (tail)
+    cs->fields.insertAtTail(def);
+  else
+    cs->fields.insertAtHead(def);
+}
+
+void InterfaceSymbol::addDeclarations(Expr* expr, bool tail){
+ if (DefExpr* def = toDefExpr(expr)) {
+	addDeclaration(this, def, tail);
+  } else if (BlockStmt* block = toBlockStmt(expr)) {
+	for_alist(expr, block->body) {
+	  addDeclarations(expr, tail);
+	}
+  } else {
+	INT_FATAL(expr, "unexpected case");
+  }
+}
 
 FnSymbol::FnSymbol(const char* initName) :
   Symbol(E_FnSymbol, initName),

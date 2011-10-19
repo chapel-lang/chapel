@@ -94,6 +94,7 @@ enum AstTag {
   E_CallExpr,
   E_NamedExpr,
   E_BlockStmt,
+  E_ImplementsStmt,
   E_CondStmt,
   E_GotoStmt,
   E_Expr,
@@ -103,6 +104,7 @@ enum AstTag {
   E_ArgSymbol,
   E_TypeSymbol,
   E_FnSymbol,
+  E_InterfaceSymbol,
   E_EnumSymbol,
   E_LabelSymbol,
   E_Symbol,
@@ -225,6 +227,7 @@ extern Vec<ModuleSymbol*> mainModules; // contains main modules
 #define isArgSymbol(a)         ((a) && (a)->astTag == E_ArgSymbol)
 #define isTypeSymbol(a)        ((a) && (a)->astTag == E_TypeSymbol)
 #define isFnSymbol(a)          ((a) && (a)->astTag == E_FnSymbol)
+#define isInterfaceSymbol(a)   ((a) && (a)->astTag == E_InterfaceSymbol)
 #define isEnumSymbol(a)        ((a) && (a)->astTag == E_EnumSymbol)
 #define isLabelSymbol(a)       ((a) && (a)->astTag == E_LabelSymbol)
 #define isPrimitiveType(a)     ((a) && (a)->astTag == E_PrimitiveType)
@@ -250,6 +253,7 @@ extern Vec<ModuleSymbol*> mainModules; // contains main modules
 #define toArgSymbol(a)         def_to_ast(ArgSymbol, a)
 #define toTypeSymbol(a)        def_to_ast(TypeSymbol, a)
 #define toFnSymbol(a)          def_to_ast(FnSymbol, a)
+#define toInterfaceSymbol(a)   def_to_ast(InterfaceSymbol, a)
 #define toEnumSymbol(a)        def_to_ast(EnumSymbol, a)
 #define toLabelSymbol(a)       def_to_ast(LabelSymbol, a)
 #define toSymbol(a)            def_to_ast(Symbol, a)
@@ -329,6 +333,8 @@ extern Vec<ModuleSymbol*> mainModules; // contains main modules
     AST_CALL_LIST(_a, ClassType, fields, call, __VA_ARGS__);            \
     AST_CALL_LIST(_a, ClassType, inherits, call, __VA_ARGS__);          \
     break;                                                              \
+  case E_InterfaceSymbol:													\
+    AST_CALL_LIST(_a, InterfaceSymbol, fields, call, __VA_ARGS__); \
   default:                                                              \
     break;                                                              \
   }

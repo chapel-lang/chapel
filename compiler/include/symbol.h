@@ -195,6 +195,17 @@ class FnSymbol : public Symbol {
   bool tag_generic();
 };
 
+class InterfaceSymbol : public Symbol {
+public:
+	Vec<FnSymbol*> functionSignatures;
+	AList fields;
+
+	InterfaceSymbol(const char* initName);
+	~InterfaceSymbol();
+	DECLARE_SYMBOL_COPY(InterfaceSymbol);
+	void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
+	void addDeclarations(Expr* expr, bool tail=true);
+};
 
 class EnumSymbol : public Symbol {
  public:

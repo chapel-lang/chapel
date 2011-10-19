@@ -21,6 +21,7 @@ class VarSymbol;
 class TypeSymbol;
 class ArgSymbol;
 class FnSymbol;
+class ConceptSymbol;
 class Expr;
 class DefExpr;
 class CallExpr;

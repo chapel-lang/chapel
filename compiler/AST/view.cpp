@@ -99,9 +99,15 @@ list_ast(BaseAST* ast, int indent = 0) {
 
   if (Symbol* sym = toSymbol(ast))
     list_sym(sym);
-  if (toFnSymbol(ast) || toModuleSymbol(ast)) {
+  if (toFnSymbol(ast) || toModuleSymbol(ast) || toInterfaceSymbol(ast)) {
     printf("\n");
   }
+  /*if (toInterfaceSymbol(ast)){
+	  printf("%-7d ", expr->id);
+	  for (int i = 0; i < indent; i++)
+	    printf(" ");
+	  printf("{\n");
+  }*/
 
   int new_indent = indent;
 
@@ -126,8 +132,14 @@ list_ast(BaseAST* ast, int indent = 0) {
     } else if (!toCondStmt(expr) && list_line(expr)) {
       DefExpr* def = toDefExpr(expr);
       if (!(def && (toFnSymbol(def->sym) ||
-                    toModuleSymbol(def->sym))))
+                    toModuleSymbol(def->sym) || toInterfaceSymbol(def->sym))))
         printf("\n");
+      /*if (toInterfaceSymbol(def->sym)){
+    	printf("%-7d ", expr->id);
+    	for (int i = 0; i < indent; i++)
+    	  printf(" ");
+    	printf("{\n");
+      }*/
     }
   }
 }

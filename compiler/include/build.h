@@ -32,6 +32,7 @@ BlockStmt* buildChapelStmt(BaseAST* ast = NULL);
 BlockStmt* buildUseStmt(CallExpr* modules);
 BlockStmt* buildTupleVarDeclStmt(BlockStmt* tupleBlock, Expr* type, Expr* init);
 BlockStmt* buildLabelStmt(const char* name, Expr* stmt);
+BlockStmt* buildImplementsStmt(Expr* type, Expr* interfaceName);
 BlockStmt* buildIfStmt(Expr* condExpr, Expr* thenExpr, Expr* elseExpr = NULL);
 ModuleSymbol* buildModule(const char* name, BlockStmt* block, const char* filename);
 CallExpr* buildPrimitiveExpr(CallExpr* exprs);
@@ -78,6 +79,7 @@ CallExpr* buildScanExpr(Expr* op, Expr* data);
 BlockStmt* buildVarDecls(BlockStmt* stmts, Flag externconfig, Flag varconst);
 
 DefExpr* buildClassDefExpr(const char* name, Type* type, Expr* inherit, BlockStmt* decls, bool isExtern);
+DefExpr* buildInterfaceDefExpr(const char* name, BlockStmt* decls);
 DefExpr* buildArgDefExpr(IntentTag tag, const char* ident, Expr* type, Expr* init, Expr* variable);
 DefExpr* buildTupleArgDefExpr(IntentTag tag, BlockStmt* tuple, Expr* type, Expr* init);
 FnSymbol* buildFunctionFormal(FnSymbol* fn, DefExpr* def);

@@ -358,6 +358,10 @@ buildLabelStmt(const char* name, Expr* stmt) {
   return block;
 }
 
+BlockStmt*
+buildImplementsStmt(Expr* type, Expr* interfaceName) {
+	return buildChapelStmt(new ImplementsStmt(type,interfaceName));
+}
 
 BlockStmt*
 buildIfStmt(Expr* condExpr, Expr* thenExpr, Expr* elseExpr) {
@@ -1520,6 +1524,13 @@ buildClassDefExpr(const char* name, Type* type, Expr* inherit, BlockStmt* decls,
   if (inherit)
     ct->inherits.insertAtTail(inherit);
   return def;
+}
+
+DefExpr*
+buildInterfaceDefExpr(const char* name, BlockStmt* decls){
+	InterfaceSymbol* con = new InterfaceSymbol(name);
+	con->addDeclarations(decls);
+	return new DefExpr(con);
 }
 
 
