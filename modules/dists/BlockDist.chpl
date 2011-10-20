@@ -737,12 +737,6 @@ proc BlockDom.dsiBuildRectangularDom(param rank: int, type idxType,
 proc LocBlockDom.member(i) return myBlock.member(i);
 
 proc BlockArr.dsiDisplayRepresentation() {
-  if debugBlockDist && doRADOpt then
-    for loc in dom.dist.targetLocDom do on loc do
-      for l in dom.dist.targetLocDom do
-        if l != here.id then
-          writeln(loc, ": myRADCache(", l,"): ", locArr(l).myRADCache);
-
   for tli in dom.dist.targetLocDom do
     writeln("locArr[", tli, "].myElems = ", for e in locArr[tli].myElems do e);
 }
