@@ -359,7 +359,7 @@ proc backwardSub(n: indexType,
   var x: [bd] elemType;
 
   for i in bd by -1 do
-    x[i] = (Ab[n+1,i] - (+ reduce [j in i+1..bd.high] (Ab[i,j] * x[j]))) 
+    x[i] = (Ab[i,n+1] - (+ reduce [j in i+1..bd.high] (Ab[i,j] * x[j]))) 
             / Ab[i,i];
 
   return x;
@@ -432,7 +432,7 @@ proc gaxpyMinus(A: [],
   var res: [1..n] elemType;
 
   forall i in 1..n do
-    res[i] = (+ reduce [j in xD] (A[i,j] * x[j])) - y[n+1, i];
+    res[i] = (+ reduce [j in xD] (A[i,j] * x[j])) - y[i,n+1];
 
   return res;
 }
