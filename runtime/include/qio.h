@@ -1105,6 +1105,7 @@ err_t qio_channel_close(const int threadsafe, qio_channel_t* ch)
 }
 
 err_t qio_channel_mark(const int threadsafe, qio_channel_t* ch);
+err_t qio_channel_mark_maybe_flush_bits(const int threadsafe, qio_channel_t* ch, int flushbits);
 
 // Returns an error, but that error can safely be ignored.
 err_t qio_channel_advance_unlocked(qio_channel_t* ch, int64_t nbytes);
@@ -1163,6 +1164,9 @@ err_t qio_channel_commit(const int threadsafe, qio_channel_t* ch)
 
 /* Handle I/O of bits at a time */
 err_t qio_channel_write_bits(const int threadsafe, qio_channel_t* restrict ch, uint64_t v, int8_t nbits);
+// Puts zeros at the end of any partial byte and writes it to the buffer.
+err_t qio_channel_flush_bits(const int threadsafe, qio_channel_t* restrict ch);
+
 err_t qio_channel_read_bits(const int threadsafe, qio_channel_t* restrict ch, uint64_t* restrict v, int8_t nbits);
 
 /*

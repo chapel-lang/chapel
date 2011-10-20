@@ -85,7 +85,9 @@ so that we have an opportunity to free memory occupied by a lock.
    bool atomic_compare_exchange_weak(volatile A* object, C* expected, C desired);
    bool atomic_compare_exchange_weak_explicit(volatile A* object, C* expected, C desired, memory_order success, memory_order failure);
 
-   // atomic fetch and op, for op in add, sub, or, xor, and:
+   // atomic fetch and op, for op in add, sub, or, and:
+   // (atomic xor only supported on some platforms)
    C atomic_fetch_op(volatile A *object, M operand);
    C atomic_fetch_op_explicit(volatile A *object, M operand, memory_order order);
+
 

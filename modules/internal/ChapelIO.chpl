@@ -902,7 +902,7 @@ proc _debugWriteln() {
       var e2:err_t = ENOERR;
       e2 = qio_file_path_for_fp(fp, path);
       if e2 then path = "unknown";
-      _ioerror(err, "in openfd", path);
+      _ioerror(err, "in openfp", path);
     }
     return ret;
   }

@@ -8,10 +8,21 @@ $preset_atomics   = $ENV{'CHPL_ATOMICS'};
 
 if ($preset_atomics eq "") {
     $compiler = `$utildirname/compiler --target`;
-    if ($compiler =~ /^(gnu|clang)$/) {
-	$atomics = "intrinsics";
+    chomp $compiler;
+    if ($compiler eq "gnu" ) {
+      # Check the compiler version
+      $version = `gcc -dumpversion`;
+      @vers = split(/\./, $version);
+      if( ($vers[0] == 4 && $vers[1] >= 1) ||
+          $vers[0] > 4 ) {
+        $atomics = "intrinsics";
+      } else {
+        $atomics = "locks";
+      }
+    } elsif ($compiler eq "clang") {
+      $atomics = "intrinsics";
     } else {
-	$atomics = "locks";
+      $atomics = "locks";
     }
 } else {
     $atomics = $preset_atomics;

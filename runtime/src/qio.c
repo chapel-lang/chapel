@@ -2945,7 +2945,11 @@ error:
   return err;
 }
 
-err_t qio_channel_mark(const int threadsafe, qio_channel_t* ch)
+// declared below..
+static
+err_t _qio_flush_bits_if_needed_unlocked(qio_channel_t* restrict ch);
+
+err_t qio_channel_mark_maybe_flush_bits(const int threadsafe, qio_channel_t* ch, int flushbits)
 {
   err_t err;
   qio_buffered_channel_t* heavy;
@@ -2964,7 +2968,12 @@ err_t qio_channel_mark(const int threadsafe, qio_channel_t* ch)
       return err;
     }
   }
-  
+ 
+  if( flushbits ) {
+    err = _qio_flush_bits_if_needed_unlocked(ch);
+    if( err ) goto error;
+  }
+
   // includes the amount we've got in cached in the channel.
   pos = qio_channel_offset_unlocked(ch);
   
@@ -3018,6 +3027,10 @@ error:
   return err;
 }
 
+err_t qio_channel_mark(const int threadsafe, qio_channel_t* ch)
+{
+  return qio_channel_mark_maybe_flush_bits(threadsafe, ch, 1);
+}
 
 /* Always advances, may call qio_buffered_behind and
  * then returns an error code. This error code may be ignored
@@ -3030,6 +3043,13 @@ err_t qio_channel_advance_unlocked(qio_channel_t* ch, int64_t nbytes)
   err_t err;
 
   assert( (ch->hints & QIO_CHTYPEMASK) == QIO_CH_BUFFERED );
+
+  heavy = & ch->u.buffered;
+
+  // clear out any bits.
+  heavy->bit_buffer = 0;
+  heavy->bit_buffer_bits = 0;
+
 
   // Fast path: all data is available in the cached area.
   if( nbytes <= VOID_PTR_DIFF(ch->cached_end, ch->cached_cur) ) {
@@ -3062,6 +3082,10 @@ void qio_channel_revert_unlocked(qio_channel_t* restrict ch)
 
   assert( (ch->hints & QIO_CHTYPEMASK) == QIO_CH_BUFFERED );
   assert(heavy->mark_cur >= 1);
+
+  // clear out any bits.
+  heavy->bit_buffer = 0;
+  heavy->bit_buffer_bits = 0;
 
   // seek back to heavy->mark_stack[heavy->mark_cur].
   target = heavy->mark_stack[heavy->mark_cur-1];
@@ -3104,6 +3128,8 @@ void qio_channel_commit_unlocked(qio_channel_t* ch)
   int64_t pos = -1;
 
   heavy = & ch->u.buffered;
+
+  // OK to leave any bits alone.
 
   assert( (ch->hints & QIO_CHTYPEMASK) == QIO_CH_BUFFERED );
   assert(heavy->mark_cur >= 1);
@@ -3172,7 +3198,7 @@ err_t qio_channel_write_bits(const int threadsafe, qio_channel_t* restrict ch, u
     }
   }
 
-  err = qio_channel_mark(false, ch);
+  err = qio_channel_mark_maybe_flush_bits(false, ch, 0);
   if( err ) goto unlock;
 
   heavy = & ch->u.buffered;
@@ -3239,6 +3265,51 @@ unlock:
 #undef WRITESOME
 }
 
+static inline
+err_t _qio_flush_bits_if_needed_unlocked(qio_channel_t* restrict ch)
+{
+  qio_buffered_channel_t* heavy;
+  err_t err = 0;
+
+  if( (ch->hints & QIO_CHTYPEMASK) == QIO_CH_BUFFERED ) {
+    heavy = & ch->u.buffered;
+    if( (ch->flags & QIO_FDFLAG_WRITEABLE) && heavy->bit_buffer_bits > 0 ) {
+      err = qio_channel_write_bits(false, ch, 0, 8 - heavy->bit_buffer_bits);
+      assert(heavy->bit_buffer_bits == 0);
+    }
+  }
+  return err;
+}
+
+err_t qio_channel_flush_bits(const int threadsafe, qio_channel_t* restrict ch)
+{
+  err_t err = 0;
+  qio_chtype_t type = ch->hints & QIO_CHTYPEMASK;
+
+  if( type != QIO_CH_BUFFERED ) {
+    return EINVAL;
+  }
+
+  if( threadsafe ) {
+    err = qio_lock(&ch->lock);
+    if( err ) {
+      return err;
+    }
+  }
+
+  err = _qio_flush_bits_if_needed_unlocked(ch);
+
+//unlock:
+  _qio_channel_set_error_unlocked(ch, err);
+
+  if( threadsafe ) {
+    qio_unlock(&ch->lock);
+  }
+
+  return err;
+}
+
+
 err_t qio_channel_read_bits(const int threadsafe, qio_channel_t* restrict ch, uint64_t* restrict v, int8_t nbits)
 {
   qio_buffered_channel_t* heavy;
@@ -3263,7 +3334,7 @@ err_t qio_channel_read_bits(const int threadsafe, qio_channel_t* restrict ch, ui
     }
   }
 
-  err = qio_channel_mark(false, ch);
+  err = qio_channel_mark_maybe_flush_bits(false, ch, 0);
   if( err ) goto unlock;
 
   heavy = & ch->u.buffered;
