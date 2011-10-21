@@ -168,8 +168,8 @@ static inline bool isAlive(Type* type) {
   (E_##type == E_ModuleSymbol && ((ModuleSymbol*)(ast)) == rootModule)
 
 
-bool get_int(Expr *e, long *i); // false is failure
-bool get_uint(Expr *e, unsigned long *i); // false is failure
+bool get_int(Expr* e, int64_t* i); // false is failure
+bool get_uint(Expr *e, uint64_t *i); // false is failure
 bool get_string(Expr *e, const char **s); // false is failure
 const char* get_string(Expr* e); // fatal on failure
 VarSymbol *get_constant(Expr *e);
