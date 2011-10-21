@@ -9,9 +9,11 @@ use d;
 class vdist {
   // REQ over how many locales
   // todo: can the Dimensional do without this one?
-  var numLocales: int;
+  const numLocales: int;
 
-  // locale ID in our dimension of the locale this instance is on
+  // Locale ID in our dimension of the locale this instance is on.
+  // Because of these, it may be incorrect to share the same vdist
+  // object between multiple DimensionalDist objects.
   var localLocID = invalidLocID;
   var localLocIDlegit = false;
 }
@@ -65,10 +67,21 @@ proc vdist.dsiUsesLocalLocID1d() param return true;
 // If 'legit' is false, this is a privatized copy on a locale
 // that's not among our Dimensional distribution's target locales.
 proc vdist.dsiStoreLocalLocID1d(localLocID: locIdT, legit: bool) {
-  // no big deal, but currently we intend to update this just once
-  assert(this.localLocID == invalidLocID);
-  this.localLocID = localLocID;
-  this.localLocIDlegit = legit;
+  // This will get invoked multiple times if this vdist object
+  // is reused in another DimensionalDist object.
+  // In which case the cache better be the same for both uses.
+  if this.localLocID == invalidLocID {
+    // This is the intended use.
+    this.localLocID = localLocID;
+    this.localLocIDlegit = legit;
+  } else {
+    if this.localLocID == localLocID &&
+       this.localLocIDlegit == localLocIDlegit {
+      // alright, let it be for now
+    } else {
+      halt("Inconsistent locale cache in a ReplicatedDim descriptor object. One cause can be a reuse of such an object for different DimensionalDist objects whose target locales differ and/or this object is reused in a different dimension.");
+    }
+  }
 }
 
 // REQ if dsiUsesLocalLocID1d: retrieve the localLocID and its legitimacy
