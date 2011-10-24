@@ -126,12 +126,13 @@ err_t qio_send(fd_t sockfd, qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t
               int64_t* num_sent_out);
 
 typedef enum {
-  QIO_CH_UNBUFFERED = 1,
+  QIO_CH_ALWAYS_UNBUFFERED = 1,
+  QIO_CH_ALWAYS_BUFFERED,
   QIO_CH_BUFFERED
 } qio_chtype_t;
 
 #define QIO_CH_DEFAULT 0
-#define QIO_CH_MIN_TYPE QIO_CH_UNBUFFERED
+#define QIO_CH_MIN_TYPE QIO_CH_ALWAYS_UNBUFFERED
 #define QIO_CH_MAX_TYPE QIO_CH_BUFFERED
 
 char* qio_chtype_to_string(qio_chtype_t type);
@@ -218,8 +219,11 @@ char* qio_hints_to_string(qio_hint_t hint)
     strcat(buf, "default_type"); ok = 1;
   } else {
     switch ( type ) {
-      case QIO_CH_UNBUFFERED:
-        strcat(buf, "unbuffered"); ok = 1;
+      case QIO_CH_ALWAYS_UNBUFFERED:
+        strcat(buf, "always_unbuffered"); ok = 1;
+        break;
+      case QIO_CH_ALWAYS_BUFFERED:
+        strcat(buf, "always_buffered"); ok = 1;
         break;
       case QIO_CH_BUFFERED:
         strcat(buf, "buffered"); ok = 1;
@@ -494,7 +498,40 @@ err_t qio_file_length(qio_file_t* f, int64_t *len_out);
  *  (cached_cur - cached_start) + cached_start_pos
  */
 #define MARK_INITIAL_STACK_SZ 4
-typedef struct qio_buffered_channel_s {
+
+typedef struct qio_channel_s {
+  // reference count which is atomically updated
+  qbytes_refcnt_t ref_cnt;
+
+  // frequently used data:
+  void* cached_cur; // current offset in a buffer.
+  void* cached_end; // end offset in a buffer; we don't exceed this.
+  void* cached_start; // start offset in a buffer; when mark/commit/reverting we
+                      // might back up to this point.
+  int64_t cached_start_pos; // what position does cached_start correspond to?
+
+  // sticky channel error. Channel I/O functions generally return
+  // an error code, which if set, will also be stored here.
+  // This error code can only be cleared by qio_channel_clear_error().
+  // This error code can be checked with qio_channel_error().
+  // Operations on the channel (besides qio_channel_error()) do not
+  // check this error code and only write to it if there is an error.
+  // Thus, the behavior is similar to the global errno.
+  err_t error;
+
+  qio_file_t* file;
+  qio_lock_t lock;
+
+  // less frequently used.
+  int64_t start_pos; // what is the initial position of the channel?
+                     // this is used in a thread-safe truncation
+                     // scheme for mmap channels.
+  int64_t end_pos; // we should not write at or beyond this position.
+                   // use INT64_MAX for no limit.
+  qio_hint_t hints;
+  qio_fdflag_t flags;
+
+  // buffered channel materials.
   /* When reading, we 'require' then read from
    * right_mark_start to (potentially) heavy->av_end
    * and then move right_mark_start forward
@@ -557,48 +594,6 @@ typedef struct qio_buffered_channel_s {
   // initial few entries so we don't have to malloc
   // for the common case of very few marks.
   int64_t mark_space[MARK_INITIAL_STACK_SZ];
-} qio_buffered_channel_t;
-
-typedef struct qio_unbuffered_channel_s {
-  int64_t pos;
-} qio_unbuffered_channel_t;
-
-typedef struct qio_channel_s {
-  // frequently used data:
-  void* cached_cur; // current offset in a buffer.
-  void* cached_end; // end offset in a buffer; we don't exceed this.
-  void* cached_start; // start offset in a buffer; when mark/commit/reverting we
-                      // might back up to this point.
-  int64_t cached_start_pos; // what position does cached_start correspond to?
-
-  // reference count which is atomically updated
-  qbytes_refcnt_t ref_cnt;
-
-  // sticky channel error. Channel I/O functions generally return
-  // an error code, which if set, will also be stored here.
-  // This error code can only be cleared by qio_channel_clear_error().
-  // This error code can be checked with qio_channel_error().
-  // Operations on the channel (besides qio_channel_error()) do not
-  // check this error code and only write to it if there is an error.
-  // Thus, the behavior is similar to the global errno.
-  err_t error;
-
-  qio_file_t* file;
-  qio_lock_t lock;
-
-  // less frequently used.
-  int64_t start_pos; // what is the initial position of the channel?
-                     // this is used in a thread-safe truncation
-                     // scheme for mmap channels.
-  int64_t end_pos; // we should not write at or beyond this position.
-                   // use INT64_MAX for no limit.
-  qio_hint_t hints;
-  qio_fdflag_t flags;
-
-  union {
-    qio_unbuffered_channel_t unbuffered;
-    qio_buffered_channel_t buffered;
-  } u;
 
   qio_style_t style;
 } qio_channel_t;
@@ -638,7 +633,6 @@ err_t qio_channel_error(qio_channel_t* ch) {
 }
 
 
-err_t _qio_channel_init_unbuffered(qio_channel_t* ch, qio_file_t* file, qio_hint_t hints, int readable, int writeable, int64_t start, int64_t end, qio_style_t* style);
 err_t _qio_channel_init_buffered(qio_channel_t* ch, qio_file_t* file, qio_hint_t hints, int readable, int writeable, int64_t start, int64_t end, qio_style_t* style);
 err_t _qio_channel_init_file(qio_channel_t* ch, qio_file_t* file, qio_hint_t hints, int readable, int writeable, int64_t start, int64_t end, qio_style_t* style);
 
@@ -667,11 +661,9 @@ err_t _qio_channel_post_cached_write(qio_channel_t* restrict ch)
   // Flush FILE* buffers after every write, so that C I/O
   // can be intermixed with QIO calls.
   if( (ch->hints & QIO_METHODMASK) == QIO_METHOD_FREADFWRITE) {
-    if( (ch->hints & QIO_CHTYPEMASK) == QIO_CH_BUFFERED ) {
-      qio_buffered_channel_t* heavy;
-      heavy = & ch->u.buffered;
-      if( heavy->mark_cur == 0 ) {
-        err = _qio_channel_flush_unlocked(ch);
+    if( qbuffer_is_initialized(&ch->buf) ) {
+      if( ch->mark_cur == 0 ) {
+        err = _qio_channel_flush_qio_unlocked(ch);
         _qio_channel_set_error_unlocked(ch, err);
       }
     }
@@ -1027,17 +1019,25 @@ err_t qio_channel_end_peek_buffer(const int threadsafe, qio_channel_t* ch, int64
 static inline
 err_t qio_channel_isbuffered(const int threadsafe, qio_channel_t* ch, char* isbuffered)
 {
-  if( (ch->hints & QIO_CHTYPEMASK) == QIO_CH_BUFFERED ) {
-    *isbuffered = 1;
-  } else {
-    *isbuffered = 0;
-  }
+  *isbuffered = 1;
   return 0;
 }
 
 
 err_t qio_channel_offset(const int threadsafe, qio_channel_t* ch, int64_t* offset_out);
-int64_t qio_channel_offset_unlocked(qio_channel_t* ch);
+
+static inline
+int64_t qio_channel_offset_unlocked(qio_channel_t* ch)
+{
+  int64_t cached_amt = VOID_PTR_DIFF(ch->cached_cur, ch->cached_start);
+  
+  if( ch->cached_start != NULL ) {
+    return cached_amt + ch->cached_start_pos;
+  }
+
+  // and if there's no cached data, cached_start_pos is not available:
+  return ch->mark_stack[ch->mark_cur]; // _right_mark_start(ch);
+}
 
 
 err_t qio_channel_advance(const int threadsafe, qio_channel_t* ch, int64_t nbytes);

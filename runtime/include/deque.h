@@ -232,6 +232,18 @@ void deque_destroy(deque_t* d)
 }
 
 static inline
+void deque_init_uninitialized(deque_t* d)
+{
+  d->map = NULL;
+}
+
+static inline
+int deque_is_initialized(deque_t* d)
+{
+  return d->map != NULL;
+}
+
+static inline
 deque_iterator_t deque_begin(deque_t* d)
 {
   return d->start;

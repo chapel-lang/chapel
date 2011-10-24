@@ -299,8 +299,9 @@ module GMP {
         halt("Error initializing big integer: bad format");
       }
     }
-    proc BigInt(str:string, base=0, inout error:err_t) {
+    proc BigInt(str:string, base=0, out error:err_t) {
       var e:c_int;
+      error = ENOERR;
       e = mpz_init_set_str(this.mpz, str, base);
       if e {
         mpz_clear(this.mpz);

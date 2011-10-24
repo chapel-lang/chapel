@@ -67,11 +67,11 @@ typedef void (*qbytes_free_t)(struct qbytes_s*);
  * outside of the qbytes.
  */
 typedef struct qbytes_s {
+  // reference count which is atomically updated
+  qbytes_refcnt_t ref_cnt;
+  // all of the other fields 
   void* data;
   int64_t len;
-  // reference count which is atomically updated
-  // all of the other fields 
-  qbytes_refcnt_t ref_cnt;
   qbytes_free_t free_function;
   uint8_t flags; // is it const?
   uint8_t unused1;
@@ -155,7 +155,7 @@ typedef struct qbuffer_part_s {
  * should be called when it goes out of scope.
  */
 typedef struct qbuffer_s {
-  qbytes_refcnt_t ref_cnt;
+  qbytes_refcnt_t ref_cnt; // atomically updated
   deque_t deque; // contains qbuffer_part_t s 
   int64_t offset_start;
   int64_t offset_end;
@@ -179,6 +179,15 @@ qbuffer_iter_t qbuffer_iter_null(void) {
 void debug_print_qbuffer_iter(qbuffer_iter_t* iter);
 void debug_print_qbuffer(qbuffer_t* buf);
 
+
+static inline
+void qbuffer_init_uninitialized(qbuffer_t* buf) {
+  deque_init_uninitialized(&buf->deque);
+}
+static inline
+int qbuffer_is_initialized(qbuffer_t* buf) {
+  return deque_is_initialized(&buf->deque);
+}
 
 /* Initialize a buffer */
 err_t qbuffer_init(qbuffer_t* buf);

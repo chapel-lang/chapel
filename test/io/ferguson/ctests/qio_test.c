@@ -47,7 +47,7 @@ void check_channel(char threadsafe, qio_chtype_t type, int64_t start, int64_t le
     file_hints = (file_hints & ~ QIO_METHODMASK ) | QIO_METHOD_MEMORY;
     ch_hints = (ch_hints & ~ QIO_METHODMASK ) | QIO_METHOD_MEMORY;
   }
-  if( memory && type == QIO_CH_UNBUFFERED ) return;
+  if( memory && type == QIO_CH_ALWAYS_UNBUFFERED ) return;
 
   fhints = qio_hints_to_string(file_hints);
   chhints = qio_hints_to_string(ch_hints);

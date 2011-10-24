@@ -116,12 +116,6 @@ static inline type atomic_fetch_or_explicit_ ## type(atomic_ ## type * obj, type
 static inline type atomic_fetch_or_ ## type(atomic_ ## type * obj, type operand) { \
   return atomic_fetch_or_explicit_ ## type(obj, operand, memory_order_seq_cst); \
 } \
-static inline type atomic_fetch_xor_explicit_ ## type(atomic_ ## type * obj, type operand, memory_order order) { \
-  return __sync_fetch_and_xor(obj, operand); \
-} \
-static inline type atomic_fetch_xor_ ## type(atomic_ ## type * obj, type operand) { \
-  return atomic_fetch_xor_explicit_ ## type(obj, operand, memory_order_seq_cst); \
-} \
 static inline type atomic_fetch_and_explicit_ ## type(atomic_ ## type * obj, type operand, memory_order order) { \
   return __sync_fetch_and_and(obj, operand); \
 } \

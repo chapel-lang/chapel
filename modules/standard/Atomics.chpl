@@ -37,7 +37,6 @@ module Atomics {
   extern proc atomic_fetch_add_explicit_uint_least8_t(inout obj:atomic_uint_least8_t, operand:uint(8), order:memory_order):uint(8);
   extern proc atomic_fetch_sub_explicit_uint_least8_t(inout obj:atomic_uint_least8_t, operand:uint(8), order:memory_order):uint(8);
   extern proc atomic_fetch_or_explicit_uint_least8_t(inout obj:atomic_uint_least8_t, operand:uint(8), order:memory_order):uint(8);
-  extern proc atomic_fetch_xor_explicit_uint_least8_t(inout obj:atomic_uint_least8_t, operand:uint(8), order:memory_order):uint(8);
   extern proc atomic_fetch_and_explicit_uint_least8_t(inout obj:atomic_uint_least8_t, operand:uint(8), order:memory_order):uint(8);
 
   extern proc atomic_is_lock_free_uint_least16_t(inout obj:atomic_uint_least16_t):bool;
@@ -51,7 +50,6 @@ module Atomics {
   extern proc atomic_fetch_add_explicit_uint_least16_t(inout obj:atomic_uint_least16_t, operand:uint(16), order:memory_order):uint(16);
   extern proc atomic_fetch_sub_explicit_uint_least16_t(inout obj:atomic_uint_least16_t, operand:uint(16), order:memory_order):uint(16);
   extern proc atomic_fetch_or_explicit_uint_least16_t(inout obj:atomic_uint_least16_t, operand:uint(16), order:memory_order):uint(16);
-  extern proc atomic_fetch_xor_explicit_uint_least16_t(inout obj:atomic_uint_least16_t, operand:uint(16), order:memory_order):uint(16);
   extern proc atomic_fetch_and_explicit_uint_least16_t(inout obj:atomic_uint_least16_t, operand:uint(16), order:memory_order):uint(16);
 
 
@@ -66,7 +64,6 @@ module Atomics {
   extern proc atomic_fetch_add_explicit_uint_least32_t(inout obj:atomic_uint_least32_t, operand:uint(32), order:memory_order):uint(32);
   extern proc atomic_fetch_sub_explicit_uint_least32_t(inout obj:atomic_uint_least32_t, operand:uint(32), order:memory_order):uint(32);
   extern proc atomic_fetch_or_explicit_uint_least32_t(inout obj:atomic_uint_least32_t, operand:uint(32), order:memory_order):uint(32);
-  extern proc atomic_fetch_xor_explicit_uint_least32_t(inout obj:atomic_uint_least32_t, operand:uint(32), order:memory_order):uint(32);
   extern proc atomic_fetch_and_explicit_uint_least32_t(inout obj:atomic_uint_least32_t, operand:uint(32), order:memory_order):uint(32);
 
   extern proc atomic_is_lock_free_uint_least64_t(inout obj:atomic_uint_least64_t):bool;
@@ -80,7 +77,6 @@ module Atomics {
   extern proc atomic_fetch_add_explicit_uint_least64_t(inout obj:atomic_uint_least64_t, operand:uint(64), order:memory_order):uint(64);
   extern proc atomic_fetch_sub_explicit_uint_least64_t(inout obj:atomic_uint_least64_t, operand:uint(64), order:memory_order):uint(64);
   extern proc atomic_fetch_or_explicit_uint_least64_t(inout obj:atomic_uint_least64_t, operand:uint(64), order:memory_order):uint(64);
-  extern proc atomic_fetch_xor_explicit_uint_least64_t(inout obj:atomic_uint_least64_t, operand:uint(64), order:memory_order):uint(64);
   extern proc atomic_fetch_and_explicit_uint_least64_t(inout obj:atomic_uint_least64_t, operand:uint(64), order:memory_order):uint(64);
 
   extern proc atomic_is_lock_free_uintptr_t(inout obj:atomic_uintptr_t):bool;
@@ -94,7 +90,6 @@ module Atomics {
   extern proc atomic_fetch_add_explicit_uintptr_t(inout obj:atomic_uintptr_t, operand:c_ptr, order:memory_order):c_ptr;
   extern proc atomic_fetch_sub_explicit_uintptr_t(inout obj:atomic_uintptr_t, operand:c_ptr, order:memory_order):c_ptr;
   extern proc atomic_fetch_or_explicit_uintptr_t(inout obj:atomic_uintptr_t, operand:c_ptr, order:memory_order):c_ptr;
-  extern proc atomic_fetch_xor_explicit_uintptr_t(inout obj:atomic_uintptr_t, operand:c_ptr, order:memory_order):c_ptr;
   extern proc atomic_fetch_and_explicit_uintptr_t(inout obj:atomic_uintptr_t, operand:c_ptr, order:memory_order):c_ptr;
 
 
@@ -134,9 +129,6 @@ module Atomics {
     }
     proc fetchOr(value:uint(8), order = memory_order_seq_cst):uint(8) {
       return atomic_fetch_or_explicit_uint_least8_t(_v, value, order);
-    }
-    proc fetchXor(value:uint(8), order = memory_order_seq_cst):uint(8) {
-      return atomic_fetch_xor_explicit_uint_least8_t(_v, value, order);
     }
     proc fetchAnd(value:uint(8), order = memory_order_seq_cst):uint(8) {
       return atomic_fetch_and_explicit_uint_least8_t(_v, value, order);
@@ -178,9 +170,6 @@ module Atomics {
     proc fetchOr(value:uint(16), order = memory_order_seq_cst):uint(16) {
       return atomic_fetch_or_explicit_uint_least16_t(_v, value, order);
     }
-    proc fetchXor(value:uint(16), order = memory_order_seq_cst):uint(16) {
-      return atomic_fetch_xor_explicit_uint_least16_t(_v, value, order);
-    }
     proc fetchAnd(value:uint(16), order = memory_order_seq_cst):uint(16) {
       return atomic_fetch_and_explicit_uint_least16_t(_v, value, order);
     }
@@ -221,9 +210,6 @@ module Atomics {
     proc fetchOr(value:uint(32), order = memory_order_seq_cst):uint(32) {
       return atomic_fetch_or_explicit_uint_least32_t(_v, value, order);
     }
-    proc fetchXor(value:uint(32), order = memory_order_seq_cst):uint(32) {
-      return atomic_fetch_xor_explicit_uint_least32_t(_v, value, order);
-    }
     proc fetchAnd(value:uint(32), order = memory_order_seq_cst):uint(32) {
       return atomic_fetch_and_explicit_uint_least32_t(_v, value, order);
     }
@@ -263,9 +249,6 @@ module Atomics {
     }
     proc fetchOr(value:uint(64), order = memory_order_seq_cst):uint(64) {
       return atomic_fetch_or_explicit_uint_least64_t(_v, value, order);
-    }
-    proc fetchXor(value:uint(64), order = memory_order_seq_cst):uint(64) {
-      return atomic_fetch_xor_explicit_uint_least64_t(_v, value, order);
     }
     proc fetchAnd(value:uint(64), order = memory_order_seq_cst):uint(64) {
       return atomic_fetch_and_explicit_uint_least64_t(_v, value, order);

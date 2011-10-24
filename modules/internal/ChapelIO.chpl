@@ -4,7 +4,6 @@
 // it's a problem because this is an
 // internal module.
 
-
 //use SysBasic;
 // BEGIN SysBasic.chpl
 
@@ -802,12 +801,13 @@ proc _debugWriteln() {
 
   /* Close a file.
      Alternately, file will be closed when it is no longer referred to */
-  proc file.close(inout error:err_t) {
+  proc file.close(out error:err_t) {
     check();
     on __primitive("chpl_on_locale_num", this.home_uid) {
       error = qio_file_close(_file_internal);
     }
   }
+
   proc file.close() {
     var err:err_t = ENOERR;
     this.close(err);
@@ -815,7 +815,7 @@ proc _debugWriteln() {
   }
 
   /* Sync a file to disk. */
-  proc file.fsync(inout error:err_t) {
+  proc file.fsync(out error:err_t) {
     check();
     on __primitive("chpl_on_locale_num", this.home_uid) {
       error = qio_file_sync(_file_internal);
@@ -829,7 +829,7 @@ proc _debugWriteln() {
 
 
   /* Get the path to a file. */
-  proc file.getPath(inout error:err_t) : string {
+  proc file.getPath(out error:err_t) : string {
     check();
     var ret:string;
     on __primitive("chpl_on_locale_num", this.home_uid) {
@@ -855,7 +855,7 @@ proc _debugWriteln() {
     if err then _ioerror(err, "in file.path");
   }
 
-  proc open(path:string, access:string, inout error:err_t, hints:iohint_t=0, style:iostyle = defaultStyle()):file {
+  proc open(path:string, access:string, out error:err_t, hints:iohint_t=0, style:iostyle = defaultStyle()):file {
     var local_style = style;
     var ret:file;
     ret.home_uid = _current_locale();
@@ -868,7 +868,7 @@ proc _debugWriteln() {
     if err then _ioerror(err, "in open", path);
     return ret;
   }
-  proc openfd(fd: fd_t, inout error:err_t, hints:iohint_t=0, style:iostyle = defaultStyle()):file {
+  proc openfd(fd: fd_t, out error:err_t, hints:iohint_t=0, style:iostyle = defaultStyle()):file {
     var local_style = style;
     var ret:file;
     ret.home_uid = _current_locale();
@@ -887,7 +887,7 @@ proc _debugWriteln() {
     }
     return ret;
   }
-  proc openfp(fp: _file, inout error:err_t, hints:iohint_t=0, style:iostyle = defaultStyle()):file {
+  proc openfp(fp: _file, out error:err_t, hints:iohint_t=0, style:iostyle = defaultStyle()):file {
     var local_style = style;
     var ret:file;
     ret.home_uid = _current_locale();
@@ -907,7 +907,7 @@ proc _debugWriteln() {
     return ret;
   }
 
-  proc opentmp(inout error:err_t, hints:iohint_t=0, style:iostyle = defaultStyle()):file {
+  proc opentmp(out error:err_t, hints:iohint_t=0, style:iostyle = defaultStyle()):file {
     var local_style = style;
     var ret:file;
     ret.home_uid = _current_locale();
@@ -921,7 +921,7 @@ proc _debugWriteln() {
     return ret;
   }
 
-  proc openmem(inout error:err_t, style:iostyle = defaultStyle()) {
+  proc openmem(out error:err_t, style:iostyle = defaultStyle()) {
     var local_style = style;
     var ret:file;
     ret.home_uid = _current_locale();
@@ -970,7 +970,7 @@ proc _debugWriteln() {
     return ret;
   }
 
-  proc channel.channel(param writing:bool, param kind:iokind, param locking:bool, f:file, inout error:err_t, hints:c_int, start:int(64), end:int(64), style:iostyle) {
+  proc channel.channel(param writing:bool, param kind:iokind, param locking:bool, f:file, out error:err_t, hints:c_int, start:int(64), end:int(64), style:iostyle) {
     on __primitive("chpl_on_locale_num", f.home_uid) {
       this.home_uid = f.home_uid;
       var local_style = style;
@@ -1037,7 +1037,7 @@ proc _debugWriteln() {
       var tmp_path:string;
       var tmp_offset:int(64);
       var err:err_t = ENOERR;
-      err = qio_channel_path_offset(true, _channel_internal, tmp_path, tmp_offset);
+      err = qio_channel_path_offset(locking, _channel_internal, tmp_path, tmp_offset);
       if !err {
         path = tmp_path;
         offset = tmp_offset;
@@ -1047,7 +1047,7 @@ proc _debugWriteln() {
   }
 
   inline
-  proc channel.lock(inout error:err_t) {
+  proc channel.lock(out error:err_t) {
     error = ENOERR;
     if locking {
       on __primitive("chpl_on_locale_num", this.home_uid) {
@@ -1107,7 +1107,7 @@ proc _debugWriteln() {
   }
   */
 
-  proc file.reader(inout error:err_t, param kind=iokind.dynamic, param locking=true, start:int(64) = 0, end:int(64) = max(int(64)), hints:c_int = 0, style:iostyle = this._style): channel(false, kind, locking) {
+  proc file.reader(out error:err_t, param kind=iokind.dynamic, param locking=true, start:int(64) = 0, end:int(64) = max(int(64)), hints:c_int = 0, style:iostyle = this._style): channel(false, kind, locking) {
     check();
 
     var ret:channel(false, kind, locking);
@@ -1123,7 +1123,7 @@ proc _debugWriteln() {
     return ret;
   }
   // for convenience..
-  proc file.lines(inout error:err_t, param locking:bool = true, start:int(64) = 0, end:int(64) = max(int(64)), hints:c_int = 0, style:iostyle = this._style) {
+  proc file.lines(out error:err_t, param locking:bool = true, start:int(64) = 0, end:int(64) = max(int(64)), hints:c_int = 0, style:iostyle = this._style) {
     check();
 
     style.string_format = QIO_STRING_FORMAT_TOEND;
@@ -1145,7 +1145,7 @@ proc _debugWriteln() {
   }
 
 
-  proc file.writer(inout error:err_t, param kind:iokind, param locking:bool, start:int(64), end:int(64), hints:c_int, style:iostyle): channel(true,kind,locking) {
+  proc file.writer(out error:err_t, param kind:iokind, param locking:bool, start:int(64), end:int(64), hints:c_int, style:iostyle): channel(true,kind,locking) {
     check();
 
     var ret:channel(true, kind, locking);
@@ -1465,23 +1465,19 @@ proc _debugWriteln() {
      false if we encountered EOF (or possibly another error and didn't halt)*/
   inline
   proc channel.read(inout args ...?k,
-                    inout error:err_t):bool {
+                    out error:err_t):bool {
     if writing then compilerError("read on write-only channel");
-    var e:err_t = ENOERR;
+    error = ENOERR;
     on __primitive("chpl_on_locale_num", this.home_uid) {
       this.lock();
       for param i in 1..k {
-        if !e {
-          e = _read_one_internal(_channel_internal, kind, args[i]);
+        if !error {
+          error = _read_one_internal(_channel_internal, kind, args[i]);
         }
       }
       this.unlock();
     }
-    if !e then return true;
-    else {
-      error = e;
-      return false;
-    }
+    return !error;
   }
   var _arg_to_proto_names = ("a", "b", "c", "d", "e", "f");
   proc _args_to_proto(args ...?k,
@@ -1512,26 +1508,22 @@ proc _debugWriteln() {
   }
   proc channel.read(inout args ...?k,
                     style:iostyle,
-                    inout error:err_t):bool {
+                    out error:err_t):bool {
     if writing then compilerError("read on write-only channel");
-    var e:err_t = ENOERR;
+    error = ENOERR;
     on __primitive("chpl_on_locale_num", this.home_uid) {
       this.lock();
       var save_style = this._style();
       this._set_style(style);
       for param i in 1..k {
-        if !e {
-          e = _read_one_internal(_channel_internal, kind, args[i]);
+        if !error {
+          error = _read_one_internal(_channel_internal, kind, args[i]);
         }
       }
       this._set_style(save_style);
       this.unlock();
     }
-    if !e then return true;
-    else {
-      error = e;
-      return false;
-    }
+    return !error;
   }
   proc channel.read(inout args ...?k,
                     style:iostyle):bool {
@@ -1547,9 +1539,9 @@ proc _debugWriteln() {
     }
   }
 
-  proc channel.readline(inout arg:string, inout error:err_t):bool {
+  proc channel.readline(inout arg:string, out error:err_t):bool {
     if writing then compilerError("read on write-only channel");
-    var e:err_t = ENOERR;
+    error = ENOERR;
     on __primitive("chpl_on_locale_num", this.home_uid) {
       this.lock();
       var save_style = this._style();
@@ -1557,15 +1549,11 @@ proc _debugWriteln() {
       mystyle.string_format = QIO_STRING_FORMAT_TOEND;
       mystyle.string_end = 0x0a; // ascii newline.
       this._set_style(mystyle);
-      e = _read_one_internal(_channel_internal, iokind.dynamic, arg);
+      error = _read_one_internal(_channel_internal, iokind.dynamic, arg);
       this._set_style(save_style);
       this.unlock();
     }
-    if !e then return true;
-    else {
-      error = e;
-      return false;
-    }
+    return !error;
   }
   proc channel.readline(inout arg:string):bool {
     var e:err_t = ENOERR;
@@ -1578,7 +1566,7 @@ proc _debugWriteln() {
     }
   }
 
-  proc channel.readln(inout error:err_t):bool {
+  proc channel.readln(out error:err_t):bool {
     var nl = new ioNewline();
     return this.read(nl, error=error);
   }
@@ -1593,13 +1581,13 @@ proc _debugWriteln() {
     return this.read((...args), nl);
   }
   proc channel.readln(inout args ...?k,
-                      inout error:err_t):bool {
+                      out error:err_t):bool {
     var nl = new ioNewline();
     return this.read((...args), nl, error=error);
   }
   proc channel.readln(inout args ...?k,
                       style:iostyle,
-                      inout error:err_t):bool {
+                      out error:err_t):bool {
     var nl = new ioNewline();
     return this.read((...args), nl, style=style, error=error);
   }
@@ -1648,23 +1636,19 @@ proc _debugWriteln() {
   }*/
 
   inline
-  proc channel.write(args ...?k, inout error:err_t):bool {
+  proc channel.write(args ...?k, out error:err_t):bool {
     if !writing then compilerError("write on read-only channel");
-    var e:err_t = ENOERR;
+    error = ENOERR;
     on __primitive("chpl_on_locale_num", this.home_uid) {
       this.lock();
       for param i in 1..k {
-        if !e {
-          e = _write_one_internal(_channel_internal, kind, args(i));
+        if !error {
+          error = _write_one_internal(_channel_internal, kind, args(i));
         }
       }
       this.unlock();
     }
-    if !e then return true;
-    else {
-      error = e;
-      return false;
-    }
+    return !error;
   }
 
   inline
@@ -1682,26 +1666,22 @@ proc _debugWriteln() {
 
   proc channel.write(args ...?k,
                      style:iostyle,
-                     inout error:err_t):bool {
+                     out error:err_t):bool {
     if !writing then compilerError("write on read-only channel");
-    var e:err_t = ENOERR;
+    error = ENOERR;
     on __primitive("chpl_on_locale_num", this.home_uid) {
       this.lock();
       var save_style = this._style();
       this._set_style(style);
       for param i in 1..k {
-        if !e {
-          e = _write_one_internal(dynamic, args(i));
+        if !error {
+          error = _write_one_internal(dynamic, args(i));
         }
       }
       this._set_style(save_style);
       this.unlock();
     }
-    if !e then return true;
-    else {
-      error = e;
-      return false;
-    }
+    return !error;
   }
   proc channel.write(args ...?k,
                      style:iostyle):bool {
@@ -1716,13 +1696,13 @@ proc _debugWriteln() {
     }
   }
 
-  proc channel.writeln(inout error:err_t):bool {
+  proc channel.writeln(out error:err_t):bool {
     return this.write(new ioNewline(), error=error);
   }
   proc channel.writeln():bool {
     return this.write(new ioNewline());
   }
-  proc channel.writeln(args ...?k, inout error:err_t):bool {
+  proc channel.writeln(args ...?k, out error:err_t):bool {
     return this.write((...args), new ioNewline(), error=error);
   }
   proc channel.writeln(args ...?k):bool {
@@ -1734,17 +1714,16 @@ proc _debugWriteln() {
   }
   proc channel.writeln(args ...?k,
                        style:iostyle,
-                       inout error:err_t):bool {
+                       out error:err_t):bool {
     return this.write((...args), new ioNewline(), style=style, error=error);
   }
 
 
-  proc channel.flush(inout error:err_t) {
-    var e:err_t = ENOERR;
+  proc channel.flush(out error:err_t) {
+    error = ENOERR;
     on __primitive("chpl_on_locale_num", this.home_uid) {
-      e = qio_channel_flush(true, _channel_internal);
+      error = qio_channel_flush(locking, _channel_internal);
     }
-    error = e;
   }
   proc channel.flush() {
     var e:err_t = ENOERR;
@@ -1752,14 +1731,13 @@ proc _debugWriteln() {
     if e then this._ch_ioerror(e, "in channel.flush");
   }
 
-
-  proc channel.close(inout error:err_t) {
-    var e:err_t = ENOERR;
+  proc channel.close(out error:err_t) {
+    error = ENOERR;
     on __primitive("chpl_on_locale_num", this.home_uid) {
-      e = qio_channel_close(true, _channel_internal);
+      error = qio_channel_close(locking, _channel_internal);
     }
-    error = e;
   }
+
   proc channel.close() {
     var e:err_t = ENOERR;
     this.close(error=e);
@@ -1807,7 +1785,7 @@ proc _debugWriteln() {
     param kind:iokind;
     param locking:bool;
     var ch:channel(false,kind,locking);
-    proc read(out arg:ItemType, inout error:err_t):bool {
+    proc read(out arg:ItemType, out error:err_t):bool {
       return ch.read(arg, error=error);
     }
     proc read(out arg:ItemType):bool {
@@ -1823,7 +1801,7 @@ proc _debugWriteln() {
       }
     }
     /*
-    iter these(inout error:err_t) {
+    iter these(out error:err_t) {
       while true {
         var x:ItemType;
         var gotany = ch.read(x, error=error);
@@ -1843,7 +1821,7 @@ proc _debugWriteln() {
     param kind:iokind;
     param locking:bool;
     var ch:channel(false,kind);
-    proc write(arg:ItemType, inout error:err_t):bool {
+    proc write(arg:ItemType, out error:err_t):bool {
       return ch.write(arg, error=error);
     }
     proc write(arg:ItemType):bool {

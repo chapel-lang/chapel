@@ -147,7 +147,7 @@ err_t qbytes_create_iobuf(qbytes_t** out)
   return 0;
 }
 
-
+/*
 err_t _qbytes_init_calloc(qbytes_t* ret, int64_t len)
 {
   void* data;
@@ -160,22 +160,18 @@ err_t _qbytes_init_calloc(qbytes_t* ret, int64_t len)
   _qbytes_init_generic(ret, data, len, qbytes_free_free);
 
   return 0;
-}
+}*/
 
 err_t qbytes_create_calloc(qbytes_t** out, int64_t len)
 {
   qbytes_t* ret = NULL;
-  err_t err;
+  void* data;
 
-  ret = qio_calloc(1, sizeof(qbytes_t));
+  ret = qio_calloc(1, sizeof(qbytes_t) + len);
   if( ! ret ) return ENOMEM;
 
-  err = _qbytes_init_calloc(ret, len);
-  if( err ) {
-    qio_free(ret);
-    *out = NULL;
-    return err;
-  }
+  data = ret + 1; // ie ret + sizeof(qbytes_t)
+  _qbytes_init_generic(ret, data, len, qbytes_free_null);
 
   *out = ret;
   return 0;
@@ -259,6 +255,7 @@ err_t qbuffer_init(qbuffer_t* buf)
   memset(buf, 0, sizeof(qbuffer_t));
   DO_INIT_REFCNT(buf);
   return deque_init(sizeof(qbuffer_part_t), & buf->deque, 0);
+  //return 0;
 }
 
 err_t qbuffer_destroy(qbuffer_t* buf)
