@@ -1484,7 +1484,7 @@ proc _debugWriteln() {
     }
   }
   var _arg_to_proto_names = ("a", "b", "c", "d", "e", "f");
-  proc _args_to_proto(inout args ...?k,
+  proc _args_to_proto(args ...?k,
                       preArg:string) {
     var err_args:string = "";
     for param i in 1..k {
