@@ -68,8 +68,6 @@ config var reproducible = false, verbose = false;
   var targetLocales: [targetIds] locale;
   setupTargetLocalesArray(targetIds, targetLocales, Locales);
 
-  // writeln("targetLocales\n", targetLocales, "\n");
-
   // Here are the dimensions of our grid of locales.
   const tl1 = targetIds.dim(1).length,
         tl2 = targetIds.dim(2).length;
@@ -103,19 +101,16 @@ config var reproducible = false, verbose = false;
       piv: [1..n] indexType;         // a vector of pivot values
 
   //
-  // Create the replicated arrays for schurComplement() and panelSolve().
+  // Create the 1-d replicated arrays for schurComplement().
   //
   const
     replAD = [1..n, 1..blkSize]
       dmapped DimensionalDist(targetLocales, bdim1, rdim2, "distBR"),
     replBD = [1..blkSize, 1..n+1]
-      dmapped DimensionalDist(targetLocales, rdim1, bdim2, "distRB"),
-    replKD = [0..0, 1..blkSize-1]
-      dmapped DimensionalDist(targetLocales, rdim1, rdim2, "distRR");
+      dmapped DimensionalDist(targetLocales, rdim1, bdim2, "distRB");
 
   var replA: [replAD] elemType,
-      replB: [replBD] elemType,
-      replK: [replKD] elemType;
+      replB: [replBD] elemType;
 
   initAB();
 
@@ -227,15 +222,15 @@ proc schurComplement(AD: domain, BD: domain, Rest: domain) {
   // Copy data into replicated arrays so every processor has a local copy
   // of the data it will need to perform a local matrix-multiply.
   //
-  coforall dest in computeReplLocales(2, Rest.dim(2), Rest.dim(1).low) do
+  coforall dest in targetLocales[targetIds.dim(1).high, targetIds.dim(2)] do
     on dest do
       // replA on tgLocales[d1,i] gets a copy of Ab from tgLocales[d1,..]
-      replA[Rest.dim(1), ..] = Ab[Rest.dim(1), AD.dim(2)];
+      replA = Ab[1..n, AD.dim(2)];
 
-  coforall dest in computeReplLocales(1, Rest.dim(1), Rest.dim(2).low) do
+  coforall dest in targetLocales[targetIds.dim(1), targetIds.dim(2).high] do
     on dest do
       // replB on tgLocales[i,d2] gets a copy of Ab from tgLocales[..,d2]
-      replB[.., Rest.dim(2)] = Ab[BD.dim(1), Rest.dim(2)];
+      replB = Ab[BD.dim(1), 1..n+1];
 
   // do local matrix-multiply on a block-by-block basis
   forall (row,col) in Rest by (blkSize, blkSize) {
@@ -258,10 +253,6 @@ proc schurComplement(AD: domain, BD: domain, Rest: domain) {
 proc panelSolve(
                panel: domain,
                piv: [] indexType) {
-
-  // Used in replication below.
-  const replKLocales = computeReplLocales(1, panel.dim(1), panel.dim(2).low);
-  const rowEnd = panel.dim(2).high;
 
   for k in panel.dim(2) {             // iterate through the columns
     const col = panel[k.., k..k];
@@ -288,18 +279,10 @@ proc panelSolve(
     // divide all values below and in the same col as the pivot by
     // the pivot value
     Ab[k+1.., k..k] /= pivotVal;
-
-    // Replicate some values for the last computation.
-    coforall dest in replKLocales do
-      on dest do
-        replK[0..0, 1..rowEnd-k] = Ab[k..k, k+1..rowEnd];
-
+    
     // update all other values below the pivot
     forall (i,j) in panel[k+1.., k+1..] do
-      // this 'local' relies on the entire row of the panel being on one locale
-      local {
-        Ab[i,j] -= Ab[i,k] * replK[0,j-k]; // replK[] was: Ab[k,j]
-      }
+      Ab[i,j] -= Ab[i,k] * Ab[k,j];
   }
 }
 
@@ -336,41 +319,6 @@ proc backwardSub(n: indexType) {
             / Ab[i,i];
 
   return x;
-}
-
-
-//
-// compute the column of targetLocales that's hosting
-// the current panel. this is specific to the distribution
-// for the second dimension of Ab
-//
-proc computeReplLocales(param replDim, replStartEnd, nonReplIx)
-{
-  param nonreplDim =
-    if replDim == 1 then 2 else 1;
-  proc numTgLocales(param dim)
-    return if dim == 1 then tl1 else tl2;
-  proc make2dIx(replIx, nonreplIx)
-    return if replDim == 1 then (replIx, nonreplIx) else (nonreplIx, replIx);
-  proc tgLocalesIndexForAbIndex(param dim, abIx)
-    return (abIx / blkSize) % numTgLocales(dim);
-
-  const tgNonrepl = tgLocalesIndexForAbIndex(nonreplDim, nonReplIx);
-  assert(Ab[make2dIx(1, 1 + tgNonrepl * blkSize)].locale ==
-         targetLocales[make2dIx(0, tgNonrepl)]);
-
-  const startB = replStartEnd.first / blkSize,
-        endB   = replStartEnd.last / blkSize;
-
-  if endB - startB + 1 >= numTgLocales(replDim) {
-    return
-      if replDim == 1 then targetLocales[.., tgNonrepl]
-      else                 targetLocales[tgNonrepl, ..];
-  } else {
-    var result: [startB..endB] locale = [b in startB..endB]
-      targetLocales[make2dIx(b % numTgLocales(replDim), tgNonrepl)];
-    return result;
-  }
 }
 
 
