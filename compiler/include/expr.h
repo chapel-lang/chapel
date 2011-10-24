@@ -1,6 +1,7 @@
 #ifndef _EXPR_H_
 #define _EXPR_H_
 
+#include <cstdlib>
 #include <cstdio>
 #include "alist.h"
 #include "baseAST.h"
