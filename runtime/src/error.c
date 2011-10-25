@@ -178,8 +178,8 @@ void chpl_exit_backtrace(int exit_code)
 void chpl_set_backtrace_config(_Bool doBacktrace)
 {
   if( doBacktrace ) {
-    printf("Sorry, backtrace not supported in this configuration\n");
-    fflush(stdout);
+    fprintf(stderr, "Sorry, backtrace not supported in this configuration\n");
+    fflush(stderr);
   }
 }
 
