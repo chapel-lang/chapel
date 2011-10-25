@@ -15,14 +15,6 @@
 general regressions (seem to happen in most configurations)
 ===========================================================
 
-incorrectly retired future (06/25/11)
--------------------------------------
-[Error matching program output for distributions/vass/dmap-var-decl]
-
-timeouts
---------
-[Error: Timed out executing program release/examples/ssca2/SSCA2_main]
-
 
 ========================================================================
 general nondeterministic regressions (could happen in any configuration)
@@ -45,6 +37,9 @@ nondet. bad output
 linux64 regressions (in addition to the above)
 ==============================================
 
+nondet. compilation timeout
+---------------------------
+[Error: Timed out compilation for functions/iterators/angeles/checkAdvancedIters/checkAdaptiveWSIter(--fast --cc-warnings -smethodStealing=1 )] (10/09/11)
 
 ==============================================
 linux32 regressions (in addition to the above)
@@ -55,16 +50,12 @@ linux32 regressions (in addition to the above)
 performance-specific regressions
 ================================
 
-nondet. execution timeout
--------------------------
-[Error: Timed out executing program studies/shootout/nbody/nbody_forloop_3] (04/14/11, 04/22/11, 04/26/11, 04/29/11, 04/30/11, 05/04/11, 05/09/11, 05/10/11, 05/13/11, 05/29/11, 06/26/11)
-[Error: Timed out executing program studies/shootout/nbody/nbody_reductions_6] (09/29/11)
-
 execution timeouts (08/29/09)
 -----------------------------
 [Error: Timed out executing program studies/shootout/nbody/nbody_iterator_7]
 [Error: Timed out executing program studies/shootout/nbody/nbody_rangesub_5]
 [Error: Timed out executing program studies/shootout/nbody/nbody_vector_4]
+
 
 ========================
 memory leaks regressions
@@ -74,28 +65,6 @@ memory leaks regressions
 =============================
 valgrind-specific regressions
 =============================
-
-overlap in memcpy (09/26/11)
-----------------------------
-[Error matching program output for distributions/robust/arithmetic/slicing/test_array_slicing3]
-
-invalid read on distribution distructor
----------------------------------------
-[Error matching program output for distributions/vass/dmap-var-decl]
-
-nondet. output reordering
--------------------------
-[Error matching program output for exits/bradc/child_remains_after_parent] (05/29/11)
-
-nondet. source file empty error message from chpl
--------------------------------------------------
-[Error matching compiler output for release/examples/spec/Records/recordInheritance] (04/10/11)
-
-nondet. valgrind "the impossible has happened"
-----------------------------------------------
-[Error matching program output for domains/sungeun/assoc/stress --doSerial=false --numAdds=5000 (--cc-warnings -sparSafe=true) (1-3)] (05/08/11)
-[Error matching program output for studies/sudoku/dinan/search/sudoku-reduce] (05/08/11)
-[Error matching program output for studies/sudoku/dinan/search/sudoku-reduce3] (04/10/11, 07/03/11)
 
 invalid write of size 1
 -----------------------
@@ -133,18 +102,12 @@ maxThreadsPerLocale unbounded but ... warning
 
 nondet. out-of-memory error
 ---------------------------
-[Error matching program output for stress/deitz/test_10k_begins] (05/12/11, 05/17/11, 05/20/11, 09/15/11)
-
-nondet. compilation timeout
----------------------------
-[Error: Timed out compilation for users/jglewis/ssca2_version2/SSCA2_main(--cc-warnings --no-local analyze_torus_graphs_stencil_rep_v1.chpl SSCA2_kernels.chpl -sREPRODUCIBLE_PROBLEMS=true -sPRINT_TIMING_STATISTICS=false --no-warnings --fast )] (04/14/11, 04/22/11, 04/25/11, 05/01/11, 05/07/11)
+[Error matching program output for stress/deitz/test_10k_begins] (10/06/11, 10/09/11, 10/16/11, 10/18/11)
 
 nondet. execution timeout
 -------------------------
-[Error: Timed out executing program studies/cholesky/jglewis/test_cholesky] (05/10/11, 05/12/11, 05/14/11, 05/15/11, 09/30/11)
-[Error: Timed out executing program studies/cholesky/jglewis/version2/performance/test_cholesky_performance] (04/22/11, 05/16/11, 09/15/11, 10/28/11)
-[Error: Timed out executing program studies/cholesky/jglewis/version2/standard_cholesky/test_standard_cholesky] (05/03/11, 05/10/11)
-[Error: Timed out executing program studies/shootout/fannkuch-redux/fannkuch-redux  --N=10 (--cc-warnings --no-local  ) (0-2)] (04/22/11, 04/24/11, 04/28/11, 04/30/11, 05/01/11, 05/19/11)
+[Error: Timed out executing program studies/cholesky/jglewis/test_cholesky] (09/30/11)
+[Error: Timed out executing program studies/cholesky/jglewis/version2/performance/test_cholesky_performance] (10/28/11)
 
 internal error SYM0172 (02/09/10)
 ---------------------------------
@@ -173,15 +136,20 @@ seg fault (?)
 gasnet-everything regressions (other than the above)
 ====================================================
 
+timed out since checked in (10/21/11)
+-------------------------------------
+[Error: Timed out executing program studies/hpcc/HPL/vass/hpl]
+
+nondet. compilation timeout
+---------------------------
+[Error: Timed out compilation for studies/shootout/pidigits/bradc/pidigits-blc] (10/09/11)
+
 nondet. execution timeout
 -------------------------
-[Error: Timed out executing program multilocale/diten/needMultiLocales/coforallon_maxThreads] (06/25/11, 09/19/11)
-[Error: Timed out executing program studies/sudoku/dinan/sudoku] (06/19/11, 10/02/11)
-[Error: Timed out executing program studies/hpcc/HPL/bradc/hpl-blc-noreindex] (04/11/11, 04/15/11, 04/22/11, 04/29/11, 05/03/11, 05/08/11)
-[Error: Timed out executing program studies/madness/aniruddha/madchap/test_likepy] (04/22/11, 05/06/11, 05/19/11, 09/13/11, 09/24/11, 10/05/11)
-[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct] (05/23/11, 05/25/11, 06/06/11, 06/08/11, 08/24/11, 09/15/11, 09/20/11)
-[Error: Timed out executing program studies/madness/aniruddha/madchap/test_gaxpy] (06/02/11)
-[Error: Timed out executing program studies/madness/aniruddha/madchap/test_diff] (09/03/11, 09/05/11)
+[Error: Timed out executing program multilocale/diten/needMultiLocales/coforallon_maxThreads] (10/13/11)
+[Error: Timed out executing program studies/sudoku/dinan/sudoku] (10/02/11)
+[Error: Timed out executing program studies/madness/aniruddha/madchap/test_likepy] (10/05/11, 10/08/11, 10/12/11)
+[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct] (10/11/11)
 
 execution timeouts
 ------------------
@@ -201,15 +169,6 @@ verbose output now shows launch command (10/31/08)
 gasnet-fast regressions (other than the above)
 ==============================================
 
-nondet. execution failure (index not in domain)
------------------------------------------------
-[Error matching program output for domains/sungeun/assoc/minus_equals   -nl 1 (--cc-warnings -sparSafe=true) (1-0)] (07/09/11, 07/15/11)
-[Error: Timed out executing program users/franzf/v1/chpl/main] (09/24/11)
-
-
-nondet. execution timeout
--------------------------
-[Error: Timed out executing program studies/madness/aniruddha/madchap/test_gaxpy] (06/01/11)
 
 ==============================
 block distribution regressions
@@ -218,7 +177,6 @@ block distribution regressions
 execution timeouts (09/30/11)
 -----------------------------
 [Error: Timed out executing program distributions/robust/arithmetic/stress/test_many_array]
-
 
 
 ===============================
@@ -262,23 +220,20 @@ gdb output differences
 [Error matching program output for execflags/bradc/gdbddash/declint2]
 [Error matching program output for execflags/bradc/gdbddash/gdbSetConfig]
 
+
 ======================================
 chpbld02 (PrgEnv test system) failures
 ======================================
+
+nondet. failure
+---------------
+[Error matching program output for parallel/cobegin/diten/cobeginRace] (10/13/11)
 
 lack of GMP support (09/26/11 -- first complete run in ages)
 ------------------------------------------------------------
 [Error matching compiler output for studies/shootout/pidigits/bradc/pidigits-blc]
 [Error matching compiler output for studies/shootout/pidigits/bradc/pidigits-iter]
 [Error matching compiler output for studies/shootout/pidigits/hilde/pidigits]
-
-pthread_mutex_lock() failure (09/30/11 -- first run in ages)
-------------------------------------------------------------
-[Error matching program output for distributions/vass/dmap-var-decl]
-
-haven't set up machine-specific .goods for chpbld02 yet (09/26/11 -- first run)
--------------------------------------------------------------------------------
-[Error matching program output for modules/standard/machine/numCores]
 
 countMemory prediff script doesn't get ".0" correct for round numbers
 ---------------------------------------------------------------------
@@ -288,25 +243,15 @@ gets "that wasn't very random looking" failure (09/26/11 -- first run in ages)
 ------------------------------------------------------------------------------
 [Error matching program output for modules/standard/Random/diten/testRandomSeed]
 
-precision issue (09/30/11 -- first run in ages)
------------------------------------------------
-[Error matching program output for studies/shootout/spectral-norm/spectralnorm]
-
-floating point roundoff issues? (09/26/11 -- first run in ages)
----------------------------------------------------------------
-[Error matching program output for users/rbarrett/diffuse2d-orig-blc]
-
 nondet. execution timeouts
 --------------------------
-[Error: Timed out executing program studies/cholesky/jglewis/version2/standard_cholesky/test_standard_cholesky] (09/26/11)
-[Error: Timed out executing program distributions/robust/associative/stress/many_domain] (09/28/11)
+[Error: Timed out executing program distributions/robust/associative/stress/many_domain] (10/20/11)
+[Error: Timed out executing program studies/cholesky/jglewis/test_cholesky] (10/20/11, 10/12/11, 10/14/11)
 
 timeouts (09/26/11 -- first run in ages)
 ----------------------------------------
 [Error: Timed out executing program distributions/robust/associative/stress/many_array]
-[Error: Timed out executing program distributions/vass/dmap-var-decl]
 [Error: Timed out executing program studies/amr/diffusion/level/Level_DiffusionBE_driver]
-[Error: Timed out executing program studies/cholesky/jglewis/test_cholesky]
 [Error: Timed out executing program studies/cholesky/jglewis/version2/performance/test_cholesky_performance]
 [Error: Timed out executing program studies/sudoku/dinan/sudoku]
 [Error: Timed out executing program users/jglewis/cholesky_version_1/test_cholesky]
@@ -328,6 +273,24 @@ nondet. timeout failure
 =====================================
 cray-xt-cray/cce-specific regressions
 =====================================
+
+compilation timeouts (10/19/11)
+-------------------------------
+[Error: Timed out compilation for distributions/dm/t5a]
+
+??? (10/19/11)
+--------------
+[Error matching program output for memory/shannon/outofmemory/mallocOutOfMemory]
+[Error matching program output for modules/standard/memory/countMemory/countMemory]
+
+
+some sort of gdb issue? (10/19/11)
+----------------------------------
+[Error matching program output for execflags/bradc/gdbddash/declint2]
+
+??? (10/11/11)
+--------------
+[Error matching compiler output for release/examples/spec/Memory_Consistency/syncSpinWait]
 
 redeclaration of identifier in scope (01/24/11)
 -----------------------------------------------
@@ -371,14 +334,6 @@ wrong result
 ------------
 [Error matching program output for trivial/waynew/identity]
 
-nondet. compilation timeouts
-----------------------------
-[Error: Timed out compilation for multilocale/deitz/linked/test_linked3a] (05/29/11)
-[Error: Timed out compilation for studies/graph500/v2/main] (05/29/11)
-[Error: Timed out compilation for users/franzf/v0/chpl/main] (05/15/11, 06/12/11)
-[Error: Timed out compilation for studies/cholesky/jglewis/version2/elemental/test_elemental_cholesky]
-[Error: Timed out compilation for studies/hpcc/FFT/fft-testPow4] (06/06/11)
-
 compiler timeouts
 -----------------
 [Error: Timed out compilation for sparse/parallel/sparse-iter-dom-arr-zipper]
@@ -401,6 +356,10 @@ long identifiers
 [Error matching program output for distributions/dm/t1]
 [Error matching program output for distributions/dm/t8]
 [Error matching program output for distributions/dm/t9]
+[Error matching compiler output for distributions/dm/s9]
+[Error matching program output for studies/hpcc/HPL/vass/bc.dim]
+[Error matching program output for studies/hpcc/HPL/vass/bl.dim]
+[Error matching program output for studies/hpcc/HPL/vass/hpl]
 
 redeclaration of identifier in scope (01/24/11)
 -----------------------------------------------
@@ -432,33 +391,19 @@ negative floating point 0.0 not supported
 [Error matching program output for types/complex/bradc/negateimaginary3] 
 [Error matching program output for types/complex/bradc/negativeimaginaryliteral] 
 
-
-===================================================================
-pathscale-specific regressions (in addition to xt-cle errors above)
-===================================================================
-
-some sort of gdb issue
-----------------------
-[Error matching program output for execflags/bradc/gdbddash/declint2]
-
-exp2 not supported:
--------------------
-[Error matching program output for functions/dinan/exp2] 
-
-
 ==================================================================
 xt-intel-specific regressions (in addition to xt-cle errors above)
 ==================================================================
+
+incorrect output (10/19/11)
+---------------------------
+[Error matching program output for studies/shootout/spectral-norm/spectralnorm]
 
 problem with static/dynamic linking? (10/1/11 -- first run)
 -----------------------------------------------------------
 [Error matching compiler output for link/sungeun/static_dynamic (--cc-warnings --dynamic --static)]
 [Error matching compiler output for link/sungeun/static_dynamic (--cc-warnings --static)]
 [Error matching compiler output for link/sungeun/static_dynamic (--cc-warnings --static --dynamic --static)]
-
-nondet. compilation timeout
----------------------------
-[Error: Timed out compilation for npb/cg/bradc/cg-sparse] (06/13/11)
 
 
 ========================
@@ -472,7 +417,7 @@ cygwin-specific failures
 
 nondet. execution failure
 -------------------------
-[Error matching program output for release/examples/hello4-datapar-dist] (09/29/11)
+[Error matching program output for release/examples/hello4-datapar-dist] (10/21/11)
 
 incorrect output (06/24/11 -- first cygwin test in ages)
 --------------------------------------------------------
@@ -505,60 +450,6 @@ sig_send: wait for sig_complete event failed
 [Error matching program output for studies/madness/dinan/mad_chapel/test_likepy]
 [Error matching program output for users/jglewis/badGetModule]
 
-========================
-xmt-specific regressions
-========================
-
-*compiler always fails on first link; XMT alerted but not developing compiler*
-
-assertion failed: f.is_FILBlock() || f.is_FILScope() || f.is_FILEndScope()
---------------------------------------------------------------------------
-[Error matching compiler output for release/examples/hpcc/fft]
-[Error matching compiler output for release/examples/primers/arrays]
-
-unresolved sync variable calls (04/09/11 -- once spec examples added)
----------------------------------------------------------------------
-[Error matching compiler output for release/examples/spec/Task_Parallelism_and_Synchronization/serialStmt1]
-[Error matching compiler output for release/examples/spec/Task_Parallelism_and_Synchronization/singleVar]
-[Error matching compiler output for release/examples/spec/Task_Parallelism_and_Synchronization/syncMethods]
-[Error matching compiler output for release/examples/spec/Task_Parallelism_and_Synchronization/syncStmt1]
-
-nondet. compilation timeout
----------------------------
-[Error: Timed out compilation for release/examples/hello] (04/10/11, 04/12/11, 04/14/11, 04/19/11, 04/23/11, 04/26/11, 04/30/11, 05/07/11, 05/14/11, 05/15/11, 05/17/11, 05/21/11, 05/25/11, 05/27/11, 08/21/11, 08/24/11, 08/26/11, 08/27/11, 09/04/11, 09/07/11, 09/11/11, 09/16/11, 09/19/11, 09/20/11, 09/24/11, 09/26/11, 09/30/11, 10/01/11, 10/02/11, 10/04/11)
-[Error: Timed out compilation for release/examples/primers/distributions] (08/30/11, 09/05/11)
-
-
-=======================================================
-xmt-sim specific regressions (in addition to the above)
-=======================================================
-
-warning: full/empty bit modified on less than word-sized data (05/24/11)
-(due to new release candidate)
-------------------------------------------------------------------------
-*all*
-
-nondet. compilation timeout
----------------------------
-[Error: Timed out compilation for release/examples/primers/arrays] (05/27/11, 05/31/11, 08/21/11, 08/26/11, 09/01/11, 09/10/11, 09/15/11, 09/19/11, 09/28/11, 10/01/11, 10/06/11)
-
-array index out of bounds due to bug in XMT compiler
-----------------------------------------------------
-[Error matching program output for release/examples/hpcc/hpl]
-[Error matching program output for release/examples/hpcc/ptrans]
-[Error matching program output for release/examples/primers/distributions]
-
-sparse regression recurred after latest range changes (03/17/11)
-----------------------------------------------------------------
-[Error matching program output for release/examples/primers/sparse]
-
-execution timeouts
-------------------
-[Error: Timed out executing program release/examples/hpcc/hpl]
-[Error: Timed out executing program release/examples/programs/prodCons]
-[Error: Timed out executing program release/examples/programs/quicksort]
-[Error: Timed out executing program release/examples/primers/timers]
-
 
 ====================
 nanox-specific tests
@@ -566,16 +457,21 @@ nanox-specific tests
 
 nondet. core dump
 -----------------
-[Error matching program output for release/examples/primers/taskParallel] (06/23/11, 07/02/11, 07/08/11, 07/15/11, 08/19/11)
+[Error matching program output for release/examples/primers/taskParallel] (10/13/11, 10/19/11)
 
 nondet. incorrect output
 ------------------------
-[Error matching program output for release/examples/spec/Task_Parallelism_and_Synchronization/serialStmt2] (06/23/11, 06/26/11, 06/30/11, 07/04/11, 07/07/11, 07/13/11, 07/15/11, 08/18/11, 09/08/11, 09/11/11, 09/16/11, 09/18/11, 09/21/11, 09/24/11, 09/28/11, 09/30/11)
+[Error matching program output for release/examples/spec/Task_Parallelism_and_Synchronization/singleVar] (10/14/11, 10/21/11)
+[Error matching program output for
+release/examples/spec/Task_Parallelism_and_Synchronization/serialStmt1] (10/13/11)
+[Error matching program output for release/examples/spec/Task_Parallelism_and_Synchronization/serialStmt2] (09/30/11)
 
 nondet. execution timeouts (ever since switching to 4 shepherds)
 --------------------------------------------------------
-[Error: Timed out executing program release/examples/primers/taskParallel] (06/24/11, 07/03/11, 07/16/11, 08/20/11, 09/13/11, 09/19/11, 09/20/11, 09/22/11, 10/06/11)
-[Error: Timed out executing program release/examples/spec/Task_Parallelism_and_Synchronization/serialStmt2] (07/03/11, 09/10/11, 09/13/11, 09/17/11, 09/23/11, 09/26/11)
+[Error: Timed out executing program release/examples/primers/syncsingle] (10/15/11, 10/17/11)
+[Error: Timed out executing program release/examples/spec/Task_Parallelism_and_Synchronization/singleVar] (10/13/11, 10/16/11, 10/17/11)
+[Error: Timed out executing program release/examples/primers/taskParallel] (10/06/11, 10/16/11)
+[Error: Timed out executing program release/examples/spec/Task_Parallelism_and_Synchronization/serialStmt2] (09/26/11)
 
 
 ===========================
@@ -590,11 +486,7 @@ execution timeouts (since making default # shepherds follow #cores)
 
 nondet. execution timeouts
 --------------------------
-[Error: Timed out executing program release/examples/hello6-taskpar-dist] (09/21/11, 09/29/11)
-[Error: Timed out executing program release/examples/hpcc/stream] (06/26/11, 07/05/11, 08/18/11)
-[Error: Timed out executing program release/examples/hpcc/ra] (07/18/11)
-[Error: Timed out executing program release/examples/hpcc/variants/ra-cleanloop] (07/02/11, 07/13/11, 07/16/11)
-[Error: Timed out executing program release/examples/hpcc/variants/stream-promoted] (06/27/11, 07/01/11, 08/20/11)
+[Error: Timed out executing program release/examples/hello6-taskpar-dist] (09/29/11)
 
 execution timeouts (ever since switching to 4 shepherds)
 --------------------------------------------------------
@@ -607,24 +499,31 @@ execution timeouts (ever since switching to 4 shepherds)
 qthreads-specific tests
 =======================
 
+nondet. failures
+----------------
+[Error matching program output for release/examples/hello3-datapar] (10/13/11)
+
+serial statement not supported? (10/09/11)
+------------------------------------------
+[Error matching program output for release/examples/spec/Task_Parallelism_and_Synchronization/serialStmt1]
+
 recently became a nondet. failure (since increasing the callstack; used to
 fail consistently prior to that)
 --------------------------------------------------------------------------
-[Error matching program output for release/examples/spec/Classes/thisMethod] (08/30/11, 09/25/11)
+[Error matching program output for release/examples/spec/Classes/thisMethod] (09/25/11)
 
 
 =========================================================
 qthreads+gasnet-specific tests (in addition to the above)
 =========================================================
 
-nondet. timeout
----------------
-[Error: Timed out executing program release/examples/hpcc/ra] (09/06/11)
-
+nondet. execution timeout
+-------------------------
+[Error: Timed out executing program release/examples/ssca2/SSCA2_main] (10/09/11, 10/16/11, 10/18/11, 10/21/11)
 
 nondet. timeout starting when #shepherds based on #cores
 --------------------------------------------------------
-[Error: Timed out executing program release/examples/hpcc/ptrans] (08/25/11, 09/12/11, 09/23/11, 09/26/11, 09/29/11)
+[Error: Timed out executing program release/examples/hpcc/ptrans] (09/29/11)
 
 timeouts when #shepherds started getting based on #cores
 --------------------------------------------------------
@@ -635,6 +534,11 @@ timeouts when #shepherds started getting based on #cores
 =======================
 baseline-specific tests
 =======================
+
+related to Tom's bug fix? (10/18/11)
+------------------------------------
+[Error matching program output for trivial/mjoyner/iterators/nest_func_iterator2b]
+[Error matching program output for users/ferguson/iterinout]
 
 .good assumes dead code elimination has run (since added)
 ---------------------------------------------------------
@@ -678,6 +582,17 @@ timeouts due to removal of -O
 -----------------------------
 [Error: Timed out executing program users/franzf/v1/chpl/main]
 [Error: Timed out executing program users/franzf/v2/chpl/main]
+
+
+=====================
+mpi-specific failures
+=====================
+
+mpi abort messages show up (ever since spec tests added to examples testing)
+----------------------------------------------------------------------------
+[Error matching program output for release/examples/spec/Arrays/sparse-error]
+[Error matching program output for release/examples/spec/Classes/thisMethod]
+[Error matching program output for release/examples/spec/Functions/variable-functions]
 
 
 ===================
@@ -788,48 +703,54 @@ general failures
 [Error matching compiler output for users/shetag/iteratorWithOn]
 
 
-=====================
-mpi-specific failures
-=====================
+========================
+xmt-specific regressions
+========================
 
-mpi abort messages show up (ever since spec tests added to examples testing)
-----------------------------------------------------------------------------
-[Error matching program output for release/examples/spec/Arrays/sparse-error]
-[Error matching program output for release/examples/spec/Classes/thisMethod]
-[Error matching program output for release/examples/spec/Functions/variable-functions]
+*compiler always fails on first link; XMT alerted but not developing compiler*
+
+assertion failed: f.is_FILBlock() || f.is_FILScope() || f.is_FILEndScope()
+--------------------------------------------------------------------------
+[Error matching compiler output for release/examples/hpcc/fft]
+[Error matching compiler output for release/examples/primers/arrays]
+
+unresolved sync variable calls (04/09/11 -- once spec examples added)
+---------------------------------------------------------------------
+[Error matching compiler output for release/examples/spec/Task_Parallelism_and_Synchronization/syncMethods]
+
+nondet. compilation timeout
+---------------------------
+[Error: Timed out compilation for release/examples/hello] (10/01/11, 10/02/11, 10/04/11, 10/07/11, 10/12/11, 10/19/11, 10/20/11)
 
 
-==================
-pvm-specific tests
-==================
+=======================================================
+xmt-sim specific regressions (in addition to the above)
+=======================================================
 
-timouts for newly-added tests -- maybe because Lee's on the road? (04/06/11)
-----------------------------------------------------------------------------
-[Error: Timed out executing program release/examples/hello2-module]
-[Error: Timed out executing program release/examples/hello3-datapar]
-[Error: Timed out executing program release/examples/hello4-datapar-dist]
-[Error: Timed out executing program release/examples/hello5-taskpar]
-[Error: Timed out executing program release/examples/hello6-taskpar-dist]
-[Error: Timed out executing program release/examples/hello]
-[Error: Timed out executing program release/examples/hpcc/variants/ra-cleanloop]
-[Error: Timed out executing program release/examples/hpcc/variants/stream-promoted]
+warning: full/empty bit modified on less than word-sized data (05/24/11)
+(due to new release candidate)
+------------------------------------------------------------------------
+*all*
 
-timeouts for all multilocale testing
-(as of 03/25/10 when --gen-communicated-structures got fixed)
-----------------------------------------------------------------------
-[Error: Timed out executing program release/examples/hello-multiloc]
-[Error: Timed out executing program release/examples/hpcc/fft]
+nondet. compilation timeout
+---------------------------
+[Error: Timed out compilation for release/examples/primers/arrays] (10/01/11, 10/06/11)
+
+array index out of bounds due to bug in XMT compiler
+----------------------------------------------------
+[Error matching program output for release/examples/hpcc/hpl]
+[Error matching program output for release/examples/hpcc/ptrans]
+[Error matching program output for release/examples/primers/distributions]
+
+sparse regression recurred after latest range changes (03/17/11)
+----------------------------------------------------------------
+[Error matching program output for release/examples/primers/sparse]
+
+execution timeouts
+------------------
 [Error: Timed out executing program release/examples/hpcc/hpl]
-[Error: Timed out executing program release/examples/hpcc/ptrans]
-[Error: Timed out executing program release/examples/hpcc/ra]
-[Error: Timed out executing program release/examples/hpcc/stream-ep]
-[Error: Timed out executing program release/examples/hpcc/stream]
-[Error: Timed out executing program release/examples/primers/distributions]
-[Error: Timed out executing program release/examples/primers/locales]
-[Error: Timed out executing program release/examples/primers/multirealm]
+[Error: Timed out executing program release/examples/programs/prodCons]
+[Error: Timed out executing program release/examples/programs/quicksort]
+[Error: Timed out executing program release/examples/primers/timers]
 
-nondet. problems due to "address already in use" errors
--------------------------------------------------------
 
-nondet. compilation timeouts
-----------------------------

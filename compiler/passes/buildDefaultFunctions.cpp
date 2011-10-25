@@ -460,7 +460,7 @@ static void build_enum_cast_function(EnumType* et) {
   } else {
     // Generate a select statement with when clauses for each of the
     // enumeration constants, and an otherwise clause that calls halt.
-    long count = 0;
+    int64_t count = 0;
     BlockStmt* whenstmts = buildChapelStmt();
     for_enums(constant, et) {
       if (!get_int(constant->init, &count)) {

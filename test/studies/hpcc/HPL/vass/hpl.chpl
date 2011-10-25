@@ -12,7 +12,7 @@ use HPCCProblemSize;
 //
 // Use the distributions we need for this computation
 //
-use BlockCycDist;
+use d, r, f;
 
 //
 // The number of matrices and the element type of those matrices
@@ -51,11 +51,36 @@ config const printParams = true,
              printArrays = false,
              printStats = true;
 
+// These are solely to make the testing system happy given the COMPOPTS file.
+// To be removed once COMPOPTS becomes a non-issue.
+config var reproducible = false, verbose = false;
+
 //
-// The program entry point
+// The program entry point, currently module initialization
 //
-proc main() {
   printConfiguration();
+
+  //
+  // Compute targetLocales - required for Dimensional.
+  // We hard-code 2 dimensions.
+  //
+  var targetIds: domain(2);
+  var targetLocales: [targetIds] locale;
+  setupTargetLocalesArray(targetIds, targetLocales, Locales);
+
+  // Here are the dimensions of our grid of locales.
+  const tl1 = targetIds.dim(1).length,
+        tl2 = targetIds.dim(2).length;
+  if printParams && printStats then
+    writeln("target locales ", tl1, " x ", tl2);
+
+  // Create the dimensional descriptors
+  const
+    bdim1 = new idist(lowIdx=1, blockSize=blkSize, numLocales=tl1),
+    rdim1 = new vdist(tl1),
+
+    bdim2 = new idist(lowIdx=1, blockSize=blkSize, numLocales=tl2),
+    rdim2 = new vdist(tl2);
 
   //
   // MatVectSpace is a 2D domain of type indexType that represents the
@@ -65,35 +90,48 @@ proc main() {
   // standard distribution library is filled out, MatVectSpace will be
   // distributed using a BlockCyclic(blkSize) distribution.
   //
-  const MatVectSpace: domain(2, indexType) 
-                      dmapped BlockCyclic(startIdx=(1,1), (blkSize,blkSize)) 
-                    = [1..n, 1..n+1],
-        MatrixSpace = MatVectSpace[.., ..n];
+  // We use 'AbD' instead of 'MatVectSpace' throughout.
+  //
+  const AbD: domain(2, indexType)
+          dmapped DimensionalDist(targetLocales, bdim1, bdim2, "dim")
+          = [1..n, 1..n+1],
+        MatrixSpace = AbD[.., ..n];
 
-  var Ab : [MatVectSpace] elemType,  // the matrix A and vector b
+  var Ab : [AbD] elemType,           // the matrix A and vector b
       piv: [1..n] indexType;         // a vector of pivot values
 
-  initAB(Ab);
+  //
+  // Create the 1-d replicated arrays for schurComplement().
+  //
+  const
+    replAD = [1..n, 1..blkSize]
+      dmapped DimensionalDist(targetLocales, bdim1, rdim2, "distBR"),
+    replBD = [1..blkSize, 1..n+1]
+      dmapped DimensionalDist(targetLocales, rdim1, bdim2, "distRB");
+
+  var replA: [replAD] elemType,
+      replB: [replBD] elemType;
+
+  initAB();
 
   const startTime = getCurrentTime();     // capture the start time
 
-  LUFactorize(n, Ab, piv);                 // compute the LU factorization
+  LUFactorize(n, piv);                 // compute the LU factorization
 
-  var x = backwardSub(n, Ab);  // perform the back substitution
+  var x = backwardSub(n);  // perform the back substitution
 
   const execTime = getCurrentTime() - startTime;  // store the elapsed time
 
   //
   // Validate the answer and print the results
-  const validAnswer = verifyResults(Ab, MatrixSpace, x);
+  const validAnswer = verifyResults(x);
   printResults(validAnswer, execTime);
-}
 
 //
 // blocked LU factorization with pivoting for matrix augmented with
 // vector of RHS values.
 //
-proc LUFactorize(n: indexType, Ab: [?AbD] elemType,
+proc LUFactorize(n: indexType,
                 piv: [1..n] indexType) {
   
   // Initialize the pivot vector to represent the initially unpivoted matrix.
@@ -124,6 +162,8 @@ proc LUFactorize(n: indexType, Ab: [?AbD] elemType,
        +----+-----+----------------+
   */
   for blk in 1..n by blkSize {
+    if printStats then writeln("processing block ", blk);
+
     const tl = AbD[blk..#blkSize, blk..#blkSize],
           tr = AbD[blk..#blkSize, blk+blkSize..],
           bl = AbD[blk+blkSize.., blk..#blkSize],
@@ -134,13 +174,13 @@ proc LUFactorize(n: indexType, Ab: [?AbD] elemType,
     // Now that we've sliced and diced Ab properly, do the blocked-LU
     // computation:
     //
-    panelSolve(Ab, l, piv);
-    updateBlockRow(Ab, tl, tr);
+    panelSolve(l, piv);
+    updateBlockRow(tl, tr);
     
     //
     // update trailing submatrix (if any)
     //
-    schurComplement(Ab, bl, tr, br);
+    schurComplement(bl, tr, br);
   }
 }
 
@@ -173,64 +213,49 @@ proc LUFactorize(n: indexType, Ab: [?AbD] elemType,
 // locale only stores one copy of each block it requires for all of
 // its rows/columns.
 //
-proc schurComplement(Ab: [?AbD] elemType, AD: domain, BD: domain, Rest: domain) {
-  //
-  // Copy data into replicated array so every processor has a local copy
-  // of the data it will need to perform a local matrix-multiply.  These
-  // replicated distributions aren't implemented yet, but imagine that
-  // they look something like the following:
-  //
-  //var replAbD: domain(2) 
-  //            dmapped new Dimensional(BlkCyc(blkSize), Replicated)) = AbD[AD];
-  //
-  const replAD: domain(2, indexType) = AD,
-        replBD: domain(2, indexType) = BD;
-    
-  const replA : [replAD] elemType = Ab[replAD],
-        replB : [replBD] elemType = Ab[replBD];
+proc schurComplement(AD: domain, BD: domain, Rest: domain) {
 
-  //  writeln("Rest = ", Rest);
-  //  writeln("Rest by blkSize = ", Rest by (blkSize, blkSize));
+  // Prevent replication of unequal-sized slices
+  if Rest.numIndices == 0 then return;
+
+  //
+  // Copy data into replicated arrays so every processor has a local copy
+  // of the data it will need to perform a local matrix-multiply.
+  //
+  coforall dest in targetLocales[targetIds.dim(1).high, targetIds.dim(2)] do
+    on dest do
+      // replA on tgLocales[d1,i] gets a copy of Ab from tgLocales[d1,..]
+      replA = Ab[1..n, AD.dim(2)];
+
+  coforall dest in targetLocales[targetIds.dim(1), targetIds.dim(2).high] do
+    on dest do
+      // replB on tgLocales[i,d2] gets a copy of Ab from tgLocales[..,d2]
+      replB = Ab[BD.dim(1), 1..n+1];
+
   // do local matrix-multiply on a block-by-block basis
   forall (row,col) in Rest by (blkSize, blkSize) {
-    //
-    // At this point, the dgemms should all be local once we have
-    // replication correct, so we'll want to assert that fact
-    //
-    //    local {
-      const aBlkD = replAD[row..#blkSize, ..],
-            bBlkD = replBD[.., col..#blkSize],
-            cBlkD = AbD[row..#blkSize, col..#blkSize];
+    // workaround: localize Rest explicitly
+    const RestLcl = Rest;
 
-      dgemmNativeInds(replA[aBlkD], replB[bBlkD], Ab[cBlkD]);
-      //    }
+    local {
+      for a in (RestLcl.dim(1))(row..#blkSize) do
+        for w in 1..blkSize do
+          for b in (RestLcl.dim(2))(col..#blkSize) do
+            Ab[a,b] -= replA[a,w] * replB[w,b];
+    }
   }
 }
-
-//
-// calculate C = C - A * B.
-//
-proc dgemmNativeInds(A: [] elemType,
-                    B: [] elemType,
-                    C: [] elemType) {
-  for (iA, iC) in (A.domain.dim(1), C.domain.dim(1)) do
-    for (jA, iB) in (A.domain.dim(2), B.domain.dim(1)) do
-      for (jB, jC) in (B.domain.dim(2), C.domain.dim(2)) do
-        C[iC,jC] -= A[iA, jA] * B[iB, jB];
-}
-
-
 
 //
 // do unblocked-LU decomposition within the specified panel, update the
 // pivot vector accordingly
 //
-proc panelSolve(Ab: [] elemType,
+proc panelSolve(
                panel: domain,
                piv: [] indexType) {
 
   for k in panel.dim(2) {             // iterate through the columns
-    var col = panel[k.., k..k];
+    const col = panel[k.., k..k];
     
     // If there are no rows below the current column return
     if col.numIndices == 0 then return;
@@ -254,78 +279,10 @@ proc panelSolve(Ab: [] elemType,
     // divide all values below and in the same col as the pivot by
     // the pivot value
     Ab[k+1.., k..k] /= pivotVal;
-
-    // Replicate Ab[panel[k, k+1..]] across column of locales
-    // * Could store as Dimensional(Replicated, BlockCyclic)
-    // * Or as completely replicated block-size row vector
-
-    //
-    // Option 1: most flexible w.r.t. Ab's distribution
-    //  Note: assignment to AbRowRepl assumes all replicants will
-    //        be assigned
-    //
-
-    const AbRowReplDom: domain(2) 
-                        dmapped Dimensional((Replicated, Ab.dimdist(2)),
-                                            targetLocales=Ab.targetLocales)
-                      = panel[k..k, k+1..];
-    const AbRowRepl: [AbRowReplDom] real = Ab[AbRowReplDom];
-
-    // update all other values below the pivot
-    forall (i,j) in panel[k+1.., k+1..] do
-      Ab[i,j] -= Ab[i,k] * AbRowRepl[k,j];
-
-    //
-    // Option 2: build in assumption that block column is local to a single
-    // locale
-    //
-    const AbRowReplDom: domain(1) 
-                        dmapped Replicated(targetLocales=Ab.targetLocales[.., Ab.domain.indexToLocaleDim(dim=2, idx=k)])
-                      = [k+1..panel.dim(2).high];
-
-    var AbRowRepl: [AbRowReplDom] = Ab[k, AbRowReplDom.dim(1)];
     
     // update all other values below the pivot
     forall (i,j) in panel[k+1.., k+1..] do
-      Ab[i,j] -= Ab[i,k] * AbRowRepl[j];
-
-    //
-    // Option 3: allocate storage up-front (and hoist out of loop over k)
-    //
-    const AbRowReplDom: domain(1) 
-                        dmapped Replicated(targetLocales=Ab.targetLocales[.., Ab.domain.indexToLocaleDim(dim=2, idx=k)])
-                      = [panel.dim(2)];
-
-    var AbRowRepl: [AbRowReplDom] = Ab[k, AbRowReplDom.dim(1)];
-    
-    // update all other values below the pivot
-    forall (i,j) in panel[k+1.., k+1..] do
-      Ab[i,j] -= Ab[i,k] * AbRowRepl[j];
-  }
-
-    //
-    // Option 4: allocate storage up-front (and hoist out of loop over k)
-    // across all locales, but restrict assignment to the active column;
-    // hoist completely out of this routine; but have to specify coordinates
-    // using some fixed scheme (e.g., 0..#blocksize) and adjust global
-    // indexing scheme to match
-    //
-    const AbRowReplDom: domain(1) 
-                        dmapped Replicated()
-                      = [0..#blkSize];
-
-    //
-    // TODO: How do we restrict this to only certain locales?
-    // idea: it would be nice to have dimensional support some queries
-    // along these lines:  "Which locale subarray owns this subdomain
-    // of indices.  One particular challenge is that the answer may be
-    // disjoint or not expressible using a dense/regular array of locales.
-    //
-    var AbRowRepl: [AbRowReplDom] = Ab[k, panel[k, ..].dim(2)];
-    
-    // update all other values below the pivot
-    forall (i,j) in panel[k+1.., k+1..] do
-      Ab[i,j] -= Ab[i,k] * AbRowRepl[j%blkSize];
+      Ab[i,j] -= Ab[i,k] * Ab[k,j];
   }
 }
 
@@ -335,7 +292,7 @@ proc panelSolve(Ab: [] elemType,
 // solve a block (tl for top-left) portion of a matrix. This function
 // solves the rows to the right of the block.
 //
-proc updateBlockRow(Ab: [] elemType,
+proc updateBlockRow(
                    tl: domain,
                    tr: domain) {
 
@@ -353,9 +310,8 @@ proc updateBlockRow(Ab: [] elemType,
 //
 // compute the backwards substitution
 //
-proc backwardSub(n: indexType,
-                 Ab: [] elemType) {
-  const bd = Ab.domain.dim(1);
+proc backwardSub(n: indexType) {
+  const bd = Ab.domain.dim(1);  // or simply 1..n
   var x: [bd] elemType;
 
   for i in bd by -1 do
@@ -364,6 +320,7 @@ proc backwardSub(n: indexType,
 
   return x;
 }
+
 
 //
 // print out the problem size and block size if requested
@@ -380,7 +337,7 @@ proc printConfiguration() {
 // construct an n by n+1 matrix filled with random values and scale
 // it to be in the range -1.0..1.0
 //
-proc initAB(Ab: [] elemType) {
+proc initAB() {
   fillRandom(Ab, seed);
   Ab = Ab * 2.0 - 1.0;
 }
@@ -388,9 +345,9 @@ proc initAB(Ab: [] elemType) {
 //
 // calculate norms and residuals to verify the results
 //
-proc verifyResults(Ab, MatrixSpace, x) {
-  initAB(Ab);
-
+proc verifyResults(x) {
+  initAB();
+  
   const axmbNorm = norm(gaxpyMinus(Ab[.., 1..n], x, Ab[.., n+1..n+1]), normType.normInf);
 
   const a1norm   = norm(Ab[.., 1..n], normType.norm1),

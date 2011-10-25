@@ -35,9 +35,10 @@
 // we're supposed to include gasnet.h first.
 #ifdef PLEASE_INCLUDE_GASNET_H
 #include "gasnet.h"
+#include "gasnet_tools.h"
 #endif
 
-
+/*
 #ifdef _chplrt_H_
 #ifndef PLEASE_INCLUDE_GASNET_TOOLS_H
 #define PLEASE_INCLUDE_GASNET_TOOLS_H 1
@@ -55,7 +56,7 @@
 #define PLEASE_INCLUDE_GASNET_TOOLS_H 1
 #endif
 #endif
-
+*/
 
 #ifdef PLEASE_INCLUDE_GASNET_TOOLS_H
 // GASNet manuals say they want this to be the 1st thing included.

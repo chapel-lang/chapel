@@ -11,6 +11,8 @@ CHPL_MAKE_COMM = $(shell export CHPL_COMM && CHPL_COMM=$(CHPL_COMM) && $(CHAPEL_
 
 CHPL_MAKE_COMM_SUBSTRATE = $(shell export CHPL_COMM && CHPL_COMM=$(CHPL_COMM) && $(CHAPEL_ROOT)/util/chplenv/commSubstrate)
 
+CHPL_MAKE_COMM_SEGMENT = $(shell export CHPL_COMM && CHPL_COMM=$(CHPL_COMM) && $(CHAPEL_ROOT)/util/chplenv/commSegment)
+
 CHPL_MAKE_COMM_MPI = $(shell export CHPL_COMM && $(CHAPEL_ROOT)/util/chplenv/chplmpi)
 
 ifeq ($(CHPL_COMM), gasnet)

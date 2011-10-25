@@ -1022,7 +1022,7 @@ void lowerIterators() {
   forv_Vec(CallExpr, call, gCallExprs) {
     if (call->parentSymbol && call->isPrimitive(PRIM_GET_MEMBER)) {
       ClassType* ct = toClassType(call->get(1)->getValType());
-      long num;
+      int64_t num;
       if (get_int(call->get(2), &num)) {
         Symbol* field = ct->getField(num+1); // add 1 for super
         call->get(2)->replace(new SymExpr(field));

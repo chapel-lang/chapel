@@ -234,6 +234,18 @@ proc getCommDiagnostics() {
   return D;
 }
 
+proc getCommDiagnosticsHere() {
+  var cd: commDiagnostics;
+  cd.get = chpl_numCommGets();
+  cd.put = chpl_numCommPuts();
+  cd.fork = chpl_numCommForks();
+  cd.fork_fast = chpl_numCommFastForks();
+  cd.fork_nb = chpl_numCommNBForks();
+  cd.get_nb = chpl_numCommNBGets();
+  cd.get_nb_test = chpl_numCommTestNBGets();
+  cd.get_nb_wait = chpl_numCommWaitNBGets();
+  return cd;
+}
 
 config const
   memTrack: bool = false,

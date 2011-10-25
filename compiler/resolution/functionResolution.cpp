@@ -2199,7 +2199,7 @@ resolveCall(CallExpr* call, bool errorCheck) {
     const char* name = var->immediate->v_string;
 
     {
-      long i;
+      int64_t i;
       if (get_int(sym, &i)) {
         name = astr("x", istr(i));
         call->get(2)->replace(new SymExpr(new_StringSymbol(name)));
@@ -3153,7 +3153,7 @@ preFold(Expr* expr) {
       if (isVarSymbol(base->var) && base->var->hasFlag(FLAG_TYPE_VARIABLE)) {
         if (call->numActuals() == 2)
           USR_FATAL(call, "illegal call of type");
-        long index;
+        int64_t index;
         if (!get_int(call->get(3), &index))
           USR_FATAL(call, "illegal type index expression");
         char field[8];
@@ -3171,8 +3171,8 @@ preFold(Expr* expr) {
           Type* indexType = call->get(3)->getValType();
           if (!is_int_type(indexType) && !is_uint_type(indexType))
             USR_FATAL(call, "tuple indexing expression is not of integral type");
-          long index;
-          unsigned long uindex;
+          int64_t index;
+          uint64_t uindex;
           if (get_int(call->get(3), &index)) {
             char field[8];
             sprintf(field, "x%ld", index);
@@ -3288,7 +3288,7 @@ preFold(Expr* expr) {
                     result = new SymExpr(new_ImmediateSymbol(&coerce));
                     call->replace(result);
                   } else if (typeenum) {
-                    long value, count = 0;
+                    int64_t value, count = 0;
                     bool replaced = false;
                     if (!get_int(call->get(2), &value)) {
                       INT_FATAL("unexpected case in cast_fold");
@@ -3671,7 +3671,7 @@ preFold(Expr* expr) {
 }
 
 static void foldEnumOp(int op, EnumSymbol *e1, EnumSymbol *e2, Immediate *imm) {
-  long val1 = -1, val2 = -1, count = 0;
+  int64_t val1 = -1, val2 = -1, count = 0;
   // ^^^ This is an assumption that "long" on the compiler host is at
   // least as big as "int" on the target.  This is not guaranteed to be true.
   EnumType *type1, *type2;

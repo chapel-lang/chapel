@@ -57,9 +57,9 @@ int main(int argc, char* argv[]) {
   int runInGDB;
   int numPollingTasks;
 
-#ifndef CHPL_NO_GASNET
+#ifdef GASNETT_SPEC_VERSION_MAJOR
   // MPF - initialize GASNet's backtrace facility.
-  gasneti_backtrace_init(argv[0]);
+  gasnett_backtrace_init(argv[0]);
 #endif
 
   // Declare that we are 'locale aware' so that

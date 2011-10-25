@@ -1,0 +1,5 @@
+for loop with different size int indices fails
+
+intops.chpl:1: In function 'test':
+intops.chpl:9: error: type mismatch in assignment from int to int(8)
+

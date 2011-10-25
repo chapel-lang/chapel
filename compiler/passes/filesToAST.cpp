@@ -168,7 +168,15 @@ void parse(void) {
   parseDependentModules(MOD_USER);
 
   forv_Vec(ModuleSymbol, mod, allModules) {
-    if (mod != standardModule && mod != theProgram && mod != rootModule) {
+    if (mod == baseModule ||
+        mod == standardModule ||
+        mod == theProgram ||
+        mod == rootModule)
+      // The modules in this list do not depend on ChapelStandard.
+      continue;
+
+    // ChapelStandard is added implicity to the "use" list of all other modules.
+    {
       mod->block->addUse(standardModule);
       mod->modUseSet.clear();
       mod->modUseList.clear();

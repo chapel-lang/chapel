@@ -371,7 +371,7 @@ codegen_member(FILE* outfile, Expr *base, BaseAST *member) {
 
 static void
 codegenExprMinusOne(FILE* outfile, Expr* expr) {
-  long i;
+  int64_t i;
   if (get_int(expr, &i)) {
     fprintf(outfile, "%ld", i-1);
   } else {
@@ -2634,7 +2634,7 @@ void NamedExpr::codegen(FILE* outfile) {
 
 
 bool 
-get_int(Expr *e, long *i) {
+get_int(Expr *e, int64_t *i) {
   if (e) {
     if (SymExpr *l = toSymExpr(e)) {
       if (VarSymbol *v = toVarSymbol(l->var)) {
@@ -2651,7 +2651,7 @@ get_int(Expr *e, long *i) {
 }
 
 bool 
-get_uint(Expr *e, unsigned long *i) {
+get_uint(Expr *e, uint64_t *i) {
   if (e) {
     if (SymExpr *l = toSymExpr(e)) {
       if (VarSymbol *v = toVarSymbol(l->var)) {

@@ -83,14 +83,6 @@ ARMCI_LIB_DIR = $(ARMCI_INSTALL_DIR)/lib/$(ARMCI_TARGET)
 # the gasnet version
 GASNET_VERSION = 1.16.2
 GASNET_SUBDIR = $(GASNET_ABS_DIR)/GASNet-$(GASNET_VERSION)
-# determine the segment if the user hasn't specified onex
-ifndef CHPL_GASNET_SEGMENT
-ifeq ($(CHPL_MAKE_COMM_SUBSTRATE),portals)
-CHPL_GASNET_SEGMENT = fast
-else
-CHPL_GASNET_SEGMENT = everything
-endif
-endif
 # decide whether to do a debug or no-debug build
 ifdef CHPL_COMM_DEBUG
 CHPL_GASNET_DEBUG = debug
@@ -101,7 +93,7 @@ endif
 
 # directories
 GASNET_DIR = $(THIRD_PARTY_DIR)/gasnet
-GASNET_UNIQUE_SUBDIR = $(CHPL_MAKE_TARGET_PLATFORM)-$(CHPL_MAKE_TARGET_COMPILER)/seg-$(CHPL_GASNET_SEGMENT)/$(CHPL_GASNET_DEBUG)
+GASNET_UNIQUE_SUBDIR = $(CHPL_MAKE_TARGET_PLATFORM)-$(CHPL_MAKE_TARGET_COMPILER)/seg-$(CHPL_MAKE_COMM_SEGMENT)/$(CHPL_GASNET_DEBUG)
 GASNET_INSTALL_SUBDIR = install/$(GASNET_UNIQUE_SUBDIR)
 GASNET_BUILD_SUBDIR = build/$(GASNET_UNIQUE_SUBDIR)
 GASNET_INSTALL_DIR = $(GASNET_DIR)/$(GASNET_INSTALL_SUBDIR)
@@ -118,7 +110,7 @@ GASNET_TOOLS_CFLAGS = -DGASNETT_THREAD_SAFE=1 -DGASNETI_THREAD_SAFE=1
 # but when building with a real GASNet conduit, we could
 # set GASNET_TOOLS_LIB to "" so that we don't get linker conflicts,
 # but that does not appear to be necessary.
-GASNET_TOOLS_LIB = -lgasnet_tools-par
+#GASNET_TOOLS_LIB = -lgasnet_tools-par intentionally disabled.
 # This one is used as a make target
 GASNET_TOOLS_FILE = $(GASNET_TOOLS_INCLUDE_DIR)/gasnet_tools.h
 

@@ -1,0 +1,12 @@
+bug: Parameter type name resolves to punned module name.
+
+This test case fails because it contains use-before def of a class (type) name
+and there is a module name (that of the test itself) which matches the desired
+type name.
+If either the type or the module is renamed, the test succeeds.
+The fix most likely involves using context to filter the kind of symbol the name
+represents.
+
+Hint: Put a breakpoint on line 266 of scopeResolve.cpp.  This gets you close to
+the point of failure.
+
