@@ -1,5 +1,7 @@
+#define __STDC_FORMAT_MACROS
 #include <sstream>
 #include <map>
+#include <inttypes.h>
 
 #include "astutil.h"
 #include "build.h"
@@ -3145,7 +3147,7 @@ preFold(Expr* expr) {
         if (!get_int(call->get(3), &index))
           USR_FATAL(call, "illegal type index expression");
         char field[8];
-        sprintf(field, "x%ld", index);
+        sprintf(field, "x%" PRId64, index);
         result = new SymExpr(base->var->type->getField(field)->type->symbol);
         call->replace(result);
       } else if (base && (isVarSymbol(base->var) || isArgSymbol(base->var))) {
@@ -3163,7 +3165,7 @@ preFold(Expr* expr) {
           uint64_t uindex;
           if (get_int(call->get(3), &index)) {
             char field[8];
-            sprintf(field, "x%ld", index);
+            sprintf(field, "x%" PRId64, index);
             if (index <= 0 || index >= toClassType(t)->fields.length)
               USR_FATAL(call, "tuple index out-of-bounds error (%ld)", index);
             if (toClassType(t)->getField(field)->type->symbol->hasFlag(FLAG_REF))
@@ -3173,7 +3175,7 @@ preFold(Expr* expr) {
             call->replace(result);
           } else if (get_uint(call->get(3), &uindex)) {
             char field[8];
-            sprintf(field, "x%lu", uindex);
+            sprintf(field, "x%" PRIu64, uindex);
             if (uindex <= 0 || uindex >= (unsigned long)toClassType(t)->fields.length)
               USR_FATAL(call, "tuple index out-of-bounds error (%lu)", uindex);
             if (toClassType(t)->getField(field)->type->symbol->hasFlag(FLAG_REF))
