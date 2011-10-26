@@ -1,346 +1,321 @@
-// These should really just be use IO,
-// but I get scope-resolve errors if
-// they're not here as well. I'm guessing
-// it's a problem because this is an
-// internal module.
-
-//use SysBasic;
-// BEGIN SysBasic.chpl
-// END SysBasic.chpl
-
 use SysBasic;
 
-//use Error;
-// BEGIN Error.chpl
+proc _isNilObject(val) {
+  proc helper(o: object) return o == nil;
+  proc helper(o)         return false;
+  return helper(val);
+}
 
-
-// END Error.chpl
-//use IO;
-// BEGIN IO.chpl
-
-  proc _isNilObject(val) {
-    proc helper(o: object) return o == nil;
-    proc helper(o)         return false;
-    return helper(val);
+class Writer {
+  proc writing param return true;
+  // if it's binary, we don't decorate class/record fields and values
+  proc binary:bool { return false; }
+  proc error():err_t { return 0; }
+  proc setError(e:err_t) { }
+  proc clearError() { }
+  proc writePrimitive(x) {
+    //compilerError("Generic Writer.writePrimitive called");
+    halt("Generic Writer.writePrimitive called");
   }
+  proc writeIt(x:?t) {
+    if _isIoPrimitiveTypeOrNewline(t) {
+      writePrimitive(x);
+    } else {
+      if isClassType(t) {
+        // FUTURE -- write the class name/ID?
 
-  class Writer {
-    proc writing param return true;
-    // if it's binary, we don't decorate class/record fields and values
-    proc binary:bool { return false; }
-    proc error():err_t { return 0; }
-    proc setError(e:err_t) { }
-    proc clearError() { }
-    proc writePrimitive(x) {
-      //compilerError("Generic Writer.writeIt called");
-      halt("Generic Writer.writePrimitive called");
-    }
-    proc writeIt(x:?t) {
-      if _isIoPrimitiveTypeOrNewline(t) {
-        writePrimitive(x);
-      } else {
-        if isClassType(t) {
-          // FUTURE -- write the class name/ID?
-
-          if x == nil {
-            var iolit = new ioLiteral("nil", !binary);
-            writePrimitive(iolit);
-            return;
-          }
-        }
-
-        x.writeThis(this);
-      }
-    }
-    proc readwrite(x) {
-      writeIt(x);
-    }
-    proc write(args ...?k) {
-      for param i in 1..k {
-        writeIt(args(i));
-      }
-    }
-    proc writeln(args ...?k) {
-      for param i in 1..k {
-        writeIt(args(i));
-      }
-      var nl = new ioNewline();
-      writeIt(nl);
-    }
-    proc writeln() {
-      var nl = new ioNewline();
-      writeIt(nl);
-    }
-    proc writeThisFieldsDefaultImpl(x:?t, inout first:bool) {
-      param num_fields = __primitive("num fields", t);
-
-      if (isClassType(t)) {
-        if t != object {
-          // only write parent fields for subclasses of object
-          // since object has no .super field.
-          writeThisFieldsDefaultImpl(x.super, first);
+        if x == nil {
+          var iolit = new ioLiteral("nil", !binary);
+          writePrimitive(iolit);
+          return;
         }
       }
 
-      if !isUnionType(t) {
-        // print out all fields for classes and records
-        for param i in 1..num_fields {
-          if !binary {
-            var comma = new ioLiteral(", ");
-            if !first then write(comma);
+      x.writeThis(this);
+    }
+  }
+  proc readwrite(x) {
+    writeIt(x);
+  }
+  proc write(args ...?k) {
+    for param i in 1..k {
+      writeIt(args(i));
+    }
+  }
+  proc writeln(args ...?k) {
+    for param i in 1..k {
+      writeIt(args(i));
+    }
+    var nl = new ioNewline();
+    writeIt(nl);
+  }
+  proc writeln() {
+    var nl = new ioNewline();
+    writeIt(nl);
+  }
+  proc writeThisFieldsDefaultImpl(x:?t, inout first:bool) {
+    param num_fields = __primitive("num fields", t);
 
+    if (isClassType(t)) {
+      if t != object {
+        // only write parent fields for subclasses of object
+        // since object has no .super field.
+        writeThisFieldsDefaultImpl(x.super, first);
+      }
+    }
+
+    if !isUnionType(t) {
+      // print out all fields for classes and records
+      for param i in 1..num_fields {
+        if !binary {
+          var comma = new ioLiteral(", ");
+          if !first then write(comma);
+
+          var eq = new ioLiteral(__primitive("field num to name", t, i) + " = ");
+          write(eq);
+        }
+
+        write(__primitive("field value by num", x, i));
+
+        first = false;
+      }
+    } else {
+      // Handle unions.
+      // print out just the set field for a union.
+      var id = __primitive("get_union_id", x);
+      for param i in 1..num_fields {
+        if __primitive("field id by num", t, i) == id {
+          if binary {
+            // store the union ID
+            write(id);
+          } else {
             var eq = new ioLiteral(__primitive("field num to name", t, i) + " = ");
             write(eq);
           }
-
           write(__primitive("field value by num", x, i));
-
-          first = false;
         }
+      }
+    }
+  }
+  // Note; this is not a multi-method and so must be called
+  // with the appropriate *concrete* type of x; that's what
+  // happens now with buildDefaultWriteFunction
+  // since it has the concrete type and then calls this method.
+
+  // MPF: We would like to entirely write the default writeThis
+  // method in Chapel, but that seems to be a bit of a challenge
+  // right now and I'm having trouble with scoping/modules.
+  // So I'll go back to writeThis being generated by the
+  // compiler.... the writeThis generated by the compiler
+  // calls writeThisDefaultImpl.
+  proc writeThisDefaultImpl(x:?t) {
+    if !binary {
+      if isClassType(t) {
+        var start = new ioLiteral("{");
+        write(start);
       } else {
-        // Handle unions.
-        // print out just the set field for a union.
+        var start = new ioLiteral("(");
+        write(start);
+      }
+    }
+
+    var first = true;
+
+    writeThisFieldsDefaultImpl(x, first);
+
+    if !binary {
+      if isClassType(t) {
+        var end = new ioLiteral("}");
+        write(end);
+      } else {
+        var end = new ioLiteral(")");
+        write(end);
+      }
+    }
+  }
+}
+
+class Reader {
+  proc writing param return false;
+  // if it's binary, we don't decorate class/record fields and values
+  proc binary:bool { return false; }
+  proc error():err_t { return ENOERR; }
+  proc setError(e:err_t) { }
+  proc clearError() { }
+
+  proc readPrimitive(inout x:?t):bool where _isIoPrimitiveTypeOrNewline(t) {
+    //compilerError("Generic Reader.readPrimitive called");
+    halt("Generic Reader.readPrimitive called");
+    return false;
+  }
+  proc readIt(inout x:?t):bool {
+    if _isIoPrimitiveTypeOrNewline(t) {
+      return readPrimitive(x);
+    } else {
+      if isClassType(t) {
+        // FUTURE -- write the class name/ID?
+
+        // Handle reading nil.
+        var iolit = new ioLiteral("nil", !binary);
+        var got:bool;
+        got = readPrimitive(iolit);
+        if got && !(error()) {
+          // Return nil.
+          delete x;
+          x = nil;
+          return true;
+        } else {
+          clearError();
+        }
+      }
+
+      var got: bool;
+      got = this.readType(x);
+      return got;
+    }
+    return false;
+  }
+  proc readwrite(inout x) {
+    readIt(x);
+  }
+  proc read(inout args ...?k):bool {
+    for param i in 1..k {
+      readIt(args(i));
+    }
+
+    if error() == EEOF {
+      clearError();
+      return false;
+    } else {
+      return true;
+    }
+  }
+  proc readln(inout args ...?k) {
+    for param i in 1..k {
+      readIt(args(i));
+    }
+    var nl = new ioNewline();
+    readIt(nl);
+    if error() == EEOF {
+      clearError();
+      return false;
+    } else {
+      return true;
+    }
+  }
+  proc readln() {
+    var nl = new ioNewline();
+    readIt(nl);
+    if error() == EEOF {
+      clearError();
+      return false;
+    } else {
+      return true;
+    }
+  }
+  proc readThisFieldsDefaultImpl(type t, inout x, inout first:bool) {
+    param num_fields = __primitive("num fields", t);
+
+    //writeln("Scanning fields for ", typeToString(t));
+
+    if (isClassType(t)) {
+      if t != object {
+        // only write parent fields for subclasses of object
+        // since object has no .super field.
+        readThisFieldsDefaultImpl(x.super.type, x, first);
+      }
+    }
+
+    if !isUnionType(t) {
+      // read all fields for classes and records
+
+      for param i in 1..num_fields {
+        if !binary {
+          var comma = new ioLiteral(",", true);
+          if !first then read(comma);
+
+          var fname = new ioLiteral(__primitive("field num to name", t, i), true);
+          read(fname);
+
+          var eq = new ioLiteral("=", true);
+          read(eq);
+        }
+
+        read(__primitive("field value by num", x, i));
+
+        first = false;
+      }
+    } else {
+      // Handle unions.
+      if binary {
         var id = __primitive("get_union_id", x);
+        // Read the ID
+        read(id);
         for param i in 1..num_fields {
           if __primitive("field id by num", t, i) == id {
-            if binary {
-              // store the union ID
-              write(id);
-            } else {
-              var eq = new ioLiteral(__primitive("field num to name", t, i) + " = ");
-              write(eq);
-            }
-            write(__primitive("field value by num", x, i));
+            read(__primitive("field value by num", x, i));
           }
         }
-      }
-    }
-    // Note; this is not a multi-method and so must be called
-    // with the appropriate *concrete* type of x; that's what
-    // happens now with buildDefaultWriteFunction
-    // since it has the concrete type and then calls this method.
-
-    // MPF: We would like to entirely write the default writeThis
-    // method in Chapel, but that seems to be a bit of a challenge
-    // right now and I'm having trouble with scoping/modules.
-    // So I'll go back to writeThis being generated by the
-    // compiler.... the writeThis generated by the compiler
-    // calls writeThisDefaultImpl.
-    proc writeThisDefaultImpl(x:?t) {
-      if !binary {
-        if isClassType(t) {
-          var start = new ioLiteral("{");
-          write(start);
-        } else {
-          var start = new ioLiteral("(");
-          write(start);
-        }
-      }
-
-      var first = true;
-
-      writeThisFieldsDefaultImpl(x, first);
-
-      if !binary {
-        if isClassType(t) {
-          var end = new ioLiteral("}");
-          write(end);
-        } else {
-          var end = new ioLiteral(")");
-          write(end);
-        }
-      }
-    }
-  }
-
-  class Reader {
-    proc writing param return false;
-    // if it's binary, we don't decorate class/record fields and values
-    proc binary:bool { return false; }
-    proc error():err_t { return ENOERR; }
-    proc setError(e:err_t) { }
-    proc clearError() { }
-
-    proc readPrimitive(inout x:?t):bool where _isIoPrimitiveTypeOrNewline(t) {
-      halt("Generic Reader.readPrimitive called");
-      return false;
-    }
-    proc readIt(inout x:?t):bool {
-      if _isIoPrimitiveTypeOrNewline(t) {
-        /*var m = readPrimitive(t);
-        x = m.it;
-        return m.hasit;*/
-        return readPrimitive(x);
       } else {
-        if isClassType(t) {
-          // FUTURE -- write the class name/ID?
-
-          // Handle reading nil.
-          var iolit = new ioLiteral("nil", !binary);
-          var got:bool;
-          //writeln("Reading iolit ", iolit.val);
-          /*var m = readPrimitive(iolit.type);
-          iolit = m.it;
-          got = m.hasit;*/
-          got = readPrimitive(iolit);
-          if got && !(error()) {
-            // Return nil.
-            delete x;
-            x = nil;
-            return true;
-          } else {
-            clearError();
-          }
-        }
-
-        var got: bool;
-        got = this.readType(x);
-        return got;
-      }
-      return false;
-    }
-    proc readwrite(inout x) {
-      readIt(x);
-    }
-    proc read(inout args ...?k):bool {
-      for param i in 1..k {
-        readIt(args(i));
-      }
-
-      if error() == EEOF {
-        clearError();
-        return false;
-      } else {
-        return true;
-      }
-    }
-    proc readln(inout args ...?k) {
-      for param i in 1..k {
-        readIt(args(i));
-      }
-      var nl = new ioNewline();
-      readIt(nl);
-      if error() == EEOF {
-        clearError();
-        return false;
-      } else {
-        return true;
-      }
-    }
-    proc readln() {
-      var nl = new ioNewline();
-      readIt(nl);
-      if error() == EEOF {
-        clearError();
-        return false;
-      } else {
-        return true;
-      }
-    }
-    proc readThisFieldsDefaultImpl(type t, inout x, inout first:bool) {
-      param num_fields = __primitive("num fields", t);
-
-      //writeln("Scanning fields for ", typeToString(t));
-
-      if (isClassType(t)) {
-        if t != object {
-          // only write parent fields for subclasses of object
-          // since object has no .super field.
-          readThisFieldsDefaultImpl(x.super.type, x, first);
-        }
-      }
-
-      if !isUnionType(t) {
-        // read all fields for classes and records
-
+        // Read the field name = part until we get one that worked.
         for param i in 1..num_fields {
-          if !binary {
-            var comma = new ioLiteral(",", true);
-            if !first then read(comma);
-
-            var fname = new ioLiteral(__primitive("field num to name", t, i), true);
-            read(fname);
-
-            var eq = new ioLiteral("=", true);
-            read(eq);
-          }
-
-          read(__primitive("field value by num", x, i));
-
-          first = false;
-        }
-      } else {
-        // Handle unions.
-        if binary {
-          var id = __primitive("get_union_id", x);
-          // Read the ID
-          read(id);
-          for param i in 1..num_fields {
-            if __primitive("field id by num", t, i) == id {
-              read(__primitive("field value by num", x, i));
-            }
-          }
-        } else {
-          // Read the field name = part until we get one that worked.
-          for param i in 1..num_fields {
-            var eq = new ioLiteral(__primitive("field num to name", t, i) + " = ");
-            read(eq);
-            if error() == EFORMAT {
-              clearError();
-            } else {
-              // We read the 'name = ', so now read the value!
-              read(__primitive("field value by num", x, i));
-            }
+          var eq = new ioLiteral(__primitive("field num to name", t, i) + " = ");
+          read(eq);
+          if error() == EFORMAT {
+            clearError();
+          } else {
+            // We read the 'name = ', so now read the value!
+            read(__primitive("field value by num", x, i));
           }
         }
       }
     }
-    // Note; this is not a multi-method and so must be called
-    // with the appropriate *concrete* type of x; that's what
-    // happens now with buildDefaultWriteFunction
-    // since it has the concrete type and then calls this method.
-    proc readThisDefaultImpl(inout x:?t):bool {
-      if !binary {
-        if isClassType(t) {
-          var start = new ioLiteral("{");
-          read(start);
-        } else {
-          var start = new ioLiteral("(");
-          read(start);
-        }
-      }
-
-      var first = true;
-
-      readThisFieldsDefaultImpl(t, x, first);
-
-      if !binary {
-        if isClassType(t) {
-          var end = new ioLiteral("}");
-          read(end);
-        } else {
-          var end = new ioLiteral(")");
-          read(end);
-        }
-      }
-
-      if error() == EEOF {
-        clearError();
-        return false;
+  }
+  // Note; this is not a multi-method and so must be called
+  // with the appropriate *concrete* type of x; that's what
+  // happens now with buildDefaultWriteFunction
+  // since it has the concrete type and then calls this method.
+  proc readThisDefaultImpl(inout x:?t):bool {
+    if !binary {
+      if isClassType(t) {
+        var start = new ioLiteral("{");
+        read(start);
       } else {
-        return true;
+        var start = new ioLiteral("(");
+        read(start);
       }
     }
-  }
 
-  proc &(w: Writer, x) {
-    w.readwrite(x);
-  }
-  proc &(r: Reader, x) {
-    r.readwrite(x);
-  }
+    var first = true;
 
-// END IO.chpl
+    readThisFieldsDefaultImpl(t, x, first);
+
+    if !binary {
+      if isClassType(t) {
+        var end = new ioLiteral("}");
+        read(end);
+      } else {
+        var end = new ioLiteral(")");
+        read(end);
+      }
+    }
+
+    if error() == EEOF {
+      clearError();
+      return false;
+    } else {
+      return true;
+    }
+  }
+}
+
+proc &(w: Writer, x) {
+  w.readwrite(x);
+}
+proc &(r: Reader, x) {
+  r.readwrite(x);
+}
+
 use IO;
 
 proc _debugWrite(args...?n) {

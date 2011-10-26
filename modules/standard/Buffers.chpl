@@ -2,30 +2,6 @@ module BufferInternals {
   use SysBasic;
   use Error;
 
-  /*
-     This way does not work because we lose calls to chpl__initCopy.
-
-  extern class qbytes_ptr_t {
-    var data:c_ptr;
-    var len:int(64);
-    var ref_cnt:c_long;
-    // free_function:qbytes_free_t
-    var flags:uint(8);
-    // unused1, unused2, unused3
-  }
-
-  extern class qbuffer_ptr_t {
-    var ref_cnt:c_long;
-    // deque:deque_t
-    var offset_start:int(64);
-    var offset_end:int(64);
-  }
-  extern record qbuffer_iter_t {
-    var offset:int(64);
-    // iter:deque_iterator_t
-  }
-  */
-
   extern type qbytes_ptr_t;
   extern type qbuffer_ptr_t;
   extern type qbuffer_iter_t;
@@ -86,7 +62,7 @@ module BufferInternals {
 }
 
 module Buffers {
-  use BufferInternals; // TODO -- just use . for the symbols.
+  use BufferInternals; // TODO -- non-exporting use
 
   // Now define the Chapel types using the originals..
   record bytes {
@@ -134,7 +110,7 @@ module Buffers {
     var tmp:int;
     var error:err_t = ENOERR;
     error = qbytes_create_calloc(this._bytes_internal, len);
-    if error then _ioerror(error, "in bytes constructor");
+    if error then ioerror(error, "in bytes constructor");
     this.home_uid = __primitive("_get_locale", tmp);
   }
 
@@ -149,7 +125,7 @@ module Buffers {
   proc create_iobuf():bytes {
     var err:err_t = ENOERR; 
     var ret = create_iobuf(err);
-    if err then _ioerror(err, "in create_iobuf");
+    if err then ioerror(err, "in create_iobuf");
     return ret;
   }
 
@@ -237,7 +213,7 @@ module Buffers {
     var error:err_t = ENOERR;
     this.home_uid = here_uid;
     error = qbuffer_create(this._buf_internal);
-    if error then _ioerror(error, "in buffer constructor");
+    if error then ioerror(error, "in buffer constructor");
   }
 
 
@@ -298,7 +274,7 @@ module Buffers {
         err = bulk_put_buffer(there_uid, ptr, len, x._buf_internal,
                               qbuffer_begin(x._buf_internal),
                               qbuffer_end(x._buf_internal));
-        if err then _ioerror(err, "in buffer init copy");
+        if err then ioerror(err, "in buffer init copy");
       }
 
       ret.append(b);
@@ -350,7 +326,7 @@ module Buffers {
         err = bulk_put_buffer(there_uid, ptr, len, x._buf_internal,
                               qbuffer_begin(x._buf_internal),
                               qbuffer_end(x._buf_internal));
-        if err then _ioerror(err, "in buffer assignment");
+        if err then ioerror(err, "in buffer assignment");
       }
 
       ret.append(b);
@@ -381,7 +357,7 @@ module Buffers {
   proc buffer.append(b:bytes, skip_bytes:int(64) = 0, len_bytes:int(64) = b.len) {
     var err:err_t = ENOERR;
     this.append(b, skip_bytes, len_bytes, err);
-    if err then _ioerror(err, "in buffer.append");
+    if err then ioerror(err, "in buffer.append");
   }
 
 
@@ -393,7 +369,7 @@ module Buffers {
   proc buffer.append(buf:buffer, part:buffer_range = buf.all()) {
     var err:err_t = ENOERR;
     this.append(buf, part, err);
-    if err then _ioerror(err, "in buffer.append");
+    if err then ioerror(err, "in buffer.append");
   }
 
   proc buffer.prepend(b:bytes, skip_bytes:int(64) = 0, len_bytes:int(64) = b.len, inout error:err_t) {
@@ -404,7 +380,7 @@ module Buffers {
   proc buffer.prepend(b:bytes, skip_bytes:int(64) = 0, len_bytes:int(64) = b.len) {
     var err:err_t = ENOERR;
     this.prepend(b, skip_bytes, len_bytes, err);
-    if err then _ioerror(err, "in buffer.prepend");
+    if err then ioerror(err, "in buffer.prepend");
   }
 
   proc buffer.start():buffer_iterator {
@@ -483,7 +459,7 @@ module Buffers {
   proc buffer.copyout(it:buffer_iterator, out value):buffer_iterator {
     var err:err_t = ENOERR;
     this.copyout(it, value, err);
-    if err then _ioerror(err, "in buffer.copyout");
+    if err then ioerror(err, "in buffer.copyout");
   }
 
   proc buffer.copyin( it:buffer_iterator, value, inout error:err_t):buffer_iterator {
@@ -509,7 +485,7 @@ module Buffers {
   proc buffer.copyin( it:buffer_iterator, value):buffer_iterator {
     var err:err_t = ENOERR;
     this.copyin(it, value, err);
-    if err then _ioerror(err, "in buffer.copyin");
+    if err then ioerror(err, "in buffer.copyin");
   }
 }
 

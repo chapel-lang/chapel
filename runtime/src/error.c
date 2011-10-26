@@ -43,7 +43,7 @@ void chpl_exit_backtrace(int exit_code)
 #else
 // not GASNET TOOLS
 
-/* Nasty way to get a backtrace that requires extra compile flags 
+/* Nasty way to get a backtrace that requires extra compile flags (-rdynamic)
 #ifdef __GLIBC__
 // returns 0 for no error, and stores into dst a C string with
 // the path to the running executable.
