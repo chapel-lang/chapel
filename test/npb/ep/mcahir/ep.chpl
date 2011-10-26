@@ -20,9 +20,6 @@
    implementations of the Chapel compiler and runtime could possibly make
    greater improvements in this version's performance.
 
-   Currently (10/2011) this does not work correctly for Class D size. Suspicion rests on
-   the reduction of the int64 tuple. A bug was filed.
-
    Written by Brandon Holt and Margaret Cahir, October 2011.
 */
 
