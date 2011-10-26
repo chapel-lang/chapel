@@ -1,12 +1,12 @@
 proc main {
   var x: int = 17;
-  _debugWriteln(here.id, " x=", x);
+  writeln(here.id, " x=", x);
   x += 1;
-  _debugWriteln(here.id, " x.locale.id=", x.locale.id);
+  writeln(here.id, " x.locale.id=", x.locale.id);
   on Locales(1) {
-    _debugWriteln(here.id, " x=", x);
+    writeln(here.id, " x=", x);
     x += 1;
-    _debugWriteln(here.id, " x.locale.id=", x.locale.id);
+    writeln(here.id, " x.locale.id=", x.locale.id);
   }
-  _debugWriteln(here.id, " x=", x);
+  writeln(here.id, " x=", x);
 }
