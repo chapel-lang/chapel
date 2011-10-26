@@ -99,9 +99,9 @@ module SSCA2_kernels
   // ===================================================================
   
   proc rooted_heavy_subgraphs ( G, 
-			       Heavy_Edge_List     : domain,
-			       Heavy_Edge_Subgraph : [],
-			       in max_path_length  : int )
+                                Heavy_Edge_List     : domain,
+                                Heavy_Edge_Subgraph : [],
+                                in max_path_length  : int )
     
     // -------------------------------------------------------------------------
     // there is a classic space versus time tradeoff.  if the subgraphs expanded
@@ -200,6 +200,26 @@ module SSCA2_kernels
   //
   use ReplicatedDist;
 
+  //
+  // Data structure to save Children lists between the forward
+  //  and backwards pass
+  //
+  record child_struct {
+    type vertex;
+    var nd: domain(1);
+    var Row_Children: [nd] vertex;
+    var child_count: int=0;
+    var vlock$: sync bool = true;
+
+    // This function should only be called using unique vertices
+    proc add_child ( new_child: vertex ) {
+       vlock$.readFE();
+       child_count += 1;
+       Row_Children[child_count] = new_child;
+       vlock$.writeEF(true);
+    }
+  }
+
   // ==================================================================
   //                              KERNEL 4
   // ==================================================================
@@ -209,8 +229,8 @@ module SSCA2_kernels
   // ==================================================================
 
   proc approximate_betweenness_centrality ( G, starting_vertices, 
-					   Between_Cent : [] real,
-					   out Sum_Min_Dist : real )
+                                            Between_Cent : [] real,
+                                            out Sum_Min_Dist : real )
   
     // -----------------------------------------------------------------------
     // The betweenness centrality metric for a given node  v  is defined
@@ -265,6 +285,12 @@ module SSCA2_kernels
 	var depend         : [vertex_domain] real           = 0.0;
 	var Lcl_Sum_Min_Dist: sync real                     = 0.0;
 
+        var children_list: [vertex_domain] child_struct(index(vertex_domain));
+        // Initialize size of child lists for each vertex to its neighbor count
+        forall v in G.vertices {
+          children_list[v].nd = [1..G.n_Neighbors[v]];
+        }
+
 	// The structure of the algorithm depends on a breadth-first
 	// traversal. Each vertex will be marked by the length of
 	// the shortest path (min_distance$) from s to it. The array
@@ -278,7 +304,17 @@ module SSCA2_kernels
         // Can possibly use a replicated bool with rcCollect(), but
         // not sure of the performance implications for large numbers
         // of locales.
-        var Active_Remaining: [LocaleSpace] bool = true;
+        // sungeun: 10/2011
+        // Distributed Active_Remaining to reduce communication overhead.
+        // Similar scaling concerns exists for the reduction as for
+        // replacing it with a replicated bool.
+        use BlockDist;
+        const DL = 
+          if DISTRIBUTION_TYPE == "BLOCK" then
+            [LocaleSpace] dmapped Block(boundingBox=LocaleSpace)
+          else
+            [LocaleSpace];
+        var Active_Remaining: [DL] bool = true;
         var remaining = true;
 
         // Replicated level sets
@@ -324,11 +360,7 @@ module SSCA2_kernels
             coforall loc in Locales do on loc {
              forall u in rcLocal(Active_Level).Members do { // sparse
 
-              forall (v, w) in ( G.Neighbors (u), G.edge_weight (u) ) do on v {
-
-		// should be forall, requires a custom parallel iterator in the
-		// random graph case and zippering for associative domains
-
+               forall (v, w) in ( G.Neighbors (u), G.edge_weight (u) ) do on v {
 		// --------------------------------------------
 		// add any unmarked neighbors to the next level
 		// --------------------------------------------
@@ -343,10 +375,12 @@ module SSCA2_kernels
 			  if VALIDATE_BC then
 			    Lcl_Sum_Min_Dist += current_distance_c;
 			}
-		      else
+		      else {
                         // could min_distance$(v) be < current_distance?
 			min_distance$ (v) . writeEF (current_distance_c);
+                      }
 		    }
+
 
 		// ------------------------------------------------
 		// only neighbors of  u  that are in the next level
@@ -357,11 +391,14 @@ module SSCA2_kernels
 		// ------------------------------------------------
   
 		if  min_distance$ (v).readFF () == current_distance_c  
-		  then
+		  then {
 		    path_count$ (v) += path_count$ (u).readFF ();
+                    children_list(u).add_child (v);
+                  }
+
 	      }
 	    };
-  
+
             // sungeun: 8/2011
             // This (split-phase) barrier is needed to insure all updates
             // to Next_Level are completed before creating the next
@@ -388,6 +425,11 @@ module SSCA2_kernels
           remaining = || reduce Active_Remaining;
 
 	};  // end forward pass
+
+        // Resize the arrays to the actual count to free up some memory
+        forall v in G.vertices {
+            children_list[v].nd = [1..children_list[v].child_count];
+        }
 
 	if VALIDATE_BC then
 	  Sum_Min_Dist$ += Lcl_Sum_Min_Dist;
@@ -416,8 +458,7 @@ module SSCA2_kernels
           delete rcLocal(Active_Level);
           rcLocal(Active_Level) = rcLocal(Next_Level);
   
-          for current_distance in 2 .. graph_diameter by -1 do {
-
+         for current_distance in 2 .. graph_diameter by -1 do {
             rcLocal(Next_Level)   = rcLocal(Active_Level).previous;
             delete rcLocal(Active_Level);
             rcLocal(Active_Level) = rcLocal(Next_Level);
@@ -427,18 +468,12 @@ module SSCA2_kernels
 
             forall u in rcLocal(Active_Level).Members do
               {
-                depend (u) = + reduce 
-                  [ (v, w)  in ( G.Neighbors (u), G.edge_weight (u) ) ]
-                  if ( min_distance$ (v).readFF () == current_distance ) && 
-                  ( ( FILTERING && w % 8 != 0 || !FILTERING ) )
-                  then
-                    ( path_count$ (u) . readFF () / 
-                      path_count$ (v) . readFF () )      *
-                      ( 1.0 + depend (v) );
+	      depend (u) = + reduce [v in children_list(u).Row_Children]
+		  ( path_count$ (u) . readFF () / 
+		    path_count$ (v) . readFF () )      *
+		    ( 1.0 + depend (v) );
 
-                // do not need conditional u != s
-
-                Between_Cent$ (u) += depend (u);
+              Between_Cent$ (u) += depend (u);
               }
             // sungeun: 8/2011
             // This barrier is needed to insure all updates to depend are
@@ -457,7 +492,6 @@ module SSCA2_kernels
 
       }; // closure of outer embarassingly parallel forall
 
-  
       if PRINT_TIMING_STATISTICS then {
 	stopwatch.stop ();
 	var K4_time = stopwatch.elapsed ();
