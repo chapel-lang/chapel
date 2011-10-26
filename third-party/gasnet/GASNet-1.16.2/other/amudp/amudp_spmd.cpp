@@ -627,31 +627,34 @@ extern int AMUDP_SPMDStartup(int *argc, char ***argv,
         handleStdOutput(stdout, psockset, stdoutList, allList, AMUDP_SPMDNUMPROCS);
         handleStdOutput(stderr, psockset, stderrList, allList, AMUDP_SPMDNUMPROCS);
         // stdin (illegal to receive anything here)
-        if (((numset = stdinList.getIntersection(psockset, tempSockArr, AMUDP_SPMDNUMPROCS)))) {
-          for (int i=0; i < numset; i++) {
-            SOCKET s = tempSockArr[i];
-            AMUDP_assert(FD_ISSET(s, psockset));
+        if (AMUDP_SPMDRedirectStdin) {
+          if( stdinSocket != INVALID_SOCKET && FD_ISSET(stdinSocket, psockset)) {
+            SOCKET s = stdinSocket;
             if (isClosed(s)) {
-              DEBUG_MASTER("dropping a stdinList socket...");
-              stdinList.remove(s);
+              DEBUG_MASTER("dropping a stdinSocket...");
+              stdinSocket = INVALID_SOCKET;
               allList.remove(s);
             } else {
-              AMUDP_Err("Master got illegal input on a stdin socket");
-              stdinList.remove(s); // prevent subsequent warnings
+              AMUDP_Err("Master got illegal input on a stdin socket %i", stdinSocket);
+              stdinSocket = INVALID_SOCKET; // prevent subsequent warnings
               allList.remove(s);
             }
           }
-        }
-        if (stdinSocket != INVALID_SOCKET && FD_ISSET(stdinSocket, psockset)) {
-          SOCKET s = stdinSocket;
-          if (isClosed(s)) {
-            DEBUG_MASTER("dropping a stdinSocket...");
-            stdinSocket = INVALID_SOCKET;
-            allList.remove(s);
-          } else {
-            AMUDP_Err("Master got illegal input on a stdin socket");
-            stdinSocket = INVALID_SOCKET; // prevent subsequent warnings
-            allList.remove(s);
+        } else {
+          if ((numset = stdinList.getIntersection(psockset, tempSockArr, AMUDP_SPMDNUMPROCS))) {
+            for (int i=0; i < numset; i++) {
+              SOCKET s = tempSockArr[i];
+              AMUDP_assert(FD_ISSET(s, psockset));
+              if (isClosed(s)) {
+                DEBUG_MASTER("dropping a stdinList socket...");
+                stdinList.remove(s);
+                allList.remove(s);
+              } else {
+                AMUDP_Err("Master got illegal input on a stdinList socket");
+                stdinList.remove(s); // prevent subsequent warnings
+                allList.remove(s);
+              }
+            }
           }
         }
         // handle incoming data on stdin (ie file descriptor 0)
@@ -674,8 +677,8 @@ extern int AMUDP_SPMDStartup(int *argc, char ***argv,
             ssize_t got;
             int written;
             int amtread;
-            int bufsz = 8*1024;
-            char *buf = (char *)AMUDP_malloc(bufsz);
+            int bufsz = 1025;
+            char buf[1025];
             int doclose = 0;
 
             amtread = 0;
@@ -684,8 +687,10 @@ extern int AMUDP_SPMDStartup(int *argc, char ***argv,
               amtread = got;
             } else if( got == 0 ) {
               // end of file. We need to close the stdin socket.
+              DEBUG_MASTER("closing stdinSocket...");
               close_socket(stdinSocket);
               allList.remove(stdinSocket);
+              stdinSocket = INVALID_SOCKET;
               allList.remove(s);
             } else {
               if (errno == EAGAIN || errno == EWOULDBLOCK ) {
@@ -701,7 +706,6 @@ extern int AMUDP_SPMDStartup(int *argc, char ***argv,
               #endif
               sendAll(stdinSocket, buf, amtread);
             }
-            AMUDP_free(buf);
           }
         }
         //------------------------------------------------------------------------------------
