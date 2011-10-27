@@ -1287,6 +1287,46 @@ proc channel.readline(inout arg:string):bool {
   }
 }
 
+inline
+proc channel.readbits(out v:uint(64), nbits:int(8), out error:err_t):bool {
+  var tmp:ioBits;
+  var ret:bool;
+
+  error = ENOERR;
+
+  tmp.nbits = nbits;
+  ret = this.read(tmp, error=error);
+  v = tmp.v;
+
+  return ret;
+}
+proc channel.readbits(out v:uint(64), nbits:int(8)):bool {
+  var e:err_t = ENOERR;
+  this.readbits(v, nbits, error=e);
+  if !e then return true;
+  else if e == EEOF then return false;
+  else {
+    this._ch_ioerror(e, "in channel.readbits(out v:uint(64), nbits:int(8))");
+    return false;
+  }
+}
+
+inline
+proc channel.writebits(v:uint(64), nbits:int(8), out error:err_t):bool {
+  return this.write(new ioBits(v, nbits), error=error);
+}
+proc channel.writebits(v:uint(64), nbits:int(8)):bool {
+  var e:err_t = ENOERR;
+  this.writebits(v, nbits, error=e);
+  if !e then return true;
+  else {
+    this._ch_ioerror(e, "in channel.writebits(v:uint(64), nbits:int(8))");
+    return false;
+  }
+}
+
+
+
 proc channel.readln(out error:err_t):bool {
   var nl = new ioNewline();
   return this.read(nl, error=error);

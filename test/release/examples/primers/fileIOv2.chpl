@@ -8,6 +8,7 @@
    Third example: reading UTF-8 lines and printing them out.
    Fourth example: error handling.
    Fifth example: object-at-a-time writing.
+   Sixth example: binary I/O with bits at a time
 */
 
 config const n = 1*1024*1024;
@@ -223,6 +224,53 @@ if example == 0 || example == 5 {
   forall i in 1..4 {
     var t:MyThing;
     write(t);
+  }
+}
+
+/*
+   In Example 6, we demonstrate bit-level I/O.
+ */
+if example == 0 || example == 6 {
+  writeln("Running Example 6");
+
+  var f = open(testfile, "w+");
+
+  {
+    var w = f.writer(kind=native);
+
+    // Write 011 0110 011110000
+    w.writebits(0b011, 3);
+    w.writebits(0b0110, 4);
+    w.writebits(0b011110000, 9);
+    w.close();
+  }
+
+  // Try reading it back the way we wrote it.
+  {
+    var r = f.reader(kind=native);
+    var tmp:uint(64);
+
+    r.readbits(tmp, 3);
+    assert(tmp == 0b011);
+
+    r.readbits(tmp, 4);
+    assert(tmp == 0b0110);
+
+    r.readbits(tmp, 9);
+    assert(tmp == 0b011110000);
+  }
+
+  // Try reading it back all as one big chunk.
+  // Read 01101100 11110000
+  {
+    var r = f.reader(kind=native);
+    var tmp:uint(8);
+
+    r.read(tmp);
+    assert(tmp == 0b01101100);
+
+    r.read(tmp);
+    assert(tmp == 0b11110000);
   }
 }
 
