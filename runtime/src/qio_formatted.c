@@ -2713,6 +2713,30 @@ err_t _qio_channel_read_char_slow_unlocked(qio_channel_t* restrict ch, int32_t* 
   return err;
 }
 
+const char* qio_encode_to_string(int32_t chr)
+{
+  int nbytes;
+  char* buf;
+  err_t err;
+
+  nbytes = qio_nbytes_char(chr);
+  if( nbytes == 0 ) {
+    return NULL;
+  }
+  
+  buf = qio_malloc(nbytes + 1);
+  if( ! buf ) return NULL;
+
+  err = qio_encode_char_buf(buf, chr);
+  if( err ) {
+    qio_free(buf);
+    return NULL;
+  }
+
+  buf[nbytes] = '\0';
+  return buf;
+}
+
 err_t _qio_channel_write_char_slow_unlocked(qio_channel_t* restrict ch, int32_t chr) {
   char mbs[MB_LEN_MAX];
   mbstate_t ps;

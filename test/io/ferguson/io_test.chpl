@@ -8,7 +8,7 @@ proc testio(param typ:iokind, style:iostyle, x)
   var f = opentmp();
   {
     var ch = f.writer(typ, style=style);
-    if noisy then writeln("Writing ", x);
+    if noisy then writeln("Writing ", x:string);
     ch.write(x);
     ch.close();
   }
@@ -18,7 +18,7 @@ proc testio(param typ:iokind, style:iostyle, x)
     var z = x;
     if noisy then writeln("Reading element");
     var got = ch.read(y);
-    if noisy then writeln("Read ", y);
+    if noisy then writeln("Read ", y:string);
     assert( got );
     assert( y == x );
 
@@ -168,6 +168,11 @@ proc main() {
   testio(1.0:imag(32));
   testio(1.0:imag(64));
   //testio(100:uint(8));
+
+  testio(new ioChar(97));
+  testio(new ioNewline());
+  testio(new ioLiteral("test"));
+  testio(new ioBits(0b011011001101000110101101, 24));
 
   test_readlines();
 }

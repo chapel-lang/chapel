@@ -1,3 +1,41 @@
+/* "channel" I/O contributed by Michael Ferguson
+
+   Future Work:
+    - formatted input/output, like printf, probably called writef/writefln/etc,
+      and supporting ###.#### formats in addition to the usual % stuff.
+    - Regular expression support (currently favoring RE2 integration)
+    - Reader needs a Reader.readType method implemented for any custom types
+      that want to provide their own reader method. We might rather implement
+      this with a static method or a method on a default-constructed object
+      of the type we're reading (so that the readThis method is somehow
+      'in the class' along with writeThis).
+    - We would like to have a 'serialization' system, including allowing
+      the writing of data structures with circular references, and
+      encoding the types of classes.
+    - Currently, the union tag numbers are per-compile; you could not read
+      binary union data written in one Chapel program with another. This problem
+      will also apply to class tag numbers once we start encoding types.
+    - The Chapel compiler does not currently allow RAII/reference counting
+      to work correctly in all cases (bug report 'records containing pointers'
+      and test files in test/users/ferguson/{byvalue.chpl,refcnt.chpl};
+      as a result, current code might need to close channels and files
+      explicitly and/or sharing of channels and files between variables might
+      not work correctly.
+    - Channels have a lock, and some methods on a channel only make sense
+      when the lock is held. In the future (again, once RAII makes sense),
+      we might replace this with 'get locked channel' that returns a different
+      type that has the methods that can only be used on a locked channel.
+    - The error handling strategy here is a bit awkward for the library-writer
+      (not so much for the user). A broader exceptions strategy would help
+      quite a bit - and some of these interfaces will change when that happens.
+    - Fancy features, like adding a bytes or buffer object to a channel
+      (so that the channel just refers to it and does not copy it) are
+      implemented but not well tested.
+    - It would be nice if ioBits:string printed itself in binary instead of decimal.
+
+*/
+
+
 use SysBasic;
 use Error;
 
@@ -72,6 +110,10 @@ extern const QIO_HINT_BANDWIDTH:c_int;
 extern const QIO_HINT_CACHED:c_int;
 extern const QIO_HINT_DIRECT:c_int;
 extern const QIO_HINT_NOREUSE:c_int;
+
+const HINT_CACHED = QIO_HINT_CACHED;
+const HINT_RANDOM = QIO_HINT_RANDOM;
+const HINT_SEQUENTIAL = QIO_HINT_SEQUENTIAL;
 
 extern type qio_file_ptr_t;
 extern const QIO_FILE_PTR_NULL:qio_file_ptr_t;
@@ -228,6 +270,9 @@ extern proc qio_channel_mark(threadsafe:c_int, ch:qio_channel_ptr_t):err_t;
 extern proc qio_channel_revert_unlocked(ch:qio_channel_ptr_t);
 extern proc qio_channel_commit_unlocked(ch:qio_channel_ptr_t);
 
+extern proc qio_channel_write_bits(threadsafe:c_int, ch:qio_channel_ptr_t, v:uint(64), nbits:int(8)):err_t;
+extern proc qio_channel_flush_bits(threadsafe:c_int, ch:qio_channel_ptr_t):err_t;
+extern proc qio_channel_read_bits(threadsafe:c_int, ch:qio_channel_ptr_t, inout v:uint(64), nbits:int(8)):err_t;
 
 extern proc qio_file_path_for_fd(fd:fd_t, inout path:string):err_t;
 extern proc qio_file_path_for_fp(fp:_file, inout path:string):err_t;
@@ -256,6 +301,11 @@ extern proc qio_channel_print_complex(threadsafe:c_int, ch:qio_channel_ptr_t, in
 
 
 extern proc qio_channel_read_char(threadsafe:c_int, ch:qio_channel_ptr_t, inout char:int(32)):err_t;
+
+extern proc qio_nbytes_char(chr:int(32)):c_int;
+extern proc qio_encode_to_string(chr:int(32)):string;
+extern proc qio_decode_char_buf(inout chr:int(32), inout nbytes:c_int, buf:string, buflen:ssize_t):err_t;
+
 extern proc qio_channel_write_char(threadsafe:c_int, ch:qio_channel_ptr_t, char:int(32)):err_t;
 extern proc qio_channel_skip_past_newline(threadsafe:c_int, ch:qio_channel_ptr_t):err_t;
 extern proc qio_channel_write_newline(threadsafe:c_int, ch:qio_channel_ptr_t):err_t;
@@ -266,6 +316,7 @@ extern proc qio_channel_print_string(threadsafe:c_int, ch:qio_channel_ptr_t, ptr
 extern proc qio_channel_scan_literal(threadsafe:c_int, ch:qio_channel_ptr_t, match:string, len:ssize_t, skipws:c_int):err_t;
 extern proc qio_channel_print_literal(threadsafe:c_int, ch:qio_channel_ptr_t, match:string, len:ssize_t):err_t;
 //type iostyle = qio_style_t;
+
 
 proc defaultStyle():iostyle {
   var ret:iostyle;
@@ -646,6 +697,10 @@ proc Reader.readType(inout x:ioChar):bool {
   halt("ioChar.readType must be implemented in Reader subclasses.");
   return false;
 }
+pragma "inline" proc _cast(type t, x: ioChar) where t == string {
+  return qio_encode_to_string(x.ch);
+}
+
 
 // Used to represent "\n", but never escaped...
 record ioNewline {
@@ -679,6 +734,25 @@ proc Reader.readType(inout x:ioLiteral):bool {
 pragma "inline" proc _cast(type t, x: ioLiteral) where t == string {
   return x.val;
 }
+
+// Used to represent some number of bits we want to read or write...
+record ioBits {
+  var v:uint(64);
+  var nbits:int(8);
+  proc writeThis(f: Writer) {
+    // Normally this is handled explicitly in read/write.
+    f.write(v);
+  }
+}
+proc Reader.readType(inout x:ioBits):bool {
+  halt("readType(ioBits) must be implemented in Reader subclasses.");
+  return false;
+}
+
+pragma "inline" proc _cast(type t, x: ioBits) where t == string {
+  return "ioBits(v=" + x.v:string + ", nbits=" + x.nbits:string + ")";
+}
+
 
 proc channel._ch_ioerror(syserr:err_t, msg:string) {
   var path:string = "unknown";
@@ -728,11 +802,11 @@ proc channel._mark():err_t {
 }
 inline
 proc channel._revert() {
-  qio_channel_revert(false, _channel_internal);
+  qio_channel_revert_unlocked(_channel_internal);
 }
 inline
 proc channel._commit() {
-  qio_channel_commit(false, _channel_internal);
+  qio_channel_commit_unlocked(_channel_internal);
 }
 proc channel._style():iostyle {
   var ret:iostyle;
@@ -811,7 +885,7 @@ proc _isIoPrimitiveType(type t) param return
   _isImagType(t) || _isEnumeratedType(t);
 
  proc _isIoPrimitiveTypeOrNewline(type t) param return
-  _isIoPrimitiveType(t) || t == ioNewline || t == ioLiteral || t == ioChar;
+  _isIoPrimitiveType(t) || t == ioNewline || t == ioLiteral || t == ioChar || t == ioBits;
 
     //var trues = ("true", "1", "yes");
     //var falses = ("false", "0", "no");
@@ -1038,6 +1112,8 @@ proc _read_one_internal(_channel_internal:qio_channel_ptr_t, param kind:iokind, 
     //e = qio_channel_scan_literal(false, _channel_internal, x.val, x.val.length, x.ignoreWhiteSpace);
     //writeln("Scanning literal ", x.val,  " yeilded error ", e);
     //return e;
+  } else if t == ioBits {
+    return qio_channel_read_bits(false, _channel_internal, x.v, x.nbits);
   } else if kind == iokind.dynamic {
     var binary:uint(8) = qio_channel_binary(_channel_internal);
     var byteorder:uint(8) = qio_channel_byteorder(_channel_internal);
@@ -1066,6 +1142,8 @@ proc _write_one_internal(_channel_internal:qio_channel_ptr_t, param kind:iokind,
     return qio_channel_write_char(false, _channel_internal, x.ch);
   } else if t == ioLiteral {
     return qio_channel_print_literal(false, _channel_internal, x.val, x.val.length);
+  } else if t == ioBits {
+    return qio_channel_write_bits(false, _channel_internal, x.v, x.nbits);
   } else if kind == iokind.dynamic {
     var binary:uint(8) = qio_channel_binary(_channel_internal);
     var byteorder:uint(8) = qio_channel_byteorder(_channel_internal);
@@ -1361,7 +1439,6 @@ proc channel.writeln(args ...?k,
   return this.write((...args), new ioNewline(), style=style, error=error);
 }
 
-
 proc channel.flush(out error:err_t) {
   error = ENOERR;
   on __primitive("chpl_on_locale_num", this.home_uid) {
@@ -1608,4 +1685,19 @@ class ChannelReader : Reader {
   }
 }
 
+// Delete a file.
+proc unlink(path:string, out error:err_t) {
+  extern proc sys_unlink(path:string):err_t;
+  error = sys_unlink(path);
+}
+proc unlink(path:string) {
+  var err:err_t = ENOERR;
+  unlink(path, err);
+  if err then ioerror(err, "in unlink", path);
+}
+
+proc unicodeSupported():bool {
+  extern proc qio_unicode_supported():c_int;
+  return qio_unicode_supported() > 0;
+}
 

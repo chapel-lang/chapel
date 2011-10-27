@@ -6,6 +6,9 @@
  * It initializes an array and writes its size and data to a file.  It
  * then opens the file, uses the size in the file to declare a new
  * domain and array, and reads in the array data.
+ *
+ * Chapel's I/O system has many more features than are shown here;
+ * see fileIOv2.chpl for further examples.
  */
 
 config var n = 9,                 // the problem size

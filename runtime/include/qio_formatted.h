@@ -489,6 +489,165 @@ err_t qio_channel_read_char(const int threadsafe, qio_channel_t* restrict ch, in
   return err;
 }
 
+// Return the number of bytes used in encoding chr,
+// or 0 if it's an invalid character.
+static inline
+int qio_nbytes_char(int32_t chr)
+{
+  if( qio_glocale_utf8 > 0 ) {
+    if( qio_glocale_utf8 == QIO_GLOCALE_UTF8 ) {
+      if( chr < 0 ) {
+        return 0;
+      } else if( chr < 0x80 ) {
+        // OK, we got a 1-byte character; case #1
+        return 1;
+      } else if( chr < 0x800 ) {
+        // OK, we got a fits-in-2-bytes character; case #2
+        return 2;
+      } else if( chr < 0x10000 ) {
+        // OK, we got a fits-in-3-bytes character; case #3
+        return 3;
+      } else {
+        // OK, we got a fits-in-4-bytes character; case #4
+        return 4;
+      }
+    } else if( qio_glocale_utf8 == QIO_GLOCALE_ASCII ) {
+      return 1;
+    }
+  } else {
+    mbstate_t ps;
+    size_t got;
+    memset(&ps, 0, sizeof(mbstate_t));
+    got = wcrtomb(NULL, chr, &ps);
+    if( got == (size_t) -1 ) {
+      return 0;
+    } else {
+      return got;
+    }
+  }
+  return 0;
+}
+// dst is a pointer to a buffer containing room for the encoded characters
+// (use qio_nbytes_char to find out the size).
+static inline
+err_t qio_encode_char_buf(char* dst, int32_t chr)
+{
+  err_t err = 0;
+  if( qio_glocale_utf8 > 0 ) {
+    if( qio_glocale_utf8 == QIO_GLOCALE_UTF8 ) {
+      if( chr < 0 ) {
+        err = EILSEQ;
+      } else if( chr < 0x80 ) {
+        // OK, we got a 1-byte character; case #1
+        *(unsigned char*)dst = (unsigned char) chr;
+      } else if( chr < 0x800 ) {
+        // OK, we got a fits-in-2-bytes character; case #2
+        *(unsigned char*)dst = (0xc0 | (chr >> 6));
+        *(((unsigned char*)dst)+1) = (0x80 | (chr & 0x3f));
+      } else if( chr < 0x10000 ) {
+        // OK, we got a fits-in-3-bytes character; case #3
+        *(unsigned char*)dst = (0xe0 | (chr >> 12));
+        *(((unsigned char*)dst)+1) = (0x80 | ((chr >> 6) & 0x3f));
+        *(((unsigned char*)dst)+2) = (0x80 | (chr & 0x3f));
+      } else {
+        // OK, we got a fits-in-4-bytes character; case #4
+        *(unsigned char*)dst = (0xf0 | (chr >> 18));
+        *(((unsigned char*)dst)+1) = (0x80 | ((chr >> 12) & 0x3f));
+        *(((unsigned char*)dst)+2) = (0x80 | ((chr >> 6) & 0x3f));
+        *(((unsigned char*)dst)+3) = (0x80 | (chr & 0x3f));
+      }
+    } else if( qio_glocale_utf8 == QIO_GLOCALE_ASCII ) {
+      *(unsigned char*)dst = (unsigned char) chr;
+    }
+  } else {
+    mbstate_t ps;
+    size_t got;
+    memset(&ps, 0, sizeof(mbstate_t));
+    got = wcrtomb(dst, chr, &ps);
+    if( got == (size_t) -1 ) {
+      err = EILSEQ;
+    } else {
+      *dst += got;
+    }
+  }
+  return err;
+}
+
+// Returns NULL if it's an illegal character OR we're out of memory.
+const char* qio_encode_to_string(int32_t chr);
+
+static inline
+err_t qio_decode_char_buf(int32_t* restrict chr, int* restrict nbytes, const char* buf, ssize_t buflen)
+{
+  const char* start = buf;
+  const char* end = start + buflen;
+  uint32_t codepoint, state;
+
+  // Fast path: an entire multi-byte sequence
+  // is stored in the buffers.
+  if( qio_glocale_utf8 > 0 ) {
+    if( qio_glocale_utf8 == QIO_GLOCALE_UTF8 ) {
+      state = 0;
+      while( buf != end ) {
+        qio_utf8_decode(&state,
+                        &codepoint,
+                        *buf);
+        buf++;
+        if (state <= 1) {
+          break;
+        }
+      }
+      if( state == UTF8_ACCEPT ) {
+        *chr = codepoint;
+        *nbytes = VOID_PTR_DIFF(buf, start);
+        return 0;
+      } else {
+        *chr = 0xfffd; // replacement character
+        *nbytes = VOID_PTR_DIFF(buf, start);
+        return EILSEQ;
+      }
+    } else if( qio_glocale_utf8 == QIO_GLOCALE_ASCII ) {
+      // character == byte.
+      if( buf != end ) {
+        *chr = *buf;
+        *nbytes = 1;
+        return 0;
+      } else {
+        *chr = -1;
+        *nbytes = 0;
+        return EILSEQ;
+      }
+    }
+  } else {
+    mbstate_t ps;
+    size_t got;
+    memset(&ps, 0, sizeof(mbstate_t));
+    got = mbrtowc(chr, buf, buflen, &ps);
+    if( got == 0 ) {
+      // We read a NUL.
+      *chr = 0;
+      *nbytes = 1;
+      return 0;
+    } else if( got == (size_t) -1 ) {
+      // it contains an invalid multibyte sequence.
+      // errno should be EILSEQ.
+      *chr = -3; // invalid character... think 0xfffd for unicode
+      *nbytes = 1;
+      return EILSEQ;
+    } else if( got == (size_t) -2 ) {
+      // continue as long as we have an incomplete char.
+      *chr = -3; // invalid character... think 0xfffd for unicode
+      *nbytes = 1;
+      return EILSEQ;
+    } else {
+      // OK!
+      // mbrtowc already set the character.
+      *nbytes = got;
+      return 0;
+    }
+  }
+}
+
 
 err_t _qio_channel_write_char_slow_unlocked(qio_channel_t* restrict ch, int32_t chr);
 
@@ -553,6 +712,14 @@ err_t qio_channel_write_char(const int threadsafe, qio_channel_t* restrict ch, i
   return err;
 }
 
+static inline
+int qio_unicode_supported(void) {
+  if( qio_glocale_utf8 == 0 ) {
+    qio_set_glocale();
+  }
+
+  return qio_glocale_utf8 == QIO_GLOCALE_UTF8;
+}
 
 err_t qio_channel_skip_past_newline(const int threadsafe, qio_channel_t* restrict ch);
 

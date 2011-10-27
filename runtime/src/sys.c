@@ -1353,3 +1353,15 @@ err_t sys_socketpair(int domain, int type, int protocol, fd_t* sockfd_out_a, fd_
 }
 
 
+err_t sys_unlink(const char* path)
+{
+  int got;
+  err_t err_out;
+
+  got = unlink(path);
+  if( got == 0 ) err_out = 0;
+  else err_out = errno;
+
+  return err_out;
+}
+

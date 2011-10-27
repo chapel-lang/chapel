@@ -188,6 +188,6 @@ err_t sys_socketpair(int domain, int type, int protocol, fd_t* fd_out_a, fd_t* f
 
 
 
-
+err_t sys_unlink(const char* path);
 
 #endif

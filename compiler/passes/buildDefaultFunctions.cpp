@@ -834,8 +834,6 @@ static bool buildWriteSuperClass(ArgSymbol* fileArg, FnSymbol* fn, Expr* dot, Ty
 */
 static void buildDefaultReadWriteFunctions(ClassType* ct) {
   // Always make readThis/writeThis if they don't exist.
-  // If there is a readWriteThis, readThis/writeThis call readWriteThis;
-  // otherwise, they call readThisDefaultImpl/writeThisDefaultImpl.
   if (! function_exists("writeThis", 3, dtMethodToken, ct, dtWriter)) {
     FnSymbol* fn = new FnSymbol("writeThis");
     fn->cname = astr("_auto_", ct->symbol->name, "_write");
@@ -878,7 +876,6 @@ static void buildDefaultReadWriteFunctions(ClassType* ct) {
     reset_line_info(def, ct->symbol->lineno);
     normalize(fn);
     ct->methods.add(fn);
-    // ? need to add it to Writer?
   }
 }
 
