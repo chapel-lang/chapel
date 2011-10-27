@@ -1365,3 +1365,32 @@ err_t sys_unlink(const char* path)
   return err_out;
 }
 
+err_t sys_getcwd(const char** path_out)
+{
+  int sz = 128;
+  char* buf;
+  char* got;
+  err_t err = 0;
+
+  buf = qio_malloc(sz);
+  if( !buf ) return ENOMEM;
+  while( 1 ) {
+    got = getcwd(buf, sz);
+    if( got != NULL ) break;
+    else if( errno == ERANGE ) {
+      // keep looping but with bigger buffer.
+      sz = 2*sz;
+      got = qio_realloc(buf, sz);
+      if( ! got ) {
+        qio_free(buf);
+        return ENOMEM;
+      }
+    } else {
+      // Other error, stop.
+      err = errno;
+    }
+  }
+
+  *path_out = buf;
+  return err;
+}

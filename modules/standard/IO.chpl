@@ -277,6 +277,7 @@ extern proc qio_channel_read_bits(threadsafe:c_int, ch:qio_channel_ptr_t, inout 
 extern proc qio_file_path_for_fd(fd:fd_t, inout path:string):err_t;
 extern proc qio_file_path_for_fp(fp:_file, inout path:string):err_t;
 extern proc qio_file_path(f:qio_file_ptr_t, inout path:string):err_t;
+extern proc qio_shortest_path(inout path_out:string, path_in:string):err_t;
 
 extern proc qio_channel_read_int(threadsafe:c_int, byteorder:c_int, ch:qio_channel_ptr_t, inout ptr, len:size_t, issigned:c_int):err_t;
 extern proc qio_channel_write_int(threadsafe:c_int, byteorder:c_int, ch:qio_channel_ptr_t, inout ptr, len:size_t, issigned:c_int):err_t;
@@ -535,8 +536,16 @@ proc file.getPath(out error:err_t) : string {
   var ret:string;
   on __primitive("chpl_on_locale_num", this.home_uid) {
     var tmp:string;
+    var tmp2:string;
     error = qio_file_path(_file_internal, tmp);
-    ret = tmp;
+    if !error {
+      error = qio_shortest_path(tmp2, tmp);
+    }
+    if !error {
+      ret = tmp2;
+    } else {
+      ret = "unknown";
+    }
   }
  return ret; 
 }

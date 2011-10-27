@@ -640,6 +640,10 @@ err_t _qio_channel_init_file(qio_channel_t* ch, qio_file_t* file, qio_hint_t hin
 // maybe want to use INT64_MAX for end if it's not to be restricted.
 err_t qio_channel_create(qio_channel_t** ch_out, qio_file_t* file, qio_hint_t hints, int readable, int writeable, int64_t start, int64_t end, qio_style_t* style);
 
+
+err_t qio_relative_path(const char** path_out, const char* cwd, const char* path);
+err_t qio_shortest_path(const char** path_out, const char* path_in);
+
 err_t qio_channel_path_offset(const int threadsafe, qio_channel_t* ch, const char** string_out, int64_t* offset_out);
 
 err_t _qio_slow_read(qio_channel_t* ch, void* ptr, ssize_t len, ssize_t* amt_read);

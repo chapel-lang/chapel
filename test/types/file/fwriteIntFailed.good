@@ -1,1 +1,1 @@
-fwriteIntFailed.chpl:4: error: Unhandled system error: Invalid argument (22)
+fwriteIntFailed.chpl:4: error: Unhandled system error: Invalid argument (22) in channel.write(a:int) with path fwriteIntFailed.txt offset 0

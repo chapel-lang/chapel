@@ -1040,6 +1040,14 @@ err_t _qio_channel_init_file_internal(qio_channel_t* ch, qio_file_t* file, qio_h
   qio_chtype_t type;
   qio_style_t* use_style;
 
+  // check file access matches up with this request.
+  if( readable && ! (file->fdflags & QIO_FDFLAG_READABLE) ) {
+    return EINVAL;
+  }
+  if( writeable && ! (file->fdflags & QIO_FDFLAG_WRITEABLE) ) {
+    return EINVAL;
+  }
+
   // now normalize it!
   use_hints = choose_io_method(file->fdflags, hints, file->hints,
                                file->initial_length, readable, writeable,
@@ -1215,9 +1223,114 @@ err_t qio_channel_create(qio_channel_t** ch_out, qio_file_t* file, qio_hint_t hi
   }
 }
 
+err_t qio_relative_path(const char** path_out, const char* cwd, const char* path)
+{
+  ssize_t i,j;
+  size_t cwd_len;
+  ssize_t last_common_slash = 0;
+  ssize_t later_slashes = 0;
+  ssize_t after_len = 0;
+  char* tmp = NULL;
+
+  // Not an absolute path.
+  if( path[0] != '/' ) {
+    *path_out = strdup(path);
+    if( ! *path_out ) return ENOMEM;
+    return 0;
+  }
+
+  // Make sure cwd does not end with a / unless it == /
+  cwd_len = strlen(cwd);
+  if( cwd_len > 0 && cwd[cwd_len-1] == '/' ) cwd_len--;
+
+  // Find the common prefix of the two strings.
+  for( i = 0; i < cwd_len && path[i]; i++ ) {
+    if( cwd[i] == '/' && path[i] == '/' ) last_common_slash = i;
+    if( cwd[i] != path[i] ) break;
+  }
+
+  // We might've gotten to the end of the string...
+  // but there's a character here that should possibly
+  // count as the last common slash.
+  if( (cwd[i] == '\0' || cwd[i] == '/') &&
+      (path[i] == '\0' || path[i] == '/') ) {
+    last_common_slash = i;
+  }
+
+  if( i == cwd_len && last_common_slash == i ) {
+    // cwd is a prefix or equal to path
+    // just trim cwd off of path.
+    if( path[i] == '/' ) i++;
+    *path_out = strdup( &path[i] );
+    if( ! *path_out ) return ENOMEM;
+    return 0;
+  }
+
+  // Otherwise, we have to add some '../'es
+  // How many /'s are there in cwd after last_common_slash?
+  later_slashes = 0;
+  for( i = last_common_slash + 1; i < cwd_len; i++ ) {
+    if( cwd[i] == '/' ) later_slashes++;
+  }
+
+  // Always consider cwd to end in a /
+  later_slashes++;
+
+  // OK, we need to add that many ../ to our relative path.
+  after_len = strlen(&path[last_common_slash + 1]);
+  tmp = qio_malloc(3*later_slashes+after_len+1);
+  if( ! tmp ) {
+    return ENOMEM;
+  }
+
+  j = 0;
+  // First, put the ../
+  for( i = 0; i < later_slashes; i++ ) {
+    tmp[j++] = '.';
+    tmp[j++] = '.';
+    tmp[j++] = '/';
+  }
+  // Now, copy the path after last_common_slash, including trailing '\0'
+  memcpy(&tmp[j], &path[last_common_slash + 1], after_len+1);
+
+  *path_out = tmp;
+  return 0;
+}
+
+/* Try to find the shortest way to write the absolute path in path_in
+ * relative to the current working directory.
+ */
+err_t qio_shortest_path(const char** path_out, const char* path_in)
+{
+  const char* cwd = NULL;
+  const char* relpath = NULL;
+  err_t err;
+
+  err = sys_getcwd(&cwd);
+  if( err ) return err;
+
+  err = qio_relative_path(&relpath, cwd, path_in);
+
+  printf("cwd %s abs %s rel %s\n", cwd, path_in, relpath);
+
+  if( ! err ) {
+    if( strlen(relpath) < strlen(path_in) ) {
+      *path_out = relpath;
+    } else {
+      *path_out = strdup(path_in);
+      if( ! *path_out ) err = ENOMEM;
+    }
+  }
+
+  qio_free((void*) cwd);
+
+  return err;
+}
+
 err_t qio_channel_path_offset(const int threadsafe, qio_channel_t* ch, const char** string_out, int64_t* offset_out)
 {
   err_t err;
+  const char* tmp = NULL;
 
   if( threadsafe ) {
     err = qio_lock(&ch->lock);
@@ -1230,7 +1343,12 @@ err_t qio_channel_path_offset(const int threadsafe, qio_channel_t* ch, const cha
 
   *offset_out = qio_channel_offset_unlocked(ch);
 
-  err = qio_file_path(ch->file, string_out);
+  err = qio_file_path(ch->file, &tmp);
+  if( !err ) {
+    err = qio_shortest_path(string_out, tmp);
+  }
+
+  qio_free((void*) tmp);
 
   if( threadsafe ) {
     qio_unlock(&ch->lock);

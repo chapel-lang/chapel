@@ -190,4 +190,7 @@ err_t sys_socketpair(int domain, int type, int protocol, fd_t* fd_out_a, fd_t* f
 
 err_t sys_unlink(const char* path);
 
+// Allocates a string to store the current directory which must be freed.
+err_t sys_getcwd(const char** path_out);
+
 #endif

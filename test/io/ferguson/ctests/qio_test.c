@@ -246,49 +246,46 @@ void check_channels(void)
     check_channel(0, QIO_CH_BUFFERED, 0, 5L*1024L*1024L*1024L, 1024*1024, hints[file_hint], hints[file_hint]);
   }
 }
-/*
-void check_printscan(void)
+
+// Check some path functions.
+void check_paths(void)
 {
-  err_t err;
-  qio_file_t* f;
-  qio_channel_t* writing;
-  qio_channel_t* reading;
-  int nmatched;
-  int x;
+  const char* tmp = NULL;
+  qio_relative_path(&tmp, "/", "/tmp/foo");
+  assert(0==strcmp(tmp, "tmp/foo"));
+  qio_free((void*)tmp);
+  qio_relative_path(&tmp, "", "/tmp/foo");
+  assert(0==strcmp(tmp, "tmp/foo"));
+  qio_free((void*)tmp);
+  qio_relative_path(&tmp, "/bar/bre/", "/bar/bre/tmp/foo");
+  assert(0==strcmp(tmp, "tmp/foo"));
+  qio_free((void*)tmp);
+  qio_relative_path(&tmp, "/bar/bre", "/bar/bre/tmp/foo");
+  assert(0==strcmp(tmp, "tmp/foo"));
+  qio_free((void*)tmp);
+  qio_relative_path(&tmp, "/a/b/c/d/e", "/a/b/x/y");
+  assert(0==strcmp(tmp, "../../../x/y"));
+  qio_free((void*)tmp);
+  qio_relative_path(&tmp, "/a/b/c/d/e/", "/a/b/x/y");
+  assert(0==strcmp(tmp, "../../../x/y"));
+  qio_free((void*)tmp);
+  qio_relative_path(&tmp, "/a/b/xc/d/e/", "/a/b/x/y");
+  assert(0==strcmp(tmp, "../../../x/y"));
+  qio_free((void*)tmp);
+  qio_relative_path(&tmp, "/a/b/c/d/e/", "/a/b/cx/y");
+  assert(0==strcmp(tmp, "../../../cx/y"));
+  qio_free((void*)tmp);
+  qio_relative_path(&tmp, "/home/mppf/chapel/svn_ferguson/test/types/file", "/home/mppf/chapel/svn_ferguson/test/types/file/freadNoInt.txt");
+  assert(0==strcmp(tmp, "freadNoInt.txt"));
+  qio_free((void*)tmp);
+  qio_relative_path(&tmp, "/home/mppf/chapel/svn_ferguson/test/types/file/", "/home/mppf/chapel/svn_ferguson/test/types/file/freadNoInt.txt");
+  assert(0==strcmp(tmp, "freadNoInt.txt"));
+  qio_free((void*)tmp);
 
-  // Open a temporary file.
-  err = qio_file_open_tmp(&f, 0);
-  assert(!err);
 
-  // Create a "write to file" channel.
-  err = qio_channel_create(&writing, QIO_CH_BUFFERED, f, 0, 0, 1, 0, INT64_MAX);
-  assert(!err);
 
-  qio_printf(1, writing, "%i", 15);
+}
 
-  err = qio_channel_release(writing);
-  assert(!err);
-  writing = NULL;
-
-  // Create a "read from file" channel.
-  err = qio_channel_create(&reading, QIO_CH_BUFFERED, f, 0, 1, 0, 0, INT64_MAX);
-  assert(!err);
-
-  nmatched = 0;
-  x = 0;
-  err = qio_scanf(1, reading, &nmatched, "%i", &x);
-  printf("Read %i with error %i %i\n", x, err, errno);
-  assert(!err);
-  assert( x == 15 );
-
-  err = qio_channel_release(reading);
-  assert(!err);
-  reading = NULL;
-
-  // Close the file.
-  qio_file_release(f);
-  f = NULL;
-}*/
 
 int main(int argc, char** argv)
 {
@@ -299,7 +296,7 @@ int main(int argc, char** argv)
   // use smaller qbytes_iobuf_size for testing
   qbytes_iobuf_size = 4*1024;
 
-  //check_printscan();
+  check_paths();
 
   check_channels();
 
