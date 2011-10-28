@@ -19,9 +19,11 @@ static size_t saved_heap_size;
 
 void chpl_mem_layerInit(void) {
   chpl_comm_desired_shared_heap(&saved_heap_start, &saved_heap_size);
-  if (!saved_heap_start || !saved_heap_size)
-    chpl_error("Must have a shared segment", 0, 0);
-  chpl_heap = create_mspace_with_base(saved_heap_start, saved_heap_size, 1);
+  if (!saved_heap_start || !saved_heap_size) {
+    chpl_heap = create_mspace(0, 1);
+  } else {
+    chpl_heap = create_mspace_with_base(saved_heap_start, saved_heap_size, 1);
+  }
 }
 
 
