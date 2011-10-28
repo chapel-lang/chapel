@@ -1,5 +1,7 @@
 // ChapelRange.chpl
 //
+pragma "no use ChapelStandard"
+module ChapelRange {
 
 use ChapelRangeBase;
 
@@ -631,3 +633,4 @@ proc chpl__hasAlignment(r : range(?))
   return false;
 }
 
+}

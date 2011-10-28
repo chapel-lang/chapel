@@ -1,3 +1,11 @@
+// ChapelIO.chpl
+//
+pragma "no use ChapelStandard"
+module ChapelIO {
+
+use ChapelBase; // for uint().
+
+
 extern proc chpl_cstdin(): _file;
 extern proc chpl_cstdout(): _file;
 extern proc chpl_cstderr(): _file;
@@ -543,4 +551,6 @@ proc chpl__testPar(args...) where chpl__testParFlag == true {
     const line : int = __primitive("_get_user_line");
     writeln("CHPL TEST PAR (", file, ":", line, "): ", (...args));
   }
+}
+
 }

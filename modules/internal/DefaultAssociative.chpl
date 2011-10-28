@@ -1,3 +1,8 @@
+// DefaultAssociative.chpl
+//
+pragma "no use ChapelStandard"
+module DefaultAssociative {
+
 use DSIUtil;
 config param debugDefaultAssoc = false;
 config param debugAssocDataPar = false;
@@ -509,4 +514,6 @@ proc chpl__defaultHash(x : string): int(64) {
 pragma "inline"
 proc chpl__defaultHash(o: object): int(64) {
   return _gen_key(__primitive( "object2int", o));
+}
+
 }

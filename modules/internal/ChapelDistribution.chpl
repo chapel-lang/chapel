@@ -1,3 +1,6 @@
+pragma "no use ChapelStandard"
+module ChapelDistribution {
+
 use List;
 
 config const dataParTasksPerLocale = 0;
@@ -298,4 +301,6 @@ class BaseArr {
   }
 
   proc dsiDisplayRepresentation() { }
+}
+
 }

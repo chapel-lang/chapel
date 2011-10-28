@@ -1,3 +1,8 @@
+// DefaultSparse.chpl
+//
+pragma "no use ChapelStandard"
+module DefaultSparse {
+
 use Search;
 config param debugDefaultSparse = false;
 
@@ -344,4 +349,6 @@ proc DefaultSparseArr.dsiSerialWrite(f: Writer) {
       f.writeln();
     }
   }
+}
+
 }

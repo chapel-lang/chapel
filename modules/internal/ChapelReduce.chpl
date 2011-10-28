@@ -1,3 +1,8 @@
+// ChapelReduce.chpl
+//
+pragma "no use ChapelStandard"
+module ChapelReduce {
+
 iter chpl__scanIterator(op, data) {
   for e in data {
     op.accumulate(e);
@@ -189,4 +194,6 @@ class minloc: ReduceScanOp {
     }
   }
   proc generate() return value;
+}
+
 }

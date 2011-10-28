@@ -1,6 +1,9 @@
 // ChapelBase.chpl
 //
 
+pragma "no use ChapelStandard"
+module ChapelBase {
+
 extern proc chpl_config_has_value(name, module_name): bool;
 extern proc chpl_config_get_value(name, module_name): string;
 
@@ -1774,4 +1777,4 @@ pragma "inline" proc <=(param a: int(64), b: uint(64)) {
   if a < 0 then _throwOpError("<="); else return if a == 0 then true else a:uint(64) <= b;
 }
 
-
+}

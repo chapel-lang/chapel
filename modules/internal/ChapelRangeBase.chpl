@@ -1,6 +1,9 @@
 // ChapelRangeBase.chpl
 //
+pragma "no use ChapelStandard"
+module ChapelRangeBase {
 
+use Math; // for abs().
 //use DSIUtil;
 
 // Turns on range iterator debugging.
@@ -1083,3 +1086,4 @@ pragma "inline" proc chpl__extendedEuclid(u:int, v:int)
 pragma "inline" proc chpl__extendedEuclid(u:int(64), v:int(64))
 { return chpl__extendedEuclidHelper(u,v); }
 
+}

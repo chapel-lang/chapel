@@ -1,3 +1,11 @@
+// ChapelArray.chpl
+//
+pragma "no use ChapelStandard"
+module ChapelArray {
+
+use ChapelBase; // For opaque type.
+use ChapelTuple;
+
 config param noRefCount = false;
 
 var privatizeLock$: sync int;
@@ -1917,3 +1925,4 @@ proc chpl__initCopy(ir: _iteratorRecord) {
   return A;
 }
 
+}
