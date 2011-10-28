@@ -9,7 +9,7 @@ MEM_COMMON_OBJS = \
 RUNTIME_INCLS += -I$(TCMALLOC_INCLUDE_DIR) -I$(TCMALLOC_INCLUDE2_DIR)
 
 tcmalloc-interface.depend: tcmalloc-interface.cc $(DEPEND_STAMP)
-	$(CMAKEDEPEND) $(DEPEND_CFLAGS) -I$(TCMALLOC_SRC_DIR) $< | sed s/$*\\\.o/\\\$(DEPEND_DIR_SAFESLASH)\\\/$*\\\.o/ >> $(SVN_DEPENDS).tmp
+	$(MAKEDEPEND) $(DEPEND_CXXFLAGS) -I$(TCMALLOC_SRC_DIR) $< | sed s/$*\\\.o/\\\$(DEPEND_DIR_SAFESLASH)\\\/$*\\\.o/ >> $(SVN_DEPENDS).tmp
 
 $(RUNTIME_OBJ_DIR)/tcmalloc-interface.o: tcmalloc-interface.cc \
                                          $(RUNTIME_OBJ_DIR_STAMP)
