@@ -76,7 +76,7 @@ ARMCI_LIB_DIR = $(ARMCI_INSTALL_DIR)/lib/$(ARMCI_TARGET)
 # GASNet stuff
 #
 # the gasnet version
-GASNET_VERSION = 1.16.2
+GASNET_VERSION = 1.18.0
 GASNET_SUBDIR = $(GASNET_ABS_DIR)/GASNet-$(GASNET_VERSION)
 # decide whether to do a debug or no-debug build
 ifdef CHPL_COMM_DEBUG
