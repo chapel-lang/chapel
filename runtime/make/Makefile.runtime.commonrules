@@ -11,39 +11,3 @@ clobber: $(CLOBBERSUBDIRS) echoruntimedir
 	rm -rf ./$(CLOBBER_TARGS)
 
 norecurse: echoruntimedir $(TARGETS)
-
-# We might need to make GASNet because we use GASNet tools
-#
-# don't remake gasnet if we're making depend from the parent directory
-#
-ifeq ($(CHPL_MAKE_RULE),depend)
-$(GASNET_TOOLS_FILE):
-else
-ifdef $(CHPL_NO_GASNET)
-$(GASNET_TOOLS_FILE):
-else
-$(GASNET_TOOLS_FILE):
-	cd $(THIRD_PARTY_DIR) && $(MAKE) gasnet
-endif
-endif
-
-gasnet_tools.h: $(GASNET_TOOLS_FILE)
-
-# We might need to make GMP because we use GMP in header files
-#
-# don't remake GMP if we're making depend from the parent directory
-#
-ifeq ($(CHPL_MAKE_RULE),depend)
-$(GMP_FILE):
-else
-ifdef $(CHPL_NO_GMP)
-$(GMP_FILE):
-else
-$(GMP_FILE):
-	cd $(THIRD_PARTY_DIR) && $(MAKE) gmp
-endif
-endif
-
-
-gmp.h: $(GMP_FILE)
-

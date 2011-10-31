@@ -13,6 +13,7 @@
 #include "stringutil.h"
 #include "symbol.h"
 
+
 //
 // Move the statements in a block out of the block
 //
@@ -155,6 +156,7 @@ static void change_cast_in_where(FnSymbol* fn) {
     }
   }
 }
+
 
 void cleanup(void) {
   Vec<BaseAST*> asts;
