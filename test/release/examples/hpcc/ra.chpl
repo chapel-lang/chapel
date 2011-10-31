@@ -137,8 +137,12 @@ proc verifyResults(T) {
   // atomic statement to ensure no conflicting updates
   //
   forall ( , r) in (Updates, RAStream()) do
-    on TableDist.idxToLocale(r & indexMask) do
-      atomic T(r & indexMask) ^= r;
+    on TableDist.idxToLocale(r & indexMask) do {
+      const myR = r;
+      local {
+        atomic T(myR & indexMask) ^= myR;
+      }
+   }
 
   //
   // Print the table again after the updates have been reversed
