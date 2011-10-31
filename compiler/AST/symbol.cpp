@@ -438,6 +438,7 @@ void TypeSymbol::codegenDef(FILE* outfile) {
 InterfaceSymbol::InterfaceSymbol(const char* initName) :
 		Symbol(E_InterfaceSymbol,initName)
 {
+  gInterfaceSymbols.add(this);
 }
 
 InterfaceSymbol::~InterfaceSymbol(){

@@ -326,12 +326,22 @@ class VisibleFunctionBlock2 {
 class CallInfo2 {
  public:
   CallExpr*        call;        // call expression
+  FnSymbol*        interface;   // function interface
   BlockStmt*       scope;       // module scope as in M.call
   const char*      name;        // function name
   Vec<Symbol*>     actuals;     // actual symbols
   Vec<const char*> actualNames; // named arguments
   CallInfo2(CallExpr* icall);
+  CallInfo2(FnSymbol* iface);
 };
+
+CallInfo2::CallInfo2(FnSymbol* fn) : interface(fn), scope(NULL) {
+  name = fn->name;
+
+  for_alist (formal, fn->formals) {
+    printf("stuff");
+  }
+}
 
 CallInfo2::CallInfo2(CallExpr* icall) : call(icall), scope(NULL) {
   if (SymExpr* se = toSymExpr(call->baseExpr))
@@ -659,8 +669,50 @@ BaseAST *typeCheckFn(FnSymbol *fn) {
   return typeCheckExpr(fn->body, fn->retExprType);
 }
 
+void checkInterfaceImplementations(BlockStmt *block) {
+  for_alist(s, block->body) {
+    if (DefExpr *de = toDefExpr(s)) {
+      if (de->sym && isFnSymbol(de->sym)) {
+        FnSymbol *fn = toFnSymbol(de->sym);
+        checkInterfaceImplementations(fn->body);
+      }
+    }
+    else if (CallExpr *ce = toCallExpr(s)) {
+      if (UnresolvedSymExpr *use = toUnresolvedSymExpr(ce->baseExpr)) {
+        if (!strcmp(use->unresolved, "implements")) {
+          printf("Found implementation phrase\n");
+          //Next, fine the interface this is talking about
+          if (UnresolvedSymExpr *interface_name = toUnresolvedSymExpr(ce->argList.tail)) {
+            forv_Vec (InterfaceSymbol, is, gInterfaceSymbols) {
+              printf("Checking against: %s\n", is->cname);
+              if (!strcmp(is->cname, interface_name->unresolved))
+                printf("Found interface\n");
+            }
+          }
+          else if (SymExpr *se = toSymExpr(ce->argList.tail)) {
+            printf("Found interface: %p\n", se);
+            //if (SymExpr *implementing_type = toSymExpr(ce->argList.head)) {
+            if (isSymExpr(ce->argList.head)) {
+              if (InterfaceSymbol *is = toInterfaceSymbol(se->var)) {
+                forv_Vec (FnSymbol, fn, is->functionSignatures) {
+                  CallInfo2 info(fn);
+                }
+              }
+            }
+            else {
+              printf("Implementing type not found\n");
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
 void earlyTypeCheck(void) { 
   bool found_early_type_checked = false;
+  checkInterfaceImplementations(userModules.v[0]->block);
+
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->hasFlag(FLAG_SEPARATELY_TYPE_CHECKED)) {
       found_early_type_checked = true;

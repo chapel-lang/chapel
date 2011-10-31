@@ -32,6 +32,7 @@
   macro(ArgSymbol) sep                             \
   macro(TypeSymbol) sep                            \
   macro(FnSymbol) sep                              \
+  macro(InterfaceSymbol) sep                       \
   macro(EnumSymbol) sep                            \
   macro(LabelSymbol) sep                           \
   macro(SymExpr) sep                               \

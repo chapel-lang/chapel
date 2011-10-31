@@ -50,6 +50,9 @@ void printStatistics(const char* pass) {
   int nType = nPrimitiveType+nEnumType+nClassType;
   int kType = kPrimitiveType+kEnumType+kClassType;
 
+  if (strstr(fPrintStatistics, "n"))
+    fprintf(stderr, "   Interfaces: %d\n", kInterfaceSymbol);  //FIXME: Make this part of statistics
+
   fprintf(stderr, "%7d asts (%6dK) %s\n", nStmt+nExpr+nSymbol+nType, kStmt+kExpr+kSymbol+kType, pass);
 
   if (nStmt+nExpr+nSymbol+nType > maxN)
