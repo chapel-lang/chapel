@@ -5,4 +5,3 @@ while processing the following Chapel call chain:
   print-callstack-on-error-1.chpl:10: test2(y)
   print-callstack-on-error-1.chpl:6: test1(x)
   print-callstack-on-error-1.chpl:3: top-level module statements for print-callstack-on-error-1
-  print-callstack-on-error-1.chpl:1: chpl_main() [compiler-generated]

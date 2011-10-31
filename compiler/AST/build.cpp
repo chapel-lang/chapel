@@ -385,24 +385,22 @@ void createInitFn(ModuleSymbol* mod) {
   mod->initFn->addFlag(FLAG_MODULE_INIT);
   mod->initFn->addFlag(FLAG_INSERT_LINE_FILE_INFO);
   mod->initFn->addFlag(FLAG_PROC_ITER_KW_USED); // ProcIter: remove
+  // All module initialization functions should be exported.
+  // But that means we have to adopt some new naming conventions.
+  // mod->initFn->addFlag(FLAG_EXPORT);
 
   //
   // move module-level statements into module's init function
   //
-  if (mod != theProgram) {
-    for_alist(stmt, mod->block->body) {
+  for_alist(stmt, mod->block->body) {
+    // except for module definitions
+    if (BlockStmt* block = toBlockStmt(stmt))
+      if (block->length() == 1)
+        if (DefExpr* def = toDefExpr(block->body.only()))
+          if (isModuleSymbol(def->sym))
+            continue;
 
-      //
-      // except for module definitions
-      //
-      if (BlockStmt* block = toBlockStmt(stmt))
-        if (block->length() == 1)
-          if (DefExpr* def = toDefExpr(block->body.only()))
-            if (isModuleSymbol(def->sym))
-              continue;
-
-      mod->initFn->insertAtTail(stmt->remove());
-    }
+    mod->initFn->insertAtTail(stmt->remove());
   }
   mod->block->insertAtHead(new DefExpr(mod->initFn));
 }

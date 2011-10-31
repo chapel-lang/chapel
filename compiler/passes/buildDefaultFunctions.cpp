@@ -243,42 +243,7 @@ static FnSymbol* chpl_main_exists(void) {
 }
 
 
-static Vec<ModuleSymbol*> initMods;
-
-
-static void addModuleInits(BlockStmt* block, ModuleSymbol* mod) {
-  //  printf("Adding module inits for %s\n", mod->name);
-  if (initMods.set_in(mod)) {
-    //    printf("...already done\n");
-    return;
-  }
-  //  printf("---start %s\n", mod->name);
-  initMods.set_add(mod);
-  // Insert module initializations for any parent modules that we haven't
-  if (ModuleSymbol* parent = mod->defPoint->getModule()) {
-    addModuleInits(block, parent);
-  }
-  forv_Vec(ModuleSymbol*, usedmod, mod->modUseList) {
-    addModuleInits(block, usedmod);
-  }
-  //  printf("---stop %s\n", mod->name);
-
-  block->insertAtTail(new CallExpr(mod->initFn));
-}
-
-
-static BlockStmt* createModuleInitBlock(ModuleSymbol* startModule) {
-  // we're going to insert the init call for the program manually later
-  initMods.set_add(theProgram);
-
-  BlockStmt* initBlock = new BlockStmt();
-  addModuleInits(initBlock, startModule);
-  return initBlock;
-}
-
-
 static void build_chpl_entry_points(void) {
-  ModuleSymbol* mainModule = NULL;
 
   //                                                                          
   // chpl_user_main is the (user) programmatic portion of the app             
@@ -349,12 +314,9 @@ static void build_chpl_entry_points(void) {
     chpl_main->insertAtHead(new CallExpr("main"));
   }
 
-  // Creation of stdInits must precede usrInits, because it invokes 
-  // function resolution.  The standard module inits are carefully ordered
-  // to avoid the "Dependency Ordering" bug.  (Learned the hard way.) <hilde>
-  BlockStmt* stdInits = createModuleInitBlock(standardModule);
-  BlockStmt* usrInits = createModuleInitBlock(mainModule);
-  chpl_main->insertAtHead(usrInits);
+  // We have to initialize the main module explicitly.
+  // It will initialize all the modules it uses, recursively.
+  chpl_main->insertAtHead(new CallExpr(mainModule->initFn));
 
   VarSymbol* endCount = newTemp("_endCount");
   chpl_main->insertAtHead(new CallExpr("chpl_startTrackingMemory"));
@@ -363,8 +325,6 @@ static void build_chpl_entry_points(void) {
   chpl_main->insertAtHead(new DefExpr(endCount));
   chpl_main->insertBeforeReturn(new CallExpr("_waitEndCount"));
   //chpl_main->insertBeforeReturn(new CallExpr("_endCountFree", endCount));
-
-  theProgram->initFn->insertBeforeReturn(stdInits);
 }
 
 static void build_record_equality_function(ClassType* ct) {

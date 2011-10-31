@@ -127,7 +127,7 @@ int main(int argc, char* argv[]) {
     chpl_task_setSerial(false);
 
     // Initialize the internal modules.
-    chpl__init_chpl__Program(0, myFilename);
+    chpl__init_ChapelStandard(0, myFilename);
     // Note that in general, module code can contain "on" clauses
     // and should therefore not be called before the call to
     // chpl_comm_startPollingTask().

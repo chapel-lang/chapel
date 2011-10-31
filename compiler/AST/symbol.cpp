@@ -18,6 +18,7 @@ FnSymbol *chpl_main = NULL;
 
 ModuleSymbol* rootModule = NULL;
 ModuleSymbol* theProgram = NULL;
+ModuleSymbol* mainModule = NULL;
 ModuleSymbol* baseModule = NULL;
 ModuleSymbol* standardModule = NULL;
 Symbol *gNil = NULL;
