@@ -1311,7 +1311,7 @@ err_t qio_shortest_path(const char** path_out, const char* path_in)
 
   err = qio_relative_path(&relpath, cwd, path_in);
 
-  printf("cwd %s abs %s rel %s\n", cwd, path_in, relpath);
+  //printf("cwd %s abs %s rel %s\n", cwd, path_in, relpath);
 
   if( ! err ) {
     if( strlen(relpath) < strlen(path_in) ) {

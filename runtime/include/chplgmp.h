@@ -1,4 +1,6 @@
 
+#include "chpltypes.h"
+
 #include <stdarg.h>
 #include <stdio.h>
 
