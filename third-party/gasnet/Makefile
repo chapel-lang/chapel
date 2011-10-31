@@ -19,19 +19,25 @@ CHPL_GASNET_CFG_OPTIONS += -with-mpi-cc=mpcc
 endif
 
 ifeq ($(CHPL_MAKE_TARGET_PLATFORM),xe-cle)
-CHPL_GASNET_CFG_OPTIONS += -with-mpi-cc=cc --enable-mpi --enable-pthreads
+CHPL_GASNET_CFG_OPTIONS += --enable-pthreads
+ifeq ($(CHPL_MAKE_COMM_SUBSTRATE),gemini)
+else
+# We need to do this because the auto-dectect stuff for gemini is not
+#  yet working as well as the portals auto-detect
+CHPL_GASNET_CFG_OPTIONS += --disable-gemini --disable-pshm --disable-pshm-xpmem --enable-pshm-posix
 endif
+CHPL_GASNET_CFG_SCRIPT=cross-configure-crayxe-linux
+XTRA_CONFIG_COMMAND=cp --update $(GASNET_SUBDIR)/other/contrib/$(CHPL_GASNET_CFG_SCRIPT) $(GASNET_SUBDIR)
+XTRA_POST_INSTALL_COMMAND=rm -f $(GASNET_SUBDIR)/$(CHPL_GASNET_CFG_SCRIPT)
+else
 
 ifeq ($(CHPL_MAKE_TARGET_PLATFORM),xt-cle)
-#
-# this conditional should only be necessary for PE <= 2.0 and should
-# match the corresponding test in cross-configure-crayxt-linux
-#
-XTRA_CONFIG_COMMAND=cp --update $(GASNET_SUBDIR)/other/contrib/cross-configure-crayxt-linux $(GASNET_SUBDIR)
-XTRA_POST_INSTALL_COMMAND=if test -f /usr/include/nptl/pthread.h -a -d /usr/lib64/nptl ; then cp -fr $(GASNET_BUILD_DIR)/patched-headers $(GASNET_INSTALL_DIR); fi
 CHPL_GASNET_CFG_SCRIPT=cross-configure-crayxt-linux
+XTRA_CONFIG_COMMAND=cp --update $(GASNET_SUBDIR)/other/contrib/$(CHPL_GASNET_CFG_SCRIPT) $(GASNET_SUBDIR)
+XTRA_POST_INSTALL_COMMAND=rm -f $(GASNET_SUBDIR)/$(CHPL_GASNET_CFG_SCRIPT)
 else
 CHPL_GASNET_CFG_SCRIPT=configure
+endif
 endif
 
 MKFILES=$(shell find $(GASNET_INSTALL_DIR) -name \*.mak)
