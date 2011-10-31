@@ -1,6 +1,10 @@
+// ChapelTuple.chpl
 //
 // tuple data implementation as a record
 //
+pragma "no use ChapelStandard"
+module ChapelTuple {
+
 pragma "tuple" record _tuple {
   param size : int;
 }
@@ -431,3 +435,5 @@ record _square_tuple {
 //
 proc chpl__buildDomainExpr(x ...?size) where size > 1
   return new _square_tuple(size, x);
+
+}

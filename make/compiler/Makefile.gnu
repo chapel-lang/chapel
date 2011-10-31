@@ -18,7 +18,6 @@ RANLIB = ranlib
 #
 
 DEBUG_CFLAGS = -g
-# DEBUG_LFLAGS = -g
 OPT_CFLAGS = -O3
 PROFILE_CFLAGS = -pg
 PROFILE_LFLAGS = -pg
@@ -37,6 +36,7 @@ COMP_CFLAGS_NONCHPL = -Wno-error
 RUNTIME_CFLAGS = -std=c99 $(CFLAGS)
 RUNTIME_GEN_CFLAGS = $(RUNTIME_CFLAGS)
 RUNTIME_CXXFLAGS = $(CFLAGS)
+RUNTIME_GEN_CXXFLAGS = $(RUNTIME_CXXFLAGS)
 GEN_CFLAGS = -std=c99
 GEN_STATIC_FLAG = -static
 GEN_DYNAMIC_FLAG =
@@ -71,11 +71,9 @@ SUPPORT_SETENV_CFLAGS = -std=gnu89
 #
 # query gcc version
 #
-GNU_GPP_MAJOR_VERSION = $(shell $(CC) -dumpversion | awk '{split($$1,a,"."); printf("%s", a[1]);}')
-GNU_GPP_MINOR_VERSION = $(shell $(CC) -dumpversion | awk '{split($$1,a,"."); printf("%s", a[2]);}')
+GNU_GPP_MAJOR_VERSION = $(shell $(CXX) -dumpversion | awk '{split($$1,a,"."); printf("%s", a[1]);}')
+GNU_GPP_MINOR_VERSION = $(shell $(CXX) -dumpversion | awk '{split($$1,a,"."); printf("%s", a[2]);}')
 GNU_GPP_SUPPORTS_MISSING_DECLS = $(shell test $(GNU_GPP_MAJOR_VERSION) -lt 4 || (test $(GNU_GPP_MAJOR_VERSION) -eq 4 && test $(GNU_GPP_MINOR_VERSION) -le 2); echo "$$?")
-
-GNU_GPP_SUPPORTS_WERROR = $(shell test $(GNU_GPP_MAJOR_VERSION) -lt 4 || (test $(GNU_GPP_MAJOR_VERSION) -eq 4 && test $(GNU_GPP_MINOR_VERSION) -le 3); echo "$$?")
 
 #
 # Flags for turning on warnings for C++/C code
@@ -98,7 +96,7 @@ COMP_CFLAGS += $(WARN_CXXFLAGS)
 RUNTIME_CFLAGS += $(WARN_CFLAGS)
 RUNTIME_CXXFLAGS += $(WARN_CXXFLAGS)
 RUNTIME_GEN_CFLAGS += -Wno-unused
-
+RUNTIME_GEN_CXXFLAGS += -Wno-unused
 # mpf - turning off unreachable code warning
 # because it is unavoidable in some situations
 # with macros/inline functions with some values
@@ -135,18 +133,7 @@ RUNTIME_GEN_CFLAGS += -Wno-unused
 # -Wno-unused has to be used due to _dummy_checkalign variables in
 # -gasnet_atomicops.h
 #
-# -Wunused-function because gasnet_tools.h creates a static _gasnett_trace_printf_noop
-#
-# MPF - Since these can be useful errors, it's better to use -Wno-error
-#       so that a warning is still printed out. Since GASNet Tools will
-#       be used for atomics, the GASNET_MORE_CFLAGS will have to apply
-#       to *all* our code, not just GASNet comms support.
-ifeq ($(GNU_GPP_SUPPORTS_WERROR),1)
-CHPL_GASNET_MORE_CFLAGS = -Wno-error=strict-prototypes -Wno-error=missing-prototypes -Wno-error=unused-function
-else
-CHPL_GASNET_MORE_CFLAGS = -Wno-strict-prototypes -Wno-missing-prototypes -Wno-unused-function
-endif
-
+CHPL_GASNET_MORE_CFLAGS = -Wno-strict-prototypes -Wno-missing-prototypes
 ifndef CHPL_COMM_DEBUG
 CHPL_GASNET_MORE_CFLAGS += -Wno-unused
 endif

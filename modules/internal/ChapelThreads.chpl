@@ -1,3 +1,5 @@
+// ChapelThreads.chpl
+//
 // IMPORTANT NOTE: This module is currently initialized manually in
 // runtime/src/main.c and then again during the normal module
 // initialization phase, and therefore must only contain
@@ -10,6 +12,12 @@
 // indicates that the tasking layer can determine the number of
 // threads to use.
 //
+pragma "no use ChapelStandard"
+module ChapelThreads {
+
+use ChapelBase; // for uint().
+
+
 config const numThreadsPerLocale = 0;
 const chpl__maxThreadsPerLocale = chpl__initMaxThreadsPerLocale();
 
@@ -37,4 +45,6 @@ proc chpl__initMaxThreadsPerLocale() {
   extern proc chpl_maxThreads(): int(32);
 
   return chpl_maxThreads();
+}
+
 }

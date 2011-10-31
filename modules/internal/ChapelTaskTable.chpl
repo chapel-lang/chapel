@@ -1,3 +1,8 @@
+// ChapelTaskTable.chpl
+//
+pragma "no use ChapelStandard"
+module ChapelTaskTable {
+
 use ChapelBase;
 use ChapelIO;
 use ChapelArray;
@@ -130,4 +135,6 @@ export proc chpldev_taskTable_print()
                    ":",  chpldev_taskTable.map[taskID].lineno,
                    " is ", chpldev_taskTable.map[taskID].state);
   }
+}
+
 }

@@ -2808,9 +2808,17 @@ error:
   return err;
 }
 
-// declared below..
-static
-err_t _qio_flush_bits_if_needed_unlocked(qio_channel_t* restrict ch);
+  static inline
+err_t _qio_flush_bits_if_needed_unlocked(qio_channel_t* restrict ch)
+{
+  err_t err = 0;
+
+  if( (ch->flags & QIO_FDFLAG_WRITEABLE) && ch->bit_buffer_bits > 0 ) {
+    err = qio_channel_write_bits(false, ch, 0, 8 - ch->bit_buffer_bits);
+    assert(ch->bit_buffer_bits == 0);
+  }
+  return err;
+}
 
 err_t qio_channel_mark_maybe_flush_bits(const int threadsafe, qio_channel_t* ch, int flushbits)
 {
@@ -3102,18 +3110,6 @@ unlock:
   return err;
 
 #undef WRITESOME
-}
-
-static inline
-err_t _qio_flush_bits_if_needed_unlocked(qio_channel_t* restrict ch)
-{
-  err_t err = 0;
-
-  if( (ch->flags & QIO_FDFLAG_WRITEABLE) && ch->bit_buffer_bits > 0 ) {
-    err = qio_channel_write_bits(false, ch, 0, 8 - ch->bit_buffer_bits);
-    assert(ch->bit_buffer_bits == 0);
-  }
-  return err;
 }
 
 err_t qio_channel_flush_bits(const int threadsafe, qio_channel_t* restrict ch)

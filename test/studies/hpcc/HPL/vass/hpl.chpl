@@ -74,12 +74,16 @@ config var reproducible = false, verbose = false;
   if printParams && printStats then
     writeln("target locales ", tl1, " x ", tl2);
 
-  // Create the dimensional descriptors
+  // Create individual dimension descriptors
   const
+    // block-cyclic for 1st dimension
     bdim1 = new idist(lowIdx=1, blockSize=blkSize, numLocales=tl1),
+    // replicated for 1st dimension
     rdim1 = new vdist(tl1),
 
+    // block-cyclic for 2nd dimension
     bdim2 = new idist(lowIdx=1, blockSize=blkSize, numLocales=tl2),
+    // replicated for 2nd dimension
     rdim2 = new vdist(tl2);
 
   //
@@ -234,13 +238,15 @@ proc schurComplement(AD: domain, BD: domain, Rest: domain) {
 
   // do local matrix-multiply on a block-by-block basis
   forall (row,col) in Rest by (blkSize, blkSize) {
-    // workaround: localize Rest explicitly
-    const RestLcl = Rest;
+    // localize Rest explicitly as a workaround;
+    // also hoist the innerRange computation
+    const outterRange = Rest.dim(1)(row..#blkSize),
+          innerRange  = Rest.dim(2)(col..#blkSize);
 
     local {
-      for a in (RestLcl.dim(1))(row..#blkSize) do
+      for a in outterRange do
         for w in 1..blkSize do
-          for b in (RestLcl.dim(2))(col..#blkSize) do
+          for b in innerRange do
             Ab[a,b] -= replA[a,w] * replB[w,b];
     }
   }

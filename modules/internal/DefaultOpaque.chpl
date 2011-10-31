@@ -1,3 +1,8 @@
+// DefaultOpaque.chpl
+//
+pragma "no use ChapelStandard"
+module DefaultOpaque {
+
 class DefaultOpaqueDom: BaseOpaqueDom {
   type idxType = _OpaqueIndex;
   param parSafe: bool;
@@ -108,4 +113,6 @@ class DefaultOpaqueArr: BaseArr {
 
 proc DefaultOpaqueDom.dsiRemove(idx: idxType) {
   adomain.dsiRemove(idx);
+}
+
 }

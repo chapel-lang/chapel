@@ -172,7 +172,7 @@ view_ast(BaseAST* ast, bool number = false, int mark = -1, int indent = 0) {
     int64_t i;
     const char *str;
     if (get_int(expr, &i)) {
-      printf(" %ld", i);
+      printf(" %" PRId64, i);
     } else if (get_string(expr, &str)) {
       printf(" \"%s\"", str);
     }

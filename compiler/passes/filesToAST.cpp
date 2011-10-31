@@ -14,10 +14,23 @@
 
 
 static ModuleSymbol* parseInternalModule(const char* name) {
-  ModuleSymbol* modsym = ParseMod(name, MOD_INTERNAL);
+
+  ModuleSymbol* modsym = NULL;
+
+  ParseMod(name, MOD_INTERNAL);
+
+  // vass sez: It would be better to push this down into ParseMod().
+  // If ParseMod() sees that there is a single module within a file (whether wrapped or not),
+  // it can return that one module.  Currently, if the content of the file is not a module body,
+  // ParseMod() returns NULL.
+  forv_Vec(ModuleSymbol, mod, gModuleSymbols)
+    if (!strcmp(mod->name, name))
+      modsym = mod;
+
   if (modsym == NULL) {
     INT_FATAL("Couldn't find module %s\n", name);
   }
+
   return modsym;
 }
 
@@ -168,11 +181,8 @@ void parse(void) {
   parseDependentModules(MOD_USER);
 
   forv_Vec(ModuleSymbol, mod, allModules) {
-    if (mod == baseModule ||
-        mod == standardModule ||
-        mod == theProgram ||
-        mod == rootModule)
-      // The modules in this list do not depend on ChapelStandard.
+    // Filter out modules that don't want to include ChapelStandard by default.
+    if (mod->hasFlag(FLAG_NO_DEFAULT_USE))
       continue;
 
     // ChapelStandard is added implicity to the "use" list of all other modules.

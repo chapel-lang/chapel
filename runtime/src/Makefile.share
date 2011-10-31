@@ -16,7 +16,7 @@ COMMON_NOGEN_SRCS = \
 	chplsys.c \
 	gdb.c \
 	bulkget.c deque.c qbuffer.c qio.c qio_formatted.c \
-	sys.c sys_xsi_strerror_r.c chplgmp.c \
+	sys.c sys_xsi_strerror_r.c \
 
 ifdef NVCC
 CUDA_SRCS = \

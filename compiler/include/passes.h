@@ -10,7 +10,7 @@ extern bool resolved;
 //
 // prototypes of functions that are called as passes (alphabetical)
 //
-void addInitGuards();
+void addInitCalls();
 void buildDefaultFunctions();
 void callDestructors();
 void checkNormalized();

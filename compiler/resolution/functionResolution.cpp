@@ -1,5 +1,7 @@
+#define __STDC_FORMAT_MACROS
 #include <sstream>
 #include <map>
+#include <inttypes.h>
 
 #include "astutil.h"
 #include "build.h"
@@ -176,6 +178,7 @@ static void
 addVirtualMethodTableEntry(Type* type, FnSymbol* fn, bool exclusive = false);
 static void computeStandardModuleSet();
 static void unmarkDefaultedGenerics();
+static void resolveUses(ModuleSymbol* mod);
 static void resolveExports();
 static void resolveEnumTypes();
 static void resolveDynamicDispatches();
@@ -311,7 +314,7 @@ const char* toString(CallInfo* info) {
   bool _this = false;
   const char *str = "";
   if (info->actuals.n > 1)
-    if (info->actuals.v[0]->type == dtMethodToken)
+    if (info->actuals.head()->type == dtMethodToken)
       method = true;
   if (!strcmp("this", info->name)) {
     _this = true;
@@ -1293,7 +1296,7 @@ addCandidate(Vec<FnSymbol*>* candidateFns,
   resolveFormals(fn);
 
   if (!strcmp(fn->name, "=")) {
-    Symbol* actual = formalActuals.v[0];
+    Symbol* actual = formalActuals.head();
     Symbol* formal = fn->getFormal(1);
     if (actual->type != formal->type &&
         actual->type != formal->type->refType)
@@ -1534,7 +1537,7 @@ printResolutionError(const char* error,
                      CallInfo* info) {
   CallExpr* call = userCall(info->call);
   if (!strcmp("_cast", info->name)) {
-    if (!info->actuals.v[0]->hasFlag(FLAG_TYPE_VARIABLE)) {
+    if (!info->actuals.head()->hasFlag(FLAG_TYPE_VARIABLE)) {
       USR_FATAL(call, "illegal cast to non-type",
                 toString(info->actuals.v[1]->type),
                 toString(info->actuals.v[0]->type));
@@ -1635,7 +1638,7 @@ static void issueCompilerError(CallExpr* call) {
   if (call->isPrimitive(PRIM_WARNING))
     if (inDynamicDispatchResolution)
       if (call->getModule()->modTag == MOD_INTERNAL &&
-          callStack.v[0]->getModule()->modTag == MOD_INTERNAL)
+          callStack.head()->getModule()->modTag == MOD_INTERNAL)
         return;
   //
   // If an errorDepth was specified, report a diagnostic about the call
@@ -1653,16 +1656,17 @@ static void issueCompilerError(CallExpr* call) {
     depth = 1;
     foundDepthVal = false;
   }
-  if (depth+1 > callStack.n) {
-    USR_WARN(call, "compiler diagnostic depth value exceeds call stack depth");
+  if (depth > callStack.n - 1) {
+    if (foundDepthVal)
+      USR_WARN(call, "compiler diagnostic depth value exceeds call stack depth");
     depth = callStack.n - 1;
   }
   if (depth < 0) {
     USR_WARN(call, "compiler diagnostic depth value can not be negative");
-    depth = 1;
+    depth = 0;
   }
   CallExpr* from = NULL;
-  for (int i = callStack.n-(1+depth); i >= 0; i--) {
+  for (int i = callStack.n-1 - depth; i >= 0; i--) {
     from = callStack.v[i];
     if (from->lineno > 0 && 
         from->getModule()->modTag != MOD_INTERNAL &&
@@ -1683,9 +1687,9 @@ static void issueCompilerError(CallExpr* call) {
   } else {
     USR_WARN(from, "%s", str);
   }
-  if (FnSymbol* fn = toFnSymbol(callStack.v[callStack.n-1]->isResolved()))
+  if (FnSymbol* fn = toFnSymbol(callStack.tail()->isResolved()))
     innerCompilerWarningMap.put(fn, str);
-  if (FnSymbol* fn = toFnSymbol(callStack.v[callStack.n-(1+depth)]->isResolved()))
+  if (FnSymbol* fn = toFnSymbol(callStack.v[callStack.n-1 - depth]->isResolved()))
     outerCompilerWarningMap.put(fn, str);
 }
 
@@ -1696,8 +1700,8 @@ static void reissueCompilerWarning(const char* str, int offset) {
   // confusion.  See note in 'issueCompileError' above.
   //
   if (inDynamicDispatchResolution)
-    if (callStack.v[callStack.n-1]->getModule()->modTag == MOD_INTERNAL &&
-        callStack.v[0]->getModule()->modTag == MOD_INTERNAL)
+    if (callStack.tail()->getModule()->modTag == MOD_INTERNAL &&
+        callStack.head()->getModule()->modTag == MOD_INTERNAL)
       return;
 
   CallExpr* from = NULL;
@@ -2821,7 +2825,7 @@ createFunctionAsValue(CallExpr *call) {
 
   INT_ASSERT(visibleFns.n == 1);
   
-  FnSymbol* captured_fn = visibleFns.v[0];
+  FnSymbol* captured_fn = visibleFns.head();
 
   //Check to see if we've already cached the capture somewhere
   if (functionCaptureMap.find(captured_fn) != functionCaptureMap.end()) {
@@ -3157,7 +3161,7 @@ preFold(Expr* expr) {
         if (!get_int(call->get(3), &index))
           USR_FATAL(call, "illegal type index expression");
         char field[8];
-        sprintf(field, "x%ld", index);
+        sprintf(field, "x%" PRId64, index);
         result = new SymExpr(base->var->type->getField(field)->type->symbol);
         call->replace(result);
       } else if (base && (isVarSymbol(base->var) || isArgSymbol(base->var))) {
@@ -3175,7 +3179,7 @@ preFold(Expr* expr) {
           uint64_t uindex;
           if (get_int(call->get(3), &index)) {
             char field[8];
-            sprintf(field, "x%ld", index);
+            sprintf(field, "x%" PRId64, index);
             if (index <= 0 || index >= toClassType(t)->fields.length)
               USR_FATAL(call, "tuple index out-of-bounds error (%ld)", index);
             if (toClassType(t)->getField(field)->type->symbol->hasFlag(FLAG_REF))
@@ -3185,7 +3189,7 @@ preFold(Expr* expr) {
             call->replace(result);
           } else if (get_uint(call->get(3), &uindex)) {
             char field[8];
-            sprintf(field, "x%lu", uindex);
+            sprintf(field, "x%" PRIu64, uindex);
             if (uindex <= 0 || uindex >= (unsigned long)toClassType(t)->fields.length)
               USR_FATAL(call, "tuple index out-of-bounds error (%lu)", uindex);
             if (toClassType(t)->getField(field)->type->symbol->hasFlag(FLAG_REF))
@@ -4132,8 +4136,8 @@ postFold(Expr* expr) {
   //
   if (tryStack.n) {
     if (BlockStmt* block = toBlockStmt(result)) {
-      if (tryStack.v[tryStack.n-1]->thenStmt == block) {
-        tryStack.v[tryStack.n-1]->replace(block->remove());
+      if (tryStack.tail()->thenStmt == block) {
+        tryStack.tail()->replace(block->remove());
         tryStack.pop();
       }
     }
@@ -4184,14 +4188,14 @@ resolveBlock(Expr* body) {
       if (!tryFailure && call->isResolved())
         resolveFns(call->isResolved());
       if (tryFailure) {
-        if (tryStack.v[tryStack.n-1]->parentSymbol == fn) {
-          while (callStack.v[callStack.n-1]->isResolved() != tryStack.v[tryStack.n-1]->elseStmt->parentSymbol) {
-            callStack.pop();
-            if (callStack.n == 1)
+        if (tryStack.tail()->parentSymbol == fn) {
+          while (callStack.tail()->isResolved() != tryStack.tail()->elseStmt->parentSymbol) {
+            if (callStack.n == 0)
               INT_FATAL(call, "unable to roll back stack due to try block failure");
+            callStack.pop();
           }
-          BlockStmt* block = tryStack.v[tryStack.n-1]->elseStmt;
-          tryStack.v[tryStack.n-1]->replace(block->remove());
+          BlockStmt* block = tryStack.tail()->elseStmt;
+          tryStack.tail()->replace(block->remove());
           tryStack.pop();
           if (!block->prev)
             block->insertBefore(new CallExpr(PRIM_NOOP));
@@ -4381,7 +4385,7 @@ resolveFns(FnSymbol* fn) {
 
   if (retType == dtUnknown) {
     if (retTypes.n == 1)
-      retType = retTypes.v[0];
+      retType = retTypes.head();
     else if (retTypes.n > 1) {
       for (int i = 0; i < retTypes.n; i++) {
         bool best = true;
@@ -4825,13 +4829,7 @@ resolve() {
 
   unmarkDefaultedGenerics();
 
-  // We resolve the program initialization function first.
-  // This resolves module initialization functions and their dependencies in
-  // the order specified in ChapelStandard.chpl,
-  // subject to the proviso that the immediate dependencies of an entry
-  // in that file are resolved prior to the entry itself.
-  resolveFormals(theProgram->initFn);
-  resolveFns(theProgram->initFn);
+  resolveUses(mainModule);
 
   resolveFns(chpl_main);
   USR_STOP();
@@ -4904,6 +4902,33 @@ static void unmarkDefaultedGenerics() {
       INT_ASSERT(false);
     }
   }
+}
+
+static Vec<ModuleSymbol*> initMods;
+
+static void resolveUses(ModuleSymbol* mod) {
+  // We have to resolve modules in dependency order, 
+  // so that the types of globals are ready when we need them.
+
+  // Test and set to break loops and prevent infinite recursion.
+  if (initMods.set_in(mod))
+    return;
+  initMods.set_add(mod);
+
+  // I use my parent implicitly.
+  if (ModuleSymbol* parent = mod->defPoint->getModule())
+    if (parent != theProgram && parent != rootModule)
+      resolveUses(parent);
+
+  // Now, traverse my use statements, and call the initializer for each
+  // module I use.
+  forv_Vec(ModuleSymbol, usedMod, mod->modUseList)
+    resolveUses(usedMod);
+
+  // Finally, myself.
+  FnSymbol* fn = mod->initFn;
+  resolveFormals(fn);
+  resolveFns(fn);
 }
 
 static void resolveExports() {

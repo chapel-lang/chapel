@@ -410,8 +410,8 @@ use statment names a module that has already been visited, it is not visited a
 second time.  Thus, infinite recursion is avoided.
 
 Modules used by a given module are visited in the order in which
-they appear in the program text.  For nested modules, uses in the
-parent module are initialized before uses in the nested module.
+they appear in the program text.  For nested modules, the
+parent module and its uses are initialized before the nested module and its uses.
 
 \begin{chapelexample}{init-order.chpl}
 The code

@@ -1,3 +1,8 @@
+// ChapelLocale.chpl
+//
+pragma "no use ChapelStandard"
+module ChapelLocale {
+
 use DefaultRectangular;
 
 // would like this to be the following, but it breaks about 20 tests:
@@ -275,4 +280,6 @@ proc chpl_startTrackingMemory() {
       }
     }
   }
+}
+
 }

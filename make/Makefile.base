@@ -51,7 +51,6 @@ endif
 #
 ifeq ($(DEBUG), 1)
 CFLAGS += $(DEBUG_CFLAGS)
-LDFLAGS += $(DEBUG_LFLAGS)
 endif
 
 ifeq ($(OPTIMIZE), 1)
@@ -99,21 +98,6 @@ GASNET_BUILD_SUBDIR = build/$(GASNET_UNIQUE_SUBDIR)
 GASNET_INSTALL_DIR = $(GASNET_DIR)/$(GASNET_INSTALL_SUBDIR)
 GASNET_LIB_DIR = $(GASNET_INSTALL_DIR)/lib
 GASNET_INC_MAKEFILE = $(GASNET_INSTALL_DIR)/include/$(CHPL_MAKE_COMM_SUBSTRATE)-conduit/$(CHPL_MAKE_COMM_SUBSTRATE)-par.mak
-
-GASNET_TOOLS_INCLUDE_DIR = $(GASNET_INSTALL_DIR)/include
-GASNET_TOOLS_LIB_DIR = $(GASNET_LIB_DIR)
-GASNET_TOOLS_CFLAGS = -DGASNETT_THREAD_SAFE=1 -DGASNETI_THREAD_SAFE=1
-# note - if we're building a shared library, we need to pass -DGASNETI_FORCE_PIC=1
-# for GASNET or GASNET tools. We do that in runtime/etc/Makefile.shared
-
-# Now we need to add the GASNet tools library,
-# but when building with a real GASNet conduit, we could
-# set GASNET_TOOLS_LIB to "" so that we don't get linker conflicts,
-# but that does not appear to be necessary.
-#GASNET_TOOLS_LIB = -lgasnet_tools-par intentionally disabled.
-# This one is used as a make target
-GASNET_TOOLS_FILE = $(GASNET_TOOLS_INCLUDE_DIR)/gasnet_tools.h
-
 
 MPICH1_DIR = $(THIRD_PARTY_DIR)/mpich1
 MPICH1_INSTALL_DIR = $(MPICH1_DIR)/install/$(CHPL_MAKE_TARGET_PLATFORM)
@@ -199,7 +183,6 @@ GMP_INSTALL_DIR=$(GMP_DIR)/$(GMP_INSTALL_SUBDIR)
 GMP_BUILD_DIR=$(GMP_DIR)/$(GMP_LIB_DIR)
 GMP_INCLUDE_DIR=$(GMP_INSTALL_DIR)/include
 GMP_LIB_DIR=$(GMP_INSTALL_DIR)/lib
-GMP_FILE=$(GMP_INCLUDE_DIR)/gmp.h
 
 #
 # how to make a platform-specific subdirectory
@@ -247,7 +230,7 @@ OBJ_SUBDIR_SAFESLASH = $(subst /,\\/, $(OBJ_SUBDIR))
 	@mkdir -p $*
 	@-touch $*/.timestamp
 
-COMM_SUBSTRATE_SUBDIR = comm-$(CHPL_MAKE_COMM)$(CHPL_MAKE_COMM_EXTRAS)/substrate-$(CHPL_MAKE_COMM_SUBSTRATE)
+COMM_SUBSTRATE_SUBDIR = comm-$(CHPL_MAKE_COMM)$(CHPL_MAKE_COMM_EXTRAS)/substrate-$(CHPL_MAKE_COMM_SUBSTRATE)/seg-$(CHPL_MAKE_COMM_SEGMENT)
 COMM_TASK_THREAD_SUBDIR = $(COMM_SUBSTRATE_SUBDIR)/tasks-$(CHPL_MAKE_TASKS)/threads-$(CHPL_MAKE_THREADS)
 COMM_LAUNCH_SUBDIR = $(COMM_SUBSTRATE_SUBDIR)/launch-$(CHPL_MAKE_LAUNCHER)
 PLAT_RUNTIME_SUBDIR = $(CHPL_MAKE_TARGET_PLATFORM)/$(CHPL_MAKE_COMPILER)
@@ -301,23 +284,3 @@ EXE_SUFFIX =
 -include $(CHAPEL_ROOT)/make/platform/Makefile.$(CHPL_MAKE_PLATFORM)
 -include $(CHAPEL_ROOT)/make/comm/Makefile.$(CHPL_MAKE_COMM)
 -include $(CHAPEL_ROOT)/make/tasks/Makefile.$(CHPL_MAKE_TASKS)
-
-# Since GASNet headers will be included on a large
-# scale in order to support backtrace... we need to disable
-# some warnings-as-errors.
-ifndef CHPL_NO_GASNET
-RUNTIME_CFLAGS += $(GASNET_TOOLS_CFLAGS) $(CHPL_GASNET_MORE_CFLAGS)
-RUNTIME_CXXFLAGS += $(GASNET_TOOLS_CFLAGS) $(CHPL_GASNET_MORE_CFLAGS)
-GEN_CFLAGS += $(GASNET_TOOLS_CFLAGS) $(CHPL_GASNET_MORE_CFLAGS)
-else
-RUNTIME_CFLAGS += -DCHPL_NO_GASNET
-RUNTIME_CXXFLAGS += -DCHPL_NO_GASNET
-GEN_CFLAGS += -DCHPL_NO_GASNET
-endif
-
-ifdef CHPL_NO_GMP
-RUNTIME_CFLAGS += -DCHPL_NO_GMP
-RUNTIME_CXXFLAGS += -DCHPL_NO_GMP
-GEN_CFLAGS += -DCHPL_NO_GMP
-endif
-

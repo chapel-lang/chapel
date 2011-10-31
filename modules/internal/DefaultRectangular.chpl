@@ -1,3 +1,8 @@
+// DefaultRectangular.chpl
+//
+pragma "no use ChapelStandard"
+module DefaultRectangular {
+
 use DSIUtil;
 config param debugDefaultDist = false;
 config param debugDefaultDistBulkTransfer = false;
@@ -773,3 +778,4 @@ proc DefaultRectangularArr.doiBulkTransfer(B) {
   }
 }
 
+}

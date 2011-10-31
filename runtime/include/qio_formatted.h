@@ -646,6 +646,8 @@ err_t qio_decode_char_buf(int32_t* restrict chr, int* restrict nbytes, const cha
       return 0;
     }
   }
+  assert(0);
+  return EILSEQ; // this should never be reached.
 }
 
 

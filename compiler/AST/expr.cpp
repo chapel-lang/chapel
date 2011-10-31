@@ -1,4 +1,7 @@
+#include <cstdlib>
 #include <cstring>
+#define __STDC_FORMAT_MACROS
+#include <inttypes.h>
 #include "astutil.h"
 #include "expr.h"
 #include "misc.h"
@@ -373,7 +376,7 @@ static void
 codegenExprMinusOne(FILE* outfile, Expr* expr) {
   int64_t i;
   if (get_int(expr, &i)) {
-    fprintf(outfile, "%ld", i-1);
+    fprintf(outfile, "%" PRId64, i-1);
   } else {
     expr->codegen(outfile);
     fprintf(outfile, "-1");

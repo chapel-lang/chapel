@@ -1,3 +1,8 @@
+// ChapelIO.chpl
+//
+pragma "no use ChapelStandard"
+module ChapelIO {
+use ChapelBase; // for uint().
 use SysBasic;
 
 proc _isNilObject(val) {
@@ -498,3 +503,4 @@ proc chpl__testPar(args...) where chpl__testParFlag == true {
   }
 }
 
+}
