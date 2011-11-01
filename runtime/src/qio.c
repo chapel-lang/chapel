@@ -29,6 +29,7 @@
 #include <fcntl.h>
 #include <sys/select.h>
 #include <sys/fcntl.h>
+#include <sys/param.h> // MAXPATHLEN
 #include <sys/stat.h>
 #include <sys/mman.h>
 
@@ -99,7 +100,7 @@ void qio_unlock(qio_lock_t* x) {
 }
 #endif
 
-err_t qio_readv(fd_t fd, qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, int64_t* num_read)
+err_t qio_readv(fd_t fd, qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, ssize_t* num_read)
 {
   int64_t nread = 0;
   int64_t num_bytes = qbuffer_iter_num_bytes(start, end);
@@ -137,7 +138,7 @@ error:
   return err;
 }
 
-err_t qio_writev(fd_t fd, qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, int64_t* num_written)
+err_t qio_writev(fd_t fd, qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, ssize_t* num_written)
 {
   int64_t nwritten = 0;
   int64_t num_bytes = qbuffer_iter_num_bytes(start, end);
@@ -175,7 +176,7 @@ error:
   return err;
 }
 
-err_t qio_preadv(fd_t fd, qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, int64_t seek_to_offset, int64_t* num_read)
+err_t qio_preadv(fd_t fd, qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, int64_t seek_to_offset, ssize_t* num_read)
 {
   ssize_t nread = 0;
   int64_t num_bytes = qbuffer_iter_num_bytes(start, end);
@@ -213,7 +214,7 @@ error:
 
 }
 
-err_t qio_freadv(FILE* fp, qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, int64_t* num_read)
+err_t qio_freadv(FILE* fp, qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, ssize_t* num_read)
 {
   int64_t total_read = 0;
   size_t nread;
@@ -261,9 +262,9 @@ error:
 
 }
 
-err_t qio_fwritev(FILE* fp, qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, int64_t* num_written)
+err_t qio_fwritev(FILE* fp, qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, ssize_t* num_written)
 {
-  int64_t total_written = 0;
+  ssize_t total_written = 0;
   size_t nwritten;
   int64_t num_bytes = qbuffer_iter_num_bytes(start, end);
   ssize_t num_parts = qbuffer_iter_num_parts(start, end);
@@ -310,9 +311,9 @@ error:
 
 
 
-err_t qio_pwritev(fd_t fd, qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, int64_t seek_to_offset, int64_t* num_written)
+err_t qio_pwritev(fd_t fd, qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, int64_t seek_to_offset, ssize_t* num_written)
 {
-  int64_t nwritten = 0;
+  ssize_t nwritten = 0;
   int64_t num_bytes = qbuffer_iter_num_bytes(start, end);
   ssize_t num_parts = qbuffer_iter_num_parts(start, end);
   struct iovec* iov = NULL;
@@ -351,10 +352,10 @@ error:
 err_t qio_recv(fd_t sockfd, qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, int flags,
               sys_sockaddr_t* src_addr_out, /* can be NULL */
               void* ancillary_out, socklen_t* ancillary_len_inout, /* can be NULL */
-              int64_t* num_recvd_out)
+              ssize_t* num_recvd_out)
 {
   struct msghdr msg;
-  int64_t nrecvd = 0;
+  ssize_t nrecvd = 0;
   int64_t num_bytes = qbuffer_iter_num_bytes(start, end);
   ssize_t num_parts = qbuffer_iter_num_parts(start, end);
   struct iovec* iov = NULL;
@@ -409,10 +410,10 @@ err_t qio_send(fd_t sockfd, qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t
               const sys_sockaddr_t* dst_addr, /* can be NULL */
               const void* ancillary, /* can be NULL */
               socklen_t ancillary_len,
-              int64_t* num_sent_out)
+              ssize_t* num_sent_out)
 {
   struct msghdr msg;
-  int64_t nsent = 0;
+  ssize_t nsent = 0;
   int64_t num_bytes = qbuffer_iter_num_bytes(start, end);
   ssize_t num_parts = qbuffer_iter_num_parts(start, end);
   struct iovec* iov = NULL;
@@ -537,18 +538,25 @@ err_t qio_fadvise_for_hints(qio_file_t* file)
     err = sys_fcntl(file->fd, F_GETFL, &rc);
     if( err ) return err;
 
-    arg = rc | O_DIRECT;
+    arg = rc;
+#ifdef O_DIRECT
+    arg |= O_DIRECT;
+#endif
     err = sys_fcntl_long(file->fd, F_SETFL, arg, &rc);
     if( err ) return err;
   } else {
+    err = 0;
+#if (_XOPEN_SOURCE >= 600 || _POSIX_C_SOURCE >= 200112L)
     if( file->hints & QIO_HINT_RANDOM ) advice |= POSIX_FADV_RANDOM;
     if( file->hints & QIO_HINT_SEQUENTIAL ) advice |= POSIX_FADV_SEQUENTIAL;
     if( file->hints & QIO_HINT_NOREUSE ) advice |= POSIX_FADV_NOREUSE;
+    if( file->hints & QIO_HINT_CACHED ) advice |= POSIX_FADV_WILLNEED;
 
     if( advice == 0 ) err = 0; // do nothing.
     else err = sys_posix_fadvise(file->fd, 0, len, advice);
 
     if( err ) return err;
+#endif
   }
 
   // now, if we're using mmap, go ahead and map the file.
@@ -572,6 +580,8 @@ err_t qio_fadvise_for_hints(qio_file_t* file)
     err = sys_mmap(NULL, len, prot, MAP_SHARED|populate, file->fd, 0, &data);
     if( err ) return err;
 
+    // TODO -- run madvise/posix_madvise
+    
     err = qbytes_create_generic(&file->mmap, data, len, qbytes_free_munmap);
     if( err ) {
       sys_munmap(data, len);
@@ -2470,7 +2480,7 @@ err_t qio_channel_offset(const int threadsafe, qio_channel_t* ch, int64_t* offse
 static
 err_t _qio_channel_put_bytes_unlocked(qio_channel_t* ch, qbytes_t* bytes, int64_t skip_bytes, int64_t len_bytes)
 {
-  error_t err;
+  err_t err;
   int64_t use_len, use_skip, copylen;
 
   qio_method_t method = ch->hints & QIO_METHODMASK;
@@ -2619,7 +2629,7 @@ err_t qio_channel_put_bytes(const int threadsafe, qio_channel_t* ch, qbytes_t* b
 static
 err_t _qio_channel_put_buffer_unlocked(qio_channel_t* ch, qbuffer_t* src, qbuffer_iter_t src_start, qbuffer_iter_t src_end)
 {
-  error_t err;
+  err_t err;
   int64_t use_len, copylen;
   qbuffer_iter_t src_copy_end;
 

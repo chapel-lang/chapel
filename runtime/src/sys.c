@@ -204,8 +204,12 @@ err_t sys_posix_fadvise(fd_t fd, off_t offset, off_t len, int advice)
   int got;
   err_t err_out;
 
+#if (_XOPEN_SOURCE >= 600 || _POSIX_C_SOURCE >= 200112L)
   got = posix_fadvise(fd, offset, len, advice);
   err_out = got;
+#else
+  err_out = 0;
+#endif
 
   return err_out;
 }

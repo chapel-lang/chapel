@@ -68,7 +68,9 @@
 // end of ifndef CHPL_NO_GASNET
 #endif
 
-#include <features.h>
+//#include <features.h> including features.h not necessary for feature
+// test macros.
+
 #include <sys/types.h>
 #include <unistd.h>
 #include <errno.h>
