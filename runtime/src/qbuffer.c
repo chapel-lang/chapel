@@ -74,7 +74,7 @@ void qbytes_free_free(qbytes_t* b) {
 
 void qbytes_free_iobuf(qbytes_t* b) {
   // iobuf is just something to be freed with free()
-  return qbytes_free_free(b);
+  qbytes_free_free(b);
 }
 
 void debug_print_bytes(qbytes_t* b)
