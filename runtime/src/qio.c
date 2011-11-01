@@ -1234,7 +1234,7 @@ err_t qio_relative_path(const char** path_out, const char* cwd, const char* path
 
   // Not an absolute path.
   if( path[0] != '/' ) {
-    *path_out = strdup(path);
+    *path_out = qio_strdup(path);
     if( ! *path_out ) return ENOMEM;
     return 0;
   }
@@ -1261,7 +1261,7 @@ err_t qio_relative_path(const char** path_out, const char* cwd, const char* path
     // cwd is a prefix or equal to path
     // just trim cwd off of path.
     if( path[i] == '/' ) i++;
-    *path_out = strdup( &path[i] );
+    *path_out = qio_strdup( &path[i] );
     if( ! *path_out ) return ENOMEM;
     return 0;
   }
@@ -1317,7 +1317,7 @@ err_t qio_shortest_path(const char** path_out, const char* path_in)
     if( strlen(relpath) < strlen(path_in) ) {
       *path_out = relpath;
     } else {
-      *path_out = strdup(path_in);
+      *path_out = qio_strdup(path_in);
       if( ! *path_out ) err = ENOMEM;
     }
   }
