@@ -274,13 +274,13 @@ proc GridVariable.clawOutput(
 
 
   //==== Time file ====
-  var outfile = open(time_filename, "w").writer();
+  var outfile = open(time_filename, mode.w).writer();
   writeTimeFile(time, 1, 1, 0, outfile);
   outfile.close();
   
   
   //==== Data file ====
-  outfile = open(data_filename, "w").writer();
+  outfile = open(data_filename, mode.w).writer();
   this.writeData(1, 1, outfile);
   outfile.close();
 

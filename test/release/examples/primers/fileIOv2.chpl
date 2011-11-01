@@ -34,7 +34,7 @@ if example == 0 || example == 1 {
   // First, open up a test file. Chapel's I/O interface allows
   // us to open regular files, temporary files, memory, or file descriptors;
   // we can also specify access with "r", "w", "r+", "w+", etc.
-  var f = open(testfile, "w+");
+  var f = open(testfile, mode.wr);
 
   /* Since the typical 'file position' design leads to race conditions
    * all over, the Chapel I/O design separates a file from a channel.
@@ -90,7 +90,7 @@ if example == 0 || example == 2 {
 
   // First, open up a file and write to it.
   {
-    var f = open(testfile, "w+");
+    var f = open(testfile, mode.wr);
     /* When we create the writer, suppling locking=false will do unlocked I/O.
        That's fine as long as the channel is not shared between tasks.
       */
@@ -110,7 +110,7 @@ if example == 0 || example == 2 {
      we can optimize better (using mmap, if you like details).
    */
   {
-    var f = open(testfile, "r", hints=HINT_RANDOM|HINT_CACHED);
+    var f = open(testfile, mode.r, hints=HINT_RANDOM|HINT_CACHED);
 
     // Note -- this could be a forall loop to do I/O in parallel!
     forall i in 0..#n by -1 {
@@ -139,7 +139,7 @@ if example == 0 || example == 2 {
 if example == 0 || example == 3 {
   writeln("Running Example 3");
 
-  var f = open(testfile, "w+");
+  var f = open(testfile, mode.wr);
   var w = f.writer();
 
   w.writeln("Hello");
@@ -147,8 +147,8 @@ if example == 0 || example == 3 {
   w.writeln(" is ");
   w.writeln(" a test ");
   // We only write the UTF-8 characters if unicode is supported,
-  // and that depends on the current locale (e.g. setting the
-  // environment variable LC_ALL=C will disable unicode support). 
+  // and that depends on the current unix locale environment
+  // (e.g. setting the environment variable LC_ALL=C will disable unicode support). 
   if unicodeSupported() then w.writeln(" of UTF-8 Euro Sign: €");
 
   // flush buffers, close the channel.
@@ -191,7 +191,7 @@ if example == 0 || example == 4 {
   assert(err == ENOENT);
   
   // What happens if we try to open a non-existant file?
-  var f = open(testfile, "r", error=err);
+  var f = open(testfile, mode.r, error=err);
   assert(err == ENOENT);
 
   /* Note that if an error= argument is not supplied to an
@@ -233,7 +233,7 @@ if example == 0 || example == 5 {
 if example == 0 || example == 6 {
   writeln("Running Example 6");
 
-  var f = open(testfile, "w+");
+  var f = open(testfile, mode.wr);
 
   {
     var w = f.writer(kind=native);

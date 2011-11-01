@@ -1,4 +1,4 @@
-var infile = open("eof.in", "r").reader();
+var infile = open("eof.in", mode.r).reader();
 
 /*
 while !infile.eof {

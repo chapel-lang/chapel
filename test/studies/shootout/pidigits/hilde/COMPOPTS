@@ -1,1 +1,1 @@
-gmp.h -lgmp
+gmp.h -lgmp -I../../../../../runtime/include -I../../../../../runtime/include/tasks/`../../../../../util/chplenv/tasks` -I../../../../../runtime/include/threads/`../../../../../util/chplenv/threads` ../../../../../runtime/include/chplgmp.h  ../../../../../runtime/src/chplgmp.c

@@ -1,15 +1,15 @@
-var f = new file("test_remote_file_read.txt");
+var f = open("test_remote_file_read.txt", mode.r).reader();
 var i: int;
 
-f.open();
 f.readln(i);
 f.close();
 writeln(i);
 
+f = open("test_remote_file_read.txt", mode.r).reader();
+
 i = 0;
 
 on Locales(1) {
-  f.open();
   f.readln(i);
   f.close();
 }

@@ -1,5 +1,5 @@
 var myFloat: real;
-var f = open("freadNoFloat.txt", "r").reader();
+var f = open("freadNoFloat.txt", mode.r).reader();
 
 f.read(myFloat);
 

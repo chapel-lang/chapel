@@ -1,5 +1,4 @@
 var myInt: int;
-var f: file = new file(filename = "anyFile.txt", mode = FileAccessMode.q);
+var f = open("anyFile.txt", mode.q).writer();
 
-f.open();
 f.write(myInt);

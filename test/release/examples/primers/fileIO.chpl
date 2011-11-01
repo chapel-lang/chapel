@@ -48,7 +48,7 @@ proc main {
 //
 proc writeSquareArray(n, X, filename) {
   // Create and open an output file with the specified filename in write mode
-  var outfile = open(filename, "w");
+  var outfile = open(filename, mode.w);
   var writer = outfile.writer();
 
   // Write the problem size in each dimension to the file
@@ -68,7 +68,7 @@ proc writeSquareArray(n, X, filename) {
 //
 proc readArray(filename) {
    // Open an input file with the specified filename in read mode
-  var infile = open(filename, "r");
+  var infile = open(filename, mode.r);
   var reader = infile.reader();
 
   // Read the number of rows and columns in the array in from the file

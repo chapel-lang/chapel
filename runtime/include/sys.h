@@ -158,21 +158,21 @@ err_t sys_getsockopt(fd_t sockfd, int level, int optname, void* optval, socklen_
 err_t sys_listen(fd_t sockfd, int backlog);
 
 
-err_t sys_recv(fd_t sockfd, void* buf, size_t len, int flags, int64_t* num_recvd_out);
+err_t sys_recv(fd_t sockfd, void* buf, size_t len, int flags, ssize_t* num_recvd_out);
 
 
-err_t sys_recvfrom(fd_t sockfd, void* buf, size_t len, int flags, sys_sockaddr_t* src_addr_out, int64_t* num_recvd_out);
+err_t sys_recvfrom(fd_t sockfd, void* buf, size_t len, int flags, sys_sockaddr_t* src_addr_out, ssize_t* num_recvd_out);
 
 
-err_t sys_recvmsg(fd_t sockfd, struct msghdr *msg, int flags, int64_t* num_recvd_out);
+err_t sys_recvmsg(fd_t sockfd, struct msghdr *msg, int flags, ssize_t* num_recvd_out);
 
-err_t sys_send(fd_t sockfd, const void* buf, int64_t len, int flags, int64_t* num_sent_out);
-
-
-err_t sys_sendto(fd_t sockfd, const void* buf, int64_t len, int flags, const sys_sockaddr_t* dest_addr, int64_t* num_sent_out);
+err_t sys_send(fd_t sockfd, const void* buf, int64_t len, int flags, ssize_t* num_sent_out);
 
 
-err_t sys_sendmsg(fd_t sockfd, const struct msghdr *msg, int flags, int64_t* num_sent_out);
+err_t sys_sendto(fd_t sockfd, const void* buf, int64_t len, int flags, const sys_sockaddr_t* dest_addr, ssize_t* num_sent_out);
+
+
+err_t sys_sendmsg(fd_t sockfd, const struct msghdr *msg, int flags, ssize_t* num_sent_out);
 
 
 err_t sys_setsockopt(fd_t sockfd, int level, int optname, void* optval, socklen_t optlen);

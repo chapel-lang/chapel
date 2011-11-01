@@ -102,7 +102,7 @@ void qio_unlock(qio_lock_t* x) {
 
 err_t qio_readv(fd_t fd, qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, ssize_t* num_read)
 {
-  int64_t nread = 0;
+  ssize_t nread = 0;
   int64_t num_bytes = qbuffer_iter_num_bytes(start, end);
   ssize_t num_parts = qbuffer_iter_num_parts(start, end);
   struct iovec* iov = NULL;
@@ -140,7 +140,7 @@ error:
 
 err_t qio_writev(fd_t fd, qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, ssize_t* num_written)
 {
-  int64_t nwritten = 0;
+  ssize_t nwritten = 0;
   int64_t num_bytes = qbuffer_iter_num_bytes(start, end);
   ssize_t num_parts = qbuffer_iter_num_parts(start, end);
   struct iovec* iov = NULL;
@@ -547,10 +547,18 @@ err_t qio_fadvise_for_hints(qio_file_t* file)
   } else {
     err = 0;
 #if (_XOPEN_SOURCE >= 600 || _POSIX_C_SOURCE >= 200112L)
+#ifdef POSIX_FADV_RANDOM
     if( file->hints & QIO_HINT_RANDOM ) advice |= POSIX_FADV_RANDOM;
+#endif
+#ifdef POSIX_FADV_SEQUENTIAL
     if( file->hints & QIO_HINT_SEQUENTIAL ) advice |= POSIX_FADV_SEQUENTIAL;
+#endif
+#ifdef POSIX_FADV_NOREUSE
     if( file->hints & QIO_HINT_NOREUSE ) advice |= POSIX_FADV_NOREUSE;
+#endif
+#ifdef POSIX_FADV_WILLNEED
     if( file->hints & QIO_HINT_CACHED ) advice |= POSIX_FADV_WILLNEED;
+#endif
 
     if( advice == 0 ) err = 0; // do nothing.
     else err = sys_posix_fadvise(file->fd, 0, len, advice);
@@ -1789,7 +1797,7 @@ err_t _buffered_read_atleast(qio_channel_t* ch, int64_t amt)
 {
   qbuffer_iter_t read_start;
   qbuffer_iter_t read_end;
-  int64_t num_read;
+  ssize_t num_read;
   int64_t left = amt;
   int64_t max_amt;
   int return_eof = 0;
@@ -1954,7 +1962,7 @@ err_t _qio_buffered_behind(qio_channel_t* ch, int flushall)
   qbuffer_iter_t write_start;
   qbuffer_iter_t write_end;
   err_t err;
-  int64_t num_written;
+  ssize_t num_written;
   qio_method_t method = ch->hints & QIO_METHODMASK;
 
   // If we are a FILE* type buffer, we want to automatically

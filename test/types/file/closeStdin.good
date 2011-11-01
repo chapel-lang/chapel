@@ -1,1 +1,0 @@
-closeStdin.chpl:3: error: halt reached - ***Error: You may not close "stdin"***

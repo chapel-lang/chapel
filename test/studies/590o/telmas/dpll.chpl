@@ -854,9 +854,7 @@ proc parse() {
 	var clause : Clause;
 	var c : int;
 	
-	var inputfile = new file(FILENAME);
-	
-	inputfile.open();
+	var inputfile = open(FILENAME, mode.r).reader();
 	
 	inputfile.read(p);
 	while p != "p" {

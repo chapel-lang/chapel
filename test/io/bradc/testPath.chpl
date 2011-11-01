@@ -1,4 +1,4 @@
-var outfile = open("subdir/out.dat", "w").writer();
+var outfile = open("subdir/out.dat", mode.w).writer();
 
 outfile.writeln("Hello, world!");
 outfile.close();

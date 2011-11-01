@@ -39,6 +39,13 @@
 use SysBasic;
 use Error;
 
+enum mode {
+  r = 1,
+  w = 2,
+  rw = 3,
+  wr = 4,
+}
+
 enum iokind {
   /* don't change these without updating qio_style.h QIO_NATIVE, etc
      a default of 0 is always reasonable, but you can avoid some
@@ -402,9 +409,9 @@ enum FileAccessMode { read, write };
 param _oldioerr="This program is using old-style I/O which is no longer supported.\n" +
                 "See doc/README.io.\n" +
                 "You'll probably want something like:\n" +
-                "var f = open(filename, \"w\").writer()\n" + 
+                "var f = open(filename, mode.w).writer()\n" + 
                 "or\n" + 
-                "var f = open(filename, \"r\").reader()\n";
+                "var f = open(filename, mode.r).reader()\n";
 
 // This file constructor exists to throw an error for old I/O code.
 proc file.file(filename:string="",
@@ -565,16 +572,31 @@ proc file.path : string {
   if err then ioerror(err, "in file.path");
 }
 
-proc open(path:string, access:string, out error:err_t, hints:iohint_t=0, style:iostyle = defaultStyle()):file {
+const _r = "r";
+const _rw  = "r+";
+const _w = "w";
+const _wr = "w+";
+
+proc _modestring(m:mode) {
+  select m {
+    when mode.r do return _r;
+    when mode.rw do return _rw;
+    when mode.w do return _w;
+    when mode.wr do return _wr;
+    otherwise halt("Invalid mode");
+  }
+}
+
+proc open(path:string, m:mode, out error:err_t, hints:iohint_t=0, style:iostyle = defaultStyle()):file {
   var local_style = style;
   var ret:file;
   ret.home_uid = _current_locale();
-  error = qio_file_open_access(ret._file_internal, path, access, hints, local_style);
+  error = qio_file_open_access(ret._file_internal, path, _modestring(m), hints, local_style);
   return ret;
 }
-proc open(path:string, access:string, hints:iohint_t=0, style:iostyle = defaultStyle()):file {
+proc open(path:string, m:mode, hints:iohint_t=0, style:iostyle = defaultStyle()):file {
   var err:err_t = ENOERR;
-  var ret = open(path, access, err, hints, style);
+  var ret = open(path, m, err, hints, style);
   if err then ioerror(err, "in open", path);
   return ret;
 }
@@ -898,9 +920,9 @@ proc _isIoPrimitiveType(type t) param return
 
     //var trues = ("true", "1", "yes");
     //var falses = ("false", "0", "no");
-var _trues = tuple("true");
-var _falses = tuple("false");
-var _i = "i";
+const _trues = tuple("true");
+const _falses = tuple("false");
+const _i = "i";
 
 // Read routines for all primitive types.
 proc _read_text_internal(_channel_internal:qio_channel_ptr_t, out x:?t):err_t where _isIoPrimitiveType(t) {

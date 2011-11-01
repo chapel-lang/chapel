@@ -8,7 +8,7 @@ class myClass {
 
 var a: myClass = new myClass(x = 1, y = 2.3);
 var myInt: int = 9;
-var myFile = open("_test_freadToClassDataMember.txt", "w+");
+var myFile = open("_test_freadToClassDataMember.txt", mode.wr);
 var w = myFile.writer();
 
 w.writeln(myInt);

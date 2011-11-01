@@ -38,7 +38,7 @@ iter aawindow(W:range,H:range,filter_width:int,filter_height:int){
 
 proc main() {
 
-  var infile = open(inputfile, "r");
+  var infile = open(inputfile, mode.r);
   var reader = infile.reader();
   const m = reader.read(int),
         n = reader.read(int);
@@ -54,7 +54,7 @@ proc main() {
   reader.close();
   infile.close();
   
-  var finfile = open(filterfile, "r");
+  var finfile = open(filterfile, mode.r);
   var freader = finfile.reader();
   
   const fx = freader.read(int), fy = freader.read(int); 
