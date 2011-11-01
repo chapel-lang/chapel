@@ -103,27 +103,27 @@ extern ssize_t qio_mmap_chunk_iobufs;
 /* Wrap system calls readv, writev, preadv, pwritev
  * to take a buffer.
  */
-err_t qio_readv(fd_t fd, qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, int64_t* num_read);
-err_t qio_writev(fd_t fd, qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, int64_t* num_written);
-err_t qio_preadv(fd_t fd, qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, int64_t seek_to_offset, int64_t* num_read);
-err_t qio_pwritev(fd_t fd, qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, int64_t seek_to_offset, int64_t* num_written);
+err_t qio_readv(fd_t fd, qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, ssize_t* num_read);
+err_t qio_writev(fd_t fd, qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, ssize_t* num_written);
+err_t qio_preadv(fd_t fd, qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, ssize_t seek_to_offset, int64_t* num_read);
+err_t qio_pwritev(fd_t fd, qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, ssize_t seek_to_offset, int64_t* num_written);
 
-err_t qio_freadv(FILE* fp, qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, int64_t* num_read);
-err_t qio_fwritev(FILE* fp, qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, int64_t* num_written);
+err_t qio_freadv(FILE* fp, qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, ssize_t* num_read);
+err_t qio_fwritev(FILE* fp, qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, ssize_t* num_written);
 
 
 err_t qio_recv(fd_t sockfd, qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end,
               int flags,
               sys_sockaddr_t* src_addr_out, /* can be NULL */
               void* ancillary_out, socklen_t* ancillary_len_inout, /* can be NULL */
-              int64_t* num_recvd_out);
+              ssize_t* num_recvd_out);
 
 err_t qio_send(fd_t sockfd, qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end,
               int flags,
               const sys_sockaddr_t* dst_addr, /* can be NULL */
               const void* ancillary, /* can be NULL */
               socklen_t ancillary_len,
-              int64_t* num_sent_out);
+              ssize_t* num_sent_out);
 
 typedef enum {
   QIO_CH_ALWAYS_UNBUFFERED = 1,
