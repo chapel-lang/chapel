@@ -473,8 +473,8 @@ void test_printscan_float(void)
                         "2.2251e-308", // %e, showpoint, precision 4
                        };
   double mynan = 0.0*(1.0/0.0);
-  double posnan = (mynan>0)?(mynan):(-mynan);
-  double negnan = -posnan;
+  double posnan = copysign(mynan, 1.0);
+  double negnan = copysign(mynan, -1.0);
   double nums[] = {0.0, 1.0,
                    1.0/0.0 /*+inf*/, -1.0/0.0 /*-inf*/,
                    posnan,

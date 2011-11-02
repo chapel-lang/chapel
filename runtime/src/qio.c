@@ -982,6 +982,7 @@ err_t qio_file_path_for_fd(fd_t fd, const char** string_out)
   if( !err ) {
     // pathbuf now contains *a* path to the open file descriptor
     *string_out = qio_strdup(pathbuf);
+    return 0;
   } else {
     *string_out = NULL;
     return err;
@@ -1746,14 +1747,21 @@ err_t _buffered_get_mmap(qio_channel_t* ch, int64_t amt_in, int writing)
       // extends the file past this position after we called fstat,
       // we won't mess up their mmap.
       
-      // This code could be used on a system without posix_fallocate
-      //err = sys_pwrite(ch->file->fd, &zero, 1, map_start + len - 1, &wrote);
-      //if( err ) return err;
-      
+     
       // Make sure that we have actual disk space for the mapping.
       // Note that posix_fallocate returns an error code.
+#ifdef __linux__
       err = sys_posix_fallocate(ch->file->fd, map_start, len);
       if( err ) return err;
+#else
+      {
+        uint8_t zero = 0;
+        ssize_t wrote = 0;
+        // This code could be used on a system without posix_fallocate
+        err = sys_pwrite(ch->file->fd, &zero, 1, map_start + len - 1, &wrote);
+        if( err ) return err;
+      }
+#endif
     } else {
       // Don't mmap all that -- just mmap to how much we're reading.
       len = stats.st_size - map_start;

@@ -204,12 +204,13 @@ err_t sys_posix_fadvise(fd_t fd, off_t offset, off_t len, int advice)
   int got;
   err_t err_out;
 
+  got = 0;
 #if (_XOPEN_SOURCE >= 600 || _POSIX_C_SOURCE >= 200112L)
+#ifdef POSIX_FADV_NORMAL
   got = posix_fadvise(fd, offset, len, advice);
-  err_out = got;
-#else
-  err_out = 0;
 #endif
+#endif
+  err_out = got;
 
   return err_out;
 }
@@ -477,7 +478,11 @@ err_t sys_posix_fallocate(fd_t fd, off_t offset, off_t len)
 {
   err_t err_out;
   STARTING_SLOW_SYSCALL;
+#ifdef __linux__
   err_out = posix_fallocate(fd, offset, len);
+#else
+  err_out = ENOSYS;
+#endif
   DONE_SLOW_SYSCALL;
   return err_out;
 }

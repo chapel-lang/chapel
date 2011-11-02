@@ -6,6 +6,12 @@
 #define _BSD_SOURCE
 #endif
 
+#ifndef _DARWIN_C_SOURCE
+// to get NI_MAXHOST or NI_MAXSERV
+#define _DARWIN_C_SOURCE
+#endif
+
+
 // get posix_memalign
 #ifndef _XOPEN_SOURCE
 #define _XOPEN_SOURCE 600
@@ -21,9 +27,9 @@
 #endif
 
 #ifdef __GNUC__
-#define always_inline inline __attribute__((__always_inline__))
+#define __always_inline inline __attribute__((__always_inline__))
 #else
-#define always_inline inline
+#define __always_inline inline
 #endif
 
 #ifndef CHPL_NO_GASNET

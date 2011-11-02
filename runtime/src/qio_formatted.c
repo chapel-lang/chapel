@@ -19,7 +19,8 @@ void qio_set_glocale(void) {
 
   if( 0 == strcmp(codeset, "UTF-8") ) {
     qio_glocale_utf8 = QIO_GLOCALE_UTF8;
-  } else if( 0 == strcmp(codeset, "ANSI_X3.4-1968") ) {
+  } else if( 0 == strcmp(codeset, "ANSI_X3.4-1968") || // what Linux calls it
+             0 == strcmp(codeset, "US-ASCII") ) { // what Mac OS X calls it
     qio_glocale_utf8 = QIO_GLOCALE_ASCII;
   } else {
     qio_glocale_utf8 = QIO_GLOCALE_OTHER;
@@ -275,7 +276,7 @@ err_t qio_channel_read_string(const int threadsafe, const int byteorder, const i
   char* restrict ret = NULL;
   int found_term=0;
   ssize_t len;
-  int64_t amt = 0;
+  ssize_t amt = 0;
 
   if( maxlen <= 0 ) maxlen = SSIZE_MAX - 1;
 
@@ -1093,7 +1094,9 @@ err_t _peek_number_unlocked(qio_channel_t* restrict ch, number_reading_state_t* 
 done:
   err = 0;
   *amount = s->end - mark_offset;
-  if( *amount == 0 ) err = EFORMAT;
+  if( *amount == 0 ) {
+    err = EFORMAT;
+  }
 error:
   qio_channel_revert_unlocked(ch);
   return err;
