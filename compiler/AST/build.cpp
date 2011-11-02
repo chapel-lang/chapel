@@ -1522,6 +1522,8 @@ buildClassDefExpr(const char* name, Type* type, Expr* inherit, BlockStmt* decls,
   ct->addDeclarations(decls);
   if (isExtern == FLAG_EXTERN || isExtern == FLAG_OLD_EXTERN_KW_USED) {
     ts->addFlag(FLAG_EXTERN);
+    ts->addFlag(FLAG_NO_OBJECT);
+    ct->defaultValue=NULL;
     if (inherit)
       USR_FATAL_CONT(inherit, "External types do not currently support inheritance");
     if (isExtern == FLAG_OLD_EXTERN_KW_USED)

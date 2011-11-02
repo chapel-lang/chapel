@@ -136,10 +136,6 @@ seg fault (?)
 gasnet-everything regressions (other than the above)
 ====================================================
 
-timed out since checked in (10/21/11)
--------------------------------------
-[Error: Timed out executing program studies/hpcc/HPL/vass/hpl]
-
 nondet. compilation timeout
 ---------------------------
 [Error: Timed out compilation for studies/shootout/pidigits/bradc/pidigits-blc] (10/09/11)
@@ -149,7 +145,7 @@ nondet. execution timeout
 [Error: Timed out executing program multilocale/diten/needMultiLocales/coforallon_maxThreads] (10/13/11)
 [Error: Timed out executing program studies/sudoku/dinan/sudoku] (10/02/11)
 [Error: Timed out executing program studies/madness/aniruddha/madchap/test_likepy] (10/05/11, 10/08/11, 10/12/11)
-[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct] (10/11/11)
+[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct] (10/11/11, 10/25/11, 10/28/11)
 
 execution timeouts
 ------------------
@@ -225,9 +221,13 @@ gdb output differences
 chpbld02 (PrgEnv test system) failures
 ======================================
 
+nondet. compilation timeout
+---------------------------
+[Error: Timed out compilation for release/examples/ssca2/SSCA2_main] (10/27/11, 10/30/11, 10/27/11)
+
 nondet. failure
 ---------------
-[Error matching program output for parallel/cobegin/diten/cobeginRace] (10/13/11)
+[Error matching program output for parallel/cobegin/diten/cobeginRace] (10/13/11, 10/26/11)
 
 lack of GMP support (09/26/11 -- first complete run in ages)
 ------------------------------------------------------------
@@ -245,8 +245,9 @@ gets "that wasn't very random looking" failure (09/26/11 -- first run in ages)
 
 nondet. execution timeouts
 --------------------------
-[Error: Timed out executing program distributions/robust/associative/stress/many_domain] (10/20/11)
-[Error: Timed out executing program studies/cholesky/jglewis/test_cholesky] (10/20/11, 10/12/11, 10/14/11)
+[Error: Timed out executing program distributions/robust/associative/stress/many_domain] (10/20/11, 10/24/11)
+[Error: Timed out executing program studies/cholesky/jglewis/test_cholesky] (10/20/11, 10/12/11, 10/14/11, 10/24/11, 10/26/11)
+[Error: Timed out executing program studies/cholesky/jglewis/version2/standard_cholesky/test_standard_cholesky] (10/27/11)
 
 timeouts (09/26/11 -- first run in ages)
 ----------------------------------------
@@ -273,6 +274,11 @@ nondet. timeout failure
 =====================================
 cray-xt-cray/cce-specific regressions
 =====================================
+
+seg fault in compiler (10/31/11)
+--------------------------------
+[Error matching compiler output for release/examples/spec/Modules/main-module (--cc-warnings --main-module M1 )]
+[Error matching compiler output for release/examples/spec/Modules/nested-use]
 
 compilation timeouts (10/19/11)
 -------------------------------
@@ -410,6 +416,11 @@ problem with static/dynamic linking? (10/1/11 -- first run)
 xt-gnu specific failures
 ========================
 
+precision issues (10/24/11)
+---------------------------
+[Error matching program output for studies/shootout/spectral-norm/spectralnorm]
+
+
 
 ========================
 cygwin-specific failures
@@ -417,11 +428,8 @@ cygwin-specific failures
 
 nondet. execution failure
 -------------------------
+[Error matching program output for release/examples/hello3-datapar] (06/24/11)
 [Error matching program output for release/examples/hello4-datapar-dist] (10/21/11)
-
-incorrect output (06/24/11 -- first cygwin test in ages)
---------------------------------------------------------
-[Error matching program output for release/examples/hello3-datapar]
 
 undiagnosed problems that started showing up 10/14/10 after lack of testing
 ---------------------------------------------------------------------------
@@ -461,17 +469,17 @@ nondet. core dump
 
 nondet. incorrect output
 ------------------------
-[Error matching program output for release/examples/spec/Task_Parallelism_and_Synchronization/singleVar] (10/14/11, 10/21/11)
+[Error matching program output for release/examples/spec/Task_Parallelism_and_Synchronization/singleVar] (10/14/11, 10/21/11, 10/23/11, 10/27/11, 10/30/11)
 [Error matching program output for
 release/examples/spec/Task_Parallelism_and_Synchronization/serialStmt1] (10/13/11)
-[Error matching program output for release/examples/spec/Task_Parallelism_and_Synchronization/serialStmt2] (09/30/11)
+[Error matching program output for release/examples/spec/Task_Parallelism_and_Synchronization/serialStmt2] (09/30/11, 10/25/11, 10/29/11)
 
 nondet. execution timeouts (ever since switching to 4 shepherds)
 --------------------------------------------------------
-[Error: Timed out executing program release/examples/primers/syncsingle] (10/15/11, 10/17/11)
-[Error: Timed out executing program release/examples/spec/Task_Parallelism_and_Synchronization/singleVar] (10/13/11, 10/16/11, 10/17/11)
-[Error: Timed out executing program release/examples/primers/taskParallel] (10/06/11, 10/16/11)
-[Error: Timed out executing program release/examples/spec/Task_Parallelism_and_Synchronization/serialStmt2] (09/26/11)
+[Error: Timed out executing program release/examples/primers/syncsingle] (10/15/11, 10/17/11, 10/23/11, 10/30/11)
+[Error: Timed out executing program release/examples/spec/Task_Parallelism_and_Synchronization/singleVar] (10/13/11, 10/16/11, 10/17/11, 10/22/11, 10/24/11, 10/28/11)
+[Error: Timed out executing program release/examples/primers/taskParallel] (10/06/11, 10/16/11, 10/25/11, 10/28/11)
+[Error: Timed out executing program release/examples/spec/Task_Parallelism_and_Synchronization/serialStmt2] (09/26/11, 10/23/11)
 
 
 ===========================
@@ -519,7 +527,7 @@ qthreads+gasnet-specific tests (in addition to the above)
 
 nondet. execution timeout
 -------------------------
-[Error: Timed out executing program release/examples/ssca2/SSCA2_main] (10/09/11, 10/16/11, 10/18/11, 10/21/11)
+[Error: Timed out executing program release/examples/ssca2/SSCA2_main] (10/09/11, 10/16/11, 10/18/11, 10/21/11, 10/26/11, 10/28/11)
 
 nondet. timeout starting when #shepherds based on #cores
 --------------------------------------------------------
@@ -534,6 +542,10 @@ timeouts when #shepherds started getting based on #cores
 =======================
 baseline-specific tests
 =======================
+
+nondet. execution timeout (10/29/11)
+------------------------------------
+[Error: Timed out executing program studies/amr/diffusion/level/Level_DiffusionBE_driver]
 
 related to Tom's bug fix? (10/18/11)
 ------------------------------------
@@ -720,7 +732,7 @@ unresolved sync variable calls (04/09/11 -- once spec examples added)
 
 nondet. compilation timeout
 ---------------------------
-[Error: Timed out compilation for release/examples/hello] (10/01/11, 10/02/11, 10/04/11, 10/07/11, 10/12/11, 10/19/11, 10/20/11)
+[Error: Timed out compilation for release/examples/hello] (10/01/11, 10/02/11, 10/04/11, 10/07/11, 10/12/11, 10/19/11, 10/20/11, 10/23/11, 10/29/11)
 
 
 =======================================================
@@ -734,7 +746,7 @@ warning: full/empty bit modified on less than word-sized data (05/24/11)
 
 nondet. compilation timeout
 ---------------------------
-[Error: Timed out compilation for release/examples/primers/arrays] (10/01/11, 10/06/11)
+[Error: Timed out compilation for release/examples/primers/arrays] (10/01/11, 10/06/11, 10/26/11)
 
 array index out of bounds due to bug in XMT compiler
 ----------------------------------------------------
