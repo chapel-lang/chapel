@@ -1,6 +1,7 @@
 /* "channel" I/O contributed by Michael Ferguson
 
    Future Work:
+    - Chapel-friendly ways to e.g. request JSON string format or hexadecimal numbers
     - formatted input/output, like printf, probably called writef/writefln/etc,
       and supporting ###.#### formats in addition to the usual % stuff.
     - Regular expression support (currently favoring RE2 integration)

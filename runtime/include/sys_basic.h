@@ -94,7 +94,8 @@ typedef double c_double;
 typedef void* c_ptr;
 typedef int err_t;
 typedef int fd_t;
-typedef wchar_t c_wchar_t;
+//typedef wchar_t c_wchar_t; it's a bad idea to use wchar_t
+// we use int32_t instead
 typedef char c_char_t;
 typedef FILE* c_file;
 

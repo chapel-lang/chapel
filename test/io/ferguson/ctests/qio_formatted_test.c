@@ -929,7 +929,6 @@ void basicstring_test()
         styles[10].string_format = QIO_STRING_FORMAT_CHPL;
         styles[11].string_format = QIO_STRING_FORMAT_JSON;
 
-
 	for(x=0;x<NUM_STR_STYLES;x++){
           qio_style_t* style = &styles[x];
 		for(y=0;y<NUM_STRINGS;y++){

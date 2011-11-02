@@ -20,7 +20,7 @@
 
 extern int qio_glocale_utf8; // for testing use.
 #define QIO_GLOCALE_UTF8 1
-#define QIO_GLOCALE_ASCII -2
+#define QIO_GLOCALE_ASCII 2
 #define QIO_GLOCALE_OTHER -1
 
 void qio_set_glocale(void);

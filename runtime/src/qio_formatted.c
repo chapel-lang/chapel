@@ -153,10 +153,10 @@ err_t _peek_until_byte(qio_channel_t* restrict ch, uint8_t term_byte, int64_t* r
 }
 
 static
-err_t _getc_after_whitespace(qio_channel_t* restrict ch, wchar_t* restrict got_chr)
+err_t _getc_after_whitespace(qio_channel_t* restrict ch, int32_t* restrict got_chr)
 {
   err_t err = 0;
-  wchar_t chr = 0;
+  int32_t chr = 0;
 
   while( 1 ) {
     err = qio_channel_read_char(false, ch, &chr);
@@ -170,13 +170,13 @@ err_t _getc_after_whitespace(qio_channel_t* restrict ch, wchar_t* restrict got_c
 
 /*
 static inline
-err_t _peek_until_char(qio_channel_t* ch, wchar_t term_chr, int64_t* amt_read_out, int* found_term_out)
+err_t _peek_until_char(qio_channel_t* ch, int32_t term_chr, int64_t* amt_read_out, int* found_term_out)
 {
   err_t err, newerr;
   int64_t mark_offset = 0;
   int64_t end_offset = 0;
   uint64_t num = 0;
-  wchar_t chr = 0;
+  int32_t chr = 0;
   int found_term;
 
   err = qio_channel_mark(false, ch);
@@ -209,23 +209,26 @@ err_t _peek_until_char(qio_channel_t* ch, wchar_t term_chr, int64_t* amt_read_ou
 
 // always appends room for a NULL byte at the end.
 static
-err_t _append_char(char* restrict * restrict buf, size_t* restrict buf_len, size_t* restrict buf_max, wchar_t chr)
+err_t _append_char(char* restrict * restrict buf, size_t* restrict buf_len, size_t* restrict buf_max, int32_t chr)
 {
   char* buf_in = *buf;
   size_t len_in = *buf_len;
   size_t max_in = *buf_max;
   char* newbuf;
   size_t newsz;
-  mbstate_t ps;
-  size_t got;
   size_t need;
+  size_t chbytes;
 
-  need = len_in + MB_LEN_MAX + 1; 
+  // Encode the character in UTF-8...
+  // (or whatever the locale requires)
+  // How many bytes is our character?
+  chbytes = qio_nbytes_char(chr);
+
+  need = len_in + chbytes + 1;
   if( need < len_in || need > (SSIZE_MAX-1) ) {
     // Too big.
     return EOVERFLOW;
   }
-
   // First, make sure that there is room.
   if( need >= max_in ) {
     // Reallocate buffer.
@@ -238,17 +241,10 @@ err_t _append_char(char* restrict * restrict buf, size_t* restrict buf_len, size
     max_in = newsz;
   }
 
-  if( chr <= 127 ) {
-    // just append 1 byte.
-    buf_in[len_in++] = chr;
-  } else {
-    memset(&ps, 0, sizeof(mbstate_t));
-    got = wcrtomb(buf_in + len_in, chr, &ps);
-    if( got == (size_t) -1 ) {
-      return errno;
-    }
-    len_in += got;
-  }
+  // Now store it in the buffer.
+  qio_encode_char_buf(&buf_in[len_in], chr);
+  len_in += chbytes;
+
   *buf = buf_in;
   *buf_len = len_in;
   *buf_max = max_in;
@@ -388,10 +384,11 @@ err_t qio_channel_scan_string(const int threadsafe, qio_channel_t* restrict ch, 
   char* restrict ret = NULL;
   size_t ret_len = 0;
   size_t ret_max = 0;
-  wchar_t term_chr;
-  wchar_t chr;
-  wchar_t tmp[5];
-  wchar_t* end_ptr;
+  int32_t term_chr;
+  int32_t chr;
+  char tmp[4*MB_LEN_MAX + 1]; // room for XXXX in \uXXXX
+  int32_t tmpchr;
+  int tmpi;
   int handle_back;
   int handle_0x;
   int handle_u;
@@ -401,6 +398,10 @@ err_t qio_channel_scan_string(const int threadsafe, qio_channel_t* restrict ch, 
   ssize_t nread = 0;
   int64_t mark_offset;
   int64_t end_offset;
+
+  if( qio_glocale_utf8 == 0 ) {
+    qio_set_glocale();
+  }
 
   if( maxlen <= 0 ) maxlen = SSIZE_MAX - 1;
 
@@ -489,32 +490,64 @@ err_t qio_channel_scan_string(const int threadsafe, qio_channel_t* restrict ch, 
 
       if( handle_0x && chr == 'x' ) {
         // handle \x20
-        err = qio_channel_read_char(false, ch, &tmp[0]);
+        tmpi = 0;
+        err = qio_channel_read_char(false, ch, &tmpchr);
         if( err ) break;
-        err = qio_channel_read_char(false, ch, &tmp[1]);
+        err = qio_encode_char_buf(&tmp[tmpi], tmpchr);
         if( err ) break;
-        tmp[2] = '\0';
+        tmpi += qio_nbytes_char(tmpchr);
+
+        err = qio_channel_read_char(false, ch, &tmpchr);
+        if( err ) break;
+        err = qio_encode_char_buf(&tmp[tmpi], tmpchr);
+        if( err ) break;
+        tmpi += qio_nbytes_char(tmpchr);
+
+        tmp[tmpi] = '\0';
 
         errno = 0;
-        conv = wcstoul(tmp, &end_ptr, 16);
-        if( conv == 0 && errno ) err = errno;
+        conv = strtol(tmp, NULL, 16);
+        if( (conv == ULONG_MAX || conv == 0) && errno ) {
+          err = errno;
+          break;
+        }
 
         err = _append_char(&ret, &ret_len, &ret_max, conv);
       } else if( handle_u && chr == 'u' ) {
         // handle \uABCD
-        err = qio_channel_read_char(false, ch, &tmp[0]);
+        tmpi = 0;
+        err = qio_channel_read_char(false, ch, &tmpchr);
         if( err ) break;
-        err = qio_channel_read_char(false, ch, &tmp[1]);
+        err = qio_encode_char_buf(&tmp[tmpi], tmpchr);
         if( err ) break;
-        err = qio_channel_read_char(false, ch, &tmp[2]);
+        tmpi += qio_nbytes_char(tmpchr);
+
+        err = qio_channel_read_char(false, ch, &tmpchr);
         if( err ) break;
-        err = qio_channel_read_char(false, ch, &tmp[3]);
+        err = qio_encode_char_buf(&tmp[tmpi], tmpchr);
         if( err ) break;
-        tmp[4] = '\0';
+        tmpi += qio_nbytes_char(tmpchr);
+
+        err = qio_channel_read_char(false, ch, &tmpchr);
+        if( err ) break;
+        err = qio_encode_char_buf(&tmp[tmpi], tmpchr);
+        if( err ) break;
+        tmpi += qio_nbytes_char(tmpchr);
+
+        err = qio_channel_read_char(false, ch, &tmpchr);
+        if( err ) break;
+        err = qio_encode_char_buf(&tmp[tmpi], tmpchr);
+        if( err ) break;
+        tmpi += qio_nbytes_char(tmpchr);
+
+        tmp[tmpi] = '\0';
 
         errno = 0;
-        conv = wcstoul(tmp, &end_ptr, 16);
-        if( conv == 0 && errno ) err = errno;
+        conv = strtol(tmp, NULL, 16);
+        if( (conv == ULONG_MAX || conv == 0) && errno ) {
+          err = errno;
+          break;
+        }
 
         err = _append_char(&ret, &ret_len, &ret_max, conv);
       } else {
@@ -576,7 +609,7 @@ unlock:
 err_t qio_channel_scan_literal(const int threadsafe, qio_channel_t* restrict ch, const char* restrict match, ssize_t len, int skipws)
 {
   err_t err;
-  wchar_t wchr = -1;
+  int32_t wchr = -1;
   char chr = -1;
   ssize_t nread = 0;
   int64_t lastwspos = 0;
@@ -774,18 +807,27 @@ unlock:
   return err;
 }
 
+#if MB_LEN_MAX < 6
+#define MB_LEN_MAX_OR_6 6
+#else
+#define MB_LEN_MAX_OR_6 MB_LEN_MAX
+#endif
+
 err_t qio_channel_print_string(const int threadsafe, qio_channel_t* restrict ch, const char* restrict ptr, ssize_t len)
 {
   err_t err;
   ssize_t i, j;
   int clen;
-  wchar_t cbuf[10]; // room for \uABCD
-  wchar_t chr;
-  mbstate_t ps;
-  size_t gotlen;
+  int32_t chr;
   qio_style_t* style;
+  char tmp[MB_LEN_MAX_OR_6+1];
+  int tmplen;
+  char tmpch_hi, tmpch_lo;
+  int32_t tmpchr;
 
-  memset(&ps, 0, sizeof(mbstate_t));
+  if( qio_glocale_utf8 == 0 ) {
+    qio_set_glocale();
+  }
 
   if( threadsafe ) {
     err = qio_lock(&ch->lock);
@@ -805,67 +847,106 @@ err_t qio_channel_print_string(const int threadsafe, qio_channel_t* restrict ch,
     if( err ) goto rewind;
   } else {
     // Write string_start.
-    cbuf[0] = style->string_start;
-    err = qio_channel_write_amt(false, ch, cbuf, 1);
+    err = qio_channel_write_char(false, ch, style->string_start);
     if( err ) goto rewind;
 
     // Write the string while translating it.
     for( i = 0; i < len; i++ ) {
-      cbuf[0] = 0;
-      gotlen = mbrtowc(cbuf, ptr + i, len - i, &ps);
-
-      if( gotlen == (size_t) -1 ||
-          gotlen == (size_t) -2 ) {
-        // invalid multibyte sequence or end of string before
-        // proper multibyte character; just consume a char.
-        gotlen = 1;
-      }
-
-      // We just set cbuf[0].
-      clen = 1;
-
-      chr = cbuf[0];
+      err = qio_decode_char_buf(&chr, &clen, ptr + i, len - i);
+      if( err ) goto rewind;
 
       // handle escaping for the different formats.
       switch (style->string_format) {
         case QIO_STRING_FORMAT_BASIC:
           if( chr == style->string_end || chr == '\\' ) {
-            cbuf[0] = '\\';
-            cbuf[1] = chr;
-            clen = 2;
+            err = qio_channel_write_char(false, ch, '\\');
+            if( err ) goto rewind;
+            err = qio_channel_write_char(false, ch, chr);
+            if( err ) goto rewind;
+          } else {
+            err = qio_channel_write_char(false, ch, chr);
+            if( err ) goto rewind;
           }
           break;
         case QIO_STRING_FORMAT_CHPL:
           if( chr == style->string_end || chr == '\\' || chr == '\'' || chr == '"' || chr == '\n' ) {
-            cbuf[0] = '\\';
-            cbuf[1] = chr;
-            if( chr == '\n' ) cbuf[1] = 'n';
-            clen = 2;
-          } else if( !iswprint(chr) ) {
-            clen = swprintf(cbuf, sizeof(cbuf), L"\\x%02x", chr);
-            if( clen < 0 ) {
-              err = errno;
-              goto rewind;
+            err = qio_channel_write_char(false, ch, '\\');
+            if( err ) goto rewind;
+            if( chr == '\n' ) {
+              tmpchr = 'n';
+            } else {
+              tmpchr = chr;
             }
+
+            err = qio_channel_write_char(false, ch, tmpchr);
+            if( err ) goto rewind;
+
+          } else if( !iswprint(chr) ) {
+            // convert each of the bytes into \x00 escaped things.
+            tmplen = qio_nbytes_char(chr);
+            err = qio_encode_char_buf(tmp, chr);
+            if( err ) goto rewind;
+
+            // Now, print out each byte escaped.
+            for( j = 0; j < tmplen; j++ ) {
+              tmpch_hi = (tmp[j] >> 4) & 0xf;
+              tmpch_lo = tmp[j] & 0xf;
+              if( tmpch_hi < 10 ) tmpch_hi = '0' + tmpch_hi;
+              else tmpch_hi = 'a' + tmpch_hi - 10;
+              if( tmpch_lo < 10 ) tmpch_lo = '0' + tmpch_lo;
+              else tmpch_lo = 'a' + tmpch_lo - 10;
+
+              err = qio_channel_write_char(false, ch, '\\');
+              if( err ) goto rewind;
+              err = qio_channel_write_char(false, ch, 'x');
+              if( err ) goto rewind;
+              err = qio_channel_write_char(false, ch, tmpch_hi);
+              if( err ) goto rewind;
+              err = qio_channel_write_char(false, ch, tmpch_lo);
+              if( err ) goto rewind;
+            }
+          } else {
+            err = qio_channel_write_char(false, ch, chr);
+            if( err ) goto rewind;
           }
           break;
         case QIO_STRING_FORMAT_JSON:
-          if( chr == style->string_end || chr == '\\' || chr == '"' ) {
-            cbuf[0] = '\\';
-            cbuf[1] = chr;
-            clen = 2;
+          if( chr == style->string_end || chr == '\\' || chr == '"' ||
+              chr == '\b' || chr == '\f' || chr == '\n' || chr == '\r' || chr == '\t' ) {
+
+            err = qio_channel_write_char(false, ch, '\\');
+            if( err ) goto rewind;
+
+            if( chr == '\b' ) {
+              tmpchr = 'b';
+            } else if( chr == '\f' ) {
+              tmpchr = 'f';
+            } else if( chr == '\n' ) {
+              tmpchr = 'n';
+            } else if( chr == '\r' ) {
+              tmpchr = 'r';
+            } else if( chr == '\t' ) {
+              tmpchr = 't';
+            } else {
+              tmpchr = chr;
+            }
+
+            err = qio_channel_write_char(false, ch, tmpchr);
+            if( err ) goto rewind;
           } else if( !iswprint(chr) ) {
-            clen = swprintf(cbuf, sizeof(cbuf), L"\\u%04x", chr);
-            if( clen < 0 ) {
+            // write it as \uXXXX 4 hex digits.
+            tmplen = sprintf(tmp, "\\u%04x", (unsigned int) chr);
+            if( tmplen < 0 ) {
               err = errno;
               goto rewind;
             }
+            err = qio_channel_write_amt(false, ch, tmp, tmplen);
+            if( err ) goto rewind;
+          } else {
+            err = qio_channel_write_char(false, ch, chr);
+            if( err ) goto rewind;
           }
           break;
-      }
-      for( j = 0; j < clen; j++ ) {
-        err = qio_channel_write_char(false, ch, cbuf[j]);
-        if( err ) goto rewind;
       }
     }
 
@@ -959,7 +1040,7 @@ err_t _peek_number_unlocked(qio_channel_t* restrict ch, number_reading_state_t* 
   }
 
   int64_t mark_offset;
-  wchar_t chr;
+  int32_t chr;
   err_t err;
 
   s->sign = 0;
@@ -1992,7 +2073,7 @@ error:
 
 err_t qio_channel_scan_complex(const int threadsafe, qio_channel_t* restrict ch, void* restrict re_out, void* restrict im_out, size_t len)
 {
-  wchar_t chr;
+  int32_t chr;
   err_t err;
 
   if( threadsafe ) {
@@ -2140,7 +2221,7 @@ unlock:
 
 err_t qio_channel_skip_past_newline(const int threadsafe, qio_channel_t* restrict ch)
 {
-  wchar_t c;
+  int32_t c;
   err_t err;
 
   if( threadsafe ) {
@@ -2335,7 +2416,7 @@ err_t qio_channel_read_char(const int threadsafe, qio_channel_t* restrict ch, in
   mbstate_t ps;
   size_t got;
   char mb;
-  wchar_t tmp_chr;
+  int32_t tmp_chr;
   err_t err;
   int32_t gotch;
   uint32_t codepoint, state;
@@ -2544,7 +2625,7 @@ err_t _qio_channel_read_char_slow_unlocked(qio_channel_t* restrict ch, int32_t* 
   mbstate_t ps;
   size_t got;
   char mb;
-  wchar_t tmp_chr;
+  int32_t tmp_chr;
   err_t err;
   int32_t gotch;
   uint32_t codepoint, state;
