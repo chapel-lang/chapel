@@ -546,7 +546,7 @@ void chpl_comm_get_nb(void* addr, int32_t locale, void* raddr,
   }
 }
 
-int chpl_comm_test_get_nb(chpl_comm_get_nb_token_t *token,
+int chpl_comm_test_get_nb(chpl_comm_get_nb_token_t token,
                           int ln, chpl_string fn) {
   if (chpl_verbose_comm && !chpl_comm_no_debug_private)
     printf("%d: %s:%d: test non-blocking get (%p)\n",
@@ -556,10 +556,10 @@ int chpl_comm_test_get_nb(chpl_comm_get_nb_token_t *token,
     chpl_comm_commDiagnostics.get_nb_test++;
     chpl_sync_unlock(&chpl_comm_diagnostics_sync);
   }
-  return gasnet_try_syncnb(*token)==GASNET_OK;
+  return gasnet_try_syncnb(token)==GASNET_OK;
 }
 
-void chpl_comm_wait_get_nb(chpl_comm_get_nb_token_t *token,
+void chpl_comm_wait_get_nb(chpl_comm_get_nb_token_t token,
                            int ln, chpl_string fn) {
   if (chpl_verbose_comm && !chpl_comm_no_debug_private)
     printf("%d: %s:%d: wait non-blocking get (%p)\n",
@@ -569,7 +569,7 @@ void chpl_comm_wait_get_nb(chpl_comm_get_nb_token_t *token,
     chpl_comm_commDiagnostics.get_nb_wait++;
     chpl_sync_unlock(&chpl_comm_diagnostics_sync);
   }
-  gasnet_wait_syncnb(*token);
+  gasnet_wait_syncnb(token);
 }
 
 
