@@ -373,6 +373,7 @@ buildIfStmt(Expr* condExpr, Expr* thenExpr, Expr* elseExpr) {
 
 BlockStmt*
 buildFromStmt(Expr* moduleName, Expr * implements) {
+	//Syntax: from A use C implements LessThan; //A is module
 	return buildChapelStmt(new FromStmt(moduleName,implements));
 }
 
