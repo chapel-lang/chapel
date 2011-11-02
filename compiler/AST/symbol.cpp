@@ -435,8 +435,9 @@ void TypeSymbol::codegenDef(FILE* outfile) {
   }
 }
 
-InterfaceSymbol::InterfaceSymbol(const char* initName) :
-		Symbol(E_InterfaceSymbol,initName)
+InterfaceSymbol::InterfaceSymbol(const char* initName, AList* iFormals) :
+		Symbol(E_InterfaceSymbol,initName),
+		formals(iFormals)
 {
   gInterfaceSymbols.add(this);
 }
@@ -451,7 +452,7 @@ void InterfaceSymbol::replaceChild(BaseAST* old_ast,BaseAST* new_ast){
 
 InterfaceSymbol*
 InterfaceSymbol::copyInner(SymbolMap* map) {
-  InterfaceSymbol* copy = new InterfaceSymbol(name);
+  InterfaceSymbol* copy = new InterfaceSymbol(name,formals);
   return copy;
 }
 

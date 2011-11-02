@@ -20,6 +20,7 @@ BaseAST *get_root_type_or_type_expr(BaseAST *ast);
 BaseAST *typeCheckExpr(BaseAST *currentExpr, BaseAST *expectedReturnTypeExpr);
 void handle_where_clause_expr(BaseAST *ast);
 BaseAST *typeCheckFn(FnSymbol *fn);
+void checkInterfaceImplementations(BlockStmt *block);
 
 //FIXME: This probably already exists in Chapel, but I couldn't find it
 //FIXME: A more optimized approach would be to use the congruence closure to find all representative types at
@@ -79,14 +80,17 @@ BaseAST *get_root_type_or_type_expr(BaseAST *ast) {
       //FIXME: is this strictly correct?
       return get_root_type_or_type_expr(bs->body.head);
     }
+    else if (isUnresolvedSymExpr(ast)) {
+      return dtUnknown;
+    }
     else {
-      INT_FATAL("Unimplemented case in getSymbolId(expr)");
+      INT_FATAL("Unimplemented case in get_root_type_or_type_expr(expr): %i\n", toExpr(ast)->astTag);
     }
   }
   else {
-    INT_FATAL("Unimplemented case in getSymbolId(ast)");
+    INT_FATAL("Unimplemented case in get_root_type_or_type_expr(ast)");
   }
-  INT_FATAL("Unimplemented case in getSymbolId");
+  INT_FATAL("Unimplemented case in get_root_type_or_type_expr");
   return 0;
 }
 
@@ -110,23 +114,6 @@ typedef std::vector<std::pair<int, CCNode *> >::reverse_iterator CCNodeAssocList
 struct CongruenceClosure {
   CCNodeAssocList node_assoc_list;
   std::vector<unsigned> scope_stops;
-
-  void enter_scope() {
-    scope_stops.push_back(node_assoc_list.size());
-  }
-
-  void exit_scope() {
-    unsigned last_scope_stop;
-
-    INT_ASSERT(!scope_stops.empty() && "Popping an empty scope");
-    last_scope_stop = scope_stops.back();
-    scope_stops.pop_back();
-
-    //FIXME: this is pessimized, you can make this faster
-    while (node_assoc_list.size() != last_scope_stop) {
-      node_assoc_list.pop_back();
-    }
-  }
 
   BaseAST *get_representative_ast(BaseAST *ast) {
     CCNode *rep = representative(find_or_insert(ast));

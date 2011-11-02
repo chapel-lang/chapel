@@ -85,6 +85,7 @@ _extern          processToken(TEXTERN); // Deprecated
 extern           processToken(TEXTERN);
 for              processToken(TFOR);
 forall           processToken(TFORALL);
+from			 processToken(TFROM);
 if               processToken(TIF);
 implements       processToken(TIMPLEMENTS);
 in               processToken(TIN);

@@ -359,8 +359,8 @@ buildLabelStmt(const char* name, Expr* stmt) {
 }
 
 BlockStmt*
-buildImplementsStmt(Expr* type, Expr* interfaceName) {
-	return buildChapelStmt(new ImplementsStmt(type,interfaceName));
+buildImplementsStmt(Expr* implementsClause, Expr* wherePart, BlockStmt* statements ) {
+	return buildChapelStmt(new ImplementsStmt(implementsClause, wherePart, statements));
 }
 
 BlockStmt*
@@ -369,6 +369,11 @@ buildIfStmt(Expr* condExpr, Expr* thenExpr, Expr* elseExpr) {
     if (!strcmp(use->unresolved, gTryToken->name))
       return buildChapelStmt(new CondStmt(condExpr, thenExpr, elseExpr));
   return buildChapelStmt(new CondStmt(new CallExpr("_cond_test", condExpr), thenExpr, elseExpr));
+}
+
+BlockStmt*
+buildFromStmt(Expr* moduleName, Expr * implements) {
+	return buildChapelStmt(new FromStmt(moduleName,implements));
 }
 
 
@@ -1527,12 +1532,23 @@ buildClassDefExpr(const char* name, Type* type, Expr* inherit, BlockStmt* decls,
 }
 
 DefExpr*
-buildInterfaceDefExpr(const char* name, BlockStmt* decls){
-	InterfaceSymbol* con = new InterfaceSymbol(name);
-	con->addDeclarations(decls);
-	return new DefExpr(con);
+buildInterfaceDefExpr(const char* name,AList* iFormals, Expr* inherit, BlockStmt* decls){
+	InterfaceSymbol* interface = new InterfaceSymbol(name, iFormals);
+	interface->addDeclarations(decls);
+	if(inherit)
+		interface->inherits.insertAtTail(inherit);
+	return new DefExpr(interface);
 }
 
+AList*
+buildInterfaceFormal(AList* formal_list, DefExpr* new_formal){
+	if (new_formal == NULL)
+		return NULL;
+	else if(formal_list == NULL)
+		formal_list = new AList();
+	formal_list->insertAtTail(new_formal);
+	return formal_list;
+}
 
 DefExpr*
 buildArgDefExpr(IntentTag tag, const char* ident, Expr* type, Expr* init, Expr* variable) {

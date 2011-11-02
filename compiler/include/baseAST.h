@@ -96,6 +96,7 @@ enum AstTag {
   E_NamedExpr,
   E_BlockStmt,
   E_ImplementsStmt,
+  E_FromStmt,
   E_CondStmt,
   E_GotoStmt,
   E_Expr,
@@ -334,8 +335,14 @@ extern Vec<ModuleSymbol*> mainModules; // contains main modules
     AST_CALL_LIST(_a, ClassType, fields, call, __VA_ARGS__);            \
     AST_CALL_LIST(_a, ClassType, inherits, call, __VA_ARGS__);          \
     break;                                                              \
-  case E_InterfaceSymbol:													\
-    AST_CALL_LIST(_a, InterfaceSymbol, fields, call, __VA_ARGS__); \
+  case E_InterfaceSymbol:												\
+    AST_CALL_LIST(_a, InterfaceSymbol, fields, call, __VA_ARGS__); 		\
+    AST_CALL_LIST(_a, InterfaceSymbol, inherits, call, __VA_ARGS__);    \
+    break;																\
+  case E_FromStmt:														\
+  	AST_CALL_CHILD(_a, FromStmt, moduleName, call, __VA_ARGS__); 		\
+  	AST_CALL_CHILD(_a, FromStmt, implementsClause, call, __VA_ARGS__); 		\
+  	break;																\
   default:                                                              \
     break;                                                              \
   }
