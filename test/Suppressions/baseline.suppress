@@ -5,3 +5,5 @@ trivial/mjoyner/inlinefunc/inlfunc2_report
 users/ferguson/recordbug3
 #Removing unnecessary autocopies necessary to get to minimum number of leaks
 memory/figueroa/LeakedMemory5
+# --baseline turns off deadcode removal
+optimizations/hilde/removeUnreachable
