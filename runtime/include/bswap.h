@@ -7,9 +7,28 @@
 
 
 #include <sys/param.h>
-
 #ifdef __GLIBC__
 #include <endian.h>
+
+#endif
+
+#ifdef __PGI 
+// __bswap_64 does not compile with the PGI compiler
+#undef __bswap_16
+#undef __bswap_32
+#undef __bswap_64
+#undef htobe16
+#undef htobe32
+#undef htobe64
+#undef htole16
+#undef htole32
+#undef htole64
+#undef be16toh
+#undef be32toh
+#undef be64toh
+#undef le16toh
+#undef le32toh
+#undef le64toh
 #endif
 
 #ifdef htobe64

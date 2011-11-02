@@ -127,6 +127,7 @@ void* qbytes_data(qbytes_t* b)
 }
 
 typedef enum {
+  QB_PART_FLAGS_NONE = 0,
   QB_PART_FLAGS_EXTENDABLE_TO_ENTIRE_BYTES = 1,
 } qbuffer_part_flags_t;
 

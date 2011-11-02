@@ -323,9 +323,9 @@ err_t qbuffer_init_part(qbuffer_part_t* p, qbytes_t* bytes, int64_t skip_bytes, 
   p->skip_bytes = skip_bytes;
   p->len_bytes = len_bytes;
   p->end_offset = end_offset;
-  p->flags = 0;
 
-  if( skip_bytes == 0 && len_bytes == bytes->len ) p->flags |= QB_PART_FLAGS_EXTENDABLE_TO_ENTIRE_BYTES;
+  p->flags = QB_PART_FLAGS_NONE;
+  if( skip_bytes == 0 && len_bytes == bytes->len ) p->flags = QB_PART_FLAGS_EXTENDABLE_TO_ENTIRE_BYTES;
 
   return 0;
 }

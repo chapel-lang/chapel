@@ -1085,9 +1085,13 @@ err_t sys_getnameinfo(const sys_sockaddr_t* addr, char** host_out, char** serv_o
                       serv_buf, serv_buf_sz,
                       flags);
 
+#ifndef EAI_OVERFLOW
+    break; // oddly enough... old Mac OS X does not have EAI_OVERFLOW.
+#else
     if( got != EAI_OVERFLOW ) break;
     host_buf_sz *= 2;
     serv_buf_sz *= 2;
+#endif
   }
 
   if( got == 0 ) {
@@ -1097,7 +1101,8 @@ err_t sys_getnameinfo(const sys_sockaddr_t* addr, char** host_out, char** serv_o
   } else {
     *host_out = host_buf;
     *serv_out = serv_buf;
-    err_out = GAI_ERROR_OFFSET + got;
+    if( got == EAI_SYSTEM ) err_out = errno;
+    else err_out = GAI_ERROR_OFFSET + got;
   }
 
 error:

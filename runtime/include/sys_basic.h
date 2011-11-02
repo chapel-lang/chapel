@@ -27,9 +27,9 @@
 #endif
 
 #ifdef __GNUC__
-#define __always_inline inline __attribute__((__always_inline__))
+#define ___always_inline inline __attribute__((__always_inline__))
 #else
-#define __always_inline inline
+#define ___always_inline inline
 #endif
 
 #ifndef CHPL_NO_GASNET

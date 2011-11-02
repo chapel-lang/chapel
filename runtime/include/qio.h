@@ -658,7 +658,7 @@ err_t _qio_channel_flush_unlocked(qio_channel_t* ch);
 // because the data will already be in the buffer.
 // The actual error in flushing, if there was one,
 // will be returned in a qio_channel_flush
-static __always_inline
+static ___always_inline
 err_t _qio_channel_post_cached_write(qio_channel_t* restrict ch)
 {
   err_t err = 0;
@@ -682,7 +682,7 @@ err_t _qio_channel_post_cached_write(qio_channel_t* restrict ch)
 // Returns an error code.
 //
 // On a read, returns EEOF and *amt_read=some amount for EOF.
-static __always_inline
+static ___always_inline
 err_t qio_channel_read(const int threadsafe, qio_channel_t* restrict ch, void* restrict ptr, ssize_t len, ssize_t* restrict amt_read)
 {
   err_t err;
@@ -715,7 +715,7 @@ err_t qio_channel_read(const int threadsafe, qio_channel_t* restrict ch, void* r
 
 // returns a character >= 0 or negative for an error code.
 // This function exists for performance reasons.
-static __always_inline
+static ___always_inline
 int32_t qio_channel_read_byte(const int threadsafe, qio_channel_t* restrict ch)
 {
   int32_t ret;
@@ -755,7 +755,7 @@ int32_t qio_channel_read_byte(const int threadsafe, qio_channel_t* restrict ch)
 }
 
 // This function exists for performance reasons.
-static __always_inline
+static ___always_inline
 err_t qio_channel_write_byte(const int threadsafe, qio_channel_t* restrict ch, uint8_t byte) {
   err_t err;
 
@@ -835,7 +835,7 @@ int64_t qio_channel_str_style(qio_channel_t* ch)
 
 
  
-static __always_inline
+static ___always_inline
 err_t qio_channel_write(const int threadsafe, qio_channel_t* restrict ch, const void* restrict ptr, ssize_t len, ssize_t* restrict amt_written )
 {
   err_t err;
@@ -867,7 +867,7 @@ err_t qio_channel_write(const int threadsafe, qio_channel_t* restrict ch, const 
 }
 
 
-static __always_inline
+static ___always_inline
 err_t qio_channel_read_amt(const int threadsafe, qio_channel_t* restrict ch, void* restrict ptr, ssize_t len) {
   err_t err;
 
@@ -897,7 +897,7 @@ err_t qio_channel_read_amt(const int threadsafe, qio_channel_t* restrict ch, voi
   return err;
 }
 
-static __always_inline
+static ___always_inline
 err_t qio_channel_write_amt(const int threadsafe, qio_channel_t* restrict ch, const void* restrict ptr, ssize_t len) {
   err_t err;
 
