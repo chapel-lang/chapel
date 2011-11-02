@@ -1,7 +1,0 @@
-bug: Seg fault for simple case of inheritance.
-
-This test declares a class A with a type variable and another class B
-that is a subclass of A.
-
-This test seg faults during the prune pass (during collect_asts),
-similar to others in this directory.
