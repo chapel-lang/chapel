@@ -33,7 +33,17 @@
       (so that the channel just refers to it and does not copy it) are
       implemented but not well tested.
     - It would be nice if ioBits:string printed itself in binary instead of decimal.
-
+    - Cleaning up to reduce the number of exported symbols, and using enums for
+      all constants once 'use enum' is available and we have a way to get
+      C constants into Chapel enums.
+    - Support for libevent/qthreads system call thread so that we have something
+      suitable for writing (in a straightforward manner) a multithreaded webserver
+    - Doing something reasonable with a file that moves from one node to another -
+      namely, when a channel is created with a file that resides remotely, if that
+      same file is accessible locally (e.g. with Lustre or NFS), we should open
+      a local copy of that file and use that in the channel. (not sure how to avoid
+      opening # channels copies of these files -- seems that we'd want some way
+      to cache that...).
 */
 
 
