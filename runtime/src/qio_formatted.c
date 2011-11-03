@@ -2625,7 +2625,7 @@ err_t _qio_channel_read_char_slow_unlocked(qio_channel_t* restrict ch, int32_t* 
   mbstate_t ps;
   size_t got;
   char mb;
-  int32_t tmp_chr;
+  wchar_t tmp_chr;
   err_t err;
   int32_t gotch;
   uint32_t codepoint, state;
