@@ -622,8 +622,9 @@ err_t qio_decode_char_buf(int32_t* restrict chr, int* restrict nbytes, const cha
   } else {
     mbstate_t ps;
     size_t got;
+    wchar_t wch = 0;
     memset(&ps, 0, sizeof(mbstate_t));
-    got = mbrtowc(chr, buf, buflen, &ps);
+    got = mbrtowc(&wch, buf, buflen, &ps);
     if( got == 0 ) {
       // We read a NUL.
       *chr = 0;
@@ -643,6 +644,7 @@ err_t qio_decode_char_buf(int32_t* restrict chr, int* restrict nbytes, const cha
     } else {
       // OK!
       // mbrtowc already set the character.
+      *chr = wch;
       *nbytes = got;
       return 0;
     }
