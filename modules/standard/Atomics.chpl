@@ -1,3 +1,5 @@
+// See runtime/include/atomics/README for more info about these functions
+
 module Atomics {
 
   extern type memory_order;
@@ -94,7 +96,14 @@ module Atomics {
 
 
   // Begin Chapel interface for atomic integers.
-  // it would be nice to create records wrapping these data types
+
+  // See runtime/include/atomics/README for more info about these functions
+
+  // these can be called just the way they are:
+  //extern proc atomic_thread_fence(order:memory_order);
+  //extern proc atomic_signal_thread_fence(order:memory_order);
+
+
   proc create_atomic_uint_least8():atomic_uint_least8_t {
     var ret:atomic_uint_least8_t;
     atomic_init_uint_least8_t(ret, 0);

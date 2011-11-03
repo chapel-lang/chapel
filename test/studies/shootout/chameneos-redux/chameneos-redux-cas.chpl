@@ -1,9 +1,11 @@
-extern proc __sync_val_compare_and_swap(inout state_p : volatile uint(32), 
+/*extern proc __sync_val_compare_and_swap(inout state_p : volatile uint(32), 
                                          state : uint(32), 
                                          xchg : uint(32)) : uint(32);
+ */
 extern proc sched_yield();
 
 use Time;
+use Atomics;
 
 /*	- The Chameneos game is as follows: 
 	  	A population of n chameneos gathers at a common meeting place, where 
@@ -33,18 +35,18 @@ config const MEET_COUNT_SHIFT = 8;
 
 
 class MeetingPlace {
-	var state : volatile uint(32);
+	var state : atomicuint(32);
 
 	/* constructor for MeetingPlace, sets the 
 	   number of meetings to take place */
 	proc MeetingPlace() {
-		state = (numMeetings << MEET_COUNT_SHIFT) : uint;
+		state.store((numMeetings << MEET_COUNT_SHIFT) : uint);
 	}
 	
 	/* reset must be called after meet, 
 	   to reset numMeetings for a subsequent call of meet */
 	proc reset() {
-		state = (numMeetings << MEET_COUNT_SHIFT) : uint;
+		state.store((numMeetings << MEET_COUNT_SHIFT) : uint);
 	}
 }
 	
@@ -63,7 +65,7 @@ class Chameneos {
 	var color : Color;
 	var meetings : int;
 	var meetingsWithSelf : int;
-	var meetingCompleted : volatile uint(32);
+	var meetingCompleted : atomicuint(32);
 	
 	/* start tells a Chameneos to go to a given MeetingPlace, where it may meet 
 	   with another Chameneos.  If it does, it will get the complement of the color
@@ -78,7 +80,7 @@ class Chameneos {
 		var newColor : Color;
 
 		//writeln("id ", id, ": in start");
-		stateTemp = meetingPlace.state;	
+		stateTemp = meetingPlace.state.load();	
 					
 		while (true) {
 			peer_idx = stateTemp & CHAMENEOS_IDX_MASK;
@@ -91,8 +93,8 @@ class Chameneos {
 				break;
 			}
 			//writeln("id ", id, ": xchg is ", xchg);
-			prev = __sync_val_compare_and_swap(meetingPlace.state, stateTemp, xchg);
-			if (prev == stateTemp) {
+
+			if (meetingPlace.state.compareExchangeStrong(stateTemp, xchg)) {
 				if (peer_idx) {
 					//writeln("id ", id, ": got here second");
 					if (id == peer_idx) {
@@ -104,7 +106,7 @@ class Chameneos {
 					peer.color = newColor;
 					peer.meetings += 1;
 					peer.meetingsWithSelf += is_same;
-					peer.meetingCompleted = 1;
+					peer.meetingCompleted.store(1);
 					color = newColor;
 					meetings += 1;
 					meetingsWithSelf += is_same;
@@ -112,15 +114,15 @@ class Chameneos {
 
 				} else {
 					//writeln("id ", id, ": got here first");
-					while (meetingCompleted == 0) {
+					while (meetingCompleted.load() == 0) {
 						sched_yield();
 					}
 					//writeln("id ", id, ": exiting");
-					meetingCompleted = 0;
-					stateTemp = meetingPlace.state;	
+					meetingCompleted.store(0);
+					stateTemp = meetingPlace.state.load();	
 				}
 			} else {
-				stateTemp = prev; 
+				stateTemp = meetingPlace.state.load();
 			}
 		} 
 	}
