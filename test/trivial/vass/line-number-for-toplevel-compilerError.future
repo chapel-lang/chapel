@@ -1,7 +1,0 @@
-bug: the error message for compilerError points to a wrong line number
-
-It should point to Line 4, where the compilerError call is actually
-located, but at present it points to Line 1.
-
-It probably has something to do with how the call stack is processed
-upon a compilerError/compilerWarning (e.g. in issueCompilerError()).
