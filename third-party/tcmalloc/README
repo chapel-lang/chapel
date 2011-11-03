@@ -18,6 +18,9 @@ google-perftools library itself.
 The modifications that we have made to the official google-perftools 1.7
 release are as follows:
 
+* Change the default large allocation reporting threshold to 0, so that
+  by default tcmalloc does not produce a message no matter how large an
+  allocation is.
 * Add a function to disable all but the specified entry in the table of
   system allocators.  This can be called after a user-supplied system
   allocator is registered, in order to turn off all the others and thus

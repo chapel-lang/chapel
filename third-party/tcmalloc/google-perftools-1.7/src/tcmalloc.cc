@@ -168,7 +168,7 @@ DECLARE_double(tcmalloc_release_rate);
 #ifdef _WIN32
 const int64 kDefaultLargeAllocReportThreshold = static_cast<int64>(1) << 62;
 #else
-const int64 kDefaultLargeAllocReportThreshold = static_cast<int64>(1) << 30;
+const int64 kDefaultLargeAllocReportThreshold = 0;
 #endif
 DEFINE_int64(tcmalloc_large_alloc_report_threshold,
              EnvToInt64("TCMALLOC_LARGE_ALLOC_REPORT_THRESHOLD",
