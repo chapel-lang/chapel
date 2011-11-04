@@ -48,6 +48,17 @@ void atomic_signal_thread_fence(memory_order order)
   // No idea!
 }
 
+static inline void atomic_init_flag(atomic_flag *obj, chpl_bool value)
+{
+  obj->v = value;
+  chpl_sync_initAux(&obj->sv);
+}
+
+static inline void atomic_destroy_flag(atomic_flag *obj) 
+{
+  chpl_sync_destroyAux(&obj->sv);
+}
+
 static inline chpl_bool atomic_flag_test_and_set_explicit(atomic_flag *obj, memory_order order) {
   chpl_bool ret;
   chpl_sync_lock(&obj->sv);

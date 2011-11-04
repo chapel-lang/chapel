@@ -66,6 +66,7 @@ class Chameneos {
 	var meetings : int;
 	var meetingsWithSelf : int;
 	var meetingCompleted : atomicuint(32);
+        //var meetingCompleted : volatile uint(32);
 	
 	/* start tells a Chameneos to go to a given MeetingPlace, where it may meet 
 	   with another Chameneos.  If it does, it will get the complement of the color
@@ -107,6 +108,7 @@ class Chameneos {
 					peer.meetings += 1;
 					peer.meetingsWithSelf += is_same;
 					peer.meetingCompleted.store(1);
+					//peer.meetingCompleted = 1;
 					color = newColor;
 					meetings += 1;
 					meetingsWithSelf += is_same;
@@ -114,11 +116,16 @@ class Chameneos {
 
 				} else {
 					//writeln("id ", id, ": got here first");
+                                        //var spin_count = spinCount;
 					while (meetingCompleted.load() == 0) {
-						sched_yield();
+					//while (meetingCompleted == 0) {
+                                                //if spin_count then spin_count -= 1;
+                                                //else 
+                                                  sched_yield();
 					}
 					//writeln("id ", id, ": exiting");
 					meetingCompleted.store(0);
+					//meetingCompleted = 0;
 					stateTemp = meetingPlace.state.load();	
 				}
 			} else {
