@@ -758,6 +758,35 @@ parallel(void) {
 
   forv_Vec(FnSymbol, fn, nestedFunctions) {
     forv_Vec(CallExpr, call, *fn->calledBy) {
+      // Overhead is high for on statements if locale==here, so
+      //  perform a simple optimization here to call fn() directly if
+      //  this is the case.  In the non-blocking case if the serial
+      //  state is false, we could effectively put a begin before the
+      //  non-blocking fork but the resulting code would have similar
+      //  overhead.  In the non-blocking case when the serial state is
+      //  true, we could perform this optimization, but in our current
+      //  implementation, we don't generate code for the two paths.
+      //  Rather we use a macro, so the optimization would have to be
+      //  performed within the macro.
+      if (fn->hasFlag(FLAG_ON) && !fn->hasFlag(FLAG_NON_BLOCKING)) {
+        CallExpr *newCall = call->copy();
+        BlockStmt* lblock = new BlockStmt();
+        lblock->insertAtHead(newCall);
+        BlockStmt* rblock = new BlockStmt();
+
+        INT_ASSERT(call->get(1));
+        CallExpr* localeID = new CallExpr(PRIM_LOCALE_ID);
+        VarSymbol* tmp = newTemp(localeID->typeInfo());
+        VarSymbol* tmpBool = newTemp(dtBool);
+        call->insertBefore(new DefExpr(tmp));
+        call->insertBefore(new DefExpr(tmpBool));
+        call->insertBefore(new CallExpr(PRIM_MOVE, tmp, localeID));
+        call->insertBefore(new CallExpr(PRIM_MOVE, tmpBool,
+                                        new CallExpr(PRIM_EQUAL, tmp,
+                                                     call->get(1)->copy())));
+        call->insertBefore(new CondStmt(new SymExpr(tmpBool), lblock, rblock));
+        rblock->insertAtHead(call->remove());
+      }
       bundleArgs(call);
     }
   }

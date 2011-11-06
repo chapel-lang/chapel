@@ -16,3 +16,7 @@ release are as follows:
 * modified the implementation of the serial state to support calls to
   get/setSerial prior to initialization.  This corresponds to commit
   r2444 to the Qthreads tree (made after the 1.7 release).
+
+* applied a fix for autoconf scripts in a cross-compilation
+  environment.  This corresponds to commit r2590 to the Qthreads tree
+  (made after the 1.7 release).

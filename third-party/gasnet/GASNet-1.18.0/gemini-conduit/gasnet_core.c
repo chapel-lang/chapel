@@ -202,7 +202,7 @@ static int gasnetc_init(int *argc, char ***argv) {
       GASNETI_RETURN_ERRR(NOT_INIT, errstring);
     }
 
-    if (!gasneti_mynode) {
+    if (!gasneti_mynode && !getenv("CHPL_GASNET_QUIET")) {
       fflush(NULL);
       fprintf(stdout,
               "-----------------------------------------------------------------------\n"
@@ -210,7 +210,7 @@ static int gasnetc_init(int *argc, char ***argv) {
               "\n"
               " GASNet's gemini-conduit is currently in BETA status.\n"
               " You should NOT trust any performance numbers from this run as\n"
-              " predictive of the performace of the conduit when completed.\n"
+              " predictive of the performance of the conduit when completed.\n"
               "\n"
               " WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING\n"
               "-----------------------------------------------------------------------\n");

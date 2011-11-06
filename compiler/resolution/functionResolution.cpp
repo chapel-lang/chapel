@@ -5356,6 +5356,29 @@ static void removeUnusedFunctions() {
   }
 }
 
+static bool
+isUnusedClass(ClassType *ct) {
+  // FALSE if default constructors are used
+  if (resolvedFns.get(ct->defaultConstructor) ||
+      resolvedFns.get(ct->defaultTypeConstructor)) {
+    return false;
+  }
+
+  // TRUE if fields are not all type vars, params, or super class
+  for_fields(field, ct) {
+    if (!field->hasFlag(FLAG_PARAM) &&
+        !field->hasFlag(FLAG_TYPE_VARIABLE) &&
+        !field->hasFlag(FLAG_SUPER_CLASS)) {
+      return true;
+    }
+  }
+
+  // Otherwise be conservative and keep it around because it maybe
+  //  be used by a child class that is used (need multiple passes
+  //  over the global type symbols determine this accurately)
+  return false;
+}
+
 static void removeUnusedTypes() {
   // Remove unused types
 
@@ -5363,8 +5386,7 @@ static void removeUnusedTypes() {
     if (type->defPoint && type->defPoint->parentSymbol)
       if (!type->hasFlag(FLAG_REF))
         if (ClassType* ct = toClassType(type->type))
-          if (!resolvedFns.get(ct->defaultConstructor) &&
-              !resolvedFns.get(ct->defaultTypeConstructor)) {
+          if (isUnusedClass(ct)) {
             if (ct->symbol->hasFlag(FLAG_OBJECT_CLASS))
               dtObject = NULL;
             ct->symbol->defPoint->remove();
@@ -5375,8 +5397,7 @@ static void removeUnusedTypes() {
     if (type->defPoint && type->defPoint->parentSymbol) {
       if (type->hasFlag(FLAG_REF)) {
         if (ClassType* ct = toClassType(type->getValType())) {
-          if (!resolvedFns.get(ct->defaultConstructor) &&
-              !resolvedFns.get(ct->defaultTypeConstructor)) {
+          if (isUnusedClass(ct)) {
             if (ct->symbol->hasFlag(FLAG_OBJECT_CLASS))
               dtObject = NULL;
             type->defPoint->remove();

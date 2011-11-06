@@ -1,7 +1,0 @@
-bug: Seg fault for simple case of inheritance.
-
-This test is exactly like inheritance1.chpl, except it calls
-writeln(a) before delaring b.
-
-The test seg faults during the removeWrapRecords pass.
-

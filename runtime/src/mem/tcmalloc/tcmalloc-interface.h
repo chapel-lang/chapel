@@ -8,7 +8,7 @@
 extern "C" {
 #endif
 
-void* tcmallocChapelInit_c(size_t, size_t*);
+void tcmallocChapelInit_c(void*, size_t);
 
 #ifdef __cplusplus
 }   // extern "C"

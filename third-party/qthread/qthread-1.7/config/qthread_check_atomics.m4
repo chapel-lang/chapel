@@ -70,9 +70,13 @@ return (int)(long)foo;
 AS_IF([test "x$qthread_cv_atomic_CAS32" = "xyes" && test "x$qthread_cv_atomic_CAS64" = "xyes" && test "x$qthread_cv_atomic_CASptr" = "xyes"],
 	  [qthread_cv_atomic_CAS=yes],
 	  [qthread_cv_atomic_CAS=no])
+AC_ARG_ENABLE([cmpxchg16b],
+              [AS_HELP_STRING([--enable-cmpxchg16b],
+			                  [forces acceptance or rejection of the cmpxchg16b instruction; useful primarily for cross-compiling])])
 AC_CACHE_CHECK([whether the compiler supports CMPXCHG16B],
   [qthread_cv_cmpxchg16b],
-  [AC_RUN_IFELSE([AC_LANG_SOURCE([[
+  [AS_IF([test "x$qthread_cv_asm_arch" = xAMD64],
+         [AC_RUN_IFELSE([AC_LANG_SOURCE([[
 #include <stdint.h> /* for uint64_t and intptr_t (C99) */
 struct m128 {
 uint64_t a,b;
@@ -104,8 +108,15 @@ return -1;
 return 0;
 }
 }]])],
-    [qthread_cv_cmpxchg16b="yes"],
-	[qthread_cv_cmpxchg16b="no"])])
+                        [qthread_cv_cmpxchg16b="yes"],
+	                    [qthread_cv_cmpxchg16b="no"],
+	                    [AS_IF([test "x$enable_cmpxchg16b" = x],
+	                           [case "$host" in # for vim: ( (
+		                         x86_64-*) qthread_cv_cmpxchg16b="yes" ;;
+			                     *) qthread_cv_cmpxchg16b="no" ;;
+			                    esac],
+		                       [qthread_cv_cmpxchg16b="$enable_cmpxchg16b"])])],
+         [qthread_cv_cmpxchg16b="no"])])
 qthread_cv_atomic_CAS128="$qthread_cv_cmpxchg16b"
 AC_CACHE_CHECK([whether compiler supports builtin atomic incr],
   [qthread_cv_atomic_incr],

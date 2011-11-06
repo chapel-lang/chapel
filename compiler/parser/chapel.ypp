@@ -427,6 +427,7 @@ linkage_spec:
 | TEXPORT       { $$ = new FnSymbol(""); $$->addFlag(FLAG_EXPORT); }
 | TEXPORT ident { $$ = new FnSymbol($2); $$->addFlag(FLAG_EXPORT); }
 | TEXTERN       { $$ = new FnSymbol(""); $$->addFlag(FLAG_EXTERN); }
+| TEXTERN ident { $$ = new FnSymbol($2); $$->addFlag(FLAG_EXTERN); }
 | T_EXTERN      { $$ = new FnSymbol(""); $$->addFlag(FLAG_EXTERN);
                   $$->addFlag(FLAG_OLD_EXTERN_KW_USED); }
 
