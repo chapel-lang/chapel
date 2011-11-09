@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 #include "gasnet.h"
 #include "chplrt.h"
 #include "chpl-comm.h"
@@ -74,6 +75,7 @@ typedef struct {
 
 static void AM_fork_fast(gasnet_token_t token, void* buf, size_t nbytes) {
   fork_t *f = buf;
+  gasnet_handlerarg_t a0, a1;
 
   if (chpl_verbose_comm) {
     char mybuf[128];
@@ -88,18 +90,21 @@ static void AM_fork_fast(gasnet_token_t token, void* buf, size_t nbytes) {
     (*chpl_ftable[f->fid])(0);
 
   // Signal that the handler has completed
-  GASNET_Safe(gasnet_AMReplyMedium0(token, SIGNAL, &(f->ack), sizeof(f->ack)));
+  a0 = (gasnet_handlerarg_t) ((((uint64_t) f->ack)<<32UL)>>32UL);
+  a1 = (gasnet_handlerarg_t) (((uint64_t) f->ack)>>32UL);
+  GASNET_Safe(gasnet_AMReplyShort2(token, SIGNAL, a0, a1));
 }
 
 static void fork_wrapper(fork_t *f) {
+  gasnet_handlerarg_t a0, a1;
   if (f->arg_size)
     (*chpl_ftable[f->fid])(&f->arg);
   else
     (*chpl_ftable[f->fid])(0);
-  GASNET_Safe(gasnet_AMRequestMedium0(f->caller,
-                                      SIGNAL,
-                                      &(f->ack),
-                                      sizeof(f->ack)));
+  a0 = (gasnet_handlerarg_t) ((((uint64_t) f->ack)<<32UL)>>32UL);
+  a1 = (gasnet_handlerarg_t) (((uint64_t) f->ack)>>32UL);
+  GASNET_Safe(gasnet_AMRequestShort2(f->caller, SIGNAL, a0, a1));
+
   chpl_mem_free(f, 0, 0);
 }
 
@@ -110,15 +115,16 @@ static void AM_fork(gasnet_token_t token, void* buf, size_t nbytes) {
 }
 
 static void fork_large_wrapper(fork_t* f) {
+  gasnet_handlerarg_t a0, a1;
   void* arg = chpl_mem_allocMany(1, f->arg_size, CHPL_RT_MD_COMM_FORK_RECV_LARGE_ARG, 0, 0);
 
   chpl_comm_get(arg, f->caller, *(void**)f->arg,
                 f->arg_size, -1 /*typeIndex: unused*/, 1, 0, "fork large");
   (*chpl_ftable[f->fid])(arg);
-  GASNET_Safe(gasnet_AMRequestMedium0(f->caller,
-                                      SIGNAL,
-                                      &(f->ack),
-                                      sizeof(f->ack)));
+  a0 = (gasnet_handlerarg_t) ((((uint64_t) f->ack)<<32UL)>>32UL);
+  a1 = (gasnet_handlerarg_t) (((uint64_t) f->ack)>>32UL);
+  GASNET_Safe(gasnet_AMRequestShort2(f->caller, SIGNAL, a0, a1));
+
   chpl_mem_free(f, 0, 0);
   chpl_mem_free(arg, 0, 0);
 }
@@ -172,9 +178,9 @@ static void AM_fork_nb_large(gasnet_token_t token, void* buf, size_t nbytes) {
              true, f->serial_state, NULL);
 }
 
-static void AM_signal(gasnet_token_t token, void* buf, size_t nbytes) {
-  int **done = (int**)buf;
-  **done = 1;
+static void AM_signal(gasnet_token_t token, gasnet_handlerarg_t a0, gasnet_handlerarg_t a1) {
+  uint64_t done = ((uint64_t) (uint32_t) a0) | (((uint64_t) (uint32_t) a1)<<32UL);
+  *((int *) done) = 1;
 }
 
 static void AM_priv_bcast(gasnet_token_t token, void* buf, size_t nbytes) {
@@ -268,6 +274,8 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
   int status;
 
   CHPL_COMM_GASNET_SETENV
+
+  assert(sizeof(gasnet_handlerarg_t)==sizeof(uint32_t));
 
   gasnet_init(argc_p, argv_p);
   chpl_localeID = gasnet_mynode();
@@ -423,10 +431,10 @@ static void chpl_comm_exit_common(int status) {
   static int loopback = 0;
 
   if (chpl_localeID == 0) {
-    GASNET_Safe(gasnet_AMRequestMedium0(chpl_localeID,
-                                        SIGNAL,
-                                        &ack,
-                                        sizeof(ack)));
+    gasnet_handlerarg_t a0 = (gasnet_handlerarg_t) ((((uint64_t) ack)<<32UL)>>32UL);
+    gasnet_handlerarg_t a1 = (gasnet_handlerarg_t) (((uint64_t) ack)>>32UL);
+    GASNET_Safe(gasnet_AMRequestShort2(chpl_localeID, SIGNAL, a0, a1));
+
     if (loopback) {
       gasnet_exit(2);
     }
@@ -450,10 +458,9 @@ void chpl_comm_exit_any_dirty(int status) {
   static int loopback = 0;
 
   if (chpl_localeID == 0) {
-    GASNET_Safe(gasnet_AMRequestMedium0(chpl_localeID,
-                                        SIGNAL,
-                                        &ack,
-                                        sizeof(ack)));
+    gasnet_handlerarg_t a0 = (gasnet_handlerarg_t) ((((uint64_t) ack)<<32UL)>>32UL);
+    gasnet_handlerarg_t a1 = (gasnet_handlerarg_t) (((uint64_t) ack)>>32UL);
+    GASNET_Safe(gasnet_AMRequestShort2(chpl_localeID, SIGNAL, a0, a1));
     if (loopback) {
       gasnet_exit(2);
     }
@@ -579,7 +586,9 @@ void  chpl_comm_fork(int locale, chpl_fn_int_t fid, void *arg,
                      int32_t arg_size, int32_t arg_tid) {
   fork_t* info;
   int     info_size;
-  int     done;
+  int     done; /* This is not declared volatile because we capture &done
+                   (and pass it to a GASNet function), so the compiler
+                   should not optimize out any accesses to it. */
   int     passArg = sizeof(fork_t) + arg_size <= gasnet_AMMaxMedium();
 
   if (chpl_localeID == locale) {
@@ -681,7 +690,7 @@ void  chpl_comm_fork_fast(int locale, chpl_fn_int_t fid, void *arg,
   char infod[gasnet_AMMaxMedium()];
   fork_t* info;
   int     info_size = sizeof(fork_t) + arg_size;
-  int     done;
+  int     done; // See chpl_comm_fork() for why this is not volatile
   int     passArg = info_size <= gasnet_AMMaxMedium();
 
   if (chpl_localeID == locale) {
