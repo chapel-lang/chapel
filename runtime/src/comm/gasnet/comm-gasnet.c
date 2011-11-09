@@ -104,13 +104,13 @@ static void fork_wrapper(fork_t *f) {
 }
 
 static void AM_fork(gasnet_token_t token, void* buf, size_t nbytes) {
-  fork_t *f = (fork_t*)chpl_mem_allocMany(nbytes, sizeof(char), CHPL_RT_MD_AM_FORK_DATA, 0, 0);
+  fork_t *f = (fork_t*)chpl_mem_allocMany(nbytes, sizeof(char), CHPL_RT_MD_COMM_FORK_RECV_INFO, 0, 0);
   memcpy(f, buf, nbytes);
   chpl_task_begin((chpl_fn_p)fork_wrapper, (void*)f, true, f->serial_state, NULL);
 }
 
 static void fork_large_wrapper(fork_t* f) {
-  void* arg = chpl_mem_allocMany(1, f->arg_size, CHPL_RT_MD_AM_FORK_ARG, 0, 0);
+  void* arg = chpl_mem_allocMany(1, f->arg_size, CHPL_RT_MD_COMM_FORK_RECV_LARGE_ARG, 0, 0);
 
   chpl_comm_get(arg, f->caller, *(void**)f->arg,
                 f->arg_size, -1 /*typeIndex: unused*/, 1, 0, "fork large");
@@ -127,7 +127,7 @@ static void fork_large_wrapper(fork_t* f) {
 ////           hide data copy by making get non-blocking
 ////GASNET - can we allocate f big enough so as not to need malloc in wrapper
 static void AM_fork_large(gasnet_token_t token, void* buf, size_t nbytes) {
-  fork_t* f = (fork_t*)chpl_mem_allocMany(1, nbytes, CHPL_RT_MD_AM_FORK_LARGE_DATA, 0, 0);
+  fork_t* f = (fork_t*)chpl_mem_allocMany(1, nbytes, CHPL_RT_MD_COMM_FORK_RECV_LARGE_INFO, 0, 0);
   memcpy(f, buf, nbytes);
   chpl_task_begin((chpl_fn_p)fork_large_wrapper, (void*)f,
              true, f->serial_state, NULL);
@@ -145,14 +145,14 @@ static void AM_fork_nb(gasnet_token_t  token,
                         void           *buf,
                         size_t          nbytes) {
   fork_t *f = (fork_t*)chpl_mem_allocMany(nbytes, sizeof(char),
-                                          CHPL_RT_MD_AM_NB_FORK_DATA, 0, 0);
+                                          CHPL_RT_MD_COMM_FORK_RECV_NB_INFO, 0, 0);
   memcpy(f, buf, nbytes);
   chpl_task_begin((chpl_fn_p)fork_nb_wrapper, (void*)f,
              true, f->serial_state, NULL);
 }
 
 static void fork_nb_large_wrapper(fork_t* f) {
-  void* arg = chpl_mem_allocMany(1, f->arg_size, CHPL_RT_MD_AM_NB_FORK_ARG, 0, 0);
+  void* arg = chpl_mem_allocMany(1, f->arg_size, CHPL_RT_MD_COMM_FORK_RECV_NB_LARGE_ARG, 0, 0);
 
   chpl_comm_get(arg, f->caller, *(void**)f->arg,
                 f->arg_size, -1 /*typeIndex: unused*/, 1, 0, "fork large");
@@ -166,7 +166,7 @@ static void fork_nb_large_wrapper(fork_t* f) {
 }
 
 static void AM_fork_nb_large(gasnet_token_t token, void* buf, size_t nbytes) {
-  fork_t* f = (fork_t*)chpl_mem_allocMany(1, nbytes, CHPL_RT_MD_AM_NB_FORK_LARGE_DATA, 0, 0);
+  fork_t* f = (fork_t*)chpl_mem_allocMany(1, nbytes, CHPL_RT_MD_COMM_FORK_RECV_NB_LARGE_INFO, 0, 0);
   memcpy(f, buf, nbytes);
   chpl_task_begin((chpl_fn_p)fork_nb_large_wrapper, (void*)f,
              true, f->serial_state, NULL);
@@ -379,7 +379,7 @@ void chpl_comm_broadcast_private(int id, int32_t size, int32_t tid) {
   int payloadSize = size + sizeof(priv_bcast_t);
 
   if (payloadSize <= gasnet_AMMaxMedium()) {
-    priv_bcast_t* pbp = chpl_mem_allocMany(1, payloadSize, CHPL_RT_MD_PRIVATE_BROADCAST_DATA, 0, 0);
+    priv_bcast_t* pbp = chpl_mem_allocMany(1, payloadSize, CHPL_RT_MD_COMM_PRIVATE_BROADCAST_DATA, 0, 0);
     memcpy(pbp->data, chpl_private_broadcast_table[id], size);
     pbp->id = id;
     pbp->size = size;
@@ -392,7 +392,7 @@ void chpl_comm_broadcast_private(int id, int32_t size, int32_t tid) {
   } else {
     int maxpayloadsize = gasnet_AMMaxMedium();
     int maxsize = maxpayloadsize - sizeof(priv_bcast_large_t);
-    priv_bcast_large_t* pblp = chpl_mem_allocMany(1, maxpayloadsize, CHPL_RT_MD_PRIVATE_BROADCAST_DATA, 0, 0);
+    priv_bcast_large_t* pblp = chpl_mem_allocMany(1, maxpayloadsize, CHPL_RT_MD_COMM_PRIVATE_BROADCAST_DATA, 0, 0);
     pblp->id = id;
     for (offset = 0; offset < size; offset += maxsize) {
       int thissize = size - offset;
@@ -598,7 +598,7 @@ void  chpl_comm_fork(int locale, chpl_fn_int_t fid, void *arg,
     } else {
       info_size = sizeof(fork_t) + sizeof(void*);
     }
-    info = (fork_t*)chpl_mem_allocMany(1, info_size, CHPL_RT_MD_REMOTE_FORK_DATA, 0, 0);
+    info = (fork_t*)chpl_mem_allocMany(1, info_size, CHPL_RT_MD_COMM_FORK_SEND_INFO, 0, 0);
     info->caller = chpl_localeID;
     info->ack = &done;
     info->serial_state = chpl_task_getSerial();
@@ -640,7 +640,7 @@ void  chpl_comm_fork_nb(int locale, chpl_fn_int_t fid, void *arg,
   } else {
     info_size = sizeof(fork_t) + sizeof(void*);
   }
-  info = (fork_t*)chpl_mem_allocMany(info_size, sizeof(char), CHPL_RT_MD_REMOTE_NB_FORK_DATA, 0, 0);
+  info = (fork_t*)chpl_mem_allocMany(info_size, sizeof(char), CHPL_RT_MD_COMM_FORK_SEND_NB_INFO, 0, 0);
   info->caller = chpl_localeID;
   info->ack = (int*)info; // pass address to free after get in large case
   info->serial_state = chpl_task_getSerial();
@@ -650,7 +650,7 @@ void  chpl_comm_fork_nb(int locale, chpl_fn_int_t fid, void *arg,
     if (arg_size)
       memcpy(&(info->arg), arg, arg_size);
   } else {
-    argCopy = chpl_mem_allocMany(1, arg_size, CHPL_RT_MD_REMOTE_FORK_ARG, 0, 0);
+      argCopy = chpl_mem_allocMany(1, arg_size, CHPL_RT_MD_COMM_FORK_SEND_NB_LARGE_ARG, 0, 0);
     memcpy(argCopy, arg, arg_size);
     memcpy(&(info->arg), &argCopy, sizeof(void*));
   }

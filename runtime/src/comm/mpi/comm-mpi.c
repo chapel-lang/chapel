@@ -206,13 +206,13 @@ static void chpl_mpi_polling_thread(void* arg) {
       }
       case ChplCommFork: {
         void* args;
-        _chplForkedTaskArg* rpcArg = chpl_mem_allocMany(1, sizeof(_chplForkedTaskArg), CHPL_RT_MD_REMOTE_FORK_DATA, 0, 0);
+        _chplForkedTaskArg* rpcArg = chpl_mem_allocMany(1, sizeof(_chplForkedTaskArg), CHPL_RT_MD_COMM_FORK_SEND_INFO, 0, 0);
 #if CHPL_DIST_DEBUG
         sprintf(debugMsg, "Fulfilling ChplCommFork(fromloc=%d, tag=%d)", status.MPI_SOURCE, msg_info.replyTag);
         PRINTF(debugMsg);
 #endif
         if (msg_info.size != 0) {
-          args = chpl_mem_allocMany(1, msg_info.size, CHPL_RT_MD_REMOTE_FORK_ARG, 0, 0);
+          args = chpl_mem_allocMany(1, msg_info.size, CHPL_RT_MD_COMM_FORK_SEND_LARGE_ARG, 0, 0);
         } else {
           args = NULL;
         }
@@ -230,13 +230,13 @@ static void chpl_mpi_polling_thread(void* arg) {
       }
       case ChplCommForkNB: {
         void* args;
-        _chplForkedTaskArg* rpcArg = chpl_mem_allocMany(1, sizeof(_chplForkedTaskArg), CHPL_RT_MD_REMOTE_FORK_DATA, 0, 0);
+        _chplForkedTaskArg* rpcArg = chpl_mem_allocMany(1, sizeof(_chplForkedTaskArg), CHPL_RT_MD_COMM_FORK_SEND_NB_INFO, 0, 0);
 #if CHPL_DIST_DEBUG
         sprintf(debugMsg, "Fulfilling ChplCommForkNB(fromloc=%d, tag=%d)", status.MPI_SOURCE, msg_info.replyTag);
         PRINTF(debugMsg);
 #endif
         if (msg_info.size != 0) {
-          args = chpl_mem_allocMany(1, msg_info.size, CHPL_RT_MD_REMOTE_FORK_ARG, 0, 0);
+          args = chpl_mem_allocMany(1, msg_info.size, CHPL_RT_MD_COMM_FORK_SEND_NB_LARGE_ARG, 0, 0);
         } else {
           args = NULL;
         }
@@ -470,8 +470,8 @@ void  chpl_comm_fork(int locale, chpl_fn_int_t fid, void *arg,
 void  chpl_comm_fork_nb(int locale, chpl_fn_int_t fid, void *arg,
                         int32_t arg_size, int32_t arg_tid) {
   if (chpl_localeID == locale) {
-    void* argCopy = chpl_mem_allocMany(1, arg_size, CHPL_RT_MD_REMOTE_NB_FORK_DATA, 0, 0);
-    _chplForkedTaskArg* rpcArg = chpl_mem_allocMany(1, sizeof(_chplForkedTaskArg), CHPL_RT_MD_REMOTE_FORK_DATA, 0, 0);
+    void* argCopy = chpl_mem_allocMany(1, arg_size, CHPL_RT_MD_COMM_FORK_SEND_NB_LARGE_ARG, 0, 0);
+    _chplForkedTaskArg* rpcArg = chpl_mem_allocMany(1, sizeof(_chplForkedTaskArg), CHPL_RT_MD_COMM_FORK_SEND_NB_INFO, 0, 0);
     memmove(argCopy, arg, arg_size);
     rpcArg->fid = fid;
     rpcArg->arg = argCopy;
