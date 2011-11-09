@@ -465,6 +465,23 @@ proc idom.dsiSingleTaskPerLocaleOnly1d() param return true;
 proc ilocdom.dsiMyDensifiedRangeType1d(globDD) type
   return range(idxType=globDD.idxType, stridable=globDD.stridable);
 
+proc ilocdom.dsiLocalSliceStorageIndices1d(globDD, sliceRange)
+  : range(stoIndexT, sliceRange.boundedType, false)
+{
+  if sliceRange.stridable {
+    // to be done: figure out sliceRange's stride vs. globDD.wholeR.stride
+    compilerError("localSlice is not implemented for the Dimensional distribution with a block-cyclic dimension descriptor when the slice is stridable");
+  } else {
+    const lowSid = if sliceRange.hasLowBound()
+      then globDD._dsiStorageIdx(sliceRange.low)
+      else 0: stoIndexT;
+    const highSid = if sliceRange.hasHighBound()
+      then globDD._dsiStorageIdx(sliceRange.high)
+      else 0: stoIndexT;
+    return new range(stoIndexT, sliceRange.boundedType, false, lowSid, highSid);
+  }
+}
+
 iter idom.dsiSerialArrayIterator1d() {
   // dispatch here, for code clarity
   if stridable then

@@ -373,7 +373,7 @@ proc _passLocalLocIDsDist(d1, doD1:bool, d2, doD2:bool,
   // now do the runtime checks, too
   if (d1.dsiUsesLocalLocID1d() && doD1) || (d2.dsiUsesLocalLocID1d() && doD2) {
 
-   // 'l' - "legitimate?"
+   // 'l' stands for "legitimate?"
    const (lIds, l): (targetLocales.rank * locIdT, bool) =
      if gotHint && targetLocales(hint) == here
        then (hint, true)
@@ -513,6 +513,7 @@ proc DimensionalDom.dsiMyDist() return dist;
 
 proc DimensionalDom.dsiDims()             return whole.dims();
 proc DimensionalDom.dsiDim(d)             return whole.dim(d);
+proc DimensionalDom.dsiDim(param d)       return whole.dim(d);
 proc DimensionalDom.dsiLow                return whole.low;
 proc DimensionalDom.dsiHigh               return whole.high;
 proc DimensionalDom.dsiStride             return whole.stride;
@@ -858,6 +859,25 @@ proc DimensionalArr.dsiSlice(sliceDef: DimensionalDom) {
 
   assert(result.isAlias);
   return result;
+}
+
+proc DimensionalArr.dsiLocalSlice((sliceDim1, sliceDim2)) {
+  const dom = this.dom;
+  const dist = dom.dist;
+  // todo: cache (l1, l2) in privatized copies when possible
+  // (i.e. if privatization is supported and there is no oversubscription)
+  // Assuming dsiLocalSlice is guaranteed to be local to 'here'.
+  const l1 = dist.di1.dsiIndexToLocale1d(sliceDim1.low),
+        l2 = dist.di2.dsiIndexToLocale1d(sliceDim2.low),
+        locAdesc = this.localAdescs[l1, l2],
+        r1 = if dom.dom1.dsiStorageUsesUserIndices()
+             then dom.whole.dim(1)(sliceDim1)
+             else locAdesc.locDom.doml1.dsiLocalSliceStorageIndices1d(dom.dom1, sliceDim1),
+        r2 = if dom.dom2.dsiStorageUsesUserIndices()
+             then dom.whole.dim(2)(sliceDim2)
+             else locAdesc.locDom.doml2.dsiLocalSliceStorageIndices1d(dom.dom2, sliceDim2);
+
+  return locAdesc.myStorageArr[r1, r2];
 }
 
 
