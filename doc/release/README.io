@@ -26,9 +26,24 @@ ERROR HANDLING
 
 FILES
   Create a file by calling one of the open() functions. The first form
-  takes in a path string and an access string, as well optional hints
+  takes in a path string and an access mode, as well optional hints
   (the default for channels using that file) and an error object.
   The second form can open an existing file descriptor.
+
+  An access mode is one of:
+   mode.r
+    like "r" in C, open an existing file for reading
+   mode.w 
+    like "w" in C, create a new file or truncate an existing one,
+    and open it for writing.
+   mode.rw
+    like "r+" in C, open an existing file for reading and
+    writing, but the file must exist.
+   mode.wr
+    like "w+" in C, open an existing file for reading and
+    writing, creating or truncating the file if it exists.
+
+
 
   In addition, there is an opentmp() function, which will open
   a temporary file (ie one in /tmp) that will be deleted when

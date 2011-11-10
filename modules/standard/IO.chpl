@@ -44,6 +44,9 @@
       a local copy of that file and use that in the channel. (not sure how to avoid
       opening # channels copies of these files -- seems that we'd want some way
       to cache that...).
+    - Create leader/follower iterators for ItemReader/ItemWriter so that these
+      are as efficient as possible when working with fixed-size data types
+      (ie, they can open up channels that are not shared).
 */
 
 

@@ -110,12 +110,14 @@ err_t qbytes_create_generic(qbytes_t** out, void* give_data, int64_t len, qbytes
 err_t _qbytes_init_iobuf(qbytes_t* ret)
 {
   void* data = NULL;
-  err_t err;
   
   if( (qbytes_iobuf_size & 4095) == 0 ) {
     // multiple of 4K
-    err = posix_memalign(&data, qbytes_iobuf_size, qbytes_iobuf_size);
-    if( err ) return err;
+    data = valloc(qbytes_iobuf_size);
+    if( !data ) return ENOMEM;
+    // We used to use posix_memalign, but that didn't work on an old Mac.
+    //err_t err = posix_memalign(&data, qbytes_iobuf_size, qbytes_iobuf_size);
+    //if( err ) return err;
     memset(data, 0, qbytes_iobuf_size);
   } else {
     data = qio_calloc(1, qbytes_iobuf_size);
