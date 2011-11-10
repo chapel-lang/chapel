@@ -1017,25 +1017,37 @@ err_t sys_connect(fd_t sockfd, const sys_sockaddr_t* addr)
   return err_out;
 }
 
-err_t sys_getaddrinfo(const char* node, const char* service, 
-                     const sys_addrinfo_t* hints, sys_addrinfo_t ** res_out)
-{
-  int got;
-  err_t err_out;
+/* Commenting this out for the time being as it is not currently used and
+   causes warnings in PrgEnv-gnu compiles due to static linking being the
+   default and dynamic linking being required.
 
-  STARTING_SLOW_SYSCALL;
+   Note that one solution to deal with the warning in the future would
+   be to break this into its own .c/.o file so that users who use it
+   get the warning which they might want while users who don't won't.
+   Alternatively, we could look into squashing the error, but that
+   seems more heavy-handed.
 
-  got = getaddrinfo(node, service, hints, res_out);
-  if( got == 0 ) {
-    err_out = 0;
-  } else {
-    err_out = got + GAI_ERROR_OFFSET;
-  }
+   -BLC */
 
-  DONE_SLOW_SYSCALL;
-
-  return err_out;
-}
+//  err_t sys_getaddrinfo(const char* node, const char* service, 
+//                       const sys_addrinfo_t* hints, sys_addrinfo_t ** res_out)
+//  {
+//    int got;
+//    err_t err_out;
+//  
+//    STARTING_SLOW_SYSCALL;
+//  
+//    got = getaddrinfo(node, service, hints, res_out);
+//    if( got == 0 ) {
+//      err_out = 0;
+//    } else {
+//      err_out = got + GAI_ERROR_OFFSET;
+//    }
+//  
+//    DONE_SLOW_SYSCALL;
+//  
+//    return err_out;
+//  }
 
 int sys_getaddrinfo_flags(sys_addrinfo_ptr_t a) {return a->ai_flags;}
 int sys_getaddrinfo_family(sys_addrinfo_ptr_t a) {return a->ai_family;}

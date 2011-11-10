@@ -132,8 +132,11 @@ err_t sys_bind(fd_t sockfd, const sys_sockaddr_t* addr);
 err_t sys_connect(fd_t sockfd, const sys_sockaddr_t* addr);
 
 
-err_t sys_getaddrinfo(const char* node, const char* service, 
-                     const struct addrinfo* hints, struct addrinfo ** res);
+/* See comment about this being commented out in sys.c -BLC */
+//err_t sys_getaddrinfo(const char* node, const char* service, 
+//                     const struct addrinfo* hints, struct addrinfo ** res);
+
+
 int sys_getaddrinfo_flags(sys_addrinfo_ptr_t a);
 int sys_getaddrinfo_family(sys_addrinfo_ptr_t a);
 int sys_getaddrinfo_socktype(sys_addrinfo_ptr_t a);
