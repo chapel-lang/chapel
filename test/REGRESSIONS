@@ -66,6 +66,10 @@ memory leaks regressions
 valgrind-specific regressions
 =============================
 
+nondet. output ordering
+-----------------------
+[Error matching program output for exits/bradc/child_remains_after_parent] (10/31/11)
+
 invalid write of size 1
 -----------------------
 [Error matching compiler output for memory/shannon/outofmemory/mallocOutOfMemory]
@@ -107,7 +111,7 @@ nondet. out-of-memory error
 nondet. execution timeout
 -------------------------
 [Error: Timed out executing program studies/cholesky/jglewis/test_cholesky] (09/30/11)
-[Error: Timed out executing program studies/cholesky/jglewis/version2/performance/test_cholesky_performance] (10/28/11)
+[Error: Timed out executing program studies/cholesky/jglewis/version2/performance/test_cholesky_performance] (10/28/11, 11/06/11)
 
 internal error SYM0172 (02/09/10)
 ---------------------------------
@@ -136,16 +140,21 @@ seg fault (?)
 gasnet-everything regressions (other than the above)
 ====================================================
 
+nondet. seg fault at execution time
+-----------------------------------
+[Error matching compiler output for studies/uts/uts_rec_seq]  (11/02/11, 11/04/11)
+[Error matching compiler output for studies/uts/uts_deq_seq] (11/07/11)
+
 nondet. compilation timeout
 ---------------------------
 [Error: Timed out compilation for studies/shootout/pidigits/bradc/pidigits-blc] (10/09/11)
 
 nondet. execution timeout
 -------------------------
-[Error: Timed out executing program multilocale/diten/needMultiLocales/coforallon_maxThreads] (10/13/11)
+[Error: Timed out executing program multilocale/diten/needMultiLocales/coforallon_maxThreads] (10/13/11, 11/01/11)
 [Error: Timed out executing program studies/sudoku/dinan/sudoku] (10/02/11)
-[Error: Timed out executing program studies/madness/aniruddha/madchap/test_likepy] (10/05/11, 10/08/11, 10/12/11)
-[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct] (10/11/11, 10/25/11, 10/28/11)
+[Error: Timed out executing program studies/madness/aniruddha/madchap/test_likepy] (10/05/11, 10/08/11, 10/12/11, 11/02/11, 11/05/11)
+[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct] (10/11/11, 10/25/11, 10/28/11, 11/06/11)
 
 execution timeouts
 ------------------
@@ -221,13 +230,17 @@ gdb output differences
 chpbld02 (PrgEnv test system) failures
 ======================================
 
+nondet. precision issues
+------------------------
+[Error matching program output for studies/shootout/spectral-norm/spectralnorm] (10/24/11, 11/1/11, 11/2/11)
+
 nondet. compilation timeout
 ---------------------------
-[Error: Timed out compilation for release/examples/ssca2/SSCA2_main] (10/27/11, 10/30/11, 10/27/11)
+[Error: Timed out compilation for release/examples/ssca2/SSCA2_main] (10/27/11, 10/30/11, 10/27/11, 11/04/11, 11/07/11)
 
 nondet. failure
 ---------------
-[Error matching program output for parallel/cobegin/diten/cobeginRace] (10/13/11, 10/26/11)
+[Error matching program output for parallel/cobegin/diten/cobeginRace] (10/13/11, 10/26/11, 11/02/11)
 
 lack of GMP support (09/26/11 -- first complete run in ages)
 ------------------------------------------------------------
@@ -246,7 +259,7 @@ gets "that wasn't very random looking" failure (09/26/11 -- first run in ages)
 nondet. execution timeouts
 --------------------------
 [Error: Timed out executing program distributions/robust/associative/stress/many_domain] (10/20/11, 10/24/11)
-[Error: Timed out executing program studies/cholesky/jglewis/test_cholesky] (10/20/11, 10/12/11, 10/14/11, 10/24/11, 10/26/11)
+[Error: Timed out executing program studies/cholesky/jglewis/test_cholesky] (10/20/11, 10/12/11, 10/14/11, 10/24/11, 10/26/11, 11/01/11)
 [Error: Timed out executing program studies/cholesky/jglewis/version2/standard_cholesky/test_standard_cholesky] (10/27/11)
 
 timeouts (09/26/11 -- first run in ages)
@@ -274,11 +287,6 @@ nondet. timeout failure
 =====================================
 cray-xt-cray/cce-specific regressions
 =====================================
-
-seg fault in compiler (10/31/11)
---------------------------------
-[Error matching compiler output for release/examples/spec/Modules/main-module (--cc-warnings --main-module M1 )]
-[Error matching compiler output for release/examples/spec/Modules/nested-use]
 
 compilation timeouts (10/19/11)
 -------------------------------
@@ -334,7 +342,6 @@ precision issues (?) -- is there a floating point flag we need to throw?
 [Error matching program output for studies/madness/common/test_likepy]
 [Error matching program output for studies/madness/dinan/mad_chapel/test_diff]
 [Error matching program output for studies/madness/dinan/mad_chapel/test_gaxpy]
-[Error matching program output for studies/shootout/spectral-norm/spectralnorm]
 
 wrong result
 ------------
@@ -401,10 +408,6 @@ negative floating point 0.0 not supported
 xt-intel-specific regressions (in addition to xt-cle errors above)
 ==================================================================
 
-incorrect output (10/19/11)
----------------------------
-[Error matching program output for studies/shootout/spectral-norm/spectralnorm]
-
 problem with static/dynamic linking? (10/1/11 -- first run)
 -----------------------------------------------------------
 [Error matching compiler output for link/sungeun/static_dynamic (--cc-warnings --dynamic --static)]
@@ -415,11 +418,6 @@ problem with static/dynamic linking? (10/1/11 -- first run)
 ========================
 xt-gnu specific failures
 ========================
-
-precision issues (10/24/11)
----------------------------
-[Error matching program output for studies/shootout/spectral-norm/spectralnorm]
-
 
 
 ========================
@@ -465,27 +463,27 @@ nanox-specific tests
 
 nondet. core dump
 -----------------
+[Error matching program output for release/examples/primers/syncsingle] (11/06/11, 11/09/11)
 [Error matching program output for release/examples/primers/taskParallel] (10/13/11, 10/19/11)
 
 nondet. incorrect output
 ------------------------
-[Error matching program output for release/examples/spec/Task_Parallelism_and_Synchronization/singleVar] (10/14/11, 10/21/11, 10/23/11, 10/27/11, 10/30/11)
+[Error matching program output for release/examples/spec/Task_Parallelism_and_Synchronization/singleVar] (10/14/11, 10/21/11, 10/23/11, 10/27/11, 10/30/11, 11/02/11, 11/05/11)
 [Error matching program output for
 release/examples/spec/Task_Parallelism_and_Synchronization/serialStmt1] (10/13/11)
-[Error matching program output for release/examples/spec/Task_Parallelism_and_Synchronization/serialStmt2] (09/30/11, 10/25/11, 10/29/11)
+[Error matching program output for release/examples/spec/Task_Parallelism_and_Synchronization/serialStmt2] (09/30/11, 10/25/11, 10/29/11, 11/03/11)
 
 nondet. execution timeouts (ever since switching to 4 shepherds)
 --------------------------------------------------------
-[Error: Timed out executing program release/examples/primers/syncsingle] (10/15/11, 10/17/11, 10/23/11, 10/30/11)
-[Error: Timed out executing program release/examples/spec/Task_Parallelism_and_Synchronization/singleVar] (10/13/11, 10/16/11, 10/17/11, 10/22/11, 10/24/11, 10/28/11)
-[Error: Timed out executing program release/examples/primers/taskParallel] (10/06/11, 10/16/11, 10/25/11, 10/28/11)
-[Error: Timed out executing program release/examples/spec/Task_Parallelism_and_Synchronization/serialStmt2] (09/26/11, 10/23/11)
+[Error: Timed out executing program release/examples/primers/syncsingle] (10/15/11, 10/17/11, 10/23/11, 10/30/11, 11/1/11, 11/3/11, 11/06/11, 11/08/11)
+[Error: Timed out executing program release/examples/spec/Task_Parallelism_and_Synchronization/serialStmt2] (09/26/11, 10/23/11, 11/1/11)
+[Error: Timed out executing program release/examples/primers/taskParallel] (10/06/11, 10/16/11, 10/25/11, 10/28/11, 11/04/11)
+[Error: Timed out executing program release/examples/spec/Task_Parallelism_and_Synchronization/singleVar] (10/13/11, 10/16/11, 10/17/11, 10/22/11, 10/24/11, 10/28/11, 11/1/11, 11/04/11, 11/06/11)
 
 
 ===========================
 nanox+gasnet-specific tests
 ===========================
-
 
 execution timeouts (since making default # shepherds follow #cores)
 -------------------------------------------------------------------
@@ -507,9 +505,9 @@ execution timeouts (ever since switching to 4 shepherds)
 qthreads-specific tests
 =======================
 
-nondet. failures
-----------------
-[Error matching program output for release/examples/hello3-datapar] (10/13/11)
+nondet. race on newlines
+------------------------
+[Error matching program output for release/examples/hello3-datapar] (10/13/11, 11/09/11)
 
 serial statement not supported? (10/09/11)
 ------------------------------------------
@@ -527,7 +525,7 @@ qthreads+gasnet-specific tests (in addition to the above)
 
 nondet. execution timeout
 -------------------------
-[Error: Timed out executing program release/examples/ssca2/SSCA2_main] (10/09/11, 10/16/11, 10/18/11, 10/21/11, 10/26/11, 10/28/11)
+[Error: Timed out executing program release/examples/ssca2/SSCA2_main] (10/09/11, 10/16/11, 10/18/11, 10/21/11, 10/26/11, 10/28/11, 11/1/11)
 
 nondet. timeout starting when #shepherds based on #cores
 --------------------------------------------------------
@@ -546,11 +544,6 @@ baseline-specific tests
 nondet. execution timeout (10/29/11)
 ------------------------------------
 [Error: Timed out executing program studies/amr/diffusion/level/Level_DiffusionBE_driver]
-
-related to Tom's bug fix? (10/18/11)
-------------------------------------
-[Error matching program output for trivial/mjoyner/iterators/nest_func_iterator2b]
-[Error matching program output for users/ferguson/iterinout]
 
 .good assumes dead code elimination has run (since added)
 ---------------------------------------------------------
@@ -732,7 +725,7 @@ unresolved sync variable calls (04/09/11 -- once spec examples added)
 
 nondet. compilation timeout
 ---------------------------
-[Error: Timed out compilation for release/examples/hello] (10/01/11, 10/02/11, 10/04/11, 10/07/11, 10/12/11, 10/19/11, 10/20/11, 10/23/11, 10/29/11)
+[Error: Timed out compilation for release/examples/hello] (10/01/11, 10/02/11, 10/04/11, 10/07/11, 10/12/11, 10/19/11, 10/20/11, 10/23/11, 10/29/11, 11/09/11)
 
 
 =======================================================
@@ -746,7 +739,7 @@ warning: full/empty bit modified on less than word-sized data (05/24/11)
 
 nondet. compilation timeout
 ---------------------------
-[Error: Timed out compilation for release/examples/primers/arrays] (10/01/11, 10/06/11, 10/26/11)
+[Error: Timed out compilation for release/examples/primers/arrays] (10/01/11, 10/06/11, 10/26/11, 11/07/11)
 
 array index out of bounds due to bug in XMT compiler
 ----------------------------------------------------
