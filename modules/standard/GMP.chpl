@@ -1,7 +1,5 @@
-type  c_int =  int(32),
-     c_uint = uint(32),
-       long =  int(64),
-      c_ulong = uint(64);
+use SysBasic;
+type  long =  int(64);
 
 extern type __mpf_struct;
 extern type mpf_t = 1*__mpf_struct;

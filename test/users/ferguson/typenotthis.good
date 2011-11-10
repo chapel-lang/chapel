@@ -1,0 +1,5 @@
+typenotthis.chpl:8: In function 'do_something':
+typenotthis.chpl:10: error: unresolved call 'type R.do_something_helper()'
+typenotthis.chpl:10: note: method called on type not instance
+typenotthis.chpl:4: note: candidates are: R.do_something_helper()
+typenotthis.chpl:4: note: candidates require instance not type

@@ -379,6 +379,10 @@ static void codegen_header(FILE* hdrfile, FILE* codefile=NULL) {
 
   fprintf(hdrfile, "\n#define CHPL_GEN_CODE\n\n");
 
+
+  // Include sys_basic.h to get C types always defined, proper library .h inclusion
+  fprintf(hdrfile, "#include \"sys_basic.h\"\n");
+
   genIncludeCommandLineHeaders(hdrfile);
 
   genClassTagEnum(hdrfile, types);

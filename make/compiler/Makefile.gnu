@@ -97,7 +97,7 @@ RUNTIME_CFLAGS += $(WARN_CFLAGS)
 RUNTIME_CXXFLAGS += $(WARN_CXXFLAGS)
 RUNTIME_GEN_CFLAGS += -Wno-unused
 RUNTIME_GEN_CXXFLAGS += -Wno-unused
-WARN_GEN_CFLAGS += -Wunreachable-code
+#WARN_GEN_CFLAGS += -Wunreachable-code
 # GEN_CFLAGS gets warnings added via WARN_GEN_CFLAGS in comp-generated Makefile
 
 

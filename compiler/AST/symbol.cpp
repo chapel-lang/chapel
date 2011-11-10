@@ -13,6 +13,7 @@
 #include "symbol.h"
 #include "passes.h"
 
+#include "intlimits.h"
 
 FnSymbol *chpl_main = NULL;
 
@@ -215,7 +216,11 @@ void VarSymbol::codegen(FILE* outfile) {
   } else if (immediate &&
              immediate->const_kind == NUM_KIND_UINT) {
     uint64_t uconst = immediate->uint_value();
-    fprintf(outfile, "UINT64(%"PRIu64")", uconst);
+    if( uconst <= (uint64_t) INT32_MAX ) {
+      fprintf(outfile, "%"PRIu64, uconst);
+    } else {
+      fprintf(outfile, "UINT64(%"PRIu64")", uconst);
+    }
   } else {
     fprintf(outfile, "%s", cname);
   }

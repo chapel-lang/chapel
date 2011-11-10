@@ -5,6 +5,7 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include <string.h>
 #include "arg.h"
 #include "chpltypes.h"
 #include "chpl-tasks.h"
@@ -60,6 +61,8 @@ typedef enum {
   CHPL_RT_MD_TASK_LIST_DESCRIPTOR,
   CHPL_RT_MD_THREAD_PRIVATE_DATA,
   CHPL_RT_MD_THREAD_LIST_DESCRIPTOR,
+  CHPL_RT_MD_IO_BUFFER,
+  CHPL_RT_MD_GMP,
   CHPL_RT_MD_NUM
 } chpl_mem_rtMemDesc_t;
 extern const int chpl_mem_numDescs;
@@ -85,6 +88,11 @@ void chpl_mem_actualSharedHeap(void** start_p, size_t* size_p);
 void* chpl_mem_allocMany(size_t number, size_t size,
                          chpl_mem_descInt_t description,
                          int32_t lineno, chpl_string filename);
+// mpf -- nice to have an equivalent of calloc
+void* chpl_mem_allocManyZero(size_t number, size_t size,
+                             chpl_mem_descInt_t description,
+                             int32_t lineno, chpl_string filename);
+
 void* chpl_mem_realloc(void* ptr, size_t number, size_t size, 
                        chpl_mem_descInt_t description,
                        int32_t lineno, chpl_string filename);

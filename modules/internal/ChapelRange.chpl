@@ -595,7 +595,7 @@ proc range.writeThis(f: Writer)
     // could verify that we succeeded:
     //assert(_base.isNaturallyAligned());
   }
-  _base.writeThis(f);
+  f.write(_base);
 }
 
 // Return a substring of a string with a range of indices.

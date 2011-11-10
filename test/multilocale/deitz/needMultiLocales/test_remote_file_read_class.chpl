@@ -3,24 +3,22 @@ class C {
   var y: real;
 }
 
-var f = new file(filename="test_remote_file_read_class.txt", mode=FileAccessMode.write);
+var w = open("test_remote_file_read_class.txt", mode.w).writer();
 
 var c = new C(x=1,y=2.3);
 
 writeln(c);
 
-f.open();
-f.writeln(c);
-f.close();
+w.writeln(c);
+w.close();
 
-f.mode = FileAccessMode.read;
+var r = open("test_remote_file_read_class.txt", mode.r).reader();
 
 var d = new C();
 
 on Locales(1) {
-  f.open();
-  f.read(d);
-  f.close();
+  r.read(d);
+  r.close();
 }
 
 writeln(d);

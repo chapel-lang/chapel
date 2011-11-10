@@ -8,8 +8,7 @@ config var writeAccuracyInfo = false;
 
 proc main() {
   var TEST = new HPLparams(inFileName=inputfile);
-  var outfile = new file(TEST.outFileName, path='./', mode=FileAccessMode.write);
-  outfile.open();
+  var outfile = open(TEST.outFileName, mode.w).writer();
 
 //for p in TEST.P {
 //  for q in TEST.Q {
@@ -63,6 +62,9 @@ proc main() {
        errorResults(outfile, TEST, resid, norms);
     }
   }
+
+  outfile.close();
+
 }
 
 proc testResults(ofile, n, nb) {

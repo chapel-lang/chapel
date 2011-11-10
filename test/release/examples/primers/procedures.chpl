@@ -82,11 +82,11 @@ proc +(p1: Point, p2: Point)
 proc Point.writeThis(w: Writer)
 {
   // Writes it out as a coordinate pair.
-  "(".writeThis(w);
-  this.x.writeThis(w);
-  ", ".writeThis(w);
-  this.y.writeThis(w);
-  ")".writeThis(w);
+  w.write("(");
+  w.write(this.x);
+  w.write(", ");
+  w.write(this.y);
+  w.write(")");
 }
 
 writeln("Using operator overloading");

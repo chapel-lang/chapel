@@ -119,8 +119,8 @@ proc Tree.writeThis(x: Writer)
   var first = true;
   for node in postorder(tree) {
     if first then first = false;
-      else " ".writeThis(x);
-    node.data.writeThis(x);
+      else x.write(" ");
+    x.write(node.data);
   }
 }
   

@@ -504,15 +504,13 @@ proc DFS(G){
 // This function reads a new graph returns
 //
 proc readGraph(filename) {
-  // Create an input file with the specified filename in read (FileAccessMode.read) mode
-  var infile = new file(filename, FileAccessMode.read);
-
-  // Open the file
-  infile.open();
+  // Create and open  an input file with the specified filename in read (FileAccessMode.read) mode
+  var infile = open(filename, mode.r);
+  var reader = infile.reader();
 
   // Read the number of nodes and edges
   //  var n,m:int;
-  //  infile.read(n,m);
+  //  reader.read(n,m);
 
   var ND: domain(string);
   var ED: domain((string,string));
@@ -523,10 +521,10 @@ proc readGraph(filename) {
   //
   var i = 0,j = 1;
   var s,arrow,d : string;
-  var edges = infile.read(int);
+  var edges = reader.read(int);
 
   for i in 1..edges do{
-    infile.read(s,arrow,d);
+    reader.read(s,arrow,d);
 
     // Create a Node for the source if needed
     if(!ND.member(s)){
@@ -568,6 +566,7 @@ proc readGraph(filename) {
   writeln(NameMap.sorted());
   writeln("Y = ",Y);
 
+  reader.close();
   infile.close();
 
   // Return the Graph

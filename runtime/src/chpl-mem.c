@@ -101,7 +101,9 @@ const char* chpl_mem_descString(chpl_mem_descInt_t mdi) {
     "task list descriptor",
     "thread private data",
     "thread callee function pointer and argument",
-    "thread list descriptor"
+    "thread list descriptor",
+    "io buffer or bytes",
+    "gmp data",
   };
 
   if (mdi < CHPL_RT_MD_NUM)
@@ -140,6 +142,14 @@ void* chpl_mem_allocMany(size_t number, size_t size,
   return memAlloc;
 }
 
+void* chpl_mem_allocManyZero(size_t number, size_t size,
+                             chpl_mem_descInt_t description,
+                             int32_t lineno, chpl_string filename)
+{
+  void* ptr = chpl_mem_allocMany(number, size, description, lineno, filename);
+  memset(ptr, 0, number*size);
+  return ptr;
+}
 
 void* chpl_mem_realloc(void* memAlloc, size_t number, size_t size, 
                        chpl_mem_descInt_t description,

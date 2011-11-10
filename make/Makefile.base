@@ -42,6 +42,10 @@ ifndef CHPL_MAKE_MEM
 include $(CHAPEL_ROOT)/make/Makefile.mem
 endif
 
+ifndef CHPL_MAKE_ATOMICS
+include $(CHAPEL_ROOT)/make/Makefile.atomics
+endif
+
 #
 # default CFLAGS, based on other settings
 #
@@ -198,6 +202,7 @@ printplatform:
 	@echo "CHPL_MAKE_COMM_SUBSTRATE  = $(CHPL_MAKE_COMM_SUBSTRATE)"    
 	@echo "CHPL_MAKE_LAUNCHER        = $(CHPL_MAKE_LAUNCHER)"
 	@echo "CHPL_MAKE_MEM             = $(CHPL_MAKE_MEM)"
+	@echo "CHPL_MAKE_ATOMICS         = $(CHPL_MAKE_ATOMICS)"
 
 #
 # use: make print-X to print the value of the variable X

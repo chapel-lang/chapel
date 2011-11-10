@@ -2271,6 +2271,7 @@ void CallExpr::codegen(FILE* outfile) {
       fprintf(outfile, "chpl_task_getNumBlockedTasks()");
       break;
     case PRIM_RT_ERROR:
+    case PRIM_RT_ERROR_NOEXIT:
     case PRIM_RT_WARNING:
       codegenBasicPrimitive(outfile, this);
       break;

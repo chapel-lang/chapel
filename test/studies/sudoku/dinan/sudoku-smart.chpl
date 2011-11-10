@@ -246,10 +246,9 @@ proc costFcn(board: [] int): int {
 
 
 proc main() {
-  var boardData = new file(inputfile, path='./', mode=FileAccessMode.read);
+  var boardData = open(inputfile, mode.r).reader();
 
   // Read the board from the input file
-  boardData.open();
 
   writeln("Reading board from: ", inputfile, "\n");
   for ij in givenBoard.domain do {

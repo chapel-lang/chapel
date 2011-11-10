@@ -2999,6 +2999,18 @@ usesOuterVars(FnSymbol* fn, Vec<FnSymbol*> &seen) {
   return false;
 }
 
+static bool
+isNormalField(Symbol* field)
+{
+  if( field->hasFlag(FLAG_IMPLICIT_ALIAS_FIELD) ) return false;
+  if( field->hasFlag(FLAG_TYPE_VARIABLE) ) return false;
+  if( field->hasFlag(FLAG_SUPER_CLASS) ) return false;
+  // TODO -- this will break user fields named outer!
+  if( 0 == strcmp("outer", field->name)) return false;
+
+  return true;
+}
+
 static Expr*
 preFold(Expr* expr) {
   Expr* result = expr;
@@ -3478,6 +3490,147 @@ preFold(Expr* expr) {
       result = new SymExpr(new_UIntSymbol(next_region_id, INT_SIZE_32));
       ++next_region_id;
       call->replace(result);
+    } else if (call->isPrimitive(PRIM_NUM_FIELDS)) {
+      ClassType* classtype = toClassType(toSymExpr(call->get(1))->var->type);
+      int fieldcount = 0;
+
+      INT_ASSERT( classtype != NULL );
+
+      for_fields(field, classtype) {
+        if( ! isNormalField(field) ) continue;
+
+        fieldcount++;
+      }
+ 
+      result = new SymExpr(new_IntSymbol(fieldcount));
+
+      call->replace(result);
+    } else if (call->isPrimitive(PRIM_FIELD_NUM_TO_NAME)) {
+      ClassType* classtype = toClassType(toSymExpr(call->get(1))->var->type);
+
+      INT_ASSERT( classtype != NULL );
+
+      VarSymbol* var = toVarSymbol(toSymExpr(call->get(2))->var);
+
+      INT_ASSERT( var != NULL );
+
+      int fieldnum = var->immediate->int_value();
+      int fieldcount = 0;
+      const char* name = NULL;
+      for_fields(field, classtype) {
+        if( ! isNormalField(field) ) continue;
+
+        fieldcount++;
+        if (fieldcount == fieldnum) {
+          name = field->name;
+        }
+      }
+      result = new SymExpr(new_StringSymbol(name));
+      call->replace(result);
+    } else if (call->isPrimitive(PRIM_FIELD_VALUE_BY_NUM)) {
+      ClassType* classtype = toClassType(call->get(1)->typeInfo());
+
+      INT_ASSERT( classtype != NULL );
+
+      VarSymbol* var = toVarSymbol(toSymExpr(call->get(2))->var);
+
+      INT_ASSERT( var != NULL );
+
+      int fieldnum = var->immediate->int_value();
+      int fieldcount = 0;
+      for_fields(field, classtype) {
+        if( ! isNormalField(field) ) continue;
+
+        fieldcount++;
+        if (fieldcount == fieldnum) {
+          result = new CallExpr(PRIM_GET_MEMBER, call->get(1)->copy(), 
+                                new_StringSymbol(field->name));
+          break;
+        }
+      }
+      call->replace(result);
+    } else if (call->isPrimitive(PRIM_FIELD_ID_BY_NUM)) {
+      ClassType* classtype = toClassType(call->get(1)->typeInfo());
+
+      INT_ASSERT( classtype != NULL );
+
+      VarSymbol* var = toVarSymbol(toSymExpr(call->get(2))->var);
+
+      INT_ASSERT( var != NULL );
+
+      int fieldnum = var->immediate->int_value();
+      int fieldcount = 0;
+      for_fields(field, classtype) {
+        if( ! isNormalField(field) ) continue;
+
+        fieldcount++;
+        if (fieldcount == fieldnum) {
+          result = new SymExpr(new_IntSymbol(field->id));
+          break;
+        }
+      }
+      call->replace(result);
+    } else if (call->isPrimitive(PRIM_FIELD_VALUE_BY_NAME)) {
+      ClassType* classtype = toClassType(call->get(1)->typeInfo());
+      VarSymbol* var = toVarSymbol(toSymExpr(call->get(2))->var);
+      INT_ASSERT( var != NULL );
+
+      Immediate* imm = var->immediate;
+
+      INT_ASSERT( classtype != NULL );
+      // fail horribly if immediate is not a string .
+      INT_ASSERT(imm->const_kind == CONST_KIND_STRING);
+
+      const char* fieldname = imm->v_string;
+      int fieldcount = 0;
+      for_fields(field, classtype) {
+        if( ! isNormalField(field) ) continue;
+
+        fieldcount++;
+        if ( 0 == strcmp(field->name,  fieldname) ) {
+          result = new CallExpr(PRIM_GET_MEMBER, call->get(1)->copy(), 
+                                new_StringSymbol(field->name));
+          break;
+        }
+      }
+      call->replace(result);
+    } else if (call->isPrimitive(PRIM_ENUM_MIN_BITS) || call->isPrimitive(PRIM_ENUM_IS_SIGNED)) {
+      EnumType* et = toEnumType(toSymExpr(call->get(1))->var->type);
+
+      INT_ASSERT( et != NULL );
+
+      if( ! et->integerType ) {
+        // Make sure to resolve all enum types.
+        for_enums(def, et) {
+          if (def->init) {
+            resolve_type_expr(def->init);
+          }
+        }
+        // Now try computing the enum size...
+        et->sizeAndNormalize();
+      }
+
+      INT_ASSERT(et->integerType != NULL);
+
+      result = NULL;
+      if( call->isPrimitive(PRIM_ENUM_MIN_BITS) ) {
+        result = new SymExpr(new_IntSymbol(get_width(et->integerType)));
+      } else if( call->isPrimitive(PRIM_ENUM_IS_SIGNED) ) {
+        if( is_int_type(et->integerType) )
+          result = new SymExpr(gTrue);
+        else
+          result = new SymExpr(gFalse);
+      }
+      call->replace(result);
+    } else if (call->isPrimitive(PRIM_IS_UNION_TYPE)) {
+      ClassType* classtype = toClassType(call->get(1)->typeInfo());
+
+      if( isUnion(classtype) ) 
+        result = new SymExpr(gTrue);
+      else
+        result = new SymExpr(gFalse);
+      call->replace(result);
+
     } else if (call->isPrimitive(PRIM_IS_STAR_TUPLE_TYPE)) {
       Type* tupleType = call->get(1)->typeInfo();
       INT_ASSERT(tupleType->symbol->hasFlag(FLAG_TUPLE));

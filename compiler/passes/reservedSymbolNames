@@ -104,6 +104,8 @@
   max
   min
 
+  unlink
+
   // symbols in stdint.h
   int8_t
   int16_t

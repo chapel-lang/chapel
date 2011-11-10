@@ -530,6 +530,7 @@ initPrimitive() {
   prim_def("chpl_setMemFlags", returnInfoVoid, true);
 
   prim_def(PRIM_RT_ERROR, "chpl_error", returnInfoVoid, true, true);
+  prim_def(PRIM_RT_ERROR_NOEXIT, "chpl_error_noexit", returnInfoVoid, true, true);
   prim_def(PRIM_RT_WARNING, "chpl_warning", returnInfoVoid, true, true);
 
   prim_def(PRIM_NEW_PRIV_CLASS, "chpl_newPrivatizedClass", returnInfoVoid, true);
@@ -548,6 +549,16 @@ initPrimitive() {
   prim_def(PRIM_GET_SVEC_MEMBER_VALUE, "get svec member value", returnInfoGetTupleMember, false, true);
 
   prim_def(PRIM_VMT_CALL, "virtual method call", returnInfoVirtualMethodCall, true, true);
+
+  prim_def(PRIM_NUM_FIELDS, "num fields", returnInfoInt32);
+  prim_def(PRIM_FIELD_NUM_TO_NAME, "field num to name", returnInfoString);
+  prim_def(PRIM_FIELD_VALUE_BY_NUM, "field value by num", returnInfoUnknown);
+  prim_def(PRIM_FIELD_ID_BY_NUM, "field id by num", returnInfoInt32);
+  prim_def(PRIM_FIELD_VALUE_BY_NAME, "field value by name", returnInfoUnknown);
+  prim_def(PRIM_IS_UNION_TYPE, "is union type", returnInfoBool);
+
+  prim_def(PRIM_ENUM_MIN_BITS, "enum min bits", returnInfoInt32);
+  prim_def(PRIM_ENUM_IS_SIGNED, "enum is signed", returnInfoBool);
 }
 
 Map<const char*, VarSymbol*> memDescsMap;

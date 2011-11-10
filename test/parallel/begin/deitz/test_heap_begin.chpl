@@ -2,11 +2,15 @@ use Time;
 
 foo();
 
+class MyNum {
+  var x:int;
+}
+
 proc foo() {
-  var x = 17;
+  var c = new MyNum(17);
   begin {
     sleep(1);
-    writeln(x);
+    writeln(c.x);
   }
-  x = 18;
+  c.x = 18;
 }

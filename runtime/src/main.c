@@ -13,6 +13,7 @@
 #include "error.h"
 #include <stdint.h>
 #include <string.h>
+#include <locale.h>
 
 static const char myFilename[] = 
 #ifdef CHPL_DEVELOPER
@@ -55,6 +56,11 @@ int main(int argc, char* argv[]) {
   int32_t execNumLocales;
   int runInGDB;
   int numPollingTasks;
+
+  // Declare that we are 'locale aware' so that
+  // UTF-8 functions (e.g. wcrtomb) work as
+  // indicated by the locale environment variables.
+  setlocale(LC_CTYPE,"");
 
   chpl_comm_init(&argc, &argv);
   chpl_mem_init();
