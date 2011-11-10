@@ -45,6 +45,10 @@ nondet. compilation timeout
 linux32 regressions (in addition to the above)
 ==============================================
 
+new I/O breaks this (11/10/11)
+------------------------------
+[Error matching compiler output for release/examples/primers/fileIO]
+
 
 ================================
 performance-specific regressions
@@ -174,6 +178,17 @@ verbose output now shows launch command (10/31/08)
 gasnet-fast regressions (other than the above)
 ==============================================
 
+counts for RAD optimizations dropped by 1 (11/10/11)
+----------------------------------------------------
+[Error matching program output for optimizations/sungeun/RADOpt/access1d]
+[Error matching program output for optimizations/sungeun/RADOpt/access2d]
+[Error matching program output for optimizations/sungeun/RADOpt/access3d]
+
+strings for path names are garbled in error messages (11/10/11)
+---------------------------------------------------------------
+[Error matching program output for types/file/freadIntFailed]
+[Error matching program output for types/file/fwriteIntFailed]
+
 
 ==============================
 block distribution regressions
@@ -288,6 +303,10 @@ nondet. timeout failure
 cray-xt-cray/cce-specific regressions
 =====================================
 
+new I/O causes missing prototype warning (11/10/11)
+---------------------------------------------------
+*all*
+
 compilation timeouts (10/19/11)
 -------------------------------
 [Error: Timed out compilation for distributions/dm/t5a]
@@ -358,6 +377,10 @@ compiler timeouts
 pgi-specific regressions (in addition to xt-cle errors above)
 =============================================================
 
+new I/O creates warnings that break testing (11/10/11)
+------------------------------------------------------
+*all*
+
 internal sst_zero problem (04/02/11)
 ------------------------------------
 [Error matching compiler output for classes/hannah/volatile_decl]
@@ -407,6 +430,10 @@ negative floating point 0.0 not supported
 ==================================================================
 xt-intel-specific regressions (in addition to xt-cle errors above)
 ==================================================================
+
+new file I/O problem (11/10/11)
+-------------------------------
+[Error matching compiler output for release/examples/primers/fileIO]
 
 problem with static/dynamic linking? (10/1/11 -- first run)
 -----------------------------------------------------------
@@ -461,6 +488,10 @@ sig_send: wait for sig_complete event failed
 nanox-specific tests
 ====================
 
+new file I/O times out in I/O test (11/10/11)
+---------------------------------------------
+[Error: Timed out executing program release/examples/primers/fileIO]
+
 nondet. core dump
 -----------------
 [Error matching program output for release/examples/primers/syncsingle] (11/06/11, 11/09/11)
@@ -504,6 +535,10 @@ execution timeouts (ever since switching to 4 shepherds)
 =======================
 qthreads-specific tests
 =======================
+
+new I/O causes assertion error (11/10/11)
+-----------------------------------------
+*all*
 
 nondet. race on newlines
 ------------------------
