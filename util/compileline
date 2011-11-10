@@ -1,0 +1,30 @@
+#!/usr/bin/env perl
+
+use File::Basename;
+use Cwd 'abs_path';
+
+
+$chpl_home_dir = abs_path(dirname(__FILE__) . "/../");
+
+if( defined $ENV{"CHPL_HOME"} ) {
+  if( $ENV{"CHPL_HOME"} ne $chpl_home_dir ) {
+    die "Mismatched CHPL_HOME for $__FILE__";
+  }
+} else {
+  $ENV{"CHPL_HOME"} = $chpl_home_dir;
+}
+
+$ENV{"CHAPEL_ROOT"} = $ENV{"CHPL_HOME"};
+
+$chpl_home_dir = $ENV{"CHAPEL_ROOT"};
+
+if( $ARGV[0] eq "--home" ) {
+  print $chpl_home_dir . "\n";
+} elsif( $ARGV[0] eq "--compile" ) {
+  0 == system("make -f $chpl_home_dir/runtime/etc/Makefile.include printcompileline") or die "Could not make: $!";
+} elsif ( $ARGV[0] eq "--link" ) {
+  0 == system("make -f $chpl_home_dir/runtime/etc/Makefile.include printlinkline") or die "Could not make: $!";
+} else {
+  print "Unknown argument; try --compile or --link\n";
+}
+
