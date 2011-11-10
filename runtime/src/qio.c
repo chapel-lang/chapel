@@ -418,7 +418,7 @@ err_t qio_send(fd_t sockfd, qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t
   ssize_t num_parts = qbuffer_iter_num_parts(start, end);
   struct iovec* iov = NULL;
   size_t iovcnt;
-  int iov_onstack;
+  int iov_onstack=0;
   err_t err;
 
   if( num_bytes < 0 || num_parts < 0 || num_parts > INT_MAX ) {

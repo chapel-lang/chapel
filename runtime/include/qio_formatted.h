@@ -463,7 +463,7 @@ err_t _qio_channel_read_char_slow_unlocked(qio_channel_t* restrict ch, int32_t* 
 static inline
 err_t qio_channel_read_char(const int threadsafe, qio_channel_t* restrict ch, int32_t* restrict chr) {
   err_t err;
-  uint32_t codepoint, state;
+  uint32_t codepoint=0, state;
   
   if( qio_glocale_utf8 == 0 ) {
     qio_set_glocale();
@@ -608,7 +608,7 @@ err_t qio_decode_char_buf(int32_t* restrict chr, int* restrict nbytes, const cha
 {
   const char* start = buf;
   const char* end = start + buflen;
-  uint32_t codepoint, state;
+  uint32_t codepoint=0, state;
 
   // Fast path: an entire multi-byte sequence
   // is stored in the buffers.

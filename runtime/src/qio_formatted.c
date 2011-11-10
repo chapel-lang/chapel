@@ -271,7 +271,7 @@ err_t qio_channel_read_string(const int threadsafe, const int byteorder, const i
   int64_t peek_amt = 0;
   char* restrict ret = NULL;
   int found_term=0;
-  ssize_t len;
+  ssize_t len=0;
   ssize_t amt = 0;
 
   if( maxlen <= 0 ) maxlen = SSIZE_MAX - 1;
@@ -1484,9 +1484,9 @@ int _ltoa(char* restrict dst, size_t size, uint64_t num, int isnegative,
           int base, const qio_style_t* restrict style)
 {
   char tmp[22]; // enough room for largest 64-bit number base 10.
-  int tmp_len;
-  char b;
-  int i,shift;
+  int tmp_len=0;
+  char b=0;
+  int i,shift=0;
   int width;
   int ret_width;
 
@@ -1577,7 +1577,7 @@ int _ftoa(char* restrict dst, size_t size, double num, int base, const qio_style
   char* buf = NULL;
   int buf_onstack = 0;
   int buf_len;
-  int got;
+  int got=0;
   int width;
   int isnegative;
   int shownegative;
@@ -1844,8 +1844,8 @@ int _ftoa(char* restrict dst, size_t size, double num, int base, const qio_style
 // TODO -- support max_width
 err_t qio_channel_print_int(const int threadsafe, qio_channel_t* restrict ch, const void* restrict ptr, size_t len, int issigned)
 {
-  uint64_t num;
-  int64_t num_s;
+  uint64_t num=0;
+  int64_t num_s=0;
   int isneg;
   int max = 70; // room enough for binary output. (1 '\0', 2 0b, 1 +-, 64 bits)
   int signed_len;
@@ -2375,12 +2375,12 @@ unlock:
 
 err_t _qio_channel_read_char_slow_unlocked(qio_channel_t* restrict ch, int32_t* restrict chr) {
   mbstate_t ps;
-  size_t got;
+  size_t got=0;
   char mb;
   wchar_t tmp_chr;
-  err_t err;
+  err_t err=0;
   int32_t gotch;
-  uint32_t codepoint, state;
+  uint32_t codepoint=0, state;
 
   if( qio_glocale_utf8 == QIO_GLOCALE_UTF8 ) {
     /* This decoder was written and tested... but it doesn't

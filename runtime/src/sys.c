@@ -1057,9 +1057,9 @@ void sys_freeaddr_info(sys_addrinfo_ptr_t *p)
 
 err_t sys_getnameinfo(const sys_sockaddr_t* addr, char** host_out, char** serv_out, int flags)
 {
-  char* host_buf;
+  char* host_buf=0;
   char* new_host_buf;
-  char* serv_buf;
+  char* serv_buf=0;
   char* new_serv_buf;
   int host_buf_sz = NI_MAXHOST;
   int serv_buf_sz = NI_MAXSERV;
