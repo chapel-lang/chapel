@@ -2,4 +2,5 @@
 
 include $(CHAPEL_ROOT)/make/compiler/Makefile.cray-xt
 
+RUNTIME_CFLAGS += -std=c99
 GEN_CFLAGS += -std=c99
