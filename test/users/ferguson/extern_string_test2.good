@@ -1,0 +1,5 @@
+get_string returns Hello
+modify_string got Hello
+modify_string returns Aello
+a is: Hello
+b is: Aello
