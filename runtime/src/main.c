@@ -57,11 +57,6 @@ int main(int argc, char* argv[]) {
   int runInGDB;
   int numPollingTasks;
 
-#ifdef GASNETT_SPEC_VERSION_MAJOR
-  // MPF - initialize GASNet's backtrace facility.
-  gasnett_backtrace_init(argv[0]);
-#endif
-
   // Declare that we are 'locale aware' so that
   // UTF-8 functions (e.g. wcrtomb) work as
   // indicated by the locale environment variables.

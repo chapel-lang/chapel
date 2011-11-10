@@ -8,6 +8,8 @@
 #include "type.h"
 #include "yy.h"
 
+static void cleanModuleList();
+
 //
 // declare global vectors gSymExprs, gCallExprs, gFnSymbols, ...
 //
@@ -126,6 +128,7 @@ void trace_remove(BaseAST* ast, char flag) {
   g##type##s.n = i##type
 
 void cleanAst() {
+  cleanModuleList();
   //
   // clear back pointers to dead ast instances
   //
@@ -156,6 +159,20 @@ void cleanAst() {
   // clean global vectors and delete dead ast instances
   //
   foreach_ast(clean_gvec);
+}
+
+
+// ModuleSymbols cache a pointer to their initialization function
+// This pointer has to be zeroed out specially before the matching function
+// definition is deleted from module body.
+static void cleanModuleList()
+{
+  // Walk the module list.
+  forv_Vec(ModuleSymbol, mod, gModuleSymbols) {
+    // Zero the initFn pointer if the function is now dead.
+    if (mod->initFn && !isAlive(mod->initFn))
+      mod->initFn = NULL;
+  }
 }
 
 

@@ -217,19 +217,7 @@ static void spinhaltIfAlreadyExiting(void) {
   while (temp);
 }
 
-void chpl_error(const char* message, int32_t lineno, chpl_string filename) {
-  spinhaltIfAlreadyExiting();
-  fflush(stdout);
-  if (lineno > 0)
-    fprintf(stderr, "%s:%" PRId32 ": error: %s\n", filename, lineno, message);
-  else if (filename)
-    fprintf(stderr, "%s: error: %s\n", filename, message);
-  else
-    fprintf(stderr, "error: %s\n", message);
-  chpl_exit_backtrace(1);
-}
-
-void chpl_error_noexit(const char* message, int32_t lineno, chpl_string filename) {
+static void chpl_error_common(const char* message, int32_t lineno, chpl_string filename) {
   spinhaltIfAlreadyExiting();
   fflush(stdout);
   if (lineno > 0)
@@ -238,6 +226,17 @@ void chpl_error_noexit(const char* message, int32_t lineno, chpl_string filename
     fprintf(stderr, "%s: error: %s", filename, message);
   else
     fprintf(stderr, "error: %s", message);
+}
+
+
+void chpl_error(const char* message, int32_t lineno, chpl_string filename) {
+  chpl_error_common(message, lineno, filename);
+  fprintf(stderr, "\n");
+  chpl_exit_backtrace(1);
+}
+
+void chpl_error_noexit(const char* message, int32_t lineno, chpl_string filename) {
+  chpl_error_common(message, lineno, filename);
 }
 
 

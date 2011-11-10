@@ -275,7 +275,6 @@ proc vlocdom.dsiBuildLocalDom1d(newGlobDD, locId: locIdT) {
 // REQ indicate whether "storage indices" returned by dsiSetLocalIndices1d()
 // correspond to "user indices". (In which case dsiAccess1d() returns
 // (as a part of a tuple) its argument without modification.)
-// As of this writing, this is used for assertions only.
 proc vdom.dsiStorageUsesUserIndices() param return true;
 
 // REQ given one dimension of the array index, return
@@ -316,6 +315,14 @@ proc vlocdom.dsiMyDensifiedRangeForTaskID1d(globDD, taskid:int, numTasks:int)
 // and (if applicable) by dsiMyDensifiedRangeForTaskID1d().
 proc vlocdom.dsiMyDensifiedRangeType1d(globDD) type
   return range(globDD.idxType);
+
+// REQ-2 if !dsiStorageUsesUserIndices
+// Returns a range of storage indices corresponding to the user indices
+// in 'sliceRange'. Can assume that all sliceRange indices are local.
+proc vlocdom.dsiLocalSliceStorageIndices1d(globDD, sliceRange) {
+  compilerError("should not be invoked");
+  return sliceRange; // but if needed, return this anyway
+}
 
 // REQ for iterating over array elements.
 // Yield tuples (locId, iterable) s.t. the following results in

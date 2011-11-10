@@ -2,10 +2,10 @@
 #include <stdint.h>
 #include "cint.h"
 
-c_int my_extern_c_int = 43;
+ext_c_int_t my_extern_c_int = 43;
 int32_t my_extern_c_int32 = 67;
 
-void set_c_int(c_int* lhs, int32_t rhs) {
+void set_c_int(ext_c_int_t* lhs, int32_t rhs) {
   *lhs = (int)rhs;
 }
 

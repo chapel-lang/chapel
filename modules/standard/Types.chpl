@@ -85,10 +85,6 @@ proc numBits(type t) param where _isVolatileType(t) return numBits(_volToNon(t))
 
 param bitsPerByte = 8;
 
-// want to use numBytes from within internal/ChapelIO
-// and that leads to a known bug... and bits per byte
-// is always going to be 8 anyways... so it's hard-coded
-// below.
 proc numBytes(type t) param return numBits(t)/8;
 
 //

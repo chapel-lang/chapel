@@ -142,7 +142,6 @@ proc _computeBlock(numelems, numblocks, blocknum, wayhi,
   const bhi =
     if blocknum == numblocks - 1 then wayhi
     else lo + intCeilXDivByY(numelems:uint(64) * (blocknum+1):uint(64), numblocks:uint(64)):lo.type - 1;
-    //else lo + intCeilXDivByY((numelems * ((blocknum+1):numelems.type)):uint(64), numblocks:uint(64)):lo.type - 1;
 
   return (blo, bhi);
 }

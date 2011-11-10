@@ -15,9 +15,5 @@ void chpl_msg(int verbose_level, const char* fmt, ...)
 #define printf PRINTF_DEF
 
 void chpl_error_noexit(const char* message, int32_t lineno, chpl_string filename);
-void chpl_exit_backtrace(int);
-int chpl_getexe_path(char* dst, size_t max_dst);
-
-void chpl_set_backtrace_config(_Bool doBacktrace);
 
 #endif

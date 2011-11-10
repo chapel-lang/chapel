@@ -25,7 +25,7 @@ const chpl__maxThreadsPerLocale = chpl__initMaxThreadsPerLocale();
 // Legality check for numThreadsPerLocale
 //
 if numThreadsPerLocale < 0 {
-  __primitive("chpl_error", "numThreadsPerLocale must be >= 0");
+  halt("numThreadsPerLocale must be >= 0");
 }
 if chpl__maxThreadsPerLocale != 0 then
   if (numThreadsPerLocale > chpl__maxThreadsPerLocale) then

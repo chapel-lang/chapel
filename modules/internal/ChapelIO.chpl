@@ -358,19 +358,19 @@ proc _debugWriteln() {
 
 
 
-extern proc chpl_exit_backtrace(exit_code:c_int);
-
 proc assert(test: bool) {
   if !test then
     __primitive("chpl_error", "assert failed");
 }
+
+extern proc chpl_exit_any(status:int);
 
 proc assert(test: bool, args ...?numArgs) {
   if !test {
     //chpl_error_noexit("assert failed - ", -1, "");
     __primitive("chpl_error_noexit", "assert failed - ");
     stderr.writeln((...args));
-    chpl_exit_backtrace(1);
+    chpl_exit_any(1);
     //exit(1);
     //__primitive("chpl_error", "assert failed");
   }
@@ -388,7 +388,7 @@ proc halt(args ...?numArgs) {
   //chpl_error_noexit("halt reached - ", -1, "");
   __primitive("chpl_error_noexit", "halt reached - ");
   stderr.writeln((...args));
-  chpl_exit_backtrace(1);
+  chpl_exit_any(1);
   //exit(1);
   //__primitive("chpl_error", "halt reached");
 }

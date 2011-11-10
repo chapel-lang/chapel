@@ -198,7 +198,7 @@ void chpl_comm_broadcast_private(int id, int32_t size, int32_t tid) {
   _broadcast_private_helper bph;
   void* heapAddr = NULL;
 
-  heapAddr = chpl_mem_allocMany(1, size, CHPL_RT_MD_PRIVATE_BROADCAST_DATA, 0, 0);
+  heapAddr = chpl_mem_allocMany(1, size, CHPL_RT_MD_COMM_PRIVATE_BROADCAST_DATA, 0, 0);
   bcopy(chpl_private_broadcast_table[id], heapAddr, size);
   for (i = 0; i < chpl_numLocales; i++)
     if (i != chpl_localeID) {
@@ -345,7 +345,7 @@ static void chpl_comm_fork_common(int locale, chpl_fn_int_t fid, void *arg, int 
   }
 
   info_size = sizeof(dist_fork_t) + arg_size;
-  info = (dist_fork_t *)chpl_mem_allocMany(info_size, sizeof(char), CHPL_RT_MD_REMOTE_FORK_DATA, 0, 0);
+  info = (dist_fork_t *)chpl_mem_allocMany(info_size, sizeof(char), CHPL_RT_MD_COMM_FORK_SEND_INFO, 0, 0);
 
   info->caller = chpl_localeID;
   info->serial_state = chpl_task_getSerial();
@@ -356,15 +356,15 @@ static void chpl_comm_fork_common(int locale, chpl_fn_int_t fid, void *arg, int 
     bcopy(arg, &(info->arg), arg_size);
 
   if (arg_size > 0)
-    rdata = chpl_mem_allocMany(arg_size, sizeof(char), CHPL_RT_MD_REMOTE_GPC_DATA, 0, 0);
+    rdata = chpl_mem_allocMany(arg_size, sizeof(char), CHPL_RT_MD_COMM_FORK_SEND_RESPONSE_DATA, 0, 0);
   else
     rdata = NULL;
   rdlen = arg_size;
 
   header = chpl_mem_allocMany(sizeof(void *), sizeof(char),
-                              CHPL_RT_MD_REMOTE_GPC_HEADER_ADDR, 0, 0);
+                              CHPL_RT_MD_COMM_FORK_SEND_INFO, 0, 0);
   rheader = chpl_mem_allocMany(rhdr_size, sizeof(char),
-                               CHPL_RT_MD_REMOTE_GPC_HEADER, 0, 0);
+                               CHPL_RT_MD_COMM_FORK_SEND_INFO, 0, 0);
   // must be non-empty  
 
   *(intptr_t *)header = (intptr_t)rheader;
@@ -468,10 +468,10 @@ int gpc_call_handler(int to, int from, void *hdr, int hlen,
   gpc_info_t *ginfo;
   intptr_t prhdr;
 
-  finfo = chpl_mem_allocMany(dlen, sizeof(char), CHPL_RT_MD_REMOTE_GPC_COPY_OF_DATA, 0, 0);
+  finfo = chpl_mem_allocMany(dlen, sizeof(char), CHPL_RT_MD_COMM_FORK_RECV_INFO, 0, 0);
   bcopy(data, finfo, dlen);
 
-  ginfo = chpl_mem_allocMany(sizeof(gpc_info_t), sizeof(char), CHPL_RT_MD_REMOTE_GPC_FORK_DATA, 0, 0);
+  ginfo = chpl_mem_allocMany(sizeof(gpc_info_t), sizeof(char), CHPL_RT_MD_COMM_FORK_RECV_INFO, 0, 0);
   ginfo->info = finfo;
   prhdr = *(intptr_t *)hdr;
   ginfo->rhdr = (int *)prhdr;

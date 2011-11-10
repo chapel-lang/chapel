@@ -845,6 +845,8 @@ void ModuleSymbol::verify() {
   }
   if (block && block->parentSymbol != this)
     INT_FATAL(this, "Bad ModuleSymbol::block::parentSymbol");
+  if (initFn && !toFnSymbol(initFn))
+    INT_FATAL(this, "Bad ModuleSymbol::initFn");
 }
 
 

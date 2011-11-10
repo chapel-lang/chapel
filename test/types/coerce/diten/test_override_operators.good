@@ -1,4 +1,4 @@
 Found my plus
-(x = 3)
-Found my ==, returning !=
+3
+Found my ==, but it's going to give != instead
 true

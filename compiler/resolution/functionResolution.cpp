@@ -3594,32 +3594,6 @@ preFold(Expr* expr) {
         }
       }
       call->replace(result);
-    } else if (call->isPrimitive(PRIM_HAS_METHOD_BY_NAME)) {
-      Type* type = toSymExpr(call->get(1))->var->type;
-      VarSymbol* var = toVarSymbol(toSymExpr(call->get(2))->var);
-
-      INT_ASSERT( var != NULL );
-
-      Immediate* imm = var->immediate;
-
-      INT_ASSERT( type != NULL );
-      // fail horribly if immediate is not a string .
-      INT_ASSERT(imm->const_kind == CONST_KIND_STRING);
-
-      const char* methodname = imm->v_string;
-      int found = 0;
-      forv_Vec(FnSymbol*, method, type->methods) {
-        if( 0 == strcmp(method->name, methodname) ) {
-          found = 1;
-        }
-      }
-
-      if( found )
-        result = new SymExpr(gTrue);
-      else
-        result = new SymExpr(gFalse);
-
-      call->replace(result);
     } else if (call->isPrimitive(PRIM_ENUM_MIN_BITS) || call->isPrimitive(PRIM_ENUM_IS_SIGNED)) {
       EnumType* et = toEnumType(toSymExpr(call->get(1))->var->type);
 

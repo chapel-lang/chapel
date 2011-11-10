@@ -20,3 +20,11 @@ release are as follows:
 * applied a fix for autoconf scripts in a cross-compilation
   environment.  This corresponds to commit r2590 to the Qthreads tree
   (made after the 1.7 release).
+
+* added config/ac_prog_sed.m4 which was intended to be in the 1.7
+  release, but mistakenly left out.  This permits autogen.sh to be run
+  without problems if needed.
+
+* added the --force flag to the autoreconf call in autogen.sh because
+  the timestamps aren't particularly trustworthy once we've committed
+  things to SVN and checked them back out again.
