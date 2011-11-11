@@ -33,29 +33,65 @@ config const maxColor = 15;
 //
 config const maxSteps = 50;
 
+// 
+// The number of tasks we should spawn.
+//
+config const numTasks = here.numCores; // Cores on LOCALE0.
+
 
 proc main() {
-  // The set of indices used in the image.
+  //
+  // domains and arrays representing the number of steps taken in the
+  // calculation (effectively, the image).  Note that Block is
+  // actually not a very good choice for Mandelbrot; Cyclic should be
+  // better.
+  //
   var ImgSpace = [0..#xsize, 0..#ysize];
-
-  //
-  // An array representing the number of iteration steps taken in the
-  // calculation (effectively, the image)
-  //
   var NumSteps: [ImgSpace] int;
 
   //
   // Compute the image
   //
-  NumSteps = compute(ImgSpace);
-  //
-  // OR:
-  //
-  //  forall ij in ImgSpace do
-  //    NumSteps(ij) = compute(ij);
+
+  // We explicitly partition the work and send it to separate tasks.
+  coforall tid in 0..#numTasks do
+    // This performs a portion of the computation, based on the task ID.
+    blockCompute(tid, numTasks, NumSteps);
 
   // Plot the image
   plot(NumSteps);
+}
+
+
+// Perform the computation a portion of the image plane 
+// assigned to the given task/taskID.
+proc blockCompute(taskId, taskCount, NumSteps: [?D] int)
+{
+  // Let's choose a simple partitioning: horizontal stripes == sets of rows.
+  proc blockbound(id, count) {
+    // This function returns a partition boundary in the first dimension of the domain
+    // used to define the array NumSteps.
+    // The return value is the first index in the given partition.
+    // The end of a given partition is the start of the next partition minus one.
+    var xlow = D.dim(1).low;
+    var xlim = D.dim(1).high + 1;
+    var xspan = xlim - xlow;
+
+    // Special case: Task IDs are number from 0 to taskCount-1, 
+    // so if taskCount is passed in, return one more than the high index in dim(1).
+    // The ensures that we visit every index, even if xspan is not evenly divisible by count.
+    if id == count then return xlim;
+
+    return xlow + id * xspan / count;
+  }
+
+  // Get the range of rows assigned to this task.
+  var myRowRange = blockbound(taskId, taskCount)..(blockbound(taskId+1, taskCount) - 1);
+
+  // Iterate over my subset of rows and all columns.
+  for i in myRowRange do
+    for j in D.dim(2) do
+      NumSteps(i, j) = compute((i, j));
 }
 
 

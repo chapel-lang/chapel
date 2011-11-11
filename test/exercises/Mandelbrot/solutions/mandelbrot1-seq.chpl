@@ -35,11 +35,14 @@ config const maxSteps = 50;
 
 
 proc main() {
+  // The set of indices used in the image.
+  var ImgSpace = [0..#xsize, 0..#ysize];
+
   //
-  // An array representing the number of steps taken in the
+  // An array representing the number of iteration steps taken in the
   // calculation (effectively, the image)
   //
-  var NumSteps: [0..#xsize, 0..#ysize] int;
+  var NumSteps: [ImgSpace] int;
 
   //
   // Compute the image
