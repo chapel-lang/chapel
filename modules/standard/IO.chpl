@@ -197,6 +197,7 @@ extern record iostyle {
   var uppercase:uint(8);
   var leftjustify:uint(8);
   var showpoint:uint(8);
+  var showpointzero:uint(8);
   var precision:int(32);
   var significant_digits:int(32);
   var realtype:uint(8);
