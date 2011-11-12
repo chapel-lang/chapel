@@ -18,16 +18,25 @@ config const imgType = imageType.color;
 config const filename = "mandelbrot";
 
 //
+// Dimensions of image file
+//
+config const rows = 100,
+             cols = rows;
+
+//
 // Maximum color depth for image file
 //
 config const maxColor = 15;
 
 
 proc main() {
+  // The set of indices over which the image is defined.
+  var ImgSpace = [0..#rows, 0..#cols];
+
   //
   // A dummy array just to show that this works.
   //
-  var A: [1..100, 1..100] int = [(i,j) in [1..100, 1..100]] i + j;
+  var A: [ImgSpace] int = [(i,j) in ImgSpace] i + j;
 
   // Plot the image
   plot(A);

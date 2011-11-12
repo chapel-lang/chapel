@@ -1,10 +1,12 @@
 // mandelbrot2-datapar.chpl
 //
-// Solution for Exercise 2: Mandelbrot Set -- Data parallel implementation.
+// Solution for Exercise 5: Mandelbrot Set -- Distributed data-parallel implementation.
 //
-// compile command: chpl mandelbrot2-datapar.chpl MPlot.chpl -o mand
+// compile command: chpl mandelbrot5-datapar-dist.chpl MPlot.chpl -o mand
 // execute command: mand
 //
+
+use BlockDist;
 
 use MPlot;
 
@@ -21,13 +23,14 @@ config const maxSteps = 50;
 
 
 proc main() {
-  // The set of indices over which the image is defined.
-  var ImgSpace = [0..#rows, 0..#cols];
-
   //
-  // An array representing the number of iteration steps taken in the
-  // calculation (effectively, the image)
+  // domains and arrays representing the number of steps taken in the
+  // calculation (effectively, the image).  Note that Block is
+  // actually not a very good choice for Mandelbrot; Cyclic should be
+  // better.
   //
+  var LocImgSpace = [0..#rows, 0..#cols];
+  var ImgSpace = LocImgSpace dmapped Block(rank=2, boundingBox=LocImgSpace);
   var NumSteps: [ImgSpace] int;
 
   //
