@@ -1,11 +1,15 @@
-// mandelbrot-framework.chpl
+// mandelbrot.chpl: Starting point for Chapel tutorial Mandelbrot exercises
 //
-// Starting point for Chapel tutorial exercises
+// compile command: chpl mandelbrot.chpl -o mandelbrot
+// execute command: ./mandelbrot
 //
-// compile command: chpl mandelbrot.chpl -o mand
-// execute command: mand
+
+//
+// Use a helper module to create PPM/PGM/PBM image files (use
+// ./mandelbrot --help to see configuration options)
 //
 use MPlot;
+
 //
 // Dimensions of image file
 //
