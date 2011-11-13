@@ -1,9 +1,4 @@
-// mandelbrot4-taskpar-dist.chpl
-//
-// Solution for Exercise 4: Mandelbrot Set -- Distributed task-parallel implementation.
-//
-// compile command: chpl mandelbrot4-taskpar-dist.chpl MPlot.chpl -o mand
-// execute command: mand
+// mandelbrot4-taskpar-dist.chpl: Distributed task-parallel implementation
 //
 
 use MPlot;
@@ -88,6 +83,22 @@ proc blockCompute(taskId, taskCount, NumSteps: [?D] int)
 }
 
 
+//
+// Compute the pixel value as described in the handout
+//
+proc compute((x, y)) {
+  const c = mapImg2CPlane((x, y));
+  
+  var z: complex;
+  for i in 1..maxSteps {
+    z = z*z + c;
+    if (abs(z) > 2.0) then
+      return i;
+  }
+  return 0;			
+}
+
+
 // Map an image coordinate to a point in the complex plane.
 // Image coordinates are (row, col), with row 0 at the top.
 proc mapImg2CPlane((row, col)) {
@@ -97,17 +108,4 @@ proc mapImg2CPlane((row, col)) {
   return ((rmax - rmin) * col / cols + rmin) +
          ((imin - imax) * row / rows + imax);
 }
-
-proc compute((x, y)) {
-  const c = mapImg2CPlane((x, y));
-  
-  var z: complex = 0i;
-  for i in 1..maxSteps {
-    z = z*z + c;
-    if (abs(z) > 2.0) then
-      return i;
-  }
-  return 0;			
-}
-
 
