@@ -39,8 +39,7 @@ proc plot(NumSteps:[]) where NumSteps.rank == 2 {
   const extensions: [extensionSpace] string = (".pbm", ".pgm", ".ppm");
 
   //
-  // Compute the full output filename and open the file and a writer
-  // to it.
+  // Compute the full output filename and open the file.
   //
   const outfilename = filename + extensions(imgType);
   const outfile = new file(outfilename, FileAccessMode.write);
