@@ -2,6 +2,8 @@
 
 use d;
 
+config const BlockCyclicDim_allowParLeader = true;
+
 // the types to use for blockSzie and numLocales
 type cycSizeT = uint(32);     // unsigned - for optimization
 type cycSizeTuser = int(32);  // for versatility
@@ -405,6 +407,8 @@ proc idom.dsiAccess1d(ind: idxType): (locIdT, stoIndexT) {
 }
 
 iter ilocdom.dsiMyDensifiedRangeForSingleTask1d(globDD) {
+// todo: for the special case handled in dsiMyDensifiedRangeForTaskID1d,
+// maybe handling it here will be beneficial, too?
   const locNo = this.locId;
   const wholeR = globDD.wholeR;
   const lowIdx = wholeR.low;
@@ -457,10 +461,49 @@ iter ilocdom.dsiMyDensifiedRangeForSingleTask1d(globDD) {
     yield mydensify(lastRange);
 }
 
-proc idom.dsiSingleTaskPerLocaleOnly1d() param return true;
+// available in a special case only, for now
+proc idom.dsiSingleTaskPerLocaleOnly1d()
+  return !BlockCyclicDim_allowParLeader ||
+         !((blockSizePos:wholeR.stride.type) == wholeR.stride);
 
-// not supported at the moment:
-//proc ilocdom.dsiMyDensifiedRangeForTaskID1d(globDD, taskid:int, numTasks:int)
+// only works when idom.dsiSingleTaskPerLocaleOnly1d()
+proc ilocdom.dsiMyDensifiedRangeForTaskID1d(globDD, taskid:int, numTasks:int)
+{
+  const wholeR = globDD.wholeR;
+  const nLocs  = globDD.numLocalesPos :globDD.idxType;
+  assert((globDD.blockSizePos:wholeR.stride.type) == wholeR.stride);
+  assert(globDD.storagePerCycle == 1); // should follow from the previous
+
+  // In this case, the densified range for *all* indices on this locale is:
+  //   0..#wholeR.length by numLocales align AL
+  // where
+  //   (_dsiLocNo(wholeR.low) + AL) % numLocales == this.locId
+
+  const firstLoc = globDD._dsiLocNo_formula(wholeR.low);
+  const AL = this.locId + nLocs - firstLoc;
+
+  // Here is the densified range for all indices on this locale.
+  const hereDenseInds = 0..#wholeR.length by nLocs align AL;
+  const hereNumInds   = hereDenseInds.length;
+  const hereFirstInd  = hereDenseInds.first;
+
+  // This is our piece of hereNumInds
+  const (begNo,endNo) = _computeChunkStartEnd(hereNumInds, numTasks, taskid+1);
+
+  // Pick the corresponding part of hereDenseInds
+  const begIx = hereFirstInd + (begNo - 1) * nLocs;
+  const endIx = hereFirstInd + (endNo - 1) * nLocs;
+  assert(hereDenseInds.member(begIx));
+  assert(hereDenseInds.member(endIx));
+
+//writeln("MyDensifiedRangeForTaskID(", globDD.name, ") on ", locId,
+//        "  taskid ", taskid, " of ", numTasks, "  ", begIx, "...", endIx,
+//        "   fl=", firstLoc, " al=", AL,
+//        "  fullR ", hereDenseInds, " myR ", begIx .. endIx by nLocs,
+//        "");
+
+  return begIx .. endIx by nLocs;
+}
 
 proc ilocdom.dsiMyDensifiedRangeType1d(globDD) type
   return range(idxType=globDD.idxType, stridable=globDD.stridable);
