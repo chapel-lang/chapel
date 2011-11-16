@@ -708,6 +708,99 @@ bool checkInterfaceImplementations(BlockStmt *block) {
                 forv_Vec (FnSymbol, fn, is->functionSignatures) {
                   CallInfo2 info(fn);
 
+									if (PrimitiveOp *op = primitives_map.get(fn->cname)) {
+										if (fn->formals.length == 0) {
+											INT_FATAL("Unimplemented Operator: 0 args\n");
+											//if (cclosure.is_equal(e_actual, s_formal->typeExpr))
+											//return op->returnInfo(call, NULL, NULL);
+										}
+										else if (fn->formals.length == 1) {
+											INT_FATAL("Unimplemented Operator: 1 arg\n");
+											//return op->returnInfo(call, cclosure.get_representative_ast(call->argList.get(1)), NULL);
+										}
+										else {
+											printf("Operator: 2 args\n");
+											//FIXME: I don't like passing NULL here, we need to be more flexible
+											//with what operators need
+
+											//FIXME: Handle dtUnknown
+
+											BaseAST *arg1Expr;
+											BaseAST *arg2Expr;
+
+											bool isArg1Self = false;
+											if (DefExpr *de1 = toDefExpr(fn->formals.get(1))) {
+												if (ArgSymbol *as1 = toArgSymbol(de1->sym)) {
+													if (UnresolvedSymExpr *use1 =
+															toUnresolvedSymExpr(as1->typeExpr->body.head)) {
+
+														if (!strcmp(use1->unresolved, "self"))
+															isArg1Self = true;
+													}
+												}
+											}
+											if (isArg1Self) {
+												arg1Expr =
+														cclosure.get_representative_ast(ce->argList.head);
+											}
+											else {
+												arg1Expr =
+														cclosure.get_representative_ast(fn->formals.get(1));
+											}
+
+											bool isArg2Self = false;
+											if (DefExpr *de2 = toDefExpr(fn->formals.get(2))) {
+												if (ArgSymbol *as2 = toArgSymbol(de2->sym)) {
+													if (UnresolvedSymExpr *use2 =
+															toUnresolvedSymExpr(as2->typeExpr->body.head)) {
+
+														if (!strcmp(use2->unresolved, "self"))
+															isArg2Self = true;
+													}
+												}
+											}
+											if (isArg2Self) {
+												arg2Expr =
+														cclosure.get_representative_ast(ce->argList.head);
+											}
+											else {
+												arg2Expr =
+														cclosure.get_representative_ast(fn->formals.get(2));
+											}
+
+											Type *retType = op->returnInfo(NULL, arg1Expr, arg2Expr);
+
+											if (retType != dtUnknown) {
+												//FIXME: Can't assume 'self' is always unresolved
+												BlockStmt *retBlock = toBlockStmt(fn->retExprType);
+												if (retBlock) {
+													if (UnresolvedSymExpr *use3 =
+														toUnresolvedSymExpr(retBlock->body.head)) {
+														if (!strcmp(use3->unresolved, "self")) {
+															if (!cclosure.is_equal(ce->argList.head, retType)) {
+																INT_FATAL("Operator which satisfies interface requirement has mismatched type");
+															}
+															else {
+																continue;
+															}
+														}
+														else {
+															INT_FATAL("Return type of operator unknown");
+														}
+													}
+												}
+												if (!cclosure.is_equal(fn->retExprType, retType)) {
+													INT_FATAL("Operator which satisfies interface requirement has mismatched type");
+												}
+												else {
+													continue;
+												}
+											}
+											//return op->returnInfo(call, cclosure.get_representative_ast(call->argList.get(1)),
+											//		cclosure.get_representative_ast(call->argList.get(2)));
+										}
+									}
+
                   if (gFnSymbols.n != nVisibleFunctions)
                     buildVisibleFunctionMap2();
 
