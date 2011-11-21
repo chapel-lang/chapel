@@ -67,14 +67,19 @@ void qbytes_free_munmap(qbytes_t* b) {
   _qbytes_free_qbytes(b);
 }
 
-void qbytes_free_free(qbytes_t* b) {
+void qbytes_free_qio_free(qbytes_t* b) {
   qio_free(b->data);
+  _qbytes_free_qbytes(b);
+}
+void qbytes_free_sys_free(qbytes_t* b) {
+  // We need to use the system 'free' function here.
+  sys_free(b->data);
   _qbytes_free_qbytes(b);
 }
 
 void qbytes_free_iobuf(qbytes_t* b) {
   // iobuf is just something to be freed with free()
-  qbytes_free_free(b);
+  qbytes_free_sys_free(b);
 }
 
 void debug_print_bytes(qbytes_t* b)
@@ -111,18 +116,15 @@ err_t _qbytes_init_iobuf(qbytes_t* ret)
 {
   void* data = NULL;
   
-  if( (qbytes_iobuf_size & 4095) == 0 ) {
-    // multiple of 4K
-    data = valloc(qbytes_iobuf_size);
-    if( !data ) return ENOMEM;
-    // We used to use posix_memalign, but that didn't work on an old Mac.
-    //err_t err = posix_memalign(&data, qbytes_iobuf_size, qbytes_iobuf_size);
-    //if( err ) return err;
-    memset(data, 0, qbytes_iobuf_size);
-  } else {
-    data = qio_calloc(1, qbytes_iobuf_size);
-    if( ! ret ) return ENOMEM;
-  }
+  // allocate 4K-aligned (or page size aligned)
+  // multiple of 4K
+  data = valloc(qbytes_iobuf_size);
+  if( !data ) return ENOMEM;
+  // We used to use posix_memalign, but that didn't work on an old Mac;
+  // also, this should be page-aligned (vs iobuf_size aligned).
+  //err_t err = posix_memalign(&data, qbytes_iobuf_size, qbytes_iobuf_size);
+  //if( err ) return err;
+  memset(data, 0, qbytes_iobuf_size);
 
   _qbytes_init_generic(ret, data, qbytes_iobuf_size, qbytes_free_iobuf);
 

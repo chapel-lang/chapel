@@ -105,7 +105,8 @@ void qbytes_free_null(qbytes_t* b);
 // unmap the data
 void qbytes_free_munmap(qbytes_t* b);
 // free the data
-void qbytes_free_free(qbytes_t* b);
+void qbytes_free_sys_free(qbytes_t* b);
+void qbytes_free_qio_free(qbytes_t* b);
 
 void _qbytes_init_generic(qbytes_t* ret, void* give_data, int64_t len, qbytes_free_t free_function);
 err_t qbytes_create_generic(qbytes_t** out, void* give_data, int64_t len, qbytes_free_t free_function);
@@ -420,6 +421,7 @@ static inline char* qio_strdup(const char* ptr)
 #define qio_calloc(nmemb, size) calloc(nmemb,size)
 #define qio_realloc(ptr, size) realloc(ptr, size)
 #define qio_free(ptr) free(ptr)
+#define sys_free(ptr) free(ptr)
 #define qio_strdup(ptr) strdup(ptr)
 
 #endif
