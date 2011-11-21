@@ -4,7 +4,7 @@ use File::Basename;
 use Cwd 'abs_path';
 
 
-$chpl_home_dir = abs_path(dirname(__FILE__) . "/../");
+$chpl_home_dir = abs_path(dirname(__FILE__) . "/../../");
 
 if( defined $ENV{"CHPL_HOME"} ) {
   if( $ENV{"CHPL_HOME"} ne $chpl_home_dir ) {

@@ -28,3 +28,12 @@ ifdef NVCC
 TMPBINNAME_GPU=$(TMPBINNAME).gpu
 endif
 
+printcompileline:
+	@echo $(CC) $(GEN_CFLAGS) $(COMP_GEN_CFLAGS) -I$(CHAPEL_RT_INC_DIR)
+ifdef NVCC
+	@echo $(NVCC) $(HEADER_CFLAGS) $(RUNTIME_CUDA_CFLAGS) -I$(CHAPEL_RT_INC_DIR)
+endif
+
+printlinkline:
+	@echo $(LD) $(GEN_CFLAGS) $(COMP_GEN_CFLAGS) -L$(CHPL_RT_LIB_DIR) -I$(CHAPEL_RT_INC_DIR) -lchpl -lm
+
