@@ -993,6 +993,7 @@ namespace {
 // automatic increases factored in.
 static int64_t large_alloc_threshold =
   (kPageSize > FLAGS_tcmalloc_large_alloc_report_threshold
+   && FLAGS_tcmalloc_large_alloc_report_threshold > 0
    ? kPageSize : FLAGS_tcmalloc_large_alloc_report_threshold);
 
 static void ReportLargeAlloc(Length num_pages, void* result) {
