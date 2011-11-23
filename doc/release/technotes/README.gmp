@@ -8,10 +8,7 @@ should be considered incomplete in that (a) only a subset of the full
 GMP interface is supported, and (b) the performance is currently
 lacking due to extraneous copies in the Chapel code that have not yet
 been optimized away.  If there is sufficient interest, we can expand
-this prototype to support the full GMP interface and performance.  We
-are also interested in supporting GMP functionality using less of a
-C-like interface by taking advantage of Chapel's support for defining
-methods and I/O routines on types.
+this prototype to support the full GMP interface and performance.
 
 We have used this prototype GMP module to implement a port of the
 standard GMP Chudnovsky algorithm for computing pi to arbitrary digits
@@ -37,12 +34,44 @@ Step 2: Have your Chapel program 'use' the standard GMP module
 Step 3: Start using the supported subset of GMP types and routines
         (see below for a complete listing)
 
+Step 4: When you compile your program, add the following chpl compiler arguments:
+        gmp.h -lgmp -I../../../runtime/include -I../../../runtime/include/tasks/`../../../util/chplenv/tasks` -I../../../runtime/include/threads/`../../../util/chplenv/threads` ../../../runtime/include/chplgmp.h  ../../../runtime/src/chplgmp.c
 
-Supported subset of the GMP interface
+        (hopefully we can add these automatically in the future).
+
+Using the BigInt class
 -------------------------------------
 
-For a full reference to GMP capabilities, please refer to the GMP
-website (http://gmplib.org).
+The GMP Chapel module provides a BigInt class wrapping GMP integers.
+At the present time, only the functions for mpz (ie signed integer)
+GMP types are supported with BigInt; future work will be to make
+fixed-size wrappers for mpn types and a class for floating-point types.
+
+See the source code in modules/standard/GMP.chpl. Also, the BigInt methods
+all wrap GMP functions with the obvious names. The BigInt methods are
+locale-aware. Also, methods BigInt objects are setting the receiver,
+so e.g. myBigInt.add(x,y) sets myBigInt to x + y.
+
+A code example:
+ var a = new BigInt(); // initialize a GMP value, set it to zero
+
+ a.fac_ui(100); // set a to 100!
+ 
+ writeln(a); // output 100!
+
+ delete a; // free memory used by the GMP value
+
+ var b = new BigInt("48473822929893829847"); // initialize from a decimal string
+ b.add_ui(b, 1); // add one to b
+ 
+ delete b; // free memory used by b
+
+Calling GMP functions directly
+-------------------------------------
+
+The GMP Chapel module supports calling GMP functions directly,
+if you know what you are doing. For a full reference to GMP capabilities,
+please refer to the GMP website (http://gmplib.org).
 
 At present, Chapel's GMP module supports the following GMP types:
 
