@@ -226,12 +226,12 @@ proc chpl__buildDomainExpr(x: domain)
   return x;
 
 proc chpl__buildDomainExpr(ranges: range(?) ...?rank) {
-  for param i in 2..rank {
+  for param i in 2..rank do
     if ranges(1).idxType != ranges(i).idxType then
-      compilerError("domain has mixed dimensional type");
-    if ranges(i).boundedType != BoundedRangeType.bounded then
-      compilerError("domain has dimension of unbounded range");
-  }
+      compilerError("idxType varies among domain's dimensions");
+  for param i in 1..rank do
+    if ! isBoundedRange(ranges(i)) then
+      compilerError("one of domain's dimensions is not a bounded range");
   var d: domain(rank, ranges(1).idxType, chpl__anyStridable(ranges));
   d.setIndices(ranges);
   return d;
