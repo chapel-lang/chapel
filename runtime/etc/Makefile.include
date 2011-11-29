@@ -35,5 +35,5 @@ ifdef NVCC
 endif
 
 printlinkline:
-	@echo $(LD) $(GEN_CFLAGS) $(COMP_GEN_CFLAGS) -L$(CHPL_RT_LIB_DIR) -I$(CHAPEL_RT_INC_DIR) -lchpl -lm
+	@echo $(LD) $(GEN_CFLAGS) $(COMP_GEN_CFLAGS) -L$(CHAPEL_RT_LIB_DIR) -I$(CHAPEL_RT_INC_DIR) -lchpl -lm
 

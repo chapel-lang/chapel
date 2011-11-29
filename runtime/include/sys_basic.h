@@ -11,6 +11,11 @@
 #define _DARWIN_C_SOURCE
 #endif
 
+// AIX needs _ALL_SOURCE
+// in order to get us gai_strerror().
+#ifndef _ALL_SOURCE
+#define _ALL_SOURCE
+#endif
 
 // get posix_memalign
 #ifndef _XOPEN_SOURCE
@@ -65,12 +70,21 @@ static inline int chpl_err_eq(err_t a, err_t b) { return a == b; }
 static inline int32_t chpl_err_to_int(err_t a) { return a; }
 static inline err_t chpl_int_to_err(int32_t a) { return a; }
 
+
 // EEOF 
-enum { EEOF = (EXTEND_ERROR_OFFSET+0),
-       ESHORT = (EXTEND_ERROR_OFFSET+1),
-       EFORMAT = (EXTEND_ERROR_OFFSET+2),
-     };
-enum { EXTEND_ERROR_NUM = 3 };
+#ifndef EEOF
+#define EEOF (EXTEND_ERROR_OFFSET+0)
+#endif
+
+#ifndef ESHORT
+#define ESHORT (EXTEND_ERROR_OFFSET+1)
+#endif
+
+#ifndef EFORMAT
+#define EFORMAT (EXTEND_ERROR_OFFSET+2)
+#endif
+
+#define EXTEND_ERROR_NUM 3
 
 #define PTR_ADDBYTES(ptr,nbytes) ((void*) ( ((unsigned char*)ptr) + nbytes))
 
