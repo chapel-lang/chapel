@@ -4,25 +4,33 @@ pragma "no use ChapelStandard"
 module ChapelLocale {
 
 use DefaultRectangular;
+use ChapelNumLocales;
 
 // would like this to be the following, but it breaks about 20 tests:
 //const LocaleSpace: domain(1) distributed(OnePer) = [0..numLocales-1];
 const LocaleSpace: domain(1) = [0..numLocales-1];
 
 var doneCreatingLocales: bool;
+var localeSerialNumber = 0;
 
 class locale {
-  const chpl_id: int;
-  const numCores: int(32);
+  const chpl_id: int = -1;
+  const _numCores: int = -1;
+  var parent: locale = nil;
 
-  proc locale(id = -1) {
-    if doneCreatingLocales {
-      halt("locales cannot be created");
+  proc initialize() {
+    if (_numCores < 0) {
+      extern proc chpl_numCoresOnThisLocale(): int(32);
+      _numCores = chpl_numCoresOnThisLocale();
     }
-    chpl_id = id;
-
-    extern proc chpl_numCoresOnThisLocale(): int(32);
-    numCores = chpl_numCoresOnThisLocale();
+    // This only works on a non-distributed system.
+    // It is not thread-safe and also very inefficient on a distributed system.
+    // Instead of having a shared global variable, we need something like a GUID --
+    // that is generated locally and yet guaranteed to be unique system-wide.
+    if (chpl_id < 0) {
+      chpl_id = localeSerialNumber;
+      localeSerialNumber += 1;
+    }
   }
 
   proc id {
@@ -49,8 +57,16 @@ class locale {
 }
 
 pragma "private" var _here: locale;
-
 proc here return _here;
+
+const Locales: [LocaleSpace] locale;
+
+
+//proc locale.addChild(l: locale) {
+//  LocaleSpace.expand(1);	// Expand by 1.
+//  Locales[numLocales] = l;
+//  numLocales += 1;
+//}
 
 // Perform locale-specific initialization.
 // This is where global variables declared 'pragma "private"' are initialized.
@@ -67,7 +83,6 @@ proc chpl_setupLocale(id) {
   return tmp;
 }
 
-const Locales: [LocaleSpace] locale;
 // We cannot use a forall here because the default leader iterator will
 // access data structures that are not yet initialized (i.e., Locales
 // array/here).  An alternative would be to use a coforall+on and refactor
@@ -105,16 +120,39 @@ proc chpl_initLocaleTree() {
 
 chpl_initLocaleTree();
 
-//proc locale.numCores {
-//  var numCores: int;
-//  on this do numCores = __primitive("chpl_coresPerLocale");
-//  return numCores;
-//}
-
-proc chpl_int_to_locale(id) {
-  return Locales(id);
+proc set_here(loc : locale) {
+  _here = loc;
+ //task-private accessor here ...
 }
 
+proc set_here_by_id(locID: int) {
+  set_here(Locales[locID]);
+}
+
+// Prototype for chpl_malloc functions implemented in the runtime.
+extern proc chpl_mem_allocMany(l:int(32), size:int(32), description:int(32), lineno:int(32), filename:string):opaque;
+extern proc chpl_mem_realloc(ptr:opaque, number:int(32), size:int(32), description:int(32), lineno:int(32), filename:string):opaque;
+extern proc chpl_mem_free(ptr:opaque, lineno:int(32), filename:string);
+extern proc sizeof(t) : int(32);
+
+
+export locale_alloc proc locale.alloc(nbytes:int(32), mem_type:int(32), lineno:int(32), filename:string) : opaque { 
+  extern proc printf(str: string);
+  printf("l");
+  return chpl_mem_allocMany(1, nbytes, mem_type, lineno, filename);
+}
+
+proc locale.realloc(ptr: opaque, nbytes:int(32), size:int(32), mem_type:int(32), lineno:int(32), filename:string) : opaque { 
+  chpl_mem_realloc(ptr, nbytes, size, mem_type, lineno, filename);
+}
+
+proc locale.free(ptr: opaque, lineno:int(32), filename:string) { 
+  chpl_mem_free(ptr, lineno, filename);
+}
+
+proc locale.numCores {
+  return _numCores;
+}
 
 proc locale.totalThreads() {
   var totalThreads: uint;
@@ -154,6 +192,11 @@ proc locale.blockedTasks() {
   on this do blockedTasks = __primitive("chpl_numBlockedTasks");
 
   return blockedTasks;
+}
+
+proc chpl_int_to_locale(id) {
+  // Internal representation is not necessarily a dense rectangular array.
+  return Locales(id);
 }
 
 proc chpl_getPrivatizedCopy(type objectType, objectPid:int): objectType
@@ -277,4 +320,4 @@ proc chpl_startTrackingMemory() {
   }
 }
 
-}
+} // End of ChapelLocale module

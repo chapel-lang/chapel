@@ -1738,10 +1738,13 @@ buildOnStmt(Expr* expr, Expr* stmt) {
   CallExpr* onExpr = new CallExpr(PRIM_GET_REF, extractLocaleID(expr));
 
   BlockStmt* body = toBlockStmt(stmt);
+  // body->insertAtHead(new CallExpr("set_here_by_id", extractLocaleID(expr)));
+
 
   //
   // detect begin statement directly inside on-statement
   //
+  // CallExpr* memberAccess = new CallExpr(".", new UnresolvedSymExpr("here")
   BlockStmt* beginBlock = NULL;
   BlockStmt* tmp = body;
   while (tmp) {

@@ -615,13 +615,29 @@ void build_constructor(ClassType* ct) {
 
   ArgSymbol* meme = NULL;
   CallExpr* superCall = NULL;
+//#define DO_DEFAULT_ALLOC
+#ifdef DO_DEFAULT_ALLOC
   CallExpr* allocCall = NULL;
+#endif
   if (ct->symbol->hasFlag(FLAG_REF) ||
       ct->symbol->hasFlag(FLAG_SYNC) ||
       ct->symbol->hasFlag(FLAG_SINGLE)) {
-    allocCall = new CallExpr(PRIM_CHPL_ALLOC, fn->_this,
-                         newMemDesc(ct->symbol->name));
-    fn->insertAtTail(new CallExpr(PRIM_MOVE, fn->_this, allocCall));
+
+    CallExpr* defaultAllocCall = new CallExpr(PRIM_CHPL_ALLOC, fn->_this, newMemDesc(ct->symbol->name));
+    CallExpr* defaultAssignmentCall = new CallExpr(PRIM_MOVE, fn->_this, defaultAllocCall);
+
+    CallExpr* typeOfCall = new CallExpr(PRIM_RESOLVE_TYPEOF, fn->_this);
+    CallExpr* mdCall = new CallExpr(PRIM_RESOLVE_MD_NUM, newMemDesc(ct->symbol->name));
+    CallExpr* memberAccess = new CallExpr(".", new UnresolvedSymExpr("here"), new_StringSymbol("alloc"));
+    CallExpr* hereAllocCall = new CallExpr(memberAccess, typeOfCall, mdCall, buildIntLiteral("0"), new_StringSymbol("unknown"));
+    //CallExpr("sizeof" ? 
+    CallExpr* hereAssignmentCall = new CallExpr(PRIM_MOVE, fn->_this, new CallExpr(PRIM_CAST, fn->_this, hereAllocCall));
+
+    CallExpr* condExpr = new CallExpr("==", new UnresolvedSymExpr("here"), gNil);
+
+    BlockStmt* allocation = buildIfStmt(condExpr, defaultAssignmentCall, hereAssignmentCall);
+    fn->insertAtTail(allocation);
+
   } else if (!ct->symbol->hasFlag(FLAG_TUPLE)) {
     meme = new ArgSymbol(INTENT_BLANK, "meme", ct, NULL, new SymExpr(gTypeDefaultToken));
     meme->addFlag(FLAG_IS_MEME);

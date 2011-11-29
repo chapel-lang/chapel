@@ -202,8 +202,10 @@ proc numBits(type t) param where _isVolatileType(t) return numBits(_volToNon(t))
 // numBytes(type) -- returns the number of bytes in a type
 //
 
-param bitsPerByte = 8;
+param bitsPerByte:int(32) = 8;
 
+// Have to put bitsPerByte in here verbatim, because expression folding
+// does not do early type resolution for param and type expressions.
 proc numBytes(type t) param return numBits(t)/8;
 
 //

@@ -1320,6 +1320,32 @@ void CallExpr::codegen(FILE* outfile) {
     case PRIM_RSH:
       gen(outfile, "(%A >> %A)", get(1), get(2));
       break;
+    case PRIM_RESOLVE_TYPEOF:
+    {
+      bool is_struct = false;
+      if (TypeSymbol *t = toTypeSymbol(get(1)->typeInfo()->symbol)) {
+        if (toClassType(t->type)) {
+          is_struct = true;
+        }
+      }
+
+      fprintf(outfile, "sizeof(");
+      if (is_struct) fprintf( outfile, "_");          // need struct of class
+      get(1)->typeInfo()->symbol->codegen( outfile);
+      fprintf( outfile, ")");
+      break;
+    }
+    case PRIM_HERE:
+    {
+      fprintf( outfile, "_here");
+      break;
+    }
+    case PRIM_RESOLVE_MD_NUM:
+    {
+      get(1)->codegen( outfile);
+      fprintf( outfile, " + CHPL_RT_MD_NUM");
+      break;
+    }
     case PRIM_PTR_EQUAL:
     case PRIM_EQUAL:
       if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) &&
