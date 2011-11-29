@@ -1,4 +1,0 @@
-bug: Sparse domains are not thread-safe and therefore do not support parallel operations
-
-This is a case where the remove operation is parallelized via a promotion
-wrapper.

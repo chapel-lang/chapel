@@ -1,2 +1,0 @@
-return;
-writeln("hello, world");

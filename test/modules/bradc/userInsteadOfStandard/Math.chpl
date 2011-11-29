@@ -1,2 +1,0 @@
-writeln("In my math!");
-

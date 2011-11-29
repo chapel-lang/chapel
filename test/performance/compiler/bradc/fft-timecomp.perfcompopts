@@ -1,1 +1,0 @@
-probSize.chpl -O --no-checks --print-passes

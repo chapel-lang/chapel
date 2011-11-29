@@ -1,4 +1,0 @@
-GEN_CFLAGS += -I$(NANOX_INCLUDE_DIR)
-GEN_LFLAGS += -pthread -L$(NANOX_LIB_DIR) -L$(NANOX_LIB_DIR2) -Wl,-rpath=$(NANOX_LIB_DIR2)
-
-LIBS += -Wl,-whole-archive -lnanox-chpl-init -Wl,-no-whole-archive -lnanox-chpl

@@ -1,7 +1,0 @@
-bug: An exit statement without parenthesis (and arguments) results in an internal error.
-
-Compilation results in the following (internal) error:
-
-	exitWithNoParensNoArgs.chpl:1: error: Cannot call insertBefore on Expr not in a list [expr.cpp:125]
-
-

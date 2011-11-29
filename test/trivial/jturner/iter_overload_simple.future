@@ -1,4 +1,0 @@
-bug: Immediately returning values from overriden iterators disallows vtable access
-
-If you override an iterator method in a parent class, and the parent class's iterator yields immediately (instead of yielding in a loop), then a vtable
-execution of that method which should invoke the child's method instead invokes the parent's.

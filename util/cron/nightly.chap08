@@ -1,2 +1,0 @@
-#!/bin/tcsh
-~/chapel/util/cron/nightly-mta.cron >&! ~/tmp/nightly.mta-sanity.out

@@ -1,3 +1,0 @@
-a.out
-output
-*.tmp

@@ -1,3 +1,0 @@
-feature request: the identifier in the "type binding" clause
-should be interpreted according to the usual name resolution rules.
-See group meeting notes on 2010-12-09.

@@ -1,1 +1,0 @@
-probSize.chpl -srealmTypes='"linux64 linux64"' --no-warnings

@@ -1,1 +1,0 @@
-fwriteIntFailed.chpl:5: error: halt reached - ***Error: ./fwriteIntFailed.txt not open for writing***

@@ -1,2 +1,0 @@
-iteratorWithOn.chpl:3: In iterator 'g':
-iteratorWithOn.chpl:6: error: invalid use of 'on' in serial iterator

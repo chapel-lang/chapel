@@ -1,8 +1,0 @@
-pms/ss
-pms/openmp
-plugins/throttle
-plugins/slicers
-plugins/sched
-plugins/instrumentation
-plugins/barr
-arch/smp

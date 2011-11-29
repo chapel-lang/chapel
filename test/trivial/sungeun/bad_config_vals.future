@@ -1,3 +1,0 @@
-error message: Config vars out of range of type.
-
-Probably want warning/error in this case.

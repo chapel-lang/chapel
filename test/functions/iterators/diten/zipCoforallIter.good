@@ -1,2 +1,0 @@
-zipCoforallIter.chpl:1: In iterator 'f':
-zipCoforallIter.chpl:2: error: invalid use of parallel construct in serial iterator

@@ -1,4 +1,0 @@
-GEN_LFLAGS += -L$(TCMALLOC_LIB_DIR)
-LIBS += -ltcmalloc_minimal
-
-LD=$(CXX)

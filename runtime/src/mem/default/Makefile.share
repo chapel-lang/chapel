@@ -1,6 +1,0 @@
-MEM_SRCS = mem-default.c
-
-SVN_SRCS = $(MEM_SRCS)
-SRCS = $(SVN_SRCS)
-
-MEM_COMMON_OBJS = $(MEM_SRCS:%.c=$(MEM_OBJDIR)/%.o)

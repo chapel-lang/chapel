@@ -1,2 +1,0 @@
-SymbolShadowing.chpl:4: In function 'main':
-SymbolShadowing.chpl:5: error: imported symbol 'RandomNumber.arraySize' referenced before its definition

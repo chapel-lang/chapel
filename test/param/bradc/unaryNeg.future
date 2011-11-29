@@ -1,6 +1,0 @@
-semantic: unary ops on param floating point values
-
-To my tastes, our current restriction against param floating point
-functions becomes overly strict when it applies to floating point
-params.  Am I being naive in believing that evaluating these functions
-at compile time doesn't seem like it could/should be problematic?

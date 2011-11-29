@@ -1,9 +1,0 @@
-bug: type composed of runtime type is not a runtime type
-
-was:
-
-bug: tuple of array return type
-
-This test will work if the return type for foo is inferred and not explicitly
-specified.
-

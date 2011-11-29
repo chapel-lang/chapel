@@ -1,8 +1,0 @@
-semantic: what should main's return type be?
-
-Current implementation mostly assumes void; returning an int makes it
-through the compiler, but chokes in runtime.  We should enforce a
-specific type -- either void (in which case, returning from main
-should not be allowed), or int (in which case we should add a return 0
-to the end of any user-defined main function, as well as any that we
-create).

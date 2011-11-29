@@ -1,1 +1,0 @@
-writeln("In wrong bax");

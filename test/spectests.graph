@@ -1,5 +1,0 @@
-perfkeys: Total tests generated:, Ignored examples:, Ignored code segments:
-files: spectests.dat, spectests.dat, spectests.dat
-ylabel: number of test
-graphname: spectests
-graphtitle: Converted examples from the Chapel Spec

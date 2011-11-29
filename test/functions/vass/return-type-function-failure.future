@@ -1,8 +1,0 @@
-bug: compiler internal error
-
-Right now I am getting:
-
-return-type-function-failure.chpl:4: In function 'valfun':
-return-type-function-failure.chpl:4: error: Cannot call insertBefore on Expr not in a list [expr.cpp:125]
-
-The compiler should emit an user error instead.

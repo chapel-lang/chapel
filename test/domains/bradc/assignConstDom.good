@@ -1,1 +1,0 @@
-modArrDom.chpl:11: error: passing const domain to function that modifies domains

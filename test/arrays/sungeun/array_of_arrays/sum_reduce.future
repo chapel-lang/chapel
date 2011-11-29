@@ -1,5 +1,0 @@
-bug: Sum reduce of arrays of arrays seg faults
-
-This is derived from a bug reported from Michael Ferguson's 12/2010
-workshop.  Sum reduction of arrays of arrays results in a seg fault at
-runtime.

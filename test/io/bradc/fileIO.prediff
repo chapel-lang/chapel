@@ -1,2 +1,0 @@
-#!/bin/csh -f
-cat fileIO.out.txt >> $2

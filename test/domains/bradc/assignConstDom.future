@@ -1,4 +1,0 @@
-bug: const domains modifiable via function calls
-
-This test shows that const domains can be illegally
-modified via a function call.

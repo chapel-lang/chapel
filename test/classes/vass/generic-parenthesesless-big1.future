@@ -1,9 +1,0 @@
-bug: compiler reports an error incorrectly
-
-Currently I am getting:
-  generic-parenthesesless-big1.chpl:11: error: actual type is unknown or generic
-
-This is the same as generic-parenthesesless-3.future.
-
-This test contains a few variations at once.
-See other generic-parenthesesless-*.chpl for smaller examples.

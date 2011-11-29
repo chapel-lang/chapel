@@ -1,4 +1,0 @@
-bug: Continues in param loops with no label cause compiler assertion.
-
-I'm not sure what is supposed to happen, but I'm pretty sure it's not
-supposed to cause an assertion.

@@ -1,3 +1,0 @@
-true
-false
-readWriteBool.chpl:9: error: halt reached - read of bool value that is neither true nor false

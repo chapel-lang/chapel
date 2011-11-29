@@ -1,2 +1,0 @@
-translate.chpl:6: In function 'my_translate':
-translate.chpl:7: error: translate not supported on sparse domains

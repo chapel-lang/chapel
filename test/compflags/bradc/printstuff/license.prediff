@@ -1,2 +1,0 @@
-#!/bin/csh -f
-./licensehelp.csh $1 $2 $3 > license.good

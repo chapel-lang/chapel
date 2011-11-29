@@ -1,4 +1,0 @@
-bug: arrays with negative stride don't work
-
-A variation on arrNegDom.future
-

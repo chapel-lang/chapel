@@ -1,4 +1,0 @@
-deep_nest.chpl:27: In function 'method':
-deep_nest.chpl:31: error: unresolved call 'E.fun(3, 4.5)'
-deep_nest.chpl:5: note: candidates are: B.fun(x: int, y: real)
-deep_nest.chpl:15: note:                 E.fun(x: int, y: int)

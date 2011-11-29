@@ -1,3 +1,0 @@
-warning: Ambiguous module source file -- using ./bar.chpl over subdir/bar.chpl
-In ./bar
-In foo

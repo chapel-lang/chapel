@@ -1,2 +1,0 @@
-resolveGeneric.chpl:23: In function 'bar':
-resolveGeneric.chpl:24: error: invalid use of 'new'

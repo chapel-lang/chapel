@@ -1,2 +1,0 @@
-testOpaqueClass.chpl:23: In function 'main':
-testOpaqueClass.chpl:27: error: unresolved call 'C.a'

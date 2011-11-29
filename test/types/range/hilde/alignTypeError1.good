@@ -1,1 +1,0 @@
-alignTypeError1.chpl:1: error: type mismatch applying 'align' to range(int) with int(64)

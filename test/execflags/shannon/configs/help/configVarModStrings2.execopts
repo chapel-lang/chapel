@@ -1,1 +1,0 @@
--smodule1.x="this is a test" -smodule2.x="of setting strings in two modules" -h -nl 1

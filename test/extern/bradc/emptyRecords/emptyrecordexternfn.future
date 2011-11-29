@@ -1,7 +1,0 @@
-bug: pruning of empty records and externs
-
-This is similar to emptyexternrecord.chpl except in this case the
-empty record is an internal Chapel type.  This is a little trickier
-because here it seems reasonable to prune an internal Chapel type that
-is determined to be empty, yet that means we have nothing left to pass
-into the external function.

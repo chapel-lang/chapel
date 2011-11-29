@@ -1,1 +1,0 @@
-writeln("Running program");

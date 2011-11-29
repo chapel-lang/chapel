@@ -1,9 +1,0 @@
-feature request: isEmpty method for domains
-
-Current methods make domain.numIndices==0 the simplest
-query for whether a domain is empty, which doesn't look
-look quite right.  For what it's worth, I say that from
-having used this query a whole, whole lot.  It would also 
-be nice to know that I can query for emptiness without 
-expending the extra effort of calculating the precise 
-number of elements.

@@ -1,2 +1,0 @@
-# This test highlights a qthreads issue.
-CHPL_TASKS != qthreads

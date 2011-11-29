@@ -1,2 +1,0 @@
-thisWrongSize.chpl:12: In function 'this':
-thisWrongSize.chpl:17: error: unresolved access of '[domain(1,int,0)] real' by '(int(64))'

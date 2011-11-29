@@ -1,3 +1,0 @@
-This was Richard's second version of his stencil that he sent me.
-It had some syntax errors and combined tuple indexing and scalar
-iteration in the same loop in illegal ways.

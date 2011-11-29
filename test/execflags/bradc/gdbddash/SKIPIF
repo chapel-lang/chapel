@@ -1,2 +1,0 @@
-# GASNet can run gdb but can't send a stdin file to each window
-CHPL_COMM == gasnet

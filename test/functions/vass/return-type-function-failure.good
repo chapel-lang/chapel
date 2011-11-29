@@ -1,1 +1,0 @@
-return-type-function-failure.chpl:4: error: cannot use a function as a type, unless it is an invocation of a type function

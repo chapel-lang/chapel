@@ -1,3 +1,0 @@
-semantic: can a reindex operation change an array's distribution?
-
-Should this be an error or should it work somehow?

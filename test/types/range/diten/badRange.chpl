@@ -1,2 +1,0 @@
-var r = .. ..;
-writeln(r);

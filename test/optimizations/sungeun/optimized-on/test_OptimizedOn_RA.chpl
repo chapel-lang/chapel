@@ -1,4 +1,0 @@
-use ra;
-
-ra.main();
-

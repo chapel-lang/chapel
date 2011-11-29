@@ -1,4 +1,0 @@
-bug: promoting a function over an array from a var function fails
-
-Promoting a function with an explicit return type over an array returned from
-a var function fails to compile.

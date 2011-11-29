@@ -1,4 +1,0 @@
-perfkeys: Time elapsed :
-graphkeys: n=50000000
-ylabel: Time (seconds)
-graphtitle: N-Body with for loops (with explict ranges)

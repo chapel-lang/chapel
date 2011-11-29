@@ -1,1 +1,0 @@
-writeln(ascii("hello world"));

@@ -1,5 +1,0 @@
-bug: reduction of arrays
-
-We are seeing a strange bug where in declaring an  array C that is dead (unused)
-is causing a floating point exception, even though it is never referenced. Once
-C is removed, we then see "error: attempt to dereference nil".

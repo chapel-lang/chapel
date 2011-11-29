@@ -1,5 +1,0 @@
-bug: reindexing with a negatively-strided range doesn't work correctly
-
-The third reindexing in this test walks off into dead values rather
-than cueing off of the negative stride and counting from the top of
-the loop as it should.

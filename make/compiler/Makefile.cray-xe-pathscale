@@ -1,5 +1,0 @@
-# put XE cross-compilation pathscale-specific settings here
-
-XE_GEN_CFLAGS = -OPT:Olimit=0
-
-include $(CHAPEL_ROOT)/make/compiler/Makefile.cray-xe

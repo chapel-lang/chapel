@@ -1,8 +1,0 @@
-bug: compiler crashes with an assertion
-
-Currently I get (depending on --devel):
-
-error: assertion error [callInfo.cpp:32]
-error: internal failure CAL0032 chpl Version 1.2.0.18356
-
-While the code may or may not be legal, the compiler should react gracefully.

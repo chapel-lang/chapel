@@ -1,2 +1,0 @@
-expand.chpl:3: In function 'my_expand':
-expand.chpl:4: error: expand not supported on sparse domains

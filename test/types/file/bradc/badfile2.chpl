@@ -1,1 +1,0 @@
-thisVariableDoesntExist.writeln();

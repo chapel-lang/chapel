@@ -1,2 +1,0 @@
-writeln("Hello, world");
-exit;

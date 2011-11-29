@@ -1,3 +1,0 @@
-memory: string leaks
-
-memory: leaking local variables

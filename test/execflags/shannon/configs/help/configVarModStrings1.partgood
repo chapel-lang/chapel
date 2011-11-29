@@ -1,6 +1,0 @@
-module1 config vars:
-                       x: string (configured to this is a test)
-
-module2 config vars:
-                       x: int (configured to 888)
-                       z: string (configured to no module name given)

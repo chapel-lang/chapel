@@ -1,3 +1,0 @@
-error: Ambiguous main() function:
-twomains.chpl:4: note: in module twomains
-twomains.chpl:11: note: in module twomains

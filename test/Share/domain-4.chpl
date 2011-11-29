@@ -1,8 +1,0 @@
-
-var Cliques : domain(1);
-var randomnums = (/ 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.10 /);
-var cliqueSizes[Cliques] : int;
-cliqueSizes = ceil(maxCliqueSize*randomnums);
-Cliques = 1..10;
-var AdjDomain : domain [i in Cliques] * (2) =
-  let k = cliqueSize(i) in (1..k, 1..k);

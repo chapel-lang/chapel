@@ -1,2 +1,0 @@
-paramExample2.chpl:12: error: unresolved call 'widthOfResult(real, int)'
-paramExample2.chpl:4: note: candidates are: widthOfResult(param x, param y)

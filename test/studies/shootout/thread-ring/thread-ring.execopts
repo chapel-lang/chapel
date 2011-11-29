@@ -1,3 +1,0 @@
---N=2000 --nthreads=102 # thread-ring.N=2000.nthreads=102.good
---N=1000 --nthreads=204 # thread-ring.N=1000.nthreads=204.good
-# This is the reference size --N=50000000            # thread-ring.N=50000000.good

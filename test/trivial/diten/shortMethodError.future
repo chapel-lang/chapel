@@ -1,4 +1,0 @@
-error message: method with only a return statement has bad error message
-
-The method C.shortMethod gets called C.shortMethodreturn in the unresolved call
-error message.

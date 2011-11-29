@@ -1,4 +1,0 @@
-perfkeys: Time elapsed :
-graphkeys: fasta
-graphtitle: Fasta Shootout Benchmark
-ylabel: Time (seconds)

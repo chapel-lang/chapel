@@ -1,1 +1,0 @@
-promoteRange2.chpl:1: error: Bounds of '..' must be integers of compatible types, when specified.

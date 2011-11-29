@@ -1,8 +1,0 @@
-semantic: disallow parenthesis-less constructors
-
-Brad and Vass feel that Chapel should not allow constructor methods to
-be declared without parentheses.
-
-Note: in the current implementation one can write both constructors
-(both with no arguments) at the same time. Then when invoking
-new classname(), the compiler finds that call ambiguous.

@@ -1,2 +1,0 @@
-ra-bradc-duplicateErrors.chpl:39: In function 'VerifyResults':
-ra-bradc-duplicateErrors.chpl:49: error: 'numErrors' undeclared (first use this function)

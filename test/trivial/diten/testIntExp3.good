@@ -1,4 +1,0 @@
-0
-0
-1
-testIntExp3.chpl:8: error: halt reached - cannot compute 0 ** -1

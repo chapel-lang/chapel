@@ -1,8 +1,0 @@
-error message: "chpl_destroy" should not appear in the error message
-
-error message: destructors may not be defined for a record
-
-error message: class instances that have not been created (using new)
-may not be destroyed
-
-error message: records may not be destroyed

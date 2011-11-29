@@ -1,4 +1,0 @@
-#!/bin/csh -f
-./copyrighthelp.csh $1 $2 $3 > zcopyhelp.good
-echo >> zcopyhelp.good
-./helphelp.csh $1 $2 $3 >> zcopyhelp.good

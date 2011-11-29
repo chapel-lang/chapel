@@ -1,4 +1,0 @@
-transition-warning-return-expr.chpl:1: warning: the 'def' keyword is deprecated - replace it with 'iter'
-transition-warning-return-expr.chpl:1: In iterator 'i11f':
-transition-warning-return-expr.chpl:3: warning: returning a value in an iterator is deprecated; replace it with a yield of that value, followed by a return with no expression
-11f-1.11f-2.

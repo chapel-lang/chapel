@@ -1,3 +1,0 @@
-set_problem/hierarchy_parameters_2d.txt
-set_problem/velocity_2d.txt
-set_problem/time.txt

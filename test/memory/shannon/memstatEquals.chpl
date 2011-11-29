@@ -1,1 +1,0 @@
-writeln("No, you may not follow memtrace or memtrack with an equals sign.");

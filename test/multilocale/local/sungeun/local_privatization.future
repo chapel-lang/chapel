@@ -1,6 +1,0 @@
-bug: Variable declarations within local blocks for types with privatized data result in seg fault or "cannot access remote data in local block" error.
-
-This currently fails because privatization requires communication.
-Specifically, chpl_localeTree which is used to fan out the privatized
-data has locales for its fields.  Access to these locales require
-communication which is not generated for local blocks.

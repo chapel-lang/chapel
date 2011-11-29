@@ -1,1 +1,0 @@
-test_return_error.chpl:1: error: return statement is not in a function or iterator

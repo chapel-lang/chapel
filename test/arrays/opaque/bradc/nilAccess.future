@@ -1,7 +1,0 @@
-error message: nil opaque bounds checking
-
-It would be nice to customize the opaque bounds checking error message
-for the case when the index is nil since it's difficult to reason
-about "bounds" in an opaque domain/array context (though this error
-message would still pertain if the index of one opaque domain was used
-to access an opaque array defined over a disjoint opaque domain.

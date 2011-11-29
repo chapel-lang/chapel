@@ -1,2 +1,0 @@
-queryClassArgGenerics-bad2.chpl:11: error: 'tt' has multiple definitions, redefined at:
-  queryClassArgGenerics-bad2.chpl:12

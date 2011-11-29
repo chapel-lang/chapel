@@ -1,4 +1,0 @@
-bug: casts of enums with initialization expressions is broken
-
-Enum initialization expressions are not folded early enough.  See
-test_foldEnumOp.future for details.

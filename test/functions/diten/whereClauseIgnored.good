@@ -1,1 +1,0 @@
-whereClauseIgnored.chpl:1: error: illegal where clause on non-generic function

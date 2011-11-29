@@ -1,3 +1,0 @@
-bug: array alias constructor argument that changes stridable param fails
-
-The array should be reindexed to match the domain in the class.

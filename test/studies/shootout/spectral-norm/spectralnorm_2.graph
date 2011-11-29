@@ -1,4 +1,0 @@
-perfkeys: Time elapsed :
-graphkeys: spectral-norm
-graphtitle: Spectral Norm Shootout Benchmark (BlockDist)
-ylabel: Time (seconds)

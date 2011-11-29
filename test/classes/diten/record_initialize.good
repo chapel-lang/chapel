@@ -1,3 +1,0 @@
-BBB.initialize()
-AAA.initialize()
-(b = (a = 0, b = 0, c = 0))

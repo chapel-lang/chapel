@@ -1,1 +1,0 @@
-closedWithoutOpen.chpl:3: error: halt reached - ***Error: Trying to close "./closedWithoutOpen.txt" which isn't open***

@@ -1,1 +1,0 @@
-freadIntUnopenedFile.chpl:4: error: halt reached - ***Error: You must open "./unopenedFile.txt" before trying to read from it***

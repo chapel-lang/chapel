@@ -1,1 +1,0 @@
-writeln("black" + " and " + "white");

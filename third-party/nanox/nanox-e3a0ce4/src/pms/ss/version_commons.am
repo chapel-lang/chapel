@@ -1,4 +1,0 @@
-sources = \
-        $(top_srcdir)/src/pms/ss/ss_init.cpp\
-	$(END) 
-

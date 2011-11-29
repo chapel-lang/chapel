@@ -1,5 +1,0 @@
-A
-B
-C
-D
-varEnumOutOfBounds.chpl:10: error: halt reached - enumerated type out of bounds

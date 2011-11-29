@@ -1,3 +1,0 @@
-semantic: multiple assignments to const fields in constructors
-
-error message: assigning a const field multiple times in the constructor does not result in an error message

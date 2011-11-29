@@ -1,9 +1,0 @@
-sources = \
-	$(top_srcdir)/src/pms/chapel/chpl_nanos.h\
-        $(top_srcdir)/src/pms/chapel/chpl_main.cpp\
-        $(top_srcdir)/src/pms/chapel/chpl_sync.cpp\
-	$(END) 
-
-chpl_dir=@CHAPEL_HOME@
-chpl_flags=-I$(chpl_dir)/runtime/include -Wmissing-declarations -Werror
-

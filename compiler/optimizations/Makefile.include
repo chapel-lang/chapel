@@ -1,5 +1,0 @@
-OPTIMIZATIONS_OBJDIR = $(COMPILER_ROOT)/optimizations/$(OBJ_SUBDIR)
-
-ALL_SRCS += optimizations/*.cpp
-
-include $(COMPILER_ROOT)/optimizations/Makefile.share

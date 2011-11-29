@@ -1,5 +1,0 @@
-bug: Crash on initialization of single array.
-
-Array of single ints initializes fine, but single array of ints crashes during initialization.
-
-Probably the right fix for this is to disallow that syntax.

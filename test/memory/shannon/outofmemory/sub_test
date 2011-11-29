@@ -1,6 +1,0 @@
-#!/bin/csh -f
-
-limit vmemoryuse 256M
-
-../../../../util/test/sub_test $1
-

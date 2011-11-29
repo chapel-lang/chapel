@@ -1,4 +1,0 @@
-test_whole_array_assignment_has_been_serialized_warnings.chpl:3: warning: whole array assignment has been serialized (see note in $CHPL_HOME/STATUS)
-test_whole_array_assignment_has_been_serialized_warnings.chpl:4: warning: whole array assignment has been serialized (see note in $CHPL_HOME/STATUS)
-test_whole_array_assignment_has_been_serialized_warnings.chpl:11: warning: whole array assignment has been serialized (see note in $CHPL_HOME/STATUS)
-test_whole_array_assignment_has_been_serialized_warnings.chpl:12: warning: whole array assignment has been serialized (see note in $CHPL_HOME/STATUS)

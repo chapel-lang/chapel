@@ -1,2 +1,0 @@
-#!/bin/sh
-test -x nocodegen && echo "Oops, there's a binary!" >> $2

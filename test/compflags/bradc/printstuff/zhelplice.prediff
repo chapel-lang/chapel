@@ -1,4 +1,0 @@
-#!/bin/csh -f
-./licensehelp.csh $1 $2 $3 > zhelplice.good
-echo >> zhelplice.good
-./helphelp.csh $1 $2 $3 >> zhelplice.good

@@ -1,8 +1,0 @@
-#!/usr/bin/env perl
-
-print "Launch requested on $ARGV[1] locales\n";
-print "Launch command: @ARGV[2..$#ARGV]\n";
-
-exec @ARGV[2..$#ARGV] or print STDERR "ERROR: couldn't launch $ARGV[2]\n";
-exit($?);
-

@@ -1,2 +1,0 @@
-# GASNet allocates a bunch of extra stuff, so don't run this test
-CHPL_COMM == gasnet

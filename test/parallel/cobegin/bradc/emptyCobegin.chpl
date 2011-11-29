@@ -1,3 +1,0 @@
-cobegin {
-}
-writeln("Test worked");

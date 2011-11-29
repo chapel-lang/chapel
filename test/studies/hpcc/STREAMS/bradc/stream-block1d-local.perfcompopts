@@ -1,1 +1,0 @@
-../../common/probSize.chpl -O --no-checks --local

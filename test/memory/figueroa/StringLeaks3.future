@@ -1,6 +1,0 @@
-memory: string leaks
-
-Was:
-
-Bug: Memory is leaked when a (string) variable is assigned to more than once
-When s2 is assigned to the second time, it should be freed and then assigned to.

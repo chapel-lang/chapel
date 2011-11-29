@@ -1,5 +1,0 @@
-# put XT cross-compilation gnu-specific settings here
-
-include $(CHAPEL_ROOT)/make/compiler/Makefile.cray-xt
-
-GEN_CFLAGS += -std=c99

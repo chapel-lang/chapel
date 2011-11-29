@@ -1,6 +1,0 @@
-start reduce
-finish reduce
-(countNO = 1, dim = 3 1 1) (countNO = 11, dim = 11 1 1) (countNO = 21, dim = 21 1 1) (countNO = 31, dim = 31 1 1) (countNO = 41, dim = 41 1 1) (countNO = 51, dim = 51 1 1) (countNO = 61, dim = 61 1 1) (countNO = 71, dim = 71 1 1) (countNO = 81, dim = 81 1 1) (countNO = 91, dim = 93 1 1)
-6 10 10 10 10 10 10 10 10 14
-(countNO = 0, dim = 21 6 6) (countNO = 0, dim = 115 10 10) (countNO = 0, dim = 215 10 10) (countNO = 0, dim = 315 10 10) (countNO = 0, dim = 415 10 10) (countNO = 0, dim = 515 10 10) (countNO = 0, dim = 615 10 10) (countNO = 0, dim = 715 10 10) (countNO = 0, dim = 815 10 10) (countNO = 0, dim = 1309 14 14)
-1050.0
