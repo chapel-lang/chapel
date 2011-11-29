@@ -1,0 +1,28 @@
+#!/usr/bin/env perl
+
+# simple1.prediff output
+# 
+# Removes the pthread_attr_destroy warning output from Valgrind.
+#
+
+$file = $ARGV[1];
+system( "mv $file $file.tmp");
+open( INFILE, "<$file.tmp");
+open( OUTFILE, ">$file");
+
+$skip_next = 0;
+while ($line = <INFILE>) {
+    if ($skip_next) {
+        $skip_next = 0;
+        next;
+    } elsif ($line =~ /pthread_attr_destroy does nothing/) {
+        $skip_next = 1;
+        next;
+    } else {
+        print OUTFILE $line;
+    }
+}
+
+close( OUTFILE);
+close( INFILE);
+system( "rm $file.tmp");

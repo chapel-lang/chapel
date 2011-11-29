@@ -1,0 +1,5 @@
+bug: slicing an unsigned range with a signed range is not supported
+
+Right now I get ChapelBase.chpl:635: error: unable to resolve return type
+
+This is the same as slice-2.*, except for the order of the slice operands.

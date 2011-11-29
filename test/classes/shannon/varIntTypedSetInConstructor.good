@@ -1,0 +1,7 @@
+const_testSix.thisShouldBeSix         = 6
+const_testEleven.thisShouldBeEleven   = 11
+const_testSixteen.thisShouldBeSixteen = 16
+
+var_testSix.thisShouldBeSix         = 6
+var_testEleven.thisShouldBeEleven   = 11
+var_testSixteen.thisShouldBeSixteen = 16

@@ -1,0 +1,7 @@
+feature request: profiling with line numbers
+
+This test began failing due to a line number propagation issue which
+Jacob hopes to get back to.
+
+At present, this test does not even compile because of standard/Profiling.chpl
+(see CrayPatProfilerTest1.future for notes).

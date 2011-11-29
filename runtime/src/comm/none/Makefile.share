@@ -1,0 +1,16 @@
+COMM_LAUNCHER_SRCS = \
+        comm-none-locales.c \
+
+COMM_SRCS = \
+	$(COMM_LAUNCHER_SRCS) \
+	comm-none.c \
+
+SVN_SRCS = $(COMM_SRCS)
+SRCS = $(SVN_SRCS)
+
+COMM_OBJS = \
+	$(COMM_SRCS:%.c=$(COMM_OBJDIR)/%.o)
+
+COMM_LAUNCHER_OBJS = \
+	$(COMM_LAUNCHER_SRCS:%.c=$(COMM_LAUNCHER_OBJDIR)/%.o)
+

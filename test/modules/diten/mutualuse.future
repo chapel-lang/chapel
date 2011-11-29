@@ -1,0 +1,5 @@
+bug: out-of-order resolution
+
+bug: modules that mutually use each other can have some types lost
+
+I think M2.n should be assigned the default value of the C class - nil.

@@ -1,0 +1,3 @@
+funParamThis.chpl:9: error: ambiguous call 'foo()'
+funParamThis.chpl:1: note: candidates are: param foo()
+funParamThis.chpl:5: note:                 foo()

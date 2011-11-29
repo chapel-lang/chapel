@@ -1,0 +1,19 @@
+.TH qtimer_fastrand 3 "APRIL 2011" libqthread "libqthread"
+.SH NAME
+.B qtimer_fastrand
+\- generate a quick random number based on the high-resolution timer
+.SH SYNOPSIS
+.B #include <qthread/qtimer.h>
+
+.I long
+.br
+.B qtimer_fastrand
+(void);
+.SH DESCRIPTION
+This function returns a quick random number based on the high-resolution timer.
+The return value is between -2^31 and 2^31.
+.SH SEE ALSO
+.BR qtimer_create (3),
+.BR qtimer_destroy (3),
+.BR qtimer_start (3),
+.BR qtimer_stop (3)

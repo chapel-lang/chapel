@@ -1,0 +1,2 @@
+emptyCobegin.chpl:1: warning: cobegin has no effect if it contains fewer than 2 statements
+Test worked

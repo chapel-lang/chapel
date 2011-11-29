@@ -1,0 +1,7 @@
+bug: tuple is not constructed out when parenthesizing a tuple expansion expression
+
+Currently 'return' just picks r's first component.
+
+See also:
+  return-of-tuple-expansion-*
+  types/tuple/vass/tuple-expansion-with-parens-*

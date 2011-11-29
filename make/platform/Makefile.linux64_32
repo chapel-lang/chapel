@@ -1,0 +1,6 @@
+# Makefile.linux64_32: contains linux64-specific variables for compiling
+# 32-bit code
+#
+
+CFLAGS += -m32
+LDFLAGS += -m32

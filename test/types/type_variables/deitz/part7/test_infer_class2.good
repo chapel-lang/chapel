@@ -1,0 +1,2 @@
+test_infer_class2.chpl:6: error: unresolved call 'C(f=1)'
+test_infer_class2.chpl:1: note: candidates are: C(type t, f: t)

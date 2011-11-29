@@ -1,0 +1,2 @@
+monte3.chpl:13: warning: reduce has been serialized (see note in $CHPL_HOME/STATUS)
+3.1448

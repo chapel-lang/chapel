@@ -1,0 +1,80 @@
+============================
+Using Chapel on an SGI Altix
+============================
+
+The Chapel team does not have access to an SGI Altix for the purposes
+of testing, so this file describes the experiences that other users
+have had in hopes that it will be useful to future Altix users.  This
+file assumes a certain amount of familiarity building and using Chapel
+in single- and multi-locale settings such as desktops or commodity
+clusters.
+
+As an opening note, performance on the Altix was not quite as good as
+we'd expected based on what we see on other platforms.  We conjecture
+that the cause is that our runtime pthreads are not bound to specific
+cores/processors and expect that some overhead creeps in as the OS
+tries to schedule them -- that perhaps it ends up moving them around
+more than is ideal.  The Altix represents a larger core count per node
+(not to mention a different OS) than the platforms that we've focused
+on to date, so it may be more sensitive to this.  As a result, a
+possible area of future work would be to look into how our runtime
+might be modified to do this binding and/or to utilize a user-level
+tasking library that multiplexes logical tasks onto a fixed set of
+pthreads equal to (and bound to) the number of cores.
+
+Due to its support for shared memory, an Altix machine can either be
+viewed as a large single locale, or as a multi-locale machine.  Our
+experience is that better performance is obtained when treating it as
+a single-locale machine.  However, since most Altix installations are
+organized as multi-partition machines, you will need to treat it as a
+multi-locale machine if you want to span multiple partitions.
+
+For the single-locale version, you should be able to build Chapel in
+the standard way as described in $CHPL_HOME/README, making sure that
+CHPL_COMM is unset or set to 'none'.
+
+For multi-locale executions, Chapel uses GASNet as our means of
+specifying inter-locale communication.  Left to its own devices,
+GASNet prefers to use its SHMEM conduit on the SGI Altix because it's
+considered the lowest overhead communication layer with which to
+implement GASNet.  Unfortunately, GASNet's SHMEM conduit is not
+thread-safe (because SHMEM itself is apparently not thread-safe); or,
+to use GASNet terminology, it does not support PAR mode.  Chapel's
+execution model requires PAR mode, and therefore the suboptimal MPI
+conduit needs to be used for GASNet executions.  
+
+This can be done using the following settings:
+
+        go to chapel source directory
+
+        export CHPL_HOME=$(pwd)
+        export CHPL_COMM=gasnet
+        export CHPL_COMM_SUBSTRATE=mpi
+        # edit make/Makefile.base to include
+        CHPL_GASNET_CFG_OPTIONS += --disable-aligned-segments
+
+In our experience, different Altix installations support MPI in
+different ways.  If your Altix machine supports MPI via an mpicc
+compiler command and launches using an mpiexec command, then make the
+following settings:
+
+        export MPI_CC=mpicc
+        export MPI_LDFLAGS=-mt
+        export MPI_RUNCMD="mpiexec -n %N %C"
+        export MPI_LIBS=
+
+If on the other hand, your Altix machine supports MPI via a normal
+compiler invocation and by linking in the mpi libraries, make the
+following settings:
+
+        export MPI_CC=cc        (or whatever compiler you wish to use)
+        export MPI_LIBS=-lmpi
+
+Then build the Chapel compiler/runtime again using 'make'/'gmake'
+
+Over time, we would like to minimize the number of settings that a
+user has to manually make by introducing the concept of an 'altix'
+platform for Chapel that implies the above settings in our scripts and
+Makefiles.  If you would like to help with this effort or can provide
+us with an account so that we can develop it (or Makefile patches that
+we could commit back to our source tree), please let us know.

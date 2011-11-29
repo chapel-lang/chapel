@@ -1,0 +1,10 @@
+semantic bug: Unnecessary copies of records lead to excessive calls of the record destructor
+
+Ideally this program should only call the record destructor once, but
+given our current default blank intent for records it gets called
+every time the record gets passed into any function (at function
+exit).
+
+This problem could be solved either by optimization or by implementing
+const ref as the default for blank record intents.
+

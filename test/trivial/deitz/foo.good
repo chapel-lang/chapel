@@ -1,0 +1,1 @@
+foo.chpl:4: error: illegal use of module 'foo'

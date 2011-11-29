@@ -1,0 +1,11 @@
+
+- main program:0 is active
+- reports.chpl:4 is active
+--------------------------------
+In thread
+Known tasks:
+Pending tasks:
+Program is deadlocked!
+Task report
+Waiting at: reports.chpl:10
+Waiting at: reports.chpl:6

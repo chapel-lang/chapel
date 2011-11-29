@@ -1,0 +1,28 @@
+A bunch of implementations of reductions using
+instantiated classes to exercise mechanisms that
+we're likely to need for implementing reductions
+in the compiler.
+
+manual             -- first version I wrote, uses a single type variable
+
+inferstatetype     -- infer state type rather than declaring explicitly
+inferstatetype2    -- infer return type of ident() function
+
+identisvar         -- store ident as a variable rather than function
+identisinferredvar -- infer ident variable type
+
+usestate           -- put the state inside the class rather than outside
+usestate2          -- similar, but don't refer to state outside the class
+
+promote            -- promote combiner
+
+twouses            -- instantiate twice (integer and float)
+threeuses          -- instantiate three times (integer, float, string)
+
+usetype            -- use the type in the class to declare things
+usetype2           -- use array's element type to declare reduction type too
+
+threeclasstypes    -- use three types in reduction, setting two in terms
+                      of the third
+threeclasstypes-manual -- use three types in reduction, setting all explicitly
+threeclasstypes-construct -- use three types, trying to set all in constructor

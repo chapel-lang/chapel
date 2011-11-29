@@ -1,0 +1,6 @@
+bug: out-of-order resolution
+
+This test shows an inadequacy in function resolution in which multiple
+functions cannot be resolved at the same time.  This should be fixed
+with a queue of calls that need to be resolved and the ability to skip
+over some of the calls.

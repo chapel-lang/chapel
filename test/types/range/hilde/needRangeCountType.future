@@ -1,0 +1,8 @@
+bug: Cannot represent the length of a maximal range.
+
+On a range like min(int)..max(int), length returns zero rather than the actual
+length of the range (which in this case would be max(uint) + 1.
+
+Calculations like these should be allowed to proceed without loss of precision,
+and then report an error if an attempt is made to shoehorn the resulting value
+back into a smaller type.

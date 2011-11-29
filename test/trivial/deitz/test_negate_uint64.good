@@ -1,0 +1,1 @@
+test_negate_uint64.chpl:3: error: illegal use of '-' on operand of type uint(64)

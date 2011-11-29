@@ -1,0 +1,39 @@
+.TH qthread_debuglevel 3 "APRIL 2011" libqthread "libqthread"
+.SH NAME
+.B qthread_debuglevel
+\- returns status information from the runtime
+.SH SYNOPSIS
+.B #include <qthread.h>
+
+.I size_t
+.br
+.B qthread_debuglevel
+.RI "(const enum introspective_state " type );
+.SH DESCRIPTION
+This function is for querying the runtime about itself. The
+.I type
+argument specifies what information is desired. The valid values of
+.I type
+include:
+.TP 4
+.B STACK_SIZE
+This causes the function to return the size stack, measured in bytes, that all
+spawned qthreads receive.
+.TP
+.B BUSYNESS
+This causes the function to return the approximate number of threads available
+in the run queue of the current shepherd.
+.TP
+.B ACTIVE_SHEPHERDS
+This causes the function to return the number of shepherds currently active and
+scheduling threads. This is equivalent to the function
+.BR qthread_num_shepherds ().
+.TP
+.B TOTAL_SHEPHERDS
+This causes the funciton to return the total number of shepherds that exist,
+whether active or inactive.
+.SH SEE ALSO
+.BR qthread_id (3),
+.BR qthread_num_shepherds (3),
+.BR qthread_retloc (3),
+.BR qthread_stackleft (3)

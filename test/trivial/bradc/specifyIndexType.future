@@ -1,0 +1,41 @@
+semantic: explicit type on indices
+
+Notes from 04/30/08 meeting
+---------------------------
+* for var iterators, if this capability was used, the reference
+  semantics could/should get lost.  This seems reasonable and
+  consistent with the rest of the language
+
+* implementation options:
+
+  Given: for i: type in iter() { ... }
+
+  Case I: const i: type;
+          i = index;  // where index is the thing yielded by iter()
+
+  Case II: const i = index:type;
+
+  Case III: if index.type != type then compilerError(...);
+
+* Original intent of the future was one of the first two, not the
+  third.
+
+* Case I is probably most consistent with the language semantics, but
+  it's not as flexible.  Though arguably, one could get the case II
+  semantics if case I was implemented by casting the iterator
+  expression rather than the index itself.
+
+Previously
+----------
+
+should we allow these?
+
+how does this interact with var iterators since we are not doing an
+assignment here?  does the type have to match exactly?  this is
+similar to return type specifications.  how is this done?
+
+unimplemented feature: explicit typing of for/forall index variable
+
+We should allow the type of a for/forall index variable to be
+specified if the user wants it to be.  This used to be in the spec,
+not sure whether it is anymore or not.

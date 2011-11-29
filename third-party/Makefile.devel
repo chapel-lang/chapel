@@ -1,0 +1,12 @@
+armci: FORCE
+	cd armci && $(MAKE)
+
+mpich1: FORCE
+	cd mpich1 && $(MAKE)
+
+openmpi: FORCE
+	cd openmpi && $(MAKE)
+
+pvm: FORCE
+	cd pvm && $(MAKE)
+

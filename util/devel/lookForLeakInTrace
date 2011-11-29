@@ -1,0 +1,24 @@
+#!/usr/bin/env perl
+
+while (<>) {
+  $line = $_;
+  if ($line =~ m/^malloc/) {
+    m/0x(.*)$/;
+    $addr = $1;
+    $mallocs{$addr} = $line;
+  } elsif ($line =~ m/^free/) {
+    m/0x(.*)$/;
+    $addr = $1;
+    $mallocs{$addr} = "free free free";
+  }
+}
+
+$size = 0;
+while (($key, $value) = each(%mallocs)) {
+  if (!($value =~ /free free free/)) {
+    print $value;
+    $value =~ m/for (.*) items of size (.*) for/;
+    $size = $size + $1 * $2;
+  }
+}
+print "Not freed: $size\n";

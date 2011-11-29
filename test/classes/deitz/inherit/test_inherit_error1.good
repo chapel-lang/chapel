@@ -1,0 +1,1 @@
+test_inherit_error1.chpl:1: error: Class hierarchy is cyclic

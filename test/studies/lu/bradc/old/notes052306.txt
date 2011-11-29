@@ -1,0 +1,97 @@
+* Update on HPLS and Chapel Status
+
+* Big picture: John and M-B interested in writing Chapel codes
+
+  - John would like to take some of the standard algorithms and see
+    what they look like; and to push it into some of the arenas that
+    people haven't gone to before in languages like this.
+
+    o like, a year from now, we ought to be able to walk into a
+      meeting with some fairly interesting, but not large in terms of
+      source code, all written in Chapel.  Things that aren't obvious
+      from the beginning about how you are going to do it.
+
+    o Like: sparse matrix stuff;
+
+    o unstructured grids/AMR & interaction with distributions; 
+
+    o beefing up the connection to MeTis.
+
+    o write pieces of these, if not the complete thing, written in
+      Chapel
+
+    o library design issue -- how to minimize # dependences on
+      application that's being designed to call it (sparse parallel
+      solver, dense parallel solver, FFT, suite of libraries, etc.)
+      Leveraging decoupling of implementations from algorithms.
+
+    o parallel FFT
+    o ScalaPACK
+    o EPetra from Trilinos or PetSC (sparse matrix representation)
+    o sparse direct method
+    o dynamic domain decomposition schemes
+    o graph partitioner
+
+    o glomming a few of these things together to show something that
+      people don't traditionally do
+
+    o something that shows how much simpler interfaces become in
+      Chapel
+
+    o showing how libraries look to the application/user; also showing
+      the design of a ScalaPACK within Chapel.  Would you have BLACS?
+      PBLAS?  How would distributions work?
+
+    o John's cute twist on CG -- generalized symmetric eigenvalue
+      problem, Lanczos <mumble>.  So much simpler in Chapel, could
+      produce this in Chapel.
+
+    o do the BLAS exist in this structure?  When you have domains, do
+      you keep the BLAS around?  How would you leverage/use Chapel's
+      sparse matrices?
+
+AMR has John scared -- has looked at some AMR codes, and is scared;
+not sure how to proceed.  Kathy Yelick and Phil Calella's AMR code
+took one of Kathy's postdocs 2 years to develop in Titanium and is not
+written very well.  If we're going to do this, somebody is going to
+become Mr. or Mrs. AMR for the next year or so.  NAS implementation
+may be another possibility, though it has a bad reputation as well.
+
+Berkeley people have come up with Titanium work, Bell AMR framework in
+C++, Phil Calella maybe has some third thing?  Randy Levesque has
+CLAWPack.
+
+Madness -- as a possible application.
+
+Unstructured grids: New NAS benchmarks have some things that are less
+interesting than AMR, but could demonstrate some interesting sorts of
+things.
+
+Looked through user interface to ScalaPACK routines.
+
+Looked through lu.scalar.betterrow.chpl a bit, resulting in these
+comments:
+
+Could lu.scalar.betterrow.chpl be rewritten to not refer to d?  Reduce
+"Reduced" by one each time that we go around the for loop.
+
+Output is actually a pair of triangular matrices.  Should try to use
+the symmetric packed or symmetric recursive data structure codes.
+
+Scalapack's factor routine produces "something" -- an object/structure
+that you can pass to the solve routine, or the condition number
+estimator routine.  Things like the pivot array never need to be
+exposed to the user -- could hide this better than they are in
+Fortran.  Have factor() return some sort of tuple/record that includes
+an array of values and a pivot array.
+
+
+Action items:
+
+* rewrite using domain operators
+
+* make output of LU more of an opaque object that includes array and
+  pivot
+
+* could have a decoder of this array/pivot pair as well
+

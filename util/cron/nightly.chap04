@@ -1,0 +1,3 @@
+#!/usr/bin/tcsh
+
+~/chapel/util/cron/nightly-mpi.cron -cron -examples >&! ~/tmp/nightly.mpi.out

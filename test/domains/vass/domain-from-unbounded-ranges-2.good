@@ -1,0 +1,1 @@
+domain-from-unbounded-ranges-2.chpl:4: error: one of domain's dimensions is not a bounded range

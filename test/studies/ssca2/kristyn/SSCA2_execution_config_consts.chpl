@@ -1,0 +1,78 @@
+module SSCA2_execution_config_consts
+{
+  // +======================================================+
+  // |  Execution time constants control                    |
+  // |                                                      |
+  // |    1.  Problem Sizes                                 |
+  // |        - number of vertices                          |
+  // |        - size of starting vertex set for approximate |
+  // |          betweenness centrality computation          |
+  // |    2.  Graph Representations to test                 |
+  // |    3.  RMAT generator constants                      |
+  // |                                                      |
+  // |   All can be set from the command line.              |
+  // +======================================================+
+
+  // -------------
+  // Problem Size:
+  // -------------
+
+  config const SCALE = 6;
+
+  config const TOP_APPROX_SCALE = 8;
+
+  config const LOW_APPROX_SCALE = 4;
+
+  const N_VERTICES = 2**SCALE;
+    
+  const MAX_EDGE_WEIGHT = 2**SCALE;
+
+  config const SUBGRAPH_PATH_LENGTH = 3;
+
+  // --------------------
+  // Graph Types to Test:
+  // --------------------
+
+  enum graph_type { RMAT_associative, RMAT_1D_array,
+		    Torus_1D,   Torus_2D,
+		    Torus_3D,   Torus_4D };
+
+  const graph_type_domain : domain ( graph_type );
+
+  const testing_type : [graph_type_domain] bool = false;
+
+  // The normal default for booleans is to initialize to false, which will be
+  // the likely long term state of this code.  At present, the code is set to
+  // test all possible representations.  Individual types can be overwritten
+  // with the boolean assignments below.
+
+  config const TEST_RMAT_ASSOCIATIVE = true,
+               TEST_RMAT_1D_ARRAY    = true,
+               TEST_TORUS_1D         = true,
+	       TEST_TORUS_2D         = true,
+	       TEST_TORUS_3D         = true,
+	       TEST_TORUS_4D         = true;
+
+  testing_type (graph_type.RMAT_associative) = TEST_RMAT_ASSOCIATIVE; 
+  testing_type (graph_type.RMAT_1D_array)    = TEST_RMAT_1D_ARRAY; 
+  testing_type (graph_type.Torus_1D)         = TEST_TORUS_1D;
+  testing_type (graph_type.Torus_2D)         = TEST_TORUS_2D;
+  testing_type (graph_type.Torus_3D)         = TEST_TORUS_3D;
+  testing_type (graph_type.Torus_4D)         = TEST_TORUS_4D;
+
+  // RMAT power law generation constants; these four should add to one
+
+  config const RMAT_a = .55;
+
+  config const RMAT_b = .10;
+
+  config const RMAT_c = .10;
+
+  config const RMAT_d = .25;
+
+  // Torus indexing base, lower bound for each torus dimension.  The code is
+  // polymorphic over any value, in particular for either zero or one-based 
+  // indexing
+
+  config param Torus_Base_Index = 1;
+}

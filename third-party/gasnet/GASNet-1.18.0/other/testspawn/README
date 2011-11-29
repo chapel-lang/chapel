@@ -1,0 +1,5 @@
+This directory contains a stripped down version of a GASNet conduit with just
+enough to test the conduit-independent bootstrappers.
+
+It is not meant to be built as part of a GASNet conduit and is simply used as
+a debug mechanism for the ssh and mpi spawners.

@@ -1,0 +1,3 @@
+rm -f /tmp/nightly.baseline.out
+source ~chapelu/.chplcron.baseline.bashrc && /users/chapelu/chapel/util/cron/nightly -cron -baseline -suppress Suppressions/baseline.suppress >& /tmp/nightly.baseline.out
+

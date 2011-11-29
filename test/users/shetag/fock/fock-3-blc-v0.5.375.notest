@@ -1,0 +1,2 @@
+This is a version of fock that worked with v0.5.375 of the compiler, but
+does not work with the current due to the renaming of Locale(s).

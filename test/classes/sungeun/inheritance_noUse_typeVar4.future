@@ -1,0 +1,10 @@
+bug: Confusing error message simple case of inheritance.
+
+This test is exactly like inheritance_noUse_typeVar3.chpl, except it
+calls writeln(a) before delaring b.
+
+      inheritance_noUse_typeVar4.chpl:5: error: unresolved type specifier 'B(myType=type real)'
+      inheritance_noUse_typeVar4.chpl:5: note: candidates are: B
+      inheritance_noUse_typeVar4.chpl:5: note: did you forget the 'new' keyword?
+
+I don't know what this is supposed to mean.

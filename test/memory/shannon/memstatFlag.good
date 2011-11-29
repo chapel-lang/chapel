@@ -1,0 +1,1 @@
+memstatFlag.chpl:6: error: invalid call to printMemStat(); rerun with --memTrack

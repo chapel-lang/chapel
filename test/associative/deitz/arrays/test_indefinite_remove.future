@@ -1,0 +1,3 @@
+semantic: remove during associative domain iteration
+
+This test traverses a domain, removing the elements at the same time.  Should this work?

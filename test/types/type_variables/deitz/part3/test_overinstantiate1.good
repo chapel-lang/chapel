@@ -1,0 +1,2 @@
+test_overinstantiate1.chpl:1: error: Function 'foo' has been instantiated too many times
+note:   If this is intentional, try increasing the instantiation limit from 256

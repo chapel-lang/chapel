@@ -1,0 +1,14 @@
+m = 10
+n = 12
+
+test: m &= n
+expected answer = 8
+actual answer = 8
+
+test: m ^= n
+expected answer = 6
+actual answer = 6
+
+test: m |= n
+expected answer = 14
+actual answer = 14

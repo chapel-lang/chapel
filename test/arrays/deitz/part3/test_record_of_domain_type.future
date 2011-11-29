@@ -1,0 +1,9 @@
+bug: type composed of runtime type is not a runtime type
+
+was:
+
+bug: instantiation over runtime type loses runtime info
+
+This future shows a limitation with the runtime type implementation.
+If you instantiate a type over a runtime type, the instantiated type
+will not have a runtime type, so the runtime info will be lost.

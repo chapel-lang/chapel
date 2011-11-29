@@ -1,0 +1,42 @@
+#!/usr/bin/env perl
+
+use File::Basename;
+
+$utildirname = dirname($0);
+
+$preset_atomics   = $ENV{'CHPL_ATOMICS'};
+
+if ($preset_atomics eq "") {
+    $compiler = `$utildirname/compiler --target`;
+    chomp $compiler;
+    $platform = `$utildirname/platform --target`; chomp($platform);
+
+#
+# our atomics assume a 64-bit platform, so for 32-bit platforms, we
+# need to conservatively use locks for now; we could fine-tune and
+# only use locks for 64-bit atomics, but we'll cross that bridge when
+# we come to it.
+#
+    if ($platform eq "linux32") {
+	$atomics = "locks";
+    } elsif ($compiler eq "gnu" ) {
+      # Check the compiler version
+      $version = `gcc -dumpversion`;
+      @vers = split(/\./, $version);
+      if( ($vers[0] == 4 && $vers[1] >= 1) ||
+          $vers[0] > 4 ) {
+        $atomics = "intrinsics";
+      } else {
+        $atomics = "locks";
+      }
+    } elsif ($compiler eq "clang") {
+      $atomics = "intrinsics";
+    } else {
+      $atomics = "locks";
+    }
+} else {
+    $atomics = $preset_atomics;
+}
+
+print "$atomics\n";
+exit(0);

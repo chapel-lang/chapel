@@ -1,0 +1,9 @@
+bug: mixing illegal types in config param setting
+
+This test should generate an error since j is an int but we're trying
+to initialize it to a floating point value.  Instead of some sort of
+type mismatch error, though, it generates an error complaining that
+the initializer is not a compile-time value:
+
+chpl -sj=5.1 ./badConfigParamOverride.chpl
+./badConfigParamOverride.chpl:1: error: Initializing parameter 'j' to value not known at compile time [functionResolution.cpp:3482]

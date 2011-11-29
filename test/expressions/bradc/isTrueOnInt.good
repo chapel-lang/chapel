@@ -1,0 +1,2 @@
+isTrueOnInt.chpl:1: In function 'main':
+isTrueOnInt.chpl:5: error: short-circuiting logical operators not supported on integers

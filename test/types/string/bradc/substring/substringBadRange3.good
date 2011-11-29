@@ -1,0 +1,3 @@
+str.substring(3..2) = 
+str.substring(1..0) = 
+str.substring(1..-1) = 

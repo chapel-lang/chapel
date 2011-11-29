@@ -1,0 +1,4 @@
+The first type is ADD or, as an int, 1
+The second type is MUL or, as an int, 2
+The third type is DIV or, as an int, 3
+The fourth type is NEG or, as an int, -1

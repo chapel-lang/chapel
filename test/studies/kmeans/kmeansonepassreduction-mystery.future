@@ -1,0 +1,10 @@
+bug: record within reduction class
+
+For some reason, using a record within a reduction class breaks this
+test.  My guess is that it's a bad interaction with memory management.
+Replacing the record with its contents (as shown in
+kmeaonsonepassreduction-minchange.chpl ) seems to be a reasonable
+workaround for the time being.  Reductions should probably be
+implemented within a Chapel module before we work on retiring this.
+We could potentially add a warning if we thought this was going to be
+a common case.

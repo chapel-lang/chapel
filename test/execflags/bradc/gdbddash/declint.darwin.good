@@ -1,0 +1,3 @@
+Reading symbols for shared libraries ... done
+(gdb) Exception condition detected on fd 0
+error detected on stdin

@@ -1,0 +1,91 @@
+
+This is the next version of the SPIRAL-generated FFT code for C99 and
+Chapel.  A quick inspection makes it look like the Chapel code has not
+changed since v0.  The C99 version has.  There still seem to be
+differences between the two in terms of number of global arrays
+inserted and temp variables around loop structures.
+
+Here is reported performance from Franz:
+
+--------------------------------------
+
+Spiral 5.0 Chapel FFT example
+
+fft_2: 0.08us = 125.0 Mflop/s
+fft_4: 0.2us = 200.0 Mflop/s
+fft_8: 0.44us = 272.727 Mflop/s
+fft_16: 1.04us = 307.692 Mflop/s
+fft_32: 3.98us = 201.005 Mflop/s
+fft_64: 7.14us = 268.908 Mflop/s
+fft_128: 18.34us = 244.275 Mflop/s
+fft_256: 45.28us = 226.148 Mflop/s
+fft_512: 97.42us = 236.502 Mflop/s
+fft_1024: 222.32us = 230.299 Mflop/s
+fft_2048: 584.14us = 192.83 Mflop/s
+
+
+Spiral 5.0 Chapel FFT example -- C99 version, Intel C++ Compiler
+fft_2: 4 ns = 2.174 Gflop/s
+fft_4: 10 ns = 3.810 Gflop/s
+fft_8: 26 ns = 4.596 Gflop/s
+fft_16: 64 ns = 4.937 Gflop/s
+fft_32: 156 ns = 5.107 Gflop/s
+fft_64: 462 ns = 4.147 Gflop/s
+fft_128: 1071 ns = 4.180 Gflop/s
+fft_256: 2847 ns = 3.597 Gflop/s
+fft_512: 6043 ns = 3.813 Gflop/s
+fft_1024: 13644 ns = 3.753 Gflop/s
+fft_2048: 32299 ns = 3.487 Gflop/s
+
+
+Spiral 5.0 Chapel FFT example -- C99 version, GNU C Compiler
+fft_2: 6 ns = 1.587 Gflop/s
+fft_4: 15 ns = 2.581 Gflop/s
+fft_8: 34 ns = 3.456 Gflop/s
+fft_16: 101 ns = 3.156 Gflop/s
+fft_32: 289 ns = 2.765 Gflop/s
+fft_64: 724 ns = 2.652 Gflop/s
+fft_128: 1639 ns = 2.732 Gflop/s
+fft_256: 4243 ns = 2.413 Gflop/s
+fft_512: 9395 ns = 2.452 Gflop/s
+fft_1024: 21086 ns = 2.428 Gflop/s
+fft_2048: 48838 ns = 2.306 Gflop/s
+
+--------------------------------------
+
+Here is what I got on solitary on my first runs:
+
+Spiral 5.0 Chapel FFT example
+
+fft_2: 0.02032us = 492.126 Mflop/s
+fft_4: 0.0312us = 1282.05 Mflop/s
+fft_8: 0.08478us = 1415.43 Mflop/s
+fft_16: 0.20608us = 1552.8 Mflop/s
+fft_32: 0.47252us = 1693.05 Mflop/s
+fft_64: 1.27694us = 1503.59 Mflop/s
+fft_128: 3.29994us = 1357.6 Mflop/s
+fft_256: 7.43832us = 1376.65 Mflop/s
+fft_512: 18.5509us = 1241.99 Mflop/s
+fft_1024: 39.4768us = 1296.97 Mflop/s
+fft_2048: 88.5819us = 1271.59 Mflop/s
+
+Spiral 5.0 Chapel FFT example -- C99 version, GNU C Compiler
+fft_2: 10 ns = 1.000 Gflop/s
+fft_4: 20 ns = 2.000 Gflop/s
+fft_8: 291 ns = 0.411 Gflop/s
+fft_16: 1032 ns = 0.310 Gflop/s
+fft_32: 2638 ns = 0.303 Gflop/s
+fft_64: 7908 ns = 0.243 Gflop/s
+fft_128: 18475 ns = 0.242 Gflop/s
+fft_256: 70659 ns = 0.145 Gflop/s
+fft_512: 162776 ns = 0.142 Gflop/s
+fft_1024: 253733 ns = 0.202 Gflop/s
+fft_2048: 574722 ns = 0.196 Gflop/s
+
+---------------------------
+
+After some emails, we decided that there were a number of things that
+made Franz' experiments not be apples-to-apples comparisons, so we
+put the ball back in his court to clean these up.
+
+

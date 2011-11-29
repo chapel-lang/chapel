@@ -1,0 +1,3 @@
+LIBS += -L$(ARMCI_LIB_DIR) -L$(MPICH1_LIB_DIR) -larmci -lmpich $(ARMCI_PLATFORM_SPECIFIC_LIBS) -lnsl -lrt
+
+# Does sunos need -lsocket?

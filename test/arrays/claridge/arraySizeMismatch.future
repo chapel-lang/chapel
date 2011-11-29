@@ -1,0 +1,14 @@
+bug: parallel zippered iteration does no size/shape checking
+
+bradc: The problem is that our parallel leader/follower interface does
+not support a size check.
+
+Claridge writes:
+
+Note that the error is detected if the roles are reversed, i.e. a smaller
+array is assigned to a larger one.  The bounds performing the loop for
+assignment are probably determined by the array on the left side.
+
+This might mean that "array index out of bounds" is the wrong error, since
+in this example B(4) would never be accessed.  Perhaps the compatibility 
+of the domains needs to be verified before the assignment occurs?

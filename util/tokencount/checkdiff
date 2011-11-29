@@ -1,0 +1,4 @@
+#!/bin/sh
+tokencount $1 > out.tmp
+diff $1 out.tmp > /dev/null 2>&1 || echo "$1: differs"
+#diff $1 out.tmp || echo "$1: differs"

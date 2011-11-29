@@ -1,0 +1,3 @@
+perfkeys: Time elapsed :
+ylabel: Time (seconds)
+graphtitle: Black-Scholes (PARSEC benchmark) using Promotion

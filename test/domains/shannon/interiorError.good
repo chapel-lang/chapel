@@ -1,0 +1,3 @@
+domain(3): 		[1..4, 1..4, 1..4]
+interior(1, 3, 5): 	Halt reached: interiorError.chpl:5
+***Error: Argument to 'interior' function out of range in dimension 3***

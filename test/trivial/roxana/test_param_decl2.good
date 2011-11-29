@@ -1,0 +1,1 @@
+test_param_decl2.chpl:2: error: Initializing parameter 'h' to value not known at compile time

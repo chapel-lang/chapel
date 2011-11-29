@@ -1,0 +1,12 @@
+member(0) = false
+member(2) = true
+member(53) = false
+member(92) = false
+member(5) = true
+member(4) = true
+member(meet) = false
+member(peet) = false
+member(pete) = true
+member(seat) = false
+member(feat) = false
+member(feet) = true

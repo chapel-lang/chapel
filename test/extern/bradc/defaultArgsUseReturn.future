@@ -1,0 +1,9 @@
+feature request: extern functions w/ default args and return values
+
+Default arguments work on extern functions with little or no work
+on our part (see defaultArgs.chpl).  However, if the extern function
+returns a value, the wrapper we create doesn't preserve the return
+value appropriately, unfortunately.  This seems like it should not
+be too hard to support, but if I'm wrong then we should flag a
+more specific error (like "extern functions with default arguments
+cannot return values?")

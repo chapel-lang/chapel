@@ -1,0 +1,2 @@
+test_scope2.chpl:5: In function 'bar':
+test_scope2.chpl:6: error: 'foo' used before defined (first used here)

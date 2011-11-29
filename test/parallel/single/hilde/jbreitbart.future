@@ -1,0 +1,4 @@
+bug: Single qualifier on arrays is not legal, but it compiles and crashes during init.
+
+Sync and single should only be allowed on primitive types excluding
+string and complex.

@@ -1,0 +1,13 @@
+bug: type composed of runtime type is not a runtime type
+
+was: 
+
+bug: instantiation over runtime type loses runtime info
+
+Was:
+
+bug: tuple with runtime type causes runtime seg fault
+
+A tuple with a complex and a domain and another type causes a seg fault at
+runtime. Changing complex or the domain type to another type avoids this, as
+does removing the third type.

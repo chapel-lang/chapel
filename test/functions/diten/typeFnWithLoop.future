@@ -1,0 +1,7 @@
+error message: side effect checking on type function
+
+Was:
+
+bug: type function with non-parameter evaluated statements is allowed
+
+The type returned is resolved and the other statements are discarded.

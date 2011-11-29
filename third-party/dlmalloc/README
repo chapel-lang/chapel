@@ -1,0 +1,24 @@
+===========================
+dlmalloc for Chapel release
+===========================
+
+This copy of dlmalloc is being released with Chapel for convenience
+and is a snapshot of dlmalloc version 2.8.5 obtained from Doug Lea at:
+http://g.oswego.edu/dl/html/malloc.html
+
+Any Chapel issues that seem to be related to dlmalloc should be
+directed to the Chapel team at chapel-bugs@lists.sourceforge.net, as
+the cause is most likely due to Chapel's use of dlmalloc and not the
+dlmalloc library itself.
+
+The structure of this directory is as follows:
+
+./
+  Makefile        : a Makefile to help build dlmalloc for Chapel's use
+  README          : this file
+  build/          : dlmalloc object files are stored in the subdirectory:
+    $CHPL_PLATFORM-$CHPL_COMPILER/
+  include/        : contains the dlmalloc header file
+  lib/            : the dlmalloc library is stored in the subdirectory:
+    $CHPL_PLATFORM-$CHPL_COMPILER/
+  src/            : contains the dlmalloc source file and a Makefile

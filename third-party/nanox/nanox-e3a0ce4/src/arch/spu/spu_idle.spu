@@ -1,0 +1,13 @@
+#include <stdio.h>
+
+int main(unsigned long long id,
+         unsigned long long argp,
+         unsigned long long envp)
+{
+        printf("Thread %d Hello World!\n",id);
+
+
+        printf("Thread %d Bye World!\n",id);
+        return id+argp+envp;
+}
+

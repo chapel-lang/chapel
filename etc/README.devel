@@ -1,0 +1,5 @@
+In addition to holding the raw sources for the vim and emacs modes as
+described in the user's README file in this directory, this directory
+contains:
+
+Chapel.xcodeproj/  -- a Chapel XCode project for Mac developers

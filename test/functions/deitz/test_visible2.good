@@ -1,0 +1,1 @@
+test_visible2.chpl:15: error: unresolved call 'bar(C)'

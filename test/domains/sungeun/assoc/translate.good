@@ -1,0 +1,2 @@
+translate.chpl:7: In function 'my_translate':
+translate.chpl:8: error: translate not supported on associative domains

@@ -1,0 +1,6 @@
+foo of 1, 2.0, three
+foo of 1, 3.0, two
+foo of 2, 1.0, three
+foo of 3, 1.0, two
+foo of 2, 3.0, one
+foo of 3, 2.0, one

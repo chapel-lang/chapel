@@ -1,0 +1,1 @@
+unary_uint64_param_minus_error.chpl:3: error: illegal use of '-' on operand of type uint(64)

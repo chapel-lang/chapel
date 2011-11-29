@@ -1,0 +1,16 @@
+classWithArray-orig.chpl  : the original code from email, not tested
+classWithArray.chpl       : a modified version with interesting output and
+                            a few more test cases that work
+
+classWithArray-init.chpl  : a version that initializes the class' array with
+                            an external variable; doesn't support 0-argument
+                            constructor call
+classWithArray-init-works.chpl : a version of the above with the 0-argument
+                                 constructor commented out; could be removed
+                                 once the above works.
+
+classWithArray-init2.chpl : similar to the classWithArray-init.chpl, but
+                            eliminating the array variable outside of the
+                            class
+
+classWithArray-init3.chpl : similar to the above but uses scalar initializer

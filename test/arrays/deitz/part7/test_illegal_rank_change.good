@@ -1,0 +1,2 @@
+test_illegal_rank_change.chpl:1: In function 'foo':
+test_illegal_rank_change.chpl:1: error: illegal implicit rank change

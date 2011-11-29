@@ -1,0 +1,5 @@
+bug: Max reduce of arrays of arrays results in unresolved call
+
+This is derived from a bug reported from Michael Ferguson's 12/2010
+workshop.  Max reduction of arrays of arrays results in an unresolved
+call reference to min() on an array.

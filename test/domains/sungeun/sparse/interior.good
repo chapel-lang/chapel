@@ -1,0 +1,2 @@
+interior.chpl:3: In function 'my_interior':
+interior.chpl:4: error: interior not supported on sparse domains

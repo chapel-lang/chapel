@@ -1,0 +1,70 @@
+use BlockDist, CyclicDist;
+config const n = 3;
+const Space = [1..n,1..n,1..n,1..n,1..n,1..n];
+
+proc dit(D, A, B, C) {
+  forall i in D {
+    var (i0,i1,i2,i3,i4,i5) = (i);
+    A(i) = (i0+i1)/i2:real;
+    B(i) = (i3+i4)/i5:real;
+    C(i) = A(i) + B(i);
+  }
+}
+
+var RA, RB, RC: [Space] real;
+for i in Space {
+  var (i0,i1,i2,i3,i4,i5) = (i);
+  RA(i) = (i0+i1)/i2:real;
+  RB(i) = (i3+i4)/i5:real;
+  RC(i) = RA(i) + RB(i);
+}
+
+proc checkdit(distName, A, B, C) {
+  var allerr, err = 0;
+
+  for (ra, a) in (RA, A) do
+    if ra!=a then err += 1;
+  if err>0 {
+    writeln(distName, " array A does not match (", err, " errors)");
+    allerr += err;
+    err = 0;
+  }
+
+  for (rb, b) in (RB, B) do
+    if rb!=b then err += 1;
+  if err>0 {
+    writeln(distName, " array B does not match (", err, " errors)");
+    allerr += err;
+    err = 0;
+  }
+
+  for (rc, c) in (RC, C) do
+    if rc!=c then err += 1;
+  if err>0 then {
+    writeln(distName, " array C does not match (", err, " errors)");
+    allerr += err;
+    err = 0;
+  }
+
+  if allerr==0 then writeln(distName, ": OK"); else writeln(distName, ": NO OK");
+
+  return allerr;
+}
+
+var err = 0;
+const DDom = Space dmapped new dmap(new DefaultDist());
+var DA, DB, DC: [DDom] real;
+dit(DDom, DA, DB, DC);
+err += checkdit("Default", DA, DB, DC);
+
+const BDom = Space dmapped new dmap(new Block(boundingBox=Space));
+var BA, BB, BC: [BDom] real;
+dit(BDom, BA, BB, BC);
+err += checkdit("Block", BA, BB, BC);
+
+const CDom = Space dmapped new dmap(new Cyclic(startIdx=(1,1,1,1,1,1)));
+var CA, CB, CC: [CDom] real;
+dit(CDom, CA, CB, CC);
+err += checkdit("Cyclic", CA, CB, CC);
+
+exit(err);

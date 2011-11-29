@@ -1,0 +1,9 @@
+
+include $(RUNTIME_ROOT)/make/Makefile.runtime.commonrules
+
+depend: $(DEPENDSUBDIRS) echoruntimedir $(DEPEND_DEPS)
+	@echo Updating dependences...
+
+SVN_DEPS = $(addsuffix .depend,$(basename $(SVN_SRCS)))
+
+filedepend: $(SVN_DEPS)

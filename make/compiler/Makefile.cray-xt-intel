@@ -1,0 +1,10 @@
+# put XT cross-compilation intel-specific settings here
+
+# Warnings squashed for generated code
+# 592 : squelch use-before-def problems -- we'll rely on valgrind to catch them
+XT_GEN_CFLAGS = -wr592
+
+include $(CHAPEL_ROOT)/make/compiler/Makefile.cray-xt
+
+RUNTIME_CFLAGS += -std=c99 -wr188
+GEN_CFLAGS += -std=c99

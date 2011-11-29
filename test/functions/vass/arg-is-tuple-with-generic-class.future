@@ -1,0 +1,17 @@
+bug: compiler crashes with an assertion
+
+Currently I get:
+
+  error: assertion error [callInfo.cpp:32]
+
+The culprit apparently is the (?) after TestDom. I.e. if we remove (?),
+the compiler gives a somewhat-meaningful error message. If we add ?s
+(e.g. TestDom(?,?,?)), the compiler still crashes the same way.
+
+Note on the desired behavior:
+What I'd like to say here is that the 'follower' arg is a tuple (a pair)
+whose first element is a TestDom. The compiler should either tell me
+that I am not doing it right (ideally with a suggestion on how to do it)
+or just accept it and compile successfully. (My .good assumes the latter.)
+
+(This test case distills my leader/follower attempt for DefaultSparseDom.)

@@ -1,0 +1,3 @@
+redefineTypeNames2a.chpl:1: In function 'main':
+redefineTypeNames2a.chpl:3: error: 'int' used before defined (first used here)
+redefineTypeNames2a.chpl:4: error: 'real' used before defined (first used here)

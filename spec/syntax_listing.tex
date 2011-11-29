@@ -1,0 +1,20 @@
+\lstdefinelanguage{syntax}
+  {
+    sensitive=false,
+    mathescape=true,
+    basewidth = 0.50em,
+    fontadjust=true,
+    columns=fullflexible,
+    basicstyle=\small,
+    keywordstyle=\footnotesize\ttfamily,
+    commentstyle=\footnotesize\ttfamily,
+    identifierstyle=\small\slshape,
+    moredelim=[is][\small\bf]{`}{'},
+    literate={-}{{\ttfamily -}}{1}
+             {[OPT]}{{{\scriptsize $_{opt}$}}}{2}
+  }
+
+\lstnewenvironment{syntax}{\lstset{language=syntax,xleftmargin=2pc}}{}
+\lstnewenvironment{syntax_donotcollect}{\lstset{language=syntax,xleftmargin=2pc}}{}
+
+\newcommand{\sntx}[1]{\lstinline[language=syntax]!#1!}

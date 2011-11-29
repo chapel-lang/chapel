@@ -1,0 +1,10 @@
+-------------------------------------------------------------
+This system uses 8 bytes per 64-bit real.
+-------------------------------------------------------------
+Array size (B) = 1048576
+Total memory required (GB) = 0.00292969
+-------------------------------------------------------------
+Results Comparison: 
+        Expected  : 3.986
+        Observed  : 3.986
+Solution Validates

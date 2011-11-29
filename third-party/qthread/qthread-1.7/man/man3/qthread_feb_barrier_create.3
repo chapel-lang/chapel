@@ -1,0 +1,43 @@
+.TH qthread_feb_barrier 3 "APRIL 2011" libqthread "libqthread"
+.SH NAME
+.BR qthread_feb_barrier_create ,
+.BR qthread_feb_barrier_enter ,
+.BR qthread_feb_barrier_destroy ,
+.B qthread_feb_barrier_resize
+\- manipulates FEB-based barriers
+.SH SYNOPSIS
+.B #include <qthread/feb_barrier.h>
+
+.I qt_feb_barrier_t *
+.br
+.B qthread_feb_barrier_create
+.RI "(size_t " max_threads );
+.PP
+.I void
+.br
+.B qthread_feb_barrier_enter
+.RI "(qt_feb_barrier_t *" b );
+.PP
+.I void
+.br
+.B qthread_feb_barrier_resize
+.RI "(size_t" new_max_threads );
+.PP
+.I void
+.br
+.B qthread_feb_barrier_destroy
+.RI "(qt_feb_barrier_t *" b );
+.SH DESCRIPTION
+These are the functions for manipulating simplistic FEB-based barriers.
+.PP
+The
+.BR qthread_feb_barrier_create ()
+function generates a barrier data structure, which can then be used to wait for
+.I max_threads
+threads to enter the barrier. To enter the barrier, each thread must call
+.BR qthread_feb_barrier_enter (),
+which will cause the thread to block until the specified number of threads has entered the same barrier. Once the barrier is no longer needed, it can be deallocated with the
+.BR qthread_feb_barrier_destroy ()
+function. Instead of destroying and creating a new barrier, barriers may be resized if necessary, using the
+.BR qthread_feb_barrier_resize ()
+function. The barrier must be empty before resizing.

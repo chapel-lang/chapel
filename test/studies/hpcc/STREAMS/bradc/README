@@ -1,0 +1,31 @@
+Sequential stream implementations
+---------------------------------
+stream-bradc.chpl     : an early version when we were still wrestling with it
+stream-nopromote.chpl : uses a loop rather than whole-array ops
+stream-slice.chpl     : uses domains to slice the arrays
+
+
+Parallel stream implementations
+-------------------------------
+stream-fragmented.chpl : manually fragmented implementation of stream
+stream-fragmented-timecoforall.chpl : similar to the above, but moves
+                         the timing outside of the coforall which is
+                         more correct, but requires re-initializing the
+                         arrays for each trial which causes the test to
+                         time out
+
+stream-block1dclass.chpl : sequential implementation using a distribution-like
+                           set of classes to implement the array
+
+stream-block1dpar.chpl     : parallel version that iterates over the domain
+                             using leader/follower iterators
+
+stream-block1dpar-arr.chpl : parallel version that iterates over the array
+                             using leader/follower iterators -- currently the
+                             best implementation.
+
+
+Future implementations
+----------------------
+stream-block1d.chpl : start of an implementation that uses a distribution
+                      but does not yet work

@@ -1,0 +1,5 @@
+#!/bin/sh
+
+cp $2 /tmp/prepend.tmp.deleteme
+cat $1 /tmp/prepend.tmp.deleteme > $2
+rm /tmp/prepend.tmp.deleteme

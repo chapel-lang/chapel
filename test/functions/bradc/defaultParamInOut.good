@@ -1,0 +1,20 @@
+in callinout2, x is: 101, y is: 201
+returning: 302
+at callsite, a is: 10, b is: 30, r is: 302
+
+in callinout2, x is: 11, y is: 201
+returning: 212
+at callsite, a is: 11, b is: 30, r is: 212
+
+in callinout2, x is: 12, y is: 12
+returning: 24
+at callsite, a is: 12, b is: 30, r is: 24
+
+in callinout2, x is: 13, y is: 31
+returning: 44
+at callsite, a is: 13, b is: 31, r is: 44
+
+in callinout2, x is: 32, y is: 14
+returning: 46
+at callsite, a is: 14, b is: 32, r is: 46
+

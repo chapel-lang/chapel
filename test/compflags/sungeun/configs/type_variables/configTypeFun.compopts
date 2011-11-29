@@ -1,0 +1,4 @@
+-smyType=rPair
+-smyType=cPair
+-smyIdxType=uint(8) -smyType=cPair
+-smyType=rPair -smyIdxType=real

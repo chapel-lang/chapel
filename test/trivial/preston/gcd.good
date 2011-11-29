@@ -1,0 +1,3 @@
+gcd.chpl:3: In function 'gcd':
+gcd.chpl:3: warning: control reaches end of function that returns a value
+5

@@ -1,0 +1,1 @@
+subdir/bar.chpl --print-search-dirs -M subdir1 -M subdir2 --print-module-files --main-module foo

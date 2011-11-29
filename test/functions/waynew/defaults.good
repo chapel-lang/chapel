@@ -1,0 +1,28 @@
+
+a = true
+b = 4.0
+c = 1.234
+
+a = false
+b = 4.0
+c = 1.234
+
+a = true
+b = 4.0
+c = 1.234
+
+a = false
+b = 1.0
+c = 1.234
+
+a = false
+b = 1.0
+c = 2.3
+
+a = false
+b = 2.8
+c = 1.234
+
+a = false
+b = 2.0
+c = 8.0

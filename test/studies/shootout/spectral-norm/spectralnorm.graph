@@ -1,0 +1,4 @@
+perfkeys: Time elapsed :
+graphkeys: spectral-norm
+graphtitle: Spectral Norm Shootout Benchmark
+ylabel: Time (seconds)

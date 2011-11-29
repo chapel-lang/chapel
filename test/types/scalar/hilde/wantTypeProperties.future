@@ -1,0 +1,5 @@
+feature request: Support access of type characteristics as properties
+
+Like character-traits in the C++ STL, we ought to present type properties to the
+user such that they can be accessed as properties.
+

@@ -1,0 +1,2 @@
+numBitsBytesDefault.chpl:3: In function 'printSizes':
+numBitsBytesDefault.chpl:4: error: default-width 'bool' does not have a well-defined size

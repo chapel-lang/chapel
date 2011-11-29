@@ -1,0 +1,1 @@
+assignIRV.chpl:14: error: halt reached - attempting to assign a 'zero' value in a sparse array: (1, 2)

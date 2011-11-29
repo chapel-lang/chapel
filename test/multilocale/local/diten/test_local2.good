@@ -1,0 +1,1 @@
+test_local2.chpl:11: error: cannot access remote data in local block

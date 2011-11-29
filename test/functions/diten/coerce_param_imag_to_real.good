@@ -1,0 +1,2 @@
+coerce_param_imag_to_real.chpl:6: error: unresolved call 'foo(1.1i)'
+coerce_param_imag_to_real.chpl:1: note: candidates are: foo(r: real)

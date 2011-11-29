@@ -1,0 +1,4 @@
+MPI_INSTALL = $(OPENMPI_INSTALL_DIR)
+
+GEN_LFLAGS += -I$(MPI_INSTALL)/include -pthread -L$(MPI_INSTALL)/lib
+LIBS += -lmpi -lopen-rte -lopen-pal -lrt -ldl -Wl,--export-dynamic -lnsl -lutil -lm -ldl

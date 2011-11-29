@@ -1,0 +1,2 @@
+#! /bin/sh
+sed -e 's/more than [1-9][0-9]* threads/more than 0000 threads/' <$2 >$1.blah.tmp && cp $2 $1.prediff.tmp && mv $1.blah.tmp $2

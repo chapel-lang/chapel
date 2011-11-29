@@ -1,0 +1,4 @@
+#!/bin/csh -f
+./versionhelp.csh $1 $2 $3 > version.good
+./copyrighthelp.csh $1 $2 $3 >> version.good
+

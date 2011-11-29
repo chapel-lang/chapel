@@ -1,0 +1,4 @@
+semantic: what should happen when a domain is reassigned in parallel constructs?
+
+In this case, a whole array is getting assigned a value when another thread
+reassigns its domain, making most of the iterations be out of bounds.

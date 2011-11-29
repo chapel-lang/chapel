@@ -1,0 +1,3 @@
+callMethodOnClass.chpl:23: In function 'main':
+callMethodOnClass.chpl:25: error: unresolved call 'type D.start'
+callMethodOnClass.chpl:14: note: candidates are: D.start

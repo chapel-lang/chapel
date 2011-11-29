@@ -1,0 +1,7 @@
+Made it past constructor
+myC.arr(1) = 0
+myC.arr(1).isFull = false
+myC.arr(2) = 0
+myC.arr(2).isFull = false
+myC.arr(3) = 0
+myC.arr(3).isFull = false

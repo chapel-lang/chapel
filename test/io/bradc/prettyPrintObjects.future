@@ -1,0 +1,8 @@
+feature request: pretty printing of objects
+
+When debugging large classes/records lately (like array/domain
+implementing classes) I found myself wishing I had some means
+of pretty printing them in an indented style as in gdb.  This
+test captures the flavor of that even though the case is not
+as compelling.  This could be through a global config param (or 
+one that could be overridden on a class-by-class basis) for instance.

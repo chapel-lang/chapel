@@ -1,0 +1,1 @@
+badStringToComplex5.chpl:3: error: Unexpected character when converting from string to complex(64): '3'

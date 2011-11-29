@@ -1,0 +1,3 @@
+perfkeys: Maximum Size (KB):
+ylabel: size (KB)
+graphtitle: Jacobi AST size

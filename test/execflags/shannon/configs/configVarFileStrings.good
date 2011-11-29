@@ -1,0 +1,9 @@
+a: quoted with spaces
+b: quotedwithnospaces
+c: notquoted
+d: embedded quote (') different from enclosing quotes
+e:  this has a blank as the first character
+f: puddin' and pie
+g: 
+h: nasty, glommy,
+i: sticky strings

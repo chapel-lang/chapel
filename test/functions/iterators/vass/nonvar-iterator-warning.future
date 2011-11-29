@@ -1,0 +1,28 @@
+feature request: compiler to detect when an iterator should be marked 'var'
+
+Motivation: I hit this (several times) when writing leader/follower iterators.
+My follower iterator over an array was not marked 'var' but there was
+no diagnostics to warn me that I needed to add 'var'.
+
+The compiler could issue a warning "did you mean it to be a 'var' iterator?"
+upon encountering the following case:
+- a for/forall/... loop with an index variable and an iterable expression
+  ('lval' and 'myiter()' in this test)
+- the iteratable expression in the loop is a non-var iterator
+- there is an assignment to the index variable
+- the index variable is never read following the assignment
+  (i.e. it is a dead assignment; only fire if it is guaranteed to be dead)
+
+Brad says (Date: Thu, 30 Sep 2010 17:15:28 -0500)
+
+I think the correct behavior here is for the compiler to issue an error 
+about modifying a const value.  If the iterator is not marked as var, the 
+loop's index variable should be const and any attempts to modify it should 
+result in an error.  This is one of several examples where we don't 
+currently do const checking properly.
+
+Since the iterator may not be under the user's control (e.g., it may be 
+part of an internal (or standard) layout or distribution), this also makes 
+more sense since the problem is in the invocation not the definition. 
+(And in cases where the user does own both pieces of code, it should send 
+the right message, helping them determine that the iterator should be 'var').

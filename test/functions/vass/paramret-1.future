@@ -1,0 +1,83 @@
+bug: paramret - if a param procedure has its return type declared explicitly, it returns the default value of that type, regardless of its body
+
+The reason this happens is because a function
+
+  proc a() param :T { ... return r; ... }
+
+is rewritten by the compiler into
+
+  proc a() param :T { var _ret: T; ...; _ret = r; goto _last; ...;
+                      last: return _ret; }
+
+'var _ret: T;' initializes _ret to the default value of T, as it should.
+However, the compiler ignores the subsequent assignment of 'r' to _ret.
+So the default value gets returned.
+
+Proposed solution 1: David suggested to rewrite the function
+
+  proc g(param a: int) param : int { return a; }
+
+into
+
+  proc g_rewritten(param a: int) param {
+    param _ret = a;
+    if (_ret.type != int) then
+      compilerError("param function return type mismatch");
+    return _ret;
+  }
+
+(see paramret-diten.chpl - this actually works).
+
+Proposed solution 2: Vass has a compiler tree modified by David
+in an attempt to address this.
+
+Proposed solution 3: Brad's brainstorming in his email of 09/07/2010 08:41pm:
+
+  What if we compiled param fns with explicitly-declared types:
+  
+  def foo(): param <t> {
+     ...
+  }
+  
+  identically to how we compile those with inferred types:
+  
+  def foo(): param {
+     ...
+  }
+  
+  but inserted the following as an initial statement in the body:
+  
+  if (_ret.type != <t>) then
+     compilerError("param function return type mismatch");
+  
+  (where _ret is the temp that's put in by the compiler with inferred type).
+  
+  Potential problem: presumably _ret.type need not match <t> exactly but 
+  rather should be coercible to t.  E.g., <t> could be real but the returned 
+  values could be int.
+  
+  Potential fix: replace the equality test with a call to a primitive that 
+  is implemented by calling canDispatch() in the compiler on the two types 
+  in question?
+  
+Proposed solution 4: no, just Vass's ramblings:
+
+* In general, the return type of a function can be any expression, not
+necessarily a type identifier.  Therefore we may not have a Type to
+assign into the return variable's var->type field, as we tried to. 
+That's when we got the segfault.
+
+* In general the compiler does not assign known types into the 'type'
+fields directly, but uses the transformation to PRIM_INIT assginment and
+relies on the later type inference.  Given that, even if we do assign a
+type into return var's var->type field, are we guaranteed that type
+inference will not clobber it or that it will not otherwise be ignored?
+
+* What was the reason for allowing only one assignment to a param
+variable?  An alternative solution to this bug could be to permit
+multiple assignments, at least internally within the compiler.
+
+* // Related: ensuring that each variable is initialized prior to use is
+trivial given Chapel's declaration-is-initialization semantics.  How
+about ensuring that there is a return from a function on any path - is
+there an analysis that checks this?

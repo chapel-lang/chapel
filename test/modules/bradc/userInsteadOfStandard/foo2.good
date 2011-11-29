@@ -1,0 +1,3 @@
+warning: Ambiguous module source file -- using ./Math.chpl over $CHPL_HOME/modules/standard/Math.chpl
+In my math!
+In my foo2

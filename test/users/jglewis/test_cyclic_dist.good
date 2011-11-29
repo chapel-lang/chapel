@@ -1,0 +1,22 @@
+Cholesky Factorization Tests for Strided Index Ranges
+   Matrix Dimension  : 4
+   Indexing Base     : -3
+   Array distribution: cyclic
+
+Parallel Environment
+   Number of Locales         : 1
+   Number of cores per locale: 2
+-3:  2.30106
+2:  1.79381 1.97454
+7:  1.52831 1.51692 1.71308
+12:  1.41914 1.15822 0.858245 1.02758
+ unaliased array
+-3:  2.30106
+2:  1.79381 1.97454
+7:  1.52831 1.51692 1.71308
+12:  1.41914 1.15822 0.858245 1.02758
+ aliased array
+-3:  2.30106
+-2:  1.79381 1.97454
+-1:  1.52831 1.51692 1.71308
+0:  1.41914 1.15822 0.858245 1.02758

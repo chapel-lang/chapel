@@ -1,0 +1,4 @@
+x is initialized at compile time to 1.5
+x at runtime is 13.333
+y is initialized at compile time to 1
+y at runtime is 13

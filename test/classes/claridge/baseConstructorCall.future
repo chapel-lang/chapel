@@ -1,0 +1,4 @@
+bug: Derived class attempts to call the default constructor of the
+derived class, even when a user-defined constructor is provided.
+
+Also, try changing the DerivedClass constructor so it takes one argument and defines this.a.  Then the constructor chaining will actually assign that value to b instead.

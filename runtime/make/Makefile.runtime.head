@@ -1,0 +1,95 @@
+#
+# settings for the build
+#
+ifdef CHPL_DEVELOPER
+DEBUG=1
+else
+OPTIMIZE=1
+endif
+
+
+#
+# include the standard Chapel Makefile.base
+#
+
+CHAPEL_ROOT = $(RUNTIME_ROOT)/..
+CHAPEL_SUBDIR = runtime/$(RUNTIME_SUBDIR)
+
+ifneq ($(MAKE_LAUNCHER),1)
+CHPL_MAKE_HOST_TARGET = --target
+endif
+include $(CHAPEL_ROOT)/make/Makefile.base
+
+RUNTIME_INCLUDE_ROOT = $(RUNTIME_ROOT)/include
+
+LAUNCHER_CFLAGS = $(RUNTIME_CFLAGS) -DLAUNCHER
+LAUNCHER_INCLS = -I$(RUNTIME_ROOT)/include/comp-$(CHPL_MAKE_HOST_COMPILER) -I$(RUNTIME_ROOT)/include/$(subst -sim,,$(CHPL_MAKE_HOST_PLATFORM)) -I$(RUNTIME_ROOT)/include
+
+RUNTIME_CFLAGS += \
+	-DCHPL_TASKS_MODEL_H=\"tasks-$(CHPL_MAKE_TASKS).h\" \
+        -DCHPL_THREADS_MODEL_H=\"threads-$(CHPL_MAKE_THREADS).h\"
+
+RUNTIME_INCLS = \
+	-I. \
+	-I$(RUNTIME_INCLUDE_ROOT)/comm/$(CHPL_MAKE_COMM) \
+	-I$(RUNTIME_INCLUDE_ROOT)/tasks/$(CHPL_MAKE_TASKS) \
+	-I$(RUNTIME_INCLUDE_ROOT)/threads/$(CHPL_MAKE_THREADS) \
+	-I$(RUNTIME_INCLUDE_ROOT)/comp-$(CHPL_MAKE_COMPILER) \
+	-I$(RUNTIME_INCLUDE_ROOT)/$(subst -sim,,$(CHPL_MAKE_TARGET_PLATFORM)) \
+	-I$(RUNTIME_INCLUDE_ROOT) \
+	-I$(RUNTIME_INCLUDE_ROOT)/atomics/$(CHPL_MAKE_ATOMICS) \
+
+
+RUNTIME_OBJ_DIR = ./$(RUNTIME_OBJDIR)
+RUNTIME_OBJ_DIR_STAMP = $(RUNTIME_OBJ_DIR)/.timestamp
+
+LAUNCHER_OBJ_DIR = ./$(LAUNCHER_OBJDIR)
+LAUNCHER_OBJ_DIR_STAMP = $(LAUNCHER_OBJ_DIR)/.timestamp
+
+ifneq ($(MAKE_LAUNCHER),1)
+DEPEND_DIR = $(RUNTIME_OBJ_DIR)
+DEPEND_STAMP = $(RUNTIME_OBJ_DIR_STAMP)
+DEPEND_CFLAGS = $(RUNTIME_GEN_CFLAGS)
+DEPEND_CXXFLAGS = $(RUNTIME_GEN_CXXFLAGS)
+DEPEND_INCLS = $(RUNTIME_INCLS)
+else
+DEPEND_DIR = $(LAUNCHER_OBJ_DIR)
+DEPEND_STAMP = $(LAUNCHER_OBJ_DIR_STAMP)
+DEPEND_CFLAGS = $(LAUNCHER_CFLAGS)
+DEPEND_INCLS = $(LAUNCHER_INCLS)
+endif
+DEPEND_DIR_SAFESLASH = $(subst /,\\/, $(DEPEND_DIR))
+
+#
+# platform-specific subdirectory targets
+#
+SVN_DEPENDS = ./$(DEPEND_DIR)/Makefile.svn.depend
+
+
+#
+# clean and clobber targets
+#
+CLEAN_TARGS = \
+	./$(RUNTIME_OBJ_DIR)/*.o \
+	./$(LAUNCHER_OBJ_DIR)/*.o \
+	core \
+	*.core \
+	*.gmon \
+	*.a \
+        $(GEN_HEADERS) \
+	$(GEN_SRCS) \
+	$(EXECS)
+
+CLOBBER_TARGS = \
+	$(CLEAN_TARGS) \
+	./$(GEN_SUBDIR) \
+	*~
+
+
+
+
+MAKEALLSUBDIRS = $(SUBDIRS:%=%.makedir)
+CLEANSUBDIRS = $(SUBDIRS:%=%.cleandir)
+CLEANSUBDIRDEPS = $(SUBDIRS:%=%.cleandirdeps)
+CLOBBERSUBDIRS = $(SUBDIRS:%=%.clobberdir)
+DEPENDSUBDIRS = $(SUBDIRS:%=%.dependdir)

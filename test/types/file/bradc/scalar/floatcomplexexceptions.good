@@ -1,0 +1,15 @@
+f is: inf
+f is: nan
+f is: -inf
+f is: -0.0
+
+c is: inf + 0.0i
+c is: nan
+c is: -inf + 0.0i
+c is: -0.0 + 0.0i
+
+c is: 0.0 + infi
+c is: nan
+c is: 0.0 - infi
+c is: 0.0 - 0.0i
+

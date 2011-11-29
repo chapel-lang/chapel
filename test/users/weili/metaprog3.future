@@ -1,0 +1,6 @@
+error message: inferred return type param function returns variable
+
+This is similar to metaprog2.future except that here we generate an
+error message that suggests the root cause but not in a way that makes
+sense to the user.  Ideally, it seems like we should generate the same
+message as metaprog2.chpl.

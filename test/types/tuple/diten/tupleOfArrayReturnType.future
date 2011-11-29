@@ -1,0 +1,14 @@
+bug: type composed of runtime type is not a runtime type
+
+was:
+
+bug: tuple of array return type
+
+Was:
+
+
+bug: return type of tuple of type alias for array of int
+
+If a function has an explicit return type which is tuple of type aliases
+for the type array of int, it crashes at runtime. If the type is inferred
+as in tupleOfArrayReturnType2.chpl, it works correctly.

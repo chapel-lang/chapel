@@ -1,0 +1,1 @@
+configVarFileStringsMismatch.input: error: Found newline while reading string: "this test has mismatched quotes'

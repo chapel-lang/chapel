@@ -1,0 +1,1 @@
+outOfBounds.chpl:16: error: halt reached - array index out of bounds: (0, 0)

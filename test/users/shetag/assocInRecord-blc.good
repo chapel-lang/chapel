@@ -1,0 +1,15 @@
+assocInRecord-blc.chpl:2: warning: whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)
+A(one) = 1
+
+A(one) = 1
+A(two) = 2
+
+A(one) = 1
+A(two) = 2
+A(three) = 3
+
+A(one) = 1
+A(two) = 2
+A(three) = 3
+A(four) = 4
+

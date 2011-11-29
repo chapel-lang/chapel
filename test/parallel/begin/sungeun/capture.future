@@ -1,0 +1,31 @@
+feature request: Capture variable values used in a begin block at the
+time of task creation.
+
+Mostly just capturing a conversation we had with Fergie after his
+Chapel class in 12/10.  This test case is very similar to the one he
+sent to us.
+
+A snippet:
+
+  var i = 0;
+  while i < n {
+      begin work(i);
+      i += 1;
+    }
+
+'i' is not private to the task, so each iteration does not necessarily
+get a unique value of 'i' passed to work().
+
+Brad suggested that the existence of task private variables could make
+the situation better/clearer.
+
+Evaluating some of the begin block at task creation time opens up a
+bit of a can of worms because there is a question of where to draw the
+line (how much should be evaluated?).
+
+Another option might be to go the style of XMT futures where any
+non-global variables that are used in the block are required to be
+"passed in".  This might allow us to get rid of the heap allocation
+step we have now during the parallel pass.
+
+The solution should probably apply to cobegins also.

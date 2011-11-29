@@ -1,0 +1,2 @@
+numBits(x) = 32
+numBits(y) = 64

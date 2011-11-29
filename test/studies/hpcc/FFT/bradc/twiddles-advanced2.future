@@ -1,0 +1,13 @@
+semantic: reindexing array argument with unbounded domains 
+
+I think it is a semantic future if Brad can't figure out where
+to draw the line...
+
+feature request: formal array argument with indefinite reindexing
+
+This is a very advanced version of the twiddles function in
+which we use an anonymous domain with an unspecified bound to
+refer to an array's size rather than a separate query function.  
+Though I  think there are questions about how far we'd want to 
+push this concept, I think for the simple 1D case it can make
+sense.  Not sure where I'd draw the line currently...

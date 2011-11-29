@@ -1,0 +1,4 @@
+perfkeys: Time elapsed :
+graphkeys: n=50000000
+ylabel: Time (seconds)
+graphtitle: N-Body using Records (explicit domains)

@@ -1,0 +1,12 @@
+
+B[D] = true true true true true true true true true true
+&& reduce B[D] = true
+|| reduce B[D] = true
+
+B[D] = false false false false false false false false false false
+&& reduce B[D] = false
+|| reduce B[D] = false
+
+B[D] = true false true false true false true false true false
+&& reduce B[D] = false
+|| reduce B[D] = true

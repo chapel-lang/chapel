@@ -1,0 +1,2 @@
+halt.chpl:8: error: halt reached - x and y are not equal!
+x = 13, y = 99.9

@@ -1,0 +1,6 @@
+rAll is: 1..10
+rAllSlice = 3..8 by 2
+rAllSlice = 2..8 by 2
+rAllSlice = 3..8
+rAllSlice = 2..8
+rAllSlice = 1..10

@@ -1,0 +1,4 @@
+This test is very useful for testing that when running on
+a heterogeneous system, the memory and cpu of each locale
+are being queried correctly.  Unfortunately, it's not very
+useful for automated testing...

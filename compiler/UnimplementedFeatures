@@ -1,0 +1,94 @@
+Unimplemented feature list
+
+HIGH PRIORITY ITEMS (For implementation before Dec 1)
+
+DONE int/uint semantics "var x: uint = 12" "var y: int = 12u"
+DONE byte width semantics  "var x : int(8) = 2" where 2 defaults to int(64)
+DONE floating point literals
+DONE variable declarations with shared types
+     constructors
+DONE nested type aliases
+DONE sequence # operator
+DONE sequence indexing with negative integers
+DONE sequence indexing by a tuple
+DONE cross product function application
+DONE sequence indexing with a sequence
+DONE predicate expressions "x = [i in D] if i < 10 then ..."
+DONE iterator functions
+DONE reductions
+DONE indefinite domains
+DONE   -=/remove method
+DONE   member? method
+DONE domain arguments to functions
+DONE association of arrays to domains
+DONE   domain assignment
+DONE   domain reallocation
+DONE   array reallocation
+DONE array arguments to functions
+DONE   with explicit domains
+DONE   with queried domains
+     scalar promotion to preserve arrayness
+DONE single variables
+DONE sync variables
+
+MEDIUM PRIORITY ITEMS (Maybe implemented by Dec 1)
+
+DONE primitive to string casts
+DONE string to primitive functions
+DONE config parameters
+DONE config variables (more orthogonal implementation)
+DONE underscore to destructure tuples
+DONE variables accessed via modules (mod.x)
+     using modules not in files passed to the compiler
+DONE unions
+DONE unbounded ranges
+DONE   usage in zippered context
+DONE   usage in array slicing
+DONE tuple to sequence cast
+DONE sequence to tuple cast
+DONE shadowing functions
+     index types in domain type
+     subdomains
+     association of subdomains to domains
+DONE array slicing
+     array rank change
+DONE complex array initialization "var x : [i in D] int = i"
+     arrays of arrays
+DONE serial statement
+
+LOW PRIORITY ITEMS (Probably not implemented by Dec 1)
+
+DONE intents (in, out, inout, const)
+     functions as arguments to functions
+     conditional declarations
+     predefined argv array
+DONE nested classes
+     nested records
+     array reshape
+     type select statements and wildcard underscore
+DONE type variables nested in formal types "x : C(?t)"
+DONE enumerated domains
+     opaque domains
+DONE sparse domains
+     sparse array slicing and reindexing
+     forall statement in parallel
+     coforall
+
+CHOPPING BLOCK ITEMS
+
+     anonymous record literals
+     module initialize function
+     module finalize function
+     fixed size strings
+     static methods
+     assignment of records to classes
+     sequence of length-1 strings special features
+     check for invalid goto usage
+     any and all reductions
+     implicit all reduction
+     special interpretation of sequences in select statements
+     cursors
+     arithmetic index sets
+     set_range method on arithmetic domains
+     product domains
+     array functions

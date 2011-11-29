@@ -1,0 +1,16 @@
+semantic bug: Choose one of int(64) or uint(64) for mixed operations.
+
+Keeping the result of this combination of types will make a lot of code break
+if we go to 64 bits for the default integer type.  It would be better to choose
+one of int(64) and uint(46) as the result type of a mixed operation, and then 
+generate a run-time error if the result does not fit in the specified result type
+(a down-cast for assignment).
+
+At this point, I think that int(64) is the better choice for the uebertype.
+The reasoning is that prgrs normally use "int" when they don't care, but use
+"uint" as an assertion that the value never goes negative.  
+Then it makes sense to allow (e.g.) uint real arguments to be cast silently to
+int formal parameters (as long as the representation fits), whereas signed real
+arguments might have to be explicitly cast to unsigned when calling a function
+expecting unsigned arguments.  That makes the unsignedness assertion show up in
+the client code, so the assertion propagates (similar to const-ness in C).

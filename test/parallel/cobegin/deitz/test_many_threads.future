@@ -1,0 +1,77 @@
+unimplemented feature: task pool with repooling on waits
+
+These are the emails I sent out when I think I figured out the issue:
+
+I think I figured it out right after I hit 'send' (go figure).  I think   
+the problem is that the recursion is greater than the maxThreadsPerLocale so all of
+the threads are waiting on the threads generated for the recursive calls     
+to finish.  For this test to work, we would need to requeue tasks that are
+waiting on sync variables (in this case, the sync var used with the
+cobegin implementation).
+
+Steve
+
+On Tue, 25 Mar 2008, Steve Deitz wrote:
+
+> Samuel,
+>
+> Do you have any insight into the following:  I've been looking at the future
+>
+>  test/parallel/cobegin/deitz/test_many_threads.chpl
+> 
+> where I changed s to 1 and added a writeln statement to show progress in the
+> sleepAndWrite function.  The code is
+>
+>  use Time;
+>  
+>  config var n: int = 512;
+>  config var s: uint = 1; 
+>  
+>  var A: [1..n] int;
+>  
+>  def sleepAndWrite(i: int) {
+>    sleep(s);
+>    A(i) = 1;
+>    writeln("wrote ", i);
+>  }
+>   
+>  def foo(i: int) {
+>    cobegin {
+>      sleepAndWrite(i);
+>      if i < n then
+>        foo(i+1);  
+>    }
+>  }  
+>   
+>  foo(1);
+> 
+>  writeln(A);
+> 
+> The problem is that it doesn't seem to make progress after maxThreadsPerLocale has
+> been reached.  So on my desktop, I see the warning
+> 
+>  warning: maxThreadsPerLocale is unbounded, but unable to create more than 305
+> threads
+> 
+> and it stops working at 305.  When I explicitly set maxThreadsPerLocale, it stops
+> working at one less than whatever that value is.  So
+> 
+>  $ a.out --maxThreadsPerLocale=4
+>  wrote 1
+>  wrote 2
+>  wrote 3
+>
+> and then it hangs.  Shouldn't this test be able to finish using the task
+> pool?
+>
+> Steve
+>
+
+was:
+
+unimplemented feature: task pool to avoid exhausting thread resources
+
+Currently, when we can't fork off new tasks using threads, we give an
+internal error.  Eventually, such tasks should be queued in some sort
+of structure so that they get scheduled to threads as threads become
+available.

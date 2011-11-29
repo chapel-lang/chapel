@@ -1,0 +1,56 @@
+#!/usr/bin/env perl
+
+use strict;
+my $outputdir = $ARGV[0];
+my $html_file = "$outputdir/index.html";
+my $image_files = "$outputdir/images.tmp";
+my $currentdir_file = "$outputdir/dir.tmp";
+my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime time;
+
+$mon += 1;
+$year -= 100;
+
+use Cwd;
+my $currentdir = getcwd;
+
+opendir(DIR, $outputdir);
+my @myfiles= readdir(DIR); 
+
+my @images;
+foreach my $image (@myfiles) {
+    my $myindex = index($image, ".gif");
+    my $mylength = length($image);
+    if (($myindex != -1) &&
+        ($myindex == (length($image)-4))) {
+        my @image_parts = split(/\//, $image);
+        push(@images,  @image_parts[$#image_parts]);
+    }
+}
+
+
+if (-e $html_file) {
+    unlink $html_file or warn "[Warning (viewGraphs): Could not remove $html_file:$!]\n";
+}
+open HTML, ">$html_file" or die "[Error (viewGraphs): Could not open $html_file: $!]\n";
+print HTML "<html>\n";
+print HTML "<body>\n";
+print HTML "<p>Performance Graphs as of $mon/$mday/$year</p>\n";
+&appendImageList;
+print HTML "</body>\n";
+print HTML "</html>\n";
+close (HTML);
+
+sub appendImageList {
+    foreach my $image (@images) {
+        my $image_name = substr $image, 0, -4;
+        print HTML "\n";
+	print HTML "<p>\n";
+	print HTML "$image_name: <a href=$image>\n";
+	print HTML "<br>\n";
+        print HTML "<img border=\"0\" alt=\"\" src=\"$image\" title=\"$image\" width=\"600\" />\n"; #height=\"150\" />\n";
+	print HTML "</a>\n";
+	print HTML "</p>\n";
+        print HTML "\n";
+    }
+}
+

@@ -1,0 +1,12 @@
+abc == abc => true
+abc == abd => false
+abc != abc => false
+abc != abd => true
+abc <= abc => true
+abc <= abd => true
+abc < abc => false
+abc < abd => true
+abc >= abc => true
+abc >= abd => false
+abc > abc => false
+abc > abd => false

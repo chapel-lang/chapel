@@ -1,0 +1,9 @@
+bug: range op overflow
+
+Was:
+
+bug: range slice causes integral overflow
+
+When checking if the ranges have an empty intersection, the subtraction
+causes an overflow, so the check is incorrect. A degenerate range is returned
+even though the two ranges do intersect.

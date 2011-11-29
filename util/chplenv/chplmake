@@ -1,0 +1,28 @@
+#!/usr/bin/env perl
+
+use File::Basename;
+
+$utildirname = dirname($0);
+
+$preset_chplmake=$ENV{'CHPL_MAKE'};
+if ($preset_chplmake eq "") {
+    $platform = `$utildirname/platform`;
+    chomp($platform);
+    if ($platform eq "cygwin" || $platform eq "darwin") {
+        $chplmake = "make";
+    } elsif ($platform eq "linux32" || $platform eq "linux64") {
+        $whichgmake = system("which gmake > /dev/null 2>&1");
+        if ($whichgmake == 0) {
+            $chplmake = "gmake";
+        } else {
+            $chplmake = "make";
+        }
+    } else {
+        $chplmake = "gmake";
+    }
+} else {
+    $chplmake = $preset_chplmake;
+}
+
+print "$chplmake\n";
+exit(0);

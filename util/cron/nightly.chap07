@@ -1,0 +1,6 @@
+#!/bin/tcsh
+#
+
+# run cyclic dist regressions
+source ~/.chplcron.dists.cshrc && ~/chapel/util/cron/nightly -cron -dist cyclic >&! ~/tmp/nightly.cyclic.out
+

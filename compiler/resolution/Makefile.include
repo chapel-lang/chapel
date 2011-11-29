@@ -1,0 +1,5 @@
+RESOLUTION_OBJDIR = $(COMPILER_ROOT)/resolution/$(OBJ_SUBDIR)
+
+ALL_SRCS += resolution/*.cpp
+
+include $(COMPILER_ROOT)/resolution/Makefile.share

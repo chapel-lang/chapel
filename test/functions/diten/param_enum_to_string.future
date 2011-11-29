@@ -1,0 +1,3 @@
+unimplemented feature: compile time enum->string conversion
+
+A param enum->string conversion should be done at compile time.

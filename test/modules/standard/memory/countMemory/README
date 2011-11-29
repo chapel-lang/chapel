@@ -1,0 +1,3 @@
+This test is non-portable, so a .good file needs
+to be created for each platform on which it is
+to be run.  See countMemory.good for more info.

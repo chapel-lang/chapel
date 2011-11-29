@@ -1,0 +1,12 @@
+error message: passing strided range to non-strided
+
+The current error message for this is:
+
+test/users/thom/passStridedToNonStrided.chpl:5: error: unresolved call 'foo(range(int,bounded,1))'
+test/users/thom/passStridedToNonStrided.chpl:1: note: candidates are: foo(x: range)
+
+which was not clear to Thom and seems like it could be improved:
+
+- the "1" seems like it should be printed out as "true"?
+- could the formal range type be expanded to show all of the default
+  types/params and make the mismatch more clear?

@@ -1,0 +1,17 @@
+bug: zipper iteration of mismatched ranks
+
+This test needs a compiler error message.
+
+was:
+
+
+The current expected behavior of this test is to use the default iteration
+orders of both arrays to produce a 1D sum, which is reduced.
+
+This test currently causes leader/follower iterators to get used, and gets
+a compile time tuple index out of bounds error. If A and B are swapped:
+"+ reduce (B + A);", the serial iterators are chosen instead and the reduction
+gets the right result.  See reduce3Dwith2D.chpl for that case.
+
+This should eventually be an error because the shapes don't match and the
+result of promotion should not automatically be flattened to 1D.

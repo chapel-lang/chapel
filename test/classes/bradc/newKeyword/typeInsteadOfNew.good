@@ -1,0 +1,3 @@
+typeInsteadOfNew.chpl:10: error: unresolved type specifier 'C(domain(1,int(64),false))'
+typeInsteadOfNew.chpl:5: note: candidates are: C
+typeInsteadOfNew.chpl:10: note: did you forget the 'new' keyword?

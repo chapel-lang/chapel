@@ -1,0 +1,10 @@
+semantic: should we be able to infer that a function is returning
+types?
+
+Put another way, why should the user be forced to specify the 'type'
+keyword in this function?
+
+Note that this test is a clone of raiseType-blc.chpl which I checked
+in unfuturized because I think it's a nice test of the language as it
+stands.
+

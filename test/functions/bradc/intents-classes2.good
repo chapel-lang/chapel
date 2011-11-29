@@ -1,0 +1,15 @@
+in callin, x is: 10 2.3
+re-assigned to be new instance: 11 3.4
+back at callsite, a is: 10 2.3
+
+in callout, x ought to be nil
+re-assigned to be new instance: 12 4.5
+back at callsite, a is: 12 4.5
+
+in callinout, x is: 12 4.5
+re-assigned to be new instance: 13 5.6
+back at callsite, a is: 13 5.6
+
+in callblank, x is: 13 5.6
+re-assigned to be: 14 6.7
+back at callsite, a is: 14 6.7

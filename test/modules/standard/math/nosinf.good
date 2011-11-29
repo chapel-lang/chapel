@@ -1,0 +1,1 @@
+nosinf.chpl:6: error: unresolved call 'sinf(real(32))'

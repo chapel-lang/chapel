@@ -1,0 +1,1 @@
+byTypeError1.chpl:1: error: in the 'by' operator, there is no implicit conversion from the type of the step argument, int(64), to the type required by the range argument, int

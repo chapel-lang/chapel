@@ -1,0 +1,16 @@
+PARSER_SRCS = \
+	countTokens.cpp \
+	parser.cpp \
+	processTokens.cpp \
+        yy.cpp \
+
+CXX_C_SRCS = \
+	chapel.tab.cpp \
+	lex.yy.cpp \
+
+SVN_SRCS = $(PARSER_SRCS)
+SRCS = $(SVN_SRCS) $(CXX_C_SRCS)
+
+PARSER_OBJS = \
+	$(CXX_C_SRCS:%.cpp=$(PARSER_OBJDIR)/%.$(OBJ_SUFFIX)) \
+	$(PARSER_SRCS:%.cpp=$(PARSER_OBJDIR)/%.$(OBJ_SUFFIX))

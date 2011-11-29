@@ -1,0 +1,1 @@
+test_named6-error.chpl:5: error: The named argument 'i' is used more than once in the same function call.

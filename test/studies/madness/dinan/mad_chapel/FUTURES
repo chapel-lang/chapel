@@ -1,0 +1,160 @@
+     FUTURES:  1D MADNESS Known Bugs, Workarounds, and Design Issues
+     ---------------------------------------------------------------
+
+This file is intended to enumerate some of the workarounds that have been used
+in the 1d Madness code.  I have also marked these workarounds in the code with
+"FIXME" comments.
+
+Lines beginning with + and - mean:
+ + Issue unresolved, workaround still present
+ - Issue resolved, workaround has been removed
+
+
+Overall:
+=======
+
+ + Module/Class privates
+ + Private/Non-transitive use statements.  "private use ..."
+ + Initialization from a function in the default constructor
+ + Custom constructors
+
+
+FTree:
+=====
+ 
+ + Arrays of arrays (in FTree)
+ - Domains of type domain(2*int) require naming the index type separately.
+ + Can't return const from a var function getter.
+
+AnalyticFcn:
+===========
+
+ + The AFcn class gets around not having function pointers.  It's useful though
+   for creating new functions that are composed of old functions which will be
+   hard without anonymous functions and static data in functions.
+ + this() is meant to be abstract so there are 2 workarounds to ensure that any
+   AFcn() implements this function.  The first is the halt() if you call the
+   this() in the base class and the second is the return statement you have to
+   give to help out the compiler.
+
+StringConvert:
+=============
+
+ + Chapel doesn't support formatted output yet, so this wraps an extern call to
+   sprintf.  Once chapel supports formatted printing of reals, etc, this should
+   go.
+
+Quadrature:
+==========
+
+ + In here we really want a const matrix that contains all of these
+   coefficients and then when we return them we would use a rank changing slice
+   operation to pull out a piece and return it as a const.  This would eliminate
+   the need for the select blocks.
+   
+TwoScale:
+========
+
+ + Really want module privates here.
+ + Would like to be able to make some of the fields in the class const.  This can't
+   be done presently because of constructor gotchas.
+ + Coefficients are read from a file rather than being defined in a static const
+   matrix.  This is technically a workaround from how it's done in the other 1d
+   implementations, but in reality it's probably an improvement.
+ + hg_getCoeffs() does an explicit copy to work around rank change slicing.
+
+MRA:
+===
+
+ + Constructors proved to be the biggest workaround in the Function class.
+   Construction is done through the default constructor plus initialize() plus
+   some other functions that initialize() calls.  Being able to initialize
+   members with the result of a function call would help clean this up, being
+   able to define constructors would be best.  This would hopefully also
+   subsume the .copy() constructor.
+ + The constructor issue is also preventing some things from being const that
+   really should be.
+   
+
+Overal Design Futures:
+=====================
+
+These are some thoughts on the overall design of 1d Madness that could be
+improved.  My goal in the implementation was to take an iterative approach to
+Madness, starting from the structure and algorithms that are in the Python and
+Java code, getting numerical correctness, and then improving on this design
+wherever we can.
+
+** The FTree data structure:
+
+It bugs me that the algorithms in Function have been married to the hashtable
+implementation of the tree.  I would really like to abstract this out so that
+the FTree contains all of these optimizations and not Function.  This doesn't
+necessarily involve removing all mention of (level, index) from Function --
+it's fine to take advantage of the structure of the tree in the algorithms --
+the main thing to revise will be the assumptions that we can do random access
+on the tree.  In general, I have the feeling that doing this successfully
+will involve defining a base class called TreeNode:
+
+class TreeNode {
+  var lvl: int;  // aka n -- These names have to do with the math
+  var idx: int;  // aka l
+}
+
+This class should be specialized based on the particular implementation of
+FTree and FTree's methods should take TreeNodes (possibly in addition to level
+and index.  eg takeMeFromHereTo(here: TreeNode, n, l).
+
+
+** The Sum (scaling/gauss legendre) and Difference (multiwavelet) Trees
+
+Recall the telescoping series that forms the Multiresolution analysis in
+Madness:
+
+ L^2 = V_0 + (V_1-V_0) + (V_2-V_1) + (V_3-V_2) + ...
+
+     Sum^^    ^^^ Difference Spaces ^^^
+
+ Where L^2 is the space of square integrable functions and:
+
+V_0 <= V_1 <= V_3 <= ...  (by <= I mean subset) -- That is, each finer space
+(in the scaling representation) completely subsumes the coarser spaces.  Put
+another way, level n+1 in the tree can contain all of the information in level
+n and then some.
+
+At any given time we can store our approximation of the L^2 space as a
+combination of V_x and the difference spaces (V_(x+1)-V_x) + (V_(x+2)-V(x+1)) +
+... from the telescoping series.  The compressed and uncompressed cases in
+Madness correspond to the extremes where all the data is either in the
+difference tree or in the sum tree, respectively.  This sliding scale is a
+cornerstone of the multiresolution analysis (MRA), so every Function that we
+wish to represent in the MRA /must/ have both an s and a d tree.  Because of
+the difference in representation, these trees have different properties and
+certain operations (such as get_coeffs) are performed differently on each tree.
+Presently these operations are built into the Function class but a much cleaner
+and more flexible structure would be to split these two types of trees off into
+separate classes that can contain these differences and make the two
+representations easier to work with.
+
+What I would envision for this is a class hierarchy like:
+
+
+                      FTree*
+                      /   \
+                     /     \
+          ScalingTree*     DifferenceTree*
+               |                  |
+               |                  |
+            GLTree             MWTree
+
+
+      * - Abstract Class
+          GL=Gauss-Legendre and MW=MultiWavelet
+
+These FTree subclasses would then contain all of the iterators and accessor
+functions that deal with preserving the specific properties of each tree.  For
+example, the scaling tree has coefficients only at the leaves whereas the
+difference tree has coefficients at every node.  A change like this would also
+make it easier to substitute different basis functions for problems from
+different domains (chemists apparently favor the Gauss Legendre polynomial
+basis).

@@ -1,0 +1,4 @@
+bug: array shape not preserved in forall expr (sparse array type)
+
+This test needs sparse array types to be inferred
+from forall loops in order to work properly.

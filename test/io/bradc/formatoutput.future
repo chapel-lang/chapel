@@ -1,0 +1,15 @@
+feature request: output formatting
+
+This future is a placeholder for implementing some sort of
+formatting when writing integer and floating point values.
+I'm not married to (nor particularly fond of) the syntax
+that I used here, but wanted to have something as a placeholder.
+Generally, I like the concept of casting to strings, but am not
+as crazy about %format strings (in part because we don't have
+as much need of them as C does, since we have better information
+about our types being written; in part because I think the C
+flags are unintuitive.
+
+The person who takes this on should probably start by seeing
+what C# and Java do, and then see if they can fit that into
+a Chapel type cast framework.

@@ -1,0 +1,1 @@
+writeln("Fight the power!");
