@@ -1,6 +1,7 @@
+
+#define __STDC_FORMAT_MACROS
 #include <cstdlib>
 #include <cstring>
-#define __STDC_FORMAT_MACROS
 #include <inttypes.h>
 #include "astutil.h"
 #include "expr.h"
