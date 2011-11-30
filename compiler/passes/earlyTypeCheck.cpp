@@ -407,6 +407,7 @@ static Map<BlockStmt*, VisibleFunctionBlock2*> visibleFunctionMap;
 static int nVisibleFunctions = 0; // for incremental build
 static Map<BlockStmt*, BlockStmt*> visibilityBlockCache;
 static Vec<BlockStmt*> standardModuleSet;
+static Map<BaseAST*, TypeSymbol*> typeMap;
 
 static BlockStmt*
 getVisibleFunctions(BlockStmt* block, const char* name,
@@ -469,10 +470,10 @@ getVisibleFunctions(BlockStmt* block, const char* name,
 static void buildVisibleFunctionMap2() {
   for (int i = nVisibleFunctions; i < gFnSymbols.n; i++) {
     FnSymbol* fn = gFnSymbols.v[i];
-    if (!fn->hasFlag(FLAG_INVISIBLE_FN) && fn->defPoint->parentSymbol
-        && !isArgSymbol(fn->defPoint->parentSymbol)
-        && !isInterfaceSymbol(fn->defPoint->parentSymbol)) {
-      BlockStmt* block = NULL;
+    if (!fn->hasFlag(FLAG_INVISIBLE_FN)
+        && fn->defPoint->parentSymbol && !isArgSymbol(fn->defPoint->parentSymbol)
+        && !isInterfaceSymbol(fn->defPoint->parentSymbol)) {BlockStmt *
+block      = NULL;
       if (fn->hasFlag(FLAG_AUTO_II)) {
         block = theProgram->block;
       } else {
@@ -481,7 +482,7 @@ static void buildVisibleFunctionMap2() {
         // add all functions in standard modules to theProgram
         //
         if (standardModuleSet.set_in(block))
-          block = theProgram->block;
+        block = theProgram->block;
       }
       VisibleFunctionBlock2* vfb = visibleFunctionMap.get(block);
       if (!vfb) {
@@ -503,17 +504,17 @@ static void buildVisibleFunctionMap2() {
  * END DUPLICATE CODE
  */
 
-void addVisibleInterfaceFunctions(BaseAST *where_clause, const char *name,
-    Vec<FnSymbol*>& visibleFns) {
+/*void addVisibleInterfaceFunctions(BaseAST *where_clause, const char *name,
+ Vec<FnSymbol*>& visibleFns) {
 
-  BaseAST *implementer;
-  BaseAST *implemented;
+ BaseAST *implementer;
+ BaseAST *implemented;
 
-  SymExpr *se_implemented = toSymExpr(implemented);
+ SymExpr *se_implemented = toSymExpr(implemented);
 
-  InterfaceSymbol *is = toInterfaceSymbol(se_implemented->var);
+ InterfaceSymbol *is = toInterfaceSymbol(se_implemented->var);
 
-}
+ }*/
 
 // Typechecks the given ast node with the expected return (in case a return
 // is encountered)
@@ -594,8 +595,8 @@ BaseAST *typeCheckExpr(BaseAST *currentExpr, BaseAST *expectedReturnTypeExpr) {
               e_actual;
               e_actual = e_actual->next, s_formal =
                   (s_formal && s_formal->defPoint->next) ?
-                  toArgSymbol(toDefExpr((s_formal)->defPoint->next)->sym) :
-                  NULL) {
+                      toArgSymbol(toDefExpr((s_formal)->defPoint->next)->sym) :
+                      NULL) {
             if (!s_formal) {
               mismatch = true;
               break;
@@ -703,6 +704,137 @@ BaseAST *typeCheckFn(FnSymbol *fn) {
   return typeCheckExpr(fn->body, fn->retExprType);
 }
 
+void mapArguements(CallExpr* where, FnSymbol* visibleFn, CallExpr* call) {
+  //UnresolvedSymExpr *ur_where = toUnresolvedSymExpr(where->baseExpr);
+  BaseAST *arg1 = where->argList.get(1);
+  BaseAST *arg2 = where->argList.get(2);
+  //printf("%s\n", ur_where->unresolved);
+  //Expr* type = where->list->get(1);
+  SymExpr *s_arg1 = toSymExpr(arg1);
+  //SymExpr *s_arg2 = toSymExpr(arg2);
+  //printf("%s %d implements the interface %d\n", s_arg1->var->cname,s_arg1->var->id, arg2->id);
+  Expr *e_actual = call->argList.head;
+  ArgSymbol *s_formal =
+      ((visibleFn)->formals.head) ?
+          toArgSymbol(toDefExpr((visibleFn)->formals.head)->sym) : NULL;
+  for (;
+      e_actual;
+      e_actual = e_actual->next, s_formal =
+          (s_formal && s_formal->defPoint->next) ?
+              toArgSymbol(toDefExpr((s_formal)->defPoint->next)->sym) : NULL) {
+    //printf("%s %d\n", s_formal->cname, s_formal->id);
+    if (s_formal->id == s_arg1->var->id) {
+      //if(checkImplementation(e_actual,s_arg2)){
+      if (cclosure.has_implements_relation(e_actual, arg2)) {
+        printf("Interface is implemented!\n");
+        break;
+      } else {
+        printf("Interface not implemented\n");
+      }
+
+    }
+
+  }
+}
+
+void checkFunctionCall(CallExpr* call) {
+  //printf("In checkFunctioncall\n");
+  if (!call->primitive) {
+    //printf("Inside not primitive\n");
+    CallInfo2 info(call);
+
+    Vec<FnSymbol*> visibleFns; // visible functions
+
+    if (gFnSymbols.n != nVisibleFunctions)
+      buildVisibleFunctionMap2();
+
+    if (!call->isResolved()) {
+      if (!info.scope) {
+        Vec<BlockStmt*> visited;
+        getVisibleFunctions(getVisibilityBlock(call), info.name, visibleFns,
+            visited);
+      } else {
+        if (VisibleFunctionBlock2* vfb = visibleFunctionMap.get(info.scope))
+          if (Vec<FnSymbol*>* fns = vfb->visibleFunctions.get(info.name))
+            visibleFns.append(*fns);
+      }
+    } else {
+      visibleFns.add(call->isResolved());
+    }
+
+    forv_Vec(FnSymbol, visibleFn, visibleFns) {
+        //printf("Inside for loop Checking against %s\n", visibleFn->cname);
+        bool mismatch = false;
+        Expr *e_actual = call->argList.head;
+        ArgSymbol *s_formal =
+            ((visibleFn)->formals.head) ?
+                toArgSymbol(toDefExpr((visibleFn)->formals.head)->sym) : NULL;
+        for (;
+            e_actual;
+            e_actual = e_actual->next, s_formal =
+                (s_formal && s_formal->defPoint->next) ?
+                    toArgSymbol(toDefExpr((s_formal)->defPoint->next)->sym) :
+                    NULL) {
+          //printf("Inside actuals loop\n");
+          if (!s_formal) {
+            printf("Mismatched\n");
+            mismatch = true;
+            break;
+          }
+          //printf("Inside Actuals 2\n");
+          /*if (hasFlag(s_formal, FLAG_TYPE_VARIABLE)) {
+            if (SymExpr *se_actual = toSymExpr(e_actual)) {
+              if (!isTypeSymbol(se_actual->var)) {
+                mismatch = true;
+                break;
+              } else {
+                typeMap.put(s_formal, toTypeSymbol(se_actual->var));
+              }
+            } else {
+              mismatch = true;
+              break;
+            }
+          } else if (!cclosure.is_equal(e_actual, s_formal->typeExpr)) {
+            //if(UnresolvedSymExpr *s_type = toUnresolvedSymExpr(toExpr(s_formal->typeExpr)))
+            printf("Mismatched\n");
+            mismatch = true;
+            break;
+          }*/
+        }
+        //printf("Out of actuals loop\n");
+        if (!mismatch) {
+          //printf ("Matching function found %s\n",visibleFn->cname);
+          if (visibleFn->where) {
+            for_alist(expr,visibleFn->where->body) {
+              if (CallExpr* where_expr = toCallExpr(expr)) {
+                if (UnresolvedSymExpr *callsymexpr = toUnresolvedSymExpr(where_expr->baseExpr)) {
+                  if ((!strcmp(callsymexpr->unresolved, "_build_tuple"))
+                      || (!strcmp(callsymexpr->unresolved, "PRIM_ACTUALS_LIST"))) {
+                    //printf("inside list of exprs\n");
+                    for_alist(wl, where_expr->argList) {
+                      if (CallExpr *where_ce = toCallExpr(wl)) {
+                        if (UnresolvedSymExpr *use = toUnresolvedSymExpr(where_ce->baseExpr)) {
+                          if (!strcmp(use->unresolved, "implements")) {
+                            //printf("where with implements found\n");
+                            mapArguements(where_ce, visibleFn, call);
+                          }
+                        }
+                      }
+                    }
+                  } else if (!strcmp(callsymexpr->unresolved, "implements")) {
+                    //printf("where with implements found\n");
+                    mapArguements(where_expr, visibleFn, call);
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    printf("No matching functions at call");
+  }
+}
+
 bool checkInterfaceImplementations(BlockStmt *block) {
   bool foundImplementsPhrases = false;
 
@@ -714,6 +846,7 @@ bool checkInterfaceImplementations(BlockStmt *block) {
           foundImplementsPhrases = true;
       }
     } else if (CallExpr *ce = toCallExpr(s)) {
+      //printf("Call expr %d\n", ce->id);
       if (UnresolvedSymExpr *use = toUnresolvedSymExpr(ce->baseExpr)) {
         if (!strcmp(use->unresolved, "implements")) {
           foundImplementsPhrases = true;
@@ -743,7 +876,7 @@ bool checkInterfaceImplementations(BlockStmt *block) {
                         INT_FATAL("Unimplemented Operator: 1 arg\n");
                         //return op->returnInfo(call, cclosure.get_representative_ast(call->argList.get(1)), NULL);
                       } else {
-                        printf("Operator: 2 args\n");
+                        //printf("Operator: 2 args\n");
                         //FIXME: I don't like passing NULL here, we need to be more flexible
                         //with what operators need
 
@@ -843,19 +976,17 @@ bool checkInterfaceImplementations(BlockStmt *block) {
                         Expr *e_actual = ce->argList.head;
                         ArgSymbol *s_formal =
                             ((visibleFn)->formals.head) ?
-                                toArgSymbol(toDefExpr((visibleFn)->formals.head)->sym)
-                                    :
+                                toArgSymbol(toDefExpr((visibleFn)->formals.head)->sym) :
                                 NULL;
                         for (;
                             e_actual;
                             e_actual = e_actual->next, s_formal =
                                 (s_formal && s_formal->defPoint->next) ?
-                                toArgSymbol(toDefExpr((s_formal)->defPoint->next)->sym) :
-                                NULL) {
+                                    toArgSymbol(toDefExpr((s_formal)->defPoint->next)->sym) :
+                                    NULL) {
 
                           SymExpr *actual_sym = toSymExpr(e_actual);
-                          if (!actual_sym
-                              || !isInterfaceSymbol(actual_sym->var)) {
+                          if (!actual_sym || !isInterfaceSymbol(actual_sym->var)) {
                             if (!s_formal) {
                               mismatch = true;
                               break;
@@ -928,6 +1059,8 @@ bool checkInterfaceImplementations(BlockStmt *block) {
               INT_FATAL("Implementing type not found\n");
             }
           }
+        } else {
+          checkFunctionCall(ce);
         }
       }
     }
