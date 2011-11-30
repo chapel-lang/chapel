@@ -129,27 +129,27 @@ struct CongruenceClosure {
     return node;
   }
 
-  bool has_implements_relation(BaseAST *implementer, BaseAST *implements) {
+  bool has_implements_relation(BaseAST *implementer, BaseAST *implemented) {
   	CCNode *rep_implementer = representative(find_or_insert(implementer));
-  	CCNode *rep_implements = representative(find_or_insert(implements));
+  	CCNode *rep_implemented = representative(find_or_insert(implemented));
 
   	if (std::find(rep_implementer->implements.begin(),
-  			rep_implementer->implements.end(), rep_implements) !=
+  			rep_implementer->implements.end(), rep_implemented) !=
   					rep_implementer->implements.end())
   		return true;
   	else
   		return false;
   }
 
-  void add_implements_witness(BaseAST *implementer, BaseAST *implements) {
+  void add_implements_witness(BaseAST *implementer, BaseAST *implemented) {
   	CCNode *rep_implementer = representative(find_or_insert(implementer));
-  	CCNode *rep_implements = representative(find_or_insert(implements));
+  	CCNode *rep_implemented = representative(find_or_insert(implemented));
 
   	if (std::find(rep_implementer->implements.begin(),
-  			rep_implementer->implements.end(), rep_implements) ==
+  			rep_implementer->implements.end(), rep_implemented) ==
   					rep_implementer->implements.end()) {
 
-  		rep_implementer->implements.push_back(rep_implements);
+  		rep_implementer->implements.push_back(rep_implemented);
   	}
   }
 
