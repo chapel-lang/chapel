@@ -10,7 +10,7 @@ module BufferInternals {
 
 
   extern proc qbytes_retain(qb:qbytes_ptr_t);
-  extern proc qbytes_release(qb:qbytes_ptr_t):err_t;
+  extern proc qbytes_release(qb:qbytes_ptr_t);
   extern proc qbytes_len(qb:qbytes_ptr_t):int(64);
   extern proc qbytes_data(qb:qbytes_ptr_t):c_ptr;
 
@@ -25,7 +25,7 @@ module BufferInternals {
   */
   extern proc qbuffer_create(inout buf:qbuffer_ptr_t):err_t;
   extern proc qbuffer_retain(buf:qbuffer_ptr_t);
-  extern proc qbuffer_release(buf:qbuffer_ptr_t):err_t;
+  extern proc qbuffer_release(buf:qbuffer_ptr_t);
 
   extern proc qbuffer_append(buf:qbuffer_ptr_t, bytes:qbytes_ptr_t, skip_bytes:int(64), len_bytes:int(64)):err_t;
   extern proc qbuffer_append_buffer(buf:qbuffer_ptr_t, src:qbuffer_ptr_t, src_start:qbuffer_iter_t, src_end:qbuffer_iter_t):err_t;
