@@ -571,7 +571,19 @@ BaseAST *typeCheckExpr(BaseAST *currentExpr, BaseAST *expectedReturnTypeExpr) {
             mismatch = true;
             break;
           }
-          if (!cclosure.is_equal(e_actual, s_formal->typeExpr)) {
+          if (hasFlag(s_formal, FLAG_TYPE_VARIABLE)) {
+          	if (SymExpr *se_actual = toSymExpr(e_actual)) {
+          		if (!isTypeSymbol(se_actual->var)) {
+          			mismatch = true;
+          			break;
+          		}
+          	}
+          	else {
+        			mismatch = true;
+        			break;
+          	}
+          }
+          else if (!cclosure.is_equal(e_actual, s_formal->typeExpr)) {
             mismatch = true;
             break;
           }
