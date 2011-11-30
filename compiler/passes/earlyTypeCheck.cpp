@@ -97,6 +97,8 @@ BaseAST *get_root_type_or_type_expr(BaseAST *ast) {
 struct CCNode {
   CCNode* parent;
 
+  std::vector<CCNode*> implements;
+
   BaseAST *actualExprOrType;
 
   int unique_id;
@@ -125,6 +127,30 @@ struct CongruenceClosure {
       node = node->parent;
 
     return node;
+  }
+
+  bool has_implements_relation(BaseAST *implementer, BaseAST *implements) {
+  	CCNode *rep_implementer = representative(find_or_insert(implementer));
+  	CCNode *rep_implements = representative(find_or_insert(implements));
+
+  	if (std::find(rep_implementer->implements.begin(),
+  			rep_implementer->implements.end(), rep_implements) !=
+  					rep_implementer->implements.end())
+  		return true;
+  	else
+  		return false;
+  }
+
+  void add_implements_witness(BaseAST *implementer, BaseAST *implements) {
+  	CCNode *rep_implementer = representative(find_or_insert(implementer));
+  	CCNode *rep_implements = representative(find_or_insert(implements));
+
+  	if (std::find(rep_implementer->implements.begin(),
+  			rep_implementer->implements.end(), rep_implements) ==
+  					rep_implementer->implements.end()) {
+
+  		rep_implementer->implements.push_back(rep_implements);
+  	}
   }
 
   void print_map() {
@@ -639,7 +665,7 @@ BaseAST *typeCheckExpr(BaseAST *currentExpr, BaseAST *expectedReturnTypeExpr) {
           currentExpr->astTag, E_Expr, E_Symbol, E_Type);
     }
     else {
-      INT_FATAL("UNIMPLEMENTED: <expr is NULL\n");
+      INT_FATAL("UNIMPLEMENTED: <expr is NULL>\n");
     }
   }
   return NULL;
@@ -899,6 +925,7 @@ bool checkInterfaceImplementations(BlockStmt *block) {
 									}
                 }
               }
+              cclosure.add_implements_witness(ce->argList.head, ce->argList.tail);
             }
             else {
             	INT_FATAL("Implementing type not found\n");
