@@ -850,17 +850,16 @@ for testname in testsrc:
             cleanup(execname)
             continue # on to next compopts
 
+        dfltexeccheckfile = None
         # Execute the test for all requested execopts
         execoptsnum = 0
         # Handle empty execopts list
         if len(execoptslist)==0 and len(clist)==0:
             execoptslist.append(' ')
-            dfltexeccheckfile = None
         elif len(clist)!=0:
-            dfltexeccheckfile = clist[0].split('#')[1].strip()
-        else:
-            dfltexeccheckfile = None
-        for texecopts in execoptslist+clist:
+            if len(clist[0].split('#')) > 1:
+                dfltexeccheckfile = clist[0].split('#')[1].strip()
+        for texecopts in execoptslist:
             sys.stdout.flush()
             onlyone = (len(compoptslist)==1) and (len(execoptslist)==1)
             tlist = texecopts.split('#')
