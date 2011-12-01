@@ -3,7 +3,7 @@ CHPL = chpl
 #
 # This does not build the torus versions
 #
-CHPL_FLAGS = --fast -M SSCA2_Modules SSCA2_Modules/SSCA2_kernels.chpl SSCA2_Modules/analyze_torus_graphs_stencil_rep_v1.chpl -sBUILD_TORUS_VERSIONS=false -sREPRODUCIBLE_PROBLEMS=true -sPRINT_TIMING_STATISTICS=false --no-warnings --fast
+CHPL_FLAGS = --fast -M SSCA2_Modules SSCA2_Modules/SSCA2_kernels.chpl SSCA2_Modules/analyze_torus_graphs_stencil_rep_v1.chpl -sBUILD_TORUS_VERSIONS=false -sREPRODUCIBLE_PROBLEMS=true -sPRINT_TIMING_STATISTICS=false --no-warnings
 
 MODDIR= SSCA2_Modules
 SRCS= \
@@ -28,7 +28,7 @@ default: all
 all: $(TARGET)
 
 $(TARGET): $(SRCS)
-	$(CHPL) -o $@ $(CHPL_FLAGS) $<
+	$(CHPL) -o $@ $(CHPL_FLAGS) $(OFLAGS) $<
 
 clean: FORCE
 	rm -f $(TARGET) $(REAL)

@@ -42,7 +42,15 @@ module SSCA2_compilation_config_params
 
   config param DISTRIBUTION_TYPE = "BLOCK";
 
-  config param BUILD_TORUS_VERSIONS = false;
+  config param BUILD_RMAT_VERSION = true;
+
+  config param BUILD_1D_TORUS_VERSION = false;
+
+  config param BUILD_2D_TORUS_VERSION = false;
+
+  config param BUILD_3D_TORUS_VERSION = false;
+
+  config param BUILD_4D_TORUS_VERSION = false;
 }
 
 

@@ -82,62 +82,19 @@ module SSCA2_main
 *************************************************************************/
 
 {
+  use SSCA2_compilation_config_params, 
+    SSCA2_execution_config_consts,
+    analyze_torus_graphs,
+    analyze_RMAT_graph_associative_array,
+    BlockDist;
+    
   proc main () {
 
-    use SSCA2_compilation_config_params, 
-        SSCA2_execution_config_consts,
-        analyze_torus_graphs,
-        analyze_RMAT_graph_associative_array,
-        BlockDist;
-    
     var graph_types : domain (graph_type);
 
     for this_graph_type in graph_types do {
 
       if testing_type (this_graph_type) then {
-
-	writeln ( "=========================================================" );
-	writeln ( "Problem Dimensions");
-	writeln ( "                   Scale: ", SCALE );
-	writeln ( "      Number of Vertices: ", N_VERTICES );
-	writeln ( "    Kernel 3 Path Length: ", SUBGRAPH_PATH_LENGTH );
-	writeln ( "    Kernel 4 Starting Set range" );
-	writeln ( "        low scale: ", LOW_APPROX_SCALE );
-	writeln ( "       high scale: ", TOP_APPROX_SCALE );
-	writeln ();
-	writeln ( "Code Characteristics");
-
-	if FILTERING then
-	  writeln ( "   Filtering Edges by Weight" );
-	else
-	  writeln ( "   Not filtering Edges by Weight" );
-
-	if REPRODUCIBLE_PROBLEMS then
-	  writeln ( "   Reproducible problem" );
-	else
-	  writeln ( "   Randomizing problems" );
-
-	if VALIDATE_BC then
-	  writeln ( "   Collecting graph statistics for bounds computation" );
-	else
-	  writeln ( "   No additional work for bounds computation" );
-
-	if PRINT_TIMING_STATISTICS then
-	  writeln ( "   Collecting timing statistics" );
-	else
-	  writeln ( "   Not collecting timing statistics" );
-
-	if DISTRIBUTION_TYPE == "BLOCK" then
-	  writeln ( "   Vertex domain is block distributed" );
-	else
-	  writeln ( "   Vertex domain is not distributed" );
-
-	if this_graph_type == graph_type.RMAT_associative  then
-	  writeln ( "   RMAT graph generation constants:", 
-		    (RMAT_a, RMAT_b, RMAT_c , RMAT_d) );
-	writeln ( "=========================================================" );
-
-
 	select this_graph_type {
 
            when graph_type.Torus_1D do
@@ -147,8 +104,12 @@ module SSCA2_main
              // vertices, then execute Kernels 2, 3 and 4 of SSCA #2
              // ----------------------------------------------------
 
-             if BUILD_TORUS_VERSIONS then
+             if BUILD_1D_TORUS_VERSION {
+               printProblemInfo(this_graph_type);
                generate_and_analyze_1D_torus;
+               writeln ( "=========================================================" );
+               writeln (); writeln ();
+             }
 
 
            when graph_type.Torus_2D do
@@ -159,8 +120,12 @@ module SSCA2_main
              // execute Kernels 2, 3 and 4 of SSCA #2
              // ----------------------------------------------
 
-             if BUILD_TORUS_VERSIONS then
+             if BUILD_2D_TORUS_VERSION {
+               printProblemInfo(this_graph_type);
                generate_and_analyze_2D_torus;
+               writeln ( "=========================================================" );
+               writeln (); writeln ();
+             }
 
 
            when graph_type.Torus_3D do
@@ -171,8 +136,12 @@ module SSCA2_main
              // execute Kernels 2, 3 and 4 of SSCA #2
              // -----------------------------------------------
 
-             if BUILD_TORUS_VERSIONS then
+             if BUILD_3D_TORUS_VERSION {
+               printProblemInfo(this_graph_type);
                generate_and_analyze_3D_torus;
+               writeln ( "=========================================================" );
+               writeln (); writeln ();
+             }
 
 
            when graph_type.Torus_4D do
@@ -182,8 +151,12 @@ module SSCA2_main
              // 2^SCALE vertices, then execute Kernels 2, 3 and 4 of SSCA #2
              // ------------------------------------------------------------
 
-             if BUILD_TORUS_VERSIONS then
+             if BUILD_4D_TORUS_VERSION {
+               printProblemInfo(this_graph_type);
                generate_and_analyze_4D_torus;
+               writeln ( "=========================================================" );
+               writeln (); writeln ();
+             }
 
            when graph_type.RMAT_associative do
 
@@ -196,16 +169,63 @@ module SSCA2_main
              // torus cases.
              // -----------------------------------------------------------------
 
-             generate_and_analyze_associative_array_RMAT_graph_representation;
+             if BUILD_RMAT_VERSION {
+               printProblemInfo(this_graph_type);
+               generate_and_analyze_associative_array_RMAT_graph_representation;
+               writeln ( "=========================================================" );
+               writeln (); writeln ();
+             }
 
            } // end select 
 
-         writeln ( "=========================================================" );
-         writeln (); writeln ();
        }
 
     } // end of for over graph types
 
   } // end of main
+
+  proc printProblemInfo(this_graph_type) {
+
+    writeln ( "=========================================================" );
+    writeln ( "Problem Dimensions");
+    writeln ( "                   Scale: ", SCALE );
+    writeln ( "      Number of Vertices: ", N_VERTICES );
+    writeln ( "    Kernel 3 Path Length: ", SUBGRAPH_PATH_LENGTH );
+    writeln ( "    Kernel 4 Starting Set range" );
+    writeln ( "        low scale: ", LOW_APPROX_SCALE );
+    writeln ( "       high scale: ", TOP_APPROX_SCALE );
+    writeln ();
+    writeln ( "Code Characteristics");
+
+    if FILTERING then
+      writeln ( "   Filtering Edges by Weight" );
+    else
+      writeln ( "   Not filtering Edges by Weight" );
+
+    if REPRODUCIBLE_PROBLEMS then
+      writeln ( "   Reproducible problem" );
+    else
+      writeln ( "   Randomizing problems" );
+
+    if VALIDATE_BC then
+      writeln ( "   Collecting graph statistics for bounds computation" );
+    else
+      writeln ( "   No additional work for bounds computation" );
+
+    if PRINT_TIMING_STATISTICS then
+      writeln ( "   Collecting timing statistics" );
+    else
+      writeln ( "   Not collecting timing statistics" );
+
+    if DISTRIBUTION_TYPE == "BLOCK" then
+      writeln ( "   Vertex domain is block distributed" );
+    else
+      writeln ( "   Vertex domain is not distributed" );
+
+    if this_graph_type == graph_type.RMAT_associative  then
+      writeln ( "   RMAT graph generation constants:", 
+                (RMAT_a, RMAT_b, RMAT_c , RMAT_d) );
+    writeln ( "=========================================================" );
+  }
 
 }

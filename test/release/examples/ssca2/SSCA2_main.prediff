@@ -14,6 +14,8 @@
 import sys
 
 # 1-4d torus and RMAT
+# This script will work if more than one graph type is run in a single test,
+#  even if we don't do so currently.
 numGraphTypes = 5
 
 # Debug output for graph generation, kernel 2 (heavy edge), kernel 3
