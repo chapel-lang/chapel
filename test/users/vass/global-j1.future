@@ -1,0 +1,31 @@
+bug: name clash of global variables in the generated code with mathcalls.h
+
+Currently I get these during the C compilation:
+
+chpl__header.h:1301: error: ‘j0’ redeclared as different kind of symbol
+/usr/include/bits/mathcalls.h:238: error: previous declaration of ‘j0’ was here
+chpl__header.h:1302: error: ‘j1’ redeclared as different kind of symbol
+/usr/include/bits/mathcalls.h:239: error: previous declaration of ‘j1’ was here
+chpl__header.h:1303: error: ‘jn’ redeclared as different kind of symbol
+/usr/include/bits/mathcalls.h:240: error: previous declaration of ‘jn’ was here
+chpl__header.h:1304: error: ‘y0’ redeclared as different kind of symbol
+/usr/include/bits/mathcalls.h:241: error: previous declaration of ‘y0’ was here
+chpl__header.h:1306: error: ‘yn’ redeclared as different kind of symbol
+/usr/include/bits/mathcalls.h:243: error: previous declaration of ‘yn’ was here
+
+And indeed /usr/include/bits/mathcalls.h has these:
+
+#if defined __USE_MISC || defined __USE_XOPEN
+/* Return nonzero if VALUE is not a number.  */
+__MATHDECL_1 (int,isnan,, (_Mdouble_ __value)) __attribute__ ((__const__));
+
+/* Bessel functions.  */
+__MATHCALL (j0,, (_Mdouble_));
+__MATHCALL (j1,, (_Mdouble_));
+__MATHCALL (jn,, (int, _Mdouble_));
+__MATHCALL (y0,, (_Mdouble_));
+__MATHCALL (y1,, (_Mdouble_));
+__MATHCALL (yn,, (int, _Mdouble_));
+#endif
+
+Seems the compiler needs to mangle these names. (It already does 'y1'.)
