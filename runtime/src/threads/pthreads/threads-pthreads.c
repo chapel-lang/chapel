@@ -7,6 +7,7 @@
 #define NDEBUG
 #endif
 
+#include "chpl-comm.h"
 #include "chpl-mem.h"
 #include "chplcast.h"
 #include "chplrt.h"
@@ -55,7 +56,7 @@ static pthread_key_t   thread_id_key;
 static pthread_key_t   thread_private_key;
 
 static int32_t         threadMaxThreadsPerLocale  = 0;
-static uint32_t        threadNumThreads           = 1;  // count main thread
+static uint32_t        threadNumThreads           = 0;
 static pthread_mutex_t threadNumThreadsLock;
 
 static size_t          threadCallStackSize = 0;
@@ -136,6 +137,13 @@ void chpl_thread_init(int32_t numThreadsPerLocale,
   } else {
     threadMaxThreadsPerLocale = maxThreadsPerLocale;
   }
+
+  //
+  // Count the main thread on locale 0 as already existing, since it
+  // is (or soon will be) running the main program.
+  //
+  if (chpl_localeID == 0)
+    threadNumThreads = 1;
 
   //
   // If a value was specified for the call stack size config const, use
