@@ -6,10 +6,14 @@ pragma "inline" proc abs(i : uint(?w)) return i;
 proc abs(param i : integral) param return if i < 0 then -i else i;
 pragma "inline" proc abs(x : complex(?w)) return sqrt(x.re*x.re + x.im*x.im);
 
-// We can't use "numeric" here because signum is not defined on a complex type.
-// It might be good to have a "scalar" class to encompass integral and real but not complex.
-pragma "inline" proc sgn(i : integral) return (i > 0) : i.type - (i < 0) : i.type;
-pragma "inline" proc sgn(x : real(?w)) return (x > 0.0) : x.type - (x < 0.0) : x.type;
+pragma "inline" proc sgn(i : int(?w))
+  return ((i > 0) : int(8) - (i < 0) : int(8)) : int(8);
+pragma "inline" proc sgn(i : uint(?w))
+  return (i > 0) : uint(8);
+proc sgn(param i : integral) param
+  return if i > 0 then 1 else if i == 0 then 0 else -1;
+pragma "inline" proc sgn(x : real(?w))
+  return ((x > 0.0) : int(8) - (x < 0.0) : int(8)) : int(8);
 
 pragma "inline" proc conjg(a: complex(?w)) return (a.re, -a.im):complex;
 
