@@ -327,6 +327,12 @@ void ArgSymbol::verify() {
     INT_FATAL(this, "Bad ArgSymbol::defaultExpr::parentSymbol");
   if (variableExpr && variableExpr->parentSymbol != this)
     INT_FATAL(this, "Bad ArgSymbol::variableExpr::parentSymbol");
+  // ArgSymbols appear only in formal parameter lists.
+  // If this one has a successor but the successor is not an argsymbol
+  // the formal parameter list is corrupted.
+  if (defPoint && defPoint->next && (!toDefExpr(defPoint->next)->sym ||
+                                     !toArgSymbol(toDefExpr(defPoint->next)->sym)))
+    INT_FATAL(this, "Bad ArgSymbol::defPoint->next");
 }
 
 
@@ -372,6 +378,11 @@ bool ArgSymbol::isConstant(void) {
   return (intent == INTENT_BLANK || intent == INTENT_CONST) &&
     !isReferenceType(type) &&
     !isRecordWrappedType(type) /* array, domain, distribution */;
+}
+
+
+bool ArgSymbol::isParameter(void) {
+  return (intent == INTENT_PARAM);
 }
 
 
