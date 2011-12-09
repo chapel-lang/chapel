@@ -559,8 +559,12 @@ record _domain {
 
   // see comments for the same method in _array
   //
-  proc this(d: domain) where d.rank == rank
-    return this((...d.getIndices()));
+  proc this(d: domain) {
+    if d.rank == rank then
+      return this((...d.getIndices()));
+    else
+      compilerError("slicing a domain with a domain of a different rank");
+  }
 
   proc this(ranges: range(?) ...rank) {
     param stridable = _value.stridable || chpl__anyStridable(ranges);
@@ -603,6 +607,14 @@ record _domain {
     }
     var d = [(...newRanges)] dmapped newDist;
     return d;
+  }
+
+  // anything that is not covered by the above
+  proc this(args ...?numArgs) {
+    if numArgs == rank then
+      compilerError("invalid argument types for domain slicing");
+    else
+      compilerError("a domain slice requires either a single domain argument or exactly one argument per domain dimension");
   }
 
   proc dims() return _value.dsiDims();
@@ -1060,8 +1072,12 @@ record _array {
   // ranges, but in the sparse case, is there a general
   // representation?
   //
-  proc this(d: domain) where d.rank == rank
-    return this((...d.getIndices()));
+  proc this(d: domain) {
+    if d.rank == rank then
+      return this((...d.getIndices()));
+    else
+      compilerError("slicing an array with a domain of a different rank");
+  }
 
   proc checkSlice(ranges: range(?) ...rank) {
     for param i in 1.._value.dom.rank do
