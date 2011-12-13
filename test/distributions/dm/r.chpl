@@ -178,6 +178,13 @@ proc vdist.dsiNewRectangularDom1d(type idxType, param stridable: bool,
 proc vdist.toString()
   return "ReplicatedDim(" + numLocales:string + ")";
 
+// REQ-2 create a 1-d global distribution descriptor that
+// describes a reindexing of 'this' from 'oldRange' to 'newRange'.
+// This is the 1-d counterpart of dsiCreateReindexDist().
+proc vdist.dsiCreateReindexDist1d(newRange: range(?), oldRange: range(?)) {
+  return this;
+}
+
 // REQ is this a replicated distribution?
 proc vdom.dsiIsReplicated1d() param return true;
 
@@ -392,6 +399,19 @@ class slocdom {
 }
 
 
+/////////// user constructor, for convenience
+
+proc sdist.sdist(numLocales: int, boundingBox: range(?),
+                 type idxType = boundingBox.idxType)
+{
+  if !isBoundedRange(boundingBox) then
+    compilerError("The 1-d block descriptor constructor was passed an unbounded range as the boundingBox");
+
+  this.numLocales = numLocales;
+  this.bbStart = boundingBox.low;
+  this.bbLength = boundingBox.length;
+}
+
 /////////// privatization - start
 
 proc sdist.dsiSupportsPrivatization1d() param return true;
@@ -460,6 +480,19 @@ proc sdist.sdist(numLocales, boundingBoxLow, boundingBoxHigh, type idxType = bou
 proc sdist.toString()
   return "BlockDim(" + numLocales:string + ", " + boundingBox:string + ")";
 
+proc sdist.dsiCreateReindexDist1d(newRange: range(?), oldRange: range(?)) {
+  const oldDesc = this;
+  if oldRange.stride != newRange.stride then
+    halt("reindexing from ", oldRange, " to ", newRange,
+         " is not supported by ", oldDesc.toString,
+         " due to a change in stride");
+  // TODO: this is overflow-oblivious. See Block.dsiCreateReindexDist().
+  const delta = newRange.first - oldRange.first;
+  return new sdist(idxType     = oldDesc.idxType,
+                   numLocales  = oldDesc.numLocales,
+                   boundingBox = oldDesc.boundingBox + delta);
+}
+
 proc sdist.dsiNewRectangularDom1d(type idxType, param stridable: bool,
                                   type stoIndexT)
 {
@@ -482,16 +515,18 @@ proc sdist.dsiIndexToLocale1d(indexx): locIdT {
   if indexx <= bbStart then
     return 0;
 
+  const index0 = indexx - bbStart;  // always > 0
+
   // (numLocales-1) is the answer when
-  //   indexx >= bbStart + (numLocales-1) * (bbLength+1) / numLocales
+  //   index0 >= (numLocales-1) * (bbLength+1) / numLocales
   // whose r.h.s. could be stored in 'sdist', trading memory for computation.
-  // We simplify the condition to 'indexx >= bbStart + bbLength'.
-  // (Note: (bbStart + bbLength - 1) will not always map to (numLocales - 1)).
-  // If the condition doesn't hold, the formula gives the answer.
+  // We simplify the condition to 'index0 >= bbLength'.
+  // (Note: if index0 == bbLength - 1, the answer may not be (numLocales - 1)).
+  // If the condition doesn't hold, the later formula gives the answer.
   // (Compared to the formula in Block.targetLocsIdx, we run comparisons
   // *before* multiplying and dividing.)
   //
-  if indexx >= bbStart + bbLength then
+  if index0 >= bbLength then
     return numLocales - 1;
 
   // need to think what to do if numLocales is not int
@@ -500,7 +535,7 @@ proc sdist.dsiIndexToLocale1d(indexx): locIdT {
     then uint(64)
     else numLocales.type;
 
-  const result = (indexx - bbStart) * numLocales:adjT / bbLength;
+  const result = index0 * numLocales:adjT / bbLength;
   assert(0 <= result && result < numLocales:adjT);
   return result:locIdT;
 }

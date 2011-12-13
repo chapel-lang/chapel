@@ -2,6 +2,8 @@
 
 //use DSIUtil;
 
+use n;
+
 // debugging/trace certain DSI methods as they are being invoked
 config param traceDimensionalDist = false;
 config param traceDimensionalDistDsiAccess = false;
@@ -205,6 +207,28 @@ proc DimensionalDist.DimensionalDist(
                      this.targetLocales, true, this.targetLocales.domain.low);
 }
 
+// Having targetLocales be a constant means we have to run
+// setupTargetLocalesArray() before invoking the constructor.
+// Hence this method. It also lets us pass just di1 and di2.
+proc newDimensionalDist(
+  di1,
+  di2,
+  targetLocales: [] locale = Locales,
+  name: string = "dimensional distribution",
+  type idxType = int,
+  dataParTasksPerLocale: int      = getDataParTasksPerLocale(),
+  dataParIgnoreRunningTasks: bool = getDataParIgnoreRunningTasks(),
+  dataParMinGranularity: int      = getDataParMinGranularity()
+) {
+  var tempTargetIds: domain(2);
+  var tempTargetLocales: [tempTargetIds] locale;
+  setupTargetLocalesArray(tempTargetIds, tempTargetLocales, targetLocales);
+
+  return new DimensionalDist(tempTargetLocales, di1, di2, name, idxType,
+   dataParTasksPerLocale, dataParIgnoreRunningTasks, dataParMinGranularity);
+}
+
+
 // Check all restrictions/assumptions that must be satisfied by the user
 // when constructing a DimensionalDist.
 proc DimensionalDist.checkInvariants(): void {
@@ -290,7 +314,7 @@ proc DimensionalDist.dsiPrivatize(privatizeData) {
 }
 
 // constructor of a privatized copy
-// (currently almost same as user constructor; 'dummy' distinguishes)
+// ('dummy' distinguishes it from the user constructor)
 proc DimensionalDist.DimensionalDist(param dummy: int,
   targetLocales: [] locale,
   name,
@@ -489,14 +513,10 @@ proc DimensionalDom.dsiGetReprivatizeData() {
 proc DimensionalDom.dsiReprivatize(other, reprivatizeData) {
   _traceddd(this, ".dsiReprivatize on ", here.id);
 
-  assert(this.rank == other.rank &&
-         this.idxType == other.idxType &&
-         this.stridable == other.stridable);
+  compilerAssert(this.rank == other.rank &&
+                 this.idxType == other.idxType &&
+                 this.stridable == other.stridable);
 
-  // A natural thing to do is to pass 'other = other.dom1' below.
-  // However, this *forces* communication to other.locale (I think).
-  // So instead we package other.dom1 (or, rather, .dom1 of the original
-  // object) into reprivatizeData.
   if dom1.dsiSupportsPrivatization1d() then
     dom1.dsiReprivatize1d(other           = reprivatizeData(1),
                           reprivatizeData = reprivatizeData(2));
@@ -746,7 +766,7 @@ proc DimensionalArr.mustbeAlias param
   return this.dom.type != this.allocDom.type;
 
 proc DimensionalArr.isAlias
-  return this.dom != allocDom;
+  return this.dom != this.allocDom;
 
 
 //== creation
@@ -843,6 +863,8 @@ proc DimensionalArr.dsiSerialWrite(f: Writer): void {
 proc DimensionalArr.dsiSlice(sliceDef: DimensionalDom) {
   _traceddd(this, ".dsiSlice of ", this.dom.whole, " with ", sliceDef.whole);
 
+//writeln("slicing DimensionalArr ", this.dom.dsiDims(), "  with DimensionalDom ", sliceDef.dsiDims());
+
 // started with dsiBuildArray, modified like ReplicatedArr.dsiSlice
   const slicee = this;
   if slicee.rank != sliceDef.rank then
@@ -879,6 +901,28 @@ proc DimensionalArr.dsiLocalSlice((sliceDim1, sliceDim2)) {
 
   return locAdesc.myStorageArr[r1, r2];
 }
+
+proc DimensionalDist.dsiCreateReindexDist(newSpace, oldSpace) {
+  return genericDsiCreateReindexDist(this, this.rank, newSpace, oldSpace);
+}
+
+proc DimensionalArr.dsiReindex(reindexDef: DimensionalDom) {
+  const reindexee = this;
+  if reindexee.dom == reindexDef then
+    return reindexee;
+
+  halt("DimensionalArr.dsiReindex: unexpected invocation on ",
+       typeToString(reindexDef.type));
+}
+
+proc DimensionalArr.dsiReindex(reindexDef: WrapperRectDom) {
+  return genericDsiReindex(this, reindexDef);
+}
+
+proc DimensionalDist.dsiCreateRankChangeDist(param newRank: int, args) {
+  return genericDsiCreateRankChangeDist(this, newRank, args);
+}
+
 
 
 /// iterators ///////////////////////////////////////////////////////////////
@@ -1029,9 +1073,10 @@ iter DimensionalDom.these(param tag: iterKind) where tag == iterKind.leader {
               // with _computeChunkStuff (i.e. the latter returns more tasks
               // than the former wants to use) - fine. Then, replace assert with
               //   if myPiece.length == 0 then do not yield anything
-              assert(myPiece.length > 0);
-
-              yield myPiece;
+// TODO: can it be enabled for test_strided_slice1.chpl with 1d block-cyclic?
+//              assert(myPiece.length > 0);
+              if myPiece.length > 0 then
+                yield myPiece;
             }
           }
 
