@@ -576,10 +576,18 @@ for testname in testsrc:
         elif (suffix=='.skipif' and (os.access(f, os.R_OK) and
                (os.getenv('CHPL_TEST_SINGLES')=='0'))):
             skiptest=subprocess.Popen([utildir+'/testEnv', './'+f], stdout=subprocess.PIPE).communicate()[0]
-            if int(skiptest):
-                sys.stdout.write('[Skipping test based on .skipif environment settings: %s/%s]\n'%(localdir,execname))
+            try:
+                skipme = int(skiptest)
+                if skipme:
+                    sys.stdout.write('[Skipping test based on .skipif environment settings: %s/%s]\n'%(localdir,execname))
+                    do_not_test=True
+                break
+            except ValueError:
+                sys.stdout.write('[Error processing .skipif file %s/%s]\n'%(localdir,f))
                 do_not_test=True
                 break
+            if do_not_test:
+                continue
 
         elif (suffix=='.timeout' and os.access(f, os.R_OK)):
             timeout=ReadTimeoutValue(f)
