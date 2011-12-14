@@ -1160,6 +1160,9 @@ foreach test ($testlist)
             echo "[Starting $sub_test `date`]" |& $tee -a $logfile
 
             $sub_test "$compiler" |& $tee -a $logfile
+            if ($? != 0) then
+                echo "[Error running sub_test for $test]" |& $tee -a $logfile
+            endif
 
             unsetenv CHPL_ONETEST
         endif
@@ -1279,6 +1282,9 @@ foreach testType ($testTypes)
                         echo "[Starting $sub_test `date`]" |& $tee -a $logfile
                     
                         $sub_test "$compiler" |& $tee -a $logfile
+                        if ($? != 0) then
+                            echo "[Error running sub_test in $dir]" |& $tee -a $logfile
+                        endif
                     endif
                 else
                     echo \["No tests in directory" $dir\] |& $tee -a $logfile
