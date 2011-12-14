@@ -862,9 +862,9 @@ for testname in testsrc:
         # Execute the test for all requested execopts
         execoptsnum = 0
         # Handle empty execopts list
-        if len(execoptslist)==0 and len(clist)==0:
+        if len(execoptslist)==0:
             execoptslist.append(' ')
-        elif len(clist)!=0:
+        if len(clist)!=0:
             if len(clist[0].split('#')) > 1:
                 dfltexeccheckfile = clist[0].split('#')[1].strip()
         for texecopts in execoptslist:
@@ -1106,7 +1106,7 @@ for testname in testsrc:
                     perfexecname = execname
                     keyfile = execname+'.perfkeys'
                 else:
-                    perfexecname = string.strip(execcheckfile, '.perfkeys')
+                    perfexecname = re.sub('\\.perfkeys$', '', execcheckfile)
                     if os.path.isfile(execcheckfile):
                         keyfile = execcheckfile
                     else:
