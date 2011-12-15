@@ -218,6 +218,21 @@ def cleanup(execname):
         os.unlink(execname+'_real')
     return
 
+# print (compopts: XX, execopts: XX) for later decoding of failed tests
+def printTestVariation(compoptsnum, execoptsnum=0):
+    if compoptsnum==0 and execoptsnum==0:
+        return;
+
+    sys.stdout.write(' (')
+    if compoptsnum != 0:
+        sys.stdout.write('compopts: %d'%(compoptsnum))
+    if execoptsnum != 0:
+        if compoptsnum != 0:
+            sys.stdout.write(', ')
+        sys.stdout.write('execopts: %d'%(execoptsnum))
+    sys.stdout.write(')')
+    return
+
 # return true if string is an integer
 def IsInteger(str):
     try:
@@ -695,7 +710,7 @@ for testname in testsrc:
         else:
             del clist[:]
 
-        if len(compoptslist) == 1:
+        if compopts == ' ':
             complog=execname+'.comp.out.tmp'
         else:
             compoptsnum += 1
@@ -751,8 +766,7 @@ for testname in testsrc:
             if status == 222:
                 sys.stdout.write('%s[Error: Timed out compilation for %s/%s'%
                                  (futuretest, localdir, execname))
-                if len(compoptslist) > 1:
-                    sys.stdout.write('(%s %s)'%(' '.join(globalCompopts),compopts))
+                printTestVariation(compoptsnum);
                 sys.stdout.write(']\n')
                 cleanup(execname)
                 continue # on to next compopts
@@ -766,8 +780,7 @@ for testname in testsrc:
             except ReadTimeoutException:
                 sys.stdout.write('%s[Error: Timed out compilation for %s/%s'%
                                  (futuretest, localdir, execname))
-                if len(compoptslist) > 1:
-                    sys.stdout.write('(%s %s)'%(' '.join(globalCompopts),compopts))
+                printTestVariation(compoptsnum);
                 sys.stdout.write(']\n')
                 KillProc(p, killtimeout)
                 cleanup(execname)
@@ -838,8 +851,7 @@ for testname in testsrc:
                 sys.stdout.write('%s[Error '%(futuretest))
             sys.stdout.write('matching compiler output for %s/%s'%
                                  (localdir, execname))
-            if len(compoptslist) > 1:
-                sys.stdout.write(' (%s %s)'%(' '.join(globalCompopts),compopts))
+            printTestVariation(compoptsnum);
             sys.stdout.write(']\n')
 
             cleanup(execname)
@@ -869,9 +881,19 @@ for testname in testsrc:
                 dfltexeccheckfile = clist[0].split('#')[1].strip()
         for texecopts in execoptslist:
             sys.stdout.flush()
-            onlyone = (len(compoptslist)==1) and (len(execoptslist)==1)
+
+            if (len(compoptslist)==1) and (len(execoptslist)==1):
+                onlyone = True
+                execlog=execname+'.exec.out.tmp'
+            else:
+                onlyone = False
+                if texecopts != ' ':
+                    execoptsnum += 1
+                execlog = execname+'.'+str(compoptsnum)+'-'+str(execoptsnum)+'.exec.out.tmp'
+
             tlist = texecopts.split('#')
             execopts = tlist[0].strip()
+
             if numlocexecopts != None:
                 execopts += numlocexecopts;
             if len(tlist) > 1:
@@ -880,13 +902,6 @@ for testname in testsrc:
             else:
                 execcheckfile = dfltexeccheckfile
             del tlist
-
-            if onlyone:
-                execlog=execname+'.exec.out.tmp'
-            else:
-                if len(execoptslist)!=1:
-                    execoptsnum += 1
-                execlog = execname+'.'+str(compoptsnum)+'-'+str(execoptsnum)+'.exec.out.tmp'
 
             if globalPreexec:
                 sys.stdout.write('[Executing ./PREEXEC]\n')
@@ -903,8 +918,7 @@ for testname in testsrc:
             if not os.access(execname, os.R_OK|os.X_OK):
                 sys.stdout.write('%s[Error could not locate executable %s for %s/%s'%
                                  (futuretest, execname, localdir, execname))
-                if not onlyone:
-                    sys.stdout.write(' (%d-%d)'%(compoptsnum, execoptsnum))
+                printTestVariation(compoptsnum, execoptsnum)
                 sys.stdout.write(']\n')
                 break; # on to next compopts
 
@@ -946,11 +960,7 @@ for testname in testsrc:
                     exectimeout = True
                     sys.stdout.write('%s[Error: Timed out executing program %s/%s'%
                                      (futuretest, localdir, execname))
-                    if not onlyone:
-                        sys.stdout.write(' %s %s (%s %s) (%d-%d)'%
-                                         (' '.join(globalExecopts), execopts,
-                                          ' '.join(globalCompopts),compopts,
-                                          compoptsnum, execoptsnum))
+                    printTestVariation(compoptsnum, execoptsnum);
                     sys.stdout.write(']\n')
 
             elif useTimedExec:
@@ -971,11 +981,7 @@ for testname in testsrc:
                     exectimeout = True
                     sys.stdout.write('%s[Error: Timed out executing program %s/%s'%
                                      (futuretest, localdir, execname))
-                    if not onlyone:
-                        sys.stdout.write(' %s %s (%s %s) (%d-%d)'%
-                                         (' '.join(globalExecopts), execopts,
-                                          ' '.join(globalCompopts),compopts,
-                                          compoptsnum, execoptsnum))
+                    printTestVariation(compoptsnum, execoptsnum);
                     sys.stdout.write(']\n')
 
             else:
@@ -992,11 +998,7 @@ for testname in testsrc:
                     exectimeout = True
                     sys.stdout.write('%s[Error: Timed out executing program %s/%s'%
                                      (futuretest, localdir, execname))
-                    if not onlyone:
-                        sys.stdout.write(' %s %s (%s %s) (%d-%d)'%
-                                         (' '.join(globalExecopts), execopts,
-                                          ' '.join(globalCompopts),compopts,
-                                          compoptsnum, execoptsnum))
+                    printTestVariation(compoptsnum, execoptsnum);
                     sys.stdout.write(']\n')
                     KillProc(p, killtimeout)
 
@@ -1055,13 +1057,10 @@ for testname in testsrc:
                         if onlyone:
                             ceident=''
                         else:
-                            if len(compoptslist)==1:
-                                ceident = '.0-'
-                            else:
-                                ceident = '.'+str(compoptsnum)+'-'
-                            ceident += str(execoptsnum)
+                            ceident = '.'+str(compoptsnum)+'-'+str(execoptsnum)
 
                         execcheckfile = execname+'.'+machine+ceident+'.good'
+
                         if not os.path.isfile(execcheckfile):
                             execcheckfile=execname+'.comm-'+os.getenv('CHPL_COMM','none')+ceident+'.good'
                             if not os.path.isfile(execcheckfile):
@@ -1088,11 +1087,8 @@ for testname in testsrc:
                         sys.stdout.write('%s[Error '%(futuretest))
                     sys.stdout.write('matching program output for %s/%s'%
                                      (localdir, execname))
-                    if result!=0 and not onlyone:
-                        sys.stdout.write(' %s %s (%s %s) (%d-%d)'%
-                                         (' '.join(globalExecopts), execopts,
-                                          ' '.join(globalCompopts),compopts,
-                                          compoptsnum, execoptsnum))
+                    if result!=0:
+                        printTestVariation(compoptsnum, execoptsnum);
                     sys.stdout.write(']\n')
 
             if perftest:
@@ -1129,11 +1125,8 @@ for testname in testsrc:
                     sys.stdout.write('[Error')
                 sys.stdout.write(' matching performance keys for %s/%s'%
                                  (localdir, execname))
-                if status!=0 and not onlyone:
-                    sys.stdout.write(' %s %s (%s %s) (%d-%d)'%
-                                     (' '.join(globalExecopts), execopts,
-                                      ' '.join(globalCompopts),compopts,
-                                      compoptsnum, execoptsnum))
+                if status!=0:
+                    printTestVariation(compoptsnum, execoptsnum);
                 sys.stdout.write(']\n')
 
         cleanup(execname)
