@@ -241,8 +241,8 @@ def IsInteger(str):
     except ValueError:
         return False
 
-# read timeout file
-def ReadTimeoutValue(f):
+# read integer value from a file
+def ReadIntegerValue(f, localdir):
     to = ReadFileWithComments(f)
     if to:
         for l in to:
@@ -252,7 +252,7 @@ def ReadTimeoutValue(f):
                 return string.atoi(l)
             else:
                 break
-    Fatal('Invalid timeout value in '+f);
+    Fatal('Invalid integer value in '+f+' ('+localdir+')');
 
 # report an error message and exit
 def Fatal(message):
@@ -321,22 +321,6 @@ platform = platform.strip()
 machine=os.uname()[1].split('.', 1)[0]
 # sys.stdout.write('machine='+machine+'\n')
 
-# Get global timeout
-if os.access('./TIMEOUT',os.R_OK):
-    globalTimeout = ReadTimeoutValue('./TIMEOUT')
-elif os.getenv('CHPL_TEST_VGRND_COMP')=='on':
-    globalTimeout=1000
-else:
-    globalTimeout=300
-# sys.stdout.write('globalTimeout=%d\n'%(globalTimeout))
-
-# Get global timeout for kill
-if os.access('./KILLTIMEOUT',os.R_OK):
-    globalKillTimeout = ReadTimeoutValue('./KILLTIMEOUT')
-else:
-    globalKillTimeout=10
-# sys.stdout.write('globalKillTimeout=%d\n'%(globalKillTimeout))
-
 # Get the system-wide prediff
 systemPrediff = os.getenv('CHPL_SYSTEM_PREDIFF')
 if systemPrediff:
@@ -359,6 +343,23 @@ if localdir.find('./') == 0:
 #
 # Test options for all tests in this directory
 #
+
+# Get global timeout
+if os.access('./TIMEOUT',os.R_OK):
+    globalTimeout = ReadIntegerValue('./TIMEOUT', localdir)
+elif os.getenv('CHPL_TEST_VGRND_COMP')=='on':
+    globalTimeout=1000
+else:
+    globalTimeout=300
+# sys.stdout.write('globalTimeout=%d\n'%(globalTimeout))
+
+# Get global timeout for kill
+if os.access('./KILLTIMEOUT',os.R_OK):
+    globalKillTimeout = ReadIntegerValue('./KILLTIMEOUT', localdir)
+else:
+    globalKillTimeout=10
+# sys.stdout.write('globalKillTimeout=%d\n'%(globalKillTimeout))
+
 if os.access('./NOEXEC',os.R_OK):
     execute=False
 else:
@@ -383,9 +384,10 @@ if os.access('./LASTCOMPOPTS',os.R_OK):
 # sys.stdout.write('globalLastcompopts=%s\n'%(globalLastcompopts))
 
 if os.access('./NUMLOCALES',os.R_OK):
-    globalNumlocales=int(subprocess.Popen(['cat', './NUMLOCALES'], stdout=subprocess.PIPE).communicate()[0])
+    globalNumlocales=ReadIntegerValue('./NUMLOCALES', localdir)
     # globalNumlocales.strip(globalNumlocales)
 else:
+    # start_test sets this, so we'll assume it's right :)
     globalNumlocales=int(os.getenv('NUMLOCALES'))
 # sys.stdout.write('globalNumlocales=%s\n'%(globalNumlocales))
 
@@ -605,10 +607,10 @@ for testname in testsrc:
                 continue
 
         elif (suffix=='.timeout' and os.access(f, os.R_OK)):
-            timeout=ReadTimeoutValue(f)
+            timeout=ReadIntegerValue(f, localdir)
 
         elif (suffix=='.killtimeout' and os.access(f, os.R_OK)):
-            killtimeout=ReadTimeoutValue(f)
+            killtimeout=ReadIntegerValue(f, localdir)
 
         elif (suffix=='.catfiles' and os.access(f, os.R_OK)):
             execcatfiles=subprocess.Popen(['cat', f], stdout=subprocess.PIPE).communicate()[0].strip()
@@ -622,7 +624,7 @@ for testname in testsrc:
             # sys.stdout.write("lastcompopts=%s\n"%(lastcompopts))
 
         elif (suffix=='.numlocales' and os.access(f, os.R_OK)):
-            numlocales=int(subprocess.Popen(['cat', f], stdout=subprocess.PIPE).communicate()[0])
+            numlocales=ReadIntegerValue(f, localdir)
 
         elif suffix==futureSuffix and os.access(f, os.R_OK):
             futuretest='Future ('+subprocess.Popen(['head', '-n', '1', './'+execname+futureSuffix], stdout=subprocess.PIPE).communicate()[0].strip()+') '
