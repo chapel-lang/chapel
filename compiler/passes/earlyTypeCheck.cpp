@@ -606,6 +606,8 @@ BaseAST *typeCheckExpr(BaseAST *currentExpr, BaseAST *expectedReturnTypeExpr) {
                 if (!isTypeSymbol(se_actual->var)) {
                   mismatch = true;
                   break;
+                }else {
+                  cclosure.equate(s_formal,se_actual->var);
                 }
               } else {
                 mismatch = true;
@@ -704,7 +706,7 @@ BaseAST *typeCheckFn(FnSymbol *fn) {
   return typeCheckExpr(fn->body, fn->retExprType);
 }
 
-void mapArguements(CallExpr* where, FnSymbol* visibleFn, CallExpr* call) {
+bool mapArguments(CallExpr* where, FnSymbol* visibleFn, CallExpr* call) {
   //UnresolvedSymExpr *ur_where = toUnresolvedSymExpr(where->baseExpr);
   BaseAST *arg1 = where->argList.get(1);
   BaseAST *arg2 = where->argList.get(2);
@@ -727,17 +729,17 @@ void mapArguements(CallExpr* where, FnSymbol* visibleFn, CallExpr* call) {
       //if(checkImplementation(e_actual,s_arg2)){
       if (cclosure.has_implements_relation(e_actual, arg2)) {
         printf("Interface is implemented!\n");
-        break;
+        return true;
       } else {
         printf("Interface not implemented\n");
+        return false;
       }
 
     }
-
   }
 }
 
-void checkFunctionCall(CallExpr* call) {
+BaseAST* checkFunctionCall(CallExpr* call) {
   //printf("In checkFunctioncall\n");
   if (!call->primitive) {
     //printf("Inside not primitive\n");
@@ -782,13 +784,15 @@ void checkFunctionCall(CallExpr* call) {
             break;
           }
           //printf("Inside Actuals 2\n");
-          /*if (hasFlag(s_formal, FLAG_TYPE_VARIABLE)) {
+          if (hasFlag(s_formal, FLAG_TYPE_VARIABLE)) {
             if (SymExpr *se_actual = toSymExpr(e_actual)) {
+              printf("Type symbol %s",se_actual->var->cname);
               if (!isTypeSymbol(se_actual->var)) {
                 mismatch = true;
                 break;
               } else {
-                typeMap.put(s_formal, toTypeSymbol(se_actual->var));
+                cclosure.equate(s_formal,se_actual->var);
+                //typeMap.put(s_formal, toTypeSymbol(se_actual->var));
               }
             } else {
               mismatch = true;
@@ -799,7 +803,7 @@ void checkFunctionCall(CallExpr* call) {
             printf("Mismatched\n");
             mismatch = true;
             break;
-          }*/
+          }
         }
         //printf("Out of actuals loop\n");
         if (!mismatch) {
@@ -816,26 +820,36 @@ void checkFunctionCall(CallExpr* call) {
                         if (UnresolvedSymExpr *use = toUnresolvedSymExpr(where_ce->baseExpr)) {
                           if (!strcmp(use->unresolved, "implements")) {
                             //printf("where with implements found\n");
-                            mapArguements(where_ce, visibleFn, call);
+                            if(mapArguments(where_ce, visibleFn, call))
+                              return cclosure.representative(visibleFn->retExprType);
+                            else
+                              return dtUnknown;
                           }
                         }
                       }
                     }
                   } else if (!strcmp(callsymexpr->unresolved, "implements")) {
                     //printf("where with implements found\n");
-                    mapArguements(where_expr, visibleFn, call);
+                    if(mapArguments(where_expr, visibleFn, call))
+                      return cclosure.representative(visibleFn->retExprType);
+                    else
+                      return dtUnknown;
                   }
                 }
               }
             }
           }
+          else{
+            return cclosure.representative(visibleFn->retExprType);
+          }
         }
       }
     printf("No matching functions at call");
+    return dtUnknown;
   }
 }
 
-bool checkInterfaceImplementations(BlockStmt *block) {
+BaseAST* checkInterfaceImplementations(BlockStmt *block) {
   bool foundImplementsPhrases = false;
 
   for_alist(s, block->body) {
@@ -1060,7 +1074,7 @@ bool checkInterfaceImplementations(BlockStmt *block) {
             }
           }
         } else {
-          checkFunctionCall(ce);
+          return checkFunctionCall(ce);
         }
       }
     }
