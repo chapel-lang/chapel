@@ -1,5 +1,15 @@
 // This is a two-dimensional Dimensional distribution
 
+// TODO
+//
+// * Implement reindexing and rank change directly within Dimensional.
+//  That will probably be more efficient.
+//  For that, will need allow Dimensional to have smaller rank.
+//  Can use "reindexing" subordinate 1-d distributions - will only
+//  need two - one for replicated and one for any non-replicated.
+// * Ensure that reallocation works with block-cyclic 1-d distribution
+//  when the domain's stride changes.
+
 //use DSIUtil;
 
 use n;
@@ -565,7 +575,7 @@ proc DimensionalDist.dsiNewRectangularDom(param rank: int,
            (rank, typeToString(idxType), stridable));
   if rank != 2 then
     compilerError("DimensionalDist presently supports only 2 dimensions,",
-                  " got ", rank, " dimensions");
+                  " got ", rank:string, " dimensions");
 
   // todo: ideally, this will not be required;
   // furthermore, DimensionalDist shouldn't be specific to idxType.
@@ -858,7 +868,7 @@ proc DimensionalArr.dsiSerialWrite(f: Writer): void {
 }
 
 
-/// slicing, reindexing, rank change ////////////////////////////////////////
+/// slicing, reindexing, rank change, reallocation //////////////////////////
 
 proc DimensionalArr.dsiSlice(sliceDef: DimensionalDom) {
   _traceddd(this, ".dsiSlice of ", this.dom.whole, " with ", sliceDef.whole);
@@ -912,7 +922,7 @@ proc DimensionalArr.dsiReindex(reindexDef: DimensionalDom) {
     return reindexee;
 
   halt("DimensionalArr.dsiReindex: unexpected invocation on ",
-       typeToString(reindexDef.type));
+       typeToString(this.type), "  and  ", typeToString(reindexDef.type));
 }
 
 proc DimensionalArr.dsiReindex(reindexDef: WrapperRectDom) {
@@ -923,6 +933,22 @@ proc DimensionalDist.dsiCreateRankChangeDist(param newRank: int, args) {
   return genericDsiCreateRankChangeDist(this, newRank, args);
 }
 
+proc DimensionalArr.dsiRankChange(sliceDefDom: WrapperRectDom,
+                                  param newRank: int,
+                                  param newStridable: bool,
+                                  sliceDefIndsRanges) {
+  return genericDsiRankChange(this, sliceDefDom, newRank, newStridable,
+                              sliceDefIndsRanges);
+}
+
+proc DimensionalArr.dsiReallocate(d: domain) {
+  // nothing
+  // TODO: handle block-cyclic 1d when the stride changes
+}
+
+proc DimensionalArr.dsiPostReallocate() {
+  // nothing for now
+}
 
 
 /// iterators ///////////////////////////////////////////////////////////////

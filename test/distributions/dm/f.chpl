@@ -3,6 +3,7 @@
 use d;
 
 config const BlockCyclicDim_allowParLeader = true;
+config param BlockCyclicDim_enableArrayIterWarning = false;  // 'false' for testing
 
 // the types to use for blockSzie and numLocales
 type cycSizeT = uint(32);     // unsigned - for optimization
@@ -588,6 +589,7 @@ iter idom._dsiSerialArrayIterator1dUnitstride(rangeToIterateOver) {
 
 iter idom._dsiSerialArrayIterator1dStridable() {
   assert(stridable);
+ if BlockCyclicDim_enableArrayIterWarning then
   compilerWarning("array iterator over stridable block-cyclic-dim arrays is presently not efficient", 4);
 
   // the simplest way out
