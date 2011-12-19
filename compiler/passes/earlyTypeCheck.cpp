@@ -21,6 +21,8 @@ BaseAST *typeCheckExpr(BaseAST *currentExpr, BaseAST *expectedReturnTypeExpr);
 void handle_where_clause_expr(BaseAST *ast);
 BaseAST *typeCheckFn(FnSymbol *fn);
 BaseAST *checkInterfaceImplementations(BlockStmt *block);
+static void getFunctionsInWhereClause(const char* name,
+    Vec<FnSymbol*>& visibleFns, BaseAST *whereClause);
 
 //FIXME: This probably already exists in Chapel, but I couldn't find it
 //FIXME: A more optimized approach would be to use the congruence closure to find all representative types at
@@ -399,11 +401,13 @@ CallInfo2::CallInfo2(CallExpr* icall) :
     }
     SymExpr* se = toSymExpr(actual);
     INT_ASSERT(se);
+    /*
     Type* t = se->var->type;
     if (t == dtUnknown || t->symbol->hasFlag(FLAG_GENERIC))
       INT_FATAL(icall,
           "the type of the actual argument '%s' is unknown or generic",
           se->var->name);
+    */
     actuals.add(se->var);
   }
 }
@@ -522,7 +526,9 @@ block      = NULL;
 
 // Typechecks the given ast node with the expected return (in case a return
 // is encountered)
-BaseAST *typeCheckExpr(BaseAST *currentExpr, BaseAST *expectedReturnTypeExpr) {
+BaseAST *typeCheckExpr(BaseAST *currentExpr, BaseAST *expectedReturnTypeExpr,
+    BlockStmt *whereClause) {
+
   if (SymExpr *se_actual = toSymExpr(currentExpr)) {
 
     if (se_actual->var->type && se_actual->var->type != dtUnknown)
@@ -533,14 +539,14 @@ BaseAST *typeCheckExpr(BaseAST *currentExpr, BaseAST *expectedReturnTypeExpr) {
     if ((argSym = toArgSymbol(se_actual->var)) && argSym->typeExpr) {
       return cclosure.get_representative_ast(argSym->typeExpr);
     } else if ((defPt = se_actual->var->defPoint)) {
-      return typeCheckExpr(defPt, expectedReturnTypeExpr);
+      return typeCheckExpr(defPt, expectedReturnTypeExpr, whereClause);
     }
   } else if (CallExpr* call = toCallExpr(currentExpr)) {
     Vec<Expr*> checked_arg_exprs;
 
     if (call->primitive && (call->primitive->tag == PRIM_RETURN)) {
       BaseAST *e_typeAST = typeCheckExpr(call->argList.head,
-          expectedReturnTypeExpr);
+          expectedReturnTypeExpr, whereClause);
 
       if (!cclosure.is_equal(e_typeAST, expectedReturnTypeExpr)) {
         INT_FATAL("Mismatched type expressions in return\n");
@@ -585,6 +591,11 @@ BaseAST *typeCheckExpr(BaseAST *currentExpr, BaseAST *expectedReturnTypeExpr) {
             if (Vec<FnSymbol*>* fns = vfb->visibleFunctions.get(info.name))
               visibleFns.append(*fns);
         }
+
+        // Also include the functions that come into scope because of
+        // implements statements in the where clause
+        getFunctionsInWhereClause(info.name, visibleFns, whereClause);
+
       } else {
         visibleFns.add(call->isResolved());
       }
@@ -623,7 +634,12 @@ BaseAST *typeCheckExpr(BaseAST *currentExpr, BaseAST *expectedReturnTypeExpr) {
             }
           }
           if (!mismatch) {
-            return typeCheckFn(visibleFn);
+            if (visibleFn->body->body.length == 0) {
+              return visibleFn->retExprType;
+            }
+            else {
+              return typeCheckFn(visibleFn);
+            }
           }
         }
       INT_FATAL("No matching functions at call");
@@ -644,21 +660,21 @@ BaseAST *typeCheckExpr(BaseAST *currentExpr, BaseAST *expectedReturnTypeExpr) {
       INT_FATAL("Generic variable without initializing expression\n");
     }
   } else if (NamedExpr *ne = toNamedExpr(currentExpr)) {
-    return typeCheckExpr(ne->actual, expectedReturnTypeExpr);
+    return typeCheckExpr(ne->actual, expectedReturnTypeExpr, whereClause);
   } else if (BlockStmt *block = toBlockStmt(currentExpr)) {
     BaseAST *ret = NULL;
     for_alist(e, block->body) {
-      ret = typeCheckExpr(e, expectedReturnTypeExpr);
+      ret = typeCheckExpr(e, expectedReturnTypeExpr, whereClause);
     }
     return ret;
   } else if (CondStmt *cond = toCondStmt(currentExpr)) {
     //INT_FATAL("UNIMPLEMENTED: ContStmt\n");
     if (CallExpr *cond_test = toCallExpr(cond->condExpr)) {
       BaseAST *conditional = typeCheckExpr(cond_test->argList.head,
-          expectedReturnTypeExpr);
+          expectedReturnTypeExpr, whereClause);
       if (cclosure.is_equal(conditional, dtBool)) {
-        typeCheckExpr(cond->thenStmt, expectedReturnTypeExpr);
-        typeCheckExpr(cond->elseStmt, expectedReturnTypeExpr);
+        typeCheckExpr(cond->thenStmt, expectedReturnTypeExpr, whereClause);
+        typeCheckExpr(cond->elseStmt, expectedReturnTypeExpr, whereClause);
       }
       else {
         INT_FATAL("Expected boolean expression in if condition");
@@ -668,7 +684,7 @@ BaseAST *typeCheckExpr(BaseAST *currentExpr, BaseAST *expectedReturnTypeExpr) {
       INT_FATAL("Expected boolean expression in if condition");
     }
   } else if (GotoStmt *gotoStmt = toGotoStmt(currentExpr)) {
-    typeCheckExpr(gotoStmt->label, expectedReturnTypeExpr);
+    typeCheckExpr(gotoStmt->label, expectedReturnTypeExpr, whereClause);
   } else {
     if (currentExpr) {
       INT_FATAL("UNIMPLEMENTED: <expr type unknown: %i %i %i %i>\n",
@@ -678,6 +694,74 @@ BaseAST *typeCheckExpr(BaseAST *currentExpr, BaseAST *expectedReturnTypeExpr) {
     }
   }
   return NULL;
+}
+
+static void
+getFunctionsInWhereClause(const char* name, Vec<FnSymbol*>& visibleFns,
+    BaseAST *whereClause) {
+
+  if (CallExpr *ce = toCallExpr(whereClause)) {
+    if (UnresolvedSymExpr *callsymexpr = toUnresolvedSymExpr(ce->baseExpr)) {
+      if (!strcmp(callsymexpr->unresolved, "implements")) {
+        //First find the interface that was implemented and open it up
+        BaseAST *interface_implemented = ce->argList.get(2);
+        if (SymExpr *se = toSymExpr(interface_implemented)) {
+          // Is a symexpr
+          if (InterfaceSymbol *is = toInterfaceSymbol(se->var)) {
+            forv_Vec(FnSymbol, fn, is->functionSignatures) {
+              //For now, copy the function prototype and replace the types
+              //with the ones we know
+              if (!strcmp(fn->name, name)) {
+                FnSymbol *fn_copy = fn->copy();
+
+                //replace formal types
+                for_formals(arg, fn_copy) {
+                  list_view(arg);
+                  if (BlockStmt *bs = toBlockStmt(arg->typeExpr)) {
+                    if (UnresolvedSymExpr *use = toUnresolvedSymExpr(bs->body.head)) {
+                      if (!strcmp(use->unresolved, "self")) {
+                        bs->body.head = ce->argList.get(1)->copy();
+                      }
+                    }
+                  }
+                }
+                //replace return type
+                if (BlockStmt *bs = toBlockStmt(fn_copy->retExprType)) {
+                  if (UnresolvedSymExpr *use = toUnresolvedSymExpr(bs->body.head)) {
+                    if (!strcmp(use->unresolved, "self")) {
+                      bs->body.head = ce->argList.get(1)->copy();
+                    }
+                  }
+                }
+
+                visibleFns.add(fn_copy);
+                list_view(fn_copy);
+              }
+            }
+          }
+          else {
+            INT_FATAL("Implementation phrase with non-interface symbol");
+          }
+        }
+        else {
+          // Isn't a symexpr, something is wrong
+        }
+      } else if (!strcmp(callsymexpr->unresolved, "_build_tuple")) {
+        //We have multiple constraints, handle them
+        for_alist(arg, ce->argList) {
+          handle_where_clause_expr(arg);
+        }
+      }
+    }
+    else {
+      printf("Not unresolved\n");
+    }
+  }
+  else if (BlockStmt *block = toBlockStmt(whereClause)) {
+    for_alist(expr, block->body) {
+      getFunctionsInWhereClause(name, visibleFns, expr);
+    }
+  }
 }
 
 void handle_where_clause_expr(BaseAST *ast) {
@@ -718,7 +802,7 @@ BaseAST *typeCheckFn(FnSymbol *fn) {
   }
 
   // Now, look through the function body
-  return typeCheckExpr(fn->body, fn->retExprType);
+  return typeCheckExpr(fn->body, fn->retExprType, fn->where);
 }
 
 bool mapArguments(CallExpr* where, FnSymbol* visibleFn, CallExpr* call) {
