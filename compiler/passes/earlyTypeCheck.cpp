@@ -20,7 +20,7 @@ BaseAST *get_root_type_or_type_expr(BaseAST *ast);
 BaseAST *typeCheckExpr(BaseAST *currentExpr, BaseAST *expectedReturnTypeExpr);
 void handle_where_clause_expr(BaseAST *ast);
 BaseAST *typeCheckFn(FnSymbol *fn);
-bool checkInterfaceImplementations(BlockStmt *block);
+BaseAST *checkInterfaceImplementations(BlockStmt *block);
 
 //FIXME: This probably already exists in Chapel, but I couldn't find it
 //FIXME: A more optimized approach would be to use the congruence closure to find all representative types at
@@ -648,10 +648,21 @@ BaseAST *typeCheckExpr(BaseAST *currentExpr, BaseAST *expectedReturnTypeExpr) {
     }
     return ret;
   } else if (CondStmt *cond = toCondStmt(currentExpr)) {
-    INT_FATAL("UNIMPLEMENTED: ContStmt\n");
-    typeCheckExpr(cond->condExpr, expectedReturnTypeExpr);
-    typeCheckExpr(cond->thenStmt, expectedReturnTypeExpr);
-    typeCheckExpr(cond->elseStmt, expectedReturnTypeExpr);
+    //INT_FATAL("UNIMPLEMENTED: ContStmt\n");
+    if (CallExpr *cond_test = toCallExpr(cond->condExpr)) {
+      BaseAST *conditional = typeCheckExpr(cond_test->argList.head,
+          expectedReturnTypeExpr);
+      if (cclosure.is_equal(conditional, dtBool)) {
+        typeCheckExpr(cond->thenStmt, expectedReturnTypeExpr);
+        typeCheckExpr(cond->elseStmt, expectedReturnTypeExpr);
+      }
+      else {
+        INT_FATAL("Expected boolean expression in if condition");
+      }
+    }
+    else {
+      INT_FATAL("Expected boolean expression in if condition");
+    }
   } else if (GotoStmt *gotoStmt = toGotoStmt(currentExpr)) {
     typeCheckExpr(gotoStmt->label, expectedReturnTypeExpr);
   } else {
@@ -737,6 +748,7 @@ bool mapArguments(CallExpr* where, FnSymbol* visibleFn, CallExpr* call) {
 
     }
   }
+  return false;
 }
 
 BaseAST* checkFunctionCall(CallExpr* call) {
@@ -821,7 +833,7 @@ BaseAST* checkFunctionCall(CallExpr* call) {
                           if (!strcmp(use->unresolved, "implements")) {
                             //printf("where with implements found\n");
                             if(mapArguments(where_ce, visibleFn, call))
-                              return cclosure.representative(visibleFn->retExprType);
+                              return visibleFn->retExprType;
                             else
                               return dtUnknown;
                           }
@@ -831,7 +843,7 @@ BaseAST* checkFunctionCall(CallExpr* call) {
                   } else if (!strcmp(callsymexpr->unresolved, "implements")) {
                     //printf("where with implements found\n");
                     if(mapArguments(where_expr, visibleFn, call))
-                      return cclosure.representative(visibleFn->retExprType);
+                      return visibleFn->retExprType;
                     else
                       return dtUnknown;
                   }
@@ -840,13 +852,15 @@ BaseAST* checkFunctionCall(CallExpr* call) {
             }
           }
           else{
-            return cclosure.representative(visibleFn->retExprType);
+            return visibleFn->retExprType;
           }
         }
       }
     printf("No matching functions at call");
     return dtUnknown;
   }
+  printf("No matching functions at call");
+  return dtUnknown;
 }
 
 BaseAST* checkInterfaceImplementations(BlockStmt *block) {
@@ -1080,7 +1094,7 @@ BaseAST* checkInterfaceImplementations(BlockStmt *block) {
     }
   }
 
-  return foundImplementsPhrases;
+  return dtUnknown;
 }
 
 void earlyTypeCheck(void) {
