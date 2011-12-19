@@ -112,6 +112,11 @@ struct CongruenceClosure {
     return rep->actualExprOrType;
   }
 
+  void make_parent_null(BaseAST *ast){
+    CCNode *rep = representative(find_or_insert(ast));
+    rep->parent = NULL;
+  }
+
   CCNode *representative(CCNode *node) {
     while (node->parent)
       node = node->parent;
@@ -407,7 +412,6 @@ static Map<BlockStmt*, VisibleFunctionBlock2*> visibleFunctionMap;
 static int nVisibleFunctions = 0; // for incremental build
 static Map<BlockStmt*, BlockStmt*> visibilityBlockCache;
 static Vec<BlockStmt*> standardModuleSet;
-static Map<BaseAST*, TypeSymbol*> typeMap;
 
 static BlockStmt*
 getVisibleFunctions(BlockStmt* block, const char* name,
@@ -753,6 +757,7 @@ bool mapArguments(CallExpr* where, FnSymbol* visibleFn, CallExpr* call) {
 
 BaseAST* checkFunctionCall(CallExpr* call) {
   //printf("In checkFunctioncall\n");
+  BaseAST *retExpr;
   if (!call->primitive) {
     //printf("Inside not primitive\n");
     CallInfo2 info(call);
@@ -798,7 +803,7 @@ BaseAST* checkFunctionCall(CallExpr* call) {
           //printf("Inside Actuals 2\n");
           if (hasFlag(s_formal, FLAG_TYPE_VARIABLE)) {
             if (SymExpr *se_actual = toSymExpr(e_actual)) {
-              printf("Type symbol %s",se_actual->var->cname);
+              //printf("Type symbol %s",se_actual->var->cname);
               if (!isTypeSymbol(se_actual->var)) {
                 mismatch = true;
                 break;
@@ -832,8 +837,11 @@ BaseAST* checkFunctionCall(CallExpr* call) {
                         if (UnresolvedSymExpr *use = toUnresolvedSymExpr(where_ce->baseExpr)) {
                           if (!strcmp(use->unresolved, "implements")) {
                             //printf("where with implements found\n");
-                            if(mapArguments(where_ce, visibleFn, call))
-                              return visibleFn->retExprType;
+                            if(mapArguments(where_ce, visibleFn, call)){
+                              retExpr = cclosure.get_representative_ast((visibleFn->retExprType)->body.head);
+                              cclosure.make_parent_null((visibleFn->retExprType)->body.head);
+                              return retExpr;
+                            }
                             else
                               return dtUnknown;
                           }
@@ -842,8 +850,11 @@ BaseAST* checkFunctionCall(CallExpr* call) {
                     }
                   } else if (!strcmp(callsymexpr->unresolved, "implements")) {
                     //printf("where with implements found\n");
-                    if(mapArguments(where_expr, visibleFn, call))
-                      return visibleFn->retExprType;
+                    if(mapArguments(where_expr, visibleFn, call)){
+                      retExpr = cclosure.get_representative_ast((visibleFn->retExprType)->body.head);
+                      cclosure.make_parent_null((visibleFn->retExprType)->body.head);
+                      return retExpr;
+                    }
                     else
                       return dtUnknown;
                   }
@@ -852,7 +863,9 @@ BaseAST* checkFunctionCall(CallExpr* call) {
             }
           }
           else{
-            return visibleFn->retExprType;
+            retExpr = cclosure.get_representative_ast((visibleFn->retExprType)->body.head);
+            cclosure.make_parent_null((visibleFn->retExprType)->body.head);
+            return retExpr;
           }
         }
       }
@@ -865,6 +878,7 @@ BaseAST* checkFunctionCall(CallExpr* call) {
 
 BaseAST* checkInterfaceImplementations(BlockStmt *block) {
   bool foundImplementsPhrases = false;
+  BaseAST * returnExpr;
 
   for_alist(s, block->body) {
     if (DefExpr *de = toDefExpr(s)) {
@@ -1088,13 +1102,15 @@ BaseAST* checkInterfaceImplementations(BlockStmt *block) {
             }
           }
         } else {
-          return checkFunctionCall(ce);
+          returnExpr = checkFunctionCall(ce);
+          printf("Return Type: %d\n",returnExpr->id);
+          list_view(returnExpr);
         }
       }
     }
   }
 
-  return dtUnknown;
+  return returnExpr;
 }
 
 void earlyTypeCheck(void) {
