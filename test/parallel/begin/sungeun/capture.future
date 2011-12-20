@@ -16,6 +16,16 @@ A snippet:
 'i' is not private to the task, so each iteration does not necessarily
 get a unique value of 'i' passed to work().
 
+NOTE (12/2011): This test fails because i is passed by reference.
+This *used* to make sense before the QIO changes because apparently
+writeln() used to take its arguments by reference.  With the QIO
+change, this test started passing since i is passed as a value to
+writeln() and is no longer heap-allocated.  I added a barrier (with
+sync and single vars) to the work() function, and for some reason, the
+compiler decided to pass i by reference again.  So this test (and
+captureAppearsToWork.chpl) again illustrates the issue described here,
+but likely warrants a different future also for the pass by reference.
+
 Brad suggested that the existence of task private variables could make
 the situation better/clearer.
 
