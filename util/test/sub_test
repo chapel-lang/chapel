@@ -598,13 +598,11 @@ for testname in testsrc:
                 if skipme:
                     sys.stdout.write('[Skipping test based on .skipif environment settings: %s/%s]\n'%(localdir,execname))
                     do_not_test=True
-                break
             except ValueError:
                 sys.stdout.write('[Error processing .skipif file %s/%s]\n'%(localdir,f))
                 do_not_test=True
-                break
             if do_not_test:
-                continue
+                break
 
         elif (suffix=='.timeout' and os.access(f, os.R_OK)):
             timeout=ReadIntegerValue(f, localdir)
@@ -627,7 +625,9 @@ for testname in testsrc:
             numlocales=ReadIntegerValue(f, localdir)
 
         elif suffix==futureSuffix and os.access(f, os.R_OK):
-            futuretest='Future ('+subprocess.Popen(['head', '-n', '1', './'+execname+futureSuffix], stdout=subprocess.PIPE).communicate()[0].strip()+') '
+            futurefile = open('./'+execname+futureSuffix, 'r')
+            futuretest='Future ('+futurefile.readline().strip()+') '
+            futurefile.close()
 
         elif (suffix=='.noexec' and os.access(f, os.R_OK)):
             noexecfile=True
@@ -651,12 +651,12 @@ for testname in testsrc:
             else:
                 redirectin=f
 
-        if suffix=='.future':
-            testfuturesfile=True
+        if suffix==futureSuffix:
             if testfutures==0:
                 sys.stdout.write('[Skipping future test: %s/%s]\n'%(localdir,execname))
                 do_not_test=True
                 break
+            testfuturesfile=True
 
     del execname_files
 
