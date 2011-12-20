@@ -119,9 +119,6 @@
   46  (7, 5)  75
   46  (7, 7)  77
   46  zippered iterator (D,A)
-./u.chpl:37: In function 'msgserial':
-./u.chpl:37: warning: array iterator over stridable block-cyclic-dim arrays is presently not efficient
-./u.chpl:37: warning: array iterator over stridable block-cyclic-dim arrays is presently not efficient
 11 12 13 14 15 16 17 18
 21 22 23 24 25 26 27 28
 31 32 33 34 35 36 37 38

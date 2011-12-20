@@ -1,6 +1,3 @@
-t5a.chpl: In function 'test':
-t5a.chpl: warning: array iterator over stridable block-cyclic-dim arrays is presently not efficient
-t5a.chpl: warning: array iterator over stridable block-cyclic-dim arrays is presently not efficient
    1  setupLocales 2*2
    1  mylocs
    1   LOCALE0 LOCALE1 LOCALE2 LOCALE3
