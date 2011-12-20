@@ -373,19 +373,21 @@ maximum-with-location reduction returns the lowest index position with
 the maximum value (as defined by the \verb@>@ operator).
 
 The expression on the right-hand side of the \chpl{reduce} keyword
-can be of any type that can be iterated over and to which the
-reduction operator can be applied.  For example, the bitwise-and
+can be of any type that can be iterated over, provided
+the reduction operator can be applied to the values yielded
+by the iteration. For example, the bitwise-and
 operator can be applied to arrays of boolean or integral types to
 compute the bitwise-and of all the values in the array.
 
-The minimum-with-location and maximum-with-location reductions take a
-2-tuple of arguments where the first tuple element is the collection
+For the minimum-with-location and maximum-with-location reductions,
+the argument on the right-hand side of the \chpl{reduce} keyword
+must be a 2-tuple. Its first component is the collection
 of values for which the minimum/maximum value is to be computed.  The
-second tuple element is a collection of indices with the same size and
+second argument component is a collection of indices with the same size and
 shape that provides names for the locations of the values in the first
-argument.  The reduction returns a tuple containing the
-minimum/maximum value in the first position and the location of the
-value in the second position.
+component.  The reduction returns a tuple containing the
+minimum/maximum value in the first argument component and the value
+at the corresponding location in the second argument component.
 
 \begin{chapelexample}{reduce-loc.chpl}
 The first line below computes the smallest element in an array
