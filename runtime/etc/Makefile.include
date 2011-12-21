@@ -21,7 +21,9 @@ CHAPEL_RT_INC_DIR = \
         -I$(CHAPEL_ROOT)/runtime/include/comp-$(CHPL_MAKE_COMPILER) \
         -I$(CHAPEL_ROOT)/runtime/include/$(subst -sim,,$(CHPL_MAKE_TARGET_PLATFORM)) \
         -I$(CHAPEL_ROOT)/runtime/include/atomics/$(CHPL_MAKE_ATOMICS) \
+        -I$(THIRD_PARTY_DIR)/utf8-decoder \
         -I$(CHAPEL_ROOT)/runtime/include
+
 CHAPEL_RT_LIB_DIR = $(CHAPEL_ROOT)/$(LIB_RT_DIR)
 
 ifdef NVCC
