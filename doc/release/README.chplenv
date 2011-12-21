@@ -115,12 +115,10 @@ Optional Settings
         cray-mta          : the Cray compiler for multithreaded architectures
         cray-vec          : the Cray compiler for vector architectures
         cray-xt-gnu       : the Cray XT compiler using the GNU backend
-        cray-xt-pathscale : the Cray XT compiler using the Pathscale backend
         cray-xt-pgi       : the Cray XT compiler using the PGI backend
         gnu               : the GNU compiler suite -- gcc and g++
         ibm               : the IBM compiler suite -- xlc and xlC
         intel             : the Intel compiler suite -- icc and icpc
-	pathscale         : the Pathscale compiler suite -- pathcc and pathCC
 	pgi               : the PGI compiler suite -- pgcc and pgCC
 
    The default for CHPL_HOST_COMPILER depends on the value of the
