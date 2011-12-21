@@ -1,4 +1,4 @@
-config const n = 2000;
+config const n = 1000;
 var count: sync int = n;
 var barrier: single bool;
 
