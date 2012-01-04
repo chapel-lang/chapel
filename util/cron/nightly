@@ -442,13 +442,6 @@ if ($hostplatform eq "cygwin") {
 
 
 
-#
-# build stuff
-#
-if ($tasks && ($tasks eq "qthreads" || $tasks eq "nanox")) {
-    mysystem("cd $chapeldir/third-party && $make $tasks", "making task layer", 1, 1);
-}
-
 $makestat = mysystem("cd $chapeldir && $make DEBUG=0 OPTIMIZE=1 compiler", "making chapel compiler", 0, 1);
 if ($makestat != 0) {
     mysystem("cd $chapeldir && $make DEBUG=0 compiler", "making chapel compiler", 1, 1);
