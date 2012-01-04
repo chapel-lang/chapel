@@ -54,7 +54,7 @@ default: all
 all: gasnet
 
 clean: FORCE
-	rm -rf $(QTHREAD_BUILD_DIR)
+	rm -rf $(GASNET_BUILD_DIR)
 
 clobber: FORCE
 	rm -rf build install

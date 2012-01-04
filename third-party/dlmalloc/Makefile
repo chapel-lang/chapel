@@ -4,8 +4,13 @@ include $(CHAPEL_ROOT)/make/Makefile.base
 
 default: all
 
-all:
+all: FORCE
 	cd src && $(MAKE)
 
-clean:
-	cd src && $(MAKE) clean
+clean: FORCE
+	rm -rf $(DLMALLOC_BUILD_DIR)
+
+clobber: FORCE
+	rm -rf build install
+
+FORCE:

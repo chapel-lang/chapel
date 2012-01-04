@@ -26,28 +26,34 @@ clobber: FORCE
 
 depend:
 
-
-dlmalloc: FORCE
+dlmalloc: $(DLMALLOC_INSTALL_DIR)
+$(DLMALLOC_INSTALL_DIR):
 	cd dlmalloc && $(MAKE)
 
 # See gasnet/Makefile for explanation of the post-install step
-gasnet: FORCE
+gasnet: $(GASNET_INSTALL_DIR)
+$(GASNET_INSTALL_DIR):
 	cd gasnet && $(MAKE) && $(MAKE) post-install
 
-gmp: FORCE
+gmp: $(GMP_INSTALL_DIR)
+$(GMP_INSTALL_DIR):
 	cd gmp && $(MAKE)
 
-nanox: FORCE
+nanox: $(NANOX_INSTALL_DIR)
+$(NANOX_INSTALL_DIR):
 	cd nanox && $(MAKE)
 
-qthread: FORCE
+qthread: $(QTHREAD_INSTALL_DIR)
+$(QTHREAD_INSTALL_DIR):
 	cd qthread && $(MAKE)
 
 qthreads: qthread
 
-tcmalloc: FORCE
+tcmalloc: $(TCMALLOC_INSTALL_DIR)
+$(TCMALLOC_INSTALL_DIR):
 	cd tcmalloc && $(MAKE)
 
 -include Makefile.devel
 
 FORCE:
+
