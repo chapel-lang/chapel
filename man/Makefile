@@ -6,7 +6,7 @@ VERSION = $(shell $(CHAPEL_ROOT)/util/devel/compVersion)
 MANPAGE = man1/$(PROGRAM).1
 TARGETS = $(MANPAGE) $(PROGRAM).pdf
 
-TXT2MAN = $(THIRD_PARTY_DIR)/txt2man/txt2man
+TXT2MAN = $(CHAPEL_ROOT)/third-party/txt2man/txt2man
 
 STARS = \*\*\*\*\*
 
