@@ -438,6 +438,10 @@ cray-xt-cray/cce-specific regressions
 ***uselocale is undefined, breaking compiler build (11/10/11)
 -------------------------------------------------------------
 
+nondet. compilation timeout (01/04/11)
+--------------------------------------
+[Error: Timed out compilation for studies/graph500/v2/main (compopts: 1)]
+
 new unreachable loop warning (05/29/11)
 ---------------------------------------
 [Error matching program output for arrays/deitz/jacobi-unoptimized (compopts: 1)]
@@ -548,10 +552,6 @@ negative floating point 0.0 not supported
 xt-intel-specific regressions (in addition to xt-cle errors above)
 ==================================================================
 
-GLIBC_2.10 not found (12/22/11)
--------------------------------
-*everything*
-
 nondet. compilation timeout
 ---------------------------
 [Error: Timed out compilation for release/examples/ssca2/SSCA2_main (compopts: 1)] (12/05/11, 12/07/11, 12/10/11, 12/13/11, 12/17/11, 12/26/11, 12/29/11, 01/02/12)
@@ -583,7 +583,6 @@ compilation timeouts (11/12/11)
 
 new file I/O problem due to unicode literal (11/10/11)
 ------------------------------------------------------
-[Error matching compiler output for release/examples/primers/fileIO]
 [Error matching compiler output for unicode/print_euro]
 
 problem with static/dynamic linking? (10/1/11 -- first run)
@@ -596,10 +595,6 @@ problem with static/dynamic linking? (10/1/11 -- first run)
 ========================
 xt-gnu specific failures
 ========================
-
-GLIBC_2.10 not found (12/22/11)
--------------------------------
-*everything*
 
 
 ========================
@@ -661,9 +656,9 @@ release/examples/spec/Task_Parallelism_and_Synchronization/serialStmt1] (10/13/1
 nondet. execution timeouts (ever since switching to 4 shepherds)
 --------------------------------------------------------
 [Error: Timed out executing program release/examples/spec/Task_Parallelism_and_Synchronization/singleVar] (10/13/11, 10/16/11, 10/17/11, 10/22/11, 10/24/11, 10/28/11, 11/1/11, 11/04/11, 11/06/11, 12/03/11, 12/13/11, 12/17/11, 12/21/11, 12/23/11, 12/26/11, 12/30/11)
-[Error: Timed out executing program release/examples/ssca2/SSCA2_main (compopts: 1, execopts: 1)] (12/02/11, 12/04/11, 12/07/11, 12/09/11, 12/12/11, 12/14/11, 12/18/11, 12/21/11, 12/23/11, 12/27/11, 12/30/11, 01/02/12)
+[Error: Timed out executing program release/examples/ssca2/SSCA2_main (compopts: 1, execopts: 1)] (12/02/11, 12/04/11, 12/07/11, 12/09/11, 12/12/11, 12/14/11, 12/18/11, 12/21/11, 12/23/11, 12/27/11, 12/30/11, 01/02/12, 01/05/12)
 [Error: Timed out executing program release/examples/ssca2/SSCA2_main (compopts: 4, execopts: 1)] (12/02/11, 12/04/11, 12/06/11, 12/08/11, 12/11/11, 12/14/11, 12/22/11, 12/24/11, 12/27/11, 12/29/11, 01/01/12, 01/03/12)
-[Error: Timed out executing program release/examples/ssca2/SSCA2_main (compopts: 5, execopts: 1)] (12/02/11, 12/04/11, 12/09/11, 12/16/11, 12/23/11, 12/27/11, 01/01/12)
+[Error: Timed out executing program release/examples/ssca2/SSCA2_main (compopts: 5, execopts: 1)] (12/02/11, 12/04/11, 12/09/11, 12/16/11, 12/23/11, 12/27/11, 01/01/12, 01/05/12)
 [Error: Timed out executing program release/examples/primers/syncsingle] (10/15/11, 10/17/11, 10/23/11, 10/30/11, 11/1/11, 11/3/11, 11/06/11, 11/08/11)
 [Error: Timed out executing program release/examples/spec/Task_Parallelism_and_Synchronization/serialStmt2] (09/26/11, 10/23/11, 11/1/11)
 [Error: Timed out executing program release/examples/primers/taskParallel] (10/06/11, 10/16/11, 10/25/11, 10/28/11, 11/04/11)
@@ -695,6 +690,9 @@ execution timeouts (ever since switching to 4 shepherds)
 =======================
 qthreads-specific tests
 =======================
+
+***new third-party build rule breaks build (01/05/11)
+-----------------------------------------------------
 
 new I/O causes assertion error (11/10/11)
 -----------------------------------------
