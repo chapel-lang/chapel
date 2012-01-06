@@ -20,7 +20,7 @@ export CHPL_MEM=tcmalloc
 $CHPL_HOME/util/cron/nightly -cron &> $LOGFILE
 echo "Done testing CHPL_TASKS=tcmalloc"
 
-# tcmalloc with comm gasnet
+# tcmalloc with comm gasnet for examples
 LOGFILE=/users/chapelu/tmp/nightly.tcmalloc-gasnet.out
 echo "Testing CHPL_TASKS=tcmalloc CHPL_COMM=gasnet.  See $LOGFILE for more info."
 export CHPL_COMM=gasnet
@@ -28,6 +28,6 @@ export GASNET_SPAWNFN=L
 export GASNET_ROUTE_OUTPUT=0
 export CHPL_GASNET_CFG_OPTIONS=--disable-ibv
 export GASNET_QUIET=Y
-$CHPL_HOME/util/cron/nightly -cron &> $LOGFILE
+$CHPL_HOME/util/cron/nightly -cron -examples &> $LOGFILE
 echo "Done testing CHPL_TASKS=tcmalloc CHPL_COMM=gasnet"
 
