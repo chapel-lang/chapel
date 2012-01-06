@@ -1,14 +1,16 @@
 use Time;
 
+extern proc printf(x...);
+
 proc foo() {
   var x: int = 2;
   on Locales(1) {
     begin {
       sleep(2);
-      _debugWriteln(here.id, " x=", x);
+      printf("%s\n", here.id + " x=" + x);
     }
   }
-  _debugWriteln(here.id, " x=", x);
+  printf("%s\n", here.id + " x=" + x);
 }
 
 foo();

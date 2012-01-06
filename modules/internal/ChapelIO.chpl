@@ -323,41 +323,6 @@ proc &(r: Reader, x) {
 
 use IO;
 
-proc _debugWrite(args...?n) {
-  extern proc fprintf(f: _file, fmt: string, vals...?numvals): int;
-  extern proc fflush(f: _file): int;
-  proc getString(a: ?t) {
-    if t == bool(8) || t == bool(16) || t == bool(32) || t == bool(64) ||
-       t == int(8) || t == int(16) || t == int(32) || t == int(64) ||
-       t == uint(8) || t == uint(16) || t == uint(32) || t == uint(64) ||
-       t == real(32) || t == real(64) || t == imag(32) || t == imag(64) ||
-       t == complex(64) || t == complex(128) ||
-       t == bool || t == string || _isEnumeratedType(t) then
-      return a:string;
-    else 
-      compilerError("Cannot call _debugWrite on value of type ",
-                    typeToString(t));
-  }
-  for param i in 1..n {
-    var status = fprintf(chpl_cstdout(), "%s", getString(args(i)));
-    if status < 0 {
-      //const err = chpl_cerrno();
-      halt("_debugWrite failed");
-    }
-  }
-  fflush(chpl_cstdout());
-}
-
-proc _debugWriteln(args...?n) {
-  _debugWrite((...args), "\n");
-}
-
-proc _debugWriteln() {
-  _debugWrite("\n");
-}
-
-
-
 proc assert(test: bool) {
   if !test then
     __primitive("chpl_error", "assert failed");

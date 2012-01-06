@@ -1433,15 +1433,6 @@ proc channel.read(type t ...?numTypes) where numTypes > 1 {
   return tupleVal;
 }
 
-/*
-proc _debugWriteTypes(args ...?k) {
-  for param i in 1..k {
-    _debugWrite(typeToString(args(i).type));
-    _debugWrite(" ");
-  }
-  _debugWriteln();
-}*/
-
 inline
 proc channel.write(args ...?k, out error:err_t):bool {
   if !writing then compilerError("write on read-only channel");
