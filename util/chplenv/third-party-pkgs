@@ -15,6 +15,10 @@
 #     indented are assumed to be modifiers of the corresponding top-level
 #     variable and will not be considered in this script (*** and also
 #     do not necessarily have to be prefixed with 'CHPL_')
+# - $CHPL_HOME/third-party/<pkg>/Makefile.include defines any aliases
+#   for the package name in a variable called XXX_ALIASES where XXX
+#   is the directory name in all caps.
+#
 #
 import os, os.path, sys, subprocess
 
@@ -23,6 +27,26 @@ chpl_home = utildir[0]+'/../..'
 
 third_party = chpl_home+'/third-party'
 third_party_pkgs = os.listdir(third_party)
+
+#
+# Add any aliases
+#
+pkg_aliases = list()
+for dir in third_party_pkgs:
+    if dir == '.svn':
+        continue
+    deffile = third_party+'/'+dir+'/Makefile.include'
+    aliasvar = dir.upper()+'_ALIASES'
+    if os.access(deffile, os.F_OK) and os.access(deffile, os.R_OK):
+        f = open(deffile, 'r')
+        for line in f.readlines():
+            varvalue = line.strip().split('=')
+            if varvalue[0] == aliasvar:
+                aliases = varvalue[1].split()
+                for a in aliases:
+                    pkg_aliases.append(a)
+                break
+        f.close()
 
 printchplenv = chpl_home+'/util/printchplenv'
 chplenv=subprocess.Popen([printchplenv],
@@ -38,6 +62,8 @@ for l in chplenv.split('\n'):
         # Ignore platform variables
         if not var.endswith('_PLATFORM'):
             if third_party_pkgs.count(val)==1:
+                pkgs += val+' '
+            elif pkg_aliases.count(val)==1:
                 pkgs += val+' '
 
 print pkgs

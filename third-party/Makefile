@@ -46,8 +46,7 @@ $(NANOX_INSTALL_DIR):
 qthread: $(QTHREAD_INSTALL_DIR)
 $(QTHREAD_INSTALL_DIR):
 	cd qthread && $(MAKE)
-
-qthreads: qthread
+$(QTHREAD_ALIASES): qthread
 
 tcmalloc: $(TCMALLOC_INSTALL_DIR)
 $(TCMALLOC_INSTALL_DIR):
