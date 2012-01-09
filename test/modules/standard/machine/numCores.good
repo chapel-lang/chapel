@@ -1,8 +1,0 @@
-The .good file for this test must be specified on a
-machine-by-machine basis, as the test reports the
-number of cores available on node 0 of the machine.
-
-If anyone knows of a portable way to determine this
-value from the command-line in a portable way (such
-that we can tuck it into a prediff script and generate
-the .good file on the fly), that would be very useful.
