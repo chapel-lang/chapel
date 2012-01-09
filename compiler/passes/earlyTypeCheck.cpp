@@ -14,15 +14,18 @@
 #include <list>
 #include <string>
 #include <utility>
+#include <algorithm>
 
-//Predeclare recursive functions
+//Predeclare functions
 BaseAST *get_root_type_or_type_expr(BaseAST *ast);
-BaseAST *typeCheckExpr(BaseAST *currentExpr, BaseAST *expectedReturnTypeExpr);
+BaseAST *typeCheckExpr(BaseAST *currentExpr, BaseAST *expectedReturnTypeExpr, BlockStmt *whereClause);
 void handle_where_clause_expr(BaseAST *ast);
 BaseAST *typeCheckFn(FnSymbol *fn);
 BaseAST *checkInterfaceImplementations(BlockStmt *block);
 static void getFunctionsInWhereClause(const char* name,
     Vec<FnSymbol*>& visibleFns, BaseAST *whereClause);
+bool mapArguments(CallExpr*, FnSymbol*, CallExpr*);
+BaseAST* checkFunctionCall(CallExpr*);
 
 //FIXME: This probably already exists in Chapel, but I couldn't find it
 //FIXME: A more optimized approach would be to use the congruence closure to find all representative types at
@@ -961,21 +964,18 @@ BaseAST* checkFunctionCall(CallExpr* call) {
 }
 
 BaseAST* checkInterfaceImplementations(BlockStmt *block) {
-  bool foundImplementsPhrases = false;
   BaseAST * returnExpr;
 
   for_alist(s, block->body) {
     if (DefExpr *de = toDefExpr(s)) {
       if (de->sym && isFnSymbol(de->sym)) {
         FnSymbol *fn = toFnSymbol(de->sym);
-        if (checkInterfaceImplementations(fn->body))
-          foundImplementsPhrases = true;
+        checkInterfaceImplementations(fn->body);
       }
     } else if (CallExpr *ce = toCallExpr(s)) {
       //printf("Call expr %d\n", ce->id);
       if (UnresolvedSymExpr *use = toUnresolvedSymExpr(ce->baseExpr)) {
         if (!strcmp(use->unresolved, "implements")) {
-          foundImplementsPhrases = true;
           //Next, fine the interface this is talking about
           /*
            if (UnresolvedSymExpr *interface_name = toUnresolvedSymExpr(ce->argList.tail)) {
