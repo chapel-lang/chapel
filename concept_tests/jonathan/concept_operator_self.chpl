@@ -1,5 +1,5 @@
 interface LessThan {
-  proc <(x:self, y:self):int;
+  proc <(x:self, y:self):bool;
 }
 
 int implements LessThan;
