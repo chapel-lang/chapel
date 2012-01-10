@@ -79,6 +79,7 @@ system("cd $tmpdir && svn export -q $svnroot $reldir");
     "runtime",
     "third-party",
     "util/chplenv",
+    "util/config",
     "util/test"
 );
 

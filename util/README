@@ -17,4 +17,5 @@ to end-users.  The current contents of the directory are as follows:
                      the language evolves
 
    chplenv/        : helper scripts for inferring CHPL_* variables if unset
+   config/         : helper scripts for configuring the Chapel build
    test/           : helper scripts for the testing system
