@@ -11,10 +11,11 @@ chap10 : gasnet
 chpbld01 : XT/XE PrgEnvs
 chpbld02 : unused (parallel performance testing planned)
 gold: 32-bit linux
+bradc-lnx : release testing, performance, token count, tab check
 lnx-vass : block, memory leaks
 lnx-hilde : nanox (none + gasnet)
-lnx-bradc : release testing, performance, token count, tab check
-macchapel-mac : mac (currently waiting for replacement Mac)
+lnx-sung: tcmalloc (none + gasnet examples)
+macchapel-mac : mac (need to restart cron job after hard drive replacement)
 (windows laptop) : cygwin
 
 
