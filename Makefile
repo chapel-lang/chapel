@@ -12,10 +12,14 @@ all: comprt
 
 comprt: FORCE
 	@$(MAKE) compiler
+	@$(MAKE) modules
 	@$(MAKE) runtime
 
 compiler: FORCE
 	cd compiler && $(MAKE)
+
+modules: FORCE
+	cd modules && $(MAKE)
 
 runtime: FORCE
 	cd runtime && $(MAKE)
@@ -25,10 +29,12 @@ third-party: FORCE
 
 clean: FORCE
 	cd compiler && $(MAKE) clean
+	cd modules && $(MAKE) clean
 	cd runtime && $(MAKE) clean
 
 clobber: FORCE
 	cd compiler && $(MAKE) clobber
+	cd modules && $(MAKE) clobber
 	cd runtime && $(MAKE) clobber
 	rm -rf bin
 	rm -rf lib

@@ -146,7 +146,7 @@ extern const QIO_CHANNEL_PTR_NULL:qio_channel_ptr_t;
 extern type qbuffer_ptr_t;
 extern const QBUFFER_PTR_NULL:qbuffer_ptr_t;
 
-extern type style_char_t = c_char_t;
+extern type style_char_t = uint(8);
 
 extern const QIO_STRING_FORMAT_WORD:uint(8);
 extern const QIO_STRING_FORMAT_BASIC:uint(8);

@@ -1,17 +1,9 @@
 
 /* BASIC TYPES */
-extern type c_uint = uint(32);
-extern type c_int = int(32);
-extern type c_long = int(64);
-extern type c_ulong = uint(64);
-extern type c_longlong = int(64);
-extern type c_ulonglong = uint(64);
+use SysCTypes;
+
 extern type c_double = real(64);
 /*extern type c_wchar_t = uint(32); */
-extern type c_char_t = uint(8);
-extern type c_ptr; // opaque; no ptr arithmetic in Chapel code!
-extern type ssize_t = int(64);
-extern type size_t = uint(64);
 extern type off_t = int(64);
 extern type mode_t = uint(32);
 extern type socklen_t = int(32);
