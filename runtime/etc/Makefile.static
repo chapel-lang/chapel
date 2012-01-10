@@ -2,7 +2,7 @@
 # Makefile.static
 #
 
-include $(CHAPEL_ROOT)/runtime/etc/Makefile.include
+include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.include
 
 all: $(TMPBINNAME)
 

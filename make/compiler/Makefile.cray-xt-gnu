@@ -1,6 +1,6 @@
 # put XT cross-compilation gnu-specific settings here
 
-include $(CHAPEL_ROOT)/make/compiler/Makefile.cray-xt
+include $(CHPL_MAKE_HOME)/make/compiler/Makefile.cray-xt
 
 RUNTIME_CFLAGS += -std=c99
 GEN_CFLAGS += -std=c99

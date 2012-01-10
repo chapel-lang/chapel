@@ -12,10 +12,7 @@ endif
 # include the standard Chapel Makefile.base
 #
 
-CHAPEL_ROOT = $(COMPILER_ROOT)/..
-CHAPEL_SUBDIR = compiler/$(COMPILER_SUBDIR)
-
-include $(CHAPEL_ROOT)/make/Makefile.base
+include $(CHPL_MAKE_HOME)/make/Makefile.base
 
 INCL_CFLAGS = -I. -I$(COMPILER_ROOT)/include/$(CHPL_MAKE_HOST_PLATFORM) -I$(COMPILER_ROOT)/include
 COMP_CFLAGS += $(INCL_CFLAGS)

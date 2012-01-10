@@ -1,5 +1,5 @@
-CHAPEL_ROOT = ..
-include $(CHAPEL_ROOT)/make/Makefile.base
+CHPL_MAKE_HOME = ..
+include $(CHPL_MAKE_HOME)/make/Makefile.base
 
 all:
 	@$(MAKE) "CHPL_MAKE_HOST_TARGET=--host" printplatform

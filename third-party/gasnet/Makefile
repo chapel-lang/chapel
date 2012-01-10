@@ -1,8 +1,10 @@
+ifndef CHPL_MAKE_HOME
+export CHPL_MAKE_HOME=$(shell pwd)/../..
+endif
+
 export CHPL_COMM=gasnet
-CHAPEL_ROOT = ../..
-CHAPEL_SUBDIR = third-party/gasnet
 CHPL_MAKE_HOST_TARGET = --target
-include $(CHAPEL_ROOT)/make/Makefile.base
+include $(CHPL_MAKE_HOME)/make/Makefile.base
 
 CHPL_GASNET_CFG_OPTIONS += --enable-segment-$(CHPL_MAKE_COMM_SEGMENT) --enable-allow-gcc4
 

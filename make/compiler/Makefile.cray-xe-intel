@@ -4,7 +4,7 @@
 # 592 : squelch use-before-def problems -- we'll rely on valgrind to catch them
 XE_GEN_CFLAGS = -wr592
 
-include $(CHAPEL_ROOT)/make/compiler/Makefile.cray-xe
+include $(CHPL_MAKE_HOME)/make/compiler/Makefile.cray-xe
 
 RUNTIME_CFLAGS += -std=c99 -wr188
 GEN_CFLAGS += -std=c99

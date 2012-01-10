@@ -21,7 +21,7 @@ printstuff:
 	@echo CHPL_MAKE_PLATFORM = $(CHPL_MAKE_PLATFORM)
 	@echo AR = $(AR)
 	@echo GOOPY = $(GOOPY)
-	@echo $(CHAPEL_ROOT)/make/platform/Makefile.$(CHPL_MAKE_PLATFORM)
+	@echo $(CHPL_MAKE_HOME)/make/platform/Makefile.$(CHPL_MAKE_PLATFORM)
 	@echo CHPL_MAKE_MEM = $(CHPL_MAKE_MEM)
 	@echo CHPL_MAKE_HOST_TARGET = $(CHPL_MAKE_HOST_TARGET)
 

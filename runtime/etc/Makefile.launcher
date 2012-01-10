@@ -2,16 +2,16 @@ CHPL_MAKE_HOST_TARGET = --host
 MAKE_LAUNCHER = 1
 REAL_SUFFIX = _real
 
-include $(CHAPEL_ROOT)/make/Makefile.base
+include $(CHPL_MAKE_HOME)/make/Makefile.base
 
 LD = $(CC)
 
-include $(CHAPEL_ROOT)/runtime/etc/Makefile.threads-$(CHPL_MAKE_THREADS)
-include $(CHAPEL_ROOT)/runtime/etc/Makefile.comm-$(CHPL_MAKE_COMM)
-include $(CHAPEL_ROOT)/runtime/etc/Makefile.mem-$(CHPL_MAKE_MEM)
+include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.threads-$(CHPL_MAKE_THREADS)
+include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.comm-$(CHPL_MAKE_COMM)
+include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.mem-$(CHPL_MAKE_MEM)
 
-CHAPEL_LN_INCS = -I$(CHAPEL_ROOT)/runtime/include/$(subst -sim,,$(CHPL_MAKE_TARGET_PLATFORM)) -I$(CHAPEL_ROOT)/runtime/include
-CHAPEL_LN_LIB_DIR = $(CHAPEL_ROOT)/$(LIB_LN_DIR)
+CHAPEL_LN_INCS = -I$(CHPL_MAKE_HOME)/runtime/include/$(subst -sim,,$(CHPL_MAKE_TARGET_PLATFORM)) -I$(CHPL_MAKE_HOME)/runtime/include
+CHAPEL_LN_LIB_DIR = $(CHPL_MAKE_HOME)/$(LIB_LN_DIR)
 
 LAUNCHER_SRC_NAME = $(TMPDIRNAME)/config.c
 REAL_BINARY_NAME = $(BINNAME:%$(EXE_SUFFIX)=%)$(REAL_SUFFIX)

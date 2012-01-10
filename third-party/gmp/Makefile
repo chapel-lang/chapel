@@ -1,8 +1,9 @@
-CHAPEL_ROOT = ../..
-CHAPEL_SUBDIR = third-party/gmp
-CHPL_MAKE_HOST_TARGET = --target
-include $(CHAPEL_ROOT)/make/Makefile.base
+ifndef CHPL_MAKE_HOME
+export CHPL_MAKE_HOME=$(shell pwd)/../..
+endif
 
+CHPL_MAKE_HOST_TARGET = --target
+include $(CHPL_MAKE_HOME)/make/Makefile.base
 
 #
 # set up the directories

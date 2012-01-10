@@ -1,5 +1,5 @@
 #
-# Makefile.base: Defines general Makefile variables.  Set CHAPEL_ROOT
+# Makefile.base: Defines general Makefile variables.  Set CHPL_MAKE_HOME
 # before using
 #
 
@@ -12,38 +12,38 @@ endif
 #
 # determine what platform we're running on
 #
-include $(CHAPEL_ROOT)/make/Makefile.platform
+include $(CHPL_MAKE_HOME)/make/Makefile.platform
 
 ifndef CHPL_MAKE_COMPILER
-include $(CHAPEL_ROOT)/make/Makefile.compiler
+include $(CHPL_MAKE_HOME)/make/Makefile.compiler
 endif
 
 ifndef CHPL_MAKE_TASKS
-include $(CHAPEL_ROOT)/make/Makefile.tasks
+include $(CHPL_MAKE_HOME)/make/Makefile.tasks
 endif
 
 ifndef CHPL_MAKE_THREADS
-include $(CHAPEL_ROOT)/make/Makefile.threads
+include $(CHPL_MAKE_HOME)/make/Makefile.threads
 endif
 
 ifndef CHPL_MAKE_TIMERS
-include $(CHAPEL_ROOT)/make/Makefile.timers
+include $(CHPL_MAKE_HOME)/make/Makefile.timers
 endif
 
 ifndef CHPL_MAKE_COMM
-include $(CHAPEL_ROOT)/make/Makefile.comm
+include $(CHPL_MAKE_HOME)/make/Makefile.comm
 endif
 
 ifndef CHPL_MAKE_LAUNCHER
-include $(CHAPEL_ROOT)/make/Makefile.launcher
+include $(CHPL_MAKE_HOME)/make/Makefile.launcher
 endif
 
 ifndef CHPL_MAKE_MEM
-include $(CHAPEL_ROOT)/make/Makefile.mem
+include $(CHPL_MAKE_HOME)/make/Makefile.mem
 endif
 
 ifndef CHPL_MAKE_ATOMICS
-include $(CHAPEL_ROOT)/make/Makefile.atomics
+include $(CHPL_MAKE_HOME)/make/Makefile.atomics
 endif
 
 #
@@ -65,7 +65,7 @@ endif
 #
 # Third-party package stuff
 #
-THIRD_PARTY_DIR = $(CHAPEL_ROOT)/third-party
+THIRD_PARTY_DIR = $(CHPL_MAKE_HOME)/third-party
 
 include $(THIRD_PARTY_DIR)/gasnet/Makefile.include
 include $(THIRD_PARTY_DIR)/dlmalloc/Makefile.include
@@ -133,7 +133,7 @@ LIB_RT_DIR = lib/$(PLAT_RUNTIME_SUBDIR)/$(COMM_TASK_THREAD_SUBDIR)
 LIB_LN_DIR = lib/$(PLAT_RUNTIME_SUBDIR)/$(COMM_LAUNCH_SUBDIR)
 
 
-CHPL_BIN_DIR = $(CHAPEL_ROOT)/bin/$(CHPL_MAKE_HOST_PLATFORM)
+CHPL_BIN_DIR = $(CHPL_MAKE_HOME)/bin/$(CHPL_MAKE_HOST_PLATFORM)
 CHPL = $(CHPL_BIN_DIR)/chpl$(EXE_SUFFIX)
 
 
@@ -172,7 +172,7 @@ EXE_SUFFIX =
 #
 # include compiler- and platform-specific settings
 #
--include $(CHAPEL_ROOT)/make/compiler/Makefile.$(CHPL_MAKE_COMPILER)
--include $(CHAPEL_ROOT)/make/platform/Makefile.$(CHPL_MAKE_PLATFORM)
--include $(CHAPEL_ROOT)/make/comm/Makefile.$(CHPL_MAKE_COMM)
--include $(CHAPEL_ROOT)/make/tasks/Makefile.$(CHPL_MAKE_TASKS)
+-include $(CHPL_MAKE_HOME)/make/compiler/Makefile.$(CHPL_MAKE_COMPILER)
+-include $(CHPL_MAKE_HOME)/make/platform/Makefile.$(CHPL_MAKE_PLATFORM)
+-include $(CHPL_MAKE_HOME)/make/comm/Makefile.$(CHPL_MAKE_COMM)
+-include $(CHPL_MAKE_HOME)/make/tasks/Makefile.$(CHPL_MAKE_TASKS)

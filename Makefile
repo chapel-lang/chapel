@@ -2,8 +2,8 @@
 # top-level Chapel Makefile
 #
 
-CHAPEL_ROOT = .
-include $(CHAPEL_ROOT)/make/Makefile.base
+export CHPL_MAKE_HOME=$(shell pwd)
+include ./make/Makefile.base
 
 default: all
 

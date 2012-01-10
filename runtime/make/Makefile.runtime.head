@@ -12,13 +12,12 @@ endif
 # include the standard Chapel Makefile.base
 #
 
-CHAPEL_ROOT = $(RUNTIME_ROOT)/..
-CHAPEL_SUBDIR = runtime/$(RUNTIME_SUBDIR)
+# CHAPEL_SUBDIR = runtime/$(RUNTIME_SUBDIR)
 
 ifneq ($(MAKE_LAUNCHER),1)
 CHPL_MAKE_HOST_TARGET = --target
 endif
-include $(CHAPEL_ROOT)/make/Makefile.base
+include $(RUNTIME_ROOT)/../make/Makefile.base
 
 RUNTIME_INCLUDE_ROOT = $(RUNTIME_ROOT)/include
 

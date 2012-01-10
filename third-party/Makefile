@@ -1,8 +1,7 @@
-CHAPEL_ROOT = ..
-CHAPEL_SUBDIR = third-party
-include $(CHAPEL_ROOT)/make/Makefile.base
-
-THIRD_PARTY_ABS_DIR = $(shell pwd)
+ifndef CHPL_MAKE_HOME
+export CHPL_MAKE_HOME=$(shell pwd)/..
+endif
+include $(CHPL_MAKE_HOME)/make/Makefile.base
 
 default: all
 

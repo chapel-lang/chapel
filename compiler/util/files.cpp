@@ -423,7 +423,7 @@ void codegen_makefile(fileinfo* mainfile, fileinfo *gpusrcfile) {
   const char* strippedExeFilename = stripdirectories(executableFilename);
   const char* exeExt = "";
 
-  fprintf(makefile.fptr, "CHAPEL_ROOT = %s\n\n", CHPL_HOME);
+  fprintf(makefile.fptr, "CHPL_MAKE_HOME = %s\n\n", CHPL_HOME);
   fprintf(makefile.fptr, "TMPDIRNAME = %s\n", tmpDirName);
 
   if (fLibraryCompile) {
@@ -483,9 +483,9 @@ void codegen_makefile(fileinfo* mainfile, fileinfo *gpusrcfile) {
   if (developer && saveCDir[0] && !printCppLineno) {
     fprintf(makefile.fptr,
             "-@which $(CHPL_TAGS_UTIL) > /dev/null 2>&1 && "
-            "test -f $(CHAPEL_ROOT)/runtime/$(CHPL_TAGS_FILE) && "
+            "test -f $(CHAPEL_MAKE_HOME)/runtime/$(CHPL_TAGS_FILE) && "
             "cd %s && "
-            "cp $(CHAPEL_ROOT)/runtime/$(CHPL_TAGS_FILE) . && "
+            "cp $(CHPL_MAKE_HOME)/runtime/$(CHPL_TAGS_FILE) . && "
             "$(CHPL_TAGS_UTIL) $(CHPL_TAGS_FLAGS) $(CHPL_TAGS_APPEND_FLAG) *.c *.h",
             saveCDir);
   }
@@ -505,12 +505,12 @@ void codegen_makefile(fileinfo* mainfile, fileinfo *gpusrcfile) {
   fprintf(makefile.fptr, "\n");
   fprintf(makefile.fptr, "\n");
   if (!fLibraryCompile) {
-    fprintf(makefile.fptr, "include $(CHAPEL_ROOT)/runtime/etc/Makefile.exe\n");
+    fprintf(makefile.fptr, "include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.exe\n");
   } else {
     if (fLinkStyle == LS_DYNAMIC)
-      fprintf(makefile.fptr, "include $(CHAPEL_ROOT)/runtime/etc/Makefile.shared\n");
+      fprintf(makefile.fptr, "include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.shared\n");
     else
-      fprintf(makefile.fptr, "include $(CHAPEL_ROOT)/runtime/etc/Makefile.static\n");
+      fprintf(makefile.fptr, "include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.static\n");
   }
   fprintf(makefile.fptr, "\n");
   genCFileBuildRules(makefile.fptr);

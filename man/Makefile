@@ -1,12 +1,14 @@
-CHAPEL_ROOT = ..
+ifndef CHPL_MAKE_HOME
+export CHPL_MAKE_HOME=$(shell pwd)/..
+endif
 
 PROGRAM = chpl
-VERSION = $(shell $(CHAPEL_ROOT)/util/devel/compVersion)
+VERSION = $(shell $(CHPL_MAKE_HOME)/util/devel/compVersion)
 
 MANPAGE = man1/$(PROGRAM).1
 TARGETS = $(MANPAGE) $(PROGRAM).pdf
 
-TXT2MAN = $(CHAPEL_ROOT)/third-party/txt2man/txt2man
+TXT2MAN = $(CHPL_MAKE_HOME)/third-party/txt2man/txt2man
 
 STARS = \*\*\*\*\*
 

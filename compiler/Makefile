@@ -2,9 +2,12 @@
 # Makefile: builds Chapel compiler
 #
 
+ifndef CHPL_MAKE_HOME
+export CHPL_MAKE_HOME=$(shell pwd)/..
+endif
+
 COMPILER_ROOT=.
 COMPILER_SUBDIR = .
-
 
 #
 # subdirectories and false subdirectory-oriented targets to force recursion
@@ -81,10 +84,10 @@ include $(COMPILER_ROOT)/make/Makefile.compiler.rules
 
 ifdef CHPL_DEVELOPER
 CheckForStandardCHeaders:
-	@if [ `$(CHAPEL_ROOT)/util/devel/grepstdchdrs | wc -l` -gt 0 ]; then \
+	@if [ `$(CHPL_MAKE_HOME)/util/devel/grepstdchdrs | wc -l` -gt 0 ]; then \
 	  echo; \
 	  echo Standard C headers found in the following file\(s\):; \
-	  echo `$(CHAPEL_ROOT)/util/devel/grepstdchdrs`; \
+	  echo `$(CHPL_MAKE_HOME)/util/devel/grepstdchdrs`; \
 	  echo; \
 	  echo The above list was generated with the util/devel/grepstdchdrs script.; \
 	  exit 1; \
@@ -93,10 +96,10 @@ else
 CheckForStandardCHeaders:
 endif
 
-UPDATE_BUILD_VERSION = $(CHAPEL_ROOT)/util/devel/updateBuildVersion
+UPDATE_BUILD_VERSION = $(CHPL_MAKE_HOME)/util/devel/updateBuildVersion
 
 $(BUILD_VERSION_FILE): CheckForStandardCHeaders
-	@(test -x $(CHAPEL_ROOT)/.svn && test -x $(UPDATE_BUILD_VERSION) && \
+	@(test -x $(CHPL_MAKE_HOME)/.svn && test -x $(UPDATE_BUILD_VERSION) && \
 	$(UPDATE_BUILD_VERSION) $@) || (echo 0 > $@);
 
 

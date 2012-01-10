@@ -7,13 +7,13 @@
 # work properly when building in third-party directories where we
 # explicitly set CHPL_COMM...
 #
-CHPL_MAKE_COMM = $(shell export CHPL_COMM && CHPL_COMM=$(CHPL_COMM) && $(CHAPEL_ROOT)/util/chplenv/comm)
+CHPL_MAKE_COMM = $(shell export CHPL_COMM && CHPL_COMM=$(CHPL_COMM) && $(CHPL_MAKE_HOME)/util/chplenv/comm)
 
-CHPL_MAKE_COMM_SUBSTRATE = $(shell export CHPL_COMM && CHPL_COMM=$(CHPL_COMM) && $(CHAPEL_ROOT)/util/chplenv/commSubstrate)
+CHPL_MAKE_COMM_SUBSTRATE = $(shell export CHPL_COMM && CHPL_COMM=$(CHPL_COMM) && $(CHPL_MAKE_HOME)/util/chplenv/commSubstrate)
 
-CHPL_MAKE_COMM_SEGMENT = $(shell export CHPL_COMM && CHPL_COMM=$(CHPL_COMM) && $(CHAPEL_ROOT)/util/chplenv/commSegment)
+CHPL_MAKE_COMM_SEGMENT = $(shell export CHPL_COMM && CHPL_COMM=$(CHPL_COMM) && $(CHPL_MAKE_HOME)/util/chplenv/commSegment)
 
-CHPL_MAKE_COMM_MPI = $(shell export CHPL_COMM && $(CHAPEL_ROOT)/util/chplenv/chplmpi)
+CHPL_MAKE_COMM_MPI = $(shell export CHPL_COMM && $(CHPL_MAKE_HOME)/util/chplenv/chplmpi)
 
 ifeq ($(CHPL_COMM), gasnet)
 ifeq ($(CHPL_COMM_DEBUG),)
