@@ -74,6 +74,13 @@ while (@ARGV) {
     }
 }
 
+
+$crontab = `crontab -l`;
+if ($debug == 0) {
+    print "Currently installed crontab on ".hostname.":\n";
+    print $crontab;
+}
+
 $svntoday = `date +%F`; chomp($svntoday);
 if ($debug == 0 && $svnrevopt eq "") {
     $svnrevopt = "-r'{$svntoday 00:00 -0700}'";
@@ -460,7 +467,7 @@ if ($buildruntime == 0) {
     
     open(MAIL, $mailcommand);
     
-    print MAIL startMailHeader($revision, "<no logfile>", $starttime, $endtime);
+    print MAIL startMailHeader($revision, "<no logfile>", $starttime, $endtime, $crontab);
     print MAIL "Built compiler but not runtime, and did not run tests\n";
     print MAIL endMailHeader();
     close(MAIL);
@@ -574,7 +581,7 @@ if ($runtests == 0) {
     
     open(MAIL, $mailcommand);
     
-    print MAIL startMailHeader($revision, "<no logfile>", $starttime, $endtime);
+    print MAIL startMailHeader($revision, "<no logfile>", $starttime, $endtime, $crontab);
     print MAIL "Built compiler and runtime but did not run tests\n";
     print MAIL endMailHeader();
     
@@ -662,7 +669,7 @@ if ($runtests == 0) {
     
     open(MAIL, $mailcommand);
     
-    print MAIL startMailHeader($revision, $rawlog, $starttime, $endtime);
+    print MAIL startMailHeader($revision, $rawlog, $starttime, $endtime, $crontab);
     print MAIL "$numtestssummary\n";
     print MAIL "$summary\n";
     print MAIL endMailHeader();
@@ -775,7 +782,7 @@ sub mysystem {
 
             print "Trying to mail message... using $mailcommand\n";
 	    open(MAIL, $mailcommand);
-            print MAIL startMailHeader($revision, $rawlog, $starttime, $endtime);
+            print MAIL startMailHeader($revision, $rawlog, $starttime, $endtime, $crontab);
 	    print MAIL "ERROR $_[1]: $status\n";
 	    print MAIL "(workspace left at $tmpdir)\n";
             print MAIL endMailHeader();
@@ -853,6 +860,10 @@ sub startMailHeader {
         "Logfile:  " . shift(@_) . "\n" .
         "Started:  " . shift(@_) . "\n" .
         "Ended:    " . shift(@_) . "\n\n";
+
+    if ($debug == 0) {
+        $mystr .= "Crontab:\n". shift(@_) . "\n";
+    }
 
     $mystr;
 }
