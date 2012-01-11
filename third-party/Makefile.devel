@@ -1,5 +1,4 @@
 armci: FORCE
-	echo $(CHPL_MAKE_HOME)
 	cd armci && $(MAKE)
 
 mpich1: FORCE
