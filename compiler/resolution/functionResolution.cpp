@@ -2367,10 +2367,7 @@ formalRequiresTemp(ArgSymbol* formal) {
   // The fLibraryCompile flag was added to support separate compilation.
   // Several code generation functions crash if it is not there.
   // This makes exported object arguments read-only which is not what we want.
-  if (!strcmp("this", formal->name)) {
-    // hilde sez: This shouldn't be special-cased.
-    // We ought to tag "this" variables as call-by-ref.
-    INT_ASSERT(formal->hasFlag(FLAG_ARG_THIS));
+  if (formal->hasFlag(FLAG_ARG_THIS)) {
     if (!fLibraryCompile)
       // So call-by-ref is cancelled if we are compiling an exported function.
       return false;
