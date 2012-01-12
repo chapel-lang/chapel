@@ -266,6 +266,8 @@ int qthread_debuglevel(int);
 
 /* these are accessor functions for use by the qthreads to retrieve information
  * about themselves */
+#define QTHREAD_NULL_TASK_ID ((unsigned)-1)
+#define QTHREAD_NON_TASK_ID  0
 unsigned              qthread_id(void);
 unsigned              qthread_barrier_id(void);
 qthread_shepherd_id_t qthread_shep(void);

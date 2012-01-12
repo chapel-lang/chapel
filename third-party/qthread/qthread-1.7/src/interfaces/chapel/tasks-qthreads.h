@@ -72,8 +72,8 @@ void chpl_task_yield(void);
 // Type (and default value) used to communicate task identifiers
 // between C code and Chapel code in the runtime.
 //
-typedef uint64_t chpl_taskID_t;
-#define chpl_nullTaskID 0
+typedef unsigned int chpl_taskID_t;
+#define chpl_nullTaskID QTHREAD_NULL_TASK_ID
 
 
 //

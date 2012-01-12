@@ -28,3 +28,10 @@ release are as follows:
 * added the --force flag to the autoreconf call in autogen.sh because
   the timestamps aren't particularly trustworthy once we've committed
   things to SVN and checked them back out again.
+
+* applied a patch supplied by Dylan Stark reflecting changes made to
+  the Qthreads sources recently to support compatibility with Chapel's
+  new QIO features by supporting a sentinel value for
+  chpl_task_getId() in the event that it is called outside of a task
+  -- for example, by the main() program thread prior to starting up
+  tasks.

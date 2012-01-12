@@ -267,7 +267,6 @@ void chpl_task_begin(chpl_fn_p        fp,
     }
 }
 
-// Returns '(unsigned int)-1' if called outside of the tasking layer.
 chpl_taskID_t chpl_task_getId(void)
 {
     return (chpl_taskID_t)qthread_id();
