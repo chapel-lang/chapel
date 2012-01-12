@@ -75,7 +75,12 @@ while (@ARGV) {
 }
 
 
-$crontab = `crontab -l`;
+$ctmp = `crontab -l`;
+@blah = split(/\n/, $ctmp);
+# Ignore the first 3 (commented) lines added by crontab
+# I'm not sure how standard this is, but let's see how it goes.
+$crontab = join("\n", splice(@blah , 3))."\n";
+
 if ($debug == 0) {
     print "Currently installed crontab on ".hostname.":\n";
     print $crontab;
