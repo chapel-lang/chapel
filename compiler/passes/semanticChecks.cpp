@@ -21,8 +21,6 @@ check_functions(FnSymbol* fn) {
   Vec<CallExpr*> calls;
   collectMyCallExprs(fn, calls, fn);
   bool isIterator = fn->hasFlag(FLAG_ITERATOR_FN);
-  bool isProc = fn->hasFlag(FLAG_PROC_ITER_KW_USED) && !isIterator;  // ProcIter: replace isProc with !isIterator
-  INT_ASSERT(!isIterator || fn->hasFlag(FLAG_PROC_ITER_KW_USED));  // ProcIter: remove
   bool notInAFunction = !isIterator && (fn->getModule()->initFn == fn);
   int numVoidReturns = 0, numNonVoidReturns = 0, numYields = 0;
 
@@ -45,7 +43,7 @@ check_functions(FnSymbol* fn) {
     else if (call->isPrimitive(PRIM_YIELD)) {
       if (notInAFunction)
         USR_FATAL_CONT(call, "yield statement is outside an iterator");
-      else if (isProc)
+      else if (!isIterator)
         USR_FATAL_CONT(call, "yield statement is in a non-iterator function");
       else
         numYields++;
@@ -146,8 +144,6 @@ checkParsed(void) {
   }
 
   check_exported_names();
-
-  markNewFnSymbolsWithProcIter = true; // ProcIter: remove
 }
 
 

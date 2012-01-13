@@ -73,7 +73,6 @@ coforall         processToken(TCOFORALL);
 config           processToken(TCONFIG);
 const            processToken(TCONST);
 continue         processToken(TCONTINUE);
-def              processToken(TDEF);
 delete           processToken(TDELETE);
 dmapped          processToken(TDMAPPED);
 do               processToken(TDO);

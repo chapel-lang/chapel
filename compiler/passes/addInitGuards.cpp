@@ -81,7 +81,6 @@ static void addInitGuards(void) {
   preInitFn->retType = dtVoid;
   preInitFn->addFlag(FLAG_EXPORT);
   preInitFn->addFlag(FLAG_INSERT_LINE_FILE_INFO);
-  preInitFn->addFlag(FLAG_PROC_ITER_KW_USED); // ProcIter: remove
   theProgram->block->insertAtTail(new DefExpr(preInitFn));
   normalize(preInitFn);
 
