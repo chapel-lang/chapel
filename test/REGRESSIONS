@@ -15,6 +15,7 @@
 general regressions (seem to happen in most configurations)
 ===========================================================
 
+
 ========================================================================
 general nondeterministic regressions (could happen in any configuration)
 ========================================================================
@@ -43,10 +44,6 @@ nondet. compilation timeout
 ==============================================
 linux32 regressions (in addition to the above)
 ==============================================
-
-new I/O breaks this (11/10/11)
-------------------------------
-[Error matching compiler output for release/examples/primers/fileIO]
 
 
 ================================
@@ -170,6 +167,8 @@ nondet. "the impossible has happened" (raise VG_N_THREADS)
 [Error matching program output for studies/nqueens/nqueens-par] (01/03/12)
 [Error matching program output for studies/nqueens/nqueens-2-par] (11/29/11)
 [Error matching program output for distributions/nelson/MultiBlockDist2DLocales] (??/??/??, 12/06/11)
+[Error matching program output for parallel/cobegin/deitz/test_big_recursive_cobegin] (01/10/12)
+
 
 nondet. output ordering
 -----------------------
@@ -224,7 +223,7 @@ nondet. out-of-memory error
 nondet. execution timeout
 -------------------------
 [Error: Timed out executing program studies/cholesky/jglewis/test_cholesky] (09/30/11)
-[Error: Timed out executing program studies/cholesky/jglewis/version2/performance/test_cholesky_performance] (10/28/11, 11/06/11, 12/10/11, 12/15/11)
+[Error: Timed out executing program studies/cholesky/jglewis/version2/performance/test_cholesky_performance] (10/28/11, 11/06/11, 12/10/11, 12/15/11, 01/05/12)
 
 internal error SYM0172 (02/09/10)
 ---------------------------------
@@ -253,6 +252,10 @@ seg fault (?)
 gasnet-everything regressions (other than the above)
 ====================================================
 
+execvp() failed -- no file or directory (01/12/12 or a bit earlier)
+-------------------------------------------------------------------
+*all*
+
 times out (12/20/11)
 --------------------
 [Error: Timed out executing program parallel/begin/sungeun/captureAppearsToWork]
@@ -261,12 +264,6 @@ BSD Source redefined (???)
 --------------------------
 [Error matching compiler output for extern/bradc/extern_string_test-remote
 (compopts: 1)]
-
-counts for RAD optimizations dropped by 1 (11/10/11)
-----------------------------------------------------
-[Error matching program output for optimizations/sungeun/RADOpt/access1d (compopts: 1)]
-[Error matching program output for optimizations/sungeun/RADOpt/access2d (compopts: 1)]
-[Error matching program output for optimizations/sungeun/RADOpt/access3d (compopts: 1)]
 
 nondet. seg fault at execution time
 -----------------------------------
@@ -279,17 +276,15 @@ nondet. compilation timeout
 
 nondet. execution timeout
 -------------------------
-[Error: Timed out executing program distributions/nelson/MultiBlockDist2DLocales] (12/14/11, 12/19/11, 01/03/12)
+[Error: Timed out executing program distributions/nelson/MultiBlockDist2DLocales] (12/14/11, 12/19/11, 01/03/12, 01/09/12, 01/13/12)
 [Error: Timed out executing program studies/hpcc/HPL/vass/hpl] (11/16/11, 11/23/11, 11/25/11, 11/27/11, 11/29/11)
 [Error: Timed out executing program multilocale/diten/needMultiLocales/coforallon_maxThreads] (10/13/11, 11/01/11)
 [Error: Timed out executing program studies/sudoku/dinan/sudoku] (10/02/11)
-[Error: Timed out executing program studies/madness/aniruddha/madchap/test_likepy] (10/05/11, 10/08/11, 10/12/11, 11/02/11, 11/05/11, 11/12/11, 11/15/11, 11/19/11, 11/22/11, 12/04/11, 12/09/11)
-[Error: Timed out executing program studies/madness/aniruddha/madchap/test_diff] (11/14/11, 12/20/11)
-[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct (compopts: 1)] (10/11/11, 10/25/11, 10/28/11, 11/06/11, 11/22/11, 11/25/11, 11/28/11, 12/03/11, 12/14/11, 12/20/11, 12/24/11, 12/26/11, 01/01/12)
-
-execution timeouts
-------------------
-[Error: Timed out executing program studies/madness/aniruddha/madchap/test_mul]
+[Error: Timed out executing program studies/madness/aniruddha/madchap/test_diff] (11/14/11, 12/20/11, 01/13/12)
+[Error: Timed out executing program studies/madness/aniruddha/madchap/test_gaxpy] (12/20/11, 12/23/11, 12/26/11, 12/30/11, 01/13/12)
+[Error: Timed out executing program studies/madness/aniruddha/madchap/test_likepy] (10/05/11, 10/08/11, 10/12/11, 11/02/11, 11/05/11, 11/12/11, 11/15/11, 11/19/11, 11/22/11, 12/04/11, 12/09/11, 01/05/12, 01/07/12, 01/13/12)
+[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct (compopts: 1)] (10/11/11, 10/25/11, 10/28/11, 11/06/11, 11/22/11, 11/25/11, 11/28/11, 12/03/11, 12/14/11, 12/20/11, 12/24/11, 12/26/11, 01/01/12, 01/06/12, 01/09/12)
+[Error: Timed out executing program studies/madness/aniruddha/madchap/test_mul] (01/06/12, 01/13/12)
 
 memory stuff
 ------------
@@ -307,7 +302,12 @@ gasnet-fast regressions (other than the above)
 
 nondet. execution timeout
 -------------------------
-[Error: Timed out executing program studies/madness/aniruddha/madchap/test_gaxpy] (12/20/11, 12/23/11, 12/26/11, 12/30/11)
+
+
+too many threads error (~01/13/12)
+----------------------------------
+[Error matching program output for distributions/bradc/extremeBlock]
+
 
 
 ==============================
@@ -379,7 +379,7 @@ precision portability issue (12/30/11)
 
 nondet. precision issues
 ------------------------
-[Error matching program output for studies/shootout/spectral-norm/spectralnorm] (10/24/11, 11/1/11, 11/2/11, 11/17/11, 11/26/11, 12/12/11, 12/23/11)
+[Error matching program output for studies/shootout/spectral-norm/spectralnorm] (10/24/11, 11/1/11, 11/2/11, 11/17/11, 11/26/11, 12/12/11, 12/23/11, 01/13/12)
 
 nondet. compilation timeout
 ---------------------------
@@ -407,7 +407,7 @@ nondet. execution timeouts
 --------------------------
 [Error: Timed out executing program distributions/robust/associative/stress/many_domain] (10/20/11, 10/24/11, 11/25/11)
 [Error: Timed out executing program studies/cholesky/jglewis/test_cholesky] (10/20/11, 10/12/11, 10/14/11, 10/24/11, 10/26/11, 11/01/11, 11/14/11, 11/18/11, 12/05/11)
-[Error: Timed out executing program studies/cholesky/jglewis/version2/standard_cholesky/test_standard_cholesky] (10/27/11, 11/21/11, 12/31/11)
+[Error: Timed out executing program studies/cholesky/jglewis/version2/standard_cholesky/test_standard_cholesky] (10/27/11, 11/21/11, 12/31/11, 01/06/12)
 
 timeouts (09/26/11 -- first run in ages)
 ----------------------------------------
@@ -552,6 +552,16 @@ negative floating point 0.0 not supported
 xt-intel-specific regressions (in addition to xt-cle errors above)
 ==================================================================
 
+nondet.(?) 'GLIBC_2.10 not found' issue? (~01/13/12)
+----------------------------------------------------
+[Error matching program output for studies/ssca2/sungeun/SSCA2_main (compopts: 1)]
+[Error matching program output for users/ferguson/histogram/reductionex]
+[Error matching program output for users/ferguson/histogram/reductionex_class2]
+[Error matching program output for users/ferguson/histogram/reductionex_module]
+[Error matching program output for users/ferguson/histogram/reductionex_module2]
+[Error matching program output for users/ferguson/histogram/reductionex_record2]
+[Error matching program output for users/ferguson/histogram/reductionex_record_class]
+
 nondet. compilation timeout
 ---------------------------
 [Error: Timed out compilation for release/examples/ssca2/SSCA2_main (compopts: 1)] (12/05/11, 12/07/11, 12/10/11, 12/13/11, 12/17/11, 12/26/11, 12/29/11, 01/02/12)
@@ -559,7 +569,6 @@ nondet. compilation timeout
 nondet. execution timeout
 -------------------------
 [Error matching program output for release/examples/ssca2/SSCA2_main (compopts: 1, execopts: 1)] (12/25/11, 12/26/11, 12/28/11, 01/01/12)
-
 
 execution timeout (11/19/11)
 ----------------------------
@@ -577,7 +586,7 @@ execution timeout (11/17/11 -- new icc version?)
 
 compilation timeouts (11/12/11)
 -------------------------------
-[Error: Timed out compilation for npb/cg/bradc/cg-sparse]
+[Error: Timed out compilation for npb/cg/bradc/cg-sparse (compopts: 1)]
 [Error: Timed out compilation for performance/compiler/bradc/cg-sparse-timecomp]
 [Error: Timed out compilation for studies/ssca2/atomic/SSCA2_main_atomic]
 
@@ -595,6 +604,8 @@ problem with static/dynamic linking? (10/1/11 -- first run)
 ========================
 xt-gnu specific failures
 ========================
+
+[Error compiling C I/O tests]
 
 
 ========================
@@ -648,17 +659,17 @@ nondet. core dump
 
 nondet. incorrect output
 ------------------------
-[Error matching program output for release/examples/spec/Task_Parallelism_and_Synchronization/singleVar] (10/14/11, 10/21/11, 10/23/11, 10/27/11, 10/30/11, 11/02/11, 11/05/11, 11/11/11, 11/14/11, 11/16/11, 11/21/11)
+[Error matching program output for release/examples/spec/Task_Parallelism_and_Synchronization/singleVar] (10/14/11, 10/21/11, 10/23/11, 10/27/11, 10/30/11, 11/02/11, 11/05/11, 11/11/11, 11/14/11, 11/16/11, 11/21/11, 01/06/12, 01/08/12)
 [Error matching program output for
 release/examples/spec/Task_Parallelism_and_Synchronization/serialStmt1] (10/13/11)
-[Error matching program output for release/examples/spec/Task_Parallelism_and_Synchronization/serialStmt2] (09/30/11, 10/25/11, 10/29/11, 11/03/11)
+[Error matching program output for release/examples/spec/Task_Parallelism_and_Synchronization/serialStmt2] (09/30/11, 10/25/11, 10/29/11, 11/03/11, 01/11/12)
 
 nondet. execution timeouts (ever since switching to 4 shepherds)
 --------------------------------------------------------
-[Error: Timed out executing program release/examples/spec/Task_Parallelism_and_Synchronization/singleVar] (10/13/11, 10/16/11, 10/17/11, 10/22/11, 10/24/11, 10/28/11, 11/1/11, 11/04/11, 11/06/11, 12/03/11, 12/13/11, 12/17/11, 12/21/11, 12/23/11, 12/26/11, 12/30/11)
-[Error: Timed out executing program release/examples/ssca2/SSCA2_main (compopts: 1, execopts: 1)] (12/02/11, 12/04/11, 12/07/11, 12/09/11, 12/12/11, 12/14/11, 12/18/11, 12/21/11, 12/23/11, 12/27/11, 12/30/11, 01/02/12, 01/05/12)
-[Error: Timed out executing program release/examples/ssca2/SSCA2_main (compopts: 4, execopts: 1)] (12/02/11, 12/04/11, 12/06/11, 12/08/11, 12/11/11, 12/14/11, 12/22/11, 12/24/11, 12/27/11, 12/29/11, 01/01/12, 01/03/12)
-[Error: Timed out executing program release/examples/ssca2/SSCA2_main (compopts: 5, execopts: 1)] (12/02/11, 12/04/11, 12/09/11, 12/16/11, 12/23/11, 12/27/11, 01/01/12, 01/05/12)
+[Error: Timed out executing program release/examples/spec/Task_Parallelism_and_Synchronization/singleVar] (10/13/11, 10/16/11, 10/17/11, 10/22/11, 10/24/11, 10/28/11, 11/1/11, 11/04/11, 11/06/11, 12/03/11, 12/13/11, 12/17/11, 12/21/11, 12/23/11, 12/26/11, 12/30/11, 01/11/12)
+[Error: Timed out executing program release/examples/ssca2/SSCA2_main (compopts: 1, execopts: 1)] (12/02/11, 12/04/11, 12/07/11, 12/09/11, 12/12/11, 12/14/11, 12/18/11, 12/21/11, 12/23/11, 12/27/11, 12/30/11, 01/02/12, 01/05/12, 01/11/12, 01/13/12)
+[Error: Timed out executing program release/examples/ssca2/SSCA2_main (compopts: 4, execopts: 1)] (12/02/11, 12/04/11, 12/06/11, 12/08/11, 12/11/11, 12/14/11, 12/22/11, 12/24/11, 12/27/11, 12/29/11, 01/01/12, 01/03/12, 01/06/12, 01/12/12, 01/13/12)
+[Error: Timed out executing program release/examples/ssca2/SSCA2_main (compopts: 5, execopts: 1)] (12/02/11, 12/04/11, 12/09/11, 12/16/11, 12/23/11, 12/27/11, 01/01/12, 01/05/12, 01/09/12, 01/11/12, 01/13/12)
 [Error: Timed out executing program release/examples/primers/syncsingle] (10/15/11, 10/17/11, 10/23/11, 10/30/11, 11/1/11, 11/3/11, 11/06/11, 11/08/11)
 [Error: Timed out executing program release/examples/spec/Task_Parallelism_and_Synchronization/serialStmt2] (09/26/11, 10/23/11, 11/1/11)
 [Error: Timed out executing program release/examples/primers/taskParallel] (10/06/11, 10/16/11, 10/25/11, 10/28/11, 11/04/11)
@@ -675,11 +686,11 @@ nanox+gasnet-specific tests
 
 nondet. execution timeouts
 --------------------------
-[Error: Timed out executing program release/examples/hpcc/fft] (12/03/11, 12/05/11, 12/07/11, 12/09/11, 12/12/11, 12/17/11, 12/22/11, 12/26/11, 12/28/11, 01/03/12)
-[Error: Timed out executing program release/examples/hpcc/ra] (12/08/11, 12/13/11, 12/15/11, 12/21/11, 01/01/12)
-[Error: Timed out executing program release/examples/hpcc/variants/ra-cleanloop] (12/07/11, 12/15/11, 12/17/11, 12/27/11, 12/30/11, 01/03/12)
-[Error: Timed out executing program release/examples/hpcc/stream] (12/05/11, 12/11/11, 12/14/11, 12/16/11, 12/18/11, 12/21/11, 12/27/11, 01/01/12, 01/04/12)
-[Error: Timed out executing program release/examples/hpcc/stream-promoted] (12/05/11, 12/06/11, 12/10/11, 12/17/11, 12/21/11, 12/28/11, 01/01/12, 01/04/12)
+[Error: Timed out executing program release/examples/hpcc/fft] (12/03/11, 12/05/11, 12/07/11, 12/09/11, 12/12/11, 12/17/11, 12/22/11, 12/26/11, 12/28/11, 01/03/12, 01/07/12, 01/13/12)
+[Error: Timed out executing program release/examples/hpcc/ra] (12/08/11, 12/13/11, 12/15/11, 12/21/11, 01/01/12, 01/06/12)
+[Error: Timed out executing program release/examples/hpcc/variants/ra-cleanloop (compopts: 1)] (12/07/11, 12/15/11, 12/17/11, 12/27/11, 12/30/11, 01/03/12, 01/13/12)
+[Error: Timed out executing program release/examples/hpcc/stream] (12/05/11, 12/11/11, 12/14/11, 12/16/11, 12/18/11, 12/21/11, 12/27/11, 01/01/12, 01/04/12, 01/08/12)
+[Error: Timed out executing program release/examples/hpcc/stream-promoted] (12/05/11, 12/06/11, 12/10/11, 12/17/11, 12/21/11, 12/28/11, 01/01/12, 01/04/12, 01/08/12, 01/13/12)
 [Error: Timed out executing program release/examples/hello6-taskpar-dist] (09/29/11)
 
 execution timeouts (ever since switching to 4 shepherds)
@@ -691,20 +702,13 @@ execution timeouts (ever since switching to 4 shepherds)
 qthreads-specific tests
 =======================
 
-***new third-party build rule breaks build (01/05/11)
------------------------------------------------------
-
-new I/O causes assertion error (11/10/11)
------------------------------------------
-*all*
+serial statement not supported? (10/09/11)
+------------------------------------------
+[Error matching program output for release/examples/spec/Task_Parallelism_and_Synchronization/serialStmt1]
 
 nondet. race on newlines
 ------------------------
 [Error matching program output for release/examples/hello3-datapar] (10/13/11, 11/09/11)
-
-serial statement not supported? (10/09/11)
-------------------------------------------
-[Error matching program output for release/examples/spec/Task_Parallelism_and_Synchronization/serialStmt1]
 
 recently became a nondet. failure (since increasing the callstack; used to
 fail consistently prior to that)
@@ -716,9 +720,13 @@ fail consistently prior to that)
 qthreads+gasnet-specific tests (in addition to the above)
 =========================================================
 
+times out/deadlocks? (01/13/12 -- first successful run since qio committed)
+---------------------------------------------------------------------------
+[Error: Timed out executing program release/examples/primers/fileIO]
+
 nondet. execution timeout
 -------------------------
-[Error: Timed out executing program release/examples/primers/distributions] (12/01/11, 12/24/11, 01/03/12)
+[Error: Timed out executing program release/examples/primers/distributions] (12/01/11, 12/24/11, 01/03/12, 01/13/12)
 
 nondet. timeout starting when #shepherds based on #cores
 --------------------------------------------------------
@@ -737,20 +745,9 @@ times out (since checked in)
 ----------------------------
 [Error: Timed out executing program studies/lulesh/sungeun/lulesh (compopts: 1)]
 
-suppressions failures with new compopts/execopts formats
---------------------------------------------------------
-[Error matching program output for memory/figueroa/LeakedMemory5 (compopts: 1)]
-[Error matching program output for trivial/mjoyner/inlinefunc/inlfunc1_report (compopts: 1)]
-[Error matching program output for trivial/mjoyner/inlinefunc/inlfunc2_report (compopts: 1)]
-[Error: didn't find expected suppression memory/figueroa/LeakedMemory5]
-[Error: didn't find expected suppression trivial/mjoyner/inlinefunc/inlfunc1_report]
-[Error: didn't find expected suppression trivial/mjoyner/inlinefunc/inlfunc2_report]
-
-uses debugWrite (11/10/11)
---------------------------
-[Error matching compiler output for parallel/cobegin/deitz/test_big_recursive_cobegin]
-[Error matching compiler output for users/shetag/iteratorWithOn]
-[Error matching compiler output for users/shetag/iteratorWithoutOn]
+Bad suppression format (01/05/12)
+---------------------------------
+[Error: did not find expected suppression optimizations/hilde/removeUnreachable]
 
 nondet. execution timeout (10/29/11)
 ------------------------------------
