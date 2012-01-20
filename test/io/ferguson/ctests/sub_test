@@ -3,6 +3,15 @@
 COMP=`$CHPL_HOME/util/config/compileline --compile`
 RSRC="$CHPL_HOME/runtime/src"
 
+echo $COMP | grep atomics/intrinsics
+if [ $? == 0 ]
+then
+  echo C tests will run using atomics/intrinsics
+else
+  echo Skipping C I/O tests without atomics/intrinsics
+  exit
+fi
+
 T1="$COMP -o deque_test -g deque_test.c -DSIMPLE_TEST $RSRC/deque.c -Wall"
 T2="$COMP -o qbuffer_test -g qbuffer_test.c -DSIMPLE_TEST $RSRC/qbuffer.c $RSRC/sys.c $RSRC/sys_xsi_strerror_r.c $RSRC/deque.c -Wall"
 T3="$COMP -o qio_test -g qio_test.c -DSIMPLE_TEST $RSRC/qio.c $RSRC/sys.c $RSRC/sys_xsi_strerror_r.c $RSRC/qbuffer.c $RSRC/deque.c -Wall -pthread"
