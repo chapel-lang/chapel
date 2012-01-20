@@ -2421,7 +2421,7 @@ void CallExpr::codegen(FILE* outfile) {
     } else
       fputs("chpl_localeID)", outfile);
     fprintf(outfile, ", true, %d, \"%s\");\n",
-            fn->lineno, fn->getModule()->filename);
+            fn->linenum(), fn->fname());
     return;
   } else if (fn->hasFlag(FLAG_COBEGIN_OR_COFORALL_BLOCK)) {
     fputs("chpl_task_addToTaskList(", outfile);
@@ -2484,7 +2484,7 @@ void CallExpr::codegen(FILE* outfile) {
     }
     fputs("->taskList)", outfile);
     fprintf(outfile, ", chpl_localeID, false, %d, \"%s\");\n",
-            baseExpr->lineno, baseExpr->getModule()->filename);
+            baseExpr->linenum(), baseExpr->fname());
     return;
   } else if (fn->hasFlag(FLAG_ON_BLOCK)) {
     if (fn->hasFlag(FLAG_NON_BLOCKING))

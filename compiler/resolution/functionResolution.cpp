@@ -1509,7 +1509,7 @@ explainCallMatch(CallExpr* call) {
     return false;
   if (explainCallModule && explainCallModule != call->getModule())
     return false;
-  if (explainCallLine != -1 && explainCallLine != call->lineno)
+  if (explainCallLine != -1 && explainCallLine != call->linenum())
     return false;
   return true;
 }
@@ -1668,7 +1668,7 @@ static void issueCompilerError(CallExpr* call) {
   CallExpr* from = NULL;
   for (int i = callStack.n-1 - depth; i >= 0; i--) {
     from = callStack.v[i];
-    if (from->lineno > 0 && 
+    if (from->linenum() > 0 && 
         from->getModule()->modTag != MOD_INTERNAL &&
         !from->getFunction()->hasFlag(FLAG_TEMP))
       break;
@@ -1707,7 +1707,7 @@ static void reissueCompilerWarning(const char* str, int offset) {
   CallExpr* from = NULL;
   for (int i = callStack.n-offset; i >= 0; i--) {
     from = callStack.v[i];
-    if (from->lineno > 0 && 
+    if (from->linenum() > 0 && 
         from->getModule()->modTag != MOD_INTERNAL &&
         !from->getFunction()->hasFlag(FLAG_TEMP))
       break;
@@ -2809,11 +2809,11 @@ createFunctionAsValue(CallExpr *call) {
   static int unique_fcf_id = 0;
   UnresolvedSymExpr* use = toUnresolvedSymExpr(call->get(1));
   INT_ASSERT(use);
-  const char *fname = use->unresolved;
+  const char *flname = use->unresolved;
       
   Vec<FnSymbol*> visibleFns;
   Vec<BlockStmt*> visited;
-  getVisibleFunctions(getVisibilityBlock(call), fname, visibleFns, visited);
+  getVisibleFunctions(getVisibilityBlock(call), flname, visibleFns, visited);
 
   if (visibleFns.n > 1) {
     USR_FATAL(call, "%s: can not capture overloaded functions as values",
@@ -2850,7 +2850,7 @@ createFunctionAsValue(CallExpr *call) {
 
   ClassType *ct = new ClassType(CLASS_CLASS);
   std::ostringstream fcf_name;
-  fcf_name << "_chpl_fcf_" << unique_fcf_id++ << "_" << fname;
+  fcf_name << "_chpl_fcf_" << unique_fcf_id++ << "_" << flname;
   
   TypeSymbol *ts = new TypeSymbol(astr(fcf_name.str().c_str()), ct);
 
@@ -5262,7 +5262,7 @@ static void insertReturnTemps() {
                 fn->hasFlag(FLAG_ITERATOR_FN)) {
               CallExpr* sls = new CallExpr("_statementLevelSymbol", tmp);
               call->insertBefore(sls);
-              reset_line_info(sls, call->lineno);
+              reset_ast_loc(sls, call);
               resolveCall(sls);
               INT_ASSERT(sls->isResolved());
               resolveFns(sls->isResolved());

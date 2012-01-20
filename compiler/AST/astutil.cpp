@@ -84,10 +84,13 @@ void collect_top_asts(BaseAST* ast, Vec<BaseAST*>& asts) {
   asts.add(ast);
 }
               
+void reset_ast_loc(BaseAST* destNode, BaseAST* sourceNode) {
+  reset_ast_loc(destNode, sourceNode->astloc);
+}
 
-void reset_line_info(BaseAST* ast, int lineno) {
-  ast->lineno = lineno;
-  AST_CHILDREN_CALL(ast, reset_line_info, lineno);
+void reset_ast_loc(BaseAST* destNode, astlocT astlocArg) {
+  destNode->astloc = astlocArg;
+  AST_CHILDREN_CALL(destNode, reset_ast_loc, astlocArg);
 }
 
 

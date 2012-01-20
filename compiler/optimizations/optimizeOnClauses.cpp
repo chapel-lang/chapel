@@ -280,7 +280,7 @@ optimizeOnClauses(void) {
 #ifdef DEBUG
       printf("%p (%s in %s:%d): FLAG_ON_BLOCK (block=%p, id=%d)\n",
              fn, fn->cname, toModuleSymbol(fn->defPoint->parentSymbol)->filename,
-             fn->lineno, fn->body, fn->id);
+             fn->linenum(), fn->body, fn->id);
       printf("\tlength=%d\n", fn->body->length());
 #endif
       Vec<FnSymbol*> visited;
@@ -295,7 +295,7 @@ optimizeOnClauses(void) {
           if (developer ||
               ((mod->modTag != MOD_INTERNAL) && (mod->modTag != MOD_STANDARD))) {
             printf("Optimized on clause (%s) in module %s (%s:%d)\n",
-                   fn->cname, mod->name, mod->filename, fn->lineno);
+                   fn->cname, mod->name, fn->fname(), fn->linenum());
           }
         }
         fn->addFlag(FLAG_FAST_ON);

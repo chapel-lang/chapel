@@ -31,7 +31,8 @@ void collectSymExprs(BaseAST* ast, Vec<SymExpr*>& symExprs);
 void collectSymbols(BaseAST* ast, Vec<Symbol*>& symbols);
 
 // utility routines for clearing and resetting lineno and filename
-void reset_line_info(BaseAST* baseAST, int lineno);
+void reset_ast_loc(BaseAST* destNode, astlocT astloc);
+void reset_ast_loc(BaseAST* destNode, BaseAST* sourceNode);
 
 // compute call sites FnSymbol::calls
 void compute_call_sites();

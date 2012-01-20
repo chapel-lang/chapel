@@ -24,7 +24,7 @@ explainInstantiation(FnSymbol* fn) {
     return;
   if (explainInstantiationModule && explainInstantiationModule != fn->defPoint->getModule())
     return;
-  if (explainInstantiationLine != -1 && explainInstantiationLine != fn->defPoint->lineno)
+  if (explainInstantiationLine != -1 && explainInstantiationLine != fn->defPoint->linenum())
     return;
 
   char msg[1024] = "";

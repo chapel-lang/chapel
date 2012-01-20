@@ -193,7 +193,7 @@ static void build_getter(ClassType* ct, Symbol *field) {
     fn->insertAtTail(new CallExpr(PRIM_RETURN, new CallExpr(PRIM_GET_MEMBER, new SymExpr(_this), new SymExpr(new_StringSymbol(field->name)))));
   DefExpr* def = new DefExpr(fn);
   ct->symbol->defPoint->insertBefore(def);
-  reset_line_info(fn, field->lineno);
+  reset_ast_loc(fn, field);
   normalize(fn);
   ct->methods.add(fn);
   fn->addFlag(FLAG_METHOD);
@@ -350,7 +350,7 @@ static void build_record_equality_function(ClassType* ct) {
   fn->insertAtTail(new CallExpr(PRIM_RETURN, gTrue));
   DefExpr* def = new DefExpr(fn);
   ct->symbol->defPoint->insertBefore(def);
-  reset_line_info(def, ct->symbol->lineno);
+  reset_ast_loc(def, ct->symbol);
   normalize(fn);
 }
 
@@ -378,7 +378,7 @@ static void build_record_inequality_function(ClassType* ct) {
   fn->insertAtTail(new CallExpr(PRIM_RETURN, gFalse));
   DefExpr* def = new DefExpr(fn);
   ct->symbol->defPoint->insertBefore(def);
-  reset_line_info(def, ct->symbol->lineno);
+  reset_ast_loc(def, ct->symbol);
   normalize(fn);
 }
 
@@ -448,7 +448,7 @@ static void build_enum_cast_function(EnumType* et) {
   // are automatically inserted to handle implicit coercions
   //
   baseModule->block->insertAtTail(def);
-  reset_line_info(def, et->symbol->lineno);
+  reset_ast_loc(def, et->symbol);
   normalize(fn);
 
   // string to enumerated type cast function
@@ -479,7 +479,7 @@ static void build_enum_cast_function(EnumType* et) {
   // are automatically inserted to handle implicit coercions
   //
   baseModule->block->insertAtTail(def);
-  reset_line_info(def, et->symbol->lineno);
+  reset_ast_loc(def, et->symbol);
   normalize(fn);
 }
 
@@ -496,7 +496,7 @@ static void build_enum_assignment_function(EnumType* et) {
   fn->insertAtTail(new CallExpr(PRIM_RETURN, arg2));
   DefExpr* def = new DefExpr(fn);
   et->symbol->defPoint->insertBefore(def);
-  reset_line_info(def, et->symbol->lineno);
+  reset_ast_loc(def, et->symbol);
   normalize(fn);
 }
 
@@ -531,7 +531,7 @@ static void build_record_assignment_function(ClassType* ct) {
   fn->insertAtTail(new CallExpr(PRIM_RETURN, arg1));
   DefExpr* def = new DefExpr(fn);
   ct->symbol->defPoint->insertBefore(def);
-  reset_line_info(def, ct->symbol->lineno);
+  reset_ast_loc(def, ct->symbol);
   normalize(fn);
 }
 
@@ -554,7 +554,7 @@ static void build_record_cast_function(ClassType* ct) {
   fn->insertAtTail(new CallExpr(PRIM_RETURN, ret));
   DefExpr* def = new DefExpr(fn);
   ct->symbol->defPoint->insertBefore(def);
-  reset_line_info(def, ct->symbol->lineno);
+  reset_ast_loc(def, ct->symbol);
   normalize(fn);
 }
 
@@ -583,7 +583,7 @@ static void build_union_assignment_function(ClassType* ct) {
   fn->insertAtTail(new CallExpr(PRIM_RETURN, arg1));
   DefExpr* def = new DefExpr(fn);
   ct->symbol->defPoint->insertBefore(def);
-  reset_line_info(def, ct->symbol->lineno);
+  reset_ast_loc(def, ct->symbol);
   normalize(fn);
 }
 
@@ -607,7 +607,7 @@ static void build_record_copy_function(ClassType* ct) {
   fn->insertAtTail(new CallExpr(PRIM_RETURN, call));
   DefExpr* def = new DefExpr(fn);
   ct->symbol->defPoint->insertBefore(def);
-  reset_line_info(def, ct->symbol->lineno);
+  reset_ast_loc(def, ct->symbol);
   normalize(fn);
 }
 
@@ -647,7 +647,7 @@ static void build_record_hash_function(ClassType *ct) {
   }
   DefExpr *def = new DefExpr(fn);
   ct->symbol->defPoint->insertBefore(def);
-  reset_line_info(def, ct->symbol->lineno);
+  reset_ast_loc(def, ct->symbol);
   normalize(fn);
 }
 
@@ -669,7 +669,7 @@ static void buildDefaultReadWriteFunctions(ClassType* ct) {
     DefExpr* def = new DefExpr(fn);
     ct->symbol->defPoint->insertBefore(def);
     fn->addFlag(FLAG_METHOD);
-    reset_line_info(def, ct->symbol->lineno);
+    reset_ast_loc(def, ct->symbol);
     normalize(fn);
     ct->methods.add(fn);
   }
@@ -692,7 +692,7 @@ static void buildDefaultReadWriteFunctions(ClassType* ct) {
     ct->symbol->defPoint->insertBefore(def);
     // ? ct->methods.add(fn) ? in old code
     fn->addFlag(FLAG_METHOD);
-    reset_line_info(def, ct->symbol->lineno);
+    reset_ast_loc(def, ct->symbol);
     normalize(fn);
     ct->methods.add(fn);
   }
@@ -726,7 +726,7 @@ static void buildStringCastFunction(EnumType* et) {
   // are automatically inserted to handle implicit coercions
   //
   baseModule->block->insertAtTail(def);
-  reset_line_info(def, et->symbol->lineno);
+  reset_ast_loc(def, et->symbol);
   normalize(fn);
 }
 

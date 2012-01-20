@@ -617,10 +617,13 @@ codegenNullAssignments(FILE* outfile, const char* cname, ClassType* ct) {
 
 
 void FnSymbol::codegenDef(FILE* outfile) {
-  if (strcmp(saveCDir, "") && getModule()->filename) {
-    const char* name = strrchr(getModule()->filename, '/');
-    name = (!name) ? getModule()->filename : name + 1;
-    fprintf(outfile, "/* %s:%d */\n", name, lineno);
+  if (strcmp(saveCDir, "")) {
+    const char* rawname = fname();
+    // if this assert fails, revert it to a conjunct in the enclosing 'if'
+    INT_ASSERT(rawname);
+    const char* name = strrchr(rawname, '/');
+    name = name ? name + 1 : rawname;
+    fprintf(outfile, "/* %s:%d */\n", name, linenum());
   }
 
   codegenHeader(outfile);
@@ -866,9 +869,9 @@ ModuleSymbol::copyInner(SymbolMap* map) {
 static int compareLineno(const void* v1, const void* v2) {
   FnSymbol* fn1 = *(FnSymbol**)v1;
   FnSymbol* fn2 = *(FnSymbol**)v2;
-  if (fn1->lineno > fn2->lineno)
+  if (fn1->linenum() > fn2->linenum())
     return 1;
-  else if (fn1->lineno < fn2->lineno)
+  else if (fn1->linenum() < fn2->linenum())
     return -1;
   else
     return 0;

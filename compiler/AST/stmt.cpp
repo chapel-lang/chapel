@@ -16,9 +16,9 @@ Vec<LabelSymbol*> removedIterResumeLabels;
 
 
 void codegenStmt(FILE* outfile, Expr* stmt) {
-  if (stmt->lineno > 0) {
+  if (stmt->linenum() > 0) {
     if (printCppLineno) {
-      fprintf(outfile, "/* ZLINE: %d %s */\n", stmt->lineno, stmt->getModule()->filename);
+      fprintf(outfile, "/* ZLINE: %d %s */\n", stmt->linenum(), stmt->fname());
     } 
   }
   if (fGenIDS)

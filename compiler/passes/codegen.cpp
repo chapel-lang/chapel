@@ -165,8 +165,8 @@ compareSymbol(const void* v1, const void* v2) {
     return strcmp(m1->cname, m2->cname);
   }
 
-  if (s1->lineno != s2->lineno)
-    return (s1->lineno < s2->lineno) ? -1 : 1;
+  if (s1->linenum() != s2->linenum())
+    return (s1->linenum() < s2->linenum()) ? -1 : 1;
 
   int result = strcmp(s1->type->symbol->cname, s2->type->symbol->cname);
   if (!result)
