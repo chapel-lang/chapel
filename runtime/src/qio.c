@@ -42,23 +42,6 @@ ssize_t qio_too_small_for_default_mmap = 16*1024;
 ssize_t qio_too_large_for_default_mmap = 64*1024*((size_t)1024*1024);
 ssize_t qio_mmap_chunk_iobufs = 1024; // we mmap 1024 iobufs at a time (64M)
 
-/*
-#define INIT_LOCK(v) (qthread_syncvar_empty(NULL, v))
-#define TAKE_LOCK(v) (qthread_syncvar_writeEF_const(NULL, v, 1))
-
-static inline int do_unlock(syncvar_t* x)
-{
-  if( qthread_syncvar_status(x) ) {
-    return qthread_syncvar_empty(NULL, x);
-  } else {
-    // nobody has the lock!
-    return EPERM;
-  }
-}
-#define RELEASE_LOCK(v) (do_unlock(v))
-#define DESTROY_LOCK(v) (TAKE_LOCK(v))
-*/
-
 #ifdef _chplrt_H_
 err_t qio_lock(qio_lock_t* x) {
   // recursive mutex based on glibc pthreads implementation
@@ -1042,6 +1025,7 @@ err_t _qio_channel_init(qio_channel_t* ch, qio_chtype_t type)
   // for emphasis...
   ch->cached_cur = NULL;
   ch->cached_end = NULL;
+  ch->cached_end_bits = NULL;
   ch->cached_start = NULL;
   ch->cached_start_pos = 0;
 
@@ -1869,12 +1853,76 @@ err_t _buffered_read_atleast(qio_channel_t* ch, int64_t amt)
   else return 0;
 }
 
+static
+err_t _qio_flush_bits_if_needed_unlocked(qio_channel_t* restrict ch)
+{
+  err_t err = 0;
+  int keep_bytes = 0;
+  qio_bitbuffer_t part_one_bits_be;
+  int writing = ch->flags & QIO_FDFLAG_WRITEABLE;
+  int flush;
+
+
+  if( writing ) flush = ch->bit_buffer_bits > 0;
+  else flush = ch->bits_read_bytes > 0;
+
+  if( flush ) {
+
+    //printf("IN FLUSH BITS bit_buffer_bits=%i read_bytes=%i\n", ch->bit_buffer_bits, ch->bits_read_bytes);
+
+    if( writing ) {
+      //printf("FLUSHING TO BYTE %i\n", ch->bit_buffer_bits);
+      keep_bytes = (ch->bit_buffer_bits + 7)/8;
+
+      // Pad out the end of bit_buffer with zeros.
+      err = qio_channel_write_bits(false, ch, 0, 8*sizeof(qio_bitbuffer_t) - ch->bit_buffer_bits);
+
+      part_one_bits_be = qio_bitbuffer_tobe(ch->bit_buffer); // big endian now.
+    } else {
+      keep_bytes = (7 + 8*ch->bits_read_bytes - ch->bit_buffer_bits) / 8;
+    }
+  }
+
+  if( ch->cached_end_bits ) {
+    ch->cached_end = ch->cached_end_bits;
+    ch->cached_end_bits = NULL;
+  }
+
+  ch->bit_buffer = 0;
+  ch->bit_buffer_bits = 0;
+  ch->bits_read_bytes = 0;
+
+  if( flush ) {
+    if( writing ) {
+      //printf("IN FLUSH BITS WRITING %i BYTES %llx\n", keep_bytes, (long long int) qio_bitbuffer_unbe(part_one_bits_be) );
+      // Now write the top keep_bytes of ch->bit_buffer.
+      err = qio_channel_write_amt(false, ch, &part_one_bits_be, keep_bytes);
+    } else {
+      // advance past any bits we've already read..
+      err = qio_channel_read_amt(false, ch, &part_one_bits_be, keep_bytes);
+    }
+  }
+
+  return err;
+}
+
+
 /* This function updates our buffer ch->buf with the
  * current position from the fast-path pointer ch->cached_cur
  */
 void _qio_buffered_advance_cached(qio_channel_t* ch)
 {
+  err_t err;
   int64_t av_bytes;
+
+  // flush any bits stored up.
+  // Note that we only store up bits for
+  // more than a byte if we've got a buffered
+  // channel and cached->cur has room for
+  // 2 8-byte words. So we can only lose
+  // up to a byte from this particular
+  // call failing.
+  err = _qio_flush_bits_if_needed_unlocked(ch);
 
   // Update! Find the place the cached data is from.
 
@@ -1913,6 +1961,8 @@ void _qio_buffered_advance_cached(qio_channel_t* ch)
     ch->cached_cur = NULL;
     ch->cached_end = NULL;
   }
+
+  _qio_channel_set_error_unlocked(ch, err);
 }
 
 void _qio_buffered_setup_cached(qio_channel_t* ch)
@@ -2364,11 +2414,7 @@ err_t _qio_channel_flush_qio_unlocked(qio_channel_t* ch)
   err = 0;
 
   // if writing, write anything in the bits...
-  if( (ch->flags & QIO_FDFLAG_WRITEABLE) && ch->bit_buffer_bits > 0 ) {
-    err = qio_channel_write_amt(false, ch, &ch->bit_buffer, 1);
-  }
-  ch->bit_buffer = 0;
-  ch->bit_buffer_bits = 0;
+  err = _qio_flush_bits_if_needed_unlocked(ch);
 
   // Handle flushing any buffers.
 
@@ -2834,18 +2880,6 @@ error:
   return err;
 }
 
-  static inline
-err_t _qio_flush_bits_if_needed_unlocked(qio_channel_t* restrict ch)
-{
-  err_t err = 0;
-
-  if( (ch->flags & QIO_FDFLAG_WRITEABLE) && ch->bit_buffer_bits > 0 ) {
-    err = qio_channel_write_bits(false, ch, 0, 8 - ch->bit_buffer_bits);
-    assert(ch->bit_buffer_bits == 0);
-  }
-  return err;
-}
-
 err_t qio_channel_mark_maybe_flush_bits(const int threadsafe, qio_channel_t* ch, int flushbits)
 {
   err_t err;
@@ -3055,87 +3089,174 @@ err_t qio_channel_advance(const int threadsafe, qio_channel_t* ch, int64_t nbyte
 }
 
 /* Handle I/O of bits at a time */
-err_t qio_channel_write_bits(const int threadsafe, qio_channel_t* restrict ch, uint64_t v, int8_t nbits)
+void _qio_channel_write_bits_cached_realign(qio_channel_t* restrict ch, uint64_t v, int8_t nbits)
+{
+  qio_bitbuffer_t part_one_bits;
+  qio_bitbuffer_t part_one_bits_be;
+  qio_bitbuffer_t tmp_bits;
+  qio_bitbuffer_t mask;
+  int tmp_live;
+  int part_one;
+  int part_two;
+  size_t to_copy;
+
+  tmp_live = ch->bit_buffer_bits;
+  tmp_bits = ch->bit_buffer;
+
+  // We've got > 64 bits to write.
+  part_one = 8*sizeof(qio_bitbuffer_t) - tmp_live;
+  part_two = nbits - part_one;
+  part_one_bits = (tmp_bits << part_one) | ( v >> part_two );
+  part_one_bits_be = qio_bitbuffer_tobe(part_one_bits); // big endian now.
+  tmp_bits = v;
+  tmp_live = part_two;
+
+  // How many bytes to write?
+  to_copy = sizeof(qio_bitbuffer_t) - VOID_PTR_ALIGN(ch->cached_cur, sizeof(qio_bitbuffer_t));
+  
+  //printf("WRITE BITS REALIGNALIGNED WRITING %llx %i\n", (long long int) part_one_bits, (int) (8*to_copy));
+  // memcpy will work because part_one_bits is big endian now.
+  memcpy(ch->cached_cur, &part_one_bits_be, to_copy);
+  ch->cached_cur = VOID_PTR_ADD(ch->cached_cur, to_copy);
+
+  // Remove junk from the top of tmp_bits, so only bottom tmp_live bits are set.
+  if( 0 < tmp_live && tmp_live < 8*sizeof(qio_bitbuffer_t) ) {
+    mask = -1;
+    mask >>= (8*sizeof(qio_bitbuffer_t) - tmp_live);
+  } else if( tmp_live == 0 ) {
+    // no live bits.
+    mask = 0;
+  } else {
+    // tmp_live == bit size of bitbuffer.
+    mask = -1;
+  }
+  tmp_bits &= mask;
+
+  // But now what do we need to put into tmp_bits?
+  if( tmp_live <= 8*to_copy ) {
+    // We can just put the remaining bits into tmp_bits
+    // and that's great.
+    // Clear out what we copied.
+    part_one_bits <<= 8*to_copy;
+    // now relevant bits of part_one_bits are in the hi bits. Move them to bottom.
+    part_one_bits >>= 8*to_copy;
+    tmp_bits |= (part_one_bits << tmp_live);
+    tmp_live = 8*sizeof(qio_bitbuffer_t) - 8*to_copy + tmp_live;
+  } else {
+    // Otherwise... we still have to write another word.
+    part_one_bits <<= 8*to_copy;
+    part_one_bits |= tmp_bits >> (tmp_live - 8*to_copy);
+    part_one_bits_be = qio_bitbuffer_tobe(part_one_bits); // big endian now.
+    // We have 8-byte alignment
+    *(qio_bitbuffer_t*)ch->cached_cur = part_one_bits_be;
+    ch->cached_cur = VOID_PTR_ADD(ch->cached_cur, sizeof(qio_bitbuffer_t));
+
+    // tmp_bits stays what it is.
+    tmp_live = tmp_live - 8*to_copy;
+  }
+
+  //printf("WRITE BITS REALIGNALIGNED LEAVING %llx %i\n", (long long int) tmp_bits, tmp_live);
+  ch->bit_buffer = tmp_bits;
+  ch->bit_buffer_bits = tmp_live;
+}
+
+err_t _qio_channel_write_bits_slow(qio_channel_t* restrict ch, uint64_t v, int8_t nbits)
 {
   err_t err = 0;
-  uint64_t tmp_bits;
-  uint64_t top;
-  int8_t tmp_live;
+  qio_bitbuffer_t part_one, part_two;
+  qio_bitbuffer_t parts_be[2];
+  qio_bitbuffer_t tmp_bits;
+  int tmp_live;
+  int tmp_leftshift;
+  int part_bits;
+  int v_leftshift;
+  int v_rightshift;
+  int writebytes;
 
-  if( nbits < 0 ) return EINVAL;
-  if( nbits == 0 ) return 0;
+  tmp_live = ch->bit_buffer_bits;
+  tmp_bits = ch->bit_buffer;
 
-  if( threadsafe ) {
-    err = qio_lock(&ch->lock);
-    if( err ) {
-      return err;
+  //printf("In write bits slow\n");
+
+  // Write any number of bytes based on what is in ch->bit_buffer
+  // and based upon what we're writing in nbits.
+
+  tmp_leftshift = 8*sizeof(qio_bitbuffer_t) - tmp_live;
+  part_bits = tmp_live + nbits;
+  if( nbits > tmp_leftshift ) {
+    // we will need more than one word...
+    v_rightshift = nbits - tmp_leftshift;
+    part_one = (tmp_bits << tmp_leftshift) | (v >> v_rightshift);
+    part_two = v << (8*sizeof(qio_bitbuffer_t) - v_rightshift);
+  } else {
+    // otherwise, we will not spill over..
+    v_leftshift = tmp_leftshift - nbits;
+    part_one = (tmp_bits << tmp_leftshift) | (v << v_leftshift);
+    part_two = 0;
+  }
+
+  // Convert them to big-endian.
+  parts_be[0] = qio_bitbuffer_tobe(part_one);
+  parts_be[1] = qio_bitbuffer_tobe(part_two);
+
+  writebytes = part_bits / 8; // round down.
+
+  // Now we have parts[0,1] and part_bits.
+  // Write out the full bytes.
+  
+  // avoid flushing bit-buffer in this write
+  ch->bit_buffer_bits = 0;
+  ch->bits_read_bytes = 0;
+
+  // setup buffer pointers for normal write.
+  if( ch->cached_end_bits ) {
+    ch->cached_end = ch->cached_end_bits;
+    ch->cached_end_bits = NULL;
+  }
+
+  //printf("SLOW WRITING %i bytes %llx %llx\n", writebytes, (long long int) part_one, (long long int) part_two);
+
+  if( writebytes > 0 ) {
+    err = qio_channel_write_amt(false, ch, parts_be, writebytes);
+  }
+
+  // Now put any partial byte back in ch->bit_buffer.
+
+  tmp_live = part_bits - 8*writebytes;
+
+  // Which word is the remainder in?
+  if( writebytes < sizeof(qio_bitbuffer_t) ) {
+    // remainder in part_one
+    // put the byte in question to the hi byte
+    tmp_bits = part_one << (8*writebytes);
+  } else {
+    // put the byte in question to the hi byte
+    tmp_bits = part_one << (8*(writebytes-sizeof(qio_bitbuffer_t)));
+  }
+  // put the byte in question to the lo byte
+  tmp_bits = tmp_bits >> (8*sizeof(qio_bitbuffer_t) - 8);
+  tmp_bits &= 0xff; // just one byte...
+  // set the bits right
+  tmp_bits = tmp_bits >> (8 - tmp_live); // move from hi to lo
+
+  if( ! err ) {
+    ch->bit_buffer = tmp_bits;
+    ch->bit_buffer_bits = tmp_live;
+
+    //printf("AFTER SLOW WRITING %llx %i\n", (long long int) tmp_bits, tmp_live);
+    // set up caching for bit-buffer fast writes
+    // and cause automatic flush of remaining bits
+    // upon a byte-driven write.
+    if( ch->cached_end ) {
+      ch->cached_end_bits = ch->cached_end;
+      ch->cached_end = NULL;
     }
   }
 
-  err = qio_channel_mark_maybe_flush_bits(false, ch, 0);
-  if( err ) goto unlock;
-
-  tmp_live = ch->bit_buffer_bits;
-  tmp_bits = ((uint64_t)ch->bit_buffer) << (64 - tmp_live);
-
-#define WRITESOME \
-{ \
-  int i; \
-  for( i = 0; i < 8 && tmp_live >= 8; i++ ) { \
-    uint8_t byte = (uint8_t) (tmp_bits >> 56); \
-    err = qio_channel_write_amt(false, ch, &byte, 1); \
-    if( err ) goto error; \
-    tmp_bits <<= 8; \
-    tmp_live -= 8; \
-  } \
-}
-
-  // we have to fit up to 7 bits from bit_buffer in as well,
-  // so if we're writing more than 56 bits we have to do it
-  // in two parts.
-  if( nbits > 56 ) {
-    // Extract 56 top bits from v into top.
-    top = v >> (nbits - 56);
-    nbits -= 56;
-
-    // Clear the top 56 bits of v.
-    v <<= 56;
-    v >>= 56;
-
-    // Put these 56 bits, now in top, into tmp_bits and update tmp_live.
-    tmp_bits |= top << (64 - tmp_live - 56);
-    tmp_live += 56;
-    // Write to the channel.
-    WRITESOME;
-  }
-
-  // OK, now write whatever is left or all of it for <= 56 bits.
-  tmp_bits |= v << (64 - tmp_live - nbits);
-  tmp_live += nbits;
-
-  // Write to the channel.
-  WRITESOME;
-
-error:
-  if( err == 0 ) {
-    // Save what's left in tmp_bits back in our structure.
-    ch->bit_buffer = (uint8_t) (tmp_bits >> (64 - tmp_live));
-    ch->bit_buffer_bits = tmp_live;
-    qio_channel_commit_unlocked(ch);
-  } else {
-    qio_channel_revert_unlocked(ch);
-  }
-
-unlock:
+//unlock:
   _qio_channel_set_error_unlocked(ch, err);
 
-  if( threadsafe ) {
-    qio_unlock(&ch->lock);
-  }
-
   return err;
-
-#undef WRITESOME
 }
 
 err_t qio_channel_flush_bits(const int threadsafe, qio_channel_t* restrict ch)
@@ -3161,85 +3282,155 @@ err_t qio_channel_flush_bits(const int threadsafe, qio_channel_t* restrict ch)
   return err;
 }
 
-
-err_t qio_channel_read_bits(const int threadsafe, qio_channel_t* restrict ch, uint64_t* restrict v, int8_t nbits)
+void _qio_channel_read_bits_cached_realign(qio_channel_t* restrict ch, uint64_t* restrict v, int8_t nbits)
 {
-  err_t err = 0;
-  uint64_t tmp_bits;
-  int8_t tmp_live;
-  uint64_t ret;
-  uint64_t got;
-  uint64_t one = 1;
+  qio_bitbuffer_t tmp_bits;
+  qio_bitbuffer_t buf;
+  size_t to_copy;
+  uint64_t value;
+  int vbits;
+  int tmp_live;
+  int tmp_read;
+  int value_part;
+  int part_one;
+  int part_two;
 
-  if( nbits < 0 ) return EINVAL;
-  if( nbits == 0 ) return 0;
-
-  if( threadsafe ) {
-    err = qio_lock(&ch->lock);
-    if( err ) {
-      return err;
-    }
-  }
-
-  err = qio_channel_mark_maybe_flush_bits(false, ch, 0);
-  if( err ) goto unlock;
-
-  tmp_live = ch->bit_buffer_bits;
   tmp_bits = ch->bit_buffer;
+  tmp_live = ch->bit_buffer_bits;
+  tmp_read = 0;
 
-#define READSOME(n) \
-{ \
-  int i; \
-  for( i = 0; i < 8 && tmp_live < n; i++ ) { \
-    uint8_t byte = 0; \
-    err = qio_channel_read_amt(false, ch, &byte, 1); \
-    if( err ) goto error; \
-    tmp_bits = (tmp_bits << 8) | ((uint64_t)byte); \
-    tmp_live += 8; \
-  } \
-  got = (tmp_bits >> (tmp_live - n)) & ((one << n)-one); \
-  tmp_live -= n; \
+  assert( tmp_live < nbits ); // shouldn't get here otherwise.
+
+  // first, take any bits we have in tmp_bits and put them into value.
+  value = qio_bitbuffer_topn(tmp_bits, tmp_live);
+  vbits = tmp_live;
+
+  // Next, read as many bytes as we need to in order to
+  // get the rest of the data we have to put in value.
+  value_part = nbits - vbits;
+  to_copy = (7 + value_part) / 8;
+
+  buf = 0;
+  memcpy(&buf, ch->cached_cur, to_copy);
+  ch->cached_cur = VOID_PTR_ADD(ch->cached_cur, to_copy);
+
+  // now we've set the top several bytes of buf.
+  buf = qio_bitbuffer_unbe(buf);
+
+  // Extract the part that applies to our value.
+  value <<= value_part;
+  value |= qio_bitbuffer_topn(buf, value_part);
+
+  *v = value;
+
+  // Now what's left in buf (<8bits) needs to go into
+  // tmp_bits.
+  part_one = 8*to_copy - value_part;
+  buf <<= value_part;
+  tmp_bits = qio_bitbuffer_topn(buf, part_one); // currently storing at bottom.
+  tmp_live = part_one;
+
+  // now we need to read some amount.
+  // We've got < 1 byte in tmp currently,
+  // and to get to alignment we'll need to read
+  // <= 7 bytes, so that will fit into 8 bytes.
+  to_copy = sizeof(qio_bitbuffer_t) - VOID_PTR_ALIGN(ch->cached_cur, sizeof(qio_bitbuffer_t));
+  if( to_copy == sizeof(qio_bitbuffer_t) ) to_copy = 0;
+
+  buf = 0;
+  if( to_copy ) memcpy(&buf, ch->cached_cur, to_copy);
+  tmp_read = to_copy;
+  part_two = 8*to_copy;
+
+  // now we've set the top several bytes of buf.
+  buf = qio_bitbuffer_unbe(buf);
+
+  // OK, now extract the part of buf that we care about.
+  tmp_bits <<= part_two;
+  tmp_bits |= qio_bitbuffer_topn(buf, part_two);
+  tmp_live += part_two;
+
+  // Now move tmp_bits to the higher order bits
+  // like we want for reading.
+  tmp_bits <<= (8*sizeof(qio_bitbuffer_t) - tmp_live);
+
+  ch->bit_buffer = tmp_bits;
+  ch->bit_buffer_bits = tmp_live;
+  ch->bits_read_bytes = tmp_read;
 }
 
-  ret = 0;
+err_t _qio_channel_read_bits_slow(qio_channel_t* restrict ch, uint64_t* restrict v, int8_t nbits)
+{
+  qio_bitbuffer_t tmp_bits;
+  qio_bitbuffer_t buf;
+  int tmp_live;
+  int tmp_read;
+  int part_two;
+  uint64_t value;
+  err_t err = 0;
 
-  // we have to fit up to 7 bits from bit_buffer in as well,
-  // so if we're reading more than 56 bits we have to do it
-  // in two parts.
-  if( nbits > 56 ) {
-    // Read 56 bits into ret.
-    READSOME(56);
-    ret = got;
-    nbits -= 56;
-  }
+  tmp_bits = ch->bit_buffer;
+  tmp_live = ch->bit_buffer_bits;
+  tmp_read = ch->bits_read_bytes;
 
-  // OK, now read whatever is left or all of it for <= 56 bits.
-  READSOME(nbits);
-  ret <<= nbits;
-  ret |= got;
-
-error:
-  if( err == 0 ) {
-    // Now save the remaining bits in tmp_bits
-    // back in our structure.
-    ch->bit_buffer = tmp_bits & ((one << tmp_live)-one);
-    ch->bit_buffer_bits = tmp_live;
-
-    // Set the result.
-    *v = ret;
-    qio_channel_commit_unlocked(ch);
+  if( nbits <= tmp_live ) {
+    // we're going to get everything we need from tmp_bits.
+    *v = tmp_bits >> (8*sizeof(qio_bitbuffer_t) - nbits);
+    tmp_bits <<= nbits;
+    tmp_live -= nbits;
   } else {
-    qio_channel_revert_unlocked(ch);
+    part_two = nbits - tmp_live;
+
+    // Do not cause flushing of bit-I/O on these reads.
+    ch->bits_read_bytes = 0; // avoid flushing.
+    ch->bit_buffer_bits = 0;
+
+    // skip any bytes we've already processed.
+    buf = 0;
+    if( tmp_read > 0 ) {
+      err = qio_channel_read_amt(false, ch, &buf, tmp_read);
+    }
+
+    // we're going to have to read something.
+    // how many bytes will we read?
+    tmp_read = (7 + nbits - tmp_live) / 8; // round up.
+
+    buf = 0;
+    err = qio_channel_read_amt(false, ch, &buf, tmp_read);
+    // move it to host endian.
+    buf = qio_bitbuffer_unbe(buf);
+
+    value = qio_bitbuffer_topn(tmp_bits, tmp_live);
+    value <<= part_two;
+
+    value |= qio_bitbuffer_topn(buf, part_two);
+    tmp_bits = buf << part_two;
+    tmp_live = 8*tmp_read - part_two;
+
+    // Now we havn't read ahead any bytes beyond
+    // where we'd expect byte-I/O to truncate us
+    tmp_read = 0;
+
+    *v = value;
   }
 
-unlock:
+
+  if( ! err ) {
+    // set up caching for bit-buffer fast reads
+    // and cause automatic flush of remaining bits
+    // upon a byte-driven read.
+    if( ch->cached_end ) {
+      ch->cached_end_bits = ch->cached_end;
+      ch->cached_end = NULL;
+    }
+
+    ch->bit_buffer = tmp_bits;
+    ch->bit_buffer_bits = tmp_live;
+    ch->bits_read_bytes = tmp_read;
+  }
+
   _qio_channel_set_error_unlocked(ch, err);
-
-  if( threadsafe ) {
-    qio_unlock(&ch->lock);
-  }
-
+  
   return err;
-#undef READSOME
 }
 

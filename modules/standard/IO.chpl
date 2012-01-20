@@ -288,6 +288,7 @@ extern proc qio_channel_write(threadsafe:c_int, ch:qio_channel_ptr_t, inout ptr,
 extern proc qio_channel_write_amt(threadsafe:c_int, ch:qio_channel_ptr_t, inout ptr, len:ssize_t):err_t;
 extern proc qio_channel_write_byte(threadsafe:c_int, ch:qio_channel_ptr_t, byte:uint(8)):err_t;
 
+extern proc qio_channel_offset_unlocked(ch:qio_channel_ptr_t):int(64);
 extern proc qio_channel_mark(threadsafe:c_int, ch:qio_channel_ptr_t):err_t;
 extern proc qio_channel_revert_unlocked(ch:qio_channel_ptr_t);
 extern proc qio_channel_commit_unlocked(ch:qio_channel_ptr_t);
@@ -675,9 +676,9 @@ proc openmem(out error:err_t, style:iostyle = defaultStyle()) {
   error = qio_file_open_mem(ret._file_internal, QBUFFER_PTR_NULL, local_style);
   return ret;
 }
-proc openmem(hints:iohint_t=0, style:iostyle = defaultStyle()):file {
+proc openmem(style:iostyle = defaultStyle()):file {
   var err:err_t = ENOERR;
-  var ret = openmem(err, hints, style);
+  var ret = openmem(err, style);
   if err then ioerror(err, "in openmem");
   return ret;
 }
@@ -841,7 +842,27 @@ proc channel.unlock() {
   }
 }
 
+proc channel.offset():int(64) {
+  var ret:int(64);
+  on __primitive("chpl_on_locale_num", this.home_uid) {
+    this.lock();
+    ret = qio_channel_offset_unlocked(_channel_internal);
+    this.unlock();
+  }
+  return ret;
+}
+
 // you should have a lock before you use these...
+
+inline
+proc channel._offset():int(64) {
+  var ret:int(64);
+  on __primitive("chpl_on_locale_num", this.home_uid) {
+    ret = qio_channel_offset_unlocked(_channel_internal);
+  }
+  return ret;
+}
+
 inline
 proc channel._mark():err_t {
   return qio_channel_mark(false, _channel_internal);
@@ -1542,12 +1563,12 @@ proc channel.close() {
 }
 
 
-proc channel.modifyStyle(f:func(iostyle, void))
+proc channel.modifyStyle(f:func(iostyle, iostyle))
 {
   on __primitive("chpl_on_locale_num", this.home_uid) {
     this.lock();
     var style = this._style();
-    f(style);
+    style = f(style);
     this._set_style(style);
     this.unlock();
   }
