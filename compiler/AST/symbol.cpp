@@ -618,12 +618,11 @@ codegenNullAssignments(FILE* outfile, const char* cname, ClassType* ct) {
 
 void FnSymbol::codegenDef(FILE* outfile) {
   if (strcmp(saveCDir, "")) {
-    const char* rawname = fname();
-    // if this assert fails, revert it to a conjunct in the enclosing 'if'
-    INT_ASSERT(rawname);
+   if (const char* rawname = fname()) {
     const char* name = strrchr(rawname, '/');
     name = name ? name + 1 : rawname;
     fprintf(outfile, "/* %s:%d */\n", name, linenum());
+   }
   }
 
   codegenHeader(outfile);

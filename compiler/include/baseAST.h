@@ -83,9 +83,10 @@ extern void trace_remove(BaseAST* ast, char flag);
 // how an AST node knows its location in the source code
 // (assumed to get copied upon assignment and parameter passing)
 struct astlocT {
+  const char* filename;  // filename of location
   int lineno;    // line number of location
   astlocT(int linenoArg, const char* filenameArg):
-    lineno(linenoArg)
+    filename(filenameArg), lineno(linenoArg)
     {}
 };
 
@@ -187,7 +188,7 @@ class BaseAST {
   ModuleSymbol* getModule();
   FnSymbol* getFunction();
   int linenum() { return astloc.lineno; }
-  const char* fname(); // astloc: inline if possible
+  const char* fname() { return astloc.filename; }
 
   virtual Type* typeInfo(void) = 0;
   Type* getValType();

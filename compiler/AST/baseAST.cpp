@@ -228,15 +228,11 @@ BaseAST::BaseAST(AstTag type) :
 
 
 const char* BaseAST::stringLoc(void) {
-  const int tmpBuffSize = 64;
+  const int tmpBuffSize = 256;
   char tmpBuff[tmpBuffSize];
 
   snprintf(tmpBuff, tmpBuffSize, "%s:%d", fname(), linenum());
   return astr(tmpBuff);
-}
-
-const char* BaseAST::fname() {
-  return getModule()->filename;
 }
 
 // stringLoc for debugging only
@@ -251,13 +247,7 @@ char* stringLoc(BaseAST* ast) {
   const int tmpBuffSize = 256;
   static char tmpBuff[tmpBuffSize];
 
-  // astloc: each node will know its file name
-  ModuleSymbol* module = ast->getModule();
-  if (module) {
-    snprintf(tmpBuff, tmpBuffSize, "%s:%d", ast->fname(), ast->linenum());
-  } else {
-    snprintf(tmpBuff, tmpBuffSize, "<unknown module>:%d", ast->linenum());
-  }
+  snprintf(tmpBuff, tmpBuffSize, "%s:%d", ast->fname(), ast->linenum());
   return tmpBuff;
 }
 
