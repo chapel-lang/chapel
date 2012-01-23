@@ -251,43 +251,67 @@ static void type_print_view(BaseAST* ast) {
 }
 
 void list_view(BaseAST* ast) {
-  if (toSymbol(ast))
-    printf("%-7d ", ast->id);
-  list_ast(ast);
+  if (ast==NULL) {
+    printf("<NULL>");
+  } else {
+    if (toSymbol(ast))
+      printf("%-7d ", ast->id);
+    list_ast(ast);
+  }
   printf("\n");
   fflush(stdout);
 }
 
 void list_view_noline(BaseAST* ast) {
-  if (toSymbol(ast))
-    printf("%-7d ", ast->id);
-  list_ast(ast);
+  if (ast==NULL) {
+    printf("<NULL>");
+  } else {
+    if (toSymbol(ast))
+      printf("%-7d ", ast->id);
+    list_ast(ast);
+  }
   fflush(stdout);
 }
 
 void print_view(BaseAST* ast) {
-  type_print_view(ast);
-  view_ast(ast);
+  if (ast==NULL) {
+    printf("<NULL>");
+  } else {
+    type_print_view(ast);
+    view_ast(ast);
+  }
   printf("\n\n");
   fflush(stdout);
 }
 
 void print_view_noline(BaseAST* ast) {
-  type_print_view(ast);
-  view_ast(ast);
+  if (ast==NULL) {
+    printf("<NULL>");
+  } else {
+    type_print_view(ast);
+    view_ast(ast);
+  }
   fflush(stdout);
 }
 
 void nprint_view(BaseAST* ast) {
-  type_nprint_view(ast);
-  view_ast(ast, true);
+  if (ast==NULL) {
+    printf("<NULL>");
+  } else {
+    type_nprint_view(ast);
+    view_ast(ast, true);
+  }
   printf("\n\n");
   fflush(stdout);
 }
 
 void nprint_view_noline(BaseAST* ast) {
-  type_nprint_view(ast);
-  view_ast(ast, true);
+  if (ast==NULL) {
+    printf("<NULL>");
+  } else {
+    type_nprint_view(ast);
+    view_ast(ast, true);
+  }
   fflush(stdout);
 }
 
