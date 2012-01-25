@@ -13,6 +13,14 @@
 #include "error.h"
 #include <stdint.h>
 #include <string.h>
+#include <locale.h>
+
+static const char myFilename[] = 
+#ifdef CHPL_DEVELOPER
+  __FILE__;
+#else
+  "<internal>";
+#endif
 
 
 char* chpl_executionCommand;
@@ -49,6 +57,11 @@ int main(int argc, char* argv[]) {
   int runInGDB;
   int numPollingTasks;
 
+  // Declare that we are 'locale aware' so that
+  // UTF-8 functions (e.g. wcrtomb) work as
+  // indicated by the locale environment variables.
+  setlocale(LC_CTYPE,"");
+
   chpl_comm_init(&argc, &argv);
   chpl_mem_init();
   chpl_comm_post_mem_init();
@@ -83,7 +96,7 @@ int main(int argc, char* argv[]) {
   // This just sets all of the initialization predicates to false.
   // Must occur before any other call to a chpl__init_<foo> function.
   //
-  chpl__init_preInit(1, "<internal>");
+  chpl__init_preInit(0, myFilename);
  
   //
   // initialize the task management layer
@@ -93,7 +106,8 @@ int main(int argc, char* argv[]) {
   // that its config consts (numThreadsPerLocale and callStackSize)
   // can be used to initialize the tasking layer.  
   //
-  chpl__init_ChapelThreads(1, "<internal>");
+  chpl__init_ChapelThreads(0, myFilename);
+  // (Can we grab those constants directly, and stay out of the module code?)
   //
   numPollingTasks = chpl_comm_numPollingTasks();
   if (numPollingTasks != 0 && numPollingTasks != 1) {
@@ -110,8 +124,20 @@ int main(int argc, char* argv[]) {
   recordExecutionCommand(argc, argv);
 
   chpl_comm_barrier("barrier before main");
+  // The call to chpl_comm_barrier makes sure that all locales are listening
+  // before an attempt is made to run tasks "on" them.
 
   if (chpl_localeID == 0) {      // have locale #0 run the user's main function
+
+    // OK, we can create tasks now.
+    chpl_task_setSerial(false);
+
+    // Initialize the internal modules.
+    chpl__init_ChapelStandard(0, myFilename);
+    // Note that in general, module code can contain "on" clauses
+    // and should therefore not be called before the call to
+    // chpl_comm_startPollingTask().
+
     chpl_task_callMain(chpl_main);
   }
 

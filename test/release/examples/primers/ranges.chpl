@@ -1,25 +1,26 @@
 /*
  * Range Primer
  *
- * This primer covers uses of the range type and operations on ranges.
+ * This primer illustrates Chapel ranges and range operations.
  *
  */
 
 //
-// Ranges represent sequences of integral numbers.  A range literal is
-// defined using the '..' operator.  The lower bound is always on the left;
+// Ranges represent sequences of integral numbers, or "indices".
+// A range literal is defined using the '..' operator.
+// The lower bound is always on the left;
 // the upper bound is always on the right.
 //
-writeln("Basic range");
-var r = 1..10;
+writeln("Basic range r");
+const r = 1..10;
 writeRange(r);
 
 //
-// Ranges are useful building blocks for iteration.  Here we use a
-// for-loop to iterate over the values in range 'r' and compute the
-// sum of the values.
+// Ranges are a basic building block for iteration.  Here we use a
+// for-loop to iterate over the sequence represented by 'r' and
+// compute the sum of the indices in the sequence.
 //
-var sum: int;
+var sum: int = 0;
 for i in r do
   sum += i;
 writeln("The sum of the values in ", r, " is ", sum);
@@ -32,8 +33,8 @@ writeln("The sum of the values in ", r, " as computed by reduce is also ", sum);
 writeln();
 
 //
-// Ranges are also the building blocks for domains and arrays.  Here
-// we use the range r to build up a 2D domain and an array.
+// Ranges are also the building blocks for domains.  Here
+// we use the range r to build up a 2-D domain and an array.
 //
 writeln("Domains and arrays");
 const D: domain(2) = [r, r];
@@ -45,39 +46,42 @@ writeln();
 
 //
 // Ranges don't have to be fully bounded.  A range without a low bound
-// represents an infinite number of values that are less than or equal to
+// represents an infinite sequence of numbers that are less than or equal to
 // the high bound.  Similarly a range without a high bound represents
-// an infinitude of values greater or equal to the low bound.  A range
-// with no bounds is allowed as well.  Unbounded ranges are useful for
-// zippered iteration and range slicing.
+// an infinitude of numbers greater or equal to the low bound.  A range
+// with no bounds is allowed as well.
 //
 writeln("Unbounded ranges");
 writeRange(1..);
 writeRange(..5);
 writeRange(..);
-write("Iterating over (312..315, 1..) = ");
-for (v, i) in (312..315, 1..) {
-  write((v, i), " ");
+
+//
+// When an unbounded range is used in a zippered iteration,
+// only the necessary number of indices are taken from its sequence.
+//
+// Only ranges whose sequences have a starting point may be used in
+// an iteration. This includes all the above ranges except .. and ..5 .
+//
+writeln("Iterating over (312..315, 1..) generates");
+for (i, j) in (312..315, 1..) {
+  write(" ", (i, j));
 }
 writeln();
 writeln();
 
 //
-// There are several operators for working with ranges:  
-//   =  by  #  align  +  -  ==
-//
-// Operators such as '#' and 'by' can be
-// combined to make more complex range values.
+// There are several operators for working with ranges.
+// The 'by' and 'align' operators create more complex range values.
 //
 
 //
-// The 'by' operator applies a stride to a range.  If the range was already
-// strided, the effect is multiplicative.  If the stride is negative,
-// the range starts at the high bound and counts backward to the low
-// bound.  It is an error to apply a positive stride to a range with
-// no lower bound or a negative stride to a range with no upper bound.
+// The 'by' operator applies a stride to a range, selecting a subsequence
+// from its sequence.  If the range was already strided, the effect is
+// multiplicative.  If the stride is negative, the direction of the sequence
+// is reversed.
 //
-writeln("The by operator");
+writeln("Range stride and the by operator");
 writeRange(r by 2);
 writeRange(r by 2 by 2);
 writeRange(r by -1);
@@ -85,107 +89,152 @@ writeRange(5.. by 2);
 writeln();
 
 //
-// Another range operator is the count operator '#'.  It is used to
-// count off a number of elements from the start of a range.  
-// If the count is negative, the elements are taken from the end of the
-// range, instead.  It is an error to take a positive count of indices
-// from a range with no starting index, or a negative count of indices
-// from a range with no ending index.
+// The 'align' operator specifies the alignment of a strided range, which
+// determines (i % |stride|) for any index 'i' in the range's sequence.
+// For example, alignment differentiates the sequence of all odd numbers
+// from all even numbers.
 //
-writeln("The count operator");
-var numElements = 5;
-writeRange(0..#numElements);
-writeRange(r # 4);
-writeRange(r by -1 # 4);
-writeRange(..5 # -3);
-writeln();
-
-// 
-// When defining a strided range, it is useful to specify the alignment.
-// The align operator makes it easy to do so.
-// These two ranges specify all odd and even numbers, respectively.
-var odds = .. by 2 align 1;
-var evens = .. by 2 align 2;
+const allOdds = .. by 2 align 1;
+const allEvens = .. by 2 align 2;
+//
 // The alignment is always taken modulo the stride, so one could also say:
-//  var evens = .. by 2 align 0;
-//  var evens = .. by 2 align -2;
-//  etc.
+//  const allEvens = .. by 2 align 0;
+//  const allEvens = .. by 2 align -2;
+// etc.
 //
-writeln("The align operator");
-var oddsBetween1and10 = r by 2 align 1;
+writeln("Range alignment and the align operator");
+const oddsBetween1and10 = r by 2 align 1;
 writeRange(oddsBetween1and10);
-var evensBetween1and10 = r by 2 align 0;
+const evensBetween1and10 = r by 2 align 0;
 writeRange(evensBetween1and10);
+
+//
+// If a range's stride is 1 or -1, its sequence is always defined.
+// Otherwise, the sequence is defined only when the range's alignment
+// is defined, or "unambiguous". Without alignment, for example, it is
+// unknown whether the sequence contains all odds or all evens.
+// A defined sequence is required when using the range in an iteration
+// or in many other cases.
+//
+// The 'align' operator always defines the alignment, overriding
+// the exiting alignment, if any.
+// When creating a strided range from a range literal, 'by' will define
+// the alignment to be the literal's low bound for positive stride,
+// or the literal's high bound for negative stride.
+// The corresponding bound must exist.
+//
+writeln("Implicit alignment set using 'by'");
+writeRange(1..10 by -2);
+writeRange(..5 by -3);
+const rangeWithAmbiguousAlignment = 1.. by -3;
 writeln();
 
 //
-// The '+' and '-' operators are used to add or subtract a scalar from
-// the high and low bounds of a range, shifting it higher or lower.
+// The == operator can be used to test if two ranges are equal.
+// Equality means they represent the same sequence of indices.
 //
-writeln("Arithmetic operators");
+writeln("Range equality");
+writeln(r(allOdds) == oddsBetween1and10);          // true
+writeln(r(allEvens) == evensBetween1and10);        // true
+writeln();
+
+//
+// Range slicing produces an intersection of the sequences defined
+// by two given ranges. Slicing is commutative in most respects.
+// It is written as indexing or application of one range to another.
+//
+writeln("Range slicing");
+writeln("A slice of ", r, " with ", 2..7);
+writeRange(r(2..7));
+const r1 = 5..15;
+writeln("A slice of ", r, " with ", r1);
+writeRange(r(r1));
+writeln("A slice of ", r1, " with ", r, " is the same");
+writeRange(r1(r));
+
+// The odds between 1 and 10 (using range slicing):
+writeRange(r(allOdds));
+// The evens between 1 and 10 (using range slicing):
+writeRange(r(allEvens));
+const r2 = 1..20 by 3;
+writeln("A slice of ", r2, " with ", 1..20 by 2);
+writeRange(r2(1..20 by 2));
+writeln("A slice of ", r2, " with ", 1..20 by -2);
+writeRange(r2(1..20 by -2));
+writeln();
+
+//
+// When an unbounded range is used in slicing a bounded range,
+// the corresponding infinite sequence participates in the intersection.
+//
+writeln("A slice of ", r, " with ", 5..);
+writeRange(r(5..));
+writeln("A slice of ", r, " with ", 5.. by 2);
+writeRange(r(5.. by 2));
+writeln("A slice of ", 1.., " with ", ..5);
+writeRange((1..)(..5));
+writeln();
+
+//
+// The '+' and '-' operators are used to shift a range's sequence
+// higher or lower.
+//
+writeln("Operators + and -");
 writeRange(r + 2);
 writeRange(1 + ..5);
 writeRange((r by 2) - 1);
 writeln();
 
 //
-// A range can be "sliced" by another range to create a range that
-// represents the intersection of the original two.  Slicing a range
-// is accomplished by indexing the range with a second range.
+// The count operator '#' counts off a number of elements from the start
+// of a range. If the count is negative, the elements are taken from the end
+// of the range, instead. It is an error to take a positive count of indices
+// from a range with no starting index, or a negative count of indices
+// from a range with no ending index.
 //
-var r2 = 1..20 by 3;
-writeln("Range Slicing");
-writeRange(r(2..9));
-writeRange(r(2.. by 2));
-writeRange(r2(1..20 by 2));
-// The odds between 1 and 10 (using range slicing):
-writeRange(r(odds));
-// The evens between 1 and 10 (using range slicing):
-writeRange(r(evens));
+writeln("The count operator");
+const numElements = 5;
+writeRange(0..#numElements);
+writeRange(r # 4);
+writeRange(r by -1 # 4);
+writeRange(..5 # -3);
 writeln();
 
 //
-// The == operator can be used to test if two ranges are equivalent.
-// Equivalence means they produce the same sequence when iterated.
-//
-writeln("Range equivalence");
-writeln(r(odds) == oddsBetween1and10);          // true
-writeln(r(evens) == evensBetween1and10);        // true
-writeln();
-
-//
-// The procedure that has been used throughout this example to print
-// ranges is defined below.  It checks the boundedType of the range
-// argument and if the range is fully bounded, all of the values are
-// printed.  If the range has only one bound, it prints the three
-// values nearest to the bound.  If it is fully unbounded, it just
-// prints "all integers".
+// The procedure that has been used throughout this primer to print
+// ranges is defined below. It adjusts to the specifics of the range.
 //
 proc writeRange(r: range(?)) {
-  write("Range ", r, " = ");
-  select r.boundedType {
-    when BoundedRangeType.bounded {
-      var first: bool = true;;
-      for i in r {
-        if !first then write(", ");
-        write(i);
-        first = false;
-      }
-      writeln();
+  write("Range ", r);
+  if r.boundedType == BoundedRangeType.bounded {
+    // The range is fully bounded - print its entire sequence.
+    write(" = ");
+    var first: bool = true;;
+    for i in r {
+      if !first then write(", ");
+      write(i);
+      first = false;
     }
-    when BoundedRangeType.boundedLow {
-      for i in r # 3 do
-        write(i, ", ");
-      writeln("...");
-    }
-    when BoundedRangeType.boundedHigh {
-      write("...");
-      for i in r # -3 do
-        write(", ", i);
-      writeln();
-    }
-    when BoundedRangeType.boundedNone {
-      writeln("all integers");
-    }
+  } else if r.hasFirst() {
+    // The range is not fully bounded, but its sequence has a starting point
+    // - print the first three indices.  Note that in this and the next
+    // case the sequence can be either increasing or decreasing.
+    write(" = ");
+    for i in r # 3 do
+      write(i, ", ");
+    write("...");
+  } else if r.hasLast() {
+    // The range is not fully bounded, but its sequence has a starting point
+    // - print the last three indices.
+    write(" = ...");
+    for i in r # -3 do
+      write(", ", i);
+  } else if r.stride == 1 || r.stride == -1 {
+    // If we are here, the range is fully unbounded.
+    write(" = all integers, ",
+          if r.stride > 0 then "increasing" else "decreasing");
+  } else {
+    // We got a more complex range, do not elaborate.
   }
+  writeln();
 }

@@ -86,3 +86,17 @@ tcmalloc/
            http://code.google.com/p/google-perftools/
 
   See also: tcmalloc/README
+
+
+utf8-decoder/
+  Summary: A fast UTF-8 decoder, used for fast UTF-8 I/O.
+           This decoder is by Bjoern Hoehrmann.
+
+  License: MIT (see utf8-decoder/README)
+
+  Contact: For more information, please refer to:
+           http://bjoern.hoehrmann.de/utf-8/decoder/dfa/
+
+  See also: utf8-decoder/README
+
+

@@ -11,6 +11,7 @@ $debug = 1;
 $runtests = 1;
 $buildruntime = 1;
 $hello = 0;
+$allhellos = 0;
 $examples = 0;
 $componly = 0;
 $suppressions = "";
@@ -40,6 +41,9 @@ while (@ARGV) {
 	$buildruntime = 0;
     } elsif ($flag eq "-hello") {
 	$hello = 1;
+    } elsif ($flag eq "-hellos") {
+	$hello = 1;
+	$allhellos = 1;
     } elsif ($flag eq "-examples") {
         $examples = 1;
     } elsif ($flag eq "-performance") {
@@ -52,7 +56,6 @@ while (@ARGV) {
         $dist = shift @ARGV;
     } elsif ($flag eq "-memleaks") {
         $memleaks = shift @ARGV;
-        $examples = 1;
     } elsif ($flag eq "-suppress") {
         $suppressions = shift @ARGV;
     } elsif ($flag eq "-componly") {
@@ -71,6 +74,18 @@ while (@ARGV) {
     }
 }
 
+
+$ctmp = `crontab -l`;
+@blah = split(/\n/, $ctmp);
+# Ignore the first 3 (commented) lines added by crontab
+# I'm not sure how standard this is, but let's see how it goes.
+$crontab = join("\n", splice(@blah , 3))."\n";
+
+if ($debug == 0) {
+    print "Currently installed crontab on ".hostname.":\n";
+    print $crontab;
+}
+
 $svntoday = `date +%F`; chomp($svntoday);
 if ($debug == 0 && $svnrevopt eq "") {
     $svnrevopt = "-r'{$svntoday 00:00 -0700}'";
@@ -78,8 +93,6 @@ if ($debug == 0 && $svnrevopt eq "") {
 
 if ($ENV{'CHPL_COMM'} eq "gasnet") {
     $gasnet = 1;
-} elsif ($ENV{'CHPL_COMM'} eq "pvm") {
-    $pvm = 1;
 } elsif ($ENV{'CHPL_COMM'} eq "mpi") {
     $mpi = 1;
 }
@@ -98,6 +111,7 @@ if ($printusage == 1) {
     print "\t-noruntime   : don't build the runtime or run the tests\n";
     print "\t-examples    : run the release/examples tests only\n";
     print "\t-hello       : run the release/examples/hello.chpl test only\n";
+    print "\t-hellos      : run the release/examples/hello*.chpl tests only\n";
     print "\t-valgrind    : run tests in valgrind mode\n";
 #    print "\t-interpret   : run tests in interpreted mode\n";
     print "\t-performance : run performance tests\n";
@@ -188,13 +202,18 @@ $hostplatform = `$utildir/chplenv/platform --host`; chomp($hostplatform);
 $targetplatform = `$utildir/chplenv/platform --target`; chomp($targetplatform);
 $hostcompiler = `$utildir/chplenv/compiler --host`; chomp($hostcompiler);
 $targetcompiler = `$utildir/chplenv/compiler --target`; chomp($targetcompiler);
+$tasks = `$utildir/chplenv/tasks`; chomp($tasks);
 $threads = `$utildir/chplenv/threads`; chomp($threads);
+$mem =  `$utildir/chplenv/mem`; chomp($mem);
 $comm = `$utildir/chplenv/comm`; chomp($comm);
 if ($comm eq "gasnet" && $ENV{'CHPL_GASNET_SEGMENT'} ne "") {
     $comm = "$comm-$ENV{'CHPL_GASNET_SEGMENT'}";
 }
 
-$fullplatform = "$targetplatform.$targetcompiler.$comm.$threads";
+$fullplatform = "$targetplatform.$targetcompiler.$comm.$tasks.$threads";
+if ($mem ne "default") {
+    $fullplatform = "$fullplatform.$mem";
+}
 if ($hostplatform ne $targetplatform) {
     $fullplatform = "$fullplatform--$hostplatform";
     if ($hostcompiler ne $targetcompiler) {
@@ -291,6 +310,9 @@ if ($debug == 1) {
 } else {
     $subjectid = "Cron$subjectid";
     $recipient = "chapel_cronmail\@cray.com chapel_cronmail_all\@cray.com";
+    if ($tasks eq "qthreads") {
+      $recipient = "$recipient qthreads-chapel\@googlegroups.com";
+    }
     $nochangerecipient = "$user\@cray.com chapel_cronmail_all\@cray.com";
 }
 
@@ -436,21 +458,6 @@ if ($hostplatform eq "cygwin") {
 
 
 
-#
-# build stuff
-#
-
-if ($pvm == 1) {
-    mysystem("cd $chapeldir/third-party && $make pvm", "making PVM", 1, 1);
-    mysystem("uname -n > $chapeldir/hostfile.$hostplatform");
-    mysystem("uname -n >> $chapeldir/hostfile.$hostplatform");
-    mysystem("uname -n >> $chapeldir/hostfile.$hostplatform");
-    mysystem("uname -n >> $chapeldir/hostfile.$hostplatform");
-    mysystem("uname -n >> $chapeldir/hostfile.$hostplatform");
-    mysystem("uname -n >> $chapeldir/hostfile.$hostplatform");
-    mysystem("uname -n >> $chapeldir/hostfile.$hostplatform");
-    mysystem("uname -n >> $chapeldir/hostfile.$hostplatform");
-}
 $makestat = mysystem("cd $chapeldir && $make DEBUG=0 OPTIMIZE=1 compiler", "making chapel compiler", 0, 1);
 if ($makestat != 0) {
     mysystem("cd $chapeldir && $make DEBUG=0 compiler", "making chapel compiler", 1, 1);
@@ -465,18 +472,19 @@ if ($buildruntime == 0) {
     
     open(MAIL, $mailcommand);
     
-    print MAIL startMailHeader($revision, "<no logfile>", $starttime, $endtime);
+    print MAIL startMailHeader($revision, "<no logfile>", $starttime, $endtime, $crontab);
     print MAIL "Built compiler but not runtime, and did not run tests\n";
     print MAIL endMailHeader();
     close(MAIL);
     exit 0;
 }
 
-
 $makestat = mysystem("cd $chapeldir && $make DEBUG=0 OPTIMIZE=1 runtime", "making chapel runtime", 0, 1);
 if ($makestat != 0) {
     mysystem("cd $chapeldir && $make DEBUG=0 runtime", "making chapel runtime", 1, 1);
 }
+
+$makestat = mysystem("cd $chapeldir && $make modules", "making chapel modules", 0, 1);
 
 
 #
@@ -499,6 +507,12 @@ if ($valgrind == 1) {
 if ($valgrind == 0) {
     $testflags = "$testflags -futures";
 }
+
+#
+# don't bother making the spec tests if we're only testing hello, world programs;
+# and they'll get made automatically if we're testing everything; so we only need
+# to make them if we're testing the examples directory.
+#
 if ($examples == 1) {
     mysystem("cd $chapeldir && $make spectests", "making spec tests", 0, 1);
     if ($parnodefile eq "") {
@@ -516,8 +530,6 @@ if ($parnodefile eq "") {
 } else {
     if ($gasnet == 1) {
         $testflags = "$testflags -comm gasnet";
-    } elsif ($pvm == 1) {
-        $testflags = "$testflags -comm pvm";
     } elsif ($mpi == 1) {
         $testflags = "$testflags -comm mpi";
     }
@@ -525,9 +537,13 @@ if ($parnodefile eq "") {
     
 if ($hello == 1) {
     if ($parnodefile eq "") {
-	$testflags = "$testflags release/examples/hello.chpl";
+	if ($allhellos == 1) {
+	    $testflags = "$testflags --no-recurse release/examples";
+	} else {
+	    $testflags = "$testflags release/examples/hello.chpl";
+	}
     } else {
-	print("Error: Can't yet run the parallel tests with --hello");
+	print("Error: Can't yet run the parallel tests with --hello[s]");
 	exit(1);
     }
 }
@@ -570,7 +586,7 @@ if ($runtests == 0) {
     
     open(MAIL, $mailcommand);
     
-    print MAIL startMailHeader($revision, "<no logfile>", $starttime, $endtime);
+    print MAIL startMailHeader($revision, "<no logfile>", $starttime, $endtime, $crontab);
     print MAIL "Built compiler and runtime but did not run tests\n";
     print MAIL endMailHeader();
     
@@ -658,7 +674,7 @@ if ($runtests == 0) {
     
     open(MAIL, $mailcommand);
     
-    print MAIL startMailHeader($revision, $rawlog, $starttime, $endtime);
+    print MAIL startMailHeader($revision, $rawlog, $starttime, $endtime, $crontab);
     print MAIL "$numtestssummary\n";
     print MAIL "$summary\n";
     print MAIL endMailHeader();
@@ -771,7 +787,7 @@ sub mysystem {
 
             print "Trying to mail message... using $mailcommand\n";
 	    open(MAIL, $mailcommand);
-            print MAIL startMailHeader($revision, $rawlog, $starttime, $endtime);
+            print MAIL startMailHeader($revision, $rawlog, $starttime, $endtime, $crontab);
 	    print MAIL "ERROR $_[1]: $status\n";
 	    print MAIL "(workspace left at $tmpdir)\n";
             print MAIL endMailHeader();
@@ -849,6 +865,10 @@ sub startMailHeader {
         "Logfile:  " . shift(@_) . "\n" .
         "Started:  " . shift(@_) . "\n" .
         "Ended:    " . shift(@_) . "\n\n";
+
+    if ($debug == 0) {
+        $mystr .= "Crontab:\n". shift(@_) . "\n";
+    }
 
     $mystr;
 }

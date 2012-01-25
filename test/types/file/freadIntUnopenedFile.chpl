@@ -1,4 +1,6 @@
 var myInt = 123;
-var f: file = new file(filename = "unopenedFile.txt", mode = FileAccessMode.read);
+var f : file;
 
-f.read(myInt);
+var r = f.reader();
+
+r.read(myInt);

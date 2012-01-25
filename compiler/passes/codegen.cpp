@@ -165,8 +165,8 @@ compareSymbol(const void* v1, const void* v2) {
     return strcmp(m1->cname, m2->cname);
   }
 
-  if (s1->lineno != s2->lineno)
-    return (s1->lineno < s2->lineno) ? -1 : 1;
+  if (s1->linenum() != s2->linenum())
+    return (s1->linenum() < s2->linenum()) ? -1 : 1;
 
   int result = strcmp(s1->type->symbol->cname, s2->type->symbol->cname);
   if (!result)
@@ -378,6 +378,10 @@ static void codegen_header(FILE* hdrfile, FILE* codefile=NULL) {
   }
 
   fprintf(hdrfile, "\n#define CHPL_GEN_CODE\n\n");
+
+
+  // Include sys_basic.h to get C types always defined, proper library .h inclusion
+  fprintf(hdrfile, "#include \"sys_basic.h\"\n");
 
   genIncludeCommandLineHeaders(hdrfile);
 
@@ -657,22 +661,6 @@ codegen_config(FILE* outfile) {
   }
 
   fprintf(outfile, "}\n\n\n");
-
-  int numRealms = getNumRealms();
-  fprintf(outfile, "int32_t chpl_numRealms = %d;\n\n\n", numRealms);
-
-  fprintf(outfile, "const char* chpl_realmType(int32_t r) {\n");
-  fprintf(outfile, "  switch (r) {\n");
-  int realmNum = 0;
-  forv_Vec(const char*, realm, realms) {
-    fprintf(outfile, "    case %d: return \"%s\";\n", realmNum, realm);
-    realmNum++;
-  }
-  fprintf(outfile, "    default:\n");
-  fprintf(outfile, "      chpl_internal_error(\"attempt to query realm other than 0-%d\\n\");\n", numRealms-1);
-  fprintf(outfile, "      return \"unknown\";\n");
-  fprintf(outfile, "  }\n");
-  fprintf(outfile, "}\n");
 
   closeCFile(&configFile);
 }

@@ -2,6 +2,7 @@ module search dirs:
   modules/d3
   .
   modules/d4
+  $CHPL_HOME/modules/standard/gen/...
   $CHPL_HOME/modules/standard
   $CHPL_HOME/modules/layouts
   $CHPL_HOME/modules/dists

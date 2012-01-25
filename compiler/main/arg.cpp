@@ -296,7 +296,7 @@ word_wrap_print(const char* text, int start_column, int end_column) {
 void usage(ArgumentState* arg_state, int status, bool printEnvHelp,
            bool printCurrentSettings) {
   ArgumentDescription *desc = arg_state->desc;
-  const int desc_start_col = 42, end_col = 79;
+  const int desc_start_col = 39, end_col = 79;
   int i, nprinted;
 
   fprintf(stdout,"Usage: %s [flags] [source files]\n",arg_state->program_name);

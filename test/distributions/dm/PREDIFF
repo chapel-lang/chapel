@@ -4,6 +4,24 @@ testname=$1
 outputfile=$2
 compiler=$3
 
+doSort=true
+doRLN=false
+
+# test-specific
+case $testname in
+  (t8)  doRLN=true ;;
+  (t5a) doRLN=true; doSort=false ;;
+  (s7)  doSort=false ;;
+esac
+
+# remove line numbers from warnings
+if $doRLN; then
+  sed 's@\.chpl:[1-9][0-9]*:@.chpl:@' $outputfile > $outputfile.tmp && \
+  mv $outputfile.tmp $outputfile
+fi
+
 # sort the output
-sort $outputfile > $outputfile.tmp
-mv $outputfile.tmp $outputfile
+if $doSort; then
+  sort $outputfile > $outputfile.tmp  && \
+  mv $outputfile.tmp $outputfile
+fi

@@ -13,5 +13,9 @@ to end-users.  The current contents of the directory are as follows:
 
    start_test      : the kickoff script for the Chapel testing system
 
+   update-sources  : a script designed to help update Chapel sources as
+                     the language evolves
+
    chplenv/        : helper scripts for inferring CHPL_* variables if unset
+   config/         : helper scripts for configuring the Chapel build
    test/           : helper scripts for the testing system

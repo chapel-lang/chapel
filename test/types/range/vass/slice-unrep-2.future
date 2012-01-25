@@ -1,0 +1,5 @@
+bug: an error is not raised when slicing an unsigned range with a signed range and the result is not representable within the expected range type
+
+The result should be -5..-4, but its idxType should be uint
+(because it is inherited from the first operand).
+According to the spec, an error should be raised in this case.

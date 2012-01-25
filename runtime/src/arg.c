@@ -112,69 +112,10 @@ void parseNumLocales(const char* numPtr, int32_t lineno, chpl_string filename) {
   }
 }
 
-static int32_t* chpl_arg_LocalesPerRealm;
-static int32_t* chpl_base_unique_localeID;
-
-void parseLocalesPerRealm(const char* arrPtr, int32_t lineno, 
-                          chpl_string filename) {
-  const char* startPtr = arrPtr;
-  int32_t baseID = 0;
-  int i;
-  chpl_arg_LocalesPerRealm =
-    chpl_mem_allocMany(chpl_numRealms, sizeof(int32_t),
-                       CHPL_RT_MD_LOCALES_PER_REALM, 0, NULL);
-  chpl_base_unique_localeID =
-    chpl_mem_allocMany(chpl_numRealms, sizeof(int32_t),
-                       CHPL_RT_MD_LOCALES_PER_REALM, 0, NULL);
-  for (i=0; i<chpl_numRealms; i++) {
-    int charsRead;
-    int numRead = sscanf(startPtr, "%"SCNd32"%n", &chpl_arg_LocalesPerRealm[i],
-                         &charsRead);
-    if (numRead == 0) {
-      chpl_error("--localesPerRealm didn't have enough values", 0, NULL);
-    }
-    chpl_base_unique_localeID[i] = baseID;
-    baseID += chpl_arg_LocalesPerRealm[i];
-    startPtr += charsRead;
-  }
-}
-
-int32_t chpl_localesPerRealm(int32_t r) {
-  if (r >= chpl_numRealms) {
-    char message[80];
-    sprintf(message, 
-            "--localesPerRealm didn't specify a number of locales for realm %" 
-            PRId32, r);
-    chpl_error(message, 0, NULL);
-  }
-  return chpl_arg_LocalesPerRealm[r];
-}
-
-int32_t chpl_baseUniqueLocaleID(int32_t r) {
-  if (r >= chpl_numRealms) {
-    chpl_error("Trying to query using realmID > numRealms", 0, NULL);
-  }
-  return chpl_base_unique_localeID[r];
-}
-
-
 int32_t getArgNumLocales(void) {
   int32_t retval = 0;
-  if (chpl_numRealms == 1) {
-    if (_argNumLocales) {
-      retval = _argNumLocales;
-    }
-  } else {
-    if (!chpl_arg_LocalesPerRealm) {
-      chpl_error("must specify number of locales per realm "
-                 "via --localesPerRealm='nl0 nl1 nl2 ...'", 0, "<command-line>");
-    } else {
-      int i;
-      retval = 0;
-      for (i=0; i<chpl_numRealms; i++) {
-        retval += chpl_arg_LocalesPerRealm[i];
-      }
-    }
+  if (_argNumLocales) {
+    retval = _argNumLocales;
   }
   return retval;
 }
@@ -339,10 +280,6 @@ void parseArgs(int* argc, char* argv[]) {
 
 
 int chpl_specify_locales_error(void) {
-  if (chpl_numRealms == 1) {
-    chpl_error("Specify number of locales via -nl <#> or --numLocales=<#>", 0, 0);
-  } else {
-    chpl_error("Specify number of locales per realm via --localesPerRealm='<#> <#> ...'", 0, 0);
-  }
+  chpl_error("Specify number of locales via -nl <#> or --numLocales=<#>", 0, 0);
   return 0;
 }

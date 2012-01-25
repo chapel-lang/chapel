@@ -227,3 +227,7 @@ int chpl_task_createCommTask(chpl_fn_p fn, void* arg) {
   chpl_task_begin(fn, arg, true, false, NULL);
   return 0;
 }
+
+void chpl_task_yield(void) {
+  Scheduler::yield();
+}

@@ -3,4 +3,4 @@
 #
 #
 #
-CHPL_MAKE_MEM = $(shell $(CHAPEL_ROOT)/util/chplenv/mem $(CHPL_MAKE_HOST_TARGET))
+CHPL_MAKE_MEM = $(shell $(CHPL_MAKE_HOME)/util/chplenv/mem $(CHPL_MAKE_HOST_TARGET))

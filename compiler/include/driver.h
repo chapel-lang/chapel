@@ -8,6 +8,7 @@
 extern FILE* html_index_file;
 extern FILE* deletedIdHandle;
 extern char deletedIdFilename[FILENAME_MAX+1];
+#define deletedIdON (deletedIdFilename[0] != '\0')
 
 extern int instantiation_limit;
 
@@ -71,9 +72,11 @@ extern bool fGPU;
 extern bool fHeterogeneous;
 extern bool fieeefloat;
 
+enum { LS_DEFAULT=0, LS_STATIC, LS_DYNAMIC };
+extern int fLinkStyle;
+
 extern int debugParserLevel;
 extern bool fLibraryCompile;
-extern bool fLibraryShared;     // Compile a shared library (DLL).
 extern bool no_codegen;
 extern bool developer;
 extern int num_constants_per_variable;
@@ -111,8 +114,5 @@ extern int breakOnDeleteID;
 // code generation strings
 extern const char* compileCommand;
 extern char compileVersion[64];
-
-int32_t getNumRealms(void);
-extern Vec<const char*> realms;
 
 #endif

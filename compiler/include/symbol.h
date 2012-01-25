@@ -122,6 +122,7 @@ class ArgSymbol : public Symbol {
 
   bool requiresCPtr(void);
   bool isConstant(void);
+  bool isParameter(void);
 
   void printDef(FILE* outfile);
   void codegen(FILE* outfile);
@@ -240,6 +241,7 @@ class ModuleSymbol : public Symbol {
 
 class LabelSymbol : public Symbol {
  public:
+  GotoStmt* iterResumeGoto;
   LabelSymbol(const char* init_name);
   void verify(); 
   DECLARE_SYMBOL_COPY(LabelSymbol);
@@ -267,6 +269,7 @@ extern StringChainHash uniqueStringHash;
 
 extern ModuleSymbol* rootModule;
 extern ModuleSymbol* theProgram;
+extern ModuleSymbol* mainModule;
 extern ModuleSymbol* baseModule;
 extern ModuleSymbol* standardModule;
 extern Symbol *gNil;

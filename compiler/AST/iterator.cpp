@@ -101,13 +101,12 @@ replaceLocalsWithFields(IteratorInfo* ii,
     if (SymExpr* se = toSymExpr(ast)) {
       if (se->parentSymbol && (useSet.set_in(se) || defSet.set_in(se))) {
         CallExpr* call = toCallExpr(se->parentExpr);
+        Symbol* field = local2field.get(se->var);
         if (call && call->isPrimitive(PRIM_SET_REF)) {
-          Symbol* field = local2field.get(se->var);
           call->primitive = primitives[PRIM_GET_MEMBER];
           call->insertAtHead(ic);
           se->var = field;
         } else {
-          Symbol* field = local2field.get(se->var);
           VarSymbol* tmp = newTemp(se->var->type);
           Expr* stmt = se->getStmtExpr();
           BlockStmt* loop = NULL;
@@ -136,10 +135,32 @@ replaceLocalsWithFields(IteratorInfo* ii,
           }
           if (defSet.set_in(se) ||
               (call && call->isPrimitive(PRIM_SET_MEMBER))) {
-            if (loop) {
-              loop->insertAtHead(new CallExpr(PRIM_SET_MEMBER, ic, field, tmp));
+            ArgSymbol* arg = toArgSymbol(se->var);
+            if (arg && (arg->intent == INTENT_INOUT ||
+                        arg->intent == INTENT_OUT ||
+                        arg->intent == INTENT_REF)) {
+              // This is the writeback of a formal temp into its corresponding arg:
+              // (move x (= x _formal_tmp_x))
+              // Since these arguments have reference types, we use the code
+              // (move tmp0 (.v ic field))
+              // to load the passed-in pointer-to-actual-arg.  The C dereference
+              // operator (*) is applied to variables of ref type during code generation
+              // The read of the formal will be replaced by the same code. Thus, we have:
+              // (move tmp0 (.v ic field_x))
+              // (move tmp1 (.v ic field_x))
+              // (move tmp2 (.v ic field_formal_tmp_x))
+              // (move tmp0 (= tmp1 tmp2))
+              // which is sufficient.  
+              // The normal code below adds a writeback of the temp result of a call:
+              // (= ic field_x tmp0)
+              // but that is trivial, since ic->field_x and tmp0 are already equal.
+              stmt->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER_VALUE, ic, field)));
             } else {
-              stmt->insertAfter(new CallExpr(PRIM_SET_MEMBER, ic, field, tmp));
+              if (loop) {
+                loop->insertAtHead(new CallExpr(PRIM_SET_MEMBER, ic, field, tmp));
+              } else {
+                stmt->insertAfter(new CallExpr(PRIM_SET_MEMBER, ic, field, tmp));
+              }
             }
           }
           se->var = tmp;
@@ -268,13 +289,13 @@ buildAdvance(FnSymbol* fn,
 
   // change yields to labels and gotos
   int i = 2; // 1 = not started, 0 = finished
-  Vec<Symbol*> labels;
+  Vec<LabelSymbol*> labels;
   forv_Vec(BaseAST, ast, asts) {
     if (CallExpr* call = toCallExpr(ast)) {
       if (call->isPrimitive(PRIM_YIELD)) {
         call->insertBefore(new CallExpr(PRIM_SET_MEMBER, ic, ii->iclass->getField("more"), new_IntSymbol(i)));
-        call->insertBefore(new GotoStmt(GOTO_NORMAL, end));
-        Symbol* label = new LabelSymbol(astr("_jump_", istr(i)));
+        call->insertBefore(new GotoStmt(GOTO_ITER_END, end));
+        LabelSymbol* label = new LabelSymbol(astr("_jump_", istr(i)));
         call->insertBefore(new DefExpr(label));
         labels.add(label);
         call->remove();
@@ -291,8 +312,10 @@ buildAdvance(FnSymbol* fn,
   Symbol* tmp = newTemp(dtBool);
   Symbol* more = new VarSymbol("more", dtInt[INT_SIZE_32]);
 
-  forv_Vec(Symbol, label, labels) {
-    ii->advance->insertAtHead(new CondStmt(new SymExpr(tmp), new GotoStmt(GOTO_NORMAL, label)));
+  forv_Vec(LabelSymbol, label, labels) {
+    GotoStmt* igs = new GotoStmt(GOTO_ITER_RESUME, label);
+    label->iterResumeGoto = igs;
+    ii->advance->insertAtHead(new CondStmt(new SymExpr(tmp), igs));
     ii->advance->insertAtHead(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_EQUAL, more, new_IntSymbol(i++))));
   }
   ii->advance->insertAtHead(new CallExpr(PRIM_MOVE, more, new CallExpr(PRIM_GET_MEMBER_VALUE, ic, ii->iclass->getField("more"))));

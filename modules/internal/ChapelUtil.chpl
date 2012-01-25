@@ -1,4 +1,9 @@
+// ChapelUtil.chpl
+//
 // Internal data structures module
+//
+pragma "no use ChapelStandard"
+module ChapelUtil {
 
 param _INIT_STACK_SIZE = 8;
 
@@ -122,4 +127,6 @@ proc safeSub(a: ?t, b: t) {
       }
     }
   }
+}
+
 }

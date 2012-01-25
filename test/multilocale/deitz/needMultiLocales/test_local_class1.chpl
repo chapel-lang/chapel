@@ -4,11 +4,11 @@ class C {
 
 proc main {
   var c = new C();
-  _debugWriteln(here.id, " ", c.x);
+  writeln(here.id, " ", c.x);
   c.x = 18;
   on Locales(1) {
-    _debugWriteln(here.id, " ", c.x);
+    writeln(here.id, " ", c.x);
     c.x = 19;
   }
-  _debugWriteln(here.id, " ", c.x);
+  writeln(here.id, " ", c.x);
 }

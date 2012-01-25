@@ -9,9 +9,11 @@ use d;
 class vdist {
   // REQ over how many locales
   // todo: can the Dimensional do without this one?
-  var numLocales: int;
+  const numLocales: int;
 
-  // locale ID in our dimension of the locale this instance is on
+  // Locale ID in our dimension of the locale this instance is on.
+  // Because of these, it may be incorrect to share the same vdist
+  // object between multiple DimensionalDist objects.
   var localLocID = invalidLocID;
   var localLocIDlegit = false;
 }
@@ -34,8 +36,10 @@ class vdom {
 }
 
 class vlocdom {
+  type stoIndexT;
+  param stridable;
   // our copy of wholeR
-  var locWholeR;
+  var locWholeR: range(stoIndexT, stridable=stridable);
 }
 
 
@@ -63,10 +67,21 @@ proc vdist.dsiUsesLocalLocID1d() param return true;
 // If 'legit' is false, this is a privatized copy on a locale
 // that's not among our Dimensional distribution's target locales.
 proc vdist.dsiStoreLocalLocID1d(localLocID: locIdT, legit: bool) {
-  // no big deal, but currently we intend to update this just once
-  assert(this.localLocID == invalidLocID);
-  this.localLocID = localLocID;
-  this.localLocIDlegit = legit;
+  // This will get invoked multiple times if this vdist object
+  // is reused in another DimensionalDist object.
+  // In which case the cache better be the same for both uses.
+  if this.localLocID == invalidLocID {
+    // This is the intended use.
+    this.localLocID = localLocID;
+    this.localLocIDlegit = legit;
+  } else {
+    if this.localLocID == localLocID &&
+       this.localLocIDlegit == localLocIDlegit {
+      // alright, let it be for now
+    } else {
+      halt("Inconsistent locale cache in a ReplicatedDim descriptor object. One cause can be a reuse of such an object for different DimensionalDist objects whose target locales differ and/or this object is reused in a different dimension.");
+    }
+  }
 }
 
 // REQ if dsiUsesLocalLocID1d: retrieve the localLocID and its legitimacy
@@ -80,15 +95,17 @@ proc vdom.dsiSupportsPrivatization1d() param return true;
 
 // REQ if privatization is supported - same purpose as dsiGetPrivatizeData()
 proc vdom.dsiGetPrivatizeData1d() {
-  return 0; // no data
+  return tuple(wholeR);
 }
 
 // REQ if privatization is supported - same purpose as dsiPrivatize()
 // 'privDist' is the corresponding 1-d distribution descriptor,
 // privatized (if it supports privatization).
 proc vdom.dsiPrivatize1d(privDist, privatizeData) {
+  assert(privDist.locale == here); // sanity check
   return new vdom(idxType   = this.idxType,
-                  stridable = this.stridable);
+                  stridable = this.stridable,
+                  wholeR    = privatizeData(1));
 }
 
 // REQ if privatization is supported - same purpose as dsiGetReprivatizeData()
@@ -98,8 +115,9 @@ proc vdom.dsiGetReprivatizeData1d() {
 
 // REQ if privatization is supported - same purpose as dsiReprivatize()
 proc vdom.dsiReprivatize1d(other, reprivatizeData) {
-  assert(other.idxType   == this.idxType,
-         other.stridable == this.stridable);
+  if other.idxType   != this.idxType ||
+     other.stridable != this.stridable then
+    compilerError("inconsistent types in privatization");
 
   this.wholeR = reprivatizeData(1);
 }
@@ -109,6 +127,8 @@ proc vdom.dsiReprivatize1d(other, reprivatizeData) {
 proc vdom.dsiUsesLocalLocID1d() param return true;
 
 // REQ if dsiUsesLocalLocID1d: store the localLocID
+// This is invoked when a DimensionalDom is created, including
+// from DimensionalDom.dsiPrivatize(), but not DimensionalDom.dsiReprivatize()
 proc vdom.dsiStoreLocalLocID1d((localLocID, legit): (locIdT, bool)) {
   // no big deal, but currently we intend to update this just once
   assert(this.localLocID == invalidLocID);
@@ -145,8 +165,24 @@ proc vlocdom.dsiStoreLocalDescToPrivatizedGlobalDesc1d(privGlobDesc) {
 
 // REQ create a 1-d global domain descriptor for dsiNewRectangularDom()
 // where our dimension is a range(idxType, bounded, stridable)
-proc vdist.dsiNewRectangularDom1d(type idxType, param stridable: bool) {
+// stoIndexT is the same as in vdom.dsiNewLocalDom1d.
+proc vdist.dsiNewRectangularDom1d(type idxType, param stridable: bool,
+                                  type stoIndexT)
+{
+  // ignore stoIndexT - all we need is for other places to work out
   return new vdom(idxType, stridable);
+}
+
+// A nicety: produce a string showing the parameters.
+// This might get renamed in the future.
+proc vdist.toString()
+  return "ReplicatedDim(" + numLocales:string + ")";
+
+// REQ-2 create a 1-d global distribution descriptor that
+// describes a reindexing of 'this' from 'oldRange' to 'newRange'.
+// This is the 1-d counterpart of dsiCreateReindexDist().
+proc vdist.dsiCreateReindexDist1d(newRange: range(?), oldRange: range(?)) {
+  return this;
 }
 
 // REQ is this a replicated distribution?
@@ -156,12 +192,15 @@ proc vdom.dsiIsReplicated1d() param return true;
 // on a locale for the given locale index locId, for dsiNewRectangularDom().
 // Note: may be invoked multiple times/locales with the same locId.
 // - one for each point in the other dimension(s).
-proc vdom.dsiNewLocalDom1d(locId: locIdT) {
-  return new vlocdom(wholeR);
+// stoIndexT must be the index type of the range returned by
+// dsiSetLocalIndices1d().
+proc vdom.dsiNewLocalDom1d(type stoIndexT, locId: locIdT) {
+  return new vlocdom(stoIndexT, wholeR.stridable);
 }
 
 // REQ given our dimension of the array index, on which locale is it located?
 proc vdist.dsiIndexToLocale1d(indexx): locIdT {
+  assert(localLocIDlegit);
   return localLocID;
 }
 
@@ -184,11 +223,66 @@ proc vdom.dsiSetIndices1d(rangeArg: rangeT): void {
 // to an index in the range this returns).
 //
 // 'globDD' is the global domain descriptor (a 'vdom', in this case).
+// The return type must be range(stoIndexT, stridable= true or false)
+// where 'stoIndexT' is the arg of dsiNewLocalDom1d() that created 'this'.
 //
-proc vlocdom.dsiSetLocalIndices1d(globDD, locId: locIdT): globDD.rangeT {
+proc vlocdom.dsiSetLocalIndices1d(globDD, locId: locIdT) {
   locWholeR = globDD.wholeR;
   return locWholeR;
 }
+
+// REQ-2 - like dsiBuildRectangularDom: create a new global domain descriptor
+// for our dimension when the corresponding domain is created as a modification
+// of an existing domain, preserving the domain map.
+//
+// 'rangeArg' is what dsiSetIndices1d would be invoked on.
+// 'DD' is the distribution descriptor for 'this' (a 'vdist', in this case).
+// 'idxType' and 'stoIndexT' of the result are the same as for 'this'.
+//
+// Just like in the multi-dimensional case, we show here how to write
+// dsiBuildRectangularDom1d from existing methods.
+//
+proc vdom.dsiBuildRectangularDom1d(DD,
+                                   param stridable:bool,
+                                   rangeArg: range(idxType,
+                                                   BoundedRangeType.bounded,
+                                                   stridable))
+{
+  type dummy_stoIndexT = int; // use 'this.stoIndexT' when needed
+  const result = DD.dsiNewRectangularDom1d(this.idxType, stridable,
+                                           dummy_stoIndexT);
+  result.dsiSetIndices1d(rangeArg);
+  return result;
+}
+
+// REQ-2 - the local-descriptor companion to dsiBuildRectangularDom1d.
+//
+// Just like
+//   dsiBuildRectangularDom1d = dsiNewRectangularDom1d + dsiSetIndices1d,
+// we show here
+//   dsiBuildLocalDom1d       = dsiNewLocalDom1d       + dsiSetLocalIndices1d.
+//
+// 'idxType' and 'stoIndexT' of the result are the same as for 'this'.
+// 'newGlobDD' is the global domain descriptor (a 'vdom', in this case)
+// whose local descriptor is to be created.
+//
+// Returns (new local 1-d domain descriptor, new storage range),
+// which could be the results of dsiNewLocalDom1d() and
+// dsiSetLocalIndices1d(), resp.
+//
+proc vlocdom.dsiBuildLocalDom1d(newGlobDD, locId: locIdT) {
+  type  old_stoIndexT = this.stoIndexT;
+
+  const newLocDD = newGlobDD.dsiNewLocalDom1d(old_stoIndexT, locId);
+  const newStoRng = newLocDD.dsiSetLocalIndices1d(newGlobDD, locId);
+
+  return (newLocDD, newStoRng);
+}
+
+// REQ indicate whether "storage indices" returned by dsiSetLocalIndices1d()
+// correspond to "user indices". (In which case dsiAccess1d() returns
+// (as a part of a tuple) its argument without modification.)
+proc vdom.dsiStorageUsesUserIndices() param return true;
 
 // REQ given one dimension of the array index, return
 // (locale id, storage index on that locale) for that index.
@@ -202,21 +296,39 @@ proc vdom.dsiAccess1d(indexx: idxType): (locIdT, idxType) {
 
 // REQ yield the densified range to be used in the leader iterator
 // on this descriptor's locale, when there is only a single task.
-iter vlocdom.dsiMyDensifiedRangeForSingleTask1d(globDD) {
+iter vlocdom.dsiMyDensifiedRangeForSingleTask1d(globDD)
+  : dsiMyDensifiedRangeType1d(globDD)
+{
   yield 0:globDD.idxType..#locWholeR.length;
 }
 
 // REQ whether this distribution can handle only a single task per locale.
-proc vdom.dsiSingleTaskPerLocaleOnly1d() param return true;
+proc vdom.dsiSingleTaskPerLocaleOnly1d() param return false;
 
-// REQ unless dsiSingleTaskPerLocaleOnly() is true.
+// REQ unless dsiSingleTaskPerLocaleOnly1d() is true.
 // Yield the densified range to be used in the leader iterator
 // on this descriptor's locale for task 'taskid' of 0..#numTasks.
 // Note: should be densified w.r.t. the entire global range in this dimension.
-proc vlocdom.dsiMyDensifiedRangeForTaskID1d(globDD, taskid:int, numTasks:int) {
+proc vlocdom.dsiMyDensifiedRangeForTaskID1d(globDD, taskid:int, numTasks:int)
+  : dsiMyDensifiedRangeType1d(globDD)
+{
+  type IT = globDD.idxType;
   const (startIx, endIx) = _computeChunkStartEnd(locWholeR.length,
-                                                 numTasks, taskid+1);
-  return startIx - 1 .. endIx - 1;
+                                                 numTasks:IT, taskid:IT+1);
+  return (startIx:IT - 1) .. (endIx:IT - 1);
+}
+
+// REQ the range type returned/yielded by dsiMyDensifiedRangeForSingleTask1d()
+// and (if applicable) by dsiMyDensifiedRangeForTaskID1d().
+proc vlocdom.dsiMyDensifiedRangeType1d(globDD) type
+  return range(globDD.idxType);
+
+// REQ-2 if !dsiStorageUsesUserIndices
+// Returns a range of storage indices corresponding to the user indices
+// in 'sliceRange'. Can assume that all sliceRange indices are local.
+proc vlocdom.dsiLocalSliceStorageIndices1d(globDD, sliceRange) {
+  compilerError("should not be invoked");
+  return sliceRange; // but if needed, return this anyway
 }
 
 // REQ for iterating over array elements.
@@ -233,8 +345,7 @@ iter vdom.dsiSerialArrayIterator1d() {
 // REQ for array follower iterator.
 //
 // Yield pairs (locId, storageOffset) that traverse storage for
-// the array elements corresponding to the indices given by:
-//   unDensify(denseRange, wholeRangeInMyDimension)
+// the array elements corresponding to the indices given by undensRange,
 // preserving the order in which those indices occur.
 //
 // This is similar to dsiSerialArrayIterator1d(), except
@@ -244,9 +355,9 @@ iter vdom.dsiSerialArrayIterator1d() {
 // The latter is chosen to simplify dsiFollowerArrayIterator1d implementations.
 // It also eliminates one loop nest per dimension in DimensionalArr follower.
 //
-iter vdom.dsiFollowerArrayIterator1d(denseRange): (locIdT, idxType) {
-  // The dense indices are just fine here.
-  for i in unDensify(denseRange, wholeR) do
+iter vdom.dsiFollowerArrayIterator1d(undensRange): (locIdT, idxType) {
+  assert(localLocIDlegit);
+  for i in undensRange do
     yield (localLocID, i);
 }
 
@@ -255,16 +366,18 @@ iter vdom.dsiFollowerArrayIterator1d(denseRange): (locIdT, idxType) {
 // 1-d distribution - block
 
 class sdist {
-  const numLocales: int;
-
   // the type of bbStart, bbLength
   // (also (ab)used as the idxType of the domains created over this dist.)
   // (todo - straighten that out)
   type idxType;
 
+  const numLocales: int;
+
   // the .low and .length of BlockDist's 'boundingBox' for our dimension
   const bbStart: idxType;
   const bbLength: idxType;
+
+  proc boundingBox return bbStart .. (bbStart + bbLength - 1);
 }
 
 class sdom {
@@ -282,10 +395,22 @@ class sdom {
 }
 
 class slocdom {
-  const myLocId: locIdT; // presently unused
   var myRange;
 }
 
+
+/////////// user constructor, for convenience
+
+proc sdist.sdist(numLocales: int, boundingBox: range(?),
+                 type idxType = boundingBox.idxType)
+{
+  if !isBoundedRange(boundingBox) then
+    compilerError("The 1-d block descriptor constructor was passed an unbounded range as the boundingBox");
+
+  this.numLocales = numLocales;
+  this.bbStart = boundingBox.low;
+  this.bbLength = boundingBox.length;
+}
 
 /////////// privatization - start
 
@@ -311,13 +436,14 @@ proc sdist.dsiUsesLocalLocID1d() param return false;
 proc sdom.dsiSupportsPrivatization1d() param return true;
 
 proc sdom.dsiGetPrivatizeData1d() {
-  return 0;  // no data
+  return tuple(wholeR);
 }
 
 proc sdom.dsiPrivatize1d(privDist, privatizeData) {
   assert(privDist.locale == here); // sanity check
   return new sdom(idxType   = this.idxType,
                   stridable = this.stridable,
+                  wholeR    = privatizeData(1),
                   pdist     = privDist);
 }
 
@@ -326,8 +452,9 @@ proc sdom.dsiGetReprivatizeData1d() {
 }
 
 proc sdom.dsiReprivatize1d(other, reprivatizeData) {
-  assert(other.idxType   == this.idxType,
-         other.stridable == this.stridable);
+  if other.idxType   != this.idxType ||
+     other.stridable != this.stridable then
+    compilerError("inconsistent types in privatization");
 
   this.wholeR = reprivatizeData(1);
 }
@@ -341,16 +468,35 @@ proc sdom.dsiLocalDescUsesPrivatizedGlobalDesc1d() param return false;
 
 // Constructor. idxType is inferred from the 'bbLow' argument
 // (alternative: default to 'int' instead).
-proc sdist.sdist(nLocales, bbLow, bbHigh, type idxType = bbLow.type) {
-  if !(bbLow <= bbHigh) then halt("'sdist' distribution must have a non-empty bounding box between bbLow and bbHigh; got ", bbLow, " .. ", bbHigh);
-  assert(nLocales > 0); // so we can cast it to any int type
-  this.numLocales = nLocales;
-  this.bbStart = bbLow;
-  this.bbLength = (bbHigh - bbLow + 1):idxType;
+proc sdist.sdist(numLocales, boundingBoxLow, boundingBoxHigh, type idxType = boundingBoxLow.type) {
+  if !(boundingBoxLow <= boundingBoxHigh) then halt("'sdist' distribution must have a non-empty bounding box between boundingBoxLow and boundingBoxHigh; got ", boundingBoxLow, " .. ", boundingBoxHigh);
+  assert(numLocales > 0); // so we can cast it to any int type
+  this.numLocales = numLocales;
+  this.bbStart = boundingBoxLow;
+  this.bbLength = (boundingBoxHigh - boundingBoxLow + 1):idxType;
   assert(this.bbLength > 0);
 }
 
-proc sdist.dsiNewRectangularDom1d(type idxType, param stridable: bool) {
+proc sdist.toString()
+  return "BlockDim(" + numLocales:string + ", " + boundingBox:string + ")";
+
+proc sdist.dsiCreateReindexDist1d(newRange: range(?), oldRange: range(?)) {
+  const oldDesc = this;
+  if oldRange.stride != newRange.stride then
+    halt("reindexing from ", oldRange, " to ", newRange,
+         " is not supported by ", oldDesc.toString,
+         " due to a change in stride");
+  // TODO: this is overflow-oblivious. See Block.dsiCreateReindexDist().
+  const delta = newRange.first - oldRange.first;
+  return new sdist(idxType     = oldDesc.idxType,
+                   numLocales  = oldDesc.numLocales,
+                   boundingBox = oldDesc.boundingBox + delta);
+}
+
+proc sdist.dsiNewRectangularDom1d(type idxType, param stridable: bool,
+                                  type stoIndexT)
+{
+  // ignore stoIndexT - all we need is for other places to work out
   if idxType != this.idxType then
     compilerError("The index type ", typeToString(idxType),
                   " does not match the index type ",typeToString(this.idxType),
@@ -360,25 +506,27 @@ proc sdist.dsiNewRectangularDom1d(type idxType, param stridable: bool) {
 
 proc sdom.dsiIsReplicated1d() param return false;
 
-proc sdom.dsiNewLocalDom1d(locId: locIdT) {
-  var defaultVal: rangeT;
-  return new slocdom(myLocId = locId, myRange = defaultVal);
+proc sdom.dsiNewLocalDom1d(type stoIndexT, locId: locIdT) {
+  var defaultVal: range(stoIndexT, stridable=this.stridable);
+  return new slocdom(myRange = defaultVal);
 }
 
 proc sdist.dsiIndexToLocale1d(indexx): locIdT {
   if indexx <= bbStart then
     return 0;
 
+  const index0 = indexx - bbStart;  // always > 0
+
   // (numLocales-1) is the answer when
-  //   indexx >= bbStart + (numLocales-1) * (bbLength+1) / numLocales
+  //   index0 >= (numLocales-1) * (bbLength+1) / numLocales
   // whose r.h.s. could be stored in 'sdist', trading memory for computation.
-  // We simplify the condition to 'indexx >= bbStart + bbLength'.
-  // (Note: (bbStart + bbLength - 1) will not always map to (numLocales - 1)).
-  // If the condition doesn't hold, the formula gives the answer.
+  // We simplify the condition to 'index0 >= bbLength'.
+  // (Note: if index0 == bbLength - 1, the answer may not be (numLocales - 1)).
+  // If the condition doesn't hold, the later formula gives the answer.
   // (Compared to the formula in Block.targetLocsIdx, we run comparisons
   // *before* multiplying and dividing.)
   //
-  if indexx >= bbStart + bbLength then
+  if index0 >= bbLength then
     return numLocales - 1;
 
   // need to think what to do if numLocales is not int
@@ -387,7 +535,7 @@ proc sdist.dsiIndexToLocale1d(indexx): locIdT {
     then uint(64)
     else numLocales.type;
 
-  const result = (indexx - bbStart) * numLocales:adjT / bbLength;
+  const result = index0 * numLocales:adjT / bbLength;
   assert(0 <= result && result < numLocales:adjT);
   return result:locIdT;
 }
@@ -403,19 +551,45 @@ proc sdom._dsiComputeMyRange(locId): rangeT {
   // see LocBlock.LocBlock()
   const (blo, bhi) = _computeBlock(dist.bbLength, dist.numLocales,
            locId, max(dom.idxType), min(dom.idxType), dist.bbStart);
-  const myChunk = [blo..bhi];
+  const myChunk = blo..bhi;
   // see Block.getChunk()
-  const chunk = myChunk(dom.wholeR);
-  return chunk.dim(1);
+  const chunk = dom.wholeR(myChunk);
+  return chunk;
 }
 
-proc slocdom.dsiSetLocalIndices1d(globDD, locId): globDD.rangeT {
-  // todo: create local *distribution* descriptors for sdist, and
-  // store myChunk there, like it's done in BlockDist?
-
+proc slocdom.dsiSetLocalIndices1d(globDD, locId: locIdT) {
   myRange = globDD._dsiComputeMyRange(locId);
   return myRange;
 }
+
+/////////////////////////////////
+
+proc sdom.dsiBuildRectangularDom1d(DD,
+                                   param stridable:bool,
+                                   rangeArg: range(idxType,
+                                                   BoundedRangeType.bounded,
+                                                   stridable))
+{
+  // There does not seem to be any optimizations from merging the two calls.
+  type dummy_stoIndexT = int;
+  const result = DD.dsiNewRectangularDom1d(this.idxType, stridable,
+                                           dummy_stoIndexT);
+  result.dsiSetIndices1d(rangeArg);
+  return result;
+}
+
+proc slocdom.dsiBuildLocalDom1d(newGlobDD, locId: locIdT) {
+  type  old_stoIndexT = this.myRange.idxType; // essentially 'this.stoIndexT'
+
+  const newLocDD = newGlobDD.dsiNewLocalDom1d(old_stoIndexT, locId);
+  const newStoRng = newLocDD.dsiSetLocalIndices1d(newGlobDD, locId);
+
+  return (newLocDD, newStoRng);
+}
+
+/////////////////////////////////
+
+proc sdom.dsiStorageUsesUserIndices() param return true;
 
 proc sdom.dsiAccess1d(indexx: idxType): (locIdT, idxType) {
   return (pdist.dsiIndexToLocale1d(indexx), indexx);
@@ -423,7 +597,7 @@ proc sdom.dsiAccess1d(indexx: idxType): (locIdT, idxType) {
 
 iter slocdom.dsiMyDensifiedRangeForSingleTask1d(globDD) {
   const locRange = densify(myRange, globDD.wholeR, userErrors=false);
-  yield locRange;
+  yield locRange: range(globDD.idxType);
 }
 
 proc sdom.dsiSingleTaskPerLocaleOnly1d() param return false;
@@ -439,6 +613,9 @@ proc slocdom.dsiMyDensifiedRangeForTaskID1d(globDD, taskid:int, numTasks:int) {
   return lo..hi;
 }
 
+proc slocdom.dsiMyDensifiedRangeType1d(globDD) type
+  return range(globDD.idxType);
+
 iter sdom.dsiSerialArrayIterator1d() {
   // The Block distribution assigns indices to locales contiguously and
   // so that (i1<i2) => (locId1<=locId2). This is defined by the domain map.
@@ -448,15 +625,16 @@ iter sdom.dsiSerialArrayIterator1d() {
   // already happens to reflect the desired direction.
 
   for locId in (0..#pdist.numLocales) by sgn(wholeR.stride) {
-    // We do not go to slocdom for myRange - see above for rationale.
+    // We do not go to slocdom for myRange because (a) recomputing it
+    // is probably cheaper than going to a remote locale, and
+    // (b) we do not store slocdom objects in sdom.
     const localRange = _dsiComputeMyRange(locId);
 //writeln("sdom.dsiSerialArrayIterator1d  ", locId, ", ", localRange);
     yield (locId, localRange);
   }
 }
 
-iter sdom.dsiFollowerArrayIterator1d(denseRange): (locIdT, idxType) {
-  const undensRange = unDensify(denseRange, wholeR);
+iter sdom.dsiFollowerArrayIterator1d(undensRange): (locIdT, idxType) {
 //writeln("sdom.dsiFollowerArrayIterator1d  undensRange ", undensRange);
 
   const heuristic_weight_rangepoint = 2; // measure of work in (a) below
@@ -484,6 +662,7 @@ iter sdom.dsiFollowerArrayIterator1d(denseRange): (locIdT, idxType) {
     } else {
       assert(lowLocId < highLocId);
       for locId in lowLocId .. highLocId by sgn(undensRange.stride) {
+        // We do not go to slocdom for myRange - same rationale as above.
         const thisLocaleRange = _dsiComputeMyRange(locId);
         const localRangeToFollow = undensRange(thisLocaleRange);
 //writeln("sdom.dsiFollowerArrayIterator1d case B2  locId ", locId, "  localRangeToFollow ", localRangeToFollow);

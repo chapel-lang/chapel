@@ -19,8 +19,8 @@ iter dynamic(c:range(?), chunkSize:int, numTasks:int) {
 
 // Leader iterator
 
-iter dynamic(param tag:iterator, c:range(?), chunkSize:int, numTasks:int=0) 
-where tag == iterator.leader
+iter dynamic(param tag:iterKind, c:range(?), chunkSize:int, numTasks:int=0) 
+where tag == iterKind.leader
 {   
   // Check if the number of tasks is 0, in that case it returns a default value  
   const nTasks=defaultNumTasks(numTasks);
@@ -57,13 +57,13 @@ where tag == iterator.leader
 }
 
 // Follower
-iter dynamic(param tag:iterator, c:range(?), chunkSize:int, numTasks:int, follower) 
-where tag == iterator.follower
+iter dynamic(param tag:iterKind, c:range(?), chunkSize:int, numTasks:int, followThis) 
+where tag == iterKind.follower
 {
   type rType=c.type;
-  const current:rType=unDensify(follower(1),c);
+  const current:rType=unDensify(followThis(1),c);
   if (verbose) then
-    writeln("Follower received range ", follower, " ; shifting to ", current);
+    writeln("Follower received range ", followThis, " ; shifting to ", current);
   for i in current do {
     yield i;
   }
@@ -85,8 +85,8 @@ iter guided(c:range(?), numTasks:int) {
 // Parallel iterator
 
 // Leader iterator
-iter guided(param tag:iterator, c:range(?), numTasks:int=0)
-where tag == iterator.leader 
+iter guided(param tag:iterKind, c:range(?), numTasks:int=0)
+where tag == iterKind.leader 
 {   
   // Check if the number of tasks is 0, in that case it returns a default value  
   const nTasks=defaultNumTasks(numTasks);
@@ -123,14 +123,14 @@ where tag == iterator.leader
 }
 
 // Follower
-iter guided(param tag:iterator, c:range(?), numTasks:int, follower)
-where tag == iterator.follower
+iter guided(param tag:iterKind, c:range(?), numTasks:int, followThis)
+where tag == iterKind.follower
 
 {
   type rType=c.type;
-  const current:rType=unDensify(follower(1),c);
+  const current:rType=unDensify(followThis(1),c);
   if verbose then
-    writeln("Follower received range ", follower, " ; shifting to ", current);
+    writeln("Follower received range ", followThis, " ; shifting to ", current);
   for i in current do {
     yield i;
   }
@@ -155,8 +155,8 @@ config param methodStealing:int=0;
 
 
 // Leader iterator
-iter adaptive(param tag:iterator, c:range(?), numTasks:int=0)
-where tag == iterator.leader
+iter adaptive(param tag:iterKind, c:range(?), numTasks:int=0)
+where tag == iterKind.leader
   
 {   
   if (methodStealing > 2 || methodStealing < 0) then
@@ -183,7 +183,7 @@ where tag == iterator.leader
   
     const factorSteal:int=2;
     var moreWork:bool=true; // A global var to control the termination
-    var nVisitedVictims: int=0; 
+
  
     // Variables to put a barrier to ensure the initial range is computed on each Thread
     var barrierCount$:sync int=0;
@@ -215,6 +215,7 @@ where tag == iterator.leader
 
       // Step3: Task tid finished its work, so it will try to steal from a neighbor
 
+      var nVisitedVictims:int=0; 
       var victim=(tid+1) % nTasks; 
       var stealFailed:bool=false;
 
@@ -272,7 +273,7 @@ where tag == iterator.leader
 	  // If here, then it can have failed the stealing intent at the victim (method 1), 
 	  // or we have exhausted the victim range (methods 0, 2)
 
-	  if (methodStealing==0 || methodStealing==2 || methodStealing==1 && stealFailed) then { 
+	  if (methodStealing==0 || methodStealing==2 || (methodStealing==1 && stealFailed)) then { 
 	    nVisitedVictims += 1; // Signal that there is no more work in victim
 	    if verbose then 
 	      writeln("Failed Stealing intent at tid ", tid," with victim ", victim, " and total no. of visited victims ", nVisitedVictims);
@@ -328,13 +329,13 @@ where tag == iterator.leader
 }
 
 // Follower
-iter adaptive(param tag:iterator, c:range(?), numTasks:int, follower)
-where tag == iterator.follower
+iter adaptive(param tag:iterKind, c:range(?), numTasks:int, followThis)
+where tag == iterKind.follower
 {
   type rType=c.type;
-  var current:rType=unDensify(follower(1),c);
+  var current:rType=unDensify(followThis(1),c);
   if (verbose) then
-    writeln("Follower received range ", follower, " ; shifting to ", current);
+    writeln("Follower received range ", followThis, " ; shifting to ", current);
   for i in current do {
     yield i;
   }

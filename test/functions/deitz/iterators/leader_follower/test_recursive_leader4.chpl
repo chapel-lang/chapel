@@ -5,7 +5,7 @@ iter bar(n: int, i: int) {
     yield i;
 }
 
-iter bar(param tag: iterator, n: int, i: int): int where tag == iterator.leader {
+iter bar(param tag: iterKind, n: int, i: int): int where tag == iterKind.leader {
   if i == 1 then
     coforall j in 2..n do
       on Locales((j-1)%numLocales) do
@@ -14,8 +14,8 @@ iter bar(param tag: iterator, n: int, i: int): int where tag == iterator.leader 
   yield i;
 }
 
-iter bar(param tag: iterator, follower, n: int, i: int) where tag == iterator.follower {
-  yield follower;
+iter bar(param tag: iterKind, followThis, n: int, i: int) where tag == iterKind.follower {
+  yield followThis;
 }
 
 config const n: int = 8;

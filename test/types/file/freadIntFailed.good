@@ -1,1 +1,1 @@
-freadIntFailed.chpl:5: error: read failed: eof
+freadIntFailed.chpl:2: error: Unhandled system error: Invalid argument (22) in file.reader with path _test_freadIntFailed.txt

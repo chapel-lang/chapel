@@ -1,7 +1,7 @@
-_extern type c_int;
+extern type ext_c_int_t;
 
-_extern var my_extern_c_int: c_int;
+extern var my_extern_c_int: ext_c_int_t;
 
-_extern proc print_c_int(x: c_int);
+extern proc print_c_int(x: ext_c_int_t);
 
 print_c_int(my_extern_c_int);

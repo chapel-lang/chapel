@@ -1,188 +1,193 @@
-_extern const INFINITY: real(64);
-_extern const NAN: real(64);
+extern const INFINITY: real(64);
+extern const NAN: real(64);
 
 pragma "inline" proc abs(i : int(?w)) return if i < 0 then -i else i;
 pragma "inline" proc abs(i : uint(?w)) return i;
+proc abs(param i : integral) param return if i < 0 then -i else i;
 pragma "inline" proc abs(x : complex(?w)) return sqrt(x.re*x.re + x.im*x.im);
 
-// We can't use "numeric" here because signum is not defined on a complex type.
-// It might be good to have a "scalar" class to encompass integral and real but not complex.
-pragma "inline" proc sgn(i : integral) return (i > 0) : i.type - (i < 0) : i.type;
-pragma "inline" proc sgn(x : real(?w)) return (x > 0.0) : x.type - (x < 0.0) : x.type;
+pragma "inline" proc sgn(i : int(?w))
+  return ((i > 0) : int(8) - (i < 0) : int(8)) : int(8);
+pragma "inline" proc sgn(i : uint(?w))
+  return (i > 0) : uint(8);
+proc sgn(param i : integral) param
+  return if i > 0 then 1 else if i == 0 then 0 else -1;
+pragma "inline" proc sgn(x : real(?w))
+  return ((x > 0.0) : int(8) - (x < 0.0) : int(8)) : int(8);
 
 pragma "inline" proc conjg(a: complex(?w)) return (a.re, -a.im):complex;
 
-_extern proc isinf(x: real(64)): bool;
-_extern proc isinf(x: real(32)): bool;
-_extern proc isfinite(x: real(64)): bool;
-_extern proc isfinite(x: real(32)): bool;
-_extern proc isnan(x: real(64)): bool;
-_extern proc isnan(x: real(32)): bool;
+extern proc isinf(x: real(64)): bool;
+extern proc isinf(x: real(32)): bool;
+extern proc isfinite(x: real(64)): bool;
+extern proc isfinite(x: real(32)): bool;
+extern proc isnan(x: real(64)): bool;
+extern proc isnan(x: real(32)): bool;
 
-_extern proc acos(x: real(64)): real(64);
-_extern proc acosh(x: real(64)): real(64);
-_extern proc asin(x: real(64)): real(64);
-_extern proc asinh(x: real(64)): real(64);
-_extern proc atan(x: real(64)): real(64);
-_extern proc atan2(y: real(64), x: real(64)): real(64);
-_extern proc atanh(x: real(64)): real(64);
-_extern proc cbrt(x: real(64)): real(64);
-_extern proc ceil(x: real(64)): real(64);
-_extern proc cos(x: real(64)): real(64);
-_extern proc cosh(x: real(64)): real(64);
-_extern proc erf(x: real(64)): real(64);
-_extern proc erfc(x: real(64)): real(64);
-_extern proc exp(x: real(64)): real(64);
-_extern proc exp2(x: real(64)): real(64);
-_extern proc expm1(x: real(64)): real(64);
-_extern proc fabs(x: real(64)): real(64);
-_extern proc floor(x: real(64)): real(64);
-_extern proc lgamma(x: real(64)): real(64);
-_extern proc log(x: real(64)): real(64);
-_extern proc log2(x: real(64)): real(64);
-_extern proc log10(x: real(64)): real(64);
-_extern proc log1p(x: real(64)): real(64);
-_extern proc nearbyint(x: real(64)): real(64);
-_extern proc rint(x: real(64)): real(64);
-_extern proc round(x: real(64)): real(64);
-_extern proc sin(x: real(64)): real(64);
-_extern proc sinh(x: real(64)): real(64);
-_extern proc sqrt(x: real(64)): real(64);
-_extern proc tan(x: real(64)): real(64);
-_extern proc tanh(x: real(64)): real(64);
-_extern proc tgamma(x: real(64)): real(64);
-_extern proc trunc(x: real(64)): real(64);
+extern proc acos(x: real(64)): real(64);
+extern proc acosh(x: real(64)): real(64);
+extern proc asin(x: real(64)): real(64);
+extern proc asinh(x: real(64)): real(64);
+extern proc atan(x: real(64)): real(64);
+extern proc atan2(y: real(64), x: real(64)): real(64);
+extern proc atanh(x: real(64)): real(64);
+extern proc cbrt(x: real(64)): real(64);
+extern proc ceil(x: real(64)): real(64);
+extern proc cos(x: real(64)): real(64);
+extern proc cosh(x: real(64)): real(64);
+extern proc erf(x: real(64)): real(64);
+extern proc erfc(x: real(64)): real(64);
+extern proc exp(x: real(64)): real(64);
+extern proc exp2(x: real(64)): real(64);
+extern proc expm1(x: real(64)): real(64);
+extern proc fabs(x: real(64)): real(64);
+extern proc floor(x: real(64)): real(64);
+extern proc lgamma(x: real(64)): real(64);
+extern proc log(x: real(64)): real(64);
+extern proc log2(x: real(64)): real(64);
+extern proc log10(x: real(64)): real(64);
+extern proc log1p(x: real(64)): real(64);
+extern proc nearbyint(x: real(64)): real(64);
+extern proc rint(x: real(64)): real(64);
+extern proc round(x: real(64)): real(64);
+extern proc sin(x: real(64)): real(64);
+extern proc sinh(x: real(64)): real(64);
+extern proc sqrt(x: real(64)): real(64);
+extern proc tan(x: real(64)): real(64);
+extern proc tanh(x: real(64)): real(64);
+extern proc tgamma(x: real(64)): real(64);
+extern proc trunc(x: real(64)): real(64);
 
 pragma "inline" proc acos(x : real(32)) {
-  _extern proc acosf(x: real(32)): real(32);
+  extern proc acosf(x: real(32)): real(32);
   return acosf(x);
 }
 pragma "inline" proc acosh(x : real(32)) {
-  _extern proc acoshf(x: real(32)): real(32);
+  extern proc acoshf(x: real(32)): real(32);
   return acoshf(x);
 }
 pragma "inline" proc asin(x : real(32)) {
-  _extern proc asinf(x: real(32)): real(32);
+  extern proc asinf(x: real(32)): real(32);
   return asinf(x);
 }
 pragma "inline" proc asinh(x : real(32)) {
-  _extern proc asinhf(x: real(32)): real(32);
+  extern proc asinhf(x: real(32)): real(32);
   return asinhf(x);
 }
 pragma "inline" proc atan(x : real(32)) {
-  _extern proc atanf(x: real(32)): real(32);
+  extern proc atanf(x: real(32)): real(32);
   return atanf(x);
 }
 pragma "inline" proc atan2(y : real(32), x: real(32)) {
-  _extern proc atan2f(y: real(32), x: real(32)): real(32);
+  extern proc atan2f(y: real(32), x: real(32)): real(32);
   return atan2f(y, x);
 }
 pragma "inline" proc atanh(x : real(32)) {
-  _extern proc atanhf(x: real(32)): real(32);
+  extern proc atanhf(x: real(32)): real(32);
   return atanhf(x);
 }
 pragma "inline" proc cbrt(x : real(32)) {
-  _extern proc cbrtf(x: real(32)): real(32);
+  extern proc cbrtf(x: real(32)): real(32);
   return cbrtf(x);
 }
 pragma "inline" proc ceil(x : real(32)) {
-  _extern proc ceilf(x: real(32)): real(32);
+  extern proc ceilf(x: real(32)): real(32);
   return ceilf(x);
 }
 pragma "inline" proc cos(x : real(32)) {
-  _extern proc cosf(x: real(32)): real(32);
+  extern proc cosf(x: real(32)): real(32);
   return cosf(x);
 }
 pragma "inline" proc cosh(x : real(32)) {
-  _extern proc coshf(x: real(32)): real(32);
+  extern proc coshf(x: real(32)): real(32);
   return coshf(x);
 }
 pragma "inline" proc erf(x : real(32)) {
-  _extern proc erff(x: real(32)): real(32);
+  extern proc erff(x: real(32)): real(32);
   return erff(x);
 }
 pragma "inline" proc erfc(x : real(32)) {
-  _extern proc erfcf(x: real(32)): real(32);
+  extern proc erfcf(x: real(32)): real(32);
   return erfcf(x);
 }
 pragma "inline" proc exp(x : real(32)) {
-  _extern proc expf(x: real(32)): real(32);
+  extern proc expf(x: real(32)): real(32);
   return expf(x);
 }
 pragma "inline" proc exp2(x : real(32)) {
-  _extern proc exp2f(x: real(32)): real(32);
+  extern proc exp2f(x: real(32)): real(32);
   return exp2f(x);
 }
 pragma "inline" proc expm1(x : real(32)) {
-  _extern proc expm1f(x: real(32)): real(32);
+  extern proc expm1f(x: real(32)): real(32);
   return expm1f(x);
 }
 pragma "inline" proc abs(x : real(32)) {
-  _extern proc fabsf(x: real(32)): real(32);
+  extern proc fabsf(x: real(32)): real(32);
   return fabsf(x);
 }
 pragma "inline" proc floor(x : real(32)) {
-  _extern proc floorf(x: real(32)): real(32);
+  extern proc floorf(x: real(32)): real(32);
   return floorf(x);
 }
 pragma "inline" proc lgamma(x : real(32)) {
-  _extern proc lgammaf(x: real(32)): real(32);
+  extern proc lgammaf(x: real(32)): real(32);
   return lgammaf(x);
 }
 pragma "inline" proc log(x : real(32)) {
-  _extern proc logf(x: real(32)): real(32);
+  extern proc logf(x: real(32)): real(32);
   return logf(x);
 }
 pragma "inline" proc log2(x : real(32)) {
-  _extern proc log2f(x: real(32)): real(32);
+  extern proc log2f(x: real(32)): real(32);
   return log2f(x);
 }
 pragma "inline" proc log10(x : real(32)) {
-  _extern proc log10f(x: real(32)): real(32);
+  extern proc log10f(x: real(32)): real(32);
   return log10f(x);
 }
 pragma "inline" proc log1p(x : real(32)) {
-  _extern proc log1pf(x: real(32)): real(32);
+  extern proc log1pf(x: real(32)): real(32);
   return log1pf(x);
 }
 pragma "inline" proc nearbyint(x : real(32)) {
-  _extern proc nearbyintf(x: real(32)): real(32);
+  extern proc nearbyintf(x: real(32)): real(32);
   return nearbyintf(x);
 }
 pragma "inline" proc rint(x : real(32)) {
-  _extern proc rintf(x: real(32)): real(32);
+  extern proc rintf(x: real(32)): real(32);
   return rintf(x);
 }
 pragma "inline" proc round(x : real(32)) {
-  _extern proc roundf(x: real(32)): real(32);
+  extern proc roundf(x: real(32)): real(32);
   return roundf(x);
 }
 pragma "inline" proc sin(x: real(32)) {
-  _extern proc sinf(x: real(32)): real(32);
+  extern proc sinf(x: real(32)): real(32);
   return sinf(x);
 }
 pragma "inline" proc sinh(x : real(32)) {
-  _extern proc sinhf(x: real(32)): real(32);
+  extern proc sinhf(x: real(32)): real(32);
   return sinhf(x);
 }
 pragma "inline" proc sqrt(x : real(32)): real(32) {
-  _extern proc sqrtf(x: real(32)): real(32);
+  extern proc sqrtf(x: real(32)): real(32);
   return sqrtf(x);
 }
 pragma "inline" proc tan(x : real(32)) {
-  _extern proc tanf(x: real(32)): real(32);
+  extern proc tanf(x: real(32)): real(32);
   return tanf(x);
 }
 pragma "inline" proc tanh(x : real(32)) {
-  _extern proc tanhf(x: real(32)): real(32);
+  extern proc tanhf(x: real(32)): real(32);
   return tanhf(x);
 }
 pragma "inline" proc tgamma(x : real(32)) {
-  _extern proc tgammaf(x: real(32)): real(32);
+  extern proc tgammaf(x: real(32)): real(32);
   return tgammaf(x);
 }
 pragma "inline" proc trunc(x : real(32)) {
-  _extern proc truncf(x: real(32)): real(32);
+  extern proc truncf(x: real(32)): real(32);
   return truncf(x);
 }
 

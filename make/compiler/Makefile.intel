@@ -36,9 +36,15 @@ PROFILE_LFLAGS = -pg
 
 COMP_CFLAGS = $(CFLAGS)
 COMP_CFLAGS_NONCHPL = -wr111,193,1418,1419,2215,2259,170
-RUNTIME_CFLAGS = -std=c99 $(CFLAGS) -wr181
+RUNTIME_CFLAGS = -std=c99 $(CFLAGS) -wr181,188
 RUNTIME_GEN_CFLAGS = $(RUNTIME_CFLAGS)
 GEN_CFLAGS = -std=c99 -fp-model strict -wr592
+# NOTE: These are only supported for Linux
+GEN_STATIC_FLAG = -Bstatic
+GEN_DYNAMIC_FLAG = -Bdynamic
+LIB_STATIC_FLAG =
+LIB_DYNAMIC_FLAG = -shared
+SHARED_LIB_CFLAGS = -fpic
 
 #
 # Warnings squashed for flex-/bison-generated code

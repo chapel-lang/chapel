@@ -118,8 +118,8 @@ insertLineNumber(CallExpr* call) {
         call->insertAtTail(gCLine);
         call->insertAtTail(gCFile);
       } else {
-        call->insertAtTail(new_IntSymbol(call->lineno));
-        call->insertAtTail(new_StringSymbol(call->getModule()->filename));
+        call->insertAtTail(new_IntSymbol(call->linenum()));
+        call->insertAtTail(new_StringSymbol(call->fname()));
       }
     }
   } else if (file) {

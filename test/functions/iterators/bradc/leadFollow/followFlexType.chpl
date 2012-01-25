@@ -3,13 +3,13 @@ class C {
     yield 0.0;
   }
 
-  iter these(param tag: iterator) where tag == iterator.leader {
+  iter these(param tag: iterKind) where tag == iterKind.leader {
     var D: domain(1, int(32)) = [1..10];
     yield D;
   }
 
-  iter these(param tag: iterator, follower) where tag == iterator.follower {
-    for i in follower do
+  iter these(param tag: iterKind, followThis) where tag == iterKind.follower {
+    for i in followThis do
       yield i:real;
   }
 }
@@ -19,13 +19,13 @@ class D {
     yield 0.0;
   }
 
-  iter these(param tag: iterator) where tag == iterator.leader {
+  iter these(param tag: iterKind) where tag == iterKind.leader {
     var D: domain(1, int(64)) = [1..10:int(64)];
     yield D;
   }
 
-  iter these(param tag: iterator, follower) where tag == iterator.follower {
-    for i in follower do
+  iter these(param tag: iterKind, followThis) where tag == iterKind.follower {
+    for i in followThis do
       yield (-i):real;
   }
 }

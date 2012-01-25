@@ -40,34 +40,13 @@ static void add_to_where_clause(ArgSymbol* formal, Expr* expr, CallExpr* query);
 static void fixup_query_formals(FnSymbol* fn);
 static void change_method_into_constructor(FnSymbol* fn);
 
-static void warn_proc_iter(void)
-{
-  forv_Vec(FnSymbol, fn, gFnSymbols)
-  {
-    if (!(fn->hasFlag(FLAG_TEMP) || fn->hasFlag(FLAG_COMPILER_NESTED_FUNCTION))
-        && !fn->hasFlag(FLAG_PROC_ITER_KW_USED))
-    {
-      if (fn->hasFlag(FLAG_ITERATOR_FN)) {
-        INT_ASSERT(!fn->hasFlag(FLAG_EXTERN)); // should be ensured by parser
-        USR_WARN(fn,"the 'def' keyword is deprecated - replace it with 'iter'");
-      } else {
-        USR_WARN(fn,"the 'def' keyword is deprecated - replace it with 'proc'");
-      }
-    }
-  }
-}
-
 void normalize(void) {
   // tag iterators and replace delete statements with calls to ~chpl_destroy
   forv_Vec(CallExpr, call, gCallExprs) {
-    // ProcIter: after transition this entire 'if' should disappear
     if (call->isPrimitive(PRIM_YIELD)) {
       FnSymbol* fn = toFnSymbol(call->parentSymbol);
-      if (!fn) {
-        USR_FATAL_CONT(call, "yield statement must be in a function");
-      } else {
-        fn->addFlag(FLAG_ITERATOR_FN);
-      }
+      // violations should have caused USR_FATAL in semanticChecks.cpp
+      INT_ASSERT(fn && fn->hasFlag(FLAG_ITERATOR_FN));
     }
     if (call->isPrimitive(PRIM_DELETE)) {
       VarSymbol* tmp = newTemp();
@@ -82,10 +61,6 @@ void normalize(void) {
       call->remove();
     }
   }
-  USR_STOP();  // ProcIter: remove this after transition (not needed)
-
-  // ProcIter: remove this entire 'if' after transition
-  warn_proc_iter();
 
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     SET_LINENO(fn);
@@ -229,7 +204,7 @@ checkUseBeforeDefs() {
                 (sym->var->defPoint->parentSymbol == fn ||
                  (sym->var->defPoint->parentSymbol == mod && mod->initFn == fn))) {
               if (!defined.set_in(sym->var) && !undefined.set_in(sym->var)) {
-                if (strcmp(sym->var->name, "this")) {
+                if (!sym->var->hasFlag(FLAG_ARG_THIS)) {
                   USR_FATAL_CONT(sym, "'%s' used before defined (first used here)", sym->var->name);
                   undefined.set_add(sym->var);
                 }
@@ -361,12 +336,6 @@ static void normalize_returns(FnSymbol* fn) {
       theRet = call;
       if (is_void_return(call))
           numVoidReturns++;
-      else if (isIterator) {
-        // Expect that all returns from an iterator are void returns.
-        // ProcIter: remove the entire enclosing 'else if'
-        if (!fn->hasFlag(FLAG_PROC_ITER_KW_USED))
-          USR_WARN(call, "returning a value in an iterator is deprecated; replace it with a yield of that value, followed by a return with no expression");
-      }
     }
     else if (call->isPrimitive(PRIM_YIELD)) {
       rets.add(call);
@@ -460,7 +429,7 @@ static void normalize_returns(FnSymbol* fn) {
           ret->remove();
       else {    // Cases 2 and 3.
         if (ret->next != label->defPoint) {
-          ret->replace(new GotoStmt(GOTO_NORMAL, label));
+          ret->replace(new GotoStmt(GOTO_RETURN, label));
           label_is_used = true;
         } else {
           ret->remove();
@@ -474,7 +443,7 @@ static void normalize_returns(FnSymbol* fn) {
       }
       // replace with GOTO(label)
       if (ret->next != label->defPoint) {
-        ret->replace(new GotoStmt(GOTO_NORMAL, label));
+        ret->replace(new GotoStmt(GOTO_RETURN, label));
         label_is_used = true;
       } else {
         ret->remove();

@@ -9,7 +9,6 @@
 #include <pwd.h>
 #include <cerrno>
 #include <unistd.h>
-#include <sys/types.h>
 
 char executableFilename[FILENAME_MAX+1] = "a.out";
 char saveCDir[FILENAME_MAX+1] = "";
@@ -424,11 +423,11 @@ void codegen_makefile(fileinfo* mainfile, fileinfo *gpusrcfile) {
   const char* strippedExeFilename = stripdirectories(executableFilename);
   const char* exeExt = "";
 
-  fprintf(makefile.fptr, "CHAPEL_ROOT = %s\n\n", CHPL_HOME);
+  fprintf(makefile.fptr, "CHPL_MAKE_HOME = %s\n\n", CHPL_HOME);
   fprintf(makefile.fptr, "TMPDIRNAME = %s\n", tmpDirName);
 
   if (fLibraryCompile) {
-    if (fLibraryShared) exeExt = ".so";
+    if (fLinkStyle==LS_DYNAMIC) exeExt = ".so";
     else exeExt = ".a";
   }
   fprintf(makefile.fptr, "BINNAME = %s%s\n\n", executableFilename, exeExt);
@@ -459,7 +458,7 @@ void codegen_makefile(fileinfo* mainfile, fileinfo *gpusrcfile) {
   } else {
     fprintf(makefile.fptr, " $(NO_IEEE_FLOAT_GEN_CFLAGS)");
   }
-  if (fLibraryShared)
+  if (fLibraryCompile && (fLinkStyle==LS_DYNAMIC))
     fprintf(makefile.fptr, " $(SHARED_LIB_CFLAGS)");
   forv_Vec(const char*, dirName, incDirs) {
     fprintf(makefile.fptr, " -I%s", dirName);
@@ -467,17 +466,26 @@ void codegen_makefile(fileinfo* mainfile, fileinfo *gpusrcfile) {
   fprintf(makefile.fptr, " %s\n", ccflags);
 
   fprintf(makefile.fptr, "COMP_GEN_LFLAGS =");
-  if (fLibraryShared)
-      fprintf(makefile.fptr, " -shared" );
+  if (!fLibraryCompile) {
+    if (fLinkStyle==LS_DYNAMIC)
+      fprintf(makefile.fptr, " $(GEN_DYNAMIC_FLAG)" );
+    else if (fLinkStyle==LS_STATIC)
+      fprintf(makefile.fptr, " $(GEN_STATIC_FLAG)" );
+  } else {
+    if (fLinkStyle==LS_DYNAMIC)
+      fprintf(makefile.fptr, " $(LIB_DYNAMIC_FLAG)" );
+    else
+      fprintf(makefile.fptr, " $(LIB_STATIC_FLAG)" );
+  }
   fprintf(makefile.fptr, " %s\n", ldflags);
 
   fprintf(makefile.fptr, "TAGS_COMMAND = ");
   if (developer && saveCDir[0] && !printCppLineno) {
     fprintf(makefile.fptr,
             "-@which $(CHPL_TAGS_UTIL) > /dev/null 2>&1 && "
-            "test -f $(CHAPEL_ROOT)/runtime/$(CHPL_TAGS_FILE) && "
+            "test -f $(CHAPEL_MAKE_HOME)/runtime/$(CHPL_TAGS_FILE) && "
             "cd %s && "
-            "cp $(CHAPEL_ROOT)/runtime/$(CHPL_TAGS_FILE) . && "
+            "cp $(CHPL_MAKE_HOME)/runtime/$(CHPL_TAGS_FILE) . && "
             "$(CHPL_TAGS_UTIL) $(CHPL_TAGS_FLAGS) $(CHPL_TAGS_APPEND_FLAG) *.c *.h",
             saveCDir);
   }
@@ -496,14 +504,14 @@ void codegen_makefile(fileinfo* mainfile, fileinfo *gpusrcfile) {
     fprintf(makefile.fptr, " %s", libFlag[i]);
   fprintf(makefile.fptr, "\n");
   fprintf(makefile.fptr, "\n");
-  if (fLibraryCompile) {
-    if (fLibraryShared)
-      fprintf(makefile.fptr, "include $(CHAPEL_ROOT)/runtime/etc/Makefile.shared\n");
+  if (!fLibraryCompile) {
+    fprintf(makefile.fptr, "include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.exe\n");
+  } else {
+    if (fLinkStyle == LS_DYNAMIC)
+      fprintf(makefile.fptr, "include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.shared\n");
     else
-      fprintf(makefile.fptr, "include $(CHAPEL_ROOT)/runtime/etc/Makefile.static\n");
+      fprintf(makefile.fptr, "include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.static\n");
   }
-  else
-    fprintf(makefile.fptr, "include $(CHAPEL_ROOT)/runtime/etc/Makefile.exe\n");
   fprintf(makefile.fptr, "\n");
   genCFileBuildRules(makefile.fptr);
   closeCFile(&makefile, false);
@@ -583,6 +591,8 @@ void setupModulePaths(void) {
   intModPath.add(astr(CHPL_HOME, "/modules/internal/", CHPL_THREADS));
   intModPath.add(astr(CHPL_HOME, "/modules/internal/", CHPL_TASKS));
   intModPath.add(astr(CHPL_HOME, "/modules/internal"));
+  stdModPath.add(astr(CHPL_HOME, "/modules/standard/gen/", CHPL_TARGET_PLATFORM,
+                      "-", CHPL_TARGET_COMPILER));
   stdModPath.add(astr(CHPL_HOME, "/modules/standard"));
   stdModPath.add(astr(CHPL_HOME, "/modules/layouts"));
   stdModPath.add(astr(CHPL_HOME, "/modules/dists"));
@@ -600,13 +610,6 @@ void setupModulePaths(void) {
       addFlagModulePath(start);
     } while (colon);
   }
-}
-
-
-void addStdRealmsPath(void) {
-  int32_t numRealms = getNumRealms();
-  intModPath.add(astr(CHPL_HOME, "/modules/internal/",
-                      numRealms == 1 ? "singlerealm" : "multirealm"));
 }
 
 

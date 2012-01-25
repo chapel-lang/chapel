@@ -1054,7 +1054,7 @@ static void polling(void* x) {
       // fork works similarly, but runs it from polling thread.
     case ChplCommFork: {
       void* args;
-      _chpl_RPC_arg* rpcArg = chpl_mem_allocMany(1, sizeof(_chpl_RPC_arg), CHPL_RT_MD_REMOTE_FORK_DATA, 0, 0);
+      _chpl_RPC_arg* rpcArg = chpl_mem_allocMany(1, sizeof(_chpl_RPC_arg), CHPL_RT_MD_COMM_FORK_SEND_INFO, 0, 0);
 #if CHPL_DIST_DEBUG
       sprintf(debugMsg, "Fulfilling ChplCommFork(fromloc=%d, tag=%d, fnid=%d)", source, msg_info.replyTag, msg_info.u.fid);
       PRINTF(debugMsg);
@@ -1066,7 +1066,7 @@ static void polling(void* x) {
         mallocsize = msg_info.size;
 
       if (mallocsize != 0) {
-        args = chpl_mem_allocMany(1, mallocsize, CHPL_RT_MD_REMOTE_FORK_ARG, 0, 0);
+        args = chpl_mem_allocMany(1, mallocsize, CHPL_RT_MD_COMM_FORK_SEND_LARGE_ARG, 0, 0);
       } else {
         args = NULL;
       }
@@ -1094,7 +1094,7 @@ static void polling(void* x) {
         mallocsize = msg_info.size;
 
       if (mallocsize != 0) {
-        args = chpl_mem_allocMany(1, mallocsize, CHPL_RT_MD_REMOTE_FORK_ARG, 0, 0);
+        args = chpl_mem_allocMany(1, mallocsize, CHPL_RT_MD_COMM_FORK_SEND_NB_LARGE_ARG, 0, 0);
       } else {
         args = NULL;
       }
@@ -1178,7 +1178,7 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
   if (max != chpl_numLocales) {
     chpl_internal_error("PVM group configuration failed");
   }
-  tids = chpl_mem_allocMany(chpl_numLocales, sizeof(int), CHPL_RT_MD_PVM_LIST_OF_NODES, 0, 0);
+  tids = chpl_mem_allocMany(chpl_numLocales, sizeof(int), CHPL_RT_MD_COMM_PER_LOCALE_INFO, 0, 0);
   for (i=0; i < chpl_numLocales; i++) {
     PVM_LOCK_UNLOCK_SAFE(tids[i] = pvm_gettid((char *)jobname, i), "pvm_gettid", "chpl_comm_init");
   }
@@ -1714,7 +1714,7 @@ void chpl_comm_fork_nb(int locale, chpl_fn_int_t fid,
   }
 
   if (chpl_localeID == locale) {
-    void* argCopy = chpl_mem_allocMany(1, mallocsize, CHPL_RT_MD_REMOTE_NB_FORK_DATA, 0, 0);
+    void* argCopy = chpl_mem_allocMany(1, mallocsize, CHPL_RT_MD_COMM_FORK_SEND_NB_LARGE_ARG, 0, 0);
     memmove(argCopy, arg, mallocsize);
     chpl_task_begin((chpl_fn_p)chpl_ftable[fid], argCopy, true, false, NULL);
   } else {

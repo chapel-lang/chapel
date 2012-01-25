@@ -1,4 +1,5 @@
 #define __STDC_FORMAT_MACROS
+#include <cstdlib>
 #include <inttypes.h>
 #include "astutil.h"
 #include "caches.h"
@@ -23,7 +24,7 @@ explainInstantiation(FnSymbol* fn) {
     return;
   if (explainInstantiationModule && explainInstantiationModule != fn->defPoint->getModule())
     return;
-  if (explainInstantiationLine != -1 && explainInstantiationLine != fn->defPoint->lineno)
+  if (explainInstantiationLine != -1 && explainInstantiationLine != fn->defPoint->linenum())
     return;
 
   char msg[1024] = "";
@@ -273,7 +274,10 @@ static void
 checkInstantiationLimit(FnSymbol* fn) {
   static Map<FnSymbol*,int> instantiationLimitMap;
 
-  if (fn->getModule()->modTag != MOD_INTERNAL) {
+  // Don't count instantiations on internal modules 
+  // nor ones explicitly marked NO_INSTANTIATION_LIMIT.
+  if (fn->getModule()->modTag != MOD_INTERNAL &&
+      !fn->hasFlag(FLAG_NO_INSTANTIATION_LIMIT)) {
     if (instantiationLimitMap.get(fn) >= instantiation_limit) {
       if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR)) {
         USR_FATAL_CONT(fn->retType, "Type '%s' has been instantiated too many times",

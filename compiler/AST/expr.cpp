@@ -1,4 +1,8 @@
+
+#define __STDC_FORMAT_MACROS
+#include <cstdlib>
 #include <cstring>
+#include <inttypes.h>
 #include "astutil.h"
 #include "expr.h"
 #include "misc.h"
@@ -371,9 +375,9 @@ codegen_member(FILE* outfile, Expr *base, BaseAST *member) {
 
 static void
 codegenExprMinusOne(FILE* outfile, Expr* expr) {
-  long i;
+  int64_t i;
   if (get_int(expr, &i)) {
-    fprintf(outfile, "%ld", i-1);
+    fprintf(outfile, "%" PRId64, i-1);
   } else {
     expr->codegen(outfile);
     fprintf(outfile, "-1");
@@ -732,6 +736,37 @@ isTupleOfTuple(Expr *e) {
           toDefExpr(toClassType(e->typeInfo())->fields.head)->sym->type->symbol->hasFlag(FLAG_TUPLE));
 }
 
+static void
+genValue(FILE *outfile, Expr *e) {
+  SymExpr *sym = toSymExpr(e);
+  INT_ASSERT(sym);
+  if (sym->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
+    if (sym->typeInfo()->getField("addr", true)->typeInfo()->symbol->hasFlag(FLAG_REF)) {
+      gen(outfile, "*");
+    }
+    gen(outfile, "%A.addr, ", sym);
+  } else {
+    if (sym->typeInfo()->symbol->hasFlag(FLAG_REF)) {
+      gen(outfile, "*");
+    }
+    gen(outfile, "%A, ", sym);
+  }
+}
+
+static void
+genRef(FILE *outfile, Expr *e) {
+  SymExpr *sym = toSymExpr(e);
+  INT_ASSERT(sym);
+  if (sym->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
+    gen(outfile, "%A.addr, ", sym);
+  } else {
+    if (!sym->typeInfo()->symbol->hasFlag(FLAG_REF)) {
+      gen(outfile, "&");
+    }
+    gen(outfile, "%A, ", sym);
+  }
+}
+
 void CallExpr::codegen(FILE* outfile) {
   if (getStmtExpr() && getStmtExpr() == this)
     codegenStmt(outfile, this);
@@ -1059,8 +1094,11 @@ void CallExpr::codegen(FILE* outfile) {
             genTypeStructureIndex(outfile, eltType->symbol);
             gen(outfile, ", %A, %A)", call->get(3), call->get(4));
           } else {
-            gen(outfile, "%A = _ARRAY_GET(%A, %A)",
-                get(1), call->get(1), call->get(2));
+            gen(outfile, "%A = _ARRAY_GET(%A, ", get(1), call->get(1));
+            if (call->get(2)->typeInfo()->symbol->hasFlag(FLAG_REF)) {
+              gen(outfile, "*");
+            }
+            gen(outfile, "%A)", call->get(2));
           }
           break;
         }
@@ -1452,7 +1490,12 @@ void CallExpr::codegen(FILE* outfile) {
         if (is_arithmetic_type( t)) {
           if (is_int_type( t) || is_uint_type( t) || is_real_type( t) ||
               is_imag_type(t)) {
-            fprintf( outfile, "MAX_UINT%d", get_width( t));
+            // MAX_UINT(size) cast to appropriate target type.
+            fprintf(outfile, "((");
+            t->codegen(outfile);
+            fprintf(outfile, ")(");
+            fprintf(outfile, "MAX_UINT%d", get_width( t));
+            fprintf(outfile, "))");
           } else {   // must be (is_complex_type( t))
             // WAW: needs fixing?
             fprintf( outfile, "_chpl_complex%d( MAX_UINT%d, MAX_UINT%d)", 
@@ -1942,6 +1985,80 @@ void CallExpr::codegen(FILE* outfile) {
     case PRIM_SET_SERIAL:
       gen(outfile, "chpl_task_setSerial(%A)", get(1));
       break;
+    case PRIM_CHPL_COMM_GET:
+    case PRIM_CHPL_COMM_PUT: {
+      if (primitive->tag == PRIM_CHPL_COMM_GET) {
+        gen(outfile, "CHPL_COMM_GET(");
+      } else {
+        gen(outfile, "CHPL_COMM_PUT(");
+      }
+      // THIS IS YUCKY!!!
+      TypeSymbol *dt;
+      // destination data array
+      if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
+        Symbol *sym = get(1)->typeInfo()->getField("addr", true);
+        INT_ASSERT(sym);
+        dt = sym->typeInfo()->getValType()->symbol;
+        gen(outfile, "*%A.addr, ", get(1));
+      } else {
+        dt = get(1)->typeInfo()->getValType()->symbol;
+        if (get(1)->typeInfo()->symbol->hasFlag(FLAG_REF)) {
+          gen(outfile, "*");
+        }
+        gen(outfile, "%A, ", get(1));
+      }
+      // locale id
+      genValue(outfile, get(2));
+      /*
+      if (get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
+        if (get(2)->typeInfo()->getField("addr", true)->typeInfo()->symbol->hasFlag(FLAG_REF)) {
+          gen(outfile, "*");
+        }
+        gen(outfile, "%A.addr, ", get(2));
+      } else {
+        if (get(2)->typeInfo()->symbol->hasFlag(FLAG_REF)) {
+          gen(outfile, "*");
+        }
+        gen(outfile, "%A, ", get(2));
+      }
+      */
+      // source data array
+      genRef(outfile, get(3));
+      /*
+      if (get(3)->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
+        gen(outfile, "%A.addr, ", get(3));
+      } else {
+        if (!get(3)->typeInfo()->symbol->hasFlag(FLAG_REF)) {
+          gen(outfile, "&");
+        }
+        gen(outfile, "%A, ", get(3));
+      }
+      */
+      // data type
+      dt->codegen(outfile);
+      gen(outfile, ", ");
+      // type index
+      genTypeStructureIndex(outfile, dt);
+      gen(outfile, ", ");
+      // length
+      genValue(outfile, get(4));
+      /*
+      if (get(4)->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
+        if (get(4)->typeInfo()->getField("addr", true)->typeInfo()->symbol->hasFlag(FLAG_REF)) {
+          gen(outfile, "*");
+        }
+        gen(outfile, "%A.addr, ", get(4));
+      } else {
+        if (get(4)->typeInfo()->symbol->hasFlag(FLAG_REF)) {
+          gen(outfile, "*");
+        }
+        gen(outfile, "%A, ", get(4));
+      }
+      */
+      // line and filename
+      gen(outfile, "%A, %A)", get(5), get(6));
+      break;
+    }
     case PRIM_CHPL_ALLOC:
     case PRIM_CHPL_ALLOC_PERMIT_ZERO: {
       bool is_struct = false;
@@ -2165,6 +2282,7 @@ void CallExpr::codegen(FILE* outfile) {
       fprintf(outfile, "chpl_task_getNumBlockedTasks()");
       break;
     case PRIM_RT_ERROR:
+    case PRIM_RT_ERROR_NOEXIT:
     case PRIM_RT_WARNING:
       codegenBasicPrimitive(outfile, this);
       break;
@@ -2313,7 +2431,7 @@ void CallExpr::codegen(FILE* outfile) {
     } else
       fputs("chpl_localeID)", outfile);
     fprintf(outfile, ", true, %d, \"%s\");\n",
-            fn->lineno, fn->getModule()->filename);
+            fn->linenum(), fn->fname());
     return;
   } else if (fn->hasFlag(FLAG_COBEGIN_OR_COFORALL_BLOCK)) {
     fputs("chpl_task_addToTaskList(", outfile);
@@ -2376,7 +2494,7 @@ void CallExpr::codegen(FILE* outfile) {
     }
     fputs("->taskList)", outfile);
     fprintf(outfile, ", chpl_localeID, false, %d, \"%s\");\n",
-            baseExpr->lineno, baseExpr->getModule()->filename);
+            baseExpr->linenum(), baseExpr->fname());
     return;
   } else if (fn->hasFlag(FLAG_ON_BLOCK)) {
     if (fn->hasFlag(FLAG_NON_BLOCKING))
@@ -2530,7 +2648,7 @@ void NamedExpr::codegen(FILE* outfile) {
 
 
 bool 
-get_int(Expr *e, long *i) {
+get_int(Expr *e, int64_t *i) {
   if (e) {
     if (SymExpr *l = toSymExpr(e)) {
       if (VarSymbol *v = toVarSymbol(l->var)) {
@@ -2547,7 +2665,7 @@ get_int(Expr *e, long *i) {
 }
 
 bool 
-get_uint(Expr *e, unsigned long *i) {
+get_uint(Expr *e, uint64_t *i) {
   if (e) {
     if (SymExpr *l = toSymExpr(e)) {
       if (VarSymbol *v = toVarSymbol(l->var)) {

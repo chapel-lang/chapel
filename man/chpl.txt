@@ -1,11 +1,14 @@
 NAME
   chpl - Cray Inc. compiler for the Chapel parallel language
+
 SYNOPSIS
   chpl [-O] [--no-checks] [--fast]
        [-g] [--savec dir]
        [-M dir...] [--main-module mod]
        [-o outfile] [flags...] source-files...
+
 DESCRIPTION
+
   The Chapel compiler, chpl, converts one or more Chapel source files
   into an executable. It does this by compiling Chapel to ISO C code
   and then invoking the target platform's C compiler to create the
@@ -25,33 +28,25 @@ DESCRIPTION
   Future versions of the compiler will continue to result in improved
   performance.
 
+SOURCE FILES
+  Chapel currently recognizes four source file types: .chpl, .c, .h and .o.
+
+  foo.chpl      Chapel sources are compiled by the Chapel compiler into C intermediate code,
+                which is then passed to the target compiler to be compiled into
+                object code.
+
+  foo.c         C source files are passed directly to the target C compiler.
+
+  foo.h         C header files are placed in the generated chpl_header.h file
+
+  foo.o         Object files are passed directly to the target linker. 
+
 OPTIONS
-
-  Compiler Information Options
-
-  --copyright     Print the compiler's copyright information.
-
-  -h, --help      Print a list of the command line options, indicating
-                  the arguments that they expect and a brief summary of their 
-                  purpose.
-
-  --help-env      Print the command line option help message, listing
-                  the environment variable equivalent for each flag
-                  (see ENVIRONMENT) and its current value.
-
-  --help-settings   Print the command line option help message, listing
-                 the current setting of each option as specified by
-                 environment variables and other flags on the command line.
-
-  --license       Print the compiler's license information.
-
-  --version       Print the version number of the compiler.
 
   Module Processing Options
 
-  -M, --module-dir <dir>   Add the specified directory to the module search 
-                    path. See the description of $CHPL_MODULE_PATH in the 
-                    ENVIRONMENT section of this man page for more details.
+  --count-tokens    Prints the total number of static lexical tokens in 
+                    the Chapel code files named on the command line.
 
   --main-module <module>   For programs that supply multiple possible entry
                      points (main() functions or module initializers that
@@ -59,16 +54,9 @@ OPTIONS
                      to specify which module should serve as the starting 
                      point for program execution.
 
-  --print-search-dirs   Print the module search path used to resolve module 'use'
-                    statements. See the description of $CHPL_MODULE_PATH
-                    in the ENVIRONMENT section of this man page for more 
-                    details.
-
-  --print-module-files   Prints the Chapel module source files parsed by
-                    the Chapel compiler.
-
-  --count-tokens    Prints the total number of static lexical tokens in 
-                    the Chapel code files named on the command line.
+  -M, --module-dir <dir>   Add the specified directory to the module search 
+                    path. See the description of $CHPL_MODULE_PATH in the 
+                    ENVIRONMENT section of this man page for more details.
 
   --print-code-size    Prints out the size of the Chapel code files named
                     on the command line in great detail: For each code file, 
@@ -84,6 +72,14 @@ OPTIONS
                     After this information is printed for each file, a
                     grand total of the number of tokens across all the
                     files is displayed.
+
+  --print-module-files   Prints the Chapel module source files parsed by
+                    the Chapel compiler.
+
+  --print-search-dirs   Print the module search path used to resolve module 'use'
+                    statements. See the description of $CHPL_MODULE_PATH
+                    in the ENVIRONMENT section of this man page for more 
+                    details.
 
   Parallelism Control Options
 
@@ -120,21 +116,21 @@ OPTIONS
                     used for dynamic dispatch instead of the virtual
                     method table. The default is zero.
 
-  --fast            Turns off all runtime checks using --no-checks, turns
-                    on --no-ieee-float and -O, and enables all compiler
-                    optimizations in the rest of this section.
- 
-  --[no-]ieee-float   Disable [enable] optimizations that may affect IEEE
-                    floating point conformance. The default is --ieee-float,
-                    which ensures IEEE conformance.
-
   --[no-]copy-propagation   Enable [disable] copy propagation.
 
   --[no-]dead-code-elimination   Enable [disable] dead code elimination.
 
+  --fast            Turns off all runtime checks using --no-checks, turns
+                    on --no-ieee-float and -O, and enables all compiler
+                    optimizations in the rest of this section.
+ 
   --[no-]fast-followers   Enable [disable] the fast follower
                     optimization in which fast implementations of
                     followers will be invoked for specific leaders.
+
+  --[no-]ieee-float   Disable [enable] optimizations that may affect IEEE
+                    floating point conformance. The default is --ieee-float,
+                    which ensures IEEE conformance.
 
   --[no-]inline     Enable [disable] function inlining.
 
@@ -228,26 +224,30 @@ OPTIONS
   --ccflags <flags>   Add the specified flags to the C compiler command line
                      when compiling the generated code.
 
+  -g, --[no-]debug  Causes the generated C code to be compiled with debugging
+                    turned on. If you are trying to debug a Chapel program,
+                    this flag is virtually essential along with the --savec
+                    flag. This flag also turns on the --cpp-lines option
+                    unless compiling as a developer (for example, via --devel).
+
+  --dynamic  Use dynamic linking when generating the final binary.  If 
+             neither --dynamic or --static are specified, use the
+             backend compiler's default.
+
+  -I, --hdr-search-path <dir>   Add dir to the back-end C compiler's search 
+                     path for header files.
+
   --ldflags <flags>  Add the specified flags to the C compiler link line
                      when linking the generated code.
 
   -l, --lib-linkage <library>   Specify a C library to link in on the C 
                      compiler command line.
 
-  -I, --hdr-search-path <dir>   Add dir to the back-end C compiler's search 
-                     path for header files.
-
   -L, --lib-search-path <dir>   Specify a C library search path on the C
                      compiler command line.
 
   --make <make utility>   Specify the gmake-compatible utility that should be 
                     used when compiling the generated code.
-
-  -g, --[no-]debug  Causes the generated C code to be compiled with debugging
-                    turned on. If you are trying to debug a Chapel program,
-                    this flag is virtually essential along with the --savec
-                    flag. This flag also turns on the --cpp-lines option
-                    unless compiling as a developer (for example, via --devel).
 
   -O, --[no-]optimize  Causes the generated C code to be compiled with
                     [without] optimizations turned on. The specific set of
@@ -258,6 +258,10 @@ OPTIONS
 
   -o, --output <filename>   Specify the name of the compiler-generated
                      executable (defaults to a.out if unspecified).
+
+  --static  Use static linking when generating the final binary.  If 
+             neither --static or --dynamic are specified, use the
+             backend compiler's default.
 
   Compilation Trace Options
 
@@ -290,12 +294,6 @@ OPTIONS
                      those calls within a specific module or at a
                      particular line number.
 
-  --[no-]print-callstack-on-error   Accompany certain error and warning
-                     messages with the Chapel call stack that the compiler
-                     was working on when it reached the error or warning
-                     location. This is useful when the underlying cause
-                     of the issue is in one of the callers.
-
   --instantiate-max <max>   In order to avoid infinite loops when
                      instantiating generic functions, the compiler
                      limits the number of times a single function
@@ -303,12 +301,39 @@ OPTIONS
                      maximum in the event that a legal instantiation
                      is being pruned too aggressively.
 
-  --no-warnings      Turns off compiler warnings.
+  --[no-]print-callstack-on-error   Accompany certain error and warning
+                     messages with the Chapel call stack that the compiler
+                     was working on when it reached the error or warning
+                     location. This is useful when the underlying cause
+                     of the issue is in one of the callers.
 
   -s, --set <config param>[=<value>]   Overrides the default value of
                      a configuration parameter in the code. For
                      boolean configuration variables, the value can
                      be omitted, causing the default value to be toggled.
+
+  --no-warnings      Turns off compiler warnings.
+
+  Compiler Information Options
+
+  --copyright     Print the compiler's copyright information.
+
+  -h, --help      Print a list of the command line options, indicating
+                  the arguments that they expect and a brief summary of their 
+                  purpose.
+
+  --help-env      Print the command line option help message, listing
+                  the environment variable equivalent for each flag
+                  (see ENVIRONMENT) and its current value.
+
+  --help-settings   Print the command line option help message, listing
+                 the current setting of each option as specified by
+                 environment variables and other flags on the command line.
+
+  --license       Print the compiler's license information.
+
+  --version       Print the version number of the compiler.
+
 
 ENVIRONMENT
 

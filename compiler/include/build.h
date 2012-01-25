@@ -79,7 +79,7 @@ CallExpr* buildScanExpr(Expr* op, Expr* data);
 
 BlockStmt* buildVarDecls(BlockStmt* stmts, Flag externconfig, Flag varconst);
 
-DefExpr* buildClassDefExpr(const char* name, Type* type, Expr* inherit, BlockStmt* decls, bool isExtern);
+DefExpr* buildClassDefExpr(const char* name, Type* type, Expr* inherit, BlockStmt* decls, Flag isExtern);
 DefExpr* buildInterfaceDefExpr(const char* name,AList* iFormals, Expr* inherit, BlockStmt* decls);
 AList* buildInterfaceFormal(AList* formal_list, DefExpr* new_formal);
 DefExpr* buildArgDefExpr(IntentTag tag, const char* ident, Expr* type, Expr* init, Expr* variable);

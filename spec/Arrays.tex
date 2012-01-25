@@ -420,9 +420,8 @@ the interior of \chpl{A}.
 
 \subsection{Rectangular Array Slicing}
 \label{Rectangular_Array_Slicing}
-\index{arrays!slice}
 
-a rectangular array can be sliced by any rectangular domain that is a
+A rectangular array can be sliced by any rectangular domain that is a
 subdomain of the array's defining domain.  If the subdomain
 relationship is not met, an out-of-bounds error will occur.  The
 result is a subarray whose indices are those of the slicing domain and
@@ -436,6 +435,9 @@ completely unbounded ranges.  This is equivalent to slicing the
 array's defining domain by the specified ranges to create a subdomain
 as described in~\rsec{Array_Slicing} and then using that subdomain to slice
 the array.
+
+\subsection{Rectangular Array Slicing with a Rank Change}
+\label{Rectangular_Array_Slicing_With_Rank_Change}
 
 For multidimensional rectangular arrays, slicing with a rank change is
 supported by substituting integral values within a dimension's range
@@ -582,7 +584,7 @@ and \chpl{C}.
 %
 
 
-\subsection{Array Aliases}
+\section{Array Aliases}
 \label{Array_Aliases}
 \index{=>@\chpl{=>}}
 
@@ -595,7 +597,7 @@ array-alias-declaration:
   identifier reindexing-expression[OPT] => array-expression ;
 
 reindexing-expression:
-  [ domain-expression ]
+  : [ domain-expression ]
 
 array-expression:
   expression

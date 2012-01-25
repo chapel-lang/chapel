@@ -1,2 +1,0 @@
-#!/usr/bin/env tcsh
-source ~/.chapelcshrc-cron && source ~/.chapelcshrc-cron-pvm && ~/chapel/util/cron/nightly -examples -cron >&! ~/tmp/nightly-perf.pvm.beetlejuice.out

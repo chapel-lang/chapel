@@ -36,8 +36,13 @@ COMP_CFLAGS_NONCHPL = -Wno-error
 RUNTIME_CFLAGS = -std=c99 $(CFLAGS)
 RUNTIME_GEN_CFLAGS = $(RUNTIME_CFLAGS)
 RUNTIME_CXXFLAGS = $(CFLAGS)
-SHARED_LIB_CFLAGS = -fPIC
+RUNTIME_GEN_CXXFLAGS = $(RUNTIME_CXXFLAGS)
 GEN_CFLAGS = -std=c99
+GEN_STATIC_FLAG = -static
+GEN_DYNAMIC_FLAG =
+LIB_STATIC_FLAG = 
+LIB_DYNAMIC_FLAG = -shared
+SHARED_LIB_CFLAGS = -fPIC
 
 ifeq ($(CHPL_MAKE_PLATFORM), darwin)
 # build 64-bit binaries when on a 64-bit capable PowerPC
@@ -47,6 +52,15 @@ RUNTIME_CXXFLAGS += $(ARCH)
 # the -D_POSIX_C_SOURCE flag prevents nonstandard functions from polluting the global name space
 GEN_CFLAGS += -D_POSIX_C_SOURCE $(ARCH)
 GEN_LFLAGS += $(ARCH)
+endif
+
+#ensure that 64 bit binaries are made on AIX
+ifeq ($(CHPL_MAKE_PLATFORM), aix)
+GEN_CFLAGS += -maix64
+RUNTIME_CFLAGS += -maix64
+RUNTIME_GEN_CFLAGS += -maix64
+GEN_CFLAGS += -maix64
+COMP_GEN_LFLAGS += -maix64
 endif
 
 #
@@ -82,7 +96,8 @@ COMP_CFLAGS += $(WARN_CXXFLAGS)
 RUNTIME_CFLAGS += $(WARN_CFLAGS)
 RUNTIME_CXXFLAGS += $(WARN_CXXFLAGS)
 RUNTIME_GEN_CFLAGS += -Wno-unused
-WARN_GEN_CFLAGS += -Wunreachable-code
+RUNTIME_GEN_CXXFLAGS += -Wno-unused
+#WARN_GEN_CFLAGS += -Wunreachable-code
 # GEN_CFLAGS gets warnings added via WARN_GEN_CFLAGS in comp-generated Makefile
 
 

@@ -5,6 +5,6 @@ record R {
 
 var myR: R;
 
-_extern proc foo(inout myR);
+extern proc foo(inout myR);
 
 foo(myR);

@@ -87,7 +87,11 @@ class CondStmt : public Expr {
 enum GotoTag {
   GOTO_NORMAL,
   GOTO_BREAK,
-  GOTO_CONTINUE
+  GOTO_CONTINUE,
+  GOTO_RETURN,
+  GOTO_GETITER_END,
+  GOTO_ITER_RESUME,
+  GOTO_ITER_END
 };
 
 
@@ -109,5 +113,16 @@ class GotoStmt : public Expr {
 
 void codegenStmt(FILE* outfile, Expr* stmt);
 
+// Extract (e.toGotoStmt)->(label.toSymExpr)->var and var->->iterResumeGoto,
+// if possible; NULL otherwise.
+LabelSymbol* getGotoLabelSymbol(GotoStmt* gs);
+GotoStmt*    getGotoLabelsIterResumeGoto(GotoStmt* gs);
+
+extern Vec<LabelSymbol*> removedIterResumeLabels;
+void removeDeadIterResumeGotos();
+void verifyNcleanRemovedIterResumeGotos();
+
+extern Map<GotoStmt*,GotoStmt*> copiedIterResumeGotos;
+void verifyNcleanCopiedIterResumeGotos();
 
 #endif

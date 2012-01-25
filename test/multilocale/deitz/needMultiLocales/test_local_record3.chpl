@@ -9,17 +9,17 @@ proc main {
   r.x1 = 17;
   r.x2 = 19;
   r.x3 = 23;
-  _debugWriteln(here.id, ": ", r.x1, " ", r.x2, " ", r.x3);
+  writeln(here.id, ": ", r.x1, " ", r.x2, " ", r.x3);
   r.x1 = r.x1 + 1;
   r.x2 = r.x2 + 2;
   r.x3 = r.x3 + 3;
 
   on Locales(1) {
-    _debugWriteln(here.id, ": ", r.x1, " ", r.x2, " ", r.x3);
+    writeln(here.id, ": ", r.x1, " ", r.x2, " ", r.x3);
     r.x1 = r.x1 + 1;
     r.x2 = r.x2 + 2;
     r.x3 = r.x3 + 3;
   }
 
-  _debugWriteln(here.id, ": ", r.x1, " ", r.x2, " ", r.x3);
+  writeln(here.id, ": ", r.x1, " ", r.x2, " ", r.x3);
 }

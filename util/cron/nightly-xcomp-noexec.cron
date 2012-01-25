@@ -1,6 +1,0 @@
-#!/usr/bin/env tcsh
-source ~/.chapelcshrc-cron
-$CHPL_HOME/test/Bin/nightly -cron -examples -componly
-setenv CHPL_HOST_PLATFORM $CHPL_TARGET_PLATFORM
-unsetenv CHPL_TARGET_PLATFORM
-$CHPL_HOME/test/Bin/nightly -cron -notest

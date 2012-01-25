@@ -40,8 +40,8 @@ class DD {
     }
   }
 
-  iter these(follower) {
-    for i in follower do
+  iter these(followThis) {
+    for i in followThis do
       yield i;
   }
 }
@@ -66,8 +66,8 @@ class C {
     }
   }
 
-  iter these(follower) var {
-    for i in follower do
+  iter these(followThis) var {
+    for i in followThis do
       if (i <= n) then
         yield A(i);
       else

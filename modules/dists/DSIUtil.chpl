@@ -65,8 +65,7 @@ proc _computeChunkStuff(maxTasks, ignoreRunning, minSize, ranges,
 
 // returns 0 if no numElems <= 0
 proc _computeNumChunks(maxTasks, ignoreRunning, minSize, numElems): int {
-  assert(numElems >= 0);
-  if numElems == 0 then
+  if numElems <= 0 then
     return 0;
 
   type EC = uint(64); // type for element counts
@@ -130,10 +129,10 @@ proc _computeChunkStartEnd(numElems, numChunks, myChunk) {
 //
 // helper function for blocking index ranges
 //
+proc intCeilXDivByY(x, y) return 1 + (x - 1)/y;
+
 proc _computeBlock(numelems, numblocks, blocknum, wayhi,
                   waylo=0:wayhi.type, lo=0:wayhi.type) {
-  proc intCeilXDivByY(x, y) return 1 + (x - 1)/y;
-
   if numelems == 0 then
     return (1:lo.type, 0:lo.type);
 
@@ -256,7 +255,7 @@ proc densify(subs, wholes, userErrors = true)
   return result;
 }
 
-proc densify(s: range(?,?B,?), w: range(?IT,?,?), userErrors=true) : range(IT,B,true)
+proc densify(s: range(?,?B,?), w: range(?IT,?,true), userErrors=true) : range(IT,B,true)
 {
   _densiEnsureBounded(s);
   _densiIdxCheck(s.idxType, IT, (s,w).type);
@@ -295,6 +294,31 @@ proc densify(s: range(?,?B,?), w: range(?IT,?,?), userErrors=true) : range(IT,B,
       return low .. high by stride;
     }
   }
+}
+
+proc densify(sArg: range(?,?B,?S), w: range(?IT,?,false), userErrors=true) : range(IT,B,S)
+{
+  _densiEnsureBounded(sArg);
+  _densiIdxCheck(sArg.idxType, IT, (sArg,w).type);
+  const s = sArg:range(IT,B,S);
+
+  proc ensure(cond) {
+    if userErrors then { if !cond then halt(); }
+    else                               assert(cond);
+  }
+
+  // todo: account for the case s.isAmbiguous()
+  ensure(s.isEmpty() ||
+         // If idxType is unsigned, caller must ensure that s.low is big enough
+         // so it can be subtracted from.
+         w.low <= if _isSignedType(IT) then s.alignedLow else s.low);
+  ensure(s.isEmpty() || !w.hasHighBound() || s.alignedHigh <= w.high);
+
+  // gotta have a special case, e.g.: s=1..0 w=5..6 IT=uint
+  if _isUnsignedType(IT) && s.isEmpty() then
+    return 1:IT..0:IT;
+    
+  return (s - w.low): range(IT,B,S);
 }
 
 proc _densiEnsureBounded(arg) {
@@ -350,7 +374,7 @@ proc unDensify(denses, wholes, userErrors = true)
   return result;
 }
 
-proc unDensify(dense: range(?,?B,?), whole: range(?IT,?,?)) : range(IT,B,true)
+proc unDensify(dense: range(?,?B,?), whole: range(?IT,?,true)) : range(IT,B,true)
 {
   _undensEnsureBounded(dense);
   if whole.boundedType == BoundedRangeType.boundedNone then
@@ -373,6 +397,14 @@ proc unDensify(dense: range(?,?B,?), whole: range(?IT,?,?)) : range(IT,B,true)
 
   assert(low <= high, "unDensify(dense=", dense, ", whole=", whole, "): got low (", low, ") larger than high (", high, ")");
   return low .. high by stride;
+}
+
+proc unDensify(dense: range(?,?B,?S), whole: range(?IT,?,false)) : range(IT,B,S)
+{
+  if !whole.hasLowBound() then
+    compilerError("unDensify(): the 'whole' argument, when not stridable, must have a low bound");
+
+  return (dense + whole.low): range(IT,B,S);
 }
 
 proc _undensEnsureBounded(arg) {

@@ -41,6 +41,7 @@ This directory contains the following documentation:
     README.format           :  value-to-string formatting
     README.gmp              :  a prototype GMP module
     README.local            :  the 'local' statement
+    README.module_search    :  how modules are searched for to fulfill 'use's
     README.volatile         :  support for volatile types
 
 

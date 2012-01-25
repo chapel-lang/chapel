@@ -483,8 +483,8 @@ static void buildVisibleFunctionMap2() {
     FnSymbol* fn = gFnSymbols.v[i];
     if (!fn->hasFlag(FLAG_INVISIBLE_FN)
         && fn->defPoint->parentSymbol && !isArgSymbol(fn->defPoint->parentSymbol)
-        && !isInterfaceSymbol(fn->defPoint->parentSymbol)) {BlockStmt *
-block      = NULL;
+        && !isInterfaceSymbol(fn->defPoint->parentSymbol)) {
+      BlockStmt * block = NULL;
       if (fn->hasFlag(FLAG_AUTO_II)) {
         block = theProgram->block;
       } else {
@@ -514,18 +514,6 @@ block      = NULL;
 /*
  * END DUPLICATE CODE
  */
-
-/*void addVisibleInterfaceFunctions(BaseAST *where_clause, const char *name,
- Vec<FnSymbol*>& visibleFns) {
-
- BaseAST *implementer;
- BaseAST *implemented;
-
- SymExpr *se_implemented = toSymExpr(implemented);
-
- InterfaceSymbol *is = toInterfaceSymbol(se_implemented->var);
-
- }*/
 
 // Typechecks the given ast node with the expected return (in case a return
 // is encountered)
@@ -624,7 +612,7 @@ BaseAST *typeCheckExpr(BaseAST *currentExpr, BaseAST *expectedReturnTypeExpr,
                 if (!isTypeSymbol(se_actual->var)) {
                   mismatch = true;
                   break;
-                }else {
+                } else {
                   cclosure.equate(s_formal,se_actual->var);
                 }
               } else {
@@ -1199,7 +1187,7 @@ BaseAST* checkInterfaceImplementations(BlockStmt *block) {
 
 void earlyTypeCheck(void) {
   bool found_early_type_checked = false;
-  found_early_type_checked = checkInterfaceImplementations(
+  checkInterfaceImplementations(
       userModules.v[0]->block);
 
   forv_Vec(FnSymbol, fn, gFnSymbols) {
@@ -1208,9 +1196,9 @@ void earlyTypeCheck(void) {
         typeCheckFn(fn);
       }
     }
-  if (found_early_type_checked) {
+  //if (found_early_type_checked) {
     //Hackish workaround to stop early when we're early type-checking until we
     //tie into the rest of the passes
     INT_FATAL("SUCCESS");
-  }
+  //}
 }

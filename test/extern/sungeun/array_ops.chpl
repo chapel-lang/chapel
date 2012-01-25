@@ -1,5 +1,5 @@
-_extern proc clear_int_array(inout A: int, len: int);
-_extern proc copy_int_array(inout dest: int, inout src: int, len:int);
+extern proc clear_int_array(inout A: int, len: int);
+extern proc copy_int_array(inout dest: int, inout src: int, len:int);
 
 config const n = 10;
 

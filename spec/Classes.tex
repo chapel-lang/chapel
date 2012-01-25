@@ -28,8 +28,11 @@ are discussed in~\rsec{Generic_Types}.
 A class is defined with the following syntax:
 \begin{syntax}
 class-declaration-statement:
-  `class' identifier class-inherit-list[OPT] {
-    class-statement-list[OPT] }
+  external-class-declaration-statement
+  simple-class-declaration-statement
+
+simple-class-declaration-statement:
+  `class' identifier class-inherit-list[OPT] { class-statement-list[OPT] }
 
 class-inherit-list:
   : class-type-list
@@ -71,6 +74,15 @@ If a class declaration contains a type alias or a parameter field, or it contain
 constant without a specified type and without an initialization
 expression, then it declares a generic class type.  Generic classes are described
 in~\rsec{Generic_Types}.
+
+If the \chpl{extern} keyword appears before the \chpl{class} keyword, then an
+external class type is declared.  An external class type declaration must not
+contain a \sntx{class-inherit-list}.  An external class is used within Chapel
+for type and field resolution, but no corresponding backend definition is
+generated.  It is presumed that the definition of an external class is supplied
+by a library or the execution environment.  See the chapter on interoperability
+(\rsec{Interoperability}) for more information on external classes.
+% External class inheritance is not currently supported.
 
 \subsection{Class Types}
 \label{Class_Types}
@@ -162,10 +174,12 @@ A class method is a procedure or iterator that is bound to a class.
 Methods are declared with the following syntax:
 \begin{syntax}
 method-declaration-statement:
-  `proc' param-clause[OPT] type-binding function-name argument-list[OPT] return-intent[OPT] return-type[OPT]
-    where-clause[OPT] function-body
-  `iter' param-clause[OPT] type-binding function-name argument-list[OPT] return-intent[OPT] return-type[OPT]
-    where-clause[OPT] function-body
+  linkage-specifier[OPT] proc-or-iter param-clause[OPT] type-binding function-name argument-list[OPT] 
+    return-intent[OPT] return-type[OPT] where-clause[OPT] function-body
+
+proc-or-iter:
+  `proc'
+  `iter'
 
 param-clause:
   `param'
@@ -204,14 +218,14 @@ its immediately enclosing class (or record).
 
 A \emph{derived} class can inherit from one or more other classes by
 listing those classes in the derived class declaration.
-%REVIEW:vass: do we want to allow multiple base classes in the spec?
-%REVIEW:vass: need to define "base" class and add it to index, if useful
+%REVIEW: vass: do we want to allow multiple base classes in the spec?
+%REVIEW: vass: need to define "base" class and add it to index, if useful
 When inheriting from multiple base classes, only one of the base classes
 may contain fields.  The other classes can only define methods.  Note
 that a class can still be derived from a class that contains fields
 which is itself derived from a class that contains fields.  
 
-%REVIEW:vass: the below ("tree") does not match the above ("multiple base classes")
+%REVIEW: vass: the below ("tree") does not match the above ("multiple base classes")
 These restrictions on inheritance induce a class hierarchy which has the form of
 a tree.  A variable referring to an instance of class \chpl{C} can be
 cast to any type that is an ancestor of \chpl{C}.  Note that casts to more- and
@@ -305,7 +319,7 @@ field be shadowed by a subclass.
 \index{multiple inheritance}
 \index{classes!inheritance!multiple}
 
-%REVIEW:vass: need to decide as a group whether we want this in the spec
+%REVIEW: vass: need to decide as a group whether we want this in the spec
 A class can be derived from multiple base classes provided that only
 one of the base classes contains fields either directly or from base
 classes that it is derived from.  The methods defined by the other
@@ -317,14 +331,6 @@ It is an open question whether the language will support \chpl{interface}
 declarations and multiple inheritance. This is currently under study
 at the University of Colorado (Boulder).
 \end{openissue}
-
-\subsection{Class Assignment}
-\label{Class_Assignment}
-\index{classes!assignment}
-
-Classes are assigned by reference.  After an assignment from one
-variable of class type to another, the variables reference the same
-class instance.
 
 \subsection{The {\em nil} Value}
 \label{Class_nil_value}
@@ -345,7 +351,7 @@ value results in a run-time error.
 \index{default initialization!classes}
 \index{initialization!classes!default}
 
-%REVIEW:vass:this does not correspond to the current implementation:
+%REVIEW: vass:this does not correspond to the current implementation:
 % * when invoking the compiler-generated constructor, default initialization
 %   does not happen;
 % * in many cases (?), fields' initialization expressions are not invoked.
@@ -827,6 +833,27 @@ for i in ta do
 \end{chapeloutput}
 
 \end{chapelexample}
+
+\section{Common Operations}
+
+\subsection{Class Assignment}
+\label{Class_Assignment}
+\index{classes!assignment}
+
+Classes are assigned by reference.  After an assignment from one
+variable of a class type to another, the variables reference the same
+class instance.
+
+\subsection{Implicit Class Conversions}
+\label{Implicit_Class_Conversions}
+\index{conversions!class}
+\index{conversions!implicit!class}
+\index{classes!implicit conversion}
+
+An implicit conversion from class type \chpl{D} to
+another class type \chpl{C} is allowed when \chpl{D} is a subclass
+of \chpl{C}.
+Such conversion does not change the value.
 
 \section{Dynamic Memory Management}
 \label{Dynamic_Memory_Management}

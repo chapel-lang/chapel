@@ -78,13 +78,13 @@ void chpl_comm_exit_all(int status) { }
 void  chpl_comm_put(void* addr, int32_t locale, void* raddr,
                     int32_t size, int32_t typeIndex, int32_t len,
                     int ln, chpl_string fn) {
-  memcpy(raddr, addr, size);
+  memcpy(raddr, addr, size*len);
 }
 
 void  chpl_comm_get(void* addr, int32_t locale, void* raddr,
                     int32_t size, int32_t typeIndex, int32_t len,
                     int ln, chpl_string fn) {
-  memcpy(addr, raddr, size);
+  memcpy(addr, raddr, size*len);
 }
 
 typedef struct {
@@ -107,7 +107,7 @@ void chpl_comm_fork_nb(int locale, chpl_fn_int_t fid, void *arg,
   int     info_size;
 
   info_size = sizeof(fork_t) + arg_size;
-  info = (fork_t*)chpl_mem_allocMany(info_size, sizeof(char), CHPL_RT_MD_REMOTE_NB_FORK_DATA, 0, 0);
+  info = (fork_t*)chpl_mem_allocMany(info_size, sizeof(char), CHPL_RT_MD_COMM_FORK_SEND_NB_INFO, 0, 0);
   info->fid = fid;
   info->arg_size = arg_size;
   if (arg_size)

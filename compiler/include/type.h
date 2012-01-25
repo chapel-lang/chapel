@@ -72,6 +72,8 @@ class Type : public BaseAST {
 class EnumType : public Type {
  public:
   AList constants; // EnumSymbols
+  PrimitiveType* integerType; // what integer type contains all of this enum values?
+                              // if this is NULL it will just be recomputed when needed.
 
   EnumType();
   ~EnumType();
@@ -81,6 +83,11 @@ class EnumType : public Type {
 
   void codegenDef(FILE* outfile);
   int codegenStructure(FILE* outfile, const char* baseoffset);
+
+  // computes integerType and does the next=last+1 assignments.
+  // This will only really work after the function resolution.
+  void sizeAndNormalize();
+  PrimitiveType* getIntegerType();
 };
 
 
@@ -170,7 +177,7 @@ extern ClassType* wideStringType;
 
 // standard module types
 TYPE_EXTERN ClassType* dtArray;
-TYPE_EXTERN ClassType* dtChapelFile;
+TYPE_EXTERN ClassType* dtReader;
 TYPE_EXTERN ClassType* dtWriter;
 TYPE_EXTERN ClassType* dtBaseArr;
 TYPE_EXTERN ClassType* dtBaseDom;

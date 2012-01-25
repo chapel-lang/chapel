@@ -1,6 +1,14 @@
+// DefaultRectangular.chpl
+//
+pragma "no use ChapelStandard"
+module DefaultRectangular {
+
 use DSIUtil;
 config param debugDefaultDist = false;
+config param debugDefaultDistBulkTransfer = false;
 config param debugDataPar = false;
+
+config param defaultDoRADOpt = true;
 
 class DefaultDist: BaseDist {
   proc dsiNewRectangularDom(param rank: int, type idxType, param stridable: bool)
@@ -43,6 +51,10 @@ class DefaultRectangularDom: BaseRectangularDom {
 
   proc DefaultRectangularDom(param rank, type idxType, param stridable, dist) {
     this.dist = dist;
+  }
+
+  proc dsiDisplayRepresentation() {
+    writeln("ranges = ", ranges);
   }
 
   proc dsiClear() {
@@ -96,7 +108,7 @@ class DefaultRectangularDom: BaseRectangularDom {
     }
   }
 
-  iter these(param tag: iterator) where tag == iterator.leader {
+  iter these(param tag: iterKind) where tag == iterKind.leader {
     if debugDefaultDist then
       writeln("*** In domain/array leader code:"); // this = ", this);
     const numTasks = if dataParTasksPerLocale==0 then here.numCores
@@ -170,35 +182,35 @@ class DefaultRectangularDom: BaseRectangularDom {
     }
   }
 
-  iter these(param tag: iterator, follower) where tag == iterator.follower {
+  iter these(param tag: iterKind, followThis) where tag == iterKind.follower {
     proc anyStridable(rangeTuple, param i: int = 1) param
       return if i == rangeTuple.size then rangeTuple(i).stridable
              else rangeTuple(i).stridable || anyStridable(rangeTuple, i+1);
 
-    chpl__testPar("default rectangular domain follower invoked on ", follower);
+    chpl__testPar("default rectangular domain follower invoked on ", followThis);
     if debugDefaultDist then
-      writeln("In domain follower code: Following ", follower);
-    param stridable = this.stridable || anyStridable(follower);
+      writeln("In domain follower code: Following ", followThis);
+    param stridable = this.stridable || anyStridable(followThis);
     var block: rank*range(idxType=idxType, stridable=stridable);
     if stridable {
       for param i in 1..rank {
         const rStride = ranges(i).stride:idxType,
-              fStride = follower(i).stride:idxType;
+              fStride = followThis(i).stride:idxType;
         if ranges(i).stride > 0 {
-          const low = ranges(i).low + follower(i).low*rStride,
-                high = ranges(i).low + follower(i).high*rStride,
+          const low = ranges(i).low + followThis(i).low*rStride,
+                high = ranges(i).low + followThis(i).high*rStride,
                 stride = (rStride * fStride):int;
           block(i) = low..high by stride;
         } else {
-          const low = ranges(i).high + follower(i).high*rStride,
-                high = ranges(i).high + follower(i).low*rStride,
+          const low = ranges(i).high + followThis(i).high*rStride,
+                high = ranges(i).high + followThis(i).low*rStride,
                 stride = (rStride * fStride): int;
           block(i) = low..high by stride;
         }
       }
     } else {
       for  param i in 1..rank do
-        block(i) = ranges(i).low+follower(i).low:idxType..ranges(i).low+follower(i).high:idxType;
+        block(i) = ranges(i).low+followThis(i).low:idxType..ranges(i).low+followThis(i).high:idxType;
     }
 
     if rank == 1 {
@@ -356,6 +368,35 @@ class DefaultRectangularDom: BaseRectangularDom {
   }
 }
 
+record _remoteAccessData {
+  type eltType;
+  param rank : int;
+  type idxType;
+  var off: rank*idxType;
+  var blk: rank*idxType;
+  var str: rank*chpl__signedType(idxType);
+  var origin: idxType;
+  var factoredOffs: idxType;
+}
+
+//
+// Local cache of remote ddata access info
+//
+class LocRADCache {
+  type eltType;
+  param rank: int;
+  type idxType;
+  var targetLocDom: domain(rank);
+  var RAD: [targetLocDom] _remoteAccessData(eltType, rank, idxType);
+  var ddata: [targetLocDom] _ddata(eltType);
+
+  proc LocRADCache(type eltType, param rank: int, type idxType,
+                   newTargetLocDom: domain(rank)) {
+    // This should resize the arrays
+    targetLocDom=newTargetLocDom;
+  }
+}
+
 class DefaultRectangularArr: BaseArr {
   type eltType;
   param rank : int;
@@ -376,6 +417,15 @@ class DefaultRectangularArr: BaseArr {
   proc canCopyFromDevice param return true;
 
   // end class definition here, then defined secondary methods below
+
+  proc dsiDisplayRepresentation() {
+    writeln("off=", off);
+    writeln("blk=", blk);
+    writeln("str=", str);
+    writeln("origin=", origin);
+    writeln("factoredOffs=", factoredOffs);
+    writeln("noinit=", noinit);
+  }
 
   // can the compiler create this automatically?
   proc dsiGetBaseDom() return dom;
@@ -431,15 +481,15 @@ class DefaultRectangularArr: BaseArr {
     }
   }
 
-  iter these(param tag: iterator) where tag == iterator.leader {
-    for follower in dom.these(tag) do
-      yield follower;
+  iter these(param tag: iterKind) where tag == iterKind.leader {
+    for followThis in dom.these(tag) do
+      yield followThis;
   }
 
-  iter these(param tag: iterator, follower) var where tag == iterator.follower {
+  iter these(param tag: iterKind, followThis) var where tag == iterKind.follower {
     if debugDefaultDist then
       writeln("*** In array follower code:"); // [\n", this, "]");
-    for i in dom.these(tag=iterator.follower, follower) {
+    for i in dom.these(tag=iterKind.follower, followThis) {
       __primitive("noalias pragma");
       yield dsiAccess(i);
     }
@@ -594,6 +644,16 @@ class DefaultRectangularArr: BaseArr {
   proc dsiLocalSlice(ranges) {
     halt("all dsiLocalSlice calls on DefaultRectangulars should be handled in ChapelArray.chpl");
   }
+
+  proc dsiGetRAD() {
+    var rad: _remoteAccessData(eltType, rank, idxType);
+    rad.off = off;
+    rad.blk = blk;
+    rad.str = str;
+    rad.origin = origin;
+    rad.factoredOffs = factoredOffs;
+    return rad;
+  }
 }
 
 proc DefaultRectangularDom.dsiSerialWrite(f: Writer) {
@@ -627,4 +687,95 @@ proc DefaultRectangularArr.dsiSerialWrite(f: Writer) {
   }
   const zeroTup: rank*idxType;
   recursiveArrayWriter(zeroTup);
+}
+
+
+// This is very conservative.  For example, it will return false for
+// 1-d array aliases that are shifted from the aliased array.
+proc DefaultRectangularArr.isDataContiguous() {
+  if debugDefaultDistBulkTransfer then
+    writeln("isDataContiguous(): origin=", origin, " off=", off, " blk=", blk);
+  if origin != 0 then return false;
+
+  for param dim in 1..rank do
+    if off(dim)!= dom.dsiDim(dim).first then return false;
+
+  if blk(rank) != 1 then return false;
+
+  for param dim in 1..rank-1 by -1 do
+    if blk(dim) != blk(dim+1)*dom.dsiDim(dim+1).length then return false;
+
+  if debugDefaultDistBulkTransfer then
+    writeln("\tYES!");
+
+  return true;
+}
+
+proc DefaultRectangularArr.dsiSupportsBulkTransfer() param return true;
+
+proc DefaultRectangularArr.doiCanBulkTransfer() {
+  if dom.stridable then
+    for param i in 1..rank do
+      if dom.ranges(i).stride != 1 then return false;
+
+  if !isDataContiguous() then return false;
+
+  return true;
+}
+
+proc DefaultRectangularArr.doiBulkTransfer(B) {
+  const Adims = dom.dsiDims();
+  var Alo: rank*dom.idxType;
+  for param i in 1..rank do
+    Alo(i) = Adims(i).first;
+
+  const Bdims = B.domain.dims();
+  var Blo: rank*dom.idxType;
+  for param i in 1..rank do
+    Blo(i) = Bdims(i).first;
+
+  const len = dom.dsiNumIndices:int(32);
+  extern proc sizeof(type x): int(32);
+  if debugBulkTransfer {
+    const elemSize: int(32)=sizeof(B._value.eltType);
+    writeln("In doiBulkTransfer(): Alo=", Alo, ", Blo=", Blo,
+            ", len=", len, ", elemSize=", elemSize);
+  }
+
+  // NOTE: This does not work with --heterogeneous, but heterogeneous
+  // compilation does not work right now.  The calls to chpl_comm_get
+  // and chpl_comm_put should be changed once that is fixed.
+  if this.data.locale==here {
+    if debugDefaultDistBulkTransfer then
+      writeln("\tlocal get() from ", B.locale.id);
+    var dest = this.data;
+    var src = B._value.data;
+    __primitive("chpl_comm_get",
+                __primitive("array_get", dest, getDataIndex(Alo)),
+                B._value.data.locale.id,
+                __primitive("array_get", src, B._value.getDataIndex(Blo)),
+                len);
+  } else if B._value.data.locale==here {
+    if debugDefaultDistBulkTransfer then
+      writeln("\tlocal put() to ", this.locale.id);
+    var dest = this.data;
+    var src = B._value.data;
+    __primitive("chpl_comm_put",
+                __primitive("array_get", src, B._value.getDataIndex(Blo)),
+                this.data.locale.id,
+                __primitive("array_get", dest, getDataIndex(Alo)),
+                len);
+  } else on this.data.locale {
+    if debugDefaultDistBulkTransfer then
+      writeln("\tremote get() on ", here.id, " from ", B.locale.id);
+    var dest = this.data;
+    var src = B._value.data;
+    __primitive("chpl_comm_get",
+                __primitive("array_get", dest, getDataIndex(Alo)),
+                B._value.data.locale.id,
+                __primitive("array_get", src, B._value.getDataIndex(Blo)),
+                len);
+  }
+}
+
 }

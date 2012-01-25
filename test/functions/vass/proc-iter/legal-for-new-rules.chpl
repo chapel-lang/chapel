@@ -42,7 +42,7 @@ writeln(i11g());
 
 
 // just a declaration
-_extern proc e1();
+extern proc e1();
 
 
 // helper: run an iterator

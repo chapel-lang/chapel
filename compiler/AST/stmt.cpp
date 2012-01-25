@@ -8,10 +8,17 @@
 #include "stringutil.h"
 
 
+// remember these so we can update their labels' iterResumeGoto
+Map<GotoStmt*,GotoStmt*> copiedIterResumeGotos;
+
+// remember these so we can remove their iterResumeGoto
+Vec<LabelSymbol*> removedIterResumeLabels;
+
+
 void codegenStmt(FILE* outfile, Expr* stmt) {
-  if (stmt->lineno > 0) {
+  if (stmt->linenum() > 0) {
     if (printCppLineno) {
-      fprintf(outfile, "/* ZLINE: %d %s */\n", stmt->lineno, stmt->getModule()->filename);
+      fprintf(outfile, "/* ZLINE: %d %s */\n", stmt->linenum(), stmt->fname());
     } 
   }
   if (fGenIDS)
@@ -350,6 +357,7 @@ CondStmt::fold_cond_stmt()
       }
     }
   }
+  removeDeadIterResumeGotos();
   return result;
 }
 
@@ -459,6 +467,20 @@ GotoStmt::GotoStmt(GotoTag init_gotoTag, Expr* init_label) :
 }
 
 
+LabelSymbol* getGotoLabelSymbol(GotoStmt* gs) {
+  if (gs->label)
+    if (SymExpr* labse = toSymExpr(gs->label))
+      if (labse->var)
+        return toLabelSymbol(labse->var);
+  return NULL;
+}
+
+GotoStmt* getGotoLabelsIterResumeGoto(GotoStmt* gs) {
+  LabelSymbol* labsym = getGotoLabelSymbol(gs);
+  return labsym ? labsym->iterResumeGoto : NULL;
+}
+
+
 void GotoStmt::verify() {
   Expr::verify();
   if (astTag != E_GotoStmt) {
@@ -476,6 +498,11 @@ void GotoStmt::verify() {
         INT_FATAL(this, "goto label is not in a function");
       if (se->var->defPoint->parentSymbol != this->parentSymbol)
         INT_FATAL(this, "goto label is in a different function than the goto");
+      GotoStmt* igs = getGotoLabelsIterResumeGoto(this);
+      if ((gotoTag == GOTO_ITER_RESUME) == (igs == NULL))
+        INT_FATAL(this, "goto must be GOTO_ITER_RESUME iff its label has iterResumeGoto");
+      if (gotoTag == GOTO_ITER_RESUME && igs != this)
+        INT_FATAL(this, "GOTO_ITER_RESUME goto's label's iterResumeGoto does not match the goto");
     }
   }
 }
@@ -483,7 +510,40 @@ void GotoStmt::verify() {
 
 GotoStmt*
 GotoStmt::copyInner(SymbolMap* map) {
-  return new GotoStmt(gotoTag, COPY_INT(label));
+  GotoStmt* copy = new GotoStmt(gotoTag, COPY_INT(label));
+
+  // For a GOTO_ITER_RESUME: has the label symbol already been copied? ...
+  LabelSymbol* labsym;
+  if (gotoTag == GOTO_ITER_RESUME && (labsym = getGotoLabelSymbol(this))) {
+    LabelSymbol* lcopy = NULL;
+    if (Symbol* mcopy = map->get(labsym)) {
+      lcopy = toLabelSymbol(mcopy);
+      INT_ASSERT(lcopy); // a LabelSymbol gotta map to a LabelSymbol
+    }
+    if (lcopy) {
+      // ... yes => update the copy's field,
+      lcopy->iterResumeGoto = copy;
+      // printf("GotoStmt-copy %d > %d  labsym %d > %d  updating the copy\n",
+      //        this->id, copy->id, labsym->id, lcopy->id);
+    } else {
+      // ... no => remember this goto copy for later.
+      copiedIterResumeGotos.put(this, copy);
+      // printf("GotoStmt-copy %d > %d  labsym %d  remembering\n",
+      //        this->id, copy->id, labsym->id);
+    }
+  }
+  return copy;
+}
+
+//
+// Ensure all remembered Gotos have been taken care of.
+// Reset copiedIterResumeGotos.
+//
+void verifyNcleanCopiedIterResumeGotos() {
+  for (int i = 0; i < copiedIterResumeGotos.n; i++)
+    if (GotoStmt* copy = copiedIterResumeGotos.v[i].value)
+      INT_FATAL(copy, "unhandled goto in copiedIterResumeGotos");
+  copiedIterResumeGotos.clear();
 }
 
 

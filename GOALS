@@ -1,5 +1,5 @@
 ===========================================
-Chapel Public Release Goals (version 1.3.0)
+Chapel Public Release Goals (version 1.4.0)
 ===========================================
 
 The goals of this release are as follows:
@@ -18,11 +18,8 @@ The goals of this release are as follows:
 * to demonstrate Chapel's data parallel features via a combination of
 
   (i) a multi-threaded implementation of ranges and of non-distributed
-      arithmetic, sparse, and associative domains and arrays;
+      regular and irregular domains and arrays;
 
-  (ii) a multi-threaded, multi-locale implementation of arithmetic
-       domains and arrays via standard Block and Cyclic distributions;
-
-  (iii) a single-threaded, non-distributed reference implementation
-        of opaque domains and arrays.
+  (ii) a multi-threaded, multi-locale implementation of regular arrays
+       using some standard distributions.
 

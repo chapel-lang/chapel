@@ -8,7 +8,7 @@
 // so it can compute only the first 4 million digits of Pi or so.
 //
 //
-_extern proc printf(s...);
+extern proc printf(s...);
 
 use Time;
 

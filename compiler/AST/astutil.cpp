@@ -84,10 +84,13 @@ void collect_top_asts(BaseAST* ast, Vec<BaseAST*>& asts) {
   asts.add(ast);
 }
               
+void reset_ast_loc(BaseAST* destNode, BaseAST* sourceNode) {
+  reset_ast_loc(destNode, sourceNode->astloc);
+}
 
-void reset_line_info(BaseAST* ast, int lineno) {
-  ast->lineno = lineno;
-  AST_CHILDREN_CALL(ast, reset_line_info, lineno);
+void reset_ast_loc(BaseAST* destNode, astlocT astlocArg) {
+  destNode->astloc = astlocArg;
+  AST_CHILDREN_CALL(destNode, reset_ast_loc, astlocArg);
 }
 
 
@@ -324,12 +327,15 @@ void insert_help(BaseAST* ast,
 }
 
 
-void remove_help(BaseAST* ast, int flag) {
-  AST_CHILDREN_CALL(ast, remove_help, flag);
+void remove_help(BaseAST* ast, int trace_flag) {
+  trace_remove(ast, trace_flag);
+  AST_CHILDREN_CALL(ast, remove_help, trace_flag);
   if (Expr* expr = toExpr(ast)) {
-    trace_remove(ast, flag);
     expr->parentSymbol = NULL;
     expr->parentExpr = NULL;
+  } else if (LabelSymbol* labsym = toLabelSymbol(ast)) {
+    if (labsym->iterResumeGoto)
+      removedIterResumeLabels.add(labsym);
   }
 }
 
@@ -426,8 +432,11 @@ visitVisibleFunctions(Vec<FnSymbol*>& fns, Vec<TypeSymbol*>& types)
         pruneVisit(virtualMethodTable.v[i].value->v[j], fns, types);
 
   // Mark exported symbols as visible.
+  // All module initialization functions should be exported,
+  // but for now we treat them as a separate class. <hilde>
   forv_Vec(FnSymbol, fn, gFnSymbols)
-    if (fn->hasFlag(FLAG_EXPORT))
+    if (fn->hasFlag(FLAG_EXPORT) ||
+        fn->hasFlag(FLAG_MODULE_INIT))
       pruneVisit(fn, fns, types);
 }
 

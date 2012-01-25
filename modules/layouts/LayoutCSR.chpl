@@ -76,7 +76,7 @@ class CSRDom: BaseSparseDom {
     }
   }
 
-  iter these(param tag: iterator) where tag == iterator.leader {
+  iter these(param tag: iterKind) where tag == iterKind.leader {
     // same as DefaultSparseDom's leader
     const numElems = nnz;
       const numChunks = _computeNumChunks(numElems);
@@ -96,12 +96,12 @@ class CSRDom: BaseSparseDom {
       // pass to the tasks created in 'coforall' smaller ranges to search over.
   }
 
-  iter these(param tag: iterator, follower: (?,?,?)) where tag == iterator.follower {
-    var (followerDom, startIx, endIx) = follower;
+  iter these(param tag: iterKind, followThis: (?,?,?)) where tag == iterKind.follower {
+    var (followThisDom, startIx, endIx) = followThis;
     if boundsChecking then
       assert(startIx <= endIx, "CSRDom follower - got nothing to iterate over");
 
-    if (followerDom != this) then
+    if (followThisDom != this) then
       halt("Sparse domains can't be zippered with anything other than themselves and their arrays (CSR layout)");
 
     // This loop is identical to the serial iterator, except for the iteration
@@ -117,7 +117,7 @@ class CSRDom: BaseSparseDom {
     }
   }
 
-  iter these(param tag: iterator, follower) where tag == iterator.follower {
+  iter these(param tag: iterKind, followThis) where tag == iterKind.follower {
     compilerError("Sparse iterators can't yet be zippered with others (CSR layout)");
     yield 0;	// Dummy.
   }
@@ -323,19 +323,19 @@ class CSRArr: BaseArr {
     for e in data[1..dom.nnz] do yield e;
   }
 
-  iter these(param tag: iterator) where tag == iterator.leader {
+  iter these(param tag: iterKind) where tag == iterKind.leader {
     // forward to the leader iterator on our domain
     // Note: this is so that arrays can be zippered with domains;
     // otherwise just chunk up data[1..dom.nnz] a-la DefaultSparseArr.
-    for follower in dom.these(tag) do
-      yield follower;
+    for followThis in dom.these(tag) do
+      yield followThis;
   }
 
-  iter these(param tag: iterator, follower: (?,?,?)) var where tag == iterator.follower {
+  iter these(param tag: iterKind, followThis: (?,?,?)) var where tag == iterKind.follower {
     // simpler than CSRDom's follower - no need to deal with rows (or columns)
-    var (followerDom, startIx, endIx) = follower;
+    var (followThisDom, startIx, endIx) = followThis;
 
-    if (followerDom != this.dom) then
+    if (followThisDom != this.dom) then
       halt("Sparse arrays can't be zippered with anything other than their domains and sibling arrays (CSR layout)");
     if debugCSR then
       writeln("CSRArr follower: ", startIx, "..", endIx);
@@ -343,7 +343,7 @@ class CSRArr: BaseArr {
     for e in data[startIx..endIx] do yield e;
   }
 
-  iter these(param tag: iterator, follower) where tag == iterator.follower {
+  iter these(param tag: iterKind, followThis) where tag == iterKind.follower {
     compilerError("Sparse iterators can't yet be zippered with others (CSR layout)");
     yield 0;	// Dummy.
   }

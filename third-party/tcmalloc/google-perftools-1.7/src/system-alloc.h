@@ -108,8 +108,16 @@ class SysAllocator {
 extern PERFTOOLS_DLL_DECL bool RegisterSystemAllocator(SysAllocator *allocator,
                                                        int priority);
 
+// Disable all system allocators except the given one. This can be used
+// by clients that want to register their own system allocator and be
+// assured that all memory will come from it. Note that after this is
+// called, the client must do allocations that consume any memory that
+// was already given to tcmalloc by any other system allocators that
+// had been active before the disable call was made.
+extern PERFTOOLS_DLL_DECL void DisableAllButThisSystemAllocator(int);
+
 // Number of SysAllocators known to call RegisterSystemAllocator
-static const int kMaxDynamicAllocators = 3;
+static const int kMaxDynamicAllocators = 2;
 
 // Retrieve the current state of various system allocators.
 extern PERFTOOLS_DLL_DECL void DumpSystemAllocatorStats(TCMalloc_Printer* printer);

@@ -1,5 +1,6 @@
 var myFloat = 9.99;
-var f: file = new file(filename = "_test_fwritelnFloatFile.txt", mode = FileAccessMode.write);
+var f = open("_test_fwritelnFloatFile.txt", mode.w).writer();
 
-f.open();
 f.writeln(myFloat);
+f.close();
+

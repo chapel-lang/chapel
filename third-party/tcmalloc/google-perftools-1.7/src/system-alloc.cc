@@ -154,7 +154,7 @@ static char devmem_space[sizeof(DevMemSysAllocator)];
 
 static const int kStaticAllocators = 3;
 // kMaxDynamicAllocators + kStaticAllocators;
-static const int kMaxAllocators = 6;
+static const int kMaxAllocators = 5;
 static SysAllocator *allocators[kMaxAllocators];
 
 bool RegisterSystemAllocator(SysAllocator *a, int priority) {
@@ -165,6 +165,15 @@ bool RegisterSystemAllocator(SysAllocator *a, int priority) {
   CHECK_CONDITION(allocators[priority] == NULL);
   allocators[priority] = a;
   return true;
+}
+
+void DisableAllButThisSystemAllocator(int priority) {
+  SpinLockHolder lock_holder(&spinlock);
+
+  for (int j = 0; j < kMaxAllocators; j++) {
+    if (j != priority && allocators[j] != NULL)
+      allocators[j]->usable_ = false;
+  }
 }
 
 
@@ -422,23 +431,6 @@ static bool system_alloc_inited = false;
 void InitSystemAllocators(void) {
   // This determines the order in which system allocators are called
   int i = kMaxDynamicAllocators;
-
-  //
-  // If Chapel supplies a static pool allocator, then that is our only
-  // static one.
-  //
-  {
-    extern
-      ATTRIBUTE_WEAK SysAllocator *chpl_mem_createStaticPoolSysAllocator(void);
-    SysAllocator *a;
-
-    if (chpl_mem_createStaticPoolSysAllocator != NULL
-	&& (a = chpl_mem_createStaticPoolSysAllocator()) != NULL) {
-      allocators[i++] = a;
-      return;
-    }
-  }
-
   allocators[i++] = new (devmem_space) DevMemSysAllocator();
 
   // In 64-bit debug mode, place the mmap allocator first since it

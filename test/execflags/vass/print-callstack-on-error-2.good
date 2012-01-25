@@ -4,4 +4,3 @@ while processing the following Chapel call chain:
   print-callstack-on-error-2.chpl:5: myiter1.these()
   $CHPL_HOME/modules/internal/ChapelArray.chpl:: _getIterator(x) [internal module]
   print-callstack-on-error-2.chpl:11: top-level module statements for print-callstack-on-error-2
-  print-callstack-on-error-2.chpl:1: chpl_main() [compiler-generated]

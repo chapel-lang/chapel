@@ -11,7 +11,7 @@
 #include <cstdlib>
 #include <sys/time.h>
 
-bool printPasses = true;
+bool printPasses = false;
 
 struct PassInfo {
   void (*fn)(void);
@@ -110,7 +110,7 @@ static void setupLogfiles() {
     dump_index_header(html_index_file);
     fprintf(html_index_file, "<TABLE CELLPADDING=\"0\" CELLSPACING=\"0\">");
   }
-  if (deletedIdFilename[0]) {
+  if (deletedIdFilename[0] != '\0') {
     deletedIdHandle = fopen(deletedIdFilename, "w");
     if (!deletedIdHandle) {
       USR_FATAL("cannot open file to log deleted AST ids\"%s\" for writing", deletedIdFilename);
@@ -124,8 +124,9 @@ static void teardownLogfiles() {
     dump_index_footer(html_index_file);
     fclose(html_index_file);
   }
-  if (*deletedIdFilename) {
+  if (deletedIdON) {
     fclose(deletedIdHandle);
+    deletedIdHandle = NULL;
   }
 }
 
@@ -144,6 +145,6 @@ void runPasses(void) {
     pass++;
   }
   advanceCurrentPass("finishing up");
-  teardownLogfiles();
   destroyAst();
+  teardownLogfiles();
 }

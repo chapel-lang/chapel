@@ -1,3 +1,3 @@
-write("
+write("\
 ");
 var x;

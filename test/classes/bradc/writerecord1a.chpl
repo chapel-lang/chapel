@@ -9,7 +9,6 @@ record myrecord {
 
 var a: myrecord;
 var b: myrecord;
-var f: file = stdout;
 
 writeln("a is: ", a, ", b is: ", b);
 

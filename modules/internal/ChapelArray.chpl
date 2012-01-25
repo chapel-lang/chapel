@@ -1,6 +1,17 @@
+// ChapelArray.chpl
+//
+pragma "no use ChapelStandard"
+module ChapelArray {
+
+use ChapelBase; // For opaque type.
+use ChapelTuple;
+
 config param noRefCount = false;
 
 var privatizeLock$: sync int;
+
+config param debugBulkTransfer = false;
+config param useBulkTransfer = true;
 
 pragma "privatized class"
 proc _isPrivatized(value) param
@@ -9,14 +20,14 @@ proc _isPrivatized(value) param
 proc _newPrivatizedClass(value) {
   privatizeLock$.writeEF(true);
   var n = __primitive("chpl_numPrivatizedClasses");
-  var hereID = here.uid;
+  var hereID = here.id;
   const privatizeData = value.dsiGetPrivatizeData();
-  on Realms(0) do
+  on Locales[0] do
     _newPrivatizedClassHelp(value, value, n, hereID, privatizeData);
 
   proc _newPrivatizedClassHelp(parentValue, originalValue, n, hereID, privatizeData) {
     var newValue = originalValue;
-    if hereID != here.uid {
+    if hereID != here.id {
       newValue = parentValue.dsiPrivatize(privatizeData);
       __primitive("chpl_newPrivatizedClass", newValue);
       newValue.pid = n;
@@ -40,13 +51,14 @@ proc _newPrivatizedClass(value) {
 
 proc _reprivatize(value) {
   var pid = value.pid;
-  var hereID = here.uid;
+  var hereID = here.id;
   const reprivatizeData = value.dsiGetReprivatizeData();
-  on Realms(0) do
+  on Locales[0] do
     _reprivatizeHelp(value, value, pid, hereID, reprivatizeData);
+
   proc _reprivatizeHelp(parentValue, originalValue, pid, hereID, reprivatizeData) {
     var newValue = originalValue;
-    if hereID != here.uid {
+    if hereID != here.id {
       newValue = chpl_getPrivatizedCopy(newValue.type, pid);
       newValue.dsiReprivatize(parentValue, reprivatizeData);
     }
@@ -214,12 +226,12 @@ proc chpl__buildDomainExpr(x: domain)
   return x;
 
 proc chpl__buildDomainExpr(ranges: range(?) ...?rank) {
-  for param i in 2..rank {
+  for param i in 2..rank do
     if ranges(1).idxType != ranges(i).idxType then
-      compilerError("domain has mixed dimensional type");
-    if ranges(i).boundedType != BoundedRangeType.bounded then
-      compilerError("domain has dimension of unbounded range");
-  }
+      compilerError("idxType varies among domain's dimensions");
+  for param i in 1..rank do
+    if ! isBoundedRange(ranges(i)) then
+      compilerError("one of domain's dimensions is not a bounded range");
   var d: domain(rank, ranges(1).idxType, chpl__anyStridable(ranges));
   d.setIndices(ranges);
   return d;
@@ -468,7 +480,7 @@ record _distribution {
   proc idxToLocale(ind) return _value.dsiIndexToLocale(ind);
 
   proc writeThis(x: Writer) {
-    _value.writeThis(x);
+    x.write(_value);
   }
 
   proc displayRepresentation() { _value.dsiDisplayRepresentation(); }
@@ -547,8 +559,12 @@ record _domain {
 
   // see comments for the same method in _array
   //
-  proc this(d: domain) where d.rank == rank
-    return this((...d.getIndices()));
+  proc this(d: domain) {
+    if d.rank == rank then
+      return this((...d.getIndices()));
+    else
+      compilerError("slicing a domain with a domain of a different rank");
+  }
 
   proc this(ranges: range(?) ...rank) {
     param stridable = _value.stridable || chpl__anyStridable(ranges);
@@ -591,6 +607,14 @@ record _domain {
     }
     var d = [(...newRanges)] dmapped newDist;
     return d;
+  }
+
+  // anything that is not covered by the above
+  proc this(args ...?numArgs) {
+    if numArgs == rank then
+      compilerError("invalid argument types for domain slicing");
+    else
+      compilerError("a domain slice requires either a single domain argument or exactly one argument per domain dimension");
   }
 
   proc dims() return _value.dsiDims();
@@ -1048,8 +1072,12 @@ record _array {
   // ranges, but in the sparse case, is there a general
   // representation?
   //
-  proc this(d: domain) where d.rank == rank
-    return this((...d.getIndices()));
+  proc this(d: domain) {
+    if d.rank == rank then
+      return this((...d.getIndices()));
+    else
+      compilerError("slicing an array with a domain of a different rank");
+  }
 
   proc checkSlice(ranges: range(?) ...rank) {
     for param i in 1.._value.dom.rank do
@@ -1296,6 +1324,9 @@ proc =(a: domain, b: domain) {
       on e do e.dsiReallocate(b);
     }
     a.setIndices(b.getIndices());
+    for e in a._value._arrs do {
+      on e do e.dsiPostReallocate();
+    }
   } else {
     //
     // BLC: It's tempting to do a clear + add here, but because
@@ -1418,11 +1449,66 @@ proc chpl__serializeAssignment(a: [], b) param {
   return false;
 }
 
+// This must be a param function
+proc chpl__compatibleForBulkTransfer(a:[], b:[]) param {
+  if a.eltType != b.eltType then return false;
+  if !chpl__supportedDataTypeForBulkTransfer(a.eltType) then return false;
+  if a._value.type != b._value.type then return false;
+  if !a._value.dsiSupportsBulkTransfer() then return false;
+  return true;
+}
+
+// This must be a param function
+proc chpl__supportedDataTypeForBulkTransfer(type t) param {
+  var x:t;
+  if !_isPrimitiveType(t) then return false;
+  if t==string then return false;
+  return true;
+  return chpl__supportedDataTypeForBulkTransfer(x);
+}
+proc chpl__supportedDataTypeForBulkTransfer(x: string) param return false;
+proc chpl__supportedDataTypeForBulkTransfer(x: sync) param return false;
+proc chpl__supportedDataTypeForBulkTransfer(x: single) param return false;
+proc chpl__supportedDataTypeForBulkTransfer(x: domain) param return false;
+proc chpl__supportedDataTypeForBulkTransfer(x: []) param return false;
+proc chpl__supportedDataTypeForBulkTransfer(x: _distribution) param return false;
+proc chpl__supportedDataTypeForBulkTransfer(x: object) param return false;
+proc chpl__supportedDataTypeForBulkTransfer(x) param return true;
+
+
+proc chpl__useBulkTransfer(a:[], b:[]) {
+
+  // constraints specific to a particular domain map array type
+  if !a._value.doiCanBulkTransfer() then return false;
+  if !b._value.doiCanBulkTransfer() then return false;
+
+  for param i in 1..a._value.rank {
+    // size must be the same in each dimension
+    if a._value.dom.dsiDim(i).length !=
+       b._value.dom.dsiDim(i).length then return false;
+  }
+
+  return true;
+}
+
+proc chpl__useBulkTransfer(a: [], b) param return false;
+
 pragma "inline" proc =(a: [], b) {
   if (chpl__isArray(b) || chpl__isDomain(b)) && a.rank != b.rank then
     compilerError("rank mismatch in array assignment");
   if chpl__isArray(b) && b._value == nil then
     return a;
+
+  // This outer conditional must result in a param
+  if useBulkTransfer && chpl__isArray(b) &&
+     chpl__compatibleForBulkTransfer(a, b) &&
+    !chpl__serializeAssignment(a, b) {
+    if chpl__useBulkTransfer(a, b) {
+      a._value.doiBulkTransfer(b);
+      return a;
+    }
+  }
+
   if chpl__serializeAssignment(a, b) {
     compilerWarning("whole array assignment has been serialized (see note in $CHPL_HOME/STATUS)");
     for (aa,bb) in (a,b) do
@@ -1484,7 +1570,7 @@ proc =(a: [], b: _desync(a.eltType)) {
     forall e in a do
       e = b;
   } else {
-    compilerWarning("Whole array assignment has been serialized (see note in $CHPL_HOME/STATUS)");
+    compilerWarning("whole array assignment has been serialized (see note in $CHPL_HOME/STATUS)");
     for e in a do
       e = b;
   }
@@ -1853,4 +1939,6 @@ proc chpl__initCopy(ir: _iteratorRecord) {
   }
   D = [1..i-1];
   return A;
+}
+
 }

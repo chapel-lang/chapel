@@ -1,7 +1,7 @@
 // Test tuple indefinite domain lookup
 
-type key_t = (string, int, real);
-var tupled: domain( key_t);
+type my_key_t = (string, int, real);
+var tupled: domain(my_key_t);
 // var tupled: domain( (string, int, real));
 tupled.add( ("pete", 1, 2.0));
 tupled.add( ("beet", 9, 0.0));

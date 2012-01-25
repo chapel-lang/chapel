@@ -64,25 +64,24 @@ const char* chpl_mem_descString(chpl_mem_descInt_t mdi) {
     "array elements",
     "set wide string",
     "get wide string",
-    "private broadcast data",
-    "remote fork data",
-    "remote fork non-blocking data",
-    "remote GPC data",
-    "remote GPC header addr",
-    "remote GPC header",
-    "remote GPC copy of data",
-    "remote GPC fork data",
-    "active message fork data",
-    "active message fork arg",
-    "active message fork large data",
-    "active message fork non-blocking data",
-    "active message fork non-blocking arg",
-    "active message fork non-blocking large data",
-    "remote fork arg",
     "command buffer",
-    "pvm list of nodes",
-    "pvm spawn thing",
-    "private objects array",
+    "comm layer transmit/receive buffer",
+    "comm layer transmit/receive status",
+    "comm layer sent remote fork info",
+    "comm layer sent non-blocking remote fork info",
+    "comm layer sent remote fork large fncall arg",
+    "comm layer sent non-blocking remote fork large fncall arg",
+    "comm layer sent remote fork response data",
+    "comm layer received remote fork info",
+    "comm layer received remote fork large info",
+    "comm layer received non-blocking remote fork info",
+    "comm layer received non-blocking remote fork large info",
+    "comm layer received remote fork large fncall arg",
+    "comm layer received non-blocking remote fork large fncall arg ",
+    "comm layer remote fork done flag(s)",
+    "comm layer per-locale information",
+    "comm layer private objects array",
+    "comm layer private broadcast data",
     "garbage collection heap",
     "garbage collection space pointer",
     "glom strings data",
@@ -100,10 +99,11 @@ const char* chpl_mem_descString(chpl_mem_descInt_t mdi) {
     "lock report data",
     "task pool descriptor",
     "task list descriptor",
-    "arrays for localesPerRealm",
     "thread private data",
     "thread callee function pointer and argument",
-    "thread list descriptor"
+    "thread list descriptor",
+    "io buffer or bytes",
+    "gmp data",
   };
 
   if (mdi < CHPL_RT_MD_NUM)
@@ -142,6 +142,14 @@ void* chpl_mem_allocMany(size_t number, size_t size,
   return memAlloc;
 }
 
+void* chpl_mem_allocManyZero(size_t number, size_t size,
+                             chpl_mem_descInt_t description,
+                             int32_t lineno, chpl_string filename)
+{
+  void* ptr = chpl_mem_allocMany(number, size, description, lineno, filename);
+  memset(ptr, 0, number*size);
+  return ptr;
+}
 
 void* chpl_mem_realloc(void* memAlloc, size_t number, size_t size, 
                        chpl_mem_descInt_t description,

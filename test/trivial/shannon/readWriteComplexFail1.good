@@ -1,1 +1,1 @@
-readWriteComplexFail1.chpl:2: error: halt reached - ***Error: Incorrect format for complex numbers***
+1.2 + 0.0i

@@ -1,3 +1,5 @@
+#include "sys_basic.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include "chpl_rt_utils_static.h"
@@ -17,7 +19,7 @@ static void chpl_exit_common(int status, int all) {
     gdbShouldBreakHere();
   }
   if (all) {
-    chpl_comm_barrier("chpl_comm_exit_all");
+    chpl_comm_barrier("chpl_exit_common");
     chpl_comm_stopPollingTask();
     chpl_task_exit();
     chpl_reportMemInfo();

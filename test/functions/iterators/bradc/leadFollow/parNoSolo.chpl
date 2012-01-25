@@ -1,10 +1,10 @@
 class C {
-  iter these(param tag: iterator) where tag == iterator.leader {
+  iter these(param tag: iterKind) where tag == iterKind.leader {
     yield 1..10;
   }
 
-  iter these(param tag: iterator, follower) where tag == iterator.follower {
-    for i in follower do
+  iter these(param tag: iterKind, followThis) where tag == iterKind.follower {
+    for i in followThis do
       yield i;
   }
 }

@@ -16,7 +16,7 @@ foreach my $envsetting (@envlist) {
     } elsif ($envsetting =~ m/\#(.*)/) {
         # comment
     } elsif ($envsetting =~ m/(\w*)\s*(.)=\s*(\S*)/) {
-#        print "checking whether $1 $2= $3\n";
+#        print "checking whether $1 $2 $3\n";
         if ($2 eq "=") {
             if ($ENV{$1} eq $3) {
 #                print "yep\n";
@@ -30,6 +30,13 @@ foreach my $envsetting (@envlist) {
             } else {
 #                print "yep\n";
                 $skiptest = 1;
+            }
+        } elsif ($2 eq "<") {
+            if ($ENV{$1} =~ m/$3/) {
+#                print "yep\n";
+                $skiptest = 1;
+            } else {
+#                print "nope\n";
             }
         } else {
 #            print "ERROR: badly formatted line: $envsetting\n";

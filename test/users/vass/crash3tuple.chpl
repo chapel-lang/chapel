@@ -710,7 +710,7 @@ iter DimensionalDom.these() {
 
 //== leader iterator - domain
 
-iter DimensionalDom.these(param tag: iterator) where tag == iterator.leader {
+iter DimensionalDom.these(param tag: iterKind) where tag == iterKind.leader {
   _traceddd(this, ".leader");
   assert(rank == 2);
 
@@ -832,21 +832,21 @@ writeln(lls(2), "-", taskid, "  follower ", follow);
 
 //== leader iterator - array
 
-iter DimensionalArr.these(param tag: iterator) where tag == iterator.leader {
-  for follower in dom.these(tag) do
-    yield follower;
+iter DimensionalArr.these(param tag: iterKind) where tag == iterKind.leader {
+  for followThis in dom.these(tag) do
+    yield followThis;
 }
 
 
 //== follower iterator - domain
 
-iter DimensionalDom.these(param tag: iterator, follower) where tag == iterator.follower {
-  _traceddd(this, ".follower on ", here.id, "  got ", follower);
+iter DimensionalDom.these(param tag: iterKind, followThis) where tag == iterKind.follower {
+  _traceddd(this, ".follower on ", here.id, "  got ", followThis);
 
   // This is pre-defined by DSI, so no need to consult
   // the subordinate 1-d distributions.
 
-  for i in [(...unDensify(follower, whole.dims()))] do
+  for i in [(...unDensify(followThis, whole.dims()))] do
     yield i;
 }
 
@@ -876,15 +876,15 @@ iter DimensionalArr.these() var {
 
 //== follower iterator - array   (similar to the serial iterator)
 
-iter DimensionalArr.these(param tag: iterator, follower) var where tag == iterator.follower {
+iter DimensionalArr.these(param tag: iterKind, followThis) var where tag == iterKind.follower {
   const dom = this.dom;
-  _traceddd(this, ".follower on ", here.id, "  got ", follower);
+  _traceddd(this, ".follower on ", here.id, "  got ", followThis);
   assert(dom.rank == 2);
 
   // TODO: is this the right approach? (similar to serial)
   // e.g. is it right that the *global* subordinate 1-d descriptors are used?
-  for (l1,r1) in dom.dom1.dsiFollowerArrayIterator1d(follower(1)) do
-    for (l2,r2) in dom.dom2.dsiFollowerArrayIterator1d(follower(2)) do
+  for (l1,r1) in dom.dom1.dsiFollowerArrayIterator1d(followThis(1)) do
+    for (l2,r2) in dom.dom2.dsiFollowerArrayIterator1d(followThis(2)) do
       {
         const locAdesc = localAdescs[l1,l2];
         _traceddc(traceDimensionalDistIterators,

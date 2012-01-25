@@ -12,8 +12,7 @@ proc blockLU(x: [?D], piv, blk) where (D.rank != 2) {
 // This routine will give a compiler error if blockLU
 // is called with an array that is not two dimensional.
 
-  compilerError("blockLU factors a matrix.  The first
-input parameter to blockLU must be a two-dimensional array.");
+  compilerError("blockLU factors a matrix.  The first input parameter to blockLU must be a two-dimensional array.");
 }
 
 proc blockLU(A: [?D], blk, piv: [D.dim(1)]) where (D.rank == 2) {

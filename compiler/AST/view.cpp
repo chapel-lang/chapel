@@ -1,4 +1,5 @@
 #define __STDC_FORMAT_MACROS
+#include <cstdlib>
 #include <inttypes.h>
 #include "view.h"
 #include "astutil.h"
@@ -180,10 +181,10 @@ view_ast(BaseAST* ast, bool number = false, int mark = -1, int indent = 0) {
     if (toDefExpr(expr))
       printf(" ");
 
-    long i;
+    int64_t i;
     const char *str;
     if (get_int(expr, &i)) {
-      printf(" %ld", i);
+      printf(" %" PRId64, i);
     } else if (get_string(expr, &str)) {
       printf(" \"%s\"", str);
     }
@@ -262,43 +263,67 @@ static void type_print_view(BaseAST* ast) {
 }
 
 void list_view(BaseAST* ast) {
-  if (toSymbol(ast))
-    printf("%-7d ", ast->id);
-  list_ast(ast);
+  if (ast==NULL) {
+    printf("<NULL>");
+  } else {
+    if (toSymbol(ast))
+      printf("%-7d ", ast->id);
+    list_ast(ast);
+  }
   printf("\n");
   fflush(stdout);
 }
 
 void list_view_noline(BaseAST* ast) {
-  if (toSymbol(ast))
-    printf("%-7d ", ast->id);
-  list_ast(ast);
+  if (ast==NULL) {
+    printf("<NULL>");
+  } else {
+    if (toSymbol(ast))
+      printf("%-7d ", ast->id);
+    list_ast(ast);
+  }
   fflush(stdout);
 }
 
 void print_view(BaseAST* ast) {
-  type_print_view(ast);
-  view_ast(ast);
+  if (ast==NULL) {
+    printf("<NULL>");
+  } else {
+    type_print_view(ast);
+    view_ast(ast);
+  }
   printf("\n\n");
   fflush(stdout);
 }
 
 void print_view_noline(BaseAST* ast) {
-  type_print_view(ast);
-  view_ast(ast);
+  if (ast==NULL) {
+    printf("<NULL>");
+  } else {
+    type_print_view(ast);
+    view_ast(ast);
+  }
   fflush(stdout);
 }
 
 void nprint_view(BaseAST* ast) {
-  type_nprint_view(ast);
-  view_ast(ast, true);
+  if (ast==NULL) {
+    printf("<NULL>");
+  } else {
+    type_nprint_view(ast);
+    view_ast(ast, true);
+  }
   printf("\n\n");
   fflush(stdout);
 }
 
 void nprint_view_noline(BaseAST* ast) {
-  type_nprint_view(ast);
-  view_ast(ast, true);
+  if (ast==NULL) {
+    printf("<NULL>");
+  } else {
+    type_nprint_view(ast);
+    view_ast(ast, true);
+  }
   fflush(stdout);
 }
 
@@ -409,6 +434,10 @@ html_view_ast(BaseAST* ast, FILE* html_file, int pass) {
       case GOTO_NORMAL: fprintf(html_file, "<B>goto</B> "); break;
       case GOTO_BREAK: fprintf(html_file, "<B>break</B> "); break;
       case GOTO_CONTINUE: fprintf(html_file, "<B>continue</B> "); break;
+      case GOTO_RETURN: fprintf(html_file, "<B>gotoReturn</B> "); break;
+      case GOTO_GETITER_END: fprintf(html_file, "<B>gotoGetiterEnd</B> "); break;
+      case GOTO_ITER_RESUME: fprintf(html_file, "<B>gotoIterResume</B> "); break;
+      case GOTO_ITER_END: fprintf(html_file, "<B>gotoIterEnd</B> "); break;
       }
       if (SymExpr* label = toSymExpr(s->label))
         if (label->var != gNil)

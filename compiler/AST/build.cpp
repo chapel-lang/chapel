@@ -192,12 +192,21 @@ Expr* buildStringLiteral(const char* pch) {
 
 
 Expr* buildDotExpr(BaseAST* base, const char* member) {
-  if (!strcmp("uid", member))
+  // The following optimization was added to avoid calling chpl_int_to_locale
+  // when all we end up doing is extracting the locale id, thus:
+  // chpl_int_to_locale(_get_locale(x)).id ==> _get_locale(x)
+
+  // This broke when realms were removed and uid was renamed as id.
+  // It might be better coding practice to label very special module code
+  // (i.e. types, fields, values known to the compiler) using pragmas. <hilde>
+  if (!strcmp("id", member))
     if (CallExpr* intToLocale = toCallExpr(base))
       if (intToLocale->isNamed("chpl_int_to_locale"))
         if (CallExpr* getLocale = toCallExpr(intToLocale->get(1)))
           if (getLocale->isPrimitive(PRIM_GET_LOCALEID))
             return getLocale->remove();
+
+  // "x.locale" member access expressions are rendered as chpl_int_to_locale(_get_locale(x)).
   if (!strcmp("locale", member))
     return new CallExpr("chpl_int_to_locale", 
                         new CallExpr(PRIM_GET_LOCALEID, base));
@@ -385,25 +394,22 @@ void createInitFn(ModuleSymbol* mod) {
   mod->initFn->retType = dtVoid;
   mod->initFn->addFlag(FLAG_MODULE_INIT);
   mod->initFn->addFlag(FLAG_INSERT_LINE_FILE_INFO);
-  mod->initFn->addFlag(FLAG_PROC_ITER_KW_USED); // ProcIter: remove
+  // All module initialization functions should be exported.
+  // But that means we have to adopt some new naming conventions.
+  // mod->initFn->addFlag(FLAG_EXPORT);
 
   //
   // move module-level statements into module's init function
   //
-  if (mod != theProgram) {
-    for_alist(stmt, mod->block->body) {
+  for_alist(stmt, mod->block->body) {
+    // except for module definitions
+    if (BlockStmt* block = toBlockStmt(stmt))
+      if (block->length() == 1)
+        if (DefExpr* def = toDefExpr(block->body.only()))
+          if (isModuleSymbol(def->sym))
+            continue;
 
-      //
-      // except for module definitions
-      //
-      if (BlockStmt* block = toBlockStmt(stmt))
-        if (block->length() == 1)
-          if (DefExpr* def = toDefExpr(block->body.only()))
-            if (isModuleSymbol(def->sym))
-              continue;
-
-      mod->initFn->insertAtTail(stmt->remove());
-    }
+    mod->initFn->insertAtTail(stmt->remove());
   }
   mod->block->insertAtHead(new DefExpr(mod->initFn));
 }
@@ -673,7 +679,6 @@ handleArrayTypeCase(FnSymbol* fn, Expr* indices, Expr* iteratorExpr, Expr* expr)
   //
   FnSymbol* isArrayTypeFn = new FnSymbol("_isArrayTypeFn");
   isArrayTypeFn->addFlag(FLAG_INLINE);
-  isArrayTypeFn->addFlag(FLAG_PROC_ITER_KW_USED); // ProcIter: remove
 
   Symbol* isArrayType = newTemp("_isArrayType");
   isArrayType->addFlag(FLAG_MAYBE_PARAM);
@@ -741,7 +746,6 @@ static int loopexpr_uid = 1;
 CallExpr*
 buildForLoopExpr(Expr* indices, Expr* iteratorExpr, Expr* expr, Expr* cond, bool maybeArrayType) {
   FnSymbol* fn = new FnSymbol(astr("_seqloopexpr", istr(loopexpr_uid++)));
-  fn->addFlag(FLAG_PROC_ITER_KW_USED); // ProcIter: remove
   BlockStmt* block = fn->body;
 
   if (maybeArrayType) {
@@ -760,8 +764,7 @@ buildForLoopExpr(Expr* indices, Expr* iteratorExpr, Expr* expr, Expr* cond, bool
   // build serial iterator function
   //
   FnSymbol* sifn = new FnSymbol(iteratorName);
-  sifn->addFlag(FLAG_PROC_ITER_KW_USED); // ProcIter: remove
-  sifn->addFlag(FLAG_ITERATOR_FN); // ProcIter: I think we should keep this one
+  sifn->addFlag(FLAG_ITERATOR_FN);
   ArgSymbol* sifnIterator = new ArgSymbol(INTENT_BLANK, "iterator", dtAny);
   sifn->insertFormalAtTail(sifnIterator);
   fn->insertAtHead(new DefExpr(sifn));
@@ -779,7 +782,6 @@ buildForallLoopExpr(Expr* indices, Expr* iteratorExpr, Expr* expr, Expr* cond, b
     return buildForLoopExpr(indices, iteratorExpr, expr, cond, maybeArrayType);
 
   FnSymbol* fn = new FnSymbol(astr("_parloopexpr", istr(loopexpr_uid++)));
-  fn->addFlag(FLAG_PROC_ITER_KW_USED); // ProcIter: remove
   BlockStmt* block = fn->body;
 
   if (maybeArrayType) {
@@ -798,8 +800,7 @@ buildForallLoopExpr(Expr* indices, Expr* iteratorExpr, Expr* expr, Expr* cond, b
   // build serial iterator function
   //
   FnSymbol* sifn = new FnSymbol(iteratorName);
-  sifn->addFlag(FLAG_PROC_ITER_KW_USED); // ProcIter: remove
-  sifn->addFlag(FLAG_ITERATOR_FN); // ProcIter: I think we should keep this one
+  sifn->addFlag(FLAG_ITERATOR_FN);
   ArgSymbol* sifnIterator = new ArgSymbol(INTENT_BLANK, "iterator", dtAny);
   sifn->insertFormalAtTail(sifnIterator);
   fn->insertAtHead(new DefExpr(sifn));
@@ -812,11 +813,11 @@ buildForallLoopExpr(Expr* indices, Expr* iteratorExpr, Expr* expr, Expr* cond, b
   // build leader iterator function
   //
   FnSymbol* lifn = new FnSymbol(iteratorName);
-  lifn->addFlag(FLAG_PROC_ITER_KW_USED); // ProcIter: remove
   ArgSymbol* lifnIterator = new ArgSymbol(INTENT_BLANK, "iterator", dtAny);
   lifn->insertFormalAtTail(lifnIterator);
   Expr* tag = buildDotExpr(buildDotExpr(new UnresolvedSymExpr("ChapelBase"),
-                                        "iterator"), "leader");
+                                        iterKindTypename),
+                           iterKindLeaderTagname);
   ArgSymbol* lifnTag = new ArgSymbol(INTENT_PARAM, "tag", dtUnknown,
                                      new CallExpr(PRIM_TYPEOF, tag));
   lifn->insertFormalAtTail(lifnTag);
@@ -832,17 +833,16 @@ buildForallLoopExpr(Expr* indices, Expr* iteratorExpr, Expr* expr, Expr* cond, b
   // build follower iterator function
   //
   FnSymbol* fifn = new FnSymbol(iteratorName);
-  fifn->addFlag(FLAG_PROC_ITER_KW_USED); // ProcIter: remove
-  fifn->addFlag(FLAG_ITERATOR_FN); // ProcIter: I think we should keep this one
+  fifn->addFlag(FLAG_ITERATOR_FN);
   ArgSymbol* fifnIterator = new ArgSymbol(INTENT_BLANK, "iterator", dtAny);
   fifn->insertFormalAtTail(fifnIterator);
 
   tag = buildDotExpr(buildDotExpr(new UnresolvedSymExpr("ChapelBase"),
-                                  "iterator"), "follower");
+                                  iterKindTypename), iterKindFollowerTagname);
   ArgSymbol* fifnTag = new ArgSymbol(INTENT_PARAM, "tag", dtUnknown,
                                      new CallExpr(PRIM_TYPEOF, tag));
   fifn->insertFormalAtTail(fifnTag);
-  ArgSymbol* fifnFollower = new ArgSymbol(INTENT_BLANK, "follower", dtAny);
+  ArgSymbol* fifnFollower = new ArgSymbol(INTENT_BLANK, iterFollowthisArgname, dtAny);
   fifn->insertFormalAtTail(fifnFollower);
   fifn->where = new BlockStmt(new CallExpr("==", fifnTag, tag->copy()));
   fn->insertAtHead(new DefExpr(fifn));
@@ -1267,7 +1267,6 @@ BlockStmt* buildTypeSelectStmt(CallExpr* exprs, BlockStmt* whenstmts) {
         USR_FATAL(conds, "Type select statement has multiple otherwise clauses");
       has_otherwise = true;
       fn = new FnSymbol(astr("_typeselect", istr(uid)));
-      fn->addFlag(FLAG_PROC_ITER_KW_USED); // ProcIter: remove
       int lid = 1;
       for_actuals(expr, exprs) {
         fn->insertFormalAtTail(
@@ -1286,7 +1285,6 @@ BlockStmt* buildTypeSelectStmt(CallExpr* exprs, BlockStmt* whenstmts) {
       if (conds->numActuals() != exprs->argList.length)
         USR_FATAL(when, "Type select statement requires number of selectors to be equal to number of when conditions");
       fn = new FnSymbol(astr("_typeselect", istr(uid)));
-      fn->addFlag(FLAG_PROC_ITER_KW_USED); // ProcIter: remove
       int lid = 1;
       for_actuals(expr, conds) {
         fn->insertFormalAtTail(
@@ -1516,16 +1514,20 @@ buildVarDecls(BlockStmt* stmts, Flag externconfig, Flag varconst) {
 
 
 DefExpr*
-buildClassDefExpr(const char* name, Type* type, Expr* inherit, BlockStmt* decls, bool isExtern) {
+buildClassDefExpr(const char* name, Type* type, Expr* inherit, BlockStmt* decls, Flag isExtern) {
   ClassType* ct = toClassType(type);
   INT_ASSERT(ct);
   TypeSymbol* ts = new TypeSymbol(name, ct);
   DefExpr* def = new DefExpr(ts);
   ct->addDeclarations(decls);
-  if (isExtern) {
+  if (isExtern == FLAG_EXTERN || isExtern == FLAG_OLD_EXTERN_KW_USED) {
     ts->addFlag(FLAG_EXTERN);
+    ts->addFlag(FLAG_NO_OBJECT);
+    ct->defaultValue=NULL;
     if (inherit)
       USR_FATAL_CONT(inherit, "External types do not currently support inheritance");
+    if (isExtern == FLAG_OLD_EXTERN_KW_USED)
+      USR_WARN(type, "The _extern keyword is deprecated. Use extern (no leading underscore) instead.");
   }
   if (inherit)
     ct->inherits.insertAtTail(inherit);
@@ -1646,6 +1648,10 @@ BlockStmt*
 buildFunctionDecl(FnSymbol* fn, RetTag optRetTag, Expr* optRetType,
                   Expr* optWhere, BlockStmt* optFnBody)
 {
+  // This clause can be removed when the old _extern keyword is obsoleted. <hilde>
+  if (fn->hasFlag(FLAG_OLD_EXTERN_KW_USED))
+    USR_WARN(fn, "The _extern keyword is deprecated. Use extern (no leading underscore) instead.");
+
   fn->retTag = optRetTag;
   if (optRetTag == RET_VAR)
   {

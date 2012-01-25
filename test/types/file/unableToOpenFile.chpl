@@ -1,6 +1,3 @@
-var f : file = new file(filename = "_test_cannotOpenMe.txt");
+var f = open("_test_cannotOpenMe.txt", mode.r);
 
-writeln(f.filename);
-writeln(f.mode);
-f.open();
 f.close();

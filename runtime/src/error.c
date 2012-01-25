@@ -2,6 +2,7 @@
 #include "chplexit.h"
 #include "chplrt.h"
 #include <stdarg.h>
+#include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <inttypes.h>
@@ -35,16 +36,26 @@ static void spinhaltIfAlreadyExiting(void) {
   while (temp);
 }
 
-void chpl_error(const char* message, int32_t lineno, chpl_string filename) {
+static void chpl_error_common(const char* message, int32_t lineno, chpl_string filename) {
   spinhaltIfAlreadyExiting();
   fflush(stdout);
   if (lineno > 0)
-    fprintf(stderr, "%s:%" PRId32 ": error: %s\n", filename, lineno, message);
+    fprintf(stderr, "%s:%" PRId32 ": error: %s", filename, lineno, message);
   else if (filename)
-    fprintf(stderr, "%s: error: %s\n", filename, message);
+    fprintf(stderr, "%s: error: %s", filename, message);
   else
-    fprintf(stderr, "error: %s\n", message);
+    fprintf(stderr, "error: %s", message);
+}
+
+
+void chpl_error(const char* message, int32_t lineno, chpl_string filename) {
+  chpl_error_common(message, lineno, filename);
+  fprintf(stderr, "\n");
   chpl_exit_any(1);
+}
+
+void chpl_error_noexit(const char* message, int32_t lineno, chpl_string filename) {
+  chpl_error_common(message, lineno, filename);
 }
 
 

@@ -1,10 +1,67 @@
-// addInitGuards.c
+// addInitCalls.c
 //////////////////////////////////////////////////////////////////////////////////
-// Add initialization guards to the module init functions.
+// Add module initialization calls and  guards to the module init functions.
+//
+// Initially, the module initialization functions contain only the "loose" 
+// statements found within the body of the corresponding module.  
+// This pass adds calls to the module initialization functions for 
+// parent modules as well as modules mentioned in "use" statements within
+// the module.  Then, it wraps the entire initialization function in a guard 
+// to ensure that it is run just once.
 //
 // This pass must be run after parallel().
 //
-// This makes the initialization functions idempotent -- meaning that they can
+
+#include "passes.h"
+#include "stmt.h"
+#include "build.h"
+#include "astutil.h"
+
+static void addModuleInitBlocks();
+static void addInitGuards();
+static void addInitGuard(FnSymbol* fn, FnSymbol* preInitFn);
+
+
+void addInitCalls()
+{
+  addModuleInitBlocks();
+  addInitGuards();
+}
+
+
+void addModuleInitBlocks() {
+  forv_Vec(ModuleSymbol, mod, gModuleSymbols) {
+    // Not for the root module
+    if (mod == rootModule) continue;
+
+    FnSymbol* fn = toFnSymbol(mod->initFn);
+    if (!fn)
+      // Sometimes a module parsed on the command line
+      // is not actually used, so its initializer is pruned during resolution.
+      continue;
+
+    BlockStmt* initBlock = new BlockStmt();
+
+    // If I have a parent, I need it initialized first,
+    // since all of its symbols are visible to me.
+    if (ModuleSymbol* parent = mod->defPoint->getModule())
+      // The initializer for theProgram is called specially in main.c,
+      // so we don't have to call it here.
+      if (parent != theProgram && parent != rootModule)
+        initBlock->insertAtTail(new CallExpr(parent->initFn));
+
+    // Now, traverse my use statements, and call the initializer for each
+    // module I use.
+    forv_Vec(ModuleSymbol, usedMod, mod->modUseList) {
+      initBlock->insertAtTail(new CallExpr(usedMod->initFn));
+    }
+
+    fn->insertAtHead(initBlock);
+  }
+}
+
+
+// This function makes the initialization functions idempotent -- meaning that they can
 // be executed any number of times, but the net effect is as if they were only 
 // called once.  That is done using the idiom:
 //
@@ -18,25 +75,24 @@
 // This pass also creates the function "chpl__init_preInit()", which 
 // initializes all of the initialization flags to false.
 //
-
-#include "passes.h"
-#include "stmt.h"
-#include "build.h"
-#include "astutil.h"
-
-void addInitGuards(void) {
+static void addInitGuards(void) {
   // We need a function to drop the initializers into.
-  FnSymbol* initFn = new FnSymbol(astr("chpl__init_preInit"));
-  initFn->retType = dtVoid;
-  initFn->addFlag(FLAG_EXPORT);
-  initFn->addFlag(FLAG_INSERT_LINE_FILE_INFO);
-  initFn->addFlag(FLAG_PROC_ITER_KW_USED); // ProcIter: remove
-  theProgram->block->insertAtTail(new DefExpr(initFn));
-  normalize(initFn);
+  FnSymbol* preInitFn = new FnSymbol(astr("chpl__init_preInit"));
+  preInitFn->retType = dtVoid;
+  preInitFn->addFlag(FLAG_EXPORT);
+  preInitFn->addFlag(FLAG_INSERT_LINE_FILE_INFO);
+  theProgram->block->insertAtTail(new DefExpr(preInitFn));
+  normalize(preInitFn);
 
-  // Iterate all functions and select just the module initialization functions.
-  forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (! fn->hasFlag(FLAG_MODULE_INIT))
+  // Iterate all modules and select their module initialization functions.
+  forv_Vec(ModuleSymbol, mod, gModuleSymbols) {
+    if (mod == rootModule)
+      continue;
+
+    FnSymbol* fn = toFnSymbol(mod->initFn);
+    if (!fn)
+      // Sometimes a module parsed on the command line
+      // is not actually used, so its initializer is pruned.
       continue;
 
     // Test if this fn has a nontrivial body.
@@ -45,7 +101,12 @@ void addInitGuards(void) {
       continue;
 
     // Alright then, add the guard.
+    addInitGuard(fn, preInitFn);
+  }
+}
 
+static void addInitGuard(FnSymbol* fn, FnSymbol* preInitFn)
+{
     // The declaration:
     //      var <init_fn_name>_p : bool;
     // is added to the end of the program block.
@@ -59,7 +120,7 @@ void addInitGuards(void) {
     // is added at the end of chpl__init_preInit().
     // This means the module has not yet been initialized.
     Expr* asgnExprFalse = new CallExpr(PRIM_MOVE, var, new SymExpr(gFalse));
-    initFn->insertBeforeReturn(asgnExprFalse);
+    preInitFn->insertBeforeReturn(asgnExprFalse);
 
     // The assignment:
     //      <init_fn_name>_p = true;
@@ -77,5 +138,4 @@ void addInitGuards(void) {
     Expr* gotoExit = new GotoStmt(GOTO_NORMAL, label);
     Expr* ifStmt = new CondStmt(new SymExpr(var), gotoExit);
     fn->insertAtHead(ifStmt);
-  }
 }

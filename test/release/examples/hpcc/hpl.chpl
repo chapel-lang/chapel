@@ -230,7 +230,7 @@ proc panelSolve(Ab: [] elemType,
                piv: [] indexType) {
 
   for k in panel.dim(2) {             // iterate through the columns
-    var col = panel[k.., k..k];
+    const col = panel[k.., k..k];
     
     // If there are no rows below the current column return
     if col.numIndices == 0 then return;
@@ -291,7 +291,7 @@ proc backwardSub(n: indexType,
   var x: [bd] elemType;
 
   for i in bd by -1 do
-    x[i] = (Ab[n+1,i] - (+ reduce [j in i+1..bd.high] (Ab[i,j] * x[j]))) 
+    x[i] = (Ab[i,n+1] - (+ reduce [j in i+1..bd.high] (Ab[i,j] * x[j]))) 
             / Ab[i,i];
 
   return x;
@@ -364,7 +364,7 @@ proc gaxpyMinus(A: [],
   var res: [1..n] elemType;
 
   forall i in 1..n do
-    res[i] = (+ reduce [j in xD] (A[i,j] * x[j])) - y[n+1, i];
+    res[i] = (+ reduce [j in xD] (A[i,j] * x[j])) - y[i,n+1];
 
   return res;
 }

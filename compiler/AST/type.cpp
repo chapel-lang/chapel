@@ -9,6 +9,8 @@
 #include "type.h"
 #include "vec.h"
 
+#include "intlimits.h"
+
 
 Type::Type(AstTag astTag, Symbol* init_defaultVal) :
   BaseAST(astTag),
@@ -125,7 +127,7 @@ int PrimitiveType::codegenStructure(FILE* outfile, const char* baseoffset) {
 
 EnumType::EnumType() :
   Type(E_EnumType, NULL),
-  constants()
+  constants(), integerType(NULL)
 {
   gEnumTypes.add(this);
   constants.parent = this;
@@ -165,6 +167,10 @@ void EnumType::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 
 
 void EnumType::codegenDef(FILE* outfile) {
+
+  // Make sure that we've computed all of the enum values..
+  getIntegerType();
+
   fprintf(outfile, "typedef enum {");
   bool first = true;
   for_enums(constant, this) {
@@ -188,6 +194,203 @@ void EnumType::codegenDef(FILE* outfile) {
 int EnumType::codegenStructure(FILE* outfile, const char* baseoffset) {
   fprintf(outfile, "{CHPL_TYPE_enum, %s},\n", baseoffset);
   return 1;
+}
+
+void EnumType::sizeAndNormalize() {
+  bool first = true;
+  bool issigned = false;
+  int64_t v;
+  uint64_t uv;
+  int64_t min_v, max_v;
+  uint64_t min_uv, max_uv;
+  int num_bytes;
+  uint64_t max;
+  int64_t min;
+  PrimitiveType* ret = NULL;
+
+  // First, look for negative numbers in the enum.
+  // If there are any, we have to store all
+  // the values in negative numbers.
+  for_enums(constant, this) {
+    if( constant->init ) {
+      if( get_int( constant->init, &v ) ) {
+        if( v < 0 ) {
+          issigned = true;
+        }
+      } else if( get_uint( constant->init, &uv ) ) {
+        // OK!
+      } else {
+        // If we get here, then the initializer does not have an immediate
+        // value associated with it....
+        SymExpr* sym = toSymExpr(constant->init);
+        // We think that all params should have init values by now.
+        INT_ASSERT(sym && !sym->var->hasFlag(FLAG_PARAM));
+        // So we're going to blame this on the user.
+        USR_FATAL(constant, "enumerator '%s' is not an integer constant", constant->sym->name);
+        // And unfortunately, if we get here, we don't know how to proceed,
+        // which is why no USR_FATAL_CONT().
+      }
+    }
+  }
+
+  // Set initializers for all enum symbols and
+  // compute the minimum and maximum values.
+  v = 1;
+  uv = 1;
+  min_v = max_v = 1;
+  min_uv = max_uv = 1;
+
+  first = true;
+  for_enums(constant, this) {
+    if( constant->init ) {
+      // set v and uv to the initializer value
+      if( get_int( constant->init, &v ) ) {
+        if( v >= 0 ) uv = v;
+        else uv = 1;
+      } else if( get_uint( constant->init, &uv ) ) {
+        v = uv;
+      }
+    } else {
+      // create initializer with v
+      if( issigned ) {
+        if( v >= INT32_MIN && v <= INT32_MAX ) {
+          constant->init = new SymExpr(new_IntSymbol(v, INT_SIZE_32));
+        } else {
+          constant->init = new SymExpr(new_IntSymbol(v, INT_SIZE_64));
+        }
+      } else {
+        if( uv <= UINT32_MAX ) {
+          constant->init = new SymExpr(new_UIntSymbol(uv, INT_SIZE_32));
+        } else {
+          constant->init = new SymExpr(new_UIntSymbol(uv, INT_SIZE_64));
+        }
+      }
+      constant->init->parentExpr = constant;
+      constant->init->parentSymbol = constant->parentSymbol;
+    }
+    if( first ) {
+      min_v = v;
+      max_v = v;
+      min_uv = uv;
+      max_uv = uv;
+      first = false;
+    } else {
+      if( min_v > v ) min_v = v;
+      if( max_v < v ) max_v = v;
+      if( min_uv > uv ) min_uv = uv;
+      if( max_uv < uv ) max_uv = uv;
+    }
+    // Increment v for the next one, in case it is not set.
+    v++;
+    uv++;
+  }
+
+  num_bytes = 0;
+
+  // Now figure out, based on min/max values, what integer
+  // size we must use.
+  if( issigned ) {
+    int num_bytes_neg = 0;
+    if( min_v >= INT8_MIN ) {
+      num_bytes_neg = 1;
+    } else if( min_v >= INT16_MIN ) {
+      num_bytes_neg = 2;
+    } else if( min_v >= INT32_MIN ) {
+      num_bytes_neg = 4;
+    } else {
+      num_bytes_neg = 8;
+    }
+
+    if( max_v <= INT8_MAX ) {
+      num_bytes = 1;
+    } else if( max_v <= INT16_MAX ) {
+      num_bytes = 2;
+    } else if( max_v <= INT32_MAX ) {
+      num_bytes = 4;
+    } else {
+      num_bytes = 8;
+    }
+
+    if( num_bytes < num_bytes_neg ) num_bytes = num_bytes_neg;
+  } else {
+    if( max_v <= UINT8_MAX ) {
+      num_bytes = 1;
+    } else if( max_v <= UINT16_MAX ) {
+      num_bytes = 2;
+    } else if( max_v <= UINT32_MAX ) {
+      num_bytes = 4;
+    } else {
+      num_bytes = 8;
+    }
+  }
+
+  // Now figure out field min and max values.
+  // and set et->integerType
+  min = max = 0;
+
+  if( num_bytes == 1 ) {
+    if( issigned ) {
+      max = INT8_MAX;
+      min = INT8_MIN;
+      ret = dtInt[INT_SIZE_8];
+    } else {
+      max = UINT8_MAX;
+      ret = dtUInt[INT_SIZE_8];
+    }
+  } else if( num_bytes == 2 ) {
+    if( issigned ) {
+      max = INT16_MAX;
+      min = INT16_MIN;
+      ret = dtInt[INT_SIZE_16];
+    } else {
+      max = UINT16_MAX;
+      ret = dtUInt[INT_SIZE_16];
+    }
+  } else if( num_bytes == 4 ) {
+    if( issigned ) {
+      max = INT32_MAX;
+      min = INT32_MIN;
+      ret = dtInt[INT_SIZE_32];
+    } else {
+      max = UINT32_MAX;
+      ret = dtUInt[INT_SIZE_32];
+    }
+  } else if( num_bytes == 8 ) {
+    if( issigned ) {
+      max = INT64_MAX;
+      min = INT64_MIN;
+      ret = dtInt[INT_SIZE_64];
+    } else {
+      max = UINT64_MAX;
+      ret = dtUInt[INT_SIZE_64];
+    }
+  }
+
+  // At the end of it all, check that each enum
+  // symbol fits into the assigned type.
+  // This check is necessary because we might have
+  // had the impossible-to-fit enum
+  // because it has e.g. UINT64_MAX and INT64_MIN.
+  for_enums(constant, this) {
+    if( get_int( constant->init, &v ) ) {
+      if( v < min || (v > 0 && (uint64_t)v > max) ) {
+        INT_FATAL(constant, "Does not fit in enum integer type");
+      }
+    } else if( get_uint( constant->init, &uv ) ) {
+      if( uv > max ) {
+        INT_FATAL(constant, "Does not fit in enum integer type");
+      }
+    }
+  }
+
+  integerType = ret;
+}
+
+PrimitiveType* EnumType::getIntegerType() {
+  if( ! integerType ) {
+    sizeAndNormalize();
+  }
+  return integerType;
 }
 
 
@@ -381,14 +584,11 @@ int ClassType::codegenStructure(FILE* outfile, const char* baseoffset) {
   case CLASS_CLASS:
     fprintf(outfile, "{CHPL_TYPE_CLASS_REFERENCE, %s},\n", baseoffset);
     return 1;
-    break;
   case CLASS_RECORD:
     return codegenFieldStructure(outfile, true, baseoffset);
-    break;
   case CLASS_UNION:
     INT_FATAL(this, "Don't know how to codegenStructure for unions yet");
     return 0;
-    break;
   default:
     INT_FATAL(this, "Unexpected case in ClassType::codegenStructure");
     return 0;
@@ -575,9 +775,12 @@ void initChplProgram(void) {
   // Inititalize the outermost module
   rootModule = new ModuleSymbol("_root", MOD_INTERNAL, new BlockStmt());
   rootModule->filename = astr("<internal>");
+  rootModule->addFlag(FLAG_NO_DEFAULT_USE);
 
   theProgram = new ModuleSymbol("chpl__Program", MOD_INTERNAL, new BlockStmt());
   theProgram->filename = astr("<internal>");
+  theProgram->addFlag(FLAG_NO_DEFAULT_USE);
+
   rootModule->block->insertAtTail(new DefExpr(theProgram));
 }
 
@@ -701,6 +904,7 @@ void initPrimitiveTypes(void) {
 
 void initTheProgram(void) {
   createInitFn(theProgram);
+  theProgram->initFn->addFlag(FLAG_EXPORT);     // Called from main.c
 
   theProgram->initFn->insertAtTail(
     new CallExpr(PRIM_USE, new UnresolvedSymExpr("ChapelBase")));
@@ -725,7 +929,7 @@ void initTheProgram(void) {
   //  in possibly more special case code.
   //
   DefExpr* objectDef = buildClassDefExpr("object", dtObject,
-                                         NULL, new BlockStmt(), false);
+                                         NULL, new BlockStmt(), FLAG_UNKNOWN);
   objectDef->sym->addFlag(FLAG_OBJECT_CLASS);
   objectDef->sym->addFlag(FLAG_NO_OBJECT);
   theProgram->initFn->insertAtHead(objectDef);

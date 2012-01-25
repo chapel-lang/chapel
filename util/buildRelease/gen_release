@@ -29,9 +29,9 @@ $svnroot = $ENV{'CHPL_HOME_REPOSITORY'};
 if ($svnroot eq "") {
     $svnroot = "https://chapel.svn.sourceforge.net/svnroot/chapel/trunk";
 }
-system("mkdir --parents $rootdir > /dev/null");
+system("mkdir $tmpdir > /dev/null");
 print "Checking out the sources...\n";
-system("cd $rootdir && svn export -q $svnroot chapel");
+system("cd $tmpdir && svn export -q $svnroot $reldir");
 
 
 # explicit files to include
@@ -77,12 +77,9 @@ system("cd $rootdir && svn export -q $svnroot chapel");
     "make",
     "modules",
     "runtime",
-    "third-party/dlmalloc",
-    "third-party/gasnet",
-    "third-party/gmp",
-    "third-party/nanox",
-    "third-party/qthread",
+    "third-party",
     "util/chplenv",
+    "util/config",
     "util/test"
 );
 
@@ -90,50 +87,51 @@ system("cd $rootdir && svn export -q $svnroot chapel");
 chdir "$rootdir";
 
 print "Tagging the files with copyright messages...\n";
-system("cd chapel && make -f make/Makefile.release");
+system("make -f make/Makefile.release");
 
 print "Generating the bison/flex files...\n";
-system("cd chapel/compiler/parser && make lex.yy.cpp > /dev/null");
+system("cd compiler/parser && make lex.yy.cpp > /dev/null");
 
 print "Creating the examples directory...\n";
-system("cd chapel && cp -r test/release/examples .");
-system("cd chapel/util && cp start_test ../examples/");
-system("cd chapel && ./util/devel/test/extract_tests --no-futures -o ./examples/spec spec/*.tex");
+system("cp -r test/release/examples .");
+system("cd util && cp start_test ../examples/");
+system("./util/devel/test/extract_tests --no-futures -o ./examples/spec spec/*.tex");
 
 print "Building the man page...\n";
-system("cd chapel && make man");
+system("make man");
 
 print "Building the STATUS file...\n";
-system("cd chapel && make STATUS");
+system("make STATUS");
 
 print "Creating the docs directory...\n";
-system("cd chapel && mv doc doctmp");
-system("cd chapel && mv doctmp/release doc");
-system("cd chapel && rm -r doctmp");
+system("mv doc doctmp");
+system("mv doctmp/release doc");
+system("rm -r doctmp");
 
 print "Removing Makefiles that are not intended for release...\n";
-system("cd chapel/make/platform && rm Makefile.sunos_old");
+system("cd make/platform && rm Makefile.sunos_old");
 
 print "Removing compiler directories that are not intended for release...\n";
-system("cd chapel/compiler/include && rm -r sunos_old");
+system("cd compiler/include && rm -r sunos_old");
 
 print "Removing runtime directories that are not ready for release...\n";
-system("cd chapel/runtime/src/comm && rm -r armci");
-system("cd chapel/runtime/src/comm && rm -r mpi");
-system("cd chapel/runtime/src/launch && rm -r apsim");
-system("cd chapel/runtime/src/launch && rm -r dummy");
-system("cd chapel/runtime/src/launch && rm -r mpirun");
-system("cd chapel/runtime/src/launch && rm -r zebra");
-system("cd chapel/runtime/include && rm -r sunos_old");
-
-print "Chmodding the hierarchy\n";
-system("chmod -R ugo+rX chapel");
-system("chmod -R go-w chapel");
+system("cd runtime/src/comm && rm -r armci");
+system("cd runtime/src/comm && rm -r mpi");
+system("cd runtime/src/launch && rm -r apsim");
+system("cd runtime/src/launch && rm -r dummy");
+system("cd runtime/src/launch && rm -r mpirun");
+system("cd runtime/src/launch && rm -r zebra");
+system("cd runtime/include && rm -r sunos_old");
+system("cd third-party && rm -rf txt2man");
 
 chdir "$tmpdir";
 
+print "Chmodding the hierarchy\n";
+system("chmod -R ugo+rX $reldir");
+system("chmod -R go-w $reldir");
+
 foreach $file (@files) {
-    $dfile = "$reldir/chapel/$file";
+    $dfile = "$reldir/$file";
     if (!(-e $dfile)) {
         print "$dfile does not exist\n";
         exit( 9);
@@ -142,7 +140,7 @@ foreach $file (@files) {
 }
 
 foreach $dir (@code_dirs) {
-    @filelist = `find $reldir/chapel/$dir`;
+    @filelist = `find $reldir/$dir`;
     foreach $fullpath (@filelist) {
         chomp $fullpath;
         $file = $fullpath;
@@ -155,7 +153,7 @@ foreach $dir (@code_dirs) {
 }
 
 foreach $dir (@complete_dirs) {
-    push @tarfiles, "$reldir\/chapel\/$dir";
+    push @tarfiles, "$reldir\/$dir";
 }
 
 
@@ -167,9 +165,10 @@ if (defined($ENV{"CHPL_HOME"})) {
 }
 
 $cmd = "tar -cz -f $resultdir/$reldir.tar.gz @tarfiles";
-#print "$cmd\n";
+print "$cmd\n";
 system ($cmd);
 
 print "Left result in $resultdir/$reldir.tar.gz\n";
 
 system("rm -r $tmpdir");
+

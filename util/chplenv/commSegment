@@ -12,7 +12,7 @@ if ($comm eq "gasnet") {
     $substrate = `$utildirname/commSubstrate`;
     chomp($substrate);
 
-    if ($substrate eq "portals") {
+    if (($substrate eq "portals") || ($substrate eq "gemini")) {
       $segment = "fast";
     } else {
       $segment = "everything";

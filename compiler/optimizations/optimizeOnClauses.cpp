@@ -100,7 +100,6 @@ isFastPrimitive(CallExpr *call) {
   case PRIM_GET_USER_LINE:
   case PRIM_GET_USER_FILE:
   
-  case PRIM_COUNT_NUM_REALMS:
 #ifdef DEBUG
     printf(" *** OK (default): %s\n", call->primitive->name);
 #endif
@@ -206,18 +205,19 @@ markFastSafeFn(FnSymbol *fn, int recurse, Vec<FnSymbol*> *visited) {
 
   forv_Vec(CallExpr, call, calls) {
 #ifdef DEBUG
-    printf("\tcall %p: id=%d", call, call->id);
+    printf("\tcall %p (id=%d): ", call, call->id);
 #endif
     if (!call->primitive) {
 #ifdef DEBUG
-      printf(" (non-primitive CALL)\n");
+      printf("(non-primitive CALL)\n");
 #endif
       if ((recurse>0) && call->isResolved()) {
         if (call->isResolved()->hasFlag(FLAG_ON_BLOCK)) {
           visited->add_exclusive(call->isResolved());
           call->isResolved()->removeFlag(FLAG_FAST_ON);
 #ifdef DEBUG
-          printf("%d: recurse FAILED (nested on block).\n", recurse-1);
+          printf("%d: recurse FAILED (nested on block, id=%d).\n",
+                 recurse-1, call->id);
 #endif
           return false;
         }
@@ -230,7 +230,7 @@ markFastSafeFn(FnSymbol *fn, int recurse, Vec<FnSymbol*> *visited) {
 #endif
           if (!markFastSafeFn(call->isResolved(), recurse-1, visited)) {
 #ifdef DEBUG
-            printf("%d: recurse FAILED.\n", recurse-1);
+            printf("%d: recurse FAILED (id=%d).\n", recurse-1, call->id);
 #endif
             return false;
           }
@@ -247,8 +247,8 @@ markFastSafeFn(FnSymbol *fn, int recurse, Vec<FnSymbol*> *visited) {
       } else {
         // No function calls allowed
 #ifdef DEBUG
-        printf("%d: recurse FAILED %s.\n", recurse-1,
-               recurse == 1 ? "(too deep)" : "(function not resolved)");
+        printf("%d: recurse FAILED (%s, id=%d).\n", recurse-1,
+               recurse == 1 ? "too deep" : "function not resolved", call->id);
 #endif
         return false;
       }
@@ -258,7 +258,8 @@ markFastSafeFn(FnSymbol *fn, int recurse, Vec<FnSymbol*> *visited) {
 #endif
     } else {
 #ifdef DEBUG
-      printf("%d: FAILED (non-FAST primitive CALL: %s)\n", recurse-1, call->primitive->name);
+      printf("%d: FAILED (non-FAST primitive CALL: %s, id=%d)\n",
+             recurse-1, call->primitive->name, call->id);
 #endif
       return false;
     }
@@ -279,7 +280,7 @@ optimizeOnClauses(void) {
 #ifdef DEBUG
       printf("%p (%s in %s:%d): FLAG_ON_BLOCK (block=%p, id=%d)\n",
              fn, fn->cname, toModuleSymbol(fn->defPoint->parentSymbol)->filename,
-             fn->lineno, fn->body, fn->id);
+             fn->linenum(), fn->body, fn->id);
       printf("\tlength=%d\n", fn->body->length());
 #endif
       Vec<FnSymbol*> visited;
@@ -294,7 +295,7 @@ optimizeOnClauses(void) {
           if (developer ||
               ((mod->modTag != MOD_INTERNAL) && (mod->modTag != MOD_STANDARD))) {
             printf("Optimized on clause (%s) in module %s (%s:%d)\n",
-                   fn->cname, mod->name, mod->filename, fn->lineno);
+                   fn->cname, mod->name, fn->fname(), fn->linenum());
           }
         }
         fn->addFlag(FLAG_FAST_ON);

@@ -1,5 +1,5 @@
 
-_extern record mys {
+extern record mys {
   var a:int(32);
   var b:int(32);
 }
@@ -9,8 +9,8 @@ record myr {
   var b:int(32);
 }
 
-_extern proc set_mys(inout x:mys);
-_extern proc ret_mys():mys;
+extern proc set_mys(inout x:mys);
+extern proc ret_mys():mys;
 
 proc testr():myr {
   var ret:myr;

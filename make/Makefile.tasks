@@ -3,5 +3,5 @@
 #
 #
 #
-CHPL_MAKE_TASKS      := $(shell $(CHAPEL_ROOT)/util/chplenv/tasks)
+CHPL_MAKE_TASKS      := $(shell $(CHPL_MAKE_HOME)/util/chplenv/tasks)
 CHPL_MAKE_TASKS_UBAR := $(subst -,_,$(CHPL_MAKE_TASKS))

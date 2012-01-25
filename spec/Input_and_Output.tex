@@ -167,7 +167,7 @@ class to allow user-defined classes to be written to.  If a class is
 defined to be a subclass of Writer, it must override
 the \chpl{writeIt} method that takes a \chpl{string} as an argument.
 
-\begin{chapelexample}{Writer.chpl}
+\begin{chapelexample}{UserWriter.chpl}
 The following code defines a subclass of \chpl{Writer} that overrides
 the \chpl{writeIt} method to allow it to be written to.  It also
 overrides the \chpl{writeThis} method to override the default way that
@@ -175,7 +175,8 @@ it is written.
 \begin{chapel}
 class C: Writer {
   var data: string;
-  proc writeIt(s: string) {
+  proc writePrimitive(x) {
+    var s = x:string;
     data += s.substring(1);
   }
   proc writeThis(x: Writer) {

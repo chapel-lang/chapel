@@ -11,14 +11,14 @@ iter myIter() var {
   }
 }
 
-iter myIter(param tag: iterator) where tag == iterator.leader {
+iter myIter(param tag: iterKind) where tag == iterKind.leader {
   yield 0..3;
   yield 4..5;
   yield 6..8;
 }
 
-iter myIter(param tag: iterator, follower) var where tag == iterator.follower {
-  for i in follower {
+iter myIter(param tag: iterKind, followThis) var where tag == iterKind.follower {
+  for i in followThis {
     yield A(i);
   }
 }
@@ -47,7 +47,7 @@ if compilerRewrite {
 
   // TODO: Next step would be to move coforall into leader itself
   coforall blk in myIter(leader=true) {
-    for a in myIter(follower=blk) {
+    for a in myIter(followThis=blk) {
       a = 1.2;
     }
   }

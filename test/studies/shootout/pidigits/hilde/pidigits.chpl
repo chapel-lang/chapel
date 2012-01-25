@@ -7,8 +7,8 @@
 // Translated to Chapel by Tom Hildebrandt (hilde@cray.com)
 
 
-_extern proc printf(s:string, args ...);
-_extern proc putchar(c:int);
+extern proc printf(s:string, args ...);
+extern proc putchar(c:int);
 
 use GMP;
 use Time;

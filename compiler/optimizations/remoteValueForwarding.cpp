@@ -51,7 +51,7 @@ buildSyncAccessFunctionSet(Vec<FnSymbol*>& syncAccessFunctionSet) {
           syncAccessFunctionSet.set_add(parent);
           syncAccessFunctionVec.add(parent);
 #ifdef DEBUG_SYNC_ACCESS_FUNCTION_SET
-          printf("%s:%d %s\n", parent->getModule()->name, parent->lineno, parent->name);
+          printf("%s:%d %s\n", parent->getModule()->name, parent->linenum(), parent->name);
 #endif
         }
       }
@@ -70,8 +70,8 @@ buildSyncAccessFunctionSet(Vec<FnSymbol*>& syncAccessFunctionSet) {
         syncAccessFunctionSet.set_add(parent);
         syncAccessFunctionVec.add(parent);
 #ifdef DEBUG_SYNC_ACCESS_FUNCTION_SET
-        printf("%s:%d %s\n", parent->getModule()->name, parent->lineno, parent->name);
-        printf("  %s:%d %s\n", fn->getModule()->name, fn->lineno, fn->name);
+        printf("%s:%d %s\n", parent->getModule()->name, parent->linenum(), parent->name);
+        printf("  %s:%d %s\n", fn->getModule()->name, fn->linenum(), fn->name);
 #endif
       }
     }

@@ -3,18 +3,18 @@ iter foo(n: int) {
     yield i;
 }
 
-iter foo(param tag: iterator, n: int):range where tag == iterator.leader {
+iter foo(param tag: iterKind, n: int):range where tag == iterKind.leader {
   if n == 1 then
     yield 1..1;
   else {
-    for i in foo(iterator.leader, n/2) do
+    for i in foo(iterKind.leader, n/2) do
       yield i;
     yield n/2..n;
   }
 }
 
-iter foo(param tag: iterator, follower, n: int) where tag == iterator.follower {
-  for i in follower do
+iter foo(param tag: iterKind, followThis, n: int) where tag == iterKind.follower {
+  for i in followThis do
     yield i;
 }
 

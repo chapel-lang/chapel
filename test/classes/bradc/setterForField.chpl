@@ -16,3 +16,4 @@ writeln("myC is: ", myC);
 
 myC.x = -1;
 writeln("myC is: ", myC);
+writeln("myC.x is: ", myC.x);

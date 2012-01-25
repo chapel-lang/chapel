@@ -586,7 +586,7 @@ expandIteratorInline(CallExpr* call) {
   SET_LINENO(call);
 
   BlockStmt* ibody = iterator->body->copy();
-  reset_line_info(ibody, call->lineno);
+  reset_ast_loc(ibody, call);
   BlockStmt* body = toBlockStmt(call->parentExpr);
   call->remove();
   body->replace(ibody);
@@ -1022,7 +1022,7 @@ void lowerIterators() {
   forv_Vec(CallExpr, call, gCallExprs) {
     if (call->parentSymbol && call->isPrimitive(PRIM_GET_MEMBER)) {
       ClassType* ct = toClassType(call->get(1)->getValType());
-      long num;
+      int64_t num;
       if (get_int(call->get(2), &num)) {
         Symbol* field = ct->getField(num+1); // add 1 for super
         call->get(2)->replace(new SymExpr(field));
@@ -1111,7 +1111,7 @@ void lowerIterators() {
           }
           thenStmt->insertAtTail(new CallExpr(PRIM_MOVE, classTmp, new CallExpr(type->defaultConstructor->iteratorInfo->getIterator, recordTmp)));
           thenStmt->insertAtTail(new CallExpr(PRIM_MOVE, ret, new CallExpr(PRIM_CAST, ret->type->symbol, classTmp)));
-          thenStmt->insertAtTail(new GotoStmt(GOTO_NORMAL, label));
+          thenStmt->insertAtTail(new GotoStmt(GOTO_GETITER_END, label));
           ret->defPoint->insertAfter(new CondStmt(new SymExpr(cid), thenStmt));
           ret->defPoint->insertAfter(new CallExpr(PRIM_MOVE, cid, new CallExpr(PRIM_TESTCID, tmp, type->defaultConstructor->iteratorInfo->irecord->getField(1)->type->symbol)));
           ret->defPoint->insertAfter(new DefExpr(cid));
