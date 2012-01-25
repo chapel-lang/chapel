@@ -586,7 +586,8 @@ expandIteratorInline(CallExpr* call) {
   SET_LINENO(call);
 
   BlockStmt* ibody = iterator->body->copy();
-  reset_ast_loc(ibody, call);
+  if (!preserveInlinedLineNumbers)
+    reset_ast_loc(ibody, call);
   BlockStmt* body = toBlockStmt(call->parentExpr);
   call->remove();
   body->replace(ibody);

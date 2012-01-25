@@ -105,8 +105,8 @@ extern Timer timer4;
 extern Timer timer5;
 
 extern bool fNoMemoryFrees;
-
 extern int numGlobalsOnHeap;
+extern bool preserveInlinedLineNumbers;
 
 extern int breakOnID;
 extern int breakOnDeleteID;
