@@ -24,9 +24,6 @@
 #ifndef _POSIX_C_SOURCE
 #define _POSIX_C_SOURCE 200112L
 #endif
-#ifndef _POSIX_SOURCE
-#define _POSIX_SOURCE 200112L
-#endif
 #ifndef _FILE_OFFSET_BITS
 #define _FILE_OFFSET_BITS 64
 #endif
