@@ -1186,13 +1186,13 @@ BaseAST* checkInterfaceImplementations(BlockStmt *block) {
 }
 
 void earlyTypeCheck(void) {
-  bool found_early_type_checked = false;
+  //bool found_early_type_checked = false;
   checkInterfaceImplementations(
       userModules.v[0]->block);
 
   forv_Vec(FnSymbol, fn, gFnSymbols) {
       if (fn->hasFlag(FLAG_SEPARATELY_TYPE_CHECKED)) {
-        found_early_type_checked = true;
+        //found_early_type_checked = true;
         typeCheckFn(fn);
       }
     }
