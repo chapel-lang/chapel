@@ -12,7 +12,6 @@ This directory contains the following documentation:
   README.executing   : execution options for Chapel programs
   README.launcher    : using a launcher to get Chapel execution started
   README.multilocale : how to use Chapel with multiple locales
-  README.io          : overview of the new I/O system in Chapel
   README.prereqs     : prerequisites for using Chapel
   README.threads     : explains how Chapel tasks are implemented using threads
 
@@ -43,6 +42,7 @@ This directory contains the following documentation:
     README.gmp              :  a prototype GMP module
     README.local            :  the 'local' statement
     README.module_search    :  how modules are searched for to fulfill 'use's
+    README.io               :  the new I/O system in Chapel
     README.volatile         :  support for volatile types
 
 
