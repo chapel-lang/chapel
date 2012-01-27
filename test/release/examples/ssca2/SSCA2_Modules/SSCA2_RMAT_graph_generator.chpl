@@ -244,9 +244,11 @@ module SSCA2_RMAT_graph_generator
       writeln (); writeln ("Vertex Set in G:", G.vertices);
 
       // ----------------------------------------------------------
-      // Kernel 1: assemble graph from list of triples.  Include
-      // only non-self incident edges.  in case of duplicates, last
-      // in wins (+= instead of = works to take sum of weights)
+      // Kernel 1: assemble graph from list of triples.
+      // Include only non-self incident edges.
+      // In case of (start, end) duplicates, the first triple wins.
+      // Alternatively, could skip the member(v) check (so the last triple
+      // wins) or also use += instead of = (to sum duplicates' weights).
       // ----------------------------------------------------------
 
       var collisions = 0, self_edges = 0;
