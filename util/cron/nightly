@@ -467,7 +467,7 @@ if ($buildruntime == 0) {
     $endtime = localtime;
     $shortstatus = "Passed";
 
-    $mailsubject = "$subjectid $shortstatus ($fullplatform)";
+    $mailsubject = "$subjectid ($fullplatform) $shortstatus";
     $mailcommand = "| $mailer -s \"$mailsubject \" $recipient";
     
     open(MAIL, $mailcommand);
@@ -581,7 +581,7 @@ if ($runtests == 0) {
     $endtime = localtime;
     $shortstatus = "Passed";
 
-    $mailsubject = "$subjectid $shortstatus ($fullplatform)";
+    $mailsubject = "$subjectid ($fullplatform) $shortstatus";
     $mailcommand = "| $mailer -s \"$mailsubject \" $recipient";
     
     open(MAIL, $mailcommand);
@@ -655,9 +655,10 @@ if ($runtests == 0) {
     if ($status == 0) {
         $newfailures = `comm -13 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep -v "$futuremarker" | wc -l`; chomp($newfailures);
         $newresolved = `comm -23 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep -v "$futuremarker" | wc -l`; chomp($newresolved);
+        $newpassingfutures = `comm -23 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep "$futuremarker" | wc -l`; chomp($newpassingfutures);
         $passingfutures = `grep "$futuremarker" $sortedsummary | grep "Success" | wc -l`; chomp($passingfutures);
         $newfailures += 0;
-        $shortstatus = "$newfailures/$curfail";
+        $shortstatus = "$newfailures/$newpassingfutures/$curfail";
     } else {
         $shortstatus = "build/test failed";
     }
@@ -669,7 +670,7 @@ if ($runtests == 0) {
         print "Mailing to everyone\n";
     }
 
-    $mailsubject = "$subjectid $shortstatus ($fullplatform)";
+    $mailsubject = "$subjectid ($fullplatform) $shortstatus";
     $mailcommand = "| $mailer -s \"$mailsubject \" $recipient";
     
     open(MAIL, $mailcommand);
@@ -782,7 +783,7 @@ sub mysystem {
 	print "Error $_[1]: $status\n";
 
 	if ($mailmsg != 0) {
-            $mailsubject = "$subjectid Failure ($fullplatform)";
+            $mailsubject = "$subjectid ($fullplatform) Failure";
             $mailcommand = "| $mailer -s \"$mailsubject \" $recipient";
 
             print "Trying to mail message... using $mailcommand\n";
