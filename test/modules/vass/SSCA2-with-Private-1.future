@@ -1,0 +1,23 @@
+bug: a default class type constructor does not get resolved with certain 'use' decls
+
+The case is extremely simple:
+
+    module SSCA2_main {
+      proc main () {
+        use SSCA2_kernels;
+      }
+    }
+    module SSCA2_kernels { 
+      use PrivateDist;
+    }
+
+Currently I get:
+
+    ChapelTaskTable.chpl:35: error: unresolved type specifier 'Private()'
+
+(The location of the error can change with more complicated code,
+but the message itself remains the same.)
+
+Seems like there is some kind of ordering issue.
+If 'use SSCA2_kernels' is moved (or copied) just outside main(),
+things work fine.
