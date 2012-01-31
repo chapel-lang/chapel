@@ -28,6 +28,6 @@ export GASNET_SPAWNFN=L
 export GASNET_ROUTE_OUTPUT=0
 export CHPL_GASNET_CFG_OPTIONS=--disable-ibv
 export GASNET_QUIET=Y
-$CHPL_HOME/util/cron/nightly -cron -examples &> $LOGFILE
+$CHPL_HOME/util/cron/nightly -cron -multilocale &> $LOGFILE
 echo "Done testing CHPL_TASKS=tcmalloc CHPL_COMM=gasnet"
 

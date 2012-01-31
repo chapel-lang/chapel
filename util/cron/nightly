@@ -20,6 +20,7 @@ $nolocal = 0;
 $combinedir = 0;
 $dist = "";
 $memleaks = "";
+$multilocale = 0;
 $svnrevopt = "";
 $startdate = "-1";
 
@@ -46,6 +47,9 @@ while (@ARGV) {
 	$allhellos = 1;
     } elsif ($flag eq "-examples") {
         $examples = 1;
+    } elsif ($flag eq "-multilocale") {
+        $examples = 1;
+        $multilocale = 1;
     } elsif ($flag eq "-performance") {
         $performance = 1;
     } elsif ($flag eq "-startdate") {
@@ -110,6 +114,7 @@ if ($printusage == 1) {
     print "\t-notest      : don't run the tests (check the build only)\n";
     print "\t-noruntime   : don't build the runtime or run the tests\n";
     print "\t-examples    : run the release/examples tests only\n";
+    print "\t-multilocale : run multilocale suite only\n";
     print "\t-hello       : run the release/examples/hello.chpl test only\n";
     print "\t-hellos      : run the release/examples/hello*.chpl tests only\n";
     print "\t-valgrind    : run tests in valgrind mode\n";
@@ -361,7 +366,11 @@ if ($valgrind == 1) {
     $morechars = "nolocal";
 } elsif ($examples == 1) {
     $threechars = "exm";
-    $morechars = "examples";
+    if ($multilocale == 1) {
+        $morechars = "multilocale-examples";
+    } else {
+        $morechars = "examples";
+    }
 } else {
     $threechars = "std";
     $morechars = "standard";
@@ -515,10 +524,15 @@ if ($valgrind == 0) {
 #
 if ($examples == 1) {
     mysystem("cd $chapeldir && $make spectests", "making spec tests", 0, 1);
+    $testdirs = "release/examples";
+    if ($multilocale == 1) {
+        # $testdirs .= "multilocale distributions";
+        $testdirs = "distributions";
+    }
     if ($parnodefile eq "") {
-        $testflags = "$testflags release/examples";
+        $testflags = "$testflags $testdirs";
     } else {
-        mysystem("cd $testdir && find release/examples -type d > DIRFILE", 
+        mysystem("cd $testdir && find $testdirs -wholename \"*.svn\" -prune -o -type d > DIRFILE", 
                  "making directory file", 1, 1);
         $testflags = "$testflags -dirfile DIRFILE";
     }
