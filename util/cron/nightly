@@ -677,7 +677,7 @@ if ($runtests == 0) {
         $shortstatus = "build/test failed";
     }
 
-    if ($newfailures == 0 && $newresolved == 0 && $passingfutures == 0) {
+    if ($newfailures == 0 && $newresolved == 0 && $newpassingfutures == 0) {
         print "Mailing to minimal group\n";
         $recipient = $nochangerecipient;
     } else {
@@ -695,37 +695,37 @@ if ($runtests == 0) {
     print MAIL endMailHeader();
     
     if ($status == 0) {
-        print MAIL "--- New Errors ($morechars) -----------------------------------------\n";
+        print MAIL "--- New Errors ($morechars) -------------------------------\n";
         print MAIL `comm -13 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep -v "$futuremarker"`;
         print MAIL "\n";
     }
     
     if ($status == 0) {
-        print MAIL "--- Resolved Errors ($morechars) ------------------------------------\n";
+        print MAIL "--- Resolved Errors ($morechars) --------------------------\n";
         print MAIL `comm -23 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep -v "$futuremarker"`;
         print MAIL "\n";
     }
     
     if ($status == 0) {
-        print MAIL "--- Passing Future tests ($morechars) -------------------------------\n";
+        print MAIL "--- Passing Future tests ($morechars) ---------------------\n";
         print MAIL `grep "$futuremarker" $sortedsummary | grep "Success"`;
         print MAIL "\n";    
     }
     
     if ($status == 0) {
-        print MAIL "--- Unresolved Errors ($morechars) ----------------------------------\n";
+        print MAIL "--- Unresolved Errors ($morechars) ------------------------\n";
         print MAIL `comm -12 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep -v "$futuremarker"`;
         print MAIL "\n";
     }
     
     if ($status == 0) {
-        print MAIL "--- New Failing Future tests ($morechars) ---------------------------\n";
+        print MAIL "--- New Failing Future tests ($morechars) -----------------\n";
         print MAIL `comm -13 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep "$futuremarker" | grep "Error"`;
         print MAIL "\n";    
     }
     
     if ($status == 0) {
-        print MAIL "--- Unresolved Future tests ($morechars) ----------------------------\n";
+        print MAIL "--- Unresolved Future tests ($morechars) ------------------\n";
         print MAIL `comm -12 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep "$futuremarker" | grep "Error"`;
         print MAIL "\n";    
     }
