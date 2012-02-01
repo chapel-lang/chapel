@@ -25,3 +25,6 @@ Local modifications:
 * Added the capability for the tasking layer to yield tasks in the
   event of active message calls by defining chpl_task_yield() and
   CHPL_COMM_YIELD_TASK_WHILE_POLLING.
+
+* Added calls to store/read a task-private 'serial' bit and to use
+  this bit to squash parallelism when requested/necessary.
