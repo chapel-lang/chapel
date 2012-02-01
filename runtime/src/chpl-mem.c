@@ -51,6 +51,24 @@ computeChunkSize(size_t number, size_t size, chpl_bool zeroOK,
   return number * size;
 }
 
+void chpl_mem_check_pre(size_t number, size_t size, chpl_bool zeroOK,
+                         chpl_mem_descInt_t description,
+                         int32_t lineno, chpl_string filename) {
+  if( ! heapInitialized ) {
+    chpl_error("memory routine called before the heap is initialized",
+               lineno, filename);
+  }
+  // This might chpl_error out if number==0 || size==0 or overflow.
+  computeChunkSize(number, size, zeroOK, lineno, filename);
+}
+
+void chpl_mem_check_post(void* memAlloc,
+                         chpl_mem_descInt_t description,
+                         int32_t lineno, chpl_string filename)
+{
+  confirm(memAlloc, description, lineno, filename);
+}
+
 
 const char* chpl_mem_descString(chpl_mem_descInt_t mdi) {
   //
@@ -128,61 +146,3 @@ void chpl_mem_actualSharedHeap(void** start_p, size_t* size_p) {
   chpl_mem_layerActualSharedHeap(start_p, size_p);
 }
 
-
-void* chpl_mem_allocMany(size_t number, size_t size,
-                         chpl_mem_descInt_t description,
-                         int32_t lineno, chpl_string filename) {
-  size_t chunk = computeChunkSize(number, size, false, lineno, filename);
-  void* memAlloc = chpl_mem_layerAlloc(chunk, lineno, filename);
-  if (chunk != 0) {
-    confirm(memAlloc, description, lineno, filename);
-  }
-  chpl_track_malloc(memAlloc, chunk, number, size, description,
-                    lineno, filename);
-  return memAlloc;
-}
-
-void* chpl_mem_allocManyZero(size_t number, size_t size,
-                             chpl_mem_descInt_t description,
-                             int32_t lineno, chpl_string filename)
-{
-  void* ptr = chpl_mem_allocMany(number, size, description, lineno, filename);
-  memset(ptr, 0, number*size);
-  return ptr;
-}
-
-void* chpl_mem_realloc(void* memAlloc, size_t number, size_t size, 
-                       chpl_mem_descInt_t description,
-                       int32_t lineno, chpl_string filename) {
-  size_t newChunk = computeChunkSize(number, size, true, lineno, filename);
-  void* moreMemAlloc;
-
-  if (!newChunk) {
-    chpl_mem_free(memAlloc, lineno, filename);
-    return NULL;
-  }
-
-  if (!heapInitialized) {
-    chpl_error("chpl_mem_realloc called before the heap is initialized",
-               lineno, filename);
-  }
-
-  chpl_track_realloc1(memAlloc, number, size, description, lineno, filename);
-
-  moreMemAlloc = chpl_mem_layerRealloc(memAlloc, newChunk, lineno, filename);
-
-  confirm(moreMemAlloc, description, lineno, filename);
-
-  chpl_track_realloc2(moreMemAlloc, newChunk, memAlloc, number, size,
-                      description, lineno, filename);
-
-  return moreMemAlloc;
-}
-
-
-void chpl_mem_free(void* memAlloc, int32_t lineno, chpl_string filename) {
-  if (memAlloc != NULL) {
-    chpl_track_free(memAlloc, lineno, filename);
-    chpl_mem_layerFree(memAlloc, lineno, filename);
-  }
-}
