@@ -526,8 +526,7 @@ if ($examples == 1) {
     mysystem("cd $chapeldir && $make spectests", "making spec tests", 0, 1);
     $testdirs = "release/examples";
     if ($multilocale == 1) {
-        # $testdirs .= "multilocale distributions";
-        $testdirs = "distributions";
+        $testdirs .= " multilocale distributions";
     }
     if ($parnodefile eq "") {
         $testflags = "$testflags $testdirs";
