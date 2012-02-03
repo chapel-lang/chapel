@@ -19,13 +19,19 @@
 
 // CHPL_MEM_DEBUG=1 will enable tracking and other extra checks;
 // CHPL_MEM_DEBUG will be set to 1 if CHPL_DEBUG is defined;
-// otherwise it is 0.
+// or if CHPL_OPTIMIZE is not defined.
 #ifndef CHPL_MEM_DEBUG
+
 #ifdef CHPL_DEBUG
 #define CHPL_MEM_DEBUG 1
 #else
+#ifdef CHPL_OPTIMIZE
 #define CHPL_MEM_DEBUG 0
+#else
+#define CHPL_MEM_DEBUG 1
 #endif
+#endif
+
 #endif
 
 // import allocation types
@@ -71,8 +77,10 @@ void* chpl_mem_allocMany(size_t number, size_t size,
     chpl_mem_check_pre(number, size, false, description, lineno, filename);
   }
   memAlloc = chpl_malloc(number*size);
-  if( CHPL_MEM_DEBUG ) {
+  if( CHPL_MEM_DEBUG || ! memAlloc ) {
     chpl_mem_check_post(memAlloc, description, lineno, filename);
+  }
+  if( CHPL_MEM_DEBUG ) {
     chpl_track_malloc(memAlloc, number*size, number, size, description,
                       lineno, filename);
   }
@@ -88,8 +96,10 @@ void* chpl_mem_allocManyZero(size_t number, size_t size,
     chpl_mem_check_pre(number, size, false, description, lineno, filename);
   }
   memAlloc = chpl_calloc(number, size);
-  if( CHPL_MEM_DEBUG ) {
+  if( CHPL_MEM_DEBUG || ! memAlloc ) {
     chpl_mem_check_post(memAlloc, description, lineno, filename);
+  }
+  if( CHPL_MEM_DEBUG ) {
     chpl_track_malloc(memAlloc, number*size, number, size, description,
                       lineno, filename);
   }
@@ -120,8 +130,10 @@ void* chpl_mem_realloc(void* memAlloc, size_t number, size_t size,
     chpl_track_realloc1(memAlloc, number, size, description, lineno, filename);
   }
   moreMemAlloc = chpl_realloc(memAlloc, number*size);
-  if( CHPL_MEM_DEBUG ) {
+  if( CHPL_MEM_DEBUG || ! moreMemAlloc ) {
     chpl_mem_check_post(moreMemAlloc, description, lineno, filename);
+  }
+  if( CHPL_MEM_DEBUG ) {
     chpl_track_realloc2(moreMemAlloc, number*size, memAlloc, number, size,
                         description, lineno, filename);
   }
