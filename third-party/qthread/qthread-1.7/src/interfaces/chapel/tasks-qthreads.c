@@ -19,7 +19,6 @@
 #include "chplsys.h"
 #include "tasks-qthreads.h"
 #include "chpl-tasks.h"
-#include "chpl-mem.h" // for chpl_malloc(), mandatory malloc() replacement
 #include "config.h"   // for chpl_config_get_value()
 #include "error.h"    // for chpl_warning()
 #include <stdio.h>
