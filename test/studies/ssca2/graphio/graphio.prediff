@@ -1,3 +1,0 @@
-#!/bin/bash --norc
-
-../../../release/examples/ssca2/SSCA2_main.prediff "$@"

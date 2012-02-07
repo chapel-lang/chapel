@@ -1,5 +1,14 @@
 module analyze_RMAT_graph_associative_array {
 
+  // These control whether graphs are generated and/or written out.
+  // The filename of "-" disables the corresponding operation.
+  config const gFilename      = "graphio.1.";
+  config const gDstyle        = "-";
+  config const refFilenameIn  = "graphio.1.";
+  config const refDstyleIn    = "-";
+  config const refFilenameOut = "graphio.2.";
+  config const refDstyleOut   = "-";
+
   // +========================================================================+
   // |  Define associative array-based representations for general sparse     |
   // |  graphs. Provide execution template to generate a random RMAT graph    |
@@ -107,13 +116,27 @@ module analyze_RMAT_graph_associative_array {
     // values for quadrant assignment.
     // ------------------------------------------------------------------
 
-    writeln("about to call Gen_RMAT_graph() for graphio");
+  if gFilename != "-" {
     Gen_RMAT_graph ( RMAT_a, RMAT_b, RMAT_c, RMAT_d, 
-		     SCALE, N_VERTICES, n_raw_edges, MAX_EDGE_WEIGHT, G ); 
+		     SCALE, N_VERTICES, n_raw_edges, MAX_EDGE_WEIGHT, G );
+
+    // write it out, read it back in, write the new one out so we can compare
+    Writeout_RMAT_graph ( G, gFilename, gDstyle );
+  }
 
     execute_SSCA2 ( G );
     writeln (); writeln ();
     delete G;
+
+    // Let's also read a graph and write it back out.
+    if refFilenameIn != "-" {
+      const Ref = new Associative_Graph (vertex_domain);
+      Readin_RMAT_graph ( Ref, refFilenameIn, refDstyleIn );
+      if !checkOnlyOnRead && refFilenameOut != "-" then
+        Writeout_RMAT_graph ( Ref, refFilenameOut, refDstyleOut );
+      delete Ref;
+    }
   }
 
 }
+
