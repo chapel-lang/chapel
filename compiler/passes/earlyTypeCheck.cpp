@@ -1173,12 +1173,15 @@ BaseAST* checkInterfaceImplementations(BlockStmt *block) {
               INT_FATAL("Implementing type not found\n");
             }
           }
-        } else {
+        } else  if(!ce->primitive) {
           returnExpr = checkFunctionCall(ce);
           printf("Return Type: %d\n",returnExpr->id);
           list_view(returnExpr);
         }
       }
+    }
+    else if(BlockStmt* bs = toBlockStmt(s)) {
+                returnExpr = checkInterfaceImplementations(bs);
     }
   }
 
