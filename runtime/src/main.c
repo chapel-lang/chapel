@@ -14,6 +14,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <locale.h>
+#include "sys.h"
 
 static const char myFilename[] = 
 #ifdef CHPL_DEVELOPER
@@ -56,6 +57,9 @@ int main(int argc, char* argv[]) {
   int32_t execNumLocales;
   int runInGDB;
   int numPollingTasks;
+
+  // Check that we can get the page size.
+  assert( sys_page_size() > 0 );
 
   // Declare that we are 'locale aware' so that
   // UTF-8 functions (e.g. wcrtomb) work as

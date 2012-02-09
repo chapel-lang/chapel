@@ -9,7 +9,6 @@
 #include <stddef.h>
 #include <stdio.h>
 #include <stdarg.h>
-#include <pthread.h>
 #include <stdbool.h>
 #include <assert.h>
 
@@ -65,6 +64,9 @@ static inline void qio_lock_destroy(qio_lock_t* x) {
 }
 
 #else
+
+#include <pthread.h>
+
 typedef pthread_mutex_t qio_lock_t;
 // these should return 0 on success; otherwise, an error number.
 static inline err_t qio_lock(qio_lock_t* x) { return pthread_mutex_lock(x); }

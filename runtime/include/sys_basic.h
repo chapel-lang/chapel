@@ -2,7 +2,7 @@
 #define _SYS_BASIC_H
 
 #ifndef _BSD_SOURCE
-// get endian.h htobe16, etc
+// get endian.h htobe16, valloc, etc
 #define _BSD_SOURCE
 #endif
 
@@ -17,10 +17,15 @@
 #define _ALL_SOURCE
 #endif
 
-// get posix_memalign
+// get posix_fallocate
+// linux man says it needs _XOPEN_SOURCE >= 600 || _POSIX_C_SOURCE >= 200112L
+// get pread, pwrite
+// linux man says it needs _XOPEN_SOURCE >= 500 || /* Since glibc 2.12: */ _POSIX_C_SOURCE >= 200809
+// get readv, writev, preadv, pwritev
 #ifndef _XOPEN_SOURCE
 #define _XOPEN_SOURCE 600
 #endif
+
 #ifndef _POSIX_C_SOURCE
 #define _POSIX_C_SOURCE 200112L
 #endif
@@ -34,12 +39,19 @@
 #define ___always_inline inline
 #endif
 
+#ifdef __MTA__
+// MTA defines WCHAR_MAX in stdint and wchar,
+// but avoids it if wchar is included before stdint.
+#include <wchar.h>
+#endif
+
 #include <sys/types.h>
 #include <unistd.h>
 #include <errno.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h>
+#include <limits.h>
 
 typedef int c_int;
 typedef unsigned int c_uint;
@@ -81,12 +93,34 @@ static inline err_t chpl_int_to_err(int32_t a) { return a; }
 #define EFORMAT (EXTEND_ERROR_OFFSET+2)
 #endif
 
-#define EXTEND_ERROR_NUM 3
+// Make sure we have an EILSEQ (missing on XMT)
+#ifndef EILSEQ
+#define EILSEQ (EXTEND_ERROR_OFFSET+3)
+#endif
+
+// Make sure we have EOVERFLOW (missing on XMT)
+#ifndef EOVERFLOW
+#define EOVERFLOW (EXTEND_ERROR_OFFSET+4)
+#endif
+
+#define EXTEND_ERROR_NUM 5
 
 #define PTR_ADDBYTES(ptr,nbytes) ((void*) ( ((unsigned char*)ptr) + nbytes))
 
 #define PTR_DIFFBYTES(end_ptr,start_ptr) (((unsigned char*)end_ptr) - ((unsigned char*)start_ptr))
 
 static inline int is_c_nil(void* x) { return x==NULL; }
+
+// Define LLONG_MAX, ULLONG_MAX if it doesn't exist (should be in limits.h)
+// This is needed for XMT.
+#ifdef __MTA__
+#ifndef LLONG_MAX
+#define LLONG_MAX LONG_LONG_MAX
+#endif
+#ifndef ULLONG_MAX
+#define ULLONG_MAX (2ULL*LLONG_MAX+1ULL)
+#endif
+#endif
+
 
 #endif

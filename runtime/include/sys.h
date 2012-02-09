@@ -6,19 +6,37 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/socket.h>
+#include <netdb.h>
 #include <unistd.h>
 #include <stdio.h>
 
+
+// Do we have getaddrinfo?
+#ifdef EAI_NONAME
+#define HAS_GETADDRINFO
+#endif
+
+
+// MTA seems not to have a struct sockaddr_storage
+// or socklen_t defined, so we do our best to guess.
+#ifdef __MTA__
+#include <sys/un.h>
+typedef struct sockaddr_un sys_sockaddr_storage_t;
+typedef int socklen_t;
+#else
 typedef struct sockaddr_storage sys_sockaddr_storage_t;
+#endif
+
 
 typedef struct sys_sockaddr_s {
   sys_sockaddr_storage_t addr;
   socklen_t len;
 } sys_sockaddr_t;
 
+#ifdef HAS_GETADDRINFO
 typedef struct addrinfo sys_addrinfo_t;
 typedef struct addrinfo* sys_addrinfo_ptr_t;
-
+#endif
 
 //
 //typedef struct sys_addrinfo_s //{
@@ -48,6 +66,9 @@ typedef struct addrinfo* sys_addrinfo_ptr_t;
 #define DONE_SLOW_SYSCALL { }
 
 void sys_init_sys_sockaddr(sys_sockaddr_t* addr);
+
+size_t sys_page_size(void);
+
 
 err_t sys_fseeko(FILE* stream, off_t offset, int whence);
 err_t sys_ftello(FILE* stream, off_t* offset_out);
@@ -132,6 +153,7 @@ err_t sys_bind(fd_t sockfd, const sys_sockaddr_t* addr);
 err_t sys_connect(fd_t sockfd, const sys_sockaddr_t* addr);
 
 
+#ifdef HAS_GETADDRINFO
 /* See comment about this being commented out in sys.c -BLC */
 //err_t sys_getaddrinfo(const char* node, const char* service, 
 //                     const struct addrinfo* hints, struct addrinfo ** res);
@@ -148,7 +170,7 @@ void sys_freeaddr_info(sys_addrinfo_ptr_t* p);
 
 
 err_t sys_getnameinfo(const sys_sockaddr_t* addr, char** host_out, char** serv_out, int flags);
-
+#endif
 
 err_t sys_getpeername(fd_t sockfd, sys_sockaddr_t* addr);
 

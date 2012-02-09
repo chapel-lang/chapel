@@ -363,7 +363,7 @@ err_t qio_recv(fd_t sockfd, qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t
 
   memset(&msg, 0, sizeof(struct msghdr));
   if( src_addr_out ) {
-    msg.msg_name = &src_addr_out->addr;
+    msg.msg_name = (void*) &src_addr_out->addr;
     msg.msg_namelen = src_addr_out->len;
   }
   msg.msg_iov = iov;
@@ -422,7 +422,7 @@ err_t qio_send(fd_t sockfd, qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t
 
   memset(&msg, 0, sizeof(struct msghdr));
   if( dst_addr ) {
-    msg.msg_name = (struct sockaddr*) &dst_addr->addr;
+    msg.msg_name = (void*) &dst_addr->addr;
     msg.msg_namelen = dst_addr->len;
   }
   msg.msg_iov = iov;
@@ -1688,8 +1688,7 @@ err_t _buffered_get_mmap(qio_channel_t* ch, int64_t amt_in, int writing)
   }
 
   // round start down to page size.
-  err = sys_sysconf(_SC_PAGESIZE, &pagesize);
-  if( err ) return err;
+  pagesize = sys_page_size();
 
   start = qbuffer_end(&ch->buf);
 
@@ -1856,6 +1855,9 @@ err_t _buffered_read_atleast(qio_channel_t* ch, int64_t amt)
 static
 err_t _qio_flush_bits_if_needed_unlocked(qio_channel_t* restrict ch)
 {
+#ifdef __MTA__
+  return 0; // for some reason the code here doesn't compile!
+#else
   err_t err = 0;
   int keep_bytes = 0;
   qio_bitbuffer_t part_one_bits_be;
@@ -1904,6 +1906,7 @@ err_t _qio_flush_bits_if_needed_unlocked(qio_channel_t* restrict ch)
   }
 
   return err;
+#endif
 }
 
 
@@ -2484,36 +2487,44 @@ int _use_buffered(qio_channel_t* ch, ssize_t len)
  */
 err_t _qio_slow_write(qio_channel_t* ch, const void* ptr, ssize_t len, ssize_t* amt_written)
 {
+  err_t ret;
+
   *amt_written = 0;
 
   if( ! (ch->flags & QIO_FDFLAG_WRITEABLE ) ) {
     return EINVAL;
   }
 
+  ret = EINVAL;
+
   if( _use_buffered(ch, len) ) {
-    return _qio_buffered_write(ch, ptr, len, amt_written);
+    ret = _qio_buffered_write(ch, ptr, len, amt_written);
   } else {
-    return _qio_unbuffered_write(ch, ptr, len, amt_written);
+    ret = _qio_unbuffered_write(ch, ptr, len, amt_written);
   }
 
-  return EINVAL;
+  return ret;
 }
 
 err_t _qio_slow_read(qio_channel_t* ch, void* ptr, ssize_t len, ssize_t* amt_read)
 {
+  err_t ret;
+
   *amt_read = 0;
 
   if( ! (ch->flags & QIO_FDFLAG_READABLE ) ) {
     return EINVAL;
   }
 
+  ret = EINVAL;
+
   if( _use_buffered(ch, len) ) {
-    return _qio_buffered_read(ch, ptr, len, amt_read);
+    ret = _qio_buffered_read(ch, ptr, len, amt_read);
   } else {
-    return _qio_unbuffered_read(ch, ptr, len, amt_read);
+    ret = _qio_unbuffered_read(ch, ptr, len, amt_read);
   }
 
-  return EINVAL;
+  return ret;
 }
 
 // Only returns locking errors (ie when threadsafe=true).
@@ -3121,14 +3132,14 @@ void _qio_channel_write_bits_cached_realign(qio_channel_t* restrict ch, uint64_t
 
   // Remove junk from the top of tmp_bits, so only bottom tmp_live bits are set.
   if( 0 < tmp_live && tmp_live < 8*sizeof(qio_bitbuffer_t) ) {
-    mask = -1;
+    mask = (qio_bitbuffer_t) -1;
     mask >>= (8*sizeof(qio_bitbuffer_t) - tmp_live);
   } else if( tmp_live == 0 ) {
     // no live bits.
     mask = 0;
   } else {
     // tmp_live == bit size of bitbuffer.
-    mask = -1;
+    mask = (qio_bitbuffer_t) -1;
   }
   tmp_bits &= mask;
 
