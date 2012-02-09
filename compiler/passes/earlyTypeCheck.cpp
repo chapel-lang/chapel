@@ -515,6 +515,99 @@ static void buildVisibleFunctionMap2() {
  * END DUPLICATE CODE
  */
 
+/*
+ * Start of code duplication for SymbolTable required for scoped implements clauses
+ * Code taken from scopeResolve.cpp
+ * Code is modified - structure of SymbolTable
+ */
+
+typedef Vec<BaseAST*> ImplementsDetails;
+typedef Map<BaseAST*, ImplementsDetails*> ImplementingTypeList;
+typedef Map<BaseAST*, ImplementingTypeList*> ImplementedInterfaceList;
+typedef Map<BaseAST*, ImplementedInterfaceList*> ImplementsSymbolTable;
+
+static ImplementsSymbolTable implementsSymbolTable;
+
+//
+// getScope returns the BaseAST that corresponds to the scope where
+// 'ast' exists; 'ast' must be an Expr or a Symbol.  Note that if you
+// pass this a BaseAST that defines a scope, the BaseAST that defines
+// the scope where it exists will be returned.  Thus if a BlockStmt
+// nested in another BlockStmt is passed to getScope, the outer
+// BlockStmt will be returned.
+//
+static BaseAST*
+getScope2(BaseAST* ast) {
+  if (Expr* expr = toExpr(ast)) {
+    BlockStmt* block = toBlockStmt(expr->parentExpr);
+    if (block && block->blockTag != BLOCK_SCOPELESS) {
+      return block;
+    } else if (expr->parentExpr) {
+      return getScope2(expr->parentExpr);
+    } else if (FnSymbol* fn = toFnSymbol(expr->parentSymbol)) {
+      return fn;
+    } else if (TypeSymbol* ts = toTypeSymbol(expr->parentSymbol)) {
+      if (isEnumType(ts->type) || isClassType(ts->type)) {
+        return ts;
+      }
+    }
+    if (expr->parentSymbol == rootModule)
+      return NULL;
+    else
+      return getScope2(expr->parentSymbol->defPoint);
+  } else if (Symbol* sym = toSymbol(ast)) {
+    if (sym == rootModule)
+      return NULL;
+    else
+      return getScope2(sym->defPoint);
+  }
+  INT_FATAL(ast, "getScope2 expects an Expr or a Symbol");
+  return NULL;
+}
+
+static void
+addToImplementsSymbolTable(CallExpr* ce, BaseAST* interface, BaseAST* implementingType){
+  BaseAST* scope = getScope2(ce);
+  BaseAST* interface_node = cclosure.get_representative_ast(interface);
+  BaseAST* implementingType_node = cclosure.get_representative_ast(implementingType);
+  ImplementedInterfaceList* interfaceEntry = implementsSymbolTable.get(scope);
+  if(!interfaceEntry) {
+    interfaceEntry = new ImplementedInterfaceList();
+    implementsSymbolTable.put(scope,interfaceEntry);
+  }
+  ImplementingTypeList* typeEntry = interfaceEntry->get(interface);
+  if(!typeEntry) {
+    typeEntry = new ImplementingTypeList();
+    interfaceEntry->put(interface_node,typeEntry);
+  }
+  typeEntry->put(implementingType_node,new ImplementsDetails());
+}
+
+static bool
+lookupImplementsSymbolTable(BaseAST* ce, BaseAST* interface, BaseAST* implementingType) {
+  BaseAST* scope = getScope2(ce);
+  if(!scope)
+    return false;
+  BaseAST* interface_node = cclosure.get_representative_ast(interface);
+  BaseAST* implementingType_node = cclosure.get_representative_ast(implementingType);
+  ImplementedInterfaceList* interfaceEntry = implementsSymbolTable.get(scope);
+  if(!interfaceEntry) {
+    return lookupImplementsSymbolTable(scope,interface,implementingType);
+  }
+  ImplementingTypeList* typeEntry = interfaceEntry->get(interface_node);
+  if(!typeEntry)
+    return lookupImplementsSymbolTable(scope,interface,implementingType);
+  ImplementsDetails* details = typeEntry->get(implementingType_node);
+  if(!details)
+    return lookupImplementsSymbolTable(scope,interface,implementingType);
+  return true;
+}
+
+/*
+ * END DUPLICATE CODE 2
+ */
+
+
 // Typechecks the given ast node with the expected return (in case a return
 // is encountered)
 BaseAST *typeCheckExpr(BaseAST *currentExpr, BaseAST *expectedReturnTypeExpr,
@@ -817,7 +910,8 @@ bool mapArguments(CallExpr* where, FnSymbol* visibleFn, CallExpr* call) {
     //printf("%s %d\n", s_formal->cname, s_formal->id);
     if (s_formal->id == s_arg1->var->id) {
       //if(checkImplementation(e_actual,s_arg2)){
-      if (cclosure.has_implements_relation(e_actual, arg2)) {
+      //if (cclosure.has_implements_relation(e_actual, arg2)) {
+      if(lookupImplementsSymbolTable(call, e_actual, arg2)) {
         printf("Interface is implemented!\n");
         return true;
       } else {
@@ -1167,7 +1261,9 @@ BaseAST* checkInterfaceImplementations(BlockStmt *block) {
                     }
                   }
               }
-              cclosure.add_implements_witness(ce->argList.head,
+              //cclosure.add_implements_witness(ce->argList.head,
+                  //ce->argList.tail);
+              addToImplementsSymbolTable(ce,ce->argList.head,
                   ce->argList.tail);
             } else {
               INT_FATAL("Implementing type not found\n");
