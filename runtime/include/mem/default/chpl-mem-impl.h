@@ -8,20 +8,20 @@
 #undef free
 #undef _chpl_mem_warning_macros_h_
 
-static inline void* chpl_calloc(size_t n, size_t size) {
+static ___always_inline void* chpl_calloc(size_t n, size_t size) {
   if( n == 0 || size == 0 ) return NULL;
   return calloc(n,size);
 }
 
-static inline void* chpl_malloc(size_t size) {
+static ___always_inline void* chpl_malloc(size_t size) {
   return (size) ? malloc(size) : NULL;
 }
 
-static inline void* chpl_realloc(void* ptr, size_t size) {
+static ___always_inline void* chpl_realloc(void* ptr, size_t size) {
   return realloc(ptr,size);
 }
 
-static inline void chpl_free(void* ptr) {
+static ___always_inline void chpl_free(void* ptr) {
   free(ptr);
 }
 
