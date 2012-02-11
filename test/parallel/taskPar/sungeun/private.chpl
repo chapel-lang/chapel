@@ -4,33 +4,41 @@
 // arrays/domains (you could drop the dmap), as well as Block, Cyclic,
 // and probably BlockCyclic arrays/domains.
 //
-use BlockDist;
+use BlockDist, PrivateDist;
 
 record taskPrivateData {
+  var inUse: bool = false;
   var x: int;
   var y: [0..#numLocales] real;
 };
 
 class localePrivateData {
   type myStuff;
+  // assumes numCores is the same across all locales
+  const numTasks = if dataParTasksPerLocale==0 then here.numCores
+    else dataParTasksPerLocale;
   var tid: sync int = 0;
-  var r: domain(1);
+  var r = [0..#numTasks];
   var temps: [r] myStuff;
+  proc gettid() {
+    var mytid = tid;
+    while temps[mytid%numTasks].inUse do mytid += 1;
+    temps[mytid%numTasks].inUse = true;
+    tid = mytid+1;
+    return mytid%numTasks;
+  }
+  proc freetid(mytid) {
+    tid; // just use as a lock
+    temps[mytid].inUse = false;
+    tid = mytid+1;
+  }
 }
 
-const myD = [LocaleSpace] dmapped Block(boundingBox=[LocaleSpace]);
-var localePrivate: [myD] localePrivateData(taskPrivateData);
-
+var localePrivate: [PrivateSpace] localePrivateData(taskPrivateData);
 forall l in localePrivate do l = new localePrivateData(taskPrivateData);
 
-// assumes numCores is the same across all locales (prolly should use max)
-var numTasks = if dataParTasksPerLocale==0 then here.numCores
-  else dataParTasksPerLocale;
-localePrivate.r = [0..#numTasks];
-
-
 // an example use
-config param nPerLocale = 8;
+config param nPerLocale = 100;
 config const printTemps = false;
 const D = [0..#nPerLocale*numLocales] dmapped Block(boundingBox=[0..#nPerLocale*numLocales]);
 forall d in D {
@@ -38,29 +46,34 @@ forall d in D {
   var lp = localePrivate[here.id];
 
   // int-fetch-add
-  var tid = lp.tid;
-  lp.tid = tid+1;
+  var tid = lp.gettid();
 
-  tid = tid % numTasks;
+  lp.temps[tid].x += 1;
+  lp.temps[tid].y += 1;
 
-  lp.temps[tid].x += tid+1;
-  lp.temps[tid].y[here.id] += 1;
+  lp.freetid(tid);
 }
 
 if printTemps then writeln(localePrivate.temps);
 
+const numTasks = if dataParTasksPerLocale==0 then here.numCores
+  else dataParTasksPerLocale;
 for l in 0..#numLocales {
   var lp = localePrivate[l];
-  var y =  0.0;
+  var x = 0;
+  var y: [D] real = 0.0;
   for tid in 0..#numTasks {
-    y += + reduce lp.temps[tid].y;
-    for l2 in 0..#numLocales {
-      if l != l2 {
-        if lp.temps[tid].y[l2] != 0.0 then
-          halt("localePrivate[",l,"].temps[",tid,"].y[", l2, "] is not 0.0!");
-      }
+    x += lp.temps[tid].x;
+    for i in 0..#numLocales do y[i] += lp.temps[tid].y[i];
+  }
+  if x != nPerLocale {
+    for tid in 0..#numTasks do writeln(lp.temps[tid].x);
+    halt("localePrivate[",l,"].temps[].x value is incorrect!");
+  }
+  for i in 0..#numLocales {
+    if y[i] != nPerLocale {
+      for tid in 0..#numTasks do writeln(lp.temps[tid].y);
+      halt("localePrivate[",l,"].temps[].y values are incorrect!");
     }
   }
-  if y != nPerLocale then
-    halt("localePrivate[",l,"].temps[].y value is incorrect!");
 }
