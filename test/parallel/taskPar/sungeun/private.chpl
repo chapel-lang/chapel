@@ -6,8 +6,10 @@
 //
 use BlockDist, PrivateDist;
 
+extern proc system(s: string): int;
+
 record taskPrivateData {
-  var inUse: bool = false;
+  var tid$: sync chpl_taskID_t = chpl_nullTaskID;
   var x: int;
   var y: [0..#numLocales] real;
 };
@@ -17,20 +19,22 @@ class localePrivateData {
   // assumes numCores is the same across all locales
   const numTasks = if dataParTasksPerLocale==0 then here.numCores
     else dataParTasksPerLocale;
-  var tid: sync int = 0;
+  var slot: sync bool;
   var r = [0..#numTasks];
   var temps: [r] myStuff;
   proc gettid() {
-    var mytid = tid;
-    while temps[mytid%numTasks].inUse do mytid += 1;
-    temps[mytid%numTasks].inUse = true;
-    tid = mytid+1;
-    return mytid%numTasks;
-  }
-  proc freetid(mytid) {
-    tid; // just use as a lock
-    temps[mytid].inUse = false;
-    tid = mytid+1;
+    extern proc chpl_task_getId(): chpl_taskID_t;
+    var mytid = chpl_task_getId();
+    var slot = (mytid:uint % (numTasks:uint)):int;
+    // Would be nice to have CAS
+    var tid: chpl_taskID_t = temps[slot].tid$; // lock
+    while ((tid != chpl_nullTaskID) && (tid != mytid)) {
+      temps[slot].tid$ = tid;                  // unlock
+      slot = (slot+1)%numTasks;
+      tid = temps[slot].tid$;                  // lock
+    }
+    temps[slot].tid$ = mytid;                  // unlock
+    return slot;
   }
 }
 
@@ -38,42 +42,42 @@ var localePrivate: [PrivateSpace] localePrivateData(taskPrivateData);
 forall l in localePrivate do l = new localePrivateData(taskPrivateData);
 
 // an example use
-config param nPerLocale = 100;
+config param nPerLocale = 113;
 config const printTemps = false;
 const D = [0..#nPerLocale*numLocales] dmapped Block(boundingBox=[0..#nPerLocale*numLocales]);
 forall d in D {
   // my copy of the task private vars
   var lp = localePrivate[here.id];
 
-  // int-fetch-add
-  var tid = lp.gettid();
+  var slot = lp.gettid();
 
-  lp.temps[tid].x += 1;
-  lp.temps[tid].y += 1;
+  lp.temps[slot].x += slot+1;
 
-  lp.freetid(tid);
+  // make a system call to skew timing a bit
+  if d%7==0 then system("sleep 1");
+
+  lp.temps[slot].y[here.id] += 1;
+
 }
 
 if printTemps then writeln(localePrivate.temps);
 
 const numTasks = if dataParTasksPerLocale==0 then here.numCores
   else dataParTasksPerLocale;
+
 for l in 0..#numLocales {
   var lp = localePrivate[l];
-  var x = 0;
-  var y: [D] real = 0.0;
-  for tid in 0..#numTasks {
-    x += lp.temps[tid].x;
-    for i in 0..#numLocales do y[i] += lp.temps[tid].y[i];
-  }
-  if x != nPerLocale {
-    for tid in 0..#numTasks do writeln(lp.temps[tid].x);
-    halt("localePrivate[",l,"].temps[].x value is incorrect!");
-  }
-  for i in 0..#numLocales {
-    if y[i] != nPerLocale {
-      for tid in 0..#numTasks do writeln(lp.temps[tid].y);
-      halt("localePrivate[",l,"].temps[].y values are incorrect!");
+  var y =  0.0;
+  for slot in 0..#numTasks {
+    y += + reduce lp.temps[slot].y;
+    for l2 in 0..#numLocales {
+      if l != l2 {
+        if lp.temps[slot].y[l2] != 0.0 then
+          halt("localePrivate[",l,"].temps[",slot,"].y[", l2, "]!=0.0! (",
+               lp.temps[slot].y[l2],")");
+      }
     }
   }
+  if y != nPerLocale then
+    halt("localePrivate[",l,"].temps[].y value is incorrect! (y=",y,")");
 }
