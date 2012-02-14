@@ -146,6 +146,8 @@ int chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status) {
   return 0;
 }
 
+void chpl_comm_post_task_init(void) { }
+
 //
 // a final comm layer stub before barrier synching and calling into
 // the user code.  It is recommended that a debugging message be
@@ -221,9 +223,13 @@ void chpl_comm_barrier(const char *msg) {
   ARMCI_Barrier();
 }
 
+void chpl_comm_pre_task_exit(int all) {
+  if (all)
+    chpl_comm_barrier("chpl_comm_pre_task_exit");
+}
 
-static void chpl_comm_exit_common(int status)
-{
+void chpl_comm_exit(int all, int status) {
+  // Any or all threads should be able to call ARMCI exit
   if (armci_init_called) {
     if (globalPtrs)
       ARMCI_Free_local(globalPtrs);
@@ -234,37 +240,6 @@ static void chpl_comm_exit_common(int status)
     ARMCI_Finalize();
     MPI_SAFE(MPI_Finalize());
   }
-} /* chpl_comm_exit_common */
-
-//
-// terminates communication package at the end of a normal run of the
-// chapel program -- assumes all processes are calling into the
-// routine.  If the communication layer likes to call exit, the exit
-// code is provided using the "status" argument; if it doesn't, it
-// can simply return and the Chapel program will call exit().
-//
-// notes:
-//   this function is called last
-//   a barrier is invoked before calling into this function
-//   Chapel's program termination is not yet implemented correctly
-//
-void chpl_comm_exit_all(int status) {
-  // Insert cooperative ARMCI exit call here
-  chpl_comm_exit_common(status);
-}
-
-
-//
-// this routine should terminate the communication package when called
-// by any thread, and should clean up the communication package's
-// resources as best possible.  This routine is called whenever a user
-// thread calls halt or exit and we have no guarantees that all threads
-// are calling into the halt or exit.  Otherwise, it is much like the
-// chpl_comm_exit_all() routine.
-//
-void chpl_comm_exit_any(int status) {
-  // Insert "any one thread should be able to call" ARMCI exit call here
-  chpl_comm_exit_common(status);
 }
 
 
@@ -420,10 +395,6 @@ void  chpl_comm_fork_fast(int locale, chpl_fn_int_t fid,
 }
 
 int chpl_comm_numPollingTasks(void) { return 0; }
-
-void chpl_comm_startPollingTask(void) { }
-
-void chpl_comm_stopPollingTask(void) { }
 
 void chpl_startVerboseComm() { }
 void chpl_stopVerboseComm() { }

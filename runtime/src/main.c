@@ -94,7 +94,6 @@ int main(int argc, char* argv[]) {
   // number of locales is reasonable
   //
   chpl_comm_verify_num_locales(execNumLocales);
-  chpl_comm_rollcall();
 
   //
   // This just sets all of the initialization predicates to false.
@@ -121,9 +120,11 @@ int main(int argc, char* argv[]) {
                  numPollingTasks, callStackSize); 
 
   //
-  // start communication tasks as necessary
+  // Some comm layer initialization may have to be done after the
+  // tasking layer is initialized.
   //
-  chpl_comm_startPollingTask();
+  chpl_comm_post_task_init();
+  chpl_comm_rollcall();
 
   recordExecutionCommand(argc, argv);
 

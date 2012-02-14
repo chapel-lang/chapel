@@ -52,6 +52,8 @@ int chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status) {
   return 1;
 }
 
+void chpl_comm_post_task_init(void) { }
+
 void chpl_comm_rollcall(void) {
   chpl_msg(2, "executing on a single locale\n");
 }
@@ -71,9 +73,9 @@ void chpl_comm_broadcast_private(int id, int32_t sizee, int32_t tid) { }
 
 void chpl_comm_barrier(const char *msg) { }
 
-void chpl_comm_exit_any(int status) { }
+void chpl_comm_pre_task_exit(int all) { }
 
-void chpl_comm_exit_all(int status) { }
+void chpl_comm_exit(int all, int status) { }
 
 void  chpl_comm_put(void* addr, int32_t locale, void* raddr,
                     int32_t size, int32_t typeIndex, int32_t len,
@@ -127,8 +129,6 @@ void chpl_comm_fork_fast(int locale, chpl_fn_int_t fid, void *arg,
 }
 
 int chpl_comm_numPollingTasks(void) { return 0; }
-void chpl_comm_startPollingTask(void) { }
-void chpl_comm_stopPollingTask(void) { }
 
 void chpl_startVerboseComm() { }
 void chpl_stopVerboseComm() { }

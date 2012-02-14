@@ -301,46 +301,28 @@ int chpl_comm_numPollingTasks(void) {
   return (chpl_localeID == 0);
 }
 
-void chpl_comm_startPollingTask(void) {
-  //
-  // Start polling thread on locale 0.  (On other locales, main enters
-  // into a barrier wait, so the polling thread is unnecessary.)
-  //
-  if (chpl_localeID == 0) {
-    int status = chpl_task_createCommTask(polling, NULL);
-    if (status) {
-      alldone = 1;
-      chpl_internal_error("unable to start polling thread for gasnet");
-    }
-  }
-
-  // clear diags
-  memset(&chpl_comm_commDiagnostics, 0, sizeof(chpl_commDiagnostics));
-}
-
-void chpl_comm_stopPollingTask(void) {
-  //
-  // This only needs to be done on locale 0 (the only one using a
-  // polling thread), but there's no harm in doing it everywhere.
-  //
-  //  printf("[%d] setting alldone to 1\n", chpl_localeID);
-  //
-  alldone = 1;
-
-  //
-  // On locale 0 (the only one to use a polling thread) make sure the
-  // polling thread is done before going on
-  //
-  if (chpl_localeID == 0) {
-    while (pollingRunning) {}
-  }
-}
-
 //
 // No support for gdb for now
 //
 int chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status) {
   return 0;
+}
+
+void chpl_comm_post_task_init(void) {
+  //
+  // Start polling task on locale 0.  (On other locales, main enters
+  // into a barrier wait, so the polling task is unnecessary.)
+  //
+  if (chpl_localeID == 0) {
+    int status = chpl_task_createCommTask(polling, NULL);
+    if (status) {
+      alldone = 1;
+      chpl_internal_error("unable to start polling task for gasnet");
+    }
+  }
+
+  // clear diags
+  memset(&chpl_comm_commDiagnostics, 0, sizeof(chpl_commDiagnostics));
 }
 
 void chpl_comm_rollcall(void) {
@@ -426,7 +408,22 @@ void chpl_comm_barrier(const char *msg) {
   GASNET_Safe(gasnet_barrier_wait(0, GASNET_BARRIERFLAG_ANONYMOUS));
 }
 
-static void chpl_comm_exit_common(int status) {
+void chpl_comm_pre_task_exit(int all) {
+  if (all) {
+    chpl_comm_barrier("chpl_comm_pre_task_exit");
+
+    if (chpl_localeID == 0) {
+      //
+      // Only locale 0 actually runs a polling task.  Tell that task to
+      // halt, and then wait for it to do so.
+      //
+      alldone = 1;
+      while (pollingRunning) {}
+    }
+  }
+}
+
+static void exit_common(int status) {
   int* ack = (int*)&alldone;
   static int loopback = 0;
 
@@ -438,20 +435,15 @@ static void chpl_comm_exit_common(int status) {
     if (loopback) {
       gasnet_exit(2);
     }
-    chpl_comm_stopPollingTask();
   }
 
-  chpl_comm_barrier("chpl_comm_exit_common_gasnet_exit"); 
+  chpl_comm_barrier("exit_common_gasnet_exit"); 
   //exit(); // depending on PAT exit strategy, maybe switch to this
   gasnet_exit(status); // not a collective operation, but one locale will win and all locales will die.
 }
 
-void chpl_comm_exit_all(int status) {
-  chpl_comm_exit_common(status);
-}
-
-void chpl_comm_exit_any_dirty(int status) {
-  // kill the polling thread on locale 0, but other than that...
+static void exit_any_dirty(int status) {
+  // kill the polling task on locale 0, but other than that...
   // clean up nothing; just ask GASNet to exit
   // GASNet will then kill all other locales.
   int* ack = (int*)&alldone;
@@ -464,7 +456,6 @@ void chpl_comm_exit_any_dirty(int status) {
     if (loopback) {
       gasnet_exit(2);
     }
-    chpl_comm_stopPollingTask();
   }
 
   gasnet_exit(status);
@@ -472,7 +463,7 @@ void chpl_comm_exit_any_dirty(int status) {
 
 // this is currently unused; it's intended to be used to implement
 // exit_any with cleanup on all nodes
-void chpl_comm_exit_any_clean(int status) {
+static void exit_any_clean(int status) {
   int* status_p = &status;
   int locale;
 
@@ -487,9 +478,14 @@ void chpl_comm_exit_any_clean(int status) {
   GASNET_Safe(gasnet_AMRequestMedium0(chpl_localeID, EXIT_ANY, &status_p, sizeof(status_p)));
 }
 
-void chpl_comm_exit_any(int status) {
-  // when chpl_comm_exit_any_clean is finished, consider switching to that.
-  chpl_comm_exit_any_dirty(status); 
+void chpl_comm_exit(int all, int status) {
+  if (all) {
+    exit_common(status);
+  }
+  else {
+    // when exit_any_clean is finished, consider switching to that.
+    exit_any_dirty(status); 
+  }
 }
 
 void  chpl_comm_put(void* addr, int32_t locale, void* raddr,
