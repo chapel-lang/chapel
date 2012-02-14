@@ -9,16 +9,16 @@ endif
 
 RUNTIME_INCLUDE_ROOT = $(RUNTIME_ROOT)/include
 
-RUNTIME_CFLAGS += \
+RUNTIME_DEFS += \
         -DCHPL_TASKS_MODEL_H=\"tasks-$(CHPL_MAKE_TASKS).h\" \
         -DCHPL_THREADS_MODEL_H=\"threads-$(CHPL_MAKE_THREADS).h\"
 
 ifeq ($(DEBUG),1)
-RUNTIME_CFLAGS += -DCHPL_DEBUG
+RUNTIME_DEFS += -DCHPL_DEBUG
 endif
 
 ifeq ($(OPTIMIZE),1)
-RUNTIME_CFLAGS += -DCHPL_OPTIMIZE
+RUNTIME_DEFS += -DCHPL_OPTIMIZE
 endif
 
 RUNTIME_INCLS = \
@@ -39,4 +39,5 @@ ifneq ($(strip $(wildcard $(MEM_INCLUDE))),)
   include $(MEM_INCLUDE)
 endif
 
+RUNTIME_CFLAGS += $(RUNTIME_DEFS)
 

@@ -22,9 +22,11 @@ if( $ARGV[0] eq "--home" ) {
   print $chpl_home_dir . "\n";
 } elsif( $ARGV[0] eq "--compile" ) {
   0 == system("make -f $chpl_home_dir/runtime/etc/Makefile.include printcompileline") or die "Could not make: $!";
-} elsif ( $ARGV[0] eq "--link" ) {
+} elsif ( $ARGV[0] eq "--includes-and-defines" ) {
+  0 == system("make -f $chpl_home_dir/runtime/etc/Makefile.include printincludesanddefines") or die "Could not make: $!";
+} elsif( $ARGV[0] eq "--link" ) {
   0 == system("make -f $chpl_home_dir/runtime/etc/Makefile.include printlinkline") or die "Could not make: $!";
 } else {
-  print "Unknown argument; try --compile or --link\n";
+  print "Unknown argument; try --compile or --link or --includes-and-defines\n";
 }
 
