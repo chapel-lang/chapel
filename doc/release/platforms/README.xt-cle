@@ -51,14 +51,6 @@ let us know at chapel_info@cray.com.
    launcher capabilities.
 
 
-4) If your Cray XT has compute nodes with varying numbers of cores,
-   you will need to select a number of cores per node using the
-   variable CHPL_LAUNCHER_CORES_PER_LOCALE.  For example, to use
-   quad-core nodes, you might use:
-
-     setenv CHPL_LAUNCHER_CORES_PER_LOCALE 4
-
-
 5) When using CHPL_LAUNCHER == pbs-aprun, you can optionally specify a
    queue name using the environment variable CHPL_LAUNCHER_QUEUE.  For
    example:
@@ -134,6 +126,14 @@ let us know at chapel_info@cray.com.
 
    You can use the -v flag to see the commands used to launch your
    program.  See README.launcher for further details.
+
+
+12) If your Cray XT has compute nodes with varying numbers of cores,
+    you can request nodes with at least a certain number of cores
+    using the variable CHPL_LAUNCHER_CORES_PER_LOCALE.  For example,
+    to request quad-core nodes, you might use:
+
+      setenv CHPL_LAUNCHER_CORES_PER_LOCALE 4
 
 
 -----------------------------------------
