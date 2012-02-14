@@ -74,7 +74,7 @@ include $(THIRD_PARTY_DIR)/qthread/Makefile.include
 include $(THIRD_PARTY_DIR)/tcmalloc/Makefile.include
 include $(THIRD_PARTY_DIR)/gmp/Makefile.include
 
-include $(THIRD_PARTY_DIR)/Makefile.devel.include
+-include $(THIRD_PARTY_DIR)/Makefile.devel.include
 
 #
 # how to make a platform-specific subdirectory
