@@ -151,8 +151,6 @@ pragma "inline" proc =(a: complex(?w), b: complex(w)) return b;
 pragma "inline" proc =(a: string, b: string) return __primitive("string_copy", b);
 pragma "inline" proc =(a, b) return b;
 
-pragma "inline" proc ==(a: chpl_taskID_t, b: chpl_taskID_t) return __primitive("==", a, b);
-
 //
 // equality comparison on primitive types
 //
@@ -1079,9 +1077,6 @@ pragma "inline" proc _cast(type t, x: int(?w)) where _isPrimitiveType(t)
   return __primitive("cast", t, x);
 
 pragma "inline" proc _cast(type t, x: uint(?w)) where _isPrimitiveType(t)
-  return __primitive("cast", t, x);
-
-pragma "inline" proc _cast(type t, x: chpl_taskID_t) where _isPrimitiveType(t)
   return __primitive("cast", t, x);
 
 pragma "inline" proc _cast(type t, x: real(?w)) where _isPrimitiveType(t)
