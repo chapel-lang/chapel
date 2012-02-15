@@ -300,7 +300,7 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
 void chpl_comm_post_mem_init(void) { }
 
 
-void chpl_comm_post_task_init(void) {
+void chpl_comm_post_task_init(uint32_t maxConcurrency) {
   if (chpl_task_createCommTask(chpl_mpi_polling_task, NULL))
     chpl_internal_error("unable to start polling task for MPI");
 }
@@ -370,7 +370,7 @@ void chpl_comm_pre_task_exit(int all) {
     // to release the termination_sync, which it will do only once no more
     // MPI Calls will be made.
     chpl_mpi_send(&msg_info, sizeof(_chpl_mpi_message_info), MPI_BYTE,
-		  chpl_localeID, TAGMASK+1, MPI_COMM_WORLD);
+                  chpl_localeID, TAGMASK+1, MPI_COMM_WORLD);
     PRINTF("Sent shutdown message");
     chpl_sync_lock(&termination_sync);
     chpl_sync_unlock(&termination_sync);
