@@ -12,30 +12,8 @@ module SSCA2_kernels
 //  |  These are the only requirements on the representation of the graph.     |
 //  |                                                                          |
 //  |  Filtering in Kernel 4 is turned on or off by a compilation time param.  |
-//  |  The equivalent of "ifdef" is provided by conditionals that are          |
-//  |  evaluated at compile time.  Dead code is eliminated by the compiler.    |
 //  +==========================================================================+
 
-//  +==========================================================================+
-//  |  Parallelism note -- March 2010                                          |
-//  |                                                                          |
-//  |  A common motif in all three kernels is a pair of loops of the form      |
-//  |      forall vertices in some_set do                                      |
-//  |         forall neighbors of each vertex do ....                          |
-//  |  Even when this appears inside an enclosing embarrassingly parallel      |
-//  |  outer loop, it will be important to parallelize this pair of loops.     |
-//  |  In the most important cases, the size of the set of vertices varies     |
-//  |  considerably during the execution of the kernel and there can be wide   |
-//  |  variation in the number of neighbors.  So parallelization should        |
-//  |  consider both loops together.                                           |
-//  |                                                                          |
-//  |  That said, currently Chapel cannot parallelize the innermost loops,     |
-//  |  even when the innermost loop is a reduction.  Some or all of the        |
-//  |  iterators that appear in this inner loop do not have parallel forms     |
-//  |  at present; they use sparse or associative domains.  So the inner loops |
-//  |  all appear in this code as "for" rather than "forall".  They are all    |
-//  |  parallelizable and should become parallel loops eventually.             |
-//  +==========================================================================+
 { 
   use SSCA2_compilation_config_params, Time;
 
@@ -121,9 +99,9 @@ module SSCA2_kernels
   // ===================================================================
   
   proc rooted_heavy_subgraphs ( G, 
-			       Heavy_Edge_List     : domain,
-			       Heavy_Edge_Subgraph : [],
-			       in max_path_length  : int )
+                                Heavy_Edge_List     : domain,
+                                Heavy_Edge_Subgraph : [],
+                                in max_path_length  : int )
     
     // -------------------------------------------------------------------------
     // there is a classic space versus time tradeoff.  if the subgraphs expanded
@@ -196,6 +174,8 @@ module SSCA2_kernels
     } // end of rooted_heavy_subgraphs
 
 
+
+  use ReplicatedDist;
   // ============================================================
   // generic class structure must be defined outside of 
   // generic procedure.  used by Betweenness Centrality kernel 4.
@@ -212,15 +192,64 @@ module SSCA2_kernels
     var previous : Level_Set (Sparse_Vertex_List);
   }
 
-  // sungeun: 8/2011
-  // Added replicated level sets
   //
-  // Each locale will have its own level sets.  A locale's level set
-  // will only contain nodes that are physically allocated on that
-  // particular locale.  We implement this using the replicated
-  // distribution.
+  // Data structure to save Children lists between the forward
+  //  and backwards pass
   //
-  use ReplicatedDist;
+  record child_struct {
+    type vertex;
+    var nd: domain(1);
+    var Row_Children: [nd] vertex;
+    var child_count: int=0;
+    var vlock$: sync bool = true;
+
+    // This function should only be called using unique vertices
+    proc add_child ( new_child: vertex ) {
+      // int-fetch-add
+       vlock$.readFE();
+       child_count += 1;
+       Row_Children[child_count] = new_child;
+       vlock$.writeEF(true);
+    }
+  }
+
+  //
+  // Implementation of task-private variables for kernel 4
+  //
+  use BlockDist;
+  const myPrivateSpace = [LocaleSpace] dmapped Block(boundingBox=[LocaleSpace]);
+  class taskPrivateData {
+    const vertex_domain;
+    var tid$           : sync chpl_taskID_t = chpl_nullTaskID;
+    var min_distance$  : [vertex_domain] sync int;
+    var path_count$    : [vertex_domain] sync real (64);
+    var depend         : [vertex_domain] real;
+    var children_list  : [vertex_domain] child_struct(index(vertex_domain));
+    var Active_Remaining: [myPrivateSpace] bool;
+  };
+  inline proc =(a: chpl_taskID_t, b: chpl_taskID_t) return b;
+  inline proc !=(a: chpl_taskID_t, b: chpl_taskID_t) return __primitive("!=", a, b);
+  class localePrivateData {
+    const vertex_domain;
+    const numTasks = if dataParTasksPerLocale==0 then here.numCores
+      else dataParTasksPerLocale;
+    var r = [0..#numTasks];
+    var temps: [r] taskPrivateData(vertex_domain.type);
+    proc gettid() {
+      extern proc chpl_task_getId(): chpl_taskID_t;
+      var mytid = chpl_task_getId();
+      var slot = (mytid:uint % (numTasks:uint)):int;
+      // Would be nice to have CAS
+      var tid: chpl_taskID_t = temps[slot].tid$; // lock
+      while ((tid != chpl_nullTaskID) && (tid != mytid)) {
+        temps[slot].tid$ = tid;                  // unlock
+        slot = (slot+1)%numTasks;
+        tid = temps[slot].tid$;                  // lock
+      }
+      temps[slot].tid$ = mytid;                  // unlock
+      return slot;
+    }
+  }
 
   // ==================================================================
   //                              KERNEL 4
@@ -231,8 +260,8 @@ module SSCA2_kernels
   // ==================================================================
 
   proc approximate_betweenness_centrality ( G, starting_vertices, 
-					   Between_Cent : [] real,
-					   out Sum_Min_Dist : real )
+                                            Between_Cent : [] real,
+                                            out Sum_Min_Dist : real )
   
     // -----------------------------------------------------------------------
     // The betweenness centrality metric for a given node  v  is defined
@@ -261,6 +290,15 @@ module SSCA2_kernels
       var Between_Cent$ : [vertex_domain] sync real = 0.0;
       var Sum_Min_Dist$ : sync real = 0.0;
 
+      // Initialize task private data
+      var localePrivate: [myPrivateSpace] localePrivateData(vertex_domain.type);
+      for l in localePrivate {
+        l = new localePrivateData(vertex_domain);
+        // l.temps = [i in l.r] new taskPrivateData(vertex_domain);
+        forall t in l.temps do
+          t = new taskPrivateData(vertex_domain);
+      }
+
       // ------------------------------------------------------ 
       // Each iteration of the outer loop of Brandes's algorithm
       // computes the contribution (the "dependency" metric) for
@@ -281,11 +319,30 @@ module SSCA2_kernels
 	// all locally declared variables become private data 
 	// for each instance of the parallel for loop
 	// --------------------------------------------------
-  
-  	var min_distance$  : [vertex_domain] sync int       = -1;
-	var path_count$    : [vertex_domain] sync real (64) = 0.0;
-	var depend         : [vertex_domain] real           = 0.0;
+        const lp = localePrivate[here.id];
+        const tid = lp.gettid();
+        var depend => lp.temps[tid].depend;
+        var min_distance$ => lp.temps[tid].min_distance$;
+        var path_count$   => lp.temps[tid].path_count$;
+        forall v in [vertex_domain] {
+          depend[v] = 0.0;
+          min_distance$[v].writeXF(-1);
+          path_count$[v].writeXF(0.0);
+        }
+  	// var min_distance$  : [vertex_domain] sync int       = -1;
+	// var path_count$    : [vertex_domain] sync real (64) = 0.0;
+        // var depend         : [vertex_domain] real;
+
 	var Lcl_Sum_Min_Dist: sync real                     = 0.0;
+
+        var children_list => lp.temps[tid].children_list;
+        // var children_list: [vertex_domain] child_struct(index(vertex_domain));
+        // Initialize size of child lists for each vertex to its neighbor count
+        forall v in vertex_domain {
+          children_list[v].child_count = 0;
+          children_list[v].vlock$.writeXF(true);
+          children_list[v].nd = [1..G.n_Neighbors[v]];
+        }
 
 	// The structure of the algorithm depends on a breadth-first
 	// traversal. Each vertex will be marked by the length of
@@ -297,10 +354,22 @@ module SSCA2_kernels
         // Used to check termination of the forward pass
         //
         // sungeun: 8/2011
+        // Added replicated level sets
+        //
+        // Each locale will have its own level sets.  A locale's level set
+        // will only contain nodes that are physically allocated on that
+        // particular locale.  We implement this using the replicated
+        // distribution.
+        // sungeun: 8/2011
         // Can possibly use a replicated bool with rcCollect(), but
         // not sure of the performance implications for large numbers
         // of locales.
-        var Active_Remaining: [LocaleSpace] bool = true;
+        // sungeun: 10/2011
+        // Distributed Active_Remaining to reduce communication overhead.
+        // Similar scaling concerns exists for the reduction as for
+        // replacing it with a replicated bool.
+        var Active_Remaining => lp.temps[tid].Active_Remaining;
+        Active_Remaining = true;
         var remaining = true;
 
         // Replicated level sets
@@ -346,11 +415,7 @@ module SSCA2_kernels
             coforall loc in Locales do on loc {
              forall u in rcLocal(Active_Level).Members do { // sparse
 
-              forall (v, w) in ( G.Neighbors (u), G.edge_weight (u) ) do on v {
-
-		// should be forall, requires a custom parallel iterator in the
-		// random graph case and zippering for associative domains
-
+               forall (v, w) in ( G.Neighbors (u), G.edge_weight (u) ) do on vertex_domain.dist.idxToLocale(v) {
 		// --------------------------------------------
 		// add any unmarked neighbors to the next level
 		// --------------------------------------------
@@ -365,10 +430,12 @@ module SSCA2_kernels
 			  if VALIDATE_BC then
 			    Lcl_Sum_Min_Dist += current_distance_c;
 			}
-		      else
+		      else {
                         // could min_distance$(v) be < current_distance?
 			min_distance$ (v) . writeEF (current_distance_c);
+                      }
 		    }
+
 
 		// ------------------------------------------------
 		// only neighbors of  u  that are in the next level
@@ -379,11 +446,14 @@ module SSCA2_kernels
 		// ------------------------------------------------
   
 		if  min_distance$ (v).readFF () == current_distance_c  
-		  then
+		  then {
 		    path_count$ (v) += path_count$ (u).readFF ();
+                    children_list(u).add_child (v);
+                  }
+
 	      }
 	    };
-  
+
             // sungeun: 8/2011
             // This (split-phase) barrier is needed to insure all updates
             // to Next_Level are completed before creating the next
@@ -411,6 +481,11 @@ module SSCA2_kernels
 
 	};  // end forward pass
 
+        // Resize the arrays to the actual count to free up some memory
+        forall v in G.vertices {
+            children_list[v].nd = [1..children_list[v].child_count];
+        }
+
 	if VALIDATE_BC then
 	  Sum_Min_Dist$ += Lcl_Sum_Min_Dist;
 
@@ -432,14 +507,14 @@ module SSCA2_kernels
         // to simplify synchronization between multiple barriers
         var barrier: [2..graph_diameter] single bool;
 
+        // writeln((tid, depend));
         coforall loc in Locales do on loc {
           delete rcLocal(Next_Level);	               // it's empty
           rcLocal(Next_Level)   = rcLocal(Active_Level).previous;  // back up to last level
           delete rcLocal(Active_Level);
           rcLocal(Active_Level) = rcLocal(Next_Level);
   
-          for current_distance in 2 .. graph_diameter by -1 do {
-
+         for current_distance in 2 .. graph_diameter by -1 do {
             rcLocal(Next_Level)   = rcLocal(Active_Level).previous;
             delete rcLocal(Active_Level);
             rcLocal(Active_Level) = rcLocal(Next_Level);
@@ -449,18 +524,12 @@ module SSCA2_kernels
 
             forall u in rcLocal(Active_Level).Members do
               {
-                depend (u) = + reduce 
-                  [ (v, w)  in ( G.Neighbors (u), G.edge_weight (u) ) ]
-                  if ( min_distance$ (v).readFF () == current_distance ) && 
-                  ( ( FILTERING && w % 8 != 0 || !FILTERING ) )
-                  then
-                    ( path_count$ (u) . readFF () / 
-                      path_count$ (v) . readFF () )      *
-                      ( 1.0 + depend (v) );
+	      depend (u) = + reduce [v in children_list(u).Row_Children]
+		  ( path_count$ (u) . readFF () / 
+		    path_count$ (v) . readFF () )      *
+		    ( 1.0 + depend (v) );
 
-                // do not need conditional u != s
-
-                Between_Cent$ (u) += depend (u);
+              Between_Cent$ (u) += depend (u);
               }
             // sungeun: 8/2011
             // This barrier is needed to insure all updates to depend are
@@ -473,13 +542,13 @@ module SSCA2_kernels
               count = myc-1;
               barrier[current_distance];
             }
+            // writeln((tid, depend));
           };
           delete rcLocal(Active_Level);
         }
 
       }; // closure of outer embarassingly parallel forall
 
-  
       if PRINT_TIMING_STATISTICS then {
 	stopwatch.stop ();
 	var K4_time = stopwatch.elapsed ();
@@ -501,6 +570,12 @@ module SSCA2_kernels
       
       Between_Cent = Between_Cent$;
   
+      for l in localePrivate {
+        [i in l.r] delete l.temps[i];
+        delete l;
+      }
+
     } // end of Brandes' betweenness centrality calculation
 
 }
+
