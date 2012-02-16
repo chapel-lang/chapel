@@ -106,7 +106,6 @@ static char jobname[64];           // used for PVM groups
 
 static int okay_to_barrier = 1;
 static volatile int okaypoll = 0;
-static int* poll_retval;           // polling task finished
 
 extern int fileno(FILE *stream);
 
