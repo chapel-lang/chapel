@@ -483,7 +483,7 @@ void codegen_makefile(fileinfo* mainfile, fileinfo *gpusrcfile) {
   if (developer && saveCDir[0] && !printCppLineno) {
     fprintf(makefile.fptr,
             "-@which $(CHPL_TAGS_UTIL) > /dev/null 2>&1 && "
-            "test -f $(CHAPEL_MAKE_HOME)/runtime/$(CHPL_TAGS_FILE) && "
+            "test -f $(CHPL_MAKE_HOME)/runtime/$(CHPL_TAGS_FILE) && "
             "cd %s && "
             "cp $(CHPL_MAKE_HOME)/runtime/$(CHPL_TAGS_FILE) . && "
             "$(CHPL_TAGS_UTIL) $(CHPL_TAGS_FLAGS) $(CHPL_TAGS_APPEND_FLAG) *.c *.h",
