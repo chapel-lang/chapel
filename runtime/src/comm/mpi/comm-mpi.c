@@ -300,7 +300,7 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
 void chpl_comm_post_mem_init(void) { }
 
 
-void chpl_comm_post_task_init(uint32_t maxConcurrency) {
+void chpl_comm_post_task_init(void) {
   if (chpl_task_createCommTask(chpl_mpi_polling_task, NULL))
     chpl_internal_error("unable to start polling task for MPI");
 }
