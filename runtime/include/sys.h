@@ -82,6 +82,7 @@ err_t sys_fflush(FILE* stream);
 err_t sys_feof(FILE* stream, int *iseof);
 err_t sys_ferror(FILE* stream);
 err_t sys_posix_fadvise(fd_t fd, off_t offset, off_t len, int advice);
+err_t sys_posix_madvise(void* addr, size_t len, int advice);
 
 // returns an allocated string in string_out, which must be freed.
 err_t sys_strerror(err_t error, const char** string_out);

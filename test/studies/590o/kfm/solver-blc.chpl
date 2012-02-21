@@ -10,7 +10,7 @@ const Boxes: domain(2) = [1..3, 1..3];
 var Table: [TableSpace] int;
 
 //...then read the values from the puzzle into it
-var infile = open(infilename, mode.r);
+var infile = open(infilename, iomode.r);
 var reader = infile.reader();
 
 for ij in TableSpace {

@@ -342,7 +342,7 @@ module SSCA2_RMAT_graph_generator
 
   proc createGraphChannel(prefix:string, suffix:string, param forWriting:bool) {
     const f = open(prefix+suffix,
-                   if forWriting then mode.w else mode.r,
+                   if forWriting then iomode.w else iomode.r,
                    HINT_SEQUENTIAL);
     const chan = if forWriting
       then f.writer(iokind.big, false)

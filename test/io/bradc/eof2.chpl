@@ -1,4 +1,4 @@
-var infile = open("eof.in", mode.r).reader();
+var infile = open("eof.in", iomode.r).reader();
 
 while !infile.eof {
   var s = infile.read(string);

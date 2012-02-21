@@ -16,7 +16,7 @@ const cols = size / 8;
 proc main() {
 
   var datastart:int(64);
-  var f = open(outfile, mode.wr);
+  var f = open(outfile, iomode.wr);
   var writer = f.writer();
   writer.writeln("P4");
   writer.writeln(size, " ", size);

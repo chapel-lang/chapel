@@ -248,6 +248,21 @@ err_t sys_posix_fadvise(fd_t fd, off_t offset, off_t len, int advice)
   return err_out;
 }
 
+err_t sys_posix_madvise(void* addr, size_t len, int advice)
+{
+  int got;
+  err_t err_out;
+
+  got = 0;
+#ifdef POSIX_MADV_NORMAL
+  got = posix_madvise(addr, len, advice);
+#endif
+  err_out = got;
+
+  return err_out;
+}
+
+
 
 static
 const char* extended_errors[] = {

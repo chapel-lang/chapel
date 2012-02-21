@@ -67,10 +67,10 @@ proc testio(x)
 
   for i in 1..styles.size {
     var style = styles[i];
-    testio(dynamic, style, x);
-    testio(native, style, x);
-    testio(big, style, x);
-    testio(little, style, x);
+    testio(iodynamic, style, x);
+    testio(ionative, style, x);
+    testio(iobig, style, x);
+    testio(iolittle, style, x);
   }
 }
 

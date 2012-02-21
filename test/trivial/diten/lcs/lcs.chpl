@@ -30,7 +30,7 @@ proc main() {
 }
 
 proc get_strings(out s1: string, out s2: string) {
-  var infile = open(filename, mode.r).reader();
+  var infile = open(filename, iomode.r).reader();
 
   infile.read(s1);
   infile.read(s2);

@@ -160,7 +160,7 @@ proc populateBoard(inout board: [] int) {
 
 
 proc main() {
-  var boardData = open(inputfile, mode.r).reader();
+  var boardData = open(inputfile, iomode.r).reader();
 
   // Read the board from the input file
 

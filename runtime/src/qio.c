@@ -40,7 +40,11 @@
 
 ssize_t qio_too_small_for_default_mmap = 16*1024;
 ssize_t qio_too_large_for_default_mmap = 64*1024*((size_t)1024*1024);
-ssize_t qio_mmap_chunk_iobufs = 1024; // we mmap 1024 iobufs at a time (64M)
+ssize_t qio_mmap_chunk_iobufs = 128; // mmap 128 iobufs at a time (8M)
+
+// Future - possibly set this based on ulimit?
+ssize_t qio_initial_mmap_max = 8*1024*1024;
+bool qio_allow_default_mmap = true;
 
 #ifdef _chplrt_H_
 err_t qio_lock(qio_lock_t* x) {
@@ -469,8 +473,9 @@ qio_hint_t choose_io_method(qio_fdflag_t fdflags, qio_hint_t hints, qio_hint_t d
         else if( hints & QIO_HINT_CACHED ) method = QIO_METHOD_MMAP;
         else {
           // default case
-          if( !writing &&
-              qio_too_small_for_default_mmap < file_size &&
+          if( qio_allow_default_mmap && (!writing) &&
+              qio_too_small_for_default_mmap <= file_size &&
+              file_size < SSIZE_MAX &&
               file_size < qio_too_large_for_default_mmap &&
               (qbytes_iobuf_size & 4095) == 0) {
             // not writing, not too small, not too big, iobuf size multiple of 4k.
@@ -550,9 +555,48 @@ err_t qio_fadvise_for_hints(qio_file_t* file)
 #endif
   }
 
+  return 0;
+}
+
+static
+err_t qio_madvise_for_hints(void* data, int64_t len, qio_hint_t hints)
+{
+  int advice = 0;
+  err_t err;
+
+#ifdef POSIX_MADV_RANDOM
+  if( hints & QIO_HINT_RANDOM ) advice |= POSIX_MADV_RANDOM;
+#endif
+#ifdef POSIX_MADV_SEQUENTIAL
+  if( hints & QIO_HINT_SEQUENTIAL ) advice |= POSIX_MADV_SEQUENTIAL;
+#endif
+#ifdef POSIX_MADV_WILLNEED
+  if( hints & QIO_HINT_CACHED ) advice |= POSIX_MADV_WILLNEED;
+#endif
+
+  if( advice == 0 ) err = 0; // do nothing.
+  else err = sys_posix_madvise(data, len, advice);
+
+  return err;
+}
+
+static
+err_t qio_mmap_initial(qio_file_t* file)
+{
+  int64_t len = file->initial_length;
+  int do_mmap_initial = 0;
+  err_t err;
+
   // now, if we're using mmap, go ahead and map the file.
-  if( (file->hints & QIO_METHODMASK) == QIO_METHOD_MMAP &&
-      len > 0 ) {
+  // note that here file->hints might be the result of choose_io_method.
+  if( (file->hints & QIO_METHODMASK) == QIO_METHOD_MMAP ) {
+    if( (file->hints & QIO_HINT_PARALLEL) ||
+        (len > 0 && len <= qio_initial_mmap_max) ) {
+      do_mmap_initial = 1;
+    }
+  }
+
+  if( do_mmap_initial ) {
     void* data;
     int prot = PROT_READ;
     int populate = 0;
@@ -571,14 +615,17 @@ err_t qio_fadvise_for_hints(qio_file_t* file)
     err = sys_mmap(NULL, len, prot, MAP_SHARED|populate, file->fd, 0, &data);
     if( err ) return err;
 
-    // TODO -- run madvise/posix_madvise
-    
+    err = qio_madvise_for_hints(data, len, file->hints);
+    if( err ) {
+      sys_munmap(data, len);
+      return err;
+    }
+ 
     err = qbytes_create_generic(&file->mmap, data, len, qbytes_free_munmap);
     if( err ) {
       sys_munmap(data, len);
       return err;
     }
-
   }
 
   return 0;
@@ -595,6 +642,7 @@ err_t qio_file_init(qio_file_t** file_out, FILE* fp, fd_t fd, qio_hint_t iohints
   qio_file_t* file = NULL;
   struct stat stats;
   off_t seek_ret;
+  qio_chtype_t hinted_type;
 
   if( fp ) {
     fd = fileno(fp);
@@ -653,6 +701,9 @@ err_t qio_file_init(qio_file_t** file_out, FILE* fp, fd_t fd, qio_hint_t iohints
   file->fdflags = fdflags;
   file->initial_length = initial_length;
   file->initial_pos = initial_pos;
+
+  hinted_type = (iohints & QIO_METHODMASK);
+
   file->hints = choose_io_method(fdflags, iohints, 0, initial_length,
                                  (fdflags & QIO_FDFLAG_READABLE) > 0,
                                  (fdflags & QIO_FDFLAG_WRITEABLE) > 0,
@@ -666,8 +717,11 @@ err_t qio_file_init(qio_file_t** file_out, FILE* fp, fd_t fd, qio_hint_t iohints
   err = qio_fadvise_for_hints(file);
   if( err ) goto error;
 
+  err = qio_mmap_initial(file);
+  if( err ) goto error;
+
   // put file->hints back to DEFAULT if that's what we started with.
-  if( (iohints & QIO_METHODMASK) == QIO_METHOD_DEFAULT ) {
+  if( hinted_type == QIO_METHOD_DEFAULT ) {
     file->hints &= ~QIO_METHODMASK; // clear the method.
     file->hints |= QIO_METHOD_DEFAULT;
   }

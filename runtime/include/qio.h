@@ -177,7 +177,8 @@ enum {
   QIO_HINT_LATENCY      = QIO_HINT_SEQUENTIAL<<1,
   QIO_HINT_BANDWIDTH    = QIO_HINT_LATENCY<<1,
   QIO_HINT_CACHED       = QIO_HINT_BANDWIDTH<<1,
-  QIO_HINT_DIRECT       = QIO_HINT_CACHED<<1,
+  QIO_HINT_PARALLEL     = QIO_HINT_CACHED<<1,
+  QIO_HINT_DIRECT       = QIO_HINT_PARALLEL<<1,
      // note -- if DIRECT is set, you must do aligned I/O;
      // offset, request size must be 512-byte aligned, and
      // user buffer must be page-aligned. This should more or

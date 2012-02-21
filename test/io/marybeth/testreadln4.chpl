@@ -1,6 +1,6 @@
 config var inputfile = "test.dat";
 
-var infile = open(inputfile, mode.r).reader();
+var infile = open(inputfile, iomode.r).reader();
 
 var n1, n2: int;
 
