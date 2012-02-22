@@ -456,7 +456,7 @@ have not been closed.
 
 Closing a file, when completed successfully, also commits
 all file data to the disk or other persistent storage,
-if appropriate.
+if applicable.
 
 \begin{future}
 In the future we plan to implement reference counting for files
@@ -481,9 +481,10 @@ proc channel.flush(out error:err_t);
 proc channel.flush();
 \end{protohead}
 \begin{protobody}
-Make all writes to the channel available to other views of the
+Make all writes to the channel available to other concurrent views of the
 channel's file. These include other channels for the same file and
 other applications accessing the file concurrently.
+This does not guarantee persistence of the written data, however.
 \end{protobody}
 
 \index{input/output!fsync}
@@ -493,7 +494,7 @@ proc file.fsync();
 \end{protohead}
 \begin{protobody}
 Commits all file data to the disk or other persistent storage, if
-appropriate. This ensures that the file data will be available to
+applicable. This ensures that the file data will be available to
 applications executing later.
 \end{protobody}
 
@@ -559,10 +560,14 @@ a single type is specified, the return value is the value that was
 read; if multiple types are specified, a tuple of the values is
 returned.
 
-These functions are wrappers for the methods on streams described next.
+These functions are provided for convenience.
+\chpl{write} and \chpl{writeln} invoke the correspondingly-named methods
+on the \chpl{stdout} channel (\rsec{IO_channel_write}).
+\chpl{read} and \chpl{readln} invoke the correspondingly-named methods
+on the \chpl{stdin} channel (\rsec{IO_channel_read}).
 
 \begin{chapelexample}{writeln.chpl}
-The \chpl{writeln} wrapper function allows for a simple implementation
+The \chpl{writeln} function allows for a simple implementation
 of the {\em Hello-World} program:
 \begin{chapel}
 writeln("Hello, World!");
@@ -654,11 +659,13 @@ var c = new C();
 c.write(41, 32, 23, 14);
 writeln(c);
 \end{chapel}
+The \chpl{C} class filters the arguments sent to it, printing out only
+the first letter.  The output to the above is thus:
+% TODO: when 'chapelprintoutput' is extended with some wording,
+% move things around so that the printed text is well-composed.
 \begin{chapelprintoutput}
 4321
 \end{chapelprintoutput}
-The \chpl{C} class filters the arguments sent to it, printing out only
-the first letter.  The output to the above is thus \chpl{4321}.
 \end{chapelexample}
 
 
