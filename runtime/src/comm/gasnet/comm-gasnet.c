@@ -4,6 +4,7 @@
 #include <string.h>
 #include <assert.h>
 #include "gasnet.h"
+#include "gasnet_tools.h"
 #include "chplrt.h"
 #include "chpl-comm.h"
 #include "chpl-mem.h"
@@ -20,6 +21,8 @@
 static chpl_sync_aux_t chpl_comm_diagnostics_sync;
 static chpl_commDiagnostics chpl_comm_commDiagnostics;
 static int chpl_comm_no_debug_private = 0;
+static gasnet_seginfo_t* seginfo_table = NULL;
+
 
 //
 // The following macro is from the GASNet test.h distribution
@@ -72,6 +75,7 @@ typedef struct {
 #define PRIV_BCAST_LARGE 135 // put data at addr (used for private broadcast)
 #define FREE          136 // free data at addr
 #define EXIT_ANY      137 // free data at addr
+#define BCAST_SEGINFO 138 // broadcast for segment info table
 
 static void AM_fork_fast(gasnet_token_t token, void* buf, size_t nbytes) {
   fork_t *f = buf;
@@ -207,6 +211,20 @@ static void AM_exit_any(gasnet_token_t token, void* buf, size_t nbytes) {
   // ensure only one thread calls chpl_exit_all on this locale.
 }
 
+//
+// This global and routine are used to broadcast the seginfo_table at the outset
+// of the program's execution.  It is designed to only be used once.  This code
+// was modeled after the _test_segbcast() routine in
+// third-party/gasnet/GASNet-*/tests/test.h
+//
+static int bcast_seginfo_done = 0;
+static void AM_bcast_seginfo(gasnet_token_t token, void *buf, size_t nbytes) {
+  assert(nbytes == sizeof(gasnet_seginfo_t)*gasnet_nodes());
+  memcpy(seginfo_table, buf, nbytes);
+  gasnett_local_wmb();
+  bcast_seginfo_done = 1;
+}
+
 static gasnet_handlerentry_t ftable[] = {
   {FORK,          AM_fork},
   {FORK_LARGE,    AM_fork_large},
@@ -217,10 +235,9 @@ static gasnet_handlerentry_t ftable[] = {
   {PRIV_BCAST,    AM_priv_bcast},
   {PRIV_BCAST_LARGE, AM_priv_bcast_large},
   {FREE,          AM_free},
-  {EXIT_ANY,      AM_exit_any}
+  {EXIT_ANY,      AM_exit_any},
+  {BCAST_SEGINFO, AM_bcast_seginfo}
 };
-
-static gasnet_seginfo_t* seginfo_table;
 
 //
 // Chapel interface starts here
@@ -284,12 +301,70 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
                             sizeof(ftable)/sizeof(gasnet_handlerentry_t),
                             gasnet_getMaxLocalSegmentSize(),
                             0));
-#if defined(GASNET_SEGMENT_FAST) || defined(GASNET_SEGMENT_LARGE)
 #undef malloc
   seginfo_table = (gasnet_seginfo_t*)malloc(chpl_numLocales*sizeof(gasnet_seginfo_t));
-#define malloc dont_use_malloc_use_chpl_mem_allocMany_instead
+  //
+  // The following call has no real effect on the .addr and .size
+  // fields for GASNET_SEGMENT_EVERYTHING, but is recommended to be
+  // used anyway (see third-party/gasnet/GASNet-version/tests/test.h)
+  // in order to ensure that the seginfo_table array is initialized
+  // appropriately on all locales.
+  //
   GASNET_Safe(gasnet_getSegmentInfo(seginfo_table, chpl_numLocales));
+#ifdef GASNET_SEGMENT_EVERYTHING
+  //
+  // For SEGMENT_EVERYTHING, there is no GASNet-provided memory
+  // segment, so instead we're going to create our own fake segment
+  // in order to share the code that refers to it and avoid any
+  // assumptions that global variables in the generated C code will
+  // be stored at the same address in all instances of the executable
+  // (something that is typically true, but turns out not to be on,
+  // for example, OS X Lion).  This technique was modeled after the
+  // _test_attach() routine from third-party/gasnet/GASNET-version/tests/test.h
+  // but is significantly simplified for our purposes.
+  //
+  if (chpl_localeID == 0) {
+    int i;
+    //
+    // Only locale #0 really needs the seginfo_table to store anything since it owns all
+    // of the global variable locations; everyone else will just peek at its copy.  So
+    // locale 0 sets up its segment to an appropriate size:
+    //
+    int global_table_size = chpl_numGlobalsOnHeap * sizeof(void*) + GASNETT_PAGESIZE;
+    void* global_table = malloc(global_table_size);
+    seginfo_table[0].addr = ((void *)(((uint8_t*)global_table) + 
+				      (((((uintptr_t)global_table)%GASNETT_PAGESIZE) == 0)? 0 : 
+				       (GASNETT_PAGESIZE-(((uintptr_t)global_table)%GASNETT_PAGESIZE)))));
+    seginfo_table[0].size = global_table_size;
+    //
+    // ...and then zeroes out everyone else's
+    //
+    for (i=1; i<chpl_numLocales; i++) {
+      seginfo_table[i].addr = NULL;
+      seginfo_table[i].size = 0;
+    }
+  }
+  //
+  // Then we're going to broadcast the seginfo_table to everyone so that each locale
+  // has its own copy of it and knows where everyone else's segment lives (or, really,
+  // where locale #0's lives since we're not using anyone else's at this point).
+  //
+  chpl_comm_barrier("getting ready to broadcast addresses");
+  //
+  // This is a naive O(numLocales) broadcast; we could do something
+  // more scalable with more effort
+  //
+  if (chpl_localeID == 0) {
+    int i;
+    for (i=0; i < chpl_numLocales; i++) {
+      GASNET_Safe(gasnet_AMRequestMedium0(i, BCAST_SEGINFO, seginfo_table, 
+					  chpl_numLocales*sizeof(gasnet_seginfo_t)));
+    }
+  }
+  GASNET_BLOCKUNTIL(bcast_seginfo_done);
+  chpl_comm_barrier("making sure everyone's done with the broadcast");
 #endif
+#define malloc dont_use_malloc_use_chpl_mem_allocMany_instead
 
   gasnet_set_waitmode(GASNET_WAIT_BLOCK);
 
@@ -337,7 +412,7 @@ void chpl_comm_desired_shared_heap(void** start_p, size_t* size_p) {
              + (char*)seginfo_table[chpl_localeID].addr;
   *size_p  = seginfo_table[chpl_localeID].size
              - chpl_numGlobalsOnHeap * sizeof(void*);
-#else
+#else /* GASNET_SEGMENT_EVERYTHING */
   *start_p = NULL;
   *size_p  = 0;
 #endif
@@ -351,15 +426,9 @@ void chpl_comm_broadcast_global_vars(int numGlobals) {
   int i;
   if (chpl_localeID != 0) {
     for (i = 0; i < numGlobals; i++) {
-#if defined(GASNET_SEGMENT_FAST) || defined(GASNET_SEGMENT_LARGE)
       chpl_comm_get(chpl_globals_registry[i], 0,
                     &((void**)seginfo_table[0].addr)[i],
                     sizeof(void*), -1 /*typeIndex: unused*/, 1, 0, "");
-#else
-      chpl_comm_get(chpl_globals_registry[i], 0,
-                    chpl_globals_registry[i],
-                    sizeof(void*), -1 /*typeIndex: unused*/, 1, 0, "");
-#endif
     }
   }
 }
@@ -824,9 +893,7 @@ int32_t chpl_numCommNBForks(void) {
 
 
 void chpl_comm_gasnet_help_register_global_var(int i, void* addr) {
-#if defined(GASNET_SEGMENT_FAST) || defined(GASNET_SEGMENT_LARGE)
   if (chpl_localeID == 0) {
     ((void**)seginfo_table[0].addr)[i] = addr;
   }
-#endif
 }
