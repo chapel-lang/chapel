@@ -333,8 +333,8 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
     int global_table_size = chpl_numGlobalsOnHeap * sizeof(void*) + GASNETT_PAGESIZE;
     void* global_table = malloc(global_table_size);
     seginfo_table[0].addr = ((void *)(((uint8_t*)global_table) + 
-				      (((((uintptr_t)global_table)%GASNETT_PAGESIZE) == 0)? 0 : 
-				       (GASNETT_PAGESIZE-(((uintptr_t)global_table)%GASNETT_PAGESIZE)))));
+                                      (((((uintptr_t)global_table)%GASNETT_PAGESIZE) == 0)? 0 : 
+                                       (GASNETT_PAGESIZE-(((uintptr_t)global_table)%GASNETT_PAGESIZE)))));
     seginfo_table[0].size = global_table_size;
     //
     // ...and then zeroes out everyone else's
@@ -358,7 +358,7 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
     int i;
     for (i=0; i < chpl_numLocales; i++) {
       GASNET_Safe(gasnet_AMRequestMedium0(i, BCAST_SEGINFO, seginfo_table, 
-					  chpl_numLocales*sizeof(gasnet_seginfo_t)));
+                                          chpl_numLocales*sizeof(gasnet_seginfo_t)));
     }
   }
   GASNET_BLOCKUNTIL(bcast_seginfo_done);
