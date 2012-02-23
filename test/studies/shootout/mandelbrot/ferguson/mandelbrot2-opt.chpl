@@ -61,7 +61,7 @@ proc main() {
   datastart = hwriter.offset();
   hwriter.close();
 
-  var writer = f.writer(kind=native, locking=false, start=datastart);
+  var writer = f.writer(kind=iokind.native, locking=false, start=datastart);
   for (im,re8) in D {
     writer.write(set(im,re8));
   }
