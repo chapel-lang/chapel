@@ -1,0 +1,6 @@
+bug: Deleting a class instance on a different locale than the one it was allocated on results in GASNet or glibc error.
+
+In the desktop environment, depending on CHPL_GASNET_SEGMENT, you
+either get a seg fault (caught by GASNet) or glibc invalid pointer
+error.
+
