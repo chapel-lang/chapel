@@ -4804,6 +4804,7 @@ resolve() {
 
   resolveFns(chpl_main);
   
+  /*
   //TODO: Refactor this into its own function call
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->hasFlag(FLAG_SEPARATELY_TYPE_CHECKED)) {
@@ -4811,6 +4812,7 @@ resolve() {
       resolveFns(fn);
     }
   }
+  */
 
   USR_STOP();
 
