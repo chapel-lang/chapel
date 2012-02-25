@@ -975,7 +975,18 @@ void lowerIterators() {
         }
         if ((call->isPrimitive(PRIM_BLOCK_ON)) ||
             (call->isPrimitive(PRIM_BLOCK_ON_NB))) {
-          USR_FATAL_CONT(call, "invalid use of 'on' in serial iterator");
+          BlockStmt* onBlock = toBlockStmt(call->parentExpr);
+          if (!onBlock || onBlock->blockInfo != call) {
+            INT_FATAL(call, "mis-assumption about structure of on blocks in "
+                      "lowerIterators pass");
+          }
+          Vec<CallExpr*> callsWithinOn;
+          collectCallExprs(onBlock, callsWithinOn);
+          forv_Vec(CallExpr, call, callsWithinOn) {
+            if (call->isPrimitive(PRIM_YIELD)) {
+              USR_FATAL_CONT(call, "invalid use of 'yield' within 'on' in serial iterator");
+            }
+          }
         }
       }
     }
