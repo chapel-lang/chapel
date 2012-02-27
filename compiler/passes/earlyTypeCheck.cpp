@@ -737,7 +737,7 @@ BaseAST *typeCheckExpr(BaseAST *currentExpr, BaseAST *expectedReturnTypeExpr,
               mismatch = true;
               break;
             }
-            if (hasFlag(s_formal, FLAG_TYPE_VARIABLE)) {
+            if (s_formal->hasFlag(FLAG_TYPE_VARIABLE)) {
               if (SymExpr *se_actual = toSymExpr(e_actual)) {
                 if (!isTypeSymbol(se_actual->var)) {
                   mismatch = true;
@@ -756,7 +756,7 @@ BaseAST *typeCheckExpr(BaseAST *currentExpr, BaseAST *expectedReturnTypeExpr,
           }
           if (!mismatch) {
             if (ArgSymbol *obj = fnsInInterfaces.get(visibleFn)) {
-              printf("Converted to method\n");
+              //printf("Converted to method\n");
               call->baseExpr->replace(new CallExpr(".", new SymExpr(obj),
                   new_StringSymbol(info.name)));
             }
@@ -849,7 +849,7 @@ static void getWitnessesInWhereClause(Vec<CallExpr*>& implementsClauses, BaseAST
       }
     }
     else {
-      printf("Not unresolved\n");
+      //printf("Not unresolved\n");
     }
   }
   else if (BlockStmt *block = toBlockStmt(whereClause)) {
@@ -881,12 +881,13 @@ getFunctionsInWhereClause(Map<FnSymbol*, ArgSymbol*>& fnsInInterfaces,
       if (InterfaceSymbol *is = toInterfaceSymbol(se->var)) {
 
         // Create an symbol that will represent this dictionary
-
         ArgSymbol *dict = new ArgSymbol(INTENT_BLANK,
             astr(implementing_type->var->name, "_impl_", se->var->name), dtAny);
         dict->addFlag(FLAG_GENERIC);
 
         witnessObjects.add(dict);
+
+        addToImplementsSymbolTable(ce, is, se, dict);
 
         forv_Vec(FnSymbol, fn, is->functionSignatures) {
           //For now, copy the function prototype and replace the types
@@ -896,7 +897,7 @@ getFunctionsInWhereClause(Map<FnSymbol*, ArgSymbol*>& fnsInInterfaces,
 
           //replace formal types
           for_formals(arg, fn_copy) {
-            list_view(arg);
+            //list_view(arg);
             if (BlockStmt *bs = toBlockStmt(arg->typeExpr)) {
               if (UnresolvedSymExpr *use = toUnresolvedSymExpr(bs->body.head)) {
                 if (!strcmp(use->unresolved, "self")) {
@@ -915,7 +916,7 @@ getFunctionsInWhereClause(Map<FnSymbol*, ArgSymbol*>& fnsInInterfaces,
           }
 
           fnsInInterfaces.put(fn_copy, dict);
-          list_view(fn_copy);
+          //list_view(fn_copy);
         }
       }
       else {
@@ -940,7 +941,7 @@ void handle_where_clause_expr(BaseAST *ast) {
         }
       }
     } else {
-      printf("Not unresolved\n");
+      //printf("Not unresolved\n");
     }
   }
 }
@@ -1008,10 +1009,10 @@ Symbol* mapArguments(CallExpr* where, FnSymbol* visibleFn, CallExpr* call) {
       //if(checkImplementation(e_actual,s_arg2)){
       //if (cclosure.has_implements_relation(e_actual, arg2)) {
       if(Symbol *witness = lookupImplementsWitnessInSymbolTable(call, e_actual, arg2)) {
-        printf("Interface is implemented!\n");
+        //printf("Interface is implemented!\n");
         return witness;
       } else {
-        printf("Interface not implemented\n");
+        //printf("Interface not implemented\n");
         return NULL;
       }
 
@@ -1061,12 +1062,12 @@ BaseAST* checkFunctionCall(CallExpr* call) {
                     NULL) {
           //printf("Inside actuals loop\n");
           if (!s_formal) {
-            printf("Mismatched\n");
+            //printf("Mismatched\n");
             mismatch = true;
             break;
           }
           //printf("Inside Actuals 2\n");
-          if (hasFlag(s_formal, FLAG_TYPE_VARIABLE)) {
+          if (s_formal->hasFlag(FLAG_TYPE_VARIABLE)) {
             if (SymExpr *se_actual = toSymExpr(e_actual)) {
               //printf("Type symbol %s",se_actual->var->cname);
               if (!isTypeSymbol(se_actual->var)) {
@@ -1082,7 +1083,7 @@ BaseAST* checkFunctionCall(CallExpr* call) {
             }
           } else if (!cclosure.is_equal(e_actual, s_formal->typeExpr)) {
             //if(UnresolvedSymExpr *s_type = toUnresolvedSymExpr(toExpr(s_formal->typeExpr)))
-            printf("Mismatched\n");
+            //printf("Mismatched\n");
             mismatch = true;
             break;
           }
@@ -1140,10 +1141,10 @@ BaseAST* checkFunctionCall(CallExpr* call) {
           }
         }
       }
-    printf("No matching functions at call");
+    //printf("No matching functions at call");
     return dtUnknown;
   }
-  printf("No matching functions at call");
+  //printf("No matching functions at call");
   return dtUnknown;
 }
 
@@ -1391,7 +1392,7 @@ BaseAST* checkInterfaceImplementations(BaseAST *s) {
                           //Next check return type.
                           Expr *retExpr;
 
-                          printf("Adding adaptation to witness\n");
+                          //printf("Adding adaptation to witness\n");
                           addAdaptationToWitness(ce, witness, fn, visibleFn);
 
                           if (BlockStmt *blockStmt = toBlockStmt(fn->retExprType))
@@ -1452,13 +1453,13 @@ BaseAST* checkInterfaceImplementations(BaseAST *s) {
             }
           }
         } else if(!strcmp(use->unresolved, "writeln")) {
-            printf("Inside Writeln\n");
+            //printf("Inside Writeln\n");
             checkInterfaceImplementations(ce->argList.head);
         }
           else  if(!ce->primitive) {
           returnExpr = checkFunctionCall(ce);
-          printf("Return Type: %d\n",returnExpr->id);
-          list_view(returnExpr);
+          //printf("Return Type: %d\n",returnExpr->id);
+          //list_view(returnExpr);
         }
       }
     }
@@ -1709,7 +1710,7 @@ void earlyTypeCheck(void) {
     is->defPoint->remove();
   }
 
-  printf("complete\n");
+  //printf("complete\n");
   //if (found_early_type_checked) {
     //Hackish workaround to stop early when we're early type-checking until we
     //tie into the rest of the passes
