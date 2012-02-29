@@ -15,6 +15,7 @@
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
+#include "typeCheck.h"
 #include "../ifa/prim_data.h"
 
 //#
@@ -1714,12 +1715,6 @@ static void reissueCompilerWarning(const char* str, int offset) {
   }
   USR_WARN(from, "%s", str);
 }
-
-class VisibleFunctionBlock {
- public:
-  Map<const char*,Vec<FnSymbol*>*> visibleFunctions;
-  VisibleFunctionBlock() { }
-};
 
 static Map<BlockStmt*,VisibleFunctionBlock*> visibleFunctionMap;
 static int nVisibleFunctions = 0; // for incremental build

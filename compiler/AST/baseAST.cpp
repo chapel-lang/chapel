@@ -43,8 +43,8 @@ void printStatistics(const char* pass) {
 
   foreach_ast(decl_counters);
 
-  int nStmt = nCondStmt + nBlockStmt + nGotoStmt;
-  int kStmt = kCondStmt + kBlockStmt + kGotoStmt;
+  int nStmt = nCondStmt + nBlockStmt + nGotoStmt + nImplementsStmt + nFromStmt;
+  int kStmt = kCondStmt + kBlockStmt + kGotoStmt + kImplementsStmt + kFromStmt;
   int nExpr = nUnresolvedSymExpr + nSymExpr + nDefExpr + nCallExpr + nNamedExpr;
   int kExpr = kUnresolvedSymExpr + kSymExpr + kDefExpr + kCallExpr + kNamedExpr;
   int nSymbol = nModuleSymbol+nVarSymbol+nArgSymbol+nTypeSymbol+nFnSymbol+nEnumSymbol+nLabelSymbol;
