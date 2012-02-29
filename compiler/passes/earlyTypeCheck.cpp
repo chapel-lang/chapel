@@ -24,7 +24,7 @@ BaseAST *typeCheckFn(FnSymbol *fn);
 BaseAST *checkInterfaceImplementations(BaseAST *s);
 Symbol* mapArguments(CallExpr*, FnSymbol*, CallExpr*);
 BaseAST* checkFunctionCall(CallExpr*);
-void addAdaptationToWitness(CallExpr*, ClassType *witness, FnSymbol *requiredFn, FnSymbol *actualFn);
+void addAdaptationToWitness(BaseAST*, ClassType *witness, FnSymbol *requiredFn, FnSymbol *actualFn);
 static void addToImplementsSymbolTable(CallExpr* ce, BaseAST* interface, BaseAST* implementingType, Symbol *implementingWitness);
 
 void getMatchingFunctionsInInterfaces(const char* name, Vec<FnSymbol*>& visibleFns,
@@ -1153,7 +1153,7 @@ BaseAST* checkFunctionCall(CallExpr* call) {
   happen to share the same function type.  By using the parent class we can assign new values onto variable that match the function type
   but may currently be pointing at a different function.
 */
-static ClassType* createAndInsertInstanceWitnessClass(CallExpr *witness, const char *name) {
+static ClassType* createAndInsertInstanceWitnessClass(BaseAST *witness, const char *name) {
   ClassType *parent = new ClassType(CLASS_CLASS);
   TypeSymbol *parent_ts = new TypeSymbol(name, parent);
 
@@ -1162,7 +1162,15 @@ static ClassType* createAndInsertInstanceWitnessClass(CallExpr *witness, const c
   // Because this function type needs to be globally visible (because we don't know the modules it will be passed to), we put
   // it at the highest scope
   //theProgram->block->body.insertAtTail(new DefExpr(parent_ts));
-  witness->insertBefore(new DefExpr(parent_ts));
+
+  //witness->insertBefore(new DefExpr(parent_ts));
+
+  //Adding supprot for implements stmt
+  if(ImplementsStmt* s = toImplementsStmt(witness)) {
+    s->insertBefore(new DefExpr(parent_ts));
+  } else if (CallExpr* ce = toCallExpr(witness)) {
+    ce->insertBefore(new DefExpr(parent_ts));
+  }
 
   parent->dispatchParents.add(dtObject);
   dtObject->dispatchChildren.add(parent);
@@ -1175,7 +1183,7 @@ static ClassType* createAndInsertInstanceWitnessClass(CallExpr *witness, const c
   return parent;
 }
 
-void addAdaptationToWitness(CallExpr *insertBefore, ClassType *witness, FnSymbol *requiredFn, FnSymbol *actualFn) {
+void addAdaptationToWitness(BaseAST *insertBefore, ClassType *witness, FnSymbol *requiredFn, FnSymbol *actualFn) {
   FnSymbol* adapted_method = new FnSymbol(requiredFn->name);
   adapted_method->addFlag(FLAG_INLINE);
   //adapted_method->addFlag(FLAG_INVISIBLE_FN);
@@ -1204,7 +1212,12 @@ void addAdaptationToWitness(CallExpr *insertBefore, ClassType *witness, FnSymbol
     adapted_method->insertAtTail(new CallExpr(PRIM_RETURN, tmp));
   }
 
-  insertBefore->insertBefore(new DefExpr(adapted_method));
+  //insertBefore->insertBefore(new DefExpr(adapted_method));
+  if(ImplementsStmt* s = toImplementsStmt(insertBefore)) {
+      s->insertBefore(new DefExpr(adapted_method));
+    } else if (CallExpr* c = toCallExpr(insertBefore)) {
+      c->insertBefore(new DefExpr(adapted_method));
+    }
 
   normalize(adapted_method);
 
@@ -1220,226 +1233,261 @@ BaseAST* checkInterfaceImplementations(BaseAST *s) {
     }
   }
 
-  //for_alist(s, block->body) {
   else if (DefExpr *de = toDefExpr(s)) {
       if (de->sym && isFnSymbol(de->sym)) {
         FnSymbol *fn = toFnSymbol(de->sym);
         checkInterfaceImplementations(fn->body);
       }
-    } else if (CallExpr *ce = toCallExpr(s)) {
-      //printf("Call expr %d\n", ce->id);
-      if (UnresolvedSymExpr *use = toUnresolvedSymExpr(ce->baseExpr)) {
-        if (!strcmp(use->unresolved, "implements")) {
-          ClassType* witness = createAndInsertInstanceWitnessClass(ce, "witness");
-          //Next, fine the interface this is talking about
-          /*
-           if (UnresolvedSymExpr *interface_name = toUnresolvedSymExpr(ce->argList.tail)) {
-           forv_Vec (InterfaceSymbol, is, gInterfaceSymbols) {
-           printf("Checking against: %s\n", is->cname);
-           if (!strcmp(is->cname, interface_name->unresolved))
-           printf("Found interface\n");
-           }
-           }
-           else*/
-          if (SymExpr *se = toSymExpr(ce->argList.tail)) {
-            //if (SymExpr *implementing_type = toSymExpr(ce->argList.head)) {
-            if (isSymExpr(ce->argList.head)) {
-              if (InterfaceSymbol *is = toInterfaceSymbol(se->var)) {
-                forv_Vec (FnSymbol, fn, is->functionSignatures) {
-                    CallInfo2 info(fn);
+  }
+  else if (isCallExpr(s) || isImplementsStmt(s)) {
+    CallExpr *ce;
+    if(isCallExpr(s)) {
+      ce = toCallExpr(s);
+    }
+    if(isImplementsStmt(s)) {
+      ImplementsStmt* istmt = toImplementsStmt(s);
+      ce = toCallExpr(istmt->implementsClause);
+    }
+    if (UnresolvedSymExpr *use = toUnresolvedSymExpr(ce->baseExpr)) {
+      if (!strcmp(use->unresolved, "implements")) {
+        ClassType* witness = createAndInsertInstanceWitnessClass(s, "witness");
+        if (SymExpr *se = toSymExpr(ce->argList.tail)) {
+          //if (SymExpr *implementing_type = toSymExpr(ce->argList.head)) {
+          if (isSymExpr(ce->argList.head)) {
+            if (InterfaceSymbol *is = toInterfaceSymbol(se->var)) {
+              forv_Vec (FnSymbol, fn, is->functionSignatures) {
+                  CallInfo2 info(fn);
 
-                    if (PrimitiveOp *op = primitives_map.get(fn->cname)) {
-                      if (fn->formals.length == 0) {
-                        INT_FATAL("Unimplemented Operator: 0 args\n");
-                        //if (cclosure.is_equal(e_actual, s_formal->typeExpr))
-                        //return op->returnInfo(call, NULL, NULL);
-                      } else if (fn->formals.length == 1) {
-                        INT_FATAL("Unimplemented Operator: 1 arg\n");
-                        //return op->returnInfo(call, cclosure.get_representative_ast(call->argList.get(1)), NULL);
-                      } else {
-                        //printf("Operator: 2 args\n");
-                        //FIXME: I don't like passing NULL here, we need to be more flexible
-                        //with what operators need
+                if (PrimitiveOp *op = primitives_map.get(fn->cname)) {
+                  if (fn->formals.length == 0) {
+                    INT_FATAL("Unimplemented Operator: 0 args\n");
+                    //if (cclosure.is_equal(e_actual, s_formal->typeExpr))
+                    //return op->returnInfo(call, NULL, NULL);
+                  } else if (fn->formals.length == 1) {
+                    INT_FATAL("Unimplemented Operator: 1 arg\n");
+                    //return op->returnInfo(call, cclosure.get_representative_ast(call->argList.get(1)), NULL);
+                  } else {
+                    //printf("Operator: 2 args\n");
+                    //FIXME: I don't like passing NULL here, we need to be more flexible
+                    //with what operators need
 
-                        //FIXME: Handle dtUnknown
+                    //FIXME: Handle dtUnknown
 
-                        BaseAST *arg1Expr;
-                        BaseAST *arg2Expr;
+                    BaseAST *arg1Expr;
+                    BaseAST *arg2Expr;
 
-                        bool isArg1Self = false;
-                        if (DefExpr *de1 = toDefExpr(fn->formals.get(1))) {
-                          if (ArgSymbol *as1 = toArgSymbol(de1->sym)) {
-                            if (UnresolvedSymExpr *use1 =
-                            toUnresolvedSymExpr(as1->typeExpr->body.head)) {
+                    bool isArg1Self = false;
+                    if (DefExpr *de1 = toDefExpr(fn->formals.get(1))) {
+                      if (ArgSymbol *as1 = toArgSymbol(de1->sym)) {
+                        if (UnresolvedSymExpr *use1 =
+                        toUnresolvedSymExpr(as1->typeExpr->body.head)) {
 
-                              if (!strcmp(use1->unresolved, "self"))
-                                isArg1Self = true;
-                            }
-                          }
+                          if (!strcmp(use1->unresolved, "self"))
+                            isArg1Self = true;
                         }
-                        if (isArg1Self) {
-                          arg1Expr = cclosure.get_representative_ast(
-                              ce->argList.head);
-                        } else {
-                          arg1Expr = cclosure.get_representative_ast(
-                              fn->formals.get(1));
-                        }
-
-                        bool isArg2Self = false;
-                        if (DefExpr *de2 = toDefExpr(fn->formals.get(2))) {
-                          if (ArgSymbol *as2 = toArgSymbol(de2->sym)) {
-                            if (UnresolvedSymExpr *use2 =
-                            toUnresolvedSymExpr(as2->typeExpr->body.head)) {
-
-                              if (!strcmp(use2->unresolved, "self"))
-                                isArg2Self = true;
-                            }
-                          }
-                        }
-                        if (isArg2Self) {
-                          arg2Expr = cclosure.get_representative_ast(
-                              ce->argList.head);
-                        } else {
-                          arg2Expr = cclosure.get_representative_ast(
-                              fn->formals.get(2));
-                        }
-
-                        Type *retType = op->returnInfo(NULL, arg1Expr,
-                            arg2Expr);
-
-                        if (retType != dtUnknown) {
-                          //FIXME: Can't assume 'self' is always unresolved
-                          BlockStmt *retBlock = toBlockStmt(fn->retExprType);
-                          if (retBlock) {
-                            if (UnresolvedSymExpr *use3 =
-                            toUnresolvedSymExpr(retBlock->body.head)) {
-                              if (!strcmp(use3->unresolved, "self")) {
-                                if (!cclosure.is_equal(ce->argList.head,
-                                    retType)) {
-                                  INT_FATAL(
-                                      "Operator which satisfies interface requirement has mismatched type");
-                                } else {
-                                  continue;
-                                }
-                              } else {
-                                INT_FATAL("Return type of operator unknown");
-                              }
-                            }
-                          }
-                          if (!cclosure.is_equal(fn->retExprType, retType)) {
-                            INT_FATAL(
-                                "Operator which satisfies interface requirement has mismatched type");
-                          } else {
-                            continue;
-                          }
-                        }
-                        //return op->returnInfo(call, cclosure.get_representative_ast(call->argList.get(1)),
-                        //		cclosure.get_representative_ast(call->argList.get(2)));
                       }
                     }
+                    if (isArg1Self) {
+                      arg1Expr = cclosure.get_representative_ast(
+                          ce->argList.head);
+                    } else {
+                      arg1Expr = cclosure.get_representative_ast(
+                          fn->formals.get(1));
+                    }
 
-                    if (gFnSymbols.n != nVisibleFunctions)
-                      buildVisibleFunctionMap2();
+                    bool isArg2Self = false;
+                    if (DefExpr *de2 = toDefExpr(fn->formals.get(2))) {
+                      if (ArgSymbol *as2 = toArgSymbol(de2->sym)) {
+                        if (UnresolvedSymExpr *use2 =
+                        toUnresolvedSymExpr(as2->typeExpr->body.head)) {
 
-                    Vec<FnSymbol*> visibleFns; // visible functions
-
-                    Vec<BlockStmt*> visited;
-
-                    //First, add the visible functions
-
-                    getVisibleFunctions(getVisibilityBlock(ce), info.name,
-                        visibleFns, visited);
-
-                    bool found_match = false;
-                    forv_Vec(FnSymbol, visibleFn, visibleFns) {
-                        bool mismatch = false;
-
-                        Expr *e_actual = ce->argList.head;
-                        ArgSymbol *s_formal =
-                            ((visibleFn)->formals.head) ?
-                                toArgSymbol(toDefExpr((visibleFn)->formals.head)->sym) :
-                                NULL;
-                        for (;
-                            e_actual;
-                            e_actual = e_actual->next, s_formal =
-                                (s_formal && s_formal->defPoint->next) ?
-                                    toArgSymbol(toDefExpr((s_formal)->defPoint->next)->sym) :
-                                    NULL) {
-
-                          SymExpr *actual_sym = toSymExpr(e_actual);
-                          if (!actual_sym || !isInterfaceSymbol(actual_sym->var)) {
-                            if (!s_formal) {
-                              mismatch = true;
-                              break;
-                            }
-                            if (actual_sym
-                                && !strcmp(actual_sym->var->cname, "self")) {
-                              if (!cclosure.is_equal(e_actual,
-                                  s_formal->typeExpr)) {
-                                mismatch = true;
-                                break;
-                              }
-                            } else {
-                              if (!cclosure.is_equal(ce->argList.head,
-                                  s_formal->typeExpr)) {
-                                mismatch = true;
-                                break;
-                              }
-                            }
-                          }
+                          if (!strcmp(use2->unresolved, "self"))
+                            isArg2Self = true;
                         }
-                        if (!mismatch) {
-                          //Next check return type.
-                          Expr *retExpr;
+                      }
+                    }
+                    if (isArg2Self) {
+                      arg2Expr = cclosure.get_representative_ast(
+                          ce->argList.head);
+                    } else {
+                      arg2Expr = cclosure.get_representative_ast(
+                          fn->formals.get(2));
+                    }
 
-                          //printf("Adding adaptation to witness\n");
-                          addAdaptationToWitness(ce, witness, fn, visibleFn);
+                    Type *retType = op->returnInfo(NULL, arg1Expr,
+                        arg2Expr);
 
-                          if (BlockStmt *blockStmt = toBlockStmt(fn->retExprType))
-                            retExpr = blockStmt->body.head;
-                          else
-                            retExpr = fn->retExprType;
-
-                          SymExpr *retSymExpr = toSymExpr(retExpr);
-                          UnresolvedSymExpr *retUnSymExpr =
-                              toUnresolvedSymExpr(retExpr);
-                          if (retSymExpr
-                              && !strcmp(retSymExpr->var->cname, "self")) {
-                            if (cclosure.is_equal(ce->argList.head,
-                                visibleFn->retExprType)) {
-                              found_match = true;
-                              break;
+                    if (retType != dtUnknown) {
+                      //FIXME: Can't assume 'self' is always unresolved
+                      BlockStmt *retBlock = toBlockStmt(fn->retExprType);
+                      if (retBlock) {
+                        if (UnresolvedSymExpr *use3 =
+                        toUnresolvedSymExpr(retBlock->body.head)) {
+                          if (!strcmp(use3->unresolved, "self")) {
+                            if (!cclosure.is_equal(ce->argList.head,
+                                retType)) {
+                              INT_FATAL(
+                                  "Operator which satisfies interface requirement has mismatched type");
                             } else {
-                              mismatch = true;
-                            }
-                          } else if (retUnSymExpr
-                              && !strcmp(retUnSymExpr->unresolved, "self")) {
-                            if (cclosure.is_equal(ce->argList.head,
-                                visibleFn->retExprType)) {
-                              found_match = true;
-                              break;
-                            } else {
-                              mismatch = true;
+                              continue;
                             }
                           } else {
-                            if (cclosure.is_equal(fn->retExprType,
-                                visibleFn->retExprType)) {
-                              found_match = true;
-                              break;
-                            } else {
-                              mismatch = true;
+                            INT_FATAL("Return type of operator unknown");
+                          }
+                        }
+                      }
+                      if (!cclosure.is_equal(fn->retExprType, retType)) {
+                        INT_FATAL(
+                            "Operator which satisfies interface requirement has mismatched type");
+                      } else {
+                        continue;
+                      }
+                    }
+                    //return op->returnInfo(call, cclosure.get_representative_ast(call->argList.get(1)),
+                    //		cclosure.get_representative_ast(call->argList.get(2)));
+                  }
+                }
+
+                if (gFnSymbols.n != nVisibleFunctions)
+                  buildVisibleFunctionMap2();
+
+                Vec<FnSymbol*> visibleFns; // visible functions
+
+                Vec<BlockStmt*> visited;
+
+                //First, add the visible functions
+
+                if (ImplementsStmt* istmt = toImplementsStmt(s)) {   //the scope for visible functions for implements statement is its block_stmt
+                  const char* function_name = info.name;
+                  for_alist(stmt, istmt->statements->body) {
+                    if(CallExpr *ce1 = toCallExpr(stmt)) {
+                      if (UnresolvedSymExpr *use1 = toUnresolvedSymExpr(ce1->baseExpr)) {
+                        if (!strcmp(use1->unresolved, "=")) {
+                          Expr* lhs = ce1->argList.head;
+                          Expr* rhs = ce1->argList.tail;
+                          if(CallExpr* lhs_ce = toCallExpr(lhs)) {
+                            Expr* lhs_fn = lhs_ce->argList.head;
+                            if(UnresolvedSymExpr* us_lhs = toUnresolvedSymExpr(lhs_fn)) {
+                              if(!strcmp(us_lhs->unresolved,info.name)) {
+                                if(CallExpr* rhs_ce = toCallExpr(rhs)) {
+                                  Expr* rhs_fn = rhs_ce->argList.head;
+                                  if(UnresolvedSymExpr* us_rhs = toUnresolvedSymExpr(rhs_fn)) {
+                                    function_name = us_rhs->unresolved;
+                                  }
+                                }
+                              }
                             }
                           }
                         }
                       }
-                    if (!found_match) {
-                      INT_FATAL("No matching functions at call");
                     }
                   }
-              }
-              //cclosure.add_implements_witness(ce->argList.head,
-                  //ce->argList.tail);
+                  getVisibleFunctions(istmt->statements, function_name,
+                    visibleFns, visited);
+                } else {
+                getVisibleFunctions(getVisibilityBlock(ce), info.name,
+                    visibleFns, visited);
+                }
 
+                bool found_match = false;
+                forv_Vec(FnSymbol, visibleFn, visibleFns) {
+                  bool mismatch = false;
+                  Expr *e_actual = ce->argList.head;
+                  ArgSymbol *s_formal =
+                      ((visibleFn)->formals.head) ?
+                          toArgSymbol(toDefExpr((visibleFn)->formals.head)->sym) :
+                          NULL;
+                  for (;
+                      e_actual;
+                      e_actual = e_actual->next, s_formal =
+                          (s_formal && s_formal->defPoint->next) ?
+                              toArgSymbol(toDefExpr((s_formal)->defPoint->next)->sym) :
+                              NULL) {
+
+                    SymExpr *actual_sym = toSymExpr(e_actual);
+                    if (!actual_sym || !isInterfaceSymbol(actual_sym->var)) {
+                      if (!s_formal) {
+                        mismatch = true;
+                        break;
+                      }
+                      if (actual_sym
+                          && !strcmp(actual_sym->var->cname, "self")) {
+                        if (!cclosure.is_equal(e_actual,
+                            s_formal->typeExpr)) {
+                          mismatch = true;
+                          break;
+                        }
+                      } else {
+                        if (!cclosure.is_equal(ce->argList.head,
+                            s_formal->typeExpr)) {
+                          mismatch = true;
+                          break;
+                        }
+                      }
+                    }
+                  }
+                  if (!mismatch) {
+                    //Next check return type.
+                    Expr *retExpr;
+
+                    //printf("Adding adaptation to witness\n");
+                    addAdaptationToWitness(s, witness, fn, visibleFn);
+
+                    if (BlockStmt *blockStmt = toBlockStmt(fn->retExprType))
+                      retExpr = blockStmt->body.head;
+                    else
+                      retExpr = fn->retExprType;
+
+                    SymExpr *retSymExpr = toSymExpr(retExpr);
+                    UnresolvedSymExpr *retUnSymExpr =
+                        toUnresolvedSymExpr(retExpr);
+                    if (retSymExpr
+                        && !strcmp(retSymExpr->var->cname, "self")) {
+                      if (cclosure.is_equal(ce->argList.head,
+                          visibleFn->retExprType)) {
+                        found_match = true;
+                        break;
+                      } else {
+                        mismatch = true;
+                      }
+                    } else if (retUnSymExpr
+                        && !strcmp(retUnSymExpr->unresolved, "self")) {
+                      if (cclosure.is_equal(ce->argList.head,
+                          visibleFn->retExprType)) {
+                        found_match = true;
+                        break;
+                      } else {
+                        mismatch = true;
+                      }
+                    } else {
+                      if (cclosure.is_equal(fn->retExprType,
+                          visibleFn->retExprType)) {
+                        found_match = true;
+                        break;
+                      } else {
+                        mismatch = true;
+                      }
+                    }
+                  }
+                }
+                if (!found_match) {
+                  INT_FATAL("No matching functions at call");
+                }
+              }
+            }
+            //cclosure.add_implements_witness(ce->argList.head,
+                //ce->argList.tail);
+            if (ImplementsStmt* istmt = toImplementsStmt(s)) {
+              //printf("Inside stmt");
+              VarSymbol *tmp = newTemp();
+              istmt->insertBefore(new DefExpr(tmp));
+              istmt->insertBefore(new CallExpr(PRIM_MOVE, tmp,
+                 new CallExpr(witness->defaultConstructor->name)));
+              addToImplementsSymbolTable(ce,ce->argList.head,
+                  ce->argList.tail, tmp);
+              istmt->remove();
+            } else {
+              printf("Inside clause");
               VarSymbol *tmp = newTemp();
               ce->insertBefore(new DefExpr(tmp));
               ce->insertBefore(new CallExpr(PRIM_MOVE, tmp,
@@ -1448,248 +1496,26 @@ BaseAST* checkInterfaceImplementations(BaseAST *s) {
               addToImplementsSymbolTable(ce,ce->argList.head,
                   ce->argList.tail, tmp);
               ce->remove();
-            } else {
-              INT_FATAL("Implementing type not found\n");
             }
+          } else {
+            INT_FATAL("Implementing type not found\n");
           }
-        } else if(!strcmp(use->unresolved, "writeln")) {
-            //printf("Inside Writeln\n");
-            checkInterfaceImplementations(ce->argList.head);
-        }
-          else  if(!ce->primitive) {
-          returnExpr = checkFunctionCall(ce);
-          //printf("Return Type: %d\n",returnExpr->id);
-          //list_view(returnExpr);
         }
       }
+      else if(!strcmp(use->unresolved, "writeln")) {
+          //printf("Inside Writeln\n");
+          checkInterfaceImplementations(ce->argList.head);
+      }
+      else  if(!ce->primitive) {
+        returnExpr = checkFunctionCall(ce);
+        //printf("Return Type: %d\n",returnExpr->id);
+        //list_view(returnExpr);
+      }
     }
-    else if(BlockStmt* bs = toBlockStmt(s)) {
-      returnExpr = checkInterfaceImplementations(bs);
-    }
-    /*else if(ImplementsStmt* istmt = toImplementsStmt(s)) {
-      printf ("ImplementsStmt\n");
-      CallExpr* ce = toCallExpr(istmt->implementsClause);
-      if (UnresolvedSymExpr *use = toUnresolvedSymExpr(ce->baseExpr)) {
-              if (!strcmp(use->unresolved, "implements")) {
-                //Next, fine the interface this is talking about
-                //was commented start
-                 if (UnresolvedSymExpr *interface_name = toUnresolvedSymExpr(ce->argList.tail)) {
-                 forv_Vec (InterfaceSymbol, is, gInterfaceSymbols) {
-                 printf("Checking against: %s\n", is->cname);
-                 if (!strcmp(is->cname, interface_name->unresolved))
-                 printf("Found interface\n");
-                 }
-                 }
-                 else //end
-                if (SymExpr *se = toSymExpr(ce->argList.tail)) {
-                  //if (SymExpr *implementing_type = toSymExpr(ce->argList.head)) {
-                  if (isSymExpr(ce->argList.head)) {
-                    if (InterfaceSymbol *is = toInterfaceSymbol(se->var)) {
-                      forv_Vec (FnSymbol, fn, is->functionSignatures) {
-                          CallInfo2 info(fn);
-
-                          if (PrimitiveOp *op = primitives_map.get(fn->cname)) {
-                            if (fn->formals.length == 0) {
-                              INT_FATAL("Unimplemented Operator: 0 args\n");
-                              //if (cclosure.is_equal(e_actual, s_formal->typeExpr))
-                              //return op->returnInfo(call, NULL, NULL);
-                            } else if (fn->formals.length == 1) {
-                              INT_FATAL("Unimplemented Operator: 1 arg\n");
-                              //return op->returnInfo(call, cclosure.get_representative_ast(call->argList.get(1)), NULL);
-                            } else {
-                              //printf("Operator: 2 args\n");
-                              //FIXME: I don't like passing NULL here, we need to be more flexible
-                              //with what operators need
-
-                              //FIXME: Handle dtUnknown
-
-                              BaseAST *arg1Expr;
-                              BaseAST *arg2Expr;
-
-                              bool isArg1Self = false;
-                              if (DefExpr *de1 = toDefExpr(fn->formals.get(1))) {
-                                if (ArgSymbol *as1 = toArgSymbol(de1->sym)) {
-                                  if (UnresolvedSymExpr *use1 =
-                                  toUnresolvedSymExpr(as1->typeExpr->body.head)) {
-
-                                    if (!strcmp(use1->unresolved, "self"))
-                                      isArg1Self = true;
-                                  }
-                                }
-                              }
-                              if (isArg1Self) {
-                                arg1Expr = cclosure.get_representative_ast(
-                                    ce->argList.head);
-                              } else {
-                                arg1Expr = cclosure.get_representative_ast(
-                                    fn->formals.get(1));
-                              }
-
-                              bool isArg2Self = false;
-                              if (DefExpr *de2 = toDefExpr(fn->formals.get(2))) {
-                                if (ArgSymbol *as2 = toArgSymbol(de2->sym)) {
-                                  if (UnresolvedSymExpr *use2 =
-                                  toUnresolvedSymExpr(as2->typeExpr->body.head)) {
-
-                                    if (!strcmp(use2->unresolved, "self"))
-                                      isArg2Self = true;
-                                  }
-                                }
-                              }
-                              if (isArg2Self) {
-                                arg2Expr = cclosure.get_representative_ast(
-                                    ce->argList.head);
-                              } else {
-                                arg2Expr = cclosure.get_representative_ast(
-                                    fn->formals.get(2));
-                              }
-
-                              Type *retType = op->returnInfo(NULL, arg1Expr,
-                                  arg2Expr);
-
-                              if (retType != dtUnknown) {
-                                //FIXME: Can't assume 'self' is always unresolved
-                                BlockStmt *retBlock = toBlockStmt(fn->retExprType);
-                                if (retBlock) {
-                                  if (UnresolvedSymExpr *use3 =
-                                  toUnresolvedSymExpr(retBlock->body.head)) {
-                                    if (!strcmp(use3->unresolved, "self")) {
-                                      if (!cclosure.is_equal(ce->argList.head,
-                                          retType)) {
-                                        INT_FATAL(
-                                            "Operator which satisfies interface requirement has mismatched type");
-                                      } else {
-                                        continue;
-                                      }
-                                    } else {
-                                      INT_FATAL("Return type of operator unknown");
-                                    }
-                                  }
-                                }
-                                if (!cclosure.is_equal(fn->retExprType, retType)) {
-                                  INT_FATAL(
-                                      "Operator which satisfies interface requirement has mismatched type");
-                                } else {
-                                  continue;
-                                }
-                              }
-                              //return op->returnInfo(call, cclosure.get_representative_ast(call->argList.get(1)),
-                              //    cclosure.get_representative_ast(call->argList.get(2)));
-                            }
-                          }
-
-                          if (gFnSymbols.n != nVisibleFunctions)
-                            buildVisibleFunctionMap2();
-
-                          Vec<FnSymbol*> visibleFns; // visible functions
-
-                          Vec<BlockStmt*> visited;
-
-                          //First, add the visible functions
-
-                          getVisibleFunctions(istmt->statements, info.name,
-                              visibleFns, visited);
-
-                          bool found_match = false;
-                          forv_Vec(FnSymbol, visibleFn, visibleFns) {
-                              bool mismatch = false;
-
-                              Expr *e_actual = ce->argList.head;
-                              ArgSymbol *s_formal =
-                                  ((visibleFn)->formals.head) ?
-                                      toArgSymbol(toDefExpr((visibleFn)->formals.head)->sym) :
-                                      NULL;
-                              for (;
-                                  e_actual;
-                                  e_actual = e_actual->next, s_formal =
-                                      (s_formal && s_formal->defPoint->next) ?
-                                          toArgSymbol(toDefExpr((s_formal)->defPoint->next)->sym) :
-                                          NULL) {
-
-                                SymExpr *actual_sym = toSymExpr(e_actual);
-                                if (!actual_sym || !isInterfaceSymbol(actual_sym->var)) {
-                                  if (!s_formal) {
-                                    mismatch = true;
-                                    break;
-                                  }
-                                  if (actual_sym
-                                      && !strcmp(actual_sym->var->cname, "self")) {
-                                    if (!cclosure.is_equal(e_actual,
-                                        s_formal->typeExpr)) {
-                                      mismatch = true;
-                                      break;
-                                    }
-                                  } else {
-                                    if (!cclosure.is_equal(ce->argList.head,
-                                        s_formal->typeExpr)) {
-                                      mismatch = true;
-                                      break;
-                                    }
-                                  }
-                                }
-                              }
-                              if (!mismatch) {
-                                //Next check return type.
-                                Expr *retExpr;
-
-                                if (BlockStmt *blockStmt = toBlockStmt(fn->retExprType))
-                                  retExpr = blockStmt->body.head;
-                                else
-                                  retExpr = fn->retExprType;
-
-                                SymExpr *retSymExpr = toSymExpr(retExpr);
-                                UnresolvedSymExpr *retUnSymExpr =
-                                    toUnresolvedSymExpr(retExpr);
-                                if (retSymExpr
-                                    && !strcmp(retSymExpr->var->cname, "self")) {
-                                  if (cclosure.is_equal(ce->argList.head,
-                                      visibleFn->retExprType)) {
-                                    found_match = true;
-                                    break;
-                                  } else {
-                                    mismatch = true;
-                                  }
-                                } else if (retUnSymExpr
-                                    && !strcmp(retUnSymExpr->unresolved, "self")) {
-                                  if (cclosure.is_equal(ce->argList.head,
-                                      visibleFn->retExprType)) {
-                                    found_match = true;
-                                    break;
-                                  } else {
-                                    mismatch = true;
-                                  }
-                                } else {
-                                  if (cclosure.is_equal(fn->retExprType,
-                                      visibleFn->retExprType)) {
-                                    found_match = true;
-                                    break;
-                                  } else {
-                                    mismatch = true;
-                                  }
-                                }
-                              }
-                            }
-                          if (!found_match) {
-                            INT_FATAL("No matching functions at call");
-                          }
-                        }
-                    }
-                    //cclosure.add_implements_witness(ce->argList.head,
-                        //ce->argList.tail);
-                    addToImplementsSymbolTable(ce,ce->argList.head,
-                        ce->argList.tail);
-                  } else {
-                    INT_FATAL("Implementing type not found\n");
-                  }
-                }
-              } else  if(!ce->primitive) {
-                returnExpr = checkFunctionCall(ce);
-                printf("Return Type: %d\n",returnExpr->id);
-                list_view(returnExpr);
-              }
-            }
-    }*/
-  //}
+  }
+  else if(BlockStmt* bs = toBlockStmt(s)) {
+    returnExpr = checkInterfaceImplementations(bs);
+  }
 
   return returnExpr;
 }
@@ -1714,6 +1540,6 @@ void earlyTypeCheck(void) {
   //if (found_early_type_checked) {
     //Hackish workaround to stop early when we're early type-checking until we
     //tie into the rest of the passes
-  //INT_FATAL("SUCCESS");
+  INT_FATAL("SUCCESS");
   //}
 }
