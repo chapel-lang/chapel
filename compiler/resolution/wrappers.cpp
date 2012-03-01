@@ -100,8 +100,7 @@ buildDefaultWrapper(FnSymbol* fn,
   SymbolMap copy_map;
   bool specializeDefaultConstructor =
     fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR) &&
-    !fn->_this->type->symbol->hasFlag(FLAG_SYNC) &&
-    !fn->_this->type->symbol->hasFlag(FLAG_SINGLE) &&
+    !isSyncType(fn->_this->type) &&
     !fn->_this->type->symbol->hasFlag(FLAG_REF);
   if (specializeDefaultConstructor) {
     wrapper->removeFlag(FLAG_TEMP);
@@ -407,7 +406,7 @@ buildCoercionWrapper(FnSymbol* fn,
       TypeSymbol *ts = toTypeSymbol(coercion_map->get(formal));
       INT_ASSERT(ts);
       wrapperFormal->type = ts->type;
-      if (ts->hasFlag(FLAG_SYNC)) {
+      if (getSyncFlags(ts).any()) {
         //
         // apply readFF or readFE to single or sync actual unless this
         // is a member access of the sync or single actual
@@ -418,8 +417,10 @@ buildCoercionWrapper(FnSymbol* fn,
           call->insertAtTail(new CallExpr("value", gMethodToken, wrapperFormal));
         else if (ts->hasFlag(FLAG_SINGLE))
           call->insertAtTail(new CallExpr("readFF", gMethodToken, wrapperFormal));
-        else
+        else if (ts->hasFlag(FLAG_SYNC))
           call->insertAtTail(new CallExpr("readFE", gMethodToken, wrapperFormal));
+        else
+          INT_ASSERT(false);    // Unhandled case.
       } else if (ts->hasFlag(FLAG_REF)) {
         //
         // dereference reference actual

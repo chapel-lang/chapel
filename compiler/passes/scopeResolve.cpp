@@ -576,7 +576,7 @@ void build_constructor(ClassType* ct) {
 
   SET_LINENO(ct);
 
-  if (ct->symbol->hasFlag(FLAG_SYNC) || ct->symbol->hasFlag(FLAG_SINGLE))
+  if (isSyncType(ct))
     ct->defaultValue = NULL;
 
   // Create the default constructor.
@@ -624,8 +624,7 @@ void build_constructor(ClassType* ct) {
   CallExpr* superCall = NULL;
   CallExpr* allocCall = NULL;
   if (ct->symbol->hasFlag(FLAG_REF) ||
-      ct->symbol->hasFlag(FLAG_SYNC) ||
-      ct->symbol->hasFlag(FLAG_SINGLE)) {
+      isSyncType(ct)) {
     // For ref, sync and single classes, just allocate space.
     allocCall = new CallExpr(PRIM_CHPL_ALLOC, fn->_this,
                          newMemDesc(ct->symbol->name));

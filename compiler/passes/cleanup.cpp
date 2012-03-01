@@ -138,6 +138,8 @@ static void flatten_primary_methods(FnSymbol* fn) {
       fn->userString = astr(ts->name, ".", fn->userString);
     if (ts->hasFlag(FLAG_SYNC))
       fn->addFlag(FLAG_SYNC);
+    if (ts->hasFlag(FLAG_SINGLE))
+      fn->addFlag(FLAG_SINGLE);
   }
 }
 

@@ -380,8 +380,7 @@ makeHeapAllocations() {
            (isRecord(def->sym->type) &&
             !isRecordWrappedType(def->sym->type) &&
             // sync/single are currently classes, so this shouldn't matter
-            !def->sym->type->symbol->hasFlag(FLAG_SYNC) &&
-            !def->sym->type->symbol->hasFlag(FLAG_SINGLE)))) {
+            !isSyncType(def->sym->type)))) {
         // replicate global const of primitive type
         INT_ASSERT(defMap.get(def->sym) && defMap.get(def->sym)->n == 1);
         for_defs(se, defMap, def->sym) {

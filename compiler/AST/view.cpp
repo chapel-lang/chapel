@@ -448,13 +448,12 @@ html_view_ast(BaseAST* ast, FILE* html_file, int pass) {
         } else if (structuralTypeSymbol(e->sym)) {
           fprintf(html_file, "<UL CLASS =\"mktree\">\n");
           fprintf(html_file, "<LI>");
-          if (DefExpr *def = toDefExpr( ast))
-            if (def->sym->hasFlag(FLAG_SYNC)) {
-              if (def->sym->hasFlag(FLAG_SINGLE))
-                fprintf( html_file, "<B>single</B> ");
-              else
-                fprintf( html_file, "<B>sync</B> ");
-            }
+          if (DefExpr *def = toDefExpr( ast)) {
+            if (def->sym->hasFlag(FLAG_SYNC))
+              fprintf( html_file, "<B>sync</B> ");
+            if (def->sym->hasFlag(FLAG_SINGLE))
+              fprintf( html_file, "<B>single</B> ");
+          }
           fprintf(html_file, "<B>type ");
           html_print_symbol( html_file, pass, e->sym, true);
           fprintf(html_file, "</B><UL>\n");
@@ -462,12 +461,10 @@ html_view_ast(BaseAST* ast, FILE* html_file, int pass) {
           fprintf(html_file, "<B>type </B> ");
           html_print_symbol( html_file, pass, e->sym, true);
         } else if (VarSymbol* vs=toVarSymbol(e->sym)) {
-          if (vs->type->symbol->hasFlag(FLAG_SYNC)) {
-            if (vs->type->symbol->hasFlag(FLAG_SINGLE))
-              fprintf( html_file, "<B>single </B>");
-            else
-              fprintf( html_file, "<B>sync </B>");
-          }
+          if (vs->type->symbol->hasFlag(FLAG_SYNC))
+            fprintf( html_file, "<B>sync </B>");
+          if (vs->type->symbol->hasFlag(FLAG_SINGLE))
+            fprintf( html_file, "<B>single </B>");
           fprintf(html_file, "<B>var </B> ");
           html_print_symbol( html_file, pass, e->sym, true);
         } else if (ArgSymbol* s = toArgSymbol(e->sym)) {

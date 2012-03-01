@@ -1116,17 +1116,18 @@ bool isRefCountedType(Type* t) {
   // We may eventually want to add a separate flag and provide users
   //  with an interface to declare reference counted types that will
   //  be "automatically" reference counted when needed
-  return (t->symbol->hasFlag(FLAG_ARRAY) ||
-          t->symbol->hasFlag(FLAG_DOMAIN) ||
-          t->symbol->hasFlag(FLAG_DISTRIBUTION));
+
+  // The set of reference counted types currently coincides with the set
+  // of record-wrapped types, so we can reuse the flag set. 
+  return getRecordWrappedFlags(t->symbol).any();
 }
 
 bool isRecordWrappedType(Type* t) {
-  // Same deal as with isRefCountedType()
-  // Currently this is the same as isRefCountedType()
-  return (t->symbol->hasFlag(FLAG_ARRAY) ||
-          t->symbol->hasFlag(FLAG_DOMAIN) ||
-          t->symbol->hasFlag(FLAG_DISTRIBUTION));
+  return getRecordWrappedFlags(t->symbol).any();
+}
+
+bool isSyncType(Type* t) {
+  return getSyncFlags(t->symbol).any();
 }
 
 bool
