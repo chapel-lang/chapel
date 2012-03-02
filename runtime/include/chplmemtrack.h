@@ -5,9 +5,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include "chpl-mem.h"
-
-#define HASHSIZE 1019
+#include "chpl-mem-desc.h"
 
 uint64_t chpl_memoryUsed(int32_t lineno, chpl_string filename);
 void chpl_printMemStat(int32_t lineno, chpl_string filename);

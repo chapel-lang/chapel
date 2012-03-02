@@ -9,7 +9,6 @@
 #include <stddef.h>
 #include <stdio.h>
 #include <stdarg.h>
-#include <pthread.h>
 #include <stdbool.h>
 #include <assert.h>
 
@@ -65,6 +64,9 @@ static inline void qio_lock_destroy(qio_lock_t* x) {
 }
 
 #else
+
+#include <pthread.h>
+
 typedef pthread_mutex_t qio_lock_t;
 // these should return 0 on success; otherwise, an error number.
 static inline err_t qio_lock(qio_lock_t* x) { return pthread_mutex_lock(x); }
@@ -175,7 +177,8 @@ enum {
   QIO_HINT_LATENCY      = QIO_HINT_SEQUENTIAL<<1,
   QIO_HINT_BANDWIDTH    = QIO_HINT_LATENCY<<1,
   QIO_HINT_CACHED       = QIO_HINT_BANDWIDTH<<1,
-  QIO_HINT_DIRECT       = QIO_HINT_CACHED<<1,
+  QIO_HINT_PARALLEL     = QIO_HINT_CACHED<<1,
+  QIO_HINT_DIRECT       = QIO_HINT_PARALLEL<<1,
      // note -- if DIRECT is set, you must do aligned I/O;
      // offset, request size must be 512-byte aligned, and
      // user buffer must be page-aligned. This should more or

@@ -5,8 +5,13 @@
 
 #include "qio_formatted.h"
 
+#include <limits.h>
+#include <ctype.h>
+
+#ifdef HAS_WCTYPE_H
 #include <wctype.h>
 #include <langinfo.h>
+#endif
 
 // 0 means not set
 // 1 means use faster, hard-coded UTF-8 decode/encoder
@@ -15,6 +20,7 @@
 int qio_glocale_utf8 = 0;
 
 void qio_set_glocale(void) {
+#ifdef HAS_WCTYPE_H
   char* codeset = nl_langinfo(CODESET);
 
   if( 0 == strcmp(codeset, "UTF-8") ) {
@@ -25,8 +31,17 @@ void qio_set_glocale(void) {
   } else {
     qio_glocale_utf8 = QIO_GLOCALE_OTHER;
   }
-
+#else
+  qio_glocale_utf8 = QIO_GLOCALE_ASCII;
+#endif
 }
+
+#ifndef HAS_WCTYPE_H
+static int towlower(int wc) { return tolower(wc); }
+static int iswprint(int wc) { return isprint(wc); }
+static int iswspace(int wc) { return isspace(wc); }
+#endif
+
 
 err_t qio_channel_read_uvarint(const int threadsafe, qio_channel_t* restrict ch, uint64_t* restrict ptr) {
   err_t err = 0;
@@ -2374,10 +2389,6 @@ unlock:
 
 
 err_t _qio_channel_read_char_slow_unlocked(qio_channel_t* restrict ch, int32_t* restrict chr) {
-  mbstate_t ps;
-  size_t got=0;
-  char mb;
-  wchar_t tmp_chr;
   err_t err=0;
   int32_t gotch;
   uint32_t codepoint=0, state;
@@ -2488,6 +2499,12 @@ err_t _qio_channel_read_char_slow_unlocked(qio_channel_t* restrict ch, int32_t* 
       err = 0;
     }
   } else {
+#ifdef HAS_WCTYPE_H
+    mbstate_t ps;
+    size_t got=0;
+    char mb;
+    wchar_t tmp_chr;
+
     // Use C functions, probably not UTF-8.
     memset(&ps, 0, sizeof(mbstate_t));
 
@@ -2544,6 +2561,9 @@ err_t _qio_channel_read_char_slow_unlocked(qio_channel_t* restrict ch, int32_t* 
         }
       }
     }
+#else
+    err = ENOSYS;
+#endif
   }
 
   return err;
@@ -2575,8 +2595,6 @@ const char* qio_encode_to_string(int32_t chr)
 
 err_t _qio_channel_write_char_slow_unlocked(qio_channel_t* restrict ch, int32_t chr) {
   char mbs[MB_LEN_MAX];
-  mbstate_t ps;
-  size_t got;
   err_t err;
 
   if( qio_glocale_utf8 == QIO_GLOCALE_UTF8 ) {
@@ -2615,6 +2633,9 @@ err_t _qio_channel_write_char_slow_unlocked(qio_channel_t* restrict ch, int32_t 
   } else if( qio_glocale_utf8 == QIO_GLOCALE_ASCII ) {
     err = qio_channel_write_byte(false, ch, chr);
   } else {
+#ifdef HAS_WCTYPE_H
+    mbstate_t ps;
+    size_t got;
     memset(&ps, 0, sizeof(mbstate_t));
     got = wcrtomb(mbs, chr, &ps);
     if( got == (size_t) -1 ) {
@@ -2622,6 +2643,9 @@ err_t _qio_channel_write_char_slow_unlocked(qio_channel_t* restrict ch, int32_t 
     } else {
       err = qio_channel_write_amt(false, ch, mbs, got);
     }
+#else
+    err = ENOSYS;
+#endif
   }
 
   return err;

@@ -262,12 +262,8 @@ fixupDestructors() {
         if (field->type->destructor) {
           ClassType* fct = toClassType(field->type);
           INT_ASSERT(fct);
-          if (!isClass(fct) ||
-              fct->symbol->hasFlag(FLAG_SYNC) ||
-              fct->symbol->hasFlag(FLAG_SINGLE)) {
-            bool useRefType = !isRefCountedType(fct) &&
-              !fct->symbol->hasFlag(FLAG_SYNC) &&
-              !fct->symbol->hasFlag(FLAG_SINGLE);
+          if (!isClass(fct) || isSyncType(fct)) {
+            bool useRefType = !isRefCountedType(fct) && !isSyncType(fct);
             VarSymbol* tmp = newTemp("_field_destructor_tmp_", useRefType ? fct->refType : fct);
             fn->insertBeforeReturnAfterLabel(new DefExpr(tmp));
             fn->insertBeforeReturnAfterLabel(new CallExpr(PRIM_MOVE, tmp,
@@ -296,8 +292,7 @@ fixupDestructors() {
             //  field is copied in the autocopy.  The corresponding
             //  autodestroys may delete the data twice.
             //
-            if ((fct->symbol->hasFlag(FLAG_SYNC) ||
-                 fct->symbol->hasFlag(FLAG_SINGLE)) &&
+            if (isSyncType(fct) &&
                 ((ct->getModule()->modTag==MOD_INTERNAL) ||
                  (ct->getModule()->modTag==MOD_STANDARD)))
               fn->insertBeforeReturnAfterLabel(new CallExpr(PRIM_CHPL_FREE, tmp));

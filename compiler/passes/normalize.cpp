@@ -54,10 +54,21 @@ void normalize(void) {
       call->insertBefore(new DefExpr(tmp));
       call->insertBefore(new CallExpr(PRIM_MOVE, tmp, call->get(1)->remove()));
       call->insertBefore(new CallExpr("~chpl_destroy", gMethodToken, tmp));
-      if (call->numActuals() > 0)
-        call->insertBefore(new CallExpr(PRIM_CHPL_FREE, tmp, call->get(1)->remove()));
-      else
-        call->insertBefore(new CallExpr(PRIM_CHPL_FREE, tmp));
+
+      CallExpr* freeExpr = (call->numActuals() > 0) ?
+        new CallExpr(PRIM_CHPL_FREE, tmp, call->get(1)->remove()) :
+        new CallExpr(PRIM_CHPL_FREE, tmp);
+      if (fLocal) {
+        call->insertBefore(freeExpr);
+      } else {
+        //
+        // if compiling for multiple locales, we need to be sure that the
+        // delete is executed on the locale on which the object lives for
+        // correctness sake.
+        //
+        BlockStmt* onStmt = buildOnStmt(new SymExpr(tmp), freeExpr);
+        call->insertBefore(onStmt);
+      }
       call->remove();
     }
   }

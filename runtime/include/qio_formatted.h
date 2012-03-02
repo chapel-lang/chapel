@@ -15,6 +15,11 @@
 #include <wchar.h>
 #include <assert.h>
 
+#ifdef __MTA__
+// no wide character support
+#else
+#define HAS_WCTYPE_H
+#endif
 
 #include "qio_style.h"
 
@@ -477,6 +482,7 @@ int qio_nbytes_char(int32_t chr)
       return 1;
     }
   } else {
+#ifdef HAS_WCTYPE_H
     mbstate_t ps;
     size_t got;
     memset(&ps, 0, sizeof(mbstate_t));
@@ -486,6 +492,9 @@ int qio_nbytes_char(int32_t chr)
     } else {
       return got;
     }
+#else
+    return 0;
+#endif
   }
   return 0;
 }
@@ -522,6 +531,7 @@ err_t qio_encode_char_buf(char* dst, int32_t chr)
       *(unsigned char*)dst = (unsigned char) chr;
     }
   } else {
+#ifdef HAS_WCTYPE_H
     mbstate_t ps;
     size_t got;
     memset(&ps, 0, sizeof(mbstate_t));
@@ -531,6 +541,9 @@ err_t qio_encode_char_buf(char* dst, int32_t chr)
     } else {
       *dst += got;
     }
+#else
+    err = ENOSYS;
+#endif
   }
   return err;
 }
@@ -581,6 +594,7 @@ err_t qio_decode_char_buf(int32_t* restrict chr, int* restrict nbytes, const cha
       }
     }
   } else {
+#ifdef HAS_WCTYPE_H
     mbstate_t ps;
     size_t got;
     wchar_t wch = 0;
@@ -609,6 +623,9 @@ err_t qio_decode_char_buf(int32_t* restrict chr, int* restrict nbytes, const cha
       *nbytes = got;
       return 0;
     }
+#else
+    return ENOSYS;
+#endif
   }
   assert(0);
   return EILSEQ; // this should never be reached.

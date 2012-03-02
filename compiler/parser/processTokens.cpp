@@ -116,41 +116,42 @@ void processSingleLineComment(void) {
 
 
 void processMultiLineComment(void) {
-  register int c;
-          
+  int c;
+  int lastc;
+  int depth;
+
+  c = 0;
+  lastc = 0;
+  depth = 1;
+
   newString();
   countCommentLine();
-  while (1) {
-    while ((c = getNextYYChar()) != '*' && c != 0) {
-      if (c == '\n') {
-        countMultiLineComment(stringBuffer);
-        processNewline();
-        newString();
-        countCommentLine();
-      } else {
-        addChar(c);
-      }
-    }    /* eat up text of comment */
-    
-    if ( c == '*' ) {
-      while ( (c = getNextYYChar()) == '*' ) {
-        addChar(c);
-      }
-      if ( c == '/' ) {
-        countMultiLineComment(stringBuffer);
-        newString();
-        break;    /* found the end */
-      } else if (c == '\n') {
-        countMultiLineComment(stringBuffer);
-        processNewline();
-        newString();
-        countCommentLine();
-      }
-    } else {      // c == EOF
+  
+  while (depth > 0) {
+    lastc = c;
+    c = getNextYYChar();
+    if( c == '\n' ) {
+      countMultiLineComment(stringBuffer);
+      processNewline();
+      newString();
+      countCommentLine();
+    } else {
+      addChar(c);
+    }
+    if( lastc == '*' && c == '/' ) { // close comment
+      depth--;
+    } else if( lastc == '/' && c == '*' ) { // start nested
+      depth++;
+    } else if( c == 0 ) {
       yyerror( "EOF in comment" );
-      break;
     }
   }
+
+  // back up two to not print */ again.
+  if( stringLen >= 2 ) stringLen -= 2;
+  stringBuffer[stringLen] = '\0';
+  countMultiLineComment(stringBuffer);
+  newString();
 }
 
 

@@ -18,7 +18,7 @@ extern proc chpl_cstderr():_file;
 extern proc chpl_cnullfile():_file;
 
 // system error number.
-extern type err_t; // = c_int;
+extern type err_t; // = c_int, opaque so we can manually override ==,!=,etc
 
 // system file descriptor.
 extern type fd_t = c_int;

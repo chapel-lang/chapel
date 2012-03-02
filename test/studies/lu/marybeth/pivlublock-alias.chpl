@@ -121,7 +121,7 @@ iter IterateByBlocks(D:range,blksize) {
   
 proc initA(A,filename:string){
 
-  var Adat = open(filename, mode.r).reader();
+  var Adat = open(filename, iomode.r).reader();
 
   for ij in A.domain {
     Adat.read(A(ij));

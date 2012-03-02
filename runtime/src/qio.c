@@ -40,7 +40,11 @@
 
 ssize_t qio_too_small_for_default_mmap = 16*1024;
 ssize_t qio_too_large_for_default_mmap = 64*1024*((size_t)1024*1024);
-ssize_t qio_mmap_chunk_iobufs = 1024; // we mmap 1024 iobufs at a time (64M)
+ssize_t qio_mmap_chunk_iobufs = 128; // mmap 128 iobufs at a time (8M)
+
+// Future - possibly set this based on ulimit?
+ssize_t qio_initial_mmap_max = 8*1024*1024;
+bool qio_allow_default_mmap = true;
 
 #ifdef _chplrt_H_
 err_t qio_lock(qio_lock_t* x) {
@@ -363,7 +367,7 @@ err_t qio_recv(fd_t sockfd, qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t
 
   memset(&msg, 0, sizeof(struct msghdr));
   if( src_addr_out ) {
-    msg.msg_name = &src_addr_out->addr;
+    msg.msg_name = (void*) &src_addr_out->addr;
     msg.msg_namelen = src_addr_out->len;
   }
   msg.msg_iov = iov;
@@ -422,7 +426,7 @@ err_t qio_send(fd_t sockfd, qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t
 
   memset(&msg, 0, sizeof(struct msghdr));
   if( dst_addr ) {
-    msg.msg_name = (struct sockaddr*) &dst_addr->addr;
+    msg.msg_name = (void*) &dst_addr->addr;
     msg.msg_namelen = dst_addr->len;
   }
   msg.msg_iov = iov;
@@ -469,8 +473,9 @@ qio_hint_t choose_io_method(qio_fdflag_t fdflags, qio_hint_t hints, qio_hint_t d
         else if( hints & QIO_HINT_CACHED ) method = QIO_METHOD_MMAP;
         else {
           // default case
-          if( !writing &&
-              qio_too_small_for_default_mmap < file_size &&
+          if( qio_allow_default_mmap && (!writing) &&
+              qio_too_small_for_default_mmap <= file_size &&
+              file_size < SSIZE_MAX &&
               file_size < qio_too_large_for_default_mmap &&
               (qbytes_iobuf_size & 4095) == 0) {
             // not writing, not too small, not too big, iobuf size multiple of 4k.
@@ -550,9 +555,48 @@ err_t qio_fadvise_for_hints(qio_file_t* file)
 #endif
   }
 
+  return 0;
+}
+
+static
+err_t qio_madvise_for_hints(void* data, int64_t len, qio_hint_t hints)
+{
+  int advice = 0;
+  err_t err;
+
+#ifdef POSIX_MADV_RANDOM
+  if( hints & QIO_HINT_RANDOM ) advice |= POSIX_MADV_RANDOM;
+#endif
+#ifdef POSIX_MADV_SEQUENTIAL
+  if( hints & QIO_HINT_SEQUENTIAL ) advice |= POSIX_MADV_SEQUENTIAL;
+#endif
+#ifdef POSIX_MADV_WILLNEED
+  if( hints & QIO_HINT_CACHED ) advice |= POSIX_MADV_WILLNEED;
+#endif
+
+  if( advice == 0 ) err = 0; // do nothing.
+  else err = sys_posix_madvise(data, len, advice);
+
+  return err;
+}
+
+static
+err_t qio_mmap_initial(qio_file_t* file)
+{
+  int64_t len = file->initial_length;
+  int do_mmap_initial = 0;
+  err_t err;
+
   // now, if we're using mmap, go ahead and map the file.
-  if( (file->hints & QIO_METHODMASK) == QIO_METHOD_MMAP &&
-      len > 0 ) {
+  // note that here file->hints might be the result of choose_io_method.
+  if( (file->hints & QIO_METHODMASK) == QIO_METHOD_MMAP ) {
+    if( (file->hints & QIO_HINT_PARALLEL) ||
+        (len > 0 && len <= qio_initial_mmap_max) ) {
+      do_mmap_initial = 1;
+    }
+  }
+
+  if( do_mmap_initial ) {
     void* data;
     int prot = PROT_READ;
     int populate = 0;
@@ -571,14 +615,17 @@ err_t qio_fadvise_for_hints(qio_file_t* file)
     err = sys_mmap(NULL, len, prot, MAP_SHARED|populate, file->fd, 0, &data);
     if( err ) return err;
 
-    // TODO -- run madvise/posix_madvise
-    
+    err = qio_madvise_for_hints(data, len, file->hints);
+    if( err ) {
+      sys_munmap(data, len);
+      return err;
+    }
+ 
     err = qbytes_create_generic(&file->mmap, data, len, qbytes_free_munmap);
     if( err ) {
       sys_munmap(data, len);
       return err;
     }
-
   }
 
   return 0;
@@ -595,6 +642,7 @@ err_t qio_file_init(qio_file_t** file_out, FILE* fp, fd_t fd, qio_hint_t iohints
   qio_file_t* file = NULL;
   struct stat stats;
   off_t seek_ret;
+  qio_chtype_t hinted_type;
 
   if( fp ) {
     fd = fileno(fp);
@@ -653,6 +701,9 @@ err_t qio_file_init(qio_file_t** file_out, FILE* fp, fd_t fd, qio_hint_t iohints
   file->fdflags = fdflags;
   file->initial_length = initial_length;
   file->initial_pos = initial_pos;
+
+  hinted_type = (iohints & QIO_METHODMASK);
+
   file->hints = choose_io_method(fdflags, iohints, 0, initial_length,
                                  (fdflags & QIO_FDFLAG_READABLE) > 0,
                                  (fdflags & QIO_FDFLAG_WRITEABLE) > 0,
@@ -666,8 +717,11 @@ err_t qio_file_init(qio_file_t** file_out, FILE* fp, fd_t fd, qio_hint_t iohints
   err = qio_fadvise_for_hints(file);
   if( err ) goto error;
 
+  err = qio_mmap_initial(file);
+  if( err ) goto error;
+
   // put file->hints back to DEFAULT if that's what we started with.
-  if( (iohints & QIO_METHODMASK) == QIO_METHOD_DEFAULT ) {
+  if( hinted_type == QIO_METHOD_DEFAULT ) {
     file->hints &= ~QIO_METHODMASK; // clear the method.
     file->hints |= QIO_METHOD_DEFAULT;
   }
@@ -1688,8 +1742,7 @@ err_t _buffered_get_mmap(qio_channel_t* ch, int64_t amt_in, int writing)
   }
 
   // round start down to page size.
-  err = sys_sysconf(_SC_PAGESIZE, &pagesize);
-  if( err ) return err;
+  pagesize = sys_page_size();
 
   start = qbuffer_end(&ch->buf);
 
@@ -1856,6 +1909,9 @@ err_t _buffered_read_atleast(qio_channel_t* ch, int64_t amt)
 static
 err_t _qio_flush_bits_if_needed_unlocked(qio_channel_t* restrict ch)
 {
+#ifdef __MTA__
+  return 0; // for some reason the code here doesn't compile!
+#else
   err_t err = 0;
   int keep_bytes = 0;
   qio_bitbuffer_t part_one_bits_be;
@@ -1904,6 +1960,7 @@ err_t _qio_flush_bits_if_needed_unlocked(qio_channel_t* restrict ch)
   }
 
   return err;
+#endif
 }
 
 
@@ -2484,36 +2541,44 @@ int _use_buffered(qio_channel_t* ch, ssize_t len)
  */
 err_t _qio_slow_write(qio_channel_t* ch, const void* ptr, ssize_t len, ssize_t* amt_written)
 {
+  err_t ret;
+
   *amt_written = 0;
 
   if( ! (ch->flags & QIO_FDFLAG_WRITEABLE ) ) {
     return EINVAL;
   }
 
+  ret = EINVAL;
+
   if( _use_buffered(ch, len) ) {
-    return _qio_buffered_write(ch, ptr, len, amt_written);
+    ret = _qio_buffered_write(ch, ptr, len, amt_written);
   } else {
-    return _qio_unbuffered_write(ch, ptr, len, amt_written);
+    ret = _qio_unbuffered_write(ch, ptr, len, amt_written);
   }
 
-  return EINVAL;
+  return ret;
 }
 
 err_t _qio_slow_read(qio_channel_t* ch, void* ptr, ssize_t len, ssize_t* amt_read)
 {
+  err_t ret;
+
   *amt_read = 0;
 
   if( ! (ch->flags & QIO_FDFLAG_READABLE ) ) {
     return EINVAL;
   }
 
+  ret = EINVAL;
+
   if( _use_buffered(ch, len) ) {
-    return _qio_buffered_read(ch, ptr, len, amt_read);
+    ret = _qio_buffered_read(ch, ptr, len, amt_read);
   } else {
-    return _qio_unbuffered_read(ch, ptr, len, amt_read);
+    ret = _qio_unbuffered_read(ch, ptr, len, amt_read);
   }
 
-  return EINVAL;
+  return ret;
 }
 
 // Only returns locking errors (ie when threadsafe=true).
@@ -3121,14 +3186,14 @@ void _qio_channel_write_bits_cached_realign(qio_channel_t* restrict ch, uint64_t
 
   // Remove junk from the top of tmp_bits, so only bottom tmp_live bits are set.
   if( 0 < tmp_live && tmp_live < 8*sizeof(qio_bitbuffer_t) ) {
-    mask = -1;
+    mask = (qio_bitbuffer_t) -1;
     mask >>= (8*sizeof(qio_bitbuffer_t) - tmp_live);
   } else if( tmp_live == 0 ) {
     // no live bits.
     mask = 0;
   } else {
     // tmp_live == bit size of bitbuffer.
-    mask = -1;
+    mask = (qio_bitbuffer_t) -1;
   }
   tmp_bits &= mask;
 

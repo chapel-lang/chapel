@@ -4,6 +4,7 @@
 #include "qbuffer.h"
 
 #include <limits.h>
+#include <stdint.h>
 
 #define QIO_NATIVE 1
 #define QIO_BIG 2
@@ -157,7 +158,7 @@ void qio_style_init_default(qio_style_t* s)
   s->str_style = -10;
 
   s->min_width = 1;
-  s->max_width = UINT_MAX;
+  s->max_width = UINT32_MAX;
 
   s->string_start = '\"';
   s->string_end = '\"';

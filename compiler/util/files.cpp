@@ -483,7 +483,7 @@ void codegen_makefile(fileinfo* mainfile, fileinfo *gpusrcfile) {
   if (developer && saveCDir[0] && !printCppLineno) {
     fprintf(makefile.fptr,
             "-@which $(CHPL_TAGS_UTIL) > /dev/null 2>&1 && "
-            "test -f $(CHAPEL_MAKE_HOME)/runtime/$(CHPL_TAGS_FILE) && "
+            "test -f $(CHPL_MAKE_HOME)/runtime/$(CHPL_TAGS_FILE) && "
             "cd %s && "
             "cp $(CHPL_MAKE_HOME)/runtime/$(CHPL_TAGS_FILE) . && "
             "$(CHPL_TAGS_UTIL) $(CHPL_TAGS_FLAGS) $(CHPL_TAGS_APPEND_FLAG) *.c *.h",
@@ -503,7 +503,17 @@ void codegen_makefile(fileinfo* mainfile, fileinfo *gpusrcfile) {
   for (int i=0; i<numLibFlags; i++)
     fprintf(makefile.fptr, " %s", libFlag[i]);
   fprintf(makefile.fptr, "\n");
+
+  // MPF - we want to allow the runtime to make use of debug/optimize information
+  if (debugCCode) {
+    fprintf(makefile.fptr, "DEBUG = 1\n");
+  }
+  if (optimizeCCode) {
+    fprintf(makefile.fptr, "OPTIMIZE = 1\n");
+  }
   fprintf(makefile.fptr, "\n");
+  fprintf(makefile.fptr, "\n");
+
   if (!fLibraryCompile) {
     fprintf(makefile.fptr, "include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.exe\n");
   } else {

@@ -53,7 +53,7 @@
 use SysBasic;
 use Error;
 
-enum mode {
+enum iomode {
   r = 1,
   w = 2,
   rw = 3,
@@ -71,38 +71,40 @@ enum iokind {
   big = 2, /* aka "network" */
   little = 3
 }
-param dynamic = iokind.dynamic;
-param native = iokind.native;
-param big = iokind.big;
-param little = iokind.little;
+param iodynamic = iokind.dynamic;
+param ionative = iokind.native;
+param iobig = iokind.big;
+param iolittle = iokind.little;
 
-enum style {
-  string1bLen = -1,
-  string2bLen = -2,
-  string4bLen = -4,
-  string8bLen = -8,
-  stringVarbLen = -10,
-  stringNullTerm = -0x0100
+
+enum iostringstyle {
+  len1b_data = -1,
+  len2b_data = -2,
+  len4b_data = -4,
+  len8b_data = -8,
+  lenVb_data = -10,
+  data_null = -0x0100,
 }
 proc stringStyleTerminated(terminator:uint(8)) {
-  return -(0x0100:int(64) + terminator);
+  return -(terminator - iostringstyle.data_null);
 }
 proc stringStyleNullTerminated() {
-  return stringStyleTerminated(0);
+  return iostringstyle.data_null;
 }
 proc stringStyleExactLen(len:int(64)) {
   return len;
 }
 proc stringStyleWithVariableLength() {
-  return -10;
+  return iostringstyle.lenVb_data;
 }
 proc stringStyleWithLength(lengthBytes:int) {
-  var x = style.stringVarbLen;
+  var x = iostringstyle.lenVb_data;
   select lengthBytes {
-    when 1 do x = -1;
-    when 2 do x = -2;
-    when 4 do x = -4;
-    when 8 do x = -8;
+    when 0 do x = iostringstyle.lenVb_data;
+    when 1 do x = iostringstyle.len1b_data;
+    when 2 do x = iostringstyle.len2b_data;
+    when 4 do x = iostringstyle.len4b_data;
+    when 8 do x = iostringstyle.len8b_data;
     otherwise halt("Unhandled string length prefix size");
   }
   return x;
@@ -129,12 +131,14 @@ extern const QIO_HINT_SEQUENTIAL:c_int;
 extern const QIO_HINT_LATENCY:c_int;
 extern const QIO_HINT_BANDWIDTH:c_int;
 extern const QIO_HINT_CACHED:c_int;
+extern const QIO_HINT_PARALLEL:c_int;
 extern const QIO_HINT_DIRECT:c_int;
 extern const QIO_HINT_NOREUSE:c_int;
 
-const HINT_CACHED = QIO_HINT_CACHED;
 const HINT_RANDOM = QIO_HINT_RANDOM;
 const HINT_SEQUENTIAL = QIO_HINT_SEQUENTIAL;
+const HINT_CACHED = QIO_HINT_CACHED;
+const HINT_PARALLEL = QIO_HINT_PARALLEL;
 
 extern type qio_file_ptr_t;
 extern const QIO_FILE_PTR_NULL:qio_file_ptr_t;
@@ -405,7 +409,9 @@ extern type fdflag_t = c_int;
   QIO_HINT_NOREUSE
 }
 */
-extern type iohint_t = c_int;
+
+extern type iohints = c_int;
+type ioerr = err_t;
 
 inline
 proc _current_locale():int {
@@ -425,9 +431,9 @@ enum FileAccessMode { read, write };
 param _oldioerr="This program is using old-style I/O which is no longer supported.\n" +
                 "See doc/README.io.\n" +
                 "You'll probably want something like:\n" +
-                "var f = open(filename, mode.w).writer()\n" + 
+                "var f = open(filename, iomode.w).writer()\n" + 
                 "or\n" + 
-                "var f = open(filename, mode.r).reader()\n";
+                "var f = open(filename, iomode.r).reader()\n";
 
 // This file constructor exists to throw an error for old I/O code.
 proc file.file(filename:string="",
@@ -548,7 +554,7 @@ proc file.fsync(out error:err_t) {
 }
 proc file.fsync() {
   var err:err_t = ENOERR;
-  this.fsync();
+  this.fsync(err);
   if err then ioerror(err, "in file.fsync", this.tryGetPath());
 }
 
@@ -593,37 +599,37 @@ const _rw  = "r+";
 const _w = "w";
 const _wr = "w+";
 
-proc _modestring(m:mode) {
+proc _modestring(m:iomode) {
   select m {
-    when mode.r do return _r;
-    when mode.rw do return _rw;
-    when mode.w do return _w;
-    when mode.wr do return _wr;
+    when iomode.r do return _r;
+    when iomode.rw do return _rw;
+    when iomode.w do return _w;
+    when iomode.wr do return _wr;
     otherwise halt("Invalid mode");
   }
 }
 
-proc open(path:string, m:mode, out error:err_t, hints:iohint_t=0, style:iostyle = defaultStyle()):file {
+proc open(out error:err_t, path:string, m:iomode, hints:iohints=0, style:iostyle = defaultStyle()):file {
   var local_style = style;
   var ret:file;
   ret.home_uid = _current_locale();
   error = qio_file_open_access(ret._file_internal, path, _modestring(m), hints, local_style);
   return ret;
 }
-proc open(path:string, m:mode, hints:iohint_t=0, style:iostyle = defaultStyle()):file {
+proc open(path:string, m:iomode, hints:iohints=0, style:iostyle = defaultStyle()):file {
   var err:err_t = ENOERR;
-  var ret = open(path, m, err, hints, style);
+  var ret = open(err, path, m, hints, style);
   if err then ioerror(err, "in open", path);
   return ret;
 }
-proc openfd(fd: fd_t, out error:err_t, hints:iohint_t=0, style:iostyle = defaultStyle()):file {
+proc openfd(fd: fd_t, out error:err_t, hints:iohints=0, style:iostyle = defaultStyle()):file {
   var local_style = style;
   var ret:file;
   ret.home_uid = _current_locale();
   error = qio_file_init(ret._file_internal, chpl_cnullfile(), fd, hints, local_style, 0);
   return ret;
 }
-proc openfd(fd: fd_t, hints:iohint_t=0, style:iostyle = defaultStyle()):file {
+proc openfd(fd: fd_t, hints:iohints=0, style:iostyle = defaultStyle()):file {
   var err:err_t = ENOERR;
   var ret = openfd(fd, err, hints, style);
   if err {
@@ -635,14 +641,14 @@ proc openfd(fd: fd_t, hints:iohint_t=0, style:iostyle = defaultStyle()):file {
   }
   return ret;
 }
-proc openfp(fp: _file, out error:err_t, hints:iohint_t=0, style:iostyle = defaultStyle()):file {
+proc openfp(fp: _file, out error:err_t, hints:iohints=0, style:iostyle = defaultStyle()):file {
   var local_style = style;
   var ret:file;
   ret.home_uid = _current_locale();
   error = qio_file_init(ret._file_internal, fp, -1, hints, local_style, 1);
   return ret;
 }
-proc openfp(fp: _file, hints:iohint_t=0, style:iostyle = defaultStyle()):file {
+proc openfp(fp: _file, hints:iohints=0, style:iostyle = defaultStyle()):file {
   var err:err_t = ENOERR;
   var ret = openfp(fp, err, hints, style);
   if err {
@@ -655,14 +661,14 @@ proc openfp(fp: _file, hints:iohint_t=0, style:iostyle = defaultStyle()):file {
   return ret;
 }
 
-proc opentmp(out error:err_t, hints:iohint_t=0, style:iostyle = defaultStyle()):file {
+proc opentmp(out error:err_t, hints:iohints=0, style:iostyle = defaultStyle()):file {
   var local_style = style;
   var ret:file;
   ret.home_uid = _current_locale();
   error = qio_file_open_tmp(ret._file_internal, hints, local_style);
   return ret;
 }
-proc opentmp(hints:iohint_t=0, style:iostyle = defaultStyle()):file {
+proc opentmp(hints:iohints=0, style:iostyle = defaultStyle()):file {
   var err:err_t = ENOERR;
   var ret = opentmp(err, hints, style);
   if err then ioerror(err, "in opentmp");
@@ -891,7 +897,7 @@ proc channel._set_style(style:iostyle) {
   }
 }
 
-proc file.reader(out error:err_t, param kind=iokind.dynamic, param locking=true, start:int(64) = 0, end:int(64) = max(int(64)), hints:c_int = 0, style:iostyle = this._style): channel(false, kind, locking) {
+proc file.reader(out error:err_t, param kind=iokind.dynamic, param locking=true, start:int(64) = 0, end:int(64) = max(int(64)), hints:iohints = 0, style:iostyle = this._style): channel(false, kind, locking) {
   check();
 
   var ret:channel(false, kind, locking);
@@ -900,7 +906,7 @@ proc file.reader(out error:err_t, param kind=iokind.dynamic, param locking=true,
   }
   return ret;
 }
-proc file.reader(param kind=iokind.dynamic, param locking=true, start:int(64) = 0, end:int(64) = max(int(64)), hints:c_int = 0, style:iostyle = this._style): channel(false, kind, locking) {
+proc file.reader(param kind=iokind.dynamic, param locking=true, start:int(64) = 0, end:int(64) = max(int(64)), hints:iohints = 0, style:iostyle = this._style): channel(false, kind, locking) {
   var err:err_t = ENOERR;
   var ret = this.reader(err, kind, locking, start, end, hints, style);
   if err then ioerror(err, "in file.reader", this.tryGetPath());
@@ -921,7 +927,7 @@ proc file.lines(out error:err_t, param locking:bool = true, start:int(64) = 0, e
   }
   return ret;
 }
-proc file.lines(param locking:bool = true, start:int(64) = 0, end:int(64) = max(int(64)), hints:c_int = 0, style:iostyle = this._style) {
+proc file.lines(param locking:bool = true, start:int(64) = 0, end:int(64) = max(int(64)), hints:iohints = 0, style:iostyle = this._style) {
   var err:err_t = ENOERR;
   var ret = this.lines(err, locking, start, end, hints, style);
   if err then ioerror(err, "in file.lines", this.tryGetPath());
@@ -929,7 +935,7 @@ proc file.lines(param locking:bool = true, start:int(64) = 0, end:int(64) = max(
 }
 
 
-proc file.writer(out error:err_t, param kind:iokind, param locking:bool, start:int(64), end:int(64), hints:c_int, style:iostyle): channel(true,kind,locking) {
+proc file.writer(out error:err_t, param kind=iokind.dynamic, param locking=true, start:int(64) = 0, end:int(64) = max(int(64)), hints:iohints = 0, style:iostyle = this._style): channel(true,kind,locking) {
   check();
 
   var ret:channel(true, kind, locking);
@@ -1186,9 +1192,9 @@ proc _read_one_internal(_channel_internal:qio_channel_ptr_t, param kind:iokind, 
     var byteorder:uint(8) = qio_channel_byteorder(_channel_internal);
     if binary {
       select byteorder {
-        when big    do e = _read_binary_internal(_channel_internal, big, x);
-        when little do e = _read_binary_internal(_channel_internal, little, x);
-        otherwise      e = _read_binary_internal(_channel_internal, native, x);
+        when iokind.big    do e = _read_binary_internal(_channel_internal, iokind.big, x);
+        when iokind.little do e = _read_binary_internal(_channel_internal, iokind.little, x);
+        otherwise             e = _read_binary_internal(_channel_internal, iokind.native, x);
       }
     } else {
       e = _read_text_internal(_channel_internal, x);
@@ -1216,9 +1222,9 @@ proc _write_one_internal(_channel_internal:qio_channel_ptr_t, param kind:iokind,
     var byteorder:uint(8) = qio_channel_byteorder(_channel_internal);
     if binary {
       select byteorder {
-        when big    do e = _write_binary_internal(_channel_internal, big, x);
-        when little do e = _write_binary_internal(_channel_internal, little, x);
-        otherwise      e = _write_binary_internal(_channel_internal, native, x);
+        when iokind.big    do e = _write_binary_internal(_channel_internal, iokind.big, x);
+        when iokind.little do e = _write_binary_internal(_channel_internal, iokind.little, x);
+        otherwise             e = _write_binary_internal(_channel_internal, iokind.native, x);
       }
     } else {
       e = _write_text_internal(_channel_internal, x);
@@ -1494,7 +1500,7 @@ proc channel.write(args ...?k,
     this._set_style(style);
     for param i in 1..k {
       if !error {
-        error = _write_one_internal(dynamic, args(i));
+        error = _write_one_internal(iokind.dynamic, args(i));
       }
     }
     this._set_style(save_style);

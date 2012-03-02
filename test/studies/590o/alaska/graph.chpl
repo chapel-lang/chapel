@@ -505,7 +505,7 @@ proc DFS(G){
 //
 proc readGraph(filename) {
   // Create and open  an input file with the specified filename in read (FileAccessMode.read) mode
-  var infile = open(filename, mode.r);
+  var infile = open(filename, iomode.r);
   var reader = infile.reader();
 
   // Read the number of nodes and edges

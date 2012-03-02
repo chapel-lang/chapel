@@ -20,6 +20,7 @@ $nolocal = 0;
 $combinedir = 0;
 $dist = "";
 $memleaks = "";
+$multilocale = 0;
 $svnrevopt = "";
 $startdate = "-1";
 
@@ -46,6 +47,9 @@ while (@ARGV) {
 	$allhellos = 1;
     } elsif ($flag eq "-examples") {
         $examples = 1;
+    } elsif ($flag eq "-multilocale") {
+        $examples = 1;
+        $multilocale = 1;
     } elsif ($flag eq "-performance") {
         $performance = 1;
     } elsif ($flag eq "-startdate") {
@@ -110,6 +114,7 @@ if ($printusage == 1) {
     print "\t-notest      : don't run the tests (check the build only)\n";
     print "\t-noruntime   : don't build the runtime or run the tests\n";
     print "\t-examples    : run the release/examples tests only\n";
+    print "\t-multilocale : run multilocale suite only\n";
     print "\t-hello       : run the release/examples/hello.chpl test only\n";
     print "\t-hellos      : run the release/examples/hello*.chpl tests only\n";
     print "\t-valgrind    : run tests in valgrind mode\n";
@@ -361,7 +366,11 @@ if ($valgrind == 1) {
     $morechars = "nolocal";
 } elsif ($examples == 1) {
     $threechars = "exm";
-    $morechars = "examples";
+    if ($multilocale == 1) {
+        $morechars = "multilocale-examples";
+    } else {
+        $morechars = "examples";
+    }
 } else {
     $threechars = "std";
     $morechars = "standard";
@@ -467,7 +476,7 @@ if ($buildruntime == 0) {
     $endtime = localtime;
     $shortstatus = "Passed";
 
-    $mailsubject = "$subjectid $shortstatus ($fullplatform)";
+    $mailsubject = "$subjectid ($fullplatform) $shortstatus";
     $mailcommand = "| $mailer -s \"$mailsubject \" $recipient";
     
     open(MAIL, $mailcommand);
@@ -515,10 +524,14 @@ if ($valgrind == 0) {
 #
 if ($examples == 1) {
     mysystem("cd $chapeldir && $make spectests", "making spec tests", 0, 1);
+    $testdirs = "release/examples";
+    if ($multilocale == 1) {
+        $testdirs .= " multilocale distributions";
+    }
     if ($parnodefile eq "") {
-        $testflags = "$testflags release/examples";
+        $testflags = "$testflags $testdirs";
     } else {
-        mysystem("cd $testdir && find release/examples -type d > DIRFILE", 
+        mysystem("cd $testdir && find $testdirs -wholename \"*.svn\" -prune -o -type d > DIRFILE", 
                  "making directory file", 1, 1);
         $testflags = "$testflags -dirfile DIRFILE";
     }
@@ -581,7 +594,7 @@ if ($runtests == 0) {
     $endtime = localtime;
     $shortstatus = "Passed";
 
-    $mailsubject = "$subjectid $shortstatus ($fullplatform)";
+    $mailsubject = "$subjectid ($fullplatform) $shortstatus";
     $mailcommand = "| $mailer -s \"$mailsubject \" $recipient";
     
     open(MAIL, $mailcommand);
@@ -655,21 +668,22 @@ if ($runtests == 0) {
     if ($status == 0) {
         $newfailures = `comm -13 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep -v "$futuremarker" | wc -l`; chomp($newfailures);
         $newresolved = `comm -23 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep -v "$futuremarker" | wc -l`; chomp($newresolved);
+        $newpassingfutures = `comm -13 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep "$futuremarker" | wc -l`; chomp($newpassingfutures);
         $passingfutures = `grep "$futuremarker" $sortedsummary | grep "Success" | wc -l`; chomp($passingfutures);
         $newfailures += 0;
-        $shortstatus = "$newfailures/$curfail";
+        $shortstatus = "$newfailures/$newpassingfutures/$curfail";
     } else {
         $shortstatus = "build/test failed";
     }
 
-    if ($newfailures == 0 && $newresolved == 0 && $passingfutures == 0) {
+    if ($newfailures == 0 && $newresolved == 0 && $newpassingfutures == 0) {
         print "Mailing to minimal group\n";
         $recipient = $nochangerecipient;
     } else {
         print "Mailing to everyone\n";
     }
 
-    $mailsubject = "$subjectid $shortstatus ($fullplatform)";
+    $mailsubject = "$subjectid ($fullplatform) $shortstatus";
     $mailcommand = "| $mailer -s \"$mailsubject \" $recipient";
     
     open(MAIL, $mailcommand);
@@ -680,38 +694,44 @@ if ($runtests == 0) {
     print MAIL endMailHeader();
     
     if ($status == 0) {
-        print MAIL "--- New Errors ($morechars) -----------------------------------------\n";
+        print MAIL "--- New Errors ($morechars) -------------------------------\n";
         print MAIL `comm -13 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep -v "$futuremarker"`;
         print MAIL "\n";
     }
     
     if ($status == 0) {
-        print MAIL "--- Resolved Errors ($morechars) ------------------------------------\n";
+        print MAIL "--- Resolved Errors ($morechars) --------------------------\n";
         print MAIL `comm -23 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep -v "$futuremarker"`;
         print MAIL "\n";
     }
     
     if ($status == 0) {
-        print MAIL "--- Passing Future tests ($morechars) -------------------------------\n";
-        print MAIL `grep "$futuremarker" $sortedsummary | grep "Success"`;
+        print MAIL "--- New Passing Future tests ($morechars) ---------------------\n";
+        print MAIL `comm -13 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep "$futuremarker" | grep "\\[Success"`;
         print MAIL "\n";    
     }
     
     if ($status == 0) {
-        print MAIL "--- Unresolved Errors ($morechars) ----------------------------------\n";
+        print MAIL "--- Passing Future tests ($morechars) ---------------------\n";
+        print MAIL `comm -12 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep "$futuremarker" | grep "\\[Success"`;
+        print MAIL "\n";    
+    }
+    
+    if ($status == 0) {
+        print MAIL "--- Unresolved Errors ($morechars) ------------------------\n";
         print MAIL `comm -12 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep -v "$futuremarker"`;
         print MAIL "\n";
     }
     
     if ($status == 0) {
-        print MAIL "--- New Failing Future tests ($morechars) ---------------------------\n";
-        print MAIL `comm -13 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep "$futuremarker" | grep "Error"`;
+        print MAIL "--- New Failing Future tests ($morechars) -----------------\n";
+        print MAIL `comm -13 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep "$futuremarker" | grep "\\[Error"`;
         print MAIL "\n";    
     }
     
     if ($status == 0) {
-        print MAIL "--- Unresolved Future tests ($morechars) ----------------------------\n";
-        print MAIL `comm -12 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep "$futuremarker" | grep "Error"`;
+        print MAIL "--- Unresolved Future tests ($morechars) ------------------\n";
+        print MAIL `comm -12 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep "$futuremarker" | grep "\\[Error"`;
         print MAIL "\n";    
     }
     
@@ -782,7 +802,7 @@ sub mysystem {
 	print "Error $_[1]: $status\n";
 
 	if ($mailmsg != 0) {
-            $mailsubject = "$subjectid Failure ($fullplatform)";
+            $mailsubject = "$subjectid ($fullplatform) Failure";
             $mailcommand = "| $mailer -s \"$mailsubject \" $recipient";
 
             print "Trying to mail message... using $mailcommand\n";

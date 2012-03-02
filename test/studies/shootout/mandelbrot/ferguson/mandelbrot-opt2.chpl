@@ -16,7 +16,7 @@ const cols = size / 8;
 proc main() {
 
   var datastart:int(64);
-  var f = open(outfile, mode.wr);
+  var f = open(outfile, iomode.wr);
   var writer = f.writer();
   writer.writeln("P4");
   writer.writeln(size, " ", size);
@@ -25,7 +25,7 @@ proc main() {
 
   forall ipart in 0..#size {
     var c_im:real = (upper.im - lower.im) * ipart / size + lower.im;
-    var writer = f.writer(kind=native, locking=false,
+    var writer = f.writer(kind=iokind.native, locking=false,
                           start=datastart+ipart*cols,
                           end=datastart+(ipart+1)*cols);
 

@@ -1160,7 +1160,8 @@ foreach test ($testlist)
             echo "[Starting $sub_test `date`]" |& $tee -a $logfile
 
             $sub_test "$compiler" |& $tee -a $logfile
-            if ($? != 0) then
+            set errcode = $?
+            if ($errcode != 0) then
                 echo "[Error running sub_test for $test]" |& $tee -a $logfile
             endif
 
@@ -1282,8 +1283,9 @@ foreach testType ($testTypes)
                         echo "[Starting $sub_test `date`]" |& $tee -a $logfile
                     
                         $sub_test "$compiler" |& $tee -a $logfile
-                        if ($? != 0) then
-                            echo "[Error running sub_test in $dir]" |& $tee -a $logfile
+                        set errcode = $?
+                        if ($errcode != 0) then
+                            echo "[Error running sub_test in $dir ($errcode)]" |& $tee -a $logfile
                         endif
                     endif
                 else

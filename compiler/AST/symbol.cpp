@@ -1298,6 +1298,28 @@ void resetTempID() {
   tempID = 1;
 }
 
+FlagSet getRecordWrappedFlags(Symbol* s) {
+  static FlagSet mask;
+  if (mask.none()) {
+    // Initialize the function-scope static variable.
+    mask.set(FLAG_ARRAY);
+    mask.set(FLAG_DOMAIN);
+    mask.set(FLAG_DISTRIBUTION);
+  }
+
+  return s->flags & mask;
+}
+
+FlagSet getSyncFlags(Symbol* s) {
+  static FlagSet mask;
+  if (mask.none()) {
+    mask.set(FLAG_SYNC);
+    mask.set(FLAG_SINGLE);
+  }
+
+  return s->flags & mask;
+}
+
 VarSymbol* newTemp(const char* name, Type* type) {
   if (!name) {
     if (localTempNames)

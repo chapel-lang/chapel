@@ -1,9 +1,9 @@
 
 config const testfile="test.bin";
-var f = open(testfile, mode.wr);
+var f = open(testfile, iomode.wr);
 
 {
-    var w = f.writer(kind=native);
+    var w = f.writer(kind=ionative);
 
     // Write 011
     w.writebits(0b011, 3);
@@ -12,7 +12,7 @@ var f = open(testfile, mode.wr);
 
 // Try reading it back the way we wrote it.
 {
-    var r = f.reader(kind=native);
+    var r = f.reader(kind=ionative);
     var tmp:uint(64);
 
     r.readbits(tmp, 3);

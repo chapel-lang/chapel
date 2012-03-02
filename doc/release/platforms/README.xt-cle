@@ -51,15 +51,7 @@ let us know at chapel_info@cray.com.
    launcher capabilities.
 
 
-4) If your Cray XT has compute nodes with varying numbers of cores,
-   you will need to select a number of cores per node using the
-   variable CHPL_LAUNCHER_CORES_PER_LOCALE.  For example, to use
-   quad-core nodes, you might use:
-
-     setenv CHPL_LAUNCHER_CORES_PER_LOCALE 4
-
-
-5) When using CHPL_LAUNCHER == pbs-aprun, you can optionally specify a
+4) When using CHPL_LAUNCHER == pbs-aprun, you can optionally specify a
    queue name using the environment variable CHPL_LAUNCHER_QUEUE.  For
    example:
 
@@ -76,7 +68,7 @@ let us know at chapel_info@cray.com.
    mechanisms above.
    
 
-6) Ensure that you have one of the following Programming Environment
+5) Ensure that you have one of the following Programming Environment
    modules loaded which will specify the C compiler used to compile
    Chapel programs for the compute nodes:
 
@@ -86,7 +78,7 @@ let us know at chapel_info@cray.com.
      - PrgEnv-pgi
 
 
-7) By default, g++ will be used to compile code that runs on the login
+6) By default, g++ will be used to compile code that runs on the login
    nodes, such as the Chapel compiler and launcher code.  Optionally,
    you can override this default by setting CHPL_HOST_COMPILER to one
    of the following values:
@@ -97,7 +89,7 @@ let us know at chapel_info@cray.com.
      pgi       : the PGI compiler suite -- pgcc and pgCC
 
 
-8) Make sure you're in the top-level chapel/ directory:
+7) Make sure you're in the top-level chapel/ directory:
 
      cd $CHPL_HOME
 
@@ -106,27 +98,27 @@ let us know at chapel_info@cray.com.
      gmake
 
 
-9) Set your PATH to include the directory $CHPL_HOME/bin/xe-cle
+8) Set your PATH to include the directory $CHPL_HOME/bin/xe-cle
    which is created when you build the compiler.  For example:
 
      setenv PATH "$PATH":"$CHPL_HOME/bin/xe-cle"
 
 
-10) Compile your Chapel program as usual.  See README.compiling for
+9)  Compile your Chapel program as usual.  See README.compiling for
     details.  For example:
 
       chpl -o hello6-taskpar-dist $CHPL_HOME/examples/hello6-taskpar-dist.chpl
 
 
-11) When you compile a Chapel program for the Cray XT, you should see
-    two binaries (e.g., hello6-taskpar-dist and hello6-taskpar-dist_real).  The
-    first binary contains code to launch the Chapel program onto the
+10) When you compile a Chapel program for the Cray XT, you should see
+    two binaries (e.g., hello6-taskpar-dist and hello6-taskpar-dist_real).
+    The first binary contains code to launch the Chapel program onto the
     compute nodes, as specified by your CHPL_LAUNCHER setting.  The
     second contains the program code itself; it is not intended to be
     executed directly from the shell prompt.
 
 
-12) Multi-locale executions require the number of locales to be
+11) Multi-locale executions require the number of locales to be
     specified on the command line.  Other than this, execute your
     Chapel program as usual.  For example:
 
@@ -134,6 +126,14 @@ let us know at chapel_info@cray.com.
 
    You can use the -v flag to see the commands used to launch your
    program.  See README.launcher for further details.
+
+
+12) If your Cray XT has compute nodes with varying numbers of cores,
+    you can request nodes with at least a certain number of cores
+    using the variable CHPL_LAUNCHER_CORES_PER_LOCALE.  For example,
+    to request quad-core nodes, you might use:
+
+      setenv CHPL_LAUNCHER_CORES_PER_LOCALE 4
 
 
 -----------------------------------------

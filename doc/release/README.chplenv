@@ -210,7 +210,7 @@ Optional Settings
         default  : use the standard C malloc/free commands
         dlmalloc : use Doug Lea's memory allocation package
 
-   If unset, CHPL_COMM defaults to "default" unless CHPL_COMM is
+   If unset, CHPL_MEM defaults to "default" unless CHPL_COMM is
    gasnet and you are using the fast or large segments.  See
    README.multilocale for more information on GASNet segments.
 

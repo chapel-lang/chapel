@@ -88,31 +88,3 @@ void chpl_mem_layerActualSharedHeap(void** addr_p, size_t* size_p)
 }
 
 
-void* chpl_mem_layerAlloc(size_t size,
-                          int32_t lineno, chpl_string filename)
-{
-  if (!heapInitialized)
-    chpl_error("chpl_mem_allocMany called before the heap is initialized",
-               lineno, filename);
-  return tc_malloc(size);
-}
-
-
-void* chpl_mem_layerRealloc(void* memAlloc, size_t newChunk,
-                            int32_t lineno, chpl_string filename)
-{
-  if (!heapInitialized)
-    chpl_error("chpl_mem_realloc called before the heap is initialized",
-               lineno, filename);
-  return tc_realloc(memAlloc, newChunk);
-}
-
-
-void chpl_mem_layerFree(void* memAlloc,
-                        int32_t lineno, chpl_string filename)
-{
-  if (!heapInitialized)
-    chpl_error("chpl_mem_free called before the heap is initialized",
-               lineno, filename);
-  tc_free(memAlloc);
-}

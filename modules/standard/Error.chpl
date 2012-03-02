@@ -29,3 +29,11 @@ proc ioerror(syserr:err_t, msg:string, path:string, offset:int(64))
   __primitive("chpl_error", "Unhandled system error: " + errstr + " (" + (syserr:int(32)):string + ") " + msg + " with path " + path + " offset " + offset:string);
 }
 
+
+proc errorToString(syserr:err_t):string
+{
+  var errstr:string = "unknown";
+  var strerror_err:err_t = ENOERR;
+  errstr = sys_strerror_str(syserr, strerror_err); 
+  return errstr;
+}

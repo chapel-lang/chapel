@@ -10,7 +10,7 @@ config var block = 2;
 proc main() {
 
   // Open the input file, read in the array size, ensure it's square
-  var infile = open(inputfile, mode.r).reader();
+  var infile = open(inputfile, iomode.r).reader();
   const m = infile.read(int),
         n = infile.read(int);
   if (m != n) then halt("Input matrix must be square");

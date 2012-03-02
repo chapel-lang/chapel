@@ -50,8 +50,6 @@ system("cd $tmpdir && svn export -q $svnroot $reldir");
        "compiler/passes/reservedSymbolNames",
        "etc/README",
        "man/man1/chpl.1",
-       "third-party/Makefile",
-       "third-party/README",
        "util/README",
        "util/printchplenv",
        "util/setchplenv.bash",
@@ -123,6 +121,9 @@ system("cd runtime/src/launch && rm -r mpirun");
 system("cd runtime/src/launch && rm -r zebra");
 system("cd runtime/include && rm -r sunos_old");
 system("cd third-party && rm -rf txt2man");
+
+print "Removing third-party directories that are not intended for release...\n";
+system("cd third-party && rm *.devel*");
 
 chdir "$tmpdir";
 

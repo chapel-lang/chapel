@@ -867,8 +867,7 @@ canCoerce(Type* actualType, Symbol* actualSym, Type* formalType, FnSymbol* fn, b
         (get_width(actualType) < get_width(formalType)))
       return true;
   }
-  if (actualType->symbol->hasFlag(FLAG_SYNC) ||
-      actualType->symbol->hasFlag(FLAG_SINGLE)) {
+  if (isSyncType(actualType)) {
     Type* baseType = actualType->getField("base_type")->type;
     return canDispatch(baseType, NULL, formalType, fn, promotes);
   }
@@ -2400,11 +2399,8 @@ insertFormalTemps(FnSymbol* fn) {
       Type* formalType = formal->type->getValType();
       if ((formal->intent == INTENT_BLANK ||
            formal->intent == INTENT_CONST) &&
-          !formalType->symbol->hasFlag(FLAG_SYNC) &&
-          !formalType->symbol->hasFlag(FLAG_SINGLE) &&
-          !formalType->symbol->hasFlag(FLAG_DISTRIBUTION) &&
-          !formalType->symbol->hasFlag(FLAG_DOMAIN) &&
-          !formalType->symbol->hasFlag(FLAG_ARRAY))
+          !isSyncType(formalType) &&
+          !isRefCountedType(formalType))
         tmp->addFlag(FLAG_CONST);
       formals2vars.put(formal, tmp);
     }
@@ -2436,13 +2432,10 @@ insertFormalTemps(FnSymbol* fn) {
         tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
       } else {
         TypeSymbol* ts = formal->type->symbol;
-        if (!ts->hasFlag(FLAG_ARRAY) &&
-            !ts->hasFlag(FLAG_DOMAIN) &&
-            !ts->hasFlag(FLAG_DISTRIBUTION) &&
+        if (!getRecordWrappedFlags(ts).any() &&
             !ts->hasFlag(FLAG_ITERATOR_CLASS) &&
             !ts->hasFlag(FLAG_ITERATOR_RECORD) &&
-            !ts->hasFlag(FLAG_SYNC) &&
-            !ts->hasFlag(FLAG_SINGLE) &&
+            !getSyncFlags(ts).any() &&
             !ts->hasFlag(FLAG_REF)) {
           fn->insertAtHead(new CallExpr(PRIM_MOVE, tmp, new CallExpr("chpl__autoCopy", formal)));
           // WORKAROUND:
@@ -5040,7 +5033,7 @@ static void insertRuntimeTypeTemps() {
 static void resolveAutoCopies() {
   forv_Vec(TypeSymbol, ts, gTypeSymbols) {
     if ((isRecord(ts->type) ||
-         (ts->hasFlag(FLAG_SYNC) || ts->hasFlag(FLAG_SINGLE))) &&
+         getSyncFlags(ts).any()) &&
         !ts->hasFlag(FLAG_GENERIC) &&
         !ts->hasFlag(FLAG_SYNTACTIC_DISTRIBUTION)) {
       resolveAutoCopy(ts->type);
@@ -5261,10 +5254,8 @@ static void insertReturnTemps() {
             DefExpr* def = new DefExpr(tmp);
             call->insertBefore(def);
             if ((fn->retType->getValType() &&
-                 (fn->retType->getValType()->symbol->hasFlag(FLAG_SYNC) ||
-                  fn->retType->getValType()->symbol->hasFlag(FLAG_SINGLE))) ||
-                fn->retType->symbol->hasFlag(FLAG_SYNC) ||
-                fn->retType->symbol->hasFlag(FLAG_SINGLE) ||
+                 isSyncType(fn->retType->getValType())) ||
+                isSyncType(fn->retType) ||
                 fn->hasFlag(FLAG_ITERATOR_FN)) {
               CallExpr* sls = new CallExpr("_statementLevelSymbol", tmp);
               call->insertBefore(sls);

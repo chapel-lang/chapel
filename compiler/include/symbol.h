@@ -258,10 +258,12 @@ VarSymbol *new_RealSymbol(const char *n, long double b, IF1_float_type size=FLOA
 VarSymbol *new_ImagSymbol(const char *n, long double b, IF1_float_type size=FLOAT_SIZE_64, bool hasVolatileType=false);
 VarSymbol *new_ComplexSymbol(const char *n, long double r, long double i, IF1_complex_type size=COMPLEX_SIZE_128, bool hasVolatileType=false);
 VarSymbol *new_ImmediateSymbol(Immediate *imm);
-
+void resetTempID();
+FlagSet getRecordWrappedFlags(Symbol* s);
+FlagSet getSyncFlags(Symbol* s);
 VarSymbol* newTemp(const char* name = NULL, Type* type = dtUnknown);
 VarSymbol* newTemp(Type* type);
-void resetTempID();
+
 extern bool localTempNames;
 
 extern HashMap<Immediate *, ImmHashFns, VarSymbol *> uniqueConstantsHash;

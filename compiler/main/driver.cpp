@@ -117,8 +117,8 @@ Timer timer4;
 Timer timer5;
 
 bool fNoMemoryFrees = false;
-
 int numGlobalsOnHeap = 0;
+bool preserveInlinedLineNumbers = false;
 
 const char* compileCommand = NULL;
 char compileVersion[64];
@@ -501,6 +501,7 @@ static ArgumentDescription arg_desc[] = {
  {"local-temp-names", ' ', NULL, "[Don't] Generate locally-unique temp names", "N", &localTempNames, "CHPL_LOCAL_TEMP_NAMES", NULL},
  {"log-deleted-ids-to", ' ', "<filename>", "Log AST id and memory address of each deleted node to the specified file", "P", deletedIdFilename, "CHPL_DELETED_ID_FILENAME", NULL},
  {"memory-frees", ' ', NULL, "Enable [disable] memory frees in the generated code", "n", &fNoMemoryFrees, "CHPL_DISABLE_MEMORY_FREES", NULL},
+ {"preserve-inlined-line-numbers", ' ', NULL, "[Don't] Preserve file names/line numbers in inlined code", "N", &preserveInlinedLineNumbers, "CHPL_PRESERVE_INLINED_LINE_NUMBERS", NULL},
  {"print-id-on-error", ' ', NULL, "Print AST id in error messages", "F", &fPrintIDonError, "CHPL_PRINT_ID_ON_ERROR", NULL},
  {"remove-empty-records", ' ', NULL, "Enable [disable] empty record removal", "n", &fNoRemoveEmptyRecords, "CHPL_DISABLE_REMOVE_EMPTY_RECORDS", NULL},
  {"reposition-def-expressions", ' ', NULL, "Enable [disable] repositioning of def expressions to usage points", "n", &fNoRepositionDefExpr, "CHPL_DISABLE_REPOSITION_DEF_EXPR", NULL},
