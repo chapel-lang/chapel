@@ -2,6 +2,7 @@
 #define _CALLINFO_H_
 
 #include "chpl.h"
+#include "congruenceClosure.h"
 
 class BlockStmt;
 class CallExpr;
@@ -15,7 +16,8 @@ class CallInfo {
   const char*      name;        // function name
   Vec<Symbol*>     actuals;     // actual symbols
   Vec<const char*> actualNames; // named arguments
-  CallInfo(CallExpr* icall);
+  CallInfo(CallExpr* icall, bool genericArgumentsFatal=true);
+  CallInfo(FnSymbol* iface, CongruenceClosure &);
 };
 
 #endif

@@ -13,5 +13,4 @@ class VisibleFunctionBlock {
 };
 
 
-
 #endif

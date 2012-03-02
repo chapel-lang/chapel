@@ -10,6 +10,7 @@
 #include "earlyTypeCheck.h"
 #include "congruenceClosure.h"
 #include "typeCheck.h"
+#include "callInfo.h"
 
 //FIXME: Convert these over to the Chapel structures
 #include <iostream>
@@ -45,80 +46,8 @@ CongruenceClosure cclosure;
  */
 
 /*
- * FIXME: Took out isResolved optimization.  Need to put that back in later
- * for speed improvements.
+ * FIXME: With CallInfo, respect isResolved for a speed improvement
  */
-class CallInfo2 {
-public:
-  //CallExpr*        call;        // call expression
-  //FnSymbol*        interface;   // function interface
-  BlockStmt* scope; // module scope as in M.call
-  const char* name; // function name
-  Vec<Symbol*> actuals; // actual symbols
-  Vec<const char*> actualNames; // named arguments
-  CallInfo2(CallExpr* icall);
-  CallInfo2(FnSymbol* iface);
-};
-
-CallInfo2::CallInfo2(FnSymbol* fn) :
-    scope(NULL) {
-  name = fn->name;
-
-  for_alist (formal, fn->formals) {
-    if (DefExpr *de = toDefExpr(formal)) {
-      actualNames.add(de->sym->cname);
-      BaseAST *tmp = cclosure.get_representative_ast(de);
-      if (Symbol *s = toSymbol(tmp)) {
-        actuals.add(s);
-      } else if (Type *t = toType(tmp)) {
-        actuals.add(t->symbol);
-      } else {
-        INT_FATAL("Unimplemented: trying to handle non-Symbol representation");
-      }
-    } else {
-      INT_FATAL("Unimplemented case in CallInfo2(FnSymbol* fn).  Not DefExpr.");
-    }
-  }
-}
-
-CallInfo2::CallInfo2(CallExpr* icall) :
-    scope(NULL) {
-  if (SymExpr* se = toSymExpr(icall->baseExpr))
-    name = se->var->name;
-  else if (UnresolvedSymExpr* use = toUnresolvedSymExpr(icall->baseExpr))
-    name = use->unresolved;
-  if (icall->numActuals() >= 2) {
-    if (SymExpr* se = toSymExpr(icall->get(1))) {
-      if (se->var == gModuleToken) {
-        se->remove();
-        se = toSymExpr(icall->get(1));
-        INT_ASSERT(se);
-        ModuleSymbol* mod = toModuleSymbol(se->var);
-        INT_ASSERT(mod);
-        se->remove();
-        scope = mod->block;
-      }
-    }
-  }
-  for_actuals(actual, icall) {
-    if (NamedExpr* named = toNamedExpr(actual)) {
-      actualNames.add(named->name);
-      actual = named->actual;
-    } else {
-      actualNames.add(NULL);
-    }
-    SymExpr* se = toSymExpr(actual);
-    INT_ASSERT(se);
-    /*
-    Type* t = se->var->type;
-    if (t == dtUnknown || t->symbol->hasFlag(FLAG_GENERIC))
-      INT_FATAL(icall,
-          "the type of the actual argument '%s' is unknown or generic",
-          se->var->name);
-    */
-    actuals.add(se->var);
-  }
-}
 
 static Map<BlockStmt*, VisibleFunctionBlock*> visibleFunctionMap;
 static int nVisibleFunctions = 0; // for incremental build
@@ -394,12 +323,11 @@ static BaseAST *typeCheckExpr(BaseAST *currentExpr, BaseAST *expectedReturnTypeE
         }
       }
 
-      CallInfo2 info(call);
+      CallInfo info(call, false);
 
       Vec<FnSymbol*> visibleFns; // visible functions
 
-      if (gFnSymbols.n != nVisibleFunctions)
-        buildVisibleFunctionMap2();
+      buildVisibleFunctionMap2();
 
       if (!call->isResolved()) {
         // Also include the functions that come into scope because of
@@ -412,9 +340,15 @@ static BaseAST *typeCheckExpr(BaseAST *currentExpr, BaseAST *expectedReturnTypeE
           getVisibleFunctions(getVisibilityBlock(call), info.name, visibleFns,
               visited);
         } else {
+          /*
           if (VisibleFunctionBlock* vfb = visibleFunctionMap.get(info.scope))
             if (Vec<FnSymbol*>* fns = vfb->visibleFunctions.get(info.name))
               visibleFns.append(*fns);
+          */
+          Vec<FnSymbol*> fns;
+          Vec<BlockStmt*> visited;
+          getVisibleFunctions(info.scope, info.name, fns, visited);
+          visibleFns.append(fns);
         }
       } else {
         visibleFns.add(call->isResolved());
@@ -725,12 +659,11 @@ static BaseAST* checkFunctionCall(CallExpr* call) {
   BaseAST *retExpr;
   if (!call->primitive) {
     //printf("Inside not primitive\n");
-    CallInfo2 info(call);
+    CallInfo info(call, false);
 
     Vec<FnSymbol*> visibleFns; // visible functions
 
-    if (gFnSymbols.n != nVisibleFunctions)
-      buildVisibleFunctionMap2();
+    buildVisibleFunctionMap2();
 
     if (!call->isResolved()) {
       if (!info.scope) {
@@ -738,9 +671,15 @@ static BaseAST* checkFunctionCall(CallExpr* call) {
         getVisibleFunctions(getVisibilityBlock(call), info.name, visibleFns,
             visited);
       } else {
+        /*
         if (VisibleFunctionBlock* vfb = visibleFunctionMap.get(info.scope))
           if (Vec<FnSymbol*>* fns = vfb->visibleFunctions.get(info.name))
             visibleFns.append(*fns);
+        */
+        Vec<FnSymbol*> fns;
+        Vec<BlockStmt*> visited;
+        getVisibleFunctions(info.scope, info.name, fns, visited);
+        visibleFns.append(fns);
       }
     } else {
       visibleFns.add(call->isResolved());
@@ -955,7 +894,7 @@ static BaseAST* checkInterfaceImplementations(BaseAST *s) {
           if (isSymExpr(ce->argList.head)) {
             if (InterfaceSymbol *is = toInterfaceSymbol(se->var)) {
               forv_Vec (FnSymbol, fn, is->functionSignatures) {
-                  CallInfo2 info(fn);
+                  CallInfo info(fn, cclosure);
 
                 if (PrimitiveOp *op = primitives_map.get(fn->cname)) {
                   if (fn->formals.length == 0) {
@@ -1047,8 +986,7 @@ static BaseAST* checkInterfaceImplementations(BaseAST *s) {
                   }
                 }
 
-                if (gFnSymbols.n != nVisibleFunctions)
-                  buildVisibleFunctionMap2();
+                buildVisibleFunctionMap2();
 
                 Vec<FnSymbol*> visibleFns; // visible functions
 

@@ -66,6 +66,12 @@ Map<FnSymbol*,FnSymbol*> iteratorFollowerMap; // iterator->leader map for promot
 //#
 //# Static Function Declarations
 //#
+static BlockStmt*
+getVisibleFunctions(BlockStmt* block,
+                    const char* name,
+                    Vec<FnSymbol*>& visibleFns,
+                    Vec<BlockStmt*>& visited);
+
 static bool hasRefField(Type *type);
 static bool typeHasRefField(Type *type);
 static FnSymbol* resolveUninsertedCall(Type* type, CallExpr* call);
@@ -125,11 +131,6 @@ static void issueCompilerError(CallExpr* call);
 static void reissueCompilerWarning(const char* str, int offset);
 BlockStmt* getVisibilityBlock(Expr* expr);
 static void buildVisibleFunctionMap();
-static BlockStmt*
-getVisibleFunctions(BlockStmt* block,
-                    const char* name,
-                    Vec<FnSymbol*>& visibleFns,
-                    Vec<BlockStmt*>& visited);
 static Type* resolve_type_expr(Expr* expr);
 static void makeNoop(CallExpr* call);
 static bool isTypeExpr(Expr* expr);
