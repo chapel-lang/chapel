@@ -83,6 +83,7 @@ int fLinkStyle = LS_DEFAULT; // use backend compiler's default
 bool fLocal;   // initialized in setupOrderedGlobals() below
 bool fHeterogeneous = false; // re-initialized in setupOrderedGlobals() below
 bool fGPU;
+bool fTargetIL = false;
 bool fieeefloat = true;
 bool report_inlining = false;
 char chplmake[256] = "";
@@ -415,6 +416,7 @@ static ArgumentDescription arg_desc[] = {
  {"ieee-float", ' ', NULL, "Generate code that is strict [lax] with respect to IEEE compliance", "N", &fieeefloat, "CHPL_IEEE_FLOAT", NULL},
  {"inline", ' ', NULL, "Enable [disable] function inlining", "n", &fNoInline, NULL, NULL},
  {"inline-iterators", ' ', NULL, "Enable [disable] iterator inlining", "n", &fNoInlineIterators, "CHPL_DISABLE_INLINE_ITERATORS", NULL},
+ {"target-IL", ' ', NULL, "Enable [disable] the targeting of the parallel intermediate language", "N", &fTargetIL, "CHPL_DISABLE_INTERVALS", NULL},
  {"live-analysis", ' ', NULL, "Enable [disable] live variable analysis", "n", &fNoLiveAnalysis, "CHPL_DISABLE_LIVE_ANALYSIS", NULL},
  {"optimize-loop-iterators", ' ', NULL, "Enable [disable] optimization of iterators composed of a single loop", "n", &fNoOptimizeLoopIterators, "CHPL_DISABLE_OPTIMIZE_LOOP_ITERATORS", NULL},
  {"optimize-on-clauses", ' ', NULL, "Enable [disable] optimization of on clauses", "n", &fNoOptimizeOnClauses, "CHPL_DISABLE_OPTIMIZE_ON_CLAUSES", NULL},

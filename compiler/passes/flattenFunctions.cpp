@@ -3,6 +3,7 @@
 #include "expr.h"
 #include "passes.h"
 #include "stmt.h"
+#include "interval.h"
 
 
 //
@@ -41,15 +42,35 @@ findOuterVars(FnSymbol* fn, SymbolMap* uses) {
 
 
 static void
-addVarsToFormals(FnSymbol* fn, SymbolMap* vars) {
+addVarsToFormals(FnSymbol* fn, SymbolMap* vars, bool isTargetIL) {
   form_Map(SymbolMapElem, e, *vars) {
     if (Symbol* sym = e->key) {
       Type* type = sym->type;
-      if (type->refType)
-        type = type->refType;
-      ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, sym->name, type);
+      ArgSymbol *arg = NULL;
+      if (!isTargetIL && !sym->hasFlag(FLAG_WHILE_INDEX)) {
+        if (type->refType)
+          type = type->refType;
+        arg = new ArgSymbol(INTENT_BLANK, sym->name, type);
+      }
+      else {
+        if (fn->intervals->length() == 1) {
+          Interval *interval = fn->intervals->v[0];
+          if (sym->hasFlag(FLAG_WHILE_INDEX) && interval->intervalTag == FORALL_LOOP) {
+            arg = new ArgSymbol(INTENT_BLANK, sym->name, type);
+          }
+          else
+          {
+            arg = new ArgSymbol(INTENT_REF, sym->name, type);
+          }
+        }
+        else 
+          arg = new ArgSymbol(INTENT_REF, sym->name, type);
+        if (sym->hasFlag(FLAG_WHILE_INDEX))
+          arg->addFlag(FLAG_WHILE_INDEX);
+      }
       if (!strcmp(sym->name, "this"))
         arg->addFlag(FLAG_ARG_THIS);
+
       fn->insertFormalAtTail(new DefExpr(arg));
       vars->put(sym, arg);
     }
@@ -100,10 +121,11 @@ replaceVarUsesWithFormals(FnSymbol* fn, SymbolMap* vars) {
 
 
 static void
-addVarsToActuals(CallExpr* call, SymbolMap* vars, bool outerCall) {
+addVarsToActuals(CallExpr* call, SymbolMap* vars, bool outerCall, bool isTargetIL) {
   form_Map(SymbolMapElem, e, *vars) {
     if (Symbol* sym = e->key) {
-      if (!outerCall && sym->type->refType) {
+      /* If a non-codelet base function */
+      if (!isTargetIL && !outerCall && !sym->hasFlag(FLAG_WHILE_INDEX) && sym->type->refType) {
         VarSymbol* tmp = newTemp(sym->type->refType);
         call->getStmtExpr()->insertBefore(new DefExpr(tmp));
         call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_SET_REF, sym)));
@@ -117,7 +139,7 @@ addVarsToActuals(CallExpr* call, SymbolMap* vars, bool outerCall) {
 
 
 void
-flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions) {
+flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions, bool isTargetIL) {
   compute_call_sites();
 
   Vec<FnSymbol*> nestedFunctionSet;
@@ -191,7 +213,7 @@ flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions) {
         }
       }
 
-      addVarsToActuals(call, uses, outerCall);
+      addVarsToActuals(call, uses, outerCall, isTargetIL);
     }
   }
 
@@ -207,7 +229,7 @@ flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions) {
 
   // add extra formals to nested functions
   forv_Vec(FnSymbol, fn, nestedFunctions)
-    addVarsToFormals(fn, args_map.get(fn));
+    addVarsToFormals(fn, args_map.get(fn), isTargetIL);
 
   // replace outer variable uses with added formals
   forv_Vec(FnSymbol, fn, nestedFunctions)
@@ -230,5 +252,5 @@ void flattenFunctions(void) {
       nestedFunctions.add(fn);
   }
 
-  flattenNestedFunctions(nestedFunctions);
+  flattenNestedFunctions(nestedFunctions, false);
 }

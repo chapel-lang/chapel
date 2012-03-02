@@ -15,7 +15,8 @@ PASSES_SRCS = \
         repositionDefExpressions.cpp \
         returnStarTuplesByRefArgs.cpp \
         scopeResolve.cpp \
-        semanticChecks.cpp
+        semanticChecks.cpp \
+	targetIL.cpp
 
 SVN_SRCS = $(PASSES_SRCS)
 SRCS = $(SVN_SRCS)

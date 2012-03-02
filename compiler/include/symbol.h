@@ -17,6 +17,7 @@ class Stmt;
 class BlockStmt;
 class Immediate;
 class BasicBlock;
+class Interval;
 class IteratorInfo;
 
 enum RetTag {
@@ -158,6 +159,7 @@ class FnSymbol : public Symbol {
   SymbolMap substitutions;
   BlockStmt* instantiationPoint; // point of instantiation
   Vec<BasicBlock*>* basicBlocks;
+  Vec<Interval*>* intervals;
   Vec<CallExpr*>* calledBy;
   const char* userString;
   FnSymbol* valueFunction; // pointer to value function (created in

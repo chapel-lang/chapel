@@ -9,6 +9,14 @@
 BasicBlock::BasicBlock()
   : id(nextid++) {}
 
+#define BB_ADD_LOOP_BRANCH(expr)                \
+  top->branch = expr;                           \
+  top->thenBB = loopTop;                        \
+  top->elseBB = bottom;                         \
+  loopBottom->branch = expr;                    \
+  loopBottom->thenBB = loopTop;                 \
+  loopBottom->elseBB = bottom
+
 #define BB_START()                              \
   basicBlock = new BasicBlock()
 
@@ -33,6 +41,9 @@ BasicBlock::BasicBlock()
 #define BBB(stmt)                               \
     buildBasicBlocks(fn, stmt)
 
+#define BCBB(stmt)                              \
+    buildCoarseBasicBlocks(fn, stmt)
+
 #define BB_THREAD(src, dst)                     \
   dst->ins.add(src);                            \
   src->outs.add(dst)
@@ -42,6 +53,20 @@ BasicBlock* BasicBlock::basicBlock;
 Map<LabelSymbol*,Vec<BasicBlock*>*> BasicBlock::gotoMaps;
 Map<LabelSymbol*,BasicBlock*> BasicBlock::labelMaps;
 int BasicBlock::nextid;
+
+/* Determine of block statement contains a FORALL loop anywhere inside of it */
+static bool containsForAll(BlockStmt* block){
+  Vec<BaseAST*> asts;
+  collect_asts(block, asts);
+  forv_Vec(BaseAST, ast, asts) {
+    if (BlockStmt* bs = toBlockStmt(ast)){
+      if (bs->blockInfo && bs->blockInfo->isPrimitive(PRIM_ON_IL))
+        return true;
+    }
+  }
+  return false;
+}
+
 
 
 // Returns true if the class invariants have been preserved.
@@ -81,6 +106,23 @@ void buildBasicBlocks(FnSymbol* fn)
   BasicBlock::reset(fn);
   BasicBlock::basicBlock = new BasicBlock();
   BasicBlock::buildBasicBlocks(fn, fn->body);
+  fn->basicBlocks->add(BasicBlock::Steal());
+}
+
+// This is the top-level (public) builder function.
+void buildCoarseBasicBlocks(FnSymbol* fn)
+{
+  BasicBlock::reset(fn);
+  BasicBlock::basicBlock = new BasicBlock();
+  if (containsForAll(fn->body)) {
+    BasicBlock::buildCoarseBasicBlocks(fn, fn->body);
+  } else {
+    for_alist(stmt, fn->body->body) 
+    {
+      INT_ASSERT(stmt);
+      BasicBlock::basicBlock->exprs.add(stmt);
+    }
+  }
   fn->basicBlocks->add(BasicBlock::Steal());
 }
 
@@ -178,6 +220,140 @@ void BasicBlock::buildBasicBlocks(FnSymbol* fn, Expr* stmt)
   }
 }
 
+void BasicBlock::buildCoarseBasicBlocks(FnSymbol* fn, Expr* stmt)
+{
+  if (!stmt) return;
+
+  if (BlockStmt* s = toBlockStmt(stmt))
+  {
+    // If blockStatement doesn't contain any forall loop, collapse entire body 
+    // into current basic block */
+    if (!containsForAll(s)) 
+    {
+      BB_ADD(s);
+    } 
+    // If a loop statement of some sort
+    else if (s->blockInfo) 
+    {
+      BasicBlock* top = basicBlock;
+      BB_RESTART();
+      BasicBlock* loopTop = basicBlock;
+      // If loop isn't a forall, recursively search for one.
+      // Assume that blockInfo is never null.
+      if (!s->blockInfo->isPrimitive(PRIM_ON_IL))
+      {
+        for_alist(stmt, s->body) {
+          BCBB(stmt);
+        }
+      }
+      else
+      {
+        BB_ADD(s->blockInfo);
+        basicBlock->forAll = true;
+        // If forall, add each statement as part of the same BB
+        for_alist(stmt, s->body) {
+          BB_ADD(stmt);
+        }
+      }
+      BasicBlock* loopBottom = basicBlock;
+      BB_RESTART();
+      BasicBlock* bottom = basicBlock;
+      if (!s->blockInfo->isPrimitive(PRIM_ON_IL))
+      {
+        /* Add back edge for non-forall loop */
+        if (s->blockInfo->isPrimitive(PRIM_BLOCK_WHILEDO_LOOP) || 
+            s->blockInfo->isPrimitive(PRIM_BLOCK_FOR_LOOP)){
+          BB_ADD_LOOP_BRANCH(s->blockInfo->get(1));
+        }
+        BB_THREAD(top, loopTop);
+        BB_THREAD(loopBottom, bottom);
+        BB_THREAD(loopBottom, loopTop);
+        BB_THREAD(top, bottom);
+      }
+      else
+      {
+        BB_ADD_LOOP_BRANCH(NULL);
+        BB_THREAD(top, loopTop);
+        BB_THREAD(loopBottom, bottom);
+      }
+    }
+    else
+    {
+      for_alist(stmt, s->body)
+        BCBB(stmt);
+    }
+  }
+  else if (CondStmt* s = toCondStmt(stmt))
+  {
+    INT_ASSERT(s->condExpr);
+    BB_ADD(s->condExpr);
+    BasicBlock* top = basicBlock;
+    /* Albert fixes for interval */
+    top->branch = s->condExpr;
+    /*****************************/
+    BB_RESTART();
+    /* Albert fixes for interval */
+    top->thenBB = basicBlock;
+    /*****************************/
+    BB_THREAD(top, basicBlock);
+    BCBB(s->thenStmt);
+    BasicBlock* thenBottom = basicBlock;
+    BB_RESTART();
+    if (s->elseStmt)
+    {
+      BB_THREAD(top, basicBlock);
+      /* Albert fixes for interval */
+      top->elseBB = basicBlock;
+      /*****************************/
+      BCBB(s->elseStmt);
+      BasicBlock* elseBottom = basicBlock;
+      BB_RESTART();
+      BB_THREAD(elseBottom, basicBlock);
+    }
+    else
+      BB_THREAD(top, basicBlock);
+    BB_THREAD(thenBottom, basicBlock);
+  } else if (GotoStmt* s = toGotoStmt(stmt)) {
+    LabelSymbol* label = toLabelSymbol(toSymExpr(s->label)->var);
+    if (BasicBlock* bb = labelMaps.get(label)) {
+      BB_THREAD(basicBlock, bb);
+    } else {
+      Vec<BasicBlock*>* vbb = gotoMaps.get(label);
+      if (!vbb)
+        vbb = new Vec<BasicBlock*>();
+      vbb->add(basicBlock);
+      gotoMaps.put(label, vbb);
+    }
+    BB_ADD(s); // Put the goto at the end of its block.
+    BB_RESTART();
+  } else {
+    DefExpr* def = toDefExpr(stmt);
+    if (def && toLabelSymbol(def->sym)) {
+      // If a label appears in the middle of a block,
+      // we start a new block.
+      if (basicBlock->exprs.count() > 0)
+      {
+        BasicBlock* top = basicBlock;
+        BB_RESTART();
+        BB_THREAD(top, basicBlock);
+      }
+      BB_ADD(def); // Put the label def at the start of its block.
+
+      // OK, this statement is a label def, so get the label.
+      LabelSymbol* label = toLabelSymbol(def->sym);
+
+      // See if we have any unresolved references to this label,
+      // and resolve them.
+      if (Vec<BasicBlock*>* vbb = gotoMaps.get(label)) {
+        forv_Vec(BasicBlock, bb, *vbb) {
+          BB_THREAD(bb, basicBlock);
+        }
+      }
+      labelMaps.put(label, basicBlock);
+    } else
+      BB_ADD(stmt);
+  }
+}
 // Returns true if the basic block structure is OK, false otherwise.
 bool verifyBasicBlocks(FnSymbol* fn)
 {

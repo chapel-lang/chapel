@@ -474,7 +474,7 @@ expandIteratorInline(CallExpr* call) {
     loopBodyFn->retType = dtVoid;
     Vec<FnSymbol*> nestedFunctions;
     nestedFunctions.add(loopBodyFn);
-    flattenNestedFunctions(nestedFunctions);
+    flattenNestedFunctions(nestedFunctions, false);
 
     FnSymbol* iteratorFn = iteratorFnMap.get(iterator);
     if (!iteratorFn) {

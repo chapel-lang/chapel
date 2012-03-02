@@ -216,6 +216,12 @@ enum PrimitiveTag {
 
   PRIM_VMT_CALL, // virtual method call
 
+  // Albert - related to intervals
+  PRIM_MAP_SEQ,
+  PRIM_MAP_PAR,
+  PRIM_IDEN,
+  PRIM_ON_IL,
+
   PRIM_NUM_FIELDS,
   PRIM_FIELD_NUM_TO_NAME,
   PRIM_FIELD_VALUE_BY_NUM,

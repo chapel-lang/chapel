@@ -28,6 +28,15 @@ class BasicBlock {
   Vec<Expr*> exprs;
   Vec<BasicBlock*> ins;
   Vec<BasicBlock*> outs;
+  
+  /* Albert - Support for intervals/coarsened BBs */
+  Expr* branch;
+  BasicBlock* thenBB;
+  BasicBlock* elseBB;
+  Vec<Expr*> condExprs;
+  Vec<bool> condBools;
+  bool forAll;
+
   BasicBlock();
 
   bool isOK();
@@ -36,10 +45,12 @@ class BasicBlock {
   // This function must be called on each function and each time
   // there is a structural change in the AST.
   static void buildBasicBlocks(FnSymbol* fn, Expr* stmt);
+  static void buildCoarseBasicBlocks(FnSymbol* fn, Expr* stmt);
   static BasicBlock* Steal();
 };
 
 void buildBasicBlocks(FnSymbol* fn);
+void buildCoarseBasicBlocks(FnSymbol* fn);
 bool verifyBasicBlocks(FnSymbol* fn);
 
 void buildLocalsVectorMap(FnSymbol* fn,

@@ -407,9 +407,9 @@ static void callExprHelper(CallExpr* call, BaseAST* arg) {
     INT_FATAL(call, "Bad argList in CallExpr constructor");
 }
 
-
 CallExpr::CallExpr(BaseAST* base, BaseAST* arg1, BaseAST* arg2,
-                   BaseAST* arg3, BaseAST* arg4) :
+                   BaseAST* arg3, BaseAST* arg4, BaseAST* arg5, 
+                   BaseAST* arg6, BaseAST* arg7, BaseAST* arg8) :
   Expr(E_CallExpr),
   baseExpr(NULL),
   argList(),
@@ -429,12 +429,16 @@ CallExpr::CallExpr(BaseAST* base, BaseAST* arg1, BaseAST* arg2,
   callExprHelper(this, arg2);
   callExprHelper(this, arg3);
   callExprHelper(this, arg4);
+  callExprHelper(this, arg5);
+  callExprHelper(this, arg6);
+  callExprHelper(this, arg7);
+  callExprHelper(this, arg8);
   argList.parent = this;
   gCallExprs.add(this);
 }
 
-
-CallExpr::CallExpr(PrimitiveOp *prim, BaseAST* arg1, BaseAST* arg2, BaseAST* arg3, BaseAST* arg4) :
+CallExpr::CallExpr(PrimitiveOp *prim, BaseAST* arg1, BaseAST* arg2, BaseAST* arg3, 
+                   BaseAST* arg4, BaseAST* arg5, BaseAST* arg6, BaseAST* arg7, BaseAST* arg8) :
   Expr(E_CallExpr),
   baseExpr(NULL),
   argList(),
@@ -447,11 +451,16 @@ CallExpr::CallExpr(PrimitiveOp *prim, BaseAST* arg1, BaseAST* arg2, BaseAST* arg
   callExprHelper(this, arg2);
   callExprHelper(this, arg3);
   callExprHelper(this, arg4);
+  callExprHelper(this, arg5);
+  callExprHelper(this, arg6);
+  callExprHelper(this, arg7);
+  callExprHelper(this, arg8);
   argList.parent = this;
   gCallExprs.add(this);
 }
 
-CallExpr::CallExpr(PrimitiveTag prim, BaseAST* arg1, BaseAST* arg2, BaseAST* arg3, BaseAST* arg4) :
+CallExpr::CallExpr(PrimitiveTag prim, BaseAST* arg1, BaseAST* arg2, BaseAST* arg3, 
+                   BaseAST* arg4, BaseAST* arg5, BaseAST* arg6, BaseAST* arg7, BaseAST* arg8) :
   Expr(E_CallExpr),
   baseExpr(NULL),
   argList(),
@@ -464,13 +473,17 @@ CallExpr::CallExpr(PrimitiveTag prim, BaseAST* arg1, BaseAST* arg2, BaseAST* arg
   callExprHelper(this, arg2);
   callExprHelper(this, arg3);
   callExprHelper(this, arg4);
+  callExprHelper(this, arg5);
+  callExprHelper(this, arg6);
+  callExprHelper(this, arg7);
+  callExprHelper(this, arg8);
   argList.parent = this;
   gCallExprs.add(this);
 }
 
-
 CallExpr::CallExpr(const char* name, BaseAST* arg1, BaseAST* arg2,
-                   BaseAST* arg3, BaseAST* arg4) :
+                   BaseAST* arg3, BaseAST* arg4, BaseAST* arg5, 
+                   BaseAST* arg6, BaseAST* arg7, BaseAST* arg8) :
   Expr(E_CallExpr),
   baseExpr(new UnresolvedSymExpr(name)),
   argList(),
@@ -483,6 +496,10 @@ CallExpr::CallExpr(const char* name, BaseAST* arg1, BaseAST* arg2,
   callExprHelper(this, arg2);
   callExprHelper(this, arg3);
   callExprHelper(this, arg4);
+  callExprHelper(this, arg5);
+  callExprHelper(this, arg6);
+  callExprHelper(this, arg7);
+  callExprHelper(this, arg8);
   argList.parent = this;
   gCallExprs.add(this);
 }
@@ -1283,8 +1300,13 @@ void CallExpr::codegen(FILE* outfile) {
       }
       break;
     case PRIM_RETURN:
-      if (typeInfo() == dtVoid)
-        gen(outfile, "return");
+      if (typeInfo() == dtVoid) {
+        /* Not necessary to return void in the codelet model */
+        if (!fTargetIL)
+          gen(outfile, "return");
+        else
+          return;
+      }
       else
         gen(outfile, "return %A", get(1));
       break;
@@ -1314,6 +1336,9 @@ void CallExpr::codegen(FILE* outfile) {
       break;
     case PRIM_MOD:
       gen(outfile, "(%A %% %A)", get(1), get(2));
+      break;
+    case PRIM_IDEN:
+      gen(outfile, "(%A)", get(1));
       break;
     case PRIM_LSH:
       gen(outfile, "(%A << %A)", get(1), get(2));
@@ -2373,6 +2398,54 @@ void CallExpr::codegen(FILE* outfile) {
         this->remove();
       }
       break;
+    case PRIM_MAP_SEQ:
+    {
+      fprintf(outfile, "map(");
+      get(1)->codegen(outfile); // current map label
+      fprintf(outfile,", NULL, [1:1:1], ");
+      get(3)->codegen(outfile); // numID
+      fprintf(outfile,", ");
+
+      SymExpr *symExpr = toSymExpr(get(2));
+      VarSymbol *var = toVarSymbol(symExpr->var);
+      if (var->immediate && var->immediate->const_kind == CONST_KIND_STRING) {
+        fprintf(outfile, "%s, ", var->immediate->v_string);
+      }
+      else
+        fprintf(outfile, "NULL, ");
+
+      get(4)->codegen(outfile);
+      fprintf(outfile,")");
+      break;
+    }
+    case PRIM_MAP_PAR:
+    {
+      fprintf(outfile, "map(");
+      get(1)->codegen(outfile); // current map label
+      fprintf(outfile,", ");
+      get(7)->codegen(outfile); // index
+      fprintf(outfile,", [");
+      get(4)->codegen(outfile); // low
+      fprintf(outfile,":");
+      get(5)->codegen(outfile); // stride
+      fprintf(outfile,":");
+      get(6)->codegen(outfile); // high
+      fprintf(outfile,"], ");
+      get(3)->codegen(outfile); // numID
+      fprintf(outfile,", ");
+
+      SymExpr *symExpr = toSymExpr(get(2));
+      VarSymbol *var = toVarSymbol(symExpr->var);
+      if (var->immediate && var->immediate->const_kind == CONST_KIND_STRING) {
+        fprintf(outfile, "%s, ", var->immediate->v_string);
+      }
+      else
+        fprintf(outfile, "NULL, ");
+
+      get(8)->codegen(outfile);
+      fprintf(outfile,")");
+      break;
+    }
     default:
       INT_FATAL(this, "primitive codegen fail; should it still be in the AST?");
       fprintf(outfile, "/* ERR %s */", primitive->name);
@@ -2541,7 +2614,7 @@ void CallExpr::codegen(FILE* outfile) {
         closeDeRefParens = true;
       }
     } else if (formal->requiresCPtr() && 
-               !actualType->symbol->hasFlag(FLAG_REF)) {
+               (fTargetIL || !actualType->symbol->hasFlag(FLAG_REF))) {
       fprintf(outfile, "&(");
       closeDeRefParens = true;
     }

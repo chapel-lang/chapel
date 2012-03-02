@@ -550,6 +550,12 @@ initPrimitive() {
 
   prim_def(PRIM_VMT_CALL, "virtual method call", returnInfoVirtualMethodCall, true, true);
 
+  /* MAP necessary for parallel IL */
+  prim_def(PRIM_MAP_SEQ, "map sequential", returnInfoVoid);
+  prim_def(PRIM_MAP_PAR, "map parallel", returnInfoVoid);
+  prim_def(PRIM_IDEN, "identity", returnInfoVoid);
+  prim_def(PRIM_ON_IL, "chpl_target_il", returnInfoVoid);
+
   prim_def(PRIM_NUM_FIELDS, "num fields", returnInfoInt32);
   prim_def(PRIM_FIELD_NUM_TO_NAME, "field num to name", returnInfoString);
   prim_def(PRIM_FIELD_VALUE_BY_NUM, "field value by num", returnInfoUnknown);

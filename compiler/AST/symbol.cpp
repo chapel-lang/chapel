@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include "astutil.h"
 #include "bb.h"
+#include "interval.h"
 #include "build.h"
 #include "files.h"
 #include "iterator.h"
@@ -469,6 +470,7 @@ FnSymbol::FnSymbol(const char* initName) :
   instantiatedFrom(NULL),
   instantiationPoint(NULL),
   basicBlocks(NULL),
+  intervals(NULL),
   calledBy(NULL),
   userString(NULL),
   valueFunction(NULL)
@@ -487,6 +489,12 @@ FnSymbol::~FnSymbol() {
       delete bb;
     }
     delete basicBlocks;
+  }
+  if (intervals) {
+    forv_Vec(Interval, interval, *intervals) {
+      delete interval;
+    }
+    delete intervals;
   }
   if (calledBy)
     delete calledBy;

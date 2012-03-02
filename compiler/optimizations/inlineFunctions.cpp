@@ -114,3 +114,20 @@ inlineFunctions(void) {
     }
   }
 }
+
+void
+inlineFunction(FnSymbol *fn) {
+  if (!fNoInline) {
+    compute_call_sites();
+    Vec<FnSymbol*> inlinedSet;
+    if (fn->hasFlag(FLAG_INLINE) && !inlinedSet.set_in(fn))
+      inlineFunction(fn, inlinedSet);
+  }
+
+  if (!fNoInline && fn->hasFlag(FLAG_INLINE) && !fn->hasFlag(FLAG_VIRTUAL)) {
+    fn->defPoint->remove();
+  } else {
+    collapseBlocks(fn->body);
+    removeUnnecessaryGotos(fn);
+  }
+}

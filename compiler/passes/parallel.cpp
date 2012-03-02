@@ -718,7 +718,7 @@ parallel(void) {
     }
   }
 
-  flattenNestedFunctions(nestedFunctions);
+  flattenNestedFunctions(nestedFunctions, false);
 
   compute_call_sites();
 
