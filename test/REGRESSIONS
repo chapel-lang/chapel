@@ -15,9 +15,14 @@
 general regressions (seem to happen in most configurations)
 ===========================================================
 
+
 ========================================================================
 general nondeterministic regressions (could happen in any configuration)
 ========================================================================
+
+nondet. numerical accuracy issue (?)
+------------------------------------
+[Error matching program output for studies/lulesh/sungeun/lulesh (compopts: 1)] (01/20/12, 02/12/12, 02/19/12, 02/24/12, 03/04/12)
 
 RA fails to match sometimes
 ---------------------------
@@ -39,6 +44,7 @@ linux64 regressions (in addition to the above)
 
 nondet. compilation timeout
 ---------------------------
+[Error: Timed out compilation for trivial/deitz/test_uint] (02/18/12)
 [Error: Timed out compilation for functions/iterators/angeles/checkAdvancedIters/checkAdaptiveWSIter(--fast --cc-warnings -smethodStealing=1 )] (10/09/11)
 
 ==============================================
@@ -69,6 +75,7 @@ valgrind-specific regressions
 
 unhandled syscall problem that should be fixed in newer valgrind versions
 -------------------------------------------------------------------------
+[Error matching program output for io/ferguson/zerosatend]
 [Error matching program output for arrays/deitz/test_read_in_forall]
 [Error matching program output for arrays/marybeth/testinit]
 [Error matching program output for exercises/Mandelbrot/mandelbrot]
@@ -116,6 +123,7 @@ unhandled syscall problem that should be fixed in newer valgrind versions
 [Error matching program output for studies/matrixlib/QR/qr]
 [Error matching program output for studies/matrixlib/testBlockChol]
 [Error matching program output for studies/matrixlib/testBlockLU]
+[Error matching program output for studies/ssca2/graphio/graphio (compopts: 1)]
 [Error matching program output for studies/sudoku/deitz/sudoku2]
 [Error matching program output for studies/sudoku/deitz/sudoku3]
 [Error matching program output for studies/sudoku/deitz/sudoku]
@@ -163,10 +171,10 @@ unhandled syscall problem that should be fixed in newer valgrind versions
 nondet. "the impossible has happened" (raise VG_N_THREADS)
 ----------------------------------------------------------
 [Error matching program output for domains/sungeun/assoc/stress (compopts: 1, execopts: 3)] (12/27/11, 01/31/12)
-[Error matching program output for studies/nqueens/nqueens-par] (01/03/12, 02/07/12)
+[Error matching program output for studies/nqueens/nqueens-par] (01/03/12, 02/07/12, 02/21/12)
 [Error matching program output for studies/nqueens/nqueens-2-par] (11/29/11, 01/17/12, 02/07/12)
 [Error matching program output for distributions/nelson/MultiBlockDist2DLocales] (??/??/??, 12/06/11)
-[Error matching program output for parallel/cobegin/deitz/test_big_recursive_cobegin] (01/10/12)
+[Error matching program output for parallel/cobegin/deitz/test_big_recursive_cobegin] (01/10/12, 02/14/12)
 
 
 nondet. output ordering
@@ -195,6 +203,10 @@ no-local regressions
 nondet. compilation timeout
 ---------------------------
 [Error: Timed out compilation for types/tuple/bradc/returnTuple] (12/11/11)
+[Error: Timed out compilation for studies/ssca2/sungeun/SSCA2_test (compopts: 1)] (02/17/12)
+[Error: Timed out compilation for studies/ssca2/sungeun/SSCA2_test (compopts: 2)] (02/17/12)
+[Error: Timed out compilation for studies/ssca2/sungeun/SSCA2_test (compopts: 5)] (02/16/12)
+[Error: Timed out compilation for studies/ssca2/sungeun/SSCA2_test (compopts: 6)] (02/16/12, 02/18/12)
 
 strings for path names are garbled in error messages (11/10/11)
 ---------------------------------------------------------------
@@ -223,7 +235,7 @@ nondet. out-of-memory error
 nondet. execution timeout
 -------------------------
 [Error: Timed out executing program studies/cholesky/jglewis/test_cholesky] (09/30/11)
-[Error: Timed out executing program studies/cholesky/jglewis/version2/performance/test_cholesky_performance] (10/28/11, 11/06/11, 12/10/11, 12/15/11, 01/05/12, 01/15/12, 01/18/12)
+[Error: Timed out executing program studies/cholesky/jglewis/version2/performance/test_cholesky_performance] (10/28/11, 11/06/11, 12/10/11, 12/15/11, 01/05/12, 01/15/12, 01/18/12, 02/15/12)
 
 internal error SYM0172 (02/09/10)
 ---------------------------------
@@ -243,18 +255,14 @@ memory stuff in flux (05/28/09)
 [Error matching program output for memory/shannon/memstatPrint]
 [Error matching program output for memory/shannon/printFinalMemStat]
 
-seg fault (?)
--------------
-[Error matching program output for parallel/cobegin/deitz/test_big_recursive_cobegin]
+nondet. seg fault (?)
+---------------------
+[Error matching program output for parallel/cobegin/deitz/test_big_recursive_cobegin] (02/10/12)
 
 
 ====================================================
 gasnet-everything regressions (other than the above)
 ====================================================
-
-output truncated?? (02/10/12)
---------------
-[Error matching program output for parallel/cobegin/deitz/test_big_recursive_cobegin]
 
 times out (12/20/11)
 --------------------
@@ -276,16 +284,16 @@ nondet. compilation timeout
 
 nondet. execution timeout
 -------------------------
-[Error: Timed out executing program users/franzf/v1/chpl/main (compopts: 1)] (02/09/12)
-[Error: Timed out executing program distributions/nelson/MultiBlockDist2DLocales] (12/14/11, 12/19/11, 01/03/12, 01/09/12, 01/13/12)
+[Error: Timed out executing program users/franzf/v1/chpl/main (compopts: 1)] (02/09/12, 02/15/12)
+[Error: Timed out executing program distributions/nelson/MultiBlockDist2DLocales] (12/14/11, 12/19/11, 01/03/12, 01/09/12, 01/13/12, 02/18/12, 02/24/12, 02/27/12, 03/03/12)
 [Error: Timed out executing program studies/hpcc/HPL/vass/hpl] (11/16/11, 11/23/11, 11/25/11, 11/27/11, 11/29/11)
-[Error: Timed out executing program multilocale/diten/needMultiLocales/coforallon_maxThreads] (10/13/11, 11/01/11)
+[Error: Timed out executing program multilocale/diten/needMultiLocales/coforallon_maxThreads] (10/13/11, 11/01/11, 02/26/12, 02/28/12, 02/29/12)
 [Error: Timed out executing program studies/sudoku/dinan/sudoku] (10/02/11)
-[Error: Timed out executing program studies/madness/aniruddha/madchap/test_diff] (11/14/11, 12/20/11, 01/13/12)
-[Error: Timed out executing program studies/madness/aniruddha/madchap/test_gaxpy] (12/20/11, 12/23/11, 12/26/11, 12/30/11, 01/13/12, 01/15/12, 01/24/12, 01/29/12, 01/31/12, 02/03/12, 02/05/12, 02/09/12)
-[Error: Timed out executing program studies/madness/aniruddha/madchap/test_likepy] (10/05/11, 10/08/11, 10/12/11, 11/02/11, 11/05/11, 11/12/11, 11/15/11, 11/19/11, 11/22/11, 12/04/11, 12/09/11, 01/05/12, 01/07/12, 01/13/12, 01/24/12, 02/05/12, 02/07/12)
-[Error: Timed out executing program studies/madness/aniruddha/madchap/test_showboxes] (01/18/12, 01/29/12)
-[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct (compopts: 1)] (10/11/11, 10/25/11, 10/28/11, 11/06/11, 11/22/11, 11/25/11, 11/28/11, 12/03/11, 12/14/11, 12/20/11, 12/24/11, 12/26/11, 01/01/12, 01/06/12, 01/09/12, 01/17/12, 01/19/12, 01/26/12, 02/01/12, 02/09/12)
+[Error: Timed out executing program studies/madness/aniruddha/madchap/test_diff] (11/14/11, 12/20/11, 01/13/12, 02/24/12)
+[Error: Timed out executing program studies/madness/aniruddha/madchap/test_gaxpy] (12/20/11, 12/23/11, 12/26/11, 12/30/11, 01/13/12, 01/15/12, 01/24/12, 01/29/12, 01/31/12, 02/03/12, 02/05/12, 02/09/12, 02/14/12, 02/20/12, 02/27/12, 03/01/12)
+[Error: Timed out executing program studies/madness/aniruddha/madchap/test_likepy] (10/05/11, 10/08/11, 10/12/11, 11/02/11, 11/05/11, 11/12/11, 11/15/11, 11/19/11, 11/22/11, 12/04/11, 12/09/11, 01/05/12, 01/07/12, 01/13/12, 01/24/12, 02/05/12, 02/07/12, 02/17/12, 02/27/12, 02/29/12)
+[Error: Timed out executing program studies/madness/aniruddha/madchap/test_showboxes] (01/18/12, 01/29/12, 03/05/12)
+[Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct (compopts: 1)] (10/11/11, 10/25/11, 10/28/11, 11/06/11, 11/22/11, 11/25/11, 11/28/11, 12/03/11, 12/14/11, 12/20/11, 12/24/11, 12/26/11, 01/01/12, 01/06/12, 01/09/12, 01/17/12, 01/19/12, 01/26/12, 02/01/12, 02/09/12, 02/12/12, 02/19/12, 02/21/12, 02/24/12, 02/27/12, 03/03/12)
 [Error: Timed out executing program studies/madness/aniruddha/madchap/test_mul] (01/06/12, 01/13/12)
 
 memory stuff
@@ -306,6 +314,25 @@ too many threads error (~01/13/12)
 ----------------------------------
 [Error matching program output for distributions/bradc/extremeBlock]
 
+
+=======================
+tcmalloc-specific tests
+=======================
+
+nondet. wrong result
+--------------------
+[Error matching program output for multilocale/deitz/needMultiLocales/dist/test_private_space] (03/01/12)
+
+nondet. sub_test early error exit issue
+---------------------------------------
+[Error running sub_test in /tmp/chapel-cron-linux64.gnu.none.fifo.pthreads.tcmalloc-chapelu/chapel/test/classes/diten] (02/18/12)
+
+nondet. execution timeout
+-------------------------
+[Error: Timed out executing program distributions/bradc/blkCyc/blkCyc2d (compopts: 1)] (02/13/12)
+[Error: Timed out executing program distributions/bradc/blkCyc/weirdcase] (02/13/12)
+[Error: Timed out executing program distributions/dm/t8] (02/13/12)
+[Error: Timed out executing program distributions/nelson/MultiBlockDist2DLocales] (02/13/12)
 
 
 ==============================
@@ -371,13 +398,9 @@ timeout (12/23/11)
 ------------------
 [Error: Timed out executing program parallel/begin/sungeun/captureAppearsToWork]
 
-precision portability issue (12/30/11)
---------------------------------------
-[Error matching program output for studies/lulesh/sungeun/lulesh (compopts: 1)]
-
 nondet. precision issues
 ------------------------
-[Error matching program output for studies/shootout/spectral-norm/spectralnorm] (10/24/11, 11/1/11, 11/2/11, 11/17/11, 11/26/11, 12/12/11, 12/23/11, 01/13/12, 01/14/12, 01/28/12, 01/29/12, 02/06/12, 02/10/12)
+[Error matching program output for studies/shootout/spectral-norm/spectralnorm] (10/24/11, 11/1/11, 11/2/11, 11/17/11, 11/26/11, 12/12/11, 12/23/11, 01/13/12, 01/14/12, 01/28/12, 01/29/12, 02/06/12, 02/10/12, 02/25/12, 02/28/12, 03/02/12)
 
 nondet. compilation timeout
 ---------------------------
@@ -425,12 +448,13 @@ nondet. timeout failure
 cray-xt-cray/cce-specific regressions
 =====================================
 
+nondet. "unable to obtain license" errors
+-----------------------------------------
+***arbitrary tests*** (02/18/12 on chpbld02)
+
 ??? (01/28/12)
 --------------
 [Error matching program output for io/ferguson/easybits]
-
-***uselocale is undefined, breaking compiler build (11/10/11)
--------------------------------------------------------------
 
 nondet. compilation timeout (01/04/11)
 --------------------------------------
@@ -443,10 +467,6 @@ new unreachable loop warning (05/29/11)
 wrong result due to reliance on wraparound in signed integers in test itself
 ----------------------------------------------------------------------------
 [Error matching program output for expressions/bradc/uminusVsTimesPrec]
-
-??? (10/19/11)
---------------
-[Error matching program output for memory/shannon/outofmemory/mallocOutOfMemory]
 
 invalid multibyte character appears in the source code (12/22/11 -- first comp)
 -------------------------------------------------------------------------------
@@ -485,10 +505,6 @@ compiler timeouts
 =============================================================
 pgi-specific regressions (in addition to xt-cle errors above)
 =============================================================
-
-some new warning about -I not being recognized (02/02/12)
----------------------------------------------------------
-*all*
 
 #inclusion of wchar.h generates a warning that breaks testing (11/10/11)
 ------------------------------------------------------------------------
@@ -601,10 +617,6 @@ problem with static/dynamic linking? (10/1/11 -- first run)
 xt-gnu specific failures
 ========================
 
-Numerical accuracy issue (?) (01/20/12)
----------------------------------------
-[Error matching program output for studies/lulesh/sungeun/lulesh (compopts: 1)]
-
 
 ========================
 cygwin-specific failures
@@ -657,17 +669,17 @@ nondet. core dump
 
 nondet. incorrect output
 ------------------------
-[Error matching program output for release/examples/spec/Task_Parallelism_and_Synchronization/singleVar] (10/14/11, 10/21/11, 10/23/11, 10/27/11, 10/30/11, 11/02/11, 11/05/11, 11/11/11, 11/14/11, 11/16/11, 11/21/11, 01/06/12, 01/08/12, 01/26/12)
+[Error matching program output for release/examples/spec/Task_Parallelism_and_Synchronization/singleVar] (10/14/11, 10/21/11, 10/23/11, 10/27/11, 10/30/11, 11/02/11, 11/05/11, 11/11/11, 11/14/11, 11/16/11, 11/21/11, 01/06/12, 01/08/12, 01/26/12, 02/15/12, 02/24/12, 03/01/12, 03/03/12)
 [Error matching program output for
 [Error matching program output for release/examples/spec/Task_Parallelism_and_Synchronization/serialStmt2] (09/30/11, 10/25/11, 10/29/11, 11/03/11, 01/11/12)
 
 nondet. execution timeouts
 --------------------------
-[Error: Timed out executing program release/examples/spec/Task_Parallelism_and_Synchronization/singleVar] (02/10/12)
-[Error: Timed out executing program release/examples/ssca2/SSCA2_main (compopts: 1, execopts: 1)] (12/02/11, 12/04/11, 12/07/11, 12/09/11, 12/12/11, 12/14/11, 12/18/11, 12/21/11, 12/23/11, 12/27/11, 12/30/11, 01/02/12, 01/05/12, 01/11/12, 01/13/12, 01/14/12, 01/17/12, 01/20/12, 01/22/12, 01/30/12, 02/06/12, 02/08/12)
-[Error: Timed out executing program release/examples/ssca2/SSCA2_main (compopts: 3, execopts: 1)] (01/30/12)
-[Error: Timed out executing program release/examples/ssca2/SSCA2_main (compopts: 4, execopts: 1)] (12/02/11, 12/04/11, 12/06/11, 12/08/11, 12/11/11, 12/14/11, 12/22/11, 12/24/11, 12/27/11, 12/29/11, 01/01/12, 01/03/12, 01/06/12, 01/12/12, 01/13/12, 01/23/12, 01/26/12, 02/02/12)
-[Error: Timed out executing program release/examples/ssca2/SSCA2_main (compopts: 5, execopts: 1)] (12/02/11, 12/04/11, 12/09/11, 12/16/11, 12/23/11, 12/27/11, 01/01/12, 01/05/12, 01/09/12, 01/11/12, 01/13/12, 01/25/12, 02/04/12)
+[Error: Timed out executing program release/examples/spec/Task_Parallelism_and_Synchronization/singleVar] (02/10/12, 02/12/12)
+[Error: Timed out executing program release/examples/ssca2/SSCA2_main (compopts: 1, execopts: 1)] (12/02/11, 12/04/11, 12/07/11, 12/09/11, 12/12/11, 12/14/11, 12/18/11, 12/21/11, 12/23/11, 12/27/11, 12/30/11, 01/02/12, 01/05/12, 01/11/12, 01/13/12, 01/14/12, 01/17/12, 01/20/12, 01/22/12, 01/30/12, 02/06/12, 02/08/12, 02/11/12, 02/14/12, 02/16/12, 02/21/12, 03/02/12)
+[Error: Timed out executing program release/examples/ssca2/SSCA2_main (compopts: 3, execopts: 1)] (01/30/12, 02/17/12)
+[Error: Timed out executing program release/examples/ssca2/SSCA2_main (compopts: 4, execopts: 1)] (12/02/11, 12/04/11, 12/06/11, 12/08/11, 12/11/11, 12/14/11, 12/22/11, 12/24/11, 12/27/11, 12/29/11, 01/01/12, 01/03/12, 01/06/12, 01/12/12, 01/13/12, 01/23/12, 01/26/12, 02/02/12, 02/11/12, 02/16/12, 02/22/12, 02/28/12, 03/05/12)
+[Error: Timed out executing program release/examples/ssca2/SSCA2_main (compopts: 5, execopts: 1)] (12/02/11, 12/04/11, 12/09/11, 12/16/11, 12/23/11, 12/27/11, 01/01/12, 01/05/12, 01/09/12, 01/11/12, 01/13/12, 01/25/12, 02/04/12, 02/15/12, 02/21/12, 02/23/12, 02/25/12, 03/02/12)
 [Error: Timed out executing program release/examples/primers/syncsingle] (10/15/11, 10/17/11, 10/23/11, 10/30/11, 11/1/11, 11/3/11, 11/06/11, 11/08/11)
 [Error: Timed out executing program release/examples/spec/Task_Parallelism_and_Synchronization/serialStmt2] (09/26/11, 10/23/11, 11/1/11)
 [Error: Timed out executing program release/examples/primers/taskParallel] (10/06/11, 10/16/11, 10/25/11, 10/28/11, 11/04/11)
@@ -681,9 +693,10 @@ execution timeouts (ever since switching to 4 shepherds)
 nanox+gasnet-specific tests
 ===========================
 
-??? (02/02/12)
---------------
-[Error matching program output for distributions/dm/s7]
+nondet. segfault
+----------------
+[Error matching program output for distributions/dm/s7] (02/02/12, 02/15/12)
+[Error matching program output for multilocale/diten/oneOrMoreLocales/1DBlockDistributedJacobi] (02/15/12, 02/24/12)
 
 new timeouts (02/02/12)
 -----------------------
@@ -703,14 +716,14 @@ nondet. seg fault
 
 nondet. execution timeouts
 --------------------------
-[Error: Timed out executing program multilocale/deitz/needMultiLocales/raCommCheck (compopts: 1)] (02/02/12, 02/10/12)
-[Error: Timed out executing program multilocale/diten/needMultiLocales/coforallon_maxThreads] (02/06/12, 02/10/12)
-[Error: Timed out executing program distributions/dm/s7] (01/31/12, 02/03/12)
-[Error: Timed out executing program release/examples/hpcc/fft] (12/03/11, 12/05/11, 12/07/11, 12/09/11, 12/12/11, 12/17/11, 12/22/11, 12/26/11, 12/28/11, 01/03/12, 01/07/12, 01/13/12, 01/19/12, 01/26/12, 01/29/12, 02/06/12)
-[Error: Timed out executing program release/examples/hpcc/ra (compopts: 1)] (12/08/11, 12/13/11, 12/15/11, 12/21/11, 01/01/12, 01/06/12, 01/15/12, 01/21/12, 01/24/12, 01/26/12, 02/10/12)
-[Error: Timed out executing program release/examples/hpcc/variants/ra-cleanloop (compopts: 1)] (12/07/11, 12/15/11, 12/17/11, 12/27/11, 12/30/11, 01/03/12, 01/13/12, 01/15/12, 01/17/12, 01/19/12, 01/22/12, 01/30/12, 02/03/12, 02/10/12)
-[Error: Timed out executing program release/examples/hpcc/stream] (12/05/11, 12/11/11, 12/14/11, 12/16/11, 12/18/11, 12/21/11, 12/27/11, 01/01/12, 01/04/12, 01/08/12, 01/14/12, 01/23/12, 01/26/12, 02/03/12, 02/06/12, 02/08/12))
-[Error: Timed out executing program release/examples/hpcc/stream-promoted] (12/05/11, 12/06/11, 12/10/11, 12/17/11, 12/21/11, 12/28/11, 01/01/12, 01/04/12, 01/08/12, 01/13/12, 01/16/12, 01/21/12, 01/23/12, 01/29/12, 02/06/12, 02/09/12)
+[Error: Timed out executing program multilocale/deitz/needMultiLocales/raCommCheck (compopts: 1)] (02/02/12, 02/10/12, 02/16/12, 02/21/12)
+[Error: Timed out executing program multilocale/diten/needMultiLocales/coforallon_maxThreads] (02/06/12, 02/10/12, 02/14/12, 02/23/12, 02/27/12, 02/29/12, 03/04/12)
+[Error: Timed out executing program distributions/dm/s7] (01/31/12, 02/03/12, 02/16/12)
+[Error: Timed out executing program release/examples/hpcc/fft] (12/03/11, 12/05/11, 12/07/11, 12/09/11, 12/12/11, 12/17/11, 12/22/11, 12/26/11, 12/28/11, 01/03/12, 01/07/12, 01/13/12, 01/19/12, 01/26/12, 01/29/12, 02/06/12, 02/14/12, 02/22/12, 02/25/12, 02/27/12, 03/04/12)
+[Error: Timed out executing program release/examples/hpcc/ra (compopts: 1)] (12/08/11, 12/13/11, 12/15/11, 12/21/11, 01/01/12, 01/06/12, 01/15/12, 01/21/12, 01/24/12, 01/26/12, 02/10/12, 02/13/12, 02/16/12, 02/21/12, 02/28/12)
+[Error: Timed out executing program release/examples/hpcc/variants/ra-cleanloop (compopts: 1)] (12/07/11, 12/15/11, 12/17/11, 12/27/11, 12/30/11, 01/03/12, 01/13/12, 01/15/12, 01/17/12, 01/19/12, 01/22/12, 01/30/12, 02/03/12, 02/10/12, 02/13/12, 02/21/12, 02/26/12, 02/29/12, 03/02/12, 03/04/12)
+[Error: Timed out executing program release/examples/hpcc/stream] (12/05/11, 12/11/11, 12/14/11, 12/16/11, 12/18/11, 12/21/11, 12/27/11, 01/01/12, 01/04/12, 01/08/12, 01/14/12, 01/23/12, 01/26/12, 02/03/12, 02/06/12, 02/08/12, 02/15/12, 03/01/12, 03/03/12)
+[Error: Timed out executing program release/examples/hpcc/stream-promoted] (12/05/11, 12/06/11, 12/10/11, 12/17/11, 12/21/11, 12/28/11, 01/01/12, 01/04/12, 01/08/12, 01/13/12, 01/16/12, 01/21/12, 01/23/12, 01/29/12, 02/06/12, 02/09/12, 02/13/12, 02/15/12, 02/25/12, 03/04/12)
 [Error: Timed out executing program release/examples/hello6-taskpar-dist] (09/29/11)
 
 execution timeouts (ever since switching to 4 shepherds)
@@ -721,10 +734,6 @@ execution timeouts (ever since switching to 4 shepherds)
 =======================
 qthreads-specific tests
 =======================
-
-serial statement not supported? (10/09/11)
-------------------------------------------
-[Error matching program output for release/examples/spec/Task_Parallelism_and_Synchronization/serialStmt1]
 
 nondet. race on newlines
 ------------------------
@@ -740,16 +749,20 @@ fail consistently prior to that)
 qthreads+gasnet-specific tests (in addition to the above)
 =========================================================
 
+nondet. compilation timeout
+---------------------------
+[Error: Timed out compilation for multilocale/diten/needMultiLocales/coforallon_maxThreads] (02/18/12, 02/21/12, 02/23/12)
+
+strange sub_test early error exit issue (02/14/12)
+--------------------------------------------------
+[Error running sub_test in /tmp/chapel-cron-linux64.gnu.gasnet.qthreads.none-chapelu/chapel/test/distributions/bradc/blkCyc]
+
 ??? (02/04/12)
 --------------
-[Error matching program output for multilocale/gasnet/bradc/257threads-quiet]
-[Error matching program output for multilocale/gasnet/bradc/257threads]
 [Error: Timed out executing program multilocale/diten/oneOrMoreLocales/1DBlockDistributedJacobi]
 
 failed since adding more multilocale directories (01/31/12)
 -----------------------------------------------------------
-[Error: Timed out executing program distributions/bradc/blkCyc/blkCyc2d (compopts: 1)]
-[Error: Timed out executing program distributions/bradc/blkCyc/weirdcase]
 [Error: Timed out executing program distributions/bradc/extremeBlock]
 [Error: Timed out executing program distributions/dm/s7]
 [Error: Timed out executing program distributions/dm/t1]
@@ -764,13 +777,17 @@ failed since adding more multilocale directories (01/31/12)
 [Error: Timed out executing program distributions/sungeun/dataPar1 (execopts: 4)]
 [Error: Timed out executing program distributions/vass/wrapper_nl4_testReplicatedDist1]
 
-nondet. timeout/deadlock
-------------------------
-[Error: Timed out executing program release/examples/primers/fileIO] (01/13/12, 01/16/12, 01/18/12, 01/21/12, 01/25/12, 01/29/12, 02/05/12)
-[Error: Timed out executing program multilocale/diten/needMultiLocales/matrixVecMult] (02/05/12)
-
-nondet. execution timeout
--------------------------
+nondet. execution timeout/deadlock
+----------------------------------
+[Error: Timed out executing program distributions/bradc/blkCyc/sliceBlkCyc] (02/29/12)
+[Error: Timed out executing program distributions/deitz/test_aligned_unaligned_block_forall (compopts: 1)] (02/27/12)
+[Error: Timed out executing program distributions/deitz/test_aligned_unaligned_block_forall_no_fast_follower (compopts: 1)] (02/27/12, 02/29/12)
+[Error: Timed out executing program distributions/bradc/blkCyc/blkCyc2d (compopts: 1)] (01/31/12, 02/15/12)
+[Error: Timed out executing program distributions/bradc/blkCyc/weirdcase] (01/31/12, 02/15/12)
+[Error: Timed out executing program release/examples/primers/fileIO] (01/13/12, 01/16/12, 01/18/12, 01/21/12, 01/25/12, 01/29/12, 02/05/12, 02/16/12)
+[Error: Timed out executing program multilocale/diten/needMultiLocales/matrixVecMult] (02/05/12, 02/13/12, 02/17/12, 02/24/12)
+[Error: Timed out executing program distributions/deitz/test_distribution_syntax2] (02/29/12)
+[Error: Timed out executing program release/examples/ssca2/SSCA2_main (compopts: 1, execopts: 1)] (02/29/12, 03/03/12)
 [Error: Timed out executing program release/examples/primers/distributions] (12/01/11, 12/24/11, 01/03/12, 01/13/12)
 
 nondet. timeout starting when #shepherds based on #cores
@@ -785,6 +802,17 @@ timeouts when #shepherds started getting based on #cores
 =======================
 baseline-specific tests
 =======================
+
+wrong output (02/16/12 -- first run in awhile)
+----------------------------------------------
+[Error matching program output for arrays/deitz/part7/test_descriptor_frees]
+[Error matching program output for memory/figueroa/LeakedMemory2]
+[Error matching program output for memory/figueroa/LeakedMemoryArrayOfClasses]
+[Error matching program output for memory/shannon/memmaxExceedsLineno2]
+
+problems in generated code (02/16/12 -- first run in awhile)
+------------------------------------------------------------
+[Error matching compiler output for types/typedefs/bradc/redefineTypeNames]
 
 times out (since checked in)
 ----------------------------
@@ -893,6 +921,7 @@ unresolved sync variable calls (04/09/11 -- once spec examples added)
 nondet. compilation timeout
 ---------------------------
 [Error: Timed out compilation for release/examples/hello] (10/01/11, 10/02/11, 10/04/11, 10/07/11, 10/12/11, 10/19/11, 10/20/11, 10/23/11, 10/29/11, 11/09/11)
+[Error: Timed out compilation for release/examples/spec/Arrays/slicing] (02/18/12)
 
 
 =======================================================
@@ -906,7 +935,7 @@ warning: full/empty bit modified on less than word-sized data (05/24/11)
 
 nondet. compilation timeout
 ---------------------------
-[Error: Timed out compilation for release/examples/primers/arrays] (10/01/11, 10/06/11, 10/26/11, 11/07/11)
+[Error: Timed out compilation for release/examples/primers/arrays] (10/01/11, 10/06/11, 10/26/11, 11/07/11, 02/16/12)
 
 array index out of bounds due to bug in XMT compiler
 ----------------------------------------------------
