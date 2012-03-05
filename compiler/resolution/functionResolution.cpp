@@ -63,14 +63,11 @@ Map<Type*,FnSymbol*> autoDestroyMap; // type to chpl__autoDestroy function
 Map<FnSymbol*,FnSymbol*> iteratorLeaderMap; // iterator->leader map for promotion
 Map<FnSymbol*,FnSymbol*> iteratorFollowerMap; // iterator->leader map for promotion
 
+static VisibleFunctionManager vFunManager;
+
 //#
 //# Static Function Declarations
 //#
-static BlockStmt*
-getVisibleFunctions(BlockStmt* block,
-                    const char* name,
-                    Vec<FnSymbol*>& visibleFns,
-                    Vec<BlockStmt*>& visited);
 
 static bool hasRefField(Type *type);
 static bool typeHasRefField(Type *type);
@@ -129,8 +126,6 @@ printResolutionError(const char* error,
                      CallInfo* info);
 static void issueCompilerError(CallExpr* call);
 static void reissueCompilerWarning(const char* str, int offset);
-BlockStmt* getVisibilityBlock(Expr* expr);
-static void buildVisibleFunctionMap();
 static Type* resolve_type_expr(Expr* expr);
 static void makeNoop(CallExpr* call);
 static bool isTypeExpr(Expr* expr);
@@ -1716,122 +1711,6 @@ static void reissueCompilerWarning(const char* str, int offset) {
   USR_WARN(from, "%s", str);
 }
 
-static Map<BlockStmt*,VisibleFunctionBlock*> visibleFunctionMap;
-static int nVisibleFunctions = 0; // for incremental build
-static Map<BlockStmt*,BlockStmt*> visibilityBlockCache;
-static Vec<BlockStmt*> standardModuleSet;
-
-//
-// return the innermost block for searching for visible functions
-//
-BlockStmt*
-getVisibilityBlock(Expr* expr) {
-  if (BlockStmt* block = toBlockStmt(expr->parentExpr)) {
-    if (block->blockTag == BLOCK_SCOPELESS)
-      return getVisibilityBlock(block);
-    else
-      return block;
-  } else if (expr->parentExpr) {
-    return getVisibilityBlock(expr->parentExpr);
-  } else {
-    FnSymbol* fn = toFnSymbol(expr->parentSymbol);
-    if (fn && fn->instantiationPoint)
-      return fn->instantiationPoint;
-    else
-      return getVisibilityBlock(expr->parentSymbol->defPoint);
-  }
-}
-
-static void buildVisibleFunctionMap() {
-  for (int i = nVisibleFunctions; i < gFnSymbols.n; i++) {
-    FnSymbol* fn = gFnSymbols.v[i];
-    if (!fn->hasFlag(FLAG_INVISIBLE_FN) && fn->defPoint->parentSymbol && !isArgSymbol(fn->defPoint->parentSymbol)) {
-      BlockStmt* block = NULL;
-      if (fn->hasFlag(FLAG_AUTO_II)) {
-        block = theProgram->block;
-      } else {
-        block = getVisibilityBlock(fn->defPoint);
-        //
-        // add all functions in standard modules to theProgram
-        //
-        if (standardModuleSet.set_in(block))
-          block = theProgram->block;
-      }
-      VisibleFunctionBlock* vfb = visibleFunctionMap.get(block);
-      if (!vfb) {
-        vfb = new VisibleFunctionBlock();
-        visibleFunctionMap.put(block, vfb);
-      }
-      Vec<FnSymbol*>* fns = vfb->visibleFunctions.get(fn->name);
-      if (!fns) {
-        fns = new Vec<FnSymbol*>();
-        vfb->visibleFunctions.put(fn->name, fns);
-      }
-      fns->add(fn);
-    }
-  }
-  nVisibleFunctions = gFnSymbols.n;
-}
-
-static BlockStmt*
-getVisibleFunctions(BlockStmt* block,
-                    const char* name,
-                    Vec<FnSymbol*>& visibleFns,
-                    Vec<BlockStmt*>& visited) {
-  //
-  // all functions in standard modules are stored in a single block
-  //
-  if (standardModuleSet.set_in(block))
-    block = theProgram->block;
-
-  //
-  // avoid infinite recursion due to modules with mutual uses
-  //
-  if (visited.set_in(block))
-    return NULL;
-  else if (isModuleSymbol(block->parentSymbol))
-    visited.set_add(block);
-
-  bool canSkipThisBlock = true;
-
-  VisibleFunctionBlock* vfb = visibleFunctionMap.get(block);
-  if (vfb) {
-    canSkipThisBlock = false; // cannot skip if this block defines functions
-    Vec<FnSymbol*>* fns = vfb->visibleFunctions.get(name);
-    if (fns) {
-      visibleFns.append(*fns);
-    }
-  }
-
-  if (block->modUses) {
-    for_actuals(expr, block->modUses) {
-      SymExpr* se = toSymExpr(expr);
-      INT_ASSERT(se);
-      ModuleSymbol* mod = toModuleSymbol(se->var);
-      INT_ASSERT(mod);
-      canSkipThisBlock = false; // cannot skip if this block uses modules
-      getVisibleFunctions(mod->block, name, visibleFns, visited);
-    }
-  }
-
-  //
-  // visibilityBlockCache contains blocks that can be skipped
-  //
-  if (BlockStmt* next = visibilityBlockCache.get(block)) {
-    getVisibleFunctions(next, name, visibleFns, visited);
-    return (canSkipThisBlock) ? next : block;
-  }
-
-  if (block != rootModule->block) {
-    BlockStmt* next = getVisibilityBlock(block);
-    BlockStmt* cache = getVisibleFunctions(next, name, visibleFns, visited);
-    if (cache)
-      visibilityBlockCache.put(block, cache);
-    return (canSkipThisBlock) ? cache : block;
-  }
-
-  return NULL;
-}
 
 
 static Type*
@@ -1959,15 +1838,16 @@ resolveCall(CallExpr* call, bool errorCheck) {
     //
     // update visible function map as necessary
     //
-    if (gFnSymbols.n != nVisibleFunctions)
-      buildVisibleFunctionMap();
+    if (gFnSymbols.n != vFunManager.nVisibleFunctions)
+      vFunManager.buildVisibleFunctionMap();
 
     if (!call->isResolved()) {
       if (!info.scope) {
         Vec<BlockStmt*> visited;
-        getVisibleFunctions(getVisibilityBlock(call), info.name, visibleFns, visited);
+        vFunManager.getVisibleFunctions(VisibleFunctionManager::getVisibilityBlock(call),
+            info.name, visibleFns, visited);
       } else {
-        if (VisibleFunctionBlock* vfb = visibleFunctionMap.get(info.scope))
+        if (VisibleFunctionBlock* vfb = vFunManager.visibleFunctionMap.get(info.scope))
           if (Vec<FnSymbol*>* fns = vfb->visibleFunctions.get(info.name))
             visibleFns.append(*fns);
       }
@@ -2008,7 +1888,8 @@ resolveCall(CallExpr* call, bool errorCheck) {
 
     FnSymbol* best = NULL;
     Vec<ArgSymbol*>* actualFormals = 0;
-    Expr* scope = (info.scope) ? info.scope : getVisibilityBlock(call);
+    Expr* scope = (info.scope) ? info.scope :
+        VisibleFunctionManager::getVisibilityBlock(call);
     best = disambiguate_by_match(&candidateFns, &candidateActualFormals,
                                  &info.actuals, &actualFormals, scope);
 
@@ -2802,7 +2683,8 @@ createFunctionAsValue(CallExpr *call) {
       
   Vec<FnSymbol*> visibleFns;
   Vec<BlockStmt*> visited;
-  getVisibleFunctions(getVisibilityBlock(call), flname, visibleFns, visited);
+  vFunManager.getVisibleFunctions(VisibleFunctionManager::getVisibilityBlock(call),
+      flname, visibleFns, visited);
 
   if (visibleFns.n > 1) {
     USR_FATAL(call, "%s: can not capture overloaded functions as values",
@@ -2956,7 +2838,8 @@ usesOuterVars(FnSymbol* fn, Vec<FnSymbol*> &seen) {
       Vec<FnSymbol*> visibleFns;
       Vec<BlockStmt*> visited;
 
-      getVisibleFunctions(getVisibilityBlock(call), call->parentSymbol->name, visibleFns, visited);
+      vFunManager.getVisibleFunctions(VisibleFunctionManager::getVisibilityBlock(call),
+          call->parentSymbol->name, visibleFns, visited);
     
       forv_Vec(FnSymbol, called_fn, visibleFns) {
         bool seen_this_fn = false;
@@ -4747,8 +4630,8 @@ parseExplainFlag(char* flag, int* line, ModuleSymbol** module) {
 
 static void
 computeStandardModuleSet() {
-  standardModuleSet.set_add(rootModule->block);
-  standardModuleSet.set_add(theProgram->block);
+  vFunManager.standardModuleSet.set_add(rootModule->block);
+  vFunManager.standardModuleSet.set_add(theProgram->block);
 
   Vec<ModuleSymbol*> stack;
   stack.add(standardModule);
@@ -4760,9 +4643,9 @@ computeStandardModuleSet() {
         INT_ASSERT(se);
         ModuleSymbol* use = toModuleSymbol(se->var);
         INT_ASSERT(use);
-        if (!standardModuleSet.set_in(use->block)) {
+        if (!vFunManager.standardModuleSet.set_in(use->block)) {
           stack.add(use);
-          standardModuleSet.set_add(use->block);
+          vFunManager.standardModuleSet.set_add(use->block);
         }
       }
     }
@@ -4792,16 +4675,6 @@ resolve() {
   resolveUses(mainModule);
 
   resolveFns(chpl_main);
-  
-  /*
-  //TODO: Refactor this into its own function call
-  forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->hasFlag(FLAG_SEPARATELY_TYPE_CHECKED)) {
-      resolveFormals(fn);
-      resolveFns(fn);
-    }
-  }
-  */
 
   USR_STOP();
 
@@ -4826,7 +4699,7 @@ resolve() {
   freeCache(promotionsCache);
 
   Vec<VisibleFunctionBlock*> vfbs;
-  visibleFunctionMap.get_values(vfbs);
+  vFunManager.visibleFunctionMap.get_values(vfbs);
   forv_Vec(VisibleFunctionBlock, vfb, vfbs) {
     Vec<Vec<FnSymbol*>*> vfns;
     vfb->visibleFunctions.get_values(vfns);
@@ -4835,8 +4708,8 @@ resolve() {
     }
     delete vfb;
   }
-  visibleFunctionMap.clear();
-  visibilityBlockCache.clear();
+  vFunManager.visibleFunctionMap.clear();
+  vFunManager.visibilityBlockCache.clear();
 
   checkResolveRemovedPrims();
 

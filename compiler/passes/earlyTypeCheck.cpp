@@ -49,6 +49,8 @@ CongruenceClosure cclosure;
  * FIXME: With CallInfo, respect isResolved for a speed improvement
  */
 
+static VisibleFunctionManager vFunManager;
+/*
 static Map<BlockStmt*, VisibleFunctionBlock*> visibleFunctionMap;
 static int nVisibleFunctions = 0; // for incremental build
 static Map<BlockStmt*, BlockStmt*> visibilityBlockCache;
@@ -144,6 +146,7 @@ static void buildVisibleFunctionMap2() {
   }
   nVisibleFunctions = gFnSymbols.n;
 }
+*/
 
 /*
  * END DUPLICATE CODE
@@ -327,7 +330,7 @@ static BaseAST *typeCheckExpr(BaseAST *currentExpr, BaseAST *expectedReturnTypeE
 
       Vec<FnSymbol*> visibleFns; // visible functions
 
-      buildVisibleFunctionMap2();
+      vFunManager.buildVisibleFunctionMap();
 
       if (!call->isResolved()) {
         // Also include the functions that come into scope because of
@@ -337,7 +340,7 @@ static BaseAST *typeCheckExpr(BaseAST *currentExpr, BaseAST *expectedReturnTypeE
 
         if (!info.scope) {
           Vec<BlockStmt*> visited;
-          getVisibleFunctions(getVisibilityBlock(call), info.name, visibleFns,
+          vFunManager.getVisibleFunctions(vFunManager.getVisibilityBlock(call), info.name, visibleFns,
               visited);
         } else {
           /*
@@ -347,7 +350,7 @@ static BaseAST *typeCheckExpr(BaseAST *currentExpr, BaseAST *expectedReturnTypeE
           */
           Vec<FnSymbol*> fns;
           Vec<BlockStmt*> visited;
-          getVisibleFunctions(info.scope, info.name, fns, visited);
+          vFunManager.getVisibleFunctions(info.scope, info.name, fns, visited);
           visibleFns.append(fns);
         }
       } else {
@@ -663,12 +666,12 @@ static BaseAST* checkFunctionCall(CallExpr* call) {
 
     Vec<FnSymbol*> visibleFns; // visible functions
 
-    buildVisibleFunctionMap2();
+    vFunManager.buildVisibleFunctionMap();
 
     if (!call->isResolved()) {
       if (!info.scope) {
         Vec<BlockStmt*> visited;
-        getVisibleFunctions(getVisibilityBlock(call), info.name, visibleFns,
+        vFunManager.getVisibleFunctions(vFunManager.getVisibilityBlock(call), info.name, visibleFns,
             visited);
       } else {
         /*
@@ -678,7 +681,7 @@ static BaseAST* checkFunctionCall(CallExpr* call) {
         */
         Vec<FnSymbol*> fns;
         Vec<BlockStmt*> visited;
-        getVisibleFunctions(info.scope, info.name, fns, visited);
+        vFunManager.getVisibleFunctions(info.scope, info.name, fns, visited);
         visibleFns.append(fns);
       }
     } else {
@@ -986,7 +989,7 @@ static BaseAST* checkInterfaceImplementations(BaseAST *s) {
                   }
                 }
 
-                buildVisibleFunctionMap2();
+                vFunManager.buildVisibleFunctionMap();
 
                 Vec<FnSymbol*> visibleFns; // visible functions
 
@@ -1019,11 +1022,11 @@ static BaseAST* checkInterfaceImplementations(BaseAST *s) {
                       }
                     }
                   }
-                  getVisibleFunctions(istmt->statements, function_name,
+                  vFunManager.getVisibleFunctions(istmt->statements, function_name,
                     visibleFns, visited);
                 } else {
-                getVisibleFunctions(getVisibilityBlock(ce), info.name,
-                    visibleFns, visited);
+                  vFunManager.getVisibleFunctions(vFunManager.getVisibilityBlock(ce), info.name,
+                      visibleFns, visited);
                 }
 
                 bool found_match = false;
@@ -1067,9 +1070,6 @@ static BaseAST* checkInterfaceImplementations(BaseAST *s) {
                     //Next check return type.
                     Expr *retExpr;
 
-                    //printf("Adding adaptation to witness\n");
-                    addAdaptationToWitness(s, witness, fn, visibleFn);
-
                     if (BlockStmt *blockStmt = toBlockStmt(fn->retExprType))
                       retExpr = blockStmt->body.head;
                     else
@@ -1082,6 +1082,9 @@ static BaseAST* checkInterfaceImplementations(BaseAST *s) {
                         && !strcmp(retSymExpr->var->cname, "self")) {
                       if (cclosure.is_equal(ce->argList.head,
                           visibleFn->retExprType)) {
+
+                        //printf("Adding adaptation to witness\n");
+                        addAdaptationToWitness(s, witness, fn, visibleFn);
                         found_match = true;
                         break;
                       } else {
@@ -1091,6 +1094,9 @@ static BaseAST* checkInterfaceImplementations(BaseAST *s) {
                         && !strcmp(retUnSymExpr->unresolved, "self")) {
                       if (cclosure.is_equal(ce->argList.head,
                           visibleFn->retExprType)) {
+
+                        //printf("Adding adaptation to witness\n");
+                        addAdaptationToWitness(s, witness, fn, visibleFn);
                         found_match = true;
                         break;
                       } else {
@@ -1099,6 +1105,9 @@ static BaseAST* checkInterfaceImplementations(BaseAST *s) {
                     } else {
                       if (cclosure.is_equal(fn->retExprType,
                           visibleFn->retExprType)) {
+
+                        //printf("Adding adaptation to witness\n");
+                        addAdaptationToWitness(s, witness, fn, visibleFn);
                         found_match = true;
                         break;
                       } else {
@@ -1177,6 +1186,6 @@ void earlyTypeCheck(void) {
   //if (found_early_type_checked) {
     //Hackish workaround to stop early when we're early type-checking until we
     //tie into the rest of the passes
-  //INT_FATAL("SUCCESS");
+  INT_FATAL("SUCCESS");
   //}
 }

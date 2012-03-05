@@ -6,6 +6,7 @@
 #include "scopeResolve.h"
 #include "stringutil.h"
 #include "symbol.h"
+#include "typeCheck.h"
 
 //
 // The symbolTable maps BaseAST* pointers to entries based on scope
@@ -910,7 +911,7 @@ process_import_expr(CallExpr* call) {
   if (call->getStmtExpr()->parentExpr == call->getModule()->initFn->body)
     call->getModule()->block->addUse(mod);
   else
-    getVisibilityBlock(call)->addUse(mod);
+    VisibleFunctionManager::getVisibilityBlock(call)->addUse(mod);
   call->getStmtExpr()->remove();
 }
 

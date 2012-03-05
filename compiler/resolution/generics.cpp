@@ -8,7 +8,7 @@
 #include "resolution.h"
 #include "stmt.h"
 #include "symbol.h"
-
+#include "typeCheck.h"
 
 static int explainInstantiationLine = -2;
 static ModuleSymbol* explainInstantiationModule = NULL;
@@ -533,7 +533,7 @@ instantiate(FnSymbol* fn, SymbolMap* subs, CallExpr* call) {
   newFn->instantiatedFrom = fn;
 
   if (call)
-    newFn->instantiationPoint = getVisibilityBlock(call);
+    newFn->instantiationPoint = VisibleFunctionManager::getVisibilityBlock(call);
 
   fn->defPoint->insertBefore(new DefExpr(newFn));
 

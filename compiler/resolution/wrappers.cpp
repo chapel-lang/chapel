@@ -7,7 +7,7 @@
 #include "resolution.h"
 #include "stmt.h"
 #include "symbol.h"
-
+#include "typeCheck.h"
 
 static FnSymbol*
 buildEmptyWrapper(FnSymbol* fn, CallInfo* info) {
@@ -26,7 +26,7 @@ buildEmptyWrapper(FnSymbol* fn, CallInfo* info) {
   }
   if (fn->hasFlag(FLAG_METHOD))
     wrapper->addFlag(FLAG_METHOD);
-  wrapper->instantiationPoint = getVisibilityBlock(info->call);
+  wrapper->instantiationPoint = VisibleFunctionManager::getVisibilityBlock(info->call);
   wrapper->addFlag(FLAG_TEMP);
   return wrapper;
 }
@@ -561,7 +561,7 @@ buildPromotionWrapper(FnSymbol* fn,
       lifn->insertAtTail(loop);
       theProgram->block->insertAtTail(new DefExpr(lifn));
       normalize(lifn);
-      lifn->instantiationPoint = getVisibilityBlock(info->call);
+      lifn->instantiationPoint = VisibleFunctionManager::getVisibilityBlock(info->call);
 
       SymbolMap followerMap;
       FnSymbol* fifn = wrapper->copy(&followerMap);
@@ -589,7 +589,7 @@ buildPromotionWrapper(FnSymbol* fn,
       theProgram->block->insertAtTail(new DefExpr(fifn));
       normalize(fifn);
       fifn->addFlag(FLAG_GENERIC);
-      fifn->instantiationPoint = getVisibilityBlock(info->call);
+      fifn->instantiationPoint = VisibleFunctionManager::getVisibilityBlock(info->call);
     }
     BlockStmt* yieldBlock = new BlockStmt();
     Symbol* yieldTmp = newTemp();
