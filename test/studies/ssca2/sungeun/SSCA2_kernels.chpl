@@ -217,6 +217,7 @@ module SSCA2_kernels
   // Implementation of task-private variables for kernel 4
   //
   use BlockDist;
+  // Kinda want to use PrivateDist here, but there is some module resolution bug
   const myPrivateSpace = [LocaleSpace] dmapped Block(boundingBox=[LocaleSpace]);
   class taskPrivateData {
     const vertex_domain;
@@ -292,11 +293,13 @@ module SSCA2_kernels
 
       // Initialize task private data
       var localePrivate: [myPrivateSpace] localePrivateData(vertex_domain.type);
-      for l in localePrivate {
+      forall l in localePrivate do on l {
         l = new localePrivateData(vertex_domain);
-        // l.temps = [i in l.r] new taskPrivateData(vertex_domain);
-        forall t in l.temps do
+        for t in l.temps { // this might be bad for first-touch
           t = new taskPrivateData(vertex_domain);
+          forall v in vertex_domain do
+            t.children_list[v].nd = [1..G.n_Neighbors[v]];
+        }
       }
 
       // ------------------------------------------------------ 
@@ -324,25 +327,15 @@ module SSCA2_kernels
         var depend => lp.temps[tid].depend;
         var min_distance$ => lp.temps[tid].min_distance$;
         var path_count$   => lp.temps[tid].path_count$;
-        forall v in [vertex_domain] {
+        var children_list => lp.temps[tid].children_list;
+        forall v in vertex_domain do on v {
           depend[v] = 0.0;
           min_distance$[v].writeXF(-1);
           path_count$[v].writeXF(0.0);
-        }
-  	// var min_distance$  : [vertex_domain] sync int       = -1;
-	// var path_count$    : [vertex_domain] sync real (64) = 0.0;
-        // var depend         : [vertex_domain] real;
-
-	var Lcl_Sum_Min_Dist: sync real                     = 0.0;
-
-        var children_list => lp.temps[tid].children_list;
-        // var children_list: [vertex_domain] child_struct(index(vertex_domain));
-        // Initialize size of child lists for each vertex to its neighbor count
-        forall v in vertex_domain {
           children_list[v].child_count = 0;
           children_list[v].vlock$.writeXF(true);
-          children_list[v].nd = [1..G.n_Neighbors[v]];
         }
+	var Lcl_Sum_Min_Dist: sync real = 0.0;
 
 	// The structure of the algorithm depends on a breadth-first
 	// traversal. Each vertex will be marked by the length of
@@ -481,11 +474,6 @@ module SSCA2_kernels
 
 	};  // end forward pass
 
-        // Resize the arrays to the actual count to free up some memory
-        forall v in G.vertices {
-            children_list[v].nd = [1..children_list[v].child_count];
-        }
-
 	if VALIDATE_BC then
 	  Sum_Min_Dist$ += Lcl_Sum_Min_Dist;
 
@@ -507,7 +495,6 @@ module SSCA2_kernels
         // to simplify synchronization between multiple barriers
         var barrier: [2..graph_diameter] single bool;
 
-        // writeln((tid, depend));
         coforall loc in Locales do on loc {
           delete rcLocal(Next_Level);	               // it's empty
           rcLocal(Next_Level)   = rcLocal(Active_Level).previous;  // back up to last level
@@ -524,7 +511,7 @@ module SSCA2_kernels
 
             forall u in rcLocal(Active_Level).Members do
               {
-	      depend (u) = + reduce [v in children_list(u).Row_Children]
+	      depend (u) = + reduce [v in children_list(u).Row_Children[1..children_list(u).child_count]]
 		  ( path_count$ (u) . readFF () / 
 		    path_count$ (v) . readFF () )      *
 		    ( 1.0 + depend (v) );
@@ -569,8 +556,8 @@ module SSCA2_kernels
 	Sum_Min_Dist = Sum_Min_Dist$;
       
       Between_Cent = Between_Cent$;
-  
-      for l in localePrivate {
+
+      forall l in localePrivate do on l {
         [i in l.r] delete l.temps[i];
         delete l;
       }
