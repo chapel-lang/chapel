@@ -476,14 +476,9 @@ static BaseAST *typeCheckFn(FnSymbol *fn) {
 }
 
 static Symbol* mapArguments(CallExpr* where, FnSymbol* visibleFn, CallExpr* call) {
-  //UnresolvedSymExpr *ur_where = toUnresolvedSymExpr(where->baseExpr);
   BaseAST *arg1 = where->argList.get(1);
   BaseAST *arg2 = where->argList.get(2);
-  //printf("%s\n", ur_where->unresolved);
-  //Expr* type = where->list->get(1);
   SymExpr *s_arg1 = toSymExpr(arg1);
-  //SymExpr *s_arg2 = toSymExpr(arg2);
-  //printf("%s %d implements the interface %d\n", s_arg1->var->cname,s_arg1->var->id, arg2->id);
   Expr *e_actual = call->argList.head;
   ArgSymbol *s_formal =
       ((visibleFn)->formals.head) ?
@@ -493,15 +488,11 @@ static Symbol* mapArguments(CallExpr* where, FnSymbol* visibleFn, CallExpr* call
       e_actual = e_actual->next, s_formal =
           (s_formal && s_formal->defPoint->next) ?
               toArgSymbol(toDefExpr((s_formal)->defPoint->next)->sym) : NULL) {
-    //printf("%s %d\n", s_formal->cname, s_formal->id);
     if (s_formal->id == s_arg1->var->id) {
-      //if(checkImplementation(e_actual,s_arg2)){
-      //if (cclosure.has_implements_relation(e_actual, arg2)) {
-      if(Symbol *witness = lookupImplementsWitnessInSymbolTable(call, e_actual, arg2)) {
-        //printf("Interface is implemented!\n");
+      if(Symbol *witness = lookupImplementsWitnessInSymbolTable(call, arg2, e_actual)) {
         return witness;
       } else {
-        //printf("Interface not implemented\n");
+
         return NULL;
       }
 
@@ -982,8 +973,8 @@ static BaseAST* checkInterfaceImplementations(BaseAST *s) {
               istmt->insertBefore(new DefExpr(tmp));
               istmt->insertBefore(new CallExpr(PRIM_MOVE, tmp,
                  new CallExpr(witness->defaultConstructor->name)));
-              addToImplementsSymbolTable(ce,ce->argList.head,
-                  ce->argList.tail, tmp);
+              addToImplementsSymbolTable(ce,ce->argList.tail,
+                  ce->argList.head, tmp);
               istmt->remove();
             } else {
               //printf("Inside clause");
@@ -992,8 +983,8 @@ static BaseAST* checkInterfaceImplementations(BaseAST *s) {
               ce->insertBefore(new CallExpr(PRIM_MOVE, tmp,
                  new CallExpr(witness->defaultConstructor->name)));
 
-              addToImplementsSymbolTable(ce,ce->argList.head,
-                  ce->argList.tail, tmp);
+              addToImplementsSymbolTable(ce,ce->argList.tail,
+                  ce->argList.head, tmp);
               ce->remove();
             }
           } else {
@@ -1039,6 +1030,6 @@ void earlyTypeCheck(void) {
   //if (found_early_type_checked) {
     //Hackish workaround to stop early when we're early type-checking until we
     //tie into the rest of the passes
-  //INT_FATAL("SUCCESS");
+  INT_FATAL("SUCCESS");
   //}
 }
