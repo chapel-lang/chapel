@@ -41,119 +41,13 @@ static void getFunctionsInWhereClause(Map<FnSymbol*, ArgSymbol*>& fnsInInterface
 CongruenceClosure cclosure;
 
 /*
- * BEGIN DUPLICATE CODE
- * FIXME: Need to refactor once we know what we need here
- */
-
-/*
  * FIXME: With CallInfo, respect isResolved for a speed improvement
  */
 
 static VisibleFunctionManager vFunManager;
-/*
-static Map<BlockStmt*, VisibleFunctionBlock*> visibleFunctionMap;
-static int nVisibleFunctions = 0; // for incremental build
-static Map<BlockStmt*, BlockStmt*> visibilityBlockCache;
-static Vec<BlockStmt*> standardModuleSet;
-
-static BlockStmt*
-getVisibleFunctions(BlockStmt* block, const char* name,
-    Vec<FnSymbol*>& visibleFns, Vec<BlockStmt*>& visited) {
-  //
-  // all functions in standard modules are stored in a single block
-  //
-  if (standardModuleSet.set_in(block))
-    block = theProgram->block;
-
-  //
-  // avoid infinite recursion due to modules with mutual uses
-  //
-  if (visited.set_in(block))
-    return NULL;
-  else if (isModuleSymbol(block->parentSymbol))
-    visited.set_add(block);
-
-  bool canSkipThisBlock = true;
-
-  VisibleFunctionBlock* vfb = visibleFunctionMap.get(block);
-  if (vfb) {
-    canSkipThisBlock = false; // cannot skip if this block defines functions
-    Vec<FnSymbol*>* fns = vfb->visibleFunctions.get(name);
-    if (fns) {
-      visibleFns.append(*fns);
-    }
-  }
-
-  if (block->modUses) {
-    for_actuals(expr, block->modUses) {
-      SymExpr* se = toSymExpr(expr);
-      INT_ASSERT(se);
-      ModuleSymbol* mod = toModuleSymbol(se->var);
-      INT_ASSERT(mod);
-      canSkipThisBlock = false; // cannot skip if this block uses modules
-      getVisibleFunctions(mod->block, name, visibleFns, visited);
-    }
-  }
-
-  //
-  // visibilityBlockCache contains blocks that can be skipped
-  //
-  if (BlockStmt* next = visibilityBlockCache.get(block)) {
-    getVisibleFunctions(next, name, visibleFns, visited);
-    return (canSkipThisBlock) ? next : block;
-  }
-
-  if (block != rootModule->block) {
-    BlockStmt* next = getVisibilityBlock(block);
-    BlockStmt* cache = getVisibleFunctions(next, name, visibleFns, visited);
-    if (cache)
-      visibilityBlockCache.put(block, cache);
-    return (canSkipThisBlock) ? cache : block;
-  }
-
-  return NULL;
-}
-
-static void buildVisibleFunctionMap2() {
-  for (int i = nVisibleFunctions; i < gFnSymbols.n; i++) {
-    FnSymbol* fn = gFnSymbols.v[i];
-    if (!fn->hasFlag(FLAG_INVISIBLE_FN)
-        && fn->defPoint->parentSymbol && !isArgSymbol(fn->defPoint->parentSymbol)
-        && !isInterfaceSymbol(fn->defPoint->parentSymbol)) {
-      BlockStmt * block = NULL;
-      if (fn->hasFlag(FLAG_AUTO_II)) {
-        block = theProgram->block;
-      } else {
-        block = getVisibilityBlock(fn->defPoint);
-        //
-        // add all functions in standard modules to theProgram
-        //
-        if (standardModuleSet.set_in(block))
-        block = theProgram->block;
-      }
-      VisibleFunctionBlock* vfb = visibleFunctionMap.get(block);
-      if (!vfb) {
-        vfb = new VisibleFunctionBlock();
-        visibleFunctionMap.put(block, vfb);
-      }
-      Vec<FnSymbol*>* fns = vfb->visibleFunctions.get(fn->name);
-      if (!fns) {
-        fns = new Vec<FnSymbol*>();
-        vfb->visibleFunctions.put(fn->name, fns);
-      }
-      fns->add(fn);
-    }
-  }
-  nVisibleFunctions = gFnSymbols.n;
-}
-*/
 
 /*
- * END DUPLICATE CODE
- */
-
-/*
- * Start of code duplication for SymbolTable required for scoped implements clauses
+ * Adapted code for SymbolTable required for scoped implements clauses
  * Code taken from scopeResolve.cpp
  * Code is modified - structure of SymbolTable
  */
@@ -164,47 +58,10 @@ typedef Map<BaseAST*, ImplementedInterfaceList*> ImplementsSymbolTable;
 
 static ImplementsSymbolTable implementsSymbolTable;
 
-//
-// getScope returns the BaseAST that corresponds to the scope where
-// 'ast' exists; 'ast' must be an Expr or a Symbol.  Note that if you
-// pass this a BaseAST that defines a scope, the BaseAST that defines
-// the scope where it exists will be returned.  Thus if a BlockStmt
-// nested in another BlockStmt is passed to getScope, the outer
-// BlockStmt will be returned.
-//
-static BaseAST*
-getScope2(BaseAST* ast) {
-  if (Expr* expr = toExpr(ast)) {
-    BlockStmt* block = toBlockStmt(expr->parentExpr);
-    if (block && block->blockTag != BLOCK_SCOPELESS) {
-      return block;
-    } else if (expr->parentExpr) {
-      return getScope2(expr->parentExpr);
-    } else if (FnSymbol* fn = toFnSymbol(expr->parentSymbol)) {
-      return fn;
-    } else if (TypeSymbol* ts = toTypeSymbol(expr->parentSymbol)) {
-      if (isEnumType(ts->type) || isClassType(ts->type)) {
-        return ts;
-      }
-    }
-    if (expr->parentSymbol == rootModule)
-      return NULL;
-    else
-      return getScope2(expr->parentSymbol->defPoint);
-  } else if (Symbol* sym = toSymbol(ast)) {
-    if (sym == rootModule)
-      return NULL;
-    else
-      return getScope2(sym->defPoint);
-  }
-  INT_FATAL(ast, "getScope2 expects an Expr or a Symbol");
-  return NULL;
-}
-
 static void
 addToImplementsSymbolTable(CallExpr* ce, BaseAST* interface, BaseAST* implementingType,
     Symbol *implementingWitness){
-  BaseAST* scope = getScope2(ce);
+  BaseAST* scope = getScope(ce);
   BaseAST* interface_node = cclosure.get_representative_ast(interface);
   BaseAST* implementingType_node = cclosure.get_representative_ast(implementingType);
   ImplementedInterfaceList* interfaceEntry = implementsSymbolTable.get(scope);
@@ -222,7 +79,7 @@ addToImplementsSymbolTable(CallExpr* ce, BaseAST* interface, BaseAST* implementi
 
 static bool
 lookupImplementsSymbolTable(BaseAST* ce, BaseAST* interface, BaseAST* implementingType) {
-  BaseAST* scope = getScope2(ce);
+  BaseAST* scope = getScope(ce);
   if(!scope)
     return false;
   BaseAST* interface_node = cclosure.get_representative_ast(interface);
@@ -242,7 +99,7 @@ lookupImplementsSymbolTable(BaseAST* ce, BaseAST* interface, BaseAST* implementi
 
 static Symbol*
 lookupImplementsWitnessInSymbolTable(BaseAST* ce, BaseAST* interface, BaseAST* implementingType) {
-  BaseAST* scope = getScope2(ce);
+  BaseAST* scope = getScope(ce);
   if(!scope)
     return NULL;
   BaseAST* interface_node = cclosure.get_representative_ast(interface);
@@ -259,10 +116,6 @@ lookupImplementsWitnessInSymbolTable(BaseAST* ce, BaseAST* interface, BaseAST* i
     return lookupImplementsWitnessInSymbolTable(scope,interface,implementingType);
   return witness;
 }
-
-/*
- * END DUPLICATE CODE 2
- */
 
 typedef MapElem<FnSymbol *, ArgSymbol *> DictElem;
 
@@ -1186,6 +1039,6 @@ void earlyTypeCheck(void) {
   //if (found_early_type_checked) {
     //Hackish workaround to stop early when we're early type-checking until we
     //tie into the rest of the passes
-  INT_FATAL("SUCCESS");
+  //INT_FATAL("SUCCESS");
   //}
 }

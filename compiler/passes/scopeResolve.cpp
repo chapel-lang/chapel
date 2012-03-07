@@ -49,43 +49,6 @@ static bool enableModuleUsesCache = false;
 static Vec<const char*> aliasFieldSet;
 
 //
-// getScope returns the BaseAST that corresponds to the scope where
-// 'ast' exists; 'ast' must be an Expr or a Symbol.  Note that if you
-// pass this a BaseAST that defines a scope, the BaseAST that defines
-// the scope where it exists will be returned.  Thus if a BlockStmt
-// nested in another BlockStmt is passed to getScope, the outer
-// BlockStmt will be returned.
-//
-static BaseAST*
-getScope(BaseAST* ast) {
-  if (Expr* expr = toExpr(ast)) {
-    BlockStmt* block = toBlockStmt(expr->parentExpr);
-    if (block && block->blockTag != BLOCK_SCOPELESS) {
-      return block;
-    } else if (expr->parentExpr) {
-      return getScope(expr->parentExpr);
-    } else if (FnSymbol* fn = toFnSymbol(expr->parentSymbol)) {
-      return fn;
-    } else if (TypeSymbol* ts = toTypeSymbol(expr->parentSymbol)) {
-      if (isEnumType(ts->type) || isClassType(ts->type)) {
-        return ts;
-      }
-    }
-    if (expr->parentSymbol == rootModule)
-      return NULL;
-    else
-      return getScope(expr->parentSymbol->defPoint);
-  } else if (Symbol* sym = toSymbol(ast)) {
-    if (sym == rootModule)
-      return NULL;
-    else
-      return getScope(sym->defPoint);
-  }
-  INT_FATAL(ast, "getScope expects an Expr or a Symbol");
-  return NULL;
-}
-
-//
 // addToSymbolTable adds the asts in a vector to the global
 // symbolTable such that symbol definitions are added to entries in
 // the table and new enclosing asts become entries

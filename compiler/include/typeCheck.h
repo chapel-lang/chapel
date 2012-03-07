@@ -3,6 +3,8 @@
 
 #include "symbol.h"
 #include "astutil.h"
+#include "expr.h"
+#include "stmt.h"
 #include "map.h"
 #include "vec.h"
 
@@ -133,5 +135,15 @@ struct VisibleFunctionManager {
     return NULL;
   }
 };
+
+//
+// getScope returns the BaseAST that corresponds to the scope where
+// 'ast' exists; 'ast' must be an Expr or a Symbol.  Note that if you
+// pass this a BaseAST that defines a scope, the BaseAST that defines
+// the scope where it exists will be returned.  Thus if a BlockStmt
+// nested in another BlockStmt is passed to getScope, the outer
+// BlockStmt will be returned.
+//
+BaseAST* getScope(BaseAST* ast);
 
 #endif
