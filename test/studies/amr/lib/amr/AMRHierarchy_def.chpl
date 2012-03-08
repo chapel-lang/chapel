@@ -913,14 +913,14 @@ proc AMRHierarchy.clawOutput(frame_number: int)
   var n_grids: int = 0;
   for level in levels do n_grids += level.grids.numIndices;
 
-  const time_file = open(time_file_name, iomode.w).writer();
+  const time_file = open(time_file_name, iomode.cw).writer();
   writeTimeFile(time, 1, n_grids, 1, time_file);
   time_file.close();
 
 
   //---- Solution file ----
   
-  const solution_file = open(solution_file_name, iomode.w).writer();
+  const solution_file = open(solution_file_name, iomode.cw).writer();
   this.writeData(solution_file);
   solution_file.close();
 

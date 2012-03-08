@@ -15,8 +15,8 @@ class Writer {
   proc writing param return true;
   // if it's binary, we don't decorate class/record fields and values
   proc binary:bool { return false; }
-  proc error():err_t { return 0; }
-  proc setError(e:err_t) { }
+  proc error():syserr { return ENOERR; }
+  proc setError(e:syserr) { }
   proc clearError() { }
   proc writePrimitive(x) {
     //compilerError("Generic Writer.writePrimitive called");
@@ -144,8 +144,8 @@ class Reader {
   proc writing param return false;
   // if it's binary, we don't decorate class/record fields and values
   proc binary:bool { return false; }
-  proc error():err_t { return ENOERR; }
-  proc setError(e:err_t) { }
+  proc error():syserr { return ENOERR; }
+  proc setError(e:syserr) { }
   proc clearError() { }
 
   proc readPrimitive(inout x:?t):bool where _isIoPrimitiveTypeOrNewline(t) {

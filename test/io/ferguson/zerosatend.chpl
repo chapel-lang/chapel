@@ -5,7 +5,7 @@ var n = sz / 8;
 
 // create the file.
 {
-  var tmp = open(testfile, iomode.wr);
+  var tmp = open(testfile, iomode.cwr);
 
   var och = tmp.writer(kind=iobig);
   for i in 0..#n {

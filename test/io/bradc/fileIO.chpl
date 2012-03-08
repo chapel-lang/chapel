@@ -9,7 +9,7 @@ r.readln(y);
 r.readln(z);
 r.close();
 
-var w = open("fileIO.out.txt", iomode.w).writer();
+var w = open("fileIO.out.txt", iomode.cw).writer();
 
 w.writeln("(x,y,z) is: ", (x,y,z));
 w.close();
