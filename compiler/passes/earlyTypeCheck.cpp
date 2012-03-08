@@ -26,7 +26,7 @@ static void handle_where_clause_expr(BaseAST *ast);
 static BaseAST *typeCheckFn(FnSymbol *fn);
 static BaseAST *checkInterfaceImplementations(BaseAST *s);
 static Symbol* mapArguments(CallExpr*, FnSymbol*, CallExpr*);
-static BaseAST* checkFunctionCall(CallExpr*);
+static BaseAST* newCheckFunctionCall(CallExpr*, Map<FnSymbol*, ArgSymbol*>&);
 static void addAdaptationToWitness(BaseAST*, ClassType *witness, FnSymbol *requiredFn, FnSymbol *actualFn);
 static void addToImplementsSymbolTable(CallExpr* ce, BaseAST* interface, BaseAST* implementingType, Symbol *implementingWitness);
 
@@ -158,107 +158,13 @@ static BaseAST *typeCheckExpr(BaseAST *currentExpr, BaseAST *expectedReturnTypeE
       } else {
         return e_typeAST;
       }
-    } else if (call->primitive) {
-      INT_FATAL("UNIMPLEMENTED: PRIMITIVE OP\n");
-    } else if (!call->primitive) {
-      //First, check to see if it should be a primitive but it hasn't been
-      //resolved yet
-
-      if (UnresolvedSymExpr *use = toUnresolvedSymExpr(call->baseExpr)) {
-        if (PrimitiveOp *op = primitives_map.get(use->unresolved)) {
-          if (call->argList.length == 0) {
-            return op->returnInfo(call, NULL, NULL);
-          } else if (call->argList.length == 1) {
-            return op->returnInfo(call,
-                cclosure.get_representative_ast(call->argList.get(1)), NULL);
-          } else {
-            return op->returnInfo(call,
-                cclosure.get_representative_ast(call->argList.get(1)),
-                cclosure.get_representative_ast(call->argList.get(2)));
-          }
-        }
-      }
-
-      CallInfo info(call, false);
-
-      Vec<FnSymbol*> visibleFns; // visible functions
-
-      vFunManager.buildVisibleFunctionMap();
-
-      if (!call->isResolved()) {
-        // Also include the functions that come into scope because of
-        // implements statements in the where clause
-        //getFunctionsInWhereClause(info.name, visibleFns, whereClause);
-        getMatchingFunctionsInInterfaces(info.name, visibleFns, fnsInInterfaces);
-
-        if (!info.scope) {
-          Vec<BlockStmt*> visited;
-          vFunManager.getVisibleFunctions(vFunManager.getVisibilityBlock(call), info.name, visibleFns,
-              visited);
-        } else {
-          /*
-          if (VisibleFunctionBlock* vfb = visibleFunctionMap.get(info.scope))
-            if (Vec<FnSymbol*>* fns = vfb->visibleFunctions.get(info.name))
-              visibleFns.append(*fns);
-          */
-          Vec<FnSymbol*> fns;
-          Vec<BlockStmt*> visited;
-          vFunManager.getVisibleFunctions(info.scope, info.name, fns, visited);
-          visibleFns.append(fns);
-        }
+    } else {
+      BaseAST* retExpr = newCheckFunctionCall(call,fnsInInterfaces);
+      if(retExpr == dtUnknown) {
+        USR_FATAL(call, "No matching functions at call");
       } else {
-        visibleFns.add(call->isResolved());
+        return retExpr;
       }
-
-      forv_Vec(FnSymbol, visibleFn, visibleFns) {
-          bool mismatch = false;
-          Expr *e_actual = call->argList.head;
-          ArgSymbol *s_formal =
-              ((visibleFn)->formals.head) ?
-                  toArgSymbol(toDefExpr((visibleFn)->formals.head)->sym) : NULL;
-          for (;
-              e_actual;
-              e_actual = e_actual->next, s_formal =
-                  (s_formal && s_formal->defPoint->next) ?
-                      toArgSymbol(toDefExpr((s_formal)->defPoint->next)->sym) :
-                      NULL) {
-            if (!s_formal) {
-              mismatch = true;
-              break;
-            }
-            if (s_formal->hasFlag(FLAG_TYPE_VARIABLE)) {
-              if (SymExpr *se_actual = toSymExpr(e_actual)) {
-                if (!isTypeSymbol(se_actual->var)) {
-                  mismatch = true;
-                  break;
-                } else {
-                  cclosure.equate(s_formal,se_actual->var);
-                }
-              } else {
-                mismatch = true;
-                break;
-              }
-            } else if (!cclosure.is_equal(e_actual, s_formal->typeExpr)) {
-              mismatch = true;
-              break;
-            }
-          }
-          if (!mismatch) {
-            if (ArgSymbol *obj = fnsInInterfaces.get(visibleFn)) {
-              //printf("Converted to method\n");
-              call->baseExpr->replace(new CallExpr(".", new SymExpr(obj),
-                  new_StringSymbol(info.name)));
-            }
-            if (visibleFn->body->body.length == 0) {
-              return visibleFn->retExprType;
-            }
-            else {
-
-              return typeCheckFn(visibleFn);
-            }
-          }
-        }
-      INT_FATAL("No matching functions at call");
     }
   } else if (UnresolvedSymExpr *use = toUnresolvedSymExpr(currentExpr)) {
     INT_FATAL("UNIMPLEMENTED: Unresolved SymExpr: %s\n", use->unresolved);
@@ -501,137 +407,162 @@ static Symbol* mapArguments(CallExpr* where, FnSymbol* visibleFn, CallExpr* call
   return NULL;
 }
 
-static BaseAST* checkFunctionCall(CallExpr* call) {
-  //printf("In checkFunctioncall\n");
-  BaseAST *retExpr;
-  if (!call->primitive) {
-    //printf("Inside not primitive\n");
-    CallInfo info(call, false);
-
-    Vec<FnSymbol*> visibleFns; // visible functions
-
-    vFunManager.buildVisibleFunctionMap();
-
-    if (!call->isResolved()) {
-      if (!info.scope) {
-        Vec<BlockStmt*> visited;
-        vFunManager.getVisibleFunctions(vFunManager.getVisibilityBlock(call), info.name, visibleFns,
-            visited);
+static BaseAST* newCheckFunctionCall(CallExpr* call, Map<FnSymbol*, ArgSymbol*>& fnsInInterfaces) {
+  if(call->primitive) {
+    USR_FATAL(call,"Unimplemented: Primitive operators\n");
+  }
+  BaseAST* retExpr;
+  //First, check to see if it should be a primitive but it hasn't been
+  //resolved yet
+  if (UnresolvedSymExpr *use = toUnresolvedSymExpr(call->baseExpr)) {
+    if (PrimitiveOp *op = primitives_map.get(use->unresolved)) {
+      if (call->argList.length == 0) {
+        return op->returnInfo(call, NULL, NULL);
+      } else if (call->argList.length == 1) {
+        return op->returnInfo(call,
+            cclosure.get_representative_ast(call->argList.get(1)), NULL);
       } else {
-        /*
-        if (VisibleFunctionBlock* vfb = visibleFunctionMap.get(info.scope))
-          if (Vec<FnSymbol*>* fns = vfb->visibleFunctions.get(info.name))
-            visibleFns.append(*fns);
-        */
-        Vec<FnSymbol*> fns;
-        Vec<BlockStmt*> visited;
-        vFunManager.getVisibleFunctions(info.scope, info.name, fns, visited);
-        visibleFns.append(fns);
+        return op->returnInfo(call,
+            cclosure.get_representative_ast(call->argList.get(1)),
+            cclosure.get_representative_ast(call->argList.get(2)));
       }
+    }
+  }
+
+  CallInfo info(call, false);
+  Vec<FnSymbol*> visibleFns;
+
+  vFunManager.buildVisibleFunctionMap();
+
+  if (!call->isResolved()) {
+    // Also include the functions that come into scope because of
+    // implements statements in the where clause
+    //getFunctionsInWhereClause(info.name, visibleFns, whereClause);
+    getMatchingFunctionsInInterfaces(info.name, visibleFns, fnsInInterfaces);
+
+    if (!info.scope) {
+      Vec<BlockStmt*> visited;
+      vFunManager.getVisibleFunctions(vFunManager.getVisibilityBlock(call), info.name, visibleFns,
+          visited);
     } else {
-      visibleFns.add(call->isResolved());
+      Vec<FnSymbol*> fns;
+      Vec<BlockStmt*> visited;
+      vFunManager.getVisibleFunctions(info.scope, info.name, fns, visited);
+      visibleFns.append(fns);
+    }
+  } else {
+    visibleFns.add(call->isResolved());
+  }
+
+  forv_Vec(FnSymbol, visibleFn, visibleFns) {
+    bool mismatch = false;
+    Expr *e_actual = call->argList.head;
+    ArgSymbol *s_formal =
+        ((visibleFn)->formals.head) ?
+            toArgSymbol(toDefExpr((visibleFn)->formals.head)->sym) : NULL;
+    for (;
+        e_actual;
+        e_actual = e_actual->next, s_formal =
+            (s_formal && s_formal->defPoint->next) ?
+                toArgSymbol(toDefExpr((s_formal)->defPoint->next)->sym) :
+                NULL) {
+      if (!s_formal) {
+        mismatch = true;
+        break;
+      }
+      if (s_formal->hasFlag(FLAG_TYPE_VARIABLE)) {
+        if (SymExpr *se_actual = toSymExpr(e_actual)) {
+          if (!isTypeSymbol(se_actual->var)) {
+            mismatch = true;
+            break;
+          } else {
+            cclosure.equate(s_formal,se_actual->var);
+          }
+        } else {
+          mismatch = true;
+          break;
+        }
+      } else if (!cclosure.is_equal(e_actual, s_formal->typeExpr)) {
+        mismatch = true;
+        break;
+      }
     }
 
-    forv_Vec(FnSymbol, visibleFn, visibleFns) {
-        //printf("Inside for loop Checking against %s\n", visibleFn->cname);
-        bool mismatch = false;
-        Expr *e_actual = call->argList.head;
-        ArgSymbol *s_formal =
-            ((visibleFn)->formals.head) ?
-                toArgSymbol(toDefExpr((visibleFn)->formals.head)->sym) : NULL;
-        for (;
-            e_actual;
-            e_actual = e_actual->next, s_formal =
-                (s_formal && s_formal->defPoint->next) ?
-                    toArgSymbol(toDefExpr((s_formal)->defPoint->next)->sym) :
-                    NULL) {
-          //printf("Inside actuals loop\n");
-          if (!s_formal) {
-            //printf("Mismatched\n");
-            mismatch = true;
-            break;
-          }
-          //printf("Inside Actuals 2\n");
-          if (s_formal->hasFlag(FLAG_TYPE_VARIABLE)) {
-            if (SymExpr *se_actual = toSymExpr(e_actual)) {
-              //printf("Type symbol %s",se_actual->var->cname);
-              if (!isTypeSymbol(se_actual->var)) {
-                mismatch = true;
-                break;
-              } else {
-                cclosure.equate(s_formal,se_actual->var);
-                //typeMap.put(s_formal, toTypeSymbol(se_actual->var));
-              }
-            } else {
-              mismatch = true;
-              break;
-            }
-          } else if (!cclosure.is_equal(e_actual, s_formal->typeExpr)) {
-            //if(UnresolvedSymExpr *s_type = toUnresolvedSymExpr(toExpr(s_formal->typeExpr)))
-            //printf("Mismatched\n");
-            mismatch = true;
-            break;
-          }
-        }
-        //printf("Out of actuals loop\n");
-        if (!mismatch) {
-          //printf ("Matching function found %s\n",visibleFn->cname);
-          if (visibleFn->where) {
-            for_alist(expr,visibleFn->where->body) {
-              if (CallExpr* where_expr = toCallExpr(expr)) {
-                if (UnresolvedSymExpr *callsymexpr = toUnresolvedSymExpr(where_expr->baseExpr)) {
-                  if ((!strcmp(callsymexpr->unresolved, "_build_tuple"))
-                      || (!strcmp(callsymexpr->unresolved, "PRIM_ACTUALS_LIST"))) {
-                    //printf("inside list of exprs\n");
-                    for_alist(wl, where_expr->argList) {
-                      if (CallExpr *where_ce = toCallExpr(wl)) {
-                        if (UnresolvedSymExpr *use = toUnresolvedSymExpr(where_ce->baseExpr)) {
-                          if (!strcmp(use->unresolved, "implements")) {
-                            //printf("where with implements found\n");
-                            if(Symbol *witness = mapArguments(where_ce, visibleFn, call)){
-                              retExpr = cclosure.get_representative_ast((visibleFn->retExprType)->body.head);
-                              cclosure.make_parent_null((visibleFn->retExprType)->body.head);
+    if (!mismatch) {
+      if (visibleFn->where) {
+        for_alist(expr,visibleFn->where->body) {
+          if (CallExpr* where_expr = toCallExpr(expr)) {
+            if (UnresolvedSymExpr *callsymexpr = toUnresolvedSymExpr(where_expr->baseExpr)) {
+              if ((!strcmp(callsymexpr->unresolved, "_build_tuple"))
+                  || (!strcmp(callsymexpr->unresolved, "PRIM_ACTUALS_LIST"))) {
+                for_alist(wl, where_expr->argList) {
+                  if (CallExpr *where_ce = toCallExpr(wl)) {
+                    if (UnresolvedSymExpr *use = toUnresolvedSymExpr(where_ce->baseExpr)) {
+                      if (!strcmp(use->unresolved, "implements")) {
+                        //printf("where with implements found\n");
+                        if(Symbol *witness = mapArguments(where_ce, visibleFn, call)){
+                          retExpr = cclosure.get_representative_ast((visibleFn->retExprType)->body.head);
+                          cclosure.make_parent_null((visibleFn->retExprType)->body.head);
 
-                              call->insertAtTail(new SymExpr(witness));
-
-                              return retExpr;
-                            }
-                            else
-                              return dtUnknown;
+                          call->insertAtTail(new SymExpr(witness));
+                          if (ArgSymbol *obj = fnsInInterfaces.get(visibleFn)) {
+                            // Convert call to method call on interface dictionary
+                            call->baseExpr->replace(new CallExpr(".", new SymExpr(obj),
+                                new_StringSymbol(info.name)));
                           }
+
+                          return retExpr;
+                        }
+                        else {
+                          cclosure.make_parent_null((visibleFn->retExprType)->body.head);
+
+                          return dtUnknown;
                         }
                       }
                     }
-                  } else if (!strcmp(callsymexpr->unresolved, "implements")) {
-                    //printf("where with implements found\n");
-                    if(Symbol *witness = mapArguments(where_expr, visibleFn, call)){
-                      retExpr = cclosure.get_representative_ast((visibleFn->retExprType)->body.head);
-                      cclosure.make_parent_null((visibleFn->retExprType)->body.head);
-
-                      call->insertAtTail(new SymExpr(witness));
-
-                      return retExpr;
-                    }
-                    else
-                      return dtUnknown;
                   }
+                }
+              } else if (!strcmp(callsymexpr->unresolved, "implements")) {
+                //printf("where with implements found\n");
+                if(Symbol *witness = mapArguments(where_expr, visibleFn, call)){
+                  retExpr = cclosure.get_representative_ast((visibleFn->retExprType)->body.head);
+                  cclosure.make_parent_null((visibleFn->retExprType)->body.head);
+
+                  call->insertAtTail(new SymExpr(witness));
+                  if (ArgSymbol *obj = fnsInInterfaces.get(visibleFn)) {
+                    // Convert call to method call on interface dictionary
+                    call->baseExpr->replace(new CallExpr(".", new SymExpr(obj),
+                        new_StringSymbol(info.name)));
+                  }
+
+                  return retExpr;
+                }
+                else {
+                  cclosure.make_parent_null((visibleFn->retExprType)->body.head);
+                  return dtUnknown;
                 }
               }
             }
           }
-          else{
-            retExpr = cclosure.get_representative_ast((visibleFn->retExprType)->body.head);
-            cclosure.make_parent_null((visibleFn->retExprType)->body.head);
-            return retExpr;
-          }
         }
       }
-    //printf("No matching functions at call");
-    return dtUnknown;
+      else{
+        retExpr = cclosure.get_representative_ast((visibleFn->retExprType)->body.head);
+        cclosure.make_parent_null((visibleFn->retExprType)->body.head);
+        if (ArgSymbol *obj = fnsInInterfaces.get(visibleFn)) {
+          // Convert call to method call on interface dictionary
+          call->baseExpr->replace(new CallExpr(".", new SymExpr(obj),
+              new_StringSymbol(info.name)));
+        }
+
+        return retExpr;
+      }
+    }
   }
-  //printf("No matching functions at call");
+
   return dtUnknown;
 }
+
 
 /*
   Creates the parent class which will represent the function's type.  Children of the parent class will capture different functions which
@@ -997,7 +928,8 @@ static BaseAST* checkInterfaceImplementations(BaseAST *s) {
           checkInterfaceImplementations(ce->argList.head);
       }
       else  if(!ce->primitive) {
-        returnExpr = checkFunctionCall(ce);
+        Map<FnSymbol*, ArgSymbol*> fnInInterfaces;
+        returnExpr = newCheckFunctionCall(ce, fnInInterfaces);
         //printf("Return Type: %d\n",returnExpr->id);
         //list_view(returnExpr);
       }
@@ -1030,6 +962,6 @@ void earlyTypeCheck(void) {
   //if (found_early_type_checked) {
     //Hackish workaround to stop early when we're early type-checking until we
     //tie into the rest of the passes
-  INT_FATAL("SUCCESS");
+  //INT_FATAL("SUCCESS");
   //}
 }
