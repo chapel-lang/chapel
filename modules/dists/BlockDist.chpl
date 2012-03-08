@@ -1192,14 +1192,34 @@ proc BlockArr.doiCanBulkTransfer() {
 
 proc BlockArr.doiBulkTransfer(B) {
   if debugBlockDistBulkTransfer then resetCommDiagnostics();
-  coforall i in dom.dist.targetLocDom do // for all locales
-    on dom.dist.targetLocales(i)  {
+  var sameDomain: bool;
+  // We need to do the following on the locale where 'this' was allocated,
+  //  but hopefully, most of the time we are initiating the transfer
+  //  from the same locale (local on clauses are optimized out).
+  on this do sameDomain = dom==B._value.dom;
+  // Use zippered iteration to piggyback data movement with the remote
+  //  fork.  This avoids remote gets for each access to locArr[i] and
+  //  B._value.locArr[i]
+  coforall (i, myLocArr, BmyLocArr) in (dom.dist.targetLocDom,
+                                        locArr,
+                                        B._value.locArr) do
+    on dom.dist.targetLocales(i) {
+
+    if sameDomain &&
+      chpl__useBulkTransfer(myLocArr.myElems, BmyLocArr.myElems) {
+      // Take advantage of DefaultRectangular bulk transfer
+      if debugBlockDistBulkTransfer then startCommDiagnosticsHere();
+      local {
+        myLocArr.myElems._value.doiBulkTransfer(BmyLocArr.myElems);
+      }
+      if debugBlockDistBulkTransfer then stopCommDiagnosticsHere();
+    } else {
       if debugBlockDistBulkTransfer then startCommDiagnosticsHere();
       if (rank==1) {
         var lo=dom.locDoms[i].myBlock.low;
         const start=lo;
         //use divCeilPos(i,j) to know the limits
-        //but i and j has to be possitive.
+        //but i and j have to be positive.
         for (rid, rlo, size) in ConsecutiveChunks(dom,B._value.dom,i,start) {
           if debugBlockDistBulkTransfer then writeln("Local Locale id=",i,
                                             "; Remote locale id=", rid,
@@ -1210,11 +1230,11 @@ proc BlockArr.doiBulkTransfer(B) {
           // NOTE: This does not work with --heterogeneous, but heterogeneous
           // compilation does not work right now.  This call should be changed
           // once that is fixed.
-          var dest = locArr[i].myElems._value.data; // can this be myLocArr?
-          var src = B._value.locArr[rid].myElems._value.data;
+          var dest = myLocArr.myElems._value.data;
+          const src = B._value.locArr[rid].myElems._value.data;
           __primitive("chpl_comm_get",
                       __primitive("array_get", dest,
-                                  locArr[i].myElems._value.getDataIndex(lo)),
+                                  myLocArr.myElems._value.getDataIndex(lo)),
                       rid,
                       __primitive("array_get", src,
                                   B._value.locArr[rid].myElems._value.getDataIndex(rlo)),
@@ -1233,11 +1253,11 @@ proc BlockArr.doiBulkTransfer(B) {
                                         "; lo=", lo,
                                         "; rlo=", rlo
                                         );
-          var dest = locArr[i].myElems._value.data; // can this be myLocArr?
-          var src = B._value.locArr[rid].myElems._value.data;
+          var dest = myLocArr.myElems._value.data;
+          const src = B._value.locArr[rid].myElems._value.data;
           __primitive("chpl_comm_get",
                       __primitive("array_get", dest,
-                                  locArr[i].myElems._value.getDataIndex(lo)),
+                                  myLocArr.myElems._value.getDataIndex(lo)),
                       dom.dist.targetLocales(rid).id,
                       __primitive("array_get", src,
                                   B._value.locArr[rid].myElems._value.getDataIndex(rlo)),
@@ -1248,6 +1268,7 @@ proc BlockArr.doiBulkTransfer(B) {
       }
       if debugBlockDistBulkTransfer then stopCommDiagnosticsHere();
     }
+  }
   if debugBlockDistBulkTransfer then writeln("Comms:",getCommDiagnostics());
 }
 
@@ -1292,8 +1313,8 @@ proc BlockDom.numRemoteElems(rlo,rid){
   return(bhi - rlo + 1);
 }
 
-//Brad's utility function. It drops from Domain D de dimensions
-//indicated by the subsequent parammeters dims...
+//Brad's utility function. It drops from Domain D the dimensions
+//indicated by the subsequent parameters dims.
 proc dropDims(D: domain, dims...) {
   var r = D.dims();
   var r2: (D.rank-dims.size)*r(1).type;

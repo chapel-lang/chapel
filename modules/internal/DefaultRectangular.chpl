@@ -745,7 +745,7 @@ proc DefaultRectangularArr.doiBulkTransfer(B) {
   // NOTE: This does not work with --heterogeneous, but heterogeneous
   // compilation does not work right now.  The calls to chpl_comm_get
   // and chpl_comm_put should be changed once that is fixed.
-  if this.data.locale==here {
+  if this.data.locale.id==here.id {
     if debugDefaultDistBulkTransfer then
       writeln("\tlocal get() from ", B.locale.id);
     var dest = this.data;
@@ -755,7 +755,7 @@ proc DefaultRectangularArr.doiBulkTransfer(B) {
                 B._value.data.locale.id,
                 __primitive("array_get", src, B._value.getDataIndex(Blo)),
                 len);
-  } else if B._value.data.locale==here {
+  } else if B._value.data.locale.id==here.id {
     if debugDefaultDistBulkTransfer then
       writeln("\tlocal put() to ", this.locale.id);
     var dest = this.data;
