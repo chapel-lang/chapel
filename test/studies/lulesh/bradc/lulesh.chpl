@@ -63,14 +63,20 @@
 
  */
 
+
+// TODO: Found a lot of loops that were computing reductions in a race-y
+// way (i.e., by accumulating into unprotected scalars).  This could be
+// the cause of the numerical instability in the nightly tests.  We 
+// really should be using a reduction for these.
+
 use Time;
 
 /* Compile-time constants */
 
 config const showProgress = false;
 config const debug = false;
-config const doTiming = true;
-config const printArrays = false;
+config const doTiming = false;  // TODO: reset to true
+config const printCoords = false;
 
 param XI_M        = 0x003;
 param XI_M_SYMM   = 0x001;
@@ -101,8 +107,13 @@ var infile = open(filename, iomode.r);
 var reader = infile.reader();
 
 if debug then writeln("Reading problem size...");
-const numElems = reader.read(int);
-const numNodes = reader.read(int);
+const (numElems, numNodes) = reader.read(int, int);
+
+// TODO: Do we want to keep this, or promote it across all reads?
+config const debugIO = false;
+
+if (debugIO) then
+  writeln("Using ", numElems, " elements, and ", numNodes, " nodes");
 
 if debug then
   writeln((numElems, numNodes));
@@ -122,6 +133,9 @@ const NodeSpace = [Nodes];
 use BlockDist;
 config param useBlockDist = false;
 
+
+// STYLE: I don't really like these names (ElemDist, NodeDist)
+
 const ElemDist = if useBlockDist then ElemSpace dmapped Block(ElemSpace)
                                  else ElemSpace;
 const NodeDist = if useBlockDist then NodeSpace dmapped Block(NodeSpace)
@@ -129,20 +143,15 @@ const NodeDist = if useBlockDist then NodeSpace dmapped Block(NodeSpace)
 
                            
                                  
-if debug then writeln("reading number of symmetric elements per dim");
-//
-// STYLE: would like to do this:
-// const (numSymX, numSymY, numSymZ) = reader.read((int, int, int));
-//
-const numSymX = reader.read(int);
-const numSymY = reader.read(int);
-const numSymZ = reader.read(int);
-                                                                         
+// STYLE: It'd be nice to replace groups of three arrays with some
+// sort of tuple or otherwise parameterizable data structure
 
 // coordinates
 var
    x, y, z: [NodeDist] real; //coordinates
 
+
+// TODO: Support comments in file between major sections for clarity
                                                                          
 if debug then writeln("reading coordinates");
 for (locX,locY,locZ) in (x,y,z) do reader.read(locX, locY, locZ);
@@ -179,27 +188,7 @@ for e in elemToNode do
     reader.read(n);
 
                                                                          
-const XSymSpace = [0..#numSymX];
-const YSymSpace = [0..#numSymY];
-const ZSymSpace = [0..#numSymZ];
 
-var XSym: [XSymSpace] int;
-var YSym: [YSymSpace] int;
-var ZSym: [ZSymSpace] int;
-
-if debug then
-  writeln((numSymX, numSymY, numSymZ));
-
-//
-// STYLE: Wanted to do this:
-// reader.read(XSym, YSym, ZSym);
-//
-
-if debug then writeln("reading symmetric cell locations");
-
-for x in XSym do reader.read(x);
-for y in YSym do reader.read(y);
-for z in ZSym do reader.read(z);
 
 var lxim, lxip, letam, letap, lzetam, lzetap: [ElemDist] index(ElemDist);
 
@@ -209,16 +198,55 @@ for (xm,xp,em,ep,zm,zp) in (lxim, lxip, letam, letap, lzetam, lzetap) do
   reader.read(xm,xp,em,ep,zm,zp);
 
 
+if debug then writeln("reading symmetric cell locations");
+
+// NOTE: The integers returned by readNodeSet below are not actually
+// used currently because Chapel prefers iterating over arrays directly
+// (i.e. 'forall x in XSym' rather than 'forall i in 0..#numSymX ... XSym[i]').
+//
+// Moreover, an array's size can also be queried directly
+// (i.e., 'const numSymX = XSym.numElements')
+//
+// We used the style below to demonstrate a commonly used idiom in
+// current unstructured codes.
+
+var (numSymX, XSym) = readNodeset(reader);
+var (numSymY, YSym) = readNodeset(reader);
+var (numSymZ, ZSym) = readNodeset(reader);
+
+if debugIO {
+  writeln("XSym:\n", XSym);
+  writeln("YSym:\n", YSym);
+  writeln("ZSym:\n", ZSym);
+}
+
+
+if debug then writeln("reading free surfaces");
+
+var (numFreeSurf, freeSurface) = readNodeset(reader);
+
+if debugIO {
+  writeln("freeSurface:\n", freeSurface);
+}
+
+
+// Make sure we're at the end of the input file, for sanity
+/*
+var err: err_t = ENOERR;
+var badint: int;
+reader.read(badint, error=err);
+if (err != EEOF) then halt("Data remains at end of file");
+*/
+
+
+
+
 // TODO: Retire these over time; we prefer the index(...) form
 // OR: use something like type Element = index(ElemDist)?
 
 /* Types */
 type Eid = index(ElemDist);
 type Nid = index(NodeDist);
-
-
-if debug then
-  writeln(XSym, " ", YSym, " ", ZSym);
 
 
 /* Constants */
@@ -241,6 +269,7 @@ const u_cut = 1.0e-7,       /* velocity tolerance */
   qlc_monoq = 0.5,          /* linear term coef for q */
   qqc_monoq = 2.0/3.0,      /* quadratic term coef for q */
   qqc = 2.0, 
+  qqc2 = 64.0 * qqc**2,
   eosvmax = 1.0e+9,
   eosvmin = 1.0e-9,
   pmin = 0.0,               /* pressure floor */
@@ -255,7 +284,17 @@ const u_cut = 1.0e-7,       /* velocity tolerance */
 
 config const stoptime = 1.0e-2;        /* end time for simulation */
 
-var matElemlist: [ElemDist] Eid,
+// BIG TODO: matElemList should be a sparse subdomain; for the
+// purposes of this benchmark, it should be a fully-populated sparse
+// subdomain (i.e., a sparse subdomain of ElemDist equal to ElemDist).
+// Unfortunately, because they are the same size/shape/index set,
+// this leads to a lot of loops that are looping over the wrong thing
+// or zippering matElemList and ElemDist even though they're of
+// different sizes.  We've tried to mark all of these cases that use
+// matElemList directly with TODOs throughout the code.
+
+var matElemlist: [ElemDist] Eid, 
+
 
   elemBC: [ElemDist] int,
 
@@ -308,9 +347,6 @@ proc main() {
   LuleshData();
   if debug then testInit();
 
-  //deposit energy for Sedov Problem
-  e[ElemSpace.low] = 3.948746e+7;
-
   var st: real;
   if doTiming then st = getCurrentTime();
   while (time < stoptime) {
@@ -329,16 +365,22 @@ proc main() {
   if doTiming {
     const et = getCurrentTime();
     writeln("Total Time: ", et-st);
+    writeln("Number of cycles: ", cycle);
   }
-  if printArrays {
+
+  // TODO: We should dump these coords to a file so that things like
+  // progress, timing, etc. come to the console and the coordinates
+  // are plottable in gnuplot (which they are!)
+
+  if printCoords {
     for i in NodeDist {
       if debug {
-        writeln(format("%3d",NodeDist.indexOrder(i)), ": ", 
+        writeln(//format("%3d",NodeDist.indexOrder(i)), ": ", 
                 format("%1.9e", x[i]), " ", 
                 format("%1.9e", y[i]), " ", 
                 format("%1.9e", z[i]));
       } else {
-        writeln(format("%3d",NodeDist.indexOrder(i)), ": ", 
+        writeln(//format("%3d",NodeDist.indexOrder(i)), ": ", 
                 format("%1.4e", x[i]), " ", 
                 format("%1.4e", y[i]), " ", 
                 format("%1.4e", z[i]));
@@ -365,7 +407,10 @@ proc LuleshData() {
   //calculated on the fly using functions with the same name as the arrays
 
   /* set up boundary condition information */
-  setupBoundaryConditions();
+  const octantCorner = setupBoundaryConditions();
+
+  //deposit energy for Sedov Problem
+  e[octantCorner] = 3.948746e+7;
 }
 
 proc initializeFieldData() {
@@ -392,17 +437,34 @@ proc initializeFieldData() {
   // which point the massAccum$ array can go away (and will at the
   // procedure's return
 
-  nodalMass = massAccum$;
+  nodalMass = massAccum$ / 8.0;
 }
 
 proc setupBoundaryConditions() {
-  forall e in ElemDist {
-    forall n in elemToNode[e] {
-      if x[n] == 0.0 then elemBC[e] |=   XI_M_SYMM;
-      if y[n] == 0.0 then elemBC[e] |=  ETA_M_SYMM;
-      if z[n] == 0.0 then elemBC[e] |= ZETA_M_SYMM;
-    }
+  var surfaceNode: [NodeDist] int;
+
+  forall n in XSym do
+    surfaceNode[n] = 1;
+  forall n in YSym do
+    surfaceNode[n] = 1;
+  forall n in ZSym do
+    surfaceNode[n] = 1;
+
+  forall e in ElemDist do {
+    var mask: int;
+    for i in 0..#nodesPerElem do
+      mask += surfaceNode[elemToNode[e][i]] << i;
+
+    // STYLE: make a little inlined function for this idiom?
+
+    if ((mask & 0x0f) == 0x0f) then elemBC[e] |= ZETA_M_SYMM;
+    if ((mask & 0xf0) == 0xf0) then elemBC[e] |= ZETA_P_SYMM;
+    if ((mask & 0x33) == 0x33) then elemBC[e] |= ETA_M_SYMM;
+    if ((mask & 0xcc) == 0xcc) then elemBC[e] |= ETA_P_SYMM;
+    if ((mask & 0x99) == 0x99) then elemBC[e] |= XI_M_SYMM;
+    if ((mask & 0x66) == 0x66) then elemBC[e] |= XI_P_SYMM;
   }
+
 
   //
   // We find the octant corner by looking for the element with
@@ -411,21 +473,43 @@ proc setupBoundaryConditions() {
   //
   var (check, loc) = maxloc reduce (elemBC, ElemDist);
 
-  assert(check == (XI_M_SYMM | ETA_M_SYMM | ZETA_M_SYMM));
-  writeln("Found the octant corner at: ", loc);
-  
-  
+  if debug then writeln("Found the octant corner at: ", loc);
 
-  writeln("WARNING: Skipping the boundary conditions for now!");
-  
-  /*
-  elemBC[..,..,Elems.low ] |= XI_M_SYMM;
-  elemBC[..,..,Elems.high] |= XI_P_FREE;
-  elemBC[..,Elems.low ,..] |= ETA_M_SYMM;
-  elemBC[..,Elems.high,..] |= ETA_P_FREE;
-  elemBC[Elems.low ,..,..] |= ZETA_M_SYMM;
-  elemBC[Elems.high,..,..] |= ZETA_P_FREE;
-  */
+  if (check != (XI_M_SYMM | ETA_M_SYMM | ZETA_M_SYMM)) then
+    halt("maxloc got a value of ", check, " at loc ", loc);
+
+  // PERF TODO: This is an example of an array that, in a distributed
+  // memory code, would typically be completely local and only storing
+  // the local nodes owned by the locale -- noting that some nodes
+  // are logically owned by multiple locales and therefore would 
+  // redundantly be stored in both locales' surfaceNode arrays -- it's
+  // essentially local scratchspace that does not need to be communicated
+  // or kept coherent across locales.
+  //
+
+  surfaceNode = 0;
+
+  forall n in freeSurface do
+    surfaceNode[n] = 1;
+
+  // STYLE: Unify these loop idioms over elemToNode?
+
+  forall e in ElemDist do {
+    var mask: int;
+    for i in 0..#nodesPerElem do
+      mask += surfaceNode[elemToNode[e][i]] << i;
+
+    // STYLE: make a little inlined function for this idiom?
+
+    if ((mask & 0x0f) == 0x0f) then elemBC[e] |= ZETA_M_FREE;
+    if ((mask & 0xf0) == 0xf0) then elemBC[e] |= ZETA_P_FREE;
+    if ((mask & 0x33) == 0x33) then elemBC[e] |= ETA_M_FREE;
+    if ((mask & 0xcc) == 0xcc) then elemBC[e] |= ETA_P_FREE;
+    if ((mask & 0x99) == 0x99) then elemBC[e] |= XI_M_FREE;
+    if ((mask & 0x66) == 0x66) then elemBC[e] |= XI_P_FREE;
+  }
+
+  return loc;
 }
 
 // TODO: This seems inefficient... Can we just alias/reuse the existing
@@ -856,47 +940,60 @@ inline proc CalcTimeConstraintsForElems() {
   CalcHydroConstraintForElems();
 }
 
-proc CalcCourantConstraintForElems() {
-  var dtcourant_tmp = 1.0e+20;
-  var courant_elem: Eid;
-  var qqc2 = 64.0 * qqc**2;
-  var active = false;
-
-  forall (i,indx) in (ElemDist,matElemlist) {
-    var dtf = ss[indx]**2;
-    if vdov[indx] < 0.0 {
-      dtf += qqc2 * arealg[indx]**2 * vdov[indx]**2;
-    }
-    dtf = sqrt(dtf);
-    dtf = arealg[indx] / dtf;
-
-    /* determine minimum timestep with its corresponding elem */
-    if vdov[indx] != 0.0 && dtf < dtcourant_tmp {
-      dtcourant_tmp = dtf;
-      courant_elem = indx;
-      active = true;
-    }
+inline proc computeDTF(indx) {
+  var dtf = ss[indx]**2;
+  if vdov[indx] < 0.0 {
+    dtf += qqc2 * arealg[indx]**2 * vdov[indx]**2;
   }
-  /* Don't try to register a time constraint if none of the elements were active */
-  if active then dtcourant = dtcourant_tmp;
+  dtf = sqrt(dtf);
+  dtf = arealg[indx] / dtf;
+
+  // TODO: remove following && clause -- we believe it was just a sentinel
+  // value, similar to how we're using max(real) to make sure the reduction
+  // found something useful.
+  if vdov[indx] != 0.0 /* && dtf < 1.0e+20 */ then
+    return dtf;
+  else
+    return max(real);
+}
+
+proc CalcCourantConstraintForElems() {
+  var courant_elem: index(ElemDist); // TODO: This is currently unused; Jeff's
+                                     // looking into it
+
+  const (val, loc) 
+          = minloc reduce
+              ([indx in matElemlist] computeDTF(indx),
+               matElemlist);
+
+  if (val == max(real)) {
+    courant_elem = -1;
+  } else {
+    dtcourant = val;
+    courant_elem = -1;
+  }
 }
 
 proc CalcHydroConstraintForElems() {
-  var dthydro_tmp = 1.0e+20;
-  var dthydro_elem: Eid;
-  var active = false;
+  var dthydro_elem: index(ElemDist);  // TODO: This is currently unused; Jeff's
+                                      // looking into it
 
-  forall (i,indx) in (ElemDist,matElemlist) {
-    if vdov[indx] != 0.0 {
-      var dtdvov = dvovmax / (abs(vdov[indx])+1.0e-20);
-      if dthydro_tmp > dtdvov {
-        dthydro_tmp = dtdvov;
-        dthydro_elem = indx;
-        active = true;
-      }
-    }
+  const (val, loc)
+          = minloc reduce 
+                     ([indx in matElemlist] 
+                        (if vdov[indx] == 0.0 
+                            then max(real)
+                            else dvovmax / (abs(vdov[indx])+1.0e-20)),
+             // TODO: Here vvv ElemDist should be 0..#matElemlist.numIndices
+                      ElemDist);
+  if (val == max(real)) {
+    dthydro_elem = -1;
+    // TODO: Should dthydro be set here?  Jeff is going to look into this?
+    // Related: Should we be comparing against 1.0e+20 in some way?
+  } else {
+    dthydro = val;
+    dthydro_elem = loc;
   }
-  if active then dthydro = dthydro_tmp;
 }
 
 proc CalcForceForNodes() {
@@ -1179,10 +1276,18 @@ proc CalcQForElems() {
 }
 
 // sungeun: Temporary array reused throughout
+//
+// TODO: This should be over a domain 0..matElemList.numIndices
+//
 var vnewc: [ElemDist] real;
 proc ApplyMaterialPropertiesForElems() {
   /* Expose all of the variables needed for material evaluation */
 
+  // 
+  // TODO: This is a gather operation, so we should be iterating
+  // over matElemlist.size rather than assuming its size ==
+  // ElemDist.numIndices
+  //
   forall i in ElemDist do vnewc[i] = vnew[matElemlist[i]];
 
   if eosvmin != 0.0 {
@@ -1192,9 +1297,12 @@ proc ApplyMaterialPropertiesForElems() {
     [c in vnewc] if c > eosvmax then c = eosvmax;
   }
 
+  // TODO: The following loop should compute min/max reductions;
+  // currently, race-y
+
   //does this actually do anything?
-  forall eli in ElemDist {
-    var vc = v[matElemlist[eli]];
+  forall matelm in matElemlist {
+    var vc = v[matelm];
     if eosvmin != 0.0 && vc < eosvmin then vc = eosvmin;
     if eosvmax != 0.0 && vc > eosvmax then vc = eosvmax;
     if vc <= 0.0 {
@@ -1302,7 +1410,7 @@ proc CalcMonotonicQForElems(delv_xi, delv_eta, delv_zeta,
                             delx_xi, delx_eta, delx_zeta) {
   //got rid of call through to "CalcMonotonicQRegionForElems"
 
-  forall (eli,i) in (ElemDist,matElemlist) {
+  forall i in matElemlist {
     const ptiny = 1.0e-36;
     const bcMask = elemBC[i];
     var norm, delvm, delvp: real;
@@ -1426,6 +1534,9 @@ proc EvalEOSForElems(vnewc) {
   var e_old, delvc, p_old, q_old, compression, compHalfStep, 
     qq_old, ql_old, work, p_new, e_new, q_new, bvc, pbvc: [ElemDist] real;
 
+  // TODO: This needs to be converted into a gather -- see TODO in
+  // ApplyMaterialPropertiesForElems
+  //
   /* compress data, minimal set */
   forall (i,zidx) in (ElemDist,matElemlist) {
     e_old[i]  = e[zidx];
@@ -1435,6 +1546,9 @@ proc EvalEOSForElems(vnewc) {
     qq_old[i] = qq[zidx];
     ql_old[i] = ql[zidx];
   }
+
+  // TODO: The following should be over the number of things in matElemList,
+  // not over ElemDist
 
   forall i in ElemDist do local {
     compression[i] = 1.0 / vnewc[i] - 1.0;
@@ -1465,6 +1579,8 @@ proc EvalEOSForElems(vnewc) {
                      p_old, e_old, q_old, compression, compHalfStep, 
                      vnewc, work, delvc, qq_old, ql_old);
 
+  // TODO: This should be a scatter; the dual of EvalEOSOverElems
+
   forall (i,zidx) in (ElemDist,matElemlist) {
     p[zidx] = p_new[i];
     e[zidx] = e_new[i];
@@ -1483,6 +1599,9 @@ proc CalcEnergyForElems(p_new, e_new, q_new, bvc, pbvc,
   /* TODO [sungeun]: Check if these are remote value forwarded. */
   const rho0 = refdens; 
   const sixth = 1.0 / 6.0;
+  //
+  // TODO: This should be declared over 0..#matElemList, not ElemDist
+  //
   var pHalfStep: [ElemDist] real;
 
   forall i in ElemDist {
@@ -1549,6 +1668,13 @@ proc CalcEnergyForElems(p_new, e_new, q_new, bvc, pbvc,
 }
 
 proc CalcSoundSpeedForElems(vnewc, rho0:real, enewc, pnewc, pbvc, bvc) {
+  // TODO: This is assuming ElemDist and matElemlist have the same
+  // arity, which won't always be the case.  So, the first thing we're
+  // iterating over should be a 0..matElemlist.numIndices domain.
+  //
+  // TODO: Open question: If we had multiple materials, should (a) ss
+  // be zeroed and accumulated into, and (b) updated atomically to
+  // avoid losing updates?  (Jeff will go back and think on this)
   forall (i,iz) in (ElemDist,matElemlist) {
     var ssTmp = (pbvc[i] * enewc[i] + vnewc[i]**2 * bvc[i] * pnewc[i]) / rho0;
     if ssTmp <= 1.111111e-36 then ssTmp = 1.111111e-36;
@@ -1557,7 +1683,7 @@ proc CalcSoundSpeedForElems(vnewc, rho0:real, enewc, pnewc, pbvc, bvc) {
 }
 
 //
-// TODO: This seems a little extraneous at this point...  Just use a
+// STYLE: This seems a little extraneous at this point...  Just use a
 // zippered iterator at callsites?
 //
 iter elemToNodesTuple(e) {
@@ -1618,3 +1744,13 @@ proc deprint(title:string, A: [?D] real) {
   writeln([a in A] format("%g",a), " ");
 }
 
+proc readNodeset(reader) {
+  const arrSize = reader.read(int);
+  //  var A: [0..#arrSize] index(NodeDist);
+  var A: [0..#arrSize] int;
+
+  for a in A do
+    reader.read(a);
+
+  return (arrSize, A);
+}
