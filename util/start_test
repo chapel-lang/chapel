@@ -688,6 +688,12 @@ while ( $#argv > 0 )
         set logfile = $argv[1]
         shift
         breaksw
+    case -logtmp:
+    case --logtmp:
+        shift
+        set logtmp = $argv[1]
+        shift
+        breaksw
     case -memleaks:
     case --memleaks:
         shift
@@ -790,7 +796,7 @@ while ( $#argv > 0 )
                 breaksw
     case -h:
     case -help:
-        case --help:
+    case --help:
         echo Usage and defaults\:
         echo "     start_test <options> <files> <directories>"
                 echo "          -clean-only"
