@@ -1,0 +1,4 @@
+GEN_LFLAGS += -L$(HWLOC_LIB_DIR) -L$(STARPU_LIB_DIR)
+LIBS += -lstarpu-1.0 -lhwloc
+
+LD=$(CXX)

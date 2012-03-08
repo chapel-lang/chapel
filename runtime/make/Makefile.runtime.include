@@ -39,5 +39,8 @@ ifneq ($(strip $(wildcard $(MEM_INCLUDE))),)
   include $(MEM_INCLUDE)
 endif
 
+# Add includes for codelet support (starpu and hwloc)
+include $(RUNTIME_ROOT)/make/Makefile.runtime.codelet
+
 RUNTIME_CFLAGS += $(RUNTIME_DEFS)
 

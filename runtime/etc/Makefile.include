@@ -8,6 +8,9 @@ include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.threads-$(CHPL_MAKE_THREADS)
 include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.comm-$(CHPL_MAKE_COMM)
 include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.mem-$(CHPL_MAKE_MEM)
 
+# Include necessary codelet libs
+include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.codelet
+
 # Get runtime headers and required -D flags.
 # sets RUNTIME_INCLUDE_ROOT RUNTIME_CFLAGS RUNTIME_INCLS
 include $(CHPL_MAKE_HOME)/runtime/make/Makefile.runtime.include

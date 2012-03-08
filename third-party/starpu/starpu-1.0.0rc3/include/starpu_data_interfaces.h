@@ -135,7 +135,7 @@ struct starpu_data_interface_ops
 };
 
 /* Return the next available id for a data interface */
-int starpu_data_interface_get_next_id();
+int starpu_data_interface_get_next_id(void);
 
 void starpu_data_register(starpu_data_handle_t *handleptr, uint32_t home_node, void *data_interface, struct starpu_data_interface_ops *ops);
 void starpu_data_register_same(starpu_data_handle_t *handledst, starpu_data_handle_t handlesrc);
