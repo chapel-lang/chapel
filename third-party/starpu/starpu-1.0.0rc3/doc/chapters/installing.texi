@@ -1,0 +1,130 @@
+@c -*-texinfo-*-
+
+@c This file is part of the StarPU Handbook.
+@c Copyright (C) 2009--2011  Universit@'e de Bordeaux 1
+@c Copyright (C) 2010, 2011, 2012  Centre National de la Recherche Scientifique
+@c Copyright (C) 2011 Institut National de Recherche en Informatique et Automatique
+@c See the file starpu.texi for copying conditions.
+
+@menu
+* Downloading StarPU::          
+* Configuration of StarPU::     
+* Building and Installing StarPU::  
+@end menu
+
+StarPU can be built and installed by the standard means of the GNU
+autotools. The following chapter is intended to briefly remind how these tools
+can be used to install StarPU.
+
+@node Downloading StarPU
+@section Downloading StarPU
+
+@menu
+* Getting Sources::             
+* Optional dependencies::       
+@end menu
+
+@node Getting Sources
+@subsection Getting Sources
+
+The latest official release tarballs of StarPU sources are available
+for download from
+@indicateurl{https://gforge.inria.fr/frs/?group_id=1570}.
+
+The latest nightly development snapshot is available from
+@indicateurl{http://starpu.gforge.inria.fr/testing/}.
+
+@example
+% wget http://starpu.gforge.inria.fr/testing/starpu-nightly-latest.tar.gz
+@end example
+
+Additionally, the code can be directly checked out of Subversion, it
+should be done only if you need the very latest changes (i.e. less
+than a day!).@footnote{The client side of the software Subversion can
+be obtained from @indicateurl{http://subversion.tigris.org}. If you
+are running on Windows, you will probably prefer to use TortoiseSVN
+from @indicateurl{http://tortoisesvn.tigris.org/}}.
+
+@example
+% svn checkout svn://scm.gforge.inria.fr/svn/starpu/trunk
+@end example
+
+@node Optional dependencies
+@subsection Optional dependencies
+
+The topology discovery library, @code{hwloc}, is not mandatory to use StarPU
+but strongly recommended. It allows to increase performance, and to
+perform some topology aware scheduling.
+
+@code{hwloc} is available in major distributions and for most OSes and can be
+downloaded from @indicateurl{http://www.open-mpi.org/software/hwloc}.
+
+@node Configuration of StarPU
+@section Configuration of StarPU
+
+@menu
+* Generating Makefiles and configuration scripts::  
+* Running the configuration::   
+@end menu
+
+@node Generating Makefiles and configuration scripts
+@subsection Generating Makefiles and configuration scripts
+
+This step is not necessary when using the tarball releases of StarPU.  If you
+are using the source code from the svn repository, you first need to generate
+the configure scripts and the Makefiles. This requires the
+availability of @code{autoconf}, @code{automake} >= 2.60, and @code{makeinfo}.
+
+@example
+% ./autogen.sh
+@end example
+
+@node Running the configuration
+@subsection Running the configuration
+
+@example
+% ./configure
+@end example
+
+Details about options that are useful to give to @code{./configure} are given in
+@ref{Compilation configuration}.
+
+@node Building and Installing StarPU
+@section Building and Installing StarPU
+
+@menu
+* Building::                    
+* Sanity Checks::               
+* Installing::                  
+@end menu
+
+@node Building
+@subsection Building
+
+@example
+% make
+@end example
+
+@node Sanity Checks
+@subsection Sanity Checks
+
+In order to make sure that StarPU is working properly on the system, it is also
+possible to run a test suite.
+
+@example
+% make check
+@end example
+
+@node Installing
+@subsection Installing
+
+In order to install StarPU at the location that was specified during
+configuration:
+
+@example
+% make install
+@end example
+
+Libtool interface versioning information are included in
+libraries names (libstarpu-1.0.so, libstarpumpi-1.0.so and
+libstarpufft-1.0.so).

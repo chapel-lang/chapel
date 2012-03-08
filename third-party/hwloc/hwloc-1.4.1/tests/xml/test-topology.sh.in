@@ -1,0 +1,86 @@
+#!/bin/sh
+#-*-sh-*-
+
+#
+# Copyright © 2009 CNRS
+# Copyright © 2009-2010 inria.  All rights reserved.
+# Copyright © 2009-2011 Université Bordeaux 1
+# Copyright © 2010 Cisco Systems, Inc.  All rights reserved.
+# See COPYING in top-level directory.
+#
+
+# Check the conformance of `lstopo' for all the XML
+# hierarchies available here.  Return true on success.
+
+HWLOC_top_builddir="@HWLOC_top_builddir@"
+HWLOC_top_srcdir="@HWLOC_top_srcdir@"
+lstopo="@HWLOC_top_builddir@/utils/lstopo"
+
+# make sure we use default numeric formats
+LANG=C
+LC_ALL=C
+export LANG LC_ALL
+
+error()
+{
+    echo $@ 2>&1
+}
+
+if [ ! -x "$lstopo" ]
+then
+    error "Could not find executable file \`$lstopo'."
+    exit 1
+fi
+
+
+: ${TMPDIR=/tmp}
+{
+  tmp=`
+    (umask 077 && mktemp -d "$TMPDIR/fooXXXXXX") 2>/dev/null
+  ` &&
+  test -n "$tmp" && test -d "$tmp"
+} || {
+  tmp=$TMPDIR/foo$$-$RANDOM
+  (umask 077 && mkdir "$tmp")
+} || exit $?
+file="$tmp/lstopo_xml.output.xml"
+
+set -e
+
+do_run()
+{
+  $lstopo --if xml --input "$1" --of xml "$file"
+
+  if [ "$HWLOC_UPDATE_TEST_TOPOLOGY_OUTPUT" != 1 ]
+  then
+    diff @HWLOC_DIFF_U@ @HWLOC_DIFF_W@ "$1" "$file"
+  else
+    if ! diff "$1" "$file" >/dev/null
+    then
+	cp -f "$file" "$1"
+	echo "Updated $1"
+    fi
+  fi
+
+  if [ -n "@XMLLINT@" ]
+  then
+    cp -f "$HWLOC_top_srcdir"/src/hwloc.dtd "$tmp/"
+    @XMLLINT@ --valid "$file" > /dev/null
+  fi
+
+  rm "$file"
+}
+
+export HWLOC_NO_LIBXML_IMPORT
+export HWLOC_NO_LIBXML_EXPORT
+
+echo "Importing with default parser and reexporting with minimalistic implementation..."
+HWLOC_NO_LIBXML_IMPORT=0
+HWLOC_NO_LIBXML_EXPORT=1
+do_run "$1"
+echo "Importing with minimalistic parser and reexporting with default implementation..."
+HWLOC_NO_LIBXML_IMPORT=1
+HWLOC_NO_LIBXML_EXPORT=0
+do_run "$1"
+
+rm -rf "$tmp"

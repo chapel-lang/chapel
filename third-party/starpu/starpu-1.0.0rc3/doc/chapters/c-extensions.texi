@@ -1,0 +1,411 @@
+@c -*-texinfo-*-
+
+@c This file is part of the StarPU Handbook.
+@c Copyright (C) 2011, 2012 Institut National de Recherche en Informatique et Automatique
+@c See the file starpu.texi for copying conditions.
+
+@cindex C extensions
+@cindex GCC plug-in
+
+When GCC plug-in support is available, StarPU builds a plug-in for the
+GNU Compiler Collection (GCC), which defines extensions to languages of
+the C family (C, C++, Objective-C) that make it easier to write StarPU
+code@footnote{This feature is only available for GCC 4.5 and later.  It
+can be disabled by configuring with @code{--disable-gcc-extensions}.}.
+
+Those extensions include syntactic sugar for defining
+tasks and their implementations, invoking a task, and manipulating data
+buffers.  Use of these extensions can be made conditional on the
+availability of the plug-in, leading to valid C sequential code when the
+plug-in is not used (@pxref{Conditional Extensions}).
+
+When StarPU has been installed with its GCC plug-in, programs that use
+these extensions can be compiled this way:
+
+@example
+$ gcc -c -fplugin=`pkg-config starpu-1.0 --variable=gccplugin` foo.c
+@end example
+
+@noindent
+When the plug-in is not available, the above @command{pkg-config}
+command returns the empty string.
+
+In addition, the @code{-fplugin-arg-starpu-verbose} flag can be used to
+obtain feedback from the compiler as it analyzes the C extensions used
+in source files.
+
+This section describes the C extensions implemented by StarPU's GCC
+plug-in.  It does not require detailed knowledge of the StarPU library.
+
+Note: as of StarPU @value{VERSION}, this is still an area under
+development and subject to change.
+
+@menu
+* Defining Tasks::              Defining StarPU tasks
+* Synchronization and Other Pragmas:: Synchronization, and more.
+* Registered Data Buffers::     Manipulating data buffers
+* Conditional Extensions::      Using C extensions only when available
+@end menu
+
+@node Defining Tasks
+@section Defining Tasks
+
+@cindex task
+@cindex task implementation
+
+The StarPU GCC plug-in views @dfn{tasks} as ``extended'' C functions:
+
+@enumerate
+@item
+tasks may have several implementations---e.g., one for CPUs, one written
+in OpenCL, one written in CUDA;
+@item
+tasks may have several implementations of the same target---e.g.,
+several CPU implementations;
+@item
+when a task is invoked, it may run in parallel, and StarPU is free to
+choose any of its implementations.
+@end enumerate
+
+Tasks and their implementations must be @emph{declared}.  These
+declarations are annotated with @dfn{attributes} (@pxref{Attribute
+Syntax, attributes in GNU C,, gcc, Using the GNU Compiler Collection
+(GCC)}): the declaration of a task is a regular C function declaration
+with an additional @code{task} attribute, and task implementations are
+declared with a @code{task_implementation} attribute.
+
+The following function attributes are provided:
+
+@table @code
+
+@item task
+@cindex @code{task} attribute
+Declare the given function as a StarPU task.  Its return type must be
+@code{void}, and it must not be defined---instead, a definition will
+automatically be provided by the compiler.
+
+Under the hood, declaring a task leads to the declaration of the
+corresponding @code{codelet} (@pxref{Codelet and Tasks}).  If one or
+more task implementations are declared in the same compilation unit,
+then the codelet and the function itself are also defined; they inherit
+the scope of the task.
+
+Scalar arguments to the task are passed by value and copied to the
+target device if need be---technically, they are passed as the
+@code{cl_arg} buffer (@pxref{Codelets and Tasks, @code{cl_arg}}).
+
+@cindex @code{output} type attribute
+Pointer arguments are assumed to be registered data buffers---the
+@code{buffers} argument of a task (@pxref{Codelets and Tasks,
+@code{buffers}}); @code{const}-qualified pointer arguments are viewed as
+read-only buffers (@code{STARPU_R}), and non-@code{const}-qualified
+buffers are assumed to be used read-write (@code{STARPU_RW}).  In
+addition, the @code{output} type attribute can be as a type qualifier
+for output pointer or array parameters (@code{STARPU_W}).
+
+@item task_implementation (@var{target}, @var{task})
+@cindex @code{task_implementation} attribute
+Declare the given function as an implementation of @var{task} to run on
+@var{target}.  @var{target} must be a string, currently one of
+@code{"cpu"}, @code{"opencl"}, or @code{"cuda"}.
+@c FIXME: Update when OpenCL support is ready.
+
+@end table
+
+Here is an example:
+
+@cartouche
+@smallexample
+#define __output  __attribute__ ((output))
+
+static void matmul (const float *A, const float *B,
+                    __output float *C,
+                    size_t nx, size_t ny, size_t nz)
+  __attribute__ ((task));
+
+static void matmul_cpu (const float *A, const float *B,
+                        __output float *C,
+                        size_t nx, size_t ny, size_t nz)
+  __attribute__ ((task_implementation ("cpu", matmul)));
+
+
+static void
+matmul_cpu (const float *A, const float *B, __output float *C,
+            size_t nx, size_t ny, size_t nz)
+@{
+  size_t i, j, k;
+
+  for (j = 0; j < ny; j++)
+    for (i = 0; i < nx; i++)
+      @{
+        for (k = 0; k < nz; k++)
+          C[j * nx + i] += A[j * nz + k] * B[k * nx + i];
+      @}
+@}
+@end smallexample
+@end cartouche
+
+@noindent
+A @code{matmult} task is defined; it has only one implementation,
+@code{matmult_cpu}, which runs on the CPU.  Variables @var{A} and
+@var{B} are input buffers, whereas @var{C} is considered an input/output
+buffer.
+
+CUDA and OpenCL implementations can be declared in a similar way:
+
+@cartouche
+@smallexample
+static void matmul_cuda (const float *A, const float *B, float *C,
+                         size_t nx, size_t ny, size_t nz)
+  __attribute__ ((task_implementation ("cuda", matmul)));
+
+static void matmul_opencl (const float *A, const float *B, float *C,
+                           size_t nx, size_t ny, size_t nz)
+  __attribute__ ((task_implementation ("opencl", matmul)));
+@end smallexample
+@end cartouche
+
+@noindent
+The CUDA and OpenCL implementations typically either invoke a kernel
+written in CUDA or OpenCL (for similar code, @pxref{CUDA Kernel}, and
+@pxref{OpenCL Kernel}), or call a library function that uses CUDA or
+OpenCL under the hood, such as CUBLAS functions:
+
+@cartouche
+@smallexample
+static void
+matmul_cuda (const float *A, const float *B, float *C,
+             size_t nx, size_t ny, size_t nz)
+@{
+  cublasSgemm ('n', 'n', nx, ny, nz,
+               1.0f, A, 0, B, 0,
+               0.0f, C, 0);
+  cudaStreamSynchronize (starpu_cuda_get_local_stream ());
+@}
+@end smallexample
+@end cartouche
+
+A task can be invoked like a regular C function:
+
+@cartouche
+@smallexample
+matmul (&A[i * zdim * bydim + k * bzdim * bydim],
+        &B[k * xdim * bzdim + j * bxdim * bzdim],
+        &C[i * xdim * bydim + j * bxdim * bydim],
+        bxdim, bydim, bzdim);
+@end smallexample
+@end cartouche
+
+@noindent
+This leads to an @dfn{asynchronous invocation}, whereby @code{matmult}'s
+implementation may run in parallel with the continuation of the caller.
+
+The next section describes how memory buffers must be handled in
+StarPU-GCC code.  For a complete example, see the
+@code{gcc-plugin/examples} directory of the source distribution, and
+@ref{Vector Scaling Using the C Extension, the vector-scaling
+example}.
+
+
+@node Synchronization and Other Pragmas
+@section Initialization, Termination, and Synchronization
+
+The following pragmas allow user code to control StarPU's life time and
+to synchronize with tasks.
+
+@table @code
+
+@item #pragma starpu initialize
+Initialize StarPU.  This call is compulsory and is @emph{never} added
+implicitly.  One of the reasons this has to be done explicitly is that
+it provides greater control to user code over its resource usage.
+
+@item #pragma starpu shutdown
+Shut down StarPU, giving it an opportunity to write profiling info to a
+file on disk, for instance (@pxref{Off-line, off-line performance
+feedback}).
+
+@item #pragma starpu wait
+Wait for all task invocations to complete, as with
+@code{starpu_wait_for_all} (@pxref{Codelets and Tasks,
+starpu_wait_for_all}).
+
+@end table
+
+@node Registered Data Buffers
+@section Registered Data Buffers
+
+Data buffers such as matrices and vectors that are to be passed to tasks
+must be @dfn{registered}.  Registration allows StarPU to handle data
+transfers among devices---e.g., transferring an input buffer from the
+CPU's main memory to a task scheduled to run a GPU (@pxref{StarPU Data
+Management Library}).
+
+The following pragmas are provided:
+
+@table @code
+
+@item #pragma starpu register @var{ptr} [@var{size}]
+Register @var{ptr} as a @var{size}-element buffer.  When @var{ptr} has
+an array type whose size is known, @var{size} may be omitted.
+
+@item #pragma starpu unregister @var{ptr}
+Unregister the previously-registered memory area pointed to by
+@var{ptr}.  As a side-effect, @var{ptr} points to a valid copy in main
+memory.
+
+@item #pragma starpu acquire @var{ptr}
+Acquire in main memory an up-to-date copy of the previously-registered
+memory area pointed to by @var{ptr}, for read-write access.
+
+@item #pragma starpu release @var{ptr}
+Release the previously-register memory area pointed to by @var{ptr},
+making it available to the tasks.
+
+@end table
+
+Additionally, the @code{heap_allocated} variable attribute offers a
+simple way to allocate storage for arrays on the heap:
+
+@table @code
+
+@item heap_allocated
+@cindex @code{heap_allocated} attribute
+This attributes applies to local variables with an array type.  Its
+effect is to automatically allocate the array's storage on
+the heap, using @code{starpu_malloc} under the hood (@pxref{Basic Data
+Library API, starpu_malloc}).  The heap-allocated array is automatically
+freed when the variable's scope is left, as with
+automatic variables.
+
+@end table
+
+@noindent
+The following example illustrates use of the @code{heap_allocated}
+attribute:
+
+@example
+extern void cholesky(unsigned nblocks, unsigned size,
+                    float mat[nblocks][nblocks][size])
+  __attribute__ ((task));
+
+int
+main (int argc, char *argv[])
+@{
+#pragma starpu initialize
+
+  /* ... */
+
+  int nblocks, size;
+  parse_args (&nblocks, &size);
+
+  /* Allocate an array of the required size on the heap,
+     and register it.  */
+
+  @{
+    float matrix[nblocks][nblocks][size]
+      __attribute__ ((heap_allocated));
+
+#pragma starpu register matrix
+
+    cholesky (nblocks, size, matrix);
+
+#pragma starpu wait
+#pragma starpu unregister matrix
+
+  @}   /* MATRIX is automatically freed here.  */
+
+#pragma starpu shutdown
+
+  return EXIT_SUCCESS;
+@}
+@end example
+
+@node Conditional Extensions
+@section Using C Extensions Conditionally
+
+The C extensions described in this chapter are only available when GCC
+and its StarPU plug-in are in use.  Yet, it is possible to make use of
+these extensions when they are available---leading to hybrid CPU/GPU
+code---and discard them when they are not available---leading to valid
+sequential code.
+
+To that end, the GCC plug-in defines a C preprocessor macro when it is
+being used:
+
+@defmac STARPU_GCC_PLUGIN
+Defined for code being compiled with the StarPU GCC plug-in.  When
+defined, this macro expands to an integer denoting the version of the
+supported C extensions.
+@end defmac
+
+The code below illustrates how to define a task and its implementations
+in a way that allows it to be compiled without the GCC plug-in:
+
+@smallexample
+/* The macros below abstract over the attributes specific to
+   StarPU-GCC and the name of the CPU implementation.  */
+#ifdef STARPU_GCC_PLUGIN
+# define __task  __attribute__ ((task))
+# define CPU_TASK_IMPL(task)  task ## _cpu
+#else
+# define __task
+# define CPU_TASK_IMPL(task)  task
+#endif
+
+#include <stdlib.h>
+
+static void matmul (const float *A, const float *B, float *C,
+                    size_t nx, size_t ny, size_t nz) __task;
+
+#ifdef STARPU_GCC_PLUGIN
+
+static void matmul_cpu (const float *A, const float *B, float *C,
+                        size_t nx, size_t ny, size_t nz)
+  __attribute__ ((task_implementation ("cpu", matmul)));
+
+#endif
+
+
+static void
+CPU_TASK_IMPL (matmul) (const float *A, const float *B, float *C,
+                        size_t nx, size_t ny, size_t nz)
+@{
+  /* Code of the CPU kernel here...  */
+@}
+
+int
+main (int argc, char *argv[])
+@{
+  /* The pragmas below are simply ignored when StarPU-GCC
+     is not used.  */
+#pragma starpu initialize
+
+  float A[123][42][7], B[123][42][7], C[123][42][7];
+
+#pragma starpu register A
+#pragma starpu register B
+#pragma starpu register C
+
+  /* When StarPU-GCC is used, the call below is asynchronous;
+     otherwise, it is synchronous.  */
+  matmul (A, B, C, 123, 42, 7);
+
+#pragma starpu wait
+#pragma starpu shutdown
+
+  return EXIT_SUCCESS;
+@}
+@end smallexample
+
+Note that attributes such as @code{task} are simply ignored by GCC when
+the StarPU plug-in is not loaded, so the @code{__task} macro could be
+omitted altogether.  However, @command{gcc -Wall} emits a warning for
+unknown attributes, which can be inconvenient, and other compilers may
+be unable to parse the attribute syntax.  Thus, using macros such as
+@code{__task} above is recommended.
+
+@c Local Variables:
+@c TeX-master: "../starpu.texi"
+@c ispell-local-dictionary: "american"
+@c End:

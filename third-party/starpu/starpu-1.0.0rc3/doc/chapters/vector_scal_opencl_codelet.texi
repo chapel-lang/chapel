@@ -1,0 +1,16 @@
+@c -*-texinfo-*-
+
+@c This file is part of the StarPU Handbook.
+@c Copyright (C) 2009-2011  Université de Bordeaux 1
+@c Copyright (C) 2010, 2011  Centre National de la Recherche Scientifique
+@c See the file starpu.texi for copying conditions.
+
+@smallexample
+__kernel void vector_mult_opencl(__global float* val, int nx, float factor)
+@{
+        const int i = get_global_id(0);
+        if (i < nx) @{
+                val[i] *= factor;
+        @}
+@}
+@end smallexample

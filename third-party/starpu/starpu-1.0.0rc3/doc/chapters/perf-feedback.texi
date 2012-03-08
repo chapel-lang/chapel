@@ -1,0 +1,429 @@
+@c -*-texinfo-*-
+
+@c This file is part of the StarPU Handbook.
+@c Copyright (C) 2009--2011  Universit@'e de Bordeaux 1
+@c Copyright (C) 2010, 2011, 2012  Centre National de la Recherche Scientifique
+@c Copyright (C) 2011 Institut National de Recherche en Informatique et Automatique
+@c See the file starpu.texi for copying conditions.
+
+@menu
+* On-line::                     On-line performance feedback
+* Off-line::                    Off-line performance feedback
+* Codelet performance::         Performance of codelets
+* Theoretical lower bound on execution time API::  
+@end menu
+
+@node On-line
+@section On-line performance feedback
+
+@menu
+* Enabling monitoring::         Enabling on-line performance monitoring
+* Task feedback::               Per-task feedback
+* Codelet feedback::            Per-codelet feedback
+* Worker feedback::             Per-worker feedback
+* Bus feedback::                Bus-related feedback
+* StarPU-Top::                  StarPU-Top interface
+@end menu
+
+@node Enabling monitoring
+@subsection Enabling on-line performance monitoring
+
+In order to enable online performance monitoring, the application can call
+@code{starpu_profiling_status_set(STARPU_PROFILING_ENABLE)}. It is possible to
+detect whether monitoring is already enabled or not by calling
+@code{starpu_profiling_status_get()}. Enabling monitoring also reinitialize all
+previously collected feedback. The @code{STARPU_PROFILING} environment variable
+can also be set to 1 to achieve the same effect.
+
+Likewise, performance monitoring is stopped by calling
+@code{starpu_profiling_status_set(STARPU_PROFILING_DISABLE)}. Note that this
+does not reset the performance counters so that the application may consult
+them later on.
+
+More details about the performance monitoring API are available in section
+@ref{Profiling API}.
+
+@node Task feedback
+@subsection Per-task feedback
+
+If profiling is enabled, a pointer to a @code{starpu_task_profiling_info}
+structure is put in the @code{.profiling_info} field of the @code{starpu_task}
+structure when a task terminates.
+This structure is automatically destroyed when the task structure is destroyed,
+either automatically or by calling @code{starpu_task_destroy}.
+
+The @code{starpu_task_profiling_info} structure indicates the date when the
+task was submitted (@code{submit_time}), started (@code{start_time}), and
+terminated (@code{end_time}), relative to the initialization of
+StarPU with @code{starpu_init}. It also specifies the identifier of the worker
+that has executed the task (@code{workerid}).
+These date are stored as @code{timespec} structures which the user may convert
+into micro-seconds using the @code{starpu_timing_timespec_to_us} helper
+function.
+
+It it worth noting that the application may directly access this structure from
+the callback executed at the end of the task. The @code{starpu_task} structure
+associated to the callback currently being executed is indeed accessible with
+the @code{starpu_get_current_task()} function.
+
+@node Codelet feedback
+@subsection Per-codelet feedback
+
+The @code{per_worker_stats} field of the @code{struct starpu_codelet} structure is
+an array of counters. The i-th entry of the array is incremented every time a
+task implementing the codelet is executed on the i-th worker.
+This array is not reinitialized when profiling is enabled or disabled.
+
+@node Worker feedback
+@subsection Per-worker feedback
+
+The second argument returned by the @code{starpu_worker_get_profiling_info}
+function is a @code{starpu_worker_profiling_info} structure that gives
+statistics about the specified worker. This structure specifies when StarPU
+started collecting profiling information for that worker (@code{start_time}),
+the duration of the profiling measurement interval (@code{total_time}), the
+time spent executing kernels (@code{executing_time}), the time spent sleeping
+because there is no task to execute at all (@code{sleeping_time}), and the
+number of tasks that were executed while profiling was enabled.
+These values give an estimation of the proportion of time spent do real work,
+and the time spent either sleeping because there are not enough executable
+tasks or simply wasted in pure StarPU overhead. 
+
+Calling @code{starpu_worker_get_profiling_info} resets the profiling
+information associated to a worker.
+
+When an FxT trace is generated (see @ref{Generating traces}), it is also
+possible to use the @code{starpu_top} script (described in @ref{starpu-top}) to
+generate a graphic showing the evolution of these values during the time, for
+the different workers.
+
+@node Bus feedback
+@subsection Bus-related feedback 
+
+TODO: ajouter STARPU_BUS_STATS
+
+@c how to enable/disable performance monitoring
+
+@c what kind of information do we get ?
+
+The bus speed measured by StarPU can be displayed by using the
+@code{starpu_machine_display} tool, for instance:
+
+@example
+StarPU has found:
+        3 CUDA devices
+                CUDA 0 (Tesla C2050 02:00.0)
+                CUDA 1 (Tesla C2050 03:00.0)
+                CUDA 2 (Tesla C2050 84:00.0)
+from    to RAM          to CUDA 0       to CUDA 1       to CUDA 2
+RAM     0.000000        5176.530428     5176.492994     5191.710722
+CUDA 0  4523.732446     0.000000        2414.074751     2417.379201
+CUDA 1  4523.718152     2414.078822     0.000000        2417.375119
+CUDA 2  4534.229519     2417.069025     2417.060863     0.000000
+@end example
+
+@node StarPU-Top
+@subsection StarPU-Top interface
+
+StarPU-Top is an interface which remotely displays the on-line state of a StarPU
+application and permits the user to change parameters on the fly.
+
+Variables to be monitored can be registered by calling the
+@code{starpu_top_add_data_boolean}, @code{starpu_top_add_data_integer},
+@code{starpu_top_add_data_float} functions, e.g.:
+
+@cartouche
+@smallexample
+starpu_top_data *data = starpu_top_add_data_integer("mynum", 0, 100, 1);
+@end smallexample
+@end cartouche
+
+The application should then call @code{starpu_top_init_and_wait} to give its name
+and wait for StarPU-Top to get a start request from the user. The name is used
+by StarPU-Top to quickly reload a previously-saved layout of parameter display.
+
+@cartouche
+@smallexample
+starpu_top_init_and_wait("the application");
+@end smallexample
+@end cartouche
+
+The new values can then be provided thanks to
+@code{starpu_top_update_data_boolean}, @code{starpu_top_update_data_integer},
+@code{starpu_top_update_data_float}, e.g.:
+
+@cartouche
+@smallexample
+starpu_top_update_data_integer(data, mynum);
+@end smallexample
+@end cartouche
+
+Updateable parameters can be registered thanks to @code{starpu_top_register_parameter_boolean}, @code{starpu_top_register_parameter_integer}, @code{starpu_top_register_parameter_float}, e.g.:
+
+@cartouche
+@smallexample
+float alpha;
+starpu_top_register_parameter_float("alpha", &alpha, 0, 10, modif_hook);
+@end smallexample
+@end cartouche
+
+@code{modif_hook} is a function which will be called when the parameter is being modified, it can for instance print the new value:
+
+@cartouche
+@smallexample
+void modif_hook(struct starpu_top_param *d) @{
+    fprintf(stderr,"%s has been modified: %f\n", d->name, alpha);
+@}
+@end smallexample
+@end cartouche
+
+Task schedulers should notify StarPU-Top when it has decided when a task will be
+scheduled, so that it can show it in its Gantt chart, for instance:
+
+@cartouche
+@smallexample
+starpu_top_task_prevision(task, workerid, begin, end);
+@end smallexample
+@end cartouche
+
+Starting StarPU-Top and the application can be done two ways:
+
+@itemize
+@item The application is started by hand on some machine (and thus already
+waiting for the start event). In the Preference dialog of StarPU-Top, the SSH
+checkbox should be unchecked, and the hostname and port (default is 2011) on
+which the application is already running should be specified. Clicking on the
+connection button will thus connect to the already-running application.
+@item StarPU-Top is started first, and clicking on the connection button will
+start the application itself (possibly on a remote machine). The SSH checkbox
+should be checked, and a command line provided, e.g.:
+
+@example
+ssh myserver STARPU_SCHED=heft ./application
+@end example
+
+If port 2011 of the remote machine can not be accessed directly, an ssh port bridge should be added:
+
+@example
+ssh -L 2011:localhost:2011 myserver STARPU_SCHED=heft ./application
+@end example
+
+and "localhost" should be used as IP Address to connect to.
+@end itemize
+
+@node Off-line
+@section Off-line performance feedback
+
+@menu
+* Generating traces::           Generating traces with FxT
+* Gantt diagram::               Creating a Gantt Diagram
+* DAG::                         Creating a DAG with graphviz
+* starpu-top::                  Monitoring activity
+@end menu
+
+@node Generating traces
+@subsection Generating traces with FxT
+
+StarPU can use the FxT library (see
+@indicateurl{https://savannah.nongnu.org/projects/fkt/}) to generate traces
+with a limited runtime overhead.
+
+You can either get a tarball:
+@example
+% wget http://download.savannah.gnu.org/releases/fkt/fxt-0.2.2.tar.gz
+@end example
+
+or use the FxT library from CVS (autotools are required):
+@example
+% cvs -d :pserver:anonymous@@cvs.sv.gnu.org:/sources/fkt co FxT
+% ./bootstrap
+@end example
+
+Compiling and installing the FxT library in the @code{$FXTDIR} path is
+done following the standard procedure:
+@example
+% ./configure --prefix=$FXTDIR
+% make
+% make install
+@end example
+
+In order to have StarPU to generate traces, StarPU should be configured with
+the @code{--with-fxt} option:
+@example
+$ ./configure --with-fxt=$FXTDIR
+@end example
+
+Or you can simply point the @code{PKG_CONFIG_PATH} to
+@code{$FXTDIR/lib/pkgconfig} and pass @code{--with-fxt} to @code{./configure}
+
+When FxT is enabled, a trace is generated when StarPU is terminated by calling
+@code{starpu_shutdown()}). The trace is a binary file whose name has the form
+@code{prof_file_XXX_YYY} where @code{XXX} is the user name, and
+@code{YYY} is the pid of the process that used StarPU. This file is saved in the
+@code{/tmp/} directory by default, or by the directory specified by
+the @code{STARPU_FXT_PREFIX} environment variable.
+
+@node Gantt diagram
+@subsection Creating a Gantt Diagram
+
+When the FxT trace file @code{filename} has been generated, it is possible to
+generate a trace in the Paje format by calling:
+@example
+% starpu_fxt_tool -i filename
+@end example
+
+Or alternatively, setting the @code{STARPU_GENERATE_TRACE} environment variable
+to 1 before application execution will make StarPU do it automatically at
+application shutdown.
+
+This will create a @code{paje.trace} file in the current directory that can be
+inspected with the ViTE trace visualizing open-source tool. More information
+about ViTE is available at @indicateurl{http://vite.gforge.inria.fr/}. It is
+possible to open the @code{paje.trace} file with ViTE by using the following
+command:
+@example
+% vite paje.trace
+@end example
+
+@node DAG
+@subsection Creating a DAG with graphviz
+
+When the FxT trace file @code{filename} has been generated, it is possible to
+generate a task graph in the DOT format by calling:
+@example
+$ starpu_fxt_tool -i filename
+@end example
+
+This will create a @code{dag.dot} file in the current directory. This file is a
+task graph described using the DOT language. It is possible to get a
+graphical output of the graph by using the graphviz library:
+@example
+$ dot -Tpdf dag.dot -o output.pdf
+@end example
+
+@node starpu-top
+@subsection Monitoring activity
+
+When the FxT trace file @code{filename} has been generated, it is possible to
+generate an activity trace by calling:
+@example
+$ starpu_fxt_tool -i filename
+@end example
+
+This will create an @code{activity.data} file in the current
+directory. A profile of the application showing the activity of StarPU
+during the execution of the program can be generated:
+@example
+$ starpu_top activity.data
+@end example
+
+This will create a file named @code{activity.eps} in the current directory.
+This picture is composed of two parts.
+The first part shows the activity of the different workers. The green sections
+indicate which proportion of the time was spent executed kernels on the
+processing unit. The red sections indicate the proportion of time spent in
+StartPU: an important overhead may indicate that the granularity may be too
+low, and that bigger tasks may be appropriate to use the processing unit more
+efficiently. The black sections indicate that the processing unit was blocked
+because there was no task to process: this may indicate a lack of parallelism
+which may be alleviated by creating more tasks when it is possible.
+
+The second part of the @code{activity.eps} picture is a graph showing the
+evolution of the number of tasks available in the system during the execution.
+Ready tasks are shown in black, and tasks that are submitted but not
+schedulable yet are shown in grey.
+
+@node Codelet performance
+@section Performance of codelets
+
+The performance model of codelets (described in @ref{Performance model example}) can be examined by using the
+@code{starpu_perfmodel_display} tool:
+
+@example
+$ starpu_perfmodel_display -l
+file: <malloc_pinned.hannibal>
+file: <starpu_slu_lu_model_21.hannibal>
+file: <starpu_slu_lu_model_11.hannibal>
+file: <starpu_slu_lu_model_22.hannibal>
+file: <starpu_slu_lu_model_12.hannibal>
+@end example
+
+Here, the codelets of the lu example are available. We can examine the
+performance of the 22 kernel (in micro-seconds):
+
+@example
+$ starpu_perfmodel_display -s starpu_slu_lu_model_22
+performance model for cpu
+# hash      size       mean          dev           n
+57618ab0    19660800   2.851069e+05  1.829369e+04  109
+performance model for cuda_0
+# hash      size       mean          dev           n
+57618ab0    19660800   1.164144e+04  1.556094e+01  315
+performance model for cuda_1
+# hash      size       mean          dev           n
+57618ab0    19660800   1.164271e+04  1.330628e+01  360
+performance model for cuda_2
+# hash      size       mean          dev           n
+57618ab0    19660800   1.166730e+04  3.390395e+02  456
+@end example
+
+We can see that for the given size, over a sample of a few hundreds of
+execution, the GPUs are about 20 times faster than the CPUs (numbers are in
+us). The standard deviation is extremely low for the GPUs, and less than 10% for
+CPUs.
+
+The @code{starpu_regression_display} tool does the same for regression-based
+performance models. It also writes a @code{.gp} file in the current directory,
+to be run in the @code{gnuplot} tool, which shows the corresponding curve.
+
+The same can also be achieved by using StarPU's library API, see
+@ref{Performance Model API} and notably the @code{starpu_load_history_debug}
+function. The source code of the @code{starpu_perfmodel_display} tool can be a
+useful example.
+
+@node Theoretical lower bound on execution time API
+@section Theoretical lower bound on execution time
+
+See @ref{Theoretical lower bound on execution time} for an example on how to use
+this API. It permits to record a trace of what tasks are needed to complete the
+application, and then, by using a linear system, provide a theoretical lower
+bound of the execution time (i.e. with an ideal scheduling).
+
+The computed bound is not really correct when not taking into account
+dependencies, but for an application which have enough parallelism, it is very
+near to the bound computed with dependencies enabled (which takes a huge lot
+more time to compute), and thus provides a good-enough estimation of the ideal
+execution time.
+
+@deftypefun void starpu_bound_start (int @var{deps}, int @var{prio})
+Start recording tasks (resets stats).  @var{deps} tells whether
+dependencies should be recorded too (this is quite expensive)
+@end deftypefun
+
+@deftypefun void starpu_bound_stop (void)
+Stop recording tasks
+@end deftypefun
+
+@deftypefun void starpu_bound_print_dot ({FILE *}@var{output})
+Print the DAG that was recorded
+@end deftypefun
+
+@deftypefun void starpu_bound_compute ({double *}@var{res}, {double *}@var{integer_res}, int @var{integer})
+Get theoretical upper bound (in ms) (needs glpk support detected by @code{configure} script)
+@end deftypefun
+
+@deftypefun void starpu_bound_print_lp ({FILE *}@var{output})
+Emit the Linear Programming system on @var{output} for the recorded tasks, in
+the lp format
+@end deftypefun
+
+@deftypefun void starpu_bound_print_mps ({FILE *}@var{output})
+Emit the Linear Programming system on @var{output} for the recorded tasks, in
+the mps format
+@end deftypefun
+
+@deftypefun void starpu_bound_print ({FILE *}@var{output}, int @var{integer})
+Emit statistics of actual execution vs theoretical upper bound. @var{integer}
+permits to choose between integer solving (which takes a long time but is
+correct), and relaxed solving (which provides an approximate solution).
+@end deftypefun

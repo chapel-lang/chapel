@@ -1,0 +1,3 @@
+SRCDIR=@srcdir@
+include ($$SRCDIR/StarPU-Top-common.pri)
+include ($$SRCDIR/StarPU-Top-qwt-@QWT_PRI@.pri)

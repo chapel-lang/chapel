@@ -1,0 +1,403 @@
+@c -*-texinfo-*-
+
+@c This file is part of the StarPU Handbook.
+@c Copyright (C) 2009--2011  Universit@'e de Bordeaux 1
+@c Copyright (C) 2010, 2011, 2012  Centre National de la Recherche Scientifique
+@c Copyright (C) 2011, 2012 Institut National de Recherche en Informatique et Automatique
+@c See the file starpu.texi for copying conditions.
+
+@menu
+* Compilation configuration::   
+* Execution configuration through environment variables::  
+@end menu
+
+@node Compilation configuration
+@section Compilation configuration
+
+The following arguments can be given to the @code{configure} script.
+
+@menu
+* Common configuration::        
+* Configuring workers::         
+* Advanced configuration::      
+@end menu
+
+@node Common configuration
+@subsection Common configuration
+
+@table @code
+
+@item --enable-debug
+Enable debugging messages.
+
+@item --enable-fast
+Disable assertion checks, which saves computation time.
+
+@item --enable-verbose
+Increase the verbosity of the debugging messages.  This can be disabled
+at runtime by setting the environment variable @code{STARPU_SILENT} to
+any value.
+
+@smallexample
+% STARPU_SILENT=1 ./vector_scal
+@end smallexample
+
+@item --enable-coverage
+Enable flags for the @code{gcov} coverage tool.
+
+@end table
+
+@node Configuring workers
+@subsection Configuring workers
+
+@table @code
+
+@item --enable-maxcpus=@var{count}
+Use at most @var{count} CPU cores.  This information is then
+available as the @code{STARPU_MAXCPUS} macro.
+
+@item --disable-cpu
+Disable the use of CPUs of the machine. Only GPUs etc. will be used.
+
+@item --enable-maxcudadev=@var{count}
+Use at most @var{count} CUDA devices.  This information is then
+available as the @code{STARPU_MAXCUDADEVS} macro.
+
+@item --disable-cuda
+Disable the use of CUDA, even if a valid CUDA installation was detected.
+
+@item --with-cuda-dir=@var{prefix}
+Search for CUDA under @var{prefix}, which should notably contain
+@file{include/cuda.h}.
+
+@item --with-cuda-include-dir=@var{dir}
+Search for CUDA headers under @var{dir}, which should
+notably contain @code{cuda.h}. This defaults to @code{/include} appended to the
+value given to @code{--with-cuda-dir}.
+
+@item --with-cuda-lib-dir=@var{dir}
+Search for CUDA libraries under @var{dir}, which should notably contain
+the CUDA shared libraries---e.g., @file{libcuda.so}.  This defaults to
+@code{/lib} appended to the value given to @code{--with-cuda-dir}.
+
+@item --disable-cuda-memcpy-peer
+Explicitly disable peer transfers when using CUDA 4.0.
+
+@item --enable-maxopencldev=@var{count}
+Use at most @var{count} OpenCL devices.  This information is then
+available as the @code{STARPU_MAXOPENCLDEVS} macro.
+
+@item --disable-opencl
+Disable the use of OpenCL, even if the SDK is detected.
+
+@item --with-opencl-dir=@var{prefix}
+Search for an OpenCL implementation under @var{prefix}, which should
+notably contain @file{include/CL/cl.h} (or @file{include/OpenCL/cl.h} on
+Mac OS).
+
+@item --with-opencl-include-dir=@var{dir}
+Search for OpenCL headers under @var{dir}, which should notably contain
+@file{CL/cl.h} (or @file{OpenCL/cl.h} on Mac OS).  This defaults to
+@code{/include} appended to the value given to @code{--with-opencl-dir}.
+
+@item --with-opencl-lib-dir=@var{dir}
+Search for an OpenCL library under @var{dir}, which should notably
+contain the OpenCL shared libraries---e.g. @file{libOpenCL.so}. This defaults to
+@code{/lib} appended to the value given to @code{--with-opencl-dir}.
+
+@item --enable-gordon
+Enable the use of the Gordon runtime for Cell SPUs.
+@c TODO: rather default to enabled when detected
+
+@item --with-gordon-dir=@var{prefix}
+Search for the Gordon SDK under @var{prefix}.
+
+@item --enable-maximplementations=@var{count}
+Allow for at most @var{count} codelet implementations for the same
+target device.  This information is then available as the
+@code{STARPU_MAXIMPLEMENTATIONS} macro.
+
+@end table
+
+@node Advanced configuration
+@subsection Advanced configuration
+
+@table @code
+
+@item --enable-perf-debug
+Enable performance debugging through gprof.
+
+@item --enable-model-debug
+Enable performance model debugging.
+
+@item --enable-stats
+@c see ../../src/datawizard/datastats.c
+Enable gathering of memory transfer statistics.
+
+@item --enable-maxbuffers
+Define the maximum number of buffers that tasks will be able to take
+as parameters, then available as the @code{STARPU_NMAXBUFS} macro.
+
+@item --enable-allocation-cache
+Enable the use of a data allocation cache to avoid the cost of it with
+CUDA. Still experimental.
+
+@item --enable-opengl-render
+Enable the use of OpenGL for the rendering of some examples.
+@c TODO: rather default to enabled when detected
+
+@item --enable-blas-lib
+Specify the blas library to be used by some of the examples. The
+library has to be 'atlas' or 'goto'.
+
+@item --disable-starpufft
+Disable the build of libstarpufft, even if fftw or cuFFT is available.
+
+@item --with-magma=@var{prefix}
+Search for MAGMA under @var{prefix}.  @var{prefix} should notably
+contain @file{include/magmablas.h}.
+
+@item --with-fxt=@var{prefix}
+Search for FxT under @var{prefix}.
+@url{http://savannah.nongnu.org/projects/fkt, FxT} is used to generate
+traces of scheduling events, which can then be rendered them using ViTE
+(@pxref{Off-line, off-line performance feedback}).  @var{prefix} should
+notably contain @code{include/fxt/fxt.h}.
+
+@item --with-perf-model-dir=@var{dir}
+Store performance models under @var{dir}, instead of the current user's
+home.
+
+@item --with-mpicc=@var{path}
+Use the @command{mpicc} compiler at @var{path}, for starpumpi
+(@pxref{StarPU MPI support}).
+
+@item --with-goto-dir=@var{prefix}
+Search for GotoBLAS under @var{prefix}.
+
+@item --with-atlas-dir=@var{prefix}
+Search for ATLAS under @var{prefix}, which should notably contain
+@file{include/cblas.h}.
+
+@item --with-mkl-cflags=@var{cflags}
+Use @var{cflags} to compile code that uses the MKL library.
+
+@item --with-mkl-ldflags=@var{ldflags}
+Use @var{ldflags} when linking code that uses the MKL library.  Note
+that the
+@url{http://software.intel.com/en-us/articles/intel-mkl-link-line-advisor/,
+MKL website} provides a script to determine the linking flags.
+
+@item --disable-gcc-extensions
+Disable the GCC plug-in (@pxref{C Extensions}).  By default, it is
+enabled when the GCC compiler provides a plug-in support.
+
+@item --disable-socl
+Disable the SOCL extension (@pxref{SOCL OpenCL Extensions}).  By
+default, it is enabled when an OpenCL implementation is found.
+
+@item --disable-starpu-top
+Disable the StarPU-Top interface (@pxref{starpu-top}).  By default, it
+is enabled when the required dependencies are found.
+
+@end table
+@node Execution configuration through environment variables
+@section Execution configuration through environment variables
+
+@menu
+* Workers::                     Configuring workers
+* Scheduling::                  Configuring the Scheduling engine
+* Misc::                        Miscellaneous and debug
+@end menu
+
+Note: the values given in @code{starpu_conf} structure passed when
+calling @code{starpu_init} will override the values of the environment
+variables.
+
+@node Workers
+@subsection Configuring workers
+
+@menu
+* STARPU_NCPUS::                Number of CPU workers
+* STARPU_NCUDA::                Number of CUDA workers
+* STARPU_NOPENCL::              Number of OpenCL workers
+* STARPU_NGORDON::              Number of SPU workers (Cell)
+* STARPU_WORKERS_NOBIND::       Do not bind workers
+* STARPU_WORKERS_CPUID::        Bind workers to specific CPUs
+* STARPU_WORKERS_CUDAID::       Select specific CUDA devices
+* STARPU_WORKERS_OPENCLID::     Select specific OpenCL devices
+@end menu
+
+@node STARPU_NCPUS
+@subsubsection @code{STARPU_NCPUS} -- Number of CPU workers
+
+Specify the number of CPU workers (thus not including workers dedicated to control acceleratores). Note that by default, StarPU will not allocate
+more CPU workers than there are physical CPUs, and that some CPUs are used to control
+the accelerators.
+
+@node STARPU_NCUDA
+@subsubsection @code{STARPU_NCUDA} -- Number of CUDA workers
+
+Specify the number of CUDA devices that StarPU can use. If
+@code{STARPU_NCUDA} is lower than the number of physical devices, it is
+possible to select which CUDA devices should be used by the means of the
+@code{STARPU_WORKERS_CUDAID} environment variable. By default, StarPU will
+create as many CUDA workers as there are CUDA devices.
+
+@node STARPU_NOPENCL
+@subsubsection @code{STARPU_NOPENCL} -- Number of OpenCL workers
+
+OpenCL equivalent of the @code{STARPU_NCUDA} environment variable.
+
+@node STARPU_NGORDON
+@subsubsection @code{STARPU_NGORDON} -- Number of SPU workers (Cell)
+
+Specify the number of SPUs that StarPU can use.
+
+@node STARPU_WORKERS_NOBIND
+@subsubsection @code{STARPU_WORKERS_NOBIND} -- Do not bind workers to specific CPUs
+
+Setting it to non-zero will prevent StarPU from binding its threads to
+CPUs. This is for instance useful when running the testsuite in parallel.
+
+@node STARPU_WORKERS_CPUID
+@subsubsection @code{STARPU_WORKERS_CPUID} -- Bind workers to specific CPUs
+
+Passing an array of integers (starting from 0) in @code{STARPU_WORKERS_CPUID}
+specifies on which logical CPU the different workers should be
+bound. For instance, if @code{STARPU_WORKERS_CPUID = "0 1 4 5"}, the first
+worker will be bound to logical CPU #0, the second CPU worker will be bound to
+logical CPU #1 and so on.  Note that the logical ordering of the CPUs is either
+determined by the OS, or provided by the @code{hwloc} library in case it is
+available.
+
+Note that the first workers correspond to the CUDA workers, then come the
+OpenCL and the SPU, and finally the CPU workers. For example if
+we have @code{STARPU_NCUDA=1}, @code{STARPU_NOPENCL=1}, @code{STARPU_NCPUS=2}
+and @code{STARPU_WORKERS_CPUID = "0 2 1 3"}, the CUDA device will be controlled
+by logical CPU #0, the OpenCL device will be controlled by logical CPU #2, and
+the logical CPUs #1 and #3 will be used by the CPU workers.
+
+If the number of workers is larger than the array given in
+@code{STARPU_WORKERS_CPUID}, the workers are bound to the logical CPUs in a
+round-robin fashion: if @code{STARPU_WORKERS_CPUID = "0 1"}, the first and the
+third (resp. second and fourth) workers will be put on CPU #0 (resp. CPU #1).
+
+This variable is ignored if the @code{use_explicit_workers_bindid} flag of the
+@code{starpu_conf} structure passed to @code{starpu_init} is set.
+
+@node STARPU_WORKERS_CUDAID
+@subsubsection @code{STARPU_WORKERS_CUDAID} -- Select specific CUDA devices
+
+Similarly to the @code{STARPU_WORKERS_CPUID} environment variable, it is
+possible to select which CUDA devices should be used by StarPU. On a machine
+equipped with 4 GPUs, setting @code{STARPU_WORKERS_CUDAID = "1 3"} and
+@code{STARPU_NCUDA=2} specifies that 2 CUDA workers should be created, and that
+they should use CUDA devices #1 and #3 (the logical ordering of the devices is
+the one reported by CUDA).
+
+This variable is ignored if the @code{use_explicit_workers_cuda_gpuid} flag of
+the @code{starpu_conf} structure passed to @code{starpu_init} is set.
+
+@node STARPU_WORKERS_OPENCLID
+@subsubsection @code{STARPU_WORKERS_OPENCLID} -- Select specific OpenCL devices
+
+OpenCL equivalent of the @code{STARPU_WORKERS_CUDAID} environment variable.
+
+This variable is ignored if the @code{use_explicit_workers_opencl_gpuid} flag of
+the @code{starpu_conf} structure passed to @code{starpu_init} is set.
+
+@node Scheduling
+@subsection Configuring the Scheduling engine
+
+@menu
+* STARPU_SCHED::                Scheduling policy
+* STARPU_CALIBRATE::            Calibrate performance models
+* STARPU_PREFETCH::             Use data prefetch
+* STARPU_SCHED_ALPHA::          Computation factor
+* STARPU_SCHED_BETA::           Communication factor
+@end menu
+
+@node STARPU_SCHED
+@subsubsection @code{STARPU_SCHED} -- Scheduling policy
+
+Choose between the different scheduling policies proposed by StarPU: work
+random, stealing, greedy, with performance models, etc.
+
+Use @code{STARPU_SCHED=help} to get the list of available schedulers.
+
+@node STARPU_CALIBRATE
+@subsubsection @code{STARPU_CALIBRATE} -- Calibrate performance models
+
+If this variable is set to 1, the performance models are calibrated during
+the execution. If it is set to 2, the previous values are dropped to restart
+calibration from scratch. Setting this variable to 0 disable calibration, this
+is the default behaviour.
+
+Note: this currently only applies to @code{dm}, @code{dmda} and @code{heft} scheduling policies.
+
+@node STARPU_PREFETCH
+@subsubsection @code{STARPU_PREFETCH} -- Use data prefetch
+
+This variable indicates whether data prefetching should be enabled (0 means
+that it is disabled). If prefetching is enabled, when a task is scheduled to be
+executed e.g. on a GPU, StarPU will request an asynchronous transfer in
+advance, so that data is already present on the GPU when the task starts. As a
+result, computation and data transfers are overlapped.
+Note that prefetching is enabled by default in StarPU.
+
+@node STARPU_SCHED_ALPHA
+@subsubsection @code{STARPU_SCHED_ALPHA} -- Computation factor
+
+To estimate the cost of a task StarPU takes into account the estimated
+computation time (obtained thanks to performance models). The alpha factor is
+the coefficient to be applied to it before adding it to the communication part.
+
+@node STARPU_SCHED_BETA
+@subsubsection @code{STARPU_SCHED_BETA} -- Communication factor
+
+To estimate the cost of a task StarPU takes into account the estimated
+data transfer time (obtained thanks to performance models). The beta factor is
+the coefficient to be applied to it before adding it to the computation part.
+
+@node Misc
+@subsection Miscellaneous and debug
+
+@menu
+* STARPU_SILENT::               Disable verbose mode
+* STARPU_LOGFILENAME::          Select debug file name
+* STARPU_FXT_PREFIX::           FxT trace location
+* STARPU_LIMIT_GPU_MEM::        Restrict memory size on the GPUs
+* STARPU_GENERATE_TRACE::       Generate a Paje trace when StarPU is shut down
+@end menu
+
+@node STARPU_SILENT
+@subsubsection @code{STARPU_SILENT} -- Disable verbose mode
+
+This variable allows to disable verbose mode at runtime when StarPU
+has been configured with the option @code{--enable-verbose}.
+
+@node STARPU_LOGFILENAME
+@subsubsection @code{STARPU_LOGFILENAME} -- Select debug file name
+
+This variable specifies in which file the debugging output should be saved to.
+
+@node STARPU_FXT_PREFIX
+@subsubsection @code{STARPU_FXT_PREFIX} -- FxT trace location
+
+This variable specifies in which directory to save the trace generated if FxT is enabled. It needs to have a trailing '/' character.
+
+@node STARPU_LIMIT_GPU_MEM
+@subsubsection @code{STARPU_LIMIT_GPU_MEM} -- Restrict memory size on the GPUs
+
+This variable specifies the maximum number of megabytes that should be
+available to the application on each GPUs. In case this value is smaller than
+the size of the memory of a GPU, StarPU pre-allocates a buffer to waste memory
+on the device. This variable is intended to be used for experimental purposes
+as it emulates devices that have a limited amount of memory.
+
+@node STARPU_GENERATE_TRACE
+@subsubsection @code{STARPU_GENERATE_TRACE} -- Generate a Paje trace when StarPU is shut down
+
+When set to 1, this variable indicates that StarPU should automatically
+generate a Paje trace when starpu_shutdown is called.

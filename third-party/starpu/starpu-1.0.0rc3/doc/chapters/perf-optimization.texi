@@ -1,0 +1,331 @@
+@c -*-texinfo-*-
+
+@c This file is part of the StarPU Handbook.
+@c Copyright (C) 2009--2011  Universit@'e de Bordeaux 1
+@c Copyright (C) 2010, 2011, 2012  Centre National de la Recherche Scientifique
+@c Copyright (C) 2011 Institut National de Recherche en Informatique et Automatique
+@c See the file starpu.texi for copying conditions.
+
+TODO: improve!
+
+@menu
+* Data management::
+* Task granularity::
+* Task submission::
+* Task priorities::
+* Task scheduling policy::
+* Performance model calibration::
+* Task distribution vs Data transfer::
+* Data prefetch::
+* Power-based scheduling::
+* Profiling::
+* CUDA-specific optimizations::
+* Performance debugging::
+@end menu
+
+Simply encapsulating application kernels into tasks already permits to
+seamlessly support CPU and GPUs at the same time. To achieve good performance, a
+few additional changes are needed.
+
+@node Data management
+@section Data management
+
+When the application allocates data, whenever possible it should use the
+@code{starpu_malloc} function, which will ask CUDA or
+OpenCL to make the allocation itself and pin the corresponding allocated
+memory. This is needed to permit asynchronous data transfer, i.e. permit data
+transfer to overlap with computations. Otherwise, the trace will show that the
+@code{DriverCopyAsync} state takes a lot of time, this is because CUDA or OpenCL
+then reverts to synchronous transfers.
+
+By default, StarPU leaves replicates of data wherever they were used, in case they
+will be re-used by other tasks, thus saving the data transfer time. When some
+task modifies some data, all the other replicates are invalidated, and only the
+processing unit which ran that task will have a valid replicate of the data. If the application knows
+that this data will not be re-used by further tasks, it should advise StarPU to
+immediately replicate it to a desired list of memory nodes (given through a
+bitmask). This can be understood like the write-through mode of CPU caches.
+
+@cartouche
+@smallexample
+starpu_data_set_wt_mask(img_handle, 1<<0);
+@end smallexample
+@end cartouche
+
+will for instance request to always automatically transfer a replicate into the
+main memory (node 0), as bit 0 of the write-through bitmask is being set.
+
+@cartouche
+@smallexample
+starpu_data_set_wt_mask(img_handle, ~0U);
+@end smallexample
+@end cartouche
+
+will request to always automatically broadcast the updated data to all memory
+nodes.
+
+Setting the write-through mask to @code{~0U} can also be useful to make sure all
+memory nodes always have a copy of the data, so that it is never evicted when
+memory gets scarse.
+
+Implicit data dependency computation can become expensive if a lot
+of tasks access the same piece of data. If no dependency is required
+on some piece of data (e.g. because it is only accessed in read-only
+mode, or because write accesses are actually commutative), use the
+@code{starpu_data_set_sequential_consistency_flag} function to disable implicit
+dependencies on that data.
+
+@node Task granularity
+@section Task granularity
+
+Like any other runtime, StarPU has some overhead to manage tasks. Since
+it does smart scheduling and data management, that overhead is not always
+neglectable. The order of magnitude of the overhead is typically a couple of
+microseconds. The amount of work that a task should do should thus be somewhat
+bigger, to make sure that the overhead becomes neglectible. The offline
+performance feedback can provide a measure of task length, which should thus be
+checked if bad performance are observed.
+
+@node Task submission
+@section Task submission
+
+To let StarPU make online optimizations, tasks should be submitted
+asynchronously as much as possible. Ideally, all the tasks should be
+submitted, and mere calls to @code{starpu_task_wait_for_all} or
+@code{starpu_data_unregister} be done to wait for
+termination. StarPU will then be able to rework the whole schedule, overlap
+computation with communication, manage accelerator local memory usage, etc.
+
+@node Task priorities
+@section Task priorities
+
+By default, StarPU will consider the tasks in the order they are submitted by
+the application. If the application programmer knows that some tasks should
+be performed in priority (for instance because their output is needed by many
+other tasks and may thus be a bottleneck if not executed early enough), the
+@code{priority} field of the task structure should be set to transmit the
+priority information to StarPU.
+
+@node Task scheduling policy
+@section Task scheduling policy
+
+By default, StarPU uses the @code{eager} simple greedy scheduler. This is
+because it provides correct load balance even if the application codelets do not
+have performance models. If your application codelets have performance models
+(@pxref{Performance model example} for examples showing how to do it),
+you should change the scheduler thanks to the @code{STARPU_SCHED} environment
+variable. For instance @code{export STARPU_SCHED=dmda} . Use @code{help} to get
+the list of available schedulers.
+
+The @b{eager} scheduler uses a central task queue, from which workers draw tasks
+to work on. This however does not permit to prefetch data since the scheduling
+decision is taken late. If a task has a non-0 priority, it is put at the front of the queue.
+
+The @b{prio} scheduler also uses a central task queue, but sorts tasks by
+priority (between -5 and 5).
+
+The @b{random} scheduler distributes tasks randomly according to assumed worker
+overall performance.
+
+The @b{ws} (work stealing) scheduler schedules tasks on the local worker by
+default. When a worker becomes idle, it steals a task from the most loaded
+worker.
+
+The @b{dm} (deque model) scheduler uses task execution performance models into account to
+perform an HEFT-similar scheduling strategy: it schedules tasks where their
+termination time will be minimal.
+
+The @b{dmda} (deque model data aware) scheduler is similar to dm, it also takes
+into account data transfer time.
+
+The @b{dmdar} (deque model data aware ready) scheduler is similar to dmda,
+it also sorts tasks on per-worker queues by number of already-available data
+buffers.
+
+The @b{dmdas} (deque model data aware sorted) scheduler is similar to dmda, it
+also supports arbitrary priority values.
+
+The @b{heft} (heterogeneous earliest finish time) scheduler is similar to dmda, it also supports task bundles.
+
+The @b{pheft} (parallel HEFT) scheduler is similar to heft, it also supports
+parallel tasks (still experimental).
+
+The @b{pgreedy} (parallel greedy) scheduler is similar to greedy, it also
+supports parallel tasks (still experimental).
+
+@node Performance model calibration
+@section Performance model calibration
+
+Most schedulers are based on an estimation of codelet duration on each kind
+of processing unit. For this to be possible, the application programmer needs
+to configure a performance model for the codelets of the application (see
+@ref{Performance model example} for instance). History-based performance models
+use on-line calibration.  StarPU will automatically calibrate codelets
+which have never been calibrated yet, and save the result in
+@code{~/.starpu/sampling/codelets}.
+The models are indexed by machine name. To share the models between machines (e.g. for a homogeneous cluster), use @code{export STARPU_HOSTNAME=some_global_name}. To force continuing calibration, use
+@code{export STARPU_CALIBRATE=1} . This may be necessary if your application
+has not-so-stable performance. StarPU will force calibration (and thus ignore
+the current result) until 10 (_STARPU_CALIBRATION_MINIMUM) measurements have been
+made on each architecture, to avoid badly scheduling tasks just because the
+first measurements were not so good. Details on the current performance model status
+can be obtained from the @code{starpu_perfmodel_display} command: the @code{-l}
+option lists the available performance models, and the @code{-s} option permits
+to choose the performance model to be displayed. The result looks like:
+
+@example
+$ starpu_perfmodel_display -s starpu_dlu_lu_model_22
+performance model for cpu
+# hash    size     mean          dev           n
+880805ba  98304    2.731309e+02  6.010210e+01  1240
+b50b6605  393216   1.469926e+03  1.088828e+02  1240
+5c6c3401  1572864  1.125983e+04  3.265296e+03  1240
+@end example
+
+Which shows that for the LU 22 kernel with a 1.5MiB matrix, the average
+execution time on CPUs was about 11ms, with a 3ms standard deviation, over
+1240 samples. It is a good idea to check this before doing actual performance
+measurements.
+
+A graph can be drawn by using the @code{starpu_perfmodel_plot}:
+
+@example
+$ starpu_perfmodel_plot -s starpu_dlu_lu_model_22
+98304 393216 1572864 
+$ gnuplot starpu_starpu_dlu_lu_model_22.gp
+$ gv starpu_starpu_dlu_lu_model_22.eps
+@end example
+
+If a kernel source code was modified (e.g. performance improvement), the
+calibration information is stale and should be dropped, to re-calibrate from
+start. This can be done by using @code{export STARPU_CALIBRATE=2}.
+
+Note: due to CUDA limitations, to be able to measure kernel duration,
+calibration mode needs to disable asynchronous data transfers. Calibration thus
+disables data transfer / computation overlapping, and should thus not be used
+for eventual benchmarks. Note 2: history-based performance models get calibrated
+only if a performance-model-based scheduler is chosen.
+
+@node Task distribution vs Data transfer
+@section Task distribution vs Data transfer
+
+Distributing tasks to balance the load induces data transfer penalty. StarPU
+thus needs to find a balance between both. The target function that the
+@code{dmda} scheduler of StarPU
+tries to minimize is @code{alpha * T_execution + beta * T_data_transfer}, where
+@code{T_execution} is the estimated execution time of the codelet (usually
+accurate), and @code{T_data_transfer} is the estimated data transfer time. The
+latter is estimated based on bus calibration before execution start,
+i.e. with an idle machine, thus without contention. You can force bus re-calibration by running
+@code{starpu_calibrate_bus}. The beta parameter defaults to 1, but it can be
+worth trying to tweak it by using @code{export STARPU_SCHED_BETA=2} for instance,
+since during real application execution, contention makes transfer times bigger.
+This is of course imprecise, but in practice, a rough estimation already gives
+the good results that a precise estimation would give.
+
+@node Data prefetch
+@section Data prefetch
+
+The @code{heft}, @code{dmda} and @code{pheft} scheduling policies perform data prefetch (see @ref{STARPU_PREFETCH}):
+as soon as a scheduling decision is taken for a task, requests are issued to
+transfer its required data to the target processing unit, if needeed, so that
+when the processing unit actually starts the task, its data will hopefully be
+already available and it will not have to wait for the transfer to finish.
+
+The application may want to perform some manual prefetching, for several reasons
+such as excluding initial data transfers from performance measurements, or
+setting up an initial statically-computed data distribution on the machine
+before submitting tasks, which will thus guide StarPU toward an initial task
+distribution (since StarPU will try to avoid further transfers).
+
+This can be achieved by giving the @code{starpu_data_prefetch_on_node} function
+the handle and the desired target memory node.
+
+@node Power-based scheduling
+@section Power-based scheduling
+
+If the application can provide some power performance model (through
+the @code{power_model} field of the codelet structure), StarPU will
+take it into account when distributing tasks. The target function that
+the @code{dmda} scheduler minimizes becomes @code{alpha * T_execution +
+beta * T_data_transfer + gamma * Consumption} , where @code{Consumption}
+is the estimated task consumption in Joules. To tune this parameter, use
+@code{export STARPU_SCHED_GAMMA=3000} for instance, to express that each Joule
+(i.e kW during 1000us) is worth 3000us execution time penalty. Setting
+@code{alpha} and @code{beta} to zero permits to only take into account power consumption.
+
+This is however not sufficient to correctly optimize power: the scheduler would
+simply tend to run all computations on the most energy-conservative processing
+unit. To account for the consumption of the whole machine (including idle
+processing units), the idle power of the machine should be given by setting
+@code{export STARPU_IDLE_POWER=200} for 200W, for instance. This value can often
+be obtained from the machine power supplier.
+
+The power actually consumed by the total execution can be displayed by setting
+@code{export STARPU_PROFILING=1 STARPU_WORKER_STATS=1} .
+
+@node Profiling
+@section Profiling
+
+A quick view of how many tasks each worker has executed can be obtained by setting 
+@code{export STARPU_WORKER_STATS=1} This is a convenient way to check that
+execution did happen on accelerators without penalizing performance with
+the profiling overhead.
+
+A quick view of how much data transfers have been issued can be obtained by setting 
+@code{export STARPU_BUS_STATS=1} .
+
+More detailed profiling information can be enabled by using @code{export STARPU_PROFILING=1} or by
+calling @code{starpu_profiling_status_set} from the source code.
+Statistics on the execution can then be obtained by using @code{export
+STARPU_BUS_STATS=1} and @code{export STARPU_WORKER_STATS=1} .
+ More details on performance feedback are provided by the next chapter.
+
+@node CUDA-specific optimizations
+@section CUDA-specific optimizations
+
+Due to CUDA limitations, StarPU will have a hard time overlapping its own
+communications and the codelet computations if the application does not use a
+dedicated CUDA stream for its computations. StarPU provides one by the use of
+@code{starpu_cuda_get_local_stream()} which should be used by all CUDA codelet
+operations. For instance:
+
+@cartouche
+@smallexample
+func <<<grid,block,0,starpu_cuda_get_local_stream()>>> (foo, bar);
+cudaStreamSynchronize(starpu_cuda_get_local_stream());
+@end smallexample
+@end cartouche
+
+StarPU already does appropriate calls for the CUBLAS library.
+
+Unfortunately, some CUDA libraries do not have stream variants of
+kernels. That will lower the potential for overlapping.
+
+@node Performance debugging
+@section Performance debugging
+
+To get an idea of what is happening, a lot of performance feedback is available,
+detailed in the next chapter. The various informations should be checked for.
+
+@itemize
+@item What does the Gantt diagram look like? (see @ref{Gantt diagram})
+@itemize
+  @item If it's mostly green (running tasks), then the machine is properly
+  utilized, and perhaps the codelets are just slow. Check their performance, see
+  @ref{Codelet performance}.
+  @item If it's mostly purple (FetchingInput), tasks keep waiting for data
+  transfers, do you perhaps have far more communication than computation? Did
+  you properly use CUDA streams to make sure communication can be
+  overlapped? Did you use data-locality aware schedulers to avoid transfers as
+  much as possible?
+  @item If it's mostly red (Blocked), tasks keep waiting for dependencies,
+  do you have enough parallelism? It might be a good idea to check what the DAG
+  looks like (see @ref{DAG}).
+  @item If only some workers are completely red (Blocked), for some reason the
+  scheduler didn't assign tasks to them. Perhaps the performance model is bogus,
+  check it (see @ref{Codelet performance}). Do all your codelets have a
+  performance model?  When some of them don't, the schedulers switches to a
+  greedy algorithm which thus performs badly.
+@end itemize
+@end itemize

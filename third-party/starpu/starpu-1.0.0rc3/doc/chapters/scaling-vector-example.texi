@@ -1,0 +1,48 @@
+@c -*-texinfo-*-
+
+@c This file is part of the StarPU Handbook.
+@c Copyright (C) 2009--2011  Universit@'e de Bordeaux 1
+@c Copyright (C) 2010, 2011, 2012  Centre National de la Recherche Scientifique
+@c Copyright (C) 2011 Institut National de Recherche en Informatique et Automatique
+@c See the file starpu.texi for copying conditions.
+
+@menu
+* Main application::            
+* CPU Kernel::                 
+* CUDA Kernel::                
+* OpenCL Kernel::              
+@end menu
+
+@node Main application
+@section Main application
+
+@include chapters/vector_scal_c.texi
+
+@node CPU Kernel
+@section CPU Kernel
+
+@include chapters/vector_scal_cpu.texi
+
+@node CUDA Kernel
+@section CUDA Kernel
+
+@include chapters/vector_scal_cuda.texi
+
+@node OpenCL Kernel
+@section OpenCL Kernel
+
+@menu
+* Invoking the kernel::         
+* Source of the kernel::        
+@end menu
+
+@node Invoking the kernel
+@subsection Invoking the kernel
+
+@include chapters/vector_scal_opencl.texi
+
+@node Source of the kernel
+@subsection Source of the kernel
+
+@include chapters/vector_scal_opencl_codelet.texi
+

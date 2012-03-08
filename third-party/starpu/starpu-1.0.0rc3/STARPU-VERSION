@@ -1,0 +1,21 @@
+# -*- sh -*-
+
+# Versioning (SONAMEs) for StarPU libraries.
+
+# Libtool interface versioning (info "(libtool) Versioning").
+LIBSTARPU_INTERFACE_CURRENT=0	# increment upon ABI change
+LIBSTARPU_INTERFACE_REVISION=0	# increment upon implementation change
+LIBSTARPU_INTERFACE_AGE=0	# set to CURRENT - PREVIOUS interface
+STARPU_EFFECTIVE_VERSION=1.0
+
+LIBSTARPUFFT_INTERFACE_CURRENT=0	# increment upon ABI change
+LIBSTARPUFFT_INTERFACE_REVISION=0	# increment upon implementation change
+LIBSTARPUFFT_INTERFACE_AGE=0		# set to CURRENT - PREVIOUS interface
+
+LIBSTARPUMPI_INTERFACE_CURRENT=0	# increment upon ABI change
+LIBSTARPUMPI_INTERFACE_REVISION=0	# increment upon implementation change
+LIBSTARPUMPI_INTERFACE_AGE=0		# set to CURRENT - PREVIOUS interface
+
+LIBSOCL_INTERFACE_CURRENT=0	# increment upon ABI change
+LIBSOCL_INTERFACE_REVISION=0	# increment upon implementation change
+LIBSOCL_INTERFACE_AGE=0		# set to CURRENT - PREVIOUS interface

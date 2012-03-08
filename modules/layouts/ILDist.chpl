@@ -2,6 +2,10 @@ use DSIUtil;
 config param debugILDist = false;
 config param debugILDataPar = false;
 
+extern proc chpl_codelet_init() : int;
+
+chpl_codelet_init();
+
 class ILDist: BaseDist {
   proc dsiNewRectangularDom(param rank: int, type idxType, param stridable: bool)
     return new DefaultILRectangularDom(rank, idxType, stridable, this);
@@ -475,6 +479,11 @@ class DefaultILRectangularArr: BaseArr {
   // we want to get rid of all initialize functions everywhere
   proc initialize() {
     if noinit == true then return;
+
+    // Initialize 
+    writeln("About to initialize codelet runtime ...");
+    chpl_codelet_init();
+
     for param dim in 1..rank {
       off(dim) = dom.dsiDim(dim).alignedLow;
       str(dim) = dom.dsiDim(dim).stride;

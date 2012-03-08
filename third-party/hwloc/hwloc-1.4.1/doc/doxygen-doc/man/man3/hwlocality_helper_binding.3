@@ -1,0 +1,56 @@
+.TH "Binding Helpers" 3 "Mon Feb 27 2012" "Version 1.4.1" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+Binding Helpers \- 
+.SS "Functions"
+
+.in +1c
+.ti -1c
+.RI "static inline void \fBhwloc_distributev\fP (\fBhwloc_topology_t\fP topology, \fBhwloc_obj_t\fP *root, unsigned n_roots, \fBhwloc_cpuset_t\fP *cpuset, unsigned n, unsigned until)"
+.br
+.ti -1c
+.RI "static inline void \fBhwloc_distribute\fP (\fBhwloc_topology_t\fP topology, \fBhwloc_obj_t\fP root, \fBhwloc_cpuset_t\fP *cpuset, unsigned n, unsigned until)"
+.br
+.ti -1c
+.RI "static inline void * \fBhwloc_alloc_membind_policy_nodeset\fP (\fBhwloc_topology_t\fP topology, size_t len, \fBhwloc_const_nodeset_t\fP nodeset, \fBhwloc_membind_policy_t\fP policy, int flags)"
+.br
+.ti -1c
+.RI "static inline void * \fBhwloc_alloc_membind_policy\fP (\fBhwloc_topology_t\fP topology, size_t len, \fBhwloc_const_cpuset_t\fP cpuset, \fBhwloc_membind_policy_t\fP policy, int flags)"
+.br
+.in -1c
+.SH "Function Documentation"
+.PP 
+.SS "static inline void* \fBhwloc_alloc_membind_policy\fP (\fBhwloc_topology_t\fPtopology, size_tlen, \fBhwloc_const_cpuset_t\fPcpuset, \fBhwloc_membind_policy_t\fPpolicy, intflags)\fC [static]\fP"
+.PP
+Allocate some memory on the memory nodes near given cpuset \fCcpuset\fP\&. This is similar to hwloc_alloc_membind_policy_nodeset, but for a given cpuset\&. 
+.SS "static inline void* \fBhwloc_alloc_membind_policy_nodeset\fP (\fBhwloc_topology_t\fPtopology, size_tlen, \fBhwloc_const_nodeset_t\fPnodeset, \fBhwloc_membind_policy_t\fPpolicy, intflags)\fC [static]\fP"
+.PP
+Allocate some memory on the given nodeset \fCnodeset\fP\&. This is similar to hwloc_alloc_membind except that it is allowed to change the current memory binding policy, thus providing more binding support, at the expense of changing the current state\&. 
+.SS "static inline void \fBhwloc_distribute\fP (\fBhwloc_topology_t\fPtopology, \fBhwloc_obj_t\fProot, \fBhwloc_cpuset_t\fP *cpuset, unsignedn, unsigneduntil)\fC [static]\fP"
+.SS "static inline void \fBhwloc_distributev\fP (\fBhwloc_topology_t\fPtopology, \fBhwloc_obj_t\fP *roots, unsignedn_roots, \fBhwloc_cpuset_t\fP *cpuset, unsignedn, unsigneduntil)\fC [static]\fP"
+.PP
+Distribute \fCn\fP items over the topology under \fCroot\fP\&. Distribute \fCn\fP items over the topology under \fCroots\fP\&.
+.PP
+Array \fCcpuset\fP will be filled with \fCn\fP cpusets recursively distributed linearly over the topology under \fCroot\fP, down to depth \fCuntil\fP (which can be INT_MAX to distribute down to the finest level)\&.
+.PP
+This is typically useful when an application wants to distribute \fCn\fP threads over a machine, giving each of them as much private cache as possible and keeping them locally in number order\&.
+.PP
+The caller may typically want to also call \fBhwloc_bitmap_singlify()\fP before binding a thread so that it does not move at all\&.
+.PP
+\fBNote:\fP
+.RS 4
+This function requires the \fCroot\fP object to have a CPU set\&.
+.RE
+.PP
+This is the same as hwloc_distribute, but takes an array of roots instead of just one root\&.
+.PP
+\fBNote:\fP
+.RS 4
+This function requires the \fCroots\fP objects to have a CPU set\&. 
+.RE
+.PP
+
+.SH "Author"
+.PP 
+Generated automatically by Doxygen for Hardware Locality (hwloc) from the source code\&.

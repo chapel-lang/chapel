@@ -1,0 +1,25 @@
+@c -*-texinfo-*-
+
+@c This file is part of the StarPU Handbook.
+@c Copyright (C) 2012  Centre National de la Recherche Scientifique
+@c See the file starpu.texi for copying conditions.
+
+SOCL is an extension that aims at implementing the OpenCL standard on
+top of StarPU. It allows to gives a (relatively) clean and
+standardized API to StarPU.
+By allowing OpenCL applications to use StarPU transparently, it
+provides users with the latest StarPU enhancements without any further
+development, and allows these OpenCL applications to easily fall back
+to another OpenCL implementation.
+
+This section does not require detailed knowledge of the StarPU
+library.
+
+Note: as of StarPU @value{VERSION}, this is still an area under
+development and subject to change.
+
+TODO
+
+
+
+

@@ -1,0 +1,245 @@
+\input texinfo @c -*-texinfo-*-
+
+@c %**start of header
+@setfilename starpu.info
+@settitle StarPU Handbook
+@c %**end of header
+
+@include version.texi
+
+@copying
+Copyright @copyright{} 2009--2011  Universit@'e de Bordeaux 1
+
+@noindent
+Copyright @copyright{} 2010, 2011, 2012  Centre National de la Recherche Scientifique
+
+@noindent
+Copyright @copyright{} 2011, 2012 Institut National de Recherche en Informatique et Automatique
+
+@quotation
+Permission is granted to copy, distribute and/or modify this document
+under the terms of the GNU Free Documentation License, Version 1.3
+or any later version published by the Free Software Foundation;
+with no Invariant Sections, no Front-Cover Texts, and no Back-Cover
+Texts.  A copy of the license is included in the section entitled ``GNU
+Free Documentation License''.
+@end quotation
+@end copying
+
+@setchapternewpage odd
+@dircategory Development
+@direntry
+* StarPU: (starpu).             StarPU Handbook
+@end direntry
+
+@titlepage
+@title StarPU Handbook
+@subtitle for StarPU @value{VERSION}
+
+@page
+@vskip 0pt plus 1fill
+
+@insertcopying
+
+@end titlepage
+
+@c @summarycontents
+@contents
+@page
+
+@node Top
+@top Preface
+
+This manual documents the usage of StarPU version @value{VERSION}.  It
+was last updated on @value{UPDATED}.
+
+@ifnottex
+@insertcopying
+@end ifnottex
+
+@comment
+@comment  When you add a new menu item, please keep the right hand
+@comment  aligned to the same column.  Do not use tabs.  This provides
+@comment  better formatting.
+@comment
+@menu
+* Introduction::                Getting started
+* Installing StarPU::           How to configure, build and install StarPU
+* Using StarPU::                How to run StarPU application
+* Basic Examples::              Basic examples of the use of StarPU
+* Advanced Examples::           Advanced examples of the use of StarPU
+* Performance optimization::    How to optimize performance with StarPU
+* Performance feedback::        Performance debugging tools
+* Tips and Tricks::             Tips and tricks to know about
+* StarPU MPI support::          How to combine StarPU with MPI
+* StarPU FFT support::          How to perform FFT computations with StarPU
+* C Extensions::                Easier StarPU programming with GCC
+* SOCL OpenCL Extensions::      How to use OpenCL on top of StarPU
+* StarPU Basic API::            The Basic API to use StarPU
+* StarPU Advanced API::         Advanced use of StarPU
+* Configuring StarPU::          How to configure StarPU
+* Full source code for the 'Scaling a Vector' example::  
+* GNU Free Documentation License::  How you can copy and share this manual.
+
+* Concept Index::               Index of programming concepts.
+* Function Index::              Index of C functions.
+* Datatype Index::              Index of C datatypes
+@end menu
+
+@c ---------------------------------------------------------------------
+@c Introduction to StarPU
+@c ---------------------------------------------------------------------
+
+@node Introduction
+@chapter Introduction to StarPU
+@include chapters/introduction.texi
+
+@c ---------------------------------------------------------------------
+@c Installing StarPU
+@c ---------------------------------------------------------------------
+
+@node Installing StarPU
+@chapter Installing StarPU
+@include chapters/installing.texi
+
+@c ---------------------------------------------------------------------
+@c Using StarPU
+@c ---------------------------------------------------------------------
+
+@node Using StarPU
+@chapter Using StarPU
+@include chapters/using.texi
+
+@c ---------------------------------------------------------------------
+@c Basic Examples
+@c ---------------------------------------------------------------------
+
+@node Basic Examples
+@chapter Basic Examples
+@include chapters/basic-examples.texi
+
+@c ---------------------------------------------------------------------
+@c Advanced Examples
+@c ---------------------------------------------------------------------
+
+@node Advanced Examples
+@chapter Advanced Examples
+@include chapters/advanced-examples.texi
+
+@c ---------------------------------------------------------------------
+@c Performance options
+@c ---------------------------------------------------------------------
+
+@node Performance optimization
+@chapter How to optimize performance with StarPU
+@include chapters/perf-optimization.texi
+
+@c ---------------------------------------------------------------------
+@c Performance feedback
+@c ---------------------------------------------------------------------
+
+@node Performance feedback
+@chapter Performance feedback
+@include chapters/perf-feedback.texi
+
+@c ---------------------------------------------------------------------
+@c Tips and Tricks
+@c ---------------------------------------------------------------------
+
+@node Tips and Tricks
+@chapter Tips and Tricks to know about
+@include chapters/tips-tricks.texi
+
+@c ---------------------------------------------------------------------
+@c MPI support
+@c ---------------------------------------------------------------------
+
+@node StarPU MPI support
+@chapter StarPU MPI support
+@include chapters/mpi-support.texi
+
+@c ---------------------------------------------------------------------
+@c FFT support
+@c ---------------------------------------------------------------------
+
+@node StarPU FFT support
+@chapter StarPU FFT support
+@include chapters/fft-support.texi
+
+@c ---------------------------------------------------------------------
+@c C Extensions
+@c ---------------------------------------------------------------------
+
+@node C Extensions
+@chapter C Extensions
+@include chapters/c-extensions.texi
+
+@c ---------------------------------------------------------------------
+@c SOCL
+@c ---------------------------------------------------------------------
+
+@node SOCL OpenCL Extensions
+@chapter SOCL OpenCL Extensions
+@include chapters/socl.texi
+
+@c ---------------------------------------------------------------------
+@c StarPU API
+@c ---------------------------------------------------------------------
+
+@node StarPU Basic API
+@chapter StarPU Basic API
+@include chapters/basic-api.texi
+
+@c ---------------------------------------------------------------------
+@c Advanced Topics
+@c ---------------------------------------------------------------------
+
+@node StarPU Advanced API
+@chapter StarPU Advanced API
+@include chapters/advanced-api.texi
+
+@c ---------------------------------------------------------------------
+@c Configuration options
+@c ---------------------------------------------------------------------
+
+@node Configuring StarPU
+@chapter Configuring StarPU
+@include chapters/configuration.texi
+
+@c ---------------------------------------------------------------------
+@c Appendices
+@c ---------------------------------------------------------------------
+
+@c ---------------------------------------------------------------------
+@c Full source code for the 'Scaling a Vector' example
+@c ---------------------------------------------------------------------
+
+@node Full source code for the 'Scaling a Vector' example
+@appendix Full source code for the 'Scaling a Vector' example
+@include chapters/scaling-vector-example.texi
+
+@c ---------------------------------------------------------------------
+@c License
+@c ---------------------------------------------------------------------
+
+@node GNU Free Documentation License
+@appendix GNU Free Documentation License
+@include chapters/fdl-1.3.texi
+
+@c ---------------------------------------------------------------------
+@c Indices
+@c ---------------------------------------------------------------------
+
+@node Concept Index
+@unnumbered Concept Index
+@printindex cp
+
+@node Function Index
+@unnumbered Function Index
+@printindex fn
+
+@node Datatype Index
+@unnumbered Datatype Index
+@printindex tp
+
+@bye

@@ -1,0 +1,107 @@
+@c -*-texinfo-*-
+
+@c This file is part of the StarPU Handbook.
+@c Copyright (C) 2009--2011  Universit@'e de Bordeaux 1
+@c Copyright (C) 2010, 2011, 2012  Centre National de la Recherche Scientifique
+@c Copyright (C) 2011 Institut National de Recherche en Informatique et Automatique
+@c See the file starpu.texi for copying conditions.
+
+StarPU provides @code{libstarpufft}, a library whose design is very similar to
+both fftw and cufft, the difference being that it takes benefit from both CPUs
+and GPUs. It should however be noted that GPUs do not have the same precision as
+CPUs, so the results may different by a negligible amount
+
+float, double and long double precisions are available, with the fftw naming
+convention:
+
+@enumerate
+@item double precision structures and functions are named e.g. @code{starpufft_execute}
+@item float precision structures and functions are named e.g. @code{starpufftf_execute}
+@item long double precision structures and functions are named e.g. @code{starpufftl_execute}
+@end enumerate
+
+The documentation below uses names for double precision, replace
+@code{starpufft_} with @code{starpufftf_} or @code{starpufftl_} as appropriate.
+
+Only complex numbers are supported at the moment.
+
+The application has to call @code{starpu_init} before calling starpufft functions.
+
+Either main memory pointers or data handles can be provided.
+
+@enumerate
+@item To provide main memory pointers, use @code{starpufft_start} or
+@code{starpufft_execute}. Only one FFT can be performed at a time, because
+StarPU will have to register the data on the fly. In the @code{starpufft_start}
+case, @code{starpufft_cleanup} needs to be called to unregister the data.
+@item To provide data handles (which is preferrable),
+use @code{starpufft_start_handle} (preferred) or
+@code{starpufft_execute_handle}. Several FFTs Several FFT tasks can be submitted
+for a given plan, which permits e.g. to start a series of FFT with just one
+plan. @code{starpufft_start_handle} is preferrable since it does not wait for
+the task completion, and thus permits to enqueue a series of tasks.
+@end enumerate
+
+@section Compilation
+
+The flags required to compile or link against the FFT library are accessible
+with the following commands:
+
+@example
+% pkg-config --cflags starpufft-1.0  # options for the compiler
+% pkg-config --libs starpufft-1.0    # options for the linker
+@end example
+
+Also pass the @code{--static} option if the application is to be linked statically.
+
+@section Initialisation
+
+@deftypefun {void *} starpufft_malloc (size_t @var{n})
+Allocates memory for @var{n} bytes. This is preferred over @code{malloc}, since
+it allocates pinned memory, which allows overlapped transfers.
+@end deftypefun
+
+@deftypefun {void *} starpufft_free (void *@var{p})
+Release memory previously allocated.
+@end deftypefun
+
+@deftypefun {struct starpufft_plan *} starpufft_plan_dft_1d (int @var{n}, int @var{sign}, unsigned @var{flags})
+Initializes a plan for 1D FFT of size @var{n}. @var{sign} can be
+@code{STARPUFFT_FORWARD} or @code{STARPUFFT_INVERSE}. @var{flags} must be 0.
+@end deftypefun
+
+@deftypefun {struct starpufft_plan *} starpufft_plan_dft_2d (int @var{n}, int @var{m}, int @var{sign}, unsigned @var{flags})
+Initializes a plan for 2D FFT of size (@var{n}, @var{m}). @var{sign} can be
+@code{STARPUFFT_FORWARD} or @code{STARPUFFT_INVERSE}. @var{flags} must be 0.
+@end deftypefun
+
+@deftypefun {struct starpu_task *} starpufft_start (starpufft_plan @var{p}, void *@var{in}, void *@var{out})
+Start an FFT previously planned as @var{p}, using @var{in} and @var{out} as
+input and output. This only submits the task and does not wait for it.
+The application should call @code{starpufft_cleanup} to unregister the data.
+@end deftypefun
+
+@deftypefun {struct starpu_task *} starpufft_start_handle (starpufft_plan @var{p}, starpu_data_handle_t @var{in}, starpu_data_handle_t @var{out})
+Start an FFT previously planned as @var{p}, using data handles @var{in} and
+@var{out} as input and output (assumed to be vectors of elements of the expected
+types). This only submits the task and does not wait for it.
+@end deftypefun
+
+@deftypefun void starpufft_execute (starpufft_plan @var{p}, void *@var{in}, void *@var{out})
+Execute an FFT previously planned as @var{p}, using @var{in} and @var{out} as
+input and output. This submits and waits for the task.
+@end deftypefun
+
+@deftypefun void starpufft_execute_handle (starpufft_plan @var{p}, starpu_data_handle_t @var{in}, starpu_data_handle_t @var{out})
+Execute an FFT previously planned as @var{p}, using data handles @var{in} and
+@var{out} as input and output (assumed to be vectors of elements of the expected
+types). This submits and waits for the task.
+@end deftypefun
+
+@deftypefun void starpufft_cleanup (starpufft_plan @var{p})
+Releases data for plan @var{p}, in the @code{starpufft_start} case.
+@end deftypefun
+
+@deftypefun void starpufft_destroy_plan (starpufft_plan @var{p})
+Destroys plan @var{p}, i.e. release all CPU (fftw) and GPU (cufft) resources.
+@end deftypefun

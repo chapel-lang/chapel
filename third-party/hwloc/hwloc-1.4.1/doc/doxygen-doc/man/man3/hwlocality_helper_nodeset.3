@@ -1,0 +1,68 @@
+.TH "Nodeset Helpers" 3 "Mon Feb 27 2012" "Version 1.4.1" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+Nodeset Helpers \- 
+.SS "Functions"
+
+.in +1c
+.ti -1c
+.RI "static inline 
+.br
+\fBhwloc_const_nodeset_t\fP \fBhwloc_topology_get_complete_nodeset\fP (\fBhwloc_topology_t\fP topology) "
+.br
+.ti -1c
+.RI "static inline 
+.br
+\fBhwloc_const_nodeset_t\fP \fBhwloc_topology_get_topology_nodeset\fP (\fBhwloc_topology_t\fP topology) "
+.br
+.ti -1c
+.RI "static inline 
+.br
+\fBhwloc_const_nodeset_t\fP \fBhwloc_topology_get_allowed_nodeset\fP (\fBhwloc_topology_t\fP topology) "
+.br
+.in -1c
+.SH "Function Documentation"
+.PP 
+.SS "static inline \fBhwloc_const_nodeset_t\fP \fBhwloc_topology_get_allowed_nodeset\fP (\fBhwloc_topology_t\fPtopology)\fC [static]\fP"
+.PP
+Get allowed node set\&. \fBReturns:\fP
+.RS 4
+the node set of allowed memory of the system\&. If the topology is the result of a combination of several systems, NULL is returned\&.
+.RE
+.PP
+\fBNote:\fP
+.RS 4
+The returned nodeset is not newly allocated and should thus not be changed or freed, hwloc_nodeset_dup must be used to obtain a local copy\&. 
+.RE
+.PP
+
+.SS "static inline \fBhwloc_const_nodeset_t\fP \fBhwloc_topology_get_complete_nodeset\fP (\fBhwloc_topology_t\fPtopology)\fC [static]\fP"
+.PP
+Get complete node set\&. \fBReturns:\fP
+.RS 4
+the complete node set of memory of the system\&. If the topology is the result of a combination of several systems, NULL is returned\&.
+.RE
+.PP
+\fBNote:\fP
+.RS 4
+The returned nodeset is not newly allocated and should thus not be changed or freed; hwloc_nodeset_dup must be used to obtain a local copy\&. 
+.RE
+.PP
+
+.SS "static inline \fBhwloc_const_nodeset_t\fP \fBhwloc_topology_get_topology_nodeset\fP (\fBhwloc_topology_t\fPtopology)\fC [static]\fP"
+.PP
+Get topology node set\&. \fBReturns:\fP
+.RS 4
+the node set of memory of the system for which hwloc provides topology information\&. This is equivalent to the nodeset of the system object\&. If the topology is the result of a combination of several systems, NULL is returned\&.
+.RE
+.PP
+\fBNote:\fP
+.RS 4
+The returned nodeset is not newly allocated and should thus not be changed or freed; hwloc_nodeset_dup must be used to obtain a local copy\&. 
+.RE
+.PP
+
+.SH "Author"
+.PP 
+Generated automatically by Doxygen for Hardware Locality (hwloc) from the source code\&.

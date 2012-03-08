@@ -1,0 +1,26 @@
+.TH "Myrinet Express-Specific Functions" 3 "Mon Feb 27 2012" "Version 1.4.1" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+Myrinet Express-Specific Functions \- 
+.SS "Functions"
+
+.in +1c
+.ti -1c
+.RI "static inline int \fBhwloc_mx_board_get_device_cpuset\fP (\fBhwloc_topology_t\fP topology, unsigned id, \fBhwloc_cpuset_t\fP set)"
+.br
+.ti -1c
+.RI "static inline int \fBhwloc_mx_endpoint_get_device_cpuset\fP (\fBhwloc_topology_t\fP topology, mx_endpoint_t endpoint, \fBhwloc_cpuset_t\fP set)"
+.br
+.in -1c
+.SH "Function Documentation"
+.PP 
+.SS "static inline int \fBhwloc_mx_board_get_device_cpuset\fP (\fBhwloc_topology_t\fPtopology, unsignedid, \fBhwloc_cpuset_t\fPset)\fC [static]\fP"
+.PP
+Get the CPU set of logical processors that are physically close the MX board \fCid\fP\&. For the given Myrinet Express board index \fCid\fP, read the OS-provided NUMA node and return the corresponding CPU set\&. 
+.SS "static inline int \fBhwloc_mx_endpoint_get_device_cpuset\fP (\fBhwloc_topology_t\fPtopology, mx_endpoint_tendpoint, \fBhwloc_cpuset_t\fPset)\fC [static]\fP"
+.PP
+Get the CPU set of logical processors that are physically close to endpoint \fCendpoint\fP\&. For the given Myrinet Express endpoint \fCendpoint\fP, read the OS-provided NUMA node and return the corresponding CPU set\&. 
+.SH "Author"
+.PP 
+Generated automatically by Doxygen for Hardware Locality (hwloc) from the source code\&.

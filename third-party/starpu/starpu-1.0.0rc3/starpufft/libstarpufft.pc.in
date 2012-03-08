@@ -1,0 +1,27 @@
+# StarPU --- Runtime system for heterogeneous multicore architectures.
+#
+# Copyright (C) 2009-2012  Université de Bordeaux 1
+# Copyright (C) 2010, 2011, 2012  Centre National de la Recherche Scientifique
+#
+# StarPU is free software; you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation; either version 2.1 of the License, or (at
+# your option) any later version.
+#
+# StarPU is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+#
+# See the GNU Lesser General Public License in COPYING.LGPL for more details.
+
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+
+Name: starpufft
+Description: offers support for heterogeneous multicore architecture
+Version: @PACKAGE_VERSION@
+Cflags: -I${includedir}/starpu/@STARPU_EFFECTIVE_VERSION@ @STARPU_CUDA_CPPFLAGS@ -DSTARPU_USE_DEPRECATED_API
+Libs: -L${libdir} -lstarpufft-@STARPU_EFFECTIVE_VERSION@ 
+Libs.private: @LDFLAGS@ @LIBS@ @STARPU_CUFFT_LDFLAGS@ @FFTW_LIBS@ @FFTWF_LIBS@

@@ -1,0 +1,440 @@
+#!/bin/sh
+# -*- mode: scheme; coding: utf-8; -*-
+GUILE_AUTO_COMPILE=0
+export GUILE_AUTO_COMPILE
+main='(@ (run-test) build/run)'
+exec "${GUILE-@GUILE@}" -l "$0"    \
+         -c "(apply $main (cdr (command-line)))" "$@"
+!#
+;;; GCC-StarPU
+;;; Copyright (C) 2011, 2012 Institut National de Recherche en Informatique et Automatique
+;;;
+;;; GCC-StarPU is free software: you can redistribute it and/or modify
+;;; it under the terms of the GNU General Public License as published by
+;;; the Free Software Foundation, either version 3 of the License, or
+;;; (at your option) any later version.
+;;;
+;;; GCC-StarPU is distributed in the hope that it will be useful,
+;;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;;; GNU General Public License for more details.
+;;;
+;;; You should have received a copy of the GNU General Public License
+;;; along with GCC-StarPU.  If not, see <http://www.gnu.org/licenses/>.
+
+;;;
+;;; Written by Ludovic Courtès <ludovic.courtes@inria.fr>.
+;;;
+
+(define-module (run-test)
+  #:use-module (ice-9 regex)
+  #:use-module (ice-9 popen)
+  #:use-module (ice-9 rdelim)
+  #:use-module (ice-9 format)
+  #:use-module (ice-9 match)
+  #:use-module (srfi srfi-1)
+  #:use-module (srfi srfi-9)
+  #:use-module (srfi srfi-11)
+  #:use-module (srfi srfi-13)
+  #:use-module (srfi srfi-14)
+  #:use-module (srfi srfi-26)
+  #:export (build/run))
+
+;;; Commentary:
+;;;
+;;; Test machinery similar to the DejaGNU-based test framework used in GCC.
+;;; In a nutshell, this program compiles code with GCC and makes sure
+;;; warnings and errors are as appear in source code comments.
+;;;
+;;; This module should work with both Guile 1.8 and Guile 2.0.
+;;;
+;;; Code:
+
+;; Make sure the reader gets position information.
+(read-enable 'positions)
+
+(define %log-port
+  ;; Output port for debugging messages.
+  (current-output-port))
+
+(define (log fmt . args)
+  "Write an informational message."
+  (apply format %log-port (string-append fmt "\n") args))
+
+
+;;;
+;;; Compiling code.
+;;;
+
+(define %srcdir "@srcdir@")
+(define %builddir "@builddir@")
+(define %gcc "@CC@")
+
+(define %cuda-cppflags
+  (string-tokenize "@STARPU_CUDA_CPPFLAGS@"))
+
+(define %default-cflags
+  `("-I" ,%srcdir
+    "-I" ,(string-append %srcdir "/../../src")    ; for <common/uthash.h>
+    "-I" ,(string-append %srcdir "/../../include")
+    "-I" ,(string-append %builddir "/../../include")
+    "-I" ,(string-append %builddir "/../..")
+
+    ,@%cuda-cppflags
+
+    ;; Unfortunately `libtool --mode=execute' doesn't help here, so hard-code
+    ;; the real file name.
+    ,(string-append "-fplugin=" %builddir "/../src/.libs/starpu.so")
+
+    ;; Use the non-installed headers.
+    ,(string-append "-fplugin-arg-starpu-include-dir=@top_srcdir@/include")
+
+    "-g"
+    "-fdump-tree-gimple" "-Wall"))
+
+(define %default-ldflags
+  `(,(string-append "-L" %builddir "/../../src")))
+
+(define %libtool
+  (string-append %builddir "/../../libtool"))
+
+
+(define (compile-starpu-code file cc cflags ldflags)
+  "Compile and link FILE with CC, using CFLAGS and LDFLAGS.  Return the
+compiler status and the list of lines printed on stdout/stderr."
+  (let* ((compile? (member "-c" cflags))
+         (ldflags  (if compile?
+                       (remove (cut string-prefix? "-L" <>) ldflags)
+                       ldflags))
+         (mode     (if compile?
+                       "compile"
+                       "link"))
+         (command  (format #f "LC_ALL=C ~a --mode=~a ~a ~{~a ~} \"~a\" ~{~a ~} 2>&1"
+                           %libtool mode cc cflags file ldflags))
+         (pipe     (begin
+                     (log "running `~a'" command)
+                     (open-input-pipe command))))
+    (let loop ((line    (read-line pipe))
+               (result '()))
+      (if (eof-object? line)
+          (values (close-pipe pipe) (reverse result))
+          (loop (read-line pipe)
+                (cons line result))))))
+
+(define (run-starpu-code executable)
+  "Run EXECUTABLE using Libtool; return its exit status."
+  (let* ((exe     (if (string-index executable #\/)
+                      executable
+                      (string-append (getcwd) "/" executable)))
+         (command (string-append %libtool " --mode=execute "
+                                 exe)))
+    (log "running `~a'" command)
+    (system command)))
+
+
+;;;
+;;; GCC diagnostics.
+;;;
+
+(define-record-type <location>
+  (make-location file line column)
+  location?
+  (file     location-file)
+  (line     location-line)
+  (column   location-column))
+
+(define (location=? loc1 loc2)
+  "Return #t if LOC1 and LOC2 refer roughly to the same file and line
+number."
+  (and (location-file loc1) (location-file loc2)
+       (string=? (basename (location-file loc1))
+                 (basename (location-file loc2)))
+       (= (location-line loc1) (location-line loc2))))
+
+(define-record-type <diagnostic>
+  (make-diagnostic location kind message)
+  diagnostic?
+  (location diagnostic-location)
+  (kind     diagnostic-kind)
+  (message  diagnostic-message))
+
+(define %diagnostic-with-location-rx
+  ;; "FILE:LINE:COL: KIND: MESSAGE..."
+  (make-regexp "^(.+):([[:digit:]]+):([[:digit:]]+): ([^:]+): (.*)$"))
+
+(define (string->diagnostic str)
+  "Parse STR and return the corresponding `diagnostic' object."
+  (cond ((regexp-exec %diagnostic-with-location-rx str)
+         =>
+         (lambda (m)
+           (let ((loc  (make-location (match:substring m 1)
+                                      (string->number (match:substring m 2))
+                                      (string->number (match:substring m 3))))
+                 (kind (string->symbol (match:substring m 4))))
+            (make-diagnostic loc kind (match:substring m 5)))))
+        (else
+         (make-diagnostic #f #f str))))
+
+
+;;;
+;;; Reading test directives.
+;;;
+
+(define (read-test-directives port)
+  "Read test directives from PORT.  Return a list of location/directive
+pairs."
+  (define (consume-whitespace p)
+    (let loop ((chr (peek-char p)))
+      (cond ((char-set-contains? char-set:whitespace chr)
+             (read-char p) ;; consume CHR
+             (loop (peek-char p)))
+            (else chr))))
+
+  (define (read-until-*/ p)
+    (let loop ((chr (read-char p)))
+      (cond ((eof-object? chr)
+             (error "unterminated C comment"))
+            ((eq? chr #\*)
+             (let ((next (peek-char p)))
+               (if (eq? next #\/)
+                   (read-char p) ;; consume CHR
+                   (loop (read-char p)))))
+            (else
+             (loop (read-char p))))))
+
+  (let loop ((chr        (read-char port))
+             (directives '()))
+    (cond ((eof-object? chr)
+           (reverse directives))
+          ((eq? chr #\/)
+           (let ((chr (read-char port)))
+             (if (eq? chr #\*)
+                 (let ((chr (consume-whitespace port)))
+                   (if (eq? chr #\()
+                       (let ((loc  (make-location (port-filename port)
+                                                  (1+ (port-line port))
+                                                  (port-column port)))
+                             (sexp (read port)))
+                         (read-until-*/ port)
+                         (loop (peek-char port)
+                               (cons (cons loc sexp)
+                                     directives)))
+                       (begin
+                         (read-until-*/ port)
+                         (loop (peek-char port) directives))))
+                 (loop chr directives))))
+          (else
+           (loop (read-char port) directives)))))
+
+(define (diagnostic-matches-directive? diagnostic directive location)
+  "Return #t if DIAGNOSTIC matches DIRECTIVE, which is at LOCATION."
+  (and (location? (diagnostic-location diagnostic))
+       (location=? (diagnostic-location diagnostic) location)
+       (match directive
+         ((kind message)
+          (and (eq? kind (diagnostic-kind diagnostic))
+               (string-match message (diagnostic-message diagnostic)))))))
+
+
+;;;
+;;; Compiling and matching diagnostics against directives.
+;;;
+
+(define (compile/match* file directives cc cflags ldflags)
+  "Compile FILE and check whether GCC's diagnostics match DIRECTIVES.  Return
+3 values: the compiler's status code, the unmatched diagnostics, and the
+unsatisfied directives."
+  (let-values (((status diagnostics)
+                (compile-starpu-code file cc cflags ldflags)))
+    (let loop ((diagnostics (map string->diagnostic diagnostics))
+               (directives  directives)
+               (unsatisfied '()))
+      (if (null? directives)
+          (values status diagnostics unsatisfied)
+          (let* ((dir  (car directives))
+                 (diag (find (cute diagnostic-matches-directive?
+                                   <> (cdr dir) (car dir))
+                             diagnostics)))
+            (if diag
+                (loop (delq diag diagnostics)
+                      (cdr directives)
+                      unsatisfied)
+                (loop diagnostics
+                      (cdr directives)
+                      (cons dir unsatisfied))))))))
+
+(define (executable-file source)
+  "Return the name of the executable file corresponding to SOURCE."
+  (let* ((dot (string-rindex source #\.))
+         (exe (if dot
+                  (substring source 0 dot)
+                  (string-append source ".exe")))
+         )
+  (if (string-prefix? %srcdir exe)
+      (string-append %builddir (substring exe (string-length %srcdir)))
+      exe
+      )))
+
+(define (compile/match file cc cflags ldflags)
+  "Read directives from FILE, and compiler/link/run it.  Make sure directives
+are matched, and report any errors otherwise.  Return #t on success and #f
+otherwise."
+  (define directives
+    (call-with-input-file file read-test-directives))
+
+  (define exe
+    (executable-file file))
+
+  (define (c->o c-file)
+    (string-append (substring c-file 0 (- (string-length c-file) 2))
+                   ".lo"))
+
+  (log "~a directives found in `~a'" (length directives) file)
+
+  (let*-values (((error-expected?)
+                 (find (lambda (l+d)
+                         (match l+d
+                           (((? location?) 'error _)
+                            #t)
+                           (_ #f)))
+                       directives))
+                ((instructions)
+                 (or (any (lambda (l+d)
+                            (match l+d
+                              (((? location?) 'instructions x ...)
+                               x)
+                              (_ #f)))
+                          directives)
+                     '(run)))
+                ((options)
+                 (match instructions
+                   ((_ options ...)
+                    options)
+                   (_ '())))
+                ((dependencies)
+                 (or (assq-ref options 'dependencies)
+                     '())))
+
+    (or (null? dependencies)
+        (format (current-output-port) "~s has ~a dependencies: ~{~s ~}~%"
+                file (length dependencies) dependencies))
+
+    (and (every (cut compile/match <> cc cflags ldflags)
+                (map (cut string-append %srcdir "/" <>) dependencies))
+         (let*-values (((goal)
+                        (if error-expected?
+                            'compile
+                            (car instructions)))
+                       ((cflags)
+                        `(,@cflags
+                          ,@(or (assq-ref options 'cflags) '())
+                          ,@(if (memq goal '(link run))
+                                `("-o" ,exe)
+                                '("-c"))))
+                       ((ldflags)
+                        `(,@(map c->o dependencies)
+                          ,@ldflags
+                          ,@(or (assq-ref options 'ldflags)
+                                '())))
+                       ((directives)
+                        (remove (lambda (l+d)
+                                  (match l+d
+                                    (((? location?) 'instructions _ ...)
+                                     #t)
+                                    (_ #f)))
+                                directives))
+                       ((status diagnostics unsatisfied)
+                        (compile/match* file directives cc cflags ldflags))
+                       ((unmatched)
+                        ;; Consider unmatched only diagnostics that have a
+                        ;; kind, to avoid taking into account messages like
+                        ;; "In file included from", "In function 'main'",
+                        ;; etc.
+                        (filter diagnostic-kind diagnostics)))
+
+           (or (null? unmatched)
+               (begin
+                 (format (current-error-port)
+                         "error: ~a unmatched GCC diagnostics:~%"
+                         (length unmatched))
+                 (for-each (lambda (d)
+                             (format (current-error-port)
+                                     "  ~a:~a:~a: ~a: ~a~%"
+                                     (and=> (diagnostic-location d)
+                                            location-file)
+                                     (and=> (diagnostic-location d)
+                                            location-line)
+                                     (and=> (diagnostic-location d)
+                                            location-column)
+                                     (diagnostic-kind d)
+                                     (diagnostic-message d)))
+                           unmatched)
+                 #f))
+
+           (if (null? unsatisfied)
+               (or (null? directives)
+                   (log "~a directives satisfied" (length directives)))
+               (begin
+                 (format (current-error-port)
+                         "error: ~a unsatisfied directives:~%"
+                         (length unsatisfied))
+                 (for-each (lambda (l+d)
+                             (let ((loc (car l+d))
+                                   (dir (cdr l+d)))
+                               (format (current-error-port)
+                                       "  ~a:~a:~a: ~a: ~s~%"
+                                       (location-file loc)
+                                       (location-line loc)
+                                       (location-column loc)
+                                       (car dir)
+                                       (cadr dir))))
+                           unsatisfied)
+                 #f))
+
+           (if error-expected?
+               (if (= 0 status)
+                   (format (current-error-port)
+                           "error: compilation succeeded~%"))
+               (if (= 0 status)
+                   (or (eq? goal 'compile)
+                       (file-exists? exe)
+                       (begin
+                         (format (current-error-port)
+                                 "error: executable file `~a' not found~%" exe)
+                         #f))
+                   (format (current-error-port)
+                           "error: compilation failed (compiler exit code ~a)~%~{  ~a~%~}"
+                           status
+                           (map diagnostic-message diagnostics))))
+
+           (and (null? unmatched)
+                (null? unsatisfied)
+                (if error-expected?
+                    (not (= 0 status))
+                    (and (= 0 status)
+                         (or (eq? goal 'compile) (file-exists? exe))
+                         (or (not (eq? goal 'run))
+                             (let ((status (run-starpu-code exe)))
+                               (or (= 0 status)
+                                   (begin
+                                     (format (current-error-port)
+                                             "error: program `~a' failed \
+(exit code ~a)~%"
+                                             exe status)
+                                     #f)))))))))))
+
+
+;;;
+;;; Entry point.
+;;;
+
+(define (build/run . file)
+  (exit (every (lambda (file)
+                 ;; For each file, check that everything works both with and
+                 ;; without optimizations.
+                 (every (cut compile/match file %gcc <> %default-ldflags)
+                        `((,"-O0" ,@%default-cflags)
+                          (,"-O2" ,@%default-cflags))))
+               file)))
+
+;;; run-test.in ends here

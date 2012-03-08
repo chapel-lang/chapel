@@ -1,0 +1,61 @@
+# StarPU --- Runtime system for heterogeneous multicore architectures.
+#
+# Copyright (C) 2010  Université de Bordeaux 1
+# Copyright (C) 2010, 2011  Centre National de la Recherche Scientifique
+#
+# StarPU is free software; you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation; either version 2.1 of the License, or (at
+# your option) any later version.
+#
+# StarPU is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+#
+# See the GNU Lesser General Public License in COPYING.LGPL for more details.
+
+# Build configuration
+--enable-coverage
+# Execution configuration
+
+# Build configuration
+--enable-debug --enable-verbose
+# Execution configuration
+STARPU_LOGFILENAME=/tmp/starpu_run.log
+#
+# Build configuration
+
+# Execution configuration
+STARPU_NCUDA=0
+# Execution configuration
+STARPU_NCUDA=1
+# Execution configuration
+STARPU_SCHED=ws
+# Execution configuration
+STARPU_SCHED=prio
+# Execution configuration
+STARPU_SCHED=no-prio
+# Execution configuration
+STARPU_SCHED=dm
+# Execution configuration
+STARPU_SCHED=dmda
+# Execution configuration
+STARPU_SCHED=random
+# Execution configuration
+STARPU_SCHED=eager
+# Execution configuration
+STARPU_SCHED=dmda STARPU_SCHED_ALPHA=10 STARPU_SCHED_BETA=15
+# Execution configuration
+STARPU_CALIBRATE=1
+# Execution configuration
+STARPU_PREFETCH=1
+#
+# Build configuration
+--disable-cuda
+# Execution configuration
+
+#
+# Build configuration
+--disable-opencl
+# Execution configuration
+

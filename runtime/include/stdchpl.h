@@ -36,6 +36,7 @@
 #include "chpltimers.h"
 #include "chpltypes.h"
 #include "chplgpu.h"
+#include "codelet.h"
 #include "error.h"
 
 #include "qbuffer.h"

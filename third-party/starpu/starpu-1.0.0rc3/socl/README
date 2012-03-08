@@ -1,0 +1,7 @@
+StarPU's OpenCL interface
+=========================
+
+This directory contains an OpenCL implementation that can
+be used as a replacement of the classic StarPU's API.
+
+OpenCL applications need to be compiled using provided headers.

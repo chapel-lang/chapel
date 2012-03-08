@@ -1,0 +1,138 @@
+#!/bin/sh
+#-*-sh-*-
+
+#
+# Copyright © 2009 CNRS
+# Copyright © 2009-2010 inria.  All rights reserved.
+# Copyright © 2009-2012 Université Bordeaux 1
+# See COPYING in top-level directory.
+#
+
+abs_top_builddir="@abs_top_builddir@"
+prefix="@prefix@"
+exec_prefix="@exec_prefix@"
+bindir="@bindir@"
+# this will be changed into $bindir/lstopo during make install
+lstopo="$abs_top_builddir/utils/lstopo"
+
+# make sure we use default numeric formats
+LANG=C
+LC_ALL=C
+export LANG LC_ALL
+
+error()
+{
+    echo $@ 2>&1
+}
+
+usage()
+{
+   echo "$0 <savepath>"
+   echo "  Saves the Linux topology files (/sys, /proc, ...) under <savepath>.tar.bz2"
+   echo "  and the corresponding lstopo verbose output under <savepath>.output"
+   echo "Example:"
+   echo "  $0 /tmp/\$(uname -n)"
+}
+
+name="$1"; shift
+if [ -z "$name" -o x`echo $name | cut -c1` = x- ] ; then
+  [ x$name != x -a x$name != x-h -a x$name != x--help ] && echo "Unrecognized option: $name"
+  usage
+  exit 1
+fi
+basename=`basename "$name"`
+dirname=`dirname "$name"`
+
+if ! mkdir -p "$dirname" ; then
+    error "Failed to create directory $dirname."
+    exit 1
+fi
+
+if [ ! -w  "$dirname" ] ; then
+    echo "$dirname is not writable."
+    exit 1
+fi
+
+destdir=`mktemp -d`
+
+# Use cat so that we properly get proc/sys files even if their
+# file length is wrong
+savefile() {
+  local dest="$1"
+  local file="$2"
+  dir=`dirname "$file"`
+  mkdir -p "$dest/$dir" 2>/dev/null
+  cat "$file" > "$dest/$file" 2>/dev/null
+}
+
+# Gather the following list of files
+cat << EOF | while read -r path ; do savefile "$destdir/$basename" "$path" ; done
+/proc/cpuinfo
+/proc/meminfo
+/proc/mounts
+/proc/stat
+/proc/self/cpuset
+EOF
+
+# Get all files from the given directory
+# Ignore errors since some files may be missing, and some may be
+# restricted to root (but we don't need them).
+savedir() {
+  local dest="$1"
+  local path="$2"
+  # gather all directories, including empty ones
+  find "$path" -type d 2>/dev/null | while read -r dir ; do
+    mkdir -p "$dest/$dir" 2>/dev/null
+  done
+  # gather all files now
+  find "$path" -type f 2>/dev/null | while read -r file ; do
+    savefile "$dest" "$file"
+  done
+}
+
+# Gather the following list of directories
+cat << EOF | while read -r path ; do savedir "$destdir/$basename" "$path" ; done
+/sys/devices/system/cpu/
+/sys/devices/system/node/
+/sys/bus/cpu/devices/
+/sys/bus/node/devices/
+/sys/class/dmi/id/
+/sys/kernel/mm/hugepages/
+/proc/device-tree/cpus/
+EOF
+
+# Get an entire mount point, after decoding its path
+# we don't support path with \n since it would break in 'find ... | while read ..." above
+savemntpnt() {
+  local encodedpath=$1
+  if echo "$1" | grep "\\012" ; then
+    echo "Ignoring mount point whose filename contains an end of line."
+    return
+  fi
+  local path=$(echo "$1" | sed -e 's@\\134@\\@g' -e 's@\\040@ @g' -e 's@\\011@	@g')
+  savedir "$destdir/$basename" "${path}/"
+}
+
+# Gather cgroup/cpuset mntpnts
+cat /proc/mounts | while read -r dummy1 mntpath mnttype mntopts dummy2 ; do
+  [ x$mnttype = xcpuset ] && savemntpnt "$mntpath"
+  [ x$mnttype = xcgroup ] && echo $mntopts | grep -w cpuset >/dev/null && savemntpnt "$mntpath"
+done
+
+# Create the archive and keep the tree in /tmp for testing
+( cd "$destdir/" && tar cfj "$basename.tar.bz2" "$basename" )
+mv "$destdir/$basename.tar.bz2" "$dirname/$basename.tar.bz2"
+echo "Hierarchy gathered in $dirname/$basename.tar.bz2 and kept in $destdir/$basename/"
+
+# Generate the output as well
+if [ ! -x "$lstopo" ]
+then
+    error "Could not find lstopo executable in the install or build dir."
+    exit 1
+fi
+# we need "Topology not from this system" in the output so as to make test-topology.sh happy
+export HWLOC_THISSYSTEM=0
+"$lstopo" - -v > "$dirname/$basename.output"
+echo "Expected topology output stored in $dirname/$basename.output"
+
+exit 0

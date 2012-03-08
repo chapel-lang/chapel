@@ -1,0 +1,30 @@
+#!/bin/bash
+
+# StarPU --- Runtime system for heterogeneous multicore architectures.
+#
+# Copyright (C) 2010  Université de Bordeaux 1
+# Copyright (C) 2010, 2011  Centre National de la Recherche Scientifique
+#
+# StarPU is free software; you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation; either version 2.1 of the License, or (at
+# your option) any later version.
+#
+# StarPU is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+#
+# See the GNU Lesser General Public License in COPYING.LGPL for more details.
+
+[ -z "$N" ] && N=1
+export N
+[ -z "$STARPU_SCHED_BETA" ] && STARPU_SCHED_BETA="2"
+export STARPU_SCHED_BETA
+echo sched $STARPU_SCHED 1>&2
+echo sched_beta $STARPU_SCHED_BETA 1>&2
+echo prefetch $STARPU_PREFETCH 1>&2
+echo calibrate $STARPU_CALIBRATE 1>&2
+echo ncpus $STARPU_NCPUS 1>&2
+echo ncuda $STARPU_NCUDA 1>&2
+echo N $N
+./stencil -nbz $(($N * 64)) -sizex 128 -sizey 128 -sizez $(( $((16 * $N)) * 128 )) -niter 64 "$@"

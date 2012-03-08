@@ -1,0 +1,32 @@
+.TH "CUDA Runtime API Specific Functions" 3 "Mon Feb 27 2012" "Version 1.4.1" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+CUDA Runtime API Specific Functions \- 
+.SS "Functions"
+
+.in +1c
+.ti -1c
+.RI "static inline int \fBhwloc_cudart_get_device_pci_ids\fP (\fBhwloc_topology_t\fP topology , int device, int *domain, int *bus, int *dev)"
+.br
+.ti -1c
+.RI "static inline int \fBhwloc_cudart_get_device_cpuset\fP (\fBhwloc_topology_t\fP topology , int device, \fBhwloc_cpuset_t\fP set)"
+.br
+.ti -1c
+.RI "static inline \fBhwloc_obj_t\fP \fBhwloc_cudart_get_device_pcidev\fP (\fBhwloc_topology_t\fP topology, int device)"
+.br
+.in -1c
+.SH "Function Documentation"
+.PP 
+.SS "static inline int \fBhwloc_cudart_get_device_cpuset\fP (\fBhwloc_topology_t\fP topology, intdevice, \fBhwloc_cpuset_t\fPset)\fC [static]\fP"
+.PP
+Get the CPU set of logical processors that are physically close to device \fCdevice\fP\&. For the given CUDA Runtime API device \fCdevice\fP, read the corresponding kernel-provided cpumap file and return the corresponding CPU set\&. This function is currently only implemented in a meaningful way for Linux; other systems will simply get a full cpuset\&. 
+.SS "static inline int \fBhwloc_cudart_get_device_pci_ids\fP (\fBhwloc_topology_t\fP topology, intdevice, int *domain, int *bus, int *dev)\fC [static]\fP"
+.PP
+Return the domain, bus and device IDs of device \fCdevice\fP\&. 
+.SS "static inline \fBhwloc_obj_t\fP \fBhwloc_cudart_get_device_pcidev\fP (\fBhwloc_topology_t\fPtopology, intdevice)\fC [static]\fP"
+.PP
+Get the hwloc object for the PCI device corresponding to device \fCdevice\fP\&. For the given CUDA Runtime API device \fCdevice\fP, return the hwloc PCI object containing the device\&. Returns NULL if there is none\&. 
+.SH "Author"
+.PP 
+Generated automatically by Doxygen for Hardware Locality (hwloc) from the source code\&.

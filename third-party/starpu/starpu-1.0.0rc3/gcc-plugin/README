@@ -1,0 +1,12 @@
+StarPU's GCC Plug-In
+=====================
+
+This directory contains an (experimental) GCC plug-in that provides C
+language extensions to make it easier to define and invoke StarPU
+tasks.
+
+Plug-ins are supported starting from GCC 4.5.
+
+To run the test suite, GNU Guile 1.8.x or 2.0.x is needed.
+
+When building from SVN, GNU Bison 2.5+ is required.

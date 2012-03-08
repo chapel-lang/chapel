@@ -1,0 +1,113 @@
+@c -*-texinfo-*-
+
+@c This file is part of the StarPU Handbook.
+@c Copyright (C) 2009--2011  Universit@'e de Bordeaux 1
+@c Copyright (C) 2010, 2011, 2012  Centre National de la Recherche Scientifique
+@c Copyright (C) 2011 Institut National de Recherche en Informatique et Automatique
+@c See the file starpu.texi for copying conditions.
+
+@menu
+* Setting flags for compiling and linking applications::  
+* Running a basic StarPU application::  
+* Kernel threads started by StarPU::
+* Enabling OpenCL::
+@end menu
+
+@node Setting flags for compiling and linking applications
+@section Setting flags for compiling and linking applications
+
+Compiling and linking an application against StarPU may require to use
+specific flags or libraries (for instance @code{CUDA} or @code{libspe2}).
+To this end, it is possible to use the @code{pkg-config} tool.
+
+If StarPU was not installed at some standard location, the path of StarPU's
+library must be specified in the @code{PKG_CONFIG_PATH} environment variable so
+that @code{pkg-config} can find it. For example if StarPU was installed in
+@code{$prefix_dir}:
+
+@example
+% PKG_CONFIG_PATH=$PKG_CONFIG_PATH:$prefix_dir/lib/pkgconfig
+@end example
+
+The flags required to compile or link against StarPU are then
+accessible with the following commands@footnote{It is still possible to use the API
+provided in the version 0.9 of StarPU by calling @code{pkg-config}
+with the @code{libstarpu} package. Similar packages are provided for
+@code{libstarpumpi} and @code{libstarpufft}.}:
+
+@example
+% pkg-config --cflags starpu-1.0  # options for the compiler
+% pkg-config --libs starpu-1.0    # options for the linker
+@end example
+
+Also pass the @code{--static} option if the application is to be
+linked statically.
+
+@node Running a basic StarPU application
+@section Running a basic StarPU application
+
+Basic examples using StarPU are built in the directory
+@code{examples/basic_examples/} (and installed in
+@code{$prefix_dir/lib/starpu/examples/}). You can for example run the example
+@code{vector_scal}.
+
+@example
+% ./examples/basic_examples/vector_scal
+BEFORE: First element was 1.000000
+AFTER: First element is 3.140000
+%
+@end example
+
+When StarPU is used for the first time, the directory
+@code{$STARPU_HOME/.starpu/} is created, performance models will be stored in
+that directory (@code{STARPU_HOME} defaults to @code{$HOME})
+
+Please note that buses are benchmarked when StarPU is launched for the
+first time. This may take a few minutes, or less if @code{hwloc} is
+installed. This step is done only once per user and per machine.
+
+@node Kernel threads started by StarPU
+@section Kernel threads started by StarPU
+
+StarPU automatically binds one thread per CPU core. It does not use
+SMT/hyperthreading because kernels are usually already optimized for using a
+full core, and using hyperthreading would make kernel calibration rather random.
+
+Since driving GPUs is a CPU-consuming task, StarPU dedicates one core per GPU
+
+While StarPU tasks are executing, the application is not supposed to do
+computations in the threads it starts itself, tasks should be used instead.
+
+TODO: add a StarPU function to bind an application thread (e.g. the main thread)
+to a dedicated core (and thus disable the corresponding StarPU CPU worker).
+
+@node Enabling OpenCL
+@section Enabling OpenCL
+
+When both CUDA and OpenCL drivers are enabled, StarPU will launch an
+OpenCL worker for NVIDIA GPUs only if CUDA is not already running on them.
+This design choice was necessary as OpenCL and CUDA can not run at the
+same time on the same NVIDIA GPU, as there is currently no interoperability
+between them.
+
+To enable OpenCL, you need either to disable CUDA when configuring StarPU:
+
+@example
+% ./configure --disable-cuda
+@end example
+
+or when running applications:
+
+@example
+% STARPU_NCUDA=0 ./application
+@end example
+
+OpenCL will automatically be started on any device not yet used by
+CUDA. So on a machine running 4 GPUS, it is therefore possible to
+enable CUDA on 2 devices, and OpenCL on the 2 other devices by doing
+so:
+
+@example
+% STARPU_NCUDA=2 ./application
+@end example
+

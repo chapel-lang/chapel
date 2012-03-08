@@ -1,0 +1,46 @@
+.TH "Helpers for manipulating Linux libnuma nodemask_t" 3 "Mon Feb 27 2012" "Version 1.4.1" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+Helpers for manipulating Linux libnuma nodemask_t \- 
+.SS "Functions"
+
+.in +1c
+.ti -1c
+.RI "static inline int \fBhwloc_cpuset_to_linux_libnuma_nodemask\fP (\fBhwloc_topology_t\fP topology, \fBhwloc_const_cpuset_t\fP cpuset, nodemask_t *nodemask)"
+.br
+.ti -1c
+.RI "static inline int \fBhwloc_nodeset_to_linux_libnuma_nodemask\fP (\fBhwloc_topology_t\fP topology, \fBhwloc_const_nodeset_t\fP nodeset, nodemask_t *nodemask)"
+.br
+.ti -1c
+.RI "static inline int \fBhwloc_cpuset_from_linux_libnuma_nodemask\fP (\fBhwloc_topology_t\fP topology, \fBhwloc_cpuset_t\fP cpuset, const nodemask_t *nodemask)"
+.br
+.ti -1c
+.RI "static inline int \fBhwloc_nodeset_from_linux_libnuma_nodemask\fP (\fBhwloc_topology_t\fP topology, \fBhwloc_nodeset_t\fP nodeset, const nodemask_t *nodemask)"
+.br
+.in -1c
+.SH "Detailed Description"
+.PP 
+\fBNote:\fP
+.RS 4
+The Linux libnuma nodemask_t interface is deprecated and its implementation is at least incorrect with respect to sparse NUMA node ids\&. It is strongly advised to use struct bitmask instead of nodemask_t, or even to use hwloc directly\&. 
+.RE
+.PP
+
+.SH "Function Documentation"
+.PP 
+.SS "static inline int \fBhwloc_cpuset_from_linux_libnuma_nodemask\fP (\fBhwloc_topology_t\fPtopology, \fBhwloc_cpuset_t\fPcpuset, const nodemask_t *nodemask)\fC [static]\fP"
+.PP
+Convert libnuma nodemask \fCnodemask\fP into hwloc CPU set \fCcpuset\fP\&. This function may be used before calling some old libnuma functions that use a nodemask_t as an output parameter\&. 
+.SS "static inline int \fBhwloc_cpuset_to_linux_libnuma_nodemask\fP (\fBhwloc_topology_t\fPtopology, \fBhwloc_const_cpuset_t\fPcpuset, nodemask_t *nodemask)\fC [static]\fP"
+.PP
+Convert hwloc CPU set \fCcpuset\fP into libnuma nodemask \fCnodemask\fP\&. This function may be used before calling some old libnuma functions that use a nodemask_t as an input parameter\&. 
+.SS "static inline int \fBhwloc_nodeset_from_linux_libnuma_nodemask\fP (\fBhwloc_topology_t\fPtopology, \fBhwloc_nodeset_t\fPnodeset, const nodemask_t *nodemask)\fC [static]\fP"
+.PP
+Convert libnuma nodemask \fCnodemask\fP into hwloc NUMA node set \fCnodeset\fP\&. This function may be used before calling some old libnuma functions that use a nodemask_t as an output parameter\&. 
+.SS "static inline int \fBhwloc_nodeset_to_linux_libnuma_nodemask\fP (\fBhwloc_topology_t\fPtopology, \fBhwloc_const_nodeset_t\fPnodeset, nodemask_t *nodemask)\fC [static]\fP"
+.PP
+Convert hwloc NUMA node set \fCnodeset\fP into libnuma nodemask \fCnodemask\fP\&. This function may be used before calling some old libnuma functions that use a nodemask_t as an input parameter\&. 
+.SH "Author"
+.PP 
+Generated automatically by Doxygen for Hardware Locality (hwloc) from the source code\&.

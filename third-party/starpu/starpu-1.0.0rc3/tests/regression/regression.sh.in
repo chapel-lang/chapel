@@ -1,0 +1,141 @@
+#!/bin/bash
+
+# StarPU --- Runtime system for heterogeneous multicore architectures.
+# 
+# Copyright (C) 2010  Centre National de la Recherche Scientifique
+# 
+# StarPU is free software; you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation; either version 2.1 of the License, or (at
+# your option) any later version.
+# 
+# StarPU is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+# 
+# See the GNU Lesser General Public License in COPYING.LGPL for more details.
+
+WORKDIR=`mktemp -d`
+SRCDIR=@STARPU_SRC_DIR@
+MAKE="${MAKE:-make -j3}"
+
+##################################################
+
+# arg: returned status from the previous command
+check_exec()
+{
+    PROFILE=$PROFILE_NUM
+    if [ $SUBPROFILE_NUM -ne 0 ] ; then
+        PROFILE="${PROFILE}.${SUBPROFILE_NUM}"
+    fi
+    if [ $1 -eq 0 ]; then
+        echo "PASS: Profile $PROFILE"
+    else
+	echo "FAIL: Profile $PROFILE"
+	if [ ${ABORT_ON_ERROR} -eq 1 ]; then
+            echo "Aborting ..."
+	    exit 1;
+	fi
+    fi
+}
+
+do_build()
+{
+    PROFILE_NUM=`expr ${PROFILE_NUM} + 1`
+    echo ">>> Build configuration ${PROFILE_NUM}: <$@>"
+
+    rm -rf ${WORKDIR}/build/*
+
+    cd ${WORKDIR}/build
+    ${SRCDIR}/configure "$@" > $WORKDIR/logs/profile.${PROFILE_NUM} 2>&1
+    cd -
+    code_build=$?
+
+    if [ $code_build -ne 0 ]; then
+        check_exec $code_build
+    else
+        ${MAKE} -C ${WORKDIR}/build >> $WORKDIR/logs/profile.${PROFILE_NUM} 2>&1
+        code_build=$?
+        check_exec $code_build
+    fi
+}
+
+do_test()
+{
+    SUBPROFILE_NUM=`expr ${SUBPROFILE_NUM} + 1`
+    echo ">>>> Execution configuration ${PROFILE_NUM}.${SUBPROFILE_NUM} : <$@>"
+
+    (
+        export $* ;
+        ${MAKE} -C ${WORKDIR}/build check
+    ) > $WORKDIR/logs/profile.${PROFILE_NUM}.${SUBPROFILE_NUM} 2>&1
+    code_check=$?
+    check_exec $code_check
+
+    if [ $code_check -ne 0 ] ; then
+        grep FAIL: $WORKDIR/logs/profile.${PROFILE_NUM}.${SUBPROFILE_NUM}
+    fi
+
+    coverage=$(find ${WORKDIR}/build -name "*.gcda" 2>/dev/null)
+    if [ -n "$coverage" ] ; then
+	lcov -c -d ${WORKDIR}/build -o ${WORKDIR}/cov/profile_${PROFILE_NUM}.${SUBPROFILE_NUM}.lcov >> $WORKDIR/logs/profile.${PROFILE_NUM}.${SUBPROFILE_NUM} 2>&1
+    fi
+}
+
+##################################################
+
+ABORT_ON_ERROR=0
+while [ $# -ne 0 ]; do
+    case $1 in
+	--abort-on-error) 
+	    ABORT_ON_ERROR=1
+            shift ;;
+	--help)
+	    echo
+            echo "Error. Syntax $0 [ --abort-on-error ] <profile files>"
+            echo
+	    exit 0 ;;
+        *)
+            break ;;
+    esac
+done
+
+if [ -z "$1" ] ; then
+    echo "Error. Syntax $0 [ --abort-on-error ] <profile files>"
+    exit 0
+fi
+
+#################################################
+
+## Create and jump to the workdir
+mkdir ${WORKDIR}/build ; mkdir ${WORKDIR}/cov ; mkdir ${WORKDIR}/html ; mkdir ${WORKDIR}/logs
+
+PROFILE_NUM=0
+code_build=1
+for file in $* ; do
+    (
+        while read line ; do
+            if [ "$line" == "# Build configuration" ] ; then
+                read line
+                SUBPROFILE_NUM=0
+                do_build $line
+            elif [ "$line" == "# Execution configuration" ] ; then
+                read line
+                if [ $code_build -eq 0 ] ; then
+                    do_test $line
+                fi
+            fi
+        done
+    ) < $file
+done
+echo $WORKDIR
+
+### End of script
+
+coverage=$(ls ${WORKDIR}/cov/*.lcov 2>/dev/null)
+if [ -n "${coverage}" ] ; then
+    genhtml --function-coverage --legend ${WORKDIR}/cov/*.lcov -o ${WORKDIR}/html -t "StarPU coverage test results" > ${WORKDIR}/logs/genhtml.log
+    echo "The coverage report is located at : ${WORKDIR}/html"
+fi
+
+echo "Tests done"

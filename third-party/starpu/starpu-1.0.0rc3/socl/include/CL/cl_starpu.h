@@ -1,0 +1,80 @@
+#define SOCL
+
+#define clGetPlatformIDs soclGetPlatformIDs
+#define clGetPlatformInfo soclGetPlatformInfo
+
+#define clGetDeviceIDs soclGetDeviceIDs
+#define clGetDeviceInfo soclGetDeviceInfo
+
+#define clCreateContext soclCreateContext
+#define clCreateContextFromType soclCreateContextFromType
+#define clRetainContext soclRetainContext
+#define clReleaseContext soclReleaseContext
+#define clGetContextInfo soclGetContextInfo
+
+#define clCreateCommandQueue soclCreateCommandQueue
+#define clRetainCommandQueue soclRetainCommandQueue
+#define clReleaseCommandQueue soclReleaseCommandQueue
+#define clGetCommandQueueInfo soclGetCommandQueueInfo
+#define clSetCommandQueueProperty soclSetCommandQueueProperty
+
+#define clCreateBuffer soclCreateBuffer
+#define clCreateImage2D soclCreateImage2D
+#define clCreateImage3D soclCreateImage3D
+#define clRetainMemObject soclRetainMemObject
+#define clReleaseMemObject soclReleaseMemObject
+#define clGetSupportedImageFormats soclGetSupportedImageFormats
+#define clGetMemObjectInfo soclGetMemObjectInfo
+#define clGetImageInfo soclGetImageInfo
+
+#define clCreateSampler soclCreateSampler
+#define clRetainSampler soclRetainSampler
+#define clReleaseSampler soclReleaseSampler
+#define clGetSamplerInfo soclGetSamplerInfo
+
+#define clCreateProgramWithSource soclCreateProgramWithSource
+#define clCreateProgramWithBinary soclCreateProgramWithBinary
+#define clRetainProgram soclRetainProgram
+#define clReleaseProgram soclReleaseProgram
+#define clBuildProgram soclBuildProgram
+#define clUnloadCompiler soclUnloadCompiler
+#define clGetProgramInfo soclGetProgramInfo
+#define clGetProgramBuildInfo soclGetProgramBuildInfo
+
+#define clCreateKernel soclCreateKernel
+#define clCreateKernelsInProgram soclCreateKernelsInProgram
+#define clRetainKernel soclRetainKernel
+#define clReleaseKernel soclReleaseKernel
+#define clSetKernelArg soclSetKernelArg
+#define clGetKernelInfo soclGetKernelInfo
+#define clGetKernelWorkGroupInfo soclGetKernelWorkGroupInfo
+
+#define clWaitForEvents soclWaitForEvents
+#define clGetEventInfo soclGetEventInfo
+#define clRetainEvent soclRetainEvent
+#define clReleaseEvent soclReleaseEvent
+
+#define clGetEventProfilingInfo soclGetEventProfilingInfo
+
+#define clFlush soclFlush
+#define clFinish soclFinish
+
+#define clEnqueueReadBuffer soclEnqueueReadBuffer
+#define clEnqueueWriteBuffer soclEnqueueWriteBuffer
+#define clEnqueueCopyBuffer soclEnqueueCopyBuffer
+#define clEnqueueReadImage soclEnqueueReadImage
+#define clEnqueueWriteImage soclEnqueueWriteImage
+#define clEnqueueCopyImage soclEnqueueCopyImage
+#define clEnqueueCopyImageToBuffer soclEnqueueCopyImageToBuffer
+#define clEnqueueCopyBufferToImage soclEnqueueCopyBufferToImage
+#define clEnqueueMapBuffer soclEnqueueMapBuffer
+#define clEnqueueMapImage soclEnqueueMapImage
+#define clEnqueueUnmapMemObject soclEnqueueUnmapMemObject
+#define clEnqueueNDRangeKernel soclEnqueueNDRangeKernel
+#define clEnqueueTask soclEnqueueTask
+#define clEnqueueNativeKernel soclEnqueueNativeKernel
+#define clEnqueueMarker soclEnqueueMarker
+#define clEnqueueWaitForEvents soclEnqueueWaitForEvents
+#define clEnqueueBarrier soclEnqueueBarrier
+
+#define clGetExtensionFunctionAddress soclGetExtensionFunctionAddress

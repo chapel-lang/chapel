@@ -1,0 +1,701 @@
+@c -*-texinfo-*-
+
+@c This file is part of the StarPU Handbook.
+@c Copyright (C) 2009--2011  Universit@'e de Bordeaux 1
+@c Copyright (C) 2010, 2011, 2012  Centre National de la Recherche Scientifique
+@c Copyright (C) 2011, 2012 Institut National de Recherche en Informatique et Automatique
+@c See the file starpu.texi for copying conditions.
+
+@menu
+* Defining a new data interface::  
+* Multiformat Data Interface::  
+* Task Bundles::                
+* Task Lists::                  
+* Using Parallel Tasks::        
+* Defining a new scheduling policy::  
+* Expert mode::                 
+@end menu
+
+@node Defining a new data interface
+@section Defining a new data interface
+
+@menu
+* Data Interface API::  Data Interface API
+* An example of data interface::        An example of data interface
+@end menu
+
+@node Data Interface API
+@subsection Data Interface API
+
+@deftp {Data Type} {struct starpu_data_interface_ops}
+@anchor{struct starpu_data_interface_ops}
+Per-interface data transfer methods.
+
+@table @asis
+@item @code{void (*register_data_handle)(starpu_data_handle_t handle, uint32_t home_node, void *data_interface)}
+Register an existing interface into a data handle.
+
+@item @code{starpu_ssize_t (*allocate_data_on_node)(void *data_interface, uint32_t node)}
+Allocate data for the interface on a given node.
+
+@item @code{ void (*free_data_on_node)(void *data_interface, uint32_t node)}
+Free data of the interface on a given node.
+
+@item @code{ const struct starpu_data_copy_methods *copy_methods}
+ram/cuda/spu/opencl synchronous and asynchronous transfer methods.
+
+@item @code{ void * (*handle_to_pointer)(starpu_data_handle_t handle, uint32_t node)}
+Return the current pointer (if any) for the handle on the given node.
+
+@item @code{ size_t (*get_size)(starpu_data_handle_t handle)}
+Return an estimation of the size of data, for performance models.
+
+@item @code{ uint32_t (*footprint)(starpu_data_handle_t handle)}
+Return a 32bit footprint which characterizes the data size.
+
+@item @code{ int (*compare)(void *data_interface_a, void *data_interface_b)}
+Compare the data size of two interfaces.
+
+@item @code{ void (*display)(starpu_data_handle_t handle, FILE *f)}
+Dump the sizes of a handle to a file.
+
+@item @code{ int (*convert_to_gordon)(void *data_interface, uint64_t *ptr, gordon_strideSize_t *ss)}
+Convert the data size to the spu size format. If no SPUs are used, this field can be seto NULL.
+
+@item @code{enum starpu_data_interface_id interfaceid}
+An identifier that is unique to each interface.
+
+@item @code{size_t interface_size}
+The size of the interface data descriptor.
+
+@end table
+@end deftp
+
+@deftp {Data Type} {struct starpu_data_copy_methods}
+Defines the per-interface methods.
+@table @asis
+@item @code{int @{ram,cuda,opencl,spu@}_to_@{ram,cuda,opencl,spu@}(void *src_interface, unsigned src_node, void *dst_interface, unsigned dst_node)}
+These 16 functions define how to copy data from the @var{src_interface}
+interface on the @var{src_node} node to the @var{dst_interface} interface
+on the @var{dst_node} node. They return 0 on success.
+
+@item @code{int (*ram_to_cuda_async)(void *src_interface, unsigned src_node, void *dst_interface, unsigned dst_node, cudaStream_t stream)}
+Define how to copy data from the @var{src_interface} interface on the
+@var{src_node} node (in RAM) to the @var{dst_interface} interface on the
+@var{dst_node} node (on a CUDA device), using the given @var{stream}. Return 0
+on success.
+
+@item @code{int (*cuda_to_ram_async)(void *src_interface, unsigned src_node, void *dst_interface, unsigned dst_node, cudaStream_t stream)}
+Define how to copy data from the @var{src_interface} interface on the
+@var{src_node} node (on a CUDA device) to the @var{dst_interface} interface on the
+@var{dst_node} node (in RAM), using the given @var{stream}. Return 0
+on success.
+
+@item @code{int (*cuda_to_cuda_async)(void *src_interface, unsigned src_node, void *dst_interface, unsigned dst_node, cudaStream_t stream)}
+Define how to copy data from the @var{src_interface} interface on the
+@var{src_node} node (on a CUDA device) to the @var{dst_interface} interface on
+the @var{dst_node} node (on another CUDA device), using the given @var{stream}.
+Return 0 on success.
+
+@item @code{int (*ram_to_opencl_async)(void *src_interface, unsigned src_node, void *dst_interface, unsigned dst_node, /* cl_event * */ void *event)}
+Define how to copy data from the @var{src_interface} interface on the
+@var{src_node} node (in RAM) to the @var{dst_interface} interface on the
+@var{dst_node} node (on an OpenCL device), using @var{event}, a pointer to a
+cl_event. Return 0 on success.
+
+@item @code{int (*opencl_to_ram_async)(void *src_interface, unsigned src_node, void *dst_interface, unsigned dst_node, /* cl_event * */ void *event)}
+Define how to copy data from the @var{src_interface} interface on the
+@var{src_node} node (on an OpenCL device) to the @var{dst_interface} interface
+on the @var{dst_node} node (in RAM), using the given @var{event}, a pointer to
+a cl_event. Return 0 on success.
+
+@item @code{int (*opencl_to_opencl_async)(void *src_interface, unsigned src_node, void *dst_interface, unsigned dst_node, /* cl_event * */ void *event)}
+Define how to copy data from the @var{src_interface} interface on the
+@var{src_node} node (on an OpenCL device) to the @var{dst_interface} interface
+on the @var{dst_node} node (on another OpenCL device), using the given
+@var{event}, a pointer to a cl_event. Return 0 on success.
+@end table
+@end deftp
+
+@deftypefun uint32_t starpu_crc32_be_n ({void *}@var{input}, size_t @var{n}, uint32_t @var{inputcrc})
+Compute the CRC of a byte buffer seeded by the inputcrc "current
+state". The return value should be considered as the new "current
+state" for future CRC computation. This is used for computing data size
+footprint.
+@end deftypefun
+
+@deftypefun uint32_t starpu_crc32_be (uint32_t @var{input}, uint32_t @var{inputcrc})
+Compute the CRC of a 32bit number seeded by the inputcrc "current
+state". The return value should be considered as the new "current
+state" for future CRC computation. This is used for computing data size
+footprint.
+@end deftypefun
+
+@deftypefun uint32_t starpu_crc32_string ({char *}@var{str}, uint32_t @var{inputcrc})
+Compute the CRC of a string seeded by the inputcrc "current state".
+The return value should be considered as the new "current state" for
+future CRC computation. This is used for computing data size footprint.
+@end deftypefun
+
+@node An example of data interface
+@subsection An example of data interface
+
+@deftypefun int starpu_data_interface_get_next_id ()
+Returns the next available id for a newly created data interface.
+@end deftypefun
+
+Let's define a new data interface to manage complex numbers.
+
+@cartouche
+@smallexample
+/* interface for complex numbers */
+struct starpu_complex_interface
+@{
+        double *real;
+        double *imaginary;
+        int nx;
+@};
+@end smallexample
+@end cartouche
+
+Registering such a data to StarPU is easily done using the function
+@code{starpu_data_register} (@pxref{Basic Data Library API}). The last
+parameter of the function, @code{interface_complex_ops}, will be
+described below.
+
+@cartouche
+@smallexample
+void starpu_complex_data_register(starpu_data_handle_t *handle,
+     uint32_t home_node, double *real, double *imaginary, int nx)
+@{
+        struct starpu_complex_interface complex =
+        @{
+                .real = real,
+                .imaginary = imaginary,
+                .nx = nx
+        @};
+
+        if (interface_complex_ops.interfaceid == -1)
+        @{
+                interface_complex_ops.interfaceid = starpu_data_interface_get_next_id();
+        @}
+
+        starpu_data_register(handleptr, home_node, &complex, &interface_complex_ops);
+@}
+@end smallexample
+@end cartouche
+
+Different operations need to be defined for a data interface through
+the type @code{struct starpu_data_interface_ops} (@pxref{Data
+Interface API}). We only define here the basic operations needed to
+run simple applications. The source code for the different functions
+can be found in the file
+@code{examples/interface/complex_interface.c}.
+
+@cartouche
+@smallexample
+static struct starpu_data_interface_ops interface_complex_ops =
+@{
+        .register_data_handle = complex_register_data_handle,
+        .allocate_data_on_node = complex_allocate_data_on_node,
+        .copy_methods = &complex_copy_methods,
+        .get_size = complex_get_size,
+        .footprint = complex_footprint,
+        .interfaceid = -1,
+        .interface_size = sizeof(struct starpu_complex_interface),
+@};
+@end smallexample
+@end cartouche
+
+Functions need to be defined to access the different fields of the
+complex interface from a StarPU data handle.
+
+@cartouche
+@smallexample
+double *starpu_complex_get_real(starpu_data_handle_t handle)
+@{
+        struct starpu_complex_interface *complex_interface =
+          (struct starpu_complex_interface *) starpu_data_get_interface_on_node(handle, 0);
+        return complex_interface->real;
+@}
+
+double *starpu_complex_get_imaginary(starpu_data_handle_t handle);
+int starpu_complex_get_nx(starpu_data_handle_t handle);
+@end smallexample
+@end cartouche
+
+Similar functions need to be defined to access the different fields of the
+complex interface from a @code{void *} pointer to be used within codelet
+implemetations.
+
+@cartouche
+@smallexample
+#define STARPU_COMPLEX_GET_REAL(interface)	\
+        (((struct starpu_complex_interface *)(interface))->real)
+#define STARPU_COMPLEX_GET_IMAGINARY(interface)	\
+        (((struct starpu_complex_interface *)(interface))->imaginary)
+#define STARPU_COMPLEX_GET_NX(interface)	\
+        (((struct starpu_complex_interface *)(interface))->nx)
+@end smallexample
+@end cartouche
+
+Complex data interfaces can then be registered to StarPU.
+
+@cartouche
+@smallexample
+double real = 45.0;
+double imaginary = 12.0;
+starpu_complex_data_register(&handle1, 0, &real, &imaginary, 1);
+starpu_insert_task(&cl_display, STARPU_R, handle1, 0);
+@end smallexample
+@end cartouche
+
+and used by codelets.
+
+@cartouche
+@smallexample
+void display_complex_codelet(void *descr[], __attribute__ ((unused)) void *_args)
+@{
+        int nx = STARPU_COMPLEX_GET_NX(descr[0]);
+        double *real = STARPU_COMPLEX_GET_REAL(descr[0]);
+        double *imaginary = STARPU_COMPLEX_GET_IMAGINARY(descr[0]);
+        int i;
+
+        for(i=0 ; i<nx ; i++)
+        @{
+                fprintf(stderr, "Complex[%d] = %3.2f + %3.2f i\n", i, real[i], imaginary[i]);
+        @}
+@}
+@end smallexample
+@end cartouche
+
+The whole code for this complex data interface is available in the
+directory @code{examples/interface/}.
+
+@node Multiformat Data Interface
+@section Multiformat Data Interface
+
+@deftp {Data Type} {struct starpu_multiformat_data_interface_ops}
+The different fields are:
+@table @asis
+@item @code{size_t cpu_elemsize}
+the size of each element on CPUs,
+
+@item @code{size_t opencl_elemsize}
+the size of each element on OpenCL devices,
+
+@item @code{struct starpu_codelet *cpu_to_opencl_cl}
+pointer to a codelet which converts from CPU to OpenCL
+
+@item @code{struct starpu_codelet *opencl_to_cpu_cl}
+pointer to a codelet which converts from OpenCL to CPU
+
+@item @code{size_t cuda_elemsize}
+the size of each element on CUDA devices,
+
+@item @code{struct starpu_codelet *cpu_to_cuda_cl}
+pointer to a codelet which converts from CPU to CUDA
+
+@item @code{struct starpu_codelet *cuda_to_cpu_cl}
+pointer to a codelet which converts from CUDA to CPU
+@end table
+@end deftp
+
+@deftypefun void starpu_multiformat_data_register (starpu_data_handle_t *@var{handle}, uint32_t @var{home_node}, void *@var{ptr}, uint32_t @var{nobjects}, struct starpu_multiformat_data_interface_ops *@var{format_ops})
+Register a piece of data that can be represented in different ways, depending upon
+the processing unit that manipulates it. It allows the programmer, for instance, to
+use an array of structures when working on a CPU, and a structure of arrays when
+working on a GPU.
+
+@var{nobjects} is the number of elements in the data. @var{format_ops} describes
+the format.
+@end deftypefun
+
+@defmac STARPU_MULTIFORMAT_GET_CPU_PTR ({void *}@var{interface})
+returns the local pointer to the data with CPU format.
+@end defmac
+
+@defmac STARPU_MULTIFORMAT_GET_CUDA_PTR ({void *}@var{interface})
+returns the local pointer to the data with CUDA format.
+@end defmac
+
+@defmac STARPU_MULTIFORMAT_GET_OPENCL_PTR ({void *}@var{interface})
+returns the local pointer to the data with OpenCL format.
+@end defmac
+
+@defmac STARPU_MULTIFORMAT_GET_NX  ({void *}@var{interface})
+returns the number of elements in the data.
+@end defmac
+
+
+@node Task Bundles
+@section Task Bundles
+
+@deftp {Data Type} {starpu_task_bundle_t}
+Opaque structure describing a list of tasks that should be scheduled
+on the same worker whenever it's possible. It must be considered as a
+hint given to the scheduler as there is no guarantee that they will be
+executed on the same worker.
+@end deftp
+
+@deftypefun void starpu_task_bundle_create ({starpu_task_bundle_t *}@var{bundle})
+Factory function creating and initializing @var{bundle}, when the call returns, memory needed is allocated and @var{bundle} is ready to use.
+@end deftypefun
+
+@deftypefun int starpu_task_bundle_insert (starpu_task_bundle_t @var{bundle}, {struct starpu_task *}@var{task})
+Insert @var{task} in @var{bundle}. Until @var{task} is removed from @var{bundle} its expected length and data transfer time will be considered along those of the other tasks of @var{bundle}.
+This function mustn't be called if @var{bundle} is already closed and/or @var{task} is already submitted.
+@end deftypefun
+
+@deftypefun int starpu_task_bundle_remove (starpu_task_bundle_t @var{bundle}, {struct starpu_task *}@var{task})
+Remove @var{task} from @var{bundle}.
+Of course @var{task} must have been previously inserted @var{bundle}.
+This function mustn't be called if @var{bundle} is already closed and/or @var{task} is already submitted. Doing so would result in undefined behaviour.
+@end deftypefun
+
+@deftypefun void starpu_task_bundle_close (starpu_task_bundle_t @var{bundle})
+Inform the runtime that the user won't modify @var{bundle} anymore, it means no more inserting or removing task. Thus the runtime can destroy it when possible.
+@end deftypefun
+
+
+@node Task Lists
+@section Task Lists
+
+@deftp {Data Type} {struct starpu_task_list}
+Stores a double-chained list of tasks
+@end deftp
+
+@deftypefun void starpu_task_list_init ({struct starpu_task_list *}@var{list})
+Initialize a list structure
+@end deftypefun
+
+@deftypefun void starpu_task_list_push_front ({struct starpu_task_list *}@var{list}, {struct starpu_task *}@var{task})
+Push a task at the front of a list
+@end deftypefun
+
+@deftypefun void starpu_task_list_push_back ({struct starpu_task_list *}@var{list}, {struct starpu_task *}@var{task})
+Push a task at the back of a list
+@end deftypefun
+
+@deftypefun {struct starpu_task *} starpu_task_list_front ({struct starpu_task_list *}@var{list})
+Get the front of the list (without removing it)
+@end deftypefun
+
+@deftypefun {struct starpu_task *} starpu_task_list_back ({struct starpu_task_list *}@var{list})
+Get the back of the list (without removing it)
+@end deftypefun
+
+@deftypefun int starpu_task_list_empty ({struct starpu_task_list *}@var{list})
+Test if a list is empty
+@end deftypefun
+
+@deftypefun void starpu_task_list_erase ({struct starpu_task_list *}@var{list}, {struct starpu_task *}@var{task})
+Remove an element from the list
+@end deftypefun
+
+@deftypefun {struct starpu_task *} starpu_task_list_pop_front ({struct starpu_task_list *}@var{list})
+Remove the element at the front of the list
+@end deftypefun
+
+@deftypefun {struct starpu_task *} starpu_task_list_pop_back ({struct starpu_task_list *}@var{list})
+Remove the element at the back of the list
+@end deftypefun
+
+@deftypefun {struct starpu_task *} starpu_task_list_begin ({struct starpu_task_list *}@var{list})
+Get the first task of the list.
+@end deftypefun
+
+@deftypefun {struct starpu_task *} starpu_task_list_end ({struct starpu_task_list *}@var{list})
+Get the end of the list.
+@end deftypefun
+
+@deftypefun {struct starpu_task *} starpu_task_list_next ({struct starpu_task *}@var{task})
+Get the next task of the list. This is not erase-safe.
+@end deftypefun
+
+@node Using Parallel Tasks
+@section Using Parallel Tasks
+
+These are used by parallel tasks:
+
+@deftypefun int starpu_combined_worker_get_size (void)
+Return the size of the current combined worker, i.e. the total number of cpus
+running the same task in the case of SPMD parallel tasks, or the total number
+of threads that the task is allowed to start in the case of FORKJOIN parallel
+tasks.
+@end deftypefun
+
+@deftypefun int starpu_combined_worker_get_rank (void)
+Return the rank of the current thread within the combined worker. Can only be
+used in FORKJOIN parallel tasks, to know which part of the task to work on.
+@end deftypefun
+
+Most of these are used for schedulers which support parallel tasks.
+
+@deftypefun unsigned starpu_combined_worker_get_count (void)
+Return the number of different combined workers.
+@end deftypefun
+
+@deftypefun int starpu_combined_worker_get_id (void)
+Return the identifier of the current combined worker.
+@end deftypefun
+
+@deftypefun int starpu_combined_worker_assign_workerid (int @var{nworkers}, int @var{workerid_array}[])
+Register a new combined worker and get its identifier
+@end deftypefun
+
+@deftypefun int starpu_combined_worker_get_description (int @var{workerid}, {int *}@var{worker_size}, {int **}@var{combined_workerid})
+Get the description of a combined worker
+@end deftypefun
+
+@deftypefun int starpu_combined_worker_can_execute_task (unsigned @var{workerid}, {struct starpu_task *}@var{task}, unsigned @var{nimpl})
+Variant of starpu_worker_can_execute_task compatible with combined workers
+@end deftypefun
+
+
+@node Defining a new scheduling policy
+@section Defining a new scheduling policy
+
+TODO
+
+A full example showing how to define a new scheduling policy is available in
+the StarPU sources in the directory @code{examples/scheduler/}.
+
+@menu
+* Scheduling Policy API:: Scheduling Policy API
+* Source code::
+@end menu
+
+@node Scheduling Policy API
+@subsection Scheduling Policy API
+
+While StarPU comes with a variety of scheduling policies (@pxref{Task
+scheduling policy}), it may sometimes be desirable to implement custom
+policies to address specific problems.  The API described below allows
+users to write their own scheduling policy.
+
+@deftp {Data Type} {struct starpu_machine_topology}
+@table @asis
+@item @code{unsigned nworkers}
+Total number of workers.
+
+@item @code{unsigned ncombinedworkers}
+Total number of combined workers.
+
+@item @code{hwloc_topology_t hwtopology}
+Topology as detected by hwloc.
+
+To maintain ABI compatibility when hwloc is not available, the field
+is replaced with @code{void *dummy}
+
+@item @code{unsigned nhwcpus}
+Total number of CPUs, as detected by the topology code. May be different from
+the actual number of CPU workers.
+
+@item @code{unsigned nhwcudagpus}
+Total number of CUDA devices, as detected. May be different from the actual
+number of CUDA workers.
+
+@item @code{unsigned nhwopenclgpus}
+Total number of OpenCL devices, as detected. May be different from the actual
+number of CUDA workers.
+
+@item @code{unsigned ncpus}
+Actual number of CPU workers used by StarPU.
+
+@item @code{unsigned ncudagpus}
+Actual number of CUDA workers used by StarPU.
+
+@item @code{unsigned nopenclgpus}
+Actual number of OpenCL workers used by StarPU.
+
+@item @code{unsigned ngordon_spus}
+Actual number of Gordon workers used by StarPU.
+
+@item @code{unsigned workers_bindid[STARPU_NMAXWORKERS]}
+Indicates the successive cpu identifier that should be used to bind the
+workers. It is either filled according to the user's explicit
+parameters (from starpu_conf) or according to the STARPU_WORKERS_CPUID env.
+variable. Otherwise, a round-robin policy is used to distributed the workers
+over the cpus.
+
+@item @code{unsigned workers_cuda_gpuid[STARPU_NMAXWORKERS]}
+Indicates the successive cpu identifier that should be used by the CUDA
+driver.  It is either filled according to the user's explicit parameters (from
+starpu_conf) or according to the STARPU_WORKERS_CUDAID env. variable. Otherwise,
+they are taken in ID order.
+
+@item @code{unsigned workers_opencl_gpuid[STARPU_NMAXWORKERS]}
+Indicates the successive cpu identifier that should be used by the OpenCL
+driver.  It is either filled according to the user's explicit parameters (from
+starpu_conf) or according to the STARPU_WORKERS_OPENCLID env. variable. Otherwise,
+they are taken in ID order.
+
+
+@end table
+@end deftp
+
+@deftp {Data Type} {struct starpu_sched_policy}
+This structure contains all the methods that implement a scheduling policy.  An
+application may specify which scheduling strategy in the @code{sched_policy}
+field of the @code{starpu_conf} structure passed to the @code{starpu_init}
+function. The different fields are:
+
+@table @asis
+@item @code{void (*init_sched)(struct starpu_machine_topology *, struct starpu_sched_policy *)}
+Initialize the scheduling policy.
+
+@item @code{void (*deinit_sched)(struct starpu_machine_topology *, struct starpu_sched_policy *)}
+Cleanup the scheduling policy.
+
+@item @code{int (*push_task)(struct starpu_task *)}
+Insert a task into the scheduler.
+
+@item @code{void (*push_task_notify)(struct starpu_task *, int workerid)}
+Notify the scheduler that a task was pushed on a given worker. This method is
+called when a task that was explicitely assigned to a worker becomes ready and
+is about to be executed by the worker. This method therefore permits to keep
+the state of of the scheduler coherent even when StarPU bypasses the scheduling
+strategy.
+
+@item @code{struct starpu_task *(*pop_task)(void)} (optional)
+Get a task from the scheduler. The mutex associated to the worker is already
+taken when this method is called. If this method is defined as @code{NULL}, the
+worker will only execute tasks from its local queue. In this case, the
+@code{push_task} method should use the @code{starpu_push_local_task} method to
+assign tasks to the different workers.
+
+@item @code{struct starpu_task *(*pop_every_task)(void)}
+Remove all available tasks from the scheduler (tasks are chained by the means
+of the prev and next fields of the starpu_task structure). The mutex associated
+to the worker is already taken when this method is called. This is currently
+only used by the Gordon driver.
+
+@item @code{void (*pre_exec_hook)(struct starpu_task *)} (optional)
+This method is called every time a task is starting.
+
+@item @code{void (*post_exec_hook)(struct starpu_task *)} (optional)
+This method is called every time a task has been executed.
+
+@item @code{const char *policy_name} (optional)
+Name of the policy.
+
+@item @code{const char *policy_description} (optional)
+Description of the policy.
+@end table
+@end deftp
+
+@deftypefun void starpu_worker_set_sched_condition (int @var{workerid}, pthread_cond_t *@var{sched_cond}, pthread_mutex_t *@var{sched_mutex})
+This function specifies the condition variable associated to a worker
+When there is no available task for a worker, StarPU blocks this worker on a
+condition variable. This function specifies which condition variable (and the
+associated mutex) should be used to block (and to wake up) a worker. Note that
+multiple workers may use the same condition variable. For instance, in the case
+of a scheduling strategy with a single task queue, the same condition variable
+would be used to block and wake up all workers.
+The initialization method of a scheduling strategy (@code{init_sched}) must
+call this function once per worker.
+@end deftypefun
+
+@deftypefun void starpu_sched_set_min_priority (int @var{min_prio})
+Defines the minimum priority level supported by the scheduling policy. The
+default minimum priority level is the same as the default priority level which
+is 0 by convention.  The application may access that value by calling the
+@code{starpu_sched_get_min_priority} function. This function should only be
+called from the initialization method of the scheduling policy, and should not
+be used directly from the application.
+@end deftypefun
+
+@deftypefun void starpu_sched_set_max_priority (int @var{max_prio})
+Defines the maximum priority level supported by the scheduling policy. The
+default maximum priority level is 1.  The application may access that value by
+calling the @code{starpu_sched_get_max_priority} function. This function should
+only be called from the initialization method of the scheduling policy, and
+should not be used directly from the application.
+@end deftypefun
+
+@deftypefun int starpu_sched_get_min_priority (void)
+Returns the current minimum priority level supported by the
+scheduling policy
+@end deftypefun
+
+@deftypefun int starpu_sched_get_max_priority (void)
+Returns the current maximum priority level supported by the
+scheduling policy
+@end deftypefun
+
+@deftypefun int starpu_push_local_task (int @var{workerid}, {struct starpu_task} *@var{task}, int @var{back})
+The scheduling policy may put tasks directly into a worker's local queue so
+that it is not always necessary to create its own queue when the local queue
+is sufficient. If @var{back} not null, @var{task} is put at the back of the queue
+where the worker will pop tasks first. Setting @var{back} to 0 therefore ensures
+a FIFO ordering.
+@end deftypefun
+
+@deftypefun int starpu_worker_can_execute_task (unsigned @var{workerid}, {struct starpu_task *}@var{task}, unsigned {nimpl})
+Check if the worker specified by workerid can execute the codelet. Schedulers need to call it before assigning a task to a worker, otherwise the task may fail to execute.
+@end deftypefun
+
+@deftypefun double starpu_timing_now (void)
+Return the current date in µs
+@end deftypefun
+
+@deftypefun double starpu_task_expected_length ({struct starpu_task *}@var{task}, {enum starpu_perf_archtype} @var{arch}, unsigned @var{nimpl})
+Returns expected task duration in µs
+@end deftypefun
+
+@deftypefun double starpu_worker_get_relative_speedup ({enum starpu_perf_archtype} @var{perf_archtype})
+Returns an estimated speedup factor relative to CPU speed
+@end deftypefun
+
+@deftypefun double starpu_task_expected_data_transfer_time (uint32_t @var{memory_node}, {struct starpu_task *}@var{task})
+Returns expected data transfer time in µs
+@end deftypefun
+
+@deftypefun double starpu_data_expected_transfer_time (starpu_data_handle_t @var{handle}, unsigned @var{memory_node}, {enum starpu_access_mode} @var{mode})
+Predict the transfer time (in µs) to move a handle to a memory node
+@end deftypefun
+
+@deftypefun double starpu_task_expected_power ({struct starpu_task *}@var{task}, {enum starpu_perf_archtype} @var{arch}, unsigned @var{nimpl})
+Returns expected power consumption in J
+@end deftypefun
+
+@deftypefun double starpu_task_expected_conversion_time ({struct starpu_task *}@var{task}, {enum starpu_perf_archtype} @var{arch}, unsigned {nimpl})
+Returns expected conversion time in ms (multiformat interface only)
+@end deftypefun
+
+@node Source code
+@subsection Source code
+
+@cartouche
+@smallexample
+static struct starpu_sched_policy dummy_sched_policy = @{
+    .init_sched = init_dummy_sched,
+    .deinit_sched = deinit_dummy_sched,
+    .push_task = push_task_dummy,
+    .push_prio_task = NULL,
+    .pop_task = pop_task_dummy,
+    .post_exec_hook = NULL,
+    .pop_every_task = NULL,
+    .policy_name = "dummy",
+    .policy_description = "dummy scheduling strategy"
+@};
+@end smallexample
+@end cartouche
+
+@node Expert mode
+@section Expert mode
+
+@deftypefun void starpu_wake_all_blocked_workers (void)
+Wake all the workers, so they can inspect data requests and task submissions
+again.
+@end deftypefun
+
+@deftypefun int starpu_progression_hook_register (unsigned (*@var{func})(void *arg), void *@var{arg})
+Register a progression hook, to be called when workers are idle.
+@end deftypefun
+
+@deftypefun void starpu_progression_hook_deregister (int @var{hook_id})
+Unregister a given progression hook.
+@end deftypefun
+

@@ -1,0 +1,44 @@
+
+# StarPU --- Runtime system for heterogeneous multicore architectures.
+#
+# Copyright (C) 2010  Université de Bordeaux 1
+# Copyright (C) 2010, 2011  Centre National de la Recherche Scientifique
+#
+# StarPU is free software; you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation; either version 2.1 of the License, or (at
+# your option) any later version.
+#
+# StarPU is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+#
+# See the GNU Lesser General Public License in COPYING.LGPL for more details.
+
+This is a sample 3D stencil application (here just using the game of life rules
+for simplicity), split on the z axis.
+
+This is a suggest order of read:
+
+life.c
+life.cu: Heart of the stencil computation: compute a new state from an old one.
+
+shadow.cu
+shadow.h: Perform replication of data on X and Y edges, to fold the domain on
+itself through mere replication of the source state.
+
+stencil.h: Declarations
+
+stencil-kernels.c: Computation Kernels
+
+stencil-blocks.c: Manage block and tags allocation
+
+stencil-tasks.c: Schedule tasks for updates and saves
+
+stencil.c: Main application
+
+*.out: various results according to beta value (communication vs computation
+penalty ratio), run make pics or make view to get pictures.
+mpi.out: results on MPI.
+
+results: a few results

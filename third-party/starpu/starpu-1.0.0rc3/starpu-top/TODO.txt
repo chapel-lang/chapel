@@ -1,0 +1,9 @@
+FONCTIONS :
+- cleanup dans le destructeur final (~MainWindow)
+- mettre en place l'interface DescriptionProvider
+
+BUGS :
+- parfois un QLIST ASSERT (index out of range)
+lors de la restauration de session (a priori assez difficile à reproduire)?
+
+TESTS :
