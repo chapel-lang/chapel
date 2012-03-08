@@ -1,11 +1,12 @@
 UTIL_SRCS = \
+	congruenceClosure.cpp \
 	files.cpp \
 	misc.cpp \
 	mysystem.cpp \
 	stringutil.cpp \
 	timer.cpp \
-        tmpdirname.cpp \
-        typeCheck.cpp
+    tmpdirname.cpp \
+    typeCheck.cpp 
 
 SVN_SRCS = $(UTIL_SRCS)
 SRCS = $(SVN_SRCS)
