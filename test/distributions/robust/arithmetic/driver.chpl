@@ -2,7 +2,8 @@ use BlockDist, CyclicDist, BlockCycDist, ReplicatedDist;
 
 enum DistType { default, block, cyclic, blockcyclic, replicated };
 
-config param distType: DistType = DistType.default;
+config param distType: DistType = if CHPL_COMM=="none" then DistType.default
+                                                       else DistType.block;
 
 config const n1 = 100;
 config const n2 = 20;
