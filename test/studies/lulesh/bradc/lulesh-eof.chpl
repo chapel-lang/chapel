@@ -231,7 +231,7 @@ if debugIO {
 
 
 // Make sure we're at the end of the input file, for sanity
-var err: err_t = ENOERR;
+var err: syserr = ENOERR;
 var badint: int;
 reader.read(badint, error=err);
 if (err != EEOF) then halt("Data remains at end of file");
