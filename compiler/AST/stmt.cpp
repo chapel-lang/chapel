@@ -247,7 +247,7 @@ void ImplementsStmt::codegen(FILE* outfile) {
 }
 
 FromStmt::FromStmt(Expr* moduleName, Expr* implementsClause) :
-	Expr(E_ImplementsStmt),
+	Expr(E_FromStmt),
 	moduleName(moduleName),
 	implementsClause(implementsClause)
 {}

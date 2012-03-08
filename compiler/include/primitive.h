@@ -227,6 +227,8 @@ enum PrimitiveTag {
   PRIM_ENUM_MIN_BITS,
   PRIM_ENUM_IS_SIGNED,
 
+  PRIM_IMPLEMENTS,
+
   NUM_KNOWN_PRIMS
 };
 

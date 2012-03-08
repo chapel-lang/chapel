@@ -562,6 +562,7 @@ initPrimitive() {
 
   prim_def(PRIM_ENUM_MIN_BITS, "enum min bits", returnInfoInt32);
   prim_def(PRIM_ENUM_IS_SIGNED, "enum is signed", returnInfoBool);
+  prim_def(PRIM_IMPLEMENTS, "implements", returnInfoVoid);
 }
 
 Map<const char*, VarSymbol*> memDescsMap;
