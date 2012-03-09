@@ -18,10 +18,8 @@ if s != -1:
     opt = compopts[s+len(searchstring):len(compopts)]
     dist = opt.split()[0]
 
-commlayer=os.getenv('CHPL_COMM')
-if dist=='cyclic' and commlayer!=None and commlayer!='none':
-    # This is going to fail to perform the optimized on due to a halt
-    # statement in chpl__diffMod().
-    goodfn=testname+'.comm-none.good'
-    if os.path.isfile(goodfn):
-        shutil.copy(goodfn, testname+'.comm-'+commlayer+'.good')
+goodfn=testname+'.'+dist+'.good'
+if os.path.isfile(goodfn):
+    shutil.copy(goodfn, testname+'.good')
+else:
+    shutil.copy(testname+'.default.good', testname+'.good')
