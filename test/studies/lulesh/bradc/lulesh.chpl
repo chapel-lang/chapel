@@ -67,7 +67,8 @@
 // TODO: Found a lot of loops that were computing reductions in a race-y
 // way (i.e., by accumulating into unprotected scalars).  This could be
 // the cause of the numerical instability in the nightly tests.  We 
-// really should be using a reduction for these.
+// really should be using a reduction for these.  Fixed the ones I found,
+// but are there more?
 
 use Time;
 
@@ -75,8 +76,8 @@ use Time;
 
 config const showProgress = false;
 config const debug = false;
-config const doTiming = false;  // TODO: reset to true
-config const printCoords = false;
+config const doTiming = true;
+config const printCoords = true;
 
 param XI_M        = 0x003;
 param XI_M_SYMM   = 0x001;
@@ -102,15 +103,14 @@ param ZETA_P      = 0xc00;
 param ZETA_P_SYMM = 0x400;
 param ZETA_P_FREE = 0x800;
 
-config const filename = "input.lmesh";
+config const debugIO = false;
+
+config const filename = "../lmeshes/sedov15oct.lmesh";
 var infile = open(filename, iomode.r);
 var reader = infile.reader();
 
 if debug then writeln("Reading problem size...");
 const (numElems, numNodes) = reader.read(int, int);
-
-// TODO: Do we want to keep this, or promote it across all reads?
-config const debugIO = false;
 
 if (debugIO) then
   writeln("Using ", numElems, " elements, and ", numNodes, " nodes");
@@ -120,13 +120,9 @@ if debug then
 
 /* Setup Problem Domain*/
 
-//ranges
-const Elems = 0..#numElems;
-const Nodes = 0..#numNodes;
-
 //domains
-const ElemSpace = [Elems];
-const NodeSpace = [Nodes];
+const ElemSpace = [0..#numElems];
+const NodeSpace = [0..#numNodes];
 
 
 //distributions
@@ -134,12 +130,10 @@ use BlockDist;
 config param useBlockDist = false;
 
 
-// STYLE: I don't really like these names (ElemDist, NodeDist)
-
-const ElemDist = if useBlockDist then ElemSpace dmapped Block(ElemSpace)
-                                 else ElemSpace;
-const NodeDist = if useBlockDist then NodeSpace dmapped Block(NodeSpace)
-                                 else NodeSpace;
+const Elems = if useBlockDist then ElemSpace dmapped Block(ElemSpace)
+                              else ElemSpace;
+const Nodes = if useBlockDist then NodeSpace dmapped Block(NodeSpace)
+                              else NodeSpace;
 
                            
                                  
@@ -148,13 +142,19 @@ const NodeDist = if useBlockDist then NodeSpace dmapped Block(NodeSpace)
 
 // coordinates
 var
-   x, y, z: [NodeDist] real; //coordinates
+   x, y, z: [Nodes] real; //coordinates
 
 
 // TODO: Support comments in file between major sections for clarity
                                                                          
 if debug then writeln("reading coordinates");
 for (locX,locY,locZ) in (x,y,z) do reader.read(locX, locY, locZ);
+
+if debugIO {
+  writeln("locations are:");
+  for (locX,locY,locZ) in (x,y,z) do
+    writeln((locX, locY, locZ));
+}
 
 param nodesPerElem = 8;
 
@@ -175,7 +175,7 @@ param nodesPerElem = 8;
 // as an initializer to fill it all up?  Maybe we can and I just
 // don't know how to?  Or else, we can write our own iterator...
 //
-var elemToNode: [ElemDist] [0..#nodesPerElem] index(NodeDist);
+var elemToNode: [Elems] [0..#nodesPerElem] index(Nodes);
 
 
                                  
@@ -183,19 +183,30 @@ var elemToNode: [ElemDist] [0..#nodesPerElem] index(NodeDist);
 if debug then writeln("reading elemToNode mapping");
 //
 // OR, at the very least, we should be able to write read(elemToNode);
-for e in elemToNode do 
-  for n in e do
+for nodelist in elemToNode do 
+  for n in nodelist do
     reader.read(n);
 
+if debugIO {
+  writeln("elemToNode mappings are:");
+  for nodelist in elemToNode do
+    writeln(nodelist);
+}
                                                                          
 
 
-var lxim, lxip, letam, letap, lzetam, lzetap: [ElemDist] index(ElemDist);
+var lxim, lxip, letam, letap, lzetam, lzetap: [Elems] index(Elems);
 
 if debug then writeln("reading greek stuff");
 
 for (xm,xp,em,ep,zm,zp) in (lxim, lxip, letam, letap, lzetam, lzetap) do
   reader.read(xm,xp,em,ep,zm,zp);
+
+if debugIO {
+  writeln("greek stuff:");
+  for (xm,xp,em,ep,zm,zp) in (lxim, lxip, letam, letap, lzetam, lzetap) do
+    writeln((xm,xp,em,ep,zm,zp));
+}
 
 
 if debug then writeln("reading symmetric cell locations");
@@ -231,22 +242,14 @@ if debugIO {
 
 
 // Make sure we're at the end of the input file, for sanity
-/*
-var err: err_t = ENOERR;
+
+/*  This isn't working consistently yet -- see lulesh-eof.chpl
+var err: syserr = ENOERR;
 var badint: int;
 reader.read(badint, error=err);
 if (err != EEOF) then halt("Data remains at end of file");
 */
 
-
-
-
-// TODO: Retire these over time; we prefer the index(...) form
-// OR: use something like type Element = index(ElemDist)?
-
-/* Types */
-type Eid = index(ElemDist);
-type Nid = index(NodeDist);
 
 
 /* Constants */
@@ -286,51 +289,51 @@ config const stoptime = 1.0e-2;        /* end time for simulation */
 
 // BIG TODO: matElemList should be a sparse subdomain; for the
 // purposes of this benchmark, it should be a fully-populated sparse
-// subdomain (i.e., a sparse subdomain of ElemDist equal to ElemDist).
+// subdomain (i.e., a sparse subdomain of Elems equal to Elems).
 // Unfortunately, because they are the same size/shape/index set,
 // this leads to a lot of loops that are looping over the wrong thing
-// or zippering matElemList and ElemDist even though they're of
+// or zippering matElemList and Elems even though they're of
 // different sizes.  We've tried to mark all of these cases that use
 // matElemList directly with TODOs throughout the code.
 
-var matElemlist: [ElemDist] Eid, 
+var matElemlist: [Elems] index(Elems), 
 
 
-  elemBC: [ElemDist] int,
+  elemBC: [Elems] int,
 
-  e: [ElemDist] real, //energy
-  p: [ElemDist] real, //pressure
+  e: [Elems] real, //energy
+  p: [Elems] real, //pressure
 
-  q:  [ElemDist] real, //q
-  ql: [ElemDist] real, //linear term for q
-  qq: [ElemDist] real, //quadratic term for q
+  q:  [Elems] real, //q
+  ql: [Elems] real, //linear term for q
+  qq: [Elems] real, //quadratic term for q
 
-  v:     [ElemDist] real = 1.0, //relative volume
-  vnew: [ElemDist] real,
+  v:     [Elems] real = 1.0, //relative volume
+  vnew: [Elems] real,
 
-  volo: [ElemDist] real, //reference volume
-  delv: [ElemDist] real, //m_vnew - m_v
-  vdov: [ElemDist] real, //volume derivative over volume
+  volo: [Elems] real, //reference volume
+  delv: [Elems] real, //m_vnew - m_v
+  vdov: [Elems] real, //volume derivative over volume
 
-  arealg: [ElemDist] real, //elem characteristic length
+  arealg: [Elems] real, //elem characteristic length
 
-  ss: [ElemDist] real, //"sound speed"
+  ss: [Elems] real, //"sound speed"
 
-  elemMass: [ElemDist] real, //mass
+  elemMass: [Elems] real, //mass
 
-  xd: [NodeDist] real, //velocities
-  yd: [NodeDist] real,
-  zd: [NodeDist] real,
+  xd: [Nodes] real, //velocities
+  yd: [Nodes] real,
+  zd: [Nodes] real,
 
-  xdd: [NodeDist] real, //acceleration
-  ydd: [NodeDist] real,
-  zdd: [NodeDist] real,
+  xdd: [Nodes] real, //acceleration
+  ydd: [Nodes] real,
+  zdd: [Nodes] real,
 
-  fx: [NodeDist] real, //forces
-  fy: [NodeDist] real,
-  fz: [NodeDist] real,
+  fx: [Nodes] real, //forces
+  fy: [Nodes] real,
+  fz: [Nodes] real,
 
-  nodalMass: [NodeDist] real, //mass
+  nodalMass: [Nodes] real, //mass
 
   // Parameters
   time = 0.0,          /* current time */
@@ -340,7 +343,7 @@ var matElemlist: [ElemDist] Eid,
 
   cycle = 0;           /* iteration count for simulation */
 
-	
+
 proc main() {
   if debug then writeln("Lulesh -- Problem Size = ", numElems);
 
@@ -365,34 +368,27 @@ proc main() {
   if doTiming {
     const et = getCurrentTime();
     writeln("Total Time: ", et-st);
-    writeln("Number of cycles: ", cycle);
   }
-
-  // TODO: We should dump these coords to a file so that things like
-  // progress, timing, etc. come to the console and the coordinates
-  // are plottable in gnuplot (which they are!)
+  writeln("Number of cycles: ", cycle);
 
   if printCoords {
-    for i in NodeDist {
-      if debug {
-        writeln(//format("%3d",NodeDist.indexOrder(i)), ": ", 
-                format("%1.9e", x[i]), " ", 
-                format("%1.9e", y[i]), " ", 
-                format("%1.9e", z[i]));
-      } else {
-        writeln(//format("%3d",NodeDist.indexOrder(i)), ": ", 
-                format("%1.4e", x[i]), " ", 
-                format("%1.4e", y[i]), " ", 
-                format("%1.4e", z[i]));
-      }
+    var outfile = open("coords.out", iomode.cw);
+    var writer = outfile.writer();
+    var fmtstr = if debug then "%1.9e" else "%1.4e";
+    for i in Nodes {
+      writer.writeln(format(fmtstr, x[i]), " ", 
+                     format(fmtstr, y[i]), " ", 
+                     format(fmtstr, z[i]));
     }
+    writer.close();
+    outfile.close();
   }
 }
 
 // Initialization functions
 proc LuleshData() {
   /* embed hexehedral elements in nodal point lattice */
-  //calculated on the fly using: elemToNodes(i: Eid): Nid
+  //calculated on the fly using: elemToNodes(i: index(Elems)): index(Nodes)
 
   /* Create a material IndexSet (entire domain same material for now) */
   forall (mat, i) in (matElemlist, matElemlist.domain) do mat = i;
@@ -416,9 +412,9 @@ proc LuleshData() {
 proc initializeFieldData() {
   // This is a temporary array used to accumulate masses in parallel
   // without losing updates by using the sync vars' full/empty semantics
-  var massAccum$: [NodeDist] sync real = 0.0;
+  var massAccum$: [Nodes] sync real = 0.0;
 
-  forall eli in ElemDist {
+  forall eli in Elems {
     var x_local, y_local, z_local: 8*real;
     localizeNeighborNodes(eli, x, x_local, y, y_local, z, z_local);
 
@@ -441,7 +437,7 @@ proc initializeFieldData() {
 }
 
 proc setupBoundaryConditions() {
-  var surfaceNode: [NodeDist] int;
+  var surfaceNode: [Nodes] int;
 
   forall n in XSym do
     surfaceNode[n] = 1;
@@ -450,7 +446,7 @@ proc setupBoundaryConditions() {
   forall n in ZSym do
     surfaceNode[n] = 1;
 
-  forall e in ElemDist do {
+  forall e in Elems do {
     var mask: int;
     for i in 0..#nodesPerElem do
       mask += surfaceNode[elemToNode[e][i]] << i;
@@ -471,7 +467,7 @@ proc setupBoundaryConditions() {
   // all three SYMM flags set, which will have the largest
   // integral value.  Thus, we can use a maxloc to identify it.
   //
-  var (check, loc) = maxloc reduce (elemBC, ElemDist);
+  var (check, loc) = maxloc reduce (elemBC, Elems);
 
   if debug then writeln("Found the octant corner at: ", loc);
 
@@ -492,9 +488,7 @@ proc setupBoundaryConditions() {
   forall n in freeSurface do
     surfaceNode[n] = 1;
 
-  // STYLE: Unify these loop idioms over elemToNode?
-
-  forall e in ElemDist do {
+  forall e in Elems do {
     var mask: int;
     for i in 0..#nodesPerElem do
       mask += surfaceNode[elemToNode[e][i]] << i;
@@ -517,7 +511,7 @@ proc setupBoundaryConditions() {
 
 // Helper functions
 inline proc
-localizeNeighborNodes(eli: Eid,
+localizeNeighborNodes(eli: index(Elems),
                       x: [] real, inout x_local: 8*real,
                       y: [] real, inout y_local: 8*real,
                       z: [] real, inout z_local: 8*real) {
@@ -958,7 +952,7 @@ inline proc computeDTF(indx) {
 }
 
 proc CalcCourantConstraintForElems() {
-  var courant_elem: index(ElemDist); // TODO: This is currently unused; Jeff's
+  var courant_elem: index(Elems); // TODO: This is currently unused; Jeff's
                                      // looking into it
 
   const (val, loc) 
@@ -975,7 +969,7 @@ proc CalcCourantConstraintForElems() {
 }
 
 proc CalcHydroConstraintForElems() {
-  var dthydro_elem: index(ElemDist);  // TODO: This is currently unused; Jeff's
+  var dthydro_elem: index(Elems);  // TODO: This is currently unused; Jeff's
                                       // looking into it
 
   const (val, loc)
@@ -984,8 +978,8 @@ proc CalcHydroConstraintForElems() {
                         (if vdov[indx] == 0.0 
                             then max(real)
                             else dvovmax / (abs(vdov[indx])+1.0e-20)),
-             // TODO: Here vvv ElemDist should be 0..#matElemlist.numIndices
-                      ElemDist);
+             // TODO: Here vvv Elems should be 0..#matElemlist.numIndices
+                      Elems);
   if (val == max(real)) {
     dthydro_elem = -1;
     // TODO: Should dthydro be set here?  Jeff is going to look into this?
@@ -1012,7 +1006,7 @@ proc CalcForceForNodes() {
 }
 
 proc CalcVolumeForceForElems() {
-  var sigxx, sigyy, sigzz, determ: [ElemDist] real;
+  var sigxx, sigyy, sigzz, determ: [Elems] real;
 
   /* Sum contributions to total stress tensor */
   InitStressTermsForElems(p, q, sigxx, sigyy, sigzz);
@@ -1030,7 +1024,7 @@ proc CalcVolumeForceForElems() {
 }
 
 proc IntegrateStressForElems(sigxx, sigyy, sigzz, determ) {
-  forall k in ElemDist {
+  forall k in Elems {
     var b_x, b_y, b_z: 8*real;
     var x_local, y_local, z_local: 8*real;
     localizeNeighborNodes(k, x, x_local, y, y_local, z, z_local);
@@ -1056,10 +1050,10 @@ proc IntegrateStressForElems(sigxx, sigyy, sigzz, determ) {
   }
 }
 
-proc CalcHourglassControlForElems(determ: [ElemDist] real) {
-  var dvdx, dvdy, dvdz, x8n, y8n, z8n: [ElemDist] 8*real;
+proc CalcHourglassControlForElems(determ: [Elems] real) {
+  var dvdx, dvdy, dvdz, x8n, y8n, z8n: [Elems] 8*real;
 
-  forall eli in ElemDist {
+  forall eli in Elems {
     //Collect domain nodes to elem nodes
     var x1, y1, z1: 8*real;
     localizeNeighborNodes(eli, x, x1, y, y1, z, z1);
@@ -1094,7 +1088,7 @@ proc CalcFBHourglassForceForElems(determ,
   /* Calculates the Flanagan-Belytschko anti-hourglass force. */
 
   /* compute the hourglass modes */
-  forall eli in ElemDist {
+  forall eli in Elems {
     var hourgam: 8*(4*real);
     var volinv = 1.0 / determ[eli];
     var ss1, mass1, volume13: real;
@@ -1143,7 +1137,7 @@ proc CalcFBHourglassForceForElems(determ,
 }
 
 proc CalcAccelerationForNodes() {
-  forall noi in NodeDist do local {
+  forall noi in Nodes do local {
       xdd[noi] = fx[noi] / nodalMass[noi];
       ydd[noi] = fy[noi] / nodalMass[noi];
       zdd[noi] = fz[noi] / nodalMass[noi];
@@ -1162,7 +1156,7 @@ proc ApplyAccelerationBoundaryConditionsForNodes() {
 }
 
 proc CalcVelocityForNodes(dt: real, u_cut: real) {
-  forall i in NodeDist do local {
+  forall i in Nodes do local {
       var xdtmp = xd[i] + xdd[i] * dt,
         ydtmp = yd[i] + ydd[i] * dt,
         zdtmp = zd[i] + zdd[i] * dt;
@@ -1176,7 +1170,7 @@ proc CalcVelocityForNodes(dt: real, u_cut: real) {
 }
 
 proc CalcPositionForNodes(dt: real) {
-  forall ijk in NodeDist {
+  forall ijk in Nodes {
     x[ijk] += xd[ijk] * dt;
     y[ijk] += yd[ijk] * dt;
     z[ijk] += zd[ijk] * dt;
@@ -1185,12 +1179,12 @@ proc CalcPositionForNodes(dt: real) {
 
 // sungeun: Temporary array reused throughout
 proc CalcLagrangeElements() {
-var dxx, dyy, dzz: [ElemDist] real;
+var dxx, dyy, dzz: [Elems] real;
 
   CalcKinematicsForElems(dxx, dyy, dzz, deltatime);
 
   // element loop to do some stuff not included in the elemlib function.
-  forall k in ElemDist do local {
+  forall k in Elems do local {
       vdov[k] = dxx[k] + dyy[k] + dzz[k];
       var vdovthird = vdov[k] / 3.0;
       dxx[k] -= vdovthird;
@@ -1206,7 +1200,7 @@ var dxx, dyy, dzz: [ElemDist] real;
 
 proc CalcKinematicsForElems(dxx, dyy, dzz, const dt: real) {
   // loop over all elements
-  forall k in ElemDist {
+  forall k in Elems {
     var b_x, b_y, b_z: 8*real,
       d: 6*real,
       detJ: real;
@@ -1251,9 +1245,9 @@ proc CalcKinematicsForElems(dxx, dyy, dzz, const dt: real) {
 
 // sungeun: Temporary array reused throughout
 /* velocity gradient */
-var delv_xi, delv_eta, delv_zeta: [ElemDist] real;
+var delv_xi, delv_eta, delv_zeta: [Elems] real;
 /* position gradient */
-var delx_xi, delx_eta, delx_zeta: [ElemDist] real;
+var delx_xi, delx_eta, delx_zeta: [Elems] real;
 proc CalcQForElems() {
   // MONOTONIC Q option
 
@@ -1279,16 +1273,16 @@ proc CalcQForElems() {
 //
 // TODO: This should be over a domain 0..matElemList.numIndices
 //
-var vnewc: [ElemDist] real;
+var vnewc: [Elems] real;
 proc ApplyMaterialPropertiesForElems() {
   /* Expose all of the variables needed for material evaluation */
 
   // 
   // TODO: This is a gather operation, so we should be iterating
   // over matElemlist.size rather than assuming its size ==
-  // ElemDist.numIndices
+  // Elems.numIndices
   //
-  forall i in ElemDist do vnewc[i] = vnew[matElemlist[i]];
+  forall i in Elems do vnewc[i] = vnew[matElemlist[i]];
 
   if eosvmin != 0.0 {
     [c in vnewc] if c < eosvmin then c = eosvmin;
@@ -1315,7 +1309,7 @@ proc ApplyMaterialPropertiesForElems() {
 }
 
 proc UpdateVolumesForElems() {
-  forall i in ElemDist do local {
+  forall i in Elems do local {
     var tmpV = vnew[i];
     if abs(tmpV-1.0) < v_cut then tmpV = 1.0;
     v[i] = tmpV;
@@ -1324,7 +1318,7 @@ proc UpdateVolumesForElems() {
 
 proc CalcMonotonicQGradientsForElems(delv_xi, delv_eta, delv_zeta, 
                                      delx_xi, delx_eta, delx_zeta) {
-  forall eli in ElemDist {
+  forall eli in Elems {
     const ptiny = 1.0e-36;
     var xl, yl, zl: 8*real;
     localizeNeighborNodes(eli, x, xl, y, yl, z, zl);
@@ -1532,13 +1526,13 @@ proc EvalEOSForElems(vnewc) {
   const rho0 = refdens;
 
   var e_old, delvc, p_old, q_old, compression, compHalfStep, 
-    qq_old, ql_old, work, p_new, e_new, q_new, bvc, pbvc: [ElemDist] real;
+    qq_old, ql_old, work, p_new, e_new, q_new, bvc, pbvc: [Elems] real;
 
   // TODO: This needs to be converted into a gather -- see TODO in
   // ApplyMaterialPropertiesForElems
   //
   /* compress data, minimal set */
-  forall (i,zidx) in (ElemDist,matElemlist) {
+  forall (i,zidx) in (Elems,matElemlist) {
     e_old[i]  = e[zidx];
     delvc[i]  = delv[zidx];
     p_old[i]  = p[zidx];
@@ -1548,9 +1542,9 @@ proc EvalEOSForElems(vnewc) {
   }
 
   // TODO: The following should be over the number of things in matElemList,
-  // not over ElemDist
+  // not over Elems
 
-  forall i in ElemDist do local {
+  forall i in Elems do local {
     compression[i] = 1.0 / vnewc[i] - 1.0;
     var vchalf = vnewc[i] - delvc[i] * 0.5;
     compHalfStep[i] = 1.0 / vchalf - 1.0;
@@ -1559,12 +1553,12 @@ proc EvalEOSForElems(vnewc) {
   /* Check for v > eosvmax or v < eosvmin */
   // (note: I think this was already checked for in calling function!)
   if eosvmin != 0.0 {
-    forall i in ElemDist {
+    forall i in Elems {
       if vnewc[i] <= eosvmin then compHalfStep[i] = compression[i];
     }
   }
   if eosvmax != 0.0 {
-    forall i in ElemDist {
+    forall i in Elems {
       if vnewc[i] >= eosvmax {
         p_old[i] = 0.0;
         compression[i] = 0.0;
@@ -1581,7 +1575,7 @@ proc EvalEOSForElems(vnewc) {
 
   // TODO: This should be a scatter; the dual of EvalEOSOverElems
 
-  forall (i,zidx) in (ElemDist,matElemlist) {
+  forall (i,zidx) in (Elems,matElemlist) {
     p[zidx] = p_new[i];
     e[zidx] = e_new[i];
     q[zidx] = q_new[i];
@@ -1600,11 +1594,11 @@ proc CalcEnergyForElems(p_new, e_new, q_new, bvc, pbvc,
   const rho0 = refdens; 
   const sixth = 1.0 / 6.0;
   //
-  // TODO: This should be declared over 0..#matElemList, not ElemDist
+  // TODO: This should be declared over 0..#matElemList, not Elems
   //
-  var pHalfStep: [ElemDist] real;
+  var pHalfStep: [Elems] real;
 
-  forall i in ElemDist {
+  forall i in Elems {
     e_new[i] = e_old[i] - 0.5 * delvc[i] * (p_old[i] + q_old[i]) + 0.5 * work[i];
     if e_new[i] < emin then e_new[i] = emin;
   }
@@ -1612,7 +1606,7 @@ proc CalcEnergyForElems(p_new, e_new, q_new, bvc, pbvc,
   CalcPressureForElems(pHalfStep, bvc, pbvc, e_new, compHalfStep, 
                        vnewc, pmin, p_cut, eosvmax);
 
-  forall i in ElemDist {
+  forall i in Elems {
     const vhalf = 1.0 / (1.0 + compHalfStep[i]);
 
     if delvc[i] > 0.0 {
@@ -1627,7 +1621,7 @@ proc CalcEnergyForElems(p_new, e_new, q_new, bvc, pbvc,
     e_new[i] += 0.5 * delvc[i]
       * (3.0*(p_old[i] + q_old[i]) - 4.0*(pHalfStep[i] + q_new[i]));
   }
-  forall i in ElemDist {
+  forall i in Elems {
     e_new[i] += 0.5 * work[i];
     if abs(e_new[i] < e_cut) then e_new[i] = 0.0;
     if e_new[i] < emin then e_new[i] = emin;
@@ -1635,7 +1629,7 @@ proc CalcEnergyForElems(p_new, e_new, q_new, bvc, pbvc,
 
   CalcPressureForElems(p_new, bvc, pbvc, e_new, compression, vnewc, pmin, p_cut, eosvmax);
 
-  forall i in ElemDist {
+  forall i in Elems {
     var q_tilde:real;
 
     if delvc[i] > 0.0 {
@@ -1656,7 +1650,7 @@ proc CalcEnergyForElems(p_new, e_new, q_new, bvc, pbvc,
 
   CalcPressureForElems(p_new, bvc, pbvc, e_new, compression, vnewc, pmin, p_cut, eosvmax);
 
-  forall i in ElemDist do local {
+  forall i in Elems do local {
       if delvc[i] <= 0.0 {
         var ssc = ( pbvc[i] * e_new[i] + vnewc[i]**2 * bvc[i] * p_new[i] ) / rho0;
         if ssc <= 0.0 then ssc = 0.333333e-36;
@@ -1668,14 +1662,14 @@ proc CalcEnergyForElems(p_new, e_new, q_new, bvc, pbvc,
 }
 
 proc CalcSoundSpeedForElems(vnewc, rho0:real, enewc, pnewc, pbvc, bvc) {
-  // TODO: This is assuming ElemDist and matElemlist have the same
+  // TODO: This is assuming Elems and matElemlist have the same
   // arity, which won't always be the case.  So, the first thing we're
   // iterating over should be a 0..matElemlist.numIndices domain.
   //
   // TODO: Open question: If we had multiple materials, should (a) ss
   // be zeroed and accumulated into, and (b) updated atomically to
   // avoid losing updates?  (Jeff will go back and think on this)
-  forall (i,iz) in (ElemDist,matElemlist) {
+  forall (i,iz) in (Elems,matElemlist) {
     var ssTmp = (pbvc[i] * enewc[i] + vnewc[i]**2 * bvc[i] * pnewc[i]) / rho0;
     if ssTmp <= 1.111111e-36 then ssTmp = 1.111111e-36;
     ss[iz] = sqrt(ssTmp);
@@ -1746,8 +1740,7 @@ proc deprint(title:string, A: [?D] real) {
 
 proc readNodeset(reader) {
   const arrSize = reader.read(int);
-  //  var A: [0..#arrSize] index(NodeDist);
-  var A: [0..#arrSize] int;
+  var A: [0..#arrSize] index(Nodes);
 
   for a in A do
     reader.read(a);
