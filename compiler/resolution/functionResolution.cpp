@@ -1264,6 +1264,7 @@ addCandidate(Vec<FnSymbol*>* candidateFns,
   // make sure that type constructor is resolved before other constructors
   //
   if (fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR)) {
+    SET_LINENO(fn);
     CallExpr* typeConstructorCall = new CallExpr(astr("_type", fn->name));
     for_formals(formal, fn) {
       if (strcmp(formal->name, "meme")) {
