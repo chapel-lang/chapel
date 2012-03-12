@@ -22,11 +22,11 @@
 
 //Predeclare functions
 static BaseAST *typeCheckExpr(BaseAST *currentExpr, BaseAST *expectedReturnTypeExpr, Map<FnSymbol*, ArgSymbol*>&);
-static void handle_where_clause_expr(BaseAST *ast);
+static void handleWhereClauseExpr(BaseAST *ast);
 static BaseAST *typeCheckFn(FnSymbol *fn);
 static BaseAST *checkInterfaceImplementations(BaseAST *s);
 static Symbol* mapArguments(CallExpr*, FnSymbol*, CallExpr*);
-static BaseAST* newCheckFunctionCall(CallExpr*, Map<FnSymbol*, ArgSymbol*>&);
+static BaseAST* checkFunctionCall(CallExpr*, Map<FnSymbol*, ArgSymbol*>&);
 static void addAdaptationToWitness(BaseAST*, ClassType *witness, FnSymbol *requiredFn, FnSymbol *actualFn);
 static void addToImplementsSymbolTable(CallExpr* ce, BaseAST* interface, BaseAST* implementingType, Symbol *implementingWitness);
 
@@ -44,7 +44,11 @@ CongruenceClosure cclosure;
  * FIXME: With CallInfo, respect isResolved for a speed improvement
  */
 
+/*
+ * FIXME: For performance reasons, this should be shared with function resolution
+ */
 static VisibleFunctionManager vFunManager;
+static Vec<FnSymbol*> visitedFns;
 
 /*
  * Adapted code for SymbolTable required for scoped implements clauses
@@ -158,14 +162,20 @@ static BaseAST *typeCheckExpr(BaseAST *currentExpr, BaseAST *expectedReturnTypeE
       } else {
         return e_typeAST;
       }
-    } else {
-      BaseAST* retExpr = newCheckFunctionCall(call,fnsInInterfaces);
-      if(retExpr == dtUnknown) {
-        USR_FATAL(call, "No matching functions at call");
-      } else {
-        return retExpr;
+    } else if (UnresolvedSymExpr *use = toUnresolvedSymExpr(call->baseExpr)) {
+      if (!strcmp(use->unresolved, "implements")) {
+        checkInterfaceImplementations(call);
+        return NULL;
       }
     }
+    BaseAST* retExpr = checkFunctionCall(call,fnsInInterfaces);
+    if(retExpr == dtUnknown) {
+      USR_FATAL(call, "No matching functions at call");
+    } else {
+      return retExpr;
+    }
+  } else if (isImplementsStmt(currentExpr)) {
+    checkInterfaceImplementations(currentExpr);
   } else if (UnresolvedSymExpr *use = toUnresolvedSymExpr(currentExpr)) {
     INT_FATAL("UNIMPLEMENTED: Unresolved SymExpr: %s\n", use->unresolved);
   } else if (DefExpr *de = toDefExpr(currentExpr)) {
@@ -239,7 +249,7 @@ static void getWitnessesInWhereClause(Vec<CallExpr*>& implementsClauses, BaseAST
       } else if (!strcmp(callsymexpr->unresolved, "_build_tuple")) {
         //We have multiple constraints, handle them
         for_alist(arg, ce->argList) {
-          handle_where_clause_expr(arg);
+          handleWhereClauseExpr(arg);
         }
       }
     }
@@ -321,7 +331,7 @@ getFunctionsInWhereClause(Map<FnSymbol*, ArgSymbol*>& fnsInInterfaces,
   }
 }
 
-static void handle_where_clause_expr(BaseAST *ast) {
+static void handleWhereClauseExpr(BaseAST *ast) {
   if (CallExpr *ce = toCallExpr(ast)) {
     if (UnresolvedSymExpr *callsymexpr = toUnresolvedSymExpr(ce->baseExpr)) {
       if (!strcmp(callsymexpr->unresolved, "==")) {
@@ -332,7 +342,7 @@ static void handle_where_clause_expr(BaseAST *ast) {
       } else if (!strcmp(callsymexpr->unresolved, "_build_tuple")) {
         //We have multiple constraints, handle them
         for_alist(arg, ce->argList) {
-          handle_where_clause_expr(arg);
+          handleWhereClauseExpr(arg);
         }
       }
     } else {
@@ -354,7 +364,7 @@ static BaseAST *typeCheckFn(FnSymbol *fn) {
 
   if (fn->where) {
     for_alist(expr, fn->where->body) {
-      handle_where_clause_expr(expr);
+      handleWhereClauseExpr(expr);
     }
   }
 
@@ -370,7 +380,7 @@ static BaseAST *typeCheckFn(FnSymbol *fn) {
   BaseAST *tmp = typeCheckExpr(fn->body, fn->retExprType, fnsInInterfaces);
 
   //FIXME: This is a workaround until we have a clean-up pass
-  fn->where->remove();
+  //fn->where->remove();
 
   if (witnessObjects.length() > 0) {
     fn->addFlag(FLAG_ALLOW_REF);
@@ -407,7 +417,7 @@ static Symbol* mapArguments(CallExpr* where, FnSymbol* visibleFn, CallExpr* call
   return NULL;
 }
 
-static BaseAST* newCheckFunctionCall(CallExpr* call, Map<FnSymbol*, ArgSymbol*>& fnsInInterfaces) {
+static BaseAST* checkFunctionCall(CallExpr* call, Map<FnSymbol*, ArgSymbol*>& fnsInInterfaces) {
   if(call->primitive) {
     USR_FATAL(call,"Unimplemented: Primitive operators\n");
   }
@@ -573,15 +583,7 @@ static ClassType* createAndInsertInstanceWitnessClass(BaseAST *witness, const ch
   ClassType *parent = new ClassType(CLASS_CLASS);
   TypeSymbol *parent_ts = new TypeSymbol(name, parent);
 
-  //parent_ts->addFlag(FLAG);
-
-  // Because this function type needs to be globally visible (because we don't know the modules it will be passed to), we put
-  // it at the highest scope
-  //theProgram->block->body.insertAtTail(new DefExpr(parent_ts));
-
-  //witness->insertBefore(new DefExpr(parent_ts));
-
-  //Adding supprot for implements stmt
+  //Adding support for implements stmt
   if(ImplementsStmt* s = toImplementsStmt(witness)) {
     s->insertBefore(new DefExpr(parent_ts));
   } else if (CallExpr* ce = toCallExpr(witness)) {
@@ -602,7 +604,6 @@ static ClassType* createAndInsertInstanceWitnessClass(BaseAST *witness, const ch
 static void addAdaptationToWitness(BaseAST *insertBefore, ClassType *witness, FnSymbol *requiredFn, FnSymbol *actualFn) {
   FnSymbol* adapted_method = new FnSymbol(requiredFn->name);
   adapted_method->addFlag(FLAG_INLINE);
-  //adapted_method->addFlag(FLAG_INVISIBLE_FN);
   adapted_method->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
   ArgSymbol* thisWitnessSymbol = new ArgSymbol(INTENT_BLANK, "this", witness);
   thisWitnessSymbol->addFlag(FLAG_ARG_THIS);
@@ -628,12 +629,11 @@ static void addAdaptationToWitness(BaseAST *insertBefore, ClassType *witness, Fn
     adapted_method->insertAtTail(new CallExpr(PRIM_RETURN, tmp));
   }
 
-  //insertBefore->insertBefore(new DefExpr(adapted_method));
   if(ImplementsStmt* s = toImplementsStmt(insertBefore)) {
-      s->insertBefore(new DefExpr(adapted_method));
-    } else if (CallExpr* c = toCallExpr(insertBefore)) {
-      c->insertBefore(new DefExpr(adapted_method));
-    }
+    s->insertBefore(new DefExpr(adapted_method));
+  } else if (CallExpr* c = toCallExpr(insertBefore)) {
+    c->insertBefore(new DefExpr(adapted_method));
+  }
 
   normalize(adapted_method);
 
@@ -652,7 +652,8 @@ static BaseAST* checkInterfaceImplementations(BaseAST *s) {
   else if (DefExpr *de = toDefExpr(s)) {
       if (de->sym && isFnSymbol(de->sym)) {
         FnSymbol *fn = toFnSymbol(de->sym);
-        checkInterfaceImplementations(fn->body);
+        if (!fn->hasFlag(FLAG_SEPARATELY_TYPE_CHECKED))
+          checkInterfaceImplementations(fn->body);
       }
   }
   else if (isCallExpr(s) || isImplementsStmt(s)) {
@@ -900,7 +901,7 @@ static BaseAST* checkInterfaceImplementations(BaseAST *s) {
                 //ce->argList.tail);
             if (ImplementsStmt* istmt = toImplementsStmt(s)) {
               //printf("Inside stmt");
-              VarSymbol *tmp = newTemp();
+              VarSymbol *tmp = new VarSymbol("witness");
               istmt->insertBefore(new DefExpr(tmp));
               istmt->insertBefore(new CallExpr(PRIM_MOVE, tmp,
                  new CallExpr(witness->defaultConstructor->name)));
@@ -909,7 +910,7 @@ static BaseAST* checkInterfaceImplementations(BaseAST *s) {
               istmt->remove();
             } else {
               //printf("Inside clause");
-              VarSymbol *tmp = newTemp();
+              VarSymbol *tmp = new VarSymbol("witness");
               ce->insertBefore(new DefExpr(tmp));
               ce->insertBefore(new CallExpr(PRIM_MOVE, tmp,
                  new CallExpr(witness->defaultConstructor->name)));
@@ -923,13 +924,13 @@ static BaseAST* checkInterfaceImplementations(BaseAST *s) {
           }
         }
       }
-      else if(!strcmp(use->unresolved, "writeln")) {
+      else if (!strcmp(use->unresolved, "writeln")) {
           //printf("Inside Writeln\n");
           checkInterfaceImplementations(ce->argList.head);
       }
-      else  if(!ce->primitive) {
+      else if (!ce->primitive) {
         Map<FnSymbol*, ArgSymbol*> fnInInterfaces;
-        returnExpr = newCheckFunctionCall(ce, fnInInterfaces);
+        returnExpr = checkFunctionCall(ce, fnInInterfaces);
         //printf("Return Type: %d\n",returnExpr->id);
         //list_view(returnExpr);
       }
@@ -943,25 +944,26 @@ static BaseAST* checkInterfaceImplementations(BaseAST *s) {
 }
 
 void earlyTypeCheck(void) {
-  //bool found_early_type_checked = false;
   checkInterfaceImplementations(
       userModules.v[0]->block);
 
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-      if (fn->hasFlag(FLAG_SEPARATELY_TYPE_CHECKED)) {
-        //found_early_type_checked = true;
-        typeCheckFn(fn);
-      }
+    if (fn->hasFlag(FLAG_SEPARATELY_TYPE_CHECKED)) {
+      typeCheckFn(fn);
     }
+  }
 
   forv_Vec(InterfaceSymbol, is, gInterfaceSymbols) {
     is->defPoint->remove();
   }
 
-  //printf("complete\n");
-  //if (found_early_type_checked) {
-    //Hackish workaround to stop early when we're early type-checking until we
-    //tie into the rest of the passes
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    if (fn->hasFlag(FLAG_SEPARATELY_TYPE_CHECKED)) {
+      fn->where->remove();
+    }
+  }
+
+  //Hackish workaround to stop early when we're early type-checking until we
+  //tie into the rest of the passes
   //INT_FATAL("SUCCESS");
-  //}
 }

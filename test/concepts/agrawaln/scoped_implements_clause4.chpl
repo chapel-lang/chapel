@@ -16,7 +16,7 @@ proc min(type T, x:T, y:T) : T where T implements LessThan checked {
   }
 }
 
-proc test1() checked {
+proc test1() : void checked {
   int implements LessThan;
 }
 
