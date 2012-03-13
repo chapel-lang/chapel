@@ -37,7 +37,7 @@ for l in lines:
     if knum == -1:
         # check to see which kernel we are in
         p=l.find('proc ')
-        if p >= 0:
+        if k < 3 and p >= 0:
             if l[p+5:].strip().find(kernels[k])==0:
                 k += 1
                 knum = k+1

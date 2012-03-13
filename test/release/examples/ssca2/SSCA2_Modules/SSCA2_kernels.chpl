@@ -174,51 +174,9 @@ module SSCA2_kernels
     } // end of rooted_heavy_subgraphs
 
 
-  // ============================================================
-  // generic class structure must be defined outside of 
-  // generic procedure.  used by Betweenness Centrality kernel 4.
-  // ------------------------------------------------------------
-  // The set of vertices at a particular distance from s form a
-  // level set.  The class allows the full set of vertices to be
-  // partitioned into a linked list of level sets.  Each instance
-  // of the outer loop in kernel 4 creates such a partitioning.
-  // ============================================================
-
-  class Level_Set {
-    type Sparse_Vertex_List;
-    var Members  : Sparse_Vertex_List;
-    var previous : Level_Set (Sparse_Vertex_List);
-  }
-
-  // sungeun: 8/2011
-  // Added replicated level sets
-  //
-  // Each locale will have its own level sets.  A locale's level set
-  // will only contain nodes that are physically allocated on that
-  // particular locale.  We implement this using the replicated
-  // distribution.
-  //
-  use ReplicatedDist;
-
-  //
-  // Data structure to save Children lists between the forward
-  //  and backwards pass
-  //
-  record child_struct {
-    type vertex;
-    var nd: domain(1);
-    var Row_Children: [nd] vertex;
-    var child_count: int=0;
-    var vlock$: sync bool = true;
-
-    // This function should only be called using unique vertices
-    proc add_child ( new_child: vertex ) {
-       vlock$.readFE();
-       child_count += 1;
-       Row_Children[child_count] = new_child;
-       vlock$.writeEF(true);
-    }
-  }
+  use BlockDist;
+  // Should use PrivateDist here, but it currently has higher overhead
+  const PrivateSpace = [LocaleSpace] dmapped Block(boundingBox=[LocaleSpace]);
 
   // ==================================================================
   //                              KERNEL 4
@@ -259,6 +217,17 @@ module SSCA2_kernels
       var Between_Cent$ : [vertex_domain] sync real = 0.0;
       var Sum_Min_Dist$ : sync real = 0.0;
 
+      // Initialize task private data
+      var localePrivate: [PrivateSpace] localePrivateData(vertex_domain.type);
+      forall l in localePrivate do on l {
+        l = new localePrivateData(vertex_domain);
+        for t in l.temps { // this might be bad for first-touch
+          t = new taskPrivateData(vertex_domain);
+          forall v in vertex_domain do
+            t.children_list[v].nd = [1..G.n_Neighbors[v]];
+        }
+      }
+
       // ------------------------------------------------------ 
       // Each iteration of the outer loop of Brandes's algorithm
       // computes the contribution (the "dependency" metric) for
@@ -279,17 +248,20 @@ module SSCA2_kernels
 	// all locally declared variables become private data 
 	// for each instance of the parallel for loop
 	// --------------------------------------------------
-  
-  	var min_distance$  : [vertex_domain] sync int       = -1;
-	var path_count$    : [vertex_domain] sync real (64) = 0.0;
-	var depend         : [vertex_domain] real           = 0.0;
-	var Lcl_Sum_Min_Dist: sync real                     = 0.0;
-
-        var children_list: [vertex_domain] child_struct(index(vertex_domain));
-        // Initialize size of child lists for each vertex to its neighbor count
-        forall v in G.vertices {
-          children_list[v].nd = [1..G.n_Neighbors[v]];
+        const lp = localePrivate[here.id];
+        const tid = lp.get_tid();
+        var depend => lp.get_depend(tid);
+        var min_distance$ => lp.get_min_distance(tid);
+        var path_count$   => lp.get_path_count(tid);
+        var children_list => lp.get_children_list(tid);
+        forall v in vertex_domain do on v {
+          depend[v] = 0.0;
+          min_distance$[v].writeXF(-1);
+          path_count$[v].writeXF(0.0);
+          children_list[v].child_count = 0;
+          children_list[v].vlock$.writeXF(true);
         }
+	var Lcl_Sum_Min_Dist: sync real = 0.0;
 
 	// The structure of the algorithm depends on a breadth-first
 	// traversal. Each vertex will be marked by the length of
@@ -301,6 +273,13 @@ module SSCA2_kernels
         // Used to check termination of the forward pass
         //
         // sungeun: 8/2011
+        // Added replicated level sets
+        //
+        // Each locale will have its own level sets.  A locale's level set
+        // will only contain nodes that are physically allocated on that
+        // particular locale.  We implement this using the replicated
+        // distribution.
+        // sungeun: 8/2011
         // Can possibly use a replicated bool with rcCollect(), but
         // not sure of the performance implications for large numbers
         // of locales.
@@ -308,13 +287,8 @@ module SSCA2_kernels
         // Distributed Active_Remaining to reduce communication overhead.
         // Similar scaling concerns exists for the reduction as for
         // replacing it with a replicated bool.
-        use BlockDist;
-        const DL = 
-          if DISTRIBUTION_TYPE == "BLOCK" then
-            [LocaleSpace] dmapped Block(boundingBox=LocaleSpace)
-          else
-            [LocaleSpace];
-        var Active_Remaining: [DL] bool = true;
+        var Active_Remaining => lp.get_Active_Remaining(tid);
+        Active_Remaining = true;
         var remaining = true;
 
         // Replicated level sets
@@ -360,7 +334,7 @@ module SSCA2_kernels
             coforall loc in Locales do on loc {
              forall u in rcLocal(Active_Level).Members do { // sparse
 
-               forall (v, w) in ( G.Neighbors (u), G.edge_weight (u) ) do on v {
+               forall (v, w) in ( G.Neighbors (u), G.edge_weight (u) ) do on vertex_domain.dist.idxToLocale(v) {
 		// --------------------------------------------
 		// add any unmarked neighbors to the next level
 		// --------------------------------------------
@@ -426,11 +400,6 @@ module SSCA2_kernels
 
 	};  // end forward pass
 
-        // Resize the arrays to the actual count to free up some memory
-        forall v in G.vertices {
-            children_list[v].nd = [1..children_list[v].child_count];
-        }
-
 	if VALIDATE_BC then
 	  Sum_Min_Dist$ += Lcl_Sum_Min_Dist;
 
@@ -468,7 +437,7 @@ module SSCA2_kernels
 
             forall u in rcLocal(Active_Level).Members do
               {
-	      depend (u) = + reduce [v in children_list(u).Row_Children]
+	      depend (u) = + reduce [v in children_list(u).Row_Children[1..children_list(u).child_count]]
 		  ( path_count$ (u) . readFF () / 
 		    path_count$ (v) . readFF () )      *
 		    ( 1.0 + depend (v) );
@@ -512,7 +481,99 @@ module SSCA2_kernels
 	Sum_Min_Dist = Sum_Min_Dist$;
       
       Between_Cent = Between_Cent$;
-  
+
+      forall l in localePrivate do on l {
+        [i in l.r] delete l.temps[i];
+        delete l;
+      }
+
     } // end of Brandes' betweenness centrality calculation
 
+
+
+
+  //
+  // Addition support data structures for kernel 4
+  //
+
+  use ReplicatedDist;
+  // ============================================================
+  // generic class structure must be defined outside of 
+  // generic procedure.  used by Betweenness Centrality kernel 4.
+  // ------------------------------------------------------------
+  // The set of vertices at a particular distance from s form a
+  // level set.  The class allows the full set of vertices to be
+  // partitioned into a linked list of level sets.  Each instance
+  // of the outer loop in kernel 4 creates such a partitioning.
+  // ============================================================
+
+  class Level_Set {
+    type Sparse_Vertex_List;
+    var Members  : Sparse_Vertex_List;
+    var previous : Level_Set (Sparse_Vertex_List);
+  }
+
+  //
+  // Data structure to save Children lists between the forward
+  //  and backwards pass
+  //
+  record child_struct {
+    type vertex;
+    var nd: domain(1);
+    var Row_Children: [nd] vertex;
+    var child_count: int=0;
+    var vlock$: sync bool = true;
+
+    // This function should only be called using unique vertices
+    proc add_child ( new_child: vertex ) {
+      // int-fetch-add
+       vlock$.readFE();
+       child_count += 1;
+       Row_Children[child_count] = new_child;
+       vlock$.writeEF(true);
+    }
+  }
+
+  //
+  // Implementation of task-private variables for kernel 4
+  //
+  class taskPrivateData {
+    const vertex_domain;
+    var tid$           : sync chpl_taskID_t = chpl_nullTaskID;
+    var min_distance$  : [vertex_domain] sync int;
+    var path_count$    : [vertex_domain] sync real (64);
+    var depend         : [vertex_domain] real;
+    var children_list  : [vertex_domain] child_struct(index(vertex_domain));
+    var Active_Remaining: [PrivateSpace] bool;
+  };
+  inline proc =(a: chpl_taskID_t, b: chpl_taskID_t) return b;
+  inline proc !=(a: chpl_taskID_t, b: chpl_taskID_t) return __primitive("!=", a, b);
+  class localePrivateData {
+    const vertex_domain;
+    const numTasks = if dataParTasksPerLocale==0 then here.numCores
+      else dataParTasksPerLocale;
+    var r = [0..#numTasks];
+    var temps: [r] taskPrivateData(vertex_domain.type);
+    proc get_tid() {
+      extern proc chpl_task_getId(): chpl_taskID_t;
+      var mytid = chpl_task_getId();
+      var slot = (mytid:uint % (numTasks:uint)):int;
+      // Would be nice to have CAS
+      var tid: chpl_taskID_t = temps[slot].tid$; // lock
+      while ((tid != chpl_nullTaskID) && (tid != mytid)) {
+        temps[slot].tid$ = tid;                  // unlock
+        slot = (slot+1)%numTasks;
+        tid = temps[slot].tid$;                  // lock
+      }
+      temps[slot].tid$ = mytid;                  // unlock
+      return slot;
+    }
+    inline proc get_min_distance(tid=get_tid()) return temps[tid].min_distance$;
+    inline proc get_path_count(tid=get_tid()) return temps[tid].path_count$;
+    inline proc get_depend(tid=get_tid()) return temps[tid].depend;
+    inline proc get_children_list(tid=get_tid()) return temps[tid].children_list;
+    inline proc get_Active_Remaining(tid=get_tid()) return temps[tid].Active_Remaining;
+  }
+
 }
+

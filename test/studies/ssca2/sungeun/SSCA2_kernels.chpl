@@ -174,83 +174,9 @@ module SSCA2_kernels
     } // end of rooted_heavy_subgraphs
 
 
-
-  use ReplicatedDist;
-  // ============================================================
-  // generic class structure must be defined outside of 
-  // generic procedure.  used by Betweenness Centrality kernel 4.
-  // ------------------------------------------------------------
-  // The set of vertices at a particular distance from s form a
-  // level set.  The class allows the full set of vertices to be
-  // partitioned into a linked list of level sets.  Each instance
-  // of the outer loop in kernel 4 creates such a partitioning.
-  // ============================================================
-
-  class Level_Set {
-    type Sparse_Vertex_List;
-    var Members  : Sparse_Vertex_List;
-    var previous : Level_Set (Sparse_Vertex_List);
-  }
-
-  //
-  // Data structure to save Children lists between the forward
-  //  and backwards pass
-  //
-  record child_struct {
-    type vertex;
-    var nd: domain(1);
-    var Row_Children: [nd] vertex;
-    var child_count: int=0;
-    var vlock$: sync bool = true;
-
-    // This function should only be called using unique vertices
-    proc add_child ( new_child: vertex ) {
-      // int-fetch-add
-       vlock$.readFE();
-       child_count += 1;
-       Row_Children[child_count] = new_child;
-       vlock$.writeEF(true);
-    }
-  }
-
-  //
-  // Implementation of task-private variables for kernel 4
-  //
   use BlockDist;
-  // Kinda want to use PrivateDist here, but there is some module resolution bug
-  const myPrivateSpace = [LocaleSpace] dmapped Block(boundingBox=[LocaleSpace]);
-  class taskPrivateData {
-    const vertex_domain;
-    var tid$           : sync chpl_taskID_t = chpl_nullTaskID;
-    var min_distance$  : [vertex_domain] sync int;
-    var path_count$    : [vertex_domain] sync real (64);
-    var depend         : [vertex_domain] real;
-    var children_list  : [vertex_domain] child_struct(index(vertex_domain));
-    var Active_Remaining: [myPrivateSpace] bool;
-  };
-  inline proc =(a: chpl_taskID_t, b: chpl_taskID_t) return b;
-  inline proc !=(a: chpl_taskID_t, b: chpl_taskID_t) return __primitive("!=", a, b);
-  class localePrivateData {
-    const vertex_domain;
-    const numTasks = if dataParTasksPerLocale==0 then here.numCores
-      else dataParTasksPerLocale;
-    var r = [0..#numTasks];
-    var temps: [r] taskPrivateData(vertex_domain.type);
-    proc gettid() {
-      extern proc chpl_task_getId(): chpl_taskID_t;
-      var mytid = chpl_task_getId();
-      var slot = (mytid:uint % (numTasks:uint)):int;
-      // Would be nice to have CAS
-      var tid: chpl_taskID_t = temps[slot].tid$; // lock
-      while ((tid != chpl_nullTaskID) && (tid != mytid)) {
-        temps[slot].tid$ = tid;                  // unlock
-        slot = (slot+1)%numTasks;
-        tid = temps[slot].tid$;                  // lock
-      }
-      temps[slot].tid$ = mytid;                  // unlock
-      return slot;
-    }
-  }
+  // Should use PrivateDist here, but it currently has higher overhead
+  const PrivateSpace = [LocaleSpace] dmapped Block(boundingBox=[LocaleSpace]);
 
   // ==================================================================
   //                              KERNEL 4
@@ -292,7 +218,7 @@ module SSCA2_kernels
       var Sum_Min_Dist$ : sync real = 0.0;
 
       // Initialize task private data
-      var localePrivate: [myPrivateSpace] localePrivateData(vertex_domain.type);
+      var localePrivate: [PrivateSpace] localePrivateData(vertex_domain.type);
       forall l in localePrivate do on l {
         l = new localePrivateData(vertex_domain);
         for t in l.temps { // this might be bad for first-touch
@@ -323,11 +249,11 @@ module SSCA2_kernels
 	// for each instance of the parallel for loop
 	// --------------------------------------------------
         const lp = localePrivate[here.id];
-        const tid = lp.gettid();
-        var depend => lp.temps[tid].depend;
-        var min_distance$ => lp.temps[tid].min_distance$;
-        var path_count$   => lp.temps[tid].path_count$;
-        var children_list => lp.temps[tid].children_list;
+        const tid = lp.get_tid();
+        var depend => lp.get_depend(tid);
+        var min_distance$ => lp.get_min_distance(tid);
+        var path_count$   => lp.get_path_count(tid);
+        var children_list => lp.get_children_list(tid);
         forall v in vertex_domain do on v {
           depend[v] = 0.0;
           min_distance$[v].writeXF(-1);
@@ -361,7 +287,7 @@ module SSCA2_kernels
         // Distributed Active_Remaining to reduce communication overhead.
         // Similar scaling concerns exists for the reduction as for
         // replacing it with a replicated bool.
-        var Active_Remaining => lp.temps[tid].Active_Remaining;
+        var Active_Remaining => lp.get_Active_Remaining(tid);
         Active_Remaining = true;
         var remaining = true;
 
@@ -529,7 +455,6 @@ module SSCA2_kernels
               count = myc-1;
               barrier[current_distance];
             }
-            // writeln((tid, depend));
           };
           delete rcLocal(Active_Level);
         }
@@ -563,6 +488,92 @@ module SSCA2_kernels
       }
 
     } // end of Brandes' betweenness centrality calculation
+
+
+
+
+  //
+  // Addition support data structures for kernel 4
+  //
+
+  use ReplicatedDist;
+  // ============================================================
+  // generic class structure must be defined outside of 
+  // generic procedure.  used by Betweenness Centrality kernel 4.
+  // ------------------------------------------------------------
+  // The set of vertices at a particular distance from s form a
+  // level set.  The class allows the full set of vertices to be
+  // partitioned into a linked list of level sets.  Each instance
+  // of the outer loop in kernel 4 creates such a partitioning.
+  // ============================================================
+
+  class Level_Set {
+    type Sparse_Vertex_List;
+    var Members  : Sparse_Vertex_List;
+    var previous : Level_Set (Sparse_Vertex_List);
+  }
+
+  //
+  // Data structure to save Children lists between the forward
+  //  and backwards pass
+  //
+  record child_struct {
+    type vertex;
+    var nd: domain(1);
+    var Row_Children: [nd] vertex;
+    var child_count: int=0;
+    var vlock$: sync bool = true;
+
+    // This function should only be called using unique vertices
+    proc add_child ( new_child: vertex ) {
+      // int-fetch-add
+       vlock$.readFE();
+       child_count += 1;
+       Row_Children[child_count] = new_child;
+       vlock$.writeEF(true);
+    }
+  }
+
+  //
+  // Implementation of task-private variables for kernel 4
+  //
+  class taskPrivateData {
+    const vertex_domain;
+    var tid$           : sync chpl_taskID_t = chpl_nullTaskID;
+    var min_distance$  : [vertex_domain] sync int;
+    var path_count$    : [vertex_domain] sync real (64);
+    var depend         : [vertex_domain] real;
+    var children_list  : [vertex_domain] child_struct(index(vertex_domain));
+    var Active_Remaining: [PrivateSpace] bool;
+  };
+  inline proc =(a: chpl_taskID_t, b: chpl_taskID_t) return b;
+  inline proc !=(a: chpl_taskID_t, b: chpl_taskID_t) return __primitive("!=", a, b);
+  class localePrivateData {
+    const vertex_domain;
+    const numTasks = if dataParTasksPerLocale==0 then here.numCores
+      else dataParTasksPerLocale;
+    var r = [0..#numTasks];
+    var temps: [r] taskPrivateData(vertex_domain.type);
+    proc get_tid() {
+      extern proc chpl_task_getId(): chpl_taskID_t;
+      var mytid = chpl_task_getId();
+      var slot = (mytid:uint % (numTasks:uint)):int;
+      // Would be nice to have CAS
+      var tid: chpl_taskID_t = temps[slot].tid$; // lock
+      while ((tid != chpl_nullTaskID) && (tid != mytid)) {
+        temps[slot].tid$ = tid;                  // unlock
+        slot = (slot+1)%numTasks;
+        tid = temps[slot].tid$;                  // lock
+      }
+      temps[slot].tid$ = mytid;                  // unlock
+      return slot;
+    }
+    inline proc get_min_distance(tid=get_tid()) return temps[tid].min_distance$;
+    inline proc get_path_count(tid=get_tid()) return temps[tid].path_count$;
+    inline proc get_depend(tid=get_tid()) return temps[tid].depend;
+    inline proc get_children_list(tid=get_tid()) return temps[tid].children_list;
+    inline proc get_Active_Remaining(tid=get_tid()) return temps[tid].Active_Remaining;
+  }
 
 }
 
