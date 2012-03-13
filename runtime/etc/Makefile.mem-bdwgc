@@ -1,0 +1,3 @@
+#GEN_CFLAGS += -I$(BDWGC_INCLUDE_DIR)
+#LIBS += -L$(BDWGC_LIB_DIR) -lgc
+LIBS += -lgc

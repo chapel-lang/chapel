@@ -54,6 +54,8 @@ static pthread_attr_t  thread_attributes;
 
 static pthread_key_t   thread_id_key;
 static pthread_key_t   thread_private_key;
+static pthread_key_t   thread_private_ptr_key;
+static void*           main_thread_private_ptr;
 
 static int32_t         threadMaxThreadsPerLocale  = 0;
 static uint32_t        threadNumThreads           = 0;
@@ -200,6 +202,12 @@ void chpl_thread_init(int32_t numThreadsPerLocale,
   if (pthread_key_create(&thread_private_key, NULL))
     chpl_internal_error("pthread_key_create(thread_private_key) failed");
 
+  if (pthread_key_create(&thread_private_ptr_key, NULL))
+    chpl_internal_error("pthread_key_create(thread_private_ptr_key) failed");
+  if (pthread_setspecific(thread_private_ptr_key, (void*) &main_thread_private_ptr))
+    chpl_internal_error("thread_private_ptr_key doesn't work");
+
+
   pthread_mutex_init(&thread_info_lock, NULL);
   pthread_mutex_init(&threadNumThreadsLock, NULL);
 
@@ -321,6 +329,11 @@ static void* pthread_func(void* arg) {
   chpl_thread_id_t my_thread_id;
   thread_list_p          tlp;
 
+  // Boehm GC does not scan thread-local storage, so
+  // we just add a pointer to our thread_private data here
+  // on the thread stack, which will be scanned.
+  void *thread_private_ptr = NULL;
+
   // disable cancellation immediately
   // enable only while waiting for new work
   pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, NULL); 
@@ -352,6 +365,12 @@ static void* pthread_func(void* arg) {
 
   if (pthread_setspecific(thread_id_key, (void*) (intptr_t) my_thread_id))
     chpl_internal_error("thread id data key doesn't work");
+
+  // Make thread-local-storage accessible from the thread stack
+  // by arranging to have it pointed to from thread_private_ptr.
+  // This solves problems with Boehm-GC not scanning thread-local storage.
+  if (pthread_setspecific(thread_private_ptr_key, (void*) &thread_private_ptr))
+    chpl_internal_error("thread_private_ptr_key doesn't work");
 
   if (saved_threadEndFn == NULL)
     (*saved_threadBeginFn)(arg);
@@ -388,6 +407,10 @@ void* chpl_thread_getPrivateData(void) {
 }
 
 void chpl_thread_setPrivateData(void* p) {
+  // Arrange for thread-private data to be pointed to from the thread
+  // stack, for Boehm-GC.
+  void** thread_private_ptr = (void**) pthread_getspecific(thread_private_ptr_key);
+  *thread_private_ptr = p;
   if (pthread_setspecific(thread_private_key, p))
     chpl_internal_error("thread private data key doesn't work");
 }
