@@ -7,6 +7,9 @@
 #include <stdlib.h>
 #include "chpl-mem-desc.h"
 
+// Memory tracking activated?
+extern _Bool memTrack;
+
 uint64_t chpl_memoryUsed(int32_t lineno, chpl_string filename);
 void chpl_printMemStat(int32_t lineno, chpl_string filename);
 void chpl_printMemTable(int64_t threshold, int32_t lineno, chpl_string filename);
