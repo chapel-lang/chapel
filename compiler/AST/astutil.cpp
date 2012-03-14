@@ -490,6 +490,9 @@ pruneUnusedTypes(Vec<TypeSymbol*>& types)
   }
 }
 
+// Done this way because the log letter and hence the pass name for
+// each pass must be unique.  See initLogFlags() in runpasses.cpp.
+void prune2() { prune(); } // Synonym for prune.
 
 // Determine sets of used functions and types, and then delete
 // functions which are not visible and classes which are not used.
