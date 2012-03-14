@@ -27,7 +27,9 @@ module SSCA2_RMAT_graph_generator
   // |  compiler use more abstract, higher level, code.                        |
   // +=========================================================================+
 
-  use SSCA2_compilation_config_params;
+  use SSCA2_compilation_config_params, Time;
+
+  var stopwatch : Timer;
 
   record directed_vertex_pair {
     var start = 1: int;
@@ -212,7 +214,7 @@ module SSCA2_RMAT_graph_generator
       Edges.start = permutation (Edges.start);
       Edges.end   = permutation (Edges.end  );
 
-      if DEBUG_GRAPH_GENERATOR || DEBUG_WEIGHT_GENERATOR then {
+      if DEBUG_WEIGHT_GENERATOR then {
 	writeln ();
 	for e in edge_range do
 	  writeln ("edge (", e, ") : (", Edges(e), ", ", 
@@ -251,6 +253,8 @@ module SSCA2_RMAT_graph_generator
       // wins) or also use += instead of = (to sum duplicates' weights).
       // ----------------------------------------------------------
 
+      if PRINT_TIMING_STATISTICS then stopwatch.start ();
+
       var collisions = 0, self_edges = 0;
       for e in edge_range do {
 	var u = Edges (e).start;
@@ -269,13 +273,20 @@ module SSCA2_RMAT_graph_generator
 	  self_edges += 1;
       }
 
+      if PRINT_TIMING_STATISTICS then {
+	stopwatch.stop ();
+	writeln ( "Elapsed time for Kernel 1: ", stopwatch.elapsed (), 
+		  " seconds");
+	stopwatch.clear ();
+      }
+
       writeln ( "# of raw edges generated  ", n_raw_edges );
       writeln ( "# of duplicate edges      ", collisions );
       writeln ( "# of self edges           ", self_edges );
       writeln ( "# of edges in final graph ", 
 		+ reduce [v in G.vertices] G.n_Neighbors (v) );
 
-      if DEBUG_GRAPH_GENERATOR || DEBUG_WEIGHT_GENERATOR then {
+      if DEBUG_GRAPH_GENERATOR then {
 	writeln ();
 	writeln ("tuples denote (edge, weight)");
 	writeln ();
