@@ -6,7 +6,7 @@
 #include <pthread.h>
 #include "chplexit.h"
 #include "chpl-comm.h"
-#include "chpl_mem.h"
+#include "chpl-mem.h"
 #include "chplrt.h"
 #include "chpl-tasks.h"
 #include "error.h"
@@ -50,10 +50,6 @@ pthread_key_t tag_count_key;
 
 
 int32_t chpl_comm_getMaxThreads(void) {
-  return 0;
-}
-
-int32_t chpl_comm_maxThreadsLimit(void) {
   return 0;
 }
 
@@ -114,7 +110,7 @@ static int makeTag(void) {
   int* tag = (int*)pthread_getspecific(tag_count_key);
   const int maxtag = (TAGMASK/chpl_numLocales)*(1+chpl_localeID) - 1;
   if (tag == NULL) {
-    tag = chpl_malloc(1, sizeof(int), 0, 0, 0);
+    tag = chpl_mem_allocMany(1, sizeof(int), 0, 0, 0);
     chpl_sync_lock(&tag_count_sync);
     *tag = tag_count;
     tag_count += 1;
@@ -134,8 +130,8 @@ static void chplExecForkedTask(_chplForkedTaskArg* arg) {
   if (arg->blockingCall)
     chpl_mpi_send(NULL, 0, MPI_BYTE, arg->joinLocale, arg->replyTag, MPI_COMM_WORLD);
   if (arg->arg != NULL)
-    chpl_free(arg->arg, 0, 0);
-  chpl_free(arg, 0, 0);
+    chpl_mem_free(arg->arg, 0, 0);
+  chpl_mem_free(arg, 0, 0);
 }
 
 
@@ -170,11 +166,11 @@ static void chpl_mpi_send(void* buf, int count, MPI_Datatype datatype, int dest,
 
 
 //
-// Every node has a polling thread that does an MPI receive accepting a
+// Every node has a polling task that does an MPI receive accepting a
 // message from any node. The message is always a struct chpl_mpi_message_info.
 // It then intreprets that chpl_mpi_message_info and acts accordingly.
 //
-static void chpl_mpi_polling_thread(void* arg) {
+static void chpl_mpi_polling_task(void* arg) {
   int finished = 0;
   _chpl_mpi_message_info msg_info;
   MPI_Status status;
@@ -182,7 +178,7 @@ static void chpl_mpi_polling_thread(void* arg) {
   char debugMsg[DEBUG_MSG_LENGTH];
 #endif
 
-  PRINTF("Starting mpi polling thread");
+  PRINTF("Starting mpi polling task");
 
   chpl_sync_lock(&termination_sync);
   while (!finished) {
@@ -210,13 +206,13 @@ static void chpl_mpi_polling_thread(void* arg) {
       }
       case ChplCommFork: {
         void* args;
-        _chplForkedTaskArg* rpcArg = chpl_malloc(1, sizeof(_chplForkedTaskArg), CHPL_RT_MD_REMOTE_FORK_DATA, 0, 0);
+        _chplForkedTaskArg* rpcArg = chpl_mem_allocMany(1, sizeof(_chplForkedTaskArg), CHPL_RT_MD_COMM_FORK_SEND_INFO, 0, 0);
 #if CHPL_DIST_DEBUG
         sprintf(debugMsg, "Fulfilling ChplCommFork(fromloc=%d, tag=%d)", status.MPI_SOURCE, msg_info.replyTag);
         PRINTF(debugMsg);
 #endif
         if (msg_info.size != 0) {
-          args = chpl_malloc(1, msg_info.size, CHPL_RT_MD_REMOTE_FORK_ARG, 0, 0);
+          args = chpl_mem_allocMany(1, msg_info.size, CHPL_RT_MD_COMM_FORK_SEND_LARGE_ARG, 0, 0);
         } else {
           args = NULL;
         }
@@ -234,13 +230,13 @@ static void chpl_mpi_polling_thread(void* arg) {
       }
       case ChplCommForkNB: {
         void* args;
-        _chplForkedTaskArg* rpcArg = chpl_malloc(1, sizeof(_chplForkedTaskArg), CHPL_RT_MD_REMOTE_FORK_DATA, 0, 0);
+        _chplForkedTaskArg* rpcArg = chpl_mem_allocMany(1, sizeof(_chplForkedTaskArg), CHPL_RT_MD_COMM_FORK_SEND_NB_INFO, 0, 0);
 #if CHPL_DIST_DEBUG
         sprintf(debugMsg, "Fulfilling ChplCommForkNB(fromloc=%d, tag=%d)", status.MPI_SOURCE, msg_info.replyTag);
         PRINTF(debugMsg);
 #endif
         if (msg_info.size != 0) {
-          args = chpl_malloc(1, msg_info.size, CHPL_RT_MD_REMOTE_FORK_ARG, 0, 0);
+          args = chpl_mem_allocMany(1, msg_info.size, CHPL_RT_MD_COMM_FORK_SEND_NB_LARGE_ARG, 0, 0);
         } else {
           args = NULL;
         }
@@ -298,17 +294,28 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
   chpl_sync_initAux(&termination_sync);
   chpl_sync_initAux(&tag_count_sync);
   pthread_key_create(&tag_count_key, NULL);
+}
 
-  if (pthread_create(&polling_thread, NULL,
-                     (void*(*)(void*))chpl_mpi_polling_thread, 0))
-    chpl_internal_error("unable to start polling thread for mpi");
-  pthread_detach(polling_thread);
+
+void chpl_comm_post_mem_init(void) { }
+
+
+void chpl_comm_post_task_init(void) {
+  if (chpl_task_createCommTask(chpl_mpi_polling_task, NULL))
+    chpl_internal_error("unable to start polling task for MPI");
 }
 
 
 void chpl_comm_rollcall(void) {
   chpl_msg(2, "executing on locale %d of %d locale(s): %s\n", chpl_localeID,
             chpl_numLocales, chpl_localeName());
+}
+
+
+void chpl_comm_desired_shared_heap(void** start_p, size_t* size_p) {
+  // Use the regular malloc/free implementation
+  *start_p = NULL;
+  *size_p  = 0;
 }
 
 
@@ -344,38 +351,41 @@ void chpl_comm_broadcast_private(int id, int32_t size, int32_t tid) {
 }
 
 
-void chpl_comm_init_shared_heap(void) {
-  // Use the regular malloc/free implementation
-  chpl_initHeap(NULL, 0);
-}
-
-
 void chpl_comm_barrier(const char *msg) {
   PRINTF(msg);
   MPI_SAFE(MPI_Barrier(MPI_COMM_WORLD));
 }
 
-
-void chpl_comm_exit_all(int status) {
+void chpl_comm_pre_task_exit(int all) {
   _chpl_mpi_message_info msg_info;
-  PRINTF("in chpl_comm_exit_all");
-  msg_info.msg_type = ChplCommFinish;
-  // To prevent MPI_Finalize from being called while the polling thread
-  // is still making MPI calls, send it a finish message, then wait for it
-  // to release the termination_sync, which it will do only once no more
-  // MPI Calls will be made.
-  chpl_mpi_send(&msg_info, sizeof(_chpl_mpi_message_info), MPI_BYTE,
-                chpl_localeID, TAGMASK+1, MPI_COMM_WORLD);
-  PRINTF("Sent shutdown message");
-  chpl_sync_lock(&termination_sync);
-  chpl_sync_unlock(&termination_sync);
-  chpl_comm_barrier("About to finalize");
-  MPI_SAFE(MPI_Finalize());
+
+  if (all) {
+    chpl_comm_barrier("chpl_comm_pre_task_exit");
+
+    // Stop the polling task
+    PRINTF("in chpl_comm_exit_all");
+    msg_info.msg_type = ChplCommFinish;
+    // To prevent MPI_Finalize from being called while the polling task
+    // is still making MPI calls, send it a finish message, then wait for it
+    // to release the termination_sync, which it will do only once no more
+    // MPI Calls will be made.
+    chpl_mpi_send(&msg_info, sizeof(_chpl_mpi_message_info), MPI_BYTE,
+                  chpl_localeID, TAGMASK+1, MPI_COMM_WORLD);
+    PRINTF("Sent shutdown message");
+    chpl_sync_lock(&termination_sync);
+    chpl_sync_unlock(&termination_sync);
+  }
 }
 
 
-void chpl_comm_exit_any(int status) {
-  MPI_SAFE(MPI_Abort(MPI_COMM_WORLD, status));
+void chpl_comm_exit(int all, int status) {
+  if (all) {
+    chpl_comm_barrier("About to finalize");
+    MPI_SAFE(MPI_Finalize());
+  }
+  else {
+    MPI_SAFE(MPI_Abort(MPI_COMM_WORLD, status));
+  }
 }
 
 
@@ -470,8 +480,8 @@ void  chpl_comm_fork(int locale, chpl_fn_int_t fid, void *arg,
 void  chpl_comm_fork_nb(int locale, chpl_fn_int_t fid, void *arg,
                         int32_t arg_size, int32_t arg_tid) {
   if (chpl_localeID == locale) {
-    void* argCopy = chpl_malloc(1, arg_size, CHPL_RT_MD_REMOTE_NB_FORK_DATA, 0, 0);
-    _chplForkedTaskArg* rpcArg = chpl_malloc(1, sizeof(_chplForkedTaskArg), CHPL_RT_MD_REMOTE_FORK_DATA, 0, 0);
+    void* argCopy = chpl_mem_allocMany(1, arg_size, CHPL_RT_MD_COMM_FORK_SEND_NB_LARGE_ARG, 0, 0);
+    _chplForkedTaskArg* rpcArg = chpl_mem_allocMany(1, sizeof(_chplForkedTaskArg), CHPL_RT_MD_COMM_FORK_SEND_NB_INFO, 0, 0);
     memmove(argCopy, arg, arg_size);
     rpcArg->fid = fid;
     rpcArg->arg = argCopy;
@@ -506,14 +516,8 @@ void  chpl_comm_fork_fast(int locale, chpl_fn_int_t fid, void *arg,
   chpl_comm_fork(locale, fid, arg, arg_size, arg_tid);
 }
 
-void chpl_comm_startPollingTask(void) {
-  // Ultimately the pthread code from above to create the polling thread
-  // should be moved down here
-}
 
-void chpl_comm_stopPollingTask(void) {
-  // And that thread should be stopped here
-}
+int chpl_comm_numPollingTasks(void) { return 1; }
 
 void chpl_startVerboseComm() { }
 void chpl_stopVerboseComm() { }

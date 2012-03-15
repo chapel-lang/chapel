@@ -262,12 +262,8 @@ fixupDestructors() {
         if (field->type->destructor) {
           ClassType* fct = toClassType(field->type);
           INT_ASSERT(fct);
-          if (!isClass(fct) ||
-              fct->symbol->hasFlag(FLAG_SYNC) ||
-              fct->symbol->hasFlag(FLAG_SINGLE)) {
-            bool useRefType = !isRefCountedType(fct) &&
-              !fct->symbol->hasFlag(FLAG_SYNC) &&
-              !fct->symbol->hasFlag(FLAG_SINGLE);
+          if (!isClass(fct) || isSyncType(fct)) {
+            bool useRefType = !isRefCountedType(fct) && !isSyncType(fct);
             VarSymbol* tmp = newTemp("_field_destructor_tmp_", useRefType ? fct->refType : fct);
             fn->insertBeforeReturnAfterLabel(new DefExpr(tmp));
             fn->insertBeforeReturnAfterLabel(new CallExpr(PRIM_MOVE, tmp,
@@ -296,8 +292,7 @@ fixupDestructors() {
             //  field is copied in the autocopy.  The corresponding
             //  autodestroys may delete the data twice.
             //
-            if ((fct->symbol->hasFlag(FLAG_SYNC) ||
-                 fct->symbol->hasFlag(FLAG_SINGLE)) &&
+            if (isSyncType(fct) &&
                 ((ct->getModule()->modTag==MOD_INTERNAL) ||
                  (ct->getModule()->modTag==MOD_STANDARD)))
               fn->insertBeforeReturnAfterLabel(new CallExpr(PRIM_CHPL_FREE, tmp));
@@ -340,15 +335,11 @@ fixupDestructors() {
 
 
 static void insertGlobalAutoDestroyCalls() {
-  const char* name = (!fRuntime)
-    ? "chpl__autoDestroyGlobals" : "chpl__autoDestroyRuntimeGlobals";
+  const char* name = "chpl__autoDestroyGlobals";
   FnSymbol* fn = new FnSymbol(name);
   fn->retType = dtVoid;
   chpl_main->defPoint->insertBefore(new DefExpr(fn));
-  if (!fRuntime)
-    chpl_main->insertBeforeReturnAfterLabel(new CallExpr(fn));
-  else
-    fn->addFlag(FLAG_EXPORT);
+  chpl_main->insertBeforeReturnAfterLabel(new CallExpr(fn));
   forv_Vec(DefExpr, def, gDefExprs) {
     if (isModuleSymbol(def->parentSymbol))
       if (def->parentSymbol != rootModule)

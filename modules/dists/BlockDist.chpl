@@ -30,6 +30,17 @@ use ChapelUtil;
 // modules, perhaps called debugDists and checkDists.
 //
 config param debugBlockDist = false;
+config param debugBlockDistBulkTransfer = false;
+
+// This flag is used to enable bulk transfer when aliased arrays are
+// involved.  Currently, aliased arrays are not eligible for the
+// optimization due to a bug in bulk transfer for rank changed arrays
+// in which the last (right-most) dimension is collapsed.  Disabling
+// the optimization for all aliased arrays is very conservative, so
+// we provide this flag to allow the user to override the decision,
+// with the caveat that it will likely not work for the above case.
+config const disableAliasedBulkTransfer = true;
+
 config param sanityCheckDistribution = false;
 
 //
@@ -160,6 +171,7 @@ class BlockArr: BaseArr {
   param rank: int;
   type idxType;
   param stridable: bool;
+  var doRADOpt: bool = defaultDoRADOpt;
   var dom: BlockDom(rank, idxType, stridable);
   var locArr: [dom.dist.targetLocDom] LocBlockArr(eltType, rank, idxType, stridable);
   var myLocArr: LocBlockArr(eltType, rank, idxType, stridable);
@@ -182,6 +194,7 @@ class LocBlockArr {
   type idxType;
   param stridable: bool;
   const locDom: LocBlockDom(rank, idxType, stridable);
+  var locRAD: LocRADCache(eltType, rank, idxType); // non-nil if doRADOpt=true
   var myElems: [locDom.myBlock] eltType;
 }
 
@@ -189,15 +202,15 @@ class LocBlockArr {
 // Block constructor for clients of the Block distribution
 //
 proc Block.Block(boundingBox: domain,
-                targetLocales: [] locale = thisRealm.Locales,
+                targetLocales: [] locale = Locales,
                 dataParTasksPerLocale=getDataParTasksPerLocale(),
                 dataParIgnoreRunningTasks=getDataParIgnoreRunningTasks(),
                 dataParMinGranularity=getDataParMinGranularity(),
                 param rank = boundingBox.rank,
-                type idxType = boundingBox.dim(1).idxType) {
+                type idxType = boundingBox.idxType) {
   if rank != boundingBox.rank then
     compilerError("specified Block rank != rank of specified bounding box");
-  if idxType != boundingBox.dim(1).idxType then
+  if idxType != boundingBox.idxType then
     compilerError("specified Block index type != index type of specified bounding box");
 
   this.boundingBox = boundingBox;
@@ -294,7 +307,7 @@ proc Block.writeThis(x:Writer) {
   x.writeln("indexed via: ", targetLocDom);
   x.writeln("resulting in: ");
   for locid in targetLocDom do
-    x.writeln("  [", locid, "] locale ", locDist(locid).locale.uid, " owns chunk: ", locDist(locid).myChunk);
+    x.writeln("  [", locid, "] locale ", locDist(locid).locale.id, " owns chunk: ", locDist(locid).myChunk);
 }
 
 proc Block.dsiIndexToLocale(ind: idxType) where rank == 1 {
@@ -535,8 +548,8 @@ proc Block.dsiCreateRankChangeDist(param newRank: int, args) {
   }
 
   const newBbox = boundingBox[(...collapsedBbox)];
-  const newTargetLocs = targetLocales((...collapsedLocs));
-  return new Block(newBbox, newTargetLocs,
+  const newTargetLocales = targetLocales((...collapsedLocs));
+  return new Block(newBbox, newTargetLocales,
                    dataParTasksPerLocale, dataParIgnoreRunningTasks,
                    dataParMinGranularity);
 }
@@ -546,7 +559,7 @@ iter BlockDom.these() {
     yield i;
 }
 
-iter BlockDom.these(param tag: iterator) where tag == iterator.leader {
+iter BlockDom.these(param tag: iterKind) where tag == iterKind.leader {
   const maxTasks = dist.dataParTasksPerLocale;
   const ignoreRunning = dist.dataParIgnoreRunningTasks;
   const minSize = dist.dataParMinGranularity;
@@ -595,18 +608,18 @@ iter BlockDom.these(param tag: iterator) where tag == iterator.leader {
 // natural composition and might help with my fears about how
 // stencil communication will be done on a per-locale basis.
 //
-iter BlockDom.these(param tag: iterator, follower) where tag == iterator.follower {
+iter BlockDom.these(param tag: iterKind, followThis) where tag == iterKind.follower {
   proc anyStridable(rangeTuple, param i: int = 1) param
       return if i == rangeTuple.size then rangeTuple(i).stridable
              else rangeTuple(i).stridable || anyStridable(rangeTuple, i+1);
 
-  chpl__testPar("Block domain follower invoked on ", follower);
-  var t: rank*range(idxType, stridable=stridable||anyStridable(follower));
+  chpl__testPar("Block domain follower invoked on ", followThis);
+  var t: rank*range(idxType, stridable=stridable||anyStridable(followThis));
   for param i in 1..rank {
     var stride = whole.dim(i).stride: idxType;
-    var low = stride * follower(i).low;
-    var high = stride * follower(i).high;
-    t(i) = (low..high by stride:int) + whole.dim(i).low by follower(i).stride;
+    var low = stride * followThis(i).low;
+    var high = stride * followThis(i).high;
+    t(i) = (low..high by stride:int) + whole.dim(i).low by followThis(i).stride;
   }
   for i in [(...t)] {
     yield i;
@@ -730,16 +743,49 @@ proc BlockArr.dsiDisplayRepresentation() {
 
 proc BlockArr.dsiGetBaseDom() return dom;
 
+proc BlockArr.setupRADOpt() {
+  for localeIdx in dom.dist.targetLocDom {
+    on dom.dist.targetLocales(localeIdx) {
+      if locArr(localeIdx).locRAD != nil then
+        delete locArr(localeIdx).locRAD;
+      locArr(localeIdx).locRAD = new LocRADCache(eltType, rank, idxType, dom.dist.targetLocDom);
+      for l in dom.dist.targetLocDom {
+        if l != localeIdx {
+          locArr(localeIdx).locRAD.RAD(l) = locArr(l).myElems._value.dsiGetRAD();
+          locArr(localeIdx).locRAD.ddata(l) = locArr(l).myElems._value.data;
+        }
+      }
+    }
+  }
+}
+
 proc BlockArr.setup() {
-  var thisid = this.locale.uid;
+  var thisid = this.locale.id;
   coforall localeIdx in dom.dist.targetLocDom {
     on dom.dist.targetLocales(localeIdx) {
       const locDom = dom.getLocDom(localeIdx);
       locArr(localeIdx) = new LocBlockArr(eltType, rank, idxType, stridable, locDom);
-      if thisid == here.uid then
+      if thisid == here.id then
         myLocArr = locArr(localeIdx);
     }
   }
+
+  if doRADOpt then setupRADOpt();
+}
+
+pragma "inline"
+proc _remoteAccessData.getDataIndex(param stridable, ind: rank*idxType) {
+  // modified from DefaultRectangularArr below
+  var sum = origin;
+  if stridable {
+    for param i in 1..rank do
+      sum += (ind(i) - off(i)) * blk(i) / abs(str(i)):idxType;
+  } else {
+    for param i in 1..rank do
+      sum += ind(i) * blk(i);
+    sum -= factoredOffs;
+  }
+  return sum;
 }
 
 //
@@ -748,9 +794,25 @@ proc BlockArr.setup() {
 // TODO: Do we need a global bounds check here or in targetLocsIdx?
 //
 proc BlockArr.dsiAccess(i: rank*idxType) var {
-  if myLocArr then local {
-    if myLocArr.locDom.member(i) then
+  local {
+    if myLocArr != nil && myLocArr.locDom.member(i) then
       return myLocArr.this(i);
+  }
+  if doRADOpt {
+    if myLocArr {
+      if boundsChecking then
+        if !dom.dsiMember(i) then
+          halt("array index out of bounds: ", i);
+      var rloc = dom.dist.targetLocsIdx(i);
+      pragma "no copy" pragma "no auto destroy" var myLocRAD = myLocArr.locRAD;
+      pragma "no copy" pragma "no auto destroy" var myLocRADdata = myLocRAD.ddata;
+      if myLocRADdata(rloc) != nil {
+        pragma "no copy" pragma "no auto destroy" var radata = myLocRAD.RAD;
+        var dataIdx = radata(rloc).getDataIndex(stridable, i);
+        pragma "no copy" pragma "no auto destroy" var retVal = myLocRADdata(rloc)(dataIdx);
+        return retVal;
+      }
+    }
   }
   return locArr(dom.dist.targetLocsIdx(i))(i);
 }
@@ -768,9 +830,9 @@ iter BlockArr.these() var {
 // logic?  (e.g., can we forward the forall to the global domain
 // somehow?
 //
-iter BlockArr.these(param tag: iterator) where tag == iterator.leader {
-  for follower in dom.these(tag) do
-    yield follower;
+iter BlockArr.these(param tag: iterKind) where tag == iterKind.leader {
+  for followThis in dom.these(tag) do
+    yield followThis;
 }
 
 proc BlockArr.dsiStaticFastFollowCheck(type leadType) param
@@ -782,52 +844,52 @@ proc BlockArr.dsiDynamicFastFollowCheck(lead: [])
 proc BlockArr.dsiDynamicFastFollowCheck(lead: domain)
   return lead._value == this.dom;
 
-iter BlockArr.these(param tag: iterator, follower, param fast: bool = false) var where tag == iterator.follower {
+iter BlockArr.these(param tag: iterKind, followThis, param fast: bool = false) var where tag == iterKind.follower {
   proc anyStridable(rangeTuple, param i: int = 1) param
       return if i == rangeTuple.size then rangeTuple(i).stridable
              else rangeTuple(i).stridable || anyStridable(rangeTuple, i+1);
 
   if fast then
-    chpl__testPar("Block array fast follower invoked on ", follower);
+    chpl__testPar("Block array fast follower invoked on ", followThis);
   else
-    chpl__testPar("Block array non-fast follower invoked on ", follower);
+    chpl__testPar("Block array non-fast follower invoked on ", followThis);
 
   if testFastFollowerOptimization then
     writeln((if fast then "fast" else "regular") + " follower invoked for Block array");
 
-  var followThis: rank*range(idxType=idxType, stridable=stridable || anyStridable(follower));
+  var myFollowThis: rank*range(idxType=idxType, stridable=stridable || anyStridable(followThis));
   var lowIdx: rank*idxType;
 
   for param i in 1..rank {
     var stride = dom.whole.dim(i).stride;
-    var low = follower(i).low * stride;
-    var high = follower(i).high * stride;
-    followThis(i) = (low..high by stride) + dom.whole.dim(i).low by follower(i).stride;
-    lowIdx(i) = followThis(i).low;
+    var low = followThis(i).low * stride;
+    var high = followThis(i).high * stride;
+    myFollowThis(i) = (low..high by stride) + dom.whole.dim(i).low by followThis(i).stride;
+    lowIdx(i) = myFollowThis(i).low;
   }
-  const followThisDom = [(...followThis)];
 
-  //
-  // TODO: The following is a buggy hack that will only work when we're
-  // distributing across the entire Locales array.  I still think the
-  // locArr/locDoms arrays should be associative over locale values.
-  //
-  var arrSection = locArr(dom.dist.targetLocsIdx(lowIdx));
   if fast {
     //
+    // TODO: The following is a buggy hack that will only work when we're
+    // distributing across the entire Locales array.  I still think the
+    // locArr/locDoms arrays should be associative over locale values.
+    //
+    var arrSection = locArr(dom.dist.targetLocsIdx(lowIdx));
+
+    //
     // if arrSection is not local and we're using the fast follower,
-    // it means that followThisDom is empty; make arrSection local so
+    // it means that myFollowThisDom is empty; make arrSection local so
     // that we can use the local block below
     //
-    if arrSection.locale.uid != here.uid then
+    if arrSection.locale.id != here.id then
       arrSection = myLocArr;
     local {
-      for e in arrSection.myElems(followThisDom) do
+      for e in arrSection.myElems((...myFollowThis)) do
         yield e;
     }
   } else {
     //
-    // we don't own all the elements we're following
+    // we don't necessarily own all the elements we're following
     //
     proc accessHelper(i) var {
       if myLocArr then local {
@@ -836,7 +898,8 @@ iter BlockArr.these(param tag: iterator, follower, param fast: bool = false) var
       }
       return dsiAccess(i);
     }
-    for i in followThisDom {
+    const myFollowThisDom = [(...myFollowThis)];
+    for i in myFollowThisDom {
       yield accessHelper(i);
     }
   }
@@ -873,15 +936,15 @@ proc BlockArr.dsiSerialWrite(f: Writer) {
 
 proc BlockArr.dsiSlice(d: BlockDom) {
   var alias = new BlockArr(eltType=eltType, rank=rank, idxType=idxType, stridable=d.stridable, dom=d, pid=pid);
-  var thisid = this.locale.uid;
+  var thisid = this.locale.id;
   coforall i in d.dist.targetLocDom {
     on d.dist.targetLocales(i) {
       alias.locArr[i] = new LocBlockArr(eltType=eltType, rank=rank, idxType=idxType, stridable=d.stridable, locDom=d.locDoms[i], myElems=>locArr[i].myElems[d.locDoms[i].myBlock]);
-      if thisid == here.uid then
+      if thisid == here.id then
         alias.myLocArr = alias.locArr[i];
     }
   }
-
+  if doRADOpt then alias.setupRADOpt();
   return alias;
 }
 
@@ -928,7 +991,7 @@ proc _extendTuple(type t, idx, args) {
 
 proc BlockArr.dsiRankChange(d, param newRank: int, param stridable: bool, args) {
   var alias = new BlockArr(eltType=eltType, rank=newRank, idxType=idxType, stridable=stridable, dom=d);
-  var thisid = this.locale.uid;
+  var thisid = this.locale.id;
   coforall ind in d.dist.targetLocDom {
     on d.dist.targetLocales(ind) {
       const locDom = d.getLocDom(ind);
@@ -973,10 +1036,11 @@ proc BlockArr.dsiRankChange(d, param newRank: int, param stridable: bool, args) 
                         stridable=d.stridable, locDom=locDom,
                         myElems=>locArr[(...locArrInd)].myElems[(...locSlice)]);
 
-      if thisid == here.uid then
+      if thisid == here.id then
         alias.myLocArr = alias.locArr[ind];
     }
   }
+  if doRADOpt then alias.setupRADOpt();
   return alias;
 }
 
@@ -984,7 +1048,7 @@ proc BlockArr.dsiReindex(d: BlockDom) {
   var alias = new BlockArr(eltType=eltType, rank=d.rank, idxType=d.idxType,
                            stridable=d.stridable, dom=d);
 
-  var thisid = this.locale.uid;
+  var thisid = this.locale.id;
   coforall i in d.dist.targetLocDom {
     on d.dist.targetLocales(i) {
       const locDom = d.getLocDom(i);
@@ -994,10 +1058,12 @@ proc BlockArr.dsiReindex(d: BlockDom) {
                                         stridable=d.stridable,
                                         locDom=locDom,
                                         myElems=>locAlias);
-      if thisid == here.uid then
+      if thisid == here.id then
         alias.myLocArr = alias.locArr[i];
     }
   }
+
+  if doRADOpt then alias.setupRADOpt();
 
   return alias;
 }
@@ -1014,6 +1080,16 @@ proc BlockArr.dsiReallocate(d: domain) {
   // assignment is defined so that only the indices are transferred.
   // The distribution remains unchanged.
   //
+}
+
+proc BlockArr.dsiPostReallocate() {
+  // Call this *after* the domain has been reallocated
+  if doRADOpt then setupRADOpt();
+}
+
+proc BlockArr.setRADOpt(val=true) {
+  doRADOpt = val;
+  if doRADOpt then setupRADOpt();
 }
 
 //
@@ -1094,8 +1170,162 @@ proc BlockArr.dsiPrivatize(privatizeData) {
   var c = new BlockArr(eltType=eltType, rank=rank, idxType=idxType, stridable=stridable, dom=privdom);
   for localeIdx in c.dom.dist.targetLocDom {
     c.locArr(localeIdx) = locArr(localeIdx);
-    if c.locArr(localeIdx).locale.uid == here.uid then
+    if c.locArr(localeIdx).locale.id == here.id then
       c.myLocArr = c.locArr(localeIdx);
   }
   return c;
 }
+
+proc BlockArr.dsiSupportsBulkTransfer() param return true;
+
+proc BlockArr.doiCanBulkTransfer() {
+  if dom.stridable then
+    for param i in 1..rank do
+      if dom.whole.dim(i).stride != 1 then return false;
+
+  // See above note regarding aliased arrays
+  if disableAliasedBulkTransfer then
+    if _arrAlias != nil then return false;
+
+  return true;
+}
+
+proc BlockArr.doiBulkTransfer(B) {
+  if debugBlockDistBulkTransfer then resetCommDiagnostics();
+  var sameDomain: bool;
+  // We need to do the following on the locale where 'this' was allocated,
+  //  but hopefully, most of the time we are initiating the transfer
+  //  from the same locale (local on clauses are optimized out).
+  on this do sameDomain = dom==B._value.dom;
+  // Use zippered iteration to piggyback data movement with the remote
+  //  fork.  This avoids remote gets for each access to locArr[i] and
+  //  B._value.locArr[i]
+  coforall (i, myLocArr, BmyLocArr) in (dom.dist.targetLocDom,
+                                        locArr,
+                                        B._value.locArr) do
+    on dom.dist.targetLocales(i) {
+
+    if sameDomain &&
+      chpl__useBulkTransfer(myLocArr.myElems, BmyLocArr.myElems) {
+      // Take advantage of DefaultRectangular bulk transfer
+      if debugBlockDistBulkTransfer then startCommDiagnosticsHere();
+      local {
+        myLocArr.myElems._value.doiBulkTransfer(BmyLocArr.myElems);
+      }
+      if debugBlockDistBulkTransfer then stopCommDiagnosticsHere();
+    } else {
+      if debugBlockDistBulkTransfer then startCommDiagnosticsHere();
+      if (rank==1) {
+        var lo=dom.locDoms[i].myBlock.low;
+        const start=lo;
+        //use divCeilPos(i,j) to know the limits
+        //but i and j have to be positive.
+        for (rid, rlo, size) in ConsecutiveChunks(dom,B._value.dom,i,start) {
+          if debugBlockDistBulkTransfer then writeln("Local Locale id=",i,
+                                            "; Remote locale id=", rid,
+                                            "; size=", size,
+                                            "; lo=", lo,
+                                            "; rlo=", rlo
+                                            );
+          // NOTE: This does not work with --heterogeneous, but heterogeneous
+          // compilation does not work right now.  This call should be changed
+          // once that is fixed.
+          var dest = myLocArr.myElems._value.data;
+          const src = B._value.locArr[rid].myElems._value.data;
+          __primitive("chpl_comm_get",
+                      __primitive("array_get", dest,
+                                  myLocArr.myElems._value.getDataIndex(lo)),
+                      rid,
+                      __primitive("array_get", src,
+                                  B._value.locArr[rid].myElems._value.getDataIndex(rlo)),
+                      size);
+          lo+=size;
+        }
+      } else {
+        var orig=dom.locDoms[i].myBlock.low(dom.rank);
+        for coord in dropDims(dom.locDoms[i].myBlock, dom.locDoms[i].myBlock.rank) {
+          var lo=if rank==2 then (coord,orig) else ((...coord), orig);
+          const start=lo;
+          for (rid, rlo, size) in ConsecutiveChunksD(dom,B._value.dom,i,start) {
+            if debugBlockDistBulkTransfer then writeln("Local Locale id=",i,
+                                        "; Remote locale id=", rid,
+                                        "; size=", size,
+                                        "; lo=", lo,
+                                        "; rlo=", rlo
+                                        );
+          var dest = myLocArr.myElems._value.data;
+          const src = B._value.locArr[rid].myElems._value.data;
+          __primitive("chpl_comm_get",
+                      __primitive("array_get", dest,
+                                  myLocArr.myElems._value.getDataIndex(lo)),
+                      dom.dist.targetLocales(rid).id,
+                      __primitive("array_get", src,
+                                  B._value.locArr[rid].myElems._value.getDataIndex(rlo)),
+                      size);
+            lo(rank)+=size;
+          }
+        }
+      }
+      if debugBlockDistBulkTransfer then stopCommDiagnosticsHere();
+    }
+  }
+  if debugBlockDistBulkTransfer then writeln("Comms:",getCommDiagnostics());
+}
+
+iter ConsecutiveChunks(d1,d2,lid,lo) {
+  var elemsToGet = d1.locDoms[lid].myBlock.numIndices;
+  const offset   = d2.whole.low - d1.whole.low;
+  var rlo=lo+offset;
+  var rid  = d2.dist.targetLocsIdx(rlo);
+  while (elemsToGet>0) {
+    const size = min(d2.numRemoteElems(rlo,rid),elemsToGet):int;
+    yield (rid,rlo,size);
+    rid +=1;
+    rlo += size;
+    elemsToGet -= size;
+  }
+}
+
+iter ConsecutiveChunksD(d1,d2,i,lo) {
+  const rank=d1.rank;
+  var elemsToGet = d1.locDoms[i].myBlock.dim(rank).length;
+  const offset   = d2.whole.low - d1.whole.low;
+  var rlo = lo+offset;
+  var rid = d2.dist.targetLocsIdx(rlo);
+  while (elemsToGet>0) {
+    const size = min(d2.numRemoteElems(rlo(rank):int,rid(rank):int),elemsToGet);
+    yield (rid,rlo,size);
+    rid(rank) +=1;
+    rlo(rank) += size;
+    elemsToGet -= size;
+  }
+}
+
+proc BlockDom.numRemoteElems(rlo,rid){
+  var blo,bhi:dist.idxType;
+  if rid==(dist.targetLocDom.dim(rank).length - 1) then
+    bhi=whole.dim(rank).high;
+  else
+      bhi=dist.boundingBox.dim(rank).low +
+	intCeilXDivByY((dist.boundingBox.dim(rank).high - dist.boundingBox.dim(rank).low +1)*(rid+1),
+                   dist.targetLocDom.dim(rank).length) - 1;
+  
+  return(bhi - rlo + 1);
+}
+
+//Brad's utility function. It drops from Domain D the dimensions
+//indicated by the subsequent parameters dims.
+proc dropDims(D: domain, dims...) {
+  var r = D.dims();
+  var r2: (D.rank-dims.size)*r(1).type;
+  var j = 1;
+  for i in 1..D.rank do
+    for k in 1..dims.size do
+      if dims(k) != i {
+        r2(j) = r(i);
+        j+=1;
+      }
+  var DResult = [(...r2)];
+  return DResult;
+}
+

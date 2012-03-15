@@ -1,7 +1,7 @@
-var infile = new file("eof.in");
-infile.open();
+var infile = open("eof.in", iomode.r).reader();
 
-while !infile.eof {
-  var s = infile.read(string);
+var s:string;
+while infile.read(s) {
   writeln(s);
 }
+

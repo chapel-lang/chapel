@@ -23,6 +23,7 @@
         t == TIN ||                             \
         t == TINOUT ||                          \
         t == TOUT ||                            \
+        t == TREF ||                            \
         t == TCOLON ||                          \
         t == TASSIGN ||                         \
         t == TRSBR)                             \
@@ -72,19 +73,21 @@ coforall         processToken(TCOFORALL);
 config           processToken(TCONFIG);
 const            processToken(TCONST);
 continue         processToken(TCONTINUE);
-def              processToken(TDEF);
 delete           processToken(TDELETE);
 dmapped          processToken(TDMAPPED);
 do               processToken(TDO);
 domain           processToken(TDOMAIN);
 else             processToken(TELSE);
 enum             processToken(TENUM);
-_extern          processToken(TEXTERN);
+export           processToken(TEXPORT);
+_extern          processToken(T_EXTERN); // Deprecated
+extern           processToken(TEXTERN);
 for              processToken(TFOR);
 forall           processToken(TFORALL);
 if               processToken(TIF);
 in               processToken(TIN);
 index            processToken(TINDEX);
+inline           processToken(TINLINE);
 inout            processToken(TINOUT);
 iter             processToken(TITER);
 label            processToken(TLABEL);
@@ -104,6 +107,7 @@ __primitive_loop processToken(TPRIMITIVELOOP);
 proc             processToken(TPROC);
 record           processToken(TRECORD);
 reduce           processToken(TREDUCE);
+ref              processToken(TREF);
 return           processToken(TRETURN);
 scan             processToken(TSCAN);
 select           processToken(TSELECT);

@@ -16,6 +16,8 @@ Two forms of comments are supported.  All text following the
 consecutive characters {\tt //} and before the end of the line is in a
 comment.  All text following the consecutive characters {\tt /*} and
 before the consecutive characters {\tt */} is in a comment.
+A comment delimited by {\tt /*} and {\tt */} can be nested in
+another comment delimited by {\tt /*} and {\tt */}
 
 Comments, including the characters that delimit them, do not affect
 the behavior of the program (except in delimiting tokens).  If the
@@ -83,7 +85,7 @@ legal-identifier-char:
   letter
   digit
   `_'
-  `$\mbox{{\bf \$}}$'
+  `(*\texttt{\$}*)'
 
 letter: one of
   `A' `B' `C' `D' `E' `F' `G' `H' `I' `J' `K' `L' `M' `N' `O' `P' `Q' `R' `S' `T' `U' `V' `W' `X' `Y' `Z' `a' `b' `c' `d' `e' `f' `g' `h' `i' `j' `k' `l' `m'
@@ -104,7 +106,7 @@ deadlocks.
 
 \begin{example}
 The following are legal
-identifiers: \chpl{Cray1}, \chpl{syncvar$\mbox{{\tt \$}}$},
+identifiers: \chpl{Cray1}, \chpl{syncvar$\mbox{\texttt{\$}}$},
 \chpl{legalIdentifier}, and \chpl{legal_identifier}.
 \end{example}
 
@@ -161,6 +163,7 @@ proc
 range
 record
 reduce
+ref
 return
 scan
 select
@@ -168,8 +171,8 @@ serial
 single
 sparse
 subdomain
-sync
 \end{chapel} & \begin{chapel}
+sync
 then
 true
 type
@@ -373,7 +376,7 @@ The following braces are part of the Chapel language:
 \hline
 \verb@( )@ & parenthesization, function calls, and tuples \\
 \verb@[ ]@ & domains, forall expressions, function calls, and tuples \\
-\verb@{ }@ & compound statements \\
+\verb@{ }@ & block statements \\
 \hline
 \end{tabular}
 \end{center}

@@ -25,6 +25,8 @@
 #include "schedule.hpp"
 #include "smpdd.hpp"
 #include "chpl_nanos.h"
+#include "smpdd.hpp"
+#include "chpl_pmdata.hpp"
 
 // // TODO: include chpl headers?
 // typedef char * chpl_string;
@@ -40,12 +42,14 @@ static uint64_t taskCallStackSize;
 
 using namespace nanos;
 using namespace nanos::ext;
+using namespace nanos::chapel;
 
 static bool chapel_hooked = false;
 
 void nanos_chapel_pre_init ( void * dummy )
 {
    sys.setDelayedStart(true);
+   sys.setPMInterface( NEW nanos::chapel::ChapelPMInterface() );
    chapel_hooked = true;
 }
 
@@ -64,6 +68,20 @@ static int32_t chpl_localeID = -1;
   else { fprintf(stderr, "[%d:%d:%ld] thread in chpl_task_%s()\n", chpl_localeID, (nanos::myThread)->getId(), pthread_self(), #routine); }
 #endif
 
+
+void * chpl_smp_factory( void *prealloc, void *args );
+void * chpl_smp_factory( void *prealloc, void *args )
+{
+   chpl_fn_p outline = ( chpl_fn_p ) args;
+
+   if ( prealloc != NULL ) {
+     return ( void * )new (prealloc) SMPDD( outline );
+   } else {
+     return ( void * )new SMPDD( outline );
+   }
+}
+
+
 //
 // interface function with begin-statement
 //
@@ -76,21 +94,38 @@ void chpl_task_begin(chpl_fn_p fp,
   NANOX_SANITY_CHECK(begin);
    assert(!ltask);
 
-   WD * wd = NEW WD( NEW SMPDD( fp ), 0, 0, a );
+   if ( !ignore_serial && chpl_task_getSerial() ) {	   
+      (*fp)(a);
+      return;
+   }
+   
+   WD * wd = 0;
+   nanos_device_t devs[] = {{ chpl_smp_factory , sizeof(SMPDD), (void *) fp}};
+   sys.createWD(&wd, 1, devs, 0, 1, &a, NULL, NULL, 0, NULL, NULL);
+
+   ChapelWDData *data = (ChapelWDData *)wd->getInternalData();
+   data->serial = serial_state;
+
    sys.submit(*wd);
 }
 
 // Tasks
 
-void nanos_chpl_task_init(int32_t maxThreadsPerLocale, uint64_t callStackSize, 
+void nanos_chpl_task_init(int32_t numThreadsPerLocale, 
+                          int32_t maxThreadsPerLocale, int numCommTasks, 
+                          uint64_t callStackSize, 
                           int32_t init_chpl_localeID) {
    NANOX_SANITY_CHECK(init);
 
    fatal_cond0(!chapel_hooked, "Chapel layer has not been correctly initialized");
 
+   if (numThreadsPerLocale == 0) {
+     numThreadsPerLocale = chpl_numCoresOnThisLocale() + numCommTasks;
+   }
+
    sys.setInitialMode( System::POOL );
    sys.setUntieMaster(true);
-   sys.setNumPEs(4);
+   sys.setNumPEs(numThreadsPerLocale);
    sys.start();
 
    NANOX_SANITY_CHECK(init);
@@ -103,7 +138,7 @@ void nanos_chpl_task_init(int32_t maxThreadsPerLocale, uint64_t callStackSize,
 
    chpl_localeID = init_chpl_localeID;
 
-/*  tp = chpl_alloc(sizeof(thread_private_data_t), CHPL_RT_MD_THREAD_PRIVATE_DATA, 0, 0);
+/*  tp = chpl_mem_alloc(sizeof(thread_private_data_t), CHPL_RT_MD_THREAD_PRIVATE_DATA, 0, 0);
   threadlayer_set_thread_private_data(tp);
   tp->serial_state = false;*/
 }
@@ -152,17 +187,20 @@ void chpl_task_sleep(int secs)
   sleep(secs);
 }
 
-//TODO
 chpl_bool chpl_task_getSerial(void)
 {
   NANOX_SANITY_CHECK(getSerial);
-  return 0;
+  WD* wd = myThread->getCurrentWD();
+  ChapelWDData* data = (ChapelWDData*)wd->getInternalData();
+  return data->serial;
 }
 
-//TODO
 void chpl_task_setSerial(chpl_bool state)
 {
   NANOX_SANITY_CHECK(setSerial);
+  WD* wd = myThread->getCurrentWD();
+  ChapelWDData* data = (ChapelWDData*)wd->getInternalData();
+  data->serial = state;
 }
 
 uint64_t chpl_task_getCallStackSize(void) {
@@ -200,20 +238,6 @@ chpl_taskID_t chpl_task_getId(void)
 
 // Threads stat routines
 
-int32_t  chpl_task_getMaxThreads(void)
-{
-  NANOX_SANITY_CHECK(getMaxThreads);
-   // TODO: Alex
-   return 0;
-}
-
-int32_t  chpl_task_getMaxThreadsLimit(void)
-{
-  NANOX_SANITY_CHECK(getMaxThreadsLimit);
-   // TODO: Alex
-   return 0;
-}
-
 uint32_t chpl_task_getNumThreads(void)
 {
   NANOX_SANITY_CHECK(getNumThreads);
@@ -234,4 +258,8 @@ int chpl_task_createCommTask(chpl_fn_p fn, void* arg) {
   // work as long as the number of threads Nanos is using is > 1.
   chpl_task_begin(fn, arg, true, false, NULL);
   return 0;
+}
+
+void chpl_task_yield(void) {
+  Scheduler::yield();
 }

@@ -1,5 +1,0 @@
-function __init multipledef.v:1
-globals
-user::a(multipledef.v:1) ( int32 )
-user::b(multipledef.v:1) ( int32 )
-user::c(multipledef.v:1) ( int32 )

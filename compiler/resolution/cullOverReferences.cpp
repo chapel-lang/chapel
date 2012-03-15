@@ -47,13 +47,6 @@ refNecessary(SymExpr* se,
   return false;
 }
 
-static bool
-isDerefType(Type* type) {
-  return (type->symbol->hasFlag(FLAG_ARRAY) ||
-          type->symbol->hasFlag(FLAG_DOMAIN) ||
-          type->symbol->hasFlag(FLAG_DISTRIBUTION) ||
-          type->symbol->hasFlag(FLAG_ITERATOR_RECORD));
-}
 
 //
 // removes references that are not necessary
@@ -104,13 +97,13 @@ void cullOverReferences() {
   forv_Vec(DefExpr, def, gDefExprs) {
     if (!isTypeSymbol(def->sym) && def->sym->type) {
       if (Type* vt = def->sym->getValType()) {
-        if (isDerefType(vt)) {
+        if (isRecordWrappedType(vt)) {
           def->sym->type = vt;
         }
       }
       if (FnSymbol* fn = toFnSymbol(def->sym)) {
         if (Type* vt = fn->retType->getValType()) {
-          if (isDerefType(vt)) {
+          if (isRecordWrappedType(vt)) {
             fn->retType = vt;
             fn->retTag = RET_VALUE;
           }
@@ -124,23 +117,23 @@ void cullOverReferences() {
       Type* vt = call->get(1)->typeInfo();
       if (isReferenceType(vt))
         vt = vt->getValType();
-      if (isDerefType(vt))
+      if (isRecordWrappedType(vt))
         call->replace(call->get(1)->remove());
     }
     if (call->isPrimitive(PRIM_GET_MEMBER)) {
       Type* vt = call->get(2)->getValType();
-      if (isDerefType(vt))
+      if (isRecordWrappedType(vt))
         call->primitive = primitives[PRIM_GET_MEMBER_VALUE];
     }
     if (call->isPrimitive(PRIM_GET_SVEC_MEMBER)) {
       Type* tupleType = call->get(1)->getValType();
       Type* vt = tupleType->getField("x1")->getValType();
-      if (isDerefType(vt))
+      if (isRecordWrappedType(vt))
         call->primitive = primitives[PRIM_GET_SVEC_MEMBER_VALUE];
     }
     if (call->isPrimitive(PRIM_ARRAY_GET)) {
       Type* vt = call->getValType();
-      if (isDerefType(vt))
+      if (isRecordWrappedType(vt))
         call->primitive = primitives[PRIM_ARRAY_GET_VALUE];
     }
   }

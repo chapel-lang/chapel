@@ -1,6 +1,6 @@
 var myComplex: complex = 1.2 + 2.3i;
 
-var f: file = new file(filename = "_test_fwritelnComplexFile.txt", mode = FileAccessMode.write);
+var f = open("_test_fwritelnComplexFile.txt", iomode.cw).writer();
 
-f.open();
 f.writeln(myComplex);
+f.close();

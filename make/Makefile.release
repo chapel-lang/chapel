@@ -10,8 +10,7 @@
 #
 # include standard stuff to let each platform define its own ECHO command
 #
-CHAPEL_ROOT = .
-include $(CHAPEL_ROOT)/make/Makefile.base
+include ./make/Makefile.base
 
 RELCHPLDIR = .
 RELCOMPDIR = compiler

@@ -5,7 +5,6 @@
 #include <cstdlib>
 #include <cstdio>
 #include <climits>
-#include <sys/types.h>
 #include <unistd.h>
 #include <cstring>
 

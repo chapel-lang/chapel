@@ -5,40 +5,52 @@ Chapel programs, tasks, and threads
 Chapel programs create new tasks via the begin, cobegin, and coforall
 statements.  Tasks are computations that can conceptually execute
 concurrently, though they may or may not do so in practice.  Tasks are
-executed using threads, where the implementation of these threads may
-vary depending on the target platform ($CHPL_TARGET_PLATFORM), tasking
-package (($CHPL_TASKS), and threading package ($CHPL_THREADS) selected
-by the user.  For a brief introduction to these variables, refer to
-README.chplenv.  This document describes the currently-supported tasking
-and threading options in more detail.
+executed using threads, which are the system's mechanism for executing
+work in parallel.  The implementation of tasks and threads depends on
+the target platform ($CHPL_TARGET_PLATFORM), tasking package
+($CHPL_TASKS), and threading package ($CHPL_THREADS) selected by the
+user.  For an introduction to these variables, refer to
+README.chplenv.  
 
-The rest of this document includes: 
+All tasking layers support configuration constants to control system
+resources such as the number of threads used to execute tasks and the
+amount of call stack space reserved for each task.  Generally
+speaking, the Chapel programmer can make no assumptions about the
+scheduling of threads or the mapping of tasks to threads, apart from
+those semantics defined by the language specification.
+
+This document describes the currently-supported tasking and threading
+options in more detail.  The rest of this document includes:
 
 * an overview of the different tasking options
   * a detailed description of each tasking option
+* a discussion of the number of threads used by each tasking option
 * a discussion of call stack sizes for each tasking option
-* a brief description of future directions for the tasking
+* a brief description of future directions for the tasking layer
 
 If you have questions about task and thread scheduling that are not
-covered in the following, please contact chapel_info@cray.com.
+covered in the following, please send them to chapel_info@cray.com.
 
----------------
-Tasking Options
----------------
+--------------------------
+Task Implementation Layers
+--------------------------
 
-This release contains five main options for the CHPL_TASKS variable,
-each of which has a single corresponding choice for the threading
-layer.  Note that generally only the CHPL_TASKS variable needs to be
-set and that the CHPL_THREADS variable will be inferred appropriately.
-These options can be summarized as follows:
+This release contains five distinct implementations of Chapel tasks.
+The user can select between these options by setting the CHPL_TASKS
+environment variable to one of the following options:
 
-fifo:     the default and most portable/stable option; heavyweight
-mta:      an option specific to the Cray XMT
-nanox:    a prototype option based on BSC's Nanos++ user-level tasks
-qthreads: a prototype option based on Sandia's Qthreads user-level tasks
-none:     execute the program serially using a single task
+fifo     : the default and most portable/stable option; heavyweight
+qthreads : a prototype option based on Sandia's Qthreads user-level tasks
+nanox    : a prototype option based on BSC's Nanos++ user-level tasks
+mta      : an option specific to the Cray XMT (TM)
+none     : execute the program serially using a single task
 
-Each tasking layer is described in more detail below:
+Each task layer has a default logical corresponding threading
+implementation.  Note that generally only the CHPL_TASKS variable
+needs to be set and that the CHPL_THREADS variable will be inferred
+appropriately.
+
+Each tasking/threading layer is described in more detail below:
 
 
 CHPL_TASKS == fifo, CHPL_THREADS == pthreads
@@ -46,79 +58,25 @@ CHPL_TASKS == fifo, CHPL_THREADS == pthreads
 
 FIFO tasking and POSIX threads (or pthreads) is the default tasking
 implementation for all platforms other than the Cray XMT.  It is
-attractive in its portability, though on most platforms it may be
-heavier weight than Chapel strictly requires.
+attractive in its portability, though on most platforms it will tend
+to be heavier weight than Chapel strictly requires.
 
-In the FIFO tasking implementation, Chapel tasks are mapped to
-threads such that each task is executed by a single thread and is run
-to completion before giving up that thread.  As a result, a program
-can have no more tasks active (that is, created and started) at any
-given time than it has threads on which to run those tasks.  It can
-still create more tasks than it has threads, but it cannot start and
-run any more tasks than there are threads.  The additional tasks, if
-any, are placed in a pool and are picked up and started by threads as
-the tasks they are executing complete.
+In the FIFO tasking implementation, Chapel tasks are mapped to threads
+such that each task is executed by a single thread and is run to
+completion before giving up that thread.  As a result, a program can
+have no more tasks active (that is, created and started) at any given
+time than it has threads on which to run those tasks.  It can create
+more tasks than threads, but no more tasks will be run at any time
+than there are theads.  Excess tasks are placed in a pool where they
+will be picked up and started by threads as they complete their tasks.
 
-The pthreads threading implementation uses POSIX threads (pthreads)
-to run Chapel tasks.  Because pthreads are relatively expensive to
+The pthreads threading implementation uses POSIX threads (pthreads) to
+run Chapel tasks.  Because pthreads are relatively expensive to
 create, the implementation does not destroy them when there are no
 tasks for them to execute.  Instead they stay around and continue to
-check the task pool for tasks to execute.
-
-The number of threads per locale used to implement a Chapel program is
-controlled by a configuration constant named maxThreadsPerLocale.  If
-maxThreadsPerLocale has a value of 0, the Chapel program will create
-as many threads as it needs to execute the program, up to any system-
-or library-defined limits.  (The program will generate a runtime
-warning if it ever tries to create a thread and the system prevents it
-from doing so, due to resource limitations for example.)
-
-If maxThreadsPerLocale has a non-zero value, that value specifies the
-maximum number of threads per locale that will be created to execute
-the Chapel program.  If the system or libraries have stricter
-constraints on maxThreadsPerLocale than this value, a warning will be
-generated when no more threads can be created.
-
-The user can set maxThreadsPerLocale just like any other configuration
-variable (e.g., by using --maxThreadsPerLocale=<num> on the generated
-executable's command-line).
-
-If not set by the user, maxThreadsPerLocale typically defaults to 0
-(an unbounded number of threads).  The main exception to this is when
-executing programs compiled using CHPL_COMM = gasnet, in which case
-maxThreadsPerLocale is set to a smaller number (typically 127 or 255)
-due to assumptions made in the GASNet implementation.  (There are
-ways to work around this assumption on certain platforms -- please
-contact us at chapel_info@cray.com or peruse the GASNet documentation
-if you need to do so.)
-
-When the maximum number of threads (specified by maxThreadsPerLocale
-or the system limit) has been reached, any additional tasks are added
-to a task pool in the Chapel runtime, waiting for a thread to become
-available.  When an existing thread completes execution of its task,
-it will go to the task pool to select a new task for execution.
-
-Generally speaking, the Chapel programmer can make no assumptions
-about the scheduling of threads or the mapping of tasks to threads,
-apart from those semantics defined by the language specification.
-
-The value of maxThreadsPerLocale can have a major impact on
-performance.  For programs with low inter-task dependences and high
-computational intensity, setting maxThreadsPerLocale roughly equal to
-the number of cores on each locale can lead to near-optimal
-performance.  However, for programs with lots of fine-grained
-synchronization in which tasks frequently block on sync or single
-variables, maxThreadsPerLocale can often exceed the number of cores
-without an adverse effect on performance since blocked threads will
-not consume the CPU's cycles.
-
-Note that setting maxThreadsPerLocale too low can result in program
-deadlock.  For example, for programs written with an assumption that
-some minimum number of tasks are executing concurrently, setting
-maxThreadsPerLocale lower than this can result in deadlock if there
-are not enough threads to implement all of the required tasks.  The
--b/--blockreport flag can help debug programs like this that appear
-to be deadlocked.
+check the task pool for tasks to execute.  The number of pthreads used
+to execute tasks can be controlled by the configuration constant
+'numThreadsPerLocale' described below.
 
 Several methods on the locale type are available to query the state of
 the task pool and threads:
@@ -159,130 +117,90 @@ currently they only return meaningful values for the FIFO tasking and
 pthreads threading layers.
 
 
-CHPL_TASKS == mta, CHPL_THREADS == none
----------------------------------------
+CHPL_TASKS == fifo, CHPL_THREADS == minimal
+--------------------------------------------
 
-Setting CHPL_TASKS to mta only makes sense when targeting the Cray XMT
-platform.  This platform has hardware support for executing multiple
-threads, and Chapel tasks are mapped to these hardware thread contexts
-by compiling them down to the "future" construct supported by the
-platform's dialect of C.
+FIFO tasking also works with "minimal" threading.  This combination
+does have severe limitations, however.  In minimal threading there is
+only a single thread, the process itself.  Deadlock can occur if a
+program requires more than one task to be active at the same time.
+The effect is essentially equivalent to using pthreads threading with
+numThreadsPerLocale=1.
 
-This tasking model has been implemented, but has not yet been
-extensively used, so users with access to a Cray XMT are likely to be
-exploring uncharted areas.  We'd be curious to hear about any
-experiences you have at chapel_info@cray.com.
+
+CHPL_TASKS == qthreads, CHPL_THREADS == none
+--------------------------------------------
+
+We have been working with the Qthreads team at Sandia National Labs to
+implement Chapel tasking over their user-level tasking layer
+('qthreads') in order to create a lighter-weight implementation of
+Chapel tasks and ultimately an optimized implementation of sync
+variables.  To try Qthreads tasking, please take the following steps
+(bash commands are shown):
+
+1) Ensure that the environment variable CHPL_HOME points to the
+   top-level Chapel directory, as always.
+
+2) Set up your environment to use Qthreads:
+
+2a) Set this variable:
+
+      export CHPL_TASKS=qthreads
+
+2b) Ensure these variables are unset (or set to "none"):
+
+      unset CHPL_THREADS
+
+3) Follow the "Quick Start" instructions in $CHPL_HOME/README
+   to set up, compile and run your Chapel programs.
+
+Please report any apparent bugs in Qthreads tasking to the Chapel team.
+For more information on Qthreads, please see $CHPL_HOME/third-party/README
 
 
 CHPL_TASKS == nanox, CHPL_THREADS == none
 -----------------------------------------
 
-We have recently been working with the Nanos++ team at Barcelona
+We have also been working with the Nanos++ team at Barcelona
 Supercompting Center (BSC) to implement Chapel tasking over their
 user-level tasking layer ('nanox') in order to create a lighter-weight
-implementation of Chapel tasks.  In this release, Nanos++ tasking is
-only supported for single-locale (CHPL_COMM == none) executions.  To
-try Nanos++ tasking, please take the following steps
-(sample commands are shown for bash):
+implementation of Chapel tasks.  To try Nanos++ tasking, please take
+the following steps (sample commands are shown for bash):
 
-1) Set the environment variable CHPL_HOME to point to the directory
-   containing the top-level README file of the Chapel distribution, e.g.:
-
-      export CHPL_HOME=~/chapel-1.3.0/chapel
+1) Ensure that the environment variable CHPL_HOME points to the
+   directory containing the top-level README file of the Chapel
+   distribution, as always.
 
 2) Set up your environment to use Nanos++:
 
-2a) Ensure these variables are unset (or set to "none"):
-
-      unset CHPL_THREADS
-      unset CHPL_COMM 
-
-2b) Ensure that your dynamic library path includes the directory
-
-      $CHPL_HOME/third-party/nanox/install/<platform>-<compiler>/lib/performance
-
-    where <platform> and <compiler> are the outputs of these commands,
-    respectively:
-
-      $CHPL_HOME/util/chplenv/platform --target
-      $CHPL_HOME/util/chplenv/compiler --target
-
-    for example, with this command:
-
-      export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$CHPL_HOME/third-party/nanox/install/`$CHPL_HOME/util/chplenv/platform --target`-`$CHPL_HOME/util/chplenv/compiler --target`/lib/performance"
-
-2c) Set this variable:
+2a) Set this variable:
 
       export CHPL_TASKS=nanox
 
-3) Build the Nanos++ library:
+2b) Ensure these variables are unset (or set to "none"):
 
-      cd $CHPL_HOME/third-party
-      gmake nanox
+      unset CHPL_THREADS
 
-4) Follow the "Quick Start" instructions in $CHPL_HOME/README
+3) Follow the "Quick Start" instructions in $CHPL_HOME/README
    to set up, compile and run your Chapel programs.
 
 Please report any apparent bugs in Nanos++ tasking to the Chapel team.
 For more information on Nanos++, please see $CHPL_HOME/third-party/README
 
 
-CHPL_TASKS == qthreads, CHPL_THREADS == none
---------------------------------------------
+CHPL_TASKS == mta, CHPL_THREADS == none
+---------------------------------------
 
-We have also been working with the Qthreads team at Sandia National
-Labs to implement Chapel tasking over their user-level tasking layer
-('qthreads') in order to create a lighter-weight implementation of
-Chapel tasks and ultimately an optimized implementation of sync
-variables.  In this release, Qthreads tasking is only supported for
-single-locale (CHPL_COMM == none) executions.  To try Qthreads
-tasking, please take the following steps (bash commands are shown):
+Setting CHPL_TASKS to 'mta' only makes sense when targeting the Cray
+XMT platform.  This platform has hardware support for executing
+multiple threads, and Chapel tasks are mapped to these hardware thread
+contexts by compiling them down to the "future" construct supported by
+the platform's dialect of C.
 
-1) Set the environment variable CHPL_HOME to point to the directory
-   containing the top-level README file of the Chapel distribution, e.g.:
-
-      export CHPL_HOME=~/chapel-1.3.0/chapel
-
-2) Set up your environment to use Qthreads:
-
-2a) Ensure these variables are unset (or set to "none"):
-
-      unset CHPL_THREADS
-      unset CHPL_COMM 
-
-2b) Ensure that your dynamic library path includes the directory
-
-      $CHPL_HOME/third-party/qthread/install/<platform>-<compiler>/lib
-
-    where <platform> and <compiler> are the outputs of these commands,
-    respectively:
-
-      $CHPL_HOME/util/chplenv/platform --target
-      $CHPL_HOME/util/chplenv/compiler --target
-
-    for example, with this command:
-
-      export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$CHPL_HOME/third-party/qthread/install/`$CHPL_HOME/util/chplenv/platform --target`-`$CHPL_HOME/util/chplenv/compiler --target`/lib"
-
-2c) Set this variable:
-
-      export CHPL_TASKS=qthreads
-
-3) Build the Qthreads library:
-
-      cd $CHPL_HOME/third-party
-      gmake qthreads
-
-4) Follow the "Quick Start" instructions in $CHPL_HOME/README
-   to set up, compile and run your Chapel programs.
-
-   You may need to specify a call stack size explicitly
-   (see "Limiting Per-Task Memory" below), e.g. with the option:
-
-      -scallStackSize=12000
-
-Please report any apparent bugs in Qthreads tasking to the Chapel team.
-For more information on Qthreads, please see $CHPL_HOME/third-party/README
+This tasking model has been implemented, but has not yet been
+extensively used, so users with access to a Cray XMT are likely to be
+exploring uncharted areas.  We'd be curious to hear about any
+experiences you have at chapel_info@cray.com.
 
 
 CHPL_TASKS == none, CHPL_THREADS == none
@@ -291,20 +209,88 @@ CHPL_TASKS == none, CHPL_THREADS == none
 Setting CHPL_TASKS to "none" indicates that you do not wish to have
 multiple Chapel tasks actually execute concurrently.  By default, this
 is equivalent to using the Chapel compiler's --serial flag, which has
-the effect of (i) ignoring begin keywords, (ii) converting cobegins into
-traditional block statements, and (iii) converting forall and coforall
-loops into for loops.  In other words, it removes all constructs that
-introduce new tasks and executes those tasks serially.  This can be
-overridden using the --no-serial compiler flag, which will use a single
-thread to execute tasks added to a task pool, similar to the behavior
-described in the FIFO tasking section above.  As with FIFO tasking, each
-task will be scheduled to run to completion, so if it blocks on a sync
-or single variable, the program will deadlock.
+the effect of (i) ignoring begin keywords, (ii) converting cobegins
+into traditional block statements, and (iii) converting forall and
+coforall loops into for loops.  In other words, it removes all
+constructs that introduce new tasks and executes those tasks serially.
+This can be overridden using the --no-serial compiler flag, which will
+use a single thread to execute tasks added to a task pool, similar to
+the behavior described in the fifo/minimal tasking section above.  As
+with FIFO tasking, each task will be scheduled to run to completion,
+so if it blocks on a sync or single variable, the program will
+deadlock.
 
 
-------------------------
-Limiting Per-Task Memory
-------------------------
+---------------------------------
+Controlling the Number of Threads
+---------------------------------
+
+The number of threads used to implement a Chapel program can be
+controlled by a configuration constant named numThreadsPerLocale.  The
+default value of numThreadsPerLocale is zero, indicating that the
+choice of number of threads is left to the tasking layer.  See the
+case-by-case discussions below for more details.
+
+The user can set numThreadsPerLocale just like any other configuration
+variable (e.g., by using --numThreadsPerLocale=<num> on the generated
+executable's command-line).  The Chapel program will generate an error
+if the requested number of threads per locale is too large.  For
+example, when running multi-locale programs, the GASNet communication
+layer typically places an upper bound of 127 or 255 on the number of
+threads per locale (There are ways to work around this assumption on
+certain platforms -- please contact us at chapel_info@cray.com or
+peruse the GASNet documentation if you need to do so.)
+
+CHPL_TASKS == fifo, CHPL_THREADS == pthreads:
+  The value of numThreadsPerLocale indicates the maximum number of
+  threads that the ptherads layer can create on each locale to execute
+  tasks.  These threads are created on a demand-driven basis, so a
+  program with a small number of concurrent tasks may never create the
+  specified number.  If the value is zero, then the number of threads
+  will be limited by system resources and other constraints (such as
+  GASNet's configuration-time limit).
+
+  The value of numThreadsPerLocale can have a major impact on
+  performance for fifo tasking.  For programs with few inter-task
+  dependences and high computational intensity, setting
+  numThreadsPerLocale roughly equal to the number of cores on each
+  locale can lead to near-optimal performance.  However, for programs
+  with lots of fine-grained synchronization in which tasks frequently
+  block on sync or single variables, numThreadsPerLocale can often
+  exceed the number of cores without an adverse effect on performance
+  since blocked threads will not consume the CPU's cycles.
+
+  Note that setting numThreadsPerLocale too low can result in program
+  deadlock for fifo tasking.  For example, for programs written with
+  an assumption that some minimum number of tasks are executing
+  concurrently, setting numThreadsPerLocale lower than this can result
+  in deadlock if there are not enough threads to implement all of the
+  required tasks.  The -b/--blockreport flag can help debug programs
+  like this that appear to be deadlocked.
+
+CHPL_TASKS == qthreads, CHPL_THREADS == none
+  In the Qthreads tasking layer, the value of numThreadsPerLocale
+  indicates the number of system threads, or shepherds, used to
+  execute tasks.  If the value is 0, the qthreads tasking layer will
+  create a number of threads equal to the number of processor cores on
+  the locale.
+
+CHPL_TASKS == nanox, CHPL_THREADS == none:
+  In the Nanos++ tasking layer, the value of numThreadsPerLocale
+  indicates the number of system threads used to execute tasks.
+  If the value is 0, the nanox tasking layer will create a number
+  of threads equal to the number of processor cores on the locale.
+
+CHPL_TASKS == mta, CHPL_THREADS == none
+CHPL_TASKS == fifo, CHPL_THREADS == minimal
+CHPL_TASKS == none, CHPL_THREADS == none
+  The numThreadsPerLocale variable has no impact on any of these
+  tasking layers.
+
+
+-------------------------------
+Controlling the Call Stack Size
+-------------------------------
 
 As documented in README.executing, the callStackSize configuration
 constant can be used to adjust the call stack size for active tasks.
@@ -316,6 +302,15 @@ CHPL_TASKS == fifo, CHPL_THREADS == pthreads:
   execution model is that a task occupies a pthread and uses its stack
   for the duration of the task's existence.
 
+CHPL_TASKS == nanox, CHPL_THREADS == none
+  Nanox tasks have a typical call stack size of 32k * sizeof(size_t)
+  (though in practice some tasks may have the system pthread call
+  stack size limit).  In the current Nanos++ tasking implementation,
+  the callStackSize constant is ignored.
+
+CHPL_TASKS == qthreads, CHPL_THREADS == none
+  Qthreads tasks have a default call stack size of 32k*sizeof(size_t).
+
 CHPL_TASKS == mta, CHPL_THREADS == none
   The callStackSize configuration constant is ignored.  As in FIFO
   tasking, the execution model is that a task occupies a thread and uses
@@ -325,16 +320,6 @@ CHPL_TASKS == mta, CHPL_THREADS == none
   by available memory.  There is no need for call stack sizing; tasks
   neither waste memory because their stacks are too big, nor do they
   overflow stacks that are too small.
-
-CHPL_TASKS == nanox, CHPL_THREADS == none
-  Nanox tasks have a typical call stack size of 32k * sizeof(size_t)
-  (though in practice some tasks may have the system pthread call
-  stack size limit).  In the current Nanos++ tasking implementation,
-  the callStackSize constant is ignored.
-
-CHPL_TASKS == qthreads, CHPL_THREADS == none
-  The default stack size for a task is modest -- one page.
-  Use -scallStackSize=<num bytes> to override this default.
 
 CHPL_TASKS == none, CHPL_THREADS == none
   The value of callStackSize is used to set the stack size for the process.
@@ -348,7 +333,7 @@ Future Tasking Directions
 -------------------------
 
 As Chapel's task parallel implementation matures, we expect to have
-multiple task->thread scheduling policies from literally creating and
+multiple task->thread scheduling policies, from literally creating and
 destroying new threads with each task (for programmers who want full
 control over a thread's lifetime) to automated work stealing and load
 balancing at the other end of the spectrum (for programmers who would

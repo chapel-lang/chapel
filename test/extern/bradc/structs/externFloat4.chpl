@@ -1,4 +1,4 @@
-_extern record float4 {
+extern record float4 {
   var x,y,z,w: real(32);
 }
 

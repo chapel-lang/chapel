@@ -1,3 +1,6 @@
+pragma "no use ChapelStandard"
+module ChapelDistribution {
+
 use List;
 
 config const dataParTasksPerLocale = 0;
@@ -58,6 +61,8 @@ class BaseDist {
   proc dsiRequiresPrivatization() param return false;
 
   proc dsiDestroyDistClass() { }
+
+  proc dsiDisplayRepresentation() { }
 }
 
 //
@@ -126,6 +131,8 @@ class BaseDom {
 
   // dynamically-dispatched counterpart of linksDistribution
   proc dsiLinksDistribution() return true;
+
+  proc dsiDisplayRepresentation() { }
 }
 
 class BaseRectangularDom : BaseDom {
@@ -235,6 +242,9 @@ class BaseArr {
     halt("reallocating not supported for this array type");
   }
 
+  proc dsiPostReallocate() {
+  }
+
   // This method is unsatisfactory -- see bradc's commit entries of
   // 01/02/08 around 14:30 for details
   proc _purge( ind: int) {
@@ -283,4 +293,14 @@ class BaseArr {
 
   proc dsiSupportsPrivatization() param return false;
   proc dsiRequiresPrivatization() param return false;
+
+  proc dsiSupportsBulkTransfer() param return false;
+  proc doiCanBulkTransfer() param return false;
+  proc doiBulkTransfer(B){ 
+    halt("This array type does not support bulk transfer.");
+  }
+
+  proc dsiDisplayRepresentation() { }
+}
+
 }

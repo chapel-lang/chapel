@@ -71,8 +71,8 @@ proc computeHistogram(X: [] real, Y: [] int) {
 // outputHistogram: output histogram array
 proc outputHistogram(Y: [] int) {
   var bucketMax = max reduce Y;
-  var rowSize = ceil(bucketMax:real/10):int;
-  var numRows = ceil(bucketMax:real/rowSize):int;
+  var rowSize = divceil(bucketMax,10);
+  var numRows = divceil(bucketMax, rowSize);
   for i in 1..numRows by -1 {
     write(" ");
     for j in 1..numBuckets do

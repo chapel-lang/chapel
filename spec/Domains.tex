@@ -304,8 +304,8 @@ representational name or value.
 
 When an associative domain is used as the index set of an array, the relation
 between the indices and the array elements can be thought of as a map between
-the elements of the index set and the values stored in the array.
-For enumerated domains, the mapping is between elements of the enumeration and
+the values of the index set and the elements stored in the array.
+For enumerated domains, the mapping is between values of the enumeration and
 the associated array values.  For opaque domains, the
 indices have no inherent names and are therefore anonymous.  Opaque domains can
 be used to represent sets and to build unstructured arrays (similar to
@@ -352,8 +352,8 @@ enumeration.
 \begin{rationale}
 The decision to have enumerated domains start fully populated was
 based on the observation that enumerations have a finite, typically
-small number of elements and that it would be common to declare arrays
-with values corresponding to each identifier in the enumeration.
+small number of values and that it would be common to declare arrays
+with elements corresponding to each identifier in the enumeration.
 Further, in terms of usability it is simpler to clear a fully-populated
 domain than to fully populate an empty one.
 
@@ -541,7 +541,7 @@ also afford the opportunity to represent that index using an optimized
 format that doesn't simply store the index variable's value.  This fact could be
 used to support accelerated access to arrays declared over that domain.  For
 example, iteration over an index type could be implemented using memory pointers
-and strides, rather than explicitly calculating the offset of each element
+and strides, rather than explicitly calculating the offset of each index
 within the domain.
 
 These potential optimizations may make it less expensive to
@@ -707,42 +707,58 @@ corresponding range using the \chpl{by} operator.
 \label{Domain_Slicing}
 \index{slicing!domains}
 \index{domains!slicing}
+\index{slice}
 
-In Chapel, slicing is the application of an index set to another
-variable using either parentheses or square brackets.
+Slicing is the application of an index set to a domain.
+It can be written using either parentheses or square brackets.
+The index set can be defined with either a domain or a list of ranges.
 
 \begin{syntax}
 domain-slice-expression:
-  domain-slice-expression \[ domain-expression \]
-  domain-slice-expression ( domain-expression )
+  domain-expression [ slicing-index-set ]
+  domain-expression ( slicing-index-set )
+
+slicing-index-set:
+  domain-expression
+  range-expression-list
 \end{syntax}
 
+The result of slicing, or a \emph{slice}, is a new domain value
+that represents the intersection of
+the index set of the domain being sliced and
+the index set being applied.
+The type and domain map of the slice match the domain being sliced.
+
+Slicing can also be performed on an array,
+resulting in aliasing a subset of the array's elements
+(\rsec{Array_Slicing}).
+
 \subsubsection{Domain-based Slicing}
-\index{slicing!domains}
-\index{domains!slicing}
+\index{domain-based slicing}
 
-The index set used to express a slice can be represented using a
-domain value.
-
-Slicing an array results in an alias to a subset of the array's
-elements as described in~\rsec{Array_Slicing}.
-
-Slicing a domain evaluates to a new domain value whose index set is
-the intersection of the domain's index set and the slicing index set.
-The type and domain map of the result match the domain being sliced.
+If the brackets or parentheses contain a domain value,
+its index set is applied for slicing.
 
 \begin{openissue}
-Ccan we say that it is an alias in the case of sparse/associative?
+Can we say that it is an alias in the case of sparse/associative?
+% If so, need to reconcile getting an "alias" with getting
+% a "new domain value", as claimed earlier.
 \end{openissue}
 
 \subsubsection{Range-based Slicing}
 \label{Range_Based_Slicing}
 \index{slicing!range-based}
 \index{range-based slicing}
-When slicing rectangular domains or arrays, the slice can be expressed
-as a list of \chpl{rank} ranges.  These ranges can either be bounded
-or unbounded.  When unbounded, they inherit their bounds from the
+When slicing rectangular domains or arrays, the brackets or parentheses
+can contain a list of \chpl{rank} ranges.  These ranges can either be bounded
+or unbounded.
+%
+%REVIEW: vass: no, they don't inherit. We should either drop
+% the following sentence or rephrase it to make it correct.
+When unbounded, they inherit their bounds from the
 domain or array being sliced.
+%
+The cartesian product of the ranges' index sets is applied for slicing.
 
 \begin{example}
 The following code declares a two dimensional rectangular
@@ -861,15 +877,15 @@ This function is not available on opaque domains.
 \end{protobody}
 
 \begin{protohead}
-proc $Domain$.indexOrder(i: index($Domain$)): dim_type
+proc $Domain$.indexOrder(i: index($Domain$)): idxType
 \end{protohead}
 \begin{protobody}
 If \chpl{i} is a member of the domain, returns the ordinal value of
 \chpl{i} using a total ordering of the domain's indices using 0-based
-indexing.  Otherwise, it returns \chpl{(-1):dim_type}.  For rectangular
+indexing.  Otherwise, it returns \chpl{(-1):idxType}.  For rectangular
 domains, this ordering will be based on a row-major ordering of the
 indices; for other domains, the ordering may be
-implementation-defined and unstable as elements are added and
+implementation-defined and unstable as indices are added and
 removed from the domain.
 \end{protobody}
 
@@ -1051,7 +1067,7 @@ by \chpl{off} or \chpl{off(d)} for each dimension \chpl{d}.
 \end{protobody}
 
 %% \begin{protohead} **/
-%% proc $Domain$.position(i: index($Domain$)): rank*dim_type **/
+%% proc $Domain$.position(i: index($Domain$)): rank*idxType **/
 %% \end{protohead} **/
 %% \begin{protobody} **/
 %% Returns a tuple holding the order of index i in each range defining **/

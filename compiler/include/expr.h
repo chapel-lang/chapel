@@ -1,6 +1,7 @@
 #ifndef _EXPR_H_
 #define _EXPR_H_
 
+#include <cstdlib>
 #include <cstdio>
 #include "alist.h"
 #include "baseAST.h"
@@ -140,8 +141,36 @@ class NamedExpr : public Expr {
   void codegen(FILE* outfile);
 };
 
-bool get_int(Expr *e, long *i); // false is failure
-bool get_uint(Expr *e, unsigned long *i); // false is failure
+
+// Determines whether a node is in the AST (vs. has been removed
+// from the AST). Used e.g. by cleanAst().
+// Exception: 'n' is also live if isRootModule(n).
+
+static inline bool isAlive(Expr* expr) {
+  return expr->parentSymbol;
+}
+
+static inline bool isAliveQuick(Symbol* symbol) {
+  return isAlive(symbol->defPoint);
+}
+
+static inline bool isAlive(Symbol* symbol) {
+  return symbol->defPoint && isAliveQuick(symbol);
+}
+
+static inline bool isAlive(Type* type) {
+  return isAliveQuick(type->symbol);
+}
+
+#define isRootModule(ast)  \
+  ((ast) == rootModule)
+
+#define isRootModuleWithType(ast, type)  \
+  (E_##type == E_ModuleSymbol && ((ModuleSymbol*)(ast)) == rootModule)
+
+
+bool get_int(Expr* e, int64_t* i); // false is failure
+bool get_uint(Expr *e, uint64_t *i); // false is failure
 bool get_string(Expr *e, const char **s); // false is failure
 const char* get_string(Expr* e); // fatal on failure
 VarSymbol *get_constant(Expr *e);

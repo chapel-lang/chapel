@@ -5,7 +5,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include "chpllaunch.h"
-#include "chpl_mem.h"
+#include "chpl-mem.h"
 #include "chpltypes.h"
 #include "error.h"
 
@@ -173,7 +173,7 @@ static char* chpl_launch_create_command(int argc, char* argv[],
 
   size = strlen(baseCommand) + 1;
 
-  command = chpl_malloc(size, sizeof(char), CHPL_RT_MD_COMMAND_BUFFER, -1, "");
+  command = chpl_mem_allocMany(size, sizeof(char), CHPL_RT_MD_COMMAND_BUFFER, -1, "");
   
   sprintf(command, "%s", baseCommand);
 

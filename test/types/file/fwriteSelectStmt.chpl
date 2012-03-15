@@ -3,7 +3,7 @@ var favorite: dessert = dessert.pie;
 
 writeDessert(stdout, favorite);
 
-proc writeDessert(f: file, val: dessert) {
+proc writeDessert(f: channel, val: dessert) {
   select (val) {
     when (dessert.cake) do 
       f.write("cake");

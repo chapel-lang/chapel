@@ -1,2 +1,2 @@
-_extern proc e1();
-_extern iter e2();
+extern proc e1();
+extern iter e2();

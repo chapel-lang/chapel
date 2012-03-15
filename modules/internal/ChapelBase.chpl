@@ -1,8 +1,11 @@
 // ChapelBase.chpl
 //
 
-_extern proc chpl_config_has_value(name, module_name): bool;
-_extern proc chpl_config_get_value(name, module_name): string;
+pragma "no use ChapelStandard"
+module ChapelBase {
+
+extern proc chpl_config_has_value(name, module_name): bool;
+extern proc chpl_config_get_value(name, module_name): string;
 
 config param CHPL_HOST_PLATFORM: string = "unset";
 config param CHPL_TARGET_PLATFORM: string = "unset";
@@ -76,9 +79,6 @@ proc +(param s: string, param x: bool) param
 proc +(param x: bool, param s: string) param
   return x:string + s;
 
-config param realmTypes: string = CHPL_TARGET_PLATFORM;
-param numRealms: int(32) = __primitive("get num realms"); // defined by realmTypes
-
 proc _throwOpError(param op: string) {
     compilerError("illegal use of '", op, "' on operands of type uint(64) and signed integer");
 }
@@ -99,11 +99,44 @@ proc compilerWarning(param x:string ...?n) {
   __primitive("warning", (...x));
 }
 
+// for compilerAssert, as param tuples do not de-tuple into params yet,
+// we handle only up to 5 message args and omit the rest
+
+proc compilerAssert(param test: bool)
+{ if !test then compilerError("assert failed"); }
+
+proc compilerAssert(param test: bool, param arg1:integral)
+{ if !test then compilerError("assert failed", arg1:int); }
+
+proc compilerAssert(param test: bool, param arg1) where !_isIntegralType(arg1.type)
+{ if !test then compilerError("assert failed - ", arg1); }
+
+proc compilerAssert(param test: bool, param arg1, param arg2)
+{ if !test then compilerError("assert failed - ", arg1, arg2); }
+
+proc compilerAssert(param test: bool, param arg1, param arg2, param arg3)
+{ if !test then compilerError("assert failed - ", arg1, arg2, arg3); }
+
+proc compilerAssert(param test: bool, param arg1, param arg2, param arg3, param arg4)
+{ if !test then compilerError("assert failed - ", arg1, arg2, arg3, arg4); }
+
+proc compilerAssert(param test: bool, param arg1, param arg2, param arg3, param arg4, param arg5)
+{ if !test then compilerError("assert failed - ", arg1, arg2, arg3, arg4, arg5); }
+
+proc compilerAssert(param test: bool, param arg1, param arg2, param arg3, param arg4, param arg5, param arg6: integral)
+{ if !test then compilerError("assert failed - ", arg1, arg2, arg3, arg4, arg5, arg6:int); }
+
+proc compilerAssert(param test: bool, param arg1, param arg2, param arg3, param arg4, param arg5, argrest..., param arglast: integral)
+{ if !test then compilerError("assert failed - ", arg1, arg2, arg3, arg4, arg5, " [...]", arglast:int); }
+
+proc compilerAssert(param test: bool, param arg1, param arg2, param arg3, param arg4, param arg5, argrest...)
+{ if !test then compilerError("assert failed - ", arg1, arg2, arg3, arg4, arg5, " [...]"); }
+
 proc typeToString(type t) param {
   return __primitive("typeToString", t);
 }
 
-enum iterator {leader, follower};
+enum iterKind {leader, follower};
 
 //
 // assignment on primitive types
@@ -117,8 +150,6 @@ pragma "inline" proc =(a: imag(?w), b: imag(w)) return b;
 pragma "inline" proc =(a: complex(?w), b: complex(w)) return b;
 pragma "inline" proc =(a: string, b: string) return __primitive("string_copy", b);
 pragma "inline" proc =(a, b) return b;
-
-pragma "inline" proc ==(a: chpl_taskID_t, b: chpl_taskID_t) return __primitive("==", a, b);
 
 //
 // equality comparison on primitive types
@@ -585,6 +616,12 @@ proc _cond_invalid(x: bool) param return false;
 proc _cond_invalid(x: integral) param return false;
 proc _cond_invalid(x) param return true;
 
+//
+// isNonnegative(i) == (i>=0), but is a param value if i is unsigned.
+//
+inline proc isNonnegative(i: int(?)) return i >= 0;
+inline proc isNonnegative(i: uint(?)) param return true;
+inline proc isNonnegative(param i) param return i >= 0;
 
 
 //
@@ -1018,109 +1055,6 @@ proc _waitEndCount() {
   _waitEndCount(e);
 }
 
-//
-// type predicates
-//
-proc chpl__isType(type t) param return true;
-proc chpl__isType(e) param return false;
-
-proc _isPrimitiveType(type t) param return
-  (t == bool) | (t == bool(8)) | (t == bool(16)) | (t == bool(32)) | (t == bool(64)) |
-  (t == int(8)) | (t == int(16)) | (t == int(32)) | (t == int(64)) |
-  (t == uint(8)) | (t == uint(16)) | (t == uint(32)) | (t == uint(64)) |
-  (t == real(32)) | (t == real(64)) |
-// BLC: Why aren't imaginaries here?  Someone should try this
-  (t == string) | (_isVolatileType(t) && _isPrimitiveType(_volToNon(t)));
-
-proc _isSimpleScalarType(type t) param return
-  _isBooleanType(t) | _isIntegralType(t) | _isFloatType(t);
-
-proc _isBooleanType(type t) param return
-  (t == bool) | (t == bool(8)) | (t == bool(16)) | (t == bool(32)) | (t == bool(64));
-
-proc _isIntegralType(type t) param return
-  _isSignedType(t) || _isUnsignedType(t);
-
-proc _isSignedType(type t) param return
-  (t == int(8)) || (t == int(16)) || (t == int(32)) || (t == int(64));
-
-
-proc _isUnsignedType(type t) param return
-  (t == uint(8)) || (t == uint(16)) || (t == uint(32)) || (t == uint(64));
-
-proc _isEnumeratedType(type t) param {
-  proc isEnum(type t: enumerated) param return true;
-  proc isEnum(type t) param return false;
-  return isEnum(t);
-}
-
-proc _isComplexType(type t) param return
-  (t == complex(64)) | (t == complex(128));
-
-proc _isFloatType(type t) param return
-  (t == real(32)) | (t == real(64)) |
-  (t == imag(32)) | (t == imag(64));
-
-proc _isRealType(type t) param return
-  (t == real(32)) | (t == real(64));
-
-proc _isImagType(type t) param return
-  (t == imag(32)) | (t == imag(64));
-
-proc _isVolatileType(type t) param
-  return ((t == volatile bool) | (t == volatile bool(8)) | 
-          (t == volatile bool(16)) | (t == volatile bool(32)) | 
-          (t == volatile bool(64)) |  (t == volatile int) | 
-          (t == volatile int(8)) | (t == volatile int(16)) | 
-          (t == volatile int(32)) | (t == volatile int(64)) | 
-          (t == volatile uint(8)) | (t == volatile uint(16)) | 
-          (t == volatile uint(32)) | (t == volatile uint(64)) | 
-          (t == volatile real(32)) | (t == volatile real(64)) | 
-          (t == volatile imag(32)) | (t == volatile imag(64))
-          );
-//  (t == volatile string);
-
-proc _volToNon(type t) type {
-  if (t == volatile bool) {
-    return bool;
-  } else if (t == volatile bool(8)) {
-    return bool(8);
-  } else if (t == volatile bool(16)) {
-    return bool(16);
-  } else if (t == volatile bool(32)) {
-    return bool(32);
-  } else if (t == volatile bool(64)) {
-    return bool(64);
-  } else if (t == volatile int(8)) {
-    return int(8);
-  } else if (t == volatile int(16)) {
-    return int(16);
-  } else if (t == volatile int(32)) {
-    return int(32);
-  } else if (t == volatile int(64)) {
-    return int(64);
-  } else if (t == volatile uint(8)) {
-    return uint(8);
-  } else if (t == volatile uint(16)) {
-    return uint(16);
-  } else if (t == volatile uint(32)) {
-    return uint(32);
-  } else if (t == volatile uint(64)) {
-    return uint(64); 
-  } else if (t == volatile real(32)) {
-    return real(32);
-  } else if (t == volatile real(64)) {
-    return real(64);
-  } else if (t == volatile imag(32)) {
-    return imag(32);
-  } else if (t == volatile imag(64)) {
-    return imag(64);
-  } else {
-    compilerError(typeToString(t), " is not a volatile type");
-  }
-}
-
-
 pragma "command line setting"
 proc _command_line_cast(param s: string, type t, x) return _cast(t, x);
 
@@ -1143,9 +1077,6 @@ pragma "inline" proc _cast(type t, x: int(?w)) where _isPrimitiveType(t)
   return __primitive("cast", t, x);
 
 pragma "inline" proc _cast(type t, x: uint(?w)) where _isPrimitiveType(t)
-  return __primitive("cast", t, x);
-
-pragma "inline" proc _cast(type t, x: chpl_taskID_t) where _isPrimitiveType(t)
   return __primitive("cast", t, x);
 
 pragma "inline" proc _cast(type t, x: real(?w)) where _isPrimitiveType(t)
@@ -1469,7 +1400,7 @@ pragma "inline" proc func(type t...?n, type rettype) type { return __primitive("
 // to be special-cased in functionResolution.cpp such that the inout
 // does not actually result in temps.
 //
-proc chpldev_refToString(inout ref) {
+proc chpldev_refToString(inout arg) {
 
   //
   // print out the address of class references as well
@@ -1478,12 +1409,12 @@ proc chpldev_refToString(inout ref) {
     return " (class = " + __primitive("ref to string", x) + ")";
   proc chpldev_classToString(x) return "";
 
-  return __primitive("ref to string", ref) + chpldev_classToString(ref);
+  return __primitive("ref to string", arg) + chpldev_classToString(arg);
 }
 
 
 // Everything below this comment was generated by the program
-// $CHPL_HOME/util/gen_int_uint64_operators.chpl.  If something below this
+// $CHPL_HOME/util/devel/gen_int_uint64_operators.chpl.  If something below this
 // comment needs to change, please update that file and regenerate these operators
 
 
@@ -1738,4 +1669,28 @@ pragma "inline" proc <=(param a: int(64), b: uint(64)) {
   if a < 0 then _throwOpError("<="); else return if a == 0 then true else a:uint(64) <= b;
 }
 
+proc numFields(type t) param {
+  return __primitive("num fields", t);
+}
 
+proc fieldNumToName(type t, param i) param {
+  return __primitive("field num to name", t, i);
+}
+
+proc fieldValueByNum(x, param i) {
+  return __primitive("field value by num", x, i);
+}
+
+proc fieldValueByName(x, param name) {
+  compilerError("Not yet implemented");
+  return __primitive("field value by name", x, name);
+}
+
+proc isClassType(type t) param where t:object return true;
+proc isClassType(type t) param return false;
+
+proc isUnionType(type t) param {
+  return __primitive("is union type", t);
+}
+
+}

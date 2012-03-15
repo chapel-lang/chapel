@@ -15,9 +15,9 @@
 // Each formal argument can have a default value associated with it.
 //
 // Formal arguments are supplied with values when the procedure is called.
-// The arguments supplied at the call site are the "actual" parameters.
-// If a name is supplied with an actual argument, the value is assigned
-// to the formal argument with the same name.  Any remaining (unnamed) actual
+// The arguments supplied at the call site are the "actual" arguments.
+// If a name and '=' preceed an actual argument, the actual is assigned
+// to the formal argument with that name.  Any remaining (unnamed) actual
 // arguments are assigned to the remaining formal arguments in lexical order.
 //
 // A procedure can return zero, one or more values (as a tuple).
@@ -44,6 +44,8 @@ writeln();
 //
 // Integers are somewhat small, so we might want to specify a larger return
 // type.  Also, we can optimize a bit, compressing the call stack by a factor of 2.
+// This version "overloads" the previous version of factorial.
+// Upon a call to factorial(), the compiler will choose the best fit.
 //
 proc factorial(x: int(64)) : int(64)
 {
@@ -80,11 +82,11 @@ proc +(p1: Point, p2: Point)
 proc Point.writeThis(w: Writer)
 {
   // Writes it out as a coordinate pair.
-  "(".writeThis(w);
-  this.x.writeThis(w);
-  ", ".writeThis(w);
-  this.y.writeThis(w);
-  ")".writeThis(w);
+  w.write("(");
+  w.write(this.x);
+  w.write(", ");
+  w.write(this.y);
+  w.write(")");
 }
 
 writeln("Using operator overloading");
@@ -168,8 +170,8 @@ writeln("t is now ", t);	// 0
 writeln();
 
 //
-// The out intent causes an argument to be ignored when the procedure starts,
-// but its value is written back when the routine exits.
+// The out intent causes the actual argument to be ignored when the procedure starts.
+// The actual is assigned the value of the corresponding formal when the routine exits.
 //
 // This arctan routine puts the result in res and returns the number of
 // iterations it needed to converge.

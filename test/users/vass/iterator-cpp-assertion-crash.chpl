@@ -332,7 +332,7 @@ iter DimensionalDom.these() {
 TODO - parallel iterators
 (follower should be the same as everyone else's)
 
-iter DimensionalDom.these(param tag: iterator) where tag == iterator.leader {
+iter DimensionalDom.these(param tag: iterKind) where tag == iterKind.leader {
   coforall locDom in localDoms do
     on locDom do
       // for simplicity, redirect to DefaultRectangular's leader/follow
@@ -340,11 +340,11 @@ iter DimensionalDom.these(param tag: iterator) where tag == iterator.leader {
         yield follow;
 }
 
-iter DimensionalDom.these(param tag: iterator, follower) where tag == iterator.follower {
+iter DimensionalDom.these(param tag: iterKind, followThis) where tag == iterKind.follower {
   // redirect to DefaultRectangular
   // note: 'localDoms[here.id].domLocalRep' would not save any comm
   //       because have to go to DimensionalDom's locale for 'localDoms' anyway
-  for i in whole._value.these(tag, follower) do
+  for i in whole._value.these(tag, followThis) do
     yield i;
 }
 */
@@ -463,7 +463,7 @@ proc DimensionalArr.dsiSerialWrite(f: Writer): void {
 
 // leader iterator - domain
 
-iter DimensionalDom.these(param tag: iterator) where tag == iterator.leader {
+iter DimensionalDom.these(param tag: iterKind) where tag == iterKind.leader {
   if traceDimensionalDist then
     writeln("DimensionalDom(", dist.name, ").leader iterator");
   assert(rank == 2);
@@ -545,9 +545,9 @@ iter DimensionalDom.these(param tag: iterator) where tag == iterator.leader {
     } // coforall ... on locDdesc
 } // DimensionalDom.these leader
 
-iter DimensionalDom.these(param tag: iterator, follower) where tag == iterator.follower {
-  writeln("DimensionalDom follower: got ", follower);
-  for i in [(...follower)] do
+iter DimensionalDom.these(param tag: iterKind, followThis) where tag == iterKind.follower {
+  writeln("DimensionalDom follower: got ", followThis);
+  for i in [(...followThis)] do
     yield i;
 }
 

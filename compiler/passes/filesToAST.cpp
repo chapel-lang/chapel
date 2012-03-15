@@ -14,23 +14,36 @@
 
 
 static ModuleSymbol* parseInternalModule(const char* name) {
-  ModuleSymbol* modsym = ParseMod(name, MOD_INTERNAL);
+
+  ModuleSymbol* modsym = NULL;
+
+  ParseMod(name, MOD_INTERNAL);
+
+  // vass sez: It would be better to push this down into ParseMod().
+  // If ParseMod() sees that there is a single module within a file (whether wrapped or not),
+  // it can return that one module.  Currently, if the content of the file is not a module body,
+  // ParseMod() returns NULL.
+  forv_Vec(ModuleSymbol, mod, gModuleSymbols)
+    if (!strcmp(mod->name, name))
+      modsym = mod;
+
   if (modsym == NULL) {
     INT_FATAL("Couldn't find module %s\n", name);
   }
+
   return modsym;
 }
 
 
 static void setIteratorTags(void) {
   forv_Vec(TypeSymbol, ts, gTypeSymbols) {
-    if (!strcmp(ts->name, "iterator")) {
+    if (!strcmp(ts->name, iterKindTypename)) {
       if (EnumType* enumType = toEnumType(ts->type)) {
         for_alist(expr, enumType->constants) {
           if (DefExpr* def = toDefExpr(expr)) {
-            if (!strcmp(def->sym->name, "leader"))
+            if (!strcmp(def->sym->name, iterKindLeaderTagname))
               gLeaderTag = def->sym;
-            else if (!strcmp(def->sym->name, "follower"))
+            else if (!strcmp(def->sym->name, iterKindFollowerTagname))
               gFollowerTag = def->sym;
           }
         }
@@ -45,7 +58,6 @@ static void parseInternalModules(void) {
 
   setIteratorTags();
 
-  addStdRealmsPath();
   standardModule = parseInternalModule("ChapelStandard"); 
 }
 
@@ -104,16 +116,17 @@ void parse(void) {
         USR_WARN("'BaseDist' defined more than once in Chapel Internal modules.");
       }
       dtDist = toClassType(ts->type);
-    } else if (!strcmp(ts->name, "Writer")) {
+    }
+    else if (!strcmp(ts->name, "Writer")) {
       if (dtWriter) {
         USR_WARN("'Writer' defined more than once in Chapel Internal modules.");
       }
       dtWriter = toClassType(ts->type);
-    } else if (!strcmp(ts->name, "file")) {
-      if (dtChapelFile) {
-        USR_WARN("'file' defined more than once in Chapel Internal modules.");
+    } else if (!strcmp(ts->name, "Reader")) {
+      if (dtReader) {
+        USR_WARN("'Reader' defined more than once in Chapel Internal modules.");
       }
-      dtChapelFile = toClassType(ts->type);
+      dtReader = toClassType(ts->type);
     }
   }
 
@@ -138,8 +151,8 @@ void parse(void) {
   if (!dtWriter) {
     USR_FATAL_CONT("'Writer' not defined in Chapel Internal modules.");
   }
-  if (!dtChapelFile) {
-    USR_FATAL_CONT("'file' not defined in Chapel Internal modules.");
+  if (!dtReader) {
+    USR_FATAL_CONT("'Reader' not defined in Chapel Internal modules.");
   }
   USR_STOP();
 
@@ -151,6 +164,8 @@ void parse(void) {
       addModulePathFromFilename(inputFilename);
     }
   }
+
+  addDashMsToUserPath();
 
   if (printSearchDirs) {
     printModuleSearchPath();
@@ -166,8 +181,12 @@ void parse(void) {
   parseDependentModules(MOD_USER);
 
   forv_Vec(ModuleSymbol, mod, allModules) {
-    if (mod != standardModule && mod != theProgram && mod != rootModule &&
-        (!fRuntime || mod->modTag != MOD_MAIN)) {
+    // Filter out modules that don't want to include ChapelStandard by default.
+    if (mod->hasFlag(FLAG_NO_DEFAULT_USE))
+      continue;
+
+    // ChapelStandard is added implicity to the "use" list of all other modules.
+    {
       mod->block->addUse(standardModule);
       mod->modUseSet.clear();
       mod->modUseList.clear();

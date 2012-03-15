@@ -2,38 +2,37 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
-#include "chpl_mem.h"
+
+#include "chpl-comm.h"
+#include "chpl-mem.h"
 #include "chplmemtrack.h"
 #include "chplrt.h"
 #include "chpltypes.h"
 #include "error.h"
 #include "dlmalloc.h"
 
-static mspace chpl_heap;
+mspace chpl_dlmalloc_heap;
 
-void chpl_md_initHeap(void* start, size_t size) {
-  if (!start || !size)
-    chpl_error("Must have a shared segment", 0, 0);
-  chpl_heap = create_mspace_with_base(start, size, 1);
-}
+static void* saved_heap_start;
+static size_t saved_heap_size;
 
 
-void* chpl_md_malloc(size_t size, int32_t lineno, chpl_string filename) {
-  if (!heapInitialized) {
-    chpl_error("chpl_malloc called before the heap is initialized", lineno, filename);
+void chpl_mem_layerInit(void) {
+  chpl_comm_desired_shared_heap(&saved_heap_start, &saved_heap_size);
+  if (!saved_heap_start || !saved_heap_size) {
+    chpl_dlmalloc_heap = create_mspace(0, 1);
+  } else {
+    chpl_dlmalloc_heap = create_mspace_with_base(saved_heap_start, saved_heap_size, 1);
   }
-  return mspace_malloc(chpl_heap, size);
 }
 
 
-void chpl_md_free(void* memAlloc, int32_t lineno, chpl_string filename) {
-  if (!heapInitialized) {
-    chpl_error("chpl_free called before the heap is initialized", lineno, filename);
-  }
-  mspace_free(chpl_heap, memAlloc);
+void chpl_mem_layerExit(void) { }
+
+
+void chpl_mem_layerActualSharedHeap(void** start_p, size_t* size_p) {
+  *start_p = saved_heap_start;
+  *size_p  = saved_heap_size;
 }
 
 
-void* chpl_md_realloc(void* memAlloc, size_t newChunk, int32_t lineno, chpl_string filename) {
-  return mspace_realloc(chpl_heap, memAlloc, newChunk);
-}

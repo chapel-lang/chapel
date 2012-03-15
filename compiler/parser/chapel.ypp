@@ -51,6 +51,7 @@
   FnSymbol* pfnsymbol;
   Flag flag;
   ProcIter procIter;
+  FlagSet* flagSet;
 };
 
 //
@@ -62,12 +63,16 @@
 //
 // keywords (alphabetical)
 //
-%token TALIGN TATOMIC TBEGIN TBREAK TBY TCLASS TCOBEGIN TCOFORALL TCONFIG TCONST
-%token TCONTINUE TDEF TDELETE TDMAPPED TDO TDOMAIN TELSE TENUM TEXTERN TFOR
-%token TFORALL TIF TIN TINDEX TINOUT TITER TLABEL TLAMBDA TLET TLOCAL TMINUSMINUS
-%token TMODULE TNEW TNIL TON TOTHERWISE TOUT TPARAM TPLUSPLUS TPRAGMA
-%token TPRIMITIVE TPRIMITIVELOOP TPROC TRECORD TREDUCE TRETURN TSCAN TSELECT TSERIAL
-%token TSINGLE TSPARSE TSUBDOMAIN TSYNC TTHEN TTYPE TUNION TUSE TVAR TVOLATILE
+%token TALIGN TATOMIC TBEGIN TBREAK TBY
+%token TCLASS TCOBEGIN TCOFORALL TCONFIG TCONST TCONTINUE
+%token TDELETE TDMAPPED TDO TDOMAIN TELSE TENUM TEXPORT TEXTERN T_EXTERN
+%token TFOR TFORALL TIF TIN TINDEX TINLINE TINOUT TITER
+%token TLABEL TLAMBDA TLET TLOCAL TMINUSMINUS TMODULE
+%token TNEW TNIL TON TOTHERWISE TOUT
+%token TPARAM TPLUSPLUS TPRAGMA TPRIMITIVE TPRIMITIVELOOP TPROC
+%token TRECORD TREDUCE TREF TRETURN
+%token TSCAN TSELECT TSERIAL TSINGLE TSPARSE TSUBDOMAIN
+%token TSYNC TTHEN TTYPE TUNION TUSE TVAR TVOLATILE
 %token TWHEN TWHERE TWHILE TYIELD
 
 //
@@ -114,8 +119,8 @@
 %left TDOT TLP TLSBR
 
 %type <flag> opt_config
-%type <b> opt_extern
- 
+%type <flag> opt_extern
+
 %type <pt> opt_intent_tag opt_this_intent_tag
 
 %type <retTag> opt_ret_tag
@@ -132,19 +137,19 @@
 %type <pblockstmt> select_stmt assignment_stmt class_level_stmt
 %type <pblockstmt> type_select_stmt return_stmt
 
-%type <pblockstmt> type_alias_decl_stmt type_alias_decl_stmt_inner fn_decl_stmt class_decl_stmt module_decl_stmt extern_fn_decl_stmt
+%type <pblockstmt> type_alias_decl_stmt type_alias_decl_stmt_inner fn_decl_stmt class_decl_stmt module_decl_stmt
 %type <pblockstmt> enum_decl_stmt
 
 %type <pblockstmt> var_decl_stmt var_decl_stmt_inner_ls
 %type <pblockstmt> var_decl_stmt_inner tuple_var_decl_stmt_inner_ls
 
-%type <pblockstmt> function_body_stmt
+%type <pblockstmt> function_body_stmt opt_function_body_stmt
 
 %type <pexpr> when_stmt
 %type <pblockstmt> when_stmt_ls
 
 %type <pexpr> opt_type array_type opt_formal_type formal_array_type opt_formal_array_elt_type lambda_decl_expr
-%type <pexpr> opt_domain
+%type <pexpr> opt_reindex_expr
 %type <ptype> class_tag
 %type <penumtype> enum_ls
 
@@ -160,7 +165,8 @@
 %type <pcallexpr> opt_actual_ls actual_ls
 
 %type <pfnsymbol> fn_decl_stmt_inner formal_ls opt_formal_ls req_formal_ls
-%type <procIter> proc_or_iter_or_def
+%type <procIter> proc_or_iter
+%type <pfnsymbol> linkage_spec
 
 %% 
 
@@ -327,8 +333,9 @@ class_decl_stmt:
 ;
 
 opt_extern:
-           { $$ = false; }
-| TEXTERN  { $$ = true; }
+           { $$ = FLAG_UNKNOWN; }
+| TEXTERN  { $$ = FLAG_EXTERN; }
+| T_EXTERN { $$ = FLAG_OLD_EXTERN_KW_USED; }
 ;
 
 class_tag:
@@ -412,56 +419,50 @@ lambda_decl_expr:
     }
 ;
 
+// The FnSymbol is just used as a struct to carry the flag and
+// (for exports only) the cname of the function.
+linkage_spec:
+                { $$ = new FnSymbol(""); }
+| TINLINE       { $$ = new FnSymbol(""); $$->addFlag(FLAG_INLINE); }
+| TEXPORT       { $$ = new FnSymbol(""); $$->addFlag(FLAG_EXPORT); }
+| TEXPORT ident { $$ = new FnSymbol($2); $$->addFlag(FLAG_EXPORT); }
+| TEXTERN       { $$ = new FnSymbol(""); $$->addFlag(FLAG_EXTERN); }
+| TEXTERN ident { $$ = new FnSymbol($2); $$->addFlag(FLAG_EXTERN); }
+| T_EXTERN      { $$ = new FnSymbol(""); $$->addFlag(FLAG_EXTERN);
+                  $$->addFlag(FLAG_OLD_EXTERN_KW_USED); }
+
 fn_decl_stmt:
-  extern_fn_decl_stmt
-| proc_or_iter_or_def
+  linkage_spec proc_or_iter
     {
+      // Sets up to capture tokens while parsing the next grammar nonterminal.
       captureTokens = 1;
       captureString[0] = '\0';
     }
   fn_decl_stmt_inner
     {
+      // Stop capturing and save the result.
       captureTokens = 0;
-      $3->userString = astr(captureString);
+      $4->userString = astr(captureString);
     }
-  opt_ret_tag opt_type opt_where_part function_body_stmt
+  opt_ret_tag opt_type opt_where_part opt_function_body_stmt
     {
-      FnSymbol* fn = $3;
-      // ProcIter: remove this outer 'if' after transition
-      if ($1 == ProcIter_DEF) {
-          // nothing
-      } else {
-          fn->addFlag(FLAG_PROC_ITER_KW_USED);
-          if ($1 == ProcIter_ITER)
-            fn->addFlag(FLAG_ITERATOR_FN);
-      }
-      fn->retTag = $5;
-      if ($5 == RET_VAR)
-        fn->setter = new DefExpr(new ArgSymbol(INTENT_BLANK, "setter", dtBool));
-      if ($6)
-        fn->retExprType = new BlockStmt($6, BLOCK_SCOPELESS);
-      if ($7)
-        fn->where = new BlockStmt($7);
-      fn->insertAtTail($8);
-      $$ = buildChapelStmt(new DefExpr(fn));
-    }
-;
+      FnSymbol* fn = $4;
 
-extern_fn_decl_stmt:
-  TEXTERN proc_or_iter_or_def fn_decl_stmt_inner opt_type TSEMI
-    {
-      FnSymbol* fn = $3;
-      fn->addFlag(FLAG_EXTERN);
+      fn->copyFlags($1);
+      // The user explicitly named this function (controls mangling).
+      if ($1->hasFlag(FLAG_EXPORT) || $1->hasFlag(FLAG_EXTERN))
+        fn->addFlag(FLAG_USER_NAMED);
+      if (*$1->name)
+        fn->cname = $1->name;
+
       if ($2 == ProcIter_ITER)
-        USR_FATAL_CONT(fn, "'iter' is not legal with 'extern'");
-      // ProcIter: remove this 'if' altogether after transition
-      if ($2 == ProcIter_PROC)
-        fn->addFlag(FLAG_PROC_ITER_KW_USED);
-      if ($4)
-        fn->retExprType = new BlockStmt($4, BLOCK_SCOPELESS);
-      else
-        fn->retType = dtVoid;
-      $$ = buildChapelStmt(new DefExpr(fn));
+      {
+        if (fn->hasFlag(FLAG_EXTERN))
+          USR_FATAL_CONT(fn, "'iter' is not legal with 'extern'");
+        fn->addFlag(FLAG_ITERATOR_FN);
+      }
+
+      $$ = buildFunctionDecl($4, $6, $7, $8, $9);
     }
 ;
 
@@ -484,6 +485,7 @@ fn_decl_stmt_inner:
       if ($4[0] == '~' && $4[1] != '\0')
         $$->addFlag(FLAG_DESTRUCTOR);
       $$->_this = new ArgSymbol($1, "this", dtUnknown, new UnresolvedSymExpr($2));
+      $$->_this->addFlag(FLAG_ARG_THIS);
       $$->insertFormalAtHead(new DefExpr($$->_this));
       $$->insertFormalAtHead(new DefExpr(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken)));
     }
@@ -558,9 +560,8 @@ opt_this_intent_tag:
 | TPARAM { $$ = INTENT_PARAM; }
 ;
 
-proc_or_iter_or_def:
-  TDEF   { $$ = ProcIter_DEF; }
-| TPROC  { $$ = ProcIter_PROC; }
+proc_or_iter:
+  TPROC  { $$ = ProcIter_PROC; }
 | TITER  { $$ = ProcIter_ITER; }
 ;
 
@@ -570,6 +571,11 @@ opt_ret_tag:
 | TVAR      { $$ = RET_VAR; }
 | TPARAM    { $$ = RET_PARAM; }
 | TTYPE     { $$ = RET_TYPE; }
+;
+
+opt_function_body_stmt:
+  TSEMI     { $$ = NULL; }
+| function_body_stmt
 ;
 
 function_body_stmt:
@@ -611,6 +617,10 @@ type_alias_decl_stmt:
     { $$ = handleConfigTypes($3); }
 | TEXTERN TTYPE type_alias_decl_stmt_inner TSEMI 
     { $$ = convertTypesToExtern($3); }
+| T_EXTERN TTYPE type_alias_decl_stmt_inner TSEMI
+    { $$ = convertTypesToExtern($3);
+      USR_WARN($$, "The _extern keyword is deprecated. Use extern (no leading underscore) instead.");
+    }
 ;
 
 type_alias_decl_stmt_inner:
@@ -636,19 +646,53 @@ opt_init_type:
 | TASSIGN expr  { $$ = $2; }
 ;
 
+// The ugliness added by FLAG_OLD_EXTERN_KW_USED can be eliminated
+// once the "_extern" keyword moves from being deprecated to being
+// obsolete. <hilde>
 var_decl_stmt:
   opt_config TPARAM var_decl_stmt_inner_ls TSEMI
-    { $$ = buildVarDecls($3, $1, FLAG_PARAM); }
+    {
+      /* Begin part to delete when "_extern" is obsoleted. */
+      if ($1 == FLAG_OLD_EXTERN_KW_USED)
+      {
+        $$ = buildVarDecls($3, FLAG_EXTERN, FLAG_PARAM);
+        USR_WARN($$, "The _extern keyword is deprecated. Use extern (no leading underscore) instead.");
+      }
+      else
+      /* End part to delete when "_extern" is obsoleted. */
+      $$ = buildVarDecls($3, $1, FLAG_PARAM);
+    }
 | opt_config TCONST var_decl_stmt_inner_ls TSEMI
-    { $$ = buildVarDecls($3, $1, FLAG_CONST); }
+    {
+      /* Begin part to delete when "_extern" is obsoleted. */
+      if ($1 == FLAG_OLD_EXTERN_KW_USED)
+      {
+        $$ = buildVarDecls($3, FLAG_EXTERN, FLAG_CONST);
+        USR_WARN($$, "The _extern keyword is deprecated. Use extern (no leading underscore) instead.");
+      }
+      else
+      /* End part to delete when "_extern" is obsoleted. */
+      $$ = buildVarDecls($3, $1, FLAG_CONST);
+    }
 | opt_config TVAR var_decl_stmt_inner_ls TSEMI
-    { $$ = buildVarDecls($3, $1, FLAG_UNKNOWN); }
+    {
+      /* Begin part to delete when "_extern" is obsoleted. */
+      if ($1 == FLAG_OLD_EXTERN_KW_USED)
+      {
+        $$ = buildVarDecls($3, FLAG_EXTERN, FLAG_UNKNOWN);
+        USR_WARN($$, "The _extern keyword is deprecated. Use extern (no leading underscore) instead.");
+      }
+      else
+      /* End part to delete when "_extern" is obsoleted. */
+      $$ = buildVarDecls($3, $1, FLAG_UNKNOWN);
+    }
 ;
 
 opt_config:
-           { $$ = FLAG_UNKNOWN; }
-| TCONFIG  { $$ = FLAG_CONFIG; }
-| TEXTERN  { $$ = FLAG_EXTERN; }
+            { $$ = FLAG_UNKNOWN; }
+| TCONFIG   { $$ = FLAG_CONFIG; }
+| TEXTERN   { $$ = FLAG_EXTERN; }
+| T_EXTERN  { $$ = FLAG_OLD_EXTERN_KW_USED; }
 ;
  
 var_decl_stmt_inner_ls:
@@ -663,7 +707,7 @@ var_decl_stmt_inner_ls:
 var_decl_stmt_inner:
   ident opt_type opt_init_expr
     { $$ = buildChapelStmt(new DefExpr(new VarSymbol($1), $3, $2)); }
-| ident opt_domain TALIAS expr
+| ident opt_reindex_expr TALIAS expr
     {
       VarSymbol* var = new VarSymbol($1);
       var->addFlag(FLAG_ARRAY_ALIAS);
@@ -694,7 +738,7 @@ opt_init_expr:
 | TASSIGN expr  { $$ = $2; }
 ;
 
-opt_domain:
+opt_reindex_expr:
     { $$ = NULL; }
 | TCOLON TLSBR expr_ls TRSBR
     { $$ = new CallExpr("chpl__buildDomainExpr", $3); }

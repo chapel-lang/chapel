@@ -1,14 +1,8 @@
 #ifndef _log_H_
 #define _log_H_
 
+#include <vec.h>
 #include <cstdio>
-
-#ifndef IFA_EXTERN
-#define IFA_EXTERN extern
-#endif
-#ifndef IFA_EXTERN_INIT
-#define IFA_EXTERN_INIT(x)
-#endif
 
 
 //#include "../ifa/defs.h"
@@ -43,19 +37,55 @@
 
 class ArgumentState;
 
-#define LOG_AST         'a'
+#ifndef NUL
+ #define NUL '\0'
+#endif
 
-IFA_EXTERN char log_dir[FILENAME_MAX] IFA_EXTERN_INIT("./log");
-IFA_EXTERN char log_tag[256];
+// Used in passlist.h to match up pass designator letters (used on the command line
+// with these slightly more mnemonic #defines.
+#define LOG_parse               'p'
+#define LOG_checkParsed         NUL
+#define LOG_cleanup             'u'
+#define LOG_scopeResolve        'S'
+#define LOG_flattenClasses      'b'
+#define LOG_normalize           'N'
+#define LOG_checkNormalized     NUL
+#define LOG_buildDefaultFunctions 'D'
+#define LOG_resolve             'R'
+#define LOG_checkResolved       NUL
+#define LOG_flattenFunctions    'e'
+#define LOG_cullOverReferences  'O'
+#define LOG_callDestructors     'd'
+#define LOG_lowerIterators      'L'
+#define LOG_parallel            'P'
+#define LOG_prune               'X'
+#define LOG_complex2record      'C'
+#define LOG_removeUnnecessaryAutoCopyCalls 'U'
+#define LOG_inlineFunctions     'I'
+#define LOG_scalarReplace       'r'
+#define LOG_refPropagation      'g'
+#define LOG_copyPropagation     'G'
+#define LOG_deadCodeElimination 'x'
+#define LOG_removeWrapRecords   'w'
+#define LOG_removeEmptyRecords  'm'
+#define LOG_localizeGlobals     'l'
+#define LOG_prune2              'Y'
+#define LOG_returnStarTuplesByRefArgs 's'
+#define LOG_gpuFlattenArgs      'a'
+#define LOG_insertWideReferences 'W'
+#define LOG_optimizeOnClauses   'o'
+#define LOG_addInitCalls        'M'
+#define LOG_insertLineNumbers   'n'
+#define LOG_repositionDefExpressions 'f'
+#define LOG_codegen             'E'
+#define LOG_makeBinary          NUL
 
-#define logging_level(_log, _level) (log_tag[(unsigned char)(_log)] >= _level)
-#define logging(_log) logging_level(_log, 1)
+#define LOG_ANY -1
 
 void init_logs();
 void log_flags_arg(ArgumentState *arg_state, char *arg);
 FILE *log_fp(int log);
 int log(int log, char *str, ...);
-int log_level(int log, int level, char *str, ...);
-
+bool logging(int log = LOG_ANY);    // Default means "any pass".
 
 #endif

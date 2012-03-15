@@ -5,7 +5,7 @@
 #include "chpl-comm.h"
 #include "chplexit.h"
 #include "chplio.h"
-#include "chpl_mem.h"
+#include "chpl-mem.h"
 #include "chplmemtrack.h"
 #include "chplrt.h"
 #include "chpl-tasks.h"
@@ -13,6 +13,15 @@
 #include "error.h"
 #include <stdint.h>
 #include <string.h>
+#include <locale.h>
+#include "sys.h"
+
+static const char myFilename[] = 
+#ifdef CHPL_DEVELOPER
+  __FILE__;
+#else
+  "<internal>";
+#endif
 
 
 char* chpl_executionCommand;
@@ -35,7 +44,7 @@ static void recordExecutionCommand(int argc, char *argv[]) {
   for (i = 0; i < argc; i++) {
     length += strlen(argv[i]) + 1;
   }
-  chpl_executionCommand = (char*)chpl_malloc(length+1, sizeof(char), CHPL_RT_EXECUTION_COMMAND, 0, 0);
+  chpl_executionCommand = (char*)chpl_mem_allocMany(length+1, sizeof(char), CHPL_RT_EXECUTION_COMMAND, 0, 0);
   sprintf(chpl_executionCommand, "%s", argv[0]);
   for (i = 1; i < argc; i++) {
     strcat(chpl_executionCommand, " ");
@@ -47,9 +56,19 @@ static void recordExecutionCommand(int argc, char *argv[]) {
 int main(int argc, char* argv[]) {
   int32_t execNumLocales;
   int runInGDB;
+  int numPollingTasks;
+
+  // Check that we can get the page size.
+  assert( sys_page_size() > 0 );
+
+  // Declare that we are 'locale aware' so that
+  // UTF-8 functions (e.g. wcrtomb) work as
+  // indicated by the locale environment variables.
+  setlocale(LC_CTYPE,"");
 
   chpl_comm_init(&argc, &argv);
-  chpl_comm_init_shared_heap();
+  chpl_mem_init();
+  chpl_comm_post_mem_init();
 
   chpl_comm_barrier("about to leave comm init code");
   chpl__heapAllocateGlobals(); // allocate global vars on heap for multilocale
@@ -75,34 +94,55 @@ int main(int argc, char* argv[]) {
   // number of locales is reasonable
   //
   chpl_comm_verify_num_locales(execNumLocales);
-  chpl_comm_rollcall();
 
+  //
+  // This just sets all of the initialization predicates to false.
+  // Must occur before any other call to a chpl__init_<foo> function.
+  //
+  chpl__init_preInit(0, myFilename);
  
   //
   // initialize the task management layer
   //
   //
   // This is an early call to initialize the ChapelThreads module so
-  // that its config consts (maxThreadsPerLocale and callStackSize)
-  // can be used to initialize the tasking layer.  It assumes that the
-  // ChapelThreads module can be initialized multiple times without
-  // harm (currently true).
+  // that its config consts (numThreadsPerLocale and callStackSize)
+  // can be used to initialize the tasking layer.  
   //
-  chpl__init_ChapelThreads(1, "<internal>");
+  chpl__init_ChapelThreads(0, myFilename);
+  // (Can we grab those constants directly, and stay out of the module code?)
   //
-  chpl_task_init(maxThreadsPerLocale, callStackSize); 
-  chpl_init_chpl_rt_utils();
+  numPollingTasks = chpl_comm_numPollingTasks();
+  if (numPollingTasks != 0 && numPollingTasks != 1) {
+    chpl_internal_error("chpl_comm_numPollingTasks() returned illegal value");
+  }
+  chpl_task_init(numThreadsPerLocale, chpl__maxThreadsPerLocale, 
+                 numPollingTasks, callStackSize); 
 
   //
-  // start communication tasks as necessary
+  // Some comm layer initialization may have to be done after the
+  // tasking layer is initialized.
   //
-  chpl_comm_startPollingTask();
+  chpl_comm_post_task_init();
+  chpl_comm_rollcall();
 
   recordExecutionCommand(argc, argv);
 
   chpl_comm_barrier("barrier before main");
+  // The call to chpl_comm_barrier makes sure that all locales are listening
+  // before an attempt is made to run tasks "on" them.
 
   if (chpl_localeID == 0) {      // have locale #0 run the user's main function
+
+    // OK, we can create tasks now.
+    chpl_task_setSerial(false);
+
+    // Initialize the internal modules.
+    chpl__init_ChapelStandard(0, myFilename);
+    // Note that in general, module code can contain "on" clauses
+    // and should therefore not be called before the call to
+    // chpl_comm_startPollingTask().
+
     chpl_task_callMain(chpl_main);
   }
 

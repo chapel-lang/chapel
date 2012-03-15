@@ -102,12 +102,11 @@ proc main {
   
   //===> Get names of input files ===>
   
-  const pointer_file = new file("input_files.txt", FileAccessMode.read);
+  const pointer_file = open("input_files.txt", iomode.r).reader();
   var time_file_name:      string;
   var hierarchy_file_name: string;
   var velocity_file_name:  string;
   
-  pointer_file.open();
   pointer_file.read(hierarchy_file_name);
   pointer_file.read(velocity_file_name);
   pointer_file.read(time_file_name);
@@ -151,8 +150,7 @@ proc main {
   //---- Advection velocity ----
 
   var velocity: dimension*real;
-  const velocity_file = new file(velocity_file_name, FileAccessMode.read);
-  velocity_file.open();
+  const velocity_file = open(velocity_file_name, iomode.r).reader();
   velocity_file.read( (...velocity) );
   velocity_file.close();
 

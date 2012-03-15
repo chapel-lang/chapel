@@ -8,6 +8,8 @@
 #include "type.h"
 #include "yy.h"
 
+static void cleanModuleList();
+
 //
 // declare global vectors gSymExprs, gCallExprs, gFnSymbols, ...
 //
@@ -100,52 +102,58 @@ void printStatistics(const char* pass) {
   last_nasts = nasts;
 }
 
-
-static inline bool isAlive(Expr* expr) {
-  return expr->parentSymbol;
-}
-
-static inline bool isAlive(Type* type) {
-  return type->symbol->defPoint->parentSymbol;
-}
-
-static inline bool isAlive(Symbol* symbol) {
-  return symbol == rootModule || (symbol->defPoint && symbol->defPoint->parentSymbol);
+// for debugging purposes only
+void trace_remove(BaseAST* ast, char flag) {
+  // crash if deletedIdHandle is not initialized but deletedIdFilename is
+  if (deletedIdON) {
+    fprintf(deletedIdHandle, "%d %c %p %d\n",
+            currentPassNo, flag, ast, ast->id);
+  }
+  if (ast->id == breakOnDeleteID) {
+    if (deletedIdON) fflush(deletedIdHandle);
+    gdbShouldBreakHere();
+  }
 }
 
 #define clean_gvec(type)                        \
   int i##type = 0;                              \
   forv_Vec(type, ast, g##type##s) {             \
-    if (isAlive(ast)) {                         \
+    if (isAlive(ast) || isRootModuleWithType(ast, type)) { \
       g##type##s.v[i##type++] = ast;            \
     } else {                                    \
+      trace_remove(ast, 'x');                   \
       delete ast;                               \
     }                                           \
   }                                             \
   g##type##s.n = i##type
 
 void cleanAst() {
+  cleanModuleList();
   //
   // clear back pointers to dead ast instances
   //
   forv_Vec(TypeSymbol, ts, gTypeSymbols) {
     for(int i = 0; i < ts->type->methods.n; i++) {
       FnSymbol* method = ts->type->methods.v[i];
-      if (method && !method->defPoint->parentSymbol)
+      if (method && !isAliveQuick(method))
         ts->type->methods.v[i] = NULL;
       if (ClassType* ct = toClassType(ts->type)) {
-        if (ct->defaultConstructor && !ct->defaultConstructor->defPoint->parentSymbol)
+        if (ct->defaultConstructor && !isAliveQuick(ct->defaultConstructor))
           ct->defaultConstructor = NULL;
-        if (ct->destructor && !ct->destructor->defPoint->parentSymbol)
+        if (ct->destructor && !isAliveQuick(ct->destructor))
           ct->destructor = NULL;
       }
     }
     for(int i = 0; i < ts->type->dispatchChildren.n; i++) {
       Type* type = ts->type->dispatchChildren.v[i];
-      if (type && !type->symbol->defPoint->parentSymbol)
+      if (type && !isAlive(type))
         ts->type->dispatchChildren.v[i] = NULL;
     }
   }
+
+  // check iterator-resume-label/goto data before nodes are free'd
+  verifyNcleanRemovedIterResumeGotos();
+  verifyNcleanCopiedIterResumeGotos();
 
   //
   // clean global vectors and delete dead ast instances
@@ -154,9 +162,24 @@ void cleanAst() {
 }
 
 
+// ModuleSymbols cache a pointer to their initialization function
+// This pointer has to be zeroed out specially before the matching function
+// definition is deleted from module body.
+static void cleanModuleList()
+{
+  // Walk the module list.
+  forv_Vec(ModuleSymbol, mod, gModuleSymbols) {
+    // Zero the initFn pointer if the function is now dead.
+    if (mod->initFn && !isAlive(mod->initFn))
+      mod->initFn = NULL;
+  }
+}
+
+
 void destroyAst() {
   #define destroy_gvec(type)                    \
     forv_Vec(type, ast, g##type##s) {           \
+      trace_remove(ast, 'z');                   \
       delete ast;                               \
     }
   foreach_ast(destroy_gvec);
@@ -174,13 +197,11 @@ verify() {
 
 
 int breakOnID = -1;
+int breakOnDeleteID = -1;
 
 int lastNodeIDUsed() {
   return uid - 1;
 }
-
-// ProcIter: remove this
-bool markNewFnSymbolsWithProcIter = false;
 
 
 // This is here so that we can break on the creation of a particular
@@ -195,25 +216,24 @@ static void checkid(int id) {
 BaseAST::BaseAST(AstTag type) :
   astTag(type),
   id(uid++),
-  lineno(yystartlineno)
+  astloc(yystartlineno, yyfilename)
 {
   checkid(id);
-  if (lineno == -1) {
-    if (currentLineno) {
-      lineno = currentLineno;
+  if (astloc.lineno == -1) {
+    if (currentAstLoc.lineno) {
+      astloc = currentAstLoc;
     }
   }
 }
 
 
 const char* BaseAST::stringLoc(void) {
-  const int tmpBuffSize = 64;
+  const int tmpBuffSize = 256;
   char tmpBuff[tmpBuffSize];
 
-  snprintf(tmpBuff, tmpBuffSize, "%s:%d", getModule()->filename, lineno);
+  snprintf(tmpBuff, tmpBuffSize, "%s:%d", fname(), linenum());
   return astr(tmpBuff);
 }
-
 
 // stringLoc for debugging only
 char* stringLoc(BaseAST* ast);
@@ -227,12 +247,7 @@ char* stringLoc(BaseAST* ast) {
   const int tmpBuffSize = 256;
   static char tmpBuff[tmpBuffSize];
 
-  ModuleSymbol* module = ast->getModule();
-  if (module) {
-    snprintf(tmpBuff, tmpBuffSize, "%s:%d", module->filename, ast->lineno);
-  } else {
-    snprintf(tmpBuff, tmpBuffSize, "<unknown module>:%d", ast->lineno);
-  }
+  snprintf(tmpBuff, tmpBuffSize, "%s:%d", ast->fname(), ast->linenum());
   return tmpBuff;
 }
 
@@ -342,7 +357,7 @@ const char* astTagName[E_BaseAST+1] = {
   "BaseAST"
 };
 
-int currentLineno = 0;
+astlocT currentAstLoc(0,NULL);
 
 Vec<ModuleSymbol*> mainModules; // Contains main modules
 Vec<ModuleSymbol*> userModules; // Contains user + main modules

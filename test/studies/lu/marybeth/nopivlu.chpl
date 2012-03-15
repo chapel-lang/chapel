@@ -34,10 +34,9 @@ proc initA(A,filename:string){
 // Very expensive, but easy way to permute the matrix
 // so that pivoting isn't needed.
 
-var Adat = new file(filename,path='./',mode=FileAccessMode.read);
+var Adat = open(filename, iomode.r).reader();
 var P, temp: [A.domain] real;
 
-Adat.open();
 for ij in A.domain {
   Adat.read(A(ij));
 }

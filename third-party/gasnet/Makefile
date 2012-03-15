@@ -1,12 +1,14 @@
+ifndef CHPL_MAKE_HOME
+export CHPL_MAKE_HOME=$(shell pwd)/../..
+endif
+
 export CHPL_COMM=gasnet
-CHAPEL_ROOT = ../..
-CHAPEL_SUBDIR = third-party/gasnet
 CHPL_MAKE_HOST_TARGET = --target
-include $(CHAPEL_ROOT)/make/Makefile.base
+include $(CHPL_MAKE_HOME)/make/Makefile.base
 
-CHPL_GASNET_CFG_OPTIONS += --enable-segment-$(CHPL_GASNET_SEGMENT) --enable-allow-gcc4
+CHPL_GASNET_CFG_OPTIONS += --enable-segment-$(CHPL_MAKE_COMM_SEGMENT) --enable-allow-gcc4
 
-ifneq ($(CHPL_GASNET_SEGMENT),everything)
+ifneq ($(CHPL_MAKE_COMM_SEGMENT),everything)
 CHPL_GASNET_CFG_OPTIONS += --disable-aligned-segments
 endif
 
@@ -19,19 +21,25 @@ CHPL_GASNET_CFG_OPTIONS += -with-mpi-cc=mpcc
 endif
 
 ifeq ($(CHPL_MAKE_TARGET_PLATFORM),xe-cle)
-CHPL_GASNET_CFG_OPTIONS += -with-mpi-cc=cc --enable-mpi --enable-pthreads
+CHPL_GASNET_CFG_OPTIONS += --enable-pthreads
+ifeq ($(CHPL_MAKE_COMM_SUBSTRATE),gemini)
+else
+# We need to do this because the auto-dectect stuff for gemini is not
+#  yet working as well as the portals auto-detect
+CHPL_GASNET_CFG_OPTIONS += --disable-gemini --disable-pshm --disable-pshm-xpmem --enable-pshm-posix
 endif
+CHPL_GASNET_CFG_SCRIPT=cross-configure-crayxe-linux
+XTRA_CONFIG_COMMAND=cp --update $(GASNET_SUBDIR)/other/contrib/$(CHPL_GASNET_CFG_SCRIPT) $(GASNET_SUBDIR)
+XTRA_POST_INSTALL_COMMAND=rm -f $(GASNET_SUBDIR)/$(CHPL_GASNET_CFG_SCRIPT)
+else
 
 ifeq ($(CHPL_MAKE_TARGET_PLATFORM),xt-cle)
-#
-# this conditional should only be necessary for PE <= 2.0 and should
-# match the corresponding test in cross-configure-crayxt-linux
-#
-XTRA_CONFIG_COMMAND=cp --update $(GASNET_SUBDIR)/other/contrib/cross-configure-crayxt-linux $(GASNET_SUBDIR)
-XTRA_POST_INSTALL_COMMAND=if test -f /usr/include/nptl/pthread.h -a -d /usr/lib64/nptl ; then cp -fr $(GASNET_BUILD_DIR)/patched-headers $(GASNET_INSTALL_DIR); fi
 CHPL_GASNET_CFG_SCRIPT=cross-configure-crayxt-linux
+XTRA_CONFIG_COMMAND=cp --update $(GASNET_SUBDIR)/other/contrib/$(CHPL_GASNET_CFG_SCRIPT) $(GASNET_SUBDIR)
+XTRA_POST_INSTALL_COMMAND=rm -f $(GASNET_SUBDIR)/$(CHPL_GASNET_CFG_SCRIPT)
 else
 CHPL_GASNET_CFG_SCRIPT=configure
+endif
 endif
 
 MKFILES=$(shell find $(GASNET_INSTALL_DIR) -name \*.mak)
@@ -40,6 +48,8 @@ MKFILES=$(shell find $(GASNET_INSTALL_DIR) -name \*.mak)
 # set up the directories
 #
 GASNET_ABS_DIR = $(shell pwd)
+GASNET_SUBDIR = $(GASNET_ABS_DIR)/GASNet-$(GASNET_VERSION)
+# redefined these with the absolute path for the build
 GASNET_INSTALL_DIR = $(GASNET_ABS_DIR)/$(GASNET_INSTALL_SUBDIR)
 GASNET_BUILD_DIR = $(GASNET_ABS_DIR)/$(GASNET_BUILD_SUBDIR)
 
@@ -48,10 +58,10 @@ default: all
 all: gasnet
 
 clean: FORCE
-	cd $(GASNET_SUBDIR) && make clean
+	rm -rf $(GASNET_BUILD_DIR)
 
 clobber: FORCE
-	rm -r $(GASNET_INSTALL_DIR)
+	rm -rf build install
 
 
 gasnet-config: FORCE

@@ -18,7 +18,7 @@ config const myLow = 4, myHigh = 12; // iterator arguments (config for testing)
 enum IteratorType { solo, leader, follower };
 
 iter singleLocaleIterator(low: int, high: int,
-                         param iterator: IteratorType, follower) {
+                         param iterator: IteratorType, followThis) {
   if iterator == IteratorType.solo {
     for i in low..high do
       yield i;
@@ -26,7 +26,7 @@ iter singleLocaleIterator(low: int, high: int,
     for i in 1..parallelFactor do
       yield 1+(high-low+1)*(i-1)/parallelFactor..(high-low+1)*i/parallelFactor;
   } else {
-    for i in follower do
+    for i in followThis do
       yield low+i-1;
   }
 }

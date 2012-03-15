@@ -7,7 +7,8 @@
 #define NDEBUG
 #endif
 
-#include "chpl_mem.h"
+#include "chpl-comm.h"
+#include "chpl-mem.h"
 #include "chplcast.h"
 #include "chplrt.h"
 #include "chpl-tasks.h"
@@ -55,7 +56,7 @@ static pthread_key_t   thread_id_key;
 static pthread_key_t   thread_private_key;
 
 static int32_t         threadMaxThreadsPerLocale  = 0;
-static uint32_t        threadNumThreads           = 1;  // count main thread
+static uint32_t        threadNumThreads           = 0;
 static pthread_mutex_t threadNumThreadsLock;
 
 static size_t          threadCallStackSize = 0;
@@ -77,8 +78,8 @@ void chpl_thread_mutexInit(chpl_thread_mutex_p mutex) {
 
 chpl_thread_mutex_p chpl_thread_mutexNew(void) {
   chpl_thread_mutex_p m;
-  m = (chpl_thread_mutex_p) chpl_alloc(sizeof(chpl_thread_mutex_t),
-                                       CHPL_RT_MD_MUTEX, 0, 0);
+  m = (chpl_thread_mutex_p) chpl_mem_alloc(sizeof(chpl_thread_mutex_t),
+                                           CHPL_RT_MD_MUTEX, 0, 0);
   chpl_thread_mutexInit(m);
   return m;
 }
@@ -120,14 +121,29 @@ void chpl_thread_yield(void) {
 }
 
 
-void chpl_thread_init(int32_t maxThreadsPerLocale,
+void chpl_thread_init(int32_t numThreadsPerLocale,
+                      int32_t maxThreadsPerLocale,
                       uint64_t callStackSize,
                       void(*threadBeginFn)(void*),
                       void(*threadEndFn)(void)) {
   //
-  // Tuck maxThreadsPerLocale away in a static global for use by other routines
+  // Tuck maxThreadsPerLocale away in a static global for use by other
+  // routines.  This threading layer uses a user-specified (non-zero)
+  // numThreadsPerLocale as the max.
   //
-  threadMaxThreadsPerLocale = maxThreadsPerLocale;
+
+  if (numThreadsPerLocale != 0) {
+    threadMaxThreadsPerLocale = numThreadsPerLocale;
+  } else {
+    threadMaxThreadsPerLocale = maxThreadsPerLocale;
+  }
+
+  //
+  // Count the main thread on locale 0 as already existing, since it
+  // is (or soon will be) running the main program.
+  //
+  if (chpl_localeID == 0)
+    threadNumThreads = 1;
 
   //
   // If a value was specified for the call stack size config const, use
@@ -243,14 +259,11 @@ void chpl_thread_exit(void) {
       chpl_internal_error("thread join failed");
     tlp = thread_list_head;
     thread_list_head = thread_list_head->next;
-    chpl_free(tlp, 0, 0);
+    chpl_mem_free(tlp, 0, 0);
   }
 
   if (pthread_key_delete(thread_id_key) != 0)
     chpl_internal_error("pthread_key_delete(thread_id_key) failed");
-
-  if (pthread_key_delete(thread_private_key) != 0)
-    chpl_internal_error("pthread_key_delete(thread_private_key) failed");
 
   if (pthread_attr_destroy(&thread_attributes) != 0)
     chpl_internal_error("pthread_attr_destroy() failed");
@@ -313,8 +326,8 @@ static void* pthread_func(void* arg) {
   pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, NULL); 
 
   // add us to the list of threads
-  tlp = (thread_list_p) chpl_alloc(sizeof(struct thread_list),
-                                   CHPL_RT_MD_THREAD_LIST_DESCRIPTOR, 0, 0);
+  tlp = (thread_list_p) chpl_mem_alloc(sizeof(struct thread_list),
+                                       CHPL_RT_MD_THREAD_LIST_DESCRIPTOR, 0, 0);
 
   tlp->thread = pthread_self();
   tlp->next   = NULL;
@@ -323,7 +336,7 @@ static void* pthread_func(void* arg) {
 
   if (exiting) {
     pthread_mutex_unlock(&thread_info_lock);
-    chpl_free(tlp, 0, 0);
+    chpl_mem_free(tlp, 0, 0);
     return NULL;
   }
 

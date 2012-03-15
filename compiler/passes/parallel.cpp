@@ -380,8 +380,7 @@ makeHeapAllocations() {
            (isRecord(def->sym->type) &&
             !isRecordWrappedType(def->sym->type) &&
             // sync/single are currently classes, so this shouldn't matter
-            !def->sym->type->symbol->hasFlag(FLAG_SYNC) &&
-            !def->sym->type->symbol->hasFlag(FLAG_SINGLE)))) {
+            !isSyncType(def->sym->type)))) {
         // replicate global const of primitive type
         INT_ASSERT(defMap.get(def->sym) && defMap.get(def->sym)->n == 1);
         for_defs(se, defMap, def->sym) {
@@ -697,6 +696,7 @@ parallel(void) {
         fn->insertFormalAtTail(arg1);
         fn->insertFormalAtTail(arg2);
       }
+
       if (fn) {
         nestedFunctions.add(fn);
         CallExpr* call = new CallExpr(fn);
@@ -717,6 +717,7 @@ parallel(void) {
       }
     }
   }
+
   flattenNestedFunctions(nestedFunctions);
 
   compute_call_sites();
@@ -756,10 +757,41 @@ parallel(void) {
 
   forv_Vec(FnSymbol, fn, nestedFunctions) {
     forv_Vec(CallExpr, call, *fn->calledBy) {
+      // Overhead is high for on statements if locale==here, so
+      //  perform a simple optimization here to call fn() directly if
+      //  this is the case.  In the non-blocking case if the serial
+      //  state is false, we could effectively put a begin before the
+      //  non-blocking fork but the resulting code would have similar
+      //  overhead.  In the non-blocking case when the serial state is
+      //  true, we could perform this optimization, but in our current
+      //  implementation, we don't generate code for the two paths.
+      //  Rather we use a macro, so the optimization would have to be
+      //  performed within the macro.
+      if (fn->hasFlag(FLAG_ON) && !fn->hasFlag(FLAG_NON_BLOCKING)) {
+        CallExpr *newCall = call->copy();
+        BlockStmt* lblock = new BlockStmt();
+        lblock->insertAtHead(newCall);
+        BlockStmt* rblock = new BlockStmt();
+
+        INT_ASSERT(call->get(1));
+        CallExpr* localeID = new CallExpr(PRIM_LOCALE_ID);
+        VarSymbol* tmp = newTemp(localeID->typeInfo());
+        VarSymbol* tmpBool = newTemp(dtBool);
+        call->insertBefore(new DefExpr(tmp));
+        call->insertBefore(new DefExpr(tmpBool));
+        call->insertBefore(new CallExpr(PRIM_MOVE, tmp, localeID));
+        call->insertBefore(new CallExpr(PRIM_MOVE, tmpBool,
+                                        new CallExpr(PRIM_EQUAL, tmp,
+                                                     call->get(1)->copy())));
+        call->insertBefore(new CondStmt(new SymExpr(tmpBool), lblock, rblock));
+        rblock->insertAtHead(call->remove());
+      }
       bundleArgs(call);
     }
   }
 }
+
+ClassType* wideStringType = NULL;
 
 
 static void
@@ -774,8 +806,13 @@ buildWideClass(Type* type) {
   //
   // Strings need an extra field in their wide class to hold their length
   //
-  if (type == dtString)
+  if (type == dtString) {
     wide->fields.insertAtTail(new DefExpr(new VarSymbol("size", dtInt[INT_SIZE_32])));
+    if (wideStringType) {
+      INT_FATAL("Created two wide string types");
+    }
+    wideStringType = wide;
+  }
 
   //
   // set reference type of wide class to reference type of class since
@@ -787,6 +824,21 @@ buildWideClass(Type* type) {
   wideClassMap.put(type, wide);
 }
 
+//
+// This is a utility function that handles a case when wide strings
+// are passed to extern functions.  If strings were a little better
+// behaved, it arguably wouldn't/shouldn't be required.
+//
+bool passingWideStringToExtern(Type* t) {
+  ClassType* ct = toClassType(t);
+  if (ct) {
+    Symbol* valField = ct->getField("_val", false);
+    if (valField && valField->type == wideStringType) {
+      return true;
+    }
+  }
+  return false;
+}
 
 //
 // The argument expr is a use of a wide reference. Insert a check to ensure
@@ -998,9 +1050,6 @@ static void handleLocalBlocks() {
 //
 void
 insertWideReferences(void) {
-  if (fRuntime)
-    return;
-
   FnSymbol* heapAllocateGlobals = new FnSymbol("chpl__heapAllocateGlobals");
   heapAllocateGlobals->retType = dtVoid;
   theProgram->block->insertAtTail(new DefExpr(heapAllocateGlobals));
@@ -1213,13 +1262,17 @@ insertWideReferences(void) {
       for_alist(arg, call->argList) {
         SymExpr* sym = toSymExpr(arg);
         INT_ASSERT(sym);
-        if (sym->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) ||
-            sym->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
-          VarSymbol* var = newTemp(sym->typeInfo()->getField("addr")->type);
+        Type* symType = sym->typeInfo();
+        if (symType->symbol->hasFlag(FLAG_WIDE_CLASS) ||
+            symType->symbol->hasFlag(FLAG_WIDE)) {
+          Type* narrowType = symType->getField("addr")->type;
+          
+          VarSymbol* var = newTemp(narrowType);
           SET_LINENO(call);
           call->getStmtExpr()->insertBefore(new DefExpr(var));
-          if (sym->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) &&
-              var->type->symbol->hasFlag(FLAG_EXTERN)) {
+          if ((symType->symbol->hasFlag(FLAG_WIDE_CLASS) &&
+               var->type->symbol->hasFlag(FLAG_EXTERN)) ||
+              passingWideStringToExtern(narrowType)) {
             // Insert a local check because we cannot reflect any changes
             // made to the class back to another locale
             if (!fNoLocalChecks)

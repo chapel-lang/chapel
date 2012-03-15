@@ -1,28 +1,32 @@
+// ChapelLocale.chpl
+//
+pragma "no use ChapelStandard"
+module ChapelLocale {
+
 use DefaultRectangular;
 
-class locale {
-  const myRealm: realm;
-  const chpl_id: int;
-  const chpl_uid: int;
-  const myNumCores: int;
+// would like this to be the following, but it breaks about 20 tests:
+//const LocaleSpace: domain(1) distributed(OnePer) = [0..numLocales-1];
+const LocaleSpace: domain(1) = [0..numLocales-1];
 
-  proc locale(r: realm = nil, id = -1, uid = -1,
-             numCores = __primitive("chpl_coresPerLocale")) {
+var doneCreatingLocales: bool;
+
+class locale {
+  const chpl_id: int;
+  const numCores: int(32);
+
+  proc locale(id = -1) {
     if doneCreatingLocales {
       halt("locales cannot be created");
     }
-    myRealm = r;
     chpl_id = id;
-    chpl_uid = uid;
-    myNumCores = numCores;
+
+    extern proc chpl_numCoresOnThisLocale(): int(32);
+    numCores = chpl_numCoresOnThisLocale();
   }
 
   proc id {
     return chpl_id;
-  }
-
-  proc uid {
-    return chpl_uid;
   }
 
   proc name {
@@ -33,25 +37,28 @@ class locale {
 
   proc callStackSize: uint(64) {
     // Locales may have differing call stack sizes.
-    _extern proc chpl_task_getCallStackSize(): uint(64);
+    extern proc chpl_task_getCallStackSize(): uint(64);
     var retval: uint(64);
     on this do retval = chpl_task_getCallStackSize();
     return retval;
   }
 
   proc writeThis(f: Writer) {
-    if (numRealms == 1) {
-      f.write("LOCALE", id);
-    } else {
-      f.write("LOCALE", myRealm.id, "-", id);
-    }
+    f.write("LOCALE", id);
   }
 }
 
-proc chpl_setupLocale(uid) {
+pragma "private" var _here: locale;
+
+proc here return _here;
+
+// Perform locale-specific initialization.
+// This is where global variables declared 'pragma "private"' are initialized.
+// That initialization is not currently arranged automatically by the compiler.
+proc chpl_setupLocale(id) {
   var tmp: locale;
-  on __primitive("chpl_on_locale_num", uid) {
-    tmp = new locale(uid=uid);
+  on __primitive("chpl_on_locale_num", id) {
+    tmp = new locale(id);
     _here = tmp;
     if (defaultDist._value == nil) {
       defaultDist = new dmap(new DefaultDist());
@@ -60,18 +67,52 @@ proc chpl_setupLocale(uid) {
   return tmp;
 }
 
-proc locale.numCores {
-  return myNumCores;
+const Locales: [LocaleSpace] locale;
+// We cannot use a forall here because the default leader iterator will
+// access data structures that are not yet initialized (i.e., Locales
+// array/here).  An alternative would be to use a coforall+on and refactor
+// chpl_setupLocale().
+for loc in LocaleSpace do
+  Locales(loc) = chpl_setupLocale(loc);
+
+doneCreatingLocales = true;
+
+//
+// tree for recursive task invocation during privatization
+//
+record chpl_localeTreeRecord {
+  var left, right: locale;
+}
+pragma "private" var chpl_localeTree: chpl_localeTreeRecord;
+
+proc chpl_initLocaleTree() {
+  for i in LocaleSpace {
+    var left: locale = nil;
+    var right: locale = nil;
+    var child = (i+1)*2-1;
+    if child < numLocales {
+      left = Locales[child];
+      child += 1;
+      if child < numLocales then
+        right = Locales[child];
+    }
+    on Locales(i) {
+      chpl_localeTree.left = left;
+      chpl_localeTree.right = right;
+    }
+  }
 }
 
-proc chpl_int_to_locale(in id) {
-  for r in Realms {
-    if id < r.numLocales then
-      return r.Locales[id];
-    id -= r.numLocales;
-  }
-  halt("id out of range in chpl_int_to_locale()");
-  return Realms[0].Locales[0];
+chpl_initLocaleTree();
+
+//proc locale.numCores {
+//  var numCores: int;
+//  on this do numCores = __primitive("chpl_coresPerLocale");
+//  return numCores;
+//}
+
+proc chpl_int_to_locale(id) {
+  return Locales(id);
 }
 
 
@@ -126,7 +167,7 @@ proc chpl_getPrivatizedCopy(type objectType, objectPid:int): objectType
 // There should be a type like this declared in chpl-comm.h with a single
 // function that returns the C struct.  We're not doing it that way yet
 // due to some shortcomings in our extern records implementation.
-// Once that gets sorted out, we can turn this into an _extern record,
+// Once that gets sorted out, we can turn this into an extern record,
 // and remove the 8 or so individual functions below that return the
 // various counters.
 record chpl_commDiagnostics {
@@ -142,16 +183,16 @@ record chpl_commDiagnostics {
 
 type commDiagnostics = chpl_commDiagnostics;
 
-_extern proc chpl_startVerboseComm();
-_extern proc chpl_stopVerboseComm();
-_extern proc chpl_startVerboseCommHere();
-_extern proc chpl_stopVerboseCommHere();
-_extern proc chpl_startCommDiagnostics();
-_extern proc chpl_stopCommDiagnostics();
-_extern proc chpl_startCommDiagnosticsHere();
-_extern proc chpl_stopCommDiagnosticsHere();
-_extern proc chpl_resetCommDiagnosticsHere();
-_extern proc chpl_getCommDiagnosticsHere(out cd: commDiagnostics);
+extern proc chpl_startVerboseComm();
+extern proc chpl_stopVerboseComm();
+extern proc chpl_startVerboseCommHere();
+extern proc chpl_stopVerboseCommHere();
+extern proc chpl_startCommDiagnostics();
+extern proc chpl_stopCommDiagnostics();
+extern proc chpl_startCommDiagnosticsHere();
+extern proc chpl_stopCommDiagnosticsHere();
+extern proc chpl_resetCommDiagnosticsHere();
+extern proc chpl_getCommDiagnosticsHere(out cd: commDiagnostics);
 
 proc startVerboseComm() { chpl_startVerboseComm(); }
 proc stopVerboseComm() { chpl_stopVerboseComm(); }
@@ -163,31 +204,28 @@ proc stopCommDiagnostics() { chpl_stopCommDiagnostics(); }
 proc startCommDiagnosticsHere() { chpl_startCommDiagnosticsHere(); }
 proc stopCommDiagnosticsHere() { chpl_stopCommDiagnosticsHere(); }
 
-proc resetCommDiagnostics(realmID: int(32) = 0) {
-  for loc in Realms(realmID).Locales do on loc do
+proc resetCommDiagnostics() {
+  for loc in Locales do on loc do
     resetCommDiagnosticsHere();
 }
 
-proc resetCommDiagnosticsHere(realmID: int(32) = 0) {
+inline proc resetCommDiagnosticsHere() {
   chpl_resetCommDiagnosticsHere();
 }
 
-// TODO: generalize this for multiple realms by returning a manhattan
-// array
 // See note above regarding extern records
-_extern proc chpl_numCommGets(): int(32);
-_extern proc chpl_numCommNBGets(): int(32);
-_extern proc chpl_numCommTestNBGets(): int(32);
-_extern proc chpl_numCommWaitNBGets(): int(32);
-_extern proc chpl_numCommPuts(): int(32);
-_extern proc chpl_numCommForks(): int(32);
-_extern proc chpl_numCommFastForks(): int(32);
-_extern proc chpl_numCommNBForks(): int(32);
+extern proc chpl_numCommGets(): int(32);
+extern proc chpl_numCommNBGets(): int(32);
+extern proc chpl_numCommTestNBGets(): int(32);
+extern proc chpl_numCommWaitNBGets(): int(32);
+extern proc chpl_numCommPuts(): int(32);
+extern proc chpl_numCommForks(): int(32);
+extern proc chpl_numCommFastForks(): int(32);
+extern proc chpl_numCommNBForks(): int(32);
 
-proc getCommDiagnostics(realmID: int(32) = 0) {
-  var D: [Realms(realmID).LocaleSpace] commDiagnostics;
-  const r = Realms(realmID);
-  for loc in r.Locales do on loc {
+proc getCommDiagnostics() {
+  var D: [LocaleSpace] commDiagnostics;
+  for loc in Locales do on loc {
     // See note above regarding extern records
     D(loc.id).get = chpl_numCommGets();
     D(loc.id).put = chpl_numCommPuts();
@@ -201,6 +239,18 @@ proc getCommDiagnostics(realmID: int(32) = 0) {
   return D;
 }
 
+proc getCommDiagnosticsHere() {
+  var cd: commDiagnostics;
+  cd.get = chpl_numCommGets();
+  cd.put = chpl_numCommPuts();
+  cd.fork = chpl_numCommForks();
+  cd.fork_fast = chpl_numCommFastForks();
+  cd.fork_nb = chpl_numCommNBForks();
+  cd.get_nb = chpl_numCommNBGets();
+  cd.get_nb_test = chpl_numCommTestNBGets();
+  cd.get_nb_wait = chpl_numCommWaitNBGets();
+  return cd;
+}
 
 config const
   memTrack: bool = false,
@@ -216,25 +266,15 @@ config const
   memLeaksLog: string = "";
 
 proc chpl_startTrackingMemory() {
-  coforall r in Realms {
-    if r.Locales(0) == here {
-      coforall loc in r.Locales {
-        if loc == here {
+  if Locales(0) == here {
+    coforall loc in Locales {
+      if loc == here {
+        __primitive("chpl_setMemFlags", memTrack, memStats, memLeaks, memLeaksTable, memMax, memThreshold, memLog, memLeaksLog);
+      } else on loc {
           __primitive("chpl_setMemFlags", memTrack, memStats, memLeaks, memLeaksTable, memMax, memThreshold, memLog, memLeaksLog);
-        } else on loc {
-            __primitive("chpl_setMemFlags", memTrack, memStats, memLeaks, memLeaksTable, memMax, memThreshold, memLog, memLeaksLog);
-        }
-      }
-    } else {
-      on r {
-        coforall loc in r.Locales {
-          if loc == here {
-            __primitive("chpl_setMemFlags", memTrack, memStats, memLeaks, memLeaksTable, memMax, memThreshold, memLog, memLeaksLog);
-          } else on loc {
-              __primitive("chpl_setMemFlags", memTrack, memStats, memLeaks, memLeaksTable, memMax, memThreshold, memLog, memLeaksLog);
-          }
-        }
       }
     }
   }
+}
+
 }

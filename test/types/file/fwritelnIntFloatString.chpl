@@ -2,7 +2,8 @@ var myInt = 123;
 var myFloat = 99.9;
 var myString = " ";
 
-var f: file = new file(filename = "_test_fwritelnIntFloatStringFile.txt", mode = FileAccessMode.write);
+var f = open("_test_fwritelnIntFloatStringFile.txt", iomode.cw).writer();
 
-f.open();
 f.writeln(myInt, myString, myFloat);
+f.close();
+

@@ -1,3 +1,3 @@
-_extern proc chpl_malloc(number, size, description, lineno, filename);
+extern proc chpl_mem_allocMany(number, size, description, lineno, filename);
 
-chpl_malloc(0, 0, 0, 3, "");
+chpl_mem_allocMany(0, 0, 0, 3, "");

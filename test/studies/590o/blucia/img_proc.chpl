@@ -38,30 +38,32 @@ iter aawindow(W:range,H:range,filter_width:int,filter_height:int){
 
 proc main() {
 
-  var infile = new file(inputfile,path='./',mode=FileAccessMode.read);
-  infile.open();
-  const m = infile.read(int),
-        n = infile.read(int);
+  var infile = open(inputfile, iomode.r);
+  var reader = infile.reader();
+  const m = reader.read(int),
+        n = reader.read(int);
 
   const Width = 0..m-1, Height = 0..n-1, ImgDom = [Width, Height];
   var Img: [ImgDom] real;
   var outImg: [ImgDom] real;
 
   for ij in ImgDom do{
-    infile.read(Img(ij));
+    reader.read(Img(ij));
     outImg(ij) = 0;
   }
+  reader.close();
   infile.close();
   
-  var finfile = new file(filterfile,path='./',mode=FileAccessMode.read);
-  finfile.open();
+  var finfile = open(filterfile, iomode.r);
+  var freader = finfile.reader();
   
-  const fx = finfile.read(int), fy = finfile.read(int); 
+  const fx = freader.read(int), fy = freader.read(int); 
   const FilterDom = [0..((fx*fy)-1)];
   const Filter : [FilterDom] real;
   for i in FilterDom do{
-    finfile.read(Filter(i));
+    freader.read(Filter(i));
   }
+  freader.close();
   finfile.close();
 
   writeln("Original Array:");

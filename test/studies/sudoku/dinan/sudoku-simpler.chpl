@@ -48,10 +48,9 @@ proc solveBoard(inout board: [] int) {
 
 proc main() {
   var board: [1..9, 1..9] int;
-  var boardData = new file(inputfile, path='./', mode=FileAccessMode.read);
+  var boardData = open(inputfile, iomode.r).reader();
 
   // Read the board from the input file
-  boardData.open();
 
   writeln("Reading board from: ", inputfile, "\n");
   for element in board do boardData.read(element);

@@ -1,3 +1,3 @@
-var f : file = new file(filename = "closedWithoutOpen.txt", mode = FileAccessMode.write);
+var f : file;
 
 f.close();

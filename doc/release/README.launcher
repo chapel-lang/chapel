@@ -48,7 +48,6 @@ Currently-supported launchers include:
   mtarun            : Cray XMT application launcher using mtarun
   pbs-aprun         : Cray XT application launcher using PBS (qsub) + aprun
   pbs-gasnetrun_ibv : GASNet launcher using PBS (qsub) over Infiniband
-  pvm               : PVM launcher using pvm_spawn
   none              : do not use a launcher
 
 A specific launcher can be requested by setting the CHPL_LAUNCHER
@@ -69,8 +68,6 @@ environment variable.  If left unset, a default is picked as follows:
     (otherwise)                 -> gasnetrun_ibv
   + CHPL_COMM_SUBSTRATE=udp     -> amudprun
   (otherwise)                   -> none
-
-  CHPL_COMM=pvm                 -> pvm
 
   (otherwise)                   -> none
 

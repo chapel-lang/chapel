@@ -1,1 +1,0 @@
--M SSCA2_Modules SSCA2_Modules/SSCA2_kernels_atomic.chpl SSCA2_Modules/analyze_torus_graphs_stencil_rep_v1.chpl -sREPRODUCIBLE_PROBLEMS=true -sPRINT_TIMING_STATISTICS=false --no-warnings --fast --main-module=SSCA2_main

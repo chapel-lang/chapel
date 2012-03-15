@@ -31,7 +31,8 @@ void collectSymExprs(BaseAST* ast, Vec<SymExpr*>& symExprs);
 void collectSymbols(BaseAST* ast, Vec<Symbol*>& symbols);
 
 // utility routines for clearing and resetting lineno and filename
-void reset_line_info(BaseAST* baseAST, int lineno);
+void reset_ast_loc(BaseAST* destNode, astlocT astloc);
+void reset_ast_loc(BaseAST* destNode, BaseAST* sourceNode);
 
 // compute call sites FnSymbol::calls
 void compute_call_sites();
@@ -116,8 +117,7 @@ void buildDefUseSets(Vec<Symbol*>& syms,
 // replace symbol use with another
 void subSymbol(BaseAST* ast, Symbol* oldSym, Symbol* newSym);
 
-// replaces Fixup
-void remove_help(BaseAST* ast, int dummy=0); // dummy is never used
+void remove_help(BaseAST* ast, int trace_flag);
 void parent_insert_help(BaseAST* parent, Expr* ast);
 void sibling_insert_help(BaseAST* sibling, BaseAST* ast);
 void insert_help(BaseAST* ast, Expr* parentExpr, Symbol* parentSymbol);

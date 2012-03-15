@@ -649,8 +649,7 @@ proc AMRHierarchy.AMRHierarchy (
   inputIC:    func(dimension*real,real))
 {
 
-  const parameter_file = new file(file_name, FileAccessMode.read);
-  parameter_file.open();
+  const parameter_file = open(file_name, iomode.r).reader();
 
   //==== Safety check the dimension ====
   var dim_input: int;
@@ -914,17 +913,16 @@ proc AMRHierarchy.clawOutput(frame_number: int)
   var n_grids: int = 0;
   for level in levels do n_grids += level.grids.numIndices;
 
-  const time_file = new file(time_file_name, FileAccessMode.write);
-  time_file.open();
+  const time_file = open(time_file_name, iomode.cw).writer();
   writeTimeFile(time, 1, n_grids, 1, time_file);
   time_file.close();
 
 
   //---- Solution file ----
   
-  const solution_file = new file(solution_file_name, FileAccessMode.write);
-  solution_file.open();
+  const solution_file = open(solution_file_name, iomode.cw).writer();
   this.writeData(solution_file);
+  solution_file.close();
 
 }
 
@@ -934,7 +932,7 @@ proc AMRHierarchy.clawOutput(frame_number: int)
 // Proceeds down the indexed_levels, calling the LevelVariable.write
 // method on each corresponding LevelVariable.
 //----------------------------------------------------------------
-proc AMRHierarchy.writeData(outfile: file){
+proc AMRHierarchy.writeData(outfile: channel){
 
   var base_grid_number = 1;
 

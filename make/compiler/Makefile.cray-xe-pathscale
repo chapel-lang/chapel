@@ -2,4 +2,4 @@
 
 XE_GEN_CFLAGS = -OPT:Olimit=0
 
-include $(CHAPEL_ROOT)/make/compiler/Makefile.cray-xe
+include $(CHPL_MAKE_HOME)/make/compiler/Makefile.cray-xe

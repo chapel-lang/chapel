@@ -14,7 +14,7 @@
 #include <machine/runtime.h>
 #endif
 #include "chplrt.h"
-#include "chpl_mem.h"
+#include "chpl-mem.h"
 #include "chplsys.h"
 #include "chpl-tasks.h"
 #include "chpl-comm.h"
@@ -60,7 +60,7 @@ uint64_t chpl_bytesPerLocale(void) {
 }
 
 
-int32_t chpl_coresPerLocale(void) {
+int32_t chpl_numCoresOnThisLocale(void) {
 #ifdef NO_CORES_PER_LOCALE
   return 1;
 #elif defined __APPLE__
@@ -78,35 +78,17 @@ int32_t chpl_coresPerLocale(void) {
   int32_t numcores = mta_get_num_teams();
   return numcores;
 #else
-  int32_t numcores = (int32_t)sysconf(_SC_NPROCESSORS_ONLN);
+  static int32_t numcores = 0;
+  if (numcores == 0) {
+    numcores = (int32_t)sysconf(_SC_NPROCESSORS_ONLN);
+  }
   return numcores;
 #endif
 }
 
 
 int32_t chpl_maxThreads(void) {
-  int32_t comm_max = chpl_comm_getMaxThreads();
-  int32_t threads_max = chpl_task_getMaxThreads();
-
-  if (comm_max == 0)
-    return threads_max;
-  else if (threads_max == 0)
-    return comm_max;
-  else
-    return comm_max < threads_max ? comm_max : threads_max;
-}
-
-
-int32_t chpl_maxThreadsLimit(void) {
-  int32_t comm_max = chpl_comm_maxThreadsLimit();
-  int32_t threads_max = chpl_task_getMaxThreadsLimit();
-
-  if (comm_max == 0)
-    return threads_max;
-  else if (threads_max == 0)
-    return comm_max;
-  else
-    return comm_max < threads_max ? comm_max : threads_max;
+  return chpl_comm_getMaxThreads();
 }
 
 
@@ -119,8 +101,8 @@ chpl_string chpl_localeName(void) {
   newnamelen = strlen(utsinfo.nodename)+1;
   if (newnamelen > namelen) {
     namelen = newnamelen;
-    namespace = chpl_realloc(namespace, newnamelen, sizeof(char), 
-                             CHPL_RT_MD_LOCALE_NAME_BUFFER, 0, NULL);
+    namespace = chpl_mem_realloc(namespace, newnamelen, sizeof(char), 
+                                 CHPL_RT_MD_LOCALE_NAME_BUFFER, 0, NULL);
   }
   strcpy(namespace, utsinfo.nodename);
   return namespace;

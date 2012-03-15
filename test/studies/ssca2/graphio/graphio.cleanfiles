@@ -1,0 +1,11 @@
+graphio.1.vertex_edge_info.data
+graphio.1.sv2_snapshot.data
+graphio.1.ev2_snapshot.data
+graphio.1.start_snapshot.data
+graphio.1.weight_snapshot.data
+
+graphio.2.vertex_edge_info.data
+graphio.2.sv2_snapshot.data
+graphio.2.ev2_snapshot.data
+graphio.2.start_snapshot.data
+graphio.2.weight_snapshot.data

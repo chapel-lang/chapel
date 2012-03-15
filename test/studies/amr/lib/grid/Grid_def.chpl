@@ -281,8 +281,7 @@ proc Grid.xValue (point_index: dimension*int) {
 
 proc readGrid(file_name: string) {
 
-  var input_file = new file(file_name, FileAccessMode.read);
-  input_file.open();
+  var input_file = open(file_name, iomode.r).reader();
 
   var dim_in: int;
   input_file.readln(dim_in);
@@ -324,8 +323,7 @@ proc readGrid(file_name: string) {
 
 proc setOutputTimes (file_name: string) {
 
-  var input_file = new file(file_name, FileAccessMode.read);
-  input_file.open();
+  var input_file = open(file_name, iomode.r).reader();
 
   var initial_time, final_time: real;
   var n_output: int;

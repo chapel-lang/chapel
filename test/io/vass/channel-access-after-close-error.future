@@ -1,0 +1,7 @@
+error message: report writing/reading/otherwise accessing a channel after it has been closed with a real error message
+
+Right now I am getting a segfault, which is not very informative.
+
+I suggest that channel accesses (read/write/etc.) do perform
+the is-it-closed check first at least when things like bounds checking
+are allowed. This check can be omitted when compiling with --fast.

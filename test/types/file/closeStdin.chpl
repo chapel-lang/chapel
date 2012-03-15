@@ -1,3 +1,1 @@
-var  fin : file = stdin;
-
-fin.close();
+stdin.close();

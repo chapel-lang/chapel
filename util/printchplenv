@@ -23,13 +23,6 @@ $targcompiler = `$utildirname/compiler --target`; chomp($targcompiler);
 
 print "CHPL_TARGET_PLATFORM: $targplatform\n";
 print "CHPL_TARGET_COMPILER: $targcompiler\n";
-if (($targcompiler =~ /^cray-xt/) or ($targcompiler =~ /^cray-xe/)) {
-    $link_dynamic = $ENV{'CHPL_ASYNCPE_USE_DYNAMIC'};
-    if (($link_dynamic eq "true") or ($link_dynamic eq "false")) {
-        print "  CHPL_ASYNCPE_USE_DYNAMIC: $link_dynamic\n";
-    }
-}
-
 
 $comm = `$utildirname/comm`; chomp($comm);
 print "CHPL_COMM: $comm\n";
@@ -60,4 +53,6 @@ $mem = `$utildirname/mem`; chomp($mem);
 print "CHPL_MEM: $mem\n";
 $make = `$utildirname/chplmake`; chomp($make);
 print "CHPL_MAKE: $make\n";
+$atomics = `$utildirname/atomics`; chomp($atomics);
+print "CHPL_ATOMICS: $atomics\n";
 

@@ -1,8 +1,9 @@
-CHAPEL_ROOT = ../..
-CHAPEL_SUBDIR = third-party/qthread
-CHPL_MAKE_HOST_TARGET = --target
-include $(CHAPEL_ROOT)/make/Makefile.base
+ifndef CHPL_MAKE_HOME
+export CHPL_MAKE_HOME=$(shell pwd)/../..
+endif
 
+CHPL_MAKE_HOST_TARGET = --target
+include $(CHPL_MAKE_HOME)/make/Makefile.base
 
 #
 # set up the directories
@@ -12,20 +13,28 @@ QTHREAD_INSTALL_DIR = $(QTHREAD_ABS_DIR)/$(QTHREAD_INSTALL_SUBDIR)
 QTHREAD_BUILD_DIR = $(QTHREAD_ABS_DIR)/$(QTHREAD_BUILD_SUBDIR)
 QTHREAD_DIR = $(QTHREAD_ABS_DIR)
 
+ifeq ($(CHPL_MAKE_TARGET_PLATFORM),xt-cle)
+CHPL_QTHREAD_CFG_OPTIONS += --host=x86_64-pc-linux-gnu --build=x86_64-suse-linux-gnu
+endif
+
+ifeq ($(CHPL_MAKE_TARGET_PLATFORM),xe-cle)
+CHPL_QTHREAD_CFG_OPTIONS += --host=x86_64-pc-linux-gnu --build=x86_64-suse-linux-gnu
+endif
+
 default: all
 
 all: qthread
 
 clean: FORCE
-	cd $(QTHREAD_SUBDIR) && make clean
+	rm -rf $(QTHREAD_BUILD_DIR)
 
 clobber: FORCE
-	rm -r $(QTHREAD_INSTALL_DIR)
+	rm -rf build install
 
 
 qthread-config: FORCE
 	mkdir -p $(QTHREAD_BUILD_DIR)
-	cd $(QTHREAD_BUILD_DIR) && $(QTHREAD_SUBDIR)/configure CC='$(CC)' CXX='$(CXX)' --prefix=$(QTHREAD_INSTALL_DIR) --enable-interfaces=chapel CHPL_HOME=$(CURDIR)/$(CHAPEL_ROOT)
+	cd $(QTHREAD_BUILD_DIR) && $(QTHREAD_SUBDIR)/configure CC='$(CC)' CXX='$(CXX)' --prefix=$(QTHREAD_INSTALL_DIR) --enable-interfaces=chapel CHPL_HOME=$(CHPL_MAKE_HOME) $(CHPL_QTHREAD_CFG_OPTIONS) --disable-spawn-cache
 
 qthread-build: FORCE
 	cd $(QTHREAD_BUILD_DIR) && $(MAKE)

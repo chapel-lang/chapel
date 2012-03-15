@@ -7,14 +7,21 @@ COMMON_LAUNCHER_SRCS = \
 
 COMMON_NOGEN_SRCS = \
 	$(COMMON_LAUNCHER_SRCS) \
+	bulkget.c \
 	chpl-comm.c \
 	chplcopygc.c \
 	chplexit.c \
 	chplio.c \
-	chpl_mem.c \
+	chpl-mem.c \
 	chplmemtrack.c \
 	chplsys.c \
+	deque.c \
 	gdb.c \
+	qbuffer.c \
+	qio.c \
+	qio_formatted.c \
+	sys.c \
+	sys_xsi_strerror_r.c \
 
 ifdef NVCC
 CUDA_SRCS = \

@@ -5,7 +5,7 @@
 #include "chplcgfns.h"
 #include "chplexit.h"
 #include "chplio.h"
-#include "chpl_mem.h"
+#include "chpl-mem.h"
 #include "chplrt.h"
 #include "config.h"
 #include "error.h"
@@ -130,11 +130,6 @@ void initConfigVarTable(void) {
   for (i = 0; i < HASHSIZE; i++) {
     configVarTable[i] = NULL;
   }
-  if (chpl_numRealms > 1) {
-    /* This should be a true configuration variable, but we can't
-       handle array configuration variables yet */
-    installConfigVar("localesPerRealm", "array-of-int", "Built-In");
-  }
 }
 
 
@@ -254,9 +249,6 @@ void initSetValue(const char* varName, const char* value,
   if (strcmp(varName, "numLocales") == 0) {
     parseNumLocales(value, lineno, filename);
   }
-  if (strcmp(varName, "localesPerRealm") == 0) {
-    parseLocalesPerRealm(value, lineno, filename);
-  }
   configVar->setValue = chpl_glom_strings(1, value);
 }
 
@@ -283,7 +275,7 @@ void installConfigVar(const char* varName, const char* value,
                       const char* moduleName) {
   unsigned hashValue;
   configVarType* configVar = (configVarType*) 
-    chpl_malloc(1, sizeof(configVarType), CHPL_RT_MD_CONFIG_TABLE_DATA, 0, 0);
+    chpl_mem_allocMany(1, sizeof(configVarType), CHPL_RT_MD_CONFIG_TABLE_DATA, 0, 0);
 
   hashValue = hash(varName);
   configVar->nextInBucket = configVarTable[hashValue]; 
@@ -350,9 +342,9 @@ int handlePossibleConfigVar(int* argc, char* argv[], int argnum,
                             int32_t lineno, chpl_string filename) {
   int retval = 0;
   int arglen = strlen(argv[argnum]+2)+1;
-  char* argCopy = chpl_malloc(arglen, sizeof(char),
-                              CHPL_RT_MD_CONFIG_ARG_COPY_DATA, argnum,
-                              "<command-line>");
+  char* argCopy = chpl_mem_allocMany(arglen, sizeof(char),
+                                     CHPL_RT_MD_CONFIG_ARG_COPY_DATA, argnum,
+                                     "<command-line>");
   char* equalsSign;
   const char* moduleName;
   char* varName;
@@ -385,7 +377,7 @@ int handlePossibleConfigVar(int* argc, char* argv[], int argnum,
     }
   }
 
-  chpl_free(argCopy, argnum, "<command-line>");
+  chpl_mem_free(argCopy, argnum, "<command-line>");
   return retval;
 }
 
@@ -428,8 +420,8 @@ void parseConfigFile(const char* configFilename,
               initSetValue(varName, configValBuffer, moduleName, 0, configFilename);
             }
           }
-        }        
-      } 
+        }
+      }
     }
   }
   fclose(argFile);

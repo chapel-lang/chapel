@@ -3,7 +3,8 @@
 
 #define CHPL_COMM_HAS_NB
 
-typedef void *chpl_comm_get_nb_token_t;
+typedef void* chpl_comm_get_nb_token_t;
+#define CHPL_COMM_NB_TOKEN_NULL ((chpl_comm_get_nb_token_t) 0)
 
 #define CHPL_COMM_GET_NB(localvar, locale, addr, type, tid, len, ln, fn)  \
   do {                                                             \
@@ -25,16 +26,16 @@ typedef void *chpl_comm_get_nb_token_t;
 // notes:
 //   address is arbitrary
 //   size and locale are part of p
-//   token is the handle returned by GASNet
+//   token is the unique handle for the reference
 //
 void chpl_comm_get_nb(void *addr, int32_t locale, void* raddr,
                       int32_t elemSize, int32_t typeIndex, int32_t len,
                       chpl_comm_get_nb_token_t *token, int ln, chpl_string fn);
 
-int chpl_comm_test_get_nb(chpl_comm_get_nb_token_t *token,
+int chpl_comm_test_get_nb(chpl_comm_get_nb_token_t token,
                           int ln, chpl_string fn);
 
-void chpl_comm_wait_get_nb(chpl_comm_get_nb_token_t *token,
+void chpl_comm_wait_get_nb(chpl_comm_get_nb_token_t token,
                            int ln, chpl_string fn);
 
 #endif

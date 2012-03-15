@@ -1,3 +1,8 @@
+// DefaultOpaque.chpl
+//
+pragma "no use ChapelStandard"
+module DefaultOpaque {
+
 class DefaultOpaqueDom: BaseOpaqueDom {
   type idxType = _OpaqueIndex;
   param parSafe: bool;
@@ -34,13 +39,13 @@ class DefaultOpaqueDom: BaseOpaqueDom {
       yield i;
   }
 
-  iter these(param tag: iterator) where tag == iterator.leader {
-    for block in adomain.these(tag=iterator.leader) do
+  iter these(param tag: iterKind) where tag == iterKind.leader {
+    for block in adomain.these(tag=iterKind.leader) do
       yield block;
   }
 
-  iter these(param tag: iterator, follower) where tag == iterator.follower {
-    for i in adomain.these(tag=iterator.follower, follower) do
+  iter these(param tag: iterKind, followThis) where tag == iterKind.follower {
+    for i in adomain.these(tag=iterKind.follower, followThis) do
       yield i;
   }
 
@@ -89,13 +94,13 @@ class DefaultOpaqueArr: BaseArr {
       yield e;
   }
 
-  iter these(param tag: iterator) where tag == iterator.leader {
-    for block in dom.these(tag=iterator.leader) do
+  iter these(param tag: iterKind) where tag == iterKind.leader {
+    for block in dom.these(tag=iterKind.leader) do
       yield block;
   }
 
-  iter these(param tag: iterator, follower) var where tag == iterator.follower {
-    for i in dom.these(tag=iterator.follower, follower) do
+  iter these(param tag: iterKind, followThis) var where tag == iterKind.follower {
+    for i in dom.these(tag=iterKind.follower, followThis) do
       yield dsiAccess(i);
   }
 
@@ -108,4 +113,6 @@ class DefaultOpaqueArr: BaseArr {
 
 proc DefaultOpaqueDom.dsiRemove(idx: idxType) {
   adomain.dsiRemove(idx);
+}
+
 }

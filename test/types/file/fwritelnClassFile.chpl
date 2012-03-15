@@ -3,8 +3,10 @@ class phone {
   var cell: int;
 }
 
-var myFile: file = new file(filename = "_test_fwritelnClassFile.txt", mode = FileAccessMode.write);
-myFile.open();
+var myFile = open("_test_fwritelnClassFile.txt", iomode.cw).writer();
 
 var smh: phone = new phone(name = "shannon", cell = 2065551212);
 myFile.writeln(smh);
+
+myFile.close();
+

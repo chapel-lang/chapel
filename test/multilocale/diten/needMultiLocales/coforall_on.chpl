@@ -1,5 +1,5 @@
 record R {
-  var a, b, c: bool;
+  var a, b, c: single bool;
   var s: string;
 }
 
@@ -9,21 +9,21 @@ proc main() {
     on Locales(i) {
       select i {
         when 0 {
-          while (!r.a) {}
+          r.a;
           r.s = "Hello from locale " + here.id;
         }
         when 1 {
-          while (!r.b) {}
-          _debugWriteln(here.id);
+          r.b;
+          writeln(here.id);
           r.c = true;
         }
         when 2 {
-          _debugWriteln(here.id);
+          writeln(here.id);
           r.b = true;
         }
         when 3 {
-          while (!r.c) {}
-          _debugWriteln(here.id);
+          r.c;
+          writeln(here.id);
           r.a = true;
         }
         otherwise {

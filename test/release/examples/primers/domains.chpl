@@ -94,6 +94,71 @@ AD -= "Stuart";
 AD += "Ringo";
 writeln(AD);
 
+//
+// A subdomain is a domain that is declared in terms of a parent
+// domain, causing it to have the same type as their parent.  A
+// subdomain represents a subset of its parent domain's index set,
+// though this constraint is not currently enforced by the
+// implementation.
+
+//
+// Create rectangular subdomains.
+//
+var RSD1, RSD2 : subdomain(RD);
+
+// A subdomain is initially empty.
+writeln("RSD1:", RSD1);
+writeln("RSD2:", RSD2);
+
+// We can select parts of the original rectangular domain using slicing.
+RSD1 = RD[..n/2, .., ..]; // This gives half of the domain
+RSD2 = RD[n/2+1.., .., ..]; // And this the other half.
+
+writeln("RSD1:", RSD1);
+writeln("RSD2:", RSD2);
+
+// Notes: 
+// - Subdomains of rectangular domains are regular unless they are explicitly
+// declared to be sparse.
+// - At present, range checking to ensure that a subdomain fits within its parent 
+// domain is unimplemented.
+
+//
+// Create a sparse subdomain of a regular domain.
+//
+
+var SSD: sparse subdomain(RD);
+
+writeln("SSD:", SSD); // Initially empty.
+
+// Add some indices to the sparse subdomain.
+
+SSD += (1,2,3);
+SSD += (4,5,6);
+SSD += (7,8,9);
+SSD += (9,10,1);
+
+writeln("SSD:", SSD); // Now contains an unordered set of indices.
+
+// Note: Checks to ensure that sparse subdomain indices lie within the parent domain
+// have not been implemented.
+
+//
+// Create an associative subdomain.
+//
+
+var ASD : subdomain(AD);
+
+// The subdomain is initially empty.
+
+writeln("ASD:", ASD);
+
+ASD += "Stuart";
+
+writeln("ASD:", ASD);
+
+// Note: Checks to ensure that ASD is a subset of AD have not been implemented.
+
 
 /*
  * For more information on domains, see the Domains chapter of the

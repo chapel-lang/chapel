@@ -1,1 +1,1 @@
-memmaxIntOnly.chpl:1: error: Unexpected character when converting from string to uint(64): '.'
+<internal>: error: Unexpected character when converting from string to uint(64): '.'

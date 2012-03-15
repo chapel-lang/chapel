@@ -1,4 +1,5 @@
 #define __STDC_FORMAT_MACROS
+#include <cstdlib>
 #include <inttypes.h>
 #include <stdint.h>
 #include "astutil.h"
@@ -12,11 +13,13 @@
 #include "symbol.h"
 #include "passes.h"
 
+#include "intlimits.h"
 
 FnSymbol *chpl_main = NULL;
 
 ModuleSymbol* rootModule = NULL;
 ModuleSymbol* theProgram = NULL;
+ModuleSymbol* mainModule = NULL;
 ModuleSymbol* baseModule = NULL;
 ModuleSymbol* standardModule = NULL;
 Symbol *gNil = NULL;
@@ -213,7 +216,11 @@ void VarSymbol::codegen(FILE* outfile) {
   } else if (immediate &&
              immediate->const_kind == NUM_KIND_UINT) {
     uint64_t uconst = immediate->uint_value();
-    fprintf(outfile, "UINT64(%"PRIu64")", uconst);
+    if( uconst <= (uint64_t) INT32_MAX ) {
+      fprintf(outfile, "%"PRIu64, uconst);
+    } else {
+      fprintf(outfile, "UINT64(%"PRIu64")", uconst);
+    }
   } else {
     fprintf(outfile, "%s", cname);
   }
@@ -320,6 +327,12 @@ void ArgSymbol::verify() {
     INT_FATAL(this, "Bad ArgSymbol::defaultExpr::parentSymbol");
   if (variableExpr && variableExpr->parentSymbol != this)
     INT_FATAL(this, "Bad ArgSymbol::variableExpr::parentSymbol");
+  // ArgSymbols appear only in formal parameter lists.
+  // If this one has a successor but the successor is not an argsymbol
+  // the formal parameter list is corrupted.
+  if (defPoint && defPoint->next && (!toDefExpr(defPoint->next)->sym ||
+                                     !toArgSymbol(toDefExpr(defPoint->next)->sym)))
+    INT_FATAL(this, "Bad ArgSymbol::defPoint->next");
 }
 
 
@@ -348,9 +361,12 @@ void ArgSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 
 
 bool ArgSymbol::requiresCPtr(void) {
-  if (intent == INTENT_REF ||
-      (!strcmp(name, "this") && is_complex_type(type)))
+  if (intent == INTENT_REF)
     return true;
+  if (hasFlag(FLAG_ARG_THIS)) {
+      if (is_complex_type(type))
+        return true;
+  }
   if (isRecord(type) || isUnion(type))
     return true;
   return false;
@@ -361,6 +377,11 @@ bool ArgSymbol::isConstant(void) {
   return (intent == INTENT_BLANK || intent == INTENT_CONST) &&
     !isReferenceType(type) &&
     !isRecordWrappedType(type) /* array, domain, distribution */;
+}
+
+
+bool ArgSymbol::isParameter(void) {
+  return (intent == INTENT_PARAM);
 }
 
 
@@ -455,9 +476,6 @@ FnSymbol::FnSymbol(const char* initName) :
   substitutions.clear();
   gFnSymbols.add(this);
   formals.parent = this;
-  // ProcIter: remove this entire 'if'
-  if (markNewFnSymbolsWithProcIter)
-    this->addFlag(FLAG_PROC_ITER_KW_USED);
 }
 
 
@@ -504,7 +522,6 @@ FnSymbol* FnSymbol::getFnSymbol(void) {
 FnSymbol*
 FnSymbol::copyInner(SymbolMap* map) {
   FnSymbol* copy = new FnSymbol(name);
-  copy->addFlag(FLAG_PROC_ITER_KW_USED); // ProcIter: remove
   if (hasFlag(FLAG_CONSTRUCTOR))
     copy->addFlag(FLAG_CONSTRUCTOR);
   for_formals(formal, this) {
@@ -600,10 +617,12 @@ codegenNullAssignments(FILE* outfile, const char* cname, ClassType* ct) {
 
 
 void FnSymbol::codegenDef(FILE* outfile) {
-  if (strcmp(saveCDir, "") && getModule()->filename) {
-    const char* name = strrchr(getModule()->filename, '/');
-    name = (!name) ? getModule()->filename : name + 1;
-    fprintf(outfile, "/* %s:%d */\n", name, lineno);
+  if (strcmp(saveCDir, "")) {
+   if (const char* rawname = fname()) {
+    const char* name = strrchr(rawname, '/');
+    name = name ? name + 1 : rawname;
+    fprintf(outfile, "/* %s:%d */\n", name, linenum());
+   }
   }
 
   codegenHeader(outfile);
@@ -757,11 +776,19 @@ hasGenericArgs(FnSymbol* fn) {
 }
 
 
+// Tag the given function as generic.
+// Returns true if there was a change, false otherwise.
 bool FnSymbol::tag_generic() {
   if (hasFlag(FLAG_GENERIC))
-    return false;
+    return false;  // Already generic, no change.
+
   if (int result = hasGenericArgs(this)) {
+    // This function has generic arguments, so mark it as generic.
     addFlag(FLAG_GENERIC);
+
+    // If the return type is not completely unknown (which is generic enough)
+    // and this function is a type constructor function,
+    // then mark its return type as generic.
     if (retType != dtUnknown && hasFlag(FLAG_TYPE_CONSTRUCTOR)) {
       retType->symbol->addFlag(FLAG_GENERIC);
       if (result == 2)
@@ -826,6 +853,8 @@ void ModuleSymbol::verify() {
   }
   if (block && block->parentSymbol != this)
     INT_FATAL(this, "Bad ModuleSymbol::block::parentSymbol");
+  if (initFn && !toFnSymbol(initFn))
+    INT_FATAL(this, "Bad ModuleSymbol::initFn");
 }
 
 
@@ -839,9 +868,9 @@ ModuleSymbol::copyInner(SymbolMap* map) {
 static int compareLineno(const void* v1, const void* v2) {
   FnSymbol* fn1 = *(FnSymbol**)v1;
   FnSymbol* fn2 = *(FnSymbol**)v2;
-  if (fn1->lineno > fn2->lineno)
+  if (fn1->linenum() > fn2->linenum())
     return 1;
-  else if (fn1->lineno < fn2->lineno)
+  else if (fn1->linenum() < fn2->linenum())
     return -1;
   else
     return 0;
@@ -855,9 +884,12 @@ void ModuleSymbol::codegenDef(FILE* outfile) {
   Vec<FnSymbol*> fns;
   for_alist(expr, block->body) {
     if (DefExpr* def = toDefExpr(expr))
-      if (FnSymbol* fn = toFnSymbol(def->sym))
-        if (!fn->hasFlag(FLAG_EXTERN))
-          fns.add(fn);
+      if (FnSymbol* fn = toFnSymbol(def->sym)) {
+        // Ignore external and prototype functions.
+        if (fn->hasFlag(FLAG_EXTERN) || fn->hasFlag(FLAG_FUNCTION_PROTOTYPE))
+          continue;
+        fns.add(fn);
+      }
   }
   qsort(fns.v, fns.n, sizeof(fns.v[0]), compareLineno);
   forv_Vec(FnSymbol, fn, fns) {
@@ -883,7 +915,8 @@ void ModuleSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 
 
 LabelSymbol::LabelSymbol(const char* init_name) :
-  Symbol(E_LabelSymbol, init_name, NULL)
+  Symbol(E_LabelSymbol, init_name, NULL),
+  iterResumeGoto(NULL)
 { 
   gLabelSymbols.add(this);
 }
@@ -894,12 +927,38 @@ void LabelSymbol::verify() {
   if (astTag != E_LabelSymbol) {
     INT_FATAL(this, "Bad LabelSymbol::astTag");
   }
+  if (GotoStmt* igs = iterResumeGoto) {
+    if (!isAlive(igs))
+      INT_FATAL(this, "label's iterResumeGoto is not in AST");
+    if (igs->gotoTag != GOTO_ITER_RESUME)
+      INT_FATAL(this, "label's iterResumeGoto has unexpected gotoTag");
+    if (getGotoLabelSymbol(igs) != this)
+      INT_FATAL(this, "label's iterResumeGoto does not point back to the label");
+  }
 }
 
 LabelSymbol* 
 LabelSymbol::copyInner(SymbolMap* map) {
   LabelSymbol* copy = new LabelSymbol(name);
   copy->cname = cname;
+  if (iterResumeGoto) {
+    MapElem<GotoStmt*,GotoStmt*>* rec =
+      copiedIterResumeGotos.get_record(iterResumeGoto);
+    if (rec) {
+      // we gotta have the mapping because we handle each goto exactly once
+      INT_ASSERT(rec->value);
+      // update the copy
+      copy->iterResumeGoto = rec->value;
+      // indicate we are done with it
+      rec->value = NULL;
+      // printf("LabelSymbol-copy %d > %d  irg %d > %d\n", this->id, copy->id,
+      //        iterResumeGoto->id, copy->iterResumeGoto->id);
+    } else {
+      // to be handled later - in GotoStmt::copyInner
+      // printf("LabelSymbol-copy %d > %d  irg %d no action\n",
+      //        this->id, copy->id, iterResumeGoto->id);
+    }
+  }
   return copy;
 }
 
@@ -1192,6 +1251,28 @@ static int tempID = 1;
 
 void resetTempID() {
   tempID = 1;
+}
+
+FlagSet getRecordWrappedFlags(Symbol* s) {
+  static FlagSet mask;
+  if (mask.none()) {
+    // Initialize the function-scope static variable.
+    mask.set(FLAG_ARRAY);
+    mask.set(FLAG_DOMAIN);
+    mask.set(FLAG_DISTRIBUTION);
+  }
+
+  return s->flags & mask;
+}
+
+FlagSet getSyncFlags(Symbol* s) {
+  static FlagSet mask;
+  if (mask.none()) {
+    mask.set(FLAG_SYNC);
+    mask.set(FLAG_SINGLE);
+  }
+
+  return s->flags & mask;
 }
 
 VarSymbol* newTemp(const char* name, Type* type) {

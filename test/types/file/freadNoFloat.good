@@ -1,1 +1,1 @@
-freadNoFloat.chpl:5: error: read failed: value not read
+freadNoFloat.chpl:4: error: bad format in channel.read(inout a:real) with path "freadNoFloat.txt" offset 0

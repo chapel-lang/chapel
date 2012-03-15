@@ -1,0 +1,17 @@
+feature request: assertEOF
+
+This feature request asks for (reading) channels to have an assertEOF
+method (or equivalent) as a means of easily having a sanity check that
+one has read an entire file's contents (modulo whitespace?).  While
+writing one of these manually isn't too hard (modulo the bug in
+lulesh-eof.chpl), I'd be more likely to use it and write safe code if
+it was a built-in capability.
+
+Once this capability exists, this test can be retired and it can be
+put to use in lulesh.chpl in this same directory (though other tests
+should be added to lock in the failure of the assertion, etc.)
+
+It occurs to me as I write this that perhaps instead (or in addition),
+we may want variations that do not themselves trip an assertion error
+so that the user can choose to print out their own useful error or
+halt message instead of getting a fairly generic assertion failure.

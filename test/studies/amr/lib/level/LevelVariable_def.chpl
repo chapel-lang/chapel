@@ -223,19 +223,15 @@ proc LevelVariable.clawOutput (
   //==== Time file ====
   var n_grids = level.grids.numIndices;
 
-  var outfile = new file(time_filename, FileAccessMode.write);
-  outfile.open();  
+  var outfile = open(time_filename, iomode.cw).writer();
   writeTimeFile(time, 1, n_grids, 0, outfile);
   outfile.close();
-  delete outfile;
   
   
   //==== Solution file ====
-  outfile = new file(solution_filename, FileAccessMode.write);
-  outfile.open();
+  outfile = open(solution_filename, iomode.cw).writer();
   this.writeData(1, 1, outfile);  // AMR_level=1 and base_grid_number=1 for single-level output
   outfile.close();
-  delete outfile;
 
 }
 // /|"""""""""""""""""""""""""""""""""/|
@@ -257,7 +253,7 @@ proc LevelVariable.clawOutput (
 proc LevelVariable.writeData (
   AMR_level:        int,
   base_grid_number: int,
-  outfile:          file)
+  outfile:          channel)
 {
 
   var grid_number = base_grid_number;

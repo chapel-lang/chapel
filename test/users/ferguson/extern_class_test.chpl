@@ -1,9 +1,9 @@
 
-_extern class mys {
+extern class mys {
     var x:int(32);
 }
 
-_extern proc return_mys(inout x:mys);
+extern proc return_mys(inout x:mys);
 
 var x:mys = new mys(6);
 var y:mys = x;

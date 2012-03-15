@@ -8,7 +8,7 @@ $preset_tasks   = $ENV{'CHPL_TASKS'};
 $preset_threads = $ENV{'CHPL_THREADS'};
 
 if ($preset_tasks eq "") {
-    if ($preset_threads eq "pthreads") {
+    if ($preset_threads =~ /^(minimal|pthreads)$/) {
 	$tasks = "fifo";
     } elsif ($preset_threads eq "dev-threads-1") {
 	$tasks = "dev-tasks-1";

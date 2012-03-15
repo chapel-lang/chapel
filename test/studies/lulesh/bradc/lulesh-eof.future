@@ -1,0 +1,15 @@
+bug: assertion of EOF idiom doesn't work consistently
+
+In our LULESH code, we had a few bugs in our IO routines that would
+have been easier to catch if we had checked that we were at EOF when
+we were done reading.  This code shows how I attempted to approach
+this idiom, which works with some input files
+(../lmeshes/sedov2cube.lmesh and ../lmeshes/sedov45cube.lmesh) but not
+with others (all others in ../lmeshes at the time of this writing).
+Not sure why this is... maybe related to buffering/readahead issues
+that might vary depending on precise file size?
+
+Anyway, this future locks in a case that consistently doesn't work for
+me in hopes that Michael can look into it.  Once it's working, this
+test can be retired and the commented-out EOF test in lulesh.chpl can
+be used to lock in the same behavior.

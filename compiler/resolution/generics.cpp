@@ -1,4 +1,5 @@
 #define __STDC_FORMAT_MACROS
+#include <cstdlib>
 #include <inttypes.h>
 #include "astutil.h"
 #include "caches.h"
@@ -23,7 +24,7 @@ explainInstantiation(FnSymbol* fn) {
     return;
   if (explainInstantiationModule && explainInstantiationModule != fn->defPoint->getModule())
     return;
-  if (explainInstantiationLine != -1 && explainInstantiationLine != fn->defPoint->lineno)
+  if (explainInstantiationLine != -1 && explainInstantiationLine != fn->defPoint->linenum())
     return;
 
   char msg[1024] = "";
@@ -189,17 +190,18 @@ instantiate_tuple_autoCopy(FnSymbol* fn) {
 
 static TypeSymbol*
 getNewSubType(FnSymbol* fn, Symbol* key, TypeSymbol* value) {
-  if (value->hasFlag(FLAG_SYNC) &&
+  if (getSyncFlags(value).any() &&
       strcmp(fn->name, "_construct__tuple") &&
       !fn->hasFlag(FLAG_REF)) {
-    if (!fn->hasFlag(FLAG_SYNC) ||
-        (fn->hasFlag(FLAG_METHOD) && (value->type->instantiatedFrom != fn->_this->type))) {
+    if (!getSyncFlags(fn).any() ||
+        (fn->hasFlag(FLAG_METHOD) &&
+         (value->type->instantiatedFrom != fn->_this->type))) {
       // allow types to be instantiated to sync types
       if (!key->hasFlag(FLAG_TYPE_VARIABLE)) {
         // instantiation of a non-type formal of sync type loses sync
 
         // unless sync is explicitly specified as the generic
-        if (key->type->symbol->hasFlag(FLAG_SYNC))
+        if (isSyncType(key->type))
           return value;
 
         TypeSymbol* nt = toTypeSymbol(value->type->substitutions.v[0].value);
@@ -273,7 +275,10 @@ static void
 checkInstantiationLimit(FnSymbol* fn) {
   static Map<FnSymbol*,int> instantiationLimitMap;
 
-  if (fn->getModule()->modTag != MOD_INTERNAL) {
+  // Don't count instantiations on internal modules 
+  // nor ones explicitly marked NO_INSTANTIATION_LIMIT.
+  if (fn->getModule()->modTag != MOD_INTERNAL &&
+      !fn->hasFlag(FLAG_NO_INSTANTIATION_LIMIT)) {
     if (instantiationLimitMap.get(fn) >= instantiation_limit) {
       if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR)) {
         USR_FATAL_CONT(fn->retType, "Type '%s' has been instantiated too many times",
@@ -495,7 +500,7 @@ instantiate(FnSymbol* fn, SymbolMap* subs, CallExpr* call) {
     renameInstantiatedType(newType->symbol, subs, fn);
     fn->retType->symbol->defPoint->insertBefore(new DefExpr(newType->symbol));
     newType->symbol->copyFlags(fn);
-    if (newType->symbol->hasFlag(FLAG_SYNC))
+    if (isSyncType(newType))
       newType->defaultValue = NULL;
     newType->substitutions.copy(fn->retType->substitutions);
     newType->dispatchParents.copy(fn->retType->dispatchParents);

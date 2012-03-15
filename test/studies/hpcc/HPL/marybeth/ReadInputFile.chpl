@@ -57,9 +57,8 @@ record HPLparams {
   var memAlign: int;
 
   proc initialize() {
-     var infile = new file(inFileName, path='./', mode=FileAccessMode.read);
+     var infile = open(inFileName, iomode.r).reader();
 
-     infile.open();
      infile.readln();
      infile.readln();
      infile.readln(outFileName);

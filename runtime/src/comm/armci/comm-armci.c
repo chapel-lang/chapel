@@ -9,7 +9,7 @@
 
 #include "chpl-comm.h"
 #include "chpl-comm-heap-macros.h"
-#include "chpl_mem.h"
+#include "chpl-mem.h"
 #include "chplrt.h"
 #include "error.h"
 
@@ -82,11 +82,6 @@ int32_t chpl_comm_getMaxThreads(void) {
             // threads that can be running on a process
 }
 
-int32_t chpl_comm_maxThreadsLimit(void) {
-  return 0; // set to 0 assuming ARMCI does not limit the number of
-            // threads that can be running on a process
-}
-
 //
 // initializes the communications package
 //   set chpl_localeID and chpl_numLocales
@@ -143,17 +138,15 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
   ghndl = ARMCI_Gpc_register(gpc_call_handler);
 }
 
+void chpl_comm_post_mem_init(void) { }
+
 int chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status) {
   chpl_error("--gdb not yet implemented for ARMCI", gdbArgnum, 
              "<command-line>");
   return 0;
 }
 
-void chpl_comm_init_shared_heap(void) {
-  void* heapStart = chpl_numGlobalsOnHeap*sizeof(void*) + (char*)globalPtrs[chpl_localeID];
-  size_t heapSize = _MAX_ARMCI_MEMSZ - chpl_numGlobalsOnHeap*sizeof(void*);
-  chpl_initHeap(heapStart, heapSize);
-}
+void chpl_comm_post_task_init(void) { }
 
 //
 // a final comm layer stub before barrier synching and calling into
@@ -166,6 +159,12 @@ void chpl_comm_rollcall(void) {
   // Something like the following should work:
   chpl_msg(2, "executing on locale %d of %d locale(s)\n", chpl_localeID, 
             chpl_numLocales);
+}
+
+void chpl_comm_desired_shared_heap(void** start_p, size_t* size_p) {
+  *start_p = chpl_numGlobalsOnHeap * sizeof(void*)
+             + (char*)globalPtrs[chpl_localeID];
+  *size_p  = _MAX_ARMCI_MEMSZ - chpl_numGlobalsOnHeap * sizeof(void*);
 }
 
 void chpl_comm_alloc_registry(int numGlobals) {
@@ -201,7 +200,7 @@ void chpl_comm_broadcast_private(int id, int32_t size, int32_t tid) {
   _broadcast_private_helper bph;
   void* heapAddr = NULL;
 
-  heapAddr = chpl_malloc(1, size, CHPL_RT_MD_PRIVATE_BROADCAST_DATA, 0, 0);
+  heapAddr = chpl_mem_allocMany(1, size, CHPL_RT_MD_COMM_PRIVATE_BROADCAST_DATA, 0, 0);
   bcopy(chpl_private_broadcast_table[id], heapAddr, size);
   for (i = 0; i < chpl_numLocales; i++)
     if (i != chpl_localeID) {
@@ -224,9 +223,13 @@ void chpl_comm_barrier(const char *msg) {
   ARMCI_Barrier();
 }
 
+void chpl_comm_pre_task_exit(int all) {
+  if (all)
+    chpl_comm_barrier("chpl_comm_pre_task_exit");
+}
 
-static void chpl_comm_exit_common(int status)
-{
+void chpl_comm_exit(int all, int status) {
+  // Any or all threads should be able to call ARMCI exit
   if (armci_init_called) {
     if (globalPtrs)
       ARMCI_Free_local(globalPtrs);
@@ -237,37 +240,6 @@ static void chpl_comm_exit_common(int status)
     ARMCI_Finalize();
     MPI_SAFE(MPI_Finalize());
   }
-} /* chpl_comm_exit_common */
-
-//
-// terminates communication package at the end of a normal run of the
-// chapel program -- assumes all processes are calling into the
-// routine.  If the communication layer likes to call exit, the exit
-// code is provided using the "status" argument; if it doesn't, it
-// can simply return and the Chapel program will call exit().
-//
-// notes:
-//   this function is called last
-//   a barrier is invoked before calling into this function
-//   Chapel's program termination is not yet implemented correctly
-//
-void chpl_comm_exit_all(int status) {
-  // Insert cooperative ARMCI exit call here
-  chpl_comm_exit_common(status);
-}
-
-
-//
-// this routine should terminate the communication package when called
-// by any thread, and should clean up the communication package's
-// resources as best possible.  This routine is called whenever a user
-// thread calls halt or exit and we have no guarantees that all threads
-// are calling into the halt or exit.  Otherwise, it is much like the
-// chpl_comm_exit_all() routine.
-//
-void chpl_comm_exit_any(int status) {
-  // Insert "any one thread should be able to call" ARMCI exit call here
-  chpl_comm_exit_common(status);
 }
 
 
@@ -348,7 +320,7 @@ static void chpl_comm_fork_common(int locale, chpl_fn_int_t fid, void *arg, int 
   }
 
   info_size = sizeof(dist_fork_t) + arg_size;
-  info = (dist_fork_t *)chpl_malloc(info_size, sizeof(char), CHPL_RT_MD_REMOTE_FORK_DATA, 0, 0);
+  info = (dist_fork_t *)chpl_mem_allocMany(info_size, sizeof(char), CHPL_RT_MD_COMM_FORK_SEND_INFO, 0, 0);
 
   info->caller = chpl_localeID;
   info->serial_state = chpl_task_getSerial();
@@ -359,15 +331,15 @@ static void chpl_comm_fork_common(int locale, chpl_fn_int_t fid, void *arg, int 
     bcopy(arg, &(info->arg), arg_size);
 
   if (arg_size > 0)
-    rdata = chpl_malloc(arg_size, sizeof(char), CHPL_RT_MD_REMOTE_GPC_DATA, 0, 0);
+    rdata = chpl_mem_allocMany(arg_size, sizeof(char), CHPL_RT_MD_COMM_FORK_SEND_RESPONSE_DATA, 0, 0);
   else
     rdata = NULL;
   rdlen = arg_size;
 
-  header = chpl_malloc(sizeof(void *), sizeof(char),
-                       CHPL_RT_MD_REMOTE_GPC_HEADER_ADDR, 0, 0);
-  rheader = chpl_malloc(rhdr_size, sizeof(char), CHPL_RT_MD_REMOTE_GPC_HEADER,
-                        0, 0);
+  header = chpl_mem_allocMany(sizeof(void *), sizeof(char),
+                              CHPL_RT_MD_COMM_FORK_SEND_INFO, 0, 0);
+  rheader = chpl_mem_allocMany(rhdr_size, sizeof(char),
+                               CHPL_RT_MD_COMM_FORK_SEND_INFO, 0, 0);
   // must be non-empty  
 
   *(intptr_t *)header = (intptr_t)rheader;
@@ -382,11 +354,11 @@ static void chpl_comm_fork_common(int locale, chpl_fn_int_t fid, void *arg, int 
 
   if (ret != 0) {
     chpl_internal_error("ARMCI_Gpc_exec() failed");
-    chpl_free(info, 0, 0);
+    chpl_mem_free(info, 0, 0);
     if (rdata)
-      chpl_free(rdata, 0, 0);
-    chpl_free(header, 0, 0);
-    chpl_free((void *)rheader, 0, 0);
+      chpl_mem_free(rdata, 0, 0);
+    chpl_mem_free(header, 0, 0);
+    chpl_mem_free((void *)rheader, 0, 0);
     return;
   }
 
@@ -396,14 +368,14 @@ static void chpl_comm_fork_common(int locale, chpl_fn_int_t fid, void *arg, int 
 #endif
   }
 
-  chpl_free(info, 0, 0);
+  chpl_mem_free(info, 0, 0);
   if (rdata) {
     if (block)
       bcopy(rdata, arg, rdlen);
-    chpl_free(rdata, 0, 0);
+    chpl_mem_free(rdata, 0, 0);
   }
-  chpl_free(header, 0, 0);
-  chpl_free((void *)rheader, 0, 0);
+  chpl_mem_free(header, 0, 0);
+  chpl_mem_free((void *)rheader, 0, 0);
 }
 
 void  chpl_comm_fork(int locale, chpl_fn_int_t fid,
@@ -421,6 +393,8 @@ void  chpl_comm_fork_fast(int locale, chpl_fn_int_t fid,
                           void *arg, int32_t arg_size, int32_t arg_tid) {
   chpl_comm_fork_common(locale, fid, arg, arg_size, true);
 }
+
+int chpl_comm_numPollingTasks(void) { return 0; }
 
 void chpl_startVerboseComm() { }
 void chpl_stopVerboseComm() { }
@@ -465,10 +439,10 @@ int gpc_call_handler(int to, int from, void *hdr, int hlen,
   gpc_info_t *ginfo;
   intptr_t prhdr;
 
-  finfo = chpl_malloc(dlen, sizeof(char), CHPL_RT_MD_REMOTE_GPC_COPY_OF_DATA, 0, 0);
+  finfo = chpl_mem_allocMany(dlen, sizeof(char), CHPL_RT_MD_COMM_FORK_RECV_INFO, 0, 0);
   bcopy(data, finfo, dlen);
 
-  ginfo = chpl_malloc(sizeof(gpc_info_t), sizeof(char), CHPL_RT_MD_REMOTE_GPC_FORK_DATA, 0, 0);
+  ginfo = chpl_mem_allocMany(sizeof(gpc_info_t), sizeof(char), CHPL_RT_MD_COMM_FORK_RECV_INFO, 0, 0);
   ginfo->info = finfo;
   prhdr = *(intptr_t *)hdr;
   ginfo->rhdr = (int *)prhdr;
@@ -506,8 +480,8 @@ void _gpc_thread_handler(void *arg)
 
   ARMCI_Free_local(done);
 
-  chpl_free(ginfo->info, 0, 0);
-  chpl_free(ginfo, 0, 0);
+  chpl_mem_free(ginfo->info, 0, 0);
+  chpl_mem_free(ginfo, 0, 0);
 } /* _gpc_thread_handler */
 
 

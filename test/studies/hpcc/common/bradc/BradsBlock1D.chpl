@@ -334,15 +334,15 @@ class Block1DArr {
     }
   }
 
-  iter these(param tag: iterator) where tag == iterator.leader {
+  iter these(param tag: iterKind) where tag == iterKind.leader {
     coforall blk in dom.locDom do
       on blk do
         yield blk.myBlock;
     //    yield 1..2;
   }
 
-  iter these(param tag: iterator, follower) var where tag == iterator.follower {
-    for i in follower do
+  iter these(param tag: iterKind, followThis) var where tag == iterKind.follower {
+    for i in followThis do
       yield this(i);
   }
 

@@ -44,13 +44,16 @@ enum ModTag {
   MOD_MAIN       // a module from a file listed on the compiler command line
 };
 
+typedef std::bitset<NUM_FLAGS> FlagSet;
+
+
 class Symbol : public BaseAST {
  public:
   const char* name;
   const char* cname; // Name of symbol for generating C code
   Type* type;
   DefExpr* defPoint; // Point of definition
-  std::bitset<NUM_FLAGS> flags;
+  FlagSet flags;
 
   Symbol(AstTag astTag, const char* init_name, Type* init_type = dtUnknown);
   virtual ~Symbol();
@@ -102,7 +105,7 @@ class VarSymbol : public Symbol {
 class ArgSymbol : public Symbol {
  public:
   IntentTag intent;
-  BlockStmt* typeExpr;
+  BlockStmt* typeExpr;  // A type expression for the argument type, or NULL.
   BlockStmt* defaultExpr;
   BlockStmt* variableExpr;
   Type* instantiatedFrom;
@@ -119,6 +122,7 @@ class ArgSymbol : public Symbol {
 
   bool requiresCPtr(void);
   bool isConstant(void);
+  bool isParameter(void);
 
   void printDef(FILE* outfile);
   void codegen(FILE* outfile);
@@ -224,6 +228,7 @@ class ModuleSymbol : public Symbol {
 
 class LabelSymbol : public Symbol {
  public:
+  GotoStmt* iterResumeGoto;
   LabelSymbol(const char* init_name);
   void verify(); 
   DECLARE_SYMBOL_COPY(LabelSymbol);
@@ -240,10 +245,12 @@ VarSymbol *new_RealSymbol(const char *n, long double b, IF1_float_type size=FLOA
 VarSymbol *new_ImagSymbol(const char *n, long double b, IF1_float_type size=FLOAT_SIZE_64, bool hasVolatileType=false);
 VarSymbol *new_ComplexSymbol(const char *n, long double r, long double i, IF1_complex_type size=COMPLEX_SIZE_128, bool hasVolatileType=false);
 VarSymbol *new_ImmediateSymbol(Immediate *imm);
-
+void resetTempID();
+FlagSet getRecordWrappedFlags(Symbol* s);
+FlagSet getSyncFlags(Symbol* s);
 VarSymbol* newTemp(const char* name = NULL, Type* type = dtUnknown);
 VarSymbol* newTemp(Type* type);
-void resetTempID();
+
 extern bool localTempNames;
 
 extern HashMap<Immediate *, ImmHashFns, VarSymbol *> uniqueConstantsHash;
@@ -251,6 +258,7 @@ extern StringChainHash uniqueStringHash;
 
 extern ModuleSymbol* rootModule;
 extern ModuleSymbol* theProgram;
+extern ModuleSymbol* mainModule;
 extern ModuleSymbol* baseModule;
 extern ModuleSymbol* standardModule;
 extern Symbol *gNil;

@@ -1,6 +1,10 @@
 RUNTIME_ROOT = ..
 RUNTIME_SUBDIR = src
 
+ifndef CHPL_MAKE_HOME
+export CHPL_MAKE_HOME=$(shell pwd)/$(RUNTIME_ROOT)/..
+endif
+
 #
 # standard header
 #
@@ -20,7 +24,6 @@ TARGETS = \
 	$(MAIN_OBJS) \
 
 SUBDIRS = \
-	common-chpl \
 	comm \
 	mem \
 	tasks \

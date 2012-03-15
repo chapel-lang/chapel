@@ -153,13 +153,13 @@ class FTree {
 
     // BLC: Really want to replace these with a non-zippered parallel
     // iterator
-    iter these(param tag: iterator) where tag == iterator.leader {
+    iter these(param tag: iterKind) where tag == iterKind.leader {
       coforall n in nodes do
         yield n;
     }
 
-    iter these(param tag: iterator, follower) where tag == iterator.follower {
-      for data in follower do
+    iter these(param tag: iterKind, followThis) where tag == iterKind.follower {
+      for data in followThis do
         yield data;
     }
 

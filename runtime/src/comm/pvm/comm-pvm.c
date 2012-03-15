@@ -13,7 +13,7 @@
 #include "chplcgfns.h"
 #include "chplrt.h"
 #include "chpl-comm.h"
-#include "chpl_mem.h"
+#include "chpl-mem.h"
 #include "chplsys.h"
 #include "chpl-tasks.h"
 #include "chpltypes.h"
@@ -106,7 +106,6 @@ static char jobname[64];           // used for PVM groups
 
 static int okay_to_barrier = 1;
 static volatile int okaypoll = 0;
-static int* poll_retval;           // polling thread finished
 
 extern int fileno(FILE *stream);
 
@@ -116,10 +115,6 @@ extern int fileno(FILE *stream);
 
 
 int32_t chpl_comm_getMaxThreads(void) {
-  return 0;
-}
-
-int32_t chpl_comm_maxThreadsLimit(void) {
   return 0;
 }
 
@@ -191,9 +186,9 @@ static void chpl_RPC(_chpl_RPC_arg* arg) {
   PRINTF("Did task");
   chpl_pvm_send(arg->joinLocale, arg->replyTag, NULL, 0);
   if (arg->arg != NULL) {
-    chpl_free(arg->arg, 0, 0);
+    chpl_mem_free(arg->arg, 0, 0);
   }
-  chpl_free(arg, 0, 0);
+  chpl_mem_free(arg, 0, 0);
 }
 
 //
@@ -1022,7 +1017,7 @@ static void polling(void* x) {
 
   int mallocsize;
 
-  PRINTF("Starting PVM polling thread");
+  PRINTF("Starting PVM polling task");
   finished = 0;
 
   while (okaypoll == 0) {
@@ -1055,10 +1050,10 @@ static void polling(void* x) {
       break;
     }
       // ChplCommFork gets a function ID and a set of arguments. Non-blocking
-      // fork works similarly, but runs it from polling thread.
+      // fork works similarly, but runs it from polling task.
     case ChplCommFork: {
       void* args;
-      _chpl_RPC_arg* rpcArg = chpl_malloc(1, sizeof(_chpl_RPC_arg), CHPL_RT_MD_REMOTE_FORK_DATA, 0, 0);
+      _chpl_RPC_arg* rpcArg = chpl_mem_allocMany(1, sizeof(_chpl_RPC_arg), CHPL_RT_MD_COMM_FORK_SEND_INFO, 0, 0);
 #if CHPL_DIST_DEBUG
       sprintf(debugMsg, "Fulfilling ChplCommFork(fromloc=%d, tag=%d, fnid=%d)", source, msg_info.replyTag, msg_info.u.fid);
       PRINTF(debugMsg);
@@ -1070,7 +1065,7 @@ static void polling(void* x) {
         mallocsize = msg_info.size;
 
       if (mallocsize != 0) {
-        args = chpl_malloc(1, mallocsize, CHPL_RT_MD_REMOTE_FORK_ARG, 0, 0);
+        args = chpl_mem_allocMany(1, mallocsize, CHPL_RT_MD_COMM_FORK_SEND_LARGE_ARG, 0, 0);
       } else {
         args = NULL;
       }
@@ -1098,7 +1093,7 @@ static void polling(void* x) {
         mallocsize = msg_info.size;
 
       if (mallocsize != 0) {
-        args = chpl_malloc(1, mallocsize, CHPL_RT_MD_REMOTE_FORK_ARG, 0, 0);
+        args = chpl_mem_allocMany(1, mallocsize, CHPL_RT_MD_COMM_FORK_SEND_NB_LARGE_ARG, 0, 0);
       } else {
         args = NULL;
       }
@@ -1131,11 +1126,9 @@ static void polling(void* x) {
     }
   }
   okaypoll = 0;
-  pthread_exit(poll_retval);
 }
 
 void chpl_comm_init(int *argc_p, char ***argv_p) {
-  pthread_t polling_thread;
   int status;
   int i, order, max;
 
@@ -1182,7 +1175,7 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
   if (max != chpl_numLocales) {
     chpl_internal_error("PVM group configuration failed");
   }
-  tids = chpl_malloc(chpl_numLocales, sizeof(int), CHPL_RT_MD_PVM_LIST_OF_NODES, 0, 0);
+  tids = chpl_mem_allocMany(chpl_numLocales, sizeof(int), CHPL_RT_MD_COMM_PER_LOCALE_INFO, 0, 0);
   for (i=0; i < chpl_numLocales; i++) {
     PVM_LOCK_UNLOCK_SAFE(tids[i] = pvm_gettid((char *)jobname, i), "pvm_gettid", "chpl_comm_init");
   }
@@ -1201,18 +1194,13 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
   // volumes of data are going to pass between two tasks.
   PVM_LOCK_UNLOCK_SAFE(status = pvm_setopt(PvmRoute, PvmRouteDirect), "pvm_setopt", "chpl_comm_init");
 
-  // Create the pthread to do the work.
-  status = pthread_create(&polling_thread, NULL, (void*(*)(void*))polling, 0);
-  if (status)
-    chpl_internal_error("unable to start polling thread for PVM");
-  poll_retval = (int *)polling_thread;
-  pthread_detach(polling_thread);
-
   // Drop the last argument: the numLocales from the launcher.
   // It confuses parseArgs, and we've already captured it.
   *argc_p = *argc_p - 3;
   return;
 }
+
+void chpl_comm_post_mem_init(void) { }
 
 //
 // No support for gdb for now
@@ -1280,14 +1268,20 @@ int chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status) {
   return 1;
 }
 
+void chpl_comm_post_task_init(void) {
+  if (chpl_task_createCommTask(polling, NULL))
+    chpl_internal_error("unable to start polling task for PVM");
+}
+
 void chpl_comm_rollcall(void) {
   chpl_sync_initAux(&chpl_comm_diagnostics_sync);
   chpl_msg(2, "executing on locale %d of %d locale(s): %s\n", chpl_localeID, chpl_numLocales, chpl_localeName());
   return;
 }
 
-void chpl_comm_init_shared_heap(void) {
-  chpl_initHeap(NULL, 0);
+void chpl_comm_desired_shared_heap(void** start_p, size_t* size_p) {
+  *start_p = NULL;
+  *size_p  = 0;
   return;
 }
 
@@ -1396,7 +1390,7 @@ void chpl_comm_barrier(const char *msg) {
 
   // Exit is a funny case, and most of the barrier case is built up around it.
   // Node 0 ignores the barrier before the exit and tears down its threads
-  // (which have finished), and calls chpl_comm_exit_all. The rest of the
+  // (which have finished), and calls chpl_comm_exit. The rest of the
   // nodes wait for a signal from node 0 that it's ready for them.
 
   // The signal is okay_to_barrier.
@@ -1407,9 +1401,9 @@ void chpl_comm_barrier(const char *msg) {
   // thread-safe, and it holds the pvm_sync.
 
   // Once node 0 tells everyone it's okay to barrier, everyone does the
-  // barrier (including node 0 -- done in chpl_comm_exit_all), and proceeds
+  // barrier (including node 0 -- done in chpl_comm_exit), and proceeds
   // to the termination.
-  if (!(strcmp(msg, "chpl_comm_exit_all")) && chpl_localeID == 0) {
+  if (!(strcmp(msg, "chpl_comm_exit")) && chpl_localeID == 0) {
     return;
   }
   if (!(strcmp(msg, "barrier before main"))) {
@@ -1443,7 +1437,7 @@ void chpl_comm_barrier(const char *msg) {
     // This comes from chpl_comm_exit_any from a node that's not 0.
     // If this is the case, node 0 is cranking along in main, and
     // everyone else is waiting here. Let all these nodes exit, but
-    // note that chpl_comm_exit_any() tells node 0 to stop polling (and
+    // note that chpl_comm_exit() tells node 0 to stop polling (and
     // hence exit).
     PVM_LOCK_UNLOCK_SAFE(pvm_barrier((char *)jobname, (chpl_numLocales - 1)), "pvm_barrier", "chpl_comm_barrier");
   } else {
@@ -1453,11 +1447,13 @@ void chpl_comm_barrier(const char *msg) {
   return;
 }
 
-void chpl_comm_exit_all(int status) {
+void chpl_comm_pre_task_exit(int all) { }
+
+void chpl_comm_exit(int all, int status) {
   _chpl_message_info msg_info;
   int commsig = CommNoop;
 
-  PRINTF("chpl_comm_exit_all called");
+  PRINTF("chpl_comm_exit called");
   // Matches code in chpl_comm_barrier. Node 0, on exit, needs to signal
   // to everyone that it's okay to barrier (and thus exit).
 
@@ -1467,58 +1463,17 @@ void chpl_comm_exit_all(int status) {
   }
   else if (chpl_localeID == 0) {
     okay_to_barrier = 1;
-    PVM_LOCK_SAFE(pvm_initsend(PvmDataDefault), "pvm_initsend", "chpl_comm_exit_all");
-    PVM_NO_LOCK_SAFE(pvm_pkint(&okay_to_barrier, 1, 1), "pvm_pkint", "chpl_comm_exit_all");
-    PVM_UNLOCK_SAFE(pvm_bcast((char *)jobname, BCASTTAG), "pvm_bcast", "chpl_comm_exit_all");
+    PVM_LOCK_SAFE(pvm_initsend(PvmDataDefault), "pvm_initsend", "chpl_comm_exit");
+    PVM_NO_LOCK_SAFE(pvm_pkint(&okay_to_barrier, 1, 1), "pvm_pkint", "chpl_comm_exit");
+    PVM_UNLOCK_SAFE(pvm_bcast((char *)jobname, BCASTTAG), "pvm_bcast", "chpl_comm_exit");
     // Do a matching barrier to everyone still in chpl_comm_barrier.
-    PVM_LOCK_UNLOCK_SAFE(pvm_barrier((char *)jobname, chpl_numLocales), "pvm_barrier", "chpl_comm_exit_all");
+    PVM_LOCK_UNLOCK_SAFE(pvm_barrier((char *)jobname, chpl_numLocales), "pvm_barrier", "chpl_comm_exit");
   }
-  msg_info.msg_type = ChplCommFinish;
-  chpl_pvm_send(chpl_localeID, TAGMASK+1, &msg_info, sizeof(_chpl_message_info));
-  PRINTF("Sent shutdown message.");
-
-  while (okaypoll) {
-    sched_yield();
-  }
-
-  PVM_LOCK_UNLOCK_SAFE(pvm_lvgroup((char *)jobname), "pvm_lvgroup", "chpl_comm_exit_all");
-  // Send a signal back to the launcher that we're done.
-  commsig = CommHalt;
-  if (parent >= 0) {
-    PVM_LOCK_SAFE(pvm_initsend(PvmDataDefault), "pvm_initsend", "chpl_comm_exit_all");
-    PVM_NO_LOCK_SAFE(pvm_pkint(&commsig, 1, 1), "pvm_pkint", "chpl_comm_exit_all");
-    PVM_UNLOCK_SAFE(pvm_send(parent, NOTIFYTAG), "pvm_pksend", "chpl_comm_exit_all");
-  }
-
-  chpl_free(tids, 0, 0);
-  pvm_exit();
-  return;
-}
-
-void chpl_comm_exit_any(int status) {
-  _chpl_message_info msg_info;
-  int commsig = CommNoop;
-
-  PRINTF("chpl_comm_exit_any called");
-  // Matches code in chpl_comm_barrier. Node 0, on exit, needs to signal
-  // to everyone that it's okay to barrier (and thus exit).
-
-  // This line should be entirely moot (never unset if chpl_numLocales is 1).
-  if (chpl_numLocales == 1) {
-    okay_to_barrier = 1;
-  }
-  else if (chpl_localeID == 0) {
-    okay_to_barrier = 1;
-    PVM_LOCK_SAFE(pvm_initsend(PvmDataDefault), "pvm_initsend", "chpl_comm_exit_all");
-    PVM_NO_LOCK_SAFE(pvm_pkint(&okay_to_barrier, 1, 1), "pvm_pkint", "chpl_comm_exit_all");
-    PVM_UNLOCK_SAFE(pvm_bcast((char *)jobname, BCASTTAG), "pvm_bcast", "chpl_comm_exit_all");
-    // Do a matching barrier to everyone still in chpl_comm_barrier.
-    PVM_LOCK_UNLOCK_SAFE(pvm_barrier((char *)jobname, chpl_numLocales), "pvm_barrier", "chpl_comm_exit_all");
-  } else {
+  else if (!all) {
     okay_to_barrier = 2;
-    PVM_LOCK_SAFE(pvm_initsend(PvmDataDefault), "pvm_initsend", "chpl_comm_exit_all");
+    PVM_LOCK_SAFE(pvm_initsend(PvmDataDefault), "pvm_initsend", "chpl_comm_exit");
     PVM_NO_LOCK_SAFE(pvm_pkint(&okay_to_barrier, 1, 1), "pvm_pkint", "chpl_comm_exit_all");
-    PVM_UNLOCK_SAFE(pvm_bcast((char *)jobname, BCASTTAG), "pvm_bcast", "chpl_comm_exit_all");
+    PVM_UNLOCK_SAFE(pvm_bcast((char *)jobname, BCASTTAG), "pvm_bcast", "chpl_comm_exit");
   }
   msg_info.msg_type = ChplCommFinish;
   chpl_pvm_send(chpl_localeID, TAGMASK+1, &msg_info, sizeof(_chpl_message_info));
@@ -1528,16 +1483,16 @@ void chpl_comm_exit_any(int status) {
     sched_yield();
   }
 
-  PVM_LOCK_UNLOCK_SAFE(pvm_lvgroup((char *)jobname), "pvm_lvgroup", "chpl_comm_exit_all");
+  PVM_LOCK_UNLOCK_SAFE(pvm_lvgroup((char *)jobname), "pvm_lvgroup", "chpl_comm_exit");
   // Send a signal back to the launcher that we're done.
   commsig = CommHalt;
   if (parent >= 0) {
-    PVM_LOCK_SAFE(pvm_initsend(PvmDataDefault), "pvm_initsend", "chpl_comm_exit_all");
-    PVM_NO_LOCK_SAFE(pvm_pkint(&commsig, 1, 1), "pvm_pkint", "chpl_comm_exit_all");
-    PVM_UNLOCK_SAFE(pvm_send(parent, NOTIFYTAG), "pvm_pksend", "chpl_comm_exit_all");
+    PVM_LOCK_SAFE(pvm_initsend(PvmDataDefault), "pvm_initsend", "chpl_comm_exit");
+    PVM_NO_LOCK_SAFE(pvm_pkint(&commsig, 1, 1), "pvm_pkint", "chpl_comm_exit");
+    PVM_UNLOCK_SAFE(pvm_send(parent, NOTIFYTAG), "pvm_pksend", "chpl_comm_exit");
   }
 
-  chpl_free(tids, 0, 0);
+  chpl_mem_free(tids, 0, 0);
   pvm_exit();
   return;
 }
@@ -1715,7 +1670,7 @@ void chpl_comm_fork_nb(int locale, chpl_fn_int_t fid,
   }
 
   if (chpl_localeID == locale) {
-    void* argCopy = chpl_malloc(1, mallocsize, CHPL_RT_MD_REMOTE_NB_FORK_DATA, 0, 0);
+    void* argCopy = chpl_mem_allocMany(1, mallocsize, CHPL_RT_MD_COMM_FORK_SEND_NB_LARGE_ARG, 0, 0);
     memmove(argCopy, arg, mallocsize);
     chpl_task_begin((chpl_fn_p)chpl_ftable[fid], argCopy, true, false, NULL);
   } else {
@@ -1749,14 +1704,7 @@ void chpl_comm_fork_fast(int locale, chpl_fn_int_t fid, void *arg,
   chpl_comm_fork(locale, fid, arg, arg_size, arg_tid);
 }
 
-void chpl_comm_startPollingTask(void) {
-  // Ultimately, pthread_create() stuff from chpl_comm_init should be
-  // moved here.
-}
-
-void chpl_comm_stopPollingTask(void) {
-  // And similarly, cleanup stuff should go here.
-}
+int chpl_comm_numPollingTasks(void) { return 1; }
 
 void chpl_startVerboseComm() {
   chpl_verbose_comm = 1;

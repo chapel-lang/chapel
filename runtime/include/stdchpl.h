@@ -1,6 +1,8 @@
 #ifndef _stdchpl_H_
 #define _stdchpl_H_
 
+#include "sys_basic.h"
+
 #include <errno.h>
 #include <math.h>
 #include <float.h>
@@ -26,7 +28,7 @@
 #include <chplfp.h>
 #include "chplio.h"
 #include "chplmath.h"
-#include "chpl_mem.h"
+#include "chpl-mem.h"
 #include "chplmemtrack.h"
 #include "chplrt.h"
 #include "chplsys.h"
@@ -35,5 +37,10 @@
 #include "chpltypes.h"
 #include "chplgpu.h"
 #include "error.h"
+
+#include "qbuffer.h"
+#include "qio.h"
+#include "qio_formatted.h"
+#include "bulkget.h"
 
 #endif

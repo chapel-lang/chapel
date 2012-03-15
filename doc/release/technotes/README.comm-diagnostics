@@ -77,7 +77,18 @@ that contains these counts for each locale:
 
   getCommDiagnostics(): [LocaleSpace] commDiagnostics - Return an
     array of records of type commDiagnostics.  The fields correspond
-    to various type of communication performed
+    to various type of communication performed.
+
+  getCommDiagnosticsHere(): commDiagnostics - Return a record of type
+    commDiagnostics.  The fields correspond to various type of
+    communication performed.
+
+To reset the communication counts, use the following functions:
+
+  resetCommDiagnostics() - Reset the communication counts on all locales.
+
+  resetCommDiagnosticsHere() - Reset the communication counts on
+    the locale on which it is called.
 
 For example, given a program mytest.chpl:
 

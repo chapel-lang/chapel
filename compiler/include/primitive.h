@@ -102,8 +102,11 @@ enum PrimitiveTag {
   PRIM_GET_SERIAL,                // get serial state
   PRIM_SET_SERIAL,                // set serial state to true or false
 
+  PRIM_CHPL_COMM_GET,   // Direct calls to the Chapel comm layer
+  PRIM_CHPL_COMM_PUT,   //  may eventually add others (e.g., non-blocking)
+
   PRIM_CHPL_ALLOC,
-  PRIM_CHPL_ALLOC_PERMIT_ZERO,  // chpl_alloc wrapper that permits size 0
+  PRIM_CHPL_ALLOC_PERMIT_ZERO,  // chpl_mem_alloc wrapper that permits size 0
   PRIM_CHPL_FREE,               // only for variables on heap?
   PRIM_INIT_FIELDS, // initialize fields of a temporary record
   PRIM_PTR_EQUAL,
@@ -193,6 +196,7 @@ enum PrimitiveTag {
   PRIM_chpl_numBlockedTasks,
 
   PRIM_RT_ERROR,
+  PRIM_RT_ERROR_NOEXIT,
   PRIM_RT_WARNING,
 
   PRIM_NEW_PRIV_CLASS,
@@ -203,8 +207,6 @@ enum PrimitiveTag {
   PRIM_GET_USER_LINE,
   PRIM_GET_USER_FILE,
   
-  PRIM_COUNT_NUM_REALMS,
-
   PRIM_FTABLE_CALL,
 
   PRIM_IS_STAR_TUPLE_TYPE,
@@ -213,6 +215,17 @@ enum PrimitiveTag {
   PRIM_GET_SVEC_MEMBER_VALUE,
 
   PRIM_VMT_CALL, // virtual method call
+
+  PRIM_NUM_FIELDS,
+  PRIM_FIELD_NUM_TO_NAME,
+  PRIM_FIELD_VALUE_BY_NUM,
+  PRIM_FIELD_ID_BY_NUM,
+  PRIM_FIELD_VALUE_BY_NAME,
+  PRIM_HAS_METHOD_BY_NAME,
+  PRIM_IS_UNION_TYPE,
+
+  PRIM_ENUM_MIN_BITS,
+  PRIM_ENUM_IS_SIGNED,
 
   NUM_KNOWN_PRIMS
 };

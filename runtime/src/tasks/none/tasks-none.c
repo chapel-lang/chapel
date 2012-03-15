@@ -3,7 +3,7 @@
 #define NDEBUG
 #endif
 
-#include "chpl_mem.h"
+#include "chpl-mem.h"
 #include "chplcast.h"
 #include "chplrt.h"
 #include "chpl-tasks.h"
@@ -14,6 +14,7 @@
 #include <sys/resource.h>
 #include <unistd.h>
 #include <stdio.h>
+#include <pthread.h>
 
 //
 // task pool: linked list of tasks
@@ -46,7 +47,7 @@ void chpl_sync_waitFullAndLock(chpl_sync_aux_t *s,
   while (!*s && launch_next_task())
     /* do nothing! */;
   if (!*s)
-    chpl_error("sync var empty (running in single-threaded mode)",
+    chpl_error("sync var empty (running in CHPL_TASKS=none mode)",
                lineno, filename);
 }
 
@@ -56,7 +57,7 @@ void chpl_sync_waitEmptyAndLock(chpl_sync_aux_t *s,
   while (*s && launch_next_task())
     /* do nothing! */;
   if (*s)
-    chpl_error("sync var full (running in single-threaded mode)",
+    chpl_error("sync var full (running in CHPL_TASKS=none mode)",
                lineno, filename);
 }
 
@@ -87,7 +88,8 @@ static chpl_taskID_t curr_taskID;
 static chpl_bool serial_state;
 static uint64_t taskCallStackSize = 0;
 
-void chpl_task_init(int32_t maxThreadsPerLocale, uint64_t callStackSize) {
+void chpl_task_init(int32_t numThreadsPerLocale, int32_t maxThreadsPerLocale, 
+                    int numCommTasks, uint64_t callStackSize) {
   //
   // If a value was specified for the call stack size config const, use
   // that (rounded up to a whole number of pages) to set the system
@@ -119,7 +121,7 @@ void chpl_task_init(int32_t maxThreadsPerLocale, uint64_t callStackSize) {
   taskCallStackSize = callStackSize;
 
   curr_taskID = next_taskID++;
-  serial_state = false;
+  serial_state = true;  // Likely makes no difference, except for testing/debugging.
 
   task_pool_head = task_pool_tail = NULL;
   queued_cnt = 0;
@@ -128,10 +130,12 @@ void chpl_task_init(int32_t maxThreadsPerLocale, uint64_t callStackSize) {
 void chpl_task_exit(void) { }
 
 int chpl_task_createCommTask(chpl_fn_p fn, void* arg) {
-  chpl_thread_createCommThread(fn, arg);
+  pthread_t thread;
+  return pthread_create(&thread, NULL, (void* (*)(void*)) fn, arg);
 }
 
 void chpl_task_callMain(void (*chpl_main)(void)) {
+  serial_state = false;
   chpl_main();
 }
 
@@ -168,9 +172,9 @@ void chpl_task_begin(chpl_fn_p fp, void* a, chpl_bool ignore_serial,
     // and append it to the end of the task pool for later execution
     chpl_task_pool_p task;
 
-    task = (chpl_task_pool_p)chpl_alloc(sizeof(task_pool_t),
-                                        CHPL_RT_MD_TASK_DESCRIPTOR,
-                                        0, 0);
+    task = (chpl_task_pool_p)chpl_mem_alloc(sizeof(task_pool_t),
+                                            CHPL_RT_MD_TASK_DESCRIPTOR,
+                                            0, 0);
     task->id = next_taskID++;
     task->fun = fp;
     task->arg = a;
@@ -241,7 +245,7 @@ launch_next_task(void) {
     chpl_task_setSerial(task->serial_state);
 
     (*task->fun)(task->arg);
-    chpl_free(task, 0, 0);
+    chpl_mem_free(task, 0, 0);
 
     //
     // restore state
@@ -257,10 +261,6 @@ launch_next_task(void) {
 
 
 // Threads
-
-int32_t chpl_task_getMaxThreads(void) { return 1; }
-
-int32_t chpl_task_getMaxThreadsLimit(void) { return 1; }
 
 uint32_t chpl_task_getNumThreads(void) { return 1; }
 

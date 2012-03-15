@@ -1,80 +1,33 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
+# tcmalloc testing
 
-export CHPL_HOME_REPOSITORY="https://chapel.svn.sourceforge.net/svnroot/chapel/trunk"
-export CHPL_LAUNCHER=none
+. /etc/profile
 
-if [ $# == 0 ] ; then
-  EXAMPLES=-examples
-  dayType=""
-else
-  if [ $1 == "weekend" ] ; then
-    EXAMPLES=
-    dayType="weekend"
-  else
-    EXAMPLES="-examples"
-    dayType=""
-  fi
-fi
+# export CHPL_HOME_REPOSITORY=https://chapel.svn.sourceforge.net/svnroot/chapel/trunk
+export CHPL_NIGHTLY_LOGDIR=/data/sea/cascade/chapel/Nightly
+export CHPL_NIGHTLY_STATDIR=$CHPL_NIGHTLY_LOGDIR/Stats
+export CHPL_HOME=/users/chapelu/chapel
 
-export CHPL_NIGHTLY_LOGDIR=/data/sea/cascade/chapel/Nightly/${dayType}
-export CHPL_NIGHTLY_STATDIR=/data/sea/cascade/chapel/Nightly/${dayType}/Stats
-export CHPL_NIGHTLY_CRON_LOGDIR="$CHPL_NIGHTLY_LOGDIR"
+export CHPL_DEVELOPER=true
 
-CHPL_HOME="/users/chapelu/chapel"
-TESTBASE="$CHPL_HOME/test"
-NIGHTLY="$CHPL_HOME/util/cron/nightly"
-
-PrgEnv_Version=""
-
-# set up PrgEnv modules
-. /opt/modules/default/init/sh
-
-# HACK HACK HACK
-# The command "module" depends on the shared library libtcl8.4. On SLES/SLED 11
-# Systems libtcl8.5 is installed instead. Trick "module" into thinking it has
-# 8.4 by putting a link named libtcl8.4 pointing at libtcl8.5 into the path.
-export LD_LIBRARY_PATH="/users/diten/updated_library_hack:$LD_LIBRARY_PATH"
-
-module use /opt/modulefiles
-module use /opt/cray/modulefiles
-module use /opt/cpkg/current/modulefiles
-
+module load cpkg all/append
 module load subversion
 
-export XTPE_INFO_MESSAGE_OFF=true
-# done setting up PrgEnv modules
+# tcmalloc with comm none
+LOGFILE=/users/chapelu/tmp/nightly.tcmalloc.out
+echo "Testing CHPL_TASKS=tcmalloc.  See $LOGFILE for more info."
+export CHPL_MEM=tcmalloc
+$CHPL_HOME/util/cron/nightly -cron &> $LOGFILE
+echo "Done testing CHPL_TASKS=tcmalloc"
 
-compilers="gnu pgi cray intel" # pathscale
-
-# Test using $compiler as TARGET compiler
-for compiler in $compilers ; do
-  module load PrgEnv-${compiler}${PrgEnv_Version}
-  export CHPL_TARGET_PLATFORM=xt-cle
-  $NIGHTLY -combinedir -cron $EXAMPLES
-  module unload PrgEnv-${compiler}${PrgEnv_Version}
-done
-
-
-# Test using $compiler as HOST and TARGET compiler
-#for compiler in $compilers ; do
-#  module load PrgEnv-${compiler}${PrgEnv_Version}
-#  export CHPL_HOST_PLATFORM=xt-cle
-#  export CHPL_TARGET_PLATFORM=xt-cle
-#  export CHPL_HOST_COMPILER=cray-xt-$compiler
-#  $NIGHTLY -combinedir -cron $EXAMPLES
-#  module unload PrgEnv-${compiler}${PrgEnv_Version}
-#done
-
-# Test using $compiler as HOST and TARGET compiler without the Cray wrapper scripts
-# cray compiler cannot be used without Cray wrapper scripts
-compilers="gnu pgi intel" # pathscale"
-
-for compiler in $compilers ; do
-  module load $compiler
-  unset CHPL_HOST_PLATFORM
-  unset CHPL_TARGET_PLATFORM
-  export CHPL_HOST_COMPILER=$compiler
-  $NIGHTLY -combinedir -cron $EXAMPLES
-  module unload $compiler
-done
+# tcmalloc with comm gasnet for examples
+LOGFILE=/users/chapelu/tmp/nightly.tcmalloc-gasnet.out
+echo "Testing CHPL_TASKS=tcmalloc CHPL_COMM=gasnet.  See $LOGFILE for more info."
+export CHPL_COMM=gasnet
+export GASNET_SPAWNFN=L
+export GASNET_ROUTE_OUTPUT=0
+export CHPL_GASNET_CFG_OPTIONS=--disable-ibv
+export GASNET_QUIET=Y
+$CHPL_HOME/util/cron/nightly -cron -multilocale &> $LOGFILE
+echo "Done testing CHPL_TASKS=tcmalloc CHPL_COMM=gasnet"
 

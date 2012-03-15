@@ -1,5 +1,5 @@
-_extern proc getPtr(): opaque;
-_extern proc printPtr(ptr);
+extern proc getPtr(): opaque;
+extern proc printPtr(ptr);
 
 var x = getPtr();
 printPtr(x);

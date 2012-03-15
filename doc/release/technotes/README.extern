@@ -3,7 +3,7 @@ Initial support for calling C routines from Chapel
 ==================================================
 
 This README describes initial support in our Chapel compiler for
-calling from Chapel to C using a keyword named '_extern'.  This
+calling from Chapel to C using a keyword named 'extern'.  This
 mechanism should be considered a placeholder technology until we have
 made these features more robust, which is why it's described in this
 README rather than the language specification.
@@ -14,7 +14,7 @@ General Approach
 
 All of the following sections rely on the same general approach:
 
-1) Programmers write Chapel declarations using the _extern keyword to
+1) Programmers write Chapel declarations using the extern keyword to
    describe the C concepts that they want to refer to in their Chapel
    code.  Most of the rest of this document details how to describe C
    types, variables, and functions within Chapel.
@@ -48,6 +48,18 @@ or:    chpl foo.h -lfoo myProgram.chpl (if foo.c had been archived in libfoo.a)
      and runtime libraries.
 
 
+Parallel Safety
+---------------
+
+If external routines are to be called from Chapel within parallel
+execution contexts, they should be parallel-safe.  As with internal
+Chapel routines, it is also the responsibility of the Chapel
+programmer to call external routines in a manner that preserves the
+integrity of objects accessible to those routines.  Simply put,
+objects shared across Chapel tasks must be kept parallel-safe within
+Chapel.
+
+
 Referring to Standard C Types
 -----------------------------
 
@@ -71,7 +83,7 @@ does not cause problems.
 Referring to External C Types
 -----------------------------
 
-You can refer to other external C types using _extern plus the normal
+You can refer to other external C types using extern plus the normal
 type alias keyword.  By leaving off any sort of type definition, you
 are telling the Chapel compiler that it can't assume it knows anything
 about how the type is represented or how to operate on it (though
@@ -82,7 +94,7 @@ Effectively, such a declaration defines a new primitive type in
 Chapel.  For example, the following declaration says that there is an
 external type named 'foo':
 
-    _extern type foo;
+    extern type foo;
 
 This permits you to declare variables of type 'foo' and to declare
 external functions that accept or return arguments of type 'foo'.
@@ -96,13 +108,13 @@ be given in Chapel, which permits the compiler to deal with the type
 directly.  For example, if the external type 'foo' was a 64-bit
 integer, you could describe it in Chapel using:
 
-    _extern type foo = int(64);
+    extern type foo = int(64);
 
 This capability can also be used to create aliases for C types (when
 they don't conflict with Chapel type names).  For example:
 
-    _extern type double = real(64);
-    _extern type int64_t = int(64);
+    extern type double = real(64);
+    extern type int64_t = int(64);
 
 Fixed-size C array types can be described within Chapel using its
 homogenous tuple type.  For example, the following C typedef:
@@ -111,7 +123,7 @@ homogenous tuple type.  For example, the following C typedef:
 
 could be described in Chapel using:
 
-    _extern type vec = 3*real(64);
+    extern type vec = 3*real(64);
 
 (Ultimately, we intend to support external C arrays using Chapel's
 more traditional array declaration syntax for improved clarity).
@@ -125,14 +137,14 @@ Referring to External C Variables and Constants
 -----------------------------------------------
 
 A C variable or constant can be referred to within Chapel by prefixing
-its declaration with the _extern keyword.  For example:
+its declaration with the extern keyword.  For example:
 
-    _extern var bar: foo;
+    extern var bar: foo;
 
 would tell the Chapel compiler about an external C variable named
 'bar' of type 'foo'.  Similarly:
 
-   _extern const baz: int(32);
+   extern const baz: int(32);
 
 would refer to an external 32-bit integer constant named 'baz' in the
 C code.  In practice, external consts can be used to provide Chapel
@@ -150,11 +162,11 @@ Calling to External C Functions
 -------------------------------
 
 To make a call to an external C function, you will need to prototype
-the routine in your Chapel code using the '_extern' keyword.  For
+the routine in your Chapel code using the 'extern' keyword.  For
 example, for a C function foo() that takes no arguments and returns
 nothing, the prototype would appear as follows:
 
-       _extern proc foo();
+       extern proc foo();
 
 C functions which return values that you wish to refer to within your
 Chapel program must have those return types declared (the Chapel
@@ -162,7 +174,7 @@ compiler cannot infer the return type as it does with Chapel functions
 since it does not analyze the C source code).  To make the function
 above return a C "double", it would be declared:
 
-       _extern proc foo(): real;
+       extern proc foo(): real;
 
 Similarly, external functions that expect arguments must declare those
 arguments in Chapel.
@@ -171,7 +183,7 @@ Types of function arguments may be omitted, in which case the types
 will be inferred based on the Chapel callsite.  For example, the
 following Chapel code:
 
-       _extern proc foo(x: int, y): real;
+       extern proc foo(x: int, y): real;
 
        var a, b: int;
 
@@ -187,7 +199,7 @@ External function arguments can be declared with default arguments in
 which case the default argument will be supplied by the Chapel
 compiler if it is omitted at the callsite.  For example:
 
-       _extern proc foo(x: int, y = 1.2): real;
+       extern proc foo(x: int, y = 1.2): real;
 
        foo(0);
 
@@ -198,13 +210,13 @@ C varargs functions can be declared using Chapel's varargs ("...")
 syntax.  For example, the following declaration prototypes C's printf
 function:
 
-       _extern proc printf(fmt: string, vals...?numvals): int;
+       extern proc printf(fmt: string, vals...?numvals): int;
 
 External C functions or macros that accept type arguments can also be
 prototyped in Chapel by declaring the argument as a type.  For
 example:
 
-       _extern foo(type t);
+       extern foo(type t);
 
 Calling such a routine with a Chapel type will cause the type
 identifier (e.g., 'int') to be passed to the routine.  In practice,
@@ -230,7 +242,7 @@ A: Ultimately, we expect to have direct support in Chapel for
 
    This could be called in Chapel using:
 
-     _extern proc foo(inout x: real);
+     extern proc foo(inout x: real);
 
      var myVal: real = 1.2;
 
@@ -265,7 +277,7 @@ Referring to External C Structs and Pointers-to-Structs
 -------------------------------------------------------
 
 External C struct types can be referred to within Chapel by prefixing
-a Chapel record definition with the _extern keyword.  For example,
+a Chapel record definition with the extern keyword.  For example,
 given an external C structure defined in foo.h called fltdbl:
 
     typedef struct _fltdbl {
@@ -275,7 +287,7 @@ given an external C structure defined in foo.h called fltdbl:
 
 This type could be referred to within a Chapel program using:
 
-   _extern record fltdbl {
+   extern record fltdbl {
    }
 
 Within the Chapel declaration, some or all of the fields from the C
@@ -286,14 +298,14 @@ equivalent Chapel type) cannot be referenced within the Chapel code.
 Thus, the following declaration would permit access to both fields x
 and y within variables of type fltdbl:
 
-   _extern record fltdbl {
+   extern record fltdbl {
      var x: real(32);
      var y: real(64);
    }
 
 as would the following declaration:
 
-   _extern record fltdbl {
+   extern record fltdbl {
      var y: real(64);
      var x: real(32);
    }
@@ -303,7 +315,7 @@ fields.  For example, the following declaration would permit field y
 to be accessed by a Chapel program, but not field x (though both would
 still be stored in any variable of type fltdbl).
 
-   _extern record fltdbl {
+   extern record fltdbl {
      var y: real(64);
    }
 
@@ -312,13 +324,13 @@ fields, which would permit variables of that struct type to be passed
 between Chapel and C routines, but their fields could not be accessed
 within the Chapel program.
 
-   _extern record fltdbl {
+   extern record fltdbl {
    }
 
 A C header file containing the struct's definition in C must be
 specified on the chpl compiler command line.  Note that currently only
 typdef'd C structures are supported.  In the future we anticipate both
-typedef'd and non-typedef'd structures to be declared using _extern
+typedef'd and non-typedef'd structures to be declared using extern
 declarations.
 
 Note that external record types only support assignment from records
@@ -328,13 +340,13 @@ records.  This restriction could be lifted in the future if found
 useful to users.
 
 You can also refer to an external C pointer-to-struct types by
-considering it to be an '_extern class' in Chapel.  The declaration
+considering it to be an 'extern class' in Chapel.  The declaration
 style is similar to that described above, it simply has different
 implications on the underlying C types.
 
 As an example, given the declaration:
 
-  _extern class D {
+  extern class D {
     var x: real;
   }
 
@@ -376,7 +388,7 @@ For example, Chapel could be used to call an external C function that
 returns a pointer to a structure (that we can't or won't describe as
 an external class using the previous mechanism) as follows:
 
-    _extern proc returnStructPtr(): opaque;
+    extern proc returnStructPtr(): opaque;
 
     var structPtr: opaque = returnStructPtr();
 
@@ -385,7 +397,7 @@ much apart from assigning it to other opaque variables of matching
 underlying type, or passing it back to an external C routine that
 expects a pointer-to-struct of that type:
 
-    _extern proc operateOnStructPtr(ptr: opaque);
+    extern proc operateOnStructPtr(ptr: opaque);
 
     var copyOfStructPtr = structPtr;
 

@@ -249,20 +249,20 @@ iter RandomPrivate_iterate(type resultType, D: domain, seed: int(64),
 }
 
 iter RandomPrivate_iterate(type resultType, D: domain, seed: int(64),
-                          start: int(64), param tag: iterator)
-      where tag == iterator.leader {
-  for block in D._value.these(tag=iterator.leader) do
+                          start: int(64), param tag: iterKind)
+      where tag == iterKind.leader {
+  for block in D._value.these(tag=iterKind.leader) do
     yield block;
 }
 
 iter RandomPrivate_iterate(type resultType, D: domain, seed: int(64),
-                          start: int(64), param tag: iterator, follower)
-      where tag == iterator.follower {
+                          start: int(64), param tag: iterKind, followThis)
+      where tag == iterKind.follower {
   param multiplier = if resultType == complex then 2 else 1;
   const ZD = computeZeroBasedDomain(D);
-  const innerRange = follower(ZD.rank);
+  const innerRange = followThis(ZD.rank);
   var cursor: real;
-  for outer in RandomPrivate_outer(follower) {
+  for outer in RandomPrivate_outer(followThis) {
     var myStart = start;
     if ZD.rank > 1 then
       myStart += multiplier * ZD.indexOrder(((...outer), innerRange.low));

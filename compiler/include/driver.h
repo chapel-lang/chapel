@@ -6,6 +6,14 @@
 #include "chpl.h"
 
 extern FILE* html_index_file;
+extern FILE* deletedIdHandle;
+extern char deletedIdFilename[FILENAME_MAX+1];
+#define deletedIdON (deletedIdFilename[0] != '\0')
+
+extern char log_dir[FILENAME_MAX+1];
+extern char log_module[FILENAME_MAX+1];
+extern char log_symbol[FILENAME_MAX+1];
+extern bool fLogIds;
 
 extern int instantiation_limit;
 
@@ -13,6 +21,9 @@ extern int fdump_html;
 extern bool fdump_html_incude_system_modules;
 
 extern int trace_level;
+
+extern int currentPassNo;
+extern const char* currentPassName;
 
 // optimization control flags
 extern int fConditionalDynamicDispatchLimit;
@@ -66,8 +77,11 @@ extern bool fGPU;
 extern bool fHeterogeneous;
 extern bool fieeefloat;
 
+enum { LS_DEFAULT=0, LS_STATIC, LS_DYNAMIC };
+extern int fLinkStyle;
+
 extern int debugParserLevel;
-extern bool fRuntime;
+extern bool fLibraryCompile;
 extern bool no_codegen;
 extern bool developer;
 extern int num_constants_per_variable;
@@ -96,16 +110,14 @@ extern Timer timer4;
 extern Timer timer5;
 
 extern bool fNoMemoryFrees;
-
 extern int numGlobalsOnHeap;
+extern bool preserveInlinedLineNumbers;
 
 extern int breakOnID;
+extern int breakOnDeleteID;
 
 // code generation strings
 extern const char* compileCommand;
 extern char compileVersion[64];
-
-int32_t getNumRealms(void);
-extern Vec<const char*> realms;
 
 #endif

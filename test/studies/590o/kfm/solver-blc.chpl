@@ -10,12 +10,12 @@ const Boxes: domain(2) = [1..3, 1..3];
 var Table: [TableSpace] int;
 
 //...then read the values from the puzzle into it
-var infile: file = new file(infilename, FileAccessMode.read);
-infile.open();
+var infile = open(infilename, iomode.r);
+var reader = infile.reader();
 
 for ij in TableSpace {
    var str: string;
-   infile.read(str);
+   reader.read(str);
    if (str == "*") {
      Table(ij) = 0;
    } else {
@@ -23,7 +23,8 @@ for ij in TableSpace {
    }
 }
 
-delete infile;
+reader.close();
+infile.close();
 
 
 //---------------------- Print out the puzzle that was given as input -----

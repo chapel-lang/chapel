@@ -1,0 +1,1 @@
+domain-slice-error-1.chpl:3: error: a domain slice requires either a single domain argument or exactly one argument per domain dimension

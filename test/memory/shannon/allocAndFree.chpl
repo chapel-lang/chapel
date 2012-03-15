@@ -1,13 +1,13 @@
-_extern proc chpl_malloc(number, size, description, userCode=true, lineno=-1, filename=""): opaque;
-_extern proc chpl_realloc(ptr, number, size, description, lineno=-1, filename=""): opaque;
-_extern proc chpl_free(ptr, userCode=true, lineno=-1, filename="");
+extern proc chpl_mem_allocMany(number, size, description, userCode=true, lineno=-1, filename=""): opaque;
+extern proc chpl_mem_realloc(ptr, number, size, description, lineno=-1, filename=""): opaque;
+extern proc chpl_mem_free(ptr, userCode=true, lineno=-1, filename="");
 
-_extern proc resetMemStat();
-_extern proc printMemStat(lineno=-1, filename="");
+extern proc resetMemStat();
+extern proc printMemStat(lineno=-1, filename="");
 
 resetMemStat();
 
-var i = chpl_malloc(1, numBytes(int(64)), "int(64)", true, -1, "");
+var i = chpl_mem_allocMany(1, numBytes(int(64)), "int(64)", true, -1, "");
 writeln("malloc'd an int");
 printMemStat();
 
@@ -17,23 +17,23 @@ printMemStat();
 // implementation to implementation, so am changing the following
 // from a bool to an int(8)
 //
-var b = chpl_malloc(1, numBytes(int(8)), "fake bool", true, -1, "");
+var b = chpl_mem_allocMany(1, numBytes(int(8)), "fake bool", true, -1, "");
 writeln("malloc'd a bool");
 printMemStat();
 
-var f = chpl_malloc(1, numBytes(real), "real", true, -1, "");
+var f = chpl_mem_allocMany(1, numBytes(real), "real", true, -1, "");
 writeln("malloc'd a real");
 printMemStat();
 
-chpl_free(i);
-chpl_free(b);
+chpl_mem_free(i);
+chpl_mem_free(b);
 writeln("freed the int and the bool");
 printMemStat();
 
-f = chpl_realloc(f, 10, numBytes(real), "_real64", -1, "");
+f = chpl_mem_realloc(f, 10, numBytes(real), "_real64", -1, "");
 writeln("realloc'd 10 times the real");
 printMemStat();
 
-chpl_free(f);
+chpl_mem_free(f);
 writeln("freed the real");
 printMemStat();

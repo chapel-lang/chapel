@@ -9,3 +9,49 @@ B is:
 8.1 8.2 8.3 8.4 8.5 8.6 8.7 8.8 8.9
 9.1 9.2 9.3 9.4 9.5 9.6 9.7 9.8 9.9
 SUCCESS
+Running Example 2
+Running Example 3
+Running Example 4
+Read line: Hello
+Read line: This
+Read line:  is 
+Read line:  a test 
+Read line: Hello
+Read line: This
+Read line:  is 
+Read line:  a test 
+Running Example 5
+Running Example 6
+This should be a chunk: {
+ a
+ b
+}
+This should be a chunk: {
+ a
+ b
+}
+This should be a chunk: {
+ a
+ b
+}
+This should be a chunk: {
+ a
+ b
+}
+This should be a chunk: {
+ a
+ b
+}
+This should be a chunk: {
+ a
+ b
+}
+This should be a chunk: {
+ a
+ b
+}
+This should be a chunk: {
+ a
+ b
+}
+Running Example 7

@@ -2,7 +2,9 @@ var myTrueBoolean: bool = true;
 var myFalseBoolean = false;
 var aSpace = " ";
 
-var f: file = new file(filename = "_test_fwritelnBooleanFile.txt", mode = FileAccessMode.write);
+var f = open("_test_fwritelnBooleanFile.txt", iomode.cw).writer();
 
-f.open();
 f.writeln(myTrueBoolean, aSpace, myFalseBoolean);
+
+f.close();
+

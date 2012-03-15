@@ -77,9 +77,18 @@ typedef MapElem<Symbol*,Symbol*> SymbolMapElem;
 // get the current AST node id
 extern int lastNodeIDUsed();
 
-// mark all FnSymbols created after the parser with FLAG_PROC_ITER_KW_USED
-// ProcIter: remove this
-extern bool markNewFnSymbolsWithProcIter;
+// trace various AST node removals
+extern void trace_remove(BaseAST* ast, char flag);
+
+// how an AST node knows its location in the source code
+// (assumed to get copied upon assignment and parameter passing)
+struct astlocT {
+  const char* filename;  // filename of location
+  int lineno;    // line number of location
+  astlocT(int linenoArg, const char* filenameArg):
+    filename(filenameArg), lineno(linenoArg)
+    {}
+};
 
 //
 // enumerated type of all AST node types (and superclass types)
@@ -131,7 +140,7 @@ extern const char* astTagName[];
     if (!map)                                                           \
       map = &localMap;                                                  \
     type* _this = copyInner(map);                                       \
-    _this->lineno = lineno;                                             \
+    _this->astloc = astloc;                                             \
     if (!internal)                                                      \
       update_symbols(_this, map);                                       \
     return _this;                                                       \
@@ -144,7 +153,7 @@ extern const char* astTagName[];
     if (!map)                                                           \
       map = &localMap;                                                  \
     type* _this = copyInner(map);                                       \
-    _this->lineno = lineno;                                             \
+    _this->astloc = astloc;                                             \
     _this->copyFlags(this);                                             \
     map->put(this, _this);                                              \
     if (!internal)                                                      \
@@ -165,7 +174,7 @@ class BaseAST {
  public:
   AstTag astTag; // BaseAST subclass
   int id;        // Unique ID
-  int lineno;    // line number of location
+  astlocT astloc; // Location of this node in the source code
 
   BaseAST(AstTag type);
   virtual ~BaseAST() { }
@@ -178,6 +187,8 @@ class BaseAST {
   const char* stringLoc(void);
   ModuleSymbol* getModule();
   FnSymbol* getFunction();
+  int linenum() { return astloc.lineno; }
+  const char* fname() { return astloc.filename; }
 
   virtual Type* typeInfo(void) = 0;
   Type* getValType();
@@ -192,8 +203,8 @@ class BaseAST {
 // This should be used before constructing new nodes to make sure the
 // line number is correctly set.
 //
-#define SET_LINENO(ast) currentLineno = ast->lineno;
-extern int currentLineno;
+#define SET_LINENO(ast) currentAstLoc = ast->astloc;
+extern astlocT currentAstLoc;
 
 //
 // vectors of modules
@@ -333,7 +344,7 @@ extern Vec<ModuleSymbol*> mainModules; // contains main modules
 //
 // clean IR between passes by clearing some back pointers to dead AST
 // nodes and removing dead AST nodes from the global vectors of AST
-// nodes
+// nodes. "dead" means !isAlive && !isRootModule.
 //
 void cleanAst(void);
 

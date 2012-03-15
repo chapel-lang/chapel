@@ -1,7 +1,10 @@
 // ChapelRangeBase.chpl
 //
+pragma "no use ChapelStandard"
+module ChapelRangeBase {
 
-use DSIUtil;
+use Math; // for abs().
+//use DSIUtil;
 
 // Turns on range iterator debugging.
 config param debugChapelRange = false;
@@ -39,7 +42,8 @@ record rangeBase
   proc strType type return chpl__signedType(idxType);
   pragma "inline" proc low return _low;       // public getter for low bound
   pragma "inline" proc high return _high;     // public getter for high bound
-  pragma "inline" proc stride return if stridable then _stride else 1:_stride.type;
+  pragma "inline" proc stride where stridable return _stride;
+  proc stride param where !stridable return 1 : strType;
   pragma "inline" proc alignment return _alignment;        // public getter for alignment
 
 }
@@ -69,12 +73,16 @@ proc rangeBase.rangeBase(type idxType = int,
   {
     if boundedType == BoundedRangeType.bounded
     {
-      if _low <= _high && this.last + _stride : idxType == this.first then
+      if _low <= _high && this.last + stride : idxType == this.first then
         writeln("Maximal range declared.  ",
         "A for loop on this range will execute zero times.  ",
         "Try using a wider index type.");
     }
   }
+
+  // todo: remove the check for boundsChecking once assert is no-op upon --fast
+  if !stridable && boundsChecking then
+    assert(_stride == 1);
 }
 
 
@@ -165,14 +173,15 @@ proc rangeBase.hasLowBound() param
 proc rangeBase.hasHighBound() param
   return boundedType == BoundedRangeType.bounded || boundedType == BoundedRangeType.boundedHigh;
 
-pragma "inline"
-proc rangeBase.isEmpty()
-where boundedType == BoundedRangeType.bounded
+inline
+proc rangeBase.isEmpty()       where isBoundedRangeB(this)
   return this.alignedLow > this.alignedHigh;
 
-pragma "inline"
-proc rangeBase.isEmpty()
+proc rangeBase.isEmpty() param where !isBoundedRangeB(this)
   return false;
+
+proc rangeBase.hasFirst() param where !stridable && !hasHighBound()
+  return hasLowBound();
 
 pragma "inline" 
 proc rangeBase.hasFirst()
@@ -181,6 +190,9 @@ proc rangeBase.hasFirst()
   return if stride > 0 then hasLowBound() else hasHighBound();
 }
     
+proc rangeBase.hasLast() param where !stridable && !hasLowBound()
+  return hasHighBound();
+
 pragma "inline" 
 proc rangeBase.hasLast()
 {
@@ -193,10 +205,10 @@ proc rangeBase.isNaturallyAligned()
   where this.boundedType == BoundedRangeType.bounded
 {
   // If the stride is positive, we must be aligned on the low bound.
-  if _stride > 0 then return this.alignedLow == _low;
+  if stride > 0 then return this.alignedLow == _low;
   // If the stride is negative, we must be aligned on the high bound.
-  if _stride < 0 then return this.alignedHigh == _high;
-  // _stride == 0: ???
+  if stride < 0 then return this.alignedHigh == _high;
+  // stride == 0: ???
   return false;
 }
 
@@ -251,12 +263,13 @@ proc rangeBase.member(other: rangeBase(?))
 
 // ==(r1,r2) returns true if the two ranges produce the same index sequence.
 
-proc ==(r1: rangeBase(?), r2: rangeBase(?)) where
+proc ==(r1: rangeBase(?), r2: rangeBase(?)) param where
   r1.boundedType != r2.boundedType
 {
   return false;
 }
 
+inline
 proc ==(r1: rangeBase(?), r2: rangeBase(?)) where
   r1.boundedType == r2.boundedType && isBoundedRangeB(r1)
 {
@@ -270,6 +283,7 @@ proc ==(r1: rangeBase(?), r2: rangeBase(?)) where
   return true;
 }
 
+inline
 proc ==(r1: rangeBase(?), r2: rangeBase(?)) where
   r1.boundedType == r2.boundedType && ! isBoundedRangeB(r1)
 {
@@ -362,7 +376,6 @@ proc rangeBase.alignHigh()
 
 proc rangeBase.indexOrder(i: idxType): idxType
 {
-  type strType = chpl__signedType(idxType);
   if ! member(i) then return (-1):idxType;
   if ! stridable then return i - _low;
   else return ((i:strType - this.first:strType) / _stride):idxType;
@@ -487,7 +500,7 @@ proc rangeBase.expand(i: idxType)
 proc rangeBase.expand(i: idxType)
 {
   return new rangeBase(idxType, boundedType, stridable,
-                   _low-i, _high+i, _stride, _alignment);
+                   _low-i, _high+i, stride, _alignment);
 }
 
 
@@ -527,7 +540,7 @@ proc +(r: rangeBase(?e,?b,?s), i: integral)
 
   return new rangeBase(resultType, b, s,
                    r._low + i, r._high + i,
-		   r._stride : strType, r._alignment + i : resultType);
+		   r.stride : strType, r._alignment + i : resultType);
 }
 
 pragma "inline"
@@ -544,36 +557,6 @@ proc -(r: rangeBase(?e,?b,?s), i: integral)
 		   r._stride : strType, r._alignment - i : resultType);
 }
 
-proc chpl__byHelp(r : rangeBase(?e, ?b, ?s), str : chpl__signedType(e))
-{
-  if str == 0 then
-    halt("range cannot be strided by zero");
-
-  var s = r._stride * str;
-  var al : e = 0;
-  if b == BoundedRangeType.boundedLow then al = r.alignedLow;
-  if b == BoundedRangeType.boundedHigh then al = r.alignedHigh;
-  if b == BoundedRangeType.bounded then
-    al = if s > 0 then r.alignedLow else r.alignedHigh;
-
-  return new rangeBase(e, b, true,
-                   r._low, r._high, s, al);
-}
-
-proc chpl__by(r : rangeBase(?), str)
-{
-  type idxType = r.idxType;
-  type strType = r.strType;
-  type argType = str.type;
-  
-  if (argType == strType) then return chpl__byHelp(r, str);
-  else if (argType == idxType || chpl__legalIntCoerce(argType, strType)) then
-    return chpl__byHelp(r, str:strType);
-  else
-    compilerError("type mismatch applying 'by' to range(", typeToString(idxType),
-                  ") with ", typeToString(argType));
-}
-
 proc chpl__align(r : rangeBase(?e, ?b, ?s), algn)
 {
   type idxType = r.idxType;
@@ -583,41 +566,15 @@ proc chpl__align(r : rangeBase(?e, ?b, ?s), algn)
     // Note that aligning an unstrided range will set the field value,
     // but has no effect on the index set produced (a mod 1 == 0).
     return new rangeBase(e, b, s,
-                     r._low, r._high, r._stride, algn);
+                     r._low, r._high, r.stride, algn);
   else
     compilerError("type mismatch applying 'align' to range(", typeToString(idxType),
                   ") with ", typeToString(argType));
 }
 
-// Apply a natural alignment to an existing range.
-proc rangeBase.offset(offs : integral)
-{
-  type argType = offs.type;
-
-  if argType == idxType || chpl__legalIntCoerce(argType, idxType)
-  {
-    if this.hasLowBound() then
-      this._alignment = _low + offs;
-    else if this.boundedType == BoundedRangeType.boundedHigh then
-      this._alignment = _high + offs;
-    else
-      this._alignment = offs;
-  }
-  else
-    compilerError("type mismatch applying 'absAlign' to range(",
-              typeToString(idxType), ") with ", typeToString(argType));
-
-  if ! stridable then
-  {
-    compilerWarning("Applying an alignment to an unstrided range has no effect."); 
-    this._alignment = 0; // Maintain the invariant.
-  }
-  return this;
-}
-
 // Composition
 // Return the intersection of this and other.
-proc rangeBase.this(other: rangeBase(?idxType2, ?boundedType, ?stridable))
+proc rangeBase.this(other: rangeBase(?))
 {
   // Determine the boundedType of result
   proc computeBoundedType(r1, r2) param
@@ -638,35 +595,50 @@ proc rangeBase.this(other: rangeBase(?idxType2, ?boundedType, ?stridable))
   // so that max(lo1, lo2) == lo2.  etc.
   var lo1 = if hasLowBound() then this._low else other._low;
   var hi1 = if hasHighBound() then this._high else other._high;
-  var st1 = abs(this._stride);
+  var st1 = abs(this.stride);
 
   var lo2 = if other.hasLowBound() then other._low else this._low;
   var hi2 = if other.hasHighBound() then other._high else this._high;
-  var st2 = abs(other._stride);
+  var st2 = abs(other.stride);
 
   // If the result type is unsigned, don't let the low bound go negative.
   // This is a kludge.  We should really obey type coercion rules. (hilde)
   if (_isUnsignedType(idxType)) { if (lo1 < 0) then lo1 = 0; }
 
-  var (g, x) = chpl__extendedEuclid(st1, st2);
-  var lcm = st1 / g * st2;        // The LCM of the two strides.
+  // We inherit the sign of the stride from this.stride.
+  var newStride: strType = this.stride;
+  var lcm: strType = abs(this.stride);
+  var (g, x): 2*strType = (lcm, 0);
+
+  if this.stride != other.stride && this.stride != -other.stride {
+
+    (g, x) = chpl__extendedEuclid(st1, st2);
+    lcm = st1 / g * st2;        // The LCM of the two strides.
   // The division must be done first to prevent overflow.
+
+    newStride = if this.stride > 0 then lcm else -lcm;
+  }
 
   var result = new rangeBase(idxType,
                          computeBoundedType(this, other),
                          this.stridable | other.stridable,
                          max(lo1, lo2):idxType,
                          min(hi1, hi2):idxType,
-                         lcm:chpl__signedType(idxType));
+                         newStride);
 
+ if result.stridable {
   var al1 = (this._alignment % st1:idxType):int;
   var al2 = (other._alignment % st2:other.idxType):int;
 
   if (al2 - al1) % g != 0 then
+  {
     // empty intersection, return degenerate result
+    if !isBoundedRangeB(result) then
+      halt("could not represent range slice - it needs to be empty, but the slice type is not bounded");
     (result._low, result._high, result._alignment) =
-    (1:idxType, 0:idxType, 1:idxType);
+    (1:idxType, 0:idxType, if this.stride > 0 then 1:idxType else 0:idxType);
     // _alignment == _low, so it won't print.
+  }
   else
   { // non-empty intersection
 
@@ -677,11 +649,11 @@ proc rangeBase.this(other: rangeBase(?idxType2, ?boundedType, ?stridable))
 
     // Now offset can be safely cast to idxType.
     result._alignment = al1:idxType + offset:idxType * st1:idxType / g:idxType;
-
-    // We inherit the sign of the stride from the operand.
-    if other._stride < 0 then 
-      result._stride = -result._stride;
   }
+ } else {
+    // !(result.stridable)
+    result._alignment = 0;
+ }
 
   return result;
 }
@@ -716,19 +688,18 @@ proc chpl__count(r:rangeBase(?), i:integral)
                      stridable = r.stridable,
                      _low = 1,
                      _high = 0,
-                     _stride = r._stride,
+                     _stride = r.stride,
                      _alignment = 1);
 
-  if i > 0 && !r.hasFirst() then
+  if !r.hasFirst() && i > 0 then
     halt("With a positive count, the range must have a first index.");
-  if i < 0 && !r.hasLast() then
+  if !r.hasLast()  && i < 0 then
     halt("With a negative count, the range must have a last index.");
   if r.boundedType == BoundedRangeType.bounded && abs(i) > r.length then
     halt("bounded range is too small to access ", abs(i), " elements");
 
   // The distance between the first and last indices.
-  var s = r._stride : strType;
-  var diff = i : strType * s;
+  var diff = i : strType * r.stride : strType;
 
   var lo : resultType =
     if diff > 0 then r._low
@@ -737,15 +708,17 @@ proc chpl__count(r:rangeBase(?), i:integral)
     if diff < 0 then r._high
     else chpl__add(r._low : resultType, diff : resultType - 1);
 
-  if r.hasLowBound() && lo < r._low then lo = r._low;
-  if r.hasHighBound() && hi > r._high then hi = r._high;
+  if r.stridable {
+    if r.hasLowBound() && lo < r._low then lo = r._low;
+    if r.hasHighBound() && hi > r._high then hi = r._high;
+  }
 
   return new rangeBase(idxType = resultType,
                        boundedType = BoundedRangeType.bounded,
                        stridable = r.stridable,
                        _low = lo,
                        _high = hi,
-                       _stride = r._stride : strType,
+                       _stride = r.stride : strType,
                        _alignment = r._alignment);
 }
 
@@ -789,7 +762,7 @@ iter rangeBase.these()
   }
 }
 
-iter rangeBase.these(param tag: iterator) where tag == iterator.leader
+iter rangeBase.these(param tag: iterKind) where tag == iterKind.leader
 {
   if ! isBoundedRangeB(this) then
     compilerError("parallel iteration is not supported over unbounded ranges");
@@ -834,33 +807,47 @@ iter rangeBase.these(param tag: iterator) where tag == iterator.leader
   }
 }
 
-iter rangeBase.these(param tag: iterator, follower) where tag == iterator.follower
+iter rangeBase.these(param tag: iterKind, followThis) where tag == iterKind.follower
 {
   if boundedType == BoundedRangeType.boundedNone then
     compilerError("iteration over a range with no bounds");
   if ! stridable && boundedType == BoundedRangeType.boundedHigh then
     compilerError("iteration over a range with no first index");
 
-  if follower.size != 1 then
+  if followThis.size != 1 then
     compilerError("iteration over a range with multi-dimensional iterator");
 
   if debugChapelRange then
-    writeln("In range follower code: Following ", follower);
+    writeln("In range follower code: Following ", followThis);
 
-  var followThis = follower(1);
+  var myFollowThis = followThis(1);
 
   if debugChapelRange then
-    writeln("Range = ", followThis);
+    writeln("Range = ", myFollowThis);
 
-  if ! this.hasFirst() then
-    halt("iteration over a range with no first index");
-  if ! followThis.hasFirst() then
-    halt("zippered iteration over a range with no first index");
+  if ! this.hasFirst() {
+    if this.isEmpty() {
+      if myFollowThis.isEmpty() then
+        // nothing to do
+        return;
+      else
+        halt("zippered iteration with a range has non-equal lengths");
+    } else {
+      halt("iteration over a range with no first index");
+    }
+  }
+  if ! myFollowThis.hasFirst() {
+    if !myFollowThis.isAmbiguous() && myFollowThis.isEmpty() then
+      // nothing to do
+      return;
+    else
+      halt("zippered iteration over a range with no first index");
+  }
 
-  if (isBoundedRangeB(followThis) && !followThis.stridable) ||
-     followThis.hasLast()
+  if (isBoundedRangeB(myFollowThis) && !myFollowThis.stridable) ||
+     myFollowThis.hasLast()
   {
-    const flwlen = followThis.length;
+    const flwlen = myFollowThis.length;
     if flwlen == 0 then
       return; // nothing to do
     if boundsChecking && this.hasLast() {
@@ -872,8 +859,8 @@ iter rangeBase.these(param tag: iterator, follower) where tag == iterator.follow
         assert(false, "hasFirst && hasLast do not imply isBoundedRangeB");
     }    
 
-    // same as undensifyBounded(this, followThis), but on a rangeBase
-    var low: idxType  = this.orderToIndex(followThis.first);
+    // same as undensifyBounded(this, myFollowThis), but on a rangeBase
+    var low: idxType  = this.orderToIndex(myFollowThis.first);
     if flwlen == 1
     {
       if debugChapelRange then
@@ -882,9 +869,9 @@ iter rangeBase.these(param tag: iterator, follower) where tag == iterator.follow
       return;
     }
 
-    const stride = this.stride * followThis.stride;
+    const stride = this.stride * myFollowThis.stride;
     var high: idxType = ( low + stride * (flwlen - 1) ):idxType;
-    assert(high == this.orderToIndex(followThis.last));
+    assert(high == this.orderToIndex(myFollowThis.last));
     if stride < 0 then low <=> high;
     assert(low <= high);
 
@@ -899,14 +886,14 @@ iter rangeBase.these(param tag: iterator, follower) where tag == iterator.follow
       yield i;
     }
   }
-  else // ! followThis.hasLast()
+  else // ! myFollowThis.hasLast()
   {
     // WARNING: this case has not been tested
     if boundsChecking && this.hasLast() then
       halt("zippered iteration where a bounded range follows an unbounded iterator");
 
-    const first  = this.orderToIndex(followThis.first);
-    const stride = this.stride * followThis.stride;
+    const first  = this.orderToIndex(myFollowThis.first);
+    const stride = this.stride * myFollowThis.stride;
 
     if stride > 0
     {
@@ -932,7 +919,7 @@ iter rangeBase.these(param tag: iterator, follower) where tag == iterator.follow
           yield i;
         }
     }
-  } // if followThis.hasLast()
+  } // if myFollowThis.hasLast()
 }
 
 
@@ -948,13 +935,13 @@ proc rangeBase.writeThis(f: Writer)
   f.write("..");
   if hasHighBound() then
     f.write(_high);
-  if _stride != 1 then
-    f.write(" by ", _stride);
+  if stride != 1 then
+    f.write(" by ", stride);
 
   // Write out the alignment only if it differs from natural alignment.
   // We take alignment modulo the stride for consistency.
   if ! isNaturallyAligned() then
-    f.write(" align ", chpl__mod(_alignment, _stride));
+    f.write(" align ", chpl__mod(_alignment, stride));
 }
 
 // Return a substring of a string with a range of indices.
@@ -963,8 +950,8 @@ pragma "inline" proc string.substring(r: rangeBase(?))
   if r.boundedType != BoundedRangeType.bounded then
     compilerError("substring indexing undefined on unbounded ranges");
 
-  if r._stride != 1 then
-    return __primitive("string_strided_select", this, r.alignedLow, r.alignedHigh, r._stride);
+  if r.stride != 1 then
+    return __primitive("string_strided_select", this, r.alignedLow, r.alignedHigh, r.stride);
   else
     return __primitive("string_select", this, r.low, r.high);
 }
@@ -1099,3 +1086,4 @@ pragma "inline" proc chpl__extendedEuclid(u:int, v:int)
 pragma "inline" proc chpl__extendedEuclid(u:int(64), v:int(64))
 { return chpl__extendedEuclidHelper(u,v); }
 
+}

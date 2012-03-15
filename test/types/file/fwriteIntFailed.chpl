@@ -1,5 +1,4 @@
 var myInt = 123;
-var f: file = new file(filename = "fwriteIntFailed.txt", mode = FileAccessMode.read);
+var f = open("fwriteIntFailed.txt", iomode.r).writer();
 
-f.open();
 f.write(myInt);

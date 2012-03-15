@@ -1,0 +1,23 @@
+proc doit():int {
+  writeln("In doit");
+  return 15;
+}
+
+record R {
+  var x:int = doit();
+  proc R() {
+    writeln("R constructor");
+    x = 15;
+  }
+  proc ~R() {
+    writeln("R destructor");
+  }
+}
+
+var r = new R();
+writeln(r.x);
+
+var r2:R;
+
+writeln(r2.x);
+

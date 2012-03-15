@@ -1,12 +1,12 @@
-_extern proc chpl_init_timer(timer);
-_extern proc chpl_now_timer(timer): _timervalue;
-_extern proc chpl_seconds_timer(timer): real;
-_extern proc chpl_microseconds_timer(timer): real;
-_extern proc chpl_now_year(): int;
-_extern proc chpl_now_month(): int;
-_extern proc chpl_now_day(): int;
-_extern proc chpl_now_dow(): int;
-_extern proc chpl_now_time(): real;
+extern proc chpl_init_timer(timer);
+extern proc chpl_now_timer(timer): _timervalue;
+extern proc chpl_seconds_timer(timer): real;
+extern proc chpl_microseconds_timer(timer): real;
+extern proc chpl_now_year(): int;
+extern proc chpl_now_month(): int;
+extern proc chpl_now_day(): int;
+extern proc chpl_now_dow(): int;
+extern proc chpl_now_time(): real;
 
 enum TimeUnits { microseconds, milliseconds, seconds, minutes, hours };
 enum Day { sunday=0, monday, tuesday, wednesday, thursday, friday, saturday };

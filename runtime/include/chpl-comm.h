@@ -42,20 +42,13 @@ extern const int chpl_heterogeneous;
 //
 
 //
-// returns the default maximum number of threads that can be handled by this
-// communication layer (initial value of maxThreadsPerLocale); use the sentinel value 0
-// if the maximum number of threads is limited only by the system's available
-// resources.
+// returns the maximum number of threads that can be handled
+// by this communication layer (used to ensure numThreadsPerLocale is
+// legal); should return the sentinel value of 0 if the communication
+// layer imposes no particular limit on the number of threads.
 //
-
 int32_t chpl_comm_getMaxThreads(void);
 
-//
-// returns the upper limit on the maximum number of threads that can be handled
-// by this communication layer; use the sentinel value 0 if the maximum number
-// of threads is limited only by the system's available resources.
-//
-int32_t chpl_comm_maxThreadsLimit(void);
 
 //
 // initializes the communications package
@@ -65,6 +58,11 @@ int32_t chpl_comm_maxThreadsLimit(void);
 //
 void chpl_comm_init(int *argc_p, char ***argv_p);
 
+//
+// Allow the communication layer to do any secondary initialization it needs
+// to, after the memory layer is initialized.
+//
+void chpl_comm_post_mem_init(void);
 
 //
 // if possible, run in gdb (because the user threw the --gdb flag)
@@ -76,6 +74,12 @@ void chpl_comm_init(int *argc_p, char ***argv_p);
 int chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status);
 
 //
+// Allow the communication layer to do any further initialization it
+// needs to, after the tasking layer is initialized.
+//
+void chpl_comm_post_task_init(void);
+
+//
 // a final comm layer stub before barrier synching and calling into
 // the user code.  It is recommended that a debugging message be
 // printed here indicating that each locale has started using
@@ -84,7 +88,11 @@ int chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status);
 //
 void chpl_comm_rollcall(void);
 
-void chpl_comm_init_shared_heap(void);
+//
+// Inform callers as to the communication layer's desired starting address
+// and length for the shared heap, if any.
+//
+void chpl_comm_desired_shared_heap(void** start_p, size_t* size_p);
 
 //
 // allocate chpl_globals_registry or make it point to
@@ -117,31 +125,29 @@ void chpl_comm_broadcast_private(int id, int32_t size, int32_t tid);
 void chpl_comm_barrier(const char *msg);
 
 //
-// terminates communication package at the end of a normal run of the
-// chapel program -- assumes all processes are calling into the
-// routine.  If the communication layer likes to call exit, the exit
+// Do exit processing that has to occur before the tasking layer is
+// shut down.  "The "all" parameter is true for normal, collective
+// program termination, and false for that done by a single locale
+// due to error or a user program halt or exit.
+//
+// Note: Chapel's program termination is not yet fully thought out.
+//
+void chpl_comm_pre_task_exit(int all);
+
+//
+// Terminate the communication layer.  "The "all" parameter is true
+// for normal, collective program termination, and false for that
+// done by a single locale due to error or a user program halt or
+// exit.  If the communication layer likes to call exit, the exit
 // code is provided using the "status" argument; if it doesn't, it
 // can simply return and the Chapel program will call exit().
 //
-// notes:
+// Notes:
 //   this function is called last
 //   a barrier is invoked before calling into this function
-//   Chapel's program termination is not yet implemented correctly
+//   Chapel's program termination is not yet fully thought out.
 //
-void chpl_comm_exit_all(int status);
-
-
-//
-// this routine should terminate the communication package when called
-// by any thread, and should clean up the communication package's
-// resources as best possible.  This routine is called whenever a user
-// thread calls halt or exit and we have no guarantees that all threads
-// are calling into the halt or exit.  Otherwise, it is much like the
-// chpl_comm_exit_all() routine.
-//
-void chpl_comm_exit_any(int status);
-void chpl_comm_exit_any_dirty(int status);
-void chpl_comm_exit_any_clean(int status);
+void chpl_comm_exit(int all, int status);
 
 //
 // put 'size' bytes of local data at 'addr' to remote data at
@@ -186,16 +192,18 @@ void chpl_comm_fork_nb(int locale, chpl_fn_int_t fid,
 void chpl_comm_fork_fast(int locale, chpl_fn_int_t fid, void *arg,
                          int32_t arg_size, int32_t arg_tid);
 
+
 //
-// This is a hook that's called after the Chapel tasking layer has
-// been set up which permits the communication layer to start a
-// polling/progress task if necessary.  If not, this can be a no-op.
-// One of the goals of this call is to avoid having to put
-// pthread_create() style calls into the communication code in order
-// to have all tasking/threading owned by the task layer.
+// This call specifies the number of polling tasks that the
+// communication layer will need (see just below for a definition).
+// The value it returns is passed to chpl_task_init(), in order to
+// forewarn the tasking layer whether the comm layer will need a
+// polling task.  In the current implementation, it should only
+// return 0 or 1.
 //
-void chpl_comm_startPollingTask(void);
-void chpl_comm_stopPollingTask(void);
+int chpl_comm_numPollingTasks(void);
+
+
 
 //
 // Comm diagnostics stuff

@@ -1,7 +1,6 @@
 var thisIsTrue: bool = true;
 
-var f: file = new file(filename = "freadNotABoolean.txt", mode = FileAccessMode.read);
-f.open();
+var f = open("freadNotABoolean.txt", iomode.r).reader();
 
 f.read(thisIsTrue);
 writeln(thisIsTrue);

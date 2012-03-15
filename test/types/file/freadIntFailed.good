@@ -1,1 +1,1 @@
-freadIntFailed.chpl:5: error: read failed: eof
+freadIntFailed.chpl:2: error: Invalid argument in file.reader with path "_test_freadIntFailed.txt"

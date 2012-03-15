@@ -1,4 +1,4 @@
 #!/bin/sh
 
-grep TITLE log/index.html $1 >> $2
+grep -H TITLE log/index.html >> $2
 

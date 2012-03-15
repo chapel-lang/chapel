@@ -1,10 +1,10 @@
-_extern type c_int;
+extern type ext_c_int_t;
 
-var my_c_int: c_int;
+var my_c_int: ext_c_int_t;
 
-_extern proc set_c_int(inout lhs: c_int, rhs: int(32));
+extern proc set_c_int(inout lhs: ext_c_int_t, rhs: int(32));
 
-_extern proc print_c_int(x: c_int);
+extern proc print_c_int(x: ext_c_int_t);
 
 set_c_int(my_c_int, 32);
 print_c_int(my_c_int);

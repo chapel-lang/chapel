@@ -1,12 +1,14 @@
-CHAPEL_ROOT = ..
+ifndef CHPL_MAKE_HOME
+export CHPL_MAKE_HOME=$(shell pwd)/..
+endif
 
 PROGRAM = chpl
-VERSION = $(shell $(CHAPEL_ROOT)/util/devel/compVersion)
+VERSION = $(shell $(CHPL_MAKE_HOME)/util/devel/compVersion)
 
 MANPAGE = man1/$(PROGRAM).1
 TARGETS = $(MANPAGE) $(PROGRAM).pdf
 
-TXT2MAN = $(CHAPEL_ROOT)/third-party/txt2man/txt2man
+TXT2MAN = $(CHPL_MAKE_HOME)/third-party/txt2man/txt2man
 
 STARS = \*\*\*\*\*
 
@@ -21,7 +23,7 @@ clean:
 	rm $(TARGETS)
 
 man1/%.1: %.txt Makefile
-	$(TXT2MAN) -s 1 -I locale -I pthreads -I "on blocks" -I"Compiler Information Options" -I"Compilation Trace Options" -I"Module Processing Options" -I"Parallelism Control Options" -I"Optimization Control Options" -I"Run-time Semantic Check Options" -I "C Code Generation Options" -I"C Code Compilation Options" -B"cpp" -B"--no-cpp-lines" -I "Miscellaneous Options" -t $* -r $(VERSION) $< > $@
+	$(TXT2MAN) -s 1 -I locale -I pthreads -I "on blocks" -I"Compiler Information Options" -I"Compilation Trace Options" -I"Module Processing Options" -I"Parallelism Control Options" -I"Optimization Control Options" -I"Run-time Semantic Check Options" -I "C Code Generation Options" -I"C Code Compilation Options" -B"h" -B"c" -B"o" -B"cpp" -B"--no-cpp-lines" -I "Miscellaneous Options" -t $* -r $(VERSION) $< > $@
 
 %.ps: man1/%.1
 	groff -man $< > $@

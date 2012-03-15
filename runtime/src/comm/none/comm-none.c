@@ -7,7 +7,7 @@
 #include "chpl-comm.h"
 #include "chplexit.h"
 #include "error.h"
-#include "chpl_mem.h"
+#include "chpl-mem.h"
 #include "chpl-tasks.h"
 
 // Helper functions
@@ -31,14 +31,12 @@ int32_t chpl_comm_getMaxThreads(void) {
   return 0;
 }
 
-int32_t chpl_comm_maxThreadsLimit(void) {
-  return 0;
-}
-
 void chpl_comm_init(int *argc_p, char ***argv_p) {
   chpl_numLocales = 1;
   chpl_localeID = 0;
 }
+
+void chpl_comm_post_mem_init(void) { }
 
 int chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status) {
   int i;
@@ -54,12 +52,15 @@ int chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status) {
   return 1;
 }
 
-void chpl_comm_init_shared_heap(void) {
-  chpl_initHeap(NULL, 0);
-}
+void chpl_comm_post_task_init(void) { }
 
 void chpl_comm_rollcall(void) {
   chpl_msg(2, "executing on a single locale\n");
+}
+
+void chpl_comm_desired_shared_heap(void** start_p, size_t* size_p) {
+  *start_p = NULL;
+  *size_p  = 0;
 }
 
 void chpl_comm_alloc_registry(int numGlobals) { 
@@ -72,20 +73,20 @@ void chpl_comm_broadcast_private(int id, int32_t sizee, int32_t tid) { }
 
 void chpl_comm_barrier(const char *msg) { }
 
-void chpl_comm_exit_any(int status) { }
+void chpl_comm_pre_task_exit(int all) { }
 
-void chpl_comm_exit_all(int status) { }
+void chpl_comm_exit(int all, int status) { }
 
 void  chpl_comm_put(void* addr, int32_t locale, void* raddr,
                     int32_t size, int32_t typeIndex, int32_t len,
                     int ln, chpl_string fn) {
-  memcpy(raddr, addr, size);
+  memcpy(raddr, addr, size*len);
 }
 
 void  chpl_comm_get(void* addr, int32_t locale, void* raddr,
                     int32_t size, int32_t typeIndex, int32_t len,
                     int ln, chpl_string fn) {
-  memcpy(addr, raddr, size);
+  memcpy(addr, raddr, size*len);
 }
 
 typedef struct {
@@ -99,7 +100,7 @@ static void fork_nb_wrapper(fork_t* f) {
     (*chpl_ftable[f->fid])(&f->arg);
   else
     (*chpl_ftable[f->fid])(0);
-  chpl_free(f, 0, 0);
+  chpl_mem_free(f, 0, 0);
 }
 
 void chpl_comm_fork_nb(int locale, chpl_fn_int_t fid, void *arg,
@@ -108,7 +109,7 @@ void chpl_comm_fork_nb(int locale, chpl_fn_int_t fid, void *arg,
   int     info_size;
 
   info_size = sizeof(fork_t) + arg_size;
-  info = (fork_t*)chpl_malloc(info_size, sizeof(char), CHPL_RT_MD_REMOTE_NB_FORK_DATA, 0, 0);
+  info = (fork_t*)chpl_mem_allocMany(info_size, sizeof(char), CHPL_RT_MD_COMM_FORK_SEND_NB_INFO, 0, 0);
   info->fid = fid;
   info->arg_size = arg_size;
   if (arg_size)
@@ -127,8 +128,7 @@ void chpl_comm_fork_fast(int locale, chpl_fn_int_t fid, void *arg,
   (*chpl_ftable[fid])(arg);
 }
 
-void chpl_comm_startPollingTask(void) { }
-void chpl_comm_stopPollingTask(void) { }
+int chpl_comm_numPollingTasks(void) { return 0; }
 
 void chpl_startVerboseComm() { }
 void chpl_stopVerboseComm() { }

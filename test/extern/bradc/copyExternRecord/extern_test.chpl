@@ -1,9 +1,9 @@
-_extern record testrec {
+extern record testrec {
   var x:int(64);
 }
 
-_extern proc init_testrec(inout t:testrec, x:int(32), y:int(32));
-_extern proc debug_print_testrec(inout t:testrec);
+extern proc init_testrec(inout t:testrec, x:int(32), y:int(32));
+extern proc debug_print_testrec(inout t:testrec);
 
 record myrecord {
   var t:testrec;

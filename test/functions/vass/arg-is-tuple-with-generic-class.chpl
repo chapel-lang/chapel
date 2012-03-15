@@ -8,7 +8,7 @@ class TestDom: BaseSparseDom {
     this.parentDom = parentDom;
   }
 
-  iter these1(follower: (TestDom(?), ?)) { yield 999; }
+  iter these1(followThis: (TestDom(?), ?)) { yield 999; }
 }
 
 var t = new TestDom(1, int, [1..8]:domain(1));

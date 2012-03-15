@@ -47,8 +47,7 @@ proc main {
 
   //===> Diffusivity ===>
   var diffusivity: real;
-  var phys_file = new file("set_problem/physics.txt", FileAccessMode.read);
-  phys_file.open();
+  var phys_file = open("set_problem/physics.txt", iomode.r).reader();
   var dim_in: int;
   phys_file.readln(diffusivity);
   phys_file.close();

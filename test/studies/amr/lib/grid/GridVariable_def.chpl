@@ -115,7 +115,7 @@ proc writeTimeFile(
   meqn:    int,
   ngrids:  int,
   naux:    int,
-  outfile: file)
+  outfile: channel)
 {
 
   //==== Formatting parameters ====
@@ -146,7 +146,7 @@ proc writeTimeFile(
 proc GridVariable.writeData (
   grid_number: int,
   AMR_level:   int,
-  outfile:     file)
+  outfile: channel)
 {
 
   //==== Formatting parameters ====
@@ -155,7 +155,6 @@ proc GridVariable.writeData (
       sfmt:  string = "%20s",
       linelabel: string;
 
-                                    
   //==== Header ====
   outfile.writeln( format(ifmt, grid_number), "                 grid_number");
   outfile.writeln( format(ifmt, AMR_level),   "                 AMR_level");
@@ -275,19 +274,15 @@ proc GridVariable.clawOutput(
 
 
   //==== Time file ====
-  var outfile = new file(time_filename, FileAccessMode.write);
-  outfile.open();
+  var outfile = open(time_filename, iomode.cw).writer();
   writeTimeFile(time, 1, 1, 0, outfile);
   outfile.close();
-  delete outfile;
   
   
   //==== Data file ====
-  outfile = new file(data_filename, FileAccessMode.write);
-  outfile.open();
+  outfile = open(data_filename, iomode.cw).writer();
   this.writeData(1, 1, outfile);
   outfile.close();
-  delete outfile;
 
 }
 // /|""""""""""""""""""""""""""""""""/|

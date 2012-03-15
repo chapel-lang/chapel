@@ -1,14 +1,14 @@
 
 use Profiling;
 
-_extern proc PAT_region_begin(id : int, lbl : string) : int;
-_extern proc PAT_region_end(id : int) : int;
+extern proc PAT_region_begin(id : int, lbl : string) : int;
+extern proc PAT_region_end(id : int) : int;
 
-_extern proc PAT_record(state : bool) : int;
+extern proc PAT_record(state : bool) : int;
 
-_extern proc PAT_trace_user(name : string) : int;
+extern proc PAT_trace_user(name : string) : int;
 
-_extern proc PAT_trace_user_l(name : string, enable : bool, vals...?numvals) : int;
+extern proc PAT_trace_user_l(name : string, enable : bool, vals...?numvals) : int;
 
 proc chpl_region_begin(param id : uint, param name : string, const file : string, const line : int) : int{
   const buf : string = name + " (" + file + ":" + line + ")";

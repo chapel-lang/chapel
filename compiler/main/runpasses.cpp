@@ -16,15 +16,13 @@ bool printPasses = false;
 struct PassInfo {
   void (*fn)(void);
   const char *name;
+  char log_tag;
 };
 
-#define FIRST {NULL, NULL}
-#define LAST {NULL, NULL}
-#define RUN(x) {x, #x}
 #include "passlist.h"
 
 
-static void runPass(const char *passName, void (*pass)(void)) {
+static void runPass(const char *passName, void (*pass)(void), char log_tag) {
   static struct timeval startTimeBetweenPasses;
   static struct timeval stopTimeBetweenPasses;
   static double timeBetweenPasses = -1.0;
@@ -54,9 +52,11 @@ static void runPass(const char *passName, void (*pass)(void)) {
   (*pass)();
   if (printPasses) {
     gettimeofday(&stopTime, &timezone);
-    fprintf(stderr, "%8.3f seconds\n",  
+    fprintf(stderr, "%8.3f seconds",
             ((double)((stopTime.tv_sec*1e6+stopTime.tv_usec) - 
                       (startTime.tv_sec*1e6+startTime.tv_usec))) / 1e6);
+    if (developer) fprintf(stderr, "  [%d]", lastNodeIDUsed());
+    fprintf(stderr, "\n");
     totalTime += ((double)((stopTime.tv_sec*1e6+stopTime.tv_usec) - 
                            (startTime.tv_sec*1e6+startTime.tv_usec))) / 1e6;
     if (!strcmp(passName, "makeBinary")) {
@@ -71,6 +71,8 @@ static void runPass(const char *passName, void (*pass)(void)) {
   if (fdump_html) {
     html_view(passName);
   }
+  if (logging(log_tag))
+    dump_ast(passName, log_tag);
   if (printPasses) {
     gettimeofday(&startTimeBetweenPasses, &timezone);
   }
@@ -99,8 +101,10 @@ static void dump_index_footer(FILE* f) {
   fprintf(f, "</HTML>\n");
 }
 
-
-void runPasses(void) {
+static void setupLogfiles() {
+  if (logging()) {
+    ensureDirExists(log_dir, "ensuring directory for log files exists");
+  }
   if (fdump_html) {
     ensureDirExists(log_dir, "ensuring directory for html files exists");
     if (!(html_index_file = fopen(astr(log_dir, "index.html"), "w"))) {
@@ -109,16 +113,58 @@ void runPasses(void) {
     dump_index_header(html_index_file);
     fprintf(html_index_file, "<TABLE CELLPADDING=\"0\" CELLSPACING=\"0\">");
   }
-  PassInfo* pass = passlist+1;  // skip over FIRST
-  while (pass->name != NULL) {
-    runPass(pass->name, pass->fn);
-    USR_STOP(); // quit if fatal errors were encountered in pass
-    pass++;
+  if (deletedIdFilename[0] != '\0') {
+    deletedIdHandle = fopen(deletedIdFilename, "w");
+    if (!deletedIdHandle) {
+      USR_FATAL("cannot open file to log deleted AST ids\"%s\" for writing", deletedIdFilename);
+    }
   }
+}
+
+static void teardownLogfiles() {
   if (fdump_html) {
     fprintf(html_index_file, "</TABLE>");
     dump_index_footer(html_index_file);
     fclose(html_index_file);
   }
+  if (deletedIdON) {
+    fclose(deletedIdHandle);
+    deletedIdHandle = NULL;
+  }
+}
+
+static void advanceCurrentPass(const char* passName) {
+  currentPassNo++;
+  currentPassName = passName;
+}
+
+void runPasses(void) {
+  setupLogfiles();
+  PassInfo* pass = passlist+1;  // skip over FIRST
+  while (pass->name != NULL) {
+    advanceCurrentPass(pass->name);
+    runPass(pass->name, pass->fn, pass->log_tag);
+    USR_STOP(); // quit if fatal errors were encountered in pass
+    pass++;
+  }
+  advanceCurrentPass("finishing up");
   destroyAst();
+  teardownLogfiles();
+}
+
+// Suck the pass flags out of the pass list, so that args to the logging command
+// can be checked for validity.
+// The pass letters are used by the driver to arrange for dumping AST logs
+// of selected passes.
+// This routine also verifies that each non-NUL flag is unique.
+void initLogFlags(Vec<char>& valid_log_flags) {
+  PassInfo* pass = passlist+1;  // skip over FIRST
+  while (pass->name != NULL) {
+    char tag = pass->log_tag;
+    if (tag != NUL) {
+      INT_ASSERT(!valid_log_flags.set_in(tag));
+      valid_log_flags.set_add(tag);
+    }
+    pass++;
+  }
 }

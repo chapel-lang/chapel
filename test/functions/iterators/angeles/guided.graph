@@ -1,0 +1,6 @@
+# Guided iterator (PGAS'11 paper)
+perfkeys: Total time fine, Total time coarse, Total time tri, Total time rand 
+graphkeys: fine, coarse, triang, rand
+ylabel: Time (millisec.)
+graphname: guided
+graphtitle: Guided Iterator

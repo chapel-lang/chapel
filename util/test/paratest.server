@@ -59,6 +59,7 @@ $summary_len = 2;
 $sleep_time = 1;                       # polling time (sec) to distribute work
 $incl_futures = 0;
 $filedist = 0;
+$duplex = 0;				# run two tasks on each node.
 $valgrind = 0;
 $memleaks = "/dev/null";
 $memleaksflag = 0;
@@ -70,7 +71,7 @@ $localhost = `uname -n`;
 chomp $localnode;
 
 
-my (@testdir_list, @node_list, $starttime, $endtime);
+my (@testdir_list, @node_list, $nodeCount, $starttime, $endtime);
 
 sub systemd {
     local ($cmd) = @_;
@@ -159,7 +160,12 @@ sub free_workers {
 
     foreach $ready (@readyv) {
         next if ($ready =~ /^\./);
-        ($node, $id) = split (/\./, $ready, 2);
+        my ($node, $id, $failed) = split (/\./, $ready);
+       if ($failed) {
+	$nodeCount--;
+	print "\n failure on $node, no more testing there\n";
+        unlink "$synchdir/$ready";
+       } else {
         push @readyids, $id;
         # Wait on the processes represented by each of the files being iterated
         # over. The existence of each file implies a previously forked process
@@ -168,6 +174,7 @@ sub free_workers {
         # these files were created by this driver script, not children. This
         # is not a problem though since wait is non-blocking.
         wait;
+       }
     }
 
     print (@readyids ? "," : ".");
@@ -182,15 +189,18 @@ sub free_workers {
 # manually.
 sub feed_nodes {
     local (@readyidv, $logfile, @logs, $testdir, $node, $rem_cmd);
+    $nodeCount = $#node_list + 1;
+
     $| = 1;    # autoflush stdout
 
     print "about to start distributing work\n" if $debug;
 
     @testdir_list = sort @testdir_list;
-    print $#node_list+1; print " worker(s) (@node_list)\n";
+    print $nodeCount; print " worker(s) (@node_list)\n";
     print $#testdir_list+1; print " test(s) (@testdir_list)\n";
 
     while (($#testdir_list >= 0) &&       # while still have work to do
+           ($nodeCount > 0)      &&       # not all nodes have failed
            !(-e "PARAHALT")) {
         @readyidv = free_workers ();      # get IDs of nodes that are ready
 
@@ -258,7 +268,7 @@ sub feed_nodes {
 
     # wait for everyone to finish;
     @readyidv = free_workers ();
-    while (($#readyidv != $#node_list) &&
+    while (($#readyidv + 1 < $nodeCount) &&
            !(-e "PARAHALT")) {
         sleep $sleep_time;
         @readyidv = free_workers ();
@@ -266,6 +276,15 @@ sub feed_nodes {
 
     if (-e "PARAHALT" && ($#testdir_list > 0)) {
         print "\nExiting early due to PARAHALT file\n";
+    }
+
+    if ($nodeCount <= 0 && $#testdir_list >= 0) {
+       print "\nExiting early due to failures on all nodes\n";
+    }
+
+    if ($#testdir_list >= 0) {
+       print $#testdir_list+1; 
+       print " directory(s) left untested: @testdir_list\n";
     }
 
     $endtime = `date`; chomp $endtime;
@@ -293,7 +312,8 @@ sub nodes_free {
 
     systemd ("rm -f $synchdir/*");
     # signal that all nodes are free
-    for ($id=0; $id<=$#node_list; $id++) {
+    my $nodeCount = $#node_list + 1;
+    for ($id=0; $id<$nodeCount; $id++) {
         $fname = "$node_list[$id].$id";
         systemd ("echo feed me > $synchdir/$fname");
     }
@@ -375,7 +395,7 @@ sub find_files {
 
 
 sub print_help {
-    print "Usage: paratest.server [-comm] [-compopts] [-execopts] [-dirfile d] [-filedist] [-futures] [-logfile l] [-nodefile n] [-valgrind] [-help|-h]\n";
+    print "Usage: paratest.server [-comm] [-compopts] [-execopts] [-dirfile d] [-filedist] [-futures] [-logfile l] [-nodefile n] [-duplex] [-valgrind] [-help|-h]\n";
     print "    -compopts s: s is a string that is passed with -compopts to start_test.\n";
     print "    -execopts s: s is a string that is passed with -execopts to start_test.\n";
     print "    -comm s    : s is a setting for CHPL_COMM, e.g., none or gasnet.\n";
@@ -384,6 +404,7 @@ sub print_help {
     print "    -futures   : include .future tests (default is none).\n";
     print "    -logfile  l: l is the output log file. Default is \"user\".\"platform\".log. in the Logs subdirectory.\n";
     print "    -nodefile n: n is a file listing nodes to run on. Default is current node.\n";
+    print "    -duplex    : Run two paratest.client tasks on each node.\n";
     print "    -memleaks f: pass -memleaks to start_test; aggregate all output.\n";
     print "    -valgrind  : pass -valgrind to start_test.\n";
 }
@@ -462,6 +483,8 @@ sub main {
                 print "missing -nodefile arg\n";
                 exit (8);
             }
+        } elsif (/^-duplex/) {
+            $duplex = 1;
         } elsif (/^-memleaks/) {
             shift @ARGV;
             if ($#ARGV >= 0) {
@@ -491,9 +514,11 @@ sub main {
             next if /^$|^\#/;
             chomp;
             push @node_list, $_;
+            push @node_list, $_ if $duplex;
         }
     } else { # else, just current node
         push @node_list, $localnode;
+        push @node_list, $localnode if $duplex;
     }
 
     if (defined $dirfile) {

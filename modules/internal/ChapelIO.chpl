@@ -1,474 +1,409 @@
-_extern proc chpl_cstdin(): _file;
-_extern proc chpl_cstdout(): _file;
-_extern proc chpl_cstderr(): _file;
-_extern proc chpl_cerrno(): string;
-_extern proc chpl_cnullfile(): _file;
-_extern proc chpl_fopen(filename: string, modestring: string): _file;
-_extern proc chpl_fclose(file: _file): int;
-_extern proc chpl_fflush(file: _file): int;
-_extern proc chpl_fprintf(file: _file, s: string): int;
-_extern proc chpl_format(fmt: string, x): string;
-
-// class file
+// ChapelIO.chpl
 //
-//  chapel-level implementations of read, write, writeln
-//  chapel-level implementations of assert, halt
+pragma "no use ChapelStandard"
+module ChapelIO {
+use ChapelBase; // for uint().
+use SysBasic;
 
-enum FileAccessMode { read, write };
-
-//
-// functions on _file primitive type, the C file pointer type
-//
-pragma "inline" proc =(a: _file, b: _file) return b;
-pragma "inline" proc ==(a: _file, b: _file) return __primitive("==", a, b);
-pragma "inline" proc !=(a: _file, b: _file) return __primitive("!=", a, b);
-
-pragma "inline" proc _readLitChar(fp: _file, val: string, ignoreWhiteSpace: bool)
-  return __primitive("_fscan_literal", fp, val, ignoreWhiteSpace);
-
-const stdin  = new file("stdin", FileAccessMode.read, "/dev", chpl_cstdin());
-const stdout = new file("stdout", FileAccessMode.write, "/dev", chpl_cstdout());
-const stderr = new file("stderr", FileAccessMode.write, "/dev", chpl_cstderr());
-
-class file: Writer {
-  var filename : string = "";
-  var mode : FileAccessMode = FileAccessMode.read;
-  var path : string = ".";
-  var _fp : _file;
-  var _lock : sync uint(64);    // for serializing output
-
-  proc open() {
-    on this {
-      if this == stdin || this == stdout || this == stderr then
-        halt("***Error: It is not necessary to open \"", filename, "\"***");
-
-      var fullFilename = path + "/" + filename;
-
-      var modestring: string;
-      select mode {
-        when FileAccessMode.read  do modestring = "r";
-        when FileAccessMode.write do modestring = "w";
-      }
-      _fp = chpl_fopen(fullFilename, modestring);
-
-      if _fp == chpl_cnullfile() {
-        const err = chpl_cerrno();
-        halt("***Error: Unable to open \"", fullFilename, "\": ", err, "***");
-      }
-    }
-  }
-
-  proc _checkFileStateChangeLegality(state) {
-    if (isOpen) {
-      halt("Cannot change ", state, " of file ", path, "/", filename, 
-           " while it is open");
-    }
-  }
-
-  proc filename var : string {
-    if setter then
-      _checkFileStateChangeLegality("filename");
-    return filename;
-  }
-
-  proc path var : string {
-    if setter then
-      _checkFileStateChangeLegality("path");
-    return path;
-  }
-
-  proc mode var {
-    if setter then
-      _checkFileStateChangeLegality("mode");
-    return mode;
-  }
-
-  proc isOpen: bool {
-    var openStatus: bool = false;
-    if (_fp != chpl_cnullfile()) {
-      openStatus = true;
-    }
-    return openStatus;
-  }
-  
-  proc close() {
-    on this {
-      if (this == stdin || this == stdout || this == stderr) {
-        halt("***Error: You may not close \"", filename, "\"***");
-      }
-      if (_fp == chpl_cnullfile()) {
-        var fullFilename = path + "/" + filename;
-        halt("***Error: Trying to close \"", fullFilename, 
-             "\" which isn't open***");
-      }
-      var returnVal: int = chpl_fclose(_fp);
-      if (returnVal < 0) {
-        var fullFilename = path + "/" + filename;
-        const err = chpl_cerrno();
-        halt("***Error: The close of \"", fullFilename, "\" failed: ", err, 
-             "***");
-      }
-      _fp = chpl_cnullfile();
-    }
-  }
-}
-
-proc file.writeThis(f: Writer) {
-  f.write("(filename = ",this.filename);
-  f.write(", path = ",this.path);
-  f.write(", mode = ",this.mode);
-  f.write(")");
-}
-
-proc file.flush() {
-  on this do chpl_fflush(_fp);
-}
-
-proc file.eof {
-  _extern proc feof(fp: _file): int;  // This should be a c_int not Chapel 'int'
-  return (feof(_fp) != 0);
-}
-
-
-proc _checkOpen(f: file, isRead: bool) {
-  if !f.isOpen {
-    var fullFilename:string = f.path + "/" + f.filename;
-    if isRead {
-      halt("***Error: You must open \"", fullFilename, 
-           "\" before trying to read from it***");
-    } else {
-      halt("***Error: You must open \"", fullFilename, 
-           "\" before trying to write to it***");
-    }
-  }
-}
-
-proc file.readln() {
-  on this {
-    if !isOpen then
-      _checkOpen(this, isRead=true);
-    __primitive("_readToEndOfLine",_fp);
-  }
-}
-
-proc file.readln(inout list ...?n) {
-  read((...list));
-  on this {
-    __primitive("_readToEndOfLine",_fp);
-  }
-} 
-
-proc file.readln(type t) {
-  var val: t;
-  this.readln(val);
-  return val;
-}
-
-proc file.read(inout first, inout rest ...?n) {
-  read(first);
-  for param i in 1..n do
-    read(rest(i));
-}
-
-proc file.read(inout val: int) {
-  if !isOpen then
-    _checkOpen(this, isRead=true);
-  var x: int;
-  on this {
-    x = __primitive("_fscan_int32", _fp);
-  }
-  val = x;
-}
-
-proc file.read(inout val: uint) {
-  if !isOpen then
-    _checkOpen(this, isRead=true);
-  var x: uint;
-  on this {
-    x = __primitive("_fscan_uint32", _fp);
-  }
-  val = x;
-}
-
-proc file.read(inout val: real) {
-  if !isOpen then
-    _checkOpen(this, isRead=true);
-  var x: real;
-  on this {
-    x = __primitive("_fscan_real64", _fp);
-  }
-  val = x;
-}
-
-proc file.read(inout val: complex) {
-  var realPart: real;
-  var imagPart: real;
-  var imagI: string;
-  var matchingCharWasRead: int;
-  var isNeg: bool;
-
-  read(realPart);
-  on this {
-    matchingCharWasRead = _readLitChar(_fp, "+", true);
-  }
-  if (matchingCharWasRead != 1) {
-    on this {
-      matchingCharWasRead = _readLitChar(_fp, "-", true);
-    }
-    if (matchingCharWasRead != 1) {
-      halt("***Error: Incorrect format for complex numbers***");
-    }
-    isNeg = true;
-  }
-
-  read(imagPart);
-  on this {
-    matchingCharWasRead = _readLitChar(_fp, "i", false);
-  }
-  if (matchingCharWasRead != 1) {
-    halt("***Error: Incorrect format for complex numbers***");
-  }
-
-  val.re = realPart;
-  if (isNeg) {
-    val.im = -imagPart;
-  } else {
-    val.im = imagPart;
-  }
-}
-
-proc file.read(inout val: string) {
-  if !isOpen then
-    _checkOpen(this, isRead=true);
-  var x: string;
-  on this {
-    x = __primitive("_fscan_string", _fp);
-  }
-  val = x;
-}
-
-proc file.read(inout val: bool) {
-  var s: string;
-  this.read(s);
-  if (s == "true") {
-    val = true;
-  } else if (s == "false") {
-    val = false;
-  } else {
-    halt("read of bool value that is neither true nor false");
-  }
-}
-
-proc file.read(type t) {
-  var val: t;
-  this.read(val);
-  return val;
-}
-
-proc string.writeThis(f: Writer) {
-  f.writeIt(this);
-}
-
-proc numeric.writeThis(f: Writer) {
-  f.writeIt(this:string);
-}
-
-proc enumerated.writeThis(f: Writer) {
-  f.writeIt(this:string);
-}
-
-proc bool.writeThis(f: Writer) {
-  f.writeIt(this:string);
-}
-
-proc chpl_taskID_t.writeThis(f: Writer) {
-  var tmp : uint(64) = this : uint(64);
-  f.writeIt(tmp : string);
-}
-
-proc file.writeIt(s: string) {
-  if !isOpen then
-    _checkOpen(this, isRead = false);
-  if mode != FileAccessMode.write then
-    halt("***Error: ", path, "/", filename, " not open for writing***");
-  var status = chpl_fprintf(_fp, s);
-  if status < 0 {
-    const err = chpl_cerrno();
-    halt("***Error: Write failed: ", err, "***");
-  }
-}
-
-class StringClass: Writer {
-  var s: string;
-  proc writeIt(s: string) { this.s += s; }
-}
-
-pragma "ref this" pragma "dont disable remote value forwarding"
-proc string.write(args ...?n) {
-  var sc = new StringClass(this);
-  sc.write((...args));
-  this = sc.s;
-  delete sc;
-}
-
-proc file.lockWrite() {
-  var me: uint(64) = __primitive("task_id") : uint(64);
-  if _lock.isFull then
-    if _lock.readXX() == me then
-      return false;
-  _lock = me;
-  return true;
-}
-
-proc file.unlockWrite() {
-  _lock.reset();
+proc _isNilObject(val) {
+  proc helper(o: object) return o == nil;
+  proc helper(o)         return false;
+  return helper(val);
 }
 
 class Writer {
-  proc writeIt(s: string) { }
-  proc lockWrite() return false;
-  proc unlockWrite() { }
-  proc write(args ...?n) {
-    proc isNilObject(val) {
-      proc helper(o: object) return o == nil;
-      proc helper(o)         return false;
-      return helper(val);
-    }
+  proc writing param return true;
+  // if it's binary, we don't decorate class/record fields and values
+  proc binary:bool { return false; }
+  proc error():syserr { return ENOERR; }
+  proc setError(e:syserr) { }
+  proc clearError() { }
+  proc writePrimitive(x) {
+    //compilerError("Generic Writer.writePrimitive called");
+    halt("Generic Writer.writePrimitive called");
+  }
+  proc writeIt(x:?t) {
+    if _isIoPrimitiveTypeOrNewline(t) {
+      writePrimitive(x);
+    } else {
+      if isClassType(t) {
+        // FUTURE -- write the class name/ID?
 
-    on this {
-      var need_release: bool;
-      need_release = lockWrite();
-      for param i in 1..n do
-        if isNilObject(args(i)) then
-          "nil".writeThis(this);
-        else
-          args(i).writeThis(this);
-      if need_release then
-        unlockWrite();
+        if x == nil {
+          var iolit = new ioLiteral("nil", !binary);
+          writePrimitive(iolit);
+          return;
+        }
+      }
+
+      x.writeThis(this);
     }
   }
-  proc writeln(args ...?n) {
-    write((...args), "\n");
+  proc readwrite(x) {
+    writeIt(x);
+  }
+  proc write(args ...?k) {
+    for param i in 1..k {
+      writeIt(args(i));
+    }
+  }
+  proc writeln(args ...?k) {
+    for param i in 1..k {
+      writeIt(args(i));
+    }
+    var nl = new ioNewline();
+    writeIt(nl);
   }
   proc writeln() {
-    write("\n");
+    var nl = new ioNewline();
+    writeIt(nl);
+  }
+  proc writeThisFieldsDefaultImpl(x:?t, inout first:bool) {
+    param num_fields = __primitive("num fields", t);
+
+    if (isClassType(t)) {
+      if t != object {
+        // only write parent fields for subclasses of object
+        // since object has no .super field.
+        writeThisFieldsDefaultImpl(x.super, first);
+      }
+    }
+
+    if !isUnionType(t) {
+      // print out all fields for classes and records
+      for param i in 1..num_fields {
+        if !binary {
+          var comma = new ioLiteral(", ");
+          if !first then write(comma);
+
+          var eq = new ioLiteral(__primitive("field num to name", t, i) + " = ");
+          write(eq);
+        }
+
+        write(__primitive("field value by num", x, i));
+
+        first = false;
+      }
+    } else {
+      // Handle unions.
+      // print out just the set field for a union.
+      var id = __primitive("get_union_id", x);
+      for param i in 1..num_fields {
+        if __primitive("field id by num", t, i) == id {
+          if binary {
+            // store the union ID
+            write(id);
+          } else {
+            var eq = new ioLiteral(__primitive("field num to name", t, i) + " = ");
+            write(eq);
+          }
+          write(__primitive("field value by num", x, i));
+        }
+      }
+    }
+  }
+  // Note; this is not a multi-method and so must be called
+  // with the appropriate *concrete* type of x; that's what
+  // happens now with buildDefaultWriteFunction
+  // since it has the concrete type and then calls this method.
+
+  // MPF: We would like to entirely write the default writeThis
+  // method in Chapel, but that seems to be a bit of a challenge
+  // right now and I'm having trouble with scoping/modules.
+  // So I'll go back to writeThis being generated by the
+  // compiler.... the writeThis generated by the compiler
+  // calls writeThisDefaultImpl.
+  proc writeThisDefaultImpl(x:?t) {
+    if !binary {
+      if isClassType(t) {
+        var start = new ioLiteral("{");
+        write(start);
+      } else {
+        var start = new ioLiteral("(");
+        write(start);
+      }
+    }
+
+    var first = true;
+
+    writeThisFieldsDefaultImpl(x, first);
+
+    if !binary {
+      if isClassType(t) {
+        var end = new ioLiteral("}");
+        write(end);
+      } else {
+        var end = new ioLiteral(")");
+        write(end);
+      }
+    }
   }
 }
 
-proc write(args ...?n) {
-  stdout.write((...args));
-  stdout.flush();
+class Reader {
+  proc writing param return false;
+  // if it's binary, we don't decorate class/record fields and values
+  proc binary:bool { return false; }
+  proc error():syserr { return ENOERR; }
+  proc setError(e:syserr) { }
+  proc clearError() { }
+
+  proc readPrimitive(inout x:?t):bool where _isIoPrimitiveTypeOrNewline(t) {
+    //compilerError("Generic Reader.readPrimitive called");
+    halt("Generic Reader.readPrimitive called");
+    return false;
+  }
+  proc readIt(inout x:?t):bool {
+    if _isIoPrimitiveTypeOrNewline(t) {
+      return readPrimitive(x);
+    } else {
+      if isClassType(t) {
+        // FUTURE -- write the class name/ID?
+
+        // Handle reading nil.
+        var iolit = new ioLiteral("nil", !binary);
+        var got:bool;
+        got = readPrimitive(iolit);
+        if got && !(error()) {
+          // Return nil.
+          delete x;
+          x = nil;
+          return true;
+        } else {
+          clearError();
+        }
+      }
+
+      var got: bool;
+      got = this.readType(x);
+      return got;
+    }
+    return false;
+  }
+  proc readwrite(inout x) {
+    readIt(x);
+  }
+  proc read(inout args ...?k):bool {
+    for param i in 1..k {
+      readIt(args(i));
+    }
+
+    if error() == EEOF {
+      clearError();
+      return false;
+    } else {
+      return true;
+    }
+  }
+  proc readln(inout args ...?k) {
+    for param i in 1..k {
+      readIt(args(i));
+    }
+    var nl = new ioNewline();
+    readIt(nl);
+    if error() == EEOF {
+      clearError();
+      return false;
+    } else {
+      return true;
+    }
+  }
+  proc readln() {
+    var nl = new ioNewline();
+    readIt(nl);
+    if error() == EEOF {
+      clearError();
+      return false;
+    } else {
+      return true;
+    }
+  }
+  proc readThisFieldsDefaultImpl(type t, inout x, inout first:bool) {
+    param num_fields = __primitive("num fields", t);
+
+    //writeln("Scanning fields for ", typeToString(t));
+
+    if (isClassType(t)) {
+      if t != object {
+        // only write parent fields for subclasses of object
+        // since object has no .super field.
+        readThisFieldsDefaultImpl(x.super.type, x, first);
+      }
+    }
+
+    if !isUnionType(t) {
+      // read all fields for classes and records
+
+      for param i in 1..num_fields {
+        if !binary {
+          var comma = new ioLiteral(",", true);
+          if !first then read(comma);
+
+          var fname = new ioLiteral(__primitive("field num to name", t, i), true);
+          read(fname);
+
+          var eq = new ioLiteral("=", true);
+          read(eq);
+        }
+
+        read(__primitive("field value by num", x, i));
+
+        first = false;
+      }
+    } else {
+      // Handle unions.
+      if binary {
+        var id = __primitive("get_union_id", x);
+        // Read the ID
+        read(id);
+        for param i in 1..num_fields {
+          if __primitive("field id by num", t, i) == id {
+            read(__primitive("field value by num", x, i));
+          }
+        }
+      } else {
+        // Read the field name = part until we get one that worked.
+        for param i in 1..num_fields {
+          var eq = new ioLiteral(__primitive("field num to name", t, i) + " = ");
+          read(eq);
+          if error() == EFORMAT {
+            clearError();
+          } else {
+            // We read the 'name = ', so now read the value!
+            read(__primitive("field value by num", x, i));
+          }
+        }
+      }
+    }
+  }
+  // Note; this is not a multi-method and so must be called
+  // with the appropriate *concrete* type of x; that's what
+  // happens now with buildDefaultWriteFunction
+  // since it has the concrete type and then calls this method.
+  proc readThisDefaultImpl(inout x:?t):bool {
+    if !binary {
+      if isClassType(t) {
+        var start = new ioLiteral("{");
+        read(start);
+      } else {
+        var start = new ioLiteral("(");
+        read(start);
+      }
+    }
+
+    var first = true;
+
+    readThisFieldsDefaultImpl(t, x, first);
+
+    if !binary {
+      if isClassType(t) {
+        var end = new ioLiteral("}");
+        read(end);
+      } else {
+        var end = new ioLiteral(")");
+        read(end);
+      }
+    }
+
+    if error() == EEOF {
+      clearError();
+      return false;
+    } else {
+      return true;
+    }
+  }
 }
 
-proc writeln(args ...?n) {
-  stdout.writeln((...args));
-  stdout.flush();
+proc &(w: Writer, x) {
+  w.readwrite(x);
+}
+proc &(r: Reader, x) {
+  r.readwrite(x);
 }
 
-proc writeln() {
-  stdout.writeln();
-  stdout.flush();
-}
-
-proc read(inout args ...?n) {
-  stdin.read((...args));
-}
-
-proc readln(inout args ...?n) {
-  stdin.readln((...args));
-}
-
-proc readln() {
-  stdin.readln();
-}
-
-proc readln(type t) {
-  return stdin.readln(t);
-}
-
-proc read(type t)
-  return stdin.read(t);
-
-proc file.readln(type t ...?numTypes) where numTypes > 1 {
-  var tupleVal: t;
-  for param i in 1..numTypes-1 do
-    tupleVal(i) = this.read(t(i));
-  tupleVal(numTypes) = this.readln(t(numTypes));
-  return tupleVal;
-}
-
-proc file.read(type t ...?numTypes) where numTypes > 1 {
-  var tupleVal: t;
-  for param i in 1..numTypes do
-    tupleVal(i) = this.read(t(i));
-  return tupleVal;
-}
-
-proc readln(type t ...?numTypes) where numTypes > 1
-  return stdin.readln((...t));
-
-proc read(type t ...?numTypes) where numTypes > 1
-  return stdin.read((...t));
-  
-proc _tuple2string(t) {
-  var s: string;
-  for param i in 1..t.size do
-    s.write(t(i));
-  return s;
-}
+use IO;
 
 proc assert(test: bool) {
   if !test then
     __primitive("chpl_error", "assert failed");
 }
 
+extern proc chpl_exit_any(status:int);
+
 proc assert(test: bool, args ...?numArgs) {
-  if !test then
-    __primitive("chpl_error", "assert failed - "+_tuple2string(args));
+  if !test {
+    //chpl_error_noexit("assert failed - ", -1, "");
+    __primitive("chpl_error_noexit", "assert failed - ");
+    stderr.writeln((...args));
+    chpl_exit_any(1);
+    //exit(1);
+    //__primitive("chpl_error", "assert failed");
+  }
 }
 
 proc halt() {
   __primitive("chpl_error", "halt reached");
 }
 
+proc halt(s:string) {
+  __primitive("chpl_error", "halt reached - " + s);
+}
+
 proc halt(args ...?numArgs) {
-  __primitive("chpl_error", "halt reached - "+_tuple2string(args));
-}
-
-proc _debugWrite(args...?n) {
-  proc getString(a: ?t) {
-    if t == bool(8) || t == bool(16) || t == bool(32) || t == bool(64) ||
-       t == int(8) || t == int(16) || t == int(32) || t == int(64) ||
-       t == uint(8) || t == uint(16) || t == uint(32) || t == uint(64) ||
-       t == real(32) || t == real(64) || t == imag(32) || t == imag(64) ||
-       t == complex(64) || t == complex(128) ||
-       t == bool || t == string || _isEnumeratedType(t) then
-      return a:string;
-    else 
-      compilerError("Cannot call _debugWrite on value of type ",
-                    typeToString(t));
-  }
-  for param i in 1..n {
-    var status = chpl_fprintf(chpl_cstdout(), getString(args(i)));
-    if status < 0 {
-      const err = chpl_cerrno();
-      halt("_debugWrite failed with status ", err);
-    }
-  }
-  chpl_fflush(chpl_cstdout());
-}
-
-proc _debugWriteln(args...?n) {
-  _debugWrite((...args), "\n");
-}
-
-proc _debugWriteln() {
-  _debugWrite("\n");
+  //chpl_error_noexit("halt reached - ", -1, "");
+  __primitive("chpl_error_noexit", "halt reached - ");
+  stderr.writeln((...args));
+  chpl_exit_any(1);
+  //exit(1);
+  //__primitive("chpl_error", "halt reached");
 }
 
 proc _ddata.writeThis(f: Writer) {
   halt("cannot write the _ddata class");
 }
+
+proc chpl_taskID_t.writeThis(f: Writer) {
+  var tmp : uint(64) = this : uint(64);
+  f.write(tmp);
+}
+proc Reader.readType(inout x:chpl_taskID_t):bool {
+  var tmp : uint(64);
+  var got : bool;
+  got = this.read(tmp);
+  x = tmp;
+  return got;
+}
+
+
+class StringWriter: Writer {
+  var s: string = "";
+  proc writePrimitive(x) { this.s += (x:string); }
+}
+
+// Convert 'x' to a string just the way it would be written out.
+// Includes Writer.write, with modifications (for simplicity; to avoid 'on').
+proc _cast(type t, x) where t == string {
+  proc isNilObject(o: object) return o == nil;
+  proc isNilObject(o) param return false;
+  const w = new StringWriter();
+  //if isNilObject(x) then "nil".writeThis(w);
+  //else                   x.writeThis(w);
+  w.write(x);
+  const result = w.s;
+  delete w;
+  return result;
+}
+
+pragma "ref this" pragma "dont disable remote value forwarding"
+proc string.write(args ...?n) {
+  var sc = new StringWriter(this);
+  sc.write((...args));
+  this = sc.s;
+  delete sc;
+}
+
+
+extern proc chpl_format(fmt: string, x): string;
 
 proc format(fmt: string, x:?t) where _isIntegralType(t) || _isFloatType(t) {
   if fmt.substring(1) == "#" {
@@ -510,6 +445,7 @@ proc _getoutputformat(s: string):string {
 // will output a message to indicate that a portion of the code has been
 // parallelized.
 //
+
 config param chpl__testParFlag = false;
 var chpl__testParOn = false;
 
@@ -530,4 +466,6 @@ proc chpl__testPar(args...) where chpl__testParFlag == true {
     const line : int = __primitive("_get_user_line");
     writeln("CHPL TEST PAR (", file, ":", line, "): ", (...args));
   }
+}
+
 }

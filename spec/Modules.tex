@@ -49,14 +49,14 @@ The following file contains two explicitly named modules
 (\rsec{Explicit_Naming}), MX and MY.
 \begin{chapel}
 module MX {
-  var x: int = 0;
+  var x: string = "Module MX";
   proc printX() {
     writeln(x);
   }
 }
 
 module MY {
-  var y: int = 0;
+  var y: string = "Module MY";
   proc printY() {
     writeln(y);
   }
@@ -67,8 +67,8 @@ MX.printX();
 MY.printY();
 \end{chapelpost}
 \begin{chapeloutput}
-0
-0
+Module MX
+Module MY
 \end{chapeloutput}
 Module MX defines top-level module symbols x and printX, while MY
 defines top-level module symbols y and printY.
@@ -90,7 +90,7 @@ The following file, named myModule.chpl, defines an implicitly named
 module called myModule.
 \begin{chapel}
 var x: int = 0;
-var y: int = 0;
+var y: int = 1;
 
 proc printX() {
   writeln(x);
@@ -105,7 +105,7 @@ printY();
 \end{chapelpost}
 \begin{chapeloutput}
 0
-0
+1
 \end{chapeloutput}
 Module myModule defines the top-level module symbols x, y, printX, and
 printY.
@@ -404,12 +404,14 @@ as described in~\rsec{Implicit_Modules}.
 
 Module initialization is performed using the following algorithm.
 
-Module use can be represented by a directed graph over the modules.
-Starting from the module that defines the main function, modules are
-initialized in the order implied by a depth-first, post-order
-traversal of the graph.  Modules are initialized in the order in which
-they appear in the program text.  For nested modules, uses in the
-parent module are initialized before uses in the nested module.
+Starting from the module that defines the main function, the modules named in
+its use statements are visited depth-first and initialized in post-order.  If a
+use statment names a module that has already been visited, it is not visited a
+second time.  Thus, infinite recursion is avoided.
+
+Modules used by a given module are visited in the order in which
+they appear in the program text.  For nested modules, the
+parent module and its uses are initialized before the nested module and its uses.
 
 \begin{chapelexample}{init-order.chpl}
 The code

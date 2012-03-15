@@ -78,6 +78,19 @@ corresponding to whatever subclass of Expr 'p' is pointing to at the
 moment (e.g. DefExpr, SymExpr, etc.).
 
 
+TUI mode
+--------
+
+GDB has the "TUI" mode that provides for convenient viewing of the
+source code during debugging, among other things, when running GDB in
+a terminal. It is somewhat similar to Emacs's gud mode.
+
+Turn the TUI mode on/off using one of: C-x C-a, C-x a, C-x A.
+Some additional information is, for example, here:
+
+  http://davis.lbl.gov/Manuals/GDB/gdb_21.html
+
+
 AST viewing and other compiler helper functions
 -----------------------------------------------
 
