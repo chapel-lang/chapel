@@ -1,40 +1,40 @@
 =================
 Memory Statistics
 ==============================================================
-Current Allocated Memory               2441
-Maximum Simultaneous Allocated Memory  2441
-Total Allocated Memory                 2697
-Total Freed Memory                     256
+Current Allocated Memory               0
+Maximum Simultaneous Allocated Memory  0
+Total Allocated Memory                 0
+Total Freed Memory                     0
 ==============================================================
 =================
 Memory Statistics
 ==============================================================
-Current Allocated Memory               2505
-Maximum Simultaneous Allocated Memory  2505
-Total Allocated Memory                 2761
-Total Freed Memory                     256
+Current Allocated Memory               64
+Maximum Simultaneous Allocated Memory  64
+Total Allocated Memory                 64
+Total Freed Memory                     0
 ==============================================================
 =================
 Memory Statistics
 ==============================================================
-Current Allocated Memory               2569
-Maximum Simultaneous Allocated Memory  2569
-Total Allocated Memory                 2825
-Total Freed Memory                     256
+Current Allocated Memory               128
+Maximum Simultaneous Allocated Memory  128
+Total Allocated Memory                 128
+Total Freed Memory                     0
 ==============================================================
 =================
 Memory Statistics
 ==============================================================
-Current Allocated Memory               2633
-Maximum Simultaneous Allocated Memory  2633
-Total Allocated Memory                 2889
-Total Freed Memory                     256
+Current Allocated Memory               192
+Maximum Simultaneous Allocated Memory  192
+Total Allocated Memory                 192
+Total Freed Memory                     0
 ==============================================================
 =================
 Memory Statistics
 ==============================================================
-Current Allocated Memory               2697
-Maximum Simultaneous Allocated Memory  2697
-Total Allocated Memory                 2953
-Total Freed Memory                     256
+Current Allocated Memory               256
+Maximum Simultaneous Allocated Memory  256
+Total Allocated Memory                 256
+Total Freed Memory                     0
 ==============================================================
