@@ -233,6 +233,8 @@ if debugIO {
 // It'd be nice to have something like the following built-in.  It
 // could use a different name/interface as far as I'm concerned.
 
+writeln("Doing EOF check");
+
 reader.assertEOF();
 
 writeln("Made it past EOF check");
