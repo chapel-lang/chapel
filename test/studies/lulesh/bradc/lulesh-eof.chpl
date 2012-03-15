@@ -230,6 +230,8 @@ if debugIO {
 }
 
 
+writeln("Doing EOF check");
+
 // Make sure we're at the end of the input file, for sanity
 var err: syserr = ENOERR;
 var badint: int;

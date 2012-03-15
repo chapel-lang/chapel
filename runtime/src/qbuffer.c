@@ -233,8 +233,8 @@ void debug_print_qbuffer(qbuffer_t* buf)
 
   while( ! deque_it_equals(cur, end) ) {
     qbuffer_part_t* qbp = (qbuffer_part_t*) deque_it_get_cur_ptr( sizeof(qbuffer_part_t), cur);
-    fprintf(stderr, "part %p: bytes=%p skip=%lli len=%lli end=%lli\n", 
-            qbp, qbp->bytes,
+    fprintf(stderr, "part %p: bytes=%p (data %p) skip=%lli len=%lli end=%lli\n", 
+            qbp, qbp->bytes, qbp->bytes->data,
             (long long int) qbp->skip_bytes,
             (long long int) qbp->len_bytes,
             (long long int) qbp->end_offset);

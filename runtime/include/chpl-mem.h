@@ -27,7 +27,7 @@
 // CHPL_MEM_DEBUG will be set to 1 if CHPL_DEBUG is defined;
 // or if CHPL_OPTIMIZE is not defined.
 // If CHPL_OPTIMIZE is defined and CHPL_DEBUG is not defined,
-// we set CHPL_MEM_DEBUG to memTrack, so that memory tracking
+// we set CHPL_MEM_DEBUG to chpl_memTrack, so that memory tracking
 // can still be activated at run-time.
 #ifndef CHPL_MEM_DEBUG
 
@@ -35,7 +35,7 @@
 #define CHPL_MEM_DEBUG 1
 #else
 #ifdef CHPL_OPTIMIZE
-#define CHPL_MEM_DEBUG memTrack
+#define CHPL_MEM_DEBUG chpl_memTrack
 #else
 #define CHPL_MEM_DEBUG 1
 #endif

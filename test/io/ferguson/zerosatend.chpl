@@ -43,3 +43,5 @@ var n = sz / 8;
   assert( j == 0 );
 }
 
+unlink(testfile);
+
