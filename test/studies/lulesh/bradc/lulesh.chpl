@@ -385,6 +385,8 @@ proc main() {
   }
 }
 
+config const initialEnergy = 3.948746e+7;
+
 // Initialization functions
 proc LuleshData() {
   /* embed hexehedral elements in nodal point lattice */
@@ -406,7 +408,7 @@ proc LuleshData() {
   const octantCorner = setupBoundaryConditions();
 
   //deposit energy for Sedov Problem
-  e[octantCorner] = 3.948746e+7;
+  e[octantCorner] = initialEnergy;
 }
 
 proc initializeFieldData() {

@@ -1,3 +1,0 @@
-Error: interpreter terminated
-error: ambiguous call, unable to dispatch to a single function
-at test_default_param3.chpl:10 

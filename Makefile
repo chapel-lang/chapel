@@ -2,8 +2,8 @@
 # top-level Chapel Makefile
 #
 
-CHAPEL_ROOT = .
-include $(CHAPEL_ROOT)/make/Makefile.base
+export CHPL_MAKE_HOME=$(shell pwd)
+include ./make/Makefile.base
 
 default: all
 
@@ -13,9 +13,13 @@ all: comprt
 comprt: FORCE
 	@$(MAKE) compiler
 	@$(MAKE) runtime
+	@$(MAKE) modules
 
 compiler: FORCE
 	cd compiler && $(MAKE)
+
+modules: FORCE
+	cd modules && $(MAKE)
 
 runtime: FORCE
 	cd runtime && $(MAKE)
@@ -26,10 +30,12 @@ third-party: FORCE
 clean: FORCE
 	cd compiler && $(MAKE) clean
 	cd runtime && $(MAKE) clean
+	cd modules && $(MAKE) clean
 
 clobber: FORCE
 	cd compiler && $(MAKE) clobber
 	cd runtime && $(MAKE) clobber
+	cd modules && $(MAKE) clobber
 	rm -rf bin
 	rm -rf lib
 

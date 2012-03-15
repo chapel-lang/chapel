@@ -12,7 +12,7 @@ dlmalloc/
            using segment fast.
 
   License: dlmalloc has been placed in the public domain as explained
-           at http://creativecommons.org/licenses/publicdomain
+           at http://creativecommons.org/publicdomain/zero/1.0/
 
   Contact: For more information, please refer to:
            http://g.oswego.edu/dl/html/malloc.html
@@ -72,3 +72,31 @@ qthread/
            http://www.cs.sandia.gov/qthreads/
 
   See also: qthread/qthread-*/README
+
+
+tcmalloc/
+  Summary: the Google perf-tools memory allocator (tcmalloc) which we
+           use to support malloc/free calls when running programs using
+           Cray's Gemini network interconnect chip
+
+  License: Google-perftools is released under the New BSD License (see
+           tcmalloc/google-perftools-*/COPYING)
+
+  Contact: For more information, please refer to:
+           http://code.google.com/p/google-perftools/
+
+  See also: tcmalloc/README
+
+
+utf8-decoder/
+  Summary: A fast UTF-8 decoder, used for fast UTF-8 I/O.
+           This decoder is by Bjoern Hoehrmann.
+
+  License: MIT (see utf8-decoder/README)
+
+  Contact: For more information, please refer to:
+           http://bjoern.hoehrmann.de/utf-8/decoder/dfa/
+
+  See also: utf8-decoder/README
+
+
