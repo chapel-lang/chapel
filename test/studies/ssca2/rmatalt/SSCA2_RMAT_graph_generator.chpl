@@ -28,6 +28,7 @@ module SSCA2_RMAT_graph_generator
   // +=========================================================================+
 
   use SSCA2_compilation_config_params, Time;
+  use analyze_RMAT_graph_associative_array;
 
   var stopwatch : Timer;
 
@@ -89,7 +90,6 @@ module SSCA2_RMAT_graph_generator
       edge.end   = bit * end_inc;
       return ( edge );
     }
-
 
   // ====================================
   // Main RMAT Graph Generation Procedure
@@ -216,6 +216,14 @@ module SSCA2_RMAT_graph_generator
 
       if DEBUG_WEIGHT_GENERATOR then {
 	writeln ();
+       if rmatEdgeGenFile != "." {
+        const fl = open(rmatEdgeGenFile, iomode.cw);
+        const ch = fl.writer();
+	for (ed, w) in (Edges, Edge_Weight) do
+          ch.writeln (ed.start, " ", ed.end, " ", w);
+        ch.close();
+        fl.close();
+       } else
 	for e in edge_range do
 	  writeln ("edge (", e, ") : (", Edges(e), ", ", 
 		   Edge_Weight (e), ")" );
@@ -255,23 +263,21 @@ module SSCA2_RMAT_graph_generator
 
       if PRINT_TIMING_STATISTICS then stopwatch.start ();
 
-      var collisions = 0, self_edges = 0;
-      for e in edge_range do {
-	var u = Edges (e).start;
-	var v = Edges (e).end  ;
+      forall e in edge_range do {
+	const u = Edges (e).start;
+	const v = Edges (e).end  ;
 
-	if ( v != u ) then {
-	  if G.Neighbors (u).member(v) then {
-	    collisions += 1;
-	  }
-	  else {
-	    G.Neighbors (u).add (v);
-	    G.Row(u).Weight (v) = Edge_Weight (e);
-	  }
+	if ( v == u ) then {
+          // self-edge, ignore
+        } else {
+          // for now, allow duplicate edges
+          const w = Edge_Weight(e);
+          G.Row[u].addEdgeOnVertex(u, v, w);
 	}
-	else
-	  self_edges += 1;
       }
+
+      forall vx in G.Row do
+        vx.shrinkNeighbors();
 
       if PRINT_TIMING_STATISTICS then {
 	stopwatch.stop ();
@@ -281,13 +287,20 @@ module SSCA2_RMAT_graph_generator
       }
 
       writeln ( "# of raw edges generated  ", n_raw_edges );
-      writeln ( "# of duplicate edges      ", collisions );
-      writeln ( "# of self edges           ", self_edges );
       writeln ( "# of edges in final graph ", 
 		+ reduce [v in G.vertices] G.n_Neighbors (v) );
 
       if DEBUG_GRAPH_GENERATOR then {
 	writeln ();
+       if rmatGraphConFile != "." {
+        const fl = open(rmatGraphConFile, iomode.cw);
+        const ch = fl.writer();
+        for (u, vx) in (G.vertices, G.Row) do
+          for (v, w) in (vx.neighborIDs, vx.edgeWeights) do
+            ch.writeln(u, " ", v, " ", w);
+        ch.close();
+        fl.close();
+       } else {
 	writeln ("tuples denote (edge, weight)");
 	writeln ();
 	for u in G.vertices do {
@@ -296,6 +309,7 @@ module SSCA2_RMAT_graph_generator
 	    write ( (v, w) );
 	  writeln (); 
 	}
+       }
       }
 
       var max_edges = max reduce [v in vertex_range] G.n_Neighbors (v);
