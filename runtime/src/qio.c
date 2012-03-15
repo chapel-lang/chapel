@@ -843,20 +843,85 @@ void _qio_file_destroy(qio_file_t* f)
   qio_free(f);
 }
 
+static
+err_t open_flags_for_string(const char* s, int *flags_out)
+{
+  if( 0 == strcmp(s, "r") ) {
+    *flags_out = O_RDONLY;
+  } else if( 0 == strcmp(s, "r+") ) {
+    *flags_out = O_RDWR;
+  } else if( 0 == strcmp(s, "w") ) {
+    *flags_out = O_WRONLY | O_CREAT | O_TRUNC;
+  } else if( 0 == strcmp(s, "w+") ) {
+    *flags_out = O_RDWR | O_CREAT | O_TRUNC;
+  } else if( 0 == strcmp(s, "a") ) {
+    *flags_out = O_WRONLY | O_CREAT | O_APPEND;
+  } else if( 0 == strcmp(s, "a+") ) {
+    *flags_out = O_RDWR | O_CREAT | O_APPEND;
+  } else {
+    *flags_out = 0;
+    return EINVAL;
+  }
+  return 0;
+}
+static
+const char* string_for_open_flags(int flags)
+{
+  if( flags == O_RDONLY ) return "r";
+  else if( flags == O_RDWR ) return "r+";
+  else if( flags == (O_WRONLY | O_CREAT | O_TRUNC) ) return "w";
+  else if( flags == (O_RDWR | O_CREAT | O_TRUNC) ) return "w+";
+  else if( flags == (O_WRONLY | O_CREAT | O_APPEND) ) return "a";
+  else if( flags == (O_RDWR | O_CREAT | O_APPEND) ) return "a+";
+  else {
+    assert(0);
+    return "r";
+  }
+}
+// always enable reading (possibly in addition to writing).
+static
+int flags_for_mmap_open(int flags)
+{
+  int acc = flags & O_ACCMODE;
+  int rest = flags & ~O_ACCMODE;
+
+  if( acc == O_WRONLY ) acc = O_RDWR;
+
+  return acc | rest;
+}
+
+
+
 // mode should default to S_IRUSR | S_IWUSR | S_IRGRP |  S_IWGRP |  S_IROTH  |  S_IWOTH
 // iohints should default to 0
 err_t qio_file_open(qio_file_t** file_out, const char* pathname, int flags, mode_t mode, qio_hint_t iohints, qio_style_t* style)
 {
-  fd_t fd;
+  FILE* fp = NULL;
+  fd_t fd = -1;
   err_t err;
+  qio_method_t method = iohints & QIO_METHODMASK;
+  
+  
 
-  err = sys_open(pathname, flags, mode, &fd);
+  if( method == QIO_METHOD_FREADFWRITE ) {
+    //err = sys_fopen(pathname, string_for_open_flags(flags), &fp);
+    fp = fopen(pathname, string_for_open_flags(flags));
+    if( ! fp ) err = errno;
+    else err = 0;
+  } else {
+    // Linux needs O_RDWR if we're writing with MMAP (vs O_WRONLY).
+    if( method == QIO_METHOD_MMAP ) {
+      flags = flags_for_mmap_open(flags);
+    }
+    err = sys_open(pathname, flags, mode, &fd);
+  }
+
   if( err ) {
     *file_out = NULL;
     return err;
   }
 
-  return qio_file_init(file_out, NULL, fd, iohints, style, 0);
+  return qio_file_init(file_out, fp, fd, iohints, style, fp != NULL);
 }
 
 // If buf is NULL, we create a new buffer. flags indicates readable/writeable/seekable.
@@ -917,28 +982,6 @@ error:
 err_t qio_file_open_mem(qio_file_t** file_out, qbuffer_t* buf, qio_style_t* style)
 {
   return qio_file_open_mem_ext(file_out, buf, QIO_FDFLAG_READABLE|QIO_FDFLAG_WRITEABLE|QIO_FDFLAG_SEEKABLE, 0, style);
-}
-
-static
-err_t open_flags_for_string(const char* s, int *flags_out)
-{
-  if( 0 == strcmp(s, "r") ) {
-    *flags_out = O_RDONLY;
-  } else if( 0 == strcmp(s, "r+") ) {
-    *flags_out = O_RDWR;
-  } else if( 0 == strcmp(s, "w") ) {
-    *flags_out = O_WRONLY | O_CREAT | O_TRUNC;
-  } else if( 0 == strcmp(s, "w+") ) {
-    *flags_out = O_RDWR | O_CREAT | O_TRUNC;
-  } else if( 0 == strcmp(s, "a") ) {
-    *flags_out = O_WRONLY | O_CREAT | O_APPEND;
-  } else if( 0 == strcmp(s, "a+") ) {
-    *flags_out = O_RDWR | O_CREAT | O_APPEND;
-  } else {
-    *flags_out = 0;
-    return EINVAL;
-  }
-  return 0;
 }
 
 err_t qio_file_open_access(qio_file_t** file_out, const char* pathname, const char* access, qio_hint_t iohints, qio_style_t* style)
@@ -1155,7 +1198,6 @@ err_t _qio_channel_makebuffer_unlocked(qio_channel_t* ch)
   err_t err;
   int64_t start = ch->mark_stack[0];
   void* expect_end = NULL;
-  void* expect_start = NULL;
 
   // If the buffer is not initialized, we have to create it.
   err = qbuffer_init(&ch->buf);
@@ -1182,8 +1224,7 @@ err_t _qio_channel_makebuffer_unlocked(qio_channel_t* ch)
         // Put the mmap data into the buffer.
         err = qbuffer_append(&ch->buf, ch->file->mmap, start, uselen);
       }
-      expect_end = VOID_PTR_ADD(ch->file->mmap->data, uselen);
-      expect_start = ch->file->mmap->data;
+      expect_end = VOID_PTR_ADD(ch->file->mmap->data, uselen + start);
     }
   }
 
@@ -1191,7 +1232,8 @@ err_t _qio_channel_makebuffer_unlocked(qio_channel_t* ch)
   // and in that case we should know cached_end is the end of the
   // file. If that's the case, we should be all set just by
   // adding to the qbuffer the file data.
-  assert( ch->cached_start == expect_start );
+  // We do not check cached_start since we might have moved
+  // the mark_stack along with changing cached_start
   assert( ch->cached_end == expect_end );
 
   ch->mark_stack[0] = qbuffer_start_offset(&ch->buf);
@@ -1249,8 +1291,9 @@ err_t _qio_channel_init_file(qio_channel_t* ch, qio_file_t* file, qio_hint_t hin
         //  bytes in the file...).
         ch->cached_cur = VOID_PTR_ADD(file->mmap->data, start);
         ch->cached_end = VOID_PTR_ADD(ch->cached_cur, uselen);
-        ch->cached_start = file->mmap->data;
-        ch->cached_start_pos = 0;
+        ch->cached_start = ch->cached_cur;
+        ch->cached_start_pos = start;
+        ch->av_end = start + uselen;
       }
     }
   }
@@ -1826,7 +1869,7 @@ err_t _buffered_get_mmap(qio_channel_t* ch, int64_t amt_in, int writing)
 
     err = qbuffer_append(&ch->buf, bytes, skip, len - skip);
     qbytes_release(bytes); // munmaps on error, decs ref count normally.
-    ch->av_end += len - skip;
+    ch->av_end = qbuffer_end_offset(&ch->buf);
 
     if( err ) return err;
   }
@@ -1970,7 +2013,8 @@ err_t _qio_flush_bits_if_needed_unlocked(qio_channel_t* restrict ch)
 void _qio_buffered_advance_cached(qio_channel_t* ch)
 {
   err_t err;
-  int64_t av_bytes;
+  int64_t cur_pos_cached;
+  int64_t cur_pos_buf;
 
   // flush any bits stored up.
   // Note that we only store up bits for
@@ -1981,37 +2025,22 @@ void _qio_buffered_advance_cached(qio_channel_t* ch)
   // call failing.
   err = _qio_flush_bits_if_needed_unlocked(ch);
 
-  // Update! Find the place the cached data is from.
+  // The cached data is from 
+  //   ch->cached_start_pos to 
+  //   ch->cached_start_pos + (ch->cached_end - ch->cached_start)
+  // The current position, according to the cached data, is
+  //   ch->cached_start_pos + (ch->cached_cur - ch->cached_start)
 
-  av_bytes = ch->av_end - _right_mark_start(ch);
-  if( av_bytes > 0 && ch->cached_end ) {
-    qbuffer_iter_t start;
-    qbuffer_iter_t end;
-    qbytes_t* bytes;
-    int64_t skip;
-    int64_t len;
-    void* start_ptr;
-    void* end_ptr;
-    int64_t amt;
+  if( ch->cached_end ) {
+    cur_pos_cached = ch->cached_start_pos +
+                       VOID_PTR_DIFF(ch->cached_cur, ch->cached_start);
+    cur_pos_buf = _right_mark_start(ch);
 
-    start = _right_mark_start_iter(ch);
-    end = _av_end_iter(ch);
-    qbuffer_iter_get(start, end, &bytes, &skip, &len);
+    // We cannot go backwards with cached...
+    assert(cur_pos_cached >= cur_pos_buf);
 
-    if( len > av_bytes ) len = av_bytes;
-
-    start_ptr = VOID_PTR_ADD(bytes->data, skip);
-    end_ptr = VOID_PTR_ADD(bytes->data, skip + len);
-
-    //printf("expected %p %p, got %p %p\n", start_ptr, end_ptr, ch->cached_cur, ch->cached_end);
-    // OK, we should have cached_end == end
-    assert( end_ptr == ch->cached_end );
-    assert( VOID_PTR_DIFF(end_ptr,ch->cached_cur) >= 0 );
-    assert( VOID_PTR_DIFF(ch->cached_cur,start_ptr) >= 0 );
-
-    amt = VOID_PTR_DIFF(ch->cached_cur, start_ptr);
-
-    _add_right_mark_start(ch, amt);
+    //printf("advance cached %li %li\n", (long int) cur_pos_cached, (long int) cur_pos_buf);
+    _add_right_mark_start(ch, cur_pos_cached - cur_pos_buf);
 
     // Clear out where we are.. If we're doing this
     // before a read or a write, we'll recompute it in a jiffy.
@@ -2054,7 +2083,7 @@ void _qio_buffered_setup_cached(qio_channel_t* ch)
     ch->cached_end = VOID_PTR_ADD(bytes->data, skip + len);
     //printf("setup has len=%li\n", (long int) len);
   }
-  //printf("setup cached %p %p\n", ch->cached_cur, ch->cached_end);
+  //printf("setup cached start %lx %p %p\n", (long) ch->cached_start_pos, ch->cached_cur, ch->cached_end);
 }
 
 
@@ -2186,6 +2215,8 @@ err_t _qio_channel_require_unlocked(qio_channel_t* ch, int64_t amt, int writing)
     // Great! Don't do anything.
     return 0;
   }
+
+  assert(n_available >= 0);
 
   // Otherwise, we need some data.
   n_needed = amt - n_available;
