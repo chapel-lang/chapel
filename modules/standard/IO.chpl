@@ -1575,6 +1575,22 @@ proc channel.flush() {
   if e then this._ch_ioerror(e, "in channel.flush");
 }
 
+proc channel.assertEOF(error:string) {
+  if writing {
+    this._ch_ioerror(EINVAL, "assertEOF on writing channel");
+  } else {
+    var tmp:uint(8);
+    var err:syserr;
+    this.read(tmp, error=err);
+    if err != EEOF {
+      this._ch_ioerror(EFORMAT, error);
+    }
+  }
+}
+proc channel.assertEOF() {
+  this.assertEOF("- Not at EOF");
+}
+
 proc channel.close(out error:syserr) {
   error = ENOERR;
   on __primitive("chpl_on_locale_num", this.home_uid) {
