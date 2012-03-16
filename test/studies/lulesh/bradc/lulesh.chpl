@@ -243,12 +243,7 @@ if debugIO {
 
 // Make sure we're at the end of the input file, for sanity
 
-/*  This isn't working consistently yet -- see lulesh-eof.chpl
-var err: syserr = ENOERR;
-var badint: int;
-reader.read(badint, error=err);
-if (err != EEOF) then halt("Data remains at end of file");
-*/
+reader.assertEOF("Input file format error (extra data at EOF)");
 
 
 
