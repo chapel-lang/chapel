@@ -530,7 +530,6 @@ initPrimitive() {
   prim_def("chpl_setMemFlags", returnInfoVoid, true);
 
   prim_def(PRIM_RT_ERROR, "chpl_error", returnInfoVoid, true, true);
-  prim_def(PRIM_RT_ERROR_NOEXIT, "chpl_error_noexit", returnInfoVoid, true, true);
   prim_def(PRIM_RT_WARNING, "chpl_warning", returnInfoVoid, true, true);
 
   prim_def(PRIM_NEW_PRIV_CLASS, "chpl_newPrivatizedClass", returnInfoVoid, true);

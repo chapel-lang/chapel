@@ -332,12 +332,9 @@ extern proc chpl_exit_any(status:int);
 
 proc assert(test: bool, args ...?numArgs) {
   if !test {
-    //chpl_error_noexit("assert failed - ", -1, "");
-    __primitive("chpl_error_noexit", "assert failed - ");
-    stderr.writeln((...args));
-    chpl_exit_any(1);
-    //exit(1);
-    //__primitive("chpl_error", "assert failed");
+    var tmpstring: string;
+    tmpstring.write((...args));
+    __primitive("chpl_error", "assert failed - " + tmpstring);
   }
 }
 
@@ -350,12 +347,9 @@ proc halt(s:string) {
 }
 
 proc halt(args ...?numArgs) {
-  //chpl_error_noexit("halt reached - ", -1, "");
-  __primitive("chpl_error_noexit", "halt reached - ");
-  stderr.writeln((...args));
-  chpl_exit_any(1);
-  //exit(1);
-  //__primitive("chpl_error", "halt reached");
+  var tmpstring: string;
+  tmpstring.write((...args));
+  __primitive("chpl_error", "halt reached - " + tmpstring);
 }
 
 proc _ddata.writeThis(f: Writer) {
