@@ -31,6 +31,7 @@ typedef enum {
   pbspro,
   nccs,
   torque,
+  uma,
   unknown
 } qsubVersion;
 
@@ -59,6 +60,8 @@ static qsubVersion determineQsubVersion(void) {
     return nccs;
   } else if (strstr(version, "PBSPro")) {
     return pbspro;
+  } else if (strstr(version, "wrapper qsub PBS UMA 1.0")) {
+    return uma;
   } else if (strstr(version, "version: ")) {
     return torque;
   } else {
@@ -96,6 +99,10 @@ static void genNumLocalesOptions(FILE* pbsFile, qsubVersion qsub,
     fprintf(pbsFile, "#PBS -l mppnppn=%d\n", procsPerNode);
     if (numCoresPerLocale)
       fprintf(pbsFile, "#PBS -l mppdepth=%d\n", numCoresPerLocale);
+    break;
+  case uma:
+    fprintf(pbsFile, "#PBS -l nodes=%d\n", numLocales);
+    fprintf(pbsFile, "#PBS -l ncpus=%d\n", numLocales*8);
     break;
   case torque:
     fprintf(pbsFile, "#PBS -l nodes=%d\n", numLocales);
@@ -139,13 +146,26 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   sprintf(pbsFilename, "%s%d", basePBSFilename, (int)mypid);
 
   pbsFile = fopen(pbsFilename, "w");
-  fprintf(pbsFile, "#!/bin/sh\n\n");
+  if ( determineQsubVersion() != uma )
+    fprintf(pbsFile, "#!/bin/sh\n\n");
   fprintf(pbsFile, "#PBS -N Chpl-%.10s\n", basenamePtr);
   genNumLocalesOptions(pbsFile, determineQsubVersion(), numLocales, getNumCoresPerLocale());
   if (projectString && strlen(projectString) > 0)
     fprintf(pbsFile, "#PBS -A %s\n", projectString);
+  if (getenv("CHPL_LAUNCHER_USE_BATCH") != NULL) {
+    fprintf(pbsFile, "#PBS -joe\n");
+    fprintf(pbsFile, "#PBS -o %s.out\n", argv[0]);
+    fprintf(pbsFile, "cd $PBS_O_WORKDIR\n");
+    fprintf(pbsFile, "%s/gasnetrun_ibv -n %d %s ",
+            WRAP_TO_STR(LAUNCH_PATH), numLocales, chpl_get_real_binary_name());
+    for (i=1; i<argc; i++) {
+      fprintf(pbsFile, " '%s'", argv[i]);
+    }
+    fprintf(pbsFile, "\n");
+  }
   fclose(pbsFile);
 
+  if (getenv("CHPL_LAUNCHER_USE_BATCH") == NULL) {
   expectFile = fopen(expectFilename, "w");
   if (verbosity < 2) {
     fprintf(expectFile, "log_user 0\n");
@@ -168,8 +188,10 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   fprintf(expectFile, "send_user \"\\n\"\n");
   fprintf(expectFile, "send \"exit\\n\"\n");
   fclose(expectFile);
-
   sprintf(baseCommand, "expect %s", expectFilename);
+  } else {
+    sprintf(baseCommand, "qsub -z -V %s\n", pbsFilename);
+  }
 
   size = strlen(baseCommand) + 1;
 
@@ -191,8 +213,10 @@ static void chpl_launch_cleanup(void) {
   sprintf(command, "rm %s", pbsFilename);
   system(command);
 
-  sprintf(command, "rm %s", expectFilename);
-  system(command);
+  if (getenv("CHPL_LAUNCHER_USE_BATCH") == NULL) {
+    sprintf(command, "rm %s", expectFilename);
+    system(command);
+  }
 
   sprintf(command, "rm %s", sysFilename);
   system(command);
