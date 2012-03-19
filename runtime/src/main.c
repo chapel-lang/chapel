@@ -66,6 +66,7 @@ int main(int argc, char* argv[]) {
   // indicated by the locale environment variables.
   setlocale(LC_CTYPE,"");
 
+  chpl_error_init();  // This does local-only initialization
   chpl_comm_init(&argc, &argv);
   chpl_mem_init();
   chpl_comm_post_mem_init();

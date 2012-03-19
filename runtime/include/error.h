@@ -14,4 +14,8 @@ void chpl_msg(int verbose_level, const char* fmt, ...)
   __attribute__((format(printf, 2, 3)));
 #define printf PRINTF_DEF
 
+#ifndef LAUNCHER
+void chpl_error_init(void);
+#endif
+
 #endif
