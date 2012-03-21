@@ -11,7 +11,8 @@ class Type;
 
 class CallInfo {
  public:
-  CallExpr*        call;        // call expression
+  CallExpr*        call;        // call expression (if a call)
+  FnSymbol*        fn;          // function symbol (if a prototype)
   BlockStmt*       scope;       // module scope as in M.call
   const char*      name;        // function name
   Vec<Symbol*>     actuals;     // actual symbols

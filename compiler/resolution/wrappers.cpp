@@ -26,7 +26,10 @@ buildEmptyWrapper(FnSymbol* fn, CallInfo* info) {
   }
   if (fn->hasFlag(FLAG_METHOD))
     wrapper->addFlag(FLAG_METHOD);
-  wrapper->instantiationPoint = VisibleFunctionManager::getVisibilityBlock(info->call);
+  if (info->call)
+    wrapper->instantiationPoint = VisibleFunctionManager::getVisibilityBlock(info->call);
+  else if (info->fn)
+    wrapper->instantiationPoint = VisibleFunctionManager::getVisibilityBlock(info->fn->defPoint);
   wrapper->addFlag(FLAG_TEMP);
   return wrapper;
 }
@@ -395,7 +398,11 @@ buildCoercionWrapper(FnSymbol* fn,
 
   wrapper->cname = astr("_coerce_wrap_", fn->cname);
   CallExpr* call = new CallExpr(fn);
-  call->square = info->call->square;
+  if (info->call)
+    call->square = info->call->square;
+  else if (info->fn)
+    call->square = false;
+
   for_formals(formal, fn) {
     SET_LINENO(formal);
     ArgSymbol* wrapperFormal = copyFormalForWrapper(formal);

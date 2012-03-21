@@ -16,6 +16,7 @@
 #include "stringutil.h"
 #include "symbol.h"
 #include "typeCheck.h"
+#include "congruenceClosure.h"
 #include "../ifa/prim_data.h"
 
 //#
@@ -25,11 +26,13 @@ bool resolved = false;
 bool inDynamicDispatchResolution = false;
 SymbolMap paramMap;
 
+
 //#
 //# Static Variables
 //#
 static int explainCallLine;
 static ModuleSymbol* explainCallModule;
+static CongruenceClosure cclosure;
 
 static Vec<CallExpr*> inits;
 static Map<FnSymbol*,bool> resolvedFns;
@@ -198,7 +201,7 @@ static void removeNilTypeArgs();
 static void insertReferenceTemps();
 static void fixTypeNames(ClassType* ct);
 static void setScalarPromotionType(ClassType* ct);
-
+static void resolveImplementsStatement(CallExpr* call, bool errorCheck);
 
 static bool hasRefField(Type *type) {
   if (isPrimitiveType(type)) return false;
@@ -1829,6 +1832,12 @@ resolveCall(CallExpr* call, bool errorCheck) {
 
     resolveDefaultGenericType(call);
 
+    if (UnresolvedSymExpr *use = toUnresolvedSymExpr(call->baseExpr)) {
+      if (!strcmp(use->unresolved, "implements")) {
+        resolveImplementsStatement(call, errorCheck);
+        return;
+      }
+    }
     CallInfo info(call);
 
     Vec<FnSymbol*> visibleFns;                    // visible functions
@@ -5598,5 +5607,68 @@ setScalarPromotionType(ClassType* ct) {
   for_fields(field, ct) {
     if (!strcmp(field->name, "_promotionType"))
       ct->scalarPromotionType = field->type;
+  }
+}
+
+static void resolveImplementsStatement(CallExpr* call, bool errorCheck) {
+  if (SymExpr *se = toSymExpr(call->argList.tail)) {
+    if (isSymExpr(call->argList.head)) {
+      if (InterfaceSymbol *is = toInterfaceSymbol(se->var)) {
+        forv_Vec (FnSymbol, fn, is->functionSignatures) {
+          CallInfo info(fn, cclosure);
+          Vec<FnSymbol*> visibleFns;                    // visible functions
+          Vec<FnSymbol*> candidateFns;
+          Vec<Vec<ArgSymbol*>*> candidateActualFormals; // candidate functions
+
+          if (!info.scope) {
+            Vec<BlockStmt*> visited;
+            vFunManager.getVisibleFunctions(VisibleFunctionManager::getVisibilityBlock(call),
+                info.name, visibleFns, visited);
+          } else {
+            if (VisibleFunctionBlock* vfb = vFunManager.visibleFunctionMap.get(info.scope))
+              if (Vec<FnSymbol*>* fns = vfb->visibleFunctions.get(info.name))
+                visibleFns.append(*fns);
+          }
+          forv_Vec(FnSymbol, visibleFn, visibleFns) {
+            //if (call->methodTag && !visibleFn->hasFlag(FLAG_NO_PARENS) && !visibleFn->hasFlag(FLAG_TYPE_CONSTRUCTOR))
+              //continue;
+            addCandidate(&candidateFns, &candidateActualFormals, visibleFn, info);
+          }
+          FnSymbol* best = NULL;
+          Vec<ArgSymbol*>* actualFormals = 0;
+          Expr* scope = (info.scope) ? info.scope :
+              VisibleFunctionManager::getVisibilityBlock(call);
+          best = disambiguate_by_match(&candidateFns, &candidateActualFormals,
+                                       &info.actuals, &actualFormals, scope);
+
+          if (!best) {
+            if (tryStack.n) {
+              tryFailure = true;
+              return;
+            } else if (candidateFns.n > 0) {
+              if (errorCheck)
+                USR_FATAL("Function is ambiguous. Debug.\n");
+            } else {
+              if (errorCheck)
+                USR_FATAL("Function unresolved. Debug.\n");
+            }
+          } else {
+            best = defaultWrap(best, actualFormals, &info);
+            best = orderWrap(best, actualFormals, &info);
+            best = coercionWrap(best, &info);
+            best = promotionWrap(best, &info);
+          }
+
+          for (int i = 0; i < candidateActualFormals.n; i++)
+            delete candidateActualFormals.v[i];
+
+          FnSymbol* resolvedFn = best;
+          if(!resolvedFn)
+            USR_FATAL("Function not resolved. Debug.\n");
+          else
+            USR_FATAL("Function resolved. Debug.\n");
+        }
+      }
+    }
   }
 }

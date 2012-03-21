@@ -2,8 +2,9 @@
 #include "callInfo.h"
 #include "expr.h"
 #include "congruenceClosure.h"
+#include "typeCheck.h"
 
-CallInfo::CallInfo(CallExpr* icall, bool genericArgumentsFatal) : call(icall), scope(NULL) {
+CallInfo::CallInfo(CallExpr* icall, bool genericArgumentsFatal) : call(icall), fn(NULL), scope(NULL) {
   if (SymExpr* se = toSymExpr(call->baseExpr))
     name = se->var->name;
   else if (UnresolvedSymExpr* use = toUnresolvedSymExpr(call->baseExpr))
@@ -40,12 +41,15 @@ CallInfo::CallInfo(CallExpr* icall, bool genericArgumentsFatal) : call(icall), s
 }
 
 CallInfo::CallInfo(FnSymbol* iface, CongruenceClosure &cclosure) :
-    scope(NULL) {
+    call(NULL), fn(iface), scope(NULL) {
   name = iface->name;
 
   for_alist (formal, iface->formals) {
     if (DefExpr *de = toDefExpr(formal)) {
       actualNames.add(de->sym->cname);
+      actuals.add(de->sym);
+      //actuals.add(formal);
+      /*
       BaseAST *tmp = cclosure.get_representative_ast(de);
       if (Symbol *s = toSymbol(tmp)) {
         actuals.add(s);
@@ -54,6 +58,7 @@ CallInfo::CallInfo(FnSymbol* iface, CongruenceClosure &cclosure) :
       } else {
         INT_FATAL("Unimplemented: trying to handle non-Symbol representation");
       }
+      */
     } else {
       INT_FATAL("Unimplemented case in CallInfo2(FnSymbol* fn).  Not DefExpr.");
     }

@@ -15,7 +15,7 @@ PassInfo passlist[] = {
   // Scope resolution and normalization
   RUN(cleanup),         // post parsing transformations
   RUN(scopeResolve),    // resolve symbols by scope
-  RUN(earlyTypeCheck),  // type-check concepts/parametric polymorphism
+  //RUN(earlyTypeCheck),  // type-check concepts/parametric polymorphism
   RUN(flattenClasses),  // denest nested classes
   RUN(normalize),       // normalization transformations
   RUN(checkNormalized), // check semantics of normalized AST
