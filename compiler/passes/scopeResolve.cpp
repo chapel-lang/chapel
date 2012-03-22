@@ -497,8 +497,7 @@ void build_type_constructor(ClassType* ct) {
             fn->insertAtTail(new CallExpr(PRIM_SET_MEMBER, fn->_this,
                                           new_StringSymbol(field->name), arg));
           else if (arg->type == dtAny &&
-                   !ct->symbol->hasFlag(FLAG_REF) &&
-                   strcmp(ct->symbol->name, "_square_tuple"))
+                   !ct->symbol->hasFlag(FLAG_REF))
             fn->insertAtTail(new CallExpr(PRIM_SET_MEMBER, fn->_this,
                                           new_StringSymbol(field->name),
                                           new CallExpr("chpl__initCopy",
@@ -748,8 +747,7 @@ void build_constructor(ClassType* ct) {
       arg->type = dtAny;
     fn->insertFormalAtTail(arg);
     if (arg->type == dtAny && !arg->hasFlag(FLAG_TYPE_VARIABLE) &&
-        !arg->hasFlag(FLAG_PARAM) && !ct->symbol->hasFlag(FLAG_REF) &&
-        strcmp(ct->symbol->name, "_square_tuple"))
+        !arg->hasFlag(FLAG_PARAM) && !ct->symbol->hasFlag(FLAG_REF))
       fn->insertAtTail(new CallExpr(PRIM_SET_MEMBER, fn->_this, 
                                     new_StringSymbol(arg->name),
                                     new CallExpr("chpl__initCopy", arg)));

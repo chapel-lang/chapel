@@ -386,8 +386,9 @@ writeln("VarArr should now be reset: ", VarArr, "\n");
 
 var Y: [ProbSpace] [1..3] real;
 
-forall ((i,j), k) in [ProbSpace, 1..3] do
-  Y(i,j)(k) = i*10 + j + k/10.0;
+forall (i,j) in ProbSpace do
+  for k in 1..3 do
+    Y(i,j)(k) = i*10 + j + k/10.0;
 
 writeln("Y is:\n", Y);
 
