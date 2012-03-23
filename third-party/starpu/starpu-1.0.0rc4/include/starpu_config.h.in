@@ -1,0 +1,91 @@
+/* StarPU --- Runtime system for heterogeneous multicore architectures.
+ *
+ * Copyright (C) 2009-2012  Université de Bordeaux 1
+ * Copyright (C) 2010, 2011, 2012  Centre National de la Recherche Scientifique
+ *
+ * StarPU is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation; either version 2.1 of the License, or (at
+ * your option) any later version.
+ *
+ * StarPU is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * See the GNU Lesser General Public License in COPYING.LGPL for more details.
+ */
+
+#ifndef __STARPU_CONFIG_PUBLIC_H__
+#define __STARPU_CONFIG_PUBLIC_H__
+
+#undef STARPU_MAJOR_VERSION
+#undef STARPU_MINOR_VERSION
+
+#undef STARPU_USE_CPU
+#undef STARPU_USE_CUDA
+#undef STARPU_USE_OPENCL
+#undef STARPU_USE_GORDON
+
+#undef STARPU_HAVE_ICC
+
+#undef STARPU_USE_MPI
+
+#undef STARPU_ATLAS
+#undef STARPU_GOTO
+#undef STARPU_MKL
+#undef STARPU_SYSTEM_BLAS
+
+#undef STARPU_BUILD_DIR
+#undef STARPU_OPENCL_DATADIR
+#undef STARPU_HAVE_MAGMA
+
+#undef STARPU_OPENGL_RENDER
+#undef STARPU_USE_GTK
+#undef STARPU_HAVE_X11
+
+#undef STARPU_HAVE_POSIX_MEMALIGN
+
+#undef STARPU_HAVE_MEMALIGN
+
+#undef STARPU_HAVE_MALLOC_H
+
+#undef STARPU_HAVE_SYNC_BOOL_COMPARE_AND_SWAP
+#undef STARPU_HAVE_SYNC_FETCH_AND_ADD
+#undef STARPU_HAVE_SYNC_FETCH_AND_OR
+#undef STARPU_HAVE_SYNC_LOCK_TEST_AND_SET
+
+#undef STARPU_MODEL_DEBUG
+#undef STARPU_NO_ASSERT
+
+#undef STARPU_HAVE_FFTW
+#undef STARPU_HAVE_FFTWF
+#undef STARPU_HAVE_FFTWL
+
+#undef STARPU_HAVE_CURAND
+
+#undef STARPU_MAXNODES
+#undef STARPU_NMAXBUFS
+#undef STARPU_MAXCPUS
+#undef STARPU_MAXCUDADEVS
+#undef STARPU_MAXOPENCLDEVS
+#undef STARPU_NMAXWORKERS
+#undef STARPU_MAXIMPLEMENTATIONS
+
+#undef STARPU_HAVE_LIBNUMA
+
+#undef STARPU_HAVE_WINDOWS
+
+#ifdef _MSC_VER
+typedef long starpu_ssize_t;
+#define __starpu_func__ __FUNCTION__
+#else
+#  include <sys/types.h>
+typedef ssize_t starpu_ssize_t;
+#define __starpu_func__ __func__
+#endif
+
+#undef STARPU_SLOW_MACHINE
+#undef STARPU_USE_DRAND48
+#undef STARPU_USE_ERAND48_R
+
+#endif

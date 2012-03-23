@@ -1,0 +1,4 @@
+@set UPDATED 21 March 2012
+@set UPDATED-MONTH March 2012
+@set EDITION 1.0.0rc4
+@set VERSION 1.0.0rc4
