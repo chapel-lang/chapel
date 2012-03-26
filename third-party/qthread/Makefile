@@ -21,10 +21,6 @@ ifeq ($(CHPL_MAKE_TARGET_PLATFORM),xe-cle)
 CHPL_QTHREAD_CFG_OPTIONS += --host=x86_64-pc-linux-gnu --build=x86_64-suse-linux-gnu
 endif
 
-ifeq ($(CHPL_NIGHTLY_TEST), 1)
-CHPL_QTHREAD_CFG_OPTIONS += --with-scheduler=nemesis
-endif
-
 default: all
 
 all: qthread
