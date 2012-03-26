@@ -1,11 +1,11 @@
--smyType=uint(8)  # no_atomic_assign.uint8.good
--smyType=uint(16) # no_atomic_assign.uint16.good
--smyType=uint(32) # no_atomic_assign.uint32.good
--smyType=uint(64) # no_atomic_assign.uint64.good
--smyType=uint     # no_atomic_assign.uint32.good
--smyType=int(8)   # no_atomic_assign.int8.good
--smyType=int(16)  # no_atomic_assign.int16.good
--smyType=int(32)  # no_atomic_assign.int32.good
--smyType=int(64)  # no_atomic_assign.int64.good
--smyType=int      # no_atomic_assign.int32.good
+-smyType=uint(8)
+-smyType=uint(16)
+-smyType=uint(32)
+-smyType=uint(64)
+-smyType=uint
+-smyType=int(8)
+-smyType=int(16)
+-smyType=int(32)
+-smyType=int(64)
+-smyType=int
 
