@@ -5,7 +5,6 @@
 extern proc sched_yield();
 
 use Time;
-use Atomics;
 
 /*	- The Chameneos game is as follows: 
 	  	A population of n chameneos gathers at a common meeting place, where 
@@ -35,18 +34,18 @@ config const MEET_COUNT_SHIFT = 8;
 
 
 class MeetingPlace {
-	var state : atomicuint(32);
+	var state : atomic uint(32);
 
 	/* constructor for MeetingPlace, sets the 
 	   number of meetings to take place */
 	proc MeetingPlace() {
-		state.store((numMeetings << MEET_COUNT_SHIFT) : uint);
+		state.write((numMeetings << MEET_COUNT_SHIFT) : uint);
 	}
 	
 	/* reset must be called after meet, 
 	   to reset numMeetings for a subsequent call of meet */
 	proc reset() {
-		state.store((numMeetings << MEET_COUNT_SHIFT) : uint);
+		state.write((numMeetings << MEET_COUNT_SHIFT) : uint);
 	}
 }
 	
@@ -65,7 +64,7 @@ class Chameneos {
 	var color : Color;
 	var meetings : int;
 	var meetingsWithSelf : int;
-	var meetingCompleted : atomicuint(32);
+	var meetingCompleted : atomic uint(32);
         //var meetingCompleted : volatile uint(32);
 	
 	/* start tells a Chameneos to go to a given MeetingPlace, where it may meet 
@@ -81,7 +80,7 @@ class Chameneos {
 		var newColor : Color;
 
 		//writeln("id ", id, ": in start");
-		stateTemp = meetingPlace.state.load();	
+		stateTemp = meetingPlace.state.read();	
 					
 		while (true) {
 			peer_idx = stateTemp & CHAMENEOS_IDX_MASK;
@@ -107,7 +106,7 @@ class Chameneos {
 					peer.color = newColor;
 					peer.meetings += 1;
 					peer.meetingsWithSelf += is_same;
-					peer.meetingCompleted.store(1);
+					peer.meetingCompleted.write(1);
 					//peer.meetingCompleted = 1;
 					color = newColor;
 					meetings += 1;
@@ -117,19 +116,19 @@ class Chameneos {
 				} else {
 					//writeln("id ", id, ": got here first");
                                         //var spin_count = spinCount;
-					while (meetingCompleted.load() == 0) {
+					while (meetingCompleted.read() == 0) {
 					//while (meetingCompleted == 0) {
                                                 //if spin_count then spin_count -= 1;
                                                 //else 
                                                   sched_yield();
 					}
 					//writeln("id ", id, ": exiting");
-					meetingCompleted.store(0);
+					meetingCompleted.write(0);
 					//meetingCompleted = 0;
-					stateTemp = meetingPlace.state.load();	
+					stateTemp = meetingPlace.state.read();	
 				}
 			} else {
-				stateTemp = meetingPlace.state.load();
+				stateTemp = meetingPlace.state.read();
 			}
 		} 
 	}

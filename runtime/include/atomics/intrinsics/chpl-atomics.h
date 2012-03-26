@@ -8,6 +8,10 @@ typedef bool chpl_bool;
                        // causes problems with the C test cases.
 #endif
 
+typedef int_least8_t atomic_int_least8_t;
+typedef int_least16_t atomic_int_least16_t;
+typedef int_least32_t atomic_int_least32_t;
+typedef int_least64_t atomic_int_least64_t;
 typedef uint_least8_t atomic_uint_least8_t;
 typedef uint_least16_t atomic_uint_least16_t;
 typedef uint_least32_t atomic_uint_least32_t;
@@ -132,6 +136,10 @@ static inline type atomic_fetch_and_ ## type(atomic_ ## type * obj, type operand
   return atomic_fetch_and_explicit_ ## type(obj, operand, memory_order_seq_cst); \
 }
 
+DECLARE_ATOMICS(int_least8_t);
+DECLARE_ATOMICS(int_least16_t);
+DECLARE_ATOMICS(int_least32_t);
+DECLARE_ATOMICS(int_least64_t);
 DECLARE_ATOMICS(uint_least8_t);
 DECLARE_ATOMICS(uint_least16_t);
 DECLARE_ATOMICS(uint_least32_t);

@@ -1,8 +1,6 @@
 config const n = 100000;
 config const showRace = false;
 
-use Atomics;
-
 proc test(param width, n_max:int ) {
   var n:uint(width) = max(uint(width));
   if n_max:uint(64) < n:uint(64) then n = n_max:uint(width);
@@ -22,7 +20,7 @@ proc test(param width, n_max:int ) {
     writeln("X is ", x," (vs. ", n, ")");
   }
 
-  var aint:atomicuint(width);
+  var aint:atomic uint(width);
 
   //aint.init(0);
 
@@ -30,14 +28,14 @@ proc test(param width, n_max:int ) {
     aint.fetchAdd(one);
   }
 
-  assert(aint.load() == n);
+  assert(aint.read() == n);
   writeln("Increment OK");
 
   forall i in one..n {
     aint.fetchSub(one);
   }
 
-  assert(aint.load() == zero);
+  assert(aint.read() == zero);
 
   writeln("Decrement OK");
 
@@ -45,19 +43,19 @@ proc test(param width, n_max:int ) {
     aint.fetchAdd(mult);
   }
 
-  assert(aint.load() == (mult*n):uint(width));
+  assert(aint.read() == (mult*n):uint(width));
   writeln("Add OK");
 
   forall i in one..n {
     aint.fetchSub(mult);
   }
 
-  assert(aint.load() == zero);
+  assert(aint.read() == zero);
   writeln("Subtract OK");
 
   aint.compareExchangeStrong(zero, mult);
 
-  assert(aint.load() == mult);
+  assert(aint.read() == mult);
 
   writeln("Compare and Swap OK");
 

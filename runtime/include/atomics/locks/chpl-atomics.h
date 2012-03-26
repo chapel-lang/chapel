@@ -2,6 +2,22 @@
 #include "chpltypes.h" // chpl_bool
 #include "chpl-tasks.h" // chpl_sync_aux_t
 
+typedef struct atomic_int_least8_s {
+  chpl_sync_aux_t sv;
+  int_least8_t v;
+} atomic_int_least8_t;
+typedef struct atomic_int_least16_s {
+  chpl_sync_aux_t sv;
+  int_least16_t v;
+} atomic_int_least16_t;
+typedef struct atomic_int_least32_s {
+  chpl_sync_aux_t sv;
+  int_least32_t v;
+} atomic_int_least32_t;
+typedef struct atomic_int_least64_s {
+  chpl_sync_aux_t sv;
+  int_least64_t v;
+} atomic_int_least64_t;
 typedef struct atomic_uint_least8_s {
   chpl_sync_aux_t sv;
   uint_least8_t v;
@@ -185,6 +201,10 @@ static inline type atomic_fetch_and_ ## type(atomic_ ## type * obj, type operand
   return atomic_fetch_and_explicit_ ## type(obj, operand, memory_order_seq_cst); \
 }
 
+DECLARE_ATOMICS(int_least8_t);
+DECLARE_ATOMICS(int_least16_t);
+DECLARE_ATOMICS(int_least32_t);
+DECLARE_ATOMICS(int_least64_t);
 DECLARE_ATOMICS(uint_least8_t);
 DECLARE_ATOMICS(uint_least16_t);
 DECLARE_ATOMICS(uint_least32_t);
