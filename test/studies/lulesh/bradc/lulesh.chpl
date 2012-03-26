@@ -175,7 +175,7 @@ param nodesPerElem = 8;
 // as an initializer to fill it all up?  Maybe we can and I just
 // don't know how to?  Or else, we can write our own iterator...
 //
-var elemToNode: [Elems] [0..#nodesPerElem] index(Nodes);
+var elemToNode: [Elems] nodesPerElem*index(Nodes);
 
 
                                  
@@ -184,8 +184,8 @@ if debug then writeln("reading elemToNode mapping");
 //
 // OR, at the very least, we should be able to write read(elemToNode);
 for nodelist in elemToNode do 
-  for n in nodelist do
-    reader.read(n);
+  for i in 1..nodesPerElem do
+    reader.read(nodelist[i]);
 
 if debugIO {
   writeln("elemToNode mappings are:");
@@ -419,7 +419,7 @@ proc initializeFieldData() {
     volo[eli] = volume;
     elemMass[eli] = volume;
 
-    for param i in 0..nodesPerElem-1 {
+    for param i in 1..nodesPerElem {
       const neighbor = elemToNode[eli][i];
       on massAccum$[neighbor] do
         massAccum$[neighbor] += volume;
@@ -445,8 +445,8 @@ proc setupBoundaryConditions() {
 
   forall e in Elems do {
     var mask: int;
-    for i in 0..#nodesPerElem do
-      mask += surfaceNode[elemToNode[e][i]] << i;
+    for i in 1..nodesPerElem do
+      mask += surfaceNode[elemToNode[e][i]] << (i-1);
 
     // STYLE: make a little inlined function for this idiom?
 
@@ -487,8 +487,8 @@ proc setupBoundaryConditions() {
 
   forall e in Elems do {
     var mask: int;
-    for i in 0..#nodesPerElem do
-      mask += surfaceNode[elemToNode[e][i]] << i;
+    for i in 1..nodesPerElem do
+      mask += surfaceNode[elemToNode[e][i]] << (i-1);
 
     // STYLE: make a little inlined function for this idiom?
 
@@ -512,6 +512,8 @@ localizeNeighborNodes(eli: index(Elems),
                       x: [] real, inout x_local: 8*real,
                       y: [] real, inout y_local: 8*real,
                       z: [] real, inout z_local: 8*real) {
+
+
   for (noi, t) in elemToNodesTuple(eli) {
     x_local[t] = x[noi];
     y_local[t] = y[noi];
@@ -1678,8 +1680,8 @@ proc CalcSoundSpeedForElems(vnewc, rho0:real, enewc, pnewc, pbvc, bvc) {
 // zippered iterator at callsites?
 //
 iter elemToNodesTuple(e) {
-  for i in 0..#nodesPerElem do
-    yield (elemToNode[e][i], i+1);
+  for i in 1..nodesPerElem do
+    yield (elemToNode[e][i], i);
 }
 
 // test & debug stuff
