@@ -833,13 +833,13 @@ void initPrimitiveTypes(void) {
   // WAW: could have a loop, but the following unrolling is more explicit.
   INIT_PRIM_INT( "int(8)", 8);
   INIT_PRIM_INT( "int(16)", 16);
-  INIT_PRIM_INT( "int", 32);
-  INIT_PRIM_INT( "int(64)", 64);            // default size
+  INIT_PRIM_INT( "int(32)", 32);
+  INIT_PRIM_INT( "int", 64);            // default size
 
   INIT_PRIM_UINT( "uint(8)", 8);
   INIT_PRIM_UINT( "uint(16)", 16);
-  INIT_PRIM_UINT( "uint", 32);
-  INIT_PRIM_UINT( "uint(64)", 64);          // default size
+  INIT_PRIM_UINT( "uint(32)", 32);
+  INIT_PRIM_UINT( "uint", 64);          // default size
 
   INIT_PRIM_REAL( "real(32)", 32);
   INIT_PRIM_REAL( "real", 64);            // default size

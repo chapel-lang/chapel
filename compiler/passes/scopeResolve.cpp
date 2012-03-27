@@ -1001,6 +1001,22 @@ add_class_to_hierarchy(ClassType* ct, Vec<ClassType*>* localSeenPtr = NULL) {
 }
 
 
+static void renameDefaultType(Type* type, const char* newname) {
+  if (strchr(type->symbol->name, '(') != NULL) {
+    INT_FATAL("Renaming a default type that already seems to have a width");
+  }
+  type->symbol->name = astr(newname);
+}
+
+
+static void renameDefaultTypesToReflectWidths(void) {
+  renameDefaultType(dtInt[INT_SIZE_DEFAULT], "int(64)");
+  renameDefaultType(dtUInt[INT_SIZE_DEFAULT], "uint(64)");
+  renameDefaultType(dtReal[FLOAT_SIZE_DEFAULT], "real(64)");
+  renameDefaultType(dtImag[FLOAT_SIZE_DEFAULT], "imag(64)");
+  renameDefaultType(dtComplex[COMPLEX_SIZE_DEFAULT], "complex(128)");
+}
+
 
 void scopeResolve(void) {
   //
@@ -1299,4 +1315,6 @@ void scopeResolve(void) {
   destroyTable();
 
   destroyModuleUsesCaches();
+
+  renameDefaultTypesToReflectWidths();
 }

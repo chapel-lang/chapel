@@ -206,8 +206,8 @@ proc Cyclic.dsiCreateReindexDist(newSpace, oldSpace) {
 //
 // Given a tuple of scalars of type t or range(t) match the shape but
 // using types rangeType and scalarType e.g. the call:
-// _matchArgsShape(range(int), int, (1:int(64), 1:int(64)..5, 1:int(64)..5))
-// returns the type: (int, range(int), range(int))
+// _matchArgsShape(range(int(32)), int(32), (1:int(64), 1:int(64)..5, 1:int(64)..5))
+// returns the type: (int(32), range(int(32)), range(int(32)))
 //
 proc _cyclic_matchArgsShape(type rangeType, type scalarType, args) type {
   proc tuple(type t ...) type return t;

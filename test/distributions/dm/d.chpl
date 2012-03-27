@@ -46,7 +46,7 @@ type locCntT = uint(32);
 
 // ... locale ID, i.e., its index in targetLocales in the given dimension
 // convention: a locale ID is between 0 and (num. locales 1d - 1)
-type locIdT =  int(32);
+type locIdT =  int;
 
 param invalidLocID =
   // encode 'max(locIdT)' as a compile-time expression

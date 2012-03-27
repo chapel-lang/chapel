@@ -136,6 +136,10 @@ proc typeToString(type t) param {
   return __primitive("typeToString", t);
 }
 
+proc typeToString(x) param {
+  compilerError("typeToString()'s argument must be a type, not a value");
+}
+
 enum iterKind {leader, follower};
 
 //
@@ -598,10 +602,10 @@ pragma "inline" proc _statementLevelSymbol(ir: _iteratorRecord) {
 //
 pragma "inline" proc _cond_test(x: object) return x != nil;
 pragma "inline" proc _cond_test(x: bool) return x;
-pragma "inline" proc _cond_test(x: integral) return x != 0;
+pragma "inline" proc _cond_test(x: integral) return x != 0:x.type;
 
 pragma "inline" proc _cond_test(param x: bool) param return x;
-pragma "inline" proc _cond_test(param x: integral) param return x != 0;
+pragma "inline" proc _cond_test(param x: integral) param return x != 0:x.type;
 
 pragma "inline" proc _cond_test(x) {
   compilerError("type '", typeToString(x.type), "' used in if or while condition");

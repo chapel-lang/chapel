@@ -665,7 +665,7 @@ proc DefaultRectangularDom.dsiSerialWrite(f: Writer) {
 
 proc DefaultRectangularArr.dsiSerialWrite(f: Writer) {
   proc recursiveArrayWriter(in idx: rank*idxType, dim=1, in last=false) {
-    var makeStridePositive = if dom.ranges(dim).stride > 0 then 1 else -1;
+    var makeStridePositive = if dom.ranges(dim).stride > 0 then 1:idxType else -1:idxType;
     if dim == rank {
       var first = true;
       if debugDefaultDist then f.writeln(dom.ranges(dim));
@@ -735,9 +735,9 @@ proc DefaultRectangularArr.doiBulkTransfer(B) {
     Blo(i) = Bdims(i).first;
 
   const len = dom.dsiNumIndices:int(32);
-  extern proc sizeof(type x): int(32);
+  extern proc sizeof(type x): int(32);  // should be c_int or size_t or ...
   if debugBulkTransfer {
-    const elemSize: int(32)=sizeof(B._value.eltType);
+    const elemSize =sizeof(B._value.eltType);
     writeln("In doiBulkTransfer(): Alo=", Alo, ", Blo=", Blo,
             ", len=", len, ", elemSize=", elemSize);
   }

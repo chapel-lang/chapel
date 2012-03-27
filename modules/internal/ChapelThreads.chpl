@@ -19,7 +19,9 @@ use ChapelBase; // for uint().
 
 
 config const numThreadsPerLocale = 0;
-const chpl__maxThreadsPerLocale = chpl__initMaxThreadsPerLocale();
+
+extern proc chpl_maxThreads(): int;
+const chpl__maxThreadsPerLocale = chpl_maxThreads();
 
 //
 // Legality check for numThreadsPerLocale
@@ -38,13 +40,6 @@ if chpl__maxThreadsPerLocale != 0 then
 //
 // the size of a call stack
 //
-config const callStackSize: uint(64) = 0;
-
-
-proc chpl__initMaxThreadsPerLocale() {
-  extern proc chpl_maxThreads(): int(32);
-
-  return chpl_maxThreads();
-}
+config const callStackSize: int = 0;
 
 }

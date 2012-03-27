@@ -457,7 +457,7 @@ proc chpl__testPar(args...) where chpl__testParFlag == false { }
 proc chpl__testPar(args...) where chpl__testParFlag == true {
   if chpl__testParFlag && chpl__testParOn {
     const file : string = __primitive("_get_user_file");
-    const line : int = __primitive("_get_user_line");
+    const line = __primitive("_get_user_line");
     writeln("CHPL TEST PAR (", file, ":", line, "): ", (...args));
   }
 }

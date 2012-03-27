@@ -163,9 +163,7 @@ Expr* buildIntLiteral(const char* pch) {
     ull = hexStr2uint64(pch);
   else
     ull = str2uint64(pch);
-  if (ull <= 2147483647ull)
-    return new SymExpr(new_IntSymbol(ull, INT_SIZE_32));
-  else if (ull <= 9223372036854775807ull)
+  if (ull <= 9223372036854775807ull)
     return new SymExpr(new_IntSymbol(ull, INT_SIZE_64));
   else
     return new SymExpr(new_UIntSymbol(ull, INT_SIZE_64));

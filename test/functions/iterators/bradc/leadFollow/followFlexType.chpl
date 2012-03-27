@@ -4,7 +4,7 @@ class C {
   }
 
   iter these(param tag: iterKind) where tag == iterKind.leader {
-    var D: domain(1, int(32)) = [1..10];
+    var D: domain(1, int(32)) = [1..10:int(32)];
     yield D;
   }
 

@@ -650,12 +650,12 @@ conditionals with a conditional expression that is not a parameter.
 In the code
 \begin{chapel}
 proc myType(x) type {
-  if numBits(x.type) <= 32 then return int;
+  if numBits(x.type) <= 32 then return int(32);
   else return int(64);
 }
 \end{chapel}
 \begin{chapelpost}
-var a = 4,
+var a = 4: int(32),
     b = 4.0;
 var at: myType(a),
     bt: myType(b);
@@ -665,7 +665,7 @@ writeln((numBits(at.type), numBits(bt.type)));
 (32, 64)
 \end{chapeloutput}
 \chpl{myType} is a type procedure that takes a single
-argument \chpl{x} and returns \chpl{int} if the number of bits used to
+argument \chpl{x} and returns \chpl{int(32)} if the number of bits used to
 represent \chpl{x} is less than or equal to 32, otherwise it
 returns \chpl{int(64)}.  \chpl{numBits} is a param
 procedure defined in the Types module~(\rsec{Types_standard_module}).

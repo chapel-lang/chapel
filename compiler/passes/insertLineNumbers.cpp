@@ -25,7 +25,7 @@ static Map<FnSymbol*,ArgSymbol*> linenoMap; // fn to line number argument
 static Map<FnSymbol*,ArgSymbol*> filenameMap; // fn to filename argument
 
 static ArgSymbol* newLine(FnSymbol* fn) {
-  ArgSymbol* line = new ArgSymbol(INTENT_BLANK, "_ln", dtInt[INT_SIZE_32]);
+  ArgSymbol* line = new ArgSymbol(INTENT_BLANK, "_ln", dtInt[INT_SIZE_DEFAULT]);
   fn->insertFormalAtTail(line);
   linenoMap.put(fn, line);
   if (Vec<FnSymbol*>* rootFns = virtualRootsMap.get(fn)) {
@@ -110,7 +110,7 @@ insertLineNumber(CallExpr* call) {
     } else {
       if (fCLineNumbers) {
         if (!gCLine) {
-          gCLine = new VarSymbol("__LINE__", dtInt[INT_SIZE_32]);
+          gCLine = new VarSymbol("__LINE__", dtInt[INT_SIZE_DEFAULT]);
           rootModule->block->insertAtTail(new DefExpr(gCLine));
           gCFile = new VarSymbol("__FILE__", dtString);
           rootModule->block->insertAtTail(new DefExpr(gCFile));

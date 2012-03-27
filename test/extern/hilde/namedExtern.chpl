@@ -7,7 +7,7 @@
 //
 extern printf proc cprintf(fmt ...?k): int;
 
-var i = 19;
+var i = 19: int(32); // using an int(32) to up the odds this works with %d
 var f = 63.0;
 var s = "pwh";
 

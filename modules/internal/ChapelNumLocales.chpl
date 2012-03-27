@@ -3,12 +3,11 @@
 pragma "no use ChapelStandard"
 module ChapelNumLocales {
 
-// the number of locales on which to run the program
-config const numLocales: int = __primitive("chpl_comm_default_num_locales");
+extern proc chpl_comm_default_num_locales(): int;
 
-//proc chpl_numLocales(r) {
-//  assert(r == 0);
-//  return numLocales;
-//}
+//
+// the number of locales on which to run the program
+//
+config const numLocales = chpl_comm_default_num_locales();
 
 }

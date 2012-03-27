@@ -140,7 +140,7 @@ proc _getDistribution(value) {
 //
 pragma "has runtime type"
 proc chpl__buildDomainRuntimeType(d: _distribution, param rank: int,
-                                 type idxType = int(32),
+                                 type idxType = int,
                                  param stridable: bool = false) type
   return _newDomain(d.newRectangularDom(rank, idxType, stridable));
 

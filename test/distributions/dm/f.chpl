@@ -7,7 +7,7 @@ config param BlockCyclicDim_enableArrayIterWarning = false;  // 'false' for test
 
 // the types to use for blockSzie and numLocales
 type cycSizeT = uint(32);     // unsigned - for optimization
-type cycSizeTuser = int(32);  // for versatility
+type cycSizeTuser = int;      // for versatility
 
 class idist {
   // distribution parameters

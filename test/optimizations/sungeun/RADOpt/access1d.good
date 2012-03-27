@@ -1,4 +1,4 @@
-1 dimensional array of int
+1 dimensional array of int(64)
 
 [1D Block] Remote read (Locale0): gets: 0
 [1D Block] Remote read (Locale0): puts: 0

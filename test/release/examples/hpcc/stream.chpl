@@ -53,13 +53,13 @@ proc main() {
 
   //
   // ProblemSpace describes the index set for the three vectors.  It
-  // is a 1D domain storing 64-bit ints and is distributed according
-  // to a Block distribution.  In this case, the Block distribution is 1D
-  // distribution computed by blocking the bounding box 1..m across the set
-  // of locales.  The ProblemSpace domain contains the indices 1..m.
+  // is a 1D domain that is distributed according to a Block
+  // distribution.  In this case, the Block distribution is 1D
+  // distribution computed by blocking the bounding box 1..m across
+  // the set of locales.  The ProblemSpace domain also contains the
+  // indices 1..m.
   //
-  const ProblemSpace:
-    domain(1, int(64)) dmapped Block(boundingBox=[1..m]) = [1..m];
+  const ProblemSpace: domain(1) dmapped Block(boundingBox=[1..m]) = [1..m];
 
   //
   // A, B, and C are the three distributed vectors, declared to store

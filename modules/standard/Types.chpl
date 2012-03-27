@@ -123,6 +123,16 @@ proc _volToNon(type t) type {
 }
 
 
+// Returns the unsigned equivalent of the input type.
+proc chpl__unsignedType(type t) type 
+{
+  if ! _isIntegralType(t) then
+    compilerError("range idxType is non-integral: ", typeToString(t));
+
+  return uint(numBits(t));
+}
+
+
 // Returns the signed equivalent of the input type.
 proc chpl__signedType(type t) type 
 {
@@ -131,6 +141,17 @@ proc chpl__signedType(type t) type
 
   return int(numBits(t));
 }
+
+proc chpl__maxIntTypeSameSign(type t) type {
+  if ! _isIntegralType(t) then
+    compilerError("type t is non-integral: ", typeToString(t));
+
+  if (_isSignedType(t)) then
+    return int(64);
+  else
+    return uint(64);
+}
+
 
 
 // Returns true if it is legal to coerce t1 to t2, false otherwise.

@@ -21,15 +21,15 @@ use Time;
 
 config const numMeetings : int = 6000000;	// number of meetings to take place
 config const spinCount : int = 20000;		// time to spin before calling sched_yield()	
-config const numChameneos1 : int = 3;		// size of population 1
-config const numChameneos2 : int = 10;  	// size of population 2
+config const numChameneos1 : int(32) = 3;		// size of population 1
+config const numChameneos2 : int(32) = 10;  	// size of population 2
 enum Color {blue=0, red=1, yellow=2}; 	 
 enum Digit {zero, one, two, three, four, 	
 	     five, six, seven, eight, nine};
 config const verbose = false;			// if verbose is true, prints out non-det output, otherwise prints det output
 config const peek = false;			// if peek is true, allows chameneos to peek at spotsLeft$ in MeetingPlace.meet()
 						// then immediately return
-config const CHAMENEOS_IDX_MASK = 0xFF;
+config const CHAMENEOS_IDX_MASK = 0xFF: uint(32);
 config const MEET_COUNT_SHIFT = 8;
 
 
@@ -39,13 +39,13 @@ class MeetingPlace {
 	/* constructor for MeetingPlace, sets the 
 	   number of meetings to take place */
 	proc MeetingPlace() {
-		state.write((numMeetings << MEET_COUNT_SHIFT) : uint);
+          state.write((numMeetings << MEET_COUNT_SHIFT) : uint(32));
 	}
 	
 	/* reset must be called after meet, 
 	   to reset numMeetings for a subsequent call of meet */
 	proc reset() {
-		state.write((numMeetings << MEET_COUNT_SHIFT) : uint);
+            state.write((numMeetings << MEET_COUNT_SHIFT) : uint(32));
 	}
 }
 	
@@ -60,7 +60,7 @@ proc getComplement(myColor : Color, otherColor : Color) {
 }
 
 class Chameneos {
-	var id: int;
+        var id: int(32);
 	var color : Color;
 	var meetings : int;
 	var meetingsWithSelf : int;
@@ -71,10 +71,10 @@ class Chameneos {
 	   with another Chameneos.  If it does, it will get the complement of the color
 	   of the Chameneos it met with, and change to the complement of that color. */
   proc start(population : [] Chameneos, meetingPlace: MeetingPlace) {
-		var stateTemp : uint;
+                var stateTemp : uint(32);
 		var peer : Chameneos;
-		var peer_idx : uint;	
-		var xchg : uint;
+		var peer_idx : uint(32);	
+		var xchg : uint(32);
 		var prev : uint;
 		var is_same : int;
 		var newColor : Color;
@@ -86,7 +86,7 @@ class Chameneos {
 			peer_idx = stateTemp & CHAMENEOS_IDX_MASK;
                         //			writeln("id ", id, ": peer_idx is ", peer_idx);
 			if (peer_idx) {
-				xchg = stateTemp - peer_idx - (1 << MEET_COUNT_SHIFT):uint;
+                          xchg = stateTemp - peer_idx - (1 << MEET_COUNT_SHIFT):uint(32);
 			} else if (stateTemp) {
 				xchg = stateTemp | id;		
 			} else {
@@ -101,7 +101,7 @@ class Chameneos {
 						is_same = 1;
 						halt("halt: chameneos met with self");
 					}
-					peer = population[peer_idx:int];
+					peer = population[peer_idx:int(32)];
 					newColor = getComplement(color, peer.color);
 					peer.color = newColor;
 					peer.meetings += 1;
@@ -146,12 +146,13 @@ proc printColorChanges() {
 	writeln();
 }
 
-/* populate takes an parameter of type int, size, and returns a population of chameneos 
+/* populate takes an parameter of type int, size, and returns a population of 
+chameneos 
    of that size. if population size is set to 10, will use preset array of colors  */
-proc populate (size : int) {
+proc populate (size : int(32)) {
 	const colorsDefault10  = (Color.blue, Color.red, Color.yellow, Color.red, Color.yellow, 
 			      	        Color.blue, Color.red, Color.yellow, Color.red, Color.blue);	
-	const D : domain(1) = [1..size];
+	const D : domain(1, int(32)) = [1..size];
 	var population : [D] Chameneos;
 
 	if (size == 10) {

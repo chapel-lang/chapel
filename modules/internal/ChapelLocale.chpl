@@ -13,7 +13,7 @@ var doneCreatingLocales: bool;
 
 class locale {
   const chpl_id: int;
-  const numCores: int(32);
+  const numCores: int;
 
   proc locale(id = -1) {
     if doneCreatingLocales {
@@ -21,7 +21,7 @@ class locale {
     }
     chpl_id = id;
 
-    extern proc chpl_numCoresOnThisLocale(): int(32);
+    extern proc chpl_numCoresOnThisLocale(): int;
     numCores = chpl_numCoresOnThisLocale();
   }
 
@@ -35,10 +35,10 @@ class locale {
     return locName;
   }
 
-  proc callStackSize: uint(64) {
+  proc callStackSize: int {
     // Locales may have differing call stack sizes.
-    extern proc chpl_task_getCallStackSize(): uint(64);
-    var retval: uint(64);
+    extern proc chpl_task_getCallStackSize(): int;
+    var retval: int;
     on this do retval = chpl_task_getCallStackSize();
     return retval;
   }
@@ -117,7 +117,7 @@ proc chpl_int_to_locale(id) {
 
 
 proc locale.totalThreads() {
-  var totalThreads: uint;
+  var totalThreads: int;
 
   on this do totalThreads = __primitive("chpl_numThreads");
 
@@ -125,7 +125,7 @@ proc locale.totalThreads() {
 }
 
 proc locale.idleThreads() {
-  var idleThreads: uint;
+  var idleThreads: int;
 
   on this do idleThreads = __primitive("chpl_numIdleThreads");
 
@@ -133,7 +133,7 @@ proc locale.idleThreads() {
 }
 
 proc locale.queuedTasks() {
-  var queuedTasks: uint;
+  var queuedTasks: int;
 
   on this do queuedTasks = __primitive("chpl_numQueuedTasks");
 
@@ -141,7 +141,7 @@ proc locale.queuedTasks() {
 }
 
 proc locale.runningTasks() {
-  var numTasks: uint;
+  var numTasks: int;
 
   on this do numTasks = __primitive("chpl_numRunningTasks");
 
@@ -257,8 +257,8 @@ config const
   memStats: bool = false, 
   memLeaks: bool = false,
   memLeaksTable: bool = false,
-  memMax: uint(64) = 0,
-  memThreshold: uint(64) = 0,
+  memMax: int = 0,
+  memThreshold: int = 0,
   memLog: string = "";
 
 pragma "no auto destroy"

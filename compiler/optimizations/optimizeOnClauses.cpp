@@ -92,7 +92,6 @@ isFastPrimitive(CallExpr *call) {
   case PRIM_DELETE:
 
   case PRIM_LOCALE_ID:
-  case PRIM_NUM_LOCALES:
 
   case PRIM_STRING_COPY:
 

@@ -2210,9 +2210,6 @@ void CallExpr::codegen(FILE* outfile) {
     case PRIM_LOCALE_ID:
       fprintf(outfile, "chpl_localeID");
       break;
-    case PRIM_NUM_LOCALES:
-      fprintf(outfile, "chpl_comm_default_num_locales()");
-      break;
     case PRIM_ALLOC_GVR:
       fprintf(outfile, "chpl_comm_alloc_registry(%d)", numGlobalsOnHeap);
       break;

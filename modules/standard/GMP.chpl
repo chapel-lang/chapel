@@ -19,7 +19,7 @@ extern proc mpz_clear(inout X: mpz_t);
 extern proc mpz_tdiv_q(inout Q: mpz_t, inout N: mpz_t, inout D: mpz_t);
 extern proc mpz_fdiv_qr(inout Q: mpz_t, inout R: mpz_t, inout N: mpz_t, inout D: mpz_t);
 extern proc mpz_add(inout ROP: mpz_t, inout OP1: mpz_t, inout OP2: mpz_t);
-extern proc mpz_cmp(inout OP1: mpz_t, inout OP2: mpz_t) : int;
+extern proc mpz_cmp(inout OP1: mpz_t, inout OP2: mpz_t) : c_int;
 extern proc mpz_get_ui(OP: mpz_t): uint(64);
 
 extern type mp_bitcnt_t = c_ulong;

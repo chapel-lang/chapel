@@ -310,7 +310,7 @@ buildAdvance(FnSymbol* fn,
   // insert jump table at head of advance
   i = 2;
   Symbol* tmp = newTemp(dtBool);
-  Symbol* more = new VarSymbol("more", dtInt[INT_SIZE_32]);
+  Symbol* more = new VarSymbol("more", dtInt[INT_SIZE_DEFAULT]);
 
   forv_Vec(LabelSymbol, label, labels) {
     GotoStmt* igs = new GotoStmt(GOTO_ITER_RESUME, label);
@@ -593,7 +593,7 @@ void lowerIterator(FnSymbol* fn) {
       ii->irecord->fields.insertAtTail(new DefExpr(rfield));
     }
   }
-  ii->iclass->fields.insertAtTail(new DefExpr(new VarSymbol("more", dtInt[INT_SIZE_32])));
+  ii->iclass->fields.insertAtTail(new DefExpr(new VarSymbol("more", dtInt[INT_SIZE_DEFAULT])));
 
   replaceLocalsWithFields(ii, asts, local2field, locals);
   if (!fn->hasFlag(FLAG_INLINE_ITERATOR)) {
