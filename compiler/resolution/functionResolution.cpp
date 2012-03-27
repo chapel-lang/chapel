@@ -1457,7 +1457,7 @@ static bool paramWorks(Symbol* actual, Type* formalType) {
         return fits_in_int(get_width(formalType), var->immediate);
       }
       if (is_uint_type(formalType)) {
-	return fits_in_uint(get_width(formalType), var->immediate);
+        return fits_in_uint(get_width(formalType), var->immediate);
       }
     }
   }
@@ -1499,7 +1499,7 @@ disambiguate_by_match(Vec<FnSymbol*>* candidateFns,
         FnSymbol* fn2 = candidateFns->v[j];
         bool worse = false; // is fn1 worse than fn2?
         bool equal = true;  // is fn1 as good as fn2?
-	int paramPrefers = 0; // 1 == fn1, 2 == fn2, -1 == conflicting signals
+        int paramPrefers = 0; // 1 == fn1, 2 == fn2, -1 == conflicting signals
         bool fnPromotes1 = false; // does fn1 require promotion?
         bool fnPromotes2 = false; // does fn2 require promotion?
         Vec<ArgSymbol*>* actualFormals2 = candidateActualFormals->v[j];
@@ -1550,14 +1550,14 @@ disambiguate_by_match(Vec<FnSymbol*>* candidateFns,
                 // matches the first slightly better if we had to
                 // decide
                 registerParamPreference(paramPrefers, 1, "arg1");
-	      } else {
-		if (arg2->instantiatedParam) {
+              } else {
+                if (arg2->instantiatedParam) {
                   registerParamPreference(paramPrefers, 2, "arg2");
-		} else {
-		  // neither is a param, but arg1 is an exact type
-		  // match, so prefer that one
+                } else {
+                  // neither is a param, but arg1 is an exact type
+                  // match, so prefer that one
                   registerParamPreference(paramPrefers, 1, "arg1");
-		}
+                }
               }
             } else {
               equal = false;
@@ -1572,69 +1572,69 @@ disambiguate_by_match(Vec<FnSymbol*>* candidateFns,
                 // matches the second slightly better if we had to
                 // decide
                 registerParamPreference(paramPrefers, 2, "arg2");
-	      } else {
-		if (arg->instantiatedParam) {
+              } else {
+                if (arg->instantiatedParam) {
                   registerParamPreference(paramPrefers, 1, "arg1");
-		} else {
-		  // neither is a param, but arg1 is an exact type
-		  // match, so prefer that one
+                } else {
+                  // neither is a param, but arg1 is an exact type
+                  // match, so prefer that one
                   registerParamPreference(paramPrefers, 2, "arg2");
-		} 
+                } 
               }
             } else {
               worse = true;
               TRACE_DISAMBIGUATE_BY_MATCH("J8: worse\n");
             }
           } else if (moreSpecific(fn1, arg->type, arg2->type) &&
-		     arg2->type != arg->type) {
+                     arg2->type != arg->type) {
             equal = false;
             TRACE_DISAMBIGUATE_BY_MATCH("K: not equal\n");
           } else if (moreSpecific(fn1, arg2->type, arg->type) && 
-		     arg2->type != arg->type) {
+                     arg2->type != arg->type) {
             worse = true;
             TRACE_DISAMBIGUATE_BY_MATCH("L: worse\n");
           } else if (is_int_type(arg->type) &&
-		     is_uint_type(arg2->type)) {
+                     is_uint_type(arg2->type)) {
             equal = false;
             TRACE_DISAMBIGUATE_BY_MATCH("M: not equal\n");
           } else if (is_int_type(arg2->type) &&
-		     is_uint_type(arg->type)) {
+                     is_uint_type(arg->type)) {
             worse = true;
             TRACE_DISAMBIGUATE_BY_MATCH("N: worse\n");
-	  } else {
+          } else {
             TRACE_DISAMBIGUATE_BY_MATCH("N2: fell through\n");
-	  }
-	}
-	if (!fnPromotes1 && fnPromotes2) {
+          }
+        }
+        if (!fnPromotes1 && fnPromotes2) {
           TRACE_DISAMBIGUATE_BY_MATCH("O: one promotes and not the other\n");
-	  continue;
-	}
-	if (!worse && equal) {
-	  if (isMoreVisible(scope, fn1, fn2)) {
-	    equal = false;
+          continue;
+        }
+        if (!worse && equal) {
+          if (isMoreVisible(scope, fn1, fn2)) {
+            equal = false;
             TRACE_DISAMBIGUATE_BY_MATCH("P: not equal\n");
-	  } else if (isMoreVisible(scope, fn2, fn1)) {
-	    worse = true;
+          } else if (isMoreVisible(scope, fn2, fn1)) {
+            worse = true;
             TRACE_DISAMBIGUATE_BY_MATCH("Q: worse\n");
-	  } else if (paramPrefers == 1) {
-	    equal = false;
+          } else if (paramPrefers == 1) {
+            equal = false;
             TRACE_DISAMBIGUATE_BY_MATCH("R1: param breaks tie for 1");
-	  } else if (paramPrefers == 2) {
-	    worse = true;
+          } else if (paramPrefers == 2) {
+            worse = true;
             TRACE_DISAMBIGUATE_BY_MATCH("R2: param breaks tie for 2");
-	  } else if (fn1->where && !fn2->where) {
-	    equal = false;
+          } else if (fn1->where && !fn2->where) {
+            equal = false;
             TRACE_DISAMBIGUATE_BY_MATCH("S: not equal\n");
-	  } else if (!fn1->where && fn2->where) {
-	    worse = true;
+          } else if (!fn1->where && fn2->where) {
+            worse = true;
             TRACE_DISAMBIGUATE_BY_MATCH("T: worse\n");
-	  }
-	}
-	if (worse || equal) {
-	  best = false;
+          }
+        }
+        if (worse || equal) {
+          best = false;
           TRACE_DISAMBIGUATE_BY_MATCH("U: not best\n");
-	  break;
-	}
+          break;
+        }
       }
     }
     if (best) {
@@ -2142,7 +2142,7 @@ resolveCall(CallExpr* call, bool errorCheck) {
         continue;
 #ifdef ENABLE_TRACING_OF_DISAMBIGUATION
       if (explainCallLine && explainCallMatch(call)) {
-	printf("Considering function %s\n", visibleFn->stringLoc());
+        printf("Considering function %s\n", visibleFn->stringLoc());
       }
 #endif
       addCandidate(&candidateFns, &candidateActualFormals, visibleFn, info);
@@ -2165,7 +2165,7 @@ resolveCall(CallExpr* call, bool errorCheck) {
     Expr* scope = (info.scope) ? info.scope : getVisibilityBlock(call);
     best = disambiguate_by_match(&candidateFns, &candidateActualFormals,
                                  &info.actuals, &actualFormals, scope,
-				 explainCallLine && explainCallMatch(call));
+                                 explainCallLine && explainCallMatch(call));
 
     if (best && explainCallLine && explainCallMatch(call)) {
       USR_PRINT(best, "best candidate is: %s", toString(best));
