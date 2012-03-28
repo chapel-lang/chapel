@@ -1234,7 +1234,7 @@ proc _write_one_internal(_channel_internal:qio_channel_ptr_t, param kind:iokind,
   } else if t == ioChar {
     return qio_channel_write_char(false, _channel_internal, x.ch);
   } else if t == ioLiteral {
-    return qio_channel_print_literal(false, _channel_internal, x.val, x.val.length);
+    return qio_channel_print_literal(false, _channel_internal, x.val, x.val.length:ssize_t);
   } else if t == ioBits {
     return qio_channel_write_bits(false, _channel_internal, x.v, x.nbits);
   } else if kind == iokind.dynamic {
