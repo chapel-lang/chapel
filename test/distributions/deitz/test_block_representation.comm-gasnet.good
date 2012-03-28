@@ -6,10 +6,10 @@ targetLocales = 0 1 2 3
 dataParTasksPerLocale = 2
 dataParIgnoreRunningTasks = true
 dataParMinGranularity = 1
-locDist[(0, 0)].myChunk = [-2147483648..2, -2147483648..2]
-locDist[(0, 1)].myChunk = [-2147483648..2, 3..2147483647]
-locDist[(1, 0)].myChunk = [3..2147483647, -2147483648..2]
-locDist[(1, 1)].myChunk = [3..2147483647, 3..2147483647]
+locDist[(0, 0)].myChunk = [-9223372036854775808..2, -9223372036854775808..2]
+locDist[(0, 1)].myChunk = [-9223372036854775808..2, 3..9223372036854775807]
+locDist[(1, 0)].myChunk = [3..9223372036854775807, -9223372036854775808..2]
+locDist[(1, 1)].myChunk = [3..9223372036854775807, 3..9223372036854775807]
 
 Domain
 
