@@ -6,6 +6,7 @@
 // the respective module must be used:
 //
 use BlockDist, CyclicDist, BlockCycDist, ReplicatedDist;
+use DimensionalDist2D, ReplicatedDim, BlockCycDim;
 
 //
 // For each distribution, we'll create a distributed domain and array
@@ -80,8 +81,8 @@ writeln();
 // other.
 //
 
-const MyLocaleView = [0..#numLocales, 1..1];
-const MyLocales: [MyLocaleView] locale = reshape(Locales, MyLocaleView);
+var MyLocaleView = [0..#numLocales, 1..1];
+var MyLocales: [MyLocaleView] locale = reshape(Locales, MyLocaleView);
 
 //
 // Then we'll declare a distributed domain/array that targets
@@ -230,3 +231,74 @@ writeln();
 //
 //       forall (a, (i,j), ra) in (A, ReplicatedSpace, RA) do ...;
 //
+
+
+//
+// The DimensionalDist2D distribution lets us build a 2D distribution
+// as a composition of specifiers for individual dimensions.
+// Under such a "dimensional" distribution each dimension is handled
+// independently of the other.
+//
+// The dimension specifiers are similar to the corresponding multi-dimensional
+// distributions in constructor arguments and index-to-locale mapping rules.
+// However, instead of an array of locales, a specifier constructor
+// accepts just the number of locales that the indices in the corresponding
+// dimension will be distributed across.
+//
+// The DimensionalDist2D constructor requires:
+// * an [0..nl1-1, 0..nl2-1] array of locales, where
+//   nl1 and nl2 are the number of locales in each dimension, and
+// * two dimension specifiers, created for nl1 and nl2 locale counts, resp.
+//
+// Presently, the following dimension specifiers are available
+// (shown here with their constructor arguments):
+//
+// * ReplicatedDim(numLocales)
+// * BlockDim(numLocales, boundingBoxLow, boundingBoxHigh)
+// * BlockCyclicDim(lowIdx, blockSize, numLocales)
+//
+
+//
+// The following example creates a dimensional distribution that
+// replicates over 2 locales (when available) in the first dimemsion
+// and distributes using block-cyclic distribution in the second dimension.
+// The example computes nl1 and nl2 and reshapes MyLocales correspondingly.
+//
+
+var (nl1, nl2) = if numLocales == 1 then (1, 1) else (2, numLocales/2);
+MyLocaleView = [0..#nl1, 0..#nl2];
+MyLocales = reshape(Locales[0..#nl1*nl2], MyLocaleView);
+
+const DimReplicatedBlockcyclicSpace = Space
+  dmapped DimensionalDist2D(MyLocales,
+                            new ReplicatedDim(numLocales = nl1),
+                            new BlockCyclicDim(numLocales = nl2,
+                                               lowIdx = 1, blockSize = 2));
+
+var DRBA: [DimReplicatedBlockcyclicSpace] int;
+
+// The ReplicatedDim specifier always accesses the local replicand.
+// (This differs from how the ReplicatedDist distribution works.)
+//
+// This example visits each replicand. The behavior is the same
+// regardless of the second index into MyLocales below.
+
+for locId1 in 0..#nl1 do on MyLocales[locId1, 0] {
+
+  forall drba in DRBA do
+    drba = here.id;
+
+  writeln("Dimensional2D(Replicated,BlockCyclic) Array Index Map",
+          " from ", here);
+
+  // Technicality: 'writeln(DRBA)' would read DRBA always on Locale 0.
+  // Since we want to see what DRBA contains on the current locale,
+  // we use 'Helper' that is mapped using the default distribution.
+  // 'Helper = DRBA' captures the view of DRBA on the current locale,
+  // which we then print out.
+
+  const Helper: [Space] int = DRBA;
+  writeln(Helper);
+  writeln();
+
+}

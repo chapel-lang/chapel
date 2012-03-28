@@ -1,6 +1,9 @@
-// One-dimensional block-cyclic distribution for use with Dimensional.
+//
+// Block-cyclic dimension specifier - for use with DimensionalDist2D.
+//
 
-use d;
+use DimensionalDist2D;
+
 
 config const BlockCyclicDim_allowParLeader = true;
 config param BlockCyclicDim_enableArrayIterWarning = false;  // 'false' for testing
@@ -9,7 +12,7 @@ config param BlockCyclicDim_enableArrayIterWarning = false;  // 'false' for test
 type cycSizeT = uint(32);     // unsigned - for optimization
 type cycSizeTuser = int;      // for versatility
 
-class idist {
+class BlockCyclicDim {
   // distribution parameters
   const numLocales: cycSizeTuser;
   const lowIdx: int(64); // ensure we can always subtract it
@@ -24,7 +27,7 @@ class idist {
   const cycleSizePos: cycSizeT = blockSizePos * numLocalesPos;
 }
 
-class idom {
+class BlockCyclic1dom {
   type idxType;
   type stoIndexT;
   param stridable: bool;
@@ -39,7 +42,7 @@ class idom {
   var wholeR: rangeT;
   var wholeRstrideAbs: idxType;
 
-  // a copy of idist constants
+  // a copy of BlockCyclicDim constants
   const lowIdxAdj: idxType;
   const blockSizePos, numLocalesPos, cycleSizePos: cycSizeT;
 
@@ -47,7 +50,7 @@ class idom {
   var storagePerCycle: cycSizeT = 0;
 }
 
-class ilocdom {
+class BlockCyclic1locdom {
   type idxType;
   type stoIndexT;
   const locId: locIdT;
@@ -56,30 +59,30 @@ class ilocdom {
 
 /////////// privatization - start
 
-proc idist.dsiSupportsPrivatization1d() param return true;
+proc BlockCyclicDim.dsiSupportsPrivatization1d() param return true;
 
-proc idist.dsiGetPrivatizeData1d() {
+proc BlockCyclicDim.dsiGetPrivatizeData1d() {
   return (lowIdx, blockSize, numLocales, name);
 }
 
-proc idist.dsiPrivatize1d(privatizeData) {
-  return new idist(lowIdx = privatizeData(1),
+proc BlockCyclicDim.dsiPrivatize1d(privatizeData) {
+  return new BlockCyclicDim(lowIdx = privatizeData(1),
                    blockSize = privatizeData(2),
                    numLocales = privatizeData(3),
                    name = privatizeData(4));
 }
 
-proc idist.dsiUsesLocalLocID1d() param return false;
+proc BlockCyclicDim.dsiUsesLocalLocID1d() param return false;
 
-proc idom.dsiSupportsPrivatization1d() param return true;
+proc BlockCyclic1dom.dsiSupportsPrivatization1d() param return true;
 
-proc idom.dsiGetPrivatizeData1d() {
+proc BlockCyclic1dom.dsiGetPrivatizeData1d() {
   return tuple(wholeR, wholeRstrideAbs, storagePerCycle, lowIdxAdj, name);
 }
 
-proc idom.dsiPrivatize1d(privDist, privatizeData) {
+proc BlockCyclic1dom.dsiPrivatize1d(privDist, privatizeData) {
   assert(privDist.locale == here); // sanity check
-  return new idom(idxType   = this.idxType,
+  return new BlockCyclic1dom(idxType   = this.idxType,
                   stoIndexT = this.stoIndexT,
                   stridable = this.stridable,
                   name            = privatizeData(5),
@@ -93,11 +96,11 @@ proc idom.dsiPrivatize1d(privDist, privatizeData) {
                   cycleSizePos  = privDist.cycleSizePos);
 }
 
-proc idom.dsiGetReprivatizeData1d() {
+proc BlockCyclic1dom.dsiGetReprivatizeData1d() {
   return tuple(wholeR, wholeRstrideAbs, storagePerCycle);
 }
 
-proc idom.dsiReprivatize1d(other, reprivatizeData) {
+proc BlockCyclic1dom.dsiReprivatize1d(other, reprivatizeData) {
   if other.idxType   != this.idxType ||
      other.stoIndexT != this.stoIndexT ||
      other.stridable != this.stridable then
@@ -108,21 +111,21 @@ proc idom.dsiReprivatize1d(other, reprivatizeData) {
   this.storagePerCycle = reprivatizeData(3);
 }
 
-proc idom.dsiUsesLocalLocID1d() param return false;
+proc BlockCyclic1dom.dsiUsesLocalLocID1d() param return false;
 
-proc idom.dsiLocalDescUsesPrivatizedGlobalDesc1d() param return false;
+proc BlockCyclic1dom.dsiLocalDescUsesPrivatizedGlobalDesc1d() param return false;
 
 /////////// privatization - end
 
 
 // Check all restrictions/assumptions that must be satisfied by the user
 // when constructing a 1-d BlockCyclic distribution.
-inline proc idist.checkInvariants() {
+inline proc BlockCyclicDim.checkInvariants() {
   assert(blockSize > 0, "BlockCyclic1d-blockSize");
   assert(numLocales > 0, "BlockCyclic1d-numLocales");
 }
 
-proc idist.toString()
+proc BlockCyclicDim.toString()
   return "BlockCyclicDim(" + numLocales:string + ", " +
          lowIdx:string + ", " + blockSize:string + ")";
 
@@ -152,7 +155,7 @@ inline proc _checkFitsWithin(src: integral, type destT)
   }
 }
 
-proc idist.dsiNewRectangularDom1d(type idxType, param stridable: bool,
+proc BlockCyclicDim.dsiNewRectangularDom1d(type idxType, param stridable: bool,
                                   type stoIndexT)
 {
   checkInvariants();
@@ -182,7 +185,7 @@ proc idist.dsiNewRectangularDom1d(type idxType, param stridable: bool,
 
     const negate = _isSignedType(idxType) && lowIdxDom <= 0;
 
-  const result = new idom(idxType = idxType,
+  const result = new BlockCyclic1dom(idxType = idxType,
                   stoIndexT = stoIndexT,
                   stridable = stridable,
                   lowIdxAdj = lowIdxAdj,
@@ -194,16 +197,16 @@ proc idist.dsiNewRectangularDom1d(type idxType, param stridable: bool,
   return result;
 }
 
-proc idom.dsiIsReplicated1d() param return false;
+proc BlockCyclic1dom.dsiIsReplicated1d() param return false;
 
-proc idom.dsiNewLocalDom1d(type stoIndexT, locId: locIdT) {
-  const result = new ilocdom(idxType = this.idxType,
+proc BlockCyclic1dom.dsiNewLocalDom1d(type stoIndexT, locId: locIdT) {
+  const result = new BlockCyclic1locdom(idxType = this.idxType,
                              stoIndexT = stoIndexT,
                              locId = locId);
   return result;
 }
 
-proc idom.dsiBuildRectangularDom1d(DD,
+proc BlockCyclic1dom.dsiBuildRectangularDom1d(DD,
                                    param stridable:bool,
                                    rangeArg: range(idxType,
                                                    BoundedRangeType.bounded,
@@ -215,7 +218,7 @@ proc idom.dsiBuildRectangularDom1d(DD,
   return result;
 }
 
-proc ilocdom.dsiBuildLocalDom1d(newGlobDD, locId: locIdT) {
+proc BlockCyclic1locdom.dsiBuildLocalDom1d(newGlobDD, locId: locIdT) {
   assert(locId == this.locId);
   // There does not seem to be any optimizations from merging the two calls.
   const newLocDD = newGlobDD.dsiNewLocalDom1d(this.stoIndexT, locId);
@@ -226,20 +229,136 @@ proc ilocdom.dsiBuildLocalDom1d(newGlobDD, locId: locIdT) {
 
 /////////////////////////////////
 
-// #include f.chpl.formulas.txt
+/* The following comment:
+- reviews the math for BlockCyclic, for a single dimension;
+- motivates some functions used in the implementation;
+- defines the mapping from user to storage index space.
 
-inline proc idom._dsiInd0(ind: idxType): idxType
+*** Given:
+
+distribution parameters:
+ lowIdx
+ blockSize >= 1
+ numLocales >= 1
+
+a range 'whole' with parameters (aligned):
+ wLo
+ wHi
+ wSt
+
+user's domain index (a member of 'whole'):
+ i
+ i0 = (i-lowIdx)  - "zero-based" index
+ (the formulas assume 1:1 correspondence between i and i0, for brevity)
+
+ note:  wLo <= i <= wHi
+        advanced: i = wLo + iSt * |wSt| where iSt - a non-negative integer
+
+*** Notation:
+ floor(a,b) = floor((real)a/(real)b)
+ a div b = { assert a>=0 && b>=0; return floor(a,b); }
+ a mod b = { assert b >= 0; return a - b*floor(a,b); }
+ "advanced" = "skip upon first reading"
+
+*** Define the "cycle" of indices that starts at lowIdx, traverses
+each locale 0..#numLocales, while traversing offsets 0..#blockSize
+on each locale, then starts over:
+
+ cycSize = blockSize * numLocales
+ cycNo(i) = floor(i0,cycSize)
+ cycOff(i) = i0 mod cycSize
+
+ note:  cycNo(wLo) <= cycNo(i) <= cycNo(wHi)
+        0 <= cycOff(i) < cycSize
+
+ // the locale number that hosts 'i', aka locId or "block number" blkNum
+ locNo(i) = cycOff(i) div blockSize
+
+ note:  0 <= locNo(i) < numLocales
+
+ // position of 'i' within the locale, aka "block offset" blkOff
+ locOff(i) = cycOff(i) mod blockSize
+
+ note: 0 <= locOff(i) < blockSize
+
+ advanced property:
+   If i1 and i2 are members of 'whole'
+     and fall on the same cycle and on the same locale
+     (i.e. cycNo and locNo are the same),
+   then
+     (locOff(i1) div |wSt|) vs. (locOff(i2) div |wSt|) are distinct
+       IFF
+     i1 vs. i2 are distinct.
+
+ advanced proof:
+   In general,
+     i1 == lowIdx + cycNo(i1)*cycSize + locNo(i1)*blockSize + locOff(i1)
+     i1 == wLo + i1St * |wSt| for some integer i1St
+   then
+     locOff(i1) div |wSt| == (i1A + i1St * |wSt|) div |wSt| == i1B + i1St
+   where
+     i1A = wLo - (lowIdx + cycNo(i1)*cycSize + locNo(i1)*blockSize)
+     i1B = i1A div |wSt|
+
+   likewise
+     locOff(i2) div |wSt| = i2B + i2St
+
+   Note i1B==i2B - because cycNo and locNo are the same for i1 and i2.
+   Note i1==i2 IFF i1St==i2St - because of the definition of i1St, i2St.
+   The property, then, follows.
+
+*** Assign each index of 'whole' to "storage" on its locale as follows:
+
+ // the pair (locNo(j), storageOff(j)) is unique for each integer j
+ storageOff(i) = cycNo(i) * blockSize + locOff(i)
+
+Advdanced: compress the storage based on the above advanced property,
+which implies that:
+ the pair (locNo(i), storageOff(i) div |wSt|) is unique
+ for each 'i' - member of 'whole'.
+
+ storageIdx(i) = cycNo(i) * storagePerCycle + (locOff(i) div |wSt|)
+
+where storagePerCycle is determined to ensure uniqueness of storageIdx(i)
+
+ storagePerCycle
+   = 1 + max(locOff(i) div |wSt|) for any i s.t.
+                                  whole.member(i)==true and locNo(i) is fixed
+   approximated as: 1 + ( (max locOff(i) for any i) div |wSt| )
+   = 1 + ((blockSize-1) div |wSt|)
+
+*** Advanced: replacing mod with Chapel's %.
+Calculate i0 using the following:
+
+ i0 = i - lowIdx + cycSize * cycAdj
+   choosing any fixed integer cycAdj >= ceil( (lowIdx-wLo), cycSize )
+
+This guarantees i0>=0, but modifies cycNo(i) by cycAdj.
+The latter is acceptable for our purposes.
+Having i0>=0 ensures that (i0 mod cycSize) == (i0 % cycSize).
+
+Additional consideration: for any given i, we want cycNo(i)
+to stay the same throughout the life of a domain descriptor.
+(This is so that our storage indices remain consistent - which is
+useful to implement Chapel's preservation of array contents upon
+domain assignments.)
+This implies that the same cycAdj should accomodate wLo for any
+domain bounds that can be assigned to our domain descriptor.
+That may not be convenient in practice.
+*/
+
+inline proc BlockCyclic1dom._dsiInd0(ind: idxType): idxType
   return ind + lowIdxAdj;
 
-inline proc idom._dsiCycNo(ind: idxType)
+inline proc BlockCyclic1dom._dsiCycNo(ind: idxType)
   return divfloor(_dsiInd0(ind), cycleSizePos): idxType;
 
-inline proc idom._dsiCycOff(ind: idxType)
+inline proc BlockCyclic1dom._dsiCycOff(ind: idxType)
   return mod(_dsiInd0(ind), cycleSizePos): cycSizeT;
 
 // "formula" in the name emphasizes no sanity checking
-inline proc idom._dsiLocNo_formula(ind: idxType): locIdT {
-  // keep in sync with idist.dsiIndexToLocale1d()
+inline proc BlockCyclic1dom._dsiLocNo_formula(ind: idxType): locIdT {
+  // keep in sync with BlockCyclicDim.dsiIndexToLocale1d()
   const ind0 = _dsiInd0(ind);
   return
     if isNonnegative(ind0) then ( (ind0/blockSizePos) % numLocalesPos ): locIdT
@@ -247,23 +366,23 @@ inline proc idom._dsiLocNo_formula(ind: idxType): locIdT {
     ;
 }
 
-inline proc idom._dsiLocOff(ind: idxType)
+inline proc BlockCyclic1dom._dsiLocOff(ind: idxType)
   return ( _dsiCycOff(ind) % blockSizePos ): stoIndexT;
 
 // hoist some common code
-inline proc idom._dsiStorageIdx2(cycNo, locOff)
+inline proc BlockCyclic1dom._dsiStorageIdx2(cycNo, locOff)
   return cycNo * storagePerCycle + _divByStride(locOff);
 
 // "formula" in the name implies no sanity checking
 // in particular at the moment its type may not be stoIndexT
-inline proc idom._dsiStorageIdx_formula(ind: idxType)
+inline proc BlockCyclic1dom._dsiStorageIdx_formula(ind: idxType)
   return _dsiStorageIdx2(_dsiCycNo(ind), _dsiLocOff(ind));
 
-inline proc idom._dsiStorageIdx(ind: idxType)
+inline proc BlockCyclic1dom._dsiStorageIdx(ind: idxType)
   return _dsiStorageIdx_formula(ind): stoIndexT;
 
 // oblivious of 'wholeR'
-inline proc idom._dsiIndicesOnCycLoc(cycNo: idxType, locNo: locIdT)
+inline proc BlockCyclic1dom._dsiIndicesOnCycLoc(cycNo: idxType, locNo: locIdT)
   : range(idxType)
 {
   const startCycle = (cycNo * cycleSizePos): idxType - lowIdxAdj;
@@ -273,8 +392,8 @@ inline proc idom._dsiIndicesOnCycLoc(cycNo: idxType, locNo: locIdT)
 
 /////////////////////////////////
 
-proc idist.dsiIndexToLocale1d(ind): locIdT {
-  // keep in sync with idom._dsiLocNo_formula
+proc BlockCyclicDim.dsiIndexToLocale1d(ind): locIdT {
+  // keep in sync with BlockCyclic1dom._dsiLocNo_formula
   const ind0 = ind - lowIdx;
   const locNo =
     if ind0 >= 0 then ( (ind0 / blockSize) % numLocales ): locIdT
@@ -289,16 +408,16 @@ proc idist.dsiIndexToLocale1d(ind): locIdT {
 }
 
 // allow uint(64) indices, but assert that they fit in int(64)
-inline proc idist.dsiIndexToLocale1d(ind: uint(64)): locIdT {
+inline proc BlockCyclicDim.dsiIndexToLocale1d(ind: uint(64)): locIdT {
   type convT = int(64);
   assert(ind <= max(convT));
   return dsiIndexToLocale1d(ind:convT);
 }
 
 //var debugD1Shown = false;
-//proc idom.debugIsD1() return name == "D1";
+//proc BlockCyclic1dom.debugIsD1() return name == "D1";
 
-proc idom.dsiSetIndices1d(rangeArg: rangeT): void {
+proc BlockCyclic1dom.dsiSetIndices1d(rangeArg: rangeT): void {
   // For now, require the user to provide unambiguous ranges only.
   // This requirement could potentially be avoided (as long as no arrays
   // are declared over the domain), but it simplifies/speeds up our code.
@@ -336,13 +455,13 @@ proc idom.dsiSetIndices1d(rangeArg: rangeT): void {
     stderr.writeln("warning: array resizing is not implemented upon change in dimension stride with 1-d BlockCyclic distribution");
 }
 
-inline proc idom._divByStride(locOff)  return
+inline proc BlockCyclic1dom._divByStride(locOff)  return
   if stridable then ( locOff / wholeRstrideAbs ): stoIndexT
   else              locOff: stoIndexT;
 
 // _dsiStorageLow(), _dsiStorageHigh(): save a few mods and divisions
 // at the cost of potentially allocating more storage
-inline proc idom._dsiStorageLow(locId: locIdT): stoIndexT {
+inline proc BlockCyclic1dom._dsiStorageLow(locId: locIdT): stoIndexT {
   const lowW = wholeR.low;
 
   // smallest cycNo(i) for i in wholeR
@@ -363,7 +482,7 @@ inline proc idom._dsiStorageLow(locId: locIdT): stoIndexT {
   return lowCycNo * storagePerCycle:stoIndexT + lowIdxAdj;
 }
 
-inline proc idom._dsiStorageHigh(locId: locIdT): stoIndexT {
+inline proc BlockCyclic1dom._dsiStorageHigh(locId: locIdT): stoIndexT {
   const hiW = wholeR.high;
 
   // biggest cycNo(i) for i in wholeR
@@ -384,7 +503,7 @@ inline proc idom._dsiStorageHigh(locId: locIdT): stoIndexT {
   return hiCycNo * storagePerCycle:stoIndexT + hiIdxAdj;
 }
 
-proc ilocdom.dsiSetLocalIndices1d(globDD, locId: locIdT): range(stoIndexT) {
+proc BlockCyclic1locdom.dsiSetLocalIndices1d(globDD, locId: locIdT): range(stoIndexT) {
   const stoLow = globDD._dsiStorageLow(locId);
   const stoHigh = globDD._dsiStorageHigh(locId);
 
@@ -401,13 +520,13 @@ proc ilocdom.dsiSetLocalIndices1d(globDD, locId: locIdT): range(stoIndexT) {
   return stoLow:stoIndexT .. stoHigh:stoIndexT;
 }
 
-proc idom.dsiStorageUsesUserIndices() param return false;
+proc BlockCyclic1dom.dsiStorageUsesUserIndices() param return false;
 
-proc idom.dsiAccess1d(ind: idxType): (locIdT, stoIndexT) {
+proc BlockCyclic1dom.dsiAccess1d(ind: idxType): (locIdT, stoIndexT) {
   return (_dsiLocNo_formula(ind), _dsiStorageIdx(ind));
 }
 
-iter ilocdom.dsiMyDensifiedRangeForSingleTask1d(globDD) {
+iter BlockCyclic1locdom.dsiMyDensifiedRangeForSingleTask1d(globDD) {
 // todo: for the special case handled in dsiMyDensifiedRangeForTaskID1d,
 // maybe handling it here will be beneficial, too?
   const locNo = this.locId;
@@ -463,12 +582,12 @@ iter ilocdom.dsiMyDensifiedRangeForSingleTask1d(globDD) {
 }
 
 // available in a special case only, for now
-proc idom.dsiSingleTaskPerLocaleOnly1d()
+proc BlockCyclic1dom.dsiSingleTaskPerLocaleOnly1d()
   return !BlockCyclicDim_allowParLeader ||
          !((blockSizePos:wholeR.stride.type) == wholeR.stride);
 
-// only works when idom.dsiSingleTaskPerLocaleOnly1d()
-proc ilocdom.dsiMyDensifiedRangeForTaskID1d(globDD, taskid:int, numTasks:int)
+// only works when BlockCyclic1dom.dsiSingleTaskPerLocaleOnly1d()
+proc BlockCyclic1locdom.dsiMyDensifiedRangeForTaskID1d(globDD, taskid:int, numTasks:int)
 {
   const wholeR = globDD.wholeR;
   const nLocs  = globDD.numLocalesPos :globDD.idxType;
@@ -506,15 +625,15 @@ proc ilocdom.dsiMyDensifiedRangeForTaskID1d(globDD, taskid:int, numTasks:int)
   return begIx .. endIx by nLocs;
 }
 
-proc ilocdom.dsiMyDensifiedRangeType1d(globDD) type
+proc BlockCyclic1locdom.dsiMyDensifiedRangeType1d(globDD) type
   return range(idxType=globDD.idxType, stridable=globDD.stridable);
 
-proc ilocdom.dsiLocalSliceStorageIndices1d(globDD, sliceRange)
+proc BlockCyclic1locdom.dsiLocalSliceStorageIndices1d(globDD, sliceRange)
   : range(stoIndexT, sliceRange.boundedType, false)
 {
   if sliceRange.stridable {
     // to be done: figure out sliceRange's stride vs. globDD.wholeR.stride
-    compilerError("localSlice is not implemented for the Dimensional distribution with a block-cyclic dimension descriptor when the slice is stridable");
+    compilerError("localSlice is not implemented for the Dimensional distribution with a block-cyclic dimension specifier when the slice is stridable");
   } else {
     const lowSid = if sliceRange.hasLowBound()
       then globDD._dsiStorageIdx(sliceRange.low)
@@ -526,7 +645,7 @@ proc ilocdom.dsiLocalSliceStorageIndices1d(globDD, sliceRange)
   }
 }
 
-iter idom.dsiSerialArrayIterator1d() {
+iter BlockCyclic1dom.dsiSerialArrayIterator1d() {
   // dispatch here, for code clarity
   if stridable then
     for result in _dsiSerialArrayIterator1dStridable() do
@@ -536,7 +655,7 @@ iter idom.dsiSerialArrayIterator1d() {
       yield result;
 }
 
-iter idom._dsiSerialArrayIterator1dUnitstride(rangeToIterateOver) {
+iter BlockCyclic1dom._dsiSerialArrayIterator1dUnitstride(rangeToIterateOver) {
   assert(!rangeToIterateOver.stridable);
 
   const firstIdx = rangeToIterateOver.low;
@@ -587,7 +706,7 @@ iter idom._dsiSerialArrayIterator1dUnitstride(rangeToIterateOver) {
   yield spec(locOff, lastLocOff);
 }
 
-iter idom._dsiSerialArrayIterator1dStridable() {
+iter BlockCyclic1dom._dsiSerialArrayIterator1dStridable() {
   assert(stridable);
  if BlockCyclicDim_enableArrayIterWarning then
   compilerWarning("array iterator over stridable block-cyclic-dim arrays is presently not efficient", 4);
@@ -597,7 +716,7 @@ iter idom._dsiSerialArrayIterator1dStridable() {
     yield (_dsiLocNo_formula(ind), _dsiStorageIdx(ind)..#(1:stoIndexT));
 }
 
-iter idom.dsiFollowerArrayIterator1d(undensRange): (locIdT, idxType) {
+iter BlockCyclic1dom.dsiFollowerArrayIterator1d(undensRange): (locIdT, idxType) {
   if undensRange.stridable {
     // the simplest way out
     for ix in undensRange do

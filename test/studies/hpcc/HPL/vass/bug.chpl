@@ -1,8 +1,9 @@
 use BlockCycDist; //MBC - not using for now
 //use BlockDist;  //MBD
-use d; //DIM
-use r; //BD //BC (for 1-d replicated, 1-d block)
-use f; //BC (with DIM)
+use DimensionalDist2D; //DIM
+use ReplicatedDim; //BD //BC (for 1-d replicated, 1-d block)
+//use BlockDim;
+use BlockCycDim; //BC (with DIM)
 use UtilMath, Time, Random;
 
 config param reproducible = false;
@@ -47,19 +48,19 @@ const MatVectSpace = [1..n, 1..n+1];
 
 const
   bdim1 =
-//  new sdist(tl1, 1, nbb1), //BD
-    new idist(lowIdx=st1, blockSize=blkSize, numLocales=tl1, name="D1"), //BC
-  rdim1 = new vdist(tl1),
+//  new BlockDim(tl1, 1, nbb1), //BD
+    new BlockCyclicDim(lowIdx=st1, blockSize=blkSize, numLocales=tl1, name="D1"), //BC
+  rdim1 = new ReplicatedDim(tl1),
 
   bdim2 =
-//  new sdist(tl2, 1, nbb2), //BD
-    new idist(lowIdx=st2, blockSize=blkSize, numLocales=tl2, name="D2"), //BC
-  rdim2 = new vdist(tl2);
+//  new BlockDim(tl2, 1, nbb2), //BD
+    new BlockCyclicDim(lowIdx=st2, blockSize=blkSize, numLocales=tl2, name="D2"), //BC
+  rdim2 = new ReplicatedDim(tl2);
 
 const AbD: domain(2, indexType)
    dmapped BlockCyclic(startIdx=(st1,st2), blocksize=(blkSize,blkSize), targetLocales=tla) //MBC
 // dmapped Block(boundingBox=[1..nbb1, 1..nbb2], targetLocales=tla) //MBD
-// dmapped DimensionalDist(tla, bdim1, bdim2, "dim") //DIM
+// dmapped DimensionalDist2D(tla, bdim1, bdim2, "dim") //DIM
   = MatVectSpace;
 
 var Ab: [AbD] elemType;  // the matrix A and vector b
@@ -72,9 +73,9 @@ var refsuccess = true;
 // the domains for the arrays used for replication
 const
   replAD = [1..n, 1..blkSize] dmapped
-    DimensionalDist(tla, bdim1, rdim2, "distBR"), //DIM
+    DimensionalDist2D(tla, bdim1, rdim2, "distBR"), //DIM
   replBD = [1..blkSize, 1..n+1] dmapped
-    DimensionalDist(tla, rdim1, bdim2, "distRB"); //DIM
+    DimensionalDist2D(tla, rdim1, bdim2, "distRB"); //DIM
 
 var replA: [replAD] elemType,
     replB: [replBD] elemType;
