@@ -204,7 +204,7 @@ proc chpl__getDomainFromArrayType(type arrayType) {
   pragma "no copy" var D = A.domain;
   pragma "dont disable remote value forwarding"
   proc help() {
-    D._value._domCnt$ += 1;
+    D._value._domCnt.fetchAdd(1);
   }
   if !noRefCount then
     help();
@@ -411,12 +411,9 @@ record _distribution {
   proc newRectangularDom(param rank: int, type idxType, param stridable: bool) {
     var x = _value.dsiNewRectangularDom(rank, idxType, stridable);
     if x.linksDistribution() {
-      var cnt = _value._distCnt$;
-      _value._doms.append(x);
+      _value.add_dom(x);
       if !noRefCount then
-        _value._distCnt$ = cnt + 1;
-      else
-        _value._distCnt$ = cnt;
+        _value._distCnt.fetchAdd(1);
     }
     return x;
   }
@@ -424,12 +421,9 @@ record _distribution {
   proc newAssociativeDom(type idxType, param parSafe: bool=true) {
     var x = _value.dsiNewAssociativeDom(idxType, parSafe);
     if x.linksDistribution() {
-      var cnt = _value._distCnt$;
-      _value._doms.append(x);
+      _value.add_dom(x);
       if !noRefCount then
-        _value._distCnt$ = cnt + 1;
-      else
-        _value._distCnt$ = cnt;
+        _value._distCnt.fetchAdd(1);
     }
     return x;
   }
@@ -438,12 +432,9 @@ record _distribution {
   where _isEnumeratedType(idxType) {
     var x = _value.dsiNewAssociativeDom(idxType, parSafe);
     if x.linksDistribution() {
-      var cnt = _value._distCnt$;
-      _value._doms.append(x);
+      _value.add_dom(x);
       if !noRefCount then
-        _value._distCnt$ = cnt + 1;
-      else
-        _value._distCnt$ = cnt;
+        _value._distCnt.fetchAdd(1);
     }
     const enumTuple = _enum_enumerate(idxType);
     for param i in 1..enumTuple.size do
@@ -454,12 +445,9 @@ record _distribution {
   proc newOpaqueDom(type idxType, param parSafe: bool=true) {
     var x = _value.dsiNewOpaqueDom(idxType, parSafe);
     if x.linksDistribution() {
-      var cnt = _value._distCnt$;
-      _value._doms.append(x);
+      _value.add_dom(x);
       if !noRefCount then
-        _value._distCnt$ = cnt + 1;
-      else
-        _value._distCnt$ = cnt;
+        _value._distCnt.fetchAdd(1);
     }
     return x;
   }
@@ -467,12 +455,9 @@ record _distribution {
   proc newSparseDom(param rank: int, type idxType, dom: domain) {
     var x = _value.dsiNewSparseDom(rank, idxType, dom);
     if x.linksDistribution() {
-      var cnt = _value._distCnt$;
-      _value._doms.append(x);
+      _value.add_dom(x);
       if !noRefCount then
-        _value._distCnt$ = cnt + 1;
-      else
-        _value._distCnt$ = cnt;
+        _value._distCnt.fetchAdd(1);
     }
     return x;
   }
@@ -578,7 +563,7 @@ record _domain {
     var d = _value.dsiBuildRectangularDom(rank, _value.idxType, stridable, r);
     if !noRefCount then
       if d.linksDistribution() then
-        d.dist._distCnt$ += 1;
+        d.dist._distCnt.fetchAdd(1);
     return _newDomain(d);
   }
 
@@ -631,12 +616,9 @@ record _domain {
     var x = _value.dsiBuildArray(eltType);
     pragma "dont disable remote value forwarding"
     proc help() {
-      var cnt = _value._domCnt$; // lock
-      _value._arrs.append(x);
+      _value.add_arr(x);
       if !noRefCount then
-        _value._domCnt$ = cnt + 1; // unlock
-      else
-        _value._domCnt$ = cnt;    // unlock
+        _value._domCnt.fetchAdd(1);
     }
     help();
     return _newArray(x);
@@ -711,7 +693,7 @@ record _domain {
                                          _value.stridable, ranges);
     if !noRefCount then
       if (d.linksDistribution()) then
-        d.dist._distCnt$ += 1;
+        d.dist._distCnt.fetchAdd(1);
     return _newDomain(d);
   }
   proc expand(off: _value.idxType) where rank > 1 {
@@ -722,7 +704,7 @@ record _domain {
                                          _value.stridable, ranges);
     if !noRefCount then
       if (d.linksDistribution()) then
-      d.dist._distCnt$ += 1;
+        d.dist._distCnt.fetchAdd(1);
     return _newDomain(d);
   }
 
@@ -745,7 +727,7 @@ record _domain {
                                          _value.stridable, ranges);
     if !noRefCount then
       if (d.linksDistribution()) then
-        d.dist._distCnt$ += 1;
+        d.dist._distCnt.fetchAdd(1);
     return _newDomain(d);
    }
                   
@@ -773,7 +755,7 @@ record _domain {
                                          _value.stridable, ranges);
     if !noRefCount then
       if (d.linksDistribution()) then
-        d.dist._distCnt$ += 1;
+        d.dist._distCnt.fetchAdd(1);
     return _newDomain(d);
   }
 
@@ -805,7 +787,7 @@ record _domain {
                                          _value.stridable, ranges);
     if !noRefCount then
       if (d.linksDistribution()) then
-        d.dist._distCnt$ += 1;
+        d.dist._distCnt.fetchAdd(1);
     return _newDomain(d);
    }
 
@@ -821,7 +803,7 @@ record _domain {
                                          _value.stridable, ranges);
     if !noRefCount then
       if (d.linksDistribution()) then
-        d.dist._distCnt$ += 1;
+        d.dist._distCnt.fetchAdd(1);
     return _newDomain(d);
   }
 
@@ -1093,8 +1075,8 @@ record _array {
     a._arrAlias = _value;
     pragma "dont disable remote value forwarding"
     proc help() {
-      d._value._domCnt$ += 1;
-      a._arrAlias._arrCnt$ += 1;
+      d._value._domCnt.fetchAdd(1);
+      a._arrAlias._arrCnt.fetchAdd(1);
     }
     if !noRefCount then
       help();
@@ -1108,11 +1090,11 @@ record _array {
     param rank = ranges.size, stridable = chpl__anyStridable(ranges);
     var d = _dom((...args));
     if !noRefCount then
-      d._value._domCnt$ += 1;
+      d._value._domCnt.fetchAdd(1);
     var a = _value.dsiRankChange(d._value, rank, stridable, args);
     a._arrAlias = _value;
     if !noRefCount then
-      a._arrAlias._arrCnt$ += 1;
+      a._arrAlias._arrCnt.fetchAdd(1);
     return _newArray(a);
   }
 
@@ -1169,8 +1151,8 @@ record _array {
     x._arrAlias = _value;
     pragma "dont disable remote value forwarding"
     proc help() {
-      _value.dom._domCnt$ += 1;
-      x._arrAlias._arrCnt$ += 1;
+      _value.dom._domCnt.fetchAdd(1);
+      x._arrAlias._arrCnt.fetchAdd(1);
     }
     if !noRefCount then
       help();
@@ -1191,8 +1173,8 @@ record _array {
     x._arrAlias = _value;
     pragma "dont disable remote value forwarding"
     proc help() {
-      newDom._value._domCnt$ += 1;
-      x._arrAlias._arrCnt$ += 1;
+      newDom._value._domCnt.fetchAdd(1);
+      x._arrAlias._arrCnt.fetchAdd(1);
     }
     if !noRefCount then
       help();
@@ -1587,7 +1569,7 @@ proc by(a: domain, b) {
   var d = a._value.dsiBuildRectangularDom(a.rank, a._value.idxType, true, r);
   if !noRefCount then
     if (d.linksDistribution()) then
-      d.dist._distCnt$ += 1;
+      d.dist._distCnt.fetchAdd(1);
   return _newDomain(d);
 }
 

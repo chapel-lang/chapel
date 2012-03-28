@@ -1,3 +1,4 @@
+-smyType=bool
 -smyType=uint(8)
 -smyType=uint(16)
 -smyType=uint(32)

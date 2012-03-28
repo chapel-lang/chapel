@@ -64,17 +64,6 @@ void atomic_signal_thread_fence(memory_order order)
   // No idea!
 }
 
-static inline void atomic_init_flag(atomic_flag *obj, chpl_bool value)
-{
-  obj->v = value;
-  chpl_sync_initAux(&obj->sv);
-}
-
-static inline void atomic_destroy_flag(atomic_flag *obj) 
-{
-  chpl_sync_destroyAux(&obj->sv);
-}
-
 static inline chpl_bool atomic_flag_test_and_set_explicit(atomic_flag *obj, memory_order order) {
   chpl_bool ret;
   chpl_sync_lock(&obj->sv);
@@ -95,7 +84,7 @@ static inline void atomic_flag_clear(atomic_flag *obj) {
   atomic_flag_clear_explicit(obj, memory_order_seq_cst);
 }
 
-#define DECLARE_ATOMICS(type) \
+#define DECLARE_ATOMICS_BASE(type) \
 static inline chpl_bool atomic_is_lock_free_ ## type(atomic_ ## type * obj) { \
   return false; \
 } \
@@ -155,7 +144,9 @@ static inline chpl_bool atomic_compare_exchange_weak_explicit_ ## type(atomic_ #
 } \
 static inline chpl_bool atomic_compare_exchange_weak_ ## type(atomic_ ## type * obj, type expected, type desired) { \
   return atomic_compare_exchange_weak_explicit_ ## type(obj, expected, desired, memory_order_seq_cst); \
-} \
+}
+
+#define DECLARE_ATOMICS_FETCH_OPS(type) \
 static inline type atomic_fetch_add_explicit_ ## type(atomic_ ## type * obj, type operand, memory_order order) { \
   type ret; \
   chpl_sync_lock(&obj->sv); \
@@ -201,6 +192,12 @@ static inline type atomic_fetch_and_ ## type(atomic_ ## type * obj, type operand
   return atomic_fetch_and_explicit_ ## type(obj, operand, memory_order_seq_cst); \
 }
 
+DECLARE_ATOMICS_BASE(flag);
+
+#define DECLARE_ATOMICS(type) \
+  DECLARE_ATOMICS_BASE(type) \
+  DECLARE_ATOMICS_FETCH_OPS(type)
+
 DECLARE_ATOMICS(int_least8_t);
 DECLARE_ATOMICS(int_least16_t);
 DECLARE_ATOMICS(int_least32_t);
@@ -211,6 +208,8 @@ DECLARE_ATOMICS(uint_least32_t);
 DECLARE_ATOMICS(uint_least64_t);
 DECLARE_ATOMICS(uintptr_t);
 
+#undef DECLARE_ATOMICS_BASE
+#undef DECLARE_ATOMICS_FETCH_OPS
 #undef DECLARE_ATOMICS
 
 static inline int leadz8(uint8_t x) {

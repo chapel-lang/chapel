@@ -26,11 +26,16 @@ module Atomics {
   extern proc atomic_thread_fence(order:memory_order);
   extern proc atomic_signal_thread_fence(order:memory_order);
 
+  extern proc atomic_is_lock_free_flag(inout obj:atomic_flag):bool;
   extern proc atomic_init_flag(inout obj:atomic_flag, value:bool);
   extern proc atomic_destroy_flag(inout obj:atomic_flag);
+  extern proc atomic_store_explicit_flag(inout obj:atomic_flag, value:bool, order:memory_order);
+  extern proc atomic_load_explicit_flag(inout obj:atomic_flag, order:memory_order):bool;
+  extern proc atomic_exchange_explicit_flag(inout obj:atomic_flag, value:bool, order:memory_order):bool;
+  extern proc atomic_compare_exchange_strong_explicit_flag(inout obj:atomic_flag, expected:bool, desired:bool, order:memory_order):bool;
+  extern proc atomic_compare_exchange_weak_explicit_flag(inout obj:atomic_flag, expected:bool, desired:uint(8), order:memory_order):bool;
   extern proc atomic_flag_test_and_set_explicit(inout obj:atomic_flag, order:memory_order):bool;
   extern proc atomic_flag_test_and_set(inout obj:atomic_flag):bool;
-
   extern proc atomic_flag_clear_explicit(inout obj:atomic_flag, order:memory_order);
   extern proc atomic_flag_clear(inout obj:atomic_flag);
 
@@ -186,6 +191,29 @@ module Atomics {
     inline proc ~atomicflag() {
       atomic_destroy_flag(_v);
     }
+    inline proc read(order = memory_order_seq_cst):bool {
+      var ret:bool;
+      on this do ret = atomic_load_explicit_flag(_v, order);
+      return ret;
+    }
+    inline proc write(value:bool, order = memory_order_seq_cst) {
+      on this do atomic_store_explicit_flag(_v, value, order);
+    }
+    inline proc exchange(value:bool, order = memory_order_seq_cst):bool {
+      var ret:bool;
+      on this do ret = atomic_exchange_explicit_flag(_v, value, order);
+      return ret;
+    }
+    inline proc compareExchangeWeak(expected:bool, desired:bool, order = memory_order_seq_cst):bool {
+      var ret:bool;
+      on this do ret = atomic_compare_exchange_weak_explicit_flag(_v, expected, desired, order);
+      return ret;
+    }
+    inline proc compareExchangeStrong(expected:bool, desired:bool, order = memory_order_seq_cst):bool {
+      var ret:bool;
+      on this do ret = atomic_compare_exchange_strong_explicit_flag(_v, expected, desired, order);
+      return ret;
+    }
 
     inline proc testAndSet(order = memory_order_seq_cst) {
       var ret:bool;
@@ -195,7 +223,9 @@ module Atomics {
     inline proc clear(order = memory_order_seq_cst) {
       on this do atomic_flag_clear_explicit(_v, order);
     }
-
+    proc writeThis(x: Writer) {
+      x.write(read());
+    }
   }
 
   inline proc create_atomic_uint_least8():atomic_uint_least8_t {
@@ -251,6 +281,9 @@ module Atomics {
       var ret:uint(8);
       on this do ret = atomic_fetch_and_explicit_uint_least8_t(_v, value, order);
       return ret;
+    }
+    proc writeThis(x: Writer) {
+      x.write(read());
     }
   }
 
@@ -308,6 +341,9 @@ module Atomics {
       on this do ret = atomic_fetch_and_explicit_uint_least16_t(_v, value, order);
       return ret;
     }
+    proc writeThis(x: Writer) {
+      x.write(read());
+    }
   }
 
   inline proc create_atomic_uint_least32():atomic_uint_least32_t {
@@ -363,6 +399,9 @@ module Atomics {
       var ret:uint(32);
       on this do ret = atomic_fetch_and_explicit_uint_least32_t(_v, value, order);
       return ret;
+    }
+    proc writeThis(x: Writer) {
+      x.write(read());
     }
   }
 
@@ -420,6 +459,9 @@ module Atomics {
       on this do ret = atomic_fetch_and_explicit_uint_least64_t(_v, value, order);
       return ret;
     }
+    proc writeThis(x: Writer) {
+      x.write(read());
+    }
   }
 
   inline proc create_atomic_int_least8():atomic_int_least8_t {
@@ -475,6 +517,9 @@ module Atomics {
       var ret:int(8);
       on this do ret = atomic_fetch_and_explicit_int_least8_t(_v, value, order);
       return ret;
+    }
+    proc writeThis(x: Writer) {
+      x.write(read());
     }
   }
 
@@ -532,6 +577,9 @@ module Atomics {
       on this do ret = atomic_fetch_and_explicit_int_least16_t(_v, value, order);
       return ret;
     }
+    proc writeThis(x: Writer) {
+      x.write(read());
+    }
   }
 
   inline proc create_atomic_int_least32():atomic_int_least32_t {
@@ -588,6 +636,9 @@ module Atomics {
       on this do ret = atomic_fetch_and_explicit_int_least32_t(_v, value, order);
       return ret;
     }
+    proc writeThis(x: Writer) {
+      x.write(read());
+    }
   }
 
   inline proc create_atomic_int_least64():atomic_int_least64_t {
@@ -643,6 +694,9 @@ module Atomics {
       var ret:int(64);
       on this do ret = atomic_fetch_and_explicit_int_least64_t(_v, value, order);
       return ret;
+    }
+    proc writeThis(x: Writer) {
+      x.write(read());
     }
   }
 

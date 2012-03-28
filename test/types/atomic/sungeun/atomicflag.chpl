@@ -1,22 +1,28 @@
-var x: atomic bool;
-if x.testAndSet() then
+var ax: atomic bool;
+if ax.testAndSet() then
   writeln("set");
  else
    writeln("not set");
-if x.testAndSet() then
+if ax.testAndSet() then
   writeln("set");
  else
    writeln("not set");
 
-x.clear();
-if x.testAndSet() then
+ax.clear();
+if ax.testAndSet() then
   writeln("set");
  else
    writeln("not set");
 
 on Locales[numLocales-1] {
-  if x.testAndSet() then
+  if ax.testAndSet() then
     writeln("set");
   else
     writeln("not set");
 }
+
+var x = ax.read();
+writeln(x);
+
+ax.write(false);
+writeln(ax);
