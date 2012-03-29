@@ -1,6 +1,6 @@
 use GMP;
 
-var depth = 4: long;
+var depth = 4: c_long;
 
 var stackdom = [0..#depth];
 

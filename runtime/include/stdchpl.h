@@ -42,5 +42,6 @@
 #include "qio.h"
 #include "qio_formatted.h"
 #include "bulkget.h"
+#include "chplgmp.h"
 
 #endif

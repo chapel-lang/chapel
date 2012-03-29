@@ -231,6 +231,16 @@ Optional Settings
    CHPL_TARGET_PLATFORM is set to "xmt" in which case it defaults to
    "mta".
 
+9) Optionally, the CHPL_GMP environment variable can select between
+   no GMP support, using the GMP distributed with Chapel in third-party,
+   or using a system GMP. The options are:
+        system : assume GMP is already installed (#include gmp.h, -lgmp)
+        none   : do not build GMP support into the Chapel runtime
+        gmp    : use the gmp implementation bundled with Chapel in third-party
+
+   If unset, CHPL_GMP defaults to "gmp" unless
+   CHPL_TARGET_PLATFORM is set to "xmt" in which case it defaults to
+   "none".
 
 -------------------------------------
 Compiler Command Line Option Defaults
