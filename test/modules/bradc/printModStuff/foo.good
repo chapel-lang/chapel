@@ -9,6 +9,7 @@ module search dirs:
   $CHPL_HOME/modules/standard
   $CHPL_HOME/modules/layouts
   $CHPL_HOME/modules/dists
+  $CHPL_HOME/modules/dists/dims
 end of module search dirs
 Parsing module files:
   subdir/bar.chpl
