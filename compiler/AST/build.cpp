@@ -920,6 +920,8 @@ buildForallLoopStmt(Expr* indices, Expr* iterExpr, BlockStmt* loopBody) {
   if (fSerial || fSerialForall)
     return buildForLoopStmt(indices, iterExpr, loopBody);
 
+  SET_LINENO(loopBody);
+
   //
   // insert temporary index when elided by user
   //
@@ -1011,6 +1013,7 @@ BlockStmt* buildCoforallLoopStmt(Expr* indices, Expr* iterator, BlockStmt* body)
       tmp = NULL;
   }
 
+  SET_LINENO(body);
   if (onBlock) {
     //
     // optimization of on-statements directly inside coforall-loops
