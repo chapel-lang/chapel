@@ -203,7 +203,7 @@ static void build_getter(ClassType* ct, Symbol *field) {
 }
 
 
-static FnSymbol* chpl_main_exists(void) {
+static FnSymbol* chpl_gen_main_exists(void) {
   FnSymbol* match = NULL;
   ModuleSymbol* matchMod = NULL;
   ModuleSymbol* module = NULL;
@@ -248,7 +248,7 @@ static void build_chpl_entry_points(void) {
   //                                                                          
   // chpl_user_main is the (user) programmatic portion of the app             
   //                                                                          
-  FnSymbol* chpl_user_main = chpl_main_exists();                              
+  FnSymbol* chpl_user_main = chpl_gen_main_exists();                              
 
   if (fLibraryCompile) {
     if (chpl_user_main)                                                       
@@ -298,33 +298,34 @@ static void build_chpl_entry_points(void) {
   chpl_user_main->cname = "chpl_user_main";
 
   //
-  // chpl_main accounts for the initialization and memory tracking of
-  // the code
+  // chpl_gen_main is the entry point for the compiler-generated cdoe.
+  // It accounts for the initialization and memory tracking of the
+  // code
   //
-  chpl_main = new FnSymbol("chpl_main");
-  chpl_main->cname = "chpl_main";
-  chpl_main->retType = dtVoid;
-  chpl_main->addFlag(FLAG_EXPORT);  // chpl_main is always exported.
-  chpl_main->addFlag(FLAG_TEMP);
-  mainModule->block->insertAtTail(new DefExpr(chpl_main));
-  normalize(chpl_main);
+  chpl_gen_main = new FnSymbol("chpl_gen_main");
+  chpl_gen_main->cname = "chpl_gen_main";
+  chpl_gen_main->retType = dtVoid;
+  chpl_gen_main->addFlag(FLAG_EXPORT);  // chpl_gen_main is always exported.
+  chpl_gen_main->addFlag(FLAG_TEMP);
+  mainModule->block->insertAtTail(new DefExpr(chpl_gen_main));
+  normalize(chpl_gen_main);
 
   if (!fLibraryCompile) {
-    SET_LINENO(chpl_main);
-    chpl_main->insertAtHead(new CallExpr("main"));
+    SET_LINENO(chpl_gen_main);
+    chpl_gen_main->insertAtHead(new CallExpr("main"));
   }
 
   // We have to initialize the main module explicitly.
   // It will initialize all the modules it uses, recursively.
-  chpl_main->insertAtHead(new CallExpr(mainModule->initFn));
+  chpl_gen_main->insertAtHead(new CallExpr(mainModule->initFn));
 
   VarSymbol* endCount = newTemp("_endCount");
-  chpl_main->insertAtHead(new CallExpr("chpl_startTrackingMemory"));
-  chpl_main->insertAtHead(new CallExpr(PRIM_SET_END_COUNT, endCount));
-  chpl_main->insertAtHead(new CallExpr(PRIM_MOVE, endCount, new CallExpr("_endCountAlloc")));
-  chpl_main->insertAtHead(new DefExpr(endCount));
-  chpl_main->insertBeforeReturn(new CallExpr("_waitEndCount"));
-  //chpl_main->insertBeforeReturn(new CallExpr("_endCountFree", endCount));
+  chpl_gen_main->insertAtHead(new CallExpr("chpl_startTrackingMemory"));
+  chpl_gen_main->insertAtHead(new CallExpr(PRIM_SET_END_COUNT, endCount));
+  chpl_gen_main->insertAtHead(new CallExpr(PRIM_MOVE, endCount, new CallExpr("_endCountAlloc")));
+  chpl_gen_main->insertAtHead(new DefExpr(endCount));
+  chpl_gen_main->insertBeforeReturn(new CallExpr("_waitEndCount"));
+  //chpl_gen_main->insertBeforeReturn(new CallExpr("_endCountFree", endCount));
 }
 
 static void build_record_equality_function(ClassType* ct) {

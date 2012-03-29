@@ -18,7 +18,7 @@ void chpl__init_ChapelThreads(int64_t _ln, chpl_string _fn);
 void chpl__init_ChapelStandard(int64_t _ln, chpl_string _fn);
 
 /* used for entry point: */
-extern void chpl_main(void);
+extern void chpl_gen_main(void);
 
 /* used for config vars: */
 extern void CreateConfigVarTable(void);

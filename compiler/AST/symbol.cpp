@@ -15,7 +15,10 @@
 
 #include "intlimits.h"
 
-FnSymbol *chpl_main = NULL;
+//
+// The function that represents the compiler-generated entry point
+//
+FnSymbol *chpl_gen_main = NULL;
 
 ModuleSymbol* rootModule = NULL;
 ModuleSymbol* theProgram = NULL;

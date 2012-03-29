@@ -53,6 +53,29 @@ static void recordExecutionCommand(int argc, char *argv[]) {
 }
 
 
+static void chpl_main(void) {
+  // OK, we can create tasks now.
+  chpl_task_setSerial(false);
+
+  // Initialize the internal modules.
+  chpl__init_ChapelStandard(0, myFilename);
+  // Note that in general, module code can contain "on" clauses
+  // and should therefore not be called before the call to
+  // chpl_comm_startPollingTask().
+
+  //
+  // Permit the tasking layer to do anything it would like to now that
+  // the standard modules are initialized.
+  //
+  CHPL_TASK_STD_MODULES_INITIALIZED();
+
+  //
+  // Call the compiler-generated main() routine
+  //
+  chpl_gen_main();
+}
+
+
 int main(int argc, char* argv[]) {
   int32_t execNumLocales;
   int runInGDB;
@@ -134,15 +157,6 @@ int main(int argc, char* argv[]) {
   // before an attempt is made to run tasks "on" them.
 
   if (chpl_localeID == 0) {      // have locale #0 run the user's main function
-
-    // OK, we can create tasks now.
-    chpl_task_setSerial(false);
-
-    // Initialize the internal modules.
-    chpl__init_ChapelStandard(0, myFilename);
-    // Note that in general, module code can contain "on" clauses
-    // and should therefore not be called before the call to
-    // chpl_comm_startPollingTask().
 
     chpl_task_callMain(chpl_main);
   }

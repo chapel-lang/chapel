@@ -9,7 +9,10 @@
 #include "flags.h"
 #include "type.h"
 
-extern FnSymbol* chpl_main;
+//
+// The function that represents the compiler-generated entry point
+//
+extern FnSymbol* chpl_gen_main;
 
 class SymExpr;
 class DefExpr;

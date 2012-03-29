@@ -243,7 +243,7 @@ resolveUninsertedCall(Type* type, CallExpr* call) {
     else
       type->symbol->defPoint->insertBefore(call);
   } else
-    chpl_main->insertAtHead(call);
+    chpl_gen_main->insertAtHead(call);
   resolveCall(call);
   call->remove();
   return call->isResolved();
@@ -277,7 +277,7 @@ static void makeRefType(Type* type) {
 static void
 resolveAutoCopy(Type* type) {
   Symbol* tmp = newTemp(type);
-  chpl_main->insertAtHead(new DefExpr(tmp));
+  chpl_gen_main->insertAtHead(new DefExpr(tmp));
   CallExpr* call = new CallExpr("chpl__autoCopy", tmp);
   FnSymbol* fn = resolveUninsertedCall(type, call);
   resolveFns(fn);
@@ -289,7 +289,7 @@ resolveAutoCopy(Type* type) {
 static void
 resolveAutoDestroy(Type* type) {
   Symbol* tmp = newTemp(type);
-  chpl_main->insertAtHead(new DefExpr(tmp));
+  chpl_gen_main->insertAtHead(new DefExpr(tmp));
   CallExpr* call = new CallExpr("chpl__autoDestroy", tmp);
   FnSymbol* fn = resolveUninsertedCall(type, call);
   resolveFns(fn);
@@ -4946,7 +4946,7 @@ resolve() {
 
   resolveUses(mainModule);
 
-  resolveFns(chpl_main);
+  resolveFns(chpl_gen_main);
   USR_STOP();
 
   resolveExports();

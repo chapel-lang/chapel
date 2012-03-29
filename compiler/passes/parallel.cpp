@@ -173,7 +173,7 @@ insertEndCount(FnSymbol* fn,
                Type* endCountType,
                Vec<FnSymbol*>& queue,
                Map<FnSymbol*,Symbol*>& endCountMap) {
-  if (fn == chpl_main) {
+  if (fn == chpl_gen_main) {
     VarSymbol* var = newTemp("_endCount", endCountType);
     fn->insertAtHead(new DefExpr(var));
     endCountMap.put(fn, var);
