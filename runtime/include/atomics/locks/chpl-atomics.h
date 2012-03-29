@@ -44,6 +44,8 @@ typedef struct atomic_flag_s {
   chpl_bool v;
 } atomic_flag;
 
+typedef chpl_bool flag;
+
 typedef enum {
  memory_order_relaxed,
  memory_order_consume,
