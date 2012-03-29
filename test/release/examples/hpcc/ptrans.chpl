@@ -26,15 +26,13 @@ const numMatrices = 2;
 // Types used to represent matrix indices and elements (overridable on
 // compiler command line)
 //
-config type idxType = int(32);
 config type eltType = real(64);
 
 //
 // Configuration constants to set the problem size (numrows x numcols),
 // the block sizes, and the scalar multiplier, beta.
 //
-config const numrows = computeProblemSize(numMatrices, eltType, rank=2, 
-                                          retType=idxType), 
+config const numrows = computeProblemSize(numMatrices, eltType, rank=2), 
              numcols = numrows,
              rowBlkSize = 8, 
              colBlkSize = rowBlkSize,
@@ -74,10 +72,10 @@ proc main() {
   // Declare domains (index sets) for the Matrix and its transpose
   // using the distributions above:
   //
-  const MatrixDom     : domain(2, idxType) dmapped new dmap(MatrixDist) 
+  const MatrixDom     : domain(2) dmapped new dmap(MatrixDist) 
                       = [1..numrows, 1..numcols],
 
-        TransposeDom  : domain(2, idxType) dmapped new dmap(TransposeDist) 
+        TransposeDom  : domain(2) dmapped new dmap(TransposeDist) 
                        = [1..numcols, 1..numrows];
 
   //

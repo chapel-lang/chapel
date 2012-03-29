@@ -1,7 +1,8 @@
-// Run various basic operations on a DimensionalDist/BlockCyclic1d-mapped
+// Run various basic operations on a DimensionalDist2D/BlockCyclicDim-mapped
 // domain and array, from each locale.
 
-use d, f, u;
+use DimensionalDist2D, BlockCycDim;
+use u;
 
 config const s1 = 1;
 config const s2 = 3;
@@ -10,11 +11,13 @@ setupLocales(s1, s2);
 
 /////////// distribution
 
-var vdf = new idist(lowIdx=-100, blockSize=3, numLocales=s1, name="D1");
-var sdf = new idist(lowIdx=-10, blockSize=2, numLocales=s2, name="D2");
+var vdf = new BlockCyclicDim(lowIdx=-100, blockSize=3, numLocales=s1,
+                              name="D1");
+var sdf = new BlockCyclicDim(lowIdx=-10, blockSize=2, numLocales=s2,
+                              name="D2");
 
-hd("new DimensionalDist()");
-var ddf = new DimensionalDist(mylocs, vdf, sdf, "ddf");
+hd("new DimensionalDist2D()");
+var ddf = new DimensionalDist2D(mylocs, vdf, sdf, "ddf");
 tl();
 
 hd("wrapping ddf in dmap");
@@ -90,9 +93,9 @@ showArr(dmdom, dmarr, dmhelp);
 /////////// subordinate 1-d distributions
 
 fphase(90);
-hd("dmarr - subordinate1dDist()");
-msg(dmarr._value.subordinate1dDist(1));
-msg(dmarr._value.subordinate1dDist(2));
+hd("dmarr - dimSpecifier()");
+msg(dmarr._value.dimSpecifier(1));
+msg(dmarr._value.dimSpecifier(2));
 tl();
 
 

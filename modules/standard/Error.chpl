@@ -20,7 +20,7 @@ proc ioerror(error:syserr, msg:string, path:string)
     var quotedpath:string;
     var strerror_err:syserr = ENOERR;
     errstr = sys_strerror_str(error, strerror_err); 
-    quotedpath = qio_quote_string_chpl(path, path.length);
+    quotedpath = qio_quote_string_chpl(path, path.length:ssize_t);
     __primitive("chpl_error", errstr + " " + msg + " with path " + quotedpath);
   }
 }
@@ -31,7 +31,7 @@ proc ioerror(error:syserr, msg:string, path:string, offset:int(64))
   var quotedpath:string;
   var strerror_err:syserr = ENOERR;
   errstr = sys_strerror_str(error, strerror_err); 
-  quotedpath = qio_quote_string_chpl(path, path.length);
+  quotedpath = qio_quote_string_chpl(path, path.length:ssize_t);
   __primitive("chpl_error", errstr + " " + msg + " with path " + quotedpath + " offset " + offset:string);
 }
 

@@ -2,6 +2,6 @@ x is: 123
 f is: 123.0
 b is: true
 im is: 1.2i
-x.numBits = 32
+x.numBits = 64
 f.numBits = 64
 im.numBits = 64

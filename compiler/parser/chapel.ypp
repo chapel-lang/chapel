@@ -96,7 +96,7 @@
 %left TNOELSE
 %left TELSE
 %left TCOMMA
-%left TFOR TFORALL TIF TSYNC TSINGLE TVOLATILE
+%left TFOR TFORALL TIF TATOMIC TSYNC TSINGLE TVOLATILE
 %left TALIGN TBY THASH
 %left TIN
 %left TDOTDOT
@@ -881,6 +881,8 @@ type_level_expr:
     { $$ = buildForallLoopExpr(NULL, $2, $7, $5); }
 | TIF expr TTHEN expr TELSE expr
     { $$ = new CallExpr(new DefExpr(buildIfExpr($2, $4, $6))); }
+| TATOMIC expr
+    { $$ = new CallExpr("chpl__atomicType", $2); }
 | TSYNC expr
     { $$ = new CallExpr( "_syncvar", $2); }
 ;

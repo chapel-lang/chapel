@@ -42,26 +42,34 @@ writeln("6! is ", factorial(6));
 writeln();
 
 //
-// Integers are somewhat small, so we might want to specify a larger return
-// type.  Also, we can optimize a bit, compressing the call stack by a factor of 2.
+// Default integers in Chapel are 64-bits, so we may want to specify
+// a version of factorial that operates on 32-bit integers to save
+// space and potentially time (depending on the target architecture).
+// This version also optimizes a bit, compressing the callstack by
+// a factor of two by doing two multiplies.
+//
 // This version "overloads" the previous version of factorial.
 // Upon a call to factorial(), the compiler will choose the best fit.
 //
-proc factorial(x: int(64)) : int(64)
+proc factorial(x: int(32)) : int(32)
 {
   if x < 1 then
     halt("factorial -- Invalid operand.");
   if x < 3 then return x;
   return x * (x-1) * factorial(x-2);
 }
+
 //
-// The argument type of this version must be different, so the two versions of 
-// factorial can be differentiated.
-// We must also cast the actual argument to a 64-bit integer to select the "wide"
-// version of factorial.
+// The argument type of this version must be different, so the two
+// versions of factorial can be differentiated.  If we pass in a
+// (default) 64-bit integer value, we will get the 64-bit version.
 //
 writeln("Another simple procedure");
-writeln("33! is ", factorial(33: int(64)));
+writeln("33! is ", factorial(33));
+//
+// Whereas passing in a 32-bit integer will cause us to get the
+// 32-bit version:
+writeln("6! is ", factorial(6:int(32)));
 writeln();
 
 //

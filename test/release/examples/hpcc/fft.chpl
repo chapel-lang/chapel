@@ -22,7 +22,6 @@ const radix = 4;               // the radix of this FFT implementation
 
 const numVectors = 2;          // the number of vectors to be stored
 type elemType = complex(128);  // the element type of the vectors
-type idxType = int(64);        // the index type of the vectors
 
 //
 // A configuration constant defining log2(problem size) -- n -- and a
@@ -73,8 +72,8 @@ proc main() {
   // to m/4-1 stored using a block distribution.
   // Twiddles is the vector of twiddle values.
   //
-  const TwiddleDom:
-    domain(1, idxType) dmapped Block(boundingBox=[0..m/4-1]) = [0..m/4-1];
+  const TwiddleDom: domain(1) dmapped Block(boundingBox=[0..m/4-1]) 
+                  = [0..m/4-1];
   var Twiddles: [TwiddleDom] elemType;
 
   //
@@ -88,8 +87,8 @@ proc main() {
   // define the vectors z (used to store the input vector) and ZBlk
   // (used for the first half of the FFT phases).
   //
-  const BlkDom:
-    domain(1, idxType) dmapped Block(boundingBox=ProblemSpace) = ProblemSpace;
+  const BlkDom: domain(1) dmapped Block(boundingBox=ProblemSpace)
+              = ProblemSpace;
   var Zblk, z: [BlkDom] elemType;
 
   //
@@ -97,8 +96,7 @@ proc main() {
   // to define the Zcyc vector, used for the second half of the FFT
   // phases.
   //
-  const CycDom:
-    domain(1, idxType) dmapped Cyclic(startIdx=0:idxType) = ProblemSpace;
+  const CycDom: domain(1) dmapped Cyclic(startIdx=0) = ProblemSpace;
 
   var Zcyc: [CycDom] elemType;
 
@@ -229,7 +227,7 @@ proc butterfly(wk1, wk2, wk3, X:[0..3]) {
 // of the DFFT simply by yielding tuples: (radix**i, radix**(i+1))
 //
 iter genDFTStrideSpan(numElements, cyclicPhase) {
-  const (start, end) = if !cyclicPhase then (1, numLocales:idxType) 
+  const (start, end) = if !cyclicPhase then (1, numLocales) 
                                        else (numLocales, numElements-1);
   var stride = start;
   for i in log4(start)+1..log4(end):int {

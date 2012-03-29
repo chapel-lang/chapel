@@ -83,10 +83,9 @@ uint32_t chpl_thread_getMaxThreads(void);
 uint32_t chpl_thread_getNumThreads(void);
 
 //
-// Get the current thread stack size, and the limit on thread stack size.
+// Get the current thread stack size.
 //
 uint64_t chpl_thread_getCallStackSize(void);
-uint64_t chpl_thread_getCallStackSizeLimit(void);
 
 //
 // Mutexes, and operations upon them.

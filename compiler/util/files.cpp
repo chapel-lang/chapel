@@ -606,6 +606,7 @@ void setupModulePaths(void) {
   stdModPath.add(astr(CHPL_HOME, "/modules/standard"));
   stdModPath.add(astr(CHPL_HOME, "/modules/layouts"));
   stdModPath.add(astr(CHPL_HOME, "/modules/dists"));
+  stdModPath.add(astr(CHPL_HOME, "/modules/dists/dims"));
   const char* envvarpath = getenv("CHPL_MODULE_PATH");
   if (envvarpath) {
     char path[FILENAME_MAX+1];

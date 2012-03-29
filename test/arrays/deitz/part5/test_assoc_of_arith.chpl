@@ -7,8 +7,8 @@ for i in D do
   for j in 1..3 do
     A(i)(j) = i + j;
 
-writeln(A);
+writeln(A[2], " ", A[5]);
 
 B = A;
 
-writeln(B);
+writeln(B[2], " ", B[5]);

@@ -102,11 +102,13 @@ static void dump_index_footer(FILE* f) {
 }
 
 static void setupLogfiles() {
-  if (logging()) {
+  if (logging() || fdump_html || *deletedIdFilename)
     ensureDirExists(log_dir, "ensuring directory for log files exists");
-  }
+
+  if (log_dir[strlen(log_dir)-1] != '/') 
+    strcat(log_dir, "/");
+
   if (fdump_html) {
-    ensureDirExists(log_dir, "ensuring directory for html files exists");
     if (!(html_index_file = fopen(astr(log_dir, "index.html"), "w"))) {
       USR_FATAL("cannot open html index file \"%s\" for writing", astr(log_dir, "index.html"));
     }

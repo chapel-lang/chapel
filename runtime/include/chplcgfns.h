@@ -8,17 +8,17 @@
 
 /* defined in chpl__header.h: */
 
-extern int32_t numThreadsPerLocale;
-extern int32_t chpl__maxThreadsPerLocale;
-extern uint64_t callStackSize;
+extern int64_t numThreadsPerLocale;
+extern int64_t chpl__maxThreadsPerLocale;
+extern int64_t callStackSize;
 
 /* generated */
-void chpl__init_preInit(int32_t _ln, chpl_string _fn);
-void chpl__init_ChapelThreads(int32_t _ln, chpl_string _fn);
-void chpl__init_ChapelStandard(int32_t _ln, chpl_string _fn);
+void chpl__init_preInit(int64_t _ln, chpl_string _fn);
+void chpl__init_ChapelThreads(int64_t _ln, chpl_string _fn);
+void chpl__init_ChapelStandard(int64_t _ln, chpl_string _fn);
 
 /* used for entry point: */
-extern void chpl_main(void);
+extern void chpl_gen_main(void);
 
 /* used for config vars: */
 extern void CreateConfigVarTable(void);

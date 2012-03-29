@@ -10,8 +10,7 @@ config param debugAssocDataPar = false;
 use Sort /* only QuickSort */;
 
 // TODO: make the domain parameterized by this?
-// TODO: make int(64) the default index type here and in arithemtic domains
-type chpl_table_index_type = int(32);
+type chpl_table_index_type = int;
 
 
 /* These declarations could/should both be nested within

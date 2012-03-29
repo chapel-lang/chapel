@@ -10,8 +10,8 @@
 
 use Time;
 
-extern proc setThreadLimit(l: int(32));
-extern proc setStackLimit(l: int(32));
+extern proc setThreadLimit(l: int(64));
+extern proc setStackLimit(l: int(64));
 
 config const numThreads = 6000;
 config const threadLimit = 500;

@@ -1,8 +1,7 @@
-// test of localSlice for Dimensional with block-cyclic 1-d descriptors
+// test of localSlice for Dimensional with block-cyclic specifiers
 
-use d;
-use r;
-use f; //MBC //BC
+use DimensionalDist2D, ReplicatedDim;
+use BlockCycDim; //MBC //BC
 use UtilMath, Time, Random;
 
 config const verb = false;
@@ -26,13 +25,15 @@ const st1=1, st2=1;
 const MatVectSpace = [1..n, 1..n+1];
 
 const
-  bdim1 = new idist(lowIdx=st1, blockSize=blkSize, numLocales=tl1, name="D1"),
-  rdim1 = new vdist(tl1),
-  bdim2 = new idist(lowIdx=st2, blockSize=blkSize, numLocales=tl2, name="D2"),
-  rdim2 = new vdist(tl2);
+  rdim1 = new ReplicatedDim(tl1),
+  bdim1 = new BlockCyclicDim(lowIdx=st1, blockSize=blkSize, numLocales=tl1,
+                              name="D1"),
+  rdim2 = new ReplicatedDim(tl2),
+  bdim2 = new BlockCyclicDim(lowIdx=st2, blockSize=blkSize, numLocales=tl2,
+                              name="D2");
 
 const AbD: domain(2, indexType)
-   dmapped DimensionalDist(tla, bdim1, bdim2, "dim") //BC
+   dmapped DimensionalDist2D(tla, bdim1, bdim2, "dim") //BC
   = MatVectSpace;
 
 var Ab: [AbD] elemType;  // the matrix A and vector b
@@ -49,9 +50,9 @@ writeln("n ", n, "  blkSize ", blkSize, "  locales ", tl1, "*", tl2);
 // the domains for the arrays used for replication
 const
   replAD = [1..n, 1..blkSize] dmapped
-    DimensionalDist(tla, bdim1, rdim2, "distBR"),
+    DimensionalDist2D(tla, bdim1, rdim2, "distBR"),
   replBD = [1..blkSize, 1..n+1] dmapped
-    DimensionalDist(tla, rdim1, bdim2, "distRB");
+    DimensionalDist2D(tla, rdim1, bdim2, "distRB");
 
 var replA: [replAD] elemType,
     replB: [replBD] elemType;

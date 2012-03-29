@@ -26,23 +26,27 @@ enum IF1_bool_type {
   BOOL_SIZE_1, BOOL_SIZE_SYS, BOOL_SIZE_8, BOOL_SIZE_16, BOOL_SIZE_32, 
   BOOL_SIZE_64, BOOL_SIZE_NUM
 };
+#define BOOL_SIZE_DEFAULT BOOL_SIZE_SYS
 
 enum IF1_int_type { 
   INT_SIZE_1, INT_SIZE_8, INT_SIZE_16, INT_SIZE_32, INT_SIZE_64,
   INT_SIZE_NUM
 };
+#define INT_SIZE_DEFAULT INT_SIZE_64
 
 enum IF1_float_type { 
   FLOAT_SIZE_16, FLOAT_SIZE_32, FLOAT_SIZE_48, FLOAT_SIZE_64, 
   FLOAT_SIZE_80, FLOAT_SIZE_96, FLOAT_SIZE_112, FLOAT_SIZE_128, 
   FLOAT_SIZE_NUM
 };
+#define FLOAT_SIZE_DEFAULT FLOAT_SIZE_64
 
 enum IF1_complex_type { 
   COMPLEX_SIZE_32, COMPLEX_SIZE_64, COMPLEX_SIZE_96, COMPLEX_SIZE_128, 
   COMPLEX_SIZE_160, COMPLEX_SIZE_192, COMPLEX_SIZE_224, COMPLEX_SIZE_256, 
   COMPLEX_SIZE_NUM
 };
+#define COMPLEX_SIZE_DEFAULT COMPLEX_SIZE_128
 
 class Immediate { public:
   unsigned int const_kind : 4;
@@ -101,6 +105,7 @@ inline int64_t
 Immediate::int_value( void) {
   int64_t val = 0;
   switch (num_index) {
+  case INT_SIZE_1 : val = v_bool; break;
   case INT_SIZE_8 : val = v_int8;  break;
   case INT_SIZE_16: val = v_int16; break;
   case INT_SIZE_32: val = v_int32; break;

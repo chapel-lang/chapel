@@ -13,7 +13,7 @@ extern proc putchar(c:int);
 use GMP;
 use Time;
 
-config const n = 50;	// Compute 50 digits of Pi, usually.
+config const n: uint = 50;	// Compute 50 digits of Pi, usually.
 config param perfTest = false;
 
 var numer, accum, denom, tmp1, tmp2: mpz_t;
@@ -57,7 +57,7 @@ proc pidigits
     // Do some format control.
     i += 1;
     m = i % 10;
-    if m == 0 then printf("\t:%d\n", i);
+    if m == 0 then writeln("\t:", i);
     if i >= n then break;
     eliminate_digit(d:uint);
   }

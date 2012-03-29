@@ -500,8 +500,8 @@ proc BlockDom.getLocDom(localeIdx) return locDoms(localeIdx);
 //
 // Given a tuple of scalars of type t or range(t) match the shape but
 // using types rangeType and scalarType e.g. the call:
-// _matchArgsShape(range(int), int, (1:int(64), 1:int(64)..5, 1:int(64)..5))
-// returns the type: (int, range(int), range(int))
+// _matchArgsShape(range(int(32)), int(32), (1:int(64), 1:int(64)..5, 1:int(64)..5))
+// returns the type: (int(32), range(int(32)), range(int(32)))
 //
 proc _matchArgsShape(type rangeType, type scalarType, args) type {
   proc tuple(type t ...) type return t;
@@ -737,12 +737,19 @@ proc BlockDom.dsiBuildRectangularDom(param rank: int, type idxType,
 proc LocBlockDom.member(i) return myBlock.member(i);
 
 proc BlockArr.dsiDisplayRepresentation() {
-  for tli in dom.dist.targetLocDom do
+  for tli in dom.dist.targetLocDom {
     writeln("locArr[", tli, "].myElems = ", for e in locArr[tli].myElems do e);
+    if doRADOpt then
+      writeln("locArr[", tli, "].locRAD = ", locArr[tli].locRAD.RAD);
+  }
 }
 
 proc BlockArr.dsiGetBaseDom() return dom;
 
+//
+// NOTE: Each locale's myElems array be initialized prior to setting up
+// the RAD cache.
+//
 proc BlockArr.setupRADOpt() {
   for localeIdx in dom.dist.targetLocDom {
     on dom.dist.targetLocales(localeIdx) {
@@ -1047,6 +1054,7 @@ proc BlockArr.dsiRankChange(d, param newRank: int, param stridable: bool, args) 
 proc BlockArr.dsiReindex(d: BlockDom) {
   var alias = new BlockArr(eltType=eltType, rank=d.rank, idxType=d.idxType,
                            stridable=d.stridable, dom=d);
+  const sameDom = d==dom;
 
   var thisid = this.locale.id;
   coforall i in d.dist.targetLocDom {
@@ -1060,10 +1068,24 @@ proc BlockArr.dsiReindex(d: BlockDom) {
                                         myElems=>locAlias);
       if thisid == here.id then
         alias.myLocArr = alias.locArr[i];
+      if doRADOpt {
+        if sameDom {
+          // If we the reindex domain is the same as that of this array,
+          //  the RAD cache will be the same you can just copy the values
+          //  directly into the alias's RAD cache
+          if locArr[i].locRAD {
+            alias.locArr[i].locRAD = new LocRADCache(eltType, rank, idxType,
+                                                     dom.dist.targetLocDom);
+            alias.locArr[i].locRAD.RAD = locArr[i].locRAD.RAD;
+            alias.locArr[i].locRAD.ddata = locArr[i].locRAD.ddata;
+          }
+        }
+      }
     }
   }
 
-  if doRADOpt then alias.setupRADOpt();
+  if doRADOpt then
+    if !sameDom then alias.setupRADOpt();
 
   return alias;
 }

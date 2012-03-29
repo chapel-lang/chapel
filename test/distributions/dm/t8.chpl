@@ -1,6 +1,7 @@
-// Testing various aspects of 1-d BlockCyclic.
+// Testing various aspects of BlockCyclic specifier.
 
-use d, f, u;
+use DimensionalDist2D, BlockCycDim;
+use u;
 
 config const verbose = false;
 config const nopfx = false;
@@ -80,9 +81,9 @@ proc testsuite(type T, initphase) {
   hd("testsuite(", typeToString(T), ")");
   tl();
 
-  const df8 = new idist(lowIdx=-100, blockSize=7, numLocales=s1, name="D1");
-  const df9 = new idist(lowIdx=-10, blockSize=5, numLocales=s2, name="D2");
-  const dm = new dmap(new DimensionalDist(mylocs, df8, df9, "dm", idxType=T));
+  const df8 = new BlockCyclicDim(lowIdx=-100, blockSize=7, numLocales=s1, name="D1");
+  const df9 = new BlockCyclicDim(lowIdx=-10, blockSize=5, numLocales=s2, name="D2");
+  const dm = new dmap(new DimensionalDist2D(mylocs, df8, df9, "dm", idxType=T));
 
   proc tw(a, b, c, d) { test([a:T..b:T, c:T..d:T] dmapped dm); }
   inline

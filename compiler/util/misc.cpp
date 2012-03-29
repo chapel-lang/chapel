@@ -214,28 +214,44 @@ void handleError(const char *fmt, ...) {
 }
 
 
+static void vhandleError(FILE* file, BaseAST* ast, const char *fmt, va_list args);
+
 void handleError(BaseAST* ast, const char *fmt, ...) {
+  va_list args;
+  va_start(args, fmt);
+  vhandleError(stderr, ast, fmt, args);
+  va_end(args);
+}
+
+void handleError(FILE* file, BaseAST* ast, const char *fmt, ...) {
+  va_list args;
+  va_start(args, fmt);
+  vhandleError(file, ast, fmt, args);
+  va_end(args);
+}
+
+static void vhandleError(FILE* file, BaseAST* ast, const char *fmt, va_list args) {
   if (err_ignore)
     return;
 
-  printDevelErrorHeader(ast);
+  if (file == stderr)
+    printDevelErrorHeader(ast);
 
   if (!err_user && !developer)
     return;
 
-  va_list args;
-  
-  va_start(args, fmt);
-  vfprintf(stderr, fmt, args);
-  va_end(args);
+  vfprintf(file, fmt, args);
 
   if (fPrintIDonError && ast)
-    fprintf(stderr, " [%d]", ast->id);
-  printDevelErrorFooter();
+    fprintf(file, " [%d]", ast->id);
 
-  fprintf(stderr, "\n");
+  if (file == stderr)
+    printDevelErrorFooter();
 
-  printCallStackOnError();
+  fprintf(file, "\n");
+
+  if (file == stderr)
+    printCallStackOnError();
 
   if (exit_immediately && !ignore_errors) {
     clean_exit(1);

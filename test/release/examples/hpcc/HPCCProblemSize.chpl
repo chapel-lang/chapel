@@ -16,7 +16,7 @@ module HPCCProblemSize {
                          rank=1,            // rank of the arrays
 			 returnLog2=false,  // whether to return log2(probSize)
                          memFraction=4,     // fraction of mem to use (eg, 1/4)
-                         type retType = int(64)): retType { // type to return
+                         type retType = int): retType { // type to return
     //
     // Compute the total memory available to the benchmark using a sum
     // reduction over the amount of physical memory (in bytes) owned

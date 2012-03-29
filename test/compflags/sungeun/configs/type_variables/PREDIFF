@@ -43,7 +43,7 @@ def getNumBits(type):
     elif type == 'real':
         return '64'
     else:
-        return '32'
+        return '64'
 
 f = open(testname+".good", 'w')
 dvalue = getDefaultValue(myType)

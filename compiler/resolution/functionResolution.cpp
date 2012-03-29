@@ -17,6 +17,16 @@
 #include "symbol.h"
 #include "../ifa/prim_data.h"
 
+#ifdef ENABLE_TRACING_OF_DISAMBIGUATION
+#define TRACE_DISAMBIGUATE_BY_MATCH(str)        \
+  if (developer && explain) printf(str)
+#define TRACE_DISAMBIGUATE_BY_MATCH1(str, arg)  \
+  if (developer && explain) printf(str, arg)
+#else
+#define TRACE_DISAMBIGUATE_BY_MATCH(str)
+#define TRACE_DISAMBIGUATE_BY_MATCH1(str, arg)
+#endif
+
 //#
 //# Global Variables
 //#
@@ -108,12 +118,6 @@ isMoreVisibleInternal(BlockStmt* block, FnSymbol* fn1, FnSymbol* fn2,
                       Vec<BlockStmt*>& visited);
 static bool
 isMoreVisible(Expr* expr, FnSymbol* fn1, FnSymbol* fn2);
-static FnSymbol*
-disambiguate_by_match(Vec<FnSymbol*>* candidateFns,
-                      Vec<Vec<ArgSymbol*>*>* candidateActualFormals,
-                      Vec<Symbol*>* actuals,
-                      Vec<ArgSymbol*>** ret_afs,
-                      Expr* scope);
 static bool explainCallMatch(CallExpr* call);
 static CallExpr* userCall(CallExpr* call);
 static void
@@ -239,7 +243,7 @@ resolveUninsertedCall(Type* type, CallExpr* call) {
     else
       type->symbol->defPoint->insertBefore(call);
   } else
-    chpl_main->insertAtHead(call);
+    chpl_gen_main->insertAtHead(call);
   resolveCall(call);
   call->remove();
   return call->isResolved();
@@ -273,7 +277,7 @@ static void makeRefType(Type* type) {
 static void
 resolveAutoCopy(Type* type) {
   Symbol* tmp = newTemp(type);
-  chpl_main->insertAtHead(new DefExpr(tmp));
+  chpl_gen_main->insertAtHead(new DefExpr(tmp));
   CallExpr* call = new CallExpr("chpl__autoCopy", tmp);
   FnSymbol* fn = resolveUninsertedCall(type, call);
   resolveFns(fn);
@@ -285,7 +289,7 @@ resolveAutoCopy(Type* type) {
 static void
 resolveAutoDestroy(Type* type) {
   Symbol* tmp = newTemp(type);
-  chpl_main->insertAtHead(new DefExpr(tmp));
+  chpl_gen_main->insertAtHead(new DefExpr(tmp));
   CallExpr* call = new CallExpr("chpl__autoDestroy", tmp);
   FnSymbol* fn = resolveUninsertedCall(type, call);
   resolveFns(fn);
@@ -437,7 +441,7 @@ const char* toString(FnSymbol* fn) {
         str = astr(str, " ");
     } else
       str = astr(str, ", ");
-    if (arg->intent == INTENT_PARAM)
+    if (arg->intent == INTENT_PARAM || arg->instantiatedParam)
       str = astr(str, "param ");
     if (arg->hasFlag(FLAG_TYPE_VARIABLE))
       str = astr(str, "type ", arg->name);
@@ -535,7 +539,7 @@ protoIteratorClass(FnSymbol* fn) {
   ii->zip2 = protoIteratorMethod(ii, "zip2", dtVoid);
   ii->zip3 = protoIteratorMethod(ii, "zip3", dtVoid);
   ii->zip4 = protoIteratorMethod(ii, "zip4", dtVoid);
-  ii->hasMore = protoIteratorMethod(ii, "hasMore", dtInt[INT_SIZE_32]);
+  ii->hasMore = protoIteratorMethod(ii, "hasMore", dtInt[INT_SIZE_DEFAULT]);
   ii->getValue = protoIteratorMethod(ii, "getValue", fn->retType);
 
   ii->irecord->defaultConstructor = fn;
@@ -692,48 +696,83 @@ resolveFormals(FnSymbol* fn) {
   }
 }
 
-static bool
-fits_in_int(int width, Immediate* imm) {
-  if (imm->const_kind == NUM_KIND_INT && imm->num_index == INT_SIZE_32) {
-    int64_t i = imm->int_value();
-    switch (width) {
-    default: INT_FATAL("bad width in fits_in_int");
-    case 8:
-      return (i >= -128 && i <= 127);
-    case 16:
-      return (i >= -32768 && i <= 32767);
-    case 32:
-      return (i >= -2147483648ll && i <= 2147483647ll);
-    case 64:
-      return (i >= -9223372036854775807ll-1 && i <= 9223372036854775807ll);
-    }
+static bool fits_in_int_helper(int width, int64_t val) {
+  switch (width) {
+  default: INT_FATAL("bad width in fits_in_int_helper");
+  case 1:
+    return (val == 0 || val == 1);
+  case 8:
+    return (val >= -128 && val <= 127);
+  case 16:
+    return (val >= -32768 && val <= 32767);
+  case 32:
+    return (val >= -2147483648ll && val <= 2147483647ll);
+  case 64:
+    return (val >= -9223372036854775807ll-1 && val <= 9223372036854775807ll);
   }
+}
+
+static bool fits_in_int(int width, Immediate* imm) {
+  if (imm->const_kind == NUM_KIND_INT && imm->num_index == INT_SIZE_DEFAULT) {
+    int64_t i = imm->int_value();
+    return fits_in_int_helper(width, i);
+  }
+
+
+  /* BLC: There is some question in my mind about whether this
+     function should include the following code as well -- that is,
+     whether default-sized uint params should get the same special
+     treatment in cases like this.  I didn't enable it for now because
+     nothing seemed to rely on it and I didn't come up with a case
+     that would.  But it's worth keeping around for future
+     consideration.
+
+     Similarly, we may want to consider enabling such param casts for
+     int sizes other then default-width.
+
+  else if (imm->const_kind == NUM_KIND_UINT && 
+           imm->num_index == INT_SIZE_DEFAULT) {
+    uint64_t u = imm->uint_value();
+    int64_t i = (int64_t)u;
+    if (i < 0)
+      return false;
+    return fits_in_int_helper(width, i);
+  }*/
+
   return false;
 }
 
-static bool
-fits_in_uint(int width, Immediate* imm) {
-  if (imm->const_kind == NUM_KIND_INT && imm->num_index == INT_SIZE_32) {
+static bool fits_in_uint_helper(int width, uint64_t val) {
+  switch (width) {
+  default: INT_FATAL("bad width in fits_in_uint_helper");
+  case 1:
+    return (val <= 1);
+  case 8:
+    return (val <= 255);
+  case 16:
+    return (val <= 65535);
+  case 32:
+    return (val <= 2147483647ull);
+  case 64:
+    return true;
+  }
+}
+
+static bool fits_in_uint(int width, Immediate* imm) {
+  if (imm->const_kind == NUM_KIND_INT && imm->num_index == INT_SIZE_DEFAULT) {
     int64_t i = imm->int_value();
     if (i < 0)
       return false;
-    uint64_t u = (uint64_t)i;
-    switch (width) {
-    default: INT_FATAL("bad width in fits_in_uint");
-    case 8:
-      return (u <= 255);
-    case 16:
-      return (u <= 65535);
-    case 32:
-      return (u <= 2147483647ull);
-    case 64:
-      return true;
-    }
-  } else if (imm->const_kind == NUM_KIND_INT && imm->num_index == INT_SIZE_64) {
-    int64_t i = imm->int_value();
-    if (i > 0 && width == 64)
-      return true;
+    return fits_in_uint_helper(width, (uint64_t)i);
   }
+
+  /* BLC: See comment just above in fits_in_int()...
+
+  else if (imm->const_kind == NUM_KIND_UINT && imm->num_index == INT_SIZE_64) {
+    uint64_t u = imm->uint_value();
+    return fits_in_uint_helper(width, u);
+  }*/
+
   return false;
 }
 
@@ -1151,7 +1190,7 @@ expandVarArgs(FnSymbol* fn, int numActuals) {
 
       // handle specified number of variable arguments
       if (VarSymbol* n_var = toVarSymbol(sym->var)) {
-        if (n_var->type == dtInt[INT_SIZE_32] && n_var->immediate) {
+        if (n_var->type == dtInt[INT_SIZE_DEFAULT] && n_var->immediate) {
           int n = n_var->immediate->int_value();
           CallExpr* tupleCall = new CallExpr((arg->hasFlag(FLAG_TYPE_VARIABLE)) ?
                                              "_type_construct__tuple" : "_construct__tuple");
@@ -1411,25 +1450,61 @@ isMoreVisible(Expr* expr, FnSymbol* fn1, FnSymbol* fn2) {
 }
 
 
+static bool paramWorks(Symbol* actual, Type* formalType) {
+  if (VarSymbol* var = toVarSymbol(actual)) {
+    if (var->immediate) {
+      if (is_int_type(formalType)) {
+        return fits_in_int(get_width(formalType), var->immediate);
+      }
+      if (is_uint_type(formalType)) {
+        return fits_in_uint(get_width(formalType), var->immediate);
+      }
+    }
+  }
+  return false;
+}
+
+
+//
+// This is a utility function that essentially tracks which function,
+// if any, the param arguments prefer.
+//
+#define registerParamPreference(paramPrefers, preference, argstr)       \
+  if (paramPrefers == 0 || paramPrefers == preference) {                \
+    /* if the param currently has no preference or it matches the new   \
+       preference, preserve the current preference */                   \
+    paramPrefers = preference;                                          \
+    TRACE_DISAMBIGUATE_BY_MATCH("param prefers " argstr);               \
+  } else {                                                              \
+    /* otherwise its preference contradicts the previous arguments, so  \
+       mark it as not preferring either */                              \
+    paramPrefers = -1;                                                  \
+    TRACE_DISAMBIGUATE_BY_MATCH("param prefers differing things");      \
+  }  
+
 static FnSymbol*
 disambiguate_by_match(Vec<FnSymbol*>* candidateFns,
                       Vec<Vec<ArgSymbol*>*>* candidateActualFormals,
                       Vec<Symbol*>* actuals,
                       Vec<ArgSymbol*>** ret_afs,
-                      Expr* scope) {
+                      Expr* scope, bool explain) {
   for (int i = 0; i < candidateFns->n; i++) {
+    TRACE_DISAMBIGUATE_BY_MATCH1("Considering fn %d ", i);
     FnSymbol* fn1 = candidateFns->v[i];
     Vec<ArgSymbol*>* actualFormals1 = candidateActualFormals->v[i];
     bool best = true; // is fn1 the best candidate?
     for (int j = 0; j < candidateFns->n; j++) {
       if (i != j) {
+        TRACE_DISAMBIGUATE_BY_MATCH1("vs. fn %d:\n", j);
         FnSymbol* fn2 = candidateFns->v[j];
         bool worse = false; // is fn1 worse than fn2?
         bool equal = true;  // is fn1 as good as fn2?
+        int paramPrefers = 0; // 1 == fn1, 2 == fn2, -1 == conflicting signals
         bool fnPromotes1 = false; // does fn1 require promotion?
         bool fnPromotes2 = false; // does fn2 require promotion?
         Vec<ArgSymbol*>* actualFormals2 = candidateActualFormals->v[j];
         for (int k = 0; k < actualFormals1->n; k++) {
+          TRACE_DISAMBIGUATE_BY_MATCH1("...arg %d: ", k);
           Symbol* actual = actuals->v[k];
 
           ArgSymbol* arg = actualFormals1->v[k];
@@ -1442,53 +1517,122 @@ disambiguate_by_match(Vec<FnSymbol*>* candidateFns,
           canDispatch(actual->type, actual, arg2->type, fn1, &argPromotes2);
           fnPromotes2 |= argPromotes2;
 
-          if (arg->type == arg2->type && arg->instantiatedParam && !arg2->instantiatedParam)
+          if (arg->type == arg2->type && arg->instantiatedParam && !arg2->instantiatedParam) {
             equal = false;
-          else if (arg->type == arg2->type && !arg->instantiatedParam && arg2->instantiatedParam)
+            TRACE_DISAMBIGUATE_BY_MATCH("A: not equal\n");
+          } else if (arg->type == arg2->type && !arg->instantiatedParam && arg2->instantiatedParam) {
             worse = true;
-          else if (!argPromotes1 && argPromotes2)
+            TRACE_DISAMBIGUATE_BY_MATCH("B: worse\n");
+          } else if (!argPromotes1 && argPromotes2) {
             equal = false;
-          else if (argPromotes1 && !argPromotes2)
+            TRACE_DISAMBIGUATE_BY_MATCH("C: equal\n");
+          } else if (argPromotes1 && !argPromotes2) {
             worse = true;
-          else if (arg->type == arg2->type && !arg->instantiatedFrom && arg2->instantiatedFrom)
+            TRACE_DISAMBIGUATE_BY_MATCH("D: worse\n");
+          } else if (arg->type == arg2->type && !arg->instantiatedFrom && arg2->instantiatedFrom) {
             equal = false;
-          else if (arg->type == arg2->type && arg->instantiatedFrom && !arg2->instantiatedFrom)
+            TRACE_DISAMBIGUATE_BY_MATCH("E: not equal\n");
+          } else if (arg->type == arg2->type && arg->instantiatedFrom && !arg2->instantiatedFrom) {
             worse = true;
-          else if (arg->instantiatedFrom!=dtAny && arg2->instantiatedFrom==dtAny)
+            TRACE_DISAMBIGUATE_BY_MATCH("F: worse\n");
+          } else if (arg->instantiatedFrom!=dtAny && arg2->instantiatedFrom==dtAny) {
             equal = false;
-          else if (arg->instantiatedFrom==dtAny && arg2->instantiatedFrom!=dtAny)
+            TRACE_DISAMBIGUATE_BY_MATCH("G: not equal\n");
+          } else if (arg->instantiatedFrom==dtAny && arg2->instantiatedFrom!=dtAny) {
             worse = true;
-          else if (actual->type == arg->type && actual->type != arg2->type)
+            TRACE_DISAMBIGUATE_BY_MATCH("H: worse\n");
+          } else if (actual->type == arg->type && actual->type != arg2->type) {
+            // The actual matches arg's type, but not arg2's
+            if (paramWorks(actual, arg2->type)) {
+              // but the actual is a param and works for arg2
+              if (arg->instantiatedParam) {
+                // the param works equally well for both, but
+                // matches the first slightly better if we had to
+                // decide
+                registerParamPreference(paramPrefers, 1, "arg1");
+              } else {
+                if (arg2->instantiatedParam) {
+                  registerParamPreference(paramPrefers, 2, "arg2");
+                } else {
+                  // neither is a param, but arg1 is an exact type
+                  // match, so prefer that one
+                  registerParamPreference(paramPrefers, 1, "arg1");
+                }
+              }
+            } else {
+              equal = false;
+              TRACE_DISAMBIGUATE_BY_MATCH("I8: not equal\n");
+            }
+          } else if (actual->type == arg2->type && actual->type != arg->type) {
+            // The actual matches arg2's type, but not arg's
+            if (paramWorks(actual, arg->type)) {
+              // but the actual is a param and works for arg
+              if (arg2->instantiatedParam) {
+                // the param works equally well for both, but
+                // matches the second slightly better if we had to
+                // decide
+                registerParamPreference(paramPrefers, 2, "arg2");
+              } else {
+                if (arg->instantiatedParam) {
+                  registerParamPreference(paramPrefers, 1, "arg1");
+                } else {
+                  // neither is a param, but arg1 is an exact type
+                  // match, so prefer that one
+                  registerParamPreference(paramPrefers, 2, "arg2");
+                } 
+              }
+            } else {
+              worse = true;
+              TRACE_DISAMBIGUATE_BY_MATCH("J8: worse\n");
+            }
+          } else if (moreSpecific(fn1, arg->type, arg2->type) &&
+                     arg2->type != arg->type) {
             equal = false;
-          else if (actual->type == arg2->type && actual->type != arg->type)
+            TRACE_DISAMBIGUATE_BY_MATCH("K: not equal\n");
+          } else if (moreSpecific(fn1, arg2->type, arg->type) && 
+                     arg2->type != arg->type) {
             worse = true;
-          else if (moreSpecific(fn1, arg->type, arg2->type) &&
-                   arg2->type != arg->type)
+            TRACE_DISAMBIGUATE_BY_MATCH("L: worse\n");
+          } else if (is_int_type(arg->type) &&
+                     is_uint_type(arg2->type)) {
             equal = false;
-          else if (moreSpecific(fn1, arg2->type, arg->type) && 
-                   arg2->type != arg->type)
+            TRACE_DISAMBIGUATE_BY_MATCH("M: not equal\n");
+          } else if (is_int_type(arg2->type) &&
+                     is_uint_type(arg->type)) {
             worse = true;
-          else if (is_int_type(arg->type) &&
-                   is_uint_type(arg2->type))
-            equal = false;
-          else if (is_int_type(arg2->type) &&
-                   is_uint_type(arg->type))
-            worse = true;
+            TRACE_DISAMBIGUATE_BY_MATCH("N: worse\n");
+          } else {
+            TRACE_DISAMBIGUATE_BY_MATCH("N2: fell through\n");
+          }
         }
-        if (!fnPromotes1 && fnPromotes2)
+        if (!fnPromotes1 && fnPromotes2) {
+          TRACE_DISAMBIGUATE_BY_MATCH("O: one promotes and not the other\n");
           continue;
+        }
         if (!worse && equal) {
-          if (isMoreVisible(scope, fn1, fn2))
+          if (isMoreVisible(scope, fn1, fn2)) {
             equal = false;
-          else if (isMoreVisible(scope, fn2, fn1))
+            TRACE_DISAMBIGUATE_BY_MATCH("P: not equal\n");
+          } else if (isMoreVisible(scope, fn2, fn1)) {
             worse = true;
-          else if (fn1->where && !fn2->where)
+            TRACE_DISAMBIGUATE_BY_MATCH("Q: worse\n");
+          } else if (paramPrefers == 1) {
             equal = false;
-          else if (!fn1->where && fn2->where)
+            TRACE_DISAMBIGUATE_BY_MATCH("R1: param breaks tie for 1");
+          } else if (paramPrefers == 2) {
             worse = true;
+            TRACE_DISAMBIGUATE_BY_MATCH("R2: param breaks tie for 2");
+          } else if (fn1->where && !fn2->where) {
+            equal = false;
+            TRACE_DISAMBIGUATE_BY_MATCH("S: not equal\n");
+          } else if (!fn1->where && fn2->where) {
+            worse = true;
+            TRACE_DISAMBIGUATE_BY_MATCH("T: worse\n");
+          }
         }
         if (worse || equal) {
           best = false;
+          TRACE_DISAMBIGUATE_BY_MATCH("U: not best\n");
           break;
         }
       }
@@ -1996,6 +2140,11 @@ resolveCall(CallExpr* call, bool errorCheck) {
     forv_Vec(FnSymbol, visibleFn, visibleFns) {
       if (call->methodTag && !visibleFn->hasFlag(FLAG_NO_PARENS) && !visibleFn->hasFlag(FLAG_TYPE_CONSTRUCTOR))
         continue;
+#ifdef ENABLE_TRACING_OF_DISAMBIGUATION
+      if (explainCallLine && explainCallMatch(call)) {
+        printf("Considering function %s\n", visibleFn->stringLoc());
+      }
+#endif
       addCandidate(&candidateFns, &candidateActualFormals, visibleFn, info);
     }
 
@@ -2015,7 +2164,8 @@ resolveCall(CallExpr* call, bool errorCheck) {
     Vec<ArgSymbol*>* actualFormals = 0;
     Expr* scope = (info.scope) ? info.scope : getVisibilityBlock(call);
     best = disambiguate_by_match(&candidateFns, &candidateActualFormals,
-                                 &info.actuals, &actualFormals, scope);
+                                 &info.actuals, &actualFormals, scope,
+                                 explainCallLine && explainCallMatch(call));
 
     if (best && explainCallLine && explainCallMatch(call)) {
       USR_PRINT(best, "best candidate is: %s", toString(best));
@@ -2731,13 +2881,13 @@ static std::string buildParentName(AList &arg_list, bool isFormal, Type *retType
         if (!isFirst)
           oss << "_";
     
-        oss << fArg->type->symbol->name;
+        oss << fArg->type->symbol->cname;
     
         isFirst = false;
       }
     }     
     oss << "_";
-    oss << retType->symbol->name;
+    oss << retType->symbol->cname;
   }
   else {
     int i = 0, alength = arg_list.length;
@@ -2754,7 +2904,7 @@ static std::string buildParentName(AList &arg_list, bool isFormal, Type *retType
       
       ++i;
    
-      oss << sExpr->var->type->symbol->name;
+      oss << sExpr->var->type->symbol->cname;
       
       isFirst = false;
     }
@@ -3044,7 +3194,7 @@ preFold(Expr* expr) {
                       tsize = toPrimitiveType(tsize->type)->volType->symbol;
                     result = new SymExpr(tsize);
                     call->replace(result);
-                  } else if (type == dtInt[INT_SIZE_32]->symbol) {
+                  } else if (type == dtInt[INT_SIZE_DEFAULT]->symbol) {
                     switch (size) {
                     case 8: tsize = dtInt[INT_SIZE_8]->symbol; break;
                     case 16: tsize = dtInt[INT_SIZE_16]->symbol; break;
@@ -3057,7 +3207,7 @@ preFold(Expr* expr) {
                       tsize = toPrimitiveType(tsize->type)->volType->symbol;
                     result = new SymExpr(tsize);
                     call->replace(result);
-                  } else if (type == dtUInt[INT_SIZE_32]->symbol) {
+                  } else if (type == dtUInt[INT_SIZE_DEFAULT]->symbol) {
                     switch (size) {
                     case  8: tsize = dtUInt[INT_SIZE_8]->symbol;  break;
                     case 16: tsize = dtUInt[INT_SIZE_16]->symbol; break;
@@ -3964,7 +4114,7 @@ postFold(Expr* expr) {
       INT_ASSERT(se);
       if (se->var->isParameter()) {
         const char* str = get_string(se);
-        result = new SymExpr(new_IntSymbol(strlen(str), INT_SIZE_32));
+        result = new SymExpr(new_IntSymbol(strlen(str), INT_SIZE_DEFAULT));
         call->replace(result);
       }
     } else if (call->isPrimitive("ascii")) {
@@ -3972,7 +4122,7 @@ postFold(Expr* expr) {
       INT_ASSERT(se);
       if (se->var->isParameter()) {
         const char* str = get_string(se);
-        result = new SymExpr(new_IntSymbol((int)str[0], INT_SIZE_32));
+        result = new SymExpr(new_IntSymbol((int)str[0], INT_SIZE_DEFAULT));
         call->replace(result);
       }
     } else if (call->isPrimitive("string_contains")) {
@@ -4796,7 +4946,7 @@ resolve() {
 
   resolveUses(mainModule);
 
-  resolveFns(chpl_main);
+  resolveFns(chpl_gen_main);
   USR_STOP();
 
   resolveExports();
@@ -5124,7 +5274,7 @@ static void insertDynamicDispatchCalls() {
       // change call of root method into virtual method call; replace
       // method token with function
       //
-      VarSymbol* cid = newTemp("_virtual_method_tmp_", dtInt[INT_SIZE_32]);
+      VarSymbol* cid = newTemp("_virtual_method_tmp_", dtInt[INT_SIZE_DEFAULT]);
       call->getStmtExpr()->insertBefore(new DefExpr(cid));
       call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, cid, new CallExpr(PRIM_GETCID, call->get(2)->copy())));
       // hilde sez: "remove" here means VMT calls are not really "resolved".

@@ -1,4 +1,4 @@
-compilerWarning.chpl:10: warning: 1-argument version of foo called with type: real
+compilerWarning.chpl:10: warning: 1-argument version of foo called with type: real(64)
 compilerWarning.chpl:11: warning: 1-argument version of foo called with type: string
 In generic foo!
 In generic foo!

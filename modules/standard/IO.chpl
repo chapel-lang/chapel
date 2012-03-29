@@ -1067,9 +1067,9 @@ proc _read_text_internal(_channel_internal:qio_channel_ptr_t, out x:?t):syserr w
 proc _write_text_internal(_channel_internal:qio_channel_ptr_t, x:?t):syserr where _isIoPrimitiveType(t) {
   if _isBooleanType(t) {
     if x {
-      return qio_channel_print_string(false, _channel_internal, _trues(1), _trues(1).length);
+      return qio_channel_print_string(false, _channel_internal, _trues(1), _trues(1).length:ssize_t);
     } else {
-      return qio_channel_print_string(false, _channel_internal, _falses(1), _falses(1).length);
+      return qio_channel_print_string(false, _channel_internal, _falses(1), _falses(1).length:ssize_t);
     }
   } else if _isIntegralType(t) {
     // handles int types
@@ -1099,10 +1099,10 @@ proc _write_text_internal(_channel_internal:qio_channel_ptr_t, x:?t):syserr wher
     return qio_channel_print_complex(false, _channel_internal, re, im, numBytes(x.re.type));
   } else if t == string {
     // handle string
-    return qio_channel_print_string(false, _channel_internal, x, x.length);
+    return qio_channel_print_string(false, _channel_internal, x, x.length:ssize_t);
   } else if _isEnumeratedType(t) {
     var s = x:string;
-    return qio_channel_print_string(false, _channel_internal, s, s.length);
+    return qio_channel_print_string(false, _channel_internal, s, s.length:ssize_t);
   } else {
     compilerError("Unknown primitive type in _write_text_internal ", typeToString(t));
   }
@@ -1181,7 +1181,7 @@ proc _write_binary_internal(_channel_internal:qio_channel_ptr_t, param byteorder
     var im = x.im;
     return qio_channel_write_complex(false, byteorder, _channel_internal, re, im, numBytes(x.re.type));
   } else if t == string {
-    return qio_channel_write_string(false, byteorder, qio_channel_str_style(_channel_internal), _channel_internal, x, x.length);
+    return qio_channel_write_string(false, byteorder, qio_channel_str_style(_channel_internal), _channel_internal, x, x.length: ssize_t);
   } else if _isEnumeratedType(t) {
     var i:enum_mintype(t) = x:enum_mintype(t);
     return qio_channel_write_int(false, byteorder, _channel_internal, i, numBytes(i.type), _isSignedType(i.type));
@@ -1234,7 +1234,7 @@ proc _write_one_internal(_channel_internal:qio_channel_ptr_t, param kind:iokind,
   } else if t == ioChar {
     return qio_channel_write_char(false, _channel_internal, x.ch);
   } else if t == ioLiteral {
-    return qio_channel_print_literal(false, _channel_internal, x.val, x.val.length);
+    return qio_channel_print_literal(false, _channel_internal, x.val, x.val.length:ssize_t);
   } else if t == ioBits {
     return qio_channel_write_bits(false, _channel_internal, x.v, x.nbits);
   } else if kind == iokind.dynamic {

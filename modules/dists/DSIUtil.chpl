@@ -23,7 +23,7 @@ proc _computeChunkStuff(maxTasks, ignoreRunning, minSize, ranges,
                         param adjustToOneDim = true): (int,int)
 {
   param rank=ranges.size;
-  type EC = uint(64); // type for element counts
+  type EC = uint; // type for element counts
   var numElems = 1:EC;
   for param i in 1..rank do {
     numElems *= ranges(i).length:EC;
@@ -68,7 +68,7 @@ proc _computeNumChunks(maxTasks, ignoreRunning, minSize, numElems): int {
   if numElems <= 0 then
     return 0;
 
-  type EC = uint(64); // type for element counts
+  type EC = uint; // type for element counts
   const unumElems = numElems:EC;
   var numChunks = maxTasks:int;
   if !ignoreRunning {
@@ -138,10 +138,10 @@ proc _computeBlock(numelems, numblocks, blocknum, wayhi,
 
   const blo =
     if blocknum == 0 then waylo
-    else lo + intCeilXDivByY(numelems:uint(64) * blocknum:uint(64), numblocks:uint(64)):lo.type;
+    else lo + intCeilXDivByY(numelems:uint * blocknum:uint, numblocks:uint):lo.type;
   const bhi =
     if blocknum == numblocks - 1 then wayhi
-    else lo + intCeilXDivByY(numelems:uint(64) * (blocknum+1):uint(64), numblocks:uint(64)):lo.type - 1;
+    else lo + intCeilXDivByY(numelems:uint * (blocknum+1):uint, numblocks:uint):lo.type - 1;
 
   return (blo, bhi);
 }

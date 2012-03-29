@@ -1,5 +1,5 @@
 extern record R {
-  var x: int;
+  var x: int(32);
 }
 
 extern proc foo(): R;
