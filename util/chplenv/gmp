@@ -11,7 +11,8 @@ if ($preset_gmp eq "") {
   if ($targplatform eq "xmt" || $targplatform eq "xmt-sim") {
     $gmp = 'none';
   } else {
-    $gmp = 'gmp';
+#    $gmp = 'gmp'; check Lion, PGI, PrgEnv-gnu before enabling
+    $gmp = 'none';
   }
 } else {
   $gmp = $preset_gmp;

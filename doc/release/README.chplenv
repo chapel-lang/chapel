@@ -238,9 +238,8 @@ Optional Settings
         none   : do not build GMP support into the Chapel runtime
         gmp    : use the gmp implementation bundled with Chapel in third-party
 
-   If unset, CHPL_GMP defaults to "gmp" unless
-   CHPL_TARGET_PLATFORM is set to "xmt" in which case it defaults to
-   "none".
+   If unset, CHPL_GMP defaults to "none". Note that the included gmp distribution
+   may not build on all platforms supported by Chapel.
 
 -------------------------------------
 Compiler Command Line Option Defaults
