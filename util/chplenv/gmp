@@ -8,7 +8,7 @@ $preset_gmp = $ENV{'CHPL_GMP'};
 
 if ($preset_gmp eq "") {
   $targplatform = `$utildirname/platform --target`; chomp($targplatform);
-  if ($targplatform eq "xmt") {
+  if ($targplatform eq "xmt" || $targplatform eq "xmt-sim") {
     $gmp = 'none';
   } else {
     $gmp = 'gmp';
