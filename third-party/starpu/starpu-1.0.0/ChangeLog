@@ -1,0 +1,215 @@
+# StarPU --- Runtime system for heterogeneous multicore architectures.
+#
+# Copyright (C) 2009-2012  Université de Bordeaux 1
+# Copyright (C) 2010, 2011, 2012  Centre National de la Recherche Scientifique
+#
+# StarPU is free software; you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation; either version 2.1 of the License, or (at
+# your option) any later version.
+#
+# StarPU is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+#
+# See the GNU Lesser General Public License in COPYING.LGPL for more details.
+
+StarPU 1.0.0 (svn revision 6306)
+==============================================
+The extensions-again release
+
+New features:
+  * Add SOCL, an OpenCL interface on top of StarPU.
+  * Add a gcc plugin to extend the C interface with pragmas which allows to
+	easily define codelets and issue tasks.
+  * Add reduction mode to starpu_mpi_insert_task.
+  * A new multi-format interface permits to use different binary formats
+	on CPUs & GPUs, the conversion functions being provided by the
+	application and called by StarPU as needed (and as less as
+	possible).
+  * Deprecate cost_model, and introduce cost_function, which is provided
+	with the whole task structure, the target arch and implementation
+	number.
+  * Permit the application to provide its own size base for performance
+	models.
+  * Applications can provide several implementations of a codelet for the
+	same architecture.
+  * Add a StarPU-Top feedback and steering interface.
+  * Permit to specify MPI tags for more efficient starpu_mpi_insert_task
+
+Changes:
+  * Fix several memory leaks and race conditions
+  * Make environment variables take precedence over the configuration
+        passed to starpu_init()
+  * Libtool interface versioning has been included in libraries names
+        (libstarpu-1.0.so, libstarpumpi-1.0.so,
+        libstarpufft-1.0.so, libsocl-1.0.so)
+  * Install headers under $includedir/starpu/1.0.
+  * Make where field for struct starpu_codelet optional. When unset, its
+	value will be automatically set based on the availability of the
+	different XXX_funcs fields of the codelet.
+  * Define access modes for data handles into starpu_codelet and no longer
+	in starpu_task. Hence mark (struct starpu_task).buffers as
+	deprecated, and add (struct starpu_task).handles and (struct
+	starpu_codelet).modes
+  * Fields xxx_func of struct starpu_codelet are made deprecated. One
+	should use fields xxx_funcs instead.
+  * Some types were renamed for consistency. when using pkg-config libstarpu,
+        starpu_deprecated_api.h is automatically included (after starpu.h) to
+        keep compatibility with existing software. Other changes are mentioned
+        below, compatibility is also preserved for them.
+        To port code to use new names (this is not mandatory), the
+        tools/dev/rename.sh script can be used, and pkg-config starpu-1.0 should
+        be used.
+  * The communication cost in the heft and dmda scheduling strategies now
+        take into account the contention brought by the number of GPUs. This
+        changes the meaning of the beta factor, whose default 1.0 value should
+        now be good enough in most case.
+
+Small features:
+  * Allow users to disable asynchronous data transfers between CPUs and
+	GPUs.
+  * Update OpenCL driver to enable CPU devices (the environment variable
+	STARPU_OPENCL_ON_CPUS must be set to a positive value when
+	executing an application)
+  * struct starpu_data_interface_ops --- operations on a data
+        interface --- define a new function pointer allocate_new_data
+        which creates a new data interface of the given type based on
+        an existing handle
+  * Add a field named magic to struct starpu_task which is set when
+        initialising the task. starpu_task_submit will fail if the
+        field does not have the right value. This will hence avoid
+        submitting tasks which have not been properly initialised.
+  * Add a hook function pre_exec_hook in struct starpu_sched_policy.
+        The function is meant to be called in drivers. Schedulers
+        can use it to be notified when a task is about being computed.
+  * Add codelet execution time statistics plot.
+  * Add bus speed in starpu_machine_display.
+  * Add a STARPU_DATA_ACQUIRE_CB which permits to inline the code to be
+	done.
+  * Add gdb functions.
+  * Add complex support to LU example.
+  * Permit to use the same data several times in write mode in the
+	parameters of the same task.
+
+Small changes:
+  * Increase default value for STARPU_MAXCPUS -- Maximum number of
+        CPUs supported -- to 64.
+  * Add man pages for some of the tools
+  * Add C++ application example in examples/cpp/
+  * Add an OpenMP fork-join example.
+  * Documentation improvement.
+
+
+StarPU 0.9 (svn revision 3721)
+==============================================
+The extensions release
+
+  * Provide the STARPU_REDUX data access mode
+  * Externalize the scheduler API.
+  * Add theoretical bound computation
+  * Add the void interface
+  * Add power consumption optimization
+  * Add parallel task support
+  * Add starpu_mpi_insert_task
+  * Add profiling information interface.
+  * Add STARPU_LIMIT_GPU_MEM environment variable.
+  * OpenCL fixes
+  * MPI fixes
+  * Improve optimization documentation
+  * Upgrade to hwloc 1.1 interface
+  * Add fortran example
+  * Add mandelbrot OpenCL example
+  * Add cg example
+  * Add stencil MPI example
+  * Initial support for CUDA4
+
+StarPU 0.4 (svn revision 2535)
+==============================================
+The API strengthening release
+
+  * Major API improvements
+    - Provide the STARPU_SCRATCH data access mode
+    - Rework data filter interface
+    - Rework data interface structure
+    - A script that automatically renames old functions to accomodate with the new
+      API is available from https://scm.gforge.inria.fr/svn/starpu/scripts/renaming
+      (login: anonsvn, password: anonsvn)
+  * Implement dependencies between task directly (eg. without tags)
+  * Implicit data-driven task dependencies simplifies the design of
+    data-parallel algorithms
+  * Add dynamic profiling capabilities
+    - Provide per-task feedback
+    - Provide per-worker feedback
+    - Provide feedback about memory transfers
+  * Provide a library to help accelerating MPI applications
+  * Improve data transfers overhead prediction
+    - Transparently benchmark buses to generate performance models
+    - Bind accelerator-controlling threads with respect to NUMA locality
+  * Improve StarPU's portability
+    - Add OpenCL support
+    - Add support for Windows
+
+StarPU 0.2.901 aka 0.3-rc1 (svn revision 1236)
+==============================================
+The asynchronous heterogeneous multi-accelerator release
+
+  * Many API changes and code cleanups
+    - Implement starpu_worker_get_id
+    - Implement starpu_worker_get_name
+    - Implement starpu_worker_get_type
+    - Implement starpu_worker_get_count
+    - Implement starpu_display_codelet_stats
+    - Implement starpu_data_prefetch_on_node
+    - Expose the starpu_data_set_wt_mask function
+  * Support nvidia (heterogeneous) multi-GPU
+  * Add the data request mechanism
+    - All data transfers use data requests now
+    - Implement asynchronous data transfers
+    - Implement prefetch mechanism
+    - Chain data requests to support GPU->RAM->GPU transfers
+  * Make it possible to bypass the scheduler and to assign a task to a specific
+    worker
+  * Support restartable tasks to reinstanciate dependencies task graphs
+  * Improve performance prediction
+    - Model data transfer overhead
+    - One model is created for each accelerator
+  * Support for CUDA's driver API is deprecated
+  * The STARPU_WORKERS_CUDAID and STARPU_WORKERS_CPUID env. variables make it possible to
+    specify where to bind the workers
+  * Use the hwloc library to detect the actual number of cores
+
+StarPU 0.2.0 (svn revision 1013)
+==============================================
+The Stabilizing-the-Basics release
+
+  * Various API cleanups
+  * Mac OS X is supported now
+  * Add dynamic code loading facilities onto Cell's SPUs
+  * Improve performance analysis/feedback tools
+  * Application can interact with StarPU tasks
+    - The application may access/modify data managed by the DSM
+    - The application may wait for the termination of a (set of) task(s)
+  * An initial documentation is added
+  * More examples are supplied
+
+
+StarPU 0.1.0 (svn revision 794)
+==============================================
+First release.
+
+Status:
+ * Only supports Linux platforms yet
+ * Supported architectures
+   - multicore CPUs
+   - NVIDIA GPUs (with CUDA 2.x)
+   - experimental Cell/BE support
+
+Changes:
+ * Scheduling facilities
+   - run-time selection of the scheduling policy
+   - basic auto-tuning facilities
+ * Software-based DSM
+   - transparent data coherency management
+   - High-level expressive interface
+
