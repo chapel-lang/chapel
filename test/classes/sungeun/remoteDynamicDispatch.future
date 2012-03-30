@@ -1,0 +1,16 @@
+bug: Remote virtual method look up broken
+
+This bug is a result of the int64 change.
+
+We currently use an enum to index (cid) into the vmtable for dynamic
+dispatch.  The int64 change declared the temps used to get the remote
+index as an default int (64 bit), but the size of the enum is a 32-bit
+value on most of our platforms (XMT is an exception).  The address of
+the temporary and the cid field are passed to the communication
+routines, and they are treated as pointers to 64 bit values.  So you
+end up reading a 64 bit value from the address of something that is
+only 32 bits.  In many cases in our testing, this doesn't seem to
+matter because the extra bits are zero'ed out for some reason or
+another.  But for SSCA2 and a number of aniruddha maddness tests, we
+get a seg fault for multi-locale runs.
+
