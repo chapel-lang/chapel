@@ -653,8 +653,29 @@ static void build_record_hash_function(ClassType *ct) {
 }
 
 static void buildDefaultReadWriteFunctions(ClassType* ct) {
-  // Always make readThis/writeThis if they don't exist.
-  if (! function_exists("writeThis", 3, dtMethodToken, ct, dtWriter)) {
+  bool hasReadWriteThis = false;
+  bool hasReadThis = false;
+  bool hasWriteThis = false;
+  bool makeReadThisAndWriteThis = true;
+
+  // If we have a readWriteThis, we'll call it from readThis/writeThis.
+  if (function_exists("readWriteThis", 3, dtMethodToken, ct, NULL)) {
+    hasReadWriteThis = true;
+  }
+  // We'll make a writeThis and a readThis if neither exist.
+  // If only one exists, we leave just one (as some types
+  // can be written but not read, for example).
+  if (function_exists("writeThis", 3, dtMethodToken, ct, dtWriter)) {
+    hasWriteThis = true;
+    makeReadThisAndWriteThis = false;
+  }
+  if (function_exists("readThis", 3, dtMethodToken, ct, dtReader)) {
+    hasReadThis = true;
+    makeReadThisAndWriteThis = false;
+  }
+
+  // Make writeThis if we have neither writeThis nor readThis.
+  if ( makeReadThisAndWriteThis && ! hasWriteThis ) {
     FnSymbol* fn = new FnSymbol("writeThis");
     fn->cname = astr("_auto_", ct->symbol->name, "_write");
     fn->_this = new ArgSymbol(INTENT_BLANK, "this", ct);
@@ -665,7 +686,11 @@ static void buildDefaultReadWriteFunctions(ClassType* ct) {
     fn->insertFormalAtTail(fileArg);
     fn->retType = dtVoid;
 
-    fn->insertAtTail(new CallExpr(buildDotExpr(fileArg, "writeThisDefaultImpl"), fn->_this));
+    if( hasReadWriteThis ) {
+      fn->insertAtTail(new CallExpr(buildDotExpr(fn->_this, "readWriteThis"), fileArg));
+    } else {
+      fn->insertAtTail(new CallExpr(buildDotExpr(fileArg, "writeThisDefaultImpl"), fn->_this));
+    }
 
     DefExpr* def = new DefExpr(fn);
     ct->symbol->defPoint->insertBefore(def);
@@ -674,20 +699,22 @@ static void buildDefaultReadWriteFunctions(ClassType* ct) {
     normalize(fn);
     ct->methods.add(fn);
   }
-  if (!function_exists("readType", 3, dtMethodToken, dtReader, ct)) {
-    FnSymbol* fn = new FnSymbol("readType");
+  if ( makeReadThisAndWriteThis && ! hasReadThis ) {
+    FnSymbol* fn = new FnSymbol("readThis");
     fn->cname = astr("_auto_", ct->symbol->name, "_read");
-    ArgSymbol* arg = new ArgSymbol(INTENT_INOUT, "x", ct);
-    arg->markedGeneric = true;
-    fn->_this = new ArgSymbol(INTENT_BLANK, "this", dtReader);
+    fn->_this = new ArgSymbol(INTENT_BLANK, "this", ct);
     fn->_this->addFlag(FLAG_ARG_THIS);
+    ArgSymbol* fileArg = new ArgSymbol(INTENT_BLANK, "f", dtReader);
     fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
     fn->insertFormalAtTail(fn->_this);
-    fn->insertFormalAtTail(arg);
-    fn->retType = dtBool;
+    fn->insertFormalAtTail(fileArg);
+    fn->retType = dtVoid;
 
-    CallExpr* call = new CallExpr(buildDotExpr(fn->_this, "readThisDefaultImpl"), arg);
-    fn->insertAtTail(new CallExpr(PRIM_RETURN, call));
+    if( hasReadWriteThis ) {
+      fn->insertAtTail(new CallExpr(buildDotExpr(fn->_this, "readWriteThis"), fileArg));
+    } else {
+      fn->insertAtTail(new CallExpr(buildDotExpr(fileArg, "readThisDefaultImpl"), fn->_this));
+    }
 
     DefExpr* def = new DefExpr(fn);
     ct->symbol->defPoint->insertBefore(def);

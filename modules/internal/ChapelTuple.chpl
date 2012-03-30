@@ -97,15 +97,15 @@ proc _tuple.this(i : integral) var {
 //
 // tuple methods
 //
-proc _tuple.writeThis(f: Writer) {
-  if size == 0 then f.write("()"); // handle zero-length tuples
-  else {
-    f.write("(", this(1));
+proc _tuple.readWriteThis(f) {
+  f & new ioLiteral("(");
+  if size != 0 {
+    f & this(1);
     for param i in 2..size {
-      f.write(", ", this(i));
+      f & new ioLiteral(", ") & this(i);
     }
-    f.write(")");
   }
+  f & new ioLiteral(")");
 }
 
 //

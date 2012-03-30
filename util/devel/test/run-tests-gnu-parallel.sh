@@ -56,6 +56,7 @@ source util/setchplenv.bash > /dev/null
 echo MAKING $CLEAN
 #make clean > /dev/null
 make > /dev/null || { echo 'make failed' ; exit 1; }
+make spectests > /dev/null || { echo 'make failed' ; exit 1; }
 echo FINDING TESTS in $CLEAN/test
 cd test
 findtests
@@ -65,6 +66,7 @@ source util/setchplenv.bash > /dev/null
 echo MAKING .
 #make clean > /dev/null
 make > /dev/null || { echo 'make failed' ; exit 1; }
+make spectests > /dev/null || { echo 'make failed' ; exit 1; }
 echo FINDING TESTS in ./test
 cd test
 findtests

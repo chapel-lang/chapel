@@ -656,23 +656,26 @@ class DefaultRectangularArr: BaseArr {
   }
 }
 
-proc DefaultRectangularDom.dsiSerialWrite(f: Writer) {
-  f.write("[", dsiDim(1));
+proc DefaultRectangularDom.dsiSerialReadWrite(f /*: Reader or Writer*/) {
+  f & new ioLiteral("[") & ranges(1);
   for i in 2..rank do
-    f.write(", ", dsiDim(i));
-  f.write("]");
+    f & new ioLiteral(", ") & ranges(i);
+  f & new ioLiteral("]");
 }
 
-proc DefaultRectangularArr.dsiSerialWrite(f: Writer) {
+proc DefaultRectangularDom.dsiSerialWrite(f: Writer) { this.dsiSerialReadWrite(f); }
+proc DefaultRectangularDom.dsiSerialRead(f: Reader) { this.dsiSerialReadWrite(f); }
+
+proc DefaultRectangularArr.dsiSerialReadWrite(f /*: Reader or Writer*/) {
   proc recursiveArrayWriter(in idx: rank*idxType, dim=1, in last=false) {
     var makeStridePositive = if dom.ranges(dim).stride > 0 then 1:idxType else -1:idxType;
     if dim == rank {
       var first = true;
-      if debugDefaultDist then f.writeln(dom.ranges(dim));
+      if debugDefaultDist && f.writing then f.writeln(dom.ranges(dim));
       for j in dom.ranges(dim) by makeStridePositive {
-        if first then first = false; else f.write(" ");
+        if first then first = false; else f & new ioLiteral(" ");
         idx(dim) = j;
-        f.write(dsiAccess(idx));
+        f & dsiAccess(idx);
       }
     } else {
       for j in dom.ranges(dim) by makeStridePositive {
@@ -683,12 +686,14 @@ proc DefaultRectangularArr.dsiSerialWrite(f: Writer) {
       }
     }
     if !last && dim != 1 then
-      f.writeln();
+      f & new ioNewline();
   }
   const zeroTup: rank*idxType;
   recursiveArrayWriter(zeroTup);
 }
 
+proc DefaultRectangularArr.dsiSerialWrite(f: Writer) { this.dsiSerialReadWrite(f); }
+proc DefaultRectangularArr.dsiSerialRead(f: Reader) { this.dsiSerialReadWrite(f); }
 
 // This is very conservative.  For example, it will return false for
 // 1-d array aliases that are shifted from the aliased array.

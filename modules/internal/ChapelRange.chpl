@@ -620,9 +620,9 @@ iter range.these(param tag: iterKind, followThis) where tag == iterKind.follower
 //#
 
 // Write implementation for ranges
-proc range.writeThis(f: Writer)
+proc range.readWriteThis(f)
 {
-  if !aligned {
+  if f.writing && !aligned {
     // set things up so alignment does not get printed out
     _base._alignment =
       if isBoundedRange(this) then
@@ -636,7 +636,7 @@ proc range.writeThis(f: Writer)
     // could verify that we succeeded:
     //assert(_base.isNaturallyAligned());
   }
-  f.write(_base);
+  _base.readWriteThis(f);
 }
 
 // Return a substring of a string with a range of indices.

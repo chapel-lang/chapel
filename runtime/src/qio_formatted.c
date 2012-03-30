@@ -632,6 +632,32 @@ err_t qio_channel_scan_literal(const int threadsafe, qio_channel_t* restrict ch,
 
   if( len == 0 ) return EINVAL;
 
+  if( skipws ) {
+    int nbytes;
+    int32_t wchr;
+    size_t min_nonspace = len;
+    size_t max_nonspace = 0;
+    // If we're skipping whitespace,
+    // ignore leading or trailing whitespace
+    // in the pattern.
+    for( nread = 0; nread < len; nread += nbytes ) {
+      err = qio_decode_char_buf(&wchr, &nbytes, &match[nread], len - nread);
+      if( err ) return err;
+      if( ! iswspace(wchr) ) {
+        if( nread < min_nonspace ) min_nonspace = nread;
+        if( nread > max_nonspace ) max_nonspace = nread;
+      }
+    }
+
+    if( min_nonspace > max_nonspace ) {
+      nread = 0;
+      len = 0;
+    } else {
+      nread = min_nonspace;
+      len = max_nonspace + 1; 
+    }
+  }
+
   if( threadsafe ) {
     err = qio_lock(&ch->lock);
     if( err ) return err;
@@ -1284,7 +1310,9 @@ err_t _peek_number_unlocked(qio_channel_t* restrict ch, number_reading_state_t* 
   } else if( chr == '0' ) {
     // Read x or b
     NEXT_CHR_OR_EOF;
-    if( s->allow_base && chr == 'x' ) {
+    if( err == EEOF ) {
+      s->digits_start = qio_channel_offset_unlocked(ch) - 1;
+    } else if( s->allow_base && chr == 'x' ) {
       s->gotbase = s->usebase = 16;
       NEXT_CHR;
       START_DIGITS;
@@ -1781,7 +1809,7 @@ int _ftoa(char* restrict dst, size_t size, double num, int base, const qio_style
     }
 
     //printf("Printing with base %i type %i precision %i sig %i upper %i showp %i\n",
-    //       style->base, style->realtype, precision, sigdigits, style->uppercase, style->showpoint);
+    //       style->base, style->realfmt, precision, sigdigits, style->uppercase, style->showpoint);
 
     // Figure out how big our output is...
     if( style->base == 16 ) {
@@ -1810,7 +1838,7 @@ int _ftoa(char* restrict dst, size_t size, double num, int base, const qio_style
             got = snprintf(buf, buf_sz, "%.*a", precision, num);
         }
       }
-    } else if( style->realtype == 0 ) {
+    } else if( style->realfmt == 0 ) {
       if( sigdigits < 0 ) {
         if( style->uppercase ) {
           if( style->showpoint )
@@ -1836,7 +1864,7 @@ int _ftoa(char* restrict dst, size_t size, double num, int base, const qio_style
             got = snprintf(buf, buf_sz, "%.*g", sigdigits, num);
         }
       }
-    } else if( style->realtype == 1 ) {
+    } else if( style->realfmt == 1 ) {
       if( precision < 0 ) {
         if( style->uppercase ) {
           if( style->showpoint )
@@ -1862,7 +1890,7 @@ int _ftoa(char* restrict dst, size_t size, double num, int base, const qio_style
             got = snprintf(buf, buf_sz, "%.*f", precision, num);
         }
       }
-    } else if( style->realtype == 2 ) {
+    } else if( style->realfmt == 2 ) {
       if( precision < 0 ) {
         if( style->uppercase ) {
           if( style->showpoint )
