@@ -1,6 +1,6 @@
-param maxU2 : uint = 2**31;
-param maxU1 : uint = maxU2 - 1 + maxU2;
-param maxU11 : uint = maxU1 + 1;
+param maxU2 : uint(32) = 2**31;
+param maxU1 : uint(32) = maxU2 - 1 + maxU2;
+param maxU11 : uint(32) = maxU1 + 1;
 
 writeln(typeToString(maxU11.type));
 writeln(maxU11);          // silent compile-time rollover!

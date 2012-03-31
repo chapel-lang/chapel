@@ -43,8 +43,8 @@ class locale {
     return retval;
   }
 
-  proc writeThis(f: Writer) {
-    f.write("LOCALE", id);
+  proc readWriteThis(f) {
+    f & new ioLiteral("LOCALE") & chpl_id;
   }
 }
 

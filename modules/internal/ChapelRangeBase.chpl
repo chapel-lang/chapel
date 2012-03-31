@@ -943,20 +943,36 @@ iter rangeBase.these(param tag: iterKind, followThis) where tag == iterKind.foll
 //#
 
 // Write implementation for ranges
-proc rangeBase.writeThis(f: Writer)
+proc rangeBase.readWriteThis(f)
 {
   if hasLowBound() then
-    f.write(_low);
-  f.write("..");
+    f & _low;
+  f & new ioLiteral("..");
   if hasHighBound() then
-    f.write(_high);
+    f & _high;
   if stride != 1 then
-    f.write(" by ", stride);
+    f & new ioLiteral(" by ") & stride;
 
   // Write out the alignment only if it differs from natural alignment.
   // We take alignment modulo the stride for consistency.
-  if ! isNaturallyAligned() then
-    f.write(" align ", chpl__mod(_alignment, stride));
+  if f.writing {
+    if ! isNaturallyAligned() then
+      f & new ioLiteral(" align ") & chpl__mod(_alignment, stride);
+  } else {
+    // try reading an 'align'
+    if !f.error() {
+      f & new ioLiteral(" align ");
+      if f.error() == EFORMAT then {
+        // naturally aligned.
+        f.clearError();
+      } else {
+        // un-naturally aligned - read the un-natural alignment
+        var a: idxType;
+        f & a;
+        _alignment = a;
+      }
+    }
+  }
 }
 
 // Return a substring of a string with a range of indices.

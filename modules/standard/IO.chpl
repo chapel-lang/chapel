@@ -176,11 +176,10 @@ extern const QIO_STRING_FORMAT_CHPL:uint(8);
 extern const QIO_STRING_FORMAT_JSON:uint(8);
 extern const QIO_STRING_FORMAT_TOEND:uint(8);
 
-//extern record qio_style_t {
-extern record iostyle {
-  var binary:uint(8);
+extern record iostyle { // aka qio_style_t
+  var binary:uint(8) = 0;
   // binary style choices
-  var byteorder:uint(8);
+  var byteorder:uint(8) = iokind.native:uint(8);
   // string binary style:
   // -1 -- 1 byte of length before
   // -2 -- 2 bytes of length before
@@ -189,12 +188,12 @@ extern record iostyle {
   // -10 -- variable byte length before (hi-bit 1 means more, little endian)
   // -0x01XX -- read until terminator XX is read
   //  + -- nonzero positive -- read exactly this length.
-  var str_style:int(64);
+  var str_style:int(64) = -10;
   // text style choices
-  var min_width:uint(32);
-  var max_width:uint(32);
-  var string_start:style_char_t;
-  var string_end:style_char_t;
+  var min_width:uint(32) = 1;
+  var max_width:uint(32) = max(uint(32));
+  var string_start:style_char_t = 0x22; // "
+  var string_end:style_char_t = 0x22; // "
 
   /* QIO_STRING_FORMAT_WORD  string is as-is; reading reads until whitespace.
      QIO_STRING_FORMAT_BASIC only escape string_end and \ with \
@@ -204,27 +203,27 @@ extern record iostyle {
                              and nonprinting characters c = \uABCD
      QIO_STRING_FORMAT_TOEND string is as-is; reading reads until string_end
    */
-  var string_format:uint(8);
+  var string_format:uint(8) = 0;
   // numeric scanning/printing choices
-  var base:uint(8);
-  var point_char:style_char_t;
-  var exponent_char:style_char_t;
-  var other_exponent_char:style_char_t;
-  var positive_char:style_char_t;
-  var negative_char:style_char_t;
-  var prefix_base:uint(8);
+  var base:uint(8) = 0;
+  var point_char:style_char_t = 0x2e; // .
+  var exponent_char:style_char_t = 0x65; // e
+  var other_exponent_char:style_char_t = 0x70; // p
+  var positive_char:style_char_t = 0x2b; // +;
+  var negative_char:style_char_t = 0x2d; // -;
+  var prefix_base:uint(8) = 1;
   // numeric printing choices
-  var pad_char:style_char_t;
-  var showplus:uint(8);
-  var uppercase:uint(8);
-  var leftjustify:uint(8);
-  var showpoint:uint(8);
-  var showpointzero:uint(8);
-  var precision:int(32);
-  var significant_digits:int(32);
-  var realtype:uint(8);
+  var pad_char:style_char_t = 0x20; // ' '
+  var showplus:uint(8) = 0;
+  var uppercase:uint(8) = 0;
+  var leftjustify:uint(8) = 0;
+  var showpoint:uint(8) = 0;
+  var showpointzero:uint(8) = 1;
+  var precision:int(32) = -1;
+  var significant_digits:int(32) = -1;
+  var realfmt:uint(8) = 0;
 
-  var complex_style:uint(8);
+  var complex_style:uint(8) = 0;
 }
 
 extern const QIO_STYLE_SIZE:size_t;
@@ -370,9 +369,6 @@ proc defaultIOStyle():iostyle {
   return ret;
 }
 
-proc iostyle.iostyle() {
-  qio_style_init_default(this);
-}
 proc iostyle.native(str_style:int(64)=stringStyleWithVariableLength()):iostyle {
   var ret = this;
   ret.binary = 1;
@@ -764,11 +760,7 @@ record ioChar {
   var ch:int(32);
   proc writeThis(f: Writer) {
     halt("ioChar.writeThis must be written in Writer subclasses");
-  } 
-}
-proc Reader.readType(inout x:ioChar):bool {
-  halt("ioChar.readType must be implemented in Reader subclasses.");
-  return false;
+  }
 }
 pragma "inline" proc _cast(type t, x: ioChar) where t == string {
   return qio_encode_to_string(x.ch);
@@ -781,10 +773,6 @@ record ioNewline {
     // Normally this is handled explicitly in read/write.
     f.write("\n");
   }
-}
-proc Reader.readType(inout x:ioNewline):bool {
-  halt("ioNewline.readType must be implemented in Reader subclasses.");
-  return false;
 }
 pragma "inline" proc _cast(type t, x: ioNewline) where t == string {
   return "\n";
@@ -799,10 +787,6 @@ record ioLiteral {
     f.write(val);
   }
 }
-proc Reader.readType(inout x:ioLiteral):bool {
-  halt("readType(ioLiteral) must be implemented in Reader subclasses.");
-  return false;
-}
 
 pragma "inline" proc _cast(type t, x: ioLiteral) where t == string {
   return x.val;
@@ -816,10 +800,6 @@ record ioBits {
     // Normally this is handled explicitly in read/write.
     f.write(v);
   }
-}
-proc Reader.readType(inout x:ioBits):bool {
-  halt("readType(ioBits) must be implemented in Reader subclasses.");
-  return false;
 }
 
 pragma "inline" proc _cast(type t, x: ioBits) where t == string {
@@ -842,6 +822,22 @@ proc channel._ch_ioerror(error:syserr, msg:string) {
   }
   ioerror(error, msg, path, offset);
 }
+proc channel._ch_ioerror(errstr:string, msg:string) {
+  var path:string = "unknown";
+  var offset:int(64) = -1;
+  on __primitive("chpl_on_locale_num", this.home_uid) {
+    var tmp_path:string;
+    var tmp_offset:int(64);
+    var err:syserr = ENOERR;
+    err = qio_channel_path_offset(locking, _channel_internal, tmp_path, tmp_offset);
+    if !err {
+      path = tmp_path;
+      offset = tmp_offset;
+    }
+  }
+  ioerror(errstr, msg, path, offset);
+}
+
 
 inline
 proc channel.lock(out error:syserr) {
@@ -1520,7 +1516,7 @@ proc channel.write(args ...?k,
     this._set_style(style);
     for param i in 1..k {
       if !error {
-        error = _write_one_internal(iokind.dynamic, args(i));
+        error = _write_one_internal(_channel_internal, iokind.dynamic, args(i));
       }
     }
     this._set_style(save_style);
@@ -1583,7 +1579,7 @@ proc channel.assertEOF(error:string) {
     var err:syserr;
     this.read(tmp, error=err);
     if err != EEOF {
-      this._ch_ioerror(EFORMAT, error);
+      this._ch_ioerror("assert failed", error);
     }
   }
 }
@@ -1724,38 +1720,28 @@ proc read(type t ...?numTypes) {
   return stdin.read((...t));
 }
 
-// readType and writeThis methods for the basic types
+// readThis and writeThis methods for the basic types
 // these just need to call writer.writePrimitive or reader.readPrimitive
-proc Reader.readType(inout x:numeric):bool {
-  return this.readPrimitive(x);
-  /*var m = this.readPrimitive(x.type);
-  x = m.it;
-  return m.hasit;*/
-}
-proc Reader.readType(inout x:enumerated):bool {
-  return this.readPrimitive(x);
-  /*var m = this.readPrimitive(x.type);
-  x = m.it;
-  return m.hasit;*/
-}
-proc Reader.readType(inout x:bool):bool {
-   return this.readPrimitive(x);
-  /*var m = this.readPrimitive(x.type);
-  x = m.it;
-  return m.hasit;*/
-}
-proc Reader.readType(inout x:string):bool {
-  return this.readPrimitive(x);
-  /*var m = this.readPrimitive(x.type);
-  x = m.it;
-  return m.hasit;*/
-}
+/* commented out because these should never be called directly;
+   readPrimitive should be called instead. It used to be the case that
+   some writeThis methods would directly call writeThis on
+   the elements of an aggregate data structure; these were
+   needed to support that operation. But, there should be no
+   more direct calls to writeThis.
+
+   Note that readThis doesn't work as a method
+   on e.g. an int because this is not an lvalue.
+
+proc numeric.readThis(r: Reader) { r.readPrimitive(this); }
+proc enumerated.readThis(r: Reader) { r.readPrimitive(this); }
+proc bool.readThis(r: Reader) { r.readPrimitive(this); }
+proc string.readThis(r: Reader) { r.readPrimitive(this); }
 
 proc numeric.writeThis(r: Writer) { r.writePrimitive(this); }
 proc enumerated.writeThis(r: Writer) { r.writePrimitive(this); }
 proc bool.writeThis(r: Writer) { r.writePrimitive(this); }
 proc string.writeThis(r: Writer) { r.writePrimitive(this); }
-
+*/
 
 class ChannelWriter : Writer {
   var _channel_internal:qio_channel_ptr_t = QIO_CHANNEL_PTR_NULL;
@@ -1783,6 +1769,7 @@ class ChannelWriter : Writer {
     // but without it test/modules/diten/returnClassDiffModule5.chpl fails.
     compilerError("writeThis on ChannelWriter called");
   }
+  // writeThis + no readThis -> ChannelWriter itself cannot be read
 }
 class ChannelReader : Reader {
   var _channel_internal:qio_channel_ptr_t = QIO_CHANNEL_PTR_NULL;
@@ -1800,24 +1787,15 @@ class ChannelReader : Reader {
   proc clearError() {
     err = ENOERR;
   }
-  proc readPrimitive(inout x:?t):bool where _isIoPrimitiveTypeOrNewline(t) {
+  proc readPrimitive(inout x:?t) where _isIoPrimitiveTypeOrNewline(t) {
     if !err {
-      //err = _read_one_internal(_channel_internal, iokind.dynamic, ret.it);
       err = _read_one_internal(_channel_internal, iokind.dynamic, x);
-      if err == EEOF {
-        clearError();
-        return false;
-        //ret.hasit = false;
-      } else {
-        return true;
-        //ret.hasit = true;
-      }
-    } else {
-      //ret.hasit = false;
-      return false;
     }
-    //return ret;
   }
+  proc writeThis(w:Writer) {
+    compilerError("writeThis on ChannelReader called");
+  }
+  // writeThis + no readThis -> ChannelReader itself cannot be read
 }
 
 // Delete a file.

@@ -464,8 +464,8 @@ record _distribution {
 
   proc idxToLocale(ind) return _value.dsiIndexToLocale(ind);
 
-  proc writeThis(x: Writer) {
-    x.write(_value);
+  proc readWriteThis(f) {
+    f & _value;
   }
 
   proc displayRepresentation() { _value.dsiDisplayRepresentation(); }
@@ -819,6 +819,9 @@ record _domain {
 
   proc writeThis(f: Writer) {
     _value.dsiSerialWrite(f);
+  }
+  proc readThis(f: Reader) {
+    _value.dsiSerialRead(f);
   }
 
   proc localSlice(r: range(?)... rank) {
@@ -1183,6 +1186,9 @@ record _array {
 
   proc writeThis(f: Writer) {
     _value.dsiSerialWrite(f);
+  }
+  proc readThis(f: Reader) {
+    _value.dsiSerialRead(f);
   }
 
   // sparse array interface

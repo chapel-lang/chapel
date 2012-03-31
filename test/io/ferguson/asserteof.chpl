@@ -1,4 +1,4 @@
-config const filename = "asserteof-test.nums";
+config const filename = "asserteof.test.nums";
 
 var infile = open(filename, iomode.cwr);
 

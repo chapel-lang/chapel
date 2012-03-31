@@ -590,6 +590,10 @@ if ($?CHPL_COMM == 0) then
     setenv CHPL_COMM `$CHPL_HOME/util/chplenv/comm`
 endif
 
+if ($?CHPL_GMP == 0) then
+    setenv CHPL_GMP `$CHPL_HOME/util/chplenv/gmp`
+endif
+
 set utildir = "$CHPL_HOME/util/test"
 if (! -d $utildir || ! -x $utildir) then
     echo "Error: Cannot find $CHPL_HOME/test/util"

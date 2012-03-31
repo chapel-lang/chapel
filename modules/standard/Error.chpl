@@ -35,6 +35,12 @@ proc ioerror(error:syserr, msg:string, path:string, offset:int(64))
   __primitive("chpl_error", errstr + " " + msg + " with path " + quotedpath + " offset " + offset:string);
 }
 
+proc ioerror(errstr:string, msg:string, path:string, offset:int(64))
+{
+  var quotedpath:string;
+  quotedpath = qio_quote_string_chpl(path, path.length);
+  __primitive("chpl_error", errstr + " " + msg + " with path " + quotedpath + " offset " + offset:string);
+}
 
 proc errorToString(error:syserr):string
 {

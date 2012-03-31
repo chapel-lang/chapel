@@ -7,6 +7,8 @@ config const dataParTasksPerLocale = 0;
 config const dataParIgnoreRunningTasks = true;
 config const dataParMinGranularity: int = 1;
 
+extern proc chpl_task_yield();
+
 // NOTE: If module initialization order changes, this may be affected
 if dataParTasksPerLocale<0 then halt("dataParTasksPerLocale must be >= 0");
 if dataParMinGranularity<=0 then halt("dataParMinGranularity must be > 0");
@@ -47,7 +49,7 @@ class BaseDist {
   }
 
   inline proc _lock_doms() {
-    while (_domsLock.testAndSet()) do ;
+    while (_domsLock.testAndSet()) do chpl_task_yield();
   }
 
   inline proc _unlock_doms() {
@@ -134,7 +136,7 @@ class BaseDom {
   }
 
   inline proc _lock_arrs() {
-    while (_arrsLock.testAndSet()) do ;
+    while (_arrsLock.testAndSet()) do chpl_task_yield();
   }
 
   inline proc _unlock_arrs() {

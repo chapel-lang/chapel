@@ -1,0 +1,6 @@
+#
+# CHPL_MAKE_GMP
+#
+#
+#
+CHPL_MAKE_GMP = $(shell $(CHPL_MAKE_HOME)/util/chplenv/gmp $(CHPL_MAKE_HOST_TARGET))

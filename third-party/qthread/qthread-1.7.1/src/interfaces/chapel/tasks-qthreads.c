@@ -109,7 +109,12 @@ chpl_bool chpl_sync_isFull(void            *val_ptr,
                            chpl_sync_aux_t *s,
                            chpl_bool        simple_sync_var)
 {
+  if(simple_sync_var)
+  {
+    return qthread_syncvar_status(&(s->signal_full));
+  } else {
     return s->is_full;
+  }
 }
 
 void chpl_sync_initAux(chpl_sync_aux_t *s)
