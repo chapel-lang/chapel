@@ -215,7 +215,7 @@ module SSCA2_kernels
 
       // Initialize task private data
       var localePrivate: [PrivateSpace] localePrivateData(vertex_domain.type);
-      forall l in localePrivate do on l {
+      forall l in localePrivate do {
         l = new localePrivateData(vertex_domain);
         for t in l.temps { // this might be bad for first-touch
           t = new taskPrivateData(domain(index(vertex_domain)), vertex_domain);
@@ -250,7 +250,7 @@ module SSCA2_kernels
         var min_distance  => lp.get_min_distance(tid);
         var path_count$   => lp.get_path_count(tid);
         var children_list => lp.get_children_list(tid);
-        forall v in vertex_domain do on v {
+        forall v in vertex_domain do {
           depend[v] = 0.0;
           min_distance[v].write(-1);
           path_count$[v].writeXF(0.0);
@@ -395,7 +395,7 @@ module SSCA2_kernels
           for current_distance in 2 .. graph_diameter by -1 {
             curr_Level = curr_Level.previous;
 
-            forall u in curr_Level.Members {
+            for u in curr_Level.Members do on vertex_domain.dist.idxToLocale(u) {
               depend (u) = + reduce [v in children_list(u).Row_Children[1..children_list(u).child_count.read()]]
                 ( path_count$[u].readFF() / 
                   path_count$[v].readFF() )      *
@@ -550,39 +550,43 @@ module SSCA2_kernels
     }
 
     inline proc reset(n: int) {
-      count.write(n);
-      done.write(false);
+      on this {
+        count.write(n);
+        done.write(false);
+      }
     }
 
     inline proc barrier() {
-      var myc = count.fetchSub(1);
-      if myc<=1 {
-        if done.testAndSet() then
-          halt("Too many callers to barrier()");
-      } else {
-        wait();
+      on this {
+        var myc = count.fetchSub(1);
+        if myc<=1 {
+          if done.testAndSet() then
+            halt("Too many callers to barrier()");
+        } else {
+          wait();
+        }
       }
     }
 
     inline proc notify() {
-      var myc = count.fetchSub(1);
-      if myc<=1 {
-        if done.testAndSet() then
-          halt("Too many callers to barrier_notify()");
+      on this {
+        var myc = count.fetchSub(1);
+        if myc<=1 {
+          if done.testAndSet() then
+            halt("Too many callers to barrier_notify()");
+        }
       }
     }
 
     inline proc wait() {
-      while !done.read() do chpl_task_yield();
+      on this do
+        while !done.read() do chpl_task_yield();
     }
 
     inline proc try() {
       return done.read();
     }
   }
-
-
-
 
 }
 
