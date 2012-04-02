@@ -550,11 +550,12 @@ initPrimitive() {
 
   prim_def(PRIM_VMT_CALL, "virtual method call", returnInfoVirtualMethodCall, true, true);
 
-  /* MAP necessary for parallel IL */
-  prim_def(PRIM_MAP_SEQ, "map sequential", returnInfoVoid);
-  prim_def(PRIM_MAP_PAR, "map parallel", returnInfoVoid);
+  /* Necessary runtime calls to create new codelets */
+  prim_def(PRIM_CODELET_SEQ, "sequential codelet", returnInfoVoid);
+  prim_def(PRIM_CODELET_PAR, "parallel codelet", returnInfoVoid);
   prim_def(PRIM_IDEN, "identity", returnInfoVoid);
   prim_def(PRIM_ON_IL, "chpl_target_il", returnInfoVoid);
+  prim_def(PRIM_CODELET_INIT, "chpl_codelet_init", returnInfoVoid);
 
   prim_def(PRIM_NUM_FIELDS, "num fields", returnInfoInt32);
   prim_def(PRIM_FIELD_NUM_TO_NAME, "field num to name", returnInfoString);

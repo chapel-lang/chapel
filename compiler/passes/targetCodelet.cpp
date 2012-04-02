@@ -8,6 +8,7 @@
 #include "optimizations.h"
 
 #define END_NODE 0
+#define TAG_ID(id) (1 << id)
 
 /* Routine to remove empty if or while blocks.
  * These typically occur due to previous transformations */
@@ -190,47 +191,119 @@ createFn(FnSymbol *fn, Map<BasicBlock*, Interval*>& intervalMaps) {
       intervalFn->intervals->add(interval);
       nestedFunctions.add(intervalFn);
       createCodelet(fn, intervalFn, interval, intervalMaps);
+      interval = NULL;
       insert_help(intervalFn, NULL, intervalFn);
-
-      /* build the list of outgoing edges */
-      char *labelStr = NULL;
-      if (interval->outs.n > 0) {
-        forv_Vec(Interval, intOut, interval->outs) {
-          if (labelStr == NULL)
-            labelStr = (char *)astr(istr(intOut->id));
-          else
-            labelStr = (char *)astr(labelStr, ",",astr(istr(intOut->id)));
-        }
-        labelStr = (char *)astr("[", labelStr, "]");
-      }
-      else 
-        /* if this is the last actual map, we return back to the MAIN.c*/
-        labelStr = (char *)astr("[",istr(END_NODE),"]");
-
 
       CallExpr *intervalCall = new CallExpr(intervalFn);
       intervalCall->insertAtTail(numID);
 
-
       fn->insertAtTail(new DefExpr(intervalFn));
-      CallExpr *call = NULL;
-      if (interval->intervalTag == BLOCK || interval->intervalTag == FOR_LOOP) {
-        call = new CallExpr(PRIM_MAP_SEQ, new_IntSymbol(interval->id), 
-                            new_StringSymbol(labelStr), numID, intervalCall);
-      }
-      else if (interval->intervalTag == FORALL_LOOP) {
-        call = new CallExpr(PRIM_MAP_PAR, new_IntSymbol(interval->id), 
-                            new_StringSymbol(labelStr), numID, interval->low, 
-                            interval->stride, interval->high, interval->ILIndex,
-                            intervalCall);
-      }
-      fn->insertAtTail(call);
+      fn->insertAtTail(intervalCall);
     }
-
     fn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
     fn->retType = dtVoid;
-
     flattenNestedFunctions(nestedFunctions, true);
+
+#if 0
+    compute_call_sites();
+    /* Create wrapper function for each codelet, so that the runtime makes the 
+     * actual codelet invocation */
+    forv_Vec(FnSymbol, nestedfn, nestedFunctions) {
+
+      CallExpr *intervalCall = new CallExpr(nestedfn);
+      intervalCall->insertAtTail(numID);
+
+      /* Construct bitmap of incoming dependent edges */
+      uint64_t incoming = 0;
+      forv_Vec(Interval, intIn, nestedfn->intervals->v[0]->ins) {
+        //incoming |= (1 << intIn->id);
+        incoming |= TAG_ID(intIn->id);
+      }
+      uint64_t outgoing = 0;
+      forv_Vec(Interval, intOut, nestedfn->intervals->v[0]->outs) {
+        //outgoing |= (1 << intOut->id);
+        outgoing |= TAG_ID(intOut->id);
+      }
+      CallExpr *call = NULL;
+      if (nestedfn->intervals && (nestedfn->intervals->v[0]->intervalTag == BLOCK || nestedfn->intervals->v[0]->intervalTag == FOR_LOOP)) {
+        //call = new CallExpr(PRIM_CODELET_SEQ, new_IntSymbol(1 << nestedfn->intervals->v[0]->id), 
+        call = new CallExpr(PRIM_CODELET_SEQ, new_IntSymbol(TAG_ID(nestedfn->intervals->v[0]->id)), 
+                            new_IntSymbol(incoming), new_IntSymbol(outgoing), numID, intervalCall);
+                            //new_StringSymbol(labelStr), numID, intervalCall);
+      }
+      else if (nestedfn->intervals && (nestedfn->intervals->v[0]->intervalTag == FORALL_LOOP)) {
+        call = new CallExpr(PRIM_CODELET_PAR, new_IntSymbol(nestedfn->intervals->v[0]->id), 
+                            new_StringSymbol(labelStr), numID, nestedfn->intervals->v[0]->low, 
+                            nestedfn->intervals->v[0]->stride, nestedfn->intervals->v[0]->high, nestedfn->intervals->v[0]->ILIndex,
+                            intervalCall);
+      }
+      //fn->insertAtTail(call);
+      fn->body->body.tail->insertBefore(call);
+
+      forv_Vec(CallExpr, call, *nestedfn->calledBy) {
+        /* bundle the arguments */
+        bundleArgs(call);
+      }
+    }
+#else
+#if 1
+    compute_call_sites();
+    /* Create wrapper function for each codelet, so that the runtime makes the 
+     * actual codelet invocation */
+    forv_Vec(FnSymbol, nestedfn, nestedFunctions) {
+      forv_Vec(CallExpr, call, *nestedfn->calledBy) {
+        /* bundle the arguments */
+        bundleArgs(call);
+      }
+    }
+
+    compute_call_sites();
+    forv_Vec(FnSymbol, nestedfn, nestedFunctions) {
+      forv_Vec(CallExpr, call, *nestedfn->calledBy) {
+        
+        if (call->parentExpr == NULL) continue;
+
+        FnSymbol *wrapperFn = toFnSymbol(call->parentSymbol);
+
+        forv_Vec(CallExpr, wrapperCall, *wrapperFn->calledBy) {
+
+          /* Construct bitmap of incoming dependent edges */
+          uint64_t incoming = 0;
+          forv_Vec(Interval, intIn, nestedfn->intervals->v[0]->ins) {
+            //incoming |= (1 << intIn->id);
+            incoming |= TAG_ID(intIn->id);
+          }
+          uint64_t outgoing = 0;
+          forv_Vec(Interval, intOut, nestedfn->intervals->v[0]->outs) {
+            //outgoing |= (1 << intOut->id);
+            outgoing |= TAG_ID(intOut->id);
+          }
+          if (nestedfn->intervals && (nestedfn->intervals->v[0]->intervalTag == BLOCK || nestedfn->intervals->v[0]->intervalTag == FOR_LOOP)) {
+            //call->replace(new CallExpr(PRIM_CODELET_SEQ, new_IntSymbol(TAG_ID(nestedfn->intervals->v[0]->id)), 
+            //    new_IntSymbol(incoming), new_IntSymbol(outgoing), numID, call));
+            fn->body->body.tail->insertBefore(new CallExpr(PRIM_CODELET_SEQ, new_IntSymbol(TAG_ID(nestedfn->intervals->v[0]->id)), 
+                  new_IntSymbol(incoming), new_IntSymbol(outgoing), numID, new_StringSymbol(wrapperFn->name), wrapperCall->get(1)->copy()));
+                  //new_IntSymbol(incoming), new_IntSymbol(outgoing), numID, wrapperCall->copy()));
+            wrapperCall->remove();
+          }
+          else if (nestedfn->intervals && (nestedfn->intervals->v[0]->intervalTag == FORALL_LOOP)) {
+            fn->body->body.tail->insertBefore(new CallExpr(PRIM_CODELET_PAR, new_IntSymbol(TAG_ID(nestedfn->intervals->v[0]->id)),
+                  new_IntSymbol(incoming), new_IntSymbol(outgoing), nestedfn->intervals->v[0]->low,
+                  nestedfn->intervals->v[0]->stride, nestedfn->intervals->v[0]->high, nestedfn->intervals->v[0]->ILIndex,
+                  numID, new_StringSymbol(wrapperFn->name), wrapperCall->get(1)->copy()));
+            wrapperCall->remove();
+
+            //call->replace(new CallExpr(PRIM_CODELET_PAR, new_IntSymbol(nestedfn->intervals->v[0]->id), 
+            //    new_StringSymbol(""), numID, nestedfn->intervals->v[0]->low, 
+            //    nestedfn->intervals->v[0]->stride, nestedfn->intervals->v[0]->high, nestedfn->intervals->v[0]->ILIndex,
+            //    call));
+          }
+        }
+
+      }
+    }
+#endif
+#endif
   }
   collapseBlocks(fn->body);
 }
@@ -248,9 +321,9 @@ static void inlineMainFunction(void) {
 }
 
 void 
-targetIL() {
+targetCodelet() {
 
-  if (fTargetIL) {
+  if (fTargetCodelet) {
 
     /* First thing we need to do is inline the main function */
     inlineMainFunction();
@@ -278,6 +351,9 @@ targetIL() {
         createFn(fn, intervalMaps);
         removeEmptyBlocks(fn);
         inlineFunction(fn);
+
+        if (fTargetCodelet)
+          fn->insertAtHead(new CallExpr(PRIM_CODELET_INIT));
       }
     }
   }

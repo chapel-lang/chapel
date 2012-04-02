@@ -18,7 +18,7 @@
 // created by the previous parallel pass. This is a way to pass along
 // multiple args through the limitation of one arg in the runtime's
 // thread creation interface. 
-static void
+void
 bundleArgs(CallExpr* fcall) {
   SET_LINENO(fcall);
   ModuleSymbol* mod = fcall->getModule();

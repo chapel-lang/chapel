@@ -16,7 +16,7 @@ PASSES_SRCS = \
         returnStarTuplesByRefArgs.cpp \
         scopeResolve.cpp \
         semanticChecks.cpp \
-	targetIL.cpp
+	targetCodelet.cpp
 
 SVN_SRCS = $(PASSES_SRCS)
 SRCS = $(SVN_SRCS)

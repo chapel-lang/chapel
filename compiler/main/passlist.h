@@ -50,7 +50,7 @@ PassInfo passlist[] = {
   RUN(returnStarTuplesByRefArgs),
   RUN(gpuFlattenArgs),      // Flatten out arguments used to call in gpu kernel
 
-  RUN(targetIL),            // Perform interval partitioning and generate codelets
+  RUN(targetCodelet),       // Perform interval partitioning and generate codelets
 
   RUN(insertWideReferences), // inserts wide references for on clauses
   RUN(optimizeOnClauses),    // Optimize on clauses

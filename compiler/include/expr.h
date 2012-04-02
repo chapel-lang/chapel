@@ -99,13 +99,22 @@ class CallExpr : public Expr {
   bool square; // true if call made with square brackets
 
   CallExpr(BaseAST* base, BaseAST* arg1 = NULL, BaseAST* arg2 = NULL,
-      BaseAST* arg3 = NULL, BaseAST* arg4 = NULL, BaseAST* arg5 = NULL, BaseAST* arg6 = NULL, BaseAST* arg7 = NULL, BaseAST* arg8 = NULL);
+      BaseAST* arg3 = NULL, BaseAST* arg4 = NULL, BaseAST* arg5 = NULL, 
+      BaseAST* arg6 = NULL, BaseAST* arg7 = NULL, BaseAST* arg8 = NULL, 
+      BaseAST *arg9 = NULL, BaseAST *arg10 = NULL);
   CallExpr(PrimitiveOp *prim, BaseAST* arg1 = NULL, BaseAST* arg2 = NULL,
-      BaseAST* arg3 = NULL, BaseAST* arg4 = NULL, BaseAST* arg5 = NULL, BaseAST* arg6 = NULL, BaseAST* arg7 = NULL, BaseAST* arg8 = NULL);
+      BaseAST* arg3 = NULL, BaseAST* arg4 = NULL, BaseAST* arg5 = NULL, 
+      BaseAST* arg6 = NULL, BaseAST* arg7 = NULL, BaseAST* arg8 = NULL, 
+      BaseAST *arg9 = NULL, BaseAST *arg10 = NULL);
   CallExpr(PrimitiveTag prim, BaseAST* arg1 = NULL, BaseAST* arg2 = NULL,
-      BaseAST* arg3 = NULL, BaseAST* arg4 = NULL, BaseAST* arg5 = NULL, BaseAST* arg6 = NULL, BaseAST* arg7 = NULL, BaseAST* arg8 = NULL);
+      BaseAST* arg3 = NULL, BaseAST* arg4 = NULL, BaseAST* arg5 = NULL, 
+      BaseAST* arg6 = NULL, BaseAST* arg7 = NULL, BaseAST* arg8 = NULL, 
+      BaseAST *arg9 = NULL, BaseAST *arg10 = NULL);
   CallExpr(const char* name, BaseAST* arg1 = NULL, BaseAST* arg2 = NULL,
-      BaseAST* arg3 = NULL, BaseAST* arg4 = NULL, BaseAST* arg5 = NULL, BaseAST* arg6 = NULL, BaseAST* arg7 = NULL, BaseAST* arg8 = NULL);
+      BaseAST* arg3 = NULL, BaseAST* arg4 = NULL, BaseAST* arg5 = NULL, 
+      BaseAST* arg6 = NULL, BaseAST* arg7 = NULL, BaseAST* arg8 = NULL, 
+      BaseAST *arg9 = NULL, BaseAST *arg10 = NULL);
+
   ~CallExpr();
   void verify(); 
   DECLARE_COPY(CallExpr);

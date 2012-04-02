@@ -1,8 +1,8 @@
-use ILDist;
+use CodeletDist;
 
 proc main {
 
-  var N = [0..9] dmapped ILDist();
+  var N = [0..9] dmapped CodeletDist();
   var A: [N] int;
 
   writeln(A(0)); // code 1

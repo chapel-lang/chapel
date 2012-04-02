@@ -42,12 +42,12 @@ findOuterVars(FnSymbol* fn, SymbolMap* uses) {
 
 
 static void
-addVarsToFormals(FnSymbol* fn, SymbolMap* vars, bool isTargetIL) {
+addVarsToFormals(FnSymbol* fn, SymbolMap* vars, bool isTargetCodelet) {
   form_Map(SymbolMapElem, e, *vars) {
     if (Symbol* sym = e->key) {
       Type* type = sym->type;
       ArgSymbol *arg = NULL;
-      if (!isTargetIL && !sym->hasFlag(FLAG_WHILE_INDEX)) {
+      if (!isTargetCodelet && !sym->hasFlag(FLAG_WHILE_INDEX)) {
         if (type->refType)
           type = type->refType;
         arg = new ArgSymbol(INTENT_BLANK, sym->name, type);
@@ -121,11 +121,11 @@ replaceVarUsesWithFormals(FnSymbol* fn, SymbolMap* vars) {
 
 
 static void
-addVarsToActuals(CallExpr* call, SymbolMap* vars, bool outerCall, bool isTargetIL) {
+addVarsToActuals(CallExpr* call, SymbolMap* vars, bool outerCall, bool isTargetCodelet) {
   form_Map(SymbolMapElem, e, *vars) {
     if (Symbol* sym = e->key) {
       /* If a non-codelet base function */
-      if (!isTargetIL && !outerCall && !sym->hasFlag(FLAG_WHILE_INDEX) && sym->type->refType) {
+      if (!isTargetCodelet && !outerCall && !sym->hasFlag(FLAG_WHILE_INDEX) && sym->type->refType) {
         VarSymbol* tmp = newTemp(sym->type->refType);
         call->getStmtExpr()->insertBefore(new DefExpr(tmp));
         call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_SET_REF, sym)));
@@ -139,7 +139,7 @@ addVarsToActuals(CallExpr* call, SymbolMap* vars, bool outerCall, bool isTargetI
 
 
 void
-flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions, bool isTargetIL) {
+flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions, bool isTargetCodelet) {
   compute_call_sites();
 
   Vec<FnSymbol*> nestedFunctionSet;
@@ -213,7 +213,7 @@ flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions, bool isTargetIL) {
         }
       }
 
-      addVarsToActuals(call, uses, outerCall, isTargetIL);
+      addVarsToActuals(call, uses, outerCall, isTargetCodelet);
     }
   }
 
@@ -229,7 +229,7 @@ flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions, bool isTargetIL) {
 
   // add extra formals to nested functions
   forv_Vec(FnSymbol, fn, nestedFunctions)
-    addVarsToFormals(fn, args_map.get(fn), isTargetIL);
+    addVarsToFormals(fn, args_map.get(fn), isTargetCodelet);
 
   // replace outer variable uses with added formals
   forv_Vec(FnSymbol, fn, nestedFunctions)

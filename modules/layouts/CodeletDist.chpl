@@ -1,14 +1,16 @@
 use DSIUtil;
-config param debugILDist = false;
+config param debugCodeletDist = false;
 config param debugILDataPar = false;
 
 extern proc chpl_codelet_init() : int;
 
+// Initial starting point to initialize codelet based runtime.
+// TODO: Find a better place to put this!
 chpl_codelet_init();
 
-class ILDist: BaseDist {
+class CodeletDist: BaseDist {
   proc dsiNewRectangularDom(param rank: int, type idxType, param stridable: bool)
-    return new DefaultILRectangularDom(rank, idxType, stridable, this);
+    return new CodletRectangularDom(rank, idxType, stridable, this);
 
   proc dsiIndexLocale(ind) return this.locale;
 
@@ -20,18 +22,18 @@ class ILDist: BaseDist {
   proc dsiCreateRankChangeDist(param newRank, args) return this;
 }
 
-class DefaultILRectangularDom: BaseRectangularDom {
+class CodletRectangularDom: BaseRectangularDom {
   param rank : int;
   type idxType;
   param stridable: bool;
-  var dist: ILDist;
+  var dist: CodeletDist;
   var ilindex : int;
   var ranges : rank*range(idxType,BoundedRangeType.bounded,stridable);
 
   proc linksDistribution() param return false;
   proc dsiLinksDistribution()     return false;
 
-  proc DefaultILRectangularDom(param rank, type idxType, param stridable, dist) {
+  proc CodletRectangularDom(param rank, type idxType, param stridable, dist) {
     this.dist = dist;
   }
 
@@ -123,7 +125,7 @@ class DefaultILRectangularDom: BaseRectangularDom {
         */
 
     /*
-    if debugILDist then
+    if debugCodeletDist then
       writeln("*** In domain/array leader code:"); // this = ", this);
     const numTasks = if dataParTasksPerLocale==0 then here.numCores
                      else dataParTasksPerLocale;
@@ -135,13 +137,13 @@ class DefaultILRectangularDom: BaseRectangularDom {
       writeln("### minIndicesPerTask = ", minIndicesPerTask);
     }
 
-    if debugILDist then
+    if debugCodeletDist then
       writeln("    numTasks=", numTasks, " (", ignoreRunning,
               "), minIndicesPerTask=", minIndicesPerTask);
 
     var (numChunks, parDim) = _computeChunkStuff(numTasks, ignoreRunning,
                                                  minIndicesPerTask, ranges);
-    if debugILDist then
+    if debugCodeletDist then
       writeln("    numChunks=", numChunks, " parDim=", parDim,
               " ranges(", parDim, ").length=", ranges(parDim).length);
 
@@ -163,7 +165,7 @@ class DefaultILRectangularDom: BaseRectangularDom {
         var locBlock: rank*range(idxType);
         for param i in 1..rank do
           locBlock(i) = 0:ranges(i).low.type..#(ranges(i).length);
-        if debugILDist then
+        if debugCodeletDist then
           writeln("*** DI: locBlock = ", locBlock);
         coforall chunk in 0..numChunks-1 {
           var tuple: rank*range(idxType) = locBlock;
@@ -171,7 +173,7 @@ class DefaultILRectangularDom: BaseRectangularDom {
                                         numChunks, chunk,
                                         locBlock(parDim).high);
           tuple(parDim) = lo..hi;
-          if debugILDist then
+          if debugCodeletDist then
             writeln("*** DI[", chunk, "]: tuple = ", tuple);
           yield tuple;
         }
@@ -365,7 +367,7 @@ class DefaultILRectangularDom: BaseRectangularDom {
                             ranges: rank*range(idxType,
                                                BoundedRangeType.bounded,
                                                stridable)) {
-    var dom = new DefaultILRectangularDom(rank, idxType, stridable, dist);
+    var dom = new CodletRectangularDom(rank, idxType, stridable, dist);
     for i in 1..rank do
       dom.ranges(i) = ranges(i);
     return dom;
@@ -378,7 +380,7 @@ class DefaultILRectangularArr: BaseArr {
   type idxType;
   param stridable: bool;
 
-  var dom : DefaultILRectangularDom(rank=rank, idxType=idxType,
+  var dom : CodletRectangularDom(rank=rank, idxType=idxType,
                                          stridable=stridable);
   var off: rank*idxType;
   var blk: rank*idxType;
@@ -456,7 +458,7 @@ class DefaultILRectangularArr: BaseArr {
 
   iter these(param tag: iterKind, followThis) var where tag == iterKind.follower {
     /*
-    if debugILDist then
+    if debugCodeletDist then
       writeln("*** In array follower code:"); // [\n", this, "]");
     for i in dom.these(tag=iterator.follower, follower) {
       __primitive("noalias pragma");
@@ -481,8 +483,8 @@ class DefaultILRectangularArr: BaseArr {
     if noinit == true then return;
 
     // Initialize 
-    writeln("About to initialize codelet runtime ...");
-    chpl_codelet_init();
+    //writeln("About to initialize codelet runtime ...");
+    //chpl_codelet_init();
 
     for param dim in 1..rank {
       off(dim) = dom.dsiDim(dim).alignedLow;
@@ -535,7 +537,7 @@ class DefaultILRectangularArr: BaseArr {
     return data(dataInd);
   }
 
-  proc dsiReindex(d: DefaultILRectangularDom) {
+  proc dsiReindex(d: CodletRectangularDom) {
     var alias = new DefaultILRectangularArr(eltType=eltType, rank=d.rank,
                                          idxType=d.idxType,
                                          stridable=d.stridable,
@@ -552,7 +554,7 @@ class DefaultILRectangularArr: BaseArr {
     return alias;
   }
 
-  proc dsiSlice(d: DefaultILRectangularDom) {
+  proc dsiSlice(d: CodletRectangularDom) {
     var alias = new DefaultILRectangularArr(eltType=eltType, rank=rank,
                                          idxType=idxType,
                                          stridable=d.stridable,
@@ -624,7 +626,7 @@ class DefaultILRectangularArr: BaseArr {
   }
 }
 
-proc DefaultILRectangularDom.dsiSerialWrite(f: Writer) {
+proc CodletRectangularDom.dsiSerialWrite(f: Writer) {
   f.write("[", dsiDim(1));
   for i in 2..rank do
     f.write(", ", dsiDim(i));
@@ -636,7 +638,7 @@ proc DefaultILRectangularArr.dsiSerialWrite(f: Writer) {
     var makeStridePositive = if dom.ranges(dim).stride > 0 then 1 else -1;
     if dim == rank {
       var first = true;
-      if debugILDist then f.writeln(dom.ranges(dim));
+      if debugCodeletDist then f.writeln(dom.ranges(dim));
       for j in dom.ranges(dim) by makeStridePositive {
         if first then first = false; else f.write(" ");
         idx(dim) = j;

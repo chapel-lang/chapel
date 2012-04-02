@@ -127,7 +127,7 @@ Expr* formal_to_actual(CallExpr* call, Symbol* formal);
 
 // move to resolve when scope resolution is put in resolution directory
 BlockStmt* getVisibilityBlock(Expr* expr);
-void flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions, bool isTargetIL);
+void flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions, bool isTargetCodelet);
 
 void inlineFunction(FnSymbol *);
 

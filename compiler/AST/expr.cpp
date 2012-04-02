@@ -409,7 +409,8 @@ static void callExprHelper(CallExpr* call, BaseAST* arg) {
 
 CallExpr::CallExpr(BaseAST* base, BaseAST* arg1, BaseAST* arg2,
                    BaseAST* arg3, BaseAST* arg4, BaseAST* arg5, 
-                   BaseAST* arg6, BaseAST* arg7, BaseAST* arg8) :
+                   BaseAST* arg6, BaseAST* arg7, BaseAST* arg8,
+                   BaseAST* arg9, BaseAST* arg10) :
   Expr(E_CallExpr),
   baseExpr(NULL),
   argList(),
@@ -433,12 +434,15 @@ CallExpr::CallExpr(BaseAST* base, BaseAST* arg1, BaseAST* arg2,
   callExprHelper(this, arg6);
   callExprHelper(this, arg7);
   callExprHelper(this, arg8);
+  callExprHelper(this, arg9);
+  callExprHelper(this, arg10);
   argList.parent = this;
   gCallExprs.add(this);
 }
 
 CallExpr::CallExpr(PrimitiveOp *prim, BaseAST* arg1, BaseAST* arg2, BaseAST* arg3, 
-                   BaseAST* arg4, BaseAST* arg5, BaseAST* arg6, BaseAST* arg7, BaseAST* arg8) :
+                   BaseAST* arg4, BaseAST* arg5, BaseAST* arg6, BaseAST* arg7, 
+                   BaseAST* arg8, BaseAST* arg9, BaseAST* arg10) :
   Expr(E_CallExpr),
   baseExpr(NULL),
   argList(),
@@ -455,12 +459,15 @@ CallExpr::CallExpr(PrimitiveOp *prim, BaseAST* arg1, BaseAST* arg2, BaseAST* arg
   callExprHelper(this, arg6);
   callExprHelper(this, arg7);
   callExprHelper(this, arg8);
+  callExprHelper(this, arg9);
+  callExprHelper(this, arg10);
   argList.parent = this;
   gCallExprs.add(this);
 }
 
 CallExpr::CallExpr(PrimitiveTag prim, BaseAST* arg1, BaseAST* arg2, BaseAST* arg3, 
-                   BaseAST* arg4, BaseAST* arg5, BaseAST* arg6, BaseAST* arg7, BaseAST* arg8) :
+                   BaseAST* arg4, BaseAST* arg5, BaseAST* arg6, BaseAST* arg7, 
+                   BaseAST* arg8, BaseAST* arg9, BaseAST* arg10) :
   Expr(E_CallExpr),
   baseExpr(NULL),
   argList(),
@@ -477,13 +484,16 @@ CallExpr::CallExpr(PrimitiveTag prim, BaseAST* arg1, BaseAST* arg2, BaseAST* arg
   callExprHelper(this, arg6);
   callExprHelper(this, arg7);
   callExprHelper(this, arg8);
+  callExprHelper(this, arg9);
+  callExprHelper(this, arg10);
   argList.parent = this;
   gCallExprs.add(this);
 }
 
 CallExpr::CallExpr(const char* name, BaseAST* arg1, BaseAST* arg2,
                    BaseAST* arg3, BaseAST* arg4, BaseAST* arg5, 
-                   BaseAST* arg6, BaseAST* arg7, BaseAST* arg8) :
+                   BaseAST* arg6, BaseAST* arg7, BaseAST* arg8, 
+                   BaseAST* arg9, BaseAST* arg10) :
   Expr(E_CallExpr),
   baseExpr(new UnresolvedSymExpr(name)),
   argList(),
@@ -500,6 +510,8 @@ CallExpr::CallExpr(const char* name, BaseAST* arg1, BaseAST* arg2,
   callExprHelper(this, arg6);
   callExprHelper(this, arg7);
   callExprHelper(this, arg8);
+  callExprHelper(this, arg9);
+  callExprHelper(this, arg10);
   argList.parent = this;
   gCallExprs.add(this);
 }
@@ -1302,7 +1314,7 @@ void CallExpr::codegen(FILE* outfile) {
     case PRIM_RETURN:
       if (typeInfo() == dtVoid) {
         /* Not necessary to return void in the codelet model */
-        if (!fTargetIL)
+        if (!fTargetCodelet)
           gen(outfile, "return");
         else
           return;
@@ -2398,14 +2410,18 @@ void CallExpr::codegen(FILE* outfile) {
         this->remove();
       }
       break;
-    case PRIM_MAP_SEQ:
+    case PRIM_CODELET_SEQ:
     {
-      fprintf(outfile, "map(");
+      fprintf(outfile, "chpl_codelet_sequential(");
       get(1)->codegen(outfile); // current map label
-      fprintf(outfile,", NULL, [1:1:1], ");
-      get(3)->codegen(outfile); // numID
+      fprintf(outfile, ",");
+      get(2)->codegen(outfile); // incoming edges
       fprintf(outfile,", ");
-
+      get(3)->codegen(outfile); // outgoing edges
+      fprintf(outfile,", ");
+      get(4)->codegen(outfile); // numID
+      fprintf(outfile,", (void *)");
+      /*
       SymExpr *symExpr = toSymExpr(get(2));
       VarSymbol *var = toVarSymbol(symExpr->var);
       if (var->immediate && var->immediate->const_kind == CONST_KIND_STRING) {
@@ -2413,37 +2429,50 @@ void CallExpr::codegen(FILE* outfile) {
       }
       else
         fprintf(outfile, "NULL, ");
+        */
+      SymExpr *symExpr = toSymExpr(get(5));
+      VarSymbol *var = toVarSymbol(symExpr->var);
+      fprintf(outfile, "%s ", var->immediate->v_string);
 
-      get(4)->codegen(outfile);
+      //get(5)->codegen(outfile); // function
+      fprintf(outfile,", ");
+      get(6)->codegen(outfile); // args
+      fprintf(outfile,", ");
+      fprintf(outfile,"sizeof(");
+      get(6)->typeInfo()->codegen(outfile);
+      fprintf(outfile,"))");
+      break;
+    }
+    case PRIM_CODELET_PAR:
+    {
+      fprintf(outfile, "chpl_codelet_parallel(");
+      get(1)->codegen(outfile); // current map label
+      fprintf(outfile,", ");
+      get(2)->codegen(outfile); // incoming edges
+      fprintf(outfile,", ");
+      get(3)->codegen(outfile); // outgoing edges
+      fprintf(outfile,", ");
+      get(4)->codegen(outfile); // low
+      fprintf(outfile,", ");
+      get(5)->codegen(outfile); // stride
+      fprintf(outfile,",");
+      get(6)->codegen(outfile); // high
+      fprintf(outfile,",");
+      get(7)->codegen(outfile); // index
+      fprintf(outfile,",");
+      get(8)->codegen(outfile); // numID
+      fprintf(outfile,", (void *)");
+      SymExpr *symExpr = toSymExpr(get(9));
+      VarSymbol *var = toVarSymbol(symExpr->var);
+      fprintf(outfile, "%s ", var->immediate->v_string); // function name
+      fprintf(outfile,", ");
+      get(10)->codegen(outfile); // params
       fprintf(outfile,")");
       break;
     }
-    case PRIM_MAP_PAR:
+    case PRIM_CODELET_INIT:
     {
-      fprintf(outfile, "map(");
-      get(1)->codegen(outfile); // current map label
-      fprintf(outfile,", ");
-      get(7)->codegen(outfile); // index
-      fprintf(outfile,", [");
-      get(4)->codegen(outfile); // low
-      fprintf(outfile,":");
-      get(5)->codegen(outfile); // stride
-      fprintf(outfile,":");
-      get(6)->codegen(outfile); // high
-      fprintf(outfile,"], ");
-      get(3)->codegen(outfile); // numID
-      fprintf(outfile,", ");
-
-      SymExpr *symExpr = toSymExpr(get(2));
-      VarSymbol *var = toVarSymbol(symExpr->var);
-      if (var->immediate && var->immediate->const_kind == CONST_KIND_STRING) {
-        fprintf(outfile, "%s, ", var->immediate->v_string);
-      }
-      else
-        fprintf(outfile, "NULL, ");
-
-      get(8)->codegen(outfile);
-      fprintf(outfile,")");
+      fprintf(outfile, "chpl_codelet_init()");
       break;
     }
     default:
@@ -2614,7 +2643,7 @@ void CallExpr::codegen(FILE* outfile) {
         closeDeRefParens = true;
       }
     } else if (formal->requiresCPtr() && 
-               (fTargetIL || !actualType->symbol->hasFlag(FLAG_REF))) {
+               (fTargetCodelet || !actualType->symbol->hasFlag(FLAG_REF))) {
       fprintf(outfile, "&(");
       closeDeRefParens = true;
     }

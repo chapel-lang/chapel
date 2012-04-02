@@ -490,12 +490,15 @@ FnSymbol::~FnSymbol() {
     }
     delete basicBlocks;
   }
+#if 0
+  // TODO: Need to figure out why this is segfaulting
   if (intervals) {
     forv_Vec(Interval, interval, *intervals) {
       delete interval;
     }
     delete intervals;
   }
+#endif
   if (calledBy)
     delete calledBy;
 }

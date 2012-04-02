@@ -45,7 +45,7 @@ void returnStarTuplesByRefArgs();
 void resolve();
 void scalarReplace();
 void scopeResolve();
-void targetIL();
+void targetCodelet();
 void verify();
 
 //
@@ -54,5 +54,6 @@ void verify();
 
 // parallel.cpp
 bool passingWideStringToExtern(Type* t);
+void bundleArgs(CallExpr *);
 
 #endif
