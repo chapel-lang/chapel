@@ -558,7 +558,7 @@ module SSCA2_kernels
 
     inline proc barrier() {
       on this {
-        var myc = count.fetchSub(1);
+        const myc = count.fetchSub(1);
         if myc<=1 {
           if done.testAndSet() then
             halt("Too many callers to barrier()");
@@ -570,7 +570,7 @@ module SSCA2_kernels
 
     inline proc notify() {
       on this {
-        var myc = count.fetchSub(1);
+        const myc = count.fetchSub(1);
         if myc<=1 {
           if done.testAndSet() then
             halt("Too many callers to barrier_notify()");
