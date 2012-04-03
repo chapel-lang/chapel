@@ -43,7 +43,6 @@ This directory contains the following documentation:
     README.local            :  the 'local' statement
     README.module_search    :  how modules are searched for to fulfill 'use's
     README.io               :  the new I/O system in Chapel
-    README.volatile         :  support for volatile types
 
 
 --------------------

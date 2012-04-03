@@ -72,7 +72,7 @@
 %token TPARAM TPLUSPLUS TPRAGMA TPRIMITIVE TPRIMITIVELOOP TPROC
 %token TRECORD TREDUCE TREF TRETURN
 %token TSCAN TSELECT TSERIAL TSINGLE TSPARSE TSUBDOMAIN
-%token TSYNC TTHEN TTYPE TUNION TUSE TVAR TVOLATILE
+%token TSYNC TTHEN TTYPE TUNION TUSE TVAR
 %token TWHEN TWHERE TWHILE TYIELD
 
 //
@@ -96,7 +96,7 @@
 %left TNOELSE
 %left TELSE
 %left TCOMMA
-%left TFOR TFORALL TIF TATOMIC TSYNC TSINGLE TVOLATILE
+%left TFOR TFORALL TIF TATOMIC TSYNC TSINGLE
 %left TALIGN TBY THASH
 %left TIN
 %left TDOTDOT
@@ -967,8 +967,7 @@ unary_op_expr:
 ;
 
 lhs_expr:
-  TVOLATILE ident                 { $$ = new UnresolvedSymExpr($2, true); }
-| ident                           { $$ = new UnresolvedSymExpr($1); }
+  ident                           { $$ = new UnresolvedSymExpr($1); }
 | call_expr
 | dot_expr
 | parenthesized_expr
