@@ -5,11 +5,6 @@
     - formatted input/output, like printf, probably called writef/writefln/etc,
       and supporting ###.#### formats in addition to the usual % stuff.
     - Regular expression support (currently favoring RE2 integration)
-    - Reader needs a Reader.readType method implemented for any custom types
-      that want to provide their own reader method. We might rather implement
-      this with a static method or a method on a default-constructed object
-      of the type we're reading (so that the readThis method is somehow
-      'in the class' along with writeThis).
     - We would like to have a 'serialization' system, including allowing
       the writing of data structures with circular references, and
       encoding the types of classes.
@@ -1719,29 +1714,6 @@ proc readln(type t ...?numTypes) {
 proc read(type t ...?numTypes) {
   return stdin.read((...t));
 }
-
-// readThis and writeThis methods for the basic types
-// these just need to call writer.writePrimitive or reader.readPrimitive
-/* commented out because these should never be called directly;
-   readPrimitive should be called instead. It used to be the case that
-   some writeThis methods would directly call writeThis on
-   the elements of an aggregate data structure; these were
-   needed to support that operation. But, there should be no
-   more direct calls to writeThis.
-
-   Note that readThis doesn't work as a method
-   on e.g. an int because this is not an lvalue.
-
-proc numeric.readThis(r: Reader) { r.readPrimitive(this); }
-proc enumerated.readThis(r: Reader) { r.readPrimitive(this); }
-proc bool.readThis(r: Reader) { r.readPrimitive(this); }
-proc string.readThis(r: Reader) { r.readPrimitive(this); }
-
-proc numeric.writeThis(r: Writer) { r.writePrimitive(this); }
-proc enumerated.writeThis(r: Writer) { r.writePrimitive(this); }
-proc bool.writeThis(r: Writer) { r.writePrimitive(this); }
-proc string.writeThis(r: Writer) { r.writePrimitive(this); }
-*/
 
 class ChannelWriter : Writer {
   var _channel_internal:qio_channel_ptr_t = QIO_CHANNEL_PTR_NULL;
