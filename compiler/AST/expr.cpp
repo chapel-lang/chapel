@@ -1145,7 +1145,7 @@ void CallExpr::codegen(FILE* outfile) {
                 get(1), call->get(1), call->get(2)->typeInfo(),
                 dtObject->typeInfo());
             gen(outfile, "chpl__class_id, %s, %A, %A)",
-                fHeterogeneous ? "CHPL_TYPE_enum" : "-1",
+                fHeterogeneous ? "CHPL_TYPE_int32_t" : "-1",
               call->get(3), call->get(4));
             break;
           }
@@ -1155,7 +1155,7 @@ void CallExpr::codegen(FILE* outfile) {
             gen(outfile, "CHPL_COMM_WIDE_CLASS_GET_CID(%A, %A, %A, ",
                 get(1), call->get(1), dtObject->typeInfo());
             gen(outfile, "chpl__class_id, %s, %A, %A)",
-                fHeterogeneous ? "CHPL_TYPE_enum" : "-1",
+                fHeterogeneous ? "CHPL_TYPE_int32_t" : "-1",
                 call->get(2), call->get(3));
             break;
           }
@@ -1522,7 +1522,7 @@ void CallExpr::codegen(FILE* outfile) {
     case PRIM_SETCID:
       if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
         gen(outfile, "CHPL_COMM_WIDE_SET_FIELD_VALUE(chpl__class_id, %s",
-            fHeterogeneous ? "CHPL_TYPE_enum" : "-1");
+            fHeterogeneous ? "CHPL_TYPE_int32_t" : "-1");
         gen(outfile, ", %A, chpl__cid_%A, %A, chpl__cid, %A, %A)",
             get(1), get(1)->typeInfo()->getField("addr")->type/*->symbol*/,
             dtObject->typeInfo(), get(2), get(3));

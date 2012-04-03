@@ -132,22 +132,17 @@ static void legalizeName(Symbol* sym) {
 
 
 static void
-genClassTagEnum(FILE* outfile, Vec<TypeSymbol*> typeSymbols) {
+genClassIDs(FILE* outfile, Vec<TypeSymbol*> typeSymbols) {
   fprintf(outfile, "/*** Class Type Identification Numbers ***/\n\n");
-  fprintf(outfile, "typedef enum {\n");
-  bool comma = false;
+  int count=0;
   forv_Vec(TypeSymbol, ts, typeSymbols) {
     if (ClassType* ct = toClassType(ts->type)) {
       if (!isReferenceType(ct) && isClass(ct)) {
-        fprintf(outfile, "%schpl__cid_%s", (comma) ? ",\n  " : "  ", ts->cname);
-        comma = true;
+        fprintf(outfile, "const chpl__class_id chpl__cid_%s = %d;\n", 
+                ts->cname, count++);
       }
     }
   }
-  if (!comma)
-    fprintf(outfile, "  chpl__cid_placeholder");
-  fprintf(outfile, "\n} chpl__class_id;\n\n");
-  fprintf(outfile, "#define CHPL__CLASS_ID_DEFINED\n\n");
 }
 
 
@@ -385,9 +380,9 @@ static void codegen_header(FILE* hdrfile, FILE* codefile=NULL) {
 
   genIncludeCommandLineHeaders(hdrfile);
 
-  genClassTagEnum(hdrfile, types);
-
   fprintf(hdrfile, "#include \"stdchpl.h\"\n");
+
+  genClassIDs(hdrfile, types);
 
   fprintf(hdrfile, "\n/*** Class Prototypes ***/\n\n");
   forv_Vec(TypeSymbol, typeSymbol, types) {

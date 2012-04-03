@@ -5274,7 +5274,12 @@ static void insertDynamicDispatchCalls() {
       // change call of root method into virtual method call; replace
       // method token with function
       //
-      VarSymbol* cid = newTemp("_virtual_method_tmp_", dtInt[INT_SIZE_DEFAULT]);
+      // N.B.: The following variable must have the same size as the type of
+      // chpl__class_id / chpl_cid_* -- otherwise communication will cause
+      // problems when it tries to read the cid of a remote class.  See
+      // test/classes/sungeun/remoteDynamicDispatch.chpl (on certain
+      // machines and configurations).
+      VarSymbol* cid = newTemp("_virtual_method_tmp_", dtInt[INT_SIZE_32]);
       call->getStmtExpr()->insertBefore(new DefExpr(cid));
       call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, cid, new CallExpr(PRIM_GETCID, call->get(2)->copy())));
       // hilde sez: "remove" here means VMT calls are not really "resolved".

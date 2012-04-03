@@ -920,9 +920,9 @@ void initTheProgram(void) {
   //     chpl__class_id chpl__cid;
   //   }
   //
-  // chpl__class_id is an enumerated type identifying the classes
-  //  in the program.  We never create the actual field or the
-  //  enumerated type (it is directly generated in the C code).  It might
+  // chpl__class_id is an int32_t field identifying the classes
+  //  in the program.  We never create the actual field within the
+  //  IR (it is directly generated in the C code).  It might
   //  be the right thing to do, so I made an attempt at adding the
   //  field.  Unfortunately, we would need some significant changes
   //  throughout compilation, and it seemed to me that the it might result
