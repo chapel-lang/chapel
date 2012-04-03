@@ -556,6 +556,7 @@ initPrimitive() {
   prim_def(PRIM_IDEN, "identity", returnInfoVoid);
   prim_def(PRIM_ON_IL, "chpl_target_il", returnInfoVoid);
   prim_def(PRIM_CODELET_INIT, "chpl_codelet_init", returnInfoVoid);
+  prim_def(PRIM_CODELET_SHUTDOWN, "chpl_codelet_shutdown", returnInfoVoid);
 
   prim_def(PRIM_NUM_FIELDS, "num fields", returnInfoInt32);
   prim_def(PRIM_FIELD_NUM_TO_NAME, "field num to name", returnInfoString);

@@ -4,6 +4,7 @@
 #include <starpu.h>
 
 #define _codelet_init starpu_init
+#define _codelet_shutdown starpu_shutdown
 #define _codelet_create starpu_task_create
 #define _codelet_submit_task starpu_task_submit
 #define _codelet_declare_deps starpu_tag_declare_deps

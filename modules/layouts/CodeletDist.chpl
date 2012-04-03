@@ -2,11 +2,9 @@ use DSIUtil;
 config param debugCodeletDist = false;
 config param debugILDataPar = false;
 
-extern proc chpl_codelet_init() : int;
-
-// Initial starting point to initialize codelet based runtime.
-// TODO: Find a better place to put this!
-chpl_codelet_init();
+var ILLow : int;
+var ILHigh : int;
+var ILStride : int;
 
 class CodeletDist: BaseDist {
   proc dsiNewRectangularDom(param rank: int, type idxType, param stridable: bool)
@@ -91,9 +89,15 @@ class CodletRectangularDom: BaseRectangularDom {
   iter these(param tag: iterKind) where tag == iterKind.leader {
 
     if rank == 1 {
+      /*
       var ILLow = ranges(1).low;
       var ILHigh = ranges(1).high;
       var ILStride = ranges(1).stride;
+      */
+      ILLow = ranges(1).low;
+      ILHigh = ranges(1).high;
+      ILStride = ranges(1).stride;
+
       pragma "while index"
       var ILIndex: int;
 

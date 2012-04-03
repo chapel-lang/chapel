@@ -58,8 +58,13 @@ innerCodelets(FnSymbol* originalFn, BlockStmt* codeletBlock, BasicBlock* curBB,
       }
     }
     else if (DefExpr *def = toDefExpr(expr)) {
-      if (FLAG_MOVE_DEF)
-        originalFn->insertAtHead(def->remove());
+      if (FLAG_MOVE_DEF) {
+        //rootModule->block->insertAtHead(def->remove());
+        ModuleSymbol *mod = originalFn->getModule();
+        mod->block->insertAtHead(def->remove());
+
+        //originalFn->insertAtHead(def->remove());
+      }
       else
         codeletBlock->insertAtTail(def->remove());
       /* Instead, we should search the other intervals to see if this definition is
@@ -113,8 +118,13 @@ createCodelet(FnSymbol *originalFn, FnSymbol *codeletFn, Interval *interval, Map
     innerCodelets(originalFn, codeletFn->body, bb, innerBB, interval, intervalMaps);
   }
 
+  /*
   ArgSymbol *condFormal = new ArgSymbol( INTENT_REF, "numID", dtInt[INT_SIZE_32]);
   codeletFn->insertFormalAtTail( new DefExpr(condFormal));
+  */
+  ModuleSymbol *mod = originalFn->getModule();
+  VarSymbol *condFormal = new VarSymbol("numID", dtInt[INT_SIZE_32]);
+  mod->block->insertAtHead(new DefExpr(condFormal));
 
   Vec<Expr*> tmpExpr;
   Vec<bool> tmpBools;
@@ -184,9 +194,11 @@ createFn(FnSymbol *fn, Map<BasicBlock*, Interval*>& intervalMaps) {
     Symbol *numID = newTemp("numID", dtInt[INT_SIZE_32]);
     fn->insertAtHead(new DefExpr(numID));
 
+
     forv_Vec(Interval, interval, *fn->intervals) {
 
       intervalFn = new FnSymbol(astr("intervalFn", istr(interval->id)));
+      intervalFn->addFlag(FLAG_CODELET);
       intervalFn->intervals = new Vec<Interval*>();
       intervalFn->intervals->add(interval);
       nestedFunctions.add(intervalFn);
@@ -195,7 +207,7 @@ createFn(FnSymbol *fn, Map<BasicBlock*, Interval*>& intervalMaps) {
       insert_help(intervalFn, NULL, intervalFn);
 
       CallExpr *intervalCall = new CallExpr(intervalFn);
-      intervalCall->insertAtTail(numID);
+      //intervalCall->insertAtTail(numID);
 
       fn->insertAtTail(new DefExpr(intervalFn));
       fn->insertAtTail(intervalCall);
@@ -204,49 +216,7 @@ createFn(FnSymbol *fn, Map<BasicBlock*, Interval*>& intervalMaps) {
     fn->retType = dtVoid;
     flattenNestedFunctions(nestedFunctions, true);
 
-#if 0
-    compute_call_sites();
-    /* Create wrapper function for each codelet, so that the runtime makes the 
-     * actual codelet invocation */
-    forv_Vec(FnSymbol, nestedfn, nestedFunctions) {
 
-      CallExpr *intervalCall = new CallExpr(nestedfn);
-      intervalCall->insertAtTail(numID);
-
-      /* Construct bitmap of incoming dependent edges */
-      uint64_t incoming = 0;
-      forv_Vec(Interval, intIn, nestedfn->intervals->v[0]->ins) {
-        //incoming |= (1 << intIn->id);
-        incoming |= TAG_ID(intIn->id);
-      }
-      uint64_t outgoing = 0;
-      forv_Vec(Interval, intOut, nestedfn->intervals->v[0]->outs) {
-        //outgoing |= (1 << intOut->id);
-        outgoing |= TAG_ID(intOut->id);
-      }
-      CallExpr *call = NULL;
-      if (nestedfn->intervals && (nestedfn->intervals->v[0]->intervalTag == BLOCK || nestedfn->intervals->v[0]->intervalTag == FOR_LOOP)) {
-        //call = new CallExpr(PRIM_CODELET_SEQ, new_IntSymbol(1 << nestedfn->intervals->v[0]->id), 
-        call = new CallExpr(PRIM_CODELET_SEQ, new_IntSymbol(TAG_ID(nestedfn->intervals->v[0]->id)), 
-                            new_IntSymbol(incoming), new_IntSymbol(outgoing), numID, intervalCall);
-                            //new_StringSymbol(labelStr), numID, intervalCall);
-      }
-      else if (nestedfn->intervals && (nestedfn->intervals->v[0]->intervalTag == FORALL_LOOP)) {
-        call = new CallExpr(PRIM_CODELET_PAR, new_IntSymbol(nestedfn->intervals->v[0]->id), 
-                            new_StringSymbol(labelStr), numID, nestedfn->intervals->v[0]->low, 
-                            nestedfn->intervals->v[0]->stride, nestedfn->intervals->v[0]->high, nestedfn->intervals->v[0]->ILIndex,
-                            intervalCall);
-      }
-      //fn->insertAtTail(call);
-      fn->body->body.tail->insertBefore(call);
-
-      forv_Vec(CallExpr, call, *nestedfn->calledBy) {
-        /* bundle the arguments */
-        bundleArgs(call);
-      }
-    }
-#else
-#if 1
     compute_call_sites();
     /* Create wrapper function for each codelet, so that the runtime makes the 
      * actual codelet invocation */
@@ -260,50 +230,44 @@ createFn(FnSymbol *fn, Map<BasicBlock*, Interval*>& intervalMaps) {
     compute_call_sites();
     forv_Vec(FnSymbol, nestedfn, nestedFunctions) {
       forv_Vec(CallExpr, call, *nestedfn->calledBy) {
-        
+
         if (call->parentExpr == NULL) continue;
 
         FnSymbol *wrapperFn = toFnSymbol(call->parentSymbol);
+
+        ArgSymbol *bufferArgs = new ArgSymbol(INTENT_REF, "buffer", dtVoid);
+        wrapperFn->insertFormalAtHead(bufferArgs);
 
         forv_Vec(CallExpr, wrapperCall, *wrapperFn->calledBy) {
 
           /* Construct bitmap of incoming dependent edges */
           uint64_t incoming = 0;
           forv_Vec(Interval, intIn, nestedfn->intervals->v[0]->ins) {
-            //incoming |= (1 << intIn->id);
             incoming |= TAG_ID(intIn->id);
           }
           uint64_t outgoing = 0;
           forv_Vec(Interval, intOut, nestedfn->intervals->v[0]->outs) {
-            //outgoing |= (1 << intOut->id);
             outgoing |= TAG_ID(intOut->id);
           }
+          /* place call right before memfrees */
           if (nestedfn->intervals && (nestedfn->intervals->v[0]->intervalTag == BLOCK || nestedfn->intervals->v[0]->intervalTag == FOR_LOOP)) {
-            //call->replace(new CallExpr(PRIM_CODELET_SEQ, new_IntSymbol(TAG_ID(nestedfn->intervals->v[0]->id)), 
-            //    new_IntSymbol(incoming), new_IntSymbol(outgoing), numID, call));
-            fn->body->body.tail->insertBefore(new CallExpr(PRIM_CODELET_SEQ, new_IntSymbol(TAG_ID(nestedfn->intervals->v[0]->id)), 
+            wrapperCall->insertBefore(new CallExpr(PRIM_CODELET_SEQ, new_IntSymbol(TAG_ID(nestedfn->intervals->v[0]->id)), 
+            //fn->body->body.tail->prev->insertBefore(new CallExpr(PRIM_CODELET_SEQ, new_IntSymbol(TAG_ID(nestedfn->intervals->v[0]->id)), 
                   new_IntSymbol(incoming), new_IntSymbol(outgoing), numID, new_StringSymbol(wrapperFn->name), wrapperCall->get(1)->copy()));
-                  //new_IntSymbol(incoming), new_IntSymbol(outgoing), numID, wrapperCall->copy()));
             wrapperCall->remove();
           }
+          /* place call right before memfrees */
           else if (nestedfn->intervals && (nestedfn->intervals->v[0]->intervalTag == FORALL_LOOP)) {
-            fn->body->body.tail->insertBefore(new CallExpr(PRIM_CODELET_PAR, new_IntSymbol(TAG_ID(nestedfn->intervals->v[0]->id)),
+            wrapperCall->insertBefore(new CallExpr(PRIM_CODELET_PAR, new_IntSymbol(TAG_ID(nestedfn->intervals->v[0]->id)),
+            //fn->body->body.tail->prev->insertBefore(new CallExpr(PRIM_CODELET_PAR, new_IntSymbol(TAG_ID(nestedfn->intervals->v[0]->id)),
                   new_IntSymbol(incoming), new_IntSymbol(outgoing), nestedfn->intervals->v[0]->low,
                   nestedfn->intervals->v[0]->stride, nestedfn->intervals->v[0]->high, nestedfn->intervals->v[0]->ILIndex,
                   numID, new_StringSymbol(wrapperFn->name), wrapperCall->get(1)->copy()));
             wrapperCall->remove();
-
-            //call->replace(new CallExpr(PRIM_CODELET_PAR, new_IntSymbol(nestedfn->intervals->v[0]->id), 
-            //    new_StringSymbol(""), numID, nestedfn->intervals->v[0]->low, 
-            //    nestedfn->intervals->v[0]->stride, nestedfn->intervals->v[0]->high, nestedfn->intervals->v[0]->ILIndex,
-            //    call));
           }
         }
-
       }
     }
-#endif
-#endif
   }
   collapseBlocks(fn->body);
 }
@@ -352,8 +316,12 @@ targetCodelet() {
         removeEmptyBlocks(fn);
         inlineFunction(fn);
 
-        if (fTargetCodelet)
+        if (fTargetCodelet) {
           fn->insertAtHead(new CallExpr(PRIM_CODELET_INIT));
+          fn->body->body.tail->insertBefore(new CallExpr(PRIM_CODELET_SHUTDOWN));
+        }
+
+        return;
       }
     }
   }

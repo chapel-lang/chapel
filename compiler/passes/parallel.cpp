@@ -158,6 +158,12 @@ bundleArgs(CallExpr* fcall) {
   wrap_fn->insertAtTail(new_cofn);     // add new call
   if (fn->hasFlag(FLAG_ON) || fn->hasFlag(FLAG_GPU_ON))
     fcall->insertAfter(new CallExpr(PRIM_CHPL_FREE, tempc));
+  else if (fn->hasFlag(FLAG_CODELET)) {
+    FnSymbol *origfn = toFnSymbol(fcall->parentSymbol);
+    // place the free before the return statement
+    if (origfn)
+      origfn->body->body.tail->insertBefore(new CallExpr(PRIM_CHPL_FREE, tempc));
+  }
   else
     wrap_fn->insertAtTail(new CallExpr(PRIM_CHPL_FREE, wrap_c));
 

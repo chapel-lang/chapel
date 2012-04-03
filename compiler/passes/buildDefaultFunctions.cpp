@@ -288,9 +288,6 @@ static void build_chpl_entry_points(void) {
     mainModule->block->insertAtTail(new DefExpr(chpl_user_main));
     normalize(chpl_user_main);
 
- //   if (fTargetCodelet)
- //     chpl_user_main->insertAtHead(new CallExpr(PRIM_CODELET_INIT));
-
   } else {
     if (!isModuleSymbol(chpl_user_main->defPoint->parentSymbol)) {
       USR_FATAL(chpl_user_main, "main function must be defined at module scope");
