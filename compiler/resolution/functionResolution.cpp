@@ -34,6 +34,7 @@ static int explainCallLine;
 static ModuleSymbol* explainCallModule;
 static CongruenceClosure cclosure;
 
+
 static Vec<CallExpr*> inits;
 static Map<FnSymbol*,bool> resolvedFns;
 static Vec<FnSymbol*> resolvedFormals;
@@ -202,6 +203,71 @@ static void insertReferenceTemps();
 static void fixTypeNames(ClassType* ct);
 static void setScalarPromotionType(ClassType* ct);
 static void resolveImplementsStatement(CallExpr* call, bool errorCheck);
+
+typedef Map<BaseAST*, Symbol*> ImplementingTypeList;
+typedef Map<BaseAST*, ImplementingTypeList*> ImplementedInterfaceList;
+typedef Map<BaseAST*, ImplementedInterfaceList*> ImplementsSymbolTable;
+
+ImplementsSymbolTable implementsSymbolTable;
+
+void
+addToImplementsSymbolTable(CallExpr* ce, BaseAST* interface, BaseAST* implementingType,
+    Symbol *implementingWitness){
+  BaseAST* scope = getScope(ce);
+  BaseAST* interface_node = cclosure.get_representative_ast(interface);
+  BaseAST* implementingType_node = cclosure.get_representative_ast(implementingType);
+  ImplementedInterfaceList* interfaceEntry = implementsSymbolTable.get(scope);
+  if(!interfaceEntry) {
+    interfaceEntry = new ImplementedInterfaceList();
+    implementsSymbolTable.put(scope,interfaceEntry);
+  }
+  ImplementingTypeList* typeEntry = interfaceEntry->get(interface);
+  if(!typeEntry) {
+    typeEntry = new ImplementingTypeList();
+    interfaceEntry->put(interface_node,typeEntry);
+  }
+  typeEntry->put(implementingType_node,implementingWitness);
+}
+
+bool
+lookupImplementsSymbolTable(BaseAST* ce, BaseAST* interface, BaseAST* implementingType) {
+  BaseAST* scope = getScope(ce);
+  if(!scope)
+    return false;
+  BaseAST* interface_node = cclosure.get_representative_ast(interface);
+  BaseAST* implementingType_node = cclosure.get_representative_ast(implementingType);
+  ImplementedInterfaceList* interfaceEntry = implementsSymbolTable.get(scope);
+  if(!interfaceEntry) {
+    return lookupImplementsSymbolTable(scope,interface,implementingType);
+  }
+  ImplementingTypeList* typeEntry = interfaceEntry->get(interface_node);
+  if(!typeEntry)
+    return lookupImplementsSymbolTable(scope,interface,implementingType);
+  Symbol* witness = typeEntry->get(implementingType_node);
+  if(!witness)
+    return lookupImplementsSymbolTable(scope,interface,implementingType);
+  return true;
+}
+
+Symbol*
+lookupImplementsWitnessInSymbolTable(BaseAST* ce, BaseAST* interface, BaseAST* implementingType) {
+  BaseAST* scope = getScope(ce);
+  if(!scope)
+    return NULL;
+  BaseAST* interface_node = cclosure.get_representative_ast(interface);
+  BaseAST* implementingType_node = cclosure.get_representative_ast(implementingType);
+  ImplementedInterfaceList* interfaceEntry = implementsSymbolTable.get(scope);
+  if(!interfaceEntry) {
+    return lookupImplementsWitnessInSymbolTable(scope,interface,implementingType);
+  }
+  ImplementingTypeList* typeEntry = interfaceEntry->get(interface_node);
+  if(!typeEntry)
+    return lookupImplementsWitnessInSymbolTable(scope,interface,implementingType);
+  Symbol* witness = typeEntry->get(implementingType_node);
+  if(!witness)
+    return lookupImplementsWitnessInSymbolTable(scope,interface,implementingType);
+  return witness;
+}
 
 static bool hasRefField(Type *type) {
   if (isPrimitiveType(type)) return false;
@@ -1252,6 +1318,7 @@ addCandidate(Vec<FnSymbol*>* candidateFns,
     }
 
     SymbolMap subs;
+
     computeGenericSubs(subs, fn, &formalActuals);
     if (subs.n) {
       if (FnSymbol* ifn = instantiate(fn, &subs, info.call))
@@ -1839,6 +1906,7 @@ resolveCall(CallExpr* call, bool errorCheck) {
       }
     }
     CallInfo info(call);
+
 
     Vec<FnSymbol*> visibleFns;                    // visible functions
     Vec<FnSymbol*> candidateFns;
@@ -5665,9 +5733,10 @@ static void resolveImplementsStatement(CallExpr* call, bool errorCheck) {
           FnSymbol* resolvedFn = best;
           if(!resolvedFn)
             USR_FATAL("Function not resolved. Debug.\n");
-          else
-            USR_FATAL("Function resolved. Debug.\n");
         }
+        VarSymbol *tmp = new VarSymbol("witness");
+        addToImplementsSymbolTable(call,call->argList.tail,
+                          call->argList.head, tmp);
       }
     }
   }

@@ -28,12 +28,12 @@ static BaseAST *checkInterfaceImplementations(BaseAST *s);
 static Symbol* mapArguments(CallExpr*, FnSymbol*, CallExpr*);
 static BaseAST* checkFunctionCall(CallExpr*, Map<FnSymbol*, ArgSymbol*>&);
 static void addAdaptationToWitness(BaseAST*, ClassType *witness, FnSymbol *requiredFn, FnSymbol *actualFn);
-static void addToImplementsSymbolTable(CallExpr* ce, BaseAST* interface, BaseAST* implementingType, Symbol *implementingWitness);
+//static void addToImplementsSymbolTable(CallExpr* ce, BaseAST* interface, BaseAST* implementingType, Symbol *implementingWitness);
 
 static void getMatchingFunctionsInInterfaces(const char* name, Vec<FnSymbol*>& visibleFns,
     Map<FnSymbol*, ArgSymbol*>& fnsInInterfaces);
 
-static void addToImplementsSymbolTable(CallExpr* ce, BaseAST* interface, BaseAST* implementingType, Symbol *implementingWitness);
+//static void addToImplementsSymbolTable(CallExpr* ce, BaseAST* interface, BaseAST* implementingType, Symbol *implementingWitness);
 static void getWitnessesInWhereClause(Vec<CallExpr*>& implementsClauses, BaseAST *whereClause);
 static void getFunctionsInWhereClause(Map<FnSymbol*, ArgSymbol*>& fnsInInterfaces,
     Vec<ArgSymbol*>& witnessObjects, BaseAST *whereClause);
@@ -56,7 +56,7 @@ static Vec<FnSymbol*> visitedFns;
  * Code is modified - structure of SymbolTable
  */
 
-typedef Map<BaseAST*, Symbol*> ImplementingTypeList;
+/*typedef Map<BaseAST*, Symbol*> ImplementingTypeList;
 typedef Map<BaseAST*, ImplementingTypeList*> ImplementedInterfaceList;
 typedef Map<BaseAST*, ImplementedInterfaceList*> ImplementsSymbolTable;
 
@@ -120,7 +120,7 @@ lookupImplementsWitnessInSymbolTable(BaseAST* ce, BaseAST* interface, BaseAST* i
     return lookupImplementsWitnessInSymbolTable(scope,interface,implementingType);
   return witness;
 }
-
+*/
 typedef MapElem<FnSymbol *, ArgSymbol *> DictElem;
 
 static void getMatchingFunctionsInInterfaces(const char* name, Vec<FnSymbol*>& visibleFns,
@@ -292,7 +292,7 @@ getFunctionsInWhereClause(Map<FnSymbol*, ArgSymbol*>& fnsInInterfaces,
 
         witnessObjects.add(dict);
 
-        addToImplementsSymbolTable(ce, is, se, dict);
+        //addToImplementsSymbolTable(ce, is, se, dict);
 
         forv_Vec(FnSymbol, fn, is->functionSignatures) {
           //For now, copy the function prototype and replace the types
@@ -393,7 +393,7 @@ static BaseAST *typeCheckFn(FnSymbol *fn) {
 
 static Symbol* mapArguments(CallExpr* where, FnSymbol* visibleFn, CallExpr* call) {
   BaseAST *arg1 = where->argList.get(1);
-  BaseAST *arg2 = where->argList.get(2);
+  //BaseAST *arg2 = where->argList.get(2);
   SymExpr *s_arg1 = toSymExpr(arg1);
   Expr *e_actual = call->argList.head;
   ArgSymbol *s_formal =
@@ -405,12 +405,12 @@ static Symbol* mapArguments(CallExpr* where, FnSymbol* visibleFn, CallExpr* call
           (s_formal && s_formal->defPoint->next) ?
               toArgSymbol(toDefExpr((s_formal)->defPoint->next)->sym) : NULL) {
     if (s_formal->id == s_arg1->var->id) {
-      if(Symbol *witness = lookupImplementsWitnessInSymbolTable(call, arg2, e_actual)) {
+      /*if(Symbol *witness = lookupImplementsWitnessInSymbolTable(call, arg2, e_actual)) {
         return witness;
       } else {
 
         return NULL;
-      }
+      }*/
 
     }
   }
@@ -905,8 +905,8 @@ static BaseAST* checkInterfaceImplementations(BaseAST *s) {
               istmt->insertBefore(new DefExpr(tmp));
               istmt->insertBefore(new CallExpr(PRIM_MOVE, tmp,
                  new CallExpr(witness->defaultConstructor->name)));
-              addToImplementsSymbolTable(ce,ce->argList.tail,
-                  ce->argList.head, tmp);
+              //addToImplementsSymbolTable(ce,ce->argList.tail,
+                //  ce->argList.head, tmp);
               istmt->remove();
             } else {
               //printf("Inside clause");
@@ -915,8 +915,8 @@ static BaseAST* checkInterfaceImplementations(BaseAST *s) {
               ce->insertBefore(new CallExpr(PRIM_MOVE, tmp,
                  new CallExpr(witness->defaultConstructor->name)));
 
-              addToImplementsSymbolTable(ce,ce->argList.tail,
-                  ce->argList.head, tmp);
+              //addToImplementsSymbolTable(ce,ce->argList.tail,
+                  //ce->argList.head, tmp);
               ce->remove();
             }
           } else {

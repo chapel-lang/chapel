@@ -14,7 +14,7 @@ static int explainInstantiationLine = -2;
 static ModuleSymbol* explainInstantiationModule = NULL;
 
 static Vec<FnSymbol*> whereStack;
-
+Symbol* lookupImplementsWitnessInSymbolTable(BaseAST* ce, BaseAST* interface, BaseAST* implementingType);
 
 static void
 explainInstantiation(FnSymbol* fn) {
@@ -220,12 +220,52 @@ getNewSubType(FnSymbol* fn, Symbol* key, TypeSymbol* value) {
 
 
 static bool
-evaluateWhereClause(FnSymbol* fn) {
+evaluateImplementsInWhereClause(FnSymbol* fn, CallExpr* fn_call) {
+  for_alist(expr,fn->where->body) {
+    if (CallExpr* where_expr = toCallExpr(expr)) {
+      if (UnresolvedSymExpr *callsymexpr = toUnresolvedSymExpr(where_expr->baseExpr)) {
+        if ((!strcmp(callsymexpr->unresolved, "_build_tuple"))
+           || (!strcmp(callsymexpr->unresolved, "PRIM_ACTUALS_LIST"))) {
+          for_alist(wl, where_expr->argList) {
+            if (CallExpr *where_ce = toCallExpr(wl)) {
+              if (UnresolvedSymExpr *use = toUnresolvedSymExpr(where_ce->baseExpr)) {
+                if (!strcmp(use->unresolved, "implements")) {
+                  BaseAST* type_arg = toSymExpr(where_ce->argList.get(1))->var->type;
+                  BaseAST* interface_arg = where_ce->argList.get(2);
+                  if(!lookupImplementsWitnessInSymbolTable(fn_call, interface_arg, type_arg)) {
+                    return false;
+                  }
+                  where_ce->replace(new SymExpr(gTrue));
+                }
+              }
+            }
+          }
+        } else if (!strcmp(callsymexpr->unresolved, "implements")) {
+          BaseAST* type_arg = toSymExpr(where_expr->argList.get(1))->var->type;
+          BaseAST* interface_arg = where_expr->argList.get(2);
+          if(!lookupImplementsWitnessInSymbolTable(fn_call, interface_arg, type_arg)) {
+           return false;
+          }
+          where_expr->replace(new SymExpr(gTrue));
+        }
+      }
+    }
+  }
+  return true;
+}
+
+
+static bool
+evaluateWhereClause(FnSymbol* fn, CallExpr* fn_call) {
   if (fn->where) {
     whereStack.add(fn);
     resolveFormals(fn);
     resolveBlock(fn->where);
     whereStack.pop();
+
+    if(!evaluateImplementsInWhereClause(fn, fn_call))
+      USR_FATAL(fn->where, "Implements condition not satisfied");
+
     SymExpr* se = toSymExpr(fn->where->body.last());
     if (!se)
       USR_FATAL(fn->where, "invalid where clause");
@@ -236,7 +276,6 @@ evaluateWhereClause(FnSymbol* fn) {
   }
   return true;
 }
-
 
 static void
 checkInfiniteWhereInstantiation(FnSymbol* fn) {
@@ -623,7 +662,7 @@ instantiate(FnSymbol* fn, SymbolMap* subs, CallExpr* call) {
 
   newFn->tag_generic();
 
-  if (!newFn->hasFlag(FLAG_GENERIC) && evaluateWhereClause(newFn) == false) {
+  if (!newFn->hasFlag(FLAG_GENERIC) && evaluateWhereClause(newFn, call) == false) {
     //
     // where clause evaluates to false so cache gVoid as a function
     //
