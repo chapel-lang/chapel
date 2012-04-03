@@ -91,7 +91,7 @@ typedef struct qio_style_s {
 
   int32_t precision; // for floating point, number after decimal point.
   int32_t significant_digits; // maximum display precision for floating point.
-  uint8_t realtype; // 0 -> print with %g; 1 -> print with %f; 2 -> print with %
+  uint8_t realfmt; //0 -> print with %g; 1 -> print with %f; 2 -> print with %e
 
   // Other data type choices
   //
@@ -183,7 +183,7 @@ void qio_style_init_default(qio_style_t* s)
   s->precision = -1; // use default printf values; usually 6 but more for base 16
   s->significant_digits = -1;
 
-  s->realtype = 0;
+  s->realfmt = 0;
 
   s->complex_style = 0;
 

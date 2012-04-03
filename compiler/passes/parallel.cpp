@@ -122,7 +122,7 @@ bundleArgs(CallExpr* fcall) {
     wrap_fn->addFlag(FLAG_ON_BLOCK);
     if (fn->hasFlag(FLAG_NON_BLOCKING))
       wrap_fn->addFlag(FLAG_NON_BLOCKING);
-    ArgSymbol* locale = new ArgSymbol(INTENT_BLANK, "_dummy_locale_arg", dtInt[INT_SIZE_32]);
+    ArgSymbol* locale = new ArgSymbol(INTENT_BLANK, "_dummy_locale_arg", dtInt[INT_SIZE_DEFAULT]);
     wrap_fn->insertFormalAtTail(locale);
   } else if (fn->hasFlag(FLAG_COBEGIN_OR_COFORALL)) {
     wrap_fn->addFlag(FLAG_COBEGIN_OR_COFORALL_BLOCK);
@@ -179,7 +179,7 @@ insertEndCount(FnSymbol* fn,
                Type* endCountType,
                Vec<FnSymbol*>& queue,
                Map<FnSymbol*,Symbol*>& endCountMap) {
-  if (fn == chpl_main) {
+  if (fn == chpl_gen_main) {
     VarSymbol* var = newTemp("_endCount", endCountType);
     fn->insertAtHead(new DefExpr(var));
     endCountMap.put(fn, var);
@@ -658,7 +658,7 @@ reprivatizeIterators() {
   }
 
   forv_Vec(Symbol, sym, privatizedFields) if (sym) {
-    sym->type = dtInt[INT_SIZE_32];
+    sym->type = dtInt[INT_SIZE_DEFAULT];
   }
 }
 
@@ -688,7 +688,7 @@ parallel(void) {
         fn->addFlag(FLAG_ON);
         if (block->blockInfo->isPrimitive(PRIM_BLOCK_ON_NB))
           fn->addFlag(FLAG_NON_BLOCKING);
-        ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "_dummy_locale_arg", dtInt[INT_SIZE_32]);
+        ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "_dummy_locale_arg", dtInt[INT_SIZE_DEFAULT]);
         fn->insertFormalAtTail(arg);
       }
       else if (block->blockInfo->isPrimitive(PRIM_ON_GPU)) {
@@ -697,8 +697,8 @@ parallel(void) {
         //Add two formal arguments:
         // nBlocks = Number of Thread blocks
         // threadsPerBlock = Number of threads per single thread block
-        ArgSymbol* arg1 = new ArgSymbol(INTENT_BLANK, "nBlocks", dtInt[INT_SIZE_32]);
-        ArgSymbol* arg2 = new ArgSymbol(INTENT_BLANK, "threadsPerBlock", dtInt[INT_SIZE_32]);
+        ArgSymbol* arg1 = new ArgSymbol(INTENT_BLANK, "nBlocks", dtInt[INT_SIZE_DEFAULT]);
+        ArgSymbol* arg2 = new ArgSymbol(INTENT_BLANK, "threadsPerBlock", dtInt[INT_SIZE_DEFAULT]);
         fn->insertFormalAtTail(arg1);
         fn->insertFormalAtTail(arg2);
       }
@@ -806,14 +806,14 @@ buildWideClass(Type* type) {
   TypeSymbol* wts = new TypeSymbol(astr("__wide_", type->symbol->cname), wide);
   wts->addFlag(FLAG_WIDE_CLASS);
   theProgram->block->insertAtTail(new DefExpr(wts));
-  wide->fields.insertAtTail(new DefExpr(new VarSymbol("locale", dtInt[INT_SIZE_32])));
+  wide->fields.insertAtTail(new DefExpr(new VarSymbol("locale", dtInt[INT_SIZE_DEFAULT])));
   wide->fields.insertAtTail(new DefExpr(new VarSymbol("addr", type)));
 
   //
   // Strings need an extra field in their wide class to hold their length
   //
   if (type == dtString) {
-    wide->fields.insertAtTail(new DefExpr(new VarSymbol("size", dtInt[INT_SIZE_32])));
+    wide->fields.insertAtTail(new DefExpr(new VarSymbol("size", dtInt[INT_SIZE_DEFAULT])));
     if (wideStringType) {
       INT_FATAL("Created two wide string types");
     }
@@ -1174,7 +1174,7 @@ insertWideReferences(void) {
       TypeSymbol* wts = new TypeSymbol(astr("__wide_", ts->cname), wide);
       wts->addFlag(FLAG_WIDE);
       theProgram->block->insertAtTail(new DefExpr(wts));
-      wide->fields.insertAtTail(new DefExpr(new VarSymbol("locale", dtInt[INT_SIZE_32])));
+      wide->fields.insertAtTail(new DefExpr(new VarSymbol("locale", dtInt[INT_SIZE_DEFAULT])));
       wide->fields.insertAtTail(new DefExpr(new VarSymbol("addr", ts->type)));
       wideRefMap.put(ts->type, wide);
     }

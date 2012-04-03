@@ -160,8 +160,9 @@ development on smaller machines.
 \begin{example}
 The code
 \begin{chapel}
-const MyLocales: [loc in 0..numLocales*4] locale = Locales(loc%numLocales);
-on MyLocales(i) ...
+const MyLocales: [0..numLocales*4] locale 
+               = [loc in 0..numLocales*4] Locales(loc%numLocales);
+on MyLocales[i] ...
 \end{chapel}
 defines a new array \chpl{MyLocales} that is four times the size of
 the \chpl{Locales} array.  Each locale is added to

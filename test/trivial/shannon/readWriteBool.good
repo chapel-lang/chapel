@@ -1,3 +1,3 @@
 true
 false
-readWriteBool.chpl:9: error: Unhandled system error: bad format (1002) in channel.read(inout a:bool) with path readWriteBool.stdin offset 11
+readWriteBool.chpl:9: error: bad format in channel.read(inout a:bool) with path "readWriteBool.stdin" offset 11

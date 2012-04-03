@@ -41,7 +41,7 @@ var error = false;
 for i in C.domain {
   // Verify the result:
   //  Since A and B are all '1's then every entry in C should be equal to N
-  if (C[i]:int != N) {
+  if (C[i]:uint != N) {
     writeln("oops: C[",i,"] = ", C[i], ".  Should be ", N, ".");
     error = true;
   }

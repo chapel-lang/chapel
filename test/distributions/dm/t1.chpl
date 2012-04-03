@@ -1,7 +1,8 @@
-// Run various basic operations on a DimensionalDist-mapped
+// Run various basic operations on a DimensionalDist2D-mapped
 // domain and array, from each locale.
 
-use d, r, u;
+use DimensionalDist2D, ReplicatedDim, BlockDim;
+use u;
 
 config const s1 = 2;
 config const s2 = 2;
@@ -10,11 +11,11 @@ setupLocales(s1, s2);
 
 /////////// distribution
 
-var vdf = new vdist(s1);
-var sdf = new sdist(s2, 1, 3);
+var vdf = new ReplicatedDim(s1);
+var sdf = new BlockDim(s2, 1, 3);
 
-hd("new DimensionalDist()");
-var ddf = new DimensionalDist(mylocs, vdf, sdf, "ddf");
+hd("new DimensionalDist2D()");
+var ddf = new DimensionalDist2D(mylocs, vdf, sdf, "ddf");
 tl();
 
 hd("wrapping ddf in dmap");
@@ -74,9 +75,9 @@ showArr(dmdom, dmarr, dmhelp);
 /////////// subordinate 1-d distributions
 
 fphase(90);
-hd("dmarr - subordinate1dDist()");
-msg(dmarr._value.subordinate1dDist(1));
-msg(dmarr._value.subordinate1dDist(2));
+hd("dmarr - dimSpecifier()");
+msg(dmarr._value.dimSpecifier(1));
+msg(dmarr._value.dimSpecifier(2));
 tl();
 
 

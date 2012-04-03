@@ -655,6 +655,7 @@ writetype(z);
 writetype(coord);
 writetype(yes);
 writetype("no");
+writetype(here);
 
 proc writetype(x) {
   type select x {
@@ -664,6 +665,9 @@ proc writetype(x) {
     when complex do writeln("Complex type");
     when string do writeln("String type");
     when bool do writeln("Boolean type");
+    when imag do writeln("Imag type");
+    when locale do writeln("Locale type");
+    when void do writeln("Void type");
     otherwise writeln("Non-primitive type");
   }
 }
@@ -675,6 +679,7 @@ Integer type
 Non-primitive type
 Boolean type
 String type
+Locale type
 \end{chapelprintoutput}
 \end{chapelexample}
 

@@ -60,7 +60,7 @@ uint64_t chpl_bytesPerLocale(void) {
 }
 
 
-int32_t chpl_numCoresOnThisLocale(void) {
+int64_t chpl_numCoresOnThisLocale(void) {
 #ifdef NO_CORES_PER_LOCALE
   return 1;
 #elif defined __APPLE__

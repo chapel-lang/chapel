@@ -4,6 +4,7 @@ pragma "no use ChapelStandard"
 module ChapelStandard {
   // Internal modules.
   use ChapelBase;
+  use Atomics;
   use ChapelNumLocales;
   use ChapelThreads;
   use ChapelThreadsInternal;

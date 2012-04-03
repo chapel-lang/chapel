@@ -296,16 +296,16 @@ of all its parameters, i.e.,
 
 \begin{chapelexample}{rangeVariable.chpl}
 The following declaration declares a variable \chpl{r}
-that can represent ranges of 64-bit integers,
+that can represent ranges of 32-bit integers,
 with both high and low bounds specified,
 and the ability to have a stride other than 1.
 \begin{chapel}
-var r: range(int(64), BoundedRangeType.bounded, stridable=true);
+var r: range(int(32), BoundedRangeType.bounded, stridable=true);
 \end{chapel}
 \begin{chapelpost}
 writeln(r);
-var i64: int(64) = 3;
-r = i64..13 by 3 align 1;
+var i32: int(32) = 3;
+r = i32..13 by 3 align 1;
 writeln(r);
 \end{chapelpost}
 \begin{chapeloutput}

@@ -125,7 +125,7 @@ writeln(typeToString(x.type));
 \end{chapelpost}
 \begin{chapeloutput}
 (3.14, 3.14, 3.14)
-3*real
+3*real(64)
 \end{chapeloutput}
 In this function, the type of the tuple is taken to be the type of the
 actual argument.  The call \chpl{fillTuple(3, 3.14)} returns a 3-tuple
@@ -160,7 +160,7 @@ writeln(typeToString(x.type));
 \end{chapelpost}
 \begin{chapeloutput}
 (3.14, 3.14, 3.14)
-3*real
+3*real(64)
 \end{chapeloutput}
 \end{chapelexample}
 
@@ -391,8 +391,6 @@ generic fields. A generic field is one of:
 expression.
 \end{itemize}
 
-\mbox{} % push the following line to the next page
-
 For each generic field, the class or record is parameterized over:
 \begin{itemize}
 \item the type bound to the type alias,
@@ -472,7 +470,7 @@ writeln(typeToString(n.next.type));
 \begin{chapeloutput}
 3.14
 nil
-Node(real)
+Node(real(64))
 \end{chapeloutput}
 The call \chpl{new Node(real, 3.14)} creates a node in the linked list
 that contains the value \chpl{3.14}.  The \chpl{next} field is set to

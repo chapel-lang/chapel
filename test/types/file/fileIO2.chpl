@@ -20,7 +20,7 @@ if (numErrors > 0) {
 
 
 proc writeArray(n, X, filename) {
-  var outfile = open(filename, iomode.w).writer();
+  var outfile = open(filename, iomode.cw).writer();
   outfile.writeln(n, " ", n);
   outfile.writeln(X);
   outfile.close();

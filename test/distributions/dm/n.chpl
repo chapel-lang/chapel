@@ -419,7 +419,7 @@ proc WrapperArr.dsiRankChange(sliceDefDom: WrapperRectDom,
 // 'reindex' WrapperDist
 
 //== creating and using it - see e.g.
-// DimensionalDist.dsiCreateReindexDist(), DimensionalArr.dsiReindex()
+// DimensionalDist2D.dsiCreateReindexDist(), DimensionalArr.dsiReindex()
 
 // For 'origRank', use origDist's rank if available,
 // otherwise newSpace.size or oldSpace.size.
@@ -596,7 +596,7 @@ iter WrapperArr.these(param tag: iterKind, followThis) var where tag == iterKind
 // 'rankchange' WrapperDist
 
 //== creating and using it - see e.g.
-// DimensionalDist.dsiCreateRankChangeDist(), DimensionalArr.dsiRankChange()
+// DimensionalDist2D.dsiCreateRankChangeDist(), DimensionalArr.dsiRankChange()
 
 inline
 proc genericDsiCreateRankChangeDist(sliceeDist, param newRank: int,

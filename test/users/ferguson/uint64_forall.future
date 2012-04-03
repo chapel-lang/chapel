@@ -1,4 +1,0 @@
-$ chpl uint64_forall.chpl 
-uint64_forall.chpl:5: error: illegal use of '*' on operands of type uint(64) and signed integer [functionResolution.cpp:1546]
-
-

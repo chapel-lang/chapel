@@ -219,3 +219,23 @@ Non-Replicated Array after assignment from Replicated Array + 4
 9 9 9 9 9 9 9 9
 9 9 9 9 9 9 9 9
 
+Dimensional2D(Replicated,BlockCyclic) Array Index Map from LOCALE0
+0 0 1 1 2 2 0 0
+0 0 1 1 2 2 0 0
+0 0 1 1 2 2 0 0
+0 0 1 1 2 2 0 0
+0 0 1 1 2 2 0 0
+0 0 1 1 2 2 0 0
+0 0 1 1 2 2 0 0
+0 0 1 1 2 2 0 0
+
+Dimensional2D(Replicated,BlockCyclic) Array Index Map from LOCALE3
+3 3 4 4 5 5 3 3
+3 3 4 4 5 5 3 3
+3 3 4 4 5 5 3 3
+3 3 4 4 5 5 3 3
+3 3 4 4 5 5 3 3
+3 3 4 4 5 5 3 3
+3 3 4 4 5 5 3 3
+3 3 4 4 5 5 3 3
+

@@ -8,7 +8,7 @@
 
 use Time;
 // This initializes the seed used for the random number generator.
-var seed: sync uint = getCurrentTime() : uint;
+var seed: sync uint(32) = getCurrentTime() : uint(32);
 
 var notThereYet = true;
 
@@ -207,7 +207,7 @@ proc RandomNumber() {
   const multiplier: int(64) = 16807,
         modulus: int(64) = 2147483647;
   // The following calculation must be done in at least 46-bit arithmetic!
-  var newSeed = (seed * multiplier % modulus) : uint;
+  var newSeed = (seed * multiplier % modulus) : uint(32);
   seed = newSeed;
   return (newSeed-1) / (modulus-1) : real;
 }

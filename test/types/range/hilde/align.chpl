@@ -2,10 +2,10 @@
 //
 // Tests representation limits for the align operator.
 
-const minS = min(int);
-const maxS = max(int);
-const maxU = max(uint);
-const nI = -2**53;
+const minS = min(int(32));
+const maxS = max(int(32));
+const maxU = max(uint(32));
+const nI = ((-2):int(32))**53;
 const pI = 2:uint(64)**63;
 
 writeln(1:int.. by 10 align minS);

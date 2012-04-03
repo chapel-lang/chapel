@@ -1,4 +1,5 @@
-use d, r, f, u;
+use DimensionalDist2D, ReplicatedDim, BlockDim, BlockCycDim;
+use u;
 
 config const s1 = 2;
 config const s2 = 2;
@@ -16,7 +17,7 @@ proc test(message, sel, dd1, dd2) {
   hd(dd1.toString(), " + ", dd2.toString(), "  sel=", sel); tl();
 
   if selector == 0 || selector == sel {
-      const dm = new dmap(new DimensionalDist(mylocs, dd1, dd2, "dm"));
+      const dm = new dmap(new DimensionalDist2D(mylocs, dd1, dd2, "dm"));
 
       const Dbase = [1..3, 1..5];
       const Ddm = Dbase dmapped dm;
@@ -45,13 +46,13 @@ proc test(message, sel, dd1, dd2) {
   }
 }
 
-test("vdist,vdist", 1, new vdist(s1), new vdist(s2));
-test("sdist,sdist", 2, new sdist(s1, 1, 4), new sdist(s2, 1, 4));
-test("idist,idist", 3, new idist(s1, 0, 2), new idist(s2, 2, 3));
+test("ReplicatedDim,ReplicatedDim", 1, new ReplicatedDim(s1), new ReplicatedDim(s2));
+test("BlockDim,BlockDim", 2, new BlockDim(s1, 1, 4), new BlockDim(s2, 1, 4));
+test("BlockCyclicDim,BlockCyclicDim", 3, new BlockCyclicDim(s1, 0, 2), new BlockCyclicDim(s2, 2, 3));
 
-test("vdist,sdist", 4, new vdist(s1),       new sdist(s2, 1, 4));
-test("vdist,idist", 5, new vdist(s1),       new idist(s2, 2, 3));
-test("sdist,vdist", 6, new sdist(s1, 1, 4), new vdist(s2));
-test("sdist,idist", 7, new sdist(s1, 1, 4), new idist(s2, 2, 3));
-test("idist,vdist", 8, new idist(s1, 0, 2), new vdist(s2));
-test("idist,sdist", 9, new idist(s1, 0, 2), new sdist(s2, 1, 4));
+test("ReplicatedDim,BlockDim", 4, new ReplicatedDim(s1),       new BlockDim(s2, 1, 4));
+test("ReplicatedDim,BlockCyclicDim", 5, new ReplicatedDim(s1),       new BlockCyclicDim(s2, 2, 3));
+test("BlockDim,ReplicatedDim", 6, new BlockDim(s1, 1, 4), new ReplicatedDim(s2));
+test("BlockDim,BlockCyclicDim", 7, new BlockDim(s1, 1, 4), new BlockCyclicDim(s2, 2, 3));
+test("BlockCyclicDim,ReplicatedDim", 8, new BlockCyclicDim(s1, 0, 2), new ReplicatedDim(s2));
+test("BlockCyclicDim,BlockDim", 9, new BlockCyclicDim(s1, 0, 2), new BlockDim(s2, 1, 4));

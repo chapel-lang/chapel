@@ -294,7 +294,7 @@ targetCodelet() {
 
     /* For every other function besides chpl_main(), we build the intervals */
     forv_Vec(FnSymbol, fn, gFnSymbols) {
-      if (!strcmp(fn->name, "chpl_main")) {
+      if (!strcmp(fn->name, "chpl_gen_main")) {
 
         Map<BasicBlock*, Interval*> intervalMaps;
 

@@ -1,0 +1,2 @@
+Past First Check
+asserteof.chpl:28: error: assert failed - Not at EOF with path "asserteof.test.nums" offset 3

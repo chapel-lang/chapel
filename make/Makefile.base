@@ -46,6 +46,11 @@ ifndef CHPL_MAKE_ATOMICS
 include $(CHPL_MAKE_HOME)/make/Makefile.atomics
 endif
 
+ifndef CHPL_MAKE_GMP
+include $(CHPL_MAKE_HOME)/make/Makefile.gmp
+endif
+
+
 #
 # default CFLAGS, based on other settings
 #

@@ -6,7 +6,7 @@ use Time;
 
 config const numThreads = 3000;
 var total: sync int = 0;
-var seed = getCurrentTime() : uint;
+var seed = getCurrentTime() : uint(32);
 
 proc foo (x) {
 
@@ -14,7 +14,7 @@ proc foo (x) {
     const multiplier: int(64) = 16807,
           modulus: int(64) = 2147483647;
     // The following calculation must be done in at least 46-bit arithmetic!
-    seed = (seed * multiplier % modulus) : uint;
+    seed = (seed * multiplier % modulus) : uint(32);
     return (seed-1) / (modulus-2) : real;
   }
 

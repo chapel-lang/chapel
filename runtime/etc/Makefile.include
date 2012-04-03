@@ -7,6 +7,7 @@ include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.threads-$(CHPL_MAKE_THREADS)
 -include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.tasks-$(CHPL_MAKE_TASKS)
 include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.comm-$(CHPL_MAKE_COMM)
 include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.mem-$(CHPL_MAKE_MEM)
+include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.gmp-$(CHPL_MAKE_GMP)
 
 # Include necessary codelet libs
 include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.codelet

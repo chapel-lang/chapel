@@ -1,7 +1,8 @@
 // This tests primarily dsiAccess1d for a block distribution,
 // on various domains (positive/negative unit/non-unit strides).
 
-use d, r, u;
+use DimensionalDist2D, ReplicatedDim, BlockDim;
+use u;
 
 config const verbose = false;
 config const nopfx = false;
@@ -47,9 +48,9 @@ proc testsuite(type T, initphase) {
   hd("testsuite(", typeToString(T), ")");
   tl();
 
-  const vdf = new vdist(1);
-  const sdf = new sdist(3, 1:T, 8:T);
-  const dm = new dmap(new DimensionalDist(mylocs, vdf, sdf, "dm", idxType=T));
+  const vdf = new ReplicatedDim(1);
+  const sdf = new BlockDim(3, 1:T, 8:T);
+  const dm = new dmap(new DimensionalDist2D(mylocs, vdf, sdf, "dm", idxType=T));
 
   test([1:T..1:T, 0:T..9:T       ] dmapped dm);
   test([1:T..1:T, 0:T..9:T by -1 ] dmapped dm);

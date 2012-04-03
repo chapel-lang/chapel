@@ -1,1 +1,1 @@
-freadNoFloat.chpl:4: error: Unhandled system error: bad format (1002) in channel.read(inout a:real) with path freadNoFloat.txt offset 0
+freadNoFloat.chpl:4: error: bad format in channel.read(inout a:real(64)) with path "freadNoFloat.txt" offset 0

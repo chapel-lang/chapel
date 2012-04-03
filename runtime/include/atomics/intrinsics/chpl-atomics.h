@@ -8,12 +8,17 @@ typedef bool chpl_bool;
                        // causes problems with the C test cases.
 #endif
 
+typedef int_least8_t atomic_int_least8_t;
+typedef int_least16_t atomic_int_least16_t;
+typedef int_least32_t atomic_int_least32_t;
+typedef int_least64_t atomic_int_least64_t;
 typedef uint_least8_t atomic_uint_least8_t;
 typedef uint_least16_t atomic_uint_least16_t;
 typedef uint_least32_t atomic_uint_least32_t;
 typedef uint_least64_t atomic_uint_least64_t;
 typedef uintptr_t atomic_uintptr_t;
 typedef chpl_bool atomic_flag;
+typedef chpl_bool flag;
 
 typedef enum {
  memory_order_relaxed,
@@ -33,15 +38,6 @@ static inline
 void atomic_signal_thread_fence(memory_order order)
 {
   __sync_synchronize();
-}
-
-static inline void atomic_init_flag(atomic_flag *obj, chpl_bool value)
-{
-  *obj = value;
-}
-
-static inline void atomic_destroy_flag(atomic_flag *obj)
-{
 }
 
 static inline chpl_bool atomic_flag_test_and_set_explicit(atomic_flag *obj, memory_order order) {
@@ -66,7 +62,7 @@ static inline void atomic_flag_clear(atomic_flag *obj) {
   atomic_flag_clear_explicit(obj, memory_order_seq_cst);
 }
 
-#define DECLARE_ATOMICS(type) \
+#define DECLARE_ATOMICS_BASE(type) \
 static inline chpl_bool atomic_is_lock_free_ ## type(atomic_ ## type * obj) { \
   return true; \
 } \
@@ -106,7 +102,9 @@ static inline chpl_bool atomic_compare_exchange_weak_explicit_ ## type(atomic_ #
 } \
 static inline chpl_bool atomic_compare_exchange_weak_ ## type(atomic_ ## type * obj, type expected, type desired) { \
   return atomic_compare_exchange_weak_explicit_ ## type(obj, expected, desired, memory_order_seq_cst); \
-} \
+}
+
+#define DECLARE_ATOMICS_FETCH_OPS(type) \
 static inline type atomic_fetch_add_explicit_ ## type(atomic_ ## type * obj, type operand, memory_order order) { \
   return __sync_fetch_and_add(obj, operand); \
 } \
@@ -132,12 +130,24 @@ static inline type atomic_fetch_and_ ## type(atomic_ ## type * obj, type operand
   return atomic_fetch_and_explicit_ ## type(obj, operand, memory_order_seq_cst); \
 }
 
+DECLARE_ATOMICS_BASE(flag);
+
+#define DECLARE_ATOMICS(type) \
+  DECLARE_ATOMICS_BASE(type) \
+  DECLARE_ATOMICS_FETCH_OPS(type)
+
+DECLARE_ATOMICS(int_least8_t);
+DECLARE_ATOMICS(int_least16_t);
+DECLARE_ATOMICS(int_least32_t);
+DECLARE_ATOMICS(int_least64_t);
 DECLARE_ATOMICS(uint_least8_t);
 DECLARE_ATOMICS(uint_least16_t);
 DECLARE_ATOMICS(uint_least32_t);
 DECLARE_ATOMICS(uint_least64_t);
 DECLARE_ATOMICS(uintptr_t);
 
+#undef DECLARE_ATOMICS_BASE
+#undef DECLARE_ATOMICS_FETCH_OPS
 #undef DECLARE_ATOMICS
 
 /*

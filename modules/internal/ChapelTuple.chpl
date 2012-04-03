@@ -97,15 +97,15 @@ proc _tuple.this(i : integral) var {
 //
 // tuple methods
 //
-proc _tuple.writeThis(f: Writer) {
-  if size == 0 then f.write("()"); // handle zero-length tuples
-  else {
-    f.write("(", this(1));
+proc _tuple.readWriteThis(f) {
+  f & new ioLiteral("(");
+  if size != 0 {
+    f & this(1);
     for param i in 2..size {
-      f.write(", ", this(i));
+      f & new ioLiteral(", ") & this(i);
     }
-    f.write(")");
   }
+  f & new ioLiteral(")");
 }
 
 //
@@ -351,89 +351,5 @@ pragma "inline" proc !=(a: _tuple, b: _tuple) {
       return true;
   return false;
 }
-
-//
-// square tuples
-//
-record _square_tuple {
-  param size: int;
-  var tuple;
-
-  pragma "expand tuples with values"
-  iter these_help(param dim: int) {
-    if dim == size - 1 {
-      for i in tuple(dim) do
-        for j in tuple(size) do
-          yield _build_tuple_always_allow_ref(i, j);
-    } else {
-      for i in tuple(dim) do
-        for j in these_help(dim+1) do
-          yield _build_tuple_always_allow_ref(i, (...j));
-    }
-  }
-
-  iter these() {
-    if size == 1 {
-      for i in tuple(1) do
-        yield i;
-    } else {
-      for i in these_help(1) do
-        yield i;
-    }
-  }
-
-  pragma "inline iterator"
-  pragma "expand tuples with values"
-  iter lead_help(param dim: int) {
-    if dim == size - 1 {
-      for i in _toLeader(tuple(dim)) do
-        for j in _toLeader(tuple(size)) do
-          yield _build_tuple_always_allow_ref(i, j);
-    } else {
-      for i in _toLeader(tuple(dim)) do
-        for j in lead_help(dim+1) do
-          yield _build_tuple_always_allow_ref(i, (...j));
-    }
-  }
-
-  iter these(param tag: iterKind) where tag == iterKind.leader {
-    if size == 1 {
-      for i in _toLeader(tuple(1)) do
-        yield i;
-    } else {
-      for i in lead_help(1) do
-        yield i;
-    }
-  }
-
-  pragma "expand tuples with values"
-  iter follow_help(param dim: int, followThis) {
-    if dim == size - 1 {
-      for i in _toFollower(tuple(dim), followThis(dim)) do
-        for j in _toFollower(tuple(size), followThis(size)) do
-          yield _build_tuple_always_allow_ref(i, j);
-    } else {
-      for i in _toFollower(tuple(dim), followThis(dim)) do
-        for j in follow_help(dim+1) do
-          yield _build_tuple_always_allow_ref(i, (...j));
-    }
-  }
-
-  iter these(param tag: iterKind, followThis) where tag == iterKind.follower {
-    if size == 1 {
-      for i in _toFollower(tuple(1), followThis) do
-        yield i;
-    } else {
-      for i in follow_help(1, followThis) do
-        yield i;
-    }
-  }
-}
-
-//
-// syntactic support for square tuples
-//
-proc chpl__buildDomainExpr(x ...?size) where size > 1
-  return new _square_tuple(size, x);
 
 }

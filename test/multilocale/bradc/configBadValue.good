@@ -1,1 +1,1 @@
-<command line setting of 'intVal'>: error: Unexpected character when converting from string to int(32): '.'
+<command line setting of 'intVal'>: error: Unexpected character when converting from string to int(64): '.'

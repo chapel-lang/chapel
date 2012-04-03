@@ -2,9 +2,9 @@
 //
 // Tests the representation limits of the count operator.
 
-param maxU2 = 2:uint**31;
+param maxU2 = 2:uint(32)**31;
 param maxU1 = maxU2 - 1 + maxU2;
-param maxS1 = (maxU2-1):int;
+param maxS1 = (maxU2-1):int(32);
 param minS1 = -maxS1 - 1;
 param maxS2 = maxS1 / 2 + 2;
 param minS2 = minS1 / 2;

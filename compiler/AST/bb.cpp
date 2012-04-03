@@ -32,7 +32,7 @@ BasicBlock::BasicBlock()
   }
 
 #define BB_STOP()                               \
-  fn->basicBlocks->add(Steal());
+  fn->basicBlocks->add(Steal())
 
 #define BB_RESTART()                            \
   BB_STOP();                                    \
@@ -176,7 +176,9 @@ void BasicBlock::buildBasicBlocks(FnSymbol* fn, Expr* stmt)
       BB_THREAD(elseBottom, basicBlock);
     }
     else
+    {
       BB_THREAD(top, basicBlock);
+    }
     BB_THREAD(thenBottom, basicBlock);
   } else if (GotoStmt* s = toGotoStmt(stmt)) {
     LabelSymbol* label = toLabelSymbol(toSymExpr(s->label)->var);
@@ -215,8 +217,9 @@ void BasicBlock::buildBasicBlocks(FnSymbol* fn, Expr* stmt)
         }
       }
       labelMaps.put(label, basicBlock);
-    } else
+    } else {
       BB_ADD(stmt);
+    }
   }
 }
 

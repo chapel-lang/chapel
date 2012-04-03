@@ -136,6 +136,10 @@ proc typeToString(type t) param {
   return __primitive("typeToString", t);
 }
 
+proc typeToString(x) param {
+  compilerError("typeToString()'s argument must be a type, not a value");
+}
+
 enum iterKind {leader, follower};
 
 //
@@ -598,10 +602,10 @@ pragma "inline" proc _statementLevelSymbol(ir: _iteratorRecord) {
 //
 pragma "inline" proc _cond_test(x: object) return x != nil;
 pragma "inline" proc _cond_test(x: bool) return x;
-pragma "inline" proc _cond_test(x: integral) return x != 0;
+pragma "inline" proc _cond_test(x: integral) return x != 0:x.type;
 
 pragma "inline" proc _cond_test(param x: bool) param return x;
-pragma "inline" proc _cond_test(param x: integral) param return x != 0;
+pragma "inline" proc _cond_test(param x: integral) param return x != 0:x.type;
 
 pragma "inline" proc _cond_test(x) {
   compilerError("type '", typeToString(x.type), "' used in if or while condition");
@@ -722,7 +726,7 @@ proc chpl__readXX(x) return x;
 // for targets that don't have particularly fast ways of achieving this functionality
 // for simple base types.)
 proc isSimpleSyncBaseType (type t) param {
-  if CHPL_TASKS == "mta" then
+  if CHPL_TASKS == "mta" || CHPL_TASKS == "qthreads" then
     if t == int(64) || t == uint(64) || t == int(32) || t == uint(32)
         || t == int(16) || t == uint(16) || t == int(8) || t == uint(8)
         || t == real(32) || t == real(64) || t == imag(32) || t == imag(64) then
@@ -1308,22 +1312,21 @@ pragma "inline" proc chpl__initCopy(x: _tuple) {
 pragma "dont disable remote value forwarding"
 pragma "removable auto copy" proc chpl__autoCopy(x: _distribution) {
   if !noRefCount then
-    if x._value then
-      on x._value do x._value._distCnt$ += 1;
+    if x._value then x._value._distCnt.fetchAdd(1);
   return x;
 }
 
 pragma "dont disable remote value forwarding"
 pragma "removable auto copy" proc chpl__autoCopy(x: domain) {
   if !noRefCount then
-    on x._value do x._value._domCnt$ += 1;
+    x._value._domCnt.fetchAdd(1);
   return x;
 }
 
 pragma "dont disable remote value forwarding"
 pragma "removable auto copy" proc chpl__autoCopy(x: []) {
   if !noRefCount then
-    on x._value do x._value._arrCnt$ += 1;
+    x._value._arrCnt.fetchAdd(1);
   return x;
 }
 

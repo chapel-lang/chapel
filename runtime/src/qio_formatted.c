@@ -632,6 +632,32 @@ err_t qio_channel_scan_literal(const int threadsafe, qio_channel_t* restrict ch,
 
   if( len == 0 ) return EINVAL;
 
+  if( skipws ) {
+    int nbytes;
+    int32_t wchr;
+    size_t min_nonspace = len;
+    size_t max_nonspace = 0;
+    // If we're skipping whitespace,
+    // ignore leading or trailing whitespace
+    // in the pattern.
+    for( nread = 0; nread < len; nread += nbytes ) {
+      err = qio_decode_char_buf(&wchr, &nbytes, &match[nread], len - nread);
+      if( err ) return err;
+      if( ! iswspace(wchr) ) {
+        if( nread < min_nonspace ) min_nonspace = nread;
+        if( nread > max_nonspace ) max_nonspace = nread;
+      }
+    }
+
+    if( min_nonspace > max_nonspace ) {
+      nread = 0;
+      len = 0;
+    } else {
+      nread = min_nonspace;
+      len = max_nonspace + 1; 
+    }
+  }
+
   if( threadsafe ) {
     err = qio_lock(&ch->lock);
     if( err ) return err;
@@ -832,7 +858,7 @@ err_t qio_channel_print_string(const int threadsafe, qio_channel_t* restrict ch,
 {
   err_t err;
   ssize_t i, j;
-  int clen;
+  int clen = 1;
   int32_t chr;
   qio_style_t* style;
   char tmp[MB_LEN_MAX_OR_6+1];
@@ -866,7 +892,7 @@ err_t qio_channel_print_string(const int threadsafe, qio_channel_t* restrict ch,
     if( err ) goto rewind;
 
     // Write the string while translating it.
-    for( i = 0; i < len; i++ ) {
+    for( i = 0; i < len; i+=clen ) {
       err = qio_decode_char_buf(&chr, &clen, ptr + i, len - i);
       if( err ) goto rewind;
 
@@ -987,6 +1013,157 @@ unlock:
   return err;
 }
 
+err_t qio_quote_string(uint8_t string_start, uint8_t string_end, uint8_t string_format, const char* restrict ptr, ssize_t len, const char** restrict out)
+{
+  err_t err;
+  ssize_t i;
+  int j;
+  int clen = 1;
+  int32_t chr;
+  char tmp[MB_LEN_MAX_OR_6+1];
+  int tmplen;
+  char tmpch_hi, tmpch_lo;
+  int32_t tmpchr;
+  ssize_t quoted_len = 0;
+  ssize_t q = 0;
+  int clenout = 0;
+  int pass = 0;
+  char* ret = NULL;
+
+#define WRITEC(ch) { \
+    clenout = qio_nbytes_char(ch); \
+    if( pass ) qio_encode_char_buf(&ret[q], ch); \
+    q += clenout; \
+  }
+
+  for( pass = 0; pass < 2; pass++ ) {
+    if( pass ) {
+      quoted_len = q;
+      q = 0;
+      // allocate quoted_len memory at the start of pass 1.
+      ret = qio_malloc(quoted_len + 1); // room for \0.
+      if( !ret ) {
+        err = ENOMEM;
+        goto error;
+      }
+      ret[quoted_len] = '\0';
+    }
+    // write the string itself, possible with some escape-handling.
+    if( string_format == QIO_STRING_FORMAT_WORD ||
+        string_format == QIO_STRING_FORMAT_TOEND ) {
+      if( pass ) memcpy(ret,ptr,len);
+      else quoted_len = len;
+    } else {
+      // Write string_start.
+      WRITEC(string_start);
+
+      // Write the string while translating it.
+      for( i = 0; i < len; i+=clen ) {
+        err = qio_decode_char_buf(&chr, &clen, ptr + i, len - i);
+        if( err ) goto error;
+
+        // handle escaping for the different formats.
+        switch (string_format) {
+          case QIO_STRING_FORMAT_BASIC:
+            if( chr == string_end || chr == '\\' ) {
+              WRITEC('\\');
+              WRITEC(chr);
+            } else {
+              WRITEC(chr);
+            }
+            break;
+          case QIO_STRING_FORMAT_CHPL:
+            if( chr == string_end || chr == '\\' || chr == '\'' || chr == '"' || chr == '\n' ) {
+              WRITEC('\\');
+              if( chr == '\n' ) {
+                tmpchr = 'n';
+              } else {
+                tmpchr = chr;
+              }
+
+              WRITEC(tmpchr);
+            } else if( !iswprint(chr) ) {
+              // convert each of the bytes into \x00 escaped things.
+              tmplen = qio_nbytes_char(chr);
+              err = qio_encode_char_buf(tmp, chr);
+              if( err ) goto error;
+
+              // Now, print out each byte escaped.
+              for( j = 0; j < tmplen; j++ ) {
+                tmpch_hi = (tmp[j] >> 4) & 0xf;
+                tmpch_lo = tmp[j] & 0xf;
+                if( tmpch_hi < 10 ) tmpch_hi = '0' + tmpch_hi;
+                else tmpch_hi = 'a' + tmpch_hi - 10;
+                if( tmpch_lo < 10 ) tmpch_lo = '0' + tmpch_lo;
+                else tmpch_lo = 'a' + tmpch_lo - 10;
+
+                WRITEC('\\');
+                WRITEC('x');
+                WRITEC(tmpch_hi);
+                WRITEC(tmpch_lo);
+              }
+            } else {
+              WRITEC(chr);
+            }
+            break;
+          case QIO_STRING_FORMAT_JSON:
+            if( chr == string_end || chr == '\\' || chr == '"' ||
+                chr == '\b' || chr == '\f' || chr == '\n' || chr == '\r' || chr == '\t' ) {
+
+              WRITEC('\\');
+
+              if( chr == '\b' ) {
+                tmpchr = 'b';
+              } else if( chr == '\f' ) {
+                tmpchr = 'f';
+              } else if( chr == '\n' ) {
+                tmpchr = 'n';
+              } else if( chr == '\r' ) {
+                tmpchr = 'r';
+              } else if( chr == '\t' ) {
+                tmpchr = 't';
+              } else {
+                tmpchr = chr;
+              }
+
+              WRITEC(tmpchr);
+            } else if( !iswprint(chr) ) {
+              // write it as \uXXXX 4 hex digits.
+              tmplen = sprintf(tmp, "\\u%04x", (unsigned int) chr);
+              if( tmplen < 0 ) {
+                err = errno;
+                goto error;
+              }
+              for( int k = 0; k < tmplen; k++ ) {
+                WRITEC(tmp[k]);
+              }
+            } else {
+              WRITEC(chr);
+            }
+            break;
+        }
+      }
+
+      WRITEC(string_end);
+    }
+  }
+  *out = ret;
+  return 0;
+error:
+  qio_free(ret);
+  *out = NULL;
+  return err;
+#undef WRITEC
+}
+
+const char* qio_quote_string_chpl(const char* ptr, ssize_t len)
+{
+  const char* ret = NULL;
+  err_t err;
+  err = qio_quote_string('"', '"', QIO_STRING_FORMAT_CHPL, ptr, len, &ret);
+  if( !ret ) return qio_strdup("<error>");
+  return ret;
+}
 
 // only support floating point numbers in
 // base 10, or base 16 (with decimal exponent).
@@ -1133,7 +1310,9 @@ err_t _peek_number_unlocked(qio_channel_t* restrict ch, number_reading_state_t* 
   } else if( chr == '0' ) {
     // Read x or b
     NEXT_CHR_OR_EOF;
-    if( s->allow_base && chr == 'x' ) {
+    if( err == EEOF ) {
+      s->digits_start = qio_channel_offset_unlocked(ch) - 1;
+    } else if( s->allow_base && chr == 'x' ) {
       s->gotbase = s->usebase = 16;
       NEXT_CHR;
       START_DIGITS;
@@ -1630,7 +1809,7 @@ int _ftoa(char* restrict dst, size_t size, double num, int base, const qio_style
     }
 
     //printf("Printing with base %i type %i precision %i sig %i upper %i showp %i\n",
-    //       style->base, style->realtype, precision, sigdigits, style->uppercase, style->showpoint);
+    //       style->base, style->realfmt, precision, sigdigits, style->uppercase, style->showpoint);
 
     // Figure out how big our output is...
     if( style->base == 16 ) {
@@ -1659,7 +1838,7 @@ int _ftoa(char* restrict dst, size_t size, double num, int base, const qio_style
             got = snprintf(buf, buf_sz, "%.*a", precision, num);
         }
       }
-    } else if( style->realtype == 0 ) {
+    } else if( style->realfmt == 0 ) {
       if( sigdigits < 0 ) {
         if( style->uppercase ) {
           if( style->showpoint )
@@ -1685,7 +1864,7 @@ int _ftoa(char* restrict dst, size_t size, double num, int base, const qio_style
             got = snprintf(buf, buf_sz, "%.*g", sigdigits, num);
         }
       }
-    } else if( style->realtype == 1 ) {
+    } else if( style->realfmt == 1 ) {
       if( precision < 0 ) {
         if( style->uppercase ) {
           if( style->showpoint )
@@ -1711,7 +1890,7 @@ int _ftoa(char* restrict dst, size_t size, double num, int base, const qio_style
             got = snprintf(buf, buf_sz, "%.*f", precision, num);
         }
       }
-    } else if( style->realtype == 2 ) {
+    } else if( style->realfmt == 2 ) {
       if( precision < 0 ) {
         if( style->uppercase ) {
           if( style->showpoint )

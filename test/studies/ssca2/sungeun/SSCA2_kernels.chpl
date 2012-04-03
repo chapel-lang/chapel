@@ -119,7 +119,8 @@ module SSCA2_kernels
       
       forall ( x, y ) in Heavy_Edge_List do {
 	var Active_Level, Next_Level : domain ( index (vertex_domain) );
-	var min_distance$            : [vertex_domain] sync int = -1;
+	var min_distance             : [vertex_domain] atomic int;
+        forall m in min_distance do m.write(-1);
 	  
 	if DEBUG_KERNEL3 then 
 	  writeln ( " Building heavy edge subgraph from pair:", (x,y) );
@@ -127,7 +128,7 @@ module SSCA2_kernels
 	Next_Level.clear ();
 	Heavy_Edge_Subgraph ( (x, y) ).nodes.clear ();
 	Heavy_Edge_Subgraph ( (x, y) ).edges.clear ();
-	min_distance$ ( y ).writeFF (0);
+	min_distance ( y ).write(0);
 
 	Heavy_Edge_Subgraph ( (x, y) ).edges.add ( (x, y) );
 	Heavy_Edge_Subgraph ( (x, y) ).nodes.add ( x );
@@ -139,20 +140,15 @@ module SSCA2_kernels
 
 	    forall w in G.Neighbors (v) do { // eventually, will be forall
 
-	      if min_distance$ (w).readXX () < 0 then {
 
-		if min_distance$ (w).readFE () < 0 then {
-		  Next_Level.add (w);
-		  Heavy_Edge_Subgraph ( (x, y) ).nodes.add (w);
-		  min_distance$ (w).writeEF (path_length);
-		}
-		else
-		  min_distance$ (w).writeEF (path_length);
+              if min_distance(w).compareExchangeStrong(-1, path_length) then {
+                Next_Level.add (w);
+                Heavy_Edge_Subgraph ( (x, y) ).nodes.add (w);
 	      }
 			 
-	      // min_distance$ must have been set by some thread by now
+	      // min_distance must have been set by some thread by now
 
-	      if min_distance$ (w).readFF () == path_length then {
+	      if min_distance(w).read() == path_length then {
 		Heavy_Edge_Subgraph ( (x, y) ).edges.add ( (v, w) );
 	      }
 	    }
@@ -174,82 +170,9 @@ module SSCA2_kernels
     } // end of rooted_heavy_subgraphs
 
 
-
-  use ReplicatedDist;
-  // ============================================================
-  // generic class structure must be defined outside of 
-  // generic procedure.  used by Betweenness Centrality kernel 4.
-  // ------------------------------------------------------------
-  // The set of vertices at a particular distance from s form a
-  // level set.  The class allows the full set of vertices to be
-  // partitioned into a linked list of level sets.  Each instance
-  // of the outer loop in kernel 4 creates such a partitioning.
-  // ============================================================
-
-  class Level_Set {
-    type Sparse_Vertex_List;
-    var Members  : Sparse_Vertex_List;
-    var previous : Level_Set (Sparse_Vertex_List);
-  }
-
-  //
-  // Data structure to save Children lists between the forward
-  //  and backwards pass
-  //
-  record child_struct {
-    type vertex;
-    var nd: domain(1);
-    var Row_Children: [nd] vertex;
-    var child_count: int=0;
-    var vlock$: sync bool = true;
-
-    // This function should only be called using unique vertices
-    proc add_child ( new_child: vertex ) {
-      // int-fetch-add
-       vlock$.readFE();
-       child_count += 1;
-       Row_Children[child_count] = new_child;
-       vlock$.writeEF(true);
-    }
-  }
-
-  //
-  // Implementation of task-private variables for kernel 4
-  //
   use BlockDist;
-  const myPrivateSpace = [LocaleSpace] dmapped Block(boundingBox=[LocaleSpace]);
-  class taskPrivateData {
-    const vertex_domain;
-    var tid$           : sync chpl_taskID_t = chpl_nullTaskID;
-    var min_distance$  : [vertex_domain] sync int;
-    var path_count$    : [vertex_domain] sync real (64);
-    var depend         : [vertex_domain] real;
-    var children_list  : [vertex_domain] child_struct(index(vertex_domain));
-    var Active_Remaining: [myPrivateSpace] bool;
-  };
-  inline proc =(a: chpl_taskID_t, b: chpl_taskID_t) return b;
-  inline proc !=(a: chpl_taskID_t, b: chpl_taskID_t) return __primitive("!=", a, b);
-  class localePrivateData {
-    const vertex_domain;
-    const numTasks = if dataParTasksPerLocale==0 then here.numCores
-      else dataParTasksPerLocale;
-    var r = [0..#numTasks];
-    var temps: [r] taskPrivateData(vertex_domain.type);
-    proc gettid() {
-      extern proc chpl_task_getId(): chpl_taskID_t;
-      var mytid = chpl_task_getId();
-      var slot = (mytid:uint % (numTasks:uint)):int;
-      // Would be nice to have CAS
-      var tid: chpl_taskID_t = temps[slot].tid$; // lock
-      while ((tid != chpl_nullTaskID) && (tid != mytid)) {
-        temps[slot].tid$ = tid;                  // unlock
-        slot = (slot+1)%numTasks;
-        tid = temps[slot].tid$;                  // lock
-      }
-      temps[slot].tid$ = mytid;                  // unlock
-      return slot;
-    }
-  }
+  // Would be nice to use PriavteSpace, but aliasing is not supported
+  const PrivateSpace = [LocaleSpace] dmapped Block(boundingBox=[LocaleSpace]);
 
   // ==================================================================
   //                              KERNEL 4
@@ -291,12 +214,21 @@ module SSCA2_kernels
       var Sum_Min_Dist$ : sync real = 0.0;
 
       // Initialize task private data
-      var localePrivate: [myPrivateSpace] localePrivateData(vertex_domain.type);
-      for l in localePrivate {
+      var localePrivate: [PrivateSpace] localePrivateData(vertex_domain.type);
+      forall l in localePrivate do {
         l = new localePrivateData(vertex_domain);
-        // l.temps = [i in l.r] new taskPrivateData(vertex_domain);
-        forall t in l.temps do
-          t = new taskPrivateData(vertex_domain);
+        for t in l.temps { // this might be bad for first-touch
+          t = new taskPrivateData(domain(index(vertex_domain)), vertex_domain);
+          forall v in vertex_domain do
+            t.children_list[v].nd = [1..G.n_Neighbors[v]];
+          for loc in Locales do on loc {
+              t.Active_Level[here.id] = new Level_Set (Sparse_Vertex_List);
+              t.Active_Level[here.id].previous = nil;
+              t.Active_Level[here.id].next = new Level_Set (Sparse_Vertex_List);;
+              t.Active_Level[here.id].next.previous = t.Active_Level[here.id];
+              t.Active_Level[here.id].next.next = nil;
+          }
+        }
       }
 
       // ------------------------------------------------------ 
@@ -311,75 +243,55 @@ module SSCA2_kernels
 
 	if DEBUG_KERNEL4 then writeln ( "expanding from starting node ", s );
 
-        // sungeun: 8/2011
-        // Privatization of the following distributed arrays may
-        // be of concern.
-
-	// --------------------------------------------------
-	// all locally declared variables become private data 
-	// for each instance of the parallel for loop
-	// --------------------------------------------------
+        // Initialize task private variables
         const lp = localePrivate[here.id];
-        const tid = lp.gettid();
-        var depend => lp.temps[tid].depend;
-        var min_distance$ => lp.temps[tid].min_distance$;
-        var path_count$   => lp.temps[tid].path_count$;
-        forall v in [vertex_domain] {
+        const tid = lp.get_tid();
+        var depend => lp.get_depend(tid);
+        var min_distance  => lp.get_min_distance(tid);
+        var path_count$   => lp.get_path_count(tid);
+        var children_list => lp.get_children_list(tid);
+        forall v in vertex_domain do {
           depend[v] = 0.0;
-          min_distance$[v].writeXF(-1);
+          min_distance[v].write(-1);
           path_count$[v].writeXF(0.0);
+          children_list[v].child_count.write(0);
         }
-  	// var min_distance$  : [vertex_domain] sync int       = -1;
-	// var path_count$    : [vertex_domain] sync real (64) = 0.0;
-        // var depend         : [vertex_domain] real;
-
-	var Lcl_Sum_Min_Dist: sync real                     = 0.0;
-
-        var children_list => lp.temps[tid].children_list;
-        // var children_list: [vertex_domain] child_struct(index(vertex_domain));
-        // Initialize size of child lists for each vertex to its neighbor count
-        forall v in vertex_domain {
-          children_list[v].child_count = 0;
-          children_list[v].vlock$.writeXF(true);
-          children_list[v].nd = [1..G.n_Neighbors[v]];
-        }
+	var Lcl_Sum_Min_Dist: sync real = 0.0;
 
 	// The structure of the algorithm depends on a breadth-first
 	// traversal. Each vertex will be marked by the length of
-	// the shortest path (min_distance$) from s to it. The array
+	// the shortest path (min_distance) from s to it. The array
 	// path_count$ will hold a count of the number of shortest
 	// paths from s to this node.  The number of paths in moderate
 	// sized tori exceeds 2**64.
   
+        //
         // Used to check termination of the forward pass
+        //
+        // We could use a task-private reduction variable, if
+        //  such a thing existed
+        //
+        var Active_Remaining => lp.get_Active_Remaining(tid);
+        Active_Remaining = true;
+        var remaining = true;
+
+        // Replicated level sets
         //
         // sungeun: 8/2011
         // Added replicated level sets
         //
         // Each locale will have its own level sets.  A locale's level set
         // will only contain nodes that are physically allocated on that
-        // particular locale.  We implement this using the replicated
-        // distribution.
-        // sungeun: 8/2011
-        // Can possibly use a replicated bool with rcCollect(), but
-        // not sure of the performance implications for large numbers
-        // of locales.
-        // sungeun: 10/2011
-        // Distributed Active_Remaining to reduce communication overhead.
-        // Similar scaling concerns exists for the reduction as for
-        // replacing it with a replicated bool.
-        var Active_Remaining => lp.temps[tid].Active_Remaining;
-        Active_Remaining = true;
-        var remaining = true;
-
-        // Replicated level sets
-	var Active_Level    : [rcDomain] Level_Set (Sparse_Vertex_List);
-        var Next_Level      : [rcDomain] Level_Set (Sparse_Vertex_List);
+        // particular locale.
+        var Active_Level => lp.get_Active_Level(tid);
         coforall loc in Locales do on loc {
-          rcLocal(Active_Level) = new Level_Set (Sparse_Vertex_List);
-          rcLocal(Active_Level).previous = nil;
-          rcLocal(Next_Level) = new Level_Set (Sparse_Vertex_List);
-          rcLocal(Next_Level).previous = rcLocal(Active_Level);
+          Active_Level[here.id].Members.clear();
+          Active_Level[here.id].next.Members.clear();
+          if vertex_domain.dist.idxToLocale(s) == here {
+            Active_Level[here.id].Members.add(s);
+            min_distance[s].write(0);
+            path_count$[s].writeXF(1);
+          }
         }
 
 	var current_distance : int = 0;
@@ -387,15 +299,7 @@ module SSCA2_kernels
 	// establish the initial level sets for the
 	// breadth-first traversal from s
 
-        on s {
-          rcLocal(Active_Level).Members.add ( s );
-          rcLocal(Next_Level).Members.clear ();
-          min_distance$ (s) . writeFF (0);
-          path_count$ (s) . writeFF (1);
-        }
-
-	while remaining do { 
-  
+	while remaining do {
 	    // ------------------------------------------------
 	    // expand the neighbor sets for all vertices at the
 	    // current distance from the starting vertex  s
@@ -403,38 +307,26 @@ module SSCA2_kernels
       
 	    current_distance += 1;
 
-            // sungeun: 8/2011
-            // basic single use barrier
-            var count: sync int = numLocales;
-            var barrier: single bool;
+            var barrier = new Barrier(numLocales);
 
             // sungeun: 8/2011
             // Copy this value to a constant to enable remote value
             // forwarding optimization.
             const current_distance_c = current_distance;
             coforall loc in Locales do on loc {
-             forall u in rcLocal(Active_Level).Members do { // sparse
+             forall u in Active_Level[here.id].Members do { // sparse
 
                forall (v, w) in ( G.Neighbors (u), G.edge_weight (u) ) do on vertex_domain.dist.idxToLocale(v) {
 		// --------------------------------------------
 		// add any unmarked neighbors to the next level
 		// --------------------------------------------
   
-		if  ( FILTERING &&  w % 8 != 0 ) || !FILTERING  then
-		  if  min_distance$ (v) . readXX () < 0  then
-		    { 
-		      if  min_distance$ (v) . readFE () < 0  then
-			{ 
-			  min_distance$ (v).writeEF (current_distance_c);
-			  rcLocal(Next_Level).Members.add (v);
-			  if VALIDATE_BC then
-			    Lcl_Sum_Min_Dist += current_distance_c;
-			}
-		      else {
-                        // could min_distance$(v) be < current_distance?
-			min_distance$ (v) . writeEF (current_distance_c);
-                      }
-		    }
+		if  ( FILTERING &&  w % 8 != 0 ) || !FILTERING then
+		  if  min_distance[v].compareExchangeStrong(-1, current_distance_c) {
+                    Active_Level[here.id].next.Members.add (v);
+                    if VALIDATE_BC then
+                      Lcl_Sum_Min_Dist += current_distance_c;
+                  }
 
 
 		// ------------------------------------------------
@@ -445,46 +337,37 @@ module SSCA2_kernels
 		// the previous, the current or the next level.
 		// ------------------------------------------------
   
-		if  min_distance$ (v).readFF () == current_distance_c  
-		  then {
-		    path_count$ (v) += path_count$ (u).readFF ();
-                    children_list(u).add_child (v);
-                  }
+		if min_distance[v].read() == current_distance_c {
+                  path_count$[v] += path_count$[u].readFF();
+                  children_list(u).add_child (v);
+                }
 
 	      }
 	    };
 
             // sungeun: 8/2011
-            // This (split-phase) barrier is needed to insure all updates
-            // to Next_Level are completed before creating the next
-            // Next_Level.
-            var myc = count;
-            if myc!=1 {
-              count = myc-1; // release the lock
-              // do some work while we wait
-              rcLocal(Active_Level) = rcLocal(Next_Level);
-
-              barrier;       // wait for everyone
-            } else {         // last one here
-              barrier=true;  // release everyone first
-              rcLocal(Active_Level) = rcLocal(Next_Level);
+            // This barrier is needed to insure all updates to the next
+            // level are completed before updating to use the next level
+            barrier.notify();
+            // do some work while we wait
+            if Active_Level[here.id].next.next == nil {
+              Active_Level[here.id].next.next = new Level_Set (Sparse_Vertex_List);
+              Active_Level[here.id].next.next.previous = Active_Level[here.id].next;
+              Active_Level[here.id].next.next.next = nil;
+            } else {
+              Active_Level[here.id].next.next.Members.clear();
             }
+            barrier.wait();
 
-            rcLocal(Next_Level)   = new Level_Set (Sparse_Vertex_List);
-	    rcLocal(Next_Level).previous = rcLocal(Active_Level);
+            Active_Level[here.id] = Active_Level[here.id].next;
             Active_Remaining[here.id] =
-              rcLocal(Active_Level).Members.numIndices:bool;
+              Active_Level[here.id].Members.numIndices:bool;
 
           }
 
           remaining = || reduce Active_Remaining;
 
 	};  // end forward pass
-
-        // Resize the arrays to the actual count to free up some memory
-        forall v in G.vertices {
-            children_list[v].nd = [1..children_list[v].child_count];
-        }
 
 	if VALIDATE_BC then
 	  Sum_Min_Dist$ += Lcl_Sum_Min_Dist;
@@ -501,50 +384,29 @@ module SSCA2_kernels
 	  writeln ( " graph diameter from starting node ", s, 
 		    "  is ", graph_diameter );
 
-        // sungeun: 8/2011
-        // basic single use barrier
-        var count: sync int = numLocales;
         // to simplify synchronization between multiple barriers
-        var barrier: [2..graph_diameter] single bool;
+        var barrier: [2..graph_diameter] Barrier;
+        [2..graph_diameter] barrier.reset(numLocales);
 
-        // writeln((tid, depend));
         coforall loc in Locales do on loc {
-          delete rcLocal(Next_Level);	               // it's empty
-          rcLocal(Next_Level)   = rcLocal(Active_Level).previous;  // back up to last level
-          delete rcLocal(Active_Level);
-          rcLocal(Active_Level) = rcLocal(Next_Level);
+          // back up to last level
+          var curr_Level =  Active_Level[here.id].previous;
   
-         for current_distance in 2 .. graph_diameter by -1 do {
-            rcLocal(Next_Level)   = rcLocal(Active_Level).previous;
-            delete rcLocal(Active_Level);
-            rcLocal(Active_Level) = rcLocal(Next_Level);
+          for current_distance in 2 .. graph_diameter by -1 {
+            curr_Level = curr_Level.previous;
 
-            // inner reduction should parallelize eventually; compiler
-            // serializes it today (and warns us that it did)
-
-            forall u in rcLocal(Active_Level).Members do
-              {
-	      depend (u) = + reduce [v in children_list(u).Row_Children]
-		  ( path_count$ (u) . readFF () / 
-		    path_count$ (v) . readFF () )      *
-		    ( 1.0 + depend (v) );
-
+            for u in curr_Level.Members do on vertex_domain.dist.idxToLocale(u) {
+              depend (u) = + reduce [v in children_list(u).Row_Children[1..children_list(u).child_count.read()]]
+                ( path_count$[u].readFF() / 
+                  path_count$[v].readFF() )      *
+                ( 1.0 + depend (v) );
               Between_Cent$ (u) += depend (u);
-              }
+            }
             // sungeun: 8/2011
             // This barrier is needed to insure all updates to depend are
             // complete before the next pass.
-            var myc = count;
-            if myc==1 {
-              count = numLocales;
-              barrier[current_distance] = true;
-            } else {
-              count = myc-1;
-              barrier[current_distance];
-            }
-            // writeln((tid, depend));
-          };
-          delete rcLocal(Active_Level);
+            barrier[current_distance].barrier();
+          }
         }
 
       }; // closure of outer embarassingly parallel forall
@@ -569,13 +431,162 @@ module SSCA2_kernels
 	Sum_Min_Dist = Sum_Min_Dist$;
       
       Between_Cent = Between_Cent$;
-  
-      for l in localePrivate {
-        [i in l.r] delete l.temps[i];
-        delete l;
+
+      forall l in localePrivate do on l {
+          for i in l.r {
+            var al  => l.temps[i].Active_Level;
+            coforall loc in Locales do on loc {
+                var level = al[here.id];
+                while level != nil {
+                    var l2 = level.next;
+                    delete level;
+                    level = l2;
+                }
+            }
+            delete l.temps[i];
+          }
+          delete l;
       }
 
     } // end of Brandes' betweenness centrality calculation
+
+
+
+
+  //
+  // Addition support data structures for kernel 4
+  //
+
+  // ============================================================
+  // generic class structure must be defined outside of 
+  // generic procedure.  used by Betweenness Centrality kernel 4.
+  // ------------------------------------------------------------
+  // The set of vertices at a particular distance from s form a
+  // level set.  The class allows the full set of vertices to be
+  // partitioned into a linked list of level sets.  Each instance
+  // of the outer loop in kernel 4 creates such a partitioning.
+  // ============================================================
+
+  class Level_Set {
+    type Sparse_Vertex_List;
+    var Members  : Sparse_Vertex_List;
+    var previous : Level_Set (Sparse_Vertex_List);
+    var next : Level_Set (Sparse_Vertex_List);
+  }
+
+  //
+  // Data structure to save Children lists between the forward
+  //  and backwards pass
+  //
+  record child_struct {
+    type vertex;
+    var nd: domain(1);
+    var Row_Children: [nd] vertex;
+    var child_count: atomic int;
+
+    // This function should only be called using unique vertices
+    proc add_child ( new_child: vertex ) {
+      var c = child_count.fetchAdd(1)+1;
+      Row_Children[c] = new_child;
+    }
+  }
+
+  //
+  // Implementation of task-private variables for kernel 4
+  //
+  class taskPrivateData {
+    type Sparse_Vertex_List;
+    const vertex_domain;
+    var tid$           : sync chpl_taskID_t = chpl_nullTaskID;
+    var min_distance   : [vertex_domain] atomic int;
+    var path_count$    : [vertex_domain] sync real(64);
+    var depend         : [vertex_domain] real;
+    var children_list  : [vertex_domain] child_struct(index(vertex_domain));
+    var Active_Remaining: [PrivateSpace] bool;
+    var Active_Level   : [PrivateSpace] Level_Set (Sparse_Vertex_List);
+  };
+  inline proc =(a: chpl_taskID_t, b: chpl_taskID_t) return b;
+  inline proc !=(a: chpl_taskID_t, b: chpl_taskID_t) return __primitive("!=", a, b);
+  class localePrivateData {
+    const vertex_domain;
+    const numTasks = if dataParTasksPerLocale==0 then here.numCores
+      else dataParTasksPerLocale;
+    var r = [0..#numTasks];
+    var temps: [r] taskPrivateData(domain(index(vertex_domain)),
+                                   vertex_domain.type);
+    proc get_tid() {
+      // This code assumes that chpl_taskID_t is an integral type
+      extern proc chpl_task_getId(): chpl_taskID_t;
+      var mytid = chpl_task_getId();
+      var slot = (mytid:uint % (numTasks:uint)):int;
+      // Would be nice to have CAS
+      var tid: chpl_taskID_t = temps[slot].tid$; // lock
+      while ((tid != chpl_nullTaskID) && (tid != mytid)) {
+        temps[slot].tid$ = tid;                  // unlock
+        slot = (slot+1)%numTasks;
+        tid = temps[slot].tid$;                  // lock
+      }
+      temps[slot].tid$ = mytid;                  // unlock
+      return slot;
+    }
+    inline proc get_min_distance(tid=get_tid()) return temps[tid].min_distance;
+    inline proc get_path_count(tid=get_tid()) return temps[tid].path_count$;
+    inline proc get_depend(tid=get_tid()) return temps[tid].depend;
+    inline proc get_children_list(tid=get_tid()) return temps[tid].children_list;
+    inline proc get_Active_Remaining(tid=get_tid()) return temps[tid].Active_Remaining;
+    inline proc get_Active_Level(tid=get_tid()) return temps[tid].Active_Level;
+  }
+
+  //
+  // simple barrier implementation
+  //
+  extern proc chpl_task_yield();
+  record Barrier {
+    var count: atomic int;
+    var done: atomic bool;
+
+    proc Barrier(n: int) {
+      reset(n);
+    }
+
+    inline proc reset(n: int) {
+      on this {
+        count.write(n);
+        done.write(false);
+      }
+    }
+
+    inline proc barrier() {
+      on this {
+        const myc = count.fetchSub(1);
+        if myc<=1 {
+          if done.testAndSet() then
+            halt("Too many callers to barrier()");
+        } else {
+          wait();
+        }
+      }
+    }
+
+    inline proc notify() {
+      on this {
+        const myc = count.fetchSub(1);
+        if myc<=1 {
+          if done.testAndSet() then
+            halt("Too many callers to barrier_notify()");
+        }
+      }
+    }
+
+    inline proc wait() {
+      on this do
+        while !done.read() do chpl_task_yield();
+    }
+
+    inline proc try() {
+      return done.read();
+    }
+  }
 
 }
 

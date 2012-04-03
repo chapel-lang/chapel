@@ -474,29 +474,32 @@ class GPURectangularArr: BaseArr {
   }
 }
 
-proc GPURectangularDom.dsiSerialWrite(f: Writer) {
-  f.write("[", dsiDim(1));
+proc GPURectangularDom.dsiSerialReadWrite(f /*: Reader or Writer*/) {
+  f & new ioLiteral("[") & dsiDim(1);
   for i in 2..rank do
-    f.write(", ", dsiDim(i));
-  f.write("]");
+    f & new ioLiteral(", ") & dsiDim(i);
+  f & new ioLiteral("]");
 }
 
-proc GPURectangularArr.dsiSerialWrite(f: Writer) {
+proc GPURectangularDom.dsiSerialWrite(f: Writer) { this.dsiSerialReadWrite(f); }
+proc GPURectangularDom.dsiSerialRead(f: Reader) { this.dsiSerialReadWrite(f); }
+
+proc GPURectangularArr.dsiSerialReadWrite(f /*: Reader or Writer*/) {
   if dom.numIndices == 0 then return;
   var i : rank*idxType;
   for dim in 1..rank do
     i(dim) = dom.dsiDim(dim).low;
   label next while true {
-    f.write(dsiAccess(i));
+    f & dsiAccess(i);
     if i(rank) <= (dom.dsiDim(rank).high - dom.dsiDim(rank).stride:idxType) {
-      f.write(" ");
+      f & new ioLiteral(" ");
       i(rank) += dom.dsiDim(rank).stride:idxType;
     } else {
       for dim in 1..rank-1 by -1 {
         if i(dim) <= (dom.dsiDim(dim).high - dom.dsiDim(dim).stride:idxType) {
           i(dim) += dom.dsiDim(dim).stride:idxType;
           for dim2 in dim+1..rank {
-            f.writeln();
+            f & new ioNewline();
             i(dim2) = dom.dsiDim(dim2).low;
           }
           continue next;
@@ -506,3 +509,7 @@ proc GPURectangularArr.dsiSerialWrite(f: Writer) {
     }
   }
 }
+
+proc GPURectangularArr.dsiSerialWrite(f: Writer) { this.dsiSerialReadWrite(f); }
+proc GPURectangularArr.dsiSerialRead(f: Reader) { this.dsiSerialReadWrite(f); }
+

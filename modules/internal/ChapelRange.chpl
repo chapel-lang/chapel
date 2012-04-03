@@ -106,10 +106,20 @@ proc range.displayRepresentation(msg: string = ""): void {
 // hilde sez: I think that these need to be spelled out explicitly
 // because param loop unrolling is performed before generic expansion.
 //
-proc _build_range(low: int, high: int)
-  return new range(idxType = int, _low = low, _high = high);
-proc _build_range(low: uint, high: uint)
-  return new range(uint, _low = low, _high = high);
+/* BLC: I think we want to add these eventually... maybe soon
+proc _build_range(low: int(8), high: int(8))
+  return new range(idxType = int(8), _low = low, _high = high);
+proc _build_range(low: uint(8), high: uint(8))
+  return new range(uint(8), _low = low, _high = high);
+proc _build_range(low: int(16), high: int(16))
+  return new range(idxType = int(16), _low = low, _high = high);
+proc _build_range(low: uint(16), high: uint(16))
+  return new range(uint(16), _low = low, _high = high);
+*/
+proc _build_range(low: int(32), high: int(32))
+  return new range(idxType = int(32), _low = low, _high = high);
+proc _build_range(low: uint(32), high: uint(32))
+  return new range(uint(32), _low = low, _high = high);
 proc _build_range(low: int(64), high: int(64))
   return new range(int(64), _low = low, _high = high);
 proc _build_range(low: uint(64), high: uint(64))
@@ -123,10 +133,20 @@ proc _build_range(low, high) {
 // Range builders for unbounded ranges
 // hilde sez: Ditto here: Generic types don't work.
 //
-proc _build_range(param bt: BoundedRangeType, bound: int)
-  return new range(int, bt, false, bound, bound);
-proc _build_range(param bt: BoundedRangeType, bound: uint)
-  return new range(uint, bt, false, bound, bound);
+/*
+proc _build_range(param bt: BoundedRangeType, bound: int(8))
+  return new range(int(8), bt, false, bound, bound);
+proc _build_range(param bt: BoundedRangeType, bound: uint(8))
+  return new range(uint(8), bt, false, bound, bound);
+proc _build_range(param bt: BoundedRangeType, bound: int(16))
+  return new range(int(16), bt, false, bound, bound);
+proc _build_range(param bt: BoundedRangeType, bound: uint(16))
+  return new range(uint(16), bt, false, bound, bound);
+*/
+proc _build_range(param bt: BoundedRangeType, bound: int(32))
+  return new range(int(32), bt, false, bound, bound);
+proc _build_range(param bt: BoundedRangeType, bound: uint(32))
+  return new range(uint(32), bt, false, bound, bound);
 proc _build_range(param bt: BoundedRangeType, bound: int(64))
   return new range(int(64), bt, false, bound, bound);
 proc _build_range(param bt: BoundedRangeType, bound: uint(64))
@@ -402,13 +422,13 @@ proc -(r: range(?e,?b,?s), i: integral)
 }
 
 
-proc by(r : range(?i,?b,?s), step)
-{
+pragma "inline"
+proc chpl_by_help(r: range(?i,?b,?s), step) {
   if step == 0 then
     __primitive("chpl_error", "the step argument of the 'by' operator is zero");
 
-  if step.type != r.idxType && !chpl__legalIntCoerce(step.type, r.strType) then
-    compilerError("in the 'by' operator, there is no implicit conversion from the type of the step argument, ", typeToString(step.type), ", to the type required by the range argument, ", typeToString(r.strType));
+  if ((step > 0) && (step:r.strType < 0)) then
+    __primitive("chpl_error", "the step argument of the 'by' operator is too large");
 
   const lw: i = r.low,
         hh: i = r.high,
@@ -425,58 +445,65 @@ proc by(r : range(?i,?b,?s), step)
   return new range(i, b, true,  lw, hh, st, alt, ald);
 }
 
-proc by(r : range(?i,?b,true), param step)
+
+proc by(r : range(?i,?b,?s), step:chpl__unsignedType(i))
 {
-  if step == 0 then
-    compilerError("the step argument of the 'by' operator is zero");
-
-  if step.type != r.idxType && !chpl__legalIntCoerce(step.type, r.strType) then
-    compilerError("in the 'by' operator, there is no implicit conversion from the type of the step argument, ", typeToString(step.type), ", to the type required by the range argument, ", typeToString(r.strType));
-
-  const lw: i = r.low,
-        hh: i = r.high,
-        st: r.strType = r.stride * step:r.strType;
-
-  const (ald, alt): (bool, i) =
-    if r.isAmbiguous() then                   (false, r.alignment)
-    else
-      // we could talk about aligned bounds
-      if      r.hasLowBound()  && st > 0 then (true, r.alignedLow)
-      else if r.hasHighBound() && st < 0 then (true, r.alignedHigh)
-      else                                    (r.aligned, r.alignment);
-
-  return new range(i, b, true,  lw, hh, st, alt, ald);
+  return chpl_by_help(r, step);
 }
 
-proc by(r : range(?i,?b,false), param step)
+
+proc by(r : range(?i,?b,?s), step:chpl__signedType(i))
 {
-  if step == 0 then
-    compilerError("the step argument of the 'by' operator is zero");
+  return chpl_by_help(r, step);
+}
 
-  if step.type != r.idxType && !chpl__legalIntCoerce(step.type, r.strType) then
-    compilerError("in the 'by' operator, there is no implicit conversion from the type of the step argument, ", typeToString(step.type), ", to the type required by the range argument, ", typeToString(r.strType));
+proc by(r : range(?i,?b,?s), param step:chpl__unsignedType(i))
+{
+  if (step == 0) then
+    compilerError("the 'by' operator cannot take a value of zero");
 
-  const lw: i = r.low,
-        hh: i = r.high;
-  param st: r.strType = r.stride * step:r.strType;
+// This should work, but doesn't correctly -- test/types/range/hilde/by.chpl
+// is max(step.type) not correctly a param in some way?
+/*
+  if (step == max(step.type)) then
+    compilerError("the 'by' operator cannot take a value this large");
+*/
 
-  const (ald, alt): (bool, i) =
-    if r.isAmbiguous() then                   (false, r.alignment)
-    else
-      // we could talk about aligned bounds
-      if      r.hasLowBound()  && st > 0 then (true, r.alignedLow)
-      else if r.hasHighBound() && st < 0 then (true, r.alignedHigh)
-      else                                    (r.aligned, r.alignment);
+  return chpl_by_help(r, step);
+}
 
-  return new range(i, b, true,  lw, hh, st, alt, ald);
+
+proc by(r : range(?i,?b,?s), param step:chpl__signedType(i))
+{
+  if (step == 0) then
+    compilerError("the 'by' operator cannot take a value of zero");
+
+  return chpl_by_help(r, step);
+}
+
+
+proc by(r : range(?i,?b,?s), step)
+{
+  compilerError("can't apply 'by' to a range with idxType ", 
+                typeToString(i), " using a step of type ", 
+                typeToString(step.type));
+  return r;
 }
 
 // This is the syntax processing routine for the "align" keyword.
 // It produces a new range with the specified alignment.
 // By definition, alignment is relative to the low bound of the range.
+
 pragma "inline"
-proc align(r : range(?e, ?b, ?s), algn)
-  return new range(e, b, s, chpl__align(r._base, algn), true);
+proc align(r : range(?i, ?b, ?s), algn: i)
+  return new range(i, b, s, chpl__align(r._base, algn), true);
+
+pragma "inline"
+proc align(r : range(?i, ?b, ?s), algn) {
+  compilerError("can't align a range with idxType ", typeToString(i), 
+                " using a value of type ", typeToString(algn.type));
+  return r;
+}
 
 // Set the alignment as an offset off the first element of the sequence.
 proc range.offset(offs : idxType)
@@ -491,6 +518,7 @@ proc range.offset(offs : idxType)
                    // here's the new alignment
                    first + offs, true);
 }
+
 
 // Composition
 // Return the intersection of this and other.
@@ -533,14 +561,27 @@ proc range.this(other: range(?))
 // If the argument n is negative, the new range contains
 // the last abs(n) elements in the existing range.
 
-proc #(r:range(?), i:integral)
-{
+proc chpl_count_help(r, count) {
   if r.isAmbiguous() then
     __primitive("chpl_error", "count -- Cannot count off elements from a range which is ambiguously aligned.");
 
-  var temp = chpl__count(r._base, i);
-  return new range(temp.idxType, temp.boundedType, temp.stridable,
-                   temp, r._aligned);
+  return new range(r.idxType, BoundedRangeType.bounded, r.stridable,
+                   chpl__count(r._base, count), r._aligned);
+}
+
+proc #(r:range(?i), count:chpl__signedType(i)) {
+  return chpl_count_help(r, count);
+}
+
+proc #(r:range(?i), count:chpl__unsignedType(i)) {
+  return chpl_count_help(r, count);
+}
+
+proc #(r: range(?i), count) {
+  compilerError("can't apply '#' to a range with idxType ", 
+                typeToString(i), " using a count of type ", 
+                typeToString(count.type));
+  return r;
 }
 
 
@@ -579,9 +620,9 @@ iter range.these(param tag: iterKind, followThis) where tag == iterKind.follower
 //#
 
 // Write implementation for ranges
-proc range.writeThis(f: Writer)
+proc range.readWriteThis(f)
 {
-  if !aligned {
+  if f.writing && !aligned {
     // set things up so alignment does not get printed out
     _base._alignment =
       if isBoundedRange(this) then
@@ -595,7 +636,7 @@ proc range.writeThis(f: Writer)
     // could verify that we succeeded:
     //assert(_base.isNaturallyAligned());
   }
-  f.write(_base);
+  _base.readWriteThis(f);
 }
 
 // Return a substring of a string with a range of indices.

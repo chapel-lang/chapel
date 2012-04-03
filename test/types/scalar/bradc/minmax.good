@@ -1,9 +1,9 @@
-Type int ranges from -2147483648..2147483647
+Type int ranges from -9223372036854775808..9223372036854775807
 Type int(8) ranges from -128..127
 Type int(16) ranges from -32768..32767
 Type int(32) ranges from -2147483648..2147483647
 Type int(64) ranges from -9223372036854775808..9223372036854775807
-Type uint ranges from 0..4294967295
+Type uint ranges from 0..18446744073709551615
 Type uint(8) ranges from 0..255
 Type uint(16) ranges from 0..65535
 Type uint(32) ranges from 0..4294967295

@@ -11,7 +11,7 @@ proc main() {
   var nNodes: int;
 
   var fin = open(input_file, iomode.r).reader();
-  var fout = open("RtsGraph_out.txt", iomode.w).writer();
+  var fout = open("RtsGraph_out.txt", iomode.cw).writer();
   var fin2 = open(gen_file, iomode.r).reader();
   var fin3 = open(load_file, iomode.r).reader();
 

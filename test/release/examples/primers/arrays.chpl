@@ -49,11 +49,8 @@ writeln("After assigning its interior values, A is: ", A);
 writeln();
 
 //
-// Chapel uses square brackets to represent tensor products in Chapel
-// and parenthesis to represent zipper products.  By convention we
-// square brackets for array slicing even when the tensor product is
-// not required.  For example, the expression above could have just
-// as correctly been written A(2..4):
+// By convention we use square brackets for array slicing, but the
+// expression above could have just as correctly been written A(2..4):
 //
 
 writeln("A(2..4) is: ", A(2..4), "\n");
@@ -224,19 +221,9 @@ A = B[n/2, ..];
 writeln("After being assigned a slice of B, A is:\n", A, "\n");
 
 //
-// As mentioned earlier, parenthesized promoted arguments in Chapel
-// represent zipper products.  This means that B(1..n, 1..n) ought
-// to represent the main diagonal of the B array.  However, these
-// semantics are not yet implemented, so today it incorrectly yields
-// the tensor product of the ranges -- in this case B in its entirety.
-//
-
-writeln("Incorrectly, B(1..n, 1..n) is:\n", B(1..n, 1..n), "\n");
-
-//
 // Domains can also be sliced.  However, rather than having indexing
-// semantics, as with arrays, domain indexing results in intersection
-// semantics.  Put another way, domains can be indexed out of bounds:
+// semantics, domain slicing results in intersection of the domain's
+// index set and the specified slice.
 //
 
 writeln("ProbSpace[0..n+1, 3..] is: ", ProbSpace[0..n+1, 3..], "\n");
@@ -386,8 +373,9 @@ writeln("VarArr should now be reset: ", VarArr, "\n");
 
 var Y: [ProbSpace] [1..3] real;
 
-forall ((i,j), k) in [ProbSpace, 1..3] do
-  Y(i,j)(k) = i*10 + j + k/10.0;
+forall (i,j) in ProbSpace do
+  for k in 1..3 do
+    Y(i,j)(k) = i*10 + j + k/10.0;
 
 writeln("Y is:\n", Y);
 

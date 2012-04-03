@@ -4,7 +4,7 @@
 #include <stdint.h>
 
 uint64_t chpl_bytesPerLocale(void);
-int32_t chpl_numCoresOnThisLocale(void);
+int64_t chpl_numCoresOnThisLocale(void);
 
 //
 // returns default values of max threads set according to the

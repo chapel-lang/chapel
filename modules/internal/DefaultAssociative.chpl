@@ -10,8 +10,7 @@ config param debugAssocDataPar = false;
 use Sort /* only QuickSort */;
 
 // TODO: make the domain parameterized by this?
-// TODO: make int(64) the default index type here and in arithemtic domains
-type chpl_table_index_type = int(32);
+type chpl_table_index_type = int;
 
 
 /* These declarations could/should both be nested within
@@ -64,18 +63,20 @@ class DefaultAssociativeDom: BaseAssociativeDom {
                                      parSafeDom=parSafe, dom=this);
   }
 
-  proc dsiSerialWrite(f: Writer) {
+  proc dsiSerialReadWrite(f /*: Reader or Writer*/) {
     var first = true;
-    f.write("[");
+    f & new ioLiteral("[");
     for idx in this {
       if first then 
         first = false; 
       else 
-        f.write(", ");
-      f.write(idx);
+        f & new ioLiteral(", ");
+      f & idx;
     }
-    f.write("]");
+    f & new ioLiteral("]");
   }
+  proc dsiSerialWrite(f: Writer) { this.dsiSerialReadWrite(f); }
+  proc dsiSerialRead(f: Reader) { this.dsiSerialReadWrite(f); }
 
   //
   // Standard user domain interface
@@ -401,16 +402,18 @@ class DefaultAssociativeArr: BaseArr {
         yield data(slot);
   }
 
-  proc dsiSerialWrite(f: Writer) {
+  proc dsiSerialReadWrite(f /*: Reader or Writer*/) {
     var first = true;
     for val in this {
       if (first) then
         first = false;
       else
-        f.write(" ");
-      f.write(val);
+        f & new ioLiteral(" ");
+      f & val;
     }
   }
+  proc dsiSerialWrite(f: Writer) { this.dsiSerialReadWrite(f); }
+  proc dsiSerialRead(f: Reader) { this.dsiSerialReadWrite(f); }
 
 
   //

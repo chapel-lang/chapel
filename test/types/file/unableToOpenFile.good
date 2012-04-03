@@ -1,1 +1,1 @@
-unableToOpenFile.chpl:1: error: Unhandled system error: No such file or directory (2) in open with path _test_cannotOpenMe.txt
+unableToOpenFile.chpl:1: error: No such file or directory in open with path "_test_cannotOpenMe.txt"

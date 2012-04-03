@@ -10,6 +10,11 @@ extern FILE* deletedIdHandle;
 extern char deletedIdFilename[FILENAME_MAX+1];
 #define deletedIdON (deletedIdFilename[0] != '\0')
 
+extern char log_dir[FILENAME_MAX+1];
+extern char log_module[FILENAME_MAX+1];
+extern char log_symbol[FILENAME_MAX+1];
+extern bool fLogIds;
+
 extern int instantiation_limit;
 
 extern int fdump_html;

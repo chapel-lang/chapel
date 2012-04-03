@@ -15,19 +15,17 @@ use HPCCProblemSize;
 use BlockCycDist;
 
 //
-// The number of matrices and the element type of those matrices
-// indexType can be int or int(64), elemType can be real or complex
+// The number of matrices and the element type of those matrices.
 //
 const numMatrices = 1;
-type indexType = int,
-     elemType = real;
+type elemType = real;
 
 //
 // Configuration constants indicating the problem size (n) and the
 // block size (blkSize)
 //
 config const n = computeProblemSize(numMatrices, elemType, rank=2, 
-                                    memFraction=2, retType=indexType),
+                                    memFraction=2),
              blkSize = 8;
 
 //
@@ -58,20 +56,20 @@ proc main() {
   printConfiguration();
 
   //
-  // MatVectSpace is a 2D domain of type indexType that represents the
-  // n x n matrix adjacent to the column vector b.  MatrixSpace is a
-  // subdomain that is created by slicing into MatVectSpace,
-  // inheriting all of its rows and its low column bound.  As our
-  // standard distribution library is filled out, MatVectSpace will be
-  // distributed using a BlockCyclic(blkSize) distribution.
+  // MatVectSpace is a 2D domain that represents the n x n matrix
+  // adjacent to the column vector b.  MatrixSpace is a subdomain that
+  // is created by slicing into MatVectSpace, inheriting all of its
+  // rows and its low column bound.  As our standard distribution
+  // library is filled out, MatVectSpace will be distributed using a
+  // BlockCyclic(blkSize) distribution.
   //
-  const MatVectSpace: domain(2, indexType) 
+  const MatVectSpace: domain(2)
                       dmapped BlockCyclic(startIdx=(1,1), (blkSize,blkSize)) 
                     = [1..n, 1..n+1],
         MatrixSpace = MatVectSpace[.., ..n];
 
   var Ab : [MatVectSpace] elemType,  // the matrix A and vector b
-      piv: [1..n] indexType;         // a vector of pivot values
+      piv: [1..n] int;               // a vector of pivot values
 
   initAB(Ab);
 
@@ -93,8 +91,8 @@ proc main() {
 // blocked LU factorization with pivoting for matrix augmented with
 // vector of RHS values.
 //
-proc LUFactorize(n: indexType, Ab: [?AbD] elemType,
-                piv: [1..n] indexType) {
+proc LUFactorize(n: int, Ab: [?AbD] elemType,
+                piv: [1..n] int) {
   
   // Initialize the pivot vector to represent the initially unpivoted matrix.
   piv = 1..n;
@@ -183,8 +181,8 @@ proc schurComplement(Ab: [?AbD] elemType, AD: domain, BD: domain, Rest: domain) 
   //var replAbD: domain(2) 
   //            dmapped new Dimensional(BlkCyc(blkSize), Replicated)) = AbD[AD];
   //
-  const replAD: domain(2, indexType) = AD,
-        replBD: domain(2, indexType) = BD;
+  const replAD: domain(2) = AD,
+        replBD: domain(2) = BD;
     
   const replA : [replAD] elemType = Ab[replAD],
         replB : [replBD] elemType = Ab[replBD];
@@ -227,7 +225,7 @@ proc dgemmNativeInds(A: [] elemType,
 //
 proc panelSolve(Ab: [] elemType,
                panel: domain,
-               piv: [] indexType) {
+               piv: [] int) {
 
   for k in panel.dim(2) {             // iterate through the columns
     const col = panel[k.., k..k];
@@ -285,7 +283,7 @@ proc updateBlockRow(Ab: [] elemType,
 //
 // compute the backwards substitution
 //
-proc backwardSub(n: indexType,
+proc backwardSub(n: int,
                  Ab: [] elemType) {
   const bd = Ab.domain.dim(1);
   var x: [bd] elemType;

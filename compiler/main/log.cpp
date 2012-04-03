@@ -3,9 +3,13 @@
 #include <sys/stat.h>
 #include "log.h"
 #include "misc.h"
+#include "runpasses.h"
 
 static char save_dir[FILENAME_MAX];
 static FILE *log_FILE[128];
+
+static Vec<char> valid_log_flags;
+static Vec<char> log_flags;
 
 void init_logs() {
   if (log_dir[strlen(log_dir)-1] != '/') 
@@ -18,12 +22,24 @@ void init_logs() {
 
 void 
 log_flags_arg(ArgumentState *arg_state, char *arg) {
+  initLogFlags(valid_log_flags);
+
+  // --log or --log= means "log every pass"
+  // Actually, passes whose log letter is NUL are skipped.
+  if (*arg == '\0') {   // empty
+    log_flags.set_union(valid_log_flags);   // Set all.
+    return;
+  }
+
+  // Parse the argument of --log=<arg> or -d<arg> for specific log flags.
+  // Each flag is a single letter; see log.h for the correspondence.
   while (*arg) {
-    if (*arg != LOG_AST) {
+    if (valid_log_flags.set_in(*arg))
+      log_flags.set_add(*arg);
+    else {
       fprintf(stderr, "Unrecognized log flag: '%c'\n", *arg);
       clean_exit(1);
     }
-    log_tag[((uint8_t)*arg)]++;
     arg++;
   }
 }
@@ -50,15 +66,12 @@ logit(int log, char *str, va_list ap) {
   return vfprintf(log_FILE[log], str, ap);
 }
 
-int 
-log_level(int log, int log_level, char *str, ...) {
-  va_list ap;
-  va_start(ap, str);
-  if (!logging_level(log, log_level))
-    return 0;
-  int res = logit(log, str, ap);
-  va_end(ap);
-  return res;
+bool logging(int log) {
+  if (log == LOG_ANY)
+    if (log_flags.count() > 0)
+      return true;
+
+  return log_flags.set_in((char)log);
 }
 
 int 

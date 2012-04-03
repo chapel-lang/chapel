@@ -3,12 +3,9 @@
 
 Chapel is a statically typed language with a rich set of types.  These
 include a set of predefined primitive types, enumerated types,
-locale types, structured types (classes, records, unions, tuples),
+structured types (classes, records, unions, tuples),
 data parallel types (ranges, domains, arrays), and synchronization
 types (sync, single).
-
-% This section defines the primitive
-% types, enumerated types, and type aliases.  
 
 The syntax of a type is as follows:
 
@@ -16,7 +13,6 @@ The syntax of a type is as follows:
 type-specifier:
   primitive-type
   enum-type
-  locale-type
   structured-type
   dataparallel-type
   synchronization-type
@@ -42,9 +38,10 @@ These statements are defined in Sections \rsec{Enumerated_Types},
 \label{Primitive_Types}
 \index{types!primitive}
 
-The primitive types include the following types: \chpl{void}, chpl{bool},
+%REVIEW: vass: we should explain what separates primitive types from the rest.
+The primitive types are: \chpl{void}, \chpl{bool},
 \chpl{int}, \chpl{uint}, \chpl{real}, \chpl{imag}, \chpl{complex},
-\chpl{string}, and \chpl{locale}.  These primitive types are defined
+\chpl{string}, and \chpl{locale}.  They are defined
 in this section.
 
 The primitive types are summarized by the following syntax:
@@ -58,6 +55,7 @@ primitive-type:
   `imag' primitive-type-parameter-part[OPT]
   `complex' primitive-type-parameter-part[OPT]
   `string'
+  `locale'
 
 primitive-type-parameter-part:
   ( integer-parameter-expression )
@@ -213,6 +211,16 @@ There is an expectation of future support for different character
 sets, possibly including internationalization.
 \end{openissue}
 
+
+%REVIEW: vass: move the reference below to the top of
+% the Primitive Types section and remove this subsection.
+\subsection{The Locale Type}
+\label{Locale_Types}
+\index{types!locale}
+
+The \chpl{locale} type is defined in~\rsec{The_Locale_Type}.
+
+
 \section{Enumerated Types}
 \label{Enumerated_Types}
 \index{enumerated types}
@@ -284,20 +292,6 @@ No one will ever win the battle of the sexes; there's too much fraternizing with
 outputs a quote from the given statesman.  Note that enumerated
 constants must be prefixed by the enumerated type and a dot.
 \end{chapelexample}
-
-
-\section{Locale Types}
-\label{Locale_Types}
-\index{types!locale}
-
-Locale types are summarized by the following syntax:
-
-\begin{syntax}
-locale-type:
-  `locale'
-\end{syntax}
-
-The \chpl{locale} type is defined in~\rsec{The_Locale_Type}.
 
 
 \section{Structured Types}

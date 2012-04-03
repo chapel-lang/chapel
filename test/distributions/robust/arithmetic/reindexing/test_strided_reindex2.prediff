@@ -4,7 +4,12 @@ import sys, os, shutil, string;
 
 testname=sys.argv[1]
 compopts=sys.argv[4]
-dist = 'default'
+
+chpl_comm = os.getenv('CHPL_COMM')
+if chpl_comm=='none' or chpl_comm==None:
+    dist = 'default'
+else:
+    dist = 'block'
 
 searchstring='distType=DistType.'
 s = string.rfind(compopts, searchstring)

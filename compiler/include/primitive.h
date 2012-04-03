@@ -174,7 +174,6 @@ enum PrimitiveTag {
 
   PRIM_GET_LOCALEID,   // return locale on which an expression exists
   PRIM_LOCALE_ID,    // return locale id
-  PRIM_NUM_LOCALES,  // return number of locales
   PRIM_ON_LOCALE_NUM,  // specify a particular locale # for an on clause
 
   PRIM_ALLOC_GVR,    // allocate space for global vars registry

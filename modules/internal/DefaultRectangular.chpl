@@ -656,23 +656,26 @@ class DefaultRectangularArr: BaseArr {
   }
 }
 
-proc DefaultRectangularDom.dsiSerialWrite(f: Writer) {
-  f.write("[", dsiDim(1));
+proc DefaultRectangularDom.dsiSerialReadWrite(f /*: Reader or Writer*/) {
+  f & new ioLiteral("[") & ranges(1);
   for i in 2..rank do
-    f.write(", ", dsiDim(i));
-  f.write("]");
+    f & new ioLiteral(", ") & ranges(i);
+  f & new ioLiteral("]");
 }
 
-proc DefaultRectangularArr.dsiSerialWrite(f: Writer) {
+proc DefaultRectangularDom.dsiSerialWrite(f: Writer) { this.dsiSerialReadWrite(f); }
+proc DefaultRectangularDom.dsiSerialRead(f: Reader) { this.dsiSerialReadWrite(f); }
+
+proc DefaultRectangularArr.dsiSerialReadWrite(f /*: Reader or Writer*/) {
   proc recursiveArrayWriter(in idx: rank*idxType, dim=1, in last=false) {
-    var makeStridePositive = if dom.ranges(dim).stride > 0 then 1 else -1;
+    var makeStridePositive = if dom.ranges(dim).stride > 0 then 1:idxType else -1:idxType;
     if dim == rank {
       var first = true;
-      if debugDefaultDist then f.writeln(dom.ranges(dim));
+      if debugDefaultDist && f.writing then f.writeln(dom.ranges(dim));
       for j in dom.ranges(dim) by makeStridePositive {
-        if first then first = false; else f.write(" ");
+        if first then first = false; else f & new ioLiteral(" ");
         idx(dim) = j;
-        f.write(dsiAccess(idx));
+        f & dsiAccess(idx);
       }
     } else {
       for j in dom.ranges(dim) by makeStridePositive {
@@ -683,12 +686,14 @@ proc DefaultRectangularArr.dsiSerialWrite(f: Writer) {
       }
     }
     if !last && dim != 1 then
-      f.writeln();
+      f & new ioNewline();
   }
   const zeroTup: rank*idxType;
   recursiveArrayWriter(zeroTup);
 }
 
+proc DefaultRectangularArr.dsiSerialWrite(f: Writer) { this.dsiSerialReadWrite(f); }
+proc DefaultRectangularArr.dsiSerialRead(f: Reader) { this.dsiSerialReadWrite(f); }
 
 // This is very conservative.  For example, it will return false for
 // 1-d array aliases that are shifted from the aliased array.
@@ -735,9 +740,9 @@ proc DefaultRectangularArr.doiBulkTransfer(B) {
     Blo(i) = Bdims(i).first;
 
   const len = dom.dsiNumIndices:int(32);
-  extern proc sizeof(type x): int(32);
+  extern proc sizeof(type x): int(32);  // should be c_int or size_t or ...
   if debugBulkTransfer {
-    const elemSize: int(32)=sizeof(B._value.eltType);
+    const elemSize =sizeof(B._value.eltType);
     writeln("In doiBulkTransfer(): Alo=", Alo, ", Blo=", Blo,
             ", len=", len, ", elemSize=", elemSize);
   }
@@ -745,7 +750,7 @@ proc DefaultRectangularArr.doiBulkTransfer(B) {
   // NOTE: This does not work with --heterogeneous, but heterogeneous
   // compilation does not work right now.  The calls to chpl_comm_get
   // and chpl_comm_put should be changed once that is fixed.
-  if this.data.locale==here {
+  if this.data.locale.id==here.id {
     if debugDefaultDistBulkTransfer then
       writeln("\tlocal get() from ", B.locale.id);
     var dest = this.data;
@@ -755,7 +760,7 @@ proc DefaultRectangularArr.doiBulkTransfer(B) {
                 B._value.data.locale.id,
                 __primitive("array_get", src, B._value.getDataIndex(Blo)),
                 len);
-  } else if B._value.data.locale==here {
+  } else if B._value.data.locale.id==here.id {
     if debugDefaultDistBulkTransfer then
       writeln("\tlocal put() to ", this.locale.id);
     var dest = this.data;

@@ -189,4 +189,6 @@ int32_t chpl_now_month(void);
 int32_t chpl_now_day(void);
 int32_t chpl_now_dow(void);
 
+typedef int32_t chpl__class_id;
+
 #endif
