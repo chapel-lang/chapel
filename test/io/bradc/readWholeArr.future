@@ -1,4 +1,0 @@
-unimplemented feature: whole-array reads
-
-Whole-array reads don't work under the new QIO system.  They never
-worked under the old system either.  :(
