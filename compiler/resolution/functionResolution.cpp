@@ -2388,19 +2388,9 @@ static void resolveSetMember(CallExpr* call) {
           fs->type = t;
 
         if (t != fs->type && t != dtNil && t != dtObject) {
-          PrimitiveType* fieldPrimType = toPrimitiveType(fs->type);
-          PrimitiveType* pt = toPrimitiveType(t);
-          if ((fieldPrimType && fieldPrimType->nonvolType && !fieldPrimType->volType) ||
-              (pt && pt->nonvolType && !pt->volType)) {
-            Expr* typeExpr = call->get(3)->remove();
-            Symbol* tmp = newTemp("_cast_tmp_", t);
-            call->insertBefore(new DefExpr(tmp));
-            call->insertBefore(new CallExpr(PRIM_MOVE, tmp, typeExpr));
-            call->insertAtTail(new CallExpr(PRIM_CAST, fs->type->symbol, tmp));
-          } else {
-            USR_FATAL(userCall(call), "cannot assign expression of type %s to field of type %s",
-                      toString(t), toString(fs->type));
-          }
+          USR_FATAL(userCall(call),
+                    "cannot assign expression of type %s to field of type %s",
+                    toString(t), toString(fs->type));
         }
 }
 
