@@ -490,21 +490,10 @@ void chpl_comm_broadcast_private(int id, int32_t size, int32_t tid) {
     chpl_mem_free(pblp, 0, 0);
   }
   // wait for the handlers to complete
-#ifndef CHPL_COMM_YIELD_TASK_WHILE_POLLING
   for (locale = 0; locale < chpl_numLocales; locale++) {
     if (locale != chpl_localeID)
       GASNET_BLOCKUNTIL(done[locale]==1);
   }
-#else
-  for (locale = 0; locale < chpl_numLocales; locale++) {
-    if (locale != chpl_localeID) {
-      while (done[locale] != 1) {
-        (void) gasnet_AMPoll();
-        chpl_task_yield();
-      }
-    }
-  }
-#endif
   chpl_mem_free(done, 0, 0);
 }
 
