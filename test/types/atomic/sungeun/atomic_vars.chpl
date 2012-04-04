@@ -7,7 +7,7 @@ proc doit(type myType) {
   if printResults then writeln(x);
 
   if numBits(x.type) != numBits(myType) then
-    writeln(typeToString(myType), ": ERROR: numBits=",  numBits(x.type),
+    writeln(typeToString(myType), ": ERROR: numBits=", numBits(x.type),
             " (should be ", numBits(myType), ")");
   if printResults then writeln(numBits(x.type));
 
@@ -24,12 +24,12 @@ proc doit(type myType) {
             " (should be ", max(myType), ")");
 
   ax.write(0:myType);
-  coforall i in 1..22 do on Locales[i%numLocales] { // 22 is max for uint(8)
+  coforall i in 1..15 do on Locales[i%numLocales] { // 15 is max for int(8)
       ax.fetchAdd(i:myType);
     }
   x = ax.read();
-  if x != 253:myType then
-    writeln(typeToString(myType), ": ERROR: x=", " (should be 253)");
+  if x != 120:myType then
+    writeln(typeToString(myType), ": ERROR: x=", x, " (should be 120)");
   if printResults then writeln(x);
 
   const D = [7..39];
