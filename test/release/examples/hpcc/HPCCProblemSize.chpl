@@ -73,8 +73,11 @@ module HPCCProblemSize {
   //
   // Print out the machine configuration used to run the job
   //
-  proc printLocalesTasks() {
-    writeln("Number of Locales = ", numLocales);
+  proc printLocalesTasks(gridRows = 0, gridColumns = 0) {
+    write("Number of Locales = ", numLocales);
+    if gridRows != 0 && gridColumns != 0 then
+      write("  grid: ", gridRows, " * ", gridColumns);
+    writeln();
     writeln("Tasks per locale = ", dataParTasksPerLocale);
   }
 
