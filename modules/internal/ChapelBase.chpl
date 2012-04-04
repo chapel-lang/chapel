@@ -1104,57 +1104,6 @@ pragma "inline" proc _cast(type t, x) where x:object && t:x && (x.type != t)
 pragma "inline" proc _cast(type t, x:_nilType) where t == _nilType
   return nil;
 
-pragma "inline" proc _cast(type t, x: volatile bool) where _isPrimitiveType(t)
-  return __primitive("cast", t, x);
-
-pragma "inline" proc _cast(type t, x: volatile bool(8)) where _isPrimitiveType(t)
-  return __primitive("cast", t, x);
-
-pragma "inline" proc _cast(type t, x: volatile bool(16)) where _isPrimitiveType(t)
-  return __primitive("cast", t, x);
-
-pragma "inline" proc _cast(type t, x: volatile bool(32)) where _isPrimitiveType(t)
-  return __primitive("cast", t, x);
-
-pragma "inline" proc _cast(type t, x: volatile bool(64)) where _isPrimitiveType(t)
-  return __primitive("cast", t, x);
-
-pragma "inline" proc _cast(type t, x: volatile int(8)) where _isPrimitiveType(t)
-  return __primitive("cast", t, x);
-
-pragma "inline" proc _cast(type t, x: volatile int(16)) where _isPrimitiveType(t)
-  return __primitive("cast", t, x);
-
-pragma "inline" proc _cast(type t, x: volatile int(32)) where _isPrimitiveType(t)
-  return __primitive("cast", t, x);
-
-pragma "inline" proc _cast(type t, x: volatile int(64)) where _isPrimitiveType(t)
-  return __primitive("cast", t, x);
-
-pragma "inline" proc _cast(type t, x: volatile uint(8)) where _isPrimitiveType(t)
-  return __primitive("cast", t, x);
-
-pragma "inline" proc _cast(type t, x: volatile uint(16)) where _isPrimitiveType(t)
-  return __primitive("cast", t, x);
-
-pragma "inline" proc _cast(type t, x: volatile uint(32)) where _isPrimitiveType(t)
-  return __primitive("cast", t, x);
-
-pragma "inline" proc _cast(type t, x: volatile uint(64)) where _isPrimitiveType(t)
-  return __primitive("cast", t, x);
-
-pragma "inline" proc _cast(type t, x: volatile real(32)) where _isPrimitiveType(t)
-  return __primitive("cast", t, x);
-
-pragma "inline" proc _cast(type t, x: volatile real(64)) where _isPrimitiveType(t)
-  return __primitive("cast", t, x);
-
-pragma "inline" proc _cast(type t, x: volatile imag(32)) where _isPrimitiveType(t)
-  return __primitive("cast", t, x);
-
-pragma "inline" proc _cast(type t, x: volatile imag(64)) where _isPrimitiveType(t)
-  return __primitive("cast", t, x);
-
 //
 // casts to complex
 //

@@ -917,6 +917,19 @@ proc DimensionalArr.dsiLocalSlice((sliceDim1, sliceDim2)) {
   return locAdesc.myStorageArr[r1, r2];
 }
 
+//
+// Currently this implements only aliasing (as invoked from _array.newAlias())
+// and generates a run-time error upon general reindexing.
+//
+proc DimensionalArr.dsiReindex(reindexDef: DimensionalDom) {
+  const reindexee = this;
+
+  if reindexee.dom != reindexDef then
+    halt("general reindexing of DimensionalDist2D-mapped arrays is currently not implemented");
+
+  return reindexee;
+}
+
 /* The following are using the standalone WrapperDist, currently not provided.
 
 proc DimensionalDist2D.dsiCreateReindexDist(newSpace, oldSpace) {

@@ -50,15 +50,17 @@ typedef struct {
 } fork_t;
 
 typedef struct {
-  int id;        // private broadcast table entry to update
-  int size;      // size of data
+  int* ack;
+  int  id;       // private broadcast table entry to update
+  int  size;     // size of data
   char data[0];  // data
 } priv_bcast_t;
 
 typedef struct {
-  int id;        // private broadcast table entry to update
-  int size;      // size of data
-  int offset;    // offset of piece of data
+  int* ack;
+  int  id;       // private broadcast table entry to update
+  int  size;     // size of data
+  int  offset;   // offset of piece of data
   char data[0];  // data
 } priv_bcast_large_t;
 
@@ -189,12 +191,24 @@ static void AM_signal(gasnet_token_t token, gasnet_handlerarg_t a0, gasnet_handl
 
 static void AM_priv_bcast(gasnet_token_t token, void* buf, size_t nbytes) {
   priv_bcast_t* pbp = buf;
+  gasnet_handlerarg_t a0, a1;
   memcpy(chpl_private_broadcast_table[pbp->id], pbp->data, pbp->size);
+
+  // Signal that the handler has completed
+  a0 = (gasnet_handlerarg_t) ((((uint64_t) pbp->ack)<<32UL)>>32UL);
+  a1 = (gasnet_handlerarg_t) (((uint64_t) pbp->ack)>>32UL);
+  GASNET_Safe(gasnet_AMReplyShort2(token, SIGNAL, a0, a1));
 }
 
 static void AM_priv_bcast_large(gasnet_token_t token, void* buf, size_t nbytes) {
   priv_bcast_large_t* pblp = buf;
+  gasnet_handlerarg_t a0, a1;
   memcpy((char*)chpl_private_broadcast_table[pblp->id]+pblp->offset, pblp->data, pblp->size);
+
+  // Signal that the handler has completed
+  a0 = (gasnet_handlerarg_t) ((((uint64_t) pblp->ack)<<32UL)>>32UL);
+  a1 = (gasnet_handlerarg_t) (((uint64_t) pblp->ack)>>32UL);
+  GASNET_Safe(gasnet_AMReplyShort2(token, SIGNAL, a0, a1));
 }
 
 static void AM_free(gasnet_token_t token, void* buf, size_t nbytes) {
@@ -434,9 +448,14 @@ void chpl_comm_broadcast_global_vars(int numGlobals) {
 }
 
 void chpl_comm_broadcast_private(int id, int32_t size, int32_t tid) {
-  int locale, offset;
-  int payloadSize = size + sizeof(priv_bcast_t);
+  int  locale, offset;
+  int  payloadSize = size + sizeof(priv_bcast_t);
+  int* done; /* These are not declared volatile because we capture &done[i]
+                (and pass it to a GASNet function), so the compiler should
+                not optimize out any accesses to it. */
 
+  done = (int*) chpl_mem_allocManyZero(chpl_numLocales, sizeof(*done),
+                                       CHPL_RT_MD_COMM_FORK_DONE_FLAG, 0, 0);
   if (payloadSize <= gasnet_AMMaxMedium()) {
     priv_bcast_t* pbp = chpl_mem_allocMany(1, payloadSize, CHPL_RT_MD_COMM_PRIVATE_BROADCAST_DATA, 0, 0);
     memcpy(pbp->data, chpl_private_broadcast_table[id], size);
@@ -444,6 +463,7 @@ void chpl_comm_broadcast_private(int id, int32_t size, int32_t tid) {
     pbp->size = size;
     for (locale = 0; locale < chpl_numLocales; locale++) {
       if (locale != chpl_localeID) {
+        pbp->ack = &done[locale];
         GASNET_Safe(gasnet_AMRequestMedium0(locale, PRIV_BCAST, pbp, payloadSize));
       }
     }
@@ -462,12 +482,30 @@ void chpl_comm_broadcast_private(int id, int32_t size, int32_t tid) {
       memcpy(pblp->data, (char*)chpl_private_broadcast_table[id]+offset, thissize);
       for (locale = 0; locale < chpl_numLocales; locale++) {
         if (locale != chpl_localeID) {
+          pblp->ack = &done[locale];
           GASNET_Safe(gasnet_AMRequestMedium0(locale, PRIV_BCAST_LARGE, pblp, sizeof(priv_bcast_large_t)+thissize));
         }
       }
     }
     chpl_mem_free(pblp, 0, 0);
   }
+  // wait for the handlers to complete
+#ifndef CHPL_COMM_YIELD_TASK_WHILE_POLLING
+  for (locale = 0; locale < chpl_numLocales; locale++) {
+    if (locale != chpl_localeID)
+      GASNET_BLOCKUNTIL(done[locale]==1);
+  }
+#else
+  for (locale = 0; locale < chpl_numLocales; locale++) {
+    if (locale != chpl_localeID) {
+      while (done[locale] != 1) {
+        (void) gasnet_AMPoll();
+        chpl_task_yield();
+      }
+    }
+  }
+#endif
+  chpl_mem_free(done, 0, 0);
 }
 
 void chpl_comm_barrier(const char *msg) {

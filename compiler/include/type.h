@@ -122,8 +122,6 @@ class ClassType : public Type {
 
 class PrimitiveType : public Type {
  public:
-  PrimitiveType* volType; 
-  PrimitiveType* nonvolType;
   bool isInternalType;
   PrimitiveType(Symbol *init_defaultVal = NULL, bool internalType=false);
   void verify(); 

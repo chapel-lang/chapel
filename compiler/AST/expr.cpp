@@ -214,10 +214,9 @@ void SymExpr::codegen(FILE* outfile) {
 }
 
 
-UnresolvedSymExpr::UnresolvedSymExpr(const char* i_unresolved, bool i_is_volatile) :
+UnresolvedSymExpr::UnresolvedSymExpr(const char* i_unresolved) :
   Expr(E_UnresolvedSymExpr),
-  unresolved(astr(i_unresolved)),
-  isVolatile(i_is_volatile)
+  unresolved(astr(i_unresolved))
 {
   if (!i_unresolved)
     INT_FATAL(this, "bad call to UnresolvedSymExpr");
@@ -243,7 +242,7 @@ UnresolvedSymExpr::verify() {
 
 UnresolvedSymExpr*
 UnresolvedSymExpr::copyInner(SymbolMap* map) {
-  return new UnresolvedSymExpr(unresolved, isVolatile);
+  return new UnresolvedSymExpr(unresolved);
 }
 
 
@@ -1145,7 +1144,7 @@ void CallExpr::codegen(FILE* outfile) {
                 get(1), call->get(1), call->get(2)->typeInfo(),
                 dtObject->typeInfo());
             gen(outfile, "chpl__class_id, %s, %A, %A)",
-                fHeterogeneous ? "CHPL_TYPE_enum" : "-1",
+                fHeterogeneous ? "CHPL_TYPE_int32_t" : "-1",
               call->get(3), call->get(4));
             break;
           }
@@ -1155,7 +1154,7 @@ void CallExpr::codegen(FILE* outfile) {
             gen(outfile, "CHPL_COMM_WIDE_CLASS_GET_CID(%A, %A, %A, ",
                 get(1), call->get(1), dtObject->typeInfo());
             gen(outfile, "chpl__class_id, %s, %A, %A)",
-                fHeterogeneous ? "CHPL_TYPE_enum" : "-1",
+                fHeterogeneous ? "CHPL_TYPE_int32_t" : "-1",
                 call->get(2), call->get(3));
             break;
           }
@@ -1522,7 +1521,7 @@ void CallExpr::codegen(FILE* outfile) {
     case PRIM_SETCID:
       if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
         gen(outfile, "CHPL_COMM_WIDE_SET_FIELD_VALUE(chpl__class_id, %s",
-            fHeterogeneous ? "CHPL_TYPE_enum" : "-1");
+            fHeterogeneous ? "CHPL_TYPE_int32_t" : "-1");
         gen(outfile, ", %A, chpl__cid_%A, %A, chpl__cid, %A, %A)",
             get(1), get(1)->typeInfo()->getField("addr")->type/*->symbol*/,
             dtObject->typeInfo(), get(2), get(3));
@@ -2127,25 +2126,8 @@ void CallExpr::codegen(FILE* outfile) {
           get(2)->codegen(outfile);
           fprintf(outfile, "))");
       } else if (dst == dtString || src == dtString) {
-        // 
-        // hh: is it okay to drop volatile type on the floor here?
-        //     should we instead of avoiding to print out the volatile type 
-        //     (which we do because of the space between volatile and the type
-        //     expr), print out the volatile type but just replace the space
-        //     with an underscore?
-        //
         const char* dst_cname = dst->symbol->cname;
         const char* src_cname = src->symbol->cname;
-        if (PrimitiveType* p_dst = toPrimitiveType(dst)) {
-          if (p_dst->nonvolType && !p_dst->volType) {
-            dst_cname = p_dst->nonvolType->symbol->cname;  
-          }
-        }
-        if (PrimitiveType* p_src = toPrimitiveType(src)) {
-          if (p_src->nonvolType && !p_src->volType) {
-            src_cname = p_src->nonvolType->symbol->cname;  
-          }
-        }
         fprintf(outfile, *dst->symbol->cname == '_' ? "%s_to%s(" : "%s_to_%s(",
                 src_cname, dst_cname);
         get(2)->codegen(outfile);

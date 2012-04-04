@@ -12,10 +12,11 @@ use HPCCProblemSize;
 //
 // Use the distributions we need for this computation
 //
-use BlockCycDist;
+use DimensionalDist2D, BlockCycDim, ReplicatedDim;
 
 //
 // The number of matrices and the element type of those matrices.
+// elemType can be real or complex
 //
 const numMatrices = 1;
 type elemType = real;
@@ -50,6 +51,15 @@ config const printParams = true,
              printStats = true;
 
 //
+// The 2D grid of locales and its extents
+// Optionally allow using only some of the locales
+//
+config const allowUnusedLocales = false,
+             gridRows = computeGridRows(),
+             gridCols = numLocales / gridRows;
+const targetLocales => setupLocaleGrid();
+
+//
 // The program entry point
 //
 proc main() {
@@ -59,12 +69,12 @@ proc main() {
   // MatVectSpace is a 2D domain that represents the n x n matrix
   // adjacent to the column vector b.  MatrixSpace is a subdomain that
   // is created by slicing into MatVectSpace, inheriting all of its
-  // rows and its low column bound.  As our standard distribution
-  // library is filled out, MatVectSpace will be distributed using a
-  // BlockCyclic(blkSize) distribution.
+  // rows and its low column bound.
   //
   const MatVectSpace: domain(2)
-                      dmapped BlockCyclic(startIdx=(1,1), (blkSize,blkSize)) 
+    dmapped DimensionalDist2D(targetLocales,
+                              new BlockCyclicDim(gridRows, lowIdx=1, blkSize),
+                              new BlockCyclicDim(gridCols, lowIdx=1, blkSize))
                     = [1..n, 1..n+1],
         MatrixSpace = MatVectSpace[.., ..n];
 
@@ -138,7 +148,8 @@ proc LUFactorize(n: int, Ab: [?AbD] elemType,
     //
     // update trailing submatrix (if any)
     //
-    schurComplement(Ab, bl, tr, br);
+    if br.numIndices > 0 then
+      schurComplement(Ab, bl, tr, br);
   }
 }
 
@@ -173,22 +184,12 @@ proc LUFactorize(n: int, Ab: [?AbD] elemType,
 //
 proc schurComplement(Ab: [?AbD] elemType, AD: domain, BD: domain, Rest: domain) {
   //
-  // Copy data into replicated array so every processor has a local copy
-  // of the data it will need to perform a local matrix-multiply.  These
-  // replicated distributions aren't implemented yet, but imagine that
-  // they look something like the following:
+  // Copy data into replicated arrays so every processor has a local copy
+  // of the data it will need to perform a local matrix-multiply.
   //
-  //var replAbD: domain(2) 
-  //            dmapped new Dimensional(BlkCyc(blkSize), Replicated)) = AbD[AD];
-  //
-  const replAD: domain(2) = AD,
-        replBD: domain(2) = BD;
-    
-  const replA : [replAD] elemType = Ab[replAD],
-        replB : [replBD] elemType = Ab[replBD];
+  const replA => replicateD2(Ab, AD),
+        replB => replicateD1(Ab, BD);
 
-  //  writeln("Rest = ", Rest);
-  //  writeln("Rest by blkSize = ", Rest by (blkSize, blkSize));
   // do local matrix-multiply on a block-by-block basis
   forall (row,col) in Rest by (blkSize, blkSize) {
     //
@@ -196,27 +197,47 @@ proc schurComplement(Ab: [?AbD] elemType, AD: domain, BD: domain, Rest: domain) 
     // replication correct, so we'll want to assert that fact
     //
     //    local {
-      const aBlkD = replAD[row..#blkSize, ..],
-            bBlkD = replBD[.., col..#blkSize],
-            cBlkD = AbD[row..#blkSize, col..#blkSize];
-
-      dgemmNativeInds(replA[aBlkD], replB[bBlkD], Ab[cBlkD]);
+      for a in Rest.dim(1)(row..#blkSize) do
+        for b in Rest.dim(2)(col..#blkSize) do
+          for w in 1..blkSize do
+            Ab[a,b] -= replA[a,w] * replB[w,b];
       //    }
   }
 }
 
 //
-// calculate C = C - A * B.
+// Replicate a row of Ab along the first dimension
 //
-proc dgemmNativeInds(A: [] elemType,
-                    B: [] elemType,
-                    C: [] elemType) {
-  for (iA, iC) in (A.domain.dim(1), C.domain.dim(1)) do
-    for (jA, iB) in (A.domain.dim(2), B.domain.dim(1)) do
-      for (jB, jC) in (B.domain.dim(2), C.domain.dim(2)) do
-        C[iC,jC] -= A[iA, jA] * B[iB, jB];
+proc replicateD1(Ab, BD) {
+  const replBD = [1..blkSize, 1..n+1]
+    dmapped DimensionalDist2D(targetLocales,
+                              new ReplicatedDim(gridRows),
+                              new BlockCyclicDim(gridCols, lowIdx=1, blkSize));
+  var replB: [replBD] elemType;
+
+  coforall dest in targetLocales[.., 0] do
+    on dest do
+      replB = Ab[BD.dim(1), 1..n+1];
+
+  return replB;
 }
 
+//
+// Replicate a column of Ab along the second dimension
+//
+proc replicateD2(Ab, AD) {
+  const replAD = [1..n, 1..blkSize]
+    dmapped DimensionalDist2D(targetLocales,
+                              new BlockCyclicDim(gridRows, lowIdx=1, blkSize),
+                              new ReplicatedDim(gridCols));
+  var replA: [replAD] elemType;
+
+  coforall dest in targetLocales[0, ..] do
+    on dest do
+      replA = Ab[1..n, AD.dim(2)];
+
+  return replA;
+}
 
 
 //
@@ -296,11 +317,39 @@ proc backwardSub(n: int,
 }
 
 //
+// compute the number of locale rows as the largest divisor of numLocales
+// that is at most sqrt(numLocales) - so that
+//   number of columns >= number of rows
+//
+proc computeGridRows() {
+   for i in 2..floor(sqrt(numLocales)):int by -1 do
+     if numLocales % i == 0 then
+       return i;
+   return 1;
+}
+
+//
+// arrange locales into a 2D grid
+//
+proc setupLocaleGrid() {
+  const numLocsUsed = gridRows * gridCols;
+  if numLocsUsed < numLocales then
+    if allowUnusedLocales then
+      writeln("Using only ", numLocsUsed, " out of ", numLocales, " locales");
+    else
+      halt("Using only ", gridRows, " * ", gridCols,
+           " out of ", numLocales, " locales.\n",
+           "Pass the option --allowUnusedLocales to suppress this check");
+
+  return reshape(Locales#numLocsUsed, [0..#gridRows, 0..#gridCols]);
+}
+
+//
 // print out the problem size and block size if requested
 //
 proc printConfiguration() {
   if (printParams) {
-    if (printStats) then printLocalesTasks();
+    if (printStats) then printLocalesTasks(gridRows, gridCols);
     printProblemSize(elemType, numMatrices, n, rank=2);
     writeln("block size = ", blkSize, "\n");
   }

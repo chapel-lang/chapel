@@ -240,13 +240,13 @@ class LabelSymbol : public Symbol {
 };
 
 
-VarSymbol *new_StringSymbol(const char *s, bool hasVolatileType=false);
-VarSymbol *new_BoolSymbol(bool b, IF1_bool_type size=BOOL_SIZE_SYS, bool hasVolatileType=false);
-VarSymbol *new_IntSymbol(int64_t b, IF1_int_type size=INT_SIZE_64, bool hasVolatileType=false);
-VarSymbol *new_UIntSymbol(uint64_t b, IF1_int_type size=INT_SIZE_64, bool hasVolatileType=false);
-VarSymbol *new_RealSymbol(const char *n, long double b, IF1_float_type size=FLOAT_SIZE_64, bool hasVolatileType=false);
-VarSymbol *new_ImagSymbol(const char *n, long double b, IF1_float_type size=FLOAT_SIZE_64, bool hasVolatileType=false);
-VarSymbol *new_ComplexSymbol(const char *n, long double r, long double i, IF1_complex_type size=COMPLEX_SIZE_128, bool hasVolatileType=false);
+VarSymbol *new_StringSymbol(const char *s);
+VarSymbol *new_BoolSymbol(bool b, IF1_bool_type size=BOOL_SIZE_SYS);
+VarSymbol *new_IntSymbol(int64_t b, IF1_int_type size=INT_SIZE_64);
+VarSymbol *new_UIntSymbol(uint64_t b, IF1_int_type size=INT_SIZE_64);
+VarSymbol *new_RealSymbol(const char *n, long double b, IF1_float_type size=FLOAT_SIZE_64);
+VarSymbol *new_ImagSymbol(const char *n, long double b, IF1_float_type size=FLOAT_SIZE_64);
+VarSymbol *new_ComplexSymbol(const char *n, long double r, long double i, IF1_complex_type size=COMPLEX_SIZE_128);
 VarSymbol *new_ImmediateSymbol(Immediate *imm);
 void resetTempID();
 FlagSet getRecordWrappedFlags(Symbol* s);

@@ -37,18 +37,26 @@ class BaseDist {
   }
 
   inline proc remove_dom(x) {
-    _lock_doms();
-    _doms.remove(x);
-    _unlock_doms();
+    on this {
+      _lock_doms();
+      _doms.remove(x);
+      _unlock_doms();
+    }
   }
 
   inline proc add_dom(x) {
-    _lock_doms();
-    _doms.append(x);
-    _unlock_doms();
+    on this {
+      _lock_doms();
+      _doms.append(x);
+      _unlock_doms();
+    }
   }
 
   inline proc _lock_doms() {
+    // WARNING: If you are calling this function directly from
+    // a remote locale, you should consider wrapping the call in
+    // an on clause to avoid excessive remote forks due to the
+    // testAndSet()
     while (_domsLock.testAndSet()) do chpl_task_yield();
   }
 
@@ -124,18 +132,26 @@ class BaseDom {
   }
 
   inline proc remove_arr(x) {
-    _lock_arrs();
-    _arrs.remove(x);
-    _unlock_arrs();
+    on this {
+      _lock_arrs();
+      _arrs.remove(x);
+      _unlock_arrs();
+    }
   }
 
   inline proc add_arr(x) {
-    _lock_arrs();
-    _arrs.append(x);
-    _unlock_arrs();
+    on this {
+      _lock_arrs();
+      _arrs.append(x);
+      _unlock_arrs();
+    }
   }
 
   inline proc _lock_arrs() {
+    // WARNING: If you are calling this function directly from
+    // a remote locale, you should consider wrapping the call in
+    // an on clause to avoid excessive remote forks due to the
+    // testAndSet()
     while (_arrsLock.testAndSet()) do chpl_task_yield();
   }
 

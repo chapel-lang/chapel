@@ -25,11 +25,6 @@ extern void CreateConfigVarTable(void);
 
 /* used by copy collection: */
 
-/* If we're not in the generated code, define an enum _class_id; */
-#ifndef CHPL__CLASS_ID_DEFINED
-typedef enum { chpl__cid_bogus } chpl__class_id;
-#endif
-
 extern size_t cid2size(chpl__class_id cid);
 extern size_t* cid2offsets(chpl__class_id cid);
 
