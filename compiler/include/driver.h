@@ -76,6 +76,7 @@ extern bool fLocal;
 extern bool fGPU;
 extern bool fHeterogeneous;
 extern bool fieeefloat;
+extern int  fMaxCIdentLen;
 
 enum { LS_DEFAULT=0, LS_STATIC, LS_DYNAMIC };
 extern int fLinkStyle;
