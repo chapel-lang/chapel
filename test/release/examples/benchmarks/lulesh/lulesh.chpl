@@ -26,35 +26,11 @@
   Status:
 
   This code remains a work-in-progress as we gain further experience
-  with it.  Proposed improvements are noted throughout the code in
-  TODO comments that are organized into one of the following
-  categories:
-    RACES : possible causes of races or unintentional nondeterminism
-            in the output of the code
-    STYLE : possible stylistic improvements
-    PERF:   possible performance improvements
-    INPUT:  changes to input file format or input
-    CAPAB:  a missing capability from the Chapel language?
-    JEFF:   something that Jeff is looking into
+  with it.  Proposed improvements are noted in the README in this
+  directory and (in some cases) in TODO comments in the code.
+
  */
 
-
-// TODO (RACES): When Brad and Jeff were revising the code, we found
-// some cases where reductions were being computed by forall loops
-// in a race-y way.  For example:
-// 
-//   var sum = 0;
-//   forall e in A do
-//     sum += e;
-//
-// rather than:
-//
-//   const sum = + reduce A;
-//
-// (though unfortunately, none were this simple :).  When printing the
-// computed coordinates, the results are still a little noisy
-// indicating that other cases may still exist.  We should scan the
-// code for other such instances.
 
 
 use Time,       // to get timing routines for benchmarking
@@ -74,10 +50,6 @@ config param useBlockDist = (CHPL_COMM != "none"),  // block-distribute arrays?
 
 config const filename = "lmeshes/sedov15oct.lmesh",  // input filename
              initialEnergy = 3.948746e+7;            // initial energy value
-
-// TODO (INPUT): Ultimately, we should read the initial energy from
-// the input file since the ideal value depends on the mesh
-// granularity.
 
 
 config const showProgress = false,   // print time and dt values on each step
@@ -120,11 +92,6 @@ var infile = open(filename, iomode.r);  // open the file
 var reader = infile.reader();           // open a reader channel to the file
 
 
-// TODO (INPUT): Ultimately, it would be great to support comments
-// separating the sections of the input file (either required, which
-// would be easy; or optional, which would require this section to be
-// beefed up a bit).
-
 /* Read problem size */
 
 const (numElems, numNodes) = reader.read(int, int);
@@ -147,12 +114,6 @@ const Elems = if useBlockDist then ElemSpace dmapped Block(ElemSpace)
 
                            
                                  
-// TODO (STYLE/PERF): It'd be nice to replace triples of arrays
-// with an array of tuples or records or little arrays or, both to
-// clean up the code and potentially to improve cache performance
-// and/or register pressure.  This would also permit a
-// rank-independent formulation of the problem.
-
 var x, y, z: [Nodes] real; //coordinates
 
 /* Read input coordinates */
@@ -176,29 +137,12 @@ param nodesPerElem = 8;
 //
 // const elemNeighbors = 1..nodesPerElem;
 
-//
-// TODO (CAPAB): It would be cool to just stream the reader into
-// this as an initializer to fill it all up?  Maybe we can and I just
-// don't know how to?
-//
-// TODO (STYLE): Otherwise, we could write our own iterator...  After
-// all, it'd be nice to be able to declare this 'const' rather than
-// 'var'
-//
-// TODO (CAPAB/STYLE): Ultimately, we should replace all the
-// homogenous tuples in this program back into arrays -- we're
-// using tuples as a fast array implementation, but arrays seem
-// more in the spirit of the benchmark, and there's no reason
-// the Chapel compiler can't eventually make 1D arrays -- particularly
-// param-sized arrays -- as fast as tuples.
-//
+
+/* The element-to-node mapping */
+
 var elemToNode: [Elems] nodesPerElem*index(Nodes);
                                  
                                  
-//
-// TODO (CAPAB): At the very least, it seems we ought to be able to
-// write 'read(elemToNode)' in this inner loop;
-//
 for nodelist in elemToNode do 
   for i in 1..nodesPerElem do
     reader.read(nodelist[i]);
@@ -263,9 +207,6 @@ reader.assertEOF("Input file format error (extra data at EOF)");
 
 /* Constants */
 
-// TODO (PERF): Would these be preferable as params?
-// TODO (STYLE): Or at least config consts?
-
 const u_cut = 1.0e-7,           /* velocity tolerance */
       hgcoef = 3.0,             /* hourglass control */
       qstop = 1.0e+12,          /* excessive q indicator */
@@ -297,11 +238,6 @@ config const stoptime = 1.0e-2;        /* end time for simulation */
 
 /* The list of material elements */
 
-//
-// TODO (PERF/CAPAB): Today, sparse subdomains are always local to a
-// single locale, whereas what we really want is for this to be
-// aligned with the Elems domain for the sake of performance.
-//
 var MatElems: sparse subdomain(Elems) = enumerateMatElems();
 
 if (printWarnings && useBlockDist && numLocales > 1) then
@@ -463,7 +399,7 @@ proc setupBoundaryConditions() {
     for i in 1..nodesPerElem do
       mask += surfaceNode[elemToNode[e][i]] << (i-1);
 
-    // TODO (STYLE): make an inlined function for this little idiom?
+    // TODO: make an inlined function for this little idiom? (and below)
 
     if ((mask & 0x0f) == 0x0f) then elemBC[e] |= ZETA_M_SYMM;
     if ((mask & 0xf0) == 0xf0) then elemBC[e] |= ZETA_P_SYMM;
@@ -486,7 +422,7 @@ proc setupBoundaryConditions() {
   if (check != (XI_M_SYMM | ETA_M_SYMM | ZETA_M_SYMM)) then
     halt("maxloc got a value of ", check, " at loc ", loc);
 
-  // TODO (PERF): This is an example of an array that, in a distributed
+  // TODO: This is an example of an array that, in a distributed
   // memory code, would typically be completely local and only storing
   // the local nodes owned by the locale -- noting that some nodes
   // are logically owned by multiple locales and therefore would 
@@ -505,8 +441,6 @@ proc setupBoundaryConditions() {
     for i in 1..nodesPerElem do
       mask += surfaceNode[elemToNode[e][i]] << (i-1);
 
-    // TODO (STYLE): make an inlined function for this little idiom?
-
     if ((mask & 0x0f) == 0x0f) then elemBC[e] |= ZETA_M_FREE;
     if ((mask & 0xf0) == 0xf0) then elemBC[e] |= ZETA_P_FREE;
     if ((mask & 0x33) == 0x33) then elemBC[e] |= ETA_M_FREE;
@@ -520,9 +454,6 @@ proc setupBoundaryConditions() {
 
 
 /* Helper functions */
-
-// TODO (PERF): This seems inefficient... Can we just alias/reuse the
-// existing arrays?
 
 inline proc localizeNeighborNodes(eli: index(Elems),
                                   x: [] real, inout x_local: 8*real,
@@ -870,7 +801,7 @@ proc CalcPressureForElems(p_new: [?D] real, bvc, pbvc,
                           pmin: real, p_cut: real, eosvmax: real) {
 
   //
-  // TODO (PERF): Uncomment local once sparse domain is distributed
+  // TODO: Uncomment local once sparse domain is distributed
   //
   forall i in D /* do local */ {
     const c1s = 2.0 / 3.0;
@@ -979,8 +910,7 @@ inline proc computeDTF(indx) {
 }
 
 proc CalcCourantConstraintForElems() {
-  var courant_elem: index(Elems); // TODO (JEFF): This is currently unused;
-                                  // Jeff's looking into it
+  var courant_elem: index(Elems);
 
   const (val, loc) = minloc reduce
                        ([indx in MatElems] computeDTF(indx),
@@ -996,8 +926,7 @@ proc CalcCourantConstraintForElems() {
 
 
 proc CalcHydroConstraintForElems() {
-  var dthydro_elem: index(Elems);  // TODO (JEFF): This is currently unused;
-                                   // Jeff's looking into it
+  var dthydro_elem: index(Elems);
 
   const (val, loc) = minloc reduce 
                        ([indx in MatElems] 
@@ -1007,11 +936,6 @@ proc CalcHydroConstraintForElems() {
                         MatElems);
   if (val == max(real)) {
     dthydro_elem = -1;
-
-    // TODO (JEFF): Should dthydro be set here?  Jeff is going to look
-    // into this?  Related: Should we be comparing against 1.0e+20 in
-    // some way, or is that just a sentinel value?
-
   } else {
     dthydro = val;
     dthydro_elem = loc;
@@ -1063,14 +987,6 @@ proc IntegrateStressForElems(sigxx, sigyy, sigzz, determ) {
 
     var fx_local, fy_local, fz_local: 8*real;
 
-    //
-    // TODO (CAPAB): Something about arrays of sync vars results in
-    // non-local accesses where arrays of normal vars don't.  This
-    // either represents a bug/inefficiency in the implementation, or
-    // it means that we've disabled some remote value forwarding that
-    // was saving us before.  In either case, it should be possible
-    // to get this local working again.
-    //
     //    local {
       /* Volume calculation involves extra work for numerical consistency. */
       CalcElemShapeFunctionDerivatives(x_local, y_local, z_local, 
@@ -1145,7 +1061,7 @@ proc CalcFBHourglassForceForElems(determ, x8n, y8n, z8n, dvdx, dvdy, dvdz) {
     var xd1, yd1, zd1: 8*real;
     localizeNeighborNodes(eli, xd, xd1, yd, yd1, zd, zd1);
 
-    /* TODO (PERF): Brandon seemed to think that this should all be local */
+    /* TODO: Can we enable this local block? */
     // local {
       for param i in 1..4 {
         var hourmodx, hourmody, hourmodz: real;
@@ -1195,7 +1111,7 @@ proc CalcAccelerationForNodes() {
 
 
 proc ApplyAccelerationBoundaryConditionsForNodes() {
-  // TODO (CAPAB): Shouldn't I be able to write these as follows?
+  // TODO: Shouldn't we be able to write these as follows?
   //
   // xdd[XSym] = 0.0;
   // ydd[YSym] = 0.0;
@@ -1347,7 +1263,6 @@ proc ApplyMaterialPropertiesForElems() {
   // old comment: The following loop should compute min/max reductions;
   // currently, race-y
 
-  // TODO (JEFF): does this actually do anything?
   forall matelm in MatElems {
     var vc = v[matelm];
     if eosvmin != 0.0 && vc < eosvmin then vc = eosvmin;
@@ -1595,9 +1510,7 @@ proc EvalEOSForElems(vnewc) {
   }
 
   //
-  // TODO (JEFF): Should the following loops be over MatElems only? 
-  //
-  // TODO (PERF): Uncomment local once sparse domain is distributed
+  // TODO: Uncomment local once sparse domain is distributed
   //
   forall i in Elems /* do local */ {
     compression[i] = 1.0 / vnewc[i] - 1.0;
@@ -1639,7 +1552,7 @@ proc EvalEOSForElems(vnewc) {
 proc CalcEnergyForElems(p_new, e_new, q_new, bvc, pbvc,
                         p_old, e_old, q_old, compression, compHalfStep, 
                         vnewc, work, delvc, qq_old, ql_old) {
-  // TODO (PERF): might need to move these consts into foralls or global
+  // TODO: might need to move these consts into foralls or global
   // Otherwise, they live on Locale0 and everyone else has to do 
   // remote reads.  OR: Check if they're remote value forwarded.
   const rho0 = refdens; 
@@ -1702,7 +1615,7 @@ proc CalcEnergyForElems(p_new, e_new, q_new, bvc, pbvc,
 
 
   //
-  // TODO (PERF): Uncomment local once sparse domain is distributed
+  // TODO: Uncomment local once sparse domain is distributed
   //
   forall i in Elems /* do local */ {
     if delvc[i] <= 0.0 {
@@ -1717,7 +1630,7 @@ proc CalcEnergyForElems(p_new, e_new, q_new, bvc, pbvc,
 
 
 proc CalcSoundSpeedForElems(vnewc, rho0:real, enewc, pnewc, pbvc, bvc) {
-  // TODO (JEFF): Open question: If we had multiple materials, should (a) ss
+  // TODO: Open question: If we had multiple materials, should (a) ss
   // be zeroed and accumulated into, and (b) updated atomically to
   // avoid losing updates?  (Jeff will go back and think on this)
   //
