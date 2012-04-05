@@ -32,6 +32,8 @@ class Block1dom {
 
   // privatized distribution descriptor
   const pdist;
+
+  proc dsiSetIndicesUnimplementedCase param return false;
 }
 
 class Block1locdom {
