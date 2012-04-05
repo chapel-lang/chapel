@@ -29,15 +29,12 @@
   with it.  Proposed improvements are noted throughout the code in
   TODO comments that are organized into one of the following
   categories:
-    INTENT : This is a necessary change to capture the intended spirit
-              of LULESH
     RACES : possible causes of races or unintentional nondeterminism
             in the output of the code
     STYLE : possible stylistic improvements
     PERF:   possible performance improvements
     INPUT:  changes to input file format or input
     CAPAB:  a missing capability from the Chapel language?
-    MAT:    something related to the bad implementation of the materials array
     JEFF:   something that Jeff is looking into
  */
 
@@ -291,16 +288,19 @@ config const stoptime = 1.0e-2;        /* end time for simulation */
 
 /* The list of material elements */
 
-// TODO (INTENT): matElemList should be a sparse subdomain or something
-// that isn't of the same size/shape as Elems; the LULESH benchmark
-// makes it contain the fully-populated set of elements which is why
-// we get away with using an array over Elems currently.  But this isn't
-// in the intended spirit of the benchmark.  We tried to mark instances
-// of this problem throughout the code.
+//
+// TODO (PERF/CAPAB): Today, sparse subdomains are always local to a
+// single locale, whereas what we really want is for this to be
+// aligned with the Elems domain for the sake of performance.
+//
+var MatElems: sparse subdomain(Elems) = enumerateMatElems();
 
-var matElemlist: [Elems] index(Elems);
+iter enumerateMatElems() {
+  for i in Elems do
+    yield i;
+}
 
-		 
+
 /* Element fields */
 
 var  elemBC: [Elems] int,
@@ -396,7 +396,7 @@ proc LuleshData() {
   //calculated on the fly using: elemToNodes(i: index(Elems)): index(Nodes)
 
   /* Create a material IndexSet (entire domain same material for now) */
-  forall (mat, i) in (matElemlist, matElemlist.domain) do mat = i;
+  //  forall i in Elems do MatElems.add(i); // += i;
 
   /* initialize field data */
   initializeFieldData();
@@ -969,8 +969,8 @@ proc CalcCourantConstraintForElems() {
                                   // Jeff's looking into it
 
   const (val, loc) = minloc reduce
-                       ([indx in matElemlist] computeDTF(indx),
-                        matElemlist);
+                       ([indx in MatElems] computeDTF(indx),
+                        MatElems);
 
   if (val == max(real)) {
     courant_elem = -1;
@@ -986,12 +986,11 @@ proc CalcHydroConstraintForElems() {
                                    // Jeff's looking into it
 
   const (val, loc) = minloc reduce 
-                       ([indx in matElemlist] 
+                       ([indx in MatElems] 
                           (if vdov[indx] == 0.0 
                              then max(real)
                              else dvovmax / (abs(vdov[indx])+1.0e-20)),
-    // TODO (MAT): Here vvv Elems should be 0..#matElemlist.numIndices
-                        Elems);
+                        MatElems);
   if (val == max(real)) {
     dthydro_elem = -1;
 
@@ -1308,20 +1307,12 @@ proc CalcQForElems() {
 
 
 // sungeun: Temporary array reused throughout
-//
-// TODO (MAT): This should be over a domain 0..matElemList.numIndices
-//
-var vnewc: [Elems] real;
+var vnewc: [MatElems] real;
 
 /* Expose all of the variables needed for material evaluation */
 proc ApplyMaterialPropertiesForElems() {
 
-  // 
-  // TODO (MAT): This is a gather operation, so we should be iterating
-  // over matElemlist.size rather than assuming its size ==
-  // Elems.numIndices
-  //
-  forall i in Elems do vnewc[i] = vnew[matElemlist[i]];
+  forall i in MatElems do vnewc[i] = vnew[i];
 
   if eosvmin != 0.0 then
     [c in vnewc] if c < eosvmin then c = eosvmin;
@@ -1334,7 +1325,7 @@ proc ApplyMaterialPropertiesForElems() {
   // currently, race-y
 
   // TODO (JEFF): does this actually do anything?
-  forall matelm in matElemlist {
+  forall matelm in MatElems {
     var vc = v[matelm];
     if eosvmin != 0.0 && vc < eosvmin then vc = eosvmin;
     if eosvmax != 0.0 && vc > eosvmax then vc = eosvmax;
@@ -1445,7 +1436,7 @@ proc CalcMonotonicQForElems(delv_xi, delv_eta, delv_zeta,
                             delx_xi, delx_eta, delx_zeta) {
   //got rid of call through to "CalcMonotonicQRegionForElems"
 
-  forall i in matElemlist {
+  forall i in MatElems {
     const ptiny = 1.0e-36;
     const bcMask = elemBC[i];
     var norm, delvm, delvp: real;
@@ -1570,22 +1561,15 @@ proc EvalEOSForElems(vnewc) {
   var e_old, delvc, p_old, q_old, compression, compHalfStep, 
     qq_old, ql_old, work, p_new, e_new, q_new, bvc, pbvc: [Elems] real;
 
-  // TODO (MAT): This needs to be converted into a gather -- see TODO
-  // in ApplyMaterialPropertiesForElems
-  //
-
   /* compress data, minimal set */
-  forall (i,zidx) in (Elems,matElemlist) {
-    e_old[i]  = e[zidx];
-    delvc[i]  = delv[zidx];
-    p_old[i]  = p[zidx];
-    q_old[i]  = q[zidx];
-    qq_old[i] = qq[zidx];
-    ql_old[i] = ql[zidx];
+  forall i in MatElems {
+    e_old[i]  = e[i];
+    delvc[i]  = delv[i];
+    p_old[i]  = p[i];
+    q_old[i]  = q[i];
+    qq_old[i] = qq[i];
+    ql_old[i] = ql[i];
   }
-
-  // TODO (MAT): The following should be over the number of things in
-  // matElemList, not over Elems
 
   forall i in Elems do local {
     compression[i] = 1.0 / vnewc[i] - 1.0;
@@ -1614,12 +1598,10 @@ proc EvalEOSForElems(vnewc) {
                      p_old, e_old, q_old, compression, compHalfStep, 
                      vnewc, work, delvc, qq_old, ql_old);
 
-  // TODO (MAT): This should be a scatter; the dual of EvalEOSOverElems
-
-  forall (i,zidx) in (Elems,matElemlist) {
-    p[zidx] = p_new[i];
-    e[zidx] = e_new[i];
-    q[zidx] = q_new[i];
+  forall i in MatElems {
+    p[i] = p_new[i];
+    e[i] = e_new[i];
+    q[i] = q_new[i];
   }
 
   CalcSoundSpeedForElems(vnewc, rho0, e_new, p_new, pbvc, bvc);
@@ -1635,10 +1617,7 @@ proc CalcEnergyForElems(p_new, e_new, q_new, bvc, pbvc,
   const rho0 = refdens; 
   const sixth = 1.0 / 6.0;
 
-  //
-  // TODO (MAT): This should be declared over 0..#matElemList, not Elems
-  //
-  var pHalfStep: [Elems] real;
+  var pHalfStep: [MatElems] real;
 
   forall i in Elems {
     e_new[i] = e_old[i] - 0.5 * delvc[i] * (p_old[i] + q_old[i]) + 0.5 * work[i];
@@ -1706,17 +1685,13 @@ proc CalcEnergyForElems(p_new, e_new, q_new, bvc, pbvc,
 
 
 proc CalcSoundSpeedForElems(vnewc, rho0:real, enewc, pnewc, pbvc, bvc) {
-  // TODO (MAT): This is assuming Elems and matElemlist have the same
-  // arity, which won't always be the case.  So, the first thing we're
-  // iterating over should be a 0..matElemlist.numIndices domain.
-  //
   // TODO (JEFF): Open question: If we had multiple materials, should (a) ss
   // be zeroed and accumulated into, and (b) updated atomically to
   // avoid losing updates?  (Jeff will go back and think on this)
-  forall (i,iz) in (Elems,matElemlist) {
+  forall i in MatElems {
     var ssTmp = (pbvc[i] * enewc[i] + vnewc[i]**2 * bvc[i] * pnewc[i]) / rho0;
     if ssTmp <= 1.111111e-36 then ssTmp = 1.111111e-36;
-    ss[iz] = sqrt(ssTmp);
+    ss[i] = sqrt(ssTmp);
   }
 }
 
