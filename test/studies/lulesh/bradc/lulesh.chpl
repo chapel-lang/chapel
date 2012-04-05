@@ -66,7 +66,8 @@ use Time,       // to get timing routines for benchmarking
    CHPL_COMM and can be overridden on the compiler command-line using
    -suseBlockDist=[true|false] */
 
-config param useBlockDist = (CHPL_COMM != "none");
+config param useBlockDist = (CHPL_COMM != "none"),  // block-distribute arrays?
+             printWarnings = true;                  // print warnings?
 
 
 /* Configuration constants: Override defaults on executable's command-line */
@@ -302,6 +303,11 @@ config const stoptime = 1.0e-2;        /* end time for simulation */
 // aligned with the Elems domain for the sake of performance.
 //
 var MatElems: sparse subdomain(Elems) = enumerateMatElems();
+
+if (printWarnings && useBlockDist && numLocales > 1) then
+  writeln("WARNING: The LULESH Material Elements (MatElems) are not yet\n",
+          "         distributed, so result in excessive memory use on,\n",
+          "         and communication with, locale 0\n");
 
 iter enumerateMatElems() {
   for i in Elems do
@@ -863,7 +869,10 @@ proc CalcPressureForElems(p_new: [?D] real, bvc, pbvc,
                           e_old, compression, vnewc,
                           pmin: real, p_cut: real, eosvmax: real) {
 
-  forall i in D do local {
+  //
+  // TODO (PERF): Uncomment local once sparse domain is distributed
+  //
+  forall i in D /* do local */ {
     const c1s = 2.0 / 3.0;
     bvc[i] = c1s * (compression[i] + 1.0);
     pbvc[i] = c1s;
@@ -1054,7 +1063,15 @@ proc IntegrateStressForElems(sigxx, sigyy, sigzz, determ) {
 
     var fx_local, fy_local, fz_local: 8*real;
 
-    local {
+    //
+    // TODO (CAPAB): Something about arrays of sync vars results in
+    // non-local accesses where arrays of normal vars don't.  This
+    // either represents a bug/inefficiency in the implementation, or
+    // it means that we've disabled some remote value forwarding that
+    // was saving us before.  In either case, it should be possible
+    // to get this local working again.
+    //
+    //    local {
       /* Volume calculation involves extra work for numerical consistency. */
       CalcElemShapeFunctionDerivatives(x_local, y_local, z_local, 
                                        b_x, b_y, b_z, determ[k]);
@@ -1063,7 +1080,7 @@ proc IntegrateStressForElems(sigxx, sigyy, sigzz, determ) {
 
       SumElemStressesToNodeForces(b_x, b_y, b_z, sigxx[k], sigyy[k], sigzz[k], 
                                   fx_local, fy_local, fz_local);
-    }
+      //    }
 		
     for (noi, t) in elemToNodesTuple(k) {
       fx$[noi] += fx_local[t];
@@ -1577,7 +1594,12 @@ proc EvalEOSForElems(vnewc) {
     ql_old[i] = ql[i];
   }
 
-  forall i in Elems do local {
+  //
+  // TODO (JEFF): Should the following loops be over MatElems only? 
+  //
+  // TODO (PERF): Uncomment local once sparse domain is distributed
+  //
+  forall i in Elems /* do local */ {
     compression[i] = 1.0 / vnewc[i] - 1.0;
     var vchalf = vnewc[i] - delvc[i] * 0.5;
     compHalfStep[i] = 1.0 / vchalf - 1.0;
@@ -1678,7 +1700,11 @@ proc CalcEnergyForElems(p_new, e_new, q_new, bvc, pbvc,
 
   CalcPressureForElems(p_new, bvc, pbvc, e_new, compression, vnewc, pmin, p_cut, eosvmax);
 
-  forall i in Elems do local {
+
+  //
+  // TODO (PERF): Uncomment local once sparse domain is distributed
+  //
+  forall i in Elems /* do local */ {
     if delvc[i] <= 0.0 {
       var ssc = ( pbvc[i] * e_new[i] + vnewc[i]**2 * bvc[i] * p_new[i] ) / rho0;
       if ssc <= 0.0 then ssc = 0.333333e-36;
