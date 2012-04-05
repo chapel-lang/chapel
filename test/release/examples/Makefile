@@ -19,18 +19,18 @@ all: $(TARGETS)
 
 clean: FORCE
 	rm -f $(TARGETS) $(REALS)
+	cd benchmarks && $(MAKE) clean
 	cd primers && $(MAKE) clean
 	cd programs && $(MAKE) clean
-	cd hpcc && $(MAKE) clean
+
+benchmarks: FORCE
+	cd benchmarks && $(MAKE)
 
 primers: FORCE
 	cd primers && $(MAKE)
 
 programs: FORCE
 	cd programs && $(MAKE)
-
-hpcc: FORCE
-	cd hpcc && $(MAKE)
 
 %: %.chpl
 	$(CHPL) -o $@ $<
