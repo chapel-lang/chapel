@@ -320,9 +320,9 @@ nondet. execution timeout
 [Error: Timed out executing program studies/hpcc/HPL/vass/hpl] (11/16/11, 11/23/11, 11/25/11, 11/27/11, 11/29/11)
 [Error: Timed out executing program multilocale/diten/needMultiLocales/coforallon_maxThreads] (10/13/11, 11/01/11, 02/26/12, 02/28/12, 02/29/12, 03/10/12)
 [Error: Timed out executing program studies/sudoku/dinan/sudoku] (10/02/11)
-[Error: Timed out executing program studies/madness/aniruddha/madchap/test_diff] (11/14/11, 12/20/11, 01/13/12, 02/24/12, 03/08/12, 03/12/12, 03/17/12)
+[Error: Timed out executing program studies/madness/aniruddha/madchap/test_diff] (11/14/11, 12/20/11, 01/13/12, 02/24/12, 03/08/12, 03/12/12, 03/17/12, 04/04/12)
 [Error: Timed out executing program studies/madness/aniruddha/madchap/test_gaxpy] (12/20/11, 12/23/11, 12/26/11, 12/30/11, 01/13/12, 01/15/12, 01/24/12, 01/29/12, 01/31/12, 02/03/12, 02/05/12, 02/09/12, 02/14/12, 02/20/12, 02/27/12, 03/01/12, 03/07/12, 03/10/12, 03/12/12, 03/16/12, 04/03/12)
-[Error: Timed out executing program studies/madness/aniruddha/madchap/test_likepy] (10/05/11, 10/08/11, 10/12/11, 11/02/11, 11/05/11, 11/12/11, 11/15/11, 11/19/11, 11/22/11, 12/04/11, 12/09/11, 01/05/12, 01/07/12, 01/13/12, 01/24/12, 02/05/12, 02/07/12, 02/17/12, 02/27/12, 02/29/12, 03/10/12, 04/03/12)
+[Error: Timed out executing program studies/madness/aniruddha/madchap/test_likepy] (10/05/11, 10/08/11, 10/12/11, 11/02/11, 11/05/11, 11/12/11, 11/15/11, 11/19/11, 11/22/11, 12/04/11, 12/09/11, 01/05/12, 01/07/12, 01/13/12, 01/24/12, 02/05/12, 02/07/12, 02/17/12, 02/27/12, 02/29/12, 03/10/12, 04/03/12, 04/04/12)
 [Error: Timed out executing program studies/madness/aniruddha/madchap/test_showboxes] (01/18/12, 01/29/12, 03/05/12, 03/18/12, 04/02/12)
 [Error: Timed out executing program studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct (compopts: 1)] (10/11/11, 10/25/11, 10/28/11, 11/06/11, 11/22/11, 11/25/11, 11/28/11, 12/03/11, 12/14/11, 12/20/11, 12/24/11, 12/26/11, 01/01/12, 01/06/12, 01/09/12, 01/17/12, 01/19/12, 01/26/12, 02/01/12, 02/09/12, 02/12/12, 02/19/12, 02/21/12, 02/24/12, 02/27/12, 03/03/12, 03/09/12, 03/14/12, 03/18/12)
 [Error: Timed out executing program studies/madness/aniruddha/madchap/test_mul] (01/06/12, 01/13/12, 04/03/12)
@@ -510,6 +510,13 @@ nondet. timeout failure
 cray-xt-cray/cce-specific regressions
 =====================================
 
+failures in looking up symbols in a few places when compiling the
+Chapel compiler with CCE -- seemingly related to backing out volatile,
+but seen in earlier revisions as well, which then fixed themselves --
+not sure how to diagnose further yet (04/04/12)
+----------------------------------------------------------------------
+*all*
+
 nondet. internal failure in compiling DefaultRectangular
 --------------------------------------------------------
 [Error matching compiler output for release/examples/spec/Generics/query] (03/31/12)
@@ -575,6 +582,11 @@ compiler timeouts
 =============================================================
 pgi-specific regressions (in addition to xt-cle errors above)
 =============================================================
+
+new use of Dimensional causes "identifier too long" warnings which cascade
+into others (04/04/12)
+--------------------------------------------------------------------------
+[Error matching compiler output for release/examples/hpcc/hpl]
 
 #inclusion of wchar.h generates a warning that breaks testing (11/10/11)
 ------------------------------------------------------------------------
@@ -762,6 +774,10 @@ execution timeouts (ever since switching to 4 shepherds)
 ===========================
 nanox+gasnet-specific tests
 ===========================
+
+early call to chpl_task_yield causes seg fault in program startup (04/04/12)
+----------------------------------------------------------------------------
+*all*
 
 incorrect comm counts when not timing out (03/26/12)
 ----------------------------------------------------
