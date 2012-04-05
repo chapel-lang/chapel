@@ -72,8 +72,8 @@ config param useBlockDist = (CHPL_COMM != "none"),  // block-distribute arrays?
 
 /* Configuration constants: Override defaults on executable's command-line */
 
-config const filename = "../lmeshes/sedov15oct.lmesh",   // input filename
-             initialEnergy = 3.948746e+7;                // initial energy to deposit
+config const filename = "lmeshes/sedov15oct.lmesh",  // input filename
+             initialEnergy = 3.948746e+7;            // initial energy value
 
 // TODO (INPUT): Ultimately, we should read the initial energy from
 // the input file since the ideal value depends on the mesh

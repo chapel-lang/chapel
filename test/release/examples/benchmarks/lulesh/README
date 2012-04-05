@@ -1,0 +1,46 @@
+===============================
+Chapel implementation of LULESH
+===============================
+
+This directory contains a Chapel port of the DARPA/Livermore
+Unstructured Lagrangian Explicit Shock Hydrodynamics (LULESH)
+benchmark (see https://computation.llnl.gov/casc/ShockHydro/
+for details).
+
+
+------
+Status
+------
+
+The Chapel version of LULESH is a work-in-progress.  To the best of
+our knowledge, the current form is a complete and faithful
+implementation of LULESH.  That said, several improvements remain
+to improve performance and elegance.  See the list below and TODO
+comments in the source code for some known areas for improvement.
+
+
+-----
+Files
+-----
+
+This directory's contents are as follows:
+
+./
+  lmeshes/     : input meshes
+
+  lulesh.chpl  : the Chapel source code
+
+  coords.out   : the coordinates computed by the program are written
+                 to this file, suitable for plotting
+
+  CLEANFILES      :\  
+  lulesh.catfiles : \
+  lulesh.compopts :  used by the Chapel testing system
+  lulesh.execopts : / 
+  lulesh.good     :/ 
+
+
+----
+TODO
+----
+
