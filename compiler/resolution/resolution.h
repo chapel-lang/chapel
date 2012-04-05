@@ -25,7 +25,7 @@ void parseExplainFlag(char* flag, int* line, ModuleSymbol** module);
 
 FnSymbol* instantiate(FnSymbol* fn, SymbolMap* subs, CallExpr* call);
 void resolveFormals(FnSymbol* fn);
-void resolveCall(CallExpr* call, bool errorCheck = true);
+void resolveCall(CallExpr* call, bool errorCheck = true, FnSymbol *containingFn = NULL);
 void resolveBlock(Expr* body);
 
 FnSymbol* defaultWrap(FnSymbol* fn, Vec<ArgSymbol*>* actualFormals,  CallInfo* info);

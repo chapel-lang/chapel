@@ -159,6 +159,9 @@ class FnSymbol : public Symbol {
   BlockStmt* instantiationPoint; // point of instantiation
   Vec<BasicBlock*>* basicBlocks;
   Vec<CallExpr*>* calledBy;
+  Map<FnSymbol*, ArgSymbol*>  fnsInInterfaces; // functions now visible because
+                                               // of implements clauses in the
+                                               // where clause
   const char* userString;
   FnSymbol* valueFunction; // pointer to value function (created in
                            // resolve and used in cullOverReferences)

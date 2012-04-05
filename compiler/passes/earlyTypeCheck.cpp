@@ -480,6 +480,12 @@ static BaseAST* checkFunctionCall(CallExpr* call, Map<FnSymbol*, ArgSymbol*>& fn
         mismatch = true;
         break;
       }
+      /*
+      if (s_formal->type == dtMethodToken) {
+        mismatch = true;
+        break;
+      }
+      */
       if (s_formal->hasFlag(FLAG_TYPE_VARIABLE)) {
         if (SymExpr *se_actual = toSymExpr(e_actual)) {
           if (!isTypeSymbol(se_actual->var)) {
@@ -497,6 +503,11 @@ static BaseAST* checkFunctionCall(CallExpr* call, Map<FnSymbol*, ArgSymbol*>& fn
         break;
       }
     }
+    /*
+    if (s_formal) {
+      mismatch = true;
+    }
+    */
 
     if (!mismatch) {
       if (visibleFn->where) {
@@ -924,16 +935,19 @@ static BaseAST* checkInterfaceImplementations(BaseAST *s) {
           }
         }
       }
+      /*
       else if (!strcmp(use->unresolved, "writeln")) {
           //printf("Inside Writeln\n");
           checkInterfaceImplementations(ce->argList.head);
       }
+
       else if (!ce->primitive) {
         Map<FnSymbol*, ArgSymbol*> fnInInterfaces;
         returnExpr = checkFunctionCall(ce, fnInInterfaces);
         //printf("Return Type: %d\n",returnExpr->id);
         //list_view(returnExpr);
       }
+      */
     }
   }
   else if(BlockStmt* bs = toBlockStmt(s)) {

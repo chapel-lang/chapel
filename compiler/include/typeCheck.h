@@ -8,6 +8,8 @@
 #include "map.h"
 #include "vec.h"
 
+typedef MapElem<FnSymbol *, ArgSymbol *> DictElem;
+
 class VisibleFunctionBlock {
  public:
   Map<const char*,Vec<FnSymbol*>*> visibleFunctions;
@@ -75,6 +77,18 @@ struct VisibleFunctionManager {
     nVisibleFunctions = gFnSymbols.n;
   }
 
+  static void getMatchingFunctionsInInterfaces(const char* name, Vec<FnSymbol*>& visibleFns,
+      Map<FnSymbol*, ArgSymbol*>& fnsInInterfaces) {
+
+    form_Map(DictElem, elem, fnsInInterfaces) {
+      printf("Adding to visibleFns\n");
+      if (!strcmp(elem->key->name, name)) {
+        if (!visibleFns.in(elem->key))
+          visibleFns.add(elem->key);
+      }
+    }
+  }
+
   BlockStmt*
   getVisibleFunctions(BlockStmt* block,
                       const char* name,
@@ -85,6 +99,10 @@ struct VisibleFunctionManager {
     //
     if (standardModuleSet.set_in(block))
       block = theProgram->block;
+
+    if (FnSymbol* fn = toFnSymbol(block->parentSymbol)) {
+      getMatchingFunctionsInInterfaces(name, visibleFns, fn->fnsInInterfaces);
+    }
 
     //
     // avoid infinite recursion due to modules with mutual uses

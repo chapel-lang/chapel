@@ -1866,7 +1866,6 @@ isTypeExpr(Expr* expr) {
   return false;
 }
 
-
 //
 // special case cast of class w/ type variables that is not generic
 //   i.e. type variables are type definitions (have default types)
@@ -1894,7 +1893,7 @@ resolveDefaultGenericType(CallExpr* call) {
 
 
 void
-resolveCall(CallExpr* call, bool errorCheck) {
+resolveCall(CallExpr* call, bool errorCheck, FnSymbol *containingFn) {
   if (!call->primitive) {
 
     resolveDefaultGenericType(call);
@@ -1972,6 +1971,10 @@ resolveCall(CallExpr* call, bool errorCheck) {
 
     if (best && explainCallLine && explainCallMatch(call)) {
       USR_PRINT(best, "best candidate is: %s", toString(best));
+    }
+
+    if (containingFn && containingFn->fnsInInterfaces.n > 0) {
+      printf ("check for functions in interface\n");
     }
 
     if (call->partialTag && (!best || !best->hasFlag(FLAG_NO_PARENS))) {
@@ -4104,7 +4107,7 @@ resolveBlock(Expr* body) {
         issueCompilerError(call);
       }
       callStack.add(call);
-      resolveCall(call);
+      resolveCall(call, true, fn);
       if (!tryFailure && call->isResolved())
         resolveFns(call->isResolved());
       if (tryFailure) {
@@ -4325,8 +4328,6 @@ resolveFns(FnSymbol* fn) {
       }
     }
   }
-
-
 
   ret->type = retType;
   if (!fn->iteratorInfo) {
@@ -5733,6 +5734,8 @@ static void resolveImplementsStatement(CallExpr* call, bool errorCheck) {
           FnSymbol* resolvedFn = best;
           if(!resolvedFn)
             USR_FATAL("Function not resolved. Debug.\n");
+         // else
+         //   USR_FATAL("Function resolved. Debug.\n");
         }
         VarSymbol *tmp = new VarSymbol("witness");
         addToImplementsSymbolTable(call,call->argList.tail,
