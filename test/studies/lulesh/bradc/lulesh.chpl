@@ -176,12 +176,20 @@ param nodesPerElem = 8;
 // const elemNeighbors = 1..nodesPerElem;
 
 //
-// TODO (CAPAB): Wouldn't it be cool to just stream the reader into
+// TODO (CAPAB): It would be cool to just stream the reader into
 // this as an initializer to fill it all up?  Maybe we can and I just
 // don't know how to?
+//
 // TODO (STYLE): Otherwise, we could write our own iterator...  After
 // all, it'd be nice to be able to declare this 'const' rather than
 // 'var'
+//
+// TODO (CAPAB/STYLE): Ultimately, we should replace all the
+// homogenous tuples in this program back into arrays -- we're
+// using tuples as a fast array implementation, but arrays seem
+// more in the spirit of the benchmark, and there's no reason
+// the Chapel compiler can't eventually make 1D arrays -- particularly
+// param-sized arrays -- as fast as tuples.
 //
 var elemToNode: [Elems] nodesPerElem*index(Nodes);
                                  
@@ -332,7 +340,7 @@ var xd, yd, zd: [Nodes] real, // velocities
 
     xdd, ydd, zdd: [Nodes] real, // acceleration
 
-    fx, fy, fz: [Nodes] real, // forces
+    fx$, fy$, fz$: [Nodes] sync real, // forces
 
     nodalMass: [Nodes] real; // mass
 
@@ -361,7 +369,7 @@ proc main() {
     LagrangeLeapFrog();
 
     if debug {
-      deprint("[[ Forces ]]", fx, fy, fz);
+      //      deprint("[[ Forces ]]", fx$, fy$, fz$);
       deprint("[[ Positions ]]", x, y, z);
       deprint("[[ p, e, q ]]", p, e, q);
     }
@@ -394,9 +402,6 @@ proc main() {
 proc LuleshData() {
   /* embed hexehedral elements in nodal point lattice */
   //calculated on the fly using: elemToNodes(i: index(Elems)): index(Nodes)
-
-  /* Create a material IndexSet (entire domain same material for now) */
-  //  forall i in Elems do MatElems.add(i); // += i;
 
   /* initialize field data */
   initializeFieldData();
@@ -1010,9 +1015,9 @@ proc CalcHydroConstraintForElems() {
 
 proc CalcForceForNodes() {
   //zero out all forces (array assignment)
-  fx = 0;
-  fy = 0;
-  fz = 0;
+  fx$ = 0;
+  fy$ = 0;
+  fz$ = 0;
 
   /* Calcforce calls partial, force, hourq */
   CalcVolumeForceForElems();
@@ -1061,9 +1066,9 @@ proc IntegrateStressForElems(sigxx, sigyy, sigzz, determ) {
     }
 		
     for (noi, t) in elemToNodesTuple(k) {
-      fx[noi] += fx_local[t];
-      fy[noi] += fy_local[t];
-      fz[noi] += fz_local[t];
+      fx$[noi] += fx_local[t];
+      fy$[noi] += fy_local[t];
+      fz$[noi] += fz_local[t];
     }
   }
 }
@@ -1155,9 +1160,9 @@ proc CalcFBHourglassForceForElems(determ, x8n, y8n, z8n, dvdx, dvdy, dvdz) {
       // } // end local
 
     for (noi,i) in elemToNodesTuple(eli) {
-      fx[noi] += hgfx[i];
-      fy[noi] += hgfy[i];
-      fz[noi] += hgfz[i];
+      fx$[noi] += hgfx[i];
+      fy$[noi] += hgfy[i];
+      fz$[noi] += hgfz[i];
     }
   }
 }
@@ -1165,15 +1170,16 @@ proc CalcFBHourglassForceForElems(determ, x8n, y8n, z8n, dvdx, dvdy, dvdz) {
 
 proc CalcAccelerationForNodes() {
   forall noi in Nodes do local {
-      xdd[noi] = fx[noi] / nodalMass[noi];
-      ydd[noi] = fy[noi] / nodalMass[noi];
-      zdd[noi] = fz[noi] / nodalMass[noi];
+      xdd[noi] = fx$[noi] / nodalMass[noi];
+      ydd[noi] = fy$[noi] / nodalMass[noi];
+      zdd[noi] = fz$[noi] / nodalMass[noi];
     }
 }
 
 
 proc ApplyAccelerationBoundaryConditionsForNodes() {
   // TODO (CAPAB): Shouldn't I be able to write these as follows?
+  //
   // xdd[XSym] = 0.0;
   // ydd[YSym] = 0.0;
   // zdd[ZSym] = 0.0;
@@ -1688,6 +1694,7 @@ proc CalcSoundSpeedForElems(vnewc, rho0:real, enewc, pnewc, pbvc, bvc) {
   // TODO (JEFF): Open question: If we had multiple materials, should (a) ss
   // be zeroed and accumulated into, and (b) updated atomically to
   // avoid losing updates?  (Jeff will go back and think on this)
+  //
   forall i in MatElems {
     var ssTmp = (pbvc[i] * enewc[i] + vnewc[i]**2 * bvc[i] * pnewc[i]) / rho0;
     if ssTmp <= 1.111111e-36 then ssTmp = 1.111111e-36;
