@@ -2464,11 +2464,10 @@ void CallExpr::codegen(FILE* outfile) {
       fprintf(outfile, "%s ", var->immediate->v_string); // function name
       fprintf(outfile,", ");
       get(10)->codegen(outfile); // params
-      fprintf(outfile,", ");
-      fprintf(outfile,"sizeof(");
-      get(6)->typeInfo()->codegen(outfile);
-
-      fprintf(outfile,"))");
+      fprintf(outfile,", _%s", get(10)->getValType()->symbol->cname);
+      //get(10)->getValType()->codegen(outfile);
+      //get(10)->typeInfo()->codegen(outfile);
+      fprintf(outfile,")");
       break;
     }
     case PRIM_CODELET_INIT:
@@ -2479,6 +2478,11 @@ void CallExpr::codegen(FILE* outfile) {
     case PRIM_CODELET_SHUTDOWN:
     {
       fprintf(outfile, "chpl_codelet_shutdown()");
+      break;
+    }
+    case PRIM_CODELET_WAITFORALL:
+    {
+      fprintf(outfile, "chpl_codelet_waitforall()");
       break;
     }
     default:

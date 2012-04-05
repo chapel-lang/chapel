@@ -25,9 +25,10 @@ import os, os.path, sys, subprocess
 utildir = os.path.split(sys.argv[0])
 chpl_home = utildir[0]+'/../..'
 
+
 third_party = chpl_home+'/third-party'
 third_party_pkgs = os.listdir(third_party)
-
+print third_party_pkgs
 #
 # Add any aliases
 #
@@ -51,7 +52,6 @@ for dir in third_party_pkgs:
 printchplenv = chpl_home+'/util/printchplenv'
 chplenv=subprocess.Popen([printchplenv],
                          stdout=subprocess.PIPE).communicate()[0]
-
 pkgs=''
 for l in chplenv.split('\n'):
     # Consider only lines to that start with 'CHPL_'.

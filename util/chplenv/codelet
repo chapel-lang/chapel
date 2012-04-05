@@ -1,0 +1,16 @@
+#!/usr/bin/env perl
+
+use File::Basename;
+
+$utildirname = dirname($0);
+
+$preset_codelet = $ENV{'CHPL_CODELET'};
+
+if ($preset_codelet eq "") {
+  $codelet = 'none';
+} else {
+  $codelet = $preset_codelet;
+}
+
+print "$codelet\n";
+exit(0);

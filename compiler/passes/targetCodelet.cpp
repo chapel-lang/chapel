@@ -58,14 +58,14 @@ innerCodelets(FnSymbol* originalFn, BlockStmt* codeletBlock, BasicBlock* curBB,
       }
     }
     else if (DefExpr *def = toDefExpr(expr)) {
-      if (FLAG_MOVE_DEF) {
-        //rootModule->block->insertAtHead(def->remove());
+      if (FLAG_MOVE_DEF && !def->sym->hasFlag(FLAG_WHILE_INDEX)) {
+        // Make variable global
         ModuleSymbol *mod = originalFn->getModule();
         mod->block->insertAtHead(def->remove());
 
         //originalFn->insertAtHead(def->remove());
       }
-      else
+      else if (!def->sym->hasFlag(FLAG_WHILE_INDEX))
         codeletBlock->insertAtTail(def->remove());
       /* Instead, we should search the other intervals to see if this definition is
        * used elsewhere. If not, no need to move it out of the interval */
@@ -318,6 +318,7 @@ targetCodelet() {
 
         if (fTargetCodelet) {
           fn->insertAtHead(new CallExpr(PRIM_CODELET_INIT));
+          fn->body->body.tail->insertBefore(new CallExpr(PRIM_CODELET_WAITFORALL));
           fn->body->body.tail->insertBefore(new CallExpr(PRIM_CODELET_SHUTDOWN));
         }
 

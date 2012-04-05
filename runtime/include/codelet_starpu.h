@@ -8,6 +8,9 @@
 #define _codelet_create starpu_task_create
 #define _codelet_submit_task starpu_task_submit
 #define _codelet_declare_deps starpu_tag_declare_deps
+#define _codelet_wait_all_array starpu_tag_wait_array
+#define _codelet_resolve_dep starpu_tag_notify_from_apps
+#define _codelet_waitforall starpu_task_wait_for_all
 
 #define CHPL_GPU STARPU_GPU
 #define CHPL_CPU STARPU_CPU

@@ -18,15 +18,18 @@ int chpl_codelet_init(void) {
   return _codelet_init(NULL);
 }
 
-/* initialize codelet runtime : passing a NULL argument means that we use
- * default configuration for the scheduling policies and the number of
- * processors/accelerators */
-//int chpl_codelet_init(_codelet_config *conf) {
+/* shutdown codelet runtime */
 void chpl_codelet_shutdown(void) {
   printf("SHUTTING DOWN CODELET R/T...\n");
   _codelet_shutdown();
 }
 
+/* shutdown codelet runtime */
+void chpl_codelet_waitforall(void) {
+  _codelet_waitforall();
+}
+
+// putting this into macro form
 /* Create a sequential codelet. There is called for sections of code with no 
  * parallel constructs */
 /* TODO : Deal with registering data and its associated handles!! */
@@ -76,6 +79,7 @@ int chpl_codelet_sequential(_codelet_tag_t self_id, _codelet_tag_t incoming,
   return 0;
 }
 
+#if 0
 /* Create a parallel codelet. There is called for sections of code with 
  * parallel constructs such as (co)forall, begin, etc. */
 int chpl_codelet_parallel(_codelet_tag_t self_id, _codelet_tag_t incoming, 
@@ -103,8 +107,6 @@ int chpl_codelet_parallel(_codelet_tag_t self_id, _codelet_tag_t incoming,
   cl.nbuffers = 0;
 
   for (outeridx = low; outeridx <= high; outeridx += stride) {
-
-
     
     /* Create Codelet Task */
     task = _codelet_create();
@@ -141,7 +143,6 @@ int chpl_codelet_parallel(_codelet_tag_t self_id, _codelet_tag_t incoming,
 
   }
 
-  printf("Ever get here?\n");
   /* Add barrier here */
   starpu_tag_wait_array(numInds, loopInds);
   //starpu_tag_remove(self_id);
@@ -149,3 +150,4 @@ int chpl_codelet_parallel(_codelet_tag_t self_id, _codelet_tag_t incoming,
 
   return 0;
 }
+#endif
