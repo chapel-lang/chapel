@@ -5,7 +5,7 @@ include $(CHPL_MAKE_HOME)/make/Makefile.base
 
 default: all
 
-all: dlmalloc gasnet gmp nanox qthread tcmalloc hwloc starpu
+all: dlmalloc gasnet gmp nanox qthread tcmalloc codelet
 
 clean: FORCE
 	cd dlmalloc && $(MAKE) clean
@@ -16,6 +16,7 @@ clean: FORCE
 	cd tcmalloc && $(MAKE) clean
 	cd hwloc && $(MAKE) clean
 	cd starpu && $(MAKE) clean
+	cd codelet && $(MAKE) clean
 
 clobber: FORCE
 	cd dlmalloc && $(MAKE) clobber
@@ -26,6 +27,7 @@ clobber: FORCE
 	cd tcmalloc && $(MAKE) clobber
 	cd hwloc && $(MAKE) clobber
 	cd starpu && $(MAKE) clobber
+	cd codelet && $(MAKE) clobber
 
 depend:
 
@@ -62,6 +64,10 @@ $(HWLOC_INSTALL_DIR):
 starpu: $(STARPU_INSTALL_DIR)
 $(STARPU_INSTALL_DIR):
 	cd starpu && $(MAKE)
+
+codelet: $(CODELET_INSTALL_DIR)
+$(CODELET_INSTALL_DIR):
+	cd codelet && $(MAKE)
 
 -include Makefile.devel
 
