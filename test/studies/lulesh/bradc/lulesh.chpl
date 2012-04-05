@@ -1,6 +1,6 @@
 /*
-
-  Livermore Unstructured Lagrangian Explicit Shock Hydrodynamics (LULESH)
+  Derived from the DARPA/Livermore Unstructured Lagrangian Explicit
+  Shock Hydrodynamics (LULESH)
   https://computation.llnl.gov/casc/ShockHydro/
 
   Original port to Chapel by Brandon Holt (8/2011).  Further
