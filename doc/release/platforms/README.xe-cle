@@ -149,10 +149,11 @@ Cray XE File Systems and Chapel execution
 Known Constraints and Bugs
 --------------------------
 
-* This is a very preliminary release of Chapel for the Cray XE using
-  GASNet over the MPI conduit (no other conduits exists).  As such,
-  the implementation does not take full advantage of some of the high
-  performance hardware instructions.
+* GASNet targets multiple "conduits" as the underlying communication
+  mechanism.  By default, the Chapel build will use the 'mpi' conduit.
+  The current version of GASNet also supports a beta implementation of
+  the native gemini conduit.  To use the native conduit, set the
+  environment variable CHPL_COMM_SUBSTRATE to 'gemini'.
 
 * Redirecting stdin when executing a Chapel program under PBS/qsub
   may not work due to limitations of qsub.
