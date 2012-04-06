@@ -110,6 +110,8 @@ Standard Modules
 * document logBasePow2() in Math.chpl (if we want to keep it)
 * in Sort module, add definition that < is used to do the sort.
 * add description of List module such as it is
+* we should promote SysCTypes.chpl to an official module and unify it with
+  other C types (float/double)
 
 
 
