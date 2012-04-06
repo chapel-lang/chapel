@@ -15,27 +15,29 @@ BasicBlock::BasicBlock()
 // The assert tests that the expression we are adding to this basic block
 // has not already been deleted.
 #define BB_ADD(expr)                            \
-  INT_ASSERT(expr);                             \
-  basicBlock->exprs.add(expr)
-
-#define BB_ADD_LS(exprls)                       \
-  for_alist(expr, exprls) {                     \
-    BB_ADD(expr);                               \
-  }
+  do {                                          \
+    INT_ASSERT(expr);                           \
+    basicBlock->exprs.add(expr);                \
+  } while (0)
 
 #define BB_STOP()                               \
   fn->basicBlocks->add(Steal())
 
 #define BB_RESTART()                            \
-  BB_STOP();                                    \
-  BB_START()
+  do {                                          \
+    BB_STOP();                                  \
+    BB_START();                                 \
+  } while (0)
 
 #define BBB(stmt)                               \
     buildBasicBlocks(fn, stmt)
 
 #define BB_THREAD(src, dst)                     \
-  dst->ins.add(src);                            \
-  src->outs.add(dst)
+  do {                                          \
+    dst->ins.add(src);                          \
+    src->outs.add(dst);                         \
+  } while (0)
+
 
 //# Statics
 BasicBlock* BasicBlock::basicBlock;

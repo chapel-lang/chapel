@@ -726,7 +726,7 @@ proc chpl__readXX(x) return x;
 // for targets that don't have particularly fast ways of achieving this functionality
 // for simple base types.)
 proc isSimpleSyncBaseType (type t) param {
-  if CHPL_TASKS == "mta" || CHPL_TASKS == "qthreads" then
+  if CHPL_TASKS == "mta" then
     if t == int(64) || t == uint(64) || t == int(32) || t == uint(32)
         || t == int(16) || t == uint(16) || t == int(8) || t == uint(8)
         || t == real(32) || t == real(64) || t == imag(32) || t == imag(64) then

@@ -8,23 +8,22 @@ use DimensionalDist2D;
 config const BlockCyclicDim_allowParLeader = true;
 config param BlockCyclicDim_enableArrayIterWarning = false;  // 'false' for testing
 
-// the types to use for blockSzie and numLocales
-type cycSizeT = uint(32);     // unsigned - for optimization
-type cycSizeTuser = int;      // for versatility
+// the values of this type must always be positive
+type bcdPosInt = int;
 
 class BlockCyclicDim {
   // distribution parameters
-  const numLocales: cycSizeTuser;
-  const lowIdx: int(64); // ensure we can always subtract it
-  const blockSize: cycSizeTuser;
+  const numLocales: int;
+  const lowIdx:     int;  // we want the most general type here
+  const blockSize:  int;
 
   // for debugging
   const name:string;
 
   // tell the compiler these are positive
-  proc blockSizePos   return blockSize: cycSizeT;
-  proc numLocalesPos  return numLocales: cycSizeT;
-  const cycleSizePos: cycSizeT = blockSizePos * numLocalesPos;
+  proc blockSizePos   return blockSize: bcdPosInt;
+  proc numLocalesPos  return numLocales: bcdPosInt;
+  const cycleSizePos: bcdPosInt = blockSizePos * numLocalesPos;
 }
 
 class BlockCyclic1dom {
@@ -44,10 +43,13 @@ class BlockCyclic1dom {
 
   // a copy of BlockCyclicDim constants
   const lowIdxAdj: idxType;
-  const blockSizePos, numLocalesPos, cycleSizePos: cycSizeT;
+  const blockSizePos, numLocalesPos, cycleSizePos: bcdPosInt;
 
   // amount of storage per locale per cycle - depends on wholeR.stride
-  var storagePerCycle: cycSizeT = 0;
+  var storagePerCycle: bcdPosInt = 0;
+
+  // whether dsiSetIndices1d() detected an unimplemented case
+  var dsiSetIndicesUnimplementedCase: bool;
 }
 
 class BlockCyclic1locdom {
@@ -169,7 +171,7 @@ proc BlockCyclicDim.dsiNewRectangularDom1d(type idxType, param stridable: bool,
   //  -lowIdx whenever possible (more natural for debugging), otherwise
   //  -lowIdx shifted up by a multiple of cycleSize until it is >=0.
   //
-  proc adjustLowIdx()  return cycleSizePos - mod(lowIdxDom, cycleSizePos);
+  proc adjustLowIdx()  return cycleSizePos - modP2(lowIdxDom, cycleSizePos);
   //
   const lowIdxAdj: idxType =
     if _isSignedType(idxType)
@@ -351,10 +353,10 @@ inline proc BlockCyclic1dom._dsiInd0(ind: idxType): idxType
   return ind + lowIdxAdj;
 
 inline proc BlockCyclic1dom._dsiCycNo(ind: idxType)
-  return divfloor(_dsiInd0(ind), cycleSizePos): idxType;
+  return divfloorP2(_dsiInd0(ind), cycleSizePos): idxType;
 
 inline proc BlockCyclic1dom._dsiCycOff(ind: idxType)
-  return mod(_dsiInd0(ind), cycleSizePos): cycSizeT;
+  return modP2(_dsiInd0(ind), cycleSizePos): bcdPosInt;
 
 // "formula" in the name emphasizes no sanity checking
 inline proc BlockCyclic1dom._dsiLocNo_formula(ind: idxType): locIdT {
@@ -362,7 +364,7 @@ inline proc BlockCyclic1dom._dsiLocNo_formula(ind: idxType): locIdT {
   const ind0 = _dsiInd0(ind);
   return
     if isNonnegative(ind0) then ( (ind0/blockSizePos) % numLocalesPos ): locIdT
-    else  mod(divfloor(ind0, blockSizePos), numLocalesPos): locIdT
+    else  modP2(divfloorP2(ind0, blockSizePos), numLocalesPos): locIdT
     ;
 }
 
@@ -390,6 +392,28 @@ inline proc BlockCyclic1dom._dsiIndicesOnCycLoc(cycNo: idxType, locNo: locIdT)
   return startLoc..#blockSizePos:idxType;
 }
 
+// from Math, but assuming the second arg is positive
+inline proc modP2(m: integral, n: bcdPosInt) {
+  const temp = m % n;
+
+  // eliminate some run-time tests if input(s) is(are) unsigned
+  return
+    if true then //if isNonnegative(n) then
+      if _isUnsignedType(m.type)
+      then temp
+      else ( if temp >= 0 then temp else temp + n )
+    else
+      // n < 0
+      ( if temp <= 0 then temp else temp + n );
+}
+inline proc divfloorP2(m: integral, n: bcdPosInt) return
+  if isNonnegative(m) then
+    if true             then m / n
+    else                     (m - n - 1) / n
+  else
+    if true             then (m - n + 1) / n
+    else                     m / n;
+
 /////////////////////////////////
 
 proc BlockCyclicDim.dsiIndexToLocale1d(ind): locIdT {
@@ -397,12 +421,12 @@ proc BlockCyclicDim.dsiIndexToLocale1d(ind): locIdT {
   const ind0 = ind - lowIdx;
   const locNo =
     if ind0 >= 0 then ( (ind0 / blockSize) % numLocales ): locIdT
-    else  mod(divfloor(ind0, blockSizePos), numLocalesPos): locIdT
+    else  modP2(divfloorP2(ind0, blockSizePos), numLocalesPos): locIdT
     ;
 
   assert(0 <= locNo && locNo < numLocales);
   // todo: the following assert should not be needed - it can be proven
-  assert(locNo == mod(ind0, cycleSizePos) / blockSize);
+  assert(locNo == modP2(ind0, cycleSizePos) / blockSize);
 
   return locNo;
 }
@@ -427,12 +451,13 @@ proc BlockCyclic1dom.dsiSetIndices1d(rangeArg: rangeT): void {
   assert(!rangeArg.isAmbiguous());
 
   const prevStoragePerCycle = storagePerCycle;
+  dsiSetIndicesUnimplementedCase = false;
 
   // As of this writing, alignedLow/High are valid even for empty ranges
   if stridable {
     wholeR = rangeArg.alignedLow..rangeArg.alignedHigh by rangeArg.stride;
     wholeRstrideAbs = abs(rangeArg.stride): idxType;
-    storagePerCycle = (1 + (blockSizePos - 1) / wholeRstrideAbs): cycSizeT;
+    storagePerCycle = (1 + (blockSizePos - 1) / wholeRstrideAbs): bcdPosInt;
   } else {
     assert(rangeArg.stride == 1); // ensures we can simplify things
     wholeR = rangeArg.alignedLow..rangeArg.alignedHigh;
@@ -452,7 +477,7 @@ proc BlockCyclic1dom.dsiSetIndices1d(rangeArg: rangeT): void {
 //if debugIsD1() then debugD1Shown = false;
 
   if prevStoragePerCycle != 0 && storagePerCycle != prevStoragePerCycle then
-    stderr.writeln("warning: array resizing is not implemented upon change in dimension stride with 1-d BlockCyclic distribution");
+    dsiSetIndicesUnimplementedCase = true;
 }
 
 inline proc BlockCyclic1dom._divByStride(locOff)  return

@@ -639,6 +639,12 @@ proc DimensionalDom._dsiSetIndicesHelper(newRanges: rank * rangeT): void {
   dom1.dsiSetIndices1d(newRanges(1));
   dom2.dsiSetIndices1d(newRanges(2));
 
+  // could omit this warning if the intersection between the old and the new
+  // domains is empty; could change it to halt("unimplemented")
+  if dom1.dsiSetIndicesUnimplementedCase||dom2.dsiSetIndicesUnimplementedCase
+    then if _arrs.length > 0 then
+      stderr.writeln("warning: array resizing will not preserve array contents upon change in dimension stride with 1-d BlockCyclic distribution");
+
   coforall (locId, locDD) in (targetIds, localDdescs) do
     on locDD do
      locDD._dsiLocalSetIndicesHelper(stoRangeT, (dom1,dom2), locId);

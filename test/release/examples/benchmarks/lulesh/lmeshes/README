@@ -1,9 +1,9 @@
-README
-======
-This directory contains input files for LULESH runs, provided by Jeff
-Keasler at LLNL who OK'd committing them to the public Chapel
-repository.
+===================
+LULESH input meshes
+===================
 
+This directory contains input meshes for the Chapel version of LULESH,
+provided by Jeff Keasler at LLNL.
 
 Files:
 ------

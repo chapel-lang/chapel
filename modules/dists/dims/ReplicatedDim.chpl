@@ -35,6 +35,9 @@ class Replicated1dom {
   // locale ID in our dimension of the locale this instance is on
   var localLocID = invalidLocID;
   var localLocIDlegit = false;
+
+  // REQ return false if unused
+  proc dsiSetIndicesUnimplementedCase param return false;
 }
 
 class Replicated1locdom {

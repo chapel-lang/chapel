@@ -36,6 +36,7 @@ Quick Start
 
      ...a bash-compatible shell (bash)         source util/setchplenv.bash
      ...a csh-compatible shell (csh, tcsh)     source util/setchplenv.csh
+     ...the fish shell (fish)                  . util/setchplenv.fish
      ...the Bourne shell (sh)                  . util/setchplenv.sh
 
    You must be in the "chapel" directory for these command scripts to

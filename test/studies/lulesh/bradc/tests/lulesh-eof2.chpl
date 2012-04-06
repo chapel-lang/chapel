@@ -102,7 +102,7 @@ param ZETA_P      = 0xc00;
 param ZETA_P_SYMM = 0x400;
 param ZETA_P_FREE = 0x800;
 
-config const filename = "../lmeshes/sedov15oct.lmesh";
+config const filename = "sedov15oct.lmesh";
 var infile = open(filename, iomode.r);
 var reader = infile.reader();
 
