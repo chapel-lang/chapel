@@ -557,15 +557,13 @@ step-expression:
   expression
 \end{syntax}
 
-The type of the step must be a signed integer of the same
+The type of the step must be a signed or unsigned integer of the same
 bit size as the base range's \chpl{idxType}, or an implicit conversion must be allowed
 to that type from the step's type.
-The type of the step is also allowed to be
-the base range's \chpl{idxType} itself.
 It is an error for the step to be zero.
 
 \begin{future}
-We consider allowing the step to be of any integer type,
+We may consider allowing the step to be of any integer type,
 for maximum flexibility.
 \end{future}
 
@@ -706,12 +704,13 @@ counted-range-expression:
   range-expression # expression
 \end{syntax}
 
-The \emph{idxType} of the resulting range is the same type that would be
-obtained by adding the integral count value to a value with the
-range's \emph{idxType}.  
-%REVIEW: bradc: We should really define to use op. range's idxType.
-The stride and alignment of the resulting range are the same as those
-of the initial range.  
+The type of the count expression must be a signed or unsigned integer
+of the same bit size as the base range's \chpl{idxType}, or an
+implicit conversion must be allowed to that type from the count's
+type.
+
+The type of the result of the \chpl{#} operator is the type of the
+range argument.
 
 Depending on the sign of the count and the stride, the high or low bound is
 unchanged and the other bound is adjusted so that it is $c * stride - 1$ units
