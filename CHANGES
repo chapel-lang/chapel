@@ -44,8 +44,8 @@ Semantic Changes / Changes to Chapel Language
     - numThreadsPerLocale, maxThreadsPerLocale
     - locale.*Threads(), locale.*tasks()
 - the 'by' and '#' operators now accept int(w)/uint(w) args for w-bit idxTypes
-- param int(64) values now dispatch to smaller int arguments if the value fits
-  (e.g., proc foo(x: int(8)) { ... }  param small: int(64) = 10; foo(small);)
+- param arguments now play a role in disambiguation between function overloads
+  (see the 'Function Resolution' section in the Chapel language specification)
 
 Newly Implemented Features
 --------------------------
