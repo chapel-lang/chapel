@@ -10,7 +10,7 @@
 // that specifies the array's index set, followed by the array's
 // element type.  Rectangular arrays are those whose indices are
 // integers or tuples of integers, supporting standard
-// multidimensional, rectilinear array support.
+// multidimensional, rectilinear index sets.
 //
 
 config const n = 5;
@@ -49,8 +49,8 @@ writeln("After assigning its interior values, A is: ", A);
 writeln();
 
 //
-// By convention we use square brackets for array slicing, but the
-// expression above could have just as correctly been written A(2..4):
+// Just like with array indexing, either square brackets or parenthesis
+// can be used for array slicing:
 //
 
 writeln("A(2..4) is: ", A(2..4), "\n");
@@ -202,7 +202,7 @@ writeln("After assigning a slice of B to F, F's value is:\n", F, "\n");
 
 //
 // Arrays can also be sliced using unbounded ranges in which either
-// the low or high bounds are omitted.  In this case, they will be
+// the low and/or high bounds are omitted.  In this case, they will be
 // inherited from the array's bounds.
 //
 
@@ -225,18 +225,14 @@ writeln("After being assigned a slice of B, A is:\n", A, "\n");
 // semantics, domain slicing results in intersection of the domain's
 // index set and the specified slice.
 //
+// Domain slicing, like array indexing and slicing, can be written
+// with either square brackets or parenthesis.
+//
 
-writeln("ProbSpace[0..n+1, 3..] is: ", ProbSpace[0..n+1, 3..], "\n");
+writeln("ProbSpace[1..n-2, 3..] is: ", ProbSpace[1..n-2, 3..], "\n");
 
 // Ranges also support slicing in this way, though we don't
 // demonstrate that here.
-
-//
-// ...while arrays cannot.  The following would result in an out-of-bounds
-// error:
-//
-
-// writeln("B[0..n+1, 3..] is:\n", B[0..n+1, 3..], "\n");
 
 //
 // Domain variables and expressions can also be used to specify an
