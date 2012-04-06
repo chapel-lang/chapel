@@ -84,11 +84,11 @@ flag.clear();
 //
 // - fetchAdd
 // - fetchSub
-// - fetchOr (logical)
-// - fetchAnd (logical)
+// - fetchOr (bit-wise)
+// - fetchAnd (bit-wise)
 //
 // Each of the above atomically reads the variable, stores the result
-// of the operation (+, -, ||, or &&) using the value and the method
+// of the operation (+, -, |, or &) using the value and the method
 // argument, then returns the original value.
 //
 // In the following example, we create n tasks to atomically increment
