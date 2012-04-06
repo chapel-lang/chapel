@@ -93,7 +93,7 @@ Example Codes
 Platform-specific Notes
 -----------------------
 - added proprietary tasking/thread/communication layers to Cray XE (TM) module
-  (for XE users using 'module chapel', see doc/TODO)
+  (on XE using 'module chapel', see doc/platforms/README.xe-cle-proprietary)
 - fixed GASNet executions on Mac OS X Lion
 - generated C identifier lengths are now capped to avoid PGI warnings
 
