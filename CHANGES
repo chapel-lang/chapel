@@ -84,6 +84,12 @@ Example Codes
 -------------
 - added a version of the LLNL/DARPA LULESH benchmark
   (see examples/benchmarks/lulesh/README)
+- numerous updates to the Chapel version of SSCA#2
+  - store visited children in forward pass to avoid recomputing in backwards
+  - use hand-coded task-private variables to store private variables
+  - replaced arrays of sync vars with arrays of atomics in most instances
+  - fixed a number of on-clauses that referred to a poor choice of locale
+  (see examples/benchmarks/ssca2/README)
 - updated hpcc/hpl.chpl to use Dimensional distributions and replicated storage
 - moved ssca2 and hpcc examples into a new benchmarks/ subdirectory
 - fixed some bugs in hpcc/hpl.chpl
