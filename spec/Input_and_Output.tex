@@ -80,10 +80,6 @@ I/O facilities are presented as follows:
 % TODO: value type/reference type definition here
 
 
-\section{Predefined Data Types and Values for I/O}
-\label{IO_data_types}
-
-
 \subsection{The {\em file} Type and Values}
 \label{IO_file_type}
 \index{input/output!file}
@@ -102,6 +98,120 @@ of the \chpl{file} type does not represent any OS file.
 The details of how the OS file is accessed are determined
 when opening a file (\rsec{IO_open_file})
 or creating its associated channel (\rsec{IO_channel_creation}).
+
+
+\section{Functions for Opening Files}
+\label{IO_open_file}
+\index{input/output!open, opentmp, openmem}
+
+The following functions are provided for opening a file.
+Once a file is open, it is necessary to create associated channel(s)
+for reading from and/or writing to the file (\rsec{IO_channel_creation}).
+The \chpl{error} argument is explained in \rsec{IO_error_handling}.
+
+\begin{protohead}
+proc open(out error:syserr, path:string, mode:iomode, hints:iohints=IOHINT_NONE, style:iostyle = defaultStyle()
+          ):file;
+proc open(path:string, mode:iomode, hints:iohints=IOHINT_NONE, style:iostyle = defaultStyle()):file;
+\end{protohead}
+\begin{protobody}
+Opens a file specified by $path$, with
+the access mode $mode$ (\rsec{IO_iomode_type})
+and the hints $hints$ (\rsec{IO_iohints_type}).
+The $style$ argument defines the I/O style (\rsec{IO_io_style})
+for use by default when creating channels associated with this file
+(\rsec{IO_channel_creation}).
+\end{protobody}
+
+\begin{protohead}
+proc opentmp(out error:syserr, hints:iohints=IOHINT_NONE, style:iostyle = defaultStyle()):file;
+proc opentmp(hints:iohints=IOHINT_NONE, style:iostyle = defaultStyle()):file;
+\end{protohead}
+\begin{protobody}
+% TODO: for writing only?
+Similar to \chpl{open}, but the created file is temporary:
+it is created in an OS-dependent temporary directory (e.g. \chpl{/tmp})
+and is deleted upon closing.
+\end{protobody}
+
+\begin{protohead}
+proc openmem(out error:syserr, style:iostyle = defaultStyle());
+proc openmem(style:iostyle = defaultStyle()):file;
+\end{protohead}
+\begin{protobody}
+% TODO: for writing only?
+Similar to \chpl{opentmp}, but
+the created file is backed up by a buffer in memory, not by a disk.
+\end{protobody}
+
+
+\section{Closing Channels and Files}
+\label{IO_closing_files_channels}
+
+In order to free the resources allocated for a file or a channel, it
+must be closed using one of the following methods:
+
+\index{input/output!close}
+\begin{protohead}
+proc file.close(out error:syserr);
+proc file.close();
+proc channel.close(out error:syserr);
+proc channel.close();
+\end{protohead}
+\begin{protobody}
+Close a file or a channel.
+The \chpl{error} argument is explained in \rsec{IO_error_handling}.
+\end{protobody}
+
+%TODO: can one be closed multiple times?
+It is an error to perform any I/O operations on a channel or file
+that has been closed.
+It is an error to close a file when it has channels that
+have not been closed.
+
+Closing a file, when completed successfully, also commits
+all file data to the disk or other persistent storage,
+if applicable.
+
+\begin{future}
+In the future we plan to implement reference counting for files
+and channels. Each file and channel will be closed automatically
+when no references remain to it. For example, if only a local
+variable refers to a channel, the channel will be closed
+when that variable goes out of scope.
+% any more here?
+The ability for the program to close a file or a channel
+explicitly will remain available.
+\end{future}
+
+
+\section{Synchronizing Channel and File Data}
+\label{IO_synchronization}
+
+The following synchronization operations are available.
+
+\index{input/output!flush}
+\begin{protohead}
+proc channel.flush(out error:syserr);
+proc channel.flush();
+\end{protohead}
+\begin{protobody}
+Makes all writes to the channel available to other concurrent views of the
+channel's file. These include other channels for the same file and
+other applications accessing the file concurrently.
+This does not guarantee persistence of the written data, however.
+\end{protobody}
+
+\index{input/output!fsync}
+\begin{protohead}
+proc file.fsync(out error:syserr);
+proc file.fsync();
+\end{protohead}
+\begin{protobody}
+Commits all file data to the disk or other persistent storage, if
+applicable. This ensures that the file data will be available to
+applications executing later.
+\end{protobody}
 
 
 \subsection{The {\em channel} Type and Values}
@@ -132,8 +242,171 @@ The representation of a \chpl{channel} value is implementation-defined.
 The default value of the \chpl{channel} type is not associated
 with any file and so cannot be used to perform I/O.
 
+
+\section{Functions for Channel Creation and Manipulation}
+\label{IO_channel_creation}
+
+\index{input/output!reader}
+\begin{protohead}
+proc file.reader(out error:syserr, param kind=iokind.dynamic, param locking=true,
+                 start:int(64) = 0, end:int(64) = max(int(64)), hints:iohints = IOHINT_NONE,
+                 style:iostyle = this._style): channel(false, kind, locking);
+proc file.reader(param kind=iokind.dynamic, param locking=true,
+                 start:int(64) = 0, end:int(64) = max(int(64)), hints:iohints = IOHINT_NONE,
+                 style:iostyle = this._style): channel(false, kind, locking);
+\end{protohead}
+\begin{protobody}
+Creates a channel for reading from the file.
+
+The arguments are as follows:
+
+\begin{itemize}
+
+\item \chpl{error} is explained in \rsec{IO_error_handling}.
+
+\item \chpl{kind} and \chpl{locking} determine the corresponding parameters of
+      the \chpl{channel} type that is returned (see \rsec{IO_channel_type})
+
+\item \chpl{start} and \chpl{end} define the region of the file that
+      the channel will read from. The default values for these arguments enable
+      the channel to access the entire file.
+      A channel will never read beyond its maximum end position.
+
+\item \chpl{hints} provides hints about the I/O that this channel
+      will perform (\rsec{IO_iohints_type}).
+      If \chpl{hints} is \chpl{IOHINT_NONE}, the hints provided when opening
+      the file will be used.
+
+\item \chpl{style} defines this channel's I/O style (\rsec{IO_io_style}).
+      If the corresponding actual argument is omitted,
+      the I/O style will be set to the style specified when the file
+      was opened (\rsec{IO_open_file}).
+
+\end{itemize}
+
+\end{protobody}
+
+\index{input/output!writer}
+\begin{protohead}
+proc file.writer(out error:syserr, param kind=iokind.dynamic, param locking=true,
+                 start:int(64) = 0, end:int(64) = max(int(64)), hints:iohints = IOHINT_NONE,
+                 style:iostyle = this._style): channel(true,kind,locking);
+proc file.writer(param kind=iokind.dynamic, param locking=true,
+                 start:int(64) = 0, end:int(64) = max(int(64)), hints:iohints = IOHINT_NONE,
+                 style:iostyle = this._style): channel(true,kind,locking);
+\end{protohead}
+\begin{protobody}
+Creates a channel for writing to the file.
+
+The arguments are the same as for \chpl{file.reader}, except for the following:
+
+\begin{itemize}
+
+\item \chpl{start} and \chpl{end} define the region of the file that
+      the channel will write to. The defaults for these arguments enable
+      the channel to access the entire file.
+
+      A channel will never write beyond its maximum end position,
+      and it will extend the file only as necessary to store data
+      written to the channel. In other words, specifying end here
+      does not impact the file size; only the section of the file
+      that this channel can write to. After all channels to a file
+      are closed, that file will have a size equal to the last
+      position of any channel.
+
+\end{itemize}
+
+\end{protobody}
+
+
+\section{Closing Channels and Files}
+\label{IO_closing_files_channels}
+
+In order to free the resources allocated for a file or a channel, it
+must be closed using one of the following methods:
+
+\index{input/output!close}
+\begin{protohead}
+proc file.close(out error:syserr);
+proc file.close();
+proc channel.close(out error:syserr);
+proc channel.close();
+\end{protohead}
+\begin{protobody}
+Close a file or a channel.
+The \chpl{error} argument is explained in \rsec{IO_error_handling}.
+\end{protobody}
+
+%TODO: can one be closed multiple times?
+It is an error to perform any I/O operations on a channel or file
+that has been closed.
+It is an error to close a file when it has channels that
+have not been closed.
+
+Closing a file, when completed successfully, also commits
+all file data to the disk or other persistent storage,
+if applicable.
+
+\begin{future}
+In the future we plan to implement reference counting for files
+and channels. Each file and channel will be closed automatically
+when no references remain to it. For example, if only a local
+variable refers to a channel, the channel will be closed
+when that variable goes out of scope.
+% any more here?
+The ability for the program to close a file or a channel
+explicitly will remain available.
+\end{future}
+
+
+\section{Synchronizing Channel and File Data}
+\label{IO_synchronization}
+
+The following synchronization operations are available.
+
+\index{input/output!flush}
+\begin{protohead}
+proc channel.flush(out error:syserr);
+proc channel.flush();
+\end{protohead}
+\begin{protobody}
+Makes all writes to the channel available to other concurrent views of the
+channel's file. These include other channels for the same file and
+other applications accessing the file concurrently.
+This does not guarantee persistence of the written data, however.
+\end{protobody}
+
+\index{input/output!fsync}
+\begin{protohead}
+proc file.fsync(out error:syserr);
+proc file.fsync();
+\end{protohead}
+\begin{protobody}
+Commits all file data to the disk or other persistent storage, if
+applicable. This ensures that the file data will be available to
+applications executing later.
+\end{protobody}
+
 A channel's I/O style is established upon channel creation
 (\rsec{IO_channel_creation}).
+
+
+\section{The Predefined Channels {\em stdin}, {\em stdout}, and {\em stderr}}
+\label{IO_std_channels}
+\index{input/output!stdin, stdout, stderr}
+
+Chapel provides the predefined channels \chpl{stdin}, \chpl{stdout},
+and \chpl{stderr} to access the corresponding operating system streams
+standard input, standard output, and standard error.
+
+\chpl{stdin} supports reading;
+\chpl{stdout} and \chpl{stderr} support writing.
+All three channels are safe to use concurrently and
+consult their I/O styles at run time to determine the I/O format.
+
+
+\section{Predefined Data Types and Values for I/O}
+\label{IO_data_types}
 
 
 \subsection{The {\em iokind} Type}
@@ -250,158 +523,6 @@ a default is desired (\rsec{IO_channel_style_mods})
 %I/O style, but this seems to be a low priority.
 
 
-\subsection{The {\em syserr} Type}
-\label{IO_syserr_type}
-\index{input/output!syserr}
-
-The \chpl{syserr} type is an alias for an integer type.
-Its values represent success or an error condition of most Chapel I/O
-functions, which are accessible as described in \rsec{IO_error_handling}.
-
-The zero value represents success. It can also be obtained as \chpl{ENOERR}.
-
-Non-zero values represent errors. They can be obtained via symbolic
-names that are defined in C for \chpl{errno}, for example
-\chpl{EEOF}, \chpl{EACCES}, etc.
-
-%TODO: how to get string descriptions of errors?
-
-
-\section{The Predefined Channels {\em stdin}, {\em stdout}, and {\em stderr}}
-\label{IO_std_channels}
-\index{input/output!stdin, stdout, stderr}
-
-Chapel provides the predefined channels \chpl{stdin}, \chpl{stdout},
-and \chpl{stderr} to access the corresponding operating system streams
-standard input, standard output, and standard error.
-
-\chpl{stdin} supports reading;
-\chpl{stdout} and \chpl{stderr} support writing.
-All three channels are safe to use concurrently and
-consult their I/O styles at run time to determine the I/O format.
-
-
-\section{Functions for Opening Files}
-\label{IO_open_file}
-\index{input/output!open, opentmp, openmem}
-
-The following functions are provided for opening a file.
-Once a file is open, it is necessary to create associated channel(s)
-for reading from and/or writing to the file (\rsec{IO_channel_creation}).
-The \chpl{error} argument is explained in \rsec{IO_error_handling}.
-
-\begin{protohead}
-proc open(out error:syserr, path:string, mode:iomode, hints:iohints=IOHINT_NONE, style:iostyle = defaultStyle()
-          ):file;
-proc open(path:string, mode:iomode, hints:iohints=IOHINT_NONE, style:iostyle = defaultStyle()):file;
-\end{protohead}
-\begin{protobody}
-Opens a file specified by $path$, with
-the access mode $mode$ (\rsec{IO_iomode_type})
-and the hints $hints$ (\rsec{IO_iohints_type}).
-The $style$ argument defines the I/O style (\rsec{IO_io_style})
-for use by default when creating channels associated with this file
-(\rsec{IO_channel_creation}).
-\end{protobody}
-
-\begin{protohead}
-proc opentmp(out error:syserr, hints:iohints=IOHINT_NONE, style:iostyle = defaultStyle()):file;
-proc opentmp(hints:iohints=IOHINT_NONE, style:iostyle = defaultStyle()):file;
-\end{protohead}
-\begin{protobody}
-% TODO: for writing only?
-Similar to \chpl{open}, but the created file is temporary:
-it is created in an OS-dependent temporary directory (e.g. \chpl{/tmp})
-and is deleted upon closing.
-\end{protobody}
-
-\begin{protohead}
-proc openmem(out error:syserr, style:iostyle = defaultStyle());
-proc openmem(style:iostyle = defaultStyle()):file;
-\end{protohead}
-\begin{protobody}
-% TODO: for writing only?
-Similar to \chpl{opentmp}, but
-the created file is backed up by a buffer in memory, not by a disk.
-\end{protobody}
-
-
-\section{Functions for Channel Creation and Manipulation}
-\label{IO_channel_creation}
-
-\index{input/output!reader}
-\begin{protohead}
-proc file.reader(out error:syserr, param kind=iokind.dynamic, param locking=true,
-                 start:int(64) = 0, end:int(64) = max(int(64)), hints:iohints = IOHINT_NONE,
-                 style:iostyle = this._style): channel(false, kind, locking);
-proc file.reader(param kind=iokind.dynamic, param locking=true,
-                 start:int(64) = 0, end:int(64) = max(int(64)), hints:iohints = IOHINT_NONE,
-                 style:iostyle = this._style): channel(false, kind, locking);
-\end{protohead}
-\begin{protobody}
-Creates a channel for reading from the file.
-
-The arguments are as follows:
-
-\begin{itemize}
-
-\item \chpl{error} is explained in \rsec{IO_error_handling}.
-
-\item \chpl{kind} and \chpl{locking} determine the corresponding parameters of
-      the \chpl{channel} type that is returned (see \rsec{IO_channel_type})
-
-\item \chpl{start} and \chpl{end} define the region of the file that
-      the channel will read from. The default values for these arguments enable
-      the channel to access the entire file.
-      A channel will never read beyond its maximum end position.
-
-\item \chpl{hints} provides hints about the I/O that this channel
-      will perform (\rsec{IO_iohints_type}).
-      If \chpl{hints} is \chpl{IOHINT_NONE}, the hints provided when opening
-      the file will be used.
-
-\item \chpl{style} defines this channel's I/O style (\rsec{IO_io_style}).
-      If the corresponding actual argument is omitted,
-      the I/O style will be set to the style specified when the file
-      was opened (\rsec{IO_open_file}).
-
-\end{itemize}
-
-\end{protobody}
-
-\index{input/output!writer}
-\begin{protohead}
-proc file.writer(out error:syserr, param kind=iokind.dynamic, param locking=true,
-                 start:int(64) = 0, end:int(64) = max(int(64)), hints:iohints = IOHINT_NONE,
-                 style:iostyle = this._style): channel(true,kind,locking);
-proc file.writer(param kind=iokind.dynamic, param locking=true,
-                 start:int(64) = 0, end:int(64) = max(int(64)), hints:iohints = IOHINT_NONE,
-                 style:iostyle = this._style): channel(true,kind,locking);
-\end{protohead}
-\begin{protobody}
-Creates a channel for writing to the file.
-
-The arguments are the same as for \chpl{file.reader}, except for the following:
-
-\begin{itemize}
-
-\item \chpl{start} and \chpl{end} define the region of the file that
-      the channel will write to. The defaults for these arguments enable
-      the channel to access the entire file.
-
-      A channel will never write beyond its maximum end position,
-      and it will extend the file only as necessary to store data
-      written to the channel. In other words, specifying end here
-      does not impact the file size; only the section of the file
-      that this channel can write to. After all channels to a file
-      are closed, that file will have a size equal to the last
-      position of any channel.
-
-\end{itemize}
-
-\end{protobody}
-
-
 \section{Functions for Manipulating a Channel's I/O Style}
 \label{IO_channel_style_mods}
 
@@ -436,73 +557,21 @@ or modify its individual aspects will also be provided.
 \end{future}
 
 
-\section{Closing Channels and Files}
-\label{IO_closing_files_channels}
+\subsection{The {\em syserr} Type}
+\label{IO_syserr_type}
+\index{input/output!syserr}
 
-In order to free the resources allocated for a file or a channel, it
-must be closed using one of the following methods:
+The \chpl{syserr} type is an alias for an integer type.
+Its values represent success or an error condition of most Chapel I/O
+functions, which are accessible as described in \rsec{IO_error_handling}.
 
-\index{input/output!close}
-\begin{protohead}
-proc file.close(out error:syserr);
-proc file.close();
-proc channel.close(out error:syserr);
-proc channel.close();
-\end{protohead}
-\begin{protobody}
-Close a file or a channel.
-The \chpl{error} argument is explained in \rsec{IO_error_handling}.
-\end{protobody}
+The zero value represents success. It can also be obtained as \chpl{ENOERR}.
 
-%TODO: can one be closed multiple times?
-It is an error to perform any I/O operations on a channel or file
-that has been closed.
-It is an error to close a file when it has channels that
-have not been closed.
+Non-zero values represent errors. They can be obtained via symbolic
+names that are defined in C for \chpl{errno}, for example
+\chpl{EEOF}, \chpl{EACCES}, etc.
 
-Closing a file, when completed successfully, also commits
-all file data to the disk or other persistent storage,
-if applicable.
-
-\begin{future}
-In the future we plan to implement reference counting for files
-and channels. Each file and channel will be closed automatically
-when no references remain to it. For example, if only a local
-variable refers to a channel, the channel will be closed
-when that variable goes out of scope.
-% any more here?
-The ability for the program to close a file or a channel
-explicitly will remain available.
-\end{future}
-
-
-\section{Synchronizing Channel and File Data}
-\label{IO_synchronization}
-
-The following synchronization operations are available.
-
-\index{input/output!flush}
-\begin{protohead}
-proc channel.flush(out error:syserr);
-proc channel.flush();
-\end{protohead}
-\begin{protobody}
-Makes all writes to the channel available to other concurrent views of the
-channel's file. These include other channels for the same file and
-other applications accessing the file concurrently.
-This does not guarantee persistence of the written data, however.
-\end{protobody}
-
-\index{input/output!fsync}
-\begin{protohead}
-proc file.fsync(out error:syserr);
-proc file.fsync();
-\end{protohead}
-\begin{protobody}
-Commits all file data to the disk or other persistent storage, if
-applicable. This ensures that the file data will be available to
-applications executing later.
-\end{protobody}
+%TODO: how to get string descriptions of errors?
 
 
 \section{Error Handling}
@@ -602,13 +671,6 @@ y = read(real);
 \end{chapel}
 \end{example}
 
-\section{User-Defined {\em writeThis} Methods}
-
-To define the output for a given type, the user must define a method
-called \chpl{writeThis} on that type that takes a single argument of
-\chpl{Writer} type.  If such a method does not exist, a default method is
-created.
-
 \section{The {\em write} and {\em writeln} Methods on Channels}
 \label{IO_channel_write}
 \index{input/output!write}
@@ -626,7 +688,35 @@ Like most other methods on channels,
 these operations are guarded with a channel-specific lock
 when the channel type's \chpl{locking} parameter is \chpl{true}.
 
-%TODO: define 'readThis', too
+
+\section{The {\em read} and {\em readln} Methods on Channels}
+\label{IO_channel_read}
+\index{input/output!read}
+\index{input/output!readln}
+\index{read!on channels}
+
+The \chpl{channel} type supports \chpl{read} and \chpl{readln} methods.
+The \chpl{read} method takes an arbitrary number of arguments, reading
+in each argument from channel.  The \chpl{readln} method also
+takes an arbitrary number of arguments, reading in each argument
+from a single line or multiple lines in the channel and 
+advancing the channel pointer to the next line after the last argument 
+is read.
+
+The \chpl{channel} type also supports overloaded methods \chpl{read}
+and \chpl{readln} that take an arbitrary number of types as arguments.
+These methods read values of the specified types from the channel and
+return them in a tuple.  If only one type is read, the value is not
+returned in a tuple, but is returned directly.
+
+\begin{example}
+The following line of code reads a value of type \chpl{int} from
+\chpl{stdin} and uses it to initialize variable \chpl{x} (causing
+\chpl{x} to have an inferred type of \chpl{int}):
+\begin{chapel}
+var x = stdin.read(int);
+\end{chapel}
+\end{example}
 
 \subsection{The {\em write} and {\em writeln} method on strings}
 \label{stringwrite}
@@ -634,6 +724,15 @@ when the channel type's \chpl{locking} parameter is \chpl{true}.
 
 The \chpl{write} and \chpl{writeln} methods can also be called on
 strings to write the output to a string instead of a channel.
+
+\section{User-Defined {\em writeThis} Methods}
+
+To define the output for a given type, the user must define a method
+called \chpl{writeThis} on that type that takes a single argument of
+\chpl{Writer} type.  If such a method does not exist, a default method is
+created.
+
+%TODO: define 'readThis', too
 
 \subsection{Generalized {\em write} and {\em writeln}}
 \label{writer}
@@ -673,36 +772,6 @@ the first letter.  The output to the above is thus:
 4321
 \end{chapelprintoutput}
 \end{chapelexample}
-
-
-\section{The {\em read} and {\em readln} Methods on Channels}
-\label{IO_channel_read}
-\index{input/output!read}
-\index{input/output!readln}
-\index{read!on channels}
-
-The \chpl{channel} type supports \chpl{read} and \chpl{readln} methods.
-The \chpl{read} method takes an arbitrary number of arguments, reading
-in each argument from channel.  The \chpl{readln} method also
-takes an arbitrary number of arguments, reading in each argument
-from a single line or multiple lines in the channel and 
-advancing the channel pointer to the next line after the last argument 
-is read.
-
-The \chpl{channel} type also supports overloaded methods \chpl{read}
-and \chpl{readln} that take an arbitrary number of types as arguments.
-These methods read values of the specified types from the channel and
-return them in a tuple.  If only one type is read, the value is not
-returned in a tuple, but is returned directly.
-
-\begin{example}
-The following line of code reads a value of type \chpl{int} from
-\chpl{stdin} and uses it to initialize variable \chpl{x} (causing
-\chpl{x} to have an inferred type of \chpl{int}):
-\begin{chapel}
-var x = stdin.read(int);
-\end{chapel}
-\end{example}
 
 
 \section{Default {\em read} and {\em write} methods}
