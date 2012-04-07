@@ -43,33 +43,26 @@ I/O facilities are presented as follows:
 
 \begin{itemize}
 
-\item the predefined data types for I/O, such as \chpl{file} and \chpl{channel}
-      \rsec{IO_data_types}
+\item the \chpl{file} type and file operations
+      \rsec{IO_files}
 
-\item the predefined channels \chpl{stdin}, \chpl{stdout} and \chpl{stderr}
+\item the \chpl{channel} type and channel operations
+      \rsec{IO_channels}
+
+\item I/O style details
+      \rsec{IO_io_style}
+
+\item the \chpl{stdin}, \chpl{stdout} and \chpl{stderr} channels
       \rsec{IO_std_channels}
 
-\item functions for opening a file
-      \rsec{IO_open_file}
-
-\item channel creation via the methods \chpl{reader} and \chpl{writer}
-      \rsec{IO_channel_creation}
-
-\item functions for manipulating a channel's I/O style
-      \rsec{IO_channel_style_mods}
-
-\item functions for closing channels and files
-      \rsec{IO_closing_files_channels}
-
-\item functions for reading data from and/or writing data to a channel
-      or a string and for user-defined output formatting
-
-\item functions for synchronizing channel and file data
-      with other channels and file viewers
-      \rsec{IO_synchronization}
+\item the supporting data types for I/O
+      \rsec{IO_data_types}
 
 \item error handling for I/O functions
       \rsec{IO_error_handling}
+
+\item writing and reading operations and supporting data types
+      \rsec{IO_writing_reading}
 
 \end{itemize}
 
@@ -77,7 +70,9 @@ I/O facilities are presented as follows:
 % TODO: MF suggests adding a section with a further example about
 % how to use a channel or a file.
 
-% TODO: value type/reference type definition here
+
+\section{Files}
+\label{IO_files}
 
 
 \subsection{The {\em file} Type and Values}
@@ -100,7 +95,7 @@ when opening a file (\rsec{IO_open_file})
 or creating its associated channel (\rsec{IO_channel_creation}).
 
 
-\section{Functions for Opening Files}
+\subsection{Functions for Opening Files}
 \label{IO_open_file}
 \index{input/output!open, opentmp, openmem}
 
@@ -145,26 +140,24 @@ the created file is backed up by a buffer in memory, not by a disk.
 \end{protobody}
 
 
-\section{Closing Channels and Files}
-\label{IO_closing_files_channels}
+\subsection{Functions for Closing Files}
+\label{IO_closing_files}
 
 In order to free the resources allocated for a file or a channel, it
 must be closed using one of the following methods:
 
-\index{input/output!close}
+\index{input/output!close (file)}
 \begin{protohead}
 proc file.close(out error:syserr);
 proc file.close();
-proc channel.close(out error:syserr);
-proc channel.close();
 \end{protohead}
 \begin{protobody}
-Close a file or a channel.
+Close a file.
 The \chpl{error} argument is explained in \rsec{IO_error_handling}.
 \end{protobody}
 
 %TODO: can one be closed multiple times?
-It is an error to perform any I/O operations on a channel or file
+It is an error to perform any I/O operations on a file
 that has been closed.
 It is an error to close a file when it has channels that
 have not been closed.
@@ -185,22 +178,10 @@ explicitly will remain available.
 \end{future}
 
 
-\section{Synchronizing Channel and File Data}
-\label{IO_synchronization}
+\subsection{Synchronization of File Data}
+\label{IO_file_synchronization}
 
-The following synchronization operations are available.
-
-\index{input/output!flush}
-\begin{protohead}
-proc channel.flush(out error:syserr);
-proc channel.flush();
-\end{protohead}
-\begin{protobody}
-Makes all writes to the channel available to other concurrent views of the
-channel's file. These include other channels for the same file and
-other applications accessing the file concurrently.
-This does not guarantee persistence of the written data, however.
-\end{protobody}
+The following synchronization operation is available.
 
 \index{input/output!fsync}
 \begin{protohead}
@@ -212,6 +193,10 @@ Commits all file data to the disk or other persistent storage, if
 applicable. This ensures that the file data will be available to
 applications executing later.
 \end{protobody}
+
+
+\section{Channels}
+\label{IO_channels}
 
 
 \subsection{The {\em channel} Type and Values}
@@ -243,7 +228,7 @@ The default value of the \chpl{channel} type is not associated
 with any file and so cannot be used to perform I/O.
 
 
-\section{Functions for Channel Creation and Manipulation}
+\subsection{Functions for Channel Creation and Manipulation}
 \label{IO_channel_creation}
 
 \index{input/output!reader}
@@ -319,33 +304,27 @@ The arguments are the same as for \chpl{file.reader}, except for the following:
 \end{protobody}
 
 
-\section{Closing Channels and Files}
-\label{IO_closing_files_channels}
+\subsection{Functions for Closing Channels}
+\label{IO_closing_channels}
 
 In order to free the resources allocated for a file or a channel, it
 must be closed using one of the following methods:
 
-\index{input/output!close}
+\index{input/output!close (channel)}
 \begin{protohead}
-proc file.close(out error:syserr);
-proc file.close();
 proc channel.close(out error:syserr);
 proc channel.close();
 \end{protohead}
 \begin{protobody}
-Close a file or a channel.
+Close a channel.
 The \chpl{error} argument is explained in \rsec{IO_error_handling}.
 \end{protobody}
 
 %TODO: can one be closed multiple times?
-It is an error to perform any I/O operations on a channel or file
+It is an error to perform any I/O operations on a channel
 that has been closed.
 It is an error to close a file when it has channels that
 have not been closed.
-
-Closing a file, when completed successfully, also commits
-all file data to the disk or other persistent storage,
-if applicable.
 
 \begin{future}
 In the future we plan to implement reference counting for files
@@ -359,10 +338,10 @@ explicitly will remain available.
 \end{future}
 
 
-\section{Synchronizing Channel and File Data}
-\label{IO_synchronization}
+\subsection{Synchronization of Channel Data}
+\label{IO_channel_synchronization}
 
-The following synchronization operations are available.
+The following synchronization operation is available.
 
 \index{input/output!flush}
 \begin{protohead}
@@ -376,22 +355,17 @@ other applications accessing the file concurrently.
 This does not guarantee persistence of the written data, however.
 \end{protobody}
 
-\index{input/output!fsync}
-\begin{protohead}
-proc file.fsync(out error:syserr);
-proc file.fsync();
-\end{protohead}
-\begin{protobody}
-Commits all file data to the disk or other persistent storage, if
-applicable. This ensures that the file data will be available to
-applications executing later.
-\end{protobody}
+
+\subsection{I/O Style}
+\label{IO_io_style}
 
 A channel's I/O style is established upon channel creation
 (\rsec{IO_channel_creation}).
+It is represented by a value of the \chpl{iostyle} type
+(\rsec{IO_iostyle_type}.
 
 
-\section{The Predefined Channels {\em stdin}, {\em stdout}, and {\em stderr}}
+\subsection{The {\em stdin}, {\em stdout}, and {\em stderr} Channels}
 \label{IO_std_channels}
 \index{input/output!stdin, stdout, stderr}
 
@@ -405,8 +379,10 @@ All three channels are safe to use concurrently and
 consult their I/O styles at run time to determine the I/O format.
 
 
-\section{Predefined Data Types and Values for I/O}
+\section{Supporting Data Types}
 \label{IO_data_types}
+
+File and channel operations make use of the type presented in this section.
 
 
 \subsection{The {\em iokind} Type}
@@ -489,9 +465,8 @@ Other hints are likely to be added in the future.
 \end{future}
 
 
-\subsection{The {\em iostyle} Type and Channel I/O Style}
+\subsection{The {\em iostyle} Type}
 \label{IO_iostyle_type}
-\label{IO_io_style}
 \index{input/output!iostyle}
 \index{input/output!I/O style}
 
@@ -523,7 +498,8 @@ a default is desired (\rsec{IO_channel_style_mods})
 %I/O style, but this seems to be a low priority.
 
 
-\section{Functions for Manipulating a Channel's I/O Style}
+% Only defaultStyle() will remain in the spec,
+% because modifyStyle() has been eliminated.
 \label{IO_channel_style_mods}
 
 The following operations provide access to and modification of
@@ -592,8 +568,8 @@ could be changed to throw exceptions instead of halting.
 
 In most cases I/O errors are reported by the function during whose
 call those errors occurred. However, in some cases errors are
-reported only upon \chpl{file.close} \rsec{IO_closing_files_channels}
-or \chpl{file.fsync} \rsec{IO_synchronization}.
+reported only upon \chpl{file.close} \rsec{IO_closing_files}
+or \chpl{file.fsync} \rsec{IO_file_synchronization}.
 Therefore, one of these two functions must be invoked to ensure
 that the data has arrived on disk successfully or an error is reported.
 
@@ -601,8 +577,12 @@ that the data has arrived on disk successfully or an error is reported.
 % TODO: the following is retained from the previous version of
 % the I/O chapter with only minor changes. May need more rewriting.
 
-\section{The {\em write}, {\em writeln}, {\em read}, and {\em readln} 
-functions}
+\section{Writing and Reading}
+\label{IO_writing_reading}
+
+
+\subsection{The {\em write}, {\em writeln}, {\em read}, and {\em readln} 
+Functions}
 \index{writeln@\chpl{writeln}}
 \index{write@\chpl{write}}
 \index{read@\chpl{read}}
@@ -671,7 +651,8 @@ y = read(real);
 \end{chapel}
 \end{example}
 
-\section{The {\em write} and {\em writeln} Methods on Channels}
+
+\subsection{The {\em write} and {\em writeln} Methods on Channels}
 \label{IO_channel_write}
 \index{input/output!write}
 \index{input/output!writeln}
@@ -689,7 +670,7 @@ these operations are guarded with a channel-specific lock
 when the channel type's \chpl{locking} parameter is \chpl{true}.
 
 
-\section{The {\em read} and {\em readln} Methods on Channels}
+\subsection{The {\em read} and {\em readln} Methods on Channels}
 \label{IO_channel_read}
 \index{input/output!read}
 \index{input/output!readln}
@@ -718,21 +699,28 @@ var x = stdin.read(int);
 \end{chapel}
 \end{example}
 
-\subsection{The {\em write} and {\em writeln} method on strings}
+
+\subsection{The {\em write} and {\em writeln} Methods on Strings}
 \label{stringwrite}
 \index{write!on strings}
 
 The \chpl{write} and \chpl{writeln} methods can also be called on
 strings to write the output to a string instead of a channel.
 
-\section{User-Defined {\em writeThis} Methods}
+
+%?? \subsection{The {\em read} and {\em readln} method on strings}
+
+
+\subsection{User-Defined {\em writeThis} Methods}
 
 To define the output for a given type, the user must define a method
 called \chpl{writeThis} on that type that takes a single argument of
 \chpl{Writer} type.  If such a method does not exist, a default method is
 created.
 
-%TODO: define 'readThis', too
+
+%TODO: \subsection{User-Defined {\em readThis} Methods}
+
 
 \subsection{Generalized {\em write} and {\em writeln}}
 \label{writer}
@@ -774,12 +762,21 @@ the first letter.  The output to the above is thus:
 \end{chapelexample}
 
 
-\section{Default {\em read} and {\em write} methods}
+%TODO: \subsection{Generalized {\em read} and {\em readln}}
+
+
+%TODO: define the error behavior of read/write/readThis/writeThis/Reader/Writer
+
+
+\subsection{Default {\em write} and {\em read} Methods}
 \index{write!default methods}
 \index{read!default methods}
 
 % TODO: these should be moved to the chapters for the corresponding
 % data types
+
+% TODO: these are methods on channels, taking arguments of all types.
+% Need to make that clear in the text.
 
 Default \chpl{write} methods are created for all types for which a user-defined
 \chpl{write} method is not provided.  They have the following semantics:
