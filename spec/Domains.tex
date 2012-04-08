@@ -236,8 +236,9 @@ values for type:
 
 \begin{chapelexample}{rectangularDomain.chpl}
 The following creates a two-dimensional rectangular domain and then uses this to
-declare an array.  The domain's \chpl{dim()} accessor is used to fill the array with
-some values.  Then it is printed out.
+declare an array.  The array indices are iterated over using the domain's
+\chpl{dim()} method, and each element is filled with
+some value.  Then the array is printed out.
 \begin{chapel}
 var D : domain(2) = [1..2, 1..7];
 var A : [D] int;

@@ -108,10 +108,14 @@ in this context~(\rsec{Implicit_Statement_Bool_Conversions}).
 \index{int@\chpl{int}}
 
 The integral types can be parameterized by the number of bits used to
-represent them.  Valid bit-sizes are 8, 16, 32, and 64.  
-The default signed integral type, \chpl{int}, and the
-default unsigned integral type, \chpl{uint}, are treated as distinct types (for
-the purposes of type resolution) but behave like int(64) and uint(64) respectively.
+represent them.  Valid bit-sizes are 8, 16, 32, and 64.  The default signed integral type, \chpl{int}, and the
+default unsigned integral type, \chpl{uint} correspond to 
+\chpl{int(64)} and \chpl{uint(64)} respectively.
+
+% BLC: I either don't understand this or don't believe it's true:
+%
+%, are treated as distinct types (for
+%the purposes of type resolution) but behave like 
 
 The integral types and their ranges are given in the following table:
 

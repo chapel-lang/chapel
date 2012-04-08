@@ -180,13 +180,11 @@ explicitly-sized counterparts.
 \index{conversions!numeric!parameter}
 \index{conversions!implicit!parameter}
 
-The following two implicit conversions of parameters are allowed:
+The following implicit conversion of a parameter is allowed:
 \begin{itemize}
-\item A parameter of type \chpl{int(32)} can be implicitly converted
-to \chpl{int(8)}, \chpl{int(16)}, or any unsigned integral type if the
-value of the parameter is within the range of the target type.
 \item A parameter of type \chpl{int(64)} can be implicitly converted
-to \chpl{uint(64)} if the value of the parameter is nonnegative.
+to \chpl{int(8)}, \chpl{int(16)}, \chpl{int(32)}, or any unsigned integral type if the
+value of the parameter is within the range of the target type.
 \end{itemize}
 
 \subsection{Implicit Statement Bool Conversions}

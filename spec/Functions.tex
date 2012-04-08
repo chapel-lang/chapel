@@ -897,6 +897,8 @@ more specific argument mapping than the corresponding legal argument
 mapping to $F_2$, then $F_2$ is more specific.
 \item If $F_1$ shadows $F_2$, then $F_1$ is more specific.
 \item If $F_2$ shadows $F_1$, then $F_2$ is more specific.
+\item If all \chpl{param} arguments prefer $F_1$ over $F_2$, then $F_1$ is more specific.  In order of preference, a \chpl{param} argument prefers to passed to (a) a \chpl{param} formal of matching type; (b) a \chpl{param} formal large enough to store the \chpl{param} value; (c) a non-\chpl{param} formal of matching type.
+\item If all \chpl{param} arguments prefer $F_2$ over $F_1$, then $F_2$ is more specific.
 \item If $F_1$ has a where clause and $F_2$ does not have a where clause, then $F_1$ is more specific.
 \item If $F_2$ has a where clause and $F_1$ does not have a where clause, then $F_2$ is more specific.
 \item Otherwise neither function is more specific.

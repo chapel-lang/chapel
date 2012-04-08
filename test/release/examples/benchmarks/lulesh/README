@@ -61,6 +61,9 @@ PERFORMANCE TODOs:
   enable this, either through smarter compiler analysis or help from
   the user.  Try to do so.
 
+* Add support for atomic floats to Chapel and replace sync vars with
+  them
+
 
 INPUT FILE TODOs:
 -----------------

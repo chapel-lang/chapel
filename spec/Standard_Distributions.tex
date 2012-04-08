@@ -259,7 +259,7 @@ formula:
 The Block-Cyclic class constructor is defined as follows:
 \begin{chapel}
 proc BlockCyclic(startIdx: rank*idxType,
-                 blocksize: rank*int(32),
+                 blocksize: rank*int,
                  targetLocales: [] locale = Locales,
                  param rank: int = $\mbox{{\it rank inferred from startIdx}}$,
                  type idxType = $\mbox{{\it index type inferred from startIdx}}$)
@@ -270,7 +270,7 @@ will be distributed to the first locale in \chpl{targetLocales}. For a single
 dimensional distribution \chpl{startIdx} can be an integer or a tuple with a
 single element.
 
-The argument \chpl{blocksize} is a tuple of 32-bit integers defining
+The argument \chpl{blocksize} is a tuple of integers defining
 the block size of indices that will be used in dealing out indices
 to the locales.
 

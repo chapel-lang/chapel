@@ -281,9 +281,20 @@ nondet. seg fault (?)
 gasnet-everything regressions (other than the above)
 ====================================================
 
+test needs epsilon comparison? (04/06/12)
+-----------------------------------------
+[Error matching program output for types/sync/sungeun/basicUpdate]
+
+brad failed to update .good when moving ra (should now be fixed) (04/06/12)
+---------------------------------------------------------------------------
+[Error matching compiler output for optimizations/sungeun/optimized-on/test_OptimizedOn_RA (compopts: 1)]
+
+nondet. comm diagnostics counts?
+--------------------------------
+[Error matching program output for parallel/taskPar/sungeun/barrier/commDiags] (04/05/12)
+
 comm diagnostics counts off (04/05/12)
 --------------------------------------
-[Error matching program output for parallel/taskPar/sungeun/barrier/commDiags]
 [Error matching program output for studies/ssca2/performance/SSCA2_commDiags (compopts: 1)]
 
 .good file needed updating to reflect int->64 changes 
@@ -474,6 +485,10 @@ gdb output differences
 chpbld02 (PrgEnv test system) failures
 ======================================
 
+test needs epsilon comparison? (04/06/12)
+-----------------------------------------
+[Error matching program output for types/sync/sungeun/basicUpdate]
+
 timeout (12/23/11)
 ------------------
 [Error: Timed out executing program parallel/begin/sungeun/captureAppearsToWork]
@@ -522,15 +537,31 @@ nondet. timeout failure
 cray-xt-cray/cce-specific regressions
 =====================================
 
-failures in looking up symbols in a few places when compiling the
-Chapel compiler with CCE -- seemingly related to backing out volatile,
-but seen in earlier revisions as well, which then fixed themselves --
-not sure how to diagnose further yet (04/04/12)
-----------------------------------------------------------------------
-*all*
+internal failure EXP0192 in IO.chpl when CCE used to compile the compiler
+-------------------------------------------------------------------------
+[Error matching compiler output for release/examples/hello2-module]
+[Error matching compiler output for release/examples/spec/Expressions/string-concat]
+[Error matching compiler output for release/examples/spec/Ranges/alignedHigh]
+[Error matching compiler output for release/examples/spec/Ranges/rangeVariable]
+[Error matching compiler output for release/examples/spec/Tuples/expansion-2]
+[Error matching compiler output for release/examples/spec/Task_Parallelism_and_Synchronization/serialStmt2]
+[Error matching compiler output for release/examples/spec/Task_Parallelism_and_Synchronization/beginUnordered]
+[Error matching compiler output for release/examples/spec/Task_Parallelism_and_Synchronization/syncMethods]
+[Error matching compiler output for release/examples/spec/Task_Parallelism_and_Synchronization/syncCounter]
+[Error matching compiler output for release/examples/spec/Modules/two-modules]
+[Error matching compiler output for release/examples/spec/Variables/config-param]
+
+internal failure MIS0275 when CCE used to compile the compiler
+--------------------------------------------------------------
+[Error matching compiler output for release/examples/benchmarks/hpcc/fft]
+
+seg fault (04/06/12 -- though may have been around for awhile and masked)
+-------------------------------------------------------------------------
+[Error matching compiler output for release/examples/primers/genericClasses]
 
 nondet. internal failure in compiling DefaultRectangular
 --------------------------------------------------------
+[Error matching compiler output for release/examples/benchmarks/hpcc/variants/stream-promoted] (04/06/12)
 [Error matching compiler output for release/examples/spec/Generics/query] (03/31/12)
 
 value is outside of the int range in C compilation (03/??/12)
@@ -812,7 +843,7 @@ nondet. timeouts since switching robustness tests to use block
 
 [Error: Timed out executing program distributions/robust/arithmetic/kernels/stream] (03/10/12, 03/13/12, 03/22/12)
 [Error: Timed out executing program release/examples/benchmarks/hpcc/variants/ra-cleanloop (compopts: 1)] (03/10/12, 03/16/12)
-[Error: Timed out executing program distributions/robust/arithmetic/basics/test_array_of_distributed_array2] (03/09/12)
+[Error: Timed out executing program distributions/robust/arithmetic/basics/test_array_of_distributed_array2] (03/09/12, 04/06/12)
 [Error: Timed out executing program distributions/robust/arithmetic/basics/test_distributed_array_of_array1]
 [Error: Timed out executing program distributions/robust/arithmetic/basics/test_distributed_array_of_array2] (03/09/12)
 
@@ -842,7 +873,7 @@ nondet. seg fault
 
 nondet. execution timeouts
 --------------------------
-[Error: Timed out executing program distributions/robust/arithmetic/kernels/stream] (03/15/12)
+[Error: Timed out executing program distributions/robust/arithmetic/kernels/stream] (03/15/12, 04/06/12)
 [Error: Timed out executing program multilocale/deitz/needMultiLocales/raCommCheck (compopts: 1)] (02/02/12, 02/10/12, 02/16/12, 02/21/12, 03/06/12, 03/21/12, 03/31/12, 04/05/12)
 [Error: Timed out executing program multilocale/diten/needMultiLocales/coforallon_maxThreads] (02/06/12, 02/10/12, 02/14/12, 02/23/12, 02/27/12, 02/29/12, 03/04/12, 03/07/12)
 [Error: Timed out executing program distributions/dm/s7] (01/31/12, 02/03/12, 02/16/12)
