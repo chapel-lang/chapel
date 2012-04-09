@@ -15,9 +15,6 @@ static ModuleSymbol* explainInstantiationModule = NULL;
 
 static Vec<FnSymbol*> whereStack;
 Symbol* lookupImplementsWitnessInSymbolTable(BaseAST* ce, BaseAST* interface, BaseAST* implementingType);
-static void getWitnessesInWhereClause(Vec<CallExpr*>& implementsClauses, BaseAST *whereClause);
-static void getFunctionsInWhereClause(Map<FnSymbol*, ArgSymbol*>& fnsInInterfaces,
-    Vec<ArgSymbol*>& witnessObjects, BaseAST *whereClause);
 
 static void
 explainInstantiation(FnSymbol* fn) {
@@ -221,111 +218,6 @@ getNewSubType(FnSymbol* fn, Symbol* key, TypeSymbol* value) {
   return value;
 }
 
-static void getWitnessesInWhereClause(Vec<CallExpr*>& implementsClauses, BaseAST *whereClause) {
-  if (CallExpr *ce = toCallExpr(whereClause)) {
-    if (UnresolvedSymExpr *callsymexpr = toUnresolvedSymExpr(ce->baseExpr)) {
-      if (!strcmp(callsymexpr->unresolved, "implements")) {
-        //First find the interface that was implemented and open it up
-        BaseAST *interface_implemented = ce->argList.get(2);
-        if (SymExpr *se = toSymExpr(interface_implemented)) {
-          // Is a symexpr
-          if (isInterfaceSymbol(se->var)) {
-            implementsClauses.add(ce);
-          }
-          else {
-            INT_FATAL("Implementation phrase with non-interface symbol");
-          }
-        }
-        else {
-          // Isn't a symexpr, something is wrong
-        }
-      } else if (!strcmp(callsymexpr->unresolved, "_build_tuple")) {
-        //We have multiple constraints, handle them
-        for_alist(arg, ce->argList) {
-          getWitnessesInWhereClause(implementsClauses, arg);
-        }
-      }
-    }
-    else {
-      //printf("Not unresolved\n");
-    }
-  }
-  else if (BlockStmt *block = toBlockStmt(whereClause)) {
-    for_alist(expr, block->body) {
-      getWitnessesInWhereClause(implementsClauses, expr);
-    }
-  }
-}
-
-static void
-getFunctionsInWhereClause(Map<FnSymbol*, ArgSymbol*>& fnsInInterfaces,
-    Vec<ArgSymbol*>& witnessObjects, BaseAST *whereClause) {
-
-  Vec<CallExpr*> implementsClauses;
-  getWitnessesInWhereClause(implementsClauses, whereClause);
-
-  forv_Vec(CallExpr, ce, implementsClauses) {
-    //First find the interface that was implemented and open it up
-    //SymExpr *implementing_type = toSymExpr(ce->argList.get(1));
-    BaseAST *interface_implemented = ce->argList.get(2);
-    if (SymExpr *se = toSymExpr(interface_implemented)) {
-      // Is a symexpr
-      if (InterfaceSymbol *is = toInterfaceSymbol(se->var)) {
-
-        // Create an symbol that will represent this dictionary
-        //ArgSymbol *dict = new ArgSymbol(INTENT_BLANK,
-        //    astr(implementing_type->var->name, "_impl_", se->var->name), dtAny);
-        //dict->addFlag(FLAG_GENERIC);
-
-        //witnessObjects.add(dict);
-
-        //addToImplementsSymbolTable(ce, is, se, dict);
-
-        forv_Vec(FnSymbol, fn, is->functionSignatures) {
-          //For now, copy the function prototype and replace the types
-          //with the ones we know
-          //FnSymbol *fn_copy = fn->copy(NULL, true);
-          /*
-          FnSymbol *fn_copy = fn->copy();
-          fn_copy->addFlag(FLAG_INVISIBLE_FN);
-
-          //replace formal types
-          for_formals(arg, fn_copy) {
-            //list_view(arg);
-            if (BlockStmt *bs = toBlockStmt(arg->typeExpr)) {
-              if (UnresolvedSymExpr *use = toUnresolvedSymExpr(bs->body.head)) {
-                if (!strcmp(use->unresolved, "self")) {
-                  bs->body.head = ce->argList.get(1)->copy();
-                }
-              }
-            }
-          }
-          //replace return type
-          if (BlockStmt *bs = toBlockStmt(fn_copy->retExprType)) {
-            if (UnresolvedSymExpr *use = toUnresolvedSymExpr(bs->body.head)) {
-              if (!strcmp(use->unresolved, "self")) {
-                bs->body.head = ce->argList.get(1)->copy();
-              }
-            }
-          }
-          */
-          SymbolMap map;
-          FnSymbol *fn_copy = instantiate(fn, &map, NULL);
-          //fn_copy->removeFlag(FLAG_GENERIC);
-          //fn_copy->addFlag(FLAG_INVISIBLE_FN);
-          //fn_copy->instantiatedFrom = fn;
-          fn_copy->defPoint = whereClause->getFunction()->defPoint;
-          fnsInInterfaces.put(fn_copy, NULL); //was fn, dict
-          //list_view(fn_copy);
-        }
-      }
-      else {
-        INT_FATAL("Implementation phrase with non-interface symbol");
-      }
-    }
-  }
-}
-
 static bool
 evaluateImplementsInWhereClause(FnSymbol* fn, CallExpr* fn_call) {
   for_alist(expr,fn->where->body) {
@@ -353,17 +245,7 @@ evaluateImplementsInWhereClause(FnSymbol* fn, CallExpr* fn_call) {
           if(!lookupImplementsWitnessInSymbolTable(fn_call, interface_arg, type_arg)) {
            return false;
           }
-          Vec<ArgSymbol*> witnessObjects; // symbols which represent the dictionaries
-                                          // passed in when a type implements an
-                                          // interface
 
-          getFunctionsInWhereClause(fn->fnsInInterfaces, witnessObjects, fn->where);
-
-          /*
-          forv_Vec(ArgSymbol, arg, witnessObjects) {
-            fn->insertFormalAtTail(arg);
-          }
-          */
           where_expr->replace(new SymExpr(gTrue));
         }
       }
