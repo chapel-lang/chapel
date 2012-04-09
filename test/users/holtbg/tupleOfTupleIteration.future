@@ -1,8 +1,8 @@
-bug: Failed assertion in replaceLocalsWithField() for tuple of tuples.
+bug: Param loop over tuple of tuples results in internal compiler error.
 
 This is a simplified version of a function that Brandon Holt wrote for
 his Lulesh code.  It appears that the tuple of tuple causes the
-following assertion:
+following assertion in replaceLocalsWithField():
 
             INT_ASSERT(tmp->type->refType);
 
