@@ -12,6 +12,7 @@ group arguments to functions, and to specify mathematical concepts.
 \section{Tuple Types}
 \label{Tuple_Types}
 \index{tuples!types}
+\index{types!tuple}
 
 A tuple type is defined by a fixed number (a compile-time constant) of
 component types.  It can be specified by a parenthesized,
@@ -30,7 +31,7 @@ type-list:
 \end{syntax}
 
 \index{tuples!homogeneous}
-\index{* (tuples)@\chpl{*} tuples}
+\index{types!* (tuples)@\chpl{*} tuples}
 A homogeneous tuple is a special-case of a general tuple where the
 types of the components are identical.  Homogeneous tuples have fewer
 restrictions for how they can be indexed~(\rsec{Tuple_Indexing}).
@@ -91,6 +92,7 @@ integers.
 \section{Tuple Values}
 \label{Tuple_Values}
 \index{tuples!values}
+\index{values!tuple}
 
 A value of a tuple type attaches a value to each component type.
 Tuple values can be specified by a parenthesized, comma-separated list
@@ -130,6 +132,7 @@ writeln((x1,x2,x3));
 \end{chapelexample}
 
 \index{tuple@\chpl{tuple}}
+\index{predefined functions!tuple@\chpl{tuple}}
 The function
 \begin{chapel}
 proc tuple(x...) return x;
@@ -484,7 +487,7 @@ call is evaluated as if an argument were defined.
 
 \subsection{Splitting a Tuple via Tuple Expansion}
 \label{Tuple_Expansion}
-\index{... tuple expansion@\chpl{...} tuple expansion}
+\index{... (tuple expansion)@\chpl{...} (tuple expansion)}
 \index{tuples!expanding in place}
 
 Tuples can be expanded in place using the following syntax:
@@ -599,10 +602,7 @@ since the type of an expression must be statically known.
 
 \subsection{Unary Operators}
 \label{Tuple_Unary_Operators}
-%\index{\+ (unary)@\chpl{\+} (unary)}
-%\index{\- (unary)@\chpl{\-} (unary)}
-%\index{\~ (unary)@\chpl{\~} (unary)}
-%\index{\! (unary)@\chpl{\!} (unary)}
+\index{operators!tuple!unary}
 
 The unary operators \chpl{\+}, \chpl{\-}, \chpl{\~}, and \chpl{\!} are
 overloaded on tuples by applying the operator to each argument component
@@ -620,6 +620,7 @@ compile-time error will be issued.
 
 \subsection{Binary Operators}
 \label{Tuple_Binary_Operators}
+\index{operators!tuple!binary}
 %\index{\+@\chpl{\+}}
 %\index{\-@\chpl{\-}}
 %\index{\*@\chpl{\*}}
@@ -664,6 +665,7 @@ writeln(x);
 
 \subsection{Relational Operators}
 \label{Tuple_Relational_Operators}
+\index{operators!tuple!relational}
 %\index{\>@\chpl{\>}}
 %\index{\>\=@\chpl{\>\=}}
 %\index{\<@\chpl{\<}}
@@ -711,8 +713,13 @@ true
 \end{chapelexample}
 
 \section{Predefined Functions and Methods on Tuples}
+\label{Predefined_Functions_and_Methods_on_Tuples}
 \index{tuples!predefined functions}
+\index{predefined functions!tuples}
+\index{functions!tuples!predefined}
 
+\index{tuples!size@\chpl{size}}
+\index{predefined functions!size@\chpl{size}}
 \begin{protohead}
 proc $Tuple$.size param
 \end{protohead}
@@ -727,6 +734,8 @@ proc isHomogeneousTuple(t: $Tuple$) param
 Returns true if \chpl{t} is a homogeneous tuple; otherwise false.
 \end{protobody}
 
+\index{tuples!isTuple@\chpl{isTuple}}
+\index{predefined functions!isTuple@\chpl{isTuple}}
 \begin{protohead}
 proc isTuple(t: $Tuple$) param
 \end{protohead}
@@ -734,6 +743,8 @@ proc isTuple(t: $Tuple$) param
 Returns true if \chpl{t} is a tuple; otherwise false.
 \end{protobody}
 
+\index{tuples!isTupleType@\chpl{isTupleType}}
+\index{predefined functions!isTupleType@\chpl{isTupleType}}
 \begin{protohead}
 proc isTupleType(type t) param
 \end{protohead}
@@ -741,6 +752,8 @@ proc isTupleType(type t) param
 Returns true if \chpl{t} is a tuple of types; otherwise false.
 \end{protobody}
 
+\index{tuples!max@\chpl{max}}
+\index{predefined functions!max@\chpl{max}}
 \begin{protohead}
 proc max(type t) where isTupleType(t)
 \end{protohead}
@@ -749,6 +762,8 @@ Returns a tuple of type \chpl{t} with each component set to the maximum
 value that can be stored in its position.
 \end{protobody}
 
+\index{tuples!min@\chpl{min}}
+\index{predefined functions!min@\chpl{min}}
 \begin{protohead}
 proc min(type t) where isTupleType(t)
 \end{protohead}

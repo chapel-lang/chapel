@@ -1,5 +1,6 @@
 \sekshun{Input and Output}
 \label{Input_and_Output}
+\index{input and output}
 \index{input/output}
 
 Input/output (I/O) facilities in Chapel include
@@ -74,11 +75,12 @@ I/O facilities are presented as follows:
 \section{Files}
 \label{IO_files}
 
+\index{input/output!types}
 
 \subsection{The {\em file} Type and Values}
 \label{IO_file_type}
-\index{input/output!file}
-\index{input/output!file!default value}
+\index{input/output!file@\chpl{file}}
+\index{input/output!file@\chpl{file}!default value}
 
 %REVIEW: vass: in our implementation there is an actual object
 % containing state etc.; multiple such objects can represent
@@ -202,6 +204,7 @@ applications executing later.
 \subsection{The {\em channel} Type and Values}
 \label{IO_channel_type}
 \index{input/output!channel}
+\index{input/output!types!channel}
 
 The \chpl{channel} type is generic. It has the following arguments,
 none of which have defaults:
@@ -387,7 +390,8 @@ File and channel operations make use of the type presented in this section.
 
 \subsection{The {\em iokind} Type}
 \label{IO_iokind_type}
-\index{input/output!iokind}
+\index{input/output!iokind@\chpl{iokind}}
+\index{input/output!types!iokind@\chpl{iokind}}
 
 The \chpl{iokind} type is an enum. Its constants are intended
 as arguments to the \chpl{channel} type,
@@ -415,7 +419,8 @@ text or string I/O.
 
 \subsection{The {\em iomode} Type}
 \label{IO_iomode_type}
-\index{input/output!iomode}
+\index{input/output!iomode@\chpl{iomode}}
+\index{input/output!types!iomode@\chpl{iomode}}
 
 The \chpl{iomode} type is an enum. Its constants are intended
 as arguments when opening files, with the following meanings:
@@ -438,7 +443,8 @@ as arguments when opening files, with the following meanings:
 
 \subsection{The {\em iohints} Type}
 \label{IO_iohints_type}
-\index{input/output!iohints}
+\index{input/output!iohints@\chpl{iohints}}
+\index{input/output!types!iohints@\chpl{iohints}}
 
 The \chpl{iohints} type is an alias for an integer type.
 When passed to functions for opening a file (\rsec{IO_open_file}),
@@ -467,7 +473,8 @@ Other hints are likely to be added in the future.
 
 \subsection{The {\em iostyle} Type}
 \label{IO_iostyle_type}
-\index{input/output!iostyle}
+\index{input/output!iostyle@\chpl{iostyle}}
+\index{input/output!types!iostyle@\chpl{iostyle}}
 \index{input/output!I/O style}
 
 The \chpl{iostyle} type is implementation-defined.
@@ -488,7 +495,7 @@ Methods that examine or modify an \chpl{iostyle} value
 are provided for the channel I/O style
 (\rsec{IO_channel_style_mods}).
 
-\index{input/output!iostyle!default value}
+\index{input/output!iostyle@\chpl{iostyle}!default value}
 The default value of the \chpl{iostyle} type does not define
 a valid I/O style.
 Instead, the result of \chpl{defaultStyle()} should be used where
@@ -501,13 +508,15 @@ a default is desired (\rsec{IO_channel_style_mods})
 % Only defaultStyle() will remain in the spec,
 % because modifyStyle() has been eliminated.
 \label{IO_channel_style_mods}
+\index{input/output!channels!style}
 
 The following operations provide access to and modification of
 a channel's I/O style. Like most other methods on channels,
 these operations are guarded with a channel-specific lock
 when the channel type's \chpl{locking} parameter is \chpl{true}.
 
-\index{input/output!defaultStyle}
+\index{input/output!defaultStyle@\chpl{defaultStyle}}
+\index{input/output!channels!defaultStyle@\chpl{defaultStyle}}
 \begin{protohead}
 proc defaultStyle():iostyle;
 \end{protohead}
@@ -517,6 +526,7 @@ which provides reasonable defaults for most channel I/O operations.
 \end{protobody}
 
 \index{input/output!modifyStyle}
+\index{input/output!channels!modifyStyle}
 \begin{protohead}
 proc channel.modifyStyle(f:func(iostyle, iostyle));
 \end{protohead}
@@ -553,7 +563,7 @@ names that are defined in C for \chpl{errno}, for example
 \section{Error Handling}
 \label{IO_error_handling}
 \index{input/output!error handling}
-\index{input/output!syserr}
+\index{input/output!syserr@\chpl{syserr}}
 
 Most I/O functions have two versions: with the \chpl{out error:syserr}
 argument and without. The version that takes the \chpl{error} argument
@@ -587,10 +597,6 @@ Functions}
 \index{write@\chpl{write}}
 \index{read@\chpl{read}}
 \index{readln@\chpl{readln}}
-\index{read}
-\index{write}
-\index{input/output!read, readln}
-\index{input/output!write, writeln}
 
 The predefined function \chpl{write} takes an arbitrary number of
 arguments and prints each out in turn to \chpl{stdout}.  The predefined
@@ -651,12 +657,16 @@ y = read(real);
 \end{chapel}
 \end{example}
 
+\label{User_Defined_writeThis_Methods}
+\index{input/output!writeThis@\chpl{writeThis}}
 
 \subsection{The {\em write} and {\em writeln} Methods on Channels}
 \label{IO_channel_write}
-\index{input/output!write}
-\index{input/output!writeln}
 \index{write!on channels}
+\index{write (channel)@\chpl{write} (channel)}
+\index{writeln (channel)@\chpl{writeln} (channel)}
+\index{input/output!write (channel)@\chpl{write} (channel)}
+\index{input/output!writeln (channel)@\chpl{writeln} (channel)}
 
 The \chpl{channel} type supports methods \chpl{write} and \chpl{writeln}
 for output.  These methods are defined to take an arbitrary number of
@@ -703,6 +713,10 @@ var x = stdin.read(int);
 \subsection{The {\em write} and {\em writeln} Methods on Strings}
 \label{stringwrite}
 \index{write!on strings}
+\index{write (string)@\chpl{write} (string)}
+\index{writeln (string)@\chpl{writeln} (string)}
+\index{input/output!write (string)@\chpl{write} (string)}
+\index{input/output!writeln (string)@\chpl{writeln} (string)}
 
 The \chpl{write} and \chpl{writeln} methods can also be called on
 strings to write the output to a string instead of a channel.
@@ -769,8 +783,8 @@ the first letter.  The output to the above is thus:
 
 
 \subsection{Default {\em write} and {\em read} Methods}
-\index{write!default methods}
-\index{read!default methods}
+\index{write@\chpl{write}!default method}
+\index{read@\chpl{read}!default method}
 
 % TODO: these should be moved to the chapters for the corresponding
 % data types

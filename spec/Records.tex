@@ -31,6 +31,7 @@ are discussed in detail in~\rsec{Generic_Types}.
 \section{Record Declarations}
 \label{Record_Declarations}
 \index{records!declarations}
+\index{declarations!records}
 \index{record@\chpl{record}}
 
 A record is defined with the following syntax:
@@ -104,6 +105,8 @@ by a library or the execution environment.  See the chapter on interoperability
 \subsection{Record Types}
 \label{Record_Types}
 \index{records!record types}
+\index{records!types}
+\index{types!records}
 
 A record type specifier simply names a record type, using
 the following syntax:
@@ -122,7 +125,7 @@ type constructors, which are defined in Section~\ref{Type_Constructors}.
 \subsection{Record Fields}
 \label{Record_Fields}
 \index{records!fields}
-\index{fields}
+\index{fields!records}
 
 Variable declarations within a record type declaration define fields within that
 record type.  The presence of at least one parameter field causes the record
@@ -148,6 +151,7 @@ an instance of the \chpl{Actor} class defined in the preceding chapter~\rsec{Cla
 \subsection{Record Methods}
 \label{Record_Methods}
 \index{records!methods}
+\index{methods!records}
 
 A record method is a function or iterator that is bound to a record.  Unlike
 functions that take a record as an argument, record methods access the record by
@@ -158,6 +162,7 @@ declarations (\rsec{Class_Methods}).
 
 \subsection{Nested Record Types}
 \label{Nested_Record_Types}
+\index{nested records}
 \index{records!nested}
 
 Record type declarations may be nested within other class, record and union
@@ -212,6 +217,7 @@ record type is the same as for accessing fields in a base class (\rsec{Accessing
 
 \subsection{Shadowing Base Record Fields}
 \label{Shadowing_Base_Record_Fields}
+\index{records!fields!shadowing}
 
 A field in the derived record can be declared with the same name as a
 field in a base record.  Such a field shadows the field in the base
@@ -224,6 +230,7 @@ A syntax for accessing shadowed fields has not yet been specified.
 
 \subsection{Overriding Base Record Methods}
 \label{Overriding_Base_Record_Methods}
+\index{records!base method!overriding}
 
 \begin{future}
 If a method in a derived record is declared with a signature identical to that
@@ -242,6 +249,7 @@ or must be a subrecord of the base record method's return type.
 \section{Record Variable Declarations}
 \label{Record_Variable_Declarations}
 \index{records!variable declarations}
+\index{variables!records}
 
 A record variable declaration is a variable declaration using a record type.
 When a variable of record type is declared, storage is allocated sufficient to
@@ -273,7 +281,7 @@ of another variable's record.
 \subsection{Record Initialization}
 \label{Record_Initialization}
 \index{records!initialization}
-\index{initialization!records}
+\index{initialization!record}
 
 A variable of a record type declared without an initialization expression
 is initialized through a call to the record's default initializer, passing no arguments.
@@ -341,6 +349,7 @@ supplied, the default initializer cannot be called directly.
 \section{Record Arguments}
 \label{Record_Arguments}
 \index{records!arguments}
+\index{arguments!records}
 
 A function declared with an argument of record type expects that argument to be
 passed by value unless intents (\rsec{Intents}) are used.
@@ -582,7 +591,10 @@ improve performance -- especially if that expression is used repeatedly.
 \label{Record_Comparison_Operators}
 \index{records!equality}
 \index{records!inequality}
-
+\index{records!==@\chpl{==}}
+\index{records!"!=@\chpl{"\"!=}}
+\index{== (record)@\chpl{==} (record)}
+\index{"!= (record)@\chpl{"\"!=} (record)}
 Default functions to overload \chpl{==} and \chpl{\!=} are defined for
 records if none are explicitly defined.
 The default implementation of \chpl{==} applies \chpl{==} to each
@@ -593,9 +605,9 @@ reduces the result with the \chpl{||} operator.
 
 \subsection{Implicit Record Conversions}
 \label{Implicit_Record_Conversions}
-\index{conversions!record}
-\index{conversions!implicit!record}
-\index{records!implicit conversion}
+\index{conversions!records}
+\index{conversions!implicit!records}
+\index{records!implicit conversions}
 
 An expression of record type \chpl{D} can be implicitly converted to
 another record type \chpl{C} if
@@ -725,13 +737,16 @@ and/or which method is invoked is determined statically by the declared type of
 the record being referenced.
 
 \subsection{No {\em nil} Value}
-\index{nil!not provided for records}
+\index{nil@\chpl{nil}!not provided for records}
 
 Records do not provide a counterpart of the \chpl{nil} value.  A variable of
 record type is associated with storage throughout its lifetime, so \chpl{nil}
 has no meaning with respect to records.
 
 \subsection{The {\em delete} operator}
+\label{Record_Delete_Illegal}
+\index{records!delete illegal}
+\index{delete!illegal for records}
 
 Calling \chpl{delete} on a record is illegal.
 

@@ -1,6 +1,5 @@
 \sekshun{Modules}
 \label{Modules}
-
 \index{modules}
 
 Chapel supports modules to manage name spaces.  A program consists of
@@ -16,8 +15,8 @@ module initialization is described in~\rsec{Program_Execution}.
 
 \section{Module Definitions}
 \label{Module_Definitions}
-
 \index{module@\chpl{module}}
+\index{modules!definitions}
 
 A module is declared with the following syntax:
 \begin{syntax}
@@ -312,6 +311,8 @@ in~\rsec{Module_Initialization_Order}.
 
 \section{Program Execution}
 \label{Program_Execution}
+\index{program execution}
+\index{program initialization}
 
 Chapel programs start by initializing all modules and then executing
 the main function~(\rsec{The_main_Function}).
@@ -320,6 +321,7 @@ the main function~(\rsec{The_main_Function}).
 \label{The_main_Function}
 
 \index{main@\chpl{main}}
+\index{functions!main@\chpl{main}}
 The main function must be called \chpl{main} and must have zero
 arguments.  It can be specified with or without parentheses.  In any
 Chapel program, there is a single main function that defines the
@@ -401,6 +403,7 @@ as described in~\rsec{Implicit_Modules}.
 
 \subsection{Module Initialization Order}
 \label{Module_Initialization_Order}
+\index{modules!initialization order}
 
 Module initialization is performed using the following algorithm.
 

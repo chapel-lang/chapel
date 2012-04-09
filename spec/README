@@ -75,4 +75,50 @@ Guidelines for updating the spec:
 
 - Italicize the term when you are defining it.
   Be sure to add it to the index.  We want as many things as possible in
-  the index.
+  the index.  (See below for guidance on index term creation.)
+
+
+General rules for index term creation:
+
+ - It is better to err on the side of too many entries; we can cull excessive
+   entries later.
+
+ - Double-billing is OK, e.g.
+	\index{formal arguments}
+	\index{arguments!formal}
+
+ - An acceptable exception is when these are visually close, so would be noisy:
+	\index{operator precedence}
+	\index{operators!precedence}
+   In this case, the second form is preferred.
+
+ - Global topics can appear at the top level; otherwise, they are qualified by
+   the chapter name (or general topic).
+	[in Functions.tex]	\index{argument passing}
+	[in Arrays.tex]		\index{arrays!argument passing}
+
+ - In general, the plural form of index headers is preferred:
+	\index{arrays!argument passing} (preferred)
+	\index{array!argument passing} (discouraged)
+
+ - If there are two forms which make sense -- one indented and the other not --
+   the indented form is preferred:
+	\index{arrays!argument passing} (preferred)
+	\index{array argument passing} (discouraged)
+   We assume that the topic of passing arrays as arguments (in this example)
+   fits entirely within the topic of arrays, so is properly cast as a subtopic.
+   In contrast, if the topic spans several chapters or stands on its own, then
+   it is reasonable to make it a top-level index entry.
+
+ - A concept which belongs both at the top level and at an indented level should
+   correspondingly have two index entries.  At the top level, there should be a
+   single entry containing a "(see xxx)" note referring to the indented entry:
+	\index{domains!rectangular}
+	\index{rectangular domains (see domains, rectangular)}
+   All detailed entries (those elaborating domains!rectangular) should appear
+   only below the indented entry.
+
+   Rationale: Since the two entries represent the same concept, their
+   sub-entries would all be duplicated.  The (see xxx) note allows us to save
+   index space.  Choosing the indented entry over the top-level one tends to
+   make the index deeper, which naturally tends to group related entries.
