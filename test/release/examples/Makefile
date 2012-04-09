@@ -13,7 +13,7 @@ TARGETS = \
 
 REALS = $(TARGETS:%=%_real)
 
-default: all primers programs hpcc 
+default: all benchmarks primers programs
 
 all: $(TARGETS)
 
