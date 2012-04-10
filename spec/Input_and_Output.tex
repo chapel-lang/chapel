@@ -120,7 +120,8 @@ A file can be opened using the following functions.
 \begin{protohead}
 proc open(out error:syserr, path:string, mode:iomode, hints:iohints=IOHINT_NONE,
           style:iostyle = defaultStyle()):file;
-proc open(path:string, mode:iomode, hints:iohints=IOHINT_NONE, style:iostyle = defaultStyle()):file;
+proc open(path:string, mode:iomode, hints:iohints=IOHINT_NONE,
+          style:iostyle = defaultStyle()):file;
 \end{protohead}
 \begin{protobody}
 Opens a file specified by $path$, with
@@ -133,7 +134,8 @@ The \chpl{error} argument is explained in \rsec{IO_error_handling}.
 \end{protobody}
 
 \begin{protohead}
-proc opentmp(out error:syserr, hints:iohints=IOHINT_NONE, style:iostyle = defaultStyle()):file;
+proc opentmp(out error:syserr, hints:iohints=IOHINT_NONE,
+             style:iostyle = defaultStyle()):file;
 proc opentmp(hints:iohints=IOHINT_NONE, style:iostyle = defaultStyle()):file;
 \end{protohead}
 \begin{protobody}
@@ -263,10 +265,12 @@ none of which have default values:
 \index{input/output!writer@\chpl{writer}}
 \begin{protohead}
 proc file.writer(out error:syserr, param kind=iokind.dynamic, param locking=true,
-                 start:int(64) = 0, end:int(64) = max(int(64)), hints:iohints = IOHINT_NONE,
+                 start:int(64) = 0, end:int(64) = max(int(64)),
+                 hints:iohints = IOHINT_NONE,
                  style:iostyle = this._style): channel(true,kind,locking);
 proc file.writer(param kind=iokind.dynamic, param locking=true,
-                 start:int(64) = 0, end:int(64) = max(int(64)), hints:iohints = IOHINT_NONE,
+                 start:int(64) = 0, end:int(64) = max(int(64)),
+                 hints:iohints = IOHINT_NONE,
                  style:iostyle = this._style): channel(true,kind,locking);
 \end{protohead}
 \begin{protobody}
