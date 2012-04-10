@@ -363,6 +363,17 @@ between two integral values are rounded towards zero.
 \end{protobody}
 
 \begin{protohead}
+proc sgn(i : int(?w)):   int(8);
+proc sgn(i : uint(?w)): uint(8);
+proc sgn(x : real(?w)):  int(8);
+proc sgn(param i : integral) param;
+\end{protohead}
+\begin{protobody}
+Returns the signum function of its argument:
+1 if positive, -1 if negative, 0 if zero.
+\end{protobody}
+
+\begin{protohead}
 proc sin(x: real): real
 proc sin(x: real(32)): real(32)
 \end{protohead}
