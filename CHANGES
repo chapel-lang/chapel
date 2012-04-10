@@ -16,9 +16,10 @@ Highlights (see entries in subsequent categories for details)
 - added a version of the LLNL/DARPA LULESH benchmark
 - improved GMP support for integer types
 - added an initial implementation of a 2D Dimensional distribution
-- added proprietary tasking/thread/communication layers to Cray XE (TM) module
+- added Cray XE (TM)-specific tasking/thread/communication layers for
+  the Cray XE module (binary only)
 - updated GASNet from 1.16.2 to 1.18.0 which includes initial ugni support
-- made integers default to 64-bits in most contexts rather than the previous 32-
+- made integers default to 64-bits in most contexts rather than the previous 32-bits
 - numerous performance improvements, bug fixes, and documentation improvements
 
 Environment Changes
@@ -34,7 +35,7 @@ Semantic Changes / Changes to Chapel Language
   (see doc/technotes/README.atomics, examples/primers/atomics.chpl)
 - added support for /* ... */-style comments to be nested
   (e.g., /* in comment! /* in nested comment! */ still in comment! */)
-- made integers default to 64-bits in most contexts rather than the previous 32-
+- made integers default to 64-bits in most contexts rather than the previous 32-bits
   - integer literals are now of type int(64)/uint(64) by default
   - the default 'int'/'uint' types now correspond to int(64)/uint(64)
   - the default idxType for ranges, domains, and arrays is now int(64)
@@ -98,9 +99,12 @@ Example Codes
 
 Platform-specific Notes
 -----------------------
-- added proprietary tasking/thread/communication layers to Cray XE (TM) module
-  (on XE using 'module chapel', see doc/platforms/README.xe-cle-proprietary)
+
+- added Cray XE-specific tasking/thread/communication layers to the
+  Cray XE module (available using 'module load chapel', see
+  doc/platforms/README.xe-cle-system-specific-layers)
 - fixed GASNet executions on Mac OS X Lion
+
 - generated C identifier lengths are now capped to avoid PGI warnings
 
 Compiler Flags
