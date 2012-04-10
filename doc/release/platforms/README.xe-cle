@@ -151,9 +151,11 @@ Known Constraints and Bugs
 
 * GASNet targets multiple "conduits" as the underlying communication
   mechanism.  By default, the Chapel build will use the 'mpi' conduit.
-  The current version of GASNet also supports a beta implementation of
-  the native gemini conduit.  To use the native conduit, set the
-  environment variable CHPL_COMM_SUBSTRATE to 'gemini'.
+  The current version of GASNet shipped with Chapel also supports a
+  beta implementation of the native gemini conduit, but it should be
+  noted that this version has not been tuned.  To use the native
+  conduit, set the environment variable CHPL_COMM_SUBSTRATE to
+  'gemini'.
 
 * Redirecting stdin when executing a Chapel program under PBS/qsub
   may not work due to limitations of qsub.
