@@ -118,10 +118,10 @@ It is illegal to perform any I/O operations on the default value.
 A file can be opened using the following functions.
 
 \begin{protohead}
-proc open(out error:syserr, path:string, mode:iomode, hints:iohints=IOHINT_NONE,
-          style:iostyle = defaultStyle()):file;
-proc open(path:string, mode:iomode, hints:iohints=IOHINT_NONE,
-          style:iostyle = defaultStyle()):file;
+proc open(out error:syserr, path:string, mode:iomode,
+          hints:iohints=IOHINT_NONE, style:iostyle = new iostyle()):file;
+proc open(path:string, mode:iomode,
+          hints:iohints=IOHINT_NONE, style:iostyle = new iostyle()):file;
 \end{protohead}
 \begin{protobody}
 Opens a file specified by $path$, with
@@ -134,9 +134,9 @@ The \chpl{error} argument is explained in \rsec{IO_error_handling}.
 \end{protobody}
 
 \begin{protohead}
-proc opentmp(out error:syserr, hints:iohints=IOHINT_NONE,
-             style:iostyle = defaultStyle()):file;
-proc opentmp(hints:iohints=IOHINT_NONE, style:iostyle = defaultStyle()):file;
+proc opentmp(out error:syserr,
+             hints:iohints=IOHINT_NONE, style:iostyle = new iostyle()):file;
+proc opentmp(hints:iohints=IOHINT_NONE, style:iostyle = new iostyle()):file;
 \end{protohead}
 \begin{protobody}
 % TODO: for writing only?
@@ -148,8 +148,8 @@ both writing to and reading from this file is allowed.
 \end{protobody}
 
 \begin{protohead}
-proc openmem(out error:syserr, style:iostyle = defaultStyle());
-proc openmem(style:iostyle = defaultStyle()):file;
+proc openmem(out error:syserr, style:iostyle = new iostyle());
+proc openmem(style:iostyle = new iostyle()):file;
 \end{protohead}
 \begin{protobody}
 % TODO: for writing only?
@@ -396,7 +396,7 @@ explicitly will remain available.
 \label{IO_io_style}
 \index{input/output!I/O style}
 
-I/O style regulates how Chapel's basic tyeps are read or written.
+I/O style regulates how Chapel's basic types are read or written.
 For example, the I/O style defines whether I/O is binary or text
 and what representation is used for each basic type.
 
