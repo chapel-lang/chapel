@@ -374,7 +374,7 @@ module SSCA2_RMAT_graph_generator
       else "Note: got a vertex count that is not a power of 2.";
 
     myerror("inconsistent vertex count: graph ", graphNumVertices(G), " vs. ",
-            snapshot_prefix, VE_FILENAME, " ", vCount, "\n", helpMessage);
+            vCount, " in ", snapshot_prefix, VE_FILENAME, "\n", helpMessage);
   }
 
   proc interpretDStyle(dstyle:string) {
