@@ -609,15 +609,12 @@ Portability
 -----------
 Cray XE:
 - Native GASNet conduit support is in beta and has not been tuned.
-  See doc/platforms/README.xt-cle for details on how to used the
+  See doc/platforms/README.xt-cle for details on how to use the
   native conduit.
 
 Cray XT:
 - The memory limit for Chapel programs may need to be set manually.
   See doc/platforms/README.xt-cle for details.
-
-Cray CX1/CX1000:
-- Support is only provided using Linux.
 
 PGI compilers (and possibly others):
 - Floating point literals of -0.0 may not work as intended.
