@@ -157,5 +157,19 @@ Known Constraints and Bugs
   conduit, set the environment variable CHPL_COMM_SUBSTRATE to
   'gemini'.
 
+  There is a known GASNet configuration issue when using the gemini
+  conduit with hugepage support that results in link errors due to
+  multiply defined symbols in the hugetlbfs library.  The workaround
+  is to redefine the "post link" options environment variable set by
+  the hugepages module.  The name of the environment variable contains
+  POST_LINK_OPTS and will vary depending on the hugepage module that
+  is loaded.  For example, if you execute 'module load
+  craype-hugepages2M' and then 'module show craype-hugepages2M', it
+  will show you that the variable HUGETLB2M_POST_LINK_OPTS is set.
+  Redefine the post link options to be the same string except removing
+  "-Wl,--whole-archive,-lhugetlbfs,--no-whole-archive".  These options
+  should be consecutive and are usually first in the list of options.
+  If you have any questions or problems, please contact us for help.
+
 * Redirecting stdin when executing a Chapel program under PBS/qsub
   may not work due to limitations of qsub.
