@@ -16,6 +16,8 @@
 #include <stdio.h>
 #include <pthread.h>
 
+#include <starpu.h>
+
 //
 // task pool: linked list of tasks
 //
@@ -193,6 +195,7 @@ void chpl_task_begin(chpl_fn_p fp, void* a, chpl_bool ignore_serial,
 }
 
 chpl_taskID_t chpl_task_getId(void) { return curr_taskID; }
+//chpl_taskID_t chpl_task_getId(void) { return starpu_worker_get_id() + 1; }
 
 void chpl_task_yield(void) {
 }

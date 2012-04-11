@@ -14,8 +14,6 @@ clean: FORCE
 	cd nanox && $(MAKE) clean
 	cd qthread && $(MAKE) clean
 	cd tcmalloc && $(MAKE) clean
-	cd hwloc && $(MAKE) clean
-	cd starpu && $(MAKE) clean
 	cd codelet && $(MAKE) clean
 
 clobber: FORCE
@@ -25,8 +23,6 @@ clobber: FORCE
 	cd nanox && $(MAKE) clobber
 	cd qthread && $(MAKE) clobber
 	cd tcmalloc && $(MAKE) clobber
-	cd hwloc && $(MAKE) clobber
-	cd starpu && $(MAKE) clobber
 	cd codelet && $(MAKE) clobber
 
 depend:
@@ -56,14 +52,6 @@ $(QTHREAD_ALIASES): qthread
 tcmalloc: $(TCMALLOC_INSTALL_DIR)
 $(TCMALLOC_INSTALL_DIR):
 	cd tcmalloc && $(MAKE)
-
-hwloc: $(HWLOC_INSTALL_DIR)
-$(HWLOC_INSTALL_DIR):
-	cd hwloc && $(MAKE)
-
-starpu: $(STARPU_INSTALL_DIR)
-$(STARPU_INSTALL_DIR):
-	cd starpu && $(MAKE)
 
 codelet: $(CODELET_INSTALL_DIR)
 $(CODELET_INSTALL_DIR):

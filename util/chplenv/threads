@@ -25,6 +25,8 @@ if ($preset_threads eq "") {
 	$threads = "none";
     } elsif ($preset_tasks eq "none") {
 	$threads = "none";
+    } elsif ($preset_tasks eq "codelet") {
+	$threads = "pthreads";
     } elsif ($preset_tasks eq "") {
 	$platform = `$utildirname/platform --target`;
 	chomp $platform;

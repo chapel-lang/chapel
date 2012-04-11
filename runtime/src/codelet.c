@@ -60,12 +60,16 @@ int chpl_codelet_sequential(_codelet_tag_t self_id, _codelet_tag_t incoming,
   for (i = 0; i < 64; i++) {
     if (0x1 & incoming) {
       _codelet_declare_deps(self_id, 1, 1 << i);
+#if CODELET_DEBUG
       printf("SEQ: just declared deps on %llu\n", (_codelet_tag_t)(1<<i));
+#endif
     }
     incoming >>= 1;
   }
 
+#if CODELET_DEBUG
   printf("SEQUENTIAL: self = %llu outgoing = %llu incoming = %llu paramsize = %lu\n", self_id, outgoing, incoming, paramsize);
+#endif
 
 //  for (int i = 0; i < numHandles; i++) {
 //    task->handles[i] = data_handles[i];
