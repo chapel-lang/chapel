@@ -14,8 +14,10 @@
 Interval::Interval(int init_id) : id(init_id) {}
 
 #define INTERVAL_START(intervals)               \
-  interval = new Interval(id++);                \
-  intervals->add(interval)
+  do {                                          \
+    interval = new Interval(id++);              \
+    intervals->add(interval);                   \
+  } while (0)
 
 #define INTERVAL_ADD(block,intv)                \
   intv->bb.add(block)

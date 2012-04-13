@@ -267,11 +267,23 @@ config const
 
 proc chpl_startTrackingMemory() {
   if Locales(0) == here {
-    coforall loc in Locales {
-      if loc == here {
-        __primitive("chpl_setMemFlags", memTrack, memStats, memLeaks, memLeaksTable, memMax, memThreshold, memLog, memLeaksLog);
-      } else on loc {
+
+    if CHPL_TASKS == "codelet" {
+      for loc in Locales {
+        if loc == here {
           __primitive("chpl_setMemFlags", memTrack, memStats, memLeaks, memLeaksTable, memMax, memThreshold, memLog, memLeaksLog);
+        } else on loc {
+          __primitive("chpl_setMemFlags", memTrack, memStats, memLeaks, memLeaksTable, memMax, memThreshold, memLog, memLeaksLog);
+        }
+      }
+    }
+    else {
+      coforall loc in Locales {
+        if loc == here {
+          __primitive("chpl_setMemFlags", memTrack, memStats, memLeaks, memLeaksTable, memMax, memThreshold, memLog, memLeaksLog);
+        } else on loc {
+          __primitive("chpl_setMemFlags", memTrack, memStats, memLeaks, memLeaksTable, memMax, memThreshold, memLog, memLeaksLog);
+        }
       }
     }
   }

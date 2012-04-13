@@ -456,8 +456,23 @@ class DefaultILRectangularArr: BaseArr {
   iter these(param tag: iterKind) where tag == iterKind.leader {
     //for follower in dom.these(tag) do
     //  yield follower;
-    var follower = dom.these(tag);
-    yield follower;
+    //var follower = dom.these(tag);
+    //yield follower;
+    if rank == 1 {
+      ILLow = dom.ranges(1).low;
+      ILHigh = dom.ranges(1).high;
+      ILStride = dom.ranges(1).stride;
+
+      pragma "while index"
+      var ILIndex: int;
+
+      on __primitive("chpl_target_il", ILLow, ILHigh, ILStride, ILIndex) do {
+        yield ILIndex;
+      }
+    }
+    else 
+      compilerError("can't support ranks > 1");
+
   }
 
   iter these(param tag: iterKind, followThis) var where tag == iterKind.follower {

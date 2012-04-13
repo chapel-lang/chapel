@@ -108,7 +108,7 @@ innerCodelets(FnSymbol* originalFn, BlockStmt* codeletBlock, BasicBlock* curBB,
 }
 
 static void
-createCodelet(FnSymbol *originalFn, FnSymbol *codeletFn, Interval *interval, Map<BasicBlock*, Interval*>& intervalMaps) {
+createCodelet(FnSymbol *originalFn, FnSymbol *codeletFn, Interval *interval, Map<BasicBlock*, Interval*>& intervalMaps, Symbol *condFormal) {
   Vec<BasicBlock*> innerBB;
   innerBB.copy(interval->bb);
 
@@ -122,9 +122,9 @@ createCodelet(FnSymbol *originalFn, FnSymbol *codeletFn, Interval *interval, Map
   ArgSymbol *condFormal = new ArgSymbol( INTENT_REF, "numID", dtInt[INT_SIZE_32]);
   codeletFn->insertFormalAtTail( new DefExpr(condFormal));
   */
-  ModuleSymbol *mod = originalFn->getModule();
-  VarSymbol *condFormal = new VarSymbol("numID", dtInt[INT_SIZE_32]);
-  mod->block->insertAtHead(new DefExpr(condFormal));
+//  ModuleSymbol *mod = originalFn->getModule();
+//  VarSymbol *condFormal = new VarSymbol("numID", dtInt[INT_SIZE_32]);
+//  mod->block->insertAtHead(new DefExpr(condFormal));
 
   Vec<Expr*> tmpExpr;
   Vec<bool> tmpBools;
@@ -156,7 +156,7 @@ createCodelet(FnSymbol *originalFn, FnSymbol *codeletFn, Interval *interval, Map
           else if (tmpBools.v[j] == false)
             condNumID = new CallExpr(PRIM_AND, condNumID, new CallExpr(PRIM_UNARY_LNOT, tmpExpr.v[j]->copy()));
         }
-        thenStmt->insertAtTail(new CallExpr(PRIM_MOVE,condFormal,new_IntSymbol(targetInt->id)));
+        thenStmt->insertAtTail(new CallExpr(PRIM_MOVE,condFormal,new_IntSymbol(1 << targetInt->id)));
         codeletFn->insertAtTail(new CondStmt(condNumID,thenStmt));
       }
       tmpExpr.clear();
@@ -167,11 +167,11 @@ createCodelet(FnSymbol *originalFn, FnSymbol *codeletFn, Interval *interval, Map
     Interval* targetInt = interval->outs.v[0];
     //BasicBlock *sourceBB = interval->sourceEdges.[0];
     //if (sourceBB->outs.n > 1)
-    codeletFn->insertAtTail(new CallExpr(PRIM_MOVE,condFormal,new_IntSymbol(targetInt->id)));
+    codeletFn->insertAtTail(new CallExpr(PRIM_MOVE,condFormal,new_IntSymbol(1 << targetInt->id)));
 
   }
   else if (interval->outs.n == 0) {
-    codeletFn->insertAtTail(new CallExpr(PRIM_MOVE,condFormal,new_IntSymbol(END_NODE)));
+    codeletFn->insertAtTail(new CallExpr(PRIM_MOVE,condFormal,new_IntSymbol(1 << END_NODE)));
   }
   
   codeletFn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
@@ -191,8 +191,11 @@ createFn(FnSymbol *fn, Map<BasicBlock*, Interval*>& intervalMaps) {
     buildDefUseMaps(fn, defMap, useMap);
 
     /* here we declare the branching conditional needed for MAP */
-    Symbol *numID = newTemp("numID", dtInt[INT_SIZE_32]);
-    fn->insertAtHead(new DefExpr(numID));
+//    Symbol *numID = newTemp("numID", dtInt[INT_SIZE_32]);
+//    fn->insertAtHead(new DefExpr(numID));
+  ModuleSymbol *mod = fn->getModule();
+  VarSymbol *numID= new VarSymbol("numID", dtInt[INT_SIZE_32]);
+  mod->block->insertAtHead(new DefExpr(numID));
 
 
     forv_Vec(Interval, interval, *fn->intervals) {
@@ -202,7 +205,8 @@ createFn(FnSymbol *fn, Map<BasicBlock*, Interval*>& intervalMaps) {
       intervalFn->intervals = new Vec<Interval*>();
       intervalFn->intervals->add(interval);
       nestedFunctions.add(intervalFn);
-      createCodelet(fn, intervalFn, interval, intervalMaps);
+      //createCodelet(fn, intervalFn, interval, intervalMaps);
+      createCodelet(fn, intervalFn, interval, intervalMaps, numID);
       interval = NULL;
       insert_help(intervalFn, NULL, intervalFn);
 
@@ -222,6 +226,11 @@ createFn(FnSymbol *fn, Map<BasicBlock*, Interval*>& intervalMaps) {
      * actual codelet invocation */
     forv_Vec(FnSymbol, nestedfn, nestedFunctions) {
       forv_Vec(CallExpr, call, *nestedfn->calledBy) {
+        
+        /* Add necessary labels before we create wrapper functions */
+        LabelSymbol *labelID = new LabelSymbol(astr("LABEL", istr(TAG_ID(nestedfn->intervals->v[0]->id))));
+        call->insertBefore(new DefExpr(labelID));
+        
         /* bundle the arguments */
         bundleArgs(call);
       }
@@ -252,17 +261,17 @@ createFn(FnSymbol *fn, Map<BasicBlock*, Interval*>& intervalMaps) {
           /* place call right before memfrees */
           if (nestedfn->intervals && (nestedfn->intervals->v[0]->intervalTag == BLOCK || nestedfn->intervals->v[0]->intervalTag == FOR_LOOP)) {
             wrapperCall->insertBefore(new CallExpr(PRIM_CODELET_SEQ, new_IntSymbol(TAG_ID(nestedfn->intervals->v[0]->id)), 
-            //fn->body->body.tail->prev->insertBefore(new CallExpr(PRIM_CODELET_SEQ, new_IntSymbol(TAG_ID(nestedfn->intervals->v[0]->id)), 
                   new_IntSymbol(incoming), new_IntSymbol(outgoing), numID, new_StringSymbol(wrapperFn->name), wrapperCall->get(1)->copy()));
+            wrapperCall->insertBefore(new CallExpr(PRIM_CODELET_CASETABLE, numID, nestedfn));
             wrapperCall->remove();
           }
           /* place call right before memfrees */
           else if (nestedfn->intervals && (nestedfn->intervals->v[0]->intervalTag == FORALL_LOOP)) {
             wrapperCall->insertBefore(new CallExpr(PRIM_CODELET_PAR, new_IntSymbol(TAG_ID(nestedfn->intervals->v[0]->id)),
-            //fn->body->body.tail->prev->insertBefore(new CallExpr(PRIM_CODELET_PAR, new_IntSymbol(TAG_ID(nestedfn->intervals->v[0]->id)),
                   new_IntSymbol(incoming), new_IntSymbol(outgoing), nestedfn->intervals->v[0]->low,
                   nestedfn->intervals->v[0]->stride, nestedfn->intervals->v[0]->high, nestedfn->intervals->v[0]->ILIndex,
                   numID, new_StringSymbol(wrapperFn->name), wrapperCall->get(1)->copy()));
+            wrapperCall->insertBefore(new CallExpr(PRIM_CODELET_CASETABLE, numID, nestedfn));
             wrapperCall->remove();
           }
         }
@@ -314,11 +323,19 @@ targetCodelet() {
         /* 3. Convert Basic Blocks to separate function */
         createFn(fn, intervalMaps);
         removeEmptyBlocks(fn);
-        inlineFunction(fn);
+        //inlineFunction(fn);
 
         if (fTargetCodelet) {
+          /* Insert codelet initialization call at the head of main */
           fn->insertAtHead(new CallExpr(PRIM_CODELET_INIT));
+
+          /* Insert "barrier"  just before end of program */
           fn->body->body.tail->insertBefore(new CallExpr(PRIM_CODELET_WAITFORALL));
+
+          /* Insert an exit label */
+          fn->body->body.tail->insertBefore(new DefExpr(new LabelSymbol("LABELEXIT")));
+
+          /* Insert codelet shutdown code at end of program */
           fn->body->body.tail->insertBefore(new CallExpr(PRIM_CODELET_SHUTDOWN));
         }
 

@@ -8,10 +8,13 @@ proc main {
   writeln(A(0)); // code 1
 
   for i in [0..9] do {
+    writeln("Before A :", i);
     forall j in N do {
-      A(i) = i + j;
+      writeln("HELLO!");
+      A(j) = i + j;
     }
+    writeln("AFter A ", i);
   }
 
-  writeln(A(0));
+  writeln(A(9));
 }

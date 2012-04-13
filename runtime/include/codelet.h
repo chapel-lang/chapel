@@ -30,7 +30,7 @@ void chpl_codelet_waitforall(void);
       task->use_tag = 1;\
       task->tag_id = (_codelet_tag_t)(self_id | (_codelet_tag_t)(outeridx << 16)); \
       loopInds[outeridx] = task->tag_id; \
-      task->synchronous = 0;    \
+      task->synchronous = 1;    \
       task->cl = &cl;   \
       /*task->cl_arg = params;*/    \
       task->cl_arg = myparam[outeridx];    \
@@ -40,7 +40,7 @@ void chpl_codelet_waitforall(void);
       /* extract dependencies from bitmap */ \
       for (i = 0; i < 64; i++) { \
         if (0x1 & incopy) { \
-          _codelet_declare_deps(task->tag_id, 1, (_codelet_tag_t)(1 << i)); \
+          /*_codelet_declare_deps(task->tag_id, 1, (_codelet_tag_t)(1 << i));*/ \
           /*printf("PAR: %llu just declared deps on %llu\n", (_codelet_tag_t)(task->tag_id), (_codelet_tag_t)(1<<i));*/  \
         } \
         incopy >>= 1; \
@@ -53,7 +53,7 @@ void chpl_codelet_waitforall(void);
       STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_submit"); \
     } \
     _codelet_wait_all_array(numInds, loopInds); \
-    _codelet_resolve_dep(self_id); \
+    /*_codelet_resolve_dep(self_id);*/ \
   }
 
 

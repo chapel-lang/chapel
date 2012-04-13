@@ -1553,7 +1553,7 @@ proc _desync(type t) {
   return x;
 }
 
-proc =(a: [], b: _desync(a.eltType)) {
+pragma "inline" proc =(a: [], b: _desync(a.eltType)) {
   if isRectangularArr(a) {
     forall e in a do
       e = b;

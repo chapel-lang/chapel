@@ -10,33 +10,37 @@ BasicBlock::BasicBlock()
   : id(nextid++) {}
 
 #define BB_ADD_LOOP_BRANCH(expr)                \
-  top->branch = expr;                           \
-  top->thenBB = loopTop;                        \
-  top->elseBB = bottom;                         \
-  loopBottom->branch = expr;                    \
-  loopBottom->thenBB = loopTop;                 \
-  loopBottom->elseBB = bottom
+  do {                                          \
+    top->branch = expr;                         \
+    top->thenBB = loopTop;                      \
+    top->elseBB = bottom;                       \
+    loopBottom->branch = expr;                  \
+    loopBottom->thenBB = loopTop;               \
+    loopBottom->elseBB = bottom;                \
+  } while (0)
 
 #define BB_START()                              \
-  basicBlock = new BasicBlock()
+  do {                                          \
+    basicBlock = new BasicBlock();              \
+    basicBlock->forAll = false;                 \
+  } while (0)
 
 // The assert tests that the expression we are adding to this basic block
 // has not already been deleted.
 #define BB_ADD(expr)                            \
-  INT_ASSERT(expr);                             \
-  basicBlock->exprs.add(expr)
-
-#define BB_ADD_LS(exprls)                       \
-  for_alist(expr, exprls) {                     \
-    BB_ADD(expr);                               \
-  }
+  do {                                          \
+    INT_ASSERT(expr);                           \
+    basicBlock->exprs.add(expr);                \
+  } while (0)
 
 #define BB_STOP()                               \
   fn->basicBlocks->add(Steal())
 
 #define BB_RESTART()                            \
-  BB_STOP();                                    \
-  BB_START()
+  do {                                          \
+    BB_STOP();                                  \
+    BB_START();                                 \
+  } while (0)
 
 #define BBB(stmt)                               \
     buildBasicBlocks(fn, stmt)
@@ -45,8 +49,10 @@ BasicBlock::BasicBlock()
     buildCoarseBasicBlocks(fn, stmt)
 
 #define BB_THREAD(src, dst)                     \
-  dst->ins.add(src);                            \
-  src->outs.add(dst)
+  do {                                          \
+    dst->ins.add(src);                          \
+    src->outs.add(dst);                         \
+  } while (0)
 
 //# Statics
 BasicBlock* BasicBlock::basicBlock;
@@ -313,8 +319,9 @@ void BasicBlock::buildCoarseBasicBlocks(FnSymbol* fn, Expr* stmt)
       BB_RESTART();
       BB_THREAD(elseBottom, basicBlock);
     }
-    else
+    else {
       BB_THREAD(top, basicBlock);
+    }
     BB_THREAD(thenBottom, basicBlock);
   } else if (GotoStmt* s = toGotoStmt(stmt)) {
     LabelSymbol* label = toLabelSymbol(toSymExpr(s->label)->var);

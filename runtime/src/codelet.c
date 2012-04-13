@@ -41,7 +41,7 @@ int chpl_codelet_sequential(_codelet_tag_t self_id, _codelet_tag_t incoming,
   _codelet_task *task;
   
   int ret;
-  int i;
+  //int i;
 
   cl.cpu_funcs[0] = function;
   cl.where = CHPL_CPU;
@@ -57,6 +57,7 @@ int chpl_codelet_sequential(_codelet_tag_t self_id, _codelet_tag_t incoming,
   task->cl_arg_size = paramsize;
 
   /* extract dependencies from bitmap */
+#if 0
   for (i = 0; i < 64; i++) {
     if (0x1 & incoming) {
       _codelet_declare_deps(self_id, 1, 1 << i);
@@ -66,6 +67,7 @@ int chpl_codelet_sequential(_codelet_tag_t self_id, _codelet_tag_t incoming,
     }
     incoming >>= 1;
   }
+#endif
 
 #if CODELET_DEBUG
   printf("SEQUENTIAL: self = %llu outgoing = %llu incoming = %llu paramsize = %lu\n", self_id, outgoing, incoming, paramsize);

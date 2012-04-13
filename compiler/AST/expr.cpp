@@ -10,6 +10,7 @@
 #include "stmt.h"
 #include "stringutil.h"
 #include "type.h"
+#include "interval.h"
 
 
 Expr::Expr(AstTag astTag) :
@@ -2483,6 +2484,24 @@ void CallExpr::codegen(FILE* outfile) {
     case PRIM_CODELET_WAITFORALL:
     {
       fprintf(outfile, "chpl_codelet_waitforall()");
+      break;
+    }
+    case PRIM_CODELET_CASETABLE:
+    {
+      fprintf(outfile, "switch(");
+      get(1)->codegen(outfile);
+      fprintf(outfile, ") {\n");
+
+      /* iterate through outgoing edges for the given interval */
+      SymExpr* se = toSymExpr(get(2));
+      INT_ASSERT(se);
+      FnSymbol* fn = toFnSymbol(se->var);
+      INT_ASSERT(fn);
+      forv_Vec(Interval, intOut, fn->intervals->v[0]->outs) {
+        fprintf(outfile, "case %d:\n\t\tgoto LABEL%d;\n\t\tbreak;\n", 1 << intOut->id, 1 << intOut->id);
+      }
+      fprintf(outfile, "default: goto LABELEXIT;\n");
+      fprintf(outfile,"}\n");
       break;
     }
     default:
