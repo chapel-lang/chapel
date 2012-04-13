@@ -41,7 +41,6 @@ int chpl_codelet_sequential(_codelet_tag_t self_id, _codelet_tag_t incoming,
   _codelet_task *task;
   
   int ret;
-  //int i;
 
   cl.cpu_funcs[0] = function;
   cl.where = CHPL_CPU;
@@ -49,8 +48,8 @@ int chpl_codelet_sequential(_codelet_tag_t self_id, _codelet_tag_t incoming,
 
   /* Create Codelet Task */
   task = _codelet_create();
-  task->use_tag = 1;
-  task->tag_id = self_id;
+  //task->use_tag = 1;
+  //task->tag_id = self_id;
   task->synchronous = 1;
   task->cl = &cl;
   task->cl_arg = params;
