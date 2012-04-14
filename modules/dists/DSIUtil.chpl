@@ -122,13 +122,13 @@ proc _computeChunkStartEnd(nElems, nChunks, myCnk): 2*nElems.type {
     var endIx = myChunk * (div + 1);
     //writeln("_computeChunkStartEnd", (numElems, numChunks, myChunk),
     // " = ", endIx - div, "..", endIx);
-    return (endIx - div, endIx);
+    return ((endIx - div):RT, (endIx):RT);
   } else {
     // (div) elements per chunk
     var startIx1 = numElems - (numChunks - myChunk + 1) * div;
     //writeln("_computeChunkStartEnd", (numElems, numChunks, myChunk),
     // " = ", startIx1 + 1, "..", startIx1 + div);
-    return (startIx1 + 1, startIx1 + div);
+    return ((startIx1 + 1):RT, (startIx1 + div):RT);
   }
 }
 

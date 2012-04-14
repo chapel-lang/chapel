@@ -43,7 +43,7 @@ class BlockCyclic1dom {
   var wholeRstrideAbs: idxType;
 
   // a copy of BlockCyclicDim constants
-  const lowIdxAdj: idxType;
+  const adjLowIdx: idxType;
   const blockSizePos, numLocalesPos, cycleSizePos: bcdPosInt;
 
   // amount of storage per locale per cycle - depends on wholeR.stride
@@ -80,7 +80,7 @@ proc BlockCyclicDim.dsiUsesLocalLocID1d() param return false;
 proc BlockCyclic1dom.dsiSupportsPrivatization1d() param return true;
 
 proc BlockCyclic1dom.dsiGetPrivatizeData1d() {
-  return tuple(wholeR, wholeRstrideAbs, storagePerCycle, lowIdxAdj, name);
+  return tuple(wholeR, wholeRstrideAbs, storagePerCycle, adjLowIdx, name);
 }
 
 proc BlockCyclic1dom.dsiPrivatize1d(privDist, privatizeData) {
@@ -92,7 +92,7 @@ proc BlockCyclic1dom.dsiPrivatize1d(privDist, privatizeData) {
                   wholeR          = privatizeData(1),
                   wholeRstrideAbs = privatizeData(2),
                   storagePerCycle = privatizeData(3),
-                  lowIdxAdj       = privatizeData(4),
+                  adjLowIdx       = privatizeData(4),
                   // could include these in privatizeData
                   blockSizePos  = privDist.blockSizePos,
                   numLocalesPos = privDist.numLocalesPos,
@@ -168,9 +168,9 @@ proc BlockCyclicDim.dsiNewRectangularDom1d(type idxType, param stridable: bool,
   const lowIdxDom = this.lowIdx;
 
   // Allow for idxType and/or stoIndexT to be unsigned, by replacing
-  //  ind0 = ind -lowIdx  -->  ind0 = ind + lowIdxAdj
+  //  ind0 = ind -lowIdx  -->  ind0 = ind + adjLowIdx
   //
-  // where lowIdxAdj is
+  // where adjLowIdx is
   //  -lowIdx whenever possible (more natural for debugging), otherwise
   //  -lowIdx shifted up by a multiple of cycleSize until it is >=0.
   //
@@ -182,11 +182,11 @@ proc BlockCyclicDim.dsiNewRectangularDom1d(type idxType, param stridable: bool,
     const offset = modP2(lowIdxDom, cycleSizePos);
     return
       if offset.type == uint then (cycleSizePos:uint) - offset
-      else cycleSizePos - offset;
+      else                         cycleSizePos - offset;
   }
 
   // Do we need to care about _isSignedType(stoIndexT) ?
-  const lowIdxAdj =
+  const adjLowIdx =
     if _isSignedType(idxType)
     then
       -lowIdxDom
@@ -194,14 +194,14 @@ proc BlockCyclicDim.dsiNewRectangularDom1d(type idxType, param stridable: bool,
       if lowIdxDom <= 0 then -lowIdxDom else adjustLowIdx()
     ;
 
-  if BlockCyclicDim_printAdjustedLowIdx then writeln("BlockCyclicDim(numLocales=", numLocales, ", lowIdx=", lowIdx, " blockSize=", blockSize, " name=", name, ").dsiNewRectangularDom1d(idxType=", typeToString(idxType), "): adjusted lowIdx = ", lowIdxAdj);
+  if BlockCyclicDim_printAdjustedLowIdx then writeln("BlockCyclicDim(numLocales=", numLocales, ", lowIdx=", lowIdx, " blockSize=", blockSize, " name=", name, ").dsiNewRectangularDom1d(idxType=", typeToString(idxType), "): adjusted lowIdx = ", adjLowIdx);
 
-  _checkFitsWithin(lowIdxAdj, idxType);
+  _checkFitsWithin(adjLowIdx, idxType);
 
   const result = new BlockCyclic1dom(idxType = idxType,
                   stoIndexT = stoIndexT,
                   stridable = stridable,
-                  lowIdxAdj = lowIdxAdj: idxType,
+                  adjLowIdx = adjLowIdx: idxType,
                   blockSizePos  = this.blockSizePos,
                   numLocalesPos = this.numLocalesPos,
                   cycleSizePos  = this.cycleSizePos,
@@ -361,7 +361,7 @@ That may not be convenient in practice.
 */
 
 inline proc BlockCyclic1dom._dsiInd0(ind: idxType): idxType
-  return ind + lowIdxAdj;
+  return ind + adjLowIdx;
 
 inline proc BlockCyclic1dom._dsiCycNo(ind: idxType)
   return divfloorP2(_dsiInd0(ind), cycleSizePos): idxType;
@@ -398,16 +398,16 @@ inline proc BlockCyclic1dom._dsiStorageIdx(ind: idxType)
 inline proc BlockCyclic1dom._dsiIndicesOnCycLoc(cycNo: idxType, locNo: locIdT)
   : range(idxType)
 {
-  const startCycle = mulP2(cycNo, cycleSizePos) - lowIdxAdj;
+  const startCycle = mulP2(cycNo, cycleSizePos) - adjLowIdx;
   const startLoc = startCycle:idxType + locNo:idxType * blockSizePos:idxType;
   const endLoc = startLoc + blockSizePos:idxType - 1;
   return startLoc..#blockSizePos:idxType;
 }
 
 // Support mixing uint and int.
-inline proc mulP2(m: integral, n: bcdPosInt): m.type
+inline proc mulP2(m: integral, n: bcdPosInt)
   return if m.type == uint then m * (n:uint)
-  else                         (m * n): m.type;
+  else                          m * n;
 inline proc divP2(m: integral, n: bcdPosInt): m.type
   return if m.type == uint then m / (n:uint)
   else                         (m / n): m.type;
@@ -515,7 +515,7 @@ inline proc BlockCyclic1dom._dsiStorageLow(locId: locIdT): stoIndexT {
   // smallest cycNo(i) for i in wholeR
   var   lowCycNo  = _dsiCycNo(lowW): stoIndexT;
   const lowLocNo  = _dsiLocNo_formula(lowW);
-  var   lowIdxAdj = 0: stoIndexT;
+  var   adjLowIdx = 0: stoIndexT;
 
   // (Optional) tighten the storage if wholeR
   // does not fall on this locale in the lowest cycle.
@@ -525,9 +525,9 @@ inline proc BlockCyclic1dom._dsiStorageLow(locId: locIdT): stoIndexT {
     // (Optional) tighten the storage if wholeR
     // starts on this locale, but not at the beginning of it.
     if lowLocNo == locId then
-      lowIdxAdj = _divByStride(_dsiLocOff(lowW));
+      adjLowIdx = _divByStride(_dsiLocOff(lowW));
 
-  return lowCycNo * storagePerCycle:stoIndexT + lowIdxAdj;
+  return lowCycNo * storagePerCycle:stoIndexT + adjLowIdx;
 }
 
 inline proc BlockCyclic1dom._dsiStorageHigh(locId: locIdT): stoIndexT {
