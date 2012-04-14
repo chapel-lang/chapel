@@ -104,7 +104,13 @@ proc _computeNumChunks(numElems): int {
 
 // Divide 1..numElems into (almost) equal numChunk pieces
 // and return myChunk-th piece.
-proc _computeChunkStartEnd(numElems, numChunks, myChunk) {
+proc _computeChunkStartEnd(nElems, nChunks, myCnk): 2*nElems.type {
+  // the type for intermediate computations
+  type IT = if nElems.type == uint then uint else int;
+  const (numElems, numChunks, myChunk) = (nElems:IT, nChunks:IT, myCnk:IT);
+  // the result type
+  type RT = nElems.type;
+
   var div = numElems / numChunks;
   var rem = numElems % numChunks;
 
