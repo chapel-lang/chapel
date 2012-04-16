@@ -872,7 +872,7 @@ void CallExpr::codegen(FILE* outfile) {
           }
           break;
         }
-        if (call->isPrimitive(PRIM_GET_REF)) {
+        if (call->isPrimitive(PRIM_DEREF)) {
           if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE) ||
               call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
             Type* valueType;
@@ -1258,7 +1258,7 @@ void CallExpr::codegen(FILE* outfile) {
       else
         gen(outfile, "%A = %A", get(1), get(2));
       break;
-    case PRIM_GET_REF:
+    case PRIM_DEREF:
     case PRIM_GET_SVEC_MEMBER_VALUE:
     case PRIM_GET_MEMBER_VALUE:
     case PRIM_GET_LOCALEID:
@@ -1270,7 +1270,7 @@ void CallExpr::codegen(FILE* outfile) {
     case PRIM_GPU_GET_ARRAY:
       // generated during generation of PRIM_MOVE
       break;
-    case PRIM_SET_REF:
+    case PRIM_ADDR_OF:
       gen(outfile, "&(%A)", get(1));
       break;
     case PRIM_REF2STR:

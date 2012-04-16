@@ -372,8 +372,8 @@ initPrimitive() {
   prim_def(PRIM_GET_IMAG, "complex_get_imag", returnInfoComplexField);
   prim_def(PRIM_QUERY, "query", returnInfoUnknown);
 
-  prim_def(PRIM_SET_REF, "set ref", returnInfoRef);
-  prim_def(PRIM_GET_REF, "get ref", returnInfoVal, false, true);
+  prim_def(PRIM_ADDR_OF, "addr of", returnInfoRef);
+  prim_def(PRIM_DEREF,   "deref",   returnInfoVal, false, true);
 
   // local block primitives
   prim_def(PRIM_LOCAL_CHECK, "local_check", returnInfoVoid, true, true);

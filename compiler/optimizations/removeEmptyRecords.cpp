@@ -99,8 +99,8 @@ removeEmptyRecords() {
       if (CallExpr* call = toCallExpr(se->parentExpr)) {
         if (call->primitive) {
           //call->isPrimitive(PRIM_SET_MEMBER) ||
-          //            call->isPrimitive(PRIM_SET_REF) ||
-          //            call->isPrimitive(PRIM_GET_REF) ||
+          //            call->isPrimitive(PRIM_ADDR_OF) ||
+          //            call->isPrimitive(PRIM_DEREF) ||
           //            call->isPrimitive(PRIM_MOVE)) {
           call->getStmtExpr()->remove();
           continue;

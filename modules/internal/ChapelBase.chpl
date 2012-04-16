@@ -1244,7 +1244,7 @@ pragma "inline" proc chpl__initCopy(type t) {
 }
 
 pragma "inline" pragma "ref"
-proc chpl__initCopy(r: _ref) return chpl__initCopy(__primitive("get ref", r));
+proc chpl__initCopy(r: _ref) return chpl__initCopy(__primitive("deref", r));
 
 pragma "inline" proc chpl__initCopy(sv: sync) {
   return sv.readFE();
