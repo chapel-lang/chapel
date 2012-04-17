@@ -1,4 +1,4 @@
-pragma "inline" proc foo() {
+inline proc foo() {
   var i : int = 0;
   while(i < 10) {
     i = i + 1;

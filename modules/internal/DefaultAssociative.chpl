@@ -82,7 +82,7 @@ class DefaultAssociativeDom: BaseAssociativeDom {
   // Standard user domain interface
   //
 
-  pragma "inline"
+  inline
   proc dsiNumIndices {
     // I'm not sure if this is desirable
     if parSafe then tableLock.readFE();
@@ -471,7 +471,7 @@ proc _gen_key(i: int(64)): int(64) {
   return (key & max(int(64))): int(64);  // YAH, make non-negative
 }
 
-pragma "inline"
+inline
 proc chpl__defaultHash(b: bool): int(64) {
   if (b) then
     return 0;
@@ -479,33 +479,33 @@ proc chpl__defaultHash(b: bool): int(64) {
     return 1;
 }
 
-pragma "inline"
+inline
 proc chpl__defaultHash(i: int(64)): int(64) {
   return _gen_key(i);
 }
 
-pragma "inline"
+inline
 proc chpl__defaultHash(u: uint(64)): int(64) {
   return _gen_key(u:int(64));
 }
 
-pragma "inline"
+inline
 proc chpl__defaultHash(f: real): int(64) {
   return _gen_key(__primitive( "real2int", f));
 }
 
-pragma "inline"
+inline
 proc chpl__defaultHash(c: complex): int(64) {
   return _gen_key(__primitive("real2int", c.re) ^ __primitive("real2int", c.im)); 
 }
 
-pragma "inline"
+inline
 proc chpl__defaultHash(u: chpl_taskID_t): int(64) {
   return _gen_key(u:int(64));
 }
 
 // Use djb2 (Dan Bernstein in comp.lang.c.
-pragma "inline"
+inline
 proc chpl__defaultHash(x : string): int(64) {
   var hash: int(64) = 0;
   for c in 1..(x.length) {
@@ -514,7 +514,7 @@ proc chpl__defaultHash(x : string): int(64) {
   return _gen_key(hash);
 }
 
-pragma "inline"
+inline
 proc chpl__defaultHash(o: object): int(64) {
   return _gen_key(__primitive( "object2int", o));
 }

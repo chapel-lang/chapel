@@ -40,11 +40,11 @@ record rangeBase
   var _alignment: idxType = 0;                   // alignment
 
   proc strType type return chpl__signedType(idxType);
-  pragma "inline" proc low return _low;       // public getter for low bound
-  pragma "inline" proc high return _high;     // public getter for high bound
-  pragma "inline" proc stride where stridable return _stride;
+  inline proc low return _low;       // public getter for low bound
+  inline proc high return _high;     // public getter for high bound
+  inline proc stride where stridable return _stride;
   proc stride param where !stridable return 1 : strType;
-  pragma "inline" proc alignment return _alignment;        // public getter for alignment
+  inline proc alignment return _alignment;        // public getter for alignment
 
 }
 
@@ -97,7 +97,7 @@ proc isBoundedRangeB(r: rangeBase(?)) param
   return r.boundedType == BoundedRangeType.bounded;
 
 // Returns the starting index (with minimal checks).
-pragma "inline" 
+inline 
 proc rangeBase.first
 {
   if ! stridable then return _low;
@@ -105,7 +105,7 @@ proc rangeBase.first
 }
 
 // Returns the ending index (with minimal checks).
-pragma "inline" 
+inline 
 proc rangeBase.last
 {
   if ! stridable then return _high;
@@ -115,7 +115,7 @@ proc rangeBase.last
 // Returns the low index, properly aligned.
 // The aligned low bound may be higher than the high bound.
 // The client must check that the low bound exists before calling this function.
-pragma "inline"
+inline
 proc rangeBase.alignedLow : idxType
 {
   if ! stridable then return _low;
@@ -127,7 +127,7 @@ proc rangeBase.alignedLow : idxType
 // Returns the high index, properly aligned.
 // The aligned high bound may be lower than the low bound.
 // The client must check that the high bound exists before calling this function.
-pragma "inline"
+inline
 proc rangeBase.alignedHigh : idxType
 {
   if ! stridable then return _high;
@@ -183,7 +183,7 @@ proc rangeBase.isEmpty() param where !isBoundedRangeB(this)
 proc rangeBase.hasFirst() param where !stridable && !hasHighBound()
   return hasLowBound();
 
-pragma "inline" 
+inline 
 proc rangeBase.hasFirst()
 {
   if this.isEmpty() then return false;
@@ -193,7 +193,7 @@ proc rangeBase.hasFirst()
 proc rangeBase.hasLast() param where !stridable && !hasLowBound()
   return hasHighBound();
 
-pragma "inline" 
+inline 
 proc rangeBase.hasLast()
 {
   if this.isEmpty() then return false;
@@ -212,21 +212,21 @@ proc rangeBase.isNaturallyAligned()
   return false;
 }
 
-pragma "inline"
+inline
 proc rangeBase.isNaturallyAligned()
   where this.boundedType == BoundedRangeType.boundedLow
 {
   return this.alignedLow == _low;
 }
 
-pragma "inline"
+inline
 proc rangeBase.isNaturallyAligned()
   where this.boundedType == BoundedRangeType.boundedHigh
 {
   return this.alignedHigh == _high;
 }
 
-pragma "inline"
+inline
 proc rangeBase.isNaturallyAligned()
 {
   if _alignment == 0 then return true;
@@ -255,7 +255,7 @@ proc rangeBase.member(i: idxType)
 }
 
 // Returns true if the other range is contained within this one.
-pragma "inline"
+inline
 proc rangeBase.member(other: rangeBase(?))
 {
   return other == this(other);
@@ -327,7 +327,7 @@ proc ident(r1: rangeBase(?), r2: rangeBase(?))
 // we get a compiler error in the boundsCheck function.
 //
 
-pragma "inline"
+inline
 proc rangeBase.boundsCheck(other: rangeBase(?e,?b,?s)) where b == BoundedRangeType.boundedNone
   return true;
 
@@ -351,7 +351,7 @@ proc rangeBase.boundsCheck(other: rangeBase(?e,?b,?s))
   return (boundedOther.length == 0) || member(boundedOther);
 }
 
-pragma "inline"
+inline
 proc rangeBase.boundsCheck(other: idxType)
   return member(other);
 
@@ -543,7 +543,7 @@ proc +(r: rangeBase(?e,?b,?s), i: integral)
 		   r.stride : strType, r._alignment + i : resultType);
 }
 
-pragma "inline"
+inline
 proc +(i:integral, r: rangeBase(?e,?b,?s))
   return r + i;
 
@@ -976,7 +976,7 @@ proc rangeBase.readWriteThis(f)
 }
 
 // Return a substring of a string with a range of indices.
-pragma "inline" proc string.substring(r: rangeBase(?))
+inline proc string.substring(r: rangeBase(?))
 {
   if r.boundedType != BoundedRangeType.bounded then
     compilerError("substring indexing undefined on unbounded ranges");
@@ -1120,10 +1120,10 @@ proc chpl__extendedEuclidHelper(u, v)
   return (U(3), U(1));
 }
 
-pragma "inline" proc chpl__extendedEuclid(u:int(32), v:int(32))
+inline proc chpl__extendedEuclid(u:int(32), v:int(32))
 { return chpl__extendedEuclidHelper(u,v); }
 
-pragma "inline" proc chpl__extendedEuclid(u:int(64), v:int(64))
+inline proc chpl__extendedEuclid(u:int(64), v:int(64))
 { return chpl__extendedEuclidHelper(u,v); }
 
 }

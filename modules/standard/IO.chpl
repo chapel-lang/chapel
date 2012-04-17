@@ -757,7 +757,7 @@ record ioChar {
     halt("ioChar.writeThis must be written in Writer subclasses");
   }
 }
-pragma "inline" proc _cast(type t, x: ioChar) where t == string {
+inline proc _cast(type t, x: ioChar) where t == string {
   return qio_encode_to_string(x.ch);
 }
 
@@ -769,7 +769,7 @@ record ioNewline {
     f.write("\n");
   }
 }
-pragma "inline" proc _cast(type t, x: ioNewline) where t == string {
+inline proc _cast(type t, x: ioNewline) where t == string {
   return "\n";
 }
 
@@ -783,7 +783,7 @@ record ioLiteral {
   }
 }
 
-pragma "inline" proc _cast(type t, x: ioLiteral) where t == string {
+inline proc _cast(type t, x: ioLiteral) where t == string {
   return x.val;
 }
 
@@ -797,7 +797,7 @@ record ioBits {
   }
 }
 
-pragma "inline" proc _cast(type t, x: ioBits) where t == string {
+inline proc _cast(type t, x: ioBits) where t == string {
   return "ioBits(v=" + x.v:string + ", nbits=" + x.nbits:string + ")";
 }
 

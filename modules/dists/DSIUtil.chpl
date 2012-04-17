@@ -1,16 +1,16 @@
 // Useful functions for implementing distributions
 
-pragma "inline"
+inline
 proc getDataParTasksPerLocale() {
   return dataParTasksPerLocale;
 }
 
-pragma "inline"
+inline
 proc getDataParIgnoreRunningTasks() {
   return dataParIgnoreRunningTasks;
 }
 
-pragma "inline"
+inline
 proc getDataParMinGranularity() {
   return dataParMinGranularity;
 }
