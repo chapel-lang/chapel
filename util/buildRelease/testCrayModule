@@ -123,7 +123,7 @@ for pe in $PES ; do
                 $CHPL_HOME/util/printchplenv
                 make clean
                 make hello6-taskpar-dist $TESTS
-                if [ "$COMPILE_ONLY" != 0 ] ; then
+                if [ "$COMPILE_ONLY" != "1" ] ; then
                     echo "***"
                     echo "*** Running hello6-taskpar-dist"
                     ./hello6-taskpar-dist `cat hello6-taskpar-dist.execopts` -nl `cat NUMLOCALES` -q | sort - | diff hello6-taskpar-dist.good -
@@ -162,7 +162,7 @@ for pe in $PES ; do
             $CHPL_HOME/util/printchplenv
             make clean
             make hello6-taskpar-dist $TESTS
-            if [ "$COMPILE_ONLY" != 0 ] ; then
+            if [ "$COMPILE_ONLY" != "1" ] ; then
                 echo "***"
                 echo "*** Running hello6-taskpar-dist"
                 ./hello6-taskpar-dist `cat hello6-taskpar-dist.execopts` -nl `cat NUMLOCALES` -q | sort - | diff hello6-taskpar-dist.good -
