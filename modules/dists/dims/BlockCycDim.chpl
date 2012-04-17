@@ -395,12 +395,14 @@ inline proc BlockCyclic1dom._dsiStorageIdx(ind: idxType)
   return _dsiStorageIdx_formula(ind): stoIndexT;
 
 // oblivious of 'wholeR'
-inline proc BlockCyclic1dom._dsiIndicesOnCycLoc(cycNo: idxType, locNo: locIdT)
+inline proc BlockCyclic1dom._dsiIndicesOnCycLoc(cycNo: idxType, locNo: locIdT,
+                                                param zerobased)
   : range(idxType)
 {
-  const startCycle = mulP2(cycNo, cycleSizePos) - adjLowIdx;
+  const startCycle = mulP2(cycNo, cycleSizePos) -
+    // cycNo*cycleSize may be <adjLowIdx, subtraction would wrap for unsigned
+    if zerobased then 0 else adjLowIdx;
   const startLoc = startCycle:idxType + locNo:idxType * blockSizePos:idxType;
-  const endLoc = startLoc + blockSizePos:idxType - 1;
   return startLoc..#blockSizePos:idxType;
 }
 
@@ -574,16 +576,32 @@ proc BlockCyclic1dom.dsiAccess1d(ind: idxType): (locIdT, stoIndexT) {
   return (_dsiLocNo_formula(ind), _dsiStorageIdx(ind));
 }
 
+proc _bcddb(args...) { /* writeln((...args)); */ }
+
 iter BlockCyclic1locdom.dsiMyDensifiedRangeForSingleTask1d(globDD) {
+  param zbased = _isUnsignedType(idxType);
 // todo: for the special case handled in dsiMyDensifiedRangeForTaskID1d,
 // maybe handling it here will be beneficial, too?
   const locNo = this.locId;
-  const wholeR = globDD.wholeR;
-  const lowIdx = wholeR.low;
-  const highIdx = wholeR.high;
+  const wholeROrig = globDD.wholeR;
+  const wholeR  = globDD.wholeR +
+    if zbased then globDD.adjLowIdx else 0:idxType;
+  const lowIdx  = wholeROrig.low;
+  const highIdx = wholeROrig.high;
   type retT = dsiMyDensifiedRangeType1d(globDD);
   param stridable = globDD.stridable;
-  assert(stridable == wholeR.stridable); // sanity
+  compilerAssert(stridable == wholeR.stridable); // sanity
+
+  _bcddb("\n", "dsiMyDensifiedRangeForSingleTask1d ",
+         "{ wholeR ",    globDD.wholeR,
+         "  adjLowIdx ", globDD.adjLowIdx,
+         "  cycleSize ", globDD.cycleSizePos,
+         " }\n",
+         "  locNo ", locNo,
+         "  wholeR ", wholeR,
+         "  lowIdx ", lowIdx,
+         "  highIdx ", highIdx,
+         "");
 
   if lowIdx > highIdx then
     return;
@@ -591,17 +609,41 @@ iter BlockCyclic1locdom.dsiMyDensifiedRangeForSingleTask1d(globDD) {
   const lowCycNo = globDD._dsiCycNo(lowIdx);
   const highCycNo = globDD._dsiCycNo(highIdx);
   const up = wholeR.stride > 0;
+  _bcddb("  lowCycNo ", lowCycNo, "  highCycNo ", highCycNo);
   assert(lowIdx <= highIdx);
 
-  proc mydensify(densifyee): dsiMyDensifiedRangeType1d(globDD) {
-    const temp = densify(densifyee, wholeR);
-    return temp:retT;
+  // Right now explicit cast range(64) to range(32) is not implemented.
+  // We are doing it by hand here. Cf. proc =(range, range).
+  proc rangecast(out r1: range(?), r2: range(?)): void {
+    compilerAssert(r1.boundedType == r2.boundedType);
+    if !r1.stridable && r2.stridable && r2._stride != 1 then
+      halt("range with non-unit stride is cast to non-stridable range");
+    r1._base._low       = r2._base._low: r1.idxType;
+    r1._base._high      = r2._base._high: r1.idxType;
+    r1._base._stride    = r2._base._stride: r1.strType;
+    r1._base._alignment = r2._base._alignment: r1.idxType;
+    r1._aligned = r2._aligned;
   }
 
-  var curIndices = globDD._dsiIndicesOnCycLoc(
-                            if up then lowCycNo else highCycNo, locNo);
+  // todo: make a cheaper densify() for this case, where
+  // always densifyee==wholeR[smth..smthelse]
+  proc mydensify(densifyee): retT {
+    const temp = densify(densifyee, wholeR);
+    _bcddb("  mydensify(", densifyee, ") = ", temp);
+    var result: retT;
+    rangecast(result, temp);
+    return result;
+  }
 
+  // Cf. wholeR above. We rely on this:
+  //   densify(range-adjLowIdx, wholeR) == densify(range, wholeR+adjLowIdx)
+  // Need zbased==true when idxType is unsigned (see _dsiIndicesOnCycLoc).
+  // I retained zbased==false, too, because it makes things more natural
+  // and perhaps avoids overflow in some cases.
+  var curIndices = globDD._dsiIndicesOnCycLoc(
+                     if up then lowCycNo else highCycNo, locNo, zbased);
   const firstRange = wholeR[curIndices];
+  _bcddb("  curIndices ", curIndices, "  firstRange ", firstRange);
   if firstRange.low <= firstRange.high then
     yield mydensify(firstRange);
   // else nothing to yield on this locale
@@ -613,6 +655,7 @@ iter BlockCyclic1locdom.dsiMyDensifiedRangeForSingleTask1d(globDD) {
   proc advance() {
     curIndices = curIndices.translate(
       if !stridable || up then globDD.cycleSizePos else -globDD.cycleSizePos);
+    _bcddb("  advance curIndices ", curIndices);
   }
 
   for cycNo in (lowCycNo + 1) .. (highCycNo - 1) {
