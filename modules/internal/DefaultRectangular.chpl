@@ -522,12 +522,10 @@ class DefaultRectangularArr: BaseArr {
     data.init(size);
   }
 
-  inline
-  proc getDataIndex(ind: idxType ...1) where rank == 1
+  inline proc getDataIndex(ind: idxType ...1) where rank == 1
     return getDataIndex(ind);
 
-  inline
-  proc getDataIndex(ind: rank* idxType) {
+  inline proc getDataIndex(ind: rank* idxType) {
     var sum = origin;
     if stridable {
       for param i in 1..rank do
@@ -541,12 +539,10 @@ class DefaultRectangularArr: BaseArr {
   }
 
   // only need second version because wrapper record can pass a 1-tuple
-  inline
-  proc dsiAccess(ind: idxType ...1) var where rank == 1
+  inline proc dsiAccess(ind: idxType ...1) var where rank == 1
     return dsiAccess(ind);
 
-  inline
-  proc dsiAccess(ind : rank*idxType) var {
+  inline proc dsiAccess(ind : rank*idxType) var {
     if boundsChecking then
       if !dom.dsiMember(ind) then
         halt("array index out of bounds: ", ind);

@@ -372,13 +372,11 @@ class GPURectangularArr: BaseArr {
     data.init(size);
   }
 
-  inline
-  proc dsiAccess(ind: idxType ...1) var where rank == 1 {
+  inline proc dsiAccess(ind: idxType ...1) var where rank == 1 {
     return dsiAccess(ind);
   }
 
-  inline
-  proc dsiAccess(ind : rank*idxType) var {
+  inline proc dsiAccess(ind : rank*idxType) var {
     var sum = ind(1) - factoredOffs; // Hardcoded to support only 1D arrays
     return data(sum);
   }

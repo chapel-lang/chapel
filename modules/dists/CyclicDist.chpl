@@ -722,8 +722,7 @@ proc CyclicArr.dsiPrivatize(privatizeData) {
 }
 
 
-inline
-proc _remoteAccessData.getDataIndex(param stridable, myStr: rank*idxType, ind: rank*idxType, startIdx, dimLen) {
+inline proc _remoteAccessData.getDataIndex(param stridable, myStr: rank*idxType, ind: rank*idxType, startIdx, dimLen) {
   // modified from DefaultRectangularArr
   var sum = origin;
   if stridable {

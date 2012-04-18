@@ -71,8 +71,7 @@ record Timer {
 }
 
 // returns diff of two timer values in microseconds
-inline
-proc _diff_timer(t1: _timervalue, t2: _timervalue) {
+inline proc _diff_timer(t1: _timervalue, t2: _timervalue) {
   var s1 = chpl_seconds_timer(t1);
   var s2 = chpl_seconds_timer(t2);
   var us1 = chpl_microseconds_timer(t1);

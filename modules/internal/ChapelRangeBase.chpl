@@ -97,16 +97,14 @@ proc isBoundedRangeB(r: rangeBase(?)) param
   return r.boundedType == BoundedRangeType.bounded;
 
 // Returns the starting index (with minimal checks).
-inline 
-proc rangeBase.first
+inline proc rangeBase.first
 {
   if ! stridable then return _low;
   else return if _stride > 0 then this.alignedLow else this.alignedHigh;
 }
 
 // Returns the ending index (with minimal checks).
-inline 
-proc rangeBase.last
+inline proc rangeBase.last
 {
   if ! stridable then return _high;
   else return if _stride > 0 then this.alignedHigh else this.alignedLow;
@@ -115,8 +113,7 @@ proc rangeBase.last
 // Returns the low index, properly aligned.
 // The aligned low bound may be higher than the high bound.
 // The client must check that the low bound exists before calling this function.
-inline
-proc rangeBase.alignedLow : idxType
+inline proc rangeBase.alignedLow : idxType
 {
   if ! stridable then return _low;
 
@@ -127,8 +124,7 @@ proc rangeBase.alignedLow : idxType
 // Returns the high index, properly aligned.
 // The aligned high bound may be lower than the low bound.
 // The client must check that the high bound exists before calling this function.
-inline
-proc rangeBase.alignedHigh : idxType
+inline proc rangeBase.alignedHigh : idxType
 {
   if ! stridable then return _high;
 
@@ -173,8 +169,7 @@ proc rangeBase.hasLowBound() param
 proc rangeBase.hasHighBound() param
   return boundedType == BoundedRangeType.bounded || boundedType == BoundedRangeType.boundedHigh;
 
-inline
-proc rangeBase.isEmpty()       where isBoundedRangeB(this)
+inline proc rangeBase.isEmpty()       where isBoundedRangeB(this)
   return this.alignedLow > this.alignedHigh;
 
 proc rangeBase.isEmpty() param where !isBoundedRangeB(this)
@@ -183,8 +178,7 @@ proc rangeBase.isEmpty() param where !isBoundedRangeB(this)
 proc rangeBase.hasFirst() param where !stridable && !hasHighBound()
   return hasLowBound();
 
-inline 
-proc rangeBase.hasFirst()
+inline proc rangeBase.hasFirst()
 {
   if this.isEmpty() then return false;
   return if stride > 0 then hasLowBound() else hasHighBound();
@@ -193,8 +187,7 @@ proc rangeBase.hasFirst()
 proc rangeBase.hasLast() param where !stridable && !hasLowBound()
   return hasHighBound();
 
-inline 
-proc rangeBase.hasLast()
+inline proc rangeBase.hasLast()
 {
   if this.isEmpty() then return false;
   return if stride > 0 then hasHighBound() else hasLowBound();
@@ -212,22 +205,19 @@ proc rangeBase.isNaturallyAligned()
   return false;
 }
 
-inline
-proc rangeBase.isNaturallyAligned()
+inline proc rangeBase.isNaturallyAligned()
   where this.boundedType == BoundedRangeType.boundedLow
 {
   return this.alignedLow == _low;
 }
 
-inline
-proc rangeBase.isNaturallyAligned()
+inline proc rangeBase.isNaturallyAligned()
   where this.boundedType == BoundedRangeType.boundedHigh
 {
   return this.alignedHigh == _high;
 }
 
-inline
-proc rangeBase.isNaturallyAligned()
+inline proc rangeBase.isNaturallyAligned()
 {
   if _alignment == 0 then return true;
   return false;
@@ -255,8 +245,7 @@ proc rangeBase.member(i: idxType)
 }
 
 // Returns true if the other range is contained within this one.
-inline
-proc rangeBase.member(other: rangeBase(?))
+inline proc rangeBase.member(other: rangeBase(?))
 {
   return other == this(other);
 }
@@ -269,8 +258,7 @@ proc ==(r1: rangeBase(?), r2: rangeBase(?)) param where
   return false;
 }
 
-inline
-proc ==(r1: rangeBase(?), r2: rangeBase(?)) where
+inline proc ==(r1: rangeBase(?), r2: rangeBase(?)) where
   r1.boundedType == r2.boundedType && isBoundedRangeB(r1)
 {
   // gotta have a special case for length 0 or 1
@@ -283,8 +271,7 @@ proc ==(r1: rangeBase(?), r2: rangeBase(?)) where
   return true;
 }
 
-inline
-proc ==(r1: rangeBase(?), r2: rangeBase(?)) where
+inline proc ==(r1: rangeBase(?), r2: rangeBase(?)) where
   r1.boundedType == r2.boundedType && ! isBoundedRangeB(r1)
 {
   if r1.stride != r2.stride then return false;
@@ -327,8 +314,7 @@ proc ident(r1: rangeBase(?), r2: rangeBase(?))
 // we get a compiler error in the boundsCheck function.
 //
 
-inline
-proc rangeBase.boundsCheck(other: rangeBase(?e,?b,?s)) where b == BoundedRangeType.boundedNone
+inline proc rangeBase.boundsCheck(other: rangeBase(?e,?b,?s)) where b == BoundedRangeType.boundedNone
   return true;
 
 proc rangeBase.boundsCheck(other: rangeBase(?e,?b,?s))
@@ -351,8 +337,7 @@ proc rangeBase.boundsCheck(other: rangeBase(?e,?b,?s))
   return (boundedOther.length == 0) || member(boundedOther);
 }
 
-inline
-proc rangeBase.boundsCheck(other: idxType)
+inline proc rangeBase.boundsCheck(other: idxType)
   return member(other);
 
 
@@ -543,8 +528,7 @@ proc +(r: rangeBase(?e,?b,?s), i: integral)
 		   r.stride : strType, r._alignment + i : resultType);
 }
 
-inline
-proc +(i:integral, r: rangeBase(?e,?b,?s))
+inline proc +(i:integral, r: rangeBase(?e,?b,?s))
   return r + i;
 
 proc -(r: rangeBase(?e,?b,?s), i: integral)

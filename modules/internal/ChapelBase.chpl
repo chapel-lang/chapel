@@ -634,11 +634,9 @@ inline proc isNonnegative(param i) param return i >= 0;
 //  bug?  in setters, parameterize real argument over complex bit width
 //
 pragma "ref this"
-inline 
-proc chpl_anycomplex.re var return __primitive("complex_get_real", this);
+inline proc chpl_anycomplex.re var return __primitive("complex_get_real", this);
 pragma "ref this"
-inline 
-proc chpl_anycomplex.im var return __primitive("complex_get_imag", this);
+inline proc chpl_anycomplex.im var return __primitive("complex_get_imag", this);
 
 //
 // helper functions
@@ -1246,8 +1244,7 @@ inline proc chpl__initCopy(type t) {
 }
 
 pragma "ref"
-inline 
-proc chpl__initCopy(r: _ref) return chpl__initCopy(__primitive("deref", r));
+inline proc chpl__initCopy(r: _ref) return chpl__initCopy(__primitive("deref", r));
 
 inline proc chpl__initCopy(sv: sync) {
   return sv.readFE();
@@ -1283,15 +1280,12 @@ pragma "removable auto copy" proc chpl__autoCopy(x: []) {
 }
 
 pragma "dont disable remote value forwarding"
-inline
-proc chpl__autoCopy(x: sync) return x;
+inline proc chpl__autoCopy(x: sync) return x;
 
 pragma "dont disable remote value forwarding"
-inline
-proc chpl__autoCopy(x: single) return x;
+inline proc chpl__autoCopy(x: single) return x;
 
-inline
-proc chpl__autoCopy(x: _tuple) {
+inline proc chpl__autoCopy(x: _tuple) {
   // body inserted during generic instantiation
 }
 

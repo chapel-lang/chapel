@@ -381,8 +381,7 @@ record _distribution {
 
   proc _distribution(_value, _valueType) { }
 
-  inline
-  proc _value {
+  inline proc _value {
     if _isPrivatized(_valueType) {
       return chpl_getPrivatizedCopy(_valueType.type, _value);
     } else {
@@ -482,8 +481,7 @@ record _domain {
   var _valueType; // stores type of privatized domains
   var _promotionType: index(rank, _value.idxType);
 
-  inline
-  proc _value {
+  inline proc _value {
     if _isPrivatized(_valueType) {
       return chpl_getPrivatizedCopy(_valueType.type, _value);
     } else {
@@ -537,8 +535,7 @@ record _domain {
     compilerError("associative domains do not support .stridable");  
   }
 
-  inline
-  proc these() {
+  inline proc these() {
     return _value.these();
   }
 
@@ -1012,8 +1009,7 @@ record _array {
   var _valueType; // stores type of privatized arrays
   var _promotionType: _value.eltType;
 
-  inline
-  proc _value {
+  inline proc _value {
     if _isPrivatized(_valueType) {
       return chpl_getPrivatizedCopy(_valueType.type, _value);
     } else {
@@ -1036,16 +1032,14 @@ record _array {
   proc _dom return _getDomain(_value.dom);
   proc rank param return this.domain.rank;
 
-  inline
-  proc this(i: rank*_value.dom.idxType) var {
+  inline proc this(i: rank*_value.dom.idxType) var {
     if isRectangularArr(this) || isSparseArr(this) then
       return _value.dsiAccess(i);
     else
       return _value.dsiAccess(i(1));
   }
 
-  inline
-  proc this(i: _value.dom.idxType ...rank) var
+  inline proc this(i: _value.dom.idxType ...rank) var
     return this(i);
 
   //
@@ -1141,8 +1135,7 @@ record _array {
     return localSlice(d.getIndices());
   }
 
-  inline
-  proc these() var {
+  inline proc these() var {
     return _value.these();
   }
 
@@ -1696,13 +1689,11 @@ inline proc _checkIterator(x) {
   return x;
 }
 
-inline
-proc _freeIterator(ic: _iteratorClass) {
+inline proc _freeIterator(ic: _iteratorClass) {
   __primitive("chpl_mem_free", ic);
 }
 
-inline
-proc _freeIterator(x: _tuple) {
+inline proc _freeIterator(x: _tuple) {
   for param i in 1..x.size do
     _freeIterator(x(i));
 }
@@ -1711,20 +1702,17 @@ pragma "no implicit copy"
 inline proc _toLeader(iterator: _iteratorClass)
   return chpl__autoCopy(__primitive("to leader", iterator));
 
-inline
-proc _toLeader(ir: _iteratorRecord) {
+inline proc _toLeader(ir: _iteratorRecord) {
   pragma "no copy" var ic = _getIterator(ir);
   pragma "no copy" var leader = _toLeader(ic);
   _freeIterator(ic);
   return leader;
 }
 
-inline
-proc _toLeader(x: _tuple)
+inline proc _toLeader(x: _tuple)
   return _toLeader(x(1));
 
-inline
-proc _toLeader(x)
+inline proc _toLeader(x)
   return _toLeader(x.these());
 
 //
@@ -1789,21 +1777,18 @@ pragma "no implicit copy"
 inline proc _toFollower(iterator: _iteratorClass, leaderIndex)
   return chpl__autoCopy(__primitive("to follower", iterator, leaderIndex));
 
-inline
-proc _toFollower(ir: _iteratorRecord, leaderIndex) {
+inline proc _toFollower(ir: _iteratorRecord, leaderIndex) {
   pragma "no copy" var ic = _getIterator(ir);
   pragma "no copy" var follower = _toFollower(ic, leaderIndex);
   _freeIterator(ic);
   return follower;
 }
 
-inline
-proc _toFollower(x, leaderIndex) {
+inline proc _toFollower(x, leaderIndex) {
   return _toFollower(x.these(), leaderIndex);
 }
 
-inline
-proc _toFollowerHelp(x: _tuple, leaderIndex, param dim: int) {
+inline proc _toFollowerHelp(x: _tuple, leaderIndex, param dim: int) {
   if dim == x.size-1 then
     return (_toFollower(x(dim), leaderIndex),
             _toFollower(x(dim+1), leaderIndex));
@@ -1812,8 +1797,7 @@ proc _toFollowerHelp(x: _tuple, leaderIndex, param dim: int) {
             (..._toFollowerHelp(x, leaderIndex, dim+1)));
 }
 
-inline
-proc _toFollower(x: _tuple, leaderIndex) {
+inline proc _toFollower(x: _tuple, leaderIndex) {
   return _toFollowerHelp(x, leaderIndex, 1);
 }
 
@@ -1822,8 +1806,7 @@ inline proc _toFastFollower(iterator: _iteratorClass, leaderIndex, fast: bool) {
   return chpl__autoCopy(__primitive("to follower", iterator, leaderIndex, true));
 }
 
-inline
-proc _toFastFollower(ir: _iteratorRecord, leaderIndex, fast: bool) {
+inline proc _toFastFollower(ir: _iteratorRecord, leaderIndex, fast: bool) {
   pragma "no copy" var ic = _getIterator(ir);
   pragma "no copy" var follower = _toFastFollower(ic, leaderIndex, fast=true);
   _freeIterator(ic);
@@ -1835,21 +1818,18 @@ inline proc _toFastFollower(iterator: _iteratorClass, leaderIndex) {
   return _toFollower(iterator, leaderIndex);
 }
 
-inline
-proc _toFastFollower(ir: _iteratorRecord, leaderIndex) {
+inline proc _toFastFollower(ir: _iteratorRecord, leaderIndex) {
   return _toFollower(ir, leaderIndex);
 }
 
-inline
-proc _toFastFollower(x, leaderIndex) {
+inline proc _toFastFollower(x, leaderIndex) {
   if chpl__staticFastFollowCheck(x) then
     return _toFastFollower(x.these(), leaderIndex, fast=true);
   else
     return _toFollower(x.these(), leaderIndex);
 }
 
-inline
-proc _toFastFollowerHelp(x: _tuple, leaderIndex, param dim: int) {
+inline proc _toFastFollowerHelp(x: _tuple, leaderIndex, param dim: int) {
   if dim == x.size-1 then
     return (_toFastFollower(x(dim), leaderIndex),
             _toFastFollower(x(dim+1), leaderIndex));
@@ -1858,8 +1838,7 @@ proc _toFastFollowerHelp(x: _tuple, leaderIndex, param dim: int) {
             (..._toFastFollowerHelp(x, leaderIndex, dim+1)));
 }
 
-inline
-proc _toFastFollower(x: _tuple, leaderIndex) {
+inline proc _toFastFollower(x: _tuple, leaderIndex) {
   return _toFastFollowerHelp(x, leaderIndex, 1);
 }
 
