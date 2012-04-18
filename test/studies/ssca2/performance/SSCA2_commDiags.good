@@ -43,12 +43,44 @@ histograph of node distributions by number of outgoing edges
 11  1
 12  2
 
-Kernel 2: (get = 0, get_nb = 0, get_nb_test = 0, get_nb_wait = 0, put = 0, fork = 0, fork_fast = 0, fork_nb = 0)
-Kernel 3: (get = 0, get_nb = 0, get_nb_test = 0, get_nb_wait = 0, put = 0, fork = 0, fork_fast = 0, fork_nb = 0)
+Kernel 2: (get = 64, get_nb = 0, get_nb_test = 0, get_nb_wait = 0, put = 7, fork = 0, fork_fast = 0, fork_nb = 6) (get = 344, get_nb = 0, get_nb_test = 0, get_nb_wait = 0, put = 20, fork = 13, fork_fast = 0, fork_nb = 0) (get = 208, get_nb = 0, get_nb_test = 0, get_nb_wait = 0, put = 4, fork = 5, fork_fast = 0, fork_nb = 0) (get = 214, get_nb = 0, get_nb_test = 0, get_nb_wait = 0, put = 4, fork = 5, fork_fast = 0, fork_nb = 0)
+Kernel 3: (get = 26222, get_nb = 0, get_nb_test = 0, get_nb_wait = 0, put = 126, fork = 2021, fork_fast = 0, fork_nb = 48) (get = 1581, get_nb = 0, get_nb_test = 0, get_nb_wait = 0, put = 728, fork = 165, fork_fast = 0, fork_nb = 0) (get = 1581, get_nb = 0, get_nb_test = 0, get_nb_wait = 0, put = 486, fork = 156, fork_fast = 0, fork_nb = 0) (get = 1581, get_nb = 0, get_nb_test = 0, get_nb_wait = 0, put = 602, fork = 156, fork_fast = 0, fork_nb = 0)
 
 
 Computing Betweenness Centrality exactly
-Kernel 4: (get = 0, get_nb = 0, get_nb_test = 0, get_nb_wait = 0, put = 0, fork = 0, fork_fast = 0, fork_nb = 0)
+Kernel 4:
+0: get: 103034 (~1%)
+0: get_nb: 0
+0: get_nb_test: 0
+0: get_nb_wait: 0
+0: put: 5180 (~1%)
+0: fork: 9902 (~1%)
+0: fork_fast: 0
+0: fork_nb: 1095
+1: get: 123752 (~1%)
+1: get_nb: 0
+1: get_nb_test: 0
+1: get_nb_wait: 0
+1: put: 5298 (~1%)
+1: fork: 10388 (~1%)
+1: fork_fast: 0
+1: fork_nb: 1074
+2: get: 112625 (~1%)
+2: get_nb: 0
+2: get_nb_test: 0
+2: get_nb_wait: 0
+2: put: 4814 (~1%)
+2: fork: 9503 (~1%)
+2: fork_fast: 0
+2: fork_nb: 1062
+3: get: 116371 (~1%)
+3: get_nb: 0
+3: get_nb_test: 0
+3: get_nb_wait: 0
+3: put: 4915 (~1%)
+3: fork: 9434 (~1%)
+3: fork_fast: 0
+3: fork_nb: 1044
 
 Max Betweenness Centrality: 396.343
 Min Betweenness Centrality: 0.0

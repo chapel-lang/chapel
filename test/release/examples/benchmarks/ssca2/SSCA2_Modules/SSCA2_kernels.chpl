@@ -34,17 +34,19 @@ module SSCA2_kernels
     // for this task.
     {
       if PRINT_TIMING_STATISTICS then stopwatch.start ();
-      var heaviest_edge_weight$ : sync int = 0;
 
       // ---------------------------------------------------------
       // find heaviest edge weight in a single pass over all edges
       // ---------------------------------------------------------
 
-      // TODO: replace with a proper reduction
+      proc maxweight(s) {
+	var mymax = 0;
+	for w in G.edge_weight[s] do
+	  if w > mymax then mymax = w;
+	return mymax;
+      }
 
-      forall s in G.vertices do
-        forall w in G.edge_weight (s) do
-	  heaviest_edge_weight$ = max ( w, heaviest_edge_weight$ );
+      const heaviest_edge_weight = max reduce [s in G.vertices] maxweight(s);
 
       // ---------------------------------------------
       // in a second pass over all edges, extract list 
@@ -54,7 +56,7 @@ module SSCA2_kernels
       forall s in G.vertices do
         forall (t, w) in ( G.Neighbors (s), G.edge_weight (s) ) do
 
-	  if w == heaviest_edge_weight$.readXX () then {
+	  if w == heaviest_edge_weight then {
 	    heavy_edge_list.add ( (s,t) ); 
 	  };
 
@@ -72,8 +74,7 @@ module SSCA2_kernels
 
       if DEBUG_KERNEL2 then {
 	writeln ();
-	writeln ( "Heaviest weight      : ", 
-		  heaviest_edge_weight$ . readFF ()); 
+	writeln ( "Heaviest weight      : ", heaviest_edge_weight); 
 	writeln ( "Number of heavy edges:", heavy_edge_list.numIndices );
 	writeln ();
 	writeln ( "Edges with largest weight and other neighbors:" );
