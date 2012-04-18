@@ -155,7 +155,9 @@ Known Constraints and Bugs
   beta implementation of the native gemini conduit, but it should be
   noted that this version has not been tuned.  To use the native
   conduit, set the environment variable CHPL_COMM_SUBSTRATE to
-  'gemini'.
+  'gemini'.  The GASNet layer prints out a warning message regarding
+  the beta nature of the release.  To quiet this message set the
+  environment variable CHPL_GASNET_QUIET=y.
 
   There is a known GASNet configuration issue when using the gemini
   conduit with hugepage support that results in link errors due to

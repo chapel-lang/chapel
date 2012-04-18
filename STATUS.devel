@@ -504,6 +504,8 @@ Data Parallelism
 
 Locales and Domain Maps
 -----------------------
+- Distributed domain maps are currently only supported for dense,
+  rectangular domains.
 - The default value for locale types is incorrect.
   # types/locale/bradc/defaultLocaleVal.future
   # multilocale/sungeun/locale_default.future
@@ -609,12 +611,18 @@ Portability
 -----------
 Cray XE:
 - Native GASNet conduit support is in beta and has not been tuned.
-  See doc/platforms/README.xt-cle for details on how to use the
+  See doc/platforms/README.xe-cle for details on how to use the
   native conduit.
+
+- By default, all Programming Environment compilers, including
+  PrgEnv-gnu, use CHPL_ATOMICS=locks.
 
 Cray XT:
 - The memory limit for Chapel programs may need to be set manually.
   See doc/platforms/README.xt-cle for details.
+
+- By default, all Programming Environment compilers, including
+  PrgEnv-gnu, use CHPL_ATOMICS=locks.
 
 PGI compilers (and possibly others):
 - Floating point literals of -0.0 may not work as intended.
