@@ -1,0 +1,19 @@
+simple-alias-mem-use.chpl:17: warning: Dist1D is a DefaultDist
+start
+testing on LOCALE0
+memory delta 0
+(3, 333, 333, 333, 333, 333)
+(8, 888, 888, 888, 888, 888)
+testing on LOCALE1
+memory delta 0
+(3, 333, 333, 333, 333, 333)
+(8, 888, 888, 888, 888, 888)
+testing on LOCALE2
+memory delta 0
+(3, 333, 333, 333, 333, 333)
+(8, 888, 888, 888, 888, 888)
+testing on LOCALE3
+memory delta 0
+(3, 333, 333, 333, 333, 333)
+(8, 888, 888, 888, 888, 888)
+done
