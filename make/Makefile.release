@@ -10,6 +10,9 @@
 #
 # include standard stuff to let each platform define its own ECHO command
 #
+ifndef CHPL_MAKE_HOME
+CHPL_MAKE_HOME=.
+endif
 include ./make/Makefile.base
 
 RELCHPLDIR = .
