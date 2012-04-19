@@ -65,7 +65,7 @@ isFastPrimitive(CallExpr *call) {
   case PRIM_GET_REAL:
   case PRIM_GET_IMAG:
 
-  case PRIM_SET_REF:
+  case PRIM_ADDR_OF:
 
   case PRIM_INIT_FIELDS:
   case PRIM_PTR_EQUAL:
@@ -168,13 +168,13 @@ isFastPrimitive(CallExpr *call) {
     }
     break;
 
-  case PRIM_GET_REF:
+  case PRIM_DEREF:
   case PRIM_SET_MEMBER:
   case PRIM_SET_SVEC_MEMBER:
     if (!call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE) &&
         !call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
 #ifdef DEBUG
-      printf(" *** OK (PRIM_GET_REF, etc.): %s\n", call->primitive->name);
+      printf(" *** OK (PRIM_DEREF, etc.): %s\n", call->primitive->name);
 #endif
       return true;
     }

@@ -433,15 +433,15 @@ class DefaultRectangularArr: BaseArr {
   proc dsiDestroyData() {
     if dom.dsiNumIndices > 0 {
       pragma "no copy" pragma "no auto destroy" var dr = data;
-      pragma "no copy" pragma "no auto destroy" var dv = __primitive("get ref", dr);
+      pragma "no copy" pragma "no auto destroy" var dv = __primitive("deref", dr);
       pragma "no copy" pragma "no auto destroy" var er = __primitive("array_get", dv, 0);
-      pragma "no copy" pragma "no auto destroy" var ev = __primitive("get ref", er);
+      pragma "no copy" pragma "no auto destroy" var ev = __primitive("deref", er);
       if (chpl__maybeAutoDestroyed(ev)) {
         for i in 0..dom.dsiNumIndices-1 {
           pragma "no copy" pragma "no auto destroy" var dr = data;
-          pragma "no copy" pragma "no auto destroy" var dv = __primitive("get ref", dr);
+          pragma "no copy" pragma "no auto destroy" var dv = __primitive("deref", dr);
           pragma "no copy" pragma "no auto destroy" var er = __primitive("array_get", dv, i);
-          pragma "no copy" pragma "no auto destroy" var ev = __primitive("get ref", er);
+          pragma "no copy" pragma "no auto destroy" var ev = __primitive("deref", er);
           chpl__autoDestroy(ev);
         }
       }
@@ -522,12 +522,10 @@ class DefaultRectangularArr: BaseArr {
     data.init(size);
   }
 
-  pragma "inline"
-  proc getDataIndex(ind: idxType ...1) where rank == 1
+  inline proc getDataIndex(ind: idxType ...1) where rank == 1
     return getDataIndex(ind);
 
-  pragma "inline"
-  proc getDataIndex(ind: rank* idxType) {
+  inline proc getDataIndex(ind: rank* idxType) {
     var sum = origin;
     if stridable {
       for param i in 1..rank do
@@ -541,12 +539,10 @@ class DefaultRectangularArr: BaseArr {
   }
 
   // only need second version because wrapper record can pass a 1-tuple
-  pragma "inline"
-  proc dsiAccess(ind: idxType ...1) var where rank == 1
+  inline proc dsiAccess(ind: idxType ...1) var where rank == 1
     return dsiAccess(ind);
 
-  pragma "inline"
-  proc dsiAccess(ind : rank*idxType) var {
+  inline proc dsiAccess(ind : rank*idxType) var {
     if boundsChecking then
       if !dom.dsiMember(ind) then
         halt("array index out of bounds: ", ind);
@@ -719,16 +715,34 @@ proc DefaultRectangularArr.isDataContiguous() {
 proc DefaultRectangularArr.dsiSupportsBulkTransfer() param return true;
 
 proc DefaultRectangularArr.doiCanBulkTransfer() {
-  if dom.stridable then
-    for param i in 1..rank do
-      if dom.ranges(i).stride != 1 then return false;
+//  if dom.stridable then
+//    for param i in 1..rank do
+//      if dom.ranges(i).stride != 1 then return false;
 
-  if !isDataContiguous() then return false;
+//  if !isDataContiguous() then return false;
 
   return true;
 }
 
+proc DefaultRectangularArr.doiBulkTransfer_(B) {
+ if(this.type == B._value.type){
+  var dstCompRank,srcCompRank:[1..rank] bool;
+  var stridelevels:int;
+  dstCompRank = assertWholeDim(this);
+  srcCompRank = assertWholeDim(B._value);
+  
+  if(getStrideLevels(srcCompRank)>=B._value.getStrideLevels(dstCompRank)) then stridelevels=getStrideLevels(srcCompRank);
+  else stridelevels=B._value.getStrideLevels(dstCompRank);
+   
+   if stridelevels>0 then this.doiBulkTransferStride(B);
+   else this.doiBulkTransfer(B);
+ }
+ else if B._value.isBlockDist() then this.doiBulkTransferFromBlock(B);
+ else writeln("ERROR IN DEFAULT RECTANGULAR");
+}
+
 proc DefaultRectangularArr.doiBulkTransfer(B) {
+  //writeln("En DefaultRectangular");
   const Adims = dom.dsiDims();
   var Alo: rank*dom.idxType;
   for param i in 1..rank do
@@ -781,6 +795,346 @@ proc DefaultRectangularArr.doiBulkTransfer(B) {
                 __primitive("array_get", src, B._value.getDataIndex(Blo)),
                 len);
   }
+}
+
+/*
+Data needed to use strided copy of data:
+  + Stridelevels: the number of stride level (not really the number of dimensions because:
+     - Stridelevels < rank if we can aggregate several dimensions due to they are consecutive 
+         -- for exameple, whole rows --
+     - Stridelevels == rank if there is a "by X" whith X>1 in the range description for 
+         the rightmost dimension)
+  + srcCount: slice size in each dimension for the source array. srcCount[0] should be the number of bytes of contiguous data in the rightmost dimension.
+  + dstCount: slice size in each dimension for the destination array. dstCount[0] should be the number of bytes of contiguous data in the rightmost dimension.
+  + dstStride: destination array of positive stride distances in bytes to move along each dimension
+  + srcStrides: source array of positive stride distances in bytes to move along each dimension
+  + dest: destination stating the address of the destination data block
+  + src: source stating the address of the source data block
+More info in: http://www.escholarship.org/uc/item/5hg5r5fs?display=all
+Proposal for Extending the UPC Memory Copy Library Functions and Supporting 
+Extensions to GASNet, Version 2.0. Author: Dan Bonachea 
+*/
+proc DefaultRectangularArr.doiBulkTransferStride(B) {
+
+  extern proc sizeof(type x): int;
+  if debugBulkTransfer {
+    writeln("In doiBulkTransferStride");
+  }
+ 
+  const Adims = dom.dsiDims();
+ 
+  var Alo: rank*dom.idxType;
+  for param i in 1..rank do
+    Alo(i) = Adims(i).first;
+  
+  const Bdims = B.domain.dims();
+  var Blo: rank*dom.idxType;
+  for param i in 1..rank do
+    Blo(i) = Bdims(i).first;
+  
+  if debugDefaultDistBulkTransfer then
+    writeln("\tlocal get() from ", B.locale.id);
+  
+  var rankcomp:[1..rank] int(32);
+  var dstCompRank, srcCompRank:[1..rank] bool;
+  var stridelevels:int(32);
+  
+  dstCompRank = assertWholeDim(this);
+  srcCompRank = assertWholeDim(B._value);
+
+  /* If the stridelevels in source and destination arrays are different, we take the larger*/
+  stridelevels=max(getStrideLevels(dstCompRank),B._value.getStrideLevels(srcCompRank));
+  
+  //These variables should be actually of size stridelevels+1, but stridelevels is not param...
+  var srcCount, dstCount, cnt: [1..rank+1] int(32); 
+  /* We now obtain the count arrays for source and destination arrays */
+  dstCount= getCount(stridelevels,dstCompRank);
+  srcCount= B._value.getCount(stridelevels,srcCompRank); 
+  
+  /*Then the Stride arrays for source and destination arrays*/
+  var dstStride, srcStride: [1..rank+1] int(32);
+  
+  /*When the source and destination arrays have different sizes 
+    (example: A[1..10,1..10] and B[1..20,1..20]), the count arrays obtained are different,
+    so we have to calculate the minimun count array */
+  //Note that we use equal function equal instead of dstCount==srcCount due to the latter fails
+  //The same for the array assigment (using assing function instead of srcCount=dstCount)
+  if !equal(dstCount, srcCount, rank+1) //For different size arrays
+    {
+      for h in [1..stridelevels+1] do
+	if dstCount[h]>srcCount[h] {
+	  assig(dstCount,srcCount, stridelevels+1);break;} //{ dstCount=srcCount;break;}
+ 
+      dstStride = getStride(dstCompRank,dstCount);
+      srcStride = B._value.getStride(srcCompRank,dstCount);   
+    }
+  else
+  {
+    dstStride = getStride(dstCompRank);
+    srcStride = B._value.getStride(srcCompRank); 
+  }
+  
+  if this.data.locale==here // IF 1
+  {
+    var dest = this.data;
+    var src = B._value.data;
+    
+    var dststr=dstStride._value.data;
+    var srcstr=srcStride._value.data;
+    var cnt=dstCount._value.data;
+    
+    if debugBulkTransfer {
+      writeln("Case 1");
+      writeln("stridelevel: ", stridelevels);
+      writeln("Count: ",dstCount);
+      writeln("dststrides: ",dstStride);
+      writeln("srcstrides: ",srcStride);
+    }
+    var srclocale =B._value.data.locale.id : int(32);
+       __primitive("chpl_comm_gets",
+                    __primitive("array_get",dest, getDataIndex(Alo)),
+                    __primitive("array_get",dststr,dstStride._value.getDataIndex(1)), 
+		    srclocale,
+                    __primitive("array_get",src, B._value.getDataIndex(Blo)),
+                    __primitive("array_get",srcstr,dstStride._value.getDataIndex(1)),
+                    __primitive("array_get",cnt, dstCount._value.getDataIndex(1)),
+                    stridelevels);
+       
+
+  } //END IF 1
+  else if B._value.data.locale==here //IF 2
+  {
+    if debugDefaultDistBulkTransfer then
+      writeln("\tlocal put() to ", this.locale.id);
+    
+    var dststr=dstStride._value.data;
+    var srcstr=srcStride._value.data;
+    var cnt=srcCount._value.data;
+    
+    if debugBulkTransfer {
+      writeln("Case 2");
+      writeln("stridelevel: ",stridelevels);
+      writeln("Count: ",srcCount);
+      writeln("dststrides: ",dstStride);
+      writeln("srcstrides: ",srcStride);
+    }
+    
+    var dest = this.data;
+    var src = B._value.data;
+    var destlocale =this.data.locale.id : int(32);
+
+    __primitive("chpl_comm_puts",
+      		  __primitive("array_get",dest,getDataIndex(Alo)),
+      		  __primitive("array_get",dststr,dstStride._value.getDataIndex(1)),
+                  destlocale,
+                  __primitive("array_get",src,B._value.getDataIndex(Blo)),
+      		  __primitive("array_get",srcstr,srcStride._value.getDataIndex(1)),
+      		  __primitive("array_get",cnt, srcCount._value.getDataIndex(1)),
+      		  stridelevels);
+  } //END IF 2
+  else on this.data.locale
+  {   
+    var dest = this.data;
+    var src = B._value.data;
+
+    //We are in a locale that doesn't store neither A nor B so we need to copy the auxiliarry
+    //arrays to the locale that hosts A. This should translate into some more gets...
+    //COUNT
+    var count:[1..(stridelevels+1)] int(32);
+    count=dstCount; //    assig(count,dstCount,stridelevels+1);
+  
+    //DSTSTRIDES AND SRCSTRIDE
+    var dststrides,srcstrides:[1..stridelevels] int(32);
+    srcstrides=srcStride; //    assig(srcstrides,srcStride,stridelevels);
+    dststrides=dstStride; //    assig(dststrides,dstStride,stridelevels);
+    
+    var dststr=dststrides._value.data;
+    var srcstr=srcstrides._value.data;
+    var cnt=count._value.data;
+    
+     if debugBulkTransfer {
+    writeln("Case 3");
+    writeln("stridelevel: ", stridelevels);
+    writeln("Count: ",count);
+    writeln("dststrides: ",dststrides);
+    writeln("srcstrides: ",srcstrides);
+    }
+    var srclocale =B._value.data.locale.id : int(32);
+       __primitive("chpl_comm_gets",
+                    __primitive("array_get",dest, getDataIndex(Alo)),
+                    __primitive("array_get",dststr,dststrides._value.getDataIndex(1)), 
+                    srclocale,
+                    __primitive("array_get",src, B._value.getDataIndex(Blo)),
+                    __primitive("array_get",srcstr,dststrides._value.getDataIndex(1)),
+                    __primitive("array_get",cnt, count._value.getDataIndex(1)),
+                    stridelevels);   
+  }//END ELSE1
+}
+
+proc DefaultRectangularArr.isDefaultRectangular() param{return true;}
+
+/* This function returns the stride level for the default rectangular array. */
+proc DefaultRectangularArr.getStrideLevels(rankcomp:[]):int(32) where rank == 1
+{
+  if dom.dsiStride==1 then return 0;
+  else return 1;
+}
+
+proc DefaultRectangularArr.getStrideLevels(rankcomp:[]):int(32) where rank > 1 
+{
+var stridelevels:int(32);
+ 
+ if dom.dsiStride(rank)>1 && dom.dsiDim(rank).length>1 then stridelevels+=1;
+ 
+  for i in [2..rank] by -1 do 
+    if (!rankcomp[i] && dom.dsiDim(i-1).length>1 && !distance(i)) then stridelevels+=1;
+    else if(dom.dsiDim(i).length>1 && !distance(i)) then stridelevels+=1;
+ 
+ if stridelevels==0 then stridelevels=1; 
+ return stridelevels; 
+}
+
+
+/* This function returns the count array for the default rectangular array. */
+proc DefaultRectangularArr.getCount(stridelevels:int(32), rankcomp:[]):(rank+1)*int(32) where rank ==1
+{
+  var c: (rank+1)*int(32);
+  c[1]=1;
+  c[2]=dom.dsiDim(1).length:int(32); 
+  return c;
+}
+
+proc DefaultRectangularArr.getCount(stridelevels:int(32), rankcomp:[]):(rank+1)*int(32) where rank >1
+{
+  var c: (rank+1)*int(32);
+  var cont:int(32)=0;
+  
+  if dom.dsiStride(rank)>1 && dom.dsiDim(rank).length>1 {c[1]=1; cont=1;}
+  var tmp:int(32) = cont;
+  for i in [0+tmp..stridelevels] do
+    if cont == rank then
+      if rankcomp[cont] then c[i+1]=1;
+      else c[i+1]=dom.dsiDim(1).length:int(32); 
+    else
+      {
+	c[i+1]=this.dom.dsiDim(rank-cont+tmp).length:int(32);
+	for h in [2..rank-cont+tmp] by -1:int(32) do
+	  if( (distance(h)&&dom.dsiDim(h-1+tmp).length>1) || (dom.dsiDim(h).length==1&&(h)!=rank))
+	    {
+	      c[i+1]*=dom.dsiDim(h-1).length:int(32);
+	      cont=rank-h+2;
+	    }
+	  else
+	    {
+	      cont=rank-h+1+tmp;
+	      break;
+	    }
+      }
+  return c;
+}
+
+/* This function returns the stride array for the default rectangular array. */
+proc DefaultRectangularArr.getStride(rankcomp:[]):int(32) where rank==1 {return dom.dsiStride:int(32);}
+proc DefaultRectangularArr.getStride(rankcomp:[]):rank*int(32) where rank > 1
+{
+  var stridelevels:int(32);
+  var c: rank*int(32);
+ 
+  if (dom.dsiStride(rank) > 1  &&  dom.dsiDim(rank).length>1)
+   { 
+     stridelevels+=1; 
+     c[stridelevels]= dom.dsiStride(rank):int(32); 
+   }
+ 
+  for i in [2..rank] by -1:int(32) do  
+    if (!rankcomp[i] && dom.dsiDim(i-1).length>1 && !distance(i))
+      {stridelevels+=1; c[stridelevels]=blk(i-1):int(32) * dom.dsiStride(i-1):int(32);}
+    else if(dom.dsiDim(i).length>1 && !distance(i))
+      {stridelevels+=1; c[stridelevels]=blk(i-2):int(32);}
+  
+  return c; 
+}
+                                                                                       
+proc DefaultRectangularArr.getStride(rankcomp:[],cnt:[])
+{
+  var c: (rank)*int(32);
+  var h=1;
+  var acum=1;
+  for i in [2..rank] by -1:int(32) do
+    if ((!rankcomp[i] && dom.dsiDim(i-1).length>1) || cnt[h]==dom.dsiDim(i).length*acum)
+    {
+      c[h]=blk(i-1):int(32);
+      h+=1;
+      acum=1;
+    }
+    else  acum=acum*dom.dsiDim(i).length;
+  
+  return c;
+}
+
+/*
+This function is used to help in the aggregation of data from different array dimensions.
+The function returns an array in which each position is associated to one of the dimensions
+of the domain. Each array component can be true or false, pointing out whether or not the rank
+for that particular dimension covers the whole dimension. 
+For instance, if for one array A, the domain is D=[1..4, 2..6, 1..6] and we refer to 
+A[1..3, 3..5,1..6] the resulting array will be [false, false, true].
+Note that the leftmost dimension is really not necessary due to the first dimension can not be 
+aggregated with any other one (there is no more dimensions beyond the first one). Therefore, a 
+subtle possible optimization would be to declare the resulting array 2..rank instead of 1..rank
+*/ 
+proc DefaultRectangularArr.assertWholeDim(d) where rank==1
+{
+  return true;
+}
+
+proc DefaultRectangularArr.assertWholeDim(d) where rank>1
+{
+  var c:[1..d.rank] bool;
+  for i in [2..rank] do
+    if (d.dom.dsiDim(i).length==d.blk(i-1)/d.blk(i) && dom.dsiStride(i-1)==1) then c[i]=true;
+
+  return c;
+}
+
+/* This function checks if the stride in dimension 'x' is the same as the distance
+between the last element in dimension 'x' and  the first in dimension 'x-1'.
+If the distances are equal, we can aggregate these two dimmensions. 
+Example: 
+array A, the domain is D=[1..6, 1..6, 1..6]
+Let's A[1..6 by 2, 1..6, 1..6 by 2], then, distance(3) returns true, due to when jumping from
+row to row (from the last element of one row, to the first element of the next one) the stride
+is the same than when jumping from elements inside the row. 
+*/
+proc DefaultRectangularArr.distance(x: int)
+{
+  var cont:bool=false;
+  if dom.dsiDim(x-1).length==1 then cont=true;
+  else if (blk(x-1)/blk(x) - (1+dom.dsiDim(x).last - dom.dsiDim(x).first) == dom.dsiStride(x)-1)
+        && dom.dsiDim(x).length>1 && (dom.dsiStride(x-1)==1||dom.dsiDim(x-1).length==1 )
+        then cont=true;
+  return cont;
+}
+
+/*This function checks if the first 'tam' elements from array 'd2' are equal than array 'd1' 
+This is a pending question: this functions replaces the operator == due to it stopped working
+at some point. We will be grateful if anyone can shed light on this problem.
+*/
+proc equal(d1:[],d2:[],tam: int(32))
+{
+  var c:bool=true;
+  for i in [1..tam] do if d1[i]!=d2[i]{ c=false;break;}
+  return c;
+}
+
+
+/*This function assigns the first 'tam' elements from array 'd2' to array 'd1' 
+This is a pending question: this functions replaces the operator = due to it stopped working
+at some point. We will be grateful if anyone can shed light on this problem.
+*/
+proc assig(d1:[],d2:[],tam: int(32))
+{
+  for i in [1..tam] do d1[i]=d2[i];
 }
 
 }

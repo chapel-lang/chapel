@@ -56,8 +56,8 @@ enum PrimitiveTag {
   PRIM_GET_IMAG,                  // get complex imag component
   PRIM_QUERY,                     // query expression primitive
 
-  PRIM_SET_REF,  // set a reference to a value
-  PRIM_GET_REF,  // dereference a reference
+  PRIM_ADDR_OF,  // set a reference to a value
+  PRIM_DEREF,    // dereference a reference
 
   PRIM_LOCAL_CHECK,          // assert that a wide ref is on this locale
 
@@ -104,6 +104,9 @@ enum PrimitiveTag {
 
   PRIM_CHPL_COMM_GET,   // Direct calls to the Chapel comm layer
   PRIM_CHPL_COMM_PUT,   //  may eventually add others (e.g., non-blocking)
+  PRIM_CHPL_COMM_GETS,   // Direct calls to the Chapel comm layer for strided comm
+  PRIM_CHPL_COMM_PUTS,   //  may eventually add others (e.g., non-blocking)
+
 
   PRIM_CHPL_ALLOC,
   PRIM_CHPL_ALLOC_PERMIT_ZERO,  // chpl_mem_alloc wrapper that permits size 0

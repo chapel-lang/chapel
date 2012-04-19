@@ -483,8 +483,7 @@ proc chpl__testParStop() {
   chpl__testParOn = false;
 }
 
-pragma "inline"
-proc chpl__testPar(args...) where chpl__testParFlag == false { }
+inline proc chpl__testPar(args...) where chpl__testParFlag == false { }
 
 proc chpl__testPar(args...) where chpl__testParFlag == true {
   if chpl__testParFlag && chpl__testParOn {

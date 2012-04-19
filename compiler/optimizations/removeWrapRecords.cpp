@@ -88,7 +88,7 @@ removeWrapRecords() {
     } else if (call->isPrimitive(PRIM_GET_MEMBER)) {
       if (SymExpr* se = toSymExpr(call->get(1))) {
         if (isRecordWrappedType(se->var->type)) {
-          call->primitive = primitives[PRIM_SET_REF];
+          call->primitive = primitives[PRIM_ADDR_OF];
           call->get(2)->remove();
         }
       }
@@ -100,7 +100,7 @@ removeWrapRecords() {
         if (se->var->type->symbol->hasFlag(FLAG_REF)) {
           Type* vt = se->getValType();
           if (isRecordWrappedType(vt)) {
-            call->replace(new CallExpr(PRIM_GET_REF, se->remove()));
+            call->replace(new CallExpr(PRIM_DEREF, se->remove()));
           }
         }
       }

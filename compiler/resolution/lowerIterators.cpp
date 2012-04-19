@@ -238,8 +238,8 @@ createArgBundleFreeFn(ClassType* ct, FnSymbol* loopBodyFnWrapper) {
       VarSymbol* loopBodyFnArgsArgTmp = newTemp(field->getValType());
       block->insertAtTail(new DefExpr(loopBodyFnArgTmp));
       block->insertAtTail(new DefExpr(loopBodyFnArgsArgTmp));
-      block->insertAtTail(new CallExpr(PRIM_MOVE, loopBodyFnArgTmp, new CallExpr(PRIM_GET_REF, lastTmp)));
-      block->insertAtTail(new CallExpr(PRIM_MOVE, loopBodyFnArgsArgTmp, new CallExpr(PRIM_GET_REF, tmp)));
+      block->insertAtTail(new CallExpr(PRIM_MOVE, loopBodyFnArgTmp, new CallExpr(PRIM_DEREF, lastTmp)));
+      block->insertAtTail(new CallExpr(PRIM_MOVE, loopBodyFnArgsArgTmp, new CallExpr(PRIM_DEREF, tmp)));
       block->insertAtTail(new CallExpr(argBundleFreeFn, loopBodyFnArgTmp, loopBodyFnArgsArgTmp));
     }
     lastField = field;
@@ -294,15 +294,15 @@ createArgBundleCopyFn(ClassType* ct, FnSymbol* loopBodyFnWrapper) {
       block->insertAtTail(new DefExpr(copy));
       block->insertAtTail(new DefExpr(loopBodyFnArgTmp));
       block->insertAtTail(new DefExpr(loopBodyFnArgsArgTmp));
-      block->insertAtTail(new CallExpr(PRIM_MOVE, loopBodyFnArgTmp, new CallExpr(PRIM_GET_REF, lastTmp)));
-      block->insertAtTail(new CallExpr(PRIM_MOVE, loopBodyFnArgsArgTmp, new CallExpr(PRIM_GET_REF, tmp)));
+      block->insertAtTail(new CallExpr(PRIM_MOVE, loopBodyFnArgTmp, new CallExpr(PRIM_DEREF, lastTmp)));
+      block->insertAtTail(new CallExpr(PRIM_MOVE, loopBodyFnArgsArgTmp, new CallExpr(PRIM_DEREF, tmp)));
       VarSymbol* retTmp = newTemp(argBundleCopyFn->retType);
       block->insertAtTail(new DefExpr(retTmp));
       VarSymbol* castTmp = newTemp(field->getValType());
       block->insertAtTail(new DefExpr(castTmp));
       block->insertAtTail(new CallExpr(PRIM_MOVE, retTmp, new CallExpr(argBundleCopyFn, loopBodyFnArgTmp, loopBodyFnArgsArgTmp)));
       block->insertAtTail(new CallExpr(PRIM_MOVE, castTmp, new CallExpr(PRIM_CAST, castTmp->type->symbol, retTmp)));
-      block->insertAtTail(new CallExpr(PRIM_MOVE, copy, new CallExpr(PRIM_SET_REF, castTmp)));
+      block->insertAtTail(new CallExpr(PRIM_MOVE, copy, new CallExpr(PRIM_ADDR_OF, castTmp)));
       tmp = copy;
     }
 
@@ -372,15 +372,15 @@ bundleLoopBodyFnArgsForIteratorFnCall(CallExpr* iteratorFnCall,
         iteratorFnCall->insertBefore(new DefExpr(tmp));
         iteratorFnCall->insertBefore(new DefExpr(loopBodyFnArgTmp));
         iteratorFnCall->insertBefore(new DefExpr(loopBodyFnArgsArgTmp));
-        iteratorFnCall->insertBefore(new CallExpr(PRIM_MOVE, loopBodyFnArgTmp, new CallExpr(PRIM_GET_REF, lastActual->copy())));
-        iteratorFnCall->insertBefore(new CallExpr(PRIM_MOVE, loopBodyFnArgsArgTmp, new CallExpr(PRIM_GET_REF, actual)));
+        iteratorFnCall->insertBefore(new CallExpr(PRIM_MOVE, loopBodyFnArgTmp, new CallExpr(PRIM_DEREF, lastActual->copy())));
+        iteratorFnCall->insertBefore(new CallExpr(PRIM_MOVE, loopBodyFnArgsArgTmp, new CallExpr(PRIM_DEREF, actual)));
         VarSymbol* retTmp = newTemp(argBundleCopyFn->retType);
         iteratorFnCall->insertBefore(new DefExpr(retTmp));
         VarSymbol* castTmp = newTemp(field->getValType());
         iteratorFnCall->insertBefore(new DefExpr(castTmp));
         iteratorFnCall->insertBefore(new CallExpr(PRIM_MOVE, retTmp, new CallExpr(argBundleCopyFn, loopBodyFnArgTmp, loopBodyFnArgsArgTmp)));
         iteratorFnCall->insertBefore(new CallExpr(PRIM_MOVE, castTmp, new CallExpr(PRIM_CAST, castTmp->type->symbol, retTmp)));
-        iteratorFnCall->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_SET_REF, castTmp)));
+        iteratorFnCall->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_ADDR_OF, castTmp)));
         iteratorFnCall->insertAfter(new CallExpr(argBundleFreeFn, loopBodyFnArgTmp, retTmp));
         actual = new SymExpr(tmp);
       }

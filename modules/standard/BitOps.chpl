@@ -67,7 +67,7 @@ proc bitMatMultOr(x: uint(64), y: uint(64)): uint(64) {
 
   // set every eighth bit to one or zero based on the results of the
   // eight reductions of the sets of eight bits
-  pragma "inline" proc byteOrReduce(u: uint(64)) {
+  inline proc byteOrReduce(u: uint(64)) {
     var t1 = u | (u >> 4);
     var t2 = t1 | (t1 >> 2);
     var t3 = t2 | (t2 >> 1);
@@ -75,7 +75,7 @@ proc bitMatMultOr(x: uint(64), y: uint(64)): uint(64) {
   }
 
   // set every bit in sets of eight to one if the last one is one
-  pragma "inline" proc byteExpand(u: uint(64))
+  inline proc byteExpand(u: uint(64))
     return 0x8080808080808080 ^ (0x8080808080808080 - u);
 
   var result:uint(64) = 0;
@@ -99,13 +99,13 @@ proc bitMatMultOr(x: uint(64), y: uint(64)): uint(64) {
 }
 
 
-pragma "inline" proc bitRotLeft(x, shift) {
+inline proc bitRotLeft(x, shift) {
   var backshift = numBits(x.type) - shift;
   return (x << shift:int) | (x >> backshift:int);
 }
 
 
-pragma "inline" proc bitRotRight(x: uint(64), shift) {
+inline proc bitRotRight(x: uint(64), shift) {
   var backshift = numBits(x.type) - shift;
   return (x >> shift:int) | (x << backshift:int);
 }

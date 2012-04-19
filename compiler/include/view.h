@@ -14,6 +14,6 @@ void list_view(BaseAST* ast);
 void list_view_noline(BaseAST* ast);
 
 void html_view(const char* passName);
-void dump_ast(const char* passName, char log_tag);
+void dump_ast(const char* passName, int pass_num);
 
 #endif

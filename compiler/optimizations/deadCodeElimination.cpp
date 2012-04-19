@@ -79,8 +79,8 @@ void deadExpressionElimination(FnSymbol* fn) {
       if (expr->isPrimitive(PRIM_CAST) ||
           expr->isPrimitive(PRIM_GET_MEMBER_VALUE) ||
           expr->isPrimitive(PRIM_GET_MEMBER) ||
-          expr->isPrimitive(PRIM_GET_REF) ||
-          expr->isPrimitive(PRIM_SET_REF))
+          expr->isPrimitive(PRIM_DEREF) ||
+          expr->isPrimitive(PRIM_ADDR_OF))
         if (expr == expr->getStmtExpr())
           expr->remove();
       if (expr->isPrimitive(PRIM_MOVE))

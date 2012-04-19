@@ -2570,7 +2570,7 @@ insertFormalTemps(FnSymbol* fn) {
           typeTmp->addFlag(FLAG_MAYBE_TYPE);
           fn->insertAtHead(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_INIT, typeTmp)));
           fn->insertAtHead(new CallExpr(PRIM_MOVE, typeTmp, new CallExpr(PRIM_TYPEOF, refTmp)));
-          fn->insertAtHead(new CallExpr(PRIM_MOVE, refTmp, new CallExpr(PRIM_GET_REF, formal)));
+          fn->insertAtHead(new CallExpr(PRIM_MOVE, refTmp, new CallExpr(PRIM_DEREF, formal)));
           fn->insertAtHead(new DefExpr(refTmp));
           fn->insertAtHead(new DefExpr(typeTmp));
         }
@@ -3499,7 +3499,7 @@ preFold(Expr* expr) {
         result = call->get(2)->remove();
         call->replace(result);
       }
-    } else if (call->isPrimitive(PRIM_SET_REF)) {
+    } else if (call->isPrimitive(PRIM_ADDR_OF)) {
       // remove set ref if already a reference
       if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_REF)) {
         result = call->get(1)->remove();
@@ -3531,7 +3531,7 @@ preFold(Expr* expr) {
           }
         }
       }
-    } else if (call->isPrimitive(PRIM_GET_REF)) {
+    } else if (call->isPrimitive(PRIM_DEREF)) {
       // remove get ref if already a value
       if (!call->get(1)->typeInfo()->symbol->hasFlag(FLAG_REF)) {
         result = call->get(1)->remove();
@@ -3872,7 +3872,7 @@ insertValueTemp(Expr* insertPoint, Expr* actual) {
     if (!se->var->type->refType) {
       VarSymbol* tmp = newTemp("_value_tmp_", se->var->getValType());
       insertPoint->insertBefore(new DefExpr(tmp));
-      insertPoint->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_REF, se->var)));
+      insertPoint->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_DEREF, se->var)));
       se->var = tmp;
     }
   }
@@ -3980,7 +3980,7 @@ postFold(Expr* expr) {
                 if (fn->retTag == RET_TYPE)
                   lhs->var->addFlag(FLAG_TYPE_VARIABLE);
               }
-              if (rhs->isPrimitive(PRIM_GET_REF)) {
+              if (rhs->isPrimitive(PRIM_DEREF)) {
                 if (isTypeExpr(rhs->get(1)))
                   lhs->var->addFlag(FLAG_TYPE_VARIABLE);
               }
@@ -4366,8 +4366,8 @@ replaceSetterArgWithFalse(BaseAST* ast, FnSymbol* fn, Symbol* ret) {
       if (CallExpr* move = toCallExpr(se->parentExpr))
         if (move->isPrimitive(PRIM_MOVE))
           if (CallExpr* call = toCallExpr(move->get(2)))
-            if (call->isPrimitive(PRIM_SET_REF))
-              call->primitive = primitives[PRIM_GET_REF];
+            if (call->isPrimitive(PRIM_ADDR_OF))
+              call->primitive = primitives[PRIM_DEREF];
     }
   }
   AST_CHILDREN_CALL(ast, replaceSetterArgWithFalse, fn, ret);
@@ -5657,7 +5657,7 @@ static void removeUnusedFormals() {
           forv_Vec(SymExpr, se, symExprs) {
             if (se->var == formal) {
               if (CallExpr* call = toCallExpr(se->parentExpr))
-                if (call->isPrimitive(PRIM_GET_REF))
+                if (call->isPrimitive(PRIM_DEREF))
                   se->getStmtExpr()->remove();
               se->var = tmp;
             }
@@ -5821,7 +5821,7 @@ static void insertReferenceTemps() {
           VarSymbol* tmp = newTemp("_ref_tmp_", formal->type);
           call->getStmtExpr()->insertBefore(new DefExpr(tmp));
           actual->replace(new SymExpr(tmp));
-          call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_SET_REF, actual)));
+          call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_ADDR_OF, actual)));
         }
       }
     } else if (call->isPrimitive(PRIM_INIT_FIELDS)) {

@@ -1,4 +1,4 @@
-pragma "inline" iter basic() : int {
+inline iter basic() : int {
   var i : int;
   while i < 10 {
     yield i * 4;

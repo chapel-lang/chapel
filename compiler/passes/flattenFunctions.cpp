@@ -80,14 +80,14 @@ replaceVarUsesWithFormals(FnSymbol* fn, SymbolMap* vars) {
                   (call->isPrimitive(PRIM_GET_LOCALEID)) ||
                   (fn && arg->type == actual_to_formal(se)->type)) {
                 se->var = arg; // do not dereference argument in these cases
-              } else if (call->isPrimitive(PRIM_SET_REF)) {
+              } else if (call->isPrimitive(PRIM_ADDR_OF)) {
                 SET_LINENO(se);
                 call->replace(new SymExpr(arg));
               } else {
                 SET_LINENO(se);
                 VarSymbol* tmp = newTemp(sym->type);
                 se->getStmtExpr()->insertBefore(new DefExpr(tmp));
-                se->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_REF, arg)));
+                se->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_DEREF, arg)));
                 se->var = tmp;
               }
             }
@@ -106,7 +106,7 @@ addVarsToActuals(CallExpr* call, SymbolMap* vars, bool outerCall) {
       if (!outerCall && sym->type->refType) {
         VarSymbol* tmp = newTemp(sym->type->refType);
         call->getStmtExpr()->insertBefore(new DefExpr(tmp));
-        call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_SET_REF, sym)));
+        call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_ADDR_OF, sym)));
         call->insertAtTail(tmp);
       } else {
         call->insertAtTail(sym);

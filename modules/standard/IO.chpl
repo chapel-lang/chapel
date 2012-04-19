@@ -421,8 +421,7 @@ extern type fdflag_t = c_int;
 
 extern type iohints = c_int;
 
-inline
-proc _current_locale():int {
+inline proc _current_locale():int {
   var tmp:int;
   return __primitive("_get_locale", tmp);
 }
@@ -757,7 +756,7 @@ record ioChar {
     halt("ioChar.writeThis must be written in Writer subclasses");
   }
 }
-pragma "inline" proc _cast(type t, x: ioChar) where t == string {
+inline proc _cast(type t, x: ioChar) where t == string {
   return qio_encode_to_string(x.ch);
 }
 
@@ -769,7 +768,7 @@ record ioNewline {
     f.write("\n");
   }
 }
-pragma "inline" proc _cast(type t, x: ioNewline) where t == string {
+inline proc _cast(type t, x: ioNewline) where t == string {
   return "\n";
 }
 
@@ -783,7 +782,7 @@ record ioLiteral {
   }
 }
 
-pragma "inline" proc _cast(type t, x: ioLiteral) where t == string {
+inline proc _cast(type t, x: ioLiteral) where t == string {
   return x.val;
 }
 
@@ -797,7 +796,7 @@ record ioBits {
   }
 }
 
-pragma "inline" proc _cast(type t, x: ioBits) where t == string {
+inline proc _cast(type t, x: ioBits) where t == string {
   return "ioBits(v=" + x.v:string + ", nbits=" + x.nbits:string + ")";
 }
 
@@ -834,8 +833,7 @@ proc channel._ch_ioerror(errstr:string, msg:string) {
 }
 
 
-inline
-proc channel.lock(out error:syserr) {
+inline proc channel.lock(out error:syserr) {
   error = ENOERR;
   if locking {
     on __primitive("chpl_on_locale_num", this.home_uid) {
@@ -843,15 +841,13 @@ proc channel.lock(out error:syserr) {
     }
   }
 }
-inline
-proc channel.lock() {
+inline proc channel.lock() {
   var err:syserr = ENOERR;
   this.lock(err);
   if err then this._ch_ioerror(err, "in lock");
 }
 
-inline
-proc channel.unlock() {
+inline proc channel.unlock() {
   if locking {
     on __primitive("chpl_on_locale_num", this.home_uid) {
       qio_channel_unlock(_channel_internal);
@@ -871,8 +867,7 @@ proc channel.offset():int(64) {
 
 // you should have a lock before you use these...
 
-inline
-proc channel._offset():int(64) {
+inline proc channel._offset():int(64) {
   var ret:int(64);
   on __primitive("chpl_on_locale_num", this.home_uid) {
     ret = qio_channel_offset_unlocked(_channel_internal);
@@ -880,16 +875,13 @@ proc channel._offset():int(64) {
   return ret;
 }
 
-inline
-proc channel._mark():syserr {
+inline proc channel._mark():syserr {
   return qio_channel_mark(false, _channel_internal);
 }
-inline
-proc channel._revert() {
+inline proc channel._revert() {
   qio_channel_revert_unlocked(_channel_internal);
 }
-inline
-proc channel._commit() {
+inline proc channel._commit() {
   qio_channel_commit_unlocked(_channel_internal);
 }
 proc channel._style():iostyle {
@@ -1100,8 +1092,7 @@ proc _write_text_internal(_channel_internal:qio_channel_ptr_t, x:?t):syserr wher
   return EINVAL;
 }
 
-inline
-proc _read_binary_internal(_channel_internal:qio_channel_ptr_t, param byteorder:iokind, out x:?t):syserr where _isIoPrimitiveType(t) {
+inline proc _read_binary_internal(_channel_internal:qio_channel_ptr_t, param byteorder:iokind, out x:?t):syserr where _isIoPrimitiveType(t) {
   if _isBooleanType(t) {
     var got:int(32);
     got = qio_channel_read_byte(false, _channel_internal);
@@ -1151,8 +1142,7 @@ proc _read_binary_internal(_channel_internal:qio_channel_ptr_t, param byteorder:
   }
 }
 
-inline
-proc _write_binary_internal(_channel_internal:qio_channel_ptr_t, param byteorder:iokind, x:?t):syserr where _isIoPrimitiveType(t) {
+inline proc _write_binary_internal(_channel_internal:qio_channel_ptr_t, param byteorder:iokind, x:?t):syserr where _isIoPrimitiveType(t) {
   if _isBooleanType(t) {
     var zero_one:uint(8) = if x then 1:uint(8) else 0:uint(8);
     return qio_channel_write_byte(false, _channel_internal, zero_one);
@@ -1183,8 +1173,7 @@ proc _write_binary_internal(_channel_internal:qio_channel_ptr_t, param byteorder
 
 // Channel must be locked, must be running on this.home
 // x is inout because it might contain a literal string.
-inline
-proc _read_one_internal(_channel_internal:qio_channel_ptr_t, param kind:iokind, inout x:?t):syserr where _isIoPrimitiveTypeOrNewline(t) {
+inline proc _read_one_internal(_channel_internal:qio_channel_ptr_t, param kind:iokind, inout x:?t):syserr where _isIoPrimitiveTypeOrNewline(t) {
   var e:syserr = EINVAL;
   if t == ioNewline {
     return qio_channel_skip_past_newline(false, _channel_internal);
@@ -1217,8 +1206,7 @@ proc _read_one_internal(_channel_internal:qio_channel_ptr_t, param kind:iokind, 
 }
 
 // Channel must be locked, must be running on this.home
-inline
-proc _write_one_internal(_channel_internal:qio_channel_ptr_t, param kind:iokind, x:?t):syserr where _isIoPrimitiveTypeOrNewline(t) {
+inline proc _write_one_internal(_channel_internal:qio_channel_ptr_t, param kind:iokind, x:?t):syserr where _isIoPrimitiveTypeOrNewline(t) {
   var e:syserr = EINVAL;
   if t == ioNewline {
     return qio_channel_write_newline(false, _channel_internal);
@@ -1246,8 +1234,7 @@ proc _write_one_internal(_channel_internal:qio_channel_ptr_t, param kind:iokind,
   return e;
 }
 
-inline
-proc _read_one_internal(_channel_internal:qio_channel_ptr_t, param kind:iokind, inout x:?t):syserr {
+inline proc _read_one_internal(_channel_internal:qio_channel_ptr_t, param kind:iokind, inout x:?t):syserr {
   var reader = new ChannelReader(_channel_internal=_channel_internal);
   var err:syserr = ENOERR;
   reader.read(x);
@@ -1256,8 +1243,7 @@ proc _read_one_internal(_channel_internal:qio_channel_ptr_t, param kind:iokind, 
   return err;
 }
 
-inline
-proc _write_one_internal(_channel_internal:qio_channel_ptr_t, param kind:iokind, x:?t):syserr {
+inline proc _write_one_internal(_channel_internal:qio_channel_ptr_t, param kind:iokind, x:?t):syserr {
   var writer = new ChannelWriter(_channel_internal=_channel_internal);
   var err:syserr = ENOERR;
   writer.write(x);
@@ -1268,8 +1254,7 @@ proc _write_one_internal(_channel_internal:qio_channel_ptr_t, param kind:iokind,
 
 /* Returns true if we read all the args,
    false if we encountered EOF (or possibly another error and didn't halt)*/
-inline
-proc channel.read(inout args ...?k,
+inline proc channel.read(inout args ...?k,
                   out error:syserr):bool {
   if writing then compilerError("read on write-only channel");
   error = ENOERR;
@@ -1298,8 +1283,7 @@ proc _args_to_proto(args ...?k,
   return err_args;
 }
 
-inline
-proc channel.read(inout args ...?k):bool {
+inline proc channel.read(inout args ...?k):bool {
   var e:syserr = ENOERR;
   this.read((...args), error=e);
   if !e then return true;
@@ -1371,8 +1355,7 @@ proc channel.readline(inout arg:string):bool {
   }
 }
 
-inline
-proc channel.readbits(out v:uint(64), nbits:int(8), out error:syserr):bool {
+inline proc channel.readbits(out v:uint(64), nbits:int(8), out error:syserr):bool {
   var tmp:ioBits;
   var ret:bool;
 
@@ -1395,8 +1378,7 @@ proc channel.readbits(out v:uint(64), nbits:int(8)):bool {
   }
 }
 
-inline
-proc channel.writebits(v:uint(64), nbits:int(8), out error:syserr):bool {
+inline proc channel.writebits(v:uint(64), nbits:int(8), out error:syserr):bool {
   return this.write(new ioBits(v, nbits), error=error);
 }
 proc channel.writebits(v:uint(64), nbits:int(8)):bool {
@@ -1471,8 +1453,7 @@ proc channel.read(type t ...?numTypes) where numTypes > 1 {
   return tupleVal;
 }
 
-inline
-proc channel.write(args ...?k, out error:syserr):bool {
+inline proc channel.write(args ...?k, out error:syserr):bool {
   if !writing then compilerError("write on read-only channel");
   error = ENOERR;
   on __primitive("chpl_on_locale_num", this.home_uid) {
@@ -1487,8 +1468,7 @@ proc channel.write(args ...?k, out error:syserr):bool {
   return !error;
 }
 
-inline
-proc channel.write(args ...?k):bool {
+inline proc channel.write(args ...?k):bool {
   var e:syserr = ENOERR;
   this.write((...args), error=e);
   if !e then return true;

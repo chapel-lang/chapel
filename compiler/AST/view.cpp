@@ -604,35 +604,46 @@ void html_view(const char* passName) {
   uid++;
 }
 
-static int log_indent = 0;
+static int log_indent;
+static bool log_need_space;
 static void log_ast(BaseAST* ast, FILE* file);
 static void log_ast_header(BaseAST* ast, FILE* file);
 static void log_ast_footer(BaseAST* ast, FILE* file);
-static void log_ast_symbol(FILE* file, Symbol* sym, bool def, bool space=true);
+static void log_ast_symbol(FILE* file, Symbol* sym, bool def);
 static void log_ast_fnsymbol(FILE* file, FnSymbol* fn);
 
-void dump_ast(const char* passName, char log_tag) {
+void dump_ast(const char* passName, int pass_num) {
   FILE* log_file;
   const char* filename;
+  char numBuf[4];
+  snprintf(numBuf, 4, "%02d", pass_num);
 
   forv_Vec(ModuleSymbol, mod, allModules) {
     if (*log_module &&  // is not NUL
         strcmp(log_module, mod->name))
       continue;
 
-    filename = astr(mod->name, "_", passName, ".ast");
+    filename = astr(mod->name, "_", numBuf, passName, ".ast");
     log_file = fopen(astr(log_dir, filename), "w");
     fprintf(log_file, "AST dump for %s after pass %s.\n", mod->name, passName);
-    log_indent = 0;
+    log_indent = 0; log_need_space = false;
     log_ast(mod, log_file);
     fclose(log_file);
   }
 }
 
-static void log_newline(FILE* file, int extra_indent = 0) {
+inline void log_newline(FILE* file) {
   putc('\n', file);
-  for (int i = 0; i < 2 * log_indent + extra_indent; ++i)
+  for (int i = 0; i < 2 * log_indent; ++i)
     putc(' ', file);
+  log_need_space = false;
+}
+
+inline void log_write(FILE* file, bool space_before, const char* text, bool space_after) {
+  if (space_before && log_need_space)
+    putc(' ', file);
+  fputs(text, file);
+  log_need_space = space_after;
 }
   
 static void
@@ -657,64 +668,63 @@ log_ast_header(BaseAST* ast, FILE* file) {
   if (Expr* expr = toExpr(ast)) {
     if (isBlockStmt(expr)) {
       log_newline(file);
-      fprintf(file, "{");
+      log_write(file, false, "{", true);
       ++log_indent;
     } else if (GotoStmt* s = toGotoStmt(expr)) {
       switch (s->gotoTag) {
-      case GOTO_NORMAL: fprintf(file, "goto"); break;
-      case GOTO_BREAK: fprintf(file, "break"); break;
-      case GOTO_CONTINUE: fprintf(file, "continue"); break;
-      case GOTO_RETURN: fprintf(file, "gotoReturn"); break;
-      case GOTO_GETITER_END: fprintf(file, "gotoGetiterEnd"); break;
-      case GOTO_ITER_RESUME: fprintf(file, "gotoIterResume"); break;
-      case GOTO_ITER_END: fprintf(file, "gotoIterEnd"); break;
+       default: break;
+       case GOTO_NORMAL:        log_write(file, true, "goto", true);            break;
+       case GOTO_BREAK:         log_write(file, true, "break", true);           break;
+       case GOTO_CONTINUE:      log_write(file, true, "continue", true);        break;
+       case GOTO_RETURN:        log_write(file, true, "gotoReturn", true);      break;
+       case GOTO_GETITER_END:   log_write(file, true, "gotoGetiterEnd", true);  break;
+       case GOTO_ITER_RESUME:   log_write(file, true, "gotoIterResume", true);  break;
+       case GOTO_ITER_END:      log_write(file, true, "gotoIterEnd", true);     break;
       }
       if (SymExpr* label = toSymExpr(s->label))
         if (label->var != gNil) {
-          fprintf(file, " ");
           log_ast_symbol(file, label->var, true);
         }
     } else if (toCondStmt(expr)) {
       log_newline(file);
-      fprintf(file, "if");
+      log_write(file, true, "if", true);
     } else {
       if (expr->getStmtExpr() && expr->getStmtExpr() == expr) {
-        log_newline(file, -1);
+        log_newline(file);
       }
-//      fprintf(file, " ");
       if (DefExpr* e = toDefExpr(expr)) {
         if (FnSymbol* fn = toFnSymbol(e->sym)) {
-          fprintf(file, " function ");
+          log_write(file, true, "function", true);
           log_ast_fnsymbol(file, fn);
         } else if (structuralTypeSymbol(e->sym)) {
           if (DefExpr *def = toDefExpr( ast)) {
             if (def->sym->hasFlag(FLAG_SYNC))
-              fprintf(file, " sync");
+              log_write(file, true, "sync", true);
             if (def->sym->hasFlag(FLAG_SINGLE))
-              fprintf(file, " single");
+              log_write(file, true, "single", true);
           }
-          fprintf(file, " type ");
+          log_write(file, true, "type", true);
           log_ast_symbol(file, e->sym, true);
         } else if (toTypeSymbol(e->sym)) {
-          fprintf(file, " type ");
+          log_write(file, true, "type", true);
           log_ast_symbol(file, e->sym, true);
         } else if (VarSymbol* vs=toVarSymbol(e->sym)) {
           if (vs->type->symbol->hasFlag(FLAG_SYNC))
-            fprintf(file, " sync");
+            log_write(file, true, "sync", true);
           if (vs->type->symbol->hasFlag(FLAG_SINGLE))
-            fprintf(file, " single");
-          fprintf(file, " var");
+            log_write(file, true, "single", true);
+          log_write(file, true, "var", true);
           log_ast_symbol(file, e->sym, true);
         } else if (toArgSymbol(e->sym)) {
           // Argsymbols are handled in the function header.
         } else if (toLabelSymbol(e->sym)) {
-          fprintf(file, " label ");
+          log_write(file, true, "label", true);
           log_ast_symbol(file, e->sym, true);
         } else if (toModuleSymbol(e->sym)) {
-          fprintf(file, "module ");
+          log_write(file, true, "module", true);
           log_ast_symbol(file, e->sym, true);
         } else {
-          fprintf(file, " def ");
+          log_write(file, true, "def", true);
           log_ast_symbol(file, e->sym, true);
         }
       } else if (VarSymbol* e = get_constant(expr)) {
@@ -722,41 +732,51 @@ log_ast_header(BaseAST* ast, FILE* file) {
           const size_t bufSize = 128;
           char imm[bufSize];
           snprint_imm(imm, bufSize, *e->immediate);
+          if (log_need_space) putc(' ', file);
           fprintf(file, "%s%s", imm, is_imag_type(e->type) ? "i" : "");
+          log_need_space = true;
         } else {
-          fprintf(file, "%s", e->name);
+          log_write(file, true, e->name, true);
         }
       } else if (SymExpr* e = toSymExpr(expr)) {
         log_ast_symbol(file, e->var, false);
       } else if (UnresolvedSymExpr* e = toUnresolvedSymExpr(expr)) {
-        fprintf(file, "%s", e->unresolved);
+        log_write(file, true, e->unresolved, true);
       } else if (NamedExpr* e = toNamedExpr(expr)) {
-        fprintf(file, "(%s = ", e->name);
+        fprintf(file, "(%s =", e->name);
+        log_need_space = true;
       } else if (CallExpr* e = toCallExpr(expr)) {
         if (e->isResolved()) {
           if (e->isResolved()->hasFlag(FLAG_BEGIN_BLOCK))
-            fprintf(file, "begin");
+            log_write(file, true, "begin", true);
           else if (e->isResolved()->hasFlag(FLAG_ON_BLOCK))
-            fprintf(file, "on");
+            log_write(file, true, "on", true);
         }
-        if (fLogIds)
-          fprintf(file, " (%d ", e->id);
-        else
-          fprintf(file, " (");
+        if (fLogIds) {
+          fprintf(file, "(%d ", e->id);
+          log_need_space = false;
+        } else {
+          log_write(file, true, "(", false);
+        }
         if (!e->primitive) {
-          fprintf(file, "call");
+          log_write(file, true, "call", true);
         } else {
           if (e->isPrimitive(PRIM_RETURN))
-            fprintf(file, "return");
+            log_write(file, true, "return", true);
           else if (e->isPrimitive(PRIM_YIELD))
-            fprintf(file, "yield");
-          else
+            log_write(file, true, "yield", true);
+          else {
+            if (log_need_space) putc(' ', file);
             fprintf(file, "'%s'", e->primitive->name);
+            log_need_space = true;
+          }
         }
         if (e->partialTag)
-          fprintf(file, " (partial)");
+          log_write(file, true, "(partial)", true);
       } else {
-        fprintf(file, " (%s", astTagName[expr->astTag]);
+        if (log_need_space) putc(' ', file);
+        fprintf(file, "(%s", astTagName[expr->astTag]);
+        log_need_space = true;
       }
     }
   }
@@ -766,38 +786,39 @@ static void
 log_ast_footer(BaseAST* ast, FILE* file) {
   if (Expr* expr = toExpr(ast)) {
     if (toCallExpr(expr) || toNamedExpr(expr)) {
-      fprintf(file, ")");
+      log_write(file, false, ")", true);
     }
 
     if (toBlockStmt(expr)) {
       --log_indent;
       log_newline(file);
-      fprintf(file, "}");
+      log_write(file, false, "}", true);
     }
   }
 }
 
 static void
-log_ast_symbol(FILE* file, Symbol* sym, bool def, bool space) {
-  if (space)
-    fprintf(file, " ");
+log_ast_symbol(FILE* file, Symbol* sym, bool def) {
+  if (log_need_space) putc(' ', file);
+  log_need_space = false;
 
   if (def)
     if (ArgSymbol* arg = toArgSymbol(sym)) {
+      log_need_space = true;
       switch (arg->intent) {
-       case INTENT_IN:  fprintf(file, "in "); break;
-       case INTENT_INOUT: fprintf(file, "inout "); break;
-       case INTENT_OUT:     fprintf(file, "out "); break;
-       case INTENT_CONST: fprintf(file, "const "); break;
-       case INTENT_REF:     fprintf(file, "ref "); break;
-       case INTENT_PARAM: fprintf(file, "param "); break;
-       case INTENT_TYPE:    fprintf(file, "type "); break;
-       default: break;
+       case INTENT_IN:      fprintf(file, "in");        break;
+       case INTENT_INOUT:   fprintf(file, "inout");     break;
+       case INTENT_OUT:     fprintf(file, "out");       break;
+       case INTENT_CONST:   fprintf(file, "const");     break;
+       case INTENT_REF:     fprintf(file, "ref");       break;
+       case INTENT_PARAM:   fprintf(file, "param");     break;
+       case INTENT_TYPE:    fprintf(file, "type");      break;
+      default: log_need_space = false; break;
       }
-      fprintf(file, "arg ");
+      log_write(file, true, "arg", true);
     }
 
-  fprintf(file, "%s", sym->name);
+  log_write(file, true, sym->name, true);
 
   if (fLogIds)
     fprintf(file, "[%d]", sym->id);
@@ -806,23 +827,24 @@ log_ast_symbol(FILE* file, Symbol* sym, bool def, bool space) {
       sym->type &&
       sym->type->symbol &&
       sym->type != dtUnknown) {
-    fprintf(file, ":");
-    log_ast_symbol(file, sym->type->symbol, false, false);
+    log_write(file, false, ":", false);
+    log_ast_symbol(file, sym->type->symbol, false);
   }
+  log_need_space = true;
 }
 
 static void
 log_ast_fnsymbol(FILE* file, FnSymbol* fn) {
   if (fn->_this && fn->_this->defPoint) {
-    log_ast_symbol(file, fn->_this->type->symbol, false, false);
-    fprintf(file, ".");
+    log_ast_symbol(file, fn->_this->type->symbol, false);
+    log_write(file, false, ".", false);
   }
-  log_ast_symbol(file, fn, true, false);
-  fprintf(file, "(");
+  log_ast_symbol(file, fn, true);
+  log_write(file, false, "(", false);
   bool first = true;
   for_formals(formal, fn) {
     if (!first) {
-      fprintf(file, ",");
+      log_write(file, false, ",", true);
     } else {
       first = false;
     }
@@ -832,15 +854,15 @@ log_ast_fnsymbol(FILE* file, FnSymbol* fn) {
       log_ast(formal->defaultExpr->body.first(), file);
     }
   }
-  fprintf(file, ")");
+  log_write(file, false, ")", false);
   if (fn->retTag == RET_VAR)
-    fprintf(file, " var");
+    log_write(file, true, "var", true);
   else if (fn->retTag == RET_PARAM)
-    fprintf(file, " param");
+    log_write(file, true, "param", true);
   else if (fn->retTag == RET_TYPE)
-    fprintf(file, " type");
+    log_write(file, true, "type", true);
   if (fn->retType && fn->retType->symbol) {
-    fprintf(file, " :");
+    log_write(file, true, ":", true);
     log_ast_symbol(file, fn->retType->symbol, false);
   }
 }

@@ -72,7 +72,7 @@ static void runPass(const char *passName, void (*pass)(void), char log_tag) {
     html_view(passName);
   }
   if (logging(log_tag))
-    dump_ast(passName, log_tag);
+    dump_ast(passName, currentPassNo);
   if (printPasses) {
     gettimeofday(&startTimeBetweenPasses, &timezone);
   }

@@ -780,8 +780,7 @@ proc BlockArr.setup() {
   if doRADOpt then setupRADOpt();
 }
 
-pragma "inline"
-proc _remoteAccessData.getDataIndex(param stridable, ind: rank*idxType) {
+inline proc _remoteAccessData.getDataIndex(param stridable, ind: rank*idxType) {
   // modified from DefaultRectangularArr below
   var sum = origin;
   if stridable {
@@ -1200,10 +1199,16 @@ proc BlockArr.dsiPrivatize(privatizeData) {
 
 proc BlockArr.dsiSupportsBulkTransfer() param return true;
 
+proc BlockArr.doiBulkTransfer_(B) {
+  if(this.type == B._value.type) && rank>1 then
+     this.doiBulkTransferStride(B);
+  else this.doiBulkTransfer(B);
+}
+
 proc BlockArr.doiCanBulkTransfer() {
   if dom.stridable then
-    for param i in 1..rank do
-      if dom.whole.dim(i).stride != 1 then return false;
+//    for param i in 1..rank do
+//      if dom.whole.dim(i).stride != 1 then return false;
 
   // See above note regarding aliased arrays
   if disableAliasedBulkTransfer then
@@ -1294,6 +1299,73 @@ proc BlockArr.doiBulkTransfer(B) {
   if debugBlockDistBulkTransfer then writeln("Comms:",getCommDiagnostics());
 }
 
+//This function should be improved so as to call a DefaultRectangular=BlockDist function for each DefaultRectangularArray.
+//Most of this code would be refactored out in that function which overloads the op= for that case.
+
+proc BlockArr.doiBulkTransferStride(B) { 
+  if debugBlockDistBulkTransfer{ writeln("In BlockDist Stride.");resetCommDiagnostics();}
+  coforall i in dom.dist.targetLocDom do
+    on dom.dist.targetLocales(i)  {
+      if debugBlockDistBulkTransfer then startCommDiagnosticsHere();
+  
+      var total = dom.locDoms[i].myBlock.numIndices;
+      var lo = dom.locDoms[i].myBlock.low;
+      var lo_ini = lo;
+      var min: [1..rank] int;
+      for h in [1..rank] do min(h)=0;
+      const offset   = B._value.dom.whole.low - dom.whole.low;
+   
+      //      var r = dom.locDoms[i].myBlock.dims(); 
+      var r2,r3: (rank)*dom.locDoms[i].myBlock.dim(1).type; //r(1).type;
+      
+      //This loop splits the local domain in subdomains so as to work at a 'DefaultRectangular" level
+/*Example:
+Let's be A[1..8,1..8] and B[1..8,1..8] block distrubuted over a 2x2 mesh
+If we assign A[1..3,2..7]=B[3..5,3..8], locale 0 is responsible of the local domain localA[1..3,2..4]
+But, the corresponding region in B is [3..5,3..5] which is distributed between 4 locales: B[3..4,3..4]
+in locale 0, B[3..4,5..5] in locale 1, B[5..5,3..4] in locale 2,B[5..5,5..5] in locale 3.
+ */ 
+        while total>0
+        {
+          if rank>1 then 
+            for t in [1..rank] by -1 do
+              if dom.locDoms[i].myBlock.dim(t).high >= lo[t]+min[t] {lo[t] += min[t]; break;}
+	      else lo[t]=lo_ini[t];
+  
+          var rlo = lo+offset;
+          var rid = B._value.dom.dist.targetLocsIdx(rlo);
+  
+//For each local array we first obtain the maximum number of local/remote elements in each locale 
+//that can be trasnferred at once
+//Basically, this number of elements is the minimum of what the destination locale wants and what the source locale has.
+//Followint the example: for locale 0, you need 9 elements but you can copy only 4 elements from the same locale 0, and so on...
+
+          for t in [1..rank] do
+            if (dom.locDoms[i].myBlock.dim(t).high - lo(t)) <= 
+	        (B._value.dom.locDoms[rid].myBlock.dim(t).high - rlo(t)) then 
+	           min(t) = dom.locDoms[i].myBlock.dim(t).high - lo(t) + 1;
+            else min(t) = B._value.dom.locDoms[rid].myBlock.dim(t).high - rlo(t) +1;
+      
+          var t:int=1;
+          for s in [1..rank]
+          {
+            t *= min[s];
+            r2(s) = (lo[s]..lo[s] + min[s] - 1);
+            r3(s) = (rlo[s]..rlo[s] + min[s] - 1);
+          }
+          if debugBlockDistBulkTransfer then 
+	    writeln("In doiBulkTransferStride: Locale:", i," Rid: ",rid," d1:  ",(...r2), " d2: ",(...r3));
+       
+	  if total>0 then 
+	    locArr[i].myElems[(...r2)]._value.doiBulkTransferStride(B._value.locArr[rid].myElems[(...r3)]);
+        
+	  total-=t;
+        } //End while
+      if debugBlockDistBulkTransfer then stopCommDiagnosticsHere();
+    }
+  if debugBlockDistBulkTransfer then writeln("Comms:",getCommDiagnostics());
+}
+
 iter ConsecutiveChunks(d1,d2,lid,lo) {
   var elemsToGet = d1.locDoms[lid].myBlock.numIndices;
   const offset   = d2.whole.low - d1.whole.low;
@@ -1351,3 +1423,79 @@ proc dropDims(D: domain, dims...) {
   return DResult;
 }
 
+proc BlockArr.TestGetsPuts(B)
+{
+  param stridelevels=1;
+  var dststrides:[1..#stridelevels] int(32);
+  var srcstrides: [1..#stridelevels] int(32);
+  var count: [1..#(stridelevels+1)] int(32);
+  var rid=1;
+  var lid=0;
+  //  writeln("locArr[0]: ", locArr[0].myElems);
+  //  writeln("B._value.locArr[",rid,"].myElems ", B._value.locArr[rid].myElems);
+
+  on Locales[0] {
+      dststrides[1]=4;
+      srcstrides[1]=2;
+      count[1]=2;
+      count[2]=4;
+      writeln();
+      var dest = locArr[0].myElems._value.data; // can this be myLocArr?
+      var srcl = B._value.locArr[lid].myElems._value.data;
+      var srcr = B._value.locArr[rid].myElems._value.data;
+      var dststr=dststrides._value.data;
+      var srcstr=srcstrides._value.data;
+      var cnt=count._value.data;
+      
+      __primitive("chpl_comm_gets",
+      		  __primitive("array_get",dest,
+      			      locArr[0].myElems._value.getDataIndex(8)),
+      		  __primitive("array_get",dststr,dststrides._value.getDataIndex(1)),
+      		  rid,
+      		  __primitive("array_get",srcr,
+      			      B._value.locArr[rid].myElems._value.getDataIndex(58)),
+      		  __primitive("array_get",srcstr,srcstrides._value.getDataIndex(1)),
+      		  __primitive("array_get",cnt, count._value.getDataIndex(1)),
+      		  stridelevels);
+
+      __primitive("chpl_comm_gets",
+      		  __primitive("array_get",dest,
+      			      locArr[0].myElems._value.getDataIndex(24)),
+      		  __primitive("array_get",dststr,dststrides._value.getDataIndex(1)),
+      		  lid,
+      		  __primitive("array_get",srcl,
+      			      B._value.locArr[lid].myElems._value.getDataIndex(8)),
+      		  __primitive("array_get",srcstr,srcstrides._value.getDataIndex(1)),
+      		  __primitive("array_get",cnt, count._value.getDataIndex(1)),
+      		  stridelevels);
+
+      var src = locArr[0].myElems._value.data; // can this be myLocArr?
+      var destl = B._value.locArr[lid].myElems._value.data;
+      var destr = B._value.locArr[rid].myElems._value.data;
+
+      __primitive("chpl_comm_puts",
+      		  __primitive("array_get",destr,
+			      B._value.locArr[rid].myElems._value.getDataIndex(76)),
+      		  __primitive("array_get",dststr,dststrides._value.getDataIndex(1)),
+      		  rid,
+      		  __primitive("array_get",src,
+      			      locArr[0].myElems._value.getDataIndex(26)),
+      		  __primitive("array_get",srcstr,srcstrides._value.getDataIndex(1)),
+      		  __primitive("array_get",cnt, count._value.getDataIndex(1)),
+      		  stridelevels);
+
+      __primitive("chpl_comm_puts",
+      		  __primitive("array_get",destl,
+			      B._value.locArr[lid].myElems._value.getDataIndex(16)),
+      		  __primitive("array_get",dststr,dststrides._value.getDataIndex(1)),
+      		  lid,
+      		  __primitive("array_get",src,
+      			      locArr[0].myElems._value.getDataIndex(2)),
+      		  __primitive("array_get",srcstr,srcstrides._value.getDataIndex(1)),
+      		  __primitive("array_get",cnt, count._value.getDataIndex(1)),
+      		  stridelevels);
+
+  }
+}
+
+proc BlockArr.isBlockDist() param {return true;}

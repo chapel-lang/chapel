@@ -134,9 +134,9 @@ module analyze_RMAT_graph_associative_array {
           yield elem;
       }
 
-      iter   edge_weight (v : index (vertices) ) var {
+      iter   edge_weight (v : index (vertices) ) {
         for w in Row (v).edgeWeights do
-          yield w;}  // var iterator to avoid a copy
+          yield w;}
 
       // Simply forward the array's parallel iterator
       // FYI: no fast follower opt

@@ -1,17 +1,14 @@
 // Useful functions for implementing distributions
 
-pragma "inline"
-proc getDataParTasksPerLocale() {
+inline proc getDataParTasksPerLocale() {
   return dataParTasksPerLocale;
 }
 
-pragma "inline"
-proc getDataParIgnoreRunningTasks() {
+inline proc getDataParIgnoreRunningTasks() {
   return dataParIgnoreRunningTasks;
 }
 
-pragma "inline"
-proc getDataParMinGranularity() {
+inline proc getDataParMinGranularity() {
   return dataParMinGranularity;
 }
 
@@ -104,7 +101,13 @@ proc _computeNumChunks(numElems): int {
 
 // Divide 1..numElems into (almost) equal numChunk pieces
 // and return myChunk-th piece.
-proc _computeChunkStartEnd(numElems, numChunks, myChunk) {
+proc _computeChunkStartEnd(nElems, nChunks, myCnk): 2*nElems.type {
+  // the type for intermediate computations
+  type IT = if nElems.type == uint then uint else int;
+  const (numElems, numChunks, myChunk) = (nElems:IT, nChunks:IT, myCnk:IT);
+  // the result type
+  type RT = nElems.type;
+
   var div = numElems / numChunks;
   var rem = numElems % numChunks;
 
@@ -116,13 +119,13 @@ proc _computeChunkStartEnd(numElems, numChunks, myChunk) {
     var endIx = myChunk * (div + 1);
     //writeln("_computeChunkStartEnd", (numElems, numChunks, myChunk),
     // " = ", endIx - div, "..", endIx);
-    return (endIx - div, endIx);
+    return ((endIx - div):RT, (endIx):RT);
   } else {
     // (div) elements per chunk
     var startIx1 = numElems - (numChunks - myChunk + 1) * div;
     //writeln("_computeChunkStartEnd", (numElems, numChunks, myChunk),
     // " = ", startIx1 + 1, "..", startIx1 + div);
-    return (startIx1 + 1, startIx1 + div);
+    return ((startIx1 + 1):RT, (startIx1 + div):RT);
   }
 }
 

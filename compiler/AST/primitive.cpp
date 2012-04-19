@@ -372,8 +372,8 @@ initPrimitive() {
   prim_def(PRIM_GET_IMAG, "complex_get_imag", returnInfoComplexField);
   prim_def(PRIM_QUERY, "query", returnInfoUnknown);
 
-  prim_def(PRIM_SET_REF, "set ref", returnInfoRef);
-  prim_def(PRIM_GET_REF, "get ref", returnInfoVal, false, true);
+  prim_def(PRIM_ADDR_OF, "addr of", returnInfoRef);
+  prim_def(PRIM_DEREF,   "deref",   returnInfoVal, false, true);
 
   // local block primitives
   prim_def(PRIM_LOCAL_CHECK, "local_check", returnInfoVoid, true, true);
@@ -450,6 +450,9 @@ initPrimitive() {
 
   prim_def(PRIM_CHPL_COMM_GET, "chpl_comm_get", returnInfoVoid, true, true);
   prim_def(PRIM_CHPL_COMM_PUT, "chpl_comm_put", returnInfoVoid, true, true);
+  prim_def(PRIM_CHPL_COMM_GETS, "chpl_comm_gets", returnInfoVoid, true, true);
+  prim_def(PRIM_CHPL_COMM_PUTS, "chpl_comm_puts", returnInfoVoid, true, true);
+
 
   prim_def(PRIM_GPU_GET_ARRAY, "get_gpu_array", returnInfoArrayIndex, false, true);
   prim_def(PRIM_GPU_GET_VALUE, "get_gpu_value", returnInfoArrayIndex, false, true);

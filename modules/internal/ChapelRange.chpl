@@ -38,25 +38,25 @@ record range
   var _promotionType: idxType;                   // enables promotion
   proc strType type return chpl__signedType(idxType);
   
-  pragma "inline" proc low return _base.low;       // public getter for low bound
-  pragma "inline" proc high return _base.high;     // public getter for high bound
-  pragma "inline" proc stride where stridable return _base.stride; // public getter for stride
+  inline proc low return _base.low;       // public getter for low bound
+  inline proc high return _base.high;     // public getter for high bound
+  inline proc stride where stridable return _base.stride; // public getter for stride
   proc stride param where !stridable return 1 : strType;
   // public getter for alignment
-  pragma "inline" proc alignment return _base.alignment;
+  inline proc alignment return _base.alignment;
   // public getter for the ambiguous alignment flag.
-  pragma "inline" proc aligned return _aligned;
+  inline proc aligned return _aligned;
 
   // Returns the starting index in the sequence.
-  pragma "inline" proc first return _base.first;
+  inline proc first return _base.first;
   // Returns the ending index.
-  pragma "inline" proc last return _base.last;
+  inline proc last return _base.last;
   // Returns the low index, properly aligned.
-  pragma "inline" proc alignedLow : idxType return _base.alignedLow;
+  inline proc alignedLow : idxType return _base.alignedLow;
   // Returns the high index, properly aligned.
-  pragma "inline" proc alignedHigh : idxType return _base.alignedHigh;
+  inline proc alignedHigh : idxType return _base.alignedHigh;
   // Returns the number of elements in this range.
-  pragma "inline" proc length return _base.length;
+  inline proc length return _base.length;
 }
 
 //################################################################################
@@ -182,8 +182,7 @@ proc range.hasHighBound() param
 
 // If the represented sequence is defined, reports whether it is empty.
 // Otherwise an error is reported.
-inline
-proc range.isEmpty() {
+inline proc range.isEmpty() {
   if isAmbiguous() then
     halt("isEmpty() is invoked on an ambiguously-aligned range");
   else
@@ -193,21 +192,18 @@ proc range.isEmpty() {
 proc range.hasFirst() param where !stridable && !hasHighBound()
   return hasLowBound();
 
-pragma "inline" 
-proc range.hasFirst()
+inline proc range.hasFirst()
   return if isAmbiguous() then false else _base.hasFirst();
     
 proc range.hasLast() param where !stridable && !hasLowBound()
   return hasHighBound();
 
-pragma "inline"
-proc range.hasLast()
+inline proc range.hasLast()
   return if isAmbiguous() then false else _base.hasLast();
 
 // Returns true if this range is naturally aligned, false otherwise.
 // Note that this does not indicate if the range is ambiguously aligned.
-pragma "inline"
-proc range.isNaturallyAligned()
+inline proc range.isNaturallyAligned()
   return _base.isNaturallyAligned();
 
 // Returns true if the range is ambiguously aligned.
@@ -217,14 +213,14 @@ proc range.isAmbiguous()       where stridable
   return !aligned && (stride > 1 || stride < -1);
 
 // Returns true if i is in this range.
-pragma "inline" proc range.member(i: idxType) 
+inline proc range.member(i: idxType) 
 {
   if this.isAmbiguous() then return false;
   return _base.member(i);
 }
 
 // Returns true if the other range is contained within this one.
-pragma "inline" proc range.member(other: range(?)) 
+inline proc range.member(other: range(?)) 
 {
   if this.isAmbiguous() || other.isAmbiguous() then return false;
   return _base.member(other);
@@ -280,8 +276,7 @@ proc ident(r1: range(?), r2: range(?)) param
 // we get a compiler error in the boundsCheck function.
 //
 
-pragma "inline"
-proc range.boundsCheck(other: range(?e,?b,?s))
+inline proc range.boundsCheck(other: range(?e,?b,?s))
   where b == BoundedRangeType.boundedNone
 {
   if this.isAmbiguous() || other.isAmbiguous()
@@ -290,8 +285,7 @@ proc range.boundsCheck(other: range(?e,?b,?s))
   return true;
 }
 
-pragma "inline"
-proc range.boundsCheck(other: range(?e,?b,?s))
+inline proc range.boundsCheck(other: range(?e,?b,?s))
 {
   if this.isAmbiguous() || other.isAmbiguous()
     then return false;
@@ -299,8 +293,7 @@ proc range.boundsCheck(other: range(?e,?b,?s))
   return _base.boundsCheck(other._base);
 }
 
-pragma "inline"
-proc range.boundsCheck(other: idxType)
+inline proc range.boundsCheck(other: idxType)
   return member(other);
 
 
@@ -351,33 +344,28 @@ proc range.orderToIndex(ord: integral): idxType
 // translate the indices in this range by i
 // A range can be translated even if its alignment is ambiguous.
 //
-pragma "inline" 
-proc range.translate(i: integral)
+inline proc range.translate(i: integral)
   return new range(idxType, boundedType, stridable,
                    _base.translate(i), _aligned);
 
-pragma "inline" 
-proc range.translate(i)
+inline proc range.translate(i)
 {
   compilerError("offsets must be of integral type");
 }
 
 // Return an interior portion of this range.
-pragma "inline" 
-proc range.interior(i: idxType)
+inline proc range.interior(i: idxType)
   return new range(idxType, boundedType, stridable,
                     _base.interior(i), _aligned);
 
 // Return an exterior portion of this range.
-pragma "inline" 
-proc range.exterior(i: idxType)
+inline proc range.exterior(i: idxType)
   return new range(idxType, boundedType, stridable,
                    _base.exterior(i), _aligned);
 
 // Returns an expanded range, or a contracted range if i < 0.
 // The existing absolute alignment is preserved.
-pragma "inline" 
-proc range.expand(i: idxType)
+inline proc range.expand(i: idxType)
   return new range(idxType, boundedType, stridable,
                    _base.expand(i), _aligned);
 
@@ -388,8 +376,7 @@ proc range.expand(i: idxType)
 //#
 
 // Assignment
-pragma "inline"
-proc =(r1: range(stridable=?s1), r2: range(stridable=?s2))
+inline proc =(r1: range(stridable=?s1), r2: range(stridable=?s2))
 {
   r1._base = r2._base;
   r1._aligned = r2._aligned;
@@ -403,27 +390,23 @@ proc =(r1: range(stridable=?s1), r2: range(stridable=?s2))
 // Absolute alignment is not preserved
 // (That is, the alignment shifts along with the range.)
 //
-pragma "inline"
-proc +(r: range(?e, ?b, ?s), i: integral)
+inline proc +(r: range(?e, ?b, ?s), i: integral)
 {
   var temp = r._base + i;
   return new range(temp.idxType, b, s, temp, r._aligned);
 }
 
-pragma "inline"
-proc +(i:integral, r: range(?e,?b,?s))
+inline proc +(i:integral, r: range(?e,?b,?s))
   return r + i;
 
-pragma "inline"
-proc -(r: range(?e,?b,?s), i: integral)
+inline proc -(r: range(?e,?b,?s), i: integral)
 {
   var temp = r._base - i;
   return new range(temp.idxType, b, s, temp, r._aligned);
 }
 
 
-pragma "inline"
-proc chpl_by_help(r: range(?i,?b,?s), step) {
+inline proc chpl_by_help(r: range(?i,?b,?s), step) {
   if step == 0 then
     __primitive("chpl_error", "the step argument of the 'by' operator is zero");
 
@@ -494,12 +477,10 @@ proc by(r : range(?i,?b,?s), step)
 // It produces a new range with the specified alignment.
 // By definition, alignment is relative to the low bound of the range.
 
-pragma "inline"
-proc align(r : range(?i, ?b, ?s), algn: i)
+inline proc align(r : range(?i, ?b, ?s), algn: i)
   return new range(i, b, s, chpl__align(r._base, algn), true);
 
-pragma "inline"
-proc align(r : range(?i, ?b, ?s), algn) {
+inline proc align(r : range(?i, ?b, ?s), algn) {
   compilerError("can't align a range with idxType ", typeToString(i), 
                 " using a value of type ", typeToString(algn.type));
   return r;
@@ -653,12 +634,10 @@ proc string.substring(r: range(?))
 //# Internal helper functions.
 //#
 
-pragma "inline"
-proc range.chpl__unTranslate(i: idxType)
+inline proc range.chpl__unTranslate(i: idxType)
   return this - i;
 
-pragma "inline"
-proc range.chpl__unTranslate(i)
+inline proc range.chpl__unTranslate(i)
 {
   if _isSignedType(i.type) then
     return this - i;

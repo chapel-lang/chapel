@@ -381,8 +381,7 @@ record _distribution {
 
   proc _distribution(_value, _valueType) { }
 
-  pragma "inline"
-  proc _value {
+  inline proc _value {
     if _isPrivatized(_valueType) {
       return chpl_getPrivatizedCopy(_valueType.type, _value);
     } else {
@@ -482,8 +481,7 @@ record _domain {
   var _valueType; // stores type of privatized domains
   var _promotionType: index(rank, _value.idxType);
 
-  pragma "inline"
-  proc _value {
+  inline proc _value {
     if _isPrivatized(_valueType) {
       return chpl_getPrivatizedCopy(_valueType.type, _value);
     } else {
@@ -537,8 +535,7 @@ record _domain {
     compilerError("associative domains do not support .stridable");  
   }
 
-  pragma "inline"
-  proc these() {
+  inline proc these() {
     return _value.these();
   }
 
@@ -941,7 +938,7 @@ proc -(d1: domain, d2: domain) {
     compilerError("Cannot remove indices from this domain type");
 }
 
-pragma "inline" proc ==(d1: domain, d2: domain) where isRectangularDom(d1) &&
+inline proc ==(d1: domain, d2: domain) where isRectangularDom(d1) &&
                                                       isRectangularDom(d2) {
   if d1._value.rank != d2._value.rank then return false;
   for param i in 1..d1._value.rank do
@@ -949,7 +946,7 @@ pragma "inline" proc ==(d1: domain, d2: domain) where isRectangularDom(d1) &&
   return true;
 }
 
-pragma "inline" proc !=(d1: domain, d2: domain) where isRectangularDom(d1) &&
+inline proc !=(d1: domain, d2: domain) where isRectangularDom(d1) &&
                                                       isRectangularDom(d2) {
   if d1._value.rank != d2._value.rank then return true;
   for param i in 1..d1._value.rank do
@@ -957,7 +954,7 @@ pragma "inline" proc !=(d1: domain, d2: domain) where isRectangularDom(d1) &&
   return false;
 }
 
-pragma "inline" proc ==(d1: domain, d2: domain) where (isAssociativeDom(d1) &&
+inline proc ==(d1: domain, d2: domain) where (isAssociativeDom(d1) &&
                                                        isAssociativeDom(d2)) {
   if d1.numIndices != d2.numIndices then return false;
   for idx in d1 do
@@ -965,7 +962,7 @@ pragma "inline" proc ==(d1: domain, d2: domain) where (isAssociativeDom(d1) &&
   return true;
 }
 
-pragma "inline" proc !=(d1: domain, d2: domain) where (isAssociativeDom(d1) &&
+inline proc !=(d1: domain, d2: domain) where (isAssociativeDom(d1) &&
                                                        isAssociativeDom(d2)) {
   if d1.numIndices != d2.numIndices then return true;
   for idx in d1 do
@@ -973,7 +970,7 @@ pragma "inline" proc !=(d1: domain, d2: domain) where (isAssociativeDom(d1) &&
   return false;
 }
 
-pragma "inline" proc ==(d1: domain, d2: domain) where (isSparseDom(d1) &&
+inline proc ==(d1: domain, d2: domain) where (isSparseDom(d1) &&
                                                        isSparseDom(d2)) {
   if d1.numIndices != d2.numIndices then return false;
   if d1._value.parentDom != d2._value.parentDom then return false;
@@ -982,7 +979,7 @@ pragma "inline" proc ==(d1: domain, d2: domain) where (isSparseDom(d1) &&
   return true;
 }
 
-pragma "inline" proc !=(d1: domain, d2: domain) where (isSparseDom(d1) &&
+inline proc !=(d1: domain, d2: domain) where (isSparseDom(d1) &&
                                                        isSparseDom(d2)) {
   if d1.numIndices != d2.numIndices then return true;
   if d1._value.parentDom != d2._value.parentDom then return true;
@@ -993,11 +990,11 @@ pragma "inline" proc !=(d1: domain, d2: domain) where (isSparseDom(d1) &&
 
 // any combinations not handled by the above
 
-pragma "inline" proc ==(d1: domain, d2: domain) param {
+inline proc ==(d1: domain, d2: domain) param {
   return false;
 }
 
-pragma "inline" proc !=(d1: domain, d2: domain) param {
+inline proc !=(d1: domain, d2: domain) param {
   return true;
 }
 
@@ -1012,8 +1009,7 @@ record _array {
   var _valueType; // stores type of privatized arrays
   var _promotionType: _value.eltType;
 
-  pragma "inline"
-  proc _value {
+  inline proc _value {
     if _isPrivatized(_valueType) {
       return chpl_getPrivatizedCopy(_valueType.type, _value);
     } else {
@@ -1036,16 +1032,14 @@ record _array {
   proc _dom return _getDomain(_value.dom);
   proc rank param return this.domain.rank;
 
-  pragma "inline"
-  proc this(i: rank*_value.dom.idxType) var {
+  inline proc this(i: rank*_value.dom.idxType) var {
     if isRectangularArr(this) || isSparseArr(this) then
       return _value.dsiAccess(i);
     else
       return _value.dsiAccess(i(1));
   }
 
-  pragma "inline"
-  proc this(i: _value.dom.idxType ...rank) var
+  inline proc this(i: _value.dom.idxType ...rank) var
     return this(i);
 
   //
@@ -1141,8 +1135,7 @@ record _array {
     return localSlice(d.getIndices());
   }
 
-  pragma "inline"
-  proc these() var {
+  inline proc these() var {
     return _value.these();
   }
 
@@ -1150,15 +1143,7 @@ record _array {
   proc numElements return _value.dom.dsiNumIndices;
 
   proc newAlias() {
-    var x = _value.dsiReindex(_value.dom);
-    x._arrAlias = _value;
-    pragma "dont disable remote value forwarding"
-    proc help() {
-      _value.dom._domCnt.fetchAdd(1);
-      x._arrAlias._arrCnt.fetchAdd(1);
-    }
-    if !noRefCount then
-      help();
+    var x = _value;
     return _newArray(x);
   }
 
@@ -1400,13 +1385,13 @@ proc =(a: domain, b) {  // b is iteratable
   return a;
 }
 
-pragma "inline" proc =(a: [], b : []) where (a._value.canCopyFromHost && b._value.canCopyFromHost) {
+inline proc =(a: [], b : []) where (a._value.canCopyFromHost && b._value.canCopyFromHost) {
   if a.rank != b.rank then
     compilerError("rank mismatch in array assignment");
   compilerError("GPU to GPU transfers not yet implemented");
 }
 
-pragma "inline" proc =(a: [], b : []) where (a._value.canCopyFromDevice && b._value.canCopyFromHost) {
+inline proc =(a: [], b : []) where (a._value.canCopyFromDevice && b._value.canCopyFromHost) {
   if a.rank != b.rank then
     compilerError("rank mismatch in array assignment");
   __primitive("copy_gpu_to_host", 
@@ -1414,7 +1399,7 @@ pragma "inline" proc =(a: [], b : []) where (a._value.canCopyFromDevice && b._va
   return a;
 }
 
-pragma "inline" proc =(a: [], b : []) where (a._value.canCopyFromHost && b._value.canCopyFromDevice) {
+inline proc =(a: [], b : []) where (a._value.canCopyFromHost && b._value.canCopyFromDevice) {
   if a.rank != b.rank then
     compilerError("rank mismatch in array assignment");
   __primitive("copy_host_to_gpu", 
@@ -1481,7 +1466,7 @@ proc chpl__useBulkTransfer(a:[], b:[]) {
 
 proc chpl__useBulkTransfer(a: [], b) param return false;
 
-pragma "inline" proc =(a: [], b) {
+inline proc =(a: [], b) {
   if (chpl__isArray(b) || chpl__isDomain(b)) && a.rank != b.rank then
     compilerError("rank mismatch in array assignment");
   if chpl__isArray(b) && b._value == nil then
@@ -1492,7 +1477,7 @@ pragma "inline" proc =(a: [], b) {
      chpl__compatibleForBulkTransfer(a, b) &&
     !chpl__serializeAssignment(a, b) {
     if chpl__useBulkTransfer(a, b) {
-      a._value.doiBulkTransfer(b);
+      a._value.doiBulkTransfer_(b);
       return a;
     }
   }
@@ -1587,12 +1572,12 @@ class _OpaqueIndex { }
 //
 // Swap operators for arrays and domains
 //
-pragma "inline" proc _chpl_swap(x: [], y: []) {
+inline proc _chpl_swap(x: [], y: []) {
   for (i,j) in (x.domain, y.domain) do
     x(i) <=> y(j);
 }
 
-pragma "inline" proc _chpl_swap(x: domain, y: domain) {
+inline proc _chpl_swap(x: domain, y: domain) {
   const t = y;
   y = x;
   x = t;
@@ -1664,15 +1649,15 @@ proc =(ic: _iteratorRecord, x: iteratorIndexType(ic)) {
   return ic;
 }
 
-pragma "inline" proc _getIterator(x) {
+inline proc _getIterator(x) {
   return _getIterator(x.these());
 }
 
-pragma "inline" proc _getIterator(ic: _iteratorClass)
+inline proc _getIterator(ic: _iteratorClass)
   return ic;
 
-pragma "inline" proc _getIterator(x: _tuple) {
-  pragma "inline" proc _getIteratorHelp(x: _tuple, param dim: int) {
+inline proc _getIterator(x: _tuple) {
+  inline proc _getIteratorHelp(x: _tuple, param dim: int) {
     if dim == x.size then
       return tuple(_getIterator(x(dim)));
     else
@@ -1692,40 +1677,34 @@ proc _checkIterator(type t) {
   compilerError("cannot iterate over a type");
 }
 
-pragma "inline" proc _checkIterator(x) {
+inline proc _checkIterator(x) {
   return x;
 }
 
-pragma "inline"
-proc _freeIterator(ic: _iteratorClass) {
+inline proc _freeIterator(ic: _iteratorClass) {
   __primitive("chpl_mem_free", ic);
 }
 
-pragma "inline"
-proc _freeIterator(x: _tuple) {
+inline proc _freeIterator(x: _tuple) {
   for param i in 1..x.size do
     _freeIterator(x(i));
 }
 
-pragma "inline"
 pragma "no implicit copy"
-proc _toLeader(iterator: _iteratorClass)
+inline proc _toLeader(iterator: _iteratorClass)
   return chpl__autoCopy(__primitive("to leader", iterator));
 
-pragma "inline"
-proc _toLeader(ir: _iteratorRecord) {
+inline proc _toLeader(ir: _iteratorRecord) {
   pragma "no copy" var ic = _getIterator(ir);
   pragma "no copy" var leader = _toLeader(ic);
   _freeIterator(ic);
   return leader;
 }
 
-pragma "inline"
-proc _toLeader(x: _tuple)
+inline proc _toLeader(x: _tuple)
   return _toLeader(x(1));
 
-pragma "inline"
-proc _toLeader(x)
+inline proc _toLeader(x)
   return _toLeader(x.these());
 
 //
@@ -1786,26 +1765,22 @@ proc chpl__dynamicFastFollowCheck(x: [], lead) {
     return false;
 }
 
-pragma "inline"
 pragma "no implicit copy"
-proc _toFollower(iterator: _iteratorClass, leaderIndex)
+inline proc _toFollower(iterator: _iteratorClass, leaderIndex)
   return chpl__autoCopy(__primitive("to follower", iterator, leaderIndex));
 
-pragma "inline"
-proc _toFollower(ir: _iteratorRecord, leaderIndex) {
+inline proc _toFollower(ir: _iteratorRecord, leaderIndex) {
   pragma "no copy" var ic = _getIterator(ir);
   pragma "no copy" var follower = _toFollower(ic, leaderIndex);
   _freeIterator(ic);
   return follower;
 }
 
-pragma "inline"
-proc _toFollower(x, leaderIndex) {
+inline proc _toFollower(x, leaderIndex) {
   return _toFollower(x.these(), leaderIndex);
 }
 
-pragma "inline"
-proc _toFollowerHelp(x: _tuple, leaderIndex, param dim: int) {
+inline proc _toFollowerHelp(x: _tuple, leaderIndex, param dim: int) {
   if dim == x.size-1 then
     return (_toFollower(x(dim), leaderIndex),
             _toFollower(x(dim+1), leaderIndex));
@@ -1814,46 +1789,39 @@ proc _toFollowerHelp(x: _tuple, leaderIndex, param dim: int) {
             (..._toFollowerHelp(x, leaderIndex, dim+1)));
 }
 
-pragma "inline"
-proc _toFollower(x: _tuple, leaderIndex) {
+inline proc _toFollower(x: _tuple, leaderIndex) {
   return _toFollowerHelp(x, leaderIndex, 1);
 }
 
-pragma "inline"
 pragma "no implicit copy"
-proc _toFastFollower(iterator: _iteratorClass, leaderIndex, fast: bool) {
+inline proc _toFastFollower(iterator: _iteratorClass, leaderIndex, fast: bool) {
   return chpl__autoCopy(__primitive("to follower", iterator, leaderIndex, true));
 }
 
-pragma "inline"
-proc _toFastFollower(ir: _iteratorRecord, leaderIndex, fast: bool) {
+inline proc _toFastFollower(ir: _iteratorRecord, leaderIndex, fast: bool) {
   pragma "no copy" var ic = _getIterator(ir);
   pragma "no copy" var follower = _toFastFollower(ic, leaderIndex, fast=true);
   _freeIterator(ic);
   return follower;
 }
 
-pragma "inline"
 pragma "no implicit copy"
-proc _toFastFollower(iterator: _iteratorClass, leaderIndex) {
+inline proc _toFastFollower(iterator: _iteratorClass, leaderIndex) {
   return _toFollower(iterator, leaderIndex);
 }
 
-pragma "inline"
-proc _toFastFollower(ir: _iteratorRecord, leaderIndex) {
+inline proc _toFastFollower(ir: _iteratorRecord, leaderIndex) {
   return _toFollower(ir, leaderIndex);
 }
 
-pragma "inline"
-proc _toFastFollower(x, leaderIndex) {
+inline proc _toFastFollower(x, leaderIndex) {
   if chpl__staticFastFollowCheck(x) then
     return _toFastFollower(x.these(), leaderIndex, fast=true);
   else
     return _toFollower(x.these(), leaderIndex);
 }
 
-pragma "inline"
-proc _toFastFollowerHelp(x: _tuple, leaderIndex, param dim: int) {
+inline proc _toFastFollowerHelp(x: _tuple, leaderIndex, param dim: int) {
   if dim == x.size-1 then
     return (_toFastFollower(x(dim), leaderIndex),
             _toFastFollower(x(dim+1), leaderIndex));
@@ -1862,8 +1830,7 @@ proc _toFastFollowerHelp(x: _tuple, leaderIndex, param dim: int) {
             (..._toFastFollowerHelp(x, leaderIndex, dim+1)));
 }
 
-pragma "inline"
-proc _toFastFollower(x: _tuple, leaderIndex) {
+inline proc _toFastFollower(x: _tuple, leaderIndex) {
   return _toFastFollowerHelp(x, leaderIndex, 1);
 }
 
@@ -1929,4 +1896,18 @@ proc chpl__initCopy(ir: _iteratorRecord) {
   return A;
 }
 
+proc TestGetsPuts(A:[], B:[])
+{
+  A._value.TestGetsPuts(B);
+}
+
+proc copyBtoC(A:[], B:[])
+{
+  A._value.copyBtoC(B);
+}
+
+proc prueba(A:[], B:[])
+{
+  A._value.prueba(B);
+}
 }
