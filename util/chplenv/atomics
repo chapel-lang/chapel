@@ -19,7 +19,7 @@ if ($preset_atomics eq "") {
 #
     if ($platform eq "linux32") {
 	$atomics = "locks";
-    } elsif ($compiler eq "gnu" ) {
+    } elsif ($compiler eq "gnu" || $compiler eq "cray-xt-gnu" || $compiler eq "cray-xe-gnu" ) {
       # Check the compiler version
       $version = `gcc -dumpversion`;
       @vers = split(/\./, $version);
