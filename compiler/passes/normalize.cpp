@@ -315,12 +315,12 @@ static void insertRetMove(FnSymbol* fn, VarSymbol* retval, CallExpr* ret) {
   Expr* ret_expr = ret->get(1);
   ret_expr->remove();
   if (fn->retTag == RET_VAR)
-    ret->insertBefore(new CallExpr(PRIM_MOVE, retval, new CallExpr(PRIM_SET_REF, ret_expr)));
+    ret->insertBefore(new CallExpr(PRIM_MOVE, retval, new CallExpr(PRIM_ADDR_OF, ret_expr)));
   else if (fn->retExprType)
     ret->insertBefore(new CallExpr(PRIM_MOVE, retval, new CallExpr("=", retval, ret_expr)));
   else if (!fn->hasFlag(FLAG_WRAPPER) && strcmp(fn->name, "iteratorIndex") &&
            strcmp(fn->name, "iteratorIndexHelp"))
-    ret->insertBefore(new CallExpr(PRIM_MOVE, retval, new CallExpr(PRIM_GET_REF, ret_expr)));
+    ret->insertBefore(new CallExpr(PRIM_MOVE, retval, new CallExpr(PRIM_DEREF, ret_expr)));
   else
     ret->insertBefore(new CallExpr(PRIM_MOVE, retval, ret_expr));
 }

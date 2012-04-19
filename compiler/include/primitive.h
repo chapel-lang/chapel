@@ -56,8 +56,8 @@ enum PrimitiveTag {
   PRIM_GET_IMAG,                  // get complex imag component
   PRIM_QUERY,                     // query expression primitive
 
-  PRIM_SET_REF,  // set a reference to a value
-  PRIM_GET_REF,  // dereference a reference
+  PRIM_ADDR_OF,  // set a reference to a value
+  PRIM_DEREF,    // dereference a reference
 
   PRIM_LOCAL_CHECK,          // assert that a wide ref is on this locale
 

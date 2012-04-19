@@ -1,59 +1,25 @@
-The new I/O system in Chapel offers additional flexibility while
-providing a single interface to I/O calls that primarily differ
-in performance.
-
-There are 4 main types: file, channel, buffer, bytes.
-
-Auxilary types include iostyle and err_t.
-
-ERROR HANDLING
-  I/O functions each have two versions; one takes a by-name error= argument,
-  and the other does not. If you supply an error= argument, the error code
-  will be returned in that argument. If not, the program will halt with a hopefully
-  useful error message.
-
-  Errors have type err_t, which supports some useful operations:
-   var err:err_t;
-   if err then ... // condition if there is an error
-   if !err then ... // condition if there is no error
-   var i = err:int(32) // turn the error into an int(32)
-   var err2 = i:err_t // turn an int(32) into an err_t
-   if err == EEOF then ... // check for a particular error
-   if err != EEOF then ... // check for anything other than a particular error
-
-  Hopefully, in the future, an exception facility can at least replace
-  the versions that halt on an error.
-
-FILES
-  Create a file by calling one of the open() functions. The first form
-  takes in a path string and an access mode, as well optional hints
-  (the default for channels using that file) and an error object.
-  The second form can open an existing file descriptor.
-
-  An access mode is one of:
-   mode.r
-    like "r" in C, open an existing file for reading
-   mode.w 
-    like "w" in C, create a new file or truncate an existing one,
-    and open it for writing.
-   mode.rw
-    like "r+" in C, open an existing file for reading and
-    writing, but the file must exist.
-   mode.wr
-    like "w+" in C, open an existing file for reading and
-    writing, creating or truncating the file if it exists.
+=========================================================
+This README supplements the Chapel Language Specification
+with details on the Cray Chapel implementation of I/O.
+=========================================================
 
 
+Predefined Constants of the Type 'syserr'
+-----------------------------------------
 
-  In addition, there is an opentmp() function, which will open
-  a temporary file (ie one in /tmp) that will be deleted when
-  the file is closed, and an openmem() function, which will open
-  a buffer in memory but allow the usual I/O routines to work with it.
+  The following constants indicating error conditions are provided:
 
-  Files are reference counted and will be closed eventually 
-  when all references to a file are out of scope. If you need
-  to close a file at a particular moment, there is a file.close()
-  method available.
+    EEOF       unexpected end of file
+    ESHORT     short read or write
+    EFORMAT    bad format
+    EILSEQ     illegal multibyte sequence
+    EOVERFLOW  overflow
+
+  In addition, the constants defined for 'errno' in C are also available.
+
+
+Ensuring Successful I/O
+-----------------------
 
   It is possible - in some situations - for I/O to fail without
   returning an error. In cases where a programmer wants to be sure
@@ -63,80 +29,37 @@ FILES
   some errors can only be reported by the system during file.close
   or even file.fsync.
 
+  When a file (or channel) is closed, data written to that file will
+  be written to disk eventually by the operating system. If an
+  application needs to be sure that the data is written to persistent
+  storage, it should use fsync prior to closing the file.
+
+
+Miscellanea
+-----------
+
   It is not possible to seek, read, or write to a file directly.
   Create a channel to proceed.
 
-  When opening a file, one can supply hints about how the file will
-  be used. The hints= argument to an open function is a number constructed
-  by bit-OR-ing any number of:
-     HINT_CACHED - meaning data is or should be cached in memory
-     HINT_RANDOM - meaning expect random access pattern
-     HINT_SEQUENTIAL - meaning expect sequential access pattern
+  channel.flush() in Chapel has the same meaning as fflush() in C.
+  However, fflush() is not necessarily called in channel.flush().
+  Unlike fsync(), which is actually called in file.fsync() in Chapel.
 
-     Other hints are available (e.g. QIO_METHOD_PREADPWRITE) but
-     will likely get more friendly names in the future, and new
-     hints are likely to be added.
+  The iomode constants in Chapel have the same meaning as the following
+  strings passed to fopen() in C:
+    iomode.r   "r"
+    iomode.rw  "r+"
+    iomode.cw  "w"
+    iomode.cwr "w+"
+  However, file.open() in Chapel does not necessarily invoke fopen().
 
-     The implementation will choose an I/O method (e.g. mmap, pwrite, ...)
-     based on the file size and the supplied hints. It is possible to force
-     a particular I/O method, but the means to do that is likely to change
-     in the future.
-   
-     0 is always the default value to hint 'normal operation'.
-
-  Lastly, one can supply an I/O style when opening a file. A style controls
-  the formatting of basic types such as strings and integers. We support
-  binary and text styles. See the STYLES section for more information.
-  Generally, omitting the style= argument will get you a default style
-  also obtainable with new iostyle().
+  A channel's I/O style may be retrieved using the following method:
+    proc channel._style():iostyle;
 
 
-CREATING CHANNELS
-  Create a channel to read from or write to a particular region in
-  a file. To do that, use file.reader() and file.writer() methods.
+Using Channels
+--------------
 
-  For example, if you have a file called myfile,
-    var writer = myfile.writer();
-
-  A channel can read or write only to a limited region of a file. That way,
-  it is possible to write parallel programs in which different tasks write
-  to different regions of a file. Channels buffer data, and if a writing
-  channel is using the same region of a file as another channel at the same
-  time, there will be a race condition and undefined behavior. Since channels
-  allow specification of a region of a file, these race conditions can
-  be easily avoided. You are ON YOUR OWN if you create channels writing
-  simultaneously to overlapping regions of a file.
-
-  Reader and writer methods take the following optional arguments:
-    kind -- param var for better-performing binary I/O.
-            kind is either dynamic, native, big, or little.
-            When this is 'dynamic', the style is consulted in all cases;
-            otherwise it is a binary style and basic integral
-            and floating point types are directly read and written.
-            
-    start -- start poisition within the file, default is 0
-    end -- maximum end position within the file, default is max(int(64)).
-           A channel will never read/write beyond its maximum end position,
-           and it will extend the file only as necessary to store data
-           written to the channel. In other words, specifying end here
-           does not impact the file size; only the section of the file
-           that this channel can write to. After all channels to a file
-           are closed, that file will have a size equal to the last
-           position of any channel.
-
-    hints -- as when opening a file, it is possible to supply hints
-             to the channel to direct its I/O. 
-
-             If hints is 0, the hints value provided when opening
-             the file will be used.
-    
-    style -- an I/O style; when omitted you get the style supplied when
-             opening the file.
-             See the STYLES section below for more information.
-
-    error -- an out err_t argument. See ERROR HANDLING.
-
-USING CHANNELS
   Channels contain read and write methods, which are generic
   methods that can read or write anything, and can also take
   optional arguments (style, error)
@@ -156,19 +79,104 @@ USING CHANNELS
   you'll have to call channel.flush() or channel.close() and then
   fsync on the related file.
 
-STYLES 
-  A style encapsulates how Chapel's basic types should be read or written.
-  In particular, a style contains options for binary and text I/O, including
-  byte order, how strings are encoded in binary channels, base for numeric
-  text I/O, field widths, and precision.
 
-  In most cases the defaults will serve well.
+The 'iostyle' Type
+------------------
 
-  It is possible to modify the style of a channel or a file with the
-  modifyStyle() method, which takes in a function which is passed
-  the style and should modify it, returning an error (0 for no error).
+  'iostyle' is a record type. In Cray's Chapel Implementation,
+  its fields and their default values are as follows:
 
-LOCKING
+  Perform binary I/O: 1 - yes, 0 - no.
+    var binary:uint(8) = 0;
+
+  --- binary I/O ---
+
+  Byte order:
+    var byteorder:uint(8) = iokind.native:uint(8);
+
+  String format:
+     -1    1 byte of string length, followed by the string
+     -2    2 bytes  "  "
+     -4    4  "     "  "
+     -8    8  "     "  "
+     -10   variable length (in bytes) before the string
+           length encoding: little endian; hi-bit 1 means continue to next byte
+     -0x01XX  - the string is terminated by the byte XX
+     +N (nonzero positive number)  - read exactly this length.
+    var str_style:int(64) = -10;
+
+  --- text I/O ---
+
+  General formatting:
+    var min_width:uint(32) = 1;
+    var max_width:uint(32) = max(uint(32));
+    var string_start:style_char_t = 0x22;  // double quote
+    var string_end:style_char_t = 0x22;    // double quote
+
+  String format:
+      QIO_STRING_FORMAT_WORD  string is as-is; reading reads until whitespace.
+      QIO_STRING_FORMAT_BASIC only escape string_end and \ with \
+      QIO_STRING_FORMAT_CHPL  escape string_end \ ' " \n with \
+                              and nonprinting characters c = 0xXY with \xXY
+      QIO_STRING_FORMAT_JSON  escape string_end " and \ with \,
+                              and nonprinting characters c = \uABCD
+      QIO_STRING_FORMAT_TOEND string is as-is; reading reads until string_end
+    var string_format:uint(8) = 0;
+
+  Numeric formatting:
+    var base:uint(8) = 0;
+    var point_char:style_char_t = 0x2e;          // .
+    var exponent_char:style_char_t = 0x65;       // e
+    var other_exponent_char:style_char_t = 0x70; // p
+    var positive_char:style_char_t = 0x2b;       // +
+    var negative_char:style_char_t = 0x2d;       // -
+    var prefix_base:uint(8) = 1;
+  //primarily for printing
+    var pad_char:style_char_t = 0x20; // ' '
+    var showplus:uint(8) = 0;
+    var uppercase:uint(8) = 0;
+    var leftjustify:uint(8) = 0;
+    var showpoint:uint(8) = 0;
+    var showpointzero:uint(8) = 1;
+    var precision:int(32) = -1;
+    var significant_digits:int(32) = -1;
+
+  Formatting of real numbers:
+      0  print out 'sigdigits' number of significant digits (%g in printf)
+      1  print out 'precision' number of digits after the decimal point (%f)
+      2  always use exponential and 'precision' number of digits (%e)
+    var realfmt:uint(8) = 0;
+
+  Formatting of complex numbers:
+    var complex_style:uint(8) = 0;
+
+
+  The default value of the 'iostyle' type is undefined.
+  However, the compiler-generated constructor is available.
+  It can be used to generate the default I/O style,
+  with or without modifications.
+
+  Example: specifying the minimum width for writing numbers
+  so array elements are aligned:
+
+    stdout.writeln(MyArray, new iostyle(min_width=10));
+
+  Useful functions:
+
+  generate the default I/O style, same as 'new iostyle()':
+    proc defaultIOStyle():iostyle;
+
+  retrieve the channel's I/O style:
+    proc channel._style():iostyle;
+
+  'iostyle' is work in progress: the fields and/or their types
+  may change. Among other changes, we will be replacing the types
+  of some multiple-choice fields from integral to enums.
+
+
+Locking
+-------
+
   Channels (and files) contain locks in order to keep their operation
   thread-safe. When creating a channel, it is possible to disable the
   lock (for performance reasons) by passing locking=false to e.g.
@@ -182,12 +190,18 @@ LOCKING
   guarantee that they are not called a channel without the appropriate
   locking.
 
-BYTES
+
+Bytes Type
+----------
+
   A bytes object is just some data in memory along with a size. Bytes
   objects are reference counted, and the memory will be freed when
   nothing refers to the bytes object any more.
 
-BUFFERS
+
+Buffers
+-------
+
   A buffer stores some number subsections of bytes objects. It is efficient
   to go to a particular offset in a buffer, and to push or pop bytes
   objects from the beginning or end of a buffer.

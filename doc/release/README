@@ -16,7 +16,6 @@ This directory contains the following documentation:
   README.tasks       : explains how Chapel tasks are implemented using threads
 
   platforms/           : platform-specific notes:
-    README.cx-linux    :  Cray CX1/CX1000 (TM) running Linux
     README.cygwin      :  Cygwin
     README.ibm         :  IBM
     README.macosx      :  Mac

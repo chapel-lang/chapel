@@ -780,8 +780,7 @@ proc BlockArr.setup() {
   if doRADOpt then setupRADOpt();
 }
 
-pragma "inline"
-proc _remoteAccessData.getDataIndex(param stridable, ind: rank*idxType) {
+inline proc _remoteAccessData.getDataIndex(param stridable, ind: rank*idxType) {
   // modified from DefaultRectangularArr below
   var sum = origin;
   if stridable {

@@ -47,7 +47,7 @@ void returnStarTuplesByRefArgs() {
           Symbol* tmp = newTemp(arg->type);
           move->insertBefore(new DefExpr(tmp));
           move->insertBefore(new CallExpr(PRIM_MOVE, tmp,
-                               new CallExpr(PRIM_SET_REF, actual)));
+                               new CallExpr(PRIM_ADDR_OF, actual)));
           actual = new SymExpr(tmp);
         }
         move->replace(call->remove());

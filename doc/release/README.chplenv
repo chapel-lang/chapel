@@ -36,11 +36,10 @@ Recommended Settings
         setenv CHPL_HOST_PLATFORM `$CHPL_HOME/util/chplenv/platform`
 
    For other platforms that appear very similar to a UNIX workstation
-   from the shell prompt (e.g., a Cray XT or Cray CX1000), the value
-   may need to be set explicitly.  The strings for our
-   currently-supported host platforms are as follows:
+   from the shell prompt (e.g., a Cray XT), the value may need to be
+   set explicitly.  The strings for our currently-supported host
+   platforms are as follows:
 
-        cx-linux    : Cray CX1 or Cray CX1000 running Linux
         cygwin      : Cygwin (Windows) platforms
         darwin      : Macintosh OS X platforms
         linux32     : 32-bit Linux platforms
@@ -126,7 +125,6 @@ Optional Settings
 
         platform        compiler
         --------        --------
-        cx-linux    ->  gnu
         marenostrum ->  ibm
         pwr5, pwr6  ->  ibm
         x1, x2      ->  cray-vec

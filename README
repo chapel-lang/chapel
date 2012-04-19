@@ -87,7 +87,6 @@ For more detailed information about...      refer to...
   ...how Chapel tasks are mapped to threads  ...doc/README.tasks
 
   ...using Chapel on a specific platform...
-     ...a Cray CX1 (TM) or Cray CX1000 (TM)  ...doc/platforms/README.cx-linux
      ...a Cray XE (TM)                       ...doc/platforms/README.xe-cle
      ...a Cray XMT (TM)                      ...doc/platforms/README.xmt
      ...a Cray XT (TM) (CLE)                 ...doc/platforms/README.xt-cle

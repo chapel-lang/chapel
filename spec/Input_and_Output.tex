@@ -1,5 +1,6 @@
 \sekshun{Input and Output}
 \label{Input_and_Output}
+% got one right below: \index{input and output}
 \index{input/output}
 
 Input/output (I/O) facilities in Chapel include
@@ -9,8 +10,8 @@ the functions \chpl{open}, \chpl{close}, \chpl{reader}, \chpl{writer},
 \chpl{read} and \chpl{write},
 and others.
 
-\index{input/output!file}
-\index{input/output!channel}
+\index{input/output!file@\chpl{file}}
+\index{input/output!channel@\chpl{channel}}
 A \emph{file} in Chapel identifies a file in the underlying operating system.
 % TODO: define the typical sequence as "open a file" -> "create a channel"
 %
@@ -19,8 +20,10 @@ associated with the file.
 Each channel provides sequential access to its file, optionally
 starting at an offset. Channels operate independently,
 thus enabling concurrent I/O without contending for locks.
+The behavior in the case of concurrent operations
+on overlapping channels for the same file is undefined, however.
 %
-Explicit flushing and synchronization operations can be used
+Explicit synchronization operations can be used
 to make the data written to a channel available to other channels
 and to commit the data to the file device for persistence.
 
@@ -73,41 +76,52 @@ I/O facilities are presented as follows:
 
 \section{Files}
 \label{IO_files}
+\index{input/output!file@\chpl{file}}
+
+A \chpl{file} value (\rsec{IO_file_type})
+is produced when opening a file (\rsec{IO_open_file})
+and represents a file in the underlying operating system.
+%
+Once a file is open, it is necessary to create associated channel(s)
+(\rsec{IO_channel_creation}) to write to and/or read from the OS file.
+%
+Explicit synchronization (\rsec{IO_file_synchronization}) can be used to ensure
+that file data is commited to the file's OS device.
+%
+To release any resources associated with a file,
+its channels then the file must be closed
+(\rsec{IO_closing_channels}, \rsec{IO_closing_files}).
 
 
 \subsection{The {\em file} Type and Values}
 \label{IO_file_type}
-\index{input/output!file}
-\index{input/output!file!default value}
+\index{input/output!file@\chpl{file}}
+\index{input/output!types!file@\chpl{file}}
 
-%REVIEW: vass: in our implementation there is an actual object
-% containing state etc.; multiple such objects can represent
-% one file. A Chapel 'file' object is a reference to such
-% actual object.
-% This should be reflected here and/or in the chapter intro.
+The \chpl{file} type is implementation-defined.
+A value of the \chpl{file} type refers to the state that is used
+by the implementation to identify and interact with the OS file.
 
-A value of the \chpl{file} type represents a file in the underlying
-operating system in an implementation-defined way. The default value
-of the \chpl{file} type does not represent any OS file.
+When a \chpl{file} formal argument has blank intent, the
+actual is copied to the formal upon a function call and
+the formal cannot be assigned within the function.
 
-The details of how the OS file is accessed are determined
-when opening a file (\rsec{IO_open_file})
-or creating its associated channel (\rsec{IO_channel_creation}).
+\index{input/output!file@\chpl{file}!default value}
+The default value of the \chpl{file} type does not represent any OS file.
+It is illegal to perform any I/O operations on the default value.
 
 
 \subsection{Functions for Opening Files}
 \label{IO_open_file}
-\index{input/output!open, opentmp, openmem}
+\index{input/output!open, opentmp, openmem@\chpl{open}, \chpl{opentmp}, \chpl{openmem}}
 
-The following functions are provided for opening a file.
-Once a file is open, it is necessary to create associated channel(s)
-for reading from and/or writing to the file (\rsec{IO_channel_creation}).
-The \chpl{error} argument is explained in \rsec{IO_error_handling}.
+A file can be opened using the following functions.
 
 \begin{protohead}
-proc open(out error:syserr, path:string, mode:iomode, hints:iohints=IOHINT_NONE, style:iostyle = defaultStyle()
-          ):file;
-proc open(path:string, mode:iomode, hints:iohints=IOHINT_NONE, style:iostyle = defaultStyle()):file;
+proc open(out error:syserr, path:string, mode:iomode,
+          hints:iohints=IOHINT_NONE, style:iostyle = new iostyle()):file;
+proc open(path:string, mode:iomode,
+          hints:iohints=IOHINT_NONE, style:iostyle = new iostyle()):file;
 \end{protohead}
 \begin{protobody}
 Opens a file specified by $path$, with
@@ -116,22 +130,26 @@ and the hints $hints$ (\rsec{IO_iohints_type}).
 The $style$ argument defines the I/O style (\rsec{IO_io_style})
 for use by default when creating channels associated with this file
 (\rsec{IO_channel_creation}).
+The \chpl{error} argument is explained in \rsec{IO_error_handling}.
 \end{protobody}
 
 \begin{protohead}
-proc opentmp(out error:syserr, hints:iohints=IOHINT_NONE, style:iostyle = defaultStyle()):file;
-proc opentmp(hints:iohints=IOHINT_NONE, style:iostyle = defaultStyle()):file;
+proc opentmp(out error:syserr,
+             hints:iohints=IOHINT_NONE, style:iostyle = new iostyle()):file;
+proc opentmp(hints:iohints=IOHINT_NONE, style:iostyle = new iostyle()):file;
 \end{protohead}
 \begin{protobody}
 % TODO: for writing only?
 Similar to \chpl{open}, but the created file is temporary:
-it is created in an OS-dependent temporary directory (e.g. \chpl{/tmp})
+it is a new file, is created in an OS-dependent temporary directory (e.g. \chpl{/tmp})
 and is deleted upon closing.
+As with a file opened with the \chpl{iomode.cwr} access mode,
+both writing to and reading from this file is allowed.
 \end{protobody}
 
 \begin{protohead}
-proc openmem(out error:syserr, style:iostyle = defaultStyle());
-proc openmem(style:iostyle = defaultStyle()):file;
+proc openmem(out error:syserr, style:iostyle = new iostyle());
+proc openmem(style:iostyle = new iostyle()):file;
 \end{protohead}
 \begin{protobody}
 % TODO: for writing only?
@@ -140,13 +158,35 @@ the created file is backed up by a buffer in memory, not by a disk.
 \end{protobody}
 
 
+\subsection{Synchronization of File Data}
+\label{IO_file_synchronization}
+
+The following synchronization operation is available.
+
+\index{input/output!fsync@\chpl{fsync}}
+\index{predefined functions!fsync@\chpl{fsync}}
+\begin{protohead}
+proc file.fsync(out error:syserr);
+proc file.fsync();
+\end{protohead}
+\begin{protobody}
+Commits file data to the device associated with this file.
+Data written to the file by a channel will be committed
+only if the channel has been closed or flushed.
+The \chpl{error} argument is explained in \rsec{IO_error_handling}.
+\end{protobody}
+\begin{craychapel}
+\chpl{fsync} in Chapel translates to the \chpl{fsync} system call.
+\end{craychapel}
+
+
 \subsection{Functions for Closing Files}
 \label{IO_closing_files}
 
-In order to free the resources allocated for a file or a channel, it
+In order to free the resources allocated for a file, it
 must be closed using one of the following methods:
 
-\index{input/output!close (file)}
+\index{input/output!close (file)@\chpl{close} (file)}
 \begin{protohead}
 proc file.close(out error:syserr);
 proc file.close();
@@ -162,9 +202,10 @@ that has been closed.
 It is an error to close a file when it has channels that
 have not been closed.
 
-Closing a file, when completed successfully, also commits
-all file data to the disk or other persistent storage,
-if applicable.
+Closing a file does not guarantee persistence of the
+performed updates, if any.
+\chpl{fsync} (\rsec{IO_file_synchronization}) should be used for that purpose
+prior to closing the file.
 
 \begin{future}
 In the future we plan to implement reference counting for files
@@ -178,33 +219,30 @@ explicitly will remain available.
 \end{future}
 
 
-\subsection{Synchronization of File Data}
-\label{IO_file_synchronization}
-
-The following synchronization operation is available.
-
-\index{input/output!fsync}
-\begin{protohead}
-proc file.fsync(out error:syserr);
-proc file.fsync();
-\end{protohead}
-\begin{protobody}
-Commits all file data to the disk or other persistent storage, if
-applicable. This ensures that the file data will be available to
-applications executing later.
-\end{protobody}
-
-
 \section{Channels}
 \label{IO_channels}
+% got one right below: \index{input/output!channel@\chpl{channel}}
 
 
 \subsection{The {\em channel} Type and Values}
 \label{IO_channel_type}
-\index{input/output!channel}
+\index{input/output!channel@\chpl{channel}}
+\index{input/output!types!channel@\chpl{channel}}
+
+The \chpl{channel} type is implementation-defined.
+A value of the \chpl{channel} type refers to the state that is used
+to implement the channel operations.
+
+When a \chpl{channel} formal has blank intent, the
+actual is copied to the formal upon a function call and
+the formal cannot be assigned within the function.
+
+\index{input/output!channel@\chpl{channel}!default value}
+The default value of the \chpl{channel} type is not associated
+with any file and so cannot be used to perform I/O.
 
 The \chpl{channel} type is generic. It has the following arguments,
-none of which have defaults:
+none of which have default values:
 
 \begin{itemize}
 
@@ -217,31 +255,26 @@ none of which have defaults:
 
 \item \chpl{locking} is a boolean indicating whether it is
       safe to use this channel concurrently (when \chpl{true}).
-      Safety is implemented by guarding all channel operations, except
-      as indicated, with a channel-specific lock.
 
 \end{itemize}
 
-\index{input/output!channel!default value}
-The representation of a \chpl{channel} value is implementation-defined.
-The default value of the \chpl{channel} type is not associated
-with any file and so cannot be used to perform I/O.
 
-
-\subsection{Functions for Channel Creation and Manipulation}
+\subsection{Functions for Channel Creation}
 \label{IO_channel_creation}
 
-\index{input/output!reader}
+\index{input/output!writer@\chpl{writer}}
 \begin{protohead}
-proc file.reader(out error:syserr, param kind=iokind.dynamic, param locking=true,
-                 start:int(64) = 0, end:int(64) = max(int(64)), hints:iohints = IOHINT_NONE,
-                 style:iostyle = this._style): channel(false, kind, locking);
-proc file.reader(param kind=iokind.dynamic, param locking=true,
-                 start:int(64) = 0, end:int(64) = max(int(64)), hints:iohints = IOHINT_NONE,
-                 style:iostyle = this._style): channel(false, kind, locking);
+proc file.writer(out error:syserr, param kind=iokind.dynamic, param locking=true,
+                 start:int(64) = 0, end:int(64) = max(int(64)),
+                 hints:iohints = IOHINT_NONE,
+                 style:iostyle = this._style): channel(true,kind,locking);
+proc file.writer(param kind=iokind.dynamic, param locking=true,
+                 start:int(64) = 0, end:int(64) = max(int(64)),
+                 hints:iohints = IOHINT_NONE,
+                 style:iostyle = this._style): channel(true,kind,locking);
 \end{protohead}
 \begin{protobody}
-Creates a channel for reading from the file.
+Creates a channel for writing to the file.
 
 The arguments are as follows:
 
@@ -253,9 +286,18 @@ The arguments are as follows:
       the \chpl{channel} type that is returned (see \rsec{IO_channel_type})
 
 \item \chpl{start} and \chpl{end} define the region of the file that
-      the channel will read from. The default values for these arguments enable
+      the channel will write to. 
+      These are byte offsets; the beginning of the file is at the offset 0.
+      The defaults for these arguments enable
       the channel to access the entire file.
-      A channel will never read beyond its maximum end position.
+
+      A channel will never write beyond its maximum end position.
+      It will extend the file only as necessary to store data
+      written to the channel. In other words, specifying end here
+      does not impact the file size directly; it impacts only the section of the file
+      that this channel can write to. After all channels to a file
+      are closed, that file will have a size equal to the last
+      position written to by any channel.
 
 \item \chpl{hints} provides hints about the I/O that this channel
       will perform (\rsec{IO_iohints_type}).
@@ -268,55 +310,67 @@ The arguments are as follows:
       was opened (\rsec{IO_open_file}).
 
 \end{itemize}
-
 \end{protobody}
 
-\index{input/output!writer}
+\index{input/output!reader@\chpl{reader}}
 \begin{protohead}
-proc file.writer(out error:syserr, param kind=iokind.dynamic, param locking=true,
+proc file.reader(out error:syserr, param kind=iokind.dynamic, param locking=true,
                  start:int(64) = 0, end:int(64) = max(int(64)), hints:iohints = IOHINT_NONE,
-                 style:iostyle = this._style): channel(true,kind,locking);
-proc file.writer(param kind=iokind.dynamic, param locking=true,
+                 style:iostyle = this._style): channel(false, kind, locking);
+proc file.reader(param kind=iokind.dynamic, param locking=true,
                  start:int(64) = 0, end:int(64) = max(int(64)), hints:iohints = IOHINT_NONE,
-                 style:iostyle = this._style): channel(true,kind,locking);
+                 style:iostyle = this._style): channel(false, kind, locking);
 \end{protohead}
 \begin{protobody}
-Creates a channel for writing to the file.
+Creates a channel for reading from the file.
 
-The arguments are the same as for \chpl{file.reader}, except for the following:
+The arguments are the same as for \chpl{file.writer}, except for the following:
 
 \begin{itemize}
 
 \item \chpl{start} and \chpl{end} define the region of the file that
-      the channel will write to. The defaults for these arguments enable
+      the channel will read from. The default values for these arguments enable
       the channel to access the entire file.
-
-      A channel will never write beyond its maximum end position,
-      and it will extend the file only as necessary to store data
-      written to the channel. In other words, specifying end here
-      does not impact the file size; only the section of the file
-      that this channel can write to. After all channels to a file
-      are closed, that file will have a size equal to the last
-      position of any channel.
+      A channel will never read beyond its maximum end position.
 
 \end{itemize}
+\end{protobody}
 
+
+\subsection{Synchronization of Channel Data}
+\label{IO_channel_synchronization}
+
+The following synchronization operation is available.
+
+\index{input/output!flush@\chpl{flush}}
+\begin{protohead}
+proc channel.flush(out error:syserr);
+proc channel.flush();
+\end{protohead}
+\begin{protobody}
+Makes all writes to the channel, if any, available to concurrent viewers
+of its associated file, such as other channels or other applications
+accessing this file concurrently.
+Unlike \chpl{file.fsync}, this does not commit the written data
+to the file's device.
 \end{protobody}
 
 
 \subsection{Functions for Closing Channels}
 \label{IO_closing_channels}
 
-In order to free the resources allocated for a file or a channel, it
-must be closed using one of the following methods:
+A channel must be closed in order to free the resources allocated for it,
+to ensure that data written to it is visible to other channels,
+or to allow the associated file to be closed.
 
-\index{input/output!close (channel)}
+\index{input/output!close (channel)@\chpl{close} (channel)}
 \begin{protohead}
 proc channel.close(out error:syserr);
 proc channel.close();
 \end{protohead}
 \begin{protobody}
-Close a channel.
+Close a channel after performing the \chpl{flush} operation
+(\rsec{IO_channel_synchronization}).
 The \chpl{error} argument is explained in \rsec{IO_error_handling}.
 \end{protobody}
 
@@ -338,36 +392,29 @@ explicitly will remain available.
 \end{future}
 
 
-\subsection{Synchronization of Channel Data}
-\label{IO_channel_synchronization}
-
-The following synchronization operation is available.
-
-\index{input/output!flush}
-\begin{protohead}
-proc channel.flush(out error:syserr);
-proc channel.flush();
-\end{protohead}
-\begin{protobody}
-Makes all writes to the channel available to other concurrent views of the
-channel's file. These include other channels for the same file and
-other applications accessing the file concurrently.
-This does not guarantee persistence of the written data, however.
-\end{protobody}
-
-
 \subsection{I/O Style}
 \label{IO_io_style}
+\index{input/output!I/O style}
 
-A channel's I/O style is established upon channel creation
-(\rsec{IO_channel_creation}).
-It is represented by a value of the \chpl{iostyle} type
-(\rsec{IO_iostyle_type}.
+I/O style regulates how Chapel's basic types are read or written.
+For example, the I/O style defines whether I/O is binary or text
+and what representation is used for each basic type.
+
+Section~\rsec{IO_iostyle_type} defines the \chpl{iostyle} type
+used to represent I/O styles and provides details on formatting
+and other representation choices.
+
+\index{input/output!I/O style!applicable}
+Each write/read operation has an \emph{applicable} I/O style.
+It is defined by the \chpl{iostyle} argument if one is passed explicitly
+when invoking the corresponding write/read function.
+Otherwise it is the channel's I/O style, which is established
+upon channel creation (\rsec{IO_channel_creation}).
 
 
 \subsection{The {\em stdin}, {\em stdout}, and {\em stderr} Channels}
 \label{IO_std_channels}
-\index{input/output!stdin, stdout, stderr}
+\index{input/output!stdin, stdout, stderr@\chpl{stdin}, \chpl{stdout}, \chpl{stderr}}
 
 Chapel provides the predefined channels \chpl{stdin}, \chpl{stdout},
 and \chpl{stderr} to access the corresponding operating system streams
@@ -375,50 +422,53 @@ standard input, standard output, and standard error.
 
 \chpl{stdin} supports reading;
 \chpl{stdout} and \chpl{stderr} support writing.
-All three channels are safe to use concurrently and
-consult their I/O styles at run time to determine the I/O format.
+All three channels are safe to use concurrently.
+Their types' \chpl{kind} argument is \chpl{dynamic}.
 
 
 \section{Supporting Data Types}
 \label{IO_data_types}
 
-File and channel operations make use of the type presented in this section.
+File and channel operations make use of the types presented in this section.
 
 
 \subsection{The {\em iokind} Type}
 \label{IO_iokind_type}
-\index{input/output!iokind}
+\index{input/output!iokind@\chpl{iokind}}
+\index{input/output!types!iokind@\chpl{iokind}}
 
-The \chpl{iokind} type is an enum. Its constants are intended
+The \chpl{iokind} type is an enum. When used
 as arguments to the \chpl{channel} type,
-where they narrow down the channels' I/O style (\rsec{IO_io_style})
-when performing binary I/O of numeric types:
+its constants have the following meaning:
 
 \begin{itemize}
 
-\item \chpl{dynamic} means that each channel's run-time I/O style will
-      have full effect.      
+\item \chpl{big} binary I/O with big-endian byte order
+      is performed when writing/reading basic types from the channel.
 
-\item \chpl{native} forces the endianness that is native
-      to the target platform for binary I/O.
+\item \chpl{little} similar to \chpl{big}, but with little-endian byte order.
 
-\item \chpl{big} forces big-endian binary I/O.
+\item \chpl{native} similar to \chpl{big}, but with the byte order
+      that is native to the target platform.
 
-\item \chpl{little} forces little-endian binary I/O.
+\item \chpl{dynamic} means that the applicable I/O style
+      has full effect.
 
 \end{itemize}
 
-In the case of \chpl{native}, \chpl{big}, or \chpl{little},
-the channel's I/O style is consulted at run time for
-text or string I/O.
+In the case of \chpl{big}, \chpl{little}, and \chpl{native},
+the applicable I/O style is consulted when writing/reading
+strings, but not for other basic types.
 
 
 \subsection{The {\em iomode} Type}
 \label{IO_iomode_type}
-\index{input/output!iomode}
+\index{input/output!iomode@\chpl{iomode}}
+\index{input/output!types!iomode@\chpl{iomode}}
 
-The \chpl{iomode} type is an enum. Its constants are intended
-as arguments when opening files, with the following meanings:
+The \chpl{iomode} type is an enum.
+When used as arguments when opening files,
+its constants have the following meaning:
 
 \begin{itemize}
 
@@ -438,25 +488,31 @@ as arguments when opening files, with the following meanings:
 
 \subsection{The {\em iohints} Type}
 \label{IO_iohints_type}
-\index{input/output!iohints}
+\index{input/output!iohints@\chpl{iohints}}
+\index{input/output!types!iohints@\chpl{iohints}}
 
-The \chpl{iohints} type is an alias for an integer type.
-When passed to functions for opening a file (\rsec{IO_open_file}),
-a \chpl{iohints} value is interpreted to be a bit mask obtained
-by a bitwise OR of the following constants:
+A value of the \chpl{iohints} type defines a set of hints
+about the I/O that the file or channel will perform.
+These hints may be used by the implementation
+to select optimized versions of the I/O operations.
 
-%TODO: describe what these hints could affect.
+The \chpl{iohints} type is implementation-defined.
+The following \chpl{iohints} constants are provided:
 
 \begin{itemize}
 
-\item \chpl{IOHINT_NONE} provides no hints.
+\item \chpl{IOHINT_NONE} defines an empty set, which provides no hints.
+%include this?  This means normal operation, nothing special to hint about.
 
 \item \chpl{IOHINT_CACHED} suggests that the file data is or should be
-      cached in memory.
+      cached in memory, possibly all at once.
 
-\item \chpl{IOHINT_RANDOM} suggests to expect random access pattern.
+\item \chpl{IOHINT_RANDOM} suggests to expect random access.
 
-\item \chpl{IOHINT_SEQUENTIAL} suggests to expect sequential access pattern.
+\item \chpl{IOHINT_SEQUENTIAL} suggests to expect sequential access.
+
+\item \chpl{IOHINT_PARALLEL} suggests to expect many channels
+      working with this file in parallel.
 
 \end{itemize}
 
@@ -464,96 +520,92 @@ by a bitwise OR of the following constants:
 Other hints are likely to be added in the future.
 \end{future}
 
+The following binary operators are defined on \chpl{iohints}:
+
+\begin{itemize}
+
+\item \chpl{|} set union,
+
+\item \chpl{&} set intersection,
+
+\item \chpl{==} set equality,
+
+\item \chpl{!=} set inequality.
+
+\end{itemize}
+
+When an \chpl{iohints} formal has blank intent, the
+actual is copied to the formal upon a function call and
+the formal cannot be assigned within the function.
+
+%\index{input/output!iohints@\chpl{iohints}!default value}
+The default value of the \chpl{iohints} type is undefined.
+
 
 \subsection{The {\em iostyle} Type}
 \label{IO_iostyle_type}
-\index{input/output!iostyle}
-\index{input/output!I/O style}
+\index{input/output!iostyle@\chpl{iostyle}}
+\index{input/output!types!iostyle@\chpl{iostyle}}
+\index{input/output!I/O style!iostyle@\chpl{iostyle}}
 
-The \chpl{iostyle} type is implementation-defined.
-Modifications to a copy of an \chpl{iostyle} value (e.g.
-obtained upon an assignment or argument passing)
-are not reflected in the original.
+The \chpl{iostyle} type represents I/O styles \rsec{IO_io_style},
+defining how Chapel's basic types should be read or written.
 
-A channel's I/O style is a value of the \chpl{iostyle} type.
-It is set when the channel is created and can be modified later
-(\rsec{IO_channel_creation}, \rsec{IO_channel_style_mods}).
-It defines how Chapel's basic types should be read or written.
-For example, it defines whether binary or text I/O
-should be performed, the byte order (big or little endian)
-and string format for binary I/O, string delimiters,
-numeric base and precision for text I/O, etc.
+The \chpl{iostyle} type is an implementation-defined record.
 
-Methods that examine or modify an \chpl{iostyle} value
-are provided for the channel I/O style
-(\rsec{IO_channel_style_mods}).
-
-\index{input/output!iostyle!default value}
-The default value of the \chpl{iostyle} type does not define
-a valid I/O style.
-Instead, the result of \chpl{defaultStyle()} should be used where
-a default is desired (\rsec{IO_channel_style_mods})
-
-%TODO: we may want the default value to define the default
-%I/O style, but this seems to be a low priority.
-
-
-% Only defaultStyle() will remain in the spec,
-% because modifyStyle() has been eliminated.
-\label{IO_channel_style_mods}
-
-The following operations provide access to and modification of
-a channel's I/O style. Like most other methods on channels,
-these operations are guarded with a channel-specific lock
-when the channel type's \chpl{locking} parameter is \chpl{true}.
-
-\index{input/output!defaultStyle}
-\begin{protohead}
-proc defaultStyle():iostyle;
-\end{protohead}
-\begin{protobody}
-The return value defines the default I/O style,
-which provides reasonable defaults for most channel I/O operations.
-\end{protobody}
-
-\index{input/output!modifyStyle}
-\begin{protohead}
-proc channel.modifyStyle(f:func(iostyle, iostyle));
-\end{protohead}
-\begin{protobody}
-Modify the channel's I/O style. The argument is
-%the new I/O style or
-a function that takes the channel's current I/O style and returns
-the new I/O style to be set for the channel.
-\end{protobody}
+\begin{craychapel}
+The \chpl{iostyle} type is presented in
+\chpl{CHPL_HOME/doc/technotes/README.io}.
+\end{craychapel}
 
 \begin{future}
-Operations that retrieve or set a channel's I/O style
-or modify its individual aspects will also be provided.
+In the future we may specify additional requirements, such as
+the required \chpl{iostyle} fields and methods.
+We also plan to provide a method to retrieve a channel's I/O style.
 \end{future}
 
 
 \subsection{The {\em syserr} Type}
 \label{IO_syserr_type}
-\index{input/output!syserr}
+\index{input/output!syserr@\chpl{syserr}}
 
-The \chpl{syserr} type is an alias for an integer type.
-Its values represent success or an error condition of most Chapel I/O
-functions, which are accessible as described in \rsec{IO_error_handling}.
+The \chpl{syserr} type is used to represent success or an error
+condition of most Chapel I/O functions, which is accessible as
+described in \rsec{IO_error_handling}.
 
-The zero value represents success. It can also be obtained as \chpl{ENOERR}.
+Success is represented by the predefined constant \chpl{ENOERR}.
+The other values represent errors.
+The constant \chpl{EEOF} represents the unexpected-end-of-file error.
 
-Non-zero values represent errors. They can be obtained via symbolic
-names that are defined in C for \chpl{errno}, for example
-\chpl{EEOF}, \chpl{EACCES}, etc.
+A string describing the error can be obtained using the following function:
 
-%TODO: how to get string descriptions of errors?
+\begin{protohead}
+proc errorToString(error:syserr):string;
+\end{protohead}
+\begin{protobody}
+Returns a string describing the success or error condition in \chpl{error}.
+\end{protobody}
+
+\begin{craychapel}
+Other \chpl{syserr} constants are described in
+\\ %formatting
+\chpl{CHPL_HOME/doc/technotes/README.io}.
+\end{craychapel}
+
+The \chpl{syserr} type is implementation-defined.
+
+When a \chpl{syserr} formal has blank intent, the
+actual is copied to the formal upon a function call and
+the formal cannot be assigned within the function.
+
+%\index{input/output!syserr@\chpl{syserr}!default value}
+The default value of the \chpl{syserr} type is undefined.
 
 
 \section{Error Handling}
 \label{IO_error_handling}
 \index{input/output!error handling}
-\index{input/output!syserr}
+\index{input/output!syserr@\chpl{syserr}}
 
 Most I/O functions have two versions: with the \chpl{out error:syserr}
 argument and without. The version that takes the \chpl{error} argument
@@ -587,10 +639,6 @@ Functions}
 \index{write@\chpl{write}}
 \index{read@\chpl{read}}
 \index{readln@\chpl{readln}}
-\index{read}
-\index{write}
-\index{input/output!read, readln}
-\index{input/output!write, writeln}
 
 The predefined function \chpl{write} takes an arbitrary number of
 arguments and prints each out in turn to \chpl{stdout}.  The predefined
@@ -651,12 +699,16 @@ y = read(real);
 \end{chapel}
 \end{example}
 
+\label{User_Defined_writeThis_Methods}
+\index{input/output!writeThis@\chpl{writeThis}}
 
 \subsection{The {\em write} and {\em writeln} Methods on Channels}
 \label{IO_channel_write}
-\index{input/output!write}
-\index{input/output!writeln}
 \index{write!on channels}
+\index{write (channel)@\chpl{write} (channel)}
+\index{writeln (channel)@\chpl{writeln} (channel)}
+\index{input/output!write (channel)@\chpl{write} (channel)}
+\index{input/output!writeln (channel)@\chpl{writeln} (channel)}
 
 The \chpl{channel} type supports methods \chpl{write} and \chpl{writeln}
 for output.  These methods are defined to take an arbitrary number of
@@ -666,14 +718,14 @@ Default \chpl{writeThis} methods are bound to any type that the user
 does not explicitly create one for.
 
 Like most other methods on channels,
-these operations are guarded with a channel-specific lock
+these operations are guarded against concurrent execution on the same channel
 when the channel type's \chpl{locking} parameter is \chpl{true}.
 
 
 \subsection{The {\em read} and {\em readln} Methods on Channels}
 \label{IO_channel_read}
-\index{input/output!read}
-\index{input/output!readln}
+\index{input/output!read@\chpl{read}}
+\index{input/output!readln@\chpl{readln}}
 \index{read!on channels}
 
 The \chpl{channel} type supports \chpl{read} and \chpl{readln} methods.
@@ -703,6 +755,10 @@ var x = stdin.read(int);
 \subsection{The {\em write} and {\em writeln} Methods on Strings}
 \label{stringwrite}
 \index{write!on strings}
+\index{write (string)@\chpl{write} (string)}
+\index{writeln (string)@\chpl{writeln} (string)}
+\index{input/output!write (string)@\chpl{write} (string)}
+\index{input/output!writeln (string)@\chpl{writeln} (string)}
 
 The \chpl{write} and \chpl{writeln} methods can also be called on
 strings to write the output to a string instead of a channel.
@@ -769,8 +825,8 @@ the first letter.  The output to the above is thus:
 
 
 \subsection{Default {\em write} and {\em read} Methods}
-\index{write!default methods}
-\index{read!default methods}
+\index{write@\chpl{write}!default method}
+\index{read@\chpl{read}!default method}
 
 % TODO: these should be moved to the chapters for the corresponding
 % data types

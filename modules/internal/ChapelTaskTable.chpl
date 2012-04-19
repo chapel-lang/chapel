@@ -22,9 +22,9 @@ use DefaultAssociative;
 */
 
 // Define a few operations over chpl_taskID_t
-pragma "inline" proc ==(a: chpl_taskID_t, b: chpl_taskID_t)
+inline proc ==(a: chpl_taskID_t, b: chpl_taskID_t)
   return __primitive("==", a, b);
-pragma "inline" proc _cast(type t, x: chpl_taskID_t) where _isPrimitiveType(t)
+inline proc _cast(type t, x: chpl_taskID_t) where _isPrimitiveType(t)
   return __primitive("cast", t, x);
 
 

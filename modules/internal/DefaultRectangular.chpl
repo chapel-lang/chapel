@@ -433,15 +433,15 @@ class DefaultRectangularArr: BaseArr {
   proc dsiDestroyData() {
     if dom.dsiNumIndices > 0 {
       pragma "no copy" pragma "no auto destroy" var dr = data;
-      pragma "no copy" pragma "no auto destroy" var dv = __primitive("get ref", dr);
+      pragma "no copy" pragma "no auto destroy" var dv = __primitive("deref", dr);
       pragma "no copy" pragma "no auto destroy" var er = __primitive("array_get", dv, 0);
-      pragma "no copy" pragma "no auto destroy" var ev = __primitive("get ref", er);
+      pragma "no copy" pragma "no auto destroy" var ev = __primitive("deref", er);
       if (chpl__maybeAutoDestroyed(ev)) {
         for i in 0..dom.dsiNumIndices-1 {
           pragma "no copy" pragma "no auto destroy" var dr = data;
-          pragma "no copy" pragma "no auto destroy" var dv = __primitive("get ref", dr);
+          pragma "no copy" pragma "no auto destroy" var dv = __primitive("deref", dr);
           pragma "no copy" pragma "no auto destroy" var er = __primitive("array_get", dv, i);
-          pragma "no copy" pragma "no auto destroy" var ev = __primitive("get ref", er);
+          pragma "no copy" pragma "no auto destroy" var ev = __primitive("deref", er);
           chpl__autoDestroy(ev);
         }
       }
@@ -522,12 +522,10 @@ class DefaultRectangularArr: BaseArr {
     data.init(size);
   }
 
-  pragma "inline"
-  proc getDataIndex(ind: idxType ...1) where rank == 1
+  inline proc getDataIndex(ind: idxType ...1) where rank == 1
     return getDataIndex(ind);
 
-  pragma "inline"
-  proc getDataIndex(ind: rank* idxType) {
+  inline proc getDataIndex(ind: rank* idxType) {
     var sum = origin;
     if stridable {
       for param i in 1..rank do
@@ -541,12 +539,10 @@ class DefaultRectangularArr: BaseArr {
   }
 
   // only need second version because wrapper record can pass a 1-tuple
-  pragma "inline"
-  proc dsiAccess(ind: idxType ...1) var where rank == 1
+  inline proc dsiAccess(ind: idxType ...1) var where rank == 1
     return dsiAccess(ind);
 
-  pragma "inline"
-  proc dsiAccess(ind : rank*idxType) var {
+  inline proc dsiAccess(ind : rank*idxType) var {
     if boundsChecking then
       if !dom.dsiMember(ind) then
         halt("array index out of bounds: ", ind);

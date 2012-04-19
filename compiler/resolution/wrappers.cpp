@@ -202,7 +202,7 @@ buildDefaultWrapper(FnSymbol* fn,
         temp = newTemp();
         temp->addFlag(FLAG_MAYBE_PARAM);
         wrapper->insertAtTail(new DefExpr(temp));
-        wrapper->insertAtTail(new CallExpr(PRIM_MOVE, temp, new CallExpr(PRIM_SET_REF, wrapper_formal)));
+        wrapper->insertAtTail(new CallExpr(PRIM_MOVE, temp, new CallExpr(PRIM_ADDR_OF, wrapper_formal)));
       } else if (specializeDefaultConstructor && wrapper_formal->typeExpr &&
                  isRefCountedType(wrapper_formal->type)) {
         // Formal has a type expression attached and is reference counted (?).
@@ -510,7 +510,7 @@ buildCoercionWrapper(FnSymbol* fn,
         //
         // dereference reference actual
         //
-        call->insertAtTail(new CallExpr(PRIM_GET_REF, wrapperFormal));
+        call->insertAtTail(new CallExpr(PRIM_DEREF, wrapperFormal));
       } else if (wrapperFormal->instantiatedParam) {
         call->insertAtTail(new CallExpr("_cast", formal->type->symbol, paramMap.get(formal)));
       } else {

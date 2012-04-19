@@ -1,0 +1,2 @@
+# This test fails only intermittently. Always skip to reduce false successes.
+CHPL_COMM!=random string

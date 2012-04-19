@@ -7,8 +7,8 @@ use Cwd 'abs_path';
 $chpl_home_dir = abs_path(dirname(__FILE__) . "/../../");
 
 if( defined $ENV{"CHPL_HOME"} ) {
-  if( $ENV{"CHPL_HOME"} ne $chpl_home_dir ) {
-    warn "Mismatched CHPL_HOME; got " . $ENV{"CHPL_HOME"} . " but expected " . $chpl_home_dir;
+  if( abs_path($ENV{"CHPL_HOME"}) ne $chpl_home_dir ) {
+    warn "Mismatched CHPL_HOME; got " . abs_path($ENV{"CHPL_HOME"}) . " but expected " . $chpl_home_dir;
   }
 } else {
   $ENV{"CHPL_HOME"} = $chpl_home_dir;

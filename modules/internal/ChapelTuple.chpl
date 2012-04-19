@@ -12,20 +12,21 @@ pragma "tuple" record _tuple {
 //
 // syntactic support for tuples
 //
-pragma "inline" proc _build_tuple(x...) {
+inline proc _build_tuple(x...) {
   if x.size == 1 then
     return x(1);
   else
     return x;
 }
 
-pragma "inline" pragma "allow ref" proc _build_tuple_always_allow_ref(x ...?size)
+pragma "allow ref" 
+inline proc _build_tuple_always_allow_ref(x ...?size)
   return x;
 
-pragma "inline" proc _build_tuple(type t ...?size) type
+inline proc _build_tuple(type t ...?size) type
   return t;
 
-pragma "inline" proc _build_tuple_always(x ...?size)
+inline proc _build_tuple_always(x ...?size)
   return x;
 
 //
@@ -53,7 +54,7 @@ proc *(p: int, type t) type {
 //
 // standard tuple creation function
 //
-pragma "inline" proc tuple(x ...?size)
+inline proc tuple(x ...?size)
   return x;
 
 //
@@ -76,7 +77,7 @@ proc isTupleType(type t) param {
 //
 // tuple assignment
 //
-pragma "inline" proc =(x: _tuple, y: _tuple) where x.size == y.size {
+inline proc =(x: _tuple, y: _tuple) where x.size == y.size {
   for param i in 1..x.size do
     x(i) = y(i);
   return x;
@@ -111,14 +112,14 @@ proc _tuple.readWriteThis(f) {
 //
 // tuple casts to complex(64) and complex(128)
 //
-pragma "inline" proc _cast(type t, x: (?,?)) where t == complex(64) {
+inline proc _cast(type t, x: (?,?)) where t == complex(64) {
   var c: complex(64);
   c.re = x(1):real(32);
   c.im = x(2):real(32);
   return c;
 }
 
-pragma "inline" proc _cast(type t, x: (?,?)) where t == complex(128) {
+inline proc _cast(type t, x: (?,?)) where t == complex(128) {
   var c: complex(128);
   c.re = x(1):real(64);
   c.im = x(2):real(64);
@@ -129,7 +130,7 @@ pragma "inline" proc _cast(type t, x: (?,?)) where t == complex(128) {
 // helper function to return a tuple of all of the components in a
 // tuple except the first
 //
-pragma "inline" proc chpl__tupleRest(t: _tuple) {
+inline proc chpl__tupleRest(t: _tuple) {
   proc chpl__tupleRestHelper(first, rest...)
     return rest;
   return chpl__tupleRestHelper((...t));
@@ -138,28 +139,28 @@ pragma "inline" proc chpl__tupleRest(t: _tuple) {
 //
 // standard overloaded unary operators on tuples
 //
-pragma "inline" proc +(a: _tuple) {
+inline proc +(a: _tuple) {
   if a.size == 1 then
     return tuple(+a(1));
   else
     return tuple(+a(1), (...+chpl__tupleRest(a)));
 }
 
-pragma "inline" proc -(a: _tuple) {
+inline proc -(a: _tuple) {
   if a.size == 1 then
     return tuple(-a(1));
   else
     return tuple(-a(1), (...-chpl__tupleRest(a)));
 }
 
-pragma "inline" proc ~(a: _tuple) {
+inline proc ~(a: _tuple) {
   if a.size == 1 then
     return tuple(~a(1));
   else
     return tuple(~a(1), (...~chpl__tupleRest(a)));
 }
 
-pragma "inline" proc !(a: _tuple) {
+inline proc !(a: _tuple) {
   if a.size == 1 then
     return tuple(!a(1));
   else
@@ -188,7 +189,7 @@ proc min(type t): t where isTupleType(t) {
 //
 // standard overloaded binary operators on tuples
 //
-pragma "inline" proc +(a: _tuple, b: _tuple) {
+inline proc +(a: _tuple, b: _tuple) {
   if a.size != b.size then
     compilerError("tuple operands to + have different sizes");
   if a.size == 1 then
@@ -197,7 +198,7 @@ pragma "inline" proc +(a: _tuple, b: _tuple) {
     return tuple(a(1)+b(1), (...chpl__tupleRest(a)+chpl__tupleRest(b)));
 }
 
-pragma "inline" proc -(a: _tuple, b: _tuple) {
+inline proc -(a: _tuple, b: _tuple) {
   if a.size != b.size then
     compilerError("tuple operands to - have different sizes");
   if a.size == 1 then
@@ -206,7 +207,7 @@ pragma "inline" proc -(a: _tuple, b: _tuple) {
     return tuple(a(1)-b(1), (...chpl__tupleRest(a)-chpl__tupleRest(b)));
 }
 
-pragma "inline" proc *(a: _tuple, b: _tuple) {
+inline proc *(a: _tuple, b: _tuple) {
   if a.size != b.size then
     compilerError("tuple operands to * have different sizes");
   if a.size == 1 then
@@ -215,7 +216,7 @@ pragma "inline" proc *(a: _tuple, b: _tuple) {
     return tuple(a(1)*b(1), (...chpl__tupleRest(a)*chpl__tupleRest(b)));
 }
 
-pragma "inline" proc /(a: _tuple, b: _tuple) {
+inline proc /(a: _tuple, b: _tuple) {
   if a.size != b.size then
     compilerError("tuple operands to / have different sizes");
   if a.size == 1 then
@@ -224,7 +225,7 @@ pragma "inline" proc /(a: _tuple, b: _tuple) {
     return tuple(a(1)/b(1), (...chpl__tupleRest(a)/chpl__tupleRest(b)));
 }
 
-pragma "inline" proc %(a: _tuple, b: _tuple) {
+inline proc %(a: _tuple, b: _tuple) {
   if a.size != b.size then
     compilerError("tuple operands to % have different sizes");
   if a.size == 1 then
@@ -233,7 +234,7 @@ pragma "inline" proc %(a: _tuple, b: _tuple) {
     return tuple(a(1)%b(1), (...chpl__tupleRest(a)%chpl__tupleRest(b)));
 }
 
-pragma "inline" proc **(a: _tuple, b: _tuple) {
+inline proc **(a: _tuple, b: _tuple) {
   if a.size != b.size then
     compilerError("tuple operands to ** have different sizes");
   if a.size == 1 then
@@ -242,7 +243,7 @@ pragma "inline" proc **(a: _tuple, b: _tuple) {
     return tuple(a(1)**b(1), (...chpl__tupleRest(a)**chpl__tupleRest(b)));
 }
 
-pragma "inline" proc &(a: _tuple, b: _tuple) {
+inline proc &(a: _tuple, b: _tuple) {
   if a.size != b.size then
     compilerError("tuple operands to & have different sizes");
   if a.size == 1 then
@@ -251,7 +252,7 @@ pragma "inline" proc &(a: _tuple, b: _tuple) {
     return tuple(a(1)&b(1), (...chpl__tupleRest(a)&chpl__tupleRest(b)));
 }
 
-pragma "inline" proc |(a: _tuple, b: _tuple) {
+inline proc |(a: _tuple, b: _tuple) {
   if a.size != b.size then
     compilerError("tuple operands to | have different sizes");
   if a.size == 1 then
@@ -260,7 +261,7 @@ pragma "inline" proc |(a: _tuple, b: _tuple) {
     return tuple(a(1)|b(1), (...chpl__tupleRest(a)|chpl__tupleRest(b)));
 }
 
-pragma "inline" proc ^(a: _tuple, b: _tuple) {
+inline proc ^(a: _tuple, b: _tuple) {
   if a.size != b.size then
     compilerError("tuple operands to ^ have different sizes");
   if a.size == 1 then
@@ -269,7 +270,7 @@ pragma "inline" proc ^(a: _tuple, b: _tuple) {
     return tuple(a(1)^b(1), (...chpl__tupleRest(a)^chpl__tupleRest(b)));
 }
 
-pragma "inline" proc <<(a: _tuple, b: _tuple) {
+inline proc <<(a: _tuple, b: _tuple) {
   if a.size != b.size then
     compilerError("tuple operands to << have different sizes");
   if a.size == 1 then
@@ -278,7 +279,7 @@ pragma "inline" proc <<(a: _tuple, b: _tuple) {
     return tuple(a(1)<<b(1), (...chpl__tupleRest(a)<<chpl__tupleRest(b)));
 }
 
-pragma "inline" proc >>(a: _tuple, b: _tuple) {
+inline proc >>(a: _tuple, b: _tuple) {
   if a.size != b.size then
     compilerError("tuple operands to >> have different sizes");
   if a.size == 1 then
@@ -290,7 +291,7 @@ pragma "inline" proc >>(a: _tuple, b: _tuple) {
 //
 // standard overloaded relational operators on tuples
 //
-pragma "inline" proc >(a: _tuple, b: _tuple) {
+inline proc >(a: _tuple, b: _tuple) {
   if a.size != b.size then
     compilerError("tuple operands to > have different sizes");
   for param i in 1..a.size do
@@ -301,7 +302,7 @@ pragma "inline" proc >(a: _tuple, b: _tuple) {
   return false;
 }
 
-pragma "inline" proc >=(a: _tuple, b: _tuple) {
+inline proc >=(a: _tuple, b: _tuple) {
   if a.size != b.size then
     compilerError("tuple operands to >= have different sizes");
   for param i in 1..a.size do
@@ -312,7 +313,7 @@ pragma "inline" proc >=(a: _tuple, b: _tuple) {
   return true;
 }
 
-pragma "inline" proc <(a: _tuple, b: _tuple) {
+inline proc <(a: _tuple, b: _tuple) {
   if a.size != b.size then
     compilerError("tuple operands to < have different sizes");
   for param i in 1..a.size do
@@ -323,7 +324,7 @@ pragma "inline" proc <(a: _tuple, b: _tuple) {
   return false;
 }
 
-pragma "inline" proc <=(a: _tuple, b: _tuple) {
+inline proc <=(a: _tuple, b: _tuple) {
   if a.size != b.size then
     compilerError("tuple operands to <= have different sizes");
   for param i in 1..a.size do
@@ -334,7 +335,7 @@ pragma "inline" proc <=(a: _tuple, b: _tuple) {
   return true;
 }
 
-pragma "inline" proc ==(a: _tuple, b: _tuple) {
+inline proc ==(a: _tuple, b: _tuple) {
   if a.size != b.size then
     return false;
   for param i in 1..a.size do
@@ -343,7 +344,7 @@ pragma "inline" proc ==(a: _tuple, b: _tuple) {
   return true;
 }
 
-pragma "inline" proc !=(a: _tuple, b: _tuple) {
+inline proc !=(a: _tuple, b: _tuple) {
   if a.size != b.size then
     return true;
   for param i in 1..a.size do

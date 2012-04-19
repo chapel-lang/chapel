@@ -493,12 +493,12 @@ FnSymbol* buildIfExpr(Expr* e, Expr* e1, Expr* e2) {
                  new SymExpr(tmp2),
                  new CallExpr(PRIM_LOGICAL_FOLDER,
                               new SymExpr(tmp1),
-                              new CallExpr(PRIM_GET_REF, e1))),
+                              new CallExpr(PRIM_DEREF, e1))),
     new CallExpr(PRIM_MOVE,
                  new SymExpr(tmp2),
                  new CallExpr(PRIM_LOGICAL_FOLDER,
                               new SymExpr(tmp1),
-                              new CallExpr(PRIM_GET_REF, e2)))));
+                              new CallExpr(PRIM_DEREF, e2)))));
   ifFn->insertAtTail(new CallExpr(PRIM_RETURN, tmp2));
   return ifFn;
 }
@@ -1103,7 +1103,7 @@ buildAssignment(Expr* lhs, Expr* rhs, const char* op) {
   ltmp->addFlag(FLAG_MAYBE_PARAM);
   stmt->insertAtTail(new DefExpr(ltmp));
   stmt->insertAtTail(new CallExpr(PRIM_MOVE, ltmp,
-                       new CallExpr(PRIM_SET_REF, lhs)));
+                       new CallExpr(PRIM_ADDR_OF, lhs)));
 
   VarSymbol* rtmp = newTemp();
   rtmp->addFlag(FLAG_MAYBE_PARAM);
@@ -1117,7 +1117,7 @@ buildAssignment(Expr* lhs, Expr* rhs, const char* op) {
         new CallExpr("_cast",
           new CallExpr(PRIM_TYPEOF, ltmp),
           new CallExpr(op,
-            new CallExpr(PRIM_GET_REF, ltmp), rtmp))));
+            new CallExpr(PRIM_DEREF, ltmp), rtmp))));
 
   if (strcmp(op, "<<") && strcmp(op, ">>"))
     cast->insertAtHead(
@@ -1127,11 +1127,11 @@ buildAssignment(Expr* lhs, Expr* rhs, const char* op) {
     new CondStmt(
       new CallExpr("_isPrimitiveType",
         new CallExpr(PRIM_TYPEOF,
-          new CallExpr(PRIM_GET_REF, ltmp))),
+          new CallExpr(PRIM_DEREF, ltmp))),
       cast,
       new CallExpr("=", ltmp,
         new CallExpr(op,
-          new CallExpr(PRIM_GET_REF, ltmp), rtmp)));
+          new CallExpr(PRIM_DEREF, ltmp), rtmp)));
 
   // This code performs a rewrite of += and -= for domains at
   // compile-time.
@@ -1171,7 +1171,7 @@ BlockStmt* buildLAndAssignment(Expr* lhs, Expr* rhs) {
   BlockStmt* stmt = buildChapelStmt();
   VarSymbol* ltmp = newTemp();
   stmt->insertAtTail(new DefExpr(ltmp));
-  stmt->insertAtTail(new CallExpr(PRIM_MOVE, ltmp, new CallExpr(PRIM_SET_REF, lhs)));
+  stmt->insertAtTail(new CallExpr(PRIM_MOVE, ltmp, new CallExpr(PRIM_ADDR_OF, lhs)));
   stmt->insertAtTail(new CallExpr("=", ltmp, buildLogicalAndExpr(ltmp, rhs)));
   return stmt;
 }
@@ -1181,7 +1181,7 @@ BlockStmt* buildLOrAssignment(Expr* lhs, Expr* rhs) {
   BlockStmt* stmt = buildChapelStmt();
   VarSymbol* ltmp = newTemp();
   stmt->insertAtTail(new DefExpr(ltmp));
-  stmt->insertAtTail(new CallExpr(PRIM_MOVE, ltmp, new CallExpr(PRIM_SET_REF, lhs)));
+  stmt->insertAtTail(new CallExpr(PRIM_MOVE, ltmp, new CallExpr(PRIM_ADDR_OF, lhs)));
   stmt->insertAtTail(new CallExpr("=", ltmp, buildLogicalOrExpr(ltmp, rhs)));
   return stmt;
 }
@@ -1511,14 +1511,12 @@ buildClassDefExpr(const char* name, Type* type, Expr* inherit, BlockStmt* decls,
   TypeSymbol* ts = new TypeSymbol(name, ct);
   DefExpr* def = new DefExpr(ts);
   ct->addDeclarations(decls);
-  if (isExtern == FLAG_EXTERN || isExtern == FLAG_OLD_EXTERN_KW_USED) {
+  if (isExtern == FLAG_EXTERN) {
     ts->addFlag(FLAG_EXTERN);
     ts->addFlag(FLAG_NO_OBJECT);
     ct->defaultValue=NULL;
     if (inherit)
       USR_FATAL_CONT(inherit, "External types do not currently support inheritance");
-    if (isExtern == FLAG_OLD_EXTERN_KW_USED)
-      USR_WARN(type, "The _extern keyword is deprecated. Use extern (no leading underscore) instead.");
   }
   if (inherit)
     ct->inherits.insertAtTail(inherit);
@@ -1622,8 +1620,6 @@ buildFunctionDecl(FnSymbol* fn, RetTag optRetTag, Expr* optRetType,
                   Expr* optWhere, BlockStmt* optFnBody)
 {
   // This clause can be removed when the old _extern keyword is obsoleted. <hilde>
-  if (fn->hasFlag(FLAG_OLD_EXTERN_KW_USED))
-    USR_WARN(fn, "The _extern keyword is deprecated. Use extern (no leading underscore) instead.");
 
   fn->retTag = optRetTag;
   if (optRetTag == RET_VAR)
@@ -1726,7 +1722,7 @@ buildOnStmt(Expr* expr, Expr* stmt) {
     }
   }
 
-  CallExpr* onExpr = new CallExpr(PRIM_GET_REF, extractLocaleID(expr));
+  CallExpr* onExpr = new CallExpr(PRIM_DEREF, extractLocaleID(expr));
 
   BlockStmt* body = toBlockStmt(stmt);
 
