@@ -86,9 +86,13 @@ module SSCA2_main
     SSCA2_execution_config_consts,
     analyze_torus_graphs,
     analyze_RMAT_graph_associative_array,
+    Time,
     BlockDist;
     
   proc main () {
+
+    var stopwatch : Timer;
+    if PRINT_TIMING_STATISTICS then stopwatch.start ();
 
     var graph_types : domain (graph_type);
 
@@ -181,6 +185,12 @@ module SSCA2_main
        }
 
     } // end of for over graph types
+
+
+    if PRINT_TIMING_STATISTICS then {
+      stopwatch.stop ();
+      writeln ( "Elapsed time for SSCA#2: ", stopwatch.elapsed (), " seconds");
+    }
 
   } // end of main
 
