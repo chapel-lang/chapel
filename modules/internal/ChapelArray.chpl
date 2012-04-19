@@ -1143,15 +1143,7 @@ record _array {
   proc numElements return _value.dom.dsiNumIndices;
 
   proc newAlias() {
-    var x = _value.dsiReindex(_value.dom);
-    x._arrAlias = _value;
-    pragma "dont disable remote value forwarding"
-    proc help() {
-      _value.dom._domCnt.fetchAdd(1);
-      x._arrAlias._arrCnt.fetchAdd(1);
-    }
-    if !noRefCount then
-      help();
+    var x = _value;
     return _newArray(x);
   }
 
