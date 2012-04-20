@@ -34,18 +34,19 @@ module SSCA2_kernels
     // for this task.
     {
       if PRINT_TIMING_STATISTICS then stopwatch.start ();
-      var heaviest_edge_weight$ : sync int = 0;
 
       // ---------------------------------------------------------
       // find heaviest edge weight in a single pass over all edges
       // ---------------------------------------------------------
 
-      //       heaviest_edge_weight = max reduce [ s in G.vertices ] 
-      //        	                         [ w in G.edge_weight (s) ] w;
+      proc maxweight(s) {
+	var mymax = 0;
+	for w in G.edge_weight[s] do
+	  if w > mymax then mymax = w;
+	return mymax;
+      }
 
-      forall s in G.vertices do
-        forall w in G.edge_weight (s) do
-	  heaviest_edge_weight$ = max ( w, heaviest_edge_weight$ );
+      const heaviest_edge_weight = max reduce [s in G.vertices] maxweight(s);
 
       // ---------------------------------------------
       // in a second pass over all edges, extract list 
@@ -55,11 +56,7 @@ module SSCA2_kernels
       forall s in G.vertices do
         forall (t, w) in ( G.Neighbors (s), G.edge_weight (s) ) do
 
-	  // should be forall, requires a custom parallel iterator in the 
-	  // random graph case and zippering for associative domains may 
-	  // also present a problem
-
-	  if w == heaviest_edge_weight$.readXX () then {
+	  if w == heaviest_edge_weight then {
 	    heavy_edge_list.add ( (s,t) ); 
 	  };
 
@@ -77,8 +74,7 @@ module SSCA2_kernels
 
       if DEBUG_KERNEL2 then {
 	writeln ();
-	writeln ( "Heaviest weight      : ", 
-		  heaviest_edge_weight$ . readFF ()); 
+	writeln ( "Heaviest weight      : ", heaviest_edge_weight); 
 	writeln ( "Number of heavy edges:", heavy_edge_list.numIndices );
 	writeln ();
 	writeln ( "Edges with largest weight and other neighbors:" );
@@ -138,15 +134,13 @@ module SSCA2_kernels
 	    
 	  forall v in Active_Level do {
 
-	    forall w in G.Neighbors (v) do { // eventually, will be forall
+	    forall w in G.Neighbors (v) do {
 
 
               if min_distance(w).compareExchangeStrong(-1, path_length) then {
                 Next_Level.add (w);
                 Heavy_Edge_Subgraph ( (x, y) ).nodes.add (w);
 	      }
-			 
-	      // min_distance must have been set by some thread by now
 
 	      if min_distance(w).read() == path_length then {
 		Heavy_Edge_Subgraph ( (x, y) ).edges.add ( (v, w) );
@@ -171,7 +165,7 @@ module SSCA2_kernels
 
 
   use BlockDist;
-  // Would be nice to use PriavteSpace, but aliasing is not supported
+  // Would be nice to use PriavteDist, but aliasing is not supported (yet)
   const PrivateSpace = [LocaleSpace] dmapped Block(boundingBox=[LocaleSpace]);
 
   // ==================================================================
@@ -204,14 +198,31 @@ module SSCA2_kernels
     {       
       const vertex_domain = G.vertices;
 
-      // Had to change declaration below
-      //    type Sparse_Vertex_List = sparse subdomain ( G.vertices );
-      // to accommodate block distribution of G.vertices
-
+      // Considering using a dense 1-d array instead.  This would
+      // complicate the Level_Set implementation a little, but would
+      // probably be more efficient.
       type Sparse_Vertex_List = domain(index(vertex_domain));
 
       var Between_Cent$ : [vertex_domain] sync real = 0.0;
       var Sum_Min_Dist$ : sync real = 0.0;
+
+      //
+      // Throughout kernel 4, we use distributed arrays that are
+      // private to each iteration of the outer loop.  Because set-up
+      // and clean-up of such variables is very expensive, it is
+      // desirable to do it at most only once per task versus once
+      // per iteration, as a task executes multiple iterations of a
+      // forall loop.
+      //
+      // To avoid this per-iteration overhead, we have implemented
+      // an optimization that make certain variables private to each
+      // task.  These variables are reinitialized each iteration of
+      // the loop, but not reallocated, reprivatized, etc.
+      //
+      // Note that the Chapel group and collaborators are currently in
+      // the process of bringing the idea of task private variable to
+      // the language.
+      //
 
       // Initialize task private data
       var localePrivate: [PrivateSpace] localePrivateData(vertex_domain.type);
@@ -268,26 +279,25 @@ module SSCA2_kernels
         //
         // Used to check termination of the forward pass
         //
-        // We could use a task-private reduction variable, if
-        //  such a thing existed
+        // We could use a task-private reduction variable here.  This
+        // is yet another concept that the Chapel group is planning to
+        // implement.
         //
-        var Active_Remaining => lp.get_Active_Remaining(tid);
-        Active_Remaining = true;
-        var remaining = true;
+        var remaining: atomic bool;
+        remaining.write(true);
 
-        // Replicated level sets
-        //
-        // sungeun: 8/2011
-        // Added replicated level sets
         //
         // Each locale will have its own level sets.  A locale's level set
         // will only contain nodes that are physically allocated on that
         // particular locale.
+        //
         var Active_Level => lp.get_Active_Level(tid);
         coforall loc in Locales do on loc {
           Active_Level[here.id].Members.clear();
           Active_Level[here.id].next.Members.clear();
           if vertex_domain.dist.idxToLocale(s) == here {
+            // Establish the initial level sets for the breadth-first
+            // traversal from s
             Active_Level[here.id].Members.add(s);
             min_distance[s].write(0);
             path_count$[s].writeXF(1);
@@ -296,10 +306,8 @@ module SSCA2_kernels
 
 	var current_distance : int = 0;
   
-	// establish the initial level sets for the
-	// breadth-first traversal from s
-
-	while remaining do {
+	while remaining.read() do {
+            remaining.clear();
 	    // ------------------------------------------------
 	    // expand the neighbor sets for all vertices at the
 	    // current distance from the starting vertex  s
@@ -309,14 +317,17 @@ module SSCA2_kernels
 
             var barrier = new Barrier(numLocales);
 
-            // sungeun: 8/2011
-            // Copy this value to a constant to enable remote value
-            // forwarding optimization.
+            // The Chapel compiler is still a bit conservative when it
+            // comes to forwarding read-only variables to remote
+            // locales, so we make a const copy here to insure it is
+            // forwarded to the remote locale in the following
+            // coforall loop.
             const current_distance_c = current_distance;
             coforall loc in Locales do on loc {
-             forall u in Active_Level[here.id].Members do { // sparse
+             forall u in Active_Level[here.id].Members do {
 
-               forall (v, w) in ( G.Neighbors (u), G.edge_weight (u) ) do on vertex_domain.dist.idxToLocale(v) {
+               forall (v, w) in ( G.Neighbors (u), G.edge_weight (u) ) do
+                 on vertex_domain.dist.idxToLocale(v) {
 		// --------------------------------------------
 		// add any unmarked neighbors to the next level
 		// --------------------------------------------
@@ -332,7 +343,7 @@ module SSCA2_kernels
 		// ------------------------------------------------
 		// only neighbors of  u  that are in the next level
 		// are on shortest paths from s through v.  Some
-		// thread will have set  min_distance$ (v) by the
+		// task will have set  min_distance (v) by the
 		// time this code is reached, whether  v  lies in
 		// the previous, the current or the next level.
 		// ------------------------------------------------
@@ -345,7 +356,6 @@ module SSCA2_kernels
 	      }
 	    };
 
-            // sungeun: 8/2011
             // This barrier is needed to insure all updates to the next
             // level are completed before updating to use the next level
             barrier.notify();
@@ -360,12 +370,9 @@ module SSCA2_kernels
             barrier.wait();
 
             Active_Level[here.id] = Active_Level[here.id].next;
-            Active_Remaining[here.id] =
-              Active_Level[here.id].Members.numIndices:bool;
-
+            if Active_Level[here.id].Members.numIndices:bool then
+              remaining.write(true);
           }
-
-          remaining = || reduce Active_Remaining;
 
 	};  // end forward pass
 
@@ -384,7 +391,8 @@ module SSCA2_kernels
 	  writeln ( " graph diameter from starting node ", s, 
 		    "  is ", graph_diameter );
 
-        // to simplify synchronization between multiple barriers
+        // Use multiple barriers to simplify synchronization between
+        // the barriers in each iteration of the outer for loop
         var barrier: [2..graph_diameter] Barrier;
         [2..graph_diameter] barrier.reset(numLocales);
 
@@ -402,7 +410,7 @@ module SSCA2_kernels
                 ( 1.0 + depend (v) );
               Between_Cent$ (u) += depend (u);
             }
-            // sungeun: 8/2011
+
             // This barrier is needed to insure all updates to depend are
             // complete before the next pass.
             barrier[current_distance].barrier();
@@ -457,9 +465,6 @@ module SSCA2_kernels
   // Addition support data structures for kernel 4
   //
 
-  // ============================================================
-  // generic class structure must be defined outside of 
-  // generic procedure.  used by Betweenness Centrality kernel 4.
   // ------------------------------------------------------------
   // The set of vertices at a particular distance from s form a
   // level set.  The class allows the full set of vertices to be
@@ -476,7 +481,7 @@ module SSCA2_kernels
 
   //
   // Data structure to save Children lists between the forward
-  //  and backwards pass
+  //  and backwards passes
   //
   record child_struct {
     type vertex;
@@ -497,12 +502,14 @@ module SSCA2_kernels
   class taskPrivateData {
     type Sparse_Vertex_List;
     const vertex_domain;
+    // It would be nice to use an atomic for the tid, but
+    // chpl_taskID_t is an opaque type.  Might be able to make some
+    // assumptions about it.
     var tid$           : sync chpl_taskID_t = chpl_nullTaskID;
     var min_distance   : [vertex_domain] atomic int;
     var path_count$    : [vertex_domain] sync real(64);
     var depend         : [vertex_domain] real;
     var children_list  : [vertex_domain] child_struct(index(vertex_domain));
-    var Active_Remaining: [PrivateSpace] bool;
     var Active_Level   : [PrivateSpace] Level_Set (Sparse_Vertex_List);
   };
   inline proc =(a: chpl_taskID_t, b: chpl_taskID_t) return b;
@@ -519,7 +526,6 @@ module SSCA2_kernels
       extern proc chpl_task_getId(): chpl_taskID_t;
       var mytid = chpl_task_getId();
       var slot = (mytid:uint % (numTasks:uint)):int;
-      // Would be nice to have CAS
       var tid: chpl_taskID_t = temps[slot].tid$; // lock
       while ((tid != chpl_nullTaskID) && (tid != mytid)) {
         temps[slot].tid$ = tid;                  // unlock
@@ -533,7 +539,6 @@ module SSCA2_kernels
     inline proc get_path_count(tid=get_tid()) return temps[tid].path_count$;
     inline proc get_depend(tid=get_tid()) return temps[tid].depend;
     inline proc get_children_list(tid=get_tid()) return temps[tid].children_list;
-    inline proc get_Active_Remaining(tid=get_tid()) return temps[tid].Active_Remaining;
     inline proc get_Active_Level(tid=get_tid()) return temps[tid].Active_Level;
   }
 
