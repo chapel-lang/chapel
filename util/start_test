@@ -985,6 +985,9 @@ if ("$dirlist" == "" && "$testlist" == "") then
                 exit $exitval
             endif
             pushd $CHPL_HOME/test >& /dev/null
+            if (! -e $perfdir) then
+                mkdir -p $perfdir
+            endif
             set blah=`$utildir/computePerfStats spectests "$perfdir"`
             set exitval = $?
             if ( $exitval != 0 ) then
