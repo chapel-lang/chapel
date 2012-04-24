@@ -339,9 +339,9 @@ const char* toString(CallInfo* info) {
     else
       str = astr(str, toString(info->actuals.v[1]->type), ".");
   }
-  if (!strncmp("_type_construct_", info->name, 16)) {
+  if (!developer && !strncmp("_type_construct_", info->name, 16)) {
     str = astr(str, info->name+16);
-  } else if (!strncmp("_construct_", info->name, 11)) {
+  } else if (!developer && !strncmp("_construct_", info->name, 11)) {
     str = astr(str, info->name+11);
   } else if (!_this) {
     str = astr(str, info->name);
@@ -430,7 +430,7 @@ const char* toString(FnSymbol* fn) {
     str = astr("top-level module statements for ", fn->name+11);
   } else
     str = astr(fn->name);
- } // if developer
+ } // if !developer
 
   bool skipParens =
     fn->hasFlag(FLAG_NO_PARENS) ||
