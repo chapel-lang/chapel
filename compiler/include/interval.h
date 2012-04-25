@@ -25,6 +25,7 @@ class Interval {
   Vec<Interval*> ins;
   Vec<Interval*> outs;
   Vec<BasicBlock*> sourceEdges;
+  bool isEnd; // Used to specify if we are the final node
   Symbol *low;
   Symbol *high;
   Symbol *stride;

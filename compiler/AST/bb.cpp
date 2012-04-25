@@ -19,6 +19,16 @@ BasicBlock::BasicBlock()
     loopBottom->elseBB = bottom;                \
   } while (0)
 
+#define BB_ADD_DOWHILE_LOOP_BRANCH(expr)        \
+  do {                                          \
+    top->branch = NULL;                         \
+    top->thenBB = NULL;                         \
+    top->elseBB = NULL;                         \
+    loopBottom->branch = expr;                  \
+    loopBottom->thenBB = loopTop;               \
+    loopBottom->elseBB = bottom;                \
+  } while (0)
+
 #define BB_START()                              \
   do {                                          \
     basicBlock = new BasicBlock();              \
@@ -240,7 +250,7 @@ void BasicBlock::buildCoarseBasicBlocks(FnSymbol* fn, Expr* stmt)
     if (!containsForAll(s)) 
     {
       BB_ADD(s);
-    } 
+    }
     // If a loop statement of some sort
     else if (s->blockInfo) 
     {
@@ -267,17 +277,24 @@ void BasicBlock::buildCoarseBasicBlocks(FnSymbol* fn, Expr* stmt)
       BasicBlock* loopBottom = basicBlock;
       BB_RESTART();
       BasicBlock* bottom = basicBlock;
-      if (!s->blockInfo->isPrimitive(PRIM_ON_IL))
+      if (!s->blockInfo->isPrimitive(PRIM_ON_IL) && !s->blockInfo->isPrimitive(PRIM_BLOCK_DOWHILE_LOOP))
       {
         /* Add back edge for non-forall loop */
         if (s->blockInfo->isPrimitive(PRIM_BLOCK_WHILEDO_LOOP) || 
             s->blockInfo->isPrimitive(PRIM_BLOCK_FOR_LOOP)){
           BB_ADD_LOOP_BRANCH(s->blockInfo->get(1));
+
         }
         BB_THREAD(top, loopTop);
         BB_THREAD(loopBottom, bottom);
         BB_THREAD(loopBottom, loopTop);
         BB_THREAD(top, bottom);
+      }
+      else if (s->blockInfo->isPrimitive(PRIM_BLOCK_DOWHILE_LOOP)) {
+        BB_ADD_DOWHILE_LOOP_BRANCH(s->blockInfo->get(1));
+        BB_THREAD(top, loopTop);
+        BB_THREAD(loopBottom, bottom);
+        BB_THREAD(loopBottom, loopTop);
       }
       else
       {

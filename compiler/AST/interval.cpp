@@ -26,6 +26,12 @@ static void expandInterval(Map<BasicBlock*, Interval*>& intervalMap,
     Interval *currInt, BasicBlock *block, Vec<BasicBlock *>& bbNotSelectedSet) {
   forv_Vec(BasicBlock, bbOut, block->outs) {
     bool isInInterval = true;
+
+    if (bbNotSelectedSet.index(bbOut) < 0) {
+      printf("BB already evaluated. Exiting\n");
+      isInInterval = false;
+    }
+
     // Here if we reach the special forall block, we stop the interval
     if (bbOut->forAll == false){
       forv_Vec(BasicBlock, bbIn, bbOut->ins) {
@@ -34,18 +40,19 @@ static void expandInterval(Map<BasicBlock*, Interval*>& intervalMap,
           isInInterval = false;
       }
       if (isInInterval) {
-        // SAEED -- Start
-        if (block->outs.n > 1){
+        /* If interval contains more than BB, we need to join them together */
+       // if (block->outs.n > 1){
           bbOut->condExprs.copy(block->condExprs);
           bbOut->condBools.copy(block->condBools);
+          if (block->outs.n > 1 && !isCondStmt(block->branch->parentExpr)) {
           bbOut->condExprs.add(block->branch);
           if (bbOut == block->thenBB){
             bbOut->condBools.add(true);
           } else if (bbOut == block->elseBB) {
             bbOut->condBools.add(false);
           }
-        }
-        // SAEED -- End
+          }
+        //}
         intervalMap.put(bbOut, currInt);
         INTERVAL_ADD(bbOut, currInt);
         bbNotSelectedSet.remove(bbNotSelectedSet.index(bbOut));
@@ -94,6 +101,11 @@ static void innerBB(FnSymbol* fn, Map<BasicBlock*, Interval*>& intervalMap, Inte
       }
     }
     if (foundSelected) {
+
+      if (bbNotSelectedSet.index(headBlock) < 0) {
+        printf("THIS SHOULD NOT BE HAPPENING!!\n");
+      }
+
       INTERVAL_START(fn->intervals);
       INTERVAL_ADD(headBlock, interval);
       intervalMap.put(headBlock, interval);
@@ -103,8 +115,12 @@ static void innerBB(FnSymbol* fn, Map<BasicBlock*, Interval*>& intervalMap, Inte
     }
   }
 
+#if 1
   forv_Vec(BasicBlock, block, *fn->basicBlocks) {
     Interval *currInt = intervalMap.get(block);
+
+    currInt->isEnd = (block->outs.n == 0); // Mark the interval if we are at the end
+
     forv_Vec(BasicBlock, inBB, block->ins) {
       Interval *predInt = intervalMap.get(inBB);
       if (predInt != currInt) {
@@ -114,16 +130,39 @@ static void innerBB(FnSymbol* fn, Map<BasicBlock*, Interval*>& intervalMap, Inte
       }
     }
   }
+#else
+  forv_Vec(BasicBlock, block, *fn->basicBlocks) {
+    Interval *currInt = intervalMap.get(block);
+    forv_Vec(BasicBlock, inBB, block->ins) {
+      Interval *predInt = intervalMap.get(inBB);
+      if (predInt != currInt) {
+        currInt->ins.add(predInt);
+        predInt->sourceEdges.add(inBB);
+      }
+    }
+
+    currInt->isEnd = (block->outs.n == 0); // Mark the interval if we are at the end
+
+    forv_Vec(BasicBlock, outBB, block->outs) {
+      Interval *succInt = intervalMap.get(outBB);
+      if (succInt != currInt) {
+        currInt->outs.add(succInt);
+      }
+    }
+  }
+#endif
 }
 
 static void
 determineIntervalType(FnSymbol *fn, Interval *interval) {
   Vec<BasicBlock*> vecBB = interval->bb;
   BasicBlock *headBB = vecBB.v[0];
+
   if (headBB && headBB->exprs.n > 0) {
     Expr *headExpr = headBB->exprs.v[0];
     if (CallExpr *call = toCallExpr(headExpr)) {
-      if (call->isPrimitive(PRIM_BLOCK_WHILEDO_LOOP)) {
+      if (call->isPrimitive(PRIM_BLOCK_WHILEDO_LOOP) ||
+          call->isPrimitive(PRIM_BLOCK_DOWHILE_LOOP)) {
         interval->intervalTag = FOR_LOOP;
         return;
       } else if (call->isPrimitive(PRIM_ON_IL)) {

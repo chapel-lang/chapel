@@ -112,24 +112,59 @@ createCodelet(FnSymbol *originalFn, FnSymbol *codeletFn, Interval *interval, Map
   Vec<BasicBlock*> innerBB;
   innerBB.copy(interval->bb);
 
+  Vec<Expr*> *short_condExprs;
+  Vec<bool> *short_condBools;
+
   while (innerBB.n > 0){
     BasicBlock* bb = innerBB.v[0];
     innerBB.remove(innerBB.index(bb));
-    innerCodelets(originalFn, codeletFn->body, bb, innerBB, interval, intervalMaps);
+    /* Need some way to preserve control flow between BBs inside of an interval node
+     * This seems to only be needed when dealing with a do-while loop that contains parallel
+     * nested. */
+    /* If BB contains condExpr, surround the BB with the NOT version of it */
+    if (bb->condExprs.n > 0) {
+      short_condExprs = &bb->condExprs;
+      short_condBools = &bb->condBools;
+      Expr *expr = bb->condExprs.v[0];
+      if (SymExpr *sym = toSymExpr(expr)) {
+        if (sym->parentExpr) {
+          if (CallExpr *call = toCallExpr(sym->parentExpr)) {
+            if (call->isPrimitive(PRIM_BLOCK_DOWHILE_LOOP)) {
+              CallExpr* condNumID;
+              if (bb->condBools.v[0] == true)
+                condNumID = new CallExpr(PRIM_IDEN, bb->condExprs.v[0]->copy());
+              else if (bb->condBools.v[0] == false)
+                condNumID = new CallExpr(PRIM_UNARY_LNOT, bb->condExprs.v[0]->copy());
+              for (int i = 1; i < bb->condExprs.n; i++){
+                if (bb->condBools.v[i] == true)
+                  condNumID = new CallExpr(PRIM_AND, condNumID, bb->condExprs.v[i]->copy());
+                else if (bb->condBools.v[i] == false)
+                  condNumID = new CallExpr(PRIM_AND, condNumID, new CallExpr(PRIM_UNARY_LNOT, bb->condExprs.v[i]->copy()));
+              }
+              BlockStmt *elseStmt = new BlockStmt();
+              innerCodelets(originalFn, elseStmt, bb, innerBB, interval, intervalMaps);
+              codeletFn->body->insertAtTail(new CondStmt(condNumID, elseStmt));
+            }
+            else {
+              INT_FATAL(expr, "FIX ASAP!!! We are not inside of a DO-WHILE\n");
+            }
+          }
+          else {
+            INT_FATAL(expr, "OH OH...something bad is happening\n");
+          }
+        }
+      }
+    }
+    /* Situation where there is no BB's inside an interval that are chanined together
+     * via a loop (e.g. do-while) */
+    else
+      innerCodelets(originalFn, codeletFn->body, bb, innerBB, interval, intervalMaps);
   }
-
-  /*
-  ArgSymbol *condFormal = new ArgSymbol( INTENT_REF, "numID", dtInt[INT_SIZE_32]);
-  codeletFn->insertFormalAtTail( new DefExpr(condFormal));
-  */
-//  ModuleSymbol *mod = originalFn->getModule();
-//  VarSymbol *condFormal = new VarSymbol("numID", dtInt[INT_SIZE_32]);
-//  mod->block->insertAtHead(new DefExpr(condFormal));
 
   Vec<Expr*> tmpExpr;
   Vec<bool> tmpBools;
   
-  /* No need to generate conditions if there are > 1 outgoing interval edges */
+  /* Generate conditional statements if there are > 1 outgoing interval edges */
   if (interval->outs.n > 1) {
     for (int i = 0; i < interval->outs.n; i++){
       Interval* targetInt = interval->outs.v[i];
@@ -163,17 +198,47 @@ createCodelet(FnSymbol *originalFn, FnSymbol *codeletFn, Interval *interval, Map
       tmpBools.clear();
     }
   }
-  else if (interval->outs.n == 1) {
+  /* If there is only one outgoing edge, but we are not at the end of the program yet */
+  else if ((interval->outs.n == 1) && (!interval->isEnd)) {
     Interval* targetInt = interval->outs.v[0];
-    //BasicBlock *sourceBB = interval->sourceEdges.[0];
-    //if (sourceBB->outs.n > 1)
     codeletFn->insertAtTail(new CallExpr(PRIM_MOVE,condFormal,new_IntSymbol(1 << targetInt->id)));
-
   }
-  else if (interval->outs.n == 0) {
+  /* Special case where final interval has a backedge and it's the last interval */
+  else if ((interval->outs.n == 1) && (interval->isEnd)) {
+    Interval* targetInt = interval->outs.v[0];
+    BasicBlock* sourceBB = interval->sourceEdges.v[0];
+    tmpExpr.copy(sourceBB->condExprs);
+    tmpBools.copy(sourceBB->condBools);
+    if (sourceBB->outs.n > 1){
+      tmpExpr.add(sourceBB->branch);
+      if (targetInt->bb.v[0] == sourceBB->thenBB)
+        tmpBools.add(true);
+      else if (targetInt->bb.v[0] == sourceBB->elseBB)
+        tmpBools.add(false);
+    }
+    if (tmpExpr.n >= 1){
+        CallExpr* condNumID;
+        BlockStmt* thenStmt = new BlockStmt();
+        if (tmpBools.v[0] == true)
+          condNumID = new CallExpr(PRIM_IDEN, tmpExpr.v[0]->copy());
+        else if (tmpBools.v[0] == false)
+          condNumID = new CallExpr(PRIM_UNARY_LNOT, tmpExpr.v[0]->copy());
+        for (int j = 1; j < tmpExpr.n; j++){
+          if (tmpBools.v[j] == true)
+            condNumID = new CallExpr(PRIM_AND, condNumID, tmpExpr.v[j]->copy());
+          else if (tmpBools.v[j] == false)
+            condNumID = new CallExpr(PRIM_AND, condNumID, new CallExpr(PRIM_UNARY_LNOT, tmpExpr.v[j]->copy()));
+        }
+        thenStmt->insertAtTail(new CallExpr(PRIM_MOVE,condFormal,new_IntSymbol(1 << targetInt->id)));
+        codeletFn->insertAtTail(new CondStmt(condNumID,thenStmt));
+      }
+      tmpExpr.clear();
+      tmpBools.clear();
+  }
+  /* If we are the last interval and there are no other outgoing edges */
+  else if (interval->outs.n == 0 || interval->isEnd) {
     codeletFn->insertAtTail(new CallExpr(PRIM_MOVE,condFormal,new_IntSymbol(1 << END_NODE)));
   }
-  
   codeletFn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
   codeletFn->retType = dtVoid;
 }
@@ -191,12 +256,9 @@ createFn(FnSymbol *fn, Map<BasicBlock*, Interval*>& intervalMaps) {
     buildDefUseMaps(fn, defMap, useMap);
 
     /* here we declare the branching conditional needed for MAP */
-//    Symbol *numID = newTemp("numID", dtInt[INT_SIZE_32]);
-//    fn->insertAtHead(new DefExpr(numID));
-  ModuleSymbol *mod = fn->getModule();
-  VarSymbol *numID= new VarSymbol("numID", dtInt[INT_SIZE_32]);
-  mod->block->insertAtHead(new DefExpr(numID));
-
+    ModuleSymbol *mod = fn->getModule();
+    VarSymbol *numID= new VarSymbol("numID", dtInt[INT_SIZE_32]);
+    mod->block->insertAtHead(new DefExpr(numID));
 
     forv_Vec(Interval, interval, *fn->intervals) {
 
