@@ -1450,16 +1450,35 @@ proc chpl__supportedDataTypeForBulkTransfer(x) param return true;
 
 
 proc chpl__useBulkTransfer(a:[], b:[]) {
+  if debugDefaultDistBulkTransfer then writeln("chpl__useBulkTransfer");
 
   // constraints specific to a particular domain map array type
   if !a._value.doiCanBulkTransfer() then return false;
   if !b._value.doiCanBulkTransfer() then return false;
 
   for param i in 1..a._value.rank {
+       writeln("a.len(",i,"):",a._value.dom.dsiDim(i).length," b.len(",i,"):",b._value.dom.dsiDim(i).length);
     // size must be the same in each dimension
     if a._value.dom.dsiDim(i).length !=
        b._value.dom.dsiDim(i).length then return false;
   }
+writeln("Final chpl__useBulkTransfer");
+  return true;
+}
+
+proc chpl__useBulkTransferStride(a:[], b:[]) {
+  if debugDefaultDistBulkTransfer then writeln("chpl__useBulkTransferStride");
+
+  // constraints specific to a particular domain map array type
+  if !a._value.doiCanBulkTransferStride() then return false;
+  if !b._value.doiCanBulkTransferStride() then return false;
+
+  /*for param i in 1..a._value.rank {
+    writeln("a.len(",i,"):",a._value.dom.dsiDim(i).length," b.len(",i,"):",b._value.dom.dsiDim(i).length);
+    // size must be the same in each dimension
+    if a._value.dom.dsiDim(i).length !=
+       b._value.dom.dsiDim(i).length then return false;
+  }*/
 
   return true;
 }
@@ -1476,10 +1495,14 @@ inline proc =(a: [], b) {
   if useBulkTransfer && chpl__isArray(b) &&
      chpl__compatibleForBulkTransfer(a, b) &&
     !chpl__serializeAssignment(a, b) {
-    if chpl__useBulkTransfer(a, b) {
-      a._value.doiBulkTransfer_(b);
+    if chpl__useBulkTransferStride(a, b) {
+      a._value.doiBulkTransferStride(b);
+      return a;
+    }else if chpl__useBulkTransfer(a, b) {
+      a._value.doiBulkTransfer(b);
       return a;
     }
+    if debugDefaultDistBulkTransfer then writeln("Leaving proc =(a:[],b)");
   }
 
   if chpl__serializeAssignment(a, b) {

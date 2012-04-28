@@ -1200,24 +1200,40 @@ proc BlockArr.dsiPrivatize(privatizeData) {
 proc BlockArr.dsiSupportsBulkTransfer() param return true;
 
 proc BlockArr.doiBulkTransfer_(B) {
+  if debugDefaultDistBulkTransfer then writeln("In BlockArr.doiBulkTransfer_");
+
   if(this.type == B._value.type) && rank>1 then
      this.doiBulkTransferStride(B);
   else this.doiBulkTransfer(B);
 }
 
 proc BlockArr.doiCanBulkTransfer() {
+  if debugDefaultDistBulkTransfer then writeln("In BlockArr.doiCanBulkTransfer");
+
   if dom.stridable then
-//    for param i in 1..rank do
-//      if dom.whole.dim(i).stride != 1 then return false;
+    for param i in 1..rank do
+      if dom.whole.dim(i).stride != 1 then return false;
 
   // See above note regarding aliased arrays
+
   if disableAliasedBulkTransfer then
     if _arrAlias != nil then return false;
 
   return true;
 }
 
+proc BlockArr.doiCanBulkTransferStride() {
+  if debugDefaultDistBulkTransfer then writeln("In BlockArr.doiCanBulkTransfer");
+
+ // if disableAliasedBulkTransfer then
+ //   if _arrAlias != nil then return false;
+//writeln("doiCanBulkTransfer TRUE!");
+  return true;
+}
+
 proc BlockArr.doiBulkTransfer(B) {
+  if debugDefaultDistBulkTransfer then writeln("In BlockArr.doiBulkTransfer");
+
   if debugBlockDistBulkTransfer then resetCommDiagnostics();
   var sameDomain: bool;
   // We need to do the following on the locale where 'this' was allocated,
@@ -1302,7 +1318,9 @@ proc BlockArr.doiBulkTransfer(B) {
 //This function should be improved so as to call a DefaultRectangular=BlockDist function for each DefaultRectangularArray.
 //Most of this code would be refactored out in that function which overloads the op= for that case.
 
-proc BlockArr.doiBulkTransferStride(B) { 
+proc BlockArr.doiBulkTransferStride(B) {
+  if debugDefaultDistBulkTransfer then writeln("In BlockArr.doiBulkTransferStride");
+
   if debugBlockDistBulkTransfer{ writeln("In BlockDist Stride.");resetCommDiagnostics();}
   coforall i in dom.dist.targetLocDom do
     on dom.dist.targetLocales(i)  {
@@ -1354,10 +1372,11 @@ in locale 0, B[3..4,5..5] in locale 1, B[5..5,3..4] in locale 2,B[5..5,5..5] in 
             r3(s) = (rlo[s]..rlo[s] + min[s] - 1);
           }
           if debugBlockDistBulkTransfer then 
-	    writeln("In doiBulkTransferStride: Locale:", i," Rid: ",rid," d1:  ",(...r2), " d2: ",(...r3));
+	    writeln("In BlockArr.doiBulkTransferStride: Locale:", i," Rid: ",rid," d1:  ",(...r2), " d2: ",(...r3));
        
 	  if total>0 then 
-	    locArr[i].myElems[(...r2)]._value.doiBulkTransferStride(B._value.locArr[rid].myElems[(...r3)]);
+	    //locArr[i].myElems[(...r2)]._value.doiBulkTransferStride(B._value.locArr[rid].myElems[(...r3)]);
+            locArr[i].myElems[(...r2)] = B._value.locArr[rid].myElems[(...r3)];
         
 	  total-=t;
         } //End while

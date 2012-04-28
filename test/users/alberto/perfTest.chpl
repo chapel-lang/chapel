@@ -2,10 +2,10 @@ use BlockDist;
 use Time;
 use PrintComms;
 config const doDiagnostics=false;
-config const debugBulkTransfer=true;
-config const printOutput=false;
+//config const debugBulkTransfer=true;
+config const printOutput=true;
 
-config  const n: int=1000;
+config  const n: int=10;
 var Dist1 = new dmap(new Block([1..n,1..n,1..n]));
 var Dist2 = new dmap(new Block([1..(2*n),1..(2*n),1..(2*n)]));
 var Dom1: domain(3,int) dmapped Dist1 = [1..n,1..n,1..n];
@@ -406,7 +406,7 @@ if printOutput then writeln("Default Rectangular <-- Default Rectangular. Exampl
  for (a,b) in (BDR[D2],ADR[D1]) do if (a!=b) then writeln("ERROR!!!!");
   
  // ==============================================================================
-  D1=[1..n,n/4+1..3*n/4];
+//  D1=[1..n,n/4+1..3*n/4];
 D2=D1;
 var mes:string;
 if(numLocales<3){

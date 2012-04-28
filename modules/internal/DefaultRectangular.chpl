@@ -691,8 +691,6 @@ proc DefaultRectangularArr.dsiSerialReadWrite(f /*: Reader or Writer*/) {
 proc DefaultRectangularArr.dsiSerialWrite(f: Writer) { this.dsiSerialReadWrite(f); }
 proc DefaultRectangularArr.dsiSerialRead(f: Reader) { this.dsiSerialReadWrite(f); }
 
-// This is very conservative.  For example, it will return false for
-// 1-d array aliases that are shifted from the aliased array.
 proc DefaultRectangularArr.isDataContiguous() {
   if debugDefaultDistBulkTransfer then
     writeln("isDataContiguous(): origin=", origin, " off=", off, " blk=", blk);
@@ -715,34 +713,46 @@ proc DefaultRectangularArr.isDataContiguous() {
 proc DefaultRectangularArr.dsiSupportsBulkTransfer() param return true;
 
 proc DefaultRectangularArr.doiCanBulkTransfer() {
-//  if dom.stridable then
-//    for param i in 1..rank do
-//      if dom.ranges(i).stride != 1 then return false;
-
-//  if !isDataContiguous() then return false;
-
+  if debugDefaultDistBulkTransfer then writeln("In DefaultRectangularArr.doiCanBulkTransfer()");
+  if dom.stridable then
+    for param i in 1..rank do
+      if dom.ranges(i).stride != 1 then return false;
+  if !isDataContiguous(){ 
+    if debugDefaultDistBulkTransfer then
+      writeln("isDataContiguous return False"); 
+    return false;
+  }
   return true;
 }
 
-proc DefaultRectangularArr.doiBulkTransfer_(B) {
- if(this.type == B._value.type){
-  var dstCompRank,srcCompRank:[1..rank] bool;
-  var stridelevels:int;
-  dstCompRank = assertWholeDim(this);
-  srcCompRank = assertWholeDim(B._value);
-  
-  if(getStrideLevels(srcCompRank)>=B._value.getStrideLevels(dstCompRank)) then stridelevels=getStrideLevels(srcCompRank);
-  else stridelevels=B._value.getStrideLevels(dstCompRank);
-   
-   if stridelevels>0 then this.doiBulkTransferStride(B);
-   else this.doiBulkTransfer(B);
- }
- else if B._value.isBlockDist() then this.doiBulkTransferFromBlock(B);
- else writeln("ERROR IN DEFAULT RECTANGULAR");
+proc DefaultRectangularArr.doiCanBulkTransferStride() {
+  if debugDefaultDistBulkTransfer then writeln("In DefaultRectangularArr.doiCanBulkTransferStride()");
+//  if dom.stridable then
+//    for param i in 1..rank do
+//      if dom.ranges(i).stride != 1 then return false;
+  /*if blk(rank) != 1 {writeln("CASE2: blk(",rank,"):",blk(rank)," != 1"); return false;}
+
+  for param dim in 1..rank-1 by -1 do 
+    if blk(dim) != blk(dim+1)*dom.dsiDim(dim+1).length
+    {
+      writeln("CASE3: blk(",dim,"):",blk(dim)," != blk(",dim+1,"):", blk(dim+1)," * dom.dsiDim(",dim+1,").length: ", dom.dsiDim(dim+1).length);
+      return false;
+    }*/
+  //var dstCompRank:[1..rank] bool;
+  //dstCompRank = assertWholeDim(this);
+ // writeln("Stridelevel: ",  trideLevels(assertWholeDim(this)));
+  if getStrideLevels(assertWholeDim(this)) == 0
+  {
+    writeln("STRIDELEVELS =0, dstCompRank:");
+    return false;
+    }
+    
+  return true;
 }
 
 proc DefaultRectangularArr.doiBulkTransfer(B) {
-  //writeln("En DefaultRectangular");
+    if debugDefaultDistBulkTransfer then writeln("In DefaultRectangularArr.doiBulkTransfer");
+
   const Adims = dom.dsiDims();
   var Alo: rank*dom.idxType;
   for param i in 1..rank do
@@ -757,16 +767,18 @@ proc DefaultRectangularArr.doiBulkTransfer(B) {
   extern proc sizeof(type x): int(32);  // should be c_int or size_t or ...
   if debugBulkTransfer {
     const elemSize =sizeof(B._value.eltType);
-    writeln("In doiBulkTransfer(): Alo=", Alo, ", Blo=", Blo,
-            ", len=", len, ", elemSize=", elemSize);
+    //writeln("In doiBulkTransfer(): Alo=", Alo);
+//    writeln(", Blo=", Blo);
+    //writeln(", len=", len);
+//    writeln(", elemSize=", elemSize);
   }
 
   // NOTE: This does not work with --heterogeneous, but heterogeneous
   // compilation does not work right now.  The calls to chpl_comm_get
   // and chpl_comm_put should be changed once that is fixed.
   if this.data.locale.id==here.id {
-    if debugDefaultDistBulkTransfer then
-      writeln("\tlocal get() from ", B.locale.id);
+    if debugDefaultDistBulkTransfer then //See bug in test/users/alberto/rafatest2.chpl
+      writeln("\tlocal get() from ", B._value.locale.id);
     var dest = this.data;
     var src = B._value.data;
     __primitive("chpl_comm_get",
@@ -774,7 +786,7 @@ proc DefaultRectangularArr.doiBulkTransfer(B) {
                 B._value.data.locale.id,
                 __primitive("array_get", src, B._value.getDataIndex(Blo)),
                 len);
-  } else if B._value.data.locale.id==here.id {
+  }else if B._value.data.locale.id==here.id {
     if debugDefaultDistBulkTransfer then
       writeln("\tlocal put() to ", this.locale.id);
     var dest = this.data;
@@ -815,14 +827,14 @@ Proposal for Extending the UPC Memory Copy Library Functions and Supporting
 Extensions to GASNet, Version 2.0. Author: Dan Bonachea 
 */
 proc DefaultRectangularArr.doiBulkTransferStride(B) {
+  if debugDefaultDistBulkTransfer then 
+    writeln("In DefaultRectangularArr.doiBulkTransferStride");
 
   extern proc sizeof(type x): int;
-  if debugBulkTransfer {
-    writeln("In doiBulkTransferStride");
-  }
+  if debugBulkTransfer then
+    writeln("In doiBulkTransferStride: ");
  
   const Adims = dom.dsiDims();
- 
   var Alo: rank*dom.idxType;
   for param i in 1..rank do
     Alo(i) = Adims(i).first;
@@ -844,6 +856,8 @@ proc DefaultRectangularArr.doiBulkTransferStride(B) {
 
   /* If the stridelevels in source and destination arrays are different, we take the larger*/
   stridelevels=max(getStrideLevels(dstCompRank),B._value.getStrideLevels(srcCompRank));
+  if debugDefaultDistBulkTransfer then 
+    writeln("In DefaultRectangularArr.doiBulkTransferStride, stridelevels: ",stridelevels);
   
   //These variables should be actually of size stridelevels+1, but stridelevels is not param...
   var srcCount, dstCount, cnt: [1..rank+1] int(32); 
@@ -884,11 +898,11 @@ proc DefaultRectangularArr.doiBulkTransferStride(B) {
     var cnt=dstCount._value.data;
     
     if debugBulkTransfer {
-      writeln("Case 1");
-      writeln("stridelevel: ", stridelevels);
-      writeln("Count: ",dstCount);
-      writeln("dststrides: ",dstStride);
-      writeln("srcstrides: ",srcStride);
+      //writeln("Case 1");
+      writeln("Locale:",here.id,"stridelevel: ", stridelevels);
+      writeln("Locale:",here.id,"Count: ",dstCount);
+      writeln("Locale:",here.id," dststrides: ",dstStride);
+      writeln("Locale:",here.id,",srcstrides: ",srcStride);
     }
     var srclocale =B._value.data.locale.id : int(32);
        __primitive("chpl_comm_gets",
@@ -952,12 +966,12 @@ proc DefaultRectangularArr.doiBulkTransferStride(B) {
     var srcstr=srcstrides._value.data;
     var cnt=count._value.data;
     
-     if debugBulkTransfer {
-    writeln("Case 3");
-    writeln("stridelevel: ", stridelevels);
-    writeln("Count: ",count);
-    writeln("dststrides: ",dststrides);
-    writeln("srcstrides: ",srcstrides);
+    if debugBulkTransfer {
+      writeln("Case 3");
+      writeln("stridelevel: ", stridelevels);
+      writeln("Count: ",count);
+      writeln("dststrides: ",dststrides);
+      writeln("srcstrides: ",srcstrides);
     }
     var srclocale =B._value.data.locale.id : int(32);
        __primitive("chpl_comm_gets",
@@ -974,13 +988,13 @@ proc DefaultRectangularArr.doiBulkTransferStride(B) {
 proc DefaultRectangularArr.isDefaultRectangular() param{return true;}
 
 /* This function returns the stride level for the default rectangular array. */
-proc DefaultRectangularArr.getStrideLevels(rankcomp:[]):int(32) where rank == 1
+proc DefaultRectangularArr.getStrideLevels(rankcomp):int(32) where rank == 1
 {
   if dom.dsiStride==1 then return 0;
   else return 1;
 }
 
-proc DefaultRectangularArr.getStrideLevels(rankcomp:[]):int(32) where rank > 1 
+proc DefaultRectangularArr.getStrideLevels(rankcomp):int(32) where rank > 1 
 {
 var stridelevels:int(32);
  
@@ -1090,7 +1104,8 @@ proc DefaultRectangularArr.assertWholeDim(d) where rank==1
 
 proc DefaultRectangularArr.assertWholeDim(d) where rank>1
 {
-  var c:[1..d.rank] bool;
+ // var c:[1..d.rank] bool;
+ var c:d.rank*bool;
   for i in [2..rank] do
     if (d.dom.dsiDim(i).length==d.blk(i-1)/d.blk(i) && dom.dsiStride(i-1)==1) then c[i]=true;
 
