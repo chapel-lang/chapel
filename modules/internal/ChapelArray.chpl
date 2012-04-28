@@ -1495,10 +1495,10 @@ inline proc =(a: [], b) {
   if useBulkTransfer && chpl__isArray(b) &&
      chpl__compatibleForBulkTransfer(a, b) &&
     !chpl__serializeAssignment(a, b) {
-    if chpl__useBulkTransferStride(a, b) {
+    if chpl__useBulkTransferStride(a, b) { //First tries the bulkStride
       a._value.doiBulkTransferStride(b);
       return a;
-    }else if chpl__useBulkTransfer(a, b) {
+    }else if chpl__useBulkTransfer(a, b) { //If not possible, the plain bulk
       a._value.doiBulkTransfer(b);
       return a;
     }
