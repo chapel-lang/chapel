@@ -1,2 +1,2 @@
-# This test fails only intermittently. Always skip to reduce false successes.
-CHPL_COMM!=random string
+# This test seems to fail only under gasnet, and only intermittently.
+CHPL_COMM==none

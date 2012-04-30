@@ -2,10 +2,6 @@ module analyze_RMAT_graph_associative_array {
 
   config const initialRMATNeighborListLength = 16;
 
-  // set to "." for traditional printouts
-  config const rmatEdgeGenFile = "rmatalt.weights";
-  config const rmatGraphConFile = "rmatalt.neis";
-
   // +========================================================================+
   // |  Define associative array-based representations for general sparse     |
   // |  graphs. Provide execution template to generate a random RMAT graph    |
@@ -62,7 +58,6 @@ module analyze_RMAT_graph_associative_array {
 	[1..N_VERTICES] ;
 
     record VertexData {
-      type vertex;
       var ndom = [1..initialRMATNeighborListLength];
       var neighborIDs: [ndom] int(64);
       var edgeWeights: [ndom] int(64);
@@ -99,9 +94,11 @@ module analyze_RMAT_graph_associative_array {
         } // on
       }
 
-      proc shrinkNeighbors() {
+      // not parallel-safe
+      proc tidyNeighbors() {
         local {
-          const edgeCount = firstAvailableNeighborPosition$.readFF() - 1;
+          var edgeCount = firstAvailableNeighborPosition$.readFF() - 1;
+          RemoveDuplicates(1, edgeCount);
           // TODO: ideally if we don't save much memory, do not resize
           if edgeCount != ndom.numIndices {
             shrinkCount += 1;
@@ -111,11 +108,101 @@ module analyze_RMAT_graph_associative_array {
         }
       }
 
+      //
+      // Jargon: a "duplicate" is an edge v1->v2 for which
+      // there is another edge v1->v2, possibly with a different weight.
+      //
+      proc RemoveDuplicates(lo, inout hi) {
+        param showArrays = false;  // beware of 'local' in the caller
+        const style = new iostyle(min_width = 3);
+        if showArrays {
+          writeln("starting ", lo, "..", hi);
+          stdout.writeln(neighborIDs(lo..hi), style);
+          stdout.writeln(edgeWeights(lo..hi), style);
+        }
+
+        // TODO: remove the duplicates as we sort
+        // InsertionSort, keep duplicates
+        for i in lo+1..hi {
+          const ithNID = neighborIDs(i);
+          const ithEDW = edgeWeights(i);
+          var inserted = false;
+
+          for j in lo..i-1 by -1 {
+            if (ithNID < neighborIDs(j)) {
+              neighborIDs(j+1) = neighborIDs(j);
+              edgeWeights(j+1) = edgeWeights(j);
+            } else {
+              neighborIDs(j+1) = ithNID;
+              edgeWeights(j+1) = ithEDW;
+              inserted = true;
+              break;
+            }
+          }
+
+          if (!inserted) {
+            neighborIDs(lo) = ithNID;
+            edgeWeights(lo) = ithEDW;
+          }
+        }
+        //writeln("sorted ", lo, "..", hi);
+
+        // remove the duplicates
+        var foundDup = false;
+        var indexDup: int;
+        var lastNID = neighborIDs(lo);
+
+        for i in lo+1..hi {
+          const currNID = neighborIDs(i);
+          if lastNID == currNID {
+            foundDup = true;
+            indexDup = i;
+            break;
+          } else {
+            lastNID = currNID;
+          }
+        }
+
+        if foundDup {
+          // indexDup points to a hole
+          // the already-found dup is dropped before entering the loop
+          for i in indexDup+1..hi {
+            const currNID = neighborIDs(i);
+            if lastNID == currNID {
+              // dropping this duplicate
+            } else {
+              // moving a non-duplicate value
+              neighborIDs(indexDup) = currNID;
+              edgeWeights(indexDup) = edgeWeights(i);
+              indexDup += 1;
+              lastNID = currNID;
+            }
+          }
+          hi = indexDup - 1;
+        }
+        //writeln("eliminated dups ", lo, "..", hi);
+
+        // VerifySort
+        if boundsChecking then
+          for i in lo..hi-1 do
+            if !( neighborIDs(i) < neighborIDs(i+1) ) then
+              writeln("unsorted for i = ", i, "   ",
+                      neighborIDs(i), " !< ", neighborIDs(i+1));
+
+        if showArrays {
+          writeln("sorted ", lo, "..", hi);
+          stdout.writeln(neighborIDs(lo..hi), style);
+          stdout.writeln(edgeWeights(lo..hi), style);
+          writeln();
+        }
+      }  // RemoveDuplicates
+
+
     } // record VertexData
 	
     class Associative_Graph {
       const vertices;
-      var   Row      : [vertices] VertexData (index (vertices));
+      var   Row      : [vertices] VertexData;
 
       // Simply forward the array's parallel iterator
       // FYI: no fast follower opt

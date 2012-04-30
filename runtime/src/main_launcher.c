@@ -8,6 +8,7 @@
 #include <string.h>
 #include <chpl-comm-printf-macros.h>
 #include "chplcgfns.h"
+#include "chpl-comm-launch.h"
 #include "chpl-comm-locales.h"
 #include "chpllaunch.h"
 #include "chpl-mem.h"
@@ -328,6 +329,13 @@ int main(int argc, char* argv[]) {
   // number of locales is reasonable
   //
   chpl_comm_verify_num_locales(execNumLocales);
+
+  //
+  // Let the comm layer do any last-minute pre-launch activities it
+  // needs to.
+  //
+  CHPL_COMM_PRELAUNCH();
+
   //
   // Launch the program
   // This may not return (e.g., if calling chpl_launch_using_exec())

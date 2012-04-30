@@ -283,8 +283,9 @@ module SSCA2_kernels
         // is yet another concept that the Chapel group is planning to
         // implement.
         //
-        var remaining: atomic bool;
-        remaining.write(true);
+        var Active_Remaining => lp.get_Active_Remaining(tid);
+        Active_Remaining = true;
+        var remaining = true;
 
         //
         // Each locale will have its own level sets.  A locale's level set
@@ -306,8 +307,7 @@ module SSCA2_kernels
 
 	var current_distance : int = 0;
   
-	while remaining.read() do {
-            remaining.clear();
+	while remaining do {
 	    // ------------------------------------------------
 	    // expand the neighbor sets for all vertices at the
 	    // current distance from the starting vertex  s
@@ -370,9 +370,12 @@ module SSCA2_kernels
             barrier.wait();
 
             Active_Level[here.id] = Active_Level[here.id].next;
-            if Active_Level[here.id].Members.numIndices:bool then
-              remaining.write(true);
+            Active_Remaining[here.id] =
+              Active_Level[here.id].Members.numIndices:bool;
+
           }
+
+          remaining = || reduce Active_Remaining;
 
 	};  // end forward pass
 
@@ -510,6 +513,7 @@ module SSCA2_kernels
     var path_count$    : [vertex_domain] sync real(64);
     var depend         : [vertex_domain] real;
     var children_list  : [vertex_domain] child_struct(index(vertex_domain));
+    var Active_Remaining: [PrivateSpace] bool;
     var Active_Level   : [PrivateSpace] Level_Set (Sparse_Vertex_List);
   };
   inline proc =(a: chpl_taskID_t, b: chpl_taskID_t) return b;
@@ -539,6 +543,7 @@ module SSCA2_kernels
     inline proc get_path_count(tid=get_tid()) return temps[tid].path_count$;
     inline proc get_depend(tid=get_tid()) return temps[tid].depend;
     inline proc get_children_list(tid=get_tid()) return temps[tid].children_list;
+    inline proc get_Active_Remaining(tid=get_tid()) return temps[tid].Active_Remaining;
     inline proc get_Active_Level(tid=get_tid()) return temps[tid].Active_Level;
   }
 
