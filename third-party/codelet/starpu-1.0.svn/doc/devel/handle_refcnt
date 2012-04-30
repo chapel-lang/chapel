@@ -1,0 +1,44 @@
+handle.refcnt usage
+===================
+
+It is the counter for a software rwlock, accounting the number of readers
+(mode == STARPU_R) or writers (mode == STARPU_W)
+
+It is thus used
+
+- during task duration for each data
+- right after completion of a data request
+- during application data acquisition
+
+* Creates a reference:
+  * Released by _starpu_notify_data_dependencies():
+    - _starpu_attempt_to_submit_data_request() immediately when returning 0, but otherwise (1) when the pending request is given control
+  * Released by _starpu_notify_data_dependencies():
+    - _starpu_notify_data_dependencies() when may_unlock_data_req_list_head returned a request which can proceed
+
+* Indirectly creates a reference:
+  * Released by starpu_data_release():
+    - _starpu_attempt_to_submit_data_request_from_apps() when returning 0
+    - starpu_data_acquire_cb()
+    - starpu_data_acquire()
+  * Released by _starpu_notify_data_dependencies():
+    - attempt_to_submit_data_request_from_job() when returning 0
+  * Released by _starpu_push_task_output():
+    - _submit_job_enforce_data_deps() for each data.
+
+* Releases a reference:
+  - _starpu_notify_data_dependencies()
+
+* Indirectly releases a reference:
+  - _starpu_release_data_on_node()
+  - _starpu_push_task_output() for each data
+  - starpu_data_release()
+
+* Temporarily creates a reference, released immediately:
+  - _starpu_write_through_data() for needed write-throughs, released by wt_callback
+  - _starpu_benchmark_ping_pong()
+  - _starpu_data_unregister()
+  - _starpu_prefetch_data_on_node_with_mode()
+  - starpu_data_invalidate()
+
+TODO: unclear conversion use

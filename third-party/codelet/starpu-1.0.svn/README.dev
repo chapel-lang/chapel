@@ -1,0 +1,78 @@
+# StarPU --- Runtime system for heterogeneous multicore architectures.
+#
+# Copyright (C) 2009, 2010, 2011  Université de Bordeaux 1
+# Copyright (C) 2010, 2011  Centre National de la Recherche Scientifique
+#
+# StarPU is free software; you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation; either version 2.1 of the License, or (at
+# your option) any later version.
+#
+# StarPU is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+#
+# See the GNU Lesser General Public License in COPYING.LGPL for more details.
+
+Contents
+========
+
+- Developer Warnings
+- Naming Conventions
+- Coding Style
+- Error handling
+
+Developer Warnings
+------------------
+
+They are enabled only if the STARPU_DEVEL environment variable is
+defined to a non-empty value, when calling configure.
+
+
+
+Naming Conventions
+------------------
+
+* Prefix names of public objects (types, functions, etc.) with "starpu"
+
+* Prefix names of internal objects (types, functions, etc.) with "_starpu"
+
+* Names for qualified types (struct, union, enum) do not end with _t, _s or similar.
+  Use _t only for typedef types, such as opaque public types, e.g
+       typedef struct _starpu_data_state* starpu_data_handle_t;
+  or
+       typedef uint64_t starpu_tag_t;
+
+* When a variable can only take a finite set of values, use an enum
+  type instead of defining macros for each of the values.
+
+
+
+Coding Style
+------------
+
+* Curly braces always go on a new line
+
+
+
+Error handling
+--------------
+* Use STARPU_ABORT() for catastrophic errors, from which StarPU will never
+  recover.
+
+	switch (node_kind)
+	{
+		case STARPU_CPU_RAM:
+			do_stg();
+			break;
+		...
+		default:
+			/* We cannot be here */
+			STARPU_ABORT();
+	}
+
+* Use STARPU_ASSERT() to run checks that are very likely to succeed, but still
+  are useful for debugging purposes. It should be OK to disable them with
+  --enable-fast.
+
+	STARPU_ASSERT(j->terminated != 0)

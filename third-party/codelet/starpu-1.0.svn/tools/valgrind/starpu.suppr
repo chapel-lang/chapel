@@ -1,0 +1,49 @@
+{
+   config.running is not racy from starpu_shutdown
+   Helgrind:Race
+   fun:starpu_shutdown
+   ...
+}
+
+{
+   config.running is not racy from _starpu_machine_is_running
+   Helgrind:Race
+   fun:_starpu_machine_is_running
+   ...
+}
+
+{
+   don't care about cache hit stats
+   Helgrind:Race
+   fun:_starpu_msi_cache_hit
+   ...
+}
+
+{
+   don't care about cache miss stats
+   Helgrind:Race
+   fun:_starpu_msi_cache_miss
+   ...
+}
+
+{
+   known race, but not problematic in practice, see comment in _starpu_tag_clear
+   Helgrind:LockOrder
+   ...
+   fun:_starpu_tag_free
+   fun:_starpu_htbl_clear_tags
+   ...
+   fun:_starpu_tag_clear
+   fun:starpu_shutdown
+   ...
+}
+
+
+{
+   There is actually no race on current_mode, because the mode can not change unexpectedly, until _starpu_notify_data_dependencies() is called further down. Valgrind can not know about such software rwlock.
+   Helgrind:Race
+   fun:_starpu_release_data_on_node
+   fun:_starpu_push_task_output
+   ...
+}
+

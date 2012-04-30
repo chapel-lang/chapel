@@ -1,2 +1,0 @@
-LIBS += 
-INCLUDEPATH += 

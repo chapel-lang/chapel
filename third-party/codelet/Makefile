@@ -45,7 +45,7 @@ install-hwloc: FORCE
 configure-starpu: FORCE
 	mkdir -p $(STARPU_BUILD_DIR)
 	cp -r $(STARPU_SUBDIR)/* $(STARPU_BUILD_DIR)
-	cd $(STARPU_BUILD_DIR) && ./configure --prefix=$(STARPU_INSTALL_DIR) --with-hwloc=$(HWLOC_INSTALL_DIR)
+	cd $(STARPU_BUILD_DIR) && ./autogen.sh && ./configure --prefix=$(STARPU_INSTALL_DIR) --with-hwloc=$(HWLOC_INSTALL_DIR)
 
 build-starpu: FORCE
 	cd $(STARPU_BUILD_DIR) && $(MAKE)

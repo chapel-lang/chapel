@@ -1,0 +1,62 @@
+replicate.refcnt usage
+======================
+
+It is used to make sure the replicate still exists on some memory node.
+
+It is thus used
+
+- during task duration for each data
+- during data requests, to make sure that the source and target still exist
+- during data reduction, to keep the per-worker data available for reduction
+- during application data acquisition
+
+Function detail
+---------------
+
+* makes sure there is at least a reference:
+  - copy_data_1_to_1_generic()
+  - _starpu_driver_copy_data_1_to_1()
+  - _starpu_post_data_request()
+  - starpu_handle_data_request()
+
+* creates a reference:
+  * Released by starpu_handle_data_request_completion:
+    - _starpu_create_data_request():
+      - 1 on dst_replicate
+      - 1 on src_replicate if (mode & STARPU_R)
+    - _starpu_search_existing_data_request() on src_replicate when turning a request without STARPU_R into one that does.
+
+  * Released by _starpu_data_end_reduction_mode_terminate:
+    - _starpu_data_end_reduction_mode() for each initialized per-worker buffer, creates a reduction_tmp_handles for them
+
+  * Released by _starpu_release_data_on_node or inside _starpu_prefetch_data_on_node_with_mode:
+    - _starpu_fetch_data_on_node() when !detached
+
+* indirectly creates a reference:
+  * Released by _starpu_push_task_output():
+    - fetch_data()
+    - _starpu_fetch_task_input() through fetch_data() for each task data (one per unique data)
+  * Released by starpu_data_release():
+    - starpu_data_acquire_cb()
+
+* releases a reference:
+  - starpu_handle_data_request_completion()
+    - 1 on dst_replicate
+    - 1 on src_replicate if (mode & STARPU_R)
+  - _starpu_data_end_reduction_mode_terminate() for each per-worker buffer which has a reduction_tmp_handles
+  - _starpu_release_data_on_node()
+
+* indirectly releases a reference:
+  - starpu_handle_data_request() through starpu_handle_data_request_completion() when returning 0.
+  - _starpu_push_task_output() for each task data (one per unique data)
+  - starpu_data_release()
+  - _starpu_handle_node_data_requests() through _starpu_handle_node_data_requests() for each completed request, which is not put back on any list.
+
+* temporarily increases, and decreases after:
+  - transfer_subtree_to_node()
+  - _starpu_allocate_interface()
+  - _starpu_prefetch_data_on_node_with_mode(), when produced by the call to _starpu_fetch_data_on_node (!detached)
+  - starpu_data_prefetch_on_node(), 
+  - starpu_data_invalidate()
+  - _starpu_data_unregister()
+  - _starpu_benchmark_ping_pong()

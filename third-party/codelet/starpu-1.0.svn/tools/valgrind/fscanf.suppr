@@ -1,0 +1,9 @@
+{
+   fscanf error
+   Memcheck:Cond
+   fun:__GI___strncasecmp_l
+   fun:____strtod_l_internal
+   fun:_IO_vfscanf
+   fun:fscanf
+   fun:scan_reg_model
+}

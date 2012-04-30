@@ -1,0 +1,15 @@
+{
+   pthread_create
+   Memcheck:Leak
+   ...
+   fun:pthread_create@@GLIBC_2.2.5
+   ...
+}
+
+{
+   name
+   Memcheck:Leak
+   ...
+   fun:pthread_cancel_init
+   ...
+}
