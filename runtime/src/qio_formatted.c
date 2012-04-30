@@ -1161,7 +1161,7 @@ const char* qio_quote_string_chpl(const char* ptr, ssize_t len)
   const char* ret = NULL;
   err_t err;
   err = qio_quote_string('"', '"', QIO_STRING_FORMAT_CHPL, ptr, len, &ret);
-  if( !ret ) return qio_strdup("<error>");
+  if( err || !ret ) return qio_strdup("<error>");
   return ret;
 }
 
