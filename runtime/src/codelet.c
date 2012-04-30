@@ -3,6 +3,8 @@
 #include <qbuffer.h>
 #include "codelet.h"
 
+//#define CODELET_DEBUG
+
 /* 
  * These are the runtime related files that will be used to call into the 
  * codelet base runtime 
@@ -12,7 +14,6 @@
 /* initialize codelet runtime : passing a NULL argument means that we use
  * default configuration for the scheduling policies and the number of
  * processors/accelerators */
-//int chpl_codelet_init(_codelet_config *conf) {
 int chpl_codelet_init(void) {
   printf("INITIALIZING CODELET R/T...\n");
   return _codelet_init(NULL);
@@ -25,134 +26,92 @@ void chpl_codelet_shutdown(void) {
 }
 
 /* shutdown codelet runtime */
-void chpl_codelet_waitforall(void) {
-  _codelet_waitforall();
+void chpl_codelet_wait_for_id(_codelet_tag_t id) {
+  _codelet_wait_for_id(id);
 }
 
-// putting this into macro form
-/* Create a sequential codelet. There is called for sections of code with no 
- * parallel constructs */
-/* TODO : Deal with registering data and its associated handles!! */
-int chpl_codelet_sequential(_codelet_tag_t self_id, _codelet_tag_t incoming, 
-                            _codelet_tag_t outgoing, int32_t numID, void (*function)(void **, void *), 
-                            void *params, size_t paramsize) {
-
-  _codelet cl = { };
-  _codelet_task *task;
-  
-  int ret;
-
-  cl.cpu_funcs[0] = function;
-  cl.where = CHPL_CPU;
-  cl.nbuffers = 0;
-
-  /* Create Codelet Task */
-  task = _codelet_create();
-  //task->use_tag = 1;
-  //task->tag_id = self_id;
-  task->synchronous = 1;
-  task->cl = &cl;
-  task->cl_arg = params;
-  task->cl_arg_size = paramsize;
-
-  /* extract dependencies from bitmap */
-#if 0
-  for (i = 0; i < 64; i++) {
-    if (0x1 & incoming) {
-      _codelet_declare_deps(self_id, 1, 1 << i);
-#if CODELET_DEBUG
-      printf("SEQ: just declared deps on %llu\n", (_codelet_tag_t)(1<<i));
-#endif
-    }
-    incoming >>= 1;
-  }
-#endif
-
-#if CODELET_DEBUG
-  printf("SEQUENTIAL: self = %llu outgoing = %llu incoming = %llu paramsize = %lu\n", self_id, outgoing, incoming, paramsize);
-#endif
-
-//  for (int i = 0; i < numHandles; i++) {
-//    task->handles[i] = data_handles[i];
-//  }
-
-  ret = _codelet_submit_task(task);
-  if (ret == -ENODEV) {
-    printf("Could not submit sequential task!!");
-  }
-  STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_submit");
-  return 0;
+void chpl_codelet_signal(_codelet_tag_t id) {
+  _codelet_tag_restart(id);
+  _codelet_signal(id);
 }
 
-#if 0
-/* Create a parallel codelet. There is called for sections of code with 
- * parallel constructs such as (co)forall, begin, etc. */
-int chpl_codelet_parallel(_codelet_tag_t self_id, _codelet_tag_t incoming, 
-    _codelet_tag_t outgoing, int low, int stride, int high, int index,
-    int32_t numID, void (*function)(void **, void *), void *params, 
-    size_t paramsize) {
+void inner_barrier(void **buffers, void *cl_arg) { 
+  /* Send a signal to waiting codelet that the barrier is complete */
+  chpl_codelet_signal(*((_codelet_tag_t *)cl_arg));
+}
 
-
-  int outeridx, ret, i, numInds;
-  _codelet_task *task;
-  _codelet_tag_t incopy;
+void _fork_tasks(void **buffers, void *cl_arg) { 
+  _codelet_task *barrier_task;
+  _codelet_fork_param_t *fparam;
+  codelet_param_t **myparam;
+  barrier_cb_t *barrier_data;
   _codelet_tag_t *loopInds;
-
-  _codelet cl = { };
-
-  printf("parallel: low = %d stride = %d high = %d\n", low, stride, high);
-
-  numInds = ceil((high - low + 1) / stride);
+  static _codelet cl;
+  int ret;
+  unsigned outeridx, numInds;
+  numInds = ceil((ILHigh - ILLow + 1) / ILStride);
   loopInds = (_codelet_tag_t *)qio_malloc(numInds * sizeof(_codelet_tag_t));
-
-  printf("numInds = %d\n", numInds);
-
-  cl.cpu_funcs[0] = function;
+  fparam = cl_arg;
+  cl.cpu_funcs[0] = fparam->forall_func;
   cl.where = CHPL_CPU;
   cl.nbuffers = 0;
-
-  for (outeridx = low; outeridx <= high; outeridx += stride) {
-    
-    /* Create Codelet Task */
-    task = _codelet_create();
-
+  myparam = qio_malloc(sizeof(codelet_param_t *) * numInds);
+  for (outeridx = ILLow; outeridx <= ILHigh; outeridx += ILStride) {
+    _codelet_task *task = _codelet_create();
+    myparam[outeridx] = qio_malloc(sizeof(codelet_param_t));
+    myparam[outeridx]->_1_ILIndex = outeridx;
     task->use_tag = 1;
-    task->tag_id = (_codelet_tag_t)(self_id | (_codelet_tag_t)(outeridx << 16));
-    loopInds[outeridx] = task->tag_id;
+    task->tag_id = CODELET_INNER_LOOP_ID(0, outeridx);
     task->synchronous = 0;
     task->cl = &cl;
-    task->cl_arg = params;
-    task->cl_arg_size = paramsize;
-
-    incopy = incoming;
-    /* extract dependencies from bitmap */
-    for (i = 0; i < 64; i++) {
-      if (0x1 & incopy) {
-        _codelet_declare_deps(task->tag_id, 1, (_codelet_tag_t)(1 << i));
-        printf("PAR: %llu just declared deps on %llu\n", (_codelet_tag_t)(task->tag_id), (_codelet_tag_t)(1<<i));
-      }
-      incopy >>= 1;
-    }
-
-    printf("PARALLEL: self = %llu outgoing = %llu incoming = %llu paramsize = %lu\n", self_id, outgoing, incoming, paramsize);
-
-    //  for (int i = 0; i < numHandles; i++) {
-    //    task->handles[i] = data_handles[i];
-    //  }
-
+    task->regenerate = 0;
+    task->cl_arg = myparam[outeridx];
+    task->cl_arg_size = sizeof(codelet_param_t);
+    loopInds[outeridx] = task->tag_id;
     ret = _codelet_submit_task(task);
     if (ret == -ENODEV) {
       printf("Could not submit sequential task!!");
     }
-    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_submit");
-
+    STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_submit"); 
   }
-
-  /* Add barrier here */
-  starpu_tag_wait_array(numInds, loopInds);
-  //starpu_tag_remove(self_id);
-  starpu_tag_notify_from_apps(self_id);
-
-  return 0;
+  barrier_data = (barrier_cb_t *)qio_malloc(sizeof(barrier_cb_t));
+  barrier_data->iters = numInds;
+  barrier_data->tags = loopInds;
+  barrier_task = _codelet_create();
+  barrier_task->cl = &barrier_cl;
+  barrier_task->cl_arg = &(fparam->successor_id);
+  barrier_task->synchronous = 0;
+  barrier_task->use_tag = 1;
+  barrier_task->tag_id = CODELET_BARRIER_ID(fparam->barrier_id);
+  barrier_task->regenerate = 0;
+  barrier_task->callback_func = _barrier_cb;
+  barrier_task->callback_arg = barrier_data;
+  _codelet_declare_deps_array(barrier_task->tag_id, numInds, loopInds);
+  ret = _codelet_submit_task(barrier_task);
+  if (ret == -ENODEV) printf("PROBLEM\n");
+  STARPU_CHECK_RETURN_VALUE(ret, "starpu_task_submit");
 }
-#endif
+
+_codelet forktask_cl = {
+  .where = CHPL_CPU,
+  .cpu_funcs = { _fork_tasks , 0 },
+  .nbuffers = 0
+};
+
+_codelet barrier_cl = {
+  .where = STARPU_CPU,
+  .cpu_funcs = { inner_barrier, 0 },
+  .nbuffers = 0
+};
+
+void _barrier_cb(void *id) {
+  int i;
+  barrier_cb_t *input = (barrier_cb_t *)id;
+
+  int numIters = input->iters;
+  _codelet_tag_t *tags = input->tags;
+
+  for (i = 0; i < numIters; i++) {
+    _codelet_tag_restart(tags[i]);
+  }
+}

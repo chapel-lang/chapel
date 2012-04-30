@@ -2481,27 +2481,18 @@ void CallExpr::codegen(FILE* outfile) {
       fprintf(outfile, "chpl_codelet_shutdown()");
       break;
     }
-    case PRIM_CODELET_WAITFORALL:
+    case PRIM_CODELET_WAIT_FOR_ID:
     {
-      fprintf(outfile, "chpl_codelet_waitforall()");
+      fprintf(outfile, "chpl_codelet_wait_for_id(");
+      get(1)->codegen(outfile);
+      fprintf(outfile,");\n");
       break;
     }
-    case PRIM_CODELET_CASETABLE:
+    case PRIM_CODELET_NOTIFY:
     {
-      fprintf(outfile, "switch(");
+      fprintf(outfile,"chpl_codelet_signal(");
       get(1)->codegen(outfile);
-      fprintf(outfile, ") {\n");
-
-      /* iterate through outgoing edges for the given interval */
-      SymExpr* se = toSymExpr(get(2));
-      INT_ASSERT(se);
-      FnSymbol* fn = toFnSymbol(se->var);
-      INT_ASSERT(fn);
-      forv_Vec(Interval, intOut, fn->intervals->v[0]->outs) {
-        fprintf(outfile, "case %d:\n\t\tgoto LABEL%d;\n\t\tbreak;\n", 1 << intOut->id, 1 << intOut->id);
-      }
-      fprintf(outfile, "default: goto LABELEXIT;\n");
-      fprintf(outfile,"}\n");
+      fprintf(outfile,");\n");
       break;
     }
     default:

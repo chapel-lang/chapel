@@ -3,7 +3,7 @@ use CodeletDist;
 proc main {
 
   var x = 0;
-  var N = [0..9] dmapped CodeletDist();
+  var N = [0..4] dmapped CodeletDist();
   var A: [N] int;
 
   writeln(A(0)); // code 1

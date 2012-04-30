@@ -558,8 +558,8 @@ initPrimitive() {
   prim_def(PRIM_ON_IL, "chpl_target_il", returnInfoVoid);
   prim_def(PRIM_CODELET_INIT, "chpl_codelet_init", returnInfoVoid);
   prim_def(PRIM_CODELET_SHUTDOWN, "chpl_codelet_shutdown", returnInfoVoid);
-  prim_def(PRIM_CODELET_WAITFORALL, "chpl_codelet_waitforall", returnInfoVoid);
-  prim_def(PRIM_CODELET_CASETABLE, "codelet switch table", returnInfoVoid);
+  prim_def(PRIM_CODELET_WAIT_FOR_ID, "chpl_codelet_waitforid", returnInfoVoid);
+  prim_def(PRIM_CODELET_NOTIFY, "notified that a codelet is complete", returnInfoVoid);
 
   prim_def(PRIM_NUM_FIELDS, "num fields", returnInfoInt32);
   prim_def(PRIM_FIELD_NUM_TO_NAME, "field num to name", returnInfoString);
