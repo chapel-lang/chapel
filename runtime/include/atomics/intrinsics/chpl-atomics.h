@@ -1,3 +1,6 @@
+#ifndef _chpl_atomics_h_
+#define _chpl_atomics_h_
+
 #ifdef SIMPLE_TEST
 #include "sys_basic.h"
 #include <stdint.h>
@@ -223,3 +226,4 @@ static inline int leadz64(uint64_t x) {
   return __builtin_clzll((unsigned long long) x);
 }
 
+#endif // _chpl_atomics_h_

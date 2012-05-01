@@ -1,3 +1,5 @@
+#ifndef _chpl_atomics_h_
+#define _chpl_atomics_h_
 
 #include "chpltypes.h" // chpl_bool
 #include "chpl-tasks.h" // chpl_sync_aux_t
@@ -247,3 +249,4 @@ static inline int leadz64(uint64_t x) {
   return i;
 }
 
+#endif // _chpl_atomics_h_
