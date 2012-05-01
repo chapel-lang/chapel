@@ -13,3 +13,23 @@ var D2 = [3..n];
 on Locales[numLocales-1] do
   writeln(D2);
 
+var D3 = f3();
+on Locales[numLocales-1] do
+  writeln(D3);
+
+var D4 = f4();
+on Locales[numLocales-1] do
+  writeln(D4);
+
+proc f3() {
+  return D0;
+}
+
+proc f4() {
+  var D = [3..n];
+  return D;
+}
+
+proc f5() {
+  return [3..n];
+}
