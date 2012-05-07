@@ -18,7 +18,7 @@
 //   TypeSymbol: defines a scope for EnumType and ClassType types for
 //   the enumerated type constants or the class/record fields
 //
-//   BlockStmt: defines a scope if the block is not BLOCK_SCOPELESS
+//   BlockStmt: defines a scope if the block is a normal block
 //   for any locally defined symbols
 //
 // Each entry contains a map from canonicalized string pointers to the
@@ -59,7 +59,8 @@ static BaseAST*
 getScope(BaseAST* ast) {
   if (Expr* expr = toExpr(ast)) {
     BlockStmt* block = toBlockStmt(expr->parentExpr);
-    if (block && block->blockTag != BLOCK_SCOPELESS) {
+    // SCOPELESS and TYPE blocks do not define scopes
+    if (block && block->blockTag == BLOCK_NORMAL) {
       return block;
     } else if (expr->parentExpr) {
       return getScope(expr->parentExpr);
@@ -488,7 +489,7 @@ void build_type_constructor(ClassType* ct) {
             arg->defaultExpr = new BlockStmt(init->copy(), BLOCK_SCOPELESS);
 
           if (exprType)
-            arg->typeExpr = new BlockStmt(exprType->copy(), BLOCK_SCOPELESS);
+            arg->typeExpr = new BlockStmt(exprType->copy(), BLOCK_TYPE);
 
           if (!exprType && arg->type == dtUnknown)
             arg->type = dtAny;
@@ -729,7 +730,7 @@ void build_constructor(ClassType* ct) {
         tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
         tmp->addFlag(FLAG_MAYBE_PARAM);
         tmp->addFlag(FLAG_MAYBE_TYPE);
-        exprType = new BlockStmt(new DefExpr(tmp), BLOCK_SCOPELESS);
+        exprType = new BlockStmt(new DefExpr(tmp), BLOCK_TYPE);
         toBlockStmt(exprType)->insertAtTail(new CallExpr(PRIM_MOVE, tmp, new CallExpr("chpl__initCopy", init->copy())));
         toBlockStmt(exprType)->insertAtTail(new CallExpr(PRIM_TYPEOF, tmp));
       }
@@ -751,7 +752,7 @@ void build_constructor(ClassType* ct) {
     }
     if (exprType) {
       if (!isBlockStmt(exprType))
-        arg->typeExpr = new BlockStmt(exprType, BLOCK_SCOPELESS);
+        arg->typeExpr = new BlockStmt(exprType, BLOCK_TYPE);
       else
         arg->typeExpr = toBlockStmt(exprType);
     }

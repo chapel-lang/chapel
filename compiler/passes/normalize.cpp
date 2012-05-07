@@ -820,7 +820,7 @@ static void fixup_array_formals(FnSymbol* fn) {
 
           // Replace the type expression with "_array".
           // I dunno.  Maybe we should keep the typeExpr around and just fix up the type. <hilde>
-          arg->typeExpr->replace(new BlockStmt(new SymExpr(dtArray->symbol), BLOCK_SCOPELESS));
+          arg->typeExpr->replace(new BlockStmt(new SymExpr(dtArray->symbol), BLOCK_TYPE));
 
           // If we have an element type, replace reference to its symbol with
           // "arg.eltType", so we use the instantiated element type.

@@ -302,7 +302,7 @@ ArgSymbol::ArgSymbol(IntentTag iIntent, const char* iName,
   else if (BlockStmt* block = toBlockStmt(iTypeExpr))
     typeExpr = block;
   else
-    typeExpr = new BlockStmt(iTypeExpr, BLOCK_SCOPELESS);
+    typeExpr = new BlockStmt(iTypeExpr, BLOCK_TYPE);
   if (!iDefaultExpr)
     defaultExpr = NULL;
   else if (BlockStmt* block = toBlockStmt(iDefaultExpr))
