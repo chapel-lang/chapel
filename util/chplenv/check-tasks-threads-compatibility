@@ -5,8 +5,8 @@
 $tasks=$ARGV[0];
 $threads=$ARGV[1];
 
-unless (($tasks =~ /^dev-tasks-1|fifo$/ &&
-         $threads =~ /^dev-threads-1|minimal|pthreads$/) ||
+unless (($tasks =~ /^muxed|fifo$/ &&
+         $threads =~ /^minimal|pthreads|soft-threads$/) ||
 	($tasks eq "mta" && $threads eq "none") ||
 	($tasks eq "nanox" && $threads eq "none") ||
 	($tasks eq "qthreads" && $threads eq "none") ||

@@ -23,9 +23,9 @@ const char* toString(FnSymbol* fn);
 
 void parseExplainFlag(char* flag, int* line, ModuleSymbol** module);
 
-FnSymbol* instantiate(FnSymbol* fn, SymbolMap* subs, CallExpr* call);
+FnSymbol* instantiate(FnSymbol* fn, SymbolMap* subs, CallExpr* call, bool addFormalDefaults = true, bool noCache = false);
 void resolveFormals(FnSymbol* fn);
-void resolveCall(CallExpr* call, bool errorCheck = true, FnSymbol *containingFn = NULL);
+void resolveCall(CallExpr* call, bool errorCheck = true);
 void resolveBlock(Expr* body);
 
 FnSymbol* defaultWrap(FnSymbol* fn, Vec<ArgSymbol*>* actualFormals,  CallInfo* info);
@@ -35,5 +35,6 @@ FnSymbol* promotionWrap(FnSymbol* fn, CallInfo* info);
 
 FnSymbol* getAutoCopy(Type* t);
 FnSymbol* getAutoDestroy(Type* t);
+Symbol* lookupImplementsWitnessInSymbolTable(BaseAST* ce, BaseAST* interface, BaseAST* implementingType);
 
 #endif

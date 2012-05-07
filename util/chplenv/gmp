@@ -1,0 +1,22 @@
+#!/usr/bin/env perl
+
+use File::Basename;
+
+$utildirname = dirname($0);
+
+$preset_gmp = $ENV{'CHPL_GMP'};
+
+if ($preset_gmp eq "") {
+  $targplatform = `$utildirname/platform --target`; chomp($targplatform);
+  if ($targplatform eq "xmt" || $targplatform eq "xmt-sim") {
+    $gmp = 'none';
+  } else {
+#    $gmp = 'gmp'; check Lion, PGI, PrgEnv-gnu before enabling
+    $gmp = 'none';
+  }
+} else {
+  $gmp = $preset_gmp;
+}
+
+print "$gmp\n";
+exit(0);

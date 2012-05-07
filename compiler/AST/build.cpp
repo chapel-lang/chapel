@@ -163,9 +163,7 @@ Expr* buildIntLiteral(const char* pch) {
     ull = hexStr2uint64(pch);
   else
     ull = str2uint64(pch);
-  if (ull <= 2147483647ull)
-    return new SymExpr(new_IntSymbol(ull, INT_SIZE_32));
-  else if (ull <= 9223372036854775807ull)
+  if (ull <= 9223372036854775807ull)
     return new SymExpr(new_IntSymbol(ull, INT_SIZE_64));
   else
     return new SymExpr(new_UIntSymbol(ull, INT_SIZE_64));
@@ -369,7 +367,7 @@ buildLabelStmt(const char* name, Expr* stmt) {
 
 BlockStmt*
 buildImplementsStmt(Expr* implementsClause, Expr* wherePart, BlockStmt* statements ) {
-	return buildChapelStmt(new ImplementsStmt(implementsClause, wherePart, statements));
+  return buildChapelStmt(new ImplementsStmt(implementsClause, wherePart, statements));
 }
 
 BlockStmt*
@@ -378,12 +376,6 @@ buildIfStmt(Expr* condExpr, Expr* thenExpr, Expr* elseExpr) {
     if (!strcmp(use->unresolved, gTryToken->name))
       return buildChapelStmt(new CondStmt(condExpr, thenExpr, elseExpr));
   return buildChapelStmt(new CondStmt(new CallExpr("_cond_test", condExpr), thenExpr, elseExpr));
-}
-
-BlockStmt*
-buildFromStmt(Expr* moduleName, Expr * implements) {
-	//Syntax: from A use C implements LessThan; //A is module
-	return buildChapelStmt(new FromStmt(moduleName,implements));
 }
 
 
@@ -505,12 +497,12 @@ FnSymbol* buildIfExpr(Expr* e, Expr* e1, Expr* e2) {
                  new SymExpr(tmp2),
                  new CallExpr(PRIM_LOGICAL_FOLDER,
                               new SymExpr(tmp1),
-                              new CallExpr(PRIM_GET_REF, e1))),
+                              new CallExpr(PRIM_DEREF, e1))),
     new CallExpr(PRIM_MOVE,
                  new SymExpr(tmp2),
                  new CallExpr(PRIM_LOGICAL_FOLDER,
                               new SymExpr(tmp1),
-                              new CallExpr(PRIM_GET_REF, e2)))));
+                              new CallExpr(PRIM_DEREF, e2)))));
   ifFn->insertAtTail(new CallExpr(PRIM_RETURN, tmp2));
   return ifFn;
 }
@@ -932,6 +924,8 @@ buildForallLoopStmt(Expr* indices, Expr* iterExpr, BlockStmt* loopBody) {
   if (fSerial || fSerialForall)
     return buildForLoopStmt(indices, iterExpr, loopBody);
 
+  SET_LINENO(loopBody);
+
   //
   // insert temporary index when elided by user
   //
@@ -1023,6 +1017,7 @@ BlockStmt* buildCoforallLoopStmt(Expr* indices, Expr* iterator, BlockStmt* body)
       tmp = NULL;
   }
 
+  SET_LINENO(body);
   if (onBlock) {
     //
     // optimization of on-statements directly inside coforall-loops
@@ -1112,7 +1107,7 @@ buildAssignment(Expr* lhs, Expr* rhs, const char* op) {
   ltmp->addFlag(FLAG_MAYBE_PARAM);
   stmt->insertAtTail(new DefExpr(ltmp));
   stmt->insertAtTail(new CallExpr(PRIM_MOVE, ltmp,
-                       new CallExpr(PRIM_SET_REF, lhs)));
+                       new CallExpr(PRIM_ADDR_OF, lhs)));
 
   VarSymbol* rtmp = newTemp();
   rtmp->addFlag(FLAG_MAYBE_PARAM);
@@ -1126,7 +1121,7 @@ buildAssignment(Expr* lhs, Expr* rhs, const char* op) {
         new CallExpr("_cast",
           new CallExpr(PRIM_TYPEOF, ltmp),
           new CallExpr(op,
-            new CallExpr(PRIM_GET_REF, ltmp), rtmp))));
+            new CallExpr(PRIM_DEREF, ltmp), rtmp))));
 
   if (strcmp(op, "<<") && strcmp(op, ">>"))
     cast->insertAtHead(
@@ -1136,11 +1131,11 @@ buildAssignment(Expr* lhs, Expr* rhs, const char* op) {
     new CondStmt(
       new CallExpr("_isPrimitiveType",
         new CallExpr(PRIM_TYPEOF,
-          new CallExpr(PRIM_GET_REF, ltmp))),
+          new CallExpr(PRIM_DEREF, ltmp))),
       cast,
       new CallExpr("=", ltmp,
         new CallExpr(op,
-          new CallExpr(PRIM_GET_REF, ltmp), rtmp)));
+          new CallExpr(PRIM_DEREF, ltmp), rtmp)));
 
   // This code performs a rewrite of += and -= for domains at
   // compile-time.
@@ -1180,7 +1175,7 @@ BlockStmt* buildLAndAssignment(Expr* lhs, Expr* rhs) {
   BlockStmt* stmt = buildChapelStmt();
   VarSymbol* ltmp = newTemp();
   stmt->insertAtTail(new DefExpr(ltmp));
-  stmt->insertAtTail(new CallExpr(PRIM_MOVE, ltmp, new CallExpr(PRIM_SET_REF, lhs)));
+  stmt->insertAtTail(new CallExpr(PRIM_MOVE, ltmp, new CallExpr(PRIM_ADDR_OF, lhs)));
   stmt->insertAtTail(new CallExpr("=", ltmp, buildLogicalAndExpr(ltmp, rhs)));
   return stmt;
 }
@@ -1190,7 +1185,7 @@ BlockStmt* buildLOrAssignment(Expr* lhs, Expr* rhs) {
   BlockStmt* stmt = buildChapelStmt();
   VarSymbol* ltmp = newTemp();
   stmt->insertAtTail(new DefExpr(ltmp));
-  stmt->insertAtTail(new CallExpr(PRIM_MOVE, ltmp, new CallExpr(PRIM_SET_REF, lhs)));
+  stmt->insertAtTail(new CallExpr(PRIM_MOVE, ltmp, new CallExpr(PRIM_ADDR_OF, lhs)));
   stmt->insertAtTail(new CallExpr("=", ltmp, buildLogicalOrExpr(ltmp, rhs)));
   return stmt;
 }
@@ -1520,14 +1515,12 @@ buildClassDefExpr(const char* name, Type* type, Expr* inherit, BlockStmt* decls,
   TypeSymbol* ts = new TypeSymbol(name, ct);
   DefExpr* def = new DefExpr(ts);
   ct->addDeclarations(decls);
-  if (isExtern == FLAG_EXTERN || isExtern == FLAG_OLD_EXTERN_KW_USED) {
+  if (isExtern == FLAG_EXTERN) {
     ts->addFlag(FLAG_EXTERN);
     ts->addFlag(FLAG_NO_OBJECT);
     ct->defaultValue=NULL;
     if (inherit)
       USR_FATAL_CONT(inherit, "External types do not currently support inheritance");
-    if (isExtern == FLAG_OLD_EXTERN_KW_USED)
-      USR_WARN(type, "The _extern keyword is deprecated. Use extern (no leading underscore) instead.");
   }
   if (inherit)
     ct->inherits.insertAtTail(inherit);
@@ -1536,21 +1529,21 @@ buildClassDefExpr(const char* name, Type* type, Expr* inherit, BlockStmt* decls,
 
 DefExpr*
 buildInterfaceDefExpr(const char* name,AList* iFormals, Expr* inherit, BlockStmt* decls){
-	InterfaceSymbol* interface = new InterfaceSymbol(name, iFormals);
-	interface->addDeclarations(decls);
-	if(inherit)
-		interface->inherits.insertAtTail(inherit);
-	return new DefExpr(interface);
+  InterfaceSymbol* interface = new InterfaceSymbol(name, iFormals);
+  interface->addDeclarations(decls);
+  if(inherit)
+    interface->inherits.insertAtTail(inherit);
+  return new DefExpr(interface);
 }
 
 AList*
 buildInterfaceFormal(AList* formal_list, DefExpr* new_formal){
-	if (new_formal == NULL)
-		return NULL;
-	else if(formal_list == NULL)
-		formal_list = new AList();
-	formal_list->insertAtTail(new_formal);
-	return formal_list;
+  if (new_formal == NULL)
+    return NULL;
+  else if(formal_list == NULL)
+    formal_list = new AList();
+  formal_list->insertAtTail(new_formal);
+  return formal_list;
 }
 
 DefExpr*
@@ -1649,8 +1642,6 @@ buildFunctionDecl(FnSymbol* fn, RetTag optRetTag, Expr* optRetType,
                   Expr* optWhere, BlockStmt* optFnBody)
 {
   // This clause can be removed when the old _extern keyword is obsoleted. <hilde>
-  if (fn->hasFlag(FLAG_OLD_EXTERN_KW_USED))
-    USR_WARN(fn, "The _extern keyword is deprecated. Use extern (no leading underscore) instead.");
 
   fn->retTag = optRetTag;
   if (optRetTag == RET_VAR)
@@ -1753,7 +1744,7 @@ buildOnStmt(Expr* expr, Expr* stmt) {
     }
   }
 
-  CallExpr* onExpr = new CallExpr(PRIM_GET_REF, extractLocaleID(expr));
+  CallExpr* onExpr = new CallExpr(PRIM_DEREF, extractLocaleID(expr));
 
   BlockStmt* body = toBlockStmt(stmt);
 

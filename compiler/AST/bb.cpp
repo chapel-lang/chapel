@@ -15,27 +15,29 @@ BasicBlock::BasicBlock()
 // The assert tests that the expression we are adding to this basic block
 // has not already been deleted.
 #define BB_ADD(expr)                            \
-  INT_ASSERT(expr);                             \
-  basicBlock->exprs.add(expr)
-
-#define BB_ADD_LS(exprls)                       \
-  for_alist(expr, exprls) {                     \
-    BB_ADD(expr);                               \
-  }
+  do {                                          \
+    INT_ASSERT(expr);                           \
+    basicBlock->exprs.add(expr);                \
+  } while (0)
 
 #define BB_STOP()                               \
-  fn->basicBlocks->add(Steal());
+  fn->basicBlocks->add(Steal())
 
 #define BB_RESTART()                            \
-  BB_STOP();                                    \
-  BB_START()
+  do {                                          \
+    BB_STOP();                                  \
+    BB_START();                                 \
+  } while (0)
 
 #define BBB(stmt)                               \
     buildBasicBlocks(fn, stmt)
 
 #define BB_THREAD(src, dst)                     \
-  dst->ins.add(src);                            \
-  src->outs.add(dst)
+  do {                                          \
+    dst->ins.add(src);                          \
+    src->outs.add(dst);                         \
+  } while (0)
+
 
 //# Statics
 BasicBlock* BasicBlock::basicBlock;
@@ -47,9 +49,26 @@ int BasicBlock::nextid;
 // Returns true if the class invariants have been preserved.
 bool BasicBlock::isOK()
 {
-  // Right now we just test that all entries are valid.
+  // Expressions must be live (non-NULL);
   forv_Vec(Expr, expr, exprs)
     if (expr == 0) return false;
+
+  // Every in edge must have a corresponding out edge in the source block.
+  forv_Vec(BasicBlock, source, ins) {
+    bool found = false;
+    forv_Vec(BasicBlock, bb, source->outs)
+      if (bb == this) { found = true; break; }
+    if (!found) return false;
+  }
+
+  // Every out edge must have a corresponding in edge in the target block.
+  forv_Vec(BasicBlock, target, outs) {
+    bool found = false;
+    forv_Vec(BasicBlock, bb, target->ins)
+      if (bb == this) { found = true; break; }
+    if (!found) return false;
+  }
+
   return true;
 }
 
@@ -79,9 +98,11 @@ BasicBlock* BasicBlock::Steal()
 void buildBasicBlocks(FnSymbol* fn)
 {
   BasicBlock::reset(fn);
-  BasicBlock::basicBlock = new BasicBlock();
-  BasicBlock::buildBasicBlocks(fn, fn->body);
-  fn->basicBlocks->add(BasicBlock::Steal());
+  BasicBlock::basicBlock = new BasicBlock();    // BB_START();
+  BasicBlock::buildBasicBlocks(fn, fn->body);   // BBB(fn->body);
+  fn->basicBlocks->add(BasicBlock::Steal());    // BB_STOP();
+
+  INT_ASSERT(verifyBasicBlocks(fn));
 }
 
 void BasicBlock::buildBasicBlocks(FnSymbol* fn, Expr* stmt)
@@ -134,7 +155,9 @@ void BasicBlock::buildBasicBlocks(FnSymbol* fn, Expr* stmt)
       BB_THREAD(elseBottom, basicBlock);
     }
     else
+    {
       BB_THREAD(top, basicBlock);
+    }
     BB_THREAD(thenBottom, basicBlock);
   } else if (GotoStmt* s = toGotoStmt(stmt)) {
     LabelSymbol* label = toLabelSymbol(toSymExpr(s->label)->var);
@@ -173,8 +196,9 @@ void BasicBlock::buildBasicBlocks(FnSymbol* fn, Expr* stmt)
         }
       }
       labelMaps.put(label, basicBlock);
-    } else
+    } else {
       BB_ADD(stmt);
+    }
   }
 }
 

@@ -1,6 +1,6 @@
 
 config const testfile="test.bin";
-var f = open(testfile, iomode.wr);
+var f = open(testfile, iomode.cwr);
 
 {
     var w = f.writer(kind=ionative);

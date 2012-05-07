@@ -16,15 +16,13 @@ bool printPasses = false;
 struct PassInfo {
   void (*fn)(void);
   const char *name;
+  char log_tag;
 };
 
-#define FIRST {NULL, NULL}
-#define LAST {NULL, NULL}
-#define RUN(x) {x, #x}
 #include "passlist.h"
 
 
-static void runPass(const char *passName, void (*pass)(void)) {
+static void runPass(const char *passName, void (*pass)(void), char log_tag) {
   static struct timeval startTimeBetweenPasses;
   static struct timeval stopTimeBetweenPasses;
   static double timeBetweenPasses = -1.0;
@@ -73,6 +71,8 @@ static void runPass(const char *passName, void (*pass)(void)) {
   if (fdump_html) {
     html_view(passName);
   }
+  if (logging(log_tag))
+    dump_ast(passName, currentPassNo);
   if (printPasses) {
     gettimeofday(&startTimeBetweenPasses, &timezone);
   }
@@ -102,8 +102,13 @@ static void dump_index_footer(FILE* f) {
 }
 
 static void setupLogfiles() {
+  if (logging() || fdump_html || *deletedIdFilename)
+    ensureDirExists(log_dir, "ensuring directory for log files exists");
+
+  if (log_dir[strlen(log_dir)-1] != '/') 
+    strcat(log_dir, "/");
+
   if (fdump_html) {
-    ensureDirExists(log_dir, "ensuring directory for html files exists");
     if (!(html_index_file = fopen(astr(log_dir, "index.html"), "w"))) {
       USR_FATAL("cannot open html index file \"%s\" for writing", astr(log_dir, "index.html"));
     }
@@ -140,11 +145,28 @@ void runPasses(void) {
   PassInfo* pass = passlist+1;  // skip over FIRST
   while (pass->name != NULL) {
     advanceCurrentPass(pass->name);
-    runPass(pass->name, pass->fn);
+    runPass(pass->name, pass->fn, pass->log_tag);
     USR_STOP(); // quit if fatal errors were encountered in pass
     pass++;
   }
   advanceCurrentPass("finishing up");
   destroyAst();
   teardownLogfiles();
+}
+
+// Suck the pass flags out of the pass list, so that args to the logging command
+// can be checked for validity.
+// The pass letters are used by the driver to arrange for dumping AST logs
+// of selected passes.
+// This routine also verifies that each non-NUL flag is unique.
+void initLogFlags(Vec<char>& valid_log_flags) {
+  PassInfo* pass = passlist+1;  // skip over FIRST
+  while (pass->name != NULL) {
+    char tag = pass->log_tag;
+    if (tag != NUL) {
+      INT_ASSERT(!valid_log_flags.set_in(tag));
+      valid_log_flags.set_add(tag);
+    }
+    pass++;
+  }
 }

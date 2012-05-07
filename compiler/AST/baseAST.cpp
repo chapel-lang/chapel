@@ -43,8 +43,8 @@ void printStatistics(const char* pass) {
 
   foreach_ast(decl_counters);
 
-  int nStmt = nCondStmt + nBlockStmt + nGotoStmt + nImplementsStmt + nFromStmt;
-  int kStmt = kCondStmt + kBlockStmt + kGotoStmt + kImplementsStmt + kFromStmt;
+  int nStmt = nCondStmt + nBlockStmt + nGotoStmt + nImplementsStmt;
+  int kStmt = kCondStmt + kBlockStmt + kGotoStmt + kImplementsStmt;
   int nExpr = nUnresolvedSymExpr + nSymExpr + nDefExpr + nCallExpr + nNamedExpr;
   int kExpr = kUnresolvedSymExpr + kSymExpr + kDefExpr + kCallExpr + kNamedExpr;
   int nSymbol = nModuleSymbol+nVarSymbol+nArgSymbol+nTypeSymbol+nFnSymbol+nEnumSymbol+nLabelSymbol + nInterfaceSymbol;
@@ -53,7 +53,7 @@ void printStatistics(const char* pass) {
   int kType = kPrimitiveType+kEnumType+kClassType;
 
   if (strstr(fPrintStatistics, "n"))
-    fprintf(stderr, "   Interfaces: %d\n", kInterfaceSymbol);  //FIXME: Make this part of statistics
+      fprintf(stderr, "   Interfaces: %d\n", kInterfaceSymbol);  //FIXME: Make this part of statistics
 
   fprintf(stderr, "%7d asts (%6dK) %s\n", nStmt+nExpr+nSymbol+nType, kStmt+kExpr+kSymbol+kType, pass);
 
@@ -339,8 +339,6 @@ const char* astTagName[E_BaseAST+1] = {
   "CallExpr",
   "NamedExpr",
   "BlockStmt",
-  "ImplementsStmt",
-  "FromStmt",
   "CondStmt",
   "GotoStmt",
   "Expr",
@@ -350,7 +348,6 @@ const char* astTagName[E_BaseAST+1] = {
   "ArgSymbol",
   "TypeSymbol",
   "FnSymbol",
-  "InterfaceSymbol",
   "EnumSymbol",
   "LabelSymbol",
   "Symbol",

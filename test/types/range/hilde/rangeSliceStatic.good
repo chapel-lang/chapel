@@ -1,1 +1,1 @@
-rangeSliceStatic.chpl:8: error: unresolved access of 'int' by '(range(int,boundedLow,false))'
+rangeSliceStatic.chpl:8: error: unresolved access of 'int(64)' by '(range(int(64),boundedLow,false))'

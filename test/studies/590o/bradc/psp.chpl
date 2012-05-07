@@ -6,6 +6,8 @@ var A: [D] real = [(i,j) in D] i + j/10.0;
 
 writeln("A is: ", A);
 
-for (aRow, aCol) in [ A[1, ..], A[.., 1] ] {
-  writeln("aRow is: ", aRow, "; aCol is: ", aCol);
+for aRow in A[1, ..] {
+  for aCol in A[.., 1] {
+    writeln("aRow is: ", aRow, "; aCol is: ", aCol);
+  }
 }

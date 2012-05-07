@@ -206,8 +206,8 @@ proc Cyclic.dsiCreateReindexDist(newSpace, oldSpace) {
 //
 // Given a tuple of scalars of type t or range(t) match the shape but
 // using types rangeType and scalarType e.g. the call:
-// _matchArgsShape(range(int), int, (1:int(64), 1:int(64)..5, 1:int(64)..5))
-// returns the type: (int, range(int), range(int))
+// _matchArgsShape(range(int(32)), int(32), (1:int(64), 1:int(64)..5, 1:int(64)..5))
+// returns the type: (int(32), range(int(32)), range(int(32)))
 //
 proc _cyclic_matchArgsShape(type rangeType, type scalarType, args) type {
   proc tuple(type t ...) type return t;
@@ -617,6 +617,7 @@ proc CyclicArr.dsiRankChange(d, param newRank: int, param stridable: bool, args)
 proc CyclicArr.dsiReindex(d: CyclicDom) {
   var alias = new CyclicArr(eltType=eltType, rank=rank, idxType=d.idxType,
                             stridable=d.stridable, dom=d);
+  const sameDom = d==dom;
   var thisid = this.locale.id;
   coforall i in dom.dist.targetLocDom {
     on dom.dist.targetLocs(i) {
@@ -627,9 +628,26 @@ proc CyclicArr.dsiReindex(d: CyclicDom) {
                                          rank=rank, myElems=>locAlias);
       if thisid == here.id then
         alias.myLocArr = alias.locArr[i];
+      if doRADOpt {
+        if sameDom {
+          // If we the reindex domain is the same as that of this array,
+          //  the RAD cache will be the same you can just copy the values
+          //  directly into the alias's RAD cache
+          if locArr[i].locRAD {
+            alias.locArr[i].locRAD = new LocRADCache(eltType, rank, idxType,
+                                                     dom.dist.targetLocDom);
+            alias.locArr[i].locCyclicRAD = new LocCyclicRADCache(rank, idxType,
+                                                                 dom.dist.startIdx,
+                                                                 dom.dist.targetLocDom);
+            alias.locArr[i].locRAD.RAD = locArr[i].locRAD.RAD;
+            alias.locArr[i].locRAD.ddata = locArr[i].locRAD.ddata;
+          }
+        }
+      }
     }
   }
-  if doRADOpt then alias.setupRADOpt();
+  if doRADOpt then
+    if !sameDom then alias.setupRADOpt();
   return alias;
 }
 
@@ -644,19 +662,20 @@ proc CyclicArr.dsiLocalSlice(ranges) {
 }
 
 proc CyclicArr.dsiDisplayRepresentation() {
-  if debugCyclicDist && doRADOpt then
-    for loc in dom.dist.targetLocDom do on loc do
-      for l in dom.dist.targetLocDom do
-        if l != here.id then
-          writeln(loc, ": myRADCache(", l,"): ", locArr(l).myRADCache);
-
-  for tli in dom.dist.targetLocDom do
+  for tli in dom.dist.targetLocDom {
     writeln("locArr[", tli, "].myElems = ", for e in locArr[tli].myElems do e);
+    writeln("locArr[", tli, "].locRAD = ", locArr[tli].locRAD.RAD);
+    writeln("locArr[", tli, "].locCyclicRAD = ", locArr[tli].locCyclicRAD);
+  }
   dom.dsiDisplayRepresentation();
 }
 
 proc CyclicArr.dsiGetBaseDom() return dom;
 
+//
+// NOTE: Each locale's myElems array be initialized prior to setting up
+// the RAD cache.
+//
 proc CyclicArr.setupRADOpt() {
   if !stridable { // for now, no support for strided cyclic arrays
     for localeIdx in dom.dist.targetLocDom {
@@ -703,8 +722,7 @@ proc CyclicArr.dsiPrivatize(privatizeData) {
 }
 
 
-pragma "inline"
-proc _remoteAccessData.getDataIndex(param stridable, myStr: rank*idxType, ind: rank*idxType, startIdx, dimLen) {
+inline proc _remoteAccessData.getDataIndex(param stridable, myStr: rank*idxType, ind: rank*idxType, startIdx, dimLen) {
   // modified from DefaultRectangularArr
   var sum = origin;
   if stridable {

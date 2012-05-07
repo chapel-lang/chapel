@@ -9,8 +9,8 @@ and array elements are mapped to locales, how they are stored in
 memory, and how operations such as accesses, iteration, and slicing
 are performed.  Each domain and array is mapped using some domain map.
 
-\index{layout}
-\index{distribution}
+\index{layouts (see also domain maps, layouts)}
+\index{distributions (see also domain maps, distributions)}
 \index{domain maps!layout}
 \index{domain maps!distribution}
 A domain map is either a \emph{layout} or a \emph{distribution}.
@@ -41,6 +41,8 @@ Domain maps are presented as follows:
 
 \section{Domain Maps for Domain Types}
 \label{Domain_Maps_For_Types}
+\index{domain maps for domain types}
+\index{types!domains!domain maps for}
 
 Each domain type has a domain map associated with it.
 This domain map is used to map all domain values of this type
@@ -143,6 +145,8 @@ type BlockDom = domain(2) dmapped new dmap(new Block([1..5,1..6]));
 
 \section{Domain Maps for Domain Values}
 \label{Domain_Maps_For_Values}
+\index{domain maps!for domain values}
+\index{values!domains!domain maps for}
 
 A domain value is always mapped using the domain map of that value's type.
 The type inferred for a domain literal (\rsec{Rectangular_Domain_Values})
@@ -183,9 +187,9 @@ will be mapped using a Block distribution.
 
 \section{Domain Maps for Arrays}
 \label{Domain_Maps_For_Arrays}
-
 \index{domain maps!for arrays}
 \index{arrays!domain maps}
+
 Each array is mapped using the domain map of the domain
 over which the array was declared.
 
@@ -204,6 +208,7 @@ distribution from the type of \chpl{Dom}.
 \label{Domain_Maps_Not_Assigned}
 \index{domain maps!domain assignment}
 \index{domains!assignment}
+\index{assignment!domain}
 
 Domain assignment (\rsec{Domain_Assignment}) transfers only the index
 set of the right-hand side expression. The implementation of the

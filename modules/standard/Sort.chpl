@@ -142,8 +142,7 @@ proc SelectionSort(Data: [?Dom], doublecheck=false) where Dom.rank == 1 {
   if (doublecheck) then VerifySort(Data, "SelectionSort");
 }
 
-pragma "inline"
-proc VerifySort(Data: [?Dom], str: string) {
+inline proc VerifySort(Data: [?Dom], str: string) {
   for i in Dom.low..Dom.high-1 do
     if (Data(i+1) < Data(i)) then
       halt(str, " did not sort properly (", i, "): ", Data);

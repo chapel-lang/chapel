@@ -1,6 +1,5 @@
 \sekshun{Statements}
 \label{Statements}
-
 \index{statement}
 
 Chapel is an imperative language with statements that may have side
@@ -69,7 +68,6 @@ and additionally as follows:
 
 \section{Blocks}
 \label{Blocks}
-
 \index{block}
 
 A block is a statement or a possibly empty list of statements that
@@ -91,9 +89,9 @@ is in a cobegin statement~(\rsec{Cobegin}).
 
 \section{Expression Statements}
 \label{Expression_Statements}
-
+\index{expressions!statement}
 \index{expression statement}
-\index{expression!as a statement}
+\index{statements!expression}
 The expression statement evaluates an expression solely for side
 effects. The syntax for an expression statement is given by
 \begin{syntax}
@@ -104,12 +102,13 @@ expression-statement:
 \section{Assignment Statements}
 \label{Assignment_Statements}
 \index{assignment}
+\index{statements!assignment}
 
 An assignment statement assigns the value of an expression to another
 expression, for
 example, a variable.  Assignment statements are given by
 
-\index{=@\chpl{=}}
+\index{= (see also assignment)@\chpl{=} (see also assignment)}
 \index{+=@\chpl{+=}}
 \index{-=@\chpl{-=}}
 \index{*=@\chpl{*=}}
@@ -133,7 +132,7 @@ assignment-operator: one of
 \end{syntax}
 
 The expression on the left-hand side of the assignment operator must
-be a valid lvalue~(\rsec{lvalue}).  It is evaluated before the
+be a valid lvalue~(\rsec{LValue_Expressions}).  It is evaluated before the
 expression on the right-hand side of the assignment operator, which
 can be any expression.
 
@@ -181,11 +180,14 @@ operator is defined on \chpl{int(32)}, not \chpl{int(8)}.
 \section{The Swap Statement}
 \label{The_Swap_Statement}
 \index{swap!statement}
+\index{statements!swap}
 \index{swap!operator}
+\index{operators!swap}
+
 % TODO: if appropriate, define swap as a sequence of three assignments
 The swap statement indicates to swap the values in the expressions
 on either side of the swap operator.  Since both expressions are assigned
-to, each must be a valid lvalue expression~(\rsec{lvalue}).
+to, each must be a valid lvalue expression~(\rsec{LValue_Expressions}).
 \begin{syntax}
 swap-statement:
   lvalue-expression swap-operator lvalue-expression
@@ -214,11 +216,12 @@ a = t;
 
 \section{The Conditional Statement}
 \label{The_Conditional_Statement}
-
+\index{statments!conditional}
 \index{if@\chpl{if}}
 \index{then@\chpl{then}}
 \index{else@\chpl{else}}
-\index{conditional statement}
+\index{conditional statements}
+
 The conditional statement allows execution to choose between two
 statements based on the evaluation of an expression of \chpl{bool}
 type. The syntax for a conditional statement is given by
@@ -255,9 +258,10 @@ scope whether or not an explicit block surrounds it.
 
 \section{The Select Statement}
 \label{The_Select_Statement}
-
 \index{select@\chpl{select}}
 \index{when@\chpl{when}}
+\index{statements!select@\chpl{select}}
+\index{statements!when@\chpl{when}}
 
 The select statement is a multi-way variant of the conditional
 statement.  The syntax is given by:
@@ -296,9 +300,9 @@ whether or not an explicit block surrounds it.
 
 \section{The While Do and Do While Loops}
 \label{The_While_and_Do_While_Loops}
-
 \index{while loops}
 \index{while@\chpl{while}}
+\index{statements!while@\chpl{while}}
 
 There are two variants of the while loop in Chapel.  The syntax of the
 while-do loop is given by:
@@ -369,9 +373,9 @@ Scope of while loop:
 
 \section{The For Loop}
 \label{The_For_Loop}
-
-\index{for@\chpl{for}}
 \index{for loops}
+\index{for@\chpl{for}}
+\index{statements!for@\chpl{for}}
 
 The for loop iterates over ranges, domains, arrays, iterators, or any
 class that implements an iterator named \chpl{these}.  The syntax of
@@ -409,6 +413,7 @@ components of the tuple must support zipper iteration.
 \subsection{Zipper Iteration}
 \label{Zipper_Iteration}
 \index{zipper iteration}
+\index{iteration!zipper}
 
 When multiple iterators are iterated over in a zipper context, on each
 iteration, each expression is iterated over, the values are returned
@@ -435,7 +440,7 @@ is
 
 \subsection{Parameter For Loops}
 \label{Parameter_For_Loops}
-
+\index{statements!param for}
 \index{for loops!parameters}
 \index{for@\chpl{for}}
 \index{param@\chpl{param}}
@@ -458,9 +463,13 @@ parameters.  The loop is then unrolled for each iteration.
 
 \section{The Break, Continue and Label Statements}
 \label{Label_Break_Continue}
+\index{statements!jumps}
 \index{label@\chpl{label}}
 \index{break@\chpl{break}}
 \index{continue@\chpl{continue}}
+\index{statements!label@\chpl{label}}
+\index{statements!break@\chpl{break}}
+\index{statements!continue@\chpl{continue}}
 
 The break- and continue-statements are used to alter the flow of control within a
 loop construct.  A break-statement causes flow to exit the containing loop and
@@ -523,6 +532,7 @@ label outer for i in 1..n {
 \section{The Use Statement}
 \label{The_Use_Statement}
 \index{use@\chpl{use}}
+\index{statements!use@\chpl{use}}
 \index{modules!using}
 
 The use statement makes the symbols defined by a module available
@@ -591,7 +601,7 @@ In M1's foo.
 
 \section{The Type Select Statement}
 \label{The_Type_Select_Statement}
-
+\index{statements!type select}
 \index{type select statements}
 
 A type select statement has two uses.  It can be used to determine the
@@ -655,6 +665,7 @@ writetype(z);
 writetype(coord);
 writetype(yes);
 writetype("no");
+writetype(here);
 
 proc writetype(x) {
   type select x {
@@ -664,6 +675,9 @@ proc writetype(x) {
     when complex do writeln("Complex type");
     when string do writeln("String type");
     when bool do writeln("Boolean type");
+    when imag do writeln("Imag type");
+    when locale do writeln("Locale type");
+    when void do writeln("Void type");
     otherwise writeln("Non-primitive type");
   }
 }
@@ -675,11 +689,13 @@ Integer type
 Non-primitive type
 Boolean type
 String type
+Locale type
 \end{chapelprintoutput}
 \end{chapelexample}
 
 \section{The Empty Statement}
 \label{The_Empty_Statement}
+\index{statements!empty}
 
 An empty statement has no effect.  The syntax of an empty statement is
 given by

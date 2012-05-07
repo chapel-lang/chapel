@@ -12,7 +12,6 @@ the specification will be expanded regarding parallel iterators soon.
 
 \section{Iterator Definitions}
 \label{Iterator_Function_Definitions}
-\index{iterator definitions}
 \index{iterators!definition}
 
 The syntax to declare an iterator is given
@@ -42,8 +41,8 @@ a procedure.
 
 \section{The Yield Statement}
 \label{The_Yield_Statement}
-\index{iterators!yield@\chpl{yield}}
 \index{yield@\chpl{yield}}
+\index{iterators!yield@\chpl{yield}}
 
 The yield statement can only appear in iterators.  The syntax of the
 yield statement is given by
@@ -67,7 +66,6 @@ An iterator need not contain any yield statements.
 
 \section{Iterator Calls}
 \label{Iterator_Calls}
-\index{iterator calls}
 \index{iterators!calls}
 
 Iterators are invoked using regular call expressions:
@@ -85,6 +83,8 @@ However, the result of an iterator call depends upon its context, as described b
 
 \subsection{Iterators in For and Forall Loops}
 \label{Iterators_in_For_and_Forall_Loops}
+\index{iterators!in for loops}
+\index{iterators!in forall loops}
 
 When an iterator is accessed via a for or forall loop, the iterator is
 evaluated alongside the loop body in an interleaved manner.  For each
@@ -163,7 +163,7 @@ proc Tree.writeThis(x: Writer)
   var first = true;
   for node in postorder(tree) {
     if first then first = false;
-      else " ".writeThis(x);
+      else x.write(" ");
     write(node);
   }
 }

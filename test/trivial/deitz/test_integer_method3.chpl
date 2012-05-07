@@ -1,8 +1,8 @@
 proc int.print() {
-  writeln("int.print = ", this);
+  writeln("int(32).print = ", this);
 }
 
 var i : int = 12;
 i.print();
-var j : int(64) = 14;
+var j : uint = 14;
 j.print();

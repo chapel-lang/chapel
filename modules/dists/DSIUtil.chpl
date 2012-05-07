@@ -1,17 +1,14 @@
 // Useful functions for implementing distributions
 
-pragma "inline"
-proc getDataParTasksPerLocale() {
+inline proc getDataParTasksPerLocale() {
   return dataParTasksPerLocale;
 }
 
-pragma "inline"
-proc getDataParIgnoreRunningTasks() {
+inline proc getDataParIgnoreRunningTasks() {
   return dataParIgnoreRunningTasks;
 }
 
-pragma "inline"
-proc getDataParMinGranularity() {
+inline proc getDataParMinGranularity() {
   return dataParMinGranularity;
 }
 
@@ -23,7 +20,7 @@ proc _computeChunkStuff(maxTasks, ignoreRunning, minSize, ranges,
                         param adjustToOneDim = true): (int,int)
 {
   param rank=ranges.size;
-  type EC = uint(64); // type for element counts
+  type EC = uint; // type for element counts
   var numElems = 1:EC;
   for param i in 1..rank do {
     numElems *= ranges(i).length:EC;
@@ -68,7 +65,7 @@ proc _computeNumChunks(maxTasks, ignoreRunning, minSize, numElems): int {
   if numElems <= 0 then
     return 0;
 
-  type EC = uint(64); // type for element counts
+  type EC = uint; // type for element counts
   const unumElems = numElems:EC;
   var numChunks = maxTasks:int;
   if !ignoreRunning {
@@ -104,7 +101,13 @@ proc _computeNumChunks(numElems): int {
 
 // Divide 1..numElems into (almost) equal numChunk pieces
 // and return myChunk-th piece.
-proc _computeChunkStartEnd(numElems, numChunks, myChunk) {
+proc _computeChunkStartEnd(nElems, nChunks, myCnk): 2*nElems.type {
+  // the type for intermediate computations
+  type IT = if nElems.type == uint then uint else int;
+  const (numElems, numChunks, myChunk) = (nElems:IT, nChunks:IT, myCnk:IT);
+  // the result type
+  type RT = nElems.type;
+
   var div = numElems / numChunks;
   var rem = numElems % numChunks;
 
@@ -116,13 +119,13 @@ proc _computeChunkStartEnd(numElems, numChunks, myChunk) {
     var endIx = myChunk * (div + 1);
     //writeln("_computeChunkStartEnd", (numElems, numChunks, myChunk),
     // " = ", endIx - div, "..", endIx);
-    return (endIx - div, endIx);
+    return ((endIx - div):RT, (endIx):RT);
   } else {
     // (div) elements per chunk
     var startIx1 = numElems - (numChunks - myChunk + 1) * div;
     //writeln("_computeChunkStartEnd", (numElems, numChunks, myChunk),
     // " = ", startIx1 + 1, "..", startIx1 + div);
-    return (startIx1 + 1, startIx1 + div);
+    return ((startIx1 + 1):RT, (startIx1 + div):RT);
   }
 }
 
@@ -138,10 +141,10 @@ proc _computeBlock(numelems, numblocks, blocknum, wayhi,
 
   const blo =
     if blocknum == 0 then waylo
-    else lo + intCeilXDivByY(numelems:uint(64) * blocknum:uint(64), numblocks:uint(64)):lo.type;
+    else lo + intCeilXDivByY(numelems:uint * blocknum:uint, numblocks:uint):lo.type;
   const bhi =
     if blocknum == numblocks - 1 then wayhi
-    else lo + intCeilXDivByY(numelems:uint(64) * (blocknum+1):uint(64), numblocks:uint(64)):lo.type - 1;
+    else lo + intCeilXDivByY(numelems:uint * (blocknum+1):uint, numblocks:uint):lo.type - 1;
 
   return (blo, bhi);
 }

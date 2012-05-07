@@ -4,94 +4,108 @@
 #include "type.h"
 
 static Type*
-returnInfoBool(CallExpr *call, BaseAST *arg1, BaseAST *arg2) {
+returnInfoBool(CallExpr* call) {
   return dtBool;
 }
 
 static Type*
-returnInfoVoid(CallExpr *call, BaseAST *arg1, BaseAST *arg2) {
+returnInfoVoid(CallExpr* call) {
   return dtVoid;
 }
 
 static Type*
-returnInfoUnknown(CallExpr *call, BaseAST *arg1, BaseAST *arg2) {
+returnInfoUnknown(CallExpr* call) {
   return dtUnknown;
 }
 
 static Type*
-returnInfoString(CallExpr *call, BaseAST *arg1, BaseAST *arg2) {
+returnInfoString(CallExpr* call) {
   return dtString;
 }
 
 static Type*
-returnInfoInt32(CallExpr *call, BaseAST *arg1, BaseAST *arg2) {
+returnInfoInt32(CallExpr* call) {
   return dtInt[INT_SIZE_32];
 }
 
 static Type*
-returnInfoInt64(CallExpr *call, BaseAST *arg1, BaseAST *arg2) {
+returnInfoInt64(CallExpr* call) {
   return dtInt[INT_SIZE_64];
 }
 
+//
+// Since 'int' is equivalent to 'int(64)' currently, this doesn't do
+// anything different than returnInfoInt64 does, but it's intended to
+// be used in cases where a primitive returns a type that ought to
+// track the default 'int' size rather than being hard-coded to a
+// specific bit-width.
+//
 static Type*
-returnInfoUInt32(CallExpr *call, BaseAST *arg1, BaseAST *arg2) { // unexecuted none/gasnet on 4/25/08
+returnInfoDefaultInt(CallExpr* call) {
+  return returnInfoInt64(call);
+}
+
+static Type*
+returnInfoUInt32(CallExpr* call) { // unexecuted none/gasnet on 4/25/08
   return dtUInt[INT_SIZE_32];
 }
 
-/* Currently unused
+/*
 static Type*
-returnInfoUInt64(CallExpr *call, BaseAST *arg1, BaseAST *arg2) {
+returnInfoUInt64(CallExpr* call) {
   return dtUInt[INT_SIZE_64];
+}
+
+static Type*
+returnInfoReal32(CallExpr* call) {
+  return dtReal[FLOAT_SIZE_32];
+}
+
+static Type*
+returnInfoReal64(CallExpr* call) {
+  return dtReal[FLOAT_SIZE_64];
 }
 */
 
 static Type*
-returnInfoReal64(CallExpr *call, BaseAST *arg1, BaseAST *arg2) {
-  return dtReal[FLOAT_SIZE_64];
-}
-
-static Type*
-returnInfoTaskID(CallExpr *call, BaseAST *arg1, BaseAST *arg2) {
+returnInfoTaskID(CallExpr* call) {
   return dtTaskID;
 }
 
 static Type*
-returnInfoComplexField(CallExpr *call, BaseAST *arg1, BaseAST *arg2) {  // for get real/imag primitives
-  Type *t = arg1->getValType();
+returnInfoComplexField(CallExpr* call) {  // for get real/imag primitives
+  Type *t = call->get(1)->getValType();
   if (t == dtComplex[COMPLEX_SIZE_64]) {
     return dtReal[FLOAT_SIZE_32]->refType;
   } else if (t == dtComplex[COMPLEX_SIZE_128]) {
     return dtReal[FLOAT_SIZE_64]->refType;
   } else {
-    //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    //FIXME: After congruence this won't point to the correct place
-    //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    INT_FATAL( arg1, "unsupported complex size");
+    INT_FATAL( call, "unsupported complex size");
   }
   return dtUnknown;
 }
 
 static Type*
-returnInfoFirst(CallExpr *call, BaseAST *arg1, BaseAST *arg2) {
-  return arg1->typeInfo();
+returnInfoFirst(CallExpr* call) {
+  return call->get(1)->typeInfo();
 }
 
 static Type*
-returnInfoFirstDeref(CallExpr *call, BaseAST *arg1, BaseAST *arg2) {
-  return arg1->getValType();
+returnInfoFirstDeref(CallExpr* call) {
+  return call->get(1)->getValType();
 }
 
 static Type*
-returnIteratorType(CallExpr *call, BaseAST *arg1, BaseAST *arg2) {
-  Type* ict = arg1->typeInfo();
+returnIteratorType(CallExpr* call) {
+  Type* ict = call->get(1)->typeInfo();
   INT_ASSERT(ict->symbol->hasFlag(FLAG_ITERATOR_CLASS));
   return ict->defaultConstructor->getReturnSymbol()->type;
 }
 
 static Type*
-returnInfoCast(CallExpr *call, BaseAST *arg1, BaseAST *arg2) {
-  Type* t1 = arg1->typeInfo();
-  Type* t2 = arg2->typeInfo();
+returnInfoCast(CallExpr* call) {
+  Type* t1 = call->get(1)->typeInfo();
+  Type* t2 = call->get(2)->typeInfo();
   if (t2->symbol->hasFlag(FLAG_WIDE_CLASS))
     if (wideClassMap.get(t1))
       t1 = wideClassMap.get(t1);
@@ -102,16 +116,16 @@ returnInfoCast(CallExpr *call, BaseAST *arg1, BaseAST *arg2) {
 }
 
 static Type*
-returnInfoVal(CallExpr *call, BaseAST *arg1, BaseAST *arg2) {
-  ClassType* ct = toClassType(arg1->typeInfo());
+returnInfoVal(CallExpr* call) {
+  ClassType* ct = toClassType(call->get(1)->typeInfo());
   if (!ct || !ct->symbol->hasFlag(FLAG_REF))
     INT_FATAL(call, "attempt to get value type of non-reference type");
   return ct->getField(1)->type;
 }
 
 static Type*
-returnInfoRef(CallExpr *call, BaseAST *arg1, BaseAST *arg2) {
-  Type* t = arg1->typeInfo();
+returnInfoRef(CallExpr* call) {
+  Type* t = call->get(1)->typeInfo();
   if (!t->refType)
     INT_FATAL(call, "invalid attempt to get reference type");
   return t->refType;
@@ -119,9 +133,9 @@ returnInfoRef(CallExpr *call, BaseAST *arg1, BaseAST *arg2) {
 
 // NEEDS TO BE FINISHED WHEN PRIMITIVES ARE REDONE
 static Type*
-returnInfoNumericUp(CallExpr *call, BaseAST *arg1, BaseAST *arg2) {
-  Type* t1 = arg1->typeInfo();
-  Type* t2 = arg2->typeInfo();
+returnInfoNumericUp(CallExpr* call) {
+  Type* t1 = call->get(1)->typeInfo();
+  Type* t2 = call->get(2)->typeInfo();
   if (is_int_type(t1) && is_real_type(t2))
     return t2;
   if (is_real_type(t1) && is_int_type(t2))
@@ -134,8 +148,8 @@ returnInfoNumericUp(CallExpr *call, BaseAST *arg1, BaseAST *arg2) {
 }
 
 static Type*
-returnInfoArrayIndexValue(CallExpr *call, BaseAST *arg1, BaseAST *arg2) {
-  SymExpr* sym = toSymExpr(arg1);
+returnInfoArrayIndexValue(CallExpr* call) {
+  SymExpr* sym = toSymExpr(call->get(1));
   INT_ASSERT(sym);
   Type* type = sym->var->type;
   if (type->symbol->hasFlag(FLAG_WIDE_CLASS))
@@ -152,13 +166,13 @@ returnInfoArrayIndexValue(CallExpr *call, BaseAST *arg1, BaseAST *arg2) {
 }
 
 static Type*
-returnInfoArrayIndex(CallExpr *call, BaseAST *arg1, BaseAST *arg2) {
-  return returnInfoArrayIndexValue(call, arg1, arg2)->refType;
+returnInfoArrayIndex(CallExpr* call) {
+  return returnInfoArrayIndexValue(call)->refType;
 }
 
 static Type*
-returnInfoChplAlloc(CallExpr *call, BaseAST *arg1, BaseAST *arg2) {
-  SymExpr* sym = toSymExpr(arg1);
+returnInfoChplAlloc(CallExpr* call) {
+  SymExpr* sym = toSymExpr(call->get(1));
   INT_ASSERT(sym);
   Type* type = sym->var->type;
   if (type->symbol->hasFlag(FLAG_WIDE_CLASS))
@@ -167,8 +181,8 @@ returnInfoChplAlloc(CallExpr *call, BaseAST *arg1, BaseAST *arg2) {
 }
 
 static Type*
-returnInfoGetMember(CallExpr *call, BaseAST *arg1, BaseAST *arg2) {
-  SymExpr* sym1 = toSymExpr(arg1);
+returnInfoGetMember(CallExpr* call) {
+  SymExpr* sym1 = toSymExpr(call->get(1));
   if (!sym1)
     INT_FATAL(call, "bad member primitive");
   ClassType* ct = toClassType(sym1->var->type);
@@ -176,7 +190,7 @@ returnInfoGetMember(CallExpr *call, BaseAST *arg1, BaseAST *arg2) {
     ct = toClassType(ct->getValType());
   if (!ct)
     INT_FATAL(call, "bad member primitive");
-  SymExpr* sym = toSymExpr(arg2);
+  SymExpr* sym = toSymExpr(call->get(2));
   if (!sym)
     INT_FATAL(call, "bad member primitive");
   VarSymbol* var = toVarSymbol(sym->var);
@@ -195,23 +209,23 @@ returnInfoGetMember(CallExpr *call, BaseAST *arg1, BaseAST *arg2) {
 }
 
 static Type*
-returnInfoGetTupleMember(CallExpr *call, BaseAST *arg1, BaseAST *arg2) {
-  ClassType* ct = toClassType(arg1->getValType());
+returnInfoGetTupleMember(CallExpr* call) {
+  ClassType* ct = toClassType(call->get(1)->getValType());
   INT_ASSERT(ct && ct->symbol->hasFlag(FLAG_STAR_TUPLE));
   return ct->getField("x1")->type;
 }
 
 static Type*
-returnInfoGetTupleMemberRef(CallExpr *call, BaseAST *arg1, BaseAST *arg2) {
-  Type* type = returnInfoGetTupleMember(call, arg1, arg2);
+returnInfoGetTupleMemberRef(CallExpr* call) {
+  Type* type = returnInfoGetTupleMember(call);
   return (type->refType) ? type->refType : type;
 }
 
 static Type*
-returnInfoGetMemberRef(CallExpr *call, BaseAST *arg1, BaseAST *arg2) {
-  ClassType* ct = toClassType(arg1->getValType());
+returnInfoGetMemberRef(CallExpr* call) {
+  ClassType* ct = toClassType(call->get(1)->getValType());
   INT_ASSERT(ct);
-  SymExpr* se = toSymExpr(arg2);
+  SymExpr* se = toSymExpr(call->get(2));
   INT_ASSERT(se);
   VarSymbol* var = toVarSymbol(se->var);
   INT_ASSERT(var);
@@ -228,7 +242,7 @@ returnInfoGetMemberRef(CallExpr *call, BaseAST *arg1, BaseAST *arg2) {
 }
 
 static Type*
-returnInfoEndCount(CallExpr *call, BaseAST *arg1, BaseAST *arg2) {
+returnInfoEndCount(CallExpr* call) {
   static Type* endCountType = NULL;
   if (endCountType == NULL) {
     forv_Vec(TypeSymbol, ts, gTypeSymbols) {
@@ -242,8 +256,8 @@ returnInfoEndCount(CallExpr *call, BaseAST *arg1, BaseAST *arg2) {
 }
 
 static Type*
-returnInfoVirtualMethodCall(CallExpr *call, BaseAST *arg1, BaseAST *arg2) {
-  SymExpr* se = toSymExpr(arg1);
+returnInfoVirtualMethodCall(CallExpr* call) {
+  SymExpr* se = toSymExpr(call->get(1));
   INT_ASSERT(se);
   FnSymbol* fn = toFnSymbol(se->var);
   INT_ASSERT(fn);
@@ -281,7 +295,7 @@ PrimitiveOp* primitives[NUM_KNOWN_PRIMS];
 
 PrimitiveOp::PrimitiveOp(PrimitiveTag atag,
                          const char *aname,
-                         Type *(*areturnInfo)(CallExpr*, BaseAST*, BaseAST*)) :
+                         Type *(*areturnInfo)(CallExpr*)) :
   tag(atag),
   name(aname),
   returnInfo(areturnInfo),
@@ -292,7 +306,7 @@ PrimitiveOp::PrimitiveOp(PrimitiveTag atag,
 }
 
 static void
-prim_def(PrimitiveTag tag, const char* name, Type *(*returnInfo)(CallExpr*, BaseAST*, BaseAST*),
+prim_def(PrimitiveTag tag, const char* name, Type *(*returnInfo)(CallExpr*),
          bool isEssential = false, bool passLineno = false) {
   primitives[tag] = new PrimitiveOp(tag, name, returnInfo);
   primitives[tag]->isEssential = isEssential;
@@ -300,13 +314,33 @@ prim_def(PrimitiveTag tag, const char* name, Type *(*returnInfo)(CallExpr*, Base
 }
 
 static void
-prim_def(const char* name, Type *(*returnInfo)(CallExpr*, BaseAST*, BaseAST*),
+prim_def(const char* name, Type *(*returnInfo)(CallExpr*),
          bool isEssential = false, bool passLineno = false) {
   PrimitiveOp* prim = new PrimitiveOp(PRIM_UNKNOWN, name, returnInfo);
   prim->isEssential = isEssential;
   prim->passLineno = passLineno;
 }
 
+
+
+/*
+ * The routine below, using the routines just above, define primitives
+ * for use by the compiler.  Each primitive definition takes:
+ * 
+ * - (optionally) the primitive's enum
+ * - its string name
+ * - a function pointer indicating the type it returns/evaluates to
+ * - (optionally) a boolean saying whether or not it's essential (i.e.,
+ *   should not be dead code eliminated)
+ * - (optionally) a boolean saying whether or not it expects to receive
+ *   filename/lineno arguments
+ *
+ * Primitives may be defined by the compiler directly (e.g., rewritten
+ * during function resolution) or implemented in the runtime.  In the
+ * latter case, not surprisingly, it is important to make sure that
+ * the return type of the primitive as specified here matches that of
+ * the runtime function implementing the primitive.
+ */
 
 void
 initPrimitive() {
@@ -355,7 +389,7 @@ initPrimitive() {
   prim_def(PRIM_TESTCID, "testcid", returnInfoBool, false, true);
   prim_def(PRIM_GETCID, "getcid", returnInfoBool, false, true);
   prim_def(PRIM_UNION_SETID, "set_union_id", returnInfoVoid, true, true);
-  prim_def(PRIM_UNION_GETID, "get_union_id", returnInfoInt64, false, true);
+  prim_def(PRIM_UNION_GETID, "get_union_id", returnInfoDefaultInt, false, true);
   prim_def(PRIM_GET_MEMBER, ".", returnInfoGetMemberRef);
   prim_def(PRIM_GET_MEMBER_VALUE, ".v", returnInfoGetMember, false, true);
   prim_def(PRIM_SET_MEMBER, ".=", returnInfoVoid, true, true);
@@ -365,8 +399,8 @@ initPrimitive() {
   prim_def(PRIM_GET_IMAG, "complex_get_imag", returnInfoComplexField);
   prim_def(PRIM_QUERY, "query", returnInfoUnknown);
 
-  prim_def(PRIM_SET_REF, "set ref", returnInfoRef);
-  prim_def(PRIM_GET_REF, "get ref", returnInfoVal, false, true);
+  prim_def(PRIM_ADDR_OF, "addr of", returnInfoRef);
+  prim_def(PRIM_DEREF,   "deref",   returnInfoVal, false, true);
 
   // local block primitives
   prim_def(PRIM_LOCAL_CHECK, "local_check", returnInfoVoid, true, true);
@@ -491,10 +525,9 @@ initPrimitive() {
 
   prim_def(PRIM_LOGICAL_FOLDER, "_paramFoldLogical", returnInfoBool);
 
-  prim_def(PRIM_NUM_LOCALES, "chpl_comm_default_num_locales", returnInfoInt32);
-  prim_def(PRIM_GET_LOCALEID, "_get_locale", returnInfoInt32, false, true);
-  prim_def(PRIM_LOCALE_ID, "chpl_localeID", returnInfoInt32);
-  prim_def(PRIM_ON_LOCALE_NUM, "chpl_on_locale_num", returnInfoInt32);
+  prim_def(PRIM_GET_LOCALEID, "_get_locale", returnInfoInt64, false, true);
+  prim_def(PRIM_LOCALE_ID, "chpl_localeID", returnInfoInt64);
+  prim_def(PRIM_ON_LOCALE_NUM, "chpl_on_locale_num", returnInfoInt64);
 
   prim_def(PRIM_ALLOC_GVR, "allocchpl_globals_registry", returnInfoVoid);
   prim_def(PRIM_HEAP_REGISTER_GLOBAL_VAR, "_heap_register_global_var", returnInfoVoid, true, true);
@@ -503,45 +536,37 @@ initPrimitive() {
 
   prim_def(PRIM_INT_ERROR, "_internal_error", returnInfoVoid, true);
 
-  prim_def("_fscan_literal", returnInfoBool, true, true);
-  prim_def("_fscan_string", returnInfoString, true, true);
-  prim_def("_fscan_int32", returnInfoInt32, true, true);
-  prim_def("_fscan_uint32", returnInfoUInt32, true, true);
-  prim_def("_fscan_real64", returnInfoReal64, true, true);
-  prim_def("_readToEndOfLine", returnInfoVoid, true);
-  prim_def("_format", returnInfoString);
-  prim_def("chpl_string_compare", returnInfoInt32, true);
+  prim_def("chpl_string_compare", returnInfoDefaultInt, true);
   prim_def("string_contains", returnInfoBool, true);
   prim_def("string_concat", returnInfoString, true, true);
-  prim_def("string_length", returnInfoInt32);
+  prim_def("string_length", returnInfoDefaultInt);
   prim_def("ascii", returnInfoInt32);
   prim_def("string_index", returnInfoString, true, true);
   prim_def(PRIM_STRING_COPY, "string_copy", returnInfoString, false, true);
   prim_def("string_select", returnInfoString, true, true);
   prim_def("string_strided_select", returnInfoString, true, true);
   prim_def("sleep", returnInfoVoid, true);
-  prim_def("real2int", returnInfoInt64);
-  prim_def("object2int", returnInfoInt64);
+  prim_def("real2int", returnInfoDefaultInt);
+  prim_def("object2int", returnInfoDefaultInt);
   prim_def("chpl_exit_any", returnInfoVoid, true);
   prim_def("chpl_localeName", returnInfoString);
-  prim_def(PRIM_chpl_numThreads, "chpl_numThreads", returnInfoUInt32);
-  prim_def(PRIM_chpl_numIdleThreads, "chpl_numIdleThreads", returnInfoUInt32);
-  prim_def(PRIM_chpl_numQueuedTasks, "chpl_numQueuedTasks", returnInfoUInt32);
-  prim_def(PRIM_chpl_numRunningTasks, "chpl_numRunningTasks", returnInfoUInt32);
-  prim_def(PRIM_chpl_numBlockedTasks, "chpl_numBlockedTasks", returnInfoInt32);
+  prim_def(PRIM_chpl_numThreads, "chpl_numThreads", returnInfoInt64);
+  prim_def(PRIM_chpl_numIdleThreads, "chpl_numIdleThreads", returnInfoInt64);
+  prim_def(PRIM_chpl_numQueuedTasks, "chpl_numQueuedTasks", returnInfoInt64);
+  prim_def(PRIM_chpl_numRunningTasks, "chpl_numRunningTasks", returnInfoInt64);
+  prim_def(PRIM_chpl_numBlockedTasks, "chpl_numBlockedTasks", returnInfoInt64);
 
   prim_def("chpl_setMemFlags", returnInfoVoid, true);
 
   prim_def(PRIM_RT_ERROR, "chpl_error", returnInfoVoid, true, true);
-  prim_def(PRIM_RT_ERROR_NOEXIT, "chpl_error_noexit", returnInfoVoid, true, true);
   prim_def(PRIM_RT_WARNING, "chpl_warning", returnInfoVoid, true, true);
 
   prim_def(PRIM_NEW_PRIV_CLASS, "chpl_newPrivatizedClass", returnInfoVoid, true);
-  prim_def(PRIM_NUM_PRIV_CLASSES, "chpl_numPrivatizedClasses", returnInfoInt32);
+  prim_def(PRIM_NUM_PRIV_CLASSES, "chpl_numPrivatizedClasses", returnInfoDefaultInt);
   prim_def(PRIM_GET_PRIV_CLASS, "chpl_getPrivatizedClass",  returnInfoFirst);
   
   prim_def(PRIM_NEXT_UINT32, "_next_uint32", returnInfoUInt32);
-  prim_def(PRIM_GET_USER_LINE, "_get_user_line", returnInfoInt32, true, true);
+  prim_def(PRIM_GET_USER_LINE, "_get_user_line", returnInfoDefaultInt, true, true);
   prim_def(PRIM_GET_USER_FILE, "_get_user_file", returnInfoString, true, true);
 
   prim_def(PRIM_FTABLE_CALL, "call ftable function", returnInfoVoid, true);
@@ -562,7 +587,6 @@ initPrimitive() {
 
   prim_def(PRIM_ENUM_MIN_BITS, "enum min bits", returnInfoInt32);
   prim_def(PRIM_ENUM_IS_SIGNED, "enum is signed", returnInfoBool);
-  prim_def(PRIM_IMPLEMENTS, "implements", returnInfoVoid);
 }
 
 Map<const char*, VarSymbol*> memDescsMap;

@@ -226,7 +226,8 @@ checkUseBeforeDefs() {
           CallExpr* call = toCallExpr(sym->parentExpr);
           if (call && call->isPrimitive(PRIM_MOVE) && call->get(1) == sym)
             continue;
-          if ((!call || (call->baseExpr != sym && !call->isPrimitive(PRIM_CAPTURE_FN))) && sym->unresolved && strcmp(sym->unresolved, "self")) {
+          if ((!call || (call->baseExpr != sym && !call->isPrimitive(PRIM_CAPTURE_FN)))
+              && sym->unresolved && strcmp(sym->unresolved, "self")) {
             if (!undeclared.set_in(sym->unresolved)) {
               if (!toFnSymbol(fn->defPoint->parentSymbol)) {
                 USR_FATAL_CONT(sym, "'%s' undeclared (first use this function)",
@@ -315,12 +316,12 @@ static void insertRetMove(FnSymbol* fn, VarSymbol* retval, CallExpr* ret) {
   Expr* ret_expr = ret->get(1);
   ret_expr->remove();
   if (fn->retTag == RET_VAR)
-    ret->insertBefore(new CallExpr(PRIM_MOVE, retval, new CallExpr(PRIM_SET_REF, ret_expr)));
+    ret->insertBefore(new CallExpr(PRIM_MOVE, retval, new CallExpr(PRIM_ADDR_OF, ret_expr)));
   else if (fn->retExprType)
     ret->insertBefore(new CallExpr(PRIM_MOVE, retval, new CallExpr("=", retval, ret_expr)));
   else if (!fn->hasFlag(FLAG_WRAPPER) && strcmp(fn->name, "iteratorIndex") &&
            strcmp(fn->name, "iteratorIndexHelp"))
-    ret->insertBefore(new CallExpr(PRIM_MOVE, retval, new CallExpr(PRIM_GET_REF, ret_expr)));
+    ret->insertBefore(new CallExpr(PRIM_MOVE, retval, new CallExpr(PRIM_DEREF, ret_expr)));
   else
     ret->insertBefore(new CallExpr(PRIM_MOVE, retval, ret_expr));
 }
@@ -540,6 +541,9 @@ static void insert_call_temps(CallExpr* call) {
     return;
   
   if (toDefExpr(call->parentExpr))
+    return;
+
+  if (isImplementsStmt(call->parentExpr))
     return;
 
   if (call->partialTag)
@@ -989,9 +993,11 @@ fixup_query_formals(FnSymbol* fn) {
       formal->type = dtAny;
     } else if (CallExpr* call = toCallExpr(formal->typeExpr->body.tail)) {
       // clone query primitive types
-      if (call->numActuals() == 1) {
+      SymExpr* callFnSymExpr = toSymExpr(call->baseExpr);
+      if (callFnSymExpr && call->numActuals() == 1) {
+        Symbol* callFnSym = callFnSymExpr->var;
         if (DefExpr* def = toDefExpr(call->get(1))) {
-          if (call->isNamed("bool")) {
+          if (callFnSym == dtBools[BOOL_SIZE_DEFAULT]->symbol) {
             for (int i=BOOL_SIZE_8; i<BOOL_SIZE_NUM; i++)
               if (dtBools[i]) {
                 clone_for_parameterized_primitive_formals(fn, def,
@@ -999,21 +1005,23 @@ fixup_query_formals(FnSymbol* fn) {
               }
             fn->defPoint->remove();
             return;
-          } else if (call->isNamed("int") || call->isNamed("uint")) {
+          } else if (callFnSym == dtInt[INT_SIZE_DEFAULT]->symbol || 
+                     callFnSym == dtUInt[INT_SIZE_DEFAULT]->symbol) {
             for( int i=INT_SIZE_1; i<INT_SIZE_NUM; i++)
               if (dtInt[i])
                 clone_for_parameterized_primitive_formals(fn, def,
                                                           get_width(dtInt[i]));
             fn->defPoint->remove();
             return;
-          } else if (call->isNamed("real") || call->isNamed("imag")) {
+          } else if (callFnSym == dtReal[FLOAT_SIZE_DEFAULT]->symbol ||
+                     callFnSym == dtImag[FLOAT_SIZE_DEFAULT]->symbol) {
             for( int i=FLOAT_SIZE_16; i<FLOAT_SIZE_NUM; i++)
               if (dtReal[i])
                 clone_for_parameterized_primitive_formals(fn, def,
                                                           get_width(dtReal[i]));
             fn->defPoint->remove();
             return;
-          } else if (call->isNamed("complex")) {
+          } else if (callFnSym == dtComplex[COMPLEX_SIZE_DEFAULT]->symbol) {
             for( int i=COMPLEX_SIZE_32; i<COMPLEX_SIZE_NUM; i++)
               if (dtComplex[i])
                 clone_for_parameterized_primitive_formals(fn, def,

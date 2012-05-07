@@ -36,8 +36,9 @@ There is an expectation that each of these modules will be extended
 and that more standard modules will be defined over time.
 
 \section{Automatic Modules}
-\index{automatic modules}
-\index{standard modules!automatic}
+\index{automatic modules (see also modules, standard, automatic)}
+\index{standard modules!automatic (see also modules, standard, automatic)}
+\index{modules!standard!automatic}
 
 Automatic modules are used by a Chapel program automatically.  There
 is currently no way to avoid their use by a program, although we
@@ -45,7 +46,8 @@ anticipate adding such a capability in the future.
 
 \subsection{Math}
 \label{Math}
-\index{automatic modules!Math}
+\index{modules!standard!Math@\chpl{Math}}
+\index{modules!standard!automatic!Math@\chpl{Math}}
 
 The module \chpl{Math} defines routines for mathematical computations.
 This module is used by default; there is no need to explicitly use
@@ -361,6 +363,17 @@ between two integral values are rounded towards zero.
 \end{protobody}
 
 \begin{protohead}
+proc sgn(i : int(?w)):   int(8);
+proc sgn(i : uint(?w)): uint(8);
+proc sgn(x : real(?w)):  int(8);
+proc sgn(param i : integral) param;
+\end{protohead}
+\begin{protobody}
+Returns the signum function of its argument:
+1 if positive, -1 if negative, 0 if zero.
+\end{protobody}
+
+\begin{protohead}
 proc sin(x: real): real
 proc sin(x: real(32)): real(32)
 \end{protohead}
@@ -423,7 +436,8 @@ than the argument in absolute value.
 
 \subsection{Base}
 \label{Standard}
-\index{automatic modules!Base}
+\index{modules!standard!Base@\chpl{Base}}
+\index{modules!standard!automatic!Base@\chpl{Base}}
 
 \begin{protohead}
 proc ascii(s: string): int
@@ -550,6 +564,8 @@ type \chpl{t}.
 
 \subsection{Types}
 \label{Types_standard_module}
+\index{modules!standard!Types@\chpl{Types}}
+\index{modules!standard!automatic!Types@\chpl{Types}}
 
 \begin{protohead}
 proc numBits(type t) param : int
@@ -589,15 +605,15 @@ is implemented for all numeric types.
 
 
 \section{Optional Modules}
-\index{optional modules}
-\index{standard modules!optional}
+\index{optional modules (see also modules, optional)}
+\index{modules!standard!optional}
 
 Optional modules can be used by a Chapel program via the \chpl{use}
 keyword (\rsec{Using_Modules}).
 
 \subsection{AdvancedIters}
 \label{AdvancedIters}
-\index{optional modules!AdvancedIters}
+\index{modules!standard!AdvancedIters@\chpl{AdvancedIters}}
 
 The \chpl{AdvancedIters} module contains several iterators that can be
 used to drive a \chpl{forall} loop by performing dynamic and adaptive splitting
@@ -675,7 +691,7 @@ iter adaptive(r:range(?), numTasks:int = 0)
 
 \subsection{BitOps}
 \label{BitOps}
-\index{optional modules!BitOps}
+\index{modules!standard!BitOps@\chpl{BitOps}}
 
 The module \chpl{BitOps} defines routines that manipulate the bits of
 values of integral types.
@@ -718,7 +734,7 @@ bits to the right \chpl{shift} number of times.
 
 \subsection{Norm}
 \label{Norm}
-\index{optional modules!Norm}
+\index{modules!optional!Norm@\chpl{Norm}}
 
 The module \chpl{Norm} supports the computation of standard vector and
 matrix norms on Chapel arrays.  The current interface is minimal and
@@ -750,7 +766,7 @@ the 2-norm, for a 2D array, this is the Frobenius norm.
 
 \subsection{Random}
 \label{Random}
-\index{optional modules!Random}
+\index{modules!optional!Random@\chpl{Random}}
 
 The module \chpl{Random} supports the generation of pseudo-random
 values and streams of values.  The current interface is minimal and
@@ -850,7 +866,7 @@ class will be used.
 
 \subsection{Search}
 \label{Search}
-\index{optional modules!Search}
+\index{modules!optional!Search@\chpl{Search}}
 
 The \chpl{Search} module is designed to support standard search
 routines.  The current interface is minimal and should be expected to
@@ -884,7 +900,7 @@ it was not found.
 
 \subsection{Sort}
 \label{Sort}
-\index{optional modules!Sort}
+\index{modules!optional!Sort@\chpl{Sort}}
 
 The \chpl{Sort} module is designed to support standard sorting
 routines.  The current interface is minimal and should be expected to
@@ -939,7 +955,7 @@ sort algorithm.
 
 \subsection{Time}
 \label{Time}
-\index{optional modules!Time}
+\index{modules!optional!Time@\chpl{Time}}
 
 The module \chpl{Time} defines routines that query the system time and
 a record \chpl{Timer} that is useful for timing portions of code.
@@ -1035,7 +1051,7 @@ Delays a task for \chpl{t} seconds.
 
 \subsection{UtilMath}
 \label{StdModules_UtilMath}
-\index{optional modules!UtilMath}
+\index{modules!optional!UtilMath@\chpl{UtilMath}}
 
 The optional module \chpl{UtilMath} provides various math-related functions.
 It supplements the automatic \chpl{Math} module (\rsec{Math}).

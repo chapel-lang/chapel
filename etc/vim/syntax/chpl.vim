@@ -253,7 +253,7 @@ endif
 syn keyword chplStatement	goto break return continue compilerWarning delete
 syn keyword chplStatement	new delete this these use module yield compilerError
 syn keyword chplIntent		param type in out inout ref
-syn keyword chplStorageClass    const config export extern var volatile
+syn keyword chplStorageClass    const config export extern var
 syn keyword chplType            domain sparse subdomain range index imag complex int uint real bool file string opaque integral numeric enumerated
 syn keyword chplType            locale sync atomic single dmapped
 syn keyword chplOperator	on reduce scan by

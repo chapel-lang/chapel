@@ -6,7 +6,6 @@ PASSES_SRCS = \
         buildDefaultFunctions.cpp \
         cleanup.cpp \
         codegen.cpp \
-        earlyTypeCheck.cpp \
         filesToAST.cpp \
         flattenClasses.cpp \
         flattenFunctions.cpp \

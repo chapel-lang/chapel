@@ -342,6 +342,7 @@ typedef qio_file_t* qio_file_ptr_t;
 #define QIO_FILE_PTR_NULL NULL
 
 // if fp is not null, fd is ignored; if fp is null, we use fd.
+// the QIO file takes ownership of fp or fd, closing it when the QIO file is closed.
 err_t qio_file_init(qio_file_t** file_out, FILE* fp, fd_t fd, qio_hint_t iohints, qio_style_t* style, int usefilestar);
 err_t qio_file_open(qio_file_t** file_out, const char* path, int flags, mode_t mode, qio_hint_t iohints, qio_style_t* style);
 err_t qio_file_open_access(qio_file_t** file_out, const char* pathname, const char* access, qio_hint_t iohints, qio_style_t* style);

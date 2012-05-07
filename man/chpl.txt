@@ -214,6 +214,12 @@ OPTIONS
                     C code back to the Chapel source code that it implements.
                     The [no-] version of this flag turns this feature off.
 
+  --max-c-ident-len  Limits the length of identifiers in the generated code,
+                    except when set to 0. The default is 0, except when
+                    $CHPL_TARGET_COMPILER indicates a PGI compiler (pgi,
+                    cray-xe-pgi or cray-xt-pgi), in which case the default
+                    is 1020.
+
   --savec <dir>      Saves the compiler-generated C code in the specified 
                     directory, creating the directory if it does not already
                     exist. This option may overwrite existing files in the
@@ -408,4 +414,4 @@ SEE ALSO
 AUTHORS
   See $CHPL_HOME/CONTRIBUTORS for a list of contributors to Chapel.
 COPYRIGHT
-  Copyright (c) 2004-2011 Cray Inc. (See $CHPL_HOME/LICENSE for more details.)
+  Copyright (c) 2004-2012 Cray Inc. (See $CHPL_HOME/LICENSE for more details.)

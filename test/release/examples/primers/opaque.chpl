@@ -252,29 +252,31 @@ proc createRandomGraph() {
   //
   // iterate over all pairs of vertices
   //
-  for (vi, vj) in [Vertices, Vertices] {
-    //
-    // roll a random number; if it's between 0.5 and 1.0, add edge (vi, vj)
-    //
-    if (myRandNums.getNext() > 0.5) {
+  for vi in Vertices {
+    for vj in Vertices {
       //
-      // allocate a new edge and give it a random weight
+      // roll a random number; if it's between 0.5 and 1.0, add edge (vi, vj)
       //
-      const newEdge = Edges.create();
-      EdgeWeight(newEdge) = myRandNums.getNext();
+      if (myRandNums.getNext() > 0.5) {
+        //
+        // allocate a new edge and give it a random weight
+        //
+        const newEdge = Edges.create();
+        EdgeWeight(newEdge) = myRandNums.getNext();
 
-      //
-      // increment the number of out edges for the source vertex vi and add
-      // the edge to its list of out edges
-      //
-      numOutEdges(vi) += 1;
-      outEdges(vi)(numOutEdges(vi)) = newEdge;
+        //
+        // increment the number of out edges for the source vertex vi and add
+        // the edge to its list of out edges
+        //
+        numOutEdges(vi) += 1;
+        outEdges(vi)(numOutEdges(vi)) = newEdge;
 
-      //
-      // store the source and sink vertices for the edge
-      //
-      from(newEdge) = vi;
-      to(newEdge) = vj;
+        //
+        // store the source and sink vertices for the edge
+        //
+        from(newEdge) = vi;
+        to(newEdge) = vj;
+      }
     }
   }
 

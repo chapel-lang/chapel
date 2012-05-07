@@ -10,8 +10,8 @@ $preset_threads = $ENV{'CHPL_THREADS'};
 if ($preset_tasks eq "") {
     if ($preset_threads =~ /^(minimal|pthreads)$/) {
 	$tasks = "fifo";
-    } elsif ($preset_threads eq "dev-threads-1") {
-	$tasks = "dev-tasks-1";
+    } elsif ($preset_threads eq "soft-threads") {
+	$tasks = "muxed";
     } elsif ($preset_threads eq "") {
 	$platform = `$utildirname/platform --target`;
 	chomp($platform);

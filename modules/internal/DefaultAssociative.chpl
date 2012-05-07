@@ -10,8 +10,7 @@ config param debugAssocDataPar = false;
 use Sort /* only QuickSort */;
 
 // TODO: make the domain parameterized by this?
-// TODO: make int(64) the default index type here and in arithemtic domains
-type chpl_table_index_type = int(32);
+type chpl_table_index_type = int;
 
 
 /* These declarations could/should both be nested within
@@ -64,25 +63,26 @@ class DefaultAssociativeDom: BaseAssociativeDom {
                                      parSafeDom=parSafe, dom=this);
   }
 
-  proc dsiSerialWrite(f: Writer) {
+  proc dsiSerialReadWrite(f /*: Reader or Writer*/) {
     var first = true;
-    f.write("[");
+    f & new ioLiteral("[");
     for idx in this {
       if first then 
         first = false; 
       else 
-        f.write(", ");
-      f.write(idx);
+        f & new ioLiteral(", ");
+      f & idx;
     }
-    f.write("]");
+    f & new ioLiteral("]");
   }
+  proc dsiSerialWrite(f: Writer) { this.dsiSerialReadWrite(f); }
+  proc dsiSerialRead(f: Reader) { this.dsiSerialReadWrite(f); }
 
   //
   // Standard user domain interface
   //
 
-  pragma "inline"
-  proc dsiNumIndices {
+  inline proc dsiNumIndices {
     // I'm not sure if this is desirable
     if parSafe then tableLock.readFE();
     var ne = numEntries;
@@ -401,16 +401,18 @@ class DefaultAssociativeArr: BaseArr {
         yield data(slot);
   }
 
-  proc dsiSerialWrite(f: Writer) {
+  proc dsiSerialReadWrite(f /*: Reader or Writer*/) {
     var first = true;
     for val in this {
       if (first) then
         first = false;
       else
-        f.write(" ");
-      f.write(val);
+        f & new ioLiteral(" ");
+      f & val;
     }
   }
+  proc dsiSerialWrite(f: Writer) { this.dsiSerialReadWrite(f); }
+  proc dsiSerialRead(f: Reader) { this.dsiSerialReadWrite(f); }
 
 
   //
@@ -468,42 +470,35 @@ proc _gen_key(i: int(64)): int(64) {
   return (key & max(int(64))): int(64);  // YAH, make non-negative
 }
 
-pragma "inline"
-proc chpl__defaultHash(b: bool): int(64) {
+inline proc chpl__defaultHash(b: bool): int(64) {
   if (b) then
     return 0;
   else
     return 1;
 }
 
-pragma "inline"
-proc chpl__defaultHash(i: int(64)): int(64) {
+inline proc chpl__defaultHash(i: int(64)): int(64) {
   return _gen_key(i);
 }
 
-pragma "inline"
-proc chpl__defaultHash(u: uint(64)): int(64) {
+inline proc chpl__defaultHash(u: uint(64)): int(64) {
   return _gen_key(u:int(64));
 }
 
-pragma "inline"
-proc chpl__defaultHash(f: real): int(64) {
+inline proc chpl__defaultHash(f: real): int(64) {
   return _gen_key(__primitive( "real2int", f));
 }
 
-pragma "inline"
-proc chpl__defaultHash(c: complex): int(64) {
+inline proc chpl__defaultHash(c: complex): int(64) {
   return _gen_key(__primitive("real2int", c.re) ^ __primitive("real2int", c.im)); 
 }
 
-pragma "inline"
-proc chpl__defaultHash(u: chpl_taskID_t): int(64) {
+inline proc chpl__defaultHash(u: chpl_taskID_t): int(64) {
   return _gen_key(u:int(64));
 }
 
 // Use djb2 (Dan Bernstein in comp.lang.c.
-pragma "inline"
-proc chpl__defaultHash(x : string): int(64) {
+inline proc chpl__defaultHash(x : string): int(64) {
   var hash: int(64) = 0;
   for c in 1..(x.length) {
     hash = ((hash << 5) + hash) ^ ascii(x.substring(c));
@@ -511,8 +506,7 @@ proc chpl__defaultHash(x : string): int(64) {
   return _gen_key(hash);
 }
 
-pragma "inline"
-proc chpl__defaultHash(o: object): int(64) {
+inline proc chpl__defaultHash(o: object): int(64) {
   return _gen_key(__primitive( "object2int", o));
 }
 

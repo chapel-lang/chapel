@@ -32,10 +32,9 @@
   macro(ArgSymbol) sep                             \
   macro(TypeSymbol) sep                            \
   macro(FnSymbol) sep                              \
+  macro(EnumSymbol) sep                            \
   macro(InterfaceSymbol) sep                       \
   macro(ImplementsStmt) sep                        \
-  macro(FromStmt) sep                              \
-  macro(EnumSymbol) sep                            \
   macro(LabelSymbol) sep                           \
   macro(SymExpr) sep                               \
   macro(UnresolvedSymExpr) sep                     \
@@ -104,7 +103,6 @@ enum AstTag {
   E_NamedExpr,
   E_BlockStmt,
   E_ImplementsStmt,
-  E_FromStmt,
   E_CondStmt,
   E_GotoStmt,
   E_Expr,
@@ -232,6 +230,8 @@ extern Vec<ModuleSymbol*> mainModules; // contains main modules
 #define isCallExpr(a)          ((a) && (a)->astTag == E_CallExpr)
 #define isNamedExpr(a)         ((a) && (a)->astTag == E_NamedExpr)
 #define isBlockStmt(a)         ((a) && (a)->astTag == E_BlockStmt)
+#define isInterfaceSymbol(a)   ((a) && (a)->astTag == E_InterfaceSymbol)
+#define isImplementsStmt(a)    ((a) && (a)->astTag == E_ImplementsStmt)
 #define isCondStmt(a)          ((a) && (a)->astTag == E_CondStmt)
 #define isGotoStmt(a)          ((a) && (a)->astTag == E_GotoStmt)
 #define isModuleSymbol(a)      ((a) && (a)->astTag == E_ModuleSymbol)
@@ -239,8 +239,6 @@ extern Vec<ModuleSymbol*> mainModules; // contains main modules
 #define isArgSymbol(a)         ((a) && (a)->astTag == E_ArgSymbol)
 #define isTypeSymbol(a)        ((a) && (a)->astTag == E_TypeSymbol)
 #define isFnSymbol(a)          ((a) && (a)->astTag == E_FnSymbol)
-#define isInterfaceSymbol(a)   ((a) && (a)->astTag == E_InterfaceSymbol)
-#define isImplementsStmt(a)    ((a) && (a)->astTag == E_ImplementsStmt)
 #define isEnumSymbol(a)        ((a) && (a)->astTag == E_EnumSymbol)
 #define isLabelSymbol(a)       ((a) && (a)->astTag == E_LabelSymbol)
 #define isPrimitiveType(a)     ((a) && (a)->astTag == E_PrimitiveType)
@@ -258,6 +256,8 @@ extern Vec<ModuleSymbol*> mainModules; // contains main modules
 #define toCallExpr(a)          def_to_ast(CallExpr, a)
 #define toNamedExpr(a)         def_to_ast(NamedExpr, a)
 #define toBlockStmt(a)         def_to_ast(BlockStmt, a)
+#define toInterfaceSymbol(a)   def_to_ast(InterfaceSymbol, a)
+#define toImplementsStmt(a)    def_to_ast(ImplementsStmt, a)
 #define toCondStmt(a)          def_to_ast(CondStmt, a)
 #define toGotoStmt(a)          def_to_ast(GotoStmt, a)
 #define toExpr(a)              def_to_ast(Expr, a)
@@ -266,8 +266,6 @@ extern Vec<ModuleSymbol*> mainModules; // contains main modules
 #define toArgSymbol(a)         def_to_ast(ArgSymbol, a)
 #define toTypeSymbol(a)        def_to_ast(TypeSymbol, a)
 #define toFnSymbol(a)          def_to_ast(FnSymbol, a)
-#define toInterfaceSymbol(a)   def_to_ast(InterfaceSymbol, a)
-#define toImplementsStmt(a)    def_to_ast(ImplementsStmt, a)
 #define toEnumSymbol(a)        def_to_ast(EnumSymbol, a)
 #define toLabelSymbol(a)       def_to_ast(LabelSymbol, a)
 #define toSymbol(a)            def_to_ast(Symbol, a)
@@ -347,14 +345,10 @@ extern Vec<ModuleSymbol*> mainModules; // contains main modules
     AST_CALL_LIST(_a, ClassType, fields, call, __VA_ARGS__);            \
     AST_CALL_LIST(_a, ClassType, inherits, call, __VA_ARGS__);          \
     break;                                                              \
-  case E_InterfaceSymbol:												                        \
-    AST_CALL_LIST(_a, InterfaceSymbol, fields, call, __VA_ARGS__); 		  \
+  case E_InterfaceSymbol:                                               \
+    AST_CALL_LIST(_a, InterfaceSymbol, fields, call, __VA_ARGS__);      \
     AST_CALL_LIST(_a, InterfaceSymbol, inherits, call, __VA_ARGS__);    \
-    break;																                              \
-  case E_FromStmt:														                          \
-  	AST_CALL_CHILD(_a, FromStmt, moduleName, call, __VA_ARGS__); 		    \
-  	AST_CALL_CHILD(_a, FromStmt, implementsClause, call, __VA_ARGS__); 	\
-  	break;																                              \
+    break;                                                              \
   case E_ImplementsStmt:                                                \
     AST_CALL_CHILD(_a, ImplementsStmt, implementsClause, call, __VA_ARGS__); \
     AST_CALL_CHILD(_a, ImplementsStmt, wherePart, call, __VA_ARGS__);   \

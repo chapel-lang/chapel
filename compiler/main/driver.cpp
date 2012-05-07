@@ -18,10 +18,16 @@
 #include "config.h"
 
 FILE* html_index_file = NULL;
-FILE* deletedIdHandle = NULL;
+
 char deletedIdFilename[FILENAME_MAX+1] = "";
+FILE* deletedIdHandle = NULL;
 
 // for logging
+char log_dir[FILENAME_MAX+1] = "./log";
+char log_module[FILENAME_MAX+1] = "";
+char log_symbol[FILENAME_MAX+1] = "";
+bool fLogIds = false;
+
 int currentPassNo = 0;
 const char* currentPassName = "starting up";
 
@@ -170,6 +176,11 @@ static void setupOrderedGlobals(void) {
   fLocal = !strcmp(CHPL_COMM, "none");
   fSerial = !strcmp(CHPL_TASKS, "none"); 
   fNoRepositionDefExpr = strcmp(CHPL_TARGET_PLATFORM, "xmt");
+  bool gotPGI = !strcmp(CHPL_TARGET_COMPILER, "pgi")
+             || !strcmp(CHPL_TARGET_COMPILER, "cray-xe-pgi")
+             || !strcmp(CHPL_TARGET_COMPILER, "cray-xt-pgi");
+  // conservatively how much is needed for the current PGI compiler
+  if (gotPGI) fMaxCIdentLen = 1020;
   // Enable if we are going to use Nvidia's NVCC compiler
   fGPU = !strcmp(CHPL_TARGET_COMPILER, "nvidia");
 }
@@ -298,7 +309,6 @@ static void addModulePath(ArgumentState* arg_state, char* newpath) {
 static void noteCppLinesSet(ArgumentState* arg, char* unused) {
   userSetCppLineno = true;
 }
-
 
 static void verifySaveCDir(ArgumentState* arg, char* unused) {
   if (saveCDir[0] == '-') {
@@ -436,6 +446,7 @@ static ArgumentDescription arg_desc[] = {
  {"", ' ', NULL, "C Code Generation Options", NULL, NULL, NULL, NULL},
  {"codegen", ' ', NULL, "[Don't] Do code generation", "n", &no_codegen, "CHPL_NO_CODEGEN", NULL},
  {"cpp-lines", ' ', NULL, "[Don't] Generate #line annotations", "N", &printCppLineno, "CHPL_CG_CPP_LINES", noteCppLinesSet},
+ {"max-c-ident-len", ' ', NULL, "Maximum length of identifiers in generated code, 0 for unlimited", "I", &fMaxCIdentLen, "CHPL_MAX_C_IDENT_LEN", NULL},
  {"savec", ' ', "<directory>", "Save generated C code in directory", "P", saveCDir, "CHPL_SAVEC_DIR", verifySaveCDir},
 
  {"", ' ', NULL, "C Code Compilation Options", NULL, NULL, NULL, NULL},
@@ -472,15 +483,17 @@ static ArgumentDescription arg_desc[] = {
  {"license", ' ', NULL, "Show license", "F", &printLicense, NULL, NULL},
  {"version", ' ', NULL, "Show version", "F", &printVersion, NULL, NULL},
 
- {"", ' ', NULL, "Developer Flags", NULL, NULL, NULL, NULL},
- {"", ' ', NULL, "Debug Output", NULL, NULL, NULL, NULL},
+ {"", ' ', NULL, "Developer Flags -- Debug Output", NULL, NULL, NULL, NULL},
  {"cc-warnings", ' ', NULL, "[Don't] Give warnings for generated code", "N", &ccwarnings, "CHPL_CC_WARNINGS", NULL},
  {"c-line-numbers", ' ', NULL, "Use C code line numbers and filenames", "F", &fCLineNumbers, NULL, NULL},
  {"gen-ids", ' ', NULL, "Pepper generated code with BaseAST::ids", "F", &fGenIDS, "CHPL_GEN_IDS", NULL},
- {"html", 't', NULL, "Dump IR in HTML", "T", &fdump_html, "CHPL_HTML", NULL},
+ {"html", 't', NULL, "Dump IR in HTML format", "T", &fdump_html, "CHPL_HTML", NULL},
  {"html-user", ' ', NULL, "Dump IR in HTML for user module(s) only", "T", &fdump_html, NULL, setHtmlUser},
- {"log", 'd', "[a|i|F|d|s]", "Specify debug logs", "S512", log_flags, "CHPL_LOG_FLAGS", log_flags_arg},
+ {"log", 'd', "<letters>", "Dump IR in text format", "S512", log_flags, "CHPL_LOG_FLAGS", log_flags_arg},
  {"log-dir", ' ', "<path>", "Specify log directory", "P", log_dir, "CHPL_LOG_DIR", NULL},
+ {"log-ids", ' ', NULL, "Include BaseAST::ids in log files", "F", &fLogIds, "CHPL_LOG_IDS", NULL},
+ {"log-module", ' ', "<module-name>", "Restrict IR dump to the named module", "S256", log_module, "CHPL_LOG_MODULE", NULL},
+ {"log-symbol", ' ', "<symbol-name>", "Restrict IR dump to the named symbol(s)", "S256", log_symbol, "CHPL_LOG_SYMBOL", NULL},
  {"parser-debug", 'D', NULL, "Set parser debug level", "+", &debugParserLevel, "CHPL_PARSER_DEBUG", NULL},
  {"print-dispatch", ' ', NULL, "Print dynamic dispatch table", "F", &fPrintDispatch, NULL, NULL},
  {"print-statistics", ' ', "[n|k|t]", "Print AST statistics", "S256", fPrintStatistics, NULL, NULL},
@@ -489,7 +502,7 @@ static ArgumentDescription arg_desc[] = {
  {"report-optimized-on", ' ', NULL, "Print information about on clauses that have been optimized for potential fast remote fork operation", "F", &fReportOptimizedOn, NULL, NULL},
  {"report-scalar-replace", ' ', NULL, "Print scalar replacement stats", "F", &fReportScalarReplace, NULL, NULL},
 
- {"", ' ', NULL, "Misc. Developer Flags", NULL, NULL, NULL, NULL},
+ {"", ' ', NULL, "Developer Flags -- Miscellaneous", NULL, NULL, NULL, NULL},
  {"break-on-id", ' ', NULL, "Break when AST id is created", "I", &breakOnID, "CHPL_BREAK_ON_ID", NULL},
  {"break-on-delete-id", ' ', NULL, "Break when AST id is deleted", "I", &breakOnDeleteID, "CHPL_BREAK_ON_DELETE_ID", NULL},
  {"default-dist", ' ', "<distribution>", "Change the default distribution", "S256", defaultDist, "CHPL_DEFAULT_DIST", NULL},

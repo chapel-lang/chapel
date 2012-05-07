@@ -8,13 +8,14 @@
 #include "resolution.h"
 #include "stmt.h"
 #include "symbol.h"
-#include "typeCheck.h"
+#include "callInfo.h"
 
 static int explainInstantiationLine = -2;
 static ModuleSymbol* explainInstantiationModule = NULL;
 
 static Vec<FnSymbol*> whereStack;
-Symbol* lookupImplementsWitnessInSymbolTable(BaseAST* ce, BaseAST* interface, BaseAST* implementingType);
+//Symbol* lookupImplementsWitnessInSymbolTable(BaseAST* ce, BaseAST* interface, BaseAST* implementingType);
+bool hasImplementsClausesInWhereClause(BaseAST *whereClause);
 
 static void
 explainInstantiation(FnSymbol* fn) {
@@ -55,11 +56,11 @@ explainInstantiation(FnSymbol* fn) {
           else
             len += sprintf(msg+len, "%s", vs->name);
         }
-    else if (Symbol* s = toSymbol(e->value))
+        else if (Symbol* s = toSymbol(e->value))
       // For a generic symbol, just print the name.
       // Additional clauses for specific symbol types should precede this one.
           len += sprintf(msg+len, "%s", s->name);
-    else
+        else
           INT_FATAL("unexpected case using --explain-instantiation");
       }
     }
@@ -218,38 +219,52 @@ getNewSubType(FnSymbol* fn, Symbol* key, TypeSymbol* value) {
   return value;
 }
 
-static bool
-evaluateImplementsInWhereClause(FnSymbol* fn, CallExpr* fn_call) {
-  for_alist(expr,fn->where->body) {
-    if (CallExpr* where_expr = toCallExpr(expr)) {
-      if (UnresolvedSymExpr *callsymexpr = toUnresolvedSymExpr(where_expr->baseExpr)) {
-        if ((!strcmp(callsymexpr->unresolved, "_build_tuple"))
-           || (!strcmp(callsymexpr->unresolved, "PRIM_ACTUALS_LIST"))) {
-          for_alist(wl, where_expr->argList) {
-            if (CallExpr *where_ce = toCallExpr(wl)) {
-              if (UnresolvedSymExpr *use = toUnresolvedSymExpr(where_ce->baseExpr)) {
-                if (!strcmp(use->unresolved, "implements")) {
-                  BaseAST* type_arg = toSymExpr(where_ce->argList.get(1))->var->type;
-                  BaseAST* interface_arg = where_ce->argList.get(2);
-                  if(!lookupImplementsWitnessInSymbolTable(fn_call, interface_arg, type_arg)) {
-                    return false;
-                  }
-                  where_ce->replace(new SymExpr(gTrue));
-                }
-              }
+static bool hasValidImplementsInWhereClause(BaseAST* whereClause, CallExpr* fn_call) {
+  if (CallExpr *ce = toCallExpr(whereClause)) {
+    if (UnresolvedSymExpr *callsymexpr = toUnresolvedSymExpr(ce->baseExpr)) {
+      if (!strcmp(callsymexpr->unresolved, "implements")) {
+        //First find the interface that was implemented and open it up
+        BaseAST* type_arg = toSymExpr(ce->argList.get(1))->var->type;
+        BaseAST *interface_implemented = ce->argList.get(2);
+        if (SymExpr *se = toSymExpr(interface_implemented)) {
+          // Is a symexpr
+          if (isInterfaceSymbol(se->var)) {
+            Symbol *witness = lookupImplementsWitnessInSymbolTable(fn_call, interface_implemented, type_arg);
+            if(!witness) {
+              //CallInfo info(ce,false);
+              //USR_FATAL(whereClause, "Implementation condition not satisfied.\n");
+              return false;
             }
+            return true;
           }
-        } else if (!strcmp(callsymexpr->unresolved, "implements")) {
-          BaseAST* type_arg = toSymExpr(where_expr->argList.get(1))->var->type;
-          BaseAST* interface_arg = where_expr->argList.get(2);
-          if(!lookupImplementsWitnessInSymbolTable(fn_call, interface_arg, type_arg)) {
-           return false;
+          else {
+            USR_FATAL(se, "Implementation phrase with non-interface symbol");
           }
-
-          where_expr->replace(new SymExpr(gTrue));
         }
+        else {
+          // Isn't a symexpr, something is wrong
+          USR_FATAL(se, "Poorly formed implements phrase in where clause");
+        }
+      } else if (!strcmp(callsymexpr->unresolved, "_build_tuple")) {
+        bool retval = true;
+        //We have multiple constraints, handle them
+        for_alist(arg, ce->argList) {
+          retval &= hasValidImplementsInWhereClause(arg,fn_call);
+        }
+        return retval;
       }
     }
+    else {
+      return true;
+      //printf("Not unresolved\n");
+    }
+  }
+  else if (BlockStmt *block = toBlockStmt(whereClause)) {
+    bool retval = true;
+    for_alist(expr, block->body) {
+      retval &= hasValidImplementsInWhereClause(expr,fn_call);
+    }
+    return retval;
   }
   return true;
 }
@@ -263,13 +278,18 @@ evaluateWhereClause(FnSymbol* fn, CallExpr* fn_call) {
     resolveBlock(fn->where);
     whereStack.pop();
 
-    if(!evaluateImplementsInWhereClause(fn, fn_call))
-      USR_FATAL(fn->where, "Implements condition not satisfied");
+    if (fn_call) {
+      if (hasImplementsClausesInWhereClause(fn->where)){
+        if (hasValidImplementsInWhereClause(fn->where, fn_call))
+          fn->where->insertAtTail(new SymExpr(gTrue));
+        else
+          fn->where->insertAtTail(new SymExpr(gFalse));
+      }
+    }
 
     SymExpr* se = toSymExpr(fn->where->body.last());
-    if (!se) {
+    if (!se)
       USR_FATAL(fn->where, "invalid where clause");
-    }
     if (se->var == gFalse)
       return false;
     if (se->var != gTrue)
@@ -277,6 +297,7 @@ evaluateWhereClause(FnSymbol* fn, CallExpr* fn_call) {
   }
   return true;
 }
+
 
 static void
 checkInfiniteWhereInstantiation(FnSymbol* fn) {
@@ -464,7 +485,7 @@ renameInstantiatedType(TypeSymbol* sym, SymbolMap* subs, FnSymbol* fn) {
 
 
 FnSymbol*
-instantiate(FnSymbol* fn, SymbolMap* subs, CallExpr* call) {
+instantiate(FnSymbol* fn, SymbolMap* subs, CallExpr* call, bool addFormalDefaults, bool noCache) {
   form_Map(SymbolMapElem, e, *subs) {
     if (TypeSymbol* ts = toTypeSymbol(e->value)) {
       if (ts->type->symbol->hasFlag(FLAG_GENERIC))
@@ -499,12 +520,14 @@ instantiate(FnSymbol* fn, SymbolMap* subs, CallExpr* call) {
   //
   // use cached instantiation if possible
   //
-  if (FnSymbol* cached = checkCache(genericsCache, root, &all_subs)) {
-    if (cached != (FnSymbol*)gVoid) {
-      checkInfiniteWhereInstantiation(cached);
-      return cached;
-    } else
-      return NULL;
+  if (!noCache) {
+    if (FnSymbol* cached = checkCache(genericsCache, root, &all_subs)) {
+      if (cached != (FnSymbol*)gVoid) {
+        checkInfiniteWhereInstantiation(cached);
+        return cached;
+      } else
+        return NULL;
+    }
   }
 
   SET_LINENO(fn);
@@ -573,7 +596,7 @@ instantiate(FnSymbol* fn, SymbolMap* subs, CallExpr* call) {
   newFn->instantiatedFrom = fn;
 
   if (call)
-    newFn->instantiationPoint = VisibleFunctionManager::getVisibilityBlock(call);
+    newFn->instantiationPoint = getVisibilityBlock(call);
 
   fn->defPoint->insertBefore(new DefExpr(newFn));
 
@@ -627,11 +650,13 @@ instantiate(FnSymbol* fn, SymbolMap* subs, CallExpr* call) {
       if (!newFormal->defaultExpr || formal->hasFlag(FLAG_TYPE_VARIABLE)) {
         if (newFormal->defaultExpr)
           newFormal->defaultExpr->remove();
-        if (Symbol* sym = paramMap.get(newFormal))
-          newFormal->defaultExpr = new BlockStmt(new SymExpr(sym));
-        else
-          newFormal->defaultExpr = new BlockStmt(new SymExpr(gTypeDefaultToken));
-        insert_help(newFormal->defaultExpr, NULL, newFormal);
+        if (addFormalDefaults) {
+          if (Symbol* sym = paramMap.get(newFormal))
+            newFormal->defaultExpr = new BlockStmt(new SymExpr(sym));
+          else
+            newFormal->defaultExpr = new BlockStmt(new SymExpr(gTypeDefaultToken));
+          insert_help(newFormal->defaultExpr, NULL, newFormal);
+        }
       }
     }
   }

@@ -63,7 +63,7 @@ variables indexed using the indices $(1, 1), (1, 2), \ldots, (1, 10),
 % param/type queries consistently between this chapter and domains
 % (and ranges?)
 %
-
+\index{arrays!element type}
 An array's element type can be referred to using the member symbol
 \chpl{eltType}.
 
@@ -82,8 +82,8 @@ writeln(typeToString(x.type));
 writeln(typeToString(A.eltType));
 \end{chapelpost}
 \begin{chapeloutput}
-real
-real
+real(64)
+real(64)
 \end{chapeloutput}
 \end{chapelexample}
 
@@ -91,6 +91,7 @@ real
 \label{Array_Values}
 \index{arrays!values}
 \index{arrays!initialization}
+\index{initialization!arrays}
 
 An array's value is the collection of its elements' values.
 Assignments between array variables are performed by value as
@@ -98,8 +99,7 @@ described in~\rsec{Array_Assignment}.  Chapel semantics are defined so
 that the compiler will never need to insert temporary arrays of the
 same size as a user array variable.
 
-\index{arrays!literals, lack thereof}
-
+\index{arrays!literals!lack thereof}
 Arrays do not have a literal format in Chapel, but arithmetic array
 variables can be initialized using tuple values.  These tuples must
 match the size and shape of the array itself.
@@ -247,7 +247,7 @@ indexed into by 1-tuples.
 \section{Iteration over Arrays}
 \label{Iteration_over_Arrays}
 \index{arrays!iteration}
-\index{iteration!over arrays}
+\index{iteration!array}
 
 All arrays support iteration via for, forall and coforall loops.
 These loops iterate over all of the array elements as described by its
@@ -274,6 +274,7 @@ the array element type.
 \section{Array Assignment}
 \label{Array_Assignment}
 \index{arrays!assignment}
+\index{assignment!array}
 
 Array assignment is by value.  Arrays can be assigned arrays, ranges,
 domains, iterators, or tuples.
@@ -372,7 +373,7 @@ writeln(A);
 \section{Array Slicing}
 \label{Array_Slicing}
 \index{arrays!slicing}
-\index{slicing!arrays}
+\index{slicing!array}
 
 An array can be sliced using a domain that has the same type as the
 domain over which it was declared.  The result of an array slice is an
@@ -420,6 +421,8 @@ the interior of \chpl{A}.
 
 \subsection{Rectangular Array Slicing}
 \label{Rectangular_Array_Slicing}
+\index{arrays!slicing!rectangular}
+\index{slicing!arrays!rectangular}
 
 A rectangular array can be sliced by any rectangular domain that is a
 subdomain of the array's defining domain.  If the subdomain
@@ -438,6 +441,7 @@ the array.
 
 \subsection{Rectangular Array Slicing with a Rank Change}
 \label{Rectangular_Array_Slicing_With_Rank_Change}
+\index{arrays!slicing!rectangular!rank change}
 
 For multidimensional rectangular arrays, slicing with a rank change is
 supported by substituting integral values within a dimension's range
@@ -470,7 +474,7 @@ are the first column of \chpl{A}.
 \section{Count Operator}
 \label{Count_Operator_Arrays}
 \index{arrays!count operator}
-
+\index{operators!# (on arrays)@\chpl{#} (on arrays)}
 The \chpl{#} operator can be applied to dense rectangular arrays with
 a tuple argument whose size matches the rank of the array (or
 optionally an integer in the case of a 1D array).  The operator is
@@ -481,8 +485,8 @@ Section~\ref{Rectangular_Array_Slicing}.
 
 \section{Array Arguments to Functions}
 \label{Array_Arguments_To_Functions}
-\index{arrays!arguments to functions}
-\index{argument passing!arrays}
+\index{arrays!actual arguments}
+\index{arguments!array}
 
 Arrays are passed to functions by reference.  Formal arguments that
 receive arrays are aliases of the actual arguments.
@@ -509,8 +513,9 @@ in~\rsec{Formal_Arguments_of_Rectangular_Array_Type}.
 
 \subsection{Formal Arguments of Rectangular Array Type}
 \label{Formal_Arguments_of_Rectangular_Array_Type}
-\index{formal arguments!rectangular arrays}
-\index{arrays!as formal arguments}
+\index{arguments!formal!rectangular arrays}
+\index{arrays!arguments!formal}
+\index{arrays!formal arguments}
 
 Formal arguments of rectangular array type allow a rectangular domain
 to be specified that does not match the rectangular domain of the
@@ -546,6 +551,7 @@ indexed by the integers between one and five.
 \subsection{Array Promotion of Scalar Functions}
 \label{Array_Promotion_of_Scalar_Functions}
 \index{arrays!promotion}
+\index{promotion!arrays}
 
 Array promotion of a scalar function is defined over the array type
 and the element type of the array.  The domain of the returned array,
@@ -586,7 +592,9 @@ and \chpl{C}.
 
 \section{Array Aliases}
 \label{Array_Aliases}
-\index{=>@\chpl{=>}}
+\index{arrays!aliases}
+\index{=> (array)@\chpl{=>} (array)}
+\index{operators!=> (array)@\chpl{=>} (array)}
 
 Array slices alias the data in arrays rather than copying it.  Such
 array aliases can be captured and optionally reindexed with the array
@@ -716,8 +724,8 @@ sparse-error.chpl:9: error: halt reached - attempting to assign a 'zero' value i
 
 \section{Association of Arrays to Domains}
 \label{Association_of_Arrays_to_Domains}
-\index{domains!association to arrays}
-\index{arrays!association to domains}
+\index{domains!association with arrays}
+\index{arrays!association with domains}
 
 %
 % Be sure to talk about resetting array values & assigning IRVs
@@ -773,10 +781,15 @@ convenient syntax support a common, optimizable case seems prudent.
 
 
 \section{Predefined Functions and Methods on Arrays}
+\label{Predefined_Functions_and_Methods_on_Arrays}
 \index{arrays!predefined functions}
+\index{predefined functions!arrays}
+\index{functions!arrays!predefined}
 
-There is an expectation that this list of predefined functions will grow.
+There is an expectation that this list of predefined methods will grow.
 
+\index{arrays!eltType@\chpl{eltType}}
+\index{predefined functions!eltType (array)@\chpl{eltType} (array)}
 \begin{protohead}
 proc $Array$.eltType type
 \end{protohead}
@@ -784,6 +797,8 @@ proc $Array$.eltType type
 Returns the element type of the array.
 \end{protobody}
 
+\index{arrays!rank@\chpl{rank}}
+\index{predefined functions!rank (array)@\chpl{rank} (array)}
 \begin{protohead}
 proc $Array$.rank param
 \end{protohead}
@@ -791,6 +806,8 @@ proc $Array$.rank param
 Returns the rank of the array.
 \end{protobody}
 
+\index{arrays!domain@\chpl{domain}}
+\index{predefined functions!domain (array)@\chpl{domain} (array)}
 \begin{protohead}
 proc $Array$.domain: this.domain
 \end{protohead}
@@ -800,6 +817,8 @@ implying that the domain cannot be resized by assigning to its domain
 field, only by modifying the domain directly.
 \end{protobody}
 
+\index{arrays!numElements@\chpl{numElements}}
+\index{predefined functions!numElements (array)@\chpl{numElements} (array)}
 \begin{protohead}
 proc $Array$.numElements: this.domain.dim_type
 \end{protohead}
@@ -807,6 +826,8 @@ proc $Array$.numElements: this.domain.dim_type
 Returns the number of elements in the array.
 \end{protobody}
 
+\index{arrays!reshape@\chpl{reshape}}
+\index{predefined functions!reshape (array)@\chpl{reshape} (array)}
 \begin{protohead}
 proc reshape(A: $Array$, D: $Domain$): $Array$
 \end{protohead}

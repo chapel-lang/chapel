@@ -1,6 +1,8 @@
-// test of slicing for 1-d block-cyclic
+// test of slicing for block specifier
 
-use d, r, u;
+
+use DimensionalDist2D, BlockDim;
+use u;
 
 config const
   // num locales
@@ -19,12 +21,14 @@ setupLocales(tl1, tl2);
 var phase = 0;
 proc leapphase() { phase += 20; fphase(phase); }
 
-const dd1 =new sdist(numLocales=tl1, boundingBoxLow=start1, boundingBoxHigh=end1);
-const dd2 =new sdist(numLocales=tl2, boundingBoxLow=start2, boundingBoxHigh=end2);
+const dd1 =new BlockDim(numLocales=tl1,
+                         boundingBoxLow=start1, boundingBoxHigh=end1);
+const dd2 =new BlockDim(numLocales=tl2,
+                         boundingBoxLow=start2, boundingBoxHigh=end2);
 
 const space = [1..n, 1..n+1];
 const AbD
-  : domain(2, int) dmapped DimensionalDist(mylocs, dd1, dd2, "dim")
+  : domain(2, int) dmapped DimensionalDist2D(mylocs, dd1, dd2, "dim")
   = space;
 
 var Ab: [AbD] int;

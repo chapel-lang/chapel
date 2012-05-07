@@ -92,7 +92,7 @@ insertDestructureStatements(Expr* S1, Expr* S2, CallExpr* lhs, Expr* rhs) {
       ltmp->addFlag(FLAG_MAYBE_PARAM);
       S1->insertBefore(new DefExpr(ltmp));
       S1->insertBefore(new CallExpr(PRIM_MOVE, ltmp,
-                         new CallExpr(PRIM_SET_REF, expr)));
+                         new CallExpr(PRIM_ADDR_OF, expr)));
       S2->insertBefore(new CallExpr("=", ltmp, nextRHS));
     }
   }

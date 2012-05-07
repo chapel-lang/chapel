@@ -1,5 +1,6 @@
 \sekshun{Generics}
 \label{Generics}
+\index{generics}
 
 Chapel supports generic functions and types that are parameterizable
 over both types and parameters.  The generic functions and types look
@@ -125,7 +126,7 @@ writeln(typeToString(x.type));
 \end{chapelpost}
 \begin{chapeloutput}
 (3.14, 3.14, 3.14)
-3*real
+3*real(64)
 \end{chapeloutput}
 In this function, the type of the tuple is taken to be the type of the
 actual argument.  The call \chpl{fillTuple(3, 3.14)} returns a 3-tuple
@@ -135,7 +136,7 @@ of real values \chpl{(3.14, 3.14, 3.14)}.  The return type is
 
 \subsection{Formal Arguments with Queried Types}
 \label{Formal_Arguments_with_Queried_Types}
-\index{formal arguments!queried types}
+\index{formal arguments!with queried types}
 
 If the type of a formal argument is specified as a queried type, the
 type of the formal argument is taken to be the type of the actual
@@ -160,13 +161,13 @@ writeln(typeToString(x.type));
 \end{chapelpost}
 \begin{chapeloutput}
 (3.14, 3.14, 3.14)
-3*real
+3*real(64)
 \end{chapeloutput}
 \end{chapelexample}
 
 \subsection{Formal Arguments of Generic Type}
 \label{Formal_Arguments_of_Generic_Type}
-\index{formal arguments!generic types}
+\index{formal arguments!generic}
 
 If the type of a formal argument is a generic type, the type of the
 formal argument is taken to be the type of the actual argument passed
@@ -278,9 +279,9 @@ proc sumOfThree(x: ?t, y:t, z:t):t {
 \end{chapelprintoutput}
 \end{chapelexample}
 
-\index{integral@\chpl{integral}}
-\index{numeric@\chpl{numeric}}
-\index{enumerated@\chpl{enumerated}}
+\index{integral (generic type)@\chpl{integral} (generic type)}
+\index{numeric (generic type)@\chpl{numeric} (generic type)}
+\index{enumerated (generic type)@\chpl{enumerated} (generic type)}
 The generic types \chpl{integral}, \chpl{numeric} and \chpl{enumerated}
 are generic types that can only be instantiated with, respectively, the
 signed and unsigned integral types, all of the numeric types, and
@@ -288,7 +289,7 @@ enumerated types.
 
 \subsection{Formal Arguments of Generic Array Types}
 \label{Formal_Arguments_of_Generic_Array_Types}
-\index{formal arguments!array types}
+\index{formal arguments!array}
 
 If the type of a formal argument is an array where either the domain
 or the element type is queried or omitted, the type of the formal
@@ -391,8 +392,6 @@ generic fields. A generic field is one of:
 expression.
 \end{itemize}
 
-\mbox{} % push the following line to the next page
-
 For each generic field, the class or record is parameterized over:
 \begin{itemize}
 \item the type bound to the type alias,
@@ -472,7 +471,7 @@ writeln(typeToString(n.next.type));
 \begin{chapeloutput}
 3.14
 nil
-Node(real)
+Node(real(64))
 \end{chapeloutput}
 The call \chpl{new Node(real, 3.14)} creates a node in the linked list
 that contains the value \chpl{3.14}.  The \chpl{next} field is set to
@@ -630,6 +629,7 @@ when invoking the type constructor.
 \subsection{Generic Methods}
 \label{Generic_Methods}
 \index{generics!methods}
+\index{methods!generic}
 
 All methods bound to generic classes or records, including
 constructors, are generic over the implicit \chpl{this} argument.
@@ -740,6 +740,7 @@ under development, so the above specification may change.
 \section{Where Expressions}
 \label{Where_Expressions}
 \index{where@\chpl{where}}
+\index{expressions!where@\chpl{where}}
 \index{generics!where@\chpl{where}}
 
 The instantiation of a generic function can be constrained by {\em
@@ -770,9 +771,9 @@ second function is instantiated the where clause evaluates to false.
 
 \section{User-Defined Compiler Diagnostics}
 \label{User_Defined_Compiler_Errors}
-\index{compiler diagnostics!user-defined}
-\index{compiler errors!user-defined}
-\index{compiler warnings!user-defined}
+\index{user-defined compiler diagnostics}
+\index{user-defined compiler errors}
+\index{user-defined compiler warnings}
 \index{compilerError}
 \index{compilerWarning}
 
@@ -857,6 +858,7 @@ foo.chpl:6: error: foo() called with non-matching types: int != real
 
 \section{Example: A Generic Stack}
 \label{Example_Generic_Stack}
+\index{generics!examples!stack}
 \begin{chapelexample}{genericStack.chpl}
 \begin{chapel}
 class MyNode {

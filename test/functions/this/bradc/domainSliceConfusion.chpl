@@ -1,6 +1,6 @@
 type indexType = int(64);
 
-var D32: domain(1, int(32)) = [1..10];
+var D32: domain(1, int(32)) = [1..10:int(32)];
 
 class D {
   var x: [D32] real;

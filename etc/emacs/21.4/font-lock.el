@@ -2727,7 +2727,7 @@ See also `chpl-font-lock-extra-types'.")
 			"scan" "select" "serial" "single" "sparse" "subdomain" "sync"
                         "then"
                         "use"
-                        "var" "volatile"
+                        "var"
                         "when" "where" "while"
                         "yield"
                         ))))

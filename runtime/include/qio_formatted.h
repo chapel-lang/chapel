@@ -538,8 +538,6 @@ err_t qio_encode_char_buf(char* dst, int32_t chr)
     got = wcrtomb(dst, chr, &ps);
     if( got == (size_t) -1 ) {
       err = EILSEQ;
-    } else {
-      *dst += got;
     }
 #else
     err = ENOSYS;
@@ -566,7 +564,7 @@ err_t qio_decode_char_buf(int32_t* restrict chr, int* restrict nbytes, const cha
       while( buf != end ) {
         qio_utf8_decode(&state,
                         &codepoint,
-                        *buf);
+                        *(const unsigned char*)buf);
         buf++;
         if (state <= 1) {
           break;
@@ -712,6 +710,12 @@ err_t qio_channel_scan_string(const int threadsafe, qio_channel_t* restrict ch, 
 
 // returns 0 if it matched, or EFORMAT if it did not.
 err_t qio_channel_scan_literal(const int threadsafe, qio_channel_t* restrict ch, const char* restrict match, ssize_t len, int skipws);
+
+// Quote a string according to a style (we have this one for some error
+// situations in which it's undesireable to use the stdout channel
+// because of e.g. Chapel module initialization order)
+err_t qio_quote_string(uint8_t string_start, uint8_t string_end, uint8_t string_format, const char* restrict ptr, ssize_t len, const char** restrict out);
+const char* qio_quote_string_chpl(const char* ptr, ssize_t len);
 
 // Prints a string according to the style.
 err_t qio_channel_print_string(const int threadsafe, qio_channel_t* restrict ch, const char* restrict ptr, ssize_t len);

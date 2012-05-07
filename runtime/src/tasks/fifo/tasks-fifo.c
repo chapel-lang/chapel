@@ -296,6 +296,16 @@ void chpl_task_exit(void) {
 
 
 void chpl_task_callMain(void (*chpl_main)(void)) {
+  chpl_main();
+}
+
+
+void chpl_task_stdModulesInitialized(void) {
+  //
+  // Register this main task in the task table.  We couldn't do this
+  // at creation time because the standard modules had not yet been
+  // initialized and therefore the task table didn't exist yet.
+  //
   if (taskreport) {
     thread_private_data_t* tp = chpl_thread_getPrivateData();
 
@@ -308,9 +318,6 @@ void chpl_task_callMain(void (*chpl_main)(void)) {
   if (blockreport) {
     initializeLockReportForThread();
   }
-
-  chpl_task_setSerial(false);
-  chpl_main();
 }
 
 

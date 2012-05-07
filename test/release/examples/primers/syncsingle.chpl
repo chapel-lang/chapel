@@ -1,7 +1,7 @@
 //
 // Sync and Single Variables Primer
 //
-// This primer illustrations Chapel's sync and single variables.
+// This primer illustrates Chapel's sync and single variables.
 //
 config const n = 7;
 
@@ -126,7 +126,7 @@ writeln(sy2);
 var si2 = si$.readFF();
 writeln(si2);
 
-// The writeXF() method, definded for sync variables, assigns the
+// The writeXF() method, defined for sync variables, assigns the
 // value argument to the variable and then sets the state to full.
 // This method does not block.
 //

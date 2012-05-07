@@ -47,6 +47,8 @@ The following two subsections provide an overview of calling externally-defined
 from external (C) code.
 
 \subsection{Calling External Functions}
+\label{Calling_External_Functions}
+\index{interoperability!external functions!calling}
 
 To use an external function in a Chapel program, it is necessary to inform the
 Chapel compiler of that routine's signature through an external function
@@ -102,6 +104,8 @@ libraries (archives), dynamic libraries or both are supported.  See
 the \chpl{chpl} man page for more information on how these file types are handled.
 
 \subsection{Calling Chapel Functions}
+\label{Calling_Chapel_Functions}
+\index{interoperability!Chapel functions!calling}
 
 To call a Chapel procedure from external code, it is necessary to expose the
 corresponding function symbol to the linker.  This is done by adding
@@ -149,6 +153,9 @@ This subsection discusses how specific types are shared between Chapel and
 external code.  
 
 \subsubsection{Referring to Standard C Types}
+\label{Referring_to_Standard_C_Types}
+\index{interoperability!standard C types}
+\index{interoperability!C types!standard}
 
 In Chapel code, all standard C types must be expressed in terms of their Chapel
 equivalents.  This is true, whether the entity is exported, imported or private.
@@ -184,6 +191,9 @@ ensure that all of the C equivalents in the above table are defined and have the
 correct representation with respect to the corresponding Chapel type.
 
 \subsubsection{Referring to External C Types}
+\label{Referring_to_External_C_Types}
+\index{interoperability!external C types}
+\index{interoperability!C types!external}
 
 An externally-defined type can be referenced using a external type declaration
 with the following syntax.
@@ -209,6 +219,8 @@ extern type vec = 3*real(64);
 
 
 \subsubsection{Referring to External C Structs}
+\label{Referring_to_External_C_Structs}
+\index{ineteroperability!C structs!external}
 
 External C struct types can be referred to within Chapel by prefixing
 a Chapel \chpl{record} definition with the \chpl{extern} keyword.
@@ -246,6 +258,8 @@ supported.  That is, in the C header file, the \chpl{struct} must be supplied
 with a type name through a \chpl{typedef} declaration.
 
 \subsubsection{Referring to External Structs Through Pointers}
+\label{Referring_to_External_Structs_Through_Pointers}
+\index{interoperability!C Structs!external!pointers to}
 
 An external type which is a pointer to a \chpl{struct} can be referred to from
 Chapel using an external \chpl{class} declaration.  External class declarations
@@ -287,6 +301,8 @@ therefore could not refer to it or manipulate it.
 
 
 \subsubsection{Opaque Types}
+\label{Opaque_Types}
+\index{interoperability!opaque types}
 
 It is possible refer to external pointer-based C types that cannot be
 described in Chapel by using the "opaque" keyword.  As the name implies,
@@ -316,6 +332,8 @@ regarding the underlying type.  It therefore subverts type safety, and should be
 used with caution.
 
 \subsection{Shared Data}
+\label{Shared_Data}
+\index{interoperability!shared data}
 
 This subsection discusses how to access external variables and constants.
 
@@ -342,11 +360,15 @@ external params are not supported.
 \end{craychapel}
 
 \subsection{Shared Procedures}
+\label{Shared_Procedures}
+\index{interoperability!shared procedures}
 
 This subsection provides additional detail and examples for calling external
 procedures from Chapel and for exporting Chapel functions for external use.
 
 \subsubsection{Calling External C Functions}
+\label{Calling_External_C_Functions}
+\index{interoperability!external functions!calling}
 
 To call an external C function, a prototype of
 the routine must appear in the Chapel code.  This is accomplished by providing
@@ -377,7 +399,7 @@ For example, the Chapel code
        foo(a, b);
 \end{chapel}
 \noindent
-would imply that the external function foo takes two 32-bit integer values
+would imply that the external function foo takes two 64-bit integer values
 and returns a 64-bit real.  External function declarations with omitted type
 arguments can also be used call external C macros.
 
@@ -410,6 +432,8 @@ this will typically only be useful if the external function is a macro
 or built-in that can handle type identifiers.}
 
 \subsection{Calling Chapel Procedures Externally}
+\label{Calling_Chapel_Procedures_Externally}
+\index{interoperability!Chapel procedures!calling}
 
 To call a Chapel procedure from external code, the procedure name must be
 exported using the \chpl{export} keyword.  An exported procedure taking no
@@ -439,6 +463,8 @@ are also exported.  Iterators cannot be explicitly exported.  However, they are
 inlined in Chapel code which uses them, so they are exported in effect.
 
 \subsection{Argument Passing}
+\label{Interop_Argument_Passing}
+\index{interoperability!argument passing}
 
 The manner in which arguments are passed to an external function can be
 controlled using argument intents.  The following table shows the correspondence

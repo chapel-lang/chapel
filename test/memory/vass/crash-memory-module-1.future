@@ -1,0 +1,99 @@
+bug: the standard Memory module is not multi-locale-safe
+
+I am observing the failure under these conditions:
+
+* Default settings for comm=gasnet on my desktop (gnu/linux64).
+
+* -nl3 and higher, intermittently.
+  -nl1 and -nl2 are always succeeding.
+  It fails with -nl3 more consistently than with -nl4.
+  It has not failed under start_test.
+
+* It is sufficient just to compile $CHPL_HOME/modules/standard/Memory.chpl
+  and run it with --memTrack -nl3.
+
+  The code I got in .chpl merely adds some frills, e.g. ensures
+  memoryUsed() is invoked.
+
+Since under start_test it is more likely to succeed (in my tries, anyways),
+I am setting .skipif to true to avoid pervasive false positives.
+
+The crash always happens on node 0.
+Here is a set of stack traces obtained with GASNET_BACKTRACE=1:
+
+---------------------------------
+*** Caught a fatal signal: SIGSEGV(11) on node 0/3
+[0] /usr/bin/gdb -nx -batch -x /tmp/gasnet_qvjA2q '/users/vass/l/r-2/out.x_real' 11456
+[0] [Thread debugging using libthread_db enabled]
+[0] [New Thread 0x7f773f124700 (LWP 11466)]
+[0] [New Thread 0x7f773f975700 (LWP 11465)]
+[0] [New Thread 0x7f77401c6700 (LWP 11462)]
+[0] 0x00007f7740ead174 in __lll_lock_wait () from /lib64/libpthread.so.0
+[0]   Id   Target Id         Frame 
+[0]   4    Thread 0x7f77401c6700 (LWP 11462) 0x00007f77404864a7 in sched_yield () from /lib64/libc.so.6
+[0]   3    Thread 0x7f773f975700 (LWP 11465) 0x00007f7740ead174 in __lll_lock_wait () from /lib64/libpthread.so.0
+[0]   2    Thread 0x7f773f124700 (LWP 11466) 0x00007f774046bb4f in waitpid () from /lib64/libc.so.6
+[0] * 1    Thread 0x7f7741291700 (LWP 11456) 0x00007f7740ead174 in __lll_lock_wait () from /lib64/libpthread.so.0
+[0] 
+[0] Thread 4 (Thread 0x7f77401c6700 (LWP 11462)):
+[0] #0  0x00007f77404864a7 in sched_yield () from /lib64/libc.so.6
+[0] #1  0x00000000004cadd5 in polling (x=<optimized out>) at comm-gasnet.c:269
+[0] #2  0x00000000004c865f in comm_task_wrapper (arg=0x0) at tasks-fifo.c:354
+[0] #3  0x00007f7740ea6696 in start_thread () from /lib64/libpthread.so.0
+[0] #4  0x00007f774049dd7d in clone () from /lib64/libc.so.6
+[0] #5  0x0000000000000000 in ?? ()
+[0] 
+[0] Thread 3 (Thread 0x7f773f975700 (LWP 11465)):
+[0] #0  0x00007f7740ead174 in __lll_lock_wait () from /lib64/libpthread.so.0
+[0] #1  0x00007f7740ea84f9 in _L_lock_1004 () from /lib64/libpthread.so.0
+[0] #2  0x00007f7740ea830e in pthread_mutex_lock () from /lib64/libpthread.so.0
+[0] #3  0x00000000004ca19f in chpl_thread_mutexLock (mutex=0x7803e8) at threads-pthreads.c:88
+[0] #4  0x00000000004c7ec0 in chpl_sync_lock (s=0x7803e0) at tasks-fifo.c:178
+[0] #5  0x00000000004afef3 in chpl_track_malloc (memAlloc=0x7a2a00, chunk=16, number=1, size=16, description=42, lineno=0, filename=0x0) at chplmemtrack.c:441
+[0] #6  0x00000000004ca7ff in chpl_mem_allocMany (number=<optimized out>, size=<optimized out>, description=<optimized out>, lineno=<optimized out>, filename=<optimized out>) at ../../../include/chpl-mem.h:87
+[0] #7  pthread_func (arg=0x79f620) at threads-pthreads.c:329
+[0] #8  0x00007f7740ea6696 in start_thread () from /lib64/libpthread.so.0
+[0] #9  0x00007f774049dd7d in clone () from /lib64/libc.so.6
+[0] #10 0x0000000000000000 in ?? ()
+[0] 
+[0] Thread 2 (Thread 0x7f773f124700 (LWP 11466)):
+[0] #0  0x00007f774046bb4f in waitpid () from /lib64/libc.so.6
+[0] #1  0x00007f7740406b21 in do_system () from /lib64/libc.so.6
+[0] #2  0x00007f7740406ecc in system () from /lib64/libc.so.6
+[0] #3  0x00000000004dc04b in gasneti_bt_gdb ()
+[0] #4  0x00000000004ddd30 in gasneti_print_backtrace ()
+[0] #5  0x000000000053f9c4 in gasneti_defaultSignalHandler ()
+[0] #6  <signal handler called>
+[0] #7  0x00000000004aedfb in addMemTableEntry (memAlloc=0x7a2980, number=1, size=16, description=42, lineno=0, filename=0x0) at chplmemtrack.c:132
+[0] #8  0x00000000004aff12 in chpl_track_malloc (memAlloc=0x7a2980, chunk=16, number=1, size=16, description=42, lineno=0, filename=0x0) at chplmemtrack.c:442
+[0] #9  0x00000000004ca7ff in chpl_mem_allocMany (number=<optimized out>, size=<optimized out>, description=<optimized out>, lineno=<optimized out>, filename=<optimized out>) at ../../../include/chpl-mem.h:87
+[0] #10 pthread_func (arg=0x79f670) at threads-pthreads.c:329
+[0] #11 0x00007f7740ea6696 in start_thread () from /lib64/libpthread.so.0
+[0] #12 0x00007f774049dd7d in clone () from /lib64/libc.so.6
+[0] #13 0x0000000000000000 in ?? ()
+[0] 
+[0] Thread 1 (Thread 0x7f7741291700 (LWP 11456)):
+[0] #0  0x00007f7740ead174 in __lll_lock_wait () from /lib64/libpthread.so.0
+[0] #1  0x00007f7740ea84f9 in _L_lock_1004 () from /lib64/libpthread.so.0
+[0] #2  0x00007f7740ea830e in pthread_mutex_lock () from /lib64/libpthread.so.0
+[0] #3  0x00000000004ca19f in chpl_thread_mutexLock (mutex=0x7803e8) at threads-pthreads.c:88
+[0] #4  0x00000000004c7ec0 in chpl_sync_lock (s=0x7803e0) at tasks-fifo.c:178
+[0] #5  0x00000000004afef3 in chpl_track_malloc (memAlloc=0x7a29e0, chunk=16, number=1, size=16, description=65, lineno=270, filename=0x553340 "/ptmp/2/modules/internal/ChapelLocale.chpl") at chplmemtrack.c:441
+[0] #6  0x0000000000407853 in chpl_mem_allocMany (number=<optimized out>, size=<optimized out>, description=<optimized out>, lineno=<optimized out>, filename=<optimized out>) at /ptmp/2/runtime//include/chpl-mem.h:87
+[0] #7  readFE (this8=0x7fffbe46d970) at x/ChapelBase.c:359
+[0] #8  0x000000000040beb0 in on_fn28 (_dummy_locale_arg=0, _formal_tmp_e=0x7fffbe46d9d0) at x/ChapelBase.c:948
+[0] #9  0x000000000040bbe6 in _downEndCount (e=0x7fffbe46dc80) at x/ChapelBase.c:918
+[0] #10 0x000000000043f1f0 in coforall_fn3 (loc=0x7fffbe46dc90, _coforallCount=0x7fffbe46dc80) at x/ChapelLocale.c:1193
+[0] #11 0x000000000043e7d6 in wrapcoforall_fn3 (c=0x79f330) at x/ChapelLocale.c:1132
+[0] #12 0x00000000004c8af1 in chpl_task_processTaskList (task_list=0x79f5e0) at tasks-fifo.c:491
+[0] #13 0x000000000043e709 in chpl__chpl_startTrackingMemory () at x/ChapelLocale.c:1116
+[0] #14 0x00000000004685dd in chpl_gen_main () at x/Memory.c:23
+[0] #15 0x00000000004a9bb2 in chpl_main () at main.c:75
+[0] #16 0x00000000004c8352 in chpl_task_callMain (chpl_main=0x4a9b8b <chpl_main>) at tasks-fifo.c:299
+[0] #17 0x00000000004a9d14 in main (argc=2, argv=0x7fffbe46e428) at main.c:161
+---------------------------------
+
+The coforall_fn3() in Thread 1 above corresponds to 'coforall loc in Locales'
+in chpl_startTrackingMemory().
+
+readFE() corresponds to the read of 'e.i' in _downEndCountInternal().

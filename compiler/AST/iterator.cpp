@@ -102,7 +102,7 @@ replaceLocalsWithFields(IteratorInfo* ii,
       if (se->parentSymbol && (useSet.set_in(se) || defSet.set_in(se))) {
         CallExpr* call = toCallExpr(se->parentExpr);
         Symbol* field = local2field.get(se->var);
-        if (call && call->isPrimitive(PRIM_SET_REF)) {
+        if (call && call->isPrimitive(PRIM_ADDR_OF)) {
           call->primitive = primitives[PRIM_GET_MEMBER];
           call->insertAtHead(ic);
           se->var = field;
@@ -310,7 +310,7 @@ buildAdvance(FnSymbol* fn,
   // insert jump table at head of advance
   i = 2;
   Symbol* tmp = newTemp(dtBool);
-  Symbol* more = new VarSymbol("more", dtInt[INT_SIZE_32]);
+  Symbol* more = new VarSymbol("more", dtInt[INT_SIZE_DEFAULT]);
 
   forv_Vec(LabelSymbol, label, labels) {
     GotoStmt* igs = new GotoStmt(GOTO_ITER_RESUME, label);
@@ -455,7 +455,7 @@ addLiveLocalVariables(Vec<Symbol*>& syms, FnSymbol* fn, BlockStmt* singleLoop) {
           if (se->var->defPoint->parentSymbol == fn) {
             syms.add_exclusive(se->var);
           }
-        } else if (call->isPrimitive(PRIM_SET_REF) ||
+        } else if (call->isPrimitive(PRIM_ADDR_OF) ||
                    call->isPrimitive(PRIM_GET_MEMBER) ||
                    call->isPrimitive(PRIM_GET_MEMBER_VALUE)) {
           SymExpr* rhs = toSymExpr(call->get(1));
@@ -513,7 +513,7 @@ rebuildIterator(IteratorInfo* ii,
         fn->insertAtTail(new DefExpr(tmp));
         fn->insertAtTail(
           new CallExpr(PRIM_MOVE, tmp,
-            new CallExpr(PRIM_GET_REF, local)));
+            new CallExpr(PRIM_DEREF, local)));
         fn->insertAtTail(new CallExpr(PRIM_SET_MEMBER, iterator, field, tmp));
       } else {
         fn->insertAtTail(new CallExpr(PRIM_SET_MEMBER, iterator, field, local));
@@ -593,7 +593,7 @@ void lowerIterator(FnSymbol* fn) {
       ii->irecord->fields.insertAtTail(new DefExpr(rfield));
     }
   }
-  ii->iclass->fields.insertAtTail(new DefExpr(new VarSymbol("more", dtInt[INT_SIZE_32])));
+  ii->iclass->fields.insertAtTail(new DefExpr(new VarSymbol("more", dtInt[INT_SIZE_DEFAULT])));
 
   replaceLocalsWithFields(ii, asts, local2field, locals);
   if (!fn->hasFlag(FLAG_INLINE_ITERATOR)) {

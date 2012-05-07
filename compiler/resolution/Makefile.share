@@ -2,6 +2,7 @@ RESOLUTION_SRCS = \
 	caches.cpp \
 	callDestructors.cpp \
 	callInfo.cpp \
+	congruenceClosure.cpp \
 	cullOverReferences.cpp \
 	generics.cpp \
 	functionResolution.cpp \

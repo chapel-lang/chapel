@@ -213,16 +213,16 @@ BlockStmt::addUse(ModuleSymbol* mod) {
 }
 
 ImplementsStmt::ImplementsStmt(Expr* implementsClause, Expr* wherePart, BlockStmt* statements) :
-		Expr(E_ImplementsStmt),
-		implementsClause(implementsClause),
-		wherePart(wherePart),
-		statements(statements)
+    Expr(E_ImplementsStmt),
+    implementsClause(implementsClause),
+    wherePart(wherePart),
+    statements(statements)
 {}
 
 ImplementsStmt*
 ImplementsStmt::copyInner(SymbolMap* map) {
   return new ImplementsStmt(COPY_INT(implementsClause),
-		  COPY_INT(wherePart), COPY_INT(statements));
+      COPY_INT(wherePart), COPY_INT(statements));
 }
 
 
@@ -232,49 +232,20 @@ void ImplementsStmt::replaceChild(Expr* old_ast, Expr* new_ast) {
   } else if (old_ast == wherePart) {
     wherePart = new_ast;
   } else if (old_ast == statements) {
-	statements = toBlockStmt(new_ast);
-  }	  else {
+  statements = toBlockStmt(new_ast);
+  }   else {
     INT_FATAL(this, "Unexpected case in ImplementsStmt::replaceChild");
   }
 }
 
 void ImplementsStmt::codegen(FILE* outfile) {
-  codegenStmt(outfile, this);
-  implementsClause->codegen(outfile);
+  //codegenStmt(outfile, this);
+  //implementsClause->codegen(outfile);
   //fprintf(outfile, " implements ");
-  wherePart->codegen(outfile);
-  statements->codegen(outfile);
+  //wherePart->codegen(outfile);
+  //statements->codegen(outfile);
 }
 
-FromStmt::FromStmt(Expr* moduleName, Expr* implementsClause) :
-	Expr(E_FromStmt),
-	moduleName(moduleName),
-	implementsClause(implementsClause)
-{}
-
-FromStmt*
-FromStmt::copyInner(SymbolMap* map) {
-  return new FromStmt(COPY_INT(moduleName), COPY_INT(implementsClause));
-}
-
-
-void FromStmt::replaceChild(Expr* old_ast, Expr* new_ast) {
-	  if (old_ast == implementsClause) {
-	    implementsClause = new_ast;
-	  } else if (old_ast == moduleName) {
-	    moduleName = new_ast;
-	  } else {
-	    INT_FATAL(this, "Unexpected case in FromStmt::replaceChild");
-	  }
-}
-
-void FromStmt::codegen(FILE* outfile) {
-	  codegenStmt(outfile, this);
-	  fprintf(outfile, " from ");
-	  moduleName->codegen(outfile);
-	  fprintf(outfile, " use ");
-	  implementsClause->codegen(outfile);
-}
 
 CondStmt::CondStmt(Expr* iCondExpr, BaseAST* iThenStmt, BaseAST* iElseStmt) :
   Expr(E_CondStmt),

@@ -4,7 +4,7 @@ enum classVals {S, W, A, B, C, D, O};
 config var probClass = classVals.S;
 
 
-const Class: domain(1) = [classVals.S..classVals.O];
+const Class: domain(1) = [classVals.S..classVals.O:int];
 const probSizes:   [Class] int = ( 1400, 7000, 14000, 75000, 150000, 150000, 1400 ),
       nonZeroes:   [Class] int = ( 7, 8, 11, 13, 15, 21, 7 ),
       shifts:      [Class] int = ( 10, 12, 20, 60, 110, 500, 10 ),

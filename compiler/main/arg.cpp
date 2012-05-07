@@ -83,8 +83,11 @@ process_arg(ArgumentState *arg_state, int i, char ***argv, char* currentFlag) {
     else if (type == '+') 
       (*(int *)desc[i].location)++;
     else {
-      arg = *++(**argv) ? **argv : *++(*argv);
+      // If there's an equal sign or characters remain, take the current arg.
+      // Otherwise, take the next one (which may be null).
+      arg = ***argv ? **argv : *++(*argv);
       if (!arg) missing_arg(currentFlag);
+      if (*arg == '=') ++arg;
       switch (type) {
         case 'I':
           *(int *)desc[i].location = atoi(arg);
@@ -105,7 +108,7 @@ process_arg(ArgumentState *arg_state, int i, char ***argv, char* currentFlag) {
           clean_exit(1);
           break;
       }
-      **argv += strlen(**argv)-1;
+      **argv += strlen(**argv); // Consume the argument value.
     }
   }
   if (desc[i].pfn)
@@ -190,7 +193,7 @@ process_args(ArgumentState *arg_state, int argc, char **aargv) {
           {
             char* currentFlag = _dupstr(*argv);
             if (!end)
-              *argv += strlen(*argv) - 1;
+              *argv += strlen(*argv);
             else
               *argv = end;
             process_arg(arg_state, i, &argv, currentFlag);
@@ -229,9 +232,10 @@ process_args(ArgumentState *arg_state, int argc, char **aargv) {
             bad_flag(errFlag);
           }
           if (desc[i].key == singleDashArg) {
-            process_arg(arg_state, i, &argv, (*argv)-1);
-            if (*(*argv+1) != '\0')
-              extraneous_arg(errFlag, *argv+1);
+            ++(*argv);
+            process_arg(arg_state, i, &argv, (*argv)-2);
+            if (**argv != '\0')
+              extraneous_arg(errFlag, *argv);
             break;
           }
         }
@@ -305,18 +309,17 @@ void usage(ArgumentState* arg_state, int status, bool printEnvHelp,
     if (!desc[i].name)
       break;
     if (desc[i].name[0] == '\0') {
-      if (!strcmp(desc[i].description, "Developer Flags")) {
-        if (developer) {
-          fprintf(stdout, "\n\n%s\n", desc[i].description);
-          fprintf(stdout, "===============\n");
-          continue;
-        } else {
+      if (!strncmp(desc[i].description, "Developer Flags", 15)) {
+        if (!developer) {
+          // We assume that developer flags are listed at the end of the
+          // argument list in driver.cpp.  If we encounter a section header
+          // whose prefix matches "Developer Flags" and (developer == false),
+          // then we truncate the rest of the options list.
           break;
         }
-      } else {
-        fprintf(stdout, "\n%s:\n", desc[i].description);
-        continue;
       }
+      fprintf(stdout, "\n%s:\n", desc[i].description);
+      continue;
     }
     if (desc[i].key != ' ') {
       nprinted = fprintf(stdout, "  -%c, --", desc[i].key);

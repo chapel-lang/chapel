@@ -3,6 +3,7 @@ A simple procedure
 
 Another simple procedure
 33! is 3400198294675128320
+6! is 720
 
 Using operator overloading
 down + over = (10.0, -5.0)

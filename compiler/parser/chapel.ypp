@@ -64,16 +64,16 @@
 //
 // keywords (alphabetical)
 //
-%token TALIGN TATOMIC TBEGIN TBREAK TBY TCHECKED
+%token TALIGN TATOMIC TBEGIN TBREAK TBY
 %token TCLASS TCOBEGIN TCOFORALL TCONFIG TCONST TCONTINUE
-%token TDELETE TDMAPPED TDO TDOMAIN TELSE TENUM TEXPORT TEXTERN T_EXTERN
-%token TFOR TFORALL TFROM TIF TIMPLEMENTS TIN TINDEX TINLINE TINOUT TINTERFACE TITER
+%token TDELETE TDMAPPED TDO TDOMAIN TELSE TENUM TEXPORT TEXTERN
+%token TFOR TFORALL TIF TIMPLEMENTS TIN TINDEX TINLINE TINOUT TINTERFACE TITER
 %token TLABEL TLAMBDA TLET TLOCAL TMINUSMINUS TMODULE
 %token TNEW TNIL TON TOTHERWISE TOUT
 %token TPARAM TPLUSPLUS TPRAGMA TPRIMITIVE TPRIMITIVELOOP TPROC
 %token TRECORD TREDUCE TREF TRETURN
 %token TSCAN TSELECT TSERIAL TSINGLE TSPARSE TSUBDOMAIN
-%token TSYNC TTHEN TTYPE TUNION TUSE TVAR TVOLATILE
+%token TSYNC TTHEN TTYPE TUNION TUSE TVAR
 %token TWHEN TWHERE TWHILE TYIELD
 
 //
@@ -98,7 +98,7 @@
 %left TELSE
 %left TCOMMA
 %left TIMPLEMENTS
-%left TFOR TFORALL TIF TSYNC TSINGLE TVOLATILE 
+%left TFOR TFORALL TIF TATOMIC TSYNC TSINGLE
 %left TALIGN TBY THASH
 %left TIN
 %left TDOTDOT
@@ -121,7 +121,7 @@
 %left TDOT TLP TLSBR
 
 %type <flag> opt_config
-%type <flag> opt_extern opt_checked_tag 
+%type <flag> opt_extern
 
 %type <pt> opt_intent_tag opt_this_intent_tag
 
@@ -135,7 +135,7 @@
 %type <pblockstmt> class_level_stmt_ls
 
 %type <pblockstmt> stmt do_stmt
-%type <pblockstmt> interface_decl_stmt implements_stmt from_stmt
+%type <pblockstmt> interface_decl_stmt implements_stmt
 %type <pblockstmt> if_stmt loop_stmt
 %type <pblockstmt> select_stmt assignment_stmt class_level_stmt
 %type <pblockstmt> type_select_stmt return_stmt
@@ -161,11 +161,11 @@
 %type <pexpr> literal_expr opt_where_part
 %type <pexpr> stmt_level_expr type_level_expr
 %type <pexpr> reduce_expr scan_expr reduce_scan_op_expr opt_init_expr opt_init_type var_arg_expr
-%type <pexpr> implements_clause
+%type <pexpr> implements_clause where_expr
 %type <pdefexpr> formal enum_item
 %type <pdefexpr> query_expr opt_query_expr
 
-%type <pcallexpr> opt_inherit expr_ls tuple_expr_ls
+%type <pcallexpr> opt_inherit expr_ls tuple_expr_ls where_expr_ls
 %type <pcallexpr> opt_actual_ls actual_ls
 
 %type <pfnsymbol> fn_decl_stmt_inner formal_ls opt_formal_ls req_formal_ls
@@ -222,7 +222,7 @@ stmt:
 | TSYNC stmt                 { $$ = buildSyncStmt($2); }
 | TUSE expr_ls TSEMI         { $$ = buildUseStmt($2); }
 | TYIELD expr TSEMI          { $$ = buildPrimitiveStmt(PRIM_YIELD, $2); }
-| error                      { printf("syntax error"); clean_exit(1); } 
+| error                      { printf("syntax error"); clean_exit(1); }
 ;
 
 assignment_stmt:
@@ -275,7 +275,6 @@ class_level_stmt:
 | var_decl_stmt
 | interface_decl_stmt
 | implements_stmt
-| from_stmt
 ;
 
 loop_stmt:
@@ -344,7 +343,6 @@ class_decl_stmt:
 opt_extern:
            { $$ = FLAG_UNKNOWN; }
 | TEXTERN  { $$ = FLAG_EXTERN; }
-| T_EXTERN { $$ = FLAG_OLD_EXTERN_KW_USED; }
 ;
 
 class_tag:
@@ -371,23 +369,21 @@ interface_decl_stmt:
 ;
 
 interface_formals:
-	{$$ = NULL;}
-|TLP interface_formals_ls TRP	{$$=$2;}
+  {$$ = NULL;}
+|TLP interface_formals_ls TRP {$$=$2;}
 ;
 
 interface_formals_ls:
-	{$$=buildInterfaceFormal(NULL,NULL);}
+  {$$=buildInterfaceFormal(NULL,NULL);}
 |formal {$$=buildInterfaceFormal(NULL,$1);}
 |interface_formals_ls TCOMMA formal {$$=buildInterfaceFormal($1,$3);}
 ;
 
 implements_stmt:
-implements_clause opt_where_part TLCBR stmt_ls TRCBR	{ $$ = buildImplementsStmt($1, $2, $4); }
+implements_clause opt_where_part TLCBR stmt_ls TRCBR  { $$ = buildImplementsStmt($1, $2, $4); }
+| implements_clause TSEMI       { $$ = buildImplementsStmt($1, NULL, NULL); }
 ;
 
-from_stmt:
-TFROM expr TUSE implements_clause TSEMI	{ $$ = buildFromStmt($2,$4); }
-; 
 
 enum_decl_stmt:
   TENUM ident TLCBR enum_ls TRCBR
@@ -461,8 +457,6 @@ linkage_spec:
 | TEXPORT ident { $$ = new FnSymbol($2); $$->addFlag(FLAG_EXPORT); }
 | TEXTERN       { $$ = new FnSymbol(""); $$->addFlag(FLAG_EXTERN); }
 | TEXTERN ident { $$ = new FnSymbol($2); $$->addFlag(FLAG_EXTERN); }
-| T_EXTERN      { $$ = new FnSymbol(""); $$->addFlag(FLAG_EXTERN);
-                  $$->addFlag(FLAG_OLD_EXTERN_KW_USED); }
 
 fn_decl_stmt:
   linkage_spec proc_or_iter
@@ -477,7 +471,7 @@ fn_decl_stmt:
       captureTokens = 0;
       $4->userString = astr(captureString);
     }
-  opt_ret_tag opt_type opt_where_part opt_checked_tag opt_function_body_stmt
+  opt_ret_tag opt_type opt_where_part opt_function_body_stmt
     {
       FnSymbol* fn = $4;
 
@@ -495,10 +489,7 @@ fn_decl_stmt:
         fn->addFlag(FLAG_ITERATOR_FN);
       }
 
-      if ($9)
-        fn->addFlag(FLAG_SEPARATELY_TYPE_CHECKED);
-
-      $$ = buildFunctionDecl($4, $6, $7, $8, $10);
+      $$ = buildFunctionDecl($4, $6, $7, $8, $9);
     }
 ;
 
@@ -591,11 +582,6 @@ opt_intent_tag:
 | TTYPE   { $$ = INTENT_TYPE; }
 ;
 
-opt_checked_tag:
-            { $$ = FLAG_UNKNOWN; }
-| TCHECKED  { $$ = FLAG_CHECKED; }
-;
-
 opt_this_intent_tag:
          { $$ = INTENT_BLANK; }
 | TPARAM { $$ = INTENT_PARAM; }
@@ -642,8 +628,8 @@ var_arg_expr:
 ;
 
 opt_where_part:
-               { $$ = NULL; }
-| TWHERE expr_ls  { $$ = $2; }
+                        { $$ = NULL; }
+| TWHERE where_expr_ls  { $$ = $2; }
 ;
 
 module_decl_stmt:
@@ -658,10 +644,6 @@ type_alias_decl_stmt:
     { $$ = handleConfigTypes($3); }
 | TEXTERN TTYPE type_alias_decl_stmt_inner TSEMI 
     { $$ = convertTypesToExtern($3); }
-| T_EXTERN TTYPE type_alias_decl_stmt_inner TSEMI
-    { $$ = convertTypesToExtern($3);
-      USR_WARN($$, "The _extern keyword is deprecated. Use extern (no leading underscore) instead.");
-    }
 ;
 
 type_alias_decl_stmt_inner:
@@ -687,44 +669,17 @@ opt_init_type:
 | TASSIGN expr  { $$ = $2; }
 ;
 
-// The ugliness added by FLAG_OLD_EXTERN_KW_USED can be eliminated
-// once the "_extern" keyword moves from being deprecated to being
-// obsolete. <hilde>
 var_decl_stmt:
   opt_config TPARAM var_decl_stmt_inner_ls TSEMI
     {
-      /* Begin part to delete when "_extern" is obsoleted. */
-      if ($1 == FLAG_OLD_EXTERN_KW_USED)
-      {
-        $$ = buildVarDecls($3, FLAG_EXTERN, FLAG_PARAM);
-        USR_WARN($$, "The _extern keyword is deprecated. Use extern (no leading underscore) instead.");
-      }
-      else
-      /* End part to delete when "_extern" is obsoleted. */
       $$ = buildVarDecls($3, $1, FLAG_PARAM);
     }
 | opt_config TCONST var_decl_stmt_inner_ls TSEMI
     {
-      /* Begin part to delete when "_extern" is obsoleted. */
-      if ($1 == FLAG_OLD_EXTERN_KW_USED)
-      {
-        $$ = buildVarDecls($3, FLAG_EXTERN, FLAG_CONST);
-        USR_WARN($$, "The _extern keyword is deprecated. Use extern (no leading underscore) instead.");
-      }
-      else
-      /* End part to delete when "_extern" is obsoleted. */
       $$ = buildVarDecls($3, $1, FLAG_CONST);
     }
 | opt_config TVAR var_decl_stmt_inner_ls TSEMI
     {
-      /* Begin part to delete when "_extern" is obsoleted. */
-      if ($1 == FLAG_OLD_EXTERN_KW_USED)
-      {
-        $$ = buildVarDecls($3, FLAG_EXTERN, FLAG_UNKNOWN);
-        USR_WARN($$, "The _extern keyword is deprecated. Use extern (no leading underscore) instead.");
-      }
-      else
-      /* End part to delete when "_extern" is obsoleted. */
       $$ = buildVarDecls($3, $1, FLAG_UNKNOWN);
     }
 ;
@@ -733,7 +688,6 @@ opt_config:
             { $$ = FLAG_UNKNOWN; }
 | TCONFIG   { $$ = FLAG_CONFIG; }
 | TEXTERN   { $$ = FLAG_EXTERN; }
-| T_EXTERN  { $$ = FLAG_OLD_EXTERN_KW_USED; }
 ;
  
 var_decl_stmt_inner_ls:
@@ -839,6 +793,13 @@ expr_ls:
 | expr_ls TCOMMA query_expr  { $1->insertAtTail($3); }
 ;
 
+where_expr_ls:
+  where_expr                        { $$ = new CallExpr(PRIM_ACTUALS_LIST, $1); }
+| query_expr                        { $$ = new CallExpr(PRIM_ACTUALS_LIST, $1); }
+| where_expr_ls TCOMMA where_expr   { $1->insertAtTail($3); }
+| where_expr_ls TCOMMA query_expr   { $1->insertAtTail($3); }
+;
+
 tuple_expr_ls:
                                    { $$ = new CallExpr(PRIM_ACTUALS_LIST,
                                             new UnresolvedSymExpr("chpl__tuple_blank")); }
@@ -902,6 +863,11 @@ expr:
     }
 ;
 
+where_expr:
+expr                  {$$ = $1;}
+| implements_clause   {$$ = $1;}
+;
+
 type_level_expr:
   stmt_level_expr
 | TFOR expr TIN expr TDO expr %prec TFOR
@@ -922,6 +888,8 @@ type_level_expr:
     { $$ = buildForallLoopExpr(NULL, $2, $7, $5); }
 | TIF expr TTHEN expr TELSE expr
     { $$ = new CallExpr(new DefExpr(buildIfExpr($2, $4, $6))); }
+| TATOMIC expr
+    { $$ = new CallExpr("chpl__atomicType", $2); }
 | TSYNC expr
     { $$ = new CallExpr( "_syncvar", $2); }
 ;
@@ -981,7 +949,6 @@ binary_op_expr:
 | expr TBAND expr          { $$ = new CallExpr("&", $1, $3); }
 | expr TBOR expr           { $$ = new CallExpr("|", $1, $3); }
 | expr TBXOR expr          { $$ = new CallExpr("^", $1, $3); }
-| implements_clause	   { $$ = $1; }
 | expr TAND expr           { $$ = buildLogicalAndExpr($1, $3); }
 | expr TOR expr            { $$ = buildLogicalOrExpr($1, $3); }
 | expr TEXP expr           { $$ = new CallExpr("**", $1, $3); }
@@ -1001,6 +968,7 @@ implements_clause:
 expr TIMPLEMENTS ident   { $$ = new CallExpr("implements",$1,new UnresolvedSymExpr($3));}
 ;
 
+
 unary_op_expr:
   TPLUS expr %prec TUPLUS         { $$ = new CallExpr("+", $2); }
 | TMINUS expr %prec TUMINUS       { $$ = new CallExpr("-", $2); }
@@ -1011,8 +979,7 @@ unary_op_expr:
 ;
 
 lhs_expr:
-  TVOLATILE ident                 { $$ = new UnresolvedSymExpr($2, true); }
-| ident                           { $$ = new UnresolvedSymExpr($1); }
+  ident                           { $$ = new UnresolvedSymExpr($1); }
 | call_expr
 | dot_expr
 | parenthesized_expr

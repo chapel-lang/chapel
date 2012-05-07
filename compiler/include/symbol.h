@@ -9,7 +9,10 @@
 #include "flags.h"
 #include "type.h"
 
-extern FnSymbol* chpl_main;
+//
+// The function that represents the compiler-generated entry point
+//
+extern FnSymbol* chpl_gen_main;
 
 class SymExpr;
 class DefExpr;
@@ -159,12 +162,16 @@ class FnSymbol : public Symbol {
   BlockStmt* instantiationPoint; // point of instantiation
   Vec<BasicBlock*>* basicBlocks;
   Vec<CallExpr*>* calledBy;
+  const char* userString;
+  bool isConvertedInterfaceUser;
+  FnSymbol* valueFunction; // pointer to value function (created in
+                           // resolve and used in cullOverReferences)
+  FnSymbol* interfacedGenericFn; // pointer to function which is ready to be
+                                 // instantiated which had interfaces in its
+                                 // where clause (and now has dictionaries)
   Map<FnSymbol*, ArgSymbol*>  fnsInInterfaces; // functions now visible because
                                                // of implements clauses in the
                                                // where clause
-  const char* userString;
-  FnSymbol* valueFunction; // pointer to value function (created in
-                           // resolve and used in cullOverReferences)
 
   FnSymbol(const char* initName);
   ~FnSymbol();
@@ -201,17 +208,18 @@ class FnSymbol : public Symbol {
 
 class InterfaceSymbol : public Symbol {
 public:
-	Vec<FnSymbol*> functionSignatures;
-	AList fields;
-	AList* formals;
-	AList inherits;
+  Vec<FnSymbol*> functionSignatures;
+  AList fields;
+  AList* formals;
+  AList inherits;
 
-	InterfaceSymbol(const char* initName, AList* iFormals);
-	~InterfaceSymbol();
-	DECLARE_SYMBOL_COPY(InterfaceSymbol);
-	void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
-	void addDeclarations(Expr* expr, bool tail=true);
+  InterfaceSymbol(const char* initName, AList* iFormals);
+  ~InterfaceSymbol();
+  DECLARE_SYMBOL_COPY(InterfaceSymbol);
+  void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
+  void addDeclarations(Expr* expr, bool tail=true);
 };
+
 
 class EnumSymbol : public Symbol {
  public:
@@ -253,13 +261,13 @@ class LabelSymbol : public Symbol {
 };
 
 
-VarSymbol *new_StringSymbol(const char *s, bool hasVolatileType=false);
-VarSymbol *new_BoolSymbol(bool b, IF1_bool_type size=BOOL_SIZE_SYS, bool hasVolatileType=false);
-VarSymbol *new_IntSymbol(int64_t b, IF1_int_type size=INT_SIZE_32, bool hasVolatileType=false);
-VarSymbol *new_UIntSymbol(uint64_t b, IF1_int_type size=INT_SIZE_32, bool hasVolatileType=false);
-VarSymbol *new_RealSymbol(const char *n, long double b, IF1_float_type size=FLOAT_SIZE_64, bool hasVolatileType=false);
-VarSymbol *new_ImagSymbol(const char *n, long double b, IF1_float_type size=FLOAT_SIZE_64, bool hasVolatileType=false);
-VarSymbol *new_ComplexSymbol(const char *n, long double r, long double i, IF1_complex_type size=COMPLEX_SIZE_128, bool hasVolatileType=false);
+VarSymbol *new_StringSymbol(const char *s);
+VarSymbol *new_BoolSymbol(bool b, IF1_bool_type size=BOOL_SIZE_SYS);
+VarSymbol *new_IntSymbol(int64_t b, IF1_int_type size=INT_SIZE_64);
+VarSymbol *new_UIntSymbol(uint64_t b, IF1_int_type size=INT_SIZE_64);
+VarSymbol *new_RealSymbol(const char *n, long double b, IF1_float_type size=FLOAT_SIZE_64);
+VarSymbol *new_ImagSymbol(const char *n, long double b, IF1_float_type size=FLOAT_SIZE_64);
+VarSymbol *new_ComplexSymbol(const char *n, long double r, long double i, IF1_complex_type size=COMPLEX_SIZE_128);
 VarSymbol *new_ImmediateSymbol(Immediate *imm);
 void resetTempID();
 FlagSet getRecordWrappedFlags(Symbol* s);

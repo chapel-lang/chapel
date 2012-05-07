@@ -1,0 +1,136 @@
+===============================
+Chapel implementation of LULESH
+===============================
+
+This directory contains a Chapel port of the DARPA/Livermore
+Unstructured Lagrangian Explicit Shock Hydrodynamics (LULESH)
+benchmark (see https://computation.llnl.gov/casc/ShockHydro/
+for details).
+
+
+------
+Status
+------
+
+The Chapel version of LULESH is a work-in-progress.  To the best of
+our knowledge, the current form is a complete and faithful
+implementation of LULESH.  That said, several improvements remain
+to improve performance and elegance.  See the list below and TODO
+comments in the source code for some known areas for improvement.
+
+
+-----
+Files
+-----
+
+This directory's contents are as follows:
+
+./
+  lmeshes/     : input meshes
+
+  lulesh.chpl  : the Chapel source code
+
+  coords.out   : the coordinates computed by the program are written
+                 to this file, suitable for plotting
+
+  CLEANFILES      :\  
+  lulesh.catfiles : \
+  lulesh.compopts :  used by the Chapel testing system
+  lulesh.execopts : / 
+  lulesh.good     :/ 
+
+
+-----
+TODOs
+-----
+
+PERFORMANCE TODOs:
+------------------
+
+* Today, the sparse subdomain MatElems is not distributed across
+  multiple locales, resulting in too much memory on, and communication
+  to, locale #0.  Making this distributed aligned with Elems would
+  also permit enabling several commented-out local clauses.
+
+* localizeNeighborNodes seems a little weird/inefficient.  Review its
+  role and look for ways to improve.
+
+* In IntegrateStressForElems, there is a local block that was disabled
+  when switching the force arrays to sync arrays, perhaps due to
+  disabling remote value forwarding.  Ultimately, we should be able to
+  enable this, either through smarter compiler analysis or help from
+  the user.  Try to do so.
+
+* Add support for atomic floats to Chapel and replace sync vars with
+  them
+
+
+INPUT FILE TODOs:
+-----------------
+
+* Put initial energy into input file format
+
+* Ultimately, it would be cool to support comments in the input file
+  for clarity.  These could either be required or optional.
+
+* Seems like there should be a nicer way to read elemToNode in one
+  fell swoop (or at least not a scalar at a time).  Ideally in an
+  initializer so it could be const.  We could use a manual iterator,
+  but it seems like it would be nice for this to "just work" in some
+  way.
+
+* At the very least, it seems like the current nested loop should be
+  able to be replaced with a singleton loop and a read of a tuple.
+
+
+STYLE TODOs:
+------------
+
+* It'd be nice to replace some of the groups of three arrays
+  representing x, y, and z values with an array of tuples or records
+  or small arrays.  The array of tuples approach seems most
+  appropriate and could result in a rank-independent version of LULESH
+  if that was of interest.  This seems like it could also potentially
+  improve performance depending on how much the coordinates are used
+  in an interleaved manner.
+
+* Conversely, the arrays of tuples used to store elemToNode and 8*real
+  variables seem like they would be more natural as arrays of arrays.
+  We started using tuples for the performance benefit, but ultimately,
+  there shouldn't be a performance hit for using arrays of arrays --
+  we should make them perform the same and switch these back.
+
+* Review uses of 'var' -- replace with 'const' when possible.
+
+* (Maybe) typedef index(Elems)/index(Nodes) to be something like
+  Elem/Node or something clear?
+
+* Should the long list of constants labeled "Constants" be made into
+  params or at least config consts?  (maybe some subset falls into
+  each of those three categories?)
+
+* In ApplyAccelerationBoundaryConditionsForNodes(), shouldn't we be
+  able to write xdd[XSym] = 0.0 rather than using an explicit loop?
+
+* elemToNodesTuple() is this too simple to bother writing as an
+  iterator?
+
+
+ACCURACY TO SPIRIT OF BENCHMARK TODOs:
+--------------------------------------
+
+* Review loops over Elems to see whether some of them should be loops
+  over MatElems -- seems like the ones in EvalEOSforElems() probably
+  should be for example
+
+* courant_elem is currently unused -- is that a problem?
+
+* ditto for dthydro_elem
+
+* ditto for sentinel values of 1.0e+20 in original code -- did our
+  rewrite using a reduction mean these could go away?
+
+* the loop at the bottom of ApplyMaterialPropertiesForElems() doesn't
+  seem to do anything?
+
+* See question in CalcSoundSpeedForElems()

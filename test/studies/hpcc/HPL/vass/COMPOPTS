@@ -1,1 +1,1 @@
--M ../../../../distributions/dm -M ../../../../release/examples/hpcc -s reproducible=true -s verbose=false
+-M ../../../../release/examples/benchmarks/hpcc -s reproducible=true -s verbose=false

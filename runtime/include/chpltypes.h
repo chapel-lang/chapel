@@ -99,32 +99,6 @@ typedef struct __complex128 { _real64 re; _real64 im; } _complex128;
 typedef const char*         chpl_string;
 typedef int64_t              _symbol;
 
-#define CHPL_DEFINE_VOLATILE_TYPEDEF(t) typedef volatile t chpl_volatile_##t
-
-// volatile types
-
-CHPL_DEFINE_VOLATILE_TYPEDEF(chpl_bool);
-CHPL_DEFINE_VOLATILE_TYPEDEF(chpl_bool8);
-CHPL_DEFINE_VOLATILE_TYPEDEF(chpl_bool16);
-CHPL_DEFINE_VOLATILE_TYPEDEF(chpl_bool32);
-CHPL_DEFINE_VOLATILE_TYPEDEF(chpl_bool64);
-
-CHPL_DEFINE_VOLATILE_TYPEDEF(int8_t);
-CHPL_DEFINE_VOLATILE_TYPEDEF(int16_t);
-CHPL_DEFINE_VOLATILE_TYPEDEF(int32_t);
-CHPL_DEFINE_VOLATILE_TYPEDEF(int64_t);
-
-CHPL_DEFINE_VOLATILE_TYPEDEF(uint8_t);
-CHPL_DEFINE_VOLATILE_TYPEDEF(uint16_t);
-CHPL_DEFINE_VOLATILE_TYPEDEF(uint32_t);
-CHPL_DEFINE_VOLATILE_TYPEDEF(uint64_t);
-
-CHPL_DEFINE_VOLATILE_TYPEDEF(_real32);
-CHPL_DEFINE_VOLATILE_TYPEDEF(_real64);
-
-CHPL_DEFINE_VOLATILE_TYPEDEF(_imag32);
-CHPL_DEFINE_VOLATILE_TYPEDEF(_imag64);
-
 // macros for Chapel min/max -> C stdint.h or values.h min/max
 #define MIN_INT8            INT8_MIN
 #define MIN_INT16           INT16_MIN
@@ -188,5 +162,7 @@ int32_t chpl_now_year(void);
 int32_t chpl_now_month(void);
 int32_t chpl_now_day(void);
 int32_t chpl_now_dow(void);
+
+typedef int32_t chpl__class_id;
 
 #endif

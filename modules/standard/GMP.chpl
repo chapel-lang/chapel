@@ -1,52 +1,1519 @@
-use SysBasic;
-type  long =  int(64);
+module GMP {
+  use SysBasic;
+  use Error;
 
-extern type __mpf_struct;
-extern type mpf_t = 1*__mpf_struct;
-extern type __mpz_struct;
-extern type mpz_t = 1*__mpz_struct;
 
-extern proc mpz_init(inout X: mpz_t);
-extern proc mpz_set_ui(inout ROP: mpz_t, OP: c_ulong);
-extern proc mpz_init_set_ui(inout ROP: mpz_t, OP: c_ulong);
-extern proc mpz_mul_ui(inout ROP: mpz_t, inout OP1: mpz_t, OP2: c_ulong);
-extern proc mpz_submul_ui(inout ROP: mpz_t, inout OP1: mpz_t, OP2: c_ulong);
-extern proc mpz_add_ui(inout ROP: mpz_t, inout OP1: mpz_t, OP2: c_ulong);
-extern proc mpz_mul(inout ROP: mpz_t, inout OP1: mpz_t, inout OP2: mpz_t);
-extern proc mpz_mul_2exp(inout ROP: mpz_t, inout OP1: mpz_t, OP2: c_ulong);
-extern proc mpz_neg(inout ROP: mpz_t, inout OP: mpz_t);
-extern proc mpz_clear(inout X: mpz_t);
-extern proc mpz_tdiv_q(inout Q: mpz_t, inout N: mpz_t, inout D: mpz_t);
-extern proc mpz_fdiv_qr(inout Q: mpz_t, inout R: mpz_t, inout N: mpz_t, inout D: mpz_t);
-extern proc mpz_add(inout ROP: mpz_t, inout OP1: mpz_t, inout OP2: mpz_t);
-extern proc mpz_cmp(inout OP1: mpz_t, inout OP2: mpz_t) : int;
-extern proc mpz_get_ui(OP: mpz_t): uint(64);
+  extern type __mpf_struct;
+  extern type mpf_t = 1*__mpf_struct;
+  extern type __mpz_struct;
+  extern type mpz_t = 1*__mpz_struct;
+  extern type __gmp_randstate_struct;
+  extern type gmp_randstate_t = 1*__gmp_randstate_struct;
 
-extern type mp_bitcnt_t = c_ulong;
-extern type size_t = int(64);
+  extern type mp_bitcnt_t = c_ulong;
+  extern type mp_size_t = size_t;
+  extern type mp_limb_t=uint(64);
+  extern type mp_ptr; // mp_limb_t *
 
-extern proc mpf_set_default_prec(PREC: mp_bitcnt_t);
-extern proc mpz_sizeinbase(inout OP: mpz_t, BASE: c_int): size_t;
+  extern const mp_bits_per_limb: c_int;
 
-extern proc mpz_addmul_ui(inout ROP: mpz_t, inout OP1: mpz_t, OPT2: c_ulong);
+  /* All these external functions are inout, which may
+     seem suprising. They are that way because identity
+     matters and they may get reallocated otherwise;
+     inout is currently the only way to avoid that. */
 
-extern type double = real(64);
+  // Why do these need inout? It seems not to work without
+  // inout...
 
-extern proc mpf_init(inout X: mpf_t);
-extern proc mpf_set_z(inout ROP: mpf_t, inout OP: mpz_t);
-extern proc mpf_get_prec(inout OP: mpf_t): mp_bitcnt_t;
-extern proc mpf_get_d(inout OP: mpf_t): double;
-extern proc mpf_set_d(inout ROP: mpf_t, OP: double);
-extern proc mpf_set_prec_raw(inout ROP: mpf_t, PREC: mp_bitcnt_t);
-extern proc mpf_ui_div(inout ROP: mpf_t, OP1: c_ulong, inout OP2: mpf_t);
-extern proc mpf_mul(inout ROP: mpf_t, inout OP1: mpf_t, inout OP2: mpf_t);
-extern proc mpf_ui_sub(inout ROP: mpf_t, OP1: c_ulong, inout OP2: mpf_t);
-extern proc mpf_add(inout ROP: mpf_t, inout OP1: mpf_t, inout OP2: mpf_t);
-extern proc mpf_sub(inout ROP: mpf_t, inout OP1: mpf_t, inout OP2: mpf_t);
-extern proc mpf_mul_ui(inout ROP: mpf_t, inout OP1: mpf_t, OP2: c_ulong);
-extern proc mpf_div_2exp(inout ROP: mpf_t, inout OP1: mpf_t, OP2: mp_bitcnt_t);
-extern proc mpf_out_str(STREAM: _file, BASE: c_int, N_DIGITS: size_t, inout OP: mpf_t);
-extern proc mpf_clear(inout X: mpf_t);
+  // initializing rng
+  extern proc gmp_randinit_default(inout STATE: gmp_randstate_t);
+  extern proc gmp_randinit_mt(inout STATE: gmp_randstate_t);
+  extern proc gmp_randinit_lc_2exp(inout STATE: gmp_randstate_t, inout A:mpz_t, C: c_ulong, M2EXP: c_ulong);
+  extern proc gmp_randinit_lc_2exp_size(inout STATE: gmp_randstate_t, SIZE: c_ulong);
+  extern proc gmp_randinit_set(inout ROP: gmp_randstate_t, inout OP: gmp_randstate_t);
+  extern proc gmp_randclear(inout STATE: gmp_randstate_t);
 
-extern proc gmp_printf(fmt: string, arg...);
-extern proc gmp_fprintf(fp: _file, fmt: string, arg...);
+  // Initializing integers
+  extern proc mpz_init2(inout X: mpz_t, N: c_ulong);
+  extern proc mpz_init(inout X: mpz_t);
+  extern proc mpz_clear(inout X: mpz_t);
+  extern proc mpz_realloc2(inout X: mpz_t, NBITS: c_ulong);
+
+  // Assignment functions
+  extern proc mpz_set(inout ROP: mpz_t, OP: mpz_t);
+  extern proc mpz_set_ui(inout ROP: mpz_t, OP: c_ulong);
+  extern proc mpz_set_si(inout ROP: mpz_t, OP: c_long);
+  extern proc mpz_set_d(inout ROP: mpz_t, OP: c_double);
+  // mpz_set_q once rationals are supported
+  // mpz_set_f once mpf supported
+  extern proc mpz_set_str(inout ROP: mpz_t, STR: string, BASE: c_int);
+  extern proc mpz_swap(inout ROP1: mpz_t, inout ROP2: mpz_t);
+
+  // Combined initialization and setting
+  extern proc mpz_init_set(inout ROP: mpz_t, inout OP:mpz_t);
+  extern proc mpz_init_set_ui(inout ROP: mpz_t, OP:c_ulong);
+  extern proc mpz_init_set_si(inout ROP: mpz_t, OP:c_long);
+  extern proc mpz_init_set_d(inout ROP: mpz_t, OP:c_double);
+  extern proc mpz_init_set_str(inout ROP: mpz_t, STR: string, BASE:c_int):c_int;
+
+  // Conversion functions
+  extern proc mpz_get_ui(inout OP: mpz_t): c_ulong;
+  extern proc mpz_get_si(inout OP: mpz_t): c_long;
+  extern proc mpz_get_d(inout OP: mpz_t): c_double;
+  extern proc mpz_get_d_2exp(inout exp:c_long, inout OP: mpz_t): c_double;
+  extern proc mpz_get_str(STR:string, BASE:c_int, inout OP: mpz_t): string;
+
+
+  // Arithmetic functions
+  extern proc mpz_add(inout ROP: mpz_t, inout OP1: mpz_t, inout OP2: mpz_t);
+  extern proc mpz_add_ui(inout ROP: mpz_t, inout OP1: mpz_t, OP2: c_ulong);
+
+  extern proc mpz_sub(inout ROP: mpz_t, inout OP1: mpz_t, inout OP2: mpz_t);
+  extern proc mpz_sub_ui(inout ROP: mpz_t, inout OP1: mpz_t, OP2: c_ulong);
+  extern proc mpz_ui_sub(inout ROP: mpz_t, OP1: c_ulong, inout OP2: mpz_t);
+
+  extern proc mpz_mul(inout ROP: mpz_t, inout OP1: mpz_t, inout OP2: mpz_t);
+  extern proc mpz_mul_si(inout ROP: mpz_t, inout OP1: mpz_t, OP2: c_long);
+  extern proc mpz_mul_ui(inout ROP: mpz_t, inout OP1: mpz_t, OP2: c_ulong);
+
+  extern proc mpz_addmul(inout ROP: mpz_t, inout OP1: mpz_t, inout OP2: mpz_t);
+  extern proc mpz_addmul_ui(inout ROP: mpz_t, inout OP1: mpz_t, inout OP2: c_ulong);
+
+  extern proc mpz_submul(inout ROP: mpz_t, inout OP1: mpz_t, inout OP2: mpz_t);
+  extern proc mpz_submul_ui(inout ROP: mpz_t, inout OP1: mpz_t, OP2: c_ulong);
+
+  extern proc mpz_mul_2exp(inout ROP: mpz_t, inout OP1: mpz_t, OP2: c_ulong);
+
+  extern proc mpz_neg(inout ROP: mpz_t, inout OP: mpz_t);
+  extern proc mpz_abs(inout ROP: mpz_t, inout OP: mpz_t);
+
+  // Division Functions
+  extern proc mpz_cdiv_q(inout Q: mpz_t, inout N: mpz_t, inout D: mpz_t);
+  extern proc mpz_fdiv_q(inout Q: mpz_t, inout N: mpz_t, inout D: mpz_t);
+  extern proc mpz_tdiv_q(inout Q: mpz_t, inout N: mpz_t, inout D: mpz_t);
+
+  extern proc mpz_cdiv_r(inout R: mpz_t, inout N: mpz_t, inout D: mpz_t);
+  extern proc mpz_fdiv_r(inout R: mpz_t, inout N: mpz_t, inout D: mpz_t);
+  extern proc mpz_tdiv_r(inout R: mpz_t, inout N: mpz_t, inout D: mpz_t);
+
+  extern proc mpz_cdiv_qr(inout Q: mpz_t, inout R: mpz_t, inout N: mpz_t, inout D: mpz_t);
+  extern proc mpz_fdiv_qr(inout Q: mpz_t, inout R: mpz_t, inout N: mpz_t, inout D: mpz_t);
+  extern proc mpz_tdiv_qr(inout Q: mpz_t, inout R: mpz_t, inout N: mpz_t, inout D: mpz_t);
+
+  extern proc mpz_cdiv_q_ui(inout Q: mpz_t, inout N: mpz_t, D: c_ulong):c_ulong;
+  extern proc mpz_fdiv_q_ui(inout Q: mpz_t, inout N: mpz_t, D: c_ulong):c_ulong;
+  extern proc mpz_tdiv_q_ui(inout Q: mpz_t, inout N: mpz_t, D: c_ulong):c_ulong;
+
+  extern proc mpz_cdiv_r_ui(inout R: mpz_t, inout N: mpz_t, D: c_ulong):c_ulong;
+  extern proc mpz_fdiv_r_ui(inout R: mpz_t, inout N: mpz_t, D: c_ulong):c_ulong;
+  extern proc mpz_tdiv_r_ui(inout R: mpz_t, inout N: mpz_t, D: c_ulong):c_ulong;
+
+
+  extern proc mpz_cdiv_qr_ui(inout Q: mpz_t, inout R: mpz_t, inout N: mpz_t, D: c_ulong):c_ulong;
+  extern proc mpz_fdiv_qr_ui(inout Q: mpz_t, inout R: mpz_t, inout N: mpz_t, D: c_ulong):c_ulong;
+  extern proc mpz_tdiv_qr_ui(inout Q: mpz_t, inout R: mpz_t, inout N: mpz_t, D: c_ulong):c_ulong;
+
+  extern proc mpz_cdiv_ui(inout N: mpz_t, D: c_ulong):c_ulong;
+  extern proc mpz_fdiv_ui(inout N: mpz_t, D: c_ulong):c_ulong;
+  extern proc mpz_tdiv_ui(inout N: mpz_t, D: c_ulong):c_ulong;
+
+  extern proc mpz_cdiv_q_2exp(inout Q:mpz_t, inout N: mpz_t, B: c_ulong);
+  extern proc mpz_fdiv_q_2exp(inout Q:mpz_t, inout N: mpz_t, B: c_ulong);
+  extern proc mpz_tdiv_q_2exp(inout Q:mpz_t, inout N: mpz_t, B: c_ulong);
+
+  extern proc mpz_cdiv_r_2exp(inout R:mpz_t, inout N: mpz_t, B: c_ulong);
+  extern proc mpz_fdiv_r_2exp(inout R:mpz_t, inout N: mpz_t, B: c_ulong);
+  extern proc mpz_tdiv_r_2exp(inout R:mpz_t, inout N: mpz_t, B: c_ulong);
+
+  extern proc mpz_mod(inout R: mpz_t, inout N: mpz_t, inout D:mpz_t);
+  extern proc mpz_mod_ui(inout R: mpz_t, inout N: mpz_t, D:c_ulong):c_ulong;
+
+  extern proc mpz_divexact(inout Q: mpz_t, inout N: mpz_t, inout D:mpz_t);
+  extern proc mpz_divexact_ui(inout Q: mpz_t, inout N: mpz_t, D:c_ulong);
+
+  extern proc mpz_divisible_p(inout N: mpz_t, inout D:mpz_t):c_int;
+  extern proc mpz_divisible_ui_p(inout N: mpz_t, D:c_ulong):c_int;
+  extern proc mpz_divisible_2exp_p(inout N: mpz_t, B:c_ulong):c_int;
+
+  extern proc mpz_conguent_p(inout N: mpz_t, inout C:mpz_t, inout D:mpz_t):c_int;
+  extern proc mpz_congruent_ui_p(inout N: mpz_t, inout C:c_ulong, D:c_ulong):c_int;
+  extern proc mpz_congruent_2exp_p(inout N: mpz_t, inout C:mpz_t, B:c_int):c_int;
+
+  // Exponentiation Functions
+  extern proc mpz_powm(inout ROP: mpz_t, inout BASE: mpz_t, inout EXP: mpz_t, inout MOD: mpz_t);
+  extern proc mpz_powm_ui(inout ROP: mpz_t, inout BASE: mpz_t, EXP: c_ulong, inout MOD: mpz_t);
+  extern proc mpz_pow_ui(inout ROP: mpz_t, inout BASE: mpz_t, EXP: c_ulong);
+  extern proc mpz_ui_pow_ui(inout ROP: mpz_t, inout BASE: c_ulong, EXP: c_ulong);
+
+  // Root Extraction Functions
+  extern proc mpz_root(inout ROP: mpz_t, inout OP: mpz_t, N: c_ulong): c_int;
+  extern proc mpz_rootrem(inout ROOT: mpz_t, inout REM: mpz_t, inout U: mpz_t, N: c_ulong);
+  extern proc mpz_sqrt(inout ROP: mpz_t, inout OP: mpz_t);
+  extern proc mpz_sqrtrem(inout ROP1: mpz_t, inout ROP2: mpz_t, inout OP: mpz_t);
+  extern proc mpz_perfect_power_p(inout OP: mpz_t):c_int;
+  extern proc mpz_perfect_square_p(inout OP: mpz_t):c_int;
+
+  // Number Theoretic Functions
+  extern proc mpz_probab_prime_p(inout N: mpz_t, REPS: c_int): c_int;
+  extern proc mpz_nextprime(inout ROP: mpz_t, inout OP: mpz_t);
+  extern proc mpz_gcd(inout ROP: mpz_t, inout OP1: mpz_t, inout OP2: mpz_t);
+  extern proc mpz_gcd_ui(inout ROP: mpz_t, inout OP1: mpz_t, OP2: c_ulong);
+
+  extern proc mpz_gcdext(inout G: mpz_t, inout S: mpz_t, inout T: mpz_t, inout A: mpz_t, inout B: mpz_t);
+  extern proc mpz_lcm(inout ROP: mpz_t, inout OP1: mpz_t, inout OP2: mpz_t);
+  extern proc mpz_lcm_ui(inout ROP: mpz_t, inout OP1: mpz_t, OP2: c_ulong);
+  extern proc mpz_invert(inout ROP: mpz_t, inout OP1: mpz_t, inout OP2: mpz_t):c_int;
+  extern proc mpz_jacobi(inout A: mpz_t, inout B: mpz_t):c_int;
+  extern proc mpz_legendre(inout A: mpz_t, inout P: mpz_t):c_int;
+  extern proc mpz_kronecker(inout A: mpz_t, inout B: mpz_t):c_int;
+  extern proc mpz_kronecker_si(inout A: mpz_t, B: c_long):c_int;
+  extern proc mpz_kronecker_ui(inout A: mpz_t, B: c_ulong):c_int;
+  extern proc mpz_si_kronecker(A: c_long, inout B: mpz_t):c_int;
+  extern proc mpz_ui_kronecker(A: c_ulong, inout B: mpz_t):c_int;
+
+  extern proc mpz_remove(inout ROP: mpz_t, inout OP: mpz_t, inout F: mpz_t):c_ulong;
+  extern proc mpz_fac_ui(inout ROP: mpz_t, OP: c_ulong);
+  extern proc mpz_bin_ui(inout ROP: mpz_t, N: mpz_t, K: c_ulong);
+  extern proc mpz_bin_uiui(inout ROP: mpz_t, N: c_ulong, K: c_ulong);
+  extern proc mpz_fib_ui(inout FN: mpz_t, N: c_ulong);
+  extern proc mpz_fib2_ui(inout FN: mpz_t, FNSUB1: mpz_t, N: c_ulong);
+  extern proc mpz_lucnum_ui(inout LN: mpz_t, N: c_ulong);
+  extern proc mpz_lucnum2_ui(inout LN: mpz_t, LNSUB1: mpz_t, N: c_ulong);
+
+  // Comparison Functions
+  extern proc mpz_cmp(inout OP1: mpz_t, inout OP2: mpz_t) : c_int;
+  extern proc mpz_cmp_d(inout OP1: mpz_t, OP2: c_double) : c_int;
+  extern proc mpz_cmp_si(inout OP1: mpz_t, OP2: c_long) : c_int;
+  extern proc mpz_cmp_ui(inout OP1: mpz_t, OP2: c_ulong) : c_int;
+  extern proc mpz_cmpabs(inout OP1: mpz_t, inout OP2: mpz_t) : c_int;
+  extern proc mpz_cmpabs_d(inout OP1: mpz_t, OP2: c_double) : c_int;
+  extern proc mpz_cmpabs_ui(inout OP1: mpz_t, OP2: c_ulong) : c_int;
+  
+  extern proc mpz_sgn(inout OP: mpz_t): c_int;
+
+  // Logical and Bit Manipulation Functions
+  extern proc mpz_and(inout ROP: mpz_t, inout OP1: mpz_t, inout OP2: mpz_t);
+  extern proc mpz_ior(inout ROP: mpz_t, inout OP1: mpz_t, inout OP2: mpz_t);
+  extern proc mpz_xor(inout ROP: mpz_t, inout OP1: mpz_t, inout OP2: mpz_t);
+  extern proc mpz_com(inout ROP: mpz_t, inout OP: mpz_t);
+  extern proc mpz_popcount(inout OP: mpz_t):c_ulong;
+  extern proc mpz_hamdist(inout OP1: mpz_t, inout OP2: mpz_t):c_ulong;
+  extern proc mpz_scan0(inout OP: mpz_t, STARTING_BIT:c_ulong):c_ulong;
+  extern proc mpz_scan1(inout OP: mpz_t, STARTING_BIT:c_ulong):c_ulong;
+  extern proc mpz_setbit(inout ROP: mpz_t, BIT_INDEX:c_ulong);
+  extern proc mpz_clrbit(inout ROP: mpz_t, BIT_INDEX:c_ulong);
+  extern proc mpz_combit(inout ROP: mpz_t, BIT_INDEX:c_ulong);
+  extern proc mpz_tstbit(inout OP: mpz_t, BIT_INDEX:c_ulong):c_int;
+
+  // Input and Output Functions
+
+  // Random Number Functions
+  extern proc mpz_urandomb(inout ROP: mpz_t, STATE: gmp_randstate_t, N: c_ulong);
+  extern proc mpz_urandomm(inout ROP: mpz_t, STATE: gmp_randstate_t, N: mpz_t);
+  extern proc mpz_urandomb(inout ROP: mpz_t, STATE: gmp_randstate_t, N: c_ulong);
+
+  extern proc gmp_randinit_default(STATE: gmp_randstate_t);
+  extern proc gmp_randinit_mt(STATE: gmp_randstate_t);
+  extern proc gmp_randseed(STATE: gmp_randstate_t, SEED: mpz_t);
+  extern proc gmp_randseed_ui(STATE: gmp_randstate_t, SEED: c_ulong);
+
+  extern proc gmp_urandomb_ui(STATE: gmp_randstate_t, N: c_ulong):c_ulong;
+  extern proc gmp_urandomm_ui(STATE: gmp_randstate_t, N: c_ulong):c_ulong;
+
+  // Integer import and export
+
+
+  // Miscellaneous Functions
+  extern proc mpz_fits_ulong_p(inout OP: mpz_t): c_int;
+  extern proc mpz_fits_slong_p(inout OP: mpz_t): c_int;
+  extern proc mpz_fits_uint_p(inout OP: mpz_t): c_int;
+  extern proc mpz_fits_sint_p(inout OP: mpz_t): c_int;
+  extern proc mpz_fits_ushort_p(inout OP: mpz_t): c_int;
+  extern proc mpz_fits_sshort_p(inout OP: mpz_t): c_int;
+
+  extern proc mpz_odd_p(inout OP: mpz_t): c_int;
+  extern proc mpz_even_p(inout OP: mpz_t): c_int;
+  extern proc mpz_sizeinbase(inout OP: mpz_t, BASE: c_int): size_t;
+
+  extern proc mpf_set_default_prec(PREC: mp_bitcnt_t);
+
+  extern proc mpz_addmul_ui(inout ROP: mpz_t, inout OP1: mpz_t, OPT2: c_ulong);
+
+  // floating-point functions
+  extern proc mpf_init(inout X: mpf_t);
+  extern proc mpf_set_z(inout ROP: mpf_t, inout OP: mpz_t);
+  extern proc mpf_get_prec(inout OP: mpf_t): mp_bitcnt_t;
+  extern proc mpf_get_d(inout OP: mpf_t): c_double;
+  extern proc mpf_set_d(inout ROP: mpf_t, OP: c_double);
+  extern proc mpf_set_prec_raw(inout ROP: mpf_t, PREC: mp_bitcnt_t);
+  extern proc mpf_ui_div(inout ROP: mpf_t, OP1: c_ulong, inout OP2: mpf_t);
+  extern proc mpf_mul(inout ROP: mpf_t, inout OP1: mpf_t, inout OP2: mpf_t);
+  extern proc mpf_ui_sub(inout ROP: mpf_t, OP1: c_ulong, inout OP2: mpf_t);
+  extern proc mpf_add(inout ROP: mpf_t, inout OP1: mpf_t, inout OP2: mpf_t);
+  extern proc mpf_sub(inout ROP: mpf_t, inout OP1: mpf_t, inout OP2: mpf_t);
+  extern proc mpf_mul_ui(inout ROP: mpf_t, inout OP1: mpf_t, OP2: c_ulong);
+  extern proc mpf_div_2exp(inout ROP: mpf_t, inout OP1: mpf_t, OP2: mp_bitcnt_t);
+  extern proc mpf_out_str(STREAM: _file, BASE: c_int, N_DIGITS: size_t, inout OP: mpf_t);
+  extern proc mpf_clear(inout X: mpf_t);
+
+
+  // printf/scanf
+  extern proc gmp_printf(fmt: string, arg...);
+  extern proc gmp_fprintf(fp: _file, fmt: string, arg...);
+  extern proc gmp_fprintf(fp: _file, fmt: string, arg...);
+  extern proc gmp_asprintf(inout ret: string, fmt: string, arg...);
+
+
+
+  extern proc chpl_gmp_init();
+  extern proc chpl_gmp_get_mpz(inout ret:mpz_t,src_local:int,from:__mpz_struct);
+  extern proc chpl_gmp_get_randstate(not_inited_state:gmp_randstate_t, src_locale:int, from:__gmp_randstate_struct);
+  extern proc chpl_gmp_mpz_nlimbs(from:__mpz_struct):uint(64);
+  extern proc chpl_gmp_mpz_print(x:mpz_t);
+  extern proc chpl_gmp_mpz_get_str(base: c_int, x:mpz_t):string;
+
+
+  enum Round {
+    UP = 1,
+    DOWN = -1,
+    ZERO = 0
+  }
+
+  class BigInt {
+    var mpz:mpz_t;
+
+    // initializing integers (constructors)
+    proc BigInt(init2:bool, nbits:c_ulong) {
+      mpz_init2(this.mpz, nbits);
+    }
+    proc BigInt(num:c_long) {
+      mpz_init_set_si(this.mpz, num);
+    }
+    proc BigInt(str:string, base:c_int=0) {
+      var e:c_int;
+      e = mpz_init_set_str(this.mpz, str, base);
+      if e {
+        mpz_clear(this.mpz);
+        halt("Error initializing big integer: bad format");
+      }
+    }
+    proc BigInt(str:string, base:c_int=0, out error:syserr) {
+      var e:c_int;
+      error = ENOERR;
+      e = mpz_init_set_str(this.mpz, str, base);
+      if e {
+        mpz_clear(this.mpz);
+        error = EFORMAT;
+      }
+    }
+    proc BigInt(num:BigInt) {
+      if num.locale == here {
+        mpz_init_set(this.mpz, num.mpz);
+      } else {
+        mpz_init(this.mpz);
+        var mpz_struct = num.mpzStruct(); 
+        chpl_gmp_get_mpz(this.mpz, num.locale.chpl_id, mpz_struct);
+      }
+    }
+    proc BigInt() { mpz_init(this.mpz); }
+
+    // destructor
+    proc ~BigInt() { on this do mpz_clear(this.mpz); }
+
+    // utility functions used below.
+    proc numLimbs:uint(64) {
+      var mpz_struct = this.mpz[1];
+      return chpl_gmp_mpz_nlimbs(mpz_struct);
+    }
+
+    proc mpzStruct():__mpz_struct {
+      var ret:__mpz_struct;
+      on this {
+        ret = this.mpz[1];
+      }
+      return ret;
+    }
+
+
+    // returns true if we made a temp copy.
+    proc maybeCopy():(bool,BigInt) {
+      if this.locale == here {
+        return (false,this);
+      } else {
+        var mpz_struct = this.mpz[1];
+        var tmp = new BigInt(true, (mp_bits_per_limb:uint(64))*chpl_gmp_mpz_nlimbs(mpz_struct));
+        chpl_gmp_get_mpz(tmp.mpz, this.locale.chpl_id, mpz_struct); 
+        return (true, tmp);
+      }
+    }
+
+    // Assignment functions
+    proc set(a:BigInt)
+    {
+      on this {
+        if a.locale == here {
+          mpz_set(this.mpz, a.mpz);
+        } else {
+          var mpz_struct = a.mpzStruct(); 
+          chpl_gmp_get_mpz(this.mpz, a.locale.chpl_id, mpz_struct);
+        }
+      }
+    }
+    proc set_ui(num:c_ulong)
+    {
+      on this do mpz_set_ui(this.mpz, num);
+    }
+    proc set_si(num:c_long)
+    {
+      on this do mpz_set_si(this.mpz, num);
+    }
+    proc set(num:c_long)
+    {
+      set_si(num);
+    }
+    proc set_d(num:c_double)
+    {
+      on this do mpz_set_d(this.mpz, num);
+    }
+    proc set_str(str:string, base:c_int=0)
+    {
+      on this do mpz_set_str(this.mpz, str, base);
+    }
+    proc swap(a:BigInt)
+    {
+      on this {
+        if a.locale == here {
+          mpz_swap(this.mpz, a.mpz);
+        } else {
+          // we have to introduce a temporary..
+          var tmp = new BigInt(a);
+          // set a to what this
+          a.set(this);
+          // now tmp is local.
+          // set this to a (in tmp)
+          mpz_set(this.mpz, tmp.mpz);
+        }
+      }
+    }
+    proc get_ui():c_ulong
+    {
+      var x:c_ulong;
+      on this do x = mpz_getui(this.mpz);
+      return x;
+    }
+    proc get_si():c_long
+    {
+      var x:c_ulong;
+      on this do x = mpz_get_si(this.mpz);
+      return x;
+    }
+    proc get_d():c_double
+    {
+      var x:c_double;
+      on this do x = mpz_get_d(this.mpz);
+      return x;
+    }
+    // returns (exponent, double)
+    proc get_d_2exp():(c_long, c_double)
+    {
+      var exp:c_long;
+      var dbl:c_double;
+      on this {
+        var tmp:c_long;
+        dbl = mpz_get_d_2exp(tmp, this.mpz);
+        exp = tmp;
+      }
+      return (exp,dbl);
+    }
+    proc get_str(base:c_int=10):string
+    {
+      var ret:string;
+      on this {
+        ret = chpl_gmp_mpz_get_str(base, this.mpz);
+      }
+      return ret;
+    }
+
+    // Arithmetic functions
+    proc add(a:BigInt, b:BigInt)
+    {
+      on this {
+        var (acopy,a_) = a.maybeCopy();
+        var (bcopy,b_) = b.maybeCopy();
+        mpz_add(this.mpz, a_.mpz, b_.mpz);
+        if acopy then delete a_;
+        if bcopy then delete b_;
+      }
+    }
+    proc add_ui(a:BigInt, b:c_ulong)
+    {
+      on this {
+        var (acopy,a_) = a.maybeCopy();
+        mpz_add_ui(this.mpz, a_.mpz, b);
+        if acopy then delete a_;
+      }
+    }
+    proc sub(a:BigInt, b:BigInt)
+    {
+      on this {
+        var (acopy,a_) = a.maybeCopy();
+        var (bcopy,b_) = b.maybeCopy();
+        mpz_sub(this.mpz, a_.mpz, b_.mpz);
+        if acopy then delete a_;
+        if bcopy then delete b_;
+      }
+    }
+    proc sub_ui(a:BigInt, b:c_ulong)
+    {
+      on this {
+        var (acopy,a_) = a.maybeCopy();
+        mpz_sub_ui(this.mpz, a_.mpz, b);
+        if acopy then delete a_;
+      }
+    }
+    proc ui_sub(a:c_ulong, b:BigInt)
+    {
+      on this {
+        var (bcopy,b_) = b.maybeCopy();
+        mpz_ui_sub(this.mpz, a, b_.mpz);
+        if bcopy then delete b_;
+      }
+    }
+    proc mul(a:BigInt, b:BigInt)
+    {
+      on this {
+        var (acopy,a_) = a.maybeCopy();
+        var (bcopy,b_) = b.maybeCopy();
+        mpz_mul(this.mpz, a_.mpz, b_.mpz);
+        if acopy then delete a_;
+        if bcopy then delete b_;
+      }
+    }
+    proc mul_si(a:BigInt, b:c_long)
+    {
+      on this {
+        var (acopy,a_) = a.maybeCopy();
+        mpz_mul_si(this.mpz, a_.mpz, b);
+        if acopy then delete a_;
+      }
+    }
+    proc mul_ui(a:BigInt, b:c_ulong)
+    {
+      on this {
+        var (acopy,a_) = a.maybeCopy();
+        mpz_mul_ui(this.mpz, a_.mpz, b);
+        if acopy then delete a_;
+      }
+    }
+    proc addmul(a:BigInt, b:BigInt)
+    {
+      on this {
+        var (acopy,a_) = a.maybeCopy();
+        var (bcopy,b_) = b.maybeCopy();
+        mpz_addmul(this.mpz, a_.mpz, b_.mpz);
+        if acopy then delete a_;
+        if bcopy then delete b_;
+      }
+    }
+    proc addmul_ui(a:BigInt, b:c_ulong)
+    {
+      on this {
+        var (acopy,a_) = a.maybeCopy();
+        mpz_addmul(this.mpz, a_.mpz, b);
+        if acopy then delete a_;
+      }
+    }
+    proc submul(a:BigInt, b:BigInt)
+    {
+      on this {
+        var (acopy,a_) = a.maybeCopy();
+        var (bcopy,b_) = b.maybeCopy();
+        mpz_submul(this.mpz, a_.mpz, b_.mpz);
+        if acopy then delete a_;
+        if bcopy then delete b_;
+      }
+    }
+    proc submul_ui(a:BigInt, b:c_ulong)
+    {
+      on this {
+        var (acopy,a_) = a.maybeCopy();
+        mpz_submul_ui(this.mpz, a_.mpz, b);
+        if acopy then delete a_;
+      }
+    }
+    proc mul_2exp(a:BigInt, b:c_ulong)
+    {
+      on this {
+        var (acopy,a_) = a.maybeCopy();
+        mpz_mul_2exp(this.mpz, a_.mpz, b);
+        if acopy then delete a_;
+      }
+    }
+    proc neg(a:BigInt)
+    {
+      on this {
+        var (acopy,a_) = a.maybeCopy();
+        mpz_neg(this.mpz, a_.mpz);
+        if acopy then delete a_;
+      }
+    }
+    proc abs(a:BigInt)
+    {
+      on this {
+        var (acopy,a_) = a.maybeCopy();
+        mpz_abs(this.mpz, a_.mpz);
+        if acopy then delete a_;
+      }
+    }
+
+    // Division Functions
+    // These functions take in a constant rounding mode.
+    proc div_q(param rounding:Round, n:BigInt, d:BigInt)
+    {
+      on this {
+        var (ncopy,n_) = n.maybeCopy();
+        var (dcopy,d_) = d.maybeCopy();
+        select rounding {
+          when Round.UP   do mpz_cdiv_q(this.mpz, n_.mpz, d_.mpz);
+          when Round.DOWN do mpz_fdiv_q(this.mpz, n_.mpz, d_.mpz);
+          when Round.ZERO do mpz_tdiv_q(this.mpz, n_.mpz, d_.mpz);
+        }
+        if ncopy then delete n_;
+        if dcopy then delete d_;
+      }
+    }
+    proc div_r(param rounding:Round, n:BigInt, d:BigInt)
+    {
+      on this {
+        var (ncopy,n_) = n.maybeCopy();
+        var (dcopy,d_) = d.maybeCopy();
+        select rounding {
+          when Round.UP   do mpz_cdiv_r(this.mpz, n_.mpz, d_.mpz);
+          when Round.DOWN do mpz_fdiv_r(this.mpz, n_.mpz, d_.mpz);
+          when Round.ZERO do mpz_tdiv_r(this.mpz, n_.mpz, d_.mpz);
+        }
+        if ncopy then delete n_;
+        if dcopy then delete d_;
+      }
+    }
+    // this gets quotient, r gets remainder
+    proc div_qr(param rounding:Round, r:BigInt, n:BigInt, d:BigInt)
+    {
+      on this {
+        var (rcopy,r_) = r.maybeCopy();
+        var (ncopy,n_) = n.maybeCopy();
+        var (dcopy,d_) = d.maybeCopy();
+        select rounding {
+          when Round.UP   do mpz_cdiv_qr(this.mpz, r_.mpz, n_.mpz, d_.mpz);
+          when Round.DOWN do mpz_fdiv_qr(this.mpz, r_.mpz, n_.mpz, d_.mpz);
+          when Round.ZERO do mpz_tdiv_qr(this.mpz, r_.mpz, n_.mpz, d_.mpz);
+        }
+        if rcopy {
+          r.set(r_);
+          delete r_;
+        }
+        if ncopy then delete n_;
+        if dcopy then delete d_;
+      }
+    }
+    proc div_q_ui(param rounding:Round, n:BigInt, d:c_ulong):c_ulong
+    {
+      var ret:c_ulong;
+      on this {
+        var (ncopy,n_) = n.maybeCopy();
+        select rounding {
+          when Round.UP   do ret=mpz_cdiv_q_ui(this.mpz, n_.mpz, d);
+          when Round.DOWN do ret=mpz_fdiv_q_ui(this.mpz, n_.mpz, d);
+          when Round.ZERO do ret=mpz_tdiv_q_ui(this.mpz, n_.mpz, d);
+        }
+        if ncopy then delete n_;
+      }
+      return ret;
+    }
+    proc div_r_ui(param rounding:Round, n:BigInt, d:c_ulong):c_ulong
+    {
+      var ret:c_ulong;
+      on this {
+        var (ncopy,n_) = n.maybeCopy();
+        select rounding {
+          when Round.UP   do ret=mpz_cdiv_r_ui(this.mpz, n_.mpz, d);
+          when Round.DOWN do ret=mpz_fdiv_r_ui(this.mpz, n_.mpz, d);
+          when Round.ZERO do ret=mpz_tdiv_r_ui(this.mpz, n_.mpz, d);
+        }
+        if ncopy then delete n_;
+      }
+      return ret;
+    }
+    // this gets quotient, r gets remainder
+    proc div_qr_ui(param rounding:Round, r:BigInt, n:BigInt, d:c_ulong):c_ulong
+    {
+      var ret:c_ulong;
+      on this {
+        var (rcopy,r_) = r.maybeCopy();
+        var (ncopy,n_) = n.maybeCopy();
+        select rounding {
+          when Round.UP   do ret=mpz_cdiv_qr_ui(this.mpz, r_.mpz, n_.mpz, d);
+          when Round.DOWN do ret=mpz_fdiv_qr_ui(this.mpz, r_.mpz, n_.mpz, d);
+          when Round.ZERO do ret=mpz_tdiv_qr_ui(this.mpz, r_.mpz, n_.mpz, d);
+        }
+        if rcopy {
+          r.set(r_);
+          delete r_;
+        }
+        if ncopy then delete n_;
+      }
+      return ret;
+    }
+    proc div_ui(param rounding:Round, n:BigInt, d:c_ulong):c_ulong
+    {
+      var ret:c_ulong;
+      on this {
+        var (ncopy,n_) = n.maybeCopy();
+        select rounding {
+          when Round.UP   do ret=mpz_cdiv_ui(this.mpz, n_.mpz, d);
+          when Round.DOWN do ret=mpz_fdiv_ui(this.mpz, n_.mpz, d);
+          when Round.ZERO do ret=mpz_tdiv_ui(this.mpz, n_.mpz, d);
+        }
+        if ncopy then delete n_;
+      }
+      return ret;
+    }
+    proc div_q_2exp(param rounding:Round, n:BigInt, b:c_ulong)
+    {
+      on this {
+        var (ncopy,n_) = n.maybeCopy();
+        select rounding {
+          when Round.UP   do mpz_cdiv_q_2exp(this.mpz, n_.mpz, b);
+          when Round.DOWN do mpz_fdiv_q_2exp(this.mpz, n_.mpz, b);
+          when Round.ZERO do mpz_tdiv_q_2exp(this.mpz, n_.mpz, b);
+        }
+        if ncopy then delete n_;
+      }
+    }
+    proc div_r_2exp(param rounding:Round, n:BigInt, b:c_ulong)
+    {
+      on this {
+        var (ncopy,n_) = n.maybeCopy();
+        select rounding {
+          when Round.UP   do mpz_cdiv_r_2exp(this.mpz, n_.mpz, b);
+          when Round.DOWN do mpz_fdiv_r_2exp(this.mpz, n_.mpz, b);
+          when Round.ZERO do mpz_tdiv_r_2exp(this.mpz, n_.mpz, b);
+        }
+        if ncopy then delete n_;
+      }
+    }
+    proc mod(n:BigInt, d:BigInt)
+    {
+      on this {
+        var (ncopy,n_) = n.maybeCopy();
+        var (dcopy,d_) = d.maybeCopy();
+        mpz_mod(this.mpz, n_.mpz, d_.mpz);
+        if ncopy then delete n_;
+        if dcopy then delete d_;
+      }
+    }
+    proc mod_ui(n:BigInt, d:c_ulong):c_ulong
+    {
+      var ret:c_ulong;
+      on this {
+        var (ncopy,n_) = n.maybeCopy();
+        ret=mpz_mod(this.mpz, n_.mpz, d);
+        if ncopy then delete n_;
+      }
+      return ret;
+    }
+    proc divexact(n:BigInt, d:BigInt)
+    {
+      on this {
+        var (ncopy,n_) = n.maybeCopy();
+        var (dcopy,d_) = d.maybeCopy();
+        mpz_divexact(this.mpz, n_.mpz, d_.mpz);
+        if ncopy then delete n_;
+        if dcopy then delete d_;
+      }
+    }
+    proc divexact_ui(n:BigInt, d:c_ulong)
+    {
+      on this {
+        var (ncopy,n_) = n.maybeCopy();
+        mpz_divexact(this.mpz, n_.mpz, d);
+        if ncopy then delete n_;
+      }
+    }
+    proc divisible_p(d:BigInt):c_int
+    {
+      var ret:c_int;
+      on this {
+        var (dcopy,d_) = d.maybeCopy();
+        ret=mpz_divisible_p(this.mpz, d_.mpz);
+        if dcopy then delete d_;
+      }
+      return ret;
+    }
+    proc divisible_ui_p(d:c_ulong):c_int
+    {
+      var ret:c_int;
+      on this {
+        ret=mpz_divisible_ui_p(this.mpz, d);
+      }
+      return ret;
+    }
+    proc divisible_2exp_p(b:c_ulong):c_int
+    {
+      var ret:c_int;
+      on this {
+        mpz_divisible_2exp_p(this.mpz, b);
+      }
+      return ret;
+    }
+    proc congruent_p(c:BigInt, d:BigInt):c_int
+    {
+      var ret:c_int;
+      on this {
+        var (ccopy,c_) = c.maybeCopy();
+        var (dcopy,d_) = d.maybeCopy();
+        ret=mpz_congruent_p(this.mpz, c_.mpz, d_.mpz);
+        if ccopy then delete c_;
+        if dcopy then delete d_;
+      }
+      return ret;
+    }
+    proc congruent_ui_p(c:c_ulong, d:c_ulong):c_int
+    {
+      var ret:c_int;
+      on this {
+        ret=mpz_congruent_ui_p(this.mpz, c, d);
+      }
+      return ret;
+    }
+    proc congruent_2exp_p(c:BigInt, b:c_ulong):c_int
+    {
+      var ret:c_int;
+      on this {
+        var (ccopy,c_) = c.maybeCopy();
+        ret=mpz_congruent_2exp_p(this.mpz, c, b);
+        if ccopy then delete c_;
+      }
+      return ret;
+    }
+
+
+    // Exponentiation Functions
+    proc powm(base:BigInt, exp:BigInt, mod:BigInt)
+    {
+      on this {
+        var (bcopy,b_) = base.maybeCopy();
+        var (ecopy,e_) = exp.maybeCopy();
+        var (mcopy,m_) = mod.maybeCopy();
+        mpz_powm(this.mpz, b_.mpz, e_.mpz, m_.mpz);
+        if bcopy then delete b_;
+        if ecopy then delete e_;
+        if mcopy then delete m_;
+      }
+    }
+    proc powm_ui(base:BigInt, exp:c_ulong, mod:BigInt)
+    {
+      on this {
+        var (bcopy,b_) = base.maybeCopy();
+        var (mcopy,m_) = mod.maybeCopy();
+        mpz_powm_ui(this.mpz, b_.mpz, exp, m_.mpz);
+        if bcopy then delete b_;
+        if mcopy then delete m_;
+      }
+    }
+    proc pow_ui(base:BigInt, exp:c_ulong)
+    {
+      on this {
+        var (bcopy,b_) = base.maybeCopy();
+        mpz_pow_ui(this.mpz, b_.mpz, exp);
+        if bcopy then delete b_;
+      }
+    }
+    proc ui_pow_ui(base:c_ulong, exp:c_ulong)
+    {
+      on this {
+        mpz_ui_pow_ui(this.mpz, base, exp);
+      }
+    }
+
+    // Root Extraction Functions
+    proc root(a:BigInt, n:c_ulong):c_int
+    {
+      var ret:c_int;
+      on this {
+        var (acopy,a_) = a.maybeCopy();
+        ret=mpz_root(this.mpz, a_.mpz, n);
+        if acopy then delete a_;
+      }
+      return ret;
+    }
+    // this gets root, rem gets remainder.
+    proc mpz_rootrem(rem:BigInt, u:BigInt, n:c_ulong)
+    {
+      on this {
+        var (rcopy,r_) = rem.maybeCopy();
+        var (ucopy,u_) = u.maybeCopy();
+        mpz_rootrem(this.mpz, r_.mpz, u_.mpz, n);
+        if rcopy {
+          rem.set(r_);
+          delete r_;
+        }
+        if ucopy then delete u_;
+      }
+    }
+    proc sqrt(a:BigInt)
+    {
+      on this {
+        var (acopy,a_) = a.maybeCopy();
+        mpz_sqrt(this.mpz, a_.mpz);
+        if acopy then delete a_;
+      }
+    }
+    // this gets root, rem gets remainder of a-root*root.
+    proc sqrtrem(rem:BigInt, a:BigInt)
+    {
+      on this {
+        var (rcopy,r_) = rem.maybeCopy();
+        var (acopy,a_) = a.maybeCopy();
+        mpz_sqrtrem(this.mpz, r_.mpz, a_.mpz);
+        if rcopy {
+          rem.set(r_);
+          delete r_;
+        }
+        if acopy then delete a_;
+      }
+    }
+    proc perfect_power_p():c_int
+    {
+      var ret:c_int;
+      on this {
+        ret=mpz_perfect_power_p(this.mpz);
+      }
+      return ret;
+    }
+    proc perfect_square():c_int
+    {
+      var ret:c_int;
+      on this {
+        ret=mpz_perfect_square(this.mpz);
+      }
+      return ret;
+    }
+
+    // Number Theoretic Functions
+    proc probab_prime_p(reps: c_int):c_int
+    {
+      var ret:c_int;
+      on this {
+        ret=mpz_probab_prime_p(this.mpz, reps);
+      }
+      return ret;
+    }
+    proc nextprime(a: BigInt)
+    {
+      on this {
+        var (acopy,a_) = a.maybeCopy();
+        mpz_nextprime(this.mpz, a_.mpz);
+        if acopy then delete a_;
+      }
+    }
+    proc gcd(a: BigInt, b: BigInt)
+    {
+      on this {
+        var (acopy,a_) = a.maybeCopy();
+        var (bcopy,b_) = b.maybeCopy();
+        mpz_gcd(this.mpz, a_.mpz, b_.mpz);
+        if acopy then delete a_;
+        if bcopy then delete b_;
+      }
+    }
+    proc gcd_ui(a: BigInt, b: c_ulong)
+    {
+      on this {
+        var (acopy,a_) = a.maybeCopy();
+        mpz_gcd_ui(this.mpz, a_.mpz, b);
+        if acopy then delete a_;
+      }
+    }
+    // sets this to gcd(a,b)
+    // set s and t to to coefficients satisfying a*s + b*t == g
+    proc gcdext(s: BigInt, t: BigInt, a: BigInt, b: BigInt)
+    {
+      on this {
+        var (acopy,a_) = a.maybeCopy();
+        var (bcopy,b_) = b.maybeCopy();
+        var (scopy,s_) = s.maybeCopy();
+        var (tcopy,t_) = t.maybeCopy();
+        mpz_gcdext(this.mpz, s_.mpz, t_.mpz, a_.mpz, b_.mpz);
+        if acopy then delete a_;
+        if bcopy then delete b_;
+        if scopy {
+          s.set(s_);
+          delete s_;
+        }
+        if tcopy {
+          t.set(t_);
+          delete t_;
+        }
+      }
+    }
+    proc lcm(a: BigInt, b: BigInt)
+    {
+      on this {
+        var (acopy,a_) = a.maybeCopy();
+        var (bcopy,b_) = b.maybeCopy();
+        mpz_lcm(this.mpz, a_.mpz, b_.mpz);
+        if acopy then delete a_;
+        if bcopy then delete b_;
+      }
+    }
+    proc lcm_ui(a: BigInt, b: c_ulong)
+    {
+      on this {
+        var (acopy,a_) = a.maybeCopy();
+        mpz_lcm_ui(this.mpz, a_.mpz, b);
+        if acopy then delete a_;
+      }
+    }
+    proc invert(a: BigInt, b: BigInt):c_int
+    {
+      var ret:c_int;
+      on this {
+        var (acopy,a_) = a.maybeCopy();
+        var (bcopy,b_) = b.maybeCopy();
+        ret=mpz_invert(this.mpz, a_.mpz, b_.mpz);
+        if acopy then delete a_;
+        if bcopy then delete b_;
+      }
+      return ret;
+    }
+
+    // jacobi, legendre, kronecker are procedures outside this class.
+
+    proc remove(a: BigInt, f: BigInt):c_ulong
+    {
+      var ret:c_ulong;
+      on this {
+        var (acopy,a_) = a.maybeCopy();
+        var (fcopy,f_) = f.maybeCopy();
+        ret=mpz_remove(this.mpz, a_.mpz, f_.mpz);
+        if acopy then delete a_;
+        if fcopy then delete f_;
+      }
+      return ret;
+    }
+    proc fac_ui(a: c_ulong)
+    {
+      on this {
+        mpz_fac_ui(this.mpz, a);
+      }
+    }
+    proc bin_ui(n: BigInt, k: c_ulong)
+    {
+      on this {
+        var (ncopy,n_) = n.maybeCopy();
+        mpz_bin_ui(this.mpz, n_.mpz, k);
+        if ncopy then delete n_;
+      }
+    }
+    proc bin_uiui(n: c_ulong, k: c_ulong)
+    {
+      on this {
+        mpz_bin_uiui(this.mpz, n, k);
+      }
+    }
+    proc fib_ui(n: c_ulong)
+    {
+      on this {
+        mpz_fib_ui(this.mpz, n);
+      }
+    }
+    proc fib2_ui(fnsub1: BigInt, n: c_ulong)
+    {
+      on this {
+        var (fcopy,f_) = fnsub1.maybeCopy();
+        mpz_fib2_ui(this.mpz, f_.mpz, n);
+        if fcopy {
+          fnsub1.set(f_);
+          delete f_;
+        }
+      }
+    }
+    proc lucnum_ui(n: c_ulong)
+    {
+      on this {
+        mpz_lucnum_ui(this.mpz, n);
+      }
+    }
+    proc lucnum2_ui(lnsub1: BigInt, n: c_ulong)
+    {
+      on this {
+        var (fcopy,f_) = lnsub1.maybeCopy();
+        mpz_lucnum2_ui(this.mpz, f_.mpz, n);
+        if fcopy {
+          lnsub1.set(f_);
+          delete f_;
+        }
+      }
+    }
+ 
+
+    // Comparison Functions
+    proc cmp(b:BigInt):c_int
+    {
+      var ret:c_int;
+      on this {
+        var (bcopy,b_) = b.maybeCopy();
+        ret=mpz_cmp(this.mpz,b_);
+        if bcopy then delete b_;
+      }
+      return ret;
+    }
+    proc cmp_d(b:c_double):c_int
+    {
+      var ret:c_int;
+      on this {
+        ret=mpz_cmp_d(this.mpz,b);
+      }
+      return ret;
+    }
+    proc cmp_si(b:c_long):c_int
+    {
+      var ret:c_int;
+      on this {
+        ret=mpz_cmp_si(this.mpz,b);
+      }
+      return ret;
+    }
+    proc cmp_ui(b:c_ulong):c_int
+    {
+      var ret:c_int;
+      on this {
+        ret=mpz_cmp_ui(this.mpz,b);
+      }
+      return ret;
+    }
+    proc cmpabs(b:BigInt):c_int
+    {
+      var ret:c_int;
+      on this {
+        var (acopy,b_) = b.maybeCopy();
+        ret=mpz_cmpabs(this.mpz,b_);
+        if acopy then delete b_;
+      }
+      return ret;
+    }
+    proc cmpabs_d(b:c_double):c_int
+    {
+      var ret:c_int;
+      on this {
+        ret=mpz_cmpabs_d(this.mpz,b);
+      }
+      return ret;
+    }
+    proc cmp_abs_ui(b:c_ulong):c_int
+    {
+      var ret:c_int;
+      on this {
+        ret=mpz_cmpabs_ui(this.mpz,b);
+      }
+      return ret;
+    }
+    proc sgn():c_int
+    {
+      var ret:c_int;
+      on this {
+        ret=mpz_sgn(this.mpz);
+      }
+      return ret;
+    }
+
+    // Logical and Bit Manipulation Functions
+    proc and(a:BigInt, b:BigInt)
+    {
+      on this {
+        var (acopy,a_) = a.maybeCopy();
+        var (bcopy,b_) = b.maybeCopy();
+        mpz_and(this.mpz, a_.mpz, b_.mpz);
+        if acopy then delete a_;
+        if bcopy then delete b_;
+      }
+    }
+    proc ior(a:BigInt, b:BigInt)
+    {
+      on this {
+        var (acopy,a_) = a.maybeCopy();
+        var (bcopy,b_) = b.maybeCopy();
+        mpz_ior(this.mpz, a_.mpz, b_.mpz);
+        if acopy then delete a_;
+        if bcopy then delete b_;
+      }
+    }
+    proc xor(a:BigInt, b:BigInt)
+    {
+      on this {
+        var (acopy,a_) = a.maybeCopy();
+        var (bcopy,b_) = b.maybeCopy();
+        mpz_xor(this.mpz, a_.mpz, b_.mpz);
+        if acopy then delete a_;
+        if bcopy then delete b_;
+      }
+    }
+    proc com(a:BigInt)
+    {
+      on this {
+        var (acopy,a_) = a.maybeCopy();
+        mpz_com(this.mpz, a_.mpz);
+        if acopy then delete a_;
+      }
+    }
+    proc popcount():c_ulong
+    {
+      var ret:c_ulong;
+      on this {
+        ret = mpz_popcount(this.mpz);
+      }
+      return ret;
+    }
+    proc hamdist(b:BigInt)
+    {
+      var ret:c_ulong;
+      on this {
+        var (bcopy,b_) = b.maybeCopy();
+        ret=mpz_hamdist(this.mpz, b_.mpz);
+        if bcopy then delete b_;
+      }
+      return ret;
+    }
+    proc scan0(starting_bit:c_ulong):c_ulong
+    {
+      var ret:c_ulong;
+      on this {
+        ret = mpz_scan0(this.mpz, starting_bit);
+      }
+      return ret;
+    }
+    proc scan1(starting_bit:c_ulong):c_ulong
+    {
+      var ret:c_ulong;
+      on this {
+        ret = mpz_scan1(this.mpz, starting_bit);
+      }
+      return ret;
+    }
+    proc setbit(bit_index:c_ulong)
+    {
+      on this {
+        mpz_setbit(this.mpz, bit_index);
+      }
+    }
+    proc clrbit(bit_index:c_ulong)
+    {
+      on this {
+        mpz_clrbit(this.mpz, bit_index);
+      }
+    }
+    proc combit(bit_index:c_ulong)
+    {
+      on this {
+        mpz_combit(this.mpz, bit_index);
+      }
+    }
+    proc tstbit(bit_index:c_ulong):c_int
+    {
+      var ret:c_int;
+      on this {
+        ret = mpz_tstbit(this.mpz, bit_index);
+      }
+      return ret;
+    }
+
+    // Miscellaneous Functions
+    proc fits_ulong_p():c_int
+    {
+      var ret:c_int;
+      on this {
+        ret = mpz_fits_ulong_p(this.mpz);
+      }
+      return ret;
+    }
+    proc fits_slong_p():c_int
+    {
+      var ret:c_int;
+      on this {
+        ret = mpz_fits_ulong_p(this.mpz);
+      }
+      return ret;
+    }
+    proc fits_uint_p():c_int
+    {
+      var ret:c_int;
+      on this {
+        ret = mpz_fits_uint_p(this.mpz);
+      }
+      return ret;
+    }
+    proc fits_sint_p():c_int
+    {
+      var ret:c_int;
+      on this {
+        ret = mpz_fits_sint_p(this.mpz);
+      }
+      return ret;
+    }
+    proc fits_ushort_p():c_int
+    {
+      var ret:c_int;
+      on this {
+        ret = mpz_fits_ushort_p(this.mpz);
+      }
+      return ret;
+    }
+    proc fits_sshort_p():c_int
+    {
+      var ret:c_int;
+      on this {
+        ret = mpz_fits_sshort_p(this.mpz);
+      }
+      return ret;
+    }
+    proc odd_p():c_int
+    {
+      var ret:c_int;
+      on this {
+        ret = mpz_odd_p(this.mpz);
+      }
+      return ret;
+    }
+    proc even_p():c_int
+    {
+      var ret:c_int;
+      on this {
+        ret = mpz_even_p(this.mpz);
+      }
+      return ret;
+    }
+    proc sizeinbase(base:c_int):size_t
+    {
+      var ret:size_t;
+      on this {
+        ret = mpz_sizeinbase(this.mpz, base);
+      }
+      return ret;
+    }
+
+    // left out integer random functions
+    // these are in the GMPRandom class.
+
+    proc realloc2(nbits:c_ulong)
+    {
+      on this {
+        mpz_realloc2(this.mpz, nbits);
+      }
+    }
+    proc get_limbn(n:mp_size_t):mp_limb_t
+    {
+      var ret:mp_limb_t;
+      on this {
+        ret = mpz_getlimbn(this.mpz, n);
+      }
+      return ret;
+    }
+    proc size():size_t
+    {
+      var ret:size_t;
+      on this {
+        ret = mpz_size(this.mpz);
+      }
+      return ret;
+    }
+    proc debugprint() {
+      writeln("On locale ",this.locale);
+      on this {
+        chpl_gmp_mpz_print(this.mpz);
+      }
+    }
+  }
+
+
+  proc BigInt.writeThis(writer:Writer) {
+    var (acopy,a_) = this.maybeCopy();
+    var s:string = a_.get_str();
+    //gmp_asprintf(s, "%Zd", a_.mpz);
+    writer.write(s);
+    if acopy then delete a_;
+  }
+
+
+  proc jacobi(a: BigInt, b: BigInt):c_int
+  {
+    var ret:c_int;
+    on a {
+      var (bcopy,b_) = b.maybeCopy();
+      ret=mpz_jacobi(a.mpz, b_.mpz);
+      if bcopy then delete b_;
+    }
+    return ret;
+  }
+  proc legendre(a: BigInt, p: BigInt):c_int
+  {
+    var ret:c_int;
+    on a {
+      var (pcopy,p_) = p.maybeCopy();
+      ret=mpz_legendre(a.mpz, p_.mpz);
+      if pcopy then delete p_;
+    }
+    return ret;
+  }
+  proc kronecker(a: BigInt, b: BigInt):c_int
+  {
+    var ret:c_int;
+    on a {
+      var (bcopy,b_) = b.maybeCopy();
+      ret=mpz_kronecker(a.mpz, b_.mpz);
+      if bcopy then delete b_;
+    }
+    return ret;
+  }
+  proc kronecker_si(a: BigInt, b: c_long):c_int
+  {
+    var ret:c_int;
+    on a {
+      ret=mpz_kronecker_si(a.mpz, b);
+    }
+    return ret;
+  }
+  proc kronecker_ui(a: BigInt, b: c_ulong):c_int
+  {
+    var ret:c_int;
+    on a {
+      ret=mpz_kronecker_ui(a.mpz, b);
+    }
+    return ret;
+  }
+  proc si_kronecker(a: c_long, b: BigInt):c_int
+  {
+    var ret:c_int;
+    on b {
+      ret=mpz_si_kronecker(a, b.mpz);
+    }
+    return ret;
+  }
+  proc ui_kronecker(a: c_ulong, b: BigInt):c_int
+  {
+    var ret:c_int;
+    on b {
+      ret=mpz_ui_kronecker(a, b.mpz);
+    }
+    return ret;
+  }
+
+  class GMPRandom {
+    var state: gmp_randstate_t;
+    proc GMPRandom()
+    {
+      gmp_randinit_default(this.state);
+    }
+    // Creates a Mersenne Twister (probably same as init_default)
+    proc GMPRandom(twister:bool)
+    {
+      gmp_randinit_mt(this.state);
+    }
+    proc GMPRandom(a: BigInt, c: c_ulong, m2exp: c_ulong)
+    {
+      var (acopy,a_) = a.maybeCopy();
+      gmp_randinit_lc_2exp(this.state, a_.mpz, c, m2exp);
+      if acopy then delete a_;
+    }
+    proc GMPRandom(size: c_ulong)
+    {
+      gmp_randinit_lc_2exp_esize(this.state, size);
+    }
+    proc GMPRandom(a: GMPRandom)
+    {
+      if a.locale == here {
+        gmp_randinit_set(this.state, a.state);
+      } else {
+        chpl_gmp_get_randstate(this.state, a.locale.chpl_id, a.state[1]);
+      }
+    }
+    proc ~GMPRandom()
+    {
+      on this do gmp_randclear(this.state);
+    }
+    proc seed(seed: BigInt)
+    {
+      on this {
+        var (scopy,s_) = seed.maybeCopy();
+        gmp_randseed(this.state, s_.mpz);
+        if scopy then delete s_;
+      }
+    }
+    proc seed(seed: c_ulong)
+    {
+      on this {
+        gmp_randseed_ui(this.state, seed);
+      }
+    }
+    proc urandomb_ui(nbits: c_ulong):c_ulong
+    {
+      var ret: c_ulong;
+      on this {
+        ret=gmp_urandomb_ui(this.state, nbits);
+      }
+      return ret;
+    }
+    proc urandomm_ui(n: c_ulong):c_ulong
+    {
+      var ret: c_ulong;
+      on this {
+        ret=gmp_urandomm_ui(this.state, n);
+      }
+      return ret;
+    }
+    proc urandomb(r: BigInt, nbits: c_long)
+    {
+      on this {
+        var (rcopy,r_) = r.maybeCopy();
+        mpz_urandomb(r_.mpz, this.state, nbits);
+        if rcopy {
+          r.set(r_);
+          delete r_;
+        }
+      }
+    }
+    proc urandomm(r: BigInt, n: BigInt)
+    {
+      on this {
+        var (rcopy,r_) = r.maybeCopy();
+        var (ncopy,n_) = n.maybeCopy();
+        mpz_urandomm(r_.mpz, this.state, n_.mpz);
+        if rcopy {
+          r.set(r_);
+          delete r_;
+        }
+        if ncopy then delete n_;
+      }
+    }
+    proc rrandomb(r: BigInt, nbits: c_ulong)
+    {
+      on this {
+        var (rcopy,r_) = r.maybeCopy();
+        mpz_rrandomb(r_.mpz, this.state, nbits);
+        if rcopy {
+          r.set(r_);
+          delete r_;
+        }
+      }
+    }
+
+
+  }
+
+  /* FUTURE -- GMP numbers with record semantics,
+      expression and operator overloads.
+      */
+
+  // calls mp_set_memory_functions to use chpl_malloc, etc.
+  chpl_gmp_init();
+}

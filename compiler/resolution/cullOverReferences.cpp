@@ -76,7 +76,7 @@ void cullOverReferences() {
             }
             if (useMap.get(se->var) && useMap.get(se->var)->n > 0) {
               move->insertAfter(new CallExpr(PRIM_MOVE, se->var,
-                                  new CallExpr(PRIM_SET_REF, tmp)));
+                                  new CallExpr(PRIM_ADDR_OF, tmp)));
             } else {
               se->var->defPoint->remove();
             }
@@ -112,8 +112,8 @@ void cullOverReferences() {
     }
   }
   forv_Vec(CallExpr, call, gCallExprs) {
-    if (call->isPrimitive(PRIM_GET_REF) ||
-        call->isPrimitive(PRIM_SET_REF)) {
+    if (call->isPrimitive(PRIM_DEREF) ||
+        call->isPrimitive(PRIM_ADDR_OF)) {
       Type* vt = call->get(1)->typeInfo();
       if (isReferenceType(vt))
         vt = vt->getValType();

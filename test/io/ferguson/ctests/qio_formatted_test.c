@@ -501,11 +501,11 @@ void test_printscan_float(void)
 
   // 1 has %f, precision 3
   styles[1].precision = 3;
-  styles[1].realtype = 1;
+  styles[1].realfmt = 1;
 
   // 2 has %e, precision 3
   styles[2].precision = 3;
-  styles[2].realtype = 2;
+  styles[2].realfmt = 2;
 
   // 3 has showpoint, showplus
   styles[3].showpoint = 1;
@@ -522,17 +522,17 @@ void test_printscan_float(void)
 
   // 6 %g, 4 significant digits
   styles[6].significant_digits = 4;
-  styles[6].realtype = 0;
+  styles[6].realfmt = 0;
 
   // 7 has %f showpoint, precision 4
   styles[7].showpoint = 1;
   styles[7].precision = 4;
-  styles[7].realtype = 1;
+  styles[7].realfmt = 1;
 
   // 7 has %e showpoint, precision 4
   styles[8].showpoint = 1;
   styles[8].precision = 4;
-  styles[8].realtype = 2;
+  styles[8].realfmt = 2;
 
 
   // Open a temporary file.
@@ -1034,6 +1034,55 @@ void test_scanmatch()
   assert(err == EEOF);
 
   qio_channel_release(reading);
+
+  qio_file_release(f);
+  f = NULL;
+
+  err = qio_file_open_tmp(&f, 0, NULL);
+  assert(!err);
+
+  err = qio_channel_create(&writing, f, QIO_CH_BUFFERED, 0, 1, 0, INT64_MAX, NULL);
+  assert(!err);
+
+  err = qio_channel_write_char(true, writing, 'a');
+  assert(!err);
+  err = qio_channel_write_char(true, writing, ' ');
+  assert(!err);
+  err = qio_channel_write_char(true, writing, 'b');
+  assert(!err);
+
+  qio_channel_release(writing);
+
+  err = qio_channel_create(&reading, f, QIO_CH_BUFFERED, 1, 0, 0, INT64_MAX, NULL);
+  assert(!err);
+
+  err = qio_channel_scan_literal(true, reading, "ab", 2, 1);
+  assert(err == EFORMAT);
+  err = qio_channel_scan_literal(true, reading, "a", 1, 1);
+  assert(err == 0);
+  err = qio_channel_scan_literal(true, reading, " ", 1, 1);
+  assert(err == 0);
+  err = qio_channel_scan_literal(true, reading, "b", 1, 1);
+  assert(err == 0);
+  err = qio_channel_scan_literal(true, reading, "a", 1, 1);
+  assert(err == EEOF);
+
+  qio_channel_release(reading);
+
+  err = qio_channel_create(&reading, f, QIO_CH_BUFFERED, 1, 0, 0, INT64_MAX, NULL);
+  assert(!err);
+
+  err = qio_channel_scan_literal(true, reading, "ab", 2, 1);
+  assert(err == EFORMAT);
+  err = qio_channel_scan_literal(true, reading, "a ", 2, 1);
+  assert(err == 0);
+  err = qio_channel_scan_literal(true, reading, "b", 1, 1);
+  assert(err == 0);
+  err = qio_channel_scan_literal(true, reading, "a", 1, 1);
+  assert(err == EEOF);
+
+  qio_channel_release(reading);
+
 
   qio_file_release(f);
   f = NULL;

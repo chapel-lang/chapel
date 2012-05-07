@@ -60,9 +60,9 @@ chpl_string chpl_format(chpl_string format, ...) {
 
 #ifndef LAUNCHER
 struct __chpl____wide_chpl_string {
-  int32_t locale;
+  int64_t locale;
   chpl_string addr;
-  int32_t size;
+  int64_t size;
 };
 
 chpl_string

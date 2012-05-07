@@ -46,27 +46,17 @@ class BlockStmt : public Expr {
 
 class ImplementsStmt : public Expr {
 public:
-	Expr* implementsClause;
-	Expr* wherePart;
-	BlockStmt* statements;
+  Expr* implementsClause;
+  Expr* wherePart;
+  BlockStmt* statements;
 
-	ImplementsStmt(Expr* implementsClause, Expr* wherePart, BlockStmt* statements);
-	DECLARE_COPY(ImplementsStmt);
-	void replaceChild(Expr* old_ast, Expr* new_ast);
+  ImplementsStmt(Expr* implementsClause, Expr* wherePart, BlockStmt* statements);
+  DECLARE_COPY(ImplementsStmt);
+  void replaceChild(Expr* old_ast, Expr* new_ast);
 
-	void codegen(FILE* outfile);
+  void codegen(FILE* outfile);
 };
 
-class FromStmt : public Expr {
-public:
-	Expr* moduleName;
-	Expr* implementsClause;
-
-	FromStmt(Expr* moduleName, Expr* implementsClause);
-	DECLARE_COPY(FromStmt);
-	void replaceChild(Expr* old_ast, Expr* new_ast);
-	void codegen(FILE* outfile);
-};
 
 class CondStmt : public Expr {
  public:

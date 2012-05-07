@@ -265,12 +265,12 @@ The configuration constants can be set as follows:
                       thus printing out a table of all memory that has
                       not been freed without aggregation.
 
-  --memMax=uint(64) : sets a maximum level of allocatable memory.  If
+  --memMax=int(64) :  sets a maximum level of allocatable memory.  If
                       this constraint is violated, the program is
                       terminated.  If unset or 0, there is no
                       simulated maximum.
 
-  --memThreshold=uint(64) : sets a minimum threshold for memory
+  --memThreshold=int(64)  : sets a minimum threshold for memory
                             tracking.  Allocations and frees that are
                             smaller than this threshold are ignored.
                             The default is 0.  Note that if memory

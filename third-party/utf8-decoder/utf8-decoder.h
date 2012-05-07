@@ -27,7 +27,7 @@ static inline
 uint32_t qio_utf8_decode(uint32_t* restrict state,
                      uint32_t* restrict codep,
                      uint32_t byte) {
-  uint32_t type = qio_utf8d[byte];
+  uint32_t type = qio_utf8d[byte & 0xff];
 
   *codep = (*state != UTF8_ACCEPT) ?
     (byte & 0x3fu) | (*codep << 6) :

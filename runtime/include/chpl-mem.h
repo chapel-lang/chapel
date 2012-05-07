@@ -17,28 +17,31 @@
 // and no additional error checking.
 #include "chpl-mem-impl.h"
 
+// import allocation types
+#include "chpl-mem-desc.h"
+
+// Need memory tracking prototypes for inlined memory routines
+#include "chplmemtrack.h"
+
 // CHPL_MEM_DEBUG=1 will enable tracking and other extra checks;
 // CHPL_MEM_DEBUG will be set to 1 if CHPL_DEBUG is defined;
 // or if CHPL_OPTIMIZE is not defined.
+// If CHPL_OPTIMIZE is defined and CHPL_DEBUG is not defined,
+// we set CHPL_MEM_DEBUG to chpl_memTrack, so that memory tracking
+// can still be activated at run-time.
 #ifndef CHPL_MEM_DEBUG
 
 #ifdef CHPL_DEBUG
 #define CHPL_MEM_DEBUG 1
 #else
 #ifdef CHPL_OPTIMIZE
-#define CHPL_MEM_DEBUG 0
+#define CHPL_MEM_DEBUG chpl_memTrack
 #else
 #define CHPL_MEM_DEBUG 1
 #endif
 #endif
 
 #endif
-
-// import allocation types
-#include "chpl-mem-desc.h"
-
-// Need memory tracking prototypes for inlined memory routines
-#include "chplmemtrack.h"
 
 extern const int chpl_mem_numDescs; // defined in generated code
 

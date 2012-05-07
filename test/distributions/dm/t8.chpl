@@ -1,6 +1,7 @@
-// Testing various aspects of 1-d BlockCyclic.
+// Testing various aspects of BlockCyclic specifier.
 
-use d, f, u;
+use DimensionalDist2D, BlockCycDim;
+use u;
 
 config const verbose = false;
 config const nopfx = false;
@@ -80,14 +81,14 @@ proc testsuite(type T, initphase) {
   hd("testsuite(", typeToString(T), ")");
   tl();
 
-  const df8 = new idist(lowIdx=-100, blockSize=7, numLocales=s1, name="D1");
-  const df9 = new idist(lowIdx=-10, blockSize=5, numLocales=s2, name="D2");
-  const dm = new dmap(new DimensionalDist(mylocs, df8, df9, "dm", idxType=T));
+  const df8 = new BlockCyclicDim(lowIdx=100, blockSize=7, numLocales=s1, name="D1");
+  const df9 = new BlockCyclicDim(lowIdx=-10, blockSize=5, numLocales=s2, name="D2");
+  const dm = new dmap(new DimensionalDist2D(mylocs, df8, df9, "dm", idxType=T));
 
   proc tw(a, b, c, d) { test([a:T..b:T, c:T..d:T] dmapped dm); }
   inline
   proc t2(a,b) { tw(5,5,a,b); }
-  proc t22(a,b,st,al) { test([5:T..5:T, a:T..b:T by st align al:T] dmapped dm); }
+  proc t22(a,b,st,al) { test([5:T..5:T, a:T..b:T by st:T align al:T] dmapped dm); }
 
   t2(7,7);   // 1,0
   t2(12,12); // 1,1
@@ -136,20 +137,51 @@ proc testsuite(type T, initphase) {
 
   test([ 5:T..11:T, 12:T..12:T] dmapped dm);
 
-  test([ 1:T..1:T, 0:T..9:T       ] dmapped dm);
-  test([ 1:T..1:T, 0:T..9:T by  1 ] dmapped dm);
-  test([ 1:T..1:T, 0:T..9:T by  2 ] dmapped dm);
-  test([ 1:T..1:T, 0:T..9:T by  3 ] dmapped dm);
-  test([ 1:T..1:T, 0:T..9:T by -1 ] dmapped dm);
-  test([ 1:T..1:T, 0:T..9:T by -2 ] dmapped dm);
-  test([ 1:T..1:T, 0:T..9:T by -3 ] dmapped dm);
+  proc cmb1(param sgnOnly, r1, r2, m1, m2) {
+    if !sgnOnly || _isSignedType(T) then
+      test([r1, r2] dmapped dm);
+    else {
+      leapphase();
+      hd("skipping for unsigned (", m1, ", ", m2, ")");
+      tl();
+    }
+  }
+
+  proc combo(param sgnOnly,
+             r1a:range(T), r1b:range(T), r2:range(T),
+             m1a:string,   m1b:string,   m2:string)
+  {
+    cmb1(sgnOnly, r1a, r2      , m1a, m2           );
+    cmb1(sgnOnly, r1a, r2 by  1, m1a, m2 + " by  1");
+    cmb1(sgnOnly, r1a, r2 by  2, m1a, m2 + " by  2");
+    cmb1(sgnOnly, r1a, r2 by  3, m1a, m2 + " by  3");
+    cmb1(sgnOnly, r1b, r2 by -1, m1b, m2 + " by -1");
+    cmb1(sgnOnly, r1b, r2 by -2, m1b, m2 + " by -2");
+    cmb1(sgnOnly, r1b, r2 by -3, m1b, m2 + " by -3");
+
+    cmb1(sgnOnly, r2      , r1a, m2,            m1a);
+    cmb1(sgnOnly, r2 by  1, r1a, m2 + " by  1", m1a);
+    cmb1(sgnOnly, r2 by  2, r1a, m2 + " by  2", m1a);
+    cmb1(sgnOnly, r2 by  3, r1a, m2 + " by  3", m1a);
+    cmb1(sgnOnly, r2 by -1, r1b, m2 + " by -1", m1b);
+    cmb1(sgnOnly, r2 by -2, r1b, m2 + " by -2", m1b);
+    cmb1(sgnOnly, r2 by -3, r1b, m2 + " by -3", m1b);
+  }
+
+  const n5=-5, n9=-9; // so we can cast them to unsigned
+  combo(false, 1:T..1:T, 1:T..1:T,  0:T..9:T, "1..1", "0..0", "0..9");
+  combo(true,  1:T..1:T, 1:T..1:T, n5:T..5:T, "1..1", "0..0", "-5..5");
+  combo(true,  1:T..1:T, 1:T..1:T, n9:T..0:T, "1..1", "0..0", "-9..0");
 
   tw(5,11, 47,42);
   tw(11,5, 42,47);
   tw(11,5, 47,42);
 }
 
-testsuite(int,        0);
-testsuite(int(64), 1000);
-//testsuite(uint,     2000);
-//testsuite(uint(64), 3000);
+testsuite(int(64),  1000);
+testsuite(int(32),  3000);
+testsuite(uint(64), 5000);
+testsuite(uint(32), 7000);
+// currently the following won't create domains with idxType=u/int(8) or 16
+//testsuite( int(8));
+//testsuite(uint(8));

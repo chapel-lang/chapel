@@ -3,7 +3,7 @@ class C {
   var y: real;
 }
 
-var w = open("test_remote_file_read_class.txt", iomode.w).writer();
+var w = open("test_remote_file_read_class.txt", iomode.cw).writer();
 
 var c = new C(x=1,y=2.3);
 

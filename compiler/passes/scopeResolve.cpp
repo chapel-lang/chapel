@@ -6,7 +6,6 @@
 #include "scopeResolve.h"
 #include "stringutil.h"
 #include "symbol.h"
-#include "typeCheck.h"
 
 //
 // The symbolTable maps BaseAST* pointers to entries based on scope
@@ -47,6 +46,43 @@ static bool enableModuleUsesCache = false;
 // test/arrays/deitz/test_array_alias_field.chpl).
 //
 static Vec<const char*> aliasFieldSet;
+
+//
+// getScope returns the BaseAST that corresponds to the scope where
+// 'ast' exists; 'ast' must be an Expr or a Symbol.  Note that if you
+// pass this a BaseAST that defines a scope, the BaseAST that defines
+// the scope where it exists will be returned.  Thus if a BlockStmt
+// nested in another BlockStmt is passed to getScope, the outer
+// BlockStmt will be returned.
+//
+static BaseAST*
+getScope(BaseAST* ast) {
+  if (Expr* expr = toExpr(ast)) {
+    BlockStmt* block = toBlockStmt(expr->parentExpr);
+    if (block && block->blockTag != BLOCK_SCOPELESS) {
+      return block;
+    } else if (expr->parentExpr) {
+      return getScope(expr->parentExpr);
+    } else if (FnSymbol* fn = toFnSymbol(expr->parentSymbol)) {
+      return fn;
+    } else if (TypeSymbol* ts = toTypeSymbol(expr->parentSymbol)) {
+      if (isEnumType(ts->type) || isClassType(ts->type)) {
+        return ts;
+      }
+    }
+    if (expr->parentSymbol == rootModule)
+      return NULL;
+    else
+      return getScope(expr->parentSymbol->defPoint);
+  } else if (Symbol* sym = toSymbol(ast)) {
+    if (sym == rootModule)
+      return NULL;
+    else
+      return getScope(sym->defPoint);
+  }
+  INT_FATAL(ast, "getScope expects an Expr or a Symbol");
+  return NULL;
+}
 
 //
 // addToSymbolTable adds the asts in a vector to the global
@@ -461,8 +497,7 @@ void build_type_constructor(ClassType* ct) {
             fn->insertAtTail(new CallExpr(PRIM_SET_MEMBER, fn->_this,
                                           new_StringSymbol(field->name), arg));
           else if (arg->type == dtAny &&
-                   !ct->symbol->hasFlag(FLAG_REF) &&
-                   strcmp(ct->symbol->name, "_square_tuple"))
+                   !ct->symbol->hasFlag(FLAG_REF))
             fn->insertAtTail(new CallExpr(PRIM_SET_MEMBER, fn->_this,
                                           new_StringSymbol(field->name),
                                           new CallExpr("chpl__initCopy",
@@ -617,14 +652,25 @@ void build_constructor(ClassType* ct) {
         // Create a call to the superclass constructor.
         superCall = new CallExpr(superCtor->name);
         int shadowID = 1;
+        // Walk the formals of the default super class constructor
         for_formals_backward(formal, superCtor) {
           if (formal->hasFlag(FLAG_IS_MEME))
             continue;
           DefExpr* superArg = formal->defPoint->copy();
+          // Rename the arg if it clashes with a field name already seen,
+          // starting with those in the most-derived class in lexical order
+          // and then in successive ancestors in reverse-lexical order.
+          // Field names within a given class are guaranteed to be unique,
+          // so the order in which the names are visited at each ancestral 
+          // level is immaterial.
           if (fieldNamesSet.set_in(superArg->sym->name))
             superArg->sym->name =
               astr("_shadow_", istr(shadowID++), "_", superArg->sym->name);
           fieldNamesSet.set_add(superArg->sym->name);
+          // Inserting each successive ancestor argument at the head in 
+          // reverse-lexcial order results in all of the arguments appearing
+          // in lexical order, starting with those in the most ancient class
+          // and ending with those in the most-derived class.
           fn->insertFormalAtHead(superArg);
           superCall->insertAtHead(superArg->sym);
         }
@@ -669,13 +715,16 @@ void build_constructor(ClassType* ct) {
 
     if (field->hasFlag(FLAG_PARAM))
       arg->intent = INTENT_PARAM;
+
     Expr* exprType = field->defPoint->exprType->remove();
     Expr* init = field->defPoint->init->remove();
 
     bool hadType = exprType;
     bool hadInit = init;
+
     if (init) {
       if (!field->hasFlag(FLAG_TYPE_VARIABLE) && !exprType) {
+        // init && !exprType
         VarSymbol* tmp = newTemp();
         tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
         tmp->addFlag(FLAG_MAYBE_PARAM);
@@ -712,8 +761,7 @@ void build_constructor(ClassType* ct) {
       arg->type = dtAny;
     fn->insertFormalAtTail(arg);
     if (arg->type == dtAny && !arg->hasFlag(FLAG_TYPE_VARIABLE) &&
-        !arg->hasFlag(FLAG_PARAM) && !ct->symbol->hasFlag(FLAG_REF) &&
-        strcmp(ct->symbol->name, "_square_tuple"))
+        !arg->hasFlag(FLAG_PARAM) && !ct->symbol->hasFlag(FLAG_REF))
       fn->insertAtTail(new CallExpr(PRIM_SET_MEMBER, fn->_this, 
                                     new_StringSymbol(arg->name),
                                     new CallExpr("chpl__initCopy", arg)));
@@ -874,7 +922,7 @@ process_import_expr(CallExpr* call) {
   if (call->getStmtExpr()->parentExpr == call->getModule()->initFn->body)
     call->getModule()->block->addUse(mod);
   else
-    VisibleFunctionManager::getVisibilityBlock(call)->addUse(mod);
+    getVisibilityBlock(call)->addUse(mod);
   call->getStmtExpr()->remove();
 }
 
@@ -966,6 +1014,22 @@ add_class_to_hierarchy(ClassType* ct, Vec<ClassType*>* localSeenPtr = NULL) {
   }
 }
 
+
+static void renameDefaultType(Type* type, const char* newname) {
+  if (strchr(type->symbol->name, '(') != NULL) {
+    INT_FATAL("Renaming a default type that already seems to have a width");
+  }
+  type->symbol->name = astr(newname);
+}
+
+
+static void renameDefaultTypesToReflectWidths(void) {
+  renameDefaultType(dtInt[INT_SIZE_DEFAULT], "int(64)");
+  renameDefaultType(dtUInt[INT_SIZE_DEFAULT], "uint(64)");
+  renameDefaultType(dtReal[FLOAT_SIZE_DEFAULT], "real(64)");
+  renameDefaultType(dtImag[FLOAT_SIZE_DEFAULT], "imag(64)");
+  renameDefaultType(dtComplex[COMPLEX_SIZE_DEFAULT], "complex(128)");
+}
 
 
 void scopeResolve(void) {
@@ -1095,26 +1159,8 @@ void scopeResolve(void) {
 
     SymExpr* symExpr = NULL;
 
-    //
-    // hh: if the result of the unresolvedSymExpr look up is not a function,
-    //     try to resolve it here.  in addition, if the unresolvedSymExpr was marked
-    //     as volatile, and its look up returns a primitive type, replace the 
-    //     unresolvedSymExpr with the volatile version of that primitive type.
-    //
     if (sym) {
       if (!isFnSymbol(sym)) {
-        if (unresolvedSymExpr->isVolatile) {
-          if (TypeSymbol* typeSym = toTypeSymbol(sym)) {
-            if (PrimitiveType* primType = toPrimitiveType(typeSym->type)) {
-              if (!primType->volType) {
-                INT_FATAL("No volatile primitive type exists for %s, %s", typeSym->name);
-              } 
-              sym = primType->volType->symbol;
-            } else {
-              USR_FATAL("Volatile applied to non-primitive type expr");
-            }
-          }
-        }
         symExpr = new SymExpr(sym);
         unresolvedSymExpr->replace(symExpr);
       }
@@ -1265,4 +1311,6 @@ void scopeResolve(void) {
   destroyTable();
 
   destroyModuleUsesCaches();
+
+  renameDefaultTypesToReflectWidths();
 }

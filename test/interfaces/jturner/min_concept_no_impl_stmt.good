@@ -1,0 +1,3 @@
+min_concept_no_impl_stmt.chpl:9: In function 'minFn':
+min_concept_no_impl_stmt.chpl:9: error: Implementation condition not satisfied.
+

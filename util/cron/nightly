@@ -488,9 +488,13 @@ if ($buildruntime == 0) {
     exit 0;
 }
 
-$makestat = mysystem("cd $chapeldir && $make DEBUG=0 OPTIMIZE=1 runtime", "making chapel runtime", 0, 1);
+if ($tasks eq "qthreads") {
+    $qthreadopts = "CHPL_QTHREAD_CFG_OPTIONS='--with-scheduler=nemesis --enable-condwait-queue'";
+}
+
+$makestat = mysystem("cd $chapeldir && $make DEBUG=0 OPTIMIZE=1 $qthreadopts runtime", "making chapel runtime", 0, 1);
 if ($makestat != 0) {
-    mysystem("cd $chapeldir && $make DEBUG=0 runtime", "making chapel runtime", 1, 1);
+    mysystem("cd $chapeldir && $make DEBUG=0 $qthreadopts runtime", "making chapel runtime", 1, 1);
 }
 
 $makestat = mysystem("cd $chapeldir && $make modules", "making chapel modules", 0, 1);
@@ -608,7 +612,12 @@ if ($runtests == 0) {
 } else {
     $ENV{'CHPL_HOME'} = $chapeldir;
     if ($parnodefile eq "") {
-        $status = mysystem("cd $testdir && ../util/start_test $testflags", "running standard tests", 0, 0);
+        if ($tasks eq "qthreads") {
+            $start_test_env = "export QT_AFFINITY=no &&"
+        }
+        $testcommand = "$start_test_env cd $testdir && ../util/start_test $testflags";
+        print "Executing $testcommand\n";
+        $status = mysystem($testcommand, "running standard tests", 0, 0);
     } else {
         mysystem("cp $parnodefile $testdir/", "copying parallel node file", 1, 1);
         print "about to execute: cd $testdir && ../util/test/paratest.server -nodefile $parnodefile $testflags\n";

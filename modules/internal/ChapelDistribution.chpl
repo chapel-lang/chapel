@@ -7,6 +7,8 @@ config const dataParTasksPerLocale = 0;
 config const dataParIgnoreRunningTasks = true;
 config const dataParMinGranularity: int = 1;
 
+extern proc chpl_task_yield();
+
 // NOTE: If module initialization order changes, this may be affected
 if dataParTasksPerLocale<0 then halt("dataParTasksPerLocale must be >= 0");
 if dataParMinGranularity<=0 then halt("dataParMinGranularity must be > 0");
@@ -16,12 +18,14 @@ if dataParMinGranularity<=0 then halt("dataParMinGranularity must be > 0");
 //
 pragma "base dist"
 class BaseDist {
-  var _distCnt$: sync int = 0; // distribution reference count and lock
-  var _doms: list(BaseDom);    // arrays declared over this domain
+  var _distCnt: atomic int;   // distribution reference count
+  var _doms: list(BaseDom);   // domains declared over this domain
+  var _domsLock: atomic bool; //   and lock for concurrent access
 
   pragma "dont disable remote value forwarding"
   proc destroyDist(dom: BaseDom = nil) {
-    var cnt = _distCnt$ - 1;
+    if dom then remove_dom(dom);
+    var cnt = _distCnt.fetchSub(1)-1;
     if !noRefCount {
       if cnt < 0 then
         halt("distribution reference count is negative!");
@@ -29,11 +33,35 @@ class BaseDist {
       if cnt > 0 then
         halt("distribution reference count has been modified!");
     }
-    if dom then
-      on dom do
-        _doms.remove(dom);
-    _distCnt$ = cnt;
     return cnt;
+  }
+
+  inline proc remove_dom(x) {
+    on this {
+      _lock_doms();
+      _doms.remove(x);
+      _unlock_doms();
+    }
+  }
+
+  inline proc add_dom(x) {
+    on this {
+      _lock_doms();
+      _doms.append(x);
+      _unlock_doms();
+    }
+  }
+
+  inline proc _lock_doms() {
+    // WARNING: If you are calling this function directly from
+    // a remote locale, you should consider wrapping the call in
+    // an on clause to avoid excessive remote forks due to the
+    // testAndSet()
+    while (_domsLock.testAndSet()) do chpl_task_yield();
+  }
+
+  inline proc _unlock_doms() {
+    _domsLock.clear();
   }
 
   proc dsiNewRectangularDom(param rank: int, type idxType, param stridable: bool) {
@@ -70,8 +98,9 @@ class BaseDist {
 //
 pragma "base domain"
 class BaseDom {
-  var _domCnt$: sync int = 0; // domain reference count and lock
+  var _domCnt: atomic int;    // domain reference count
   var _arrs: list(BaseArr);   // arrays declared over this domain
+  var _arrsLock: atomic bool; //   and lock for concurrent access
 
   proc dsiMyDist(): BaseDist {
     halt("internal error: dsiMyDist is not implemented");
@@ -80,7 +109,8 @@ class BaseDom {
 
   pragma "dont disable remote value forwarding"
   proc destroyDom(arr: BaseArr = nil) {
-    var cnt = _domCnt$ - 1;
+    if arr then remove_arr(arr);
+    var cnt = _domCnt.fetchSub(1)-1;
     if !noRefCount {
       if cnt < 0 then
         halt("domain reference count is negative!");
@@ -88,10 +118,6 @@ class BaseDom {
       if cnt > 0 then
         halt("domain reference count has been modified!");
     }
-    if arr then
-      on arr do
-        _arrs.remove(arr);
-    _domCnt$ = cnt;
     if !noRefCount {
       if cnt == 0 && dsiLinksDistribution() {
         var dist = dsiMyDist();
@@ -103,6 +129,34 @@ class BaseDom {
       }
     }
     return cnt;
+  }
+
+  inline proc remove_arr(x) {
+    on this {
+      _lock_arrs();
+      _arrs.remove(x);
+      _unlock_arrs();
+    }
+  }
+
+  inline proc add_arr(x) {
+    on this {
+      _lock_arrs();
+      _arrs.append(x);
+      _unlock_arrs();
+    }
+  }
+
+  inline proc _lock_arrs() {
+    // WARNING: If you are calling this function directly from
+    // a remote locale, you should consider wrapping the call in
+    // an on clause to avoid excessive remote forks due to the
+    // testAndSet()
+    while (_arrsLock.testAndSet()) do chpl_task_yield();
+  }
+
+  inline proc _unlock_arrs() {
+    _arrsLock.clear();
   }
 
   // used for associative domains/arrays
@@ -188,8 +242,8 @@ class BaseOpaqueDom : BaseDom {
 //
 pragma "base array"
 class BaseArr {
-  var _arrCnt$: sync int = 0; // array reference count (and eventually lock)
-  var _arrAlias: BaseArr;     // reference to base array if an alias
+  var _arrCnt: atomic int; // array reference count
+  var _arrAlias: BaseArr;  // reference to base array if an alias
 
   proc dsiStaticFastFollowCheck(type leadType) param return false;
 
@@ -203,7 +257,7 @@ class BaseArr {
 
   pragma "dont disable remote value forwarding"
   proc destroyArr(): int {
-    var cnt = _arrCnt$ - 1;
+    var cnt = _arrCnt.fetchSub(1)-1;
     if !noRefCount {
       if cnt < 0 then
         halt("array reference count is negative!");
@@ -211,7 +265,6 @@ class BaseArr {
       if cnt > 0 then
         halt("array reference count has been modified!");
     }
-    _arrCnt$ = cnt;
     if cnt == 0 {
       if _arrAlias {
         on _arrAlias {

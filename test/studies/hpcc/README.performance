@@ -5,8 +5,8 @@ STREAM:
 
 Fragmented (no BlockDist):
 
-These versions are like release/examples/hpcc/stream-ep.chpl, *except* that
-they use whole array assignment.
+These versions are like release/examples/benchmarks/hpcc/stream-ep.chpl, 
+*except* that they use whole array assignment.
 
 ./STREAMS/bradc/stream-fragmented.chpl       | EXACTLY the same except the
 ./STREAMS/diten/stream-fragmented-local.chpl |  -local version has a local
@@ -15,7 +15,7 @@ they use whole array assignment.
 
 Global:
 
-These versions are like release/examples/hpcc/stream.chpl.
+These versions are like release/examples/benchmarks/hpcc/stream.chpl.
 
 ./STREAMS/bradc/stream-block1d.chpl          | Most like release version
 ./STREAMS/bradc/stream-block1d-local.chpl    | Same but compiled with --local

@@ -56,8 +56,8 @@ enum PrimitiveTag {
   PRIM_GET_IMAG,                  // get complex imag component
   PRIM_QUERY,                     // query expression primitive
 
-  PRIM_SET_REF,  // set a reference to a value
-  PRIM_GET_REF,  // dereference a reference
+  PRIM_ADDR_OF,  // set a reference to a value
+  PRIM_DEREF,    // dereference a reference
 
   PRIM_LOCAL_CHECK,          // assert that a wide ref is on this locale
 
@@ -174,7 +174,6 @@ enum PrimitiveTag {
 
   PRIM_GET_LOCALEID,   // return locale on which an expression exists
   PRIM_LOCALE_ID,    // return locale id
-  PRIM_NUM_LOCALES,  // return number of locales
   PRIM_ON_LOCALE_NUM,  // specify a particular locale # for an on clause
 
   PRIM_ALLOC_GVR,    // allocate space for global vars registry
@@ -227,19 +226,17 @@ enum PrimitiveTag {
   PRIM_ENUM_MIN_BITS,
   PRIM_ENUM_IS_SIGNED,
 
-  PRIM_IMPLEMENTS,
-
   NUM_KNOWN_PRIMS
 };
 
 class PrimitiveOp { public:
   PrimitiveTag tag;
   const char *name;
-  Type *(*returnInfo)(CallExpr*, BaseAST*, BaseAST*);
+  Type *(*returnInfo)(CallExpr*);
   bool isEssential; // has effects visible outside of the function
   bool passLineno; // pass line number and filename to this primitive
 
-  PrimitiveOp(PrimitiveTag atag, const char *aname, Type *(*areturnInfo)(CallExpr*, BaseAST*, BaseAST*));
+  PrimitiveOp(PrimitiveTag atag, const char *aname, Type *(*areturnInfo)(CallExpr*));
 };
 
 extern HashMap<const char *, StringHashFns, PrimitiveOp *> primitives_map;

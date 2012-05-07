@@ -79,8 +79,7 @@ class SymExpr : public Expr {
 class UnresolvedSymExpr : public Expr {
  public:
   const char* unresolved;
-  bool isVolatile;
-  UnresolvedSymExpr(const char* init_var, bool init_is_volatile=false);
+  UnresolvedSymExpr(const char* init_var);
   DECLARE_COPY(UnresolvedSymExpr);
   void replaceChild(Expr* old_ast, Expr* new_ast);
   void verify(); 
@@ -151,7 +150,7 @@ static inline bool isAlive(Expr* expr) {
 }
 
 static inline bool isAliveQuick(Symbol* symbol) {
-  return isAlive(symbol->defPoint);
+  return symbol->defPoint && isAlive(symbol->defPoint);
 }
 
 static inline bool isAlive(Symbol* symbol) {
@@ -159,7 +158,7 @@ static inline bool isAlive(Symbol* symbol) {
 }
 
 static inline bool isAlive(Type* type) {
-  return isAliveQuick(type->symbol);
+  return type->symbol && isAliveQuick(type->symbol);
 }
 
 #define isRootModule(ast)  \

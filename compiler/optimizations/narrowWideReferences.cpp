@@ -195,7 +195,7 @@ narrowSym(Symbol* sym, WideInfo* wi) {
         if (CallExpr* rhs = toCallExpr(call->get(2))) {
           if (rhs->isPrimitive(PRIM_CHPL_ALLOC) ||
               rhs->isPrimitive(PRIM_GET_PRIV_CLASS) ||
-              rhs->isPrimitive(PRIM_SET_REF))
+              rhs->isPrimitive(PRIM_ADDR_OF))
             continue;
           if (rhs->isPrimitive(PRIM_GET_MEMBER)) {
             INT_ASSERT(isWideRef);
@@ -263,7 +263,7 @@ narrowSym(Symbol* sym, WideInfo* wi) {
           (call->isPrimitive(PRIM_GET_SVEC_MEMBER) && call->get(1) == use) ||
           (call->isPrimitive(PRIM_GET_SVEC_MEMBER_VALUE) && call->get(1) == use) ||
           (call->isPrimitive(PRIM_CAST) && call->get(2) == use) ||
-          (call->isPrimitive(PRIM_GET_REF)) ||
+          (call->isPrimitive(PRIM_DEREF)) ||
           //          (call->isPrimitive(PRIM_GET_LOCALEID)) ||
           (call->isPrimitive(PRIM_SYNC_INIT)) ||
           (call->isPrimitive(PRIM_SYNC_LOCK)) ||

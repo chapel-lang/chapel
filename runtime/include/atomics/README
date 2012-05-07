@@ -8,10 +8,14 @@ We require the C1x standard atomic functions for the types:
    atomic_uint_least32_t
    atomic_uint_least64_t
    atomic_uintptr_t
+   atomic_int_least8_t
+   atomic_int_least16_t
+   atomic_int_least32_t
+   atomic_int_least64_t
    atomic_flag
 and we require that the generic routines have the type appended
 to them, so that (for example), atomic_fetch_add( (uint_least64_t*) ptr, 100 )
-will we written atomic_fetch_add_uint_least64_t( (uint_least64_t*) ptr, 100 )
+will be written atomic_fetch_add_uint_least64_t( (uint_least64_t*) ptr, 100 )
 
 In addition, we assume that there is a function e.g.
  void atomic_destroy_uint_least64_t(volatile A* obj, C value);
@@ -55,6 +59,10 @@ so that we have an opportunity to free memory occupied by a lock.
    atomic_uint_least32_t
    atomic_uint_least64_t
    atomic_uintptr_t
+   atomic_int_least8_t
+   atomic_int_least16_t
+   atomic_int_least32_t
+   atomic_int_least64_t
    atomic_flag
 
    // non _explicit versions use memory_order_seq_cst.

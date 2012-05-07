@@ -62,6 +62,7 @@ typedef unsigned long long c_ulonglong;
 typedef double c_double;
 typedef void* c_ptr;
 typedef int err_t;
+typedef err_t syserr;
 typedef int fd_t;
 typedef char c_char_t;
 typedef FILE* c_file;

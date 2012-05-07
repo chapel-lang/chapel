@@ -342,8 +342,8 @@ module SSCA2_RMAT_graph_generator
 
   proc createGraphChannel(prefix:string, suffix:string, param forWriting:bool) {
     const f = open(prefix+suffix,
-                   if forWriting then iomode.w else iomode.r,
-                   HINT_SEQUENTIAL);
+                   if forWriting then iomode.cw else iomode.r,
+                   IOHINT_SEQUENTIAL);
     const chan = if forWriting
       then f.writer(iokind.big, false)
       else f.reader(iokind.big, false);
@@ -351,7 +351,7 @@ module SSCA2_RMAT_graph_generator
   }
 
   proc ensureEOFofDataFile(chan, snapshot_prefix, file_suffix): void {
-    var err:err_t = ENOERR, temp:IONumType;
+    var err:syserr = ENOERR, temp:IONumType;
     chan.read(temp, error=err);
     // temp==0 is a workaround for unending large files
     if err != EEOF && temp != 0 then
@@ -374,7 +374,7 @@ module SSCA2_RMAT_graph_generator
       else "Note: got a vertex count that is not a power of 2.";
 
     myerror("inconsistent vertex count: graph ", graphNumVertices(G), " vs. ",
-            snapshot_prefix, VE_FILENAME, " ", vCount, "\n", helpMessage);
+            vCount, " in ", snapshot_prefix, VE_FILENAME, "\n", helpMessage);
   }
 
   proc interpretDStyle(dstyle:string) {
