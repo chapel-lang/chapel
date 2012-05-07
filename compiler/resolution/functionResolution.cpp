@@ -5374,19 +5374,22 @@ static void convertInterfaceUsesFn(FnSymbol *fn) {
   fn2->isConvertedInterfaceUser = true;
   gtrue->remove();
 
-  //JDT: Fixme, this only allows one implements clause
   if (BlockStmt *block = toBlockStmt(fn2->body->body.head->next)) {
-    if (DefExpr *de = toDefExpr(block->body.head)) {
-      if (FnSymbol *fn_to_res = toFnSymbol(de->sym)) {
-        fn_to_res->addFlag(FLAG_ALLOW_REF);
-        //fn_to_res->removeFlag(FLAG_INVISIBLE_FN);
-        resolveFormals(fn_to_res);
-        form_Map(FnArgElem, e, fn->fnsInInterfaces) {
-          if (fn_to_res->instantiatedFrom == e->key->instantiatedFrom) {
-            fn2->fnsInInterfaces.put(fn_to_res, e->value);
+    Expr *curr = block->body.head;
+    for (int i = 0; i < fn->fnsInInterfaces.length(); ++i) {
+      if (DefExpr *de = toDefExpr(curr)) {
+        if (FnSymbol *fn_to_res = toFnSymbol(de->sym)) {
+          fn_to_res->addFlag(FLAG_ALLOW_REF);
+          //fn_to_res->removeFlag(FLAG_INVISIBLE_FN);
+          resolveFormals(fn_to_res);
+          form_Map(FnArgElem, e, fn->fnsInInterfaces) {
+            if (fn_to_res->instantiatedFrom == e->key->instantiatedFrom) {
+              fn2->fnsInInterfaces.put(fn_to_res, e->value);
+            }
           }
         }
       }
+      curr = curr->next;
     }
   }
 
