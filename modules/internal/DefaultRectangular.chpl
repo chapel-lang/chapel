@@ -664,7 +664,8 @@ proc DefaultRectangularDom.dsiSerialRead(f: Reader) { this.dsiSerialReadWrite(f)
 
 proc DefaultRectangularArr.dsiSerialReadWrite(f /*: Reader or Writer*/) {
   proc recursiveArrayWriter(in idx: rank*idxType, dim=1, in last=false) {
-    var makeStridePositive = if dom.ranges(dim).stride > 0 then 1:idxType else -1:idxType;
+    type strType = chpl__signedType(idxType);
+    var makeStridePositive = if dom.ranges(dim).stride > 0 then 1:strType else (-1):strType;
     if dim == rank {
       var first = true;
       if debugDefaultDist && f.writing then f.writeln(dom.ranges(dim));
