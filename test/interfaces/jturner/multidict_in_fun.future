@@ -1,0 +1,3 @@
+bug: support instantiated multiple implements dictionaries for the same type 
+
+When instantiating multiple implements dictionaries for a type, currently codegen(?) seems to have an issue where the type constructor is made twice and then becomes ambiguous.  Besides being annoying for the user to see inner workings of the compiler, this example should "just work" and return the correct result.  It shouldn't matter how many dictionaries the user creates.

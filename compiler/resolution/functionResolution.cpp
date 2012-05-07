@@ -5369,9 +5369,8 @@ static void convertInterfaceUsesFn(FnSymbol *fn) {
   fn->where->insertAtTail(gtrue);
 
   FnSymbol *fn2 = instantiate(fn, &map, NULL);
-
-  //JDT: Please check this!!
   fn2->isConvertedInterfaceUser = true;
+
   gtrue->remove();
 
   if (BlockStmt *block = toBlockStmt(fn2->body->body.head->next)) {
