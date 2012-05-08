@@ -6508,7 +6508,8 @@ static void resolveImplementsStatement(ImplementsStmt* istmt, bool errorCheck) {
   if (SymExpr *se = toSymExpr(call->argList.tail)) {
     if (SymExpr *implementingExpr = toSymExpr(call->argList.head)) {
       if (InterfaceSymbol *is = toInterfaceSymbol(se->var)) {
-        ClassType* interfaceDict = createAndInsertInterfaceDictClass(istmt, "interfaceDict");
+        ClassType* interfaceDict = createAndInsertInterfaceDictClass(istmt,
+            astr("interfaceDict_", se->var->name, "_", se->var->name));
         forv_Vec (FnSymbol, fn, is->functionSignatures) {
 
           SymbolMap map;
