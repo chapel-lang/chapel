@@ -647,7 +647,10 @@ buildPromotionWrapper(FnSymbol* fn,
       lifn->insertAtTail(loop);
       theProgram->block->insertAtTail(new DefExpr(lifn));
       normalize(lifn);
-      lifn->instantiationPoint = getVisibilityBlock(info->call);
+      if (info->call)
+        lifn->instantiationPoint = getVisibilityBlock(info->call);
+      else if (info->fn)
+        lifn->instantiationPoint = info->fn->instantiationPoint;
 
       SymbolMap followerMap;
       FnSymbol* fifn = wrapper->copy(&followerMap);
@@ -675,7 +678,10 @@ buildPromotionWrapper(FnSymbol* fn,
       theProgram->block->insertAtTail(new DefExpr(fifn));
       normalize(fifn);
       fifn->addFlag(FLAG_GENERIC);
-      fifn->instantiationPoint = getVisibilityBlock(info->call);
+      if (info->call)
+        fifn->instantiationPoint = getVisibilityBlock(info->call);
+      else if (info->fn)
+        fifn->instantiationPoint = info->fn->instantiationPoint;
     }
     BlockStmt* yieldBlock = new BlockStmt();
     Symbol* yieldTmp = newTemp();
@@ -715,7 +721,11 @@ promotionWrap(FnSymbol* fn, CallInfo* info) {
     if (fWarnPromotion)
       USR_WARN(info->call, "promotion on %s", toString(info));
 
-    promoted_subs.put(fn, (Symbol*)info->call->square); // add value of square to cache
+    if (info->call) {
+      promoted_subs.put(fn, (Symbol*)info->call->square); // add value of square to cache
+    } else {
+      promoted_subs.put(fn, false); // add value of square to cache
+    }
 
     FnSymbol* wrapper = checkCache(promotionsCache, fn, &promoted_subs);
     if (wrapper == NULL) {

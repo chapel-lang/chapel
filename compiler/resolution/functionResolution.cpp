@@ -2418,7 +2418,9 @@ static void resolveNormalCall(CallExpr* call, bool errorCheck) {
       if (best && best->instantiatedFrom &&
           best->instantiatedFrom->interfacedGenericFn) {
 
-        FnSymbol *fn = best->instantiatedFrom->interfacedGenericFn;
+        FnSymbol *fn;
+
+        fn = best->instantiatedFrom->interfacedGenericFn;
 
         if (hasImplementsClausesInWhereClause(best->where)) {
           bool whereResult = addDictionaryForImplementsClausesInWhereClause(best->where,call,info);
@@ -5371,6 +5373,9 @@ static void convertInterfaceUsesFn(FnSymbol *fn) {
   FnSymbol *fn2 = instantiate(fn, &map, NULL);
   fn2->isConvertedInterfaceUser = true;
 
+  fn->addFlag(FLAG_EXTERN);
+  fn->body->replace(new BlockStmt(new CallExpr(PRIM_RETURN, gVoid)));
+
   gtrue->remove();
 
   if (BlockStmt *block = toBlockStmt(fn2->body->body.head->next)) {
@@ -5406,6 +5411,7 @@ static void convertInterfaceUsesFn(FnSymbol *fn) {
 
   //JDT: Delete??
   fn->removeFlag(FLAG_INVISIBLE_FN);
+  fn->retType = fn2->retType; //JDT: stopgap to see if I can get example working
 
   /*
   form_Map(FnArgElem, e, fn->fnsInInterfaces) {
