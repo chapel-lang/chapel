@@ -8,7 +8,7 @@ proc LT(x:int, y:int) : bool {
 	return x < y;
 }
 
-proc min(x:?T, y:T):T where T implements LessThan {
+proc minFn(x:?T, y:T):T where T implements LessThan {
 	if(LT(x,y)) {
 		return x;
 	}
@@ -17,7 +17,7 @@ proc min(x:?T, y:T):T where T implements LessThan {
 	}
 }
 
-proc min(x:?T, y:T) : T {
+proc minFn(x:?T, y:T) : T {
 	if(x < y) {
 		return x*x;
 	}
@@ -26,4 +26,4 @@ proc min(x:?T, y:T) : T {
 	}
 }
 
-writeln(min(3,4));
+writeln(minFn(3,4));

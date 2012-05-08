@@ -12,7 +12,7 @@ proc ID(x:?T, y:T) where T implements LessThan {
     return LT(x, y);
 }
 
-proc min(x:?T,y :T) where T implements LessThan {
+proc minFn(x:?T,y :T) where T implements LessThan {
 	if(ID(x,y)) {
 		return x;
 	}
@@ -21,4 +21,4 @@ proc min(x:?T,y :T) where T implements LessThan {
 	}
 }
 
-writeln(min(3,4));
+writeln(minFn(3,4));
