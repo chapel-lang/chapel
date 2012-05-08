@@ -1,0 +1,4 @@
+bug: Should not be refering to tyvar in the error messages to user
+
+The error message points to the unique types (tyvar) created by the compiler.
+The message should be changed to something user friendly.

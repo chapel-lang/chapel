@@ -75,7 +75,10 @@ buildEmptyWrapper(FnSymbol* fn, CallInfo* info) {
   }
   if (fn->hasFlag(FLAG_METHOD))
     wrapper->addFlag(FLAG_METHOD);
-  wrapper->instantiationPoint = getVisibilityBlock(info->call);
+  if(info->call)
+    wrapper->instantiationPoint = getVisibilityBlock(info->call);
+  else if(info->fn)
+    wrapper->instantiationPoint = info->fn->instantiationPoint;
   wrapper->addFlag(FLAG_TEMP);
   if (fn->hasFlag(FLAG_ALLOW_REF))
     wrapper->addFlag(FLAG_ALLOW_REF);
@@ -174,7 +177,8 @@ buildDefaultWrapper(FnSymbol* fn,
     wrapper->insertAtTail(new CallExpr(PRIM_INIT_FIELDS, wrapper->_this));
   }
   CallExpr* call = new CallExpr(fn);
-  call->square = info->call->square;    // Copy square brackets call flag.
+  if(info->call)
+    call->square = info->call->square;    // Copy square brackets call flag.
 
   // Now walk the formals list of the called function, and expand formal
   // argument defaults as needed, so every formal in the called function
@@ -482,7 +486,8 @@ buildCoercionWrapper(FnSymbol* fn,
 
   wrapper->cname = astr("_coerce_wrap_", fn->cname);
   CallExpr* call = new CallExpr(fn);
-  call->square = info->call->square;
+  if(info->call)
+    call->square = info->call->square;
   for_formals(formal, fn) {
     SET_LINENO(formal);
     ArgSymbol* wrapperFormal = copyFormalForWrapper(formal);

@@ -1,0 +1,2 @@
+min_concept_bad_implements.chpl:5: error: Function LT(x: int(64), y: int(64)) not found for implementing LessThan
+
