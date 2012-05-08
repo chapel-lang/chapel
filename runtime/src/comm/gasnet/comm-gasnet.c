@@ -890,35 +890,35 @@ void chpl_getCommDiagnosticsHere(chpl_commDiagnostics *cd) {
   chpl_sync_unlock(&chpl_comm_diagnostics_sync);
 }
 
-int32_t chpl_numCommGets(void) {
+uint64_t chpl_numCommGets(void) {
   return chpl_comm_commDiagnostics.get;
 }
 
-int32_t chpl_numCommNBGets(void) {
+uint64_t chpl_numCommNBGets(void) {
   return chpl_comm_commDiagnostics.get_nb;
 }
 
-int32_t chpl_numCommTestNBGets(void) {
+uint64_t chpl_numCommTestNBGets(void) {
   return chpl_comm_commDiagnostics.get_nb_test;
 }
 
-int32_t chpl_numCommWaitNBGets(void) {
+uint64_t chpl_numCommWaitNBGets(void) {
   return chpl_comm_commDiagnostics.get_nb_wait;
 }
 
-int32_t chpl_numCommPuts(void) {
+uint64_t chpl_numCommPuts(void) {
   return chpl_comm_commDiagnostics.put;
 }
 
-int32_t chpl_numCommFastForks(void) {
+uint64_t chpl_numCommFastForks(void) {
   return chpl_comm_commDiagnostics.fork_fast;
 }
 
-int32_t chpl_numCommForks(void) {
+uint64_t chpl_numCommForks(void) {
   return chpl_comm_commDiagnostics.fork;
 }
 
-int32_t chpl_numCommNBForks(void) {
+uint64_t chpl_numCommNBForks(void) {
   return chpl_comm_commDiagnostics.fork_nb;
 }
 

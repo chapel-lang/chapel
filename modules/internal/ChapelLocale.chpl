@@ -171,14 +171,14 @@ proc chpl_getPrivatizedCopy(type objectType, objectPid:int): objectType
 // and remove the 8 or so individual functions below that return the
 // various counters.
 record chpl_commDiagnostics {
-  var get: int(32);
-  var get_nb: int(32);
-  var get_nb_test: int(32);
-  var get_nb_wait: int(32);
-  var put: int(32);
-  var fork: int(32);
-  var fork_fast: int(32);
-  var fork_nb: int(32);
+  var get: uint(64);
+  var get_nb: uint(64);
+  var get_nb_test: uint(64);
+  var get_nb_wait: uint(64);
+  var put: uint(64);
+  var fork: uint(64);
+  var fork_fast: uint(64);
+  var fork_nb: uint(64);
 };
 
 type commDiagnostics = chpl_commDiagnostics;
@@ -214,14 +214,14 @@ inline proc resetCommDiagnosticsHere() {
 }
 
 // See note above regarding extern records
-extern proc chpl_numCommGets(): int(32);
-extern proc chpl_numCommNBGets(): int(32);
-extern proc chpl_numCommTestNBGets(): int(32);
-extern proc chpl_numCommWaitNBGets(): int(32);
-extern proc chpl_numCommPuts(): int(32);
-extern proc chpl_numCommForks(): int(32);
-extern proc chpl_numCommFastForks(): int(32);
-extern proc chpl_numCommNBForks(): int(32);
+extern proc chpl_numCommGets(): uint(64);
+extern proc chpl_numCommNBGets(): uint(64);
+extern proc chpl_numCommTestNBGets(): uint(64);
+extern proc chpl_numCommWaitNBGets(): uint(64);
+extern proc chpl_numCommPuts(): uint(64);
+extern proc chpl_numCommForks(): uint(64);
+extern proc chpl_numCommFastForks(): uint(64);
+extern proc chpl_numCommNBForks(): uint(64);
 
 proc getCommDiagnostics() {
   var D: [LocaleSpace] commDiagnostics;

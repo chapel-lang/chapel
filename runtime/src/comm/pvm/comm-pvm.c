@@ -94,10 +94,10 @@
 static chpl_sync_aux_t pvm_sync;
 
 static chpl_sync_aux_t chpl_comm_diagnostics_sync;
-static int chpl_comm_gets = 0;
-static int chpl_comm_puts = 0;
-static int chpl_comm_forks = 0;
-static int chpl_comm_nb_forks = 0;
+static uint64_t chpl_comm_gets = 0;
+static uint64_t chpl_comm_puts = 0;
+static uint64_t chpl_comm_forks = 0;
+static uint64_t chpl_comm_nb_forks = 0;
 static int chpl_comm_no_debug_private = 0;
 
 static int parent = PvmNoParent;   // used to send messages back to launcher
@@ -1772,31 +1772,31 @@ void chpl_getCommDiagnosticsHere(chpl_commDiagnostics *cd) {
   chpl_sync_unlock(&chpl_comm_diagnostics_sync);
 }
 
-int32_t chpl_numCommGets(void) {
+uint64_t chpl_numCommGets(void) {
   return chpl_comm_gets;
 }
 
-int32_t chpl_numCommPuts(void) {
+uint64_t chpl_numCommPuts(void) {
   return chpl_comm_puts;
 }
 
-int32_t chpl_numCommForks(void) {
+uint64_t chpl_numCommForks(void) {
   return chpl_comm_forks;
 }
 
-int32_t chpl_numCommFastForks(void) {
+uint64_t chpl_numCommFastForks(void) {
   return 0;
 }
 
-int32_t chpl_numCommNBForks(void) {
+uint64_t chpl_numCommNBForks(void) {
   return chpl_comm_nb_forks;
 }
 
 
 // This are not supported in this comm layer
-int32_t chpl_numCommNBGets(void) { return -1; }
-int32_t chpl_numCommTestNBGets(void) { return -1; }
-int32_t chpl_numCommWaitNBGets(void) { return -1; }
+uint64_t chpl_numCommNBGets(void) { return -1; }
+uint64_t chpl_numCommTestNBGets(void) { return -1; }
+uint64_t chpl_numCommWaitNBGets(void) { return -1; }
 
 /* TODO: eventually make this a bit more clever, as with the
    make_message call on the vsprintf man page, in order to remove the

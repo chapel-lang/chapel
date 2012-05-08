@@ -541,14 +541,14 @@ void chpl_getCommDiagnosticsHere(chpl_commDiagnostics *cd) {
   cd->fork_nb = -1;
 }
 
-int32_t chpl_numCommGets(void) { return -1; }
-int32_t chpl_numCommNBGets(void) { return -1; }
-int32_t chpl_numCommTestNBGets(void) { return -1; }
-int32_t chpl_numCommWaitNBGets(void) { return -1; }
-int32_t chpl_numCommPuts(void) { return -1; }
-int32_t chpl_numCommForks(void) { return -1; }
-int32_t chpl_numCommFastForks(void) { return -1; }
-int32_t chpl_numCommNBForks(void) { return -1; }
+uint64_t chpl_numCommGets(void) { return -1; }
+uint64_t chpl_numCommNBGets(void) { return -1; }
+uint64_t chpl_numCommTestNBGets(void) { return -1; }
+uint64_t chpl_numCommWaitNBGets(void) { return -1; }
+uint64_t chpl_numCommPuts(void) { return -1; }
+uint64_t chpl_numCommForks(void) { return -1; }
+uint64_t chpl_numCommFastForks(void) { return -1; }
+uint64_t chpl_numCommNBForks(void) { return -1; }
 
 
 /*
