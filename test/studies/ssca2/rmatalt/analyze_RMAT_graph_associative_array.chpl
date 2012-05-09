@@ -26,8 +26,10 @@ module analyze_RMAT_graph_associative_array {
     use SSCA2_compilation_config_params, SSCA2_execution_config_consts;
   
     use SSCA2_driver, SSCA2_RMAT_graph_generator;
-
+    use Time;
     use BlockDist;
+
+    var stopwatch : Timer;
 
     var n_raw_edges = 8 * N_VERTICES;
 
@@ -62,8 +64,8 @@ module analyze_RMAT_graph_associative_array {
     record VertexData {
       type vertex;
       var ndom = [1..initialRMATNeighborListLength];
-      var neighborIDs: [ndom] int; // TODO: need int(64)
-      var edgeWeights: [ndom] int; // ditto
+      var neighborIDs: [ndom] int(64);
+      var edgeWeights: [ndom] int(64);
 
       // This is used for graph construction only.
       // TODO: move to a separate array, to be deallocated after construction.
@@ -158,7 +160,16 @@ module analyze_RMAT_graph_associative_array {
     } // class Associative_Graph
 
     writeln("allocating Associative_Graph");
+    if PRINT_TIMING_STATISTICS then stopwatch.start ();
+
     var G = new Associative_Graph (vertex_domain);
+
+    if PRINT_TIMING_STATISTICS then {
+      stopwatch.stop();
+      writeln("Elapsed time for Graph Allocation: ", stopwatch.elapsed(),
+              " seconds");
+      stopwatch.clear ();
+    }
 
     // ------------------------------------------------------------------
     // generate RMAT graph of the specified size, based on input config

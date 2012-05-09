@@ -18,7 +18,7 @@
 //   TypeSymbol: defines a scope for EnumType and ClassType types for
 //   the enumerated type constants or the class/record fields
 //
-//   BlockStmt: defines a scope if the block is not BLOCK_SCOPELESS
+//   BlockStmt: defines a scope if the block is a normal block
 //   for any locally defined symbols
 //
 // Each entry contains a map from canonicalized string pointers to the
@@ -59,7 +59,8 @@ static BaseAST*
 getScope(BaseAST* ast) {
   if (Expr* expr = toExpr(ast)) {
     BlockStmt* block = toBlockStmt(expr->parentExpr);
-    if (block && block->blockTag != BLOCK_SCOPELESS) {
+    // SCOPELESS and TYPE blocks do not define scopes
+    if (block && block->blockTag == BLOCK_NORMAL) {
       return block;
     } else if (expr->parentExpr) {
       return getScope(expr->parentExpr);
@@ -488,7 +489,7 @@ void build_type_constructor(ClassType* ct) {
             arg->defaultExpr = new BlockStmt(init->copy(), BLOCK_SCOPELESS);
 
           if (exprType)
-            arg->typeExpr = new BlockStmt(exprType->copy(), BLOCK_SCOPELESS);
+            arg->typeExpr = new BlockStmt(exprType->copy(), BLOCK_TYPE);
 
           if (!exprType && arg->type == dtUnknown)
             arg->type = dtAny;
@@ -652,14 +653,25 @@ void build_constructor(ClassType* ct) {
         // Create a call to the superclass constructor.
         superCall = new CallExpr(superCtor->name);
         int shadowID = 1;
+        // Walk the formals of the default super class constructor
         for_formals_backward(formal, superCtor) {
           if (formal->hasFlag(FLAG_IS_MEME))
             continue;
           DefExpr* superArg = formal->defPoint->copy();
+          // Rename the arg if it clashes with a field name already seen,
+          // starting with those in the most-derived class in lexical order
+          // and then in successive ancestors in reverse-lexical order.
+          // Field names within a given class are guaranteed to be unique,
+          // so the order in which the names are visited at each ancestral 
+          // level is immaterial.
           if (fieldNamesSet.set_in(superArg->sym->name))
             superArg->sym->name =
               astr("_shadow_", istr(shadowID++), "_", superArg->sym->name);
           fieldNamesSet.set_add(superArg->sym->name);
+          // Inserting each successive ancestor argument at the head in 
+          // reverse-lexcial order results in all of the arguments appearing
+          // in lexical order, starting with those in the most ancient class
+          // and ending with those in the most-derived class.
           fn->insertFormalAtHead(superArg);
           superCall->insertAtHead(superArg->sym);
         }
@@ -704,18 +716,21 @@ void build_constructor(ClassType* ct) {
 
     if (field->hasFlag(FLAG_PARAM))
       arg->intent = INTENT_PARAM;
+
     Expr* exprType = field->defPoint->exprType->remove();
     Expr* init = field->defPoint->init->remove();
 
     bool hadType = exprType;
     bool hadInit = init;
+
     if (init) {
       if (!field->hasFlag(FLAG_TYPE_VARIABLE) && !exprType) {
+        // init && !exprType
         VarSymbol* tmp = newTemp();
         tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
         tmp->addFlag(FLAG_MAYBE_PARAM);
         tmp->addFlag(FLAG_MAYBE_TYPE);
-        exprType = new BlockStmt(new DefExpr(tmp), BLOCK_SCOPELESS);
+        exprType = new BlockStmt(new DefExpr(tmp), BLOCK_TYPE);
         toBlockStmt(exprType)->insertAtTail(new CallExpr(PRIM_MOVE, tmp, new CallExpr("chpl__initCopy", init->copy())));
         toBlockStmt(exprType)->insertAtTail(new CallExpr(PRIM_TYPEOF, tmp));
       }
@@ -737,7 +752,7 @@ void build_constructor(ClassType* ct) {
     }
     if (exprType) {
       if (!isBlockStmt(exprType))
-        arg->typeExpr = new BlockStmt(exprType, BLOCK_SCOPELESS);
+        arg->typeExpr = new BlockStmt(exprType, BLOCK_TYPE);
       else
         arg->typeExpr = toBlockStmt(exprType);
     }

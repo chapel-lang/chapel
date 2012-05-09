@@ -1,14 +1,27 @@
 #!/usr/bin/env perl
 
 use File::Basename;
+use File::Spec;
 use Cwd 'abs_path';
 
-
 $chpl_home_dir = abs_path(dirname(__FILE__) . "/../../");
+$check_file = File::Spec->abs2rel( __FILE__, $chpl_home_dir );
+$check_path = $chpl_home_dir . "/" . $check_file;
+if( ! -f $check_path ) {
+  warn "Warning: check $check_path not found";
+}
 
 if( defined $ENV{"CHPL_HOME"} ) {
   if( abs_path($ENV{"CHPL_HOME"}) ne $chpl_home_dir ) {
-    warn "Mismatched CHPL_HOME; got " . abs_path($ENV{"CHPL_HOME"}) . " but expected " . $chpl_home_dir;
+    # to be sure, check that the inode numbers of our check file match
+    my ($deva, $inoa) = stat($ENV{"CHPL_HOME"} . "/" . $check_file);
+    my ($devb, $inob) = stat($chpl_home_dir . "/" . $check_file);
+
+    if( $deva == $devb && $inoa == $inob ) {
+      # No warning, it's OK, they are the same file.
+    } else {
+      warn "Warning: Mismatched CHPL_HOME; got " . abs_path($ENV{"CHPL_HOME"}) . " but expected " . $chpl_home_dir;
+    }
   }
 } else {
   $ENV{"CHPL_HOME"} = $chpl_home_dir;

@@ -209,14 +209,14 @@ int chpl_comm_numPollingTasks(void);
 // Comm diagnostics stuff
 //
 typedef struct _chpl_commDiagnostics {
-  int32_t get;
-  int32_t get_nb;
-  int32_t get_nb_test;
-  int32_t get_nb_wait;
-  int32_t put;
-  int32_t fork;
-  int32_t fork_fast;
-  int32_t fork_nb;
+  uint64_t get;
+  uint64_t get_nb;
+  uint64_t get_nb_test;
+  uint64_t get_nb_wait;
+  uint64_t put;
+  uint64_t fork;
+  uint64_t fork_fast;
+  uint64_t fork_nb;
 } chpl_commDiagnostics;
 
 void chpl_startVerboseComm(void);
@@ -235,14 +235,14 @@ void chpl_getCommDiagnosticsHere(chpl_commDiagnostics *cd);
 // These are still supported because our extern record support is
 //  still a bit lacking.
 //
-int32_t chpl_numCommGets(void);
-int32_t chpl_numCommNBGets(void);
-int32_t chpl_numCommTestNBGets(void);
-int32_t chpl_numCommWaitNBGets(void);
-int32_t chpl_numCommPuts(void);
-int32_t chpl_numCommForks(void);
-int32_t chpl_numCommFastForks(void);
-int32_t chpl_numCommNBForks(void);
+uint64_t chpl_numCommGets(void);
+uint64_t chpl_numCommNBGets(void);
+uint64_t chpl_numCommTestNBGets(void);
+uint64_t chpl_numCommWaitNBGets(void);
+uint64_t chpl_numCommPuts(void);
+uint64_t chpl_numCommForks(void);
+uint64_t chpl_numCommFastForks(void);
+uint64_t chpl_numCommNBForks(void);
 
 #else // LAUNCHER
 

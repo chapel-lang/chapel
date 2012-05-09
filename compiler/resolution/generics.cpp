@@ -55,11 +55,11 @@ explainInstantiation(FnSymbol* fn) {
           else
             len += sprintf(msg+len, "%s", vs->name);
         }
-    else if (Symbol* s = toSymbol(e->value))
+        else if (Symbol* s = toSymbol(e->value))
       // For a generic symbol, just print the name.
       // Additional clauses for specific symbol types should precede this one.
           len += sprintf(msg+len, "%s", s->name);
-    else
+        else
           INT_FATAL("unexpected case using --explain-instantiation");
       }
     }

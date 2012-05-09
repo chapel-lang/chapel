@@ -54,6 +54,7 @@ system("cd $tmpdir && svn export -q $svnroot $reldir");
        "util/printchplenv",
        "util/setchplenv.bash",
        "util/setchplenv.csh",
+       "util/setchplenv.fish",
        "util/setchplenv.sh",
        "util/start_test"
 );

@@ -1,0 +1,15 @@
+perfkeys: Memory leaked during Kernel 2:
+files: SSCA2_mem.dat
+ylabel: Bytes
+graphname: SSCA2-Memory-Leaks-For-Kernel-2
+
+perfkeys: Memory leaked during Kernel 3:
+files: SSCA2_mem.dat
+ylabel: Bytes
+graphname: SSCA2-Memory-Leaks-For-Kernel-3
+
+perfkeys: Memory leaked during Kernel 4:
+files: SSCA2_mem.dat
+ylabel: Bytes
+graphname: SSCA2-Memory-Leaks-For-Kernel-4
+

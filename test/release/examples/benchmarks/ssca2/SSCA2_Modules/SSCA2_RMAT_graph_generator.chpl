@@ -107,6 +107,8 @@ module SSCA2_RMAT_graph_generator
 
     { use Random; 
 
+      if PRINT_TIMING_STATISTICS then stopwatch.start ();
+
       const vertex_range = 1..N_VERTICES, 
 	    edge_range   = 1..n_raw_edges,
 	    rand_range   = 1..n_raw_edges + 1;
@@ -213,6 +215,13 @@ module SSCA2_RMAT_graph_generator
       //      }
       Edges.start = permutation (Edges.start);
       Edges.end   = permutation (Edges.end  );
+
+      if PRINT_TIMING_STATISTICS then {
+	stopwatch.stop ();
+	writeln ( "Elapsed time for Edge Generation: ", stopwatch.elapsed (), 
+		  " seconds");
+	stopwatch.clear ();
+      }
 
       if DEBUG_WEIGHT_GENERATOR then {
 	writeln ();

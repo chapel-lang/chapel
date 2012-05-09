@@ -79,7 +79,8 @@
 #   -interpret (DEPRECATED)
 #   -logfile   <log filename>         $testdir/Logs/<username>.<platform>.log
 #                                     (where $testdir is $CHPL_HOME/test if
-#                                     it exists, $CHPL_HOME/examples otherwise)
+#                                     it exists, $CHPL_HOME/example, if it
+#                                     exists, . otherwise)
 #   -memleaks
 #
 # All options can be used with a double-dash format as well 
@@ -601,21 +602,28 @@ if (! -d $utildir || ! -x $utildir) then
 endif
 
 set testdir = "$CHPL_HOME/test"
-if (! -d $testdir || ! -x $testdir) then
+if (! -d $testdir || ! -x $testdir || ! -w $testdir) then
     set testdir = "$CHPL_HOME/examples"
+    if (! -d $testdir || ! -x $testdir || ! -w $testdir) then
+        set testdir = "."
+    endif
 endif
-if (! -d $testdir || ! -x $testdir) then
-    echo "Error: Cannot find $CHPL_HOME/test or $CHPL_HOME/examples"
-    exit 1
+if (! -d $testdir || ! -x $testdir || ! -w $testdir) then
+    echo "Cannot write test directory '$testdir'"
+    exit -1
 endif
-set logtmp = $testdir/Logs/$user.tmp.log
-set datestr = `date +"%y%m%d.%H%M%S"`
 
 if (! -e $testdir/Logs) then
    mkdir $testdir/Logs
 endif
+set logsdir = "$testdir/Logs"
+if (! -d $logsdir || ! -x $logsdir || ! -w $logsdir) then
+    echo "Cannot write Logs directory '$testdir'"
+    exit -1
+endif
 
-
+set logtmp = $logsdir/$user.tmp.$$.log
+set datestr = `date +"%y%m%d.%H%M%S"`
 
 set platform = `$CHPL_HOME/util/chplenv/platform`
 
@@ -636,7 +644,7 @@ set compopts = "--cc-warnings"
 set launchcmd = ""
 set dirlist = ""
 set testlist = ""
-set logfile = "$testdir/Logs/$user.$platform.log"
+set logfile = "$logsdir/$user.$platform.log"
 set valgrind = 0
 set valgrindexe = 0
 set interpret = 0
@@ -823,7 +831,7 @@ while ( $#argv > 0 )
                 echo "          -nostdinredirect"
                 echo "          -launchertimeout pbs"
 #                echo "          -interpret (or -i)"
-        echo "          -logfile <file>      (currently: $testdir/Logs/$user.$platform.log)"
+        echo "          -logfile <file>      (currently: $logfile)"
         echo "          -memleaks <file>"
         echo "          -h, -help"
         exit 0
@@ -859,7 +867,7 @@ set invocationDir = "$cwd"
 
 echo \[Starting Chapel regression tests - $datestr\] |& $tee $logtmp
 echo \[starting directory: \"$invocationDir\"] |& $tee -a $logtmp
-echo \[test directory: \"$testdir\"\] |& $tee -a $logtmp
+echo \[Logs directory: \"$logsdir\"\] |& $tee -a $logtmp
 
 echo \[CHPL_HOME: $CHPL_HOME\] |& $tee -a $logtmp
 echo \[platform: $platform\] |& $tee -a $logtmp
@@ -985,6 +993,9 @@ if ("$dirlist" == "" && "$testlist" == "") then
                 exit $exitval
             endif
             pushd $CHPL_HOME/test >& /dev/null
+            if (! -e $perfdir) then
+                mkdir -p $perfdir
+            endif
             set blah=`$utildir/computePerfStats spectests "$perfdir"`
             set exitval = $?
             if ( $exitval != 0 ) then
@@ -1333,6 +1344,7 @@ endif
 cd $invocationDir
 
 echo \[Done with tests - `date +"%y%m%d.%H%M%S"`\] |& $tee -a $logfile
+echo \[Log file: $logfile \] |& $tee -a $logfile
 echo " " |& $tee -a $logfile
 
 # Output grep to a temp file, don't want to infinite loop

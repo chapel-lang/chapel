@@ -12,3 +12,13 @@ perfkeys: TEPS:, edge count adjusted TEPS:
 files: SSCA2_main.dat, SSCA2_main.dat
 ylabel: Performance (TEPS)
 graphname: SSCA2-TEPS-for-SCALE=8
+
+perfkeys: Elapsed time for Edge Generation:, Elapsed time for Kernel 1:
+files: SSCA2_main.dat, SSCA2_main.dat
+ylabel: Time (seconds)
+graphname: SSCA2-Graph-Construction-for-SCALE=8
+
+perfkeys: Elapsed time for SSCA#2:
+files: SSCA2_main.dat
+ylabel: Time (seconds)
+graphname: SSCA2-Total-Time-SCALE=8
