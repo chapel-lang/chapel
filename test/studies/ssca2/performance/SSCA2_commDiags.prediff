@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #
-# Allow 5% variance for Kernel 4 communication counts
+# Allow 1% variance for Kernel 4 get and put counts
 #
 
 import sys, os
@@ -18,10 +18,10 @@ if len(sys.argv) < 3:
 # Latest approximate communication counts
 #
 commTypes = ['get', 'get_nb', 'get_nb_test', 'get_nb_wait', 'put', 'fork', 'fork_fast', 'fork_nb']
-l0 = [74223, 0, 0, 0, 4600, 9038, 0, 807]
-l1 = [94952, 0, 0, 0, 4722, 9524, 0, 786]
-l2 = [83820, 0, 0, 0, 4238, 8639, 0, 774]
-l3 = [87570, 0, 0, 0, 4340, 8570, 0, 756]
+l0 = [68361, 0, 0, 0, 4600, 9038, 0, 807]
+l1 = [89279, 0, 0, 0, 4722, 9524, 0, 786]
+l2 = [78172, 0, 0, 0, 4238, 8639, 0, 774]
+l3 = [81911, 0, 0, 0, 4340, 8570, 0, 756]
 counts = [l0, l1, l2, l3]
 
 logfile = sys.argv[2]
@@ -42,8 +42,8 @@ for l in lines:
             for d in range(8):
                 target = counts[i][d]
                 curr=int(commDiags[d].split('=')[1].strip())
-                # only gets, puts and forks should vary
-                if d==0 or d==4 or d==5:
+                # only gets and puts should vary
+                if d==0 or d==4:
                     err=int(0.01*float(target)) # truncates
                     if (curr>=target-err) and (curr<=target+err):
                         f.write('%d: %s: %d (~1%%)\n'%(i, commTypes[d], target))

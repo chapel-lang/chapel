@@ -1,0 +1,10 @@
+bug: Global arrays declared with an initializing expression are not properly broadcast to other locales.
+
+This is the same bug as test/domains/sungeun/multilocale/globalDomain.chpl.
+
+When a global array variable is declared using an initializing
+expression, the broadcast of the address on locale 0 is not done
+properly.  Specifically, the broadcast call is made before the array
+is fully initialized.
+
+Workaround: Explicitly specify the type of the array.

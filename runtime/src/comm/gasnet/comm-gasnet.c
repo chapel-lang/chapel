@@ -98,8 +98,8 @@ static void AM_fork_fast(gasnet_token_t token, void* buf, size_t nbytes) {
     (*chpl_ftable[f->fid])(0);
 
   // Signal that the handler has completed
-  a0 = (gasnet_handlerarg_t) ((((uint64_t) f->ack)<<32UL)>>32UL);
-  a1 = (gasnet_handlerarg_t) (((uint64_t) f->ack)>>32UL);
+  a0 = (gasnet_handlerarg_t) ((((uint64_t) (intptr_t) f->ack)<<32UL)>>32UL);
+  a1 = (gasnet_handlerarg_t) (((uint64_t) (intptr_t) f->ack)>>32UL);
   GASNET_Safe(gasnet_AMReplyShort2(token, SIGNAL, a0, a1));
 }
 
@@ -109,8 +109,8 @@ static void fork_wrapper(fork_t *f) {
     (*chpl_ftable[f->fid])(&f->arg);
   else
     (*chpl_ftable[f->fid])(0);
-  a0 = (gasnet_handlerarg_t) ((((uint64_t) f->ack)<<32UL)>>32UL);
-  a1 = (gasnet_handlerarg_t) (((uint64_t) f->ack)>>32UL);
+  a0 = (gasnet_handlerarg_t) ((((uint64_t) (intptr_t) f->ack)<<32UL)>>32UL);
+  a1 = (gasnet_handlerarg_t) (((uint64_t) (intptr_t) f->ack)>>32UL);
   GASNET_Safe(gasnet_AMRequestShort2(f->caller, SIGNAL, a0, a1));
 
   chpl_mem_free(f, 0, 0);
@@ -129,8 +129,8 @@ static void fork_large_wrapper(fork_t* f) {
   chpl_comm_get(arg, f->caller, *(void**)f->arg,
                 f->arg_size, -1 /*typeIndex: unused*/, 1, 0, "fork large");
   (*chpl_ftable[f->fid])(arg);
-  a0 = (gasnet_handlerarg_t) ((((uint64_t) f->ack)<<32UL)>>32UL);
-  a1 = (gasnet_handlerarg_t) (((uint64_t) f->ack)>>32UL);
+  a0 = (gasnet_handlerarg_t) ((((uint64_t) (intptr_t) f->ack)<<32UL)>>32UL);
+  a1 = (gasnet_handlerarg_t) (((uint64_t) (intptr_t) f->ack)>>32UL);
   GASNET_Safe(gasnet_AMRequestShort2(f->caller, SIGNAL, a0, a1));
 
   chpl_mem_free(f, 0, 0);
@@ -188,7 +188,7 @@ static void AM_fork_nb_large(gasnet_token_t token, void* buf, size_t nbytes) {
 
 static void AM_signal(gasnet_token_t token, gasnet_handlerarg_t a0, gasnet_handlerarg_t a1) {
   uint64_t done = ((uint64_t) (uint32_t) a0) | (((uint64_t) (uint32_t) a1)<<32UL);
-  *((int *) done) = 1;
+  *((int *) (intptr_t) done) = 1;
 }
 
 static void AM_priv_bcast(gasnet_token_t token, void* buf, size_t nbytes) {
@@ -197,8 +197,8 @@ static void AM_priv_bcast(gasnet_token_t token, void* buf, size_t nbytes) {
   memcpy(chpl_private_broadcast_table[pbp->id], pbp->data, pbp->size);
 
   // Signal that the handler has completed
-  a0 = (gasnet_handlerarg_t) ((((uint64_t) pbp->ack)<<32UL)>>32UL);
-  a1 = (gasnet_handlerarg_t) (((uint64_t) pbp->ack)>>32UL);
+  a0 = (gasnet_handlerarg_t) ((((uint64_t) (intptr_t) pbp->ack)<<32UL)>>32UL);
+  a1 = (gasnet_handlerarg_t) (((uint64_t) (intptr_t) pbp->ack)>>32UL);
   GASNET_Safe(gasnet_AMReplyShort2(token, SIGNAL, a0, a1));
 }
 
@@ -208,8 +208,8 @@ static void AM_priv_bcast_large(gasnet_token_t token, void* buf, size_t nbytes) 
   memcpy((char*)chpl_private_broadcast_table[pblp->id]+pblp->offset, pblp->data, pblp->size);
 
   // Signal that the handler has completed
-  a0 = (gasnet_handlerarg_t) ((((uint64_t) pblp->ack)<<32UL)>>32UL);
-  a1 = (gasnet_handlerarg_t) (((uint64_t) pblp->ack)>>32UL);
+  a0 = (gasnet_handlerarg_t) ((((uint64_t) (intptr_t) pblp->ack)<<32UL)>>32UL);
+  a1 = (gasnet_handlerarg_t) (((uint64_t) (intptr_t) pblp->ack)>>32UL);
   GASNET_Safe(gasnet_AMReplyShort2(token, SIGNAL, a0, a1));
 }
 
@@ -526,8 +526,10 @@ static void exit_common(int status) {
   static int loopback = 0;
 
   if (chpl_localeID == 0) {
-    gasnet_handlerarg_t a0 = (gasnet_handlerarg_t) ((((uint64_t) ack)<<32UL)>>32UL);
-    gasnet_handlerarg_t a1 = (gasnet_handlerarg_t) (((uint64_t) ack)>>32UL);
+    gasnet_handlerarg_t a0;
+    gasnet_handlerarg_t a1;
+    a0 = (gasnet_handlerarg_t) ((((uint64_t) (intptr_t) ack)<<32UL)>>32UL);
+    a1 = (gasnet_handlerarg_t) (((uint64_t) (intptr_t) ack)>>32UL);
     GASNET_Safe(gasnet_AMRequestShort2(chpl_localeID, SIGNAL, a0, a1));
 
     if (loopback) {
@@ -548,8 +550,10 @@ static void exit_any_dirty(int status) {
   static int loopback = 0;
 
   if (chpl_localeID == 0) {
-    gasnet_handlerarg_t a0 = (gasnet_handlerarg_t) ((((uint64_t) ack)<<32UL)>>32UL);
-    gasnet_handlerarg_t a1 = (gasnet_handlerarg_t) (((uint64_t) ack)>>32UL);
+    gasnet_handlerarg_t a0;
+    gasnet_handlerarg_t a1;
+    a0 = (gasnet_handlerarg_t) ((((uint64_t) (intptr_t) ack)<<32UL)>>32UL);
+    a1 = (gasnet_handlerarg_t) (((uint64_t) (intptr_t) ack)>>32UL);
     GASNET_Safe(gasnet_AMRequestShort2(chpl_localeID, SIGNAL, a0, a1));
     if (loopback) {
       gasnet_exit(2);
@@ -652,16 +656,16 @@ void  chpl_comm_gets(void* dstaddr, void* dststrides, int32_t srclocale,
   cnt[strlvls]=((int32_t*)count)[strlvls];
 
   if (chpl_verbose_comm && !chpl_comm_no_debug_private){
-    printf("%d: %s:%d: remote get from %d. strlvls:%d. elemSize:%d  sizeof(size_t):%d  sizeof(gasnet_node_t):%d\n", chpl_localeID, fn, ln, srclocale,strlvls,elemSize,sizeof(size_t),sizeof(gasnet_node_t));
+    printf("%d: %s:%d: remote get from %d. strlvls:%d. elemSize:%d  sizeof(size_t):%d  sizeof(gasnet_node_t):%d\n", chpl_localeID, fn, ln, srclocale,(int)strlvls,elemSize,(int)sizeof(size_t),(int)sizeof(gasnet_node_t));
 
     printf("dststrides in bytes:\n");		      
-    for (i=0;i<strlvls;i++) printf(" %d ",dststr[i]);
+    for (i=0;i<strlvls;i++) printf(" %d ",(int)dststr[i]);
     printf("\n");		      
     printf("srcstrides in bytes:\n");		      
-    for (i=0;i<strlvls;i++) printf(" %d ",srcstr[i]);
+    for (i=0;i<strlvls;i++) printf(" %d ",(int)srcstr[i]);
     printf("\n");		      
     printf("count (count[0] in bytes):\n");		      
-    for (i=0;i<=strlvls;i++) printf(" %d ",cnt[i]);
+    for (i=0;i<=strlvls;i++) printf(" %d ",(int)cnt[i]);
     printf("\n");		      
   }
   // the case if (chpl_localeID == srclocale) is internally managed inside gasnet
@@ -706,16 +710,16 @@ void  chpl_comm_puts(void* dstaddr, void* dststrides, int32_t dstlocale,
   cnt[strlvls]=((int32_t*)count)[strlvls];
 
   if (chpl_verbose_comm && !chpl_comm_no_debug_private){
-    printf("%d: %s:%d: remote get from %d. strlvls:%d. elemSize:%d  sizeof(size_t):%d  sizeof(gasnet_node_t):%d\n", chpl_localeID, fn, ln, dstlocale,strlvls,elemSize,sizeof(size_t),sizeof(gasnet_node_t));
+    printf("%d: %s:%d: remote get from %d. strlvls:%d. elemSize:%d  sizeof(size_t):%d  sizeof(gasnet_node_t):%d\n", chpl_localeID, fn, ln, dstlocale,(int)strlvls,elemSize,(int)sizeof(size_t),(int)sizeof(gasnet_node_t));
 
     printf("dststrides in bytes:\n");		      
-    for (i=0;i<strlvls;i++) printf(" %d ",dststr[i]);
+    for (i=0;i<strlvls;i++) printf(" %d ",(int)dststr[i]);
     printf("\n");		      
     printf("srcstrides in bytes:\n");		      
-    for (i=0;i<strlvls;i++) printf(" %d ",srcstr[i]);
+    for (i=0;i<strlvls;i++) printf(" %d ",(int)srcstr[i]);
     printf("\n");		      
     printf("count (count[0] in bytes):\n");		      
-    for (i=0;i<=strlvls;i++) printf(" %d ",cnt[i]);
+    for (i=0;i<=strlvls;i++) printf(" %d ",(int)cnt[i]);
     printf("\n");		      
   }
 
@@ -998,35 +1002,35 @@ void chpl_getCommDiagnosticsHere(chpl_commDiagnostics *cd) {
   chpl_sync_unlock(&chpl_comm_diagnostics_sync);
 }
 
-int32_t chpl_numCommGets(void) {
+uint64_t chpl_numCommGets(void) {
   return chpl_comm_commDiagnostics.get;
 }
 
-int32_t chpl_numCommNBGets(void) {
+uint64_t chpl_numCommNBGets(void) {
   return chpl_comm_commDiagnostics.get_nb;
 }
 
-int32_t chpl_numCommTestNBGets(void) {
+uint64_t chpl_numCommTestNBGets(void) {
   return chpl_comm_commDiagnostics.get_nb_test;
 }
 
-int32_t chpl_numCommWaitNBGets(void) {
+uint64_t chpl_numCommWaitNBGets(void) {
   return chpl_comm_commDiagnostics.get_nb_wait;
 }
 
-int32_t chpl_numCommPuts(void) {
+uint64_t chpl_numCommPuts(void) {
   return chpl_comm_commDiagnostics.put;
 }
 
-int32_t chpl_numCommFastForks(void) {
+uint64_t chpl_numCommFastForks(void) {
   return chpl_comm_commDiagnostics.fork_fast;
 }
 
-int32_t chpl_numCommForks(void) {
+uint64_t chpl_numCommForks(void) {
   return chpl_comm_commDiagnostics.fork;
 }
 
-int32_t chpl_numCommNBForks(void) {
+uint64_t chpl_numCommNBForks(void) {
   return chpl_comm_commDiagnostics.fork_nb;
 }
 

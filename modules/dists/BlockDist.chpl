@@ -1232,7 +1232,7 @@ proc BlockArr.doiCanBulkTransferStride() {
 }
 
 proc BlockArr.doiBulkTransfer(B) {
-  if debugDefaultDistBulkTransfer then writeln("In BlockArr.doiBulkTransfer");
+  if debugBlockDistBulkTransfer then writeln("In BlockArr.doiBulkTransfer");
 
   if debugBlockDistBulkTransfer then resetCommDiagnostics();
   var sameDomain: bool;
@@ -1315,13 +1315,16 @@ proc BlockArr.doiBulkTransfer(B) {
   if debugBlockDistBulkTransfer then writeln("Comms:",getCommDiagnostics());
 }
 
-//This function should be improved so as to call a DefaultRectangular=BlockDist function for each DefaultRectangularArray.
-//Most of this code would be refactored out in that function which overloads the op= for that case.
+//This function should be improved so as to call a
+//DefaultRectangular=BlockDist function for each
+//DefaultRectangularArray.
+//Most of this code would be refactored out in that function which
+//overloads the op= for that case.
 
 proc BlockArr.doiBulkTransferStride(B) {
-  if debugDefaultDistBulkTransfer then writeln("In BlockArr.doiBulkTransferStride");
+  if debugBlockDistBulkTransfer then writeln("In BlockArr.doiBulkTransferStride");
 
-  if debugBlockDistBulkTransfer{ writeln("In BlockDist Stride.");resetCommDiagnostics();}
+  if debugBlockDistBulkTransfer{ writeln("In BlockArr.doiBulkTransferStride.");resetCommDiagnostics();}
   coforall i in dom.dist.targetLocDom do
     on dom.dist.targetLocales(i)  {
       if debugBlockDistBulkTransfer then startCommDiagnosticsHere();
@@ -1336,12 +1339,14 @@ proc BlockArr.doiBulkTransferStride(B) {
       //      var r = dom.locDoms[i].myBlock.dims(); 
       var r2,r3: (rank)*dom.locDoms[i].myBlock.dim(1).type; //r(1).type;
       
-      //This loop splits the local domain in subdomains so as to work at a 'DefaultRectangular" level
-/*Example:
-Let's be A[1..8,1..8] and B[1..8,1..8] block distrubuted over a 2x2 mesh
-If we assign A[1..3,2..7]=B[3..5,3..8], locale 0 is responsible of the local domain localA[1..3,2..4]
-But, the corresponding region in B is [3..5,3..5] which is distributed between 4 locales: B[3..4,3..4]
-in locale 0, B[3..4,5..5] in locale 1, B[5..5,3..4] in locale 2,B[5..5,5..5] in locale 3.
+//This loop splits the local domain in subdomains so as to work at a
+//'DefaultRectangular" level
+/*Example: Let's be A[1..8,1..8] and B[1..8,1..8] block distrubuted
+over a 2x2 mesh If we assign A[1..3,2..7]=B[3..5,3..8], locale 0 is
+responsible of the local domain localA[1..3,2..4] But, the
+corresponding region in B is [3..5,3..5] which is distributed between
+4 locales: B[3..4,3..4] in locale 0, B[3..4,5..5] in locale 1,
+B[5..5,3..4] in locale 2,B[5..5,5..5] in locale 3.
  */ 
         while total>0
         {
@@ -1352,19 +1357,24 @@ in locale 0, B[3..4,5..5] in locale 1, B[5..5,3..4] in locale 2,B[5..5,5..5] in 
   
           var rlo = lo+offset;
           var rid = B._value.dom.dist.targetLocsIdx(rlo);
-  
-//For each local array we first obtain the maximum number of local/remote elements in each locale 
-//that can be trasnferred at once
-//Basically, this number of elements is the minimum of what the destination locale wants and what the source locale has.
-//Followint the example: for locale 0, you need 9 elements but you can copy only 4 elements from the same locale 0, and so on...
+
+/* For each local array we first obtain the maximum number of
+local/remote elements in each locale that can be trasnferred at once
+Basically, this number of elements is the minimum of what the
+destination locale wants and what the source locale has.  Followint
+the example: for locale 0, you need 9 elements but you can copy only 4
+elements from the same locale 0, and so on...*/
+          var t:int;
 
           for t in [1..rank] do
-            if (dom.locDoms[i].myBlock.dim(t).high - lo(t)) <= 
+            if (dom.locDoms[i].myBlock.dim(t).high - 
+		lo(t)) <= //Bug when rank =1
 	        (B._value.dom.locDoms[rid].myBlock.dim(t).high - rlo(t)) then 
 	           min(t) = dom.locDoms[i].myBlock.dim(t).high - lo(t) + 1;
             else min(t) = B._value.dom.locDoms[rid].myBlock.dim(t).high - rlo(t) +1;
+
+          t=1;
       
-          var t:int=1;
           for s in [1..rank]
           {
             t *= min[s];

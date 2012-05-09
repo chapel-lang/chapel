@@ -49,38 +49,38 @@ Kernel 3: (get = 26222, get_nb = 0, get_nb_test = 0, get_nb_wait = 0, put = 126,
 
 Computing Betweenness Centrality exactly
 Kernel 4:
-0: get: 74223 (~1%)
+0: get: 68361 (~1%)
 0: get_nb: 0
 0: get_nb_test: 0
 0: get_nb_wait: 0
 0: put: 4600 (~1%)
-0: fork: 9038 (~1%)
+0: fork: 8502
 0: fork_fast: 0
-0: fork_nb: 807
-1: get: 94952 (~1%)
+0: fork_nb: 453
+1: get: 89279 (~1%)
 1: get_nb: 0
 1: get_nb_test: 0
 1: get_nb_wait: 0
 1: put: 4722 (~1%)
-1: fork: 9524 (~1%)
+1: fork: 8942
 1: fork_fast: 0
-1: fork_nb: 786
-2: get: 83820 (~1%)
+1: fork_nb: 441
+2: get: 78172 (~1%)
 2: get_nb: 0
 2: get_nb_test: 0
 2: get_nb_wait: 0
 2: put: 4238 (~1%)
-2: fork: 8639 (~1%)
+2: fork: 8175
 2: fork_fast: 0
-2: fork_nb: 774
-3: get: 87570 (~1%)
+2: fork_nb: 435
+3: get: 81911 (~1%)
 3: get_nb: 0
 3: get_nb_test: 0
 3: get_nb_wait: 0
 3: put: 4340 (~1%)
-3: fork: 8570 (~1%)
+3: fork: 8072
 3: fork_fast: 0
-3: fork_nb: 756
+3: fork_nb: 426
 
 Max Betweenness Centrality: 396.343
 Min Betweenness Centrality: 0.0

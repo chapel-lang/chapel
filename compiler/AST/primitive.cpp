@@ -33,6 +33,13 @@ returnInfoInt64(CallExpr* call) {
   return dtInt[INT_SIZE_64];
 }
 
+//
+// Since 'int' is equivalent to 'int(64)' currently, this doesn't do
+// anything different than returnInfoInt64 does, but it's intended to
+// be used in cases where a primitive returns a type that ought to
+// track the default 'int' size rather than being hard-coded to a
+// specific bit-width.
+//
 static Type*
 returnInfoDefaultInt(CallExpr* call) {
   return returnInfoInt64(call);
@@ -314,6 +321,26 @@ prim_def(const char* name, Type *(*returnInfo)(CallExpr*),
   prim->passLineno = passLineno;
 }
 
+
+
+/*
+ * The routine below, using the routines just above, define primitives
+ * for use by the compiler.  Each primitive definition takes:
+ * 
+ * - (optionally) the primitive's enum
+ * - its string name
+ * - a function pointer indicating the type it returns/evaluates to
+ * - (optionally) a boolean saying whether or not it's essential (i.e.,
+ *   should not be dead code eliminated)
+ * - (optionally) a boolean saying whether or not it expects to receive
+ *   filename/lineno arguments
+ *
+ * Primitives may be defined by the compiler directly (e.g., rewritten
+ * during function resolution) or implemented in the runtime.  In the
+ * latter case, not surprisingly, it is important to make sure that
+ * the return type of the primitive as specified here matches that of
+ * the runtime function implementing the primitive.
+ */
 
 void
 initPrimitive() {

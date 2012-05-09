@@ -28,8 +28,8 @@ for (i) in A.domain {
 }
 writeln("A is:",A);
 
-var B : [[1..n] dmapped Block(rank=1,boundingBox=[1..n])] int; //uncomment this
-//var B : [BDom] int;                                              //and comment this
+//var B : [[1..n] dmapped Block(rank=1,boundingBox=[1..n])] int; //uncomment this
+var B : [BDom] int;                                              //and comment this
 for (i) in B.domain {
        B(i)=2*i;
 }
