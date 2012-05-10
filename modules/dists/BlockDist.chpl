@@ -1198,14 +1198,14 @@ proc BlockArr.dsiPrivatize(privatizeData) {
 }
 
 proc BlockArr.dsiSupportsBulkTransfer() param return true;
-
+/*
 proc BlockArr.doiBulkTransfer_(B) {
   if debugDefaultDistBulkTransfer then writeln("In BlockArr.doiBulkTransfer_");
 
   if(this.type == B._value.type) && rank>1 then
      this.doiBulkTransferStride(B);
   else this.doiBulkTransfer(B);
-}
+}*/
 
 proc BlockArr.doiCanBulkTransfer() {
   if debugDefaultDistBulkTransfer then writeln("In BlockArr.doiCanBulkTransfer");
@@ -1224,9 +1224,12 @@ proc BlockArr.doiCanBulkTransfer() {
 
 proc BlockArr.doiCanBulkTransferStride() {
   if debugDefaultDistBulkTransfer then writeln("In BlockArr.doiCanBulkTransfer");
+//if dom.stridable then
+//  if disableAliasedBulkTransfer then
+//writeln("_arrAlias: ",_arrAlias);
 
- // if disableAliasedBulkTransfer then
- //   if _arrAlias != nil then return false;
+  //if _arrAlias != nil then return false;
+  
 //writeln("doiCanBulkTransfer TRUE!");
   return true;
 }
@@ -1332,13 +1335,69 @@ proc BlockArr.doiBulkTransferStride(B) {
       var total = dom.locDoms[i].myBlock.numIndices;
       var lo = dom.locDoms[i].myBlock.low;
       var lo_ini = lo;
-      var min: [1..rank] int;
-      for h in [1..rank] do min(h)=0;
       const offset   = B._value.dom.whole.low - dom.whole.low;
-   
-      //      var r = dom.locDoms[i].myBlock.dims(); 
-      var r2,r3: (rank)*dom.locDoms[i].myBlock.dim(1).type; //r(1).type;
-      
+
+      var t:int=1;
+      var x = dom.locDoms[i].myBlock;
+      var tmp:int;
+  
+      if rank ==1
+      {
+        var range1: range(idxType);
+        var range2: range(idxType);
+        var minimum:int = 0;
+        var dispDst,dispSrc : int;
+        if dom.locDoms[i].myBlock.dim(1).high >= lo+minimum then lo += minimum;
+        else lo = lo_ini;
+        
+        while total>0
+        { 
+          if dom.locDoms[i].myBlock.dim(1).high >= lo+minimum then lo += minimum;
+          else lo = lo_ini;
+  
+          var rlo = lo+offset;
+          var rid = B._value.dom.dist.targetLocsIdx(rlo);
+          dispDst= (dom.locDoms[i].myBlock.low - dom.whole.low);
+          dispSrc= (B._value.dom.locDoms[rid].myBlock.low - B._value.dom.whole.low);
+          
+          if (dom.locDoms[i].myBlock.dim(1).high - lo) <= 
+                  (B._value.dom.locDoms[rid].myBlock.dim(1).high - rlo) then 
+                     minimum = dom.locDoms[i].myBlock.dim(1).high - lo + 1;
+          else minimum = B._value.dom.locDoms[rid].myBlock.dim(1).high - rlo +1;
+          
+          if dispDst%dom.dsiDim(1).stride >0 then dispDst=dom.dsiDim(1).stride - (dispDst%dom.dsiDim(1).stride);
+          else dispDst=dispDst%dom.dsiDim(1).stride;
+         // if dispDst%dom.locDoms[i].myBlock.stride >0 then dispDst=dom.locDoms[i].myBlock.stride - (dispDst%dom.locDoms[i].myBlock.stride);
+         // else dispDst=dispDst%dom.locDoms[i].myBlock.stride;
+    
+          if dispSrc%B._value.dom.dsiDim(1).stride >0 then dispSrc=B._value.dom.dsiDim(1).stride - (dispSrc%B._value.dom.dsiDim(1).stride);
+          else dispSrc=dispSrc%B._value.dom.dsiDim(1).stride;
+          //if dispSrc%B._value.dom.locDoms[rid].myBlock.stride >0 then dispSrc=B._value.dom.locDoms[rid].myBlock.stride - (dispSrc%B._value.dom.locDoms[rid].myBlock.stride);
+          //else dispSrc=dispSrc%B._value.dom.locDoms[i].myBlock.stride;
+              
+          tmp=(minimum - dispSrc)/dom.dsiDim(1).stride;
+          if (minimum - dispSrc)%dom.dsiDim(1).stride > 0 then tmp +=1;
+          t = t * tmp;    
+          range1 = (lo+dispDst..lo + minimum - 1);
+          range2 = (rlo+dispSrc..rlo + minimum - 1);
+          var r1 = (range1 by dom.dsiDim(1).stride);
+          var r2 = (range2 by B._value.dom.dsiDim(1).stride);
+         
+          //writeln("In BlockArr.doiBulkTransferStride: Locale:", i," Rid: ",rid," d1:  ",r1, " d2: ",r2);
+	  if total>0 then 
+            locArr[i].myElems[r1]=B._value.locArr[rid].myElems[r2];
+	  total-=t;
+        }
+
+      }
+      else
+      {
+        var minimum: [1..rank] int;
+        for h in [1..rank] do minimum(h)=0;
+        var dispDst,dispSrc : rank*int;
+        var range1: rank*range(idxType);
+        var range2: rank*range(idxType); 
+     
 //This loop splits the local domain in subdomains so as to work at a
 //'DefaultRectangular" level
 /*Example: Let's be A[1..8,1..8] and B[1..8,1..8] block distrubuted
@@ -1349,11 +1408,10 @@ corresponding region in B is [3..5,3..5] which is distributed between
 B[5..5,3..4] in locale 2,B[5..5,5..5] in locale 3.
  */ 
         while total>0
-        {
-          if rank>1 then 
-            for t in [1..rank] by -1 do
-              if dom.locDoms[i].myBlock.dim(t).high >= lo[t]+min[t] {lo[t] += min[t]; break;}
-	      else lo[t]=lo_ini[t];
+        { 
+            for tt in [1..rank] by -1 do
+              if dom.locDoms[i].myBlock.dim(tt).high >= lo[tt]+minimum[tt] {lo[tt] += minimum[tt]; break;}
+	      else lo[tt]=lo_ini[tt];
   
           var rlo = lo+offset;
           var rid = B._value.dom.dist.targetLocsIdx(rlo);
@@ -1364,32 +1422,52 @@ Basically, this number of elements is the minimum of what the
 destination locale wants and what the source locale has.  Followint
 the example: for locale 0, you need 9 elements but you can copy only 4
 elements from the same locale 0, and so on...*/
-          var t:int;
 
-          for t in [1..rank] do
-            if (dom.locDoms[i].myBlock.dim(t).high - 
-		lo(t)) <= //Bug when rank =1
-	        (B._value.dom.locDoms[rid].myBlock.dim(t).high - rlo(t)) then 
-	           min(t) = dom.locDoms[i].myBlock.dim(t).high - lo(t) + 1;
-            else min(t) = B._value.dom.locDoms[rid].myBlock.dim(t).high - rlo(t) +1;
+          dispDst= (dom.locDoms[i].myBlock.low - dom.whole.low);
+          dispSrc= (B._value.dom.locDoms[rid].myBlock.low - B._value.dom.whole.low);
+          
+            for tt in [1..rank] do
+              if (dom.locDoms[i].myBlock.dim(tt).high - lo(tt)) <= 
+                  (B._value.dom.locDoms[rid].myBlock.dim(tt).high - rlo(tt)) then 
+                     minimum(tt) = dom.locDoms[i].myBlock.dim(tt).high - lo(tt) + 1;
+              else minimum(tt) = B._value.dom.locDoms[rid].myBlock.dim(tt).high - rlo(tt) +1;
 
-          t=1;
-      
-          for s in [1..rank]
-          {
-            t *= min[s];
-            r2(s) = (lo[s]..lo[s] + min[s] - 1);
-            r3(s) = (rlo[s]..rlo[s] + min[s] - 1);
-          }
-          if debugBlockDistBulkTransfer then 
-	    writeln("In BlockArr.doiBulkTransferStride: Locale:", i," Rid: ",rid," d1:  ",(...r2), " d2: ",(...r3));
-       
-	  if total>0 then 
-	    //locArr[i].myElems[(...r2)]._value.doiBulkTransferStride(B._value.locArr[rid].myElems[(...r3)]);
-            locArr[i].myElems[(...r2)] = B._value.locArr[rid].myElems[(...r3)];
-        
+             for s in [1..rank]
+            {
+              
+              if dispDst[s]%dom.dsiDim(s).stride >0 then dispDst[s]=dom.dsiDim(s).stride - (dispDst[s]%dom.dsiDim(s).stride);
+              else dispDst[s]=dispDst[s]%dom.dsiDim(s).stride;
+    
+              if dispSrc[s]%B._value.dom.dsiDim(s).stride >0 then dispSrc[s]=B._value.dom.dsiDim(s).stride - (dispSrc[s]%B._value.dom.dsiDim(s).stride);
+              else dispSrc[s]=dispSrc[s]%B._value.dom.dsiDim(s).stride;
+              
+              tmp=(minimum[s] - dispSrc[s])/dom.dsiDim(s).stride;
+              if (minimum[s] - dispSrc[s])%dom.dsiDim(s).stride > 0 then tmp +=1;
+               
+              t = t * tmp;
+              range1(s) = (lo[s]+dispDst[s]..lo[s] + minimum[s] - 1);
+              range2(s) = (rlo[s]+dispSrc[s]..rlo[s] + minimum[s] - 1);
+              
+              
+            } // END FOR
+    
+         var r1: rank * range(stridable = true);
+         var r2: rank * range(stridable = true);
+         for t in [1..rank]
+         {
+          r1[t] = range1(t) by dom.dsiDim(t).stride;
+          r2[t] = range2(t) by B._value.dom.dsiDim(t).stride;
+         }
+         if total>0 then
+            if (dom.locDoms[i].myBlock.stridable || B._value.dom.locDoms[i].myBlock.stridable){ 
+              locArr[i].myElems[(...r1)]._value.doiBulkTransferStride2(B._value.locArr[rid].myElems[(...r2)]);
+            }
+            else {
+              locArr[i].myElems[(...r1)] = B._value.locArr[rid].myElems[(...r2)];
+            }                 
 	  total-=t;
         } //End while
+      } //END IF
       if debugBlockDistBulkTransfer then stopCommDiagnosticsHere();
     }
   if debugBlockDistBulkTransfer then writeln("Comms:",getCommDiagnostics());

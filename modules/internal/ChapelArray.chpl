@@ -1457,12 +1457,10 @@ proc chpl__useBulkTransfer(a:[], b:[]) {
   if !b._value.doiCanBulkTransfer() then return false;
 
   for param i in 1..a._value.rank {
-       writeln("a.len(",i,"):",a._value.dom.dsiDim(i).length," b.len(",i,"):",b._value.dom.dsiDim(i).length);
     // size must be the same in each dimension
     if a._value.dom.dsiDim(i).length !=
        b._value.dom.dsiDim(i).length then return false;
   }
-writeln("Final chpl__useBulkTransfer");
   return true;
 }
 
@@ -1473,12 +1471,13 @@ proc chpl__useBulkTransferStride(a:[], b:[]) {
   if !a._value.doiCanBulkTransferStride() then return false;
   if !b._value.doiCanBulkTransferStride() then return false;
 
-  /*for param i in 1..a._value.rank {
-    writeln("a.len(",i,"):",a._value.dom.dsiDim(i).length," b.len(",i,"):",b._value.dom.dsiDim(i).length);
-    // size must be the same in each dimension
-    if a._value.dom.dsiDim(i).length !=
-       b._value.dom.dsiDim(i).length then return false;
-  }*/
+  for h in [1..a._value.rank] do
+      if a._value.dom.dsiDim(h).stride != b._value.dom.dsiDim(h).stride then return false;
+
+  // total length must be the same in each array ??? 
+  // Acording to the reference A=B is translated into for (a,b) in (A,B) do a=b;
+  // and the zippered iteration is not valid when a.dom.numIndices != b.dom.numIndices
+  if  a._value.dom.dsiNumIndices != b._value.dom.dsiNumIndices then return false;
 
   return true;
 }
@@ -1490,7 +1489,6 @@ inline proc =(a: [], b) {
     compilerError("rank mismatch in array assignment");
   if chpl__isArray(b) && b._value == nil then
     return a;
-
   // This outer conditional must result in a param
   if useBulkTransfer && chpl__isArray(b) &&
      chpl__compatibleForBulkTransfer(a, b) &&
@@ -1932,8 +1930,8 @@ proc copyBtoC(A:[], B:[])
   A._value.copyBtoC(B);
 }
 
-proc prueba(A:[], B:[])
+/*proc prueba(A:[], B:[])
 {
   A._value.prueba(B);
-}
+}*/
 }

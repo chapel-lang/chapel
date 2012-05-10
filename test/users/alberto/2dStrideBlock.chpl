@@ -1,6 +1,6 @@
 use BlockDist;
 use PrintComms;
-config const printOutput=false;
+config const printOutput=true;
 config const doDiagnostics=false;
 
 config  const n: int=8;

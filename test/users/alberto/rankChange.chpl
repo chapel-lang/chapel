@@ -9,25 +9,35 @@ var Dom2: domain(3,int) dmapped Dist2 = [1..n,1..n,1..n];
 var A:[Dom1] int(64);
 var B:[Dom2] int(64) = [(i,j,k) in Dom2] i*n*n+j*n+k;
 
+var Dom3=[5..8,2..6,1..4];
+var Dom4=[2..5,5..9,3..6];
+
 A = -1;
-A[5..8,2..6,1..4]=B[2..5,5..9,3..6];
-writeln(A[5..8,2..6,1..4]);
+A[Dom3]=B[Dom4];
+writeln(A[Dom3]);
 writeln();
-writeln(B[2..5,5..9,3..6]);
+writeln(B[Dom4]);
+for (a,b) in (A[Dom3],B[Dom4]) do if (a!=b) then {writeln("ERROR!!!!");}
 writeln('=========');
 
 A = -1;
-A[5..5,2..6,1..4]=B[2..2,5..9,3..6];
-writeln(A[5..5,2..6,1..4]);
+Dom3=[5..5,2..6,1..4];
+Dom4=[2..2,5..9,3..6];
+A[Dom3]=B[Dom4];
+writeln(A[Dom3]);
 writeln();
-writeln(B[2..2,5..9,3..6]);
+writeln(B[Dom4]);
+for (a,b) in (A[Dom3],B[Dom4]) do if (a!=b) then {writeln("ERROR!!!!");}
 writeln('=========');
 
 A = -1;
-A[5..8,2..2,1..4]=B[2..5,5..5,3..6];
-writeln(A[5..8,2..2,1..4]);
+Dom3=[5..8,2..2,1..4];
+Dom4=[2..5,5..5,3..6];
+A[Dom3]=B[Dom4];
+writeln(A[Dom3]);
 writeln();
-writeln(B[2..5,5..5,3..6]);
+writeln(B[Dom4]);
+for (a,b) in (A[Dom3],B[Dom4]) do if (a!=b) then {writeln("ERROR!!!!");}
 writeln('=========');
 
 A = -1;
@@ -35,6 +45,7 @@ A[5,2..6,1..4]=B[2,5..9,3..6];
 writeln(A[5,2..6,1..4]);
 writeln();
 writeln(B[2,5..9,3..6]);
+for (a,b) in (A[5,2..6,1..4],B[2,5..9,3..6]) do if (a!=b) then {writeln("ERROR!!!!");}
 writeln('=========');
 
 A = -1;
@@ -43,6 +54,7 @@ writeln();
 writeln(A[5..8,2,1..4]);
 writeln();
 writeln(B[2..5,5,3..6]);
+for (a,b) in (A[5..8,2,1..4],B[2..5,5,3..6]) do if (a!=b) then {writeln("ERROR!!!!");}
 writeln('=========');
 
 A = -1;
@@ -51,5 +63,5 @@ writeln();
 writeln(A[5..8,2..6,2]);
 writeln();
 writeln(B[2..5,5..9,4]);
+for (a,b) in (A[5..8,2..6,2],B[2..5,5..9,4]) do if (a!=b) then {writeln("ERROR!!!!");}
 writeln('=========');
-
