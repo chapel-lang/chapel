@@ -10,10 +10,6 @@
 #include "chpltypes.h"
 #include "error.h"
 
-#undef malloc
-#undef free
-#undef realloc
-
 void chpl_mem_layerInit(void) {
   void* start;
   size_t size;
@@ -33,17 +29,3 @@ void chpl_mem_layerActualSharedHeap(void** start_p, size_t* size_p) {
 }
 
 
-void* chpl_mem_layerAlloc(size_t chunk, int32_t lineno, chpl_string filename) {
-  return (chunk) ? malloc(chunk) : NULL;
-}
-
-
-void* chpl_mem_layerRealloc(void* memAlloc, size_t newChunk,
-                      int32_t lineno, chpl_string filename) {
-  return realloc(memAlloc, newChunk);
-}
-
-
-void chpl_mem_layerFree(void* memAlloc, int32_t lineno, chpl_string filename) {
-  free(memAlloc);
-}

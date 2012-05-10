@@ -65,14 +65,14 @@
 //
 %token TALIGN TATOMIC TBEGIN TBREAK TBY
 %token TCLASS TCOBEGIN TCOFORALL TCONFIG TCONST TCONTINUE
-%token TDEF TDELETE TDMAPPED TDO TDOMAIN TELSE TENUM TEXPORT TEXTERN T_EXTERN
+%token TDELETE TDMAPPED TDO TDOMAIN TELSE TENUM TEXPORT TEXTERN
 %token TFOR TFORALL TIF TIN TINDEX TINLINE TINOUT TITER
 %token TLABEL TLAMBDA TLET TLOCAL TMINUSMINUS TMODULE
 %token TNEW TNIL TON TOTHERWISE TOUT
 %token TPARAM TPLUSPLUS TPRAGMA TPRIMITIVE TPRIMITIVELOOP TPROC
 %token TRECORD TREDUCE TREF TRETURN
 %token TSCAN TSELECT TSERIAL TSINGLE TSPARSE TSUBDOMAIN
-%token TSYNC TTHEN TTYPE TUNION TUSE TVAR TVOLATILE
+%token TSYNC TTHEN TTYPE TUNION TUSE TVAR
 %token TWHEN TWHERE TWHILE TYIELD
 
 //
@@ -96,7 +96,7 @@
 %left TNOELSE
 %left TELSE
 %left TCOMMA
-%left TFOR TFORALL TIF TSYNC TSINGLE TVOLATILE
+%left TFOR TFORALL TIF TATOMIC TSYNC TSINGLE
 %left TALIGN TBY THASH
 %left TIN
 %left TDOTDOT
@@ -165,7 +165,7 @@
 %type <pcallexpr> opt_actual_ls actual_ls
 
 %type <pfnsymbol> fn_decl_stmt_inner formal_ls opt_formal_ls req_formal_ls
-%type <procIter> proc_or_iter_or_def
+%type <procIter> proc_or_iter
 %type <pfnsymbol> linkage_spec
 
 %% 
@@ -335,7 +335,6 @@ class_decl_stmt:
 opt_extern:
            { $$ = FLAG_UNKNOWN; }
 | TEXTERN  { $$ = FLAG_EXTERN; }
-| T_EXTERN { $$ = FLAG_OLD_EXTERN_KW_USED; }
 ;
 
 class_tag:
@@ -428,11 +427,9 @@ linkage_spec:
 | TEXPORT ident { $$ = new FnSymbol($2); $$->addFlag(FLAG_EXPORT); }
 | TEXTERN       { $$ = new FnSymbol(""); $$->addFlag(FLAG_EXTERN); }
 | TEXTERN ident { $$ = new FnSymbol($2); $$->addFlag(FLAG_EXTERN); }
-| T_EXTERN      { $$ = new FnSymbol(""); $$->addFlag(FLAG_EXTERN);
-                  $$->addFlag(FLAG_OLD_EXTERN_KW_USED); }
 
 fn_decl_stmt:
-  linkage_spec proc_or_iter_or_def
+  linkage_spec proc_or_iter
     {
       // Sets up to capture tokens while parsing the next grammar nonterminal.
       captureTokens = 1;
@@ -459,12 +456,7 @@ fn_decl_stmt:
       {
         if (fn->hasFlag(FLAG_EXTERN))
           USR_FATAL_CONT(fn, "'iter' is not legal with 'extern'");
-        fn->addFlag(FLAG_PROC_ITER_KW_USED);
         fn->addFlag(FLAG_ITERATOR_FN);
-      }
-      if ($2 == ProcIter_PROC)
-      {
-        fn->addFlag(FLAG_PROC_ITER_KW_USED);
       }
 
       $$ = buildFunctionDecl($4, $6, $7, $8, $9);
@@ -565,9 +557,8 @@ opt_this_intent_tag:
 | TPARAM { $$ = INTENT_PARAM; }
 ;
 
-proc_or_iter_or_def:
-  TDEF   { $$ = ProcIter_DEF; }
-| TPROC  { $$ = ProcIter_PROC; }
+proc_or_iter:
+  TPROC  { $$ = ProcIter_PROC; }
 | TITER  { $$ = ProcIter_ITER; }
 ;
 
@@ -623,10 +614,6 @@ type_alias_decl_stmt:
     { $$ = handleConfigTypes($3); }
 | TEXTERN TTYPE type_alias_decl_stmt_inner TSEMI 
     { $$ = convertTypesToExtern($3); }
-| T_EXTERN TTYPE type_alias_decl_stmt_inner TSEMI
-    { $$ = convertTypesToExtern($3);
-      USR_WARN($$, "The _extern keyword is deprecated. Use extern (no leading underscore) instead.");
-    }
 ;
 
 type_alias_decl_stmt_inner:
@@ -652,44 +639,17 @@ opt_init_type:
 | TASSIGN expr  { $$ = $2; }
 ;
 
-// The ugliness added by FLAG_OLD_EXTERN_KW_USED can be eliminated
-// once the "_extern" keyword moves from being deprecated to being
-// obsolete. <hilde>
 var_decl_stmt:
   opt_config TPARAM var_decl_stmt_inner_ls TSEMI
     {
-      /* Begin part to delete when "_extern" is obsoleted. */
-      if ($1 == FLAG_OLD_EXTERN_KW_USED)
-      {
-        $$ = buildVarDecls($3, FLAG_EXTERN, FLAG_PARAM);
-        USR_WARN($$, "The _extern keyword is deprecated. Use extern (no leading underscore) instead.");
-      }
-      else
-      /* End part to delete when "_extern" is obsoleted. */
       $$ = buildVarDecls($3, $1, FLAG_PARAM);
     }
 | opt_config TCONST var_decl_stmt_inner_ls TSEMI
     {
-      /* Begin part to delete when "_extern" is obsoleted. */
-      if ($1 == FLAG_OLD_EXTERN_KW_USED)
-      {
-        $$ = buildVarDecls($3, FLAG_EXTERN, FLAG_CONST);
-        USR_WARN($$, "The _extern keyword is deprecated. Use extern (no leading underscore) instead.");
-      }
-      else
-      /* End part to delete when "_extern" is obsoleted. */
       $$ = buildVarDecls($3, $1, FLAG_CONST);
     }
 | opt_config TVAR var_decl_stmt_inner_ls TSEMI
     {
-      /* Begin part to delete when "_extern" is obsoleted. */
-      if ($1 == FLAG_OLD_EXTERN_KW_USED)
-      {
-        $$ = buildVarDecls($3, FLAG_EXTERN, FLAG_UNKNOWN);
-        USR_WARN($$, "The _extern keyword is deprecated. Use extern (no leading underscore) instead.");
-      }
-      else
-      /* End part to delete when "_extern" is obsoleted. */
       $$ = buildVarDecls($3, $1, FLAG_UNKNOWN);
     }
 ;
@@ -698,7 +658,6 @@ opt_config:
             { $$ = FLAG_UNKNOWN; }
 | TCONFIG   { $$ = FLAG_CONFIG; }
 | TEXTERN   { $$ = FLAG_EXTERN; }
-| T_EXTERN  { $$ = FLAG_OLD_EXTERN_KW_USED; }
 ;
  
 var_decl_stmt_inner_ls:
@@ -887,6 +846,8 @@ type_level_expr:
     { $$ = buildForallLoopExpr(NULL, $2, $7, $5); }
 | TIF expr TTHEN expr TELSE expr
     { $$ = new CallExpr(new DefExpr(buildIfExpr($2, $4, $6))); }
+| TATOMIC expr
+    { $$ = new CallExpr("chpl__atomicType", $2); }
 | TSYNC expr
     { $$ = new CallExpr( "_syncvar", $2); }
 ;
@@ -971,8 +932,7 @@ unary_op_expr:
 ;
 
 lhs_expr:
-  TVOLATILE ident                 { $$ = new UnresolvedSymExpr($2, true); }
-| ident                           { $$ = new UnresolvedSymExpr($1); }
+  ident                           { $$ = new UnresolvedSymExpr($1); }
 | call_expr
 | dot_expr
 | parenthesized_expr

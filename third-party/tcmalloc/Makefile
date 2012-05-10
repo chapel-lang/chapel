@@ -1,7 +1,9 @@
-CHAPEL_ROOT = ../..
-CHAPEL_SUBDIR = third-party/tcmalloc
+ifndef CHPL_MAKE_HOME
+export CHPL_MAKE_HOME=$(shell pwd)/../..
+endif
+
 CHPL_MAKE_HOST_TARGET = --target
-include $(CHAPEL_ROOT)/make/Makefile.base
+include $(CHPL_MAKE_HOME)/make/Makefile.base
 
 TCMALLOC_ABS_DIR = $(shell pwd)
 TCMALLOC_INSTALL_DIR=$(TCMALLOC_ABS_DIR)/$(TCMALLOC_INSTALL_SUBDIR)

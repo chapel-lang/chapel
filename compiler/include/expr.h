@@ -79,8 +79,7 @@ class SymExpr : public Expr {
 class UnresolvedSymExpr : public Expr {
  public:
   const char* unresolved;
-  bool isVolatile;
-  UnresolvedSymExpr(const char* init_var, bool init_is_volatile=false);
+  UnresolvedSymExpr(const char* init_var);
   DECLARE_COPY(UnresolvedSymExpr);
   void replaceChild(Expr* old_ast, Expr* new_ast);
   void verify(); 

@@ -51,7 +51,7 @@ buildSyncAccessFunctionSet(Vec<FnSymbol*>& syncAccessFunctionSet) {
           syncAccessFunctionSet.set_add(parent);
           syncAccessFunctionVec.add(parent);
 #ifdef DEBUG_SYNC_ACCESS_FUNCTION_SET
-          printf("%s:%d %s\n", parent->getModule()->name, parent->lineno, parent->name);
+          printf("%s:%d %s\n", parent->getModule()->name, parent->linenum(), parent->name);
 #endif
         }
       }
@@ -70,8 +70,8 @@ buildSyncAccessFunctionSet(Vec<FnSymbol*>& syncAccessFunctionSet) {
         syncAccessFunctionSet.set_add(parent);
         syncAccessFunctionVec.add(parent);
 #ifdef DEBUG_SYNC_ACCESS_FUNCTION_SET
-        printf("%s:%d %s\n", parent->getModule()->name, parent->lineno, parent->name);
-        printf("  %s:%d %s\n", fn->getModule()->name, fn->lineno, fn->name);
+        printf("%s:%d %s\n", parent->getModule()->name, parent->linenum(), parent->name);
+        printf("  %s:%d %s\n", fn->getModule()->name, fn->linenum(), fn->name);
 #endif
       }
     }
@@ -124,7 +124,7 @@ isSafeToDeref(Symbol* ref,
         INT_ASSERT(se);
         if (se->var != safeSettableField)
           return false;
-      } else if (!call->isPrimitive(PRIM_GET_REF))
+      } else if (!call->isPrimitive(PRIM_DEREF))
         return false; // what cases does this preclude? can this be an assert?
     } else
       return false; // what cases does this preclude? can this be an assert?
@@ -186,7 +186,7 @@ remoteValueForwarding(Vec<FnSymbol*>& fns) {
               if (call->isPrimitive(PRIM_SET_MEMBER)) {
                 Symbol* tmp = newTemp(vt);
                 call->insertBefore(new DefExpr(tmp));
-                call->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_REF, call->get(3)->remove())));
+                call->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_DEREF, call->get(3)->remove())));
                 call->insertAtTail(tmp);
               } else if (call->isPrimitive(PRIM_GET_MEMBER_VALUE)) {
                 CallExpr* move = toCallExpr(call->parentExpr);
@@ -194,7 +194,7 @@ remoteValueForwarding(Vec<FnSymbol*>& fns) {
                 Symbol* tmp = newTemp(vt);
                 move->insertBefore(new DefExpr(tmp));
                 move->insertBefore(new CallExpr(PRIM_MOVE, tmp, call->remove()));
-                move->insertAtTail(new CallExpr(PRIM_SET_REF, tmp));
+                move->insertAtTail(new CallExpr(PRIM_ADDR_OF, tmp));
               } else
                 INT_FATAL(field, "unexpected case");
             }
@@ -230,7 +230,7 @@ remoteValueForwarding(Vec<FnSymbol*>& fns) {
           VarSymbol* deref = newTemp("rvfDerefTmp", arg->type);
           call->insertBefore(new DefExpr(deref));
           call->insertBefore(new CallExpr(PRIM_MOVE, deref,
-                               new CallExpr(PRIM_GET_REF, actual->var)));
+                               new CallExpr(PRIM_DEREF, actual->var)));
           actual->replace(new SymExpr(deref));
 
           //
@@ -238,16 +238,16 @@ remoteValueForwarding(Vec<FnSymbol*>& fns) {
           //
           for_uses(use, useMap, arg) {
             CallExpr* call = toCallExpr(use->parentExpr);
-            if (call && call->isPrimitive(PRIM_GET_REF)) {
+            if (call && call->isPrimitive(PRIM_DEREF)) {
               call->replace(new SymExpr(arg));
             } else if (call && call->isPrimitive(PRIM_MOVE)) {
-              use->replace(new CallExpr(PRIM_SET_REF, arg));
+              use->replace(new CallExpr(PRIM_ADDR_OF, arg));
             } else {
               Expr* stmt = use->getStmtExpr();
               VarSymbol* reref = newTemp("rvfRerefTmp", actual->var->type);
               stmt->insertBefore(new DefExpr(reref));
               stmt->insertBefore(new CallExpr(PRIM_MOVE, reref,
-                                   new CallExpr(PRIM_SET_REF, arg)));
+                                   new CallExpr(PRIM_ADDR_OF, arg)));
               use->replace(new SymExpr(reref));
             }
           }

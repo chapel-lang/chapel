@@ -1,4 +1,4 @@
-/* testing that funs specified with the pragma inline will be inlined
+/* testing that funs specified with the 'inline' keyword will be inlined
  * testing that funs passed actual ref arguments/formal parameters
  * testing that funs with intents to ensure copied backs happen for out/inout
  */
@@ -13,7 +13,7 @@ proc main() {
    * since formal param this will be a ref */
   f.y = 1;
  
-  /* this method should be inlined because of the pragma "inline"
+  /* this method should be inlined because of the 'inline' keyword
    */
   leaf(f);
 
@@ -33,7 +33,7 @@ proc main() {
  
 }
 
-pragma "inline" proc leaf(x : Foo) : Foo {
+inline proc leaf(x : Foo) : Foo {
   return x;
 }
 

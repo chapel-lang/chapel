@@ -11,7 +11,7 @@ proc main {
 }
 
 proc foo() {
-  var li = new list(int(64));
+  var li = new list(real);
   li.append(3);
   li.append(4);
   writeln(li);
@@ -19,6 +19,6 @@ proc foo() {
 
 proc bar() {
   use LibGL;
-  var li = new list(int(64));
+  var li = new list(real);
   li.append(3);
 }

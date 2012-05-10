@@ -1,7 +1,25 @@
+#ifndef _chpl_atomics_h_
+#define _chpl_atomics_h_
 
 #include "chpltypes.h" // chpl_bool
 #include "chpl-tasks.h" // chpl_sync_aux_t
 
+typedef struct atomic_int_least8_s {
+  chpl_sync_aux_t sv;
+  int_least8_t v;
+} atomic_int_least8_t;
+typedef struct atomic_int_least16_s {
+  chpl_sync_aux_t sv;
+  int_least16_t v;
+} atomic_int_least16_t;
+typedef struct atomic_int_least32_s {
+  chpl_sync_aux_t sv;
+  int_least32_t v;
+} atomic_int_least32_t;
+typedef struct atomic_int_least64_s {
+  chpl_sync_aux_t sv;
+  int_least64_t v;
+} atomic_int_least64_t;
 typedef struct atomic_uint_least8_s {
   chpl_sync_aux_t sv;
   uint_least8_t v;
@@ -48,17 +66,6 @@ void atomic_signal_thread_fence(memory_order order)
   // No idea!
 }
 
-static inline void atomic_init_flag(atomic_flag *obj, chpl_bool value)
-{
-  obj->v = value;
-  chpl_sync_initAux(&obj->sv);
-}
-
-static inline void atomic_destroy_flag(atomic_flag *obj) 
-{
-  chpl_sync_destroyAux(&obj->sv);
-}
-
 static inline chpl_bool atomic_flag_test_and_set_explicit(atomic_flag *obj, memory_order order) {
   chpl_bool ret;
   chpl_sync_lock(&obj->sv);
@@ -79,48 +86,48 @@ static inline void atomic_flag_clear(atomic_flag *obj) {
   atomic_flag_clear_explicit(obj, memory_order_seq_cst);
 }
 
-#define DECLARE_ATOMICS(type) \
+#define DECLARE_ATOMICS_BASE(type, basetype) \
 static inline chpl_bool atomic_is_lock_free_ ## type(atomic_ ## type * obj) { \
   return false; \
 } \
-static inline void atomic_init_ ## type(atomic_ ## type * obj, type value) { \
+static inline void atomic_init_ ## type(atomic_ ## type * obj, basetype value) { \
   obj->v = value; \
   chpl_sync_initAux(&obj->sv); \
 } \
 static inline void atomic_destroy_ ## type(atomic_ ## type * obj) { \
   chpl_sync_destroyAux(&obj->sv); \
 } \
-static inline void atomic_store_explicit_ ## type(atomic_ ## type * obj, type value, memory_order order) { \
+static inline void atomic_store_explicit_ ## type(atomic_ ## type * obj, basetype value, memory_order order) { \
   chpl_sync_lock(&obj->sv); \
   obj->v = value; \
   chpl_sync_unlock(&obj->sv); \
 } \
-static inline void atomic_store_ ## type(atomic_ ## type * obj, type value) { \
+static inline void atomic_store_ ## type(atomic_ ## type * obj, basetype value) { \
   atomic_store_explicit_ ## type(obj, value, memory_order_seq_cst); \
 } \
-static inline type atomic_load_explicit_ ## type(atomic_ ## type * obj, memory_order order) { \
-  type ret; \
+static inline basetype atomic_load_explicit_ ## type(atomic_ ## type * obj, memory_order order) { \
+  basetype ret; \
   chpl_sync_lock(&obj->sv); \
   ret = obj->v; \
   chpl_sync_unlock(&obj->sv); \
   return ret; \
 } \
-static inline type atomic_load_ ## type(atomic_ ## type * obj) { \
+static inline basetype atomic_load_ ## type(atomic_ ## type * obj) { \
   return atomic_load_explicit_ ## type(obj, memory_order_seq_cst); \
 } \
-static inline type atomic_exchange_explicit_ ## type(atomic_ ## type * obj, type value, memory_order order) { \
-  type ret; \
+static inline basetype atomic_exchange_explicit_ ## type(atomic_ ## type * obj, basetype value, memory_order order) { \
+  basetype ret; \
   chpl_sync_lock(&obj->sv); \
   ret = obj->v; \
   obj->v = value; \
   chpl_sync_unlock(&obj->sv); \
   return ret; \
 } \
-static inline type atomic_exchange_ ## type(atomic_ ## type * obj, type value) { \
+static inline basetype atomic_exchange_ ## type(atomic_ ## type * obj, basetype value) { \
   return atomic_exchange_explicit_ ## type(obj, value, memory_order_seq_cst); \
 } \
-static inline chpl_bool atomic_compare_exchange_strong_explicit_ ## type(atomic_ ## type * obj, type expected, type desired, memory_order order) { \
-  type ret; \
+static inline chpl_bool atomic_compare_exchange_strong_explicit_ ## type(atomic_ ## type * obj, basetype expected, basetype desired, memory_order order) { \
+  basetype ret; \
   chpl_sync_lock(&obj->sv); \
   if( obj->v == expected ) { \
     obj->v = desired; \
@@ -131,15 +138,17 @@ static inline chpl_bool atomic_compare_exchange_strong_explicit_ ## type(atomic_
   chpl_sync_unlock(&obj->sv); \
   return ret; \
 } \
-static inline chpl_bool atomic_compare_exchange_strong_ ## type(atomic_ ## type * obj, type expected, type desired) { \
+static inline chpl_bool atomic_compare_exchange_strong_ ## type(atomic_ ## type * obj, basetype expected, basetype desired) { \
   return atomic_compare_exchange_strong_explicit_ ## type(obj, expected, desired, memory_order_seq_cst); \
 } \
-static inline chpl_bool atomic_compare_exchange_weak_explicit_ ## type(atomic_ ## type * obj, type expected, type desired, memory_order order) { \
+static inline chpl_bool atomic_compare_exchange_weak_explicit_ ## type(atomic_ ## type * obj, basetype expected, basetype desired, memory_order order) { \
   return atomic_compare_exchange_strong_explicit_ ## type(obj, expected, desired, order); \
 } \
-static inline chpl_bool atomic_compare_exchange_weak_ ## type(atomic_ ## type * obj, type expected, type desired) { \
+static inline chpl_bool atomic_compare_exchange_weak_ ## type(atomic_ ## type * obj, basetype expected, basetype desired) { \
   return atomic_compare_exchange_weak_explicit_ ## type(obj, expected, desired, memory_order_seq_cst); \
-} \
+}
+
+#define DECLARE_ATOMICS_FETCH_OPS(type) \
 static inline type atomic_fetch_add_explicit_ ## type(atomic_ ## type * obj, type operand, memory_order order) { \
   type ret; \
   chpl_sync_lock(&obj->sv); \
@@ -185,12 +194,24 @@ static inline type atomic_fetch_and_ ## type(atomic_ ## type * obj, type operand
   return atomic_fetch_and_explicit_ ## type(obj, operand, memory_order_seq_cst); \
 }
 
+DECLARE_ATOMICS_BASE(flag, chpl_bool);
+
+#define DECLARE_ATOMICS(type) \
+  DECLARE_ATOMICS_BASE(type, type) \
+  DECLARE_ATOMICS_FETCH_OPS(type)
+
+DECLARE_ATOMICS(int_least8_t);
+DECLARE_ATOMICS(int_least16_t);
+DECLARE_ATOMICS(int_least32_t);
+DECLARE_ATOMICS(int_least64_t);
 DECLARE_ATOMICS(uint_least8_t);
 DECLARE_ATOMICS(uint_least16_t);
 DECLARE_ATOMICS(uint_least32_t);
 DECLARE_ATOMICS(uint_least64_t);
 DECLARE_ATOMICS(uintptr_t);
 
+#undef DECLARE_ATOMICS_BASE
+#undef DECLARE_ATOMICS_FETCH_OPS
 #undef DECLARE_ATOMICS
 
 static inline int leadz8(uint8_t x) {
@@ -226,3 +247,4 @@ static inline int leadz64(uint64_t x) {
   return i;
 }
 
+#endif // _chpl_atomics_h_

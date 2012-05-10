@@ -255,6 +255,7 @@ extern "C" {
 #endif  // #ifndef _WIN32
 
 #if defined(LIBC_MALLOC_OVERRIDE)
+
 // Override the libc functions to prefer our own instead.  This comes
 // first so code in tcmalloc.cc can use the overridden versions.  One
 // exception: in windows, by default, we patch our code into these
@@ -1655,6 +1656,8 @@ extern "C" PERFTOOLS_DLL_DECL int tc_set_new_mode(int flag) __THROW {
 }
 
 
+#if defined(LIBC_MALLOC_OVERRIDE)
+
 // Override __libc_memalign in libc on linux boxes specially.
 // They have a bug in libc that causes them to (very rarely) allocate
 // with __libc_memalign() yet deallocate with free() and the
@@ -1674,3 +1677,5 @@ static void *MemalignOverride(size_t align, size_t size, const void *caller)
 }
 void *(*__memalign_hook)(size_t, size_t, const void *) = MemalignOverride;
 #endif  // #ifndef TCMALLOC_FOR_DEBUGALLOCATION
+
+#endif

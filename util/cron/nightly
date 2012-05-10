@@ -20,6 +20,7 @@ $nolocal = 0;
 $combinedir = 0;
 $dist = "";
 $memleaks = "";
+$multilocale = 0;
 $svnrevopt = "";
 $startdate = "-1";
 
@@ -46,6 +47,9 @@ while (@ARGV) {
 	$allhellos = 1;
     } elsif ($flag eq "-examples") {
         $examples = 1;
+    } elsif ($flag eq "-multilocale") {
+        $examples = 1;
+        $multilocale = 1;
     } elsif ($flag eq "-performance") {
         $performance = 1;
     } elsif ($flag eq "-startdate") {
@@ -74,6 +78,18 @@ while (@ARGV) {
     }
 }
 
+
+$ctmp = `crontab -l`;
+@blah = split(/\n/, $ctmp);
+# Ignore the first 3 (commented) lines added by crontab
+# I'm not sure how standard this is, but let's see how it goes.
+$crontab = join("\n", splice(@blah , 3))."\n";
+
+if ($debug == 0) {
+    print "Currently installed crontab on ".hostname.":\n";
+    print $crontab;
+}
+
 $svntoday = `date +%F`; chomp($svntoday);
 if ($debug == 0 && $svnrevopt eq "") {
     $svnrevopt = "-r'{$svntoday 00:00 -0700}'";
@@ -98,6 +114,7 @@ if ($printusage == 1) {
     print "\t-notest      : don't run the tests (check the build only)\n";
     print "\t-noruntime   : don't build the runtime or run the tests\n";
     print "\t-examples    : run the release/examples tests only\n";
+    print "\t-multilocale : run multilocale suite only\n";
     print "\t-hello       : run the release/examples/hello.chpl test only\n";
     print "\t-hellos      : run the release/examples/hello*.chpl tests only\n";
     print "\t-valgrind    : run tests in valgrind mode\n";
@@ -192,12 +209,16 @@ $hostcompiler = `$utildir/chplenv/compiler --host`; chomp($hostcompiler);
 $targetcompiler = `$utildir/chplenv/compiler --target`; chomp($targetcompiler);
 $tasks = `$utildir/chplenv/tasks`; chomp($tasks);
 $threads = `$utildir/chplenv/threads`; chomp($threads);
+$mem =  `$utildir/chplenv/mem`; chomp($mem);
 $comm = `$utildir/chplenv/comm`; chomp($comm);
 if ($comm eq "gasnet" && $ENV{'CHPL_GASNET_SEGMENT'} ne "") {
     $comm = "$comm-$ENV{'CHPL_GASNET_SEGMENT'}";
 }
 
 $fullplatform = "$targetplatform.$targetcompiler.$comm.$tasks.$threads";
+if ($mem ne "default") {
+    $fullplatform = "$fullplatform.$mem";
+}
 if ($hostplatform ne $targetplatform) {
     $fullplatform = "$fullplatform--$hostplatform";
     if ($hostcompiler ne $targetcompiler) {
@@ -345,7 +366,11 @@ if ($valgrind == 1) {
     $morechars = "nolocal";
 } elsif ($examples == 1) {
     $threechars = "exm";
-    $morechars = "examples";
+    if ($multilocale == 1) {
+        $morechars = "multilocale-examples";
+    } else {
+        $morechars = "examples";
+    }
 } else {
     $threechars = "std";
     $morechars = "standard";
@@ -442,13 +467,6 @@ if ($hostplatform eq "cygwin") {
 
 
 
-#
-# build stuff
-#
-if ($tasks && ($tasks eq "qthreads" || $tasks eq "nanox")) {
-    mysystem("cd $chapeldir/third-party && $make $tasks", "making task layer", 1, 1);
-}
-
 $makestat = mysystem("cd $chapeldir && $make DEBUG=0 OPTIMIZE=1 compiler", "making chapel compiler", 0, 1);
 if ($makestat != 0) {
     mysystem("cd $chapeldir && $make DEBUG=0 compiler", "making chapel compiler", 1, 1);
@@ -458,23 +476,28 @@ if ($buildruntime == 0) {
     $endtime = localtime;
     $shortstatus = "Passed";
 
-    $mailsubject = "$subjectid $shortstatus ($fullplatform)";
+    $mailsubject = "$subjectid ($fullplatform) $shortstatus";
     $mailcommand = "| $mailer -s \"$mailsubject \" $recipient";
     
     open(MAIL, $mailcommand);
     
-    print MAIL startMailHeader($revision, "<no logfile>", $starttime, $endtime);
+    print MAIL startMailHeader($revision, "<no logfile>", $starttime, $endtime, $crontab);
     print MAIL "Built compiler but not runtime, and did not run tests\n";
     print MAIL endMailHeader();
     close(MAIL);
     exit 0;
 }
 
-
-$makestat = mysystem("cd $chapeldir && $make DEBUG=0 OPTIMIZE=1 runtime", "making chapel runtime", 0, 1);
-if ($makestat != 0) {
-    mysystem("cd $chapeldir && $make DEBUG=0 runtime", "making chapel runtime", 1, 1);
+if ($tasks eq "qthreads") {
+    $qthreadopts = "CHPL_QTHREAD_CFG_OPTIONS='--with-scheduler=nemesis --enable-condwait-queue'";
 }
+
+$makestat = mysystem("cd $chapeldir && $make DEBUG=0 OPTIMIZE=1 $qthreadopts runtime", "making chapel runtime", 0, 1);
+if ($makestat != 0) {
+    mysystem("cd $chapeldir && $make DEBUG=0 $qthreadopts runtime", "making chapel runtime", 1, 1);
+}
+
+$makestat = mysystem("cd $chapeldir && $make modules", "making chapel modules", 0, 1);
 
 
 #
@@ -505,10 +528,14 @@ if ($valgrind == 0) {
 #
 if ($examples == 1) {
     mysystem("cd $chapeldir && $make spectests", "making spec tests", 0, 1);
+    $testdirs = "release/examples";
+    if ($multilocale == 1) {
+        $testdirs .= " multilocale distributions";
+    }
     if ($parnodefile eq "") {
-        $testflags = "$testflags release/examples";
+        $testflags = "$testflags $testdirs";
     } else {
-        mysystem("cd $testdir && find release/examples -type d > DIRFILE", 
+        mysystem("cd $testdir && find $testdirs -wholename \"*.svn\" -prune -o -type d > DIRFILE", 
                  "making directory file", 1, 1);
         $testflags = "$testflags -dirfile DIRFILE";
     }
@@ -571,12 +598,12 @@ if ($runtests == 0) {
     $endtime = localtime;
     $shortstatus = "Passed";
 
-    $mailsubject = "$subjectid $shortstatus ($fullplatform)";
+    $mailsubject = "$subjectid ($fullplatform) $shortstatus";
     $mailcommand = "| $mailer -s \"$mailsubject \" $recipient";
     
     open(MAIL, $mailcommand);
     
-    print MAIL startMailHeader($revision, "<no logfile>", $starttime, $endtime);
+    print MAIL startMailHeader($revision, "<no logfile>", $starttime, $endtime, $crontab);
     print MAIL "Built compiler and runtime but did not run tests\n";
     print MAIL endMailHeader();
     
@@ -585,7 +612,12 @@ if ($runtests == 0) {
 } else {
     $ENV{'CHPL_HOME'} = $chapeldir;
     if ($parnodefile eq "") {
-        $status = mysystem("cd $testdir && ../util/start_test $testflags", "running standard tests", 0, 0);
+        if ($tasks eq "qthreads") {
+            $start_test_env = "export QT_AFFINITY=no &&"
+        }
+        $testcommand = "$start_test_env cd $testdir && ../util/start_test $testflags";
+        print "Executing $testcommand\n";
+        $status = mysystem($testcommand, "running standard tests", 0, 0);
     } else {
         mysystem("cp $parnodefile $testdir/", "copying parallel node file", 1, 1);
         print "about to execute: cd $testdir && ../util/test/paratest.server -nodefile $parnodefile $testflags\n";
@@ -645,63 +677,70 @@ if ($runtests == 0) {
     if ($status == 0) {
         $newfailures = `comm -13 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep -v "$futuremarker" | wc -l`; chomp($newfailures);
         $newresolved = `comm -23 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep -v "$futuremarker" | wc -l`; chomp($newresolved);
+        $newpassingfutures = `comm -13 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep "$futuremarker" | wc -l`; chomp($newpassingfutures);
         $passingfutures = `grep "$futuremarker" $sortedsummary | grep "Success" | wc -l`; chomp($passingfutures);
         $newfailures += 0;
-        $shortstatus = "$newfailures/$curfail";
+        $shortstatus = "$newfailures/$newpassingfutures/$curfail";
     } else {
         $shortstatus = "build/test failed";
     }
 
-    if ($newfailures == 0 && $newresolved == 0 && $passingfutures == 0) {
+    if ($newfailures == 0 && $newresolved == 0 && $newpassingfutures == 0) {
         print "Mailing to minimal group\n";
         $recipient = $nochangerecipient;
     } else {
         print "Mailing to everyone\n";
     }
 
-    $mailsubject = "$subjectid $shortstatus ($fullplatform)";
+    $mailsubject = "$subjectid ($fullplatform) $shortstatus";
     $mailcommand = "| $mailer -s \"$mailsubject \" $recipient";
     
     open(MAIL, $mailcommand);
     
-    print MAIL startMailHeader($revision, $rawlog, $starttime, $endtime);
+    print MAIL startMailHeader($revision, $rawlog, $starttime, $endtime, $crontab);
     print MAIL "$numtestssummary\n";
     print MAIL "$summary\n";
     print MAIL endMailHeader();
     
     if ($status == 0) {
-        print MAIL "--- New Errors ($morechars) -----------------------------------------\n";
+        print MAIL "--- New Errors ($morechars) -------------------------------\n";
         print MAIL `comm -13 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep -v "$futuremarker"`;
         print MAIL "\n";
     }
     
     if ($status == 0) {
-        print MAIL "--- Resolved Errors ($morechars) ------------------------------------\n";
+        print MAIL "--- Resolved Errors ($morechars) --------------------------\n";
         print MAIL `comm -23 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep -v "$futuremarker"`;
         print MAIL "\n";
     }
     
     if ($status == 0) {
-        print MAIL "--- Passing Future tests ($morechars) -------------------------------\n";
-        print MAIL `grep "$futuremarker" $sortedsummary | grep "Success"`;
+        print MAIL "--- New Passing Future tests ($morechars) ---------------------\n";
+        print MAIL `comm -13 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep "$futuremarker" | grep "\\[Success"`;
         print MAIL "\n";    
     }
     
     if ($status == 0) {
-        print MAIL "--- Unresolved Errors ($morechars) ----------------------------------\n";
+        print MAIL "--- Passing Future tests ($morechars) ---------------------\n";
+        print MAIL `comm -12 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep "$futuremarker" | grep "\\[Success"`;
+        print MAIL "\n";    
+    }
+    
+    if ($status == 0) {
+        print MAIL "--- Unresolved Errors ($morechars) ------------------------\n";
         print MAIL `comm -12 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep -v "$futuremarker"`;
         print MAIL "\n";
     }
     
     if ($status == 0) {
-        print MAIL "--- New Failing Future tests ($morechars) ---------------------------\n";
-        print MAIL `comm -13 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep "$futuremarker" | grep "Error"`;
+        print MAIL "--- New Failing Future tests ($morechars) -----------------\n";
+        print MAIL `comm -13 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep "$futuremarker" | grep "\\[Error"`;
         print MAIL "\n";    
     }
     
     if ($status == 0) {
-        print MAIL "--- Unresolved Future tests ($morechars) ----------------------------\n";
-        print MAIL `comm -12 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep "$futuremarker" | grep "Error"`;
+        print MAIL "--- Unresolved Future tests ($morechars) ------------------\n";
+        print MAIL `comm -12 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep "$futuremarker" | grep "\\[Error"`;
         print MAIL "\n";    
     }
     
@@ -772,12 +811,12 @@ sub mysystem {
 	print "Error $_[1]: $status\n";
 
 	if ($mailmsg != 0) {
-            $mailsubject = "$subjectid Failure ($fullplatform)";
+            $mailsubject = "$subjectid ($fullplatform) Failure";
             $mailcommand = "| $mailer -s \"$mailsubject \" $recipient";
 
             print "Trying to mail message... using $mailcommand\n";
 	    open(MAIL, $mailcommand);
-            print MAIL startMailHeader($revision, $rawlog, $starttime, $endtime);
+            print MAIL startMailHeader($revision, $rawlog, $starttime, $endtime, $crontab);
 	    print MAIL "ERROR $_[1]: $status\n";
 	    print MAIL "(workspace left at $tmpdir)\n";
             print MAIL endMailHeader();
@@ -855,6 +894,10 @@ sub startMailHeader {
         "Logfile:  " . shift(@_) . "\n" .
         "Started:  " . shift(@_) . "\n" .
         "Ended:    " . shift(@_) . "\n\n";
+
+    if ($debug == 0) {
+        $mystr .= "Crontab:\n". shift(@_) . "\n";
+    }
 
     $mystr;
 }

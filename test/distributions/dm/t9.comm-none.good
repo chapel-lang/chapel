@@ -4,7 +4,7 @@
    1  oversubscribing Locales(0)
    1  setupLocales 1*3
    2  
-   2  new DimensionalDist()
+   2  new DimensionalDist2D()
    3  
    3  wrapping ddf in dmap
    4  
@@ -247,7 +247,7 @@
   56   57 507  on 0
   56  dmarr, dmhelp - zippered iteration on 0
   90  
-  90  dmarr - subordinate1dDist()
+  90  dmarr - dimSpecifier()
   90  {numLocales = 1, lowIdx = -100, blockSize = 3, name = D1, cycleSizePos = 3}
   90  {numLocales = 3, lowIdx = -10, blockSize = 2, name = D2, cycleSizePos = 6}
   91  

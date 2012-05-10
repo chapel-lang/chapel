@@ -41,7 +41,7 @@ proc main {
 
   //===> Advection velocity ===>
   var velocity: dimension*real;
-  var phys_file = open("set_problem/physics.txt", mode.r).reader();
+  var phys_file = open("set_problem/physics.txt", iomode.r).reader();
   var dim_in: int;
   phys_file.readln(dim_in);
   assert(dim_in == dimension, 

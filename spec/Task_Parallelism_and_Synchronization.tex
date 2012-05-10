@@ -1,5 +1,6 @@
 \sekshun{Task Parallelism and Synchronization}
 \label{Task_Parallelism_and_Synchronization}
+\index{synchronization}
 
 Chapel supports both task parallelism and data parallelism.  This
 chapter details task parallelism as follows:
@@ -23,6 +24,8 @@ support atomic transactions.
 
 \section{Tasks and Task Parallelism}
 \label{Task_parallelism}
+\index{task parallelism}
+\index{parallelism!task}
 
 A Chapel \emph{task} is a distinct context of execution that maybe
 running concurrently with other tasks.  Chapel provides a simple
@@ -44,6 +47,7 @@ section.
 \section{The Begin Statement}
 \label{Begin}
 \index{begin@\chpl{begin}}
+\index{statements!begin}
 
 The begin statement creates a task to execute a statement.  The syntax
 for the begin statement is given by
@@ -254,7 +258,8 @@ type of the actual.
 The following methods are defined for variables of sync and single
 type.
 
-\index{readFE@\chpl{readFE}}
+\index{readFE (sync var)@\chpl{readFE} (sync var)}
+\index{predefined functions!readFE (sync var)@\chpl{readFE} (sync var)}
 \begin{protohead}
 proc (sync t).readFE(): t
 \end{protohead}
@@ -264,7 +269,8 @@ sync variable is full.  The state of the sync variable is set to empty
 when this method completes.
 \end{protobody}
 
-\index{readFF@\chpl{readFF}}
+\index{readFF (sync var)@\chpl{readFF} (sync var)}
+\index{predefined functions!readFF (sync var)@\chpl{readFF} (sync var)}
 \begin{protohead}
 proc (sync t).readFF(): t
 proc (single t).readFF(): t
@@ -275,7 +281,8 @@ until the sync or single variable is full.  The state of the sync or
 single variable remains full when this method completes.
 \end{protobody}
 
-\index{readXX@\chpl{readXX}}
+\index{readXX (sync var)@\chpl{readXX} (sync var)}
+\index{predefined functions!readXX (sync var)@\chpl{readXX} (sync var)}
 \begin{protohead}
 proc (sync t).readXX(): t
 proc (single t).readXX(): t
@@ -286,7 +293,8 @@ and the state of the sync or single variable is unchanged when this method
 completes.
 \end{protobody}
 
-\index{writeEF@\chpl{writeEF}}
+\index{writeEF (sync var)@\chpl{writeEF} (sync var)}
+\index{predefined functions!writeEF (sync var)@\chpl{writeEF} (sync var)}
 \begin{protohead}
 proc (sync t).writeEF(v: t)
 proc (single t).writeEF(v: t)
@@ -298,7 +306,8 @@ of the sync or single variable is set to full when this method
 completes.
 \end{protobody}
 
-\index{writeFF@\chpl{writeFF}}
+\index{writeFF (sync var)@\chpl{writeFF} (sync var)}
+\index{predefined functions!writeFF (sync var)@\chpl{writeFF} (sync var)}
 \begin{protohead}
 proc (sync t).writeFF(v: t)
 \end{protohead}
@@ -308,7 +317,8 @@ blocks until the sync variable is full.  The state of the sync
 variable remains full when this method completes.
 \end{protobody}
 
-\index{writeXF@\chpl{writeXF}}
+\index{writeXF (sync var)@\chpl{writeXF} (sync var)}
+\index{predefined functions!writeXF (sync var)@\chpl{writeXF} (sync var)}
 \begin{protohead}
 proc (sync t).writeXF(v: t)
 \end{protohead}
@@ -318,7 +328,8 @@ non-blocking and the state of the sync variable is set to full when
 this method completes.
 \end{protobody}
 
-\index{reset@\chpl{reset}}
+\index{reset (sync var)@\chpl{reset} (sync var)}
+\index{predefined functions!reset (sync var)@\chpl{reset} (sync var)}
 \begin{protohead}
 proc (sync t).reset()
 \end{protohead}
@@ -328,7 +339,8 @@ variable.  This method is non-blocking and the state of the sync
 variable is set to empty when this method completes.
 \end{protobody}
 
-\index{isFull@\chpl{isFull}}
+\index{isFull (sync var)@\chpl{isFull} (sync var)}
+\index{predefined functions!isFull (sync var)@\chpl{isFull} (sync var)}
 \begin{protohead}
 proc (sync t).isFull: bool
 proc (single t).isFull: bool
@@ -387,6 +399,7 @@ writeln((x(*\texttt{\$}*).readXX(), y(*\texttt{\$}*), z));
 \section{The Cobegin Statement}
 \label{Cobegin}
 \index{cobegin@\chpl{cobegin}}
+\index{statements!cobegin@\chpl{cobegin}}
 
 The cobegin statement is used to introduce concurrency within a
 block.  The \chpl{cobegin} statement syntax is
@@ -437,7 +450,7 @@ is written, thereby ensuring that each of the functions has finished.
 \section{The Coforall Loop}
 \label{Coforall}
 \index{coforall@\chpl{coforall}}
-\index{coforall loops}
+\index{statements!coforall@\chpl{coforall}}
 
 The coforall loop is a variant of the cobegin statement in loop form.
 The syntax for the coforall loop is given by
@@ -505,6 +518,7 @@ the last line until all of the tasks have completed.
 \section{The Sync Statement}
 \label{Sync_Statement}
 \index{sync@\chpl{sync}}
+\index{statements!sync@\chpl{sync}}
 
 The sync statement acts as a join of all dynamically encountered
 begins from within a statement.  The syntax for the sync statement is
@@ -573,6 +587,7 @@ latter code will not.
 \section{The Serial Statement}
 \label{Serial}
 \index{serial@\chpl{serial}}
+\index{statements!serial@\chpl{serial}}
 
 The \chpl{serial} statement can be used to dynamically disable
 parallelism.  The syntax is:
@@ -670,6 +685,7 @@ always evaluates to true.
 \index{atomic transactions}
 \index{atomic statement}
 \index{atomic@\chpl{atomic}}
+\index{statements!atomic@\chpl{atomic}}
 
 \begin{openissue}
   This section describes a feature that is a work-in-progress.  We seek feedback

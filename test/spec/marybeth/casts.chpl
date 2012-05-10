@@ -8,7 +8,7 @@ writeln(y);
 writeln(z);
 
 var m = 2: int(64);
-var n = 2;
+var n = 2: int(32);
 var i = 1;
 var j = 1;
 

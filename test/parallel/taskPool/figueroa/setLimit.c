@@ -7,7 +7,7 @@
 #include "setLimit.h"
 
 void
-setThreadLimit(int limit) {
+setThreadLimit(int64_t limit) {
   struct rlimit rl;
   if (getrlimit(RLIMIT_NPROC, &rl) != 0) {
     fprintf(stderr, "getrlimit() failed: %s\n", strerror(errno));
@@ -19,7 +19,7 @@ setThreadLimit(int limit) {
 }
 
 void
-setStackLimit(int limit) {
+setStackLimit(int64_t limit) {
   struct rlimit rl;
   if (getrlimit(RLIMIT_STACK, &rl) != 0) {
     fprintf(stderr, "getrlimit() failed: %s\n", strerror(errno));

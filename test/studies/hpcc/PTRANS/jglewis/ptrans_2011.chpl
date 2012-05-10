@@ -219,24 +219,27 @@ module HPCC_PTRANS {
 {
         if ( beta == 1.0 ) then
 
-          for (c_rows, c_cols) in [block_partitioning (C_domain, 1),
-                                   block_partitioning (C_domain, 2)] do
-             forall (i,j) in [c_rows,c_cols] do
-                 C [i,j] += A [j,i];
+          for c_rows in block_partitioning (C_domain, 1) do
+            for c_cols in block_partitioning (C_domain, 2) do
+              forall i in c_rows do
+                for j in c_cols do
+                  C [i,j] += A [j,i];
     
         else if ( beta == 0.0 ) then
       
-          for (c_rows, c_cols) in [block_partitioning (C_domain, 1),
-                                   block_partitioning (C_domain, 2)] do 
-             forall (i,j) in [c_rows,c_cols] do
-                    C [i,j] = A [j,i];
+          for c_rows in block_partitioning (C_domain, 1) do
+            for c_cols in block_partitioning (C_domain, 2) do
+              forall i in c_rows do
+                for j in c_cols do
+                  C [i,j] = A [j,i];
     
         else
       
-          for (c_rows, c_cols) in [block_partitioning (C_domain, 1),
-                                   block_partitioning (C_domain, 2)] do 
-             forall (i,j) in [c_rows,c_cols] do
-               C [i,j] = beta * C [i,j]  +  A [j,i];
+          for c_rows in block_partitioning (C_domain, 1) do
+            for c_cols in block_partitioning (C_domain, 2) do 
+              forall i in c_rows do
+                for j in c_cols do
+                  C [i,j] = beta * C [i,j]  +  A [j,i];
         return true;
 }
   }
@@ -286,33 +289,33 @@ module HPCC_PTRANS {
 
         if ( beta == 1.0 ) then
 
-          for (c_rows, c_cols) in 
-          [SPMD_block_partitioning (C_domain, processor, 
-                                    C_grid_domain,1),
-           SPMD_block_partitioning (C_domain, processor, 
-                                    C_grid_domain,2)] do 
-             forall (i,j) in [c_rows,c_cols] do
-                 C [i,j] += A [j,i];
+          for c_rows in SPMD_block_partitioning (C_domain, processor,
+                                                 C_grid_domain,1) do
+            for c_cols in SPMD_block_partitioning (C_domain, processor,
+                                                   C_grid_domain,2) do 
+              forall i in c_rows do
+                for j in c_cols do
+                  C [i,j] += A [j,i];
     
         else if ( beta == 0.0 ) then
       
-          for (c_rows, c_cols) in 
-          [SPMD_block_partitioning (C_domain, processor, 
-                                    C_grid_domain,1),
-           SPMD_block_partitioning (C_domain, processor, 
-                                    C_grid_domain,2)] do 
-             forall (i,j) in [c_rows,c_cols] do
-                    C [i,j] = A [j,i];
+          for c_rows in SPMD_block_partitioning (C_domain, processor, 
+                                                 C_grid_domain,1) do
+            for c_cols in SPMD_block_partitioning (C_domain, processor, 
+                                                   C_grid_domain,2) do 
+              forall i in c_rows do
+                for j in c_cols do
+                  C [i,j] = A [j,i];
     
         else
       
-          for (c_rows, c_cols) in 
-          [SPMD_block_partitioning (C_domain, processor, 
-                                    C_grid_domain,1),
-           SPMD_block_partitioning (C_domain, processor, 
-                                    C_grid_domain,2)] do 
-             forall (i,j) in [c_rows,c_cols] do
-               C [i,j] = beta * C [i,j]  +  A [j,i];
+          for c_rows in SPMD_block_partitioning (C_domain, processor,
+                                                 C_grid_domain,1) do
+            for c_cols in SPMD_block_partitioning (C_domain, processor,
+                                                   C_grid_domain,2) do 
+              forall i in c_cols do
+                for j in c_cols do
+                  C [i,j] = beta * C [i,j]  +  A [j,i];
       }
 }
         return true;

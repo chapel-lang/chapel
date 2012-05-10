@@ -1,39 +1,40 @@
 CHPL_MAKE_HOST_TARGET = --target
-include $(CHAPEL_ROOT)/make/Makefile.base
+include $(CHPL_MAKE_HOME)/make/Makefile.base
 
 LD = $(CC)
 
-include $(CHAPEL_ROOT)/runtime/etc/Makefile.threads-$(CHPL_MAKE_THREADS)
--include $(CHAPEL_ROOT)/runtime/etc/Makefile.tasks-$(CHPL_MAKE_TASKS)
-include $(CHAPEL_ROOT)/runtime/etc/Makefile.comm-$(CHPL_MAKE_COMM)
-include $(CHAPEL_ROOT)/runtime/etc/Makefile.mem-$(CHPL_MAKE_MEM)
+include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.threads-$(CHPL_MAKE_THREADS)
+-include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.tasks-$(CHPL_MAKE_TASKS)
+include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.comm-$(CHPL_MAKE_COMM)
+include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.mem-$(CHPL_MAKE_MEM)
+include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.gmp-$(CHPL_MAKE_GMP)
 
-HEADER_CFLAGS = -DCHPL_TASKS_MODEL_H=\"tasks-$(CHPL_MAKE_TASKS).h\" \
-        -DCHPL_THREADS_MODEL_H=\"threads-$(CHPL_MAKE_THREADS).h\"
+# Get runtime headers and required -D flags.
+# sets RUNTIME_INCLUDE_ROOT RUNTIME_CFLAGS RUNTIME_INCLS
+include $(CHPL_MAKE_HOME)/runtime/make/Makefile.runtime.include
+
+# RUNTIME_CFLAGS e.g. -DCHPL_TASKS_MODEL_H=... -DCHPL_THREADS_MODEL_H=...
+HEADER_CFLAGS = $(RUNTIME_CFLAGS)
 
 GEN_CFLAGS += $(HEADER_CFLAGS)
 
+CHPL_RT_INC_DIR = $(RUNTIME_INCLS)
 
-CHAPEL_RT_INC_DIR = \
-        $(CHAPEL_ROOT)/runtime/include/tasks/$(CHPL_MAKE_TASKS) \
-        -I$(CHAPEL_ROOT)/runtime/include/threads/$(CHPL_MAKE_THREADS) \
-        -I$(CHAPEL_ROOT)/runtime/include/comm/$(CHPL_MAKE_COMM) \
-        -I$(CHAPEL_ROOT)/runtime/include/comp-$(CHPL_MAKE_COMPILER) \
-        -I$(CHAPEL_ROOT)/runtime/include/$(subst -sim,,$(CHPL_MAKE_TARGET_PLATFORM)) \
-        -I$(CHAPEL_ROOT)/runtime/include/atomics/$(CHPL_MAKE_ATOMICS) \
-        -I$(CHAPEL_ROOT)/runtime/include
-CHAPEL_RT_LIB_DIR = $(CHAPEL_ROOT)/$(LIB_RT_DIR)
+CHPL_RT_LIB_DIR = $(CHPL_MAKE_HOME)/$(LIB_RT_DIR)
 
 ifdef NVCC
 TMPBINNAME_GPU=$(TMPBINNAME).gpu
 endif
 
+printincludesanddefines:
+	@echo $(RUNTIME_DEFS) $(RUNTIME_INCLS)
+
 printcompileline:
-	@echo $(CC) $(GEN_CFLAGS) $(COMP_GEN_CFLAGS) -I$(CHAPEL_RT_INC_DIR)
+	@echo $(CC) $(GEN_CFLAGS) $(COMP_GEN_CFLAGS) $(CHPL_RT_INC_DIR)
 ifdef NVCC
-	@echo $(NVCC) $(HEADER_CFLAGS) $(RUNTIME_CUDA_CFLAGS) -I$(CHAPEL_RT_INC_DIR)
+	@echo $(NVCC) $(HEADER_CFLAGS) $(RUNTIME_CUDA_CFLAGS) $(CHPL_RT_INC_DIR)
 endif
 
 printlinkline:
-	@echo $(LD) $(GEN_CFLAGS) $(COMP_GEN_CFLAGS) -L$(CHPL_RT_LIB_DIR) -I$(CHAPEL_RT_INC_DIR) -lchpl -lm
+	@echo $(LD) $(GEN_CFLAGS) $(COMP_GEN_CFLAGS) -L$(CHPL_RT_LIB_DIR) $(CHPL_RT_INC_DIR) -lchpl -lm
 

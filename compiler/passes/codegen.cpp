@@ -124,7 +124,7 @@ static void legalizeName(Symbol* sym) {
   }
 
   // hilde sez:  This is very kludgy.  What do we really mean?
-  if ((!strncmp("chpl_", sym->cname, 5) && (strcmp("chpl_main", sym->cname) && strcmp("chpl_user_main", sym->cname))  && sym->cname[5] != '_') ||
+  if ((!strncmp("chpl_", sym->cname, 5) && (strcmp("chpl_gen_main", sym->cname) && strcmp("chpl_user_main", sym->cname))  && sym->cname[5] != '_') ||
       (sym->cname[0] == '_' && (sym->cname[1] == '_' || (sym->cname[1] >= 'A' && sym->cname[1] <= 'Z')))) {
     sym->cname = astr("chpl__", sym->cname);
   }
@@ -132,22 +132,17 @@ static void legalizeName(Symbol* sym) {
 
 
 static void
-genClassTagEnum(FILE* outfile, Vec<TypeSymbol*> typeSymbols) {
+genClassIDs(FILE* outfile, Vec<TypeSymbol*> typeSymbols) {
   fprintf(outfile, "/*** Class Type Identification Numbers ***/\n\n");
-  fprintf(outfile, "typedef enum {\n");
-  bool comma = false;
+  int count=0;
   forv_Vec(TypeSymbol, ts, typeSymbols) {
     if (ClassType* ct = toClassType(ts->type)) {
       if (!isReferenceType(ct) && isClass(ct)) {
-        fprintf(outfile, "%schpl__cid_%s", (comma) ? ",\n  " : "  ", ts->cname);
-        comma = true;
+        fprintf(outfile, "const chpl__class_id chpl__cid_%s = %d;\n", 
+                ts->cname, count++);
       }
     }
   }
-  if (!comma)
-    fprintf(outfile, "  chpl__cid_placeholder");
-  fprintf(outfile, "\n} chpl__class_id;\n\n");
-  fprintf(outfile, "#define CHPL__CLASS_ID_DEFINED\n\n");
 }
 
 
@@ -165,8 +160,8 @@ compareSymbol(const void* v1, const void* v2) {
     return strcmp(m1->cname, m2->cname);
   }
 
-  if (s1->lineno != s2->lineno)
-    return (s1->lineno < s2->lineno) ? -1 : 1;
+  if (s1->linenum() != s2->linenum())
+    return (s1->linenum() < s2->linenum()) ? -1 : 1;
 
   int result = strcmp(s1->type->symbol->cname, s2->type->symbol->cname);
   if (!result)
@@ -178,16 +173,30 @@ compareSymbol(const void* v1, const void* v2) {
 //
 // given a name and up to two sets of names, return a name that is in
 // neither set and add the name to the first set; the second set may
-// be omitted
+// be omitted; the returned name to be capped at fMaxCIdentLen if non-0
 //
 // the unique numbering is based on the map uniquifyNameCounts which
 // can be cleared to reset
 //
+int fMaxCIdentLen = 0;
+static const int maxUniquifyAddedChars = 25;
+static char* longCNameReplacementBuffer = NULL;
 static Map<const char*, int> uniquifyNameCounts;
 static const char* uniquifyName(const char* name,
                                 Vec<const char*>* set1,
                                 Vec<const char*>* set2 = NULL) {
   const char* newName = name;
+  if (fMaxCIdentLen > 0 && (int)(strlen(newName)) > fMaxCIdentLen) {
+    // how much of the name to preserve
+    int prefixLen = fMaxCIdentLen - maxUniquifyAddedChars;
+    if (!longCNameReplacementBuffer) {
+      longCNameReplacementBuffer = (char*)malloc(prefixLen+1);
+      longCNameReplacementBuffer[prefixLen] = '\0';
+    }
+    strncpy(longCNameReplacementBuffer, newName, prefixLen);
+    INT_ASSERT(longCNameReplacementBuffer[prefixLen] == '\0');
+    name = newName = astr(longCNameReplacementBuffer);
+  }
   while (set1->set_in(newName) || (set2 && set2->set_in(newName))) {
     char numberTmp[64];
     int count = uniquifyNameCounts.get(name);
@@ -385,9 +394,9 @@ static void codegen_header(FILE* hdrfile, FILE* codefile=NULL) {
 
   genIncludeCommandLineHeaders(hdrfile);
 
-  genClassTagEnum(hdrfile, types);
-
   fprintf(hdrfile, "#include \"stdchpl.h\"\n");
+
+  genClassIDs(hdrfile, types);
 
   fprintf(hdrfile, "\n/*** Class Prototypes ***/\n\n");
   forv_Vec(TypeSymbol, typeSymbol, types) {

@@ -24,17 +24,6 @@ void qbytes_free_iobuf(qbytes_t* b);
 void debug_print_bytes(qbytes_t* b);
 err_t qbuffer_init_part(qbuffer_part_t* p, qbytes_t* bytes, int64_t skip_bytes, int64_t len_bytes, int64_t end_offset);
 
-/*
-extern int32_t chpl_atomic_fetch_add(int32_t* ptr, int32_t incr);
-
-extern void* chpl_malloc(size_t number, size_t size, uint16_t description, int32_t lineno, const char* filename);
-extern void* chpl_realloc(void* ptr, size_t number, size_t size, uint16_t description, int32_t lineno, const char* filename);
-extern void chpl_free(void* ptr, int32_t lineno, const char* filename);
-
-#define malloc(len) chpl_malloc(1, len, 0, 0, NULL)
-#define realloc(ptr, len) chpl_realloc(ptr, 1, len, 0, 0, NULL)
-#define free(ptr) chpl_free(ptr, 0, NULL);
-*/
 
 // global, shared pools.
 
@@ -244,8 +233,8 @@ void debug_print_qbuffer(qbuffer_t* buf)
 
   while( ! deque_it_equals(cur, end) ) {
     qbuffer_part_t* qbp = (qbuffer_part_t*) deque_it_get_cur_ptr( sizeof(qbuffer_part_t), cur);
-    fprintf(stderr, "part %p: bytes=%p skip=%lli len=%lli end=%lli\n", 
-            qbp, qbp->bytes,
+    fprintf(stderr, "part %p: bytes=%p (data %p) skip=%lli len=%lli end=%lli\n", 
+            qbp, qbp->bytes, qbp->bytes->data,
             (long long int) qbp->skip_bytes,
             (long long int) qbp->len_bytes,
             (long long int) qbp->end_offset);

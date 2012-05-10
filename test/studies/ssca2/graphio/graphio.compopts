@@ -1,0 +1,1 @@
+--main-module SSCA2_main   SSCA2_RMAT_graph_generator.chpl analyze_RMAT_graph_associative_array.chpl   -M ../../../release/examples/benchmarks/ssca2 -M ../../../release/examples/benchmarks/ssca2/SSCA2_Modules   -sREPRODUCIBLE_PROBLEMS=true -sPRINT_TIMING_STATISTICS=false

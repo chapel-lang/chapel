@@ -218,6 +218,21 @@ def cleanup(execname):
         os.unlink(execname+'_real')
     return
 
+# print (compopts: XX, execopts: XX) for later decoding of failed tests
+def printTestVariation(compoptsnum, execoptsnum=0):
+    if compoptsnum==0 and execoptsnum==0:
+        return;
+
+    sys.stdout.write(' (')
+    if compoptsnum != 0:
+        sys.stdout.write('compopts: %d'%(compoptsnum))
+    if execoptsnum != 0:
+        if compoptsnum != 0:
+            sys.stdout.write(', ')
+        sys.stdout.write('execopts: %d'%(execoptsnum))
+    sys.stdout.write(')')
+    return
+
 # return true if string is an integer
 def IsInteger(str):
     try:
@@ -226,8 +241,8 @@ def IsInteger(str):
     except ValueError:
         return False
 
-# read timeout file
-def ReadTimeoutValue(f):
+# read integer value from a file
+def ReadIntegerValue(f, localdir):
     to = ReadFileWithComments(f)
     if to:
         for l in to:
@@ -237,7 +252,7 @@ def ReadTimeoutValue(f):
                 return string.atoi(l)
             else:
                 break
-    Fatal('Invalid timeout value in '+f);
+    Fatal('Invalid integer value in '+f+' ('+localdir+')');
 
 # report an error message and exit
 def Fatal(message):
@@ -306,22 +321,6 @@ platform = platform.strip()
 machine=os.uname()[1].split('.', 1)[0]
 # sys.stdout.write('machine='+machine+'\n')
 
-# Get global timeout
-if os.access('./TIMEOUT',os.R_OK):
-    globalTimeout = ReadTimeoutValue('./TIMEOUT')
-elif os.getenv('CHPL_TEST_VGRND_COMP')=='on':
-    globalTimeout=1000
-else:
-    globalTimeout=300
-# sys.stdout.write('globalTimeout=%d\n'%(globalTimeout))
-
-# Get global timeout for kill
-if os.access('./KILLTIMEOUT',os.R_OK):
-    globalKillTimeout = ReadTimeoutValue('./KILLTIMEOUT')
-else:
-    globalKillTimeout=10
-# sys.stdout.write('globalKillTimeout=%d\n'%(globalKillTimeout))
-
 # Get the system-wide prediff
 systemPrediff = os.getenv('CHPL_SYSTEM_PREDIFF')
 if systemPrediff:
@@ -341,9 +340,31 @@ if localdir.find('./') == 0:
     localdir = string.lstrip(localdir, '/')
 # sys.stdout.write('localdir=%s\n'%(localdir))
 
+# CHPL_COMM
+chplcomm=os.getenv('CHPL_COMM','none').strip()
+chplcommstr='.comm-'+chplcomm
+# sys.stdout.write('chplcomm=%s\n'%(chplcomm))
+
 #
 # Test options for all tests in this directory
 #
+
+# Get global timeout
+if os.access('./TIMEOUT',os.R_OK):
+    globalTimeout = ReadIntegerValue('./TIMEOUT', localdir)
+elif os.getenv('CHPL_TEST_VGRND_COMP')=='on':
+    globalTimeout=1000
+else:
+    globalTimeout=300
+# sys.stdout.write('globalTimeout=%d\n'%(globalTimeout))
+
+# Get global timeout for kill
+if os.access('./KILLTIMEOUT',os.R_OK):
+    globalKillTimeout = ReadIntegerValue('./KILLTIMEOUT', localdir)
+else:
+    globalKillTimeout=10
+# sys.stdout.write('globalKillTimeout=%d\n'%(globalKillTimeout))
+
 if os.access('./NOEXEC',os.R_OK):
     execute=False
 else:
@@ -368,9 +389,10 @@ if os.access('./LASTCOMPOPTS',os.R_OK):
 # sys.stdout.write('globalLastcompopts=%s\n'%(globalLastcompopts))
 
 if os.access('./NUMLOCALES',os.R_OK):
-    globalNumlocales=int(subprocess.Popen(['cat', './NUMLOCALES'], stdout=subprocess.PIPE).communicate()[0])
+    globalNumlocales=ReadIntegerValue('./NUMLOCALES', localdir)
     # globalNumlocales.strip(globalNumlocales)
 else:
+    # start_test sets this, so we'll assume it's right :)
     globalNumlocales=int(os.getenv('NUMLOCALES'))
 # sys.stdout.write('globalNumlocales=%s\n'%(globalNumlocales))
 
@@ -402,7 +424,7 @@ else:
 if (os.getenv('CHPL_TEST_VGRND_EXE')=='on' and vgrbin):
     valgrindbin = 'valgrind'
     valgrindbinopts = chpl_valgrind_opts.split()+['-q']
-    if (os.getenv('CHPL_COMM', 'none')!='none'):
+    if (chplcomm!='none'):
         valgrindbinopts+=['--trace-children=yes']
 else:
     valgrindbin = None
@@ -563,8 +585,8 @@ for testname in testsrc:
 
         # Deal with these later
         if (suffix == '.good' or
-            suffix=='compopts' or suffix=='perfcompopts' or
-            suffix=='execopts' or suffix=='perfexecopts'):
+            suffix=='.compopts' or suffix=='.perfcompopts' or
+            suffix=='.execopts' or suffix=='.perfexecopts'):
             continue # on to next file
 
         elif (suffix=='.notest' and (os.access(f, os.R_OK) and
@@ -576,16 +598,22 @@ for testname in testsrc:
         elif (suffix=='.skipif' and (os.access(f, os.R_OK) and
                (os.getenv('CHPL_TEST_SINGLES')=='0'))):
             skiptest=subprocess.Popen([utildir+'/testEnv', './'+f], stdout=subprocess.PIPE).communicate()[0]
-            if int(skiptest):
-                sys.stdout.write('[Skipping test based on .skipif environment settings: %s/%s]\n'%(localdir,execname))
+            try:
+                skipme = int(skiptest)
+                if skipme:
+                    sys.stdout.write('[Skipping test based on .skipif environment settings: %s/%s]\n'%(localdir,execname))
+                    do_not_test=True
+            except ValueError:
+                sys.stdout.write('[Error processing .skipif file %s/%s]\n'%(localdir,f))
                 do_not_test=True
+            if do_not_test:
                 break
 
         elif (suffix=='.timeout' and os.access(f, os.R_OK)):
-            timeout=ReadTimeoutValue(f)
+            timeout=ReadIntegerValue(f, localdir)
 
         elif (suffix=='.killtimeout' and os.access(f, os.R_OK)):
-            killtimeout=ReadTimeoutValue(f)
+            killtimeout=ReadIntegerValue(f, localdir)
 
         elif (suffix=='.catfiles' and os.access(f, os.R_OK)):
             execcatfiles=subprocess.Popen(['cat', f], stdout=subprocess.PIPE).communicate()[0].strip()
@@ -599,17 +627,18 @@ for testname in testsrc:
             # sys.stdout.write("lastcompopts=%s\n"%(lastcompopts))
 
         elif (suffix=='.numlocales' and os.access(f, os.R_OK)):
-            numlocales=int(subprocess.Popen(['cat', f], stdout=subprocess.PIPE).communicate()[0])
+            numlocales=ReadIntegerValue(f, localdir)
 
         elif suffix==futureSuffix and os.access(f, os.R_OK):
-            futuretest='Future ('+subprocess.Popen(['head', '-n', '1', './'+execname+futureSuffix], stdout=subprocess.PIPE).communicate()[0].strip()+') '
+            futurefile = open('./'+execname+futureSuffix, 'r')
+            futuretest='Future ('+futurefile.readline().strip()+') '
+            futurefile.close()
 
         elif (suffix=='.noexec' and os.access(f, os.R_OK)):
             noexecfile=True
             executebin=False
 
         elif (suffix=='.precomp' and os.access(f, os.R_OK|os.X_OK)):
-            sys.stdout.write('[found file %s]\n'%f)
             precomp=f
 
         elif (suffix=='.prediff' and os.access(f, os.R_OK|os.X_OK)):
@@ -626,12 +655,12 @@ for testname in testsrc:
             else:
                 redirectin=f
 
-        if suffix=='.future':
-            testfuturesfile=True
+        if suffix==futureSuffix:
             if testfutures==0:
                 sys.stdout.write('[Skipping future test: %s/%s]\n'%(localdir,execname))
                 do_not_test=True
                 break
+            testfuturesfile=True
 
     del execname_files
 
@@ -645,7 +674,7 @@ for testname in testsrc:
         continue # on to next test
 
     # Set numlocales
-    if (numlocales == 0) or (os.getenv('CHPL_COMM', 'none')=='none'):
+    if (numlocales == 0) or (chplcomm=='none'):
         numlocexecopts = None
     else:
         numlocexecopts = ' -nl '+str(numlocales)
@@ -687,7 +716,7 @@ for testname in testsrc:
         else:
             del clist[:]
 
-        if len(compoptslist) == 1:
+        if compopts == ' ':
             complog=execname+'.comp.out.tmp'
         else:
             compoptsnum += 1
@@ -743,8 +772,7 @@ for testname in testsrc:
             if status == 222:
                 sys.stdout.write('%s[Error: Timed out compilation for %s/%s'%
                                  (futuretest, localdir, execname))
-                if len(compoptslist) > 1:
-                    sys.stdout.write('(%s %s)'%(' '.join(globalCompopts),compopts))
+                printTestVariation(compoptsnum);
                 sys.stdout.write(']\n')
                 cleanup(execname)
                 continue # on to next compopts
@@ -758,8 +786,7 @@ for testname in testsrc:
             except ReadTimeoutException:
                 sys.stdout.write('%s[Error: Timed out compilation for %s/%s'%
                                  (futuretest, localdir, execname))
-                if len(compoptslist) > 1:
-                    sys.stdout.write('(%s %s)'%(' '.join(globalCompopts),compopts))
+                printTestVariation(compoptsnum);
                 sys.stdout.write(']\n')
                 KillProc(p, killtimeout)
                 cleanup(execname)
@@ -808,7 +835,7 @@ for testname in testsrc:
             else:
                 checkfile = execname+'.'+machine+'.good'
             if not os.path.isfile(checkfile):
-                checkfile=execname+'.comm-'+os.getenv('CHPL_COMM','none')+'.good'
+                checkfile=execname+chplcommstr+'.good'
                 if not os.path.isfile(checkfile):
                     checkfile=execname+'.'+platform+'.good'
                     if not os.path.isfile(checkfile):
@@ -830,8 +857,7 @@ for testname in testsrc:
                 sys.stdout.write('%s[Error '%(futuretest))
             sys.stdout.write('matching compiler output for %s/%s'%
                                  (localdir, execname))
-            if len(compoptslist) > 1:
-                sys.stdout.write(' (%s %s)'%(' '.join(globalCompopts),compopts))
+            printTestVariation(compoptsnum);
             sys.stdout.write(']\n')
 
             cleanup(execname)
@@ -850,21 +876,30 @@ for testname in testsrc:
             cleanup(execname)
             continue # on to next compopts
 
+        dfltexeccheckfile = None
         # Execute the test for all requested execopts
         execoptsnum = 0
         # Handle empty execopts list
-        if len(execoptslist)==0 and len(clist)==0:
+        if len(execoptslist)==0:
             execoptslist.append(' ')
-            dfltexeccheckfile = None
-        elif len(clist)!=0:
-            dfltexeccheckfile = clist[0].split('#')[1].strip()
-        else:
-            dfltexeccheckfile = None
-        for texecopts in execoptslist+clist:
+        if len(clist)!=0:
+            if len(clist[0].split('#')) > 1:
+                dfltexeccheckfile = clist[0].split('#')[1].strip()
+        for texecopts in execoptslist:
             sys.stdout.flush()
-            onlyone = (len(compoptslist)==1) and (len(execoptslist)==1)
+
+            if (len(compoptslist)==1) and (len(execoptslist)==1):
+                onlyone = True
+                execlog=execname+'.exec.out.tmp'
+            else:
+                onlyone = False
+                if texecopts != ' ':
+                    execoptsnum += 1
+                execlog = execname+'.'+str(compoptsnum)+'-'+str(execoptsnum)+'.exec.out.tmp'
+
             tlist = texecopts.split('#')
             execopts = tlist[0].strip()
+
             if numlocexecopts != None:
                 execopts += numlocexecopts;
             if len(tlist) > 1:
@@ -873,13 +908,6 @@ for testname in testsrc:
             else:
                 execcheckfile = dfltexeccheckfile
             del tlist
-
-            if onlyone:
-                execlog=execname+'.exec.out.tmp'
-            else:
-                if len(execoptslist)!=1:
-                    execoptsnum += 1
-                execlog = execname+'.'+str(compoptsnum)+'-'+str(execoptsnum)+'.exec.out.tmp'
 
             if globalPreexec:
                 sys.stdout.write('[Executing ./PREEXEC]\n')
@@ -896,8 +924,7 @@ for testname in testsrc:
             if not os.access(execname, os.R_OK|os.X_OK):
                 sys.stdout.write('%s[Error could not locate executable %s for %s/%s'%
                                  (futuretest, execname, localdir, execname))
-                if not onlyone:
-                    sys.stdout.write(' (%d-%d)'%(compoptsnum, execoptsnum))
+                printTestVariation(compoptsnum, execoptsnum)
                 sys.stdout.write(']\n')
                 break; # on to next compopts
 
@@ -939,11 +966,7 @@ for testname in testsrc:
                     exectimeout = True
                     sys.stdout.write('%s[Error: Timed out executing program %s/%s'%
                                      (futuretest, localdir, execname))
-                    if not onlyone:
-                        sys.stdout.write(' %s %s (%s %s) (%d-%d)'%
-                                         (' '.join(globalExecopts), execopts,
-                                          ' '.join(globalCompopts),compopts,
-                                          compoptsnum, execoptsnum))
+                    printTestVariation(compoptsnum, execoptsnum);
                     sys.stdout.write(']\n')
 
             elif useTimedExec:
@@ -964,11 +987,7 @@ for testname in testsrc:
                     exectimeout = True
                     sys.stdout.write('%s[Error: Timed out executing program %s/%s'%
                                      (futuretest, localdir, execname))
-                    if not onlyone:
-                        sys.stdout.write(' %s %s (%s %s) (%d-%d)'%
-                                         (' '.join(globalExecopts), execopts,
-                                          ' '.join(globalCompopts),compopts,
-                                          compoptsnum, execoptsnum))
+                    printTestVariation(compoptsnum, execoptsnum);
                     sys.stdout.write(']\n')
 
             else:
@@ -985,11 +1004,7 @@ for testname in testsrc:
                     exectimeout = True
                     sys.stdout.write('%s[Error: Timed out executing program %s/%s'%
                                      (futuretest, localdir, execname))
-                    if not onlyone:
-                        sys.stdout.write(' %s %s (%s %s) (%d-%d)'%
-                                         (' '.join(globalExecopts), execopts,
-                                          ' '.join(globalCompopts),compopts,
-                                          compoptsnum, execoptsnum))
+                    printTestVariation(compoptsnum, execoptsnum);
                     sys.stdout.write(']\n')
                     KillProc(p, killtimeout)
 
@@ -1048,15 +1063,12 @@ for testname in testsrc:
                         if onlyone:
                             ceident=''
                         else:
-                            if len(compoptslist)==1:
-                                ceident = '.0-'
-                            else:
-                                ceident = '.'+str(compoptsnum)+'-'
-                            ceident += str(execoptsnum)
+                            ceident = '.'+str(compoptsnum)+'-'+str(execoptsnum)
 
                         execcheckfile = execname+'.'+machine+ceident+'.good'
+
                         if not os.path.isfile(execcheckfile):
-                            execcheckfile=execname+'.comm-'+os.getenv('CHPL_COMM','none')+ceident+'.good'
+                            execcheckfile=execname+chplcommstr+ceident+'.good'
                             if not os.path.isfile(execcheckfile):
                                 execcheckfile=execname+'.'+platform+ceident+'.good'
                                 if not os.path.isfile(execcheckfile):
@@ -1081,11 +1093,8 @@ for testname in testsrc:
                         sys.stdout.write('%s[Error '%(futuretest))
                     sys.stdout.write('matching program output for %s/%s'%
                                      (localdir, execname))
-                    if result!=0 and not onlyone:
-                        sys.stdout.write(' %s %s (%s %s) (%d-%d)'%
-                                         (' '.join(globalExecopts), execopts,
-                                          ' '.join(globalCompopts),compopts,
-                                          compoptsnum, execoptsnum))
+                    if result!=0:
+                        printTestVariation(compoptsnum, execoptsnum);
                     sys.stdout.write(']\n')
 
             if perftest:
@@ -1099,7 +1108,7 @@ for testname in testsrc:
                     perfexecname = execname
                     keyfile = execname+'.perfkeys'
                 else:
-                    perfexecname = string.strip(execcheckfile, '.perfkeys')
+                    perfexecname = re.sub('\\.perfkeys$', '', execcheckfile)
                     if os.path.isfile(execcheckfile):
                         keyfile = execcheckfile
                     else:
@@ -1122,11 +1131,8 @@ for testname in testsrc:
                     sys.stdout.write('[Error')
                 sys.stdout.write(' matching performance keys for %s/%s'%
                                  (localdir, execname))
-                if status!=0 and not onlyone:
-                    sys.stdout.write(' %s %s (%s %s) (%d-%d)'%
-                                     (' '.join(globalExecopts), execopts,
-                                      ' '.join(globalCompopts),compopts,
-                                      compoptsnum, execoptsnum))
+                if status!=0:
+                    printTestVariation(compoptsnum, execoptsnum);
                 sys.stdout.write(']\n')
 
         cleanup(execname)

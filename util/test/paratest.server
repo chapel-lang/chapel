@@ -71,7 +71,7 @@ $localhost = `uname -n`;
 chomp $localnode;
 
 
-my (@testdir_list, @node_list, $starttime, $endtime);
+my (@testdir_list, @node_list, $nodeCount, $starttime, $endtime);
 
 sub systemd {
     local ($cmd) = @_;
@@ -160,7 +160,12 @@ sub free_workers {
 
     foreach $ready (@readyv) {
         next if ($ready =~ /^\./);
-        ($node, $id) = split (/\./, $ready, 2);
+        my ($node, $id, $failed) = split (/\./, $ready);
+       if ($failed) {
+	$nodeCount--;
+	print "\n failure on $node, no more testing there\n";
+        unlink "$synchdir/$ready";
+       } else {
         push @readyids, $id;
         # Wait on the processes represented by each of the files being iterated
         # over. The existence of each file implies a previously forked process
@@ -169,6 +174,7 @@ sub free_workers {
         # these files were created by this driver script, not children. This
         # is not a problem though since wait is non-blocking.
         wait;
+       }
     }
 
     print (@readyids ? "," : ".");
@@ -183,7 +189,7 @@ sub free_workers {
 # manually.
 sub feed_nodes {
     local (@readyidv, $logfile, @logs, $testdir, $node, $rem_cmd);
-    my $nodeCount = $#node_list + 1;
+    $nodeCount = $#node_list + 1;
 
     $| = 1;    # autoflush stdout
 
@@ -194,6 +200,7 @@ sub feed_nodes {
     print $#testdir_list+1; print " test(s) (@testdir_list)\n";
 
     while (($#testdir_list >= 0) &&       # while still have work to do
+           ($nodeCount > 0)      &&       # not all nodes have failed
            !(-e "PARAHALT")) {
         @readyidv = free_workers ();      # get IDs of nodes that are ready
 
@@ -271,6 +278,15 @@ sub feed_nodes {
         print "\nExiting early due to PARAHALT file\n";
     }
 
+    if ($nodeCount <= 0 && $#testdir_list >= 0) {
+       print "\nExiting early due to failures on all nodes\n";
+    }
+
+    if ($#testdir_list >= 0) {
+       print $#testdir_list+1; 
+       print " directory(s) left untested: @testdir_list\n";
+    }
+
     $endtime = `date`; chomp $endtime;
     if ($memleaksflag) {
         systemd("cat $logdir/tmp.*.memleaks > $memleaks");
@@ -296,7 +312,6 @@ sub nodes_free {
 
     systemd ("rm -f $synchdir/*");
     # signal that all nodes are free
-    # Launch two clients on each node, numbered $id and $id.2
     my $nodeCount = $#node_list + 1;
     for ($id=0; $id<$nodeCount; $id++) {
         $fname = "$node_list[$id].$id";

@@ -20,6 +20,7 @@ Ranges are presented as follows:
 
 \section{Range Concepts}
 \label{Range_Concepts}
+\index{ranges!concepts}
 
 \index{ranges!represented sequence}
 \index{ranges!sequence}
@@ -108,7 +109,7 @@ if:
 Ranges have the following additional properties.
 \begin{itemize}
 
-\index{ranges!ambiguously aligned}
+\index{ranges!alignment!ambiguous}
 \item A range is \emph{ambiguously aligned} if
   \begin{itemize}
   \item its alignment is ambiguous, and
@@ -190,6 +191,7 @@ Ranges have the following additional properties.
 \section{Range Types}
 \label{Range_Types}
 \index{ranges!types}
+\index{types!range}
 
 The type of a range is characterized by three parameters:
 \begin{itemize}
@@ -296,16 +298,16 @@ of all its parameters, i.e.,
 
 \begin{chapelexample}{rangeVariable.chpl}
 The following declaration declares a variable \chpl{r}
-that can represent ranges of 64-bit integers,
+that can represent ranges of 32-bit integers,
 with both high and low bounds specified,
 and the ability to have a stride other than 1.
 \begin{chapel}
-var r: range(int(64), BoundedRangeType.bounded, stridable=true);
+var r: range(int(32), BoundedRangeType.bounded, stridable=true);
 \end{chapel}
 \begin{chapelpost}
 writeln(r);
-var i64: int(64) = 3;
-r = i64..13 by 3 align 1;
+var i32: int(32) = 3;
+r = i32..13 by 3 align 1;
 writeln(r);
 \end{chapelpost}
 \begin{chapeloutput}
@@ -317,6 +319,7 @@ writeln(r);
 
 \section{Range Values}
 \label{Range_Values}
+\index{ranges!values}
 
 A range value consists of the range's four primary properties
 (\rsec{Range_Concepts}):
@@ -436,6 +439,8 @@ produces an empty range, matching the default value for a
 
 
 \section{Common Operations}
+\label{Ranges_Common_Operations}
+\index{ranges!operations}
 
 %REVIEW: vass: this should really be implicit conversion
 % and apply uniformly, like e.g. numeric implicit conversions.
@@ -458,6 +463,8 @@ Range assignment is legal when:
 \end{itemize}
 
 \subsection{Range Comparisons}
+\label{Range_Comparisons}
+\index{ranges!comparisons}
 
 Ranges can be compared using equality and inequality.
 
@@ -473,6 +480,8 @@ and \chpl{false} otherwise.
 \end{protobody}
 
 \subsection{Iterating over Ranges}
+\label{Iterating_over_Ranges}
+\index{ranges!iteration}
 
 A range can be used as an iterator expression in a loop. This is legal
 only if the range is iterable. In this case the loop iterates over the
@@ -480,6 +489,8 @@ members of the range's represented sequence, in the order defined by
 the sequence. If the range is empty, no iterations are executed.
 
 \subsubsection{Iterating over Unbounded Ranges in Zippered Iterations}
+\label{Iterating_over_Unbounded_Ranges_in_Zippered_Iterations}
+\index{ranges!iteration!zippered}
 
 When a range with the first index but without the last index is used
 in a zippered iteration (~\rsec{Zipper_Iteration}),
@@ -528,8 +539,9 @@ range-expression:
 \subsection{By Operator}
 \label{By_Operator_For_Ranges}
 \index{ranges!strided}
-\index{ranges!by operator}
-\index{by@\chpl{by}}
+\index{by (range)@\chpl{by} (range)}
+\index{operators!by (range)@\chpl{by} (range)}
+\index{ranges!by operator@\chpl{by} operator}
 
 The \chpl{by} operator selects a subsequence of the range's represented sequence,
 optionally reversing its direction.
@@ -557,15 +569,13 @@ step-expression:
   expression
 \end{syntax}
 
-The type of the step must be a signed integer of the same
+The type of the step must be a signed or unsigned integer of the same
 bit size as the base range's \chpl{idxType}, or an implicit conversion must be allowed
 to that type from the step's type.
-The type of the step is also allowed to be
-the base range's \chpl{idxType} itself.
 It is an error for the step to be zero.
 
 \begin{future}
-We consider allowing the step to be of any integer type,
+We may consider allowing the step to be of any integer type,
 for maximum flexibility.
 \end{future}
 
@@ -630,7 +640,9 @@ R into the expression.
 
 \subsection{Align Operator}
 \label{Align_Operator}
-\index{ranges!align operator}
+\index{ranges!align}
+\index{align@\chpl{align}}
+\index{operator!align@\chpl{align}}
 
 The \chpl{align} operator can be applied to any range, and creates a new range
 with the given alignment.  
@@ -693,6 +705,8 @@ the \chpl{offset} method (\rsec{Range_Offset_Method}).
 \subsection{Count Operator}
 \label{Count_Operator}
 \index{ranges!count operator}
+\index{ranges!#@\chpl{#}}
+\index{operators!# (range)@\chpl{#} (range)}
 
 The \chpl{#} operator takes a range and an integral count and creates a new
 range containing the specified number of indices.  The low or high bound of the
@@ -706,12 +720,13 @@ counted-range-expression:
   range-expression # expression
 \end{syntax}
 
-The \emph{idxType} of the resulting range is the same type that would be
-obtained by adding the integral count value to a value with the
-range's \emph{idxType}.  
-%REVIEW: bradc: We should really define to use op. range's idxType.
-The stride and alignment of the resulting range are the same as those
-of the initial range.  
+The type of the count expression must be a signed or unsigned integer
+of the same bit size as the base range's \chpl{idxType}, or an
+implicit conversion must be allowed to that type from the count's
+type.
+
+The type of the result of the \chpl{#} operator is the type of the
+range argument.
 
 Depending on the sign of the count and the stride, the high or low bound is
 unchanged and the other bound is adjusted so that it is $c * stride - 1$ units
@@ -772,6 +787,7 @@ Each of these ranges represents the ordered set of three indices: 6, 4, 2.
 \subsection{Arithmetic Operators}
 \label{Range_Arithmetic}
 \index{ranges!arithmetic operators}
+\index{operators!arithmetic!range}
 
 The following arithmetic operators are defined on ranges and integral
 types:
@@ -886,7 +902,10 @@ writeln((r, r2, r3, r4));
 
 \subsection{Range Type Parameters}
 \label{Range_Type_Accessors}
+\index{ranges!type accessors}
 
+\index{ranges!boundedType@\chpl{boundedType}}
+\index{predefined functions!boundedType@\chpl{boundedType}}
 \begin{protohead}
 proc $range$.boundedType : BoundedRangeType
 \end{protohead}
@@ -894,6 +913,8 @@ proc $range$.boundedType : BoundedRangeType
 Returns the \chpl{boundedType} parameter of the range's type.
 \end{protobody}
 
+\index{ranges!idxType@\chpl{idxType}}
+\index{predefined functions!idxType@\chpl{idxType}}
 \begin{protohead}
 proc $range$.idxType : type
 \end{protohead}
@@ -901,6 +922,8 @@ proc $range$.idxType : type
 Returns the \chpl{idxType} parameter of the range's type.
 \end{protobody}
 
+\index{ranges!stridable@\chpl{stridable}}
+\index{predefined functions!stridable@\chpl{stridable}}
 \begin{protohead}
 proc $range$.stridable : bool
 \end{protohead}
@@ -910,6 +933,7 @@ Returns the \chpl{stridable} parameter of the range's type.
 
 \subsection{Range Properties}
 \label{Range_Properties}
+\index{ranges!properties}
 
 Most of the methods in this subsection report on
 the range properties defined in \rsec{Range_Concepts}.
@@ -921,6 +945,8 @@ The behavior of the methods that report properties that may be
 undefined, $\infty$, or ambiguous, may change.
 \end{openissue}
 
+\index{ranges!aligned@\chpl{aligned}}
+\index{predefined functions!aligned@\chpl{aligned}}
 \begin{protohead}
 proc $range$.aligned : bool
 \end{protohead}
@@ -929,6 +955,8 @@ proc $range$.aligned : bool
 Reports whether the range's alignment is \emph{not} ambiguous.
 \end{protobody}
 
+\index{ranges!alignedHigh@\chpl{alignedHigh}}
+\index{predefined functions!alignedHigh@\chpl{alignedHigh}}
 \begin{protohead}
 proc $range$.alignedHigh : idxType
 \end{protohead}
@@ -949,6 +977,8 @@ produces the output
 \end{chapelprintoutput}
 \end{chapelexample}
 
+\index{ranges!alignedLow@\chpl{alignedLow}}
+\index{predefined functions!alignedLow@\chpl{alignedLow}}
 \begin{protohead}
 proc $range$.alignedLow : idxType
 \end{protohead}
@@ -958,6 +988,8 @@ If the aligned low bound is undefined (does not exist),
 the behavior is undefined.
 \end{protobody}
 
+\index{ranges!alignment@\chpl{alignment}}
+\index{predefined functions!alignment@\chpl{alignment}}
 \begin{protohead}
 proc $range$.alignment : idxType
 \end{protohead}
@@ -967,6 +999,8 @@ If the alignment is ambiguous, the behavior is undefined.
 See also \chpl{aligned}.
 \end{protobody}
 
+\index{ranges!first@\chpl{first}}
+\index{predefined functions!first@\chpl{first}}
 \begin{protohead}
 proc $range$.first : idxType
 \end{protohead}
@@ -976,6 +1010,8 @@ If the range has no first index, the behavior is undefined.
 See also \chpl{hasFirst}.
 \end{protobody}
 
+\index{ranges!hasFirst@\chpl{hasFirst}}
+\index{predefined functions!hasFirst@\chpl{hasFirst}}
 \begin{protohead}
 proc $range$.hasFirst(): bool
 \end{protohead}
@@ -983,6 +1019,8 @@ proc $range$.hasFirst(): bool
 Reports whether the range has the first index.
 \end{protobody}
 
+\index{ranges!hasHighBound@\chpl{hasHighBound}}
+\index{predefined functions!hasHighBound@\chpl{hasHighBound}}
 \begin{protohead}
 proc $range$.hasHighBound() param: bool
 \end{protohead}
@@ -990,6 +1028,8 @@ proc $range$.hasHighBound() param: bool
 Reports whether the range's high bound is \emph{not} +$\infty$.
 \end{protobody}
 
+\index{ranges!hasLast@\chpl{hasLast}}
+\index{predefined functions!hasLast@\chpl{hasLast}}
 \begin{protohead}
 proc $range$.hasLast(): bool
 \end{protohead}
@@ -997,6 +1037,8 @@ proc $range$.hasLast(): bool
 Reports whether the range has the last index.
 \end{protobody}
 
+\index{ranges!hasLowBound@\chpl{hasLowBound}}
+\index{predefined functions!hasLowBound@\chpl{hasLowBound}}
 \begin{protohead}
 proc $range$.hasLowBound() param: bool
 \end{protohead}
@@ -1004,6 +1046,8 @@ proc $range$.hasLowBound() param: bool
 Reports whether the range's low bound is \emph{not} -$\infty$.
 \end{protobody}
 
+\index{ranges!high@\chpl{high}}
+\index{predefined functions!high@\chpl{high}}
 \begin{protohead}
 proc $range$.high : idxType
 \end{protohead}
@@ -1021,6 +1065,8 @@ See also \chpl{hasHighBound}.
 %Reports whether the range is naturally aligned.
 %\end{protobody}
 
+\index{ranges!isAmbiguous@\chpl{isAmbiguous}}
+\index{predefined functions!isAmbiguous@\chpl{isAmbiguous}}
 \begin{protohead}
 proc $range$.isAmbiguous(): bool
 \end{protohead}
@@ -1028,6 +1074,8 @@ proc $range$.isAmbiguous(): bool
 Reports whether the range is ambiguously aligned.
 \end{protobody}
 
+\index{ranges!last@\chpl{last}}
+\index{predefined functions!last@\chpl{last}}
 \begin{protohead}
 proc $range$.last : idxType
 \end{protohead}
@@ -1037,6 +1085,8 @@ If the range has no last index, the behavior is undefined.
 See also \chpl{hasLast}.
 \end{protobody}
 
+\index{ranges!length@\chpl{length}}
+\index{predefined functions!length@\chpl{length}}
 \begin{protohead}
 proc $range$.length : idxType
 \end{protohead}
@@ -1046,6 +1096,8 @@ If the represented sequence is infinite or is undefined,
 an error is generated.
 \end{protobody}
 
+\index{ranges!low@\chpl{low}}
+\index{predefined functions!low@\chpl{low}}
 \begin{protohead}
 proc $range$.low : idxType
 \end{protohead}
@@ -1055,6 +1107,8 @@ If the low bound is -$\infty$, the behavior is undefined.
 See also \chpl{hasLowBound}.
 \end{protobody}
 
+\index{ranges!stride@\chpl{stride}}
+\index{predefined functions!stride@\chpl{stride}}
 \begin{protohead}
 proc $range$.stride : int(numBits(idxType))
 \end{protohead}
@@ -1065,7 +1119,10 @@ If the range is not stridable, this will always return 1.
 
 \subsection{Other Queries}
 \label{Range_Queries}
+\index{ranges!other queries}
 
+\index{ranges!boundsCheck@\chpl{boundsCheck}}
+\index{predefined functions!boundsCheck@\chpl{boundsCheck}}
 \begin{protohead}
 proc $range$.boundsCheck(r2: range(?)): bool
 \end{protohead}
@@ -1075,6 +1132,8 @@ Returns \chpl{true} if range \chpl{r2} lies entirely within this range
 and \chpl{false} otherwise.  
 \end{protobody}
 
+\index{ranges!ident@\chpl{ident}}
+\index{predefined functions!ident@\chpl{ident}}
 \begin{protohead}
 proc ident(r1: range(?), r2: range(?)): bool
 \end{protohead}
@@ -1087,6 +1146,8 @@ two ranges have the same \chpl{idxType},
 %compared?  Types could be compared separately using '=='?
 \end{protobody}
 
+\index{ranges!indexOrder@\chpl{indexOrder}}
+\index{predefined functions!indexOrder@\chpl{indexOrder}}
 \begin{protohead}
 proc $range$.indexOrder(i: idxType): idxType
 \end{protohead}
@@ -1110,6 +1171,8 @@ ranges:
 \end{chapel}
 \end{example}
 
+\index{ranges!member@\chpl{member}}
+\index{predefined functions!member@\chpl{member}}
 \begin{protohead}
 proc $range$.member(i: idxType): bool
 \end{protohead}
@@ -1120,6 +1183,8 @@ It is an error to invoke \chpl{member} if the represented sequence
 is not defined.
 \end{protobody}
 
+\index{ranges!member@\chpl{member}}
+\index{predefined functions!member@\chpl{member}}
 \begin{protohead}
 proc $range$.member(other: range): bool
 \end{protohead}
@@ -1133,7 +1198,10 @@ are defined and the receiver's sequence contains all members of the
 
 \subsection{Range Transformations}
 \label{Range_Transformations}
+\index{ranges!transformations}
 
+\index{ranges!alignHigh@\chpl{alignHigh}}
+\index{predefined functions!alignHigh (range)@\chpl{alignHigh} (range)}
 \begin{protohead}
 proc $range$.alignHigh()
 \end{protohead}
@@ -1142,6 +1210,8 @@ Sets the high bound of this range to its aligned high bound, if it is defined.
 Generates an error otherwise.
 \end{protobody}
 
+\index{ranges!alignLow@\chpl{alignLow}}
+\index{predefined functions!alignLow (range)@\chpl{alignLow} (range)}
 \begin{protohead}
 proc $range$.alignLow()
 \end{protohead}
@@ -1150,6 +1220,8 @@ Sets the low bound of this range to its aligned low bound, if it is defined.
 Generates an error otherwise.
 \end{protobody}
 
+\index{ranges!expand@\chpl{expand}}
+\index{predefined functions!expand (range)@\chpl{expand}}
 \begin{protohead}
 proc $range$.expand(i: idxType)
 \end{protohead}
@@ -1161,6 +1233,8 @@ is $(l-i,h+i,s,a)$.  The stride and alignment of the original range are preserve
 If the operand range is ambiguously aligned, then so is the resulting range.
 \end{protobody}
 
+\index{ranges!exterior@\chpl{exterior}}
+\index{predefined functions!exterior (range)@\chpl{exterior} (range)}
 \begin{protohead}
 proc $range$.exterior(i: idxType)
 \end{protohead}
@@ -1177,6 +1251,8 @@ be denoted by the tuple $(l,h,s,a)$.  Then:
 If the operand range is ambiguously aligned, then so is the resulting range.
 \end{protobody}
 
+\index{ranges!interior@\chpl{interior}}
+\index{predefined functions!interior (range)@\chpl{interior} (range)}
 \begin{protohead}
 proc $range$.interior(i: idxType)
 \end{protohead}
@@ -1196,6 +1272,8 @@ than \chpl{first} and \chpl{last} to establish the bounds of the resulting range
 If the operand range is ambiguously aligned, then so is the resulting range.
 \end{protobody}
 
+\index{ranges!offset@\chpl{offset}}
+\index{predefined functions!offset (range)@\chpl{offset} (range)}
 \begin{protohead}
 proc $range$.offset(n: idxType)
 \end{protohead}
@@ -1206,6 +1284,8 @@ Returns a new range whose alignment is this range's first index plus
 If the range has no first index, a run-time error is generated.
 \end{protobody}
 
+\index{ranges!translate@\chpl{translate}}
+\index{predefined functions!translate (range)@\chpl{translate} (range)}
 \begin{protohead}
 proc $range$.translate(i: integral)
 \end{protohead}
@@ -1216,7 +1296,3 @@ If the range's alignment is ambiguous, the behavior is undefined.
 %REVIEW: vass: can define this to produce ambiguous alignment in such cases.
 \end{protobody}
 
-\begin{protohead}
-\end{protohead}
-\begin{protobody}
-\end{protobody}

@@ -351,7 +351,7 @@ class UserMapAssocDom: BaseAssociativeDom {
       //
       //        ("locale" + here.id + " owns: ").writeThis(x);
 
-        locDom.writeThis(x);
+        x.write(locDom);
       //      }
   }
 
@@ -695,10 +695,10 @@ class UserMapAssocArr: BaseArr {
         if first {
           first = false;
         } else {
-          " ".writeThis(x);
+          x.write(" ");
         }
       }
-      locArr.writeThis(x);
+      x.write(locArr);
       stdout.flush();
     }
   }

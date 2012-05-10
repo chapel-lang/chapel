@@ -33,6 +33,7 @@ const char* cleanFilename(const char* name);
 void setupError(const char* filename, int lineno, int tag);
 void handleError(const char* fmt, ...);
 void handleError(BaseAST* ast, const char* fmt, ...);
+void handleError(FILE* file, BaseAST* ast, const char* fmt, ...);
 void exitIfFatalErrorsEncountered(void);
 void printCallStack(bool force, bool shortModule, FILE* out);
 

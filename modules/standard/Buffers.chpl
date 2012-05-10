@@ -10,30 +10,30 @@ module BufferInternals {
 
 
   extern proc qbytes_retain(qb:qbytes_ptr_t);
-  extern proc qbytes_release(qb:qbytes_ptr_t):err_t;
+  extern proc qbytes_release(qb:qbytes_ptr_t);
   extern proc qbytes_len(qb:qbytes_ptr_t):int(64);
   extern proc qbytes_data(qb:qbytes_ptr_t):c_ptr;
 
-  extern proc qbytes_create_iobuf(inout ret:qbytes_ptr_t):err_t;
-  extern proc qbytes_create_calloc(inout ret:qbytes_ptr_t, len:int(64)):err_t;
+  extern proc qbytes_create_iobuf(inout ret:qbytes_ptr_t):syserr;
+  extern proc qbytes_create_calloc(inout ret:qbytes_ptr_t, len:int(64)):syserr;
 
   extern proc qbuffer_iter_null():qbuffer_iter_t;
 
   /*
-  extern proc qbuffer_init(inout buf:qbuffer_t):err_t;
+  extern proc qbuffer_init(inout buf:qbuffer_t):syserr;
   extern proc qbuffer_destroy(inout buf:qbuffer_t);
   */
-  extern proc qbuffer_create(inout buf:qbuffer_ptr_t):err_t;
+  extern proc qbuffer_create(inout buf:qbuffer_ptr_t):syserr;
   extern proc qbuffer_retain(buf:qbuffer_ptr_t);
-  extern proc qbuffer_release(buf:qbuffer_ptr_t):err_t;
+  extern proc qbuffer_release(buf:qbuffer_ptr_t);
 
-  extern proc qbuffer_append(buf:qbuffer_ptr_t, bytes:qbytes_ptr_t, skip_bytes:int(64), len_bytes:int(64)):err_t;
-  extern proc qbuffer_append_buffer(buf:qbuffer_ptr_t, src:qbuffer_ptr_t, src_start:qbuffer_iter_t, src_end:qbuffer_iter_t):err_t;
-  extern proc qbuffer_prepend(buf:qbuffer_ptr_t, bytes:qbytes_ptr_t, skip_bytes:int(64), len_bytes:int(64)):err_t;
-  extern proc qbuffer_flatten(buf:qbuffer_ptr_t, start:qbuffer_iter_t, end:qbuffer_iter_t, inout bytes_out):err_t;
-  //extern proc qbuffer_clone(buf:qbuffer_ptr_t, start:qbuffer_iter_t, end:qbuffer_iter_t, inout buf_out:qbuffer_t):err_t;
-  extern proc qbuffer_copyout(buf:qbuffer_ptr_t, start:qbuffer_iter_t, end:qbuffer_iter_t, inout x, size):err_t;
-  extern proc qbuffer_copyin(buf:qbuffer_ptr_t, start:qbuffer_iter_t, end:qbuffer_iter_t, inout x, size):err_t;
+  extern proc qbuffer_append(buf:qbuffer_ptr_t, bytes:qbytes_ptr_t, skip_bytes:int(64), len_bytes:int(64)):syserr;
+  extern proc qbuffer_append_buffer(buf:qbuffer_ptr_t, src:qbuffer_ptr_t, src_start:qbuffer_iter_t, src_end:qbuffer_iter_t):syserr;
+  extern proc qbuffer_prepend(buf:qbuffer_ptr_t, bytes:qbytes_ptr_t, skip_bytes:int(64), len_bytes:int(64)):syserr;
+  extern proc qbuffer_flatten(buf:qbuffer_ptr_t, start:qbuffer_iter_t, end:qbuffer_iter_t, inout bytes_out):syserr;
+  //extern proc qbuffer_clone(buf:qbuffer_ptr_t, start:qbuffer_iter_t, end:qbuffer_iter_t, inout buf_out:qbuffer_t):syserr;
+  extern proc qbuffer_copyout(buf:qbuffer_ptr_t, start:qbuffer_iter_t, end:qbuffer_iter_t, inout x, size):syserr;
+  extern proc qbuffer_copyin(buf:qbuffer_ptr_t, start:qbuffer_iter_t, end:qbuffer_iter_t, inout x, size):syserr;
 
   extern proc qbuffer_begin(buf:qbuffer_ptr_t):qbuffer_iter_t;
   extern proc qbuffer_end(buf:qbuffer_ptr_t):qbuffer_iter_t;
@@ -57,7 +57,7 @@ module BufferInternals {
 
   extern proc bulk_get_bytes(src_locale:int, src_addr:qbytes_ptr_t):qbytes_ptr_t;
 
-  extern proc bulk_put_buffer(dst_locale:int, dst_addr:c_ptr, dst_len:int(64), buf:qbuffer_ptr_t, start:qbuffer_iter_t, end:qbuffer_iter_t):err_t;
+  extern proc bulk_put_buffer(dst_locale:int, dst_addr:c_ptr, dst_len:int(64), buf:qbuffer_ptr_t, start:qbuffer_iter_t, end:qbuffer_iter_t):syserr;
 
 }
 
@@ -101,21 +101,21 @@ module Buffers {
     this._internal = c_nil;
     this.home_uid = __primitive("_get_locale", tmp);
   }
-  proc bytes.bytes(len:int(64), inout error:err_t) {
+  proc bytes.bytes(len:int(64), out error:syserr) {
     var tmp:int;
     error = qbytes_create_calloc(this._bytes_internal, len);
     this.home_uid = __primitive("_get_locale", tmp);
   }
   proc bytes.bytes(len:int(64)) {
     var tmp:int;
-    var error:err_t = ENOERR;
+    var error:syserr = ENOERR;
     error = qbytes_create_calloc(this._bytes_internal, len);
     if error then ioerror(error, "in bytes constructor");
     this.home_uid = __primitive("_get_locale", tmp);
   }
 
 
-  proc create_iobuf(inout error:err_t):bytes {
+  proc create_iobuf(out error:syserr):bytes {
     var ret:bytes;
     var tmp:int;
     error = qbytes_create_iobuf(ret._bytes_internal);
@@ -123,7 +123,7 @@ module Buffers {
     return ret;
   }
   proc create_iobuf():bytes {
-    var err:err_t = ENOERR; 
+    var err:syserr = ENOERR; 
     var ret = create_iobuf(err);
     if err then ioerror(err, "in create_iobuf");
     return ret;
@@ -201,7 +201,7 @@ module Buffers {
   */
 
   // buffer methods.
-  proc buffer.buffer(inout error:err_t) {
+  proc buffer.buffer(out error:syserr) {
     var tmp:int;
     var here_uid = __primitive("_get_locale", tmp);
     this.home_uid = here_uid;
@@ -210,7 +210,7 @@ module Buffers {
   proc buffer.buffer() {
     var tmp:int;
     var here_uid = __primitive("_get_locale", tmp);
-    var error:err_t = ENOERR;
+    var error:syserr = ENOERR;
     this.home_uid = here_uid;
     error = qbuffer_create(this._buf_internal);
     if error then ioerror(error, "in buffer constructor");
@@ -220,7 +220,7 @@ module Buffers {
   // buffer.flatten is special in that it creates a 
   // bytes object wherever it is called (and communicates it 
   // intelligently). It is use in buffer's initCopy.
-  proc buffer.flatten(range:buffer_range, inout error:err_t):bytes {
+  proc buffer.flatten(range:buffer_range, out error:syserr):bytes {
     var tmp:int;
     var here_uid = __primitive("_get_locale", tmp);
     var ret:bytes;
@@ -270,7 +270,7 @@ module Buffers {
       var there_uid = here_uid;
 
       on __primitive("chpl_on_locale_num", x.home_uid) {
-        var err:err_t = ENOERR;
+        var err:syserr = ENOERR;
         err = bulk_put_buffer(there_uid, ptr, len, x._buf_internal,
                               qbuffer_begin(x._buf_internal),
                               qbuffer_end(x._buf_internal));
@@ -322,7 +322,7 @@ module Buffers {
       var there_uid = here_uid;
 
       on __primitive("chpl_on_locale_num", x.home_uid) {
-        var err:err_t = ENOERR;
+        var err:syserr = ENOERR;
         err = bulk_put_buffer(there_uid, ptr, len, x._buf_internal,
                               qbuffer_begin(x._buf_internal),
                               qbuffer_end(x._buf_internal));
@@ -349,36 +349,36 @@ module Buffers {
     return ret;
   }
 
-  proc buffer.append(b:bytes, skip_bytes:int(64) = 0, len_bytes:int(64) = b.len, inout error:err_t) {
+  proc buffer.append(b:bytes, skip_bytes:int(64) = 0, len_bytes:int(64) = b.len, out error:syserr) {
     on __primitive("chpl_on_locale_num", this.home_uid) {
       error = qbuffer_append(this._buf_internal, b._bytes_internal, skip_bytes, len_bytes);
     }
   }
   proc buffer.append(b:bytes, skip_bytes:int(64) = 0, len_bytes:int(64) = b.len) {
-    var err:err_t = ENOERR;
+    var err:syserr = ENOERR;
     this.append(b, skip_bytes, len_bytes, err);
     if err then ioerror(err, "in buffer.append");
   }
 
 
-  proc buffer.append(buf:buffer, part:buffer_range = buf.all(), inout error:err_t) {
+  proc buffer.append(buf:buffer, part:buffer_range = buf.all(), out error:syserr) {
     on __primitive("chpl_on_locale_num", this.home_uid) {
       error = qbuffer_append_buffer(this._buf_internal, buf._buf_internal, part.start._bufit_internal, part.end._bufit_internal);
     }
   }
   proc buffer.append(buf:buffer, part:buffer_range = buf.all()) {
-    var err:err_t = ENOERR;
+    var err:syserr = ENOERR;
     this.append(buf, part, err);
     if err then ioerror(err, "in buffer.append");
   }
 
-  proc buffer.prepend(b:bytes, skip_bytes:int(64) = 0, len_bytes:int(64) = b.len, inout error:err_t) {
+  proc buffer.prepend(b:bytes, skip_bytes:int(64) = 0, len_bytes:int(64) = b.len, out error:syserr) {
     on __primitive("chpl_on_locale_num", this.home_uid) {
       qbuffer_prepend(this._buf_internal, b._bytes_internal, skip_bytes, len_bytes);
     }
   }
   proc buffer.prepend(b:bytes, skip_bytes:int(64) = 0, len_bytes:int(64) = b.len) {
-    var err:err_t = ENOERR;
+    var err:syserr = ENOERR;
     this.prepend(b, skip_bytes, len_bytes, err);
     if err then ioerror(err, "in buffer.prepend");
   }
@@ -442,7 +442,7 @@ module Buffers {
   }*/
 
   // methods to read/write basic types.
-  proc buffer.copyout(it:buffer_iterator, out value, inout error:err_t):buffer_iterator {
+  proc buffer.copyout(it:buffer_iterator, out value, out error:syserr):buffer_iterator {
     var ret:buffer_iterator;
     ret.home_uid = this.home_uid;
     on __primitive("chpl_on_locale_num", this.home_uid) {
@@ -457,12 +457,12 @@ module Buffers {
     return ret;
   }
   proc buffer.copyout(it:buffer_iterator, out value):buffer_iterator {
-    var err:err_t = ENOERR;
+    var err:syserr = ENOERR;
     this.copyout(it, value, err);
     if err then ioerror(err, "in buffer.copyout");
   }
 
-  proc buffer.copyin( it:buffer_iterator, value, inout error:err_t):buffer_iterator {
+  proc buffer.copyin( it:buffer_iterator, value, out error:syserr):buffer_iterator {
     var ret:buffer_iterator;
     ret.home_uid = this.home_uid;
     on __primitive("chpl_on_locale_num", this.home_uid) {
@@ -483,7 +483,7 @@ module Buffers {
     return ret;
   }
   proc buffer.copyin( it:buffer_iterator, value):buffer_iterator {
-    var err:err_t = ENOERR;
+    var err:syserr = ENOERR;
     this.copyin(it, value, err);
     if err then ioerror(err, "in buffer.copyin");
   }

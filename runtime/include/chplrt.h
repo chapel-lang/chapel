@@ -68,16 +68,8 @@ extern int chpl_threads_initialized;
 
 #define _noop(x)
 
-#define malloc  dont_use_malloc_use_chpl_mem_allocMany_instead
-#define calloc  dont_use_calloc_use_chpl_mem_allocMany_instead
+#include "chpl-mem-warning-macros.h"
 
-// MPF - I needed to call the system free to pair with system valloc
-// (these are for I/O buffers that don't belong on the Chapel sharable
-// heap anyway because they could be mmap'd - and then are only
-// sharable when everything is sharable)
-static inline void sys_free(void *ptr) { free(ptr); }
-#define free    dont_use_free_use_chpl_mem_free_instead
-#define realloc dont_use_realloc_use_chpl_mem_realloc_instead
 #define exit    dont_use_exit_use_chpl_exit_instead
 
 #endif // LAUNCHER

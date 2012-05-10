@@ -2,14 +2,14 @@
 # Makefile.static
 #
 
-include $(CHAPEL_ROOT)/runtime/etc/Makefile.include
+include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.include
 
 all: $(TMPBINNAME)
 
 $(TMPBINNAME): $(CHPL_CL_OBJS) FORCE
-	$(CC) $(GEN_CFLAGS) $(COMP_GEN_CFLAGS) -c -o $(TMPBINNAME).o -I$(CHAPEL_RT_INC_DIR) -I. $(CHPLSRC)
+	$(CC) $(GEN_CFLAGS) $(COMP_GEN_CFLAGS) -c -o $(TMPBINNAME).o $(CHPL_RT_INC_DIR) $(CHPLSRC)
 ifdef NVCC
-	$(NVCC) $(HEADER_CFLAGS) $(RUNTIME_CUDA_CFLAGS) -c -o $(TMPBINNAME_GPU).o -I$(CHAPEL_RT_INC_DIR) -I. $(CHPL_GPU_SRC)
+	$(NVCC) $(HEADER_CFLAGS) $(RUNTIME_CUDA_CFLAGS) -c -o $(TMPBINNAME_GPU).o $(CHPL_RT_INC_DIR) $(CHPL_GPU_SRC)
 	$(AR) -r -s $(TMPBINNAME) $(TMPBINNAME).o $(TMPBINNAME_GPU).o $(CHPL_CL_OBJS)
 else
 	$(AR) -r -s $(TMPBINNAME) $(TMPBINNAME).o $(CHPL_CL_OBJS)

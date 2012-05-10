@@ -1,5 +1,10 @@
 module sha1_rng {
 
+  //
+  // This should really be something like c_int
+  //
+  type sha_int = c_int;
+
   // SHA1 Message Digest: 20 Bytes -- this is splittable and transferrable
 
   // The message digest (hash) is implemented in Chapel as an array of 20
@@ -13,26 +18,26 @@ module sha1_rng {
   // first element in the hash to the extern function.
 
   // Create a fresh RNG_state context from a given seed
-extern proc rng_init(inout state: uint(8), seed: int);
+extern proc rng_init(inout state: uint(8), seed: sha_int);
 
 
   // Spawn the i'th child's hash given the parent's hash
   //  Parallel Note: Either all the spawns must be done by the same
   //  processor, or i must be shipped along with the child
-extern proc rng_spawn(inout mystate: uint(8), inout newstate: uint(8), spawnNumber: int);
+extern proc rng_spawn(inout mystate: uint(8), inout newstate: uint(8), spawnNumber: sha_int);
 
 
   // Return the current random 32 bit number from an RNG_state
-extern proc rng_rand(inout mystate: uint(8)): int;
+extern proc rng_rand(inout mystate: uint(8)): sha_int;
 
 
   // Scale 32 bit positive int onto the interval [0, 1)
-  proc to_prob(v: int): real {
+ proc to_prob(v: sha_int): real {
     if (v < 0) {
       writeln("to_prob: warning, rand n = ", v, " out of range");
       return 0.0;
     } else {
-      return v:real/(max(uint)/2);
+      return v:real/(max(uint(32))/2);
     }
   }
 

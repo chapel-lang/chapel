@@ -1,5 +1,6 @@
 \sekshun{Variables}
 \label{Variables}
+\index{variables}
 
 A variable is a symbol that represents memory.  Chapel is a
 statically-typed, type-safe language so every variable has a type that
@@ -10,6 +11,7 @@ by its type.
 \section{Variable Declarations}
 \label{Variable_Declarations}
 \index{variables!declarations}
+\index{declarations!variables}
 
 Variables are declared with the following syntax:
 \begin{syntax}
@@ -142,6 +144,7 @@ explicitly left uninitialized in order to address this concern.
 \subsection{Local Type Inference}
 \label{Local_Type_Inference}
 \index{type inference}
+\index{type inference!local}
 
 If the type is omitted from a variable declaration, the type of the
 variable is defined to be the type of the initialization expression.
@@ -162,6 +165,8 @@ expression.
 
 \subsection{Multiple Variable Declarations}
 \label{Multiple_Variable_Declarations}
+\index{declarations!variables!multiple}
+\index{variables!declarations!multiple}
 
 All variables defined in the same \sntx{identifier-list} are defined
 such that they have the same type and value, and so that the type and
@@ -279,6 +284,7 @@ in~\rsec{Dynamic_Memory_Management}.
 
 \section{Constants}
 \label{Constants}
+\index{constants}
 
 Constants are divided into two categories: parameters, specified with
 the keyword \chpl{param}, are compile-time constants and constants,

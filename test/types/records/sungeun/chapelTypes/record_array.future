@@ -1,0 +1,12 @@
+bug: Declaring a record named _array with an array member results in resolution error.
+
+We get the following unresolved call:
+
+     record_array.chpl:1: In function 'chpl__initCopy':
+     record_array.chpl:1: error: unresolved call '_array(a=[domain(1,int,false)] int)'
+     record_array.chpl:1: note: candidates are: _array(a: _unknown)
+
+
+Notice that this works for other Chapel record types as seen in the
+other test programs in this directory.
+

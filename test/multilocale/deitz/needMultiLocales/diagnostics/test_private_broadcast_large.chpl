@@ -9,9 +9,11 @@ const x = f(256);
 
 startVerboseComm();
 
+extern proc printf(x...);
+
 on Locales(1) {
   for param i in 1..256 do
-    _debugWriteln(x(i));
+    printf("%s\n", x(i):string);
 }
 
 stopVerboseComm();

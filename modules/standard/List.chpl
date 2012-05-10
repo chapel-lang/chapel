@@ -14,7 +14,7 @@ record list {
     var current = first;
     while (current != nil) {
       var next = current.next;
-      on current do delete current;
+      delete current;
       current = next;
     }
   }
@@ -33,7 +33,7 @@ record list {
         first = tmp.next;
       if last == tmp then
         last = prev;
-      on tmp do delete tmp;
+      delete tmp;
       length -= 1;
     }
   }

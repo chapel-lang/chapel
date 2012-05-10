@@ -1,3 +1,3 @@
-var f = open("_test_cannotOpenMe.txt", mode.r);
+var f = open("_test_cannotOpenMe.txt", iomode.r);
 
 f.close();

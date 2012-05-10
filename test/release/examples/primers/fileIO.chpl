@@ -59,7 +59,7 @@ if example == 0 || example == 1 {
 //
 proc writeSquareArray(n, X, filename) {
   // Create and open an output file with the specified filename in write mode
-  var outfile = open(filename, mode.w);
+  var outfile = open(filename, iomode.cw);
   var writer = outfile.writer();
 
   // Write the problem size in each dimension to the file
@@ -79,7 +79,7 @@ proc writeSquareArray(n, X, filename) {
 //
 proc readArray(filename) {
    // Open an input file with the specified filename in read mode
-  var infile = open(filename, mode.r);
+  var infile = open(filename, iomode.r);
   var reader = infile.reader();
 
   // Read the number of rows and columns in the array in from the file
@@ -123,8 +123,7 @@ if example == 0 || example == 2 {
 
   // First, open up a test file. Chapel's I/O interface allows
   // us to open regular files, temporary files, memory, or file descriptors;
-  // we can also specify access with "r", "w", "r+", "w+", etc.
-  var f = open(testfile, mode.wr);
+  var f = open(testfile, iomode.cwr);
 
   /* Since the typical 'file position' design leads to race conditions
    * all over, the Chapel I/O design separates a file from a channel.
@@ -135,7 +134,7 @@ if example == 0 || example == 2 {
    */
 
   {
-    var w = f.writer(kind=native); // get a binary writing channel for the start of the file.
+    var w = f.writer(kind=ionative); // get a binary writing channel for the start of the file.
 
     for i in 0..#num { // for each i in [0,n)
       var tmp:uint(64) = i:uint(64);
@@ -151,7 +150,7 @@ if example == 0 || example == 2 {
   // OK, now we have written our data file. Now read it backwards.
   // Note -- this could be a forall loop to do I/O in parallel!
   for i in 0..#num by -1 {
-    var r = f.reader(kind=native, start=8*i, end=8*i+8);
+    var r = f.reader(kind=ionative, start=8*i, end=8*i+8);
     var tmp:uint(64);
     r.read(tmp);
     assert(tmp == i:uint(64));
@@ -180,11 +179,11 @@ if example == 0 || example == 3 {
 
   // First, open up a file and write to it.
   {
-    var f = open(testfile, mode.wr);
+    var f = open(testfile, iomode.cwr);
     /* When we create the writer, suppling locking=false will do unlocked I/O.
        That's fine as long as the channel is not shared between tasks.
       */
-    var w = f.writer(kind=native, locking=false);
+    var w = f.writer(kind=ionative, locking=false);
 
     for i in 0..#num {
       var tmp:uint(64) = i:uint(64);
@@ -200,7 +199,8 @@ if example == 0 || example == 3 {
      we can optimize better (using mmap, if you like details).
    */
   {
-    var f = open(testfile, mode.r, hints=HINT_RANDOM|HINT_CACHED);
+    var f = open(testfile, iomode.r,
+                 hints=IOHINT_RANDOM|IOHINT_CACHED|IOHINT_PARALLEL);
 
     // Note -- this could be a forall loop to do I/O in parallel!
     forall i in 0..#num by -1 {
@@ -208,7 +208,7 @@ if example == 0 || example == 3 {
          That's fine as long as the channel is not shared between tasks;
          here it's just used as a local variable, so we are O.K. 
         */
-      var r = f.reader(kind=native, locking=false, start=8*i, end=8*i+8);
+      var r = f.reader(kind=ionative, locking=false, start=8*i, end=8*i+8);
       var tmp:uint(64);
       r.read(tmp);
       assert(tmp == i:uint(64));
@@ -229,7 +229,7 @@ if example == 0 || example == 3 {
 if example == 0 || example == 4 {
   writeln("Running Example 4");
 
-  var f = open(testfile, mode.wr);
+  var f = open(testfile, iomode.cwr);
   var w = f.writer();
 
   w.writeln("Hello");
@@ -283,7 +283,7 @@ if example == 0 || example == 5 {
   assert(err == ENOENT);
   
   // What happens if we try to open a non-existant file?
-  var f = open(testfile, mode.r, error=err);
+  var f = open(testfile, iomode.r, error=err);
   assert(err == ENOENT);
 
   /* Note that if an error= argument is not supplied to an
@@ -325,10 +325,10 @@ if example == 0 || example == 6 {
 if example == 0 || example == 7 {
   writeln("Running Example 7");
 
-  var f = open(testfile, mode.wr);
+  var f = open(testfile, iomode.cwr);
 
   {
-    var w = f.writer(kind=native);
+    var w = f.writer(kind=ionative);
 
     // Write 011 0110 011110000
     w.writebits(0b011, 3);
@@ -339,7 +339,7 @@ if example == 0 || example == 7 {
 
   // Try reading it back the way we wrote it.
   {
-    var r = f.reader(kind=native);
+    var r = f.reader(kind=ionative);
     var tmp:uint(64);
 
     r.readbits(tmp, 3);
@@ -355,7 +355,7 @@ if example == 0 || example == 7 {
   // Try reading it back all as one big chunk.
   // Read 01101100 11110000
   {
-    var r = f.reader(kind=native);
+    var r = f.reader(kind=ionative);
     var tmp:uint(8);
 
     r.read(tmp);

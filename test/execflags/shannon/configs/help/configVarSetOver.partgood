@@ -1,6 +1,6 @@
 module1 config vars:
-                       x: int (configured to 999)
+                       x: int(64) (configured to 999)
 
 module2 config vars:
-                       x: int
-                       z: real (configured to 8888.88)
+                       x: int(64)
+                       z: real(64) (configured to 8888.88)

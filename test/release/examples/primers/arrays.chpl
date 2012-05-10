@@ -10,7 +10,7 @@
 // that specifies the array's index set, followed by the array's
 // element type.  Rectangular arrays are those whose indices are
 // integers or tuples of integers, supporting standard
-// multidimensional, rectilinear array support.
+// multidimensional, rectilinear index sets.
 //
 
 config const n = 5;
@@ -49,11 +49,8 @@ writeln("After assigning its interior values, A is: ", A);
 writeln();
 
 //
-// Chapel uses square brackets to represent tensor products in Chapel
-// and parenthesis to represent zipper products.  By convention we
-// square brackets for array slicing even when the tensor product is
-// not required.  For example, the expression above could have just
-// as correctly been written A(2..4):
+// Just like with array indexing, either square brackets or parenthesis
+// can be used for array slicing:
 //
 
 writeln("A(2..4) is: ", A(2..4), "\n");
@@ -205,7 +202,7 @@ writeln("After assigning a slice of B to F, F's value is:\n", F, "\n");
 
 //
 // Arrays can also be sliced using unbounded ranges in which either
-// the low or high bounds are omitted.  In this case, they will be
+// the low and/or high bounds are omitted.  In this case, they will be
 // inherited from the array's bounds.
 //
 
@@ -224,32 +221,18 @@ A = B[n/2, ..];
 writeln("After being assigned a slice of B, A is:\n", A, "\n");
 
 //
-// As mentioned earlier, parenthesized promoted arguments in Chapel
-// represent zipper products.  This means that B(1..n, 1..n) ought
-// to represent the main diagonal of the B array.  However, these
-// semantics are not yet implemented, so today it incorrectly yields
-// the tensor product of the ranges -- in this case B in its entirety.
-//
-
-writeln("Incorrectly, B(1..n, 1..n) is:\n", B(1..n, 1..n), "\n");
-
-//
 // Domains can also be sliced.  However, rather than having indexing
-// semantics, as with arrays, domain indexing results in intersection
-// semantics.  Put another way, domains can be indexed out of bounds:
+// semantics, domain slicing results in intersection of the domain's
+// index set and the specified slice.
+//
+// Domain slicing, like array indexing and slicing, can be written
+// with either square brackets or parenthesis.
 //
 
-writeln("ProbSpace[0..n+1, 3..] is: ", ProbSpace[0..n+1, 3..], "\n");
+writeln("ProbSpace[1..n-2, 3..] is: ", ProbSpace[1..n-2, 3..], "\n");
 
 // Ranges also support slicing in this way, though we don't
 // demonstrate that here.
-
-//
-// ...while arrays cannot.  The following would result in an out-of-bounds
-// error:
-//
-
-// writeln("B[0..n+1, 3..] is:\n", B[0..n+1, 3..], "\n");
 
 //
 // Domain variables and expressions can also be used to specify an
@@ -386,8 +369,9 @@ writeln("VarArr should now be reset: ", VarArr, "\n");
 
 var Y: [ProbSpace] [1..3] real;
 
-forall ((i,j), k) in [ProbSpace, 1..3] do
-  Y(i,j)(k) = i*10 + j + k/10.0;
+forall (i,j) in ProbSpace do
+  for k in 1..3 do
+    Y(i,j)(k) = i*10 + j + k/10.0;
 
 writeln("Y is:\n", Y);
 

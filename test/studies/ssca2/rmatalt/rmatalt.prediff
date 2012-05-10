@@ -1,0 +1,15 @@
+#!/bin/bash --norc
+
+output=${2:-}
+
+function doit {
+  sort rmatalt.weights | { diff rmatalt.weights.good - && echo weights match; }
+  sort rmatalt.neis    | { diff rmatalt.neis.good - && echo neis match; }
+}
+
+if [ -z "$output" ]; then
+  # if invoked manually
+  doit
+else
+  doit >> $output
+fi

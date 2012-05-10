@@ -71,8 +71,7 @@ record Timer {
 }
 
 // returns diff of two timer values in microseconds
-pragma "inline"
-proc _diff_timer(t1: _timervalue, t2: _timervalue) {
+inline proc _diff_timer(t1: _timervalue, t2: _timervalue) {
   var s1 = chpl_seconds_timer(t1);
   var s2 = chpl_seconds_timer(t2);
   var us1 = chpl_microseconds_timer(t1);
@@ -94,6 +93,6 @@ proc _convert_microseconds(unit: TimeUnits, us: real) {
   return -1.0;
 }
 
-pragma "inline" proc sleep(t: uint) {
+inline proc sleep(t: uint) {
   __primitive("task sleep", t);
 }

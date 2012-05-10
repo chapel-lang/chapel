@@ -1,4 +1,4 @@
-var n: int(64);
+var n: int(32);
 
 var D = [1..n];
 

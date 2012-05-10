@@ -17,17 +17,17 @@ CONFIG VAR FLAGS:
 
 CONFIG VARS:
 ============
-                 numLocales: int (configured to 1)
-        numThreadsPerLocale: int
-              callStackSize: uint(64)
-      dataParTasksPerLocale: int
+                 numLocales: int(64) (configured to 1)
+        numThreadsPerLocale: int(64)
+              callStackSize: int(64)
+      dataParTasksPerLocale: int(64)
   dataParIgnoreRunningTasks: bool
-      dataParMinGranularity: int
+      dataParMinGranularity: int(64)
                    memTrack: bool
                    memStats: bool
                    memLeaks: bool
               memLeaksTable: bool
-                     memMax: uint(64)
-               memThreshold: uint(64)
+                     memMax: int(64)
+               memThreshold: int(64)
                      memLog: string
                 memLeaksLog: string

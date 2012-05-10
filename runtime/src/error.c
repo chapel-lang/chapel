@@ -6,6 +6,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <inttypes.h>
+#ifndef LAUNCHER
+#include "chpl-atomics.h"
+#endif
 
 int verbosity = 1;
 
@@ -23,17 +26,23 @@ void chpl_warning(const char* message, int32_t lineno, chpl_string filename) {
     fprintf(stderr, "warning: %s\n", message);
 }
 
-static volatile int thisLocaleAlreadyExiting = 0;
+
+#ifndef LAUNCHER
+static atomic_flag thisLocaleAlreadyExiting;
+void chpl_error_init(void) {
+  atomic_init_flag(&thisLocaleAlreadyExiting, false);
+}
+#endif
 
 static void spinhaltIfAlreadyExiting(void) {
+#ifndef LAUNCHER
   volatile int temp;
-  if (thisLocaleAlreadyExiting == 0) {
-    thisLocaleAlreadyExiting = 1;
-    return;
+  if (atomic_flag_test_and_set(&thisLocaleAlreadyExiting)) {
+    // spin forever if somebody else already set it to 1
+    temp = 1;
+    while (temp);
   }
-  // spin forever if somebody else already set it to 1
-  temp = 1;
-  while (temp);
+#endif
 }
 
 static void chpl_error_common(const char* message, int32_t lineno, chpl_string filename) {
@@ -52,10 +61,6 @@ void chpl_error(const char* message, int32_t lineno, chpl_string filename) {
   chpl_error_common(message, lineno, filename);
   fprintf(stderr, "\n");
   chpl_exit_any(1);
-}
-
-void chpl_error_noexit(const char* message, int32_t lineno, chpl_string filename) {
-  chpl_error_common(message, lineno, filename);
 }
 
 

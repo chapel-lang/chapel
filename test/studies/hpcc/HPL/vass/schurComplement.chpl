@@ -1,6 +1,6 @@
-use d;
-use r;
-use f;
+use DimensionalDist2D;
+use ReplicatedDim;
+use BlockCycDim;
 use Memory, Time, Random;
 
 
@@ -52,17 +52,17 @@ const st1=1, st2=1;
 
 // 1-d descriptors for Dimensional
 const
-  bdim1 = new idist(lowIdx=st1, blockSize=blkSize, numLocales=tl1, name="D1"),
-  rdim1 = new vdist(tl1),
-  bdim2 = new idist(lowIdx=st2, blockSize=blkSize, numLocales=tl2, name="D2"),
-  rdim2 = new vdist(tl2);
+  bdim1 = new BlockCyclicDim(lowIdx=st1, blockSize=blkSize, numLocales=tl1, name="D1"),
+  rdim1 = new ReplicatedDim(tl1),
+  bdim2 = new BlockCyclicDim(lowIdx=st2, blockSize=blkSize, numLocales=tl2, name="D2"),
+  rdim2 = new ReplicatedDim(tl2);
 
-const dimdist = new DimensionalDist(tla, bdim1, bdim2, "dim");
+const dimdist = new DimensionalDist2D(tla, bdim1, bdim2, "dim");
 
 // the distributed domain for Ab
 const AbD: domain(2, indexType)
 // dmapped BlockCyclic(startIdx=(st1,st2), blocksize=(blkSize,blkSize), targetLocales=tla)
-// dmapped DimensionalDist(tla, bdim1, bdim2, "dim")
+// dmapped DimensionalDist2D(tla, bdim1, bdim2, "dim")
    dmapped new dmap(dimdist)
   = MatVectSpace;
 
@@ -76,9 +76,9 @@ var Ab: [if do_dgemms then AbD else 1..1] elemType; // small if !do_dgemms
 // the domains for replication
 const
   replAD = [1..n, 1..blkSize] dmapped
-    DimensionalDist(tla, bdim1, rdim2, "distBR"),
+    DimensionalDist2D(tla, bdim1, rdim2, "distBR"),
   replBD = [1..blkSize, 1..n+1] dmapped
-    DimensionalDist(tla, rdim1, bdim2, "distRB");
+    DimensionalDist2D(tla, rdim1, bdim2, "distRB");
 
 // the arrays for replication
 var replA: [replAD] elemType,

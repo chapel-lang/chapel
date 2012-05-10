@@ -1,4 +1,4 @@
-include $(CHAPEL_ROOT)/make/compiler/Makefile.gnu
+include $(CHPL_MAKE_HOME)/make/compiler/Makefile.gnu
 
 NVCC = nvcc
 DEVICEEMU = -deviceemu

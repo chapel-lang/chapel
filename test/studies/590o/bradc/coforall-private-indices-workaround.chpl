@@ -25,9 +25,11 @@ proc main {
   }
 
   var A: [AllPairs] real;
-  coforall xy in [StartIndices, EndIndices] do {
-    if (xy(1) <= xy(2)) {
-      A[xy(1), xy(2)] = xy(1) + xy(2)/10.0;
+  coforall x in StartIndices do {
+    coforall y in EndIndices do {
+      if (x <= y) {
+        A[x, y] = x + y/10.0;
+      }  
     }
   }
   writeln("A is:\n", A);

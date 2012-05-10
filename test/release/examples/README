@@ -15,11 +15,10 @@ get started with Chapel program structure:
 It also contains subdirectories that contain more interesting
 examples:
 
-     primers/   : introduce Chapel concepts narratively for new users
-     programs/  : demonstrate Chapel using small programs/idioms
-     hpcc/      : implementations of the HPC Challenge benchmarks
-     ssca2/     : implementation of the SSCA #2 benchmark (version 2.2)
-     spec/      : example codes from the Chapel Specification (see below)
+     benchmarks/ : contains standard benchmarks written in Chapel
+     primers/    : introduce Chapel concepts narratively for new users
+     programs/   : demonstrate Chapel using small programs/idioms
+     spec/       : example codes from the Chapel Specification (see below)
 
 The README.features file in this directory gives an overview of all
 the tests (except the spec tests) and what language features each one

@@ -2,4 +2,4 @@ perfkeys: Two Dimensional         :, Two Dimensional strided :
 files: arrayPerformance.dat, arrayPerformance.dat
 ylabel: Time (milliseconds)
 graphname: arrayPerformance-2d
-graphtitle: Scalar 2D Array Performance
+graphtitle: Scalar Multiplication 2D Array Execution Time

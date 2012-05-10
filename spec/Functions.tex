@@ -3,10 +3,10 @@
 \index{functions}
 \index{functions!call site}
 \index{call site}
-\index{functions!formal argument}
-\index{formal argument}
-\index{functions!actual argument}
-\index{actual argument}
+\index{functions!formal arguments}
+\index{formal arguments}
+\index{functions!actual arguments}
+\index{actual arguments}
 
 A \emph{function} is a code abstraction that can be invoked by a call
 expression. Throughout this specification the term ``function''
@@ -24,7 +24,7 @@ Direct and indirect recursion is supported.
 \index{functions!procedure}
 \index{procedure}
 \index{functions!operator}
-\index{operator!procedure}
+\index{operators!procedure}
 A function can be a \emph{procedure}, which completes and returns to
 the call site exactly once, returning no result, a single result, or
 multiple results aggregated in a tuple. A function can also be an
@@ -55,6 +55,7 @@ Functions are presented as follows:
 \section{Function Calls}
 \label{Function_Calls}
 \index{function calls}
+\index{calls!function}
 
 The syntax to call a non-method function is given by:
 \begin{syntax}
@@ -90,8 +91,8 @@ parentheses are discussed in~\rsec{Functions_without_Parentheses}.
 
 A \sntx{named-expression} is an expression that may be optionally
 named.  It provides
-\index{actual argument}
-\index{functions!actual argument}
+\index{actual arguments}
+\index{functions!actual arguments}
 an actual argument to the function being called.
 The optional \sntx{identifier} refers to a named formal
 argument described in~\rsec{Named_Arguments}.
@@ -102,7 +103,7 @@ Calls to methods are defined in Section~\rsec{Class_Method_Calls}.
 \section{Procedure Definitions}
 \label{Function_Definitions}
 \index{functions!procedure definition}
-\index{procedure!definition}
+\index{procedures!definition}
 
 \index{proc@\chpl{proc}}
 Procedures are defined with the following syntax:
@@ -224,7 +225,7 @@ for details on exported and imported functions.
 
 \section{Functions without Parentheses}
 \label{Functions_without_Parentheses}
-\index{functions!functions without parentheses}
+\index{functions!without parentheses}
 
 Functions do not require parentheses if they have empty argument
 lists.  Functions declared without parentheses around empty argument
@@ -253,8 +254,9 @@ when calling \chpl{bar}.
 
 \section{Formal Arguments}
 \label{Formal_Arguments}
-\index{formal argument}
-\index{functions!formal argument}
+\index{formal arguments}
+\index{functions!formal arguments}
+\index{functions!arguments!formal}
 
 Chapel supports an intuitive formal argument passing mechanism.  An
 actual argument is passed by value unless it is an array or domain, in
@@ -270,6 +272,7 @@ for use within the function.
 \label{Named_Arguments}
 \index{named arguments}
 \index{functions!named arguments}
+\index{functions!arguments!named}
 \index{formal arguments!naming}
 
 A formal argument can be named at the call site to explicitly map an
@@ -302,6 +305,7 @@ call site for compiler-checked documentation.
 \label{Default_Values}
 \index{default values}
 \index{functions!default argument values}
+\index{functions!arguments!defaults}
 \index{formal arguments!defaults}
 
 Default values can be specified for a formal argument by appending the
@@ -342,7 +346,7 @@ argument list.
 \section{Intents}
 \label{Intents}
 \index{intents}
-\index{functions!argument intents}
+\index{functions!arguments!intents}
 
 Intents allow the actual arguments to be copied to a formal argument
 and also to be copied back.
@@ -363,7 +367,7 @@ and can be modified within the function.
 
 \subsection{The In Intent}
 \label{The_In_Intent}
-\index{in@\chpl{in}}
+\index{in (intent)@\chpl{in} (intent)}
 \index{intents!in@\chpl{in}}
 
 If \chpl{in} is specified as the intent, the actual argument is copied
@@ -377,7 +381,7 @@ within the array formal are thus not reflected back at the call site.
 
 \subsection{The Out Intent}
 \label{The_Out_Intent}
-\index{out@\chpl{out}}
+\index{out (intent)@\chpl{out} (intent)}
 \index{intents!out@\chpl{out}}
 
 If \chpl{out} is specified as the intent, the actual argument is
@@ -392,7 +396,7 @@ unless it has a default expression.
 
 \subsection{The Inout Intent}
 \label{The_Inout_Intent}
-\index{inout@\chpl{inout}}
+\index{inout (intent)@\chpl{inout} (intent)}
 \index{intents!inout@\chpl{inout}}
 
 If \chpl{inout} is specified as the intent, the actual argument is
@@ -406,6 +410,7 @@ function.
 \section{Variable Number of Arguments}
 \label{Variable_Length_Argument_Lists}
 \index{functions!variable number of arguments}
+\index{functions!varargs}
 
 Functions can be defined to take a variable number of arguments where
 those arguments can have any intent or can be types.  A variable
@@ -504,11 +509,12 @@ expressions \chpl{tuple(1)} and \chpl{(1)} are not equivalent.
 \section{Variable Functions}
 \label{Variable_Functions}
 \index{functions!variable functions}
-\index{functions!as lvalues}
+\index{functions!var keyword and@\chpl{var} keyword and}
+\index{functions!lvalues}
 
 A variable function is a function whose call is an lvalue
 (specifically, a call expression for a variable procedure and
-an iterator variable for an variable iterator).
+an iterator variable for a variable iterator).
 This implies that a variable function produces a reference;
 however, this
 reference cannot be captured.
@@ -633,6 +639,7 @@ expressions that is not a parameter.
 \section{Type Functions}
 \label{Type_Functions}
 \index{functions!as types}
+\index{functions!type functions}
 
 A \emph{type function} is a function that returns a type, not a value.  It is specified by
 following the function's argument list by the keyword \chpl{type}, without the subsequent return type.  It
@@ -650,12 +657,12 @@ conditionals with a conditional expression that is not a parameter.
 In the code
 \begin{chapel}
 proc myType(x) type {
-  if numBits(x.type) <= 32 then return int;
+  if numBits(x.type) <= 32 then return int(32);
   else return int(64);
 }
 \end{chapel}
 \begin{chapelpost}
-var a = 4,
+var a = 4: int(32),
     b = 4.0;
 var at: myType(a),
     bt: myType(b);
@@ -665,7 +672,7 @@ writeln((numBits(at.type), numBits(bt.type)));
 (32, 64)
 \end{chapeloutput}
 \chpl{myType} is a type procedure that takes a single
-argument \chpl{x} and returns \chpl{int} if the number of bits used to
+argument \chpl{x} and returns \chpl{int(32)} if the number of bits used to
 represent \chpl{x} is less than or equal to 32, otherwise it
 returns \chpl{int(64)}.  \chpl{numBits} is a param
 procedure defined in the Types module~(\rsec{Types_standard_module}).
@@ -675,6 +682,7 @@ procedure defined in the Types module~(\rsec{Types_standard_module}).
 \section{The Return Statement}
 \label{The_Return_Statement}
 \index{return@\chpl{return}}
+\index{statments!return}
 
 The return statement can only appear in a function.  It exits that
 function, returning control to the point at which that function was
@@ -708,7 +716,7 @@ writeln(sum(1, 2, 3));
 \section{Return Types}
 \label{Return_Types}
 \index{return@\chpl{return}!types}
-\index{functions!return@\chpl{return} types}
+\index{functions!return types}
 
 A procedure can optionally return a value.  If the procedure does not
 return a value, its return type is \chpl{void}.  Specifying the return
@@ -717,6 +725,7 @@ type in a procedure declaration is optional.
 \subsection{Explicit Return Types}
 \label{Explicit_Return_Types}
 \index{explicit return type}
+\index{functions!return types!explicit}
 
 If a return type is specified and is not \chpl{void}, the values that the procedure returns
 via return statements must be assignable to a variable of the return
@@ -729,6 +738,7 @@ exactly, when checked after generic instantiation and parameter folding
 \label{Implicit_Return_Types}
 \index{type inference!of return types}
 \index{implicit return type}
+\index{functions!return types!implicit}
 
 If a return type is not specified, it will be inferred from the return
 statements.  Given the types that are returned by the different
@@ -758,10 +768,11 @@ which they are nested.
 
 \section{Function and Operator Overloading}
 \label{Function_Overloading}
+\index{overloading}
+\index{overloading functions (see also functions, overloading)}
+\index{overloading operators (see also operators, overloading)}
 \index{functions!overloading}
 \index{operators!overloading}
-\index{function overloading}
-\index{operator overloading}
 
 Functions that have the same name but different argument lists are
 called overloaded functions.  Function calls to overloaded functions
@@ -789,7 +800,6 @@ function resolution.
 
 \section{Function Resolution}
 \label{Function_Resolution}
-\index{function resolution}
 \index{functions!resolution}
 
 \emph{Function resolution} is the algorithm that determines
@@ -843,6 +853,7 @@ to a formal argument that is a \emph{legal argument mapping}.
 
 \subsubsection{Valid Mapping}
 \label{Valid_Mapping}
+\index{functions!resolution!valid mapping}
 
 The following algorithm determines a valid mapping from a function
 call to a function if one exists:
@@ -864,6 +875,8 @@ to by actual arguments.
 \end{itemize}
 
 \subsubsection{Legal Argument Mapping}
+\label{Legal_Argument_Mapping}
+\index{functions!resolution!legal argument mapping}
 
 An actual argument of type $T_A$ can be mapped to a formal argument of
 type $T_F$ if any of the following conditions hold:
@@ -877,6 +890,7 @@ type $T_F$ if any of the following conditions hold:
 \subsection{Determining More Specific Functions}
 \label{Determining_More_Specific_Functions}
 \index{functions!most specific}
+\index{functions!resolution!most specific}
 
 Given two functions $F_1$ and $F_2$, the more specific function is
 determined by the following steps:
@@ -897,6 +911,8 @@ more specific argument mapping than the corresponding legal argument
 mapping to $F_2$, then $F_2$ is more specific.
 \item If $F_1$ shadows $F_2$, then $F_1$ is more specific.
 \item If $F_2$ shadows $F_1$, then $F_2$ is more specific.
+\item If all \chpl{param} arguments prefer $F_1$ over $F_2$, then $F_1$ is more specific.  In order of preference, a \chpl{param} argument prefers to passed to (a) a \chpl{param} formal of matching type; (b) a \chpl{param} formal large enough to store the \chpl{param} value; (c) a non-\chpl{param} formal of matching type.
+\item If all \chpl{param} arguments prefer $F_2$ over $F_1$, then $F_2$ is more specific.
 \item If $F_1$ has a where clause and $F_2$ does not have a where clause, then $F_1$ is more specific.
 \item If $F_2$ has a where clause and $F_1$ does not have a where clause, then $F_2$ is more specific.
 \item Otherwise neither function is more specific.

@@ -163,9 +163,7 @@ Expr* buildIntLiteral(const char* pch) {
     ull = hexStr2uint64(pch);
   else
     ull = str2uint64(pch);
-  if (ull <= 2147483647ull)
-    return new SymExpr(new_IntSymbol(ull, INT_SIZE_32));
-  else if (ull <= 9223372036854775807ull)
+  if (ull <= 9223372036854775807ull)
     return new SymExpr(new_IntSymbol(ull, INT_SIZE_64));
   else
     return new SymExpr(new_UIntSymbol(ull, INT_SIZE_64));
@@ -384,7 +382,6 @@ void createInitFn(ModuleSymbol* mod) {
   mod->initFn->retType = dtVoid;
   mod->initFn->addFlag(FLAG_MODULE_INIT);
   mod->initFn->addFlag(FLAG_INSERT_LINE_FILE_INFO);
-  mod->initFn->addFlag(FLAG_PROC_ITER_KW_USED); // ProcIter: remove
   // All module initialization functions should be exported.
   // But that means we have to adopt some new naming conventions.
   // mod->initFn->addFlag(FLAG_EXPORT);
@@ -496,12 +493,12 @@ FnSymbol* buildIfExpr(Expr* e, Expr* e1, Expr* e2) {
                  new SymExpr(tmp2),
                  new CallExpr(PRIM_LOGICAL_FOLDER,
                               new SymExpr(tmp1),
-                              new CallExpr(PRIM_GET_REF, e1))),
+                              new CallExpr(PRIM_DEREF, e1))),
     new CallExpr(PRIM_MOVE,
                  new SymExpr(tmp2),
                  new CallExpr(PRIM_LOGICAL_FOLDER,
                               new SymExpr(tmp1),
-                              new CallExpr(PRIM_GET_REF, e2)))));
+                              new CallExpr(PRIM_DEREF, e2)))));
   ifFn->insertAtTail(new CallExpr(PRIM_RETURN, tmp2));
   return ifFn;
 }
@@ -670,7 +667,6 @@ handleArrayTypeCase(FnSymbol* fn, Expr* indices, Expr* iteratorExpr, Expr* expr)
   //
   FnSymbol* isArrayTypeFn = new FnSymbol("_isArrayTypeFn");
   isArrayTypeFn->addFlag(FLAG_INLINE);
-  isArrayTypeFn->addFlag(FLAG_PROC_ITER_KW_USED); // ProcIter: remove
 
   Symbol* isArrayType = newTemp("_isArrayType");
   isArrayType->addFlag(FLAG_MAYBE_PARAM);
@@ -738,7 +734,6 @@ static int loopexpr_uid = 1;
 CallExpr*
 buildForLoopExpr(Expr* indices, Expr* iteratorExpr, Expr* expr, Expr* cond, bool maybeArrayType) {
   FnSymbol* fn = new FnSymbol(astr("_seqloopexpr", istr(loopexpr_uid++)));
-  fn->addFlag(FLAG_PROC_ITER_KW_USED); // ProcIter: remove
   BlockStmt* block = fn->body;
 
   if (maybeArrayType) {
@@ -757,8 +752,7 @@ buildForLoopExpr(Expr* indices, Expr* iteratorExpr, Expr* expr, Expr* cond, bool
   // build serial iterator function
   //
   FnSymbol* sifn = new FnSymbol(iteratorName);
-  sifn->addFlag(FLAG_PROC_ITER_KW_USED); // ProcIter: remove
-  sifn->addFlag(FLAG_ITERATOR_FN); // ProcIter: I think we should keep this one
+  sifn->addFlag(FLAG_ITERATOR_FN);
   ArgSymbol* sifnIterator = new ArgSymbol(INTENT_BLANK, "iterator", dtAny);
   sifn->insertFormalAtTail(sifnIterator);
   fn->insertAtHead(new DefExpr(sifn));
@@ -776,7 +770,6 @@ buildForallLoopExpr(Expr* indices, Expr* iteratorExpr, Expr* expr, Expr* cond, b
     return buildForLoopExpr(indices, iteratorExpr, expr, cond, maybeArrayType);
 
   FnSymbol* fn = new FnSymbol(astr("_parloopexpr", istr(loopexpr_uid++)));
-  fn->addFlag(FLAG_PROC_ITER_KW_USED); // ProcIter: remove
   BlockStmt* block = fn->body;
 
   if (maybeArrayType) {
@@ -795,8 +788,7 @@ buildForallLoopExpr(Expr* indices, Expr* iteratorExpr, Expr* expr, Expr* cond, b
   // build serial iterator function
   //
   FnSymbol* sifn = new FnSymbol(iteratorName);
-  sifn->addFlag(FLAG_PROC_ITER_KW_USED); // ProcIter: remove
-  sifn->addFlag(FLAG_ITERATOR_FN); // ProcIter: I think we should keep this one
+  sifn->addFlag(FLAG_ITERATOR_FN);
   ArgSymbol* sifnIterator = new ArgSymbol(INTENT_BLANK, "iterator", dtAny);
   sifn->insertFormalAtTail(sifnIterator);
   fn->insertAtHead(new DefExpr(sifn));
@@ -809,7 +801,6 @@ buildForallLoopExpr(Expr* indices, Expr* iteratorExpr, Expr* expr, Expr* cond, b
   // build leader iterator function
   //
   FnSymbol* lifn = new FnSymbol(iteratorName);
-  lifn->addFlag(FLAG_PROC_ITER_KW_USED); // ProcIter: remove
   ArgSymbol* lifnIterator = new ArgSymbol(INTENT_BLANK, "iterator", dtAny);
   lifn->insertFormalAtTail(lifnIterator);
   Expr* tag = buildDotExpr(buildDotExpr(new UnresolvedSymExpr("ChapelBase"),
@@ -830,8 +821,7 @@ buildForallLoopExpr(Expr* indices, Expr* iteratorExpr, Expr* expr, Expr* cond, b
   // build follower iterator function
   //
   FnSymbol* fifn = new FnSymbol(iteratorName);
-  fifn->addFlag(FLAG_PROC_ITER_KW_USED); // ProcIter: remove
-  fifn->addFlag(FLAG_ITERATOR_FN); // ProcIter: I think we should keep this one
+  fifn->addFlag(FLAG_ITERATOR_FN);
   ArgSymbol* fifnIterator = new ArgSymbol(INTENT_BLANK, "iterator", dtAny);
   fifn->insertFormalAtTail(fifnIterator);
 
@@ -930,6 +920,8 @@ buildForallLoopStmt(Expr* indices, Expr* iterExpr, BlockStmt* loopBody) {
   if (fSerial || fSerialForall)
     return buildForLoopStmt(indices, iterExpr, loopBody);
 
+  SET_LINENO(loopBody);
+
   //
   // insert temporary index when elided by user
   //
@@ -1021,6 +1013,7 @@ BlockStmt* buildCoforallLoopStmt(Expr* indices, Expr* iterator, BlockStmt* body)
       tmp = NULL;
   }
 
+  SET_LINENO(body);
   if (onBlock) {
     //
     // optimization of on-statements directly inside coforall-loops
@@ -1110,7 +1103,7 @@ buildAssignment(Expr* lhs, Expr* rhs, const char* op) {
   ltmp->addFlag(FLAG_MAYBE_PARAM);
   stmt->insertAtTail(new DefExpr(ltmp));
   stmt->insertAtTail(new CallExpr(PRIM_MOVE, ltmp,
-                       new CallExpr(PRIM_SET_REF, lhs)));
+                       new CallExpr(PRIM_ADDR_OF, lhs)));
 
   VarSymbol* rtmp = newTemp();
   rtmp->addFlag(FLAG_MAYBE_PARAM);
@@ -1124,7 +1117,7 @@ buildAssignment(Expr* lhs, Expr* rhs, const char* op) {
         new CallExpr("_cast",
           new CallExpr(PRIM_TYPEOF, ltmp),
           new CallExpr(op,
-            new CallExpr(PRIM_GET_REF, ltmp), rtmp))));
+            new CallExpr(PRIM_DEREF, ltmp), rtmp))));
 
   if (strcmp(op, "<<") && strcmp(op, ">>"))
     cast->insertAtHead(
@@ -1134,11 +1127,11 @@ buildAssignment(Expr* lhs, Expr* rhs, const char* op) {
     new CondStmt(
       new CallExpr("_isPrimitiveType",
         new CallExpr(PRIM_TYPEOF,
-          new CallExpr(PRIM_GET_REF, ltmp))),
+          new CallExpr(PRIM_DEREF, ltmp))),
       cast,
       new CallExpr("=", ltmp,
         new CallExpr(op,
-          new CallExpr(PRIM_GET_REF, ltmp), rtmp)));
+          new CallExpr(PRIM_DEREF, ltmp), rtmp)));
 
   // This code performs a rewrite of += and -= for domains at
   // compile-time.
@@ -1178,7 +1171,7 @@ BlockStmt* buildLAndAssignment(Expr* lhs, Expr* rhs) {
   BlockStmt* stmt = buildChapelStmt();
   VarSymbol* ltmp = newTemp();
   stmt->insertAtTail(new DefExpr(ltmp));
-  stmt->insertAtTail(new CallExpr(PRIM_MOVE, ltmp, new CallExpr(PRIM_SET_REF, lhs)));
+  stmt->insertAtTail(new CallExpr(PRIM_MOVE, ltmp, new CallExpr(PRIM_ADDR_OF, lhs)));
   stmt->insertAtTail(new CallExpr("=", ltmp, buildLogicalAndExpr(ltmp, rhs)));
   return stmt;
 }
@@ -1188,7 +1181,7 @@ BlockStmt* buildLOrAssignment(Expr* lhs, Expr* rhs) {
   BlockStmt* stmt = buildChapelStmt();
   VarSymbol* ltmp = newTemp();
   stmt->insertAtTail(new DefExpr(ltmp));
-  stmt->insertAtTail(new CallExpr(PRIM_MOVE, ltmp, new CallExpr(PRIM_SET_REF, lhs)));
+  stmt->insertAtTail(new CallExpr(PRIM_MOVE, ltmp, new CallExpr(PRIM_ADDR_OF, lhs)));
   stmt->insertAtTail(new CallExpr("=", ltmp, buildLogicalOrExpr(ltmp, rhs)));
   return stmt;
 }
@@ -1265,7 +1258,6 @@ BlockStmt* buildTypeSelectStmt(CallExpr* exprs, BlockStmt* whenstmts) {
         USR_FATAL(conds, "Type select statement has multiple otherwise clauses");
       has_otherwise = true;
       fn = new FnSymbol(astr("_typeselect", istr(uid)));
-      fn->addFlag(FLAG_PROC_ITER_KW_USED); // ProcIter: remove
       int lid = 1;
       for_actuals(expr, exprs) {
         fn->insertFormalAtTail(
@@ -1284,7 +1276,6 @@ BlockStmt* buildTypeSelectStmt(CallExpr* exprs, BlockStmt* whenstmts) {
       if (conds->numActuals() != exprs->argList.length)
         USR_FATAL(when, "Type select statement requires number of selectors to be equal to number of when conditions");
       fn = new FnSymbol(astr("_typeselect", istr(uid)));
-      fn->addFlag(FLAG_PROC_ITER_KW_USED); // ProcIter: remove
       int lid = 1;
       for_actuals(expr, conds) {
         fn->insertFormalAtTail(
@@ -1520,14 +1511,12 @@ buildClassDefExpr(const char* name, Type* type, Expr* inherit, BlockStmt* decls,
   TypeSymbol* ts = new TypeSymbol(name, ct);
   DefExpr* def = new DefExpr(ts);
   ct->addDeclarations(decls);
-  if (isExtern == FLAG_EXTERN || isExtern == FLAG_OLD_EXTERN_KW_USED) {
+  if (isExtern == FLAG_EXTERN) {
     ts->addFlag(FLAG_EXTERN);
     ts->addFlag(FLAG_NO_OBJECT);
     ct->defaultValue=NULL;
     if (inherit)
       USR_FATAL_CONT(inherit, "External types do not currently support inheritance");
-    if (isExtern == FLAG_OLD_EXTERN_KW_USED)
-      USR_WARN(type, "The _extern keyword is deprecated. Use extern (no leading underscore) instead.");
   }
   if (inherit)
     ct->inherits.insertAtTail(inherit);
@@ -1631,8 +1620,6 @@ buildFunctionDecl(FnSymbol* fn, RetTag optRetTag, Expr* optRetType,
                   Expr* optWhere, BlockStmt* optFnBody)
 {
   // This clause can be removed when the old _extern keyword is obsoleted. <hilde>
-  if (fn->hasFlag(FLAG_OLD_EXTERN_KW_USED))
-    USR_WARN(fn, "The _extern keyword is deprecated. Use extern (no leading underscore) instead.");
 
   fn->retTag = optRetTag;
   if (optRetTag == RET_VAR)
@@ -1735,7 +1722,7 @@ buildOnStmt(Expr* expr, Expr* stmt) {
     }
   }
 
-  CallExpr* onExpr = new CallExpr(PRIM_GET_REF, extractLocaleID(expr));
+  CallExpr* onExpr = new CallExpr(PRIM_DEREF, extractLocaleID(expr));
 
   BlockStmt* body = toBlockStmt(stmt);
   // body->insertAtHead(new CallExpr("set_here_by_id", extractLocaleID(expr)));

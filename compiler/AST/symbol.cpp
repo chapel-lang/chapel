@@ -15,7 +15,10 @@
 
 #include "intlimits.h"
 
-FnSymbol *chpl_main = NULL;
+//
+// The function that represents the compiler-generated entry point
+//
+FnSymbol *chpl_gen_main = NULL;
 
 ModuleSymbol* rootModule = NULL;
 ModuleSymbol* theProgram = NULL;
@@ -299,7 +302,7 @@ ArgSymbol::ArgSymbol(IntentTag iIntent, const char* iName,
   else if (BlockStmt* block = toBlockStmt(iTypeExpr))
     typeExpr = block;
   else
-    typeExpr = new BlockStmt(iTypeExpr, BLOCK_SCOPELESS);
+    typeExpr = new BlockStmt(iTypeExpr, BLOCK_TYPE);
   if (!iDefaultExpr)
     defaultExpr = NULL;
   else if (BlockStmt* block = toBlockStmt(iDefaultExpr))
@@ -327,6 +330,12 @@ void ArgSymbol::verify() {
     INT_FATAL(this, "Bad ArgSymbol::defaultExpr::parentSymbol");
   if (variableExpr && variableExpr->parentSymbol != this)
     INT_FATAL(this, "Bad ArgSymbol::variableExpr::parentSymbol");
+  // ArgSymbols appear only in formal parameter lists.
+  // If this one has a successor but the successor is not an argsymbol
+  // the formal parameter list is corrupted.
+  if (defPoint && defPoint->next && (!toDefExpr(defPoint->next)->sym ||
+                                     !toArgSymbol(toDefExpr(defPoint->next)->sym)))
+    INT_FATAL(this, "Bad ArgSymbol::defPoint->next");
 }
 
 
@@ -357,8 +366,7 @@ void ArgSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 bool ArgSymbol::requiresCPtr(void) {
   if (intent == INTENT_REF)
     return true;
-  if (!strcmp(name, "this")) {
-      INT_ASSERT(hasFlag(FLAG_ARG_THIS));
+  if (hasFlag(FLAG_ARG_THIS)) {
       if (is_complex_type(type))
         return true;
   }
@@ -372,6 +380,11 @@ bool ArgSymbol::isConstant(void) {
   return (intent == INTENT_BLANK || intent == INTENT_CONST) &&
     !isReferenceType(type) &&
     !isRecordWrappedType(type) /* array, domain, distribution */;
+}
+
+
+bool ArgSymbol::isParameter(void) {
+  return (intent == INTENT_PARAM);
 }
 
 
@@ -466,9 +479,6 @@ FnSymbol::FnSymbol(const char* initName) :
   substitutions.clear();
   gFnSymbols.add(this);
   formals.parent = this;
-  // ProcIter: remove this entire 'if'
-  if (markNewFnSymbolsWithProcIter)
-    this->addFlag(FLAG_PROC_ITER_KW_USED);
 }
 
 
@@ -515,7 +525,6 @@ FnSymbol* FnSymbol::getFnSymbol(void) {
 FnSymbol*
 FnSymbol::copyInner(SymbolMap* map) {
   FnSymbol* copy = new FnSymbol(name);
-  copy->addFlag(FLAG_PROC_ITER_KW_USED); // ProcIter: remove
   if (hasFlag(FLAG_CONSTRUCTOR))
     copy->addFlag(FLAG_CONSTRUCTOR);
   for_formals(formal, this) {
@@ -611,10 +620,12 @@ codegenNullAssignments(FILE* outfile, const char* cname, ClassType* ct) {
 
 
 void FnSymbol::codegenDef(FILE* outfile) {
-  if (strcmp(saveCDir, "") && getModule()->filename) {
-    const char* name = strrchr(getModule()->filename, '/');
-    name = (!name) ? getModule()->filename : name + 1;
-    fprintf(outfile, "/* %s:%d */\n", name, lineno);
+  if (strcmp(saveCDir, "")) {
+   if (const char* rawname = fname()) {
+    const char* name = strrchr(rawname, '/');
+    name = name ? name + 1 : rawname;
+    fprintf(outfile, "/* %s:%d */\n", name, linenum());
+   }
   }
 
   codegenHeader(outfile);
@@ -860,9 +871,9 @@ ModuleSymbol::copyInner(SymbolMap* map) {
 static int compareLineno(const void* v1, const void* v2) {
   FnSymbol* fn1 = *(FnSymbol**)v1;
   FnSymbol* fn2 = *(FnSymbol**)v2;
-  if (fn1->lineno > fn2->lineno)
+  if (fn1->linenum() > fn2->linenum())
     return 1;
-  else if (fn1->lineno < fn2->lineno)
+  else if (fn1->linenum() < fn2->linenum())
     return -1;
   else
     return 0;
@@ -963,30 +974,13 @@ void LabelSymbol::codegenDef(FILE* outfile) { }
 static int literal_id = 1;
 HashMap<Immediate *, ImmHashFns, VarSymbol *> uniqueConstantsHash;
 
-//
-// hh: The following functions are called when we initialize the defaultValue 
-//     field for each PrimitiveType. A unique VarSymbol should represent the 
-//     default value for any specific type, where volatile types and their base 
-//     types are considered distinct types.  Although elsewhere in the compiler, 
-//     volatile types and their base types are not considered distinct (for 
-//     example, is_int_type(t) should return true whether t is an int or a volatile
-//     int), a distinction is made here to prevent ambiguity if a defaultValue or 
-//     its immediate is used to infer the type of its variable/expr. 
-//
-VarSymbol *new_StringSymbol(const char *str, bool hasVolatileType) {
+VarSymbol *new_StringSymbol(const char *str) {
   Immediate imm;
   imm.const_kind = CONST_KIND_STRING;
   imm.v_string = astr(str);
   VarSymbol *s = uniqueConstantsHash.get(&imm);
   PrimitiveType* dtRetType = dtString;
   if (s) {
-    if (hasVolatileType) {
-      dtRetType = dtString->volType;
-      s = new VarSymbol(astr("_literal_", istr(literal_id++)), dtRetType);
-      rootModule->block->insertAtTail(new DefExpr(s));
-      s->immediate = new Immediate;
-      *s->immediate = imm;
-    }
     return s;
   }
   s = new VarSymbol(astr("_literal_", istr(literal_id++)), dtRetType);
@@ -998,7 +992,7 @@ VarSymbol *new_StringSymbol(const char *str, bool hasVolatileType) {
 }
 
 
-VarSymbol* new_BoolSymbol(bool b, IF1_bool_type size, bool hasVolatileType) {
+VarSymbol* new_BoolSymbol(bool b, IF1_bool_type size) {
   Immediate imm;
   switch (size) {
   case BOOL_SIZE_8  : imm.v_bool = b; break;
@@ -1013,9 +1007,6 @@ VarSymbol* new_BoolSymbol(bool b, IF1_bool_type size, bool hasVolatileType) {
   imm.num_index = INT_SIZE_1;
   VarSymbol *s;
   PrimitiveType* dtRetType = dtBools[size];
-  if (hasVolatileType) {
-    dtRetType = dtBools[size]->volType;
-  }
   s = new VarSymbol(astr("_literal_", istr(literal_id++)), dtRetType);
   rootModule->block->insertAtTail(new DefExpr(s));
   s->immediate = new Immediate;
@@ -1023,7 +1014,7 @@ VarSymbol* new_BoolSymbol(bool b, IF1_bool_type size, bool hasVolatileType) {
   return s;
 }
 
-VarSymbol *new_IntSymbol(int64_t b, IF1_int_type size, bool hasVolatileType) {
+VarSymbol *new_IntSymbol(int64_t b, IF1_int_type size) {
   Immediate imm;
   switch (size) {
   case INT_SIZE_8  : imm.v_int8   = b; break;
@@ -1039,13 +1030,6 @@ VarSymbol *new_IntSymbol(int64_t b, IF1_int_type size, bool hasVolatileType) {
   VarSymbol *s = uniqueConstantsHash.get(&imm);
   PrimitiveType* dtRetType = dtInt[size];
   if (s) {
-    if (hasVolatileType) {
-      dtRetType = dtInt[size]->volType;
-      s = new VarSymbol(astr("_literal_", istr(literal_id++)), dtRetType);
-      rootModule->block->insertAtTail(new DefExpr(s));
-      s->immediate = new Immediate;
-      *s->immediate = imm;
-    }
     return s;
   }
   s = new VarSymbol(astr("_literal_", istr(literal_id++)), dtRetType);
@@ -1056,7 +1040,7 @@ VarSymbol *new_IntSymbol(int64_t b, IF1_int_type size, bool hasVolatileType) {
   return s;
 }
 
-VarSymbol *new_UIntSymbol(uint64_t b, IF1_int_type size, bool hasVolatileType) {
+VarSymbol *new_UIntSymbol(uint64_t b, IF1_int_type size) {
   Immediate imm;
   switch (size) {
   case INT_SIZE_8  : imm.v_uint8   = b; break;
@@ -1072,13 +1056,6 @@ VarSymbol *new_UIntSymbol(uint64_t b, IF1_int_type size, bool hasVolatileType) {
   VarSymbol *s = uniqueConstantsHash.get(&imm);
   PrimitiveType* dtRetType = dtUInt[size];
   if (s) {
-    if (hasVolatileType) {
-      dtRetType = dtUInt[size]->volType;
-      s = new VarSymbol(astr("_literal_", istr(literal_id++)), dtRetType);
-      rootModule->block->insertAtTail(new DefExpr(s));
-      s->immediate = new Immediate;
-      *s->immediate = imm;
-    }
     return s;
   }
   s = new VarSymbol(astr("_literal_", istr(literal_id++)), dtRetType);
@@ -1089,7 +1066,7 @@ VarSymbol *new_UIntSymbol(uint64_t b, IF1_int_type size, bool hasVolatileType) {
   return s;
 }
 
-VarSymbol *new_RealSymbol(const char *n, long double b, IF1_float_type size, bool hasVolatileType) {
+VarSymbol *new_RealSymbol(const char *n, long double b, IF1_float_type size) {
   Immediate imm;
   switch (size) {
   case FLOAT_SIZE_32  : imm.v_float32  = b; break;
@@ -1102,14 +1079,6 @@ VarSymbol *new_RealSymbol(const char *n, long double b, IF1_float_type size, boo
   VarSymbol *s = uniqueConstantsHash.get(&imm);
   PrimitiveType* dtRetType = dtReal[size];
   if (s) {
-    if (hasVolatileType) {
-      dtRetType = dtReal[size]->volType;
-      s = new VarSymbol(astr("_literal_", istr(literal_id++)), dtRetType);
-      rootModule->block->insertAtTail(new DefExpr(s));
-      s->cname = astr(n);
-      s->immediate = new Immediate;
-      *s->immediate = imm;
-    }
     return s;
   }
   s = new VarSymbol(astr("_literal_", istr(literal_id++)), dtRetType);
@@ -1121,7 +1090,7 @@ VarSymbol *new_RealSymbol(const char *n, long double b, IF1_float_type size, boo
   return s;
 }
 
-VarSymbol *new_ImagSymbol(const char *n, long double b, IF1_float_type size, bool hasVolatileType) {
+VarSymbol *new_ImagSymbol(const char *n, long double b, IF1_float_type size) {
   Immediate imm;
   switch (size) {
   case FLOAT_SIZE_32  : imm.v_float32  = b; break;
@@ -1134,14 +1103,6 @@ VarSymbol *new_ImagSymbol(const char *n, long double b, IF1_float_type size, boo
   VarSymbol *s = uniqueConstantsHash.get(&imm);
   PrimitiveType* dtRetType = dtImag[size];
   if (s) {
-    if (hasVolatileType) {
-      dtRetType = dtImag[size]->volType;
-      s = new VarSymbol(astr("_literal_", istr(literal_id++)), dtRetType);
-      rootModule->block->insertAtTail(new DefExpr(s));
-      s->cname = astr(n);
-      s->immediate = new Immediate;
-      *s->immediate = imm;
-    }
     return s;
   }
   s = new VarSymbol(astr("_literal_", istr(literal_id++)), dtRetType);
@@ -1153,7 +1114,7 @@ VarSymbol *new_ImagSymbol(const char *n, long double b, IF1_float_type size, boo
   return s;
 }
 
-VarSymbol *new_ComplexSymbol(const char *n, long double r, long double i, IF1_complex_type size, bool hasVolatileType) {
+VarSymbol *new_ComplexSymbol(const char *n, long double r, long double i, IF1_complex_type size) {
   Immediate imm;
   switch (size) {
   case COMPLEX_SIZE_64: 
@@ -1172,14 +1133,6 @@ VarSymbol *new_ComplexSymbol(const char *n, long double r, long double i, IF1_co
   VarSymbol *s = uniqueConstantsHash.get(&imm);
   PrimitiveType* dtRetType = dtComplex[size];
   if (s) {
-    if (hasVolatileType) {
-      dtRetType = dtComplex[size]->volType;
-      s = new VarSymbol(astr("_literal_", istr(literal_id++)), dtRetType);
-      rootModule->block->insertAtTail(new DefExpr(s));
-      s->cname = astr(n);
-      s->immediate = new Immediate;
-      *s->immediate = imm;
-    }
     return s;
   }
   s = new VarSymbol(astr("_literal_", istr(literal_id++)), dtRetType);
@@ -1243,6 +1196,28 @@ static int tempID = 1;
 
 void resetTempID() {
   tempID = 1;
+}
+
+FlagSet getRecordWrappedFlags(Symbol* s) {
+  static FlagSet mask;
+  if (mask.none()) {
+    // Initialize the function-scope static variable.
+    mask.set(FLAG_ARRAY);
+    mask.set(FLAG_DOMAIN);
+    mask.set(FLAG_DISTRIBUTION);
+  }
+
+  return s->flags & mask;
+}
+
+FlagSet getSyncFlags(Symbol* s) {
+  static FlagSet mask;
+  if (mask.none()) {
+    mask.set(FLAG_SYNC);
+    mask.set(FLAG_SINGLE);
+  }
+
+  return s->flags & mask;
 }
 
 VarSymbol* newTemp(const char* name, Type* type) {

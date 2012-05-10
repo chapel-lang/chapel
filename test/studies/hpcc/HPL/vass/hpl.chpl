@@ -12,7 +12,7 @@ use HPCCProblemSize;
 //
 // Use the distributions we need for this computation
 //
-use d, r, f;
+use DimensionalDist2D, ReplicatedDim, BlockCycDim;
 
 //
 // The number of matrices and the element type of those matrices
@@ -77,14 +77,14 @@ config var reproducible = false, verbose = false;
   // Create individual dimension descriptors
   const
     // block-cyclic for 1st dimension
-    bdim1 = new idist(lowIdx=1, blockSize=blkSize, numLocales=tl1),
+    bdim1 = new BlockCyclicDim(lowIdx=1, blockSize=blkSize, numLocales=tl1),
     // replicated for 1st dimension
-    rdim1 = new vdist(tl1),
+    rdim1 = new ReplicatedDim(tl1),
 
     // block-cyclic for 2nd dimension
-    bdim2 = new idist(lowIdx=1, blockSize=blkSize, numLocales=tl2),
+    bdim2 = new BlockCyclicDim(lowIdx=1, blockSize=blkSize, numLocales=tl2),
     // replicated for 2nd dimension
-    rdim2 = new vdist(tl2);
+    rdim2 = new ReplicatedDim(tl2);
 
   //
   // MatVectSpace is a 2D domain of type indexType that represents the
@@ -97,7 +97,7 @@ config var reproducible = false, verbose = false;
   // We use 'AbD' instead of 'MatVectSpace' throughout.
   //
   const AbD: domain(2, indexType)
-          dmapped DimensionalDist(targetLocales, bdim1, bdim2, "dim")
+          dmapped DimensionalDist2D(targetLocales, bdim1, bdim2, "dim")
           = [1..n, 1..n+1],
         MatrixSpace = AbD[.., ..n];
 
@@ -109,9 +109,9 @@ config var reproducible = false, verbose = false;
   //
   const
     replAD = [1..n, 1..blkSize]
-      dmapped DimensionalDist(targetLocales, bdim1, rdim2, "distBR"),
+      dmapped DimensionalDist2D(targetLocales, bdim1, rdim2, "distBR"),
     replBD = [1..blkSize, 1..n+1]
-      dmapped DimensionalDist(targetLocales, rdim1, bdim2, "distRB");
+      dmapped DimensionalDist2D(targetLocales, rdim1, bdim2, "distRB");
 
   var replA: [replAD] elemType,
       replB: [replBD] elemType;

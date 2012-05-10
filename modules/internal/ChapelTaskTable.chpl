@@ -13,13 +13,20 @@ use DefaultAssociative;
    This code keeps track of tasks, their state, and where they
    spawned from.
 
-   The taks information is used to generate a task report (optionally
+   The task information is used to generate a task report (optionally
    displayed when the user Ctrl+C's out of the program).
 
    The type chpl_taskID_t is a primitve type defined in the include
    files for each tasking layer.
 
 */
+
+// Define a few operations over chpl_taskID_t
+inline proc ==(a: chpl_taskID_t, b: chpl_taskID_t)
+  return __primitive("==", a, b);
+inline proc _cast(type t, x: chpl_taskID_t) where _isPrimitiveType(t)
+  return __primitive("cast", t, x);
+
 
 enum taskState { pending, active, suspended };
 

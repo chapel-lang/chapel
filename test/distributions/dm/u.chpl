@@ -1,6 +1,6 @@
 // various utilites for testing
 
-use d;
+use DimensionalDist2D;
 
 
 /// label the output with "phases" //////////////////////////////////////////

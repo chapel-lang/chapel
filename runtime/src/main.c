@@ -14,6 +14,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <locale.h>
+#include "sys.h"
 
 static const char myFilename[] = 
 #ifdef CHPL_DEVELOPER
@@ -52,16 +53,43 @@ static void recordExecutionCommand(int argc, char *argv[]) {
 }
 
 
+static void chpl_main(void) {
+  // OK, we can create tasks now.
+  chpl_task_setSerial(false);
+
+  // Initialize the internal modules.
+  chpl__init_ChapelStandard(0, myFilename);
+  // Note that in general, module code can contain "on" clauses
+  // and should therefore not be called before the call to
+  // chpl_comm_startPollingTask().
+
+  //
+  // Permit the tasking layer to do anything it would like to now that
+  // the standard modules are initialized.
+  //
+  CHPL_TASK_STD_MODULES_INITIALIZED();
+
+  //
+  // Call the compiler-generated main() routine
+  //
+  chpl_gen_main();
+}
+
+
 int main(int argc, char* argv[]) {
   int32_t execNumLocales;
   int runInGDB;
   int numPollingTasks;
+
+  // Check that we can get the page size.
+  assert( sys_page_size() > 0 );
 
   // Declare that we are 'locale aware' so that
   // UTF-8 functions (e.g. wcrtomb) work as
   // indicated by the locale environment variables.
   setlocale(LC_CTYPE,"");
 
+  chpl_error_init();  // This does local-only initialization
   chpl_comm_init(&argc, &argv);
   chpl_mem_init();
   chpl_comm_post_mem_init();
@@ -90,7 +118,6 @@ int main(int argc, char* argv[]) {
   // number of locales is reasonable
   //
   chpl_comm_verify_num_locales(execNumLocales);
-  chpl_comm_rollcall();
 
   //
   // This just sets all of the initialization predicates to false.
@@ -117,9 +144,11 @@ int main(int argc, char* argv[]) {
                  numPollingTasks, callStackSize); 
 
   //
-  // start communication tasks as necessary
+  // Some comm layer initialization may have to be done after the
+  // tasking layer is initialized.
   //
-  chpl_comm_startPollingTask();
+  chpl_comm_post_task_init();
+  chpl_comm_rollcall();
 
   recordExecutionCommand(argc, argv);
 
@@ -128,15 +157,6 @@ int main(int argc, char* argv[]) {
   // before an attempt is made to run tasks "on" them.
 
   if (chpl_localeID == 0) {      // have locale #0 run the user's main function
-
-    // OK, we can create tasks now.
-    chpl_task_setSerial(false);
-
-    // Initialize the internal modules.
-    chpl__init_ChapelStandard(0, myFilename);
-    // Note that in general, module code can contain "on" clauses
-    // and should therefore not be called before the call to
-    // chpl_comm_startPollingTask().
 
     chpl_task_callMain(chpl_main);
   }

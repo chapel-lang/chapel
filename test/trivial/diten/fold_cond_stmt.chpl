@@ -8,7 +8,7 @@ proc main() {
 }
 
 proc foo(param n: uint) {
-  var j = 0;
+  var j = 0: n.type;
   for param i in 1..n {
     j += i;
   }

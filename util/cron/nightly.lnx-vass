@@ -7,4 +7,4 @@ source ~/.chplcron.dists.cshrc && ~/chapel/util/cron/nightly -cron -dist block >
 set date = `date +%Y-%m-%d`
 
 # run memleaks regressions
-source ~/.chplcron.memleaks.cshrc && ~/chapel/util/cron/nightly -cron -memleaks -examples memleaks.$date.nightly.log >&! ~/tmp/nightly.memleaks.out
+source ~/.chplcron.memleaks.cshrc && ~/chapel/util/cron/nightly -cron -examples -memleaks memleaks.$date.nightly.log >&! ~/tmp/nightly.memleaks.out

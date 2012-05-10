@@ -4,4 +4,4 @@
 4.4 + 4.4i
 5.5 + 5.5i
 6.6 - 6.6i
-freadComplex.chpl:7: error: Unhandled system error: bad format (1002) in channel.read(inout a:complex) with path freadComplex.txt offset 79
+freadComplex.chpl:7: error: bad format in channel.read(inout a:complex(128)) with path "freadComplex.txt" offset 79

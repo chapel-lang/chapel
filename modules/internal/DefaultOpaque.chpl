@@ -67,9 +67,17 @@ proc DefaultOpaqueDom.dsiSerialWrite(f: Writer) {
   adomain.dsiSerialWrite(f);
 }
 
+proc DefaultOpaqueDom.dsiSerialRead(f: Reader) {
+  adomain.dsiSerialRead(f);
+}
+
 proc DefaultOpaqueArr.dsiSerialWrite(f: Writer) {
   anarray.dsiSerialWrite(f);
 }
+proc DefaultOpaqueArr.dsiSerialRead(f: Reader) {
+  anarray.dsiSerialRead(f);
+}
+
 
 class DefaultOpaqueArr: BaseArr {
   type eltType;

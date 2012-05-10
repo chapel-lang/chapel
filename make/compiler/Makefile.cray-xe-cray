@@ -12,4 +12,4 @@ MODULECMD = /opt/modules/$(MODULE_VERSION)/bin/modulecmd sh
 
 ENSURE_GASNET_COMPATIBLE_COMPILER = eval `$(MODULECMD) swap PrgEnv-cray PrgEnv-gnu` &&
 
-include $(CHAPEL_ROOT)/make/compiler/Makefile.cray-xe
+include $(CHPL_MAKE_HOME)/make/compiler/Makefile.cray-xe

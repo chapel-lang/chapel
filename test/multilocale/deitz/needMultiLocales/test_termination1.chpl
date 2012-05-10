@@ -1,11 +1,13 @@
 use Time;
 
+extern proc printf(x...);
+
 proc main {
   on Locales(1) {
     begin {
       sleep(2);
-      _debugWriteln("executing on locale ", here.id);
+      printf("%s\n", "executing on locale " + here.id);
     }
   }
-  _debugWriteln("executing on locale ", here.id);
+  printf("%s\n", "executing on locale " + here.id);
 }

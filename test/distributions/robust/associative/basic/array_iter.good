@@ -1,5 +1,5 @@
-Serial array iteration (int) : SUCCESS
-Serial array iteration (int) : SUCCESS
+Serial array iteration (int(64)) : SUCCESS
+Serial array iteration (int(64)) : SUCCESS
 Serial array iteration (uint(64)) : SUCCESS
 Serial array iteration (uint(64)) : SUCCESS
 Serial array iteration (real(32)) : SUCCESS

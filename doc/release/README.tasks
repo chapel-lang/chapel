@@ -151,12 +151,7 @@ variables.  To try Qthreads tasking, please take the following steps
 
       unset CHPL_THREADS
 
-3) Build the Qthreads library:
-
-      cd $CHPL_HOME/third-party
-      gmake
-
-4) Follow the "Quick Start" instructions in $CHPL_HOME/README
+3) Follow the "Quick Start" instructions in $CHPL_HOME/README
    to set up, compile and run your Chapel programs.
 
 Please report any apparent bugs in Qthreads tasking to the Chapel team.
@@ -186,12 +181,7 @@ the following steps (sample commands are shown for bash):
 
       unset CHPL_THREADS
 
-3) Build the Nanos++ library:
-
-      cd $CHPL_HOME/third-party
-      gmake nanox
-
-4) Follow the "Quick Start" instructions in $CHPL_HOME/README
+3) Follow the "Quick Start" instructions in $CHPL_HOME/README
    to set up, compile and run your Chapel programs.
 
 Please report any apparent bugs in Nanos++ tasking to the Chapel team.

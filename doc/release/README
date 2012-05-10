@@ -13,10 +13,9 @@ This directory contains the following documentation:
   README.launcher    : using a launcher to get Chapel execution started
   README.multilocale : how to use Chapel with multiple locales
   README.prereqs     : prerequisites for using Chapel
-  README.threads     : explains how Chapel tasks are implemented using threads
+  README.tasks       : explains how Chapel tasks are implemented using threads
 
   platforms/           : platform-specific notes:
-    README.cx-linux    :  Cray CX1/CX1000 (TM) running Linux
     README.cygwin      :  Cygwin
     README.ibm         :  IBM
     README.macosx      :  Mac
@@ -42,7 +41,7 @@ This directory contains the following documentation:
     README.gmp              :  a prototype GMP module
     README.local            :  the 'local' statement
     README.module_search    :  how modules are searched for to fulfill 'use's
-    README.volatile         :  support for volatile types
+    README.io               :  the new I/O system in Chapel
 
 
 --------------------

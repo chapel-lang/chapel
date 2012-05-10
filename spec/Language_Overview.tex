@@ -1,5 +1,7 @@
 \sekshun{Language Overview}
 \label{Language_Overview}
+\index{overview}
+\index{language overview}
 
 Chapel is a new programming language under development at Cray Inc. as
 part of the DARPA High Productivity Computing Systems (HPCS) program
@@ -10,6 +12,8 @@ discussing first the guiding principles behind the design of the
 language and second how to get started with Chapel.
 
 \section{Guiding Principles}
+\label{Guiding_Principles}
+\index{language principles}
 
 The following four principles guided the design of Chapel:
 \begin{enumerate}
@@ -25,6 +29,8 @@ narrow the gulf between high-performance parallel programming
 languages and mainstream programming and scripting languages.
 
 \subsection{General Parallel Programming}
+\label{General_Parallel_Programming}
+\index{language principles!general parallel programming}
 
 First and foremost, Chapel is designed to support general parallel
 programming through the use of high-level language abstractions.
@@ -86,6 +92,8 @@ all of them.  Naturally, Chapel programmers can tune their code to
 more closely match a particular machine's characteristics.
 
 \subsection{Locality-Aware Programming}
+\label{Locality_Aware_Programming}
+\index{language principles!locality-aware programming}
 
 A second principle in Chapel is to allow the user to optionally and
 incrementally specify where data and computation should be placed on
@@ -98,6 +106,8 @@ the programmer on a process-by-process basis via the multiple
 cooperating program instances.
 
 \subsection{Object-Oriented Programming}
+\label{Object_Oriented_Programming}
+\index{language principles!object-oriented programming}
 
 A third principle in Chapel is support for object-oriented
 programming.  Object-oriented programming has been instrumental in
@@ -121,6 +131,8 @@ capabilities.  However, using such libraries does not necessitate
 broader adoption of object-oriented methodologies.
 
 \subsection{Generic Programming}
+\label{Generic_Programming}
+\index{language principles!generic programming}
 
 Chapel's fourth principle is support for generic programming and
 polymorphism.  These features allow code to be written in a style that
@@ -135,6 +147,7 @@ signature rather than by relying on dynamic typing which would result
 in unacceptable runtime overheads for the HPC community.
 
 \section{Getting Started}
+\label{Getting_Started}
 
 A Chapel version of the standard ``hello, world'' computation is as
 follows:

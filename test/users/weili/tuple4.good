@@ -1,2 +1,2 @@
-(int,bool,real)
-((int,bool),real)
+(int(64),bool,real(64))
+((int(64),bool),real(64))

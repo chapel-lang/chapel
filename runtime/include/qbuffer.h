@@ -445,8 +445,9 @@ static inline char* qio_strdup(const char* ptr)
   } \
 }
 
-#define VOID_PTR_DIFF(a,b) (((const char*) (a)) - ((const char*) (b)))
+#define VOID_PTR_DIFF(a,b) (((intptr_t) (a)) - ((intptr_t) (b)))
 #define VOID_PTR_ADD(ptr,amt) ((void*)(((char*) (ptr)) + (amt)))
+#define VOID_PTR_ALIGN(ptr,align) (((uintptr_t)ptr) & (align - 1))
 
 #endif
 

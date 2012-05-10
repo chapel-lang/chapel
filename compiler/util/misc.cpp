@@ -51,7 +51,7 @@ const char* cleanFilename(const char* name) {
 static const char* cleanFilename(BaseAST* ast) {
   ModuleSymbol* mod = ast->getModule();
   if (mod) {
-    return cleanFilename(ast->getModule()->filename);
+    return cleanFilename(ast->fname());
   } else {
     return cleanFilename(yyfilename);
   }
@@ -115,9 +115,9 @@ printDevelErrorHeader(BaseAST* ast) {
         if (err_fn->getModule()->initFn != err_fn &&
             !err_fn->hasFlag(FLAG_TEMP) &&
             !err_fn->hasFlag(FLAG_INLINE) &&
-            err_fn->lineno) {
+            err_fn->linenum()) {
           fprintf(stderr, "%s:%d: In ",
-                  cleanFilename(err_fn), err_fn->lineno);
+                  cleanFilename(err_fn), err_fn->linenum());
           if (!strncmp(err_fn->name, "_construct_", 11)) {
             fprintf(stderr, "constructor '%s':\n", err_fn->name+11);
           } else {
@@ -131,8 +131,8 @@ printDevelErrorHeader(BaseAST* ast) {
   }
 
 
-  if (ast && ast->lineno)
-    fprintf(stderr, "%s:%d: ", cleanFilename(ast), ast->lineno);
+  if (ast && ast->linenum())
+    fprintf(stderr, "%s:%d: ", cleanFilename(ast), ast->linenum());
 
   fprintf(stderr, err_print ? "note: " : err_fatal ? "error: " : "warning: ");
 
@@ -165,8 +165,8 @@ void printCallStack(bool force, bool shortModule, FILE* out) {
     FnSymbol* fn = call->getFunction();
     ModuleSymbol* module = call->getModule();
     fprintf(out, "  %s:%d: %s%s%s\n",
-            (shortModule ? module->name : cleanFilename(module->filename)),
-            call->lineno, toString(fn),
+            (shortModule ? module->name : cleanFilename(fn->fname())),
+            call->linenum(), toString(fn),
             (module->modTag == MOD_INTERNAL ? " [internal module]" : ""),
             (fn->hasFlag(FLAG_TEMP) ? " [compiler-generated]" : ""));
   }
@@ -214,28 +214,44 @@ void handleError(const char *fmt, ...) {
 }
 
 
+static void vhandleError(FILE* file, BaseAST* ast, const char *fmt, va_list args);
+
 void handleError(BaseAST* ast, const char *fmt, ...) {
+  va_list args;
+  va_start(args, fmt);
+  vhandleError(stderr, ast, fmt, args);
+  va_end(args);
+}
+
+void handleError(FILE* file, BaseAST* ast, const char *fmt, ...) {
+  va_list args;
+  va_start(args, fmt);
+  vhandleError(file, ast, fmt, args);
+  va_end(args);
+}
+
+static void vhandleError(FILE* file, BaseAST* ast, const char *fmt, va_list args) {
   if (err_ignore)
     return;
 
-  printDevelErrorHeader(ast);
+  if (file == stderr)
+    printDevelErrorHeader(ast);
 
   if (!err_user && !developer)
     return;
 
-  va_list args;
-  
-  va_start(args, fmt);
-  vfprintf(stderr, fmt, args);
-  va_end(args);
+  vfprintf(file, fmt, args);
 
   if (fPrintIDonError && ast)
-    fprintf(stderr, " [%d]", ast->id);
-  printDevelErrorFooter();
+    fprintf(file, " [%d]", ast->id);
 
-  fprintf(stderr, "\n");
+  if (file == stderr)
+    printDevelErrorFooter();
 
-  printCallStackOnError();
+  fprintf(file, "\n");
+
+  if (file == stderr)
+    printCallStackOnError();
 
   if (exit_immediately && !ignore_errors) {
     clean_exit(1);

@@ -10,10 +10,10 @@ proc main() {
   var nEdges: int;  // represents first line in file -- the number of entries
   var nNodes: int;
 
-  var fin = open(input_file, mode.r).reader();
-  var fout = open("RtsGraph_out.txt", mode.w).writer();
-  var fin2 = open(gen_file, mode.r).reader();
-  var fin3 = open(load_file, mode.r).reader();
+  var fin = open(input_file, iomode.r).reader();
+  var fout = open("RtsGraph_out.txt", iomode.cw).writer();
+  var fin2 = open(gen_file, iomode.r).reader();
+  var fin3 = open(load_file, iomode.r).reader();
 
   var init_tm: real;
   const init_t0 = getCurrentTime();

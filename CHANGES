@@ -3,6 +3,202 @@ Release Changes List
 ====================
 
 =============
+version 1.5.0
+=============
+
+Eighth public release of Chapel, April 19, 2012
+
+
+Highlights (see entries in subsequent categories for details)
+-------------------------------------------------------------
+- completely revamped and improved Chapel's I/O features
+- added support for atomic bool/int/uint variables to Chapel
+- added a version of the LLNL/DARPA LULESH benchmark
+- improved GMP support for integer types
+- added an initial implementation of a 2D Dimensional distribution
+- added Cray XE (TM)-specific tasking/thread/communication layers for
+  the Cray XE module (binary only)
+- updated GASNet from 1.16.2 to 1.18.0 which includes initial ugni support
+- made integers default to 64-bits in most contexts rather than the previous 32-bits
+- numerous performance improvements, bug fixes, and documentation improvements
+
+Environment Changes
+-------------------
+- added support for fish shell users (http://fishshell.com)
+  (see $CHPL_HOME/README and $CHPL_HOME/util/setchplenv.fish)
+
+Semantic Changes / Changes to Chapel Language
+---------------------------------------------
+- completely revamped and improved Chapel's I/O features
+  (see examples/primers/fileIO.chpl, doc/technotes/README.io, I/O spec chapter)
+- added support for atomic bool/int/uint variables to Chapel
+  (see doc/technotes/README.atomics, examples/primers/atomics.chpl)
+- added support for /* ... */-style comments to be nested
+  (e.g., /* in comment! /* in nested comment! */ still in comment! */)
+- made integers default to 64-bits in most contexts rather than the previous 32-bits
+  - integer literals are now of type int(64)/uint(64) by default
+  - the default 'int'/'uint' types now correspond to int(64)/uint(64)
+  - the default idxType for ranges, domains, and arrays is now int(64)
+  - a number of locale-oriented capabilities now use/return 64-bit ints:
+    - numLocales, LocaleSpace, locale.id
+    - locale.numCores, locale.callStackSize
+    - numThreadsPerLocale, maxThreadsPerLocale
+    - locale.*Threads(), locale.*tasks()
+- the 'by' and '#' operators now accept int(w)/uint(w) args for w-bit idxTypes
+- param arguments now play a role in disambiguation between function overloads
+  (see the 'Function Resolution' section in the Chapel language specification)
+
+Newly Implemented Features
+--------------------------
+- added an initial implementation of a 2D Dimensional distribution
+  (see examples/primers/distributions.chpl)
+- added support for reading arrays, domains, ranges, and tuples
+  (e.g., var A:[1..10] real;  read(A); )
+- added support for an iterator's arguments to have intents
+- added a new getCommDiagnosticsHere() routine for querying local communications
+  (see doc/technotes/README.comm-diagnostics)
+
+Deprecated Features
+-------------------
+- removed support for tensor iteration from the Chapel compiler
+  (e.g., 'forall (i,j) in [foo(), bar()]' no longer supported; use nested loop)
+- removed volatile types in favor of atomic types
+- removed the ability to use 'def' to define functions; use 'proc' or 'iter' now
+
+Standard Modules
+----------------
+- improved GMP support for integer types
+  (see doc/technotes/README.gmp)
+- changed sgn() in Math.chpl to return an int(8)/uint(8)
+
+Documentation
+-------------
+- major updates to the I/O chapter of the spec to reflect new capabilities
+- added a new technical note describing support for atomic types
+  (doc/technotes/README.atomics)
+- revamped technical notes for I/O and GMP to reflect revamped features
+  (doc/technotes/README.io, doc/technotes/README.gmp)
+- minor updates to several other chapters of the language specification
+- minor fixes and updates to several READMEs
+
+Example Codes
+-------------
+- added a version of the LLNL/DARPA LULESH benchmark
+  (see examples/benchmarks/lulesh/README)
+- numerous updates to the Chapel version of SSCA#2
+  - store visited children in forward pass to avoid recomputing in backwards
+  - use hand-coded task-private variables to store private variables
+  - replaced arrays of sync vars with arrays of atomics in most instances
+  - fixed a number of on-clauses that referred to a poor choice of locale
+  (see examples/benchmarks/ssca2/README)
+- updated hpcc/hpl.chpl to use Dimensional distributions and replicated storage
+- moved ssca2 and hpcc examples into a new benchmarks/ subdirectory
+- fixed some bugs in hpcc/hpl.chpl
+- in ra.chpl, copied manual optimizations from timed loop into verification loop
+- updated the arrays.chpl primer to deprecate tensors and improve explanations
+
+Platform-specific Notes
+-----------------------
+
+- added Cray XE-specific tasking/thread/communication layers to the
+  Cray XE module (available using 'module load chapel', see
+  doc/platforms/README.xe-cle-system-specific-layers)
+- fixed GASNet executions on Mac OS X Lion
+
+- generated C identifier lengths are now capped to avoid PGI warnings
+
+Compiler Flags
+--------------
+- added --max-c-ident-len to cap the length of C identifiers in generated code
+
+Error Message Improvements
+--------------------------
+- in most contexts, the compiler now prints out a fully-specified type
+  (e.g., where before it printed 'int', it now prints 'int(64)')
+- line number reporting has been improved in certain cases
+
+Bug Fixes / New Semantic Checks (for old semantics)
+---------------------------------------------------
+- added a compile-time error for incorrect domain slicing cases
+- fixed an issue in which users couldn't use 'this' as an identifier
+- fixed the ability to delete an object located on a remote locale
+- fixed a non-deterministic seg fault for parent classes with types/params only
+- fixed a race condition in the implementation of halt()
+- fixed an issue in which a .exe filename could not be specified using -o
+- the --explain-calls flag now properly displays 'param' intents as such
+- protected a user's ability to name variables j0, j1, jn, y0, yn
+
+Performance Improvements
+------------------------
+- changed array/domain reference counting to use atomics rather than syncs
+- made Chapel allocation/free routines inline to reduce overheads
+- optimized local on-clauses to reduce overheads by avoiding chpl_comm_fork()
+- optimized bulk transfers for Block-distributed arrays that share a domain
+- optimized the creation of simple Block- and Cyclic- array aliases
+
+Runtime Library Changes
+-----------------------
+- no longer count communication threads against numThreadsPerLocale for pthreads
+- removed assumption that globals in generated code will have identical addrs
+- added support for keeping builds for multiple GASNet segments in one tree
+- moved most Chapel module initialization from main() to first task
+- simplified the tcmalloc memory layer to support use with GASNet
+- added dlmalloc support for communication layers other than GASNet-fast
+- broke GASNet AM_signal handler request/reply to use short messages
+- fixed a bug in which non-blocking gets could seg-fault
+- simplified the initialization and shutdown of the communication layer
+- fixed a potential race in broadcasts at program startup
+
+Third-Party Software Changes
+----------------------------
+- updated GASNet from 1.16.2 to 1.18.0 which includes initial ugni support
+- made third-party packages build automatically when needed by the runtime
+- updated Qthreads from version 1.7.0 to 1.7.1
+- added support for a UTF-8 decoder from Bjoern Hoehrmann for use in the new I/O
+- added support for Nanos++ tasking to yield when firing off an active message
+- added support for the 'serial' statement to Nanos++ tasking layer
+- turned off tcmalloc's tendency to print messages for large allocations
+
+Testing System
+--------------
+- added the ability for a skipf file to check for substrings in an env. variable
+- fixed several bugs in the testing system:
+  - when using named .good files in compopts files
+  - when using multiple compopts files and no execopts files
+  - in the generation of perforamnce data filenames
+- condensed how compilation/execution options are identified in testing logs
+- added a --logtmp flag to start_test to support single-node parallelism
+
+Internal/Developer-oriented
+---------------------------
+- fixed an issue in which internal modules resulted in too many circularities
+- changed module initialization code so that modules initialize those they use
+- added a pragma to control implicit inclusion of ChapelStandard.chpl
+- added support for automatically mapping external C types to Chapel types
+- added the ability to dump the compiler IR using a text-file format
+- added filenames back into the BaseAST class to preserve info during inlining
+- added chpl__unsignedType(), chpl__maxIntTypeSameSign() utility functions
+- added a typeToString() overload to catch common error cases
+- removed debugWrite* capability
+- fixed a bug in the compiler's basic block analysis framework
+- made existing tests much less sensitive to ordering of output
+- added a --[no-]preserve-inlined-line-numbers flag to control inlining behavior
+- added a "no instantiation limit" pragma/flag to the compiler
+- added an isParameter() method to the ArgSymbol class
+- removed strcmps against types to normalize scalar type queries (e.g., int(?w))
+- made several refactorings to functionResolution.cpp
+- refactored common flag queries into helper query functions
+- refactored creation of wrapper functions
+- fixed get_int()/get_uint() to avoid reliance on underspecified C int sizes
+- made external classes less like Chapel classes within the Chapel compiler
+- cleaned up the memory tracking enums associated with the communication layer
+- removed chpl_error_noexit primitive
+- added code to trace through the disambiguation logic of function resolution
+- refactored Makefiles, replacing CHAPEL_ROOT with CHPL_MAKE_HOME
+- made third-party/*/Makefile rules more consistent
+
+
+=============
 version 1.4.0
 =============
 

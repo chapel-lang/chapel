@@ -423,7 +423,7 @@ void codegen_makefile(fileinfo* mainfile, fileinfo *gpusrcfile) {
   const char* strippedExeFilename = stripdirectories(executableFilename);
   const char* exeExt = "";
 
-  fprintf(makefile.fptr, "CHAPEL_ROOT = %s\n\n", CHPL_HOME);
+  fprintf(makefile.fptr, "CHPL_MAKE_HOME = %s\n\n", CHPL_HOME);
   fprintf(makefile.fptr, "TMPDIRNAME = %s\n", tmpDirName);
 
   if (fLibraryCompile) {
@@ -483,9 +483,9 @@ void codegen_makefile(fileinfo* mainfile, fileinfo *gpusrcfile) {
   if (developer && saveCDir[0] && !printCppLineno) {
     fprintf(makefile.fptr,
             "-@which $(CHPL_TAGS_UTIL) > /dev/null 2>&1 && "
-            "test -f $(CHAPEL_ROOT)/runtime/$(CHPL_TAGS_FILE) && "
+            "test -f $(CHPL_MAKE_HOME)/runtime/$(CHPL_TAGS_FILE) && "
             "cd %s && "
-            "cp $(CHAPEL_ROOT)/runtime/$(CHPL_TAGS_FILE) . && "
+            "cp $(CHPL_MAKE_HOME)/runtime/$(CHPL_TAGS_FILE) . && "
             "$(CHPL_TAGS_UTIL) $(CHPL_TAGS_FLAGS) $(CHPL_TAGS_APPEND_FLAG) *.c *.h",
             saveCDir);
   }
@@ -503,14 +503,24 @@ void codegen_makefile(fileinfo* mainfile, fileinfo *gpusrcfile) {
   for (int i=0; i<numLibFlags; i++)
     fprintf(makefile.fptr, " %s", libFlag[i]);
   fprintf(makefile.fptr, "\n");
+
+  // MPF - we want to allow the runtime to make use of debug/optimize information
+  if (debugCCode) {
+    fprintf(makefile.fptr, "DEBUG = 1\n");
+  }
+  if (optimizeCCode) {
+    fprintf(makefile.fptr, "OPTIMIZE = 1\n");
+  }
   fprintf(makefile.fptr, "\n");
+  fprintf(makefile.fptr, "\n");
+
   if (!fLibraryCompile) {
-    fprintf(makefile.fptr, "include $(CHAPEL_ROOT)/runtime/etc/Makefile.exe\n");
+    fprintf(makefile.fptr, "include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.exe\n");
   } else {
     if (fLinkStyle == LS_DYNAMIC)
-      fprintf(makefile.fptr, "include $(CHAPEL_ROOT)/runtime/etc/Makefile.shared\n");
+      fprintf(makefile.fptr, "include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.shared\n");
     else
-      fprintf(makefile.fptr, "include $(CHAPEL_ROOT)/runtime/etc/Makefile.static\n");
+      fprintf(makefile.fptr, "include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.static\n");
   }
   fprintf(makefile.fptr, "\n");
   genCFileBuildRules(makefile.fptr);
@@ -591,9 +601,12 @@ void setupModulePaths(void) {
   intModPath.add(astr(CHPL_HOME, "/modules/internal/", CHPL_THREADS));
   intModPath.add(astr(CHPL_HOME, "/modules/internal/", CHPL_TASKS));
   intModPath.add(astr(CHPL_HOME, "/modules/internal"));
+  stdModPath.add(astr(CHPL_HOME, "/modules/standard/gen/", CHPL_TARGET_PLATFORM,
+                      "-", CHPL_TARGET_COMPILER));
   stdModPath.add(astr(CHPL_HOME, "/modules/standard"));
   stdModPath.add(astr(CHPL_HOME, "/modules/layouts"));
   stdModPath.add(astr(CHPL_HOME, "/modules/dists"));
+  stdModPath.add(astr(CHPL_HOME, "/modules/dists/dims"));
   const char* envvarpath = getenv("CHPL_MODULE_PATH");
   if (envvarpath) {
     char path[FILENAME_MAX+1];

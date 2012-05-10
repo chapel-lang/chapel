@@ -12,33 +12,24 @@ endif
 # include the standard Chapel Makefile.base
 #
 
-CHAPEL_ROOT = $(RUNTIME_ROOT)/..
-CHAPEL_SUBDIR = runtime/$(RUNTIME_SUBDIR)
+# CHAPEL_SUBDIR = runtime/$(RUNTIME_SUBDIR)
 
 ifneq ($(MAKE_LAUNCHER),1)
 CHPL_MAKE_HOST_TARGET = --target
 endif
-include $(CHAPEL_ROOT)/make/Makefile.base
+include $(RUNTIME_ROOT)/../make/Makefile.base
 
-RUNTIME_INCLUDE_ROOT = $(RUNTIME_ROOT)/include
 
 LAUNCHER_CFLAGS = $(RUNTIME_CFLAGS) -DLAUNCHER
-LAUNCHER_INCLS = -I$(RUNTIME_ROOT)/include/comp-$(CHPL_MAKE_HOST_COMPILER) -I$(RUNTIME_ROOT)/include/$(subst -sim,,$(CHPL_MAKE_HOST_PLATFORM)) -I$(RUNTIME_ROOT)/include
+LAUNCHER_INCLS = \
+        -I$(RUNTIME_ROOT)/include/comp-$(CHPL_MAKE_HOST_COMPILER) \
+        -I$(RUNTIME_ROOT)/include/$(subst -sim,,$(CHPL_MAKE_HOST_PLATFORM)) \
+        -I$(RUNTIME_ROOT)/include/comm/$(CHPL_MAKE_COMM) \
+        -I$(RUNTIME_ROOT)/include
 
-RUNTIME_CFLAGS += \
-	-DCHPL_TASKS_MODEL_H=\"tasks-$(CHPL_MAKE_TASKS).h\" \
-        -DCHPL_THREADS_MODEL_H=\"threads-$(CHPL_MAKE_THREADS).h\"
-
-RUNTIME_INCLS = \
-	-I. \
-	-I$(RUNTIME_INCLUDE_ROOT)/comm/$(CHPL_MAKE_COMM) \
-	-I$(RUNTIME_INCLUDE_ROOT)/tasks/$(CHPL_MAKE_TASKS) \
-	-I$(RUNTIME_INCLUDE_ROOT)/threads/$(CHPL_MAKE_THREADS) \
-	-I$(RUNTIME_INCLUDE_ROOT)/comp-$(CHPL_MAKE_COMPILER) \
-	-I$(RUNTIME_INCLUDE_ROOT)/$(subst -sim,,$(CHPL_MAKE_TARGET_PLATFORM)) \
-	-I$(RUNTIME_INCLUDE_ROOT) \
-	-I$(RUNTIME_INCLUDE_ROOT)/atomics/$(CHPL_MAKE_ATOMICS) \
-
+# Get runtime headers and required -D flags.
+# sets RUNTIME_INCLUDE_ROOT RUNTIME_CFLAGS RUNTIME_INCLS
+include $(RUNTIME_ROOT)/make/Makefile.runtime.include
 
 RUNTIME_OBJ_DIR = ./$(RUNTIME_OBJDIR)
 RUNTIME_OBJ_DIR_STAMP = $(RUNTIME_OBJ_DIR)/.timestamp

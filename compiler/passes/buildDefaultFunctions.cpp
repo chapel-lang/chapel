@@ -193,7 +193,7 @@ static void build_getter(ClassType* ct, Symbol *field) {
     fn->insertAtTail(new CallExpr(PRIM_RETURN, new CallExpr(PRIM_GET_MEMBER, new SymExpr(_this), new SymExpr(new_StringSymbol(field->name)))));
   DefExpr* def = new DefExpr(fn);
   ct->symbol->defPoint->insertBefore(def);
-  reset_line_info(fn, field->lineno);
+  reset_ast_loc(fn, field);
   normalize(fn);
   ct->methods.add(fn);
   fn->addFlag(FLAG_METHOD);
@@ -203,7 +203,7 @@ static void build_getter(ClassType* ct, Symbol *field) {
 }
 
 
-static FnSymbol* chpl_main_exists(void) {
+static FnSymbol* chpl_gen_main_exists(void) {
   FnSymbol* match = NULL;
   ModuleSymbol* matchMod = NULL;
   ModuleSymbol* module = NULL;
@@ -248,7 +248,7 @@ static void build_chpl_entry_points(void) {
   //                                                                          
   // chpl_user_main is the (user) programmatic portion of the app             
   //                                                                          
-  FnSymbol* chpl_user_main = chpl_main_exists();                              
+  FnSymbol* chpl_user_main = chpl_gen_main_exists();                              
 
   if (fLibraryCompile) {
     if (chpl_user_main)                                                       
@@ -298,33 +298,34 @@ static void build_chpl_entry_points(void) {
   chpl_user_main->cname = "chpl_user_main";
 
   //
-  // chpl_main accounts for the initialization and memory tracking of
-  // the code
+  // chpl_gen_main is the entry point for the compiler-generated cdoe.
+  // It accounts for the initialization and memory tracking of the
+  // code
   //
-  chpl_main = new FnSymbol("chpl_main");
-  chpl_main->cname = "chpl_main";
-  chpl_main->retType = dtVoid;
-  chpl_main->addFlag(FLAG_EXPORT);  // chpl_main is always exported.
-  chpl_main->addFlag(FLAG_TEMP);
-  mainModule->block->insertAtTail(new DefExpr(chpl_main));
-  normalize(chpl_main);
+  chpl_gen_main = new FnSymbol("chpl_gen_main");
+  chpl_gen_main->cname = "chpl_gen_main";
+  chpl_gen_main->retType = dtVoid;
+  chpl_gen_main->addFlag(FLAG_EXPORT);  // chpl_gen_main is always exported.
+  chpl_gen_main->addFlag(FLAG_TEMP);
+  mainModule->block->insertAtTail(new DefExpr(chpl_gen_main));
+  normalize(chpl_gen_main);
 
   if (!fLibraryCompile) {
-    SET_LINENO(chpl_main);
-    chpl_main->insertAtHead(new CallExpr("main"));
+    SET_LINENO(chpl_gen_main);
+    chpl_gen_main->insertAtHead(new CallExpr("main"));
   }
 
   // We have to initialize the main module explicitly.
   // It will initialize all the modules it uses, recursively.
-  chpl_main->insertAtHead(new CallExpr(mainModule->initFn));
+  chpl_gen_main->insertAtHead(new CallExpr(mainModule->initFn));
 
   VarSymbol* endCount = newTemp("_endCount");
-  chpl_main->insertAtHead(new CallExpr("chpl_startTrackingMemory"));
-  chpl_main->insertAtHead(new CallExpr(PRIM_SET_END_COUNT, endCount));
-  chpl_main->insertAtHead(new CallExpr(PRIM_MOVE, endCount, new CallExpr("_endCountAlloc")));
-  chpl_main->insertAtHead(new DefExpr(endCount));
-  chpl_main->insertBeforeReturn(new CallExpr("_waitEndCount"));
-  //chpl_main->insertBeforeReturn(new CallExpr("_endCountFree", endCount));
+  chpl_gen_main->insertAtHead(new CallExpr("chpl_startTrackingMemory"));
+  chpl_gen_main->insertAtHead(new CallExpr(PRIM_SET_END_COUNT, endCount));
+  chpl_gen_main->insertAtHead(new CallExpr(PRIM_MOVE, endCount, new CallExpr("_endCountAlloc")));
+  chpl_gen_main->insertAtHead(new DefExpr(endCount));
+  chpl_gen_main->insertBeforeReturn(new CallExpr("_waitEndCount"));
+  //chpl_gen_main->insertBeforeReturn(new CallExpr("_endCountFree", endCount));
 }
 
 static void build_record_equality_function(ClassType* ct) {
@@ -350,7 +351,7 @@ static void build_record_equality_function(ClassType* ct) {
   fn->insertAtTail(new CallExpr(PRIM_RETURN, gTrue));
   DefExpr* def = new DefExpr(fn);
   ct->symbol->defPoint->insertBefore(def);
-  reset_line_info(def, ct->symbol->lineno);
+  reset_ast_loc(def, ct->symbol);
   normalize(fn);
 }
 
@@ -378,7 +379,7 @@ static void build_record_inequality_function(ClassType* ct) {
   fn->insertAtTail(new CallExpr(PRIM_RETURN, gFalse));
   DefExpr* def = new DefExpr(fn);
   ct->symbol->defPoint->insertBefore(def);
-  reset_line_info(def, ct->symbol->lineno);
+  reset_ast_loc(def, ct->symbol);
   normalize(fn);
 }
 
@@ -448,7 +449,7 @@ static void build_enum_cast_function(EnumType* et) {
   // are automatically inserted to handle implicit coercions
   //
   baseModule->block->insertAtTail(def);
-  reset_line_info(def, et->symbol->lineno);
+  reset_ast_loc(def, et->symbol);
   normalize(fn);
 
   // string to enumerated type cast function
@@ -479,7 +480,7 @@ static void build_enum_cast_function(EnumType* et) {
   // are automatically inserted to handle implicit coercions
   //
   baseModule->block->insertAtTail(def);
-  reset_line_info(def, et->symbol->lineno);
+  reset_ast_loc(def, et->symbol);
   normalize(fn);
 }
 
@@ -496,7 +497,7 @@ static void build_enum_assignment_function(EnumType* et) {
   fn->insertAtTail(new CallExpr(PRIM_RETURN, arg2));
   DefExpr* def = new DefExpr(fn);
   et->symbol->defPoint->insertBefore(def);
-  reset_line_info(def, et->symbol->lineno);
+  reset_ast_loc(def, et->symbol);
   normalize(fn);
 }
 
@@ -531,7 +532,7 @@ static void build_record_assignment_function(ClassType* ct) {
   fn->insertAtTail(new CallExpr(PRIM_RETURN, arg1));
   DefExpr* def = new DefExpr(fn);
   ct->symbol->defPoint->insertBefore(def);
-  reset_line_info(def, ct->symbol->lineno);
+  reset_ast_loc(def, ct->symbol);
   normalize(fn);
 }
 
@@ -554,7 +555,7 @@ static void build_record_cast_function(ClassType* ct) {
   fn->insertAtTail(new CallExpr(PRIM_RETURN, ret));
   DefExpr* def = new DefExpr(fn);
   ct->symbol->defPoint->insertBefore(def);
-  reset_line_info(def, ct->symbol->lineno);
+  reset_ast_loc(def, ct->symbol);
   normalize(fn);
 }
 
@@ -583,7 +584,7 @@ static void build_union_assignment_function(ClassType* ct) {
   fn->insertAtTail(new CallExpr(PRIM_RETURN, arg1));
   DefExpr* def = new DefExpr(fn);
   ct->symbol->defPoint->insertBefore(def);
-  reset_line_info(def, ct->symbol->lineno);
+  reset_ast_loc(def, ct->symbol);
   normalize(fn);
 }
 
@@ -607,7 +608,7 @@ static void build_record_copy_function(ClassType* ct) {
   fn->insertAtTail(new CallExpr(PRIM_RETURN, call));
   DefExpr* def = new DefExpr(fn);
   ct->symbol->defPoint->insertBefore(def);
-  reset_line_info(def, ct->symbol->lineno);
+  reset_ast_loc(def, ct->symbol);
   normalize(fn);
 }
 
@@ -647,13 +648,34 @@ static void build_record_hash_function(ClassType *ct) {
   }
   DefExpr *def = new DefExpr(fn);
   ct->symbol->defPoint->insertBefore(def);
-  reset_line_info(def, ct->symbol->lineno);
+  reset_ast_loc(def, ct->symbol);
   normalize(fn);
 }
 
 static void buildDefaultReadWriteFunctions(ClassType* ct) {
-  // Always make readThis/writeThis if they don't exist.
-  if (! function_exists("writeThis", 3, dtMethodToken, ct, dtWriter)) {
+  bool hasReadWriteThis = false;
+  bool hasReadThis = false;
+  bool hasWriteThis = false;
+  bool makeReadThisAndWriteThis = true;
+
+  // If we have a readWriteThis, we'll call it from readThis/writeThis.
+  if (function_exists("readWriteThis", 3, dtMethodToken, ct, NULL)) {
+    hasReadWriteThis = true;
+  }
+  // We'll make a writeThis and a readThis if neither exist.
+  // If only one exists, we leave just one (as some types
+  // can be written but not read, for example).
+  if (function_exists("writeThis", 3, dtMethodToken, ct, dtWriter)) {
+    hasWriteThis = true;
+    makeReadThisAndWriteThis = false;
+  }
+  if (function_exists("readThis", 3, dtMethodToken, ct, dtReader)) {
+    hasReadThis = true;
+    makeReadThisAndWriteThis = false;
+  }
+
+  // Make writeThis if we have neither writeThis nor readThis.
+  if ( makeReadThisAndWriteThis && ! hasWriteThis ) {
     FnSymbol* fn = new FnSymbol("writeThis");
     fn->cname = astr("_auto_", ct->symbol->name, "_write");
     fn->_this = new ArgSymbol(INTENT_BLANK, "this", ct);
@@ -664,35 +686,41 @@ static void buildDefaultReadWriteFunctions(ClassType* ct) {
     fn->insertFormalAtTail(fileArg);
     fn->retType = dtVoid;
 
-    fn->insertAtTail(new CallExpr(buildDotExpr(fileArg, "writeThisDefaultImpl"), fn->_this));
+    if( hasReadWriteThis ) {
+      fn->insertAtTail(new CallExpr(buildDotExpr(fn->_this, "readWriteThis"), fileArg));
+    } else {
+      fn->insertAtTail(new CallExpr(buildDotExpr(fileArg, "writeThisDefaultImpl"), fn->_this));
+    }
 
     DefExpr* def = new DefExpr(fn);
     ct->symbol->defPoint->insertBefore(def);
     fn->addFlag(FLAG_METHOD);
-    reset_line_info(def, ct->symbol->lineno);
+    reset_ast_loc(def, ct->symbol);
     normalize(fn);
     ct->methods.add(fn);
   }
-  if (!function_exists("readType", 3, dtMethodToken, dtReader, ct)) {
-    FnSymbol* fn = new FnSymbol("readType");
+  if ( makeReadThisAndWriteThis && ! hasReadThis ) {
+    FnSymbol* fn = new FnSymbol("readThis");
     fn->cname = astr("_auto_", ct->symbol->name, "_read");
-    ArgSymbol* arg = new ArgSymbol(INTENT_INOUT, "x", ct);
-    arg->markedGeneric = true;
-    fn->_this = new ArgSymbol(INTENT_BLANK, "this", dtReader);
+    fn->_this = new ArgSymbol(INTENT_BLANK, "this", ct);
     fn->_this->addFlag(FLAG_ARG_THIS);
+    ArgSymbol* fileArg = new ArgSymbol(INTENT_BLANK, "f", dtReader);
     fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
     fn->insertFormalAtTail(fn->_this);
-    fn->insertFormalAtTail(arg);
-    fn->retType = dtBool;
+    fn->insertFormalAtTail(fileArg);
+    fn->retType = dtVoid;
 
-    CallExpr* call = new CallExpr(buildDotExpr(fn->_this, "readThisDefaultImpl"), arg);
-    fn->insertAtTail(new CallExpr(PRIM_RETURN, call));
+    if( hasReadWriteThis ) {
+      fn->insertAtTail(new CallExpr(buildDotExpr(fn->_this, "readWriteThis"), fileArg));
+    } else {
+      fn->insertAtTail(new CallExpr(buildDotExpr(fileArg, "readThisDefaultImpl"), fn->_this));
+    }
 
     DefExpr* def = new DefExpr(fn);
     ct->symbol->defPoint->insertBefore(def);
     // ? ct->methods.add(fn) ? in old code
     fn->addFlag(FLAG_METHOD);
-    reset_line_info(def, ct->symbol->lineno);
+    reset_ast_loc(def, ct->symbol);
     normalize(fn);
     ct->methods.add(fn);
   }
@@ -726,7 +754,7 @@ static void buildStringCastFunction(EnumType* et) {
   // are automatically inserted to handle implicit coercions
   //
   baseModule->block->insertAtTail(def);
-  reset_line_info(def, et->symbol->lineno);
+  reset_ast_loc(def, et->symbol);
   normalize(fn);
 }
 

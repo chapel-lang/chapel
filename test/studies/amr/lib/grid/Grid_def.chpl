@@ -108,7 +108,7 @@ class Grid {
     for d in dimensions do inner_location(d) = loc1d.inner;
 
     var ghost_domain: domain(dimension, stridable=true);
-    for loc in (loc1d.below .. loc1d.above by 2)**dimension {
+    for loc in (loc1d.below:int .. loc1d.above by 2)**dimension {
       if loc != inner_location {
         for d in dimensions {
           if loc(d) == loc1d.below then 
@@ -281,7 +281,7 @@ proc Grid.xValue (point_index: dimension*int) {
 
 proc readGrid(file_name: string) {
 
-  var input_file = open(file_name, mode.r).reader();
+  var input_file = open(file_name, iomode.r).reader();
 
   var dim_in: int;
   input_file.readln(dim_in);
@@ -323,7 +323,7 @@ proc readGrid(file_name: string) {
 
 proc setOutputTimes (file_name: string) {
 
-  var input_file = open(file_name, mode.r).reader();
+  var input_file = open(file_name, iomode.r).reader();
 
   var initial_time, final_time: real;
   var n_output: int;

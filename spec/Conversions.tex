@@ -1,5 +1,6 @@
 \sekshun{Conversions}
 \label{Conversions}
+\index{conversions}
 
 A \emph{conversion} converts an expression of one type to another type,
 possibly changing its value.
@@ -107,8 +108,8 @@ lose precision in these cases. The largest real and complex types
 are chosen to retain precision as often as as possible.
 \end{rationale}
 
-\index{conversions!bool}
-\index{conversions!implicit!bool}
+\index{conversions!boolean}
+\index{conversions!implicit!boolean}
 Any boolean type can be implicitly converted to any other boolean type,
 retaining the boolean value.
 Any boolean type can be implicitly converted to any integral type
@@ -180,19 +181,17 @@ explicitly-sized counterparts.
 \index{conversions!numeric!parameter}
 \index{conversions!implicit!parameter}
 
-The following two implicit conversions of parameters are allowed:
+The following implicit conversion of a parameter is allowed:
 \begin{itemize}
-\item A parameter of type \chpl{int(32)} can be implicitly converted
-to \chpl{int(8)}, \chpl{int(16)}, or any unsigned integral type if the
-value of the parameter is within the range of the target type.
 \item A parameter of type \chpl{int(64)} can be implicitly converted
-to \chpl{uint(64)} if the value of the parameter is nonnegative.
+to \chpl{int(8)}, \chpl{int(16)}, \chpl{int(32)}, or any unsigned integral type if the
+value of the parameter is within the range of the target type.
 \end{itemize}
 
 \subsection{Implicit Statement Bool Conversions}
 \label{Implicit_Statement_Bool_Conversions}
-\index{conversions!bool!in a statement}
-\index{conversions!implicit!bool}
+\index{conversions!boolean!in a statement}
+\index{conversions!implicit!boolean}
 
 In the condition of an if-statement, while-loop, and do-while-loop,
 the following implicit conversions to \chpl{bool} are supported:
@@ -217,8 +216,8 @@ The explicit conversions are a superset of the implicit conversions.
 \index{conversions!numeric}
 \index{conversions!explicit!numeric}
 
-Explicit conversions are allowed from any numeric type, bool, or
-string to any other numeric type, bool, or string.  
+Explicit conversions are allowed from any numeric type, boolean, or
+string to any other numeric type, boolean, or string.  
 
 % A valid \chpl{bool} value behaves like a single unsigned bit.  
 When a \chpl{bool} is converted to a \chpl{bool}, \chpl{int}
@@ -349,8 +348,8 @@ to \chpl{D}.
 
 \subsection{Explicit Record Conversions}
 \label{Explicit_Record_Conversions}
-\index{conversions!record}
-\index{conversions!explicit!record}
+\index{conversions!records}
+\index{conversions!explicit!records}
 
 An expression of record type \chpl{C} can be explicitly converted to
 another record type \chpl{D} provided that \chpl{C} is derived

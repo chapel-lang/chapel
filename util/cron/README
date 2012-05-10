@@ -1,21 +1,26 @@
-chap01 : linux64 correctness
-chap02 : qthreads (none + gasnet)
-chap03 : linux64 performance
-chap04 : mpi
+CF machines
+===========
+chap01 : linux64 (comm none, default everything)
+chap02 : qthreads (comm none examples, gasnet multilocale-examples)
+chap03 : linux64 performance (comm none, default everything)
+chap04 : mpi examples
 chap05 : --no-local
 chap06 : --baseline
-chap07 : cyclic
+chap07 : tcmalloc (comm none, gasnet multilocale-examples)
 chap08 : XMT
-chap09 : valgrind
-chap10 : gasnet
-chpbld01 : XT/XE PrgEnvs
-chpbld02 : unused (parallel performance testing planned)
-gold: 32-bit linux
-lnx-vass : block, memory leaks
-lnx-hilde : nanox (none + gasnet)
-lnx-bradc : release testing, performance, token count, tab check
-macchapel-mac : mac (currently waiting for replacement Mac)
-(windows laptop) : cygwin
+chap09 : valgrind (comm none)
+chap10 : gasnet (segment everything, segment fast)
+chpbld01 : XT/XE PrgEnvs examples, nightly
+chpbld02 : XT/XE PrgEnvs all, weekly
+cflbs32: 32-bit linux (comm none, default everything)
 
+Seattle machines
+================
+bradc-lnx : 11pm update of ~chapelu/chapel, release testing, linxu64 performance, token count, tab check
+lnx-vass : block, memory leaks
+lnx-hilde : nanox (comm none examples, gasnet multilocale-examples)
+lnx-sung: cyclic
+macchapel-mac : mac (still a bit fishy)
+(windows laptop) : cygwin (typical windows network weirdness)
 
 stale : opts testing (used to run on chap02 -- see nightly.week*.chap02

@@ -19,4 +19,4 @@ for using Chapel:
   compile our code using gcc/g++, and have used the following versions
   at various times on various platforms: egcs-2.91.66, 3.3.3, 3.3.4,
   3.4.4, 4.0.1, 4.1.1, 4.1.2, 4.2.0, 4.4.1.  We have also compiled our
-  code using compilers by Cray, IBM, Intel, PGI, and Pathscale.
+  code using compilers by Cray, IBM, Intel, and PGI.

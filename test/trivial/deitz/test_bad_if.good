@@ -1,1 +1,1 @@
-test_bad_if.chpl:3: error: type 'real' used in if or while condition
+test_bad_if.chpl:3: error: type 'real(64)' used in if or while condition

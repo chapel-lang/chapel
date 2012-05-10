@@ -62,7 +62,12 @@
   stdout
   wait
   write
+  j0 // the following 6 are in /usr/include/bits/mathcalls.h - ridiculous
+  j1
+  jn
+  y0
   y1 // this is ridiculous...
+  yn
   log2
   remove
   fprintf
@@ -206,3 +211,5 @@
   this
 
   assert
+
+  flag

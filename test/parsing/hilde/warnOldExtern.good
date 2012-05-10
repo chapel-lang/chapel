@@ -1,3 +1,0 @@
-warnOldExtern.chpl:10: warning: The _extern keyword is deprecated. Use extern (no leading underscore) instead.
-warnOldExtern.chpl:11: warning: The _extern keyword is deprecated. Use extern (no leading underscore) instead.
-warnOldExtern.chpl:13: warning: The _extern keyword is deprecated. Use extern (no leading underscore) instead.

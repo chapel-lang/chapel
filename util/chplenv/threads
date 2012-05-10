@@ -17,8 +17,8 @@ if ($preset_threads eq "") {
 	$threads = "pthreads";
     } elsif ($preset_tasks eq "mta") {
 	$threads = "none";
-    } elsif ($preset_tasks eq "dev-tasks-1") {
-	$threads = "dev-threads-1";
+    } elsif ($preset_tasks eq "muxed") {
+	$threads = "soft-threads";
     } elsif ($preset_tasks eq "nanox") {
 	$threads = "none";
     } elsif ($preset_tasks eq "qthreads") {

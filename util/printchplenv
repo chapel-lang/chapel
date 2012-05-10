@@ -55,4 +55,6 @@ $make = `$utildirname/chplmake`; chomp($make);
 print "CHPL_MAKE: $make\n";
 $atomics = `$utildirname/atomics`; chomp($atomics);
 print "CHPL_ATOMICS: $atomics\n";
+$gmp = `$utildirname/gmp`; chomp($gmp);
+print "CHPL_GMP: $gmp\n";
 

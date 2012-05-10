@@ -1,4 +1,5 @@
 #include <cstring>
+#include <cctype>
 #include "countTokens.h"
 #include "misc.h"
 #include "processTokens.h"
@@ -25,14 +26,30 @@ static void newString(void) {
   }
 }
 
+// Returns the hexadecimal character for 0-16.
+static char toHex(char c)
+{
+  if (0 <= c && c <= 9) return '0' + c;
+  else return 'A' + (c - 10);
+}
 
 static void addChar(char c) {
-  if (stringLen+2 > stringBuffLen) {
-    stringBuffLen = 2*(stringBuffLen + 1);
+  int escape = !(isascii(c) && isprint(c));
+  int charlen = escape ? 4 : 1; // convert nonasci to \xNN
+
+  if (stringLen+charlen+1 > stringBuffLen) {
+    stringBuffLen = 2*(stringBuffLen + charlen);
     stringBuffer = (char*)realloc(stringBuffer, stringBuffLen*sizeof(char));
   }
-  stringBuffer[stringLen] = c;
-  stringLen++;
+
+  if (escape) {
+    stringBuffer[stringLen++] = '\\';
+    stringBuffer[stringLen++] = 'x';
+    stringBuffer[stringLen++] = toHex(((unsigned char)c) >> 4);
+    stringBuffer[stringLen++] = toHex(c & 0xf);
+  } else {
+    stringBuffer[stringLen++] = c;
+  }
   stringBuffer[stringLen] = '\0';
 }
 
@@ -99,41 +116,42 @@ void processSingleLineComment(void) {
 
 
 void processMultiLineComment(void) {
-  register int c;
-          
+  int c;
+  int lastc;
+  int depth;
+
+  c = 0;
+  lastc = 0;
+  depth = 1;
+
   newString();
   countCommentLine();
-  while (1) {
-    while ((c = getNextYYChar()) != '*' && c != 0) {
-      if (c == '\n') {
-        countMultiLineComment(stringBuffer);
-        processNewline();
-        newString();
-        countCommentLine();
-      } else {
-        addChar(c);
-      }
-    }    /* eat up text of comment */
-    
-    if ( c == '*' ) {
-      while ( (c = getNextYYChar()) == '*' ) {
-        addChar(c);
-      }
-      if ( c == '/' ) {
-        countMultiLineComment(stringBuffer);
-        newString();
-        break;    /* found the end */
-      } else if (c == '\n') {
-        countMultiLineComment(stringBuffer);
-        processNewline();
-        newString();
-        countCommentLine();
-      }
-    } else {      // c == EOF
+  
+  while (depth > 0) {
+    lastc = c;
+    c = getNextYYChar();
+    if( c == '\n' ) {
+      countMultiLineComment(stringBuffer);
+      processNewline();
+      newString();
+      countCommentLine();
+    } else {
+      addChar(c);
+    }
+    if( lastc == '*' && c == '/' ) { // close comment
+      depth--;
+    } else if( lastc == '/' && c == '*' ) { // start nested
+      depth++;
+    } else if( c == 0 ) {
       yyerror( "EOF in comment" );
-      break;
     }
   }
+
+  // back up two to not print */ again.
+  if( stringLen >= 2 ) stringLen -= 2;
+  stringBuffer[stringLen] = '\0';
+  countMultiLineComment(stringBuffer);
+  newString();
 }
 
 

@@ -15,6 +15,11 @@
 #include <wchar.h>
 #include <assert.h>
 
+#ifdef __MTA__
+// no wide character support
+#else
+#define HAS_WCTYPE_H
+#endif
 
 #include "qio_style.h"
 
@@ -390,73 +395,8 @@ err_t qio_channel_scan_complex(const int threadsafe, qio_channel_t* restrict ch,
 err_t qio_channel_print_complex(const int threadsafe, qio_channel_t* restrict ch, const void* restrict re_ptr, const void* im_ptr, size_t len);
 
 // These methods read or write UTF-8 characters (code points).
-//err_t qio_channel_read_char(const int threadsafe, qio_channel_t* restrict ch, int32_t* restrict chr);
 
-
-#define UTF8_ACCEPT 0
-#define UTF8_REJECT 1
-#define UTF8_ONE_MORE 2
-#define UTF8_TWO_MORE 3
-#define UTF8_TWO_MORE_ONE 4
-#define UTF8_THREE_MORE 5
-#define UTF8_THREE_MORE_ONE 6
-#define UTF8_THREE_MORE_TWO 7
-
-
-static inline
-uint32_t qio_utf8_decode(uint32_t* restrict state,
-                         uint32_t* restrict codep,
-                         uint32_t byte) {
-  // #1           00000000 0xxxxxxx <-> 0xxxxxxx
-  // #2           00000yyy yyxxxxxx <-> 110yyyyy 10xxxxxx
-  // #3           zzzzyyyy yyxxxxxx <-> 1110zzzz 10yyyyyy 10xxxxxx
-  // #4  000uuuzz zzzzyyyy yyxxxxxx <-> 11110uuu 10zzzzzz 10yyyyyy 10xxxxxx
-
-  if( *state == UTF8_ACCEPT ) {
-    *codep = byte;
-
-    // Starting out.
-    if( byte < 0x80 ) {
-      // OK, we got a 1-byte character; case #1
-      *state = 0;
-    } else if( byte < 0xc2 ) { // starts 10
-      // It's a misplaced continuation character.
-      *state = UTF8_REJECT;
-    } else if( byte < 0xe0 ) { // starts 110
-      // We read this and one byte; case #2
-      *state = UTF8_ONE_MORE;
-    } else if( byte < 0xf0 ) {
-      // Read this and two bytes; case #3
-      *state = UTF8_TWO_MORE;
-    } else {
-      // Read this and three bytes; case #4
-      *state = UTF8_THREE_MORE;
-    }
-  } else if( *state == UTF8_ONE_MORE ) {
-    *codep = (((*codep) & 0x1f) << 6) | (byte & 0x3f);
-    *state = ((byte & 0xc0) == 0x80 )?UTF8_ACCEPT:UTF8_REJECT;
-  } else if( *state == UTF8_TWO_MORE ) {
-    // Read this and two bytes; case #3
-    *codep = (((*codep) & 0x0f) << 6) | (byte & 0x3f);
-    *state = ((byte & 0xc0) == 0x80 )?UTF8_TWO_MORE_ONE:UTF8_REJECT;
-  } else if( *state == UTF8_TWO_MORE_ONE ) {
-    *codep = ((*codep) << 6) | (byte & 0x3f);
-    *state = ((byte & 0xc0) == 0x80 )?UTF8_ACCEPT:UTF8_REJECT;
-  } else if( *state == UTF8_THREE_MORE ) {
-    // Read this and three bytes; case #4
-    *codep = (((*codep) & 0x07) << 6) | (byte & 0x3f);
-    *state = ((byte & 0xc0) == 0x80 )?UTF8_THREE_MORE_ONE:UTF8_REJECT;
-  } else if( *state == UTF8_THREE_MORE_ONE ) {
-    *codep = ((*codep) << 6) | (byte & 0x3f);
-    *state = ((byte & 0xc0) == 0x80 )?UTF8_THREE_MORE_TWO:UTF8_REJECT;
-  } else if( *state == UTF8_THREE_MORE_TWO ) {
-    *codep = ((*codep) << 6) | (byte & 0x3f);
-    *state = ((byte & 0xc0) == 0x80 )?UTF8_ACCEPT:UTF8_REJECT;
-  }
-    
- return *state;
-}
-
+#include "utf8-decoder.h"
 
 err_t _qio_channel_read_char_slow_unlocked(qio_channel_t* restrict ch, int32_t* restrict chr);
 
@@ -542,6 +482,7 @@ int qio_nbytes_char(int32_t chr)
       return 1;
     }
   } else {
+#ifdef HAS_WCTYPE_H
     mbstate_t ps;
     size_t got;
     memset(&ps, 0, sizeof(mbstate_t));
@@ -551,6 +492,9 @@ int qio_nbytes_char(int32_t chr)
     } else {
       return got;
     }
+#else
+    return 0;
+#endif
   }
   return 0;
 }
@@ -587,15 +531,17 @@ err_t qio_encode_char_buf(char* dst, int32_t chr)
       *(unsigned char*)dst = (unsigned char) chr;
     }
   } else {
+#ifdef HAS_WCTYPE_H
     mbstate_t ps;
     size_t got;
     memset(&ps, 0, sizeof(mbstate_t));
     got = wcrtomb(dst, chr, &ps);
     if( got == (size_t) -1 ) {
       err = EILSEQ;
-    } else {
-      *dst += got;
     }
+#else
+    err = ENOSYS;
+#endif
   }
   return err;
 }
@@ -618,7 +564,7 @@ err_t qio_decode_char_buf(int32_t* restrict chr, int* restrict nbytes, const cha
       while( buf != end ) {
         qio_utf8_decode(&state,
                         &codepoint,
-                        *buf);
+                        *(const unsigned char*)buf);
         buf++;
         if (state <= 1) {
           break;
@@ -646,6 +592,7 @@ err_t qio_decode_char_buf(int32_t* restrict chr, int* restrict nbytes, const cha
       }
     }
   } else {
+#ifdef HAS_WCTYPE_H
     mbstate_t ps;
     size_t got;
     wchar_t wch = 0;
@@ -674,6 +621,9 @@ err_t qio_decode_char_buf(int32_t* restrict chr, int* restrict nbytes, const cha
       *nbytes = got;
       return 0;
     }
+#else
+    return ENOSYS;
+#endif
   }
   assert(0);
   return EILSEQ; // this should never be reached.
@@ -760,6 +710,12 @@ err_t qio_channel_scan_string(const int threadsafe, qio_channel_t* restrict ch, 
 
 // returns 0 if it matched, or EFORMAT if it did not.
 err_t qio_channel_scan_literal(const int threadsafe, qio_channel_t* restrict ch, const char* restrict match, ssize_t len, int skipws);
+
+// Quote a string according to a style (we have this one for some error
+// situations in which it's undesireable to use the stdout channel
+// because of e.g. Chapel module initialization order)
+err_t qio_quote_string(uint8_t string_start, uint8_t string_end, uint8_t string_format, const char* restrict ptr, ssize_t len, const char** restrict out);
+const char* qio_quote_string_chpl(const char* ptr, ssize_t len);
 
 // Prints a string according to the style.
 err_t qio_channel_print_string(const int threadsafe, qio_channel_t* restrict ch, const char* restrict ptr, ssize_t len);

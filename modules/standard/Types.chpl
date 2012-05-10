@@ -16,7 +16,7 @@ proc _isPrimitiveType(type t) param return
   (t == uint(8)) | (t == uint(16)) | (t == uint(32)) | (t == uint(64)) |
   (t == real(32)) | (t == real(64)) |
 // BLC: Why aren't imaginaries here?  Someone should try this
-  (t == string) | (_isVolatileType(t) && _isPrimitiveType(_volToNon(t)));
+  (t == string);
 
 pragma "no instantiation limit"
 proc _isSimpleScalarType(type t) param return
@@ -24,8 +24,7 @@ proc _isSimpleScalarType(type t) param return
 
 pragma "no instantiation limit"
 proc _isBooleanType(type t) param return
-  (t == bool) | (t == bool(8)) | (t == bool(16)) | (t == bool(32)) | (t == bool(64)) |
-  (_isVolatileType(t) && _isBooleanType(_volToNon(t)));
+  (t == bool) | (t == bool(8)) | (t == bool(16)) | (t == bool(32)) | (t == bool(64));
 
 pragma "no instantiation limit"
 proc _isIntegralType(type t) param return
@@ -33,14 +32,12 @@ proc _isIntegralType(type t) param return
 
 pragma "no instantiation limit"
 proc _isSignedType(type t) param return
-  (t == int(8)) || (t == int(16)) || (t == int(32)) || (t == int(64)) |
-  (_isVolatileType(t) && _isSignedType(_volToNon(t)));
+  (t == int(8)) || (t == int(16)) || (t == int(32)) || (t == int(64));
 
 
 pragma "no instantiation limit"
 proc _isUnsignedType(type t) param return
-  (t == uint(8)) || (t == uint(16)) || (t == uint(32)) || (t == uint(64)) |
-  (_isVolatileType(t) && _isUnsignedType(_volToNon(t)));
+  (t == uint(8)) || (t == uint(16)) || (t == uint(32)) || (t == uint(64));
 
 proc _isEnumeratedType(type t) param {
   proc isEnum(type t: enumerated) param return true;
@@ -55,71 +52,23 @@ proc _isComplexType(type t) param return
 pragma "no instantiation limit"
 proc _isFloatType(type t) param return
   (t == real(32)) | (t == real(64)) |
-  (t == imag(32)) | (t == imag(64)) |
-  (_isVolatileType(t) && _isFloatType(_volToNon(t)));
+  (t == imag(32)) | (t == imag(64));
 
 pragma "no instantiation limit"
 proc _isRealType(type t) param return
-  (t == real(32)) | (t == real(64)) |
-  (_isVolatileType(t) && _isRealType(_volToNon(t)));
+  (t == real(32)) | (t == real(64));
 
 pragma "no instantiation limit"
 proc _isImagType(type t) param return
-  (t == imag(32)) | (t == imag(64)) |
-  (_isVolatileType(t) && _isImagType(_volToNon(t)));
+  (t == imag(32)) | (t == imag(64));
 
-pragma "no instantiation limit"
-proc _isVolatileType(type t) param
-  return ((t == volatile bool) | (t == volatile bool(8)) | 
-          (t == volatile bool(16)) | (t == volatile bool(32)) | 
-          (t == volatile bool(64)) |  (t == volatile int) | 
-          (t == volatile int(8)) | (t == volatile int(16)) | 
-          (t == volatile int(32)) | (t == volatile int(64)) | 
-          (t == volatile uint(8)) | (t == volatile uint(16)) | 
-          (t == volatile uint(32)) | (t == volatile uint(64)) | 
-          (t == volatile real(32)) | (t == volatile real(64)) | 
-          (t == volatile imag(32)) | (t == volatile imag(64))
-          );
-//  (t == volatile string);
+// Returns the unsigned equivalent of the input type.
+proc chpl__unsignedType(type t) type 
+{
+  if ! _isIntegralType(t) then
+    compilerError("range idxType is non-integral: ", typeToString(t));
 
-proc _volToNon(type t) type {
-  if (t == volatile bool) {
-    return bool;
-  } else if (t == volatile bool(8)) {
-    return bool(8);
-  } else if (t == volatile bool(16)) {
-    return bool(16);
-  } else if (t == volatile bool(32)) {
-    return bool(32);
-  } else if (t == volatile bool(64)) {
-    return bool(64);
-  } else if (t == volatile int(8)) {
-    return int(8);
-  } else if (t == volatile int(16)) {
-    return int(16);
-  } else if (t == volatile int(32)) {
-    return int(32);
-  } else if (t == volatile int(64)) {
-    return int(64);
-  } else if (t == volatile uint(8)) {
-    return uint(8);
-  } else if (t == volatile uint(16)) {
-    return uint(16);
-  } else if (t == volatile uint(32)) {
-    return uint(32);
-  } else if (t == volatile uint(64)) {
-    return uint(64); 
-  } else if (t == volatile real(32)) {
-    return real(32);
-  } else if (t == volatile real(64)) {
-    return real(64);
-  } else if (t == volatile imag(32)) {
-    return imag(32);
-  } else if (t == volatile imag(64)) {
-    return imag(64);
-  } else {
-    compilerError(typeToString(t), " is not a volatile type");
-  }
+  return uint(numBits(t));
 }
 
 
@@ -131,6 +80,17 @@ proc chpl__signedType(type t) type
 
   return int(numBits(t));
 }
+
+proc chpl__maxIntTypeSameSign(type t) type {
+  if ! _isIntegralType(t) then
+    compilerError("type t is non-integral: ", typeToString(t));
+
+  if (_isSignedType(t)) then
+    return int(64);
+  else
+    return uint(64);
+}
+
 
 
 // Returns true if it is legal to coerce t1 to t2, false otherwise.
@@ -196,7 +156,6 @@ proc numBits(type t) param where t == imag(32) return 32;
 proc numBits(type t) param where t == imag(64) return 64;
 proc numBits(type t) param where t == complex(64) return 64;
 proc numBits(type t) param where t == complex(128) return 128;
-proc numBits(type t) param where _isVolatileType(t) return numBits(_volToNon(t));
 
 //
 // numBytes(type) -- returns the number of bytes in a type

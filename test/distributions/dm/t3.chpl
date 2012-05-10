@@ -1,14 +1,15 @@
 // This exposes a (performance) bug where 'dmarr' is not local in privTest().
 
-use d, r, u;
+use DimensionalDist2D, ReplicatedDim, BlockDim;
+use u;
 
 config const s1 = 2;
 config const s2 = 2;
 setupLocales(s1, s2);
 
-var vdf = new vdist(s1);
-var sdf = new sdist(s2, 1, 3);
-var ddf = new DimensionalDist(mylocs, vdf, sdf, "ddf");
+var vdf = new ReplicatedDim(s1);
+var sdf = new BlockDim(s2, 1, 3);
+var ddf = new DimensionalDist2D(mylocs, vdf, sdf, "ddf");
 const dmbase = [1..3,1..4];
 var dmdom: domain(2) dmapped new dmap(ddf);
 dmdom = dmbase;

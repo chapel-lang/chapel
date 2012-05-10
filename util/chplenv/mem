@@ -30,6 +30,8 @@ if ($preset_mem eq "") {
     }
   } elsif ($comm eq "armci") {
     $mem = "dlmalloc";
+  } elsif ($comm eq "ugni") {
+    $mem = "tcmalloc";
   } else {
     $mem = "default";
   }

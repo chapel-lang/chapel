@@ -1,6 +1,7 @@
 \sekshun{Data Parallelism}
 \label{Data_Parallelism}
 \index{data parallelism}
+\index{parallelism!data}
 
 Chapel provides two explicit data-parallel constructs (the
 forall-statement and the forall-expression) and several idioms that
@@ -19,15 +20,17 @@ controlling default data parallelism.
 
 \section{The Forall Statement}
 \label{Forall}
-\index{forall@\chpl{forall}}
-\index{forall loops}
+\index{forall@\chpl{forall} (see also statements, forall)}
+\index{loops!forall (see also statements, forall)}
 \index{data parallelism!forall}
+\index{statements!forall}
 
 The forall statement is a concurrent variant of the for statement
 described in~\rsec{The_For_Loop}.
 
 \subsection{Syntax}
 \label{forall_syntax}
+\index{statements!forall!syntax}
 
 The syntax of the forall statement is given by
 \begin{syntax}
@@ -45,6 +48,7 @@ statement.  The square bracketed form is a syntactic convenience.
 
 \subsection{Execution and Serializability}
 \label{forall_semantics}
+\index{statements!forall!semantics}
 
 The forall statement evaluates the loop body once for each element
 yielded by the \sntx{iteratable-expression}.  Each instance of the
@@ -99,6 +103,7 @@ writeln(a);
 
 \subsection{Zipper Iteration}
 \label{forall_zipper}
+\index{statements!forall!zipper iteration}
 
 Zipper iteration has the same semantics as described
 in~\rsec{Zipper_Iteration} and~\rsec{Parallel_Iterators} for parallel
@@ -107,13 +112,15 @@ iteration.
 \section{The Forall Expression}
 \label{Forall_Expressions}
 \index{data parallelism!forall expressions}
-\index{forall expressions}
+\index{forall expressions (see also expressions, forall)}
+\index{expressions!forall}
 
 The forall expression is a concurrent variant of the for expression
 described in~\rsec{For_Expressions}.
 
 \subsection{Syntax}
 \label{forall_expr_syntax}
+\index{expressions!forall!syntax}
 
 The syntax of a forall expression is given by
 \begin{syntax}
@@ -129,6 +136,8 @@ keyword-based notation.  The bracketed form is a syntactic
 convenience.
 
 \subsection{Execution and Serializability}
+\label{Forall_Expression_Execution_and_Serializability}
+\index{expressions!forall!semantics}
 
 The forall expression executes a forall loop (\rsec{Forall}),
 evaluates the body expression on each iteration of the loop, and
@@ -151,6 +160,7 @@ The forall expression follows the semantics of the forall statement as
 described in~\ref{forall_semantics}.
 
 \subsection{Zipper Iteration}
+\index{expressions!forall!zipper iteration}
 Forall expression also support zippered iteration semantics as
 described in~\rsec{Zipper_Iteration} and~\rsec{Parallel_Iterators} for
 parallel iteration.
@@ -158,10 +168,11 @@ parallel iteration.
 
 \subsection{Filtering Predicates in Forall Expressions}
 \label{Filtering_Predicates_Forall}
-\index{forall expressions!and conditional expressions}
+\index{expressions!forall!and conditional expressions}
+\index{expressions!forall!filtering}
 
 A filtering predicate is an if expression that is immediately enclosed
-by a forall expression.  A filtering predicate does not require an
+by a forall expression and does not have an
 else clause.  Such an if expression filters the iterations of the
 forall expression.  The iterations for which the condition does not
 hold are not reflected in the result of the forall expression.
@@ -281,7 +292,10 @@ then the output is
 \end{chapelexample}
 
 \subsection{Whole Array Assignment}
+\label{Whole_Array_Assignment}
 \index{whole array assignment}
+\index{arrays!assignment}
+\index{assignment!whole array}
 
 Whole array assignment is a considered a degenerate case of promotion
 and is implicitly parallel.  The assignment statement
@@ -295,7 +309,8 @@ forall (e1,e2) in (LHS,RHS) do
 \end{chapel}
 
 \subsection{Evaluation Order}
-\index{data parallelism!and evaluation order}
+\label{Evaluation_Order}
+\index{data parallelism!evaluation order}
 The semantics of whole array assignment and promotion are different
 from most array programming languages.  Specifically, the compiler
 does not insert array temporaries for such operations if any of the
@@ -343,6 +358,7 @@ scans (Chapter~\ref{User_Defined_Reductions_and_Scans}).
 \subsection{Reduction Expressions}
 \label{reduce}
 \index{reduction expressions}
+\index{expressions!reduction}
 
 A reduction expression applies a reduction operator to an aggregate
 expression, collapsing the aggregate's dimensions down into a result
@@ -373,19 +389,21 @@ maximum-with-location reduction returns the lowest index position with
 the maximum value (as defined by the \verb@>@ operator).
 
 The expression on the right-hand side of the \chpl{reduce} keyword
-can be of any type that can be iterated over and to which the
-reduction operator can be applied.  For example, the bitwise-and
+can be of any type that can be iterated over, provided
+the reduction operator can be applied to the values yielded
+by the iteration. For example, the bitwise-and
 operator can be applied to arrays of boolean or integral types to
 compute the bitwise-and of all the values in the array.
 
-The minimum-with-location and maximum-with-location reductions take a
-2-tuple of arguments where the first tuple element is the collection
+For the minimum-with-location and maximum-with-location reductions,
+the argument on the right-hand side of the \chpl{reduce} keyword
+must be a 2-tuple. Its first component is the collection
 of values for which the minimum/maximum value is to be computed.  The
-second tuple element is a collection of indices with the same size and
+second argument component is a collection of indices with the same size and
 shape that provides names for the locations of the values in the first
-argument.  The reduction returns a tuple containing the
-minimum/maximum value in the first position and the location of the
-value in the second position.
+component.  The reduction returns a tuple containing the
+minimum/maximum value in the first argument component and the value
+at the corresponding location in the second argument component.
 
 \begin{chapelexample}{reduce-loc.chpl}
 The first line below computes the smallest element in an array
@@ -420,6 +438,7 @@ interface as described in~\rsec{User_Defined_Reductions_and_Scans}.
 \subsection{Scan Expressions}
 \label{scan}
 \index{scan expressions}
+\index{expressions!scan}
 
 A scan expression applies a scan operator to an aggregate expression,
 resulting in an aggregate expression of the same size and shape.  The
@@ -467,6 +486,7 @@ in Chapter~\ref{User_Defined_Reductions_and_Scans}.
 \section{Configuration Constants for Default Data Parallelism}
 \label{data_parallel_knobs}
 \index{data parallelism!knobs for default data parallelism}
+\index{data parallelism!configuration constants}
 
 The following configuration constants are provided to control the
 degree of data parallelism over ranges, default domains, and default

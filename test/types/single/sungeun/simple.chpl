@@ -5,17 +5,17 @@ var sx: single myType;
 var x: myType;
 
 begin {
-  x = sx;
+  var x: myType = sx;
   if !sx.isFull then writeln("invalid state (empty)");
-  if x != initval then writeln("incorrect value: ", x);
+  if x != initval then writeln("incorrect value: ", x, ", should be ", initval);
 }
 
 sx = initval;
 if !sx.isFull then writeln("invalid state (empty)");
-if sx.readXX() != initval then writeln("incorrect value: ", sx.readXX());
+if sx.readXX() != initval then writeln("incorrect value: ", sx.readXX(), ", should be ", initval);
   
 x = 2*sx;
 if !sx.isFull then writeln("invalid state (empty)");
-if x != 2*initval then writeln("incorrect value: ", x);
+if x != 2*initval then writeln("incorrect value: ", x, ", should be ", 2*initval);
 
 writeln("DONE");

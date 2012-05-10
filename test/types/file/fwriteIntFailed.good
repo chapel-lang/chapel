@@ -1,1 +1,1 @@
-fwriteIntFailed.chpl:2: error: Unhandled system error: Invalid argument (22) in file.writer with path fwriteIntFailed.txt
+fwriteIntFailed.chpl:2: error: Invalid argument in file.writer with path "fwriteIntFailed.txt"

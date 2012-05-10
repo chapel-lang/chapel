@@ -36,6 +36,7 @@ void optimizeOnClauses();
 void parallel();
 void parse();
 void prune();
+void prune2();
 void refPropagation();
 void removeEmptyRecords();
 void removeUnnecessaryAutoCopyCalls();

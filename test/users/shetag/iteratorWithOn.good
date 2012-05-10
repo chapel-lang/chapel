@@ -1,2 +1,2 @@
-iteratorWithOn.chpl:3: In iterator 'g':
-iteratorWithOn.chpl:6: error: invalid use of 'on' in serial iterator
+iteratorWithOn.chpl:5: In iterator 'g':
+iteratorWithOn.chpl:8: error: invalid use of 'yield' within 'on' in serial iterator

@@ -1,12 +1,14 @@
 config const n: int = 1024;
 
+extern proc printf(x...);
+
 proc foo(i: int) {
   if i < n {
-    _debugWriteln(here.id, " pre ", i);
+    printf("%s\n", here.id + " pre " + i);
     sync {
       on Locales(i%2) do begin foo(i+1);
     }
-    _debugWriteln(here.id, " post ", i);
+    printf("%s\n", here.id + " post " + i);
   }
 }
 

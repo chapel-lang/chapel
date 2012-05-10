@@ -10,6 +10,11 @@ extern FILE* deletedIdHandle;
 extern char deletedIdFilename[FILENAME_MAX+1];
 #define deletedIdON (deletedIdFilename[0] != '\0')
 
+extern char log_dir[FILENAME_MAX+1];
+extern char log_module[FILENAME_MAX+1];
+extern char log_symbol[FILENAME_MAX+1];
+extern bool fLogIds;
+
 extern int instantiation_limit;
 
 extern int fdump_html;
@@ -71,6 +76,7 @@ extern bool fLocal;
 extern bool fGPU;
 extern bool fHeterogeneous;
 extern bool fieeefloat;
+extern int  fMaxCIdentLen;
 
 enum { LS_DEFAULT=0, LS_STATIC, LS_DYNAMIC };
 extern int fLinkStyle;
@@ -105,8 +111,8 @@ extern Timer timer4;
 extern Timer timer5;
 
 extern bool fNoMemoryFrees;
-
 extern int numGlobalsOnHeap;
+extern bool preserveInlinedLineNumbers;
 
 extern int breakOnID;
 extern int breakOnDeleteID;

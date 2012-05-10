@@ -108,7 +108,7 @@ bundleArgs(CallExpr* fcall) {
         if (baseType == arg->typeInfo()) {
           fcall->insertBefore(new CallExpr(PRIM_MOVE, valTmp, var));
         } else {
-          fcall->insertBefore(new CallExpr(PRIM_MOVE, valTmp, new CallExpr(PRIM_GET_REF, var)));
+          fcall->insertBefore(new CallExpr(PRIM_MOVE, valTmp, new CallExpr(PRIM_DEREF, var)));
         }
         fcall->insertBefore(new CallExpr(PRIM_MOVE, valTmp, new CallExpr(autoCopyFn, valTmp)));
         VarSymbol* derefTmp = newTemp(baseType);
@@ -116,7 +116,7 @@ bundleArgs(CallExpr* fcall) {
         if (baseType == arg->typeInfo()) {
           fn->insertBeforeReturnAfterLabel(new CallExpr(PRIM_MOVE, derefTmp, new SymExpr(actual_to_formal(arg))));
         } else {
-          fn->insertBeforeReturnAfterLabel(new CallExpr(PRIM_MOVE, derefTmp, new CallExpr(PRIM_GET_REF, new SymExpr(actual_to_formal(arg)))));
+          fn->insertBeforeReturnAfterLabel(new CallExpr(PRIM_MOVE, derefTmp, new CallExpr(PRIM_DEREF, new SymExpr(actual_to_formal(arg)))));
         }
         fn->insertBeforeReturnAfterLabel(new CallExpr(autoDestroyFn, derefTmp));
       }
@@ -135,7 +135,7 @@ bundleArgs(CallExpr* fcall) {
     wrap_fn->addFlag(FLAG_ON_BLOCK);
     if (fn->hasFlag(FLAG_NON_BLOCKING))
       wrap_fn->addFlag(FLAG_NON_BLOCKING);
-    ArgSymbol* locale = new ArgSymbol(INTENT_BLANK, "_dummy_locale_arg", dtInt[INT_SIZE_32]);
+    ArgSymbol* locale = new ArgSymbol(INTENT_BLANK, "_dummy_locale_arg", dtInt[INT_SIZE_DEFAULT]);
     wrap_fn->insertFormalAtTail(locale);
   } else if (fn->hasFlag(FLAG_COBEGIN_OR_COFORALL)) {
     wrap_fn->addFlag(FLAG_COBEGIN_OR_COFORALL_BLOCK);
@@ -186,7 +186,7 @@ insertEndCount(FnSymbol* fn,
                Type* endCountType,
                Vec<FnSymbol*>& queue,
                Map<FnSymbol*,Symbol*>& endCountMap) {
-  if (fn == chpl_main) {
+  if (fn == chpl_gen_main) {
     VarSymbol* var = newTemp("_endCount", endCountType);
     fn->insertAtHead(new DefExpr(var));
     endCountMap.put(fn, var);
@@ -272,7 +272,7 @@ freeHeapAllocatedVars(Vec<Symbol*> heapAllocatedVars) {
         if (useMap.get(v)) {
           forv_Vec(SymExpr, se, *useMap.get(v)) {
             if (CallExpr* call = toCallExpr(se->parentExpr)) {
-              if (call->isPrimitive(PRIM_SET_REF) ||
+              if (call->isPrimitive(PRIM_ADDR_OF) ||
                   call->isPrimitive(PRIM_GET_MEMBER) ||
                   call->isPrimitive(PRIM_GET_SVEC_MEMBER) ||
                   call->isPrimitive(PRIM_GET_LOCALEID))
@@ -393,8 +393,7 @@ makeHeapAllocations() {
            (isRecord(def->sym->type) &&
             !isRecordWrappedType(def->sym->type) &&
             // sync/single are currently classes, so this shouldn't matter
-            !def->sym->type->symbol->hasFlag(FLAG_SYNC) &&
-            !def->sym->type->symbol->hasFlag(FLAG_SINGLE)))) {
+            !isSyncType(def->sym->type)))) {
         // replicate global const of primitive type
         INT_ASSERT(defMap.get(def->sym) && defMap.get(def->sym)->n == 1);
         for_defs(se, defMap, def->sym) {
@@ -445,7 +444,7 @@ makeHeapAllocations() {
         if (CallExpr* call = toCallExpr(def->parentExpr)) {
           if (call->isPrimitive(PRIM_MOVE)) {
             if (CallExpr* rhs = toCallExpr(call->get(2))) {
-              if (rhs->isPrimitive(PRIM_SET_REF)) {
+              if (rhs->isPrimitive(PRIM_ADDR_OF)) {
                 SymExpr* se = toSymExpr(rhs->get(1));
                 INT_ASSERT(se);
                 if (!varSet.set_in(se->var)) {
@@ -576,7 +575,7 @@ makeHeapAllocations() {
 
     for_uses(use, useMap, var) {
       if (CallExpr* call = toCallExpr(use->parentExpr)) {
-        if (call->isPrimitive(PRIM_SET_REF)) {
+        if (call->isPrimitive(PRIM_ADDR_OF)) {
           CallExpr* move = toCallExpr(call->parentExpr);
           INT_ASSERT(move && move->isPrimitive(PRIM_MOVE));
           if (move->get(1)->typeInfo() == heapType) {
@@ -663,7 +662,7 @@ reprivatizeIterators() {
           call->primitive = primitives[PRIM_GET_MEMBER_VALUE];
           VarSymbol* valTmp = newTemp(lhs->getValType());
           move->insertBefore(new DefExpr(valTmp));
-          move->insertAfter(new CallExpr(PRIM_MOVE, lhs, new CallExpr(PRIM_SET_REF, valTmp)));
+          move->insertAfter(new CallExpr(PRIM_MOVE, lhs, new CallExpr(PRIM_ADDR_OF, valTmp)));
           move->insertAfter(new CallExpr(PRIM_MOVE, valTmp, new CallExpr(PRIM_GET_PRIV_CLASS, lhs->getValType()->symbol, tmp)));
         } else if (call->isPrimitive(PRIM_SET_MEMBER)) {
           ClassType* ct = toClassType(se->var->type);
@@ -679,7 +678,7 @@ reprivatizeIterators() {
   }
 
   forv_Vec(Symbol, sym, privatizedFields) if (sym) {
-    sym->type = dtInt[INT_SIZE_32];
+    sym->type = dtInt[INT_SIZE_DEFAULT];
   }
 }
 
@@ -709,7 +708,7 @@ parallel(void) {
         fn->addFlag(FLAG_ON);
         if (block->blockInfo->isPrimitive(PRIM_BLOCK_ON_NB))
           fn->addFlag(FLAG_NON_BLOCKING);
-        ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "_dummy_locale_arg", dtInt[INT_SIZE_32]);
+        ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "_dummy_locale_arg", dtInt[INT_SIZE_DEFAULT]);
         fn->insertFormalAtTail(arg);
       }
       else if (block->blockInfo->isPrimitive(PRIM_ON_GPU)) {
@@ -718,8 +717,8 @@ parallel(void) {
         //Add two formal arguments:
         // nBlocks = Number of Thread blocks
         // threadsPerBlock = Number of threads per single thread block
-        ArgSymbol* arg1 = new ArgSymbol(INTENT_BLANK, "nBlocks", dtInt[INT_SIZE_32]);
-        ArgSymbol* arg2 = new ArgSymbol(INTENT_BLANK, "threadsPerBlock", dtInt[INT_SIZE_32]);
+        ArgSymbol* arg1 = new ArgSymbol(INTENT_BLANK, "nBlocks", dtInt[INT_SIZE_DEFAULT]);
+        ArgSymbol* arg2 = new ArgSymbol(INTENT_BLANK, "threadsPerBlock", dtInt[INT_SIZE_DEFAULT]);
         fn->insertFormalAtTail(arg1);
         fn->insertFormalAtTail(arg2);
       }
@@ -827,14 +826,14 @@ buildWideClass(Type* type) {
   TypeSymbol* wts = new TypeSymbol(astr("__wide_", type->symbol->cname), wide);
   wts->addFlag(FLAG_WIDE_CLASS);
   theProgram->block->insertAtTail(new DefExpr(wts));
-  wide->fields.insertAtTail(new DefExpr(new VarSymbol("locale", dtInt[INT_SIZE_32])));
+  wide->fields.insertAtTail(new DefExpr(new VarSymbol("locale", dtInt[INT_SIZE_DEFAULT])));
   wide->fields.insertAtTail(new DefExpr(new VarSymbol("addr", type)));
 
   //
   // Strings need an extra field in their wide class to hold their length
   //
   if (type == dtString) {
-    wide->fields.insertAtTail(new DefExpr(new VarSymbol("size", dtInt[INT_SIZE_32])));
+    wide->fields.insertAtTail(new DefExpr(new VarSymbol("size", dtInt[INT_SIZE_DEFAULT])));
     if (wideStringType) {
       INT_FATAL("Created two wide string types");
     }
@@ -914,7 +913,7 @@ static void localizeCall(CallExpr* call) {
             }
           }
           break;
-        } else if (rhs->isPrimitive(PRIM_GET_REF)) {
+        } else if (rhs->isPrimitive(PRIM_DEREF)) {
           if (rhs->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE) ||
               rhs->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
             insertLocalTemp(rhs->get(1));
@@ -1195,7 +1194,7 @@ insertWideReferences(void) {
       TypeSymbol* wts = new TypeSymbol(astr("__wide_", ts->cname), wide);
       wts->addFlag(FLAG_WIDE);
       theProgram->block->insertAtTail(new DefExpr(wts));
-      wide->fields.insertAtTail(new DefExpr(new VarSymbol("locale", dtInt[INT_SIZE_32])));
+      wide->fields.insertAtTail(new DefExpr(new VarSymbol("locale", dtInt[INT_SIZE_DEFAULT])));
       wide->fields.insertAtTail(new DefExpr(new VarSymbol("addr", ts->type)));
       wideRefMap.put(ts->type, wide);
     }
@@ -1310,7 +1309,7 @@ insertWideReferences(void) {
           } else if (var->type->symbol->hasFlag(FLAG_REF))
             call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, var, sym->copy()));
           else
-            call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, var, new CallExpr(PRIM_GET_REF, sym->copy())));
+            call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, var, new CallExpr(PRIM_DEREF, sym->copy())));
           call->getStmtExpr()->insertAfter(new CallExpr(PRIM_MOVE, sym->copy(), var));
           sym->replace(new SymExpr(var));
         }
@@ -1416,7 +1415,7 @@ insertWideReferences(void) {
               VarSymbol* tmp = newTemp(actual->typeInfo()->getField("addr")->typeInfo());
               SET_LINENO(call);
               call->getStmtExpr()->insertBefore(new DefExpr(tmp));
-              call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_REF, actual->copy())));
+              call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_DEREF, actual->copy())));
               actual->replace(new SymExpr(tmp));
             }
           }
@@ -1438,7 +1437,7 @@ insertWideReferences(void) {
         VarSymbol* tmp = newTemp(call->get(1)->getValType());
         SET_LINENO(call);
         call->getStmtExpr()->insertBefore(new DefExpr(tmp));
-        call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_REF, call->get(1)->remove())));
+        call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_DEREF, call->get(1)->remove())));
         call->insertAtHead(tmp);
       }
     }

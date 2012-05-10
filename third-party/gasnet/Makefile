@@ -1,8 +1,10 @@
+ifndef CHPL_MAKE_HOME
+export CHPL_MAKE_HOME=$(shell pwd)/../..
+endif
+
 export CHPL_COMM=gasnet
-CHAPEL_ROOT = ../..
-CHAPEL_SUBDIR = third-party/gasnet
 CHPL_MAKE_HOST_TARGET = --target
-include $(CHAPEL_ROOT)/make/Makefile.base
+include $(CHPL_MAKE_HOME)/make/Makefile.base
 
 CHPL_GASNET_CFG_OPTIONS += --enable-segment-$(CHPL_MAKE_COMM_SEGMENT) --enable-allow-gcc4
 
@@ -46,6 +48,8 @@ MKFILES=$(shell find $(GASNET_INSTALL_DIR) -name \*.mak)
 # set up the directories
 #
 GASNET_ABS_DIR = $(shell pwd)
+GASNET_SUBDIR = $(GASNET_ABS_DIR)/GASNet-$(GASNET_VERSION)
+# redefined these with the absolute path for the build
 GASNET_INSTALL_DIR = $(GASNET_ABS_DIR)/$(GASNET_INSTALL_SUBDIR)
 GASNET_BUILD_DIR = $(GASNET_ABS_DIR)/$(GASNET_BUILD_SUBDIR)
 
@@ -54,7 +58,7 @@ default: all
 all: gasnet
 
 clean: FORCE
-	rm -rf $(QTHREAD_BUILD_DIR)
+	rm -rf $(GASNET_BUILD_DIR)
 
 clobber: FORCE
 	rm -rf build install

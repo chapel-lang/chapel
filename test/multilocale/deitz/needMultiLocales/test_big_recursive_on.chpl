@@ -1,10 +1,12 @@
 config const n: int = 768;
 
+extern proc printf(x...);
+
 proc foo(i: int) {
   if i < n {
-    _debugWriteln(here.id, " pre ", i);
+    printf("%s\n", here.id + " pre " + i);
     on Locales(i%2) do foo(i+1);
-    _debugWriteln(here.id, " post ", i);
+    printf("%s\n", here.id + " post " + i);
   }
 }
 

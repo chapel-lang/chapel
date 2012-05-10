@@ -73,7 +73,7 @@ class TreeNode {
     forall i in childDom {
       if debug then writeln("  + (", depth, ", ", i, ")");
       children[i]    = new TreeNode(depth+1);
-      rng_spawn(hash[1], children[i].hash[1], i-1);
+      rng_spawn(hash[1], children[i].hash[1], (i-1):sha_int);
     }
 
     return nChildren;
@@ -295,7 +295,7 @@ proc main {
   var root: TreeNode;
   
   root = new TreeNode(0);
-  rng_init(root.hash[1], SEED:int);
+  rng_init(root.hash[1], SEED:sha_int);
 
   uts_showSearchParams();
 

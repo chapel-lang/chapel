@@ -4,9 +4,9 @@ var c = 2..10 by 2;
 var d = 0..10 by 3;
 
 var e = 0..5;
-var f = min(int)..max(int) by 3;
+var f = min(int(32))..max(int(32)) by 3;
 var g = 0:int(64)..5:int(64);
-var h = min(int):int(64)..max(int):int(64) by 3;
+var h = min(int(32)):int(64)..max(int(32)):int(64) by 3;
 
 var i = ..10:uint by -4;
 var j = -12.. by 3;

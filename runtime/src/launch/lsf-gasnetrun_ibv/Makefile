@@ -1,6 +1,10 @@
 RUNTIME_ROOT = ../../..
 RUNTIME_SUBDIR = src/launch/lsf-gasnetrun_ibv
 
+ifndef CHPL_MAKE_HOME
+export CHPL_MAKE_HOME=$(shell pwd)/$(RUNTIME_ROOT)/..
+endif
+
 #
 # standard header
 #

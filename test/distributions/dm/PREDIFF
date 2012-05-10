@@ -12,6 +12,7 @@ case $testname in
   (t8)  doRLN=true ;;
   (t5a) doRLN=true; doSort=false ;;
   (s7)  doSort=false ;;
+  (tmath) doSort=false ;;
 esac
 
 # remove line numbers from warnings

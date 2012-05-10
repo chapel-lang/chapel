@@ -1,1 +1,0 @@
-gmp.h -I $CHPL_HOME/third-party/gmp/install/$CHPL_TARGET_PLATFORM-$CHPL_TARGET_COMPILER -L $CHPL_HOME/third-party/gmp/install/$CHPL_TARGET_PLATFORM-$CHPL_TARGET_COMPILER -lgmp --ccflags -std=gnu89 --no-cc-warnings

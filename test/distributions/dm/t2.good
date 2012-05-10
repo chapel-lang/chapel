@@ -3,7 +3,7 @@
    1  mylocs
    1  setupLocales 1*3
   10  
-  10  testsuite(int)
+  10  testsuite(int(64))
   20  
   20  testing [1..1, 0..9]
   22  
@@ -135,7 +135,7 @@
   74  (1, 9)
   74  forall
  210  
- 210  testsuite(uint)
+ 210  testsuite(uint(64))
  220  
  220  testing [1..1, 0..9]
  222  

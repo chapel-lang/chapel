@@ -166,11 +166,11 @@ static void chpl_mpi_send(void* buf, int count, MPI_Datatype datatype, int dest,
 
 
 //
-// Every node has a polling thread that does an MPI receive accepting a
+// Every node has a polling task that does an MPI receive accepting a
 // message from any node. The message is always a struct chpl_mpi_message_info.
 // It then intreprets that chpl_mpi_message_info and acts accordingly.
 //
-static void chpl_mpi_polling_thread(void* arg) {
+static void chpl_mpi_polling_task(void* arg) {
   int finished = 0;
   _chpl_mpi_message_info msg_info;
   MPI_Status status;
@@ -178,7 +178,7 @@ static void chpl_mpi_polling_thread(void* arg) {
   char debugMsg[DEBUG_MSG_LENGTH];
 #endif
 
-  PRINTF("Starting mpi polling thread");
+  PRINTF("Starting mpi polling task");
 
   chpl_sync_lock(&termination_sync);
   while (!finished) {
@@ -294,15 +294,16 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
   chpl_sync_initAux(&termination_sync);
   chpl_sync_initAux(&tag_count_sync);
   pthread_key_create(&tag_count_key, NULL);
-
-  if (pthread_create(&polling_thread, NULL,
-                     (void*(*)(void*))chpl_mpi_polling_thread, 0))
-    chpl_internal_error("unable to start polling thread for mpi");
-  pthread_detach(polling_thread);
 }
 
 
 void chpl_comm_post_mem_init(void) { }
+
+
+void chpl_comm_post_task_init(void) {
+  if (chpl_task_createCommTask(chpl_mpi_polling_task, NULL))
+    chpl_internal_error("unable to start polling task for MPI");
+}
 
 
 void chpl_comm_rollcall(void) {
@@ -355,27 +356,36 @@ void chpl_comm_barrier(const char *msg) {
   MPI_SAFE(MPI_Barrier(MPI_COMM_WORLD));
 }
 
-
-void chpl_comm_exit_all(int status) {
+void chpl_comm_pre_task_exit(int all) {
   _chpl_mpi_message_info msg_info;
-  PRINTF("in chpl_comm_exit_all");
-  msg_info.msg_type = ChplCommFinish;
-  // To prevent MPI_Finalize from being called while the polling thread
-  // is still making MPI calls, send it a finish message, then wait for it
-  // to release the termination_sync, which it will do only once no more
-  // MPI Calls will be made.
-  chpl_mpi_send(&msg_info, sizeof(_chpl_mpi_message_info), MPI_BYTE,
-                chpl_localeID, TAGMASK+1, MPI_COMM_WORLD);
-  PRINTF("Sent shutdown message");
-  chpl_sync_lock(&termination_sync);
-  chpl_sync_unlock(&termination_sync);
-  chpl_comm_barrier("About to finalize");
-  MPI_SAFE(MPI_Finalize());
+
+  if (all) {
+    chpl_comm_barrier("chpl_comm_pre_task_exit");
+
+    // Stop the polling task
+    PRINTF("in chpl_comm_exit_all");
+    msg_info.msg_type = ChplCommFinish;
+    // To prevent MPI_Finalize from being called while the polling task
+    // is still making MPI calls, send it a finish message, then wait for it
+    // to release the termination_sync, which it will do only once no more
+    // MPI Calls will be made.
+    chpl_mpi_send(&msg_info, sizeof(_chpl_mpi_message_info), MPI_BYTE,
+                  chpl_localeID, TAGMASK+1, MPI_COMM_WORLD);
+    PRINTF("Sent shutdown message");
+    chpl_sync_lock(&termination_sync);
+    chpl_sync_unlock(&termination_sync);
+  }
 }
 
 
-void chpl_comm_exit_any(int status) {
-  MPI_SAFE(MPI_Abort(MPI_COMM_WORLD, status));
+void chpl_comm_exit(int all, int status) {
+  if (all) {
+    chpl_comm_barrier("About to finalize");
+    MPI_SAFE(MPI_Finalize());
+  }
+  else {
+    MPI_SAFE(MPI_Abort(MPI_COMM_WORLD, status));
+  }
 }
 
 
@@ -507,17 +517,7 @@ void  chpl_comm_fork_fast(int locale, chpl_fn_int_t fid, void *arg,
 }
 
 
-int chpl_comm_numPollingTasks(void) { return 0; }
-
-void chpl_comm_startPollingTask(void) {
-  // Ultimately the pthread code from above to create the polling thread
-  // should be moved down here;  once it is, the previous routine should
-  // be changed to return 1.
-}
-
-void chpl_comm_stopPollingTask(void) {
-  // And that thread should be stopped here
-}
+int chpl_comm_numPollingTasks(void) { return 1; }
 
 void chpl_startVerboseComm() { }
 void chpl_stopVerboseComm() { }
@@ -541,14 +541,14 @@ void chpl_getCommDiagnosticsHere(chpl_commDiagnostics *cd) {
   cd->fork_nb = -1;
 }
 
-int32_t chpl_numCommGets(void) { return -1; }
-int32_t chpl_numCommNBGets(void) { return -1; }
-int32_t chpl_numCommTestNBGets(void) { return -1; }
-int32_t chpl_numCommWaitNBGets(void) { return -1; }
-int32_t chpl_numCommPuts(void) { return -1; }
-int32_t chpl_numCommForks(void) { return -1; }
-int32_t chpl_numCommFastForks(void) { return -1; }
-int32_t chpl_numCommNBForks(void) { return -1; }
+uint64_t chpl_numCommGets(void) { return -1; }
+uint64_t chpl_numCommNBGets(void) { return -1; }
+uint64_t chpl_numCommTestNBGets(void) { return -1; }
+uint64_t chpl_numCommWaitNBGets(void) { return -1; }
+uint64_t chpl_numCommPuts(void) { return -1; }
+uint64_t chpl_numCommForks(void) { return -1; }
+uint64_t chpl_numCommFastForks(void) { return -1; }
+uint64_t chpl_numCommNBForks(void) { return -1; }
 
 
 /*

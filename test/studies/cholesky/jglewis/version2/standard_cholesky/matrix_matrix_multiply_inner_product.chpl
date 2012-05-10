@@ -78,9 +78,8 @@ module matrix_matrix_multiply_inner_product {
     //  General modification to off-diagonal block.
     //  Outer two loops can be parallelized with leader-follower iterators.
 
-    for  (AIJ_row_indices, LK_col_indices)  in 
-      [ vector_block_partition ( AJ_subdiag_row_indices ),
-        vector_block_partition ( L_prev_cols )             ]  do
+    for AIJ_row_indices in vector_block_partition ( AJ_subdiag_row_indices ) do
+      for LK_col_indices in vector_block_partition ( L_prev_cols )  do
 	forall (i,j, k) in [AIJ_row_indices, AJJ_rc_indices, LK_col_indices] do 
 	  A (i,j) -= L (i,k) * L (j,k);
   }

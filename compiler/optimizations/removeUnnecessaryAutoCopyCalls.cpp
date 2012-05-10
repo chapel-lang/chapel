@@ -80,12 +80,10 @@ isPrimitiveInitCopy(Vec<Type*>& primitiveInitCopyTypeSet, Type* type) {
   if (is_bool_type(type) || is_int_type(type) || is_uint_type(type) ||
       is_real_type(type) || is_imag_type(type) || is_complex_type(type) ||
       is_enum_type(type) ||
-      (isClass(type) && !(type->symbol->hasFlag(FLAG_SYNC) ||
-                          type->symbol->hasFlag(FLAG_SINGLE))))
+      (isClass(type) && !isSyncType(type)))
     return true;
   if (isRecordWrappedType(type) ||
-      type->symbol->hasFlag(FLAG_SYNC) ||
-      type->symbol->hasFlag(FLAG_SINGLE) ||
+      isSyncType(type) ||
       type->symbol->hasFlag(FLAG_REF) ||
       type->symbol->hasFlag(FLAG_ITERATOR_RECORD))
     return false;

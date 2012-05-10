@@ -12,14 +12,14 @@ proc writeBinaryMatrix(u: uint(64)) {
   writeln();
 }
 
-pragma "inline" proc byteOrReduce(u: uint(64)) {
+inline proc byteOrReduce(u: uint(64)) {
   var t1 = u | (u >> 4);
   var t2 = t1 | (t1 >> 2);
   var t3 = t2 | (t2 >> 1);
   return t3 & 0x0101010101010101;
 }
 
-pragma "inline" proc byteExpand(u: uint(64)) {
+inline proc byteExpand(u: uint(64)) {
   return 0x8080808080808080 ^ (0x8080808080808080 - u);
 }
 

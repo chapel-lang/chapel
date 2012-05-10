@@ -31,6 +31,8 @@ extern "C" {
 typedef int chpl_taskID_t;
 #define chpl_nullTaskID 0
 
+#define CHPL_COMM_YIELD_TASK_WHILE_POLLING
+
 typedef void * chpl_mutex_t;
 
 typedef struct {

@@ -1,6 +1,6 @@
 config var inputfile = "smallHPL.dat";
 
-var infile = open(inputfile, mode.r).reader();
+var infile = open(inputfile, iomode.r).reader();
 var outdevice: int;
 var outfile : string ;
 

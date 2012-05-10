@@ -102,7 +102,7 @@ template <class K, class AHashFns, class C> class HashMap : public Map<K,C> {
           if ((_p)->key)
 
 
-class StringHashFns {
+class StringHashFns : public HashFns<const char*> {
  public:
   static unsigned int hash(const char *s) { 
     unsigned int h = 0; 
@@ -113,10 +113,10 @@ class StringHashFns {
   static int equal(const char *a, const char *b) { return !strcmp(a, b); }
 };
 
-class PointerHashFns {
+class PointerHashFns : public HashFns<const void *> {
  public:
-  static unsigned int hash(void *s) { return (unsigned int)(uintptr_t)s; }
-  static int equal(void *a, void *b) { return a == b; }
+  static unsigned int hash(const void *s) { return (unsigned int)(uintptr_t)s; }
+  static int equal(const void *a, const void *b) { return a == b; }
 };
 
 template <class C, class AHashFns> class ChainHash : public Map<unsigned int, List<C> > {

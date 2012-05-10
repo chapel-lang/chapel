@@ -44,6 +44,19 @@ enum IF1_complex_type {
   COMPLEX_SIZE_NUM
 };
 
+//
+// The following #defines are intended to indicate what bit widths
+// from the enums above are used as the default for Chapel types that
+// are specified without an explicit width.  For example a Chapel
+// 'int' type corresponds to an 'int(64)' since INT_SIZE_DEFAULT below
+// is INT_SIZE_64.
+//
+#define BOOL_SIZE_DEFAULT BOOL_SIZE_SYS
+#define INT_SIZE_DEFAULT INT_SIZE_64
+#define FLOAT_SIZE_DEFAULT FLOAT_SIZE_64
+#define COMPLEX_SIZE_DEFAULT COMPLEX_SIZE_128
+
+
 class Immediate { public:
   unsigned int const_kind : 4;
   unsigned int num_index : 3;
@@ -101,6 +114,7 @@ inline int64_t
 Immediate::int_value( void) {
   int64_t val = 0;
   switch (num_index) {
+  case INT_SIZE_1 : val = v_bool; break;
   case INT_SIZE_8 : val = v_int8;  break;
   case INT_SIZE_16: val = v_int16; break;
   case INT_SIZE_32: val = v_int32; break;

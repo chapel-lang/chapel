@@ -5,9 +5,16 @@
 
 #include "chplrt.h"
 #include "chplmemtrack.h"
+#include "chpl-mem.h"
 #include "chpl-tasks.h"
 #include "chpl-comm.h"
 #include "error.h"
+
+//
+// This is global because it's referenced in chpl-mem.h and thus needs
+// to be available anywhere that is #included.
+//
+_Bool chpl_memTrack = false;
 
 #undef malloc
 #undef calloc
@@ -38,7 +45,6 @@ static _Bool memLeaks = false;
 static _Bool memLeaksTable = false;
 static _Bool memStats = false;
 static uint64_t memMax = 0;
-static _Bool memTrack = false;
 static uint64_t memThreshold = 0;
 static chpl_string memLog = NULL;
 static FILE* memLogFile = NULL;
@@ -178,9 +184,9 @@ void chpl_setMemFlags(chpl_bool memTrackConfig,
                       uint64_t memThresholdConfig,
                       chpl_string memLogConfig,
                       chpl_string memLeaksLogConfig) {
-  memTrack = memTrackConfig;
+  chpl_memTrack = memTrackConfig;
   if (memStatsConfig || memLeaksConfig || memLeaksTableConfig || memMaxConfig)
-    memTrack = true;
+    chpl_memTrack = true;
   memStats = memStatsConfig;
   memLeaks = memLeaksConfig;
   memLeaksTable = memLeaksTableConfig;
@@ -201,9 +207,9 @@ void chpl_setMemFlags(chpl_bool memTrackConfig,
   }
   memLeaksLog = memLeaksLogConfig;
   if (strcmp(memLeaksLog, ""))
-    memTrack = true;
+    chpl_memTrack = true;
 
-  if (memTrack) {
+  if (chpl_memTrack) {
     chpl_sync_initAux(&memTrack_sync);
     hashSizeIndex = 0;
     hashSize = hashSizes[hashSizeIndex];
@@ -213,7 +219,7 @@ void chpl_setMemFlags(chpl_bool memTrackConfig,
 
 
 uint64_t chpl_memoryUsed(int32_t lineno, chpl_string filename) {
-  if (!memTrack)
+  if (!chpl_memTrack)
     chpl_error("invalid call to memoryUsed(); rerun with --memTrack",
                lineno, filename);
   return (uint64_t)totalMem;
@@ -221,7 +227,7 @@ uint64_t chpl_memoryUsed(int32_t lineno, chpl_string filename) {
 
 
 void chpl_printMemStat(int32_t lineno, chpl_string filename) {
-  if (!memTrack)
+  if (!chpl_memTrack)
     chpl_error("invalid call to printMemStat(); rerun with --memTrack",
                lineno, filename);
   chpl_sync_lock(&memTrack_sync);
@@ -354,7 +360,7 @@ void chpl_printMemTable(int64_t threshold, int32_t lineno, chpl_string filename)
   char* loc;
   memTableEntry** table;
 
-  if (!memTrack)
+  if (!chpl_memTrack)
     chpl_error("The printMemTable function only works with the --memTrack flag", lineno, filename);
 
   n = 0;
@@ -431,7 +437,7 @@ void chpl_printMemTable(int64_t threshold, int32_t lineno, chpl_string filename)
 
 void chpl_track_malloc(void* memAlloc, size_t chunk, size_t number, size_t size, chpl_mem_descInt_t description, int32_t lineno, chpl_string filename) {
   if (chunk > memThreshold) {
-    if (memTrack) {
+    if (chpl_memTrack) {
       chpl_sync_lock(&memTrack_sync);
       addMemTableEntry(memAlloc, number, size, description, lineno, filename);
       chpl_sync_unlock(&memTrack_sync);
@@ -445,7 +451,7 @@ void chpl_track_malloc(void* memAlloc, size_t chunk, size_t number, size_t size,
 void chpl_track_free(void* memAlloc, int32_t lineno, chpl_string filename) {
   memTableEntry* memEntry = NULL;
 
-  if (memTrack) {
+  if (chpl_memTrack) {
     chpl_sync_lock(&memTrack_sync);
     memEntry = removeMemTableEntry(memAlloc);
     if (memEntry) {
@@ -463,7 +469,7 @@ void chpl_track_free(void* memAlloc, int32_t lineno, chpl_string filename) {
 void chpl_track_realloc1(void* memAlloc, size_t number, size_t size, chpl_mem_descInt_t description, int32_t lineno, chpl_string filename) {
   memTableEntry* memEntry = NULL;
 
-  if (memTrack && number*size > memThreshold) {
+  if (chpl_memTrack && number*size > memThreshold) {
     chpl_sync_lock(&memTrack_sync);
     if (memAlloc) {
       memEntry = removeMemTableEntry(memAlloc);
@@ -477,7 +483,7 @@ void chpl_track_realloc1(void* memAlloc, size_t number, size_t size, chpl_mem_de
 
 void chpl_track_realloc2(void* moreMemAlloc, size_t newChunk, void* memAlloc, size_t number, size_t size, chpl_mem_descInt_t description, int32_t lineno, chpl_string filename) {
   if (newChunk > memThreshold) {
-    if (memTrack) {
+    if (chpl_memTrack) {
       chpl_sync_lock(&memTrack_sync);
       addMemTableEntry(moreMemAlloc, number, size, description, lineno, filename);
       chpl_sync_unlock(&memTrack_sync);

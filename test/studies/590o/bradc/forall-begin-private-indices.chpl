@@ -27,11 +27,13 @@ proc main {
 
   var A: [AllPairs] real;
   sync {
-    for (x,y) in [StartIndices, EndIndices] {
-      begin {
-        if (x <= y) {
-          A[x, y] = x + y/10.0;
-        }	 
+    for x in StartIndices {
+      for y in EndIndices {
+        begin {
+          if (x <= y) {
+            A[x, y] = x + y/10.0;
+          }
+        }
       }
     }
   }

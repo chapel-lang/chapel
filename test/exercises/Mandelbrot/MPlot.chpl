@@ -43,7 +43,7 @@ proc plot(NumSteps:[]) where NumSteps.rank == 2 {
   // to it.
   //
   const outfilename = filename + extensions(imgType);
-  const outfile = open(outfilename, mode.w).writer();
+  const outfile = open(outfilename, iomode.cw).writer();
 
   //
   // Plot the image to the file (could also pass stdout in as the file...)

@@ -40,34 +40,13 @@ static void add_to_where_clause(ArgSymbol* formal, Expr* expr, CallExpr* query);
 static void fixup_query_formals(FnSymbol* fn);
 static void change_method_into_constructor(FnSymbol* fn);
 
-static void warn_proc_iter(void)
-{
-  forv_Vec(FnSymbol, fn, gFnSymbols)
-  {
-    if (!(fn->hasFlag(FLAG_TEMP) || fn->hasFlag(FLAG_COMPILER_NESTED_FUNCTION))
-        && !fn->hasFlag(FLAG_PROC_ITER_KW_USED))
-    {
-      if (fn->hasFlag(FLAG_ITERATOR_FN)) {
-        INT_ASSERT(!fn->hasFlag(FLAG_EXTERN)); // should be ensured by parser
-        USR_WARN(fn,"the 'def' keyword is deprecated - replace it with 'iter'");
-      } else {
-        USR_WARN(fn,"the 'def' keyword is deprecated - replace it with 'proc'");
-      }
-    }
-  }
-}
-
 void normalize(void) {
   // tag iterators and replace delete statements with calls to ~chpl_destroy
   forv_Vec(CallExpr, call, gCallExprs) {
-    // ProcIter: after transition this entire 'if' should disappear
     if (call->isPrimitive(PRIM_YIELD)) {
       FnSymbol* fn = toFnSymbol(call->parentSymbol);
-      if (!fn) {
-        USR_FATAL_CONT(call, "yield statement must be in a function");
-      } else {
-        fn->addFlag(FLAG_ITERATOR_FN);
-      }
+      // violations should have caused USR_FATAL in semanticChecks.cpp
+      INT_ASSERT(fn && fn->hasFlag(FLAG_ITERATOR_FN));
     }
     if (call->isPrimitive(PRIM_DELETE)) {
       VarSymbol* tmp = newTemp();
@@ -75,17 +54,24 @@ void normalize(void) {
       call->insertBefore(new DefExpr(tmp));
       call->insertBefore(new CallExpr(PRIM_MOVE, tmp, call->get(1)->remove()));
       call->insertBefore(new CallExpr("~chpl_destroy", gMethodToken, tmp));
-      if (call->numActuals() > 0)
-        call->insertBefore(new CallExpr(PRIM_CHPL_FREE, tmp, call->get(1)->remove()));
-      else
-        call->insertBefore(new CallExpr(PRIM_CHPL_FREE, tmp));
+
+      CallExpr* freeExpr = (call->numActuals() > 0) ?
+        new CallExpr(PRIM_CHPL_FREE, tmp, call->get(1)->remove()) :
+        new CallExpr(PRIM_CHPL_FREE, tmp);
+      if (fLocal) {
+        call->insertBefore(freeExpr);
+      } else {
+        //
+        // if compiling for multiple locales, we need to be sure that the
+        // delete is executed on the locale on which the object lives for
+        // correctness sake.
+        //
+        BlockStmt* onStmt = buildOnStmt(new SymExpr(tmp), freeExpr);
+        call->insertBefore(onStmt);
+      }
       call->remove();
     }
   }
-  USR_STOP();  // ProcIter: remove this after transition (not needed)
-
-  // ProcIter: remove this entire 'if' after transition
-  warn_proc_iter();
 
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     SET_LINENO(fn);
@@ -229,7 +215,7 @@ checkUseBeforeDefs() {
                 (sym->var->defPoint->parentSymbol == fn ||
                  (sym->var->defPoint->parentSymbol == mod && mod->initFn == fn))) {
               if (!defined.set_in(sym->var) && !undefined.set_in(sym->var)) {
-                if (strcmp(sym->var->name, "this")) {
+                if (!sym->var->hasFlag(FLAG_ARG_THIS)) {
                   USR_FATAL_CONT(sym, "'%s' used before defined (first used here)", sym->var->name);
                   undefined.set_add(sym->var);
                 }
@@ -329,12 +315,12 @@ static void insertRetMove(FnSymbol* fn, VarSymbol* retval, CallExpr* ret) {
   Expr* ret_expr = ret->get(1);
   ret_expr->remove();
   if (fn->retTag == RET_VAR)
-    ret->insertBefore(new CallExpr(PRIM_MOVE, retval, new CallExpr(PRIM_SET_REF, ret_expr)));
+    ret->insertBefore(new CallExpr(PRIM_MOVE, retval, new CallExpr(PRIM_ADDR_OF, ret_expr)));
   else if (fn->retExprType)
     ret->insertBefore(new CallExpr(PRIM_MOVE, retval, new CallExpr("=", retval, ret_expr)));
   else if (!fn->hasFlag(FLAG_WRAPPER) && strcmp(fn->name, "iteratorIndex") &&
            strcmp(fn->name, "iteratorIndexHelp"))
-    ret->insertBefore(new CallExpr(PRIM_MOVE, retval, new CallExpr(PRIM_GET_REF, ret_expr)));
+    ret->insertBefore(new CallExpr(PRIM_MOVE, retval, new CallExpr(PRIM_DEREF, ret_expr)));
   else
     ret->insertBefore(new CallExpr(PRIM_MOVE, retval, ret_expr));
 }
@@ -361,12 +347,6 @@ static void normalize_returns(FnSymbol* fn) {
       theRet = call;
       if (is_void_return(call))
           numVoidReturns++;
-      else if (isIterator) {
-        // Expect that all returns from an iterator are void returns.
-        // ProcIter: remove the entire enclosing 'else if'
-        if (!fn->hasFlag(FLAG_PROC_ITER_KW_USED))
-          USR_WARN(call, "returning a value in an iterator is deprecated; replace it with a yield of that value, followed by a return with no expression");
-      }
     }
     else if (call->isPrimitive(PRIM_YIELD)) {
       rets.add(call);
@@ -840,7 +820,7 @@ static void fixup_array_formals(FnSymbol* fn) {
 
           // Replace the type expression with "_array".
           // I dunno.  Maybe we should keep the typeExpr around and just fix up the type. <hilde>
-          arg->typeExpr->replace(new BlockStmt(new SymExpr(dtArray->symbol), BLOCK_SCOPELESS));
+          arg->typeExpr->replace(new BlockStmt(new SymExpr(dtArray->symbol), BLOCK_TYPE));
 
           // If we have an element type, replace reference to its symbol with
           // "arg.eltType", so we use the instantiated element type.
@@ -1009,9 +989,11 @@ fixup_query_formals(FnSymbol* fn) {
       formal->type = dtAny;
     } else if (CallExpr* call = toCallExpr(formal->typeExpr->body.tail)) {
       // clone query primitive types
-      if (call->numActuals() == 1) {
+      SymExpr* callFnSymExpr = toSymExpr(call->baseExpr);
+      if (callFnSymExpr && call->numActuals() == 1) {
+        Symbol* callFnSym = callFnSymExpr->var;
         if (DefExpr* def = toDefExpr(call->get(1))) {
-          if (call->isNamed("bool")) {
+          if (callFnSym == dtBools[BOOL_SIZE_DEFAULT]->symbol) {
             for (int i=BOOL_SIZE_8; i<BOOL_SIZE_NUM; i++)
               if (dtBools[i]) {
                 clone_for_parameterized_primitive_formals(fn, def,
@@ -1019,21 +1001,23 @@ fixup_query_formals(FnSymbol* fn) {
               }
             fn->defPoint->remove();
             return;
-          } else if (call->isNamed("int") || call->isNamed("uint")) {
+          } else if (callFnSym == dtInt[INT_SIZE_DEFAULT]->symbol || 
+                     callFnSym == dtUInt[INT_SIZE_DEFAULT]->symbol) {
             for( int i=INT_SIZE_1; i<INT_SIZE_NUM; i++)
               if (dtInt[i])
                 clone_for_parameterized_primitive_formals(fn, def,
                                                           get_width(dtInt[i]));
             fn->defPoint->remove();
             return;
-          } else if (call->isNamed("real") || call->isNamed("imag")) {
+          } else if (callFnSym == dtReal[FLOAT_SIZE_DEFAULT]->symbol ||
+                     callFnSym == dtImag[FLOAT_SIZE_DEFAULT]->symbol) {
             for( int i=FLOAT_SIZE_16; i<FLOAT_SIZE_NUM; i++)
               if (dtReal[i])
                 clone_for_parameterized_primitive_formals(fn, def,
                                                           get_width(dtReal[i]));
             fn->defPoint->remove();
             return;
-          } else if (call->isNamed("complex")) {
+          } else if (callFnSym == dtComplex[COMPLEX_SIZE_DEFAULT]->symbol) {
             for( int i=COMPLEX_SIZE_32; i<COMPLEX_SIZE_NUM; i++)
               if (dtComplex[i])
                 clone_for_parameterized_primitive_formals(fn, def,

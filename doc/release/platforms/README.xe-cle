@@ -32,7 +32,7 @@ please contact your system administrator.
    multiple locales and GASNet.
 
 
-3) If your Cray XT requires PBS/qsub to launch jobs onto the compute
+3) If your Cray XE requires PBS/qsub to launch jobs onto the compute
    nodes (or you simply want to use it as your job launch mechanism),
    set CHPL_LAUNCHER to 'pbs-aprun'.  For example:
 
@@ -47,15 +47,7 @@ please contact your system administrator.
    launcher capabilities.
 
 
-4) If your Cray XE has compute nodes with varying numbers of cores,
-   you will need to select a number of cores per node using the
-   variable CHPL_LAUNCHER_CORES_PER_LOCALE.  For example, to use
-   24-core nodes, you might use:
-
-     setenv CHPL_LAUNCHER_CORES_PER_LOCALE 24
-
-
-5) When using CHPL_LAUNCHER == pbs-aprun, you can optionally specify a
+4) When using CHPL_LAUNCHER == pbs-aprun, you can optionally specify a
    queue name using the environment variable CHPL_LAUNCHER_QUEUE.  For
    example:
 
@@ -69,7 +61,7 @@ please contact your system administrator.
      setenv CHPL_LAUNCHER_WALLTIME 00:10:00
 
 
-6) Ensure that you have one of the following Programming Environment
+5) Ensure that you have one of the following Programming Environment
    modules loaded which will specify the C compiler used to compile
    Chapel programs for the compute nodes:
 
@@ -79,7 +71,7 @@ please contact your system administrator.
      - PrgEnv-pgi
 
 
-7) By default, g++ will be used to compile code that runs on the login
+6) By default, g++ will be used to compile code that runs on the login
    nodes, such as the Chapel compiler and launcher code.  Optionally,
    you can override this default by setting CHPL_HOST_COMPILER to one
    of the following values:
@@ -90,7 +82,7 @@ please contact your system administrator.
      pgi       : the PGI compiler suite -- pgcc and pgCC
 
 
-8) Make sure you're in the top-level chapel/ directory:
+7) Make sure you're in the top-level chapel/ directory:
 
      cd $CHPL_HOME
 
@@ -99,28 +91,27 @@ please contact your system administrator.
      gmake
 
 
-9) Set your PATH to include the directory $CHPL_HOME/bin/xe-cle
+8) Set your PATH to include the directory $CHPL_HOME/bin/xe-cle
    which is created when you build the compiler.  For example:
 
      setenv PATH "$PATH":"$CHPL_HOME/bin/xe-cle"
 
 
-10) Compile your Chapel program as usual.  See README.compiling for
+9)  Compile your Chapel program as usual.  See README.compiling for
     details.  For example:
 
       chpl -o hello6-taskpar-dist $CHPL_HOME/examples/hello6-taskpar-dist.chpl
 
 
-11) When you compile a Chapel program for the Cray XE, you should see
-    two binaries (e.g., hello6-taskpar-dist and
-    hello6-taskpar-dist_real).  The first binary contains code to
-    launch the Chapel program onto the compute nodes, as specified by
-    your CHPL_LAUNCHER setting.  The second contains the program code
-    itself; it is not intended to be executed directly from the shell
-    prompt.
+10) When you compile a Chapel program for the Cray XE, you should see
+    two binaries (e.g., hello6-taskpar-dist and hello6-taskpar-dist_real).
+    The first binary contains code to launch the Chapel program onto the
+    compute nodes, as specified by your CHPL_LAUNCHER setting.  The
+    second contains the program code itself; it is not intended to be
+    executed directly from the shell prompt.
 
 
-12) Multi-locale executions require the number of locales to be
+11) Multi-locale executions require the number of locales to be
     specified on the command line.  Other than this, execute your
     Chapel program as usual.  For example:
 
@@ -128,6 +119,14 @@ please contact your system administrator.
 
    You can use the -v flag to see the commands used to launch your
    program.  See README.launcher for further details.
+
+
+12) If your Cray XE has compute nodes with varying numbers of cores,
+    you can request nodes with at least a certain number of cores
+    using the variable CHPL_LAUNCHER_CORES_PER_LOCALE.  For example,
+    to request nodes with at least 24 cores, you might use:
+
+      setenv CHPL_LAUNCHER_CORES_PER_LOCALE 24
 
 
 -----------------------------------------
@@ -150,10 +149,29 @@ Cray XE File Systems and Chapel execution
 Known Constraints and Bugs
 --------------------------
 
-* This is a very preliminary release of Chapel for the Cray XE using
-  GASNet over the MPI conduit (no other conduits exists).  As such,
-  the implementation does not take full advantage of some of the high
-  performance hardware instructions.
+* GASNet targets multiple "conduits" as the underlying communication
+  mechanism.  By default, the Chapel build will use the 'mpi' conduit.
+  The current version of GASNet shipped with Chapel also supports a
+  beta implementation of the native gemini conduit, but it should be
+  noted that this version has not been tuned.  To use the native
+  conduit, set the environment variable CHPL_COMM_SUBSTRATE to
+  'gemini'.  The GASNet layer prints out a warning message regarding
+  the beta nature of the release.  To quiet this message set the
+  environment variable CHPL_GASNET_QUIET=y.
+
+  There is a known GASNet configuration issue when using the gemini
+  conduit with hugepage support that results in link errors due to
+  multiply defined symbols in the hugetlbfs library.  The workaround
+  is to redefine the "post link" options environment variable set by
+  the hugepages module.  The name of the environment variable contains
+  POST_LINK_OPTS and will vary depending on the hugepage module that
+  is loaded.  For example, if you execute 'module load
+  craype-hugepages2M' and then 'module show craype-hugepages2M', it
+  will show you that the variable HUGETLB2M_POST_LINK_OPTS is set.
+  Redefine the post link options to be the same string except removing
+  "-Wl,--whole-archive,-lhugetlbfs,--no-whole-archive".  These options
+  should be consecutive and are usually first in the list of options.
+  If you have any questions or problems, please contact us for help.
 
 * Redirecting stdin when executing a Chapel program under PBS/qsub
   may not work due to limitations of qsub.

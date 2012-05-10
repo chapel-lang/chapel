@@ -561,7 +561,7 @@ Section~\ref{sec:moveprimitive}) and having multiple SymExprs
 reference it.  An Expr can also be replicated, e.g. using the
 \cc{BaseAST::copy} method (Section~\ref{sec:BaseASTutils}).
 
-All references ot identifiers (i.e. pointers to Symbol objects) are
+All references to identifiers (i.e. pointers to Symbol objects) are
 represented by unique Expr instances, often SymExprs.  Consider, for example,
 a program that contains the following calls:
 \begin{chapel}
@@ -598,11 +598,12 @@ multiple children may point back to the same parent expression.
 
 This uniqueness property is useful by allowing us to identify an
 expression's position within the AST given just a pointer to that
-expression node.  For example, just a pointer is sufficient to remove
+expression node.  For example, just such a pointer is sufficient to remove
 the node completely from the AST, updating properly all the
 surrounding auxiliary pointers. Also, uniqueness facilitates
-implementing iterators over the AST that visit each node exactly once.
-When you modify an expression in-place, you are assured that it
+implementing iterators over the AST that visit each node exactly once,
+in particular, the \cc{AST_CHILDREN_CALL} macro.
+Also, when you modify an expression in-place, you are assured that it
 affects the AST only in that one place.
 
 The uniqueness property, like many other assumptions on the AST, holds

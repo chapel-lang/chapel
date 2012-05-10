@@ -1,9 +1,10 @@
-export CHPL_TASKS=nanox
-CHAPEL_ROOT = ../..
-CHAPEL_SUBDIR = third-party/nanox
-CHPL_MAKE_HOST_TARGET = --target
-include $(CHAPEL_ROOT)/make/Makefile.base
+ifndef CHPL_MAKE_HOME
+export CHPL_MAKE_HOME=$(shell pwd)/../..
+endif
 
+export CHPL_TASKS=nanox
+CHPL_MAKE_HOST_TARGET = --target
+include $(CHPL_MAKE_HOME)/make/Makefile.base
 
 #
 # set up the directories
@@ -25,7 +26,7 @@ clobber: FORCE
 
 nanox-config: FORCE
 	mkdir -p $(NANOX_BUILD_DIR)
-	cd $(NANOX_BUILD_DIR) && $(NANOX_SUBDIR)/configure CC='$(CC)' CXX='$(CXX)' --prefix=$(NANOX_INSTALL_DIR) --with-chapel=$(CURDIR)/$(CHAPEL_ROOT)
+	cd $(NANOX_BUILD_DIR) && $(NANOX_SUBDIR)/configure CC='$(CC)' CXX='$(CXX)' --prefix=$(NANOX_INSTALL_DIR) --with-chapel=$(CHPL_MAKE_HOME)
 
 nanox-build: FORCE
 	cd $(NANOX_BUILD_DIR) && $(MAKE)

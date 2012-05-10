@@ -1,6 +1,10 @@
 RUNTIME_ROOT = ../../..
 RUNTIME_SUBDIR = src/mem/tcmalloc
 
+ifndef CHPL_MAKE_HOME
+export CHPL_MAKE_HOME=$(shell pwd)/$(RUNTIME_ROOT)/..
+endif
+
 include $(RUNTIME_ROOT)/make/Makefile.runtime.head
  
 MEM_OBJDIR = $(RUNTIME_OBJDIR)

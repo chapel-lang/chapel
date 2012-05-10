@@ -1,6 +1,10 @@
 RUNTIME_ROOT = ../..
 RUNTIME_SUBDIR = src/timers
 
+ifndef CHPL_MAKE_HOME
+export CHPL_MAKE_HOME=$(shell pwd)/$(RUNTIME_ROOT)/..
+endif
+
 #
 # standard header
 #

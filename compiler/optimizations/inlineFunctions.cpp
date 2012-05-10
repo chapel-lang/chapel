@@ -29,7 +29,8 @@ inlineCall(FnSymbol* fn, CallExpr* call) {
   // copy function body, inline it at call site, and update return
   //
   BlockStmt* block = fn->body->copy(&map);
-  reset_line_info(block, call->lineno);
+  if (!preserveInlinedLineNumbers)
+    reset_ast_loc(block, call);
   CallExpr* return_stmt = toCallExpr(block->body.last());
   if (!return_stmt || !return_stmt->isPrimitive(PRIM_RETURN))
     INT_FATAL(call, "function is not normalized");

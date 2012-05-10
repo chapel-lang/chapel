@@ -160,7 +160,7 @@ changeRetToArgAndClone(CallExpr* move, Symbol* lhs,
                   if (!strcmp(useFn->name, "=")) {
                     Symbol* tmp = newTemp("_ret_to_arg_tmp_", useFn->retType);
                     move->insertBefore(new DefExpr(tmp));
-                    move->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_REF, arg)));
+                    move->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_DEREF, arg)));
                     move->insertAfter(new CallExpr(PRIM_MOVE, arg, new CallExpr(useFn, tmp, ret)));
                   } else {
                     move->insertAfter(new CallExpr(PRIM_MOVE, arg, new CallExpr(useFn, ret)));
@@ -168,7 +168,7 @@ changeRetToArgAndClone(CallExpr* move, Symbol* lhs,
                 } else {
                   Symbol* tmp = newTemp("ret_to_arg_tmp_", useFn->retType);
                   se->getStmtExpr()->insertBefore(new DefExpr(tmp));
-                  se->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_REF, arg)));
+                  se->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_DEREF, arg)));
                   se->var = tmp;
                 }
               }
@@ -194,7 +194,7 @@ changeRetToArgAndClone(CallExpr* move, Symbol* lhs,
           if (!useLhs->type->symbol->hasFlag(FLAG_REF)) {
             useLhs = newTemp("ret_to_arg_ref_tmp_", useFn->retType->refType);
             move->insertBefore(new DefExpr(useLhs));
-            move->insertBefore(new CallExpr(PRIM_MOVE, useLhs, new CallExpr(PRIM_SET_REF, useMove->get(1)->remove())));
+            move->insertBefore(new CallExpr(PRIM_MOVE, useLhs, new CallExpr(PRIM_ADDR_OF, useMove->get(1)->remove())));
           }
           // lhs->defPoint->remove();
           move->replace(call->remove());
@@ -262,12 +262,8 @@ fixupDestructors() {
         if (field->type->destructor) {
           ClassType* fct = toClassType(field->type);
           INT_ASSERT(fct);
-          if (!isClass(fct) ||
-              fct->symbol->hasFlag(FLAG_SYNC) ||
-              fct->symbol->hasFlag(FLAG_SINGLE)) {
-            bool useRefType = !isRefCountedType(fct) &&
-              !fct->symbol->hasFlag(FLAG_SYNC) &&
-              !fct->symbol->hasFlag(FLAG_SINGLE);
+          if (!isClass(fct) || isSyncType(fct)) {
+            bool useRefType = !isRefCountedType(fct) && !isSyncType(fct);
             VarSymbol* tmp = newTemp("_field_destructor_tmp_", useRefType ? fct->refType : fct);
             fn->insertBeforeReturnAfterLabel(new DefExpr(tmp));
             fn->insertBeforeReturnAfterLabel(new CallExpr(PRIM_MOVE, tmp,
@@ -296,8 +292,7 @@ fixupDestructors() {
             //  field is copied in the autocopy.  The corresponding
             //  autodestroys may delete the data twice.
             //
-            if ((fct->symbol->hasFlag(FLAG_SYNC) ||
-                 fct->symbol->hasFlag(FLAG_SINGLE)) &&
+            if (isSyncType(fct) &&
                 ((ct->getModule()->modTag==MOD_INTERNAL) ||
                  (ct->getModule()->modTag==MOD_STANDARD)))
               fn->insertBeforeReturnAfterLabel(new CallExpr(PRIM_CHPL_FREE, tmp));
@@ -343,8 +338,8 @@ static void insertGlobalAutoDestroyCalls() {
   const char* name = "chpl__autoDestroyGlobals";
   FnSymbol* fn = new FnSymbol(name);
   fn->retType = dtVoid;
-  chpl_main->defPoint->insertBefore(new DefExpr(fn));
-  chpl_main->insertBeforeReturnAfterLabel(new CallExpr(fn));
+  chpl_gen_main->defPoint->insertBefore(new DefExpr(fn));
+  chpl_gen_main->insertBeforeReturnAfterLabel(new CallExpr(fn));
   forv_Vec(DefExpr, def, gDefExprs) {
     if (isModuleSymbol(def->parentSymbol))
       if (def->parentSymbol != rootModule)
@@ -371,7 +366,7 @@ callDestructors() {
         SET_LINENO(call);
         VarSymbol* tmp = newTemp("_destructor_tmp_", type->destructor->_this->type);
         call->insertBefore(new DefExpr(tmp));
-        call->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_SET_REF, call->get(1)->remove())));
+        call->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_ADDR_OF, call->get(1)->remove())));
         call->replace(new CallExpr(type->destructor, tmp));
       } else {
         SET_LINENO(call);

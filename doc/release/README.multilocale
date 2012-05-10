@@ -43,6 +43,7 @@ To run Chapel on multiple locales, the following steps are required:
 
      When CHPL_COMM_SUBSTRATE is...    Chapel will choose...
        portals                           fast
+       gemini                            fast
        (other)                           everything
 
 

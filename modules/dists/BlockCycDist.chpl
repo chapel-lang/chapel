@@ -31,10 +31,10 @@ config param debugBlockCyclicDist = false; // internal development flag (debuggi
 //
 class BlockCyclic : BaseDist {
   param rank: int;
-  type idxType = int(64);
+  type idxType = int;
 
   const lowIdx: rank*idxType;
-  const blocksize: rank*int(32);
+  const blocksize: rank*int;
   const targetLocDom: domain(rank);
   const targetLocales: [targetLocDom] locale;
   const locDist: [targetLocDom] LocBlockCyclic(rank, idxType);
@@ -442,7 +442,7 @@ proc BlockCyclicDom.setup() {
                                                    dist.getStarts(whole, localeIdx));
       else {
         locDoms(localeIdx).myStarts = dist.getStarts(whole, localeIdx);
-        locDoms(localeIdx).myFlatInds = [0:int(64)..#locDoms(localeIdx).computeFlatInds()];
+        locDoms(localeIdx).myFlatInds = [0..#locDoms(localeIdx).computeFlatInds()];
       }
   if debugBlockCyclicDist then
     enumerateBlocks();
@@ -519,7 +519,7 @@ class LocBlockCyclicDom {
   // indices back to the local index type.
   //
   var myStarts: domain(rank, idxType, stridable=true);
-  var myFlatInds: domain(1, int(64)) = [0:int(64)..#computeFlatInds()];
+  var myFlatInds: domain(1) = [0..#computeFlatInds()];
 }
 
 //
@@ -527,8 +527,8 @@ class LocBlockCyclicDom {
 //
 proc LocBlockCyclicDom.computeFlatInds() {
   //  writeln("myStarts = ", myStarts);
-  const numBlocks: int(64) = * reduce [d in 1..rank] (myStarts.dim(d).length):int(64),
-    indsPerBlk: int(64) = * reduce [d in 1..rank] (globDom.dist.blocksize(d)):int(64);
+  const numBlocks = * reduce [d in 1..rank] (myStarts.dim(d).length),
+    indsPerBlk = * reduce [d in 1..rank] (globDom.dist.blocksize(d));
   //  writeln("Total number of inds = ", numBlocks * indsPerBlk);
   return numBlocks * indsPerBlk;
 }
@@ -778,10 +778,10 @@ class LocBlockCyclicArr {
   var myElems: [allocDom.myFlatInds] eltType;
 
   // TODO: need to be able to access these, but is this the right place?
-  const blocksize: [1..rank] int(64) = [d in 1..rank] allocDom.globDom.dist.blocksize(d): int(64);
+  const blocksize: [1..rank] int = [d in 1..rank] allocDom.globDom.dist.blocksize(d);
   const low = allocDom.globDom.dsiLow;
-  const locsize: [1..rank] int(64) = [d in 1..rank] allocDom.globDom.dist.targetLocDom.dim(d).length: int(64);
-  const numblocks: [1..rank] int(64) = [d in 1..rank] (allocDom.myStarts.dim(d).length):int(64);
+  const locsize: [1..rank] int = [d in 1..rank] allocDom.globDom.dist.targetLocDom.dim(d).length;
+  const numblocks: [1..rank] int = [d in 1..rank] (allocDom.myStarts.dim(d).length);
 
 }
 
@@ -790,7 +790,7 @@ proc LocBlockCyclicArr.mdInd2FlatInd(i: ?t, dim = 1) where t == idxType {
   //  writeln("blksize");
   const blksize = blocksize(dim);
   //  writeln("ind0");
-  const ind0 = (i - low): int(64);
+  const ind0 = (i - low): int;
   //  writeln("blkNum");
   const blkNum = ind0 / (blksize * locsize(dim));
   //  writeln("blkOff");
@@ -803,11 +803,11 @@ proc LocBlockCyclicArr.mdInd2FlatInd(i: ?t) where t == rank*idxType {
   if (false) {  // CMO
     var blkmults = * scan [d in 1..rank] blocksize(d);
     //    writeln("blkmults = ", blkmults);
-    var numwholeblocks: int(64) = 0;
-    var blkOff: int(64) = 0;
+    var numwholeblocks = 0;
+    var blkOff = 0;
     for param d in rank..1 by -1 {
       const blksize = blocksize(d);
-      const ind0 = (i(d) - low(d)): int(64);
+      const ind0 = (i(d) - low(d)): int;
       const blkNum = ind0 / (blksize * locsize(d));
       const blkDimOff = ind0 % blksize;
       if (d != rank) {
@@ -820,16 +820,16 @@ proc LocBlockCyclicArr.mdInd2FlatInd(i: ?t) where t == rank*idxType {
     return (numwholeblocks * blocksize(rank)) + blkOff;
   } else { // RMO
     //TODO: want negative scan: var blkmults = * scan [d in 1..rank] blocksize(d);
-    var blkmults: [1..rank] int(64);
+    var blkmults: [1..rank] int;
     blkmults(rank) = blocksize(rank);
     for d in rank-1..1 by -1 do
       blkmults(d) = blkmults(d+1) * blocksize(d);
     //    writeln("blkmults = ", blkmults);
-    var numwholeblocks: int(64) = 0;
-    var blkOff: int(64) = 0;
+    var numwholeblocks = 0;
+    var blkOff = 0;
     for param d in 1..rank {
       const blksize = blocksize(d);
-      const ind0 = (i(d) - low(d)): int(64);
+      const ind0 = (i(d) - low(d)): int;
       const blkNum = ind0 / (blksize * locsize(d));
       const blkDimOff = ind0 % blksize;
       if (d != 1) {

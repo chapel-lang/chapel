@@ -20,10 +20,10 @@ Recommended Settings
    For example:
 
         (if your shell is tcsh - assumed in all examples:)
-        setenv CHPL_HOME ~/chapel-1.4.0/chapel
+        setenv CHPL_HOME ~/chapel-1.5.0
 
         (if your shell is bash:)
-        export CHPL_HOME=~/chapel-1.4.0/chapel
+        export CHPL_HOME=~/chapel-1.5.0
 
         (use appropriate commands for other shells)
 
@@ -36,11 +36,10 @@ Recommended Settings
         setenv CHPL_HOST_PLATFORM `$CHPL_HOME/util/chplenv/platform`
 
    For other platforms that appear very similar to a UNIX workstation
-   from the shell prompt (e.g., a Cray XT or Cray CX1000), the value
-   may need to be set explicitly.  The strings for our
-   currently-supported host platforms are as follows:
+   from the shell prompt (e.g., a Cray XT), the value may need to be
+   set explicitly.  The strings for our currently-supported host
+   platforms are as follows:
 
-        cx-linux    : Cray CX1 or Cray CX1000 running Linux
         cygwin      : Cygwin (Windows) platforms
         darwin      : Macintosh OS X platforms
         linux32     : 32-bit Linux platforms
@@ -115,12 +114,10 @@ Optional Settings
         cray-mta          : the Cray compiler for multithreaded architectures
         cray-vec          : the Cray compiler for vector architectures
         cray-xt-gnu       : the Cray XT compiler using the GNU backend
-        cray-xt-pathscale : the Cray XT compiler using the Pathscale backend
         cray-xt-pgi       : the Cray XT compiler using the PGI backend
         gnu               : the GNU compiler suite -- gcc and g++
         ibm               : the IBM compiler suite -- xlc and xlC
         intel             : the Intel compiler suite -- icc and icpc
-	pathscale         : the Pathscale compiler suite -- pathcc and pathCC
 	pgi               : the PGI compiler suite -- pgcc and pgCC
 
    The default for CHPL_HOST_COMPILER depends on the value of the
@@ -128,7 +125,6 @@ Optional Settings
 
         platform        compiler
         --------        --------
-        cx-linux    ->  gnu
         marenostrum ->  ibm
         pwr5, pwr6  ->  ibm
         x1, x2      ->  cray-vec
@@ -212,7 +208,7 @@ Optional Settings
         default  : use the standard C malloc/free commands
         dlmalloc : use Doug Lea's memory allocation package
 
-   If unset, CHPL_COMM defaults to "default" unless CHPL_COMM is
+   If unset, CHPL_MEM defaults to "default" unless CHPL_COMM is
    gasnet and you are using the fast or large segments.  See
    README.multilocale for more information on GASNet segments.
 
@@ -233,6 +229,15 @@ Optional Settings
    CHPL_TARGET_PLATFORM is set to "xmt" in which case it defaults to
    "mta".
 
+9) Optionally, the CHPL_GMP environment variable can select between
+   no GMP support, using the GMP distributed with Chapel in third-party,
+   or using a system GMP. The options are:
+        system : assume GMP is already installed (#include gmp.h, -lgmp)
+        none   : do not build GMP support into the Chapel runtime
+        gmp    : use the gmp implementation bundled with Chapel in third-party
+
+   If unset, CHPL_GMP defaults to "none". Note that the included gmp distribution
+   may not build on all platforms supported by Chapel.
 
 -------------------------------------
 Compiler Command Line Option Defaults

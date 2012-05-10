@@ -203,9 +203,6 @@ int lastNodeIDUsed() {
   return uid - 1;
 }
 
-// ProcIter: remove this
-bool markNewFnSymbolsWithProcIter = false;
-
 
 // This is here so that we can break on the creation of a particular
 // BaseAST instance in gdb.
@@ -219,25 +216,24 @@ static void checkid(int id) {
 BaseAST::BaseAST(AstTag type) :
   astTag(type),
   id(uid++),
-  lineno(yystartlineno)
+  astloc(yystartlineno, yyfilename)
 {
   checkid(id);
-  if (lineno == -1) {
-    if (currentLineno) {
-      lineno = currentLineno;
+  if (astloc.lineno == -1) {
+    if (currentAstLoc.lineno) {
+      astloc = currentAstLoc;
     }
   }
 }
 
 
 const char* BaseAST::stringLoc(void) {
-  const int tmpBuffSize = 64;
+  const int tmpBuffSize = 256;
   char tmpBuff[tmpBuffSize];
 
-  snprintf(tmpBuff, tmpBuffSize, "%s:%d", getModule()->filename, lineno);
+  snprintf(tmpBuff, tmpBuffSize, "%s:%d", fname(), linenum());
   return astr(tmpBuff);
 }
-
 
 // stringLoc for debugging only
 char* stringLoc(BaseAST* ast);
@@ -251,12 +247,7 @@ char* stringLoc(BaseAST* ast) {
   const int tmpBuffSize = 256;
   static char tmpBuff[tmpBuffSize];
 
-  ModuleSymbol* module = ast->getModule();
-  if (module) {
-    snprintf(tmpBuff, tmpBuffSize, "%s:%d", module->filename, ast->lineno);
-  } else {
-    snprintf(tmpBuff, tmpBuffSize, "<unknown module>:%d", ast->lineno);
-  }
+  snprintf(tmpBuff, tmpBuffSize, "%s:%d", ast->fname(), ast->linenum());
   return tmpBuff;
 }
 
@@ -366,7 +357,7 @@ const char* astTagName[E_BaseAST+1] = {
   "BaseAST"
 };
 
-int currentLineno = 0;
+astlocT currentAstLoc(0,NULL);
 
 Vec<ModuleSymbol*> mainModules; // Contains main modules
 Vec<ModuleSymbol*> userModules; // Contains user + main modules

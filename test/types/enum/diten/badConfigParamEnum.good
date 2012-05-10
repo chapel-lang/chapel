@@ -1,1 +1,1 @@
-badConfigParamEnum.chpl:1: error: unresolved enumerated type symbol "orange"
+Command-line arg (c):1: error: unresolved enumerated type symbol "orange"

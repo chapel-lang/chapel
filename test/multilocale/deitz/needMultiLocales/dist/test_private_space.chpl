@@ -8,31 +8,31 @@ use BlockDist, PrivateDist;
 
 config var n: int = 8;
 
-var P: [PrivateSpace] int;
+var P: [PrivateSpace] atomic int;
 var D: domain(1) dmapped new dmap(new Block(boundingBox=[1..n])) = [1..n];
 var A: [D] int;
 
 startCommDiagnostics();
 coforall loc in Locales do on loc {
-  P(loc.id) = loc.id;
+  P(loc.id).write(loc.id);
 }
 stopCommDiagnostics();
 
 writeln(P);
 writeln("diagnostics = ", getCommDiagnostics());
 
-P = 0;
+P.write(0);
 A = 1..n;
 
 startCommDiagnostics();
 forall a in A do
-  P(here.id) += a;
+  P(here.id).fetchAdd(a);
 stopCommDiagnostics();
 
 writeln(A);
 writeln(P);
 writeln("diagnostics = ", getCommDiagnostics());
 
-forall p in P {
-  writeln(here.id, ": ", p);
+for p in P do on p {
+  writeln(here.id, ": ", p.read());
 }

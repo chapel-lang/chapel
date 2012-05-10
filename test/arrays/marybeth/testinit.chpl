@@ -1,7 +1,7 @@
 var D = [1..10,1..10];
 var A: [D] real;
 var value: real;
-var Adat = open('Adata.dat', mode.r).reader();
+var Adat = open('Adata.dat', iomode.r).reader();
 //new file('Adata.dat',path='./',mode=FileAccessMode.read);
 
 for ij in D {

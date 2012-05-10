@@ -1,5 +1,6 @@
 \sekshun{Expressions}
 \label{Expressions}
+\index{expressions}
 
 Chapel provides the following expressions:
 
@@ -142,8 +143,9 @@ member-access-expression:
 
 \section{The Query Expression}
 \label{The_Query_Expression}
-\index{?@\chpl{?}}
-%TODO-how? \index{expressions!\?}
+\index{expressions!type query}
+\index{? (type query)@\chpl{?} (type query)}
+\index{operators!? (type query)@\chpl{?} (type query)}
 
 A query expression is used to query a type or value within a formal
 argument type expression.  The syntax of a query expression is given
@@ -218,6 +220,8 @@ places in the future.
 \label{Casts}
 \index{casts}
 \index{expressions!cast}
+\index{: (cast)@\chpl{:} (cast)}
+\index{operators!: (cast)@\chpl{:} (cast)}
 
 A cast is specified with the following syntax:
 \begin{syntax}
@@ -231,7 +235,8 @@ conversions~(\rsec{Explicit_Conversions}).
 The following cast has a special meaning and does not correspond to an
 explicit conversion:
 \begin{itemize}
-\item \index{complex!casts from tuples}
+\index{complex@\chpl{complex}!casts from tuples}
+\item
   A cast from a 2-tuple to \chpl{complex} converts the 2-tuple into a
   complex where the first component becomes the real part and the
   second component becomes the imaginary part.  The size of the
@@ -240,8 +245,8 @@ explicit conversion:
 \end{itemize}
 
 \section{LValue Expressions}
-\label{lvalue}
-\index{lvalue}
+\label{LValue_Expressions}
+\index{lvalues}
 \index{expressions!lvalue}
 
 An {\em lvalue} is an expression that can be used on the left-hand
@@ -451,10 +456,10 @@ expression is not a scalar as expected.
 \section{Operator Expressions}
 \label{Binary_Expressions}
 \label{Unary_Expressions}
-\index{operators!operator expressions}
 \index{expressions!operator}
 
 \index{operators!unary}
+\index{expressions!unary operator}
 The application of operators to expressions is itself an expression.
 The syntax of a unary expression is given by:
 \begin{syntax}
@@ -466,6 +471,7 @@ unary-operator: one of
 \end{syntax}
 
 \index{operators!binary}
+\index{expressions!binary operator}
 The syntax of a binary expression is given by:
 \begin{syntax}
 binary-expression:
@@ -499,6 +505,7 @@ the 32-bit integers.  The result is a 32-bit integer.
 \subsection{Unary Plus Operators}
 \label{Unary_Plus_Operators}
 \index{+ (unary)@\chpl{+} (unary)}
+\index{operators!+ (unary)@\chpl{+} (unary)}
 
 The unary plus operators are predefined as follows:
 \begin{chapel}
@@ -517,7 +524,9 @@ For each of these definitions, the result is the value of the operand.
 
 \subsection{Unary Minus Operators}
 \label{Unary_Minus_Operators}
+\index{operators!negation}
 \index{- (unary)@\chpl{-} (unary)}
+\index{operators!- (unary)@\chpl{-} (unary)}
 
 The unary minus operators are predefined as follows:
 \begin{chapel}
@@ -544,7 +553,9 @@ to \chpl{int(64)} using an implicit conversion.
 
 \subsection{Addition Operators}
 \label{Addition_Operators}
+\index{operators!addition}
 \index{+@\chpl{+}}
+\index{operators!+@\chpl{+}}
 
 The addition operators are predefined as follows:
 \begin{chapel}
@@ -590,7 +601,9 @@ type.
 
 \subsection{Subtraction Operators}
 \label{Subtraction_Operators}
+\index{operators!subtraction}
 \index{-@\chpl{-}}
+\index{operators!-@\chpl{-}}
 
 The subtraction operators are predefined as follows:
 \begin{chapel}
@@ -639,6 +652,8 @@ versa, also produces a value of complex type.
 
 \subsection{Multiplication Operators}
 \label{Multiplication_Operators}
+\index{operators!multiplication}
+\index{operators!*@\chpl{*}}
 \index{*@\chpl{*}}
 
 The multiplication operators are predefined as follows:
@@ -688,7 +703,9 @@ value of complex type.
 
 \subsection{Division Operators}
 \label{Division_Operators}
+\index{operators!division}
 \index{/@\chpl{/}}
+\index{operators!/@\chpl{/}}
 
 The division operators are predefined as follows:
 \begin{chapel}
@@ -742,7 +759,9 @@ The integer result $q$ is the candidate quotient which lies closest to zero.
 
 \subsection{Modulus Operators}
 \label{Modulus_Operators}
+\index{operators!modulus}
 \index{\%@\chpl{\%}}
+\index{operators!\%@\chpl{\%}}
 
 The modulus operators are predefined as follows:
 \begin{chapel}
@@ -775,7 +794,9 @@ extended to handle real, imaginary, and complex types in the future.
 
 \subsection{Exponentiation Operators}
 \label{Exponentiation_Operators}
+\index{operators!exponentiation}
 \index{**@\chpl{**}}
+\index{operators!**@\chpl{**}}
 
 The exponentiation operators are predefined as follows:
 \begin{chapel}
@@ -809,7 +830,9 @@ overloading~(\rsec{Function_Overloading}).
 
 \subsection{Bitwise Complement Operators}
 \label{Bitwise_Complement_Operators}
+\index{operators!bitwise!complement}
 \index{\~@\chpl{\~}}
+\index{operators!\~@\chpl{\~}}
 
 The bitwise complement operators are predefined as follows:
 \begin{chapel}
@@ -824,7 +847,9 @@ the operand.
 
 \subsection{Bitwise And Operators}
 \label{Bitwise_And_Operators}
+\index{operators!bitwise!and}
 \index{&@\chpl{&}}
+\index{operators!&@\chpl{&}}
 
 The bitwise and operators are predefined as follows:
 \begin{chapel}
@@ -861,7 +886,9 @@ reflects the semantics of standard C.
 
 \subsection{Bitwise Or Operators}
 \label{Bitwise_Or_Operators}
+\index{operators!bitwise!or}
 \index{|@\chpl{|}}
+\index{operators!|@\chpl{|}}
 
 The bitwise or operators are predefined as follows:
 \begin{chapel}
@@ -890,7 +917,9 @@ The same as for bitwise and (\rsec{Bitwise_And_Operators}).
 
 \subsection{Bitwise Xor Operators}
 \label{Bitwise_Xor_Operators}
+\index{operators!bitwise!exclusiv or}
 \index{^@\chpl{^}}
+\index{operators!^@\chpl{^}}
 
 The bitwise xor operators are predefined as follows:
 \begin{chapel}
@@ -918,8 +947,11 @@ The same as for bitwise and (\rsec{Bitwise_And_Operators}).
 
 \section{Shift Operators}
 \label{Shift_Operators}
+\index{operators!shift}
 \index{<<@\chpl{<<}}
+\index{operators!<<@\chpl{<<}}
 \index{>>@\chpl{>>}}
+\index{operators!>>@\chpl{>>}}
 
 This section describes the predefined shift operators.  These
 operators can be redefined over different types using operator
@@ -957,7 +989,9 @@ overloading~(\rsec{Function_Overloading}).
 
 \subsection{The Logical Negation Operator}
 \label{Logical_Negation_Operators}
-\index{!@\chpl{!}}
+\index{operators!logical!not}
+\index{\!@\chpl{!}}
+\index{operators!\!@\chpl{!}}
 
 The logical negation operator is predefined as follows:
 \begin{chapel}
@@ -967,12 +1001,20 @@ The result is the logical negation of the operand.
 
 \subsection{The Logical And Operator}
 \label{Logical_And_Operators}
+\index{operators!logical!and}
 \index{&&@\chpl{&&}}
+\index{operators!&&@\chpl{&&}}
 
 The logical and operator is predefined over bool type.  It returns
 true if both operands evaluate to true; otherwise it returns false.
 If the first operand evaluates to false, the second operand is not
 evaluated and the result is false.
+%% hilde sez: In the interest of supporting parallel execution, we should leave
+%% unspecified whether the right operand is evaluated.
+%% Where sufficient processing resources are available, it is faster on average
+%% to evaluate both the left and right operands and perform the conjunction or
+%% disjunction than to block until the value of the left operand is known and
+%% only then commence to evaluate the right operand.
 
 The logical and operator over expressions \chpl{a} and \chpl{b} given
 by
@@ -993,7 +1035,10 @@ by overloading the \chpl{isTrue} function over other types.
 
 \subsection{The Logical Or Operator}
 \label{Logical_Or_Operators}
+\index{operators!logical!or}
 \index{||@\chpl{||}}
+\index{operators!||@\chpl{||}}
+
 
 The logical or operator is predefined over bool type.  It returns
 true if either operand evaluate to true; otherwise it returns false.
@@ -1026,7 +1071,9 @@ overloading~(\rsec{Function_Overloading}).
 \subsection{Ordered Comparison Operators}
 \label{Ordered_Comparison_Operators}
 
+\index{operators!less than}
 \index{<@\chpl{<}}
+\index{operators!<@\chpl{<}}
 The ``less than'' comparison operators are predefined over numeric
 types as follows:
 \begin{chapel}
@@ -1042,7 +1089,9 @@ proc <(a: imag(64), b: imag(64)): bool
 The result of \chpl{a < b} is true if \chpl{a} is less than \chpl{b};
 otherwise the result is false.
 
+\index{operators!greater than}
 \index{>@\chpl{>}}
+\index{operators!>@\chpl{>}}
 The ``greater than'' comparison operators are predefined over numeric
 types as follows:
 \begin{chapel}
@@ -1058,7 +1107,9 @@ proc >(a: imag(64), b: imag(64)): bool
 The result of \chpl{a > b} is true if \chpl{a} is greater
 than \chpl{b}; otherwise the result is false.
 
+\index{operators!less than or equal}
 \index{<=@\chpl{<=}}
+\index{operators!<=@\chpl{<=}}
 The ``less than or equal to'' comparison operators are predefined over
 numeric types as follows:
 \begin{chapel}
@@ -1074,7 +1125,9 @@ proc <=(a: imag(64), b: imag(64)): bool
 The result of \chpl{a <= b} is true if \chpl{a} is less than or equal
 to \chpl{b}; otherwise the result is false.
 
+\index{operators!greater than or equal}
 \index{>=@\chpl{>=}}
+\index{operators!>=@\chpl{>=}}
 The ``greater than or equal to'' comparison operators are predefined
 over numeric types as follows:
 \begin{chapel}
@@ -1104,10 +1157,13 @@ elementwise to the string's characters in order.
 
 \subsection{Equality Comparison Operators}
 \label{Equality_Comparison_Operators}
+\index{operators!equality}
 \index{==@\chpl{==}}
-\index{!=@\chpl{!=}}
+\index{operators!==@\chpl{==}}
+\index{"!=@\chpl{"\"!=}}
+\index{operators!"!=@\chpl{"\"!=}}
 
-The equality comparison operators are predefined over bool and the
+The equality comparison operators \chpl{==} and \chpl{\!=} are predefined over bool and the
 numeric types as follows:
 \begin{chapel}
 proc ==(a: int(32), b: int(32)): bool
@@ -1120,6 +1176,16 @@ proc ==(a: imag(32), b: imag(32)): bool
 proc ==(a: imag(64), b: imag(64)): bool
 proc ==(a: complex(64), b: complex(64)): bool
 proc ==(a: complex(128), b: complex(128)): bool
+proc !=(a: int(32), b: int(32)): bool
+proc !=(a: int(64), b: int(64)): bool
+proc !=(a: uint(32), b: uint(32)): bool
+proc !=(a: uint(64), b: uint(64)): bool
+proc !=(a: real(32), b: real(32)): bool
+proc !=(a: real(64), b: real(64)): bool
+proc !=(a: imag(32), b: imag(32)): bool
+proc !=(a: imag(64), b: imag(64)): bool
+proc !=(a: complex(64), b: complex(64)): bool
+proc !=(a: complex(128), b: complex(128)): bool
 \end{chapel}
 The result of \chpl{a == b} is true if \chpl{a} and \chpl{b} contain
 the same value; otherwise the result is false.  The result of \chpl{a
@@ -1133,12 +1199,16 @@ proc !=(a: object, b: object): bool
 \end{chapel}
 The result of \chpl{a == b} is true if \chpl{a} and \chpl{b} reference
 the same storage location; otherwise the result is false.  The result
-of \chpl{a \!= b} is equivalent to \chpl{\!(a == b)}.
+of \chpl{a != b} is equivalent to \chpl{!(a == b)}.
 
 Default equality comparison operators are generated for records if the
 user does not define them.  These operators are described
 in~\rsec{Record_Comparison_Operators}.
 
+\index{== (string)@\chpl{==} (string)}
+\index{operators!== (string)@\chpl{==} (string)}
+\index{"!= (string)@\chpl{"\"!=} (string)}
+\index{operators!"!= (string)@\chpl{"\"!=} (string)}
 The equality comparison operators are predefined over strings as
 follows:
 \begin{chapel}
@@ -1159,8 +1229,9 @@ overloading~(\rsec{Function_Overloading}).
 
 \subsection{The String Concatenation Operator}
 \label{The_String_Concatenation_Operator}
-\index{+@\chpl{+}}
-\index{operators!+, on strings}
+\index{operators!string concatenation}
+\index{operators!concatenation!string}
+\index{operators!+ (string)@\chpl{+} (string)}
 
 The string concatenation operator \chpl{+} is predefined over numeric, boolean,
 and enumerated types with strings. It casts its operands to string type and
@@ -1191,7 +1262,7 @@ would be \chpl{"result: 3"}.
 \subsection{The By Operator}
 \label{The_By_Operator}
 \index{by@\chpl{by}}
-\index{operators!by}
+\index{operators!by@\chpl{by}}
 
 The operator \chpl{by} is predefined on ranges and rectangular domains.
 It is described in~\rsec{By_Operator_For_Ranges} for ranges
@@ -1199,7 +1270,9 @@ and~\rsec{Domain_Striding} for domains.
 
 \subsection{The Range Count Operator}
 \label{The_Range_Count_Operator}
+\index{operators!range!count}
 \index{#@\chpl{#}}
+\index{operators!#@\chpl{#}}
 
 The operator \chpl{#} is predefined on ranges. It is described
 in ~\rsec{Count_Operator}.
@@ -1207,6 +1280,7 @@ in ~\rsec{Count_Operator}.
 \section{Let Expressions}
 \label{Let_Expressions}
 \index{let@\chpl{let}}
+\index{operators!let@\chpl{let}}
 
 A let expression allows variables to be declared at the expression
 level and used within that expression.  The syntax of a let expression
@@ -1218,10 +1292,10 @@ let-expression:
 The scope of the variables is the let-expression.
 \begin{chapelexample}{let.chpl}
 Let expressions are useful for defining variables in the context of
-expression.  In the code
+an expression.  In the code
 \begin{chapelnoprint}
-  var a:uint = 4;
-  var b:int = 5;
+  var a = 4;
+  var b = 5;
   var l =
 \end{chapelnoprint}
 \begin{chapel}
@@ -1242,8 +1316,9 @@ of that value.
 
 \section{Conditional Expressions}
 \label{Conditional_Expressions}
-\index{conditional expression}
+\index{conditional expressions}
 \index{expressions!conditional}
+\index{expressions!if-then-else}
 \index{if@\chpl{if}}
 \index{then@\chpl{then}}
 \index{else@\chpl{else}}
@@ -1291,6 +1366,7 @@ Half of 1000 is 500
 \section{For Expressions}
 \label{For_Expressions}
 \index{for@\chpl{for}}
+\index{expressions!for@\chpl{for}}
 
 A for expression is given by the following syntax:
 \begin{syntax}
@@ -1306,11 +1382,11 @@ are determined by the iteratable-expression.
 
 \subsection{Filtering Predicates in For Expressions}
 \label{Filtering_Predicates_For}
-\index{for expressions!and conditional expressions}
+\index{for@\chpl{for}!filtering predicates}
+\index{expressions!for@\chpl{for}!filtering predicates}
 
 A conditional expression that is immediately enclosed in a for
-expression does not require an else clause.  Such a conditional
-expression filters the iterations of the for expression.
+expression and does not require an else clause filters the iterations of the for expression.
 The iterations for which the condition does not hold
 are not reflected in the result of the for expression.
 

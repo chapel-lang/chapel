@@ -148,7 +148,13 @@ See also rcExample() and rcExampleOverLocales() in this file.
 
 /*****************************************************************************/
 // THE REPLICATED DISTRIBUTION IMPLEMENTATION
-
+//
+// Classes defined:
+//  ReplicatedDist -- Global distribution descriptor
+//  ReplicatedDom -- Global domain descriptor
+//  LocReplicatedDom -- Local domain descriptor
+//  ReplicatedArray -- Global array descriptor
+//  LocReplicatedArray -- Local array descriptor
 
 // include locale information when printing out domains and arrays
 config param printReplicatedLocales = true;

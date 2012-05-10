@@ -25,7 +25,7 @@ static Map<FnSymbol*,ArgSymbol*> linenoMap; // fn to line number argument
 static Map<FnSymbol*,ArgSymbol*> filenameMap; // fn to filename argument
 
 static ArgSymbol* newLine(FnSymbol* fn) {
-  ArgSymbol* line = new ArgSymbol(INTENT_BLANK, "_ln", dtInt[INT_SIZE_32]);
+  ArgSymbol* line = new ArgSymbol(INTENT_BLANK, "_ln", dtInt[INT_SIZE_DEFAULT]);
   fn->insertFormalAtTail(line);
   linenoMap.put(fn, line);
   if (Vec<FnSymbol*>* rootFns = virtualRootsMap.get(fn)) {
@@ -86,7 +86,7 @@ insertLineNumber(CallExpr* call) {
     }
   } else if (!strcmp(fn->name, "chpl__heapAllocateGlobals") ||
              !strcmp(fn->name, "chpl__initModuleGuards") ||
-             !strcmp(fn->name, "chpl_main") ||
+             !strcmp(fn->name, "chpl_gen_main") ||
              ((mod->modTag == MOD_USER || mod->modTag == MOD_MAIN) && 
               !fn->hasFlag(FLAG_TEMP) && !fn->hasFlag(FLAG_INLINE)) ||
              (developer == true && strcmp(fn->name, "halt"))) {
@@ -110,7 +110,7 @@ insertLineNumber(CallExpr* call) {
     } else {
       if (fCLineNumbers) {
         if (!gCLine) {
-          gCLine = new VarSymbol("__LINE__", dtInt[INT_SIZE_32]);
+          gCLine = new VarSymbol("__LINE__", dtInt[INT_SIZE_DEFAULT]);
           rootModule->block->insertAtTail(new DefExpr(gCLine));
           gCFile = new VarSymbol("__FILE__", dtString);
           rootModule->block->insertAtTail(new DefExpr(gCFile));
@@ -118,8 +118,8 @@ insertLineNumber(CallExpr* call) {
         call->insertAtTail(gCLine);
         call->insertAtTail(gCFile);
       } else {
-        call->insertAtTail(new_IntSymbol(call->lineno));
-        call->insertAtTail(new_StringSymbol(call->getModule()->filename));
+        call->insertAtTail(new_IntSymbol(call->linenum()));
+        call->insertAtTail(new_StringSymbol(call->fname()));
       }
     }
   } else if (file) {

@@ -11,11 +11,12 @@ Overview
 --------
 
 The 'local' construct in Chapel performs runtime checks for any
-communication within the construct. If communication occurs,
-an error is reported. The checks are performed in the code
-within the lexical scope of the construct, as well as in all
-function calls performed by that code, directly or indirectly,
-explicitly or implicitly.
+communication within the construct. If communication occurs, an error
+is reported. The checks are performed in the code within the lexical
+scope of the construct, as well as in all function calls performed by
+that code, directly or indirectly, explicitly or implicitly. The
+checks can be disabled with the --no-local-checks flag, which is implied
+by the --no-checks and --fast flags.
 
 Communication occurs in the following cases:
 * remote memory (i.e. data not located on the current locale)

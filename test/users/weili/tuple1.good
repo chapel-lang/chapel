@@ -1,4 +1,4 @@
-(int,real)
-int
-1*int
-int
+(int(64),real(64))
+int(64)
+1*int(64)
+int(64)

@@ -1,6 +1,5 @@
 \sekshun{Classes}
 \label{Classes}
-\index{class@\chpl{class}}
 \index{classes}
 
 Classes are data structures with associated state and functions. Storage for
@@ -86,7 +85,7 @@ by a library or the execution environment.  See the chapter on interoperability
 
 \subsection{Class Types}
 \label{Class_Types}
-\index{classes!class type}
+\index{classes!types}
 \index{class type}
 
 A class type is given simply by the class name for non-generic classes.
@@ -105,7 +104,7 @@ other class declarations.
 
 \subsection{Class Values}
 \label{Class_Values}
-\index{classes!class value}
+\index{classes!values}
 \index{class value}
 
 A class value is either a reference to an instance of a class
@@ -143,7 +142,7 @@ referenced anywhere. It could be reclaimed by the garbage collector.
 \subsection{Class Fields}
 \label{Class_Fields}
 \index{classes!fields}
-\index{fields}
+\index{fields!class}
 
 Variable declarations within a class declaration define
 fields within that class.  Parameter fields make a class generic.
@@ -168,6 +167,7 @@ Field access is described in \rsec{Class_Field_Accesses}.
 \subsection{Class Methods}
 \label{Class_Methods}
 \index{classes!methods}
+\index{methods!classes}
 
 A class method is a procedure or iterator that is bound to a class.
 
@@ -214,7 +214,7 @@ its immediately enclosing class (or record).
 \index{inheritance}
 \index{classes!inheritance}
 \index{derived class}
-\index{classes!derived class}
+\index{classes!derived}
 
 A \emph{derived} class can inherit from one or more other classes by
 listing those classes in the derived class declaration.
@@ -241,6 +241,8 @@ well-defined class hierarchy.  See~\rsec{Record_Inheritance} for details.
 
 \subsection{The object Class}
 \label{The_object_Class}
+\index{object@\chpl{object}}
+\index{classes!object@\chpl{object}}
 
 All classes are derived from the \chpl{object} class, either directly or
 indirectly.  If no class name appears in the inheritance list, the class derives
@@ -250,6 +252,8 @@ can hold a reference to an object of any class type.
 
 \subsection{Accessing Base Class Fields}
 \label{Accessing_Base_Class_Fields}
+\index{classes!base!field access}
+\index{classes!field access!base class}
 
 A derived class contains data associated with the fields in its base
 classes.  The fields can be accessed in the same way that they are
@@ -259,7 +263,8 @@ in~\rsec{Overriding_Base_Class_Methods}.
 
 \subsection{Derived Class Constructors}
 \label{Derived_Class_Constructors}
-\index{constructors!for derived classes}
+\index{constructors!derived class}
+\index{classes!derived!constructors}
 
 The default initializer of a derived class automatically calls the default
 initializer of each of its base classes %and records.  
@@ -278,7 +283,7 @@ of chaining constructor calls will be supported.
 
 \subsection{Shadowing Base Class Fields}
 \label{Shadowing_Base_Class_Fields}
-
+\index{shadowing!base class fields}
 A field in the derived class can be declared with the same name as a
 field in the base class.  Such a field shadows the field in the base
 class in that it is always referenced when it is accessed in the
@@ -293,6 +298,7 @@ defined at this time.
 \subsection{Overriding Base Class Methods}
 \label{Overriding_Base_Class_Methods}
 \index{dynamic dispatch}
+\index{methods!base class!overriding}
 
 If a method in a derived class is declared with a
 signature identical to that of a method in a base class, then it is said to override the
@@ -317,6 +323,7 @@ field be shadowed by a subclass.
 \subsection{Inheriting from Multiple Classes}
 \label{Inheriting_from_Multiple_Classes}
 \index{multiple inheritance}
+\index{inheritance!multiple}
 \index{classes!inheritance!multiple}
 
 %REVIEW: vass: need to decide as a group whether we want this in the spec
@@ -372,9 +379,9 @@ initialized to the default value of its type
 \label{Class_Constructors}
 \label{Class_New}
 \index{classes!constructors}
-\index{classes!new}
 \index{new!classes}
 \index{new@\chpl{new}}
+\index{classes!new@\chpl{new}}
 \index{constructors}
 
 Class instances are created by invoking class constructors.
@@ -563,7 +570,7 @@ The \chpl{y} and \chpl{z} arguments have the default values \chpl{3.14} and
 \section{Field Accesses}
 \label{Class_Field_Accesses}
 \index{classes!field access}
-\index{field access}
+\index{field access!class}
 
 The field in a class is accessed via a field access expression.
 
@@ -576,7 +583,7 @@ receiver-clause:
 \end{syntax}
 
 \index{classes!receiver}
-\index{receiver}
+\index{receiver!class}
 % TODO: these are the rules to determine the receiver - move them
 % to a separate section so they can be uniformly referenced from everywhere.
 The receiver-clause specifies the \emph{receiver}, which is the class
@@ -621,7 +628,8 @@ reads the field \chpl{name} and assigns the value to the variable
 \subsection{Variable Getter Methods}
 \label{Getter_Methods}
 \index{classes!getter method}
-\index{getter method}
+\index{getter method!class}
+\index{methods!class!getter}
 
 All field accesses are resolved via getters that are variable
 methods~(\rsec{Variable_Functions}) defined in the class with the same
@@ -665,7 +673,7 @@ the number of times x was assigned a value.
 \section{Class Method Calls}
 \label{Class_Method_Calls}
 \index{classes!method calls}
-\index{method calls}
+\index{methods!calling}
 
 A method is invoked with a method call, which is similar to a non-method
 call expression.
@@ -710,8 +718,9 @@ procedures (\rsec{Functions}). The exception is the receiver
 
 \subsection{The Method Receiver and the {\em this} Argument}
 \label{The_em_this_Reference}
-\index{this@\chpl{this}}
 \index{classes!receiver}
+\index{this@\chpl{this}}
+\index{classes!this@\chpl{this}}
 \index{receiver}
 
 A method's \emph{receiver} is its implicit argument, 
@@ -749,8 +758,9 @@ is \chpl{c1}.
 
 \section{The {\em this} Method}
 \label{The_em_this_Method}
-\index{this@\chpl{this}}
 \index{classes!indexing}
+\index{this@\chpl{this}}
+\index{classes!this@\chpl{this}}
 
 A procedure method declared with the name \chpl{this} allows a class to be
 ``indexed'' similarly to how an array is indexed.  Indexing into a
@@ -795,8 +805,9 @@ thisMethod.chpl:9: error: halt reached - ThreeArray index out of bounds: 4
 
 \section{The {\em these} Method}
 \label{The_these_Method}
+\index{classes!iterating over}
 \index{these@\chpl{these}}
-\index{classes!iterating}
+\index{classes!these@\chpl{these}}
 
 An iterator method declared with the name \chpl{these} allows a class to be
 ``iterated over'' similarly to how a domain or array is iterated over.
@@ -839,6 +850,7 @@ for i in ta do
 \subsection{Class Assignment}
 \label{Class_Assignment}
 \index{classes!assignment}
+\index{assignment!class}
 
 Classes are assigned by reference.  After an assignment from one
 variable of a class type to another, the variables reference the same

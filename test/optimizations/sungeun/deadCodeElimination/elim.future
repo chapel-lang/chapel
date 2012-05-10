@@ -1,0 +1,10 @@
+bug: Internal error in verify() after deadCodeElimination for some cases
+
+Ran into the following internal error while debugging SSCA2 and pared
+it down to this small test:
+
+    error: SymExpr::var::defPoint is not in AST
+
+I'm not sure if this is relevant, but shift() has an "if true"
+conditional with a return statement in the then portion.
+

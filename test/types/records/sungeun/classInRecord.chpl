@@ -9,7 +9,7 @@ record myR {
   proc ~myR() { delete c; }
 }
 
-pragma "inline" proc chpl__autoDestroy(x: myR) { }
+inline proc chpl__autoDestroy(x: myR) { }
 
 proc =(a: myR, b: myR) {
   var aa: myR;

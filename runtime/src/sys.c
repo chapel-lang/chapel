@@ -11,12 +11,21 @@
 #include <sys/stat.h>
 #include <sys/socket.h>
 #include <sys/mman.h>
+#include <sys/uio.h> // maybe need this for preadv/pwritev
 #include <netdb.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <limits.h>
+
+#ifdef __MTA__
+#include <machine/param.h>
+#ifndef IOV_MAX
+#define IOV_MAX UIO_MAXIOV
+#endif
+#endif
 
 // preadv/pwritev are available
 // only on linux/glibc 2.10 or later
@@ -40,6 +49,30 @@ void sys_init_sys_sockaddr(sys_sockaddr_t* addr)
 }
 
 // -------------------  system call wrappers -----------------------------
+
+size_t sys_page_size(void)
+{
+  long pagesize;
+  err_t err;
+#ifdef _SC_PAGESIZE
+  err = sys_sysconf(_SC_PAGESIZE, &pagesize);
+  if( err == 0 && pagesize > 0 ) return pagesize;
+#endif
+
+  // Some systems offer PAGE_SIZE...
+#ifdef PAGE_SIZE
+  return PAGE_SIZE;
+#endif
+
+#ifdef __MTA__
+#ifdef NBPG
+  return NBPG;
+#endif
+#endif
+
+  fprintf(stderr, "Fatal error: could not get page size\n");
+  abort();
+}
 
 
 #if 0
@@ -215,12 +248,29 @@ err_t sys_posix_fadvise(fd_t fd, off_t offset, off_t len, int advice)
   return err_out;
 }
 
+err_t sys_posix_madvise(void* addr, size_t len, int advice)
+{
+  int got;
+  err_t err_out;
+
+  got = 0;
+#ifdef POSIX_MADV_NORMAL
+  got = posix_madvise(addr, len, advice);
+#endif
+  err_out = got;
+
+  return err_out;
+}
+
+
 
 static
 const char* extended_errors[] = {
   "end of file",
   "short read or write",
   "bad format",
+  "illegal multibyte sequence", // most systems already have EILSEQ but not all
+  "overflow", // most systems already have EOVERFLOW but not all
   NULL
 };
 
@@ -263,6 +313,7 @@ err_t sys_strerror(err_t error, const char** string_out)
   }
 
   // maybe it's a EAI/gai error, which we add GAI_ERROR_OFFSET to.
+#ifdef HAS_GETADDRINFO
   if( got == -1 && err_out == EINVAL ) {
     const char* gai_str;
     int len;
@@ -283,6 +334,7 @@ err_t sys_strerror(err_t error, const char** string_out)
       strcpy(buf, gai_str);
     }
   }
+#endif
 
   *string_out = buf;
   return err_out;
@@ -302,6 +354,7 @@ err_t sys_readlink(const char* path, const char** string_out)
   char* buf = NULL;
   char* newbuf;
   int buf_sz = 248;
+  err_t ret = EINVAL;
 
   while( 1 ) {
     newbuf = qio_realloc(buf, buf_sz);
@@ -320,13 +373,14 @@ err_t sys_readlink(const char* path, const char** string_out)
       buf[got] = '\0';
       // OK!
       *string_out = buf;
-      return 0;
+      ret = 0;
+      break;
     }
     // otherwise, buffer is too small.
     buf_sz *= 2;
   }
 
-  return EINVAL;
+  return ret;
 }
 
 err_t sys_open(const char* pathname, int flags, mode_t mode, fd_t* fd_out)
@@ -957,13 +1011,13 @@ err_t sys_accept(fd_t sockfd, sys_sockaddr_t* addr_out, fd_t* fd_out)
 {
   int got;
   err_t err_out;
-  socklen_t addr_len = sizeof(struct sockaddr_storage);
+  socklen_t addr_len = sizeof(sys_sockaddr_storage_t);
 
   STARTING_SLOW_SYSCALL;
 
   got = accept(sockfd, (struct sockaddr*) & addr_out->addr, &addr_len);
   if( got != -1 ) {
-    if( addr_len > sizeof(struct sockaddr_storage) ) {
+    if( addr_len > sizeof(sys_sockaddr_storage_t) ) {
       fprintf(stderr, "Warning: address truncated in sys_accept\n");
     }
     addr_out->len = addr_len;
@@ -1016,6 +1070,8 @@ err_t sys_connect(fd_t sockfd, const sys_sockaddr_t* addr)
 
   return err_out;
 }
+
+#ifdef HAS_GETADDRINFO
 
 /* Commenting this out for the time being as it is not currently used and
    causes warnings in PrgEnv-gnu compiles due to static linking being the
@@ -1124,6 +1180,7 @@ error:
   return err_out;
 }
 
+#endif
 
 err_t sys_getpeername(fd_t sockfd, sys_sockaddr_t* addr)
 {
@@ -1243,6 +1300,7 @@ err_t sys_recvfrom(fd_t sockfd, void* buf, size_t len, int flags, sys_sockaddr_t
 err_t sys_recvmsg(fd_t sockfd, struct msghdr *msg, int flags, ssize_t* num_recvd_out)
 
 {
+#ifndef __MTA__ 
   ssize_t got;
   err_t err_out;
 
@@ -1260,6 +1318,9 @@ err_t sys_recvmsg(fd_t sockfd, struct msghdr *msg, int flags, ssize_t* num_recvd
   DONE_SLOW_SYSCALL;
 
   return err_out;
+#else
+  return ENOSYS;
+#endif
 }
 
 err_t sys_send(fd_t sockfd, const void* buf, int64_t len, int flags, ssize_t* num_sent_out)

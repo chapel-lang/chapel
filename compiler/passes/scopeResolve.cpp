@@ -18,7 +18,7 @@
 //   TypeSymbol: defines a scope for EnumType and ClassType types for
 //   the enumerated type constants or the class/record fields
 //
-//   BlockStmt: defines a scope if the block is not BLOCK_SCOPELESS
+//   BlockStmt: defines a scope if the block is a normal block
 //   for any locally defined symbols
 //
 // Each entry contains a map from canonicalized string pointers to the
@@ -59,7 +59,8 @@ static BaseAST*
 getScope(BaseAST* ast) {
   if (Expr* expr = toExpr(ast)) {
     BlockStmt* block = toBlockStmt(expr->parentExpr);
-    if (block && block->blockTag != BLOCK_SCOPELESS) {
+    // SCOPELESS and TYPE blocks do not define scopes
+    if (block && block->blockTag == BLOCK_NORMAL) {
       return block;
     } else if (expr->parentExpr) {
       return getScope(expr->parentExpr);
@@ -488,7 +489,7 @@ void build_type_constructor(ClassType* ct) {
             arg->defaultExpr = new BlockStmt(init->copy(), BLOCK_SCOPELESS);
 
           if (exprType)
-            arg->typeExpr = new BlockStmt(exprType->copy(), BLOCK_SCOPELESS);
+            arg->typeExpr = new BlockStmt(exprType->copy(), BLOCK_TYPE);
 
           if (!exprType && arg->type == dtUnknown)
             arg->type = dtAny;
@@ -497,8 +498,7 @@ void build_type_constructor(ClassType* ct) {
             fn->insertAtTail(new CallExpr(PRIM_SET_MEMBER, fn->_this,
                                           new_StringSymbol(field->name), arg));
           else if (arg->type == dtAny &&
-                   !ct->symbol->hasFlag(FLAG_REF) &&
-                   strcmp(ct->symbol->name, "_square_tuple"))
+                   !ct->symbol->hasFlag(FLAG_REF))
             fn->insertAtTail(new CallExpr(PRIM_SET_MEMBER, fn->_this,
                                           new_StringSymbol(field->name),
                                           new CallExpr("chpl__initCopy",
@@ -576,9 +576,10 @@ void build_constructor(ClassType* ct) {
 
   SET_LINENO(ct);
 
-  if (ct->symbol->hasFlag(FLAG_SYNC) || ct->symbol->hasFlag(FLAG_SINGLE))
+  if (isSyncType(ct))
     ct->defaultValue = NULL;
 
+  // Create the default constructor.
   FnSymbol* fn = new FnSymbol(astr("_construct_", ct->symbol->name));
   fn->addFlag(FLAG_DEFAULT_CONSTRUCTOR);
   fn->addFlag(FLAG_CONSTRUCTOR);
@@ -593,19 +594,25 @@ void build_constructor(ClassType* ct) {
     fn->addFlag(FLAG_INLINE);
   }
 
+  // Create "this".
   fn->_this = new VarSymbol("this", ct);
   fn->_this->addFlag(FLAG_ARG_THIS);
   fn->insertAtTail(new DefExpr(fn->_this));
 
+  // Walk the fields in the class type.
   Map<VarSymbol*,ArgSymbol*> fieldArgMap;
   Vec<const char*> fieldNamesSet;
   for_fields(tmp, ct) {
     SET_LINENO(tmp);
     if (VarSymbol* field = toVarSymbol(tmp)) {
+      // Filter inherited fields and other special cases.
+      // "outer" is used internally to supply a pointer to the outer parent of a nested class.
       if (!field->hasFlag(FLAG_SUPER_CLASS) &&
           !field->hasFlag(FLAG_OMIT_FROM_CONSTRUCTOR) &&
           strcmp(field->name, "_promotionType") &&
           strcmp(field->name, "outer")) {
+        // Create an argument to the default constructor
+        // corresponding to the field.
         ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, field->name, field->type);
         fieldArgMap.put(field, arg);
         fieldNamesSet.set_add(field->name);
@@ -620,8 +627,8 @@ void build_constructor(ClassType* ct) {
   CallExpr* allocCall = NULL;
 #endif
   if (ct->symbol->hasFlag(FLAG_REF) ||
-      ct->symbol->hasFlag(FLAG_SYNC) ||
-      ct->symbol->hasFlag(FLAG_SINGLE)) {
+      isSyncType(ct)) {
+    // For ref, sync and single classes, just allocate space.
 
     CallExpr* defaultAllocCall = new CallExpr(PRIM_CHPL_ALLOC, fn->_this, newMemDesc(ct->symbol->name));
     CallExpr* defaultAssignmentCall = new CallExpr(PRIM_MOVE, fn->_this, defaultAllocCall);
@@ -639,32 +646,63 @@ void build_constructor(ClassType* ct) {
     fn->insertAtTail(allocation);
 
   } else if (!ct->symbol->hasFlag(FLAG_TUPLE)) {
+    // Create a meme (whatever that is).
     meme = new ArgSymbol(INTENT_BLANK, "meme", ct, NULL, new SymExpr(gTypeDefaultToken));
     meme->addFlag(FLAG_IS_MEME);
+    // Move the meme into "this".
     fn->insertAtTail(new CallExpr(PRIM_MOVE, fn->_this, meme));
     if (isClass(ct)) {
       if (ct->dispatchParents.n > 0 && !ct->symbol->hasFlag(FLAG_EXTERN)) {
+        // This class has a parent class.
         if (!ct->dispatchParents.v[0]->defaultConstructor) {
+          // If it doesn't yet have a default constructor, make one.
           build_type_constructor(toClassType(ct->dispatchParents.v[0]));
           build_constructor(toClassType(ct->dispatchParents.v[0]));
         }
+
+        // Get the parent constructor.
+        // Note that since we only pay attention to the first entry in the
+        // dispatchParents list, we are effectively implementing
+        // single class inheritance, multiple interface inheritance.
         FnSymbol* superCtor = ct->dispatchParents.v[0]->defaultConstructor;
+
+        // Create a call to the superclass constructor.
         superCall = new CallExpr(superCtor->name);
         int shadowID = 1;
+        // Walk the formals of the default super class constructor
         for_formals_backward(formal, superCtor) {
           if (formal->hasFlag(FLAG_IS_MEME))
             continue;
           DefExpr* superArg = formal->defPoint->copy();
+          // Rename the arg if it clashes with a field name already seen,
+          // starting with those in the most-derived class in lexical order
+          // and then in successive ancestors in reverse-lexical order.
+          // Field names within a given class are guaranteed to be unique,
+          // so the order in which the names are visited at each ancestral 
+          // level is immaterial.
           if (fieldNamesSet.set_in(superArg->sym->name))
             superArg->sym->name =
               astr("_shadow_", istr(shadowID++), "_", superArg->sym->name);
           fieldNamesSet.set_add(superArg->sym->name);
+          // Inserting each successive ancestor argument at the head in 
+          // reverse-lexcial order results in all of the arguments appearing
+          // in lexical order, starting with those in the most ancient class
+          // and ending with those in the most-derived class.
           fn->insertFormalAtHead(superArg);
           superCall->insertAtHead(superArg->sym);
         }
+
+        // Create a temp variable and add it to the actual argument list
+        // in the superclass constructor call.  This temp will hold 
+        // the pointer to the parent subobject.
         VarSymbol* tmp = newTemp();
         superCall->insertAtTail(new NamedExpr("meme", new SymExpr(tmp)));
+
+        // Add super call to the constructor function.
         fn->insertAtTail(superCall);
+
+        // Declare that variable in the scope of this constructor.
+        // And initialize it with the super class pointer.
         superCall->insertBefore(new DefExpr(tmp));
         superCall->insertBefore(
           new CallExpr(PRIM_MOVE, tmp,
@@ -694,18 +732,21 @@ void build_constructor(ClassType* ct) {
 
     if (field->hasFlag(FLAG_PARAM))
       arg->intent = INTENT_PARAM;
+
     Expr* exprType = field->defPoint->exprType->remove();
     Expr* init = field->defPoint->init->remove();
 
     bool hadType = exprType;
     bool hadInit = init;
+
     if (init) {
       if (!field->hasFlag(FLAG_TYPE_VARIABLE) && !exprType) {
+        // init && !exprType
         VarSymbol* tmp = newTemp();
         tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
         tmp->addFlag(FLAG_MAYBE_PARAM);
         tmp->addFlag(FLAG_MAYBE_TYPE);
-        exprType = new BlockStmt(new DefExpr(tmp), BLOCK_SCOPELESS);
+        exprType = new BlockStmt(new DefExpr(tmp), BLOCK_TYPE);
         toBlockStmt(exprType)->insertAtTail(new CallExpr(PRIM_MOVE, tmp, new CallExpr("chpl__initCopy", init->copy())));
         toBlockStmt(exprType)->insertAtTail(new CallExpr(PRIM_TYPEOF, tmp));
       }
@@ -727,7 +768,7 @@ void build_constructor(ClassType* ct) {
     }
     if (exprType) {
       if (!isBlockStmt(exprType))
-        arg->typeExpr = new BlockStmt(exprType, BLOCK_SCOPELESS);
+        arg->typeExpr = new BlockStmt(exprType, BLOCK_TYPE);
       else
         arg->typeExpr = toBlockStmt(exprType);
     }
@@ -737,8 +778,7 @@ void build_constructor(ClassType* ct) {
       arg->type = dtAny;
     fn->insertFormalAtTail(arg);
     if (arg->type == dtAny && !arg->hasFlag(FLAG_TYPE_VARIABLE) &&
-        !arg->hasFlag(FLAG_PARAM) && !ct->symbol->hasFlag(FLAG_REF) &&
-        strcmp(ct->symbol->name, "_square_tuple"))
+        !arg->hasFlag(FLAG_PARAM) && !ct->symbol->hasFlag(FLAG_REF))
       fn->insertAtTail(new CallExpr(PRIM_SET_MEMBER, fn->_this, 
                                     new_StringSymbol(arg->name),
                                     new CallExpr("chpl__initCopy", arg)));
@@ -938,6 +978,7 @@ add_class_to_hierarchy(ClassType* ct, Vec<ClassType*>* localSeenPtr = NULL) {
     }
   }
 
+  // Walk the base class list, and add parents into the class hierarchy.
   for_alist(expr, ct->inherits) {
     UnresolvedSymExpr* se = toUnresolvedSymExpr(expr);
     INT_ASSERT(se);
@@ -956,6 +997,7 @@ add_class_to_hierarchy(ClassType* ct, Vec<ClassType*>* localSeenPtr = NULL) {
       USR_FATAL(expr, "Record %s inherits from class %s",
                 ct->symbol->name, pt->symbol->name);
     if (isClass(ct) && isRecord(pt))
+      // <hilde> Possible language change: Allow classes to inherit fields and methods from records.
       USR_FATAL(expr, "Class %s inherits from record %s",
                 ct->symbol->name, pt->symbol->name);
     localSeenPtr->set_add(ct);
@@ -963,9 +1005,16 @@ add_class_to_hierarchy(ClassType* ct, Vec<ClassType*>* localSeenPtr = NULL) {
     ct->dispatchParents.add(pt);
     pt->dispatchChildren.add(ct);
     expr->remove();
-    if (!isClass(ct)) {
+    if (isClass(ct)) {
+      // For a class, just add a super class pointer.
+      VarSymbol* super = new VarSymbol("super", pt);
+      super->addFlag(FLAG_SUPER_CLASS);
+      ct->fields.insertAtHead(new DefExpr(super));
+    } else {
+      // For records and unions, scan the fields in the parent type.
       for_fields_backward(field, pt) {
         if (toVarSymbol(field) && !field->hasFlag(FLAG_SUPER_CLASS)) {
+          // If not already in derived class (by name), copy it.
           bool alreadyContainsField = false;
           for_fields(myfield, ct) {
             if (!strcmp(myfield->name, field->name)) {
@@ -978,14 +1027,26 @@ add_class_to_hierarchy(ClassType* ct, Vec<ClassType*>* localSeenPtr = NULL) {
           }
         }
       }
-    } else {
-      VarSymbol* super = new VarSymbol("super", pt);
-      super->addFlag(FLAG_SUPER_CLASS);
-      ct->fields.insertAtHead(new DefExpr(super));
     }
   }
 }
 
+
+static void renameDefaultType(Type* type, const char* newname) {
+  if (strchr(type->symbol->name, '(') != NULL) {
+    INT_FATAL("Renaming a default type that already seems to have a width");
+  }
+  type->symbol->name = astr(newname);
+}
+
+
+static void renameDefaultTypesToReflectWidths(void) {
+  renameDefaultType(dtInt[INT_SIZE_DEFAULT], "int(64)");
+  renameDefaultType(dtUInt[INT_SIZE_DEFAULT], "uint(64)");
+  renameDefaultType(dtReal[FLOAT_SIZE_DEFAULT], "real(64)");
+  renameDefaultType(dtImag[FLOAT_SIZE_DEFAULT], "imag(64)");
+  renameDefaultType(dtComplex[COMPLEX_SIZE_DEFAULT], "complex(128)");
+}
 
 
 void scopeResolve(void) {
@@ -1115,26 +1176,8 @@ void scopeResolve(void) {
 
     SymExpr* symExpr = NULL;
 
-    //
-    // hh: if the result of the unresolvedSymExpr look up is not a function,
-    //     try to resolve it here.  in addition, if the unresolvedSymExpr was marked
-    //     as volatile, and its look up returns a primitive type, replace the 
-    //     unresolvedSymExpr with the volatile version of that primitive type.
-    //
     if (sym) {
       if (!isFnSymbol(sym)) {
-        if (unresolvedSymExpr->isVolatile) {
-          if (TypeSymbol* typeSym = toTypeSymbol(sym)) {
-            if (PrimitiveType* primType = toPrimitiveType(typeSym->type)) {
-              if (!primType->volType) {
-                INT_FATAL("No volatile primitive type exists for %s, %s", typeSym->name);
-              } 
-              sym = primType->volType->symbol;
-            } else {
-              USR_FATAL("Volatile applied to non-primitive type expr");
-            }
-          }
-        }
         symExpr = new SymExpr(sym);
         unresolvedSymExpr->replace(symExpr);
       }
@@ -1285,4 +1328,6 @@ void scopeResolve(void) {
   destroyTable();
 
   destroyModuleUsesCaches();
+
+  renameDefaultTypesToReflectWidths();
 }

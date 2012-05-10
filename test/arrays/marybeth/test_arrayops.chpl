@@ -24,7 +24,7 @@ proc maxIndex(A:[?D]) {
   
 proc initA(A,filename:string){
 
-  var Adat = open('Adata.dat', mode.r).reader();
+  var Adat = open('Adata.dat', iomode.r).reader();
 
   for ij in A.domain {
     Adat.read(A(ij));

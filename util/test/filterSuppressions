@@ -1,24 +1,54 @@
-#!/usr/bin/env perl
+#!/usr/bin/env python
 
-$suppressions = $ARGV[0];
-$summaryfile = $ARGV[1];
-$tmpfile = "$summaryfile.tmp";
+import sys
 
-open SUPPRESSIONS, "$suppressions" or die "can't open $suppressions $!";
-my @suppressions = <SUPPRESSIONS>;
-close (SUPPRESSIONS);
+suppfile = sys.argv[1]
+summaryfile = sys.argv[2]
 
-foreach my $suppression (@suppressions) {
-    chomp($suppression);
-    if (substr($suppression, 0, 1) eq "#") {
-    } else {
-        print "Removing suppression for: $suppression\n";
-        $match = `grep \" $suppression\]\" $summaryfile`;
-        if ($match eq "") {
-            system("echo \"[Error: didn\'t find expected suppression $suppression]\" >> $summaryfile");
-        } else {
-            system("grep -v \" $suppression\]\" $summaryfile > $tmpfile");
-            system("mv $tmpfile $summaryfile");
-        }
-    }
-}
+f = open(suppfile, 'r')
+suppressions = f.readlines()
+f.close()
+
+f = open(summaryfile, 'r')
+summary = f.readlines()
+f.close()
+
+newsummary = list()
+removedsupps = list()
+for l in summary:
+    line = l.strip()
+    if line.startswith('[Error'):
+        removed = False
+        for s in suppressions:
+            supp = s.strip()
+            if not supp.startswith('#'):
+                if line.find(supp) != -1:
+                    print 'Removing suppression for: '+supp
+                    removedsupps.append(supp)
+                    removed = True
+                    break
+        if not removed:
+            newsummary.append(line)
+    else:
+        newsummary.append(line)
+
+# overwrite old summary file
+
+# date 'n stuff
+f = open(summaryfile, 'w')
+f.write(newsummary.pop(0)+'\n')
+
+# missing suppressions
+for s in suppressions:
+    supp = s.strip()
+    if not supp.startswith('#'):
+        if removedsupps.count(supp) == 0:
+            f.write('[Error: did not find expected suppression '+supp+']\n')
+
+# new summary
+for l in newsummary:
+    f.write(l+'\n')
+
+f.close()
+
+sys.exit(0)

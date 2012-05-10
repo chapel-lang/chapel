@@ -18,17 +18,13 @@ static void chpl_exit_common(int status, int all) {
   if (status != 0) {
     gdbShouldBreakHere();
   }
+  chpl_comm_pre_task_exit(all);
   if (all) {
-    chpl_comm_barrier("chpl_exit_common");
-    chpl_comm_stopPollingTask();
-    chpl_task_exit();
     chpl_reportMemInfo();
-    chpl_mem_exit();
-    chpl_comm_exit_all(status);
-  } else {
-    chpl_mem_exit();
-    chpl_comm_exit_any(status);
+    chpl_task_exit();
   }
+  chpl_mem_exit();
+  chpl_comm_exit(all, status);
   exit(status);
 }
 

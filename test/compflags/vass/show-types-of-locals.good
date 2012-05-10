@@ -1,0 +1,10 @@
+show-types-of-locals.chpl:2: In function 'a':
+  t = complex(128)
+  x: real(64)
+  y: int(64)
+  b: complex(128)
+  q = uint(64)
+  i: int(64)
+  z: real(64)
+  return type = real(64)
+3.0

@@ -1,30 +1,45 @@
 #!/usr/bin/env perl
 
 use File::Basename;
+use File::Spec;
 use Cwd 'abs_path';
 
-
 $chpl_home_dir = abs_path(dirname(__FILE__) . "/../../");
+$check_file = File::Spec->abs2rel( __FILE__, $chpl_home_dir );
+$check_path = $chpl_home_dir . "/" . $check_file;
+if( ! -f $check_path ) {
+  warn "Warning: check $check_path not found";
+}
 
 if( defined $ENV{"CHPL_HOME"} ) {
-  if( $ENV{"CHPL_HOME"} ne $chpl_home_dir ) {
-    die "Mismatched CHPL_HOME for $__FILE__";
+  if( abs_path($ENV{"CHPL_HOME"}) ne $chpl_home_dir ) {
+    # to be sure, check that the inode numbers of our check file match
+    my ($deva, $inoa) = stat($ENV{"CHPL_HOME"} . "/" . $check_file);
+    my ($devb, $inob) = stat($chpl_home_dir . "/" . $check_file);
+
+    if( $deva == $devb && $inoa == $inob ) {
+      # No warning, it's OK, they are the same file.
+    } else {
+      warn "Warning: Mismatched CHPL_HOME; got " . abs_path($ENV{"CHPL_HOME"}) . " but expected " . $chpl_home_dir;
+    }
   }
 } else {
   $ENV{"CHPL_HOME"} = $chpl_home_dir;
 }
 
-$ENV{"CHAPEL_ROOT"} = $ENV{"CHPL_HOME"};
+$ENV{"CHPL_MAKE_HOME"} = $ENV{"CHPL_HOME"};
 
-$chpl_home_dir = $ENV{"CHAPEL_ROOT"};
+$chpl_home_dir = $ENV{"CHPL_MAKE_HOME"};
 
 if( $ARGV[0] eq "--home" ) {
   print $chpl_home_dir . "\n";
 } elsif( $ARGV[0] eq "--compile" ) {
   0 == system("make -f $chpl_home_dir/runtime/etc/Makefile.include printcompileline") or die "Could not make: $!";
-} elsif ( $ARGV[0] eq "--link" ) {
+} elsif ( $ARGV[0] eq "--includes-and-defines" ) {
+  0 == system("make -f $chpl_home_dir/runtime/etc/Makefile.include printincludesanddefines") or die "Could not make: $!";
+} elsif( $ARGV[0] eq "--link" ) {
   0 == system("make -f $chpl_home_dir/runtime/etc/Makefile.include printlinkline") or die "Could not make: $!";
 } else {
-  print "Unknown argument; try --compile or --link\n";
+  print "Unknown argument; try --compile or --link or --includes-and-defines\n";
 }
 

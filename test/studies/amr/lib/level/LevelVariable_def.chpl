@@ -223,13 +223,13 @@ proc LevelVariable.clawOutput (
   //==== Time file ====
   var n_grids = level.grids.numIndices;
 
-  var outfile = open(time_filename, mode.w).writer();
+  var outfile = open(time_filename, iomode.cw).writer();
   writeTimeFile(time, 1, n_grids, 0, outfile);
   outfile.close();
   
   
   //==== Solution file ====
-  outfile = open(solution_filename, mode.w).writer();
+  outfile = open(solution_filename, iomode.cw).writer();
   this.writeData(1, 1, outfile);  // AMR_level=1 and base_grid_number=1 for single-level output
   outfile.close();
 

@@ -23,6 +23,7 @@ $synchdir = "Logs/.synch";
 $testcmd = "nice ../util/start_test";
 $publish_delay = 2;
 $node = "";
+$id = "x";
 
 sub systemd {
     my ($cmd) = @_;
@@ -32,14 +33,22 @@ sub systemd {
 
 sub fatal {
     print STDERR "Error in paratest.client: [$node] @_\n";
+    sleep $publish_delay;
+    systemd ("echo fatal > " . synchfile(1));  # signal failure
     exit(2);
 }
 
+sub synchfile {
+   my ($failed) = @_;
+   if ($failed) { $failed = ".failed"; }
+   return "$synchdir/$node.$id$failed";
+}
+
 sub main {
-    my ($logfile, $synchfile, $workingdir, $testdir, $compiler, $platform);
+    my ($logfile, $workingdir, $testdir, $compiler, $platform);
     $node = `uname -n`;
     chomp $node;
-    ($node, $junk) = split (/\./, $node, 2);
+    ($node) = split (/\./, $node);
 
     if ($#ARGV < 4) {
         fatal("insufficient arguments: '@ARGV'\n" .
@@ -98,7 +107,7 @@ sub main {
 
     sleep $publish_delay;
 
-    systemd ("echo feed me > $synchfile");  # signal ready for more
+    systemd ("echo feed me > " . synchfile());  # signal ready for more
 }
 
 

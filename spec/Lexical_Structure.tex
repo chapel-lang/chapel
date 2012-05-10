@@ -10,12 +10,14 @@ for input to the parser.
 \section{Comments}
 \label{Comments}
 \index{comments}
-\index{lexical structure!comment}
+\index{lexical structure!comments}
 
 Two forms of comments are supported.  All text following the
 consecutive characters {\tt //} and before the end of the line is in a
 comment.  All text following the consecutive characters {\tt /*} and
 before the consecutive characters {\tt */} is in a comment.
+A comment delimited by {\tt /*} and {\tt */} can be nested in
+another comment delimited by {\tt /*} and {\tt */}
 
 Comments, including the characters that delimit them, do not affect
 the behavior of the program (except in delimiting tokens).  If the
@@ -37,6 +39,7 @@ proc main() {
 \section{White Space}
 \label{White_Space}
 \index{white space}
+\index{lexical structure!white space}
 
 White-space characters are spaces, tabs, line feeds, and carriage
 returns.  Along with comments, they delimit tokens, but are otherwise
@@ -56,7 +59,7 @@ distinct: \chpl{chapel}, \chpl{Chapel}, and \chpl{CHAPEL}.
 
 \section{Tokens}
 \label{Tokens}
-\index{lexical structure!token}
+\index{lexical structure!tokens}
 
 Tokens include identifiers, keywords, literals, operators, and
 punctuation.
@@ -64,7 +67,7 @@ punctuation.
 \subsection{Identifiers}
 \label{Identifiers}
 \index{identifiers}
-\index{lexical structure!identifier}
+\index{lexical structure!identifiers}
 
 An identifier in Chapel is a sequence of characters that starts with a
 lowercase or uppercase letter or an underscore and is optionally
@@ -111,7 +114,7 @@ identifiers: \chpl{Cray1}, \chpl{syncvar$\mbox{\texttt{\$}}$},
 \subsection{Keywords}
 \label{Keywords}
 \index{keywords}
-\index{lexical structure!keyword}
+\index{lexical structure!keywords}
 
 The following identifiers are reserved as keywords:
 
@@ -212,7 +215,7 @@ otherwise
 \subsection{Literals}
 \label{Literals}
 \label{Primitive_Type_Literals}
-\index{lexical structure!literal}
+\index{lexical structure!literals}
 
 \index{literals!primitive type}
 Bool literals are designated by the following syntax:
@@ -250,7 +253,7 @@ binary-digit: one of
   `0' `1'
 \end{syntax}
 
-All integer literals have the type \chpl{uint}.
+All integer literals have type \chpl{int}.
 
 \begin{rationale}
 Why are there no suffixes on integral literals?  Suffixes, like those
@@ -330,7 +333,7 @@ hexadecimal-escape-character:
 \subsection{Operators and Punctuation}
 \label{Operators_and_Punctuation}
 \index{lexical structure!operator}
-\index{operator!lexical structure}
+\index{operators!lexical structure}
 \index{lexical structure!punctuation}
 
 The following operators and punctuation are defined in the syntax of

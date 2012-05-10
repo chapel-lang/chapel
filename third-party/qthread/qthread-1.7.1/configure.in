@@ -1,0 +1,1008 @@
+# -*- Autoconf -*-
+#
+# Copyright (c)      2008  Sandia Corporation
+#
+
+## --------------------- ##
+## Autoconf Requirements ##
+## --------------------- ##
+AC_PREREQ(2.59)
+
+## ---------------------------------- ##
+## Autoconf / Automake Initialization ##
+## ---------------------------------- ##
+AC_INIT([qthread],
+        m4_esyscmd([config/version-gen]),
+        [kbwheel@sandia.gov])
+AC_CONFIG_AUX_DIR([config])
+AC_CONFIG_MACRO_DIR([config])
+AC_CONFIG_SRCDIR([src/qthread.c])
+
+dnl Require at least AM 1.7.  Prior versions require AM_CONFIG_HEADER
+dnl and have no equivalent to AC_CONFIG_HEADERS (the plural version),
+dnl which is a pain.  AM 1.7 also added support for putting target
+dnl information in AM_CONDITIONAL blocks and using the += modifier.
+dnl ... removed "check-news" because of automatic version generation
+# Automake's silent rules were implemented in the same version that
+# color-tests was implemented, so we can use one to detect the other.
+# This nasty, dirty, unreliable trick is strongly discouraged by its author:
+# http://blog.flameeyes.eu/trackbacks?article_id=5155
+m4_ifdef([AM_SILENT_RULES],
+		 [m4_define([qt_color_tests], [color-tests])],
+		 [m4_define([qt_color_tests], [])])
+AM_INIT_AUTOMAKE([foreign subdir-objects dist-bzip2 no-define 1.7 ]qt_color_tests)
+# If Automake supports silent rules, enable them (credit to Brian)
+m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
+
+# clean some extra things...
+CLEANFILES="*~ .\#* .gdb_history"
+AC_SUBST(CLEANFILES)
+
+AC_CANONICAL_HOST
+AC_PROG_SED
+AC_CHECK_PROGS([timelimit_path],[timelimit])
+
+## ----------------- ##
+## Check the options ##
+## ----------------- ##
+#{{{
+AC_ARG_ENABLE([picky],
+              [AS_HELP_STRING([--enable-picky],
+                              [turns on extra compiler warnings (for developers of qthreads)])])
+
+AC_ARG_ENABLE([inlined-functions],
+              [AS_HELP_STRING([--disable-inlined-functions],
+                              [prevent functions from being inlined; this
+                               sometimes is useful for analysis of the code in
+                               a debugger or some other tool])])
+
+AC_ARG_ENABLE([hardware-increments],
+              [AS_HELP_STRING([--disable-hardware-increments],
+                              [use mutexes to do the internal increments;
+                               compatible with more compilers, but slow.])])
+
+AC_ARG_ENABLE([hardware-timer],
+              [AS_HELP_STRING([--disable-hardware-timer],
+                              [force the use of gettimeofday even if there is a
+                               better timer available])])
+
+AC_ARG_ENABLE([aligncheck],
+              [AS_HELP_STRING([--enable-aligncheck],
+                              [check the alignment of synchronization addresses])])
+
+AC_ARG_ENABLE([guard-pages],
+              [AS_HELP_STRING([--enable-guard-pages],
+                              [use extra memory around the thread stacks to
+                               help detect stack overruns (will triple memory
+                               requirements per thread)])])
+
+AC_ARG_ENABLE([setrlimit],
+              [AS_HELP_STRING([--enable-setrlimit],
+                              [use setrlimit to limit the stack (not usually
+                               necessary, but technically more correct for
+                               applications that consult rlimit for the stack
+                               size, such as some printf implementations)])])
+
+AC_ARG_ENABLE([syscall-interception],
+              [AS_HELP_STRING([--enable-syscall-interception],
+                              [Intercept blocking syscalls (or attempt to). Experimental.])])
+
+AC_ARG_ENABLE([header-syscall-interception],
+			  [AS_HELP_STRING([--enable-header-syscall-interception],
+							  [Intercept blocking syscalls by mangling them via #defs. Experimental.])])
+
+AC_ARG_ENABLE([rcrtool],
+              [AS_HELP_STRING([--enable-rcrtool],
+                              [Includes support for using qthreads with the
+                               RCRTool performance monitor. Experimental.])])
+
+AC_ARG_ENABLE([fullsize-stacks],
+              [AS_HELP_STRING([--enable-fullsize-stacks],
+                              [use 8MB stacks for every thread])])
+
+AC_ARG_ENABLE([very-small-stacks],
+              [AS_HELP_STRING([--enable-very-small-stacks],
+                              [use 2k stacks for every thread (dangerous)])])
+
+AC_ARG_ENABLE([pooled-memory],
+              [AS_HELP_STRING([--disable-pooled-memory],
+                              [prevents qthreads from (in most cases) using
+                               memory pools, which is sometimes more compatible
+                               with machines that have unusual alignment
+                               issues])])
+
+AC_ARG_ENABLE([spawn-cache],
+			  [AS_HELP_STRING([--disable-spawn-cache],
+							  [prevents qthreads from using a worker-specific cache of spawns])])
+
+AC_ARG_ENABLE([internal-spinlock],
+			  [AS_HELP_STRING([--disable-internal-spinlock],
+							  [avoid using the internal spinlock])])
+
+AC_ARG_ENABLE([debug],
+              [AS_HELP_STRING([--enable-debug=[[areas]]],
+                              [prints out debugging information as programs
+                               run, tracing their qthread-related behavior.
+                               Uses the environment variable
+							   QTHREAD_DEBUG_LEVEL. The higher the level, the
+							   greater the detail. This enables debugging in
+							   the specified areas. Default area is "all".
+							   Other available areas are:
+							   affinity,
+							   threadqueues,
+							   thread,
+							   shepherd,
+							   core,
+							   mpool,
+							   syscalls,
+							   locks,
+							   febs,
+							   syncvars,
+							   io,
+							   loops,
+							   barrier,
+							   qarray,
+							   rcrtool,
+							   futurelib,
+							   xomp])],
+              [AS_IF([test "x$enable_debug" = "xyes"],
+					 [enable_debug="affinity,threadqueues,thread,shepherd,core,mpool,syscalls,locks,febs,syncvars,io,loops,barrier,qarray,rcrtool,futurelib,xomp"])
+			   for area in $(echo "$enable_debug" | sed 's/,/ /g') ; do
+                 case "$area" in
+					 affinity) enable_debug_affinity=yes ;;
+					 threadqueues) enable_debug_threadqueues=yes ;;
+					 thread) enable_debug_threads=yes ;;
+					 shepherd) enable_debug_shepherd=yes ;;
+					 core) enable_debug_core=yes ;;
+					 mpool) enable_debug_mpool=yes ;;
+					 syscalls) enable_debug_syscalls=yes ;;
+					 locks) enable_debug_locks=yes ;;
+					 febs) enable_debug_febs=yes ;;
+					 syncvars) enable_debug_syncvars=yes ;;
+					 io) enable_debug_io=yes ;;
+					 loops) enable_debug_loops=yes ;;
+					 barrier) enable_debug_barrier=yes ;;
+					 qarray) enable_debug_qarray=yes ;;
+					 rcrtool) enable_debug_rcrtool=yes ;;
+					 futurelib) enable_debug_futurelib=yes ;;
+					 xomp) enable_debug_xomp=yes ;;
+					 multinode) enable_debug_multinode=yes ;;
+					 *) AC_MSG_ERROR([Unrecognized debug category ($area).]) ;;
+                 esac
+               done],
+              [enable_debug=no])
+
+AC_ARG_ENABLE([profiling],
+              [AS_HELP_STRING([--enable-profiling=[[areas]]],
+                              [turn on the specified comma-separated types of
+                               profiling. Available types are: shepherd, lock,
+							   steal, cas_steal, threadc, and sincs. Shepherd
+							   profiling counts the wall-clock time that each
+							   shepherd spends idle. Lock profiling counts the
+							   time spent aquiring locks. Steal profiling
+							   counts the amount of workstealing that was done
+							   (only applies to multithreaded shepherds).
+							   Cas_steal profiling counts how many CAS failures
+							   happen in nottingham steal operations. Threadc
+							   counts the number of threads spawned and the
+							   number of threads available to run
+							   concurrently. Sincs profiling reports sinc
+                               counter usage data.])],
+              [for area in $(echo "$enable_profiling" | sed 's/,/ /g') ; do
+                 case "$area" in
+                   shepherd)
+                     enable_shepherd_profiling=yes
+                     ;;
+                   lock)
+                     enable_lock_profiling=yes
+                     ;;
+                   steal)
+                     enable_steal_profiling=yes
+                     ;;
+				   cas_steal|cas-steal)
+				     enable_cas_steal_profiling=yes
+					 ;;
+				   threadc)
+				     enable_thread_count=yes
+					 ;;
+                   sincs)
+                     enable_sincs_profiling=yes
+                     ;;
+                 esac
+               done],
+              [enable_profiling=none])
+
+AC_ARG_ENABLE([cxx-tests],
+              [AS_HELP_STRING([--disable-cxx-tests],
+                              [disables all C++ test programs])])
+
+AC_ARG_ENABLE([asserts],
+              [AS_HELP_STRING([--enable-asserts],
+                              [adds sanity checks to most qthread functions])])
+
+AC_ARG_ENABLE([lazy-threadids],
+              [AS_HELP_STRING([--disable-lazy-threadids],
+                              [makes qthread assign thread IDs at spawning
+                               time, rather than as necessary; this ensures
+                               every thread gets a unique thread id])])
+
+AC_ARG_ENABLE([64bit-aligned_t],
+              [AS_HELP_STRING([--enable-64bit-aligned_t],
+                              [If enabled, aligned_t is 8 bytes.  If disabled,
+                               aligned_t is sizeof(int). By default, aligned_t
+                               is 8 bytes on all platforms except PowerPC32,
+                               where it is 4 bytes (due to a lack of native
+                               64-bit atomic operations)])])
+
+AC_ARG_ENABLE([64bit-alignment],
+              [AS_HELP_STRING([--enable-64bit-alignment],
+                              [Align aligned_t to 8 byte boundry, even if it is
+                               4 bytes long.  Default is to align to
+                               sizeof(aligned_t). Alignment cannot be smaller
+                               than aligned_t.])])
+
+AC_ARG_WITH([topology],
+            [AS_HELP_STRING([--with-topology=[[topologylib]]],
+							[specify which topology interface to use. Supported
+							 interfaces include hwloc, lgrp, libnuma,
+							 libnumaV2, mach, plpa, and tilera.])],
+			[AS_IF([test "x$with_topology" = xyes],
+                   [with_topology=none_specified])
+			 case "$with_topology" in
+				 hwloc|lgrp|libnuma|libnumaV2|mach|no|plpa|tilera) ;;
+				 none_specified) ;;
+			     *)
+				 AC_MSG_ERROR([Unsupported topology library ($with_topology)])
+				 ;;
+		     esac
+             qthread_topo="$with_topology"],
+            [qthread_topo=none_specified])
+
+AC_ARG_WITH([gcd],
+            [AS_HELP_STRING([--with-gcd=[[gcd_style]]],
+                            [specify which algorithm for computing greatest
+                             common denominator. Current options are: "mod"
+                             (default) and "shift". The mod option uses modulo
+                             operations, and is usually the fastest option. On
+                             some systems, modulo operations are particularly
+                             slow, and so the "shift" algorithm is faster. The
+                             difference is usually minor, and probably will not
+                             impact overall performance significantly, but this
+                             option is for true speed-demons who want to get
+                             the last word in speed.])],
+                        [],
+                        [with_gcd=mod])
+
+AC_ARG_ENABLE([condwait-queue],
+              [AS_HELP_STRING([--enable-condwait-queue],
+                              [force the use of a pthread condwait queue,
+                               instead of a spin-based queue for inter-thread
+                               communication (important if spinning shepherds
+                               interfere with each other). Default enabled on
+                               sparc/solaris, but default disabled elsewhere.])])
+
+AC_ARG_ENABLE([interfaces],
+              [AS_HELP_STRING([--enable-interfaces=[[list]]],
+                              [Comma separated list of compiler interfaces to
+                               support. Available interfaces include chapel and
+                               rose.])],
+              [for iface in $(echo "$enable_interfaces" | sed 's/,/ /g') ; do
+                 case "$iface" in
+                   chapel)
+                     compile_chapel_interface=yes
+                     ;;
+                   rose)
+                     enable_rose_extensions=yes
+                     ;;
+                   *)
+                     AC_MSG_ERROR([Unsupported interface ($iface) selected.])
+                     ;;
+                 esac
+               done
+               EXTRA_DISTCHECK_OPTIONS="$EXTRA_DISTCHECK_OPTIONS --enable-interfaces=$enable_interfaces"])
+
+AC_ARG_ENABLE([rose-extensions],
+              [AS_HELP_STRING([--enable-rose-extensions],
+                              [Enable some experimental extensions to qthreads
+                               that are designed to support integration with
+                               the ROSE compiler. Also enables the ROSE
+                               compiler interface.])],
+              [EXTRA_DISTCHECK_OPTIONS="$EXTRA_DISTCHECK_OPTIONS --enable-interfaces=rose"])
+
+AC_ARG_ENABLE([rose-log-barrier],
+              [AS_HELP_STRING([--enable-rose-log-barrier],
+                              [Enable logrithmic barrier (replaces FEB version) dealing with the XOMP interface.])])
+
+AC_ARG_ENABLE([omp_affinity],
+              [AS_HELP_STRING([--enable-omp-affinity],
+                              [Enable experimental OpenMP affinity extensions (part of ROSE interface). Under development])])
+
+AC_ARG_ENABLE([multithreaded_shepherds],
+              [AS_HELP_STRING([--disable-multithreaded-shepherds],
+                              [Disnable multithreaded shepherds.])])
+
+AC_ARG_WITH([scheduler],
+			[AS_HELP_STRING([--with-scheduler=[[type]]],
+							[Specify the scheduler. Options when using
+							 single-threaded shepherds are: nemesis (default),
+							 lifo, mutexfifo, and mtsfifo. Options when using
+							 multi-threaded shepherds are: sherwood (default),
+							 nottingham, and loxley. Details on these options
+							 are in the SCHEDULING file.])])
+
+AC_ARG_WITH([sinc],
+			[AS_HELP_STRING([--with-sinc=[[type]]],
+							[Specify the sinc implementation. Options are
+                             'donecount' (default), 'donecount_cas', 'snzi', and 'original'.])])
+
+AC_ARG_ENABLE([hpctoolkit],
+              [AS_HELP_STRING([--enable-hpctoolkit-support],
+                              [Enable modifications so that HPCToolkit can unwind Qthreads threads.])])
+
+AC_ARG_ENABLE([valgrind],
+              [AS_HELP_STRING([--enable-valgrind],
+                              [compile with valgrind macros to assist with debugging])])
+
+AC_ARG_WITH([cacheline-width],
+			[AS_HELP_STRING([--with-cacheline-width=bytes],
+							[Specify the cacheline width for the target
+							 machine. Defaults to 64. Used only for optimizing
+							 internal data structure layout;
+							 qthread_cacheline() still detects this at
+							 runtime.])],
+			[],
+			[with_cacheline_width=64])
+
+AC_ARG_VAR([CHPL_HOME],
+           [Provide the path to the Chapel build directory. Only used if the Chapel compiler interface is enabled.])
+AS_IF([test "x$CHPL_HOME" != "x"],
+	  [EXTRA_DISTCHECK_OPTIONS="$EXTRA_DISTCHECK_OPTIONS CHPL_HOME=\"$CHPL_HOME\""])
+
+AC_ARG_ENABLE([multinode],
+	      [AS_HELP_STRING([--enable-multinode],
+                              [Enable experimental support for multi-node qthreads applications])])
+
+AC_CACHE_SAVE
+#}}}
+
+## ------------------- ##
+## Checks for programs ##
+## ------------------- ##
+AC_PROG_CC
+dnl We use system extensions.  This includes setting _GNU_SOURCE
+AC_USE_SYSTEM_EXTENSIONS
+AC_PROG_CC_C99
+AC_PROG_CPP
+AC_PROG_CXX
+AS_IF([test "x$CXX" = "xg++"],
+      [AS_IF([test "x$GXX" = x],
+             [AC_MSG_ERROR([Qthreads requires a C++ compiler!])])])
+QTHREAD_DETECT_COMPILER_TYPE
+AS_IF([test "x$enable_picky" = x],
+      [AS_IF([test -d "${srcdir}/.svn"],
+             [echo "--> developer override: enable picky compiler by default"
+              enable_picky=yes])])
+AM_PROG_AS
+AC_PROG_INSTALL
+AC_PROG_LN_S
+AC_PROG_MAKE_SET
+AC_PROG_LIBTOOL
+AM_PROG_CC_C_O
+
+AS_IF([test "x$enable_picky" = xyes],
+      [case "$qthread_cv_c_compiler_type" in
+         GNU)
+           CFLAGS="-Wall -Wno-strict-aliasing -Wmissing-prototypes -Wstrict-prototypes $CFLAGS"
+           ;;
+         Intel)
+           CFLAGS="-Wall -wd981 -wd1572 -wd869 $CFLAGS"
+           ;;
+         SunStudio)
+           # This compiler defaults to enabling all warnings
+           ;;
+         PortlandGroup)
+           CFLAGS="-Minform=inform $CFLAGS"
+           ;;
+         IBM_XL)
+           CFLAGS="-q64 $CFLAGS"
+           ;;
+         Convey|EKOPath)
+           CFLAGS="-W -Wall $CFLAGS"
+           ;;
+         *)
+           CFLAGS="-Wall $CFLAGS"
+           ;;
+       esac
+       case "$qthread_cv_cxx_compiler_type" in
+         GNU)
+           CXXFLAGS="-Wall $CXXFLAGS"
+           ;;
+         Intel)
+           CXXFLAGS="-Wall -wd981 $CXXFLAGS"
+           ;;
+         SunStudio)
+           # This compiler defaults to enabling all warnings
+           ;;
+         PortlandGroup)
+           CXXFLAGS="-Minform=inform $CXXFLAGS"
+           ;;
+         IBM_XL)
+           CXXFLAGS="-q64 $CXXFLAGS"
+           ;;
+         Convey|EKOPath)
+           CXXFLAGS="-W -Wall $CXXFLAGS"
+           ;;
+         *)
+           CXXFLAGS="-Wall $CXXFLAGS"
+           ;;
+         esac])
+
+AC_CACHE_SAVE
+
+# Figure out if we're targeting SST or Unix implementation.  Will add
+# MTA here when the time comes.
+QTHREAD_CHECK_SST([qthread_implementation="sst"], [qthread_implementation="unix"])
+
+## --------------- ##
+## Check for types ##
+## --------------- ##
+AC_TYPE_OFF_T
+AC_TYPE_SIZE_T
+AC_TYPE_PID_T
+
+AC_CHECK_SIZEOF([int])
+AC_CHECK_SIZEOF([void*])
+QTHREAD_CHECK_ASSEMBLY([have_assembly=1], [have_assembly=0])
+
+# Default behavior:
+#   sizeof(aligned_t)    = 8 (unless POWERPC32, then 4)
+#   alignment(aligned_t) = 8 (unless POWERPC32, then 4)
+# If user specified 64bit aligned_t:
+#   sizeof(aligned_t)    = 8 (or should this be sizeof(long)?)
+#   alignment(aligned_t) = 8
+# else if user forbids 64bit aligned_t:
+#   sizeof(aligned_t)    = sizeof(int)
+#   alignment(aligned_t) = sizeof(int)
+# If user specified 64bit alignment:
+#   alignment(aligned_t) = 8
+AS_IF([test "x$qthread_cv_asm_arch" = "xPOWERPC32"],
+      [sizeof_aligned_t=4
+       align_aligned_t=4],
+      [sizeof_aligned_t=8
+       align_aligned_t=8])
+AS_IF([test "x$enable_64bit_aligned_t" = "xyes"], [sizeof_aligned_t="8"
+                                                   align_aligned_t="8"])
+AS_IF([test "x$enable_64bit_aligned_t" = "xno"],  [sizeof_aligned_t="$ac_cv_sizeof_int"
+                                                   align_aligned_t="$ac_cv_sizeof_int"])
+
+AC_DEFINE_UNQUOTED([QTHREAD_SIZEOF_ALIGNED_T], [$sizeof_aligned_t], [size of aligned_t])
+AC_DEFINE_UNQUOTED([QTHREAD_ALIGNMENT_ALIGNED_T], [$align_aligned_t], [alignment of aligned_t])
+
+AC_CACHE_SAVE
+
+# Figure out whether the compiler has builtin atomic operations
+AS_IF([test "x$enable_hardware_increments" != xno],
+      [QTHREAD_CHECK_ATOMICS($sizeof_aligned_t)])
+QTHREAD_BUILTIN_EXPECT
+QTHREAD_BUILTIN_TRAP
+QTHREAD_VAMACROS
+QTHREAD_CHECK_BITFIELDS
+
+## -------------------- ##
+## Checks for libraries ##
+## -------------------- ##
+AC_SEARCH_LIBS([pthread_create], [pthread], [],
+			   [AC_MSG_ERROR([Qthreads requires a working pthreads implementation.])])
+AC_CHECK_FUNCS([pthread_yield])
+AC_CHECK_FUNCS([pthread_spin_init],
+			   [have_pthread_spinlocks=yes],
+			   [have_pthread_spinlocks=no])
+QTHREAD_PTHREAD_PROCESS_PRIVATE
+
+AS_IF([test "x$qthread_implementation" = "xsst"],
+          [AC_DEFINE([QTHREAD_SST_PRIMITIVES],[1],[Define to use the SST primitives])
+           enable_pooled_memory="no"
+           LDFLAGS="$LDFLAGS $SST_LIBS"
+           AC_SEARCH_LIBS([ceil],[m_ppc],[],[AC_MSG_ERROR([Cannot find ceil()])])])
+AS_IF([test "x$qthread_implementation" = "xunix"],
+          [AC_SEARCH_LIBS([ceil],[m],[],[AC_MSG_ERROR([Cannot find ceil()])])
+		   AC_SEARCH_LIBS([accept], [xnet "socket -lnsl"])])
+
+AS_IF([test "x$enable_pooled_memory" = "xno"],
+      [AC_DEFINE([UNPOOLED], [1], [prevents most uses of memory pools])],
+      [enable_pooled_memory=yes])
+
+AS_IF([test "x$enable_spawn_cache" != "xno"],
+	  [AC_DEFINE([QTHREAD_USE_PRIVATE_QUEUES],[1],[Define to use worker-specific spawn queues])
+	   enable_spawn_cache=yes])
+
+AC_CACHE_SAVE
+
+## ----------------------- ##
+## Checks for header files ##
+## ----------------------- ##
+AC_HEADER_STDC
+AC_HEADER_SYS_WAIT
+AC_HEADER_TIME
+AC_CHECK_HEADERS([stdlib.h fcntl.h ucontext.h sys/time.h sys/resource.h mach/mach_time.h malloc.h math.h sys/types.h sys/sysctl.h unistd.h sys/syscall.h])
+AX_CREATE_STDINT_H([include/qthread/qthread-int.h])
+AC_SYS_LARGEFILE
+
+QTHREAD_CHECK_FUNCTION
+
+AC_CACHE_SAVE
+
+## -------------------- ##
+## Check for structures ##
+## -------------------- ##
+AC_MSG_CHECKING([cacheline width])
+AC_MSG_RESULT([$with_cacheline_width])
+AC_DEFINE_UNQUOTED([CACHELINE_WIDTH],[$with_cacheline_width],[The cacheline width])
+AC_CHECK_SIZEOF(pthread_mutex_t)
+dnl BWB - FIX ME - shouldn't we actually make sure on this size thing?
+AC_DEFINE([PTHREAD_MUTEX_SMALL_ENOUGH], [1],
+          [this signifies that pthread_mutex_t is small enough to fit in the existing data structures])
+QTHREAD_CHECK_SYSCALLTYPES([$enable_syscall_interception])
+
+AC_CACHE_SAVE
+
+## ---------------------------------- ##
+## Check for compiler characteristics ##
+## ---------------------------------- ##
+# Find out if we need the -restrict flag
+RESTRICT_CXXFLAGS=""
+AS_IF([test "x$qthread_cv_cxx_compiler_type" = "xIntel"],
+      [RESTRICT_CXXFLAGS="-restrict"])
+AC_SUBST([RESTRICT_CXXFLAGS])
+
+AC_C_CONST
+AC_C_INLINE
+AX_C_RESTRICT
+AC_C_VOLATILE
+AX_OPENMP([have_openmp=yes], [have_openmp=no])
+
+QTHREAD_MALLOC_ATTRIBUTE
+QTHREAD_UNUSED_ATTRIBUTE
+QTHREAD_ALIGNED_ATTRIBUTE
+QTHREAD_NOINLINE_ATTRIBUTE
+QTHREAD_DEPRECATED_ATTRIBUTE
+QTHREAD_BUILTIN_PREFETCH
+QTHREAD_BUILTIN_SYNCHRONIZE
+
+AS_IF([test "x$have_assembly" = "x0" -a "x$qthread_cv_atomic_CAS32" = "xno" -a "x$qthread_cv_atomic_CAS64" = "xno" -a "x$qthread_cv_atomic_incr" = "xno"],
+	      [AC_MSG_NOTICE(Compiling on a compiler without inline assembly support and without builtin atomics. This will be slow!)
+	       AS_IF([test "x$enable_hardware_increments" = x],
+				     [AC_MSG_NOTICE(turning on software increments ($have_assembly))
+			          enable_hardware_increments=no])
+		   AS_IF([test "x$enable_hardware_increments" = "xyes"],
+				     [AC_MSG_ERROR([No assembly available and software increments disabled.])])],
+ 	  [AS_IF([test "x$enable_hardware_increments" = x], [enable_hardware_increments="yes"])])
+
+AS_IF([test "x$enable_hardware_increments" = "xno"],
+      [AC_DEFINE([QTHREAD_MUTEX_INCREMENT], [1], [Use mutexes instead of assembly for atomic increment])])
+AS_IF([test "x$enable_guard_pages" = "xyes"],
+      [AC_DEFINE([QTHREAD_GUARD_PAGES], [1], [Use guard pages to detect stack overruns])],
+      [enable_guard_pages="no"])
+
+AC_CACHE_SAVE
+
+## --------------------------- ##
+## Check for library functions ##
+## --------------------------- ##
+AC_FUNC_VPRINTF
+AC_FUNC_MMAP
+AS_IF([test "x$enable_setrlimit" = "xyes"],
+      [AC_CHECK_FUNCS([getrlimit setrlimit],
+                      [AC_DEFINE([NEED_RLIMIT], [1], [Whether the library should use get/set rlimit functions])],
+                      [AC_MSG_ERROR([setrlimit() calls enabled, but function is unavailable])])])
+AC_CHECK_FUNCS([strtol memalign posix_memalign memset memmove munmap memcpy fstat64 lseek64 getcontext swapcontext makecontext sched_yield processor_bind madvise sysconf sysctl syscall])
+QTHREAD_CHECK_QSORT
+AC_CHECK_DECLS([MADV_ACCESS_LWP],[],[],[[#include <sys/types.h>
+#include <sys/mman.h>]])
+AX_CHECK_PAGE_ALIGNED_MALLOC
+AX_CHECK_16ALIGNED_MALLOC
+AX_CHECK_16ALIGNED_CALLOC
+QTHREAD_CHECK_WORKING_VALLOC
+
+AC_CACHE_SAVE
+
+## ------------------------- ##
+## Check for system services ##
+## ------------------------- ##
+
+# Figure out if we need makecontext
+AS_IF([test "x$qthread_implementation" = "xunix"],
+      [QTHREAD_PICK_CONTEXT_TYPE(qthread_makecontext_type)],
+	  [qthread_makecontext_type="none"])
+
+AS_IF([test "x$with_gcd" = "xshift"],
+      [AC_DEFINE([QTHREAD_SHIFT_GCD],[1],[use a shift-based gcd algorithm])])
+
+AS_IF([test "x$enable_condwait_queue" = "x"],
+      [case "$host" in
+         sparc-sun-solaris*)
+           enable_condwait_queue="yes"
+           ;;
+         *)
+           enable_condwait_queue="no"
+           ;;
+       esac])
+AS_IF([test "x$enable_condwait_queue" = "xyes"],
+      [AC_DEFINE([QTHREAD_CONDWAIT_BLOCKING_QUEUE], [1], [use pthread-based condwait for lf queue])])
+
+AS_IF([test "x$enable_valgrind" = "xyes"],
+      [AC_CHECK_HEADERS([valgrind/memcheck.h],
+                        [AC_DEFINE([QTHREAD_USE_VALGRIND], [1], [Use Valgrind Macros])])])
+
+AS_IF([test "x$enable_rose_extensions" = xyes],
+      [AC_DEFINE([QTHREAD_USE_ROSE_EXTENSIONS], [1], [Define to enable ROSE extensions])
+	   AS_IF([test "x$with_scheduler" = "x"],
+			 [with_scheduler="sherwood"])
+	   AS_IF([test "x$with_scheduler" != "xsherwood" -a "x$with_scheduler" != "xnottingham" -a "x$with_scheduler" != "xloxley"],
+			 [AC_MSG_ERROR([ROSE XOMP implementation *REQUIRES* the sherwood, nottingham, or loxley schedulers.])])
+	   AS_IF([test "x$enable_multithreaded_shepherds" != "x" -a "x$enable_multithreaded_shepherds" != "xyes"],
+			 [AC_MSG_ERROR([ROSE XOMP implementation *REQUIRES* multithreaded shepherds.])],
+			 [enable_multithreaded_shepherds="yes"])])
+
+AS_IF([test "x$enable_hpctoolkit_support" = xyes],
+      [AC_DEFINE([QTHREAD_ALLOW_HPCTOOLKIT_STACK_UNWINDING], [1], [Support HPCToolkit stack unwinding])])
+
+AS_IF([test "x$enable_log_barrier" = xyes],
+      [AC_DEFINE([QTHREAD_LOG_BARRIER], [1], [Define to use Logrithmic barrier inside XOMP support])])
+
+AS_IF([test "x$enable_aligncheck" = "xyes"],
+	  [],
+      [AC_DEFINE([QTHREAD_NOALIGNCHECK], [1], [Do not check the alignment of synchronization addresses])
+       enable_aligncheck=no])
+
+# check scheduler requirements
+AS_IF([test "x$with_scheduler" != "x"],
+	  [case "$with_scheduler" in
+		 default)
+           AS_IF([test "x$enable_multithreaded_shepherds" = "xno"],
+				 [with_scheduler="nemesis"],
+				 [with_scheduler="sherwood"
+				  enable_multithreaded_shepherds="yes"])
+           ;;
+	     nemesis|lifo|mutexfifo|mtsfifo)
+		   # all valid single-threaded options that require no additional configuration
+		   AS_IF([test "x$enable_multithreaded_shepherds" != "xyes"],
+				 [enable_multithreaded_shepherds=no],
+				 [AC_MSG_ERROR([The $with_scheduler scheduler is incompatible with multithreaded shepherds.])])
+		   ;;
+		 sherwood)
+		   # all valid multithreaded options that require no additional configuration
+		   AS_IF([test "x$enable_multithreaded_shepherds" != "xno"],
+				 [enable_multithreaded_shepherds=yes],
+				 [AC_MSG_ERROR([The $with_scheduler scheduler requires multithreaded shepherds.])])
+		   ;;
+		 nottingham)
+		   AS_IF([test "x$enable_multithreaded_shepherds" != "xno"],
+				 [enable_multithreaded_shepherds=yes],
+				 [AC_MSG_ERROR([The $with_scheduler scheduler requires multithreaded shepherds.])])
+		   AS_IF([test "x$qthread_cv_atomic_CAS128" != xyes],
+				 [AC_MSG_ERROR([Nottingham requires a 128-bit CAS.])])
+		   ;;
+		 loxley)
+		   AS_IF([test "x$enable_multithreaded_shepherds" != "xno"],
+				 [enable_multithreaded_shepherds=yes],
+				 [AC_MSG_ERROR([The $with_scheduler scheduler requires multithreaded shepherds.])])
+		   ;;
+		 *)
+		   AC_MSG_ERROR([Unknown scheduler option])
+		   ;;
+	   esac
+	   EXTRA_DISTCHECK_OPTIONS="$EXTRA_DISTCHECK_OPTIONS --with-scheduler=$with_scheduler"],
+	  [AS_IF([test "x$enable_multithreaded_shepherds" != "xno"],
+			 [with_scheduler="sherwood"
+			  enable_multithreaded_shepherds="yes"],
+			 [with_scheduler="nemesis"])])
+
+AS_IF([test "x$enable_multithreaded_shepherds" = xyes],
+      [AC_DEFINE([QTHREAD_MULTITHREADED_SHEPHERDS], [1], [Support multithreaded shepherds])
+       AC_SEARCH_LIBS([nanosleep],[rt],[],[AC_MSG_ERROR([Cannot find nanosleep])])
+	   AS_IF([test "x$with_scheduler" = "x"],
+			 [AC_MSG_ERROR([something broke in the configure script (hit the developer with a 2-by-four)])])
+       EXTRA_DISTCHECK_OPTIONS="$EXTRA_DISTCHECK_OPTIONS --enable-multithreaded-shepherds"
+	   enable_multithreaded_shepherds="yes"],
+      [enable_multithreaded_shepherds="no"
+       EXTRA_DISTCHECK_OPTIONS="$EXTRA_DISTCHECK_OPTIONS --disable-multithreaded-shepherds"])
+
+AS_IF([test "x$enable_hardware_increments" = "xno"],
+	  [AS_IF([test "x$enable_multithreaded_shepherds" = "xno"],
+			 [AS_IF([test "x$with_scheduler" != "xmutexfifo"],
+					[with_scheduler="mutexfifo"
+					 AC_MSG_WARN([Forcing scheduler to be mutexfifo, since hardware atomic support is lacking.])])],
+			 [AS_IF([test "x$with_scheduler" != "xsherwood"],
+					[with_scheduler="sherwood"
+					 AC_MSG_WARN([Forcing scheduler to be sherwood, since hardware atomic support is lacking.])])])],
+	  [AS_IF([test "x$enable_internal_spinlock" = x],
+			 [AS_IF([test "x$have_pthread_spinlocks" = xyes],
+					[enable_internal_spinlock=no],
+					[enable_internal_spinlock=yes])])
+	   AS_IF([test "x$enable_internal_spinlock" = xyes],
+			 [AC_DEFINE([USE_INTERNAL_SPINLOCK], [1], [Use Porterfield spinlock])])])
+
+AS_IF([test "x$enable_steal_profiling" = xyes],
+      [AC_DEFINE([STEAL_PROFILE], [1], [Support dynamic profile of steal infomation])],
+      [enable_steal_profiling="no"])
+
+AS_IF([test "x$enable_sincs_profiling" = xyes],
+      [AC_DEFINE([SINCS_PROFILE], [1], [Support dynamic profile of sincs infomation])],
+      [enable_sincs_profiling="no"])
+
+AS_IF([test "x$enable_cas_steal_profiling" = xyes],
+      [AC_DEFINE([CAS_STEAL_PROFILE], [1], [Support dynamic profile of CAS steal infomation])],
+      [enable_cas_steal_profiling="no"])
+
+AS_IF([test "x$with_sinc" = "x"],
+      [with_sinc="donecount"],
+      [])
+case "$with_sinc" in
+ donecount|donecount_cas|snzi|original) ;;
+ *) AC_MSG_ERROR([Unknown sinc option]) ;;
+esac
+
+AS_IF([test "x$enable_omp_affinity" = xyes],
+      [AC_DEFINE([QTHREAD_OMP_AFFINITY], [1], [Enable experimental OpenMP affinity extensions. Under development])],
+      [enable_omp_affinity="no"])
+
+AS_IF([test "x$enable_asserts" != "xyes"],
+      [AC_DEFINE([QTHREAD_NO_ASSERTS], [1], [removes sanity checks from most qthread functions])
+       enable_asserts=no],
+      [enable_asserts=yes])
+
+AS_IF([test "x$enable_debug" = x -o "x$enable_debug" = xno],
+	  [enable_debug=no],
+      [AC_DEFINE([QTHREAD_DEBUG], [1], [enables printing debugging information at runtime])
+	   QT_COND_DEFINE([$enable_debug_affinity],
+					  [QTHREAD_DEBUG_AFFINITY], [prints out affinity debugging information at runtime])
+	   QT_COND_DEFINE([$enable_debug_threadqueues],
+					  [QTHREAD_DEBUG_THREADQUEUES], [prints out threadqueue debugging information at runtime])
+	   QT_COND_DEFINE([$enable_debug_threads],
+					  [QTHREAD_DEBUG_THREADS], [prints out thread debugging information at runtime])
+	   QT_COND_DEFINE([$enable_debug_core],
+			          [QTHREAD_DEBUG_CORE], [prints out core debugging information at runtime])
+	   QT_COND_DEFINE([$enable_debug_mpool],
+			  [QTHREAD_DEBUG_MPOOL], [prints out memory pool debugging information at runtime])
+	   QT_COND_DEFINE([$enable_debug_shepherd],
+			          [QTHREAD_DEBUG_SHEPHERD], [prints out shepherd debugging information at runtime])
+	   QT_COND_DEFINE([$enable_debug_syscalls],
+			          [QTHREAD_DEBUG_SYSCALLS], [prints out syscall debugging information at runtime])
+	   QT_COND_DEFINE([$enable_debug_locks],
+			          [QTHREAD_DEBUG_LOCKS], [prints out lock debugging information at runtime])
+	   QT_COND_DEFINE([$enable_debug_febs],
+			          [QTHREAD_DEBUG_FEBS], [prints out feb debugging information at runtime])
+	   QT_COND_DEFINE([$enable_debug_syncvars],
+			          [QTHREAD_DEBUG_SYNCVARS], [prints out syncvar debugging information at runtime])
+	   QT_COND_DEFINE([$enable_debug_loops],
+			          [QTHREAD_DEBUG_LOOPS], [prints out loop debugging information at runtime])
+	   QT_COND_DEFINE([$enable_debug_io],
+			          [QTHREAD_DEBUG_IO], [prints out I/O debugging information at runtime])
+	   QT_COND_DEFINE([$enable_debug_barrier],
+			          [QTHREAD_DEBUG_BARRIER], [prints out barrier debugging information at runtime])
+	   QT_COND_DEFINE([$enable_debug_qarray],
+			          [QTHREAD_DEBUG_QARRAY], [prints out qarray debugging information at runtime])
+	   QT_COND_DEFINE([$enable_debug_rcrtool],
+			          [QTHREAD_DEBUG_RCRTOOL], [prints out rcrtool debugging information at runtime])
+	   QT_COND_DEFINE([$enable_debug_futurelib],
+			          [QTHREAD_DEBUG_FUTURELIB], [prints out futurelib debugging information at runtime])
+	   QT_COND_DEFINE([$enable_debug_xomp],
+			          [QTHREAD_DEBUG_XOMP], [prints out xomp debugging information at runtime])
+	   QT_COND_DEFINE([$enable_debug_multinode],
+			          [QTHREAD_DEBUG_MULTINODE], [prints out multinode debugging information at runtime])
+	   ])
+
+AS_IF([test "x$enable_rcrtool" = "xyes"],
+      [AC_DEFINE([QTHREAD_RCRTOOL], [1], [enables RCR logging and scheduling])],
+      [enable_rcrtool=no])
+
+AS_IF([test "x$enable_rcrtool_stats" = "xyes"],
+      [AC_DEFINE([QTHREAD_RCRTOOL_STAT], [1], [logs RCR stats])],
+      [enable_rcrtool_stats=no])
+
+AS_IF([test "x$enable_hardware_timer" != "xno"],
+      [# Which timer do we want to use
+       qthread_timer_type=gettimeofday
+       AS_IF([test "x$qthread_timer_type" = "xgettimeofday"],
+             [AC_CHECK_FUNC([mach_absolute_time], [qthread_timer_type=mach])])
+       AS_IF([test "x$qthread_timer_type" = "xgettimeofday"],
+             [AC_CHECK_FUNC([gethrtime], [qthread_timer_type=gethrtime])])
+       AS_IF([test "x$qthread_timer_type" = "xgettimeofday"],
+             [QTHREAD_CHECK_ALTIX_TIMER([qthread_timer_type=altix])])
+       AS_IF([test "x$qthread_timer_type" = "xgettimeofday"],
+             [AC_SEARCH_LIBS([clock_gettime],[rt],
+                             [qthread_timer_type=clock_gettime
+                              break])])
+       AC_MSG_CHECKING([for high resolution timer type])
+       AC_MSG_RESULT([$qthread_timer_type])],
+      [qthread_timer_type=gettimeofday])
+
+dnl keep in mind, if the stack size is not a multiple of the page size,
+dnl alignment issues may become dicey, depending on the architecture
+AS_IF([test "x$enable_fullsize_stacks" = "xyes"],
+      [qthread_cv_stack_size=8388608],
+      [AS_IF([test "x$enable_very_small_stacks" = "xyes"],
+             [qthread_cv_stack_size=2048],
+             [case "$host" in
+                powerpc-apple-darwin*)
+                  AC_CHECK_SIZEOF([void*])
+                  AS_IF([test "x$ac_cv_sizeof_voidp" = "x8"],
+                        [qthread_cv_stack_size=8192],
+                        [qthread_cv_stack_size=4096])
+                  ;;
+                *)
+                  qthread_cv_stack_size=4096
+                  ;;
+              esac])])
+AC_DEFINE_UNQUOTED([QTHREAD_DEFAULT_STACK_SIZE],[$qthread_cv_stack_size], [What size stacks to use by default])
+
+AS_IF([test "x$enable_thread_count" = "xyes"],
+      [AC_DEFINE([QTHREAD_COUNT_THREADS], [1], [keeps track of the number of threads])],
+      [enable_thread_count="no"])
+
+AS_IF([test "x$enable_shepherd_profiling" = "xyes"],
+      [AC_DEFINE([QTHREAD_SHEPHERD_PROFILING], [1], [adds code to monitor how much time shepherds spend idle])],
+      [enable_shepherd_profiling="no"])
+
+AS_IF([test "x$enable_lock_profiling" = "xyes"],
+      [AC_DEFINE([QTHREAD_LOCK_PROFILING], [1], [adds code to monitor how much time is spent aquiring locks])],
+      [enable_lock_profiling="no"])
+
+AS_IF([test "x$enable_lazy_threadids" = "xno" -o "x$enable_debug" = "xyes"],
+      [AC_DEFINE([QTHREAD_NONLAZY_THREADIDS], [1], [makes sure every thread gets an id at creation time])
+       enable_lazy_threadids=no],
+      [enable_lazy_threadids=yes])
+
+AS_IF([test "x$enable_inlined_functions" != "xno"],
+      [qinline_define=inline],
+      [qinline_define=""])
+AC_DEFINE_UNQUOTED([QINLINE], [$qinline_define], [Allow function inlining to be toggled])
+
+AS_IF([test "x$enable_header_syscall_interception" == xyes],
+	  [AC_DEFINE([USE_HEADER_SYSCALLS], [1],
+				 [Define to allow blocking syscalls to be mangled into qthread-specific variants])])
+
+AC_CACHE_SAVE
+
+## External libraries that help on some architectures
+AS_IF([test "x$qthread_topo" != xno],[
+AS_IF([test "x$qthread_topo" = "xnone_specified"],
+      [qthread_topo=no])
+AS_IF([test "x$qthread_implementation" = "xunix"],
+      [# First, check for hwloc, since it gives me the most portable/flexible/reliable/detailed information. Eventually, it will also give me distance information
+       AS_IF([test "x$qthread_topo" = xno -o "x$qthread_topo" = xhwloc],
+             [QTHREAD_CHECK_HWLOC([qthread_topo=hwloc],
+								  [AS_IF([test "x$qthread_topo" != xno],
+										 [AC_MSG_ERROR([Specified topology library ($qthread_topo) does not work.])])])])
+	   # Second, check for the ones that will give me distance information
+       AS_IF([test "x$qthread_topo" = xno -o "x$qthread_topo" = xlgrp],
+             [QTHREAD_CHECK_LIBLGRP([qthread_topo=lgrp],
+									[AS_IF([test "x$qthread_topo" != xno],
+										   [AC_MSG_ERROR([Specified topology library ($qthread_topo) does not work.])])])])
+       AS_IF([test "x$qthread_topo" = xno -o "x$qthread_topo" = xlibnuma -o "x$qthread_topo" = xlibnumaV2],
+             [QTHREAD_CHECK_LIBNUMA([qthread_topo=libnuma],
+									[qthread_topo=libnumaV2],
+									[AS_IF([test "x$qthread_topo" != xno],
+										   [AC_MSG_ERROR([Specified topology library ($qthread_topo) does not work.])])])])
+       AS_IF([test "x$qthread_topo" = xno -o "x$qthread_topo" = xtilera],
+             [QTHREAD_CHECK_TILETOPO([qthread_topo=tilera],
+									 [AS_IF([test "x$qthread_topo" != xno],
+											[AC_MSG_ERROR([Specified topology library ($qthread_topo) does not work.])])])])
+	   # Third, check any others.
+       AS_IF([test "x$qthread_topo" = xno -o "x$qthread_topo" = xmach],
+             [QTHREAD_CHECK_MACHTOPO([qthread_topo=mach],
+									 [AS_IF([test "x$qthread_topo" != xno],
+											[AC_MSG_ERROR([Specified topology library ($qthread_topo) does not work.])])])])
+       # PLPA is deprecated in favor of hwloc
+       AS_IF([test "x$qthread_topo" = xno -o "x$qthread_topo" = xplpa],
+             [QTHREAD_CHECK_PLPA([qthread_topo=plpa],
+								 [AS_IF([test "x$qthread_topo" != xno],
+										[AC_MSG_ERROR([Specified topology library ($qthread_topo) does not work.])])])])
+       ])
+])
+
+AS_IF([test "$enable_multinode" = "yes"], 
+  [AC_DEFINE([QTHREAD_MULTINODE], [1], [Defined if multinode support desired])
+   QTHREAD_CHECK_PORTALS4([], [AC_MSG_ERROR([Could not find Portals 4 library])])
+   CPPFLAGS="$CPPFLAGS $portals4_CPPFLAGS"
+   LDFLAGS="$LDFLAGS $portals4_LDFLAGS"
+   LIBS="$LIBS $portals4_LIBS"
+   AC_ARG_WITH([multinode-runtime],
+   	       [AC_HELP_STRING([--with-multinode-runtime@<:@=OPTION@:>@],
+		               [Use OPTION as runtime support, current options are shmemrt and mpi @<:@default=shmemrt@:>@])])
+   if test "$with_multinode_runtime" = ""; then with_multinode_runtime=shmemrt ; fi
+   dnl (((  make parens from case statement match something
+   case "$with_multinode_runtime" in
+     shmemrt)  ;;
+     mpi)   ;;
+     *) AC_MSG_ERROR([bad value ${with_multinode_runtime} for --with-multinode-runtime]) ;;
+   esac
+  ], [enable_multinode="no"])
+AM_CONDITIONAL([WANT_MULTINODE], [test "$enable_multinode" = "yes"])
+AM_CONDITIONAL([WANT_PORTALS_SHMEM_RUNTIME], [test "$with_multinode_runtime" = "shmemrt"])
+AM_CONDITIONAL([WANT_MPI_RUNTIME], [test "$with_multinode_runtime" = "mpi"])
+AM_CONDITIONAL([HAVE_PROG_TIMELIMIT], [test "x$ac_cv_prog_timelimit_path" != "x"])
+
+
+## --------------- ##
+## Output and done ##
+## --------------- ##
+AC_SUBST(EXTRA_DISTCHECK_OPTIONS)
+AC_SUBST(qthread_topo)
+AC_SUBST(with_scheduler)
+AC_SUBST(with_sinc)
+AC_SUBST(OPENMP_CFLAGS)
+
+AM_CONDITIONAL([ENABLE_CXX_TESTS], [test "x$enable_cxx_tests" != "xno"])
+AM_CONDITIONAL([COMPILE_TARGET_SST], [test "x$qthread_implementation" = "xsst"])
+AM_CONDITIONAL([COMPILE_TARGET_UNIX], [test "x$qthread_implementation" = "xunix"])
+AM_CONDITIONAL([QTHREAD_NEED_OWN_MAKECONTEXT], [test "x$qthread_makecontext_type" = "xown"])
+AM_CONDITIONAL([QTHREAD_TIMER_TYPE_GETTIME], [test "x$qthread_timer_type" = "xclock_gettime"])
+AM_CONDITIONAL([QTHREAD_TIMER_TYPE_MACH], [test "x$qthread_timer_type" = "xmach"])
+AM_CONDITIONAL([QTHREAD_TIMER_TYPE_GETHRTIME], [test "x$qthread_timer_type" = "xgethrtime"])
+AM_CONDITIONAL([QTHREAD_TIMER_TYPE_ALTIX], [test "x$qthread_timer_type" = "xaltix"])
+AM_CONDITIONAL([QTHREAD_TIMER_TYPE_GETTIMEOFDAY], [test "x$qthread_timer_type" = "xgettimeofday"])
+AM_CONDITIONAL([COMPILE_POOLED_MEMORY], [test "x$enable_pooled_memory" = "xyes"])
+AM_CONDITIONAL([COMPILE_ROSE_EXTENSIONS], [test "x$enable_rose_extensions" = "xyes"])
+AM_CONDITIONAL([COMPILE_RCRTOOL], [test "x$enable_rcrtool" = "xyes"])
+AM_CONDITIONAL([QTHREAD_MULTITHREADED_SHEPHERDS], [test "x$enable_multithreaded_shepherds" = "xyes"])
+AM_CONDITIONAL([COMPILE_CHAPEL_INTERFACE], [test "x$compile_chapel_interface" = "xyes"])
+AM_CONDITIONAL([COMPILE_OPENMP_BENCHMARKS], [test "x$have_openmp" = "xyes"])
+
+AC_CONFIG_HEADERS([include/config.h include/qthread/common.h])
+AC_CONFIG_FILES([Makefile
+                 src/Makefile
+                 man/Makefile
+                 man/man3/Makefile
+                 include/Makefile
+                 include/qthread/Makefile
+                 test/Makefile
+				 test/benchmarks/Makefile
+				 test/benchmarks/rose_bots/Makefile])
+AC_OUTPUT
+
+echo ""
+echo    "System Characteristics:"
+echo    "               Target Style: $qthread_implementation"
+echo    "                 Multi-node: $enable_multinode"
+echo    "         Topology Interface: ${qthread_topo:-none}"
+echo    "                Qtimer type: ${qthread_timer_type:-none}"
+echo    "             Aligned_t size: $sizeof_aligned_t (aligned on $align_aligned_t byte boundaries)"
+qthread_stackprefix="         Default Stack size: "
+case "$qthread_cv_stack_size" in
+        8388608) echo "${qthread_stackprefix}8MB" ;;
+        2096)    echo "${qthread_stackprefix}2kB" ;;
+        4096)    echo "${qthread_stackprefix}4kB" ;;
+        *)       echo "${qthread_stackprefix}${qthread_cv_stack_size} bytes" ;;
+esac
+echo    ""
+echo    "Safety/Debugging:"
+echo    "      Sanity assert() Calls: $enable_asserts"
+echo    "    Check address alignment: $enable_aligncheck"
+echo    "                  Profiling: $enable_profiling"
+echo    " Debugging Trace Capability: $enable_debug"
+echo    "                Guard Pages: $enable_guard_pages"
+echo    ""
+echo    "Speed:"
+echo    "                  Scheduler: $with_scheduler"
+echo    "                       Sinc: $with_sinc"
+echo    "            Lazy Thread IDs: $enable_lazy_threadids"
+echo    "              Pooled Memory: $enable_pooled_memory"
+echo    "              Pooled Spawns: $enable_spawn_cache"
+echo    "    Multithreaded Shepherds: $enable_multithreaded_shepherds"
+echo    "                    RCRTool: $enable_rcrtool"
+qthread_incprefix="             Increments/CAS: "
+AS_IF([test "x$enable_hardware_increments" = "xno"],
+          [AS_IF([test "x$ac_cv_func_pthread_spin_init" = "xyes"],
+                         [echo "${qthread_incprefix}Spin (software)"],
+                         [echo "${qthread_incprefix}Mutex (software)"])],
+          [AS_IF([test "x$qthread_cv_atomic_incr" = "xyes" -a "x$qthread_cv_atomic_CAS" = "xyes"],
+                         [echo "${qthread_incprefix}Compiler Builtin (both)"],
+                         [AS_IF([test "x$qthread_cv_atomic_incr" = "xyes"],
+                                        [echo "${qthread_incprefix}Compiler Builtin/$qthread_cv_asm_arch"],
+                                        [AS_IF([test "x$qthread_cv_atomic_CAS" = "xyes"],
+                                                   [echo "${qthread_incprefix}$qthread_cv_asm_arch/Compiler Builtin"],
+                                                   [echo "${qthread_incprefix}$qthread_cv_asm_arch"])])])])
+echo ""
+dnl vim:set expandtab

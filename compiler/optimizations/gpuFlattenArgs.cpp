@@ -152,7 +152,7 @@ gpuFlattenArgs()  {
                     if (CallExpr* rhs = toCallExpr(subcall->get(2))) {
                       if (rhs->isPrimitive(PRIM_GET_MEMBER) ||
                           rhs->isPrimitive(PRIM_GET_MEMBER_VALUE) ||
-                          rhs->isPrimitive(PRIM_GET_REF)) {
+                          rhs->isPrimitive(PRIM_DEREF)) {
                         base = toSymExpr(rhs->get(1));
                         INT_ASSERT(base);
                       }
@@ -196,7 +196,7 @@ gpuFlattenArgs()  {
         Symbol* lhs = toSymExpr(call->get(1))->var;
         Symbol* rhs = NULL;
         if (CallExpr* subcall = toCallExpr(call->get(2))) {
-          if (subcall->isPrimitive(PRIM_GET_REF) ||
+          if (subcall->isPrimitive(PRIM_DEREF) ||
               subcall->isPrimitive(PRIM_GET_MEMBER) ||
               subcall->isPrimitive(PRIM_GET_MEMBER_VALUE)) {
             rhs = toSymExpr(subcall->get(1))->var;

@@ -9,64 +9,42 @@
 #include "arg.h"
 #include "chpltypes.h"
 #include "chpl-tasks.h"
+#include "error.h"
 
-//
-// When defining a new allocation type (for new instances of chpl_mem_allocMany
-// or chpl_mem_realloc in the runtime), define both a new enumeration constant
-// below and the corresponding descriptive string in the table defined in
-// chpl-mem.c:chpl_mem_descString().  Then you can use your enumeration in
-// a call to chpl_mem_allocMany(), chpl_mem_realloc(), or chpl_mem_descString().
-//
-typedef enum {
-  CHPL_RT_MD_UNKNOWN = 0,
-  CHPL_RT_MD_CHAPEL_CODE,
-  CHPL_RT_EXECUTION_COMMAND,
-  CHPL_RT_MD_ARRAY_ELEMENTS,
-  CHPL_RT_MD_SET_WIDE_STRING,
-  CHPL_RT_MD_GET_WIDE_STRING,
-  CHPL_RT_MD_COMMAND_BUFFER,
-  CHPL_RT_MD_COMM_XMIT_RECV_BUF,
-  CHPL_RT_MD_COMM_XMIT_RECV_STATUS,
-  CHPL_RT_MD_COMM_FORK_SEND_INFO,
-  CHPL_RT_MD_COMM_FORK_SEND_NB_INFO,
-  CHPL_RT_MD_COMM_FORK_SEND_LARGE_ARG,
-  CHPL_RT_MD_COMM_FORK_SEND_NB_LARGE_ARG,
-  CHPL_RT_MD_COMM_FORK_SEND_RESPONSE_DATA,
-  CHPL_RT_MD_COMM_FORK_RECV_INFO,
-  CHPL_RT_MD_COMM_FORK_RECV_LARGE_INFO,
-  CHPL_RT_MD_COMM_FORK_RECV_NB_INFO,
-  CHPL_RT_MD_COMM_FORK_RECV_NB_LARGE_INFO,
-  CHPL_RT_MD_COMM_FORK_RECV_LARGE_ARG,
-  CHPL_RT_MD_COMM_FORK_RECV_NB_LARGE_ARG,
-  CHPL_RT_MD_COMM_FORK_DONE_FLAG,
-  CHPL_RT_MD_COMM_PER_LOCALE_INFO,
-  CHPL_RT_MD_COMM_PRIVATE_OBJECTS_ARRAY,
-  CHPL_RT_MD_COMM_PRIVATE_BROADCAST_DATA,
-  CHPL_RT_MD_GC_HEAP,
-  CHPL_RT_MD_GC_SPACE_POINTER,
-  CHPL_RT_MD_GLOM_STRINGS_DATA,
-  CHPL_RT_MD_STRING_COPY_DATA,
-  CHPL_RT_MD_STRING_CONCAT_DATA,
-  CHPL_RT_MD_STRING_STRIDED_SELECT_DATA,
-  CHPL_RT_MD_CONFIG_ARG_COPY_DATA,
-  CHPL_RT_MD_CONFIG_TABLE_DATA,
-  CHPL_RT_MD_LOCALE_NAME_BUFFER,
-  CHPL_RT_MD_SERIAL_FLAG,
-  CHPL_RT_MD_TASK_DESCRIPTOR,
-  CHPL_RT_MD_TASK_DESCRIPTOR_LINK,      // reserved for future use
-  CHPL_RT_MD_TASK_STACK,                // reserved for future use
-  CHPL_RT_MD_MUTEX,
-  CHPL_RT_MD_LOCK_REPORT_DATA,
-  CHPL_RT_MD_TASK_POOL_DESCRIPTOR,
-  CHPL_RT_MD_TASK_LIST_DESCRIPTOR,
-  CHPL_RT_MD_THREAD_PRIVATE_DATA,
-  CHPL_RT_MD_THREAD_LIST_DESCRIPTOR,
-  CHPL_RT_MD_IO_BUFFER,
-  CHPL_RT_MD_GMP,
-  CHPL_RT_MD_NUM
-} chpl_mem_rtMemDesc_t;
-extern const int chpl_mem_numDescs;
-typedef int16_t chpl_mem_descInt_t;
+// runtime/include/mem/*/chpl-mem-impl.h defines
+// chpl_calloc, chpl_malloc, chpl_realloc, chpl_free
+// with the same signatures as the standard functions
+// and no additional error checking.
+#include "chpl-mem-impl.h"
+
+// import allocation types
+#include "chpl-mem-desc.h"
+
+// Need memory tracking prototypes for inlined memory routines
+#include "chplmemtrack.h"
+
+// CHPL_MEM_DEBUG=1 will enable tracking and other extra checks;
+// CHPL_MEM_DEBUG will be set to 1 if CHPL_DEBUG is defined;
+// or if CHPL_OPTIMIZE is not defined.
+// If CHPL_OPTIMIZE is defined and CHPL_DEBUG is not defined,
+// we set CHPL_MEM_DEBUG to chpl_memTrack, so that memory tracking
+// can still be activated at run-time.
+#ifndef CHPL_MEM_DEBUG
+
+#ifdef CHPL_DEBUG
+#define CHPL_MEM_DEBUG 1
+#else
+#ifdef CHPL_OPTIMIZE
+#define CHPL_MEM_DEBUG chpl_memTrack
+#else
+#define CHPL_MEM_DEBUG 1
+#endif
+#endif
+
+#endif
+
+extern const int chpl_mem_numDescs; // defined in generated code
+
 const char* chpl_mem_descString(chpl_mem_descInt_t mdi);
 
 void chpl_mem_init(void);
@@ -85,18 +63,85 @@ void chpl_mem_actualSharedHeap(void** start_p, size_t* size_p);
                                            : chpl_mem_alloc(s,d,l,f))
 #define chpl_mem_alloc(size, description, lineno, filename) \
   chpl_mem_allocMany(1, size, description, lineno, filename)
-void* chpl_mem_allocMany(size_t number, size_t size,
+
+void chpl_mem_check_pre(size_t number, size_t size, chpl_bool zeroOK,
                          chpl_mem_descInt_t description,
                          int32_t lineno, chpl_string filename);
-// mpf -- nice to have an equivalent of calloc
+void chpl_mem_check_post(void* memAlloc,
+                         chpl_mem_descInt_t description,
+                         int32_t lineno, chpl_string filename);
+
+static ___always_inline
+void* chpl_mem_allocMany(size_t number, size_t size,
+                         chpl_mem_descInt_t description,
+                         int32_t lineno, chpl_string filename) {
+  void* memAlloc;
+  if( CHPL_MEM_DEBUG ) {
+    chpl_mem_check_pre(number, size, false, description, lineno, filename);
+  }
+  memAlloc = chpl_malloc(number*size);
+  if( CHPL_MEM_DEBUG || ! memAlloc ) {
+    chpl_mem_check_post(memAlloc, description, lineno, filename);
+  }
+  if( CHPL_MEM_DEBUG ) {
+    chpl_track_malloc(memAlloc, number*size, number, size, description,
+                      lineno, filename);
+  }
+  return memAlloc;
+}
+
+static ___always_inline
 void* chpl_mem_allocManyZero(size_t number, size_t size,
                              chpl_mem_descInt_t description,
-                             int32_t lineno, chpl_string filename);
+                             int32_t lineno, chpl_string filename) {
+  void* memAlloc;
+  if( CHPL_MEM_DEBUG ) {
+    chpl_mem_check_pre(number, size, false, description, lineno, filename);
+  }
+  memAlloc = chpl_calloc(number, size);
+  if( CHPL_MEM_DEBUG || ! memAlloc ) {
+    chpl_mem_check_post(memAlloc, description, lineno, filename);
+  }
+  if( CHPL_MEM_DEBUG ) {
+    chpl_track_malloc(memAlloc, number*size, number, size, description,
+                      lineno, filename);
+  }
+  return memAlloc;
+}
 
-void* chpl_mem_realloc(void* ptr, size_t number, size_t size, 
+static ___always_inline
+void chpl_mem_free(void* memAlloc, int32_t lineno, chpl_string filename) {
+  if( CHPL_MEM_DEBUG ) {
+    // call this one just to check heap is initialized.
+    chpl_mem_check_pre(0, 0, true, 0, lineno, filename);
+    chpl_track_free(memAlloc, lineno, filename);
+  }
+  chpl_free(memAlloc);
+}
+
+static ___always_inline
+void* chpl_mem_realloc(void* memAlloc, size_t number, size_t size, 
                        chpl_mem_descInt_t description,
-                       int32_t lineno, chpl_string filename);
-void  chpl_mem_free(void* ptr, int32_t lineno, chpl_string filename);
+                       int32_t lineno, chpl_string filename) {
+  void* moreMemAlloc;
+  if( number == 0 || size == 0 ) {
+    chpl_mem_free(memAlloc, lineno, filename);
+    return NULL;
+  }
+  if( CHPL_MEM_DEBUG ) {
+    chpl_mem_check_pre(number, size, true, description, lineno, filename);
+    chpl_track_realloc1(memAlloc, number, size, description, lineno, filename);
+  }
+  moreMemAlloc = chpl_realloc(memAlloc, number*size);
+  if( CHPL_MEM_DEBUG || ! moreMemAlloc ) {
+    chpl_mem_check_post(moreMemAlloc, description, lineno, filename);
+  }
+  if( CHPL_MEM_DEBUG ) {
+    chpl_track_realloc2(moreMemAlloc, number*size, memAlloc, number, size,
+                        description, lineno, filename);
+  }
+  return moreMemAlloc;
+}
 
 extern int heapInitialized;
 

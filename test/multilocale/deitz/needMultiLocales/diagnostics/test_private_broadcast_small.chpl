@@ -2,10 +2,12 @@ const x = (2, 3);
 
 startVerboseComm();
 
+extern proc printf(x...);
+
 on Locales(1) {
-  _debugWriteln(x(1), x(2));
+  printf("%s\n", x(1):string + x(2));
 }
 
-_debugWriteln(x(1), x(2));
+printf("%s\n", x(1):string + x(2));
 
 stopVerboseComm();

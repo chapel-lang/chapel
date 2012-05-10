@@ -14,6 +14,8 @@ void chpl_msg(int verbose_level, const char* fmt, ...)
   __attribute__((format(printf, 2, 3)));
 #define printf PRINTF_DEF
 
-void chpl_error_noexit(const char* message, int32_t lineno, chpl_string filename);
+#ifndef LAUNCHER
+void chpl_error_init(void);
+#endif
 
 #endif

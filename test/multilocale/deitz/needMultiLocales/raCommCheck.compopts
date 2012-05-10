@@ -1,1 +1,1 @@
--M../../../release/examples/hpcc --no-warnings
+-M../../../release/examples/benchmarks/hpcc --no-warnings

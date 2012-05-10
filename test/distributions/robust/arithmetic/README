@@ -30,5 +30,6 @@ name of the enum type for your new distribution.  To run the entire
 suite using your new distribution with start_test, specify -compopts
 '-sdistType=DistType.myNewDist' on the command line.
 
-By default, the test suite uses the default (single locale) distribution.
+By default, the test suite uses the default (single locale) distribution
+when $CHPL_COMM is 'none', and Block distribution otherwise.
 

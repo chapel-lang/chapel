@@ -3,7 +3,7 @@
 
 #define CHPL_COMM_HAS_NB
 
-typedef void *chpl_comm_get_nb_token_t;
+typedef void* chpl_comm_get_nb_token_t;
 #define CHPL_COMM_NB_TOKEN_NULL ((chpl_comm_get_nb_token_t) 0)
 
 #define CHPL_COMM_GET_NB(localvar, locale, addr, type, tid, len, ln, fn)  \

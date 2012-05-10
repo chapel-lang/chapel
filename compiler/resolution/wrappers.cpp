@@ -1,3 +1,21 @@
+// wrappers.cpp
+////////////////////////////////////////////////////////////////////////////////{
+// Wrappers are used to lower the Chapel idea of a function call to something
+// implementable in C.
+//  default wrapper -- supplies a value for every argument in the called function
+//      substituting default values for actual arguments that are omitted.
+//      (C does not support default values for arguments.)
+//  order wrapper -- reorders named actual arguments to match the order expected
+//      by the inner function.
+//      (C does not support named argument passing.)
+//  coercion wrapper -- add explicit casts to perform type coercions known only
+//      to Chapel.
+//      (C does not support base-class coercions, etc.)
+//  promotion wrapper -- replaces implicit array traversals with explicit
+//      array traversals.
+//      (C has no notion of scalar operator promotion.)
+////////////////////////////////////////////////////////////////////////////////}
+
 #include "astutil.h"
 #include "build.h"
 #include "caches.h"
@@ -7,6 +25,37 @@
 #include "resolution.h"
 #include "stmt.h"
 #include "symbol.h"
+
+
+//########################################################################
+//# Static Function Forward Declarations
+//########################################################################
+static FnSymbol*
+buildEmptyWrapper(FnSymbol* fn, CallInfo* info);
+static ArgSymbol* copyFormalForWrapper(ArgSymbol* formal);
+//static bool isShadowedField(ArgSymbol* formal);
+static void
+insertWrappedCall(FnSymbol* fn, FnSymbol* wrapper, CallExpr* call);
+static FnSymbol*
+buildDefaultWrapper(FnSymbol* fn,
+                    Vec<Symbol*>* defaults,
+                    SymbolMap* paramMap,
+                    CallInfo* info);
+static FnSymbol*
+buildOrderWrapper(FnSymbol* fn,
+                  SymbolMap* order_map,
+                  CallInfo* info);
+static FnSymbol*
+buildCoercionWrapper(FnSymbol* fn,
+                     SymbolMap* coercion_map,
+                     Map<ArgSymbol*,bool>* coercions,
+                     CallInfo* info);
+static FnSymbol*
+buildPromotionWrapper(FnSymbol* fn,
+                      SymbolMap* promotion_subs,
+                      CallInfo* info);
+
+//########################################################################
 
 
 static FnSymbol*
@@ -94,14 +143,18 @@ buildDefaultWrapper(FnSymbol* fn,
     return cached;
   SET_LINENO(fn);
   FnSymbol* wrapper = buildEmptyWrapper(fn, info);
+  // Prevent name-clash in generated code.
+  // Also, provide a hint where this fcn came from.
+  wrapper->cname = astr("_default_wrap_", fn->cname);
+
+  // Mimic return type.
   if (!fn->hasFlag(FLAG_ITERATOR_FN))
     wrapper->retType = fn->retType;
-  wrapper->cname = astr("_default_wrap_", fn->cname);
+
   SymbolMap copy_map;
   bool specializeDefaultConstructor =
     fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR) &&
-    !fn->_this->type->symbol->hasFlag(FLAG_SYNC) &&
-    !fn->_this->type->symbol->hasFlag(FLAG_SINGLE) &&
+    !isSyncType(fn->_this->type) &&
     !fn->_this->type->symbol->hasFlag(FLAG_REF);
   if (specializeDefaultConstructor) {
     wrapper->removeFlag(FLAG_TEMP);
@@ -129,60 +182,90 @@ buildDefaultWrapper(FnSymbol* fn,
     wrapper->insertAtTail(new CallExpr(PRIM_INIT_FIELDS, wrapper->_this));
   }
   CallExpr* call = new CallExpr(fn);
-  call->square = info->call->square;
+  call->square = info->call->square;    // Copy square brackets call flag.
+
+  // Now walk the formals list of the called function, and expand formal
+  // argument defaults as needed, so every formal in the called function
+  // has a matching actual argument in the call.
   for_formals(formal, fn) {
     SET_LINENO(formal);
+
     if (!defaults->in(formal)) {
+      // This formal does not require a default value.  It appears
+      // in the list of actual argument supplied to the call.
+
+      // Copy it into the formals for this wrapper function.
       ArgSymbol* wrapper_formal = copyFormalForWrapper(formal);
       if (fn->_this == formal)
         wrapper->_this = wrapper_formal;
       if (formal->hasFlag(FLAG_IS_MEME))
         wrapper->_this->defPoint->insertAfter(new CallExpr(PRIM_MOVE, wrapper->_this, wrapper_formal)); // unexecuted none/gasnet on 4/25/08
       wrapper->insertFormalAtTail(wrapper_formal);
-      Symbol* temp;
+
+      // By default, we simply pass the wrapper formal along to the wrapped function,
+      // but there are some special cases where some fixup is required.
+      Symbol* temp = wrapper_formal;
+
+      // Check for the fixup cases:
       if (formal->type->symbol->hasFlag(FLAG_REF)) {
+        // Formal is passed by reference.
         temp = newTemp();
         temp->addFlag(FLAG_MAYBE_PARAM);
-        if (formal->hasFlag(FLAG_TYPE_VARIABLE))
-          temp->addFlag(FLAG_TYPE_VARIABLE); // unexecuted none/gasnet on 4/25/08
         wrapper->insertAtTail(new DefExpr(temp));
-        wrapper->insertAtTail(new CallExpr(PRIM_MOVE, temp, new CallExpr(PRIM_SET_REF, wrapper_formal)));
+        wrapper->insertAtTail(new CallExpr(PRIM_MOVE, temp, new CallExpr(PRIM_ADDR_OF, wrapper_formal)));
       } else if (specializeDefaultConstructor && wrapper_formal->typeExpr &&
                  isRefCountedType(wrapper_formal->type)) {
+        // Formal has a type expression attached and is reference counted (?).
         temp = newTemp();
-        if (Symbol* field = wrapper->_this->type->getField(formal->name, false))
-          if (field->defPoint->parentSymbol == wrapper->_this->type->symbol)
+        if (Symbol* field = fn->_this->type->getField(formal->name, false))
+          if (field->defPoint->parentSymbol == fn->_this->type->symbol)
             temp->addFlag(FLAG_INSERT_AUTO_DESTROY);
         wrapper->insertAtTail(new DefExpr(temp));
+
+        // Give the formal its own copy of the type expression.
         BlockStmt* typeExpr = wrapper_formal->typeExpr->copy();
         for_alist(expr, typeExpr->body) {
           wrapper->insertAtTail(expr->remove());
         }
+
+        // The type of an array is computed at runtime, so we have to insert
+        // some type computation code if the argument is an array alias field.
         bool isArrayAliasField = false;
         const char* aliasFieldArg = astr("chpl__aliasField_", formal->name);
         for_formals(formal, fn)
           if (formal->name == aliasFieldArg && !defaults->set_in(formal))
             isArrayAliasField = true;
         if (isArrayAliasField) {
+          // The array type is the return type of this wrapper.
           Expr* arrayTypeExpr = wrapper->body->body.tail->remove();
           Symbol* arrayTypeTmp = newTemp();
           arrayTypeTmp->addFlag(FLAG_MAYBE_TYPE);
           arrayTypeTmp->addFlag(FLAG_EXPR_TEMP);
           temp->addFlag(FLAG_EXPR_TEMP);
+          // Add the type marker temporary, and use it to reindex this formal
+          // before it is passed to the called function.
           wrapper->insertAtTail(new DefExpr(arrayTypeTmp));
           wrapper->insertAtTail(new CallExpr(PRIM_MOVE, arrayTypeTmp, arrayTypeExpr));
           wrapper->insertAtTail(new CallExpr(PRIM_MOVE, temp, new CallExpr("reindex", gMethodToken, wrapper_formal, new CallExpr("chpl__getDomainFromArrayType", arrayTypeTmp))));
         } else {
+          // Not an array alias field.  Just initialize this formal with
+          // its default type expression.
           wrapper->insertAtTail(new CallExpr(PRIM_MOVE, temp, new CallExpr(PRIM_INIT, wrapper->body->body.tail->remove())));
           wrapper->insertAtTail(new CallExpr(PRIM_MOVE, temp, new CallExpr("=", temp, wrapper_formal)));
         }
-      } else
-        temp = wrapper_formal;
+      }
+
+      // Add this formal to the map used to copy the function definition.
+      // (Not sure why it is done this way, since we can also make up the 
+      // wrapper from whole cloth.)
       copy_map.put(formal, temp);
       call->insertAtTail(temp);
+
+      // If the wrapped formal is satisfied by a parameter, copy that parameter value 
+      // into the wrapper formal as well.
       if (Symbol* value = paramMap->get(formal))
         paramMap->put(wrapper_formal, value);
-      if (specializeDefaultConstructor && strcmp(fn->name, "_construct__tuple")) // && strcmp(fn->name, "_construct__square_tuple"))
+      if (specializeDefaultConstructor && strcmp(fn->name, "_construct__tuple"))
         if (!formal->hasFlag(FLAG_TYPE_VARIABLE) && !paramMap->get(formal) && formal->type != dtMethodToken)
           if (Symbol* field = wrapper->_this->type->getField(formal->name, false))
             if (field->defPoint->parentSymbol == wrapper->_this->type->symbol)
@@ -253,7 +336,7 @@ buildDefaultWrapper(FnSymbol* fn,
         }
       }
       call->insertAtTail(temp);
-      if (specializeDefaultConstructor && strcmp(fn->name, "_construct__tuple")) // && strcmp(fn->name, "_construct__square_tuple"))
+      if (specializeDefaultConstructor && strcmp(fn->name, "_construct__tuple"))
         if (!formal->hasFlag(FLAG_TYPE_VARIABLE))
           if (Symbol* field = wrapper->_this->type->getField(formal->name, false))
             if (field->defPoint->parentSymbol == wrapper->_this->type->symbol)
@@ -266,8 +349,6 @@ buildDefaultWrapper(FnSymbol* fn,
   update_symbols(wrapper->body, &copy_map);
 
   insertWrappedCall(fn, wrapper, call);
-
-  addCache(defaultsCache, fn, wrapper, defaults);
   normalize(wrapper);
   return wrapper;
 }
@@ -291,7 +372,13 @@ defaultWrap(FnSymbol* fn,
       if (!used)
         defaults.add(formal);
     }
-    wrapper = buildDefaultWrapper(fn, &defaults, &paramMap, info);
+
+    wrapper = checkCache(defaultsCache, fn, &defaults);
+    if (wrapper == NULL) {
+      wrapper = buildDefaultWrapper(fn, &defaults, &paramMap, info);
+      addCache(defaultsCache, fn, wrapper, &defaults);
+    }
+
     resolveFormals(wrapper);
 
     // update actualFormals for use in orderWrap
@@ -319,9 +406,6 @@ static FnSymbol*
 buildOrderWrapper(FnSymbol* fn,
                   SymbolMap* order_map,
                   CallInfo* info) {
-  // return cached if we already created this order wrapper
-  if (FnSymbol* cached = checkCache(ordersCache, fn, order_map))
-    return cached;
   SET_LINENO(fn);
   FnSymbol* wrapper = buildEmptyWrapper(fn, info);
   wrapper->cname = astr("_order_wrap_", fn->cname);
@@ -345,7 +429,6 @@ buildOrderWrapper(FnSymbol* fn,
   }
   insertWrappedCall(fn, wrapper, call);
   normalize(wrapper);
-  addCache(ordersCache, fn, wrapper, order_map);
   return wrapper;
 }
 
@@ -371,8 +454,13 @@ orderWrap(FnSymbol* fn,
     }
   }
   if (order_wrapper_required) {
-    fn = buildOrderWrapper(fn, &formals_to_formals, info);
-    resolveFormals(fn);
+    FnSymbol* wrapper = checkCache(ordersCache, fn, &formals_to_formals);
+    if (wrapper == NULL) {
+      wrapper = buildOrderWrapper(fn, &formals_to_formals, info);
+      addCache(ordersCache, fn, wrapper, &formals_to_formals);
+    }
+    resolveFormals(wrapper);
+    return wrapper;
   }
   return fn;
 }
@@ -388,10 +476,6 @@ buildCoercionWrapper(FnSymbol* fn,
                      SymbolMap* coercion_map,
                      Map<ArgSymbol*,bool>* coercions,
                      CallInfo* info) {
-  // return cached if we already created this coercion wrapper
-  if (FnSymbol* cached = checkCache(coercionsCache, fn, coercion_map))
-    return cached;
-
   SET_LINENO(fn);
   FnSymbol* wrapper = buildEmptyWrapper(fn, info);
 
@@ -417,7 +501,7 @@ buildCoercionWrapper(FnSymbol* fn,
       TypeSymbol *ts = toTypeSymbol(coercion_map->get(formal));
       INT_ASSERT(ts);
       wrapperFormal->type = ts->type;
-      if (ts->hasFlag(FLAG_SYNC)) {
+      if (getSyncFlags(ts).any()) {
         //
         // apply readFF or readFE to single or sync actual unless this
         // is a member access of the sync or single actual
@@ -428,13 +512,15 @@ buildCoercionWrapper(FnSymbol* fn,
           call->insertAtTail(new CallExpr("value", gMethodToken, wrapperFormal));
         else if (ts->hasFlag(FLAG_SINGLE))
           call->insertAtTail(new CallExpr("readFF", gMethodToken, wrapperFormal));
-        else
+        else if (ts->hasFlag(FLAG_SYNC))
           call->insertAtTail(new CallExpr("readFE", gMethodToken, wrapperFormal));
+        else
+          INT_ASSERT(false);    // Unhandled case.
       } else if (ts->hasFlag(FLAG_REF)) {
         //
         // dereference reference actual
         //
-        call->insertAtTail(new CallExpr(PRIM_GET_REF, wrapperFormal));
+        call->insertAtTail(new CallExpr(PRIM_DEREF, wrapperFormal));
       } else if (wrapperFormal->instantiatedParam) {
         call->insertAtTail(new CallExpr("_cast", formal->type->symbol, paramMap.get(formal)));
       } else {
@@ -449,7 +535,6 @@ buildCoercionWrapper(FnSymbol* fn,
   }
   insertWrappedCall(fn, wrapper, call);
   normalize(wrapper);
-  addCache(coercionsCache, fn, wrapper, coercion_map);
   return wrapper;
 }
 
@@ -459,7 +544,6 @@ coercionWrap(FnSymbol* fn, CallInfo* info) {
   SymbolMap subs;
   Map<ArgSymbol*,bool> coercions;
   int j = -1;
-  bool coerce = false;
   for_formals(formal, fn) {
     j++;
     Type* actualType = info->actuals.v[j]->type;
@@ -468,16 +552,22 @@ coercionWrap(FnSymbol* fn, CallInfo* info) {
       if (canCoerce(actualType, actualSym, formal->type, fn) || isDispatchParent(actualType, formal->type)) {
         subs.put(formal, actualType->symbol);
         coercions.put(formal,true);
-        coerce = true;
       } else {
         subs.put(formal, actualType->symbol);
       }
     }
   }
-  if (coerce) {
-    fn = buildCoercionWrapper(fn, &subs, &coercions, info);
-    resolveFormals(fn);
+
+  if (coercions.n > 0) {  // Any coercions?
+    FnSymbol* wrapper = checkCache(coercionsCache, fn, &subs);
+    if (wrapper == NULL) {
+      wrapper = buildCoercionWrapper(fn, &subs, &coercions, info);
+      addCache(coercionsCache, fn, wrapper, &subs);
+    }
+    resolveFormals(wrapper);
+    return wrapper;
   }
+
   return fn;  
 }
 
@@ -491,22 +581,12 @@ static FnSymbol*
 buildPromotionWrapper(FnSymbol* fn,
                       SymbolMap* promotion_subs,
                       CallInfo* info) {
-  // return cached if we already created this promotion wrapper
-  SymbolMap map;
-  Vec<Symbol*> keys;
-  promotion_subs->get_keys(keys);
-  forv_Vec(Symbol*, key, keys)
-    map.put(key, promotion_subs->get(key));
-  map.put(fn, (Symbol*)info->call->square); // add value of square to cache
-  if (FnSymbol* cached = checkCache(promotionsCache, fn, &map))
-    return cached;
-
   SET_LINENO(fn);
   FnSymbol* wrapper = buildEmptyWrapper(fn, info);
   wrapper->addFlag(FLAG_PROMOTION_WRAPPER);
   wrapper->cname = astr("_promotion_wrap_", fn->cname);
   CallExpr* indicesCall = new CallExpr("_build_tuple"); // destructured in build
-  CallExpr* iterator = new CallExpr(info->call->square ? "chpl__buildDomainExpr" : "_build_tuple");
+  CallExpr* iterator = new CallExpr("_build_tuple");
   CallExpr* actualCall = new CallExpr(fn);
   int i = 1;
   for_formals(formal, fn) {
@@ -610,7 +690,6 @@ buildPromotionWrapper(FnSymbol* fn,
   }
   fn->defPoint->insertBefore(new DefExpr(wrapper));
   normalize(wrapper);
-  addCache(promotionsCache, fn, wrapper, &map);
   return wrapper;
 }
 
@@ -638,8 +717,16 @@ promotionWrap(FnSymbol* fn, CallInfo* info) {
   if (promotion_wrapper_required) {
     if (fWarnPromotion)
       USR_WARN(info->call, "promotion on %s", toString(info));
-    fn = buildPromotionWrapper(fn, &promoted_subs, info);
-    resolveFormals(fn);
+
+    promoted_subs.put(fn, (Symbol*)info->call->square); // add value of square to cache
+
+    FnSymbol* wrapper = checkCache(promotionsCache, fn, &promoted_subs);
+    if (wrapper == NULL) {
+      wrapper = buildPromotionWrapper(fn, &promoted_subs, info);
+      addCache(promotionsCache, fn, wrapper, &promoted_subs);
+    }
+    resolveFormals(wrapper);
+    return wrapper;
   }
   return fn;
 }

@@ -5,6 +5,16 @@
 
 #include "chpl-threads.h"
 
+
+//
+// Because we use the task tracking table for fifo tasking, this gives
+// us the ability to register the main task in the task table and
+// block report.
+//
+#define CHPL_TASK_STD_MODULES_INITIALIZED chpl_task_stdModulesInitialized
+
+void chpl_task_stdModulesInitialized(void);
+
 //
 // The FIFO implementation of tasking is a least-common-denominator
 // version designed for general usefulness, simplicity and limited

@@ -3,7 +3,7 @@
 #include "chpl-comm-locales.h"
 #include "error.h"
 
-int chpl_comm_default_num_locales(void) {
+int64_t chpl_comm_default_num_locales(void) {
 #if defined(GASNET_CONDUIT_PORTALS)
   return chpl_numLocales;
 #else
@@ -12,5 +12,5 @@ int chpl_comm_default_num_locales(void) {
 }
 
 
-void chpl_comm_verify_num_locales(int32_t proposedNumLocales) {
+void chpl_comm_verify_num_locales(int64_t proposedNumLocales) {
 }

@@ -46,10 +46,11 @@ proc main {
       lock = 0;
     }
   }
-  coforall xy in [StartIndices, EndIndices] do {
-    const (x,y) = xy;
-    if (x <= y) {
-      processTag(x,y);
+  coforall x in StartIndices do {
+    coforall y in EndIndices do {
+      if (x <= y) {
+        processTag(x,y);
+      }
     }
   }
   var minindex = min reduce ([i in StartIndices] i);

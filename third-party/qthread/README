@@ -10,21 +10,8 @@ and uses a snapshot of obtained from the Qthreads team at:
 Any Chapel issues that seem to be related to Qthreads should be
 directed to the Chapel team at chapel-bugs@lists.sourceforge.net.
 
-The local modifications that we have made to the official Qthreads 1.7
-release are as follows:
+The local modifications that we have made to the official Qthreads
+1.7.1 release are as follows:
 
-* modified the implementation of the serial state to support calls to
-  get/setSerial prior to initialization.  This corresponds to commit
-  r2444 to the Qthreads tree (made after the 1.7 release).
-
-* applied a fix for autoconf scripts in a cross-compilation
-  environment.  This corresponds to commit r2590 to the Qthreads tree
-  (made after the 1.7 release).
-
-* added config/ac_prog_sed.m4 which was intended to be in the 1.7
-  release, but mistakenly left out.  This permits autogen.sh to be run
-  without problems if needed.
-
-* added the --force flag to the autoreconf call in autogen.sh because
-  the timestamps aren't particularly trustworthy once we've committed
-  things to SVN and checked them back out again.
+* applied r3046 from the qthreads SVN tree which improves support for
+  native sync variables and should improve performance.

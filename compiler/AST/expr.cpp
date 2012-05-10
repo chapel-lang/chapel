@@ -1,6 +1,7 @@
+
+#define __STDC_FORMAT_MACROS
 #include <cstdlib>
 #include <cstring>
-#define __STDC_FORMAT_MACROS
 #include <inttypes.h>
 #include "astutil.h"
 #include "expr.h"
@@ -213,10 +214,9 @@ void SymExpr::codegen(FILE* outfile) {
 }
 
 
-UnresolvedSymExpr::UnresolvedSymExpr(const char* i_unresolved, bool i_is_volatile) :
+UnresolvedSymExpr::UnresolvedSymExpr(const char* i_unresolved) :
   Expr(E_UnresolvedSymExpr),
-  unresolved(astr(i_unresolved)),
-  isVolatile(i_is_volatile)
+  unresolved(astr(i_unresolved))
 {
   if (!i_unresolved)
     INT_FATAL(this, "bad call to UnresolvedSymExpr");
@@ -242,7 +242,7 @@ UnresolvedSymExpr::verify() {
 
 UnresolvedSymExpr*
 UnresolvedSymExpr::copyInner(SymbolMap* map) {
-  return new UnresolvedSymExpr(unresolved, isVolatile);
+  return new UnresolvedSymExpr(unresolved);
 }
 
 
@@ -872,7 +872,7 @@ void CallExpr::codegen(FILE* outfile) {
           }
           break;
         }
-        if (call->isPrimitive(PRIM_GET_REF)) {
+        if (call->isPrimitive(PRIM_DEREF)) {
           if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE) ||
               call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
             Type* valueType;
@@ -1144,7 +1144,7 @@ void CallExpr::codegen(FILE* outfile) {
                 get(1), call->get(1), call->get(2)->typeInfo(),
                 dtObject->typeInfo());
             gen(outfile, "chpl__class_id, %s, %A, %A)",
-                fHeterogeneous ? "CHPL_TYPE_enum" : "-1",
+                fHeterogeneous ? "CHPL_TYPE_int32_t" : "-1",
               call->get(3), call->get(4));
             break;
           }
@@ -1154,7 +1154,7 @@ void CallExpr::codegen(FILE* outfile) {
             gen(outfile, "CHPL_COMM_WIDE_CLASS_GET_CID(%A, %A, %A, ",
                 get(1), call->get(1), dtObject->typeInfo());
             gen(outfile, "chpl__class_id, %s, %A, %A)",
-                fHeterogeneous ? "CHPL_TYPE_enum" : "-1",
+                fHeterogeneous ? "CHPL_TYPE_int32_t" : "-1",
                 call->get(2), call->get(3));
             break;
           }
@@ -1258,7 +1258,7 @@ void CallExpr::codegen(FILE* outfile) {
       else
         gen(outfile, "%A = %A", get(1), get(2));
       break;
-    case PRIM_GET_REF:
+    case PRIM_DEREF:
     case PRIM_GET_SVEC_MEMBER_VALUE:
     case PRIM_GET_MEMBER_VALUE:
     case PRIM_GET_LOCALEID:
@@ -1270,7 +1270,7 @@ void CallExpr::codegen(FILE* outfile) {
     case PRIM_GPU_GET_ARRAY:
       // generated during generation of PRIM_MOVE
       break;
-    case PRIM_SET_REF:
+    case PRIM_ADDR_OF:
       gen(outfile, "&(%A)", get(1));
       break;
     case PRIM_REF2STR:
@@ -1547,7 +1547,7 @@ void CallExpr::codegen(FILE* outfile) {
     case PRIM_SETCID:
       if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
         gen(outfile, "CHPL_COMM_WIDE_SET_FIELD_VALUE(chpl__class_id, %s",
-            fHeterogeneous ? "CHPL_TYPE_enum" : "-1");
+            fHeterogeneous ? "CHPL_TYPE_int32_t" : "-1");
         gen(outfile, ", %A, chpl__cid_%A, %A, chpl__cid, %A, %A)",
             get(1), get(1)->typeInfo()->getField("addr")->type/*->symbol*/,
             dtObject->typeInfo(), get(2), get(3));
@@ -2152,25 +2152,8 @@ void CallExpr::codegen(FILE* outfile) {
           get(2)->codegen(outfile);
           fprintf(outfile, "))");
       } else if (dst == dtString || src == dtString) {
-        // 
-        // hh: is it okay to drop volatile type on the floor here?
-        //     should we instead of avoiding to print out the volatile type 
-        //     (which we do because of the space between volatile and the type
-        //     expr), print out the volatile type but just replace the space
-        //     with an underscore?
-        //
         const char* dst_cname = dst->symbol->cname;
         const char* src_cname = src->symbol->cname;
-        if (PrimitiveType* p_dst = toPrimitiveType(dst)) {
-          if (p_dst->nonvolType && !p_dst->volType) {
-            dst_cname = p_dst->nonvolType->symbol->cname;  
-          }
-        }
-        if (PrimitiveType* p_src = toPrimitiveType(src)) {
-          if (p_src->nonvolType && !p_src->volType) {
-            src_cname = p_src->nonvolType->symbol->cname;  
-          }
-        }
         fprintf(outfile, *dst->symbol->cname == '_' ? "%s_to%s(" : "%s_to_%s(",
                 src_cname, dst_cname);
         get(2)->codegen(outfile);
@@ -2234,9 +2217,6 @@ void CallExpr::codegen(FILE* outfile) {
       break;
     case PRIM_LOCALE_ID:
       fprintf(outfile, "chpl_localeID");
-      break;
-    case PRIM_NUM_LOCALES:
-      fprintf(outfile, "chpl_comm_default_num_locales()");
       break;
     case PRIM_ALLOC_GVR:
       fprintf(outfile, "chpl_comm_alloc_registry(%d)", numGlobalsOnHeap);
@@ -2446,7 +2426,7 @@ void CallExpr::codegen(FILE* outfile) {
     } else
       fputs("chpl_localeID)", outfile);
     fprintf(outfile, ", true, %d, \"%s\");\n",
-            fn->lineno, fn->getModule()->filename);
+            fn->linenum(), fn->fname());
     return;
   } else if (fn->hasFlag(FLAG_COBEGIN_OR_COFORALL_BLOCK)) {
     fputs("chpl_task_addToTaskList(", outfile);
@@ -2509,7 +2489,7 @@ void CallExpr::codegen(FILE* outfile) {
     }
     fputs("->taskList)", outfile);
     fprintf(outfile, ", chpl_localeID, false, %d, \"%s\");\n",
-            baseExpr->lineno, baseExpr->getModule()->filename);
+            baseExpr->linenum(), baseExpr->fname());
     return;
   } else if (fn->hasFlag(FLAG_ON_BLOCK)) {
     if (fn->hasFlag(FLAG_NON_BLOCKING))

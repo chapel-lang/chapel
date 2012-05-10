@@ -127,10 +127,10 @@ if exists("c_comment_strings")
   syntax region cCommentString	contained start=+L\=\\\@<!"+ skip=+\\\\\|\\"+ end=+"+ end=+\*/+me=s-1 contains=cSpecial,cCommentSkip
   syntax region cComment2String	contained start=+L\=\\\@<!"+ skip=+\\\\\|\\"+ end=+"+ end="$" contains=cSpecial
   syntax region  cCommentL	start="//" skip="\\$" end="$" keepend contains=@cCommentGroup,cComment2String,cCharacter,cNumbersCom,cSpaceError,@Spell
-  syntax region cComment	matchgroup=cCommentStart start="/\*" end="\*/" contains=@cCommentGroup,cCommentStartError,cCommentString,cCharacter,cNumbersCom,cSpaceError,@Spell
+  syntax region cComment	matchgroup=cCommentStart start="/\*" end="\*/" contains=@cCommentGroup,cCommentString,cCharacter,cNumbersCom,cSpaceError,@Spell,cComment
 else
   syn region	cCommentL	start="//" skip="\\$" end="$" keepend contains=@cCommentGroup,cSpaceError,@Spell
-  syn region	cComment	matchgroup=cCommentStart start="/\*" end="\*/" contains=@cCommentGroup,cCommentStartError,cSpaceError,@Spell
+  syn region	cComment	matchgroup=cCommentStart start="/\*" end="\*/" contains=@cCommentGroup,cSpaceError,@Spell,cComment
 endif
 " keep a // comment separately, it terminates a preproc. conditional
 syntax match	cCommentError	display "\*/"
@@ -253,7 +253,7 @@ endif
 syn keyword chplStatement	goto break return continue compilerWarning delete
 syn keyword chplStatement	new delete this these use module yield compilerError
 syn keyword chplIntent		param type in out inout ref
-syn keyword chplStorageClass    const config export extern var volatile
+syn keyword chplStorageClass    const config export extern var
 syn keyword chplType            domain sparse subdomain range index imag complex int uint real bool file string opaque integral numeric enumerated
 syn keyword chplType            locale sync atomic single dmapped
 syn keyword chplOperator	on reduce scan by

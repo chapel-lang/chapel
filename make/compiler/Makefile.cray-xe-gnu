@@ -1,6 +1,6 @@
 # put XE cross-compilation gnu-specific settings here
 
-include $(CHAPEL_ROOT)/make/compiler/Makefile.cray-xe
+include $(CHPL_MAKE_HOME)/make/compiler/Makefile.cray-xe
 
 RUNTIME_CFLAGS += -std=c99
 GEN_CFLAGS += -std=c99

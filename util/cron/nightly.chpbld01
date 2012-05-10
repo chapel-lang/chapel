@@ -24,12 +24,16 @@ export CHPL_NIGHTLY_STATDIR=/data/sea/cascade/chapel/Nightly${dayType}/Stats
 export CHPL_NIGHTLY_CRON_LOGDIR="$CHPL_NIGHTLY_LOGDIR"
 
 CHPL_HOME="/users/chapelu/chapel"
-TESTBASE="$CHPL_HOME/test"
 NIGHTLY="$CHPL_HOME/util/cron/nightly"
 
 PrgEnv_Version=""
 
 export XTPE_INFO_MESSAGE_OFF=true
+
+function setPgiPrediff() {
+  [ $compiler == pgi ] && \
+   export CHPL_SYSTEM_PREDIFF=$CHPL_HOME/util/test/prediff-for-pgi-warnings
+}
 
 # done setting up PrgEnv modules
 
@@ -41,6 +45,7 @@ for compiler in $compilers ; do
   module load PrgEnv-${compiler}${PrgEnv_Version}
   module list
   export CHPL_TARGET_PLATFORM=xt-cle
+  setPgiPrediff
   $NIGHTLY -combinedir -cron $EXAMPLES
 )
 done
@@ -54,6 +59,7 @@ for compiler in $compilers ; do
   export CHPL_HOST_PLATFORM=xt-cle
   export CHPL_TARGET_PLATFORM=xt-cle
   export CHPL_HOST_COMPILER=cray-xt-$compiler
+  setPgiPrediff
   $NIGHTLY -combinedir -cron $EXAMPLES
 )
 done
@@ -69,6 +75,7 @@ for compiler in $compilers ; do
   unset CHPL_HOST_PLATFORM
   unset CHPL_TARGET_PLATFORM
   export CHPL_HOST_COMPILER=$compiler
+  setPgiPrediff
   $NIGHTLY -combinedir -cron $EXAMPLES
 )
 done

@@ -1,1 +1,1 @@
-(C(int),C(real),C(complex))
+(C(int(64)),C(real(64)),C(complex(128)))

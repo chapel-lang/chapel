@@ -1,7 +1,0 @@
-conversion-messages.chpl:5: warning: the 'def' keyword is deprecated - replace it with 'proc'
-conversion-messages.chpl:7: warning: the 'def' keyword is deprecated - replace it with 'proc'
-conversion-messages.chpl:9: warning: the 'def' keyword is deprecated - replace it with 'iter'
-conversion-messages.chpl:11: warning: the 'def' keyword is deprecated - replace it with 'iter'
-conversion-messages.chpl:16: warning: the 'def' keyword is deprecated - replace it with 'proc'
-conversion-messages.chpl:11: In iterator 'c13':
-conversion-messages.chpl:13: warning: returning a value in an iterator is deprecated; replace it with a yield of that value, followed by a return with no expression

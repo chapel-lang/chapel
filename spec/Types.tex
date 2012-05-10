@@ -1,14 +1,12 @@
 \sekshun{Types}
 \label{Types}
+\index{types}
 
 Chapel is a statically typed language with a rich set of types.  These
 include a set of predefined primitive types, enumerated types,
-locale types, structured types (classes, records, unions, tuples),
+structured types (classes, records, unions, tuples),
 data parallel types (ranges, domains, arrays), and synchronization
 types (sync, single).
-
-% This section defines the primitive
-% types, enumerated types, and type aliases.  
 
 The syntax of a type is as follows:
 
@@ -16,7 +14,6 @@ The syntax of a type is as follows:
 type-specifier:
   primitive-type
   enum-type
-  locale-type
   structured-type
   dataparallel-type
   synchronization-type
@@ -42,9 +39,10 @@ These statements are defined in Sections \rsec{Enumerated_Types},
 \label{Primitive_Types}
 \index{types!primitive}
 
-The primitive types include the following types: \chpl{void}, chpl{bool},
+%REVIEW: vass: we should explain what separates primitive types from the rest.
+The primitive types are: \chpl{void}, \chpl{bool},
 \chpl{int}, \chpl{uint}, \chpl{real}, \chpl{imag}, \chpl{complex},
-\chpl{string}, and \chpl{locale}.  These primitive types are defined
+\chpl{string}, and \chpl{locale}.  They are defined
 in this section.
 
 The primitive types are summarized by the following syntax:
@@ -58,6 +56,7 @@ primitive-type:
   `imag' primitive-type-parameter-part[OPT]
   `complex' primitive-type-parameter-part[OPT]
   `string'
+  `locale'
 
 primitive-type-parameter-part:
   ( integer-parameter-expression )
@@ -78,6 +77,7 @@ types.
 \subsection{The Void Type}
 \label{The_Void_Type}
 \index{void@\chpl{void}}
+\index{types!void@\chpl{void}}
 
 The \chpl{void} type is used to represent the lack of a value, for
 example when a function has no arguments and/or no return type.  
@@ -88,6 +88,7 @@ case its lifetime obeys the same rules as a value of type \chpl{int}.
 \subsection{The Bool Type}
 \label{The_Bool_Type}
 \index{bool@\chpl{bool}}
+\index{types!bool@\chpl{bool}}
 
 Chapel defines a logical data type designated by the symbol
 \chpl{bool} with the two predefined values \chpl{true} and
@@ -108,12 +109,18 @@ in this context~(\rsec{Implicit_Statement_Bool_Conversions}).
 \label{Signed_and_Unsigned_Integral_Types}
 \index{uint@\chpl{uint}}
 \index{int@\chpl{int}}
+\index{types!uint@\chpl{uint}}
+\index{types!int@\chpl{int}}
 
 The integral types can be parameterized by the number of bits used to
-represent them.  Valid bit-sizes are 8, 16, 32, and 64.  
-The default signed integral type, \chpl{int}, and the
-default unsigned integral type, \chpl{uint}, are treated as distinct types (for
-the purposes of type resolution) but behave like int(64) and uint(64) respectively.
+represent them.  Valid bit-sizes are 8, 16, 32, and 64.  The default signed integral type, \chpl{int}, and the
+default unsigned integral type, \chpl{uint} correspond to 
+\chpl{int(64)} and \chpl{uint(64)} respectively.
+
+% BLC: I either don't understand this or don't believe it's true:
+%
+%, are treated as distinct types (for
+%the purposes of type resolution) but behave like 
 
 The integral types and their ranges are given in the following table:
 
@@ -149,6 +156,7 @@ integral types should be changed to 64 bits.
 \subsection{Real Types}
 \label{Real_Types}
 \index{real@\chpl{real}}
+\index{types!real@\chpl{real}}
 
 Like the integral types, the real types can be parameterized by the
 number of bits used to represent them.  The default real
@@ -160,6 +168,7 @@ precision) and \chpl{real(64)} (double precision) following the IEEE
 \subsection{Imaginary Types}
 \label{Imaginary_Types}
 \index{imaginary@\chpl{imaginary}}
+\index{types!imaginary@\chpl{imaginary}}
 
 The imaginary types can be parameterized by the number of bits used to
 represent them.  The default imaginary type, \chpl{imag}, is 64 bits.
@@ -175,6 +184,7 @@ complex values with a zero imaginary part.
 \subsection{Complex Types}
 \label{Complex_Types}
 \index{complex@\chpl{complex}}
+\index{types!complex@\chpl{complex}}
 
 Like the integral and real types, the complex types can be
 parameterized by the number of bits used to represent them.  A complex
@@ -198,6 +208,7 @@ and \chpl{2.72} respectively.
 \subsection{The String Type}
 \label{The_String_Type}
 \index{string@\chpl{string}}
+\index{types!string@\chpl{string}}
 
 Strings are a primitive type designated by the symbol \chpl{string}
 comprised of ASCII characters.  Their length is unbounded.
@@ -213,9 +224,20 @@ There is an expectation of future support for different character
 sets, possibly including internationalization.
 \end{openissue}
 
+
+%REVIEW: vass: move the reference below to the top of
+% the Primitive Types section and remove this subsection.
+\subsection{The Locale Type}
+\label{Locale_Types}
+\index{types!locale}
+
+The \chpl{locale} type is defined in~\rsec{The_Locale_Type}.
+
+
 \section{Enumerated Types}
 \label{Enumerated_Types}
 \index{enumerated types}
+\index{types!enumerated}
 
 Enumerated types are declared with the following syntax:
 
@@ -286,20 +308,6 @@ constants must be prefixed by the enumerated type and a dot.
 \end{chapelexample}
 
 
-\section{Locale Types}
-\label{Locale_Types}
-\index{types!locale}
-
-Locale types are summarized by the following syntax:
-
-\begin{syntax}
-locale-type:
-  `locale'
-\end{syntax}
-
-The \chpl{locale} type is defined in~\rsec{The_Locale_Type}.
-
-
 \section{Structured Types}
 \label{Structured_Types}
 \index{types!structured}
@@ -320,6 +328,7 @@ in \rsec{Records}.  Unions are discussed in \rsec{Unions}.  Tuples are
 discussed in \rsec{Tuples}.
 
 \subsection{Class Types}
+\label{Types_Class_Types}
 
 % TODO: the first sentence does not make strict sense.
 % Overall, it does not feel like this paragraph has any value here.
@@ -330,18 +339,21 @@ parameters.  Such a class is generic and is defined
 in~\rsec{Generic_Types}.
 
 \subsection{Record Types}
+\label{Types_Record_Types}
 
 The record type is similar to a class type; the primary difference is
 that a record is a value rather than a reference.  Records are defined
 in~\rsec{Records}.
 
 \subsection{Union Types}
+\label{Types_Union_Types}
 
 The union type defines a type that contains one of a set of variables.
 Like classes and records, unions may also define methods.  Unions are
 defined in~\rsec{Unions}.
 
 \subsection{Tuple Types}
+\label{Types_Tuple_Types}
 
 A tuple is a light-weight record that consists of one or more
 anonymous fields.  If all the fields are of the same type, the tuple
@@ -367,6 +379,7 @@ Domains and their index types are discussed in \rsec{Domains}.
 Arrays are discussed in \rsec{Arrays}.
 
 \subsection{Range Types}
+\label{Types_Range_Types}
 
 A range defines an integral sequence of some integral type.  Ranges
 are defined in \rsec{Ranges}.
@@ -396,7 +409,7 @@ Sync and single types are discussed in \rsec{Synchronization_Variables}.
 
 \section{Type Aliases}
 \label{Type_Aliases}
-\index{type aliases}
+\index{types!aliases}
 
 Type aliases are declared with the following syntax:
 \begin{syntax}

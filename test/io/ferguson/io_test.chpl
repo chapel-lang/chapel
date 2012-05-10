@@ -35,7 +35,7 @@ proc testio(param typ:iokind, style:iostyle, x)
 /*
 proc testeof()
 {
-  var f = opentmp(style=defaultStyle().native());
+  var f = opentmp(style=defaultIOStyle().native());
   {
     var ch = f.writer();
     ch.write(5,6);
@@ -63,14 +63,14 @@ proc testeof()
 proc testio(x)
 {
   // Set up some I/O styles.
-  var styles = ( defaultStyle().native(), defaultStyle().little(), defaultStyle().big(), defaultStyle().text() );
+  var styles = ( defaultIOStyle().native(), defaultIOStyle().little(), defaultIOStyle().big(), defaultIOStyle().text() );
 
   for i in 1..styles.size {
     var style = styles[i];
-    testio(dynamic, style, x);
-    testio(native, style, x);
-    testio(big, style, x);
-    testio(little, style, x);
+    testio(iodynamic, style, x);
+    testio(ionative, style, x);
+    testio(iobig, style, x);
+    testio(iolittle, style, x);
   }
 }
 
@@ -104,7 +104,7 @@ proc test_readlines()
 
   if noisy then writeln("Testing readlines: itemReader");
   {
-    var style = defaultStyle();
+    var style = defaultIOStyle();
     style.string_format = QIO_STRING_FORMAT_TOEND;
     style.string_end = 0x0a;
     var ch = f.reader(style=style);
@@ -135,9 +135,9 @@ proc test_readlines()
 }
 
 proc main() {
-  //testio(dynamic, defaultStyle().text(), 100:uint(8));
-  //testio(dynamic, defaultStyle().text(), 57.24e23:real(32));
-  //testio(dynamic, defaultStyle().text(), 997.89+200.124i);
+  //testio(dynamic, defaultIOStyle().text(), 100:uint(8));
+  //testio(dynamic, defaultIOStyle().text(), 57.24e23:real(32));
+  //testio(dynamic, defaultIOStyle().text(), 997.89+200.124i);
 
   testio(true);
   testio(false);

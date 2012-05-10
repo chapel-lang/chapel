@@ -4,6 +4,7 @@ pragma "no use ChapelStandard"
 module ChapelIO {
 use ChapelBase; // for uint().
 use SysBasic;
+// use IO; happens below once we need it.
 
 proc _isNilObject(val) {
   proc helper(o: object) return o == nil;
@@ -15,8 +16,8 @@ class Writer {
   proc writing param return true;
   // if it's binary, we don't decorate class/record fields and values
   proc binary:bool { return false; }
-  proc error():err_t { return 0; }
-  proc setError(e:err_t) { }
+  proc error():syserr { return ENOERR; }
+  proc setError(e:syserr) { }
   proc clearError() { }
   proc writePrimitive(x) {
     //compilerError("Generic Writer.writePrimitive called");
@@ -144,41 +145,36 @@ class Reader {
   proc writing param return false;
   // if it's binary, we don't decorate class/record fields and values
   proc binary:bool { return false; }
-  proc error():err_t { return ENOERR; }
-  proc setError(e:err_t) { }
+  proc error():syserr { return ENOERR; }
+  proc setError(e:syserr) { }
   proc clearError() { }
 
-  proc readPrimitive(inout x:?t):bool where _isIoPrimitiveTypeOrNewline(t) {
+  proc readPrimitive(inout x:?t) where _isIoPrimitiveTypeOrNewline(t) {
     //compilerError("Generic Reader.readPrimitive called");
     halt("Generic Reader.readPrimitive called");
-    return false;
   }
-  proc readIt(inout x:?t):bool {
-    if _isIoPrimitiveTypeOrNewline(t) {
-      return readPrimitive(x);
+  proc readIt(x:?t) where isClassType(t) {
+    // FUTURE -- write the class name/ID? or nil?
+    // possibly in a different 'Reader'
+    /*
+    var iolit = new ioLiteral("nil", !binary);
+    readPrimitive(iolit);
+    if !(error()) {
+      // Return nil.
+      delete x;
+      x = nil;
+      return;
     } else {
-      if isClassType(t) {
-        // FUTURE -- write the class name/ID?
-
-        // Handle reading nil.
-        var iolit = new ioLiteral("nil", !binary);
-        var got:bool;
-        got = readPrimitive(iolit);
-        if got && !(error()) {
-          // Return nil.
-          delete x;
-          x = nil;
-          return true;
-        } else {
-          clearError();
-        }
-      }
-
-      var got: bool;
-      got = this.readType(x);
-      return got;
+      clearError();
+    }*/
+    x.readThis(this);
+  }
+  proc readIt(inout x:?t) where !isClassType(t) {
+    if _isIoPrimitiveTypeOrNewline(t) {
+      readPrimitive(x);
+    } else {
+      x.readThis(this);
     }
-    return false;
   }
   proc readwrite(inout x) {
     readIt(x);
@@ -195,7 +191,7 @@ class Reader {
       return true;
     }
   }
-  proc readln(inout args ...?k) {
+  proc readln(inout args ...?k):bool {
     for param i in 1..k {
       readIt(args(i));
     }
@@ -208,7 +204,7 @@ class Reader {
       return true;
     }
   }
-  proc readln() {
+  proc readln():bool {
     var nl = new ioNewline();
     readIt(nl);
     if error() == EEOF {
@@ -237,16 +233,16 @@ class Reader {
       for param i in 1..num_fields {
         if !binary {
           var comma = new ioLiteral(",", true);
-          if !first then read(comma);
+          if !first then readIt(comma);
 
           var fname = new ioLiteral(__primitive("field num to name", t, i), true);
-          read(fname);
+          readIt(fname);
 
           var eq = new ioLiteral("=", true);
-          read(eq);
+          readIt(eq);
         }
 
-        read(__primitive("field value by num", x, i));
+        readIt(__primitive("field value by num", x, i));
 
         first = false;
       }
@@ -255,22 +251,22 @@ class Reader {
       if binary {
         var id = __primitive("get_union_id", x);
         // Read the ID
-        read(id);
+        readIt(id);
         for param i in 1..num_fields {
           if __primitive("field id by num", t, i) == id {
-            read(__primitive("field value by num", x, i));
+            readIt(__primitive("field value by num", x, i));
           }
         }
       } else {
         // Read the field name = part until we get one that worked.
         for param i in 1..num_fields {
           var eq = new ioLiteral(__primitive("field num to name", t, i) + " = ");
-          read(eq);
+          readIt(eq);
           if error() == EFORMAT {
             clearError();
           } else {
             // We read the 'name = ', so now read the value!
-            read(__primitive("field value by num", x, i));
+            readIt(__primitive("field value by num", x, i));
           }
         }
       }
@@ -280,15 +276,26 @@ class Reader {
   // with the appropriate *concrete* type of x; that's what
   // happens now with buildDefaultWriteFunction
   // since it has the concrete type and then calls this method.
-  proc readThisDefaultImpl(inout x:?t):bool {
+  proc readThisDefaultImpl(x:?t) where isClassType(t) {
     if !binary {
-      if isClassType(t) {
-        var start = new ioLiteral("{");
-        read(start);
-      } else {
-        var start = new ioLiteral("(");
-        read(start);
-      }
+      var start = new ioLiteral("{");
+      readIt(start);
+    }
+
+    var first = true;
+
+    var obj = x; // make obj point to x so inout works
+    readThisFieldsDefaultImpl(t, obj, first);
+
+    if !binary {
+      var end = new ioLiteral("}");
+      readIt(end);
+    }
+  }
+  proc readThisDefaultImpl(inout x:?t) where !isClassType(t){
+    if !binary {
+      var start = new ioLiteral("(");
+      readIt(start);
     }
 
     var first = true;
@@ -296,64 +303,57 @@ class Reader {
     readThisFieldsDefaultImpl(t, x, first);
 
     if !binary {
-      if isClassType(t) {
-        var end = new ioLiteral("}");
-        read(end);
-      } else {
-        var end = new ioLiteral(")");
-        read(end);
-      }
-    }
-
-    if error() == EEOF {
-      clearError();
-      return false;
-    } else {
-      return true;
+      var end = new ioLiteral(")");
+      readIt(end);
     }
   }
 }
 
-proc &(w: Writer, x) {
+inline proc &(w: Writer, x):Writer {
   w.readwrite(x);
+  return w;
 }
-proc &(r: Reader, x) {
+inline proc &(r: Reader, inout x):Reader {
   r.readwrite(x);
+  return r;
 }
 
 use IO;
 
-proc _debugWrite(args...?n) {
-  extern proc fprintf(f: _file, fmt: string, vals...?numvals): int;
-  extern proc fflush(f: _file): int;
-  proc getString(a: ?t) {
-    if t == bool(8) || t == bool(16) || t == bool(32) || t == bool(64) ||
-       t == int(8) || t == int(16) || t == int(32) || t == int(64) ||
-       t == uint(8) || t == uint(16) || t == uint(32) || t == uint(64) ||
-       t == real(32) || t == real(64) || t == imag(32) || t == imag(64) ||
-       t == complex(64) || t == complex(128) ||
-       t == bool || t == string || _isEnumeratedType(t) then
-      return a:string;
-    else 
-      compilerError("Cannot call _debugWrite on value of type ",
-                    typeToString(t));
-  }
-  for param i in 1..n {
-    var status = fprintf(chpl_cstdout(), "%s", getString(args(i)));
-    if status < 0 {
-      //const err = chpl_cerrno();
-      halt("_debugWrite failed");
-    }
-  }
-  fflush(chpl_cstdout());
+// these are overridden to not be inout
+// since they don't change when read anyway
+// and it's much more convenient to be able to do e.g.
+//   reader & new ioLiteral("=")
+inline proc &(r: Reader, lit:ioLiteral):Reader {
+  var litCopy = lit;
+  r.readwrite(litCopy);
+  return r;
+}
+inline proc &(r: Reader, nl:ioNewline):Reader {
+  var nlCopy = nl;
+  r.readwrite(nlCopy);
+  return r;
 }
 
-proc _debugWriteln(args...?n) {
-  _debugWrite((...args), "\n");
+inline proc Reader.readWriteLiteral(lit:string, ignoreWhiteSpace=true)
+{
+  var iolit = new ioLiteral(lit, ignoreWhiteSpace);
+  this.readwrite(iolit);
 }
-
-proc _debugWriteln() {
-  _debugWrite("\n");
+inline proc Writer.readWriteLiteral(lit:string, ignoreWhiteSpace=true)
+{
+  var iolit = new ioLiteral(lit, ignoreWhiteSpace);
+  this.readwrite(iolit);
+}
+inline proc Reader.readWriteNewline()
+{
+  var ionl = new ioNewline();
+  this.readwrite(ionl);
+}
+inline proc Writer.readWriteNewline()
+{
+  var ionl = new ioNewline();
+  this.readwrite(ionl);
 }
 
 
@@ -367,12 +367,9 @@ extern proc chpl_exit_any(status:int);
 
 proc assert(test: bool, args ...?numArgs) {
   if !test {
-    //chpl_error_noexit("assert failed - ", -1, "");
-    __primitive("chpl_error_noexit", "assert failed - ");
-    stderr.writeln((...args));
-    chpl_exit_any(1);
-    //exit(1);
-    //__primitive("chpl_error", "assert failed");
+    var tmpstring: string;
+    tmpstring.write((...args));
+    __primitive("chpl_error", "assert failed - " + tmpstring);
   }
 }
 
@@ -385,12 +382,9 @@ proc halt(s:string) {
 }
 
 proc halt(args ...?numArgs) {
-  //chpl_error_noexit("halt reached - ", -1, "");
-  __primitive("chpl_error_noexit", "halt reached - ");
-  stderr.writeln((...args));
-  chpl_exit_any(1);
-  //exit(1);
-  //__primitive("chpl_error", "halt reached");
+  var tmpstring: string;
+  tmpstring.write((...args));
+  __primitive("chpl_error", "halt reached - " + tmpstring);
 }
 
 proc _ddata.writeThis(f: Writer) {
@@ -401,14 +395,11 @@ proc chpl_taskID_t.writeThis(f: Writer) {
   var tmp : uint(64) = this : uint(64);
   f.write(tmp);
 }
-proc Reader.readType(inout x:chpl_taskID_t):bool {
+proc chpl_taskID_t.readThis(f: Reader) {
   var tmp : uint(64);
-  var got : bool;
-  got = this.read(tmp);
-  x = tmp;
-  return got;
+  f.read(tmp);
+  this = tmp : chpl_taskID_t;
 }
-
 
 class StringWriter: Writer {
   var s: string = "";
@@ -492,13 +483,12 @@ proc chpl__testParStop() {
   chpl__testParOn = false;
 }
 
-pragma "inline"
-proc chpl__testPar(args...) where chpl__testParFlag == false { }
+inline proc chpl__testPar(args...) where chpl__testParFlag == false { }
 
 proc chpl__testPar(args...) where chpl__testParFlag == true {
   if chpl__testParFlag && chpl__testParOn {
     const file : string = __primitive("_get_user_file");
-    const line : int = __primitive("_get_user_line");
+    const line = __primitive("_get_user_line");
     writeln("CHPL TEST PAR (", file, ":", line, "): ", (...args));
   }
 }

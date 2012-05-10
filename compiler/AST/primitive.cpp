@@ -33,22 +33,39 @@ returnInfoInt64(CallExpr* call) {
   return dtInt[INT_SIZE_64];
 }
 
+//
+// Since 'int' is equivalent to 'int(64)' currently, this doesn't do
+// anything different than returnInfoInt64 does, but it's intended to
+// be used in cases where a primitive returns a type that ought to
+// track the default 'int' size rather than being hard-coded to a
+// specific bit-width.
+//
+static Type*
+returnInfoDefaultInt(CallExpr* call) {
+  return returnInfoInt64(call);
+}
+
 static Type*
 returnInfoUInt32(CallExpr* call) { // unexecuted none/gasnet on 4/25/08
   return dtUInt[INT_SIZE_32];
 }
 
-/* Currently unused
+/*
 static Type*
 returnInfoUInt64(CallExpr* call) {
   return dtUInt[INT_SIZE_64];
 }
-*/
+
+static Type*
+returnInfoReal32(CallExpr* call) {
+  return dtReal[FLOAT_SIZE_32];
+}
 
 static Type*
 returnInfoReal64(CallExpr* call) {
   return dtReal[FLOAT_SIZE_64];
 }
+*/
 
 static Type*
 returnInfoTaskID(CallExpr* call) {
@@ -305,6 +322,26 @@ prim_def(const char* name, Type *(*returnInfo)(CallExpr*),
 }
 
 
+
+/*
+ * The routine below, using the routines just above, define primitives
+ * for use by the compiler.  Each primitive definition takes:
+ * 
+ * - (optionally) the primitive's enum
+ * - its string name
+ * - a function pointer indicating the type it returns/evaluates to
+ * - (optionally) a boolean saying whether or not it's essential (i.e.,
+ *   should not be dead code eliminated)
+ * - (optionally) a boolean saying whether or not it expects to receive
+ *   filename/lineno arguments
+ *
+ * Primitives may be defined by the compiler directly (e.g., rewritten
+ * during function resolution) or implemented in the runtime.  In the
+ * latter case, not surprisingly, it is important to make sure that
+ * the return type of the primitive as specified here matches that of
+ * the runtime function implementing the primitive.
+ */
+
 void
 initPrimitive() {
   primitives[PRIM_UNKNOWN] = NULL;
@@ -352,7 +389,7 @@ initPrimitive() {
   prim_def(PRIM_TESTCID, "testcid", returnInfoBool, false, true);
   prim_def(PRIM_GETCID, "getcid", returnInfoBool, false, true);
   prim_def(PRIM_UNION_SETID, "set_union_id", returnInfoVoid, true, true);
-  prim_def(PRIM_UNION_GETID, "get_union_id", returnInfoInt64, false, true);
+  prim_def(PRIM_UNION_GETID, "get_union_id", returnInfoDefaultInt, false, true);
   prim_def(PRIM_GET_MEMBER, ".", returnInfoGetMemberRef);
   prim_def(PRIM_GET_MEMBER_VALUE, ".v", returnInfoGetMember, false, true);
   prim_def(PRIM_SET_MEMBER, ".=", returnInfoVoid, true, true);
@@ -362,8 +399,8 @@ initPrimitive() {
   prim_def(PRIM_GET_IMAG, "complex_get_imag", returnInfoComplexField);
   prim_def(PRIM_QUERY, "query", returnInfoUnknown);
 
-  prim_def(PRIM_SET_REF, "set ref", returnInfoRef);
-  prim_def(PRIM_GET_REF, "get ref", returnInfoVal, false, true);
+  prim_def(PRIM_ADDR_OF, "addr of", returnInfoRef);
+  prim_def(PRIM_DEREF,   "deref",   returnInfoVal, false, true);
 
   // local block primitives
   prim_def(PRIM_LOCAL_CHECK, "local_check", returnInfoVoid, true, true);
@@ -494,10 +531,9 @@ initPrimitive() {
 
   prim_def(PRIM_LOGICAL_FOLDER, "_paramFoldLogical", returnInfoBool);
 
-  prim_def(PRIM_NUM_LOCALES, "chpl_comm_default_num_locales", returnInfoInt32);
-  prim_def(PRIM_GET_LOCALEID, "_get_locale", returnInfoInt32, false, true);
-  prim_def(PRIM_LOCALE_ID, "chpl_localeID", returnInfoInt32);
-  prim_def(PRIM_ON_LOCALE_NUM, "chpl_on_locale_num", returnInfoInt32);
+  prim_def(PRIM_GET_LOCALEID, "_get_locale", returnInfoInt64, false, true);
+  prim_def(PRIM_LOCALE_ID, "chpl_localeID", returnInfoInt64);
+  prim_def(PRIM_ON_LOCALE_NUM, "chpl_on_locale_num", returnInfoInt64);
 
   prim_def(PRIM_ALLOC_GVR, "allocchpl_globals_registry", returnInfoVoid);
   prim_def(PRIM_HEAP_REGISTER_GLOBAL_VAR, "_heap_register_global_var", returnInfoVoid, true, true);
@@ -506,45 +542,37 @@ initPrimitive() {
 
   prim_def(PRIM_INT_ERROR, "_internal_error", returnInfoVoid, true);
 
-  prim_def("_fscan_literal", returnInfoBool, true, true);
-  prim_def("_fscan_string", returnInfoString, true, true);
-  prim_def("_fscan_int32", returnInfoInt32, true, true);
-  prim_def("_fscan_uint32", returnInfoUInt32, true, true);
-  prim_def("_fscan_real64", returnInfoReal64, true, true);
-  prim_def("_readToEndOfLine", returnInfoVoid, true);
-  prim_def("_format", returnInfoString);
-  prim_def("chpl_string_compare", returnInfoInt32, true);
+  prim_def("chpl_string_compare", returnInfoDefaultInt, true);
   prim_def("string_contains", returnInfoBool, true);
   prim_def("string_concat", returnInfoString, true, true);
-  prim_def("string_length", returnInfoInt32);
+  prim_def("string_length", returnInfoDefaultInt);
   prim_def("ascii", returnInfoInt32);
   prim_def("string_index", returnInfoString, true, true);
   prim_def(PRIM_STRING_COPY, "string_copy", returnInfoString, false, true);
   prim_def("string_select", returnInfoString, true, true);
   prim_def("string_strided_select", returnInfoString, true, true);
   prim_def("sleep", returnInfoVoid, true);
-  prim_def("real2int", returnInfoInt64);
-  prim_def("object2int", returnInfoInt64);
+  prim_def("real2int", returnInfoDefaultInt);
+  prim_def("object2int", returnInfoDefaultInt);
   prim_def("chpl_exit_any", returnInfoVoid, true);
   prim_def("chpl_localeName", returnInfoString);
-  prim_def(PRIM_chpl_numThreads, "chpl_numThreads", returnInfoUInt32);
-  prim_def(PRIM_chpl_numIdleThreads, "chpl_numIdleThreads", returnInfoUInt32);
-  prim_def(PRIM_chpl_numQueuedTasks, "chpl_numQueuedTasks", returnInfoUInt32);
-  prim_def(PRIM_chpl_numRunningTasks, "chpl_numRunningTasks", returnInfoUInt32);
-  prim_def(PRIM_chpl_numBlockedTasks, "chpl_numBlockedTasks", returnInfoInt32);
+  prim_def(PRIM_chpl_numThreads, "chpl_numThreads", returnInfoInt64);
+  prim_def(PRIM_chpl_numIdleThreads, "chpl_numIdleThreads", returnInfoInt64);
+  prim_def(PRIM_chpl_numQueuedTasks, "chpl_numQueuedTasks", returnInfoInt64);
+  prim_def(PRIM_chpl_numRunningTasks, "chpl_numRunningTasks", returnInfoInt64);
+  prim_def(PRIM_chpl_numBlockedTasks, "chpl_numBlockedTasks", returnInfoInt64);
 
   prim_def("chpl_setMemFlags", returnInfoVoid, true);
 
   prim_def(PRIM_RT_ERROR, "chpl_error", returnInfoVoid, true, true);
-  prim_def(PRIM_RT_ERROR_NOEXIT, "chpl_error_noexit", returnInfoVoid, true, true);
   prim_def(PRIM_RT_WARNING, "chpl_warning", returnInfoVoid, true, true);
 
   prim_def(PRIM_NEW_PRIV_CLASS, "chpl_newPrivatizedClass", returnInfoVoid, true);
-  prim_def(PRIM_NUM_PRIV_CLASSES, "chpl_numPrivatizedClasses", returnInfoInt32);
+  prim_def(PRIM_NUM_PRIV_CLASSES, "chpl_numPrivatizedClasses", returnInfoDefaultInt);
   prim_def(PRIM_GET_PRIV_CLASS, "chpl_getPrivatizedClass",  returnInfoFirst);
   
   prim_def(PRIM_NEXT_UINT32, "_next_uint32", returnInfoUInt32);
-  prim_def(PRIM_GET_USER_LINE, "_get_user_line", returnInfoInt32, true, true);
+  prim_def(PRIM_GET_USER_LINE, "_get_user_line", returnInfoDefaultInt, true, true);
   prim_def(PRIM_GET_USER_FILE, "_get_user_file", returnInfoString, true, true);
 
   prim_def(PRIM_FTABLE_CALL, "call ftable function", returnInfoVoid, true);

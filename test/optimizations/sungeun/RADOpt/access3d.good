@@ -1,4 +1,4 @@
-3 dimensional array of int
+3 dimensional array of int(64)
 
 [3D Block] Remote read (Locale0): gets: 0
 [3D Block] Remote read (Locale0): puts: 0

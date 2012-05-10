@@ -12,8 +12,17 @@
 
 #endif
 
+// __bswap_64 does not compile with the PGI or Cray compilers,
+// and so we switch to our own versions in those environments.
 #ifdef __PGI 
-// __bswap_64 does not compile with the PGI compiler
+#define REDO_BSWAP
+#endif
+
+#ifdef _CRAYC
+#define REDO_BSWAP
+#endif
+
+#ifdef REDO_BSWAP
 #undef __bswap_16
 #undef __bswap_32
 #undef __bswap_64

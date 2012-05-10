@@ -1,2 +1,2 @@
-real
-int
+real(64)
+int(64)

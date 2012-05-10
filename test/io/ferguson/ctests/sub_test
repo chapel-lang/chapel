@@ -1,15 +1,27 @@
 #!/bin/sh
 
-RINC="--std=c99 -I$CHPL_HOME/runtime/include -I$CHPL_HOME/runtime/include/atomics/intrinsics"
+# These C tests don't conform to -Wall
+unset CHPL_DEVELOPER
+
+COMP=`$CHPL_HOME/util/config/compileline --compile`
 RSRC="$CHPL_HOME/runtime/src"
 
-T1="gcc -o deque_test -g deque_test.c -DSIMPLE_TEST $RINC $RSRC/deque.c -Wall"
-T2="gcc -o qbuffer_test -g qbuffer_test.c -DSIMPLE_TEST $RINC $RSRC/qbuffer.c $RSRC/sys.c $RSRC/sys_xsi_strerror_r.c $RSRC/deque.c -Wall"
-T3="gcc -o qio_test -g qio_test.c -DSIMPLE_TEST $RINC $RSRC/qio.c $RSRC/sys.c $RSRC/sys_xsi_strerror_r.c $RSRC/qbuffer.c $RSRC/deque.c -Wall -pthread"
-T4="gcc -o qio_formatted_test -g qio_formatted_test.c -DSIMPLE_TEST $RINC $RSRC/qio.c $RSRC/qio_formatted.c $RSRC/sys.c $RSRC/sys_xsi_strerror_r.c $RSRC/qbuffer.c $RSRC/deque.c -Wall -pthread"
-T5="gcc -o qio_memfile_test -g qio_memfile_test.c -DSIMPLE_TEST $RINC $RSRC/qio.c $RSRC/qio_formatted.c $RSRC/sys.c $RSRC/sys_xsi_strerror_r.c $RSRC/qbuffer.c $RSRC/deque.c -Wall -pthread"
-T6="gcc -o qio_bits_test -g qio_bits_test.c -DSIMPLE_TEST $RINC $RSRC/qio.c $RSRC/sys.c $RSRC/sys_xsi_strerror_r.c $RSRC/qbuffer.c $RSRC/deque.c -Wall -pthread"
-T7="gcc -o qio_mark_test -g qio_mark_test.c -DSIMPLE_TEST $RINC $RSRC/qio.c $RSRC/sys.c $RSRC/sys_xsi_strerror_r.c $RSRC/qbuffer.c $RSRC/deque.c -Wall -pthread"
+echo $COMP | grep atomics/intrinsics
+if [ $? == 0 ]
+then
+  echo C tests will run using atomics/intrinsics
+else
+  echo Skipping C I/O tests without atomics/intrinsics
+  exit
+fi
+
+T1="$COMP -o deque_test -g deque_test.c -DSIMPLE_TEST $RSRC/deque.c -Wall"
+T2="$COMP -o qbuffer_test -g qbuffer_test.c -DSIMPLE_TEST $RSRC/qbuffer.c $RSRC/sys.c $RSRC/sys_xsi_strerror_r.c $RSRC/deque.c -Wall"
+T3="$COMP -o qio_test -g qio_test.c -DSIMPLE_TEST $RSRC/qio.c $RSRC/sys.c $RSRC/sys_xsi_strerror_r.c $RSRC/qbuffer.c $RSRC/deque.c -Wall -pthread"
+T4="$COMP -o qio_formatted_test -g qio_formatted_test.c -DSIMPLE_TEST $RSRC/qio.c $RSRC/qio_formatted.c $RSRC/sys.c $RSRC/sys_xsi_strerror_r.c $RSRC/qbuffer.c $RSRC/deque.c -Wall -pthread"
+T5="$COMP -o qio_memfile_test -g qio_memfile_test.c -DSIMPLE_TEST $RSRC/qio.c $RSRC/qio_formatted.c $RSRC/sys.c $RSRC/sys_xsi_strerror_r.c $RSRC/qbuffer.c $RSRC/deque.c -Wall -pthread"
+T6="$COMP -o qio_bits_test -g qio_bits_test.c -DSIMPLE_TEST $RSRC/qio.c $RSRC/sys.c $RSRC/sys_xsi_strerror_r.c $RSRC/qbuffer.c $RSRC/deque.c -Wall -pthread"
+T7="$COMP -o qio_mark_test -g qio_mark_test.c -DSIMPLE_TEST $RSRC/qio.c $RSRC/sys.c $RSRC/sys_xsi_strerror_r.c $RSRC/qbuffer.c $RSRC/deque.c -Wall -pthread"
 
 echo $T1
 echo $T2

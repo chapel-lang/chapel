@@ -1,0 +1,1 @@
+writeln(getCommDiagnostics); // missing parens

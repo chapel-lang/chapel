@@ -84,10 +84,13 @@ void collect_top_asts(BaseAST* ast, Vec<BaseAST*>& asts) {
   asts.add(ast);
 }
               
+void reset_ast_loc(BaseAST* destNode, BaseAST* sourceNode) {
+  reset_ast_loc(destNode, sourceNode->astloc);
+}
 
-void reset_line_info(BaseAST* ast, int lineno) {
-  ast->lineno = lineno;
-  AST_CHILDREN_CALL(ast, reset_line_info, lineno);
+void reset_ast_loc(BaseAST* destNode, astlocT astlocArg) {
+  destNode->astloc = astlocArg;
+  AST_CHILDREN_CALL(destNode, reset_ast_loc, astlocArg);
 }
 
 
@@ -195,9 +198,7 @@ static int isDefAndOrUse(SymExpr* se) {
       if (arg->intent == INTENT_REF ||
           arg->intent == INTENT_INOUT ||
           (!strcmp(fn->name, "=") && fn->getFormal(1) == arg && isRecord(arg->type)) ||
-          arg->type->symbol->hasFlag(FLAG_ARRAY) ||
-          arg->type->symbol->hasFlag(FLAG_DOMAIN) ||
-          arg->type->symbol->hasFlag(FLAG_DISTRIBUTION)) { // pass by reference
+          isRecordWrappedType(arg->type)) { // pass by reference
         return 3;
         // also use; do not "continue"
       } else if (arg->intent == INTENT_OUT) {
@@ -414,8 +415,8 @@ pruneVisit(FnSymbol* fn, Vec<FnSymbol*>& fns, Vec<TypeSymbol*>& types) {
 static void
 visitVisibleFunctions(Vec<FnSymbol*>& fns, Vec<TypeSymbol*>& types)
 {
-  // chpl_main is always visible (if it exists).
-  pruneVisit(chpl_main, fns, types);
+  // chpl_gen_main is always visible (if it exists).
+  pruneVisit(chpl_gen_main, fns, types);
 
   // Functions appearing the function pointer table are visible.
   // These are blocks that can be started through a forall, coforall or on statement.
@@ -489,6 +490,9 @@ pruneUnusedTypes(Vec<TypeSymbol*>& types)
   }
 }
 
+// Done this way because the log letter and hence the pass name for
+// each pass must be unique.  See initLogFlags() in runpasses.cpp.
+void prune2() { prune(); } // Synonym for prune.
 
 // Determine sets of used functions and types, and then delete
 // functions which are not visible and classes which are not used.

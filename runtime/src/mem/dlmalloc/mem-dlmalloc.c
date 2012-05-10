@@ -11,7 +11,7 @@
 #include "error.h"
 #include "dlmalloc.h"
 
-static mspace chpl_heap;
+mspace chpl_dlmalloc_heap;
 
 static void* saved_heap_start;
 static size_t saved_heap_size;
@@ -20,9 +20,9 @@ static size_t saved_heap_size;
 void chpl_mem_layerInit(void) {
   chpl_comm_desired_shared_heap(&saved_heap_start, &saved_heap_size);
   if (!saved_heap_start || !saved_heap_size) {
-    chpl_heap = create_mspace(0, 1);
+    chpl_dlmalloc_heap = create_mspace(0, 1);
   } else {
-    chpl_heap = create_mspace_with_base(saved_heap_start, saved_heap_size, 1);
+    chpl_dlmalloc_heap = create_mspace_with_base(saved_heap_start, saved_heap_size, 1);
   }
 }
 
@@ -36,25 +36,3 @@ void chpl_mem_layerActualSharedHeap(void** start_p, size_t* size_p) {
 }
 
 
-void* chpl_mem_layerAlloc(size_t size, int32_t lineno, chpl_string filename) {
-  if (!heapInitialized) {
-    chpl_error("chpl_mem_allocMany called before the heap is initialized",
-               lineno, filename);
-  }
-  return mspace_malloc(chpl_heap, size);
-}
-
-
-void* chpl_mem_layerRealloc(void* memAlloc, size_t newChunk,
-                      int32_t lineno, chpl_string filename) {
-  return mspace_realloc(chpl_heap, memAlloc, newChunk);
-}
-
-
-void chpl_mem_layerFree(void* memAlloc, int32_t lineno, chpl_string filename) {
-  if (!heapInitialized) {
-    chpl_error("chpl_mem_free called before the heap is initialized",
-               lineno, filename);
-  }
-  mspace_free(chpl_heap, memAlloc);
-}

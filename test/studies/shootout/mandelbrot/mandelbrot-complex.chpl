@@ -5,7 +5,7 @@
 extern proc putchar(i : int) : int;
 
 config const size: int(64) = 200;
-config const iters : uint = 50;
+config const iters = 50;
   
 const sizeRange = 0..#size;
 const iterRange = 0..#iters;

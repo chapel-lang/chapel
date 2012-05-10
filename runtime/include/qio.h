@@ -1,6 +1,7 @@
 #ifndef _QIO_H_
 #define _QIO_H_
 
+#include "bswap.h"
 #include "qbuffer.h"
 #include "sys.h"
 #include "qio_style.h"
@@ -8,7 +9,6 @@
 #include <stddef.h>
 #include <stdio.h>
 #include <stdarg.h>
-#include <pthread.h>
 #include <stdbool.h>
 #include <assert.h>
 
@@ -64,6 +64,9 @@ static inline void qio_lock_destroy(qio_lock_t* x) {
 }
 
 #else
+
+#include <pthread.h>
+
 typedef pthread_mutex_t qio_lock_t;
 // these should return 0 on success; otherwise, an error number.
 static inline err_t qio_lock(qio_lock_t* x) { return pthread_mutex_lock(x); }
@@ -174,7 +177,8 @@ enum {
   QIO_HINT_LATENCY      = QIO_HINT_SEQUENTIAL<<1,
   QIO_HINT_BANDWIDTH    = QIO_HINT_LATENCY<<1,
   QIO_HINT_CACHED       = QIO_HINT_BANDWIDTH<<1,
-  QIO_HINT_DIRECT       = QIO_HINT_CACHED<<1,
+  QIO_HINT_PARALLEL     = QIO_HINT_CACHED<<1,
+  QIO_HINT_DIRECT       = QIO_HINT_PARALLEL<<1,
      // note -- if DIRECT is set, you must do aligned I/O;
      // offset, request size must be 512-byte aligned, and
      // user buffer must be page-aligned. This should more or
@@ -338,6 +342,7 @@ typedef qio_file_t* qio_file_ptr_t;
 #define QIO_FILE_PTR_NULL NULL
 
 // if fp is not null, fd is ignored; if fp is null, we use fd.
+// the QIO file takes ownership of fp or fd, closing it when the QIO file is closed.
 err_t qio_file_init(qio_file_t** file_out, FILE* fp, fd_t fd, qio_hint_t iohints, qio_style_t* style, int usefilestar);
 err_t qio_file_open(qio_file_t** file_out, const char* path, int flags, mode_t mode, qio_hint_t iohints, qio_style_t* style);
 err_t qio_file_open_access(qio_file_t** file_out, const char* pathname, const char* access, qio_hint_t iohints, qio_style_t* style);
@@ -499,6 +504,13 @@ err_t qio_file_length(qio_file_t* f, int64_t *len_out);
  */
 #define MARK_INITIAL_STACK_SZ 4
 
+typedef uint64_t qio_bitbuffer_t;
+#define qio_bitbuffer_tobe(x) (htobe64(x))
+#define qio_bitbuffer_unbe(x) (be64toh(x))
+// intel right shift is mod 64, so we have this macro
+// for a right shift that zeros if we want 0 bits left...
+#define qio_bitbuffer_topn(x,amt) ( ((amt) != 0)?((x) >> (8*sizeof(qio_bitbuffer_t) - (amt))):(0) )
+
 typedef struct qio_channel_s {
   // reference count which is atomically updated
   qbytes_refcnt_t ref_cnt;
@@ -585,8 +597,12 @@ typedef struct qio_channel_s {
   qbuffer_t buf;
 
   // For reading/writing bits (ie less than a byte) at a time
-  uint8_t bit_buffer;
+  qio_bitbuffer_t bit_buffer;
+  void* cached_end_bits; // cause flush before byte I/O
+                         // once bit-I/O is used.
   int8_t bit_buffer_bits;
+  int8_t bits_read_bytes; // how many bytes do we add
+                          // to cached_cur when we move on to the next read?
 
   ssize_t mark_cur;
   size_t mark_stack_size;
@@ -730,7 +746,7 @@ int32_t qio_channel_read_byte(const int threadsafe, qio_channel_t* restrict ch)
   }
 
   // Is there room in our fast path buffer?
-  if( 1 <= VOID_PTR_DIFF(ch->cached_end, ch->cached_cur) ) {
+  if( ((intptr_t)1) <= VOID_PTR_DIFF(ch->cached_end, ch->cached_cur) ) {
     ret = *(unsigned char*) ch->cached_cur;
     ch->cached_cur = VOID_PTR_ADD(ch->cached_cur, 1);
   } else {
@@ -767,7 +783,7 @@ err_t qio_channel_write_byte(const int threadsafe, qio_channel_t* restrict ch, u
   }
 
   // Is there room in our fast path buffer?
-  if( 1 <= VOID_PTR_DIFF(ch->cached_end, ch->cached_cur) ) {
+  if( ((intptr_t)1) <= VOID_PTR_DIFF(ch->cached_end, ch->cached_cur) ) {
     *(unsigned char*) ch->cached_cur = byte;
     ch->cached_cur = VOID_PTR_ADD(ch->cached_cur, 1);
     err = _qio_channel_post_cached_write(ch);
@@ -1167,11 +1183,192 @@ err_t qio_channel_commit(const int threadsafe, qio_channel_t* ch)
 }
 
 /* Handle I/O of bits at a time */
-err_t qio_channel_write_bits(const int threadsafe, qio_channel_t* restrict ch, uint64_t v, int8_t nbits);
+err_t _qio_channel_write_bits_slow(qio_channel_t* restrict ch, uint64_t v, int8_t nbits);
+void _qio_channel_write_bits_cached_realign(qio_channel_t* restrict ch, uint64_t v, int8_t nbits);
+
+static ___always_inline
+err_t qio_channel_write_bits(const int threadsafe, qio_channel_t* restrict ch, uint64_t v, int8_t nbits) {
+  err_t err = 0;
+  qio_bitbuffer_t part_one_bits;
+  qio_bitbuffer_t part_one_bits_be;
+  qio_bitbuffer_t tmp_bits;
+  int tmp_live;
+  int part_one;
+  int part_two;
+
+  if( nbits < 0 ) return EINVAL;
+  if( nbits == 0 ) return 0;
+  if( nbits < 64 && (v >> nbits) != 0 ) return EINVAL; // v must not have any extra bits set.
+  
+  if( threadsafe ) {
+    err = qio_lock(&ch->lock);
+    if( err ) {
+      return err;
+    }
+  }
+
+  //printf("IN WRITE BITS %llx %i %p %p\n", (long long int) v, nbits, ch->cached_end, ch->cached_end_bits);
+
+  //printf("cur %p end_bits %p end %p\n", ch->cached_cur, ch->cached_end_bits, ch->cached_end);
+
+  tmp_live = ch->bit_buffer_bits;
+  tmp_bits = ch->bit_buffer;
+
+  if( ((intptr_t) (sizeof(uint64_t)+2*sizeof(qio_bitbuffer_t))) <=
+            VOID_PTR_DIFF(ch->cached_end_bits, ch->cached_cur )) {
+    //printf("WRITE BITS CACHED WRITING %llx %i %llx %i\n", (long long int) tmp_bits, tmp_live, (long long int) v, nbits);
+
+    // We have buffer for it...
+    // Can we just put it into bitbuffer?
+    if( tmp_live + nbits <= 8*sizeof(qio_bitbuffer_t) ) {
+      //printf("WRITE BITS LOCAL WRITING %llx %i %llx %i\n", (long long int) tmp_bits, tmp_live, (long long int) v, nbits);
+      tmp_bits = (tmp_bits << nbits) | v;
+      tmp_live += nbits;
+      ch->bit_buffer = tmp_bits;
+      ch->bit_buffer_bits = tmp_live;
+    } else {
+      // We've got > 64 bits to write.
+      // The value is split between tmp_bits and next_bits
+      part_one = 8*sizeof(qio_bitbuffer_t) - tmp_live;
+      part_two = nbits - part_one;
+      part_one_bits = (tmp_bits << part_one) | ( v >> part_two );
+      part_one_bits_be = qio_bitbuffer_tobe(part_one_bits); // big endian now.
+      tmp_bits = v;
+      tmp_live = part_two;
+
+      //printf("WRITE BITS CACHED PARTONE %llx tmp %llx %i\n", (long long int) part_one_bits, (long long int) tmp_bits, tmp_live);
+      // If we are 8-byte aligned, write part_one_bits and
+      // carry on.
+      if( VOID_PTR_ALIGN(ch->cached_cur, sizeof(qio_bitbuffer_t)) == 0 ) {
+        // We have 8-byte alignment
+        *(qio_bitbuffer_t*)ch->cached_cur = part_one_bits_be;
+        ch->cached_cur = VOID_PTR_ADD(ch->cached_cur, sizeof(qio_bitbuffer_t));
+        ch->bit_buffer = tmp_bits;
+        ch->bit_buffer_bits = tmp_live;
+        //printf("WRITE BITS ALIGNED WRITING %llx\n", (long long int) part_one_bits);
+      } else {
+        //printf("WRITE BITS REALIGN\n");
+        // Otherwise... write some so that the next write will
+        // be 8-byte aligned.
+        _qio_channel_write_bits_cached_realign(ch, v, nbits);
+       }
+    }
+  } else {
+   //printf("WRITE BITS SLOW WRITING %llx %i %llx %i\n", (long long int) tmp_bits, tmp_live, (long long int) v, nbits);
+   err = _qio_channel_write_bits_slow(ch, v, nbits);
+   _qio_channel_set_error_unlocked(ch, err);
+   goto unlock;
+  }
+
+unlock:
+
+  if( threadsafe ) {
+    qio_unlock(&ch->lock);
+  }
+
+  return err;
+}
+
 // Puts zeros at the end of any partial byte and writes it to the buffer.
 err_t qio_channel_flush_bits(const int threadsafe, qio_channel_t* restrict ch);
 
-err_t qio_channel_read_bits(const int threadsafe, qio_channel_t* restrict ch, uint64_t* restrict v, int8_t nbits);
+err_t _qio_channel_read_bits_slow(qio_channel_t* restrict ch, uint64_t* restrict v, int8_t nbits);
+void _qio_channel_read_bits_cached_realign(qio_channel_t* restrict ch, uint64_t* restrict v, int8_t nbits);
+
+static ___always_inline
+err_t qio_channel_read_bits(const int threadsafe, qio_channel_t* restrict ch, uint64_t* restrict v, int8_t nbits) {
+  err_t err = 0;
+  qio_bitbuffer_t part_two_bits;
+  qio_bitbuffer_t tmp_bits;
+  qio_bitbuffer_t value;
+  int tmp_live;
+  int part_two;
+
+  if( nbits < 0 ) return EINVAL;
+  if( nbits == 0 ) return 0;
+
+  if( threadsafe ) {
+    err = qio_lock(&ch->lock);
+    if( err ) {
+      return err;
+    }
+  }
+
+  //printf("IN READ BITS nbits=%i cached_end=%p cached_end_bits=%p\n", nbits, ch->cached_end, ch->cached_end_bits);
+
+  //printf("cur %p end_bits %p end %p\n", ch->cached_cur, ch->cached_end_bits, ch->cached_end);
+
+  tmp_live = ch->bit_buffer_bits;
+  tmp_bits = ch->bit_buffer;
+
+  if( ((intptr_t) (sizeof(uint64_t)+2*sizeof(qio_bitbuffer_t))) <=
+            VOID_PTR_DIFF(ch->cached_end_bits, ch->cached_cur )) {
+    //printf("READ BITS CACHED %llx %i\n", (long long int) tmp_bits, (int) tmp_live);
+
+    // We have buffer for it...
+    // Can we just read it from the bitbuffer?
+    if( nbits <= tmp_live ) {
+      //printf("READ BITS LOCAL\n");
+      *v = tmp_bits >> (8*sizeof(qio_bitbuffer_t) - nbits);
+      tmp_bits <<= nbits;
+      tmp_live -= nbits;
+      ch->bit_buffer = tmp_bits;
+      ch->bit_buffer_bits = tmp_live;
+    } else {
+      // We've got to read across two words.
+      // The value is split between tmp_bits and next_bits
+
+      part_two = nbits - tmp_live;
+
+      // Add some value to cached_cur
+      ch->cached_cur = VOID_PTR_ADD(ch->cached_cur, ch->bits_read_bytes);
+
+      // If we are 8-byte aligned, read part_two_bits and carry on.
+      if( VOID_PTR_ALIGN(ch->cached_cur, sizeof(qio_bitbuffer_t)) == 0 ) {
+        //printf("READ BITS CACHED ALIGNED\n");
+        // We have 8-byte alignment
+        // Read the next word.
+        part_two_bits = *(qio_bitbuffer_t*)ch->cached_cur;
+        part_two_bits = qio_bitbuffer_unbe(part_two_bits); // host endian now.
+        // now we need tmp_live top bits from tmp_bits
+        // and the rest from part_two_bits.
+        
+        // value we have now in bottom bits.
+        value = qio_bitbuffer_topn(tmp_bits, tmp_live);
+
+        // Now, from part_two_bits, read from the top to get
+        // our number...
+
+        value <<= part_two;
+        value |= qio_bitbuffer_topn(part_two_bits,part_two);
+
+        *v = value;
+        ch->bit_buffer = (part_two_bits << part_two);
+        ch->bit_buffer_bits = 8*sizeof(qio_bitbuffer_t) - part_two;
+        ch->bits_read_bytes = sizeof(qio_bitbuffer_t);
+      } else {
+        //printf("READ BITS CACHED REALIGN\n");
+        // Otherwise... read some so that the next read will
+        // be 8-byte aligned.
+        _qio_channel_read_bits_cached_realign(ch, v, nbits);
+       }
+    }
+  } else {
+   //printf("READ BITS SLOW %llx %i\n", (long long int) tmp_bits, (int) tmp_live);
+   err = _qio_channel_read_bits_slow(ch, v, nbits);
+   _qio_channel_set_error_unlocked(ch, err);
+   goto unlock;
+  }
+
+unlock:
+
+  if( threadsafe ) {
+    qio_unlock(&ch->lock);
+  }
+
+  return err;
+}
+
 
 /*
 err_t qio_channel_fopen(const int threadsafe, qio_channel_t* ch, int reading, int writing, FILE** out);

@@ -1,4 +1,4 @@
-1 dimensional array of int
+1 dimensional array of int(64)
 
 [1D Block] Remote read (Locale0): gets: 2
 [1D Block] Remote read (Locale0): puts: 0
@@ -10,12 +10,12 @@
 [1D Block] Remote write (Locale0): forks: 0
 [1D Block] Remote write (Locale0): fast forks: 0
 [1D Block] Remote write (Locale0): nb forks: 0
-[1D Block] Remote read (Locale1): gets: 3
+[1D Block] Remote read (Locale1): gets: 2
 [1D Block] Remote read (Locale1): puts: 0
 [1D Block] Remote read (Locale1): forks: 0
 [1D Block] Remote read (Locale1): fast forks: 0
 [1D Block] Remote read (Locale1): nb forks: 0
-[1D Block] Remote write (Locale1): gets: 2
+[1D Block] Remote write (Locale1): gets: 1
 [1D Block] Remote write (Locale1): puts: 1
 [1D Block] Remote write (Locale1): forks: 0
 [1D Block] Remote write (Locale1): fast forks: 0
@@ -31,12 +31,12 @@
 [1D Cyclic] Remote write (Locale0): forks: 0
 [1D Cyclic] Remote write (Locale0): fast forks: 0
 [1D Cyclic] Remote write (Locale0): nb forks: 0
-[1D Cyclic] Remote read (Locale1): gets: 3
+[1D Cyclic] Remote read (Locale1): gets: 2
 [1D Cyclic] Remote read (Locale1): puts: 0
 [1D Cyclic] Remote read (Locale1): forks: 0
 [1D Cyclic] Remote read (Locale1): fast forks: 0
 [1D Cyclic] Remote read (Locale1): nb forks: 0
-[1D Cyclic] Remote write (Locale1): gets: 2
+[1D Cyclic] Remote write (Locale1): gets: 1
 [1D Cyclic] Remote write (Locale1): puts: 1
 [1D Cyclic] Remote write (Locale1): forks: 0
 [1D Cyclic] Remote write (Locale1): fast forks: 0

@@ -433,15 +433,15 @@ class DefaultRectangularArr: BaseArr {
   proc dsiDestroyData() {
     if dom.dsiNumIndices > 0 {
       pragma "no copy" pragma "no auto destroy" var dr = data;
-      pragma "no copy" pragma "no auto destroy" var dv = __primitive("get ref", dr);
+      pragma "no copy" pragma "no auto destroy" var dv = __primitive("deref", dr);
       pragma "no copy" pragma "no auto destroy" var er = __primitive("array_get", dv, 0);
-      pragma "no copy" pragma "no auto destroy" var ev = __primitive("get ref", er);
+      pragma "no copy" pragma "no auto destroy" var ev = __primitive("deref", er);
       if (chpl__maybeAutoDestroyed(ev)) {
         for i in 0..dom.dsiNumIndices-1 {
           pragma "no copy" pragma "no auto destroy" var dr = data;
-          pragma "no copy" pragma "no auto destroy" var dv = __primitive("get ref", dr);
+          pragma "no copy" pragma "no auto destroy" var dv = __primitive("deref", dr);
           pragma "no copy" pragma "no auto destroy" var er = __primitive("array_get", dv, i);
-          pragma "no copy" pragma "no auto destroy" var ev = __primitive("get ref", er);
+          pragma "no copy" pragma "no auto destroy" var ev = __primitive("deref", er);
           chpl__autoDestroy(ev);
         }
       }
@@ -522,12 +522,10 @@ class DefaultRectangularArr: BaseArr {
     data.init(size);
   }
 
-  pragma "inline"
-  proc getDataIndex(ind: idxType ...1) where rank == 1
+  inline proc getDataIndex(ind: idxType ...1) where rank == 1
     return getDataIndex(ind);
 
-  pragma "inline"
-  proc getDataIndex(ind: rank* idxType) {
+  inline proc getDataIndex(ind: rank* idxType) {
     var sum = origin;
     if stridable {
       for param i in 1..rank do
@@ -541,12 +539,10 @@ class DefaultRectangularArr: BaseArr {
   }
 
   // only need second version because wrapper record can pass a 1-tuple
-  pragma "inline"
-  proc dsiAccess(ind: idxType ...1) var where rank == 1
+  inline proc dsiAccess(ind: idxType ...1) var where rank == 1
     return dsiAccess(ind);
 
-  pragma "inline"
-  proc dsiAccess(ind : rank*idxType) var {
+  inline proc dsiAccess(ind : rank*idxType) var {
     if boundsChecking then
       if !dom.dsiMember(ind) then
         halt("array index out of bounds: ", ind);
@@ -656,23 +652,27 @@ class DefaultRectangularArr: BaseArr {
   }
 }
 
-proc DefaultRectangularDom.dsiSerialWrite(f: Writer) {
-  f.write("[", dsiDim(1));
+proc DefaultRectangularDom.dsiSerialReadWrite(f /*: Reader or Writer*/) {
+  f & new ioLiteral("[") & ranges(1);
   for i in 2..rank do
-    f.write(", ", dsiDim(i));
-  f.write("]");
+    f & new ioLiteral(", ") & ranges(i);
+  f & new ioLiteral("]");
 }
 
-proc DefaultRectangularArr.dsiSerialWrite(f: Writer) {
+proc DefaultRectangularDom.dsiSerialWrite(f: Writer) { this.dsiSerialReadWrite(f); }
+proc DefaultRectangularDom.dsiSerialRead(f: Reader) { this.dsiSerialReadWrite(f); }
+
+proc DefaultRectangularArr.dsiSerialReadWrite(f /*: Reader or Writer*/) {
   proc recursiveArrayWriter(in idx: rank*idxType, dim=1, in last=false) {
-    var makeStridePositive = if dom.ranges(dim).stride > 0 then 1 else -1;
+    type strType = chpl__signedType(idxType);
+    var makeStridePositive = if dom.ranges(dim).stride > 0 then 1:strType else (-1):strType;
     if dim == rank {
       var first = true;
-      if debugDefaultDist then f.writeln(dom.ranges(dim));
+      if debugDefaultDist && f.writing then f.writeln(dom.ranges(dim));
       for j in dom.ranges(dim) by makeStridePositive {
-        if first then first = false; else f.write(" ");
+        if first then first = false; else f & new ioLiteral(" ");
         idx(dim) = j;
-        f.write(dsiAccess(idx));
+        f & dsiAccess(idx);
       }
     } else {
       for j in dom.ranges(dim) by makeStridePositive {
@@ -683,12 +683,14 @@ proc DefaultRectangularArr.dsiSerialWrite(f: Writer) {
       }
     }
     if !last && dim != 1 then
-      f.writeln();
+      f & new ioNewline();
   }
   const zeroTup: rank*idxType;
   recursiveArrayWriter(zeroTup);
 }
 
+proc DefaultRectangularArr.dsiSerialWrite(f: Writer) { this.dsiSerialReadWrite(f); }
+proc DefaultRectangularArr.dsiSerialRead(f: Reader) { this.dsiSerialReadWrite(f); }
 
 // This is very conservative.  For example, it will return false for
 // 1-d array aliases that are shifted from the aliased array.
@@ -735,9 +737,9 @@ proc DefaultRectangularArr.doiBulkTransfer(B) {
     Blo(i) = Bdims(i).first;
 
   const len = dom.dsiNumIndices:int(32);
-  extern proc sizeof(type x): int(32);
+  extern proc sizeof(type x): int(32);  // should be c_int or size_t or ...
   if debugBulkTransfer {
-    const elemSize: int(32)=sizeof(B._value.eltType);
+    const elemSize =sizeof(B._value.eltType);
     writeln("In doiBulkTransfer(): Alo=", Alo, ", Blo=", Blo,
             ", len=", len, ", elemSize=", elemSize);
   }
@@ -745,7 +747,7 @@ proc DefaultRectangularArr.doiBulkTransfer(B) {
   // NOTE: This does not work with --heterogeneous, but heterogeneous
   // compilation does not work right now.  The calls to chpl_comm_get
   // and chpl_comm_put should be changed once that is fixed.
-  if this.data.locale==here {
+  if this.data.locale.id==here.id {
     if debugDefaultDistBulkTransfer then
       writeln("\tlocal get() from ", B.locale.id);
     var dest = this.data;
@@ -755,7 +757,7 @@ proc DefaultRectangularArr.doiBulkTransfer(B) {
                 B._value.data.locale.id,
                 __primitive("array_get", src, B._value.getDataIndex(Blo)),
                 len);
-  } else if B._value.data.locale==here {
+  } else if B._value.data.locale.id==here.id {
     if debugDefaultDistBulkTransfer then
       writeln("\tlocal put() to ", this.locale.id);
     var dest = this.data;
