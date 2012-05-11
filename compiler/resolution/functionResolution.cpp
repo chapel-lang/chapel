@@ -47,8 +47,12 @@ static Map<FnSymbol*,bool> resolvedFns;
 static Vec<FnSymbol*> resolvedFormals;
 Vec<CallExpr*> callStack;
 
+Vec<Type*> uniquedTypes;  //Used for proactive type-checking
+
 static Vec<CondStmt*> tryStack;
 static bool tryFailure = false;
+
+static bool earlyTypeCheck = false;
 
 static Map<Type*,Type*> runtimeTypeMap; // map static types to runtime types
                                         // e.g. array and domain runtime types
@@ -2420,18 +2424,9 @@ static void resolveNormalCall(CallExpr* call, bool errorCheck) {
 
         FnSymbol *fn;
 
-        fn = best->instantiatedFrom->interfacedGenericFn;
+        if (earlyTypeCheck) {
+          fn = best->instantiatedFrom;
 
-        if (hasImplementsClausesInWhereClause(best->where)) {
-          bool whereResult = addDictionaryForImplementsClausesInWhereClause(best->where,call,info);
-          if (!whereResult) {
-            best = NULL;
-          }
-        }
-
-        if (best) {
-
-          //Vec<ArgSymbol*> actualFormals;
           Vec<Symbol*> formalActuals;
 
           bool valid = computeActualFormalMap(fn, formalActuals, *actualFormals, info);
@@ -2439,51 +2434,86 @@ static void resolveNormalCall(CallExpr* call, bool errorCheck) {
           if (!valid) {
             best = NULL;
           }
-
-          if (fn->hasFlag(FLAG_GENERIC)) {
-
-            //
-            // try to avoid excessive over-instantiation
-            //
-            int i = 0;
-            for_formals(formal, fn) {
-              if (formal->type != dtUnknown) {
-                if (Symbol* actual = formalActuals.v[i]) {
-                  if (actual->hasFlag(FLAG_TYPE_VARIABLE) != formal->hasFlag(FLAG_TYPE_VARIABLE)) {
-                    best = NULL;
-                    break;
-                  }
-                  if (formal->type->symbol->hasFlag(FLAG_GENERIC)) {
-                    Type* vt = actual->getValType();
-                    Type* st = actual->type->scalarPromotionType;
-                    Type* svt = (vt) ? vt->scalarPromotionType : NULL;
-                    if (!canInstantiate(actual->type, formal->type) &&
-                        (!vt || !canInstantiate(vt, formal->type)) &&
-                        (!st || !canInstantiate(st, formal->type)) &&
-                        (!svt || !canInstantiate(svt, formal->type))) {
-                      best = NULL;
-                      break;
-                    }
-                  } else {
-                    if (!canDispatch(actual->type, actual, formal->type, fn, NULL, formal->instantiatedParam)) {
-                      best = NULL;
-                      break;
-                    }
-                  }
-                }
-              }
-              i++;
-            }
-
+          else {
             // Compute the param/type substitutions for generic arguments.
             SymbolMap subs;
             computeGenericSubs(subs, fn, &formalActuals);
             if (subs.n) {
               // If any substitutions were made, instantiate the generic function.
-              if (FnSymbol* ifn = instantiate(fn, &subs, info.call, false))
+              if (FnSymbol* ifn = instantiate(fn, &subs, info.call, false)) {
+                if (ifn->retType == dtUnknown) {
+                  resolveSpecifiedReturnType(ifn);
+                }
                 best = ifn;
+              }
+            }
+          }
+        }
+        else {
+          fn = best->instantiatedFrom->interfacedGenericFn;
+
+          if (hasImplementsClausesInWhereClause(best->where)) {
+            bool whereResult = addDictionaryForImplementsClausesInWhereClause(best->where,call,info);
+            if (!whereResult) {
+              best = NULL;
+            }
+          }
+
+          if (best) {
+
+            //Vec<ArgSymbol*> actualFormals;
+            Vec<Symbol*> formalActuals;
+
+            bool valid = computeActualFormalMap(fn, formalActuals, *actualFormals, info);
+
+            if (!valid) {
+              best = NULL;
             }
 
+            if (fn->hasFlag(FLAG_GENERIC)) {
+
+              //
+              // try to avoid excessive over-instantiation
+              //
+              int i = 0;
+              for_formals(formal, fn) {
+                if (formal->type != dtUnknown) {
+                  if (Symbol* actual = formalActuals.v[i]) {
+                    if (actual->hasFlag(FLAG_TYPE_VARIABLE) != formal->hasFlag(FLAG_TYPE_VARIABLE)) {
+                      best = NULL;
+                      break;
+                    }
+                    if (formal->type->symbol->hasFlag(FLAG_GENERIC)) {
+                      Type* vt = actual->getValType();
+                      Type* st = actual->type->scalarPromotionType;
+                      Type* svt = (vt) ? vt->scalarPromotionType : NULL;
+                      if (!canInstantiate(actual->type, formal->type) &&
+                          (!vt || !canInstantiate(vt, formal->type)) &&
+                          (!st || !canInstantiate(st, formal->type)) &&
+                          (!svt || !canInstantiate(svt, formal->type))) {
+                        best = NULL;
+                        break;
+                      }
+                    } else {
+                      if (!canDispatch(actual->type, actual, formal->type, fn, NULL, formal->instantiatedParam)) {
+                        best = NULL;
+                        break;
+                      }
+                    }
+                  }
+                }
+                i++;
+              }
+
+              // Compute the param/type substitutions for generic arguments.
+              SymbolMap subs;
+              computeGenericSubs(subs, fn, &formalActuals);
+              if (subs.n) {
+                // If any substitutions were made, instantiate the generic function.
+                if (FnSymbol* ifn = instantiate(fn, &subs, info.call, false))
+                  best = ifn;
+              }
+            }
           }
         }
       }
@@ -5345,6 +5375,8 @@ static void convertInterfaceUsesFn(FnSymbol *fn) {
   if (fn->isConvertedInterfaceUser)
     return;
 
+  earlyTypeCheck = true;
+
   fn->isConvertedInterfaceUser = true;
 
   getFunctionsInWhereClause(fn->fnsInInterfaces, witnessObjects, fn->where);
@@ -5363,6 +5395,7 @@ static void convertInterfaceUsesFn(FnSymbol *fn) {
       TypeSymbol *ts = new TypeSymbol("tyvar", pt);
       ts->addFlag(FLAG_NO_COPY);
       ts->addFlag(FLAG_NO_IMPLICIT_COPY);
+      uniquedTypes.add(pt);
       map.put(formal, ts);
     }
   }
@@ -5373,6 +5406,7 @@ static void convertInterfaceUsesFn(FnSymbol *fn) {
   FnSymbol *fn2 = instantiate(fn, &map, NULL);
   fn2->isConvertedInterfaceUser = true;
 
+  fn->addFlag(FLAG_FUNCTION_PROTOTYPE);
   fn->addFlag(FLAG_EXTERN);
   fn->body->replace(new BlockStmt(new CallExpr(PRIM_RETURN, gVoid)));
 
@@ -5409,9 +5443,10 @@ static void convertInterfaceUsesFn(FnSymbol *fn) {
   resolveFormals(fn2);
   resolveFns(fn2);
 
+
   //JDT: Delete??
   fn->removeFlag(FLAG_INVISIBLE_FN);
-  fn->retType = fn2->retType; //JDT: stopgap to see if I can get example working
+  //fn->retType = fn2->retType; //JDT: stopgap to see if I can get example working
 
   /*
   form_Map(FnArgElem, e, fn->fnsInInterfaces) {
@@ -5432,16 +5467,31 @@ static void convertInterfaceUsesFn(FnSymbol *fn) {
     form_Map(SymbolMapElem, e, map) {
       if (TypeSymbol *ts = toTypeSymbol(e->value)) {
         if (formal->type == ts->type) {
-          formal->type = dtAny;
-          formal->defaultExpr->remove();
-          formal->defaultExpr = NULL;
-          formal->typeExpr->remove();
-          formal->typeExpr = NULL;
+          if (!strcmp(formal->name, e->key->name)) {
+            formal->type = dtAny;
+            formal->typeExpr->remove();
+            formal->typeExpr = NULL;
+          }
+          else {
+            formal->type = dtUnknown;
+          }
         }
       }
     }
   }
 
+  form_Map(SymbolMapElem, e, map) {
+    if (TypeSymbol *ts = toTypeSymbol(e->value)) {
+      if (fn2->retType == ts->type) {
+        fn2->retType = dtUnknown;
+        for_formals(formal, fn2) {
+          if (!strcmp(formal->name, e->key->name)) {
+            fn2->retExprType = new BlockStmt(new SymExpr(formal));
+          }
+        }
+      }
+    }
+  }
   Vec<BaseAST*> asts;
   collect_asts(fn2, asts);
   forv_Vec(BaseAST, ast, asts) {
@@ -5456,13 +5506,19 @@ static void convertInterfaceUsesFn(FnSymbol *fn) {
     }
     else if (CallExpr *ce = toCallExpr(ast)) {
       if (SymExpr *se = toSymExpr(ce->baseExpr)) {
+
+        /*
         if (se->var && !strcmp(se->var->name, "=")) {
           if (se->var->defPoint->parentSymbol)
             se->var->defPoint->remove();
           ce->baseExpr->replace(new UnresolvedSymExpr("="));
         }
+        */
+
         if (se->var) {
           if (FnSymbol *fnResolved = toFnSymbol(se->var)) {
+            bool isConvertedMethod = false;
+
             form_Map(FnArgElem, e, fn->fnsInInterfaces) {
               if (fnResolved->instantiatedFrom == e->key->instantiatedFrom) {
                 ce->insertAtHead(new SymExpr(e->value));
@@ -5472,6 +5528,28 @@ static void convertInterfaceUsesFn(FnSymbol *fn) {
                 ce->partialTag = true;
                 ce->replace(new CallExpr(ce));
                 break;
+              }
+            }
+            if (!isConvertedMethod) {
+              // Check to see if any of the unique types are in the arguments.  If so,
+              // we know this function has been stamped out, and we should remove it
+              // as those types don't really exist anywhere else in the program
+
+              bool isStampedOutUniqueFunction = false;
+              for_formals(formal, fnResolved) {
+                form_Map(SymbolMapElem, e, map) {
+                  if (TypeSymbol *ts = toTypeSymbol(e->value)) {
+                    if (formal->type == ts->type) {
+                      isStampedOutUniqueFunction = true;
+                    }
+                  }
+                }
+              }
+              if (isStampedOutUniqueFunction) {
+                //if (se->var->defPoint->parentSymbol)
+                //  se->var->defPoint->remove();
+                //ce->baseExpr->replace(new UnresolvedSymExpr(fnResolved->name));
+                ce->baseExpr->replace(new SymExpr(fnResolved->instantiatedFrom));
               }
             }
           }
@@ -5485,6 +5563,8 @@ static void convertInterfaceUsesFn(FnSymbol *fn) {
   }
 
   fn->interfacedGenericFn = fn2;
+
+  earlyTypeCheck = false;
 }
 
 static void addAdaptationToInterfaceDict(BaseAST *insertBefore, ClassType *interfaceDict,
@@ -6081,8 +6161,24 @@ static void pruneInterfaceGenericFns() {
     if (hasImplementsClausesInWhereClause(fn->where) && fn->hasFlag(FLAG_GENERIC)) {
       if (fn->interfacedGenericFn) {
         fn->interfacedGenericFn->defPoint->remove();
+        //fn->defPoint->remove();
       }
-      //fn->defPoint->remove();
+    }
+    else {
+      bool isProactiveTypeCheckingLeftover = false;
+      forv_Vec(Type, uniqueType, uniquedTypes) {
+        for_formals(formal, fn) {
+          if (formal->type == uniqueType) {
+            isProactiveTypeCheckingLeftover = true;
+            break;
+          }
+        }
+        if (isProactiveTypeCheckingLeftover)
+          break;
+      }
+      if (isProactiveTypeCheckingLeftover) {
+        fn->defPoint->remove();
+      }
     }
   }
   forv_Vec(InterfaceSymbol, is, gInterfaceSymbols) {
