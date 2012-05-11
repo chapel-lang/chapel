@@ -1450,6 +1450,7 @@ proc chpl__supportedDataTypeForBulkTransfer(x) param return true;
 
 
 proc chpl__useBulkTransfer(a:[], b:[]) {
+  if debugDefaultDistBulkTransfer then writeln("chpl__useBulkTransfer");
 
   // constraints specific to a particular domain map array type
   if !a._value.doiCanBulkTransfer() then return false;
@@ -1460,6 +1461,23 @@ proc chpl__useBulkTransfer(a:[], b:[]) {
     if a._value.dom.dsiDim(i).length !=
        b._value.dom.dsiDim(i).length then return false;
   }
+  return true;
+}
+
+proc chpl__useBulkTransferStride(a:[], b:[]) {
+  if debugDefaultDistBulkTransfer then writeln("chpl__useBulkTransferStride");
+
+  // constraints specific to a particular domain map array type
+  if !a._value.doiCanBulkTransferStride() then return false;
+  if !b._value.doiCanBulkTransferStride() then return false;
+
+  for h in [1..a._value.rank] do
+      if a._value.dom.dsiDim(h).stride != b._value.dom.dsiDim(h).stride then return false;
+
+  // total length must be the same in each array ??? 
+  // Acording to the reference A=B is translated into for (a,b) in (A,B) do a=b;
+  // and the zippered iteration is not valid when a.dom.numIndices != b.dom.numIndices
+  if  a._value.dom.dsiNumIndices != b._value.dom.dsiNumIndices then return false;
 
   return true;
 }
@@ -1471,15 +1489,18 @@ inline proc =(a: [], b) {
     compilerError("rank mismatch in array assignment");
   if chpl__isArray(b) && b._value == nil then
     return a;
-
   // This outer conditional must result in a param
   if useBulkTransfer && chpl__isArray(b) &&
      chpl__compatibleForBulkTransfer(a, b) &&
     !chpl__serializeAssignment(a, b) {
-    if chpl__useBulkTransfer(a, b) {
+    if chpl__useBulkTransferStride(a, b) { //First tries the bulkStride
+      a._value.doiBulkTransferStride(b);
+      return a;
+    }else if chpl__useBulkTransfer(a, b) { //If not possible, the plain bulk
       a._value.doiBulkTransfer(b);
       return a;
     }
+    if debugDefaultDistBulkTransfer then writeln("Leaving proc =(a:[],b)");
   }
 
   if chpl__serializeAssignment(a, b) {
@@ -1899,4 +1920,18 @@ proc chpl__initCopy(ir: _iteratorRecord) {
   return A;
 }
 
+proc TestGetsPuts(A:[], B:[])
+{
+  A._value.TestGetsPuts(B);
+}
+
+proc copyBtoC(A:[], B:[])
+{
+  A._value.copyBtoC(B);
+}
+
+/*proc prueba(A:[], B:[])
+{
+  A._value.prueba(B);
+}*/
 }

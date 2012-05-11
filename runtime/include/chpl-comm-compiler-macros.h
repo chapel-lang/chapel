@@ -81,6 +81,23 @@
   chpl_comm_put((void*)(&(localvar)), locale, (void*)addr, sizeof(type), tid, len, ln, fn)
 #endif
 
+#ifdef CHPL_TASK_COMM_GETS
+#define CHPL_COMM_GETS(localvar, dststr, locale, raddr, srcstr, count, strlevels, type, tid, ln, fn) \
+  CHPL_TASK_COMM_GETS(localvar, dststr, locale, (raddr), srcstr, count, strlevels, type, tid, ln, fn)
+#else
+#define CHPL_COMM_GETS(localvar, dststr, locale, raddr, srcstr, count, strlevels, type, tid, ln, fn) \
+  chpl_comm_gets((void*)(&(localvar)), (void*)(&(dststr)), locale, (void*)raddr, (void*)(&srcstr), (void*)(&count), strlevels, sizeof(type), tid, ln, fn)
+#endif
+
+#ifdef CHPL_TASK_COMM_PUTS
+#define CHPL_COMM_PUTS(localvar, dststr, locale, raddr, srcstr, count, strlevels, type, tid, ln, fn) \
+  CHPL_TASK_COMM_PUTS(localvar, dststr, locale, (raddr), srcstr, count, strlevels, type, tid, ln, fn)
+#else
+#define CHPL_COMM_PUTS(localvar, dststr, locale, raddr, srcstr, count, strlevels, type, tid, ln, fn) \
+  chpl_comm_puts((void*)(&(localvar)), (void*)(&(dststr)), locale, (void*)raddr, (void*)(&srcstr), (void*)(&count), strlevels, sizeof(type), tid, ln, fn)
+#endif
+
+
 #define CHPL_COMM_WIDE_GET(local, wide, type, tid, len, ln, fn)  \
   do {                                                                  \
     if (chpl_localeID == (wide).locale)                                 \
