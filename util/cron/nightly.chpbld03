@@ -1,4 +1,4 @@
-#!/usr/bin/tcsh
+#!/usr/bin/env tcsh
 
 #
 # Test Qthreads with CHPL_COMM=none
