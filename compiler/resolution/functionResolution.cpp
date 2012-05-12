@@ -2510,8 +2510,29 @@ static void resolveNormalCall(CallExpr* call, bool errorCheck) {
               computeGenericSubs(subs, fn, &formalActuals);
               if (subs.n) {
                 // If any substitutions were made, instantiate the generic function.
-                if (FnSymbol* ifn = instantiate(fn, &subs, info.call, false))
+                if (FnSymbol* ifn = instantiate(fn, &subs, info.call, false)) {
+                  Vec<CallExpr*> implementsClauses;
+                  getWitnessesInWhereClause(implementsClauses, ifn->where);
+
+                  // TODO: Double check this logic, it may not be valid for all instances
+                  int currentDict = ifn->formals.length - implementsClauses.n + 1;
+                  forv_Vec(CallExpr, implClause, implementsClauses) {
+                    if (DefExpr *de = toDefExpr(ifn->formals.get(currentDict))) {
+                      if (ArgSymbol *as = toArgSymbol(de->sym)) {
+                        addToImplementsSymbolTable(implClause, getScope(ifn), as);
+                        ++currentDict;
+                      }
+                      else {
+                        INT_FATAL("Invariant broken.  Expected ArgSymbol in implements dictionary position");
+                      }
+                    }
+                    else {
+                      INT_FATAL("Invariant broken.  Expected DefExpr in implements dictionary position");
+                    }
+                  }
+
                   best = ifn;
+                }
               }
             }
           }
@@ -5314,7 +5335,7 @@ getFunctionsInWhereClause(Map<FnSymbol*, ArgSymbol*>& fnsInInterfaces,
 
         witnessObjects.add(dict);
 
-        //addToImplementsSymbolTable(ce, dict);
+        //addToImplementsSymbolTable(ce, getScope(fn2), dict);
 
         forv_Vec(FnSymbol, fn, is->functionSignatures) {
           //For now, copy the function prototype and replace the types
@@ -5431,6 +5452,9 @@ static void convertInterfaceUsesFn(FnSymbol *fn) {
     }
   }
 
+  fn2->addFlag(FLAG_ALLOW_REF);
+  resolveFormals(fn2);
+
   Vec<CallExpr*> implementsClauses;
   getWitnessesInWhereClause(implementsClauses, fn2->where);
   int i = 0;
@@ -5439,8 +5463,6 @@ static void convertInterfaceUsesFn(FnSymbol *fn) {
     ++i;
   }
 
-  fn2->addFlag(FLAG_ALLOW_REF);
-  resolveFormals(fn2);
   resolveFns(fn2);
 
 

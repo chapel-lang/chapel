@@ -8,12 +8,12 @@ proc LT(x:int, y:int):bool {
 
 int implements LessThan;
 
-proc ID(x:?T, y:T) where T implements LessThan {  
+proc DoLT(x:?T, y:T):bool where T implements LessThan {  
     return LT(x, y);
 }
 
-proc minFn(x:?T,y :T) where T implements LessThan {
-	if(ID(x,y)) {
+proc minFn(x:?T,y :T):T where T implements LessThan {
+	if(DoLT(x,y)) {
 		return x;
 	}
 	else {
