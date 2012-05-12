@@ -5413,7 +5413,7 @@ static void convertInterfaceUsesFn(FnSymbol *fn) {
     if (formal->type == dtAny) {
       PrimitiveType *pt =  new PrimitiveType(NULL, true);
       pt->refType = new ClassType(CLASS_CLASS);
-      TypeSymbol *ts = new TypeSymbol("tyvar", pt);
+      TypeSymbol *ts = new TypeSymbol(astr(formal->name, ".type"), pt);
       ts->addFlag(FLAG_NO_COPY);
       ts->addFlag(FLAG_NO_IMPLICIT_COPY);
       uniquedTypes.add(pt);
