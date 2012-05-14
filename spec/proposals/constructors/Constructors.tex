@@ -1,0 +1,455 @@
+\sekshun{Classes}
+\label{Classes}
+\index{classes}
+
+[Sections unrelated to constructors have been omitted.]
+
+\section{Constructors}
+\label{Constructors}
+
+A class constructor is a special method bound to a class.\footnote{We expect
+record constructors to be defined similarly.}  In addition to
+the capabilities of a normal method, constructors have an initialization clause
+which can call a base-class constructor and can initialize member fields.  This
+section describes constructors in terms of their declaration syntax, invocation
+syntax and execution semantics.  
+
+\subsection{Constructor Declarations}
+\label{Constructor_Declarations}
+
+A class in Chapel always has at least one constructor associated with it.  If no
+user-defined constructor is supplied, the compiler generates one automatically.
+The compiler-generated constructor is described in section \rsec{The_Compiler_Generated_Constructor}.
+
+A user-defined constructor is a constructor method explicitly declared
+in the program.  Such a constructor declaration has the same
+syntax as a method declaration, except that it is introduced using
+the \chpl{constructor} keyword, and there is no return type specifier.
+Constructor declarations do not have a parentheses-less form.
+
+Constructor declarations have the following syntax.
+\begin{syntax}
+constructor-declaration-statement:
+  linkage-specifier[OPT] `constructor' type-binding constructor-name argument-list 
+    where-clause[OPT] initialization-clause constructor-body
+
+constructor-name:
+  identifier
+
+initialization-clause:
+  initialization
+  { base-class-initializer[OPT] initialization-list[OPT] }
+
+base-class-initializer:
+  `super' argument-list ;
+  `super' . `__init__' argument-list ;
+
+initialization-list:
+  initialization
+  initialization-list ; initialization
+
+initialization:
+  expression
+
+\end{syntax}
+
+Aside from the \chpl{constructor} keyword, the syntax elements of a constructor,
+including \sntx{linkage-specifier}, \sntx{type-binding} and \sntx{where-clause}
+have the same syntax as for a method declaration.  In contrast, however,
+a constructor declaration has two bodies associated with it.  The first is
+an \sntx{initialization-clause} and the second is the \sntx{constructor-body}.
+Statements within a \sntx{constructor-body} have the same syntax as
+a \sntx{function-body}. An \sntx{initialization-clause} has the same syntax as
+a \sntx{function-body} with some restrictions:
+\begin{itemize}
+\item Only a \sntx{base-class-initializer} call and/or initialization statements
+may appear within an \sntx{initialization-clause}.
+\item If present, the \sntx{base-class-initializer} call must appear before any other statement.
+\item Within the \sntx{initialization-clause}, method invocations which would
+access the object being constructed (i.e. \chpl{this}) are disallowed.  This
+restriction includes accessor functions.  
+\item The assignment operator \chpl{=} means initialization, not assignment.
+That is, assignment semantics are not performed.
+\end{itemize}
+\noindent
+In the context of an
+\sntx{initialization-clause}, all references to field names access the contents
+of that field directly.  That is, neither compiler-generated nor user-supplied
+accessor functions are invoked.  Assignment to a field is equivalent to
+initialization.  Reading the value out of a field returns the raw data contained
+therein, without causing any side-effects.  Within
+an \sntx{initializer-clause}, the \chpl{this} keyword may be used to
+disambiguate field names from argument names.  However, in that context it is used
+only to establish the scope of the (field name) identifier which follows; it is
+not interpreted as a reference to the object being constructed.
+
+Within an \sntx{initialization-clause}, conditional expressions depending on a
+run-time value are disallowed.  Conditional expressions depending
+on \chpl{param} or \chpl{type} expressions are permitted.  Similarly,
+normal \chpl{for} and \chpl{forall} loops are disallowed, but loops depending on
+a \chpl{param} index are permitted.  Parallel constructs are permitted; however,
+if any are present, the entire \sntx{initialization-clause} acts as an implicit
+\chpl{sync} statement.
+
+\begin{chapelexample}{fieldInitializers.chpl}
+This example shows a simple class declaration containing a user-defined constructor.
+\begin{chapel}
+class Point { 
+  var x,y : real; 
+  constructor Point(a : real, b: real)
+  { x = a; 			// Initializes field x with the value a.
+    this.y = b;     // Initializes field y with the value b.
+  }
+  {}
+}
+\end{chapel}
+\end{chapelexample}
+\noindent
+Because they do not reference any object (and most particularly do not referenct
+the object being created), static methods may be
+invoked within an \sntx{initialization-clause}.
+
+\begin{rationale}
+The \sntx{constructor-body} is supplied as a place to perform common
+post-initialization steps.  Since execution of the \sntx{constructor-body}
+follows the initialization point, the same steps could be performed at the call
+site (i.e. where the new expression appears).  However, good coding practice
+would suggest migrating these common steps into the constructor itself.
+
+Suppose, for example, that we wished to increment a count each time one
+of the above \chpl{Point} objects was created.  If constructors did not contain
+a body, it would be the responsibility of the caller to increment this count.
+\begin{chapel}
+var pointCount = 0;
+
+var p0 = new Point(0.0, 0.0);
+pointCount += 1;
+var p1 = new Point(0.0, 1.0);
+pointCount += 1;
+var p2 = new Point(1.0, 0.0);
+pointCount += 1;
+var p3 = new Point(1.0, 1.0);
+pointCount += 1;
+// Very cumbersome!
+\end{chapel}
+
+On the other hand, if constructor bodies are allowed, we can have:
+\begin{chapel}
+var pointCount = 0;
+
+constructor Point.__init__(a:real = 0.0, b:real = 0.0)
+{ x = a; y = b; }
+{ pointCount += 1; }
+
+var p0 = new Point(0.0, 0.0);
+var p1 = new Point(0.0, 1.0);
+var p2 = new Point(1.0, 0.0);
+var p3 = new Point(1.0, 1.0);
+// Not so bad....
+\end{chapel}
+\end{rationale}
+
+\begin{openissue}
+The naming convention for constructors has not been determined.  If we follow
+the C++ model, then we do not need a new keyword.  We can use the \chpl{proc}
+keyword to introduce a constructor, and then key off the fact that the name of
+the procedure matches the name of the class.
+
+The alternative --- using a \chpl{constructor} (or equivalent) keyword --- would
+permit the constructors in a class to be named arbitrarily.  This would have the
+disadvantage of making constructor calls more verbose in general, since they
+would need to be qualified by the class name.  For example:
+\begin{chapel}
+var myFoo = new foo.create();
+\end{chapel}
+On the other hand, it enables constructor names which are much more
+descriptive.  For example:
+\begin{chapel}
+constructor foo.copy(oldFoo: foo) 
+{ a = oldFoo.a; b = oldFoo.b; }
+{ }
+\end{chapel}
+This represents a copy constructor (in the C++ sense).  One could use similarly
+mnemonic names for default constructors, pointer-stealing constructors and so
+on.  
+
+A remedy for the verboseness of this latter approach would be to select a
+stereotyped name (for example \chpl{__init__}) which would be implied if only
+the class name were supplied in a constructor call.  Thus \chpl{var myFoo = new
+foo();} would be equivalent to \chpl{var myFoo = new foo.__init__()}.
+\end{openissue}
+
+\begin{chapelexample}{constructor.chpl}
+The following example shows a class with two constructors:
+\begin{chapel}
+class MessagePoint {
+  var x, y: real;
+  var message: string;
+
+  constructor byLocation(x: real, y: real) 
+  { this.x = x; this.y = y; this.message = "a point"; }
+  {} 
+
+  constructor byMessage(message: string) 
+  { this.x = 0; this.y = 0; this.message = message; }
+  {}
+}  // class MessagePoint
+
+// create two objects
+var mp1 = new MessagePoint.byLocation(1.0,2.0);
+var mp2 = new MessagePoint.byMessage("point mp2");
+\end{chapel}
+\begin{chapelpost}
+writeln(mp1);
+writeln(mp2);
+\end{chapelpost}
+\begin{chapeloutput}
+{x = 1.0, y = 2.0, message = a point}
+{x = 0.0, y = 0.0, message = point mp2}
+\end{chapeloutput}
+The first constructor lets the user specify the initial coordinates
+and the second constructor lets the user specify the initial message
+when creating a \chpl{MessagePoint}.
+\end{chapelexample}
+
+\subsubsection{The Compiler-Generated Constructor}
+\label{The_Compiler_Generated_Constructor}
+\index{classes!constructors!compiler-generated}
+\index{constructors!compiler-generated}
+\index{compiler-generated constructors}
+
+If no user-defined constructor is supplied for a given class, the compiler
+provides one.  The compiler-generated constructor uses the default constructor
+name, so it is invoked when just the class name is supplied in
+a \sntx{new-expression}.  
+
+The compiler-generated constructor is defined as follows.  Its argument list
+contains one argument for each field defined in the class.  Each argument is
+named identically with the corresponding field, and has has a default value
+which is provided either by the field initializer in the class declaration, if
+present, or by the type-dependent default value.  The arguments appear in the
+order in which the correponding fields appear in the class declaration (i.e. in
+lexical order).
+
+The \sntx{initialization-clause} of the compiler-generated
+constructor initializes each field with the value of the corresponding
+argument.  These initializations appear in the order in which the fields were
+declared in the class declaration (i.e. in lexical order).  The body of the
+compiler-generated constructor contains a call to the \chpl{initialize} method
+for the class if one is defined; otherwise, it is empty.  Note that default
+initialization is not required, because every field is initialized explicitly.
+
+If the class is a derived class, the following additions are made: The argument
+list is expanded by prepending arguments corresponding to the fields in the base
+class and its base class, and so on recursively.  This is done so that the
+fields belonging to the most ancient ancestor class appear first and in the
+order declared in that class.  The fields from the next-most ancient ancestor
+then appear --- also in lexical order --- and so on.  Any ancestor field name
+which is shadowed by one of its descendent classes is omitted from the argument
+list.  The \sntx{initialization-clause} contains a base-class constructor call
+as its first statement.  All of the formal arguments not used to initialize
+fields in the most-derived class are passed as named arguments to the
+base-class constructor --- in the same order in which they appear in the
+compiler-generated constructor.
+
+\begin{chapelexample}{compilerGeneratedConstructor.chpl}
+Given the class
+\begin{chapel}
+class C {
+  var x: int;
+  var y: real = 3.14;
+  var z: string = "Hello, World!";
+}
+\end{chapel}
+the compiler will generate a constructor equivalent to the following:
+\begin{chapel}
+constructor C.__init__(x:int = 0, y:real = 3.14, z:string = "Hello, World!")
+{ this.x = x; this.y = y; this.z = z; }
+{}
+\end{chapel}
+The \chpl{x} argument has the default value \chpl{0}, since no initializer for
+field \chpl{x} is supplied in the class declaration. The \chpl{y} and \chpl{z}
+arguments have the default values \chpl{3.14} and \chpl{"Hello, World\!"},
+copied from the initializer expressions in their respective field declarations.
+\end{chapelexample}
+
+Because argument defaults are provided as part of the compiler-generated
+constructor, some, none or all of the default field initializers can be
+overridden in a constructor call (i.e. a \chpl{new} expression).
+
+\begin{chapelexample}{callingGeneratedConstructor.chpl}
+For example, instances of the class \chpl{C} defined above can be created by calling the compiler-generated constructor as follows:
+\begin{itemize}
+\item The call \chpl{new C()} is equivalent to \chpl{C(0,3.14,"Hello, World\!")}.
+\item The call \chpl{new C(2)} is equivalent to \chpl{C(2,3.14,"Hello, World\!")}.
+\item The call \chpl{new C(z="")} is equivalent to \chpl{C(0,3.14,"")}.
+\item The call \chpl{new C(2, z="")} is equivalent to \chpl{C(2,3.14,"")}.
+\item The call \chpl{new C(0,0.0,"")} specifies the initial values for all fields explicitly.
+\end{itemize}
+\begin{chapelpre}
+class C {
+  var x: int;
+  var y: real = 3.14;
+  var z: string = "Hello, World!";
+}
+\end{chapelpre}
+\begin{chapelpost}
+var c1 = new C();
+var c2 = new C(2);
+var c3 = new C(z="");
+var c4 = new C(2, z="");
+var c5 = new C(0, 0.0, "");
+writeln((c1, c2, c3, c4, c5));
+\end{chapelpost}
+\begin{chapeloutput}
+({x = 0, y = 3.14, z = Hello, World!}, {x = 2, y = 3.14, z = Hello, World!}, {x = 0, y = 3.14, z = }, {x = 2, y = 3.14, z = }, {x = 0, y = 0.0, z = })
+\end{chapeloutput}
+\end{chapelexample}
+
+\begin{example}
+As an additional example, let us consider a derived class.
+\begin{chapel}
+class B {
+  var a,b,c,d,e,f: int;
+}
+class D : B {
+  var d,e,f,g,h: real;
+}
+\end{chapel}
+The compiler-generated constructor will be equivalent to:
+\begin{chapel}
+constructor D.__init__(a:int = 0, b:int = 0, c:int = 0, 
+                       d:real = 0.0, e:real = 0.0, f:real = 0.0, 
+                       g:real = 0.0, h:real = 0.0)
+{ super.__init__(a = a, b = b, c = c);
+  this.d = d; this.e = e; this.f = f; this.g = g; this.h = h; }
+{}
+\end{chapel}
+Note that this implies the existence of a default-named base-class constructor
+taking three arguments.  The compiler-generated constructor will fulfill these
+requirements.  Otherwise (i.e. if there are other user-defined constructors
+in the base class), the user must supply a matching constructor or a resolution
+error can occur.
+\end{example}
+
+\subsubsection{Default Constructors}
+\label{Default_Constructors}
+
+As in C++, the default constructor for a class is a constructor whose argument
+list is zero-length.  Note that the compiler-generated constructor can always be
+called as a default constructor, since it provides a default value for each of
+its arguments.
+
+\subsection{Constructor Invocation}
+\label{Constructor_Invocation}
+
+A constructor is invoked using the \chpl{new} operator.  The rest of the
+expression looks like a static method call, supplying the name of the
+constructor (qualified by the class name) and a list of constructor arguments.
+Constructor invocations do not have a parentheses-less form.  If the constructor
+name is omitted, the default constructor name \chpl{__init__} is used.  The
+usual function resolution rules (\rsec{Function_Resolution}) are applied to
+select among overloaded constructor declarations.
+
+\begin{syntax}
+constructor-call-expression:
+  `new' class-name . constructor-name argument-list
+  `new' class-name argument-list
+
+class-name:
+  identifier
+\end{syntax}
+
+Constructors for generic classes (\rsec{Generic_Types}) have \chpl{param}
+and \chpl{type} argument which are handled differently and may need to satisfy
+additional requirements. See Section~\ref{Generic_User_Constructors} for
+details.  
+
+\subsection{Constructor Semantics}
+\label{Constructor_Semantics}
+
+The semantics of a constructor are the actions which occur as a result of a
+constructor invocation.  These can be conceptually divided
+into four phases: allocation, explicit initialization, default initialization and
+construction.  \emph{Allocation} reserves enough memory to represent the object
+instance; \emph{Explicit initialization} is comprised of the statments in
+the \sntx{initialization-clause}; \emph{default initialization} provides
+default values for fields which are not explicitly initialized in
+the \sntx{initialization-clause}; \emph{construction} consists of the
+statements contained in the \sntx{constructor-body}.  
+The implied ordering\footnote{I intend to insert some verbiage elsewhere in the
+Chapel spec indicating that the compiler is free to reorder or execute in
+parallel statements which have no implied temporal dependencies.  The intention
+is provide the compiler maximum leeway for optimization, and to guide
+implementors toward an execution model that is massively parallel and
+data-driven, while still allowing programmers to reason in terms of an ordered
+sequence of steps.} of these phases is: allocation, then explicit
+initialization, then default initialization, then construction.  We define the
+\emph{initialization point} as lying after default initialization is complete and
+before construction has begun.
+
+Allocation consists of reserving on the heap (managed by the current locale)
+sufficient memory to represent the object being created.  This quantity includes
+all of the non-\chpl{param} and non-\chpl{type} fields declared in the
+most-derived class, plus all of those declared in a base-class (if this
+a derived class) and so on, recursively.
+
+%TODO <hilde>: Can records be created using 'new'?  How would we store the
+%result?
+
+Explicit initialization is quite flexible.  It not only allows the constructor
+author to rename arguments, but allows routines visible within the scope of
+the \sntx{initialization-clause} to be invoked.  Invocations of methods of this
+class on \emph{other instances} of the class is permitted.  Only method
+invocations on \emph{this} instance are prohibited, for the reason that this
+instance has not yet reached its initialization point.
+
+Default initialization provides initial values for fields which are not
+explicitly initialized in the \sntx{initialization-clause} as follows:  The
+compiler creates a list of all of the fields defined in this class (excluding
+base-class fields).  It then scans the \sntx{initialization-clause} and removes
+from the list any fields which appear on the left side of an initialization
+expression at least once.  It is an error for any field to be read (i.e. used as
+an rvalue in an expression, or as an argument (except one having \chpl{out} intent)
+before it has been explicitly initialized.  
+A default initializer is created for each field remaining on the list.  Default
+initializers are added to the constructor implementation in the order in which
+the corresponding fields appear in the class declaration (i.e. in lexical
+order).  A default initializer moves a default value into the corresponding
+field.  If a default value is provided as part of the field declaration, that
+value is used.  Otherwise, a type-dependent default value is used
+(see \rsec{Default_Values_For_Types}).
+
+If the class is a derived class, the \sntx{initialization-clause} is also
+checked for the presence of a base-class constructor call.  If none is present,
+then a call to the default base-class constructor is added implicitly.
+Whether invoked implicitly or explicitly, the base-class constructor runs to
+completion --- executing both of the initialization phases and the construction
+phase --- before returning.  Any methods invoked on \chpl{this} in
+the \sntx{constructor-body} of a base-class constructor are dispatched as if the
+run-time type of the object is that of the base class, not of the most-derived
+class.  This prevents a virtual method in the most-derived class from being
+invoked before the object has reached its initialization point.  Because the
+base-class constructor call always appears first in the initialization clause,
+the base-class subobject reaches its initialization point before any of the
+fields declared in the derived class is initialized.
+
+\subsubsection{Guaranteed Initialization}
+\label{Guaranteed_Initialization}
+
+A consequence of the default initialization phase and the automatic insertion of
+missing initializers by the compiler is that by the time execution reaches the
+initialization point, every field in the object has been initialized to a known
+value.  This property is known as \emph{guaranteed initialization}, and it supplies an
+important semantic meaning to the initialization point.
+
+\subsection{Inheriting from Multiple Classes}
+\label{Inheriting_from_Multiple_Classes}
+\index{multiple inheritance}
+\index{inheritance!multiple}
+\index{classes!inheritance!multiple}
+
+The current constructor story does not support multiple class inheritance.
+Single-class, multiple-interface inheritance is not ruled out.
+
+
