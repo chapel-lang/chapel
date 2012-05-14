@@ -1,3 +1,10 @@
+%This source file is an excerpt of the Classes chapter in the main spec,
+%modified to reflect the "new constructor story".
+
+%This version is updated with comments from Vass.  The main change involves
+%implicit pre-initialization with type-default values (usually zero cast to the
+%corresponding fundamental type.
+
 \sekshun{Classes}
 \label{Classes}
 \index{classes}
@@ -73,7 +80,7 @@ That is, assignment semantics are not performed.
 \end{itemize}
 \noindent
 In the context of an
-\sntx{initialization-clause}, all references to field names access the contents
+\sntx{initialization-clause}, all references to field names access the content
 of that field directly.  That is, neither compiler-generated nor user-supplied
 accessor functions are invoked.  Assignment to a field is equivalent to
 initialization.  Reading the value out of a field returns the raw data contained
@@ -370,9 +377,11 @@ details.
 
 The semantics of a constructor are the actions which occur as a result of a
 constructor invocation.  These can be conceptually divided
-into four phases: allocation, explicit initialization, default initialization and
+into five phases: allocation, zero initialization, explicit initialization,
+default initialization and
 construction.  \emph{Allocation} reserves enough memory to represent the object
-instance; \emph{Explicit initialization} is comprised of the statments in
+instance; \emph{zero initialization} fills the newly-allocated object with
+zeroes; \emph{Explicit initialization} is comprised of the statments in
 the \sntx{initialization-clause}; \emph{default initialization} provides
 default values for fields which are not explicitly initialized in
 the \sntx{initialization-clause}; \emph{construction} consists of the
@@ -383,7 +392,7 @@ parallel statements which have no implied temporal dependencies.  The intention
 is provide the compiler maximum leeway for optimization, and to guide
 implementors toward an execution model that is massively parallel and
 data-driven, while still allowing programmers to reason in terms of an ordered
-sequence of steps.} of these phases is: allocation, then explicit
+sequence of steps.} of these phases is: allocation and zero initialization, then explicit
 initialization, then default initialization, then construction.  We define the
 \emph{initialization point} as lying after default initialization is complete and
 before construction has begun.
@@ -396,10 +405,18 @@ a derived class) and so on, recursively.
 
 %TODO <hilde>: Can records be created using 'new'?  How would we store the
 %result?
+% This question is addressed in the emerging proposal for explicit reference assignment.
 
-Explicit initialization is quite flexible.  It not only allows the constructor
+Explicit initialization consists of the statements within the initialization
+clause.  The initialization clause must not contain run-time iteration or
+conditionals.  That is, it must resolve to straight-line code.\footnote{This
+restriction allows the compiler to determine which fields have been initialized
+explicitly, so it can insert the required default initializations.}
+Aside from that restriction, it is quite flexible in its content.  It not only allows the constructor
 author to rename arguments, but allows routines visible within the scope of
-the \sntx{initialization-clause} to be invoked.  Invocations of methods of this
+the \sntx{initialization-clause} to be invoked.  The initializer for a given
+field may depend on the initial values of other fields, and the given field may be
+initialized multiple times.  Invocations of methods of this
 class on \emph{other instances} of the class is permitted.  Only method
 invocations on \emph{this} instance are prohibited, for the reason that this
 instance has not yet reached its initialization point.
@@ -451,5 +468,4 @@ important semantic meaning to the initialization point.
 
 The current constructor story does not support multiple class inheritance.
 Single-class, multiple-interface inheritance is not ruled out.
-
 
