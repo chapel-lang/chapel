@@ -1,0 +1,9 @@
+config params for compilation:
+  CHPL_HOST_PLATFORM=
+  CHPL_TARGET_PLATFORM=
+  CHPL_HOST_COMPILER=
+  CHPL_TARGET_COMPILER=
+  CHPL_TASKS=
+  CHPL_THREADS=
+  CHPL_COMM=
+Hello, world!
