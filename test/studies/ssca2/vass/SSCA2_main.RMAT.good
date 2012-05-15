@@ -538,7 +538,7 @@ edge (512) : ((start = 64, end = 46), 54)
 
 Vertex Set in G:[1..64]
 # of raw edges generated  512
-# of duplicate edges      0
+# of duplicate edges      not counted
 # of self edges           130
 # of edges in final graph 302
 
