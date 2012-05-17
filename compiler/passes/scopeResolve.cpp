@@ -1,3 +1,6 @@
+// scopeResolve.cpp
+//
+
 #include "astutil.h"
 #include "build.h"
 #include "expr.h"
@@ -6,6 +9,14 @@
 #include "scopeResolve.h"
 #include "stringutil.h"
 #include "symbol.h"
+
+
+//
+// static functions (forward declaration)
+//
+static void build_type_constructor(ClassType* ct);
+static void build_constructor(ClassType* ct);
+
 
 //
 // The symbolTable maps BaseAST* pointers to entries based on scope
@@ -427,8 +438,15 @@ static void resolveEnumeratedTypes() {
 }
 
 
-/********* build constructor ***************/
-void build_type_constructor(ClassType* ct) {
+/********* build constructors ***************/
+void build_constructors(ClassType* ct)
+{
+  build_type_constructor(ct);
+  build_constructor(ct);
+}
+
+
+static void build_type_constructor(ClassType* ct) {
   if (ct->defaultTypeConstructor)
     return;
 
@@ -570,8 +588,8 @@ void build_type_constructor(ClassType* ct) {
 }
 
 
-void build_constructor(ClassType* ct) {
-  if (ct->defaultConstructor)
+static void build_constructor(ClassType* ct) {
+  if (ct->initializer)
     return;
 
   SET_LINENO(ct);
@@ -583,7 +601,7 @@ void build_constructor(ClassType* ct) {
   FnSymbol* fn = new FnSymbol(astr("_construct_", ct->symbol->name));
   fn->addFlag(FLAG_DEFAULT_CONSTRUCTOR);
   fn->addFlag(FLAG_CONSTRUCTOR);
-  ct->defaultConstructor = fn;
+  ct->initializer = fn;
   fn->cname = astr("_construct_", ct->symbol->cname);
   fn->addFlag(FLAG_TEMP); // compiler inserted
 
@@ -638,17 +656,16 @@ void build_constructor(ClassType* ct) {
     if (isClass(ct)) {
       if (ct->dispatchParents.n > 0 && !ct->symbol->hasFlag(FLAG_EXTERN)) {
         // This class has a parent class.
-        if (!ct->dispatchParents.v[0]->defaultConstructor) {
-          // If it doesn't yet have a default constructor, make one.
-          build_type_constructor(toClassType(ct->dispatchParents.v[0]));
-          build_constructor(toClassType(ct->dispatchParents.v[0]));
+        if (!ct->dispatchParents.v[0]->initializer) {
+          // If it doesn't yet have an initializer, make one.
+          build_constructors(toClassType(ct->dispatchParents.v[0]));
         }
 
         // Get the parent constructor.
         // Note that since we only pay attention to the first entry in the
         // dispatchParents list, we are effectively implementing
         // single class inheritance, multiple interface inheritance.
-        FnSymbol* superCtor = ct->dispatchParents.v[0]->defaultConstructor;
+        FnSymbol* superCtor = ct->dispatchParents.v[0]->initializer;
 
         // Create a call to the superclass constructor.
         superCall = new CallExpr(superCtor->name);
@@ -1092,8 +1109,7 @@ void scopeResolve(void) {
   //
   forv_Vec(ClassType, ct, gClassTypes) {
     SET_LINENO(ct->symbol);
-    build_type_constructor(ct);
-    build_constructor(ct);
+    build_constructors(ct);
   }
 
   //

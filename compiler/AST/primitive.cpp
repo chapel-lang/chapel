@@ -99,7 +99,7 @@ static Type*
 returnIteratorType(CallExpr* call) {
   Type* ict = call->get(1)->typeInfo();
   INT_ASSERT(ict->symbol->hasFlag(FLAG_ITERATOR_CLASS));
-  return ict->defaultConstructor->getReturnSymbol()->type;
+  return ict->initializer->getReturnSymbol()->type;
 }
 
 static Type*

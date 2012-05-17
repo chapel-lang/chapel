@@ -246,9 +246,9 @@ static bool typeHasRefField(Type *type) {
 //
 static FnSymbol*
 resolveUninsertedCall(Type* type, CallExpr* call) {
-  if (type->defaultConstructor) {
-    if (type->defaultConstructor->instantiationPoint)
-      type->defaultConstructor->instantiationPoint->insertAtHead(call);
+  if (type->initializer) {
+    if (type->initializer->instantiationPoint)
+      type->initializer->instantiationPoint->insertAtHead(call);
     else
       type->symbol->defPoint->insertBefore(call);
   } else
@@ -367,7 +367,7 @@ const char* toString(CallInfo* info) {
       str = astr(str, info->actualNames.v[i], "=");
     VarSymbol* var = toVarSymbol(info->actuals.v[i]);
     if (info->actuals.v[i]->type->symbol->hasFlag(FLAG_ITERATOR_RECORD) &&
-        info->actuals.v[i]->type->defaultConstructor->hasFlag(FLAG_PROMOTION_WRAPPER))
+        info->actuals.v[i]->type->initializer->hasFlag(FLAG_PROMOTION_WRAPPER))
       str = astr(str, "promoted expression");
     else if (info->actuals.v[i] && info->actuals.v[i]->hasFlag(FLAG_TYPE_VARIABLE))
       str = astr(str, "type ", toString(info->actuals.v[i]->type));
@@ -551,7 +551,7 @@ protoIteratorClass(FnSymbol* fn) {
   ii->hasMore = protoIteratorMethod(ii, "hasMore", dtInt[INT_SIZE_DEFAULT]);
   ii->getValue = protoIteratorMethod(ii, "getValue", fn->retType);
 
-  ii->irecord->defaultConstructor = fn;
+  ii->irecord->initializer = fn;
   ii->irecord->scalarPromotionType = fn->retType;
   fn->retType = ii->irecord;
   fn->retTag = RET_VALUE;
@@ -577,7 +577,7 @@ protoIteratorClass(FnSymbol* fn) {
   ii->getIterator->insertAtTail(new CallExpr(PRIM_SETCID, ret));
   ii->getIterator->insertAtTail(new CallExpr(PRIM_RETURN, ret));
   fn->defPoint->insertBefore(new DefExpr(ii->getIterator));
-  ii->iclass->defaultConstructor = ii->getIterator;
+  ii->iclass->initializer = ii->getIterator;
   resolvedFns.put(ii->getIterator, true);
 }
 
@@ -2773,8 +2773,7 @@ static ClassType* createAndInsertFunParentClass(CallExpr *call, const char *name
   VarSymbol* parent_super = new VarSymbol("super", dtObject);
   parent_super->addFlag(FLAG_SUPER_CLASS);
   parent->fields.insertAtHead(new DefExpr(parent_super));
-  build_constructor(parent);
-  build_type_constructor(parent);
+  build_constructors(parent);
 
   return parent;
 }
@@ -2997,8 +2996,7 @@ createFunctionAsValue(CallExpr *call) {
   super->addFlag(FLAG_SUPER_CLASS);
   ct->fields.insertAtHead(new DefExpr(super));
 
-  build_constructor(ct);
-  build_type_constructor(ct);
+  build_constructors(ct);
 
   FnSymbol *thisMethod = new FnSymbol("this");
   thisMethod->addFlag(FLAG_FUNCTION_THIS);
@@ -3058,7 +3056,7 @@ createFunctionAsValue(CallExpr *call) {
   FnSymbol *wrapper = new FnSymbol("wrapper");
   wrapper->addFlag(FLAG_INLINE);
 
-  wrapper->insertAtTail(new CallExpr(PRIM_RETURN, new CallExpr(PRIM_CAST, parent->symbol, new CallExpr(ct->defaultConstructor))));
+  wrapper->insertAtTail(new CallExpr(PRIM_RETURN, new CallExpr(PRIM_CAST, parent->symbol, new CallExpr(ct->initializer))));
 
   call->getStmtExpr()->insertBefore(new DefExpr(wrapper));
 
@@ -3566,7 +3564,7 @@ preFold(Expr* expr) {
         call->insertAtTail(tmp);
       }
     } else if (call->isPrimitive(PRIM_TO_LEADER)) {
-      FnSymbol* iterator = call->get(1)->typeInfo()->defaultConstructor->getFormal(1)->type->defaultConstructor;
+      FnSymbol* iterator = call->get(1)->typeInfo()->initializer->getFormal(1)->type->initializer;
       CallExpr* leaderCall;
       if (FnSymbol* leader = iteratorLeaderMap.get(iterator))
         leaderCall = new CallExpr(leader);
@@ -3579,7 +3577,7 @@ preFold(Expr* expr) {
       call->replace(leaderCall);
       result = leaderCall;
     } else if (call->isPrimitive(PRIM_TO_FOLLOWER)) {
-      FnSymbol* iterator = call->get(1)->typeInfo()->defaultConstructor->getFormal(1)->type->defaultConstructor;
+      FnSymbol* iterator = call->get(1)->typeInfo()->initializer->getFormal(1)->type->initializer;
       CallExpr* followerCall;
       if (FnSymbol* follower = iteratorFollowerMap.get(iterator))
         followerCall = new CallExpr(follower);
@@ -4408,14 +4406,14 @@ insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
 
 static void instantiate_default_constructor(FnSymbol* fn) {
   //
-  // instantiate default constructor
+  // instantiate initializer
   //
   if (fn->instantiatedFrom) {
-    INT_ASSERT(!fn->retType->defaultConstructor);
+    INT_ASSERT(!fn->retType->initializer);
     FnSymbol* instantiatedFrom = fn->instantiatedFrom;
     while (instantiatedFrom->instantiatedFrom)
       instantiatedFrom = instantiatedFrom->instantiatedFrom;
-    CallExpr* call = new CallExpr(instantiatedFrom->retType->defaultConstructor);
+    CallExpr* call = new CallExpr(instantiatedFrom->retType->initializer);
     for_formals(formal, fn) {
       if (formal->type == dtMethodToken || formal == fn->_this) {
         call->insertAtTail(formal);
@@ -4432,9 +4430,9 @@ static void instantiate_default_constructor(FnSymbol* fn) {
     }
     fn->insertBeforeReturn(call);
     resolveCall(call);
-    fn->retType->defaultConstructor = call->isResolved();
-    INT_ASSERT(fn->retType->defaultConstructor);
-    //      resolveFns(fn->retType->defaultConstructor);
+    fn->retType->initializer = call->isResolved();
+    INT_ASSERT(fn->retType->initializer);
+    //      resolveFns(fn->retType->initializer);
     call->remove();
   }
 }
@@ -4730,18 +4728,18 @@ addToVirtualMaps(FnSymbol* pfn, ClassType* ct) {
             resolveFns(fn);
             if (fn->retType->symbol->hasFlag(FLAG_ITERATOR_RECORD) &&
                 pfn->retType->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
-              if (!isSubType(fn->retType->defaultConstructor->iteratorInfo->getValue->retType,
-                  pfn->retType->defaultConstructor->iteratorInfo->getValue->retType)) {
+              if (!isSubType(fn->retType->initializer->iteratorInfo->getValue->retType,
+                  pfn->retType->initializer->iteratorInfo->getValue->retType)) {
                 USR_FATAL_CONT(pfn, "conflicting return type specified for '%s: %s'", toString(pfn),
-                               pfn->retType->defaultConstructor->iteratorInfo->getValue->retType->symbol->name);
+                               pfn->retType->initializer->iteratorInfo->getValue->retType->symbol->name);
                 USR_FATAL_CONT(fn, "  overridden by '%s: %s'", toString(fn),
-                               fn->retType->defaultConstructor->iteratorInfo->getValue->retType->symbol->name);
+                               fn->retType->initializer->iteratorInfo->getValue->retType->symbol->name);
                 USR_STOP();
               } else {
                 pfn->retType->dispatchChildren.add_exclusive(fn->retType);
                 fn->retType->dispatchParents.add_exclusive(pfn->retType);
-                Type* pic = pfn->retType->defaultConstructor->iteratorInfo->iclass;
-                Type* ic = fn->retType->defaultConstructor->iteratorInfo->iclass;
+                Type* pic = pfn->retType->initializer->iteratorInfo->iclass;
+                Type* ic = fn->retType->initializer->iteratorInfo->iclass;
                 pic->dispatchChildren.add_exclusive(ic);
                 ic->dispatchParents.add_exclusive(pic);
                 continue; // do not add to virtualChildrenMap; handle in _getIterator
@@ -5146,9 +5144,9 @@ static void insertRuntimeTypeTemps() {
         ts->hasFlag(FLAG_HAS_RUNTIME_TYPE) &&
         !ts->hasFlag(FLAG_GENERIC)) {
       VarSymbol* tmp = newTemp("_runtime_type_tmp_", ts->type);
-      ts->type->defaultConstructor->insertBeforeReturn(new DefExpr(tmp));
+      ts->type->initializer->insertBeforeReturn(new DefExpr(tmp));
       CallExpr* call = new CallExpr("chpl__convertValueToRuntimeType", tmp);
-      ts->type->defaultConstructor->insertBeforeReturn(call);
+      ts->type->initializer->insertBeforeReturn(call);
       resolveCall(call);
       resolveFns(call->isResolved());
       valueToRuntimeTypeMap.put(ts->type, call->isResolved());
@@ -5188,7 +5186,7 @@ static void resolveRecordInitializers() {
         } else if (type->symbol->hasFlag(FLAG_DISTRIBUTION)) {
           Symbol* tmp = newTemp("_distribution_tmp_");
           init->getStmtExpr()->insertBefore(new DefExpr(tmp));
-          CallExpr* classCall = new CallExpr(type->getField("_valueType")->type->defaultConstructor);
+          CallExpr* classCall = new CallExpr(type->getField("_valueType")->type->initializer);
           CallExpr* move = new CallExpr(PRIM_MOVE, tmp, classCall);
           init->getStmtExpr()->insertBefore(move);
           resolveCall(classCall);
@@ -5206,8 +5204,8 @@ static void resolveRecordInitializers() {
             fn->removeFlag(FLAG_SPECIFIED_RETURN_TYPE);
           init->replace(init->get(1)->remove());
         } else {
-          INT_ASSERT(type->defaultConstructor);
-          CallExpr* call = new CallExpr(type->defaultConstructor);
+          INT_ASSERT(type->initializer);
+          CallExpr* call = new CallExpr(type->initializer);
           init->replace(call);
           resolveCall(call);
           if (call->isResolved())
@@ -5459,8 +5457,8 @@ static void removeUnusedFunctions() {
 
 static bool
 isUnusedClass(ClassType *ct) {
-  // FALSE if default constructors are used
-  if (resolvedFns.get(ct->defaultConstructor) ||
+  // FALSE if initializers are used
+  if (resolvedFns.get(ct->initializer) ||
       resolvedFns.get(ct->defaultTypeConstructor)) {
     return false;
   }
