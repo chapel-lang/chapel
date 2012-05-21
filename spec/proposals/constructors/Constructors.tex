@@ -60,9 +60,9 @@ initialization:
 
 \end{syntax}
 
-Aside from the \chpl{constructor} keyword, the syntax elements of a constructor,
+Aside from the \chpl{constructor} keyword, the syntax elements of a constructor
 including \sntx{linkage-specifier}, \sntx{type-binding} and \sntx{where-clause}
-have the same syntax as for a method declaration.  In contrast, however,
+have the same syntax as for a method declaration.  In contrast,
 a constructor declaration has two bodies associated with it.  The first is
 an \sntx{initialization-clause} and the second is the \sntx{constructor-body}.
 Statements within a \sntx{constructor-body} have the same syntax as
@@ -77,17 +77,18 @@ access the object being constructed (i.e. \chpl{this}) are disallowed.  This
 restriction includes accessor functions.  
 \item The assignment operator \chpl{=} means initialization, not assignment.
 That is, assignment semantics are not performed.
-\item Runtime conditionals are disallowed.  Conditionals involving \chpl{param}
+\item Runtime conditionals are disallowed; conditionals involving \chpl{param}
 and \chpl{type} variables are permitted.
 \end{itemize}
 \noindent
 In the context of an
-\sntx{initialization-clause}, all references to field names access the content
+\sntx{initialization-clause}, all references to field names access the contents
 of that field directly.  That is, neither compiler-generated nor user-supplied
 accessor functions are invoked.  Assignment to a field is equivalent to
 initialization.  Reading the value out of a field returns the raw data contained
-therein, without causing any side-effects.  Within
-an \sntx{initializer-clause}, the \chpl{this} keyword may be used to
+therein, without causing any side-effects.  
+
+Within an \sntx{initializer-clause}, the \chpl{this} keyword may be used to
 disambiguate field names from argument names.  However, in that context it is used
 only to establish the scope of the (field name) identifier which follows; it is
 not interpreted as a reference to the object being constructed.
@@ -97,7 +98,7 @@ It should be noted that special initialization actions required by certain types
 the \sntx{initialization-clause}.  In particular, it is permissible to call
 methods on fields within the object being constructed; only calls to methods on
 the object as a whole (\chpl{this}) are prohibited.  Thus, the code required to
-initialize a sync variable or array elements can be placed within the
+initialize a sync variable or the elements of an array can be placed within the
 \sntx{intialization-clause}.
 
 Within an \sntx{initialization-clause}, conditional expressions depending on a
@@ -142,11 +143,15 @@ follows the initialization point, the same steps could be performed at the call
 site (i.e. where the new expression appears).  However, good coding practice
 would suggest migrating these common steps into the constructor itself.
 
-Suppose, for example, that we wished to increment a count each time one
-of the above \chpl{Point} objects was created.  If constructors did not contain
-a body, it would be the responsibility of the caller to increment this count.
+Suppose, for example, that we wish to increment a count each time one
+of the above \chpl{Point} objects is created.  If constructors do not contain
+a body, it is the responsibility of the caller to increment this count.
 \begin{chapel}
 var pointCount = 0;
+
+constructor Point.__init__(a:real = 0.0, b:real = 0.0)
+{ x = a; y = b; }
+{ /* No constructor body. */ }
 
 var p0 = new Point(0.0, 0.0);
 pointCount += 1;
@@ -202,7 +207,7 @@ on.
 A remedy for the verboseness of this latter approach would be to select a
 stereotyped name (for example \chpl{__init__}) which would be implied if only
 the class name were supplied in a constructor call.  Thus \chpl{var myFoo = new
-foo();} would be equivalent to \chpl{var myFoo = new foo.__init__()}.
+foo();} would be equivalent to \chpl{var myFoo =} \chpl{new foo.__init__()}.
 \end{openissue}
 
 \begin{chapelexample}{constructor.chpl}
@@ -254,8 +259,8 @@ a \sntx{new-expression}.
 The compiler-generated constructor is defined as follows.  Its argument list
 contains one argument for each field defined in the class.  Each argument is
 named identically with the corresponding field, and has has a default value
-which is provided either by the field initializer in the class declaration, if
-present, or by the type-dependent default value.  The arguments appear in the
+which is provided by the field initializer in the class declaration if present,
+and otherwise by the type-dependent default value.  The arguments appear in the
 order in which the correponding fields appear in the class declaration (i.e. in
 declaration order).
 
@@ -271,14 +276,16 @@ class and its base class, and so on recursively.  This is done so that the
 fields belonging to the most ancient ancestor class appear first and in the
 order declared in that class.  The fields from the next-most ancient ancestor
 then appear --- also in declaration order --- and so on.  Any ancestor field name
-which is shadowed by one of its descendent classes is omitted from the argument
+which is shadowed by a field of the same name in one of its descendent classes
+is omitted from the argument
 list.  The \sntx{initialization-clause} contains a base-class constructor call
 as its first statement.  All of the formal arguments not used to initialize
 fields in the most-derived class are passed as named arguments to the
 base-class constructor --- in the same order in which they appear in the
 compiler-generated constructor.
 Note that even though shadowed field initializers are not passed in explicitly,
-guaranteed initialization is still achieved because argument defaults are supplied.
+guaranteed initialization is still achieved because argument defaults are
+supplied for those missing arguments.
 
 \begin{chapelexample}{compilerGeneratedConstructor.chpl}
 Given the class
@@ -405,7 +412,7 @@ constructor invocation.  These can be conceptually divided
 into four phases: allocation, explicit initialization,
 default initialization and
 construction.  \emph{Allocation} reserves enough memory to represent the object
-instance; \emph{Explicit initialization} is comprised of the statments in
+instance; \emph{explicit initialization} is comprised of the statments in
 the \sntx{initialization-clause}; \emph{default initialization} provides
 default values for fields which are not explicitly initialized in
 the \sntx{initialization-clause}; and \emph{construction} consists of the
@@ -441,8 +448,8 @@ author to rename arguments, but allows routines visible within the scope of
 the \sntx{initialization-clause} to be invoked.  The initializer for a given
 field may depend on the initial values of other fields, and the given field may be
 initialized multiple times.  Invocations of methods of this
-class on \emph{other instances} of the class is permitted.  Only method
-invocations on \emph{this} instance are prohibited, for the reason that this
+class on \emph{other instances} of the class is permitted; only method
+invocations on \emph{this} instance are prohibited --- for the reason that this
 instance has not yet reached its initialization point.
 
 Default initialization provides initial values for fields which are not
@@ -459,19 +466,13 @@ the corresponding fields appear in the class declaration (i.e. in declaration
 order).  A default initializer moves a default value into the corresponding
 field.  If a default value is provided as part of the field declaration, that
 value is used.  Otherwise, a type-dependent default value is used
-(see \rsec{Default_Values_For_Types}).\footnote{There is a recommendation from
-Vass, to allow the use of a field not explicitly initialized to appear in the
-RHS of another expression.  This is possible if we can compute an acyclic
-dependency graph among the uses.  Then, the default initialization would be
-moved earlier in the \sntx{initialization-clause}, so that it precedes the first
-use.  Whether this idea is in conflict with the idea of allowing field
-initialization expressions to appear in any order is still open for debate.}
+(see \rsec{Default_Values_For_Types}).
 
 If the class is a derived class, the \sntx{initialization-clause} is also
 checked for the presence of a base-class constructor call.  If none is present,
 then a call to the default base-class constructor is added implicitly.
 Whether invoked implicitly or explicitly, the base-class constructor runs to
-completion --- executing both of the initialization phases and the construction
+completion --- executing both the initialization phases and the construction
 phase --- before returning.  Note that the allocation phase is actually part of
 the execution of the \chpl{new} operator; it is not repeated when a base-class
 constructor is called.
@@ -480,7 +481,7 @@ the \sntx{constructor-body} of a base-class constructor are dispatched as if the
 run-time type of the object is that of the base class, not of the most-derived
 class.  This prevents a virtual method in the most-derived class from being
 invoked before the object has reached its initialization point.  Because the
-base-class constructor call always appears first in the initialization clause,
+base-class constructor call must always appear first in the initialization clause,
 the base-class subobject reaches its initialization point before any of the
 fields declared in the derived class is initialized.
 
@@ -491,7 +492,7 @@ A consequence of the default initialization phase and the automatic insertion of
 missing initializers by the compiler is that by the time execution reaches the
 initialization point, every field in the object has been initialized to a known
 value.  This property is known as \emph{guaranteed initialization}, and it supplies an
-important semantic meaning to the gap between the \sntx{initialization-clause}
+important semantic meaning to the syntactical gap between the \sntx{initialization-clause}
 and the \sntx{constructor-body}.
 
 \subsection{Inheriting from Multiple Classes}
@@ -512,15 +513,13 @@ proposal represents, compared with the current implementation.
 
 At a high level, the only syntactical change is the addition of
 an \sntx{initialization-clause}.  Some refactoring of the language syntax may
-permit the grammar for \sntx{initialization} expressions to be specified as
-a subset of the most general \sntx{expression} nonterminal.  If so, then the
+permit the grammar for \sntx{initialization} expressions to be specified as a
+subset of the most general \sntx{expression} nonterminal.  If so, then the
 restriction forcing the \sntx{initialization-clause} to be straight-line code
-can be specified withing the syntax description, and adherence to be checked
-during parsing.
-
-In any case, the restriction against calling methods on \chpl{this} before it is
-fully constructed depends on type information, so cannot be checked at parse
-time.
+can be specified within the syntax description, and adherence to be checked
+during parsing.  In any case, the restriction against calling methods
+on \chpl{this} before it is fully constructed depends on type information, so
+cannot be checked at parse time.
 
 The effect upon the language and its use is discussed in more detail in the
 semantics section.  But at a high level, the addition of
@@ -533,7 +532,7 @@ field-initializer expression.  Initialization semantics are those which occur
 before the body of the constructor is called.
 \item It allows constructor arguments to be renamed before being used to
 initialize fields.  Previously, initialization
-through constructor arguments was done using named arguments whose names matched
+through constructor arguments was done using named arguments whose names match
 those of fields internal to the class (or record).  Requiring the user to have
 knowledge of the (potentially private) field names breaks encapsulation.
 \item It provides a place where a base-class constructor call can be made such
@@ -548,7 +547,7 @@ Quite a few semantical changes are implied by this proposal.  These can be
 considered in terms of how they affect the definition of compiler-generated and
 user-defined constructors, how these are invoked, and how the addition of
 inheritance affects this description.  In the following sections, we consider carefully the interaction
-between domains and arrays, and indicated any special handling required.
+between domains and arrays, and indicate any special handling required.
 
 \subsubsection{Allocation}
 
@@ -586,7 +585,7 @@ It can also perform significant computation as part of that field initialization
 --- computation that should perhaps not be exposed in a well-encapsulated class,
 or which would at least hinder the readability of client code.
 
-\begin{chapelexample}
+\begin{chapelexample}{Initializer Clauses}
 Let us compare constructors that could be used to convert between polar and
 rectangular coordinates: first avoiding initializer clauses (current
 implementation), and then using them (proposed implementation).
@@ -607,10 +606,14 @@ class RectPoint : Point{
   proc y() return _y;
   proc r() return sqrt(_x**2 + _y**2);
   proc theta() {
-    // Avoid divide-by-zero. Probably not quite right, but this
-    // is just an example after all. <hilde>
-    if (abs(_y) < abs(_x)) then return arctan(_y / _x);
-    else return 2*arctan(1.0) - arctan(_x / _y);
+    param pi = 4.0 * arctan(1.0);
+    var result: real;
+    // Avoid numerical instability.
+    if (abs(_y) < abs(_x)) then result = arctan(_y / _x);
+    else result = pi / 2.0 - arctan(_x / _y);
+    if ((_x < 0) && (abs(_y) < abs(_x)) ||
+       ((_y < 0) && (abs(_x) < abs(_y)) then result += pi;
+    return result;
   }
 }
 
@@ -648,7 +651,7 @@ constructor.
 proc RectPoint.RectPoint(p:Point)
   // (_x, _y) == (0.0, 0.0) here.
 {
-  // Danger! you can call methods on 'this' here,
+  // Danger! You can call methods on 'this' here,
   // but it's not ready yet.
   _x = p.x(); _y = p.y(); 
   // Fully-constructed here.
@@ -702,7 +705,7 @@ either in the field initializer expression or as an argument in the constructor
 call.  The ability to perform a specific field initialization in a given
 overloaded version of the constructor is absent.  Since the field initializer
 expressions provided in the class declaration are run in every constructor, there
-is no room for flexibility there.  The only way to obtain different behavior
+is no room for flexibility.  The only way to obtain different behavior
 between one constructor call and another is through the passed-in arguments.  As
 has been stressed above, this idiom breaks encapsulation.
 
@@ -770,8 +773,8 @@ specified.  Therefore, a derived class constructor need only concern itself with
 initializing the fields declared in the most-derived class.
 
 In the existing implementation, constructors are supplied with an extra ``meme''
-argument, that carries the object being passed to the constructor for
-initialization.  The body of a user-defined constructor contains just the
+argument, that carries the object being initialized.  The body of a user-defined
+constructor contains just the
 actions specified in the constructor body.  Default initialization is inserted
 by the compiler before the constructor is entered.  In particular, the default
 constructor (the compiler-generated constructor with zero arguments) is called
@@ -792,7 +795,7 @@ constructor implementation is self-consistent in the presence of inheritance.
 \subsubsection{Sync Variables, Domains and Arrays} 
 
 Sync variables, domains and arrays have special assignment semantics defined
-in the internal library code, whose invocation is arranged specially by the
+in the internal library code whose invocation is arranged specially by the
 compiler.  Special behavior is arranged through pragmas (which add flags to classes and
 funtions), and also through the class/record structure used to represent types
 which are known to the compiler.  
@@ -832,11 +835,12 @@ are handled specially in several ways: They
 are reference-counted types, they are record-wrapped types and (except for
 distributions) they have runtime types.
 
-Reference counting is an optimization, added to allow reusing objects of those
-types where appropriate.  The function \chpl{chpl__autoCopy} is redefined to increment
-a reference count contained in the abstract base class for the type.  Assignment
-and copy operations are redefined to increment the reference count, and the
-destructor arranges to decrement the count.  
+Reference counting is an optimization added to allow reusing objects of those
+types where appropriate.  The function \chpl{chpl__autoCopy} is redefined to
+increment a reference count contained in the abstract base class for the type.
+Assignment and copy operations are redefined to call \chpl{chpl__autoCopy()} and
+thus increment the reference count, and the destructor arranges to decrement the
+count.
 
 The specialized code in the compiler relating to \chpl{chpl__autoCopy()} can probably be
 removed, provided that constructors, user-defined assignment operators and destructors
@@ -850,11 +854,11 @@ code.)
 
 The auto-copy function is excluded during the insertion of formal temps and ref
 temps --- probably to avoid infinite recursion.  It is known to preFold() so it
-can be folded out as an optimization, when its argument is a literal.  It is
-used to control the insertion of explicit destroy calls --- also an optimization
-(and a poor one): A better implementation would call the destructor invariably,
+can be folded out when its argument is a literal.  It is
+used to control the insertion of explicit destroy calls --- also an
+optimization.  A better implementation would call the destructor invariably,
 and rely on inlining to remove calls to destructors which have trivial bodies.
-Some further black magic relates to inlining this function in lowerIterators.cpp
+Some further specialized code relates to inlining this function in lowerIterators.cpp
 (``reconstruct autoCopy and autoDestroy for iterator records'').
 
 Record-wrapped types are implemented as classes, so that in general a field of
@@ -864,7 +868,7 @@ possibly also in constructors, temp copies, argument and return value
 temporaries).  
 
 Arguments similar to those above (w.r.t. reference counting) can also be applied
-to record wrapping.  Provided the necessary hooks (as above) are provided for
+to record wrapping.  Assuming the necessary hooks (as above) are provided for
 overriding the default [assignment and copy construction/initialization]
 behavior, and in addition we have a way to replace a reference to one instance
 of this type with another, then the semantics provided by the specialized code
@@ -887,7 +891,7 @@ that optimization.  My understanding of this mechanism is not complete.
 Provided my analysis is correct, it should be possible to remove specialized
 compiler support for reference-counted types and record-wrapped types.  All of
 the desired behavior provided by those two mechanisms --- reference
-counting and by-value assignment semantics, respectively --- should be
+counting and by-value assignment semantics respectively --- should be
 implementable entirely in module code.  This hinges on the compiler actually
 generating calls to the appropriate copy constructor (or other initializer) for
 initialization, the assignment operator for assignment and the destructor when a
@@ -919,7 +923,7 @@ On the other hand, we can also argue that the proposed constructor semantics are
 at least as powerful as the existing ones.  Implementation may be simpler if we
 can first demonstrate standard object-oriented behavior --- having eliminated
 the specialized support code from the compiler.  However, it is also possible to
-consider a ``minimal change'' approach: the implementation supporting the
+consider a ``minimal change'' approach: having the implementation support the
 existing specializations while expanding the constructor implementation to
 support the added syntax and semantics.
 
@@ -975,14 +979,14 @@ type information only to establish the static type of the result (although in
 fact it also controls how that function is instantiated).  The mechanism for
 creating an array from the given domain goes through \chpl{domain.buildArray()} and
 \chpl{domain.dsiBuildArray()}.  The particular instantiation of
-\chpl{chpl__convertRuntimeTypeToValue} controls the exact type of the array being
+\chpl{chpl__convertRuntime} \chpl{TypeToValue()} controls the exact type of the array being
 created (as suspected).  On the other hand, a polymorphic version of
 \chpl{buildArray()} or some similar function which was also generic w.r.t. element type
 could perform the same function at the top level (i.e. without depending on
-\chpl{chpl__convertRuntimeTypeToValue()}.
+\chpl{chpl__convertRuntimeTypeToValue()}).
 
 The conversion of the present runtime type mechanism to work with proposed
-constructors appears to be a no-op.  The two are apparently orthogonal.  The
+constructors appears to be a no-op: the two are apparently orthogonal.  The
 question of when fields are initialized and when the type building routines are
 called is taken care of by the parser and support code.
 \end{chapelexample}
