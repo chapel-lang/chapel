@@ -588,6 +588,9 @@ static void build_type_constructor(ClassType* ct) {
 }
 
 
+// For the given class type, this builds the compiler-generated constructor
+// which is also called by user-defined constructors to pre-initialize all 
+// fields to their declared or type-specific initial values.
 static void build_constructor(ClassType* ct) {
   if (ct->initializer)
     return;
@@ -669,21 +672,14 @@ static void build_constructor(ClassType* ct) {
 
         // Create a call to the superclass constructor.
         superCall = new CallExpr(superCtor->name);
-        int shadowID = 1;
         // Walk the formals of the default super class constructor
         for_formals_backward(formal, superCtor) {
           if (formal->hasFlag(FLAG_IS_MEME))
             continue;
           DefExpr* superArg = formal->defPoint->copy();
-          // Rename the arg if it clashes with a field name already seen,
-          // starting with those in the most-derived class in lexical order
-          // and then in successive ancestors in reverse-lexical order.
-          // Field names within a given class are guaranteed to be unique,
-          // so the order in which the names are visited at each ancestral 
-          // level is immaterial.
+          // Omit the arguments shadowed by this class's fields.
           if (fieldNamesSet.set_in(superArg->sym->name))
-            superArg->sym->name =
-              astr("_shadow_", istr(shadowID++), "_", superArg->sym->name);
+            continue;
           fieldNamesSet.set_add(superArg->sym->name);
           // Inserting each successive ancestor argument at the head in 
           // reverse-lexcial order results in all of the arguments appearing
