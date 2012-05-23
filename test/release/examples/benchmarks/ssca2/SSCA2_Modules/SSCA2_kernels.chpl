@@ -545,7 +545,6 @@ module SSCA2_kernels
   //
   // simple barrier implementation
   //
-  extern proc chpl_task_yield();
   record Barrier {
     var count: atomic int;
     var done: atomic bool;
@@ -584,8 +583,7 @@ module SSCA2_kernels
     }
 
     inline proc wait() {
-      on this do
-        while !done.read() do chpl_task_yield();
+      done.waitFor(true);
     }
 
     inline proc try() {
