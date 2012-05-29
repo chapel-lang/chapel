@@ -28,8 +28,6 @@
 #define TRACE_DISAMBIGUATE_BY_MATCH1(str, arg)
 #endif
 
-// Testing svn commit. -Jeremy
-
 //#
 //# Global Variables
 //#
