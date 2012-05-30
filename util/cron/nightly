@@ -55,7 +55,7 @@ while (@ARGV) {
     } elsif ($flag eq "-performance") {
         $performance = 1;
     } elsif ($flag eq "-compopts") {
-        $compopts = 1;
+	$compopts = shift @ARGV;
     } elsif ($flag eq "-execopts") {
 	$execopts = shift @ARGV;
     } elsif ($flag eq "-startdate") {
