@@ -1,8 +1,0 @@
-bug: Global domains declared using an initializing expression are not properly broadcast to other locales
-
-When a global domain variable is declared using a domain literal or
-other initializing expression, the broadcast of the address on locale
-0 is not done properly.  Specifically, the broadcast call is made
-before the domain is fully initialized.
-
-Workaround: Explicitly specify the type of the domain.
