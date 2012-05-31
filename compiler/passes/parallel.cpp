@@ -190,6 +190,64 @@ insertEndCount(FnSymbol* fn,
 }
 
 
+static void
+replicateGlobalRecordWrappedVars(DefExpr *def) {
+  ModuleSymbol* mod = toModuleSymbol(def->parentSymbol);
+  Expr* stmt = mod->initFn->body->body.head;
+  Expr* useFirst = NULL;
+  Symbol *currDefSym = def->sym;
+  bool found = false;
+  // Try to find the first definition of this variable in the
+  //   module initialization function
+  while (stmt->next && !found) {
+    stmt = stmt->next;
+    Vec<SymExpr*> symExprs;
+    collectSymExprs(stmt, symExprs);
+    forv_Vec(SymExpr, se, symExprs) {
+      if (se->var == currDefSym) {
+        INT_ASSERT(se->parentExpr);
+        int result = isDefAndOrUse(se);
+        if (result & 1) {
+          // first use/def of the variable is a def (normal case)
+          INT_ASSERT(useFirst==NULL);
+          found = true;
+          break;
+        } else if (result & 2) {
+          if (useFirst == NULL) {
+            // This statement captures a reference to the variable
+            // to pass it to the function that builds the initializing
+            // expression
+            CallExpr *parent = toCallExpr(se->parentExpr);
+            INT_ASSERT(parent);
+            INT_ASSERT(parent->isPrimitive(PRIM_ADDR_OF));
+            INT_ASSERT(isCallExpr(parent->parentExpr));
+            // Now start looking for the first use of the captured
+            // reference
+            currDefSym = toSymExpr(toCallExpr(parent->parentExpr)->get(1))->var;
+            INT_ASSERT(currDefSym);
+            // This is used to flag that we have found the first use
+            // of the variable
+            useFirst = stmt;
+          } else {
+            // This statement builds the initializing expression, so
+            // we can insert the broadcast after this statement
+
+            // These checks may need to change if we change the way
+            // we handle domain literals, forall expressions, and/or
+            // depending on how we add array literals to the language
+            INT_ASSERT(toCallExpr(stmt));
+            INT_ASSERT(toCallExpr(stmt)->primitive==NULL);
+            found = true;
+            break;
+          }
+        }
+      }
+    }
+  }
+  stmt->insertAfter(new CallExpr(PRIM_PRIVATE_BROADCAST, def->sym));
+}
+
+
 static ClassType*
 buildHeapType(Type* type) {
   static Map<Type*,ClassType*> heapTypeMap;
@@ -387,20 +445,8 @@ makeHeapAllocations() {
           se->getStmtExpr()->insertAfter(new CallExpr(PRIM_PRIVATE_BROADCAST, def->sym));
         }
       } else if (isRecordWrappedType(def->sym->type)) {
-        ModuleSymbol* mod = toModuleSymbol(def->parentSymbol);
-        Expr* stmt = mod->initFn->body->body.head;
-        bool found = false;
-        while (stmt->next && !found) {
-          stmt = stmt->next;
-          Vec<SymExpr*> symExprs;
-          collectSymExprs(stmt, symExprs);
-          forv_Vec(SymExpr, se, symExprs) {
-            if (se->var == def->sym)
-              found = true;
-          }
-        }
-        INT_ASSERT(found);
-        stmt->insertAfter(new CallExpr(PRIM_PRIVATE_BROADCAST, def->sym));
+        // replicate address of global arrays, domains, and distributions
+        replicateGlobalRecordWrappedVars(def);
       } else {
         // put other global constants and all global variables on the heap
         varSet.set_add(def->sym);

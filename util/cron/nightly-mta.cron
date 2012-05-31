@@ -21,7 +21,7 @@
 source ~/.chapelcshrc-cron-xmt-sim
 
 # XMT simulation test
-$CHPL_HOME/util/cron/nightly -cron -examples
+$CHPL_HOME/util/cron/nightly -cron -examples -compopts "--savec output"
 
 #
 # Test building the compiler using the XMT compiler, as above
@@ -30,7 +30,7 @@ $CHPL_HOME/util/cron/nightly -cron -examples
 source ~/.chapelcshrc-cron-xmt
 
 # XMT compile for hardware test
-$CHPL_HOME/util/cron/nightly -cron -examples -componly
+$CHPL_HOME/util/cron/nightly -cron -examples -componly -compopts "--ldflags -static"
 
 # 
 setenv CHPL_HOST_PLATFORM $CHPL_TARGET_PLATFORM

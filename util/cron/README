@@ -1,7 +1,7 @@
 CF machines
 ===========
 chap01 : linux64 (comm none, default everything)
-chap02 : qthreads (comm none examples, gasnet multilocale-examples)
+chap02 : 
 chap03 : linux64 performance (comm none, default everything)
 chap04 : mpi examples
 chap05 : --no-local
@@ -12,6 +12,7 @@ chap09 : valgrind (comm none)
 chap10 : gasnet (segment everything, segment fast)
 chpbld01 : XT/XE PrgEnvs examples, nightly
 chpbld02 : XT/XE PrgEnvs all, weekly
+chpbld03 : qthreads (comm none examples, gasnet multilocale-examples)
 cflbs32: 32-bit linux (comm none, default everything)
 
 Seattle machines

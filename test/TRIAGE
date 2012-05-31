@@ -1,0 +1,25 @@
+# USAGE:
+#
+# Current notes on triage results.
+#
+# To be merged into REGRESSIONS when Brad gives the green light.
+#
+
+============================================================
+linux64.pgi.none.fifo.pthreads
+============================================================
+This seems noisy, or not yet ready for primetime.  Add to REGRESSIONS?
+[Error matching program output for studies/lulesh/sungeun/lulesh (compopts: 1)]
+Newly added this week, but fails also for the standard implementation. Add to REGRESSIONS.
+[Error matching program output for studies/ssca2/vass/SSCA2_main (compopts: 1, execopts: 1)]
+[Error matching program output for studies/ssca2/vass/SSCA2_main (compopts: 2, execopts: 1)]
+[Error matching program output for studies/ssca2/vass/SSCA2_main (compopts: 3, execopts: 1)]
+[Error matching program output for studies/ssca2/vass/SSCA2_main (compopts: 4, execopts: 1)]
+[Error matching program output for studies/ssca2/vass/SSCA2_main (compopts: 5, execopts: 1)]
+
+============================================================
+Perf linux64.gnu.none.fifo.pthreads
+============================================================
+Warnings from createGraphs should be eliminated because they are counted as errors.
+Bug -> Vass.
+

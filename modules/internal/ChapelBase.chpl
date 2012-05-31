@@ -976,71 +976,64 @@ proc _singlevar.isFull {
 }
 
 //
-// data structures for naive implementation of end
+// data structures for naive implementation of end used for
+// sync statements and for joining coforall and cobegin tasks
 //
 
 pragma "no default functions"
 class _EndCount {
-  var i: sync int(64) = 0,
-      b: sync bool = true,
+  var i: atomic int,
       taskList: _task_list = _nullTaskList;
 }
 
+// This function is called once by the initiating task.  No on
+// statement needed, because the task should be running on the same
+// locale as the sync/cofall/cobegin was initiated on and thus the
+// same locale on which the object is allocated.
 pragma "dont disable remote value forwarding"
-proc _endCountAlloc() return new _EndCount();
+inline proc _endCountAlloc() return new _EndCount();
 
+// This function is called once by the initiating task.  As above, no
+// on statement needed.
 pragma "dont disable remote value forwarding"
-proc _endCountFree(e: _EndCount) {
+inline proc _endCountFree(e: _EndCount) {
   delete e;
 }
 
+// This function is called by the initiating task once for each new
+// task *before* any of the tasks are started.  As above, no on
+// statement needed.
 pragma "dont disable remote value forwarding"
 proc _upEndCount(e: _EndCount) {
-  on e {
-    _upEndCountInternal(e);
-    pragma "dont disable remote value forwarding" 
-    inline proc _upEndCountInternal(e: _EndCount) {
-      //
-      // By hiding this code in its own function, remote value
-      // forwarding can be applied to the reference 'e' in order to
-      // pass the class to the on-statement rather than a reference to
-      // it.  Since the class is local, we avoid remote accesses in
-      // this case.  Remote value forwarding is disabled otherwise
-      // because of the sync variable accesses within this function.
-      //
-      var i = e.i;
-      if i == 0 then
-        e.b.reset();
-      e.i = i + 1;
-    }
-  }
+  e.i.add(1);
 }
 
+// This function is called once by each newly initiated task.  No on
+// statement is needed because the call to sub() will do a remote
+// fork (on) if needed.
 pragma "dont disable remote value forwarding"
 proc _downEndCount(e: _EndCount) {
-  on e {
-    _downEndCountInternal(e);
-    // This function seems unnecessary; sse comment in _upEndCountInternal.
-    pragma "dont disable remote value forwarding"
-    inline proc _downEndCountInternal(e: _EndCount) {
-      var i = e.i;
-      if i == 1 then
-        e.b = true;
-      e.i = i - 1;
-    }
-  }
+  e.i.sub(1);
 }
 
+// This function is called once by the initiating task.  As above, no
+// on statement needed.
 pragma "dont disable remote value forwarding"
 proc _waitEndCount(e: _EndCount) {
+  // See if we can help with any of the started tasks
   __primitive("execute tasks in list", e.taskList);
-  // First wait for the signal to be set.
-  e.b.readFE();
-  // Then wait for e.i to be updated because we may free the end count
-  // class next; note that e.b needs to be signaled when e.i is in an
-  // empty state in cases where the upEndCount and downEndCount calls
-  // alternate.
-  e.i;
+
+  // Wait for all tasks to finish
+  e.i.waitFor(0);
+
+  // It is now safe to free the task list, because we know that all the
+  // tasks have been completed.  We could free this list when all the
+  // tasks have been started, but this seems cleaner.  The alternative
+  // would be for the tasking layer to free the elements of the list
+  // when when they are no longer needed, but then every tasking layer
+  // would have to implement the free, and it's not clear that it
+  // would be of any benefit.  Another option would be for the
+  // starting task to free its own list element.
   __primitive("free task list", e.taskList);
 }
 
@@ -1261,21 +1254,21 @@ inline proc chpl__initCopy(x: _tuple) {
 pragma "dont disable remote value forwarding"
 pragma "removable auto copy" proc chpl__autoCopy(x: _distribution) {
   if !noRefCount then
-    if x._value then x._value._distCnt.fetchAdd(1);
+    if x._value then x._value._distCnt.add(1);
   return x;
 }
 
 pragma "dont disable remote value forwarding"
 pragma "removable auto copy" proc chpl__autoCopy(x: domain) {
   if !noRefCount then
-    x._value._domCnt.fetchAdd(1);
+    x._value._domCnt.add(1);
   return x;
 }
 
 pragma "dont disable remote value forwarding"
 pragma "removable auto copy" proc chpl__autoCopy(x: []) {
   if !noRefCount then
-    x._value._arrCnt.fetchAdd(1);
+    x._value._arrCnt.add(1);
   return x;
 }
 

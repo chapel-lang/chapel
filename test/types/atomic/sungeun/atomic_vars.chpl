@@ -25,12 +25,28 @@ proc doit(type myType) {
 
   ax.write(0:myType);
   coforall i in 1..15 do on Locales[i%numLocales] { // 15 is max for int(8)
-      ax.fetchAdd(i:myType);
+      var a = (ax.fetchAdd(i:myType)+i:myType):myType;
+      ax.compareExchange(a, a);
     }
   x = ax.read();
   if x != 120:myType then
     writeln(typeToString(myType), ": ERROR: x=", x, " (should be 120)");
   if printResults then writeln(x);
+
+  var b: atomic bool;
+  ax.write(0:myType);
+  begin {
+    ax.waitFor(120:myType);
+    const x = ax.read();
+    if x != 120:myType then
+      writeln(typeToString(myType), ": ERROR: x=", x, " (should be 120)");
+    if printResults then writeln(x);
+    b.testAndSet();
+  }
+  coforall i in 1..15 do on Locales[i%numLocales] { // 15 is max for int(8)
+      ax.add(i:myType);
+    }
+  b.waitFor(true);
 
   const D = [7..39];
   var aA: [D] atomic myType;

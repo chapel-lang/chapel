@@ -15,7 +15,6 @@ module Barrier {
     }
   }
 
-  extern proc chpl_task_yield();
   record Barrier: BarrierBaseType {
     var count: atomic int;
     var done: atomic bool;
@@ -54,8 +53,7 @@ module Barrier {
     }
 
     inline proc wait() {
-      on this do
-        while !done.read() do chpl_task_yield();
+      done.waitFor(true);
     }
 
     inline proc try() {

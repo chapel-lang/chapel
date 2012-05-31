@@ -165,10 +165,8 @@ module analyze_RMAT_graph_associative_array {
     use SSCA2_compilation_config_params, SSCA2_execution_config_consts;
   
     use SSCA2_driver, SSCA2_RMAT_graph_generator;
-    use Time;
-    use BlockDist;
 
-    var stopwatch : Timer;
+    use BlockDist;
 
     var n_raw_edges = 8 * N_VERTICES;
 
@@ -204,41 +202,13 @@ module analyze_RMAT_graph_associative_array {
       const vertices;
       var   Row      : [vertices] VertexData;
 
-      // Simply forward the array's parallel iterator
-      // FYI: no fast follower opt
-      iter   Neighbors  ( v : index (vertices) ) {
-        for u in Row (v).neighborIDs do
-          yield u;
+      // Neighbors and edge_weight can be used where iterators are expected
+      proc   Neighbors  ( v : index (vertices) ) {
+        return Row (v).neighborIDs;
       }
 
-      iter   Neighbors  ( v : index (vertices), param tag: iterKind)
-      where tag == iterKind.leader {
-        for block in Row(v).neighborIDs._value.these(tag) do
-          yield block;
-      }
-
-      iter   Neighbors  ( v : index (vertices), param tag: iterKind, followThis)
-      where tag == iterKind.follower {
-        for elem in Row(v).neighborIDs._value.these(tag, followThis) do
-          yield elem;
-      }
-
-      iter   edge_weight (v : index (vertices) ) {
-        for w in Row (v).edgeWeights do
-          yield w;}
-
-      // Simply forward the array's parallel iterator
-      // FYI: no fast follower opt
-      iter   edge_weight(v : index (vertices), param tag: iterKind)
-      where tag == iterKind.leader {
-        for block in Row(v).edgeWeights._value.these(tag) do
-          yield block;
-      }
-
-      iter   edge_weight(v : index (vertices), param tag: iterKind, followThis)
-      where tag == iterKind.follower {
-        for elem in Row(v).edgeWeights._value.these(tag, followThis) do
-          yield elem;
+      proc   edge_weight (v : index (vertices) ) {
+        return Row (v).edgeWeights;
       }
 
       proc   n_Neighbors (v : index (vertices) ) 
@@ -247,16 +217,7 @@ module analyze_RMAT_graph_associative_array {
     } // class Associative_Graph
 
     writeln("allocating Associative_Graph");
-    if PRINT_TIMING_STATISTICS then stopwatch.start ();
-
     var G = new Associative_Graph (vertex_domain);
-
-    if PRINT_TIMING_STATISTICS then {
-      stopwatch.stop();
-      writeln("Elapsed time for Graph Allocation: ", stopwatch.elapsed(),
-              " seconds");
-      stopwatch.clear ();
-    }
 
     // ------------------------------------------------------------------
     // generate RMAT graph of the specified size, based on input config

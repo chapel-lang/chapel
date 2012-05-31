@@ -30,6 +30,8 @@ module SSCA2_compilation_config_params
 
   config param DEBUG_WEIGHT_GENERATOR = false;
 
+  config param DEBUG_NEIGHBOR_HISTOGRAM = false;
+
   config param DEBUG_KERNEL2 = false;
 
   config param DEBUG_KERNEL3 = false;

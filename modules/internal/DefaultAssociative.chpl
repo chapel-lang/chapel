@@ -35,12 +35,20 @@ class DefaultAssociativeDom: BaseAssociativeDom {
   var dist: DefaultDist;
 
   // The guts of the associative domain
-  var numEntries: chpl_table_index_type = 0;
-  var tableLock: sync int = true;
+  var numEntries: atomic chpl_table_index_type;
+  var tableLock: atomic bool; // do not access directly, use function below
   var tableSizeNum = 1;
   var tableSize = chpl__primes(tableSizeNum);
   var tableDom = [0..tableSize-1];
   var table: [tableDom] chpl_TableEntry(idxType);
+
+  inline proc lockTable() {
+    while tableLock.testAndSet() do chpl_task_yield();
+  }
+
+  inline proc unlockTable() {
+    tableLock.clear();
+  }
 
   // TODO: An ugly [0..-1] domain appears several times in the code --
   //       replace with a named constant/param?
@@ -83,11 +91,7 @@ class DefaultAssociativeDom: BaseAssociativeDom {
   //
 
   inline proc dsiNumIndices {
-    // I'm not sure if this is desirable
-    if parSafe then tableLock.readFE();
-    var ne = numEntries;
-    if parSafe then tableLock.writeEF(true);
-    return ne;
+    return numEntries.read();
   }
 
   iter dsiIndsIterSafeForRemoving() {
@@ -95,12 +99,12 @@ class DefaultAssociativeDom: BaseAssociativeDom {
     for i in this.these() do
       yield i;
     postponeResize = false;
-    if (numEntries*8 < tableSize && tableSizeNum > 1) {
-      if parSafe then tableLock.readFE();
-      if (numEntries*8 < tableSize && tableSizeNum > 1) {
+    if (numEntries.read()*8 < tableSize && tableSizeNum > 1) {
+      if parSafe then lockTable();
+      if (numEntries.read()*8 < tableSize && tableSizeNum > 1) {
         _resize(grow=false);
       }
-      if parSafe then tableLock.writeEF(true);
+      if parSafe then unlockTable();
     }
   }
 
@@ -191,12 +195,12 @@ class DefaultAssociativeDom: BaseAssociativeDom {
   // Associative Domain Interface
   //
   proc dsiClear() {
-    if parSafe then tableLock.readFE();
+    if parSafe then lockTable();
     for slot in tableDom {
       table(slot).status = chpl__hash_status.empty;
     }
-    numEntries = 0;
-    if parSafe then tableLock.writeEF(true);
+    numEntries.write(0);
+    if parSafe then unlockTable();
   }
 
   proc dsiMember(idx: idxType): bool {
@@ -204,12 +208,12 @@ class DefaultAssociativeDom: BaseAssociativeDom {
   }
 
   proc dsiAdd(idx: idxType): index(tableDom) {
-    if parSafe then tableLock.readFE();
-    if ((numEntries+1)*2 > tableSize) {
+    if parSafe then lockTable();
+    if ((numEntries.read()+1)*2 > tableSize) {
       _resize(grow=true);
     }
     var slotNum = _add(idx);
-    if parSafe then tableLock.writeEF(true);
+    if parSafe then unlockTable();
     return slotNum;
   }
 
@@ -220,10 +224,10 @@ class DefaultAssociativeDom: BaseAssociativeDom {
     if (foundSlot) {
       table(slotNum).status = chpl__hash_status.full;
       table(slotNum).idx = idx;
-      numEntries += 1;
+      numEntries.add(1);
     } else {
       if (slotNum < 0) {
-        halt("couldn't add ", idx, " -- ", numEntries, " / ", tableSize, " taken");
+        halt("couldn't add ", idx, " -- ", numEntries.read(), " / ", tableSize, " taken");
         return -1;
       }
       // otherwise, re-adding an index that's already in there
@@ -232,24 +236,24 @@ class DefaultAssociativeDom: BaseAssociativeDom {
   }
 
   proc dsiRemove(idx: idxType) {
-    if parSafe then tableLock.readFE();
+    if parSafe then lockTable();
     const (foundSlot, slotNum) = _findFilledSlot(idx);
     if (foundSlot) {
       for a in _arrs do
         a.clearEntry(idx);
       table(slotNum).status = chpl__hash_status.deleted;
-      numEntries -= 1;
+      numEntries.sub(1);
     } else {
       halt("index not in domain: ", idx);
     }
-    if (numEntries*8 < tableSize && tableSizeNum > 1) {
+    if (numEntries.read()*8 < tableSize && tableSizeNum > 1) {
       _resize(grow=false);
     }
-    if parSafe then tableLock.writeEF(true);
+    if parSafe then unlockTable();
   }
 
   iter dsiSorted() {
-    var tableCopy: [0..#numEntries] idxType;
+    var tableCopy: [0..#numEntries.read()] idxType;
 
     for (tmp, slot) in (tableCopy.domain, _fullSlots()) do
       tableCopy(tmp) = table(slot).idx;
@@ -276,7 +280,7 @@ class DefaultAssociativeDom: BaseAssociativeDom {
 
     // grow original table
     tableDom = [0..-1:chpl_table_index_type]; // non-preserving resize
-    numEntries = 0; // reset, because the adds below will re-set this
+    numEntries.write(0); // reset, because the adds below will re-set this
     tableSizeNum += if grow then 1 else -1;
     if tableSizeNum > chpl__primes.size then halt("associative array exceeds maximum size");
     tableSize = chpl__primes(tableSizeNum);
