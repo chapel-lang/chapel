@@ -599,7 +599,7 @@ static void build_record_copy_function(ClassType* ct) {
   ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "x", ct);
   arg->markedGeneric = true;
   fn->insertFormalAtTail(arg);
-  CallExpr* call = new CallExpr(ct->defaultConstructor);
+  CallExpr* call = new CallExpr(ct->initializer);
   for_fields(tmp, ct) {
     if (!tmp->hasFlag(FLAG_IMPLICIT_ALIAS_FIELD))
       if (strcmp("_promotionType", tmp->name))

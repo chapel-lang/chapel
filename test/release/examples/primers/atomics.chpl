@@ -29,7 +29,8 @@ if x.read() != n then
   halt("Error: x (", x.read(), ") != n (", n, ")");
 
 // All atomic types support atomic exchange(),
-// compareExchangeStrong(), and compareExchangeWeak().
+// compareExchangeStrong(), and compareExchangeWeak(),
+// compareExchange() (same as compareExchangeStrong()).
 //
 // The exchange() method atomically swaps the old value with the given
 // argument and returns the old value.  The compareExchangeStrong()
@@ -80,24 +81,41 @@ flag.clear();
 
 
 // The integral atomic types also support the following atomic
-// fetch operations:
+// fetch and non-fetching operations:
 //
-// - fetchAdd
-// - fetchSub
-// - fetchOr (bit-wise)
-// - fetchAnd (bit-wise)
+// - fetchAdd() and add()
+// - fetchSub() and sub()
+// - fetchOr() and or() (bit-wise)
+// - fetchAnd() and and() (bit-wise)
 //
 // Each of the above atomically reads the variable, stores the result
 // of the operation (+, -, |, or &) using the value and the method
-// argument, then returns the original value.
+// argument, then, for the fetchOps functions, returns the original
+// value.
 //
 // In the following example, we create n tasks to atomically increment
 // the atomic variable a with the square of the task's given id.
 //
 var a: atomic int;
-coforall id in R do a.fetchAdd(id*id);
+coforall id in R do a.add(id*id);
 
 // The sum of this finite series should be n(n+1)*(2n+1)/6
 //
-if a.read() != n*(n+1)*(2*n+1)/6 then
-  halt("Error: a=", a, " (should be", n*(n+1)*(2*n+1)/6, ")");
+var expected = n*(n+1)*(2*n+1)/6; 
+if a.read() != expected then
+  halt("Error: a=", a, " (should be", expected, ")");
+
+// In the following example, we create n tasks to atomically increment
+// the atomic variable a with the square of the task's given id.  If
+// the returned value is (n-1)*(n)*(2*(n-1)+1)/6 (last task to
+// arrive), check the results.
+//
+a.write(0);
+coforall id in R {
+  if a.fetchAdd(id*id)==(n-1)*(n)*(2*(n-1)+1)/6 {
+    // The sum of this finite series should be n(n+1)*(2n+1)/6
+    //
+    if a.read() != n*(n+1)*(2*n+1)/6 then
+      halt("Error: a=", a, " (should be", n*(n+1)*(2*n+1)/6, ")");
+  }
+}

@@ -1,0 +1,36 @@
+Notes on Record Wrapped Types
+
+% Change log:
+% Created: 2012/05/18 hilde
+
+Uses of isRecordWrappedType():
+  astutil.cpp:201:  In isDefAndOrUse(), causes 3 (both) to be returned.  It is
+  probably moot, since records are already passed by reference.
+  symbol.cpp:382:  Causes isConstant() to return false.
+  type.cpp:1072:  Defined as getRecordWrappedFlags(t->symbol).any().
+  removeUnnecessaryAutoCopyCalls.cpp:85:  Causes isPrimitiveInitCopy() to return false.
+  removeWrapRecords.cpp:83:  Allows PRIM_SET_MEMBER to be replaced by a PRIM_MOVE.
+  removeWrapRecords.cpp:90:  Allows PRIM_GET_MEMBER to be replaced by PRIM_ADDR_OF.
+  removeWrapRecords.cpp:97:  Allows PRIM_GET_MEMBER_VALUE to be replaced by its argument.
+  removeWrapRecords.cpp:102:  Allows PRIM_GET_MEMBER_VALUE to be replaced by
+  PRIM_DEREF if the argument is of ref type.
+  removeWrapRecords.cpp:135:  If a class is a data class type, allows the data
+  class type to be set to the _value of this record-wrapped type.
+  removeWrapRecords.cpp:146:  In getWrapRecordBaseType(), returns the type of
+  the _value field.
+  removeWrapRecords.cpp:150:  If the type is a reference type, return the
+  reference type of the unwrapped type.
+  buildDefaultFunctions.cpp:67:  Prevents the building of record equality and
+  inequality functions for these types (optimization).
+  parallel.cpp:390:  Causes WRT symbol to be broadcast if it is ever assigned to.
+  cullOverReferences.cpp:100:  Demote WRTs to value types in local variables
+  cullOverReferences.cpp:106:  and return values.
+  cullOverReferences.cpp:120:  Causes PRIM_DEREF and PRIM_ADDR_OF primitives to
+  be replaced by their arguments.
+  cullOverReferences.cpp:125:  Causes PRIM_GET_MEMBER to be replaced by PRIM_GET_MEMBER_VALUE.
+  cullOverReferences.cpp:131:  Causes PRIM_GET_SVEC_MEMBER to be replaced by PRIM_GET_SVEC_MEMBER_VALUE.
+  cullOverReferences.cpp:136:  Causes PRIM_ARRAY_GET to be replaced by PRIM_ARRAY_GET_VALUE.
+  functionResolution.cpp:3573:  In preFold(), causes .locale to punch through to the type held
+  in the _value field.
+  functionResolution.cpp:5895:  In fixTypeNames() returns the type name held in
+  the _valueType field.

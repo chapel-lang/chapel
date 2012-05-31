@@ -470,24 +470,25 @@ static void call_constructor_for_class(CallExpr* call) {
     if (TypeSymbol* ts = toTypeSymbol(se->var)) {
       if (ClassType* ct = toClassType(ts->type)) {
         SET_LINENO(call);
+
+        // These tests can be moved up to a general ClassType object verifier.
+        if (!ct->initializer)
+          INT_FATAL(call, "class type has no initializer");
+        if (!ct->defaultTypeConstructor)
+          INT_FATAL(call, "class type has no default type constructor");
+
         CallExpr* parent = toCallExpr(call->parentExpr);
         CallExpr* parentParent = NULL;
         if (parent)
           parentParent = toCallExpr(parent->parentExpr);
         if (parent && parent->isPrimitive(PRIM_NEW)) {
-          if (!ct->defaultConstructor)
-            INT_FATAL(call, "class type has no default constructor");
-          se->replace(new UnresolvedSymExpr(ct->defaultConstructor->name));
+          se->replace(new UnresolvedSymExpr(ct->initializer->name));
           parent->replace(call->remove());
         } else if (parentParent && parentParent->isPrimitive(PRIM_NEW) &&
                    call->partialTag == true) {
-          if (!ct->defaultConstructor)
-            INT_FATAL(call, "class type has no default constructor");
-          se->replace(new UnresolvedSymExpr(ct->defaultConstructor->name));
+          se->replace(new UnresolvedSymExpr(ct->initializer->name));
           parentParent->replace(parent->remove());
         } else {
-          if (!ct->defaultTypeConstructor)
-            INT_FATAL(call, "class type has no default type constructor");
           if (ct->symbol->hasFlag(FLAG_SYNTACTIC_DISTRIBUTION))
             se->replace(new UnresolvedSymExpr("chpl__buildDistType"));
           else
@@ -1100,9 +1101,10 @@ static void change_method_into_constructor(FnSymbol* fn) {
   if (!ct)
     INT_FATAL(fn, "constructor on non-class type");
 
-  // Ensure that the argument names of this function cover those of the default constructor.
-  // REVIEW <hilde>: Is this right?  What if the constructor being defined is not intended to be a default constructor?
-  CallExpr* call = new CallExpr(ct->defaultConstructor);
+  // Call the initializer, passing in just the generic arguments.
+  // This call ensures that the object is default-initialized before the user's
+  // constructor body is called.
+  CallExpr* call = new CallExpr(ct->initializer);
   for_formals(defaultTypeConstructorArg, ct->defaultTypeConstructor) {
     ArgSymbol* arg = NULL;
     for_formals(methodArg, fn) {
@@ -1131,6 +1133,10 @@ static void change_method_into_constructor(FnSymbol* fn) {
   update_symbols(fn, &map);
 
   fn->name = astr("_construct_", fn->name);
+  // Save a string?
+  INT_ASSERT(!strcmp(fn->name, ct->initializer->name));
   fn->addFlag(FLAG_CONSTRUCTOR);
-  ct->defaultConstructor->addFlag(FLAG_INVISIBLE_FN);
+  // Hide the compiler-generated initializer 
+  // which also serves as the default constructor.
+  ct->initializer->addFlag(FLAG_INVISIBLE_FN);
 }

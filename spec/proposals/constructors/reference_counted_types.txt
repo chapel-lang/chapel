@@ -1,0 +1,31 @@
+Notes on Reference Counted Types
+
+% Change log:
+% Created: 2012/05/18 hilde
+
+For distributions, domains and arrays, the implementation of chpl__autoCopy()
+increments a type-specific reference count within the record representing the
+type: _distCnt, _domCnt and _arrCnt respectively.  For all other types,
+chpl__autoCopy() is implemented as a pass-through (and inlining will remove it).
+
+The function chpl__initCopy() does not participate in reference counting, except
+to ensure that chpl__autoCopy() is called appropriately (to bump the reference
+count) when a copy is made.
+
+
+Uses of isRefCountedType():
+  type.cpp:1062: Defined as getRecordWrappedFlags(t->symbol).any().  This flag
+  set currently contains FLAG_DOMAIN, FLAG_ARRAY, and FLAG_DISTRIBUTION.
+  parallel.cpp:90: In bundleArgs(), causes autoCopy and autoDestroy calls to be
+  inserted at the begining and end of a begin clause (to maintain the reference count).
+  callDestructors.cpp:37: In insertAutoDestroyTemps(), prevents variables of
+  this type from participating.
+  callDestructors.cpp:266: In fixupDesctructors(), causes useRefType to be false.
+  functionResolution.cpp:2561: In insertFormalTemps(), prevents such a formal
+  from being marked CONST.
+  functionResolution.cpp:3906: In requiresImplicitDestroy(), allows true to be
+  returned if the function is returning a reference (and a number of other tests
+  are true).
+  wrappers.cpp:207: If the return type of a default wrapper is a ref counted
+  type, "this" is flagged with INSERT_AUTO_DESTROY.
+ 

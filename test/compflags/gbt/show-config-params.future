@@ -1,0 +1,14 @@
+feature request: compiler option --show-config-params to show the config
+                 params the compiler knows about
+
+This would be useful if one were writing a program in which the initial
+value of a variable depended on, for example, the details of the runtime
+the program was being built with.  Having a list of the config params
+would allow one to see how much information was available to use in
+selecting that initial value.
+
+What I'm most interested in here is a list of the parameters that are
+predefined by the compiler, like CHPL_COMM.  It's not necessary to
+include the parameters that are defined by the user on the compiler
+command line, nor the ones that are defined in the source code to be
+compiled.

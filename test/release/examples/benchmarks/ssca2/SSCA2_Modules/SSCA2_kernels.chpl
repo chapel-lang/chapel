@@ -425,11 +425,15 @@ module SSCA2_kernels
 	stopwatch.clear ();
 	writeln ( "Elapsed time for Kernel 4: ", K4_time, " seconds");
 
-	var n0            = + reduce [v in vertex_domain] (G.n_Neighbors (v)== 0);
-	var n_edges       = + reduce [v in vertex_domain] G.n_Neighbors (v);
-	var N_VERTICES    = vertex_domain.numIndices;
-	var TEPS          = 7.0 * N_VERTICES * (N_VERTICES - n0) / K4_time;
-	var Adjusted_TEPS = n_edges * (N_VERTICES - n0) / K4_time;
+	var n_edges          = + reduce [v in vertex_domain] G.n_Neighbors (v);
+	var N_VERTICES       = vertex_domain.numIndices;
+	var N_START_VERTICES = if starting_vertices == G.vertices
+			       then N_VERTICES
+				    - + reduce [v in vertex_domain]
+					       (G.n_Neighbors (v) == 0)
+			       else starting_vertices.numIndices;
+	var TEPS             = 7.0 * N_VERTICES * N_START_VERTICES / K4_time;
+	var Adjusted_TEPS    = n_edges * N_START_VERTICES / K4_time;
 
 	writeln ( "                     TEPS: ", TEPS );
 	writeln ( " edge count adjusted TEPS: ", Adjusted_TEPS );
@@ -545,7 +549,6 @@ module SSCA2_kernels
   //
   // simple barrier implementation
   //
-  extern proc chpl_task_yield();
   record Barrier {
     var count: atomic int;
     var done: atomic bool;
@@ -584,8 +587,7 @@ module SSCA2_kernels
     }
 
     inline proc wait() {
-      on this do
-        while !done.read() do chpl_task_yield();
+      done.waitFor(true);
     }
 
     inline proc try() {

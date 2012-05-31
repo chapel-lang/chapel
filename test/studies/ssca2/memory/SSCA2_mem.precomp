@@ -63,6 +63,7 @@ for l in lines:
             if s >= 0:
                 if l[s+3:].strip().find(timerstr)==0:
                     f.write('const m1 = memoryUsed();\n')
+                    f.write('writeln(\"Total memory in use before Kernel '+str(knum)+': \", m1);\n')
                     sfound = 1
         elif sfound == 1:
             # look for stop
@@ -71,6 +72,7 @@ for l in lines:
                 if l[s+3:].strip().find(timerstr)==0:
                     f.write('const m2 = memoryUsed();\n')
                     f.write('writeln(\"Memory leaked during Kernel '+str(knum)+': \", m2-m1);\n')
+                    f.write('writeln(\"Total memory in use after Kernel '+str(knum)+': \", m2);\n')
                     sfound = -1
                     knum = -1
 

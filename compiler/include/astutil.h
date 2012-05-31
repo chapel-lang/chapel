@@ -48,6 +48,12 @@ void collectSymbolSetSymExprVec(BaseAST* ast,
                                 Vec<SymExpr*>& symExprs);
 
 //
+// Return value & 1 is true if se is a def
+// Return value & 2 is true if se is a use
+//
+int isDefAndOrUse(SymExpr* se);
+
+//
 // build defMap and useMap such that defMap is a map from symbols to
 // their defs and useMap is a map from symbols to their uses; these
 // vectors are built differently depending on the other arguments

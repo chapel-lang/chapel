@@ -1,0 +1,6 @@
+#!/bin/bash
+
+outfile=$2
+
+sed -e "s/^\(  CHPL_[^=]*=\).*$/\1/" $outfile > $outfile.tmp
+mv $outfile.tmp $outfile

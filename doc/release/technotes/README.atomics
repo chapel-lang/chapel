@@ -55,21 +55,28 @@ The following summarizes the methods and supported types.
    exchange(x):
      Stores x as the new value.  Returns the original value.
 
-   compareAndExchangeWeak(e, x):
-   compareAndExchangeStrong(e, x):
+   compareExchangeWeak(e, x):
+   compareExchangeStrong(e, x):
+   compareExchange(e, x):
      Stores x as the new value, if and only if the original value is
      equal to e.  Returns true if x was stored, false otherwise.  The
      'weak' variation may return false even if the original value was
      equal to e if, for example, the value could not be updated
-     atomically.
+     atomically.  compareExchange() is equivalent to
+     compareExchangeStrong().
 
-   fetchAdd(x):
-   fetchSub(x):
-   fetchOr(x):
-   fetchAnd(x):
+  waitFor(x):
+     Returns when the stored value is equal to x.  The implementation
+     may yield the running task while waiting.
+
+   add(x), fetchAdd(x):
+   sub(x), fetchSub(x):
+   or(x),  fetchOr(x):
+   and(x), fetchAnd(x):
      Applies the appropriate operator (+, -, |, or &) to the original
-     value and x and stores the result.  Returns the original value.
-     Only defined for the integral atomic types.
+     value and x and stores the result.  For the fetch varieties,
+     returns the original value.  Only defined for the integral atomic
+     types.
 
    testAndSet(x):
      Stores true as the new value.  Returns the original value.  Only

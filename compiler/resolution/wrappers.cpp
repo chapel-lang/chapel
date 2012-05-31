@@ -33,7 +33,6 @@
 static FnSymbol*
 buildEmptyWrapper(FnSymbol* fn, CallInfo* info);
 static ArgSymbol* copyFormalForWrapper(ArgSymbol* formal);
-//static bool isShadowedField(ArgSymbol* formal);
 static void
 insertWrappedCall(FnSymbol* fn, FnSymbol* wrapper, CallExpr* call);
 static FnSymbol*
@@ -93,21 +92,6 @@ static ArgSymbol* copyFormalForWrapper(ArgSymbol* formal) {
   }
   wrapperFormal->intent = INTENT_BLANK;
   return wrapperFormal;
-}
-
-
-//
-// return true if formal matches name of a subsequent formal
-//
-static bool
-isShadowedField(ArgSymbol* formal) {
-  DefExpr* tmp = toDefExpr(formal->defPoint->next);
-  while (tmp) {
-    if (!strcmp(tmp->sym->name, formal->name))
-      return true;
-    tmp = toDefExpr(tmp->next);
-  }
-  return false;
 }
 
 
@@ -259,16 +243,16 @@ buildDefaultWrapper(FnSymbol* fn,
         if (!formal->hasFlag(FLAG_TYPE_VARIABLE) && !paramMap->get(formal) && formal->type != dtMethodToken)
           if (Symbol* field = wrapper->_this->type->getField(formal->name, false))
             if (field->defPoint->parentSymbol == wrapper->_this->type->symbol)
-              if (!isShadowedField(formal)) {
-                Symbol* copyTemp = newTemp();
-                wrapper->insertAtTail(new DefExpr(copyTemp));
-                wrapper->insertAtTail(new CallExpr(PRIM_MOVE, copyTemp, new CallExpr("chpl__autoCopy", temp)));
-                wrapper->insertAtTail(
-                  new CallExpr(PRIM_SET_MEMBER, wrapper->_this,
-                               new_StringSymbol(formal->name), copyTemp));
-                copy_map.put(formal, copyTemp);
-                call->argList.tail->replace(new SymExpr(copyTemp));
-              }
+            {
+              Symbol* copyTemp = newTemp();
+              wrapper->insertAtTail(new DefExpr(copyTemp));
+              wrapper->insertAtTail(new CallExpr(PRIM_MOVE, copyTemp, new CallExpr("chpl__autoCopy", temp)));
+              wrapper->insertAtTail(
+                new CallExpr(PRIM_SET_MEMBER, wrapper->_this,
+                             new_StringSymbol(formal->name), copyTemp));
+              copy_map.put(formal, copyTemp);
+              call->argList.tail->replace(new SymExpr(copyTemp));
+            }
     } else if (paramMap->get(formal)) {
       // handle instantiated param formals
       call->insertAtTail(paramMap->get(formal));
@@ -330,10 +314,9 @@ buildDefaultWrapper(FnSymbol* fn,
         if (!formal->hasFlag(FLAG_TYPE_VARIABLE))
           if (Symbol* field = wrapper->_this->type->getField(formal->name, false))
             if (field->defPoint->parentSymbol == wrapper->_this->type->symbol)
-              if (!isShadowedField(formal))
-                wrapper->insertAtTail(
-                  new CallExpr(PRIM_SET_MEMBER, wrapper->_this,
-                               new_StringSymbol(formal->name), temp));
+              wrapper->insertAtTail(
+                new CallExpr(PRIM_SET_MEMBER, wrapper->_this,
+                             new_StringSymbol(formal->name), temp));
     }
   }
   update_symbols(wrapper->body, &copy_map);

@@ -1,5 +1,150 @@
 module analyze_RMAT_graph_associative_array {
 
+  config const initialRMATNeighborListLength = 16;
+
+    record VertexData {
+      var ndom = [1..initialRMATNeighborListLength];
+      var neighborIDs: [ndom] int(64);
+      var edgeWeights: [ndom] int(64);
+
+      // This is used for graph construction only.
+      // TODO: move to a separate array, to be deallocated after construction.
+      // Note: beware of --noRefCount vs. deallocation.
+      var firstAvailableNeighborPosition$: sync ndom.idxType = ndom.low;
+
+      // keep some statistics; guarded by firstAvailableNeighborPosition$
+      var growCount = 0, shrinkCount = 0;
+
+      proc addEdgeOnVertex(uArg, vArg, wArg) {
+        on this do {
+          // todo: the compiler should make these values local automatically!
+          const /*u = uArg,*/ v = vArg, w = wArg;
+          local {
+            // grab the vertex lock
+            const edgePos = firstAvailableNeighborPosition$;
+            const prevNdomLen = ndom.high;
+            if edgePos > prevNdomLen {
+              // grow our arrays, by 2x
+              growCount += 1;
+              ndom = [1..prevNdomLen * 2];
+              // bounds checking below will ensure (edgePos <= ndom.high)
+            }
+            // release the lock - don't need it any more
+            firstAvailableNeighborPosition$ = edgePos + 1;
+
+            // store the edge
+            neighborIDs[edgePos] = v;
+            edgeWeights[edgePos] = w;
+          }
+        } // on
+      }
+
+      // not parallel-safe
+      proc tidyNeighbors() {
+        local {
+          var edgeCount = firstAvailableNeighborPosition$.readFF() - 1;
+          RemoveDuplicates(1, edgeCount);
+          // TODO: ideally if we don't save much memory, do not resize
+          if edgeCount != ndom.numIndices {
+            shrinkCount += 1;
+            ndom = 1..edgeCount;
+          }
+          // writeln("stats ", growCount, " ", shrinkCount, ".");
+        }
+      }
+
+      //
+      // Jargon: a "duplicate" is an edge v1->v2 for which
+      // there is another edge v1->v2, possibly with a different weight.
+      //
+      proc RemoveDuplicates(lo, inout hi) {
+        param showArrays = false;  // beware of 'local' in the caller
+        const style = new iostyle(min_width = 3);
+        if showArrays {
+          writeln("starting ", lo, "..", hi);
+          stdout.writeln(neighborIDs(lo..hi), style);
+          stdout.writeln(edgeWeights(lo..hi), style);
+        }
+
+        // TODO: remove the duplicates as we sort
+        // InsertionSort, keep duplicates
+        for i in lo+1..hi {
+          const ithNID = neighborIDs(i);
+          const ithEDW = edgeWeights(i);
+          var inserted = false;
+
+          for j in lo..i-1 by -1 {
+            if (ithNID < neighborIDs(j)) {
+              neighborIDs(j+1) = neighborIDs(j);
+              edgeWeights(j+1) = edgeWeights(j);
+            } else {
+              neighborIDs(j+1) = ithNID;
+              edgeWeights(j+1) = ithEDW;
+              inserted = true;
+              break;
+            }
+          }
+
+          if (!inserted) {
+            neighborIDs(lo) = ithNID;
+            edgeWeights(lo) = ithEDW;
+          }
+        }
+        //writeln("sorted ", lo, "..", hi);
+
+        // remove the duplicates
+        var foundDup = false;
+        var indexDup: int;
+        var lastNID = neighborIDs(lo);
+
+        for i in lo+1..hi {
+          const currNID = neighborIDs(i);
+          if lastNID == currNID {
+            foundDup = true;
+            indexDup = i;
+            break;
+          } else {
+            lastNID = currNID;
+          }
+        }
+
+        if foundDup {
+          // indexDup points to a hole
+          // the already-found dup is dropped before entering the loop
+          for i in indexDup+1..hi {
+            const currNID = neighborIDs(i);
+            if lastNID == currNID {
+              // dropping this duplicate
+            } else {
+              // moving a non-duplicate value
+              neighborIDs(indexDup) = currNID;
+              edgeWeights(indexDup) = edgeWeights(i);
+              indexDup += 1;
+              lastNID = currNID;
+            }
+          }
+          hi = indexDup - 1;
+        }
+        //writeln("eliminated dups ", lo, "..", hi);
+
+        // VerifySort
+        if boundsChecking then
+          for i in lo..hi-1 do
+            if !( neighborIDs(i) < neighborIDs(i+1) ) then
+              writeln("unsorted for i = ", i, "   ",
+                      neighborIDs(i), " !< ", neighborIDs(i+1));
+
+        if showArrays {
+          writeln("sorted ", lo, "..", hi);
+          stdout.writeln(neighborIDs(lo..hi), style);
+          stdout.writeln(edgeWeights(lo..hi), style);
+          writeln();
+        }
+      }  // RemoveDuplicates
+
+
+    } // record VertexData
+
   // +========================================================================+
   // |  Define associative array-based representations for general sparse     |
   // |  graphs. Provide execution template to generate a random RMAT graph    |
@@ -42,22 +187,9 @@ module analyze_RMAT_graph_associative_array {
 
     // ------------------------------------------------------------------------
     // The data structures below are chosen to implement an irregular (sparse)
-    // graph using associative domains and arrays.  
+    // graph using rectangular domains and arrays.  
     // Each node in the graph has a list of neighbors and a corresponding list
     // of (integer) weights for the implicit edges.  
-    // The list of neighbors is really just a set; the only properties we need
-    // are that we be able to build it (add vertices to it) and that we be
-    // able to iterate over it.  Those properties are satisfied by Chapel's
-    // associative domains, so each neighbor set is represented by an
-    // associative domain.  The weights are an integer array over the 
-    // neighbor domain.
-    //
-    // We would have liked to have defined the global set of neighbors as
-    // an array of associative domains, but that is not supported in Chapel.
-    // Consequently we build an array of records, where each record provides
-    // the neighbor set and the weights for a particular node.  The name
-    // "row_struct" anticipates the planned use of sparse matrices for this same
-    // kind of graph structure.  
     // ------------------------------------------------------------------------
 
     const vertex_domain = 
@@ -65,41 +197,26 @@ module analyze_RMAT_graph_associative_array {
         [1..N_VERTICES] dmapped Block ( [1..N_VERTICES] )
       else
 	[1..N_VERTICES] ;
-
-    record row_struct {
-      type vertex;
-      var Row_Neighbors : domain (vertex);
-      var Weight        : [Row_Neighbors] int;
-    }
 	
     class Associative_Graph {
       const vertices;
-      var   Row      : [vertices] row_struct (index (vertices));
+      var   Row      : [vertices] VertexData;
 
-      proc   Neighbors  ( v : index (vertices) ) {return Row (v).Row_Neighbors;}
-
-      iter   edge_weight (v : index (vertices) ) {
-        for w in Row (v).Weight do
-          yield w;}
-
-      // Simply forward the domain's parallel iterator
-      // FYI: no fast follower opt
-      iter   edge_weight(v : index (vertices), param tag: iterKind)
-      where tag == iterKind.leader {
-        for block in Row(v).Weight._value.these(tag) do
-          yield block;
+      // Neighbors and edge_weight can be used where iterators are expected
+      proc   Neighbors  ( v : index (vertices) ) {
+        return Row (v).neighborIDs;
       }
 
-      iter   edge_weight(v : index (vertices), param tag: iterKind, followThis)
-      where tag == iterKind.follower {
-        for elem in Row(v).Weight._value.these(tag, followThis) do
-          yield elem;
+      proc   edge_weight (v : index (vertices) ) {
+        return Row (v).edgeWeights;
       }
 
       proc   n_Neighbors (v : index (vertices) ) 
-      {return Row (v).Row_Neighbors.numIndices;}
-    }
+      {return Row (v).ndom.numIndices;}
 
+    } // class Associative_Graph
+
+    writeln("allocating Associative_Graph");
     var G = new Associative_Graph (vertex_domain);
 
     // ------------------------------------------------------------------
