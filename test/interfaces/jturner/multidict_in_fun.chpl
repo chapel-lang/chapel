@@ -1,9 +1,9 @@
-interface LessThan {
-  proc LT(x:self, y:self):bool;
+interface LessThan(type T) {
+  proc LT(x:T, y:T):bool;
 }
 
-interface Equal {
-  proc EQ(x:self, y:self):bool;
+interface Equal(type T) {
+  proc EQ(x:T2, y:T):bool;
 }
 
 proc LT(x:int, y:int) {
@@ -14,7 +14,7 @@ proc EQ(x:int, y:int) {
   return x == y;
 }
 
-proc minFn(x:?T, y:T, ifeq:T) where T implements LessThan, T implements Equal {
+proc minFn(x:?T, y:T, ifeq:T) where implements LessThan(T), implements Equal(T) {
   if (LT(y, x)) {
     return y;
   }
@@ -26,8 +26,8 @@ proc minFn(x:?T, y:T, ifeq:T) where T implements LessThan, T implements Equal {
   }
 }
 
-int implements LessThan;
-int implements Equal;
+implements LessThan(int);
+implements Equal(int);
 
 writeln(minFn(3, 4, 5));
 writeln(minFn(4, 3, 5));

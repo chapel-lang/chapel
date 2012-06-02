@@ -220,32 +220,35 @@ getNewSubType(FnSymbol* fn, Symbol* key, TypeSymbol* value) {
 }
 
 static bool hasValidImplementsInWhereClause(BaseAST* whereClause, CallExpr* fn_call) {
-  if (CallExpr *ce = toCallExpr(whereClause)) {
-    if (UnresolvedSymExpr *callsymexpr = toUnresolvedSymExpr(ce->baseExpr)) {
-      if (!strcmp(callsymexpr->unresolved, "implements")) {
+  if (ImplementsExpr *ie = toImplementsExpr(whereClause)) {
+    //if (UnresolvedSymExpr *callsymexpr = toUnresolvedSymExpr(ce->baseExpr)) {
+      //if (!strcmp(callsymexpr->unresolved, "implements")) {
         //First find the interface that was implemented and open it up
-        BaseAST* type_arg = toSymExpr(ce->argList.get(1))->var->type;
-        BaseAST *interface_implemented = ce->argList.get(2);
-        if (SymExpr *se = toSymExpr(interface_implemented)) {
-          // Is a symexpr
-          if (isInterfaceSymbol(se->var)) {
-            Symbol *witness = lookupImplementsWitnessInSymbolTable(fn_call, interface_implemented, type_arg);
-            if(!witness) {
-              //CallInfo info(ce,false);
-              //USR_FATAL(whereClause, "Implementation condition not satisfied.\n");
-              return false;
-            }
-            return true;
-          }
-          else {
-            USR_FATAL(se, "Implementation phrase with non-interface symbol");
-          }
+
+    BaseAST *interface_implemented = ie->interface;
+    if (SymExpr *se = toSymExpr(interface_implemented)) {
+      // Is a symexpr
+      if (isInterfaceSymbol(se->var)) {
+        Symbol *dict = lookupImplementsWitnessInSymbolTable(fn_call, ie);
+        if(!dict) {
+          //CallInfo info(ce,false);
+          //USR_FATAL(whereClause, "Implementation condition not satisfied.\n");
+          return false;
         }
-        else {
-          // Isn't a symexpr, something is wrong
-          USR_FATAL(se, "Poorly formed implements phrase in where clause");
-        }
-      } else if (!strcmp(callsymexpr->unresolved, "_build_tuple")) {
+        return true;
+      }
+      else {
+        USR_FATAL(se, "Implementation phrase with non-interface symbol");
+      }
+    }
+    else {
+      // Isn't a symexpr, something is wrong
+      USR_FATAL(se, "Poorly formed implements phrase in where clause");
+    }
+  }
+  else if (CallExpr *ce = toCallExpr(whereClause)) {
+    if (UnresolvedSymExpr *callsymexpr = toUnresolvedSymExpr(ce->baseExpr)) {
+      if (!strcmp(callsymexpr->unresolved, "_build_tuple")) {
         bool retval = true;
         //We have multiple constraints, handle them
         for_alist(arg, ce->argList) {

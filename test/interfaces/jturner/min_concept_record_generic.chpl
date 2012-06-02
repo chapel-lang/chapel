@@ -6,13 +6,13 @@ record TestMe {
   var data;
 }
 
-TestMe implements LessThan;
+implements LessThan(TestMe);
 
 proc LT(x:TestMe, y:TestMe) : bool {
   return x.data < y.data;
 }
 
-proc minFn(x:?T, y:T):T where T implements LessThan {
+proc minFn(x:?T, y:T):T where implements LessThan(T) {
   if (LT(y, x)) {
     return y;
   }

@@ -1528,15 +1528,32 @@ buildClassDefExpr(const char* name, Type* type, Expr* inherit, BlockStmt* decls,
 }
 
 DefExpr*
-buildInterfaceDefExpr(const char* name,AList* iFormals, Expr* inherit, BlockStmt* decls){
-  InterfaceSymbol* interface = new InterfaceSymbol(name, iFormals);
+buildInterfaceDefExpr(const char* name,BaseAST* iFormals, Expr* inherit, BlockStmt* decls){
+  InterfaceSymbol* interface = new InterfaceSymbol(name);
   interface->addDeclarations(decls);
   if(inherit)
     interface->inherits.insertAtTail(inherit);
   return new DefExpr(interface);
 }
 
-AList*
+InterfaceSymbol*
+buildInterfaceFormal(InterfaceSymbol* in, DefExpr* def) {
+  if (!in)
+    in = new InterfaceSymbol("_");
+  if (!def)
+    return in;
+  ArgSymbol* arg = toArgSymbol(def->sym);
+  INT_ASSERT(arg);
+  in->insertFormalAtTail(def);
+  /*if (!strcmp(arg->name, "chpl__tuple_arg_temp")) {
+    destructureTupleGroupedArgs(fn, arg->variableExpr, new SymExpr(arg));
+    arg->variableExpr = NULL;
+  }*/
+  return in;
+}
+
+
+/*AList*
 buildInterfaceFormal(AList* formal_list, DefExpr* new_formal){
   if (new_formal == NULL)
     return NULL;
@@ -1544,7 +1561,7 @@ buildInterfaceFormal(AList* formal_list, DefExpr* new_formal){
     formal_list = new AList();
   formal_list->insertAtTail(new_formal);
   return formal_list;
-}
+}*/
 
 DefExpr*
 buildArgDefExpr(IntentTag tag, const char* ident, Expr* type, Expr* init, Expr* variable) {

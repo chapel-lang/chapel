@@ -1,19 +1,18 @@
 class C {
 	var data:int;
 }
-class D : C {}
 
-interface LessThan {
-  proc LT(x:self, y:self):bool;
+interface LessThan(type T) {
+  proc LT(x:T, y:T):bool;
 }
 
-C implements LessThan;
+implements LessThan(C);
 
 proc LT(x:C, y:C) : bool {
   return x.data < y.data;
 }
 
-proc minFn(x:?T, y:T):T where T implements LessThan {
+proc minFn(x:?T, y:T):T where implements LessThan(T) {
   if (LT(y, x)) {
     return y;
   }

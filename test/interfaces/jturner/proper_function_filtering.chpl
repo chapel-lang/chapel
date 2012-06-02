@@ -1,6 +1,6 @@
-interface IFace{ }
+interface IFace(type T){ }
 
-int implements IFace;
+implements IFace(int);
 
 proc foo(x) {
   return x;
@@ -10,7 +10,7 @@ proc foo(x:int) {
   return x + 100;
 }
 
-proc ifaced(x:?T):T where T implements IFace {
+proc ifaced(x:?T):T where implements IFace(T) {
   return foo(x);
 }
 

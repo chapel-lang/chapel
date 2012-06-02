@@ -2618,6 +2618,88 @@ void NamedExpr::codegen(FILE* outfile) {
   INT_FATAL(this, "NamedExpr::codegen not implemented");
 }
 
+static void implementsExprHelper(ImplementsExpr* implements, BaseAST* arg) {
+  if (!arg)
+    return;
+  if (toSymbol(arg) || toExpr(arg))
+    implements->insertAtTail(arg);
+  else
+    INT_FATAL(implements, "Bad typeList in ImplementsExpr constructor");
+}
+
+ImplementsExpr::ImplementsExpr(Expr* base, BaseAST* arg1, BaseAST* arg2,
+    BaseAST* arg3, BaseAST* arg4) :
+  Expr(E_ImplementsExpr),
+  interface(base)
+{
+  if (base)
+    interface->parentExpr = this;
+
+  implementsExprHelper(this, arg1);
+  implementsExprHelper(this, arg2);
+  implementsExprHelper(this, arg3);
+  implementsExprHelper(this, arg4);
+
+  typeList.parent = this;
+  //gCallExprs.add(this);
+}
+
+ImplementsExpr::~ImplementsExpr() { }
+
+void ImplementsExpr::verify() {}
+
+ImplementsExpr*
+ImplementsExpr::copyInner(SymbolMap* map) {
+  ImplementsExpr *_this = 0;
+  _this = new ImplementsExpr(COPY_INT(interface));
+  for_alist(expr, this->typeList)
+    _this->insertAtTail(COPY_INT(expr));
+  return _this;
+}
+
+void ImplementsExpr::replaceChild(Expr* old_ast, Expr* new_ast)
+{
+  if (old_ast == interface) {
+      interface = new_ast;
+    } else {
+      INT_FATAL(this, "Unexpected case in ImplementsExpr::replaceChild");
+    }
+}
+
+void ImplementsExpr::codegen(FILE* outfile) {
+  INT_FATAL(this, "ImplementsExpr::codegen not implemented");
+}
+
+void ImplementsExpr::insertAtHead(BaseAST* ast) {
+  if (Symbol* a = toSymbol(ast))
+    typeList.insertAtHead(new SymExpr(a));
+  else
+    typeList.insertAtHead(toExpr(ast));
+}
+
+void ImplementsExpr::insertAtTail(BaseAST* ast) {
+  if (Symbol* a = toSymbol(ast))
+    typeList.insertAtTail(new SymExpr(a));
+  else
+    typeList.insertAtTail(toExpr(ast));
+}
+
+int ImplementsExpr::numTypes() {
+  return typeList.length;
+}
+
+Expr* ImplementsExpr::get(int index) {
+  return typeList.get(index);
+}
+
+InterfaceSymbol* ImplementsExpr::findInterfaceSymbol(void) {
+  InterfaceSymbol* in = NULL;
+  if (SymExpr* variable = toSymExpr(interface))
+    in = toInterfaceSymbol(variable->var);
+  if (!in)
+    INT_FATAL(this, "Cannot find InterfcaeSymbol in ImplementsExpr");
+  return in;
+}
 
 bool 
 get_int(Expr *e, int64_t *i) {
@@ -2723,6 +2805,10 @@ Expr* getFirstExpr(Expr* expr) {
     break;
   case E_NamedExpr:
     AST_RET_CHILD(NamedExpr, actual);
+    break;
+  case E_ImplementsExpr:
+    AST_RET_CHILD(ImplementsExpr, interface);
+    AST_RET_LIST(ImplementsExpr, typeList);
     break;
   }
   return expr;

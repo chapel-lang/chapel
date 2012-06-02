@@ -52,7 +52,7 @@
   Flag flag;
   ProcIter procIter;
   FlagSet* flagSet;
-  AList* plist;
+  InterfaceSymbol* pinterfacesymbol;
 };
 
 //
@@ -171,8 +171,7 @@
 %type <pfnsymbol> fn_decl_stmt_inner formal_ls opt_formal_ls req_formal_ls
 %type <procIter> proc_or_iter
 %type <pfnsymbol> linkage_spec
-
-%type <plist> interface_formals interface_formals_ls
+%type <pinterfacesymbol> interface_formals interface_formals_ls 
 
 %% 
 
@@ -365,17 +364,22 @@ class_level_stmt_ls:
 
 interface_decl_stmt:
   TINTERFACE ident interface_formals opt_inherit TLCBR class_level_stmt_ls TRCBR
-     {$$ = buildChapelStmt(buildInterfaceDefExpr($2, $3, $4, $6));}
+  {
+    $3->name = astr($2);
+    $3->cname = $3->name;
+    $3->addDeclarations($6);
+    $$ = buildChapelStmt(new DefExpr($3));
+  }
 ;
 
 interface_formals:
-  {$$ = NULL;}
+                              {$$=buildInterfaceFormal(NULL,NULL);}
 |TLP interface_formals_ls TRP {$$=$2;}
 ;
 
 interface_formals_ls:
-  {$$=buildInterfaceFormal(NULL,NULL);}
-|formal {$$=buildInterfaceFormal(NULL,$1);}
+                                    {$$=buildInterfaceFormal(NULL,NULL);}
+|formal                             {$$=buildInterfaceFormal(NULL,$1);}
 |interface_formals_ls TCOMMA formal {$$=buildInterfaceFormal($1,$3);}
 ;
 
@@ -965,7 +969,7 @@ binary_op_expr:
 ;
 
 implements_clause:
-expr TIMPLEMENTS ident   { $$ = new CallExpr("implements",$1,new UnresolvedSymExpr($3));}
+TIMPLEMENTS ident TLP expr_ls TRP   { $$ = new ImplementsExpr(new UnresolvedSymExpr($2),$4); }
 ;
 
 

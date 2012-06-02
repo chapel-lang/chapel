@@ -140,6 +140,41 @@ class NamedExpr : public Expr {
   void codegen(FILE* outfile);
 };
 
+/*class ImplementsExpr : public Expr {
+ public:
+  Expr* interface;
+  AList* implementingTypeList;
+  ImplementsExpr(Expr* interface, AList* implementingTypeList);
+  void verify();
+  DECLARE_COPY(ImplementsExpr);
+  void replaceChild(Expr* old_ast, Expr* new_ast);
+  Type* typeInfo(void);
+  void codegen(FILE* outfile);
+};*/
+
+class ImplementsExpr : public Expr {
+ public:
+  Expr* interface;
+  AList typeList;          // implementing types' list
+
+  ImplementsExpr(Expr* base, BaseAST* arg1 = NULL, BaseAST* arg2 = NULL,
+           BaseAST* arg3 = NULL, BaseAST* arg4 = NULL);
+  ~ImplementsExpr();
+  void verify();
+  DECLARE_COPY(ImplementsExpr);
+
+  void replaceChild(Expr* old_ast, Expr* new_ast);
+
+  void codegen(FILE* outfile);
+
+  void insertAtHead(BaseAST* ast);
+  void insertAtTail(BaseAST* ast);
+
+  int numTypes();
+  Expr* get(int index);
+  InterfaceSymbol* findInterfaceSymbol(void);
+};
+
 
 // Determines whether a node is in the AST (vs. has been removed
 // from the AST). Used e.g. by cleanAst().

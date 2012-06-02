@@ -9,6 +9,7 @@
 #include "callInfo.h"
 #include "expr.h"
 #include "iterator.h"
+#include "normalize.h"
 #include "passes.h"
 #include "resolution.h"
 #include "scopeResolve.h"
@@ -224,15 +225,18 @@ static void resolveImplementsStatement(ImplementsStmt* istmt, bool errorCheck);
 bool hasImplementsClausesInWhereClause(BaseAST *whereClause);
 static bool addDictionaryForImplementsClausesInWhereClause(BaseAST* whereClause, CallExpr* fn_call, CallInfo &info);
 static void convertInterfaceUsesFn(FnSymbol *fn);
-static void getMatchingFunctionsInInterfaces(const char* name, Vec<FnSymbol*>& visibleFns,
-    Map<FnSymbol*, ArgSymbol*>& fnsInInterfaces);
+//static void getMatchingFunctionsInInterfaces(const char* name, Vec<FnSymbol*>& visibleFns,
+//    Map<FnSymbol*, ArgSymbol*>& fnsInInterfaces);
 static void
 getFunctionsInWhereClause(Map<FnSymbol*, ArgSymbol*>& fnsInInterfaces,
     Vec<ArgSymbol*>& witnessObjects, BaseAST *whereClause);
-static void getWitnessesInWhereClause(Vec<CallExpr*>& implementsClauses, BaseAST *whereClause);
+static void getWitnessesInWhereClause(Vec<ImplementsExpr*>& implementsClauses, BaseAST *whereClause);
 static void pruneInterfaceGenericFns();
-static void addAdaptationToInterfaceDict(BaseAST*, ClassType *witness, FnSymbol *requiredFn, FnSymbol *actualFn);
-
+//static void addAdaptationToInterfaceDict(BaseAST*, ClassType *witness, FnSymbol *requiredFn, FnSymbol *actualFn);
+static void convertInterfaceToClass(InterfaceSymbol* is);
+static void collectInstantiatedInterfaceFunctions(ImplementsExpr *call, Vec<FnSymbol *>&fns, bool buildFnBodies = true);
+static void forcePrototypeSubstitutions(FnSymbol *fn);
+//static ClassType *resolveImplementsExpr(ImplementsExpr *ie);
 
 typedef MapElem<FnSymbol*, ArgSymbol*> FnArgElem;
 
@@ -333,6 +337,7 @@ resolveAutoDestroy(Type* type) {
   but may currently be pointing at a different function.
 */
 
+/*
 static ClassType* createAndInsertInterfaceDictClass(BaseAST *interfaceDict, const char *name) {
   ClassType *parent = new ClassType(CLASS_CLASS);
   TypeSymbol *parent_ts = new TypeSymbol(name, parent);
@@ -342,6 +347,8 @@ static ClassType* createAndInsertInterfaceDictClass(BaseAST *interfaceDict, cons
     s->insertBefore(new DefExpr(parent_ts));
   } else if (CallExpr* ce = toCallExpr(interfaceDict)) {
     ce->insertBefore(new DefExpr(parent_ts));
+  } else if(InterfaceSymbol* is = toInterfaceSymbol(interfaceDict)) {
+    is->defPoint->insertBefore(new DefExpr(parent_ts));
   }
 
   parent->dispatchParents.add(dtObject);
@@ -354,28 +361,32 @@ static ClassType* createAndInsertInterfaceDictClass(BaseAST *interfaceDict, cons
 
   return parent;
 }
+*/
 
 bool hasImplementsClausesInWhereClause(BaseAST *whereClause) {
-  if (CallExpr *ce = toCallExpr(whereClause)) {
+  if (ImplementsExpr *ce = toImplementsExpr(whereClause)) {
+    //if (UnresolvedSymExpr *callsymexpr = toUnresolvedSymExpr(ce->baseExpr)) {
+    //if (!strcmp(callsymexpr->unresolved, "implements")) {
+    //First find the interface that was implemented and open it up
+    BaseAST *interface_implemented = ce->interface;
+    if (SymExpr *se = toSymExpr(interface_implemented)) {
+      // Is a symexpr
+      if (isInterfaceSymbol(se->var)) {
+        return true;
+      }
+      else {
+        USR_FATAL(se, "Implementation phrase with non-interface symbol");
+      }
+    }
+    else {
+      // Isn't a symexpr, something is wrong
+      USR_FATAL(se, "Poorly formed implements phrase in where clause");
+    }
+  }
+  else if (CallExpr *ce = toCallExpr(whereClause)) {
     if (UnresolvedSymExpr *callsymexpr = toUnresolvedSymExpr(ce->baseExpr)) {
-      if (!strcmp(callsymexpr->unresolved, "implements")) {
-        //First find the interface that was implemented and open it up
-        BaseAST *interface_implemented = ce->argList.get(2);
-        if (SymExpr *se = toSymExpr(interface_implemented)) {
-          // Is a symexpr
-          if (isInterfaceSymbol(se->var)) {
-            return true;
-          }
-          else {
-            USR_FATAL(se, "Implementation phrase with non-interface symbol");
-          }
-        }
-        else {
-          // Isn't a symexpr, something is wrong
-          USR_FATAL(se, "Poorly formed implements phrase in where clause");
-        }
-      } else if (!strcmp(callsymexpr->unresolved, "_build_tuple")) {
-        //We have multiple constraints, handle them
+      if (!strcmp(callsymexpr->unresolved, "_build_tuple")) {
+      //We have multiple constraints, handle them
         for_alist(arg, ce->argList) {
           return hasImplementsClausesInWhereClause(arg);
         }
@@ -395,36 +406,34 @@ bool hasImplementsClausesInWhereClause(BaseAST *whereClause) {
   return false;
 }
 
-static bool addDictionaryForImplementsClausesInWhereClause(BaseAST* whereClause, CallExpr* fn_call, CallInfo &info) {
-  if (CallExpr *ce = toCallExpr(whereClause)) {
+static bool addDictionaryForImplementsClausesInWhereClause(BaseAST* whereClause,
+    CallExpr* fn_call, CallInfo &info) {
+
+  if (ImplementsExpr *ie = toImplementsExpr(whereClause)) {
+    BaseAST *interface_implemented = ie->interface;
+    if (SymExpr *se = toSymExpr(interface_implemented)) {
+      // Is a symexpr
+      if (isInterfaceSymbol(se->var)) {
+        Symbol *interfaceDict = lookupImplementsWitnessInSymbolTable(fn_call, ie);
+        if(!interfaceDict)
+          return false;
+        SymExpr *dictExpr = new SymExpr(interfaceDict);
+        fn_call->insertAtTail(dictExpr);
+        info.actuals.add(interfaceDict);
+        info.actualNames.add(NULL);
+      }
+      else {
+        return false;
+      }
+    }
+    else {
+      // Isn't a symexpr, something is wrong
+      USR_FATAL(se, "Poorly formed implements phrase in where clause");
+    }
+  }
+  else if (CallExpr *ce = toCallExpr(whereClause)) {
     if (UnresolvedSymExpr *callsymexpr = toUnresolvedSymExpr(ce->baseExpr)) {
-      if (!strcmp(callsymexpr->unresolved, "implements")) {
-        //First find the interface that was implemented and open it up
-        BaseAST* type_arg = toSymExpr(ce->argList.get(1))->var->type;
-        BaseAST *interface_implemented = ce->argList.get(2);
-        if (SymExpr *se = toSymExpr(interface_implemented)) {
-          // Is a symexpr
-          if (isInterfaceSymbol(se->var)) {
-            Symbol *interfaceDict = lookupImplementsWitnessInSymbolTable(fn_call, interface_implemented, type_arg);
-            if(!interfaceDict)
-              return false;
-              //USR_FATAL("Implementation condition not satisfied.\n");
-            SymExpr *dictExpr = new SymExpr(interfaceDict);
-            fn_call->insertAtTail(dictExpr);
-            info.actuals.add(interfaceDict);
-            info.actualNames.add(NULL);
-            //ce->remove();
-          }
-          else {
-            return false;
-            //USR_FATAL(se, "Implementation phrase with non-interface symbol");
-          }
-        }
-        else {
-          // Isn't a symexpr, something is wrong
-          USR_FATAL(se, "Poorly formed implements phrase in where clause");
-        }
-      } else if (!strcmp(callsymexpr->unresolved, "_build_tuple")) {
+      if (!strcmp(callsymexpr->unresolved, "_build_tuple")) {
         //We have multiple constraints, handle them
         for_alist(arg, ce->argList) {
           bool result = addDictionaryForImplementsClausesInWhereClause(arg, fn_call, info);
@@ -445,7 +454,7 @@ static bool addDictionaryForImplementsClausesInWhereClause(BaseAST* whereClause,
 }
 
 
-typedef Map<BaseAST*, Symbol*> ImplementingTypeList;
+typedef Map<AList*, Symbol*> ImplementingTypeList;
 typedef Map<BaseAST*, ImplementingTypeList*> ImplementedInterfaceList;
 typedef Map<BaseAST*, ImplementedInterfaceList*> ImplementsSymbolTable;
 
@@ -481,13 +490,14 @@ BaseAST* getScope(BaseAST* ast) {
 }
 
 void
-addToImplementsSymbolTable(CallExpr* ce, BaseAST *scope, Symbol *implementingWitness){
-  BaseAST* interface = ce->argList.tail;
-  BaseAST* implementingType = ce->argList.head;
+addToImplementsSymbolTable(ImplementsExpr* implExpr, Symbol *implDict){
+  BaseAST* interface = implExpr->interface;
+  BaseAST *scope = getScope(implExpr);
 
-  //BaseAST* scope = getScope(ce);
+  //ClassType *implementingDictType = resolveImplementsExpr(implExpr);
+
   BaseAST* interface_node = cclosure.get_representative_ast(interface);
-  BaseAST* implementingType_node = cclosure.get_representative_ast(implementingType);
+  //BaseAST* implementingTypeNode = cclosure.get_representative_ast(implementingDictType);
   ImplementedInterfaceList* interfaceEntry = implementsSymbolTable.get(scope);
   if(!interfaceEntry) {
     interfaceEntry = new ImplementedInterfaceList();
@@ -496,34 +506,55 @@ addToImplementsSymbolTable(CallExpr* ce, BaseAST *scope, Symbol *implementingWit
   ImplementingTypeList* typeEntry = interfaceEntry->get(interface);
   if(!typeEntry) {
     typeEntry = new ImplementingTypeList();
-    interfaceEntry->put(interface_node,typeEntry);
+    interfaceEntry->put(interface_node, typeEntry);
   }
-  typeEntry->put(implementingType_node,implementingWitness);
+  //typeEntry->put(implementingTypeNode, implDict);
+  typeEntry->put(&(implExpr->typeList), implDict);
 }
 
-Symbol*
-lookupImplementsWitnessInSymbolTable(BaseAST* ce, BaseAST* interface, BaseAST* implementingType) {
-  BaseAST* scope;
-  if (ce)
-    scope = getScope(ce);
+Symbol* getDictionaryByComparingAlists(ImplementingTypeList* typeEntry, ImplementsExpr *ie) {
+  Symbol *dict;
+  for(int i=0; i<typeEntry->n; i++) {
+    int flag = 1;
+    if(typeEntry->v[i].key->length == ie->typeList.length)
+      for(int j=1; j<=typeEntry->v[i].key->length; j++) {
+        if(!cclosure.is_equal(toSymExpr((ie->typeList.get(j)))->var->type,toSymExpr(typeEntry->v[i].key->get(j))->var))
+          flag = 0;
+      }
+    if(flag == 1) {
+      dict = typeEntry->get(typeEntry->v[i].key);
+      break;
+    }
+  }
+  return dict;
+}
+
+Symbol* lookupImplementsWitnessInSymbolTable(BaseAST *scope, ImplementsExpr *ie) {
+  if (scope)
+    scope = getScope(scope);
   else
-    scope = getScope(interface);
+    scope = getScope(ie->interface);
 
   if(!scope)
     return NULL;
-  BaseAST* interface_node = cclosure.get_representative_ast(interface);
-  BaseAST* implementingType_node = cclosure.get_representative_ast(implementingType);
+
+  //ClassType *implementingDictType = resolveImplementsExpr(ie);
+
+  BaseAST* interfaceNode = cclosure.get_representative_ast(ie->interface);
+  //BaseAST* implementingType = cclosure.get_representative_ast(implementingDictType);
+
   ImplementedInterfaceList* interfaceEntry = implementsSymbolTable.get(scope);
   if(!interfaceEntry) {
-    return lookupImplementsWitnessInSymbolTable(scope,interface,implementingType);
+    return lookupImplementsWitnessInSymbolTable(scope,ie);
   }
-  ImplementingTypeList* typeEntry = interfaceEntry->get(interface_node);
+  ImplementingTypeList* typeEntry = interfaceEntry->get(interfaceNode);
   if(!typeEntry)
-    return lookupImplementsWitnessInSymbolTable(scope,interface,implementingType);
-  Symbol* witness = typeEntry->get(implementingType_node);
-  if(!witness)
-    return lookupImplementsWitnessInSymbolTable(scope,interface,implementingType);
-  return witness;
+    return lookupImplementsWitnessInSymbolTable(scope,ie);
+  //Symbol* dict = typeEntry->get(implementingType);
+  Symbol *dict = getDictionaryByComparingAlists(typeEntry,ie);
+  if(!dict)
+    return lookupImplementsWitnessInSymbolTable(scope,ie);
+  return dict;
 }
 
 
@@ -2344,11 +2375,11 @@ resolveCall(CallExpr* call, bool errorCheck) {
 static void resolveNormalCall(CallExpr* call, bool errorCheck) {
     resolveDefaultGenericType(call);
 
-    if (UnresolvedSymExpr *use = toUnresolvedSymExpr(call->baseExpr)) {
+    /*if (UnresolvedSymExpr *use = toUnresolvedSymExpr(call->baseExpr)) {
       if (!strcmp(use->unresolved, "implements")) {
         return;
       }
-    }
+    }*/
 
     CallInfo info(call);
 
@@ -2363,9 +2394,11 @@ static void resolveNormalCall(CallExpr* call, bool errorCheck) {
       buildVisibleFunctionMap();
 
     if (!call->isResolved()) {
+      /*
       if (FnSymbol *parentFn = toFnSymbol(call->parentSymbol)) {
         getMatchingFunctionsInInterfaces(info.name, visibleFns, parentFn->fnsInInterfaces);
       }
+      */
 
       if (!info.scope) {
         Vec<BlockStmt*> visited;
@@ -2511,15 +2544,15 @@ static void resolveNormalCall(CallExpr* call, bool errorCheck) {
               if (subs.n) {
                 // If any substitutions were made, instantiate the generic function.
                 if (FnSymbol* ifn = instantiate(fn, &subs, info.call, false)) {
-                  Vec<CallExpr*> implementsClauses;
+                  Vec<ImplementsExpr*> implementsClauses;
                   getWitnessesInWhereClause(implementsClauses, ifn->where);
 
                   // TODO: Double check this logic, it may not be valid for all instances
                   int currentDict = ifn->formals.length - implementsClauses.n + 1;
-                  forv_Vec(CallExpr, implClause, implementsClauses) {
+                  forv_Vec(ImplementsExpr, implClause, implementsClauses) {
                     if (DefExpr *de = toDefExpr(ifn->formals.get(currentDict))) {
                       if (ArgSymbol *as = toArgSymbol(de->sym)) {
-                        addToImplementsSymbolTable(implClause, getScope(ifn), as);
+                        addToImplementsSymbolTable(implClause, as);
                         ++currentDict;
                       }
                       else {
@@ -2531,7 +2564,11 @@ static void resolveNormalCall(CallExpr* call, bool errorCheck) {
                     }
                   }
 
+                  resolvedFns.put(best, false);
+
                   best = ifn;
+                  resolveFns(best);
+                  resolveBlock(best->body);
                 }
               }
             }
@@ -5270,25 +5307,28 @@ computeStandardModuleSet() {
 }
 
 
-static void getWitnessesInWhereClause(Vec<CallExpr*>& implementsClauses, BaseAST *whereClause) {
-  if (CallExpr *ce = toCallExpr(whereClause)) {
+static void getWitnessesInWhereClause(Vec<ImplementsExpr*>& implementsClauses, BaseAST *whereClause) {
+  if (ImplementsExpr *ce = toImplementsExpr(whereClause)) {
+    //if (UnresolvedSymExpr *callsymexpr = toUnresolvedSymExpr(ce->baseExpr)) {
+    //if (!strcmp(callsymexpr->unresolved, "implements")) {
+    //First find the interface that was implemented and open it up
+    BaseAST *interface_implemented = ce->interface;
+    if (SymExpr *se = toSymExpr(interface_implemented)) {
+      // Is a symexpr
+      if (isInterfaceSymbol(se->var)) {
+        implementsClauses.add(ce);
+      }
+      else {
+        INT_FATAL("Implementation phrase with non-interface symbol");
+      }
+    }
+    else {
+      // Isn't a symexpr, something is wrong
+    }
+  }
+  else if (CallExpr *ce = toCallExpr(whereClause)) {
     if (UnresolvedSymExpr *callsymexpr = toUnresolvedSymExpr(ce->baseExpr)) {
-      if (!strcmp(callsymexpr->unresolved, "implements")) {
-        //First find the interface that was implemented and open it up
-        BaseAST *interface_implemented = ce->argList.get(2);
-        if (SymExpr *se = toSymExpr(interface_implemented)) {
-          // Is a symexpr
-          if (isInterfaceSymbol(se->var)) {
-            implementsClauses.add(ce);
-          }
-          else {
-            INT_FATAL("Implementation phrase with non-interface symbol");
-          }
-        }
-        else {
-          // Isn't a symexpr, something is wrong
-        }
-      } else if (!strcmp(callsymexpr->unresolved, "_build_tuple")) {
+      if (!strcmp(callsymexpr->unresolved, "_build_tuple")) {
         //We have multiple constraints, handle them
         for_alist(arg, ce->argList) {
           getWitnessesInWhereClause(implementsClauses, arg);
@@ -5303,6 +5343,7 @@ static void getWitnessesInWhereClause(Vec<CallExpr*>& implementsClauses, BaseAST
   }
 }
 
+/*
 static void getMatchingFunctionsInInterfaces(const char* name, Vec<FnSymbol*>& visibleFns,
     Map<FnSymbol*, ArgSymbol*>& fnsInInterfaces) {
 
@@ -5312,78 +5353,36 @@ static void getMatchingFunctionsInInterfaces(const char* name, Vec<FnSymbol*>& v
     }
   }
 }
+*/
 
 static void
 getFunctionsInWhereClause(Map<FnSymbol*, ArgSymbol*>& fnsInInterfaces,
     Vec<ArgSymbol*>& witnessObjects, BaseAST *whereClause) {
 
-  Vec<CallExpr*> implementsClauses;
+  Vec<ImplementsExpr*> implementsClauses;
   getWitnessesInWhereClause(implementsClauses, whereClause);
 
-  forv_Vec(CallExpr, ce, implementsClauses) {
+  forv_Vec(ImplementsExpr, ce, implementsClauses) {
     //First find the interface that was implemented and open it up
-    SymExpr *implementing_type = toSymExpr(ce->argList.get(1));
-    BaseAST *interface_implemented = ce->argList.get(2);
+
+    BaseAST *interface_implemented = ce->interface;
     if (SymExpr *se = toSymExpr(interface_implemented)) {
       // Is a symexpr
-      if (InterfaceSymbol *is = toInterfaceSymbol(se->var)) {
+      ArgSymbol *dict = new ArgSymbol(INTENT_BLANK,
+          astr("_impl_dict_", se->var->name), dtAny);
+      dict->addFlag(FLAG_GENERIC);
 
-        // Create an symbol that will represent this dictionary
-        ArgSymbol *dict = new ArgSymbol(INTENT_BLANK,
-            astr(implementing_type->var->name, "_impl_", se->var->name), dtAny);
-        dict->addFlag(FLAG_GENERIC);
+      witnessObjects.add(dict);
 
-        witnessObjects.add(dict);
+      Vec<FnSymbol *> interfaceFns;
+      collectInstantiatedInterfaceFunctions(ce, interfaceFns, false);
 
-        //addToImplementsSymbolTable(ce, getScope(fn2), dict);
-
-        forv_Vec(FnSymbol, fn, is->functionSignatures) {
-          //For now, copy the function prototype and replace the types
-          //with the ones we know
-          //FnSymbol *fn_copy = fn->copy(NULL, true);
-          /*
-          FnSymbol *fn_copy = fn->copy();
-          fn_copy->addFlag(FLAG_INVISIBLE_FN);
-
-          */
-          SymbolMap map;
-          FnSymbol *fn_copy = instantiate(fn, &map, NULL, true, true);
-          //replace formal types
-          for_formals(arg, fn_copy) {
-            //list_view(arg);
-            if (BlockStmt *bs = toBlockStmt(arg->typeExpr)) {
-              if (UnresolvedSymExpr *use = toUnresolvedSymExpr(bs->body.head)) {
-                if (!strcmp(use->unresolved, "self")) {
-                  bs->body.head = ce->argList.get(1)->copy();
-                }
-              }
-            }
-          }
-          //replace return type
-          if (BlockStmt *bs = toBlockStmt(fn_copy->retExprType)) {
-            if (UnresolvedSymExpr *use = toUnresolvedSymExpr(bs->body.head)) {
-              if (!strcmp(use->unresolved, "self")) {
-                bs->body.head = ce->argList.get(1)->copy();
-              }
-            }
-          }
-          VarSymbol *ret_tmp = new VarSymbol("ret_tmp");
-          fn_copy->insertBeforeReturn(new DefExpr(ret_tmp, gNil, fn_copy->retExprType ? fn_copy->retExprType->copy() : NULL));
-          fn_copy->insertBeforeReturn(new CallExpr(PRIM_RETURN, new SymExpr(ret_tmp)));
-          fn_copy->body->body.tail->remove();
-
-          //fn_copy->addFlag(FLAG_GENERIC);
-          //fn_copy->removeFlag(FLAG_GENERIC);
-          //fn_copy->addFlag(FLAG_INVISIBLE_FN);
-          //fn_copy->instantiatedFrom = fn;
-          //fn_copy->defPoint = whereClause->getFunction()->defPoint;
-          fnsInInterfaces.put(fn_copy, dict); //was fn, dict
-          //list_view(fn_copy);
-        }
+      forv_Vec(FnSymbol, fn, interfaceFns) {
+        fnsInInterfaces.put(fn, dict); //was fn, dict
       }
-      else {
-        INT_FATAL("Implementation phrase with non-interface symbol");
-      }
+    }
+    else {
+      INT_FATAL("Implementation phrase with non-interface symbol");
     }
   }
 }
@@ -5404,6 +5403,8 @@ static void convertInterfaceUsesFn(FnSymbol *fn) {
 
   form_Map(FnArgElem, e, fn->fnsInInterfaces) {
     if (BlockStmt *block = toBlockStmt(fn->body->body.head->next)) {
+      if (e->key->defPoint)
+        e->key->defPoint->remove();
       block->insertAtHead(new DefExpr(e->key));
     }
   }
@@ -5439,7 +5440,8 @@ static void convertInterfaceUsesFn(FnSymbol *fn) {
       if (DefExpr *de = toDefExpr(curr)) {
         if (FnSymbol *fn_to_res = toFnSymbol(de->sym)) {
           fn_to_res->addFlag(FLAG_ALLOW_REF);
-          //fn_to_res->removeFlag(FLAG_INVISIBLE_FN);
+          fn_to_res->removeFlag(FLAG_INVISIBLE_FN);
+          fn_to_res->removeFlag(FLAG_GENERIC);
           resolveFormals(fn_to_res);
           form_Map(FnArgElem, e, fn->fnsInInterfaces) {
             if (fn_to_res->instantiatedFrom == e->key->instantiatedFrom) {
@@ -5455,12 +5457,14 @@ static void convertInterfaceUsesFn(FnSymbol *fn) {
   fn2->addFlag(FLAG_ALLOW_REF);
   resolveFormals(fn2);
 
-  Vec<CallExpr*> implementsClauses;
+  Vec<ImplementsExpr*> implementsClauses;
   getWitnessesInWhereClause(implementsClauses, fn2->where);
   int i = 0;
-  forv_Vec(CallExpr, implClause, implementsClauses) {
-    addToImplementsSymbolTable(implClause, getScope(fn2), witnessObjects.v[i]);
-    ++i;
+  forv_Vec(ImplementsExpr, implClause, implementsClauses) {
+    for_alist(typeExpr,implClause->typeList){
+      addToImplementsSymbolTable(implClause, witnessObjects.v[i]);
+      ++i;
+    }
   }
 
   resolveFns(fn2);
@@ -5468,7 +5472,6 @@ static void convertInterfaceUsesFn(FnSymbol *fn) {
 
   //JDT: Delete??
   fn->removeFlag(FLAG_INVISIBLE_FN);
-  //fn->retType = fn2->retType; //JDT: stopgap to see if I can get example working
 
   /*
   form_Map(FnArgElem, e, fn->fnsInInterfaces) {
@@ -5589,6 +5592,7 @@ static void convertInterfaceUsesFn(FnSymbol *fn) {
   earlyTypeCheck = false;
 }
 
+/*
 static void addAdaptationToInterfaceDict(BaseAST *insertBefore, ClassType *interfaceDict,
     FnSymbol *requiredFn, FnSymbol *actualFn) {
   FnSymbol* adapted_method = new FnSymbol(requiredFn->name);
@@ -5629,7 +5633,7 @@ static void addAdaptationToInterfaceDict(BaseAST *insertBefore, ClassType *inter
 
   interfaceDict->methods.add(adapted_method);
 }
-
+*/
 
 void
 resolve() {
@@ -5654,6 +5658,10 @@ resolve() {
     if (hasImplementsClausesInWhereClause(fn->where)) {
       convertInterfaceUsesFn(fn);
     }
+  }
+
+  forv_Vec(InterfaceSymbol, is, gInterfaceSymbols) {
+    convertInterfaceToClass(is);
   }
 
   resolveUses(mainModule);
@@ -6203,8 +6211,10 @@ static void pruneInterfaceGenericFns() {
       }
     }
   }
+
   forv_Vec(InterfaceSymbol, is, gInterfaceSymbols) {
-    is->defPoint->remove();
+    is->fields.head = NULL;
+    is->fields.tail = NULL;
   }
 }
 
@@ -6621,105 +6631,363 @@ setScalarPromotionType(ClassType* ct) {
   }
 }
 
+static void forcePrototypeSubstitutions(FnSymbol *fn) {
+  for_formals(formal, fn) {
+    if (formal->typeExpr) {
+      if (SymExpr *se = toSymExpr(formal->typeExpr->body.head)) {
+        if (Symbol *s = fn->substitutions.get(se->var)) {
+          if (TypeSymbol *ts = toTypeSymbol(s)) {
+            formal->type = ts->type;
+            formal->typeExpr = NULL;
+          }
+          else {
+            se->replace(new SymExpr(s));
+          }
+        }
+        else {
+          if (TypeSymbol *ts = toTypeSymbol(se->var)) {
+            formal->type = ts->type;
+            formal->typeExpr = NULL;
+          }
+        }
+      }
+    }
+  }
+
+  if (fn->retExprType) {
+    if (SymExpr *se = toSymExpr(fn->retExprType->body.head)) {
+      if (Symbol *s = fn->substitutions.get(se->var)) {
+        if (TypeSymbol *ts = toTypeSymbol(s)) {
+          fn->retType = ts->type;
+          fn->retExprType = NULL;
+        }
+        else {
+          se->replace(new SymExpr(s));
+        }
+      }
+      else {
+        if (TypeSymbol *ts = toTypeSymbol(se->var)) {
+          fn->retType = ts->type;
+          fn->retExprType = NULL;
+        }
+      }
+    }
+    else if (CallExpr *ce = toCallExpr(fn->retExprType->body.head)) {
+      if (UnresolvedSymExpr *use = toUnresolvedSymExpr(ce->baseExpr)) {
+        if (!strcmp(use->unresolved, "_statementLevelSymbol")) {
+          // This is a bit of a hack to get around partially formed type expressions
+          if (SymExpr *se = toSymExpr(ce->argList.head)) {
+            if (TypeSymbol *ts = toTypeSymbol(se->var)) {
+              fn->retType = ts->type;
+              fn->retExprType = NULL;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  /*
+  Vec<BaseAST*> asts;
+  collect_asts(fn, asts);
+  forv_Vec(BaseAST, ast, asts) {
+    //if (Symbol *s = toSymbol(ast)) {
+    if (DefExpr *de = toDefExpr(ast)) {
+      if (Symbol *s = fn->substitutions.get(de->sym)) {
+        //de->sym = s;
+        de->replace(new DefExpr(s));
+      }
+    }
+    else if (SymExpr *se = toSymExpr(ast)) {
+      if (Symbol *s = fn->substitutions.get(se->var)) {
+        //se->var = s;
+        se->replace(new SymExpr(s));
+      }
+    }
+  }
+  */
+}
+
+static void collectInstantiatedInterfaceFunctions(ImplementsExpr *call, Vec<FnSymbol *>&fns,
+    bool buildFnBodies) {
+  SymbolMap map;
+
+  if (SymExpr *se = toSymExpr(call->interface)) {
+    if (InterfaceSymbol *is = toInterfaceSymbol(se->var)) {
+      //TODO: Make this more robust
+      for (Expr *formal_node = is->formals.head, *actual_node = call->typeList.head;
+          formal_node != NULL && actual_node != NULL; formal_node = formal_node->next,
+          actual_node = actual_node->next) {
+
+        map.put(toDefExpr(formal_node)->sym, toSymExpr(actual_node)->var);
+      }
+
+      forv_Vec(FnSymbol, fn, is->functionSignatures) {
+        // fn->addFlag(FLAG_GENERIC);
+        FnSymbol *new_fn = instantiate(fn, &map, NULL, true, true);
+        //FnSymbol *new_fn = fn->copy();
+        //new_fn->substitutions = map;
+        // come out invisible, just as if we were instantiated
+        new_fn->addFlag(FLAG_INVISIBLE_FN);
+        forcePrototypeSubstitutions(new_fn);
+
+        if (buildFnBodies) {
+          CallExpr *proxy_call = new CallExpr(fn->name);
+
+          resolveFormals(new_fn);
+
+          for_formals (formal, new_fn) {
+            proxy_call->insertAtTail(formal);
+          }
+
+          if (new_fn->retType != dtVoid) {
+            new_fn->body->body.head->replace(new CallExpr(PRIM_RETURN, proxy_call));
+            //new_fn->body->body.head->remove();
+          }
+          else {
+            new_fn->insertBeforeReturn(proxy_call);
+          }
+          //resolveCall(proxy_call);
+          normalize(new_fn);
+        }
+
+        new_fn->removeFlag(FLAG_INVISIBLE_FN);
+        //new_fn->addFlag(FLAG_GENERIC);
+        fns.add(new_fn);
+      }
+    }
+    else {
+      USR_FATAL(call, "Unknown type used in implements statement\n");
+    }
+  }
+  else {
+    USR_FATAL(call, "Unknown type used in implements statement\n");
+  }
+}
+
+/*static ClassType *resolveImplementsExpr(ImplementsExpr *ie) {
+  if (SymExpr *se = toSymExpr(ie->interface)) {
+    CallExpr *constructorCall = new CallExpr(astr("_construct_", se->var->name));
+
+    for_alist(arg, ie->typeList) {
+      constructorCall->insertAtTail(arg->copy());
+    }
+
+    ie->insertAfter(constructorCall);
+
+    resolveCall(constructorCall);
+    resolveFns(constructorCall->isResolved());
+
+    ClassType *interfaceClassType = toClassType(constructorCall->isResolved()->retType);
+
+    constructorCall->remove();
+
+    delete(constructorCall);
+
+    return interfaceClassType;
+  }
+  return NULL;
+}*/
+
 static void resolveImplementsStatement(ImplementsStmt* istmt, bool errorCheck) {
-  CallExpr* call = toCallExpr(istmt->implementsClause);
-  if (SymExpr *se = toSymExpr(call->argList.tail)) {
-    if (SymExpr *implementingExpr = toSymExpr(call->argList.head)) {
-      if (InterfaceSymbol *is = toInterfaceSymbol(se->var)) {
-        ClassType* interfaceDict = createAndInsertInterfaceDictClass(istmt,
-            astr("interfaceDict_", se->var->name, "_", se->var->name));
-        forv_Vec (FnSymbol, fn, is->functionSignatures) {
+  ImplementsExpr* call = toImplementsExpr(istmt->implementsClause);
+  Vec<FnSymbol *> fns;
 
-          SymbolMap map;
-          FnSymbol *fn_copy = fn->copy();
-          fn_copy->defPoint = fn->defPoint;
+  collectInstantiatedInterfaceFunctions(call, fns);
 
-          //replace formal types
-          for_formals(arg, fn_copy) {
-            //list_view(arg);
-            if (BlockStmt *bs = toBlockStmt(arg->typeExpr)) {
+  if (SymExpr *se = toSymExpr(call->interface)) {
+    CallExpr *constructorCall = new CallExpr(astr("_construct_", se->var->name));
+
+    //istmt->insertAfter(constructorCall);
+    VarSymbol *ifaceDict = new VarSymbol("interfaceDict", dtUnknown);
+    addToImplementsSymbolTable(call, ifaceDict);
+    //constructorCall->remove();
+    istmt->insertAfter(new CallExpr(PRIM_MOVE, ifaceDict, constructorCall));
+      //new CallExpr(interfaceDict->defaultConstructor->name)));
+    istmt->insertAfter(new DefExpr(ifaceDict));
+    //istmt->remove();
+
+    for_alist(arg, call->typeList) {
+      constructorCall->insertAtTail(arg->copy());
+    }
+    resolveCall(constructorCall);
+    resolveFns(constructorCall->isResolved());
+
+    ClassType *interfaceClassType = toClassType(constructorCall->isResolved()->retType);
+
+    forv_Vec(FnSymbol, new_fn, fns) {
+      new_fn->removeFlag(FLAG_INVISIBLE_FN);
+      new_fn->addFlag(FLAG_INLINE);
+      ArgSymbol* thisinterfaceDictSymbol = new ArgSymbol(INTENT_BLANK, "this", interfaceClassType);
+      thisinterfaceDictSymbol->addFlag(FLAG_ARG_THIS);
+      new_fn->insertFormalAtHead(thisinterfaceDictSymbol);
+      new_fn->_this = thisinterfaceDictSymbol;
+      new_fn->insertFormalAtHead(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
+
+      istmt->insertAfter(new DefExpr(new_fn));
+
+      interfaceClassType->methods.add(new_fn);
+
+      resolveFns(new_fn);
+      resolveBlock(new_fn->body);
+    }
+    //istmt->remove();
+  }
+  else {
+    USR_FATAL(istmt, "Unknown type used in implements statement\n");
+  }
+
+  //if (SymExpr *se = toSymExpr(call->interface)) {
+  //  if (InterfaceSymbol *is = toInterfaceSymbol(se->var)) {
+      //for_alist(typeExpr,call->typeList) {
+        //if (SymExpr *implementingExpr = toSymExpr(typeExpr)) {
+          //ClassType* interfaceDict = createAndInsertInterfaceDictClass(istmt,
+          //    astr("__InterfaceDict_", se->var->name));
+
+/*
+          forv_Vec (FnSymbol, fn, is->functionSignatures) {
+
+            SymbolMap map;
+            FnSymbol *fn_copy = fn->copy();
+            fn_copy->defPoint = fn->defPoint;
+
+            //replace formal types
+            for_formals(arg, fn_copy) {
+              //list_view(arg);
+              if (BlockStmt *bs = toBlockStmt(arg->typeExpr)) {
+                if (UnresolvedSymExpr *use = toUnresolvedSymExpr(bs->body.head)) {
+                  if (!strcmp(use->unresolved, "self")) {
+                    arg->type = implementingExpr->var->type;
+                    bs->body.head = implementingExpr->copy();
+                  }
+                }
+              }
+            }
+            //replace return type
+            if (BlockStmt *bs = toBlockStmt(fn_copy->retExprType)) {
               if (UnresolvedSymExpr *use = toUnresolvedSymExpr(bs->body.head)) {
                 if (!strcmp(use->unresolved, "self")) {
-                  arg->type = implementingExpr->var->type;
+                  fn_copy->retType = implementingExpr->var->type;
                   bs->body.head = implementingExpr->copy();
                 }
               }
             }
-          }
-          //replace return type
-          if (BlockStmt *bs = toBlockStmt(fn_copy->retExprType)) {
-            if (UnresolvedSymExpr *use = toUnresolvedSymExpr(bs->body.head)) {
-              if (!strcmp(use->unresolved, "self")) {
-                fn_copy->retType = implementingExpr->var->type;
-                bs->body.head = implementingExpr->copy();
-              }
-            }
-          }
 
-          CallInfo info(fn_copy, cclosure);
-          Vec<FnSymbol*> visibleFns;                    // visible functions
-          Vec<FnSymbol*> candidateFns;
-          Vec<Vec<ArgSymbol*>*> candidateActualFormals; // candidate functions
+            CallInfo info(fn_copy, cclosure);
+            Vec<FnSymbol*> visibleFns;                    // visible functions
+            Vec<FnSymbol*> candidateFns;
+            Vec<Vec<ArgSymbol*>*> candidateActualFormals; // candidate functions
 
-          if (!info.scope) {
-            Vec<BlockStmt*> visited;
-            getVisibleFunctions(getVisibilityBlock(call),
-                info.name, visibleFns, visited);
-          } else {
-            if (VisibleFunctionBlock* vfb = visibleFunctionMap.get(info.scope))
-              if (Vec<FnSymbol*>* fns = vfb->visibleFunctions.get(info.name))
-                visibleFns.append(*fns);
-          }
-          forv_Vec(FnSymbol, visibleFn, visibleFns) {
-            //if (call->methodTag && !visibleFn->hasFlag(FLAG_NO_PARENS) && !visibleFn->hasFlag(FLAG_TYPE_CONSTRUCTOR))
-              //continue;
-            addCandidate(&candidateFns, &candidateActualFormals, visibleFn, info);
-          }
-          FnSymbol* best = NULL;
-          Vec<ArgSymbol*>* actualFormals = 0;
-          Expr* scope = (info.scope) ? info.scope :
-              getVisibilityBlock(call);
-          best = disambiguate_by_match(&candidateFns, &candidateActualFormals,
-                                       &info.actuals, &actualFormals, scope, false); //FIXME: pass explain flag
-
-          if (!best) {
-            if (tryStack.n) {
-              tryFailure = true;
-              return;
-            } else if (candidateFns.n > 0) {
-              if (errorCheck)
-                USR_FATAL(call,"Function %s is ambiguous for implementing %s \n", toString(fn_copy), is->cname); //FIXME: Integrate it more closely to chapel style
+            if (!info.scope) {
+              Vec<BlockStmt*> visited;
+              getVisibleFunctions(getVisibilityBlock(call),
+                  info.name, visibleFns, visited);
             } else {
-              if (errorCheck)
-                USR_FATAL(call,"Function %s not found for implementing %s\n", toString(fn_copy), is->cname);   //FIXME: Integrate it more closely to chapel style
+              if (VisibleFunctionBlock* vfb = visibleFunctionMap.get(info.scope))
+                if (Vec<FnSymbol*>* fns = vfb->visibleFunctions.get(info.name))
+                  visibleFns.append(*fns);
             }
-          } else {
-            best = defaultWrap(best, actualFormals, &info);
-            best = orderWrap(best, actualFormals, &info);
-            best = coercionWrap(best, &info);
-            best = promotionWrap(best, &info);
-          }
+            forv_Vec(FnSymbol, visibleFn, visibleFns) {
+              //if (call->methodTag && !visibleFn->hasFlag(FLAG_NO_PARENS) && !visibleFn->hasFlag(FLAG_TYPE_CONSTRUCTOR))
+                //continue;
+              addCandidate(&candidateFns, &candidateActualFormals, visibleFn, info);
+            }
+            FnSymbol* best = NULL;
+            Vec<ArgSymbol*>* actualFormals = 0;
+            Expr* scope = (info.scope) ? info.scope :
+                getVisibilityBlock(call);
+            best = disambiguate_by_match(&candidateFns, &candidateActualFormals,
+                                         &info.actuals, &actualFormals, scope, false); //FIXME: pass explain flag
 
-          for (int i = 0; i < candidateActualFormals.n; i++)
-            delete candidateActualFormals.v[i];
+            if (!best) {
+              if (tryStack.n) {
+                tryFailure = true;
+                return;
+              } else if (candidateFns.n > 0) {
+                if (errorCheck)
+                  USR_FATAL(call,"Function %s is ambiguous for implementing %s \n", toString(fn_copy), is->cname); //FIXME: Integrate it more closely to chapel style
+              } else {
+                if (errorCheck)
+                  USR_FATAL(call,"Function %s not found for implementing %s\n", toString(fn_copy), is->cname);   //FIXME: Integrate it more closely to chapel style
+              }
+            } else {
+              best = defaultWrap(best, actualFormals, &info);
+              best = orderWrap(best, actualFormals, &info);
+              best = coercionWrap(best, &info);
+              best = promotionWrap(best, &info);
+            }
 
-          FnSymbol* resolvedFn = best;
-          if(!resolvedFn)
-            USR_FATAL(call,"Function %s could not be resolved for implementing %s\n", toString(fn_copy), is->cname);
-          addAdaptationToInterfaceDict(istmt, interfaceDict, fn_copy, resolvedFn);
+            for (int i = 0; i < candidateActualFormals.n; i++)
+              delete candidateActualFormals.v[i];
+
+            FnSymbol* resolvedFn = best;
+            if(!resolvedFn)
+              USR_FATAL(call,"Function %s could not be resolved for implementing %s\n", toString(fn_copy), is->cname);
+            addAdaptationToInterfaceDict(istmt, interfaceDict, fn_copy, resolvedFn);
+          //}
+          VarSymbol *tmp = new VarSymbol("interfaceDict", interfaceDict);
+          istmt->insertAfter(new CallExpr(PRIM_MOVE, tmp,
+            new CallExpr(new SymExpr(interfaceDict->defaultConstructor))));
+            //new CallExpr(interfaceDict->defaultConstructor->name)));
+          istmt->insertAfter(new DefExpr(tmp));
+          addToImplementsSymbolTable(call, implementingExpr, getScope(call), tmp);
+          istmt->remove();
         }
-        VarSymbol *tmp = new VarSymbol("interfaceDict", interfaceDict);
-        istmt->insertAfter(new CallExpr(PRIM_MOVE, tmp,
-          new CallExpr(interfaceDict->defaultConstructor->name)));
-        istmt->insertAfter(new DefExpr(tmp));
-        addToImplementsSymbolTable(call, getScope(call), tmp);
-        call->remove();
+        else
+          USR_FATAL(istmt,"%s is not an Interface\n",se->var->cname);
       }
-      else
-        USR_FATAL(istmt,"%s is not an Interface\n",se->var->cname);
+      */
+    //}
+    //}
+  //}
+  //else
+    //USR_FATAL(istmt,"Interface not found\n");
+}
+
+static void convertInterfaceToClass(InterfaceSymbol* is) {
+  /*ClassType* interfaceDict = createAndInsertInterfaceDictClass(is,
+                astr("interfaceDict_", is->cname, "_", is->cname));*/
+  ClassType *interfaceDict = new ClassType(CLASS_CLASS);
+  TypeSymbol *interfaceDict_ts = new TypeSymbol(is->cname, interfaceDict);
+  is->defPoint->insertBefore(new DefExpr(interfaceDict_ts));
+
+  interfaceDict->dispatchParents.add(dtObject);
+  dtObject->dispatchChildren.add(interfaceDict);
+  VarSymbol* interfaceDict_super = new VarSymbol("super", dtObject);
+  interfaceDict_super->addFlag(FLAG_SUPER_CLASS);
+  interfaceDict->fields.insertAtHead(new DefExpr(interfaceDict_super));
+
+  for_alist(formal,is->formals) {
+    if(ArgSymbol* arg = toArgSymbol(toDefExpr(formal)->sym)) {
+      VarSymbol* formal_var = new VarSymbol(arg->cname,arg->type);
+      formal_var->addFlag(FLAG_TYPE_VARIABLE);
+      if (formal_var->type == dtAny) {
+        formal_var->type = dtUnknown;
+      }
+      interfaceDict->fields.insertAtTail(new DefExpr(formal_var));
     }
   }
-  else
-    USR_FATAL(istmt,"Interface not found\n");
+
+  forv_Vec (FnSymbol, fn, is->functionSignatures) {
+    FnSymbol *fn_copy = fn->copy();
+    //fn_copy->defPoint = fn->defPoint;
+    fn_copy->_this = new ArgSymbol(fn_copy->thisTag, "this", interfaceDict);
+    fn_copy->_this->addFlag(FLAG_ARG_THIS);
+    fn_copy->insertFormalAtHead(new DefExpr(fn_copy->_this));
+    fn_copy->insertFormalAtHead(new DefExpr(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken)));
+    fn_copy->addFlag(FLAG_METHOD);
+
+    is->defPoint->insertBefore(new DefExpr(fn_copy));
+
+    interfaceDict->methods.add(fn_copy);
+  }
+
+  build_constructor(interfaceDict);
+  build_type_constructor(interfaceDict);
+
+  interfaceDict->defaultConstructor->addFlag(FLAG_GENERIC);
+  interfaceDict->defaultTypeConstructor->addFlag(FLAG_GENERIC);
+
+  is->interfaceAsClass = interfaceDict_ts;
 }
 

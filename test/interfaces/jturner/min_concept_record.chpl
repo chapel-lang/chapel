@@ -1,18 +1,18 @@
-interface LessThan {
-  proc LT(x:self, y:self):bool;
+interface LessThan(type T) {
+  proc LT(x:T, y:T):bool;
 }
 
 record TestMe {
   var data : int;
 }
 
-TestMe implements LessThan;
+implements LessThan(TestMe);
 
 proc LT(x:TestMe, y:TestMe) : bool {
   return x.data < y.data;
 }
 
-proc minFn(x:?T, y:T):T where T implements LessThan {
+proc minFn(x:?T, y:T):T where implements LessThan(T) {
   if (LT(y, x)) {
     return y;
   }

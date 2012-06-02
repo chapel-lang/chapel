@@ -79,8 +79,9 @@ CallExpr* buildScanExpr(Expr* op, Expr* data);
 BlockStmt* buildVarDecls(BlockStmt* stmts, Flag externconfig, Flag varconst);
 
 DefExpr* buildClassDefExpr(const char* name, Type* type, Expr* inherit, BlockStmt* decls, Flag isExtern);
-DefExpr* buildInterfaceDefExpr(const char* name,AList* iFormals, Expr* inherit, BlockStmt* decls);
-AList* buildInterfaceFormal(AList* formal_list, DefExpr* new_formal);
+DefExpr* buildInterfaceDefExpr(const char* name,BaseAST* iFormals, Expr* inherit, BlockStmt* decls);
+//AList* buildInterfaceFormal(AList* formal_list, DefExpr* new_formal);
+InterfaceSymbol* buildInterfaceFormal(InterfaceSymbol* in, DefExpr* def);
 DefExpr* buildArgDefExpr(IntentTag tag, const char* ident, Expr* type, Expr* init, Expr* variable);
 DefExpr* buildTupleArgDefExpr(IntentTag tag, BlockStmt* tuple, Expr* type, Expr* init);
 FnSymbol* buildFunctionFormal(FnSymbol* fn, DefExpr* def);

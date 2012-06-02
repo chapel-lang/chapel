@@ -35,6 +35,6 @@ FnSymbol* promotionWrap(FnSymbol* fn, CallInfo* info);
 
 FnSymbol* getAutoCopy(Type* t);
 FnSymbol* getAutoDestroy(Type* t);
-Symbol* lookupImplementsWitnessInSymbolTable(BaseAST* ce, BaseAST* interface, BaseAST* implementingType);
+Symbol* lookupImplementsWitnessInSymbolTable(BaseAST *scope, ImplementsExpr *ie);
 
 #endif

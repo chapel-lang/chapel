@@ -6,13 +6,13 @@ interface GreaterThan {
   proc GT(x:self, y:self):bool;
 }
 
-int implements LessThan;
+implements LessThan(int);
 
 proc LT(x : int, y : int) : bool {
   return x < y;
 }
 
-proc minFn(x:?T, y:T):T where T implements GreaterThan {
+proc minFn(x:?T, y:T):T where implements GreaterThan(T) {
   if (LT(y, x)) {
     return y;
   }

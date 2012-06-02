@@ -101,6 +101,7 @@ enum AstTag {
   E_DefExpr,
   E_CallExpr,
   E_NamedExpr,
+  E_ImplementsExpr,
   E_BlockStmt,
   E_ImplementsStmt,
   E_CondStmt,
@@ -229,6 +230,7 @@ extern Vec<ModuleSymbol*> mainModules; // contains main modules
 #define isDefExpr(a)           ((a) && (a)->astTag == E_DefExpr)
 #define isCallExpr(a)          ((a) && (a)->astTag == E_CallExpr)
 #define isNamedExpr(a)         ((a) && (a)->astTag == E_NamedExpr)
+#define isImplementsExpr(a)         ((a) && (a)->astTag == E_ImplementsExpr)
 #define isBlockStmt(a)         ((a) && (a)->astTag == E_BlockStmt)
 #define isInterfaceSymbol(a)   ((a) && (a)->astTag == E_InterfaceSymbol)
 #define isImplementsStmt(a)    ((a) && (a)->astTag == E_ImplementsStmt)
@@ -255,6 +257,7 @@ extern Vec<ModuleSymbol*> mainModules; // contains main modules
 #define toDefExpr(a)           def_to_ast(DefExpr, a)
 #define toCallExpr(a)          def_to_ast(CallExpr, a)
 #define toNamedExpr(a)         def_to_ast(NamedExpr, a)
+#define toImplementsExpr(a)    def_to_ast(ImplementsExpr, a)
 #define toBlockStmt(a)         def_to_ast(BlockStmt, a)
 #define toInterfaceSymbol(a)   def_to_ast(InterfaceSymbol, a)
 #define toImplementsStmt(a)    def_to_ast(ImplementsStmt, a)
@@ -302,6 +305,10 @@ extern Vec<ModuleSymbol*> mainModules; // contains main modules
   case E_NamedExpr:                                                     \
     AST_CALL_CHILD(_a, NamedExpr, actual, call, __VA_ARGS__);           \
     break;                                                              \
+  case E_ImplementsExpr:                                                \
+    AST_CALL_CHILD(_a, ImplementsExpr, interface, call, __VA_ARGS__);          \
+    AST_CALL_LIST(_a, ImplementsExpr, typeList, call, __VA_ARGS__);            \
+    break;                                                              \
   case E_DefExpr:                                                       \
     AST_CALL_CHILD(_a, DefExpr, init, call, __VA_ARGS__);               \
     AST_CALL_CHILD(_a, DefExpr, exprType, call, __VA_ARGS__);           \
@@ -346,6 +353,7 @@ extern Vec<ModuleSymbol*> mainModules; // contains main modules
     AST_CALL_LIST(_a, ClassType, inherits, call, __VA_ARGS__);          \
     break;                                                              \
   case E_InterfaceSymbol:                                               \
+    AST_CALL_LIST(_a, InterfaceSymbol, formals, call, __VA_ARGS__);      \
     AST_CALL_LIST(_a, InterfaceSymbol, fields, call, __VA_ARGS__);      \
     AST_CALL_LIST(_a, InterfaceSymbol, inherits, call, __VA_ARGS__);    \
     break;                                                              \

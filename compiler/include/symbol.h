@@ -210,14 +210,19 @@ class InterfaceSymbol : public Symbol {
 public:
   Vec<FnSymbol*> functionSignatures;
   AList fields;
-  AList* formals;
+  AList formals;
   AList inherits;
+  Symbol *interfaceAsClass;
 
-  InterfaceSymbol(const char* initName, AList* iFormals);
+  InterfaceSymbol(const char* initName);
+  InterfaceSymbol(const char* initName, AList iFormals);
   ~InterfaceSymbol();
   DECLARE_SYMBOL_COPY(InterfaceSymbol);
   void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void addDeclarations(Expr* expr, bool tail=true);
+  void insertAtTail(BaseAST* ast);
+  void insertFormalAtTail(BaseAST* ast);
+  void codegenDef(FILE* outfile);
 };
 
 

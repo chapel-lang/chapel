@@ -804,9 +804,36 @@ bool FnSymbol::tag_generic() {
   return false;
 }
 
-InterfaceSymbol::InterfaceSymbol(const char* initName, AList* iFormals) :
+/*static void interfaceExprHelper(InterfaceSymbol* interface, BaseAST* iFormals) {
+  if (!iFormals)
+    return;
+  if (toSymbol(iFormals) || toExpr(iFormals))
+    interface->insertAtTail(iFormals);
+  else
+    INT_FATAL(interface, "Bad formals in InterfaceSymbol constructor");
+}*/
+
+
+InterfaceSymbol::InterfaceSymbol(const char* initName) :
     Symbol(E_InterfaceSymbol,initName),
-    formals(iFormals)
+    formals(),
+    interfaceAsClass(NULL)
+{
+  /*while(Expr* formal = iFormals->head) {
+    formal->remove();
+    fields.insertAtTail(formal);
+    //formals->insertAtTail(formal);
+    //formals->insertAtTail(formal);
+  }*/
+  //interfaceExprHelper(this, iFormals);
+  //formals.parent = this;
+  gInterfaceSymbols.add(this);
+}
+
+InterfaceSymbol::InterfaceSymbol(const char* initName, AList iFormals) :
+  Symbol(E_InterfaceSymbol,initName),
+  formals(iFormals),
+  interfaceAsClass(NULL)
 {
   gInterfaceSymbols.add(this);
 }
@@ -826,16 +853,16 @@ InterfaceSymbol::copyInner(SymbolMap* map) {
 }
 
 static void
-addDeclaration(InterfaceSymbol* cs, DefExpr* def, bool tail) {
+addDeclaration(InterfaceSymbol* is, DefExpr* def, bool tail) {
   if (FnSymbol* fn = toFnSymbol(def->sym)) {
-    cs->functionSignatures.add(fn);
+    is->functionSignatures.add(fn);
   }
   if (def->parentSymbol || def->list)
     def->remove();
   if (tail)
-    cs->fields.insertAtTail(def);
+    is->fields.insertAtTail(def);
   else
-    cs->fields.insertAtHead(def);
+    is->fields.insertAtHead(def);
 }
 
 void InterfaceSymbol::addDeclarations(Expr* expr, bool tail){
@@ -850,7 +877,26 @@ void InterfaceSymbol::addDeclarations(Expr* expr, bool tail){
   }
 }
 
+void InterfaceSymbol::insertAtTail(BaseAST* ast) {
+  if (Symbol* a = toSymbol(ast))
+    formals.insertAtTail(new SymExpr(a));
+  else
+    formals.insertAtTail(toExpr(ast));
+}
 
+void
+InterfaceSymbol::insertFormalAtTail(BaseAST* ast) {
+  if (ArgSymbol* arg = toArgSymbol(ast))
+    formals.insertAtTail(new DefExpr(arg));
+  else if (DefExpr* def = toDefExpr(ast))
+    formals.insertAtTail(def);
+  else
+    INT_FATAL(ast, "Bad argument to InterfaceSymbol::insertFormalAtTail");
+}
+
+void InterfaceSymbol::codegenDef(FILE* outfile) {
+  fprintf(outfile, "/* Interface for %s */", cname);
+}
 
 EnumSymbol::EnumSymbol(const char* init_name) :
   Symbol(E_EnumSymbol, init_name)

@@ -6,6 +6,7 @@
 #include "astutil.h"
 #include "build.h"
 #include "expr.h"
+#include "normalize.h"
 #include "passes.h"
 #include "stmt.h"
 #include "stringutil.h"
@@ -23,7 +24,6 @@ static void insertUseForExplicitModuleCalls(void);
 static void processSyntacticDistributions(CallExpr* call);
 static bool is_void_return(CallExpr* call);
 static void normalize_returns(FnSymbol* fn);
-static void call_constructor_for_class(CallExpr* call);
 static void applyGetterTransform(CallExpr* call);
 static void insert_call_temps(CallExpr* call);
 static void fix_user_assign(CallExpr* call);
@@ -466,7 +466,7 @@ static void normalize_returns(FnSymbol* fn) {
     label->defPoint->remove();
 }
 
-static void call_constructor_for_class(CallExpr* call) {
+void call_constructor_for_class(CallExpr* call) {
   if (SymExpr* se = toSymExpr(call->baseExpr)) {
     if (TypeSymbol* ts = toTypeSymbol(se->var)) {
       if (ClassType* ct = toClassType(ts->type)) {

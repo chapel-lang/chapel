@@ -1,18 +1,18 @@
-interface LessThan {
-	proc LT(x:self, y:self):bool;
+interface LessThan(type T) {
+	proc LT(x:T, y:T):bool;
 }
 
 proc LT(x:int, y:int):bool {
 	return x<y;
 }
 
-int implements LessThan;
+implements LessThan(int);
 
 proc DoID(x:?T):T { 
     return x; 
 }
 
-proc minFn(x:?T,y :T):T where T implements LessThan {
+proc minFn(x:?T,y :T):T where implements LessThan(T) {
   return DoID(x);
 }
 

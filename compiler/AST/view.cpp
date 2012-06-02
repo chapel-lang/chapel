@@ -30,6 +30,8 @@ list_sym(Symbol* sym, bool type = true) {
     printf("arg ");
   } else if (toTypeSymbol(sym)) {
     printf("type ");
+  } else if (toInterfaceSymbol(sym)) {
+    printf("iface ");
   }
   printf("%s", sym->name);
   printf("[%d]", sym->id);
@@ -82,6 +84,10 @@ list_ast(BaseAST* ast, int indent = 0) {
       printf("{\n");
     } else if (toCondStmt(ast)) {
       printf("if ");
+    } else if (toImplementsStmt(ast)) {
+      printf("implements ");
+    } else if (toImplementsExpr(ast)) {
+      printf("impl ");
     } else if (CallExpr* e = toCallExpr(expr)) {
       if (e->primitive)
         printf("%s( ", e->primitive->name);
