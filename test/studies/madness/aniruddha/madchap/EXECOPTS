@@ -1,1 +1,1 @@
---dataParTasksPerLocale=1 --numThreadsPerLocale=40
+--dataParTasksPerLocale=1 --numThreadsPerLocale=5
