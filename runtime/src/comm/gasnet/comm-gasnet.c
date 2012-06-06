@@ -124,7 +124,16 @@ static void fork_large_wrapper(fork_t* f) {
   gasnet_handlerarg_t a0, a1;
   void* arg = chpl_mem_allocMany(1, f->arg_size, CHPL_RT_MD_COMM_FORK_RECV_LARGE_ARG, 0, 0);
 
-  chpl_comm_get(arg, f->caller, *(void**)f->arg,
+  // A note on strict aliasing:
+  // We used to say something like *(void**)f->arg,
+  // but that leads to compiler errors about type-punning
+  // since it breaks strict aliasing rules. The memcpy approach
+  // employed here is one way around the problem, and a
+  // more appealing solution would be to use a union.
+  void* f_arg;
+  memcpy(&f_arg, f->arg, sizeof(void*));
+
+  chpl_comm_get(arg, f->caller, f_arg,
                 f->arg_size, -1 /*typeIndex: unused*/, 1, 0, "fork large");
   (*chpl_ftable[f->fid])(arg);
   a0 = (gasnet_handlerarg_t) ((((uint64_t) (intptr_t) f->ack)<<32UL)>>32UL);
@@ -166,7 +175,11 @@ static void AM_fork_nb(gasnet_token_t  token,
 static void fork_nb_large_wrapper(fork_t* f) {
   void* arg = chpl_mem_allocMany(1, f->arg_size, CHPL_RT_MD_COMM_FORK_RECV_NB_LARGE_ARG, 0, 0);
 
-  chpl_comm_get(arg, f->caller, *(void**)f->arg,
+  // See "A note on strict aliasing" in fork_large_wrapper
+  void* f_arg;
+  memcpy(&f_arg, f->arg, sizeof(void*));
+
+  chpl_comm_get(arg, f->caller, f_arg,
                 f->arg_size, -1 /*typeIndex: unused*/, 1, 0, "fork large");
   GASNET_Safe(gasnet_AMRequestMedium0(f->caller,
                                       FREE,
@@ -212,8 +225,15 @@ static void AM_priv_bcast_large(gasnet_token_t token, void* buf, size_t nbytes) 
 }
 
 static void AM_free(gasnet_token_t token, void* buf, size_t nbytes) {
-  chpl_mem_free(*(void**)(*(fork_t**)buf)->arg, 0, 0);
-  chpl_mem_free(*(void**)buf, 0, 0);
+  fork_t* f;
+  void* f_arg;
+  
+  // See "A note on strict aliasing" in fork_large_wrapper
+  memcpy(&f, buf, sizeof(fork_t*));
+  memcpy(&f_arg, f->arg, sizeof(void*));
+
+  chpl_mem_free(f_arg, 0, 0);
+  chpl_mem_free(f, 0, 0);
 }
 
 // this is currently unused; it's intended to be used to implement
