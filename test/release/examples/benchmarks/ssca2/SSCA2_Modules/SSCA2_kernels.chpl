@@ -332,7 +332,7 @@ module SSCA2_kernels
 		// add any unmarked neighbors to the next level
 		// --------------------------------------------
   
-		if  ( FILTERING &&  w % 8 != 0 ) || !FILTERING then
+		if !FILTERING || w%8 != 0 {
 		  if  min_distance[v].compareExchangeStrong(-1, current_distance_c) {
                     Active_Level[here.id].next.Members.add (v);
                     if VALIDATE_BC then
@@ -340,19 +340,19 @@ module SSCA2_kernels
                   }
 
 
-		// ------------------------------------------------
-		// only neighbors of  u  that are in the next level
-		// are on shortest paths from s through v.  Some
-		// task will have set  min_distance (v) by the
-		// time this code is reached, whether  v  lies in
-		// the previous, the current or the next level.
-		// ------------------------------------------------
+		  // ------------------------------------------------
+		  // only neighbors of  u  that are in the next level
+		  // are on shortest paths from s through v.  Some
+		  // task will have set  min_distance (v) by the
+		  // time this code is reached, whether  v  lies in
+		  // the previous, the current or the next level.
+		  // ------------------------------------------------
   
-		if min_distance[v].read() == current_distance_c {
-                  path_count$[v] += path_count$[u].readFF();
-                  children_list(u).add_child (v);
+		  if min_distance[v].read() == current_distance_c {
+                    path_count$[v] += path_count$[u].readFF();
+                    children_list(u).add_child (v);
+                  }
                 }
-
 	      }
 	    };
 

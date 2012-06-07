@@ -22,7 +22,7 @@ module SSCA2_compilation_config_params
 // +==========================================================================+
 
 {
-  config param FILTERING = false;
+  config param FILTERING = true;
 
   config param VALIDATE_BC = false;
 
