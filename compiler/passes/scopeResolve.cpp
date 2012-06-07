@@ -1101,14 +1101,25 @@ void scopeResolve(void) {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->_this && fn->_this->type == dtUnknown) {
       if (UnresolvedSymExpr* sym = toUnresolvedSymExpr(toArgSymbol(fn->_this)->typeExpr->body.only())) {
-        TypeSymbol* ts = toTypeSymbol(lookup(sym, sym->unresolved));
-        
-        if (!ts) {
+        Symbol* s = lookup(sym, sym->unresolved);
+        TypeSymbol* ts = toTypeSymbol(s);
+        // Jeremy experimenting here.
+        if (ts) {
+          sym->replace(new SymExpr(ts));
+          fn->_this->type = ts->type;
+          fn->_this->type->methods.add(fn);
+        } else {
+#if 0
           USR_FATAL(fn, "cannot resolve base type for method '%s'", fn->name);
+#endif
+          // We go into this branch when dealing with an interface,
+          // and the base type is an interface type parameter. 
+          // Not sure what needs to be done here. The following is a first shot. -Jeremy
+
+          sym->replace(new SymExpr(s));
+          fn->_this->type = s->type;
+          fn->_this->type->methods.add(fn);
         }
-        sym->replace(new SymExpr(ts));
-        fn->_this->type = ts->type;
-        fn->_this->type->methods.add(fn);
       } else if (SymExpr* sym = toSymExpr(toArgSymbol(fn->_this)->typeExpr->body.only())) {
         fn->_this->type = sym->var->type;
         fn->_this->type->methods.add(fn);
