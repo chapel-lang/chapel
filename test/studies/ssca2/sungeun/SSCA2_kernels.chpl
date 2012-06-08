@@ -326,35 +326,34 @@ module SSCA2_kernels
             coforall loc in Locales do on loc {
              forall u in Active_Level[here.id].Members do {
 
-               forall (v, w) in ( G.Neighbors (u), G.edge_weight (u) ) do
+               forall v in G.FilteredNeighbors(u) do
                  on vertex_domain.dist.idxToLocale(v) {
-		// --------------------------------------------
-		// add any unmarked neighbors to the next level
-		// --------------------------------------------
+                   // --------------------------------------------
+                   // add any unmarked neighbors to the next level
+                   // --------------------------------------------
   
-		if  ( FILTERING &&  w % 8 != 0 ) || !FILTERING then
-		  if  min_distance[v].compareExchangeStrong(-1, current_distance_c) {
-                    Active_Level[here.id].next.Members.add (v);
-                    if VALIDATE_BC then
-                      Lcl_Sum_Min_Dist += current_distance_c;
-                  }
+                   if  min_distance[v].compareExchangeStrong(-1, current_distance_c) {
+                     Active_Level[here.id].next.Members.add (v);
+                     if VALIDATE_BC then
+                       Lcl_Sum_Min_Dist += current_distance_c;
+                   }
 
 
-		// ------------------------------------------------
-		// only neighbors of  u  that are in the next level
-		// are on shortest paths from s through v.  Some
-		// task will have set  min_distance (v) by the
-		// time this code is reached, whether  v  lies in
-		// the previous, the current or the next level.
-		// ------------------------------------------------
+                   // ------------------------------------------------
+                   // only neighbors of  u  that are in the next level
+                   // are on shortest paths from s through v.  Some
+                   // task will have set  min_distance (v) by the
+                   // time this code is reached, whether  v  lies in
+                   // the previous, the current or the next level.
+                   // ------------------------------------------------
   
-		if min_distance[v].read() == current_distance_c {
-                  path_count$[v] += path_count$[u].readFF();
-                  children_list(u).add_child (v);
-                }
+                   if min_distance[v].read() == current_distance_c {
+                     path_count$[v] += path_count$[u].readFF();
+                     children_list(u).add_child (v);
+                   }
 
-	      }
-	    };
+                 }
+             };
 
             // This barrier is needed to insure all updates to the next
             // level are completed before updating to use the next level
@@ -425,11 +424,15 @@ module SSCA2_kernels
 	stopwatch.clear ();
 	writeln ( "Elapsed time for Kernel 4: ", K4_time, " seconds");
 
-	var n0            = + reduce [v in vertex_domain] (G.n_Neighbors (v)== 0);
-	var n_edges       = + reduce [v in vertex_domain] G.n_Neighbors (v);
-	var N_VERTICES    = vertex_domain.numIndices;
-	var TEPS          = 7.0 * N_VERTICES * (N_VERTICES - n0) / K4_time;
-	var Adjusted_TEPS = n_edges * (N_VERTICES - n0) / K4_time;
+	var n_edges          = + reduce [v in vertex_domain] G.n_Neighbors (v);
+	var N_VERTICES       = vertex_domain.numIndices;
+	var N_START_VERTICES = if starting_vertices == G.vertices
+			       then N_VERTICES
+				    - + reduce [v in vertex_domain]
+					       (G.n_Neighbors (v) == 0)
+			       else starting_vertices.numIndices;
+	var TEPS             = 7.0 * N_VERTICES * N_START_VERTICES / K4_time;
+	var Adjusted_TEPS    = n_edges * N_START_VERTICES / K4_time;
 
 	writeln ( "                     TEPS: ", TEPS );
 	writeln ( " edge count adjusted TEPS: ", Adjusted_TEPS );
@@ -545,7 +548,6 @@ module SSCA2_kernels
   //
   // simple barrier implementation
   //
-  extern proc chpl_task_yield();
   record Barrier {
     var count: atomic int;
     var done: atomic bool;
@@ -584,8 +586,7 @@ module SSCA2_kernels
     }
 
     inline proc wait() {
-      on this do
-        while !done.read() do chpl_task_yield();
+      done.waitFor(true);
     }
 
     inline proc try() {

@@ -228,6 +228,41 @@ module analyze_RMAT_graph_associative_array {
       const vertices;
       var   Row      : [vertices] VertexData;
 
+      iter FilteredNeighbors( v : index (vertices) ) {
+        const neighbors => Row(v).neighborIDs;
+        const weights => Row(v).edgeWeights;
+        for n in Row(v).ndom do
+          if !FILTERING || weights(n)%8 != 0 then
+            yield neighbors(n);
+      }
+
+      // Stand-alone parallel iterator would be nice
+      iter FilteredNeighbors( v : index (vertices), param tag: iterKind)
+      where tag == iterKind.leader {
+        pragma "no copy" pragma "no auto destroy"
+        const myDom = Row(v).ndom._value; // Cache the value
+        // 1-d, no stride assumed in the follower
+        const wholeLow = myDom.ranges(1).low;
+        for block in myDom.these(tag) do
+          yield (block(1).low, block(1).high, wholeLow);
+      }
+
+      // WARNING: This can't be zippered with anything other than itself
+      iter FilteredNeighbors( v : index (vertices), param tag: iterKind, followThis)
+      where tag == iterKind.follower {
+        pragma "no copy" pragma "no auto destroy"
+        const myRow = Row(v); // Cache a copy of the record
+        const neighbors => myRow.neighborIDs;
+        const weights => myRow.edgeWeights;
+        const (low, high, wholeLow) = followThis;
+        // 1-d, no stride
+        const myElems = (low..high) + wholeLow;
+        for n in myElems {
+          if !FILTERING || weights(n)%8 != 0 then
+            yield neighbors(n);
+        }
+      }
+
       // Neighbors and edge_weight can be used where iterators are expected
       proc   Neighbors  ( v : index (vertices) ) {
         return Row (v).neighborIDs;
