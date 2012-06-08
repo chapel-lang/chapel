@@ -1,9 +1,91 @@
 # USAGE:
 #
-# Current notes on triage results.
+# Current notes on triage results, sorted by type of failure
+# (benchmark, compiler, or platform).
 #
-# To be merged into REGRESSIONS when Brad gives the green light.
-#
+
+
+==============================================
+These things regularly cause noise in testing:
+==============================================
+
+spectralnorm (vass)
+-------------------
+proposed approach is to see whether reference version is similarly
+noisy, and if not to see whether ours has inadvertant nondeterminisms.
+
+
+madness (sungeun)
+-----------------
+Sung's been working on dialing down parallelism to avoid timeouts
+in oversubscribed setting, but it's not yet perfect: test_likepy
+timed out 06/05/12
+
+
+ra* (gbt)
+---------
+Greg plans to remove races from the verification loop on the theory
+that if we're barely/occasionally failing, removing errors introduced
+due to races here should take us below the threshold.
+
+
+lulesh (bradc)
+--------------
+1) Brad made changes this week that should stabilize Sung's version of
+   lulesh
+2) there are likely still timeouts on the release version that should
+   be investigated.
+3) causes an internal error in xmt (though perhaps not a noisy one?)
+
+
+cray-xt-cray (UNASSIGNED)
+-------------------------
+When the Chapel compiler is built with cray-xt-cray, we get
+nondeterministic failures that have not been investigated.  One
+question would be whether turning optimizations off/down when building
+'chpl' would make these go away.
+
+
+qthreads (UNASSIGNED)
+---------------------
+1) Continue to have a lot of noise in testing.
+2) Some comm counts off, got a seg fault (06/06/12)
+
+
+valgrind (UNASSIGNED)
+---------------------
+1) Nondeterministic "the impossible has happened" failures
+2) Nondeterministic timeouts (could raise timeout value even further)
+
+
+xmt build (UNASSIGNED)
+----------------------
+Every night, first XMT compile fails; second one succeeds.  Is there
+any chance that this is due to a leftover program library of some
+sort?  If not, file bug against XMT compiler.
+
+
+
+==================================================
+Not so noisy as to be instantly recognizable (yet)
+==================================================
+
+gasnet-everything nondeterminisms (UNASSIGNED)
+----------------------------------------------
+MultiBlockDist2DLocales (06/05/12)
+test_module_Sort (06/06/12)
+test_array_slicing3 (06/08/12)
+
+
+no-local nondeterminisms (UNASSIGNED)
+-------------------------------------
+cg-sparse-timecomp (06/05/12)
+
+
+
+======================================================
+Older stuff that I didn't see creating noise this week
+======================================================
 
 ============================================================
 linux64.pgi.none.fifo.pthreads
