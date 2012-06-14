@@ -639,6 +639,7 @@ record _domain {
     _value.dsiRemove(i);
   }
 
+  proc size return numIndices;
   proc numIndices return _value.dsiNumIndices;
   proc low return _value.dsiLow;
   proc high return _value.dsiHigh;
@@ -1141,6 +1142,7 @@ record _array {
 
   // 1/5/10: do we need this since it always returns domain.numIndices?
   proc numElements return _value.dom.dsiNumIndices;
+  proc size return numElements;
 
   proc newAlias() {
     var x = _value;

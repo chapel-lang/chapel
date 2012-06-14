@@ -157,6 +157,11 @@ proc rangeBase.length: idxType
   }
 }
 
+proc rangeBase.size: idxType
+{
+    return this.length;
+}
+
 //################################################################################
 //# Predicates
 //#
