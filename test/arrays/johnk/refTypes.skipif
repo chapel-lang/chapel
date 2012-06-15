@@ -1,0 +1,2 @@
+#Test doesn't encounter any issues when comm==none. 
+CHPL_COMM == none
