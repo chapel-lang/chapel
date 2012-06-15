@@ -1,4 +1,4 @@
-bug: the compiler segfaults when compiling this code, when CHPL_COMM=none, with arrays of types: real, imag, and complex.
+bug: the compiler segfaults when compiling this code, CHPL_COMM=gasnet, with arrays of types: real, imag, and complex.
 
 This issue does not present itself when CHPL_COMM=none. Below is a gdb trace
 immediately after the segfault occurs: 
