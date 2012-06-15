@@ -107,7 +107,7 @@ proc main() {
   // index and as the update value.
   //
   if (useOn) then
-    forall ( , r) in (Updates, RAStream()) do
+    forall (_, r) in (Updates, RAStream()) do
       on TableDist.idxToLocale(r & indexMask) do {
         const myR = r;
         local {
@@ -115,7 +115,7 @@ proc main() {
         }
       }
   else
-    forall ( , r) in (Updates, RAStream()) do
+    forall (_, r) in (Updates, RAStream()) do
       T(r & indexMask) ^= r;
 
   const execTime = getCurrentTime() - startTime;   // capture the elapsed time
@@ -149,7 +149,7 @@ proc verifyResults(T) {
   // atomic statement to ensure no conflicting updates
   //
   if (useOn) then
-    forall ( , r) in (Updates, RAStream()) do
+    forall (_, r) in (Updates, RAStream()) do
       on TableDist.idxToLocale(r & indexMask) do {
         const myR = r;
         local {
@@ -157,7 +157,7 @@ proc verifyResults(T) {
         }
      }
   else
-   forall ( , r) in (Updates, RAStream()) do
+   forall (_, r) in (Updates, RAStream()) do
       atomic T(r & indexMask) ^= r;
 
   //

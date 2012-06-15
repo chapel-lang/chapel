@@ -214,7 +214,7 @@ iter blkIter2D(rowRange, colRange, blksize) {
 // underscore operator, and returning the row of the resulting index.
 
 proc computePivotRow(A:[?D]) {
-   const ( , ind) = maxloc reduce (abs(A), D);
+   const (_, ind) = maxloc reduce (abs(A), D);
    return ind(1);
 }
 

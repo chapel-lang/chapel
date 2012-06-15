@@ -104,7 +104,7 @@ proc main() {
   // communications.  Compute the update using r both to compute the
   // index and as the update value.
   //
-  forall ( , r) in (Updates, RAStream()) do {
+  forall (_, r) in (Updates, RAStream()) do {
     const myR = r;
     T(myR & indexMask) ^= myR;
   }
@@ -138,7 +138,7 @@ proc verifyResults() {
   // Reverse the updates by recomputing them, this time using an
   // atomic statement to ensure no conflicting updates
   //
-  forall ( , r) in (Updates, RAStream()) do
+  forall (_, r) in (Updates, RAStream()) do
     atomic T(r & indexMask) ^= r;
 
   //

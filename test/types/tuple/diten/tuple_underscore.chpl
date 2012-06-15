@@ -6,6 +6,6 @@ proc foo(n: int) {
 proc main() {
   var a, b: int;
 
-  (a, (, b)) = (1, (foo(2), foo(3)));
+  (a, (_, b)) = (1, (foo(2), foo(3)));
   writeln(a, " ", b);
 }

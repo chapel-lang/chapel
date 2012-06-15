@@ -125,6 +125,8 @@ where            processToken(TWHERE);
 while            processToken(TWHILE);
 yield            processToken(TYIELD);
 
+"_"              processToken(TUNDERSCORE);
+
 "="              processToken(TASSIGN);
 "+="             processToken(TASSIGNPLUS);
 "-="             processToken(TASSIGNMINUS);

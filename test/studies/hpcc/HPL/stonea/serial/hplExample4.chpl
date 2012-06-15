@@ -139,7 +139,7 @@ proc panelSolve(
         var col = panel[k.., k..k];
 
         // The pivot is the element with the largest absolute value.
-        var ( , loc) =
+        var (_, loc) =
             maxloc reduce(abs(A(col)), col);
         var pivotRow = loc(1);
         var pivot = A[pivotRow, k];

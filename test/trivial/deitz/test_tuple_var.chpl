@@ -3,6 +3,6 @@ proc foo(i) {
   return i;
 }
 
-var (a,) = (foo(1),foo(2));
+var (a,_) = (foo(1),foo(2));
 
 writeln(a);

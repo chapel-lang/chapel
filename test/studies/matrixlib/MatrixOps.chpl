@@ -169,7 +169,7 @@ iter MMIterator(D1, D2) {
 // underscore operator, and returning the row of the resulting index.
 
 proc computePivotRow(A:[?D]) {
-   const ( , ind) = maxloc reduce (abs(A), D);
+   const (_, ind) = maxloc reduce (abs(A), D);
    return ind(1);
 }
 

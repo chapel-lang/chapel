@@ -107,12 +107,29 @@ BlockStmt* buildPragmaStmt(BlockStmt* block,
   return block;
 }
 
+/* The start of an incomplete zero-tuple implementation
+CallExpr* buildZeroTuple() {
+  return new CallExpr("_build_tuple");
+}
+*/
+
+CallExpr* buildOneTuple(Expr* elem) {
+  return new CallExpr("_build_tuple", new CallExpr(PRIM_ACTUALS_LIST, elem));
+}
 
 Expr* buildParenExpr(CallExpr* call) {
-  if (call->numActuals() == 1)
-    return call->get(1)->remove();
-  else
-    return new CallExpr("_build_tuple", call);
+  if (!call->isPrimitive(PRIM_ACTUALS_LIST)) {
+    // This must be a 0- or 1-tuple, so return it
+    return call;
+  } else {
+    if (call->numActuals() == 1) {
+      // If it just has one argument, then it's just a parenthesized expression
+      return call->get(1)->remove();
+    } else {
+      // Otherwise, build a tuple out of the arguments
+      return new CallExpr("_build_tuple", call);
+    }
+  }
 }
 
 

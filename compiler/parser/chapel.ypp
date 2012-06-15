@@ -72,7 +72,7 @@
 %token TPARAM TPLUSPLUS TPRAGMA TPRIMITIVE TPRIMITIVELOOP TPROC
 %token TRECORD TREDUCE TREF TRETURN
 %token TSCAN TSELECT TSERIAL TSINGLE TSPARSE TSUBDOMAIN
-%token TSYNC TTHEN TTYPE TUNION TUSE TVAR
+%token TSYNC TTHEN TTYPE TUNDERSCORE TUNION TUSE TVAR
 %token TWHEN TWHERE TWHILE TYIELD
 
 //
@@ -158,10 +158,11 @@
 %type <pexpr> literal_expr opt_where_part
 %type <pexpr> stmt_level_expr type_level_expr
 %type <pexpr> reduce_expr scan_expr reduce_scan_op_expr opt_init_expr opt_init_type var_arg_expr
+%type <pexpr> tuple_component tuple_var_decl_component
 %type <pdefexpr> formal enum_item
 %type <pdefexpr> query_expr opt_query_expr
 
-%type <pcallexpr> opt_inherit expr_ls tuple_expr_ls
+%type <pcallexpr> opt_inherit expr_ls tuple_expr_ls tuple_guts
 %type <pcallexpr> opt_actual_ls actual_ls
 
 %type <pfnsymbol> fn_decl_stmt_inner formal_ls opt_formal_ls req_formal_ls
@@ -682,19 +683,24 @@ var_decl_stmt_inner:
     { $$ = buildTupleVarDeclStmt($2, $4, $5); }
 ;
 
-tuple_var_decl_stmt_inner_ls:
-    { $$ = buildChapelStmt(new DefExpr(new VarSymbol("chpl__tuple_blank"))); }
+tuple_var_decl_component:
+  TUNDERSCORE
+    { $$ = new DefExpr(new VarSymbol("chpl__tuple_blank")); }
 | ident
-    { $$ = buildChapelStmt(new DefExpr(new VarSymbol($1))); }
+    { $$ = new DefExpr(new VarSymbol($1)); }
 | TLP tuple_var_decl_stmt_inner_ls TRP
-    { $$ = buildChapelStmt($2); }
-| tuple_var_decl_stmt_inner_ls TCOMMA
-    { $1->insertAtTail(new DefExpr(new VarSymbol("chpl__tuple_blank"))); }
-| tuple_var_decl_stmt_inner_ls TCOMMA ident
-    { $1->insertAtTail(new DefExpr(new VarSymbol($3))); }
-| tuple_var_decl_stmt_inner_ls TCOMMA TLP tuple_var_decl_stmt_inner_ls TRP
-    { $1->insertAtTail($4); }
+    { $$ = $2; }
 ;
+
+tuple_var_decl_stmt_inner_ls:
+  tuple_var_decl_component
+    { $$ = buildChapelStmt($1); }
+| tuple_var_decl_component TCOMMA
+    { $$ = buildChapelStmt($1); }
+| tuple_var_decl_component TCOMMA tuple_var_decl_stmt_inner_ls
+    { $$ = ($3->insertAtHead($1), $3); }
+;
+
 
 /** TYPES ********************************************************************/
 
@@ -763,15 +769,21 @@ expr_ls:
 | expr_ls TCOMMA query_expr  { $1->insertAtTail($3); }
 ;
 
+tuple_component:
+TUNDERSCORE  { $$ = new UnresolvedSymExpr("chpl__tuple_blank"); }
+| expr       { $$ = $1; }
+| query_expr { $$ = $1; }
+;
+
+tuple_guts:
+  tuple_component        { $$ = new CallExpr(PRIM_ACTUALS_LIST, $1); }
+| tuple_component TCOMMA { $$ = buildOneTuple($1); }
+| tuple_component TCOMMA tuple_expr_ls { $$ = ($3->insertAtHead($1), $3); }
+;
+
 tuple_expr_ls:
-                                   { $$ = new CallExpr(PRIM_ACTUALS_LIST,
-                                            new UnresolvedSymExpr("chpl__tuple_blank")); }
-| expr                             { $$ = new CallExpr(PRIM_ACTUALS_LIST, $1); }
-| query_expr                       { $$ = new CallExpr(PRIM_ACTUALS_LIST, $1); }
-| tuple_expr_ls TCOMMA             { $1->insertAtTail(
-                                           new UnresolvedSymExpr("chpl__tuple_blank")); }
-| tuple_expr_ls TCOMMA expr        { $1->insertAtTail($3); }
-| tuple_expr_ls TCOMMA query_expr  { $1->insertAtTail($3); }
+  tuple_component                      { $$ = new CallExpr(PRIM_ACTUALS_LIST, $1); }
+| tuple_expr_ls TCOMMA tuple_component { $1->insertAtTail($3); }
 ;
 
 opt_actual_ls:
@@ -951,7 +963,10 @@ dot_expr:
 ;
 
 parenthesized_expr:
-  TLP tuple_expr_ls TRP  { $$ = buildParenExpr($2); }
+/* BLC: The start of an incomplete zero-tuple implementation
+  TLP TRP { $$ = buildZeroTuple(); }
+| */
+  TLP tuple_guts TRP  { $$ = buildParenExpr($2); }
 ;
 
 literal_expr:

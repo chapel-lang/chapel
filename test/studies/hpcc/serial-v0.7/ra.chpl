@@ -34,7 +34,7 @@ proc main() {
 
   [i in TableSpace] T(i) = i;
 
-  forall ( , r) in (UpdateSpace, RAStream()) do
+  forall (_, r) in (UpdateSpace, RAStream()) do
     T(r & indexMask) ^= r;
 
   const execTime = getCurrentTime() - startTime;

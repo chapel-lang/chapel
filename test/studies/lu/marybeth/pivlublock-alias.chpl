@@ -47,7 +47,7 @@ for (UnfactoredInds,CurrentBlockInds,TrailingBlockInds)
     slice2 = k+1..CurrentBlockInds.high;
 
 //  ind = maxIndex reduce (A1(UnfactoredInds(k..),k));
-    (, (ind,)) = maxloc reduce (abs(A(slice0,k..k)), [slice0,k..k]);
+    (_, (ind,_)) = maxloc reduce (abs(A(slice0,k..k)), [slice0,k..k]);
 
     if (ind != k) {
 //      piv(k) <==> piv(ind);

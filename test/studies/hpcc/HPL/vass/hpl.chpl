@@ -267,7 +267,7 @@ proc panelSolve(
     if col.numIndices == 0 then return;
     
     // Find the pivot, the element with the largest absolute value.
-    const ( , (pivotRow, )) = maxloc reduce(abs(Ab(col)), col);
+    const (_, (pivotRow, _)) = maxloc reduce(abs(Ab(col)), col);
 
     // Capture the pivot value explicitly (note that result of maxloc
     // is absolute value, so it can't be used directly).
