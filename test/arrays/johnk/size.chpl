@@ -1,6 +1,6 @@
 var arr1 : [1..20] int;
-var arr2 : [1..300, 1..200] real;
-var arr3 : [1..10, 1..10, 1..10, 1..10] imag; 
+var arr2 : [1..300, 1..200] int;
+var arr3 : [1..10, 1..10, 1..10, 1..10] int; 
 var dom : domain(4) = [1..5, 1..4, 1..3, 1..2];
 
 writeln(arr1.size); //20
