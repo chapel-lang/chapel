@@ -1,3 +1,7 @@
+ifndef CHPL_MAKE_HOME
+export CHPL_MAKE_HOME=$(shell pwd)/../..
+endif
+
 COMPILER_ROOT = ..
 COMPILER_SUBDIR = util
 COMP_CFLAGS += -I$(COMPILER_ROOT)/ifa
