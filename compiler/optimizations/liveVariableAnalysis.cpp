@@ -26,7 +26,7 @@ liveVariableAnalysis(FnSymbol* fn,
                      Map<Symbol*,int>& localMap,
                      Vec<SymExpr*>& useSet,
                      Vec<SymExpr*>& defSet,
-                     Vec<BitVec*>& OUT) {
+                     std::vector<BitVec*>& OUT) {
   buildLocalsVectorMap(fn, locals, localMap);
 
 #ifdef DEBUG_LIVE
@@ -43,16 +43,16 @@ liveVariableAnalysis(FnSymbol* fn,
   // IN(i): the set of variables that are live at entry to basic
   // block i
   //
-  Vec<BitVec*> USE;
-  Vec<BitVec*> DEF;
-  Vec<BitVec*> IN;
+  std::vector<BitVec*> USE;
+  std::vector<BitVec*> DEF;
+  std::vector<BitVec*> IN;
 
-  forv_Vec(BasicBlock, bb, *fn->basicBlocks) {
+  for_vector(BasicBlock, bb, *fn->basicBlocks) {
     BitVec* use = new BitVec(locals.n);
     BitVec* def = new BitVec(locals.n);
     BitVec* lvin = new BitVec(locals.n);
     BitVec* lvout = new BitVec(locals.n);
-    forv_Vec(Expr, expr, bb->exprs) {
+    for_vector(Expr, expr, bb->exprs) {
       Vec<BaseAST*> asts;
       collect_asts(expr, asts);
       forv_Vec(BaseAST, ast, asts) {
@@ -74,10 +74,10 @@ liveVariableAnalysis(FnSymbol* fn,
         }
       }
     }
-    USE.add(use);
-    DEF.add(def);
-    IN.add(lvin);
-    OUT.add(lvout);
+    USE.push_back(use);
+    DEF.push_back(def);
+    IN.push_back(lvin);
+    OUT.push_back(lvout);
   }
 
 #ifdef DEBUG_LIVE
@@ -87,12 +87,12 @@ liveVariableAnalysis(FnSymbol* fn,
 
   backwardFlowAnalysis(fn, USE, DEF, IN, OUT);
 
-  forv_Vec(BitVec, use, USE)
-    delete use;
+  for_vector(BitVec, use, USE)
+    delete use, use = 0;
 
-  forv_Vec(BitVec, def, DEF)
-    delete def;
+  for_vector(BitVec, def, DEF)
+    delete def, def = 0;
 
-  forv_Vec(BitVec, in, IN)
-    delete in;
+  for_vector(BitVec, in, IN)
+    delete in, in = 0;
 }

@@ -4,6 +4,8 @@
 #include "baseAST.h"
 #include "alist.h"
 
+#include <vector>
+
 class Type;
 class FnSymbol;
 class VarSymbol;

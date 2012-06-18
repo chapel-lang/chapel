@@ -485,12 +485,8 @@ FnSymbol::FnSymbol(const char* initName) :
 FnSymbol::~FnSymbol() {
   if (iteratorInfo)
     delete iteratorInfo;
-  if (basicBlocks) {
-    forv_Vec(BasicBlock, bb, *basicBlocks) {
-      delete bb;
-    }
-    delete basicBlocks;
-  }
+  BasicBlock::clear(this);
+  delete basicBlocks; basicBlocks = 0;
   if (calledBy)
     delete calledBy;
 }
