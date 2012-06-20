@@ -50,20 +50,25 @@ int BasicBlock::nextid;
 bool BasicBlock::isOK()
 {
   // Expressions must be live (non-NULL);
+  Expr* expr;
   for_vector(Expr, expr, exprs)
     if (expr == 0) return false;
 
   // Every in edge must have a corresponding out edge in the source block.
+  BasicBlock* source;
   for_vector(BasicBlock, source, ins) {
     bool found = false;
+    BasicBlock* bb;
     for_vector(BasicBlock, bb, source->outs)
       if (bb == this) { found = true; break; }
     if (!found) return false;
   }
 
   // Every out edge must have a corresponding in edge in the target block.
+  BasicBlock* target;
   for_vector(BasicBlock, target, outs) {
     bool found = false;
+    BasicBlock* bb;
     for_vector(BasicBlock, bb, target->ins)
       if (bb == this) { found = true; break; }
     if (!found) return false;
@@ -77,6 +82,7 @@ void BasicBlock::clear(FnSymbol* fn)
   if (!fn->basicBlocks)
     return;
 
+  BasicBlock* bb;
   for_vector(BasicBlock, bb, *fn->basicBlocks)
     delete bb, bb = 0;
   delete fn->basicBlocks; fn->basicBlocks = 0;
@@ -196,6 +202,7 @@ void BasicBlock::buildBasicBlocks(FnSymbol* fn, Expr* stmt)
       // See if we have any unresolved references to this label,
       // and resolve them.
       if (std::vector<BasicBlock*>* vbb = gotoMaps.get(label)) {
+        BasicBlock* bb;
         for_vector(BasicBlock, bb, *vbb) {
           BB_THREAD(bb, basicBlock);
         }
@@ -210,6 +217,7 @@ void BasicBlock::buildBasicBlocks(FnSymbol* fn, Expr* stmt)
 // Returns true if the basic block structure is OK, false otherwise.
 bool verifyBasicBlocks(FnSymbol* fn)
 {
+  BasicBlock* bb;
   for_vector(BasicBlock, bb, *fn->basicBlocks)
   {
     if (! bb->isOK())
@@ -222,7 +230,9 @@ void buildLocalsVectorMap(FnSymbol* fn,
                           Vec<Symbol*>& locals,
                           Map<Symbol*,int>& localMap) {
   int i = 0;
+  BasicBlock* bb;
   for_vector(BasicBlock, bb, *fn->basicBlocks) {
+    Expr* expr;
     for_vector(Expr, expr, bb->exprs) {
       if (DefExpr* def = toDefExpr(expr)) {
         if (toVarSymbol(def->sym)) {
@@ -245,6 +255,7 @@ void backwardFlowAnalysis(FnSymbol* fn,
   while (iterate) {
     iterate = false;
     int i = 0;
+    BasicBlock* bb;
     for_vector(BasicBlock, bb, *fn->basicBlocks) {
       for (int j = 0; j < IN[i]->ndata; j++) {
         unsigned new_in = (OUT[i]->data[j] & ~KILL[i]->data[j]) | GEN[i]->data[j];
@@ -253,6 +264,7 @@ void backwardFlowAnalysis(FnSymbol* fn,
           iterate = true;
         }
         unsigned new_out = 0;
+        BasicBlock* bbout;
         for_vector(BasicBlock, bbout, bb->outs) {
           new_out = new_out | IN[bbout->id]->data[j];
         }
@@ -300,6 +312,7 @@ void forwardFlowAnalysis(FnSymbol* fn,
     for (int j = 0; j < IN[i]->ndata; j++) {
       if (bb->ins.size() > 0) {
         unsigned new_in = (intersect) ? (unsigned)(-1) : 0;
+        BasicBlock* bbin;
         for_vector(BasicBlock, bbin, bb->ins) {
           if (intersect)
             new_in &= OUT[bbin->id]->data[j];
@@ -318,6 +331,7 @@ void forwardFlowAnalysis(FnSymbol* fn,
       }
     }
     if (change) {
+      BasicBlock* bbout;
       for_vector(BasicBlock, bbout, bb->outs) {
         if (!bbs.get(bbout->id)) {
           nq = (nq + 1) % nbbq;
@@ -331,8 +345,10 @@ void forwardFlowAnalysis(FnSymbol* fn,
 
 
 void printBasicBlocks(FnSymbol* fn) {
+  BasicBlock* b;
   for_vector(BasicBlock, b, *fn->basicBlocks) {
     printf("%2d:  ", b->id);
+    BasicBlock* bb;
     for_vector(BasicBlock, bb, b->ins) {
       printf("%d ", bb->id);
     }
@@ -341,6 +357,7 @@ void printBasicBlocks(FnSymbol* fn) {
       printf("%d ", bb->id);
     }
     printf("\n");
+    Expr* expr;
     for_vector(Expr, expr, b->exprs) {
       if (expr)
         list_view_noline(expr);
@@ -361,6 +378,7 @@ void printLocalsVector(Vec<Symbol*> locals, Map<Symbol*,int>& localMap) {
 
 void printDefsVector(std::vector<SymExpr*> defs, Map<SymExpr*,int>& defMap) {
   printf("Variable Definitions\n");
+  SymExpr* def;
   for_vector(SymExpr, def, defs) {
     printf("%2d: %s[%d] in %d\n", defMap.get(def), def->var->name,
            def->var->id, def->getStmtExpr()->id);
@@ -370,6 +388,7 @@ void printDefsVector(std::vector<SymExpr*> defs, Map<SymExpr*,int>& defMap) {
 
 void printLocalsVectorSets(std::vector<BitVec*>& sets, Vec<Symbol*> locals) {
   int i = 0;
+  BitVec* set;
   for_vector(BitVec, set, sets) {
     printf("%2d: ", i);
     for (int j = 0; j < set->size; j++) {
@@ -384,6 +403,7 @@ void printLocalsVectorSets(std::vector<BitVec*>& sets, Vec<Symbol*> locals) {
 
 void printBitVectorSets(std::vector<BitVec*>& sets) {
   int i = 0;
+  BitVec* set;
   for_vector(BitVec, set, sets) {
     printf("%2d: ", i);
     for (int j = 0; j < set->size; j++) {

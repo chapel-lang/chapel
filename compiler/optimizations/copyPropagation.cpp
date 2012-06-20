@@ -94,7 +94,7 @@ localCopyPropagationCore(BasicBlock* bb,
                          ReverseAvailableMap& reverseAvailable,
                          Vec<SymExpr*>& useSet,
                          Vec<SymExpr*>& defSet) {
-
+  Expr* expr;
   for_vector(Expr, expr, bb->exprs) {
     Vec<SymExpr*> symExprs;
     collectSymExprs(expr, symExprs);
@@ -148,7 +148,9 @@ void localCopyPropagation(FnSymbol* fn) {
   // candidates for copy propagation
   //
   Vec<Symbol*> locals;
+  BasicBlock* bb;
   for_vector(BasicBlock, bb, *fn->basicBlocks) {
+    Expr* expr;
     for_vector(Expr, expr, bb->exprs) {
       if (DefExpr* def = toDefExpr(expr))
         if (VarSymbol* var = toVarSymbol(def->sym))
@@ -189,7 +191,9 @@ void globalCopyPropagation(FnSymbol* fn) {
   // candidates for copy propagation
   //
   Vec<Symbol*> locals;
+  BasicBlock* bb;
   for_vector(BasicBlock, bb, *fn->basicBlocks) {
+    Expr* expr;
     for_vector(Expr, expr, bb->exprs) {
       if (DefExpr* def = toDefExpr(expr))
         if (VarSymbol* var = toVarSymbol(def->sym))
@@ -220,6 +224,7 @@ void globalCopyPropagation(FnSymbol* fn) {
   Vec<SymExpr*> spsRHS;
   int start = 0;
   for_vector(BasicBlock, bb, *fn->basicBlocks) {
+    Expr* expr;
     for_vector(Expr, expr, bb->exprs) {
 
       Vec<SymExpr*> symExprs;
@@ -328,6 +333,7 @@ void globalCopyPropagation(FnSymbol* fn) {
     int stop = N.v[i];
 
     Vec<Symbol*> killSet;
+    Expr* expr;
     for_vector(Expr, expr, bb->exprs) {
 
       Vec<SymExpr*> symExprs;
@@ -391,15 +397,19 @@ void globalCopyPropagation(FnSymbol* fn) {
     freeReverseAvailable(reverseAvailable);
   }
 
+  BitVec* copy;
   for_vector(BitVec, copy, COPY)
     delete copy, copy = 0;
 
+  BitVec* kill;
   for_vector(BitVec, kill, KILL)
     delete kill, kill = 0;
 
+  BitVec* in;
   for_vector(BitVec, in, IN)
     delete in, in = 0;
 
+  BitVec* out;
   for_vector(BitVec, out, OUT)
     delete out, out = 0;
 }

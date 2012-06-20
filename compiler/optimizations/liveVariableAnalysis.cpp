@@ -47,11 +47,13 @@ liveVariableAnalysis(FnSymbol* fn,
   std::vector<BitVec*> DEF;
   std::vector<BitVec*> IN;
 
+  BasicBlock* bb;
   for_vector(BasicBlock, bb, *fn->basicBlocks) {
     BitVec* use = new BitVec(locals.n);
     BitVec* def = new BitVec(locals.n);
     BitVec* lvin = new BitVec(locals.n);
     BitVec* lvout = new BitVec(locals.n);
+    Expr* expr;
     for_vector(Expr, expr, bb->exprs) {
       Vec<BaseAST*> asts;
       collect_asts(expr, asts);
@@ -87,12 +89,15 @@ liveVariableAnalysis(FnSymbol* fn,
 
   backwardFlowAnalysis(fn, USE, DEF, IN, OUT);
 
+  BitVec* use;
   for_vector(BitVec, use, USE)
     delete use, use = 0;
 
+  BitVec* def;
   for_vector(BitVec, def, DEF)
     delete def, def = 0;
 
+  BitVec* in;
   for_vector(BitVec, in, IN)
     delete in, in = 0;
 }

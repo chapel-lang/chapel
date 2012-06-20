@@ -53,6 +53,7 @@ reachingDefinitionsAnalysis(FnSymbol* fn,
   std::vector<BitVec*> GEN;
   std::vector<BitVec*> OUT;
 
+  BasicBlock* bb;
   for_vector(BasicBlock, bb, *fn->basicBlocks) {
     Vec<Symbol*> bbDefSet;
     BitVec* kill = new BitVec(defs.n);
@@ -99,12 +100,15 @@ reachingDefinitionsAnalysis(FnSymbol* fn,
   printf("OUT:\n"); printBitVectorSets(OUT);
 #endif
 
+  BitVec* gen;
   for_vector(BitVec, gen, GEN)
     delete gen, gen = 0;
 
+  BitVec* kill;
   for_vector(BitVec, kill, KILL)
     delete kill, kill = 0;
 
+  BitVec* out;
   for_vector(BitVec, out, OUT)
     delete out, out = 0;
 }
@@ -142,6 +146,7 @@ buildDefUseChains(FnSymbol* fn,
   for (size_t i = 0; i < fn->basicBlocks->size(); i++) {
     BasicBlock* bb = (*fn->basicBlocks)[i];
     BitVec* in = IN[i];
+    Expr* expr;
     for_vector(Expr, expr, bb->exprs) {
       Vec<SymExpr*> symExprs;
       collectSymExprs(expr, symExprs);
@@ -172,6 +177,8 @@ buildDefUseChains(FnSymbol* fn,
       }
     }
   }
+
+  BitVec* in;
   for_vector(BitVec, in, IN)
     delete in, in = 0;
 }

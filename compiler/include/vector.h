@@ -15,23 +15,14 @@
 // and returns one FnSymbol* from the global list of function symbol(pointer)s on
 // each iteration.
 //
-// To accomplish the iteration without internal knowledge of the vector class,
-// we need to maintain both an iteration index and the current element.
-// Wc can declare multiple variables in the initializer expression for a for loop,
-// but (in accordance with standard C++ syntax) these variables must all have the 
-// same set of declaration specifiers (which is the fundamental type portion of a
-// declaration, trimming off pointer, reference and array modifiers).
-// The trick we use is to declare the iteration index as a pointer and then cast it
-// to an integer whenever we reference it.  The std::vector class supports indexing
-// into the data structure (using operator[]), so we can enumerate the elements in
-// the vector that way.
+// To implement iteration compatibly (with forv_Vec), we need both an index (iterator) 
+// and the value obtained by dereferencing it.  Since it is not possible to declare 
+// variables with different base types in a for loop, we declare the hidden iterator
+// internally, and push the declaration of the value outside the loop.  That is, the
+// client code has to provide the declaration where formerly it did not.
 //
-// Using a pointer to contain an integer value is pretty hideous, but the best we can 
-// do under C++ syntax restrictions.  It seems pretty safe to assume that a pointer 
-// has at least as many bits as a size_t.
-//
-#define for_vector(TYPE, VAL, VEC) for (TYPE *VAL, *_i_##VAL = 0; \
-  ((size_t)_i_##VAL) < (VEC).size() ? (VAL = (VEC)[(size_t)_i_##VAL], true) : false; \
-  ++(*(size_t*)&_i_##VAL))
+#define for_vector(TYPE, VAL, VEC) \
+  for (std::vector<TYPE*>::iterator _i_##VAL = (VEC).begin(); \
+       (VAL = (_i_##VAL != (VEC).end()) ? *_i_##VAL : (TYPE*)0) ; _i_##VAL++ )
 
 #endif
