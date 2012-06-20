@@ -10,7 +10,14 @@ proc localTest(b, numTasks) {
   var A: [barSpace] int = -1;
   coforall t in barSpace do {
     A[t] = t;
-    for i in 1..numTasks do b.barrier();
+    for i in 1..numTasks {
+      if i%2 {
+        b.barrier();
+      } else {
+        b.notify();
+        b.wait();
+      }
+    }
     if printResults && t==0 then writeln(A);
   }
 }
@@ -21,7 +28,14 @@ proc remoteTest(b, numRemoteTasks) {
   var B: [[barSpace] dmapped new dmap(new Block([barSpace]))] int = -1;
   coforall t in barSpace do on A.domain.dist.idxToLocale(t) {
     B[t] = A[t];
-    for i in 1..numRemoteTasks do b.barrier();
+    for i in 1..numRemoteTasks {
+      if i%2 {
+        b.barrier();
+      } else {
+        b.notify();
+        b.wait();
+      }
+    }
     if printResults && t==0 then writeln(B);
   }
 }

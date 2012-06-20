@@ -65,12 +65,14 @@ module Barrier {
     }
 
     inline proc wait() {
-      done.waitFor(true);
-      if reusable {
-        const myc = count.fetchAdd(1);
-        if myc == n-1 then
-          done.clear();
-        done.waitFor(false);
+      on this {
+        done.waitFor(true);
+        if reusable {
+          const myc = count.fetchAdd(1);
+          if myc == n-1 then
+            done.clear();
+          done.waitFor(false);
+        }
       }
     }
 
