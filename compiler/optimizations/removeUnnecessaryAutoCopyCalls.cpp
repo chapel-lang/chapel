@@ -12,11 +12,9 @@
 static void removeUnnecessaryAutoCopyCalls(FnSymbol* fn) {
   buildBasicBlocks(fn);
 
-  BasicBlock* bb;
   for_vector(BasicBlock, bb, *fn->basicBlocks) {
     Map<Symbol*,Symbol*> equivalenceMap;
     Map<Symbol*,CallExpr*> autoCopyMap;
-    Expr* expr;
     for_vector(Expr, expr, bb->exprs) {
       if (CallExpr* call = toCallExpr(expr)) {
         if (call->isPrimitive(PRIM_MOVE)) {

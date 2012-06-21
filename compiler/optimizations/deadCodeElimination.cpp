@@ -106,9 +106,7 @@ void deadCodeElimination(FnSymbol* fn)
   Map<Expr*,Expr*> exprMap;
   Vec<Expr*> liveCode;
   Vec<Expr*> workSet;
-  BasicBlock* bb;
   for_vector(BasicBlock, bb, *fn->basicBlocks) {
-    Expr* expr;
     for_vector(Expr, expr, bb->exprs) {
       bool essential = false;
       Vec<BaseAST*> asts;
@@ -160,9 +158,8 @@ void deadCodeElimination(FnSymbol* fn)
   }
 
   // This removes dead expressions from each block.
-  for_vector(BasicBlock, bb, *fn->basicBlocks) {
-    Expr* expr;
-    for_vector(Expr, expr, bb->exprs) {
+  for_vector(BasicBlock, bb1, *fn->basicBlocks) {
+    for_vector(Expr, expr, bb1->exprs) {
       if (isSymExpr(expr) || isCallExpr(expr))
         if (!liveCode.set_in(expr))
           expr->remove();
@@ -198,7 +195,6 @@ static bool deadBlockElimination(FnSymbol* fn)
   buildBasicBlocks(fn);
 
   bool change = false;
-  BasicBlock* bb;
   for_vector(BasicBlock, bb, *fn->basicBlocks)
   {
     // Ignore the first block.
@@ -214,7 +210,6 @@ static bool deadBlockElimination(FnSymbol* fn)
         ++deadBlockCount;
 
         // Remove all of its expressions.
-        Expr* expr;
         for_vector(Expr, expr, bb->exprs)
         {
           if (! expr->parentExpr)

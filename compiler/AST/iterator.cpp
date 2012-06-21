@@ -365,10 +365,8 @@ addLiveLocalVariables(Vec<Symbol*>& syms, FnSymbol* fn, BlockStmt* singleLoop) {
   liveVariableAnalysis(fn, locals, localMap, useSet, defSet, OUT);
 
   int i = 0;
-  BasicBlock* bb;
   for_vector(BasicBlock, bb, *fn->basicBlocks) {
     bool collect = false;
-    Expr* expr;
     for_vector(Expr, expr, bb->exprs) {
       CallExpr* call = toCallExpr(expr);
       if (call && call->isPrimitive(PRIM_YIELD))
@@ -416,7 +414,6 @@ addLiveLocalVariables(Vec<Symbol*>& syms, FnSymbol* fn, BlockStmt* singleLoop) {
   printf("\n");
 #endif
 
-  BitVec* out;
   for_vector(BitVec, out, OUT)
     delete out, out = 0;
 

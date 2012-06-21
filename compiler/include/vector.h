@@ -21,7 +21,7 @@
 // internally, and push the declaration of the value outside the loop.  That is, the
 // client code has to provide the declaration where formerly it did not.
 //
-#define for_vector(TYPE, VAL, VEC) \
+#define for_vector(TYPE, VAL, VEC) TYPE* VAL;                 \
   for (std::vector<TYPE*>::iterator _i_##VAL = (VEC).begin(); \
        (VAL = (_i_##VAL != (VEC).end()) ? *_i_##VAL : (TYPE*)0) ; _i_##VAL++ )
 
