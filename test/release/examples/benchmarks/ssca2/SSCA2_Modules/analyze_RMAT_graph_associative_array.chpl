@@ -22,7 +22,8 @@ module analyze_RMAT_graph_associative_array {
   config const graphVerifyDStyle = "-";
 
   // used during graph allocation
-  config const initialRMATNeighborListLength = 16;
+  config const initialRMATNeighborListLength =
+    if graphInputFile == "" then 16 else 0;
 
     record VertexData {
       var ndom = [1..initialRMATNeighborListLength];

@@ -4,6 +4,8 @@
 //
 module io_RMAT_graph
 {
+  use SSCA2_compilation_config_params, Time, ReplicatedDist;
+
   //
   // The data is stored in 5 files per graph.
   // The individual files' names are obtained by appending
@@ -16,7 +18,13 @@ module io_RMAT_graph
   config const START_FILENAME  = "start_snapshot.data";
   config const WEIGHT_FILENAME = "weight_snapshot.data";
   config type  IONumType       = int(64);
+  config param IOendianness    = iokind.big;
+  config const IOserial        = false;
 
+  // Debugging-related settings.
+  config const IOprogress      = true;
+  config var progressFrequency = 100000;
+  config const IOgate          = false;
 
   //
   // Writeout_RMAT_graph()
@@ -29,6 +37,9 @@ module io_RMAT_graph
   proc Writeout_RMAT_graph(G, snapshot_prefix:string, dstyle = "-"): void {
     writeln("writing RMAT graph with ", graphNumVertices(G), " vertices, ",
           graphTotalEdges(G), " edges to '", snapshot_prefix, "'*");
+
+    var stopwatch : Timer;
+    if PRINT_TIMING_STATISTICS then stopwatch.start ();
 
     param wri = true;
 
@@ -85,6 +96,13 @@ module io_RMAT_graph
     ww.close();
     sta.close();
 
+    if PRINT_TIMING_STATISTICS then {
+      stopwatch.stop ();
+      writeln ( "Elapsed time for writing RMAT graph: ", stopwatch.elapsed (), 
+                " seconds");
+      stopwatch.clear ();
+    }
+
     write("DONE writing RMAT graph");
     if dON then write(" to '", snapshot_prefix, "'*");
     //else write(" with ", numVertices, " vertices, ", startIx, " edges");
@@ -92,6 +110,14 @@ module io_RMAT_graph
 
   } // Writeout_RMAT_graph()
 
+  //
+  // For each data file, we create one Chapel 'file' per locale when parallel.
+  // Cheap-to-compute decls are here, the rest are in Readin_RMAT_graph().
+  //
+  param repfileLow = 1, repfileHi = 5,
+        repfileSV = 1, repfileEV = 2, repfileWW = 3,
+        repfileSTA = 4, repfileST2 = 5;
+  const repfileBase = [repfileLow .. repfileHi];
 
   //
   // Readin_RMAT_graph()
@@ -101,7 +127,11 @@ module io_RMAT_graph
   //
   proc Readin_RMAT_graph(G, snapshot_prefix:string, dstyle = "-"): void {
     writeln("reading RMAT graph with ", graphNumVertices(G), " vertices",
+            if IOserial then " serially" else " in parallel",
             " from '", snapshot_prefix, "'*");
+
+    var stopwatch : Timer;
+    if PRINT_TIMING_STATISTICS then stopwatch.start ();
 
     param rea = false;
 
@@ -123,92 +153,87 @@ module io_RMAT_graph
 
     if vCount != graphNumVertices(G) then
       reportNumVerticesError(G, snapshot_prefix, vCount);
+    
+    var GRow => G.Row;
+    const uxIDs = GRow.domain.dim(1);
+    type VType = uxIDs.idxType;
+    compilerAssert(!uxIDs.stridable); // for efficiency
 
-    const sv = createGraphChannel(snapshot_prefix, SV2_FILENAME, rea);
-    const ev = createGraphChannel(snapshot_prefix, EV2_FILENAME, rea);
-    const ww = createGraphChannel(snapshot_prefix, WEIGHT_FILENAME, rea);
-    const sta = createGraphChannel(snapshot_prefix, START_FILENAME, rea);
+    // All work is done in graphReaderIterator().
+    // G.Row is used to distribute/parallelize the execution.
+    if IOserial {
 
-    // see whether the edges in the data file are ordered, for each edge
-    //var outOfOrderCnt = 0, prevEnd = 0:IONumType;
+      const sv = createGraphChannel(snapshot_prefix, SV2_FILENAME, rea);
+      const ev = createGraphChannel(snapshot_prefix, EV2_FILENAME, rea);
+      const ww = createGraphChannel(snapshot_prefix, WEIGHT_FILENAME, rea);
+      const sta = createGraphChannel(snapshot_prefix, START_FILENAME, rea);
 
-    var startIxCnt = 0:IONumType, startIxData = readNum(sta);
-    if startIxCnt != startIxData then
-      halt("the first index in ", snapshot_prefix, START_FILENAME,
-           " is ", startIxData, " but should be ", startIxCnt);
-    resetProgress();
-    type VType = index(G.vertices);
+      var startIxCnt = 0:IONumType, startIxData = readNum(sta);
+      if startIxCnt != startIxData then
+        halt("the first index in ", snapshot_prefix, START_FILENAME,
+             " is ", startIxData, " but should be ", startIxCnt);
 
-    for u in 1..(vCount:VType) {
+      for u in uxIDs do
+        readOneVertex(GRow, VType, vCount, u, dON, dRow, dEdge, dstyle,
+                      sv, ev, ww, startIxData = readNum(sta), startIxCnt);
+
+      debug("done reading ", vCount, " vertices, ", startIxData, " edges");
+
+      // one more entry in 'sta'
       startIxData = readNum(sta);
-      //prevEnd = min(prevEnd.type);
-      const numEdges = startIxData - startIxCnt;
-      if dRow then write("row ", u, ": [", numEdges, "] ");
-      if dEdge then writeln(dstyle, " vertex ", u);
+      if startIxData != startIxCnt then
+        myerror("wrong last entry in ", START_FILENAME,
+                "  expected ", startIxCnt, "  got ", startIxData);
+      if startIxData != eCount then
+        myerror(snapshot_prefix, VE_FILENAME, " claimed ", eCount,
+                " edges, the other files gave ", startIxData, " edges");
 
-      // we know how many neighbors we have for this vertex
-      G.Row(u).ndom = 1..numEdges;
-      var neighborIDs => G.Row(u).neighborIDs;
-      var edgeWeights => G.Row(u).edgeWeights;
+      ensureEOFofDataFile(sv, snapshot_prefix, SV2_FILENAME);
+      ensureEOFofDataFile(ev, snapshot_prefix, EV2_FILENAME);
+      ensureEOFofDataFile(ww, snapshot_prefix, WEIGHT_FILENAME);
+      ensureEOFofDataFile(sta, snapshot_prefix, START_FILENAME);
 
-      for ix in 1..numEdges {
-        const curStart = readNum(sv)+1,
-              v = (readNum(ev)+1):VType,
-              w = readNum(ww):VType;
+      sv.close();
+      ev.close();
+      ww.close();
+      sta.close();
 
-        // initial reporting
-        if dRow then write((v, w));
-        if dEdge then writeln(dstyle, " ", u, " ", v, " ", w);
+    } else {
+      const repfileMap = new ReplicatedDist(Locales);
+      const repfileDom = repfileBase dmapped new dmap(repfileMap);
+      var repfiles: [repfileDom] file;
 
-        // sanity checks
-        if curStart != u then
-          myerror("*** start vertex mismatch: expected ",
-                  u, ", got ", curStart);
-        if v < 1 || v > vCount then
-          myerror("*** illegal end vertex number: ", v);
-
-        // record the edge in the vertex
-        neighborIDs(ix) = v;
-        edgeWeights(ix) = w;
-
-        // more reporting
-        startIxCnt += 1;
-        //if v <= prevEnd then
-        //  outOfOrderCnt += 1;
-        if dON && reportProgress() then
-          writeln("processing...  vertex ", u, "  edge ", startIxCnt);
-                  //("  outOfOrderCnt ", outOfOrderCnt);
-        //prevEnd = v;
+      coforall l in Locales do on l {
+ repfiles[repfileSV] = createGraphFile(snapshot_prefix, SV2_FILENAME, rea);
+ repfiles[repfileEV] = createGraphFile(snapshot_prefix, EV2_FILENAME, rea);
+ repfiles[repfileWW] = createGraphFile(snapshot_prefix, WEIGHT_FILENAME, rea);
+ repfiles[repfileSTA] = createGraphFile(snapshot_prefix, START_FILENAME, rea);
+ repfiles[repfileST2] = createGraphFile(snapshot_prefix, START_FILENAME, rea);
       }
-      if dRow then writeln();
 
-      // because we run the loop exactly the right number of times
-      assert(startIxCnt == startIxData);
+      // All work is done in graphReaderIterator() follower iterator.
+      // GRow is used only to distribute/parallelize the computation.
+      forall (_,_) in (GRow,
+        graphReaderIterator(GRow, uxIDs, VType, vCount, eCount, repfiles,
+                            dON, dRow, dEdge, dstyle))
+          do;
 
-    } // for G.vertices
+      coforall l in Locales do on l {
+          repfiles[repfileSV].close();
+          repfiles[repfileEV].close();
+          repfiles[repfileWW].close();
+          repfiles[repfileSTA].close();
+          repfiles[repfileST2].close();
+      }
 
-    debug("done reading ", vCount, " vertices, ", startIxData, " edges");
-    //debug(if outOfOrderCnt then "outOfOrder edges: " + outOfOrderCnt:string
-    //        else "all edges are inOrder");
+    } // if IOserial
 
-    // one more entry in 'sta'
-    startIxData = readNum(sta);
-    if startIxData != startIxCnt then
-      myerror("wrong last entry in ", START_FILENAME,
-            "  expected ", startIxCnt, "  got ", startIxData);
-    if startIxData != eCount then
-      myerror(snapshot_prefix, VE_FILENAME, " claimed ", eCount,
-            " edges, the other files gave ", startIxData, " edges");
-
-    ensureEOFofDataFile(sv, snapshot_prefix, SV2_FILENAME);
-    ensureEOFofDataFile(ev, snapshot_prefix, EV2_FILENAME);
-    ensureEOFofDataFile(ww, snapshot_prefix, WEIGHT_FILENAME);
-    ensureEOFofDataFile(sta, snapshot_prefix, START_FILENAME);
-
-    sv.close();
-    ev.close();
-    ww.close();
-    sta.close();
+    if PRINT_TIMING_STATISTICS then {
+      stopwatch.stop ();
+      writeln ( "Elapsed time for reading RMAT graph: ", stopwatch.elapsed (), 
+                " seconds");
+      stopwatch.clear ();
+    }
 
     write("DONE reading RMAT graph");
     if dON then write(" from '", snapshot_prefix, "'*");
@@ -218,12 +243,164 @@ module io_RMAT_graph
   } // Readin_RMAT_graph()
 
 
+  ///////// parallel Readin_RMAT_graph helpers /////////
+
+  // For use with IOgate=true: allows only a single graphReaderIterator
+  // follower invocation at a time.
+  var IOgate$: sync bool;
+
+  // Seems we need this serial iterator declaration to keep the compiler happy.
+  // But it is not implemented. Use --IOserial instead.
+  iter graphReaderIterator(GRow, uxIDs, type VType, vCount, eCount, repfiles,
+                           dON, dRow, dEdge, dstyle) {
+    halt("serial graphReaderIterator should not be invoked");
+    yield 0:VType;
+
+  }
+
+  // We do not need the leader iterator.
+  // The follower iterator reads the part of the graph it is given
+  // to follow, on the locale where it is run.
+  //
+  iter graphReaderIterator(GRow, uxIDs, type VType, vCount, eCount, repfiles,
+                           dON, dRow, dEdge, dstyle,
+                           param tag: iterKind, followThis)
+    where tag == iterKind.follower
+  {
+    if IOgate then IOgate$ = true;
+
+    // ensure we got unstridable range with VType-typed indices
+    compilerAssert(followThis.type ==
+                   1*range(VType, BoundedRangeType.bounded, false));
+
+    const myIDs = unDensify(followThis(1), uxIDs);
+    compilerAssert(!myIDs.stridable); // for efficiency, also for v1,v2
+    // start/end IDs
+    const v1 = myIDs.low, v2 = myIDs.high;
+    //writeln("loc ", here.id, "  myIDs ", v1, "..", v2, "  of ", uxIDs);
+
+    // Returns the offset of edgeStart[v] in staf, 1 <= v <= numVertices+2.
+    proc staOffsetForVID(v: int) return (v-1) * numBytes(IONumType);
+    // Returns the offset of startVertex/endVertex/weight[e] in
+    //  svf, evf, wwf, resp; 1 <= e <= numEdges.
+    proc svOffsetForEID(e: int) return (e-1) * numBytes(IONumType);
+
+    // We need to read edgeStart(v1) and edgeStart(v2) (in the terminology
+    // of the commit message for r19646) - to determine the span of
+    // the channels sv, ev, ww.
+    // Then we need everything in between - to know how many edges
+    // each vertex has.
+    //
+    // But we need to avoid the undefined behavior when
+    // channels refer to overlapping parts of a file.
+    // So we read edgeStart(v1) from 'staf1' and the rest from 'staf'.
+    //
+    const sta_v1 = repfiles[repfileST2].reader(kind = IOendianness,
+                                               locking = false,
+                                               start = staOffsetForVID(v1),
+                                               end = staOffsetForVID(v1+1));
+    const sta1 = readNum(sta_v1) + 1;
+    sta_v1.close();
+
+    // We read edgeStart(v2) from its own channel.
+    const sta_v2 = repfiles[repfileSTA].reader(IOendianness, false,
+                              staOffsetForVID(v2+1), staOffsetForVID(v2+1+1));
+    const sta2 = readNum(sta_v2);
+    sta_v2.close();
+
+    //writeln("edgeStart ", sta1, "..", sta2);
+    if !(sta1 < sta2) then
+      halt("graph I/O for a small number of vertices is not supported\n",
+           "  loc ", here.id, "  myIDs ", v1, "..", v2, "  of ", uxIDs,
+           "  edgeStart ", sta1, "..", sta2);
+
+    // We access only our parts these files.
+    const sv = repfiles[repfileSV].reader(IOendianness, false,
+                          svOffsetForEID(sta1), svOffsetForEID(sta2+1));
+    const ev = repfiles[repfileEV].reader(IOendianness, false,
+                          svOffsetForEID(sta1), svOffsetForEID(sta2+1));
+    const ww = repfiles[repfileWW].reader(IOendianness, false,
+                          svOffsetForEID(sta1), svOffsetForEID(sta2+1));
+
+    // 'sta' covers edgeStart(v1+1..v2).
+    // Do not include v1, as another process will be reading that from 'staf'.
+    const sta = repfiles[repfileSTA].reader(IOendianness, false,
+                           staOffsetForVID(v1+1), staOffsetForVID(v2+1+1));
+
+    var startIxCnt = sta1 - 1;
+
+    for u in v1:VType..v2:VType {
+      readOneVertex(GRow, VType, vCount, u, dON, dRow, dEdge, dstyle,
+                    sv, ev, ww, startIxData = readNum(sta), startIxCnt);
+
+      // this needs to look like an iterator
+      yield u;
+
+    } // for u
+
+    if startIxCnt != sta2 then
+      halt("*** mismatch ***  ", startIxCnt, " vs. ", sta2);
+
+    sv.close();
+    ev.close();
+    ww.close();
+    sta.close();
+
+    if IOgate then IOgate$;
+  } // follower graphReaderIterator
+
+  proc readOneVertex(GRow, type VType, vCount, u, dON, dRow, dEdge, dstyle,
+                     sv, ev, ww, startIxData, inout startIxCnt)
+  {
+    const numEdges = startIxData - startIxCnt;
+    if dRow then write("row ", u, ": [", numEdges, "] ");
+    if dEdge then writeln(dstyle, " vertex ", u);
+
+    // we know how many neighbors we have for this vertex
+    // 
+    GRow(u).ndom = 1..numEdges;
+    var neighborIDs => GRow(u).neighborIDs;
+    var edgeWeights => GRow(u).edgeWeights;
+
+    for ix in 1..numEdges {
+      const curStart = readNum(sv)+1,
+        v = (readNum(ev)+1):VType,
+        w = readNum(ww):VType;
+
+      // initial reporting
+      if dRow then write((v, w));
+      if dEdge then writeln(dstyle, " ", u, " ", v, " ", w);
+
+      // sanity checks
+      if curStart != u then
+        myerror("*** start vertex mismatch: expected ",
+                u, ", got ", curStart);
+      if v < 1 || v > vCount then
+        myerror("*** illegal end vertex number: ", v);
+
+      // record the edge in the vertex
+      neighborIDs(ix) = v;
+      edgeWeights(ix) = w;
+
+      // more reporting
+      startIxCnt += 1;
+      if dON && reportProgress() then
+        writeln("processing...  vertex ", u, "  edge ", startIxCnt);
+    }
+    if dRow then writeln();
+
+    // because we run the loop exactly the right number of times
+    assert(startIxCnt == startIxData);
+
+  } // readOneVertex
+
   ///////// helpers /////////
 
   //
   // 'dstyle' specifies the debugging style:
   //   "-"        no debug output, just start/end/summary
-  //   "summary"  verbose summary
+  //   "summary"  verbose summary - do not use when measuring performance
+  //                while IOprogress=true
   //   "row"      DEBUG_GRAPH_GENERATOR-style one line per row
   //   otherwise  one line per edge (enables sorting), prefixed by 'dstyle'
   //
@@ -261,12 +438,12 @@ module io_RMAT_graph
 
   ///////// progress indicator /////////
 
-  config var progressFrequency = 100000;
   var progressCount = 0;
   proc resetProgress() {
     progressCount = 0;
   }
   proc reportProgress() {
+    if !IOprogress then return false;
     var result = false;
     progressCount -= 1;
     if progressCount <= 0 {
@@ -284,13 +461,17 @@ module io_RMAT_graph
   ///////// I/O helpers /////////
 
   proc createGraphChannel(prefix:string, suffix:string, param forWriting:bool) {
-    const f = open(prefix+suffix,
-                   if forWriting then iomode.cw else iomode.r,
-                   IOHINT_SEQUENTIAL);
+    const f = createGraphFile(prefix, suffix, forWriting);
     const chan = if forWriting
-      then f.writer(iokind.big, false)
-      else f.reader(iokind.big, false);
+      then f.writer(IOendianness, false)
+      else f.reader(IOendianness, false);
     return chan;
+  }
+
+  proc createGraphFile(prefix:string, suffix:string, param forWriting:bool) {
+    return open(prefix+suffix,
+                if forWriting then iomode.cw else iomode.r,
+                IOHINT_SEQUENTIAL);
   }
 
   proc ensureEOFofDataFile(chan, snapshot_prefix, file_suffix): void {
