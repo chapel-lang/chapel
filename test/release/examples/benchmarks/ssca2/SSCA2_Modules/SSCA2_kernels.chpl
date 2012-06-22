@@ -250,7 +250,9 @@ module SSCA2_kernels
   
       if PRINT_TIMING_STATISTICS then stopwatch.start ();
 
-      forall s in starting_vertices do {
+      forall s in starting_vertices do on vertex_domain.dist.idxToLocale(s) {
+
+          const shere = here.id;
 
 	if DEBUG_KERNEL4 then writeln ( "expanding from starting node ", s );
 
@@ -261,10 +263,15 @@ module SSCA2_kernels
         var min_distance  => lp.get_min_distance(tid);
         var path_count$   => lp.get_path_count(tid);
         var children_list => lp.get_children_list(tid);
+        pragma "dont disable remote value forwarding"
+          inline proc f1(path_count$, v) {
+          path_count$[v].writeXF(0.0);
+        }
         forall v in vertex_domain do {
           depend[v] = 0.0;
           min_distance[v].write(-1);
-          path_count$[v].writeXF(0.0);
+          // path_count$[v].writeXF(0.0);
+          f1(path_count$, v);
           children_list[v].child_count.write(0);
         }
 	var Lcl_Sum_Min_Dist: sync real = 0.0;
@@ -283,8 +290,8 @@ module SSCA2_kernels
         // is yet another concept that the Chapel group is planning to
         // implement.
         //
-        var remaining: atomic bool;
-        remaining.write(true);
+
+        var remaining = true;
 
         //
         // Each locale will have its own level sets.  A locale's level set
@@ -292,6 +299,13 @@ module SSCA2_kernels
         // particular locale.
         //
         var Active_Level => lp.get_Active_Level(tid);
+        pragma "dont disable remote value forwarding"
+          inline proc f2(path_count$, s) {
+          path_count$[s].writeXF(1);
+        }
+
+        var barrier = new Barrier(numLocales);
+
         coforall loc in Locales do on loc {
           Active_Level[here.id].Members.clear();
           Active_Level[here.id].next.Members.clear();
@@ -300,14 +314,14 @@ module SSCA2_kernels
             // traversal from s
             Active_Level[here.id].Members.add(s);
             min_distance[s].write(0);
-            path_count$[s].writeXF(1);
+            // path_count$[s].writeXF(1);
+            f2(path_count$, s);
           }
-        }
+          barrier.barrier();
 
-	var current_distance : int = 0;
+          var current_distance : int = 0;
   
-	while remaining.read() do {
-            remaining.clear();
+          while remaining do {
 	    // ------------------------------------------------
 	    // expand the neighbor sets for all vertices at the
 	    // current distance from the starting vertex  s
@@ -315,50 +329,55 @@ module SSCA2_kernels
       
 	    current_distance += 1;
 
-            var barrier = new Barrier(numLocales);
-
             // The Chapel compiler is still a bit conservative when it
             // comes to forwarding read-only variables to remote
             // locales, so we make a const copy here to insure it is
             // forwarded to the remote locale in the following
             // coforall loop.
             const current_distance_c = current_distance;
-            coforall loc in Locales do on loc {
-             forall u in Active_Level[here.id].Members do {
+            pragma "dont disable remote value forwarding"
+              inline proc f3(path_count$, v, u) {
+              path_count$[v] += path_count$[u].readFF();
+            }
 
-               forall v in G.FilteredNeighbors(u) do
-                 on vertex_domain.dist.idxToLocale(v) {
-                   // --------------------------------------------
-                   // add any unmarked neighbors to the next level
-                   // --------------------------------------------
+            forall u in Active_Level[here.id].Members do {
+              forall v in G.FilteredNeighbors(u) do
+                on vertex_domain.dist.idxToLocale(v) {
+                  // --------------------------------------------
+                  // add any unmarked neighbors to the next level
+                  // --------------------------------------------
   
-                   if  min_distance[v].compareExchangeStrong(-1, current_distance_c) {
-                     Active_Level[here.id].next.Members.add (v);
-                     if VALIDATE_BC then
-                       Lcl_Sum_Min_Dist += current_distance_c;
-                   }
+                  if  min_distance[v].compareExchangeStrong(-1, current_distance_c) {
+                    Active_Level[here.id].next.Members.add (v);
+                    if VALIDATE_BC then
+                      Lcl_Sum_Min_Dist += current_distance_c;
+                  }
 
 
-                   // ------------------------------------------------
-                   // only neighbors of  u  that are in the next level
-                   // are on shortest paths from s through v.  Some
-                   // task will have set  min_distance (v) by the
-                   // time this code is reached, whether  v  lies in
-                   // the previous, the current or the next level.
-                   // ------------------------------------------------
+                  // ------------------------------------------------
+                  // only neighbors of  u  that are in the next level
+                  // are on shortest paths from s through v.  Some
+                  // task will have set  min_distance (v) by the
+                  // time this code is reached, whether  v  lies in
+                  // the previous, the current or the next level.
+                  // ------------------------------------------------
   
-                   if min_distance[v].read() == current_distance_c {
-                     path_count$[v] += path_count$[u].readFF();
-                     children_list(u).add_child (v);
-                   }
+                  if min_distance[v].read() == current_distance_c {
+                    // path_count$[v] += path_count$[u].readFF();
+                    f3(path_count$, v, u);
+                    children_list(u).add_child (v);
+                  }
 
-                 }
-             };
+                }
+            };
 
             // This barrier is needed to insure all updates to the next
             // level are completed before updating to use the next level
-            barrier.notify();
+
             // do some work while we wait
+            // barrier.notify(); // This is expensive without network atomics
+            //  for now, just do a normal barrier
+
             if Active_Level[here.id].next.next == nil {
               Active_Level[here.id].next.next = new Level_Set (Sparse_Vertex_List);
               Active_Level[here.id].next.next.previous = Active_Level[here.id].next;
@@ -366,36 +385,49 @@ module SSCA2_kernels
             } else {
               Active_Level[here.id].next.next.Members.clear();
             }
-            barrier.wait();
+            // barrier.wait(); // ditto
+            barrier.barrier();
+            if here.id==shere {
+              remaining = false;
+            }
 
+            barrier.barrier();
             Active_Level[here.id] = Active_Level[here.id].next;
             if Active_Level[here.id].Members.numIndices:bool then
-              remaining.write(true);
+              remaining = true;
+
+            barrier.barrier();
+
+          };  // end forward pass
+
+          if here.id==0 {
+            if VALIDATE_BC then
+              Sum_Min_Dist$ += Lcl_Sum_Min_Dist;
           }
 
-	};  // end forward pass
+          // -------------------------------------------------------------
+          // compute the dependencies recursively, traversing the vertices 
+          // of the graph in non-increasing order of distance (reverse 
+          // ordering from the initial traversal)
+          // -------------------------------------------------------------
 
-	if VALIDATE_BC then
-	  Sum_Min_Dist$ += Lcl_Sum_Min_Dist;
+          const graph_diameter = current_distance - 1;
 
-	// -------------------------------------------------------------
-	// compute the dependencies recursively, traversing the vertices 
-	// of the graph in non-increasing order of distance (reverse 
-	// ordering from the initial traversal)
-	// -------------------------------------------------------------
+          if here.id==0 {
+            if DEBUG_KERNEL4 then 
+              writeln ( " graph diameter from starting node ", s, 
+                        "  is ", graph_diameter );
+          }
 
-	var graph_diameter = current_distance - 1;
+          pragma "dont disable remote value forwarding"
+            inline proc f4(depend, children_list, path_count$, Between_Cent$, u) {
+            depend (u) = + reduce [v in children_list(u).Row_Children[1..children_list(u).child_count.read()]]
+              ( path_count$[u].readFF() / 
+                path_count$[v].readFF() )      *
+              ( 1.0 + depend (v) );
+            Between_Cent$ (u) += depend (u);
+          }
 
-	if DEBUG_KERNEL4 then 
-	  writeln ( " graph diameter from starting node ", s, 
-		    "  is ", graph_diameter );
-
-        // Use multiple barriers to simplify synchronization between
-        // the barriers in each iteration of the outer for loop
-        var barrier: [2..graph_diameter] Barrier;
-        [2..graph_diameter] barrier.reset(numLocales);
-
-        coforall loc in Locales do on loc {
           // back up to last level
           var curr_Level =  Active_Level[here.id].previous;
   
@@ -403,16 +435,17 @@ module SSCA2_kernels
             curr_Level = curr_Level.previous;
 
             for u in curr_Level.Members do on vertex_domain.dist.idxToLocale(u) {
+                f4(depend, children_list, path_count$, Between_Cent$, u);
+                /*
               depend (u) = + reduce [v in children_list(u).Row_Children[1..children_list(u).child_count.read()]]
                 ( path_count$[u].readFF() / 
                   path_count$[v].readFF() )      *
                 ( 1.0 + depend (v) );
               Between_Cent$ (u) += depend (u);
+                */
             }
 
-            // This barrier is needed to insure all updates to depend are
-            // complete before the next pass.
-            barrier[current_distance].barrier();
+            barrier.barrier();
           }
         }
 
@@ -546,18 +579,21 @@ module SSCA2_kernels
   }
 
   //
-  // simple barrier implementation
+  // reusable barrier implementation
   //
   record Barrier {
+    param reusable = true;
+    var n: int;
     var count: atomic int;
     var done: atomic bool;
 
-    proc Barrier(n: int) {
-      reset(n);
+    proc Barrier(_n: int) {
+      reset(_n);
     }
 
-    inline proc reset(n: int) {
+    inline proc reset(_n: int) {
       on this {
+        n = _n;
         count.write(n);
         done.write(false);
       }
@@ -569,8 +605,17 @@ module SSCA2_kernels
         if myc<=1 {
           if done.testAndSet() then
             halt("Too many callers to barrier()");
+          if reusable {
+            count.waitFor(n-1);
+            count.add(1);
+            done.clear();
+          }
         } else {
-          wait();
+          done.waitFor(true);
+          if reusable {
+            count.add(1);
+            done.waitFor(false);
+          }
         }
       }
     }
@@ -580,13 +625,21 @@ module SSCA2_kernels
         const myc = count.fetchSub(1);
         if myc<=1 {
           if done.testAndSet() then
-            halt("Too many callers to barrier_notify()");
+            halt("Too many callers to notify()");
         }
       }
     }
 
     inline proc wait() {
-      done.waitFor(true);
+      on this {
+        done.waitFor(true);
+        if reusable {
+          const myc = count.fetchAdd(1);
+          if myc == n-1 then
+            done.clear();
+          done.waitFor(false);
+        }
+      }
     }
 
     inline proc try() {
