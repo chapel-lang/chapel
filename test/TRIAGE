@@ -46,10 +46,12 @@ question would be whether turning optimizations off/down when building
 'chpl' would make these go away.
 
 
-qthreads (UNASSIGNED)
----------------------
+linux64.gnu.gasnet.qthreads.none (UNASSIGNED)
+---------------------------------------------
 1) Continue to have a lot of noise in testing.
-2) Some comm counts off, got a seg fault (06/06/12)
+   Often the execution times out nondeterministically
+   - is that due to gasnet (see below) ?
+2) Some comm counts off, got a seg fault (06/06/12, 6/16)
 
 
 valgrind (UNASSIGNED)
@@ -65,6 +67,44 @@ any chance that this is due to a leftover program library of some
 sort?  If not, file bug against XMT compiler.
 
 
+variance in comm counts - linux64.gnu.gasnet-everything.fifo.pthreads (sungeun)
+-------------------------------------------------------------------------------
+examples:
+ performance/sungeun/multilocale/syncsingle  (06/17/12, 6/21)
+ distributions/robust/arithmetic/performance/reduce*
+
+
+parallel/cobegin/diten/cobeginRace (UNASSIGNED)
+----------------------------------------------------
+"timedexec died with signal 11" - pgi compiler (06/18/12)
+unknown cause - baseline (06/17/12)
+
+
+non-deterministic timeouts with gasnet (UNASSIGNED)
+---------------------------------------------------
+The following configurations are affected:
+ linux64.gnu.gasnet.qthreads.none
+ linux64.gnu.gasnet.fifo.pthreads.tcmalloc
+ linux64.gnu.gasnet-fast.fifo.pthreads.dlmalloc
+ linux64.gnu.gasnet-everything.fifo.pthreads
+examples of what times out:
+ release/examples/benchmarks/ssca2/SSCA2_main
+ distributions/robust/arithmetic/kernels/hpl
+ distributions/robust/arithmetic/stress/test_many_array
+ distributions/robust/arithmetic/kernels/jacobi
+ distributions/nelson/MultiBlockDist2DLocales
+ distributions/robust/arithmetic/modules/test_module_Sort
+ etc.
+
+
+"in routine alloca() there is a stack overflow" under PGI (UNASSIGNED)
+----------------------------------------------------------------------
+Somewhat? nondeterministic.
+These configurations:
+ linux64.pgi.none.fifo.pthreads
+ xt-cle.cray-xt-pgi.none.fifo.pthreads
+ xt-cle.cray-xt-pgi.none.fifo.pthreads--linux64.gnu
+
 
 ==================================================
 Not so noisy as to be instantly recognizable (yet)
@@ -72,15 +112,19 @@ Not so noisy as to be instantly recognizable (yet)
 
 gasnet-everything nondeterminisms (UNASSIGNED)
 ----------------------------------------------
-MultiBlockDist2DLocales (06/05/12)
-test_module_Sort (06/06/12)
-test_array_slicing3 (06/08/12)
+MultiBlockDist2DLocales (06/05/12, 6/16)
+test_module_Sort (06/06/12, 6/16)
+test_array_slicing3 (06/08/12, 6/16)
 
 
 no-local nondeterminisms (UNASSIGNED)
 -------------------------------------
 cg-sparse-timecomp (06/05/12)
 
+
+memory/vass/crash-memory-module-1 (vass)
+----------------------------------------
+fails intermittently
 
 
 ======================================================
@@ -104,4 +148,9 @@ Perf linux64.gnu.none.fifo.pthreads
 ============================================================
 Warnings from createGraphs should be eliminated because they are counted as errors.
 Bug -> Vass.
+Brad 6/22/2012: ''At some point I'd like someone to address it, but
+since it isn't creating noise in the testing system (in the sense of
+new emails that aren't worth paying attention to), I'd file it more in
+the "once we've got the noise out, we should improve the system
+itself" category.''
 
