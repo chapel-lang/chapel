@@ -124,8 +124,8 @@ cat $NODESFILE | parallel rsync -az --exclude ".svn/" --delete ./ {}:$DST
 cat $NODESFILE | parallel rsync -az --exclude ".svn/" --delete ../svn_trunk_clean/ {}:$CLEANDST
 
 # Now, run the clean tests.
-cat $CLEAN/test/.tests.txt | parallel --jobs $MAXJOBS --load $MAXLOAD --eta --sshloginfile $NODESFILE -L $TESTSPER "cd $CLEANDST; source util/setchplenv.bash > /dev/null; cd test; ../util/start_test -comm $COMM -logfile Logs/run-test-{#} -logtmp  Logs/run-test-tmp-{#} -norecurse {} > /dev/null; grep '\[Error' Logs/run-test-{#}.summary" > $CLEAN/test/Logs/run-test.log
-cat ./test/.tests.txt | parallel --jobs $MAXJOBS --load $MAXLOAD --eta --sshloginfile $NODESFILE -L $TESTSPER "cd $DST; source util/setchplenv.bash > /dev/null; cd test; ../util/start_test -comm $COMM -logfile Logs/run-test-{#} -logtmp Logs/run-test-tmp-{#} -norecurse {} > /dev/null; grep '\[Error' Logs/run-test-{#}.summary" >  test/Logs/run-test.log
+cat $CLEAN/test/.tests.txt | parallel --jobs $MAXJOBS --load $MAXLOAD --eta --sshloginfile $NODESFILE -L $TESTSPER "cd $CLEANDST; source util/setchplenv.bash > /dev/null; cd test; ../util/start_test -comm $COMM -logfile Logs/run-test-{#} -norecurse {} > /dev/null; grep '\[Error' Logs/run-test-{#}.summary" > $CLEAN/test/Logs/run-test.log
+cat ./test/.tests.txt | parallel --jobs $MAXJOBS --load $MAXLOAD --eta --sshloginfile $NODESFILE -L $TESTSPER "cd $DST; source util/setchplenv.bash > /dev/null; cd test; ../util/start_test -comm $COMM -logfile Logs/run-test-{#} -norecurse {} > /dev/null; grep '\[Error' Logs/run-test-{#}.summary" >  test/Logs/run-test.log
 
 sort $CLEAN/test/Logs/run-test.log > $CLEAN/test/Logs/run-test.log.sorted
 sort ./test/Logs/run-test.log > ./test/Logs/run-test.log.sorted
