@@ -27,9 +27,8 @@ module analyze_RMAT_graph_associative_array {
 
     record VertexData {
       var ndom = [1..initialRMATNeighborListLength];
-      var neighborList: [ndom] (int(64), int(64));
-//      var neighborIDs: [ndom] int(64);
-//      var edgeWeights: [ndom] int(64);
+      var neighborIDs: [ndom] int(64);
+      var edgeWeights: [ndom] int(64);
 
       // This is used for graph construction only.
       // TODO: move to a separate array, to be deallocated after construction.
@@ -59,7 +58,8 @@ module analyze_RMAT_graph_associative_array {
             firstAvailableNeighborPosition$ = edgePos + 1;
 
             // store the edge
-            neighborList[edgePos] = (v, w);
+            neighborIDs[edgePos] = v;
+            edgeWeights[edgePos] = w;
           }
         } // on
       }
@@ -87,27 +87,32 @@ module analyze_RMAT_graph_associative_array {
         const style = new iostyle(min_width = 3);
         if showArrays {
           writeln("starting ", lo, "..", hi);
-          stdout.writeln(neighborList(lo..hi), style);
+          stdout.writeln(neighborIDs(lo..hi), style);
+          stdout.writeln(edgeWeights(lo..hi), style);
         }
 
         // TODO: remove the duplicates as we sort
         // InsertionSort, keep duplicates
         for i in lo+1..hi {
-          const (ithNID, ithEDW) = neighborList(i);
+          const ithNID = neighborIDs(i);
+          const ithEDW = edgeWeights(i);
           var inserted = false;
 
           for j in lo..i-1 by -1 {
             if (ithNID < neighborIDs(j)) {
-              neighborList(j+1) = neighborList(j);
+              neighborIDs(j+1) = neighborIDs(j);
+              edgeWeights(j+1) = edgeWeights(j);
             } else {
-              neighborList(j+1) = (ithNID, ithEDW);
+              neighborIDs(j+1) = ithNID;
+              edgeWeights(j+1) = ithEDW;
               inserted = true;
               break;
             }
           }
 
           if (!inserted) {
-            neighborList(lo)= (ithNID, ithEDW);
+            neighborIDs(lo) = ithNID;
+            edgeWeights(lo) = ithEDW;
           }
         }
         //writeln("sorted ", lo, "..", hi);
@@ -137,7 +142,8 @@ module analyze_RMAT_graph_associative_array {
               // dropping this duplicate
             } else {
               // moving a non-duplicate value
-              neighborList(indexDup) = (currNID, nlWeight(neighborList(i)));
+              neighborIDs(indexDup) = currNID;
+              edgeWeights(indexDup) = edgeWeights(i);
               indexDup += 1;
               lastNID = currNID;
             }
@@ -155,7 +161,8 @@ module analyze_RMAT_graph_associative_array {
 
         if showArrays {
           writeln("sorted ", lo, "..", hi);
-          stdout.writeln(neighborList(lo..hi), style);
+          stdout.writeln(neighborIDs(lo..hi), style);
+          stdout.writeln(edgeWeights(lo..hi), style);
           writeln();
         }
       }  // RemoveDuplicates
@@ -267,7 +274,7 @@ module analyze_RMAT_graph_associative_array {
       }
 
       proc   n_Neighbors (v : index (vertices) ) 
-      {return Row (v).numNeighbors();}  CONTINUE HERE
+      {return Row (v).numNeighbors();}
 
     } // class Associative_Graph
 
