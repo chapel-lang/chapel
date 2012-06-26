@@ -301,7 +301,7 @@ module SSCA2_RMAT_graph_generator
 	writeln ();
 	for u in G.vertices do {
 	  write ( "row ", u, ": [", G.n_Neighbors (u), "] " );
-	  for (v,w) in (G .Neighbors (u), G.edge_weight (u) ) do
+	  for (v,w) in G .NeighborPairs (u) do
 	    write ( (v, w) );
 	  writeln (); 
 	}

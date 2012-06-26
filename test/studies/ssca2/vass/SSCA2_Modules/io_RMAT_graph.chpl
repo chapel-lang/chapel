@@ -69,7 +69,7 @@ module io_RMAT_graph
       if dEdge then writeln(dstyle, " vertex ", u);
       writeNum(sta, startIx);
 
-      for (v, w) in (ux.neighborIDs, ux.edgeWeights) {
+      for (v, w) in ux.neighborList {
         if dRow then write((v, w));
         if dEdge then writeln(dstyle, " ", u, " ", v, " ", w);
         writeNum(sv, u-1);
@@ -359,8 +359,7 @@ module io_RMAT_graph
     // we know how many neighbors we have for this vertex
     // 
     GRow(u).ndom = 1..numEdges;
-    var neighborIDs => GRow(u).neighborIDs;
-    var edgeWeights => GRow(u).edgeWeights;
+    var neighborList => GRow(u).neighborList;
 
     for ix in 1..numEdges {
       const curStart = readNum(sv)+1,
@@ -379,8 +378,7 @@ module io_RMAT_graph
         myerror("*** illegal end vertex number: ", v);
 
       // record the edge in the vertex
-      neighborIDs(ix) = v;
-      edgeWeights(ix) = w;
+      neighborList(ix) = nleMake(v, w);
 
       // more reporting
       startIxCnt += 1;
