@@ -9,6 +9,8 @@
 #include "flags.h"
 #include "type.h"
 
+#include <vector>
+
 //
 // The function that represents the compiler-generated entry point
 //
@@ -160,7 +162,7 @@ class FnSymbol : public Symbol {
   FnSymbol *instantiatedFrom;
   SymbolMap substitutions;
   BlockStmt* instantiationPoint; // point of instantiation
-  Vec<BasicBlock*>* basicBlocks;
+  std::vector<BasicBlock*>* basicBlocks;
   Vec<CallExpr*>* calledBy;
   const char* userString;
   FnSymbol* valueFunction; // pointer to value function (created in

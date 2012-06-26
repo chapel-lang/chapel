@@ -649,6 +649,7 @@ inline proc _r2i(a: real(?w)) return __primitive("cast", imag(w), a);
 //
 inline proc ascii(a: string) return __primitive("ascii", a);
 inline proc string.length return __primitive("string_length", this);
+inline proc string.size return this.length;
 inline proc string.substring(i: int) return __primitive("string_index", this, i);
 inline proc _string_contains(a: string, b: string) return __primitive("string_contains", a, b);
 

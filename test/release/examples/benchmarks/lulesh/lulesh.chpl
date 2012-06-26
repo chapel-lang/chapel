@@ -112,15 +112,14 @@ const Elems = if useBlockDist then ElemSpace dmapped Block(ElemSpace)
       Nodes = if useBlockDist then NodeSpace dmapped Block(NodeSpace)
                               else NodeSpace;
 
-                           
-                                 
+
 var x, y, z: [Nodes] real; //coordinates
 
 /* Read input coordinates */
 
 for (locX,locY,locZ) in (x,y,z) do reader.read(locX, locY, locZ);
 
-if debugIO {
+if debug {
   writeln("locations are:");
   for (locX,locY,locZ) in (x,y,z) do
     writeln((locX, locY, locZ));
@@ -141,8 +140,7 @@ param nodesPerElem = 8;
 /* The element-to-node mapping */
 
 var elemToNode: [Elems] nodesPerElem*index(Nodes);
-                                 
-                                 
+
 for nodelist in elemToNode do 
   for i in 1..nodesPerElem do
     reader.read(nodelist[i]);
@@ -253,11 +251,11 @@ iter enumerateMatElems() {
 
 /* Element fields */
 
-var  elemBC: [Elems] int,
+var elemBC: [Elems] int,
 
     e: [Elems] real, // energy
     p: [Elems] real, // pressure
-		 
+
     q: [Elems] real, // q
     ql: [Elems] real, // linear term for q
     qq: [Elems] real, // quadratic term for q
@@ -286,7 +284,7 @@ var xd, yd, zd: [Nodes] real, // velocities
 
     nodalMass: [Nodes] real; // mass
 
-	       
+
 /* Parameters */
 
 var time = 0.0,          // current time
@@ -369,8 +367,7 @@ proc initializeFieldData() {
     volo[eli] = volume;
     elemMass[eli] = volume;
 
-    for param i in 1..nodesPerElem {
-      const neighbor = elemToNode[eli][i];
+    for neighbor in elemToNodes[eli] {
       on massAccum$[neighbor] do
         massAccum$[neighbor] += volume;
     }
@@ -686,11 +683,11 @@ proc CalcElemVolumeDerivative(x: 8*real, y: 8*real, z: 8*real) {
 }
 
 inline proc CalcElemFBHourglassForce(xd: 8*real, yd: 8*real, zd: 8*real,
-				     hourgam: 8*(4*real),
-				     coefficient: real,
-				     out hgfx: 8*real,
-				     out hgfy: 8*real,
-				     out hgfz: 8*real) {
+                                     hourgam: 8*(4*real),
+                                     coefficient: real,
+                                     out hgfx: 8*real,
+                                     out hgfy: 8*real,
+                                     out hgfz: 8*real) {
   var hx, hy, hz: 4*real;
 
   // reduction
@@ -746,7 +743,7 @@ proc CalcElemCharacteristicLength(x, y, z, volume) {
 proc CalcElemVelocityGradient(xvel, yvel, zvel, pfx,  pfy, pfz,
                               detJ, out d: 6*real) {
   const inv_detJ = 1.0 / detJ;
-	
+
   d[1] = inv_detJ * ( pfx[1] * (xvel[1]-xvel[7])
                     + pfx[2] * (xvel[2]-xvel[8])
                     + pfx[3] * (xvel[3]-xvel[5])
@@ -909,6 +906,9 @@ inline proc computeDTF(indx) {
     return max(real);
 }
 
+
+const NIL_NODE_ID = -1;
+
 proc CalcCourantConstraintForElems() {
   var courant_elem: index(Elems);
 
@@ -917,10 +917,10 @@ proc CalcCourantConstraintForElems() {
                         MatElems);
 
   if (val == max(real)) {
-    courant_elem = -1;
+    courant_elem = NIL_NODE_ID;
   } else {
     dtcourant = val;
-    courant_elem = -1;
+    courant_elem = NIL_NODE_ID;
   }
 }
 
@@ -935,7 +935,7 @@ proc CalcHydroConstraintForElems() {
                              else dvovmax / (abs(vdov[indx])+1.0e-20)),
                         MatElems);
   if (val == max(real)) {
-    dthydro_elem = -1;
+    dthydro_elem = NIL_NODE_ID;
   } else {
     dthydro = val;
     dthydro_elem = loc;
@@ -997,7 +997,7 @@ proc IntegrateStressForElems(sigxx, sigyy, sigzz, determ) {
       SumElemStressesToNodeForces(b_x, b_y, b_z, sigxx[k], sigyy[k], sigzz[k], 
                                   fx_local, fy_local, fz_local);
       //    }
-		
+
     for (noi, t) in elemToNodesTuple(k) {
       fx$[noi] += fx_local[t];
       fy$[noi] += fy_local[t];
@@ -1027,7 +1027,7 @@ proc CalcHourglassControlForElems(determ: [Elems] real) {
 
     determ[eli] = volo[eli] * v[eli];
   }
-	
+
   /* Do a check for negative volumes */
   if ( || reduce (v <= 0.0) ) == true {
     writeln("v:\n", v);
@@ -1042,10 +1042,10 @@ proc CalcHourglassControlForElems(determ: [Elems] real) {
 
 
 const gammaCoef: [1..4, 1..8] real = 
-		(( 1.0,  1.0, -1.0, -1.0, -1.0, -1.0,  1.0,  1.0),
-		 ( 1.0, -1.0, -1.0,  1.0, -1.0,  1.0,  1.0, -1.0),
-		 ( 1.0, -1.0,  1.0, -1.0,  1.0, -1.0,  1.0, -1.0),
-		 (-1.0,  1.0, -1.0,  1.0,  1.0, -1.0,  1.0, -1.0));
+                (( 1.0,  1.0, -1.0, -1.0, -1.0, -1.0,  1.0,  1.0),
+                 ( 1.0, -1.0, -1.0,  1.0, -1.0,  1.0,  1.0, -1.0),
+                 ( 1.0, -1.0,  1.0, -1.0,  1.0, -1.0,  1.0, -1.0),
+                 (-1.0,  1.0, -1.0,  1.0,  1.0, -1.0,  1.0, -1.0));
 
 /* Calculates the Flanagan-Belytschko anti-hourglass force. */
 proc CalcFBHourglassForceForElems(determ, x8n, y8n, z8n, dvdx, dvdy, dvdz) {
@@ -1088,8 +1088,7 @@ proc CalcFBHourglassForceForElems(determ, x8n, y8n, z8n, dvdx, dvdy, dvdz) {
 
       coefficient = - hgcoef * 0.01 * ss1 * mass1 / volume13;
 
-      CalcElemFBHourglassForce(xd1, yd1, zd1, hourgam, coefficient, 
-			       hgfx, hgfy, hgfz);
+      CalcElemFBHourglassForce(xd1, yd1, zd1, hourgam, coefficient, hgfx, hgfy, hgfz);
       // } // end local
 
     for (noi,i) in elemToNodesTuple(eli) {
@@ -1202,10 +1201,10 @@ proc CalcKinematicsForElems(dxx, dyy, dzz, const dt: real) {
       }
 
       CalcElemShapeFunctionDerivatives(x_local, y_local, z_local,
-				       b_x, b_y, b_z, detJ);
+                                       b_x, b_y, b_z, detJ);
 
       CalcElemVelocityGradient(xd_local, yd_local, zd_local, b_x, b_y, b_z,
-			       detJ, d);
+                               detJ, d);
 
     }
 
@@ -1428,10 +1427,10 @@ proc CalcMonotonicQForElems(delv_xi, delv_eta, delv_zeta,
     delvm *= monoq_limiter_mult;
     delvp *= monoq_limiter_mult;
 
-    if delvm  < phieta			then phieta = delvm;
-    if delvp  < phieta			then phieta = delvp;
-    if phieta < 0.0				then phieta = 0.0;
-    if phieta > monoq_max_slope	then phieta = monoq_max_slope;
+    if delvm  < phieta                        then phieta = delvm;
+    if delvp  < phieta                        then phieta = delvp;
+    if phieta < 0.0                                then phieta = 0.0;
+    if phieta > monoq_max_slope        then phieta = monoq_max_slope;
 
     /*  phizeta     */
     norm = 1.0 / (delv_zeta[i] + ptiny);
@@ -1455,9 +1454,9 @@ proc CalcMonotonicQForElems(delv_xi, delv_eta, delv_zeta,
     delvm *= monoq_limiter_mult;
     delvp *= monoq_limiter_mult;
 
-    if delvm   < phizeta 	 then phizeta = delvm;
-    if delvp   < phizeta	 then phizeta = delvp;
-    if phizeta < 0.0		 then phizeta = 0.0;
+    if delvm   < phizeta          then phizeta = delvm;
+    if delvp   < phizeta         then phizeta = delvp;
+    if phizeta < 0.0                 then phizeta = 0.0;
     if phizeta > monoq_max_slope then phizeta = monoq_max_slope;
 
     /* Remove length scale */
@@ -1590,7 +1589,7 @@ proc CalcEnergyForElems(p_new, e_new, q_new, bvc, pbvc,
   }
 
   CalcPressureForElems(p_new, bvc, pbvc, e_new, compression, vnewc, pmin, p_cut,
-		       eosvmax);
+                       eosvmax);
 
   forall i in Elems {
     var q_tilde:real;
@@ -1642,10 +1641,11 @@ proc CalcSoundSpeedForElems(vnewc, rho0:real, enewc, pnewc, pbvc, bvc) {
 }
 
 
-//
-// TODO (STYLE): This seems a little extraneous at this point...  Just
-// use a zippered iterator at callsites?
-//
+iter elemToNodes(elem) {
+  for param i in 1..nodesPerElem do
+    yield elemToNode[elem][i];
+}
+                                 
 iter elemToNodesTuple(e) {
   for i in 1..nodesPerElem do
     yield (elemToNode[e][i], i);
@@ -1659,8 +1659,6 @@ proc testInit() {
 
   writeln("NodalMass:");
   for mass in nodalMass do writeln(mass);
-
-  writeln("symm:");
 
   writeln("elemBC:");
   for b in elemBC do writeln(b);

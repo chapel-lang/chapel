@@ -57,6 +57,7 @@ record range
   inline proc alignedHigh : idxType return _base.alignedHigh;
   // Returns the number of elements in this range.
   inline proc length return _base.length;
+  inline proc size return length;
 }
 
 //################################################################################

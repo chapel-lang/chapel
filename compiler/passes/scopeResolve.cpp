@@ -823,35 +823,22 @@ static void build_constructor(ClassType* ct) {
   }
 
   //
-  // insert call to initialize method if one is defined; make the
-  // constructor return the result of the initialize method if it
-  // returns a value (otherwise return this)
+  // Insert a call to the "initialize()" method if one is defined.
+  // The return value of this method (if any) is ignored.
   //
-  bool insertedReturn = false;
   forv_Vec(FnSymbol, method, ct->methods) {
+    // Select a method named "initialize" and taking no arguments
+    // (aside from _mt and the implicit 'this').
     if (method && !strcmp(method->name, "initialize")) {
       if (method->numFormals() == 2) {
         CallExpr* init = new CallExpr("initialize", gMethodToken, fn->_this);
-        Vec<BaseAST*> asts;
-        collect_top_asts(method->body, asts);
-        forv_Vec(BaseAST, ast, asts) {
-          if (CallExpr* call = toCallExpr(ast)) {
-            if (call->isPrimitive(PRIM_RETURN)) {
-              if (call->get(1) && call->get(1)->typeInfo() != dtVoid) {
-                init = new CallExpr(PRIM_RETURN, init);
-                insertedReturn = true;
-                break;
-              }
-            }
-          }
-        }
         fn->insertAtTail(init);
         break;
       }
     }
   }
-  if (!insertedReturn)
-    fn->insertAtTail(new CallExpr(PRIM_RETURN, fn->_this));
+
+  fn->insertAtTail(new CallExpr(PRIM_RETURN, fn->_this));
 
   Vec<DefExpr*> defs;
   collectDefExprs(fn, defs);

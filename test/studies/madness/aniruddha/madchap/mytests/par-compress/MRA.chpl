@@ -192,7 +192,7 @@ class Function {
         // check to see if within tolerance
         // normf() is Frobenius norm == 2-norm for vectors
         var nf = normf(dc[k..2*k-1]);
-        const (n,) = curNode.get_coords();
+        const (n,_) = curNode.get_coords();
         if((nf < thresh) || (n >= (max_level-1))) {
             sumC[child(1)] = s0;
             sumC[child(2)] = s1;
@@ -223,7 +223,7 @@ class Function {
      */
     proc evaluate(curNode = rootNode, in x): real {
         if sumC.has_coeffs(curNode) {
-            const (n, ) = curNode.get_coords();
+            const (n,_) = curNode.get_coords();
             var p = phi(x, k);
             return inner(sumC[curNode], p)*sqrt(2.0**n);
 
@@ -249,7 +249,7 @@ class Function {
         // sub-trees can be done in parallel
         const child = curNode.get_children();
 
-        const (n, ) = curNode.get_coords();
+        const (n,_) = curNode.get_coords();
         if ( n+1 < log2(numThreadsPerLocale) ) then
             cobegin {	
                 on sumC.node2loc(child(1)) do
@@ -308,7 +308,7 @@ class Function {
             reconstruct(child(2));
         }
         
-        const (n,) = curNode.get_coords();
+        const (n,_) = curNode.get_coords();
         if n == 0 then compressed = false;
     }
 
@@ -382,7 +382,7 @@ class Function {
             cleaning = sumC.has_coeffs(curNode);
 
         // Sub trees can run in parallel
-        const (n,) = curNode.get_coords();
+        const (n,_) = curNode.get_coords();
         if n < max_level {
             const child = curNode.get_children();
             if !cleaning || sumC.has_coeffs(child(1)) then
@@ -491,7 +491,7 @@ class Function {
     proc multiply(f1, f2, curNode = rootNode) {
         const child = curNode.get_children();
         if f1.sumC.has_coeffs(curNode) && f2.sumC.has_coeffs(curNode) {
-            const (n,) = curNode.get_coords();
+            const (n,_) = curNode.get_coords();
             if autorefine && n+1 <= max_level {
                 // if autorefine is set we are multiplying two polynomials
                 // of order k-1 the result could be up to order 2(k-1) so

@@ -13,8 +13,8 @@ sync {
   }
 
   sx = initval;
-  if !sx.isFull then writeln("invalid state (empty)");
 }
+if sx.isFull then writeln("invalid state (full)");
 
 begin {
   sx = y;

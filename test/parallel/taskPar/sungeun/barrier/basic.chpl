@@ -26,7 +26,7 @@ proc remoteTest(b, numRemoteTasks) {
 }
 
 
-var b = new Barrier(numTasks);
+var b: Barrier(reusable=false) = new Barrier(numTasks);
 localTest(b, numTasks);
 
 b.reset(numRemoteTasks);

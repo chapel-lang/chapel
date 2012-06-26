@@ -14,10 +14,10 @@ use Random;
 use Sort;
 config const seed = 13579;
 
-enum SortType { BUBBLE=0, INSERTION, MERGE, SELECTION, QUICK };
+enum SortType { BUBBLE=0, INSERTION, MERGE, SELECTION, QUICK, HEAP };
 
 proc main() {
-  for param st in 0..4 /* this is annoying */ do
+  for param st in 0..5 /* this is annoying */ do
     doSort(st:SortType, trials);
 }
 
@@ -64,6 +64,10 @@ proc _doSort(param st, I) where st==SortType.SELECTION {
 
 proc _doSort(param st, I) where st==SortType.QUICK {
   QuickSort(I, doublecheck=verify);
+}
+
+proc _doSort(param st, I) where st==SortType.HEAP {
+  HeapSort(I, doublecheck=verify);
 }
 
 proc resetArr(A: [?D]) {

@@ -1,9 +1,135 @@
 # USAGE:
 #
-# Current notes on triage results.
+# Current notes on triage results, sorted by type of failure
+# (benchmark, compiler, or platform).
 #
-# To be merged into REGRESSIONS when Brad gives the green light.
-#
+
+
+==============================================
+These things regularly cause noise in testing:
+==============================================
+
+spectralnorm (vass)
+-------------------
+proposed approach is to see whether reference version is similarly
+noisy, and if not to see whether ours has inadvertant nondeterminisms.
+
+
+madness (sungeun)
+-----------------
+Sung's been working on dialing down parallelism to avoid timeouts
+in oversubscribed setting, but it's not yet perfect: test_likepy
+timed out 06/05/12
+
+
+ra* (gbt)
+---------
+Greg plans to remove races from the verification loop on the theory
+that if we're barely/occasionally failing, removing errors introduced
+due to races here should take us below the threshold.
+
+
+lulesh (bradc)
+--------------
+1) Brad made changes this week that should stabilize Sung's version of
+   lulesh
+2) there are likely still timeouts on the release version that should
+   be investigated.
+3) causes an internal error in xmt (though perhaps not a noisy one?)
+
+
+cray-xt-cray (UNASSIGNED)
+-------------------------
+When the Chapel compiler is built with cray-xt-cray, we get
+nondeterministic failures that have not been investigated.  One
+question would be whether turning optimizations off/down when building
+'chpl' would make these go away.
+
+
+linux64.gnu.gasnet.qthreads.none (UNASSIGNED)
+---------------------------------------------
+1) Continue to have a lot of noise in testing.
+   Often the execution times out nondeterministically
+   - is that due to gasnet (see below) ?
+2) Some comm counts off, got a seg fault (06/06/12, 6/16)
+
+
+valgrind (UNASSIGNED)
+---------------------
+1) Nondeterministic "the impossible has happened" failures
+2) Nondeterministic timeouts (could raise timeout value even further)
+
+
+xmt build (UNASSIGNED)
+----------------------
+Every night, first XMT compile fails; second one succeeds.  Is there
+any chance that this is due to a leftover program library of some
+sort?  If not, file bug against XMT compiler.
+
+
+variance in comm counts - linux64.gnu.gasnet-everything.fifo.pthreads (sungeun)
+-------------------------------------------------------------------------------
+examples:
+ performance/sungeun/multilocale/syncsingle  (06/17/12, 6/21)
+ distributions/robust/arithmetic/performance/reduce*
+
+
+parallel/cobegin/diten/cobeginRace (UNASSIGNED)
+----------------------------------------------------
+"timedexec died with signal 11" - pgi compiler (06/18/12)
+unknown cause - baseline (06/17/12)
+
+
+non-deterministic timeouts with gasnet (UNASSIGNED)
+---------------------------------------------------
+The following configurations are affected:
+ linux64.gnu.gasnet.qthreads.none
+ linux64.gnu.gasnet.fifo.pthreads.tcmalloc
+ linux64.gnu.gasnet-fast.fifo.pthreads.dlmalloc
+ linux64.gnu.gasnet-everything.fifo.pthreads
+examples of what times out:
+ release/examples/benchmarks/ssca2/SSCA2_main
+ distributions/robust/arithmetic/kernels/hpl
+ distributions/robust/arithmetic/stress/test_many_array
+ distributions/robust/arithmetic/kernels/jacobi
+ distributions/nelson/MultiBlockDist2DLocales
+ distributions/robust/arithmetic/modules/test_module_Sort
+ etc.
+
+
+"in routine alloca() there is a stack overflow" under PGI (UNASSIGNED)
+----------------------------------------------------------------------
+Somewhat? nondeterministic.
+These configurations:
+ linux64.pgi.none.fifo.pthreads
+ xt-cle.cray-xt-pgi.none.fifo.pthreads
+ xt-cle.cray-xt-pgi.none.fifo.pthreads--linux64.gnu
+
+
+==================================================
+Not so noisy as to be instantly recognizable (yet)
+==================================================
+
+gasnet-everything nondeterminisms (UNASSIGNED)
+----------------------------------------------
+MultiBlockDist2DLocales (06/05/12, 6/16)
+test_module_Sort (06/06/12, 6/16)
+test_array_slicing3 (06/08/12, 6/16)
+
+
+no-local nondeterminisms (UNASSIGNED)
+-------------------------------------
+cg-sparse-timecomp (06/05/12)
+
+
+memory/vass/crash-memory-module-1 (vass)
+----------------------------------------
+fails intermittently
+
+
+======================================================
+Older stuff that I didn't see creating noise this week
+======================================================
 
 ============================================================
 linux64.pgi.none.fifo.pthreads
@@ -22,4 +148,9 @@ Perf linux64.gnu.none.fifo.pthreads
 ============================================================
 Warnings from createGraphs should be eliminated because they are counted as errors.
 Bug -> Vass.
+Brad 6/22/2012: ''At some point I'd like someone to address it, but
+since it isn't creating noise in the testing system (in the sense of
+new emails that aren't worth paying attention to), I'd file it more in
+the "once we've got the noise out, we should improve the system
+itself" category.''
 

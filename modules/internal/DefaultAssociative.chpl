@@ -98,13 +98,15 @@ class DefaultAssociativeDom: BaseAssociativeDom {
     postponeResize = true;
     for i in this.these() do
       yield i;
-    postponeResize = false;
-    if (numEntries.read()*8 < tableSize && tableSizeNum > 1) {
-      if parSafe then lockTable();
+    on this {
+      postponeResize = false;
       if (numEntries.read()*8 < tableSize && tableSizeNum > 1) {
-        _resize(grow=false);
+        if parSafe then lockTable();
+        if (numEntries.read()*8 < tableSize && tableSizeNum > 1) {
+          _resize(grow=false);
+        }
+        if parSafe then unlockTable();
       }
-      if parSafe then unlockTable();
     }
   }
 
@@ -195,12 +197,14 @@ class DefaultAssociativeDom: BaseAssociativeDom {
   // Associative Domain Interface
   //
   proc dsiClear() {
-    if parSafe then lockTable();
-    for slot in tableDom {
-      table(slot).status = chpl__hash_status.empty;
+    on this {
+      if parSafe then lockTable();
+      for slot in tableDom {
+        table(slot).status = chpl__hash_status.empty;
+      }
+      numEntries.write(0);
+      if parSafe then unlockTable();
     }
-    numEntries.write(0);
-    if parSafe then unlockTable();
   }
 
   proc dsiMember(idx: idxType): bool {
@@ -208,12 +212,15 @@ class DefaultAssociativeDom: BaseAssociativeDom {
   }
 
   proc dsiAdd(idx: idxType): index(tableDom) {
-    if parSafe then lockTable();
-    if ((numEntries.read()+1)*2 > tableSize) {
-      _resize(grow=true);
+    var slotNum: index(tableDom);
+    on this {
+      if parSafe then lockTable();
+      if ((numEntries.read()+1)*2 > tableSize) {
+        _resize(grow=true);
+      }
+      slotNum = _add(idx);
+      if parSafe then unlockTable();
     }
-    var slotNum = _add(idx);
-    if parSafe then unlockTable();
     return slotNum;
   }
 
@@ -236,20 +243,22 @@ class DefaultAssociativeDom: BaseAssociativeDom {
   }
 
   proc dsiRemove(idx: idxType) {
-    if parSafe then lockTable();
-    const (foundSlot, slotNum) = _findFilledSlot(idx);
-    if (foundSlot) {
-      for a in _arrs do
-        a.clearEntry(idx);
-      table(slotNum).status = chpl__hash_status.deleted;
-      numEntries.sub(1);
-    } else {
-      halt("index not in domain: ", idx);
+    on this {
+      if parSafe then lockTable();
+      const (foundSlot, slotNum) = _findFilledSlot(idx);
+      if (foundSlot) {
+        for a in _arrs do
+          a.clearEntry(idx);
+        table(slotNum).status = chpl__hash_status.deleted;
+        numEntries.sub(1);
+      } else {
+        halt("index not in domain: ", idx);
+      }
+      if (numEntries.read()*8 < tableSize && tableSizeNum > 1) {
+        _resize(grow=false);
+      }
+      if parSafe then unlockTable();
     }
-    if (numEntries.read()*8 < tableSize && tableSizeNum > 1) {
-      _resize(grow=false);
-    }
-    if parSafe then unlockTable();
   }
 
   iter dsiSorted() {

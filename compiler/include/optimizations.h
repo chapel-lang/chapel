@@ -23,7 +23,7 @@ void liveVariableAnalysis(FnSymbol* fn,
                           Map<Symbol*,int>& localID,
                           Vec<SymExpr*>& useSet,
                           Vec<SymExpr*>& defSet,
-                          Vec<BitVec*>& OUT);
+                          std::vector<BitVec*>& OUT);
 
 void
 buildDefUseChains(FnSymbol* fn,

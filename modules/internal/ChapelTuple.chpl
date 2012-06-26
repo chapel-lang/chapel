@@ -13,9 +13,6 @@ pragma "tuple" record _tuple {
 // syntactic support for tuples
 //
 inline proc _build_tuple(x...) {
-  if x.size == 1 then
-    return x(1);
-  else
     return x;
 }
 

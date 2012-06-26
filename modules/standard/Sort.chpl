@@ -1,3 +1,42 @@
+proc HeapSort(Data: [?Dom], doublecheck=false) where Dom.rank == 1 {
+  const lo = Dom.dim(1).low;
+  const hi = Dom.dim(1).high;
+  const len = Dom.dim(1).size;
+  
+  // heapify
+  var start = (len - 2) / 2 + lo;
+  while (start >= lo) {
+    SiftDown(start, hi);
+    start = start - 1;
+  }
+  
+  // sort, moving max element to end and re-heapifying the rest
+  var end = hi;
+  while (end > lo) {
+    Data(end) <=> Data(lo);
+    end = end - 1;
+    SiftDown(lo, end);
+  }
+
+  proc SiftDown(start, end) {
+    var root = start;
+    while (root * 2 + 1 - lo <= end) {
+      const child = root * 2 + 1 - lo;
+      var swap = root;
+      if Data(swap) < Data(child) then swap = child;
+      if (child + 1 <= end) && (Data(swap) < Data(child + 1)) then swap = child + 1;
+      if swap != root {
+        Data(root) <=> Data(swap);
+        root = swap;
+      } else {
+        return;
+      }
+    }
+  }
+  if (doublecheck) then VerifySort(Data, "HeapSort");
+}
+
+
 proc BubbleSort(Data: [?Dom], doublecheck=false) where Dom.rank == 1 {
   const lo = Dom.dim(1).low;
   const hi = Dom.dim(1).high;
@@ -135,7 +174,7 @@ proc SelectionSort(Data: [?Dom], doublecheck=false) where Dom.rank == 1 {
   const lo = Dom.dim(1).low;
   const hi = Dom.dim(1).high;
   for i in [lo..hi-1] {
-    var (, loc) = minloc reduce (Data[i..hi], [i..hi]);
+    var (_, loc) = minloc reduce (Data[i..hi], [i..hi]);
     Data(i) <=> Data(loc);
   }
 

@@ -119,7 +119,7 @@ proc main() {
   // locale with the most pending updates, and do all of the updates
   // pending for that locale.
   //
-  forall ( , r) in (Updates, RAStream()) {
+  forall (_, r) in (Updates, RAStream()) {
     var loc = T.domain.dist.idxToLocale(r&indexMask);
     if loc == here {
       T(r&indexMask) ^= r;
@@ -180,7 +180,7 @@ proc verifyResults() {
   // Reverse the updates by recomputing them, this time using an
   // atomic statement to ensure no conflicting updates
   //
-  forall ( , r) in (Updates, RAStream()) do
+  forall (_, r) in (Updates, RAStream()) do
     on T.domain.dist.idxToLocale(r & indexMask) do
       atomic T(r & indexMask) ^= r;
 

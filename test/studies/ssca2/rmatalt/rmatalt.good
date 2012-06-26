@@ -9,7 +9,7 @@ Problem Dimensions
        high scale: 6
 
 Code Characteristics
-   Not filtering Edges by Weight
+   Filtering Edges by Weight
    Reproducible problem
    No additional work for bounds computation
    Not collecting timing statistics

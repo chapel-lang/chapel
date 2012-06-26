@@ -361,13 +361,13 @@ addLiveLocalVariables(Vec<Symbol*>& syms, FnSymbol* fn, BlockStmt* singleLoop) {
   Map<Symbol*,int> localMap;
   Vec<SymExpr*> useSet;
   Vec<SymExpr*> defSet;
-  Vec<BitVec*> OUT;
+  std::vector<BitVec*> OUT;
   liveVariableAnalysis(fn, locals, localMap, useSet, defSet, OUT);
 
   int i = 0;
-  forv_Vec(BasicBlock, bb, *fn->basicBlocks) {
+  for_vector(BasicBlock, bb, *fn->basicBlocks) {
     bool collect = false;
-    forv_Vec(Expr, expr, bb->exprs) {
+    for_vector(Expr, expr, bb->exprs) {
       CallExpr* call = toCallExpr(expr);
       if (call && call->isPrimitive(PRIM_YIELD))
         collect = true;
@@ -379,14 +379,14 @@ addLiveLocalVariables(Vec<Symbol*>& syms, FnSymbol* fn, BlockStmt* singleLoop) {
     if (collect) {
       BitVec live(locals.n);
       for (int j = 0; j < locals.n; j++) {
-        if (OUT.v[i]->get(j))
+        if (OUT[i]->get(j))
           live.set(j);
       }
-      for (int k = bb->exprs.n - 1; k >= 0; k--) {
-        CallExpr* call = toCallExpr(bb->exprs.v[k]);
+      for (int k = bb->exprs.size() - 1; k >= 0; k--) {
+        CallExpr* call = toCallExpr(bb->exprs[k]);
         if ((call && call->isPrimitive(PRIM_YIELD)) ||
-            (singleLoop && bb->exprs.v[k] == singleLoop->next) ||
-            (singleLoop && bb->exprs.v[k] == singleLoop->body.head)) {
+            (singleLoop && bb->exprs[k] == singleLoop->next) ||
+            (singleLoop && bb->exprs[k] == singleLoop->body.head)) {
           for (int j = 0; j < locals.n; j++) {
             if (live.get(j)) {
               syms.add_exclusive(locals.v[j]);
@@ -394,7 +394,7 @@ addLiveLocalVariables(Vec<Symbol*>& syms, FnSymbol* fn, BlockStmt* singleLoop) {
           }
         }
         Vec<SymExpr*> symExprs;
-        collectSymExprs(bb->exprs.v[k], symExprs);
+        collectSymExprs(bb->exprs[k], symExprs);
         forv_Vec(SymExpr, se, symExprs) {
           if (defSet.set_in(se))
             live.unset(localMap.get(se->var));
@@ -414,8 +414,8 @@ addLiveLocalVariables(Vec<Symbol*>& syms, FnSymbol* fn, BlockStmt* singleLoop) {
   printf("\n");
 #endif
 
-  forv_Vec(BitVec, out, OUT)
-    delete out;
+  for_vector(BitVec, out, OUT)
+    delete out, out = 0;
 
   //
   // If we have live references to local variables, then we need to
