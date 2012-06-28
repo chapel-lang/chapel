@@ -81,19 +81,10 @@
   chpl_comm_put((void*)(&(localvar)), locale, (void*)addr, sizeof(type), tid, len, ln, fn)
 #endif
 
-#define CHPL_COMM_WIDE_GET(local, wide, type, tid, len, ln, fn)  \
+#define CHPL_COMM_WIDE_GET(local, wide, type, tid, len, ln, fn)         \
   do {                                                                  \
     if (chpl_localeID == (wide).locale)                                 \
-      local = *(wide).addr;                                             \
-    else                                                                \
-      CHPL_COMM_GET(local, (wide).locale, (wide).addr,                  \
-                    type, tid, len, ln, fn);                            \
-  } while (0)
-
-#define CHPL_COMM_WIDE_GET_SVEC(local, wide, type, tid, len, ln, fn)    \
-  do {                                                                  \
-    if (chpl_localeID == (wide).locale)                                 \
-      CHPL_ASSIGN_SVEC(local, (*(wide).addr));                          \
+      memcpy(&local, (wide).addr, len*sizeof(type) );                   \
     else                                                                \
       CHPL_COMM_GET(local, (wide).locale, (wide).addr,                  \
                     type, tid, len, ln, fn);                            \
@@ -105,14 +96,14 @@
       local = (wide).addr->locale;                                      \
     else                                                                \
       CHPL_COMM_GET(local, (wide).locale, (wide).addr,                  \
-                    type, tid, 1, ln, fn);                              \
+                    type, tid, 1 /*length*/, ln, fn);                   \
   } while (0)
 
 #define CHPL_COMM_WIDE_PUT(type, tid, len, wide, local, ln, fn)         \
   do {                                                                  \
     type chpl_macro_tmp2 = local;                                       \
     if (chpl_localeID == (wide).locale)                                 \
-      *(wide).addr = chpl_macro_tmp2;                                   \
+      memcpy((wide).addr, &chpl_macro_tmp2, len*sizeof(type) );         \
     else                                                                \
       CHPL_COMM_PUT(chpl_macro_tmp2, (wide).locale, (wide).addr,        \
                     type, tid, len, ln, fn);                            \
@@ -121,7 +112,7 @@
 #define CHPL_COMM_WIDE_PUT_SVEC(type, tid, len, wide, local, ln, fn)    \
   do {                                                                  \
     if (chpl_localeID == (wide).locale)                                 \
-      CHPL_ASSIGN_SVEC(*(wide).addr, local);                            \
+      memcpy((wide).addr, &local, len*sizeof(type));                    \
     else                                                                \
       CHPL_COMM_PUT(local, (wide).locale, (wide).addr,                  \
                     type, tid, len, ln, fn);                            \
@@ -161,7 +152,7 @@
       CHPL_COMM_GET(local,                                              \
                     (wide).locale,                                      \
                     &((stype)((wide).addr))->sfield,                    \
-                    type, tid, 1, ln, fn);                              \
+                    type, tid, 1 /*length*/, ln, fn);                   \
   } while (0)
 
 #define CHPL_COMM_WIDE_GET_FIELD_VALUE_SVEC(local, wide, stype, sfield, type, tid, ln, fn) \
@@ -172,7 +163,7 @@
       CHPL_COMM_GET(local,                                              \
                     (wide).locale,                                      \
                     &((stype)((wide).addr))->sfield,                    \
-                    type, tid, 1, ln, fn);                              \
+                    type, tid, 1 /*length*/, ln, fn);                   \
   } while (0)
 
 #define CHPL_COMM_WIDE_GET_TUPLE_COMPONENT_VALUE(local, wide, index, type, tid, ln, fn) \
@@ -183,7 +174,7 @@
       CHPL_COMM_GET(local,                                              \
                     (wide).locale,                                      \
                     &(*(wide).addr)[index],                             \
-                    type, tid, 1, ln, fn);                              \
+                    type, tid, 1 /*length*/, ln, fn);                    \
   } while (0)
 
 #define CHPL_COMM_WIDE_GET_TUPLE_COMPONENT_VALUE_SVEC(local, wide, index, type, tid, ln, fn) \
@@ -194,7 +185,7 @@
       CHPL_COMM_GET(local,                                              \
                     (wide).locale,                                      \
                     &(*(wide).addr)[index],                             \
-                    type, tid, 1, ln, fn);                              \
+                    type, tid, 1 /*length*/, ln, fn);                   \
   } while (0)
 
 #define CHPL_COMM_WIDE_SET_FIELD_VALUE(type, tid, wide, local, stype, sfield, ln, fn) \
@@ -242,44 +233,30 @@
                     type, tid, 1 /*length*/, ln, fn);                   \
   } while (0)
 
-#define CHPL_COMM_WIDE_ARRAY_GET(wide, cls, ind, stype, sfield, etype, etid, ln, fn) \
+#define CHPL_COMM_WIDE_ARRAY_GET(wide, cls, ind, ln, fn)                \
   do {                                                                  \
     (wide).locale = (cls).locale;                                       \
-    CHPL_COMM_WIDE_GET_FIELD_VALUE((wide).addr, cls, stype, sfield,     \
-                                   etype, etid, ln, fn);                \
-    (wide).addr += ind;                                                 \
+    (wide).addr = (cls).addr + ind;                                     \
   } while (0)
 
-#define CHPL_COMM_WIDE_ARRAY_GET_SVEC(wide, cls, ind, stype, sfield, etype, etid, ln, fn) \
-  do {                                                                  \
-    (wide).locale = (cls).locale;                                       \
-    CHPL_COMM_WIDE_GET_FIELD_VALUE_SVEC((wide).addr, cls,               \
-                                        stype, sfield,                  \
-                                        etype, etid, ln, fn);           \
-    (wide).addr += ind;                                                 \
-  } while (0)
-
-#define CHPL_COMM_WIDE_ARRAY_GET_VALUE(wide_type, local, cls, ind, stype, sfield, etype, etid, etype2, etid2, ln, fn) \
+#define CHPL_COMM_WIDE_ARRAY_GET_VALUE(wide_type, local, cls, ind, etype2, etid2, ln, fn) \
   do {                                                                  \
     wide_type chpl_macro_tmp;                                           \
-    CHPL_COMM_WIDE_ARRAY_GET(chpl_macro_tmp, cls, ind, stype, sfield,   \
-                             etype, etid, ln, fn);                      \
+    CHPL_COMM_WIDE_ARRAY_GET(chpl_macro_tmp, cls, ind, ln, fn);         \
     CHPL_COMM_WIDE_GET(local, chpl_macro_tmp, etype2, etid2, 1, ln, fn);\
   } while (0)
 
-#define CHPL_COMM_WIDE_ARRAY_SET_VALUE(wide_type, cls, ind, stype, sfield, etype, etid, val, ln, fn) \
+#define CHPL_COMM_WIDE_ARRAY_SET_VALUE(wide_type, cls, ind, etype, etid, val, ln, fn) \
   do {                                                                  \
     wide_type chpl_macro_tmp;                                           \
-    CHPL_COMM_WIDE_ARRAY_GET(chpl_macro_tmp, cls, ind, stype, sfield,   \
-                             etype, etid, ln, fn);                      \
+    CHPL_COMM_WIDE_ARRAY_GET(chpl_macro_tmp, cls, ind, ln, fn);         \
     CHPL_COMM_WIDE_PUT(etype, etid, 1, chpl_macro_tmp, val, ln, fn);    \
   } while (0)
 
-#define CHPL_COMM_WIDE_ARRAY_SET_VALUE_SVEC(wide_type, cls, ind, stype, sfield, etype, etid, val, ln, fn) \
-  do {                                                                  \
-    wide_type chpl_macro_tmp;                                           \
-    CHPL_COMM_WIDE_ARRAY_GET_SVEC(chpl_macro_tmp, cls, ind, stype,      \
-                                  sfield, etype, etid, ln, fn);         \
+#define CHPL_COMM_WIDE_ARRAY_SET_VALUE_SVEC(wide_type, cls, ind, etype, etid, val, ln, fn) \
+  do {                                                                    \
+    wide_type chpl_macro_tmp;                                             \
+    CHPL_COMM_WIDE_ARRAY_GET(chpl_macro_tmp, cls, ind, ln, fn);           \
     CHPL_COMM_WIDE_PUT_SVEC(etype, etid, 1, chpl_macro_tmp, val, ln, fn); \
   } while (0)
 

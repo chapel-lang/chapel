@@ -690,21 +690,86 @@ proc init_elts(x, s, type t) {
   }
 }
 
+// Make sure that the compiler constructs the type _ref(t).
+pragma "no codegen"
+proc _ensure_reference_type(type t)
+{
+  // type t where we have _ddata(t) needs to also have
+  // a reference type created. So here we just add
+  // some otherwise useless code to do that.
+  // This code could be removed if we had some other way
+  // making sure the reference type is created.
+  proc setbyref(inout zz:t) { }
+  var unused:t;
+  setbyref(unused);
+}
+
 // dynamic data block class
 pragma "data class"
+pragma "no object"
+pragma "no default functions"
 class _ddata {
   type eltType;
+  /*
+     If we had a way to do 'static' routines, this
+     could stay here, but since we don't at the moment,
+     we've wired the compiler to call _ddata_free.
+
   proc ~_ddata() {
     __primitive("array_free", this);
   }
+
+   If we had a way to do 'static' routines, this
+     could stay here, but since we don't at the moment,
+     we've wired the compiler to call _ddata_allocate.
   inline proc init(size: integral) {
     __primitive("array_alloc", this, eltType, size);
     init_elts(this, size, eltType);
-  }
+  }*/
   inline proc this(i: integral) var {
     return __primitive("array_get", this, i);
   }
 }
+
+
+inline proc _cast(type t, x) where t:_ddata && x:_nilType {
+  return __primitive("cast", t, x);
+}
+
+inline proc _ddata_allocate(type eltType, size: integral) {
+  var ret:_ddata(eltType);
+  __primitive("array_alloc", ret, eltType, size);
+  init_elts(ret, size, eltType);
+  return ret;
+}
+
+inline proc _ddata_free(data: _ddata) {
+  __primitive("array_free", data);
+}
+
+inline proc ==(a: _ddata, b: _ddata) where a.eltType == b.eltType {
+  return __primitive("ptr_eq", a, b);
+}
+inline proc ==(a: _ddata, b: _nilType) {
+  return __primitive("ptr_eq", a, nil);
+}
+inline proc ==(a: _nilType, b: _ddata) {
+  return __primitive("ptr_eq", nil, b);
+}
+
+inline proc !=(a: _ddata, b: _ddata) where a.eltType == b.eltType {
+  return __primitive("ptr_neq", a, b);
+}
+inline proc !=(a: _ddata, b: _nilType) {
+  return __primitive("ptr_neq", a, nil);
+}
+inline proc !=(a: _nilType, b: _ddata) {
+  return __primitive("ptr_neq", nil, b);
+}
+
+
+inline proc _cond_test(x: _ddata) return x != nil;
+
 
 //
 // internal reference type
@@ -1636,5 +1701,23 @@ proc isClassType(type t) param return false;
 proc isUnionType(type t) param {
   return __primitive("is union type", t);
 }
+
+_ensure_reference_type(int(8));
+_ensure_reference_type(int(16));
+_ensure_reference_type(int(32));
+_ensure_reference_type(int(64));
+_ensure_reference_type(uint(8));
+_ensure_reference_type(uint(16));
+_ensure_reference_type(uint(32));
+_ensure_reference_type(uint(64));
+_ensure_reference_type(real(32));
+_ensure_reference_type(real(64));
+_ensure_reference_type(imag(32));
+_ensure_reference_type(imag(64));
+_ensure_reference_type(complex(64));
+_ensure_reference_type(complex(128));
+_ensure_reference_type(bool);
+_ensure_reference_type(_task_list);
+_ensure_reference_type(string);
 
 }

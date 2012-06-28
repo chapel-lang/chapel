@@ -1179,11 +1179,11 @@ insertWideReferences(void) {
 
     if (FnSymbol* fn = toFnSymbol(def->sym)) {
       if (Type* wide = wideClassMap.get(fn->retType))
-        if (!fn->hasFlag(FLAG_EXTERN))
+        if (!fn->hasEitherFlag(FLAG_EXTERN,FLAG_LOCAL))
           fn->retType = wide;
     } else if (!isTypeSymbol(def->sym)) {
       if (Type* wide = wideClassMap.get(def->sym->type)) {
-        if (def->parentSymbol->hasFlag(FLAG_EXTERN)) {
+        if (def->parentSymbol->hasEitherFlag(FLAG_EXTERN,FLAG_LOCAL)) {
           if (toArgSymbol(def->sym))
             continue; // don't change extern function's arguments
         }
@@ -1256,7 +1256,7 @@ insertWideReferences(void) {
         if (var->immediate) {
           if (CallExpr* call = toCallExpr(se->parentExpr)) {
             if (call->isPrimitive(PRIM_VMT_CALL) ||
-                (call->isResolved() && !call->isResolved()->hasFlag(FLAG_EXTERN))) {
+                (call->isResolved() && !call->isResolved()->hasEitherFlag(FLAG_EXTERN,FLAG_LOCAL))) {
               if (Type* type = actual_to_formal(se)->typeInfo()) {
                 VarSymbol* tmp = newTemp(type);
                 SET_LINENO(se);
@@ -1304,7 +1304,7 @@ insertWideReferences(void) {
   // After the call, copy the value back into the wide class.
   //
   forv_Vec(CallExpr, call, gCallExprs) {
-    if (call->isResolved() && call->isResolved()->hasFlag(FLAG_EXTERN)) {
+    if (call->isResolved() && call->isResolved()->hasEitherFlag(FLAG_EXTERN,FLAG_LOCAL)) {
       for_alist(arg, call->argList) {
         SymExpr* sym = toSymExpr(arg);
         INT_ASSERT(sym);
@@ -1317,7 +1317,7 @@ insertWideReferences(void) {
           SET_LINENO(call);
           call->getStmtExpr()->insertBefore(new DefExpr(var));
           if ((symType->symbol->hasFlag(FLAG_WIDE_CLASS) &&
-               var->type->symbol->hasFlag(FLAG_EXTERN)) ||
+               var->type->symbol->hasEitherFlag(FLAG_EXTERN,FLAG_LOCAL)) ||
               passingWideStringToExtern(narrowType)) {
             // Insert a local check because we cannot reflect any changes
             // made to the class back to another locale
@@ -1326,7 +1326,7 @@ insertWideReferences(void) {
             // If we pass a extern class to an extern function, we must treat
             // it like a reference (this is by definition)
             call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, var, sym->copy()));
-          } else if (var->type->symbol->hasFlag(FLAG_REF))
+          } else if (var->type->symbol->hasEitherFlag(FLAG_REF,FLAG_DATA_CLASS))
             call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, var, sym->copy()));
           else
             call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, var, new CallExpr(PRIM_DEREF, sym->copy())));

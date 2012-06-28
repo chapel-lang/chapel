@@ -778,8 +778,8 @@ void CallExpr::codegen(FILE* outfile) {
           gen(outfile, "CHPL_COMM_WIDE_ARRAY_SET_VALUE_SVEC");
         else
           gen(outfile, "CHPL_COMM_WIDE_ARRAY_SET_VALUE");
-        gen(outfile, "(%A, %A, %A, %A, _data, %A, ",
-            wideElementType, get(1), get(2), classType, elementType);
+        gen(outfile, "(%A, %A, %A, %A, ",
+            wideElementType, get(1), get(2), elementType);
         genTypeStructureIndex(outfile, elementType->symbol);
         gen(outfile, ", %A, %A, %A)", get(3), get(4), get(5));
       } else if (getDataClassType(get(1)->typeInfo()->symbol)->type->symbol->hasFlag(FLAG_STAR_TUPLE))
@@ -883,8 +883,6 @@ void CallExpr::codegen(FILE* outfile) {
             INT_ASSERT(valueType == get(1)->typeInfo());
             if (valueType == dtString)
               fprintf(outfile, "CHPL_COMM_WIDE_GET_STRING");
-            else if (valueType->symbol->hasFlag(FLAG_STAR_TUPLE))
-              fprintf(outfile, "CHPL_COMM_WIDE_GET_SVEC");
             else
               fprintf(outfile, "CHPL_COMM_WIDE_GET");
             gen(outfile, "(%A, %A, ", get(1), call->get(1));
@@ -1076,12 +1074,8 @@ void CallExpr::codegen(FILE* outfile) {
         }
         if (call->isPrimitive(PRIM_ARRAY_GET)) {
           if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-            Type* classType = call->get(1)->typeInfo()->getField("addr")->type;
-            Type* eltType = get(1)->typeInfo()->getField("addr")->type;
-            gen(outfile, "CHPL_COMM_WIDE_ARRAY_GET(%A, %A, %A, %A, _data, %A, ",
-                get(1), call->get(1), call->get(2), classType, eltType);
-            genTypeStructureIndex(outfile, eltType->symbol);
-            gen(outfile, ", %A, %A)", call->get(3), call->get(4));
+            gen(outfile, "CHPL_COMM_WIDE_ARRAY_GET(%A, %A, %A, %A, %A)",
+                get(1), call->get(1), call->get(2), call->get(3), call->get(4));
           } else {
             gen(outfile, "%A = _ARRAY_GET(%A, ", get(1), call->get(1));
             if (call->get(2)->typeInfo()->symbol->hasFlag(FLAG_REF)) {
@@ -1097,13 +1091,8 @@ void CallExpr::codegen(FILE* outfile) {
             Type* tt = wideRefMap.get(getDataClassType(call->get(1)->typeInfo()->getField("addr")->type->symbol)->type->refType);
             gen(outfile, "%A, %A, %A, %A, ",
                 tt->symbol, get(1), call->get(1), call->get(2));
-            TypeSymbol* ts0 = call->get(1)->typeInfo()->getField("addr")->type->symbol;
-            gen(outfile, "%A, _data, ", ts0);
             TypeSymbol* ts = getDataClassType(call->get(1)->typeInfo()->getField("addr")->type->symbol);
-            TypeSymbol* ts2 = tt->getField("addr")->type->symbol;
-            gen(outfile, "%A, ", ts2);
-            genTypeStructureIndex(outfile, ts2);
-            gen(outfile, ", %A, ", ts);
+            gen(outfile, "%A, ", ts);
             genTypeStructureIndex(outfile, ts);
             gen(outfile, ", %A, %A)", call->get(3), call->get(4));
           } else {
@@ -2093,6 +2082,8 @@ void CallExpr::codegen(FILE* outfile) {
       for_actuals(actual, this) {
         if (!first_actual)
           fputs(", ", outfile);
+        if( actual->typeInfo()->symbol->hasFlag(FLAG_DATA_CLASS))
+          INT_FATAL(this, "cannot delete data class");
         if (actual->typeInfo()->symbol->hasFlag(FLAG_REF) ||
             actual->typeInfo()->symbol->hasFlag(FLAG_WIDE))
           fputc('*', outfile);
@@ -2482,6 +2473,13 @@ void CallExpr::codegen(FILE* outfile) {
     genTypeStructureIndex(outfile, argType);
     gen(outfile, ");\n", argType);
     return;
+  }
+
+  // Do not code generate calls to functions
+  // marked FLAG_NO_CODEGEN.
+  {
+    FnSymbol* fsym = isResolved();
+    if( fsym && fsym->hasFlag(FLAG_NO_CODEGEN) ) return;
   }
 
   baseExpr->codegen(outfile);

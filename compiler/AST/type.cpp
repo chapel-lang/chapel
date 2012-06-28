@@ -507,6 +507,19 @@ void ClassType::codegenDef(FILE* outfile) {
     fprintf(outfile, "typedef char %s[%i];\n", symbol->cname, size);
     return;
   }
+  else if (symbol->hasFlag(FLAG_REF)) {
+    fprintf(outfile, "typedef %s *%s;\n", getField(1)->type->symbol->cname,
+            symbol->cname);
+    return;
+  }
+  else if (symbol->hasFlag(FLAG_DATA_CLASS)) {
+    fprintf(outfile, "typedef ");
+    getDataClassType(symbol)->codegen(outfile);
+    fprintf(outfile, " *");
+    symbol->codegen(outfile);
+    fprintf(outfile, ";\n");
+    return;
+  }
 
   fprintf(outfile, "typedef struct __");
   symbol->codegen(outfile);
@@ -547,10 +560,6 @@ void ClassType::codegenDef(FILE* outfile) {
     if (this->fields.length != 0)
       fprintf(outfile, "} _u;\n");
   }
-  if (symbol->hasFlag(FLAG_DATA_CLASS)) {
-    getDataClassType(symbol)->codegen(outfile);
-    fprintf(outfile, "* _data;\n");
-  }
   fprintf(outfile, "} ");
   if (classTag == CLASS_CLASS)
     fprintf(outfile, "_");
@@ -560,9 +569,8 @@ void ClassType::codegenDef(FILE* outfile) {
 
 
 void ClassType::codegenPrototype(FILE* outfile) {
-  if (symbol->hasFlag(FLAG_REF))
-    fprintf(outfile, "typedef %s *%s;\n", getField(1)->type->symbol->cname,
-            symbol->cname);
+  if (symbol->hasFlag(FLAG_REF)) return; // done in codegenDef
+  else if (symbol->hasFlag(FLAG_DATA_CLASS)) return; // done in codegenDef
   else if (classTag == CLASS_CLASS)
     fprintf(outfile, "typedef struct __%s *%s;\n",
             symbol->cname, symbol->cname);
@@ -736,7 +744,7 @@ createInternalType(const char *name, const char *cname) {
   dtComplex[COMPLEX_SIZE_ ## width]= createPrimitiveType (name, "_complex" #width); \
   dtComplex[COMPLEX_SIZE_ ## width]->defaultValue = new_ComplexSymbol(         \
                                   "_chpl_complex" #width "(0.0, 0.0)",         \
-                                   0.0, 0.0, COMPLEX_SIZE_ ## width);
+                                   0.0, 0.0, COMPLEX_SIZE_ ## width)
 
 #define CREATE_DEFAULT_SYMBOL(primType, gSym, name)     \
   gSym = new VarSymbol (name, primType);                \
