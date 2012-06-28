@@ -59,6 +59,30 @@ module analyze_torus_graphs {
           yield neighbors(n);
     }
 
+    // iterate over all neighbor (ID, weight) pairs
+
+    iter NeighborPairs( v : index (vertices) ) {
+      const neighbors => Neighbors[v];
+      const weights => edge_weight[v];
+      for n in torus_stencil do
+        yield (neighbors(n), weights(n));
+    }
+
+    // Simply forward the domain's parallel iterator
+    iter NeighborPairs( v : index (vertices), param tag: iterKind)
+    where tag == iterKind.leader {
+      for block in torus_stencil._value.these(tag) do
+        yield block;
+    }
+
+    iter NeighborPairs( v : index (vertices), param tag: iterKind, followThis)
+    where tag == iterKind.follower {
+      const neighbors => Neighbors[v];
+      const weights => edge_weight[v];
+      for n in torus_stencil._value.these(tag, followThis) do
+        yield (neighbors(n), weights(n));
+    }
+
     proc n_Neighbors (v : index (vertices) ) return 2*dimensions;
   }
 

@@ -25,10 +25,26 @@ module analyze_RMAT_graph_associative_array {
   config const initialRMATNeighborListLength =
     if graphInputFile == "" then 16 else 0;
 
+    //
+    // We will represent the neighbor list as an array of nleType.
+    //
+    type nleType = (int(64), int(64));
+    // Extract each component from a neighbor.
+    proc nleNID(nlElm: nleType)    return nlElm(1);
+    proc nleWeight(nlElm: nleType) return nlElm(2);
+    // Mark a use of a neighbor as a pair.
+    proc nleAsPair(nlElm: nleType) return nlElm;
+    // Produce a neighbor from components.
+    proc nleMake(nID: int(64), wt: int(64)): nleType  return (nID, wt);
+
+    //
+    // VertexData: stores the neighbor list of a vertex.
+    //
     record VertexData {
       var ndom = [1..initialRMATNeighborListLength];
-      var neighborIDs: [ndom] int(64);
-      var edgeWeights: [ndom] int(64);
+      var neighborList: [ndom] nleType;
+//      var neighborIDs: [ndom] int(64);
+//      var edgeWeights: [ndom] int(64);
 
       // This is used for graph construction only.
       // TODO: move to a separate array, to be deallocated after construction.
@@ -58,8 +74,7 @@ module analyze_RMAT_graph_associative_array {
             firstAvailableNeighborPosition$ = edgePos + 1;
 
             // store the edge
-            neighborIDs[edgePos] = v;
-            edgeWeights[edgePos] = w;
+            neighborList[edgePos] = nleMake(v, w);
           }
         } // on
       }
@@ -87,32 +102,27 @@ module analyze_RMAT_graph_associative_array {
         const style = new iostyle(min_width = 3);
         if showArrays {
           writeln("starting ", lo, "..", hi);
-          stdout.writeln(neighborIDs(lo..hi), style);
-          stdout.writeln(edgeWeights(lo..hi), style);
+          stdout.writeln(neighborList(lo..hi), style);
         }
 
         // TODO: remove the duplicates as we sort
         // InsertionSort, keep duplicates
         for i in lo+1..hi {
-          const ithNID = neighborIDs(i);
-          const ithEDW = edgeWeights(i);
+          const (ithNID, ithEDW) = nleAsPair(neighborList(i));
           var inserted = false;
 
           for j in lo..i-1 by -1 {
-            if (ithNID < neighborIDs(j)) {
-              neighborIDs(j+1) = neighborIDs(j);
-              edgeWeights(j+1) = edgeWeights(j);
+            if ithNID < nleNID(neighborList(j)) {
+              neighborList(j+1) = neighborList(j);
             } else {
-              neighborIDs(j+1) = ithNID;
-              edgeWeights(j+1) = ithEDW;
+              neighborList(j+1) = nleMake(ithNID, ithEDW);
               inserted = true;
               break;
             }
           }
 
           if (!inserted) {
-            neighborIDs(lo) = ithNID;
-            edgeWeights(lo) = ithEDW;
+            neighborList(lo)= nleMake(ithNID, ithEDW);
           }
         }
         //writeln("sorted ", lo, "..", hi);
@@ -120,10 +130,10 @@ module analyze_RMAT_graph_associative_array {
         // remove the duplicates
         var foundDup = false;
         var indexDup: int;
-        var lastNID = neighborIDs(lo);
+        var lastNID = nleNID(neighborList(lo));
 
         for i in lo+1..hi {
-          const currNID = neighborIDs(i);
+          const currNID = nleNID(neighborList(i));
           if lastNID == currNID {
             foundDup = true;
             indexDup = i;
@@ -137,13 +147,13 @@ module analyze_RMAT_graph_associative_array {
           // indexDup points to a hole
           // the already-found dup is dropped before entering the loop
           for i in indexDup+1..hi {
-            const currNID = neighborIDs(i);
+            const currNID = nleNID(neighborList(i));
             if lastNID == currNID {
               // dropping this duplicate
             } else {
               // moving a non-duplicate value
-              neighborIDs(indexDup) = currNID;
-              edgeWeights(indexDup) = edgeWeights(i);
+              neighborList(indexDup) = nleMake(currNID,
+                                               nleWeight(neighborList(i)));
               indexDup += 1;
               lastNID = currNID;
             }
@@ -155,14 +165,13 @@ module analyze_RMAT_graph_associative_array {
         // VerifySort
         if boundsChecking then
           for i in lo..hi-1 do
-            if !( neighborIDs(i) < neighborIDs(i+1) ) then
-              writeln("unsorted for i = ", i, "   ",
-                      neighborIDs(i), " !< ", neighborIDs(i+1));
+            if !( nleNID(neighborList(i)) < nleNID(neighborList(i+1)) ) then
+              writeln("unsorted IDs for i = ", i, "   ",
+                      neighborList(i), " !< ", neighborList(i+1));
 
         if showArrays {
           writeln("sorted ", lo, "..", hi);
-          stdout.writeln(neighborIDs(lo..hi), style);
-          stdout.writeln(edgeWeights(lo..hi), style);
+          stdout.writeln(neighborList(lo..hi), style);
           writeln();
         }
       }  // RemoveDuplicates
@@ -229,12 +238,12 @@ module analyze_RMAT_graph_associative_array {
       const vertices;
       var   Row      : [vertices] VertexData;
 
+      // iterate over neighbor IDs, with filtering
+
       iter FilteredNeighbors( v : index (vertices) ) {
-        const neighbors => Row(v).neighborIDs;
-        const weights => Row(v).edgeWeights;
-        for n in Row(v).ndom do
-          if !FILTERING || weights(n)%8 != 0 then
-            yield neighbors(n);
+        for nlElm in Row(v).neighborList do
+          if !FILTERING || nleWeight(nlElm)%8 != 0 then
+            yield nleNID(nlElm);
       }
 
       // Stand-alone parallel iterator would be nice
@@ -252,26 +261,61 @@ module analyze_RMAT_graph_associative_array {
       iter FilteredNeighbors( v : index (vertices), param tag: iterKind, followThis)
       where tag == iterKind.follower {
         pragma "no copy" pragma "no auto destroy"
-        const myRow = Row(v); // Cache a copy of the record
-        const neighbors => myRow.neighborIDs;
-        const weights => myRow.edgeWeights;
+        const neighbors => Row(v).neighborList;
         const (low, high, wholeLow) = followThis;
         // 1-d, no stride
         const myElems = (low..high) + wholeLow;
         for n in myElems {
-          if !FILTERING || weights(n)%8 != 0 then
-            yield neighbors(n);
+          if !FILTERING || nleWeight(neighbors(n))%8 != 0 then
+            yield nleNID(neighbors(n));
         }
       }
 
-      // Neighbors and edge_weight can be used where iterators are expected
-      proc   Neighbors  ( v : index (vertices) ) {
-        return Row (v).neighborIDs;
+      // iterate over all neighbor (ID, weight) pairs
+
+      proc NeighborPairs( v : index (vertices) ) {   // implies nleAsPair
+        return Row (v).neighborList;
       }
 
-      proc   edge_weight (v : index (vertices) ) {
-        return Row (v).edgeWeights;
+      // iterate over all neighbor IDs
+
+      iter Neighbors( v : index (vertices) ) {
+        for nlElm in Row(v).neighborList do
+          yield nleNID(nlElm);
       }
+
+      iter Neighbors( v : index (vertices), param tag: iterKind)
+      where tag == iterKind.leader {
+        for block in Row(v).neighborList._value.these(tag) do
+          yield block;
+      }
+
+      iter Neighbors( v : index (vertices), param tag: iterKind, followThis)
+      where tag == iterKind.follower {
+        for nlElm in Row(v).neighborList._value.these(tag, followThis) do
+          yield nleNID(nlElm);
+      }
+
+      // iterate over all neighbor weights
+
+      iter edge_weight( v : index (vertices) ) {
+        for nlElm in Row(v).neighborList do
+          yield nleWeight(nlElm);
+      }
+
+      iter edge_weight( v : index (vertices), param tag: iterKind)
+      where tag == iterKind.leader {
+        for block in Row(v).neighborList._value.these(tag) do
+          yield block;
+      }
+
+      iter edge_weight( v : index (vertices), param tag: iterKind, followThis)
+      where tag == iterKind.follower {
+        for nlElm in Row(v).neighborList._value.these(tag, followThis) do
+          yield nleWeight(nlElm);
+      }
+
+      // return the number of all neighbors
 
       proc   n_Neighbors (v : index (vertices) ) 
       {return Row (v).numNeighbors();}
