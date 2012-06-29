@@ -99,13 +99,15 @@ module SSCA2_RMAT_graph_generator
 		       b : real, 
 		       c : real, 
 		       d : real, 
-		       SCALE :int, 
+                       vertex_domain,
+		       SCALE :int,
 		       N_VERTICES : int,
 		       n_raw_edges : int,
 		       MAX_EDGE_WEIGHT :int,
 		       G ) 
 
-    { use Random; 
+    { use Random;
+      use analyze_RMAT_graph_associative_array;
 
       if PRINT_TIMING_STATISTICS then stopwatch.start ();
 
@@ -262,6 +264,9 @@ module SSCA2_RMAT_graph_generator
       // wins) or also use += instead of = (to sum duplicates' weights).
       // ----------------------------------------------------------
 
+      var firstAvailNeighbor$: [vertex_domain] sync int = initialFirstAvail;
+
+      writeln("Starting Graph Generation");
       if PRINT_TIMING_STATISTICS then stopwatch.start ();
 
       var collisions = 0, self_edges = 0;
@@ -275,12 +280,13 @@ module SSCA2_RMAT_graph_generator
           self_edges += 1;
         } else {
           const w = Edge_Weight(e);
-          G.Row[u].addEdgeOnVertex(u, v, w);
+          // both the vertex and firstAvail must be passed by reference
+          G.Row[u].addEdgeOnVertex(u, v, w, firstAvailNeighbor$[u]);
 	}
       }
 
-      forall vx in G.Row do
-        vx.tidyNeighbors();
+      forall (vx, firstAvail$) in (G.Row, firstAvailNeighbor$) do
+        vx.tidyNeighbors(firstAvail$);
 
       if PRINT_TIMING_STATISTICS then {
 	stopwatch.stop ();
