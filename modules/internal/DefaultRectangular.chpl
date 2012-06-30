@@ -446,7 +446,7 @@ class DefaultRectangularArr: BaseArr {
         }
       }
     }
-    delete data;
+    _ddata_free(data);
   }
 
   iter these() var {
@@ -515,11 +515,7 @@ class DefaultRectangularArr: BaseArr {
       blk(dim) = blk(dim+1) * dom.dsiDim(dim+1).length;
     computeFactoredOffs();
     var size = blk(1) * dom.dsiDim(1).length;
-    data = new _ddata(eltType);
-    //assert(size >= 0);
-    //assert(size:int(64) <= max(int):int(64));
-    //numelm = size: int;
-    data.init(size);
+    data = _ddata_allocate(eltType, size);
   }
 
   inline proc getDataIndex(ind: idxType ...1) where rank == 1

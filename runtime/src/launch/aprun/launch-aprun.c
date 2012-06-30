@@ -20,8 +20,6 @@ static char* debug = NULL;
 static int getNumCoresPerLocale(void) {
   const int buflen = 256;
   char buf[buflen];
-  int coreMask;
-  int bitMask = 0x1;
   int numCores = -1;
   char* numCoresString = getenv("CHPL_LAUNCHER_CORES_PER_LOCALE");
 
@@ -35,7 +33,7 @@ static int getNumCoresPerLocale(void) {
     char *argv[3];
     int charsRead;
     argv[0] = (char *) "cnselect";
-    argv[1] = (char *) "-Lcoremask";
+    argv[1] = (char *) "-Lnumcores";
     argv[2] = NULL;
   
     memset(buf, 0, buflen);
@@ -43,14 +41,8 @@ static int getNumCoresPerLocale(void) {
       chpl_error("Error trying to determine number of cores per node", 0, 0);
     }
 
-    if (sscanf(buf, "%d", &coreMask) != 1) {
+    if (sscanf(buf, "%d", &numCores) != 1) {
       chpl_error("unable to determine number of cores per locale; please set CHPL_LAUNCHER_CORES_PER_LOCALE", 0, 0);
-    }
-    coreMask >>= 1;
-    numCores = 1;
-    while (coreMask & bitMask) {
-      coreMask >>= 1;
-      numCores += 1;
     }
   }
 

@@ -35,13 +35,13 @@ extern int chpl_threads_initialized;
       chpl_error("attempt to dereference nil", lineno, filename);      \
   } while (0)
 
-#define _ARRAY_GET(x, i) (&((x)->_data[i]))
-#define _ARRAY_GET_VALUE(x, i) ((x)->_data[i])
-#define _ARRAY_SET(x, i, v) ((x)->_data[i] = v)
-#define _ARRAY_SET_SVEC(x, i, v) CHPL_ASSIGN_SVEC(((x)->_data[i]), v)
+#define _ARRAY_GET(x, i) (&((x)[i]))
+#define _ARRAY_GET_VALUE(x, i) ((x)[i])
+#define _ARRAY_SET(x, i, v) ((x)[i] = v)
+#define _ARRAY_SET_SVEC(x, i, v) CHPL_ASSIGN_SVEC(((x)[i]), v)
 
 #define _ARRAY_ALLOC(x, type, size, lineno, filename) \
-  (x)->_data = (size == 0) ? (void*)(0x0) : chpl_mem_allocMany(size, sizeof(type), CHPL_RT_MD_ARRAY_ELEMENTS, lineno, filename)
+  (x) = (size == 0) ? (void*)(0x0) : chpl_mem_allocMany(size, sizeof(type), CHPL_RT_MD_ARRAY_ELEMENTS, lineno, filename)
 
 #define _WIDE_ARRAY_ALLOC(x, type, size, lineno, filename)              \
   do {                                                                 \
@@ -54,7 +54,7 @@ extern int chpl_threads_initialized;
   for(i = 0; i < (x)->size; i++) call
 
 #define _ARRAY_FREE(x, lineno, filename) \
-  chpl_mem_free((x)->_data, lineno, filename)
+  chpl_mem_free((x), lineno, filename)
 
 #define _WIDE_ARRAY_FREE(x, lineno, filename)                          \
   do {                                                                 \

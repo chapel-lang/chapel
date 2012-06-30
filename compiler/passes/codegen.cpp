@@ -11,51 +11,6 @@
 #include "stringutil.h"
 #include "symbol.h"
 
-
-static int max(int a, int b) {
-  return (a >= b) ? a : b;
-}
-
-
-static void setOrder(Map<ClassType*,int>& order, int& maxOrder, ClassType* ct);
-
-static int
-getOrder(Map<ClassType*,int>& order, int& maxOrder,
-         ClassType* ct, Vec<ClassType*>& visit) {
-  if (visit.set_in(ct))
-    return 0;
-  visit.set_add(ct);
-  if (order.get(ct))
-    return order.get(ct);
-  int i = 0;
-  for_fields(field, ct) {
-    if (ClassType* fct = toClassType(field->type)) {
-      if (!visit.set_in(fct)) {
-        if (!isClass(fct) || fct->symbol->hasFlag(FLAG_REF)) {
-          setOrder(order, maxOrder, fct);
-          i = max(i, getOrder(order, maxOrder, fct, visit));
-        }
-      }
-    }
-  }
-  return i + !isClass(ct);
-}
-
-
-static void
-setOrder(Map<ClassType*,int>& order, int& maxOrder,
-         ClassType* ct) {
-  if (order.get(ct) || (isClass(ct) && !ct->symbol->hasFlag(FLAG_REF)))
-    return;
-  int i;
-  Vec<ClassType*> visit;
-  i = getOrder(order, maxOrder, ct, visit);
-  order.put(ct, i);
-  if (i > maxOrder)
-    maxOrder = i;
-}
-
-
 static const char*
 subChar(Symbol* sym, const char* ch, const char* x) {
   char* tmp = (char*)malloc(ch-sym->cname+1);
@@ -208,6 +163,63 @@ static const char* uniquifyName(const char* name,
   return newName;
 }
 
+static inline bool shouldCodegenAggregate(ClassType* ct)
+{
+  // never codegen definitions of primitive types
+  if( toPrimitiveType(ct) ) return false;
+
+  // Needed special handling for complex types, since after complex2record
+  // they appear like normal records but we must not define them
+  // since they are defined in the runtime headers
+  // Added a flag, FLAG_NO_CODEGEN, to handle this case.
+  // This flag could be used for other similar cases if necessary.
+  if( ct->symbol->hasFlag(FLAG_NO_CODEGEN) ) return false;
+
+  // Don't visit classes since they are prototyped individually all at once..
+  // ..except for classes with FLAG_REF or FLAG_DATA_CLASS.. which
+  //   we do visit.
+  if( isClass(ct) ) { // is it actually a class?
+    if( ct->symbol->hasFlag(FLAG_REF) ||
+        ct->symbol->hasFlag(FLAG_WIDE) ||
+        ct->symbol->hasFlag(FLAG_DATA_CLASS)) return true;
+    else return false;
+  }
+
+  // otherwise, visit record/union
+  return true;
+}
+
+
+static void codegen_aggregate_def(Vec<ClassType*>& visit,
+                                  FILE* hdrfile,
+                                  ClassType* ct) {
+  if(!shouldCodegenAggregate(ct)) return;
+  if(visit.set_in(ct)) return;
+  visit.set_add(ct);
+
+  // For reference or data class types, first generate
+  // the referenced type
+  Type* vt = NULL;
+  if(ct->symbol->hasFlag(FLAG_REF))
+    vt = ct->symbol->getValType();
+  else if(ct->symbol->hasFlag(FLAG_DATA_CLASS))
+    vt = getDataClassType(ct->symbol)->typeInfo();
+  if (vt) {
+    if (ClassType* fct = toClassType(vt)) {
+      codegen_aggregate_def(visit, hdrfile, fct);
+    }
+  }
+  // For other types, generate the field types
+  for_fields(field, ct) {
+    if (ClassType* fct = toClassType(field->type)) {
+      codegen_aggregate_def(visit, hdrfile, fct);
+    }
+  }
+  // Lastly, generate the type we're working on.
+  // Codegen what we have here.
+  ct->symbol->codegenDef(hdrfile);
+  fprintf(hdrfile, "\n");
+}
 
 // TODO: Split this into a number of smaller routines.<hilde>
 static void codegen_header(FILE* hdrfile, FILE* codefile=NULL) {
@@ -400,7 +412,7 @@ static void codegen_header(FILE* hdrfile, FILE* codefile=NULL) {
 
   fprintf(hdrfile, "\n/*** Class Prototypes ***/\n\n");
   forv_Vec(TypeSymbol, typeSymbol, types) {
-    if (!typeSymbol->hasFlag(FLAG_REF))
+    if (!typeSymbol->hasFlag(FLAG_REF) && !typeSymbol->hasFlag(FLAG_DATA_CLASS))
       typeSymbol->codegenPrototype(hdrfile);
   }
 
@@ -412,49 +424,17 @@ static void codegen_header(FILE* hdrfile, FILE* codefile=NULL) {
       typeSymbol->codegenDef(hdrfile);
   }
 
-  // codegen reference types
-  fprintf(hdrfile, "\n/*** Primitive References ***/\n\n");
-  forv_Vec(TypeSymbol, ts, types) {
-    if (ts->hasFlag(FLAG_REF)) {
-      Type* vt = ts->getValType();
-      if (isRecord(vt) || isUnion(vt))
-        continue; // references to records and unions codegened below
-      ts->codegenPrototype(hdrfile);
-    }
-  }
+  {
+    Vec<ClassType*> visit;
 
-  // order records/unions topologically
-  //   (int, int) before (int, (int, int))
-  Map<ClassType*,int> order;
-  int maxOrder = 0;
-  forv_Vec(TypeSymbol, ts, types) {
-    if (ClassType* ct = toClassType(ts->type))
-      setOrder(order, maxOrder, ct);
-  }
-
-  // debug
-  //   for (int i = 0; i < order.n; i++) {
-  //     if (order.v[i].key && order.v[i].value) {
-  //       printf("%d: %s\n", order.v[i].value, order.v[i].key->symbol->name);
-  //     }
-  //   }
-  //   printf("%d\n", maxOrder);
-
-  // codegen records/unions in topological order
-  fprintf(hdrfile, "\n/*** Records and Unions (Hierarchically) ***/\n\n");
-  for (int i = 1; i <= maxOrder; i++) {
+    // codegen records/unions/references/data class in topological order
+    fprintf(hdrfile, "\n/*** Records, Unions, Data Class, References (Hierarchically) ***/\n\n");
     forv_Vec(TypeSymbol, ts, types) {
-      if (ClassType* ct = toClassType(ts->type))
-        if (order.get(ct) == i && !ct->symbol->hasFlag(FLAG_REF))
-          ts->codegenDef(hdrfile);
+      if (ClassType* ct = toClassType(ts->type)) {
+        codegen_aggregate_def(visit, hdrfile, ct);
+        fprintf(hdrfile, "\n");
+      }
     }
-    forv_Vec(TypeSymbol, ts, types) {
-      if (ts->hasFlag(FLAG_REF))
-        if (ClassType* ct = toClassType(ts->getValType()))
-          if (order.get(ct) == i)
-            ts->codegenPrototype(hdrfile);
-    }
-    fprintf(hdrfile, "\n");
   }
 
   // codegen remaining types
@@ -462,6 +442,7 @@ static void codegen_header(FILE* hdrfile, FILE* codefile=NULL) {
   forv_Vec(TypeSymbol, typeSymbol, types) {
     if (isClass(typeSymbol->type) &&
         !typeSymbol->hasFlag(FLAG_REF) &&
+        !typeSymbol->hasFlag(FLAG_DATA_CLASS) &&
         typeSymbol->hasFlag(FLAG_NO_OBJECT) &&
         !typeSymbol->hasFlag(FLAG_OBJECT_CLASS))
       typeSymbol->codegenDef(hdrfile);

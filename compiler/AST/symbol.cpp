@@ -145,6 +145,10 @@ void Symbol::removeFlag(Flag flag) {
   flags.reset(flag);
 }
 
+bool Symbol::hasEitherFlag(Flag aflag, Flag bflag) {
+  return hasFlag(aflag) || hasFlag(bflag);
+}
+
 
 bool Symbol::isImmediate() {
   return false;
@@ -592,6 +596,7 @@ void FnSymbol::codegenHeader(FILE* outfile) {
 
 void FnSymbol::codegenPrototype(FILE* outfile) {
   INT_ASSERT(!hasFlag(FLAG_EXTERN));
+  if( hasFlag(FLAG_NO_CODEGEN) ) return;
   codegenHeader(outfile);
   fprintf(outfile, ";\n");
 }
@@ -616,6 +621,8 @@ codegenNullAssignments(FILE* outfile, const char* cname, ClassType* ct) {
 
 
 void FnSymbol::codegenDef(FILE* outfile) {
+  if( hasFlag(FLAG_NO_CODEGEN) ) return;
+
   if (strcmp(saveCDir, "")) {
    if (const char* rawname = fname()) {
     const char* name = strrchr(rawname, '/');

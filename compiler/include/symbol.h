@@ -83,6 +83,8 @@ class Symbol : public BaseAST {
   void addFlag(Flag flag);
   void copyFlags(Symbol* other);
   void removeFlag(Flag flag);
+
+  bool hasEitherFlag(Flag aflag, Flag bflag);
 };
 #define forv_Symbol(_p, _v) forv_Vec(Symbol, _p, _v)
 

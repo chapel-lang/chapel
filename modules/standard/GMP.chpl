@@ -211,6 +211,7 @@ module GMP {
   extern proc mpz_urandomb(inout ROP: mpz_t, STATE: gmp_randstate_t, N: c_ulong);
   extern proc mpz_urandomm(inout ROP: mpz_t, STATE: gmp_randstate_t, N: mpz_t);
   extern proc mpz_urandomb(inout ROP: mpz_t, STATE: gmp_randstate_t, N: c_ulong);
+  extern proc mpz_rrandomb(inout ROP: mpz_t, STATE: gmp_randstate_t, N: c_ulong);
 
   extern proc gmp_randinit_default(STATE: gmp_randstate_t);
   extern proc gmp_randinit_mt(STATE: gmp_randstate_t);

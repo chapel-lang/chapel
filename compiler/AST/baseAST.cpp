@@ -113,6 +113,11 @@ void trace_remove(BaseAST* ast, char flag) {
     if (deletedIdON) fflush(deletedIdHandle);
     gdbShouldBreakHere();
   }
+  // There should never be an attempt to delete an internal type.
+  if (isPrimitiveType(ast) &&
+      toPrimitiveType(ast)->isInternalType &&
+      flag != 'z') // at least, not until compiler shutdown.
+    INT_FATAL(ast, "Unexpected attempt to remove internal type.");
 }
 
 #define clean_gvec(type)                        \

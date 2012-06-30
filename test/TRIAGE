@@ -9,6 +9,12 @@
 These things regularly cause noise in testing:
 ==============================================
 
+distributions/robust/arithmetic/performance/alloc_all (sungeun)
+---------------------------------------------------------------
+This started failing on 6/26. It's Sung's and she's going to fix it, but
+hasn't gotten to it yet.
+
+
 spectralnorm (vass)
 -------------------
 proposed approach is to see whether reference version is similarly

@@ -20,6 +20,7 @@ buildComplexRecord(const char* name, Type* real) {
   TypeSymbol* ts = new TypeSymbol(name, ct);
   ct->fields.insertAtTail(new DefExpr(new VarSymbol("re", real)));
   ct->fields.insertAtTail(new DefExpr(new VarSymbol("im", real)));
+  ts->addFlag(FLAG_NO_CODEGEN);
   rootModule->block->insertAtTail(new DefExpr(ts));
   return ct;
 }

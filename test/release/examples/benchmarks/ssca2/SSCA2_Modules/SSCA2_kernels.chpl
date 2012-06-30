@@ -54,7 +54,7 @@ module SSCA2_kernels
       // ---------------------------------------------
 
       forall s in G.vertices do
-        forall (t, w) in ( G.Neighbors (s), G.edge_weight (s) ) do
+        forall (t, w) in G.NeighborPairs (s) do
 
 	  if w == heaviest_edge_weight then {
 	    heavy_edge_list.add ( (s,t) ); 
@@ -80,7 +80,7 @@ module SSCA2_kernels
 	writeln ( "Edges with largest weight and other neighbors:" );
 	for (s,t) in heavy_edge_list do {
 	  writeln ("edge   ", (s,t));
-	  for (v,w) in (G.Neighbors (s), G.edge_weight (s) ) do
+	  for (v,w) in G.NeighborPairs (s) do
 	    writeln ("      ", v, " ", w);}
       }
     };
