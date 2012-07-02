@@ -6,6 +6,7 @@
 #include "scopeResolve.h"
 #include "stringutil.h"
 #include "symbol.h"
+#include "view.h" // for debugging -Jeremy
 
 //
 // The symbolTable maps BaseAST* pointers to entries based on scope
@@ -207,8 +208,9 @@ lookup(BaseAST* scope,
 
   if (TypeSymbol* ts = toTypeSymbol(scope))
     if (ClassType* ct = toClassType(ts->type))
-      if (Symbol* sym = ct->getField(name, false))
+      if (Symbol* sym = ct->getField(name, false)) {
         symbols.set_add(sym);
+      }
 
   if (scanModuleUses && symbols.n == 0) {
     if (BlockStmt* block = toBlockStmt(scope)) {
@@ -1103,22 +1105,22 @@ void scopeResolve(void) {
       if (UnresolvedSymExpr* sym = toUnresolvedSymExpr(toArgSymbol(fn->_this)->typeExpr->body.only())) {
         Symbol* s = lookup(sym, sym->unresolved);
         TypeSymbol* ts = toTypeSymbol(s);
-        // Jeremy experimenting here.
         if (ts) {
           sym->replace(new SymExpr(ts));
           fn->_this->type = ts->type;
           fn->_this->type->methods.add(fn);
         } else {
-#if 0
-          USR_FATAL(fn, "cannot resolve base type for method '%s'", fn->name);
-#endif
-          // We go into this branch when dealing with an interface,
-          // and the base type is an interface type parameter. 
-          // Not sure what needs to be done here. The following is a first shot. -Jeremy
-
-          sym->replace(new SymExpr(s));
-          fn->_this->type = s->type;
-          fn->_this->type->methods.add(fn);
+          ArgSymbol* as = toArgSymbol(s);
+          if (as) {
+            // We go into this branch when dealing with an interface,
+            // and the base type of the method is an interface type parameter. 
+            // -Jeremy
+            sym->replace(new SymExpr(s));
+            fn->_this = s;
+            fn->_this->type->methods.add(fn);
+          } else {
+            USR_FATAL(fn, "cannot resolve base type for method '%s'", fn->name);
+          }
         }
       } else if (SymExpr* sym = toSymExpr(toArgSymbol(fn->_this)->typeExpr->body.only())) {
         fn->_this->type = sym->var->type;

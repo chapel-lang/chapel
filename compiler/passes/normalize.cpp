@@ -1088,10 +1088,14 @@ static void change_method_into_constructor(FnSymbol* fn) {
   if (fn->getFormal(1)->type != dtMethodToken)
     return;
 
+#if 0
+  // It's not known if the type of 'this' is a type parameter. -Jeremy
+
   // The second argument is 'this'.
   // For starters, it needs a known type.
   if (fn->getFormal(2)->type == dtUnknown)
     INT_FATAL(fn, "'this' argument has unknown type");
+#endif
 
   // Now check that the function name matches the name of the type
   // attached to 'this'.
