@@ -708,7 +708,7 @@ createPrimitiveType(const char *name, const char *cname, bool internalType=false
   TypeSymbol* ts = new TypeSymbol(name, pt);
   ts->cname = cname;
   ts->addFlag(FLAG_GLOBAL_TYPE_SYMBOL); // Is attached to a global variable;
-										// should not be deleted!
+                                        // should not be deleted!
   rootModule->block->insertAtTail(new DefExpr(ts));
   return pt;
 }
