@@ -1134,10 +1134,10 @@ VarSymbol *new_ComplexSymbol(const char *n, long double r, long double i, IF1_co
   imm.const_kind = NUM_KIND_COMPLEX;
   imm.num_index = size;
   VarSymbol *s = uniqueConstantsHash.get(&imm);
-  PrimitiveType* dtRetType = dtComplex[size];
   if (s) {
     return s;
   }
+  Type* dtRetType = dtComplex[size];
   s = new VarSymbol(astr("_literal_", istr(literal_id++)), dtRetType);
   rootModule->block->insertAtTail(new DefExpr(s));
   s->immediate = new Immediate;
@@ -1147,7 +1147,7 @@ VarSymbol *new_ComplexSymbol(const char *n, long double r, long double i, IF1_co
   return s;
 }
 
-static PrimitiveType*
+static Type*
 immediate_type(Immediate *imm) {
   switch (imm->const_kind) {
     case CONST_KIND_STRING:
@@ -1173,7 +1173,7 @@ VarSymbol *new_ImmediateSymbol(Immediate *imm) {
   VarSymbol *s = uniqueConstantsHash.get(imm);
   if (s)
     return s;
-  PrimitiveType *t = immediate_type(imm);
+  Type *t = immediate_type(imm);
   s = new VarSymbol(astr("_literal_", istr(literal_id++)), t);
   rootModule->block->insertAtTail(new DefExpr(s));
   s->immediate = new Immediate;

@@ -45,6 +45,7 @@ class Type : public BaseAST {
   Type *instantiatedFrom;
   SymbolMap substitutions;
   ClassType* refType;  // pointer to references for non-reference types
+  bool isInternalType; // Used only in PrimitiveType; replace with flag?
 
   Type(AstTag astTag, Symbol* init_defaultVal);
   virtual ~Type();
@@ -122,7 +123,6 @@ class ClassType : public Type {
 
 class PrimitiveType : public Type {
  public:
-  bool isInternalType;
   PrimitiveType(Symbol *init_defaultVal = NULL, bool internalType=false);
   void verify(); 
   DECLARE_COPY(PrimitiveType);
@@ -152,13 +152,15 @@ TYPE_EXTERN PrimitiveType* dtTypeDefaultToken;
 TYPE_EXTERN PrimitiveType* dtModuleToken;
 
 // primitive types
+// Anything declared as PrimitiveType* can now also be declared as Type*
+// This change was made to allow dtComplex to be represented by a record.
 TYPE_EXTERN PrimitiveType* dtBool;
 TYPE_EXTERN PrimitiveType* dtBools[BOOL_SIZE_NUM];
 TYPE_EXTERN PrimitiveType* dtInt[INT_SIZE_NUM];
 TYPE_EXTERN PrimitiveType* dtUInt[INT_SIZE_NUM];
 TYPE_EXTERN PrimitiveType* dtReal[FLOAT_SIZE_NUM];
 TYPE_EXTERN PrimitiveType* dtImag[FLOAT_SIZE_NUM];
-TYPE_EXTERN PrimitiveType* dtComplex[COMPLEX_SIZE_NUM];
+TYPE_EXTERN Type* dtComplex[COMPLEX_SIZE_NUM];
 TYPE_EXTERN PrimitiveType* dtString;
 TYPE_EXTERN PrimitiveType* dtSymbol;
 TYPE_EXTERN PrimitiveType* dtFile; 

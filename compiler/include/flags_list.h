@@ -120,6 +120,7 @@ symbolFlag( FLAG_WIDE , npr, "wide" , ncm )
 symbolFlag( FLAG_WIDE_CLASS , npr, "wide class" , ncm )
 symbolFlag( FLAG_WRAPPER , npr, "wrapper" , "wrapper function" )
 symbolFlag( FLAG_WRAP_OUT_INTENT , npr, "wrap out or inout intent formal" , "formal argument for wrapper for out/inout intent" )
+symbolFlag( FLAG_GLOBAL_TYPE_SYMBOL, npr, "global type symbol", "is accessible through a global type variable")
 
 #undef ypr
 #undef npr
