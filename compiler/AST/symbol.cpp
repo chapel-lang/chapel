@@ -835,6 +835,15 @@ bool EnumSymbol::isParameter(void) { return true; }
 
 void EnumSymbol::codegenDef(FILE* outfile) { }
 
+Immediate* EnumSymbol::getImmediate(void) {
+  if (SymExpr* init = toSymExpr(defPoint->init)) {
+    if (VarSymbol* initvar = toVarSymbol(init->var)) {
+      return initvar->immediate;
+    }
+  }
+  return NULL;
+}
+
 
 ModuleSymbol::ModuleSymbol(const char* iName, ModTag iModTag, BlockStmt* iBlock) :
   Symbol(E_ModuleSymbol, iName),

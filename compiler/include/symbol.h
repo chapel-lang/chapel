@@ -212,6 +212,7 @@ class EnumSymbol : public Symbol {
   void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void codegenDef(FILE* outfile);
   bool isParameter(void);
+  Immediate* getImmediate(void);
 };
 
 

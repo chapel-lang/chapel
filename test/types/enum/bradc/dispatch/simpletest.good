@@ -1,0 +1,2 @@
+simpletest.chpl:7: error: unresolved call 'int8works(numeral)'
+simpletest.chpl:9: note: candidates are: int8works(x: int(8))

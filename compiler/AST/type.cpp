@@ -216,7 +216,8 @@ void EnumType::sizeAndNormalize() {
         // We think that all params should have init values by now.
         INT_ASSERT(sym && !sym->var->hasFlag(FLAG_PARAM));
         // So we're going to blame this on the user.
-        USR_FATAL(constant, "enumerator '%s' is not an integer constant", constant->sym->name);
+        USR_FATAL(constant, "enumerator '%s' is not an integer param value", 
+                  constant->sym->name);
         // And unfortunately, if we get here, we don't know how to proceed,
         // which is why no USR_FATAL_CONT().
       }

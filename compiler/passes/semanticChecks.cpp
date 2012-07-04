@@ -268,7 +268,8 @@ checkResolved(void) {
           SymExpr* sym = toSymExpr(def->init);
           if (!sym || (!sym->var->hasFlag(FLAG_PARAM) &&
                        !toVarSymbol(sym->var)->immediate))
-            USR_FATAL_CONT(def, "enumerator '%s' is not an int parameter", def->sym->name);
+            USR_FATAL_CONT(def, "enumerator '%s' is not an integer param value", 
+                           def->sym->name);
         }
       }
     }

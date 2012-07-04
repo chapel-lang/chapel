@@ -786,6 +786,28 @@ static bool fits_in_uint(int width, Immediate* imm) {
 }
 
 
+static void ensureEnumTypeResolved(EnumType* etype) {
+  INT_ASSERT( etype != NULL );
+
+  if( ! etype->integerType ) {
+    // Make sure to resolve all enum types.
+    for_enums(def, etype) {
+      if (def->init) {
+        // Type* enumtype =
+        resolve_type_expr(def->init);
+
+        // printf("Type of %s.%s is %s\n", etype->symbol->name, def->sym->name,
+        // enumtype->symbol->name);
+      }
+    }
+    // Now try computing the enum size...
+    etype->sizeAndNormalize();
+  }
+
+  INT_ASSERT(etype->integerType != NULL);
+}
+
+
 // Returns true iff dispatching the actualType to the formalType
 // results in an instantiation.
 static bool
@@ -831,13 +853,39 @@ static bool canParamCoerce(Type* actualType, Symbol* actualSym, Type* formalType
     if (is_uint_type(actualType) &&
         get_width(actualType) < get_width(formalType))
       return true;
-    if (get_width(formalType) < 64)
+
+    //
+    // If the actual is an enum, check to see if *all* its values
+    // are small enough that they fit into this integer width
+    //
+    if (EnumType* etype = toEnumType(actualType)) {
+      ensureEnumTypeResolved(etype);
+      if (get_width(etype->getIntegerType()) <= get_width(formalType))
+        return true;
+    }
+
+    //
+    // For smaller integer types, if the argument is a param, does it
+    // store a value that's small enough that it could dispatch to
+    // this argument?
+    //
+    if (get_width(formalType) < 64) {
       if (VarSymbol* var = toVarSymbol(actualSym))
         if (var->immediate)
           if (fits_in_int(get_width(formalType), var->immediate))
             return true;
-    if (toEnumType(actualType))
-      return true;
+
+      if (EnumType* etype = toEnumType(actualType)) {
+        ensureEnumTypeResolved(etype);
+        if (EnumSymbol* enumsym = toEnumSymbol(actualSym)) {
+          if (Immediate* enumval = enumsym->getImmediate()) {
+            if (fits_in_int(get_width(formalType), enumval)) {
+              return true;
+            }
+          }
+        }
+      }
+    }
   }
   if (is_uint_type(formalType)) {
     if (is_bool_type(actualType))
@@ -1420,16 +1468,24 @@ isMoreVisible(Expr* expr, FnSymbol* fn1, FnSymbol* fn2) {
 
 
 static bool paramWorks(Symbol* actual, Type* formalType) {
+  Immediate* imm = NULL;
+
   if (VarSymbol* var = toVarSymbol(actual)) {
-    if (var->immediate) {
-      if (is_int_type(formalType)) {
-        return fits_in_int(get_width(formalType), var->immediate);
-      }
-      if (is_uint_type(formalType)) {
-        return fits_in_uint(get_width(formalType), var->immediate);
-      }
+    imm = var->immediate;
+  }
+  if (EnumSymbol* enumsym = toEnumSymbol(actual)) {
+    ensureEnumTypeResolved(toEnumType(enumsym->type));
+    imm = enumsym->getImmediate();
+  }
+  if (imm) {
+    if (is_int_type(formalType)) {
+      return fits_in_int(get_width(formalType), imm);
+    }
+    if (is_uint_type(formalType)) {
+      return fits_in_uint(get_width(formalType), imm);
     }
   }
+
   return false;
 }
 
@@ -1443,13 +1499,31 @@ static bool paramWorks(Symbol* actual, Type* formalType) {
     /* if the param currently has no preference or it matches the new   \
        preference, preserve the current preference */                   \
     paramPrefers = preference;                                          \
-    TRACE_DISAMBIGUATE_BY_MATCH("param prefers " argstr);               \
+    TRACE_DISAMBIGUATE_BY_MATCH("param prefers " argstr "\n");          \
   } else {                                                              \
     /* otherwise its preference contradicts the previous arguments, so  \
        mark it as not preferring either */                              \
     paramPrefers = -1;                                                  \
-    TRACE_DISAMBIGUATE_BY_MATCH("param prefers differing things");      \
+    TRACE_DISAMBIGUATE_BY_MATCH("param prefers differing things\n");    \
   }  
+
+
+static bool considerParamMatches(Type* actualtype,
+                                 Type* arg1type, Type* arg2type) {
+  /* BLC: Seems weird to have to add this; could just add it in the enum
+     case if enums have to be special-cased here.  Otherwise, how are the
+     int cases handled later...? */
+  if (actualtype->symbol->hasFlag(FLAG_REF)) {
+    actualtype = actualtype->getValType();
+  }
+  if (actualtype == arg1type && actualtype != arg2type) {
+    return true;
+  }
+  if (is_enum_type(actualtype) && actualtype != arg1type && actualtype != arg2type) {
+    return considerParamMatches(dtInt[INT_SIZE_DEFAULT], arg1type, arg2type);
+  }
+  return false;
+}
 
 static FnSymbol*
 disambiguate_by_match(Vec<FnSymbol*>* candidateFns,
@@ -1510,7 +1584,8 @@ disambiguate_by_match(Vec<FnSymbol*>* candidateFns,
           } else if (arg->instantiatedFrom==dtAny && arg2->instantiatedFrom!=dtAny) {
             worse = true;
             TRACE_DISAMBIGUATE_BY_MATCH("H: worse\n");
-          } else if (actual->type == arg->type && actual->type != arg2->type) {
+          } else if (considerParamMatches(actual->type, arg->type, arg2->type)) {
+            TRACE_DISAMBIGUATE_BY_MATCH("In param case\n");
             // The actual matches arg's type, but not arg2's
             if (paramWorks(actual, arg2->type)) {
               // but the actual is a param and works for arg2
@@ -1532,7 +1607,8 @@ disambiguate_by_match(Vec<FnSymbol*>* candidateFns,
               equal = false;
               TRACE_DISAMBIGUATE_BY_MATCH("I8: not equal\n");
             }
-          } else if (actual->type == arg2->type && actual->type != arg->type) {
+          } else if (considerParamMatches(actual->type, arg2->type, arg->type)) {
+            TRACE_DISAMBIGUATE_BY_MATCH("In param case #2\n");
             // The actual matches arg2's type, but not arg's
             if (paramWorks(actual, arg->type)) {
               // but the actual is a param and works for arg
@@ -1587,10 +1663,10 @@ disambiguate_by_match(Vec<FnSymbol*>* candidateFns,
             TRACE_DISAMBIGUATE_BY_MATCH("Q: worse\n");
           } else if (paramPrefers == 1) {
             equal = false;
-            TRACE_DISAMBIGUATE_BY_MATCH("R1: param breaks tie for 1");
+            TRACE_DISAMBIGUATE_BY_MATCH("R1: param breaks tie for 1\n");
           } else if (paramPrefers == 2) {
             worse = true;
-            TRACE_DISAMBIGUATE_BY_MATCH("R2: param breaks tie for 2");
+            TRACE_DISAMBIGUATE_BY_MATCH("R2: param breaks tie for 2\n");
           } else if (fn1->where && !fn2->where) {
             equal = false;
             TRACE_DISAMBIGUATE_BY_MATCH("S: not equal\n");
@@ -3705,20 +3781,8 @@ preFold(Expr* expr) {
     } else if (call->isPrimitive(PRIM_ENUM_MIN_BITS) || call->isPrimitive(PRIM_ENUM_IS_SIGNED)) {
       EnumType* et = toEnumType(toSymExpr(call->get(1))->var->type);
 
-      INT_ASSERT( et != NULL );
 
-      if( ! et->integerType ) {
-        // Make sure to resolve all enum types.
-        for_enums(def, et) {
-          if (def->init) {
-            resolve_type_expr(def->init);
-          }
-        }
-        // Now try computing the enum size...
-        et->sizeAndNormalize();
-      }
-
-      INT_ASSERT(et->integerType != NULL);
+      ensureEnumTypeResolved(et);
 
       result = NULL;
       if( call->isPrimitive(PRIM_ENUM_MIN_BITS) ) {
@@ -5041,11 +5105,7 @@ static void resolveEnumTypes() {
   // need to handle enumerated types better
   forv_Vec(TypeSymbol, type, gTypeSymbols) {
     if (EnumType* et = toEnumType(type->type)) {
-      for_enums(def, et) {
-        if (def->init) {
-          resolve_type_expr(def->init);
-        }
-      }
+      ensureEnumTypeResolved(et);
     }
   }
 }
