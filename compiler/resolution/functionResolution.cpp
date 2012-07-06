@@ -1522,6 +1522,10 @@ static bool considerParamMatches(Type* actualtype,
   if (is_enum_type(actualtype) && actualtype != arg1type && actualtype != arg2type) {
     return considerParamMatches(dtInt[INT_SIZE_DEFAULT], arg1type, arg2type);
   }
+  if (isSyncType(actualtype) && actualtype != arg1type && actualtype != arg2type) {
+    return considerParamMatches(actualtype->getField("base_type")->type,
+                                arg1type, arg2type);
+  }
   return false;
 }
 
