@@ -1,0 +1,2 @@
+# Currently it times out in multilocale mode, so we avoid trying.
+CHPL_COMM!=none
