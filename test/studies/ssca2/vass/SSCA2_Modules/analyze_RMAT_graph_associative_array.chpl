@@ -53,10 +53,12 @@ module analyze_RMAT_graph_associative_array {
         on this do {
           // todo: the compiler should make these values local automatically!
           const /*u = uArg,*/ v = vArg, w = wArg;
-          local {
+            // Lock and unlock should be within 'local', but currently
+            // need to pull them out due to implementation.
             // lock the vertex
             const edgePos = firstAvail$;
 
+          local {
             const prevNdomLen = ndom.high;
             if edgePos > prevNdomLen {
               // grow our arrays, by 2x
@@ -66,10 +68,10 @@ module analyze_RMAT_graph_associative_array {
             }
             // store the edge
             neighborList[edgePos] = nleMake(v, w);
+          }
 
             // release the lock
             firstAvail$ = edgePos + 1;
-          }
         } // on
       }
 
