@@ -9,6 +9,12 @@
 These things regularly cause noise in testing:
 ==============================================
 
+regression caused by Brad's enum change -- multilocale only (bradc)
+[Should be fixed now, but hadn't run by the time I turned over triage]
+-------------------------------------------------------------------
+multilocale/diten/needMultiLocales/DijkstraTermination
+
+
 distributions/robust/arithmetic/performance/alloc_all (sungeun)
 ---------------------------------------------------------------
 This started failing on 6/26. It's Sung's and she's going to fix it, but
@@ -37,15 +43,13 @@ due to races here should take us below the threshold.
 
 lulesh (bradc)
 --------------
-1) Brad made changes this week that should stabilize Sung's version of
-   lulesh
-2) there are likely still timeouts on the release version that should
-   be investigated.
-3) causes an internal error in xmt (though perhaps not a noisy one?)
+Seems like it still times out occasionally in the release version;
+need to diagnose whether it's nondeterministic deadlock/livelock
+or whether we're just running close to the threshold of the timeout.
 
 
-cray-xt-cray (UNASSIGNED)
--------------------------
+cray-xt-cray (diten)
+--------------------
 When the Chapel compiler is built with cray-xt-cray, we get
 nondeterministic failures that have not been investigated.  One
 question would be whether turning optimizations off/down when building
@@ -116,17 +120,24 @@ These configurations:
 Not so noisy as to be instantly recognizable (yet)
 ==================================================
 
+minus_equals nondeterminism (UNASSIGNED)
+----------------------------------------
+noted in regressions (week of 07/02)
+
+atomics nondeterminisms (UNASSIGNED)
+------------------------------------
+program release/examples/primers/atomics (06/30/12:xt-intel, 07/04/12:linux32)
+
 gasnet-everything nondeterminisms (UNASSIGNED)
 ----------------------------------------------
 MultiBlockDist2DLocales (06/05/12, 6/16)
 test_module_Sort (06/06/12, 6/16)
 test_array_slicing3 (06/08/12, 6/16)
 
-
 no-local nondeterminisms (UNASSIGNED)
 -------------------------------------
 cg-sparse-timecomp (06/05/12)
-
+studies/ssca2/atomic/SSCA2_main_atomic (07/04/12)
 
 memory/vass/crash-memory-module-1 (vass)
 ----------------------------------------
