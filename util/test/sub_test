@@ -968,6 +968,8 @@ for testname in testsrc:
                                      (futuretest, localdir, execname))
                     printTestVariation(compoptsnum, execoptsnum);
                     sys.stdout.write(']\n')
+                    sys.stdout.write('[Execution output was as follows:]\n')
+                    sys.stdout.write(output)
 
             elif useTimedExec:
                 wholecmd = cmd+' '+' '.join(map(ShellEscape, args))
@@ -989,6 +991,8 @@ for testname in testsrc:
                                      (futuretest, localdir, execname))
                     printTestVariation(compoptsnum, execoptsnum);
                     sys.stdout.write(']\n')
+                    sys.stdout.write('[Execution output was as follows:]\n')
+                    sys.stdout.write(output)
 
             else:
                 if redirectin == None:
