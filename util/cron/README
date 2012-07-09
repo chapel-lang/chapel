@@ -8,15 +8,16 @@ chap05 : --no-local
 chap06 : --baseline
 chap07 : tcmalloc (comm none, gasnet multilocale-examples)
 chap08 : XMT
-chap09 : valgrind (comm none)
-chap10 : gasnet (segment everything, segment fast)
 chpbld01 : XT/XE PrgEnvs examples, nightly
 chpbld02 : XT/XE PrgEnvs all, weekly
 chpbld03 : qthreads (comm none examples, gasnet multilocale-examples)
+chpbld04 :
 cflbs32: 32-bit linux (comm none, default everything)
 
 Seattle machines
 ================
+chap09 : valgrind (comm none)
+chap10 : gasnet: segment fast (M,W,F,Su), segment everything (Tu,Thu,Sa)
 bradc-lnx : 11pm update of ~chapelu/chapel, release testing, linxu64 performance, token count, tab check
 lnx-vass : block, memory leaks
 lnx-hilde : nanox (comm none examples, gasnet multilocale-examples)
