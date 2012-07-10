@@ -21,7 +21,7 @@ for w in 1..10 do
 // P - number of products
 proc multi_array(P: int=100) {
   // Domain -  Consumers
-  var D: domain(1) = [1..numLocales*4-1];
+  var D: domain(1) = {1..numLocales*4-1};
   // elements of array A used to write/read
   // the product and for synchronization
   var A$: [D] sync int;

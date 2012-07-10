@@ -30,7 +30,7 @@ module elemental_schur_complement {
     //      assert (i.locale == my_locale);
 
     for (i, j, k) in 
-      [schur_complement_rows, schur_complement_cols, Lx1_cols] do
+      {schur_complement_rows, schur_complement_cols, Lx1_cols} do
 	if j <= i then
 	  A (i,j) -= + L21 (i,k) * L12 (j,k);
     }

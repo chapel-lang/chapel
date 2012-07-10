@@ -196,6 +196,35 @@ pragma "has runtime type"
 proc chpl__buildArrayRuntimeType(dom: domain, type eltType) type
   return dom.buildArray(eltType);
 
+/*
+ * Support for array literals. 
+ *
+ * Array literals are detected during parsing and converted 
+ * to a call expr.  Array values pass through the various  
+ * compilation phases as regular parameters. 
+ *
+ * NOTE:  It would be nice to define a second, less specific, function
+ *        to handle the case of multiple types, however this is not 
+ *        possible atm due to using var args with a query type. */
+proc chpl__buildArrayLiteral( elems:?t ...?k ){
+  type elemType = elems(1).type;
+  var A : [1..k] elemType;  //This is unfortunate, can't use t here...
+
+  for param i in 1..k {
+    type currType = elems(i).type;
+
+    if currType != elemType {
+      compilerError( "Array literal element " + i:string + 
+                     " expected to be of type " + typeToString(elemType) +
+                     " but is of type " + typeToString(currType) );
+    } 
+    
+    A(i) = elems(i);
+  } 
+      
+  return A; 
+}
+
 proc chpl__convertValueToRuntimeType(arr: []) type
   return chpl__buildArrayRuntimeType(arr.domain, arr.eltType);
 
@@ -464,7 +493,7 @@ record _distribution {
   proc idxToLocale(ind) return _value.dsiIndexToLocale(ind);
 
   proc readWriteThis(f) {
-    f & _value;
+    f <~> _value;
   }
 
   proc displayRepresentation() { _value.dsiDisplayRepresentation(); }
@@ -587,7 +616,7 @@ record _domain {
         newRanges(i) = 1..0;
       }
     }
-    var d = [(...newRanges)] dmapped newDist;
+    var d = {(...newRanges)} dmapped newDist;
     return d;
   }
 
@@ -1158,7 +1187,7 @@ record _array {
 
     var newDist = new dmap(_value.dom.dist.dsiCreateReindexDist(d.dims(),
                                                                 _value.dom.dsiDims()));
-    var newDom = [(...d.dims())] dmapped newDist;
+    var newDom = {(...d.dims())} dmapped newDist;
     var x = _value.dsiReindex(newDom._value);
     x._arrAlias = _value;
     pragma "dont disable remote value forwarding"
@@ -1342,7 +1371,7 @@ proc =(a: domain, b: _tuple) {
 }
 
 proc =(d: domain, r: range(?)) {
-  d = [r];
+  d = {r};
   return d;
 }
 
@@ -1375,7 +1404,7 @@ proc chpl__isLegalRectTupDomAssign(d, t) param {
 }
 
 proc =(d: domain, rt: _tuple) where chpl__isLegalRectTupDomAssign(d, rt) {
-  d = [(...rt)];
+  d = {(...rt)};
   return d;
 }
 
@@ -1876,7 +1905,7 @@ proc chpl__initCopy(ir: _iteratorRecord) {
   pragma "no copy" var irc = _ir_copy_recursive(ir);
 
   var i = 1, size = 4;
-  pragma "insert auto destroy" var D = [1..size];
+  pragma "insert auto destroy" var D = {1..size};
 
   // note that _getIterator is called in order to copy the iterator
   // class since for arrays we need to iterate once to get the
@@ -1891,13 +1920,13 @@ proc chpl__initCopy(ir: _iteratorRecord) {
     //pragma "no copy" /*pragma "insert auto destroy"*/ var ee = e;
     if i > size {
       size = size * 2;
-      D = [1..size];
+      D = {1..size};
     }
     //A(i) = ee;
     A(i) = e;
     i = i + 1;
   }
-  D = [1..i-1];
+  D = {1..i-1};
   return A;
 }
 

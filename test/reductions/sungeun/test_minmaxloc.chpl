@@ -69,13 +69,13 @@ if debug {
   writeln(A);
 }
 
-var ml = minloc reduce (A, [1..n]);
+var ml = minloc reduce (A, {1..n});
 writeln(ml);
-ml = lastminloc reduce (A, [1..n]);
+ml = lastminloc reduce (A, {1..n});
 writeln(ml);
 
-ml = maxloc reduce (A, [1..n]);
+ml = maxloc reduce (A, {1..n});
 writeln(ml);
-ml = lastmaxloc reduce (A, [1..n]);
+ml = lastmaxloc reduce (A, {1..n});
 writeln(ml);
 

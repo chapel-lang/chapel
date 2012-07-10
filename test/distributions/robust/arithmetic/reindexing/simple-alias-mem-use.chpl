@@ -26,7 +26,7 @@ proc testit(printit:bool) {
   var bb => b;
   var bbb => bb;
   var ccc => cc;
-  Dom1D = [1..max(n1/2,10)];
+  Dom1D = {1..max(n1/2,10)};
   var e => a;
   var ee => e;
   var eee => ee;

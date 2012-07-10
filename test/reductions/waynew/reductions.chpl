@@ -2,7 +2,7 @@
 
 param M = 10;
 
-var D: domain(1) = [1..M];
+var D: domain(1) = {1..M};
 var I: [D] int;
 forall i in D do {
   I(i) = i;

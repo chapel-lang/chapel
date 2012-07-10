@@ -16,7 +16,7 @@ module cholesky_test {
 
     var Rand = new RandomStream ( seed = 314159) ;
 
-    const MatIdx = [ index_base .. #n, index_base .. #n ];
+    const MatIdx = { index_base .. #n, index_base .. #n };
 
     const mat_dom : domain (2) dmapped Cyclic ( startIdx = MatIdx.low )
       = MatIdx; 

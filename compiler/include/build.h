@@ -6,7 +6,7 @@
 #include "stmt.h"
 #include "symbol.h"
 
-BlockStmt* buildPragmaStmt(BlockStmt*, Vec<const char*>*, BlockStmt*);
+BlockStmt* buildPragmaStmt(Vec<const char*>*, BlockStmt*);
 
 /* The start of an incomplete zero-tuple implementation
 CallExpr* buildZeroTuple(void);

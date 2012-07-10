@@ -62,7 +62,7 @@ proc QR(A: [?D]) where (D.rank == 2) {
       A(i,i) = one;
       var v => A[i..m, i..i];
       var Ai => A[i..m, i+1..n];
-      var Di = [i+1..n];
+      var Di = {i+1..n};
       var w: [Di] real;
       for j in Di {
         w(j) = + reduce (Ai[..,j..j]*v);
@@ -128,7 +128,7 @@ proc main() {
         n = infile.read(int);
 
   // declare a range A1D, 2D domain AD, and array (matrix) A
-  const AD = [1..m, 1..n];
+  const AD = {1..m, 1..n};
   var A: [AD] real;
 
   // Initialize A by reading values in from infile.

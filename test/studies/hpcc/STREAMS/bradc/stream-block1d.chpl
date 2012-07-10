@@ -26,9 +26,9 @@ proc main() {
   var t1, t2, t3: Timer;
 
   t1.start();
-  const BlockDist = new dmap(new Block(rank=1, idxType=int(64), boundingBox=[1..m], targetLocales=Locales));
+  const BlockDist = new dmap(new Block(rank=1, idxType=int(64), boundingBox={1..m}, targetLocales=Locales));
 
-  const ProblemSpace: domain(1, int(64)) dmapped BlockDist = [1..m];
+  const ProblemSpace: domain(1, int(64)) dmapped BlockDist = {1..m};
 
   var A, B, C: [ProblemSpace] elemType;
   t1.stop();

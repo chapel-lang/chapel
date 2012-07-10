@@ -11,8 +11,8 @@ config const iters = 50;
 const sizeRange = 0..#size;
 const iterRange = 0..#iters;
 
-var Dist = new dmap (new Block(rank=2, idxType=int(64), boundingBox=[sizeRange, sizeRange]));
-var Dom: domain(2, int(64)) dmapped Dist = [sizeRange, sizeRange];
+var Dist = new dmap (new Block(rank=2, idxType=int(64), boundingBox={sizeRange, sizeRange}));
+var Dom: domain(2, int(64)) dmapped Dist = {sizeRange, sizeRange};
 var Bitmap: [Dom] bool;
 
 
@@ -39,8 +39,8 @@ proc work(x, y) : bool {
 
 const byteRange = 0..#(size/8);
 
-var ByteDist = new dmap(new Block(rank=2, idxType=int(64), boundingBox=[byteRange, sizeRange]));
-var ByteDom: domain(2, int(64)) dmapped ByteDist = [byteRange, sizeRange];
+var ByteDist = new dmap(new Block(rank=2, idxType=int(64), boundingBox={byteRange, sizeRange}));
+var ByteDom: domain(2, int(64)) dmapped ByteDist = {byteRange, sizeRange};
 var OutputArray: [ByteDom] uint(8);
 
 for (i,j) in ByteDom do {

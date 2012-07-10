@@ -125,8 +125,8 @@ const Elems = 0..#numElems;
 const Nodes = 0..#numNodes;
 
 //domains
-const ElemSpace = [Elems];
-const NodeSpace = [Nodes];
+const ElemSpace = {Elems};
+const NodeSpace = {Nodes};
 
 
 //distributions

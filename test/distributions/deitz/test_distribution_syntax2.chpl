@@ -3,8 +3,8 @@ config const n: int = 4;
 {
   use BlockDist;
 
-  var Dist: dmap(Block(rank=2)) = new dmap(new Block(boundingBox=[1..n,1..n]));
-  var Dom: domain(2) dmapped Dist = [1..n,1..n] dmapped Dist;
+  var Dist: dmap(Block(rank=2)) = new dmap(new Block(boundingBox={1..n,1..n}));
+  var Dom: domain(2) dmapped Dist = {1..n,1..n} dmapped Dist;
   var Arr: [Dom] 2*int;
 
   forall (i,j) in Dom {
@@ -19,7 +19,7 @@ config const n: int = 4;
   use CyclicDist;
 
   var Dist: dmap(Cyclic(rank=2)) = new dmap(new Cyclic(startIdx=(1,1)));
-  var Dom: domain(2) dmapped Dist = [1..n,1..n] dmapped Dist;
+  var Dom: domain(2) dmapped Dist = {1..n,1..n} dmapped Dist;
   var Arr: [Dom] 2*int;
 
   forall (i,j) in Dom {

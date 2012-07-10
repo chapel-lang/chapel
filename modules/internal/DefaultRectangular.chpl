@@ -511,7 +511,7 @@ class DefaultRectangularArr: BaseArr {
       str(dim) = dom.dsiDim(dim).stride;
     }
     blk(rank) = 1:idxType;
-    for param dim in 1..rank-1 by -1 do
+    for param dim in 1..(rank-1) by -1 do
       blk(dim) = blk(dim+1) * dom.dsiDim(dim+1).length;
     computeFactoredOffs();
     var size = blk(1) * dom.dsiDim(1).length;
@@ -649,10 +649,14 @@ class DefaultRectangularArr: BaseArr {
 }
 
 proc DefaultRectangularDom.dsiSerialReadWrite(f /*: Reader or Writer*/) {
-  f & new ioLiteral("[") & ranges(1);
+  f 
+      <~> 
+        new ioLiteral("[") 
+            <~> 
+                ranges(1);
   for i in 2..rank do
-    f & new ioLiteral(", ") & ranges(i);
-  f & new ioLiteral("]");
+    f <~> new ioLiteral(", ") <~> ranges(i);
+  f <~> new ioLiteral("]");
 }
 
 proc DefaultRectangularDom.dsiSerialWrite(f: Writer) { this.dsiSerialReadWrite(f); }
@@ -666,9 +670,9 @@ proc DefaultRectangularArr.dsiSerialReadWrite(f /*: Reader or Writer*/) {
       var first = true;
       if debugDefaultDist && f.writing then f.writeln(dom.ranges(dim));
       for j in dom.ranges(dim) by makeStridePositive {
-        if first then first = false; else f & new ioLiteral(" ");
+        if first then first = false; else f <~> new ioLiteral(" ");
         idx(dim) = j;
-        f & dsiAccess(idx);
+        f <~> dsiAccess(idx);
       }
     } else {
       for j in dom.ranges(dim) by makeStridePositive {
@@ -679,7 +683,7 @@ proc DefaultRectangularArr.dsiSerialReadWrite(f /*: Reader or Writer*/) {
       }
     }
     if !last && dim != 1 then
-      f & new ioNewline();
+      f <~> new ioNewline();
   }
   const zeroTup: rank*idxType;
   recursiveArrayWriter(zeroTup);
@@ -700,7 +704,7 @@ proc DefaultRectangularArr.isDataContiguous() {
 
   if blk(rank) != 1 then return false;
 
-  for param dim in 1..rank-1 by -1 do
+  for param dim in 1..(rank-1) by -1 do
     if blk(dim) != blk(dim+1)*dom.dsiDim(dim+1).length then return false;
 
   if debugDefaultDistBulkTransfer then

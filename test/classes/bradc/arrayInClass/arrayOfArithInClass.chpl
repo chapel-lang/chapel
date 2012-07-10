@@ -15,7 +15,7 @@ class OpaqueC {
 }
 
 class SparseC {
-  var sparseDom: sparse subdomain([1..3]);
+  var sparseDom: sparse subdomain({1..3});
   var x: [sparseDom] [1..3] real;
 }
 

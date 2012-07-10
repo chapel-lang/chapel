@@ -22,7 +22,7 @@ var Vertices: domain(1) = 1..totVertices;
 
 /*
 --var EdgeSpace: domain(Vertices*Vertices);
---var EdgeSpace: domain(2) = [1..totVertices, 1..totVertices];
+--var EdgeSpace: domain(2) = {1..totVertices, 1..totVertices};
 var EdgeSpace: domain(2) = (1..totVertices, 1..totVertices);
 --var AdjSpace: sparse domain(EdgeSpace) = nil;
 var AdjSpace: domain(EdgeSpace) = EdgeSpace;

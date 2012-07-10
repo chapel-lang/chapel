@@ -20,7 +20,7 @@ proc butterfly(wk1: complex, wk2: complex, wk3: complex,
 config var logN = 3;
 const N = 0x1 << logN;
 
-const D = [0..N-1];
+const D = {0..N-1};
 
 var A: [D] complex;
 

@@ -1,4 +1,4 @@
-const randNumDom = [1..3];
+const randNumDom = {1..3};
 var seed: [randNumDom] sync int = 1;
 const multipliers: [randNumDom] int = (16807, 397204094, 950706376),
       modulus = 2147483647;

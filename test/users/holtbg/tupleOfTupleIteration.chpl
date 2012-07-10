@@ -1,6 +1,6 @@
 const edgeElems = 5;
 const Elems = 0..#edgeElems;
-const ElemSpace = [Elems, Elems, Elems];
+const ElemSpace = {Elems, Elems, Elems};
 use BlockDist;
 const ElemDist = ElemSpace dmapped Block(ElemSpace);
 

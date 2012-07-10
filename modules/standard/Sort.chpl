@@ -173,8 +173,8 @@ proc QuickSort(Data: [?Dom], minlen=16, doublecheck=false) where Dom.rank == 1 {
 proc SelectionSort(Data: [?Dom], doublecheck=false) where Dom.rank == 1 {
   const lo = Dom.dim(1).low;
   const hi = Dom.dim(1).high;
-  for i in [lo..hi-1] {
-    var (_, loc) = minloc reduce (Data[i..hi], [i..hi]);
+  for i in {lo..hi-1} {
+    var (_, loc) = minloc reduce (Data[i..hi], {i..hi});
     Data(i) <=> Data(loc);
   }
 

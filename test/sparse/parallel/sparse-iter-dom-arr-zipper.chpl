@@ -3,10 +3,10 @@ config var n = 8;
 // Is there a *generic* way to create a range that's n-dimensional cube 1..n ?
 // Then could say 'for param dim in 1..4 do test(dim, cube(dim));'
 
-var d1: domain(1) = [1..n];
-var d2: domain(2) = [1..n,1..n];
-var d3: domain(3) = [1..n,1..n,1..n];
-var d4: domain(4) = [1..n,1..n,1..n,1..n];
+var d1: domain(1) = {1..n};
+var d2: domain(2) = {1..n,1..n};
+var d3: domain(3) = {1..n,1..n,1..n};
+var d4: domain(4) = {1..n,1..n,1..n,1..n};
 
 test(1, d1);
 test(2, d2);

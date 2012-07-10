@@ -1441,7 +1441,7 @@ proc channel.readln(type t) {
 // Read/write tuples of types.
 proc channel.readln(type t ...?numTypes) where numTypes > 1 {
   var tupleVal: t;
-  for param i in 1..numTypes-1 do
+  for param i in 1..(numTypes-1) do
     tupleVal(i) = this.read(t(i));
   tupleVal(numTypes) = this.readln(t(numTypes));
   return tupleVal;

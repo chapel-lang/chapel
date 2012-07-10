@@ -1,4 +1,4 @@
-const D = [1..5];
+const D = {1..5};
 
 var x, y: [D] real;
 var alpha = 2.0;

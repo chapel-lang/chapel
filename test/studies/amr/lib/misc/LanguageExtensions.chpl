@@ -129,7 +129,7 @@ proc abs(T)
 //==== Range exponentiation ====
 proc **(R: range(stridable=?s), param n: int) {
   var ranges: n*R.type;
-  for i in [1..n] do ranges(i) = R;
+  for i in {1..n} do ranges(i) = R;
 
   var D: domain(n,stridable=s) = ranges;
   return D;
@@ -142,7 +142,7 @@ proc *(R: range(stridable=?s), D: domain)
 
   var ranges: (D.rank+1)*range(stridable=stridable);
   ranges(1) = R;
-  for i in [1..D.rank] do ranges(i+1) = D.dim(i);
+  for i in {1..D.rank} do ranges(i+1) = D.dim(i);
 
   var D_new: domain(D.rank+1,stridable=stridable) = ranges;
   return D_new;
@@ -154,7 +154,7 @@ proc *(D: domain, R: range(stridable=?s))
   param stridable = s || D.stridable;
 
   var ranges: (D.rank+1)*range(stridable=stridable);
-  for i in [1..D.rank] do ranges(i) = D.dim(i);
+  for i in {1..D.rank} do ranges(i) = D.dim(i);
   ranges(D.rank+1) = R;
 
   var D_new: domain(D.rank+1,stridable=stridable) = ranges;

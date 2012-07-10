@@ -261,10 +261,10 @@ proc backwardSub(
 {
     var x : [b.domain] real;
 
-    for i in [b.domain by -1] do {
+    for i in {b.domain by -1} do {
         x[i] = b[i];
 
-        for j in [i+1..b.domain.high] do {
+        for j in {i+1..b.domain.high} do {
             x[i] -= A[i,j] * x[j];
         }
 
@@ -301,10 +301,10 @@ proc main() {
     A = A * 2.0 - 1.0;
 
     var axmbNorm =
-        norm(gaxpyMinus(n, n, A([1..n, 1..n]), x, b), normType.normInf);
+        norm(gaxpyMinus(n, n, A({1..n, 1..n}), x, b), normType.normInf);
 
-    var a1norm   = norm(A([1..n, 1..n]), normType.norm1);
-    var aInfNorm = norm(A([1..n, 1..n]), normType.normInf);
+    var a1norm   = norm(A({1..n, 1..n}), normType.norm1);
+    var aInfNorm = norm(A({1..n, 1..n}), normType.normInf);
     var x1Norm   = norm(x, normType.norm1);
     var xInfNorm = norm(x, normType.normInf);
 

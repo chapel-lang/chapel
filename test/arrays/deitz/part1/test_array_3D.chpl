@@ -1,5 +1,5 @@
 config var n : int = 4;
-var d = [1..n, 1..n, 1..n];
+var d = {1..n, 1..n, 1..n};
 var a : [d] int;
 
 for (i,j,k) in d do

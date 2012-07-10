@@ -53,7 +53,7 @@ const nbb1 = divceilpos(n, blkSize * tl1) * blkSize * tl1, //MBD //BD
 //const st1=1, st2=1; //MBC //BC
 
 // non-distributed version
-const MatVectSpace = [1..n, 1..n+1];
+const MatVectSpace = {1..n, 1..n+1};
 
 const
   bdim1 =
@@ -67,7 +67,7 @@ const
   rdim2 = new ReplicatedDim(tl2);
 
 const AbD: domain(2, indexType)
-   dmapped Block(boundingBox=[1..nbb1, 1..nbb2], targetLocales=tla) //MBD
+   dmapped Block(boundingBox={1..nbb1, 1..nbb2}, targetLocales=tla) //MBD
 // dmapped BlockCyclic(startIdx=(st1,st2), blocksize=(blkSize,blkSize), targetLocales=tla) //MBC
 // dmapped DimensionalDist2D(tla, bdim1, bdim2, "dim") //BD //BC
   = MatVectSpace;
@@ -81,16 +81,16 @@ var refsuccess = true;
 
 // the domains for the arrays used for replication
 const
-  replAD = [1..n, 1..blkSize] dmapped
+  replAD = {1..n, 1..blkSize} dmapped
     DimensionalDist2D(tla, bdim1, rdim2, "distBR"), //DIM
-  replBD = [1..blkSize, 1..n+1] dmapped
+  replBD = {1..blkSize, 1..n+1} dmapped
     DimensionalDist2D(tla, rdim1, bdim2, "distRB"); //DIM
 
 var replA: [replAD] elemType,
     replB: [replBD] elemType;
 
 writeln("n = ", n, "\n", "blkSize = ", blkSize, "\n", "AbD = ", AbD, "\n",
-        "bounding box = ", [1..nbb1, 1..nbb2], //MBD //BD
+        "bounding box = ", {1..nbb1, 1..nbb2}, //MBD //BD
       //"starting offsets = ", st1, ", ", st2, //MBC //BC
         "\n");
 
@@ -147,8 +147,8 @@ proc schurComplement(AD, BD, Rest) {
     return;
   }
 
-  vwln("  replA", replA.domain, " = Ab", AD, "  ", [1..n, AD.dim(2)]);
-  vwln("  replB", replB.domain, " = Ab", BD, "  ", [BD.dim(1), 1..n+1]);
+  vwln("  replA", replA.domain, " = Ab", AD, "  ", {1..n, AD.dim(2)});
+  vwln("  replB", replB.domain, " = Ab", BD, "  ", {BD.dim(1), 1..n+1});
 
   // TODO later: only assign from Ab[AD] and Ab[BD], resp.
   // Note: AD.dim(2)  and BD.dim(1) are always blkSize wide;

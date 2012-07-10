@@ -4,13 +4,13 @@
 use Memory;
 
 const N = 5;
-var D = [2..N];
+var D = {2..N};
 var B: [D] int = 1;
 
 proc foo () {
   var sum = 0;
   var A: [D] int = 7;
-  D = [1..N];
+  D = {1..N};
   A[A.domain.low] = 5;
   [i in A.domain] sum += A[i]*i;
   return sum;

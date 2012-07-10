@@ -25,14 +25,14 @@ proc eval_A(i,j) : real
 
 proc eval_A_times_u(U : [] real, inRange, Au : [] real)
 {
-	forall (au,i) in (Au, [0..#inRange]) do 
+	forall (au,i) in (Au, {0..#inRange}) do 
 		au = + reduce [j in 0..#inRange] (U(j) * eval_A(i,j));
 
 }
 
 proc eval_At_times_u(U : [] real, inRange, Au : [] real)
 {
-	forall (au,i) in (Au, [0..#inRange]) do
+	forall (au,i) in (Au, {0..#inRange}) do
 		au = + reduce [j in 0..#inRange] (U(j) * eval_A(j,i));
 }
 
@@ -44,9 +44,9 @@ proc eval_AtA_times_u(u,AtAu,v : [] real, inRange)
 
 proc spectral_game(N) : real
 {
-	var Dist = new dmap(new Block(rank=1, idxType=int(64), boundingBox=[0..#N],
+	var Dist = new dmap(new Block(rank=1, idxType=int(64), boundingBox={0..#N},
                                       dataParTasksPerLocale=here.numCores));
-	var Dom : domain(1, int(64)) dmapped Dist = [0..#N];
+	var Dom : domain(1, int(64)) dmapped Dist = {0..#N};
 
 	var tmp, U, V : [Dom] real;
 

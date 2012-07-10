@@ -40,7 +40,7 @@ module performance_cholesky_test {
 
     var Rand = new RandomStream ( seed = 314159) ;
 
-    const mat_dom : domain (2) = [ index_base .. #n, index_base .. #n ];
+    const mat_dom : domain (2) = { index_base .. #n, index_base .. #n };
 
     var A : [mat_dom] real,
         B : [mat_dom] real,

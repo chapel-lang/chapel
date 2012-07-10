@@ -1,4 +1,4 @@
-proc bar(i: int) return [1..3];
+proc bar(i: int) return {1..3};
 
 var A = bar(1..3);
 

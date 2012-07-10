@@ -31,7 +31,7 @@ param nExtent = 13;
 type AtomMatrix = nExtent*real;
 //type AtomMatrix = [0..#nExtent] real;
 
-const GridDom  = [0..#span_x, 0..#span_y, 0..#span_z];
+const GridDom  = {0..#span_x, 0..#span_y, 0..#span_z};
 
 proc main() {
 	var t: Timer;

@@ -34,7 +34,7 @@ const end = start + count - 1;
 
 config const debug = 0;
 
-var digitDom : domain(1) = [start..end+2*blkSz];
+var digitDom : domain(1) = {start..end+2*blkSz};
 
 // The array of digits which we are computing.
 // Each digit consumes only 4 bits.

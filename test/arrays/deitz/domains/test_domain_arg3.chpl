@@ -3,8 +3,8 @@ proc foo(d: domain) {
   writeln(a);
 }
 
-foo([1..3, 1..3]);
-foo([1..9]);
+foo({1..3, 1..3});
+foo({1..9});
 var d: domain(int);
 d += 1;
 d += 2;

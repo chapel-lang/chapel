@@ -473,10 +473,10 @@ class GPURectangularArr: BaseArr {
 }
 
 proc GPURectangularDom.dsiSerialReadWrite(f /*: Reader or Writer*/) {
-  f & new ioLiteral("[") & dsiDim(1);
+  f <~> new ioLiteral("[") <~> dsiDim(1);
   for i in 2..rank do
-    f & new ioLiteral(", ") & dsiDim(i);
-  f & new ioLiteral("]");
+    f <~> new ioLiteral(", ") <~> dsiDim(i);
+  f <~> new ioLiteral("]");
 }
 
 proc GPURectangularDom.dsiSerialWrite(f: Writer) { this.dsiSerialReadWrite(f); }
@@ -488,16 +488,16 @@ proc GPURectangularArr.dsiSerialReadWrite(f /*: Reader or Writer*/) {
   for dim in 1..rank do
     i(dim) = dom.dsiDim(dim).low;
   label next while true {
-    f & dsiAccess(i);
+    f <~> dsiAccess(i);
     if i(rank) <= (dom.dsiDim(rank).high - dom.dsiDim(rank).stride:idxType) {
-      f & new ioLiteral(" ");
+      f <~> new ioLiteral(" ");
       i(rank) += dom.dsiDim(rank).stride:idxType;
     } else {
       for dim in 1..rank-1 by -1 {
         if i(dim) <= (dom.dsiDim(dim).high - dom.dsiDim(dim).stride:idxType) {
           i(dim) += dom.dsiDim(dim).stride:idxType;
           for dim2 in dim+1..rank {
-            f & new ioNewline();
+            f <~> new ioNewline();
             i(dim2) = dom.dsiDim(dim2).low;
           }
           continue next;

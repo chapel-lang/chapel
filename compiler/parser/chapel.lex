@@ -191,6 +191,8 @@ yield            processToken(TYIELD);
 "]"              processToken(TRSBR);
 "{"              processToken(TLCBR);
 "}"              processToken(TRCBR);
+"<~>"            processToken(TIO);
+
 
 "?"              processToken(TQUESTION);
 

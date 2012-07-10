@@ -27,10 +27,10 @@ module test_elemental_explicitly_strided_cholesky {
 
     var Rand = new RandomStream ( seed = 314159) ;
 
-    const unstrided_MatIdx = [ index_base .. #n, index_base .. #n ];
+    const unstrided_MatIdx = { index_base .. #n, index_base .. #n };
 
-    const strided_MatIdx   = [ index_base .. by stride #n , 
-		               index_base .. by stride #n ];
+    const strided_MatIdx   = { index_base .. by stride #n , 
+		               index_base .. by stride #n };
 
     const strided_mat_dom : domain (2, stridable = true) 
           dmapped Cyclic ( startIdx = strided_MatIdx.low )

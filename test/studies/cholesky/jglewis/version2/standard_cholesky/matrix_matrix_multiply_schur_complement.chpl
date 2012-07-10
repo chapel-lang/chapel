@@ -134,7 +134,7 @@ module matrix_matrix_multiply_schur_complement {
           AIK_col_indices = A.domain.dim(2),
           LJ_col_indices  = L.domain.dim (2);
 
-    forall (i,j, k) in [ AIK_row_indices, AIK_col_indices, LJ_col_indices ] do 
+    forall (i,j, k) in { AIK_row_indices, AIK_col_indices, LJ_col_indices } do 
       A (i,j) -= L (i,k) * L (j,k);
   }
 }

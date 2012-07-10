@@ -166,7 +166,7 @@ proc matrixMult(
 {
     C = 0;
 
-    forall (i,j,k) in [C.domain.dim(1), C.domain.dim(2), 1..p] {
+    forall (i,j,k) in {C.domain.dim(1), C.domain.dim(2), 1..p} {
         C[i,j] += A[i,k] * B[k,j];
     }
 }
@@ -198,7 +198,7 @@ proc selfMult(n : int, A : [1..n,1..n] real, C : [1..n,1..n] real) {
 proc permuteMatrix(matrix : [?dmn], in vector) {
     //var pdmn : sparse subdomain(dmn);
     var pdmn =
-        [1..vector.domain.dim(1).length, 1..vector.domain.dim(1).length];
+        {1..vector.domain.dim(1).length, 1..vector.domain.dim(1).length};
     var p : [pdmn] int;
     //p.IRV = 0;
 
@@ -249,7 +249,7 @@ proc test_permuteMatrix(rprt = true) : bool {
     // this n by n array is filled so each element is assigned to its
     // row number. This test will permute these elements, keeping a pivot
     // vector alongside.
-    var A : [1..n, 1..n] int = [(i,j) in [1..n, 1..n]] i;
+    var A : [1..n, 1..n] int = [(i,j) in {1..n, 1..n}] i;
     var piv : [1..n] int = [i in 1..n] i;
     var AOrig = A;
 
@@ -282,7 +282,7 @@ proc test_panelSolve(rprt = true) : bool {
 
     var piv : [1..8] int = [i in 1..8] i;
     var A : [1..8, 1..9] real =
-        [(i,j) in [1..8, 1..9]] (rand.getNext() * 10000):int % 100 + 1;
+        [(i,j) in {1..8, 1..9}] (rand.getNext() * 10000):int % 100 + 1;
     var AOrig = A;
 
     var AOrig2 = A;
@@ -299,7 +299,7 @@ proc test_panelSolve(rprt = true) : bool {
     // block on the original matrix when permuted.
     var C : [1..blkSize, 1..blkSize] real;
     var blockD =
-        [offset..#blkSize, offset..#blkSize];
+        {offset..#blkSize, offset..#blkSize};
     selfMult(blkSize, A(blockD), C);
     permuteMatrix(AOrig, piv);
 

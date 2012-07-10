@@ -47,7 +47,7 @@ config const n: int = 8;
 {
   var rs = new RandomStream(seed);
 
-  var A: [[1..n] dmapped Block(rank=1,boundingBox=[1..n])] real;
+  var A: [{1..n} dmapped Block(rank=1,boundingBox={1..n})] real;
   rs.fillRandom(A);
   writeln(for e in A do format("#######", e.locale.id));
   writeln(for e in A do format("#.#####", e));
@@ -59,7 +59,7 @@ config const n: int = 8;
 {
   var rs = new RandomStream(seed);
 
-  var A: [[1..n] dmapped Block(rank=1,boundingBox=[1..n/2])] real;
+  var A: [{1..n} dmapped Block(rank=1,boundingBox={1..n/2})] real;
   rs.fillRandom(A);
   writeln(for e in A do format("#######", e.locale.id));
   writeln(for e in A do format("#.#####", e));
@@ -71,7 +71,7 @@ config const n: int = 8;
 {
   var rs = new RandomStream(seed);
 
-  var A: [[1..n] dmapped Block(rank=1,boundingBox=[1..n])] real;
+  var A: [{1..n} dmapped Block(rank=1,boundingBox={1..n})] real;
   forall (a,r) in (A,rs.iterate(A.domain)) do
     a = r;
   writeln(for e in A do format("#######", e.locale.id));
@@ -84,7 +84,7 @@ config const n: int = 8;
 {
   var rs = new RandomStream(seed);
 
-  var A: [[1..n] dmapped Block(rank=1,boundingBox=[1..n/2])] real;
+  var A: [{1..n} dmapped Block(rank=1,boundingBox={1..n/2})] real;
   forall (a,r) in (A,rs.iterate(A.domain)) do
     a = r;
   writeln(for e in A do format("#######", e.locale.id));
@@ -97,7 +97,7 @@ config const n: int = 8;
 {
   var rs = new RandomStream(seed);
 
-  var A: [[1..n] dmapped Block(rank=1,boundingBox=[1..n])] real;
+  var A: [{1..n} dmapped Block(rank=1,boundingBox={1..n})] real;
   forall (r,a) in (rs.iterate(A.domain), A) do
     a = r;
   writeln(for e in A do format("#######", e.locale.id));
@@ -110,7 +110,7 @@ config const n: int = 8;
 {
   var rs = new RandomStream(seed);
 
-  var A: [[1..n] dmapped Block(rank=1,boundingBox=[1..n/2])] real;
+  var A: [{1..n} dmapped Block(rank=1,boundingBox={1..n/2})] real;
   forall (r,a) in (rs.iterate(A.domain), A) do
     a = r;
   writeln(for e in A do format("#######", e.locale.id));

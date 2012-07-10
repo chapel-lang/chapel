@@ -1,6 +1,6 @@
 const n = 10;
 
-var D = [1..n, 1..n, 1..n];
+var D = {1..n, 1..n, 1..n};
 
 writeln("D is: ", D);
 writeln("D[2.., ..n-1, n/2] is: ", D[2.., ..n-1, n/2]);

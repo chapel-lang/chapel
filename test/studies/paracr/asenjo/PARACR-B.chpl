@@ -18,10 +18,10 @@ var stages:int= GetNumStages(n);
 
 var error:int=0;
 
-const Space = [1..n];
+const Space = {1..n};
 const Dom = Space dmapped Block(boundingBox=Space);
 
-var Dstages: domain(1,int)=[1..stages];
+var Dstages: domain(1,int)={1..stages};
 var AA,BB,CC,DD:[Dom] real;
 var A,B,C,D,X:[Dom] real;
 
@@ -171,7 +171,7 @@ proc SetExampleMatrix()
   }
   
   A(1)=0;C(n)=0;
-  forall i in [1..(n+1)/2] do {
+  forall i in {1..(n+1)/2} do {
     D(i)=i;
     D(n-i+1)=i;
   }

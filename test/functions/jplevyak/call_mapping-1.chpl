@@ -5,7 +5,7 @@ class D {
   var aa : int;
   proc a(i : int) var { return aa; }
 }
-var d : domain(1) = [1..3];
+var d : domain(1) = {1..3};
 class E {
   var a : [d] int;
 }

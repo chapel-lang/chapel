@@ -2,7 +2,7 @@ proc foo(X: [1..3] int) {
   X *= -1;
 }
 
-const D = [1..6];
+const D = {1..6};
 
 var A: [D] int;
 
@@ -23,18 +23,18 @@ foo(A[2..6 by 2]);  // this doesn't
 
 writeln("A is: ", A);
 
-const D2 = [2..6 by 2];
+const D2 = {2..6 by 2};
 foo(A[D2]);          // this does
 
 writeln("A is: ", A);
 
-const D3 = [1..3];
+const D3 = {1..3};
 foo(A[D3]);          // as does this
 
 writeln("A is: ", A);
 
 
-const DD = [1..3];
+const DD = {1..3};
 
 var B: [DD] int;
 

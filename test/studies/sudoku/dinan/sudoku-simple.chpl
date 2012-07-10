@@ -43,12 +43,12 @@ proc populateBoard(inout board: [] int) {
             if spots[spot] == true {
 
               // Search this column for the current num
-              spots[spot] = checkForNum(currentNum, board, [1..9, spot..spot]);
+              spots[spot] = checkForNum(currentNum, board, {1..9, spot..spot});
 
               // Search this block for the current num
               if spots[spot] then
-                spots[spot] = checkForNum(currentNum, board, [((row-1)/3:int)*3+1..((row-1)/3:int+1)*3,
-                                ((spot-1)/3:int)*3+1..((spot-1)/3:int+1)*3]);
+                spots[spot] = checkForNum(currentNum, board, {((row-1)/3:int)*3+1..((row-1)/3:int+1)*3,
+                                ((spot-1)/3:int)*3+1..((spot-1)/3:int+1)*3});
 
               // Is this spot still a candidate?
               if spots[spot] == true then nSpots += 1;
@@ -88,12 +88,12 @@ proc populateBoard(inout board: [] int) {
             if spots[spot] == true {
 
               // Search this row for the current num
-              spots[spot] = checkForNum(currentNum, board, [spot..spot, 1..9]);
+              spots[spot] = checkForNum(currentNum, board, {spot..spot, 1..9});
 
               // Search this block for the current num
               if spots[spot] then
-                spots[spot] = checkForNum(currentNum, board, [((spot-1)/3:int)*3+1..((spot-1)/3:int+1)*3,
-                                ((col-1)/3:int)*3+1..((col-1)/3:int+1)*3]);
+                spots[spot] = checkForNum(currentNum, board, {((spot-1)/3:int)*3+1..((spot-1)/3:int+1)*3,
+                                ((col-1)/3:int)*3+1..((col-1)/3:int+1)*3});
 
               // Still true?  Could go in this spot..
               if spots[spot] == true then nSpots += 1;
@@ -113,12 +113,12 @@ proc populateBoard(inout board: [] int) {
     writeln("Col-Wise Elimination: ", numFilledIn);
     
     // BLK-WISE ELIMINATION -- Attempt to fill in spots blk-wise
-    for (i, j) in [0..2, 0..2] {
+    for (i, j) in {0..2, 0..2} {
       g_spotsAvail = false;
       numsAvail  = true;
 
       // Find spots and nums available in this block
-      for (k, l) in [1..3, 1..3] {
+      for (k, l) in {1..3, 1..3} {
         if board[i*3+k, j*3+l] == 0 then g_spotsAvail[k, l] = true;
         else numsAvail[board[i*3+k, j*3+l]] = false;
       }
@@ -129,15 +129,15 @@ proc populateBoard(inout board: [] int) {
 
           var nSpots: int;
           g_spots = g_spotsAvail;
-          for (k, l) in [1..3, 1..3] {
+          for (k, l) in {1..3, 1..3} {
             if g_spots[k, l] == true {
 
               // Search the current row for this num
-              g_spots[k, l] = checkForNum(currentNum, board, [i*3+k..i*3+k, 1..9]);
+              g_spots[k, l] = checkForNum(currentNum, board, {i*3+k..i*3+k,1..9});
 
               // Search the current column for this num
               if g_spots[k, l] then
-                g_spots[k, l] = checkForNum(currentNum, board, [1..9, j*3+l..j*3+l]);
+                g_spots[k, l] = checkForNum(currentNum, board, {1..9,j*3+l..j*3+l});
 
               // Still true?  Could go in this spot..
               if g_spots[k, l] == true then nSpots += 1;
@@ -145,7 +145,7 @@ proc populateBoard(inout board: [] int) {
           }
 
           if nSpots == 1 then
-            for (k, l) in [1..3, 1..3] do
+            for (k, l) in {1..3, 1..3} do
               if g_spots[k, l] == true {
                 board[i*3+k, j*3+l] = currentNum;
                 g_spotsAvail[k, l] = false;
@@ -180,7 +180,7 @@ proc main() {
 
   // Count the blanks
   var nSpots = 0;
-  for (i, j) in [1..9, 1..9] {
+  for (i, j) in {1..9, 1..9} {
     if board[i, j] == 0 {
       nSpots += 1;
     }

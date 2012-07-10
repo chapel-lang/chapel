@@ -127,7 +127,7 @@ proc printColorChanges() {
 proc populate (size : int) {
 	const colorsDefault10  = (color.blue, color.red, color.yellow, color.red, color.yellow, 
 			      	        color.blue, color.red, color.yellow, color.red, color.blue);	
-	const D : domain(1) = [1..size];
+	const D : domain(1) = {1..size};
 	var population : [D] Chameneos;
 
 	if (size == 10) {

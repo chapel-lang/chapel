@@ -1,7 +1,7 @@
 config var logN = 5;
 const N = 1 << logN;
 
-var DW = [1..N/4];
+var DW = {1..N/4};
 
 var A: [DW] complex;
 

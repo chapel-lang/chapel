@@ -31,7 +31,7 @@ be omitted.
 \begin{chapelexample}{decls.chpl}
 In the code
 \begin{chapel}
-const D: domain(2) = [1..10, 1..10];
+const D: domain(2) = {1..10, 1..10};
 var A: [D] real;
 \end{chapel}
 \begin{chapelpost}
@@ -71,7 +71,7 @@ An array's element type can be referred to using the member symbol
 In the following example, \chpl{x} is declared to be of type
 \chpl{real} since that is the element type of array \chpl{A}.
 \begin{chapelpre}
-const D: domain(2) = [1..10, 1..10];
+const D: domain(2) = {1..10, 1..10};
 \end{chapelpre}
 \begin{chapel}
 var A: [D] real;
@@ -228,7 +228,7 @@ proc f(A: [], is...)
 var B: [1..5] int;
 [i in 1..5] B(i) = i;
 var C: [1..5,1..5] int;
-[(i,j) in [1..5,1..5]] C(i,j) = i+i*j;
+[(i,j) in {1..5,1..5}] C(i,j) = i+i*j;
 writeln(f(B, 3));
 writeln(f(C, 3, 3));
 \end{chapelpost}
@@ -386,8 +386,8 @@ Given the definitions
 config const n = 2;
 \end{chapelpre}
 \begin{chapel}
-var OuterD: domain(2) = [0..n+1, 0..n+1];
-var InnerD: domain(2) = [1..n, 1..n];
+var OuterD: domain(2) = {0..n+1, 0..n+1};
+var InnerD: domain(2) = {1..n, 1..n};
 var A, B: [OuterD] real;
 \end{chapel}
 \begin{chapelnoprint}
@@ -704,7 +704,7 @@ assign to \chpl{SpsA} at an index not described by its domain,
 
 \begin{chapelpre}
 config const n = 5;
-const D = [1..n, 1..n];
+const D = {1..n, 1..n};
 \end{chapelpre}
 \begin{chapel}
 var SpsD: sparse subdomain(D);

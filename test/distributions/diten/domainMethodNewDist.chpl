@@ -9,5 +9,5 @@ proc callNewDistOutsideDomain(val) {
 }
 
 
-var D = [1..10];
+var D = {1..10};
 D.callNewDist();

@@ -413,7 +413,7 @@ a forall expression making calls to a function \chpl{foo()}, storing
 the value and its number in \chpl{maxVal} and \chpl{maxValNum}.
 \begin{chapelnoprint}
 config const n = 10;
-const D = [1..n];
+const D = {1..n};
 var A: [D] int = [i in D] i % 7;
 proc foo(x) return x % 7;
 \end{chapelnoprint}

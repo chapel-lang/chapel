@@ -134,9 +134,9 @@ config const m, n = 2;
 
 
 proc main {
-  var locDom: domain(2) = [0..#m, 0..#n];
+  var locDom: domain(2) = {0..#m, 0..#n};
   var locs: [locDom] locale;
-  var undistributedDom: domain(2) = [1..5, 1..5];
+  var undistributedDom: domain(2) = {1..5, 1..5};
 
   [(i,j) in locDom] locs(i,j) = Locales((i*n + j) % numLocales);
 

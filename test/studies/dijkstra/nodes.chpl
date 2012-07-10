@@ -6,7 +6,7 @@ module Nodes {
   proc InitializeNodes(nEdges: int, nNodes: int, Edges, isDirected: int) {
     
     // Count number of neighbors
-    var D1 = [0..(nNodes-1)];
+    var D1 = {0..(nNodes-1)};
 
     var Nodes: [D1] Node;
     var counts: [D1] int;
@@ -14,7 +14,7 @@ module Nodes {
     // Compute Degree (Outdegree for directed)
     if (isDirected == 1) {
       // Directed graph: an edge is stored only once
-      for i in [0..(nEdges-1)] do counts[Edges[i].n1] += 1;
+      for i in {0..(nEdges-1)} do counts[Edges[i].n1] += 1;
     } else {
       // Undirected graph: every edge stored twice
       for i in [0..(nEdges-1)] {
@@ -25,11 +25,11 @@ module Nodes {
 
     // Initialize node list
     for i in D1 {
-      Nodes[i] = new Node(id = i, NeighborD = [0..(counts[i] - 1)], EdgeIndexD = [0..(counts[i] - 1)], nodeType = 2);
+      Nodes[i] = new Node(id = i, NeighborD = {0..(counts[i] - 1)}, EdgeIndexD = {0..(counts[i] - 1)}, nodeType = 2);
       Nodes[i].vb$.writeEF(0.0);
     }
 
-    for i in [0..(nEdges-1)] {
+    for i in {0..(nEdges-1)} {
       if (Edges[i].dupl != 0) {  // if i is duplicate, continue
 
         var u: int = Edges[i].n1;
@@ -58,7 +58,7 @@ module Nodes {
     writeln("*************************");
     writeln("Graph in Metis format: ");
     writeln("*************************");
-    for i in [0..(nNodes-1)] {
+    for i in {0..(nNodes-1)} {
       if (nodes[i].nNeighbors > 0) {
         writeln("ID= ", nodes[i].id+1, " -  degree= ", nodes[i].nNeighbors);
         writeln(nodes[i].Neighbors+1);
@@ -70,11 +70,11 @@ module Nodes {
   /// Display sources and sinks
   proc displaySourceSink(Sources, nSource: int, Sinks, nSink: int) {
     writeln("Sources (", nSource, "): ");
-    for i in [0..(nSource-1)] do writeln(Sources[i]+1, ", ");
+    for i in {0..(nSource-1)} do writeln(Sources[i]+1, ", ");
     writeln();
     writeln("*************************");
     writeln("Sinks (", nSink, "): ");
-    for i in [0..(nSink-1)] do writeln(Sinks[i]+1, ", ");
+    for i in {0..(nSink-1)} do writeln(Sinks[i]+1, ", ");
     writeln();
     writeln("*************************");
   }

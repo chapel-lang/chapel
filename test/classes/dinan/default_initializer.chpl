@@ -6,4 +6,4 @@ class Matrix {
   var data: [dom] element_t = init;
 } 
 
-var m = new Matrix(real, [1..10, 1..10], 1.0);
+var m = new Matrix(real, {1..10, 1..10}, 1.0);

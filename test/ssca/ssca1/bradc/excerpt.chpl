@@ -1,7 +1,7 @@
 
 -- a domain defined by the lengths of the two sequences, extended to
 -- support an extra initial row and column
-const Table: domain(2) = [0..ILen, 0..JLen];
+const Table: domain(2) = {0..ILen, 0..JLen};
 
 -- an array of sync integers (provides full/empty
 -- semantics... initially empty)

@@ -24,7 +24,7 @@ type elemType = real(64);
 
 
 proc main() {
-  const D = [1..n, 1..n];
+  const D = {1..n, 1..n};
   var A: [D] real;
 
   // this version builds up the sparse domain and array simultaneously

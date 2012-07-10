@@ -60,7 +60,7 @@ proc main() {
   // standard distribution library is filled out, MatVectSpace will be
   // distributed using a BlockCyclic(blkSize) distribution.
   //
-  const MatVectSpace: domain(2, indexType) = [1..n, 1..n+1],
+  const MatVectSpace: domain(2, indexType) = {1..n, 1..n+1},
         MatrixSpace = MatVectSpace[.., ..n];
 
   var Ab : [MatVectSpace] elemType,  // the matrix A and vector b

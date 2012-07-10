@@ -8,8 +8,8 @@
 config var n = 10;
 
 // Dense bounding domains
-const D1 = [1..n],
-      D3 = [1..n, 1..n, 1..n];
+const D1 = {1..n},
+      D3 = {1..n, 1..n, 1..n};
 
 
 var sparseVectSpace: sparse subdomain(D1);  // 1D sparse domain

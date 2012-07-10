@@ -29,7 +29,7 @@ forall (i,j) in (1..4, 1..7 by -2) {
 writeln(D.sorted());
 D.clear();
 
-forall (i,j) in ([1..7 by -1], 0..) {
+forall (i,j) in ({1..7 by -1}, 0..) {
   lock = true;
   D += (i,j);
   lock;
@@ -38,7 +38,7 @@ forall (i,j) in ([1..7 by -1], 0..) {
 writeln(D.sorted());
 D.clear();
 
-forall (i,j) in ([1..7 by -2], 0..) {
+forall (i,j) in ({1..7 by -2}, 0..) {
   lock = true;
   D += (i,j);
   lock;
@@ -47,7 +47,7 @@ forall (i,j) in ([1..7 by -2], 0..) {
 writeln(D.sorted());
 D.clear();
 
-forall (i,j) in ([1..4], [1..7 by -2]) {
+forall (i,j) in ({1..4}, {1..7 by -2}) {
   lock = true;
   D += (i,j);
   lock;

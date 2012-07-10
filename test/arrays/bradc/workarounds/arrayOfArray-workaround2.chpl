@@ -1,8 +1,8 @@
 config const n = 8;
 
-const ProbDom = [1..n, 1..n],
-      BigDom = [0..n+1, 0..n+1],
-      StencDom = [-1..1, -1..1];
+const ProbDom = {1..n, 1..n},
+      BigDom = {0..n+1, 0..n+1},
+      StencDom = {-1..1, -1..1};
 
 record arr33 {
   var data: [-1..1, -1..1] real;

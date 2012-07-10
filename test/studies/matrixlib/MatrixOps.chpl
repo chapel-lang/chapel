@@ -94,7 +94,7 @@ proc blockLU(A: [?D], blk, piv: [D.dim(1)]) where (D.rank == 2) {
       //   ..and subtract scaled kth row from remaining 
       //   unfactored rows of A1
 
-      forall (i,j) in [UnfactoredInds(k+1..), CurrentBlockInds(k+1..)] do
+      forall (i,j) in {UnfactoredInds(k+1..), CurrentBlockInds(k+1..)} do
         A1(i,j) -= A1(i,k) * A1(k,j);
     }
 
@@ -191,8 +191,8 @@ proc blockChol(A:[?D],blk,factor:string) where (D.rank == 2) {
     var L2 => A[TrailingBlockInds,PrecedingBlockInds];
     var A12 => A[TrailingBlockInds,CurrentBlockInds];
 
-    for j in [CurrentBlockInds] {
-      for (i,k) in [CurrentBlockInds(j..),PrecedingBlockInds] {
+    for j in {CurrentBlockInds} {
+      for (i,k) in {CurrentBlockInds(j..),PrecedingBlockInds} {
         if upper then  
           A11(j,i) -= U1(k,j)*U1(k,i);
         else
@@ -200,8 +200,8 @@ proc blockChol(A:[?D],blk,factor:string) where (D.rank == 2) {
       }
     }
 
-    for j in [CurrentBlockInds] {
-      for k in [CurrentBlockInds(..j-1)] {
+    for j in {CurrentBlockInds} {
+      for k in {CurrentBlockInds(..j-1)} {
         if upper then
           A11(j,j) -= A11(k,j)*A11(k,j);
         else
@@ -213,8 +213,8 @@ proc blockChol(A:[?D],blk,factor:string) where (D.rank == 2) {
       else
         A11(j,j) = sqrt(A11(j,j));
 
-      for i in [CurrentBlockInds(j+1..)] {
-        for k in [CurrentBlockInds(..j-1)] {
+      for i in {CurrentBlockInds(j+1..)} {
+        for k in {CurrentBlockInds(..j-1)} {
           if upper then
             A11(j,i) -= A11(k,i)*A11(k,j);
           else
@@ -227,9 +227,9 @@ proc blockChol(A:[?D],blk,factor:string) where (D.rank == 2) {
       }
     }
 
-    for j in [CurrentBlockInds] {
-      for k in [PrecedingBlockInds] {
-        for i in [TrailingBlockInds] {
+    for j in {CurrentBlockInds} {
+      for k in {PrecedingBlockInds} {
+        for i in {TrailingBlockInds} {
           if upper then
             A21(j,i) -= U1(k,j)*U2(k,i);
           else
@@ -238,14 +238,14 @@ proc blockChol(A:[?D],blk,factor:string) where (D.rank == 2) {
       }
     }
     
-    for k in [CurrentBlockInds] {
-      for i in [TrailingBlockInds] {
+    for k in {CurrentBlockInds} {
+      for i in {TrailingBlockInds} {
         if upper then
           A21(k,i) = A21(k,i)/A11(k,k);
         else
           A12(i,k) = A12(i,k)/A11(k,k);
       }
-      for (i,j) in [TrailingBlockInds,CurrentBlockInds(k+1..)] {
+      for (i,j) in {TrailingBlockInds,CurrentBlockInds(k+1..)} {
         if upper then
           A21(j,i) -= A11(k,j)*A21(k,i);
         else

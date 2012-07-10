@@ -60,7 +60,7 @@ proc main() {
   //
   // the dense domain defining the bounding box for the matrix
   //
-  const DenseSpace = [1..n, 1..n];
+  const DenseSpace = {1..n, 1..n};
 
   //
   // the sparse subdomain defining the sparse matrix's indices
@@ -89,7 +89,7 @@ proc main() {
   //
   // the (dense) vector sparse
   //
-  const VectorSpace = [1..n];
+  const VectorSpace = {1..n};
 
   //
   // our working vector, X, and zeta, which is used for verification

@@ -2,7 +2,7 @@ use Memory;
 
 config var n: int = 10;
 
-const D = [1..n, 1..n];
+const D = {1..n, 1..n};
 
 proc foo() {
   var result = 0;

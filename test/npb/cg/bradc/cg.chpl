@@ -4,7 +4,7 @@ enum classVals {S, W, A, B, C, D, O};
 config var probClass = classVals.S;
 
 
-const Class: domain(classVals) = [classVals.S..classVals.O];
+const Class: domain(classVals) = {classVals.S..classVals.O};
 const probSizes:   [Class] = ( 1400, 7000, 14000, 75000, 150000, 150000, 1400 ),
       nonZeroes:   [Class] = ( 7, 8, 11, 13, 15, 21, 7 ),
       shifts:      [Class] = ( 10, 12, 20, 60, 110, 500, 10 ),
@@ -25,12 +25,12 @@ proc main() {
         rcond = 1.0,
         zetaVerifyValue = verifyZetas(probClass);
 
-  const MatrixSpace = [1..n, 1..n],
+  const MatrixSpace = {1..n, 1..n},
         SparseMatSpace: sparse subdomain(MatrixSpace) = ???;
 
   var A: [SparseMatSpace] elemType = ???;
 
-  const VectorSpace = [1..n];
+  const VectorSpace = {1..n};
   var X: [VectorSpace] elemType;
 
   for trial in 1..numTrials {

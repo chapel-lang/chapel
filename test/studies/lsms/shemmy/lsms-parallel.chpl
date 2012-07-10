@@ -28,10 +28,10 @@ const reductionFactor = 1000.0;
 param nExtent = 13;
 type  AtomMatrix = nExtent*real;
 
-const GridDom  = [0..#span_x, 0..#span_y, 0..#span_z];
+const GridDom  = {0..#span_x, 0..#span_y, 0..#span_z};
 const GridDist = GridDom dmapped Block(GridDom);
 
-const LocalesDist = [0..#numLocales] dmapped Block([0..#numLocales]);
+const LocalesDist = {0..#numLocales} dmapped Block({0..#numLocales});
 
 class Cache {
 	var space: sparse subdomain(GridDom);

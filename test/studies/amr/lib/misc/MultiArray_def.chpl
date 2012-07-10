@@ -5,9 +5,9 @@ use MultiDomain_def;
 proc main {
   
   var mD = new MultiDomain(2,false);
-  mD.add( [1..12, 1..12] );
-  mD.subtract( [3..5, 4..7] );
-  mD.subtract( [4..9, 6..8] );
+  mD.add( {1..12, 1..12} );
+  mD.subtract( {3..5, 4..7} );
+  mD.subtract( {4..9, 6..8} );
   mD.prettyPrint();
   writeln();
 

@@ -39,7 +39,7 @@ proc constructGraph(Edges:[?ArrD] , G)
       }
 
       forall v in G.Vertices do {
-        v.nd  = [1..v.neighbor_count];
+        v.nd  = {1..v.neighbor_count};
       }
 
 

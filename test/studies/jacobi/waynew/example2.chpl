@@ -11,12 +11,12 @@ param THRESHOLD = 0.00001;
 
 
 // would like to use subdomains for D, northOfD, southOfD, westOfD, eastOfD
-var outerD: domain(2) = [0..M+1, 0..N+1];
-var D: domain(2) = [1..M, 1..N];
-var northOfD: domain(2) = [0..0,     1..N];  // 0..0
-var southOfD: domain(2) = [M+1..M+1, 1..N];
-var westOfD : domain(2) = [1..M, 0..0];
-var eastOfD : domain(2) = [1..M, N+1..N+1];  // N+1..N+1
+var outerD: domain(2) = {0..M+1, 0..N+1};
+var D: domain(2) = {1..M, 1..N};
+var northOfD: domain(2) = {0..0,     1..N};  // 0..0
+var southOfD: domain(2) = {M+1..M+1, 1..N};
+var westOfD : domain(2) = {1..M, 0..0};
+var eastOfD : domain(2) = {1..M, N+1..N+1};  // N+1..N+1
 
 var World:[D] real;
 var Temp:[outerD] real;

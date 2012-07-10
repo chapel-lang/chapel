@@ -2,7 +2,7 @@
 
 param M = 10;
 
-var D: domain(1) = [1..M];
+var D: domain(1) = {1..M};
 var B: [D] bool;
 forall i in D do {
   B(i) = true;

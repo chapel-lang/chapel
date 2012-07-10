@@ -17,8 +17,8 @@ config const probSize = probSizes(probClass);
 config const Bmax = Bmaxs(probClass);
 config const Imax = Imaxs(probClass);
 
-const D: domain(1) = [0..#probSize];
-const E: domain(1) = [0..#Bmax];
+const D: domain(1) = {0..#probSize};
+const E: domain(1) = {0..#Bmax};
 
 // The following should be replaced by two enumerated domain arrays of arrays
 const S_testIndexArray: [0..4] int = ( 48427,17148,23627,62548,4431 );

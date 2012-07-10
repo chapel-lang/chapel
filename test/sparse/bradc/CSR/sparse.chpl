@@ -25,7 +25,7 @@ config var n = 9;
 // see, it will also be useful for operations that want to treat our
 // sparse domain as though it was a dense n x n set of values.
 //
-const dnsDom = [1..n, 1..n];
+const dnsDom = {1..n, 1..n};
 
 //
 // Here we declare our sparse domain.  The sparse keyword indicates

@@ -115,7 +115,7 @@ module block_triangular_solve_variants {
 	// apply outer product modification to the remainder of the 
 	// active block row, omitting the final diagonal block
 
-	forall (i,j,k) in [A11_rc_indices, trailing_cols, active_cols] do
+	forall (i,j,k) in {A11_rc_indices, trailing_cols, active_cols} do
 	  A (i,j) -= A (i,k) * L (j,k);
       }
   }
@@ -163,7 +163,7 @@ module block_triangular_solve_variants {
 	// active block row, omitting the final diagonal block
 
 	for later_block_col in vector_block_partition (trailing_cols) do
-	  forall (i,j,k) in [A11_rc_indices, later_block_col, active_cols] do
+	  forall (i,j,k) in {A11_rc_indices, later_block_col, active_cols} do
 	    A (i,j) -= A (i,k) * L (j,k);
       }
   }

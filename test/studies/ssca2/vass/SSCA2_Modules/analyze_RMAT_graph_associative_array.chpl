@@ -43,7 +43,7 @@ module analyze_RMAT_graph_associative_array {
     // VertexData: stores the neighbor list of a vertex.
     //
     record VertexData {
-      var ndom = [initialFirstAvail..initialRMATNeighborListLength];
+      var ndom = {initialFirstAvail..initialRMATNeighborListLength};
       var neighborList: [ndom] nleType;
 
       proc numNeighbors()  return ndom.numIndices;
@@ -63,7 +63,7 @@ module analyze_RMAT_graph_associative_array {
             if edgePos > prevNdomLen {
               // grow our arrays, by 2x
               // statistics: growCount += 1;
-              ndom = [1..prevNdomLen * 2];
+              ndom = {1..prevNdomLen * 2};
               // bounds checking below will ensure (edgePos <= ndom.high)
             }
             // store the edge
@@ -227,9 +227,9 @@ module analyze_RMAT_graph_associative_array {
 
     const vertex_domain = 
       if DISTRIBUTION_TYPE == "BLOCK" then
-        [1..N_VERTICES] dmapped Block ( [1..N_VERTICES] )
+        {1..N_VERTICES} dmapped Block ( {1..N_VERTICES} )
       else
-	[1..N_VERTICES] ;
+    {1..N_VERTICES} ;
 	
     class Associative_Graph {
       const vertices;

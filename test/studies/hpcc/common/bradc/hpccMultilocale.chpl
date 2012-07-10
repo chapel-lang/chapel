@@ -40,5 +40,5 @@ proc BlockPartition(D, myBlock, numBlocks) {
   const myBlockAsIndexType:index(D) = myBlock;
   const blo = lo + (myBlockAsIndexType*numelems) / nbAsIndexType;
   const bhi = lo + (((myBlockAsIndexType+1)*numelems) / nbAsIndexType) - 1;
-  return [blo..bhi];
+  return {blo..bhi};
 }

@@ -14,7 +14,7 @@ var elems: [1..numAdds] int = relems*numAdds;
 
 var inserted: [1..numAdds] bool;
 
-const denseD = [1..numAdds*numAdds];
+const denseD = {1..numAdds*numAdds};
 var D: sparse subdomain(denseD);
 
 var removeOrder: [1..numAdds] int;

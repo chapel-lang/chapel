@@ -101,8 +101,8 @@ if debugIO then writeln("Using ", numElems, " elements, and ", numNodes, " nodes
 
 /* Declare abstract problem domains */
 
-const ElemSpace = [0..#numElems],
-      NodeSpace = [0..#numNodes];
+const ElemSpace = {0..#numElems},
+      NodeSpace = {0..#numNodes};
 
 
 /* Declare the (potentially distributed) problem domains */

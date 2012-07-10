@@ -120,9 +120,9 @@ record LocTree {
 
 class FTree {
     const order    : int;
-    const coeffDom = [0..order-1];
+    const coeffDom = {0..order-1};
     
-    const locDom = [0..#numLocs];
+    const locDom = {0..#numLocs};
     var nodes    : [locDom] LocTree;
 
     proc initialize() {
@@ -232,17 +232,17 @@ proc main() {
     /*
     var f = new FTree(2);
 
-    for (i, j) in [0..2, 0..2] do f[(i, j)] = (i, j);
+    for (i, j) in {0..2, 0..2} do f[(i, j)] = (i, j);
 
-    for (i, j) in [1..0, 1..0] do f.remove((i, j));
+    for (i, j) in {1..0, 1..0} do f.remove((i, j));
 
-    for (i, j) in [0..1, 0..1] do f[(i, j)] = (-(i:real), -(j:real));
+    for (i, j) in {0..1, 0..1} do f[(i, j)] = (-(i:real), -(j:real));
 
-    for (i, j) in [2..1, 2..1] do f.remove((i, j));
+    for (i, j) in {2..1, 2..1} do f.remove((i, j));
 
-    for (i, j) in [1..2, 1..2] do f[(i, j)] = (-(i:real), -(j:real));
+    for (i, j) in {1..2, 1..2} do f[(i, j)] = (-(i:real), -(j:real));
 
-    for (i, j) in [0..2, 0..2] do
+    for (i, j) in {0..2, 0..2} do
         writeln("(",i,", ",j,") = ", f.peek((i, j)));
 
     for i in 0..2 do
@@ -252,7 +252,7 @@ proc main() {
 
     var f = new FTree(2);
     
-    for (i, j) in [1..3, 2..4] do f[(i, j)] = (i, j);
+    for (i, j) in {1..3, 2..4} do f[(i, j)] = (i, j);
   
     for loc in 0..numLocs-1 {
         writeln("\n\ntree on loc ", loc, " = ");

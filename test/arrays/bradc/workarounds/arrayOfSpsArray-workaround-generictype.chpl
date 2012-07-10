@@ -1,8 +1,8 @@
 config const n = 8;
 
-const ProbDom = [1..n, 1..n],
-      BigDom = [0..n+1, 0..n+1],
-      DnsStencDom = [-1..1, -1..1];
+const ProbDom = {1..n, 1..n},
+      BigDom = {0..n+1, 0..n+1},
+      DnsStencDom = {-1..1, -1..1};
 
 record sps33 {
   type indexType = int;
@@ -26,7 +26,7 @@ record sps33 {
 }
 
 iter SpsStencDom() {
-  for (i,j) in [-1..1, -1..1] do
+  for (i,j) in {-1..1, -1..1} do
     if (i != j) then
       yield (i,j);
 }
@@ -36,7 +36,7 @@ iter SpsStencDom(param tag: iterKind) where tag == iterKind.leader {
 }
 
 iter SpsStencDom(param tag: iterKind, followThis) where tag == iterKind.follower {
-  for (i,j) in [-1..1, -1..1] do
+  for (i,j) in {-1..1, -1..1} do
     if (i != j) then
       yield (i,j);
 }

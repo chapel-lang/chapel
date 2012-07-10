@@ -91,8 +91,7 @@ static void addPragmaFlags(Symbol* sym, Vec<const char*>* pragmas) {
   }
 }
 
-BlockStmt* buildPragmaStmt(BlockStmt* block,
-                           Vec<const char*>* pragmas,
+BlockStmt* buildPragmaStmt(Vec<const char*>* pragmas,
                            BlockStmt* stmt) {
   if (DefExpr* def = toDefExpr(stmt->body.first()))
     addPragmaFlags(def->sym, pragmas);
@@ -103,8 +102,8 @@ BlockStmt* buildPragmaStmt(BlockStmt* block,
               pragmas->v[0]);
   }
   delete pragmas;
-  block->insertAtTail(stmt);
-  return block;
+
+  return stmt;
 }
 
 /* The start of an incomplete zero-tuple implementation

@@ -32,7 +32,7 @@ opaqueC.x(newInd) = 1.1;
 opaqueC.foo();
 delete opaqueC;
 
-var sparseDom: sparse subdomain([1..3]);
+var sparseDom: sparse subdomain({1..3});
 type sparseArr = [sparseDom] real;
 var sparseC = new C(sparseArr);
 sparseDom += 2;

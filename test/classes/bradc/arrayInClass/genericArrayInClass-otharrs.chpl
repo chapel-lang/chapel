@@ -23,7 +23,7 @@ class OpaqueC {
 class SparseC {
   type t;
   
-  var sparseDom: sparse subdomain([1..3]);
+  var sparseDom: sparse subdomain({1..3});
   var x: [sparseDom] t;
 }
 
@@ -137,7 +137,7 @@ proc foo(C) {
 {
   // declare associative class instances
 
-  var sparseDom: sparse subdomain([1..3]);
+  var sparseDom: sparse subdomain({1..3});
   type sparseArr = [sparseDom] real;
 
   var myArithC = new ArithC(sparseArr);

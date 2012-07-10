@@ -90,17 +90,17 @@ module TestNorm {
   }
 
   proc main() {
-    const D1 = [1..4];
+    const D1 = {1..4};
     var a:[D1] real;
     a = 2.0;
     testNorm(a);
 
-    const D2 = [1..2,1..2];
+    const D2 = {1..2,1..2};
     var b:[D2] real;
     b = 2.0;
     testNorm(b);
 
-    const D3 = [1..3,1..2];
+    const D3 = {1..3,1..2};
     var c:[D3] real;
     c = 2.0;
     testNorm(c);

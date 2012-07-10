@@ -1,6 +1,6 @@
 class C {
   var i : int;
-  var D: domain(1) = [1..numLocales];
+  var D: domain(1) = {1..numLocales};
   var A: [D] int = i..i+numLocales-1;
 }
 

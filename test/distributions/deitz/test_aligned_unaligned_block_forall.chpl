@@ -2,8 +2,8 @@ use BlockDist;
 
 config var n: int = 32;
 
-var BD1 = new dmap(new Block(boundingBox=[1..n], dataParTasksPerLocale=1));
-var BD2 = new dmap(new Block(boundingBox=[1..n/2], dataParTasksPerLocale=1));
+var BD1 = new dmap(new Block(boundingBox={1..n}, dataParTasksPerLocale=1));
+var BD2 = new dmap(new Block(boundingBox={1..n/2}, dataParTasksPerLocale=1));
 
 var D1 = [1..n] dmapped BD1;
 var D2 = [1..n] dmapped BD2;

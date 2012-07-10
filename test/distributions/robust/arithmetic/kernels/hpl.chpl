@@ -66,7 +66,7 @@ proc main() {
   // standard distribution library is filled out, MatVectSpace will be
   // domain mapped using a BlockCyclic(blkSize) distribution.
   //
-  const MatVectSpace: domain(2, indexType) dmapped Dist2D = [1..n, 1..n+1],
+  const MatVectSpace: domain(2, indexType) dmapped Dist2D = {1..n, 1..n+1},
         MatrixSpace = MatVectSpace[.., ..n];
 
   var Ab : [MatVectSpace] elemType,  // the matrix A and vector b
@@ -321,10 +321,10 @@ proc backwardSub(n: int,
                 b: [1..n] elemType) {
   var x: [b.domain] elemType;
 
-  for i in [b.domain by -1] {
+  for i in {b.domain by -1} {
     x[i] = b[i];
     
-    for j in [i+1..b.domain.high] do
+    for j in {i+1..b.domain.high} do
       x[i] -= A[i,j] * x[j];
 
     x[i] /= A[i,i];

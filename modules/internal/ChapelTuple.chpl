@@ -96,14 +96,14 @@ proc _tuple.this(i : integral) var {
 // tuple methods
 //
 proc _tuple.readWriteThis(f) {
-  f & new ioLiteral("(");
+  f <~> new ioLiteral("(");
   if size != 0 {
-    f & this(1);
+    f <~> this(1);
     for param i in 2..size {
-      f & new ioLiteral(", ") & this(i);
+      f <~> new ioLiteral(", ") <~> this(i);
     }
   }
-  f & new ioLiteral(")");
+  f <~> new ioLiteral(")");
 }
 
 //

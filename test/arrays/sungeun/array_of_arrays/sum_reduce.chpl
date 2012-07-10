@@ -1,11 +1,11 @@
 config param useReduce = true;
 config const n = 8;
 
-const D = [1..n];
+const D = {1..n};
 var AxA: [D] [D] uint;
 var asum: [D] uint;
 
-for (i,j) in [D,D] do
+for (i,j) in {D,D} do
   AxA[i][j] = (i*j+j):uint;
 
 asum = + reduce AxA;

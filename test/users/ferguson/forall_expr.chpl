@@ -1,6 +1,6 @@
 config const n = 16;
 
-var D = [1..n];
+var D = {1..n};
 
 var A:[D] int;
 

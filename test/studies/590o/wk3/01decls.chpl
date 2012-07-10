@@ -49,7 +49,7 @@ writeln();
 /* Basic array declarations (using anonymous domains): */
 
 var A1: [1..9, 1..9] bool;
-const A2: [[1..9, 1..9]] real = [(i,j) in [1..9, 1..9]] i + j/10.0;
+const A2: [{1..9, 1..9}] real = [(i,j) in {1..9, 1..9}] i + j/10.0;
 
 writeln("A1 is:\n", A1);
 writeln("A2 is:\n", A2);

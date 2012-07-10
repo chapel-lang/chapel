@@ -3,8 +3,8 @@ config const n = 10;              // problem size
 config const epsilon = 0.0001;    // threshold for iteration
 
 // domains for the problem
-const BigD: domain(2) = [0..n+1, 0..n+1];
-const D: subdomain(BigD) = [1..n, 1..n];  // really want to declare this first
+const BigD: domain(2) = {0..n+1, 0..n+1};
+const D: subdomain(BigD) = {1..n, 1..n};  // really want to declare this first
 // could also imagine wanting to declare one of these in terms of the other
 
 // "directions" in the form of integer tuples

@@ -22,7 +22,7 @@ class AMRHierarchy {
 
   //---- Level indexing ----
   
-  var level_indices:   domain(1) = [1..1];
+  var level_indices:   domain(1) = {1..1};
   const max_n_levels:  int;
 
 
@@ -115,7 +115,7 @@ class AMRHierarchy {
         
         //---- Extend the level indices ----
         i_finest += 1;
-        level_indices = [1..i_finest];
+        level_indices = {1..i_finest};
         
         
         //---- Create new level ----
@@ -199,7 +199,7 @@ proc AMRHierarchy.regrid ( i_base: int )
 
       //---- Update indices ----
       i_finest      = i_finest_old+1;
-      level_indices = [1..i_finest];
+      level_indices = {1..i_finest};
 
       
       //---- Add new level ----
@@ -311,7 +311,7 @@ proc AMRHierarchy.regrid ( i_base: int )
       // the end, as buildRefinedLevel depends on each element of the
       // index space corresponding to an actual level.
       //--------------------------------------------------------------
-      level_indices = [1..i_regridding-1];
+      level_indices = {1..i_regridding-1};
       
       writeln("Level ", i_regridding, "no longer needed -- discarded.");
     }

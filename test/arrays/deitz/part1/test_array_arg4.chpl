@@ -1,6 +1,6 @@
 config var n: int = 4;
 
-var D: domain(1) = [1..n];
+var D: domain(1) = {1..n};
 var A: [D] int;
 
 proc foo(X: [D] int) {

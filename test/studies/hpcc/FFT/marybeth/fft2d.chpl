@@ -23,14 +23,14 @@ proc main() {
   const N = 1 << logN;
 
   // twiddle domain and arrays
-  const TwiddleDom = [0..#N/4];
+  const TwiddleDom = {0..#N/4};
   var Twiddles: [TwiddleDom] complex;
 
   computeTwiddles(Twiddles);
   Twiddles = bitReverseShuffle(Twiddles);
 
   // problem domain and arrays
-  const ProblemDom: domain(1) = [0..#N];
+  const ProblemDom: domain(1) = {0..#N};
   var Z, z: [ProblemDom] complex;
   var realtemp, imagtemp: [ProblemDom] real;
 

@@ -1,6 +1,6 @@
 config const n = 5000000;
 
-const D = [1..n*n];
+const D = {1..n*n};
 
 var D1: sparse subdomain(D);
 forall i in 0..n do

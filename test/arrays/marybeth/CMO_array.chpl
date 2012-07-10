@@ -216,7 +216,7 @@ class CMOArr:BaseArr {
       blk(dim) = blk(dim-1) * dom.dsiDim(dim-1).length;
     computeFactoredOffs();
     size = blk(rank) * dom.dsiDim(rank).length;
-    D1 = [0:idxType..#size:idxType];
+    D1 = {0:idxType..#size:idxType};
     data = 0:eltType;
   }
 
@@ -255,7 +255,7 @@ class CMOArr:BaseArr {
         halt("extent in dimension ", i, " does not match actual");
     var alias = new CMOArr(eltType=eltType, rank=d.rank, idxType=d.idxType, stridable=d.stridable, reindexed=true, dom=d, noinit=true);
     //    was:  (eltType, rank, idxType, d.stridable, true, d, noinit=true);
-    alias.D1 = [0:idxType..#size:idxType];
+    alias.D1 = {0:idxType..#size:idxType};
     alias.data = data;
     alias.size = size: d.idxType;
     for param i in 1..rank {
@@ -278,7 +278,7 @@ class CMOArr:BaseArr {
 
   proc dsiSlice(d: CMODom) {
     var alias = new CMOArr(eltType=eltType, rank=rank, idxType=idxType, stridable=d.stridable, reindexed=reindexed, dom=d, noinit=true);
-    alias.D1 = [0:idxType..#size:idxType];
+    alias.D1 = {0:idxType..#size:idxType};
     alias.data = data;
     alias.size = size;
     alias.blk = blk;
@@ -307,7 +307,7 @@ class CMOArr:BaseArr {
     proc isRange(r: range(?e,?b,?s)) param return 1;
     proc isRange(r) param return 0;
     var alias = new CMOArr(eltType=eltType, rank=newRank, idxType=idxType, stridable=newStridable, reindexed=true, dom=d, noinit=true);
-    alias.D1 = [0:idxType..#size:idxType];
+    alias.D1 = {0:idxType..#size:idxType};
     alias.data = data;
     alias.size = size;
     var i = 1;
@@ -411,8 +411,8 @@ proc _intersect(a: CMODom, b: CMODom) {
 
 proc main() {
   param n = 5;
-  const D = [1..n,1..n];
-  const D2: domain(2) dmapped new dmap(new CMODist()) = [1..n,1..n];
+  const D = {1..n,1..n};
+  const D2: domain(2) dmapped new dmap(new CMODist()) = {1..n,1..n};
   var A: [D2] real = [ij in D2] ij(1) + (ij(2) - 1)*n;
   var B: [D] real = [ij in D] ij(2) + (ij(1) - 1)*n;
 

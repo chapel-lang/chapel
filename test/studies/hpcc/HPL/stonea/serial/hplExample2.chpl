@@ -145,11 +145,11 @@ proc LUFactorize(n : int, A : [1..n, 1..n+1] real, piv : [1..n] int) {
         const trailingCols   = (blk+crntBlkSize..ACols.high);
         const unfactoredCols = (blk..ACols.high);
 
-        var tl = [blockRange, blockRange];
-        var tr = [blockRange, trailingCols];
-        var bl = [trailingRows, blockRange];
-        var br = [trailingRows, trailingCols];
-        var l  = [unfactoredRows, blockRange];
+        var tl = {blockRange, blockRange};
+        var tr = {blockRange, trailingCols};
+        var bl = {trailingRows, blockRange};
+        var br = {trailingRows, trailingCols};
+        var l  = {unfactoredRows, blockRange};
         
         // Now that we've sliced and diced A properly do the blocked-LU
         // computation:
@@ -177,7 +177,7 @@ proc matrixMult(
 {
     C = 0;
 
-    for (i,j,k) in [C.domain.dim(1), C.domain.dim(2), 1..p] {
+    for (i,j,k) in {C.domain.dim(1), C.domain.dim(2), 1..p} {
         C[i,j] += A[i,k] * B[k,j];
     }
 }
@@ -209,7 +209,7 @@ proc selfMult(n : int, A : [1..n,1..n] real, C : [1..n,1..n] real) {
 proc permuteMatrix(matrix : [?dmn], in vector) {
     //var pdmn : sparse subdomain(dmn);
     var pdmn =
-        [1..vector.domain.dim(1).length, 1..vector.domain.dim(1).length];
+        {1..vector.domain.dim(1).length, 1..vector.domain.dim(1).length};
     var p : [pdmn] int;
     //p.IRV = 0;
 
@@ -296,10 +296,10 @@ proc backwardSub(
 {
     var x : [b.domain] real;
 
-    for i in [b.domain by -1] do {
+    for i in {b.domain by -1} do {
         x[i] = b[i];
 
-        for j in [i+1..b.domain.high] do {
+        for j in {i+1..b.domain.high} do {
             x[i] -= A[i,j] * x[j];
         }
 
@@ -321,7 +321,7 @@ proc test_permuteMatrix(rprt = true) : bool {
     // this n by n array is filled so each element is assigned to its
     // row number. This test will permute these elements, keeping a pivot
     // vector alongside.
-    var A : [1..n, 1..n] int = [(i,j) in [1..n, 1..n]] i;
+    var A : [1..n, 1..n] int = [(i,j) in {1..n, 1..n}] i;
     var piv : [1..n] int = [i in 1..n] i;
     var AOrig = A;
 
@@ -356,7 +356,7 @@ proc test_panelSolve(rprt = true) : bool {
 
     var piv : [1..8] int = [i in 1..8] i;
     var A : [1..8, 1..9] real =
-        [(i,j) in [1..8, 1..9]] (rand.getNext() * 10000):int % 100 + 1;
+        [(i,j) in {1..8, 1..9}] (rand.getNext() * 10000):int % 100 + 1;
     var AOrig = A;
 
     var AOrig2 = A;
@@ -375,7 +375,7 @@ proc test_panelSolve(rprt = true) : bool {
     // block on the original matrix when permuted.
     var C : [1..blkSize, 1..blkSize] real;
     var blockD =
-        [offset..offset+blkSize-1, offset..offset+blkSize-1];
+        {offset..offset+blkSize-1, offset..offset+blkSize-1};
     selfMult(blkSize, A(blockD), C);
     permuteMatrix(AOrig, piv);
 
@@ -408,10 +408,10 @@ proc test_updateBlockRow(rprt = true) : bool {
     var OrigA = A;
     
     // capture X and Y
-    var X = [randomOffset..randomOffset+randomHeight-1,
-             randomOffset..randomOffset+randomHeight-1];
-    var Y = [randomOffset..randomOffset+randomHeight-1,
-             randomOffset+randomHeight..(randomWidth-randomHeight)];
+    var X = {randomOffset..randomOffset+randomHeight-1,
+             randomOffset..randomOffset+randomHeight-1};
+    var Y = {randomOffset..randomOffset+randomHeight-1,
+             randomOffset+randomHeight..(randomWidth-randomHeight)};
 
     // apply the update block row function
     updateBlockRow(A, X, Y);
@@ -456,10 +456,10 @@ proc test_LUFactorizeNorms(
     //     http://www.netlib.org/benchmark/hpl/algorithm.html):
 
     var axmbNorm =
-        norm(gaxpyMinus(n, n, A([1..n, 1..n]), x, b), normType.normInf);
+        norm(gaxpyMinus(n, n, A({1..n, 1..n}), x, b), normType.normInf);
 
-    var a1norm   = norm(A([1..n, 1..n]), normType.norm1);
-    var aInfNorm = norm(A([1..n, 1..n]), normType.normInf);
+    var a1norm   = norm(A({1..n, 1..n}), normType.norm1);
+    var aInfNorm = norm(A({1..n, 1..n}), normType.normInf);
     var x1Norm   = norm(x, normType.norm1);
     var xInfNorm = norm(x, normType.normInf);
 

@@ -23,7 +23,7 @@ var ddfm = new dmap(ddf);
 tl();
 
 hd("wrapping ddf in another dmap, without assignment");
-new dmap(ddf);
+//new dmap(ddf);
 tl();
 
 i2lTest(ddfm, (1,2));
@@ -32,7 +32,7 @@ i2lTest(ddfm, (2,3));
 
 /////////// domain
 
-const dmbase = [1..3,1..4];
+const dmbase = {1..3,1..4};
 
 fphase(10);
 hd("dmdom - creating");

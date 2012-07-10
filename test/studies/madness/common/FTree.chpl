@@ -28,7 +28,7 @@ proc isNone(x) {
 
 class FTree {
     var order    : int;
-    var coeffDom = [0..order-1];
+    var coeffDom = {0..order-1};
 
     var indices  : domain(2*int);   // Indexed by 2-tuples of integers
     var nodes    : [indices] Coeff; // Associative Mapping: (:int, :int) => Coeff
@@ -164,17 +164,17 @@ class FTree {
 proc main() {
     var f = new FTree(2);
 
-    for (i, j) in [0..2, 0..2] do f[i, j] = (i, j);
+    for (i, j) in {0..2, 0..2} do f[i, j] = (i, j);
 
-    for (i, j) in [1..0, 1..0] do f.remove((i, j));
+    for (i, j) in {1..0, 1..0} do f.remove((i, j));
     
-    for (i, j) in [0..1, 0..1] do f[i, j] = (-(i:real), -(j:real));
+    for (i, j) in {0..1, 0..1} do f[i, j] = (-(i:real), -(j:real));
     
-    for (i, j) in [2..1, 2..1] do f.remove((i, j));
+    for (i, j) in {2..1, 2..1} do f.remove((i, j));
     
-    for (i, j) in [1..2, 1..2] do f[i, j] = (-(i:real), -(j:real));
+    for (i, j) in {1..2, 1..2} do f[i, j] = (-(i:real), -(j:real));
     
-    for (i, j) in [0..2, 0..2] do
+    for (i, j) in {0..2, 0..2} do
         writeln("(",i,", ",j,") = ", f.peek(i, j));
 
     for i in 0..2 do

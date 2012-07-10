@@ -110,7 +110,7 @@ class Subgraph {
   var AdjD  : domain sparse (VertexD * VertexD) = nil;
 
 -- BLC: could write this as:
--- var DenseAdj : domain(2) = [VertexD, VertexD];
+-- var DenseAdj : domain(2) = {VertexD, VertexD};
 -- var AdjD : sparse domain(DenseAdj) = nil;
 
 */

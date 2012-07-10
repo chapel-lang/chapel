@@ -57,13 +57,13 @@ module analyze_RMAT_graph_associative_array {
 
     const vertex_domain = 
       if DISTRIBUTION_TYPE == "BLOCK" then
-        [1..N_VERTICES] dmapped Block ( [1..N_VERTICES] )
+        {1..N_VERTICES} dmapped Block ( {1..N_VERTICES} )
       else
-	[1..N_VERTICES] ;
+        {1..N_VERTICES} ;
 
     record VertexData {
       type vertex;
-      var ndom = [1..initialRMATNeighborListLength];
+      var ndom = {1..initialRMATNeighborListLength};
       var neighborIDs: [ndom] int(64);
       var edgeWeights: [ndom] int(64);
 
@@ -86,7 +86,7 @@ module analyze_RMAT_graph_associative_array {
             if edgePos > prevNdomLen {
               // grow our arrays, by 2x
               growCount += 1;
-              ndom = [1..prevNdomLen * 2];
+              ndom = {1..prevNdomLen * 2};
               // bounds checking below will ensure (edgePos <= ndom.high)
             }
             // release the lock - don't need it any more

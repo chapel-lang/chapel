@@ -2,7 +2,7 @@ config const debug = false;
 config const printTiming = false;
 
 config const n = 1024;
-const D = [1..n];
+const D = {1..n};
 var AD: domain(int);
 config const offset = 7;
 var Aref: [D] int;
@@ -28,7 +28,7 @@ t0.stop();
 if debug then writeln(A);
 success = true;
 QuickSort(A);
-for i in [D] {
+for i in {D} {
   if A(i) != Aref(i) {
     success = false;
     break;
@@ -47,7 +47,7 @@ t1.stop();
 if debug then writeln(A);
 success = true;
 QuickSort(A);
-for i in [D] {
+for i in {D} {
   if A(i) != Aref(i) {
     success = false;
     break;

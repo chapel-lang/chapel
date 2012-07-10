@@ -64,7 +64,7 @@ proc luLikeMultiply(
     // ABlkDmn is a superdomain of ADmn with dimensions such that they are
     // divisible by blocksize.
     const ADmn    = A.domain;
-    const ABlkDmn = [1..blksVert*blkSize, 1..blksHoriz*blkSize];
+    const ABlkDmn = {1..blksVert*blkSize, 1..blksHoriz*blkSize};
 
     const ptOp  = (blk-1)*blkSize+1;
     const ptSol = blk*blkSize+1;
@@ -74,32 +74,32 @@ proc luLikeMultiply(
 
     // stamp A across into ACopies,
     forall blkCol in blk+1..blksHoriz {
-        const cBlkD = [(ADmn.dim(1))(ptSol..),
-                       (ABlkDmn.dim(2))((blkCol-1)*blkSize+1..#blkSize)];
-        const aBlkD = [ptSol..#cBlkD.dim(1).length,
-                       ptOp..#cBlkD.dim(2).length];
+        const cBlkD = {(ADmn.dim(1))(ptSol..),
+                       (ABlkDmn.dim(2))((blkCol-1)*blkSize+1..#blkSize)};
+        const aBlkD = {ptSol..#cBlkD.dim(1).length,
+                       ptOp..#cBlkD.dim(2).length};
 
         ACopies[cBlkD] = A[aBlkD];
     }
 
     // stamp B down into BCopies,
     forall blkRow in blk+1..blksVert {
-        const cBlkD = [(ABlkDmn.dim(1))((blkRow-1)*blkSize+1..#blkSize),
-                       (ADmn.dim(2))(ptSol..)];
-        const bBlkD = [ptOp..#cBlkD.dim(1).length,
-                       ptSol..#cBlkD.dim(2).length];
+        const cBlkD = {(ABlkDmn.dim(1))((blkRow-1)*blkSize+1..#blkSize),
+                       (ADmn.dim(2))(ptSol..)};
+        const bBlkD = {ptOp..#cBlkD.dim(1).length,
+                       ptSol..#cBlkD.dim(2).length};
 
         BCopies[cBlkD] = A[bBlkD];
     }
 
     // do local matrix-multiply on a block-by-block basis
-    forall (blkRow,blkCol) in [blk+1..blksVert, blk+1..blksHoriz] {
-        const aBlkD = [(ADmn.dim(1))((blkRow-1)*blkSize+1..#blkSize),
-                       (ABlkDmn.dim(2))((blkCol-1)*blkSize+1..#blkSize)];
-        const bBlkD = [(ABlkDmn.dim(1))((blkRow-1)*blkSize+1..#blkSize),
-                       (ADmn.dim(2))((blkCol-1)*blkSize+1..#blkSize)];
-        const cBlkD = [ADmn[(blkRow-1)*blkSize+1..#aBlkD.dim(1).length,
-                            (blkCol-1)*blkSize+1..#bBlkD.dim(2).length]];
+    forall (blkRow,blkCol) in {blk+1..blksVert, blk+1..blksHoriz} {
+        const aBlkD = {(ADmn.dim(1))((blkRow-1)*blkSize+1..#blkSize),
+                       (ABlkDmn.dim(2))((blkCol-1)*blkSize+1..#blkSize)};
+        const bBlkD = {(ABlkDmn.dim(1))((blkRow-1)*blkSize+1..#blkSize),
+                       (ADmn.dim(2))((blkCol-1)*blkSize+1..#blkSize)};
+        const cBlkD = {ADmn[(blkRow-1)*blkSize+1..#aBlkD.dim(1).length,
+                            (blkCol-1)*blkSize+1..#bBlkD.dim(2).length]};
 
         local {
             dgemm(
@@ -235,11 +235,11 @@ proc LUFactorize(n : int, A : [1..n, 1..n+1] real, piv : [1..n] int) {
         const trailingCols   = blk+crntBlkSize..ACols.high;
         const unfactoredCols = blk..ACols.high;
 
-        var tl = [A.domain[blockRange, blockRange]];
-        var tr = [A.domain[blockRange, trailingCols]];
-        var bl = [A.domain[trailingRows, blockRange]];
-        var br = [A.domain[trailingRows, trailingCols]];
-        var l  = [A.domain[unfactoredRows, blockRange]];
+        var tl = {A.domain[blockRange, blockRange]};
+        var tr = {A.domain[blockRange, trailingCols]};
+        var bl = {A.domain[trailingRows, blockRange]};
+        var br = {A.domain[trailingRows, trailingCols]};
+        var l  = {A.domain[unfactoredRows, blockRange]};
         
         // Now that we've sliced and diced A properly do the blocked-LU
         // computation:
@@ -287,10 +287,10 @@ proc backwardSub(
 {
     var x : [b.domain] real;
 
-    for i in [b.domain by -1] do {
+    for i in {b.domain by -1} do {
         x[i] = b[i];
 
-        for j in [i+1..b.domain.high] do {
+        for j in {i+1..b.domain.high} do {
             x[i] -= A[i,j] * x[j];
         }
 
@@ -317,10 +317,10 @@ proc test_LUFactorizeNorms(
     //     http://www.netlib.org/benchmark/hpl/algorithm.html):
 
     var axmbNorm =
-        norm(gaxpyMinus(n, n, A([1..n, 1..n]), x, b), normType.normInf);
+        norm(gaxpyMinus(n, n, A({1..n, 1..n}), x, b), normType.normInf);
 
-    var a1norm   = norm(A([1..n, 1..n]), normType.norm1);
-    var aInfNorm = norm(A([1..n, 1..n]), normType.normInf);
+    var a1norm   = norm(A({1..n, 1..n}), normType.norm1);
+    var aInfNorm = norm(A({1..n, 1..n}), normType.normInf);
     var x1Norm   = norm(x, normType.norm1);
     var xInfNorm = norm(x, normType.normInf);
 

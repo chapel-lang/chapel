@@ -36,7 +36,7 @@ module matrix_matrix_multiply_inner_product {
 
     for LK_col_indices in vector_block_partition (L_prev_cols) do
       forall (i,j,k) in 
-	[AJ_subdiag_row_indices, AJ_diag_rc_indices, LK_col_indices] do 
+    {AJ_subdiag_row_indices, AJ_diag_rc_indices, LK_col_indices} do 
 	A (i,j) -= L (i,k) * L (j,k);
   }
 
@@ -80,7 +80,7 @@ module matrix_matrix_multiply_inner_product {
 
     for AIJ_row_indices in vector_block_partition ( AJ_subdiag_row_indices ) do
       for LK_col_indices in vector_block_partition ( L_prev_cols )  do
-	forall (i,j, k) in [AIJ_row_indices, AJJ_rc_indices, LK_col_indices] do 
+	forall (i,j, k) in {AIJ_row_indices, AJJ_rc_indices, LK_col_indices} do 
 	  A (i,j) -= L (i,k) * L (j,k);
   }
       

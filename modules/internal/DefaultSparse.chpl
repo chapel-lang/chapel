@@ -14,7 +14,7 @@ class DefaultSparseDom: BaseSparseDom {
   var nnz = 0;  // intention is that user might specify this to avoid reallocs
 
   var nnzDomSize = nnz;
-  var nnzDom = [1..nnzDomSize];
+  var nnzDom = {1..nnzDomSize};
 
   var indices: [nnzDom] index(rank);
 
@@ -116,7 +116,7 @@ class DefaultSparseDom: BaseSparseDom {
     var oldNNZDomSize = nnzDomSize;
     if (nnz > nnzDomSize) {
       nnzDomSize = if (nnzDomSize) then 2*nnzDomSize else 1;
-      nnzDom = [1..nnzDomSize];
+      nnzDom = {1..nnzDomSize};
     }
     // shift indices up
     for i in insertPt..nnz-1 by -1 {

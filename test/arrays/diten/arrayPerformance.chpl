@@ -10,10 +10,10 @@ config param printTiming = false;
 config const randSeed:int(64) = 314159265;
 
 proc main {
-  const D1 = [1..#m*n];
-  const D2 = [1.. by 1 # m*n];
-  const D3 = [1..#m, 1..#n];
-  const D4 = [1.. by 1 #m, 1.. by 1 # n];
+  const D1 = {1..#m*n};
+  const D2 = {1.. by 1 # m*n};
+  const D3 = {1..#m, 1..#n};
+  const D4 = {1.. by 1 #m, 1.. by 1 # n};
 
   var alpha: real = 3.14;
   var t1, t2, t3, t4: real;

@@ -11,10 +11,10 @@ proc doDom(D) {
   writeln();
 }
 
-doDom([3..5]);
-doDom([3..7 by 2]);
+doDom({3..5});
+doDom({3..7 by 2});
 
-doDom([3..5, 3..5]);
-doDom([3..7 by 2, 3..7 by 2]);
+doDom({3..5, 3..5});
+doDom({3..7 by 2, 3..7 by 2});
 
 

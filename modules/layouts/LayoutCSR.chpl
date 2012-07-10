@@ -36,9 +36,9 @@ class CSRDom: BaseSparseDom {
     nnz = 0;
     rowRange = parentDom.dim(1);
     colRange = parentDom.dim(2);
-    rowDom = [rowRange.low..rowRange.high+1];
+    rowDom = {rowRange.low..rowRange.high+1};
     nnzDomSize = nnz;
-    nnzDom = [1..nnzDomSize];
+    nnzDom = {1..nnzDomSize};
     dsiClear();
   }
 
@@ -203,7 +203,7 @@ class CSRDom: BaseSparseDom {
     if (nnz > nnzDomSize) {
       nnzDomSize = if (nnzDomSize) then 2*nnzDomSize else 1;
 
-      nnzDom = [1..nnzDomSize];
+      nnzDom = {1..nnzDomSize};
     }
 
     const (row,col) = ind;
@@ -248,7 +248,7 @@ class CSRDom: BaseSparseDom {
     if (nnz > nnzDomSize) {
       nnzDomSize = if (nnzDomSize) then 2*nnzDomSize else 1;
 
-      nnzDom = [1..nnzDomSize];
+      nnzDom = {1..nnzDomSize};
     }
     */
 

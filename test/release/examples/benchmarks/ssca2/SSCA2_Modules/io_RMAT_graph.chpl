@@ -118,7 +118,7 @@ module io_RMAT_graph
   param repfileLow = 1, repfileHi = 5,
         repfileSV = 1, repfileEV = 2, repfileWW = 3,
         repfileSTA = 4, repfileST2 = 5;
-  const repfileBase = [repfileLow .. repfileHi];
+  const repfileBase = {repfileLow .. repfileHi};
 
   //
   // Readin_RMAT_graph()

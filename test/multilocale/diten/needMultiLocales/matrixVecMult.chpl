@@ -3,8 +3,8 @@ use BlockDist;
 config const rows = 100;
 config const cols = 75;
 
-const RowDom: domain(1) = [1..cols];
-const ColumnDom: domain(1) = [1..rows];
+const RowDom: domain(1) = {1..cols};
+const ColumnDom: domain(1) = {1..rows};
 
 const BlockedDist = new dmap(new Block(rank=1,boundingBox=ColumnDom));
 const DistColumnDom: domain(1) dmapped BlockedDist = ColumnDom;

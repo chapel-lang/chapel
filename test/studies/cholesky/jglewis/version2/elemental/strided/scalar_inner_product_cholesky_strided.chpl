@@ -37,7 +37,7 @@ module scalar_inner_product_cholesky_strided {
       // modify the jth column of A with the combined effects of the
       // elimination steps on all previous columns
 
-      for (i,k) in [ mtx_range (j..), mtx_range (..j-1) ]  do
+      for (i,k) in { mtx_range (j..), mtx_range (..j-1) }  do
 	A (i, j) -= A (j, k) * A (i, k);
 
       if A (j, j) > 0.0 then {

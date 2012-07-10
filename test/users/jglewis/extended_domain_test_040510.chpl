@@ -14,10 +14,10 @@ module SSCA2_main
       d1    = 2**lg2d1,
       d2    = 2**lg2d2;
 
-    const vertex_domain = [ Torus_Base_Index..#d1,
-			    Torus_Base_Index..#d2 ] 
-      dmapped Block ( [ Torus_Base_Index..#d1,
-			Torus_Base_Index..#d2 ] );
+    const vertex_domain = { Torus_Base_Index..#d1,
+			    Torus_Base_Index..#d2 }
+      dmapped Block ( { Torus_Base_Index..#d1,
+			Torus_Base_Index..#d2 } );
 
     type  vertex = index (vertex_domain);
     const extended_domain = vertex_domain.expand(1);

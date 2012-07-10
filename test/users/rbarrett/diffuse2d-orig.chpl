@@ -18,8 +18,8 @@ proc main() {
    var
       sum : real;
       
-   const ProblemSpace = [1..n, 1..n],       // domain for interior grid points
-         BigDomain    = [0..n+1, 0..n+1];   // domain with boundary points
+   const ProblemSpace = {1..n, 1..n},       // domain for interior grid points
+         BigDomain    = {0..n+1, 0..n+1};   // domain with boundary points
 
    var 
       grid1,   // 

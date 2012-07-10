@@ -24,7 +24,7 @@ const dd1 =new BlockCyclicDim(lowIdx=st1, blockSize=blkSize, numLocales=tl1,
 const dd2 =new BlockCyclicDim(lowIdx=st2, blockSize=blkSize, numLocales=tl2,
                                name="D2");
 
-const space = [1..n, 1..n+1];
+const space = {1..n, 1..n+1};
 const AbD
   : domain(2, int) dmapped DimensionalDist2D(mylocs, dd1, dd2, "dim")
   = space;

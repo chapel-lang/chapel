@@ -18,7 +18,7 @@ const factors = _factor(rank, numLocales);
 var ranges: rank*range;
 for param i in 1..rank do
   ranges(i) = 0..#factors(i);
-const D = [(...ranges)];
+const D = {(...ranges)};
 
 proc printCommDiagnosticsHere(s) {
   printCommDiagnostics(here.id, s);

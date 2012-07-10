@@ -152,7 +152,7 @@ chameneos
 proc populate (size : int(32)) {
 	const colorsDefault10  = (Color.blue, Color.red, Color.yellow, Color.red, Color.yellow, 
 			      	        Color.blue, Color.red, Color.yellow, Color.red, Color.blue);	
-	const D : domain(1, int(32)) = [1..size];
+	const D : domain(1, int(32)) = {1..size};
 	var population : [D] Chameneos;
 
 	if (size == 10) {

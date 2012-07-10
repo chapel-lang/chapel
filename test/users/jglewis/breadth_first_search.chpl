@@ -15,7 +15,7 @@ module BFS
 
      { 
 
-     var Node_Set: domain (1) = [1..n_nodes];
+     var Node_Set: domain (1) = {1..n_nodes};
      
      type Nbr_List = sparse subdomain ( Node_Set );
 //     type Nbr_List = domain (int);

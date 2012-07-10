@@ -10,7 +10,7 @@ const offset: [Directions] 2*integer = (/ (-1,0), (0,-1), (-1,-1) /);
 
 -- a 2D space defined by the lengths of the two sequences, extended to
 -- support an additional initial (0th) row and column
-const SeqSpace: domain(2) = [0..ILen, 0..JLen];
+const SeqSpace: domain(2) = {0..ILen, 0..JLen};
 
 -- an array of sync integers ("sync" results in full/empty
 -- semantics... initially empty)

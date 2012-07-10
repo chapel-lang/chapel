@@ -231,7 +231,7 @@ proc main() {
   var m1 = new Matrix(2,3);
   writeln("m1 = ",m1);
 
-  var a4 : [1..3,1..6] elemType = [(i,j) in [1..3, 1..6]] i+j;
+  var a4 : [1..3,1..6] elemType = [(i,j) in {1..3, 1..6}] i+j;
   var m4 = new Matrix(a4.domain.dim(1).high,a4.domain.dim(2).high,a4);
   writeln("m4 = ",m4);
 

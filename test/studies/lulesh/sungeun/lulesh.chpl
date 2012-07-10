@@ -100,9 +100,9 @@ const ElemDim = 0..#edgeElems,
 
 /* Declare abstract problem domains */
 
-const ElemSpace = [ElemDim, ElemDim, ElemDim],
-      NodeSpace = [NodeDim, NodeDim, NodeDim],
-      NodeFace  = [NodeDim, NodeDim];
+const ElemSpace = {ElemDim, ElemDim, ElemDim},
+      NodeSpace = {NodeDim, NodeDim, NodeDim},
+      NodeFace  = {NodeDim, NodeDim};
 
 
 /* Declare the (potentially distributed) problem domains */

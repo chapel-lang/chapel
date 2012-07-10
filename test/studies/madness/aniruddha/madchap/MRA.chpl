@@ -104,7 +104,7 @@ class Function {
     /** Initialize the two-scale relation coefficient matricies.
      */
     proc init_twoscale(k) {
-        hgDom = [0..2*k-1, 0..2*k-1];
+        hgDom = {0..2*k-1, 0..2*k-1};
         hg = hg_getCoeffs(k);
         [(i,j) in hgDom] hgT[i,j] = hg[j,i];
     }
@@ -113,11 +113,11 @@ class Function {
     /** Initialize the quadrature coefficient matricies.
      */
     proc init_quadrature(k) {
-        quadDom = [0..k-1];
+        quadDom = {0..k-1};
         quad_x = gl_getPoints(k);
         quad_w = gl_getWeights(k);
         
-        quad_phiDom = [0..k-1, 0..k-1];
+        quad_phiDom = {0..k-1, 0..k-1};
         for i in quad_phiDom.dim(1) {
             const p = phi(quad_x[i], k);
             quad_phi [i, ..] = p;
@@ -132,7 +132,7 @@ class Function {
         conditions on either side.
      */
     proc make_dc_periodic(k) {
-        dcDom = [0..k-1, 0..k-1];
+        dcDom = {0..k-1, 0..k-1};
         var iphase = 1.0;
         for i in dcDom.dim(1) {
             var jphase = 1.0;

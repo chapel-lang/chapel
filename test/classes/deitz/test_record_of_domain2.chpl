@@ -1,10 +1,10 @@
 record R {
-  var D = [1..3];
+  var D = {1..3};
   var A: [D] int;
 }
 
 record RR {
-  var DD = [1..3];
+  var DD = {1..3};
   var AA: [1..3] R;
   proc this(i) var {
     return AA(i).A;

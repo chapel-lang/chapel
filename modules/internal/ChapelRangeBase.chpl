@@ -935,29 +935,29 @@ iter rangeBase.these(param tag: iterKind, followThis) where tag == iterKind.foll
 proc rangeBase.readWriteThis(f)
 {
   if hasLowBound() then
-    f & _low;
-  f & new ioLiteral("..");
+    f <~> _low;
+  f <~> new ioLiteral("..");
   if hasHighBound() then
-    f & _high;
+    f <~> _high;
   if stride != 1 then
-    f & new ioLiteral(" by ") & stride;
+    f <~> new ioLiteral(" by ") <~> stride;
 
   // Write out the alignment only if it differs from natural alignment.
   // We take alignment modulo the stride for consistency.
   if f.writing {
     if ! isNaturallyAligned() then
-      f & new ioLiteral(" align ") & chpl__mod(_alignment, stride);
+      f <~> new ioLiteral(" align ") <~> chpl__mod(_alignment, stride);
   } else {
     // try reading an 'align'
     if !f.error() {
-      f & new ioLiteral(" align ");
+      f <~> new ioLiteral(" align ");
       if f.error() == EFORMAT then {
         // naturally aligned.
         f.clearError();
       } else {
         // un-naturally aligned - read the un-natural alignment
         var a: idxType;
-        f & a;
+        f <~> a;
         _alignment = a;
       }
     }

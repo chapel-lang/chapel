@@ -78,15 +78,15 @@ proc main() {
   // to m/4-1 stored using the block distribution TwiddleDist.
   // Twiddles is the vector of twiddle values.
   //
-//  const TwiddleDist = new dmap(new Block(1, idxType, boundingBox=[0..m/4-1]));
-  const TwiddleDom: domain(1, idxType) = [0..m/4-1];
+//  const TwiddleDist = new dmap(new Block(1, idxType, boundingBox={0..m/4-1}));
+  const TwiddleDom: domain(1, idxType) = {0..m/4-1};
   var Twiddles: [TwiddleDom] elemType;
 
   //
   // ProblemSpace describes the abstract problem space used for the
   // FFT benchmark: the indices 0..m-1
   //
-  const ProblemSpace = [0..m-1];
+  const ProblemSpace = {0..m-1};
 
   //
   // BlkDist describes the problem space as distributed in a Block

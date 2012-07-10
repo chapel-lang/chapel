@@ -5,8 +5,8 @@ config const size : int = 8;
 const sizeRange = 0..#(size : int(64));
 
 
-const blockDist = new dmap(new Block(rank=1, idxType=int(64), boundingBox=[sizeRange]));
-const blockDom : domain(1, int(64)) dmapped blockDist = [sizeRange];
+const blockDist = new dmap(new Block(rank=1, idxType=int(64), boundingBox={sizeRange}));
+const blockDom : domain(1, int(64)) dmapped blockDist = {sizeRange};
 
 var array : [blockDom] int(64) = [i in blockDom] i;
 var output : [blockDom] string;

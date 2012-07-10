@@ -63,10 +63,10 @@ config const printParams = true,
 // across the locales.
 //
 const
-  TableDist = new dmap(new Block(boundingBox=[0..m-1],
+  TableDist = new dmap(new Block(boundingBox={0..m-1},
                                  dataParTasksPerLocale=tasksPerLocale,
                                  dataParIgnoreRunningTasks=true)),
-  UpdateDist = new dmap(new Block(boundingBox=[0..N_U-1],
+  UpdateDist = new dmap(new Block(boundingBox={0..N_U-1},
                                   dataParTasksPerLocale=tasksPerLocale,
                                   dataParIgnoreRunningTasks=true));
 
@@ -78,8 +78,8 @@ const
 // It is distributed according to UpdateDist and contains the
 // indices 0..N_U-1.
 //
-const TableSpace: domain(1, indexType) dmapped TableDist = [0..m-1],
-      Updates: domain(1, indexType) dmapped UpdateDist = [0..N_U-1];
+const TableSpace: domain(1, indexType) dmapped TableDist = {0..m-1},
+      Updates: domain(1, indexType) dmapped UpdateDist = {0..N_U-1};
 
 //
 // T is the distributed table itself, storing a variable of type
