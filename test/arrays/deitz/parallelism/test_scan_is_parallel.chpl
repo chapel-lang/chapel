@@ -1,6 +1,6 @@
 config const n: int = 20;
 
-var A, B: {1..n} real;
+var A, B: [1..n] real;
 
 var r = 1.0;
 

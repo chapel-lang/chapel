@@ -16,6 +16,6 @@ proc *(D1: domain, D2: domain)
 
 writeln({1..4} * {3..7 by 2});
 
-// var D1 = [1..4];
-// var D2 = [3..7 by 2];
+// var D1 = {1..4};
+// var D2 = {3..7 by 2};
 // writeln(D1*D2);
