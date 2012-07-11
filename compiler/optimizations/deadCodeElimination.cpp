@@ -99,11 +99,11 @@ void deadCodeElimination(FnSymbol* fn)
 // TODO: Factor this long function?
   buildBasicBlocks(fn);
 
-  Map<SymExpr*,Vec<SymExpr*>*> DU;
-  Map<SymExpr*,Vec<SymExpr*>*> UD;
+  std::map<SymExpr*,Vec<SymExpr*>*> DU;
+  std::map<SymExpr*,Vec<SymExpr*>*> UD;
   buildDefUseChains(fn, DU, UD);
 
-  Map<Expr*,Expr*> exprMap;
+  std::map<Expr*,Expr*> exprMap;
   Vec<Expr*> liveCode;
   Vec<Expr*> workSet;
   for_vector(BasicBlock, bb, *fn->basicBlocks) {
@@ -120,12 +120,12 @@ void deadCodeElimination(FnSymbol* fn)
           // mark assignments to global variables as essential
           if (call->isPrimitive(PRIM_MOVE))
             if (SymExpr* se = toSymExpr(call->get(1)))
-              if (!DU.get(se) || // DU chain only contains locals
+              if (DU.count(se) == 0 || // DU chain only contains locals
                   !se->var->type->refType) // reference issue
                 essential = true;
         }
         if (Expr* sub = toExpr(ast)) {
-          exprMap.put(sub, expr);
+          exprMap[sub] = expr;
           if (BlockStmt* block = toBlockStmt(sub->parentExpr))
             if (block->blockInfo == sub)
               essential = true;
@@ -145,9 +145,11 @@ void deadCodeElimination(FnSymbol* fn)
     Vec<SymExpr*> symExprs;
     collectSymExprs(expr, symExprs);
     forv_Vec(SymExpr, se, symExprs) {
-      if (Vec<SymExpr*>* defs = UD.get(se)) {
+      if (UD.count(se) != 0) {
+        Vec<SymExpr*>* defs = UD[se];
         forv_Vec(SymExpr, def, *defs) {
-          Expr* expr = exprMap.get(def);
+          INT_ASSERT(exprMap.count(def) != 0);
+          Expr* expr = exprMap[def];
           if (!liveCode.set_in(expr)) {
             liveCode.set_add(expr);
             workSet.add(expr);

@@ -1,7 +1,7 @@
 #define __STDC_FORMAT_MACROS
 #include <sstream>
-#include <map>
 #include <inttypes.h>
+#include <map>
 
 #include "astutil.h"
 #include "build.h"
@@ -41,7 +41,7 @@ static int explainCallLine;
 static ModuleSymbol* explainCallModule;
 
 static Vec<CallExpr*> inits;
-static Map<FnSymbol*,bool> resolvedFns;
+static std::map<FnSymbol*,bool> resolvedFns;
 static Vec<FnSymbol*> resolvedFormals;
 Vec<CallExpr*> callStack;
 
@@ -558,13 +558,13 @@ protoIteratorClass(FnSymbol* fn) {
 
   makeRefType(fn->retType);
 
-  resolvedFns.put(fn->iteratorInfo->zip1, true);
-  resolvedFns.put(fn->iteratorInfo->zip2, true);
-  resolvedFns.put(fn->iteratorInfo->zip3, true);
-  resolvedFns.put(fn->iteratorInfo->zip4, true);
-  resolvedFns.put(fn->iteratorInfo->advance, true);
-  resolvedFns.put(fn->iteratorInfo->hasMore, true);
-  resolvedFns.put(fn->iteratorInfo->getValue, true);
+  resolvedFns[fn->iteratorInfo->zip1] = true;
+  resolvedFns[fn->iteratorInfo->zip2] = true;
+  resolvedFns[fn->iteratorInfo->zip3] = true;
+  resolvedFns[fn->iteratorInfo->zip4] = true;
+  resolvedFns[fn->iteratorInfo->advance] = true;
+  resolvedFns[fn->iteratorInfo->hasMore] = true;
+  resolvedFns[fn->iteratorInfo->getValue] = true;
 
   ii->getIterator = new FnSymbol("_getIterator");
   ii->getIterator->addFlag(FLAG_AUTO_II);
@@ -578,7 +578,7 @@ protoIteratorClass(FnSymbol* fn) {
   ii->getIterator->insertAtTail(new CallExpr(PRIM_RETURN, ret));
   fn->defPoint->insertBefore(new DefExpr(ii->getIterator));
   ii->iclass->initializer = ii->getIterator;
-  resolvedFns.put(ii->getIterator, true);
+  resolvedFns[ii->getIterator] = true;
 }
 
 
@@ -4508,9 +4508,9 @@ static void instantiate_default_constructor(FnSymbol* fn) {
 
 static void
 resolveFns(FnSymbol* fn) {
-  if (resolvedFns.get(fn))
+  if (resolvedFns.count(fn) != 0)
     return;
-  resolvedFns.put(fn, true);
+  resolvedFns[fn] = true;
 
   if ((fn->hasFlag(FLAG_EXTERN))||(fn->hasFlag(FLAG_FUNCTION_PROTOTYPE)))
     return;
@@ -4555,7 +4555,7 @@ resolveFns(FnSymbol* fn) {
   resolveBlock(fn->body);
 
   if (tryFailure) {
-    resolvedFns.put(fn, false);
+    resolvedFns.erase(fn);
     return;
   }
 
@@ -4871,7 +4871,7 @@ addAllToVirtualMaps(FnSymbol* fn, ClassType* ct) {
     ClassType* ct = toClassType(t);
     if (ct->defaultTypeConstructor &&
         (ct->defaultTypeConstructor->hasFlag(FLAG_GENERIC) ||
-         resolvedFns.get(ct->defaultTypeConstructor))) {
+         resolvedFns.count(ct->defaultTypeConstructor) != 0)) {
       addToVirtualMaps(fn, ct);
     }
     if (!ct->instantiatedFrom)
@@ -4883,7 +4883,7 @@ addAllToVirtualMaps(FnSymbol* fn, ClassType* ct) {
 static void
 buildVirtualMaps() {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (!fn->hasFlag(FLAG_WRAPPER) && resolvedFns.get(fn) && !fn->hasFlag(FLAG_NO_PARENS) && fn->retTag != RET_PARAM && fn->retTag != RET_TYPE) {
+    if (!fn->hasFlag(FLAG_WRAPPER) && resolvedFns.count(fn) != 0 && !fn->hasFlag(FLAG_NO_PARENS) && fn->retTag != RET_PARAM && fn->retTag != RET_TYPE) {
       if (fn->numFormals() > 1) {
         if (fn->getFormal(1)->type == dtMethodToken) {
           if (ClassType* pt = toClassType(fn->getFormal(2)->type)) {
@@ -5513,7 +5513,7 @@ static void removeUnusedFunctions() {
   // Remove unused functions
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->defPoint && fn->defPoint->parentSymbol) {
-      if (!resolvedFns.get(fn) || fn->retTag == RET_PARAM)
+      if (resolvedFns.count(fn) == 0 || fn->retTag == RET_PARAM)
         fn->defPoint->remove();
     }
   }
@@ -5522,8 +5522,8 @@ static void removeUnusedFunctions() {
 static bool
 isUnusedClass(ClassType *ct) {
   // FALSE if initializers are used
-  if (resolvedFns.get(ct->initializer) ||
-      resolvedFns.get(ct->defaultTypeConstructor)) {
+  if (resolvedFns.count(ct->initializer) != 0 ||
+      resolvedFns.count(ct->defaultTypeConstructor) != 0) {
     return false;
   }
 
