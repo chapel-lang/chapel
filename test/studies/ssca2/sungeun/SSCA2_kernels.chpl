@@ -115,7 +115,7 @@ module SSCA2_kernels
       
       forall ( x, y ) in Heavy_Edge_List do {
 	var Active_Level, Next_Level : domain ( index (vertex_domain) );
-	var min_distance             : [vertex_domain] atomic int;
+	var min_distance             : [vertex_domain] nativeAtomic(int);
         forall m in min_distance do m.write(-1);
 	  
 	if DEBUG_KERNEL3 then 
@@ -165,6 +165,7 @@ module SSCA2_kernels
 
 
   use BlockDist;
+  use remoteAtomics;
   // Would be nice to use PriavteDist, but aliasing is not supported (yet)
   const PrivateSpace = {LocaleSpace} dmapped Block(boundingBox={LocaleSpace});
 
@@ -226,12 +227,13 @@ module SSCA2_kernels
 
       // Initialize task private data
       var localePrivate: [PrivateSpace] localePrivateData(vertex_domain.type);
-      forall l in localePrivate do {
+      coforall l in localePrivate do on l {
         l = new localePrivateData(vertex_domain);
+        // put in initialize()
         for t in l.temps { // this might be bad for first-touch
           t = new taskPrivateData(domain(index(vertex_domain)), vertex_domain);
           forall v in vertex_domain do
-            t.children_list[v].nd = {1..G.n_Neighbors[v]};
+            t.BCaux[v].children_list.nd = {1..G.n_Neighbors[v]};
           for loc in Locales do on loc {
               t.Active_Level[here.id] = new Level_Set (Sparse_Vertex_List);
               t.Active_Level[here.id].previous = nil;
@@ -252,27 +254,24 @@ module SSCA2_kernels
 
       forall s in starting_vertices do on vertex_domain.dist.idxToLocale(s) {
 
-          const shere = here.id;
+        const shere = here.id;
 
 	if DEBUG_KERNEL4 then writeln ( "expanding from starting node ", s );
 
         // Initialize task private variables
         const lp = localePrivate[here.id];
         const tid = lp.get_tid();
-        var depend => lp.get_depend(tid);
-        var min_distance  => lp.get_min_distance(tid);
-        var path_count$   => lp.get_path_count(tid);
-        var children_list => lp.get_children_list(tid);
+        var BCaux => lp.get_BCaux(tid);
         pragma "dont disable remote value forwarding"
-          inline proc f1(path_count$, v) {
-          path_count$[v].writeXF(0.0);
+          inline proc f1(BCaux, v) {
+          BCaux[v].path_count$.writeXF(0.0);
         }
         forall v in vertex_domain do {
-          depend[v] = 0.0;
-          min_distance[v].write(-1);
-          // path_count$[v].writeXF(0.0);
-          f1(path_count$, v);
-          children_list[v].child_count.write(0);
+          BCaux[v].depend = 0.0;
+          BCaux[v].min_distance.write(-1);
+          // BCaux[v].path_count$.writeXF(0.0);
+          f1(BCaux, v);
+          BCaux[v].children_list.child_count.write(0);
         }
 	var Lcl_Sum_Min_Dist: sync real = 0.0;
 
@@ -300,8 +299,8 @@ module SSCA2_kernels
         //
         var Active_Level => lp.get_Active_Level(tid);
         pragma "dont disable remote value forwarding"
-          inline proc f2(path_count$, s) {
-          path_count$[s].writeXF(1);
+          inline proc f2(BCaux, s) {
+          BCaux[s].path_count$.writeXF(1);
         }
 
         var barrier = new Barrier(numLocales);
@@ -313,9 +312,9 @@ module SSCA2_kernels
             // Establish the initial level sets for the breadth-first
             // traversal from s
             Active_Level[here.id].Members.add(s);
-            min_distance[s].write(0);
-            // path_count$[s].writeXF(1);
-            f2(path_count$, s);
+            BCaux[s].min_distance.write(0);
+            // BCaux[s].path_count$.writeXF(1);
+            f2(BCaux, s);
           }
           barrier.barrier();
 
@@ -336,8 +335,8 @@ module SSCA2_kernels
             // coforall loop.
             const current_distance_c = current_distance;
             pragma "dont disable remote value forwarding"
-              inline proc f3(path_count$, v, u) {
-              path_count$[v] += path_count$[u].readFF();
+              inline proc f3(BCaux, v, u) {
+              BCaux[v].path_count$ += BCaux[u].path_count$.readFF();
             }
 
             forall u in Active_Level[here.id].Members do {
@@ -347,7 +346,7 @@ module SSCA2_kernels
                   // add any unmarked neighbors to the next level
                   // --------------------------------------------
   
-                  if  min_distance[v].compareExchangeStrong(-1, current_distance_c) {
+                  if  BCaux[v].min_distance.compareExchangeStrong(-1, current_distance_c) {
                     Active_Level[here.id].next.Members.add (v);
                     if VALIDATE_BC then
                       Lcl_Sum_Min_Dist += current_distance_c;
@@ -362,10 +361,10 @@ module SSCA2_kernels
                   // the previous, the current or the next level.
                   // ------------------------------------------------
   
-                  if min_distance[v].read() == current_distance_c {
-                    // path_count$[v] += path_count$[u].readFF();
-                    f3(path_count$, v, u);
-                    children_list(u).add_child (v);
+                  if BCaux[v].min_distance.read() == current_distance_c {
+                    // BCaux[v].path_count$ += BCaux[u].path_count$.readFF();
+                    f3(BCaux, v, u);
+                    BCaux[u].children_list.add_child (v);
                   }
 
                 }
@@ -420,12 +419,12 @@ module SSCA2_kernels
           }
 
           pragma "dont disable remote value forwarding"
-            inline proc f4(depend, children_list, path_count$, Between_Cent$, u) {
-            depend (u) = + reduce [v in children_list(u).Row_Children[1..children_list(u).child_count.read()]]
-              ( path_count$[u].readFF() / 
-                path_count$[v].readFF() )      *
-              ( 1.0 + depend (v) );
-            Between_Cent$ (u) += depend (u);
+            inline proc f4(BCaux, Between_Cent$, u) {
+            BCaux[u].depend = + reduce [v in BCaux[u].children_list.Row_Children[1..BCaux[u].children_list.child_count.read()]]
+              ( BCaux[u].path_count$.readFF() / 
+                BCaux[v].path_count$.readFF() )      *
+              ( 1.0 + BCaux[v].depend );
+            Between_Cent$ (u) += BCaux[u].depend;
           }
 
           // back up to last level
@@ -435,19 +434,21 @@ module SSCA2_kernels
             curr_Level = curr_Level.previous;
 
             for u in curr_Level.Members do on vertex_domain.dist.idxToLocale(u) {
-                f4(depend, children_list, path_count$, Between_Cent$, u);
+                f4(BCaux, Between_Cent$, u);
                 /*
-              depend (u) = + reduce [v in children_list(u).Row_Children[1..children_list(u).child_count.read()]]
-                ( path_count$[u].readFF() / 
-                  path_count$[v].readFF() )      *
-                ( 1.0 + depend (v) );
-              Between_Cent$ (u) += depend (u);
+              BCaux[u].depend = + reduce [v in BCaux[u].children_list.Row_Children[1..BCaux[u].children_list.child_count.read()]]
+                ( BCaux[u].path_count$.readFF() / 
+                  BCaux[v].path_count$.readFF() )      *
+                ( 1.0 + BCaux[v].depend );
+              Between_Cent$ (u) += BCaux[u].depend;
                 */
             }
 
             barrier.barrier();
           }
         }
+
+        lp.release_tid(tid);
 
       }; // closure of outer embarassingly parallel forall
 
@@ -523,7 +524,7 @@ module SSCA2_kernels
     type vertex;
     var nd: domain(1);
     var Row_Children: [nd] vertex;
-    var child_count: atomic int;
+    var child_count: nativeAtomic(int);
 
     // This function should only be called using unique vertices
     proc add_child ( new_child: vertex ) {
@@ -532,21 +533,27 @@ module SSCA2_kernels
     }
   }
 
+  record taskPrivateArrayData {
+    type vertex;
+    var min_distance  : nativeAtomic(int);
+    var path_count$   : sync real(64);
+    var depend        : real;
+    var children_list : child_struct(vertex);
+  }
+
   //
   // Implementation of task-private variables for kernel 4
   //
   class taskPrivateData {
     type Sparse_Vertex_List;
     const vertex_domain;
-    // It would be nice to use an atomic for the tid, but
-    // chpl_taskID_t is an opaque type.  Might be able to make some
-    // assumptions about it.
-    var tid$           : sync chpl_taskID_t = chpl_nullTaskID;
-    var min_distance   : [vertex_domain] atomic int;
-    var path_count$    : [vertex_domain] sync real(64);
-    var depend         : [vertex_domain] real;
-    var children_list  : [vertex_domain] child_struct(index(vertex_domain));
-    var Active_Level   : [PrivateSpace] Level_Set (Sparse_Vertex_List);
+    // This code assumes that chpl_taskID_t is an integral type
+    var tid   : nativeAtomic(int);
+    var BCaux : [vertex_domain] taskPrivateArrayData(index(vertex_domain));
+    var Active_Level : [PrivateSpace] Level_Set (Sparse_Vertex_List);
+    proc initialize() {
+      tid.write(chpl_nullTaskID:int);
+    }
   };
   inline proc =(a: chpl_taskID_t, b: chpl_taskID_t) return b;
   inline proc !=(a: chpl_taskID_t, b: chpl_taskID_t) return __primitive("!=", a, b);
@@ -558,24 +565,21 @@ module SSCA2_kernels
     var temps: [r] taskPrivateData(domain(index(vertex_domain)),
                                    vertex_domain.type);
     proc get_tid() {
-      // This code assumes that chpl_taskID_t is an integral type
       extern proc chpl_task_getId(): chpl_taskID_t;
-      var mytid = chpl_task_getId();
-      var slot = (mytid:uint % (numTasks:uint)):int;
-      var tid: chpl_taskID_t = temps[slot].tid$; // lock
-      while ((tid != chpl_nullTaskID) && (tid != mytid)) {
-        temps[slot].tid$ = tid;                  // unlock
+      const mytid = chpl_task_getId():int;
+      var slot = mytid % numTasks;
+      while !temps[slot].tid.compareExchangeWeak(chpl_nullTaskID:int, mytid) {
         slot = (slot+1)%numTasks;
-        tid = temps[slot].tid$;                  // lock
       }
-      temps[slot].tid$ = mytid;                  // unlock
       return slot;
     }
-    inline proc get_min_distance(tid=get_tid()) return temps[tid].min_distance;
-    inline proc get_path_count(tid=get_tid()) return temps[tid].path_count$;
-    inline proc get_depend(tid=get_tid()) return temps[tid].depend;
-    inline proc get_children_list(tid=get_tid()) return temps[tid].children_list;
-    inline proc get_Active_Level(tid=get_tid()) return temps[tid].Active_Level;
+    proc release_tid(slot) {
+      extern proc chpl_task_getId(): chpl_taskID_t;
+      const mytid = chpl_task_getId():int;
+      assert(temps[slot].tid.compareExchangeStrong(mytid, chpl_nullTaskID:int));
+    }
+    inline proc get_BCaux(tid) return temps[tid].BCaux;
+    inline proc get_Active_Level(tid) return temps[tid].Active_Level;
   }
 
   //
@@ -584,8 +588,8 @@ module SSCA2_kernels
   record Barrier {
     param reusable = true;
     var n: int;
-    var count: atomic int;
-    var done: atomic bool;
+    var count: nativeAtomic(int);
+    var done: nativeAtomic(bool);
 
     proc Barrier(_n: int) {
       reset(_n);
