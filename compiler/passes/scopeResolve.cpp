@@ -1289,9 +1289,7 @@ void scopeResolve(void) {
             if (entry->count(get_string(call->get(2))) != 0) {
               sym = (*entry)[get_string(call->get(2))];
             } else {
-              printf("Count was %d, now it's ", (int)entry->count(get_string(call->get(2))));
               sym = (*entry)[get_string(call->get(2))];
-              printf("%d\n", (int)entry->count(get_string(call->get(2))));
             }
           }
           if (!sym) {
@@ -1300,9 +1298,7 @@ void scopeResolve(void) {
               if (entry->count(get_string(call->get(2))) != 0) {
                 sym = (*entry)[get_string(call->get(2))];
               } else {
-                printf("Count was %d, now it's ", (int)entry->count(get_string(call->get(2))));
                 sym = (*entry)[get_string(call->get(2))];
-                printf("%d\n", (int)entry->count(get_string(call->get(2))));
               }
             }
           }
