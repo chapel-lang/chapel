@@ -107,7 +107,7 @@ module Graph500_main
      writeln("Candidate root = ", root);
 
      // Verify that root is a valid candidate, ie has at least one edge
-     if ( G.Vertices[root].neighbor_count > 0 ){
+     if ( G.Vertices[root].neighbor_count.read() > 0 ){
 
        BFS_time[runID].start(); 
        BFS ( root, ParentTree, G);

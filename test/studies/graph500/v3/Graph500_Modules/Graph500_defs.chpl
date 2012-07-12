@@ -10,6 +10,7 @@ module Graph500_defs
   config param RMAT_WITH_SHUFFLE = true;
   config param SHUFFLE_DETERMINISTICALLY = false;
   config param DEBUG_GRAPH_GENERATOR = false;
+  config const DEBUG_EDGE_HISTOGRAM = DEBUG_GRAPH_GENERATOR;
   config const SCALE = 6;
   config const EDGEFACTOR = 8;
   const N_VERTICES = 1 << SCALE;
@@ -49,34 +50,30 @@ module Graph500_defs
     record vertex_struct {
       var nd: domain(1);
       var Neighbors : [nd] vertex_id;
-      var neighbor_count: int=0;
-      var self_edges: int=0;
-      var duplicates: int=0;
-      var vlock$: sync bool = true;
+      var neighbor_count: atomic int; // atomics are initialized to 0, right?
+      var self_edges: atomic int;
+      var duplicates: atomic int;
 
+/* do not do that - instead filter out duplicates later
       proc is_a_neighbor (new_vertex_ID: vertex_id) {
-         var is_member: bool = false;
-         forall n in Neighbors (1..neighbor_count) {
-            if (new_vertex_ID == n ) then is_member = true;
+         // serial loop here... other cores are already working on other vertices
+         for n in Neighbors (1..neighbor_count) {
+            if (new_vertex_ID == n ) then return true;
          }
-         return is_member;
+         return false;
       }
-        
+*/        
       proc add_self_edge () {
-         vlock$.readFE();
-         self_edges += 1;
-         vlock$.writeEF(true);
+         self_edges.add(1);
       }
  
       proc add_duplicate () {
-         vlock$.readFE();
-         duplicates += 1;
-         vlock$.writeEF(true);
+         duplicates.add(1);
       }
 
       proc add_Neighbor (new_vertex_ID: vertex_id) {
-         vlock$.readFE();
          var ID: vertex_id = new_vertex_ID;
+/* different approach
 //       Check again to make sure another thread did not recently
 //       add v to u's neighbor list
          if is_a_neighbor(ID) then {
@@ -87,10 +84,12 @@ module Graph500_defs
            if (neighbor_count >= Neighbors.numElements) {
              grow_helper(); 
            }
-           neighbor_count += 1;
-           Neighbors[neighbor_count]= new_vertex_ID;
+*/
+           const newNeighbor = neighbor_count.fetchAdd(1) + 1;
+           Neighbors[newNeighbor]= new_vertex_ID;
+/*
          }
-         vlock$.writeEF(true);
+*/
       }
          
       proc grow_helper() { 
