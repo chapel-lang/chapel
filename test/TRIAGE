@@ -9,15 +9,6 @@
 These things regularly cause noise in testing:
 ==============================================
 
-extern/bradc/emptyRecords/emptyrecordexternfn
----------------------------------------------
-I wouldn't call this noise per say, but it's been a passing future for
-a while, and I think someone (maybe Brad?) should look at retiring it
-or adding skipifs (if needed).
-
-   Future (bug: pruning of empty records and externs) [Success matching program output for extern/bradc/emptyRecords/emptyrecordexternfn]
-
-
 spectralnorm (vass)
 -------------------
 proposed approach is to see whether reference version is similarly
@@ -157,3 +148,25 @@ memory/vass/crash-memory-module-1 (vass)
 fails intermittently
 
 
+===========================================
+Not noisy, but need some attention sometime
+===========================================
+
+extern/bradc/emptyRecords/emptyrecordexternfn
+---------------------------------------------
+This future is passing because Michael stubbed out the compiler pass that
+removes empty records as part of his I/O change (because, IIRC, it wasn't
+working and didn't break anything to pull it out).  Brad suggests:
+
+* reviewing why the compiler pass existed in the first place -- is it
+  still necessary/beneficial?  (My guess is that it wasn't necessary
+  since nothing else is breaking; that it is beneficial in that it
+  removes dead types and code related to those dead types).
+
+* attempting to re-enable the pass if it is still useful
+
+* removing the pass and retiring the future if it is not
+
+(This has been on Brad's TODO list since QIO got committed, but it's
+been hard to make that a priority of any sort compared to everything
+else).
