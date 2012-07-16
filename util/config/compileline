@@ -27,9 +27,7 @@ if( defined $ENV{"CHPL_HOME"} ) {
   $ENV{"CHPL_HOME"} = $chpl_home_dir;
 }
 
-$ENV{"CHPL_MAKE_HOME"} = $ENV{"CHPL_HOME"};
-
-$chpl_home_dir = $ENV{"CHPL_MAKE_HOME"};
+$ENV{"CHPL_MAKE_HOME"} = $chpl_home_dir;
 
 if( $ARGV[0] eq "--home" ) {
   print $chpl_home_dir . "\n";
