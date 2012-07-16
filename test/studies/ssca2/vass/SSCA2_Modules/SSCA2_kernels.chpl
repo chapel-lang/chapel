@@ -166,7 +166,7 @@ module SSCA2_kernels
 
   use BlockDist;
   // Would be nice to use PriavteDist, but aliasing is not supported (yet)
-  const PrivateSpace = [LocaleSpace] dmapped Block(boundingBox=[LocaleSpace]);
+  const PrivateSpace = {LocaleSpace} dmapped Block(boundingBox={LocaleSpace});
 
   // ==================================================================
   //                              KERNEL 4
@@ -231,7 +231,7 @@ module SSCA2_kernels
         for t in l.temps { // this might be bad for first-touch
           t = new taskPrivateData(domain(index(vertex_domain)), vertex_domain);
           forall v in vertex_domain do
-            t.children_list[v].nd = [1..G.n_Neighbors[v]];
+            t.children_list[v].nd = {1..G.n_Neighbors[v]};
           for loc in Locales do on loc {
               t.Active_Level[here.id] = new Level_Set (Sparse_Vertex_List);
               t.Active_Level[here.id].previous = nil;
@@ -554,7 +554,7 @@ module SSCA2_kernels
     const vertex_domain;
     const numTasks = if dataParTasksPerLocale==0 then here.numCores
       else dataParTasksPerLocale;
-    var r = [0..#numTasks];
+    var r = {0..#numTasks};
     var temps: [r] taskPrivateData(domain(index(vertex_domain)),
                                    vertex_domain.type);
     proc get_tid() {

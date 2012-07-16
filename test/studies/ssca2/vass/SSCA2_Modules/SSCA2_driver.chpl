@@ -79,8 +79,8 @@ module SSCA2_driver
         var Sum_Min_Dist : real;
         const Vertex_Count_Constraint = N_VERTICES : real * (N_VERTICES -1);
 
-        for approx_scale in [ max (1, LOW_APPROX_SCALE) .. 
-                              min (TOP_APPROX_SCALE, SCALE) ] {
+        for approx_scale in { max (1, LOW_APPROX_SCALE) .. 
+                              min (TOP_APPROX_SCALE, SCALE) } {
 	  Sum_Min_Dist = 1.0;
   
 	  if approx_scale == SCALE {
@@ -106,8 +106,8 @@ module SSCA2_driver
             //  -----------------------------------------------
 
             var BC_starting_vertices : sparse subdomain 
-              ( [(...G.vertices.dims())] );
-            var vertex_indices       : domain (1) = [1..N_VERTICES];
+              ( {(...G.vertices.dims())} );
+            var vertex_indices       : domain (1) = {1..N_VERTICES};
             var random_indices       : sparse subdomain (vertex_indices);
             var linear_index         : index (vertex_indices);
 
