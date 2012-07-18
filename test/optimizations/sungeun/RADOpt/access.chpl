@@ -128,7 +128,7 @@ const oneT = fillIt(1);
 proc main() {
   writeln(rank, " dimensional array of ", typeToString(myType));
 
-  if doCyclic {
+  if doBlock {
     writeln();
     const bD: domain(rank) dmapped new dmap (new Block(boundingBox=D)) = D;
     doit(bD, "Block");
