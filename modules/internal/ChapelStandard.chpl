@@ -9,13 +9,13 @@ module ChapelStandard {
   use ChapelThreads;
   use ChapelThreadsInternal;
   use ChapelTasksInternal;
-  use ChapelIO;
   use ChapelTuple;
   use ChapelRange;
   use ChapelReduce;
   use ChapelArray;
   use ChapelDistribution;
   use ChapelLocale;
+  use ChapelIO;
   use DefaultRectangular; // Must precede ChapelTaskTable.
   use DefaultAssociative;
   use DefaultSparse;

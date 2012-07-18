@@ -66,12 +66,12 @@ module Buffers {
 
   // Now define the Chapel types using the originals..
   record bytes {
-    var home_uid:int;
+    var home: locale;
     var _bytes_internal:qbytes_ptr_t;
   }
 
   record buffer_iterator {
-    var home_uid:int;
+    var home: locale;
     var _bufit_internal:qbuffer_iter_t;
   }
   record buffer_range {
@@ -81,7 +81,7 @@ module Buffers {
 
   proc buffer_range.len:int(64) {
     var ret:int(64);
-    on __primitive("chpl_on_locale_num", this.start.home_uid) {
+    on this.start.home {
       ret = qbuffer_iter_num_bytes(this.start._bufit_internal,
                                    this.end._bufit_internal);
     }
@@ -91,35 +91,31 @@ module Buffers {
   // FUTURE -- we could create const buffers
   // with a boolean type param
   record buffer {
-    var home_uid:int;
+    var home:locale;
     var _buf_internal:qbuffer_ptr_t;
   }
 
   // bytes methods.
   proc bytes.bytes() {
-    var tmp:int;
     this._internal = c_nil;
-    this.home_uid = __primitive("_get_locale", tmp);
+    this.home = here;
   }
   proc bytes.bytes(len:int(64), out error:syserr) {
-    var tmp:int;
     error = qbytes_create_calloc(this._bytes_internal, len);
-    this.home_uid = __primitive("_get_locale", tmp);
+    this.home = here;
   }
   proc bytes.bytes(len:int(64)) {
-    var tmp:int;
     var error:syserr = ENOERR;
     error = qbytes_create_calloc(this._bytes_internal, len);
     if error then ioerror(error, "in bytes constructor");
-    this.home_uid = __primitive("_get_locale", tmp);
+    this.home = here;
   }
 
 
   proc create_iobuf(out error:syserr):bytes {
     var ret:bytes;
-    var tmp:int;
     error = qbytes_create_iobuf(ret._bytes_internal);
-    ret.home_uid = __primitive("_get_locale", tmp);
+    ret.home = here;
     return ret;
   }
   proc create_iobuf():bytes {
@@ -132,56 +128,51 @@ module Buffers {
 
   // TODO -- shouldn't have to write this this way!
   proc chpl__initCopy(x: bytes) {
-    var tmp:int;
-    var here_uid = __primitive("_get_locale", tmp);
-    if x.home_uid == here_uid {
+    if x.home == here {
       qbytes_retain(x._bytes_internal);
       return x;
     } else {
       var ret:bytes;
-      ret.home_uid = here_uid;
+      ret.home = here;
       writeln("Bulk moving bytes");
-      ret._bytes_internal = bulk_get_bytes(x.home_uid, x._bytes_internal); 
+      ret._bytes_internal = bulk_get_bytes(x.home.id, x._bytes_internal); 
       return ret;
     }
   }
 
   proc =(ret:bytes, x:bytes) {
-    var tmp:int;
-    var here_uid = __primitive("_get_locale", tmp);
-
     // retain -- release
-    if( x.home_uid == here_uid ) {
-      on __primitive("chpl_on_locale_num", x.home_uid) {
+    if( x.home == here ) {
+      on x.home {
         qio_bytes_retain(x._bytes_internal);
       }
 
-      on __primitive("chpl_on_locale_num", ret.home_uid) {
+      on ret.home {
         qio_bytes_release(ret._bytes_internal);
       }
 
       ret.home = x.home;
       ret._bytes_internal = x._bytes_internal;
     } else {
-      on __primitive("chpl_on_locale_num", ret.home_uid) {
+      on ret.home {
         qio_bytes_release(ret._bytes_internal);
       }
       ret.home = here;
       writeln("Bulk moving bytes");
-      ret._bytes_internal = bulk_get_bytes(x.home_uid, x._bytes_internal); 
+      ret._bytes_internal = bulk_get_bytes(x.home.id, x._bytes_internal); 
     }
     return ret;
   }
 
   proc bytes.~bytes() {
-    on __primitive("chpl_on_locale_num", this.home_uid) {
+    on this.home {
       qbytes_release(this._bytes_internal);
       this._bytes_internal = QBYTES_PTR_NULL;
     }
   }
   proc bytes.len:int(64) {
     var ret:int(64);
-    on __primitive("chpl_on_locale_num", this.home_uid) {
+    on home {
      ret = qbytes_len(this._bytes_internal);
     }
     return ret;
@@ -189,9 +180,7 @@ module Buffers {
 
   // buffer iterator
   proc buffer_iterator.buffer_iterator() {
-    var tmp:int;
-    var here_uid = __primitive("_get_locale", tmp);
-    this.home_uid = here_uid;
+    this.home = here;
     this._bufit_internal = qbuffer_iter_null();
   }
   /* don't believe this is necessary...
@@ -202,16 +191,12 @@ module Buffers {
 
   // buffer methods.
   proc buffer.buffer(out error:syserr) {
-    var tmp:int;
-    var here_uid = __primitive("_get_locale", tmp);
-    this.home_uid = here_uid;
+    this.home = here;
     error = qbuffer_create(this._buf_internal);
   }
   proc buffer.buffer() {
-    var tmp:int;
-    var here_uid = __primitive("_get_locale", tmp);
     var error:syserr = ENOERR;
-    this.home_uid = here_uid;
+    this.home = here;
     error = qbuffer_create(this._buf_internal);
     if error then ioerror(error, "in buffer constructor");
   }
@@ -221,19 +206,17 @@ module Buffers {
   // bytes object wherever it is called (and communicates it 
   // intelligently). It is use in buffer's initCopy.
   proc buffer.flatten(range:buffer_range, out error:syserr):bytes {
-    var tmp:int;
-    var here_uid = __primitive("_get_locale", tmp);
     var ret:bytes;
-    if this.home_uid == here_uid {
+    if this.home == here {
       error = qbuffer_flatten(this._buf_internal, range.start._bufit_internal, range.end._bufit_internal, ret);
     } else {
       var dst_locale = here;
       var dst_len:int(64) = range.len;
       ret = new bytes(dst_len);
       var dst_addr = qbytes_data(ret._bytes_internal);
-      on __primitive("chpl_on_locale_num", this.home_uid) {
+      on this.home {
         // Copy the buffer to the bytes...
-        error = bulk_put_buffer(dst_locale.uid, dst_addr, dst_len,
+        error = bulk_put_buffer(dst_locale.id, dst_addr, dst_len,
                                 this._buf_internal,
                                 range.start._bufit_internal,
                                 range.end._bufit_internal);
@@ -244,9 +227,7 @@ module Buffers {
 
   // TODO -- shouldn't have to write this this way!
   proc chpl__initCopy(x: buffer) {
-    var tmp:int;
-    var here_uid = __primitive("_get_locale", tmp);
-    if x.home_uid == here_uid {
+    if x.home == here {
       qbuffer_retain(x._buf_internal);
       return x;
     } else {
@@ -254,7 +235,7 @@ module Buffers {
       var start_offset:int(64);
       var end_offset:int(64);
      
-      on __primitive("chpl_on_locale_num", x.home_uid) {
+      on x.home {
         start_offset = qbuffer_start_offset(x._buf_internal);
         end_offset = qbuffer_end_offset(x._buf_internal);
       }
@@ -267,9 +248,9 @@ module Buffers {
       // in it starting at the right position.
       qbuffer_reposition(ret._buf_internal, start_offset);
 
-      var there_uid = here_uid;
+      var there_uid = here.id;
 
-      on __primitive("chpl_on_locale_num", x.home_uid) {
+      on x.home {
         var err:syserr = ENOERR;
         err = bulk_put_buffer(there_uid, ptr, len, x._buf_internal,
                               qbuffer_begin(x._buf_internal),
@@ -283,30 +264,28 @@ module Buffers {
   }
 
   proc =(ret:buffer, x:buffer) {
-    var tmp:int;
-    var here_uid = __primitive("_get_locale", tmp);
-    ret.home_uid = here_uid;
+    ret.home = here;
     // retain -- release
-    if( x.home_uid == ret.home_uid ) {
-      on __primitive("chpl_on_locale_num", x.home_uid) {
+    if( x.home == ret.home ) {
+      on x.home {
         qbuffer_retain(x._buf_internal);
       }
 
-      on __primitive("chpl_on_locale_num", ret.home_uid) {
+      on ret.home {
         qbuffer_release(ret._buf_internal);
       }
 
       ret.home = x.home;
       ret._buf_internal = x._buf_internal;
     } else {
-      on __primitive("chpl_on_locale_num", ret.home_uid) {
+      on ret.home {
         qbuffer_release(ret._buf_internal);
       }
 
       var start_offset:int(64);
       var end_offset:int(64);
      
-      on __primitive("chpl_on_locale_num", x.home_uid) {
+      on x.home {
         start_offset = qbuffer_start_offset(x._buf_internal);
         end_offset = qbuffer_end_offset(x._buf_internal);
       }
@@ -319,9 +298,9 @@ module Buffers {
       // in it starting at the right position.
       qbuffer_reposition(ret._buf_internal, start_offset);
 
-      var there_uid = here_uid;
+      var there_uid = here.id;
 
-      on __primitive("chpl_on_locale_num", x.home_uid) {
+      on x.home {
         var err:syserr = ENOERR;
         err = bulk_put_buffer(there_uid, ptr, len, x._buf_internal,
                               qbuffer_begin(x._buf_internal),
@@ -335,7 +314,7 @@ module Buffers {
 
 
   proc buffer.~buffer() {
-    on __primitive("chpl_on_locale_num", this.home_uid) {
+    on this.home {
       qbuffer_release(this._buf_internal);
       this._buf_internal = QBUFFER_PTR_NULL;
     }
@@ -343,14 +322,14 @@ module Buffers {
 
   proc buffer.len {
     var ret:int(64);
-    on __primitive("chpl_on_locale_num", this.home_uid) {
+    on this.home {
       ret = qbuffer_len(this._buf_internal);
     }
     return ret;
   }
 
   proc buffer.append(b:bytes, skip_bytes:int(64) = 0, len_bytes:int(64) = b.len, out error:syserr) {
-    on __primitive("chpl_on_locale_num", this.home_uid) {
+    on this.home {
       error = qbuffer_append(this._buf_internal, b._bytes_internal, skip_bytes, len_bytes);
     }
   }
@@ -362,7 +341,7 @@ module Buffers {
 
 
   proc buffer.append(buf:buffer, part:buffer_range = buf.all(), out error:syserr) {
-    on __primitive("chpl_on_locale_num", this.home_uid) {
+    on this.home {
       error = qbuffer_append_buffer(this._buf_internal, buf._buf_internal, part.start._bufit_internal, part.end._bufit_internal);
     }
   }
@@ -373,7 +352,7 @@ module Buffers {
   }
 
   proc buffer.prepend(b:bytes, skip_bytes:int(64) = 0, len_bytes:int(64) = b.len, out error:syserr) {
-    on __primitive("chpl_on_locale_num", this.home_uid) {
+    on this.home {
       qbuffer_prepend(this._buf_internal, b._bytes_internal, skip_bytes, len_bytes);
     }
   }
@@ -385,16 +364,16 @@ module Buffers {
 
   proc buffer.start():buffer_iterator {
     var ret:buffer_iterator;
-    ret.home_uid = this.home_uid;
-    on __primitive("chpl_on_locale_num", this.home_uid) {
+    ret.home = this.home;
+    on this.home {
       ret._bufit_internal = qbuffer_begin(this._buf_internal);
     }
     return ret;
   }
   proc buffer.end():buffer_iterator {
     var ret:buffer_iterator;
-    ret.home_uid = this.home_uid;
-    on __primitive("chpl_on_locale_num", this.home_uid) {
+    ret.home = this.home;
+    on this.home {
       ret._bufit_internal = qbuffer_end(this._buf_internal);
     }
     return ret;
@@ -404,21 +383,21 @@ module Buffers {
   }
 
   proc buffer.next_part(inout it:buffer_iterator) {
-    on __primitive("chpl_on_locale_num", this.home_uid) {
+    on this.home {
       var x = it;
       qbuffer_iter_next_part(this._buf_internal, x._bufit_internal);
       it = x;
     }
   }
   proc buffer.prev_part(inout it:buffer_iterator) {
-    on __primitive("chpl_on_locale_num", this.home_uid) {
+    on this.home {
       var x = it;
       qbuffer_iter_prev_part(this._buf_internal, x._bufit_internal);
       it = x;
     }
   }
   proc buffer.advance(inout it:buffer_iterator, amount:int(64)) {
-    on __primitive("chpl_on_locale_num", this.home_uid) {
+    on this.home {
       var x = it;
       qbuffer_iter_advance(this._buf_internal, x._bufit_internal, amount);
       it = x;
@@ -427,7 +406,7 @@ module Buffers {
 
   proc buffer_iterator.debug_print()
   {
-    on __primitive("chpl_on_locale_num", this.home_uid) {
+    on this.home {
       debug_print_qbuffer_iter(this._bufit_internal);
     }
   }
@@ -444,8 +423,8 @@ module Buffers {
   // methods to read/write basic types.
   proc buffer.copyout(it:buffer_iterator, out value, out error:syserr):buffer_iterator {
     var ret:buffer_iterator;
-    ret.home_uid = this.home_uid;
-    on __primitive("chpl_on_locale_num", this.home_uid) {
+    ret.home = this.home;
+    on this.home {
       var end:buffer_iterator = it;
       var tmp:value.type;
       var sz = numBytes(value.type);
@@ -464,8 +443,8 @@ module Buffers {
 
   proc buffer.copyin( it:buffer_iterator, value, out error:syserr):buffer_iterator {
     var ret:buffer_iterator;
-    ret.home_uid = this.home_uid;
-    on __primitive("chpl_on_locale_num", this.home_uid) {
+    ret.home = this.home;
+    on this.home {
       //writeln("iterator on way in");
       //debug_print_qbuffer_iter(it._bufit_internal);
       var end = it;

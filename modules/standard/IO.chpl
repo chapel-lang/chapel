@@ -421,13 +421,8 @@ extern type fdflag_t = c_int;
 
 extern type iohints = c_int;
 
-inline proc _current_locale():int {
-  var tmp:int;
-  return __primitive("_get_locale", tmp);
-}
-
 record file {
-  var home_uid:int = _current_locale();
+  var home: locale = here;
   var _file_internal:qio_file_ptr_t = QIO_FILE_PTR_NULL;
 }
 
@@ -463,7 +458,7 @@ proc file.isOpen: bool {
 
 // TODO -- shouldn't have to write this this way!
 proc chpl__initCopy(x: file) {
-  on __primitive("chpl_on_locale_num", x.home_uid) {
+  on x.home {
     qio_file_retain(x._file_internal);
   }
   return x;
@@ -471,16 +466,16 @@ proc chpl__initCopy(x: file) {
 
 proc =(ret:file, x:file) {
   // retain -- release
-  on __primitive("chpl_on_locale_num", x.home_uid) {
+  on x.home {
     qio_file_retain(x._file_internal);
   }
 
-  on __primitive("chpl_on_locale_num", ret.home_uid) {
+  on ret.home {
     qio_file_release(ret._file_internal);
   }
 
   // compiler will do this copy.
-  ret.home_uid = x.home_uid;
+  ret.home = x.home;
   ret._file_internal = x._file_internal;
   return ret;
 }
@@ -493,14 +488,13 @@ proc file.check() {
 
 /*
 proc file.file() {
-  var tmp:int;
-  this.home_uid = _current_locale();
+  this.home = here;
   this._file_internal = QIO_FILE_PTR_NULL;
 }
 */
 
 proc file.~file() {
-  on __primitive("chpl_on_locale_num", this.home_uid) {
+  on this.home {
     qio_file_release(_file_internal);
     this._file_internal = QIO_FILE_PTR_NULL;
   }
@@ -511,12 +505,12 @@ proc file.~file() {
    at the moment I don't see any use case in which
    it would make sense. 
 proc file.lock() {
-  on __primitive("chpl_on_locale_num", this.home_uid) {
+  on this.home {
     seterr(nil, qio_file_lock(_file_internal));
   }
 }
 proc file.unlock() {
-  on __primitive("chpl_on_locale_num", this.home_uid) {
+  on this.home {
     qio_file_unlock(_file_internal);
   }
 }
@@ -529,7 +523,7 @@ proc file._style:iostyle {
   check();
 
   var ret:iostyle;
-  on __primitive("chpl_on_locale_num", this.home_uid) {
+  on this.home {
     var local_style:iostyle;
     qio_file_get_style(_file_internal, local_style);
     ret = local_style;
@@ -541,7 +535,7 @@ proc file._style:iostyle {
    Alternately, file will be closed when it is no longer referred to */
 proc file.close(out error:syserr) {
   check();
-  on __primitive("chpl_on_locale_num", this.home_uid) {
+  on this.home {
     error = qio_file_close(_file_internal);
   }
 }
@@ -555,7 +549,7 @@ proc file.close() {
 /* Sync a file to disk. */
 proc file.fsync(out error:syserr) {
   check();
-  on __primitive("chpl_on_locale_num", this.home_uid) {
+  on this.home {
     error = qio_file_sync(_file_internal);
   }
 }
@@ -570,7 +564,7 @@ proc file.fsync() {
 proc file.getPath(out error:syserr) : string {
   check();
   var ret:string;
-  on __primitive("chpl_on_locale_num", this.home_uid) {
+  on this.home {
     var tmp:string;
     var tmp2:string;
     error = qio_file_path(_file_internal, tmp);
@@ -622,7 +616,7 @@ proc _modestring(mode:iomode) {
 proc open(out error:syserr, path:string, mode:iomode, hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle()):file {
   var local_style = style;
   var ret:file;
-  ret.home_uid = _current_locale();
+  ret.home = here;
   error = qio_file_open_access(ret._file_internal, path, _modestring(mode), hints, local_style);
   return ret;
 }
@@ -635,7 +629,7 @@ proc open(path:string, mode:iomode, hints:iohints=IOHINT_NONE, style:iostyle = d
 proc openfd(fd: fd_t, out error:syserr, hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle()):file {
   var local_style = style;
   var ret:file;
-  ret.home_uid = _current_locale();
+  ret.home = here;
   error = qio_file_init(ret._file_internal, chpl_cnullfile(), fd, hints, local_style, 0);
   return ret;
 }
@@ -654,7 +648,7 @@ proc openfd(fd: fd_t, hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle(
 proc openfp(fp: _file, out error:syserr, hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle()):file {
   var local_style = style;
   var ret:file;
-  ret.home_uid = _current_locale();
+  ret.home = here;
   error = qio_file_init(ret._file_internal, fp, -1, hints, local_style, 1);
   return ret;
 }
@@ -674,7 +668,7 @@ proc openfp(fp: _file, hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle
 proc opentmp(out error:syserr, hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle()):file {
   var local_style = style;
   var ret:file;
-  ret.home_uid = _current_locale();
+  ret.home = here;
   error = qio_file_open_tmp(ret._file_internal, hints, local_style);
   return ret;
 }
@@ -688,7 +682,7 @@ proc opentmp(hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle()):file {
 proc openmem(out error:syserr, style:iostyle = defaultIOStyle()) {
   var local_style = style;
   var ret:file;
-  ret.home_uid = _current_locale();
+  ret.home = here;
   error = qio_file_open_mem(ret._file_internal, QBUFFER_PTR_NULL, local_style);
   return ret;
 }
@@ -707,13 +701,13 @@ record channel {
   param writing:bool;
   param kind:iokind;
   param locking:bool;
-  var home_uid:int;
+  var home:locale;
   var _channel_internal:qio_channel_ptr_t = QIO_CHANNEL_PTR_NULL;
 }
 
 // TODO -- shouldn't have to write this this way!
 proc chpl__initCopy(x: channel) {
-  on __primitive("chpl_on_locale_num", x.home_uid) {
+  on x.home {
     qio_channel_retain(x._channel_internal);
   }
   return x;
@@ -721,29 +715,29 @@ proc chpl__initCopy(x: channel) {
 
 proc =(ret:channel, x:channel) {
   // retain -- release
-  on __primitive("chpl_on_locale_num", x.home_uid) {
+  on x.home {
     qio_channel_retain(x._channel_internal);
   }
 
-  on __primitive("chpl_on_locale_num", ret.home_uid) {
+  on ret.home {
     qio_channel_release(ret._channel_internal);
   }
 
-  ret.home_uid = x.home_uid;
+  ret.home = x.home;
   ret._channel_internal = x._channel_internal;
   return ret;
 }
 
 proc channel.channel(param writing:bool, param kind:iokind, param locking:bool, f:file, out error:syserr, hints:c_int, start:int(64), end:int(64), style:iostyle) {
-  on __primitive("chpl_on_locale_num", f.home_uid) {
-    this.home_uid = f.home_uid;
+  on f.home {
+    this.home = f.home;
     var local_style = style;
     error = qio_channel_create(this._channel_internal, f._file_internal, hints, !writing, writing, start, end, local_style);
   }
 }
 
 proc channel.~channel() {
-  on __primitive("chpl_on_locale_num", this.home_uid) {
+  on this.home {
     qio_channel_release(_channel_internal);
     this._channel_internal = QIO_CHANNEL_PTR_NULL;
   }
@@ -804,7 +798,7 @@ inline proc _cast(type t, x: ioBits) where t == string {
 proc channel._ch_ioerror(error:syserr, msg:string) {
   var path:string = "unknown";
   var offset:int(64) = -1;
-  on __primitive("chpl_on_locale_num", this.home_uid) {
+  on this.home {
     var tmp_path:string;
     var tmp_offset:int(64);
     var err:syserr = ENOERR;
@@ -819,7 +813,7 @@ proc channel._ch_ioerror(error:syserr, msg:string) {
 proc channel._ch_ioerror(errstr:string, msg:string) {
   var path:string = "unknown";
   var offset:int(64) = -1;
-  on __primitive("chpl_on_locale_num", this.home_uid) {
+  on this.home {
     var tmp_path:string;
     var tmp_offset:int(64);
     var err:syserr = ENOERR;
@@ -836,7 +830,7 @@ proc channel._ch_ioerror(errstr:string, msg:string) {
 inline proc channel.lock(out error:syserr) {
   error = ENOERR;
   if locking {
-    on __primitive("chpl_on_locale_num", this.home_uid) {
+    on this.home {
       error = qio_channel_lock(_channel_internal);
     }
   }
@@ -849,7 +843,7 @@ inline proc channel.lock() {
 
 inline proc channel.unlock() {
   if locking {
-    on __primitive("chpl_on_locale_num", this.home_uid) {
+    on this.home {
       qio_channel_unlock(_channel_internal);
     }
   }
@@ -857,7 +851,7 @@ inline proc channel.unlock() {
 
 proc channel.offset():int(64) {
   var ret:int(64);
-  on __primitive("chpl_on_locale_num", this.home_uid) {
+  on this.home {
     this.lock();
     ret = qio_channel_offset_unlocked(_channel_internal);
     this.unlock();
@@ -869,7 +863,7 @@ proc channel.offset():int(64) {
 
 inline proc channel._offset():int(64) {
   var ret:int(64);
-  on __primitive("chpl_on_locale_num", this.home_uid) {
+  on this.home {
     ret = qio_channel_offset_unlocked(_channel_internal);
   }
   return ret;
@@ -886,7 +880,7 @@ inline proc channel._commit() {
 }
 proc channel._style():iostyle {
   var ret:iostyle;
-  on __primitive("chpl_on_locale_num", this.home_uid) {
+  on this.home {
     var local_style:iostyle;
     qio_channel_get_style(_channel_internal, local_style);
     ret = local_style;
@@ -894,7 +888,7 @@ proc channel._style():iostyle {
   return ret;
 }
 proc channel._set_style(style:iostyle) {
-  on __primitive("chpl_on_locale_num", this.home_uid) {
+  on this.home {
     var local_style:iostyle = style;
     qio_channel_set_style(_channel_internal, local_style);
   }
@@ -904,7 +898,7 @@ proc file.reader(out error:syserr, param kind=iokind.dynamic, param locking=true
   check();
 
   var ret:channel(false, kind, locking);
-  on __primitive("chpl_on_locale_num", this.home_uid) {
+  on this.home {
     ret = new channel(false, kind, locking, this, error, hints, start, end, style);
   }
   return ret;
@@ -924,7 +918,7 @@ proc file.lines(out error:syserr, param locking:bool = true, start:int(64) = 0, 
 
   param kind = iokind.dynamic;
   var ret:ItemReader(string, kind, locking);
-  on __primitive("chpl_on_locale_num", this.home_uid) {
+  on this.home {
     var ch = new channel(false, kind, locking, this, error, hints, start, end, style);
     ret = new ItemReader(string, kind, locking, ch);
   }
@@ -942,7 +936,7 @@ proc file.writer(out error:syserr, param kind=iokind.dynamic, param locking=true
   check();
 
   var ret:channel(true, kind, locking);
-  on __primitive("chpl_on_locale_num", this.home_uid) {
+  on this.home {
     ret = new channel(true, kind, locking, this, error, hints, start, end, style);
   }
   return ret;
@@ -1258,7 +1252,7 @@ inline proc channel.read(inout args ...?k,
                   out error:syserr):bool {
   if writing then compilerError("read on write-only channel");
   error = ENOERR;
-  on __primitive("chpl_on_locale_num", this.home_uid) {
+  on this.home {
     this.lock();
     for param i in 1..k {
       if !error {
@@ -1300,7 +1294,7 @@ proc channel.read(inout args ...?k,
                   out error:syserr):bool {
   if writing then compilerError("read on write-only channel");
   error = ENOERR;
-  on __primitive("chpl_on_locale_num", this.home_uid) {
+  on this.home {
     this.lock();
     var save_style = this._style();
     this._set_style(style);
@@ -1331,7 +1325,7 @@ proc channel.read(inout args ...?k,
 proc channel.readline(inout arg:string, out error:syserr):bool {
   if writing then compilerError("read on write-only channel");
   error = ENOERR;
-  on __primitive("chpl_on_locale_num", this.home_uid) {
+  on this.home {
     this.lock();
     var save_style = this._style();
     var mystyle = save_style.text();
@@ -1456,7 +1450,7 @@ proc channel.read(type t ...?numTypes) where numTypes > 1 {
 inline proc channel.write(args ...?k, out error:syserr):bool {
   if !writing then compilerError("write on read-only channel");
   error = ENOERR;
-  on __primitive("chpl_on_locale_num", this.home_uid) {
+  on this.home {
     this.lock();
     for param i in 1..k {
       if !error {
@@ -1485,7 +1479,7 @@ proc channel.write(args ...?k,
                    out error:syserr):bool {
   if !writing then compilerError("write on read-only channel");
   error = ENOERR;
-  on __primitive("chpl_on_locale_num", this.home_uid) {
+  on this.home {
     this.lock();
     var save_style = this._style();
     this._set_style(style);
@@ -1536,7 +1530,7 @@ proc channel.writeln(args ...?k,
 
 proc channel.flush(out error:syserr) {
   error = ENOERR;
-  on __primitive("chpl_on_locale_num", this.home_uid) {
+  on this.home {
     error = qio_channel_flush(locking, _channel_internal);
   }
 }
@@ -1564,7 +1558,7 @@ proc channel.assertEOF() {
 
 proc channel.close(out error:syserr) {
   error = ENOERR;
-  on __primitive("chpl_on_locale_num", this.home_uid) {
+  on this.home {
     error = qio_channel_close(locking, _channel_internal);
   }
 }
@@ -1578,7 +1572,7 @@ proc channel.close() {
 /*
 proc channel.modifyStyle(f:func(iostyle, iostyle))
 {
-  on __primitive("chpl_on_locale_num", this.home_uid) {
+  on this.home {
     this.lock();
     var style = this._style();
     style = f(style);
