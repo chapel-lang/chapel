@@ -1178,9 +1178,17 @@ record _array {
     return _newArray(x);
   }
 
-  proc reindex(d: domain) {
+  proc reindex(d: domain)
+    where isRectangularDom(this.domain) && isRectangularDom(d)
+  {
     if rank != d.rank then
       compilerError("illegal implicit rank change");
+
+    // Optimization: Just return an alias of this array if the doms match exactly.
+    if _value.dom.type == d.type then
+      if _value.dom == d then 
+        return newAlias();
+
     for param i in 1..rank do
       if d.dim(i).length != _value.dom.dsiDim(i).length then
         halt("extent in dimension ", i, " does not match actual");
@@ -1198,6 +1206,15 @@ record _array {
     if !noRefCount then
       help();
     return _newArray(x);
+  }
+
+  // reindex for all non-rectangular domain types.
+  // See above for the rectangular version.
+  proc reindex(d:domain) {
+    if this.domain != d then
+      halt("Reindexing of non-rectangular arrays is undefined.");
+    // Does this need to call newAlias()?
+    return newAlias();
   }
 
   proc writeThis(f: Writer) {
