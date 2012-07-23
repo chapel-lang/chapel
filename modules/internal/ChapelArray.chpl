@@ -971,6 +971,7 @@ proc -(d1: domain, d2: domain) {
 inline proc ==(d1: domain, d2: domain) where isRectangularDom(d1) &&
                                                       isRectangularDom(d2) {
   if d1._value.rank != d2._value.rank then return false;
+  if d1._value == d2._value then return true;
   for param i in 1..d1._value.rank do
     if (d1.dim(i) != d2.dim(i)) then return false;
   return true;
@@ -979,6 +980,7 @@ inline proc ==(d1: domain, d2: domain) where isRectangularDom(d1) &&
 inline proc !=(d1: domain, d2: domain) where isRectangularDom(d1) &&
                                                       isRectangularDom(d2) {
   if d1._value.rank != d2._value.rank then return true;
+  if d1._value == d2._value then return false;
   for param i in 1..d1._value.rank do
     if (d1.dim(i) != d2.dim(i)) then return true;
   return false;
@@ -986,6 +988,7 @@ inline proc !=(d1: domain, d2: domain) where isRectangularDom(d1) &&
 
 inline proc ==(d1: domain, d2: domain) where (isAssociativeDom(d1) &&
                                                        isAssociativeDom(d2)) {
+  if d1._value == d2._value then return true;
   if d1.numIndices != d2.numIndices then return false;
   for idx in d1 do
     if !d2.member(idx) then return false;
@@ -994,6 +997,7 @@ inline proc ==(d1: domain, d2: domain) where (isAssociativeDom(d1) &&
 
 inline proc !=(d1: domain, d2: domain) where (isAssociativeDom(d1) &&
                                                        isAssociativeDom(d2)) {
+  if d1._value == d2._value then return false;
   if d1.numIndices != d2.numIndices then return true;
   for idx in d1 do
     if !d2.member(idx) then return true;
@@ -1002,6 +1006,7 @@ inline proc !=(d1: domain, d2: domain) where (isAssociativeDom(d1) &&
 
 inline proc ==(d1: domain, d2: domain) where (isSparseDom(d1) &&
                                                        isSparseDom(d2)) {
+  if d1._value == d2._value then return true;
   if d1.numIndices != d2.numIndices then return false;
   if d1._value.parentDom != d2._value.parentDom then return false;
   for idx in d1 do
@@ -1011,6 +1016,7 @@ inline proc ==(d1: domain, d2: domain) where (isSparseDom(d1) &&
 
 inline proc !=(d1: domain, d2: domain) where (isSparseDom(d1) &&
                                                        isSparseDom(d2)) {
+  if d1._value == d2._value then return false;
   if d1.numIndices != d2.numIndices then return true;
   if d1._value.parentDom != d2._value.parentDom then return true;
   for idx in d1 do
