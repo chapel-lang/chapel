@@ -153,9 +153,7 @@ static char** chpl_launch_create_argv(int argc, char* argv[],
   char* qsubOptions;
   pid_t mypid;
   int numCoresPerLocale;
-  const char *host = getenv("CHPL_HOST_PLATFORM");
-  const char *ccArg = _ccArg ? _ccArg :
-    (host && !strcmp(host, "xe-cle") ? "none" : "cpu");
+  const char *ccArg = "none";
 
   if (basenamePtr == NULL) {
       basenamePtr = argv[0];
