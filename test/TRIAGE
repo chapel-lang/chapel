@@ -49,6 +49,7 @@ question would be whether turning optimizations off/down when building
 
 linux64.gnu.gasnet.qthreads.none (UNASSIGNED)
 ---------------------------------------------
+0) We moved to a non-oversubscribed setting on a beefier machine
 1) Continue to have a lot of noise in testing.
    - Often the execution times out nondeterministically
 2) Got a seg fault (06/06/12, 6/16)
