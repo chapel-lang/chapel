@@ -54,7 +54,7 @@ module SSCA2_kernels
       // ---------------------------------------------
 
       forall s in G.vertices do
-        forall (t, w) in ( G.Neighbors (s), G.edge_weight (s) ) do
+        forall (t, w) in G.NeighborPairs (s) do
 
 	  if w == heaviest_edge_weight then {
 	    heavy_edge_list.add ( (s,t) ); 
@@ -80,7 +80,7 @@ module SSCA2_kernels
 	writeln ( "Edges with largest weight and other neighbors:" );
 	for (s,t) in heavy_edge_list do {
 	  writeln ("edge   ", (s,t));
-	  for (v,w) in (G.Neighbors (s), G.edge_weight (s) ) do
+	  for (v,w) in G.NeighborPairs (s) do
 	    writeln ("      ", v, " ", w);}
       }
     };
@@ -166,6 +166,8 @@ module SSCA2_kernels
 
   use BlockDist;
   use remoteAtomics;
+  config param useNativeAtomicReal = CHPL_COMM=="ugni";
+  config param useOnClause = CHPL_COMM!="ugni";
   // Would be nice to use PriavteDist, but aliasing is not supported (yet)
   const PrivateSpace = {LocaleSpace} dmapped Block(boundingBox={LocaleSpace});
 
@@ -264,7 +266,10 @@ module SSCA2_kernels
         var BCaux => lp.get_BCaux(tid);
         pragma "dont disable remote value forwarding"
           inline proc f1(BCaux, v) {
-          BCaux[v].path_count$.writeXF(0.0);
+	  if useNativeAtomicReal then
+            BCaux[v].path_count$.write(0.0);
+	  else
+            BCaux[v].path_count$.writeXF(0.0);
         }
         forall v in vertex_domain do {
           BCaux[v].depend = 0.0;
@@ -300,7 +305,10 @@ module SSCA2_kernels
         var Active_Level => lp.get_Active_Level(tid);
         pragma "dont disable remote value forwarding"
           inline proc f2(BCaux, s) {
-          BCaux[s].path_count$.writeXF(1);
+	  if useNativeAtomicReal then
+            BCaux[s].path_count$.write(1.0);
+	  else
+            BCaux[s].path_count$.writeXF(1.0);
         }
 
         var barrier = new Barrier(numLocales);
@@ -336,18 +344,22 @@ module SSCA2_kernels
             const current_distance_c = current_distance;
             pragma "dont disable remote value forwarding"
               inline proc f3(BCaux, v, u) {
-              BCaux[v].path_count$ += BCaux[u].path_count$.readFF();
+	      if useNativeAtomicReal then
+                BCaux[v].path_count$.add(BCaux[u].path_count$.read());
+              else
+                BCaux[v].path_count$ += BCaux[u].path_count$.readFF();
             }
 
             forall u in Active_Level[here.id].Members do {
               forall v in G.FilteredNeighbors(u) do
-                on vertex_domain.dist.idxToLocale(v) {
+                on if useOnClause then vertex_domain.dist.idxToLocale(v) else here {
                   // --------------------------------------------
                   // add any unmarked neighbors to the next level
                   // --------------------------------------------
   
                   if  BCaux[v].min_distance.compareExchangeStrong(-1, current_distance_c) {
-                    Active_Level[here.id].next.Members.add (v);
+                    var aloc = if useOnClause then here.id else vertex_domain.dist.idxToLocale(v).id;
+                    Active_Level[aloc].next.Members.add (v);
                     if VALIDATE_BC then
                       Lcl_Sum_Min_Dist += current_distance_c;
                   }
@@ -420,6 +432,12 @@ module SSCA2_kernels
 
           pragma "dont disable remote value forwarding"
             inline proc f4(BCaux, Between_Cent$, u) {
+	    if useNativeAtomicReal then
+            BCaux[u].depend = + reduce [v in BCaux[u].children_list.Row_Children[1..BCaux[u].children_list.child_count.read()]]
+              ( BCaux[u].path_count$.read() / 
+                BCaux[v].path_count$.read() )      *
+              ( 1.0 + BCaux[v].depend );
+	    else
             BCaux[u].depend = + reduce [v in BCaux[u].children_list.Row_Children[1..BCaux[u].children_list.child_count.read()]]
               ( BCaux[u].path_count$.readFF() / 
                 BCaux[v].path_count$.readFF() )      *
@@ -536,7 +554,7 @@ module SSCA2_kernels
   record taskPrivateArrayData {
     type vertex;
     var min_distance  : nativeAtomic(int);
-    var path_count$   : sync real(64);
+    var path_count$   : if useNativeAtomicReal then nativeAtomic(real) else sync real;
     var depend        : real;
     var children_list : child_struct(vertex);
   }
