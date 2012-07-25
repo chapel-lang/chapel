@@ -5266,7 +5266,8 @@ static void resolveRecordInitializers() {
           FnSymbol* fn = toFnSymbol(init->parentSymbol);
           if (fn)
             fn->removeFlag(FLAG_SPECIFIED_RETURN_TYPE);
-          init->replace(init->get(1)->remove());
+//          init->replace(init->get(1)->remove());
+          init->parentExpr->remove();
         } else {
           INT_ASSERT(type->initializer);
           CallExpr* call = new CallExpr(type->initializer);
