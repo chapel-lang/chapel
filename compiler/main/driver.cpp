@@ -489,11 +489,11 @@ static ArgumentDescription arg_desc[] = {
  {"gen-ids", ' ', NULL, "Pepper generated code with BaseAST::ids", "F", &fGenIDS, "CHPL_GEN_IDS", NULL},
  {"html", 't', NULL, "Dump IR in HTML format", "T", &fdump_html, "CHPL_HTML", NULL},
  {"html-user", ' ', NULL, "Dump IR in HTML for user module(s) only", "T", &fdump_html, NULL, setHtmlUser},
- {"log", 'd', "<letters>", "Dump IR in text format", "S512", log_flags, "CHPL_LOG_FLAGS", log_flags_arg},
+ {"log", 'd', "<letters>", "Dump IR in text format. See log.h for definition of <letters>. Empty argument (\"-d=\" or \"--log=\") means \"log all passes\"", "S512", log_flags, "CHPL_LOG_FLAGS", log_flags_arg},
  {"log-dir", ' ', "<path>", "Specify log directory", "P", log_dir, "CHPL_LOG_DIR", NULL},
  {"log-ids", ' ', NULL, "Include BaseAST::ids in log files", "F", &fLogIds, "CHPL_LOG_IDS", NULL},
  {"log-module", ' ', "<module-name>", "Restrict IR dump to the named module", "S256", log_module, "CHPL_LOG_MODULE", NULL},
- {"log-symbol", ' ', "<symbol-name>", "Restrict IR dump to the named symbol(s)", "S256", log_symbol, "CHPL_LOG_SYMBOL", NULL},
+// {"log-symbol", ' ', "<symbol-name>", "Restrict IR dump to the named symbol(s)", "S256", log_symbol, "CHPL_LOG_SYMBOL", NULL}, // This doesn't work yet.
  {"parser-debug", 'D', NULL, "Set parser debug level", "+", &debugParserLevel, "CHPL_PARSER_DEBUG", NULL},
  {"print-dispatch", ' ', NULL, "Print dynamic dispatch table", "F", &fPrintDispatch, NULL, NULL},
  {"print-statistics", ' ', "[n|k|t]", "Print AST statistics", "S256", fPrintStatistics, NULL, NULL},
