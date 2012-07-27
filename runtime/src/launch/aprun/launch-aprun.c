@@ -55,7 +55,7 @@ static char** chpl_launch_create_argv(int argc, char* argv[],
                                       int32_t numLocales) {
   const int largc = 7;
   char *largv[largc];
-  const char *ccArg = "none";
+  const char *ccArg = _ccArg ? _ccArg : "none";
 
   largv[0] = (char *) "aprun";
   largv[1] = (char *) "-q";
