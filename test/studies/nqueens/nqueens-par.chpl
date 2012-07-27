@@ -147,14 +147,14 @@ proc Board.show(msg...): void {
             [row in 1..lastfilled] (row, queenvec(row)),
             notFilledMsg, (...msg));
   } else {
-    for [1..boardSize] do write("-"); writeln((...msg));
+    for {1..boardSize} do write("-"); writeln((...msg));
     for row in 1..lastfilled {
       for col in 1..boardSize do
         write(if queenvec(row) == col then "*" else " ");
       writeln();
     }
     if notFilledMsg != "" then writeln(notFilledMsg);
-    for [1..boardSize] do write("-"); writeln();
+    for {1..boardSize} do write("-"); writeln();
   }
 }
 

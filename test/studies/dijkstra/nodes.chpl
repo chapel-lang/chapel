@@ -17,7 +17,7 @@ module Nodes {
       for i in {0..(nEdges-1)} do counts[Edges[i].n1] += 1;
     } else {
       // Undirected graph: every edge stored twice
-      for i in [0..(nEdges-1)] {
+      for i in {0..(nEdges-1)} {
         counts[Edges[i].n1] += 1;
         counts[Edges[i].n2] += 1;
       }
