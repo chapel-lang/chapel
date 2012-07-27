@@ -803,8 +803,9 @@ for testname in testsrc:
                 sys.stdout.write('[Concatenating extra files: %s]\n'%
                                  (execname+'.catfiles'))
                 sys.stdout.flush()
-                output+=subprocess.Popen(['cat', catfiles],
-                                         stdout=subprocess.PIPE).communicate()[0]
+                output+=subprocess.Popen(['cat', catfiles,split()],
+                                         stdout=subprocess.PIPE,
+                                         stderr=subprocess.STDOUT).communicate()[0]
 
             # Sadly these scripts require an actual file
             complogfile=file(complog, 'w')
@@ -1019,7 +1020,8 @@ for testname in testsrc:
                                  (execname+'.catfiles'))
                 sys.stdout.flush()
                 output+=subprocess.Popen(['cat']+catfiles.split(),
-                                         stdout=subprocess.PIPE).communicate()[0]
+                                         stdout=subprocess.PIPE,
+                                         stderr=subprocess.STDOUT).communicate()[0]
 
             # Sadly the scripts used below require an actual file
             execlogfile=file(execlog, 'w')
