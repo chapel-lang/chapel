@@ -2,8 +2,8 @@ CF machines
 ===========
 chap01 : linux64 (comm none, default everything)
 chap02 : 
-chap03 : linux64 performance (comm none, default everything)
-chap04 : mpi examples
+chap03 : linux64 performance (comm none, default everything) -- old HW
+chap04 : linux64 performance (comm none, default everything) -- new HW
 chap05 : --no-local
 chap06 : --baseline
 chap07 : tcmalloc (comm none, gasnet multilocale-examples)
