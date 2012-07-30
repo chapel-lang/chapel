@@ -183,13 +183,11 @@ static char** chpl_launch_create_argv(int argc, char* argv[],
   if (verbosity > 0) {
     fprintf(expectFile, "spawn tcsh -f\n");
     fprintf(expectFile, "send \"set prompt=\\\"$chpl_prompt\\\"\\n\"\n");
-    fprintf(expectFile, "expect -ex $chpl_prompt {}\n");
-    fprintf(expectFile, "expect -ex $chpl_prompt {}\n");
-    fprintf(expectFile, "expect -ex $chpl_prompt {}\n");
+    fprintf(expectFile, "expect -re \"\\n$chpl_prompt\" {}\n");
     fprintf(expectFile, "send \"df -T . \\n\"\n");
     fprintf(expectFile, "expect {\n");
     fprintf(expectFile, "  -ex lustre {}\n");
-    fprintf(expectFile, "  -ex $chpl_prompt {\n");
+    fprintf(expectFile, "  -re \"\\n$chpl_prompt\" {\n");
     fprintf(expectFile, "    send_user \"warning: Executing this program from a non-Lustre file system may cause it \\nto be unlaunchable, or for file I/O to be performed on a non-local file system.\\nContinue anyway? (\\[y\\]/n) \"\n");
     fprintf(expectFile, "    interact {\n");
     fprintf(expectFile, "      \\015           {return}\n");
@@ -215,11 +213,9 @@ static char** chpl_launch_create_argv(int argc, char* argv[],
   fprintf(expectFile, "expect -re \"qsub:.*ready\" {}\n");
   fprintf(expectFile, "send \"tcsh -f\\n\"\n");
   fprintf(expectFile, "send \"set prompt=\\\"$chpl_prompt\\\"\\n\"\n");
-  fprintf(expectFile, "expect -ex $chpl_prompt {}\n");
-  fprintf(expectFile, "expect -ex $chpl_prompt {}\n");
-  fprintf(expectFile, "expect -ex $chpl_prompt {}\n");
+  fprintf(expectFile, "expect -re \"\\n$chpl_prompt\" {}\n");
   fprintf(expectFile, "send \"cd \\$PBS_O_WORKDIR\\n\"\n");
-  fprintf(expectFile, "expect -ex $chpl_prompt {}\n");
+  fprintf(expectFile, "expect -re \"\\n$chpl_prompt\" {}\n");
   if (verbosity > 2) {
     fprintf(expectFile, "send \"aprun -cc %s -q -b -d%d -n1 -N1 ls %s\\n\"\n",
             ccArg, numCoresPerLocale, chpl_get_real_binary_name());
@@ -228,7 +224,7 @@ static char** chpl_launch_create_argv(int argc, char* argv[],
             "\"error: %s must be launched from and/or stored on a "
             "cross-mounted file system\\n\" ; exit 1}\n", 
             basenamePtr);
-    fprintf(expectFile, "  -ex $chpl_prompt {}\n");
+    fprintf(expectFile, "  -ex \"$chpl_prompt\" {}\n");
     fprintf(expectFile, "}\n");
   }
   fprintf(expectFile, "send \"%s aprun ",
@@ -242,13 +238,13 @@ static char** chpl_launch_create_argv(int argc, char* argv[],
     fprintf(expectFile, " '%s'", argv[i]);
   }
   fprintf(expectFile, "\\n\"\n");
-  fprintf(expectFile, "interact -o -ex $chpl_prompt {return}\n");
+  fprintf(expectFile, "interact -o -ex \"$chpl_prompt\" {return}\n");
   fprintf(expectFile, "send \"echo CHPL_EXIT_CODE:\\$?\\n\"\n");
   fprintf(expectFile, "expect {\n");
   fprintf(expectFile, "  -ex \"CHPL_EXIT_CODE:0\" {set exitval \"0\"}\n");
   fprintf(expectFile, "  -re \"CHPL_EXIT_CODE:.\" {set exitval \"1\"}\n");
   fprintf(expectFile, "}\n");
-  fprintf(expectFile, "expect -ex $chpl_prompt {}\n");
+  fprintf(expectFile, "expect -re \"\\n$chpl_prompt\" {}\n");
   fprintf(expectFile, "send \"exit\\n\"\n"); // exit tcsh
   fprintf(expectFile, "send \"exit\\n\"\n"); // exit qsub
   fprintf(expectFile, "close\n");
