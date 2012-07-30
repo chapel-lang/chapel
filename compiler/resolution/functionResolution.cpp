@@ -688,6 +688,7 @@ resolveFormals(FnSymbol* fn) {
 
       if (formal->intent == INTENT_INOUT ||
           formal->intent == INTENT_OUT ||
+          formal->intent == INTENT_REF ||
           formal->hasFlag(FLAG_WRAP_OUT_INTENT) ||
           (formal == fn->_this &&
            (isUnion(formal->type) ||
@@ -2302,13 +2303,18 @@ static void resolveNormalCall(CallExpr* call, bool errorCheck) {
       call->baseExpr->replace(new SymExpr(resolvedFn));
     }
 
-    // Check to ensure the actual supplied to an OUT or INOUT argument is an lvalue.
+    // Check to ensure the actual supplied to an OUT, INOUT or REF argument
+    // is an lvalue.
     for_formals_actuals(formal, actual, call) {
-      if (formal->intent == INTENT_OUT || formal->intent == INTENT_INOUT) {
+      if (formal->intent == INTENT_OUT ||
+          formal->intent == INTENT_INOUT ||
+          formal->intent == INTENT_REF) {
         if (SymExpr* se = toSymExpr(actual)) {
           if (se->var->hasFlag(FLAG_EXPR_TEMP) || se->var->isConstant() || se->var->isParameter()) {
             if (formal->intent == INTENT_OUT) {
               USR_FATAL(se, "non-lvalue actual passed to out argument");
+            } else if (formal->intent == INTENT_REF) {
+              USR_FATAL(se, "non-lvalue actual passed to ref argument");
             } else {
               USR_FATAL(se, "non-lvalue actual passed to inout argument");
             }

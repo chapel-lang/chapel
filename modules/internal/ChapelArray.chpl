@@ -1668,16 +1668,11 @@ class _OpaqueIndex { }
 //
 // Swap operators for arrays and domains
 //
-inline proc _chpl_swap(x: [], y: []) {
-  for (i,j) in (x.domain, y.domain) do
-    x(i) <=> y(j);
+inline proc <=>(x: [], y: []) {
+  forall (a,b) in (x, y) do
+    a <=> b;
 }
 
-inline proc _chpl_swap(x: domain, y: domain) {
-  const t = y;
-  y = x;
-  x = t;
-}
 
 //
 // reshape function

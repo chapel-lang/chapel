@@ -368,8 +368,8 @@ void ArgSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 
 
 bool ArgSymbol::requiresCPtr(void) {
-  if (intent == INTENT_REF)
-    return true;
+  /* This used to be true for INTENT_REF, but that is handled with the "_ref"
+     class and we don't need to generate a pointer for it directly */
   if (hasFlag(FLAG_ARG_THIS)) {
       if (is_complex_type(type))
         return true;

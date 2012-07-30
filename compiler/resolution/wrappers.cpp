@@ -83,6 +83,7 @@ buildEmptyWrapper(FnSymbol* fn, CallInfo* info) {
 //
 // copy a formal and make the copy have blank intent. If the formal to copy has
 // out intent or inout intent, flag the copy to make sure it is a reference
+// If the formal is ref intent, leave it as ref on the wrapper formal.
 //
 static ArgSymbol* copyFormalForWrapper(ArgSymbol* formal) {
   ArgSymbol* wrapperFormal = formal->copy();
@@ -90,7 +91,9 @@ static ArgSymbol* copyFormalForWrapper(ArgSymbol* formal) {
       formal->hasFlag(FLAG_WRAP_OUT_INTENT)) {
     wrapperFormal->addFlag(FLAG_WRAP_OUT_INTENT);
   }
-  wrapperFormal->intent = INTENT_BLANK;
+  if (formal->intent != INTENT_REF) {
+    wrapperFormal->intent = INTENT_BLANK;
+  }
   return wrapperFormal;
 }
 
