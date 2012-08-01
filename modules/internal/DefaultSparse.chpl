@@ -298,16 +298,16 @@ class DefaultSparseArr: BaseArr {
 
 proc DefaultSparseDom.dsiSerialWrite(f: Writer) {
   if (rank == 1) {
-    f.write("[");
+    f.write("{");
     if (nnz >= 1) {
       f.write(indices(1));
       for i in 2..nnz {
         f.write(" ", indices(i));
       }
     }
-    f.write("]");
+    f.write("}");
   } else {
-    f.writeln("[");
+    f.writeln("{");
     if (nnz >= 1) {
       var prevInd = indices(1);
       f.write(" ", prevInd);
@@ -320,7 +320,7 @@ proc DefaultSparseDom.dsiSerialWrite(f: Writer) {
       }
       f.writeln();
     }
-    f.writeln("]");
+    f.writeln("}");
   }
 }
 

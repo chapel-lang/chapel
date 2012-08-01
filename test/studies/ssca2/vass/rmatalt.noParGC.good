@@ -539,7 +539,7 @@ edge (510) : ((start = 64, end = 7), 32)
 edge (511) : ((start = 44, end = 3), 11)
 edge (512) : ((start = 64, end = 46), 54)
 
-Vertex Set in G:[1..64]
+Vertex Set in G:{1..64}
 Starting Graph Generation serially
 # of raw edges generated  512
 # of duplicate edges      not counted

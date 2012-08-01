@@ -542,7 +542,7 @@ proc LocBlockCyclicDom.writeThis(x:Writer) {
 
 proc LocBlockCyclicDom.enumerateBlocks() {
   for i in myStarts {
-    write(here.id, ": [");
+    write(here.id, ": {");
     for param j in 1..rank {
       if (j != 1) {
         write(", ");
@@ -556,7 +556,7 @@ proc LocBlockCyclicDom.enumerateBlocks() {
       write(lo, "..", min(lo + globDom.dist.blocksize(j)-1, 
                           globDom.whole.dim(j).high));
     }
-    writeln("]");
+    writeln("}");
   } 
 }
   

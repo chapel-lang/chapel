@@ -1,4 +1,4 @@
-ADom is: [0..63]
+ADom is: {0..63}
 bankStart is: 0
 lo is: 0
 t1 is: 0..3

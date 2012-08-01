@@ -651,12 +651,12 @@ class DefaultRectangularArr: BaseArr {
 proc DefaultRectangularDom.dsiSerialReadWrite(f /*: Reader or Writer*/) {
   f 
       <~> 
-        new ioLiteral("[") 
+        new ioLiteral("{") 
             <~> 
                 ranges(1);
   for i in 2..rank do
     f <~> new ioLiteral(", ") <~> ranges(i);
-  f <~> new ioLiteral("]");
+  f <~> new ioLiteral("}");
 }
 
 proc DefaultRectangularDom.dsiSerialWrite(f: Writer) { this.dsiSerialReadWrite(f); }

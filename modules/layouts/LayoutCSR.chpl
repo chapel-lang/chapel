@@ -371,7 +371,7 @@ class CSRArr: BaseArr {
 
 
 proc CSRDom.dsiSerialWrite(f: Writer) {
-  f.writeln("[");
+  f.writeln("{");
   for r in rowRange {
     const lo = rowStart(r);
     const hi = rowStop(r);
@@ -379,7 +379,7 @@ proc CSRDom.dsiSerialWrite(f: Writer) {
       f.write(" (", r, ", ", colIdx(c), ")", if (c==hi) then "\n" else "");
     }
   }
-  f.writeln("]");
+  f.writeln("}");
 }
 
 

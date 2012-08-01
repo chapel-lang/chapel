@@ -473,10 +473,10 @@ class GPURectangularArr: BaseArr {
 }
 
 proc GPURectangularDom.dsiSerialReadWrite(f /*: Reader or Writer*/) {
-  f <~> new ioLiteral("[") <~> dsiDim(1);
+  f <~> new ioLiteral("{") <~> dsiDim(1);
   for i in 2..rank do
     f <~> new ioLiteral(", ") <~> dsiDim(i);
-  f <~> new ioLiteral("]");
+  f <~> new ioLiteral("}");
 }
 
 proc GPURectangularDom.dsiSerialWrite(f: Writer) { this.dsiSerialReadWrite(f); }

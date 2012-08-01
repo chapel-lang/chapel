@@ -27,9 +27,9 @@ Classes
 End of swap(C)
 {a = 3, b = 4}{a = 1, b = 2}
 Domains
-([1..10], [3..13])
+({1..10}, {3..13})
 End of swap(domain(1,int(64),false))
-([3..13], [1..10])
+({3..13}, {1..10})
 Arrays
 (1 2 3 4 5 6 7 8 9 10, 10 9 8 7 6 5 4 3 2 1)
 End of swap([domain(1,int(64),false)] int(64))

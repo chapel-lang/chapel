@@ -4,7 +4,7 @@ The sum of the values in 1..10 is 55
 The sum of the values in 1..10 as computed by reduce is also 55
 
 Domains and arrays
-D = [1..10, 1..10]
+D = {1..10, 1..10}
 Array A
 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0

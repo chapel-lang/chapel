@@ -28,7 +28,7 @@ Serializing certain parallel loops
 
 writing edges to rmatalt.weights
 
-Vertex Set in G:[1..64]
+Vertex Set in G:{1..64}
 Starting Graph Generation in parallel
 # of raw edges generated  512
 # of duplicate edges      not counted

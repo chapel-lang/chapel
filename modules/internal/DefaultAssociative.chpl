@@ -73,7 +73,7 @@ class DefaultAssociativeDom: BaseAssociativeDom {
 
   proc dsiSerialReadWrite(f /*: Reader or Writer*/) {
     var first = true;
-    f <~> new ioLiteral("[");
+    f <~> new ioLiteral("{");
     for idx in this {
       if first then 
         first = false; 
@@ -81,7 +81,7 @@ class DefaultAssociativeDom: BaseAssociativeDom {
         f <~> new ioLiteral(", ");
       f <~> idx;
     }
-    f <~> new ioLiteral("]");
+    f <~> new ioLiteral("}");
   }
   proc dsiSerialWrite(f: Writer) { this.dsiSerialReadWrite(f); }
   proc dsiSerialRead(f: Reader) { this.dsiSerialReadWrite(f); }
