@@ -476,20 +476,22 @@ module SSCA2_kernels
       
       Between_Cent = Between_Cent$;
 
-      forall l in localePrivate do on l {
-          for i in l.r {
-            var al  => l.temps[i].Active_Level;
-            coforall loc in Locales do on loc {
-                var level = al[here.id];
-                while level != nil {
-                    var l2 = level.next;
-                    delete level;
-                    level = l2;
+      if DELETE_KERNEL4_DS {
+        forall l in localePrivate do on l {
+            for i in l.r {
+              var al  => l.temps[i].Active_Level;
+              coforall loc in Locales do on loc {
+                  var level = al[here.id];
+                  while level != nil {
+                      var l2 = level.next;
+                      delete level;
+                      level = l2;
+                    }
                 }
+              delete l.temps[i];
             }
-            delete l.temps[i];
+            delete l;
           }
-          delete l;
       }
 
     } // end of Brandes' betweenness centrality calculation

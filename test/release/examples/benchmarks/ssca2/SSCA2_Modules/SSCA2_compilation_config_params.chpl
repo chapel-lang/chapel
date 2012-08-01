@@ -38,6 +38,8 @@ module SSCA2_compilation_config_params
 
   config param DEBUG_KERNEL4 = false;
 
+  config param DELETE_KERNEL4_DS = false;
+
   config param REPRODUCIBLE_PROBLEMS = true;
 
   config param PRINT_TIMING_STATISTICS = true;

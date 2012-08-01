@@ -48,7 +48,7 @@ module SSCA2_driver
       type vertex = index (G.vertices),
            edge   = 2*vertex;
 
-      if RUN_KERNEL_2 || RUN_KERNEL_3 {
+      if RUN_KERNEL2 || RUN_KERNEL3 {
         var Heavy_Edge_List : domain (edge);
 
         // --------
@@ -57,7 +57,7 @@ module SSCA2_driver
 
         largest_edges ( G, Heavy_Edge_List );
 
-        if RUN_KERNEL_3 {
+        if RUN_KERNEL3 {
           var Heavy_Edge_Subgraphs : [Heavy_Edge_List] Generated_Subgraph (vertex);
 
           for (x,y) in Heavy_Edge_List do
@@ -73,7 +73,7 @@ module SSCA2_driver
         }
       }
 
-      if RUN_KERNEL_4 {
+      if RUN_KERNEL4 {
         var Between_Cent : [G.vertices] real;
         var BC_starting_vertices : domain (1);
         var Sum_Min_Dist : real;
