@@ -1462,6 +1462,21 @@ inline proc <<=(ref lhs, rhs) where !isIterator(lhs) {
   lhs = if typesRequireCastForOpEqual(lhs.type, rhs.type) then (lhs<<rhs):lhs.type else (lhs<<rhs);
 }
 
+/* This set of overloads should not be required, but the fully generic versions
+ * are leaking memory when passed two arrays.
+ */
+inline proc +=(lhs:[], rhs:[]) { lhs = lhs + rhs; }
+inline proc -=(lhs:[], rhs:[]) { lhs = lhs - rhs; }
+inline proc *=(lhs:[], rhs:[]) { lhs = lhs * rhs; }
+inline proc /=(lhs:[], rhs:[]) { lhs = lhs / rhs; }
+inline proc %=(lhs:[], rhs:[]) { lhs = lhs % rhs; }
+inline proc **=(lhs:[], rhs:[]) { lhs = lhs ** rhs; }
+inline proc &=(lhs:[], rhs:[]) { lhs = lhs & rhs; }
+inline proc |=(lhs:[], rhs:[]) { lhs = lhs | rhs; }
+inline proc ^=(lhs:[], rhs:[]) { lhs = lhs ^ rhs; }
+inline proc >>=(lhs:[], rhs:[]) { lhs = lhs >> rhs; }
+inline proc <<=(lhs:[], rhs:[]) { lhs = lhs << rhs; }
+
 inline proc +=(ref lhs, rhs) where isIterator(lhs) { lhs = lhs + rhs; }
 inline proc -=(ref lhs, rhs) where isIterator(lhs) { lhs = lhs - rhs; }
 inline proc *=(ref lhs, rhs) where isIterator(lhs) { lhs = lhs * rhs; }
