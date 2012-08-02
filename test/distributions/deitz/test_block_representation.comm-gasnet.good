@@ -1,27 +1,27 @@
 Distribution Representation
 
-boundingBox = [1..4, 1..4]
-targetLocDom = [0..1, 0..1]
+boundingBox = {1..4, 1..4}
+targetLocDom = {0..1, 0..1}
 targetLocales = 0 1 2 3
 dataParTasksPerLocale = 2
 dataParIgnoreRunningTasks = true
 dataParMinGranularity = 1
-locDist[(0, 0)].myChunk = [-9223372036854775808..2, -9223372036854775808..2]
-locDist[(0, 1)].myChunk = [-9223372036854775808..2, 3..9223372036854775807]
-locDist[(1, 0)].myChunk = [3..9223372036854775807, -9223372036854775808..2]
-locDist[(1, 1)].myChunk = [3..9223372036854775807, 3..9223372036854775807]
+locDist[(0, 0)].myChunk = {-9223372036854775808..2, -9223372036854775808..2}
+locDist[(0, 1)].myChunk = {-9223372036854775808..2, 3..9223372036854775807}
+locDist[(1, 0)].myChunk = {3..9223372036854775807, -9223372036854775808..2}
+locDist[(1, 1)].myChunk = {3..9223372036854775807, 3..9223372036854775807}
 
 Domain
 
-[1..4, 1..4]
+{1..4, 1..4}
 
 Domain Representation
 
-whole = [1..4, 1..4]
-locDoms[(0, 0)].myBlock = [1..2, 1..2]
-locDoms[(0, 1)].myBlock = [1..2, 3..4]
-locDoms[(1, 0)].myBlock = [3..4, 1..2]
-locDoms[(1, 1)].myBlock = [3..4, 3..4]
+whole = {1..4, 1..4}
+locDoms[(0, 0)].myBlock = {1..2, 1..2}
+locDoms[(0, 1)].myBlock = {1..2, 3..4}
+locDoms[(1, 0)].myBlock = {3..4, 1..2}
+locDoms[(1, 1)].myBlock = {3..4, 3..4}
 
 Array
 

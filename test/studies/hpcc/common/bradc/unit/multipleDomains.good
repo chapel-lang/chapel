@@ -2,12 +2,12 @@ ProblemDist =
 BradsBlock1DPar
 ---------------
 distributes: {1..10}
-across locales: LOCALE0 LOCALE0 LOCALE0
+across locales: LOCALE0 LOCALE1 LOCALE2
 indexed via: {0..2}
 resulting in: 
   [0] locale 0 owns chunk: {-9223372036854775808..4}
-  [1] locale 0 owns chunk: {5..7}
-  [2] locale 0 owns chunk: {8..9223372036854775807}
+  [1] locale 1 owns chunk: {5..7}
+  [2] locale 2 owns chunk: {8..9223372036854775807}
 
 
 locale LOCALE0 is being asked to follow {0..4}
