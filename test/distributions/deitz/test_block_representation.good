@@ -6,7 +6,7 @@ targetLocales = 0
 dataParTasksPerLocale = 2
 dataParIgnoreRunningTasks = true
 dataParMinGranularity = 1
-locDist[(0, 0)].myChunk = {-2147483648..2147483647, -2147483648..2147483647}
+locDist[(0, 0)].myChunk = {-9223372036854775808..9223372036854775807, -9223372036854775808..9223372036854775807}
 
 Domain
 
