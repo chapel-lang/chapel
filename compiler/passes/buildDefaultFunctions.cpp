@@ -154,7 +154,7 @@ static void build_getter(ClassType* ct, Symbol *field) {
   FnSymbol* fn = new FnSymbol(field->name);
   fn->addFlag(FLAG_NO_IMPLICIT_COPY);
   fn->addFlag(FLAG_INLINE);
-  fn->addFlag(FLAG_TEMP);
+//  fn->addFlag(FLAG_TEMP); // Getter functions act as if user-defined.
   if (ct->symbol->hasFlag(FLAG_SYNC)) 
     fn->addFlag(FLAG_SYNC);
   if (ct->symbol->hasFlag(FLAG_SINGLE)) 
@@ -284,7 +284,7 @@ static void build_chpl_entry_points(void) {
     SET_LINENO(mainModule);
     chpl_user_main = new FnSymbol("main");
     chpl_user_main->retType = dtVoid;
-    chpl_user_main->addFlag(FLAG_TEMP);
+//    chpl_user_main->addFlag(FLAG_TEMP);
     mainModule->block->insertAtTail(new DefExpr(chpl_user_main));
     normalize(chpl_user_main);
   } else {

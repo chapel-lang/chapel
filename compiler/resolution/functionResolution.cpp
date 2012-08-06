@@ -177,6 +177,7 @@ static void
 replaceSetterArgWithFalse(BaseAST* ast, FnSymbol* fn, Symbol* ret);
 static void
 insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts);
+static void buildValueFunction(FnSymbol* fn);
 static void resolveFns(FnSymbol* fn);
 static bool
 possible_signature_match(FnSymbol* fn, FnSymbol* gn);
@@ -1454,8 +1455,13 @@ isMoreVisible(Expr* expr, FnSymbol* fn1, FnSymbol* fn2) {
   //
   // common-case check to see if functions have equal visibility
   //
-  if (fn1->defPoint->parentExpr == fn2->defPoint->parentExpr)
+  if (fn1->defPoint->parentExpr == fn2->defPoint->parentExpr) {
+    // Special check which makes cg-initializers inferior to user-defined constructors
+    // with the same args.
+    if (fn2->hasFlag(FLAG_DEFAULT_CONSTRUCTOR))
+      return true;
     return false;
+  }
 
   //
   // call helper function with visited set to avoid infinite recursion
@@ -2151,30 +2157,41 @@ gatherCandidates(Vec<FnSymbol*>& candidateFns,
                  Vec<Vec<ArgSymbol*>*>& candidateActualFormals,
                  Vec<FnSymbol*>& visibleFns, CallInfo& info)
 {
-    forv_Vec(FnSymbol, visibleFn, visibleFns) {
-      if (info.call->methodTag &&
-          ! (visibleFn->hasFlag(FLAG_NO_PARENS) ||
-             visibleFn->hasFlag(FLAG_TYPE_CONSTRUCTOR)))
-        continue;
+  // Search user-defined functions first.
+  forv_Vec(FnSymbol, visibleFn, visibleFns) {
+    if (visibleFn->hasFlag(FLAG_TEMP))
+      continue;
+    if (info.call->methodTag &&
+        ! (visibleFn->hasFlag(FLAG_NO_PARENS) ||
+           visibleFn->hasFlag(FLAG_TYPE_CONSTRUCTOR)))
+      continue;
 #ifdef ENABLE_TRACING_OF_DISAMBIGUATION
-      if (explainCallLine && explainCallMatch(info.call)) {
-        printf("Considering function %s\n", visibleFn->stringLoc());
-      }
-#endif
-      addCandidate(&candidateFns, &candidateActualFormals, visibleFn, info);
-    }
-
     if (explainCallLine && explainCallMatch(info.call)) {
-      if (candidateFns.n == 0)
-        USR_PRINT(info.call, "no candidates found");
-      bool first = true;
-      forv_Vec(FnSymbol, candidateFn, candidateFns) {
-        USR_PRINT(candidateFn, "%s %s",
-                  first ? "candidates are:" : "               ",
-                  toString(candidateFn));
-        first = false;
-      }
+      printf("Considering function %s\n", visibleFn->stringLoc());
     }
+#endif
+    addCandidate(&candidateFns, &candidateActualFormals, visibleFn, info);
+  }
+
+  // Return if we got a successful match with user-defined functions.
+  if (candidateFns.n)
+    return;
+
+  // No.  So search compiler-defined functions.
+  forv_Vec(FnSymbol, visibleFn, visibleFns) {
+    if (!visibleFn->hasFlag(FLAG_TEMP))
+      continue;
+    if (info.call->methodTag &&
+        ! (visibleFn->hasFlag(FLAG_NO_PARENS) ||
+           visibleFn->hasFlag(FLAG_TYPE_CONSTRUCTOR)))
+      continue;
+#ifdef ENABLE_TRACING_OF_DISAMBIGUATION
+    if (explainCallLine && explainCallMatch(info.call)) {
+      printf("Considering function %s\n", visibleFn->stringLoc());
+    }
+#endif
+    addCandidate(&candidateFns, &candidateActualFormals, visibleFn, info);
+  }
 }
 
 void
@@ -2236,6 +2253,18 @@ static void resolveNormalCall(CallExpr* call, bool errorCheck) {
     }
 
     gatherCandidates(candidateFns, candidateActualFormals, visibleFns, info);
+
+    if (explainCallLine && explainCallMatch(info.call)) {
+      if (candidateFns.n == 0)
+        USR_PRINT(info.call, "no candidates found");
+      bool first = true;
+      forv_Vec(FnSymbol, candidateFn, candidateFns) {
+        USR_PRINT(candidateFn, "%s %s",
+                  first ? "candidates are:" : "               ",
+                  toString(candidateFn));
+        first = false;
+      }
+    }
 
     FnSymbol* best = NULL;
     Vec<ArgSymbol*>* actualFormals = 0;
@@ -4512,6 +4541,32 @@ static void instantiate_default_constructor(FnSymbol* fn) {
 }
 
 
+static void buildValueFunction(FnSymbol* fn) {
+  if (!fn->hasFlag(FLAG_ITERATOR_FN)) {
+    FnSymbol* copy;
+    bool valueFunctionExists = fn->valueFunction;
+    if (!valueFunctionExists) {
+      // Build the value function when it does not already exist.
+      copy = fn->copy();
+      copy->addFlag(FLAG_INVISIBLE_FN);
+      if (fn->hasFlag(FLAG_NO_IMPLICIT_COPY))
+        copy->addFlag(FLAG_NO_IMPLICIT_COPY);
+      copy->retTag = RET_VALUE;   // Change ret flag to value (not ref).
+      fn->defPoint->insertBefore(new DefExpr(copy));
+      fn->valueFunction = copy;
+      Symbol* ret = copy->getReturnSymbol();
+      replaceSetterArgWithFalse(copy, copy, ret);
+      replaceSetterArgWithTrue(fn, fn);
+    } else {
+      copy = fn->valueFunction;
+    }
+    resolveFns(copy);
+  } else {
+    replaceSetterArgWithTrue(fn, fn);
+  }
+}
+ 
+
 static void
 resolveFns(FnSymbol* fn) {
   if (resolvedFns.count(fn) != 0)
@@ -4524,37 +4579,8 @@ resolveFns(FnSymbol* fn) {
   if (fn->hasFlag(FLAG_AUTO_II))
     return;
 
-  //
-  // build value function for var functions
-  //
-  if (fn->retTag == RET_VAR) {
-    if (!fn->hasFlag(FLAG_ITERATOR_FN)) {
-      FnSymbol* copy;
-      bool valueFunctionExists = fn->valueFunction;
-      if (!valueFunctionExists) {
-        // Build the value function when it does not already exist.
-        copy = fn->copy();
-        copy->addFlag(FLAG_INVISIBLE_FN);
-        if (fn->hasFlag(FLAG_NO_IMPLICIT_COPY))
-          copy->addFlag(FLAG_NO_IMPLICIT_COPY);
-        copy->retTag = RET_VALUE;   // Change ret flag to value (not ref).
-        fn->defPoint->insertBefore(new DefExpr(copy));
-        fn->valueFunction = copy;
-        Symbol* ret = copy->getReturnSymbol();
-        replaceSetterArgWithFalse(copy, copy, ret);
-      } else {
-        copy = fn->valueFunction;
-      }
-      resolveFns(copy);
-      // If the value function existed, then this function was
-      //  already flattened in a previous call to resolveFns()
-      if (!valueFunctionExists) {
-        replaceSetterArgWithTrue(fn, fn);
-      }
-    } else {
-      replaceSetterArgWithTrue(fn, fn);
-    }
-  }
+  if (fn->retTag == RET_VAR)
+    buildValueFunction(fn);
 
   insertFormalTemps(fn);
 

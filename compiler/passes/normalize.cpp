@@ -794,6 +794,7 @@ static void hack_resolve_types(ArgSymbol* arg) {
 // not up front like this. <hilde>
 static void fixup_array_formals(FnSymbol* fn) {
   for_formals(arg, fn) {
+    INT_ASSERT(toArgSymbol(arg));
     if (arg->typeExpr) {
       // The argument has a type expression
       CallExpr* call = toCallExpr(arg->typeExpr->body.tail);
@@ -807,70 +808,65 @@ static void fixup_array_formals(FnSymbol* fn) {
       //}
       if (call && call->isNamed("chpl__buildArrayRuntimeType")) {
         // We are building an array type.
-        if (ArgSymbol* larg = toArgSymbol(call->parentSymbol)) {
-          // Isn't this the arg we started out with? <hilde>
-          INT_ASSERT(larg == arg);
+        bool noDomain = (isSymExpr(call->get(1))) ? toSymExpr(call->get(1))->var == gNil : false;
+        DefExpr* queryDomain = toDefExpr(call->get(1));
+        bool noEltType = (call->numActuals() == 1);
+        DefExpr* queryEltType = (!noEltType) ? toDefExpr(call->get(2)) : NULL;
 
-          bool noDomain = (isSymExpr(call->get(1))) ? toSymExpr(call->get(1))->var == gNil : false;
-          DefExpr* queryDomain = toDefExpr(call->get(1));
-          bool noEltType = (call->numActuals() == 1);
-          DefExpr* queryEltType = (!noEltType) ? toDefExpr(call->get(2)) : NULL;
+        // Replace the type expression with "_array" to make it generic.
+        arg->typeExpr->replace(new BlockStmt(new SymExpr(dtArray->symbol), BLOCK_TYPE));
 
-          Vec<SymExpr*> symExprs;
-          collectSymExprs(fn, symExprs);
+        Vec<SymExpr*> symExprs;
+        collectSymExprs(fn, symExprs);
 
-          // Replace the type expression with "_array".
-          // I dunno.  Maybe we should keep the typeExpr around and just fix up the type. <hilde>
-          arg->typeExpr->replace(new BlockStmt(new SymExpr(dtArray->symbol), BLOCK_TYPE));
-
-          // If we have an element type, replace reference to its symbol with
-          // "arg.eltType", so we use the instantiated element type.
-          if (queryEltType) {
-            forv_Vec(SymExpr, se, symExprs) {
-              if (se->var == queryEltType->sym)
-                se->replace(new CallExpr(".", arg, new_StringSymbol("eltType")));
-            }
-          } else if (!noEltType) {
-            // The element type is supplied, but it is null.
-            // Add a new where clause "eltType == arg.eltType".
-            INT_ASSERT(queryEltType == NULL);
-            if (!fn->where) {
-              fn->where = new BlockStmt(new SymExpr(gTrue));
-              insert_help(fn->where, NULL, fn);
-            }
-            Expr* oldWhere = fn->where->body.tail;
-            CallExpr* newWhere = new CallExpr("&");
-            oldWhere->replace(newWhere);
-            newWhere->insertAtTail(oldWhere);
-            newWhere->insertAtTail(
-              new CallExpr("==", call->get(2)->remove(),
-                new CallExpr(".", arg, new_StringSymbol("eltType"))));
+        // If we have an element type, replace reference to its symbol with
+        // "arg.eltType", so we use the instantiated element type.
+        if (queryEltType) {
+          forv_Vec(SymExpr, se, symExprs) {
+            if (se->var == queryEltType->sym)
+              se->replace(new CallExpr(".", arg, new_StringSymbol("eltType")));
           }
-
-          if (queryDomain) {
-            // Array type is built using a domain.
-            // If we match the domain symbol, replace it with arg._dom.
-            forv_Vec(SymExpr, se, symExprs) {
-              if (se->var == queryDomain->sym)
-                se->replace(new CallExpr(".", arg, new_StringSymbol("_dom")));
-            }
-          } else if (!noDomain) {
-            // The domain argument is supplied but NULL.
-            INT_ASSERT(queryDomain == NULL);
-
-            VarSymbol* tmp = newTemp("_reindex");
-            tmp->addFlag(FLAG_EXPR_TEMP);
-            forv_Vec(SymExpr, se, symExprs) {
-              if (se->var == arg)
-                se->var = tmp;
-            }
-            fn->insertAtHead(new CallExpr(PRIM_MOVE, tmp,
-                               new CallExpr(
-                                 new CallExpr(".", arg,
-                                   new_StringSymbol("reindex")),
-                                 call->get(1)->copy())));
-            fn->insertAtHead(new DefExpr(tmp));
+        } else if (!noEltType) {
+          // The element type is supplied, but it is null.
+          // Add a new where clause "eltType == arg.eltType".
+          INT_ASSERT(queryEltType == NULL);
+          if (!fn->where) {
+            fn->where = new BlockStmt(new SymExpr(gTrue));
+            insert_help(fn->where, NULL, fn);
           }
+          Expr* oldWhere = fn->where->body.tail;
+          CallExpr* newWhere = new CallExpr("&");
+          oldWhere->replace(newWhere);
+          newWhere->insertAtTail(oldWhere);
+          newWhere->insertAtTail(
+            new CallExpr("==", call->get(2)->remove(),
+                         new CallExpr(".", arg, new_StringSymbol("eltType"))));
+        }
+
+        if (queryDomain) {
+          // Array type is built using a domain.
+          // If we match the domain symbol, replace it with arg._dom.
+          forv_Vec(SymExpr, se, symExprs) {
+            if (se->var == queryDomain->sym)
+              se->replace(new CallExpr(".", arg, new_StringSymbol("_dom")));
+          }
+        } else if (!noDomain) {
+          // The domain argument is supplied but NULL.
+          INT_ASSERT(queryDomain == NULL);
+
+          VarSymbol* tmp = newTemp("_reindex");
+          tmp->addFlag(FLAG_EXPR_TEMP);
+          forv_Vec(SymExpr, se, symExprs) {
+            if (se->var == arg)
+              se->var = tmp;
+          }
+          // tmp <- arg.reindex(arg->typeExpr)
+          fn->insertAtHead(new CallExpr(PRIM_MOVE, tmp,
+                                        new CallExpr(
+                                          new CallExpr(".", arg,
+                                                       new_StringSymbol("reindex")),
+                                          call->get(1)->copy())));
+          fn->insertAtHead(new DefExpr(tmp));
         }
       }
     }
@@ -1138,5 +1134,7 @@ static void change_method_into_constructor(FnSymbol* fn) {
   fn->addFlag(FLAG_CONSTRUCTOR);
   // Hide the compiler-generated initializer 
   // which also serves as the default constructor.
-  ct->initializer->addFlag(FLAG_INVISIBLE_FN);
+  // hilde sez: Try leaving this visible, but make it inferior in case of multiple matches
+  // (in disambiguateByMatch()).
+//  ct->initializer->addFlag(FLAG_INVISIBLE_FN);
 }
