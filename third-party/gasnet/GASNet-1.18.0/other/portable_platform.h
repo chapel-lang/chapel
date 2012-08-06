@@ -708,6 +708,16 @@
     #define PLATFORM_ARCH_LITTLE_ENDIAN 1
   #endif
 
+#elif defined(__tile__)
+  #define PLATFORM_ARCH_TILE 1
+  #define PLATFORM_ARCH_FAMILYNAME TILE
+  #define PLATFORM_ARCH_LITTLE_ENDIAN 1
+  #if defined(__tilegx__)
+    #define _PLATFORM_ARCH_64 1
+  #else
+    #define _PLATFORM_ARCH_32 1
+  #endif
+
 #else /* unknown CPU */
   #define PLATFORM_ARCH_UNKNOWN 1
   #define PLATFORM_ARCH_FAMILYNAME UNKNOWN
