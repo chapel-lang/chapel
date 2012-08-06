@@ -203,8 +203,9 @@ module SSCA2_RMAT_graph_generator
 	  Noisy_c *= norm;
 	  Noisy_d *= norm;
 
+          const _bit= bit;
           local
-            e.assign_quadrant(r5, Noisy_a, Noisy_b, Noisy_c, Noisy_d, bit);
+            e.assign_quadrant(r5, Noisy_a, Noisy_b, Noisy_c, Noisy_d, _bit);
 
         }  // forall
 
