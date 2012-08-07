@@ -30,6 +30,10 @@ ra* (gbt)
 Greg plans to remove races from the verification loop on the theory
 that if we're barely/occasionally failing, removing errors introduced
 due to races here should take us below the threshold.
+  release/examples/benchmarks/hpcc/ra: fix committed in r20301
+  release/examples/benchmarks/hpcc/variants/ra-cleanloop: not fixed yet
+  studies/hpcc/nodistrib/ra.nodist: not fixed yet
+  studies/hpcc/RA/bradc/parallel/ra-dist: not fixed yet
 
 
 lulesh (bradc)
