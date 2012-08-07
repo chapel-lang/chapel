@@ -490,8 +490,6 @@ if os.access('./EXECOPTS',os.R_OK):
 else:
     globalExecopts=list()
 envExecopts = os.getenv('EXECOPTS')
-if envExecopts != None:
-    globalExecopts += shlex.split(envExecopts)
 # sys.stdout.write('globalExecopts=%s\n'%(globalExecopts))
 
 #
@@ -941,6 +939,8 @@ for testname in testsrc:
 
             args+=globalExecopts
             args+=shlex.split(execopts)
+            if envExecopts != None:
+                args+=shlex.split(envExecopts)
 
             #
             # Run program (with timeout)
