@@ -1464,21 +1464,20 @@ proc chpl__useBulkTransfer(a:[], b:[]) {
   return true;
 }
 
+//NOTE: This function also checks for equal lengths in all dimensions, 
+//as the previous one (chpl__useBulkTransfer) so depending on the order they
+//are called, this can be factored out.
 proc chpl__useBulkTransferStride(a:[], b:[]) {
   if debugDefaultDistBulkTransfer then writeln("chpl__useBulkTransferStride");
-
+  
   // constraints specific to a particular domain map array type
   if !a._value.doiCanBulkTransferStride() then return false;
   if !b._value.doiCanBulkTransferStride() then return false;
-
-  for h in [1..a._value.rank] do
-      if a._value.dom.dsiDim(h).stride != b._value.dom.dsiDim(h).stride then return false;
-
-  // total length must be the same in each array ??? 
-  // Acording to the reference A=B is translated into for (a,b) in (A,B) do a=b;
-  // and the zippered iteration is not valid when a.dom.numIndices != b.dom.numIndices
-  if  a._value.dom.dsiNumIndices != b._value.dom.dsiNumIndices then return false;
-
+  
+  // size must be the same in each dimension
+  for param i in 1..a._value.rank do
+    if a._value.dom.dsiDim(i).length != b._value.dom.dsiDim(i).length then return false;
+        
   return true;
 }
 
@@ -1930,8 +1929,10 @@ proc copyBtoC(A:[], B:[])
   A._value.copyBtoC(B);
 }
 
-/*proc prueba(A:[], B:[])
+proc copyCtoB(A:[], B:[])
 {
-  A._value.prueba(B);
-}*/
+  A._value.copyCtoB(B);
+}
+
+
 }

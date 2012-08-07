@@ -177,6 +177,7 @@ if printOutput
   for (i,j,k) in Dom do writeln("A[",i,",", j,",",k,"] = ",A[i,j,k]);
   for (i,j,k) in Dom do writeln("B[",i,",", j,",",k,"] = ",B[i,j,k]);
 }
+
   if e then writeln("Hey man!!!!... double check it! There was an ERROR!");
 
   proc LocaleDistribution(X:[]){

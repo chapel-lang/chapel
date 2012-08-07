@@ -354,6 +354,8 @@ class BaseArr {
   }
 
   proc dsiDisplayRepresentation() { }
+  proc isBlockDist() param {return false;}
+  proc isDefaultRectangular() param {return false;}
 }
 
 }

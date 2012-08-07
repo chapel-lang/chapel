@@ -729,28 +729,14 @@ proc DefaultRectangularArr.doiCanBulkTransfer() {
 
 proc DefaultRectangularArr.doiCanBulkTransferStride() {
   if debugDefaultDistBulkTransfer then writeln("In DefaultRectangularArr.doiCanBulkTransferStride()");
-//  if dom.stridable then
-//    for param i in 1..rank do
-//      if dom.ranges(i).stride != 1 then return false;
-  /*if blk(rank) != 1 {writeln("CASE2: blk(",rank,"):",blk(rank)," != 1"); return false;}
-
-  for param dim in 1..rank-1 by -1 do 
-    if blk(dim) != blk(dim+1)*dom.dsiDim(dim+1).length
-    {
-      writeln("CASE3: blk(",dim,"):",blk(dim)," != blk(",dim+1,"):", blk(dim+1)," * dom.dsiDim(",dim+1,").length: ", dom.dsiDim(dim+1).length);
-      return false;
-    }*/
-  //var dstCompRank:[1..rank] bool;
-  //dstCompRank = assertWholeDim(this);
- // writeln("Stridelevel: ",  trideLevels(assertWholeDim(this)));
- //writeln("LenTotal: ",dom.length);
-  if getStrideLevels(assertWholeDim(this)) == 0 then return false;
-    
+  //If there is no stride we return false so as to rely in the original BulkTransfer (without stride)
+  if getStrideLevels(assertWholeDim(this)) == 0 then return false;    
   return true;
 }
 
 proc DefaultRectangularArr.doiBulkTransfer(B) {
-    if debugDefaultDistBulkTransfer then writeln("In DefaultRectangularArr.doiBulkTransfer");
+    if debugDefaultDistBulkTransfer then
+    writeln("In DefaultRectangularArr.doiBulkTransfer");
 
   const Adims = dom.dsiDims();
   var Alo: rank*dom.idxType;
@@ -828,6 +814,7 @@ Extensions to GASNet, Version 2.0. Author: Dan Bonachea
 proc DefaultRectangularArr.doiBulkTransferStride(B) {
   if debugDefaultDistBulkTransfer then 
     writeln("In DefaultRectangularArr.doiBulkTransferStride ");
+ //     writeln("Locale: ", here.id, " Blk: ",blk," Src.blk:",B._value.blk, " dom: ",dom.dsiDims());
 
   extern proc sizeof(type x): int;
   if debugBulkTransfer then
@@ -846,7 +833,6 @@ proc DefaultRectangularArr.doiBulkTransferStride(B) {
   if debugDefaultDistBulkTransfer then
     writeln("\tlocal get() from ", B.locale.id);
   
-  var rankcomp:[1..rank] int(32);
   var dstCompRank, srcCompRank:[1..rank] bool;
   var stridelevels:int(32);
   
@@ -859,14 +845,17 @@ proc DefaultRectangularArr.doiBulkTransferStride(B) {
     writeln("In DefaultRectangularArr.doiBulkTransferStride, stridelevels: ",stridelevels);
   
   //These variables should be actually of size stridelevels+1, but stridelevels is not param...
-  var srcCount, dstCount, cnt: [1..rank+1] int(32); 
+  
+  var srcCount, dstCount:[1..rank+1] int(32); 
+  
   /* We now obtain the count arrays for source and destination arrays */
+
   dstCount= getCount(stridelevels,dstCompRank);
   srcCount= B._value.getCount(stridelevels,srcCompRank); 
   
   /*Then the Stride arrays for source and destination arrays*/
-  var dstStride, srcStride: [1..rank+1] int(32);
-  
+
+  var dstStride, srcStride: [1..rank] int(32);
   /*When the source and destination arrays have different sizes 
     (example: A[1..10,1..10] and B[1..20,1..20]), the count arrays obtained are different,
     so we have to calculate the minimun count array */
@@ -882,21 +871,22 @@ proc DefaultRectangularArr.doiBulkTransferStride(B) {
       
       if !isDstCountMin
       {
-        dstStride = getStride(dstCompRank,dstCount);
-        srcStride = B._value.getStride(srcCompRank);
+        dstStride = getStride(dstCompRank,dstCount,stridelevels);
+        srcStride = B._value.getStride(srcCompRank,stridelevels);
       }
       else
       {
-        dstStride = getStride(dstCompRank);
-        srcStride = B._value.getStride(srcCompRank,dstCount);
+        dstStride = getStride(dstCompRank,stridelevels);
+        srcStride = B._value.getStride(srcCompRank,dstCount,stridelevels);
       }
     }
   else
   {
-    dstStride = getStride(dstCompRank);
-    srcStride = B._value.getStride(srcCompRank); 
+    dstStride = getStride(dstCompRank,stridelevels);
+    srcStride = B._value.getStride(srcCompRank,stridelevels);
   }
-  doiBulkTransferStrideComm(B, stridelevels, dstStride, srcStride, dstCount, srcCount, Alo, Blo);
+ 
+ doiBulkTransferStrideComm(B, stridelevels, dstStride, srcStride, dstCount, srcCount, Alo, Blo);
 }
 
 proc DefaultRectangularArr.doiBulkTransferStride2(B) {
@@ -920,7 +910,6 @@ proc DefaultRectangularArr.doiBulkTransferStride2(B) {
   if debugDefaultDistBulkTransfer then
     writeln("\tlocal get() from ", B.locale.id);
   
-  var rankcomp:[1..rank] int(32);
   var dstCompRank, srcCompRank:[1..rank] bool;
   var stridelevels:int(32);
   
@@ -933,49 +922,54 @@ proc DefaultRectangularArr.doiBulkTransferStride2(B) {
     writeln("In DefaultRectangularArr.doiBulkTransferStride, stridelevels: ",stridelevels);
   
   //These variables should be actually of size stridelevels+1, but stridelevels is not param...
-  var srcCount, dstCount, cnt: [1..rank+1] int(32); 
+  var srcCount, dstCount:[1..rank+1] int(32); 
   /* We now obtain the count arrays for source and destination arrays */
-  dstCount= getCount(stridelevels,dstCompRank);
-  srcCount= B._value.getCount(stridelevels,srcCompRank); 
   
+  dstCount= getCount(stridelevels,dstCompRank);
+  srcCount= B._value.getCount(stridelevels,srcCompRank);
+ 
   /*Then the Stride arrays for source and destination arrays*/
-  var dstStride, srcStride: [1..rank+1] int(32);
+  var dstStride, srcStride: [1..rank] int(32);
   
   /*When the source and destination arrays have different sizes 
     (example: A[1..10,1..10] and B[1..20,1..20]), the count arrays obtained are different,
     so we have to calculate the minimun count array */
   //Note that we use equal function equal instead of dstCount==srcCount due to the latter fails
   //The same for the array assigment (using assing function instead of srcCount=dstCount)
-  // writeln(" factoredOffs: ",factoredOffs, " off:", off, " blk: ", blk," blk2: ", B._value.blk, " str: ", str, " Stride(2): ", dom.dsiDim(2).stride," Stride(1): ", dom.dsiDim(1).stride," DstCount: ",dstCount, " SrcCount: ", srcCount);
   
   if !equal(dstCount, srcCount, rank+1) //For different size arrays
     {
       var isDstCountMin:bool=true;
       for h in [1..stridelevels+1] do
 	if dstCount[h]>srcCount[h] {isDstCountMin=false;
-	  assig(dstCount,srcCount, stridelevels+1);break;} //{ dstCount=srcCount;break;}
+	  assig(dstCount,srcCount, stridelevels+1);break;} 
       
       if !isDstCountMin
       {
-        dstStride = getStride(dstCompRank,dstCount);
-        srcStride = B._value.getStride(srcCompRank);
+        dstStride = getStride2(dstCompRank, srcCount,stridelevels);
+        srcStride = B._value.getStride2(stridelevels);
       }
       else
       {
-        dstStride = getStride(dstCompRank);
-        srcStride = B._value.getStride(srcCompRank,dstCount);
+        srcStride = B._value.getStride2(srcCompRank, dstCount,stridelevels);
+        dstStride = getStride2(stridelevels);
       }
     }
   else
   {
-    dstStride = getStride2();
-    srcStride = B._value.getStride2(); 
+    if blk(rank)>1 then dstStride = getStride2(stridelevels);
+    else dstStride = getStride2(dstCompRank,dstCount,stridelevels);
+    
+    if B._value.blk(rank)>1 then srcStride = B._value.getStride2(stridelevels);
+    else srcStride = B._value.getStride2(srcCompRank,srcCount,stridelevels);
   }
-  doiBulkTransferStrideComm(B, stridelevels, dstStride, srcStride, dstCount, srcCount, Alo, Blo);
+  
+ doiBulkTransferStrideComm(B, stridelevels, dstStride, srcStride, dstCount, srcCount, Alo, Blo);
 }
 
- proc DefaultRectangularArr.doiBulkTransferStrideComm(B, stridelevels, dstStride, srcStride, dstCount, srcCount, Alo, Blo)
- {
+ proc DefaultRectangularArr.doiBulkTransferStrideComm(B, stridelevels, dstStride/*:(rank+1)*int(32)*/, srcStride/*:(rank+1)*int(32)*/, dstCount/*:(rank+1)*int(32)*/, srcCount/*:(rank+1)*int(32)*/, Alo, Blo)
+ { 
+// writeln("Locale: ", here.id, " stridelvl: ", stridelevels, " DstStride: ", dstStride," SrcStride: ",srcStride, " Count: ", dstCount, " dst.Blk: ",blk, " src.Blk: ",B._value.blk/*, " dom: ",dom.dsiDims()," B.blk: ",B._value.blk," B.dom: ",B._value.dom.dsiDims()*/);
   if this.data.locale==here // IF 1
   {
     var dest = this.data;
@@ -998,7 +992,8 @@ proc DefaultRectangularArr.doiBulkTransferStride2(B) {
                     __primitive("array_get",dststr,dstStride._value.getDataIndex(1)), 
 		    srclocale,
                     __primitive("array_get",src, B._value.getDataIndex(Blo)),
-                    __primitive("array_get",srcstr,dstStride._value.getDataIndex(1)),
+                    //__primitive("array_get",srcstr,dstStride._value.getDataIndex(1)),
+                    __primitive("array_get",srcstr,srcStride._value.getDataIndex(1)),
                     __primitive("array_get",cnt, dstCount._value.getDataIndex(1)),
                     stridelevels);
   } //END IF 1
@@ -1071,6 +1066,7 @@ proc DefaultRectangularArr.doiBulkTransferStride2(B) {
                     __primitive("array_get",cnt, count._value.getDataIndex(1)),
                     stridelevels);   
   }//END ELSE1
+ // writeln(" Fin Locale ",here.id);
 }
 
 proc DefaultRectangularArr.isDefaultRectangular() param{return true;}
@@ -1084,10 +1080,11 @@ proc DefaultRectangularArr.getStrideLevels(rankcomp):int(32) where rank == 1
 
 proc DefaultRectangularArr.getStrideLevels(rankcomp):int(32) where rank > 1 
 {
-var stridelevels:int(32);
+  var stridelevels:int(32);
  
- if (dom.dsiStride(rank)>1 && dom.dsiDim(rank).length>1)||(blk(rank)>1 && dom.dsiDim(rank).length>1) then stridelevels+=1;
-  for i in [2..rank] by -1{
+  if (dom.dsiStride(rank)>1 && dom.dsiDim(rank).length>1)||(blk(rank)>1 && dom.dsiDim(rank).length>1) then stridelevels+=1;
+ 
+  for i in [2..rank] by -1{ //writeln("distance[",i,"]=",distance[i]);
     if (!rankcomp[i] && dom.dsiDim(i-1).length>1 && !distance(i)) then stridelevels+=1;
     else if(dom.dsiDim(i).length>1 && !distance(i)) then stridelevels+=1;
   }
@@ -1110,11 +1107,12 @@ proc DefaultRectangularArr.getCount(stridelevels:int(32), rankcomp:[]):(rank+1)*
   var c: (rank+1)*int(32);
   var cont:int(32)=0;
   var tmp:int(32)=0;
+  for i in [1..rank] do
   
-  if (dom.dsiStride(rank)>1 && dom.dsiDim(rank).length>1)||(blk(rank)>1 && dom.dsiDim(rank).length>1) {/*writeln("ENTRA");*/c[1]=1; cont=1;}
+  if (dom.dsiStride(rank)>1 && dom.dsiDim(rank).length>1)||(blk(rank)>1 && dom.dsiDim(rank).length>1) 
+    {c[1]=1; cont=1;}
   tmp = cont;
-//  if blk(rank) == 1
-//  {
+
     if blk(rank)> 1 then if(this.dom.dsiDim(rank).length:int(32)==1) then cont+=1;
   for i in [0+tmp..stridelevels] do
     if cont == rank then
@@ -1124,7 +1122,7 @@ proc DefaultRectangularArr.getCount(stridelevels:int(32), rankcomp:[]):(rank+1)*
       {
         c[i+1]=this.dom.dsiDim(rank-cont+tmp).length:int(32);
         
-	for h in [2..rank-cont+tmp] by -1:int(32) do
+	for h in [2..rank-cont+tmp] by -1:int(32){
 	  if( (distance(h)&&dom.dsiDim(h-1+tmp).length>1) || (dom.dsiDim(h).length==1&&(h)!=rank))
 	    {
 	      c[i+1]*=dom.dsiDim(h-1).length:int(32);
@@ -1135,6 +1133,7 @@ proc DefaultRectangularArr.getCount(stridelevels:int(32), rankcomp:[]):(rank+1)*
 	      cont=rank-h+1+tmp;
 	      break;
 	    }
+        }
       }
     if blk(rank)>1 then c[1]=1;
   
@@ -1142,11 +1141,11 @@ proc DefaultRectangularArr.getCount(stridelevels:int(32), rankcomp:[]):(rank+1)*
 }
 
 /* This function returns the stride array for the default rectangular array. */
-proc DefaultRectangularArr.getStride(rankcomp:[]):int(32) where rank==1 {return dom.dsiStride:int(32);}
-proc DefaultRectangularArr.getStride(rankcomp:[]):rank*int(32) where rank > 1
+proc DefaultRectangularArr.getStride(rankcomp:[],levels:int(32)) where rank==1 {return dom.dsiStride:int(32);}
+proc DefaultRectangularArr.getStride(rankcomp:[],levels:int(32)) where rank > 1
 {
   var stridelevels:int(32);
-  var c: rank*int(32);
+  var c: (rank)*int(32);
 
   if (dom.dsiStride(rank) > 1  &&  dom.dsiDim(rank).length>1) 
    { 
@@ -1158,47 +1157,96 @@ proc DefaultRectangularArr.getStride(rankcomp:[]):rank*int(32) where rank > 1
     stridelevels+=1;
     c[stridelevels]= blk(rank):int(32); 
    }
- 
   for i in [2..rank] by -1:int(32){
-    if (!rankcomp[i] && dom.dsiDim(i-1).length>1 && !distance(i))
-      {stridelevels+=1; c[stridelevels]=blk(i-1):int(32) * dom.dsiStride(i-1):int(32);}
-    else if(dom.dsiDim(i).length>1 && !distance(i))
-      {stridelevels+=1; c[stridelevels]=blk(i-2):int(32);}
+    if levels>stridelevels || stridelevels==0
+    { 
+      if (( dom.dsiDim(i-1).length>1 && !distance(i))|| (i-2==0))
+        {stridelevels+=1; c[stridelevels]=blk(i-1):int(32) * dom.dsiStride(i-1):int(32);}
+      else if(dom.dsiDim(i).length>1 && !distance(i))
+        {stridelevels+=1; c[stridelevels]=blk(i-2):int(32);}
+    }
   }
   return c;
 
 }
 
-proc DefaultRectangularArr.getStride2():rank*int(32) where rank > 1
+proc DefaultRectangularArr.getStride(rankcomp:[],cnt:[],levels:int(32))
+{
+  var c: (rank)*int(32); 
+  var h=1;
+  var acum=1;
+  
+  if cnt[1]==1 {c[1]=1;h+=1;}
+  
+  for i in [2..rank] by -1:int(32){
+    if (levels>=h)
+    {
+      if (!rankcomp[i] && dom.dsiDim(i-1).length>1) || (cnt[h]==dom.dsiDim(i).length*acum)
+      {
+       c[h]=blk(i-1):int(32);
+        h+=1;
+        acum=1;
+      }
+      else acum=acum*dom.dsiDim(i).length;
+    }
+  }
+  
+  return c;
+}
+
+proc DefaultRectangularArr.getStride2(levels:int(32)):(rank)*int(32) where rank > 1
 {
   var c: (rank)*int(32);
   var h:int(32) = 1;
-  for i in [1..blk.size] by -1:int(32) do
-     if blk[i]>1{ c[h]=blk[i]:int(32); h+=1;}
+  if blk[rank]>1 then
+    if dom.dsiDim(rank).length>0
+      {
+        c[h]=blk[rank]:int(32);
+        h+=1;
+      }
+      
+  for i in [2..blk.size-1] by -1:int(32)
+  {
+    if levels>=h || h==1 then
+      if blk[i]>1{
+        if (dom.dsiDim(i).length>0 && !distance(i+1))
+        {
+          c[h]=blk[i]:int(32);
+          h+=1;
+        }
+      }
+  }
+  if dom.dsiDim(1).length>1 then
+    c[h]=blk[1]:int(32);
+    
   return c;
 }
-                                                                                       
-proc DefaultRectangularArr.getStride(rankcomp:[],cnt:[])
+
+proc DefaultRectangularArr.getStride2(rankcomp:[],cnt:[], levels:int(32)):(rank)*int(32) where rank > 1
 {
-  var c: (rank)*int(32);
-  for t in [1..rank] do c[t]=1;
+  var c: (rank)*int(32); 
   var h=1;
   var acum=1;
-
-  if  (blk(rank)>1 && dom.dsiDim(rank).length>1) then c[1]= blk(rank):int(32); 
-   else c[1]=1;
-   
-  for i in [2..rank] by -1:int(32){    
-    if (!rankcomp[i] && dom.dsiDim(i-1).length>1) || (cnt[h]==dom.dsiDim(i).length*acum)
+  if cnt[1]==1 {
+    c[1]=blk[rank]:int(32);
+    h+=1;}
+  
+  for i in [2..rank] by -1:int(32){
+    if (levels>=h)
     {
-      c[h]=blk(i-1):int(32);
-      h+=1;
-      acum=1;
+      if (!rankcomp[i] && dom.dsiDim(i-1).length>1) || (cnt[h]==dom.dsiDim(i).length*acum && dom.dsiDim(i-1).length>1)
+      {
+       c[h]=blk(i-1):int(32);
+        h+=1;
+        acum=1;
+      }
+      else acum=acum*dom.dsiDim(i).length;
     }
-    else acum=acum*dom.dsiDim(i).length;
   }
+  
   return c;
 }
+                                                                                      
 
 /*
 This function is used to help in the aggregation of data from different array dimensions.
@@ -1220,7 +1268,7 @@ proc DefaultRectangularArr.assertWholeDim(d) where rank>1
 {
  var c:d.rank*bool;
   for i in [2..rank] do
-    if (d.dom.dsiDim(i).length==d.blk(i-1)/d.blk(i) && dom.dsiStride(i-1)==1) then c[i]=true;
+    if (d.dom.dsiDim(i).length==d.blk(i-1)/d.blk(i) && dom.dsiStride(i)==1) then c[i]=true;
 
   return c;
 }
@@ -1238,9 +1286,21 @@ proc DefaultRectangularArr.distance(x: int)
 {
   var cont:bool=false;
   if dom.dsiDim(x-1).length==1 then cont=true;
-  else if (blk(x-1)/blk(x) - (1+dom.dsiDim(x).last - dom.dsiDim(x).first) == dom.dsiStride(x)-1)
+  else
+  {
+    if blk(rank)==1
+    {
+      if (((blk(x-1)*dom.dsiStride(x))/blk(x) - (1+dom.dsiDim(x).last - dom.dsiDim(x).first)) == dom.dsiStride(x)-1)
         && dom.dsiDim(x).length>1 && (dom.dsiStride(x-1)==1||dom.dsiDim(x-1).length==1 )
         then cont=true;
+    }
+    else
+    {
+      if ((blk(x-1)*dom.dsiStride(x))/blk(x) - (1+dom.dsiDim(x).last - dom.dsiDim(x).first) == dom.dsiStride(x)-1)
+        && dom.dsiDim(x).length>1 && (dom.dsiStride(x-1)==1||dom.dsiDim(x-1).length==1 )
+        then cont=true;
+    }
+  }
   return cont;
 }
 
@@ -1248,20 +1308,7 @@ proc DefaultRectangularArr.distance(x: int)
 This is a pending question: this functions replaces the operator == due to it stopped working
 at some point. We will be grateful if anyone can shed light on this problem.
 */
-proc equal_(d1:[],d2:[],tam: int(32))
-{
-  var c:bool=true;
-  var total1,total2:int(32)=1;
-  for i in [1..tam]
-  {
-    if(d1[i]>0) then total1*=d1[i];
-    if(d2[i]>0) then total2*=d2[i];
-  }
-  if total1==total2 then return true;
-  else return false;
-}
-
-proc equal(d1:[],d2:[],tam: int(32))
+proc DefaultRectangularArr.equal(d1:[]/*(rank+1)*int(32)*/,d2:[]/*(rank+1)*int(32)*/,tam: int(32))
 {
   var c:bool=true;
   for i in [1..tam] do if d1[i]!=d2[i]{ c=false;break;}
@@ -1273,9 +1320,8 @@ proc equal(d1:[],d2:[],tam: int(32))
 This is a pending question: this functions replaces the operator = due to it stopped working
 at some point. We will be grateful if anyone can shed light on this problem.
 */
-proc assig(d1:[],d2:[],tam: int(32))
+proc DefaultRectangularArr.assig(d1:[]/*(rank+1)*int(32)*/,d2:[]/*(rank+1)*int(32)*/,tam: int(32))
 {
   for i in [1..tam] do d1[i]=d2[i];
 }
-
 }

@@ -1198,14 +1198,6 @@ proc BlockArr.dsiPrivatize(privatizeData) {
 }
 
 proc BlockArr.dsiSupportsBulkTransfer() param return true;
-/*
-proc BlockArr.doiBulkTransfer_(B) {
-  if debugDefaultDistBulkTransfer then writeln("In BlockArr.doiBulkTransfer_");
-
-  if(this.type == B._value.type) && rank>1 then
-     this.doiBulkTransferStride(B);
-  else this.doiBulkTransfer(B);
-}*/
 
 proc BlockArr.doiCanBulkTransfer() {
   if debugDefaultDistBulkTransfer then writeln("In BlockArr.doiCanBulkTransfer");
@@ -1223,14 +1215,15 @@ proc BlockArr.doiCanBulkTransfer() {
 }
 
 proc BlockArr.doiCanBulkTransferStride() {
-  if debugDefaultDistBulkTransfer then writeln("In BlockArr.doiCanBulkTransfer");
+  if debugDefaultDistBulkTransfer then writeln("In BlockArr.doiCanBulkTransferStride");
 //if dom.stridable then
 //  if disableAliasedBulkTransfer then
 //writeln("_arrAlias: ",_arrAlias);
 
-  //if _arrAlias != nil then return false;
+//if _arrAlias != nil then return false;
   
 //writeln("doiCanBulkTransfer TRUE!");
+
   return true;
 }
 
@@ -1315,161 +1308,6 @@ proc BlockArr.doiBulkTransfer(B) {
       if debugBlockDistBulkTransfer then stopCommDiagnosticsHere();
     }
   }
-  if debugBlockDistBulkTransfer then writeln("Comms:",getCommDiagnostics());
-}
-
-//This function should be improved so as to call a
-//DefaultRectangular=BlockDist function for each
-//DefaultRectangularArray.
-//Most of this code would be refactored out in that function which
-//overloads the op= for that case.
-
-proc BlockArr.doiBulkTransferStride(B) {
-  if debugBlockDistBulkTransfer then writeln("In BlockArr.doiBulkTransferStride");
-
-  if debugBlockDistBulkTransfer{ writeln("In BlockArr.doiBulkTransferStride.");resetCommDiagnostics();}
-  coforall i in dom.dist.targetLocDom do
-    on dom.dist.targetLocales(i)  {
-      if debugBlockDistBulkTransfer then startCommDiagnosticsHere();
-  
-      var total = dom.locDoms[i].myBlock.numIndices;
-      var lo = dom.locDoms[i].myBlock.low;
-      var lo_ini = lo;
-      const offset   = B._value.dom.whole.low - dom.whole.low;
-
-      var t:int=1;
-      var x = dom.locDoms[i].myBlock;
-      var tmp:int;
-  
-      if rank ==1
-      {
-        var range1: range(idxType);
-        var range2: range(idxType);
-        var minimum:int = 0;
-        var dispDst,dispSrc : int;
-        if dom.locDoms[i].myBlock.dim(1).high >= lo+minimum then lo += minimum;
-        else lo = lo_ini;
-        
-        while total>0
-        { 
-          if dom.locDoms[i].myBlock.dim(1).high >= lo+minimum then lo += minimum;
-          else lo = lo_ini;
-  
-          var rlo = lo+offset;
-          var rid = B._value.dom.dist.targetLocsIdx(rlo);
-          dispDst= (dom.locDoms[i].myBlock.low - dom.whole.low);
-          dispSrc= (B._value.dom.locDoms[rid].myBlock.low - B._value.dom.whole.low);
-          
-          if (dom.locDoms[i].myBlock.dim(1).high - lo) <= 
-                  (B._value.dom.locDoms[rid].myBlock.dim(1).high - rlo) then 
-                     minimum = dom.locDoms[i].myBlock.dim(1).high - lo + 1;
-          else minimum = B._value.dom.locDoms[rid].myBlock.dim(1).high - rlo +1;
-          
-          if dispDst%dom.dsiDim(1).stride >0 then dispDst=dom.dsiDim(1).stride - (dispDst%dom.dsiDim(1).stride);
-          else dispDst=dispDst%dom.dsiDim(1).stride;
-         // if dispDst%dom.locDoms[i].myBlock.stride >0 then dispDst=dom.locDoms[i].myBlock.stride - (dispDst%dom.locDoms[i].myBlock.stride);
-         // else dispDst=dispDst%dom.locDoms[i].myBlock.stride;
-    
-          if dispSrc%B._value.dom.dsiDim(1).stride >0 then dispSrc=B._value.dom.dsiDim(1).stride - (dispSrc%B._value.dom.dsiDim(1).stride);
-          else dispSrc=dispSrc%B._value.dom.dsiDim(1).stride;
-          //if dispSrc%B._value.dom.locDoms[rid].myBlock.stride >0 then dispSrc=B._value.dom.locDoms[rid].myBlock.stride - (dispSrc%B._value.dom.locDoms[rid].myBlock.stride);
-          //else dispSrc=dispSrc%B._value.dom.locDoms[i].myBlock.stride;
-              
-          tmp=(minimum - dispSrc)/dom.dsiDim(1).stride;
-          if (minimum - dispSrc)%dom.dsiDim(1).stride > 0 then tmp +=1;
-          t = t * tmp;    
-          range1 = (lo+dispDst..lo + minimum - 1);
-          range2 = (rlo+dispSrc..rlo + minimum - 1);
-          var r1 = (range1 by dom.dsiDim(1).stride);
-          var r2 = (range2 by B._value.dom.dsiDim(1).stride);
-         
-          //writeln("In BlockArr.doiBulkTransferStride: Locale:", i," Rid: ",rid," d1:  ",r1, " d2: ",r2);
-	  if total>0 then 
-            locArr[i].myElems[r1]=B._value.locArr[rid].myElems[r2];
-	  total-=t;
-        }
-
-      }
-      else
-      {
-        var minimum: [1..rank] int;
-        for h in [1..rank] do minimum(h)=0;
-        var dispDst,dispSrc : rank*int;
-        var range1: rank*range(idxType);
-        var range2: rank*range(idxType); 
-     
-//This loop splits the local domain in subdomains so as to work at a
-//'DefaultRectangular" level
-/*Example: Let's be A[1..8,1..8] and B[1..8,1..8] block distrubuted
-over a 2x2 mesh If we assign A[1..3,2..7]=B[3..5,3..8], locale 0 is
-responsible of the local domain localA[1..3,2..4] But, the
-corresponding region in B is [3..5,3..5] which is distributed between
-4 locales: B[3..4,3..4] in locale 0, B[3..4,5..5] in locale 1,
-B[5..5,3..4] in locale 2,B[5..5,5..5] in locale 3.
- */ 
-        while total>0
-        { 
-            for tt in [1..rank] by -1 do
-              if dom.locDoms[i].myBlock.dim(tt).high >= lo[tt]+minimum[tt] {lo[tt] += minimum[tt]; break;}
-	      else lo[tt]=lo_ini[tt];
-  
-          var rlo = lo+offset;
-          var rid = B._value.dom.dist.targetLocsIdx(rlo);
-
-/* For each local array we first obtain the maximum number of
-local/remote elements in each locale that can be trasnferred at once
-Basically, this number of elements is the minimum of what the
-destination locale wants and what the source locale has.  Followint
-the example: for locale 0, you need 9 elements but you can copy only 4
-elements from the same locale 0, and so on...*/
-
-          dispDst= (dom.locDoms[i].myBlock.low - dom.whole.low);
-          dispSrc= (B._value.dom.locDoms[rid].myBlock.low - B._value.dom.whole.low);
-          
-            for tt in [1..rank] do
-              if (dom.locDoms[i].myBlock.dim(tt).high - lo(tt)) <= 
-                  (B._value.dom.locDoms[rid].myBlock.dim(tt).high - rlo(tt)) then 
-                     minimum(tt) = dom.locDoms[i].myBlock.dim(tt).high - lo(tt) + 1;
-              else minimum(tt) = B._value.dom.locDoms[rid].myBlock.dim(tt).high - rlo(tt) +1;
-
-             for s in [1..rank]
-            {
-              
-              if dispDst[s]%dom.dsiDim(s).stride >0 then dispDst[s]=dom.dsiDim(s).stride - (dispDst[s]%dom.dsiDim(s).stride);
-              else dispDst[s]=dispDst[s]%dom.dsiDim(s).stride;
-    
-              if dispSrc[s]%B._value.dom.dsiDim(s).stride >0 then dispSrc[s]=B._value.dom.dsiDim(s).stride - (dispSrc[s]%B._value.dom.dsiDim(s).stride);
-              else dispSrc[s]=dispSrc[s]%B._value.dom.dsiDim(s).stride;
-              
-              tmp=(minimum[s] - dispSrc[s])/dom.dsiDim(s).stride;
-              if (minimum[s] - dispSrc[s])%dom.dsiDim(s).stride > 0 then tmp +=1;
-               
-              t = t * tmp;
-              range1(s) = (lo[s]+dispDst[s]..lo[s] + minimum[s] - 1);
-              range2(s) = (rlo[s]+dispSrc[s]..rlo[s] + minimum[s] - 1);
-              
-              
-            } // END FOR
-    
-         var r1: rank * range(stridable = true);
-         var r2: rank * range(stridable = true);
-         for t in [1..rank]
-         {
-          r1[t] = range1(t) by dom.dsiDim(t).stride;
-          r2[t] = range2(t) by B._value.dom.dsiDim(t).stride;
-         }
-         if total>0 then
-            if (dom.locDoms[i].myBlock.stridable || B._value.dom.locDoms[i].myBlock.stridable){ 
-              locArr[i].myElems[(...r1)]._value.doiBulkTransferStride2(B._value.locArr[rid].myElems[(...r2)]);
-            }
-            else {
-              locArr[i].myElems[(...r1)] = B._value.locArr[rid].myElems[(...r2)];
-            }                 
-	  total-=t;
-        } //End while
-      } //END IF
-      if debugBlockDistBulkTransfer then stopCommDiagnosticsHere();
-    }
   if debugBlockDistBulkTransfer then writeln("Comms:",getCommDiagnostics());
 }
 
@@ -1605,4 +1443,267 @@ proc BlockArr.TestGetsPuts(B)
   }
 }
 
+proc BlockArr.copyBtoC(B)
+{
+  coforall loc in Locales do on loc
+  {
+    const privarr=this.dsiPrivatize(dom.pid);
+    const privdom=dom.dsiPrivatize((dom.dist.pid,dom.dsiDims()));
+    const privB=B._value.dsiPrivatize(B._value.dom.pid);
+
+    param stridelevels=1;
+    var dststrides:[1..#stridelevels] int(32); 
+    var srcstrides: [1..#stridelevels] int(32);
+    var count: [1..#(stridelevels+1)] int(32);
+    var lid=loc.id; 
+
+    var numLocales: int(32)=privdom.dist.targetLocDom.dim(1).length:int(32);
+    var n:int(32)=privdom.dist.boundingBox.dim(1).length:int(32);
+    var src = privarr.locArr[lid].myElems._value.data; 
+
+    dststrides[1]=1;
+    srcstrides[1]=numLocales;
+
+    var dststr=dststrides._value.data;
+    var srcstr=srcstrides._value.data;
+    var cnt=count._value.data;
+
+    //Domain size (n) and first index (arrayini)
+
+    var arrayini:int(32)=dom.dsiLow:int(32);
+
+    //writeln("Domain: ",dom.whole.dims());
+
+    //a,b: first and last global indices in each locale
+
+    var a: int(32)=privdom.locDoms[lid].myBlock.low:int(32); 
+    var b: int(32)=privdom.locDoms[lid].myBlock.high:int(32);
+    var blksize=b-a+1;
+
+    //writeln("Locale", here.id," : blksize ",blksize," subblock first index  a ",a,
+
+    var t1,t2: real;
+    var schunkini: int;
+    var chunksize: int(32);
+    //Loop of strided chunk sends (chpl_comm_puts)
+    for k in 0..#numLocales do {
+
+      var dst=(lid+k)%numLocales;
+
+      //Compute the chunk first index in src locale to be send to locale dst.
+      if (dst-a%numLocales+arrayini)<0 then schunkini=a+numLocales +(dst-a%numLocales+arrayini);
+      else schunkini=a+(dst-a%numLocales+arrayini)%numLocales;
+
+      //Compute chunk size
+      if (schunkini+(blksize/numLocales)*numLocales>b) then chunksize=blksize/numLocales;
+      else chunksize=blksize/numLocales+1;
+
+      var destr = privB.locArr[dst].myElems._value.data;
+      count[1]=1;
+      count[2]=chunksize;
+
+      __primitive("chpl_comm_puts",
+		  __primitive("array_get",destr,
+			      privB.locArr[dst].myElems._value.getDataIndex(schunkini)),
+		  __primitive("array_get",dststr,dststrides._value.getDataIndex(1)),
+		  dst,
+		  __primitive("array_get",src,
+			      privarr.locArr[lid].myElems._value.getDataIndex(schunkini)),  
+		  __primitive("array_get",srcstr,srcstrides._value.getDataIndex(1)),
+		  __primitive("array_get",cnt, count._value.getDataIndex(1)),
+		  stridelevels);
+
+    } // end for dst
+  } // end coforall loc
+} // end proc
+
+proc  BlockArr.copyCtoB(B)
+{
+ 
+  coforall loc in Locales do on loc
+  {
+    const privarr=this.dsiPrivatize(dom.pid);
+    const privdom=dom.dsiPrivatize((dom.dist.pid,dom.dsiDims()));
+    const privB=B._value.dsiPrivatize(B._value.dom.pid);
+
+    param stridelevels=1;
+    var dststrides:[1..#stridelevels] int(32);
+    var srcstrides: [1..#stridelevels] int(32);
+    var count: [1..#(stridelevels+1)] int(32); 
+    var lid=loc.id;
+    var numLocales: int=privdom.dist.targetLocDom.dim(1).length;
+    var n:int(32)=privdom.dist.boundingBox.dim(1).length:int(32);
+
+    var dststr=dststrides._value.data;
+    var srcstr=srcstrides._value.data;
+    var cnt=count._value.data;
+
+    //On each locale (src) we compute the chunk that goes to each dst
+    var num: int;
+    var schunkini: int;
+    var chunksize: int;
+    var a: int(32)=privdom.locDoms[lid].myBlock.low:int(32); 
+    var b: int(32)=privdom.locDoms[lid].myBlock.high:int(32);
+    num=b-a+1;
+
+    var src = privarr.locArr[lid].myElems._value.data;
+    var arrayini:int(32)=dom.dsiLow:int(32);
+
+    var t,t1,t2: real;
+    t=0.0;
+    //Compute the starting index of the src chunk with destination dst
+
+    for dst in 0..#numLocales do {
+      if (dst-a%numLocales+arrayini)<0 then schunkini=a+numLocales+(dst-a%numLocales+arrayini);
+      else schunkini=a+(dst-a%numLocales+arrayini)%numLocales;
+
+      //Compute the size of the chunk. The number of elements of src subarray is num
+      if (schunkini+(num/numLocales)*numLocales>b) then chunksize=num/numLocales;
+      else chunksize=num/numLocales+1;
+
+      var destr = privB.locArr[dst].myElems._value.data;
+      dststrides[1]=numLocales:int(32);
+      srcstrides[1]=1;
+      count[1]=1;
+      count[2]=chunksize:int(32);
+
+      __primitive("chpl_comm_gets",
+		  __primitive("array_get",src,
+			      privarr.locArr[lid].myElems._value.getDataIndex(schunkini)),
+		  __primitive("array_get",dststr,dststrides._value.getDataIndex(1)),
+		  dst,
+		  __primitive("array_get",destr,
+			      privB.locArr[dst].myElems._value.getDataIndex(schunkini)),
+		  __primitive("array_get",srcstr,srcstrides._value.getDataIndex(1)),
+		  __primitive("array_get",cnt,count._value.getDataIndex(1)),
+		  stridelevels);
+    } //end for dst
+  }//end for loc
+} //end proc copyCtoB
+
+//This function should be improved so as to call a
+//DefaultRectangular=BlockDist function for each
+//DefaultRectangularArray.
+//Most of this code would be refactored out in that function which
+//overloads the op= for that case.
+
+proc BlockArr.doiBulkTransferStride(B)
+{
+  if debugDefaultDistBulkTransfer then writeln("In BlockArr.doiBulkTransferStride()");
+  coforall i in dom.dist.targetLocDom do // for all locales
+    on dom.dist.targetLocales(i)
+      {
+	var regionA = dom.locDoms(i).myBlock;
+	var ini=corr_direct(regionA.low,B._value,1);
+	var end=corr_direct(regionA.high,B._value,0);
+	var sb=B._value.dom.whole.stride;
+    
+	if rank ==1
+	  {
+	    var DomA: domain(rank,int,true);
+	    var r1: range(stridable = true);
+	    var r2: range(stridable = true);
+	    var r3: range(stridable = true);
+	    r1 = (ini[1]..end[1] by sb);
+
+	    DomA=r1; //Necessary to do the intersection
+    
+	    for j in  B._value.dom.dist.targetLocDom
+	    {
+	      var inters=DomA[B._value.dom.locDoms(j).myBlock];
+	      if(inters.numIndices>0)
+		{
+		  var ini_src=corr_inverse(inters.low,B._value);
+		  var end_src=corr_inverse(inters.high,B._value);
+		  var sa = dom.whole.stride;
+         
+		  r2 = (ini_src[1]..end_src[1] by sa);
+		  r3 = (inters.low..inters.high by inters.stride);
+          
+		  locArr[i].myElems[r2]=B._value.locArr[j].myElems[r3];
+		}
+	    }
+	  }
+	else
+	  {
+	    var DomA: domain(rank,int,true);
+	    var r1: rank * range(stridable = true);
+	    var r2: rank * range(stridable = true);
+	    var r3: rank * range(stridable = true);
+	    for t in [1..rank] do
+	      r1[t] = (ini[t]..end[t] by sb[t]); 
+        
+	    DomA=r1; //Necessary to make the intersection
+    
+	    for j in  B._value.dom.dist.targetLocDom
+	      {
+		var inters=DomA[B._value.dom.locDoms(j).myBlock];
+		if(inters.numIndices>0)
+		  {
+		    var ini_src=corr_inverse(inters.low,B._value);
+		    var end_src=corr_inverse(inters.high,B._value);
+		    var sa = dom.whole.stride;
+      
+		    for t in [1..rank]{
+		      r2[t] = (ini_src[t]..end_src[t] by sa[t]);
+		      r3[t] = (inters.low[t]..inters.high[t] by inters.stride[t]);
+		    }
+  
+		    if (dom.locDoms[i].myBlock.stridable || B._value.dom.locDoms[i].myBlock.stridable) then
+		      locArr[i].myElems[(...r2)]._value.doiBulkTransferStride2(B._value.locArr[j].myElems[(...r3)]);
+		    else
+		      locArr[i].myElems[(...r2)] = B._value.locArr[j].myElems[(...r3)];
+		  }
+	      }
+	  }
+      }
+}
+
+//These two following functios are the main contribution of Juan Lopez, and later improved by Alberto. 
+//They calculate the regions from the origin and destination array that have to be copied.
+
+proc BlockArr.corr_direct(a,B,low)
+{
+  //It finds out the initial domain coordinate and strides of destination and source Domain
+  var la=dom.whole.low;
+  var sa=dom.whole.stride;
+  var lb=B.dom.whole.low;
+  var sb=B.dom.whole.stride;
+  var b:[1..rank] int;
+  
+  if rank>1 then 
+    forall i in [1..rank]
+      {
+	var div:int(32); 
+
+	div=((a[i]-la[i])/sa[i]):int(32);  
+	b[i]=lb[i]+div*sb[i];
+	if low==1 then 
+	  if(a[i]-la[i])%sa[i]>0 then b[i]=b[i]+sb[i];
+      }
+  else
+    {
+      b[1]=lb+((a-la)/sa)*sb;
+      if low==1 then
+	if(a-la)%sb>0 then b[1]=b[1]+sb;
+    }
+  return b;
+}
+
+proc BlockArr.corr_inverse (b,B)
+{
+  //It finds out the initial domain coordinate and strides of destination Domain (of A)
+  var la=dom.whole.low;
+  var sa=dom.whole.stride;
+  var lb=B.dom.whole.low;
+  var sb=B.dom.whole.stride;
+  var a:[1..rank] int;
+  if rank>1 then 
+    forall i in [1..rank] do a[i]=la[i]+((b[i]-lb[i])/sb[i])*sa[i];
+  else
+    a[1]=la+((b-lb)/sb)*sa;
+  return a;
+}        
+
 proc BlockArr.isBlockDist() param {return true;}
+
