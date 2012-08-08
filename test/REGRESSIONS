@@ -39,7 +39,6 @@ nondet. numerical accuracy issue (?)
 
 RA fails to match sometimes
 ---------------------------
-[Error matching program output for release/examples/benchmarks/hpcc/ra] (09/26/11)
 [Error matching program output for studies/hpcc/RA/bradc/parallel/ra-dist (compopts: 1)] (01/18/12)
 
 nondet. race on output
@@ -754,50 +753,28 @@ execution timeouts (ever since switching to 4 shepherds)
 qthreads-specific tests
 =======================
 
-compilation timeout since backing out lw sync vars (04/06/12)
--------------------------------------------------------------
-[Error: Timed out compilation for release/examples/benchmarks/ssca2/SSCA2_main (compopts: 5)]
-
-new test times out (04/05/12)
------------------------------
-[Error: Timed out executing program release/examples/primers/atomics]
-
-nondet. timeout since converting qthreads configure/build options
------------------------------------------------------------------
-[Error: Timed out executing program release/examples/spec/Task_Parallelism_and_Synchronization/syncCounter] (03/16/12, 03/20/12, 04/01/12)
-
-nondet. race on newlines
-------------------------
-[Error matching program output for release/examples/hello3-datapar] (10/13/11, 11/09/11)
-
-recently became a nondet. failure (since increasing the callstack; used to
-fail consistently prior to that)
---------------------------------------------------------------------------
-[Error matching program output for release/examples/spec/Classes/thisMethod] (09/25/11)
-
 
 =========================================================
 qthreads+gasnet-specific tests (in addition to the above)
 =========================================================
 
-timeouts since changing dist robustness tests to use block (03/09/12)
----------------------------------------------------------------------
-[Error: Timed out executing program distributions/robust/arithmetic/kernels/hpl (compopts: 1)]
-[Error: Timed out executing program distributions/robust/arithmetic/kernels/jacobi]
-[Error: Timed out executing program distributions/robust/arithmetic/modules/test_module_Norm]
-[Error: Timed out executing program distributions/robust/arithmetic/modules/test_module_Search]
-[Error: Timed out executing program distributions/robust/arithmetic/modules/test_module_Sort]
-[Error: Timed out executing program distributions/robust/arithmetic/reindexing/test_reindexing4]
-[Error: Timed out executing program distributions/robust/arithmetic/slicing/test_array_slicing3]
-[Error: Timed out executing program distributions/robust/arithmetic/stress/test_many_array]
-[Error: Timed out executing program distributions/robust/arithmetic/stress/test_many_domains]
+nondet. seg fault
+-----------------
+[Error matching program output for release/examples/benchmarks/hpcc/ptrans] (08/07/12)
+
+claim that 257 threads is too high -- 255 is the limit; but why showing up now?
+(08/07/12)
+
+fails because we add an extra arg which breaks the intent of this test
+-- proposed fix is to support ability to set/override configs using
+env vars (08/07/12)
+----------------------------------------------------------------------
+[Error matching program output for multilocale/numLocales/bradc/printNumLocalesMissingArg]
 
 failed since adding more multilocale directories (01/31/12)
 -----------------------------------------------------------
 [Error: Timed out executing program distributions/bradc/extremeBlock]
-[Error: Timed out executing program distributions/jglewis/cyclicOnEvenNumLocales]
 [Error: Timed out executing program distributions/nelson/MultiBlockDist2DLocales]
-[Error: Timed out executing program distributions/vass/wrapper_nl4_testReplicatedDist1]
 
 nondet. execution timeout/deadlock
 ----------------------------------
