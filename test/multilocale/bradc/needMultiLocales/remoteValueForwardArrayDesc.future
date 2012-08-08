@@ -1,0 +1,9 @@
+performance: remote value forwarding disabled for array descriptors
+
+Privatized array descriptors should be able to be remote value
+forwarded by the Chapel compiler, even in the presence of sync vars
+since the descriptor's identity is const even if the array is not.
+
+I have a patch that's currently being tested that will enable this
+and also fix last night's RA regressions due to the new sync var
+guarded verification loop.
