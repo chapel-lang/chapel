@@ -223,58 +223,56 @@ remoteValueForwarding(Vec<FnSymbol*>& fns) {
   }
 
   forv_Vec(FnSymbol, fn, fns) {
-    if (true) {
-      INT_ASSERT(fn->calledBy->n == 1);
-      CallExpr* call = fn->calledBy->v[0];
+    INT_ASSERT(fn->calledBy->n == 1);
+    CallExpr* call = fn->calledBy->v[0];
 
-      //
-      // For each reference arg that is safe to dereference
-      //
-      for_formals(arg, fn) {
+    //
+    // For each reference arg that is safe to dereference
+    //
+    for_formals(arg, fn) {
 
-        /* if this function accesses sync vars and the argument is not
-           const, then we cannot remote value forward the argument due
-           to the fence implied by the sync var accesses */
-        if (syncAccessFunctionSet.set_in(fn) && !isSufficientlyConst(arg)) {
-          continue;
-        }
+      /* if this function accesses sync vars and the argument is not
+         const, then we cannot remote value forward the argument due
+         to the fence implied by the sync var accesses */
+      if (syncAccessFunctionSet.set_in(fn) && !isSufficientlyConst(arg)) {
+        continue;
+      }
 
-        if (arg->type->symbol->hasFlag(FLAG_REF) &&
-            isSafeToDeref(arg, defMap, useMap, NULL, NULL)) {
+      if (arg->type->symbol->hasFlag(FLAG_REF) &&
+          isSafeToDeref(arg, defMap, useMap, NULL, NULL)) {
 
-          //
-          // Find actual for arg and dereference arg type.
-          //
-          SymExpr* actual = toSymExpr(formal_to_actual(call, arg));
-          INT_ASSERT(actual && actual->var->type == arg->type);
-          arg->type = arg->getValType();
-
-          //
-          // Insert de-reference temp of value.
-          //
-          VarSymbol* deref = newTemp("rvfDerefTmp", arg->type);
-          call->insertBefore(new DefExpr(deref));
-          call->insertBefore(new CallExpr(PRIM_MOVE, deref,
-                               new CallExpr(PRIM_DEREF, actual->var)));
-          actual->replace(new SymExpr(deref));
-
-          //
-          // Insert re-reference temps at use points.
-          //
-          for_uses(use, useMap, arg) {
-            CallExpr* call = toCallExpr(use->parentExpr);
-            if (call && call->isPrimitive(PRIM_DEREF)) {
-              call->replace(new SymExpr(arg));
-            } else if (call && call->isPrimitive(PRIM_MOVE)) {
-              use->replace(new CallExpr(PRIM_ADDR_OF, arg));
-            } else {
-              Expr* stmt = use->getStmtExpr();
-              VarSymbol* reref = newTemp("rvfRerefTmp", actual->var->type);
-              stmt->insertBefore(new DefExpr(reref));
-              stmt->insertBefore(new CallExpr(PRIM_MOVE, reref,
-                                   new CallExpr(PRIM_ADDR_OF, arg)));
-              use->replace(new SymExpr(reref));
-            }
+        //
+        // Find actual for arg and dereference arg type.
+        //
+        SymExpr* actual = toSymExpr(formal_to_actual(call, arg));
+        INT_ASSERT(actual && actual->var->type == arg->type);
+        arg->type = arg->getValType();
+        
+        //
+        // Insert de-reference temp of value.
+        //
+        VarSymbol* deref = newTemp("rvfDerefTmp", arg->type);
+        call->insertBefore(new DefExpr(deref));
+        call->insertBefore(new CallExpr(PRIM_MOVE, deref,
+                                        new CallExpr(PRIM_DEREF, actual->var)));
+        actual->replace(new SymExpr(deref));
+        
+        //
+        // Insert re-reference temps at use points.
+        //
+        for_uses(use, useMap, arg) {
+          CallExpr* call = toCallExpr(use->parentExpr);
+          if (call && call->isPrimitive(PRIM_DEREF)) {
+            call->replace(new SymExpr(arg));
+          } else if (call && call->isPrimitive(PRIM_MOVE)) {
+            use->replace(new CallExpr(PRIM_ADDR_OF, arg));
+          } else {
+            Expr* stmt = use->getStmtExpr();
+            VarSymbol* reref = newTemp("rvfRerefTmp", actual->var->type);
+            stmt->insertBefore(new DefExpr(reref));
+            stmt->insertBefore(new CallExpr(PRIM_MOVE, reref,
+                                            new CallExpr(PRIM_ADDR_OF, arg)));
+            use->replace(new SymExpr(reref));
           }
         }
       }
