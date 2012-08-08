@@ -134,6 +134,23 @@ isSafeToDeref(Symbol* ref,
 }
 
 
+
+static bool isSufficientlyConst(ArgSymbol* arg) {
+  Type* argvaltype = arg->getValType();
+
+  if (argvaltype->symbol->hasFlag(FLAG_ARRAY)) {
+    // Arg is an array, so it's sufficiently constant (because this
+    // refers to the descriptor, not the array's values\n");
+    return true;
+  }
+
+  // We may want to add additional cases here as we discover them
+
+  // otherwise, conservatively assume it varies
+  return false;
+}
+
+
 //
 // Convert reference args into values if they are only read and
 // reading them early does not violate program semantics.
@@ -206,7 +223,7 @@ remoteValueForwarding(Vec<FnSymbol*>& fns) {
   }
 
   forv_Vec(FnSymbol, fn, fns) {
-    if (!syncAccessFunctionSet.set_in(fn)) {
+    if (true) {
       INT_ASSERT(fn->calledBy->n == 1);
       CallExpr* call = fn->calledBy->v[0];
 
@@ -214,6 +231,14 @@ remoteValueForwarding(Vec<FnSymbol*>& fns) {
       // For each reference arg that is safe to dereference
       //
       for_formals(arg, fn) {
+
+        /* if this function accesses sync vars and the argument is not
+           const, then we cannot remote value forward the argument due
+           to the fence implied by the sync var accesses */
+        if (syncAccessFunctionSet.set_in(fn) && !isSufficientlyConst(arg)) {
+          continue;
+        }
+
         if (arg->type->symbol->hasFlag(FLAG_REF) &&
             isSafeToDeref(arg, defMap, useMap, NULL, NULL)) {
 
