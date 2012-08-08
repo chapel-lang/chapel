@@ -3,22 +3,22 @@ config const printOutput=false;
 
 
 config  const n: int=100;
-var Dist1 = new dmap(new Block([1..n]));
-var Dist2 = new dmap(new Block([1..n,1..n]));
-var Dist3 = new dmap(new Block([1..n,1..n,1..n]));
-var Dom1: domain(1,int) dmapped Dist1 = [1..n];
-var Dom2: domain(2,int) dmapped Dist2 = [1..n,1..n];
-var Dom3: domain(3,int) dmapped Dist3 = [1..n,1..n,1..n];
+var Dist1 = new dmap(new Block({1..n}));
+var Dist2 = new dmap(new Block({1..n,1..n}));
+var Dist3 = new dmap(new Block({1..n,1..n,1..n}));
+var Dom1: domain(1,int) dmapped Dist1 = {1..n};
+var Dom2: domain(2,int) dmapped Dist2 = {1..n,1..n};
+var Dom3: domain(3,int) dmapped Dist3 = {1..n,1..n,1..n};
 
 /*Default Rectangular. Examples 1D*/
 var ADR:[1..n] int(64)=1..;
 var BDR:[1..n] int(64)=500..;
-var DDR1 = [1..n];
+var DDR1 ={1..n};
 
 if printOutput then writeln("Default Rectangular. Example 1: ADR",DDR1, " blk: ", ADR._value.blk);
 ADR[DDR1]=BDR[DDR1];
 
-var DDR2=[1..n by 2];
+var DDR2={1..n by 2};
 
 if printOutput then writeln("Default Rectangular. Example 2: ADR",DDR2, " blk: ", ADR._value.blk);
 
@@ -26,14 +26,14 @@ if printOutput then writeln("Default Rectangular. Example 2: ADR",DDR2, " blk: "
 var ADR2:[1..n,1..n] int(64)=1..;
 var BDR2:[1..n,1..n] int(64)=500..;
 
-var DDR3 =[1..n,1..n];
+var DDR3 ={1..n,1..n};
 
 if printOutput then writeln("Default Rectangular. Example 3: ADR",DDR3, " blk: ", ADR2._value.blk);
 ADR2[DDR3]=BDR2[DDR3];
 for (a,b) in (ADR2[DDR3],BDR2[DDR3]) do if (a!=b) then writeln("ERROR!!!!");
   
 
-var DDR4 =[1..n,1..n by 2];
+var DDR4 ={1..n,1..n by 2};
 
 if printOutput then writeln("Default Rectangular. Example 4: ADR",DDR4, " blk: ", ADR2._value.blk);
 ADR2[DDR4]=BDR2[DDR4];
@@ -41,13 +41,13 @@ for (a,b) in (ADR2[DDR4],BDR2[DDR4]) do if (a!=b) then writeln("ERROR!!!!");
  
 //DDR3[1]=1..n by 3;
 //DDR3[2]=1..n by 1;
-var DDR5=[1..n by 3,1..n];
+var DDR5={1..n by 3,1..n};
 
 if printOutput then writeln("Default Rectangular. Example 5: ADR",DDR5, " blk: ", ADR2._value.blk );
 ADR2[DDR5]=BDR2[DDR5];
 for (a,b) in (ADR2[DDR5],BDR2[DDR5]) do if (a!=b) then writeln("ERROR!!!!");
   
-var DDR6=[1..n by 3,1..n by 2];
+var DDR6={1..n by 3,1..n by 2};
 
 if printOutput then writeln("Default Rectangular. Example 6: ADR",DDR6, " blk: ", ADR2._value.blk);
 ADR2[DDR6]=BDR2[DDR6];
@@ -58,44 +58,44 @@ for (a,b) in (ADR2[DDR6],BDR2[DDR6]) do if (a!=b) then writeln("ERROR!!!!");
 var ADR3:[1..n,1..n,1..n] int(64)=1..;
 var BDR3:[1..n,1..n,1..n] int(64)=500..;
 
-var DDR7=[1..n,1..n,1..n];
+var DDR7={1..n,1..n,1..n};
 
 if printOutput then writeln("Default Rectangular. Example 7: ADR",DDR7, " blk: ", ADR3._value.blk);
 ADR3[DDR7]=BDR3[DDR7];
 for (a,b) in (ADR3[DDR7],BDR3[DDR7]) do if (a!=b) then writeln("ERROR!!!!");
 
 //DDR4[3]=1..n by 2;
-var DDR8=[1..n,1..n,1..n by 2];
+var DDR8={1..n,1..n,1..n by 2};
 
 if printOutput then writeln("Default Rectangular. Example 8: ADR",DDR8, " blk: ", ADR3._value.blk);
 ADR3[DDR8]=BDR3[DDR8];
 for (a,b) in (ADR3[DDR8],BDR3[DDR8]) do if (a!=b) then writeln("ERROR!!!!");
 
-var DDR9=[1..n,1..n by 3,1..n];
+var DDR9={1..n,1..n by 3,1..n};
 
 if printOutput then writeln("Default Rectangular. Example 9: ADR",DDR9, " blk: ", ADR3._value.blk);
 ADR3[DDR9]=BDR3[DDR9];
 for (a,b) in (ADR3[DDR9],BDR3[DDR9]) do if (a!=b) then writeln("ERROR!!!!");
 
-var DDR10=[1..n by 4, 1..n,1..n];
+var DDR10={1..n by 4, 1..n,1..n};
 
 if printOutput then writeln("Default Rectangular. Example 10: ADR",DDR10, " blk: ", ADR3._value.blk);
 ADR3[DDR10]=BDR3[DDR10];
 for (a,b) in (ADR3[DDR10],BDR3[DDR10]) do if (a!=b) then writeln("ERROR!!!!");
 
-var DDR11=[1..n,1..n by 3,1..n by 2];
+var DDR11={1..n,1..n by 3,1..n by 2};
 
 if printOutput then writeln("Default Rectangular. Example 11: ADR",DDR11, " blk: ", ADR3._value.blk);
 ADR3[DDR11]=BDR3[DDR11];
 for (a,b) in (ADR3[DDR11],BDR3[DDR11]) do if (a!=b) then writeln("ERROR!!!!");
 
-var DDR12=[1..n by 4,1..n,1..n by 2];
+var DDR12={1..n by 4,1..n,1..n by 2};
 
 if printOutput then writeln("Default Rectangular. Example 12: ADR",DDR12, " blk: ", ADR3._value.blk);
 ADR3[DDR12]=BDR3[DDR12];
 for (a,b) in (ADR3[DDR12],BDR3[DDR12]) do if (a!=b) then writeln("ERROR!!!!");
 
-var DDR13=[1..n by 4,1..n by 3,1..n];
+var DDR13={1..n by 4,1..n by 3,1..n};
 
 if printOutput then writeln("Default Rectangular. Example 13: ADR",DDR13, " blk: ", ADR3._value.blk);
 ADR3[DDR13]=BDR3[DDR13];
@@ -103,7 +103,7 @@ for (a,b) in (ADR3[DDR13],BDR3[DDR13]) do if (a!=b) then writeln("ERROR!!!!");
 
 var ADR4:[1..6,1..6,1..6] int(64)=1..;
 var BDR4:[1..6,1..6,1..6] int(64)=500..;
-var DDR14=[1..5 by 2,1..3, 1..6];
+var DDR14={1..5 by 2,1..3, 1..6};
 
 if printOutput then writeln("Default Rectangular. Example Rafa: ADR",DDR14, " blk: ", ADR4._value.blk);
 ADR4[DDR14]=BDR4[DDR14];
@@ -116,14 +116,14 @@ if printOutput then writeln("Block Dist. Example 1: A",Dom1, " Locales:",numLoca
 A[Dom1]=B[Dom1];
 for (a,b) in (A[Dom1],B[Dom1]) do if (a!=b) then writeln("ERROR!!!!");
 
-var D1 = [1..n by 2];
+var D1 ={1..n by 2};
 A=1; 
 
 if printOutput then writeln("Block Dist. Example 2: A",D1, " Locales:",numLocales);
 A[D1]=B[D1];
 for (a,b) in (A[D1],B[D1]) do if (a!=b) then writeln("ERROR!!!!");
 
-D1=[1..n by n];
+D1={1..n by n};
 A=1;
 
 if printOutput then writeln("Block Dist. Example 3: A",D1, " Locales:",numLocales);
@@ -138,21 +138,21 @@ if printOutput then writeln("Block Dist. Example 4: A",Dom2, " Locales:",numLoca
 A2[Dom2]=B2[Dom2];
 for (a,b) in (A2[Dom2],B2[Dom2]) do if (a!=b) then writeln("ERROR!!!!");
 
-var D2 = [1..n, 1..n by 2];
+var D2 ={1..n, 1..n by 2};
 A2=1;
 
 if printOutput then writeln("Block Dist. Example 5: A",D2, " Locales:",numLocales);
 A2[D2]=B2[D2];
 for (a,b) in (A2[D2],B2[D2]) do if (a!=b) then writeln("ERROR!!!!");
 
-D2 = [1..n by 3, 1..n];
+D2 ={1..n by 3, 1..n};
 A2=1;
 
 if printOutput then writeln("Block Dist. Example 6: A",D2, " Locales:",numLocales);
 A2[D2]=B2[D2];
 for (a,b) in (A2[D2],B2[D2]) do if (a!=b) then writeln("ERROR!!!!");
 
-D2 = [1..n by 3, 1..n by 2];
+D2 ={1..n by 3, 1..n by 2};
 A2=1;
 
 if printOutput then writeln("Block Dist. Example 7: A",D2, " Locales:",numLocales);
@@ -169,35 +169,35 @@ if printOutput then writeln("Block Dist. Example 8: A",Dom3, " Locales:",numLoca
 A3[Dom3]=B3[Dom3];
 for (a,b) in (A3[Dom3],B3[Dom3]) do if (a!=b) then writeln("ERROR!!!!");
 
-var D3 = [1..n,1..n, 1..n by 2];
+var D3 ={1..n,1..n, 1..n by 2};
 A3=1;
 
 if printOutput then writeln("Block Dist. Example 9: A",D3, " Locales:",numLocales);
 A3[D3]=B3[D3];
 for (a,b) in (A3[D3],B3[D3]) do if (a!=b) then writeln("ERROR!!!!");
 
-D3 = [1..n,1..n by 3, 1..n];
+D3 ={1..n,1..n by 3, 1..n};
 A3=1;
 
 if printOutput then writeln("Block Dist. Example 10: A",D3, " Locales:",numLocales);
 A3[D3]=B3[D3];
 for (a,b) in (A3[D3],B3[D3]) do if (a!=b) then writeln("ERROR!!!!");
 
-D3 = [1..n by 4, 1..n,1..n];
+D3 ={1..n by 4, 1..n,1..n};
 A3=1;
 
 if printOutput then writeln("Block Dist. Example 11: A",D3, " Locales:",numLocales);
 A3[D3]=B3[D3];
 for (a,b) in (A3[D3],B3[D3]) do if (a!=b) then writeln("ERROR!!!!");
 
-D3 = [1..n by 4, 1..n by 3,1..n];
+D3 ={1..n by 4, 1..n by 3,1..n};
 A3=1;
 
 if printOutput then writeln("Block Dist. Example 12: A",D3, " Locales:",numLocales);
 A3[D3]=B3[D3];
 for (a,b) in (A3[D3],B3[D3]) do if (a!=b) then writeln("ERROR!!!!");
 
-D3 = [1..n by 4, 1..n,1..n by 2];
+D3 ={1..n by 4, 1..n,1..n by 2};
 A3=1;
 
 if printOutput then writeln("Block Dist. Example 13: A",D3, " Locales:",numLocales);
@@ -205,16 +205,16 @@ A3[D3]=B3[D3];
 for (a,b) in (A3[D3],B3[D3]) do if (a!=b) then writeln("ERROR!!!!");
 
 
-D3 = [1..n by 4, 1..n by 3,1..n];
+D3 ={1..n by 4, 1..n by 3,1..n};
 A3=1;
 
 if printOutput then writeln("Block Dist. Example 14: A",D3, " Locales:",numLocales);
 A3[D3]=B3[D3];
 for (a,b) in (A3[D3],B3[D3]) do if (a!=b) then writeln("ERROR!!!!");
 
-var Dist4 = new dmap(new Block([1..6,1..6,1..6]));
-var Dom4: domain(3,int) dmapped Dist4 = [1..6,1..6,1..6];
-var D4 = [1..5 by 2,1..3,1..6];
+var Dist4 = new dmap(new Block({1..6,1..6,1..6}));
+var Dom4: domain(3,int) dmapped Dist4 ={1..6,1..6,1..6};
+var D4 ={1..5 by 2,1..3,1..6};
 var A4:[Dom4] int(64)=1..;
 var B4:[Dom4] int(64)=500..;
 

@@ -2,7 +2,7 @@ proc jam( j: int, k: int): int {
   return j*k;
 }
 
-var D: domain(1) = [1..5];
+var D: domain(1) = {1..5};
 
 var A: [D] int = [i in D] jam( i, 2);
 writeln( A);

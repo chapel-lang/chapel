@@ -47,6 +47,10 @@ module SSCA2_execution_config_consts
 	       TEST_TORUS_3D         = false,
 	       TEST_TORUS_4D         = false;
 
+  config const RUN_KERNEL2 = true;
+  config const RUN_KERNEL3 = true;
+  config const RUN_KERNEL4 = true;
+
   testing_type (graph_type.RMAT_associative) = TEST_RMAT_ASSOCIATIVE; 
   testing_type (graph_type.Torus_1D)         = TEST_TORUS_1D;
   testing_type (graph_type.Torus_2D)         = TEST_TORUS_2D;

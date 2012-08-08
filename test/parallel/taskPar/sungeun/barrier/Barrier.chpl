@@ -16,15 +16,18 @@ module Barrier {
   }
 
   record Barrier: BarrierBaseType {
+    param reusable = true;
+    var n: int;
     var count: atomic int;
     var done: atomic bool;
 
-    proc Barrier(n: int) {
-      reset(n);
+    proc Barrier(_n: int) {
+      reset(_n);
     }
 
-    inline proc reset(n: int) {
+    inline proc reset(_n: int) {
       on this {
+        n = _n;
         count.write(n);
         done.write(false);
       }
@@ -36,8 +39,17 @@ module Barrier {
         if myc<=1 {
           if done.testAndSet() then
             halt("Too many callers to barrier()");
+          if reusable {
+            count.waitFor(n-1);
+            count.add(1);
+            done.clear();
+          }
         } else {
-          wait();
+          done.waitFor(true);
+          if reusable {
+            count.add(1);
+            done.waitFor(false);
+          }
         }
       }
     }
@@ -53,7 +65,15 @@ module Barrier {
     }
 
     inline proc wait() {
-      done.waitFor(true);
+      on this {
+        done.waitFor(true);
+        if reusable {
+          const myc = count.fetchAdd(1);
+          if myc == n-1 then
+            done.clear();
+          done.waitFor(false);
+        }
+      }
     }
 
     inline proc try() {

@@ -55,7 +55,7 @@ proc getNthRandom(in n:int(64)) {
   if (n == 0) then return 0x1:tableElem;
 
   param m2DomSize = 64; // BLC: this is a magic number -- better name?
-  var m2Dom = [0..m2DomSize-1];
+  var m2Dom = {0..m2DomSize-1};
   var m2: [m2Dom] tableElem;
 
   // BLC: isn't this redundantly computing the same array m2 over and

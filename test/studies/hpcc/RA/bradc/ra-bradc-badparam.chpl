@@ -9,11 +9,11 @@ const tableSize = 1 << logTableSize;
 
 config const errorTolerance = 0.01;
 
-const tableDom = [0..tableSize:int-1];    // BLC: unfortunate cast
+const tableDom = {0..tableSize:int-1};    // BLC: unfortunate cast
 var Table: [tableDom] uint;
 
 const numUpdates = 4*tableSize;
-const updateDom = [0..numUpdates:int-1];  // BLC: unfortunate cast
+const updateDom = {0..numUpdates:int-1};  // BLC: unfortunate cast
 
 //var NUPDATE: int;
 

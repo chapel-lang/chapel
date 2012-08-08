@@ -25,7 +25,7 @@ proc norm(x: [], p) where x.rank == 1 {
   }
 }
 
-const D1 = [1..5];
+const D1 = {1..5};
 var a:[D1] real;
 a = 2.0;
 writeln(a);

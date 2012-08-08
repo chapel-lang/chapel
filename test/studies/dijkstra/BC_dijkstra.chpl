@@ -7,7 +7,7 @@ module BC_dijkstra {
     var stack: int = -1;
 
     // Initialize records
-    var D1 = [0..(nNodes-1)];
+    var D1 = {0..(nNodes-1)};
     var Records: [D1] Record;
 
     for i in D1 {
@@ -18,7 +18,7 @@ module BC_dijkstra {
     }
 
     // Initialize heap
-    var heap = new Heap(leafLevel = nNodes/2, IdsD = [0..(nNodes-1)]);
+    var heap = new Heap(leafLevel = nNodes/2, IdsD = {0..(nNodes-1)});
 
     for i in D1 do heap.Ids[i] = -1;
 
@@ -44,7 +44,7 @@ module BC_dijkstra {
       var numberNeighbors: int = Nodes[node].nNeighbors;
 
       // for each neighbor of node
-      label examineneighbors for i in [0..(numberNeighbors-1)] {
+      label examineneighbors for i in {0..(numberNeighbors-1)} {
         var neighbor: int = Nodes[node].Neighbors[i];
         // is neighbor already on stack?
         if (Records[neighbor].onStack != -2) then continue examineneighbors;

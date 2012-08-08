@@ -12,8 +12,8 @@ config var n = 5,                       // size of n x n grid
            verbose = false;             // printing control
 
 proc main() {
-  const ProblemSpace = [1..n, 1..n],    // domain for grid points
-        BigDomain = [0..n+1, 0..n+1];   // domain including boundary points
+  const ProblemSpace = {1..n, 1..n},    // domain for grid points
+        BigDomain = {0..n+1, 0..n+1};   // domain including boundary points
 
   var X, XNew: [BigDomain] real = 0.0;  // declare arrays: 
                                         //   X stores approximate solution

@@ -17,14 +17,14 @@ writeln("Example 1");
 F[1..5,1..5] = A[1..5, 1..5];
 //writeln("A[1..5,1]:",B);
 for (a,b) in (A[1..5,1..5],F[1..5,1..5]) do if (a!=b) then {writeln("ERROR!!!!");}
-var Dom1=[1..5];
-var Dom2=[1..5,1..5];
-var Dom3=[1..5,1..5,1..5];
+var Dom1={1..5};
+var Dom2={1..5,1..5};
+var Dom3={1..5,1..5,1..5};
 
 writeln();
 writeln("=====================================");
 writeln("Example 2");
-//Dom3=[1,1..5];
+//Dom3={1,1..5};
 B = A[1,1..5];
 //writeln("A[1,1..5]:",B);
 for (a,b) in (A[1,1..5],B[1..5]) do if (a!=b) then {writeln("ERROR!!!!");}
@@ -109,7 +109,7 @@ for (a,b) in (C[1..5,1..5,1],F[1..5,1..5]) do if (a!=b) then {writeln("ERROR!!!!
 writeln();
 writeln("=====================================");
 writeln("Example 13");
-Dom3=[1..1,1..5,1..5];
+Dom3={1..1,1..5,1..5};
 E[1..5,1..5,1..5]=C[Dom3];
 //writeln("C[1..1,1..5,1..5]:", E);
 for (a,b) in (C[Dom3],E[Dom3]) do if (a!=b) then {writeln("ERROR!!!!");}
@@ -117,7 +117,7 @@ for (a,b) in (C[Dom3],E[Dom3]) do if (a!=b) then {writeln("ERROR!!!!");}
 writeln();
 writeln("=====================================");
 writeln("Example 14");
-Dom3=[1..5,1..1,1..5];
+Dom3={1..5,1..1,1..5};
 E=C[Dom3];
 //writeln("C[1..5,1..1,1..5]:", E);
 for (a,b) in (C[Dom3],E[1..1,1..5,1..5]) do if (a!=b) then {writeln("ERROR!!!!");}
@@ -125,7 +125,7 @@ for (a,b) in (C[Dom3],E[1..1,1..5,1..5]) do if (a!=b) then {writeln("ERROR!!!!")
 writeln();
 writeln("=====================================");
 writeln("Example 15");
-Dom3 = [1..5,1..5,1..1];
+Dom3 ={1..5,1..5,1..1};
 E=C[Dom3];
 //writeln("C[1..5,1..5,1..1]:", E);
 for (a,b) in (E[1..1,1..5,1..5],C[Dom3]) do if (a!=b) then {writeln("ERROR!!!!");}

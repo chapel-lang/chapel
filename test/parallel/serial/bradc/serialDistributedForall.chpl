@@ -2,7 +2,7 @@ use BlockDist;
 
 config const n = 1000;
 
-var D = [1..n] dmapped Block([1..n]);
+var D = {1..n} dmapped Block({1..n});
 
 serial (true) {
   forall i in D do

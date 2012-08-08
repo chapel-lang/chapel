@@ -149,13 +149,13 @@ proc Board.writeThis(f:Writer) {
             [row in 1..lastfilled] (row, queencol(row)),
             notFilledMsg);
   } else {
-    for [1..boardSize] do f.write("-"); f.writeln();
+    for {1..boardSize} do f.write("-"); f.writeln();
     for row in 1..lastfilled {
       for col in 1..boardSize do
         f.write(if queencol(row) == col then "*" else " ");
       f.writeln();
     }
     if notFilledMsg != "" then f.writeln(notFilledMsg);
-    for [1..boardSize] do f.write("-");
+    for {1..boardSize} do f.write("-");
   }
 }

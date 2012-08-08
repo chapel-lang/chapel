@@ -47,7 +47,7 @@ class Cyclic: BaseDist {
     if isTuple(startIdx) then tupleStartIdx = startIdx;
                          else tupleStartIdx(1) = startIdx;
     if rank == 1  {
-      targetLocDom = [0..#targetLocales.numElements];
+      targetLocDom = {0..#targetLocales.numElements};
       targetLocs = targetLocales;
     } else if targetLocales.rank == 1 {
       const factors = _factor(rank, targetLocales.numElements);
@@ -55,7 +55,7 @@ class Cyclic: BaseDist {
       for param i in 1..rank {
         ranges(i) = 0..#factors(i);
       }
-      targetLocDom = [(...ranges)];
+      targetLocDom = {(...ranges)};
       for (loc1, loc2) in (targetLocs, targetLocales) {
         loc1 = loc2;
       }
@@ -67,7 +67,7 @@ class Cyclic: BaseDist {
         var thisRange = targetLocales.domain.dim(i);
         ranges(i) = 0..#thisRange.length; 
       }
-      targetLocDom = [(...ranges)];
+      targetLocDom = {(...ranges)};
       targetLocs = reshape(targetLocales, targetLocDom);
     }
 
@@ -315,7 +315,7 @@ class LocCyclic {
       const lo = lower.last, hi = upper.last;
       tuple(i) = lo..hi by dist.targetLocDom.dim(i).length;
     }
-    myChunk = [(...tuple)];
+    myChunk = {(...tuple)};
   }
 }
 
@@ -480,7 +480,7 @@ iter CyclicDom.these(param tag: iterKind, followThis) where tag == iterKind.foll
   }
   if debugCyclicDist then
     writeln(here.id, ": follower maps to: ", t);
-  for i in [(...t)] do
+  for i in {(...t)} do
     yield i;
 }
 
@@ -797,7 +797,7 @@ iter CyclicArr.these(param tag: iterKind, followThis, param fast: bool = false) 
     const wholestride = dom.whole.dim(i).stride;
     t(i) = ((followThis(i).low*wholestride)..(followThis(i).high*wholestride) by (followThis(i).stride*wholestride)) + dom.whole.dim(i).low;
   }
-  const myFollowThis = [(...t)];
+  const myFollowThis = {(...t)};
   if fast {
     const arrSection = locArr(dom.dist.targetLocsIdx(myFollowThis.low));
     if arrSection.locale.id == here.id then local {

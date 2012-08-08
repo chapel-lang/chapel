@@ -66,8 +66,6 @@ static qsubVersion determineQsubVersion(void) {
 static int getNumCoresPerLocale(void) {
   const int buflen = 256;
   char buf[buflen];
-  int coreMask;
-  int bitMask = 0x1;
   int numCores = -1;
   char* numCoresString = getenv("CHPL_LAUNCHER_CORES_PER_LOCALE");
 
@@ -81,7 +79,7 @@ static int getNumCoresPerLocale(void) {
     char *argv[3];
     int charsRead;
     argv[0] = (char *) "cnselect";
-    argv[1] = (char *) "-Lcoremask";
+    argv[1] = (char *) "-Lnumcores";
     argv[2] = NULL;
   
     memset(buf, 0, buflen);
@@ -89,14 +87,8 @@ static int getNumCoresPerLocale(void) {
       chpl_error("Error trying to determine number of cores per node", 0, 0);
     }
 
-    if (sscanf(buf, "%d", &coreMask) != 1) {
+    if (sscanf(buf, "%d", &numCores) != 1) {
       chpl_error("unable to determine number of cores per locale; please set CHPL_LAUNCHER_CORES_PER_LOCALE", 0, 0);
-    }
-    coreMask >>= 1;
-    numCores = 1;
-    while (coreMask & bitMask) {
-      coreMask >>= 1;
-      numCores += 1;
     }
   }
 
@@ -161,9 +153,7 @@ static char** chpl_launch_create_argv(int argc, char* argv[],
   char* qsubOptions;
   pid_t mypid;
   int numCoresPerLocale;
-  const char *host = getenv("CHPL_HOST_PLATFORM");
-  const char *ccArg = _ccArg ? _ccArg :
-    (host && !strcmp(host, "xe-cle") ? "none" : "cpu");
+  const char *ccArg = _ccArg ? _ccArg : "none";
 
   if (basenamePtr == NULL) {
       basenamePtr = argv[0];
@@ -189,14 +179,15 @@ static char** chpl_launch_create_argv(int argc, char* argv[],
     fprintf(expectFile, "log_user 0\n");
   }
   fprintf(expectFile, "set timeout -1\n");
-  fprintf(expectFile, "set prompt \"(%%|#|\\\\$|>) $\"\n");
+  fprintf(expectFile, "set chpl_prompt \"chpl-%d # \"\n", mypid);
   if (verbosity > 0) {
     fprintf(expectFile, "spawn tcsh -f\n");
-    fprintf(expectFile, "expect -re $prompt\n");
+    fprintf(expectFile, "send \"set prompt=\\\"$chpl_prompt\\\"\\n\"\n");
+    fprintf(expectFile, "expect -re \"\\n$chpl_prompt\" {}\n");
     fprintf(expectFile, "send \"df -T . \\n\"\n");
     fprintf(expectFile, "expect {\n");
     fprintf(expectFile, "  -ex lustre {}\n");
-    fprintf(expectFile, "  -re $prompt {\n");
+    fprintf(expectFile, "  -re \"\\n$chpl_prompt\" {\n");
     fprintf(expectFile, "    send_user \"warning: Executing this program from a non-Lustre file system may cause it \\nto be unlaunchable, or for file I/O to be performed on a non-local file system.\\nContinue anyway? (\\[y\\]/n) \"\n");
     fprintf(expectFile, "    interact {\n");
     fprintf(expectFile, "      \\015           {return}\n");
@@ -210,22 +201,21 @@ static char** chpl_launch_create_argv(int argc, char* argv[],
     fprintf(expectFile, "  }\n");
     fprintf(expectFile, "}\n");
     fprintf(expectFile, "send \"exit\\n\"\n");
+    fprintf(expectFile, "close\n");
   }
   fprintf(expectFile, "spawn qsub %s\n", qsubOptions);
   fprintf(expectFile, "expect {\n");
   fprintf(expectFile, "  \"A project was not specified\" {send_user "
           "\"error: A project account must be specified via \\$" 
           launcherAccountEnvvar "\\n\" ; exit 1}\n");
-  fprintf(expectFile, "  -re $prompt\n");
+  fprintf(expectFile, "  -ex \"qsub: waiting\" {}\n");
   fprintf(expectFile, "}\n");
-  fprintf(expectFile, "send \"cd \\$PBS_O_WORKDIR\\n\"\n");
-  fprintf(expectFile, "expect -re $prompt\n");
+  fprintf(expectFile, "expect -re \"qsub:.*ready\" {}\n");
   fprintf(expectFile, "send \"tcsh -f\\n\"\n");
-  fprintf(expectFile, "expect -re $prompt\n");
-  fprintf(expectFile, "set chpl_prompt \"chpl-%d # \"\n", mypid);
   fprintf(expectFile, "send \"set prompt=\\\"$chpl_prompt\\\"\\n\"\n");
-  fprintf(expectFile, "expect -ex $chpl_prompt\n");
-  fprintf(expectFile, "expect -ex $chpl_prompt\n");
+  fprintf(expectFile, "expect -re \"\\n$chpl_prompt\" {}\n");
+  fprintf(expectFile, "send \"cd \\$PBS_O_WORKDIR\\n\"\n");
+  fprintf(expectFile, "expect -re \"\\n$chpl_prompt\" {}\n");
   if (verbosity > 2) {
     fprintf(expectFile, "send \"aprun -cc %s -q -b -d%d -n1 -N1 ls %s\\n\"\n",
             ccArg, numCoresPerLocale, chpl_get_real_binary_name());
@@ -234,7 +224,7 @@ static char** chpl_launch_create_argv(int argc, char* argv[],
             "\"error: %s must be launched from and/or stored on a "
             "cross-mounted file system\\n\" ; exit 1}\n", 
             basenamePtr);
-    fprintf(expectFile, "  -ex $chpl_prompt\n");
+    fprintf(expectFile, "  -ex \"$chpl_prompt\" {}\n");
     fprintf(expectFile, "}\n");
   }
   fprintf(expectFile, "send \"%s aprun ",
@@ -247,19 +237,21 @@ static char** chpl_launch_create_argv(int argc, char* argv[],
   for (i=1; i<argc; i++) {
     fprintf(expectFile, " '%s'", argv[i]);
   }
-  fprintf(expectFile, "; echo CHPL_EXIT_CODE:\\$?\\n\"\n");
-  // Suck up the aprun command
-  fprintf(expectFile, "expect -re {.+\\n}\n");
-  fprintf(expectFile, "interact -o -ex \"CHPL_EXIT_CODE:\" {return}\n");
+  fprintf(expectFile, "\\n\"\n");
+  fprintf(expectFile, "interact -o -ex \"$chpl_prompt\" {return}\n");
+  fprintf(expectFile, "send \"echo CHPL_EXIT_CODE:\\$?\\n\"\n");
   fprintf(expectFile, "expect {\n");
-  fprintf(expectFile, "  -ex \"0\" {set exitval \"0\"}\n");
-  fprintf(expectFile, "  -re {\\d+} {set exitval \"1\"}\n");
+  fprintf(expectFile, "  -ex \"CHPL_EXIT_CODE:0\" {set exitval \"0\"}\n");
+  fprintf(expectFile, "  -re \"CHPL_EXIT_CODE:.\" {set exitval \"1\"}\n");
   fprintf(expectFile, "}\n");
-  fprintf(expectFile, "expect -ex $chpl_prompt\n");
+  fprintf(expectFile, "expect -re \"\\n$chpl_prompt\" {}\n");
+  fprintf(expectFile, "send \"exit\\n\"\n"); // exit tcsh
+  fprintf(expectFile, "send \"exit\\n\"\n"); // exit qsub
+  fprintf(expectFile, "close\n");
   if (verbosity > 1) {
-    fprintf(expectFile, "send_user \"\\n\"\n");
+    fprintf(expectFile, "send_user \"\\n\\n\"\n");
   }
-  fprintf(expectFile, "exit $exitval\n");
+  fprintf(expectFile, "exit $exitval\n");    // exit
   fclose(expectFile);
 
   largv[0] = (char *) EXPECT;

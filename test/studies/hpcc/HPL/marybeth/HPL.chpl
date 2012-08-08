@@ -21,8 +21,8 @@ proc main() {
 //    The solution x, is replicated in each process row.
   for n in TEST.N {
     for nb in TEST.NB {
-       var ADom = [1..n, 1..n+1];
-       var xDom = [1..n];
+       var ADom = {1..n, 1..n+1};
+       var xDom = {1..n};
        var A: [ADom] real;
        var x: [xDom] real;
        var resid: 3*real;

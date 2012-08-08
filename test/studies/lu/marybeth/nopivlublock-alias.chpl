@@ -14,7 +14,7 @@ param n = 10;
 param blk = 5;
 
 var A1D: range = 1..n;
-const A2D = [A1D,A1D]; 
+const A2D = {A1D,A1D}; 
 var A: [A2D] real;
 
 // The variable slice is used to implement D(k+1..),
@@ -42,13 +42,13 @@ for (CurrentBlockInds,TrailingBlockInds) in IterateByBlocks(A1D,blk) {
       forall i in slice {
         A11(i,k) = A11(i,k)/A11(k,k);
       }
-      forall (i,j) in [slice,slice] {
+      forall (i,j) in {slice,slice} {
         A11(i,j) -= A11(i,k)*A11(k,j);
       }
       forall i in TrailingBlockInds {
         A21(i,k) = A21(i,k)/A11(k,k);
       }
-      forall (i,j) in [TrailingBlockInds, slice] {
+      forall (i,j) in {TrailingBlockInds, slice} {
         A21(i,j) -= A21(i,k)*A11(k,j);
       }
     }
@@ -68,7 +68,7 @@ for (CurrentBlockInds,TrailingBlockInds) in IterateByBlocks(A1D,blk) {
     }
   }
 // Update of A22 -= A12*A21.
-  forall (i,j) in [TrailingBlockInds, TrailingBlockInds] {
+  forall (i,j) in {TrailingBlockInds, TrailingBlockInds} {
     for k in CurrentBlockInds {
       A22(i,j) -= A21(i,k)*A12(k,j);
     }
@@ -117,9 +117,9 @@ P(10,6) = 1.0;
 
 temp = 0.0;
 const i = 1..10;
-for i in [1..10] {
-  for j in [1..10] {
-    for k in [1..10] {
+for i in {1..10} {
+  for j in {1..10} {
+    for k in {1..10} {
       temp(i,j) = temp(i,j) + P(i,k)*A(k,j);
     }
   }

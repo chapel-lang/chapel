@@ -3,7 +3,7 @@ record R {
   var x: t;
 }
 
-var D = [1..3];
+var D = {1..3};
 
 writeln(D);
 

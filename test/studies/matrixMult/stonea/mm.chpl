@@ -91,7 +91,7 @@ proc matrixMult_tensored(
 {
     C = 0;
 
-    for (i,j,k) in [C.domain.dim(1), C.domain.dim(2), 1..p] {
+    for (i,j,k) in {C.domain.dim(1), C.domain.dim(2), 1..p} {
         C[i,j] += A[i,k] * B[k,j];
     }
 }
@@ -118,7 +118,7 @@ proc matrixMult_tensored_no_indices_no_reindexing(
 
     C = 0;
  
-    for (i,j,k) in [rowRange, colRange, calcRange] {
+    for (i,j,k) in {rowRange, colRange, calcRange} {
         C[keyIdxC + (i,j)] += A[keyIdxA + (i,k)] * B[keyIdxB + (k,j)];
     }
 }
@@ -146,7 +146,7 @@ proc matrixMult_tensored_no_indices(
     C = 0;
 
     for (i,j,k) in
-        [Cprime.domain.dim(1), Cprime.domain.dim(2), Bprime.domain.dim(1)]
+      {Cprime.domain.dim(1), Cprime.domain.dim(2), Bprime.domain.dim(1)}
     {
         Cprime[i,j] += Aprime[i,k] * Bprime[k,j];
     }

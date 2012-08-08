@@ -27,9 +27,9 @@ config var numOptions : int(64) = 1000;
 config const ERR_CHK = false;
 config const filename = "optionData.txt";
 
-const Dist = new dmap(new Block(rank=1, idxType=int(64), boundingBox=[0..#numOptions],
+const Dist = new dmap(new Block(rank=1, idxType=int(64), boundingBox={0..#numOptions},
                                 dataParTasksPerLocale=here.numCores));
-const Dom : domain(1, int(64)) dmapped Dist = [0..#numOptions];
+const Dom : domain(1, int(64)) dmapped Dist = {0..#numOptions};
 
 var data : [Dom] OptionData;
 var prices : [Dom] fptype;
@@ -109,7 +109,7 @@ proc BlkSchlsEqEuroNoDiv( sptprice : fptype, strike : fptype, rate : fptype,
 
 proc bs() {
 	for 0..#NUM_RUNS do {
-		forall i in [Dom] do {
+		forall i in {Dom} do {
 			/* Calling main function to calculate option value based on 
 			 * Black & Sholes's equation.
 			 */

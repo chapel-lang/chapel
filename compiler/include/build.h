@@ -6,8 +6,12 @@
 #include "stmt.h"
 #include "symbol.h"
 
-BlockStmt* buildPragmaStmt(BlockStmt*, Vec<const char*>*, BlockStmt*);
+BlockStmt* buildPragmaStmt(Vec<const char*>*, BlockStmt*);
 
+/* The start of an incomplete zero-tuple implementation
+CallExpr* buildZeroTuple(void);
+*/
+CallExpr* buildOneTuple(Expr* elem);
 Expr* buildParenExpr(CallExpr* call);
 
 Expr* buildSquareCallExpr(Expr* base, CallExpr* args);
@@ -68,7 +72,6 @@ BlockStmt* buildParamForLoopStmt(const char* index, Expr* range, BlockStmt* bloc
 BlockStmt* buildAssignment(Expr* lhs, Expr* rhs, const char* op = NULL);
 BlockStmt* buildLAndAssignment(Expr* lhs, Expr* rhs);
 BlockStmt* buildLOrAssignment(Expr* lhs, Expr* rhs);
-BlockStmt* buildSwapStmt(Expr* lhs, Expr* rhs);
 BlockStmt* buildSelectStmt(Expr* s, BlockStmt* whenstmts);
 BlockStmt* buildTypeSelectStmt(CallExpr* s, BlockStmt* whenstmts);
 

@@ -61,7 +61,7 @@ writeln("A(2..4) is: ", A(2..4), "\n");
 
 var B: [1..n, 1..n] real;
 
-forall (i,j) in [1..n, 1..n] do
+forall (i,j) in {1..n, 1..n} do
   B(i,j) = i + j/10.0;
 
 writeln("Initially, B is:\n", B, "\n");
@@ -124,7 +124,7 @@ writeln("After calling printArr, B is:\n", B, "\n");
 // called ProbSpace that's the same size and shape as B was above.
 //
 
-var ProbSpace: domain(2) = [1..n, 1..n];
+var ProbSpace: domain(2) = {1..n, 1..n};
 
 //
 // We then use that domain to declare some arrays...
@@ -288,7 +288,7 @@ writeln("Z is initialized to be:\n", Z, "\n");
 // values:
 //
 
-var VarDom = [1..n];
+var VarDom = {1..n};
 
 var VarArr: [VarDom] real = [i in VarDom] i;
 
@@ -300,7 +300,7 @@ writeln("Initially, VarArr = ", VarArr, "\n");
 // type's default value.
 //
 
-VarDom = [1..2*n];
+VarDom = {1..2*n};
 
 writeln("After doubling VarDom, VarArr = ", VarArr, "\n");
 
@@ -311,7 +311,7 @@ writeln("After doubling VarDom, VarArr = ", VarArr, "\n");
 // 1..n:
 //
 
-VarDom = [-n+1..2*n];
+VarDom = {-n+1..2*n};
 
 writeln("After lowering VarDom's lower bound, VarArr = ", VarArr, "\n");
 
@@ -319,7 +319,7 @@ writeln("After lowering VarDom's lower bound, VarArr = ", VarArr, "\n");
 // If the domain shrinks, values will be thrown away
 //
 
-VarDom = [2..n-1];
+VarDom = {2..n-1};
 
 writeln("After shrinking VarDom, VarArr = ", VarArr, "\n");
 
@@ -329,11 +329,11 @@ writeln("After shrinking VarDom, VarArr = ", VarArr, "\n");
 // new value:
 //
 
-VarDom = [1..0];
+VarDom = {1..0};
 
 writeln("VarArr should now be empty: ", VarArr, "\n");
 
-VarDom = [1..n];
+VarDom = {1..n};
 
 writeln("VarArr should now be reset: ", VarArr, "\n");
 
@@ -342,11 +342,11 @@ writeln("VarArr should now be reset: ", VarArr, "\n");
 // the function argument query syntax does not result in a domain
 // expression that can be reassigned.  In particular, we cannot do:
 //
-//   VarArr.domain = [1..2*n];
+//   VarArr.domain = {1..2*n};
 //
 // nor:
 //
-//   proc foo(X: [?D]) {  D = [1..2*n];  }
+//   proc foo(X: [?D]) {  D = {1..2*n};  }
 //
 // Only a domain variable or a domain function argument can be
 // reassigned to reallocate arrays.  This is to avoid confusion
@@ -357,7 +357,7 @@ writeln("VarArr should now be reset: ", VarArr, "\n");
 // them.  Arrays with constant domains provide the compiler with
 // optimization benefits, so this supports a common case efficiently.
 //
-// A.domain = [1..2*n];
+// A.domain = {1..2*n};
 //
 
 //

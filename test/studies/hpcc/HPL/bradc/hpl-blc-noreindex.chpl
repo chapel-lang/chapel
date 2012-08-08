@@ -67,7 +67,7 @@ proc main() {
   //
   const MatVectSpace: domain(2, indexType) 
                       dmapped BlockCyclic(startIdx=(1,1), (blkSize,blkSize)) 
-                    = [1..n, 1..n+1],
+                    = {1..n, 1..n+1},
         MatrixSpace = MatVectSpace[.., ..n];
 
   var Ab : [MatVectSpace] elemType,  // the matrix A and vector b
@@ -273,7 +273,7 @@ proc panelSolve(Ab: [] elemType,
     if col.numIndices == 0 then return;
     
     // Find the pivot, the element with the largest absolute value.
-    const ( , (pivotRow, )) = maxloc reduce(abs(Ab(col)), col);
+    const (_, (pivotRow, _)) = maxloc reduce(abs(Ab(col)), col);
 
     // Capture the pivot value explicitly (note that result of maxloc
     // is absolute value, so it can't be used directly).

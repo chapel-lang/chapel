@@ -2,7 +2,7 @@ config var n : int = 5;
 config var epsilon : real = 0.00001;
 config var verbose : bool = false;
 
-var R = [1..n, 1..n];
+var R = {1..n, 1..n};
 var BigR = R.expand(1);
 var South = R.exterior(1, 0);
 

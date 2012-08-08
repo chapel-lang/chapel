@@ -9,8 +9,8 @@ proc split(d: domain) where d.rank == 1 {
   writeln("------");
 }
 
-split([1..10]);
-split([1..9]);
-split([1..10 by 2]);
-split([1..12 by 2]);
-split([1..10 by -2]);
+split({1..10});
+split({1..9});
+split({1..10 by 2});
+split({1..12 by 2});
+split({1..10 by -2});

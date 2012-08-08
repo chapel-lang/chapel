@@ -1,5 +1,5 @@
 config const n = 3;
-const Space = [1..1,1..2*n,1..n,1..n,1..n,1..n];
+const Space = {1..1,1..2*n,1..n,1..n,1..n,1..n};
 var RA, RB: [Space] int;
 var A, B: [Space] int;
 

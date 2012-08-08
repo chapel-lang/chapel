@@ -4,3 +4,5 @@ assignSlice.good
 reduce.good
 reduceAlias.good
 reduceSlice.good
+alloc.good
+alloc_all.good

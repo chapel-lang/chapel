@@ -3,7 +3,7 @@ proc foo(A: [] int) {
     writeln(A(i));
 }
 
-var D: domain(2) = [1..3, 1..4];
+var D: domain(2) = {1..3, 1..4};
 var A: [D] int;
 
 var val = 0;

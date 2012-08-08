@@ -1,6 +1,6 @@
 config var hi: int(64) = 8;
 
-var D: domain(1, int(64)) = [1..hi];
+var D: domain(1, int(64)) = {1..hi};
 var A: [D] real = [i in D] i;
 
 writeln("D is: ", D);

@@ -5,10 +5,10 @@ config const doDiagnostics=false;
 
 config  const n: int=8;
 var e=false;
-var Dist1 = new dmap(new Block([1..n,1..n]));
-var Dist2 = new dmap(new Block([1..(2*n),1..(2*n)]));
-var Dom1: domain(2,int) dmapped Dist1 = [1..n,1..n];
-var Dom2: domain(2,int) dmapped Dist2 = [1..2*n,1..2*n];
+var Dist1 = new dmap(new Block({1..n,1..n}));
+var Dist2 = new dmap(new Block({1..(2*n),1..(2*n)}));
+var Dom1: domain(2,int) dmapped Dist1 = {1..n,1..n};
+var Dom2: domain(2,int) dmapped Dist2 = {1..2*n,1..2*n};
 
 var A:[Dom1] int(64); 
 var B:[Dom2] int(64);
@@ -26,14 +26,14 @@ proc main(){
 
   var a,b:real;
   var i:int;
-  for (a,i) in (A,[1..n*n]) do a=i;
-  for (b,i) in (B,[1..2*n*2*n]) do b=i+100;
+  for (a,i) in (A,{1..n*n}) do a=i;
+  for (b,i) in (B,{1..2*2*n*n}) do b=i+100;
 
   if printOutput {
     writeln();
   }
-  var DomA = [1..3,2..7];
-  var DomB = [3..5,5..10];
+  var DomA = {1..3,2..7};
+  var DomB = {3..5,5..10};
   
   if printOutput {
     writeln("A of DomA Distribution: ");
@@ -65,11 +65,11 @@ proc main(){
   }
   
   //EXAMPLE 2
-  for (a,i) in (A,[1..n*n]) do a=i;
-  for (b,i) in (B,[1..2*2*n*n]) do b=i+100;
+  for (a,i) in (A,{1..n*n}) do a=i;
+  for (b,i) in (B,{1..2*2*n*n}) do b=i+100;
   
-  DomA = [1..3,1..3];
-  DomB = [2..4,12..14];
+  DomA = {1..3,1..3};
+  DomB = {2..4,12..14};
   if printOutput {
     writeln("A of DomA Distribution: ");
     LocaleDistribution(A[DomA]);
@@ -100,11 +100,11 @@ proc main(){
   }
 
 //EXAMPLE 3
-  for (a,i) in (A,[1..n*n]) do a=i;
-  for (b,i) in (B,[1..2*2*n*n]) do b=i+100;
+  for (a,i) in (A,{1..n*n}) do a=i;
+  for (b,i) in (B,{1..2*2*n*n}) do b=i+100;
   
-  DomA = [1..3,5..7];
-  DomB = [6..8,1..3];
+  DomA = {1..3,5..7};
+  DomB = {6..8,1..3};
   if printOutput {
     writeln("A of DomA Distribution: ");
     LocaleDistribution(A[DomA]);
@@ -135,11 +135,11 @@ proc main(){
   }
   
   //EXAMPLE 4
-  for (a,i) in (A,[1..n*n]) do a=i;
-  for (b,i) in (B,[1..2*2*n*n]) do b=i+100;
+  for (a,i) in (A,{1..n*n}) do a=i;
+  for (b,i) in (B,{1..2*2*n*n}) do b=i+100;
   
-  DomA = [1..3,4..6];
-  DomB = [6..8,3..5];
+  DomA = {1..3,4..6};
+  DomB = {6..8,3..5};
   if printOutput {
     writeln("A of DomA Distribution: ");
     LocaleDistribution(A[DomA]);
@@ -170,11 +170,11 @@ proc main(){
   }
 
  //EXAMPLE 5
-  for (a,i) in (A,[1..n*n]) do a=i;
-  for (b,i) in (B,[1..2*2*n*n]) do b=i+100;
+  for (a,i) in (A,{1..n*n}) do a=i;
+  for (b,i) in (B,{1..2*2*n*n}) do b=i+100;
   
-  DomA = [4..5,4..5];
-    DomB = [5..6,4..5];
+  DomA = {4..5,4..5};
+    DomB = {5..6,4..5};
   if printOutput {
     writeln("A of DomA Distribution: ");
     LocaleDistribution(A[DomA]);
@@ -205,11 +205,11 @@ proc main(){
   }
    
   //EXAMPLE 6
-  for (a,i) in (A,[1..n*n]) do a=i;
-  for (b,i) in (B,[1..2*2*n*n]) do b=i+100;
+  for (a,i) in (A,{1..n*n}) do a=i;
+  for (b,i) in (B,{1..2*2*n*n}) do b=i+100;
   
-  DomA = [1..n-1,1..n-1];
-  DomB = [2..n,2..n];
+  DomA = {1..n-1,1..n-1};
+  DomB = {2..n,2..n};
   if printOutput {
     writeln("A of DomA Distribution: ");
     LocaleDistribution(A[DomA]);
@@ -240,11 +240,11 @@ proc main(){
   }
   
   //EXAMPLE 7
-  for (a,i) in (A,[1..n*n]) do a=i;
-  for (b,i) in (B,[1..2*2*n*n]) do b=i+100;
+  for (a,i) in (A,{1..n*n}) do a=i;
+  for (b,i) in (B,{1..2*2*n*n}) do b=i+100;
   
-  DomA = [1..n,1..n];
-  DomB = [1..n,1..n];
+  DomA = {1..n,1..n};
+  DomB = {1..n,1..n};
   if printOutput {
     writeln("A of DomA Distribution: ");
     LocaleDistribution(A[DomA]);
@@ -259,7 +259,7 @@ proc main(){
     startCommDiagnostics();
   }
   //  writeln("Example 7) A",DomA," <-- B",DomB);
-  A[DomA]=B[DomB];
+  A[DomA]=B[DomB]; 
   if doDiagnostics {
     stopCommDiagnostics();
     myPrintComms("Example 7) ");

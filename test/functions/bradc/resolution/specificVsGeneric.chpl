@@ -6,7 +6,7 @@ proc f(i) {
   writeln("In foo(:any)");
 }
 
-var D = [1..4];
+var D = {1..4};
 var A: [D] int = [i in D] i;
 
 f(2);

@@ -114,8 +114,6 @@ print "Removing compiler directories that are not intended for release...\n";
 system("cd compiler/include && rm -r sunos_old");
 
 print "Removing runtime directories that are not ready for release...\n";
-system("cd runtime/src/comm && rm -r armci");
-system("cd runtime/src/comm && rm -r mpi");
 system("cd runtime/src/launch && rm -r apsim");
 system("cd runtime/src/launch && rm -r dummy");
 system("cd runtime/src/launch && rm -r mpirun");

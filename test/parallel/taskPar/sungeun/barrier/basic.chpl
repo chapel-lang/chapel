@@ -16,8 +16,8 @@ proc localTest(b, numTasks) {
 
 proc remoteTest(b, numRemoteTasks) {
   const barSpace = 0..#numRemoteTasks;
-  var A: [[barSpace] dmapped new dmap(new Block([barSpace]))] int = barSpace;
-  var B: [[barSpace] dmapped new dmap(new Block([barSpace]))] int = -1;
+  var A: [{barSpace} dmapped new dmap(new Block({barSpace}))] int = barSpace;
+  var B: [{barSpace} dmapped new dmap(new Block({barSpace}))] int = -1;
   coforall t in barSpace do on A.domain.dist.idxToLocale(t) {
     B[t] = A[t];
     b.barrier();
@@ -26,7 +26,7 @@ proc remoteTest(b, numRemoteTasks) {
 }
 
 
-var b = new Barrier(numTasks);
+var b: Barrier(reusable=false) = new Barrier(numTasks);
 localTest(b, numTasks);
 
 b.reset(numRemoteTasks);

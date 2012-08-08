@@ -59,5 +59,5 @@ dit(A, testTypes.init);
 A = -1;
 dit(A, testTypes.lhs);
 
-for (i,j) in [1..n,1..m] do A(i,j) = (i-1)*m+j;
+for (i,j) in {1..n,1..m} do A(i,j) = (i-1)*m+j;
 dit(A, testTypes.rhs);

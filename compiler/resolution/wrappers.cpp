@@ -83,6 +83,7 @@ buildEmptyWrapper(FnSymbol* fn, CallInfo* info) {
 //
 // copy a formal and make the copy have blank intent. If the formal to copy has
 // out intent or inout intent, flag the copy to make sure it is a reference
+// If the formal is ref intent, leave it as ref on the wrapper formal.
 //
 static ArgSymbol* copyFormalForWrapper(ArgSymbol* formal) {
   ArgSymbol* wrapperFormal = formal->copy();
@@ -90,7 +91,9 @@ static ArgSymbol* copyFormalForWrapper(ArgSymbol* formal) {
       formal->hasFlag(FLAG_WRAP_OUT_INTENT)) {
     wrapperFormal->addFlag(FLAG_WRAP_OUT_INTENT);
   }
-  wrapperFormal->intent = INTENT_BLANK;
+  if (formal->intent != INTENT_REF) {
+    wrapperFormal->intent = INTENT_BLANK;
+  }
   return wrapperFormal;
 }
 
@@ -559,7 +562,7 @@ buildPromotionWrapper(FnSymbol* fn,
   wrapper->addFlag(FLAG_PROMOTION_WRAPPER);
   wrapper->cname = astr("_promotion_wrap_", fn->cname);
   CallExpr* indicesCall = new CallExpr("_build_tuple"); // destructured in build
-  CallExpr* iterator = new CallExpr("_build_tuple");
+  CallExpr* iteratorCall = new CallExpr("_build_tuple");
   CallExpr* actualCall = new CallExpr(fn);
   int i = 1;
   for_formals(formal, fn) {
@@ -575,7 +578,7 @@ buildPromotionWrapper(FnSymbol* fn,
         INT_FATAL(fn, "error building promotion wrapper");
       new_formal->type = ts->type;
       wrapper->insertFormalAtTail(new_formal);
-      iterator->insertAtTail(new_formal);
+      iteratorCall->insertAtTail(new_formal);
       VarSymbol* index = newTemp(astr("_p_i_", istr(i)));
       wrapper->insertAtTail(new DefExpr(index));
       indicesCall->insertAtTail(index);
@@ -587,9 +590,15 @@ buildPromotionWrapper(FnSymbol* fn,
     i++;
   }
 
+  // Convert 1-tuples to their contents for the second half of this function
   Expr* indices = indicesCall;
   if (indicesCall->numActuals() == 1)
     indices = indicesCall->get(1)->remove();
+  Expr* iterator = iteratorCall;
+  if (iteratorCall->numActuals() == 1)
+    iterator = iteratorCall->get(1)->remove();
+
+
   if ((!fn->hasFlag(FLAG_EXTERN) && fn->getReturnSymbol() == gVoid) ||
       (fn->hasFlag(FLAG_EXTERN) && fn->retType == dtVoid)) {
     if (fSerial || fSerialForall)

@@ -2,7 +2,7 @@ class C {
   var val: int;
 }
 
-const D = [1..10];
+const D = {1..10};
 
 var A: [D] C;
 

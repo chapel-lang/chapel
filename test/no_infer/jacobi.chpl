@@ -2,9 +2,9 @@ config var n : int = 5;
 config var epsilon : real = 0.00001;
 config var verbose : bool = false;
 
-var R : domain(2) = [1..n, 1..n];
-var BigR : domain(2) = [0..n+1, 0..n+1];
-var South : domain(2) = [n+1..n+1, 1..n];
+var R : domain(2) = {1..n, 1..n};
+var BigR : domain(2) = {0..n+1, 0..n+1};
+var South : domain(2) = {n+1..n+1, 1..n};
 
 var A : [BigR] real;
 var Temp : [R] real;

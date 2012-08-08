@@ -9,6 +9,8 @@
 #include "flags.h"
 #include "type.h"
 
+#include <vector>
+
 //
 // The function that represents the compiler-generated entry point
 //
@@ -81,6 +83,8 @@ class Symbol : public BaseAST {
   void addFlag(Flag flag);
   void copyFlags(Symbol* other);
   void removeFlag(Flag flag);
+
+  bool hasEitherFlag(Flag aflag, Flag bflag);
 };
 #define forv_Symbol(_p, _v) forv_Vec(Symbol, _p, _v)
 
@@ -160,7 +164,7 @@ class FnSymbol : public Symbol {
   FnSymbol *instantiatedFrom;
   SymbolMap substitutions;
   BlockStmt* instantiationPoint; // point of instantiation
-  Vec<BasicBlock*>* basicBlocks;
+  std::vector<BasicBlock*>* basicBlocks;
   Vec<CallExpr*>* calledBy;
   const char* userString;
   FnSymbol* valueFunction; // pointer to value function (created in
@@ -208,6 +212,7 @@ class EnumSymbol : public Symbol {
   void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void codegenDef(FILE* outfile);
   bool isParameter(void);
+  Immediate* getImmediate(void);
 };
 
 

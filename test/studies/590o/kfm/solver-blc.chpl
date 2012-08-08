@@ -5,8 +5,8 @@ config var infilename = "sudoku.txt";
 
 // set up a table for the puzzle
 const tableSize = 1..9;
-const TableSpace: domain(2) = [tableSize, tableSize];
-const Boxes: domain(2) = [1..3, 1..3];
+const TableSpace: domain(2) = {tableSize, tableSize};
+const Boxes: domain(2) = {1..3, 1..3};
 var Table: [TableSpace] int;
 
 //...then read the values from the puzzle into it
@@ -78,7 +78,7 @@ forall (i,j) in TableSpace {
 // ----- Initialize the values we still need for each box ----
 // NOTE that this is no longer used; still, it's cool
 const BoxDomains: [Boxes] subdomain(TableSpace) 
-                = [(br, bc) in Boxes] [(br-1)*3 + 1 .. br*3, (bc-1)*3+1..bc*3];
+                = [(br, bc) in Boxes] {(br-1)*3 + 1 .. br*3, (bc-1)*3+1..bc*3};
 // DEBUG: writeln("BoxDomains = ", BoxDomains);
 
 proc getBoxIndex(ij) {

@@ -2,7 +2,7 @@ var x: int = 10;
 
 writeln("x is: ", x);
 
-var D: domain(1) = [1..4];
+var D: domain(1) = {1..4};
 var A: [D] int;
 
 forall i in D {

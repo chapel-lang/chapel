@@ -3,8 +3,8 @@ var n: uint(32) = 10;
 var mm: int(64) = m:int(64);
 var nn: int(32) = n:int(32);
 
-const D32: domain(2, uint(32)) = [1..n, 1..n];
-const D64: domain(2, uint(64)) = [1..m, 1..m];
+const D32: domain(2, uint(32)) = {1..n, 1..n};
+const D64: domain(2, uint(64)) = {1..m, 1..m};
 
 writeln("D32 is: ", D32);
 const D32up = D32.translate(nn,nn);

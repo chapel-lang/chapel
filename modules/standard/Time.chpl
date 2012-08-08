@@ -36,7 +36,6 @@ record Timer {
 
   proc clear() {
     accumulated = 0.0;
-    running = false;
   }
 
   proc start() {

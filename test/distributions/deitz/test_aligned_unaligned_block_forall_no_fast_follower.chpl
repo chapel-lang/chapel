@@ -2,12 +2,12 @@ use BlockDist;
 
 config var n: int = 32;
 
-var BD1 = new dmap(new Block(boundingBox=[1..n], dataParTasksPerLocale=1));
-var BD2 = new dmap(new Block(boundingBox=[1..n/2], dataParTasksPerLocale=1));
+var BD1 = new dmap(new Block(boundingBox={1..n}, dataParTasksPerLocale=1));
+var BD2 = new dmap(new Block(boundingBox={1..n/2}, dataParTasksPerLocale=1));
 
-var A: [[1..n] dmapped BD1] real;
-var B: [[1..n] dmapped BD1] real;
-var C: [[1..n] dmapped BD2] real;
+var A: [{1..n} dmapped BD1] real;
+var B: [{1..n} dmapped BD1] real;
+var C: [{1..n} dmapped BD2] real;
 
 for i in 1..n do
   A(i) = i;

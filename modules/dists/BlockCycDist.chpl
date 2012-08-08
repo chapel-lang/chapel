@@ -50,7 +50,7 @@ class BlockCyclic : BaseDist {
     this.lowIdx = startIdx;
     this.blocksize = blocksize;
     if rank == 1 {
-      targetLocDom = [0..#targetLocales.numElements]; // 0-based for simplicity
+      targetLocDom = {0..#targetLocales.numElements}; // 0-based for simplicity
       this.targetLocales = targetLocales;
     } else if targetLocales.rank == 1 then {
 
@@ -60,7 +60,7 @@ class BlockCyclic : BaseDist {
       var ranges: rank*range;
       for param i in 1..rank do
         ranges(i) = 0..factors(i)-1;
-      targetLocDom = [(...ranges)];
+      targetLocDom = {(...ranges)};
       for (loc1, loc2) in (this.targetLocales, targetLocales) do
         loc1 = loc2;
       if debugBlockCyclicDist {
@@ -77,7 +77,7 @@ class BlockCyclic : BaseDist {
 	ranges(i) = 0..#thisRange.length; 
       }
       
-      targetLocDom = [(...ranges)];
+      targetLocDom = {(...ranges)};
       if debugBlockCyclicDist then writeln(targetLocDom);
 
       this.targetLocales = reshape(targetLocales, targetLocDom);
@@ -377,7 +377,7 @@ iter BlockCyclicDom.these(param tag: iterKind, followThis) where tag == iterKind
     t(i) = (low..high by stride:int) + whole.dim(i).low;
   }
   //  writeln(here.id, ": Changed it into: ", t);
-  for i in [(...t)] {
+  for i in {(...t)} {
     yield i;
   }
 }
@@ -442,7 +442,7 @@ proc BlockCyclicDom.setup() {
                                                    dist.getStarts(whole, localeIdx));
       else {
         locDoms(localeIdx).myStarts = dist.getStarts(whole, localeIdx);
-        locDoms(localeIdx).myFlatInds = [0..#locDoms(localeIdx).computeFlatInds()];
+        locDoms(localeIdx).myFlatInds = {0..#locDoms(localeIdx).computeFlatInds()};
       }
   if debugBlockCyclicDist then
     enumerateBlocks();
@@ -519,7 +519,7 @@ class LocBlockCyclicDom {
   // indices back to the local index type.
   //
   var myStarts: domain(rank, idxType, stridable=true);
-  var myFlatInds: domain(1) = [0..#computeFlatInds()];
+  var myFlatInds: domain(1) = {0..#computeFlatInds()};
 }
 
 //
@@ -542,7 +542,7 @@ proc LocBlockCyclicDom.writeThis(x:Writer) {
 
 proc LocBlockCyclicDom.enumerateBlocks() {
   for i in myStarts {
-    write(here.id, ": [");
+    write(here.id, ": {");
     for param j in 1..rank {
       if (j != 1) {
         write(", ");
@@ -556,7 +556,7 @@ proc LocBlockCyclicDom.enumerateBlocks() {
       write(lo, "..", min(lo + globDom.dist.blocksize(j)-1, 
                           globDom.whole.dim(j).high));
     }
-    writeln("]");
+    writeln("}");
   } 
 }
   
@@ -684,7 +684,7 @@ iter BlockCyclicArr.these(param tag: iterKind, followThis) var where tag == iter
     myFollowThis(i) = (low..high by stride) + dom.whole.dim(i).low;
     lowIdx(i) = myFollowThis(i).low;
   }
-  const myFollowThisDom = [(...myFollowThis)];
+  const myFollowThisDom = {(...myFollowThis)};
 
   //
   // TODO: The following is a buggy hack that will only work when we're

@@ -8,7 +8,7 @@ proc bar() {
   writeln(foo(3));
 
   {
-    var d : domain(1) = [1..3];
+    var d : domain(1) = {1..3};
     var foo : [d] real;
 
     foo(1) = 4.0;

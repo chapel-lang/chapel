@@ -3,8 +3,8 @@
 
 param n = 3;
 
-const AD = [1..n,1..n];
-const Vec = [1..n];
+const AD = {1..n,1..n};
+const Vec = {1..n};
 var A: [AD] real;
 var piv: [Vec] int;
 var colmax: real;
@@ -19,7 +19,7 @@ writeln(A);
 
 for k in 1..n-1 {
   colmax = abs(A(k,k));
-  for i in [k+1..n] {
+  for i in {k+1..n} {
     if (abs(A(i,k)) > colmax) {
       colmax = abs(A(i,k));
       ind = i;
@@ -29,7 +29,7 @@ for k in 1..n-1 {
     itemp = piv(k);
     piv(k) = piv(ind);
     piv(ind) = itemp;
-    for i in [1..n] {
+    for i in {1..n} {
       temp = A(k,i);
       A(k,i) = A(ind,i);
       A(ind,i) = temp;
@@ -39,7 +39,7 @@ for k in 1..n-1 {
   if (A(k,k) != 0.0) { 
     A(i,k) = A(i,k)/A(k,k);
   }
-  for j in [k+1..n] {
+  for j in {k+1..n} {
     A(i,j) -= A(i,k)*A(k,j);
   }
 }

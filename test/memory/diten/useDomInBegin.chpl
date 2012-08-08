@@ -1,6 +1,6 @@
 proc f() {
   use Time;
-  var D = [1..10];
+  var D = {1..10};
   begin {
     sleep(1);
     var A: [D] real;

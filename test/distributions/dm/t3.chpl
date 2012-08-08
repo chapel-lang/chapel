@@ -10,7 +10,7 @@ setupLocales(s1, s2);
 var vdf = new ReplicatedDim(s1);
 var sdf = new BlockDim(s2, 1, 3);
 var ddf = new DimensionalDist2D(mylocs, vdf, sdf, "ddf");
-const dmbase = [1..3,1..4];
+const dmbase = {1..3,1..4};
 var dmdom: domain(2) dmapped new dmap(ddf);
 dmdom = dmbase;
 var dmarr: [dmdom] int;

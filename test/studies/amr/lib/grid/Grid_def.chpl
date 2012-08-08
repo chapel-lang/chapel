@@ -336,7 +336,7 @@ proc setOutputTimes (file_name: string) {
   var output_times: [0..n_output] real;
   var dt_output:    real = (final_time - initial_time) / n_output;
   
-  for i in [0..n_output] do
+  for i in {0..n_output} do
     output_times(i) = initial_time + i*dt_output;
 
   return output_times;

@@ -10,7 +10,7 @@ const lower = -1.5 - 1.0i;
 const upper = 0.5 + 1.0i;
 
 // imag, real
-const D = [0..#size, 0..#size by 8];
+const D = {0..#size, 0..#size by 8};
 //const D: domain(2) dmapped Block(boundingBox=space) = space;
 
 proc in_set8(ipart: int, rpart8: int):uint(8) {

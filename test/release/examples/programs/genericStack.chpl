@@ -50,7 +50,7 @@ record ListStack {
 record ArrayStack {
   type itemType;            // type of items
   var numItems: int = 0;    // number of items in the stack
-  var dataSpace: domain(1) = [1..2];
+  var dataSpace: domain(1) = {1..2};
   var data: [dataSpace] itemType; // array of items
 
   // push method: add an item to the top of the stack
@@ -58,7 +58,7 @@ record ArrayStack {
   proc push(item: itemType) {
     var height = data.numElements;
     if numItems == height then
-      dataSpace = [1..height*2];
+      dataSpace = {1..height*2};
     data(numItems+1) = item;
     numItems += 1;
   }
@@ -79,7 +79,7 @@ record ArrayStack {
 
 
 
-var D: domain(2) = [1..4, 1..4];
+var D: domain(2) = {1..4, 1..4};
 testStacks(new ListStack(string), new ListStack(index(D)));
 testStacks(new ArrayStack(string), new ArrayStack(index(D)));
 

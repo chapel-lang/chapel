@@ -1,4 +1,4 @@
-var d : domain(2) = [1..3, 1..3];
+var d : domain(2) = {1..3, 1..3};
 var a : [d] int;
 
 var k = 1;

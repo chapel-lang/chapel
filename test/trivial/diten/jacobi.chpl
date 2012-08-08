@@ -1,7 +1,7 @@
 config var N = 4;
 config var epsilon = 1.0e-5;
-var D = [1..N, 1..N];
-var BD= [0..N+1, 0..N+1];
+var D = {1..N, 1..N};
+var BD= {0..N+1, 0..N+1};
 
 
 proc main(){

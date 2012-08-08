@@ -118,17 +118,17 @@ type coeff = [0..3] real;
 //   Stencil: a 3x3x3 domain used to describe the 27-point stencils
 //     used in this computation
 
-const Levels: domain(1) = [1..numLevels];
-const Base: domain(3) = [1..nx, 1..ny, 1..nz];
+const Levels: domain(1) = {1..numLevels};
+const Base: domain(3) = {1..nx, 1..ny, 1..nz};
 //BLC: distributed doesn't work yet
-//const Base: domain(3) dmapped(Block(3)) = [1..nx, 1..ny, 1..nz];
+//const Base: domain(3) dmapped(Block(3)) = {1..nx, 1..ny, 1..nz};
 //BLC: iterators in array decls don't work yet
 //const Hier: [lvl in Levels] subdomain(Base) = Base by -2**(lvl-1);
 //BLC: subdomains don't work:
 //var Hier: [Levels] subdomain(Base);
 var Hier: [Levels] domain(3);
 [lvl in Levels] Hier(lvl) = Base by -2**(lvl-1);
-const Stencil: domain(3) = [-1..1, -1..1, -1..1];
+const Stencil: domain(3) = {-1..1, -1..1, -1..1};
 
 
 // ENTRY POINT:
@@ -384,10 +384,10 @@ proc rprj3(S, R) {
 // topologies.
 
 proc interp(R, S) {
-  const IDom: domain(3) = [-1..0, -1..0, -1..0];
-  //  const IStn: [(i,j,k) in IDom] domain(3) = [i..0, j..0, k..0];
+  const IDom: domain(3) = {-1..0, -1..0, -1..0};
+  //  const IStn: [(i,j,k) in IDom] domain(3) = {i..0, j..0, k..0};
   var IStn: [IDom] domain(3);
-  [i,j,k in IDom] Istn(i,j,k) = [i..0, j..0, k..0];
+  [i,j,k in IDom] Istn(i,j,k) = {i..0, j..0, k..0};
   //  const w: [ijk in IDom] real = 1.0 / IStn.numIndices();
   var w: [IDom] real;
   [ijk in IDom] w(ijk) = 1.0 / IStn.numIndices();

@@ -22,7 +22,7 @@ module SSCA2_compilation_config_params
 // +==========================================================================+
 
 {
-  config param FILTERING = false;
+  config param FILTERING = true;
 
   config param VALIDATE_BC = false;
 
@@ -37,6 +37,8 @@ module SSCA2_compilation_config_params
   config param DEBUG_KERNEL3 = false;
 
   config param DEBUG_KERNEL4 = false;
+
+  config param DELETE_KERNEL4_DS = false;
 
   config param REPRODUCIBLE_PROBLEMS = true;
 

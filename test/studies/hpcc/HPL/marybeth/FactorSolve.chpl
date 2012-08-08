@@ -107,7 +107,7 @@ proc rightBlockLU(A: [?D], blk) where (D.rank == 2) {
       //   ..and subtract scaled kth row from remaining 
       //   unfactored rows of A1
 
-      forall (i,j) in [UnfactoredInds(k+1..), CurrentPanelInds(k+1..)] do
+      forall (i,j) in {UnfactoredInds(k+1..), CurrentPanelInds(k+1..)} do
         A1(i,j) -= A1(i,k) * A1(k,j);
     }
 
@@ -147,7 +147,7 @@ proc rightBlockLU(A: [?D], blk) where (D.rank == 2) {
       var Ublk => A12[CurrentPanelInds,columnblk];
       var Ablk => A22[rowblk,columnblk];
       // On processor that owns Ablk, do the following computation:
-      for (i,j) in [rowblk, columnblk] do
+      for (i,j) in {rowblk, columnblk} do
         for k in CurrentPanelInds do
           Ablk(i,j) -= Lblk(i,k) * Ublk(k,j);
       }
@@ -214,7 +214,7 @@ iter blkIter2D(rowRange, colRange, blksize) {
 // underscore operator, and returning the row of the resulting index.
 
 proc computePivotRow(A:[?D]) {
-   const ( , ind) = maxloc reduce (abs(A), D);
+   const (_, ind) = maxloc reduce (abs(A), D);
    return ind(1);
 }
 

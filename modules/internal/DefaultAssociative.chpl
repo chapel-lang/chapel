@@ -39,7 +39,7 @@ class DefaultAssociativeDom: BaseAssociativeDom {
   var tableLock: atomic bool; // do not access directly, use function below
   var tableSizeNum = 1;
   var tableSize = chpl__primes(tableSizeNum);
-  var tableDom = [0..tableSize-1];
+  var tableDom = {0..tableSize-1};
   var table: [tableDom] chpl_TableEntry(idxType);
 
   inline proc lockTable() {
@@ -73,15 +73,15 @@ class DefaultAssociativeDom: BaseAssociativeDom {
 
   proc dsiSerialReadWrite(f /*: Reader or Writer*/) {
     var first = true;
-    f & new ioLiteral("[");
+    f <~> new ioLiteral("{");
     for idx in this {
       if first then 
         first = false; 
       else 
-        f & new ioLiteral(", ");
-      f & idx;
+        f <~> new ioLiteral(", ");
+      f <~> idx;
     }
-    f & new ioLiteral("]");
+    f <~> new ioLiteral("}");
   }
   proc dsiSerialWrite(f: Writer) { this.dsiSerialReadWrite(f); }
   proc dsiSerialRead(f: Reader) { this.dsiSerialReadWrite(f); }
@@ -98,13 +98,15 @@ class DefaultAssociativeDom: BaseAssociativeDom {
     postponeResize = true;
     for i in this.these() do
       yield i;
-    postponeResize = false;
-    if (numEntries.read()*8 < tableSize && tableSizeNum > 1) {
-      if parSafe then lockTable();
+    on this {
+      postponeResize = false;
       if (numEntries.read()*8 < tableSize && tableSizeNum > 1) {
-        _resize(grow=false);
+        if parSafe then lockTable();
+        if (numEntries.read()*8 < tableSize && tableSizeNum > 1) {
+          _resize(grow=false);
+        }
+        if parSafe then unlockTable();
       }
-      if parSafe then unlockTable();
     }
   }
 
@@ -195,12 +197,14 @@ class DefaultAssociativeDom: BaseAssociativeDom {
   // Associative Domain Interface
   //
   proc dsiClear() {
-    if parSafe then lockTable();
-    for slot in tableDom {
-      table(slot).status = chpl__hash_status.empty;
+    on this {
+      if parSafe then lockTable();
+      for slot in tableDom {
+        table(slot).status = chpl__hash_status.empty;
+      }
+      numEntries.write(0);
+      if parSafe then unlockTable();
     }
-    numEntries.write(0);
-    if parSafe then unlockTable();
   }
 
   proc dsiMember(idx: idxType): bool {
@@ -208,12 +212,15 @@ class DefaultAssociativeDom: BaseAssociativeDom {
   }
 
   proc dsiAdd(idx: idxType): index(tableDom) {
-    if parSafe then lockTable();
-    if ((numEntries.read()+1)*2 > tableSize) {
-      _resize(grow=true);
+    var slotNum: index(tableDom);
+    on this {
+      if parSafe then lockTable();
+      if ((numEntries.read()+1)*2 > tableSize) {
+        _resize(grow=true);
+      }
+      slotNum = _add(idx);
+      if parSafe then unlockTable();
     }
-    var slotNum = _add(idx);
-    if parSafe then unlockTable();
     return slotNum;
   }
 
@@ -236,20 +243,22 @@ class DefaultAssociativeDom: BaseAssociativeDom {
   }
 
   proc dsiRemove(idx: idxType) {
-    if parSafe then lockTable();
-    const (foundSlot, slotNum) = _findFilledSlot(idx);
-    if (foundSlot) {
-      for a in _arrs do
-        a.clearEntry(idx);
-      table(slotNum).status = chpl__hash_status.deleted;
-      numEntries.sub(1);
-    } else {
-      halt("index not in domain: ", idx);
+    on this {
+      if parSafe then lockTable();
+      const (foundSlot, slotNum) = _findFilledSlot(idx);
+      if (foundSlot) {
+        for a in _arrs do
+          a.clearEntry(idx);
+        table(slotNum).status = chpl__hash_status.deleted;
+        numEntries.sub(1);
+      } else {
+        halt("index not in domain: ", idx);
+      }
+      if (numEntries.read()*8 < tableSize && tableSizeNum > 1) {
+        _resize(grow=false);
+      }
+      if parSafe then unlockTable();
     }
-    if (numEntries.read()*8 < tableSize && tableSizeNum > 1) {
-      _resize(grow=false);
-    }
-    if parSafe then unlockTable();
   }
 
   iter dsiSorted() {
@@ -279,12 +288,12 @@ class DefaultAssociativeDom: BaseAssociativeDom {
     var copyTable: [copyDom] chpl_TableEntry(idxType) = table;
 
     // grow original table
-    tableDom = [0..-1:chpl_table_index_type]; // non-preserving resize
+    tableDom = {0..(-1:chpl_table_index_type)}; // non-preserving resize
     numEntries.write(0); // reset, because the adds below will re-set this
     tableSizeNum += if grow then 1 else -1;
     if tableSizeNum > chpl__primes.size then halt("associative array exceeds maximum size");
     tableSize = chpl__primes(tableSizeNum);
-    tableDom = [0..tableSize-1];
+    tableDom = {0..tableSize-1};
 
     // insert old data into newly resized table
     for slot in _fullSlots(copyTable) {
@@ -346,7 +355,7 @@ class DefaultAssociativeArr: BaseArr {
 
   var data : [dom.tableDom] eltType;
 
-  var tmpDom = [0..-1:chpl_table_index_type];
+  var tmpDom = {0..(-1:chpl_table_index_type)};
   var tmpTable: [tmpDom] eltType;
 
   //
@@ -411,8 +420,8 @@ class DefaultAssociativeArr: BaseArr {
       if (first) then
         first = false;
       else
-        f & new ioLiteral(" ");
-      f & val;
+        f <~> new ioLiteral(" ");
+      f <~> val;
     }
   }
   proc dsiSerialWrite(f: Writer) { this.dsiSerialReadWrite(f); }
@@ -445,7 +454,7 @@ class DefaultAssociativeArr: BaseArr {
   }
 
   proc _removeArrayBackup() {
-    tmpDom = [0..-1:chpl_table_index_type];
+    tmpDom = {0..(-1:chpl_table_index_type)};
   }
 
   proc _preserveArrayElement(oldslot, newslot) {

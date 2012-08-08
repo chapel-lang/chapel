@@ -1,4 +1,4 @@
-NUMRUNS ?= 50000
+NUMRUNS ?= 1000
 CHPL = chpl
 FLAGS = -O --no-checks
 

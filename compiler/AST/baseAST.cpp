@@ -113,6 +113,11 @@ void trace_remove(BaseAST* ast, char flag) {
     if (deletedIdON) fflush(deletedIdHandle);
     gdbShouldBreakHere();
   }
+  // There should never be an attempt to delete a global type.
+  if (flag != 'z' && // At least, not before compiler shutdown.
+      isPrimitiveType(ast) &&
+      toPrimitiveType(ast)->symbol->hasFlag(FLAG_GLOBAL_TYPE_SYMBOL))
+    INT_FATAL(ast, "Unexpected attempt to eviscerate a global type symbol.");
 }
 
 #define clean_gvec(type)                        \
@@ -122,7 +127,7 @@ void trace_remove(BaseAST* ast, char flag) {
       g##type##s.v[i##type++] = ast;            \
     } else {                                    \
       trace_remove(ast, 'x');                   \
-      delete ast;                               \
+      delete ast; ast = 0;                      \
     }                                           \
   }                                             \
   g##type##s.n = i##type

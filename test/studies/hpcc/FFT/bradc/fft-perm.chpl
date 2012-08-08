@@ -1,4 +1,4 @@
-var D = [1..6];
+var D = {1..6};
 
 var Perm: [D] index(D);
 

@@ -5,10 +5,10 @@ config const doDiagnostics=false;
 
 config  const n: int=10;
 var e=false;
-var Dist1 = new dmap(new Block([1..n]));
-var Dist2 = new dmap(new Block([1..(2*n)]));
-var Dom1: domain(1,int) dmapped Dist1 = [1..n];
-var Dom2: domain(1,int) dmapped Dist2 = [1..2*n];
+var Dist1 = new dmap(new Block({1..n}));
+var Dist2 = new dmap(new Block({1..(2*n)}));
+var Dom1: domain(1,int) dmapped Dist1 = {1..n};
+var Dom2: domain(1,int) dmapped Dist2 = {1..2*n};
 
 var A:[Dom1] int(64); //real
 var B:[Dom2] int(64);
@@ -24,8 +24,8 @@ proc main(){
 
   var a,b:real;
   var i:int;
-  for (a,i) in (A,[1..n]) do a=i;
-  for (b,i) in (B,[1..2*n]) do b=i+100;
+  for (a,i) in (A,{1..n}) do a=i;
+  for (b,i) in (B,{1..2*n}) do b=i+100;
   /* writeln("Original vectors:"); */
   /* writeln("==================="); */
   /* writeln("A= ", A); */
@@ -34,8 +34,8 @@ proc main(){
   if printOutput {
     writeln();
   }
-  var DomA = [2..6];
-  var DomB = [5..9];
+  var DomA = {2..6};
+  var DomB = {5..9};
   if doDiagnostics {
     //startVerboseComm();
     resetCommDiagnostics();
@@ -58,9 +58,9 @@ proc main(){
     writeln();
   }
 
-  for (a,i) in (A,[1..n]) do a=i;
-  var DomC = [3..5];
-  var DomD = [8..10];
+  for (a,i) in (A,{1..n}) do a=i;
+  var DomC = {3..5};
+  var DomD = {8..10};
   if doDiagnostics {
     //startVerboseComm();
     resetCommDiagnostics();
@@ -81,9 +81,9 @@ proc main(){
     writeln();
   }
 
-  for (a,i) in (A,[1..n]) do a=i;
-  var DomE = [2..5];
-  var DomF = [9..12];
+  for (a,i) in (A,{1..n}) do a=i;
+  var DomE = {2..5};
+  var DomF = {9..12};
   if doDiagnostics {
     resetCommDiagnostics();
     startCommDiagnostics();
@@ -104,7 +104,7 @@ proc main(){
     writeln();
   }
 
-  for (a,i) in (A,[1..n]) do a=i;
+  for (a,i) in (A,{1..n}) do a=i;
   if doDiagnostics {
     resetCommDiagnostics();
     startCommDiagnostics();
@@ -116,7 +116,7 @@ proc main(){
     //writeln("Case D) ",getCommDiagnostics());
   }
   if printOutput {
-    writeln("Example D) B",[1..4]," <-- A",[3..6]);
+    writeln("Example D) B",{1..4}," <-- A",{3..6});
   }
   // writeln("A= ",A);
   //writeln("B= ",B);
@@ -125,7 +125,7 @@ proc main(){
     writeln();
   }
 
-  for (a,i) in (A,[1..n]) do a=i;
+  for (a,i) in (A,{1..n}) do a=i;
   if doDiagnostics {
     resetCommDiagnostics();
     startCommDiagnostics();
@@ -137,7 +137,7 @@ proc main(){
     //writeln("Case E) ",getCommDiagnostics());
   }
   if printOutput {
-    writeln("Example E) B",[7..10]," <-- A",[3..6]);
+    writeln("Example E) B",{7..10}," <-- A",{3..6});
     // writeln("A= ",A);
     //writeln("B= ",B);
   }

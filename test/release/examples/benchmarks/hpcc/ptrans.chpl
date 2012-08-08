@@ -73,10 +73,10 @@ proc main() {
   // using the distributions above:
   //
   const MatrixDom     : domain(2) dmapped new dmap(MatrixDist) 
-                      = [1..numrows, 1..numcols],
+                      = {1..numrows, 1..numcols},
 
         TransposeDom  : domain(2) dmapped new dmap(TransposeDist) 
-                       = [1..numcols, 1..numrows];
+                       = {1..numcols, 1..numrows};
 
   //
   // Declare the matrices themselves

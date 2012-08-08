@@ -24,7 +24,7 @@ type elemType = real(64);
 
 
 proc main() {
-  const DenseSpace = [1..n, 1..n];
+  const DenseSpace = {1..n, 1..n};
 
   var MatrixSpace: sparse subdomain(DenseSpace);
 

@@ -39,7 +39,7 @@ proc fill(param rank, x) {
 // creates a domain of rank 'rank' with each dimension equal to 'extent'
 //
 proc rankDomain(param rank, extent) {
-  return [(...fill(rank, extent))];
+  return {(...fill(rank, extent))};
 }
 
 //

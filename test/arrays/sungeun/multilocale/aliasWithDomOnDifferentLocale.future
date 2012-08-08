@@ -1,3 +1,0 @@
-bug: Global domains declared using a domain literal are not properly broadcast to other locales
-
-See domains/sungeun/multilocale/globalDomain.future for more info.

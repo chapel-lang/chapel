@@ -3,9 +3,9 @@ config const n = 10;
 config const epsilon = 0.0001;
 
 
-const BigD: domain(2) = [0..n+1, 0..n+1];
-const D: domain(2) = [1..n, 1..n];
-//const D: subdomain(BigD) = [1..n, 1..n];
+const BigD: domain(2) = {0..n+1, 0..n+1};
+const D: domain(2) = {1..n, 1..n};
+//const D: subdomain(BigD) = {1..n, 1..n};
 
 
 const north = (-1,  0);

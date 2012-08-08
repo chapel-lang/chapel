@@ -75,7 +75,7 @@ proc main() {
     dmapped DimensionalDist2D(targetLocales,
                               new BlockCyclicDim(gridRows, lowIdx=1, blkSize),
                               new BlockCyclicDim(gridCols, lowIdx=1, blkSize))
-                    = [1..n, 1..n+1],
+                    = {1..n, 1..n+1},
         MatrixSpace = MatVectSpace[.., ..n];
 
   var Ab : [MatVectSpace] elemType,  // the matrix A and vector b
@@ -209,7 +209,7 @@ proc schurComplement(Ab: [?AbD] elemType, AD: domain, BD: domain, Rest: domain) 
 // Replicate a row of Ab along the first dimension
 //
 proc replicateD1(Ab, BD) {
-  const replBD = [1..blkSize, 1..n+1]
+  const replBD = {1..blkSize, 1..n+1}
     dmapped DimensionalDist2D(targetLocales,
                               new ReplicatedDim(gridRows),
                               new BlockCyclicDim(gridCols, lowIdx=1, blkSize));
@@ -226,7 +226,7 @@ proc replicateD1(Ab, BD) {
 // Replicate a column of Ab along the second dimension
 //
 proc replicateD2(Ab, AD) {
-  const replAD = [1..n, 1..blkSize]
+  const replAD = {1..n, 1..blkSize}
     dmapped DimensionalDist2D(targetLocales,
                               new BlockCyclicDim(gridRows, lowIdx=1, blkSize),
                               new ReplicatedDim(gridCols));
@@ -255,7 +255,7 @@ proc panelSolve(Ab: [] elemType,
     if col.numIndices == 0 then return;
     
     // Find the pivot, the element with the largest absolute value.
-    const ( , (pivotRow, )) = maxloc reduce(abs(Ab(col)), col);
+    const (_, (pivotRow, _)) = maxloc reduce(abs(Ab(col)), col);
 
     // Capture the pivot value explicitly (note that result of maxloc
     // is absolute value, so it can't be used directly).
@@ -341,7 +341,7 @@ proc setupLocaleGrid() {
            " out of ", numLocales, " locales.\n",
            "Pass the option --allowUnusedLocales to suppress this check");
 
-  return reshape(Locales#numLocsUsed, [0..#gridRows, 0..#gridCols]);
+  return reshape(Locales#numLocsUsed, {0..#gridRows, 0..#gridCols});
 }
 
 //

@@ -1,5 +1,4 @@
-var d : _ddata(int) = new _ddata(int);
-d.init(3);
+var d : _ddata(int) = _ddata_allocate(int, 3);
 
 d(0) = 1;
 d(1) = 2;

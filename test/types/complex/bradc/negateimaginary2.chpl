@@ -9,7 +9,7 @@ writeln("a is: ", a);
 
 config var n = 4;
 
-var D = [1..n];
+var D = {1..n};
 
 var A: [D] complex;
 

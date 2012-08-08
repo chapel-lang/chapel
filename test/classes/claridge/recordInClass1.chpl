@@ -1,5 +1,5 @@
 record R {
-  var indices = [1..0];
+  var indices = {1..0};
 }
 
 class Container {
@@ -10,5 +10,5 @@ proc main {
   var c = new Container();
   // writeln(c.r.indices);
   writeln("hello");
-  c.r.indices = [1..1];
+  c.r.indices = {1..1};
 }

@@ -52,12 +52,12 @@ module cyclic_partition_iterators {
 
       // subsets are given as intersections of ranges, done neatly by Chapel
 
-      const my_A1x_rows        = my_rows [ A11_rows ];
+      const my_A1x_rows        = my_rows { A11_rows };
       const my_Ax1_cols        = my_cols ( A11_cols );
 
-      const my_A2x_rows        = my_rows [ next_block_low .. ];
-      const my_Ax2_cols        = my_cols [ next_block_low .. ];
-      const I_compute_L21_rows = my_L21_rows_to_compute [ next_block_low .. ];
+      const my_A2x_rows        = my_rows { next_block_low .. };
+      const my_Ax2_cols        = my_cols { next_block_low .. };
+      const I_compute_L21_rows = my_L21_rows_to_compute { next_block_low .. };
 
       yield ( A11_cols, A22_cols,
 	      my_A1x_rows, my_Ax1_cols,

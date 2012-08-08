@@ -1,6 +1,6 @@
 config var n = 10;
 
-const D = [1..n, 1..n];
+const D = {1..n, 1..n};
 
 writeln("D is: ", D);
 

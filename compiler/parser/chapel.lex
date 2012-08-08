@@ -125,6 +125,8 @@ where            processToken(TWHERE);
 while            processToken(TWHILE);
 yield            processToken(TYIELD);
 
+"_"              processToken(TUNDERSCORE);
+
 "="              processToken(TASSIGN);
 "+="             processToken(TASSIGNPLUS);
 "-="             processToken(TASSIGNMINUS);
@@ -189,6 +191,8 @@ yield            processToken(TYIELD);
 "]"              processToken(TRSBR);
 "{"              processToken(TLCBR);
 "}"              processToken(TRCBR);
+"<~>"            processToken(TIO);
+
 
 "?"              processToken(TQUESTION);
 

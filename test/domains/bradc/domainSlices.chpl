@@ -1,6 +1,6 @@
 config const n = 5;
 
-const D = [1..n];
+const D = {1..n};
 
 writeln("D is: ", D);
 writeln("D[2..n-1] is: ", D[2..n-1]);

@@ -10,8 +10,7 @@ for using Chapel:
 
 * You have the Bourne shell available at /bin/sh, the C-shell
   available at /bin/csh, 'env' available at /usr/bin/env, and that
-  'env' can locate Perl on your system (and Python if you wish to use
-  the testing system).
+  'env' can locate Perl and Python on your system.
 
 * You have access to gmake or a GNU-compatible version of make and awk.
 

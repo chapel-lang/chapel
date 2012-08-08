@@ -1,4 +1,4 @@
-var D = [1..5 by 2, 1..5 by 2];
+var D = {1..5 by 2, 1..5 by 2};
 
 var spD: sparse subdomain(D);
 

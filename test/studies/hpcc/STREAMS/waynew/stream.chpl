@@ -127,7 +127,7 @@ proc checkSTREAMresults( doIO: bool): bool {
 proc HPCC_Stream( params: HPCC_Params,  doIO: bool): bool {
   VectorSize = HPCC_LocalVectorSize( params, NUM_VECTORS, numBits(real)/8, false); 
 
-  Vector = [1..VectorSize];   // realloc a, b, and c
+  Vector = {1..VectorSize};   // realloc a, b, and c
 
   // How do we handle allocation errors?
 
@@ -161,7 +161,7 @@ proc HPCC_Stream( params: HPCC_Params,  doIO: bool): bool {
 
   // --- MAIN LOOP --- repeat test cases NTIMES times ---
   var scalar = SCALAR;
-  for k in [1..NTIMES] {
+  for k in {1..NTIMES} {
     // tuned_STREAM_Copy();
     // [j in Vector] c[j] = a[j];
     c = a;

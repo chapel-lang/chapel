@@ -1,0 +1,9 @@
+feature requst: ability to overload ChapelBase.chpl operators in user code
+
+This is a copy of the original test_override_operators.chpl which I'm
+preserving in deference to David's original intent which was to permit
+the user to override built-in operators like ==() and have them be
+chosen over the built-ins due to being closer in scope.  This test
+broke with the commmit that is checking it in because comparisons
+between enums currently dispatch to ==(int,int) and the call became
+ambiguous since neither definition of ==() was closer than the other.

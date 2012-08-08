@@ -40,22 +40,22 @@ class Function {
     //        can't be presently since they must be assigned in initialize()
 
     // Two-Scale relationship matrices
-    const hgDom = [0..2*k-1, 0..2*k-1];
+    const hgDom = {0..2*k-1, 0..2*k-1};
     var   hg    : [hgDom] real; // FIXME: hg  =  hg_getCoeffs(k);
     var   hgT   : [hgDom] real; //        hgT => transpose(hg);
 
     // Quadrature coefficients
-    const quadDom   = [0..k-1];
+    const quadDom   = {0..k-1};
     var   quad_x    : [quadDom] real; // points
     var   quad_w    : [quadDom] real; // weights
 
-    const quad_phiDom = [0..k-1, 0..k-1];
+    const quad_phiDom = {0..k-1, 0..k-1};
     var   quad_phi    : [quad_phiDom] real; // phi[point,i]
     var   quad_phiT   : [quad_phiDom] real; // phi[point,i] transpose
     var   quad_phiw   : [quad_phiDom] real; // phi[point,i]*weight[point]
 
     // blocks of the block tridiagonal derivative operator
-    const dcDom = [0..k-1, 0..k-1];
+    const dcDom = {0..k-1, 0..k-1};
     var   rm    : [dcDom] real;
     var   r0    : [dcDom] real;
     var   rp    : [dcDom] real;
@@ -186,7 +186,7 @@ class Function {
         // check to see if within tolerance
         // normf() is Frobenius norm == 2-norm for vectors
         var nf = normf(dc[k..2*k-1]);
-        const (n,  ) = curNode;
+        const (n, _) = curNode;
         if((nf < thresh) || (n >= (max_level-1))) {
             sumC[child(1)] = s0;
             sumC[child(2)] = s1;
@@ -217,7 +217,7 @@ class Function {
      */
     proc evaluate(curNode = rootNode, in x): real {
         if sumC.has_coeffs(curNode) {
-            const (n, ) = curNode;
+            const (n,_) = curNode;
             var p = phi(x, k);
             return inner(sumC[curNode], p)*sqrt(2.0**n);
 
@@ -259,7 +259,7 @@ class Function {
         sumC.remove(child(1));
         sumC.remove(child(2));
 
-        const (n, ) = curNode;
+        const (n,_) = curNode;
         if n==0 then compressed = true;
     }
 
@@ -292,7 +292,7 @@ class Function {
             reconstruct(child(2));
         }
         
-        const (n, ) = curNode;
+        const (n,_) = curNode;
         if n == 0 then compressed = false;
     }
 
@@ -366,7 +366,7 @@ class Function {
             cleaning = sumC.has_coeffs(curNode);
 
         // Sub trees can run in parallel
-        const (n, ) = curNode;
+        const (n,_) = curNode;
         if n < max_level {
             const child = sumC.get_children(curNode);
             if !cleaning || sumC.has_coeffs(child(1)) then
@@ -474,7 +474,7 @@ class Function {
     proc multiply(f1, f2, curNode = rootNode) {
         const child = sumC.get_children(curNode);
         if f1.sumC.has_coeffs(curNode) && f2.sumC.has_coeffs(curNode) {
-            const (n, ) = curNode;
+            const (n,_) = curNode;
             if autorefine && n+1 <= max_level {
                 // if autorefine is set we are multiplying two polynomials
                 // of order k-1 the result could be up to order 2(k-1) so

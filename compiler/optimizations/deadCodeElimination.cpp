@@ -96,17 +96,18 @@ void deadExpressionElimination(FnSymbol* fn) {
 
 void deadCodeElimination(FnSymbol* fn)
 {
+// TODO: Factor this long function?
   buildBasicBlocks(fn);
 
-  Map<SymExpr*,Vec<SymExpr*>*> DU;
-  Map<SymExpr*,Vec<SymExpr*>*> UD;
+  std::map<SymExpr*,Vec<SymExpr*>*> DU;
+  std::map<SymExpr*,Vec<SymExpr*>*> UD;
   buildDefUseChains(fn, DU, UD);
 
-  Map<Expr*,Expr*> exprMap;
+  std::map<Expr*,Expr*> exprMap;
   Vec<Expr*> liveCode;
   Vec<Expr*> workSet;
-  forv_Vec(BasicBlock, bb, *fn->basicBlocks) {
-    forv_Vec(Expr, expr, bb->exprs) {
+  for_vector(BasicBlock, bb, *fn->basicBlocks) {
+    for_vector(Expr, expr, bb->exprs) {
       bool essential = false;
       Vec<BaseAST*> asts;
       collect_asts(expr, asts);
@@ -119,12 +120,12 @@ void deadCodeElimination(FnSymbol* fn)
           // mark assignments to global variables as essential
           if (call->isPrimitive(PRIM_MOVE))
             if (SymExpr* se = toSymExpr(call->get(1)))
-              if (!DU.get(se) || // DU chain only contains locals
+              if (DU.count(se) == 0 || // DU chain only contains locals
                   !se->var->type->refType) // reference issue
                 essential = true;
         }
         if (Expr* sub = toExpr(ast)) {
-          exprMap.put(sub, expr);
+          exprMap[sub] = expr;
           if (BlockStmt* block = toBlockStmt(sub->parentExpr))
             if (block->blockInfo == sub)
               essential = true;
@@ -144,9 +145,11 @@ void deadCodeElimination(FnSymbol* fn)
     Vec<SymExpr*> symExprs;
     collectSymExprs(expr, symExprs);
     forv_Vec(SymExpr, se, symExprs) {
-      if (Vec<SymExpr*>* defs = UD.get(se)) {
+      if (UD.count(se) != 0) {
+        Vec<SymExpr*>* defs = UD[se];
         forv_Vec(SymExpr, def, *defs) {
-          Expr* expr = exprMap.get(def);
+          INT_ASSERT(exprMap.count(def) != 0);
+          Expr* expr = exprMap[def];
           if (!liveCode.set_in(expr)) {
             liveCode.set_add(expr);
             workSet.add(expr);
@@ -157,8 +160,8 @@ void deadCodeElimination(FnSymbol* fn)
   }
 
   // This removes dead expressions from each block.
-  forv_Vec(BasicBlock, bb, *fn->basicBlocks) {
-    forv_Vec(Expr, expr, bb->exprs) {
+  for_vector(BasicBlock, bb1, *fn->basicBlocks) {
+    for_vector(Expr, expr, bb1->exprs) {
       if (isSymExpr(expr) || isCallExpr(expr))
         if (!liveCode.set_in(expr))
           expr->remove();
@@ -194,22 +197,22 @@ static bool deadBlockElimination(FnSymbol* fn)
   buildBasicBlocks(fn);
 
   bool change = false;
-  forv_Vec(BasicBlock, bb, *fn->basicBlocks)
+  for_vector(BasicBlock, bb, *fn->basicBlocks)
   {
     // Ignore the first block.
-    if (bb == fn->basicBlocks->v[0])
+    if (bb == (*fn->basicBlocks)[0])
       continue;
 
     // If this block has no predecessors, then it is dead.
-    if (bb->ins.count() == 0)
+    if (bb->ins.size() == 0)
     {
-      if (bb->exprs.n > 0)
+      if (bb->exprs.size() > 0)
       {
         change = true;
         ++deadBlockCount;
 
         // Remove all of its expressions.
-        forv_Vec(Expr, expr, bb->exprs)
+        for_vector(Expr, expr, bb->exprs)
         {
           if (! expr->parentExpr)
             continue;   // This node is no longer in the tree.
@@ -224,11 +227,16 @@ static bool deadBlockElimination(FnSymbol* fn)
         }
       }
 
+#if 0
       // Get more out of one pass by removing this BB from the predecessor
       // lists of its successors.
-      forv_Vec(BasicBlock, succ, bb->outs)
-        succ->ins.set_remove(bb); 
-
+      // FIXME: This causes memory corruption in std::vectors.
+      // Or ... stop trying to be so clever and just remove this block.
+      for_vector(BasicBlock, succ, bb->outs)
+        for_vector(BasicBlock, self, succ->ins)
+          if (self == bb)
+            succ->ins.erase(self);
+#endif
       // We leave the "dead" bb structure in place.
       // The next time we construct basic blocks for this fn, it should be gone.
     }

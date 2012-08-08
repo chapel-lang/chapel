@@ -5,8 +5,8 @@ config const doDiagnostics=false;
 
 config  const n: int=4;
 var e=false;
-var Dist1 = new dmap(new Block([1..n,1..n]));
-var Dom1: domain(2,int) dmapped Dist1 = [1..n,1..n];
+var Dist1 = new dmap(new Block({1..n,1..n}));
+var Dom1: domain(2,int) dmapped Dist1 = {1..n,1..n};
 
 var A:[Dom1] int(64); //real
 var B:[Dom1] int(64);
@@ -16,14 +16,14 @@ proc main(){
 
   var a,b:real;
   var i:int;
-  for (a,i) in (ADR,[1..n*n*n]) do a=i;
-  for (b,i) in (BDR,[1..n*n*n]) do b=i+100;
+  for (a,i) in (ADR,{1..n*n*n}) do a=i;
+  for (b,i) in (BDR,{1..n*n*n}) do b=i+100;
   if printOutput {
     writeln();
   }
 
-  var DomA = [1..2 by 1,1..3 by 1,2..4 by 4];
-  var DomB = [1..2 by 1,1..3 by 1,2..4 by 4];
+  var DomA = {1..2 by 1,1..3 by 1,2..4 by 4};
+  var DomB = {1..2 by 1,1..3 by 1,2..4 by 4};
   ADR[DomA]=BDR[DomB];
   for (a,b) in (BDR[DomB],ADR[DomA]) do if (a!=b) then writeln("ERROR!!!!");
   if printOutput {
@@ -33,12 +33,12 @@ proc main(){
     writeln();
   }
   
-  for (a,i) in (ADR,[1..n*n*n]) do a=i;
-  for (b,i) in (BDR,[1..n*n*n]) do b=i+100;
+  for (a,i) in (ADR,{1..n*n*n}) do a=i;
+  for (b,i) in (BDR,{1..n*n*n}) do b=i+100;
 
   //  ejemplo 2
- DomA = [1..2 by 1,1..2 by 1,2..4 by 2];
- DomB = [1..2 by 1,1..2 by 1,2..4 by 2];
+ DomA = {1..2 by 1,1..2 by 1,2..4 by 2};
+ DomB = {1..2 by 1,1..2 by 1,2..4 by 2};
   ADR[DomA]=BDR[DomB];
   for (a,b) in (BDR[DomB],ADR[DomA]) do if (a!=b) then writeln("ERROR!!!!");
   if printOutput {
@@ -48,12 +48,12 @@ proc main(){
     writeln();
   }
  
- for (a,i) in (ADR,[1..n*n*n]) do a=i;
-  for (b,i) in (BDR,[1..n*n*n]) do b=i+100;
+  for (a,i) in (ADR,{1..n*n*n}) do a=i;
+  for (b,i) in (BDR,{1..n*n*n}) do b=i+100;
 
   //  ejemplo 3
- DomA = [1..2 by 1,1..4 by 2,2..4 by 2];
- DomB = [1..2 by 1,1..4 by 2,2..4 by 2];
+ DomA = {1..2 by 1,1..4 by 2,2..4 by 2};
+ DomB = {1..2 by 1,1..4 by 2,2..4 by 2};
   ADR[DomA]=BDR[DomB];
   for (a,b) in (BDR[DomB],ADR[DomA]) do if (a!=b) then writeln("ERROR!!!!");
   if printOutput {
@@ -63,12 +63,12 @@ proc main(){
     writeln();
   }
   
-  for (a,i) in (ADR,[1..n*n*n]) do a=i;
-  for (b,i) in (BDR,[1..n*n*n]) do b=i+100;
+  for (a,i) in (ADR,{1..n*n*n}) do a=i;
+  for (b,i) in (BDR,{1..n*n*n}) do b=i+100;
 
   //  ejemplo 4
- DomA = [1..2 by 1,1..4 by 3,2..4 by 2];
- DomB = [1..2 by 1,1..4 by 3,2..4 by 2];
+ DomA = {1..2 by 1,1..4 by 3,2..4 by 2};
+ DomB = {1..2 by 1,1..4 by 3,2..4 by 2};
   ADR[DomA]=BDR[DomB];
   for (a,b) in (BDR[DomB],ADR[DomA]) do if (a!=b) then writeln("ERROR!!!!");
   if printOutput {
@@ -78,12 +78,12 @@ proc main(){
     writeln();
   }
  
- for (a,i) in (ADR,[1..n*n*n]) do a=i;
-  for (b,i) in (BDR,[1..n*n*n]) do b=i+100;
+  for (a,i) in (ADR,{1..n*n*n}) do a=i;
+  for (b,i) in (BDR,{1..n*n*n}) do b=i+100;
 
   //  ejemplo 5
-  DomA = [1..3 by 2,1..4 by 2,2..4 by 2];
-  DomB = [1..3 by 2,1..4 by 2,2..4 by 2];
+  DomA = {1..3 by 2,1..4 by 2,2..4 by 2};
+  DomB = {1..3 by 2,1..4 by 2,2..4 by 2};
   ADR[DomA]=BDR[DomB];
   for (a,b) in (BDR[DomB],ADR[DomA]) do if (a!=b) then writeln("ERROR!!!!");
   if printOutput {
@@ -93,12 +93,12 @@ proc main(){
     writeln();
   }
  
- for (a,i) in (ADR,[1..n*n*n]) do a=i;
-  for (b,i) in (BDR,[1..n*n*n]) do b=i+100;
+  for (a,i) in (ADR,{1..n*n*n}) do a=i;
+  for (b,i) in (BDR,{1..n*n*n}) do b=i+100;
 
  //ejemplo 6
-   DomA = [1..3 by 2,1..4 by 4,2..4 by 2];
-   DomB = [1..3 by 2,1..4 by 4,2..4 by 2];
+   DomA = {1..3 by 2,1..4 by 4,2..4 by 2};
+   DomB = {1..3 by 2,1..4 by 4,2..4 by 2};
  
   ADR[DomA]=BDR[DomB];
   for (a,b) in (BDR[DomB],ADR[DomA]) do if (a!=b) then writeln("ERROR!!!!");
@@ -109,12 +109,12 @@ proc main(){
     writeln();
   }
  
- for (a,i) in (ADR,[1..n*n*n]) do a=i;
-  for (b,i) in (BDR,[1..n*n*n]) do b=i+100;
+  for (a,i) in (ADR,{1..n*n*n}) do a=i;
+  for (b,i) in (BDR,{1..n*n*n}) do b=i+100;
 
  //ejemplo 7
-  DomA = [1..3 by 2,1..1 by 1,2..4 by 2];
-  DomB = [1..3 by 2,1..1 by 1,2..4 by 2];
+  DomA = {1..3 by 2,1..1 by 1,2..4 by 2};
+  DomB = {1..3 by 2,1..1 by 1,2..4 by 2};
   ADR[DomA]=BDR[DomB];
   for (a,b) in (BDR[DomB],ADR[DomA]) do if (a!=b) then writeln("ERROR!!!!");
   if printOutput {

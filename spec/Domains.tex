@@ -241,7 +241,7 @@ declare an array.  The array indices are iterated over using the domain's
 \chpl{dim()} method, and each element is filled with
 some value.  Then the array is printed out.
 \begin{chapel}
-var D : domain(2) = [1..2, 1..7];
+var D : domain(2) = {1..2, 1..7};
 var A : [D] int;
 for i in D.dim(1) do
   for j in D.dim(2) do

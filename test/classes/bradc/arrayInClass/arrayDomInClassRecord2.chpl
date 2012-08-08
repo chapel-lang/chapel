@@ -1,11 +1,11 @@
 record R {
-  var D = [1..10];
+  var D = {1..10};
   var A: [D] real = [i in D] i;
 }
 
 
 class C {
-  var D = [1..10];
+  var D = {1..10};
   var A: [D] real = [i in D] i;
 }
 

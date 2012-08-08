@@ -91,8 +91,7 @@ static void addPragmaFlags(Symbol* sym, Vec<const char*>* pragmas) {
   }
 }
 
-BlockStmt* buildPragmaStmt(BlockStmt* block,
-                           Vec<const char*>* pragmas,
+BlockStmt* buildPragmaStmt(Vec<const char*>* pragmas,
                            BlockStmt* stmt) {
   if (DefExpr* def = toDefExpr(stmt->body.first()))
     addPragmaFlags(def->sym, pragmas);
@@ -103,16 +102,33 @@ BlockStmt* buildPragmaStmt(BlockStmt* block,
               pragmas->v[0]);
   }
   delete pragmas;
-  block->insertAtTail(stmt);
-  return block;
+
+  return stmt;
 }
 
+/* The start of an incomplete zero-tuple implementation
+CallExpr* buildZeroTuple() {
+  return new CallExpr("_build_tuple");
+}
+*/
+
+CallExpr* buildOneTuple(Expr* elem) {
+  return new CallExpr("_build_tuple", new CallExpr(PRIM_ACTUALS_LIST, elem));
+}
 
 Expr* buildParenExpr(CallExpr* call) {
-  if (call->numActuals() == 1)
-    return call->get(1)->remove();
-  else
-    return new CallExpr("_build_tuple", call);
+  if (!call->isPrimitive(PRIM_ACTUALS_LIST)) {
+    // This must be a 0- or 1-tuple, so return it
+    return call;
+  } else {
+    if (call->numActuals() == 1) {
+      // If it just has one argument, then it's just a parenthesized expression
+      return call->get(1)->remove();
+    } else {
+      // Otherwise, build a tuple out of the arguments
+      return new CallExpr("_build_tuple", call);
+    }
+  }
 }
 
 
@@ -1094,76 +1110,8 @@ BlockStmt* buildParamForLoopStmt(const char* index, Expr* range, BlockStmt* stmt
 
 BlockStmt*
 buildAssignment(Expr* lhs, Expr* rhs, const char* op) {
-  if (op == NULL)
-    return buildChapelStmt(new CallExpr("=", lhs, rhs));
-
-  BlockStmt* stmt = buildChapelStmt();
-
-  VarSymbol* ltmp = newTemp();
-  ltmp->addFlag(FLAG_MAYBE_PARAM);
-  stmt->insertAtTail(new DefExpr(ltmp));
-  stmt->insertAtTail(new CallExpr(PRIM_MOVE, ltmp,
-                       new CallExpr(PRIM_ADDR_OF, lhs)));
-
-  VarSymbol* rtmp = newTemp();
-  rtmp->addFlag(FLAG_MAYBE_PARAM);
-  rtmp->addFlag(FLAG_EXPR_TEMP);
-  stmt->insertAtTail(new DefExpr(rtmp));
-  stmt->insertAtTail(new CallExpr(PRIM_MOVE, rtmp, rhs));
-
-  BlockStmt* cast =
-    new BlockStmt(
-      new CallExpr("=", ltmp,
-        new CallExpr("_cast",
-          new CallExpr(PRIM_TYPEOF, ltmp),
-          new CallExpr(op,
-            new CallExpr(PRIM_DEREF, ltmp), rtmp))));
-
-  if (strcmp(op, "<<") && strcmp(op, ">>"))
-    cast->insertAtHead(
-      new BlockStmt(new CallExpr("=", ltmp, rtmp), BLOCK_TYPE));
-
-  CondStmt* inner =
-    new CondStmt(
-      new CallExpr("_isPrimitiveType",
-        new CallExpr(PRIM_TYPEOF,
-          new CallExpr(PRIM_DEREF, ltmp))),
-      cast,
-      new CallExpr("=", ltmp,
-        new CallExpr(op,
-          new CallExpr(PRIM_DEREF, ltmp), rtmp)));
-
-  // This code performs a rewrite of += and -= for domains at
-  // compile-time.
-  //     D += x     becomes     D.add(x)
-  //     D -= x     becomes     D.remove(x)
-  // Even though we can handle this in the module code (ChapelArray.chpl)
-  // because we overload +/- and =, we choose to rewrite the expression
-  // because using the assignment operator results in an O(n) operation
-  // rather than O(1) (see overload of = for domains in ChapelArray.chpl).
-  //
-  // The right way to do this would be to make += and += proper methods
-  // that can be overloaded.  When we get around to this, this rewrite
-  // should be removed.
-  if (!strcmp(op, "+")) {
-    stmt->insertAtTail(
-      new CondStmt(
-        new CallExpr("chpl__isDomain", ltmp),
-        new CallExpr(
-          new CallExpr(".", ltmp, new_StringSymbol("add")), rtmp),
-        inner));
-  } else if (!strcmp(op, "-")) {
-    stmt->insertAtTail(
-      new CondStmt(
-        new CallExpr("chpl__isDomain", ltmp),
-        new CallExpr(
-          new CallExpr(".", ltmp, new_StringSymbol("remove")), rtmp),
-        inner));
-  } else {
-    stmt->insertAtTail(inner);
-  }
-
-  return stmt;
+  INT_ASSERT(op != NULL);
+  return buildChapelStmt(new CallExpr(op, lhs, rhs));
 }
 
 
@@ -1186,9 +1134,6 @@ BlockStmt* buildLOrAssignment(Expr* lhs, Expr* rhs) {
   return stmt;
 }
 
-BlockStmt* buildSwapStmt(Expr* lhs, Expr* rhs) {
-  return buildChapelStmt(new CallExpr("_chpl_swap", lhs, rhs));
-}
 
 BlockStmt* buildSelectStmt(Expr* selectCond, BlockStmt* whenstmts) {
   CondStmt* otherwise = NULL;

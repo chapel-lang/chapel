@@ -24,9 +24,9 @@ config const printParams = true,
 proc main() {
   printConfiguration();
 
-  const ProblemDist = new Block1DDist(bbox=[1..m], targetLocales=Locales);
+  const ProblemDist = new Block1DDist(bbox={1..m}, targetLocales=Locales);
 
-  const ProblemSpace = ProblemDist.newDomain([1..m], int(64));
+  const ProblemSpace = ProblemDist.newDomain({1..m}, int(64));
 
   var A = ProblemSpace.newArray(elemType), 
       B = ProblemSpace.newArray(elemType),

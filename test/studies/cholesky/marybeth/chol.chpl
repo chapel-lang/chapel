@@ -15,7 +15,7 @@ proc main() {
   blk = min(blk,n);
 
   var A1D = 1..n;
-  const A2D = [A1D,A1D]; 
+  const A2D = {A1D,A1D}; 
   var A: [A2D] real;
   initA(A,Adat);
   Adat.close();
@@ -38,8 +38,8 @@ proc chol(A:[?D]) where (D.rank == 2) {
   var D1 = D.dim(1);
   const zero = 0.0:A.eltType;
 
-  for j in [D1] {
-    for k in [D1(..j-1)] {
+  for j in {D1} {
+    for k in {D1(..j-1)} {
       A(j,j) -= A(j,k)*A(j,k);
     }
 
@@ -48,8 +48,8 @@ proc chol(A:[?D]) where (D.rank == 2) {
     else
       A(j,j) = sqrt(A(j,j));
 
-    for i in [D1(j+1..)] {
-      for k in [D1(..j-1)] {
+    for i in {D1(j+1..)} {
+      for k in {D1(..j-1)} {
         A(i,j) -= A(i,k)*A(j,k);
       }
       A(i,j) /= A(j,j);

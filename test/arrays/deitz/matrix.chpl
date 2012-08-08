@@ -1,7 +1,7 @@
 record Matrix {
   type elt_type;
   var m, n: int;
-  var D: domain(2) = [1..m, 1..n];
+  var D: domain(2) = {1..m, 1..n};
   var A: [D] elt_type;
 
   proc this(i: int, j: int) var return A(i,j);
@@ -41,7 +41,7 @@ var m = 8, n = 4;
 var M = new Matrix(real, m, n);
 var N = new Matrix(real, m, n);
 
-for (i,j) in [1..m, 1..n] {
+for (i,j) in {1..m, 1..n} {
   M(i,j) = i-1 + (j-1)*m;
   N(i,j) = (i-1)*n + (j-1);
 }

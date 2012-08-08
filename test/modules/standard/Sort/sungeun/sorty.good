@@ -1,0 +1,30 @@
+sorty.chpl:26: In function 'doSort':
+sorty.chpl:35: warning: whole array assignment has been serialized (see note in $CHPL_HOME/STATUS)
+sorty.chpl:26: In function 'doSort':
+sorty.chpl:35: warning: whole array assignment has been serialized (see note in $CHPL_HOME/STATUS)
+sorty.chpl:26: In function 'doSort':
+sorty.chpl:35: warning: whole array assignment has been serialized (see note in $CHPL_HOME/STATUS)
+sorty.chpl:26: In function 'doSort':
+sorty.chpl:35: warning: whole array assignment has been serialized (see note in $CHPL_HOME/STATUS)
+sorty.chpl:26: In function 'doSort':
+sorty.chpl:35: warning: whole array assignment has been serialized (see note in $CHPL_HOME/STATUS)
+sorty.chpl:26: In function 'doSort':
+sorty.chpl:35: warning: whole array assignment has been serialized (see note in $CHPL_HOME/STATUS)
+BUBBLE Sort: SUCCESS
+BUBBLE Sort: SUCCESS
+BUBBLE Sort: SUCCESS
+INSERTION Sort: SUCCESS
+INSERTION Sort: SUCCESS
+INSERTION Sort: SUCCESS
+MERGE Sort: SUCCESS
+MERGE Sort: SUCCESS
+MERGE Sort: SUCCESS
+SELECTION Sort: SUCCESS
+SELECTION Sort: SUCCESS
+SELECTION Sort: SUCCESS
+QUICK Sort: SUCCESS
+QUICK Sort: SUCCESS
+QUICK Sort: SUCCESS
+HEAP Sort: SUCCESS
+HEAP Sort: SUCCESS
+HEAP Sort: SUCCESS

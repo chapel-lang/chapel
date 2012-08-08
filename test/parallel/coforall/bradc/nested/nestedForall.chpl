@@ -12,7 +12,7 @@ iter leadfollow(param tag: iterKind) where tag == iterKind.leader {
     on loc {
       coforall taskid in 0..#numTasks {
         const (lo,hi) = _computeBlock(1, numTasks, taskid, loc.id, loc.id, loc.id);
-        yield [lo..hi];
+        yield {lo..hi};
       }
     }
   }

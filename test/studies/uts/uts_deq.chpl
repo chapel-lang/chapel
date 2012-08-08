@@ -82,7 +82,7 @@ class TreeNode {
 
     if debug then writeln("Constructing ", nChildren, " children");
 
-    for i in [0..nChildren-1] {
+    for i in {0..nChildren-1} {
       if debug then writeln("  + (", depth, ", ", i, ")");
       var t = new TreeNode(depth+1);
       rng_spawn(hash[1], t.hash[1], i:sha_int);

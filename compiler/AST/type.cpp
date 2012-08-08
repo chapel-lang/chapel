@@ -216,7 +216,8 @@ void EnumType::sizeAndNormalize() {
         // We think that all params should have init values by now.
         INT_ASSERT(sym && !sym->var->hasFlag(FLAG_PARAM));
         // So we're going to blame this on the user.
-        USR_FATAL(constant, "enumerator '%s' is not an integer constant", constant->sym->name);
+        USR_FATAL(constant, "enumerator '%s' is not an integer param value", 
+                  constant->sym->name);
         // And unfortunately, if we get here, we don't know how to proceed,
         // which is why no USR_FATAL_CONT().
       }
@@ -507,6 +508,19 @@ void ClassType::codegenDef(FILE* outfile) {
     fprintf(outfile, "typedef char %s[%i];\n", symbol->cname, size);
     return;
   }
+  else if (symbol->hasFlag(FLAG_REF)) {
+    fprintf(outfile, "typedef %s *%s;\n", getField(1)->type->symbol->cname,
+            symbol->cname);
+    return;
+  }
+  else if (symbol->hasFlag(FLAG_DATA_CLASS)) {
+    fprintf(outfile, "typedef ");
+    getDataClassType(symbol)->codegen(outfile);
+    fprintf(outfile, " *");
+    symbol->codegen(outfile);
+    fprintf(outfile, ";\n");
+    return;
+  }
 
   fprintf(outfile, "typedef struct __");
   symbol->codegen(outfile);
@@ -547,10 +561,6 @@ void ClassType::codegenDef(FILE* outfile) {
     if (this->fields.length != 0)
       fprintf(outfile, "} _u;\n");
   }
-  if (symbol->hasFlag(FLAG_DATA_CLASS)) {
-    getDataClassType(symbol)->codegen(outfile);
-    fprintf(outfile, "* _data;\n");
-  }
   fprintf(outfile, "} ");
   if (classTag == CLASS_CLASS)
     fprintf(outfile, "_");
@@ -560,9 +570,8 @@ void ClassType::codegenDef(FILE* outfile) {
 
 
 void ClassType::codegenPrototype(FILE* outfile) {
-  if (symbol->hasFlag(FLAG_REF))
-    fprintf(outfile, "typedef %s *%s;\n", getField(1)->type->symbol->cname,
-            symbol->cname);
+  if (symbol->hasFlag(FLAG_REF)) return; // done in codegenDef
+  else if (symbol->hasFlag(FLAG_DATA_CLASS)) return; // done in codegenDef
   else if (classTag == CLASS_CLASS)
     fprintf(outfile, "typedef struct __%s *%s;\n",
             symbol->cname, symbol->cname);
@@ -699,6 +708,8 @@ createPrimitiveType(const char *name, const char *cname, bool internalType=false
   PrimitiveType* pt = new PrimitiveType(NULL, internalType);
   TypeSymbol* ts = new TypeSymbol(name, pt);
   ts->cname = cname;
+  ts->addFlag(FLAG_GLOBAL_TYPE_SYMBOL); // Is attached to a global variable;
+                                        // should not be deleted!
   rootModule->block->insertAtTail(new DefExpr(ts));
   return pt;
 }
@@ -736,7 +747,7 @@ createInternalType(const char *name, const char *cname) {
   dtComplex[COMPLEX_SIZE_ ## width]= createPrimitiveType (name, "_complex" #width); \
   dtComplex[COMPLEX_SIZE_ ## width]->defaultValue = new_ComplexSymbol(         \
                                   "_chpl_complex" #width "(0.0, 0.0)",         \
-                                   0.0, 0.0, COMPLEX_SIZE_ ## width);
+                                   0.0, 0.0, COMPLEX_SIZE_ ## width)
 
 #define CREATE_DEFAULT_SYMBOL(primType, gSym, name)     \
   gSym = new VarSymbol (name, primType);                \

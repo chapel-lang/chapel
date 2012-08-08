@@ -253,7 +253,7 @@ module SSCA2_kernels
       //    type Sparse_Vertex_List = sparse subdomain ( G.vertices );
       // to accommodate block distribution of G.vertices
 
-      type Sparse_Vertex_List = sparse subdomain ( [(...vertex_domain.dims())] );
+      type Sparse_Vertex_List = sparse subdomain ( {(...vertex_domain.dims())} );
 
       // ------------------------------------------------------ 
       // Each iteration of the outer loop of Brandes's algorithm

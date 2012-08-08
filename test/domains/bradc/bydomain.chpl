@@ -1,6 +1,6 @@
 config var n = 8;
 
-var D: domain(1) = [1..n];
+var D: domain(1) = {1..n};
 var DOdd = D by 2;
 
 var A: [D] int;

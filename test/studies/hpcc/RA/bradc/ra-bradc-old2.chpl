@@ -9,11 +9,11 @@ config const verify = true;
 config const debug = false;
 
 // BLC: note the prevalence of the n-1 upper bound motif
-const tableDom = [0..tableSize:int-1];    // BLC: unfortunate cast
+const tableDom = {0..tableSize:int-1};    // BLC: unfortunate cast
 var Table: [tableDom] uint(64);
 
 const numUpdates = 4*tableSize;
-const updateDom = [0..numUpdates:int-1];  // BLC: unfortunate cast
+const updateDom = {0..numUpdates:int-1};  // BLC: unfortunate cast
 
 config const numRandoms = 128;
 config const errorTolerance = 0.01;
@@ -36,7 +36,7 @@ proc randomAccessUpdate() {
 
   if debug then writeln("Table is: ", Table);
 
-  var ranDom = [0..numRandoms-1];
+  var ranDom = {0..numRandoms-1};
   // BLC: Would prefer this initialization to be:
   // var Ran: [ranDom] uint(64) = [i in ranDom] HPCCstarts((numUpdates/numRandoms) * i);
   var Ran: [ranDom] uint(64);
@@ -94,7 +94,7 @@ proc HPCCstarts(in n:int(64)) { // BLC: unfortunate type specification
   if (n == 0) then return 0x1:uint(64);
 
   param m2DomSize = 64; // BLC: this is a magic number -- better name?
-  var m2Dom = [0..m2DomSize-1];
+  var m2Dom = {0..m2DomSize-1};
   var m2: [m2Dom] uint(64);
 
   // BLC: isn't this redundantly computing the same array m2 over and

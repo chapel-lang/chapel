@@ -1,1 +1,1 @@
-valAsType.chpl:1: error: invalid type specification
+valAsType.chpl:1: syntax error: near ';'

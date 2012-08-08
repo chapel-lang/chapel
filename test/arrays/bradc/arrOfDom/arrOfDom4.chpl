@@ -1,4 +1,4 @@
-const DBase = [1..10];
+const DBase = {1..10};
 
 const D: [DBase] sparse subdomain(DBase);
 

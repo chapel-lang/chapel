@@ -3,7 +3,7 @@
 
 use driver;
 
-var MyA3D: [[10001..10005, 10001..10005, 10001..10005] dmapped Dist3D] int;
+var MyA3D: [{10001..10005, 10001..10005, 10001..10005} dmapped Dist3D] int;
 
 var S: [1..n3, 1..n3] string;
 
@@ -18,7 +18,7 @@ var AA => MyA3D;                    // alias [1..5, 1..5, 1..5]
 [aa in AA] aa = 1;
 writeToString();
 
-var AA2 => AA([10001..10005, 10001..10005, 10001..10005].expand(-1));   // slice [2..4, 2..4, 2..4]
+var AA2 => AA({10001..10005, 10001..10005, 10001..10005}.expand(-1));   // slice [2..4, 2..4, 2..4]
 [aa2 in AA2] aa2 = 2;
 writeToString();
 

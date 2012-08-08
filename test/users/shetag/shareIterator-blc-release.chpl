@@ -2,7 +2,7 @@ config var numIters = 10;
 
 config var printTaskID = true;
 
-const D = [1..numIters];
+const D = {1..numIters};
 var A: [D] int;
 
 var currIndex: sync int = 1;

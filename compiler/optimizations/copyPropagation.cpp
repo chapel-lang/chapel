@@ -94,8 +94,7 @@ localCopyPropagationCore(BasicBlock* bb,
                          ReverseAvailableMap& reverseAvailable,
                          Vec<SymExpr*>& useSet,
                          Vec<SymExpr*>& defSet) {
-
-  forv_Vec(Expr, expr, bb->exprs) {
+  for_vector(Expr, expr, bb->exprs) {
     Vec<SymExpr*> symExprs;
     collectSymExprs(expr, symExprs);
 
@@ -148,8 +147,8 @@ void localCopyPropagation(FnSymbol* fn) {
   // candidates for copy propagation
   //
   Vec<Symbol*> locals;
-  forv_Vec(BasicBlock, bb, *fn->basicBlocks) {
-    forv_Vec(Expr, expr, bb->exprs) {
+  for_vector(BasicBlock, bb, *fn->basicBlocks) {
+    for_vector(Expr, expr, bb->exprs) {
       if (DefExpr* def = toDefExpr(expr))
         if (VarSymbol* var = toVarSymbol(def->sym))
           if (isCandidateForCopyPropagation(fn, var))
@@ -165,10 +164,10 @@ void localCopyPropagation(FnSymbol* fn) {
   Vec<SymExpr*> useSet;
   buildDefUseSets(locals, fn, defSet, useSet);
 
-  forv_Vec(BasicBlock, bb, *fn->basicBlocks) {
+  for_vector(BasicBlock, bb1, *fn->basicBlocks) {
     AvailableMap available;
     ReverseAvailableMap reverseAvailable;
-    localCopyPropagationCore(bb, available, reverseAvailable, useSet, defSet);
+    localCopyPropagationCore(bb1, available, reverseAvailable, useSet, defSet);
     freeReverseAvailable(reverseAvailable);
   }
 }
@@ -181,7 +180,7 @@ void globalCopyPropagation(FnSymbol* fn) {
   buildBasicBlocks(fn);
 
   // global copy propagation will have no effect
-  if (fn->basicBlocks->n <= 1)
+  if (fn->basicBlocks->size() <= 1)
     return;
 
   //
@@ -189,8 +188,8 @@ void globalCopyPropagation(FnSymbol* fn) {
   // candidates for copy propagation
   //
   Vec<Symbol*> locals;
-  forv_Vec(BasicBlock, bb, *fn->basicBlocks) {
-    forv_Vec(Expr, expr, bb->exprs) {
+  for_vector(BasicBlock, bb, *fn->basicBlocks) {
+    for_vector(Expr, expr, bb->exprs) {
       if (DefExpr* def = toDefExpr(expr))
         if (VarSymbol* var = toVarSymbol(def->sym))
           if (isCandidateForCopyPropagation(fn, var))
@@ -219,8 +218,8 @@ void globalCopyPropagation(FnSymbol* fn) {
   Vec<SymExpr*> spsLHS;
   Vec<SymExpr*> spsRHS;
   int start = 0;
-  forv_Vec(BasicBlock, bb, *fn->basicBlocks) {
-    forv_Vec(Expr, expr, bb->exprs) {
+  for_vector(BasicBlock, bb1, *fn->basicBlocks) {
+    for_vector(Expr, expr, bb1->exprs) {
 
       Vec<SymExpr*> symExprs;
       collectSymExprs(expr, symExprs);
@@ -273,9 +272,9 @@ void globalCopyPropagation(FnSymbol* fn) {
   Vec<SymExpr*> LHS;
   Vec<SymExpr*> RHS;
 
+  size_t nbbs = fn->basicBlocks->size();
   int j = 0;
-  int i = 0;
-  forv_Vec(BasicBlock, bb, *fn->basicBlocks) {
+  for(size_t i = 0; i < nbbs; ++i) {
 #ifdef DEBUG_CP
     printf("%d:\n", i);
 #endif
@@ -290,32 +289,29 @@ void globalCopyPropagation(FnSymbol* fn) {
       j++;
     }
     N.add(LHS.n);
-    i++;
   }
 #ifdef DEBUG_CP
   printf("\n");
 #endif
 
-  Vec<BitVec*> COPY;
-  Vec<BitVec*> KILL;
-  Vec<BitVec*> IN;
-  Vec<BitVec*> OUT;
+  std::vector<BitVec*> COPY;
+  std::vector<BitVec*> KILL;
+  std::vector<BitVec*> IN;
+  std::vector<BitVec*> OUT;
   j = 0;
-  i = 0;
-  forv_Vec(BasicBlock, bb, *fn->basicBlocks) {
-    BitVec* copy = new BitVec(N.v[fn->basicBlocks->n-1]);
-    BitVec* kill = new BitVec(N.v[fn->basicBlocks->n-1]);
-    BitVec* in = new BitVec(N.v[fn->basicBlocks->n-1]);
-    BitVec* out = new BitVec(N.v[fn->basicBlocks->n-1]);
+  for(size_t i = 0; i < nbbs; ++i) {
+    BitVec* copy = new BitVec(N.v[nbbs-1]);
+    BitVec* kill = new BitVec(N.v[nbbs-1]);
+    BitVec* in = new BitVec(N.v[nbbs-1]);
+    BitVec* out = new BitVec(N.v[nbbs-1]);
     while (j < N.v[i]) {
       copy->set(j);
       j++;
     }
-    COPY.add(copy);
-    KILL.add(kill);
-    IN.add(in);
-    OUT.add(out);
-    i++;
+    COPY.push_back(copy);
+    KILL.push_back(kill);
+    IN.push_back(in);
+    OUT.push_back(out);
   }
 
 #ifdef DEBUG_CP
@@ -325,13 +321,13 @@ void globalCopyPropagation(FnSymbol* fn) {
   //
   // compute kill set
   //
-  i = 0;
+  size_t i = 0;
   start = 0;
-  forv_Vec(BasicBlock, bb, *fn->basicBlocks) {
+  for_vector(BasicBlock, bb2, *fn->basicBlocks) {
     int stop = N.v[i];
 
     Vec<Symbol*> killSet;
-    forv_Vec(Expr, expr, bb->exprs) {
+    for_vector(Expr, expr, bb2->exprs) {
 
       Vec<SymExpr*> symExprs;
       collectSymExprs(expr, symExprs);
@@ -349,12 +345,12 @@ void globalCopyPropagation(FnSymbol* fn) {
     }
     for (int j = 0; j < start; j++) {
       if (killSet.set_in(LHS.v[j]->var) || killSet.set_in(RHS.v[j]->var)) {
-        KILL.v[i]->set(j);
+        KILL[i]->set(j);
       }
     }
     for (int j = stop; j < LHS.n; j++) {
       if (killSet.set_in(LHS.v[j]->var) || killSet.set_in(RHS.v[j]->var)) {
-        KILL.v[i]->set(j);
+        KILL[i]->set(j);
       }
     }
     start = stop;
@@ -366,9 +362,9 @@ void globalCopyPropagation(FnSymbol* fn) {
 #endif
 
   // initialize IN set
-  for (int i = 1; i < fn->basicBlocks->n; i++) {
+  for (size_t i = 1; i < nbbs; i++) {
     for (int j = 0; j < LHS.n; j++) {
-      IN.v[i]->set(j);
+      IN[i]->set(j);
     }
   }
 
@@ -378,13 +374,13 @@ void globalCopyPropagation(FnSymbol* fn) {
 
   forwardFlowAnalysis(fn, COPY, KILL, IN, OUT, true);
 
-  for (int i = 0; i < fn->basicBlocks->n; i++) {
-    BasicBlock* bb = fn->basicBlocks->v[i];
+  for (size_t i = 0; i < nbbs; i++) {
+    BasicBlock* bb = (*fn->basicBlocks)[i];
     AvailableMap available;
     ReverseAvailableMap reverseAvailable;
     bool proceed = false;
     for (int j = 0; j < LHS.n; j++) {
-      if (IN.v[i]->get(j)) {
+      if (IN[i]->get(j)) {
         makeAvailable(available, reverseAvailable, LHS.v[j]->var, RHS.v[j]->var);
         proceed = true;
       }
@@ -394,17 +390,17 @@ void globalCopyPropagation(FnSymbol* fn) {
     freeReverseAvailable(reverseAvailable);
   }
 
-  forv_Vec(BitVec, copy, COPY)
-    delete copy;
+  for_vector(BitVec, copy, COPY)
+    delete copy, copy = 0;
 
-  forv_Vec(BitVec, kill, KILL)
-    delete kill;
+  for_vector(BitVec, kill, KILL)
+    delete kill, kill = 0;
 
-  forv_Vec(BitVec, in, IN)
-    delete in;
+  for_vector(BitVec, in, IN)
+    delete in, in = 0;
 
-  forv_Vec(BitVec, out, OUT)
-    delete out;
+  for_vector(BitVec, out, OUT)
+    delete out, out = 0;
 }
 
 

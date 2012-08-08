@@ -24,6 +24,16 @@ release are as follows:
   BETA warning messages (useful for testing) and fixed a small type-o
   in the message itself.
 
+* Added support for tilera targets.  The following five files have been modified:
+  Makefile
+  GASNet-1.*.*/
+               gasnet_atomic_bits.h
+               gasnet_membar.h
+               other/
+                     portable_platform.h
+                     contrib/
+                             cross-configure-tilera
+
 The structure of this directory is as follows:
 
 ./

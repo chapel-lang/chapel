@@ -145,6 +145,10 @@ void Symbol::removeFlag(Flag flag) {
   flags.reset(flag);
 }
 
+bool Symbol::hasEitherFlag(Flag aflag, Flag bflag) {
+  return hasFlag(aflag) || hasFlag(bflag);
+}
+
 
 bool Symbol::isImmediate() {
   return false;
@@ -364,8 +368,8 @@ void ArgSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 
 
 bool ArgSymbol::requiresCPtr(void) {
-  if (intent == INTENT_REF)
-    return true;
+  /* This used to be true for INTENT_REF, but that is handled with the "_ref"
+     class and we don't need to generate a pointer for it directly */
   if (hasFlag(FLAG_ARG_THIS)) {
       if (is_complex_type(type))
         return true;
@@ -485,12 +489,8 @@ FnSymbol::FnSymbol(const char* initName) :
 FnSymbol::~FnSymbol() {
   if (iteratorInfo)
     delete iteratorInfo;
-  if (basicBlocks) {
-    forv_Vec(BasicBlock, bb, *basicBlocks) {
-      delete bb;
-    }
-    delete basicBlocks;
-  }
+  BasicBlock::clear(this);
+  delete basicBlocks; basicBlocks = 0;
   if (calledBy)
     delete calledBy;
 }
@@ -596,6 +596,7 @@ void FnSymbol::codegenHeader(FILE* outfile) {
 
 void FnSymbol::codegenPrototype(FILE* outfile) {
   INT_ASSERT(!hasFlag(FLAG_EXTERN));
+  if( hasFlag(FLAG_NO_CODEGEN) ) return;
   codegenHeader(outfile);
   fprintf(outfile, ";\n");
 }
@@ -620,6 +621,8 @@ codegenNullAssignments(FILE* outfile, const char* cname, ClassType* ct) {
 
 
 void FnSymbol::codegenDef(FILE* outfile) {
+  if( hasFlag(FLAG_NO_CODEGEN) ) return;
+
   if (strcmp(saveCDir, "")) {
    if (const char* rawname = fname()) {
     const char* name = strrchr(rawname, '/');
@@ -831,6 +834,15 @@ void EnumSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 bool EnumSymbol::isParameter(void) { return true; }
 
 void EnumSymbol::codegenDef(FILE* outfile) { }
+
+Immediate* EnumSymbol::getImmediate(void) {
+  if (SymExpr* init = toSymExpr(defPoint->init)) {
+    if (VarSymbol* initvar = toVarSymbol(init->var)) {
+      return initvar->immediate;
+    }
+  }
+  return NULL;
+}
 
 
 ModuleSymbol::ModuleSymbol(const char* iName, ModTag iModTag, BlockStmt* iBlock) :
@@ -1131,10 +1143,10 @@ VarSymbol *new_ComplexSymbol(const char *n, long double r, long double i, IF1_co
   imm.const_kind = NUM_KIND_COMPLEX;
   imm.num_index = size;
   VarSymbol *s = uniqueConstantsHash.get(&imm);
-  PrimitiveType* dtRetType = dtComplex[size];
   if (s) {
     return s;
   }
+  Type* dtRetType = dtComplex[size];
   s = new VarSymbol(astr("_literal_", istr(literal_id++)), dtRetType);
   rootModule->block->insertAtTail(new DefExpr(s));
   s->immediate = new Immediate;
@@ -1144,7 +1156,7 @@ VarSymbol *new_ComplexSymbol(const char *n, long double r, long double i, IF1_co
   return s;
 }
 
-static PrimitiveType*
+static Type*
 immediate_type(Immediate *imm) {
   switch (imm->const_kind) {
     case CONST_KIND_STRING:
@@ -1170,7 +1182,7 @@ VarSymbol *new_ImmediateSymbol(Immediate *imm) {
   VarSymbol *s = uniqueConstantsHash.get(imm);
   if (s)
     return s;
-  PrimitiveType *t = immediate_type(imm);
+  Type *t = immediate_type(imm);
   s = new VarSymbol(astr("_literal_", istr(literal_id++)), t);
   rootModule->block->insertAtTail(new DefExpr(s));
   s->immediate = new Immediate;

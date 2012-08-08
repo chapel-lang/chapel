@@ -193,7 +193,7 @@ class LocCyclic1DDist {
     const lo = min(glbIdxType) + locid0;
     const hi = max(glbIdxType);
     const numlocs = dist.targetLocDom.numIndices;
-    myChunk = [lo..hi by numlocs];
+    myChunk = {lo..hi by numlocs};
     if debugCyclic1D then
       writeln("locale ", locid, " owns ", myChunk);
   }

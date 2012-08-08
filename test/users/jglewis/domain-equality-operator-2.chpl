@@ -2,7 +2,7 @@ config const n = 4;
  
 proc main
 {
-  const mat_dom : domain (2) = [1..n, 1..n];
+  const mat_dom : domain (2) = {1..n, 1..n};
   var A : [mat_dom] real,
       L : [mat_dom] real;
 

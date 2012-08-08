@@ -63,7 +63,7 @@ Features/limitations:
 
 Examples:
 
-const Dbase = [1..5];
+const Dbase = {1..5};
 const Drepl: domain(1) dmapped ReplicatedDist() = Dbase;
 var Abase: [Dbase] int;
 var Arepl: [Drepl] int;
@@ -388,7 +388,7 @@ proc ReplicatedDom.dsiSetIndices(rangesArg: rank * range(idxType,
                                                          stridable)): void {
   if traceReplicatedDist then
     writeln("ReplicatedDom.dsiSetIndices on ranges");
-  dsiSetIndices([(...rangesArg)]);
+  dsiSetIndices({(...rangesArg)});
 }
 
 proc ReplicatedDom.dsiSetIndices(domArg: domain(rank, idxType, stridable)): void {
@@ -702,7 +702,7 @@ proc ReplicatedDist.dsiCreateRankChangeDist(param newRank, args) return this;
 // SUPPORT FOR USER-LEVEL REPLICATED VARIABLES
 
 const rcDomainIx   = 1;
-const rcDomainBase = [rcDomainIx..rcDomainIx];
+const rcDomainBase = {rcDomainIx..rcDomainIx};
 const rcLocales    = Locales;
 const rcDomainMap  = new ReplicatedDist(rcLocales);
 const rcDomain     = rcDomainBase dmapped new dmap(rcDomainMap);

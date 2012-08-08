@@ -1,21 +1,21 @@
 Distribution Representation
 
-boundingBox = [1..4, 1..4]
-targetLocDom = [0..0, 0..0]
+boundingBox = {1..4, 1..4}
+targetLocDom = {0..0, 0..0}
 targetLocales = 0
 dataParTasksPerLocale = 2
 dataParIgnoreRunningTasks = true
 dataParMinGranularity = 1
-locDist[(0, 0)].myChunk = [-2147483648..2147483647, -2147483648..2147483647]
+locDist[(0, 0)].myChunk = {-9223372036854775808..9223372036854775807, -9223372036854775808..9223372036854775807}
 
 Domain
 
-[1..4, 1..4]
+{1..4, 1..4}
 
 Domain Representation
 
-whole = [1..4, 1..4]
-locDoms[(0, 0)].myBlock = [1..4, 1..4]
+whole = {1..4, 1..4}
+locDoms[(0, 0)].myBlock = {1..4, 1..4}
 
 Array
 

@@ -7,7 +7,7 @@ use Time;
 
 var a$ : sync bool;
 
-forall i in [0..#numLocales] do
+forall i in {0..#numLocales} do
   on Locales[i] do {
     cobegin {
       {sleep(1); if a$ then writeln("impossible"); }

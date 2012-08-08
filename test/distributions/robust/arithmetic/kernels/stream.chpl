@@ -59,7 +59,7 @@ proc main() {
   // is a 1D domain storing 64-bit ints and is distributed according
   // to Dist1D.  It contains the indices 1..m.
   //
-  const ProblemSpace: domain(1, idxType) dmapped Dist1D = [1..m:idxType];
+  const ProblemSpace: domain(1, idxType) dmapped Dist1D = {1..m:idxType};
 
   //
   // A, B, and C are the three distributed vectors, declared to store

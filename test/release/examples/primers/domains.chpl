@@ -24,7 +24,7 @@ config var n = 10;
 //
 // RD is an n by n by n domain.
 //
-var RD: domain(3) = [1..n, 1..n, 1..n];
+var RD: domain(3) = {1..n, 1..n, 1..n};
 writeln(RD);
 
 // 

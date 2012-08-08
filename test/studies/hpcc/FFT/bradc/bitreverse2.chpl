@@ -3,7 +3,7 @@ use BitOps;
 config var logN = 5;
 const N = 1 << logN;
 
-var DW = [0..N/4-1];
+var DW = {0..N/4-1};
 
 var A: [DW] complex;
 

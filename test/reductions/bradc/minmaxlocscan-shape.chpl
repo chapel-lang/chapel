@@ -1,6 +1,6 @@
 config var n = 9;
 
-var D = [1..n, 1..n];
+var D = {1..n, 1..n};
 var A: [D] real;
 
 forall (i,j) in D {

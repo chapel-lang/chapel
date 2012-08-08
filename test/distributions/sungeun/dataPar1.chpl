@@ -1,6 +1,6 @@
 use BlockDist, CyclicDist;
 config const n = 3;
-const Space = [1..n,1..n,1..n,1..n,1..n,1..n];
+const Space = {1..n,1..n,1..n,1..n,1..n,1..n};
 
 proc dit(D, A, B, C) {
   forall i in D {

@@ -445,7 +445,7 @@ proc Block.dsiCreateReindexDist(newSpace, oldSpace) {
         halt("invalid reindex for Block: distribution bounding box (high) out of range in dimension ", r);
     }
   }
-  var d = [(...myNewBbox)];
+  var d = {(...myNewBbox)};
   var newDist = new Block(d, targetLocales, 
                           dataParTasksPerLocale, dataParIgnoreRunningTasks,
                           dataParMinGranularity);
@@ -465,7 +465,7 @@ proc LocBlock.LocBlock(param rank: int,
     const numlocs = targetLocBox(1).length;
     const (blo, bhi) = _computeBlock(numelems, numlocs, locid,
                                      max(idxType), min(idxType), lo);
-    myChunk = [blo..bhi];
+    myChunk = {blo..bhi};
   } else {
     var tuple: rank*range(idxType);
     for param i in 1..rank {
@@ -477,7 +477,7 @@ proc LocBlock.LocBlock(param rank: int,
                                        max(idxType), min(idxType), lo);
       tuple(i) = blo..bhi;
     }
-    myChunk = [(...tuple)];
+    myChunk = {(...tuple)};
   }
 }
 
@@ -621,7 +621,7 @@ iter BlockDom.these(param tag: iterKind, followThis) where tag == iterKind.follo
     var high = stride * followThis(i).high;
     t(i) = (low..high by stride:int) + whole.dim(i).low by followThis(i).stride;
   }
-  for i in [(...t)] {
+  for i in {(...t)} {
     yield i;
   }
 }
@@ -904,7 +904,7 @@ iter BlockArr.these(param tag: iterKind, followThis, param fast: bool = false) v
       }
       return dsiAccess(i);
     }
-    const myFollowThisDom = [(...myFollowThis)];
+    const myFollowThisDom = {(...myFollowThis)};
     for i in myFollowThisDom {
       yield accessHelper(i);
     }
@@ -1126,8 +1126,8 @@ proc LocBlockArr.this(i) var {
 proc Block.Block(other: Block, privateData,
                 param rank = other.rank,
                 type idxType = other.idxType) {
-  boundingBox = [(...privateData(1))];
-  targetLocDom = [(...privateData(2))];
+  boundingBox = {(...privateData(1))};
+  targetLocDom = {(...privateData(2))};
   dataParTasksPerLocale = privateData(3);
   dataParIgnoreRunningTasks = privateData(4);
   dataParMinGranularity = privateData(5);
@@ -1152,7 +1152,7 @@ proc Block.dsiPrivatize(privatizeData) {
 proc Block.dsiGetReprivatizeData() return boundingBox.dims();
 
 proc Block.dsiReprivatize(other, reprivatizeData) {
-  boundingBox = [(...reprivatizeData)];
+  boundingBox = {(...reprivatizeData)};
   targetLocDom = other.targetLocDom;
   targetLocales = other.targetLocales;
   locDist = other.locDist;
@@ -1170,7 +1170,7 @@ proc BlockDom.dsiPrivatize(privatizeData) {
   var c = new BlockDom(rank=rank, idxType=idxType, stridable=stridable, dist=privdist);
   for i in c.dist.targetLocDom do
     c.locDoms(i) = locDoms(i);
-  c.whole = [(...privatizeData(2))];
+  c.whole = {(...privatizeData(2))};
   return c;
 }
 
@@ -1179,7 +1179,7 @@ proc BlockDom.dsiGetReprivatizeData() return whole.dims();
 proc BlockDom.dsiReprivatize(other, reprivatizeData) {
   for i in dist.targetLocDom do
     locDoms(i) = other.locDoms(i);
-  whole = [(...reprivatizeData)];
+  whole = {(...reprivatizeData)};
 }
 
 proc BlockArr.dsiSupportsPrivatization() param return true;
@@ -1364,7 +1364,7 @@ proc dropDims(D: domain, dims...) {
         r2(j) = r(i);
         j+=1;
       }
-  var DResult = [(...r2)];
+  var DResult = {(...r2)};
   return DResult;
 }
 
@@ -1594,9 +1594,9 @@ proc BlockArr.doiBulkTransferStride(B)
     on dom.dist.targetLocales(i)
       {
 	var regionA = dom.locDoms(i).myBlock;
-	var ini=corr_direct(regionA.low,B._value,1);
-	var end=corr_direct(regionA.high,B._value,0);
-	var sb=B._value.dom.whole.stride;
+	var ini = corr_direct(regionA.low,B._value,1);
+	var end = corr_direct(regionA.high,B._value,0);
+	var sb = B._value.dom.whole.stride;
     
 	if rank ==1
 	  {
@@ -1630,7 +1630,7 @@ proc BlockArr.doiBulkTransferStride(B)
 	    var r1: rank * range(stridable = true);
 	    var r2: rank * range(stridable = true);
 	    var r3: rank * range(stridable = true);
-	    for t in [1..rank] do
+	    for t in 1..rank do
 	      r1[t] = (ini[t]..end[t] by sb[t]); 
         
 	    DomA=r1; //Necessary to make the intersection
@@ -1644,7 +1644,7 @@ proc BlockArr.doiBulkTransferStride(B)
 		    var end_src=corr_inverse(inters.high,B._value);
 		    var sa = dom.whole.stride;
       
-		    for t in [1..rank]{
+		    for t in 1..rank {
 		      r2[t] = (ini_src[t]..end_src[t] by sa[t]);
 		      r3[t] = (inters.low[t]..inters.high[t] by inters.stride[t]);
 		    }
@@ -1669,10 +1669,10 @@ proc BlockArr.corr_direct(a,B,low)
   var sa=dom.whole.stride;
   var lb=B.dom.whole.low;
   var sb=B.dom.whole.stride;
-  var b:[1..rank] int;
+  var b: rank * int;
   
   if rank>1 then 
-    forall i in [1..rank]
+    forall i in 1..rank
       {
 	var div:int(32); 
 
@@ -1697,9 +1697,9 @@ proc BlockArr.corr_inverse (b,B)
   var sa=dom.whole.stride;
   var lb=B.dom.whole.low;
   var sb=B.dom.whole.stride;
-  var a:[1..rank] int;
+  var a: rank * int;
   if rank>1 then 
-    forall i in [1..rank] do a[i]=la[i]+((b[i]-lb[i])/sb[i])*sa[i];
+    forall i in 1..rank do a[i]=la[i]+((b[i]-lb[i])/sb[i])*sa[i];
   else
     a[1]=la+((b-lb)/sb)*sa;
   return a;

@@ -1,6 +1,6 @@
 config var n: int = 5;
 
-const D = [0..n+1, 0..n+1];
+const D = {0..n+1, 0..n+1};
 const S: sparse subdomain(D) = ( (1,1), (2,2), (3,3), (4,4), (5,5) );
 
 var A: [S] real;

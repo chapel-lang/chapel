@@ -323,7 +323,7 @@ proc WrapperRectDom.dsiSetIndices(newIndices: domain): void {
 }
 
 proc WrapperRectDom.dsiSetIndices(newRanges): void where isTuple(newRanges) {
-  whole = [(...newRanges)];
+  whole = {(...newRanges)};
   _reportSetIndices(newRanges);
   origDom.dsiSetIndices(origIx(newRanges));
 }
@@ -345,7 +345,7 @@ proc WrapperRectDom.dsiBuildRectangularDom(param rank: int,
   const result = new WrapperRectDom(rank=rank, idxType=idxType,
                                     stridable=stridable,
                             dist=this.dist, origDom = origdom,
-                            whole = [(...ranges)]);
+                            whole = {(...ranges)});
   reportNewDom("dsiBuildRectangularDom", result);
   return result;
 }
@@ -769,15 +769,15 @@ proc WrapperArr.dsiSlice(sliceDef:WrapperRectDom) where isRankChange() {
   assert(slicee.dom.dist.sliceDef == sliceDef.dist.sliceDef);
 
   // Example:
-  //  take an array over     [1..20, 1..20]
-  //  apply rank change with [2..18, 19]
+  //  take an array over     {1..20, 1..20}
+  //  apply rank change with {2..18, 19}
   // => get 'slicee'
-  //  slicee.origArr.dom = [1..20, 1..20]
-  //  slicee.dom         = [2..18]
-  //  slicee.dom.origDom = [2..18, 19..19]
+  //  slicee.origArr.dom = {1..20, 1..20}
+  //  slicee.dom         = {2..18}
+  //  slicee.dom.origDom = {2..18, 19..19}
   //
-  // When sliced with sliceDef = [2..15]
-  //  sliceDef.origDom         = [2..15, 19..19]
+  // When sliced with sliceDef = {2..15}
+  //  sliceDef.origDom         = {2..15, 19..19}
 
   const origSliceDef = sliceDef.origDom;
 

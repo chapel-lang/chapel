@@ -8,12 +8,12 @@ writeln("x is: ", x);
 writeln("y is: ", y);
 writeln("z is: ", z);
 
-var (a, , ) = foo();
-var (, b, ) = foo();
-var (, , c) = foo();
-var (d, e, ) = foo();
-var (f, , g) = foo();
-var (, h, i) = foo();
+var (a, _, _) = foo();
+var (_, b, _) = foo();
+var (_, _, c) = foo();
+var (d, e, _) = foo();
+var (f, _, g) = foo();
+var (_, h, i) = foo();
 
 writeln("a is: ", a);
 writeln("b is: ", b);

@@ -48,105 +48,106 @@ module SSCA2_driver
       type vertex = index (G.vertices),
            edge   = 2*vertex;
 
-      var Heavy_Edge_List : domain (edge);
+      if RUN_KERNEL2 || RUN_KERNEL3 {
+        var Heavy_Edge_List : domain (edge);
 
-      // --------
-      // Kernel 2:
-      // --------
+        // --------
+        // Kernel 2:
+        // --------
 
-      largest_edges ( G, Heavy_Edge_List );
+        largest_edges ( G, Heavy_Edge_List );
 
-      var Heavy_Edge_Subgraphs : [Heavy_Edge_List] Generated_Subgraph (vertex);
+        if RUN_KERNEL3 {
+          var Heavy_Edge_Subgraphs : [Heavy_Edge_List] Generated_Subgraph (vertex);
 
-      for (x,y) in Heavy_Edge_List do
-	Heavy_Edge_Subgraphs ( (x, y) ) = new Generated_Subgraph (vertex);
+          for (x,y) in Heavy_Edge_List do
+            Heavy_Edge_Subgraphs ( (x, y) ) = new Generated_Subgraph (vertex);
         	    
-      // --------
-      // Kernel 3:
-      // --------
+          // --------
+          // Kernel 3:
+          // --------
 
-      rooted_heavy_subgraphs ( G, Heavy_Edge_List, Heavy_Edge_Subgraphs,
-        			       SUBGRAPH_PATH_LENGTH );
-      [(x,y) in Heavy_Edge_List] delete Heavy_Edge_Subgraphs ( (x,y) );
+          rooted_heavy_subgraphs ( G, Heavy_Edge_List, Heavy_Edge_Subgraphs,
+                                   SUBGRAPH_PATH_LENGTH );
+          [(x,y) in Heavy_Edge_List] delete Heavy_Edge_Subgraphs ( (x,y) );
+        }
+      }
 
-      var Between_Cent : [G.vertices] real;
-      var BC_starting_vertices : domain (1);
-      var Sum_Min_Dist : real;
-      const Vertex_Count_Constraint = N_VERTICES : real * (N_VERTICES -1);
+      if RUN_KERNEL4 {
+        var Between_Cent : [G.vertices] real;
+        var BC_starting_vertices : domain (1);
+        var Sum_Min_Dist : real;
+        const Vertex_Count_Constraint = N_VERTICES : real * (N_VERTICES -1);
 
-      for approx_scale in [ max (1, LOW_APPROX_SCALE) .. 
-                            min (TOP_APPROX_SCALE, SCALE) ] do
-	{
+        for approx_scale in { max (1, LOW_APPROX_SCALE) .. 
+                              min (TOP_APPROX_SCALE, SCALE) } {
 	  Sum_Min_Dist = 1.0;
   
-	  if approx_scale == SCALE then
-	    {
-	      //  --------------------------------------
-	      // "Exact" Between_Centrality computed
-	      //  by BFS from every vertex in the graph.
-	      //  --------------------------------------
+	  if approx_scale == SCALE {
+            //  --------------------------------------
+            // "Exact" Between_Centrality computed
+            //  by BFS from every vertex in the graph.
+            //  --------------------------------------
 
-	      writeln (); writeln ();
-	      writeln ( "Computing Betweenness Centrality exactly" );
+            writeln (); writeln ();
+            writeln ( "Computing Betweenness Centrality exactly" );
 
-	      // -----------------------------
-	      // Kernel 4 (exact calculation):
-	      // -----------------------------
+            // -----------------------------
+            // Kernel 4 (exact calculation):
+            // -----------------------------
 
-	      approximate_betweenness_centrality ( G, G.vertices, 
-						   Between_Cent, 
-						   Sum_Min_Dist );
-	    }
-	  else
-	    {
-	      //  -----------------------------------------------
-	      // "Approximate" Between_Centrality computed by BFS
-	      //  from a random subset of vertices in the graph.
-	      //  -----------------------------------------------
+            approximate_betweenness_centrality ( G, G.vertices, 
+                                                 Between_Cent, 
+                                                 Sum_Min_Dist );
+          } else {
+            //  -----------------------------------------------
+            // "Approximate" Between_Centrality computed by BFS
+            //  from a random subset of vertices in the graph.
+            //  -----------------------------------------------
 
-	      var BC_starting_vertices : sparse subdomain 
-		( [(...G.vertices.dims())] );
-	      var vertex_indices       : domain (1) = [1..N_VERTICES];
-	      var random_indices       : sparse subdomain (vertex_indices);
-	      var linear_index         : index (vertex_indices);
+            var BC_starting_vertices : sparse subdomain 
+              ( {(...G.vertices.dims())} );
+            var vertex_indices       : domain (1) = {1..N_VERTICES};
+            var random_indices       : sparse subdomain (vertex_indices);
+            var linear_index         : index (vertex_indices);
 
-	      var Rand_Gen = if REPRODUCIBLE_PROBLEMS then 
-                                new RandomStream (seed = 3217900597)
-		              else
-		                new RandomStream ();
+            var Rand_Gen = if REPRODUCIBLE_PROBLEMS then 
+                             new RandomStream (seed = 3217900597)
+                           else
+                             new RandomStream ();
 
-	      var V_s      = 0;
+            var V_s      = 0;
 
-	      while V_s < 2**approx_scale do
-		 { linear_index = floor (1 + Rand_Gen.getNext() * N_VERTICES) 
-				: index (vertex_indices);
-		   if !random_indices.member (linear_index) then
-		     { V_s += 1;
-		       random_indices.add (linear_index);
-		     }
-		 };
+            while V_s < 2**approx_scale {
+                linear_index = floor (1 + Rand_Gen.getNext() * N_VERTICES) 
+                               : index (vertex_indices);
+                if !random_indices.member (linear_index) {
+                  V_s += 1;
+                  random_indices.add (linear_index);
+                }
+              };
 
-	      for (s, linear_index) in ( G.vertices, 1.. ) do
-		if random_indices.member (linear_index) then
-		  BC_starting_vertices.add (s);
+            for (s, linear_index) in ( G.vertices, 1.. ) do
+              if random_indices.member (linear_index) then
+                BC_starting_vertices.add (s);
 
-	      writeln (); writeln ();
-	      writeln ( "Approximating Betweenness Centrality with ", V_s,
-			" starting nodes" );
+            writeln (); writeln ();
+            writeln ( "Approximating Betweenness Centrality with ", V_s,
+                      " starting nodes" );
 
-	      if DEBUG_KERNEL4 then {
-		writeln ( "starting vertices for Betweenness Centrality");
-		writeln ( BC_starting_vertices );
-	      }
+            if DEBUG_KERNEL4 then {
+              writeln ( "starting vertices for Betweenness Centrality");
+              writeln ( BC_starting_vertices );
+            }
 
-	      // -----------------------------------
-	      // Kernel 4 (approximate calculation):
-	      // -----------------------------------
+            // -----------------------------------
+            // Kernel 4 (approximate calculation):
+            // -----------------------------------
 
-	      approximate_betweenness_centrality ( G, BC_starting_vertices, 
-						   Between_Cent, 
-						   Sum_Min_Dist );
-	    }
+            approximate_betweenness_centrality ( G, BC_starting_vertices, 
+                                                 Between_Cent, 
+                                                 Sum_Min_Dist );
+          }
 
 	  // --------------------------------------------------
 	  // Diagnostic Output at various levels of information
@@ -166,41 +167,40 @@ module SSCA2_driver
 	  writeln ("Max Betweenness Centrality: ", max_Between_Cent);
 	  writeln ("Min Betweenness Centrality: ", min_Between_Cent);
 
-      if VALIDATE_BC then {
-	if max_Between_Cent <= Sum_Min_Dist then {
-	  writeln (); 
-	  writeln ("Computed betweenness centrality satisfies ",
-		    "minimum distance constraint");}
-	else {
-	  writeln (); writeln ("Computed betweenness centrality does not ",
-			       "satisfy minimum distance constraint");
-	};
-	writeln ("All betweenness centrality scores should be <= ", 
-		 Sum_Min_Dist);
-      };
+          if VALIDATE_BC then {
+            if max_Between_Cent <= Sum_Min_Dist {
+              writeln (); 
+              writeln ("Computed betweenness centrality satisfies ",
+                       "minimum distance constraint");
+            } else {
+              writeln (); writeln ("Computed betweenness centrality does not ",
+                                   "satisfy minimum distance constraint");
+            };
+            writeln ("All betweenness centrality scores should be <= ", 
+                     Sum_Min_Dist);
+          };
 
-
-      var meet_vertex_count_constraint : bool = 
-	|| reduce [v in G.vertices]
-	          ( if G.n_Neighbors (v) == 0 then
-		      ( Between_Cent (v) == 0.0 )
-		    else
-		      ( ( Between_Cent (v) > 0.0 ) &&
-			( Between_Cent (v) <= Vertex_Count_Constraint ) ) );
-
-      if meet_vertex_count_constraint then {
-	writeln (); 
-	writeln ("Computed betweenness centrality satisfies ",
-		 "vertex count constraint");}
-      else {
-	writeln (); 
-	writeln ("Computed betweenness centrality does not ",
-			     "satisfy vertex count constraint");
-      };
-      writeln ( "All betweenness centrality scores should be in range [0, ",
-	        Vertex_Count_Constraint, "]" );
+          var meet_vertex_count_constraint : bool = 
+            || reduce [v in G.vertices]
+            ( if G.n_Neighbors (v) == 0 then
+               ( Between_Cent (v) == 0.0 )
+              else
+                ( ( Between_Cent (v) > 0.0 ) &&
+                  ( Between_Cent (v) <= Vertex_Count_Constraint ) ) );
+          
+          if meet_vertex_count_constraint {
+            writeln (); 
+            writeln ("Computed betweenness centrality satisfies ",
+                     "vertex count constraint");
+          } else {
+            writeln (); 
+            writeln ("Computed betweenness centrality does not ",
+                     "satisfy vertex count constraint");
+          };
+          writeln ( "All betweenness centrality scores should be in range [0, ",
+                    Vertex_Count_Constraint, "]" );
 	}
+      }
     }
-
 
 }

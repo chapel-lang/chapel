@@ -19,7 +19,7 @@ proc main() {
   blk = min(blk,n);
 
   var A1D = 1..n;
-  const A2D = [A1D,A1D]; 
+  const A2D = {A1D,A1D}; 
   var A: [A2D] real;
   initA(A,Adat);
   Adat.close();

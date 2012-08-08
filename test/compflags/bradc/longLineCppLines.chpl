@@ -5,7 +5,7 @@
    enough to exceed this 1024-character limit for the function
    prototype of foo().  */
 
-const Dom: domain(1) = [1..5];
+const Dom: domain(1) = {1..5};
 
 const A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z: [Dom] real;
 

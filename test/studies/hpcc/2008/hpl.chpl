@@ -59,7 +59,7 @@ proc main() {
   // standard distribution library is filled out, MatVectSpace will be
   // distributed using a BlockCyclic(blkSize) distribution.
   //
-  const MatVectSpace: domain(2, indexType) = [1..n, 1..n+1],
+  const MatVectSpace: domain(2, indexType) = {1..n, 1..n+1},
         MatrixSpace = MatVectSpace[.., ..n];
 
   var Ab : [MatVectSpace] elemType,  // the matrix A and vector b
@@ -258,7 +258,7 @@ proc panelSolve(Ab: [] ?t,
     if col.dim(1).length == 0 then return;
     
     // Find the pivot, the element with the largest absolute value.
-    const (, (pivotRow, )) = maxloc reduce(abs(Ab(col)), col),
+    const (_, (pivotRow, _)) = maxloc reduce(abs(Ab(col)), col),
           pivot = Ab[pivotRow, k];
     
     // Swap the current row with the pivot row
@@ -314,10 +314,10 @@ proc backwardSub(n: int,
                 b: [1..n] elemType) {
   var x: [b.domain] elemType;
 
-  for i in [b.domain by -1] {
+  for i in {b.domain by -1} {
     x[i] = b[i];
     
-    for j in [i+1..b.domain.high] do
+    for j in {i+1..b.domain.high} do
       x[i] -= A[i,j] * x[j];
 
     x[i] /= A[i,i];

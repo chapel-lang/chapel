@@ -1,5 +1,5 @@
 config var n: int = 6;
-var D: domain(1) = [1..n];
+var D: domain(1) = {1..n};
 
 proc callin(in x) {
   writeln("in callin, x is: ", x);

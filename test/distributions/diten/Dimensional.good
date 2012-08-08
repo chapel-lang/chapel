@@ -1,9 +1,9 @@
-0: blk is: [0..3 by 2, 0..5 by 3]
-0: blk is: [0..3 by 2, 0..5 by 3 align 1]
-0: blk is: [0..3 by 2, 0..5 by 3 align 2]
-0: blk is: [0..3 by 2 align 1, 0..5 by 3]
-0: blk is: [0..3 by 2 align 1, 0..5 by 3 align 1]
-0: blk is: [0..3 by 2 align 1, 0..5 by 3 align 2]
+0: blk is: {0..3 by 2, 0..5 by 3}
+0: blk is: {0..3 by 2, 0..5 by 3 align 1}
+0: blk is: {0..3 by 2, 0..5 by 3 align 2}
+0: blk is: {0..3 by 2 align 1, 0..5 by 3}
+0: blk is: {0..3 by 2 align 1, 0..5 by 3 align 1}
+0: blk is: {0..3 by 2 align 1, 0..5 by 3 align 2}
 (0, 0)(0.0, 0.0)
 (0, 1)(4.0, 8.0)
 (0, 2)(8.0, 16.0)

@@ -14,7 +14,7 @@ var rs = new RandomStream(seed, parSafe=false);
 // Since there is no array, the memory required is O(1) regardless
 // of the number of points.
 //
-var D = [1..n];
+var D = {1..n};
 
 //
 // Run the Monte Carlo method using a data parallel reduction to

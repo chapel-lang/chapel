@@ -24,7 +24,7 @@ config const numMessages = 100;
 // its indices to be distributed across the locales in a cyclic
 // fashion starting with 'startIdx'.
 //
-const MessageSpace = [1..numMessages] dmapped Cyclic(startIdx=1);
+const MessageSpace = {1..numMessages} dmapped Cyclic(startIdx=1);
 
 //
 // By using the distributed domain MessageSpace to drive this forall

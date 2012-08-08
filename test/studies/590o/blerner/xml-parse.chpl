@@ -1,6 +1,6 @@
 config const sourceText = "<a><ii>end</ii><none /></a>";
-const AllIndices: domain(1) = [1..(sourceText.length)];
-const AllPairs: domain(2) = [1..(sourceText.length), 1..(sourceText.length)];
+const AllIndices: domain(1) = {1..(sourceText.length)};
+const AllPairs: domain(2) = {1..(sourceText.length), 1..(sourceText.length)};
 var StartIndices: sparse subdomain(AllIndices);
 var EndIndices: sparse subdomain(AllIndices);
 var lock: sync int = 0;
@@ -20,11 +20,11 @@ class XmlTag : XmlElement {
   var attNames: domain(string);
   var attValues: [attNames] string;
   var numChildren: int;
-  var childrenValueSpace: domain(1) = [1..2];
+  var childrenValueSpace: domain(1) = {1..2};
   var childrenValues: [childrenValueSpace] XmlElement;
   proc printHelp(indent) {
     writeln(indent, "<", name, ">");
-    for child in [1..numChildren] do
+    for child in {1..numChildren} do
        childrenValues[child].printHelp(indent + "  ");
   }
 }
@@ -75,7 +75,7 @@ proc hasIndex(start, stop, indices) {
 }
 
 proc hasSpace(str) {
-  for i in [1..(str.length)] do
+  for i in {1..(str.length)} do
      if str.substring(i) == " " then return true;
   return false;
 }
@@ -106,7 +106,7 @@ proc processTag(i,j) {
   if (stop == i && sourceText.substring[j-1] == "/" && sourceText.substring[i+1] != " ") {
     /* at a self-closing tag? */
     var name : string = "";
-    for stop in [i+2..j-2] do
+    for stop in {i+2..j-2} do
       if sourceText.substring[stop] == ' ' {
         name = sourceText.substring[i+1..stop-1];
         break;
@@ -160,7 +160,7 @@ proc processTag(i,j) {
     } else {
       var curSize = elt.childrenValues.numElements;
       if curSize == elt.numChildren then
-        elt.childrenValueSpace = [1..curSize*2];
+        elt.childrenValueSpace = {1..curSize*2};
       elt.numChildren += 1;
       elt.childrenValues(elt.numChildren) = item;
       start += item.length;

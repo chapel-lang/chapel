@@ -14,7 +14,7 @@ class DefaultSparseDom: BaseSparseDom {
   var nnz = 0;  // intention is that user might specify this to avoid reallocs
 
   var nnzDomSize = nnz;
-  var nnzDom = [1..nnzDomSize];
+  var nnzDom = {1..nnzDomSize};
 
   var indices: [nnzDom] index(rank);
 
@@ -116,7 +116,7 @@ class DefaultSparseDom: BaseSparseDom {
     var oldNNZDomSize = nnzDomSize;
     if (nnz > nnzDomSize) {
       nnzDomSize = if (nnzDomSize) then 2*nnzDomSize else 1;
-      nnzDom = [1..nnzDomSize];
+      nnzDom = {1..nnzDomSize};
     }
     // shift indices up
     for i in insertPt..nnz-1 by -1 {
@@ -298,16 +298,16 @@ class DefaultSparseArr: BaseArr {
 
 proc DefaultSparseDom.dsiSerialWrite(f: Writer) {
   if (rank == 1) {
-    f.write("[");
+    f.write("{");
     if (nnz >= 1) {
       f.write(indices(1));
       for i in 2..nnz {
         f.write(" ", indices(i));
       }
     }
-    f.write("]");
+    f.write("}");
   } else {
-    f.writeln("[");
+    f.writeln("{");
     if (nnz >= 1) {
       var prevInd = indices(1);
       f.write(" ", prevInd);
@@ -320,7 +320,7 @@ proc DefaultSparseDom.dsiSerialWrite(f: Writer) {
       }
       f.writeln();
     }
-    f.writeln("]");
+    f.writeln("}");
   }
 }
 

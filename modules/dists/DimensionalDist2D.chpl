@@ -255,7 +255,7 @@ proc DimensionalDist2D.checkInvariants(): void {
   ensure(targetLocales.eltType == locale, "DimensionalDist2D requires 'targetLocales' to be an array of locales, got an array of " + typeToString(targetLocales.eltType));
   ensure(targetIds.idxType == locIdT, "DimensionalDist2D currently requires 'idxType' of 'targetLocales.domain' to be " + typeToString(locIdT) + ", got " + typeToString(targetIds.idxType));
 
-  assert(targetIds == [0..#numLocs1, 0..#numLocs2], "DimensionalDist2D-targetIds");
+  assert(targetIds == {0..#numLocs1, 0..#numLocs2}, "DimensionalDist2D-targetIds");
   assert(di1.numLocales == numLocs1, "DimensionalDist2D-numLocales-1");
   assert(di2.numLocales == numLocs2, "DimensionalDist2D-numLocales-2");
   assert(dataParTasksPerLocale > 0, "DimensionalDist2D-dataParTasksPerLocale");
@@ -489,7 +489,7 @@ proc DimensionalDom.dsiPrivatize(privatizeData) {
                                     dist = privdist,
                                     dom1 = dom1new,
                                     dom2 = dom2new,
-                                    whole       = [(...privatizeData(6))],
+                                    whole       = {(...privatizeData(6))},
                                     localDdescs = privatizeData(7));
 
   // update local-to-global pointers as needed
@@ -625,7 +625,7 @@ proc DimensionalDom.dsiSetIndices(newIndices: domainT): void {
 }
 
 proc DimensionalDom.dsiSetIndices(newRanges: rank * rangeT): void {
-  whole = [(...newRanges)];
+  whole = {(...newRanges)};
   _dsiSetIndicesHelper(newRanges);
 }
 
@@ -658,7 +658,7 @@ proc LocDimensionalDom._dsiLocalSetIndicesHelper(type stoRangeT, globDD, locId)
   var myRange1: stoRangeT = doml1.dsiSetLocalIndices1d(globDD(1),locId(1));
   var myRange2: stoRangeT = doml2.dsiSetLocalIndices1d(globDD(2),locId(2));
 
-  myStorageDom = [myRange1, myRange2];
+  myStorageDom = {myRange1, myRange2};
 
   _traceddd("DimensionalDom.dsiSetIndices on ", here.id, " ", locId,
             "  storage ", myStorageDom);
@@ -714,7 +714,7 @@ proc DimensionalDom.dsiBuildRectangularDom(param rank: int,
   const result = new DimensionalDom(rank=rank, idxType=idxType,
                                     stridable=stridable, dist=dist,
                                     dom1 = dom1, dom2 = dom2,
-                                    whole = [(...ranges)]);
+                                    whole = {(...ranges)});
 
   // Not including 'targetLocales' in zippering for now -
   // obtain the locale/locId from 'this' and its components instead.
@@ -726,7 +726,7 @@ proc DimensionalDom.dsiBuildRectangularDom(param rank: int,
       var (doml2, myRange2) = oldLocDdesc.doml2.dsiBuildLocalDom1d(dom2, locIds(2));
 
       newLocDdesc = new LocDimensionalDom(result.stoDomainT,
-                                          myStorageDom = [myRange1, myRange2],
+                                          myStorageDom = {myRange1, myRange2},
                                           doml1 = doml1, doml2 = doml2);
     }
 
@@ -1003,7 +1003,7 @@ iter DimensionalDom.these(param tag: iterKind) where tag == iterKind.leader {
       return targetIds.dim(dd);
   }
   const overTargetIds = if dom1.dsiIsReplicated1d() || dom2.dsiIsReplicated1d()
-    then [helpTargetIds(dom1,1), helpTargetIds(dom2,2)]
+    then {helpTargetIds(dom1,1), helpTargetIds(dom2,2)}
     else targetIds; // in this case, avoid re-building the domain
 
   // todo: lls is needed only for debugging printing?
@@ -1145,7 +1145,7 @@ iter DimensionalDom.these(param tag: iterKind, followThis) where tag == iterKind
   // This is pre-defined by DSI, so no need to consult
   // the dimension specifiers.
 
-  for i in [(...unDensify(followThis, whole.dims()))] do
+  for i in {(...unDensify(followThis, whole.dims()))} do
     yield i;
 }
 

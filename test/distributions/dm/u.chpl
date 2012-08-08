@@ -49,7 +49,7 @@ var manylocs: bool;
 //
 proc setupLocales(s1:int, s2:int, ensureManyLocs: bool = false) {
   hd("setupLocales ", s1, "*", s2);
-  mylocdom = [0..#s1,0..#s2];
+  mylocdom = {0..#s1,0..#s2};
   manylocs = (numLocales >= mylocs.numElements);
 
   if manylocs {

@@ -36,7 +36,7 @@ class mink : ReduceScanOp {
 }
    
 var A: [1..10] int;
-forall i in [1..10] do
+forall i in {1..10} do
        A(i) = i;
 var minimums: [1..10] int;
 minimums = mink reduce A;

@@ -1,6 +1,6 @@
 config var n = 4;
 
-var D = [1..n];
+var D = {1..n};
 
 var W: [D] real = [i in D] i;
 

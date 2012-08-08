@@ -13,7 +13,7 @@ proc dit(D, lo, hi) {
     writeln(my_translate(D, i));
 }
 
-const D = [1..n*n];
+const D = {1..n*n};
 
 var D1: sparse subdomain(D);
 D1 += n+2;

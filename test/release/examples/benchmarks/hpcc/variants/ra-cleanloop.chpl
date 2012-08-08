@@ -53,8 +53,8 @@ config const printParams = true,
 // distribution that is computed by blocking the indices 0..N_U-1
 // across the locales.
 //
-const TableDist = new dmap(new Block(boundingBox=[0..m-1])),
-      UpdateDist = new dmap(new Block(boundingBox=[0..N_U-1]));
+const TableDist = new dmap(new Block(boundingBox={0..m-1})),
+      UpdateDist = new dmap(new Block(boundingBox={0..N_U-1}));
 
 //
 // TableSpace describes the index set for the table.  It is a 1D
@@ -64,8 +64,8 @@ const TableDist = new dmap(new Block(boundingBox=[0..m-1])),
 // It is distributed according to UpdateDist and contains the
 // indices 0..N_U-1.
 //
-const TableSpace: domain(1, indexType) dmapped TableDist = [0..m-1],
-      Updates: domain(1, indexType) dmapped UpdateDist = [0..N_U-1];
+const TableSpace: domain(1, indexType) dmapped TableDist = {0..m-1},
+      Updates: domain(1, indexType) dmapped UpdateDist = {0..N_U-1};
 
 
 //
@@ -98,7 +98,7 @@ proc main() {
   // communications.  Compute the update using r both to compute the
   // index and as the update value.
   //
-  forall ( , r) in (Updates, RAStream()) do
+  forall (_, r) in (Updates, RAStream()) do
     on T(r & indexMask) do
       T(r & indexMask) ^= r;
 
@@ -132,7 +132,7 @@ proc verifyResults(T) {
   // Reverse the updates by recomputing them, this time using an
   // atomic statement to ensure no conflicting updates
   //
-  forall ( , r) in (Updates, RAStream()) do
+  forall (_, r) in (Updates, RAStream()) do
     on T(r & indexMask) do
       atomic T(r & indexMask) ^= r;
 

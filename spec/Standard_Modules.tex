@@ -1013,7 +1013,9 @@ Returns the elapsed time since midnight in the units specified.
 proc Timer.clear()
 \end{protohead}
 \begin{protobody}
-Clears the elapsed time stored in the Timer.
+Clears the elapsed time stored in the Timer.  This routine can be called
+whether or not the timer is running and doesn't change its status in that
+regard.
 \end{protobody}
 
 \begin{protohead}

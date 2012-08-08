@@ -14,8 +14,8 @@ config const timer : bool = false;
 param PI = 3.141592653589793;
 const solar_mass = (4 * PI * PI);
 param days_per_year = 365.24;
-const vecLen = [0..2];
-const NBODIES = [0..4];
+const vecLen = {0..2};
+const NBODIES = {0..4};
 
 var t : Timer;
 

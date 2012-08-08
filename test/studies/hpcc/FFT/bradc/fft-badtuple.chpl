@@ -1,6 +1,6 @@
 config var n = 4;
 
-const D = [1..n];
+const D = {1..n};
 
 var A: [D] complex;
 

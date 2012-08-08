@@ -309,11 +309,11 @@ class Reader {
   }
 }
 
-inline proc &(w: Writer, x):Writer {
+inline proc <~>(w: Writer, x):Writer {
   w.readwrite(x);
   return w;
 }
-inline proc &(r: Reader, inout x):Reader {
+inline proc <~>(r: Reader, inout x):Reader {
   r.readwrite(x);
   return r;
 }
@@ -324,12 +324,12 @@ use IO;
 // since they don't change when read anyway
 // and it's much more convenient to be able to do e.g.
 //   reader & new ioLiteral("=")
-inline proc &(r: Reader, lit:ioLiteral):Reader {
+inline proc <~>(r: Reader, lit:ioLiteral):Reader {
   var litCopy = lit;
   r.readwrite(litCopy);
   return r;
 }
-inline proc &(r: Reader, nl:ioNewline):Reader {
+inline proc <~>(r: Reader, nl:ioNewline):Reader {
   var nlCopy = nl;
   r.readwrite(nlCopy);
   return r;

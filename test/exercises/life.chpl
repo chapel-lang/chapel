@@ -19,8 +19,8 @@ config const useRandomSeed = true,
              seed = if useRandomSeed then SeedGenerator.currentTime else 314159265;
 
 // global constants and variables
-const BigD = [0..n+1, 0..n+1], // domain of grid with border cells
-      D = [1..n, 1..n];        // domain of grid without border cells
+const BigD = {0..n+1, 0..n+1}, // domain of grid with border cells
+      D = {1..n, 1..n};        // domain of grid without border cells
 var Grid:     [BigD] bool, // grid of life
     NextGrid: [D]    bool; // grid for next iteration
 

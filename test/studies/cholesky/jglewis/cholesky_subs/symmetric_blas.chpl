@@ -121,7 +121,7 @@ module symmetric_blas {
 	// apply outer product modification to the remainder of the 
 	// active block row, omitting the final diagonal block
 
-	forall (i,j,k) in [active_rows, trailing_cols, active_cols] do
+	forall (i,j,k) in {active_rows, trailing_cols, active_cols} do
 	  A (i,j) -= A (i,k) * L (j,k);
       }
   }
@@ -170,7 +170,7 @@ module symmetric_blas {
 	// active block row, omitting the final diagonal block
 
 	for later_block_col in vector_block_partition (trailing_cols) do
-	  forall (i,j,k) in [active_rows, later_block_col, active_cols] do
+	  forall (i,j,k) in {active_rows, later_block_col, active_cols} do
 	    A (i,j) -= A (i,k) * L (j,k);
       }
   }
@@ -330,7 +330,7 @@ module symmetric_blas {
 
     //  General modification to off-diagonal block
 
-    forall (i,j) in [subdiagonal_block_rows, diag_block_cols] do 
+    forall (i,j) in {subdiagonal_block_rows, diag_block_cols} do 
       A (i,j) -= + reduce [k in L_prev_cols] L (i,k) * L (j,k);
   }
 
@@ -375,7 +375,7 @@ module symmetric_blas {
     for offdiag_block_rows 
       in vector_block_partition ( subdiagonal_block_rows ) do
       for block_cols in vector_block_partition ( L_prev_cols ) do
-	forall (i,j, k) in [offdiag_block_rows, diag_block_cols, block_cols] do 
+	forall (i,j, k) in {offdiag_block_rows, diag_block_cols, block_cols} do 
 	  A (i,j) -= L (i,k) * L (j,k);
   }
       

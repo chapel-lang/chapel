@@ -20,7 +20,7 @@ record sps33 {
 }
 
 iter SpsStencDom() {
-  for (i,j) in [-1..1, -1..1] do
+  for (i,j) in {-1..1, -1..1} do
     if (i != j) then
       yield (i,j);
 }

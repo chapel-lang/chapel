@@ -1,5 +1,5 @@
 config const n = 7;
-const D = [3..n];
+const D = {3..n};
 
 var A0: [D] real = [i in D] i:real;
 on Locales[numLocales-1] do

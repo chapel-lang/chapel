@@ -2,7 +2,7 @@
 
 param M = 2;
 
-var D: domain(1) = [1..M];
+var D: domain(1) = {1..M};
 var B: [D] uint(64);
 
 B(1) = 0;

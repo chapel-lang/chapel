@@ -5,7 +5,7 @@ class C {
   proc foo() {
     writeln("D is: ", D);
     writeln("A is: ", A);
-    D = [1..10];
+    D = {1..10};
     writeln("D is: ", D);
     writeln("A is: ", A);
     A(4) = 1.2;

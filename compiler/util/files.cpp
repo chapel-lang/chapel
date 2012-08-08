@@ -656,7 +656,7 @@ const char* stdModNameToFilename(const char* modName) {
   const char* fullfilename = searchPath(stdModPath, astr(modName, ".chpl"), 
                                         NULL);
   if (fullfilename == NULL) {
-    INT_FATAL("Can't find standard module %s\n", modName);
+    USR_FATAL("Can't find standard module '%s'\n", modName);
   }
   return fullfilename;
 }

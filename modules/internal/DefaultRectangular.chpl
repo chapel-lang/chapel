@@ -446,7 +446,7 @@ class DefaultRectangularArr: BaseArr {
         }
       }
     }
-    delete data;
+    _ddata_free(data);
   }
 
   iter these() var {
@@ -511,15 +511,11 @@ class DefaultRectangularArr: BaseArr {
       str(dim) = dom.dsiDim(dim).stride;
     }
     blk(rank) = 1:idxType;
-    for param dim in 1..rank-1 by -1 do
+    for param dim in 1..(rank-1) by -1 do
       blk(dim) = blk(dim+1) * dom.dsiDim(dim+1).length;
     computeFactoredOffs();
     var size = blk(1) * dom.dsiDim(1).length;
-    data = new _ddata(eltType);
-    //assert(size >= 0);
-    //assert(size:int(64) <= max(int):int(64));
-    //numelm = size: int;
-    data.init(size);
+    data = _ddata_allocate(eltType, size);
   }
 
   inline proc getDataIndex(ind: idxType ...1) where rank == 1
@@ -654,10 +650,14 @@ class DefaultRectangularArr: BaseArr {
 }
 
 proc DefaultRectangularDom.dsiSerialReadWrite(f /*: Reader or Writer*/) {
-  f & new ioLiteral("[") & ranges(1);
+  f 
+      <~> 
+        new ioLiteral("{") 
+            <~> 
+                ranges(1);
   for i in 2..rank do
-    f & new ioLiteral(", ") & ranges(i);
-  f & new ioLiteral("]");
+    f <~> new ioLiteral(", ") <~> ranges(i);
+  f <~> new ioLiteral("}");
 }
 
 proc DefaultRectangularDom.dsiSerialWrite(f: Writer) { this.dsiSerialReadWrite(f); }
@@ -671,9 +671,9 @@ proc DefaultRectangularArr.dsiSerialReadWrite(f /*: Reader or Writer*/) {
       var first = true;
       if debugDefaultDist && f.writing then f.writeln(dom.ranges(dim));
       for j in dom.ranges(dim) by makeStridePositive {
-        if first then first = false; else f & new ioLiteral(" ");
+        if first then first = false; else f <~> new ioLiteral(" ");
         idx(dim) = j;
-        f & dsiAccess(idx);
+        f <~> dsiAccess(idx);
       }
     } else {
       for j in dom.ranges(dim) by makeStridePositive {
@@ -684,7 +684,7 @@ proc DefaultRectangularArr.dsiSerialReadWrite(f /*: Reader or Writer*/) {
       }
     }
     if !last && dim != 1 then
-      f & new ioNewline();
+      f <~> new ioNewline();
   }
   const zeroTup: rank*idxType;
   recursiveArrayWriter(zeroTup);
@@ -703,7 +703,7 @@ proc DefaultRectangularArr.isDataContiguous() {
 
   if blk(rank) != 1 then return false;
 
-  for param dim in 1..rank-1 by -1 do
+  for param dim in 1..(rank-1) by -1 do
     if blk(dim) != blk(dim+1)*dom.dsiDim(dim+1).length then return false;
 
   if debugDefaultDistBulkTransfer then
@@ -865,7 +865,7 @@ proc DefaultRectangularArr.doiBulkTransferStride(B) {
   if !equal(dstCount, srcCount, rank+1) //For different size arrays
     {
     var isDstCountMin:bool=true;
-      for h in [1..stridelevels+1] do
+      for h in 1..stridelevels+1 do
 	if dstCount[h]>srcCount[h] {isDstCountMin=false;
 	  assig(dstCount,srcCount, stridelevels+1);break;} //{ dstCount=srcCount;break;}
       
@@ -940,7 +940,7 @@ proc DefaultRectangularArr.doiBulkTransferStride2(B) {
   if !equal(dstCount, srcCount, rank+1) //For different size arrays
     {
       var isDstCountMin:bool=true;
-      for h in [1..stridelevels+1] do
+      for h in 1..stridelevels+1 do
 	if dstCount[h]>srcCount[h] {isDstCountMin=false;
 	  assig(dstCount,srcCount, stridelevels+1);break;} 
       
@@ -1084,7 +1084,7 @@ proc DefaultRectangularArr.getStrideLevels(rankcomp):int(32) where rank > 1
  
   if (dom.dsiStride(rank)>1 && dom.dsiDim(rank).length>1)||(blk(rank)>1 && dom.dsiDim(rank).length>1) then stridelevels+=1;
  
-  for i in [2..rank] by -1{ //writeln("distance[",i,"]=",distance[i]);
+  for i in 2..rank by -1{ //writeln("distance[",i,"]=",distance[i]);
     if (!rankcomp[i] && dom.dsiDim(i-1).length>1 && !distance(i)) then stridelevels+=1;
     else if(dom.dsiDim(i).length>1 && !distance(i)) then stridelevels+=1;
   }
@@ -1107,14 +1107,14 @@ proc DefaultRectangularArr.getCount(stridelevels:int(32), rankcomp:[]):(rank+1)*
   var c: (rank+1)*int(32);
   var cont:int(32)=0;
   var tmp:int(32)=0;
-  for i in [1..rank] do
+  for i in 1..rank do
   
   if (dom.dsiStride(rank)>1 && dom.dsiDim(rank).length>1)||(blk(rank)>1 && dom.dsiDim(rank).length>1) 
     {c[1]=1; cont=1;}
   tmp = cont;
 
     if blk(rank)> 1 then if(this.dom.dsiDim(rank).length:int(32)==1) then cont+=1;
-  for i in [0+tmp..stridelevels] do
+  for i in 0+tmp..stridelevels do
     if cont == rank then
       if rankcomp[cont] then c[i+1]=1;
       else c[i+1]=dom.dsiDim(1).length:int(32); 
@@ -1122,7 +1122,7 @@ proc DefaultRectangularArr.getCount(stridelevels:int(32), rankcomp:[]):(rank+1)*
       {
         c[i+1]=this.dom.dsiDim(rank-cont+tmp).length:int(32);
         
-	for h in [2..rank-cont+tmp] by -1:int(32){
+	for h in 2..rank-cont+tmp by -1:int(32){
 	  if( (distance(h)&&dom.dsiDim(h-1+tmp).length>1) || (dom.dsiDim(h).length==1&&(h)!=rank))
 	    {
 	      c[i+1]*=dom.dsiDim(h-1).length:int(32);
@@ -1157,7 +1157,7 @@ proc DefaultRectangularArr.getStride(rankcomp:[],levels:int(32)) where rank > 1
     stridelevels+=1;
     c[stridelevels]= blk(rank):int(32); 
    }
-  for i in [2..rank] by -1:int(32){
+  for i in 2..rank by -1:int(32){
     if levels>stridelevels || stridelevels==0
     { 
       if (( dom.dsiDim(i-1).length>1 && !distance(i))|| (i-2==0))
@@ -1178,7 +1178,7 @@ proc DefaultRectangularArr.getStride(rankcomp:[],cnt:[],levels:int(32))
   
   if cnt[1]==1 {c[1]=1;h+=1;}
   
-  for i in [2..rank] by -1:int(32){
+  for i in 2..rank by -1:int(32){
     if (levels>=h)
     {
       if (!rankcomp[i] && dom.dsiDim(i-1).length>1) || (cnt[h]==dom.dsiDim(i).length*acum)
@@ -1205,7 +1205,7 @@ proc DefaultRectangularArr.getStride2(levels:int(32)):(rank)*int(32) where rank 
         h+=1;
       }
       
-  for i in [2..blk.size-1] by -1:int(32)
+  for i in 2..blk.size-1 by -1:int(32)
   {
     if levels>=h || h==1 then
       if blk[i]>1{
@@ -1231,7 +1231,7 @@ proc DefaultRectangularArr.getStride2(rankcomp:[],cnt:[], levels:int(32)):(rank)
     c[1]=blk[rank]:int(32);
     h+=1;}
   
-  for i in [2..rank] by -1:int(32){
+  for i in 2..rank by -1:int(32){
     if (levels>=h)
     {
       if (!rankcomp[i] && dom.dsiDim(i-1).length>1) || (cnt[h]==dom.dsiDim(i).length*acum && dom.dsiDim(i-1).length>1)
@@ -1267,7 +1267,7 @@ proc DefaultRectangularArr.assertWholeDim(d) where rank==1
 proc DefaultRectangularArr.assertWholeDim(d) where rank>1
 {
  var c:d.rank*bool;
-  for i in [2..rank] do
+  for i in 2..rank do
     if (d.dom.dsiDim(i).length==d.blk(i-1)/d.blk(i) && dom.dsiStride(i)==1) then c[i]=true;
 
   return c;
@@ -1311,7 +1311,7 @@ at some point. We will be grateful if anyone can shed light on this problem.
 proc DefaultRectangularArr.equal(d1:[]/*(rank+1)*int(32)*/,d2:[]/*(rank+1)*int(32)*/,tam: int(32))
 {
   var c:bool=true;
-  for i in [1..tam] do if d1[i]!=d2[i]{ c=false;break;}
+  for i in 1..tam do if d1[i]!=d2[i]{ c=false;break;}
   return c;
 }
 
@@ -1322,6 +1322,6 @@ at some point. We will be grateful if anyone can shed light on this problem.
 */
 proc DefaultRectangularArr.assig(d1:[]/*(rank+1)*int(32)*/,d2:[]/*(rank+1)*int(32)*/,tam: int(32))
 {
-  for i in [1..tam] do d1[i]=d2[i];
+  for i in 1..tam do d1[i]=d2[i];
 }
 }
