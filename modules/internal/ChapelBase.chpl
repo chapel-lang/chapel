@@ -40,6 +40,21 @@ if (CHPL_COMM == "unset") {
   compilerWarning("CHPL_COMM not set");
 }
 
+config param CHPL_ATOMICS: string = "unset";
+if (CHPL_ATOMICS == "unset") {
+  compilerWarning("CHPL_ATOMICS not set");
+}
+
+config param CHPL_NETWORK_ATOMICS: string = "unset";
+if (CHPL_NETWORK_ATOMICS == "unset") {
+  compilerWarning("CHPL_NETWORK_ATOMICS not set");
+}
+
+config param CHPL_GMP: string = "unset";
+if (CHPL_GMP == "unset") {
+  compilerWarning("CHPL_GMP not set");
+}
+
 config param warnMaximalRange = false;	// Warns if integer rollover will cause
 					// the iterator to yield zero times.
 

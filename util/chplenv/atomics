@@ -1,28 +1,46 @@
 #!/usr/bin/env perl
 
 use File::Basename;
+use strict;
 
-$utildirname = dirname($0);
+my $utildirname = dirname($0);
 
-$preset_atomics   = $ENV{'CHPL_ATOMICS'};
+my $preset_atomics   = $ENV{'CHPL_ATOMICS'};
+
+my $flag = $ARGV[0];
+
+my $atomics;
 
 if ($preset_atomics eq "") {
-    $compiler = `$utildirname/compiler --target`;
+    my $compiler = `$utildirname/compiler --target`;
     chomp $compiler;
-    $platform = `$utildirname/platform --target`; chomp($platform);
+    my $platform = `$utildirname/platform --target`; chomp($platform);
+    my $comm = `$utildirname/comm`; chomp($comm);
+    my $network_atomics;
+    if ($flag eq "" || $flag eq "--processor") {
+        $network_atomics = 0;
+    } elsif ($flag eq "--network") {
+        $network_atomics = 1;
+    }
 
 #
 # our atomics assume a 64-bit platform, so for 32-bit platforms, we
 # need to conservatively use locks for now; we could fine-tune and
 # only use locks for 64-bit atomics, but we'll cross that bridge when
 # we come to it.
-#
-    if ($platform eq "linux32") {
+
+    if ($network_atomics == 1) {
+        if ($comm eq "ugni") {
+            $atomics = $comm;
+        } else {
+            $atomics = "none";
+        }
+    } elsif ($platform eq "linux32") {
 	$atomics = "locks";
     } elsif ($compiler eq "gnu" || $compiler eq "cray-xt-gnu" || $compiler eq "cray-xe-gnu" ) {
       # Check the compiler version
-      $version = `gcc -dumpversion`;
-      @vers = split(/\./, $version);
+      my $version = `gcc -dumpversion`;
+      my @vers = split(/\./, $version);
       if( ($vers[0] == 4 && $vers[1] >= 1) ||
           $vers[0] > 4 ) {
         $atomics = "intrinsics";

@@ -1,5 +1,6 @@
 // See runtime/include/atomics/README for more info about these functions
 
+pragma "no use ChapelStandard"
 module Atomics {
 
   extern type memory_order;
@@ -33,7 +34,7 @@ module Atomics {
   extern proc atomic_load_explicit_flag(inout obj:atomic_flag, order:memory_order):bool;
   extern proc atomic_exchange_explicit_flag(inout obj:atomic_flag, value:bool, order:memory_order):bool;
   extern proc atomic_compare_exchange_strong_explicit_flag(inout obj:atomic_flag, expected:bool, desired:bool, order:memory_order):bool;
-  extern proc atomic_compare_exchange_weak_explicit_flag(inout obj:atomic_flag, expected:bool, desired:uint(8), order:memory_order):bool;
+  extern proc atomic_compare_exchange_weak_explicit_flag(inout obj:atomic_flag, expected:bool, desired:bool, order:memory_order):bool;
   extern proc atomic_flag_test_and_set_explicit(inout obj:atomic_flag, order:memory_order):bool;
   extern proc atomic_flag_test_and_set(inout obj:atomic_flag):bool;
   extern proc atomic_flag_clear_explicit(inout obj:atomic_flag, order:memory_order);
@@ -168,16 +169,20 @@ module Atomics {
   //extern proc atomic_signal_thread_fence(order:memory_order);
 
   proc chpl__atomicType(type base_type) type {
-    if base_type==bool then return atomicflag;
-    else if base_type==uint(8) then return atomic_uint8;
-    else if base_type==uint(16) then return atomic_uint16;
-    else if base_type==uint(32) then return atomic_uint32;
-    else if base_type==uint(64) then return atomic_uint64;
-    else if base_type==int(8) then return atomic_int8;
-    else if base_type==int(16) then return atomic_int16;
-    else if base_type==int(32) then return atomic_int32;
-    else if base_type==int(64) then return atomic_int64;
-    else compilerError("Unsupported atomic type");
+    if CHPL_NETWORK_ATOMICS == "none" {
+      if base_type==bool then return atomicflag;
+      else if base_type==uint(8) then return atomic_uint8;
+      else if base_type==uint(16) then return atomic_uint16;
+      else if base_type==uint(32) then return atomic_uint32;
+      else if base_type==uint(64) then return atomic_uint64;
+      else if base_type==int(8) then return atomic_int8;
+      else if base_type==int(16) then return atomic_int16;
+      else if base_type==int(32) then return atomic_int32;
+      else if base_type==int(64) then return atomic_int64;
+      else compilerError("Unsupported atomic type");
+    } else {
+      return chpl__networkAtomicType(base_type);
+    }
   };
 
   inline proc create_atomic_flag():atomic_flag {

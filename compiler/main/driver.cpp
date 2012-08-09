@@ -40,6 +40,9 @@ const char* CHPL_TARGET_COMPILER = NULL;
 const char* CHPL_TASKS = NULL;
 const char* CHPL_THREADS = NULL;
 const char* CHPL_COMM = NULL;
+const char* CHPL_ATOMICS = NULL;
+const char* CHPL_NETWORK_ATOMICS = NULL;
+const char* CHPL_GMP = NULL;
 
 int fdump_html = 0;
 bool fdump_html_incude_system_modules = true;
@@ -176,6 +179,9 @@ static void setupOrderedGlobals(void) {
   SETUP_ENV_VAR(CHPL_TASKS, "chplenv/tasks");
   SETUP_ENV_VAR(CHPL_THREADS, "chplenv/threads");
   SETUP_ENV_VAR(CHPL_COMM, "chplenv/comm");
+  SETUP_ENV_VAR(CHPL_ATOMICS, "chplenv/atomics");
+  SETUP_ENV_VAR(CHPL_NETWORK_ATOMICS, "chplenv/atomics --network");
+  SETUP_ENV_VAR(CHPL_GMP, "chplenv/gmp");
 
   // These depend on the environment variables being set
   fLocal = !strcmp(CHPL_COMM, "none");
