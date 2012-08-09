@@ -50,11 +50,11 @@ chpl_run_utility1K(const char *command, char *const argv[], char *outbuf, int ou
   int rv, numRead;
 
   if (pipe(fdo) < 0) {
-    sprintf(buf, "Unable to run utility '%s' (pipe failed): %s\n", command, strerror(errno));
+    sprintf(buf, "Unable to run '%s' (pipe failed): %s\n", command, strerror(errno));
     chpl_internal_error(buf);
   }
   if (pipe(fde) < 0) {
-    sprintf(buf, "Unable to run utility '%s' (pipe failed): %s\n", command, strerror(errno));
+    sprintf(buf, "Unable to run '%s' (pipe failed): %s\n", command, strerror(errno));
     chpl_internal_error(buf);
   }
 
@@ -64,7 +64,7 @@ chpl_run_utility1K(const char *command, char *const argv[], char *outbuf, int ou
     close(fdo[0]);
     if (fdo[1] != STDOUT_FILENO) {
       if (dup2(fdo[1], STDOUT_FILENO) != STDOUT_FILENO) {
-        sprintf(buf, "Unable to run utility '%s' (dup2 failed): %s",
+        sprintf(buf, "Unable to run '%s' (dup2 failed): %s",
                 command, strerror(errno));
         chpl_internal_error(buf);
       }
@@ -72,18 +72,18 @@ chpl_run_utility1K(const char *command, char *const argv[], char *outbuf, int ou
     close(fde[0]);
     if (fde[1] != STDERR_FILENO) {
       if (dup2(fde[1], STDERR_FILENO) != STDERR_FILENO) {
-        sprintf(buf, "Unable to run utility '%s' (dup2 failed): %s",
+        sprintf(buf, "Unable to run '%s' (dup2 failed): %s",
                 command, strerror(errno));
         chpl_internal_error(buf);
       }
     }
     execvp(command, argv);
     // should only return on error
-    sprintf(buf, "Unable to run utility '%s' (execvp failed): %s",
+    sprintf(buf, "Unable to run '%s': %s",
                 command, strerror(errno));
     chpl_internal_error(buf);
   case -1:
-    sprintf(buf, "Unable to run utility '%s' (fork failed): %s",
+    sprintf(buf, "Unable to run '%s' (fork failed): %s",
             command, strerror(errno));
     chpl_warning(buf, 0, 0);
     return -1;
@@ -111,7 +111,7 @@ chpl_run_utility1K(const char *command, char *const argv[], char *outbuf, int ou
           numRead += rv;
           curlen -= rv;
         } else {
-          sprintf(buf, "Unable to run utility '%s' (read failed): %s",
+          sprintf(buf, "Unable to run '%s' (read failed): %s",
                   command, strerror(errno));
           chpl_warning(buf, 0, 0);
           return -1;
@@ -127,7 +127,7 @@ chpl_run_utility1K(const char *command, char *const argv[], char *outbuf, int ou
           numRead += rv;
           curlen -= rv;
         } else {
-          sprintf(buf, "Unable to run utility '%s' (read failed): %s",
+          sprintf(buf, "Unable to run '%s' (read failed): %s",
                   command, strerror(errno));
           chpl_warning(buf, 0, 0);
           return -1;
@@ -136,9 +136,17 @@ chpl_run_utility1K(const char *command, char *const argv[], char *outbuf, int ou
     }
 
     if (numRead != 0) {
-      memcpy(outbuf, buf, numRead);
+      if (strstr(buf, "internal error: ") == NULL) {
+	memcpy(outbuf, buf, numRead);
+      } else {
+	// The utility program ran, but failed with an internal error
+	// from child's branch above (dup2 or exevp)
+	buf[numRead] = 0;
+	chpl_warning(buf, 0, 0);
+	return -1;
+      }
     } else {
-      sprintf(buf, "Unable to run utility '%s' (no bytes read)", command);
+      sprintf(buf, "Unable to run '%s' (no bytes read)", command);
       chpl_warning(buf, 0, 0);
       return -1;
     }
