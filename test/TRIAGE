@@ -5,6 +5,31 @@
 #
 
 
+====================================
+Things to watch for across a handoff
+====================================
+
+* 08/10/12: SSCA2 comm diagnostics test should start passing in the
+  next few days for GASNet runs (at which point this note can be
+  retired); if it doesn't, alert bradc
+
+* 08/10/12: The next xt-cle.cray-xt-cray.none.fifo.pthreads on
+  chpbld01 anyway ought to have a bunch of resolved errors as we were
+  getting gemini-related warnings breaking everything for the 08/09/12
+  commit.  I've committed changes to the nightly.chpbld0* scripts that
+  ought to fix this, but did not have a chance to verify.  If we don't
+  see these go away, we should look again.
+
+* 08/10/12: The last vcalgrind run got ~44 new failures due to not
+  having enough thread slots; best theory as to what happened is that
+  Rachel had a runaway process that was consuming resources and
+  leaving valgrind out in the cold (?).  If these persist, we might
+  want to either look into what changed to make things worse or else
+  finally get around to reading the FAQ to see if we should bump up a
+  setting to permit valgrind to handle more threads (something that
+  might benefit other tests anyway).
+
+
 ==============================================
 These things regularly cause noise in testing:
 ==============================================
@@ -27,10 +52,9 @@ timed out 06/05/12.
 
 ra* (gbt)
 ---------
-Greg plans to remove races from the verification loop on the theory
-that if we're barely/occasionally failing, removing errors introduced
-due to races here should take us below the threshold.
-  release/examples/benchmarks/hpcc/ra: fix committed in r20301
+Greg committed a fix to resolve the race in the main version (r20301),
+and now just needs to propagate it to the other versions, as well as
+to the else-clause of the 'useOn' conditional.
   release/examples/benchmarks/hpcc/variants/ra-cleanloop: not fixed yet
   studies/hpcc/nodistrib/ra.nodist: not fixed yet
   studies/hpcc/RA/bradc/parallel/ra-dist: not fixed yet
@@ -38,17 +62,17 @@ due to races here should take us below the threshold.
 
 lulesh (bradc)
 --------------
-Seems like it still times out occasionally in the release version;
-need to diagnose whether it's nondeterministic deadlock/livelock
-or whether we're just running close to the threshold of the timeout.
+Times out sometimes in XMT testing, but seems to have stabilized in
+other cases.
 
 
 cray-xt-cray (diten)
 --------------------
-When the Chapel compiler is built with cray-xt-cray, we get
-nondeterministic failures that have not been investigated.  One
-question would be whether turning optimizations off/down when building
-'chpl' would make these go away.
+David fixed some of these by replacing a Chapel Map class with the STL
+equivalent.  This helped a lot, though Other cases still exist and
+some nights are worse than other.  Additional Map classes still exist,
+so the proposal was to replace more of them with STL classes with the
+goal of removing the Chapel Map class.
 
 
 linux64.gnu.gasnet.qthreads.none (UNASSIGNED)
@@ -85,6 +109,10 @@ Every night, first XMT compile fails; second one succeeds.  Is there
 any chance that this is due to a leftover program library of some
 sort?  If not, file bug against XMT compiler.
 
+
+=========================================
+Not so noisy as to be familiar annoyances
+=========================================
 
 variance in comm counts - linux64.gnu.gasnet-everything.fifo.pthreads (sungeun)
 -------------------------------------------------------------------------------
@@ -125,10 +153,6 @@ These configurations:
  xt-cle.cray-xt-pgi.none.fifo.pthreads--linux64.gnu
 
 
-==================================================
-Not so noisy as to be instantly recognizable (yet)
-==================================================
-
 minus_equals nondeterminism (UNASSIGNED)
 ----------------------------------------
 noted in regressions (week of 07/02)
@@ -152,26 +176,30 @@ memory/vass/crash-memory-module-1 (vass)
 ----------------------------------------
 fails intermittently
 
+tcmalloc failures (08/08/12)
+----------------------------
+[Error: Timed out executing program distributions/robust/arithmetic/kernels/hpl (compopts: 1)]
+[Error: Timed out executing program distributions/robust/arithmetic/kernels/jacobi]
+[Error: Timed out executing program distributions/robust/arithmetic/modules/test_module_Sort]
+
+nondet. tmalloc failures
+------------------------
+[Error: Timed out executing program distributions/robust/arithmetic/stress/test_many_domains] (08/08/12)
+
 
 ===========================================
 Not noisy, but need some attention sometime
 ===========================================
 
-extern/bradc/emptyRecords/emptyrecordexternfn
----------------------------------------------
-This future is passing because Michael stubbed out the compiler pass that
-removes empty records as part of his I/O change (because, IIRC, it wasn't
-working and didn't break anything to pull it out).  Brad suggests:
+types/range/hilde/align64
+-------------------------
+This test gets a false positive pass on intel and pgi it seems, for
+reasons that are not clear to me (i.e., why are they behaving differently
+than gcc?).  If the future should remain, a .skipif should be added to
+skip it in these cases.
 
-* reviewing why the compiler pass existed in the first place -- is it
-  still necessary/beneficial?  (My guess is that it wasn't necessary
-  since nothing else is breaking; that it is beneficial in that it
-  removes dead types and code related to those dead types).
-
-* attempting to re-enable the pass if it is still useful
-
-* removing the pass and retiring the future if it is not
-
-(This has been on Brad's TODO list since QIO got committed, but it's
-been hard to make that a priority of any sort compared to everything
-else).
+I wouldn't call the future a bug so much as a 'feature request' or
+'semantic' future -- it suggests a change in the language definition
+xthat should be considered and agreed upon rather than reflecting a way
+in which the compiler is incorrect w.r.t. the language definition (as
+I understand it.
