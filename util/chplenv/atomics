@@ -5,7 +5,8 @@ use strict;
 
 my $utildirname = dirname($0);
 
-my $preset_atomics   = $ENV{'CHPL_ATOMICS'};
+my $preset_atomics         = $ENV{'CHPL_ATOMICS'};
+my $preset_network_atomics = $ENV{'CHPL_NETWORK_ATOMICS'};
 
 my $flag = $ARGV[0];
 
@@ -30,10 +31,14 @@ if ($preset_atomics eq "") {
 # we come to it.
 
     if ($network_atomics == 1) {
-        if ($comm eq "ugni") {
-            $atomics = $comm;
+        if ($preset_network_atomics eq "") {
+            if ($comm eq "ugni") {
+                $atomics = $comm;
+            } else {
+                $atomics = "none";
+            }
         } else {
-            $atomics = "none";
+            $atomics = $preset_network_atomics;
         }
     } elsif ($platform eq "linux32") {
 	$atomics = "locks";
