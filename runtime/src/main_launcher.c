@@ -137,13 +137,13 @@ chpl_run_utility1K(const char *command, char *const argv[], char *outbuf, int ou
 
     if (numRead != 0) {
       if (strstr(buf, "internal error: ") == NULL) {
-	memcpy(outbuf, buf, numRead);
+        memcpy(outbuf, buf, numRead);
       } else {
-	// The utility program ran, but failed with an internal error
-	// from child's branch above (dup2 or exevp)
-	buf[numRead] = 0;
-	chpl_warning(buf, 0, 0);
-	return -1;
+        // The utility program ran, but failed with an internal error
+        // from child's branch above (dup2 or exevp)
+        buf[numRead] = 0;
+        chpl_warning(buf, 0, 0);
+        return -1;
       }
     } else {
       sprintf(buf, "Unable to run '%s' (no bytes read)", command);
