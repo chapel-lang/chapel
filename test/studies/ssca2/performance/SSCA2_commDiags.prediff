@@ -18,10 +18,10 @@ if len(sys.argv) < 3:
 # Latest approximate communication counts
 #
 commTypes = ['get', 'get_nb', 'get_nb_test', 'get_nb_wait', 'put', 'fork', 'fork_fast', 'fork_nb']
-l0 = [42110, 0, 0, 0, 3941, 0, 0, 0]
-l1 = [54064, 0, 0, 0, 4109, 0, 0, 0]
-l2 = [48623, 0, 0, 0, 3966, 0, 0, 0]
-l3 = [51710, 0, 0, 0, 4116, 0, 0, 0]
+l0 = [31379, 0, 0, 0, 3941, 0, 0, 0]
+l1 = [40753, 0, 0, 0, 4109, 0, 0, 0]
+l2 = [37342, 0, 0, 0, 3966, 0, 0, 0]
+l3 = [39390, 0, 0, 0, 4116, 0, 0, 0]
 counts = [l0, l1, l2, l3]
 
 logfile = sys.argv[2]
