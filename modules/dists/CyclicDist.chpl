@@ -19,6 +19,11 @@ config param verboseCyclicDistWriters = false;
 //
 config param testFastFollowerOptimization = false;
 
+//
+// This flag is used to disable lazy initialization of the RAD cache.
+//
+config param disableCyclicLazyRAD = defaultDisableLazyRADOpt;
+
 class Cyclic: BaseDist {
   param rank: int;
   type idxType = int;
@@ -550,6 +555,7 @@ class CyclicArr: BaseArr {
   var locArr: [dom.dist.targetLocDom] LocCyclicArr(eltType, rank, idxType, stridable);
   var myLocArr: LocCyclicArr(eltType=eltType, rank=rank, idxType=idxType, stridable=stridable);
   var pid: int = -1;
+  const SENTINEL = max(rank*idxType);
 }
 
 proc CyclicArr.dsiSlice(d: CyclicDom) {
@@ -680,14 +686,18 @@ proc CyclicArr.setupRADOpt() {
   if !stridable { // for now, no support for strided cyclic arrays
     for localeIdx in dom.dist.targetLocDom {
       on dom.dist.targetLocs(localeIdx) {
-        if locArr(localeIdx).locRAD != nil then
-          delete locArr(localeIdx).locRAD;
-        locArr(localeIdx).locRAD = new LocRADCache(eltType, rank, idxType, dom.dist.targetLocDom);
-        locArr(localeIdx).locCyclicRAD = new LocCyclicRADCache(rank, idxType, dom.dist.startIdx, dom.dist.targetLocDom);
-        for l in dom.dist.targetLocDom {
-          if l != localeIdx {
-            locArr(localeIdx).locRAD.RAD(l) = locArr(l).myElems._value.dsiGetRAD();
-            locArr(localeIdx).locRAD.ddata(l) = locArr(l).myElems._value.data;
+        const myLocArr = locArr(localeIdx);
+        if myLocArr.locRAD != nil {
+          delete myLocArr.locRAD;
+        }
+        if disableCyclicLazyRAD {
+          myLocArr.locRAD = new LocRADCache(eltType, rank, idxType, dom.dist.targetLocDom);
+          myLocArr.locCyclicRAD = new LocCyclicRADCache(rank, idxType, dom.dist.startIdx, dom.dist.targetLocDom);
+          for l in dom.dist.targetLocDom {
+            if l != localeIdx {
+              myLocArr.locRAD.RAD(l) = locArr(l).myElems._value.dsiGetRAD();
+              myLocArr.locRAD.ddata(l) = locArr(l).myElems._value.data;
+            }
           }
         }
       }
@@ -704,7 +714,7 @@ proc CyclicArr.setup() {
     }
   }
 
-  if doRADOpt then setupRADOpt();
+  if doRADOpt && disableCyclicLazyRAD then setupRADOpt();
 }
 
 proc CyclicArr.dsiSupportsPrivatization() param return true;
@@ -745,10 +755,32 @@ proc CyclicArr.dsiAccess(i:rank*idxType) var {
       if boundsChecking then
         if !dom.dsiMember(i) then
           halt("array index out of bounds: ", i);
-      var rloc = dom.dist.targetLocsIdx(i);
+      var rlocIndex = dom.dist.targetLocsIdx(i);
+      if !disableCyclicLazyRAD {
+        if myLocArr.locRAD == nil {
+          myLocArr.lockLocRAD();
+          if myLocArr.locRAD == nil {
+            var tempLocRAD = new LocRADCache(eltType, rank, idxType, dom.dist.targetLocDom);
+            myLocArr.locCyclicRAD = new LocCyclicRADCache(rank, idxType, dom.dist.startIdx, dom.dist.targetLocDom);
+            tempLocRAD.RAD.blk = SENTINEL;
+            myLocArr.locRAD = tempLocRAD;
+          }
+          myLocArr.unlockLocRAD();
+        }
+        // NOTE: This is a known, benign race.  Multiple tasks may be
+        // initializing the RAD cache entries at once, but our belief is
+        // that this is infrequent enough that the potential extra gets
+        // are worth *not* having to synchronize.  If this turns out to be
+        // an incorrect assumption, we can add an atomic variable and use
+        // a fetchAdd to decide which task does the update.
+        if myLocArr.locRAD.RAD(rlocIndex).blk == SENTINEL {
+          myLocArr.locRAD.RAD(rlocIndex) = locArr(rlocIndex).myElems._value.dsiGetRAD();
+          myLocArr.locRAD.ddata(rlocIndex) = locArr(rlocIndex).myElems._value.data;
+        }  
+      }
       pragma "no copy" pragma "no auto destroy" var myLocRAD = myLocArr.locRAD;
       pragma "no copy" pragma "no auto destroy" var myLocRADdata = myLocRAD.ddata;
-      if myLocRADdata(rloc) != nil {
+      if myLocRADdata(rlocIndex) != nil {
         pragma "no copy" pragma "no auto destroy" var radata = myLocRAD.RAD;
         const startIdx = myLocArr.locCyclicRAD.startIdx;
         const dimLength = myLocArr.locCyclicRAD.targetLocDomDimLength;
@@ -757,8 +789,8 @@ proc CyclicArr.dsiAccess(i:rank*idxType) var {
           pragma "no copy" pragma "no auto destroy" var whole = dom.whole;
           str(i) = whole.dim(i).stride;
         }
-        var dataIdx = radata(rloc).getDataIndex(stridable, str, i, startIdx, dimLength);
-        pragma "no copy" pragma "no auto destroy" var retVal = myLocRADdata(rloc)(dataIdx);
+        var dataIdx = radata(rlocIndex).getDataIndex(stridable, str, i, startIdx, dimLength);
+        pragma "no copy" pragma "no auto destroy" var retVal = myLocRADdata(rlocIndex)(dataIdx);
         return retVal;
       }
     }
@@ -878,7 +910,19 @@ class LocCyclicArr {
   var locRAD: LocRADCache(eltType, rank, idxType); // non-nil if doRADOpt=true
   var locCyclicRAD: LocCyclicRADCache(rank, idxType); // see below for why
   var myElems: [locDom.myBlock] eltType;
+  var locRADLock: atomicflag; // This will only be accessed locally, so
+                              // force the use of processor atomics
 
+  // These function will always be called on this.locale, and so we do
+  // not have an on statement around the while loop below (to avoid
+  // the repeated on's from calling testAndSet()).
+  inline proc lockLocRAD() {
+    while locRADLock.testAndSet() do chpl_task_yield();
+  }
+
+  inline proc unlockLocRAD() {
+    locRADLock.clear();
+  }
 }
 
 proc LocCyclicArr.this(i) var {

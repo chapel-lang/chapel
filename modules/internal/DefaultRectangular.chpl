@@ -9,6 +9,7 @@ config param debugDefaultDistBulkTransfer = false;
 config param debugDataPar = false;
 
 config param defaultDoRADOpt = true;
+config param defaultDisableLazyRADOpt = false;
 
 class DefaultDist: BaseDist {
   proc dsiNewRectangularDom(param rank: int, type idxType, param stridable: bool)

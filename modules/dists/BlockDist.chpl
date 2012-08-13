@@ -52,6 +52,11 @@ config param sanityCheckDistribution = false;
 config param testFastFollowerOptimization = false;
 
 //
+// This flag is used to disable lazy initialization of the RAD cache.
+//
+config param disableBlockLazyRAD = defaultDisableLazyRADOpt;
+
+//
 // Block Distribution Class
 //
 //   The fields dataParTasksPerLocale, dataParIgnoreRunningTasks, and
@@ -176,6 +181,7 @@ class BlockArr: BaseArr {
   var locArr: [dom.dist.targetLocDom] LocBlockArr(eltType, rank, idxType, stridable);
   var myLocArr: LocBlockArr(eltType, rank, idxType, stridable);
   var pid: int = -1; // privatized object id (this should be factored out)
+  const SENTINEL = max(rank*idxType);
 }
 
 //
@@ -196,6 +202,19 @@ class LocBlockArr {
   const locDom: LocBlockDom(rank, idxType, stridable);
   var locRAD: LocRADCache(eltType, rank, idxType); // non-nil if doRADOpt=true
   var myElems: [locDom.myBlock] eltType;
+  var locRADLock: atomicflag; // This will only be accessed locally
+                              // force the use of processor atomics
+
+  // These function will always be called on this.locale, and so we do
+  // not have an on statement around the while loop below (to avoid
+  // the repeated on's from calling testAndSet()).
+  inline proc lockLocRAD() {
+    while locRADLock.testAndSet() do chpl_task_yield();
+  }
+
+  inline proc unlockLocRAD() {
+    locRADLock.clear();
+  }
 }
 
 //
@@ -231,7 +250,7 @@ proc Block.Block(boundingBox: domain,
                                else dataParTasksPerLocale;
   this.dataParIgnoreRunningTasks = dataParIgnoreRunningTasks;
   this.dataParMinGranularity = dataParMinGranularity;
-  
+
   if debugBlockDist {
     writeln("Creating new Block distribution:");
     dsiDisplayRepresentation();
@@ -250,6 +269,7 @@ proc Block.dsiAssign(other: this.type) {
   dataParMinGranularity = other.dataParMinGranularity;
   const boundingBoxDims = boundingBox.dims();
   const targetLocDomDims = targetLocDom.dims();
+
   coforall locid in targetLocDom do
     on targetLocales(locid) do
       locDist(locid) = new LocBlock(rank, idxType, locid, boundingBoxDims,
@@ -286,7 +306,7 @@ proc Block.dsiNewRectangularDom(param rank: int, type idxType,
     compilerError("Block domain index type does not match distribution's");
   if rank != this.rank then
     compilerError("Block domain rank does not match distribution's");
-  
+
   var dom = new BlockDom(rank=rank, idxType=idxType, dist=this, stridable=stridable);
   dom.setup();
   if debugBlockDist {
@@ -724,7 +744,7 @@ proc BlockDom.dsiBuildRectangularDom(param rank: int, type idxType,
     compilerError("Block domain index type does not match distribution's");
   if rank != dist.rank then
     compilerError("Block domain rank does not match distribution's");
-  
+
   var dom = new BlockDom(rank=rank, idxType=idxType,
                          dist=dist, stridable=stridable);
   dom.dsiSetIndices(ranges);
@@ -753,13 +773,17 @@ proc BlockArr.dsiGetBaseDom() return dom;
 proc BlockArr.setupRADOpt() {
   for localeIdx in dom.dist.targetLocDom {
     on dom.dist.targetLocales(localeIdx) {
-      if locArr(localeIdx).locRAD != nil then
-        delete locArr(localeIdx).locRAD;
-      locArr(localeIdx).locRAD = new LocRADCache(eltType, rank, idxType, dom.dist.targetLocDom);
-      for l in dom.dist.targetLocDom {
-        if l != localeIdx {
-          locArr(localeIdx).locRAD.RAD(l) = locArr(l).myElems._value.dsiGetRAD();
-          locArr(localeIdx).locRAD.ddata(l) = locArr(l).myElems._value.data;
+      const myLocArr = locArr(localeIdx);
+      if myLocArr.locRAD != nil {
+        delete myLocArr.locRAD;
+      }
+      if disableBlockLazyRAD {
+        myLocArr.locRAD = new LocRADCache(eltType, rank, idxType, dom.dist.targetLocDom);
+        for l in dom.dist.targetLocDom {
+          if l != localeIdx {
+            myLocArr.locRAD.RAD(l) = locArr(l).myElems._value.dsiGetRAD();
+            myLocArr.locRAD.ddata(l) = locArr(l).myElems._value.data; 
+          }
         }
       }
     }
@@ -777,7 +801,7 @@ proc BlockArr.setup() {
     }
   }
 
-  if doRADOpt then setupRADOpt();
+  if doRADOpt && disableBlockLazyRAD then setupRADOpt();
 }
 
 inline proc _remoteAccessData.getDataIndex(param stridable, ind: rank*idxType) {
@@ -809,13 +833,34 @@ proc BlockArr.dsiAccess(i: rank*idxType) var {
       if boundsChecking then
         if !dom.dsiMember(i) then
           halt("array index out of bounds: ", i);
-      var rloc = dom.dist.targetLocsIdx(i);
+      var rlocIndex = dom.dist.targetLocsIdx(i);
+      if !disableBlockLazyRAD {
+        if myLocArr.locRAD == nil {
+          myLocArr.lockLocRAD();
+          if myLocArr.locRAD == nil {
+            var tempLocRAD = new LocRADCache(eltType, rank, idxType, dom.dist.targetLocDom);
+            tempLocRAD.RAD.blk = SENTINEL;
+            myLocArr.locRAD = tempLocRAD;
+          }
+          myLocArr.unlockLocRAD();
+        }
+        // NOTE: This is a known, benign race.  Multiple tasks may be
+        // initializing the RAD cache entries at once, but our belief is
+        // that this is infrequent enough that the potential extra gets
+        // are worth *not* having to synchronize.  If this turns out to be
+        // an incorrect assumption, we can add an atomic variable and use
+        // a fetchAdd to decide which task does the update.
+        if myLocArr.locRAD.RAD(rlocIndex).blk == SENTINEL {
+          myLocArr.locRAD.RAD(rlocIndex) = locArr(rlocIndex).myElems._value.dsiGetRAD();
+          myLocArr.locRAD.ddata(rlocIndex) = locArr(rlocIndex).myElems._value.data;
+        }
+      }
       pragma "no copy" pragma "no auto destroy" var myLocRAD = myLocArr.locRAD;
       pragma "no copy" pragma "no auto destroy" var myLocRADdata = myLocRAD.ddata;
-      if myLocRADdata(rloc) != nil {
+      if myLocRADdata(rlocIndex) != nil {
         pragma "no copy" pragma "no auto destroy" var radata = myLocRAD.RAD;
-        var dataIdx = radata(rloc).getDataIndex(stridable, i);
-        pragma "no copy" pragma "no auto destroy" var retVal = myLocRADdata(rloc)(dataIdx);
+        var dataIdx = radata(rlocIndex).getDataIndex(stridable, i);
+        pragma "no copy" pragma "no auto destroy" var retVal = myLocRADdata(rlocIndex)(dataIdx);
         return retVal;
       }
     }
@@ -966,7 +1011,7 @@ proc BlockArr.dsiLocalSlice(ranges) {
 proc _extendTuple(type t, idx: _tuple, args) {
   var tup: args.size*t;
   var j: int = 1;
-  
+
   for param i in 1..args.size {
     if isCollapsedDimension(args(i)) then
       tup(i) = args(i);
@@ -1328,9 +1373,9 @@ proc BlockDom.numRemoteElems(rlo,rid){
     bhi=whole.dim(rank).high;
   else
       bhi=dist.boundingBox.dim(rank).low +
-	intCeilXDivByY((dist.boundingBox.dim(rank).high - dist.boundingBox.dim(rank).low +1)*(rid+1),
+        intCeilXDivByY((dist.boundingBox.dim(rank).high - dist.boundingBox.dim(rank).low +1)*(rid+1),
                    dist.targetLocDom.dim(rank).length) - 1;
-  
+
   return(bhi - rlo + 1);
 }
 
