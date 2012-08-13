@@ -27,137 +27,145 @@ module Atomics {
   extern proc atomic_thread_fence(order:memory_order);
   extern proc atomic_signal_thread_fence(order:memory_order);
 
-  extern proc atomic_is_lock_free_flag(inout obj:atomic_flag):bool;
-  extern proc atomic_init_flag(inout obj:atomic_flag, value:bool);
-  extern proc atomic_destroy_flag(inout obj:atomic_flag);
-  extern proc atomic_store_explicit_flag(inout obj:atomic_flag, value:bool, order:memory_order);
-  extern proc atomic_load_explicit_flag(inout obj:atomic_flag, order:memory_order):bool;
-  extern proc atomic_exchange_explicit_flag(inout obj:atomic_flag, value:bool, order:memory_order):bool;
-  extern proc atomic_compare_exchange_strong_explicit_flag(inout obj:atomic_flag, expected:bool, desired:bool, order:memory_order):bool;
-  extern proc atomic_compare_exchange_weak_explicit_flag(inout obj:atomic_flag, expected:bool, desired:bool, order:memory_order):bool;
-  extern proc atomic_flag_test_and_set_explicit(inout obj:atomic_flag, order:memory_order):bool;
-  extern proc atomic_flag_test_and_set(inout obj:atomic_flag):bool;
-  extern proc atomic_flag_clear_explicit(inout obj:atomic_flag, order:memory_order);
-  extern proc atomic_flag_clear(inout obj:atomic_flag);
+  extern proc atomic_is_lock_free_flag(ref obj:atomic_flag):bool;
+  extern proc atomic_init_flag(ref obj:atomic_flag, value:bool);
+  extern proc atomic_destroy_flag(ref obj:atomic_flag);
+  extern proc atomic_store_explicit_flag(ref obj:atomic_flag, value:bool, order:memory_order);
+  extern proc atomic_load_explicit_flag(ref obj:atomic_flag, order:memory_order):bool;
+  extern proc atomic_exchange_explicit_flag(ref obj:atomic_flag, value:bool, order:memory_order):bool;
+  extern proc atomic_compare_exchange_strong_explicit_flag(ref obj:atomic_flag, expected:bool, desired:bool, order:memory_order):bool;
+  extern proc atomic_compare_exchange_weak_explicit_flag(ref obj:atomic_flag, expected:bool, desired:bool, order:memory_order):bool;
+  extern proc atomic_flag_test_and_set_explicit(ref obj:atomic_flag, order:memory_order):bool;
+  extern proc atomic_flag_test_and_set(ref obj:atomic_flag):bool;
+  extern proc atomic_flag_clear_explicit(ref obj:atomic_flag, order:memory_order);
+  extern proc atomic_flag_clear(ref obj:atomic_flag);
 
-  extern proc atomic_is_lock_free_uint_least8_t(inout obj:atomic_uint_least8_t):bool;
-  extern proc atomic_init_uint_least8_t(inout obj:atomic_uint_least8_t, value:uint(8));
-  extern proc atomic_destroy_uint_least8_t(inout obj:atomic_uint_least8_t);
-  extern proc atomic_store_explicit_uint_least8_t(inout obj:atomic_uint_least8_t, value:uint(8), order:memory_order);
-  extern proc atomic_load_explicit_uint_least8_t(inout obj:atomic_uint_least8_t, order:memory_order):uint(8);
-  extern proc atomic_exchange_explicit_uint_least8_t(inout obj:atomic_uint_least8_t, value:uint(8), order:memory_order):uint(8);
-  extern proc atomic_compare_exchange_strong_explicit_uint_least8_t(inout obj:atomic_uint_least8_t, expected:uint(8), desired:uint(8), order:memory_order):bool;
-  extern proc atomic_compare_exchange_weak_explicit_uint_least8_t(inout obj:atomic_uint_least8_t, expected:uint(8), desired:uint(8), order:memory_order):bool;
-  extern proc atomic_fetch_add_explicit_uint_least8_t(inout obj:atomic_uint_least8_t, operand:uint(8), order:memory_order):uint(8);
-  extern proc atomic_fetch_sub_explicit_uint_least8_t(inout obj:atomic_uint_least8_t, operand:uint(8), order:memory_order):uint(8);
-  extern proc atomic_fetch_or_explicit_uint_least8_t(inout obj:atomic_uint_least8_t, operand:uint(8), order:memory_order):uint(8);
-  extern proc atomic_fetch_and_explicit_uint_least8_t(inout obj:atomic_uint_least8_t, operand:uint(8), order:memory_order):uint(8);
+  extern proc atomic_is_lock_free_uint_least8_t(ref obj:atomic_uint_least8_t):bool;
+  extern proc atomic_init_uint_least8_t(ref obj:atomic_uint_least8_t, value:uint(8));
+  extern proc atomic_destroy_uint_least8_t(ref obj:atomic_uint_least8_t);
+  extern proc atomic_store_explicit_uint_least8_t(ref obj:atomic_uint_least8_t, value:uint(8), order:memory_order);
+  extern proc atomic_load_explicit_uint_least8_t(ref obj:atomic_uint_least8_t, order:memory_order):uint(8);
+  extern proc atomic_exchange_explicit_uint_least8_t(ref obj:atomic_uint_least8_t, value:uint(8), order:memory_order):uint(8);
+  extern proc atomic_compare_exchange_strong_explicit_uint_least8_t(ref obj:atomic_uint_least8_t, expected:uint(8), desired:uint(8), order:memory_order):bool;
+  extern proc atomic_compare_exchange_weak_explicit_uint_least8_t(ref obj:atomic_uint_least8_t, expected:uint(8), desired:uint(8), order:memory_order):bool;
+  extern proc atomic_fetch_add_explicit_uint_least8_t(ref obj:atomic_uint_least8_t, operand:uint(8), order:memory_order):uint(8);
+  extern proc atomic_fetch_sub_explicit_uint_least8_t(ref obj:atomic_uint_least8_t, operand:uint(8), order:memory_order):uint(8);
+  extern proc atomic_fetch_or_explicit_uint_least8_t(ref obj:atomic_uint_least8_t, operand:uint(8), order:memory_order):uint(8);
+  extern proc atomic_fetch_and_explicit_uint_least8_t(ref obj:atomic_uint_least8_t, operand:uint(8), order:memory_order):uint(8);
+  extern proc atomic_fetch_xor_explicit_uint_least8_t(ref obj:atomic_uint_least8_t, operand:uint(8), order:memory_order):uint(8);
 
-  extern proc atomic_is_lock_free_uint_least16_t(inout obj:atomic_uint_least16_t):bool;
-  extern proc atomic_init_uint_least16_t(inout obj:atomic_uint_least16_t, value:uint(16));
-  extern proc atomic_destroy_uint_least16_t(inout obj:atomic_uint_least16_t);
-  extern proc atomic_store_explicit_uint_least16_t(inout obj:atomic_uint_least16_t, value:uint(16), order:memory_order);
-  extern proc atomic_load_explicit_uint_least16_t(inout obj:atomic_uint_least16_t, order:memory_order):uint(16);
-  extern proc atomic_exchange_explicit_uint_least16_t(inout obj:atomic_uint_least16_t, value:uint(16), order:memory_order):uint(16);
-  extern proc atomic_compare_exchange_strong_explicit_uint_least16_t(inout obj:atomic_uint_least16_t, expected:uint(16), desired:uint(16), order:memory_order):bool;
-  extern proc atomic_compare_exchange_weak_explicit_uint_least16_t(inout obj:atomic_uint_least16_t, expected:uint(16), desired:uint(16), order:memory_order):bool;
-  extern proc atomic_fetch_add_explicit_uint_least16_t(inout obj:atomic_uint_least16_t, operand:uint(16), order:memory_order):uint(16);
-  extern proc atomic_fetch_sub_explicit_uint_least16_t(inout obj:atomic_uint_least16_t, operand:uint(16), order:memory_order):uint(16);
-  extern proc atomic_fetch_or_explicit_uint_least16_t(inout obj:atomic_uint_least16_t, operand:uint(16), order:memory_order):uint(16);
-  extern proc atomic_fetch_and_explicit_uint_least16_t(inout obj:atomic_uint_least16_t, operand:uint(16), order:memory_order):uint(16);
-
-
-  extern proc atomic_is_lock_free_uint_least32_t(inout obj:atomic_uint_least32_t):bool;
-  extern proc atomic_init_uint_least32_t(inout obj:atomic_uint_least32_t, value:uint(32));
-  extern proc atomic_destroy_uint_least32_t(inout obj:atomic_uint_least32_t);
-  extern proc atomic_store_explicit_uint_least32_t(inout obj:atomic_uint_least32_t, value:uint(32), order:memory_order);
-  extern proc atomic_load_explicit_uint_least32_t(inout obj:atomic_uint_least32_t, order:memory_order):uint(32);
-  extern proc atomic_exchange_explicit_uint_least32_t(inout obj:atomic_uint_least32_t, value:uint(32), order:memory_order):uint(32);
-  extern proc atomic_compare_exchange_strong_explicit_uint_least32_t(inout obj:atomic_uint_least32_t, expected:uint(32), desired:uint(32), order:memory_order):bool;
-  extern proc atomic_compare_exchange_weak_explicit_uint_least32_t(inout obj:atomic_uint_least32_t, expected:uint(32), desired:uint(32), order:memory_order):bool;
-  extern proc atomic_fetch_add_explicit_uint_least32_t(inout obj:atomic_uint_least32_t, operand:uint(32), order:memory_order):uint(32);
-  extern proc atomic_fetch_sub_explicit_uint_least32_t(inout obj:atomic_uint_least32_t, operand:uint(32), order:memory_order):uint(32);
-  extern proc atomic_fetch_or_explicit_uint_least32_t(inout obj:atomic_uint_least32_t, operand:uint(32), order:memory_order):uint(32);
-  extern proc atomic_fetch_and_explicit_uint_least32_t(inout obj:atomic_uint_least32_t, operand:uint(32), order:memory_order):uint(32);
-
-  extern proc atomic_is_lock_free_uint_least64_t(inout obj:atomic_uint_least64_t):bool;
-  extern proc atomic_init_uint_least64_t(inout obj:atomic_uint_least64_t, value:uint(64));
-  extern proc atomic_destroy_uint_least64_t(inout obj:atomic_uint_least64_t);
-  extern proc atomic_store_explicit_uint_least64_t(inout obj:atomic_uint_least64_t, value:uint(64), order:memory_order);
-  extern proc atomic_load_explicit_uint_least64_t(inout obj:atomic_uint_least64_t, order:memory_order):uint(64);
-  extern proc atomic_exchange_explicit_uint_least64_t(inout obj:atomic_uint_least64_t, value:uint(64), order:memory_order):uint(64);
-  extern proc atomic_compare_exchange_strong_explicit_uint_least64_t(inout obj:atomic_uint_least64_t, expected:uint(64), desired:uint(64), order:memory_order):bool;
-  extern proc atomic_compare_exchange_weak_explicit_uint_least64_t(inout obj:atomic_uint_least64_t, expected:uint(64), desired:uint(64), order:memory_order):bool;
-  extern proc atomic_fetch_add_explicit_uint_least64_t(inout obj:atomic_uint_least64_t, operand:uint(64), order:memory_order):uint(64);
-  extern proc atomic_fetch_sub_explicit_uint_least64_t(inout obj:atomic_uint_least64_t, operand:uint(64), order:memory_order):uint(64);
-  extern proc atomic_fetch_or_explicit_uint_least64_t(inout obj:atomic_uint_least64_t, operand:uint(64), order:memory_order):uint(64);
-  extern proc atomic_fetch_and_explicit_uint_least64_t(inout obj:atomic_uint_least64_t, operand:uint(64), order:memory_order):uint(64);
-
-  extern proc atomic_is_lock_free_uintptr_t(inout obj:atomic_uintptr_t):bool;
-  extern proc atomic_init_uintptr_t(inout obj:atomic_uintptr_t, value:c_ptr);
-  extern proc atomic_destroy_uintptr_t(inout obj:atomic_uintptr_t);
-  extern proc atomic_store_explicit_uintptr_t(inout obj:atomic_uintptr_t, value:c_ptr, order:memory_order);
-  extern proc atomic_load_explicit_uintptr_t(inout obj:atomic_uintptr_t, order:memory_order):c_ptr;
-  extern proc atomic_exchange_explicit_uintptr_t(inout obj:atomic_uintptr_t, value:c_ptr, order:memory_order):c_ptr;
-  extern proc atomic_compare_exchange_strong_explicit_uintptr_t(inout obj:atomic_uintptr_t, expected:c_ptr, desired:c_ptr, order:memory_order):bool;
-  extern proc atomic_compare_exchange_weak_explicit_uintptr_t(inout obj:atomic_uintptr_t, expected:c_ptr, desired:c_ptr, order:memory_order):bool;
-  extern proc atomic_fetch_add_explicit_uintptr_t(inout obj:atomic_uintptr_t, operand:c_ptr, order:memory_order):c_ptr;
-  extern proc atomic_fetch_sub_explicit_uintptr_t(inout obj:atomic_uintptr_t, operand:c_ptr, order:memory_order):c_ptr;
-  extern proc atomic_fetch_or_explicit_uintptr_t(inout obj:atomic_uintptr_t, operand:c_ptr, order:memory_order):c_ptr;
-  extern proc atomic_fetch_and_explicit_uintptr_t(inout obj:atomic_uintptr_t, operand:c_ptr, order:memory_order):c_ptr;
-
-  extern proc atomic_is_lock_free_int_least8_t(inout obj:atomic_int_least8_t):bool;
-  extern proc atomic_init_int_least8_t(inout obj:atomic_int_least8_t, value:int(8));
-  extern proc atomic_destroy_int_least8_t(inout obj:atomic_int_least8_t);
-  extern proc atomic_store_explicit_int_least8_t(inout obj:atomic_int_least8_t, value:int(8), order:memory_order);
-  extern proc atomic_load_explicit_int_least8_t(inout obj:atomic_int_least8_t, order:memory_order):int(8);
-  extern proc atomic_exchange_explicit_int_least8_t(inout obj:atomic_int_least8_t, value:int(8), order:memory_order):int(8);
-  extern proc atomic_compare_exchange_strong_explicit_int_least8_t(inout obj:atomic_int_least8_t, expected:int(8), desired:int(8), order:memory_order):bool;
-  extern proc atomic_compare_exchange_weak_explicit_int_least8_t(inout obj:atomic_int_least8_t, expected:int(8), desired:int(8), order:memory_order):bool;
-  extern proc atomic_fetch_add_explicit_int_least8_t(inout obj:atomic_int_least8_t, operand:int(8), order:memory_order):int(8);
-  extern proc atomic_fetch_sub_explicit_int_least8_t(inout obj:atomic_int_least8_t, operand:int(8), order:memory_order):int(8);
-  extern proc atomic_fetch_or_explicit_int_least8_t(inout obj:atomic_int_least8_t, operand:int(8), order:memory_order):int(8);
-  extern proc atomic_fetch_and_explicit_int_least8_t(inout obj:atomic_int_least8_t, operand:int(8), order:memory_order):int(8);
-
-  extern proc atomic_is_lock_free_int_least16_t(inout obj:atomic_int_least16_t):bool;
-  extern proc atomic_init_int_least16_t(inout obj:atomic_int_least16_t, value:int(16));
-  extern proc atomic_destroy_int_least16_t(inout obj:atomic_int_least16_t);
-  extern proc atomic_store_explicit_int_least16_t(inout obj:atomic_int_least16_t, value:int(16), order:memory_order);
-  extern proc atomic_load_explicit_int_least16_t(inout obj:atomic_int_least16_t, order:memory_order):int(16);
-  extern proc atomic_exchange_explicit_int_least16_t(inout obj:atomic_int_least16_t, value:int(16), order:memory_order):int(16);
-  extern proc atomic_compare_exchange_strong_explicit_int_least16_t(inout obj:atomic_int_least16_t, expected:int(16), desired:int(16), order:memory_order):bool;
-  extern proc atomic_compare_exchange_weak_explicit_int_least16_t(inout obj:atomic_int_least16_t, expected:int(16), desired:int(16), order:memory_order):bool;
-  extern proc atomic_fetch_add_explicit_int_least16_t(inout obj:atomic_int_least16_t, operand:int(16), order:memory_order):int(16);
-  extern proc atomic_fetch_sub_explicit_int_least16_t(inout obj:atomic_int_least16_t, operand:int(16), order:memory_order):int(16);
-  extern proc atomic_fetch_or_explicit_int_least16_t(inout obj:atomic_int_least16_t, operand:int(16), order:memory_order):int(16);
-  extern proc atomic_fetch_and_explicit_int_least16_t(inout obj:atomic_int_least16_t, operand:int(16), order:memory_order):int(16);
+  extern proc atomic_is_lock_free_uint_least16_t(ref obj:atomic_uint_least16_t):bool;
+  extern proc atomic_init_uint_least16_t(ref obj:atomic_uint_least16_t, value:uint(16));
+  extern proc atomic_destroy_uint_least16_t(ref obj:atomic_uint_least16_t);
+  extern proc atomic_store_explicit_uint_least16_t(ref obj:atomic_uint_least16_t, value:uint(16), order:memory_order);
+  extern proc atomic_load_explicit_uint_least16_t(ref obj:atomic_uint_least16_t, order:memory_order):uint(16);
+  extern proc atomic_exchange_explicit_uint_least16_t(ref obj:atomic_uint_least16_t, value:uint(16), order:memory_order):uint(16);
+  extern proc atomic_compare_exchange_strong_explicit_uint_least16_t(ref obj:atomic_uint_least16_t, expected:uint(16), desired:uint(16), order:memory_order):bool;
+  extern proc atomic_compare_exchange_weak_explicit_uint_least16_t(ref obj:atomic_uint_least16_t, expected:uint(16), desired:uint(16), order:memory_order):bool;
+  extern proc atomic_fetch_add_explicit_uint_least16_t(ref obj:atomic_uint_least16_t, operand:uint(16), order:memory_order):uint(16);
+  extern proc atomic_fetch_sub_explicit_uint_least16_t(ref obj:atomic_uint_least16_t, operand:uint(16), order:memory_order):uint(16);
+  extern proc atomic_fetch_or_explicit_uint_least16_t(ref obj:atomic_uint_least16_t, operand:uint(16), order:memory_order):uint(16);
+  extern proc atomic_fetch_and_explicit_uint_least16_t(ref obj:atomic_uint_least16_t, operand:uint(16), order:memory_order):uint(16);
+  extern proc atomic_fetch_xor_explicit_uint_least16_t(ref obj:atomic_uint_least16_t, operand:uint(16), order:memory_order):uint(16);
 
 
-  extern proc atomic_is_lock_free_int_least32_t(inout obj:atomic_int_least32_t):bool;
-  extern proc atomic_init_int_least32_t(inout obj:atomic_int_least32_t, value:int(32));
-  extern proc atomic_destroy_int_least32_t(inout obj:atomic_int_least32_t);
-  extern proc atomic_store_explicit_int_least32_t(inout obj:atomic_int_least32_t, value:int(32), order:memory_order);
-  extern proc atomic_load_explicit_int_least32_t(inout obj:atomic_int_least32_t, order:memory_order):int(32);
-  extern proc atomic_exchange_explicit_int_least32_t(inout obj:atomic_int_least32_t, value:int(32), order:memory_order):int(32);
-  extern proc atomic_compare_exchange_strong_explicit_int_least32_t(inout obj:atomic_int_least32_t, expected:int(32), desired:int(32), order:memory_order):bool;
-  extern proc atomic_compare_exchange_weak_explicit_int_least32_t(inout obj:atomic_int_least32_t, expected:int(32), desired:int(32), order:memory_order):bool;
-  extern proc atomic_fetch_add_explicit_int_least32_t(inout obj:atomic_int_least32_t, operand:int(32), order:memory_order):int(32);
-  extern proc atomic_fetch_sub_explicit_int_least32_t(inout obj:atomic_int_least32_t, operand:int(32), order:memory_order):int(32);
-  extern proc atomic_fetch_or_explicit_int_least32_t(inout obj:atomic_int_least32_t, operand:int(32), order:memory_order):int(32);
-  extern proc atomic_fetch_and_explicit_int_least32_t(inout obj:atomic_int_least32_t, operand:int(32), order:memory_order):int(32);
+  extern proc atomic_is_lock_free_uint_least32_t(ref obj:atomic_uint_least32_t):bool;
+  extern proc atomic_init_uint_least32_t(ref obj:atomic_uint_least32_t, value:uint(32));
+  extern proc atomic_destroy_uint_least32_t(ref obj:atomic_uint_least32_t);
+  extern proc atomic_store_explicit_uint_least32_t(ref obj:atomic_uint_least32_t, value:uint(32), order:memory_order);
+  extern proc atomic_load_explicit_uint_least32_t(ref obj:atomic_uint_least32_t, order:memory_order):uint(32);
+  extern proc atomic_exchange_explicit_uint_least32_t(ref obj:atomic_uint_least32_t, value:uint(32), order:memory_order):uint(32);
+  extern proc atomic_compare_exchange_strong_explicit_uint_least32_t(ref obj:atomic_uint_least32_t, expected:uint(32), desired:uint(32), order:memory_order):bool;
+  extern proc atomic_compare_exchange_weak_explicit_uint_least32_t(ref obj:atomic_uint_least32_t, expected:uint(32), desired:uint(32), order:memory_order):bool;
+  extern proc atomic_fetch_add_explicit_uint_least32_t(ref obj:atomic_uint_least32_t, operand:uint(32), order:memory_order):uint(32);
+  extern proc atomic_fetch_sub_explicit_uint_least32_t(ref obj:atomic_uint_least32_t, operand:uint(32), order:memory_order):uint(32);
+  extern proc atomic_fetch_or_explicit_uint_least32_t(ref obj:atomic_uint_least32_t, operand:uint(32), order:memory_order):uint(32);
+  extern proc atomic_fetch_and_explicit_uint_least32_t(ref obj:atomic_uint_least32_t, operand:uint(32), order:memory_order):uint(32);
+  extern proc atomic_fetch_xor_explicit_uint_least32_t(ref obj:atomic_uint_least32_t, operand:uint(32), order:memory_order):uint(32);
 
-  extern proc atomic_is_lock_free_int_least64_t(inout obj:atomic_int_least64_t):bool;
-  extern proc atomic_init_int_least64_t(inout obj:atomic_int_least64_t, value:int(64));
-  extern proc atomic_destroy_int_least64_t(inout obj:atomic_int_least64_t);
-  extern proc atomic_store_explicit_int_least64_t(inout obj:atomic_int_least64_t, value:int(64), order:memory_order);
-  extern proc atomic_load_explicit_int_least64_t(inout obj:atomic_int_least64_t, order:memory_order):int(64);
-  extern proc atomic_exchange_explicit_int_least64_t(inout obj:atomic_int_least64_t, value:int(64), order:memory_order):int(64);
-  extern proc atomic_compare_exchange_strong_explicit_int_least64_t(inout obj:atomic_int_least64_t, expected:int(64), desired:int(64), order:memory_order):bool;
-  extern proc atomic_compare_exchange_weak_explicit_int_least64_t(inout obj:atomic_int_least64_t, expected:int(64), desired:int(64), order:memory_order):bool;
-  extern proc atomic_fetch_add_explicit_int_least64_t(inout obj:atomic_int_least64_t, operand:int(64), order:memory_order):int(64);
-  extern proc atomic_fetch_sub_explicit_int_least64_t(inout obj:atomic_int_least64_t, operand:int(64), order:memory_order):int(64);
-  extern proc atomic_fetch_or_explicit_int_least64_t(inout obj:atomic_int_least64_t, operand:int(64), order:memory_order):int(64);
-  extern proc atomic_fetch_and_explicit_int_least64_t(inout obj:atomic_int_least64_t, operand:int(64), order:memory_order):int(64);
+  extern proc atomic_is_lock_free_uint_least64_t(ref obj:atomic_uint_least64_t):bool;
+  extern proc atomic_init_uint_least64_t(ref obj:atomic_uint_least64_t, value:uint(64));
+  extern proc atomic_destroy_uint_least64_t(ref obj:atomic_uint_least64_t);
+  extern proc atomic_store_explicit_uint_least64_t(ref obj:atomic_uint_least64_t, value:uint(64), order:memory_order);
+  extern proc atomic_load_explicit_uint_least64_t(ref obj:atomic_uint_least64_t, order:memory_order):uint(64);
+  extern proc atomic_exchange_explicit_uint_least64_t(ref obj:atomic_uint_least64_t, value:uint(64), order:memory_order):uint(64);
+  extern proc atomic_compare_exchange_strong_explicit_uint_least64_t(ref obj:atomic_uint_least64_t, expected:uint(64), desired:uint(64), order:memory_order):bool;
+  extern proc atomic_compare_exchange_weak_explicit_uint_least64_t(ref obj:atomic_uint_least64_t, expected:uint(64), desired:uint(64), order:memory_order):bool;
+  extern proc atomic_fetch_add_explicit_uint_least64_t(ref obj:atomic_uint_least64_t, operand:uint(64), order:memory_order):uint(64);
+  extern proc atomic_fetch_sub_explicit_uint_least64_t(ref obj:atomic_uint_least64_t, operand:uint(64), order:memory_order):uint(64);
+  extern proc atomic_fetch_or_explicit_uint_least64_t(ref obj:atomic_uint_least64_t, operand:uint(64), order:memory_order):uint(64);
+  extern proc atomic_fetch_and_explicit_uint_least64_t(ref obj:atomic_uint_least64_t, operand:uint(64), order:memory_order):uint(64);
+  extern proc atomic_fetch_xor_explicit_uint_least64_t(ref obj:atomic_uint_least64_t, operand:uint(64), order:memory_order):uint(64);
+
+  extern proc atomic_is_lock_free_uintptr_t(ref obj:atomic_uintptr_t):bool;
+  extern proc atomic_init_uintptr_t(ref obj:atomic_uintptr_t, value:c_ptr);
+  extern proc atomic_destroy_uintptr_t(ref obj:atomic_uintptr_t);
+  extern proc atomic_store_explicit_uintptr_t(ref obj:atomic_uintptr_t, value:c_ptr, order:memory_order);
+  extern proc atomic_load_explicit_uintptr_t(ref obj:atomic_uintptr_t, order:memory_order):c_ptr;
+  extern proc atomic_exchange_explicit_uintptr_t(ref obj:atomic_uintptr_t, value:c_ptr, order:memory_order):c_ptr;
+  extern proc atomic_compare_exchange_strong_explicit_uintptr_t(ref obj:atomic_uintptr_t, expected:c_ptr, desired:c_ptr, order:memory_order):bool;
+  extern proc atomic_compare_exchange_weak_explicit_uintptr_t(ref obj:atomic_uintptr_t, expected:c_ptr, desired:c_ptr, order:memory_order):bool;
+  extern proc atomic_fetch_add_explicit_uintptr_t(ref obj:atomic_uintptr_t, operand:c_ptr, order:memory_order):c_ptr;
+  extern proc atomic_fetch_sub_explicit_uintptr_t(ref obj:atomic_uintptr_t, operand:c_ptr, order:memory_order):c_ptr;
+  extern proc atomic_fetch_or_explicit_uintptr_t(ref obj:atomic_uintptr_t, operand:c_ptr, order:memory_order):c_ptr;
+  extern proc atomic_fetch_and_explicit_uintptr_t(ref obj:atomic_uintptr_t, operand:c_ptr, order:memory_order):c_ptr;
+  extern proc atomic_fetch_xor_explicit_uintptr_t(ref obj:atomic_uintptr_t, operand:c_ptr, order:memory_order):c_ptr;
+
+  extern proc atomic_is_lock_free_int_least8_t(ref obj:atomic_int_least8_t):bool;
+  extern proc atomic_init_int_least8_t(ref obj:atomic_int_least8_t, value:int(8));
+  extern proc atomic_destroy_int_least8_t(ref obj:atomic_int_least8_t);
+  extern proc atomic_store_explicit_int_least8_t(ref obj:atomic_int_least8_t, value:int(8), order:memory_order);
+  extern proc atomic_load_explicit_int_least8_t(ref obj:atomic_int_least8_t, order:memory_order):int(8);
+  extern proc atomic_exchange_explicit_int_least8_t(ref obj:atomic_int_least8_t, value:int(8), order:memory_order):int(8);
+  extern proc atomic_compare_exchange_strong_explicit_int_least8_t(ref obj:atomic_int_least8_t, expected:int(8), desired:int(8), order:memory_order):bool;
+  extern proc atomic_compare_exchange_weak_explicit_int_least8_t(ref obj:atomic_int_least8_t, expected:int(8), desired:int(8), order:memory_order):bool;
+  extern proc atomic_fetch_add_explicit_int_least8_t(ref obj:atomic_int_least8_t, operand:int(8), order:memory_order):int(8);
+  extern proc atomic_fetch_sub_explicit_int_least8_t(ref obj:atomic_int_least8_t, operand:int(8), order:memory_order):int(8);
+  extern proc atomic_fetch_or_explicit_int_least8_t(ref obj:atomic_int_least8_t, operand:int(8), order:memory_order):int(8);
+  extern proc atomic_fetch_and_explicit_int_least8_t(ref obj:atomic_int_least8_t, operand:int(8), order:memory_order):int(8);
+  extern proc atomic_fetch_xor_explicit_int_least8_t(ref obj:atomic_int_least8_t, operand:int(8), order:memory_order):int(8);
+
+  extern proc atomic_is_lock_free_int_least16_t(ref obj:atomic_int_least16_t):bool;
+  extern proc atomic_init_int_least16_t(ref obj:atomic_int_least16_t, value:int(16));
+  extern proc atomic_destroy_int_least16_t(ref obj:atomic_int_least16_t);
+  extern proc atomic_store_explicit_int_least16_t(ref obj:atomic_int_least16_t, value:int(16), order:memory_order);
+  extern proc atomic_load_explicit_int_least16_t(ref obj:atomic_int_least16_t, order:memory_order):int(16);
+  extern proc atomic_exchange_explicit_int_least16_t(ref obj:atomic_int_least16_t, value:int(16), order:memory_order):int(16);
+  extern proc atomic_compare_exchange_strong_explicit_int_least16_t(ref obj:atomic_int_least16_t, expected:int(16), desired:int(16), order:memory_order):bool;
+  extern proc atomic_compare_exchange_weak_explicit_int_least16_t(ref obj:atomic_int_least16_t, expected:int(16), desired:int(16), order:memory_order):bool;
+  extern proc atomic_fetch_add_explicit_int_least16_t(ref obj:atomic_int_least16_t, operand:int(16), order:memory_order):int(16);
+  extern proc atomic_fetch_sub_explicit_int_least16_t(ref obj:atomic_int_least16_t, operand:int(16), order:memory_order):int(16);
+  extern proc atomic_fetch_or_explicit_int_least16_t(ref obj:atomic_int_least16_t, operand:int(16), order:memory_order):int(16);
+  extern proc atomic_fetch_and_explicit_int_least16_t(ref obj:atomic_int_least16_t, operand:int(16), order:memory_order):int(16);
+  extern proc atomic_fetch_xor_explicit_int_least16_t(ref obj:atomic_int_least16_t, operand:int(16), order:memory_order):int(16);
+
+  extern proc atomic_is_lock_free_int_least32_t(ref obj:atomic_int_least32_t):bool;
+  extern proc atomic_init_int_least32_t(ref obj:atomic_int_least32_t, value:int(32));
+  extern proc atomic_destroy_int_least32_t(ref obj:atomic_int_least32_t);
+  extern proc atomic_store_explicit_int_least32_t(ref obj:atomic_int_least32_t, value:int(32), order:memory_order);
+  extern proc atomic_load_explicit_int_least32_t(ref obj:atomic_int_least32_t, order:memory_order):int(32);
+  extern proc atomic_exchange_explicit_int_least32_t(ref obj:atomic_int_least32_t, value:int(32), order:memory_order):int(32);
+  extern proc atomic_compare_exchange_strong_explicit_int_least32_t(ref obj:atomic_int_least32_t, expected:int(32), desired:int(32), order:memory_order):bool;
+  extern proc atomic_compare_exchange_weak_explicit_int_least32_t(ref obj:atomic_int_least32_t, expected:int(32), desired:int(32), order:memory_order):bool;
+  extern proc atomic_fetch_add_explicit_int_least32_t(ref obj:atomic_int_least32_t, operand:int(32), order:memory_order):int(32);
+  extern proc atomic_fetch_sub_explicit_int_least32_t(ref obj:atomic_int_least32_t, operand:int(32), order:memory_order):int(32);
+  extern proc atomic_fetch_or_explicit_int_least32_t(ref obj:atomic_int_least32_t, operand:int(32), order:memory_order):int(32);
+  extern proc atomic_fetch_and_explicit_int_least32_t(ref obj:atomic_int_least32_t, operand:int(32), order:memory_order):int(32);
+  extern proc atomic_fetch_xor_explicit_int_least32_t(ref obj:atomic_int_least32_t, operand:int(32), order:memory_order):int(32);
+
+  extern proc atomic_is_lock_free_int_least64_t(ref obj:atomic_int_least64_t):bool;
+  extern proc atomic_init_int_least64_t(ref obj:atomic_int_least64_t, value:int(64));
+  extern proc atomic_destroy_int_least64_t(ref obj:atomic_int_least64_t);
+  extern proc atomic_store_explicit_int_least64_t(ref obj:atomic_int_least64_t, value:int(64), order:memory_order);
+  extern proc atomic_load_explicit_int_least64_t(ref obj:atomic_int_least64_t, order:memory_order):int(64);
+  extern proc atomic_exchange_explicit_int_least64_t(ref obj:atomic_int_least64_t, value:int(64), order:memory_order):int(64);
+  extern proc atomic_compare_exchange_strong_explicit_int_least64_t(ref obj:atomic_int_least64_t, expected:int(64), desired:int(64), order:memory_order):bool;
+  extern proc atomic_compare_exchange_weak_explicit_int_least64_t(ref obj:atomic_int_least64_t, expected:int(64), desired:int(64), order:memory_order):bool;
+  extern proc atomic_fetch_add_explicit_int_least64_t(ref obj:atomic_int_least64_t, operand:int(64), order:memory_order):int(64);
+  extern proc atomic_fetch_sub_explicit_int_least64_t(ref obj:atomic_int_least64_t, operand:int(64), order:memory_order):int(64);
+  extern proc atomic_fetch_or_explicit_int_least64_t(ref obj:atomic_int_least64_t, operand:int(64), order:memory_order):int(64);
+  extern proc atomic_fetch_and_explicit_int_least64_t(ref obj:atomic_int_least64_t, operand:int(64), order:memory_order):int(64);
+  extern proc atomic_fetch_xor_explicit_int_least64_t(ref obj:atomic_int_least64_t, operand:int(64), order:memory_order):int(64);
 
 
   // Begin Chapel interface for atomic integers.
@@ -310,6 +318,14 @@ module Atomics {
     inline proc and(value:uint(8), order = memory_order_seq_cst):uint(8) {
       on this do atomic_fetch_and_explicit_uint_least8_t(_v, value, order);
     }
+    inline proc fetchXor(value:uint(8), order = memory_order_seq_cst):uint(8) {
+      var ret:uint(8);
+      on this do ret = atomic_fetch_xor_explicit_uint_least8_t(_v, value, order);
+      return ret;
+    }
+    inline proc xor(value:uint(8), order = memory_order_seq_cst):uint(8) {
+      on this do atomic_fetch_xor_explicit_uint_least8_t(_v, value, order);
+    }
 
     inline proc waitFor(val:uint(8)) {
       on this do while (read() != val) do chpl_task_yield();
@@ -388,6 +404,14 @@ module Atomics {
     }
     inline proc and(value:uint(16), order = memory_order_seq_cst):uint(16) {
       on this do atomic_fetch_and_explicit_uint_least16_t(_v, value, order);
+    }
+    inline proc fetchXor(value:uint(16), order = memory_order_seq_cst):uint(16) {
+      var ret:uint(16);
+      on this do ret = atomic_fetch_xor_explicit_uint_least16_t(_v, value, order);
+      return ret;
+    }
+    inline proc xor(value:uint(16), order = memory_order_seq_cst):uint(16) {
+      on this do atomic_fetch_xor_explicit_uint_least16_t(_v, value, order);
     }
 
     inline proc waitFor(val:uint(16)) {
@@ -468,6 +492,14 @@ module Atomics {
     inline proc and(value:uint(32), order = memory_order_seq_cst):uint(32) {
       on this do atomic_fetch_and_explicit_uint_least32_t(_v, value, order);
     }
+    inline proc fetchXor(value:uint(32), order = memory_order_seq_cst):uint(32) {
+      var ret:uint(32);
+      on this do ret = atomic_fetch_xor_explicit_uint_least32_t(_v, value, order);
+      return ret;
+    }
+    inline proc xor(value:uint(32), order = memory_order_seq_cst):uint(32) {
+      on this do atomic_fetch_xor_explicit_uint_least32_t(_v, value, order);
+    }
 
     inline proc waitFor(val:uint(32)) {
       on this do while (read() != val) do chpl_task_yield();
@@ -546,6 +578,14 @@ module Atomics {
     }
     inline proc and(value:uint(64), order = memory_order_seq_cst):uint(64) {
       on this do atomic_fetch_and_explicit_uint_least64_t(_v, value, order);
+    }
+    inline proc fetchXor(value:uint(64), order = memory_order_seq_cst):uint(64) {
+      var ret:uint(64);
+      on this do ret = atomic_fetch_xor_explicit_uint_least64_t(_v, value, order);
+      return ret;
+    }
+    inline proc xor(value:uint(64), order = memory_order_seq_cst):uint(64) {
+      on this do atomic_fetch_xor_explicit_uint_least64_t(_v, value, order);
     }
 
     inline proc waitFor(val:uint(64)) {
@@ -626,6 +666,14 @@ module Atomics {
     inline proc and(value:int(8), order = memory_order_seq_cst):int(8) {
       on this do atomic_fetch_and_explicit_int_least8_t(_v, value, order);
     }
+    inline proc fetchXor(value:int(8), order = memory_order_seq_cst):int(8) {
+      var ret:int(8);
+      on this do ret = atomic_fetch_xor_explicit_int_least8_t(_v, value, order);
+      return ret;
+    }
+    inline proc xor(value:int(8), order = memory_order_seq_cst):int(8) {
+      on this do atomic_fetch_xor_explicit_int_least8_t(_v, value, order);
+    }
 
     inline proc waitFor(val:int(8)) {
       on this do while (read() != val) do chpl_task_yield();
@@ -704,6 +752,14 @@ module Atomics {
     }
     inline proc and(value:int(16), order = memory_order_seq_cst):int(16) {
       on this do atomic_fetch_and_explicit_int_least16_t(_v, value, order);
+    }
+    inline proc fetchXor(value:int(16), order = memory_order_seq_cst):int(16) {
+      var ret:int(16);
+      on this do ret = atomic_fetch_xor_explicit_int_least16_t(_v, value, order);
+      return ret;
+    }
+    inline proc xor(value:int(16), order = memory_order_seq_cst):int(16) {
+      on this do atomic_fetch_xor_explicit_int_least16_t(_v, value, order);
     }
 
     inline proc waitFor(val:int(16)) {
@@ -784,6 +840,14 @@ module Atomics {
     inline proc and(value:int(32), order = memory_order_seq_cst):int(32) {
       on this do atomic_fetch_and_explicit_int_least32_t(_v, value, order);
     }
+    inline proc fetchXor(value:int(32), order = memory_order_seq_cst):int(32) {
+      var ret:int(32);
+      on this do ret = atomic_fetch_xor_explicit_int_least32_t(_v, value, order);
+      return ret;
+    }
+    inline proc xor(value:int(32), order = memory_order_seq_cst):int(32) {
+      on this do atomic_fetch_xor_explicit_int_least32_t(_v, value, order);
+    }
 
     inline proc waitFor(val:int(32)) {
       on this do while (read() != val) do chpl_task_yield();
@@ -862,6 +926,14 @@ module Atomics {
     }
     inline proc and(value:int(64), order = memory_order_seq_cst):int(64) {
       on this do atomic_fetch_and_explicit_int_least64_t(_v, value, order);
+    }
+    inline proc fetchXor(value:int(64), order = memory_order_seq_cst):int(64) {
+      var ret:int(64);
+      on this do ret = atomic_fetch_xor_explicit_int_least64_t(_v, value, order);
+      return ret;
+    }
+    inline proc xor(value:int(64), order = memory_order_seq_cst):int(64) {
+      on this do atomic_fetch_xor_explicit_int_least64_t(_v, value, order);
     }
 
     inline proc waitFor(val:int(64)) {

@@ -192,6 +192,17 @@ static inline type atomic_fetch_and_explicit_ ## type(atomic_ ## type * obj, typ
 } \
 static inline type atomic_fetch_and_ ## type(atomic_ ## type * obj, type operand) { \
   return atomic_fetch_and_explicit_ ## type(obj, operand, memory_order_seq_cst); \
+} \
+static inline type atomic_fetch_xor_explicit_ ## type(atomic_ ## type * obj, type operand, memory_order order) { \
+  type ret; \
+  chpl_sync_lock(&obj->sv); \
+  ret = obj->v; \
+  obj->v ^= operand; \
+  chpl_sync_unlock(&obj->sv); \
+  return ret; \
+} \
+static inline type atomic_fetch_xor_ ## type(atomic_ ## type * obj, type operand) { \
+  return atomic_fetch_xor_explicit_ ## type(obj, operand, memory_order_seq_cst); \
 }
 
 DECLARE_ATOMICS_BASE(flag, chpl_bool);
