@@ -234,6 +234,7 @@ module analyze_RMAT_graph_associative_array {
     class Associative_Graph {
       const vertices;
       var   Row      : [vertices] VertexData;
+      var num_edges = -1;
 
       // iterate over neighbor IDs, with filtering
 

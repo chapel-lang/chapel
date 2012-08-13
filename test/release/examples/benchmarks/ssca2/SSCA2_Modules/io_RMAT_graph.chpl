@@ -150,6 +150,7 @@ module io_RMAT_graph
     ensureEOFofDataFile(veCount, snapshot_prefix, VE_FILENAME);
     veCount.close();
 
+    G.num_edges = eCount;
     debug("files contain  ", vCount, " vertices  ", eCount, " edges");
     const sb = numBytes(IONumType);
     debug("expected file sizes  ", 2*sb, "  ", (vCount+2)*sb, "  ", eCount*sb);

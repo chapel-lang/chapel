@@ -35,6 +35,10 @@ module analyze_torus_graphs {
     var Neighbors   : [vertex_domain] [torus_stencil] vertex;
     var edge_weight : [vertex_domain] [torus_stencil] int;
 
+    proc num_edges {
+      return + reduce [v in vertex_domain] n_Neighbors (v);
+    }
+
     iter FilteredNeighbors( v : index (vertices) ) {
       const neighbors => Neighbors[v];
       const weights => edge_weight[v];

@@ -295,11 +295,13 @@ module SSCA2_RMAT_graph_generator
 	stopwatch.clear ();
       }
 
+      G.num_edges = + reduce [v in G.vertices] G.n_Neighbors (v);
+
       writeln ( "# of raw edges generated  ", n_raw_edges );
       writeln ( "# of duplicate edges      ", "not counted" /*collisions*/ );
       writeln ( "# of self edges           ", self_edges );
-      writeln ( "# of edges in final graph ", 
-		+ reduce [v in G.vertices] G.n_Neighbors (v) );
+      writeln ( "# of edges in final graph ", G.num_edges );
+
 
       if DEBUG_GRAPH_GENERATOR then {
 	writeln ();
