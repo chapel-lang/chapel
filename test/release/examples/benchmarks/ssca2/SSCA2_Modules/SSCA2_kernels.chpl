@@ -457,7 +457,7 @@ module SSCA2_kernels
 	stopwatch.clear ();
 	writeln ( "Elapsed time for Kernel 4: ", K4_time, " seconds");
 
-	var n_edges          = + reduce [v in vertex_domain] G.n_Neighbors (v);
+	var n_edges          = G.num_edges;
 	var N_VERTICES       = vertex_domain.numIndices;
 	var N_START_VERTICES = if starting_vertices == G.vertices
 			       then N_VERTICES
