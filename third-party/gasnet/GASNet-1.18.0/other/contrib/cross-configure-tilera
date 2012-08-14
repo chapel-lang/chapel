@@ -26,7 +26,7 @@ HOST_CXXFLAGS='' ; export HOST_CXXFLAGS
 #MPI_LIBS='' ; export MPI_LIBS      # libs for linking with MPI_CC
 #MPIRUN_CMD='mpirun -np %N %C' ; export MPIRUN_CMD  # launch command for MPI jobs
 #MPIRUN_CMD='srun -n %N %C' ; export MPIRUN_CMD  # launch command for MPI jobs
-EXTRA_CONFIGURE_ARGS='--disable-ibv --disable--udp --disable-amudp --enable-pthreads --enable-fork --enable-allow-gcc4' ; export EXTRA_CONFIGURE_ARGS  # misc configure args to pass
+EXTRA_CONFIGURE_ARGS='--disable-ibv --enable-pthreads --enable-fork --enable-allow-gcc4' ; export EXTRA_CONFIGURE_ARGS  # misc configure args to pass
 
 # 2. Fill in the canonical target machine type. You can usually obtain this
 #   by running config-aux/config.guess on the target machine
