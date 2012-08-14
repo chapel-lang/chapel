@@ -55,9 +55,10 @@ ra* (gbt)
 Greg committed a fix to resolve the race in the main version (r20301),
 and now just needs to propagate it to the other versions, as well as
 to the else-clause of the 'useOn' conditional.
-  release/examples/benchmarks/hpcc/variants/ra-cleanloop: not fixed yet
-  studies/hpcc/nodistrib/ra.nodist: not fixed yet
-  studies/hpcc/RA/bradc/parallel/ra-dist: not fixed yet
+  release/examples/benchmarks/hpcc/variants/ra-cleanloop: fixed by r20326
+  studies/hpcc/2008/ra: not fixed yet, failed 8/14/12
+  studies/hpcc/nodistrib/ra.nodist: not fixed yet, failed 8/14/12
+  studies/hpcc/RA/bradc/parallel/ra-dist: not fixed yet, last failure unknown
 
 
 lulesh (bradc)
