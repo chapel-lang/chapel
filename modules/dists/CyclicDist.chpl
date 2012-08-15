@@ -751,7 +751,7 @@ proc CyclicArr.dsiAccess(i:rank*idxType) var {
       return myLocArr.this(i);
   }
   if doRADOpt {
-    if myLocArr!=nil && myLocArr.locRAD!=nil {
+    if myLocArr {
       if boundsChecking then
         if !dom.dsiMember(i) then
           halt("array index out of bounds: ", i);
