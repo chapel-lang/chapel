@@ -38,6 +38,7 @@ spectralnorm (vass)
 -------------------
 proposed approach is to see whether reference version is similarly
 noisy, and if not to see whether ours has inadvertant nondeterminisms.
+(still noisy as of 2012/08/14: gnfp, gnfp-nolocal)
 
 
 madness (sungeun)
@@ -69,11 +70,12 @@ other cases.
 
 cray-xt-cray (diten)
 --------------------
-David fixed some of these by replacing a Chapel Map class with the STL
-equivalent.  This helped a lot, though Other cases still exist and
-some nights are worse than other.  Additional Map classes still exist,
-so the proposal was to replace more of them with STL classes with the
-goal of removing the Chapel Map class.
+This appears to be resolved.
+
+
+TooManyThreads (unassigned)
+---------------------------
+Fails periodically.  Lately observed pthreads.tcmalloc (2012/08/15).
 
 
 linux64.gnu.gasnet.qthreads.none (UNASSIGNED)
@@ -94,6 +96,13 @@ linux64.gnu.gasnet.qthreads.none (UNASSIGNED)
    Seen with SSCA2, lulesh, distributions/robust/arithmetic/kernels/hpl
 
 
+baseline (UNASSIGNED)
+---------------------
+distributions/nelson/MultiBlockDist2DLocales
+studies/hpcc/HPL/vass/bl.md
+studies/shootout/mandelbrot/mandelbrot-fancy
+
+
 valgrind (UNASSIGNED)
 ---------------------
 *** It's a little difficult to follow the trend since we only run this
@@ -101,6 +110,7 @@ valgrind (UNASSIGNED)
 *** considering saving the logs week-over-week (which we should
 *** probably do for all the tests too since we have the space to).
 1) Nondeterministic "the impossible has happened" failures
+   2012/08/13 -- Only one test case failed: MultiBlockDist2DLocales
 2) Nondeterministic timeouts (could raise timeout value even further)
 
 
@@ -136,12 +146,11 @@ The following configurations are affected:
  linux64.gnu.gasnet-fast.fifo.pthreads.dlmalloc
  linux64.gnu.gasnet-everything.fifo.pthreads
 examples of what times out:
- release/examples/benchmarks/ssca2/SSCA2_main (ALWAYS: sungeun on it)
- distributions/robust/arithmetic/kernels/hpl (maybe resolved?)
- distributions/robust/arithmetic/stress/test_many_array (maybe resolved?)
- distributions/robust/arithmetic/kernels/jacobi (still timing out 7/7-7/13)
+ distributions/robust/arithmetic/kernels/jacobi (still timing out 7/7-8/13)
  distributions/nelson/MultiBlockDist2DLocales (maybe resolved?)
  distributions/robust/arithmetic/modules/test_module_Sort (maybe resolved?)
+ distributions/robust/arithmetci/stress/test_many_domains (08/13)
+ distributions/dm/t2 (2012/08/15)
  etc.
 
 
@@ -160,7 +169,7 @@ noted in regressions (week of 07/02)
 
 atomics nondeterminisms (UNASSIGNED)
 ------------------------------------
-program release/examples/primers/atomics (06/30/12:xt-intel, 07/04/12:linux32)
+release/examples/primers/atomics (06/30/12:xt-intel, 07/04/12:linux32, 08/14/12:xt-cle)
 
 gasnet-everything nondeterminisms (UNASSIGNED)
 ----------------------------------------------
@@ -198,9 +207,9 @@ This test gets a false positive pass on intel and pgi it seems, for
 reasons that are not clear to me (i.e., why are they behaving differently
 than gcc?).  If the future should remain, a .skipif should be added to
 skip it in these cases.
-
+ 
 I wouldn't call the future a bug so much as a 'feature request' or
 'semantic' future -- it suggests a change in the language definition
-xthat should be considered and agreed upon rather than reflecting a way
+that should be considered and agreed upon rather than reflecting a way
 in which the compiler is incorrect w.r.t. the language definition (as
 I understand it.
