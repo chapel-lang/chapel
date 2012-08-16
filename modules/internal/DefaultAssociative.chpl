@@ -35,8 +35,11 @@ class DefaultAssociativeDom: BaseAssociativeDom {
   var dist: DefaultDist;
 
   // The guts of the associative domain
-  var numEntries: atomic chpl_table_index_type;
-  var tableLock: atomic bool; // do not access directly, use function below
+
+  // We explicitly use processor atomics here since this is not
+  // by design a distributed data structure
+  var numEntries: atomic_int64;
+  var tableLock: atomicflag; // do not access directly, use function below
   var tableSizeNum = 1;
   var tableSize = chpl__primes(tableSizeNum);
   var tableDom = {0..tableSize-1};
