@@ -688,7 +688,12 @@ proc CyclicArr.setupRADOpt() {
       on dom.dist.targetLocs(localeIdx) {
         const myLocArr = locArr(localeIdx);
         if myLocArr.locRAD != nil {
-          delete myLocArr.locRAD;
+          myLocArr.lockLocRAD();
+          if myLocArr.locRAD != nil {
+            delete myLocArr.locRAD;
+            myLocArr.locRAD = nil;
+          }
+          myLocArr.unlockLocRAD();
         }
         if disableCyclicLazyRAD {
           myLocArr.locRAD = new LocRADCache(eltType, rank, idxType, dom.dist.targetLocDom);
