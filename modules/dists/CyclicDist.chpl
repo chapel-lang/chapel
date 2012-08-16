@@ -750,7 +750,7 @@ proc CyclicArr.dsiAccess(i:rank*idxType) var {
     if myLocArr != nil && myLocArr.locDom.member(i) then
       return myLocArr.this(i);
   }
-  if doRADOpt {
+  if doRADOpt && !stridable {
     if myLocArr {
       if boundsChecking then
         if !dom.dsiMember(i) then
