@@ -1,1 +1,2 @@
+/users/hilde/devel/oldchpl/third-party/gasnet/install/linux64-gnu/seg-everything/nodbg/bin/amudprun  -np 1 ./testVerboseFlag_real --verbose -nl 1
 executing on locale 0 of 1 locale(s): 

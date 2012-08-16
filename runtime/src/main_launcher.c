@@ -205,6 +205,7 @@ int chpl_launch_using_exec(const char* command, char * const argv1[], const char
       fflush(stdout);
     }
     printf("\n");
+    fflush(stdout);
   }
   chpl_launch_sanity_checks(argv0);
 
