@@ -1,0 +1,10 @@
+badcallerror.chpl:3: error: type mismatch in assignment from chpl__fcf_type_void_int64_t to int(64)
+
+does not convey to me that the problem is that I actually forgot
+to call the function.
+
+It would probably help to improve the "chpl__fcf_type_void_int64_t"
+to be something more evocative of a function type
+(ie fcf probably stands for "First Class Function", but that
+ is solidly esoteric)
+
