@@ -48,10 +48,10 @@ int getAprunArg(aprun_arg_t argt);           // possibly inline
 static char CNA[CNAbuflen];
 
 static char const *aprun_arg_strings[aprun_none] = { "-cc",
-					       "-n",
-					       "-d",
-					       "-N",
-					       "-j"};
+                                                     "-n",
+                                                     "-d",
+                                                     "-N",
+                                                     "-j"};
 
 //
 // Return the appropriate integer value for given argument type

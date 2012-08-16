@@ -118,9 +118,9 @@ static char* genQsubOptions(char* genFilename, char* projectString, qsubVersion 
     fprintf(qsubScript, "#PBS -N Chpl-%.10s\n", genFilename);
   } else {
     optionString = chpl_mem_allocMany(maxOptLength, sizeof(char),
-				      CHPL_RT_MD_COMMAND_BUFFER, -1, "");
+                                      CHPL_RT_MD_COMMAND_BUFFER, -1, "");
     length += snprintf(optionString + length, maxOptLength - length,
-		       "-z -V -I -N Chpl-%.10s", genFilename);
+                       "-z -V -I -N Chpl-%.10s", genFilename);
   }
 
   if (projectString && strlen(projectString) != 0) {
@@ -128,7 +128,7 @@ static char* genQsubOptions(char* genFilename, char* projectString, qsubVersion 
       fprintf(qsubScript, "#PBS -A %s\n", projectString);
     } else {
       length += snprintf(optionString + length, maxOptLength - length,
-			 " -A %s", projectString);
+                         " -A %s", projectString);
     }
   }
   if (queue) {
@@ -136,7 +136,7 @@ static char* genQsubOptions(char* genFilename, char* projectString, qsubVersion 
       fprintf(qsubScript, "#PBS -q %s\n", queue);
     } else {
       length += snprintf(optionString + length, maxOptLength - length,
-			 " -q %s", queue);
+                         " -q %s", queue);
     }
   }
   if (walltime) {
@@ -144,7 +144,7 @@ static char* genQsubOptions(char* genFilename, char* projectString, qsubVersion 
       fprintf(qsubScript, "#PBS -l walltime=%s\n", walltime);
     } else {
       length += snprintf(optionString + length, maxOptLength - length,
-			 " -l walltime=%s", walltime);
+                         " -l walltime=%s", walltime);
     }
   }
   switch (qsub) {
@@ -156,8 +156,8 @@ static char* genQsubOptions(char* genFilename, char* projectString, qsubVersion 
       fprintf(qsubScript, "#PBS -l mppdepth=%d\n", numCoresPerLocale);
     } else {
       length += snprintf(optionString + length, maxOptLength - length,
-			 " -l mppwidth=%d -l mppnppn=%d -l mppdepth=%d",
-			 numLocales, procsPerNode, numCoresPerLocale);
+                         " -l mppwidth=%d -l mppnppn=%d -l mppdepth=%d",
+                         numLocales, procsPerNode, numCoresPerLocale);
     }
     break;
   case nccs:
@@ -165,11 +165,11 @@ static char* genQsubOptions(char* genFilename, char* projectString, qsubVersion 
       fprintf(qsubScript, "#PBS -l size=%d\n", numCoresPerLocale*numLocales);
     } else {
       if (!queue && !walltime)
-	chpl_error("An execution time must be specified for the NCCS launcher if no queue is\n"
-		   "specified -- use the CHPL_LAUNCHER_WALLTIME and/or CHPL_LAUNCHER_QUEUE\n"
-		   "environment variables", 0, 0);
+        chpl_error("An execution time must be specified for the NCCS launcher if no queue is\n"
+                   "specified -- use the CHPL_LAUNCHER_WALLTIME and/or CHPL_LAUNCHER_QUEUE\n"
+                   "environment variables", 0, 0);
       length += snprintf(optionString + length, maxOptLength - length,
-			 " -l size=%d\n", numCoresPerLocale*numLocales);
+                         " -l size=%d\n", numCoresPerLocale*numLocales);
     }
     break;
   }
@@ -212,7 +212,7 @@ static char** chpl_launch_create_argv(int argc, char* argv[],
     mypid = 0;
   }
   snprintf(expectFilename, FILENAME_MAX, "%s%d",
-	   baseExpectFilename, (int)mypid);
+           baseExpectFilename, (int)mypid);
 
   initAprunAttributes();
   numCoresPerLocale = getCoresPerLocale();
@@ -220,15 +220,15 @@ static char** chpl_launch_create_argv(int argc, char* argv[],
   LocalesPerNode = getLocalesPerNode();
 
   qsubOptions = genQsubOptions(basenamePtr, projectString,
-			       determineQsubVersion(),
-			       numLocales, numCoresPerLocale);
+                               determineQsubVersion(),
+                               numLocales, numCoresPerLocale);
 
   if (generate_qsub_script) {
     qsubScript = fopen(qsubOptions, "a");
     if (!qsubScript) {
       char msg[256];
       snprintf(msg, 256, "Error creating qsub script '%s': %s",
-	       qsubOptions, strerror(errno));
+               qsubOptions, strerror(errno));
       chpl_error(msg, 0, 0);
     }
     fprintf(qsubScript, "cd $PBS_O_WORKDIR\n");
@@ -238,7 +238,7 @@ static char** chpl_launch_create_argv(int argc, char* argv[],
     if (!expectFile) {
       char msg[256];
       snprintf(msg, 256, "Error creating temporary script '%s': %s",
-	       qsubOptions, strerror(errno));
+               qsubOptions, strerror(errno));
       chpl_error(msg, 0, 0);
     }
 
@@ -273,8 +273,8 @@ static char** chpl_launch_create_argv(int argc, char* argv[],
     fprintf(expectFile, "spawn qsub %s\n", qsubOptions);
     fprintf(expectFile, "expect {\n");
     fprintf(expectFile, "  \"A project was not specified\" {send_user "
-	    "\"error: A project account must be specified via \\$" 
-	    launcherAccountEnvvar "\\n\" ; exit 1}\n");
+            "\"error: A project account must be specified via \\$" 
+            launcherAccountEnvvar "\\n\" ; exit 1}\n");
     fprintf(expectFile, "  -ex \"qsub: waiting\" {}\n");
     fprintf(expectFile, "}\n");
     fprintf(expectFile, "expect -re \"qsub:.*ready\" {}\n");
@@ -285,23 +285,23 @@ static char** chpl_launch_create_argv(int argc, char* argv[],
     fprintf(expectFile, "expect -re \"\\n$chpl_prompt\" {}\n");
     if (verbosity > 2) {
       fprintf(expectFile, "send \"aprun -cc %s -q -b %s%d %s%d %s%d ", ccArg,
-	      getCoresPerLocaleStr(), numCoresPerLocale,
-	      getNumLocalesStr(), 1 /* only run on one locale */,
-	      getLocalesPerNodeStr(), LocalesPerNode);
+              getCoresPerLocaleStr(), numCoresPerLocale,
+              getNumLocalesStr(), 1 /* only run on one locale */,
+              getLocalesPerNodeStr(), LocalesPerNode);
       if (CPUsPerNode != -1) {
-	fprintf(expectFile, "%s%d ", getCPUsPerNodeStr(), CPUsPerNode);
+        fprintf(expectFile, "%s%d ", getCPUsPerNodeStr(), CPUsPerNode);
       }
       fprintf(expectFile, "ls %s\\n\"\n", chpl_get_real_binary_name());
       fprintf(expectFile, "expect {\n");
       fprintf(expectFile, "  \"failed: chdir\" {send_user "
-	      "\"error: %s must be launched from and/or stored on a "
-	      "cross-mounted file system\\n\" ; exit 1}\n", 
-	      basenamePtr);
+              "\"error: %s must be launched from and/or stored on a "
+              "cross-mounted file system\\n\" ; exit 1}\n", 
+              basenamePtr);
       fprintf(expectFile, "  -ex \"$chpl_prompt\" {}\n");
       fprintf(expectFile, "}\n");
     }
     fprintf(expectFile, "send \"%s aprun ",
-	    isatty(fileno(stdout)) ? "" : "stty -onlcr;");
+            isatty(fileno(stdout)) ? "" : "stty -onlcr;");
   }
 
   if (generate_qsub_script) {
@@ -314,9 +314,9 @@ static char** chpl_launch_create_argv(int argc, char* argv[],
     fprintf(outfile, "-q ");
   }
   fprintf(outfile, "-cc %s %s%d %s%d %s%d ", ccArg,
-	  getCoresPerLocaleStr(), numCoresPerLocale,
-	  getNumLocalesStr(), numLocales,
-	  getLocalesPerNodeStr(), LocalesPerNode);
+          getCoresPerLocaleStr(), numCoresPerLocale,
+          getNumLocalesStr(), numLocales,
+          getLocalesPerNodeStr(), LocalesPerNode);
   if (CPUsPerNode != -1) {
     fprintf(outfile, "%s%d ", getCPUsPerNodeStr(), CPUsPerNode);
   }
@@ -365,7 +365,7 @@ static void chpl_launch_cleanup(void) {
     if (unlink(expectFilename)) {
       char msg[1024];
       snprintf(msg, 1024, "Error removing temporary file '%s': %s",
-	       expectFilename, strerror(errno));
+               expectFilename, strerror(errno));
       chpl_warning(msg, 0, 0);
     }
   }
@@ -382,9 +382,9 @@ int chpl_launch(int argc, char* argv[], int32_t numLocales) {
   } else {
     retcode =
       chpl_launch_using_fork_exec(EXPECT,
-				  chpl_launch_create_argv(argc, argv,
-							  numLocales),
-				  argv[0]);
+                                  chpl_launch_create_argv(argc, argv,
+                                                          numLocales),
+                                  argv[0]);
     chpl_launch_cleanup();
   }
 
