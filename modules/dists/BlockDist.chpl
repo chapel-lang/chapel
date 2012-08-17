@@ -775,12 +775,8 @@ proc BlockArr.setupRADOpt() {
     on dom.dist.targetLocales(localeIdx) {
       const myLocArr = locArr(localeIdx);
       if myLocArr.locRAD != nil {
-        myLocArr.lockLocRAD();
-        if myLocArr.locRAD != nil {
-          delete myLocArr.locRAD;
-          myLocArr.locRAD = nil;
-        }
-        myLocArr.unlockLocRAD();
+        delete myLocArr.locRAD;
+        myLocArr.locRAD = nil;
       }
       if disableBlockLazyRAD {
         myLocArr.locRAD = new LocRADCache(eltType, rank, idxType, dom.dist.targetLocDom);
@@ -806,8 +802,7 @@ proc BlockArr.setup() {
     }
   }
 
-  //if doRADOpt && disableBlockLazyRAD then setupRADOpt();
-  if doRADOpt then setupRADOpt();
+  if doRADOpt && disableBlockLazyRAD then setupRADOpt();
 }
 
 inline proc _remoteAccessData.getDataIndex(param stridable, ind: rank*idxType) {
