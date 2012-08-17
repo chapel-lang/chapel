@@ -67,7 +67,7 @@
 
 #ifdef CHPL_TASK_COMM_GET
 #define CHPL_COMM_GET(localvar, locale, addr, type, tid, len, ln, fn)  \
-  CHPL_TASK_COMM_GET(localvar, locale, (addr), type, tid, len, ln, fn)
+  chpl_task_comm_get((void*)(&(localvar)), locale, (void*)addr, sizeof(type), tid, len, ln, fn)
 #else
 #define CHPL_COMM_GET(localvar, locale, addr, type, tid, len, ln, fn)  \
   chpl_comm_get((void*)(&(localvar)), locale, (void*)addr, sizeof(type), tid, len, ln, fn)
@@ -75,7 +75,7 @@
 
 #ifdef CHPL_TASK_COMM_PUT
 #define CHPL_COMM_PUT(localvar, locale, addr, type, tid, len, ln, fn)  \
-  CHPL_TASK_COMM_PUT(localvar, locale, (addr), tid, sizeof(type) len, ln, fn)
+  chpl_task_comm_put((void*)(&(localvar)), locale, (void*)addr, sizeof(type), tid, len, ln, fn)
 #else
 #define CHPL_COMM_PUT(localvar, locale, addr, type, tid, len, ln, fn)  \
   chpl_comm_put((void*)(&(localvar)), locale, (void*)addr, sizeof(type), tid, len, ln, fn)
