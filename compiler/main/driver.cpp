@@ -1,6 +1,9 @@
 #define EXTERN
 #define __STDC_FORMAT_MACROS
 #include <inttypes.h>
+// want dirname
+#include <libgen.h>
+
 #include "chpl.h"
 #include "arg.h"
 #include "countTokens.h"
@@ -143,15 +146,90 @@ static bool printEnvHelp = false;
 static bool printSettingsHelp = false;
 static bool printLicense = false;
 static bool printVersion = false;
+static bool printChplHome = false;
 
 
-static void setupChplHome(void) {
+static bool isMaybeChplHome(const char* path)
+{
+  bool ret = false;
+  char* real = dirHasFile(path, "util/chplenv");
+  
+  if( real ) ret = true;
+
+  free(real);
+
+  return ret;
+}
+
+static void setupChplHome(const char* argv0) {
   const char* chpl_home = getenv("CHPL_HOME");
-  if (chpl_home == NULL) {
-    USR_FATAL("$CHPL_HOME must be set to run chpl");
-  } else {
-    strncpy(CHPL_HOME, chpl_home, FILENAME_MAX);
+  char* guess = NULL;
+
+
+  // Get the executable path.
+  guess = findProgramPath(argv0);
+  if (guess) {
+    // Determine CHPL_HOME based on the exe path.
+    // Determined exe path, but don't have a env var set
+    // Look for ../../../util/chplenv
+    dirname(guess); // remove chpl
+    dirname(guess); // remove e.g linux64
+    dirname(guess); // remove bin
+    if( isMaybeChplHome(guess) ) {
+      // OK!
+    } else {
+      // Maybe we are in e.g. /usr/bin.
+      free(guess);
+      guess = NULL;
+    }
   }
+
+  if( chpl_home ) {
+    if( strlen(chpl_home) > FILENAME_MAX )
+      USR_FATAL("$CHPL_HOME=%s path too long", chpl_home);
+
+    if( guess == NULL ) {
+      // Could not find exe path, but have a env var set
+      strncpy(CHPL_HOME, chpl_home, FILENAME_MAX);
+    } else {
+      // We have env var and found exe path.
+      // Check that they match and emit a warning if not.
+
+      if( ! isSameFile(chpl_home, guess) ) {
+        // Not the same. Emit warning.
+        USR_WARN("$CHPL_HOME=%s mismatched with executable home=%s",
+                 chpl_home, guess);
+      }
+      // Since we have an enviro var, always use that.
+      strncpy(CHPL_HOME, chpl_home, FILENAME_MAX);
+    }
+  } else {
+    if( guess == NULL ) {
+      // Could not find enviro var, and could not
+      // guess at exe's path name.
+      USR_FATAL("$CHPL_HOME must be set to run chpl");
+    } else {
+      int rc;
+      
+      if( strlen(guess) > FILENAME_MAX )
+        USR_FATAL("chpl guessed home %s too long", guess);
+
+      // Determined exe path, but don't have a env var set
+      strncpy(CHPL_HOME, guess, FILENAME_MAX);
+      // Also need to setenv in this case.
+      rc = setenv("CHPL_HOME", guess, 0);
+      if( rc ) USR_FATAL("Could not setenv CHPL_HOME");
+    }
+  }
+
+  // Check that the resulting path is a Chapel distribution.
+  if( ! isMaybeChplHome(CHPL_HOME) ) {
+    // Bad enviro var.
+    USR_WARN("CHPL_HOME=%s is not a Chapel distribution", CHPL_HOME);
+  }
+
+  if( guess ) free(guess);
+
 }
 
 static const char* setupEnvVar(const char* varname, const char* script) {
@@ -167,9 +245,9 @@ static const char* setupEnvVar(const char* varname, const char* script) {
 // Can't rely on a variable initialization order for globals, so any
 // variables that need to be initialized in a particular order go here
 //
-static void setupOrderedGlobals(void) {
+static void setupOrderedGlobals(const char* argv0) {
   // Set up CHPL_HOME first
-  setupChplHome();
+  setupChplHome(argv0);
   
   // Then CHPL_* variables
   SETUP_ENV_VAR(CHPL_HOST_PLATFORM, "chplenv/platform --host");
@@ -533,6 +611,7 @@ static ArgumentDescription arg_desc[] = {
  {"reposition-def-expressions", ' ', NULL, "Enable [disable] repositioning of def expressions to usage points", "n", &fNoRepositionDefExpr, "CHPL_DISABLE_REPOSITION_DEF_EXPR", NULL},
  {"timers", ' ', NULL, "Enable general timers one to five", "F", &fEnableTimers, "CHPL_ENABLE_TIMERS", NULL},
  {"warn-promotion", ' ', NULL, "Warn about scalar promotion", "F", &fWarnPromotion, NULL, NULL},
+ {"print-chpl-home", ' ', NULL, "Print CHPL_HOME and path to this executable and exit", "F", &printChplHome, NULL, NULL},
  {0}
 };
 
@@ -552,7 +631,7 @@ static void setupDependentVars(void) {
 }
 
 
-static void printStuff(void) {
+static void printStuff(const char* argv0) {
   bool shouldExit = false;
   bool printedSomething = false;
 
@@ -576,6 +655,13 @@ static void printStuff(void) {
             );
     printedSomething = true;
   }
+  if( printChplHome ) {
+    char* guess = findProgramPath(argv0);
+    printf("%s\t%s\n", CHPL_HOME, guess);
+    free(guess);
+    printedSomething = true;
+  }
+
   if (printHelp || (!printedSomething && arg_state.nfile_arguments < 1)) {
     if (printedSomething) printf("\n");
     usage(&arg_state, (printHelp == false), printEnvHelp, printSettingsHelp);
@@ -604,7 +690,7 @@ int main(int argc, char *argv[]) {
   initPrimitive();
   initPrimitiveTypes();
   initTheProgram();
-  setupOrderedGlobals();
+  setupOrderedGlobals(argv[0]);
   compute_program_name_loc(argv[0], &(arg_state.program_name),
                            &(arg_state.program_loc));
   process_args(&arg_state, argc, argv);
@@ -612,7 +698,7 @@ int main(int argc, char *argv[]) {
   setupDependentVars();
   setupModulePaths();
   recordCodeGenStrings(argc, argv);
-  printStuff();
+  printStuff(argv[0]);
   if (rungdb)
     runCompilerInGDB(argc, argv);
   if (fdump_html || strcmp(log_flags, ""))

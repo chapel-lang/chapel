@@ -1,3 +1,14 @@
+
+// Get realpath on linux
+#ifndef _XOPEN_SOURCE
+#define _XOPEN_SOURCE 1
+#endif
+#ifndef _XOPEN_SOURCE_EXTENDED
+#define _XOPEN_SOURCE_EXTENDED 1
+#endif
+
+
+
 #include "beautify.h"
 #include "files.h"
 #include "misc.h"
@@ -8,6 +19,8 @@
 #include <cstdlib>
 #include <pwd.h>
 #include <cerrno>
+#include <sys/types.h>
+#include <sys/stat.h>
 #include <unistd.h>
 
 char executableFilename[FILENAME_MAX+1] = "a.out";
@@ -675,3 +688,178 @@ void printModuleSearchPath(void) {
   helpPrintPath(stdModPath);
   fprintf(stderr, "end of module search dirs\n");
 }
+
+
+// Returns a "real path" to the file in the directory,
+// or NULL if the file did not exist.
+// The return value must be freed by the caller.
+// We try to use realpath but might give up.
+char* dirHasFile(const char *dir, const char *file)
+{
+  struct stat stats;
+  int len = strlen(dir) + strlen(file) + 2;
+  char* tmp = (char*) malloc(len);
+  char* real;
+
+  if( ! tmp ) INT_FATAL("no memory");
+
+  snprintf(tmp, len, "%s/%s", dir, file);
+  real = realpath(tmp, NULL);
+  if( real == NULL ) {
+    // realpath not working on this system,
+    // just use tmp.
+    real = tmp;
+  } else {
+    free(tmp);
+  }
+
+  if( stat(real, &stats) != 0) {
+    free(real);
+    real = NULL;
+  }
+  
+  return real;
+}
+
+// This also exists in runtime/src/sys.c
+// returns 0 on success.
+static int sys_getcwd(char** path_out)
+{
+  int sz = 128;
+  char* buf;
+  char* got;
+  int err = 0;
+
+  buf = (char*) malloc(sz);
+  if( !buf ) return ENOMEM;
+  while( 1 ) {
+    got = getcwd(buf, sz);
+    if( got != NULL ) break;
+    else if( errno == ERANGE ) {
+      // keep looping but with bigger buffer.
+      sz = 2*sz;
+      got = (char*) realloc(buf, sz);
+      if( ! got ) {
+        free(buf);
+        return ENOMEM;
+      }
+    } else {
+      // Other error, stop.
+      err = errno;
+    }
+  }
+
+  *path_out = buf;
+  return err;
+}
+
+// Find the path to the running program
+// (or return NULL if we couldn't figure it out).
+// The return value must be freed by the caller.
+char* findProgramPath(const char *argv0)
+{
+  char* real = NULL;
+  char* path;
+
+  /* Note - there are lots of friendly
+   * but platform-specific ways to do this:
+    #ifdef __linux__
+      int ret;
+      ret = readlink("/proc/self/exe", dst, max_dst - 1);
+      // return an error if there was an error.
+      if( ret < 0 ) return -1;
+      // append the NULL byte
+      if( ret < max_dst ) dst[ret] = '\0';
+      return 0;
+    #else
+    #ifdef __APPLE__
+      uint32_t sz = max_dst - 1;
+      return _NSGetExecutablePath(dst, &sz);
+    #else
+      // getexe path not available.
+      return -1;
+    #endif
+  */
+
+
+  // Is argv0 an absolute path?
+  if( argv0[0] == '/' ) {
+    real = dirHasFile("/", argv0);
+    return real;
+  }
+
+  // Is argv0 a relative path?
+  if( strchr(argv0, '/') != NULL ) {
+    char* cwd = NULL;
+    if( 0 == sys_getcwd(&cwd) ) {
+      real = dirHasFile(cwd, argv0);
+    } else {
+      real = NULL;
+    }
+    free(cwd);
+    return real;
+  }
+
+  // Is argv0 just in $PATH?
+  path = getenv("PATH");
+  if( path == NULL ) return NULL;
+
+  path = strdup(path);
+  if( path == NULL ) return NULL;
+
+  // Go through PATH changing ':' into '\0'
+  char* start;
+  char* end;
+  char* path_end = path + strlen(path);
+
+  start = path;
+  while( start != NULL && start < path_end ) {
+    end = strchr(start, ':');
+    if( end == NULL ) end = path_end;
+    else end[0] = '\0'; // replace ':' with '\0'
+  
+    real = dirHasFile(start, argv0);
+    if( real ) break;
+
+    start = end + 1;
+  }
+
+  free(path);
+  return real;
+}
+
+// Return true if both files exist and
+// they point to the same inode.
+bool isSameFile(const char* pathA, const char* pathB)
+{
+  struct stat statsA;
+  struct stat statsB;
+  char* realPathA;
+  char* realPathB;
+  int rc;
+
+  rc = stat(pathA, &statsA);
+  if( rc != 0 ) return false;
+  rc = stat(pathB, &statsB);
+  if( rc != 0 ) return false;
+
+  // First check - does realpath return the same thing?
+  realPathA = realpath(pathA, NULL);
+  realPathB = realpath(pathB, NULL);
+  if( realPathA && realPathB ) {
+    rc = strcmp(realPathA, realPathB);
+    free(realPathA);
+    free(realPathB);
+    if( rc == 0 ) return true;
+  }
+
+  // Second check - is the inode the same? 
+  if( statsA.st_dev == statsB.st_dev &&
+      statsA.st_ino == statsB.st_ino ) {
+    return true;
+  }
+
+
+  return false;
+}
+
