@@ -32,41 +32,41 @@ Starting Graph Generation
 max number of outgoing edges 12
 
 Kernel 2: (get = 57, get_nb = 0, get_nb_test = 0, get_nb_wait = 0, put = 7, fork = 0, fork_fast = 0, fork_nb = 6) (get = 177, get_nb = 0, get_nb_test = 0, get_nb_wait = 0, put = 0, fork = 8, fork_fast = 0, fork_nb = 0) (get = 149, get_nb = 0, get_nb_test = 0, get_nb_wait = 0, put = 0, fork = 4, fork_fast = 0, fork_nb = 0) (get = 155, get_nb = 0, get_nb_test = 0, get_nb_wait = 0, put = 0, fork = 4, fork_fast = 0, fork_nb = 0)
-Kernel 3: (get = 5001, get_nb = 0, get_nb_test = 0, get_nb_wait = 0, put = 0, fork = 1569, fork_fast = 0, fork_nb = 48) (get = 1429, get_nb = 0, get_nb_test = 0, get_nb_wait = 0, put = 598, fork = 165, fork_fast = 0, fork_nb = 0) (get = 1429, get_nb = 0, get_nb_test = 0, get_nb_wait = 0, put = 378, fork = 156, fork_fast = 0, fork_nb = 0) (get = 1429, get_nb = 0, get_nb_test = 0, get_nb_wait = 0, put = 488, fork = 156, fork_fast = 0, fork_nb = 0)
+Kernel 3: (get = 5001, get_nb = 0, get_nb_test = 0, get_nb_wait = 0, put = 0, fork = 1548, fork_fast = 0, fork_nb = 48) (get = 400, get_nb = 0, get_nb_test = 0, get_nb_wait = 0, put = 598, fork = 25, fork_fast = 0, fork_nb = 0) (get = 400, get_nb = 0, get_nb_test = 0, get_nb_wait = 0, put = 378, fork = 16, fork_fast = 0, fork_nb = 0) (get = 400, get_nb = 0, get_nb_test = 0, get_nb_wait = 0, put = 488, fork = 16, fork_fast = 0, fork_nb = 0)
 
 
 Computing Betweenness Centrality exactly
 Kernel 4:
-0: get: 31379 (~1%)
+0: get: 31859 (~1%)
 0: get_nb: 0
 0: get_nb_test: 0
 0: get_nb_wait: 0
 0: put: 3941 (~1%)
-0: fork: 6513
+0: fork: 6561
 0: fork_fast: 0
 0: fork_nb: 99
-1: get: 40753 (~1%)
+1: get: 41237 (~1%)
 1: get_nb: 0
 1: get_nb_test: 0
 1: get_nb_wait: 0
 1: put: 4109 (~1%)
-1: fork: 7245
+1: fork: 7293
 1: fork_fast: 0
 1: fork_nb: 96
-2: get: 37342 (~1%)
+2: get: 37823 (~1%)
 2: get_nb: 0
 2: get_nb_test: 0
 2: get_nb_wait: 0
 2: put: 3966 (~1%)
-2: fork: 6671
+2: fork: 6719
 2: fork_fast: 0
 2: fork_nb: 96
-3: get: 39390 (~1%)
+3: get: 39865 (~1%)
 3: get_nb: 0
 3: get_nb_test: 0
 3: get_nb_wait: 0
 3: put: 4116 (~1%)
-3: fork: 6768
+3: fork: 6816
 3: fork_fast: 0
 3: fork_nb: 96
 
