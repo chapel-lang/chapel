@@ -2475,12 +2475,9 @@ void CallExpr::codegen(FILE* outfile) {
     return;
   }
 
-  // Do not code generate calls to functions
-  // marked FLAG_NO_CODEGEN.
-  {
-    FnSymbol* fsym = isResolved();
-    if( fsym && fsym->hasFlag(FLAG_NO_CODEGEN) ) return;
-  }
+  // Do not code generate calls to functions marked FLAG_NO_CODEGEN.
+  if (FnSymbol* fsym = isResolved())
+    if (fsym->hasFlag(FLAG_NO_CODEGEN)) return;
 
   baseExpr->codegen(outfile);
   if (fn->hasFlag(FLAG_GPU_ON)) {

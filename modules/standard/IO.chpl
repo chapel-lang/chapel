@@ -229,6 +229,7 @@ extern proc qio_style_init_default(inout s: iostyle);
 extern proc qio_file_retain(f:qio_file_ptr_t);
 extern proc qio_file_release(f:qio_file_ptr_t);
 
+pragma "no prototype" // FIXME
 extern proc qio_file_init(inout file_out:qio_file_ptr_t, fp:_file, fd:fd_t, iohints:c_int, inout style:iostyle, usefilestar:c_int):syserr;
 extern proc qio_file_open_access(inout file_out:qio_file_ptr_t, path:string, access:string, iohints:c_int, inout style:iostyle):syserr;
 extern proc qio_file_open_tmp(inout file_out:qio_file_ptr_t, iohints:c_int, inout style:iostyle):syserr;
@@ -276,8 +277,10 @@ extern proc qio_file_set_style(f:qio_file_ptr_t, inout style:iostyle);
  */
 //extern proc qio_pwritev(fd:fd_t, inout buf:qbuffer_t, start:qbuffer_iter_t, end:qbuffer_iter_t, offset:int(64), inout num_read:int(64)):syserr;
 
+pragma "no prototype" // FIXME
 extern proc qio_channel_create(inout ch:qio_channel_ptr_t, file:qio_file_ptr_t, hints:c_int, readable:c_int, writeable:c_int, start:int(64), end:int(64), inout style:iostyle):syserr;
 
+pragma "no prototype" // FIXME
 extern proc qio_channel_path_offset(threadsafe:c_int, ch:qio_channel_ptr_t, inout path:string, inout offset:int(64)):syserr;
 
 extern proc qio_channel_retain(ch:qio_channel_ptr_t);
@@ -313,15 +316,21 @@ extern proc qio_channel_write_bits(threadsafe:c_int, ch:qio_channel_ptr_t, v:uin
 extern proc qio_channel_flush_bits(threadsafe:c_int, ch:qio_channel_ptr_t):syserr;
 extern proc qio_channel_read_bits(threadsafe:c_int, ch:qio_channel_ptr_t, inout v:uint(64), nbits:int(8)):syserr;
 
+pragma "no prototype" // FIXME
 extern proc qio_file_path_for_fd(fd:fd_t, inout path:string):syserr;
+pragma "no prototype" // FIXME
 extern proc qio_file_path_for_fp(fp:_file, inout path:string):syserr;
+pragma "no prototype" // FIXME
 extern proc qio_file_path(f:qio_file_ptr_t, inout path:string):syserr;
+pragma "no prototype" // FIXME
 extern proc qio_shortest_path(inout path_out:string, path_in:string):syserr;
 
 extern proc qio_channel_read_int(threadsafe:c_int, byteorder:c_int, ch:qio_channel_ptr_t, inout ptr, len:size_t, issigned:c_int):syserr;
+pragma "no prototype" // FIXME
 extern proc qio_channel_write_int(threadsafe:c_int, byteorder:c_int, ch:qio_channel_ptr_t, inout ptr, len:size_t, issigned:c_int):syserr;
 
 extern proc qio_channel_read_float(threadsafe:c_int, byteorder:c_int, ch:qio_channel_ptr_t, inout ptr, len:size_t):syserr;
+pragma "no prototype" // FIXME
 extern proc qio_channel_write_float(threadsafe:c_int, byteorder:c_int, ch:qio_channel_ptr_t, inout ptr, len:size_t):syserr;
 
 extern proc qio_channel_read_complex(threadsafe:c_int, byteorder:c_int, ch:qio_channel_ptr_t, inout re_ptr, inout im_ptr, len:size_t):syserr;
@@ -331,9 +340,11 @@ extern proc qio_channel_read_string(threadsafe:c_int, byteorder:c_int, str_style
 extern proc qio_channel_write_string(threadsafe:c_int, byteorder:c_int, str_style:int(64), ch:qio_channel_ptr_t, s:string, len:ssize_t):syserr;
 
 extern proc qio_channel_scan_int(threadsafe:c_int, ch:qio_channel_ptr_t, inout ptr, len:size_t, issigned:c_int):syserr;
+pragma "no prototype" // FIXME
 extern proc qio_channel_print_int(threadsafe:c_int, ch:qio_channel_ptr_t, inout ptr, len:size_t, issigned:c_int):syserr;
 
 extern proc qio_channel_scan_float(threadsafe:c_int, ch:qio_channel_ptr_t, inout ptr, len:size_t):syserr;
+pragma "no prototype" // FIXME
 extern proc qio_channel_print_float(threadsafe:c_int, ch:qio_channel_ptr_t, inout ptr, len:size_t):syserr;
 
 extern proc qio_channel_scan_complex(threadsafe:c_int, ch:qio_channel_ptr_t, inout re_ptr, inout im_ptr, len:size_t):syserr;

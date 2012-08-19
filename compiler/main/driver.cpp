@@ -56,6 +56,7 @@ static char log_flags[512] = "";
 static bool rungdb = false;
 bool fLibraryCompile = false;
 bool no_codegen = false;
+bool genExternPrototypes = false;
 int debugParserLevel = 0;
 bool developer = false;
 bool ignore_errors = false;
@@ -537,6 +538,7 @@ static ArgumentDescription arg_desc[] = {
  {"", ' ', NULL, "C Code Generation Options", NULL, NULL, NULL, NULL},
  {"codegen", ' ', NULL, "[Don't] Do code generation", "n", &no_codegen, "CHPL_NO_CODEGEN", NULL},
  {"cpp-lines", ' ', NULL, "[Don't] Generate #line annotations", "N", &printCppLineno, "CHPL_CG_CPP_LINES", noteCppLinesSet},
+ {"gen-extern-prototypes", ' ', NULL, "[Don't] generate C prototypes for extern declarations", "F", &genExternPrototypes, "CHPL_GEN_EXTERN_PROTOTYPES", NULL},
  {"max-c-ident-len", ' ', NULL, "Maximum length of identifiers in generated code, 0 for unlimited", "I", &fMaxCIdentLen, "CHPL_MAX_C_IDENT_LEN", NULL},
  {"savec", ' ', "<directory>", "Save generated C code in directory", "P", saveCDir, "CHPL_SAVEC_DIR", verifySaveCDir},
 

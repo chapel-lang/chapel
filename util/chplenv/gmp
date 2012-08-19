@@ -10,6 +10,9 @@ if ($preset_gmp eq "") {
   $targplatform = `$utildirname/platform --target`; chomp($targplatform);
   if ($targplatform eq "xmt" || $targplatform eq "xmt-sim") {
     $gmp = 'none';
+  } elsif ($targplatform eq "linux64" || $targplatform eq "linux32") {
+    # Linux platforms almost certainly support GMP.
+    $gmp = 'system';
   } else {
 #    $gmp = 'gmp'; check Lion, PGI, PrgEnv-gnu before enabling
     $gmp = 'none';

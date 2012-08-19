@@ -17,12 +17,22 @@ inline proc sgn(x : real(?w))
 
 inline proc conjg(a: complex(?w)) return (a.re, -a.im):complex;
 
+// The functions isinf, isfinite and isnan are defined by macros in math.h.
+// We need to add pragma "no prototype".  Otherwise, the macro is
+// expanded in the prototype, and then the C compiler barfs.
+pragma "no prototype"
 extern proc isinf(x: real(64)): bool;
+pragma "no prototype"
 extern proc isinf(x: real(32)): bool;
+pragma "no prototype"
 extern proc isfinite(x: real(64)): bool;
+pragma "no prototype"
 extern proc isfinite(x: real(32)): bool;
+pragma "no prototype"
 extern proc isnan(x: real(64)): bool;
+pragma "no prototype"
 extern proc isnan(x: real(32)): bool;
+pragma "no prototype"
 
 extern proc acos(x: real(64)): real(64);
 extern proc acosh(x: real(64)): real(64);

@@ -89,6 +89,7 @@ extern int fLinkStyle;
 extern int debugParserLevel;
 extern bool fLibraryCompile;
 extern bool no_codegen;
+extern bool genExternPrototypes;
 extern bool developer;
 extern int num_constants_per_variable;
 extern bool printCppLineno;

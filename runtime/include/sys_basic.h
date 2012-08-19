@@ -110,7 +110,7 @@ static inline err_t chpl_int_to_err(int32_t a) { return a; }
 
 #define PTR_DIFFBYTES(end_ptr,start_ptr) (((unsigned char*)end_ptr) - ((unsigned char*)start_ptr))
 
-static inline int is_c_nil(void* x) { return x==NULL; }
+static inline c_int is_c_nil(void* x) { return x==NULL; }
 
 // Define LLONG_MAX, ULLONG_MAX if it doesn't exist (should be in limits.h)
 // This is needed for XMT.

@@ -2,7 +2,7 @@ use GMP;
 
 var depth = 4: c_long;
 
-var stackdom = [0..#depth];
+var stackdom = {0..#depth};
 
 var x: [stackdom] mpz_t;
 

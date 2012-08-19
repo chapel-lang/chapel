@@ -477,7 +477,7 @@ static void codegen_header(FILE* hdrfile, FILE* codefile=NULL) {
       fprintf(hdrfile, "#endif\n");
       continue;
     }
-    if (!fnSymbol->hasFlag(FLAG_EXTERN)) {
+    if (!fnSymbol->hasFlag(FLAG_EXTERN) || genExternPrototypes) {
       fnSymbol->codegenPrototype(hdrfile);
     }
   }

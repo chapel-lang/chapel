@@ -259,9 +259,9 @@ static void zeroInitializeRecord(FILE* outfile, ClassType* ct) {
 
 
 void VarSymbol::codegenDef(FILE* outfile) {
-  if (this->hasFlag(FLAG_EXTERN)) {
+  if (this->hasFlag(FLAG_EXTERN))
     return;
-  }
+
   if (type == dtVoid)
     return;
   if (this->hasFlag(FLAG_SUPER_CLASS))
@@ -595,8 +595,9 @@ void FnSymbol::codegenHeader(FILE* outfile) {
 
 
 void FnSymbol::codegenPrototype(FILE* outfile) {
-  INT_ASSERT(!hasFlag(FLAG_EXTERN));
-  if( hasFlag(FLAG_NO_CODEGEN) ) return;
+  if (hasFlag(FLAG_EXTERN) && !genExternPrototypes) return;
+  if (hasFlag(FLAG_NO_PROTOTYPE)) return;
+  if (hasFlag(FLAG_NO_CODEGEN)) return;
   codegenHeader(outfile);
   fprintf(outfile, ";\n");
 }
@@ -901,7 +902,9 @@ void ModuleSymbol::codegenDef(FILE* outfile) {
     if (DefExpr* def = toDefExpr(expr))
       if (FnSymbol* fn = toFnSymbol(def->sym)) {
         // Ignore external and prototype functions.
-        if (fn->hasFlag(FLAG_EXTERN) || fn->hasFlag(FLAG_FUNCTION_PROTOTYPE))
+        if (!genExternPrototypes &&
+            (fn->hasFlag(FLAG_EXTERN) ||
+             fn->hasFlag(FLAG_FUNCTION_PROTOTYPE)))
           continue;
         fns.add(fn);
       }
