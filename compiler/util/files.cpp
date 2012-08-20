@@ -1,7 +1,7 @@
 
 // Get realpath on linux
 #ifndef _XOPEN_SOURCE
-#define _XOPEN_SOURCE 1
+#define _XOPEN_SOURCE 600
 #endif
 #ifndef _XOPEN_SOURCE_EXTENDED
 #define _XOPEN_SOURCE_EXTENDED 1
