@@ -146,6 +146,13 @@ module NetworkAtomics {
       on this do while (read() != val) do chpl_task_yield();
     }
 
+    inline proc peek() {
+      return _v;
+    }
+    inline proc poke(value:int(64)) {
+      _v = value;
+    }
+
     proc writeThis(x: Writer) {
       x.write(read());
     }
@@ -323,6 +330,13 @@ module NetworkAtomics {
 
     inline proc waitFor(val:int(32)) {
       on this do while (read() != val) do chpl_task_yield();
+    }
+
+    inline proc peek() {
+      return _v;
+    }
+    inline proc poke(value:int(32)) {
+      _v = value;
     }
 
     proc writeThis(x: Writer) {
@@ -504,6 +518,13 @@ module NetworkAtomics {
       on this do while (read() != val) do chpl_task_yield();
     }
 
+    inline proc peek() {
+      return _v;
+    }
+    inline proc poke(value:uint(64)) {
+      _v = value;
+    }
+
     proc writeThis(x: Writer) {
       x.write(read());
     }
@@ -683,6 +704,13 @@ module NetworkAtomics {
       on this do while (read() != val) do chpl_task_yield();
     }
 
+    inline proc peek() {
+      return _v;
+    }
+    inline proc poke(value:uint(32)) {
+      _v = value;
+    }
+
     proc writeThis(x: Writer) {
       x.write(read());
     }
@@ -760,6 +788,13 @@ module NetworkAtomics {
 
     inline proc waitFor(val:bool) {
       on this do while (read() != val) do chpl_task_yield();
+    }
+
+    inline proc peek() {
+      return _v;
+    }
+    inline proc poke(value:int(64)) {
+      _v = value;
     }
 
     proc writeThis(x: Writer) {
@@ -898,6 +933,13 @@ module NetworkAtomics {
 
     inline proc waitFor(val:real(64)) {
       on this do while (read() != val) do chpl_task_yield();
+    }
+
+    inline proc peek() {
+      return _v;
+    }
+    inline proc poke(value:real(64)) {
+      _v = value;
     }
 
     proc writeThis(x: Writer) {

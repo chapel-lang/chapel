@@ -244,6 +244,13 @@ module Atomics {
       on this do while (read() != val) do chpl_task_yield();
     }
 
+    inline proc peek() {
+      return this.read(order=memory_order_relaxed);
+    }
+    inline proc poke(value:bool) {
+      this.write(value, order=memory_order_relaxed);
+    }
+
     proc writeThis(x: Writer) {
       x.write(read());
     }
@@ -329,6 +336,13 @@ module Atomics {
 
     inline proc waitFor(val:uint(8)) {
       on this do while (read() != val) do chpl_task_yield();
+    }
+
+    inline proc peek() {
+      return this.read(order=memory_order_relaxed);
+    }
+    inline proc poke(value:uint(8)) {
+      this.write(value, order=memory_order_relaxed);
     }
 
     proc writeThis(x: Writer) {
@@ -418,6 +432,13 @@ module Atomics {
       on this do while (read() != val) do chpl_task_yield();
     }
 
+    inline proc peek() {
+      return this.read(order=memory_order_relaxed);
+    }
+    inline proc poke(value:uint(16)) {
+      this.write(value, order=memory_order_relaxed);
+    }
+
     proc writeThis(x: Writer) {
       x.write(read());
     }
@@ -503,6 +524,13 @@ module Atomics {
 
     inline proc waitFor(val:uint(32)) {
       on this do while (read() != val) do chpl_task_yield();
+    }
+
+    inline proc peek() {
+      return this.read(order=memory_order_relaxed);
+    }
+    inline proc poke(value:uint(32)) {
+      this.write(value, order=memory_order_relaxed);
     }
 
     proc writeThis(x: Writer) {
@@ -592,6 +620,13 @@ module Atomics {
       on this do while (read() != val) do chpl_task_yield();
     }
 
+    inline proc peek() {
+      return this.read(order=memory_order_relaxed);
+    }
+    inline proc poke(value:uint(64)) {
+      this.write(value, order=memory_order_relaxed);
+    }
+
     proc writeThis(x: Writer) {
       x.write(read());
     }
@@ -677,6 +712,13 @@ module Atomics {
 
     inline proc waitFor(val:int(8)) {
       on this do while (read() != val) do chpl_task_yield();
+    }
+
+    inline proc peek() {
+      return this.read(order=memory_order_relaxed);
+    }
+    inline proc poke(value:int(8)) {
+      this.write(value, order=memory_order_relaxed);
     }
 
     proc writeThis(x: Writer) {
@@ -766,6 +808,13 @@ module Atomics {
       on this do while (read() != val) do chpl_task_yield();
     }
 
+    inline proc peek() {
+      return this.read(order=memory_order_relaxed);
+    }
+    inline proc poke(value:int(16)) {
+      this.write(value, order=memory_order_relaxed);
+    }
+
     proc writeThis(x: Writer) {
       x.write(read());
     }
@@ -853,6 +902,13 @@ module Atomics {
       on this do while (read() != val) do chpl_task_yield();
     }
 
+    inline proc peek() {
+      return this.read(order=memory_order_relaxed);
+    }
+    inline proc poke(value:int(32)) {
+      this.write(value, order=memory_order_relaxed);
+    }
+
     proc writeThis(x: Writer) {
       x.write(read());
     }
@@ -938,6 +994,13 @@ module Atomics {
 
     inline proc waitFor(val:int(64)) {
       on this do while (read() != val) do chpl_task_yield();
+    }
+
+    inline proc peek() {
+      return this.read(order=memory_order_relaxed);
+    }
+    inline proc poke(value:int(64)) {
+      this.write(value, order=memory_order_relaxed);
     }
 
     proc writeThis(x: Writer) {
