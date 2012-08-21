@@ -494,15 +494,15 @@ module SSCA2_kernels
 	stopwatch.clear ();
 	writeln ( "Elapsed time for Kernel 4: ", K4_time, " seconds");
 
-	var n_edges          = + reduce [v in vertex_domain] G.n_Neighbors (v);
-	var N_VERTICES       = vertex_domain.numIndices;
-	var N_START_VERTICES = if starting_vertices == G.vertices
-			       then N_VERTICES
-				    - + reduce [v in vertex_domain]
-					       (G.n_Neighbors (v) == 0)
-			       else starting_vertices.numIndices;
-	var TEPS             = 7.0 * N_VERTICES * N_START_VERTICES / K4_time;
-	var Adjusted_TEPS    = n_edges * N_START_VERTICES / K4_time;
+	const n_edges          = G.num_edges;
+	const N_VERTICES       = vertex_domain.numIndices;
+	const N_START_VERTICES = if starting_vertices == G.vertices
+                                 then N_VERTICES
+                                      - + reduce [v in vertex_domain]
+                                        (G.n_Neighbors (v) == 0)
+                                 else starting_vertices.numIndices;
+	const TEPS             = 7.0 * N_VERTICES * N_START_VERTICES / K4_time;
+	const Adjusted_TEPS    = n_edges * N_START_VERTICES / K4_time;
 
 	writeln ( "                     TEPS: ", TEPS );
 	writeln ( " edge count adjusted TEPS: ", Adjusted_TEPS );
@@ -614,8 +614,8 @@ module SSCA2_kernels
   record Barrier {
     param reusable = true;
     var n: int;
-    var count: atomic int;
-    var done: atomic bool;
+    var count: atomic_int64;
+    var done: atomicflag;
 
     proc Barrier(_n: int) {
       reset(_n);
