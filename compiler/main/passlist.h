@@ -20,6 +20,10 @@ PassInfo passlist[] = {
   RUN(cleanup),             // post parsing transformations
   RUN(scopeResolve),        // resolve symbols by scope
   RUN(flattenClasses),      // denest nested classes
+  RUN(docs),                // generates documentation instead of executable
+                            // if chpldoc is used instead of chpl, otherwise
+                            // generates both documentation and an executable
+
   RUN(normalize),           // normalization transformations
   RUN(checkNormalized),     // check semantics of normalized AST
 

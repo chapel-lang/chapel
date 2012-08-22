@@ -493,7 +493,7 @@ instantiate(FnSymbol* fn, SymbolMap* subs, CallExpr* call) {
           break;
         }
       }
-      if (markStar == true)
+      if (markStar)
         newType->symbol->addFlag(FLAG_STAR_TUPLE);
     }
 
@@ -623,7 +623,7 @@ instantiate(FnSymbol* fn, SymbolMap* subs, CallExpr* call) {
 
   newFn->tag_generic();
 
-  if (!newFn->hasFlag(FLAG_GENERIC) && evaluateWhereClause(newFn) == false) {
+  if (!newFn->hasFlag(FLAG_GENERIC) && !evaluateWhereClause(newFn)) {
     //
     // where clause evaluates to false so cache gVoid as a function
     //

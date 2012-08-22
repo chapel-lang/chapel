@@ -7,6 +7,7 @@ demonstrate Chapel feature area in detail.
 
      arrays.chpl            : Rectangular arrays/domains
      atomics.chpl           : Atomic variables
+     chpldoc.chpl	    : The chpldoc feature
      classes.chpl           : Defining and using classes
      distributions.chpl     : Chapel standard distributions
      domains.chpl           : Domains and methods on domains

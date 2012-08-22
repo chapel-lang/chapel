@@ -1,0 +1,25 @@
+Module: unattached
+    This comment should be attached to unattached but not reallyCommentless, 
+   even when before the defined module 
+   reallyCommentless()
+
+   commentLess()
+       This comment should be attached to the method 
+
+   commentLess2()
+       This comment also should be attached 
+     even though it is a longer comment 
+
+   commentLess3()
+       This comment also should be attached, even though
+     it is further away from the method 
+
+   hasArg(val: int(64))
+       This comment should be attached even with an argument 
+
+   hasBody()
+       This comment should be attached, even with a body 
+
+   hasBodyAndArg(val: int(64))
+       Attach me, even with a body and an argument 
+

@@ -2,6 +2,8 @@ Usage: chpl [flags] [source files]
 
 Module Processing Options:
       --count-tokens                  Count tokens in main modules
+      --[no-]docs                     Runs documentation on the source file
+      --[no-]docs-alphabetical        Alphabetizes the documentation
       --main-module <module>          Specify entry point module
   -M, --module-dir <directory>        Add directory to module search path
       --print-code-size               Print code size of main modules

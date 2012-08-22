@@ -1,0 +1,36 @@
+Module: longerComments
+   method1()
+       This is a comment for method1, which lies
+   outside of a defined module 
+
+   body()
+       This is a comment for method with a body 
+   which lies outside of a defined module 
+
+   hasArg(val: int(64))
+       This is a comment for method with an 
+   argument which lies outside of a defined
+   module 
+
+   argAndBody(val: int(64))
+       This is a comment for method with an
+   argument and body which lies outside of a
+   defined module 
+
+   Module: longerComments.Other
+      inside()
+          This is a comment for a method inside of
+     a module 
+
+      body()
+          This is a comment for a method with a body 
+     inside of a module 
+
+      hasArg(val: int(64))
+          This is a comment for a method with an 
+     argument inside of a module 
+
+      argAndBody(val: int(64))
+          This is a comment for a method with an 
+     argument and body inside of a module 
+

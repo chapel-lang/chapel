@@ -1,0 +1,87 @@
+Module: inlineTest
+   inline method1()
+       Comment for method1 
+
+   inline uncommented()
+
+   inline body()
+       Comment for method with a body 
+
+   inline bodyCommentless()
+
+   inline hasArg(val: int(64))
+       Comment for method with an argument 
+
+   inline hasArgCommentless(val: int(64))
+
+   inline argAndBody(val: int(64))
+       Comment for method with argument and body 
+
+   inline argAndBodyCommentless(val: int(64))
+
+   inline longComment()
+       This is an rather long comment 
+   It goes on for many lines
+   But says very little 
+
+   inline hasReturnType(): int(64)
+       This method has a return type 
+
+   inline hasReturnTypeCommentless(): int(64)
+
+   inline hasReturnTypeAndArg(val: int(64)): int(64)
+       This method has a return type and an argument 
+
+   inline hasReturnTypeAndArgCommentless(val: int(64)): int(64)
+
+   inline returnTypeAndBody(): int(64)
+       This method has both a return type and a body 
+
+   inline returnTypeAndBodyCommentless(): int(64)
+
+   inline allThree(val: int(64)): int(64)
+       This method has a return type, an argument, and a function body 
+
+   inline allThreeCommentless(val: int(64)): int(64)
+
+   Module: inlineTest.Other
+      inline inside()
+          Comment for inline method inside module 
+
+      inline commentless()
+
+      inline body()
+          Comment for inline method with a body inside module 
+
+      inline bodyCommentless()
+
+      inline hasArg(val: int(64))
+          Comment for method with an argument inside module 
+
+      inline hasArgCommentless(val: int(64))
+
+      inline argAndBody(val: int(64))
+          Comment for method with argument and body inside module 
+
+      inline argAndBodyCommentless(val: int(64))
+
+      inline hasReturnType(): int(64)
+          This method has a return type 
+
+      inline hasReturnTypeCommentless(): int(64)
+
+      inline hasReturnTypeAndArg(val: int(64)): int(64)
+          This method has a return type and an argument 
+
+      inline hasReturnTypeAndArgCommentless(val: int(64)): int(64)
+
+      inline returnTypeAndBody(): int(64)
+          This method has both a return type and a body 
+
+      inline returnTypeAndBodyCommentless(): int(64)
+
+      inline allThree(val: int(64)): int(64)
+          This method has a return type, an argument, and a function body 
+
+      inline allThreeCommentless(val: int(64)): int(64)
+

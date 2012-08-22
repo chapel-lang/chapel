@@ -1,0 +1,29 @@
+Module: multipleInheritance
+   Class: Child
+      nose()
+          A method all its own 
+
+      inherited from Father
+         hair()
+             One of Father's methods 
+
+
+      inherited from Mother
+         eyes()
+             One of Mother's methods 
+
+
+      inherited from object
+
+   Class: Father
+      hair()
+          One of Father's methods 
+
+      inherited from object
+
+   Class: Mother
+      eyes()
+          One of Mother's methods 
+
+      inherited from object
+

@@ -419,9 +419,10 @@ void createInitFn(ModuleSymbol* mod) {
 }
 
 
-ModuleSymbol* buildModule(const char* name, BlockStmt* block, const char* filename) {
+ModuleSymbol* buildModule(const char* name, BlockStmt* block, const char* filename, char *docs) {
   ModuleSymbol* mod = new ModuleSymbol(name, currentModuleType, block);
   mod->filename = astr(filename);
+  mod->doc = docs;
   createInitFn(mod);
   return mod;
 }
@@ -1387,7 +1388,7 @@ backPropagateInitsTypes(BlockStmt* stmts) {
 
 
 BlockStmt*
-buildVarDecls(BlockStmt* stmts, Flag externconfig, Flag varconst) {
+buildVarDecls(BlockStmt* stmts, Flag externconfig, Flag varconst, char* docs) {
   for_alist(stmt, stmts->body) {
     if (DefExpr* defExpr = toDefExpr(stmt)) {
       if (VarSymbol* var = toVarSymbol(defExpr->sym)) {
@@ -1417,6 +1418,7 @@ buildVarDecls(BlockStmt* stmts, Flag externconfig, Flag varconst) {
             }
           }
         }
+    var->doc = docs;
         continue;
       }
     }
@@ -1450,7 +1452,7 @@ buildVarDecls(BlockStmt* stmts, Flag externconfig, Flag varconst) {
 
 
 DefExpr*
-buildClassDefExpr(const char* name, Type* type, Expr* inherit, BlockStmt* decls, Flag isExtern) {
+buildClassDefExpr(const char* name, Type* type, Expr* inherit, BlockStmt* decls, Flag isExtern, char *docs) {
   ClassType* ct = toClassType(type);
   INT_ASSERT(ct);
   TypeSymbol* ts = new TypeSymbol(name, ct);
@@ -1465,6 +1467,7 @@ buildClassDefExpr(const char* name, Type* type, Expr* inherit, BlockStmt* decls,
   }
   if (inherit)
     ct->inherits.insertAtTail(inherit);
+  ct->doc = docs;
   return def;
 }
 
@@ -1559,10 +1562,10 @@ FnSymbol* buildLambda(FnSymbol *fn) {
 }
 
 // Called like:
-// buildFunctionDecl($4, $6, $7, $8, $9);
+// buildFunctionDecl($4, $6, $7, $8, $9, @$.comment);
 BlockStmt*
 buildFunctionDecl(FnSymbol* fn, RetTag optRetTag, Expr* optRetType,
-                  Expr* optWhere, BlockStmt* optFnBody)
+                  Expr* optWhere, BlockStmt* optFnBody, char *docs)
 {
   // This clause can be removed when the old _extern keyword is obsoleted. <hilde>
 
@@ -1597,6 +1600,7 @@ buildFunctionDecl(FnSymbol* fn, RetTag optRetTag, Expr* optRetType,
     // Looks like this flag is redundant with FLAG_EXTERN. <hilde>
     fn->addFlag(FLAG_FUNCTION_PROTOTYPE);
 
+  fn->doc = docs;
   return buildChapelStmt(new DefExpr(fn));
 }
 

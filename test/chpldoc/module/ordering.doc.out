@@ -1,0 +1,6 @@
+Module: ordering
+   config first: string
+       This config var should be printed first 
+   second()
+       This proc should be printed after all config vars 
+

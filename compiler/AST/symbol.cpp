@@ -158,7 +158,8 @@ bool Symbol::isImmediate() {
 VarSymbol::VarSymbol(const char *init_name,
                      Type    *init_type) :
   Symbol(E_VarSymbol, init_name, init_type),
-  immediate(NULL)
+  immediate(NULL),
+  doc(NULL)
 {
   gVarSymbols.add(this);
 }
@@ -478,7 +479,8 @@ FnSymbol::FnSymbol(const char* initName) :
   basicBlocks(NULL),
   calledBy(NULL),
   userString(NULL),
-  valueFunction(NULL)
+  valueFunction(NULL),
+  doc(NULL)
 {
   substitutions.clear();
   gFnSymbols.add(this);
@@ -851,7 +853,8 @@ ModuleSymbol::ModuleSymbol(const char* iName, ModTag iModTag, BlockStmt* iBlock)
   modTag(iModTag),
   block(iBlock),
   initFn(NULL),
-  filename(NULL)
+  filename(NULL),
+  doc(NULL)
 {
   block->parentSymbol = this;
   registerModule(this);
@@ -892,23 +895,98 @@ static int compareLineno(const void* v1, const void* v2) {
     return 0;
 }
 
+Vec<ClassType*> ModuleSymbol::getClasses() {
+  Vec<ClassType*> classes;
+  for_alist(expr, block->body) {
+    if (DefExpr* def = toDefExpr(expr))
+      if (FnSymbol* fn = toFnSymbol(def->sym)) {
+    // Ignore external and prototype functions.
+    if (fn->hasFlag(FLAG_MODULE_INIT)) {
+      for_alist(expr2, fn->body->body) {
+        if (DefExpr* def2 = toDefExpr(expr2))
+          if (TypeSymbol* type = toTypeSymbol(def2->sym)) 
+        if (ClassType* cl = toClassType(type->type)) {
+          classes.add(cl);
+        }
+      }
+    }
+      }
+  }
+  return classes;
+}
 
-void ModuleSymbol::codegenDef(FILE* outfile) {
-  fileinfo gpufile;
-  gpufile.fptr = NULL;
- 
+Vec<VarSymbol*> ModuleSymbol::getConfigVars() {
+  Vec<VarSymbol*> configs;
+  for_alist(expr, block->body) {
+    if (DefExpr* def = toDefExpr(expr))
+      if (FnSymbol* fn = toFnSymbol(def->sym)) {
+    // Ignore external and prototype functions.
+    if (fn->hasFlag(FLAG_MODULE_INIT)) {
+      for_alist(expr2, fn->body->body) {
+        if (DefExpr* def2 = toDefExpr(expr2))
+          if (VarSymbol* var = toVarSymbol(def2->sym)) {
+        if (var->hasFlag(FLAG_CONFIG)) {
+          configs.add(var);
+        }
+          }
+      }
+    }
+      }
+  }
+  return configs;
+}
+
+Vec<ModuleSymbol*> ModuleSymbol::getModules() {
+  Vec<ModuleSymbol*> mods;
+  for_alist(expr, block->body) {
+    if (DefExpr* def = toDefExpr(expr))
+      if (ModuleSymbol* mod = toModuleSymbol(def->sym)) {
+    if (strcmp(mod->defPoint->parentSymbol->name, name) == 0)
+      mods.add(mod);
+      }
+  }
+  return mods;
+}
+
+Vec<FnSymbol*> ModuleSymbol::getFunctions() {
   Vec<FnSymbol*> fns;
   for_alist(expr, block->body) {
     if (DefExpr* def = toDefExpr(expr))
       if (FnSymbol* fn = toFnSymbol(def->sym)) {
-        // Ignore external and prototype functions.
+    // Ignore external and prototype functions.
+    if (!genExternPrototypes &&
+            (fn->hasFlag(FLAG_EXTERN) ||
+             fn->hasFlag(FLAG_FUNCTION_PROTOTYPE)))
+      continue;
+    fns.add(fn);
+    // The following additional overhead and that present in getConfigVars 
+    // and getClasses is a result of the docs pass occurring before
+    // the functions/configvars/classes are taken out of the module
+    // initializer function and put on the same level as that function.
+    // If and when that changes, the code encapsulated in this if
+    // statement may be removed.
+    if (fn->hasFlag(FLAG_MODULE_INIT)) {
+      for_alist(expr2, fn->body->body) {
+        if (DefExpr* def2 = toDefExpr(expr2))
+          if (FnSymbol* fn2 = toFnSymbol(def2->sym)) {
         if (!genExternPrototypes &&
             (fn->hasFlag(FLAG_EXTERN) ||
              fn->hasFlag(FLAG_FUNCTION_PROTOTYPE)))
           continue;
-        fns.add(fn);
+        fns.add(fn2);
+          }
+      }
+    }
       }
   }
+  return fns;
+}
+
+
+void ModuleSymbol::codegenDef(FILE* outfile) {
+  fileinfo gpufile;
+  gpufile.fptr = NULL;
+  Vec<FnSymbol*> fns = getFunctions();
   qsort(fns.v, fns.n, sizeof(fns.v[0]), compareLineno);
   forv_Vec(FnSymbol, fn, fns) {
     // Create external file to be compiled by GPU compiler

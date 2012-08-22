@@ -1,0 +1,11 @@
+Module: recordsAndClasses
+   takesAThingy(val: thingy)
+       This method takes a record as its argument 
+
+   takesAWhatchamacallit(val: whatchamacallit)
+       This method takes a whatchamacallit as its argument 
+
+   Record: thingy
+   Class: whatchamacallit
+      inherited from object
+

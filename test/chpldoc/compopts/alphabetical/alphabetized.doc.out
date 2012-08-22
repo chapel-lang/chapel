@@ -1,0 +1,24 @@
+Module: alphabetized
+   alpha()
+       This method should be first 
+
+   beta()
+       This method should be second 
+
+   boat()
+       This method should be third 
+
+   dog()
+       This method should come before its plural 
+
+   dogs()
+       This method should come after its singular 
+
+   identical(val: int(64))
+       This method will probably come before its twin, although line number 
+   will determine exact placement 
+
+   identical(val: real(64))
+       This method will probably come after its twin, although line number 
+   will determine exact placement 
+

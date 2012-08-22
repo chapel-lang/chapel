@@ -20,6 +20,7 @@
 #include "symbol.h"
 #include "config.h"
 
+char *chplBinaryName = NULL;
 FILE* html_index_file = NULL;
 
 char deletedIdFilename[FILENAME_MAX+1] = "";
@@ -120,6 +121,8 @@ bool userSetCppLineno = false;
 int num_constants_per_variable = 1;
 char defaultDist[256] = "DefaultDist";
 int instantiation_limit = 256;
+bool fdocs = false;
+bool alphabetize = false;
 char mainModuleName[256] = "";
 bool printSearchDirs = false;
 bool printModuleFiles = false;
@@ -354,6 +357,7 @@ compute_program_name_loc(char* orig_argv0, const char** name, const char** loc) 
     *name = lastslash+1;
     *loc = argv0;
   }
+  chplBinaryName = (char*)*name;
 }
 
 
@@ -494,6 +498,8 @@ Record components:
 static ArgumentDescription arg_desc[] = {
  {"", ' ', NULL, "Module Processing Options", NULL, NULL, NULL, NULL},
  {"count-tokens", ' ', NULL, "Count tokens in main modules", "F", &countTokens, "CHPL_COUNT_TOKENS", NULL},
+ {"docs", ' ', NULL, "Runs documentation on the source file", "N", &fdocs, "CHPL_DOC", NULL },
+ {"docs-alphabetical", ' ', NULL, "Alphabetizes the documentation", "N", &alphabetize, NULL, NULL},
  {"main-module", ' ', "<module>", "Specify entry point module", "S256", mainModuleName, NULL, NULL},
  {"module-dir", 'M', "<directory>", "Add directory to module search path", "P", moduleSearchPath, NULL, addModulePath},
  {"print-code-size", ' ', NULL, "Print code size of main modules", "F", &printTokens, "CHPL_PRINT_TOKENS", NULL},
@@ -666,7 +672,7 @@ static void printStuff(const char* argv0) {
 
   if (printHelp || (!printedSomething && arg_state.nfile_arguments < 1)) {
     if (printedSomething) printf("\n");
-    usage(&arg_state, (printHelp == false), printEnvHelp, printSettingsHelp);
+    usage(&arg_state, (!printHelp), printEnvHelp, printSettingsHelp);
     shouldExit = true;
     printedSomething = true;
   }

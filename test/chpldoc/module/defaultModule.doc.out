@@ -1,0 +1,5 @@
+Module: defaultModule
+    This comment should end up attached to the module 
+   foo()
+       This proc doesn't matter very much 
+

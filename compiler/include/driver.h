@@ -5,6 +5,8 @@
 #include "map.h"
 #include "chpl.h"
 
+extern char *chplBinaryName;
+
 extern FILE* html_index_file;
 extern FILE* deletedIdHandle;
 extern char deletedIdFilename[FILENAME_MAX+1];
@@ -94,6 +96,8 @@ extern bool developer;
 extern int num_constants_per_variable;
 extern bool printCppLineno;
 
+extern bool fdocs;
+extern bool alphabetize;
 extern char defaultDist[256];
 extern char mainModuleName[256];
 extern bool printSearchDirs;

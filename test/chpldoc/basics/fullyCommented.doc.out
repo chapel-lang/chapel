@@ -1,0 +1,26 @@
+Module: fullyCommented
+   method1()
+       Comment for method1 
+
+   body()
+       Comment for method with a body 
+
+   hasArg(val: int(64))
+       Comment for method with an argument 
+
+   argAndBody(val: int(64))
+       Comment for method with argument and body 
+
+   Module: fullyCommented.Other
+      inside()
+          Comment for method inside module 
+
+      body()
+          Comment for method with a body inside module 
+
+      hasArg(val: int(64))
+          Comment for method with an argument inside module 
+
+      argAndBody(val: int(64))
+          Comment for method with argument and body inside module 
+

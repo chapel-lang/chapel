@@ -37,7 +37,7 @@ BlockStmt* buildUseStmt(CallExpr* modules);
 BlockStmt* buildTupleVarDeclStmt(BlockStmt* tupleBlock, Expr* type, Expr* init);
 BlockStmt* buildLabelStmt(const char* name, Expr* stmt);
 BlockStmt* buildIfStmt(Expr* condExpr, Expr* thenExpr, Expr* elseExpr = NULL);
-ModuleSymbol* buildModule(const char* name, BlockStmt* block, const char* filename);
+ModuleSymbol* buildModule(const char* name, BlockStmt* block, const char* filename, char *docs);
 CallExpr* buildPrimitiveExpr(CallExpr* exprs);
 BlockStmt* buildPrimitiveLoopStmt(CallExpr* exprs, BlockStmt* body);
 
@@ -78,15 +78,15 @@ BlockStmt* buildTypeSelectStmt(CallExpr* s, BlockStmt* whenstmts);
 CallExpr* buildReduceExpr(Expr* op, Expr* data);
 CallExpr* buildScanExpr(Expr* op, Expr* data);
 
-BlockStmt* buildVarDecls(BlockStmt* stmts, Flag externconfig, Flag varconst);
+BlockStmt* buildVarDecls(BlockStmt* stmts, Flag externconfig, Flag varconst, char* docs);
 
-DefExpr* buildClassDefExpr(const char* name, Type* type, Expr* inherit, BlockStmt* decls, Flag isExtern);
+DefExpr* buildClassDefExpr(const char* name, Type* type, Expr* inherit, BlockStmt* decls, Flag isExtern, char *docs);
 DefExpr* buildArgDefExpr(IntentTag tag, const char* ident, Expr* type, Expr* init, Expr* variable);
 DefExpr* buildTupleArgDefExpr(IntentTag tag, BlockStmt* tuple, Expr* type, Expr* init);
 FnSymbol* buildFunctionFormal(FnSymbol* fn, DefExpr* def);
 FnSymbol* buildLambda(FnSymbol *fn);
 BlockStmt* buildFunctionDecl(FnSymbol* fn, RetTag optRetTag, Expr* optRetType,
-                             Expr* optWhere, BlockStmt* optFnBody);
+                             Expr* optWhere, BlockStmt* optFnBody, char *docs);
 BlockStmt* buildLocalStmt(Expr* stmt);
 BlockStmt* buildOnStmt(Expr* expr, Expr* stmt);
 BlockStmt* buildBeginStmt(Expr* stmt);

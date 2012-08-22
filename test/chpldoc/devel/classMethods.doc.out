@@ -1,0 +1,25 @@
+Module: classMethods
+   chpl__init_classMethods()
+
+   method(_mt: _MT, this: named)
+       This method has a comment 
+
+   hasArg(_mt: _MT, this: named, val: string)
+       This method has an argument, which will affect 
+     its automatic generation 
+
+   _type_construct_named() type
+
+   _construct_named(meme: named)
+
+   Class: named
+       This class has a method 
+      method(_mt: _MT, this: named)
+          This method has a comment 
+
+      hasArg(_mt: _MT, this: named, val: string)
+          This method has an argument, which will affect 
+     its automatic generation 
+
+      inherited from object
+

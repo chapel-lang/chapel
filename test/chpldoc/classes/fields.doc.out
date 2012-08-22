@@ -1,0 +1,21 @@
+Module: fields
+   Class: fullOfFields
+      field thing1
+      field thing2
+      field typedField: int(64)
+      field alsoTyped: string
+      field commented
+          This field has a doc attached, does that work? 
+      field typeComment: int(64)
+          This field has a doc and an explicit type 
+      inherited from object
+
+   Record: fullOfFieldsToo
+      field thing1
+      field thing2
+      field typedField: int(64)
+      field alsoTyped: string
+      field commented
+          This field has a doc attached, does that work? 
+      field typeComment: int(64)
+          This field has a doc and an explicit type 
