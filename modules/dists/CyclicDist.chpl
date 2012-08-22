@@ -646,7 +646,6 @@ proc CyclicArr.dsiReindex(d: CyclicDom) {
                                                                  dom.dist.startIdx,
                                                                  dom.dist.targetLocDom);
             alias.locArr[i].locRAD.RAD = locArr[i].locRAD.RAD;
-            alias.locArr[i].locRAD.ddata = locArr[i].locRAD.ddata;
           }
         }
       }
@@ -697,7 +696,6 @@ proc CyclicArr.setupRADOpt() {
           for l in dom.dist.targetLocDom {
             if l != localeIdx {
               myLocArr.locRAD.RAD(l) = locArr(l).myElems._value.dsiGetRAD();
-              myLocArr.locRAD.ddata(l) = locArr(l).myElems._value.data;
             }
           }
         }
@@ -755,7 +753,7 @@ proc CyclicArr.dsiAccess(i:rank*idxType) var {
       if boundsChecking then
         if !dom.dsiMember(i) then
           halt("array index out of bounds: ", i);
-      var rlocIndex = dom.dist.targetLocsIdx(i);
+      var rlocIdx = dom.dist.targetLocsIdx(i);
       if !disableCyclicLazyRAD {
         if myLocArr.locRAD == nil {
           myLocArr.lockLocRAD();
@@ -773,15 +771,13 @@ proc CyclicArr.dsiAccess(i:rank*idxType) var {
         // are worth *not* having to synchronize.  If this turns out to be
         // an incorrect assumption, we can add an atomic variable and use
         // a fetchAdd to decide which task does the update.
-        if myLocArr.locRAD.RAD(rlocIndex).blk == SENTINEL {
-          myLocArr.locRAD.RAD(rlocIndex) = locArr(rlocIndex).myElems._value.dsiGetRAD();
-          myLocArr.locRAD.ddata(rlocIndex) = locArr(rlocIndex).myElems._value.data;
+        if myLocArr.locRAD.RAD(rlocIdx).blk == SENTINEL {
+          myLocArr.locRAD.RAD(rlocIdx) = locArr(rlocIdx).myElems._value.dsiGetRAD();
         }  
       }
       pragma "no copy" pragma "no auto destroy" var myLocRAD = myLocArr.locRAD;
-      pragma "no copy" pragma "no auto destroy" var myLocRADdata = myLocRAD.ddata;
-      if myLocRADdata(rlocIndex) != nil {
-        pragma "no copy" pragma "no auto destroy" var radata = myLocRAD.RAD;
+      pragma "no copy" pragma "no auto destroy" var radata = myLocRAD.RAD;
+      if radata(rlocIdx).data != nil {
         const startIdx = myLocArr.locCyclicRAD.startIdx;
         const dimLength = myLocArr.locCyclicRAD.targetLocDomDimLength;
         var str: rank*idxType;
@@ -789,9 +785,8 @@ proc CyclicArr.dsiAccess(i:rank*idxType) var {
           pragma "no copy" pragma "no auto destroy" var whole = dom.whole;
           str(i) = whole.dim(i).stride;
         }
-        var dataIdx = radata(rlocIndex).getDataIndex(stridable, str, i, startIdx, dimLength);
-        pragma "no copy" pragma "no auto destroy" var retVal = myLocRADdata(rlocIndex)(dataIdx);
-        return retVal;
+        var dataIdx = radata(rlocIdx).getDataIndex(stridable, str, i, startIdx, dimLength);
+        return radata(rlocIdx).data(dataIdx);
       }
     }
   }

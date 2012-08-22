@@ -378,6 +378,7 @@ record _remoteAccessData {
   var str: rank*chpl__signedType(idxType);
   var origin: idxType;
   var factoredOffs: idxType;
+  var data: _ddata(eltType);
 }
 
 //
@@ -389,7 +390,6 @@ class LocRADCache {
   type idxType;
   var targetLocDom: domain(rank);
   var RAD: [targetLocDom] _remoteAccessData(eltType, rank, idxType);
-  var ddata: [targetLocDom] _ddata(eltType);
 
   proc LocRADCache(type eltType, param rank: int, type idxType,
                    newTargetLocDom: domain(rank)) {
@@ -645,6 +645,7 @@ class DefaultRectangularArr: BaseArr {
     rad.str = str;
     rad.origin = origin;
     rad.factoredOffs = factoredOffs;
+    rad.data = data;
     return rad;
   }
 }
