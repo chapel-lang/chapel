@@ -136,8 +136,8 @@ void processMultiLineComment(void) {
       countMultiLineComment(stringBuffer);
       processNewline();
       if (fdocs) {
-    wholeComment += stringBuffer;
-    wholeComment += '\n';
+        wholeComment += stringBuffer;
+        wholeComment += '\n';
       }
       newString();
       countCommentLine();

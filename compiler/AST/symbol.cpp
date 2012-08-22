@@ -900,16 +900,16 @@ Vec<ClassType*> ModuleSymbol::getClasses() {
   for_alist(expr, block->body) {
     if (DefExpr* def = toDefExpr(expr))
       if (FnSymbol* fn = toFnSymbol(def->sym)) {
-    // Ignore external and prototype functions.
-    if (fn->hasFlag(FLAG_MODULE_INIT)) {
-      for_alist(expr2, fn->body->body) {
-        if (DefExpr* def2 = toDefExpr(expr2))
-          if (TypeSymbol* type = toTypeSymbol(def2->sym)) 
-        if (ClassType* cl = toClassType(type->type)) {
-          classes.add(cl);
+        // Ignore external and prototype functions.
+        if (fn->hasFlag(FLAG_MODULE_INIT)) {
+          for_alist(expr2, fn->body->body) {
+            if (DefExpr* def2 = toDefExpr(expr2))
+              if (TypeSymbol* type = toTypeSymbol(def2->sym)) 
+                if (ClassType* cl = toClassType(type->type)) {
+                  classes.add(cl);
+                }
+          }
         }
-      }
-    }
       }
   }
   return classes;
@@ -920,17 +920,17 @@ Vec<VarSymbol*> ModuleSymbol::getConfigVars() {
   for_alist(expr, block->body) {
     if (DefExpr* def = toDefExpr(expr))
       if (FnSymbol* fn = toFnSymbol(def->sym)) {
-    // Ignore external and prototype functions.
-    if (fn->hasFlag(FLAG_MODULE_INIT)) {
-      for_alist(expr2, fn->body->body) {
-        if (DefExpr* def2 = toDefExpr(expr2))
-          if (VarSymbol* var = toVarSymbol(def2->sym)) {
-        if (var->hasFlag(FLAG_CONFIG)) {
-          configs.add(var);
-        }
+        // Ignore external and prototype functions.
+        if (fn->hasFlag(FLAG_MODULE_INIT)) {
+          for_alist(expr2, fn->body->body) {
+            if (DefExpr* def2 = toDefExpr(expr2))
+              if (VarSymbol* var = toVarSymbol(def2->sym)) {
+                if (var->hasFlag(FLAG_CONFIG)) {
+                  configs.add(var);
+                }
+              }
           }
-      }
-    }
+        }
       }
   }
   return configs;
@@ -941,8 +941,8 @@ Vec<ModuleSymbol*> ModuleSymbol::getModules() {
   for_alist(expr, block->body) {
     if (DefExpr* def = toDefExpr(expr))
       if (ModuleSymbol* mod = toModuleSymbol(def->sym)) {
-    if (strcmp(mod->defPoint->parentSymbol->name, name) == 0)
-      mods.add(mod);
+        if (strcmp(mod->defPoint->parentSymbol->name, name) == 0)
+          mods.add(mod);
       }
   }
   return mods;
@@ -953,30 +953,30 @@ Vec<FnSymbol*> ModuleSymbol::getFunctions() {
   for_alist(expr, block->body) {
     if (DefExpr* def = toDefExpr(expr))
       if (FnSymbol* fn = toFnSymbol(def->sym)) {
-    // Ignore external and prototype functions.
-    if (!genExternPrototypes &&
-            (fn->hasFlag(FLAG_EXTERN) ||
-             fn->hasFlag(FLAG_FUNCTION_PROTOTYPE)))
-      continue;
-    fns.add(fn);
-    // The following additional overhead and that present in getConfigVars 
-    // and getClasses is a result of the docs pass occurring before
-    // the functions/configvars/classes are taken out of the module
-    // initializer function and put on the same level as that function.
-    // If and when that changes, the code encapsulated in this if
-    // statement may be removed.
-    if (fn->hasFlag(FLAG_MODULE_INIT)) {
-      for_alist(expr2, fn->body->body) {
-        if (DefExpr* def2 = toDefExpr(expr2))
-          if (FnSymbol* fn2 = toFnSymbol(def2->sym)) {
+        // Ignore external and prototype functions.
         if (!genExternPrototypes &&
             (fn->hasFlag(FLAG_EXTERN) ||
              fn->hasFlag(FLAG_FUNCTION_PROTOTYPE)))
           continue;
-        fns.add(fn2);
+        fns.add(fn);
+        // The following additional overhead and that present in getConfigVars 
+        // and getClasses is a result of the docs pass occurring before
+        // the functions/configvars/classes are taken out of the module
+        // initializer function and put on the same level as that function.
+        // If and when that changes, the code encapsulated in this if
+        // statement may be removed.
+        if (fn->hasFlag(FLAG_MODULE_INIT)) {
+          for_alist(expr2, fn->body->body) {
+            if (DefExpr* def2 = toDefExpr(expr2))
+              if (FnSymbol* fn2 = toFnSymbol(def2->sym)) {
+                if (!genExternPrototypes &&
+                    (fn->hasFlag(FLAG_EXTERN) ||
+                     fn->hasFlag(FLAG_FUNCTION_PROTOTYPE)))
+                  continue;
+                fns.add(fn2);
+              }
           }
-      }
-    }
+        }
       }
   }
   return fns;

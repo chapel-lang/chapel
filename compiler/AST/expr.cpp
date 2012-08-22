@@ -227,14 +227,14 @@ void SymExpr::prettyPrint(std::ofstream *o) {
   if (strcmp(var->name, "nil") != 0) {
     if (var->isImmediate()) {
       if (VarSymbol *sym = toVarSymbol(var)) {
-    if (sym->immediate->num_index == INT_SIZE_1)
-      *o << sym->immediate->v_bool;
-    else if (sym->immediate->const_kind == NUM_KIND_INT)
-      *o << sym->immediate->int_value();
-    else if (sym->immediate->const_kind == NUM_KIND_UINT)
-      *o << sym->immediate->uint_value();
-    else if (sym->immediate->const_kind == CONST_KIND_STRING)
-      *o << sym->immediate->v_string;
+        if (sym->immediate->num_index == INT_SIZE_1)
+          *o << sym->immediate->v_bool;
+        else if (sym->immediate->const_kind == NUM_KIND_INT)
+          *o << sym->immediate->int_value();
+        else if (sym->immediate->const_kind == NUM_KIND_UINT)
+          *o << sym->immediate->uint_value();
+        else if (sym->immediate->const_kind == CONST_KIND_STRING)
+          *o << sym->immediate->v_string;
       }
     } else {
       *o << var->name;
@@ -664,38 +664,38 @@ void CallExpr::prettyPrint(std::ofstream *o) {
   if (baseExpr != NULL) {
     if (UnresolvedSymExpr *expr = toUnresolvedSymExpr(baseExpr)) {
       if (strcmp(expr->unresolved, "chpl__buildArrayRuntimeType") == 0) {
-    *o << "[";
-    array = true;
+        *o << "[";
+        array = true;
       } else if (strcmp(expr->unresolved, 
-            "chpl__buildDomainRuntimeType") == 0) {
-    *o << "domain(";
-    argList.last()->prettyPrint(o);
-    *o << ")";
-    unusual = true;
+                        "chpl__buildDomainRuntimeType") == 0) {
+        *o << "domain(";
+        argList.last()->prettyPrint(o);
+        *o << ")";
+        unusual = true;
       } else if (strcmp(expr->unresolved, 
-            "_build_range") == 0) {
-    argList.first()->prettyPrint(o);
-    *o << "..";
-    argList.last()->prettyPrint(o);
-    unusual = true;
+                        "_build_range") == 0) {
+        argList.first()->prettyPrint(o);
+        *o << "..";
+        argList.last()->prettyPrint(o);
+        unusual = true;
       } else if (strcmp(expr->unresolved, "*") == 0){
-    unusual = true;
-    argList.first()->prettyPrint(o);
-    *o << "*(";
-    argList.last()->prettyPrint(o);
-    *o << ")";
+        unusual = true;
+        argList.first()->prettyPrint(o);
+        *o << "*(";
+        argList.last()->prettyPrint(o);
+        *o << ")";
       } else if (strcmp(expr->unresolved,
-            "chpl__buildDomainExpr") == 0) {
-    unusual = true;
-    for_alist(expr, argList) {
-      if (expr != argList.first()) {
-        *o << ", ";
-      }
-      expr->prettyPrint(o);
-    }
+                        "chpl__buildDomainExpr") == 0) {
+        unusual = true;
+        for_alist(expr, argList) {
+          if (expr != argList.first()) {
+            *o << ", ";
+          }
+          expr->prettyPrint(o);
+        }
       } else if (strcmp(expr->unresolved,
-            "_build_tuple") != 0) {
-    baseExpr->prettyPrint(o);
+                        "_build_tuple") != 0) {
+        baseExpr->prettyPrint(o);
       }
     } else {
       baseExpr->prettyPrint(o);
@@ -706,11 +706,11 @@ void CallExpr::prettyPrint(std::ofstream *o) {
   if (!unusual) {
     for_alist(expr, argList) {
       if (expr != argList.first()) {
-    if (array && expr == argList.last()) {
-      *o << "] ";
-    } else {
-      *o << ", "; 
-    }     
+        if (array && expr == argList.last()) {
+          *o << "] ";
+        } else {
+          *o << ", "; 
+        }     
       }
       expr->prettyPrint(o);         
     }

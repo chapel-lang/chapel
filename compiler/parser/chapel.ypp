@@ -20,17 +20,17 @@ typedef struct YYLTYPE {    \
 #define YYLTYPE_IS_DECLARED 1
 #define YYLTYPE_IS_TRIVIAL 1
  
-#define YYLLOC_DEFAULT(Current, Rhs, N)                 \
+#define YYLLOC_DEFAULT(Current, Rhs, N)                                 \
   if (N) {                                                              \
         (Current).first_line   = (Rhs)[1].first_line;                   \
         if ((Current).first_line) yystartlineno = (Current).first_line; \
         (Current).first_column = (Rhs)[1].first_column;                 \
         (Current).last_line    = (Rhs)[N].last_line;                    \
         (Current).last_column  = (Rhs)[N].last_column;                  \
-    (Current).comment = NULL;                   \
-  } else  {                             \
-    (Current) = yylloc;                         \
-  }                                 \
+        (Current).comment = NULL;                                       \
+  } else  {                                                             \
+    (Current) = yylloc;                                                 \
+  }                                                                     \
 }
 
 
@@ -362,7 +362,7 @@ type_select_stmt:
 class_decl_stmt:
   opt_extern class_tag ident opt_inherit TLCBR class_level_stmt_ls TRCBR
     { $$ = buildChapelStmt(buildClassDefExpr($3, $2, $4, $6, $1, @1.comment));
-    yylloc.comment = NULL; }
+      yylloc.comment = NULL; }
 ;
 
 opt_extern:
@@ -372,9 +372,9 @@ opt_extern:
 
 class_tag:
   TCLASS   { $$ = new ClassType(CLASS_CLASS); @$.comment = yylloc.comment; 
-         yylloc.comment = NULL;}
+             yylloc.comment = NULL;}
 | TRECORD  { $$ = new ClassType(CLASS_RECORD); @$.comment = yylloc.comment; 
-         yylloc.comment = NULL;}
+             yylloc.comment = NULL;}
 | TUNION   { $$ = new ClassType(CLASS_UNION); }
 ;
 
@@ -460,15 +460,15 @@ lambda_decl_expr:
 linkage_spec:
                 { $$ = new FnSymbol(""); }
 | TINLINE       { $$ = new FnSymbol(""); $$->addFlag(FLAG_INLINE); 
-          @$.comment = yylloc.comment; yylloc.comment = NULL;}
+                  @$.comment = yylloc.comment; yylloc.comment = NULL;}
 | TEXPORT       { $$ = new FnSymbol(""); $$->addFlag(FLAG_EXPORT);  
-          @$.comment = yylloc.comment; yylloc.comment = NULL;}
+                  @$.comment = yylloc.comment; yylloc.comment = NULL;}
 | TEXPORT ident { $$ = new FnSymbol($2); $$->addFlag(FLAG_EXPORT);  
-          @$.comment = yylloc.comment; yylloc.comment = NULL;}
+                  @$.comment = yylloc.comment; yylloc.comment = NULL;}
 | TEXTERN       { $$ = new FnSymbol(""); $$->addFlag(FLAG_EXTERN);  
-          @$.comment = yylloc.comment; yylloc.comment = NULL;}
+                  @$.comment = yylloc.comment; yylloc.comment = NULL;}
 | TEXTERN ident { $$ = new FnSymbol($2); $$->addFlag(FLAG_EXTERN);  
-          @$.comment = yylloc.comment; yylloc.comment = NULL;}
+                  @$.comment = yylloc.comment; yylloc.comment = NULL;}
 
 fn_decl_stmt:
   linkage_spec proc_or_iter

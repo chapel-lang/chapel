@@ -35,26 +35,26 @@ void docs(void) {
     
     forv_Vec(ModuleSymbol, mod, gModuleSymbols) {
       if (!devOnlyModule(mod) || developer) {
-    std::string filename = mod->filename;
-    if (filename.find(".chpl") != std::string::npos) {
-      // removes .chpl from the end of the file name
-      filename = filename.substr(0, filename.find(".chpl"));
-    }
-    filename = FOLDERNAME + "/" + filename;
-    filename += ".txt";
-    
-    createDocsFileFolders(filename);
-
-    // If the file we want to write to was not previously created,
-    // create it here.  
-    if (files[mod->filename] == NULL) {
-      files[mod->filename] = 
-        new std::ofstream(filename.c_str(), std::ios::out);
-    }
-    
-    if (isNotSubmodule(mod)) {
-      printModule(files[mod->filename], mod, mod->name);
-    }
+        std::string filename = mod->filename;
+        if (filename.find(".chpl") != std::string::npos) {
+          // removes .chpl from the end of the file name
+          filename = filename.substr(0, filename.find(".chpl"));
+        }
+        filename = FOLDERNAME + "/" + filename;
+        filename += ".txt";
+        
+        createDocsFileFolders(filename);
+        
+        // If the file we want to write to was not previously created,
+        // create it here.  
+        if (files[mod->filename] == NULL) {
+          files[mod->filename] = 
+            new std::ofstream(filename.c_str(), std::ios::out);
+        }
+        
+        if (isNotSubmodule(mod)) {
+          printModule(files[mod->filename], mod, mod->name);
+        }
       }
     }
     // Goes through and closes all the open files
@@ -68,10 +68,10 @@ void docs(void) {
 
 bool isNotSubmodule(ModuleSymbol *mod) {
   return (mod->defPoint == NULL || 
-      mod->defPoint->parentSymbol == NULL ||
-      mod->defPoint->parentSymbol->name == NULL || 
-      strcmp("chpl__Program", mod->defPoint->parentSymbol->name) == 0 ||
-      strcmp("_root", mod->defPoint->parentSymbol->name) == 0);
+          mod->defPoint->parentSymbol == NULL ||
+          mod->defPoint->parentSymbol->name == NULL || 
+          strcmp("chpl__Program", mod->defPoint->parentSymbol->name) == 0 ||
+          strcmp("_root", mod->defPoint->parentSymbol->name) == 0);
 }
 
 void printIntent(std::ofstream *file, IntentTag intent) {
@@ -114,9 +114,9 @@ void printFields(std::ofstream *file, ClassType *cl) {
   for_fields(tmp, cl) {
     if (VarSymbol* field = toVarSymbol(tmp)) {
       if (strcmp(field->name, "super") != 0) {
-    printTabs(file);
-    *file << "field ";
-    printVar(file, field);
+        printTabs(file);
+        *file << "field ";
+        printVar(file, field);
       }
     }
   }
@@ -169,7 +169,7 @@ void printClass(std::ofstream *file, ClassType *cl) {
       printFields(file, c);
     
       forv_Vec(FnSymbol, fn, c->methods) {
-    printFunction(file, fn);
+        printFunction(file, fn);
        
       }
       NUMTABS--;
@@ -209,8 +209,8 @@ void printTabs(std::ofstream *file) {
 // only printed in developer mode.  Is not applicable to printing class
 // functions.
 bool devOnlyFunction(FnSymbol *fn) {
-  return fn->hasFlag(FLAG_MODULE_INIT) || fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) 
-    || fn->hasFlag(FLAG_CONSTRUCTOR) || fn->hasFlag(FLAG_METHOD);
+  return (fn->hasFlag(FLAG_MODULE_INIT) || fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) 
+          || fn->hasFlag(FLAG_CONSTRUCTOR) || fn->hasFlag(FLAG_METHOD));
 }
 
 // Returns true if the provide module is one of the internal or standard 
@@ -286,19 +286,19 @@ void printFunction(std::ofstream *file, FnSymbol *fn) {
   if (fn->numFormals() > 0) {
     if (!developer && strcmp(fn->getFormal(1)->name, "_mt") == 0) {
       for (int i = 3; i < fn->numFormals(); i++) {
-    ArgSymbol *cur = fn->getFormal(i);
-    printArg(file, cur);
-    *file << ", ";
+        ArgSymbol *cur = fn->getFormal(i);
+        printArg(file, cur);
+        *file << ", ";
       }
       if (fn->numFormals() != 2) {
-    ArgSymbol *cur = fn->getFormal(fn->numFormals());
-    printArg(file, cur);
+        ArgSymbol *cur = fn->getFormal(fn->numFormals());
+        printArg(file, cur);
       }
     } else {
       for (int i = 1; i < fn->numFormals(); i++) {
-    ArgSymbol *cur = fn->getFormal(i);
-    printArg(file, cur);
-    *file << ", ";
+        ArgSymbol *cur = fn->getFormal(i);
+        printArg(file, cur);
+        *file << ", ";
       }
       ArgSymbol *cur = fn->getFormal(fn->numFormals());
       printArg(file, cur);

@@ -1418,7 +1418,7 @@ buildVarDecls(BlockStmt* stmts, Flag externconfig, Flag varconst, char* docs) {
             }
           }
         }
-    var->doc = docs;
+        var->doc = docs;
         continue;
       }
     }
