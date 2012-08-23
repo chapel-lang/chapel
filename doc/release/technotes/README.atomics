@@ -9,8 +9,11 @@ Overview
 --------
 
 Atomic variables are variables that support atomic operations.
-Currently, Chapel supports atomic operations on bools and all
-supported sized of signed and unsigned integer types.
+Currently, Chapel supports processor-provided atomic operations on
+bools and all supported sized of signed and unsigned integer types.
+Initial support for network-provided atomic operations is also
+available.  See the appropriate README for a particular platform to
+see if network-based atomics are available.
 
 The choice of supported atomic variable types as well as the atomic
 operations was strongly influenced by the upcoming C standard, C1x.
@@ -23,7 +26,16 @@ environment variable CHPL_ATOMICS.  Similar to the other Chapel
 environment variables, an appropriate default is chosen when not
 specified, and not all implementations are available for all settings.
 Chapel currently supports two atomics implementations: intrinsics (gcc
-intrinsics) and locks.
+intrinsics) and locks.  This environment variable also specifies the
+atomic implementation used by the Chapel runtime.
+
+If supported, the network atomics implementation can be selected via
+the environment variable CHPL_NETWORK_ATOMICS.  If set, all variables
+declared to be atomic, will use the network's atomic operations.  It
+is possible to override this default by using the explicit type name
+for the processor-based atomics (available in the type function
+chpl__atomicType() defined in the file
+$CHPL_HOME/modules/internal/Atomics.chpl).
 
 
 Syntax and Interface
@@ -40,9 +52,9 @@ standard operations (e.g., read, +=) on atomic variables to call these
 methods automatically.
 
 All atomic types support read(), write(), exchange(),
-compareAndExchangeWeak(), and compareAndExchangeStrong().  Integer
-atomics types support atomic fetch operations.  Bool atomics support
-testAndSet() and clear().
+compareExchangeWeak(), and compareExchangeStrong(), and
+compareExchange().  Integer atomics types support atomic fetch
+operations.  Bool atomics support testAndSet() and clear().
 
 The following summarizes the methods and supported types.
 
@@ -73,10 +85,11 @@ The following summarizes the methods and supported types.
    sub(x), fetchSub(x):
    or(x),  fetchOr(x):
    and(x), fetchAnd(x):
-     Applies the appropriate operator (+, -, |, or &) to the original
-     value and x and stores the result.  For the fetch varieties,
-     returns the original value.  Only defined for the integral atomic
-     types.
+   xor(x), fetchXor(x):
+     Applies the appropriate operator (+, -, |, &, or ^) to the
+     original value and x and stores the result.  For the fetch
+     varieties, returns the original value.  Only defined for the
+     integral atomic types.
 
    testAndSet(x):
      Stores true as the new value.  Returns the original value.  Only
@@ -116,9 +129,10 @@ Below are a few of the known open issues with Chapel atomics.
 - There are a number of undocumented functions provided by the atomics
   interface that are omitted from this README due to incomplete
   implementation and/or as of yet undefined semantics.  These
-  functions include a 'fence' operation and a 'lock free' test.  To
-  see a full list of available functions, see the extern declarations
-  at the top of $CHPL_HOME/modules/internal/Atomics.chpl.
+  functions include a 'fence' operation, a 'lock free' test, and
+  weaker accesses (peek/poke).  To see a full list of available
+  functions, see the extern declarations at the top of
+  $CHPL_HOME/modules/internal/Atomics.chpl.
 
 - Default argument passing semantics are not yet defined for atomics.
   Currently, atomics are implemented using records, and as a result
@@ -128,9 +142,6 @@ Below are a few of the known open issues with Chapel atomics.
 - Currently, all remote atomic operations will result in the calling
   task effectively migrating to the locale on which the atomic
   variable was allocated and performing the atomic operations locally.
-  In the future, we expect to utilize network-provided atomic RDMA
-  support as available.
-
 
 Feedback
 --------
