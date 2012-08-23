@@ -1,8 +1,4 @@
-/*extern proc __sync_val_compare_and_swap(inout state_p : volatile uint(32), 
-                                         state : uint(32), 
-                                         xchg : uint(32)) : uint(32);
- */
-extern proc sched_yield();
+extern proc chpl_task_yield();
 
 use Time;
 
@@ -20,7 +16,6 @@ use Time;
 	- (description of benchmark: http://shootout.alioth.debian.org/u32q/benchmark.php?test=chameneosredux&lang=all */
 
 config const numMeetings : int = 6000000;	// number of meetings to take place
-config const spinCount : int = 20000;		// time to spin before calling sched_yield()	
 config const numChameneos1 : int(32) = 3;		// size of population 1
 config const numChameneos2 : int(32) = 10;  	// size of population 2
 enum Color {blue=0, red=1, yellow=2}; 	 
@@ -65,7 +60,6 @@ class Chameneos {
 	var meetings : int;
 	var meetingsWithSelf : int;
 	var meetingCompleted : atomic uint(32);
-        //var meetingCompleted : volatile uint(32);
 	
 	/* start tells a Chameneos to go to a given MeetingPlace, where it may meet 
 	   with another Chameneos.  If it does, it will get the complement of the color
@@ -79,12 +73,10 @@ class Chameneos {
 		var is_same : int;
 		var newColor : Color;
 
-		//writeln("id ", id, ": in start");
 		stateTemp = meetingPlace.state.read();	
 					
 		while (true) {
 			peer_idx = stateTemp & CHAMENEOS_IDX_MASK;
-                        //			writeln("id ", id, ": peer_idx is ", peer_idx);
 			if (peer_idx) {
                           xchg = stateTemp - peer_idx - (1 << MEET_COUNT_SHIFT):uint(32);
 			} else if (stateTemp) {
@@ -92,11 +84,9 @@ class Chameneos {
 			} else {
 				break;
 			}
-			//writeln("id ", id, ": xchg is ", xchg);
 
 			if (meetingPlace.state.compareExchangeStrong(stateTemp, xchg)) {
 				if (peer_idx) {
-					//writeln("id ", id, ": got here second");
 					if (id == peer_idx) {
 						is_same = 1;
 						halt("halt: chameneos met with self");
@@ -107,24 +97,15 @@ class Chameneos {
 					peer.meetings += 1;
 					peer.meetingsWithSelf += is_same;
 					peer.meetingCompleted.write(1);
-					//peer.meetingCompleted = 1;
 					color = newColor;
 					meetings += 1;
 					meetingsWithSelf += is_same;
-					//writeln("id ", id, ": exiting");
 
 				} else {
-					//writeln("id ", id, ": got here first");
-                                        //var spin_count = spinCount;
 					while (meetingCompleted.read() == 0) {
-					//while (meetingCompleted == 0) {
-                                                //if spin_count then spin_count -= 1;
-                                                //else 
-                                                  sched_yield();
+                                          chpl_task_yield();
 					}
-					//writeln("id ", id, ": exiting");
 					meetingCompleted.write(0);
-					//meetingCompleted = 0;
 					stateTemp = meetingPlace.state.read();	
 				}
 			} else {
