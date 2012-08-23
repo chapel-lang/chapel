@@ -312,6 +312,11 @@ darwin-/mac-specific regressions
 ptr-to-ssize_t/ptr-to-int32_t warnings
 --------------------------------------
 [Error matching compiler output for release/examples/primers/fileIO]
+[Error matching program output for studies/amr/advection/amr/AMR_AdvectionCTU_driver]
+[Error matching program output for studies/amr/advection/grid/Grid_AdvectionCTU_driver]
+[Error matching program output for studies/amr/advection/level/Level_AdvectionCTU_driver]
+[Error matching program output for studies/amr/diffusion/grid/Grid_DiffusionBE_driver]
+[Error matching program output for studies/amr/diffusion/level/Level_DiffusionBE_driver]
 
 maybe we can remove these suppressions for Mac now?
 ---------------------------------------------------
@@ -325,14 +330,6 @@ maybe we can remove these suppressions for Mac now?
 ??? (ever since checked in)
 ---------------------------
 [Error matching compiler output for studies/shootout/chameneos-redux/chameneos-redux-cas]
-
-python syntax errors (01/18/11)
--------------------------------
-[Error matching program output for studies/amr/advection/amr/AMR_AdvectionCTU_driver]
-[Error matching program output for studies/amr/advection/grid/Grid_AdvectionCTU_driver]
-[Error matching program output for studies/amr/advection/level/Level_AdvectionCTU_driver]
-[Error matching program output for studies/amr/diffusion/grid/Grid_DiffusionBE_driver]
-[Error matching program output for studies/amr/diffusion/level/Level_DiffusionBE_driver]
 
 ??? (06/23/10)
 --------------
