@@ -921,6 +921,10 @@ nondet. compilation timeout
 [Error: Timed out compilation for release/examples/primers/arrays] (03/23/12)
 [Error: Timed out compilation for release/examples/spec/Arrays/slicing] (02/18/12)
 
+internal translate errors (08/??/12)
+-----------------------------------
+A few tests report "translate(tile tree creation): internal error"
+
 
 =======================================================
 xmt-sim specific regressions (in addition to the above)

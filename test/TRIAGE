@@ -38,7 +38,7 @@ spectralnorm (vass)
 -------------------
 proposed approach is to see whether reference version is similarly
 noisy, and if not to see whether ours has inadvertant nondeterminisms.
-(still noisy as of 2012/08/14: gnfp, gnfp-nolocal)
+(still noisy as of 2012/08/14-8/24: gnfp, gnfp-nolocal)
 
 
 madness (sungeun)
@@ -83,7 +83,7 @@ linux64.gnu.gasnet.qthreads.none (UNASSIGNED)
 0) We moved to a non-oversubscribed setting on a beefier machine
 1) Continue to have a lot of noise in testing.
    - Often the execution times out nondeterministically
-2) Got a seg fault (06/06/12, 6/16)
+2) Got a seg fault (06/06/12, 6/16, stream-ep 8/23/12)
 3) Intermitent seg fault on exit (7/7 7/9, 7/12, 7/13, same as #2?)
 4) seg fault during program execution (same as #2?):
    distributions/robust/arithmetic/optimizations/optimizeOnClauses_basic_tuple (7/10)
@@ -196,6 +196,11 @@ nondet. tmalloc failures
 ------------------------
 [Error: Timed out executing program distributions/robust/arithmetic/stress/test_many_domains] (08/08/12)
 
+parallel/begin/deitz/test_big_recursive_begin future succeeded
+--------------------------------------------------------------
+only in these two runs:
+ 120818/Nightly-day6-Sat-linux64.gnu.none.fifo.pthreads-std.log
+ 120821/Nightly-day2-Tue-linux64.gnu.none.fifo.pthreads-nlc.log
 
 ===========================================
 Not noisy, but need some attention sometime
