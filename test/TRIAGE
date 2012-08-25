@@ -125,6 +125,10 @@ sort?  If not, file bug against XMT compiler.
 Not so noisy as to be familiar annoyances
 =========================================
 
+release/examples/primers/chpldoc - linux32.gnu.gasnet.fifo.pthreads (UNASSIGNED)
+--------------------------------------------------------------------------------
+crashed with error: internal failure MIS0275 (8/24/12)
+
 variance in comm counts - linux64.gnu.gasnet-everything.fifo.pthreads (sungeun)
 -------------------------------------------------------------------------------
 examples:
