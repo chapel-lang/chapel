@@ -5,6 +5,22 @@
 #include "map.h"
 #include "chpl.h"
 
+// For versions of bison beyond 2.3, this struct and the following
+// two defines should be moved back into chapel.ypp into a %code requires
+// block so that YYLTYPE is near the YYLLOC_DEFAULT definition.
+typedef struct YYLTYPE {    
+       int first_line;      
+       int first_column;    
+       int last_line;       
+       int last_column;     
+       char *comment;       
+} YYLTYPE;
+#define YYLTYPE_IS_DECLARED 1
+#define YYLTYPE_IS_TRIVIAL 1
+
+
+
+
 extern char *chplBinaryName;
 
 extern FILE* html_index_file;

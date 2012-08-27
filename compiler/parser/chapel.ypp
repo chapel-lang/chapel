@@ -9,31 +9,6 @@
 //
 // The rules are listed in depth-first order from stmt and expr
 //
-%code requires {
-typedef struct YYLTYPE {    \
-       int first_line;      \
-       int first_column;    \
-       int last_line;       \
-       int last_column;     \
-       char *comment;       \
-} YYLTYPE;
-#define YYLTYPE_IS_DECLARED 1
-#define YYLTYPE_IS_TRIVIAL 1
- 
-#define YYLLOC_DEFAULT(Current, Rhs, N)                                 \
-  if (N) {                                                              \
-        (Current).first_line   = (Rhs)[1].first_line;                   \
-        if ((Current).first_line) yystartlineno = (Current).first_line; \
-        (Current).first_column = (Rhs)[1].first_column;                 \
-        (Current).last_line    = (Rhs)[N].last_line;                    \
-        (Current).last_column  = (Rhs)[N].last_column;                  \
-        (Current).comment = NULL;                                       \
-  } else  {                                                             \
-    (Current) = yylloc;                                                 \
-  }                                                                     \
-}
-
-
 %{
 
 #include <cstdio>
@@ -46,6 +21,20 @@ typedef struct YYLTYPE {    \
   static int query_uid = 1;
   int captureTokens;
   char captureString[1024];
+
+ 
+#define YYLLOC_DEFAULT(Current, Rhs, N)                                 \
+  if (N) {                                                              \
+        (Current).first_line   = (Rhs)[1].first_line;                   \
+        if ((Current).first_line) yystartlineno = (Current).first_line; \
+        (Current).first_column = (Rhs)[1].first_column;                 \
+        (Current).last_line    = (Rhs)[N].last_line;                    \
+        (Current).last_column  = (Rhs)[N].last_column;                  \
+        (Current).comment = NULL;                                       \
+  } else  {                                                             \
+    (Current) = yylloc;                                                 \
+  }                                                                     \
+
 %}
 
 %start program
