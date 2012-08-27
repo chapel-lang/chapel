@@ -693,17 +693,15 @@ char* chplRealPath(const char* path)
 #ifdef __MTA__
   return NULL;
 #else
-  char* got = realpath(path, NULL);
-  if( got ) return got;
-  if( ! got ) {
-    // Try again with a buffer of size PATH_MAX
-    char buf[PATH_MAX];
-    got = realpath(path, buf);
-    if( got ) {
-      return strdup(buf);
-    }
-  }
-  return NULL;
+  // We would really rather use
+  // char* got = realpath(path, NULL);
+  // but that doesn't work on some Mac OS X versions.
+  char* buf = (char*) malloc(PATH_MAX);
+  char* got = realpath(path, buf);
+  char* ret = NULL;
+  if( got ) ret = strdup(got);
+  free(buf);
+  return ret;
 #endif
 }
 
