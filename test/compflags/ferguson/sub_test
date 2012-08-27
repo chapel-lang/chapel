@@ -6,15 +6,16 @@ use File::Path qw/ mkpath /;
 #$TMP = shift @ARGV;
 
 $ORIG_CHPL_HOME = $ENV{"CHPL_HOME"};
-$ORIG_CHPL = `which chpl`;
+$PLAT=`$ORIG_CHPL_HOME/util/chplenv/platform --host`;
+chomp $PLAT;
+
+$ORIG_CHPL = "$ORIG_CHPL_HOME/bin/$PLAT/chpl";
+
 $ORIG_CWD = $ENV{"PWD"};
-chomp $ORIG_CHPL;
 
 $ORIG_PATH = $ENV{"PATH"};
 $TMP = tempdir( CLEANUP => 1 );
 
-$PLAT=`$ORIG_CHPL_HOME/util/chplenv/platform --host`;
-chomp $PLAT;
 
 $HOME = "$TMP/chplhome";
 $HOME2 = "$TMP/chplhome2";

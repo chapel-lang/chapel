@@ -1,8 +1,6 @@
 #define EXTERN
 #define __STDC_FORMAT_MACROS
 #include <inttypes.h>
-// want dirname
-#include <libgen.h>
 
 #include "chpl.h"
 #include "arg.h"
@@ -176,9 +174,21 @@ static void setupChplHome(const char* argv0) {
     // Determine CHPL_HOME based on the exe path.
     // Determined exe path, but don't have a env var set
     // Look for ../../../util/chplenv
-    dirname(guess); // remove chpl
-    dirname(guess); // remove e.g linux64
-    dirname(guess); // remove bin
+    // Remove the /bin/some-platform/chpl part
+    // from the path.
+    if( guess[0] ) {
+      int j = strlen(guess) - 5; // /bin and '\0'
+      for( ; j >= 0; j-- ) {
+        if( guess[j] == '/' &&
+            guess[j+1] == 'b' &&
+            guess[j+2] == 'i' &&
+            guess[j+3] == 'n' ) {
+          guess[j] = '\0';
+          break;
+        }
+      }
+    }
+
     if( isMaybeChplHome(guess) ) {
       // OK!
     } else {

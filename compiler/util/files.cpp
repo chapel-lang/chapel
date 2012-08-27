@@ -1,4 +1,3 @@
-
 // Get realpath on linux
 #ifndef _XOPEN_SOURCE
 #define _XOPEN_SOURCE 600
@@ -6,8 +5,6 @@
 #ifndef _XOPEN_SOURCE_EXTENDED
 #define _XOPEN_SOURCE_EXTENDED 1
 #endif
-
-
 
 #include "beautify.h"
 #include "files.h"
@@ -689,6 +686,26 @@ void printModuleSearchPath(void) {
   fprintf(stderr, "end of module search dirs\n");
 }
 
+// would just use realpath, but it is not supported on all platforms.
+static
+char* chplRealPath(const char* path)
+{
+#ifdef __MTA__
+  return NULL;
+#else
+  char* got = realpath(path, NULL);
+  if( got ) return got;
+  if( ! got ) {
+    // Try again with a buffer of size PATH_MAX
+    char buf[PATH_MAX];
+    got = realpath(path, buf);
+    if( got ) {
+      return strdup(buf);
+    }
+  }
+  return NULL;
+#endif
+}
 
 // Returns a "real path" to the file in the directory,
 // or NULL if the file did not exist.
@@ -704,7 +721,7 @@ char* dirHasFile(const char *dir, const char *file)
   if( ! tmp ) INT_FATAL("no memory");
 
   snprintf(tmp, len, "%s/%s", dir, file);
-  real = realpath(tmp, NULL);
+  real = chplRealPath(tmp);
   if( real == NULL ) {
     // realpath not working on this system,
     // just use tmp.
@@ -717,7 +734,7 @@ char* dirHasFile(const char *dir, const char *file)
     free(real);
     real = NULL;
   }
-  
+
   return real;
 }
 
@@ -830,12 +847,14 @@ char* findProgramPath(const char *argv0)
 
 // Return true if both files exist and
 // they point to the same inode.
+// (if a filesystem does not return reasonable
+//  inodes, this function might return true when
+//  the paths are different - so it should be interpreted
+//  as "NO" or "MAYBE").
 bool isSameFile(const char* pathA, const char* pathB)
 {
   struct stat statsA;
   struct stat statsB;
-  char* realPathA;
-  char* realPathB;
   int rc;
 
   rc = stat(pathA, &statsA);
@@ -843,22 +862,11 @@ bool isSameFile(const char* pathA, const char* pathB)
   rc = stat(pathB, &statsB);
   if( rc != 0 ) return false;
 
-  // First check - does realpath return the same thing?
-  realPathA = realpath(pathA, NULL);
-  realPathB = realpath(pathB, NULL);
-  if( realPathA && realPathB ) {
-    rc = strcmp(realPathA, realPathB);
-    free(realPathA);
-    free(realPathB);
-    if( rc == 0 ) return true;
-  }
-
-  // Second check - is the inode the same? 
+  // is the inode the same? 
   if( statsA.st_dev == statsB.st_dev &&
       statsA.st_ino == statsB.st_ino ) {
     return true;
   }
-
 
   return false;
 }
