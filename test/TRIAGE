@@ -72,6 +72,9 @@ cray-xt-cray (diten)
 --------------------
 This appears to be resolved.
 
+compiler segfaults under xt-cle.cray-xt-cray.none.fifo.pthreads (UNASSIGNED)
+----------------------------------------------------------------------------
+intermittent compiler segfaults (reported as internal failure MIS0275) (8/20/2012, 8/21, 8/22) (see *-xt-cle.cray-xt-cray.none.fifo.pthreads-exm.log)
 
 TooManyThreads (unassigned)
 ---------------------------

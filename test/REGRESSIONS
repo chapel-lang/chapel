@@ -123,6 +123,19 @@ internal valgrind stuff 'the impossible has happened'
 no-local regressions
 ===================
 
+compiler segfaults
+------------------
+Started in testing on 8/20/2012, occurs under --no-local or gasnet:
+[Error matching compiler output for arrays/johnk/refTypes]
+[Error matching compiler output for users/ferguson/ddata/c]
+[Error matching compiler output for users/ferguson/ddata/d]
+[Error matching compiler output for users/ferguson/ddata/e]
+[Error matching compiler output for users/ferguson/ddata/f]
+[Error matching compiler output for users/ferguson/ddata/g]
+[Error matching compiler output for users/ferguson/ddata/h]
+[Error matching compiler output for users/ferguson/ddata/i]
+[Error matching compiler output for users/ferguson/ddata/j]
+
 nondet. compilation timeout
 ---------------------------
 [Error: Timed out compilation for users/ferguson/histogram/reductionex] (04/07/12)
@@ -186,8 +199,13 @@ gasnet-everything regressions (other than the above)
 
 comm diagnostics off (04/07/12)
 -------------------------------
+[Error matching program output for studies/ssca2/performance/SSCA2_commDiags (compopts: 1)] (started in testing on 8/23/2012)
 [Error matching program output for distributions/robust/arithmetic/performance/reduce]
 [Error matching program output for parallel/taskPar/sungeun/barrier/commDiags]
+
+error: halt reached - cannot write the _ddata class
+---------------------------------------------------
+[Error matching program output for distributions/deitz/test_block_representation (compopts: 1)] (started in testing on 8/23/2012)
 
 nondet. comm diagnostics counts?
 --------------------------------
