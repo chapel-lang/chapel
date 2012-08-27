@@ -1594,9 +1594,9 @@ proc BlockArr.doiBulkTransferStride(B)
     on dom.dist.targetLocales(i)
       {
 	var regionA = dom.locDoms(i).myBlock;
-	var ini = corr_direct(regionA.low,B._value,1);
-	var end = corr_direct(regionA.high,B._value,0);
-	var sb = B._value.dom.whole.stride;
+	var ini=corr_direct(regionA.low,B._value,1);
+	var end=corr_direct(regionA.high,B._value,0);
+	var sb=B._value.dom.whole.stride;
     
 	if rank ==1
 	  {
@@ -1611,15 +1611,14 @@ proc BlockArr.doiBulkTransferStride(B)
 	    for j in  B._value.dom.dist.targetLocDom
 	    {
 	      var inters=DomA[B._value.dom.locDoms(j).myBlock];
-	      if(inters.numIndices>0)
+	      if(inters.numIndices>0 && regionA.numIndices>0)
 		{
-		  var ini_src=corr_inverse(inters.low,B._value);
-		  var end_src=corr_inverse(inters.high,B._value);
+		  var ini_src=corr_inverse(inters.first,B._value,1);
+		  var end_src=corr_inverse(inters.last,B._value,0);
 		  var sa = dom.whole.stride;
          
 		  r2 = (ini_src[1]..end_src[1] by sa);
-		  r3 = (inters.low..inters.high by inters.stride);
-          
+                  r3 = (inters.first..inters.last by inters.stride);        
 		  locArr[i].myElems[r2]=B._value.locArr[j].myElems[r3];
 		}
 	    }
@@ -1638,17 +1637,16 @@ proc BlockArr.doiBulkTransferStride(B)
 	    for j in  B._value.dom.dist.targetLocDom
 	      {
 		var inters=DomA[B._value.dom.locDoms(j).myBlock];
-		if(inters.numIndices>0)
+		if(inters.numIndices>0 && regionA.numIndices>0)
 		  {
-		    var ini_src=corr_inverse(inters.low,B._value);
-		    var end_src=corr_inverse(inters.high,B._value);
+		    var ini_src=corr_inverse(inters.first,B._value,1);
+		    var end_src=corr_inverse(inters.last,B._value,0);
 		    var sa = dom.whole.stride;
       
 		    for t in 1..rank {
 		      r2[t] = (ini_src[t]..end_src[t] by sa[t]);
-		      r3[t] = (inters.low[t]..inters.high[t] by inters.stride[t]);
+                      r3[t] = (inters.first[t]..inters.last[t] by inters.stride[t]);
 		    }
-  
 		    if (dom.locDoms[i].myBlock.stridable || B._value.dom.locDoms[i].myBlock.stridable) then
 		      locArr[i].myElems[(...r2)]._value.doiBulkTransferStride2(B._value.locArr[j].myElems[(...r3)]);
 		    else
@@ -1685,12 +1683,12 @@ proc BlockArr.corr_direct(a,B,low)
     {
       b[1]=lb+((a-la)/sa)*sb;
       if low==1 then
-	if(a-la)%sb>0 then b[1]=b[1]+sb;
+	if(a-la)%sa>0 then b[1]=b[1]+sb;
     }
   return b;
 }
 
-proc BlockArr.corr_inverse (b,B)
+proc BlockArr.corr_inverse (b,B,low)
 {
   //It finds out the initial domain coordinate and strides of destination Domain (of A)
   var la=dom.whole.low;
@@ -1701,9 +1699,12 @@ proc BlockArr.corr_inverse (b,B)
   if rank>1 then 
     forall i in 1..rank do a[i]=la[i]+((b[i]-lb[i])/sb[i])*sa[i];
   else
+  {
     a[1]=la+((b-lb)/sb)*sa;
+    if low==1 then
+	if(b-lb)%sb>0 then a[1]=a[1]+sa;
+  }
   return a;
 }        
 
 proc BlockArr.isBlockDist() param {return true;}
-

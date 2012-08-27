@@ -2,18 +2,26 @@ use BlockDist;
 use Time;
 config const printOutput=false;
 
-config  const n: int=50;
+config  const n: int=20;
 var Dist1 = new dmap(new Block({1..n,1..n,1..n}));
 var Dist2 = new dmap(new Block({1..2*n,1..2*n,1..2*n}));
 var Dom1: domain(3,int) dmapped Dist1 = {1..n,1..n,1..n};
 var Dom2: domain(3,int) dmapped Dist2 = {1..2*n,1..2*n,1..2*n};
 
+//writeln("TasksPerLocale: ",dataParTasksPerLocale);
+//Block Dist. Examples 3D
 var A:[Dom1] int(64)=1;
 var B:[Dom2] int(64)=500;
+if printOutput
+{
+  writeln("Examples 3D");
+  writeln("A defined on ",Dom1," and B on ",Dom2);
+}
 
 writeln();
 var D1={1..n by 4,1..n by 3 ,1..n by 2};
 var st,dt=getCurrentTime();
+var elem=1;
 
 if printOutput then writeln("Block Dist. Example 1: A",D1, " = B",D1," on ",numLocales," Locales:");
 st = getCurrentTime();
@@ -187,7 +195,168 @@ dt = getCurrentTime()-st;
 if printOutput then writeln("Time: ", dt);
 forall (a,b) in (A[D1],B[D2]) do if (a!=b) then writeln("ERROR!!!!");
 
+D1={1..n,2..n by 2,5..n-1};
+D2={1..n,2..2*n by 4,4..n-2};
 
+elem=1;
+for h in {1..Dom1.rank}
+{
+  if B[D2]._value.dom.dsiDim(h).length != A[D1]._value.dom.dsiDim(h).length
+  {
+    elem=0;
+    break;
+  }
+}
+
+if elem==1
+{
+  if printOutput then writeln("Block Dist. Example 15: A",D1, " = B",D2," on ",numLocales," Locales:");
+  st=getCurrentTime();
+  A[D1]=B[D2];
+  dt = getCurrentTime()-st;
+  if printOutput then writeln("Time: ", dt);
+  for (a,b) in (A[D1],B[D2]) do if (a!=b) then writeln("ERROR!!!!");
+}
+
+D1={1..n-1 by 3,2..n/2 by 2,5..n-1};
+D2={1..2*(n-1) by 6,2..n by 4,4..n-2};
+
+elem=1;
+for h in {1..Dom1.rank}
+{
+  if B[D2]._value.dom.dsiDim(h).length != A[D1]._value.dom.dsiDim(h).length
+  {
+    elem=0;
+    break;
+  }
+}
+
+if elem==1
+{
+  if printOutput then writeln("Block Dist. Example 15: A",D1, " = B",D2," on ",numLocales," Locales:");
+  st=getCurrentTime();
+  A[D1]=B[D2];
+  dt = getCurrentTime()-st;
+  if printOutput then writeln("Time: ", dt);
+  for (a,b) in (A[D1],B[D2]) do if (a!=b) then writeln("ERROR!!!!");
+}
+
+D1={2..n by 4,2..n/2 by 2,1..n/2 by 5};
+D2={2..n/2 by 2,2..n by 4,n/4+1..3*n/4 by 5};
+
+elem=1;
+for h in {1..Dom1.rank}
+{
+  if B[D2]._value.dom.dsiDim(h).length != A[D1]._value.dom.dsiDim(h).length
+  {
+    elem=0;
+    break;
+  }
+}
+
+if elem==1
+{
+  if printOutput then writeln("Block Dist. Example 16: A",D1, " = B",D2," on ",numLocales," Locales:");
+  st=getCurrentTime();
+  A[D1]=B[D2];
+  dt = getCurrentTime()-st;
+  if printOutput then writeln("Time: ", dt);
+  for (a,b) in (A[D1],B[D2]) do if (a!=b) then writeln("ERROR!!!!");
+}
+
+
+D1={1..n/2 by 3,n/2+1..3*n/4 by 2,1..n/2 by 5};
+D2={n+1..2*n by 6,n/4+1..3*n/4 by 4,n/4+1..3*n/4 by 5};
+
+elem=1;
+for h in {1..Dom1.rank}
+{
+  if B[D2]._value.dom.dsiDim(h).length != A[D1]._value.dom.dsiDim(h).length
+  {
+    elem=0;
+    break;
+  }
+}
+
+if elem==1
+{
+  if printOutput then writeln("Block Dist. Example 17: A",D1, " = B",D2," on ",numLocales," Locales:");
+  st=getCurrentTime();
+  A[D1]=B[D2];
+  dt = getCurrentTime()-st;
+  if printOutput then writeln("Time: ", dt);
+  for (a,b) in (A[D1],B[D2]) do if (a!=b) then writeln("ERROR!!!!");
+}
+
+D1={n/2+1..n by 2,1..n by 4,n/4+1..n/2 by 2};
+D2={n/2+1..3*n/2 by 4,n/2+1..n by 2,n/4+1..3*n/4 by 4};
+
+elem=1;
+for h in {1..Dom1.rank}
+{
+  if B[D2]._value.dom.dsiDim(h).length != A[D1]._value.dom.dsiDim(h).length
+  {
+    elem=0;
+    break;
+  }
+}
+
+if elem==1
+{
+  if printOutput then writeln("Block Dist. Example 18: A",D1, " = B",D2," on ",numLocales," Locales:");
+  st=getCurrentTime();
+  A[D1]=B[D2];
+  dt = getCurrentTime()-st;
+  if printOutput then writeln("Time: ", dt);
+  for (a,b) in (A[D1],B[D2]) do if (a!=b) then writeln("ERROR!!!!");
+}
+
+
+D1={n/4+1..3*n/4 by 2,n/2+1..n by 2,n/4+1..n/2 by 3};
+D2={n+1..2*n by 4,3*n/2+1..2*n by 2,n/4+1..3*n/4 by 6};
+
+elem=1;
+for h in {1..Dom1.rank}
+{
+  if B[D2]._value.dom.dsiDim(h).length != A[D1]._value.dom.dsiDim(h).length
+  {
+    elem=0;
+    break;
+  }
+}
+
+if elem==1
+{
+  if printOutput then writeln("Block Dist. Example 19: A",D1, " = B",D2," on ",numLocales," Locales:");
+  st=getCurrentTime();
+  A[D1]=B[D2];
+  dt = getCurrentTime()-st;
+  if printOutput then writeln("Time: ", dt);
+  for (a,b) in (A[D1],B[D2]) do if (a!=b) then writeln("ERROR!!!!");
+}
+
+D1={n/4+1..3*n/4 by 2,n/2+1..3*n/4 by 1,n/4+1..n/2 by 2};
+D2={n+1..5*n/4 by 1,3*n/2+1..2*n by 2,n/4+1..3*n/4 by 4};
+
+elem=1;
+for h in {1..Dom1.rank}
+{
+  if B[D2]._value.dom.dsiDim(h).length != A[D1]._value.dom.dsiDim(h).length
+  {
+    elem=0;
+    break;
+  }
+}
+
+if elem==1
+{
+  if printOutput then writeln("Block Dist. Example 20: A",D1, " = B",D2," on ",numLocales," Locales:");
+  st=getCurrentTime();
+  A[D1]=B[D2];
+  dt = getCurrentTime()-st;
+  if printOutput then writeln("Time: ", dt);
+  for (a,b) in (A[D1],B[D2]) do if (a!=b) then writeln("ERROR!!!!");
+}
 
 var Dist3 = new dmap(new Block({1..n,1..n,1..n,1..n}));
 var Dist4 = new dmap(new Block({1..2*n,1..2*n,1..2*n,1..2*n}));
@@ -197,7 +366,11 @@ var Dom4: domain(4,int) dmapped Dist4 = {1..2*n,1..2*n,1..2*n,1..2*n};
 //Block Dist. Examples 4D
 var C:[Dom3] int(64)=1;
 var D:[Dom4] int(64)=500;
-
+if printOutput
+{
+  writeln("Examples 4D");
+  writeln("C defined on ",Dom3," and D on ",Dom4);
+}
 writeln();
 var D3={1..n,1..n,1..n ,1..n by 2};
 st=getCurrentTime();
