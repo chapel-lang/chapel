@@ -89,6 +89,144 @@ void  chpl_comm_get(void* addr, int32_t locale, void* raddr,
   memcpy(addr, raddr, size*len);
 }
 
+void  chpl_comm_puts(void* dstaddr, void* dststrides, int32_t dstlocale, 
+		     void* srcaddr, void* srcstrides, void* count,
+		     int32_t stridelevels, int32_t elemSize, int32_t typeIndex, 
+		     int ln, chpl_string fn)
+{
+  const size_t strlvls=(size_t)stridelevels;
+  int i,t,j,total;
+  size_t *dststr=(size_t*)chpl_mem_allocMany(strlvls,sizeof(size_t),CHPL_RT_MD_GETS_PUTS_STRIDES,0,0); 
+  size_t *srcstr=(size_t*)chpl_mem_allocMany(strlvls,sizeof(size_t),CHPL_RT_MD_GETS_PUTS_STRIDES,0,0); 
+  size_t *cnt=(size_t*)chpl_mem_allocMany(strlvls+1,sizeof(size_t),CHPL_RT_MD_GETS_PUTS_COUNTS,0,0); 
+  
+  //Only count[0] and strides are meassured in number of bytes.
+  cnt[0]=((int32_t*)count)[0] * elemSize;
+  srcstr[0] = ((int32_t*)srcstrides)[0] * elemSize;
+  dststr[0] = ((int32_t*)dststrides)[0] * elemSize;
+  for (i=1;i<strlvls;i++)
+    { 
+      srcstr[i] = ((int32_t*)srcstrides)[i] * elemSize;
+      dststr[i] = ((int32_t*)dststrides)[i] * elemSize;
+      cnt[i]=((int32_t*)count)[i];
+    }
+  cnt[strlvls]=((int32_t*)count)[strlvls];
+  
+  //Number of memcpy operations to do
+  total=1;
+  for (i=0;i<=stridelevels-1;i++)
+    total=total*cnt[i+1];
+  
+  int *carry=chpl_mem_allocMany(total,sizeof(int),CHPL_RT_MD_GETS_PUTS_STRIDES,0,0);
+  int *x=chpl_mem_allocMany(total,sizeof(int),CHPL_RT_MD_GETS_PUTS_STRIDES,0,0);
+  
+  //displacement from the dstaddr and srcaddr start points
+  int *srcdesp=chpl_mem_allocMany(total,sizeof(int),CHPL_RT_MD_GETS_PUTS_STRIDES,0,0);
+  int *dstdesp=chpl_mem_allocMany(total,sizeof(int),CHPL_RT_MD_GETS_PUTS_STRIDES,0,0);
+  
+  for (j=0;j<total;j++)
+    {     
+      carry[j]=1;
+      for (t=1;t<=stridelevels;t++)
+	{
+	  if (cnt[t]*carry[j]>=j+1) //IF 1
+	    {
+	      x[j]=j/carry[j];
+	      int off =j-(carry[j]*x[j]);
+        
+	      if (carry[j]!=1) //IF 2
+		{
+		  srcdesp[j]=srcstr[t-1]*x[j]+srcdesp[off];
+		  dstdesp[j]=dststr[t-1]*x[j]+dstdesp[off];
+		}
+	      else //ELSE 2
+		{
+		  srcdesp[j]=srcstr[t-1]*x[j];
+		  dstdesp[j]=dststr[t-1]*x[j];
+		}   
+	      memcpy(srcaddr+srcdesp[j],dstaddr+dstdesp[j],cnt[0]);
+	      break;
+	    }
+	  else //ELSE 1
+	    carry[j]=carry[j]*cnt[t];
+	}
+    }
+  chpl_mem_free(carry,0,0);
+  chpl_mem_free(x,0,0);
+  chpl_mem_free(srcdesp,0,0);
+  chpl_mem_free(dstdesp,0,0); 
+}
+
+void  chpl_comm_gets(void* dstaddr, void* dststrides, int32_t srclocale, 
+		     void* srcaddr, void* srcstrides, void* count,
+		     int32_t stridelevels, int32_t elemSize, int32_t typeIndex, 
+		     int ln, chpl_string fn)
+{
+  const size_t strlvls=(size_t)stridelevels;
+  int i,t,j,total;
+  size_t *dststr=(size_t*)chpl_mem_allocMany(strlvls,sizeof(size_t),CHPL_RT_MD_GETS_PUTS_STRIDES,0,0); 
+  size_t *srcstr=(size_t*)chpl_mem_allocMany(strlvls,sizeof(size_t),CHPL_RT_MD_GETS_PUTS_STRIDES,0,0); 
+  size_t *cnt=(size_t*)chpl_mem_allocMany(strlvls+1,sizeof(size_t),CHPL_RT_MD_GETS_PUTS_COUNTS,0,0); 
+  
+  //Only count[0] and strides are meassured in number of bytes.
+  cnt[0]=((int32_t*)count)[0] * elemSize;
+  srcstr[0] = ((int32_t*)srcstrides)[0] * elemSize;
+  dststr[0] = ((int32_t*)dststrides)[0] * elemSize;
+  for (i=1;i<strlvls;i++)
+    { 
+      srcstr[i] = ((int32_t*)srcstrides)[i] * elemSize;
+      dststr[i] = ((int32_t*)dststrides)[i] * elemSize;
+      cnt[i]=((int32_t*)count)[i];
+    }
+  cnt[strlvls]=((int32_t*)count)[strlvls];
+  
+  //Number of memcpy operations to do
+  total=1;
+  for (i=0;i<=stridelevels-1;i++)
+    {
+      total=total*cnt[i+1];
+    }
+
+  int *carry=chpl_mem_allocMany(total,sizeof(int),CHPL_RT_MD_GETS_PUTS_STRIDES,0,0);
+  int *x=chpl_mem_allocMany(total,sizeof(int),CHPL_RT_MD_GETS_PUTS_STRIDES,0,0);
+  
+  //displacement from the dstaddr and srcaddr start points
+  int *srcdesp=chpl_mem_allocMany(total,sizeof(int),CHPL_RT_MD_GETS_PUTS_STRIDES,0,0);
+  int *dstdesp=chpl_mem_allocMany(total,sizeof(int),CHPL_RT_MD_GETS_PUTS_STRIDES,0,0);
+  
+  for (j=0;j<total;j++)
+    {     
+      carry[j]=1;
+      for (t=1;t<=stridelevels;t++)
+	{
+	  if (cnt[t]*carry[j]>=j+1) //IF 1
+	    {
+	      x[j]=j/carry[j];
+	      int off =j-(carry[j]*x[j]);
+        
+	      if (carry[j]!=1) //IF 2
+		{
+		  srcdesp[j]=srcstr[t-1]*x[j]+srcdesp[off];
+		  dstdesp[j]=dststr[t-1]*x[j]+dstdesp[off];
+		}
+	      else //ELSE 2
+		{
+		  srcdesp[j]=srcstr[t-1]*x[j];
+		  dstdesp[j]=dststr[t-1]*x[j];
+		}   
+	      memcpy(dstaddr+dstdesp[j], srcaddr+srcdesp[j], cnt[0]);
+	      break;
+	    }
+	  else //ELSE 1
+	    carry[j]=carry[j]*cnt[t];
+	}
+    }
+  chpl_mem_free(carry,0,0);
+  chpl_mem_free(x,0,0);
+  chpl_mem_free(srcdesp,0,0);
+  chpl_mem_free(dstdesp,0,0);
+}
+
 typedef struct {
   chpl_fn_int_t fid;
   int           arg_size;

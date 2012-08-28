@@ -1699,11 +1699,11 @@ proc BlockArr.corr_inverse (b,B,low)
   if rank>1 then 
     forall i in 1..rank do a[i]=la[i]+((b[i]-lb[i])/sb[i])*sa[i];
   else
-  {
-    a[1]=la+((b-lb)/sb)*sa;
-    if low==1 then
+    {
+      a[1]=la+((b-lb)/sb)*sa;
+      if low==1 then
 	if(b-lb)%sb>0 then a[1]=a[1]+sa;
-  }
+    }
   return a;
 }        
 

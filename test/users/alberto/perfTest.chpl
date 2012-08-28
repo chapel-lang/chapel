@@ -561,6 +561,10 @@ proc main(){
   for (a,i) in (ADR,{1..n*n}) do a=i;
   D1={1..n,1..n};
   D2=D1;
+  if(numLocales<2){
+    if printOutput then writeln("Default Rectangular <-- Default Rectangular. Example 2: Not enough number of Locales ",numLocales," (2 needed)");
+  }
+  else{
   on Locales(1)
     {
       if printOutput then writeln("Default Rectangular <-- Default Rectangular. Example 2 :ADR",D1,"(",ADR.locale,") = BDR",D2,"(",BDR.locale,") on ", here.locale);  
@@ -582,9 +586,11 @@ proc main(){
 	}
 	writeln("Time: ", dt);
       }
-    }
- 
   for (a,b) in (BDR[D2],ADR[D1]) do if (a!=b) then writeln("ERROR!!!!");
+    }
+  }
+ 
+  
   
   // ==============================================================================
   //  D1={1..n,n/4+1..3*n/4};
@@ -634,7 +640,12 @@ proc main(){
   for (a,i) in (ADR,{1..n*n}) do a=i;
 
   //for (a,i) in (CDR,{1..n*n}) do a=i+100;
-  on Locales(1)
+  if(numLocales<2){
+    if printOutput then writeln("Default Rectangular <-- Default Rectangular. Example 4: Not enough number of Locales ",numLocales," (2 needed)");
+  }
+  else
+  {
+    on Locales(1)
     {
 
       var CDR: [1..n,1..n] real;
@@ -662,7 +673,7 @@ proc main(){
       }
       for (a,b) in (CDR[D2],ADR[D1]) do if (a!=b) then writeln("ERROR!!!!");
     }
-
+  }
   // ==============================================================================
 
   if printOutput then  writeln("Default Rectangular <-- Default Rectangular. Example 5 :ADR",D1,"(L1) = BDR",D2,"(L0) on Locale 1"); 
@@ -670,7 +681,13 @@ proc main(){
 
   //var CCDR:[1..n,1..n] real;
   for (a,i) in (ADR,{1..n*n}) do a=i+100;
-  on Locales(1)
+ 
+  if(numLocales<2){
+    if printOutput then writeln("Default Rectangular <-- Default Rectangular. Example 5: Not enough number of Locales ",numLocales," (2 needed)");
+  }
+  else
+  {
+    on Locales(1)
     {
 
       var CDR: [1..n,1..n] real;
@@ -698,6 +715,7 @@ proc main(){
       }
       for (a,b) in (CDR[D1],ADR[D2]) do if (a!=b) then writeln("ERROR!!!!");
     }
+  }
   // ==============================================================================
  
   var D3 = {1..10, 1..5};
@@ -743,7 +761,12 @@ proc main(){
 
   //var CDR:[1..n,1..n] real;
   for (a,i) in (ADR,{1..n*n}) do a=i+100;
-  on Locales(1)
+   if(numLocales<2){
+    if printOutput then writeln("Default Rectangular <-- Default Rectangular. Example 7: Not enough number of Locales ",numLocales," (2 needed)");
+  }
+  else
+  {
+    on Locales(1)
     {
 
       var CDR: [1..n,1..n] real;
@@ -767,14 +790,20 @@ proc main(){
       }
       for (a,b) in (CDR[D3],ADR[D3]) do if (a!=b) then writeln("ERROR!!!!");
     }
+  }
 
   // ==============================================================================
 
   var D4 = {1..n by 2, 1..n by 2};
   if printOutput then writeln("Default Rectangular <-- Default Rectangular. Example 8 :ADR",D4,"(L0) = CDR",D4,"(L1) on Locale 1");
   for (a,i) in (ADR,{1..n*n}) do a=i;
-
-  on Locales(1)
+  
+  if(numLocales<2){
+    if printOutput then writeln("Default Rectangular <-- Default Rectangular. Example 8: Not enough number of Locales ",numLocales," (2 needed)");
+  }
+  else
+  {
+    on Locales(1)
     {
 
       var CDR: [1..n,1..n] real;
@@ -798,6 +827,7 @@ proc main(){
       }
       for (a,b) in (CDR[D4],ADR[D4]) do if (a!=b) then writeln("ERROR!!!!");
     }
+  }
 
   // ==============================================================================
 
@@ -805,7 +835,12 @@ proc main(){
   for (a,i) in (ADR,{1..n*n}) do a=i;
 
   for (a,i) in (ADR,{1..n*n}) do a=i+100;
-  on Locales(1)
+   if(numLocales<2){
+    if printOutput then writeln("Default Rectangular <-- Default Rectangular. Example 9: Not enough number of Locales ",numLocales," (2 needed)");
+  }
+  else
+  {
+    on Locales(1)
     {
 
       var CDR: [1..n,1..n] real;
@@ -829,6 +864,7 @@ proc main(){
       }
       for (a,b) in (CDR[D4],ADR[D4]) do if (a!=b) then writeln("ERROR!!!!");
     }
+  }
 
   // ==============================================================================
 
@@ -837,7 +873,12 @@ proc main(){
   if printOutput then  writeln("Default Rectangular <-- Default Rectangular. Example 10 :ADR",D5,"(L0) = CDR",D5,"(L1) on Locale 1");
   for (a,i) in (ADR,{1..n*n}) do a=i;
 
-  on Locales(1)
+ if(numLocales<2){
+    if printOutput then writeln("Default Rectangular <-- Default Rectangular. Example 10: Not enough number of Locales ",numLocales," (2 needed)");
+  }
+  else
+  {
+    on Locales(1)
     {
 
       var CDR: [1..n,1..n] real;
@@ -861,7 +902,7 @@ proc main(){
       }
       for (a,b) in (CDR[D5],ADR[D5]) do if (a!=b) then writeln("ERROR!!!!");
     }
-
+  }
   // ==============================================================================
 
   if printOutput then  writeln("Default Rectangular <-- Default Rectangular. Example 11 :ADR",D5,"(L1) = BDR",D5,"(L0) on Locale 1");
@@ -869,7 +910,12 @@ proc main(){
 
   //var CDR:[1..n,1..n] real;
   for (a,i) in (ADR,{1..n*n}) do a=i+100;
-  on Locales(1)
+  if(numLocales<2){
+    if printOutput then writeln("Default Rectangular <-- Default Rectangular. Example 11: Not enough number of Locales ",numLocales," (2 needed)");
+  }
+  else
+  {
+    on Locales(1)
     {
 
       var CDR: [1..n,1..n] real;
@@ -893,6 +939,7 @@ proc main(){
       }
       for (a,b) in (CDR[D5],ADR[D5]) do if (a!=b) then writeln("ERROR!!!!");
     }
+  }
  
   // ============================================================================== 
 }
