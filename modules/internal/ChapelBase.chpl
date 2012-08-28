@@ -707,7 +707,7 @@ proc init_elts(x, s, type t) {
 
 // Make sure that the compiler constructs the type _ref(t).
 pragma "no codegen"
-proc _ensure_reference_type(type t) type
+proc _ensure_reference_type(type t)
 {
   // type t where we have _ddata(t) needs to also have
   // a reference type created. So here we just add
