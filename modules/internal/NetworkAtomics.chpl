@@ -51,7 +51,7 @@ module NetworkAtomics {
   extern proc chpl_comm_atomic_cmpxchg_int64(ref expected:int(64),
                                              ref desired:int(64),
                                              l:int(32), ref obj:int(64),
-                                             ref result:bool,
+                                             ref result:bool(32),
                                              ln:int(32), fn:string);
 
   // int(64)
@@ -74,7 +74,7 @@ module NetworkAtomics {
       return ret;
     }
     inline proc compareExchange(expected:int(64), desired:int(64)):bool {
-      var ret:bool;
+      var ret:bool(32);
       var te = expected;
       var td = desired;
       chpl_comm_atomic_cmpxchg_int64(te, td, this.locale.id:int(32), this._v, ret, LINENO, "NetworkAtomics.chpl");
@@ -237,7 +237,7 @@ module NetworkAtomics {
   extern proc chpl_comm_atomic_cmpxchg_int32(ref expected:int(32),
                                              ref desired:int(32),
                                              l:int(32), ref obj:int(32),
-                                             ref result:bool,
+                                             ref result:bool(32),
                                              ln:int(32), fn:string);
 
   // int32
@@ -260,7 +260,7 @@ module NetworkAtomics {
       return ret;
     }
     inline proc compareExchange(expected:int(32), desired:int(32)):bool {
-      var ret:bool;
+      var ret:bool(32);
       var te = expected;
       var td = desired;
       chpl_comm_atomic_cmpxchg_int32(te, td, this.locale.id:int(32), this._v, ret, LINENO, "NetworkAtomics.chpl");
@@ -423,7 +423,7 @@ module NetworkAtomics {
   extern proc chpl_comm_atomic_cmpxchg_uint64(ref expected:uint(64),
                                              ref desired:uint(64),
                                              l:int(32), ref obj:uint(64),
-                                             ref result:bool,
+                                             ref result:bool(32),
                                              ln:int(32), fn:string);
 
   // uint(64)
@@ -446,7 +446,7 @@ module NetworkAtomics {
       return ret;
     }
     inline proc compareExchange(expected:uint(64), desired:uint(64)):bool {
-      var ret:bool;
+      var ret:bool(32);
       var te = expected;
       var td = desired;
       chpl_comm_atomic_cmpxchg_uint64(te, td, this.locale.id:int(32), this._v, ret, LINENO, "NetworkAtomics.chpl");
@@ -609,7 +609,7 @@ module NetworkAtomics {
   extern proc chpl_comm_atomic_cmpxchg_uint32(ref expected:uint(32),
                                              ref desired:uint(32),
                                              l:int(32), ref obj:uint(32),
-                                             ref result:bool,
+                                             ref result:bool(32),
                                              ln:int(32), fn:string);
 
   // uint(32)
@@ -632,7 +632,7 @@ module NetworkAtomics {
       return ret;
     }
     inline proc compareExchange(expected:uint(32), desired:uint(32)):bool {
-      var ret:bool;
+      var ret:bool(32);
       var te = expected;
       var td = desired;
       chpl_comm_atomic_cmpxchg_uint32(te, td, this.locale.id:int(32), this._v, ret, LINENO, "NetworkAtomics.chpl");
@@ -766,7 +766,7 @@ module NetworkAtomics {
       return ret:bool;
     }
     inline proc compareExchange(expected:bool, desired:bool):bool {
-      var ret:bool;
+      var ret:bool(32);
       var te = expected:int(64);
       var td = desired:int(64);
       chpl_comm_atomic_cmpxchg_int64(te, td, this.locale.id:int(32), this._v, ret, LINENO, "NetworkAtomics.chpl");
@@ -860,7 +860,7 @@ module NetworkAtomics {
   extern proc chpl_comm_atomic_cmpxchg_real64(ref expected:real(64),
                                               ref desired:real(64),
                                               l:int(32), ref obj:real(64),
-                                              ref result:bool,
+                                              ref result:bool(32),
                                               ln:int(32), fn:string);
   
   record ratomic_real64 {
@@ -882,7 +882,7 @@ module NetworkAtomics {
       return ret;
     }
     inline proc compareExchange(expected:real(64), desired:real(64)):bool {
-      var ret:bool;
+      var ret:bool(32);
       var te = expected;
       var td = desired;
       chpl_comm_atomic_cmpxchg_real64(te, td, this.locale.id:int(32), this._v, ret, LINENO, "NetworkAtomics.chpl");
