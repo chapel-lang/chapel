@@ -388,7 +388,8 @@ proc halt(args ...?numArgs) {
 }
 
 proc _ddata.writeThis(f: Writer) {
-  halt("cannot write the _ddata class");
+  compilerWarning("printing _ddata class");
+  write("<_ddata class cannot be printed>");
 }
 
 proc chpl_taskID_t.writeThis(f: Writer) {
