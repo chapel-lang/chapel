@@ -81,3 +81,6 @@ doit(int(16));
 doit(int(32));
 doit(int(64));
 doit(int);
+doit(real(32));
+doit(real(64));
+doit(real);

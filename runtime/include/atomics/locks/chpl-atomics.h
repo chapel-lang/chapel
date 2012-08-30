@@ -46,6 +46,16 @@ typedef struct atomic_flag_s {
   chpl_bool v;
 } atomic_flag;
 
+typedef struct atomic__real32_s {
+  chpl_sync_aux_t sv;
+  _real32 v;
+} atomic__real32;
+
+typedef struct atomic__real64_s {
+  chpl_sync_aux_t sv;
+  _real64 v;
+} atomic__real64;
+
 typedef enum {
  memory_order_relaxed,
  memory_order_consume,
@@ -205,11 +215,39 @@ static inline type atomic_fetch_xor_ ## type(atomic_ ## type * obj, type operand
   return atomic_fetch_xor_explicit_ ## type(obj, operand, memory_order_seq_cst); \
 }
 
+#define DECLARE_REAL_ATOMICS_FETCH_OPS(type) \
+static inline type atomic_fetch_add_explicit_ ## type(atomic_ ## type * obj, type operand, memory_order order) { \
+  type ret; \
+  chpl_sync_lock(&obj->sv); \
+  ret = obj->v; \
+  obj->v += operand; \
+  chpl_sync_unlock(&obj->sv); \
+  return ret; \
+} \
+static inline type atomic_fetch_add_ ## type(atomic_ ## type * obj, type operand) { \
+  return atomic_fetch_add_explicit_ ## type(obj, operand, memory_order_seq_cst); \
+} \
+static inline type atomic_fetch_sub_explicit_ ## type(atomic_ ## type * obj, type operand, memory_order order) { \
+  type ret; \
+  chpl_sync_lock(&obj->sv); \
+  ret = obj->v; \
+  obj->v -= operand; \
+  chpl_sync_unlock(&obj->sv); \
+  return ret; \
+} \
+static inline type atomic_fetch_sub_ ## type(atomic_ ## type * obj, type operand) { \
+  return atomic_fetch_sub_explicit_ ## type(obj, operand, memory_order_seq_cst); \
+}
+
 DECLARE_ATOMICS_BASE(flag, chpl_bool);
 
 #define DECLARE_ATOMICS(type) \
   DECLARE_ATOMICS_BASE(type, type) \
   DECLARE_ATOMICS_FETCH_OPS(type)
+
+#define DECLARE_REAL_ATOMICS(type) \
+  DECLARE_ATOMICS_BASE(type, type) \
+  DECLARE_REAL_ATOMICS_FETCH_OPS(type)
 
 DECLARE_ATOMICS(int_least8_t);
 DECLARE_ATOMICS(int_least16_t);
@@ -220,6 +258,9 @@ DECLARE_ATOMICS(uint_least16_t);
 DECLARE_ATOMICS(uint_least32_t);
 DECLARE_ATOMICS(uint_least64_t);
 DECLARE_ATOMICS(uintptr_t);
+
+DECLARE_REAL_ATOMICS(_real32);
+DECLARE_REAL_ATOMICS(_real64);
 
 #undef DECLARE_ATOMICS_BASE
 #undef DECLARE_ATOMICS_FETCH_OPS

@@ -21,6 +21,9 @@ module Atomics {
   extern type atomic_uint_least32_t;
   extern type atomic_uint_least64_t;
   extern type atomic_uintptr_t;
+  
+  extern type atomic__real64;
+  extern type atomic__real32;
 
   extern type atomic_flag;
 
@@ -167,6 +170,29 @@ module Atomics {
   extern proc atomic_fetch_and_explicit_int_least64_t(ref obj:atomic_int_least64_t, operand:int(64), order:memory_order):int(64);
   extern proc atomic_fetch_xor_explicit_int_least64_t(ref obj:atomic_int_least64_t, operand:int(64), order:memory_order):int(64);
 
+  extern proc atomic_init__real64(ref obj:atomic__real64, value:real(64));
+  extern proc atomic_destroy__real64(ref obj:atomic__real64);
+  extern proc atomic_store_explicit__real64(ref obj:atomic__real64, value:real(64), order:memory_order);
+  extern proc atomic_is_lock_free__real64(ref obj:atomic__real64):bool;
+  extern proc atomic_load_explicit__real64(ref obj:atomic__real64, order:memory_order):real(64);
+  extern proc atomic_exchange_explicit__real64(ref obj:atomic__real64, value:real(64), order:memory_order):real(64);
+  extern proc atomic_compare_exchange_strong_explicit__real64(ref obj:atomic__real64, expected:real(64), desired:real(64), order:memory_order):bool;
+
+  extern proc atomic_compare_exchange_weak_explicit__real64(ref obj:atomic_int_least64_t, expected:real(64), desired:real(64), order:memory_order):bool;
+  extern proc atomic_fetch_add_explicit__real64(ref obj:atomic__real64, operand:real(64), order:memory_order):real(64);
+  extern proc atomic_fetch_sub_explicit__real64(ref obj:atomic__real64, operand:real(64), order:memory_order):real(64);
+
+  extern proc atomic_init__real32(ref obj:atomic__real32, value:real(32));
+  extern proc atomic_destroy__real32(ref obj:atomic__real32);
+  extern proc atomic_store_explicit__real32(ref obj:atomic__real32, value:real(32), order:memory_order);
+  extern proc atomic_is_lock_free__real32(ref obj:atomic__real32):bool;
+  extern proc atomic_load_explicit__real32(ref obj:atomic__real32, order:memory_order):real(32);
+  extern proc atomic_exchange_explicit__real32(ref obj:atomic__real32, value:real(32), order:memory_order):real(32);
+  extern proc atomic_compare_exchange_strong_explicit__real32(ref obj:atomic__real32, expected:real(32), desired:real(32), order:memory_order):bool;
+
+  extern proc atomic_compare_exchange_weak_explicit__real32(ref obj:atomic_int_least32_t, expected:real(32), desired:real(32), order:memory_order):bool;
+  extern proc atomic_fetch_add_explicit__real32(ref obj:atomic__real32, operand:real(32), order:memory_order):real(32);
+  extern proc atomic_fetch_sub_explicit__real32(ref obj:atomic__real32, operand:real(32), order:memory_order):real(32);
 
   // Begin Chapel interface for atomic integers.
 
@@ -187,6 +213,8 @@ module Atomics {
       else if base_type==int(16) then return atomic_int16;
       else if base_type==int(32) then return atomic_int32;
       else if base_type==int(64) then return atomic_int64;
+      else if base_type==real(64) then return atomic_real64;
+      else if base_type==real(32) then return atomic_real32;
       else compilerError("Unsupported atomic type");
     } else {
       return chpl__networkAtomicType(base_type);
@@ -1009,6 +1037,147 @@ module Atomics {
   }
 
 
+  inline proc create_atomic__real64():atomic__real64 {
+    var ret:atomic__real64;
+    atomic_init__real64(ret, 0.0);
+    return ret;
+  }
+
+  record atomic_real64 {
+    var _v:atomic__real64 = create_atomic__real64();
+    inline proc ~atomic_real64() {
+      atomic_destroy__real64(_v);
+    }
+    inline proc read(order = memory_order_seq_cst):real(64) {
+      var ret:real(64);
+      on this do ret = atomic_load_explicit__real64(_v, order);
+      return ret;
+    }
+    inline proc write(value:real(64), order = memory_order_seq_cst) {
+      on this do atomic_store_explicit__real64(_v, value, order);
+    }
+
+    inline proc exchange(value:real(64), order = memory_order_seq_cst):real(64) {
+      var ret:real(64);
+      on this do ret = atomic_exchange_explicit__real64(_v, value, order);
+      return ret;
+    }
+    inline proc compareExchange(expected:real(64), desired:real(64), order = memory_order_seq_cst):bool {
+      return compareExchangeStrong(expected, desired, order);
+    }
+    inline proc compareExchangeWeak(expected:real(64), desired:real(64), order = memory_order_seq_cst):bool {
+      var ret:bool;
+      on this do ret = atomic_compare_exchange_weak_explicit__real64(_v, expected, desired, order);
+      return ret;
+    }
+    inline proc compareExchangeStrong(expected:real(64), desired:real(64), order = memory_order_seq_cst):bool {
+      var ret:bool;
+      on this do ret = atomic_compare_exchange_strong_explicit__real64(_v, expected, desired, order);
+      return ret;
+    }
+    inline proc fetchAdd(value:real(64), order = memory_order_seq_cst):real(64) {
+      var ret:real(64);
+      on this do ret = atomic_fetch_add_explicit__real64(_v, value, order);
+      return ret;
+    }
+    inline proc add(value:real(64), order = memory_order_seq_cst):real(64) {
+      on this do atomic_fetch_add_explicit__real64(_v, value, order);
+    }
+    inline proc fetchSub(value:real(64), order = memory_order_seq_cst):real(64) {
+      var ret:real(64);
+      on this do ret = atomic_fetch_sub_explicit__real64(_v, value, order);
+      return ret;
+    }
+    inline proc sub(value:real(64), order = memory_order_seq_cst):real(64) {
+      on this do atomic_fetch_sub_explicit__real64(_v, value, order);
+    }
+    inline proc waitFor(val:real(64)) {
+      on this do while (read() != val) do chpl_task_yield();
+    }
+
+    inline proc peek() {
+      return this.read(order=memory_order_relaxed);
+    }
+    inline proc poke(value:real(64)) {
+      this.write(value, order=memory_order_relaxed);
+    }
+
+    proc writeThis(x: Writer) {
+      x.write(read());
+    }
+  }
+  
+
+  inline proc create_atomic__real32():atomic__real32 {
+    var ret:atomic__real32;
+    atomic_init__real32(ret, 0.0:real(32));
+    return ret;
+  }
+
+  record atomic_real32 {
+    var _v:atomic__real32 = create_atomic__real32();
+    inline proc ~atomic_real32() {
+      atomic_destroy__real32(_v);
+    }
+    inline proc read(order = memory_order_seq_cst):real(32) {
+      var ret:real(32);
+      on this do ret = atomic_load_explicit__real32(_v, order);
+      return ret;
+    }
+    inline proc write(value:real(32), order = memory_order_seq_cst) {
+      on this do atomic_store_explicit__real32(_v, value, order);
+    }
+
+    inline proc exchange(value:real(32), order = memory_order_seq_cst):real(32) {
+      var ret:real(32);
+      on this do ret = atomic_exchange_explicit__real32(_v, value, order);
+      return ret;
+    }
+    inline proc compareExchange(expected:real(32), desired:real(32), order = memory_order_seq_cst):bool {
+      return compareExchangeStrong(expected, desired, order);
+    }
+    inline proc compareExchangeWeak(expected:real(32), desired:real(32), order = memory_order_seq_cst):bool {
+      var ret:bool;
+      on this do ret = atomic_compare_exchange_weak_explicit__real32(_v, expected, desired, order);
+      return ret;
+    }
+    inline proc compareExchangeStrong(expected:real(32), desired:real(32), order = memory_order_seq_cst):bool {
+      var ret:bool;
+      on this do ret = atomic_compare_exchange_strong_explicit__real32(_v, expected, desired, order);
+      return ret;
+    }
+    inline proc fetchAdd(value:real(32), order = memory_order_seq_cst):real(32) {
+      var ret:real(32);
+      on this do ret = atomic_fetch_add_explicit__real32(_v, value, order);
+      return ret;
+    }
+    inline proc add(value:real(32), order = memory_order_seq_cst):real(32) {
+      on this do atomic_fetch_add_explicit__real32(_v, value, order);
+    }
+    inline proc fetchSub(value:real(32), order = memory_order_seq_cst):real(32) {
+      var ret:real(32);
+      on this do ret = atomic_fetch_sub_explicit__real32(_v, value, order);
+      return ret;
+    }
+    inline proc sub(value:real(32), order = memory_order_seq_cst):real(32) {
+      on this do atomic_fetch_sub_explicit__real32(_v, value, order);
+    }
+    inline proc waitFor(val:real(32)) {
+      on this do while (read() != val) do chpl_task_yield();
+    }
+
+    inline proc peek() {
+      return this.read(order=memory_order_relaxed);
+    }
+    inline proc poke(value:real(32)) {
+      this.write(value, order=memory_order_relaxed);
+    }
+
+    proc writeThis(x: Writer) {
+      x.write(read());
+    }
+  }
+
   //
   // For the first cut, we will be making assignment and other normal
   //  operations illegal.  In addition, we are also punting on
@@ -1091,6 +1260,22 @@ module Atomics {
     compilerError("Cannot directly assign atomic variables");
     return a;
   }
+  inline proc =(a:atomic_real32, b:atomic_real32) {
+    a.write(b.read());
+    return a;
+  }
+  inline proc =(a:atomic_real32, b) {
+    compilerError("Cannot directly assign atomic variables");
+    return a;
+  }
+  inline proc =(a:atomic_real64, b:atomic_real64) {
+    a.write(b.read());
+    return a;
+  }
+  inline proc =(a:atomic_real64, b) {
+    compilerError("Cannot directly assign atomic variables");
+    return a;
+  }
 
   inline proc +(a:atomic_uint8, b) {
     compilerError("Cannot directly add atomic variables");
@@ -1121,6 +1306,14 @@ module Atomics {
     return a;
   }
   inline proc +(a:atomic_int64, b) {
+    compilerError("Cannot directly add atomic variables");
+    return a;
+  }
+  inline proc +(a:atomic_real32, b) {
+    compilerError("Cannot directly add atomic variables");
+    return a;
+  }
+  inline proc +(a:atomic_real64, b) {
     compilerError("Cannot directly add atomic variables");
     return a;
   }
@@ -1157,6 +1350,14 @@ module Atomics {
     compilerError("Cannot directly subtract atomic variables");
     return a;
   }
+  inline proc -(a:atomic_real32, b) {
+    compilerError("Cannot directly subtract atomic variables");
+    return a;
+  }
+  inline proc -(a:atomic_real64, b) {
+    compilerError("Cannot directly subtract atomic variables");
+    return a;
+  }
 
   inline proc *(a:atomic_uint8, b) {
     compilerError("Cannot directly multiply atomic variables");
@@ -1187,6 +1388,14 @@ module Atomics {
     return a;
   }
   inline proc *(a:atomic_int64, b) {
+    compilerError("Cannot directly multiply atomic variables");
+    return a;
+  }
+  inline proc *(a:atomic_real32, b) {
+    compilerError("Cannot directly multiply atomic variables");
+    return a;
+  }
+  inline proc *(a:atomic_real64, b) {
     compilerError("Cannot directly multiply atomic variables");
     return a;
   }
@@ -1223,6 +1432,14 @@ module Atomics {
     compilerError("Cannot directly divide atomic variables");
     return a;
   }
+  inline proc /(a:atomic_real32, b) {
+    compilerError("Cannot directly divide atomic variables");
+    return a;
+  }
+  inline proc /(a:atomic_real64, b) {
+    compilerError("Cannot directly divide atomic variables");
+    return a;
+  }
 
   inline proc %(a:atomic_uint8, b) {
     compilerError("Cannot directly divide atomic variables");
@@ -1256,6 +1473,15 @@ module Atomics {
     compilerError("Cannot directly divide atomic variables");
     return a;
   }
+  inline proc %(a:atomic_real32, b) {
+    compilerError("Cannot directly divide atomic variables");
+    return a;
+  }
+  inline proc %(a:atomic_real64, b) {
+    compilerError("Cannot directly divide atomic variables");
+    return a;
+  }
+
 
 }
 
