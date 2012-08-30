@@ -13,7 +13,7 @@ reachingDefinitionsAnalysis(FnSymbol* fn,
                             Map<SymExpr*,int>& defMap,
                             Vec<SymExpr*>& useSet,
                             Vec<SymExpr*>& defSet,
-                            Vec<BitVec*>& IN) {
+                            std::vector<BitVec*>& IN) {
   Vec<Symbol*> locals;
   Map<Symbol*,int> localMap;
   buildLocalsVectorMap(fn, locals, localMap);
@@ -49,18 +49,18 @@ reachingDefinitionsAnalysis(FnSymbol* fn,
     }
   }
 
-  Vec<BitVec*> KILL;
-  Vec<BitVec*> GEN;
-  Vec<BitVec*> OUT;
+  std::vector<BitVec*> KILL;
+  std::vector<BitVec*> GEN;
+  std::vector<BitVec*> OUT;
 
-  forv_Vec(BasicBlock, bb, *fn->basicBlocks) {
+  for_vector(BasicBlock, bb, *fn->basicBlocks) {
     Vec<Symbol*> bbDefSet;
     BitVec* kill = new BitVec(defs.n);
     BitVec* gen = new BitVec(defs.n);
     BitVec* in = new BitVec(defs.n);
     BitVec* out = new BitVec(defs.n);
-    for (int i = bb->exprs.n-1; i >= 0; i--) {
-      Expr* expr = bb->exprs.v[i];
+    for (int i = bb->exprs.size()-1; i >= 0; i--) {
+      Expr* expr = bb->exprs[i];
       Vec<SymExpr*> symExprs;
       collectSymExprs(expr, symExprs);
       forv_Vec(SymExpr, se, symExprs) {
@@ -76,10 +76,10 @@ reachingDefinitionsAnalysis(FnSymbol* fn,
       if (bbDefSet.set_in(defs.v[i]->var))
         kill->set(i);
     }
-    KILL.add(kill);
-    GEN.add(gen);
-    IN.add(in);
-    OUT.add(out);
+    KILL.push_back(kill);
+    GEN.push_back(gen);
+    IN.push_back(in);
+    OUT.push_back(out);
   }
 
 #ifdef DEBUG_REACHING
@@ -99,26 +99,26 @@ reachingDefinitionsAnalysis(FnSymbol* fn,
   printf("OUT:\n"); printBitVectorSets(OUT);
 #endif
 
-  forv_Vec(BitVec, gen, GEN)
-    delete gen;
+  for_vector(BitVec, gen, GEN)
+    delete gen, gen = 0;
 
-  forv_Vec(BitVec, kill, KILL)
-    delete kill;
+  for_vector(BitVec, kill, KILL)
+    delete kill, kill = 0;
 
-  forv_Vec(BitVec, out, OUT)
-    delete out;
+  for_vector(BitVec, out, OUT)
+    delete out, out = 0;
 }
 
 
 void
 buildDefUseChains(FnSymbol* fn,
-                  Map<SymExpr*,Vec<SymExpr*>*>& DU,
-                  Map<SymExpr*,Vec<SymExpr*>*>& UD) {
+                  std::map<SymExpr*,Vec<SymExpr*>*>& DU,
+                  std::map<SymExpr*,Vec<SymExpr*>*>& UD) {
   Vec<SymExpr*> defs;
   Map<SymExpr*,int> defMap;
   Vec<SymExpr*> useSet;
   Vec<SymExpr*> defSet;
-  Vec<BitVec*> IN;
+  std::vector<BitVec*> IN;
   reachingDefinitionsAnalysis(fn, defs, defMap, useSet, defSet, IN);
 
   //
@@ -136,24 +136,24 @@ buildDefUseChains(FnSymbol* fn,
   }
 
   forv_Vec(SymExpr, def, defs) {
-    DU.put(def, new Vec<SymExpr*>());
+    DU[def] = new Vec<SymExpr*>();
   }
 
-  for (int i = 0; i < fn->basicBlocks->n; i++) {
-    BasicBlock* bb = fn->basicBlocks->v[i];
-    BitVec* in = IN.v[i];
-    forv_Vec(Expr, expr, bb->exprs) {
+  for (size_t i = 0; i < fn->basicBlocks->size(); i++) {
+    BasicBlock* bb = (*fn->basicBlocks)[i];
+    BitVec* in = IN[i];
+    for_vector(Expr, expr, bb->exprs) {
       Vec<SymExpr*> symExprs;
       collectSymExprs(expr, symExprs);
       forv_Vec(SymExpr, se, symExprs) {
         if (useSet.set_in(se)) {
-          UD.put(se, new Vec<SymExpr*>());
+          UD[se] = new Vec<SymExpr*>();
           for (int j = defsIndexMap.get(se->var); j < defs.n; j++) {
             if (defs.v[j]->var != se->var)
               break;
             if (in->get(j)) {
-              DU.get(defs.v[j])->add(se);
-              UD.get(se)->add(defs.v[j]);
+              DU[defs.v[j]]->add(se);
+              UD[se]->add(defs.v[j]);
             }
           }
         }
@@ -172,17 +172,19 @@ buildDefUseChains(FnSymbol* fn,
       }
     }
   }
-  forv_Vec(BitVec, in, IN)
-    delete in;
+
+  for_vector(BitVec, in, IN)
+    delete in, in = 0;
 }
 
 typedef MapElem<SymExpr*,Vec<SymExpr*>*> SymExprToVecSymExprMapElem;
 
 void
-freeDefUseChains(Map<SymExpr*,Vec<SymExpr*>*>& DU,
-                 Map<SymExpr*,Vec<SymExpr*>*>& UD) {
-  form_Map(SymExprToVecSymExprMapElem, e, DU)
-    delete e->value;
-  form_Map(SymExprToVecSymExprMapElem, e, UD)
-    delete e->value;
+freeDefUseChains(std::map<SymExpr*,Vec<SymExpr*>*>& DU,
+                 std::map<SymExpr*,Vec<SymExpr*>*>& UD) {
+  std::map<SymExpr*,Vec<SymExpr*>*>::iterator vec;
+  for(vec = DU.begin(); vec != DU.end(); vec++)
+    delete vec->second;
+  for(vec = UD.begin(); vec != UD.end(); vec++)
+    delete vec->second;
 }

@@ -18,7 +18,7 @@ proc test(d) {
 
 for param al1 in 0..3 do
   for param al2 in 0..5 do
-    test([0..3 by 2 align al1, 0..5 by 3 align al2]);
+    test({0..3 by 2 align al1, 0..5 by 3 align al2});
 
 for param al1 in -5..5 do
-  test([-5..5 by 3 align al1]);
+  test({-5..5 by 3 align al1});

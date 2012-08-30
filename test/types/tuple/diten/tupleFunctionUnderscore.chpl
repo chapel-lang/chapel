@@ -1,4 +1,4 @@
-proc foo(a, (, b, ), c, (d, (e, ))) {
+proc foo(a, (_, b, _), c, (d, (e, _))) {
   writeln((a, b, c, d, e));
 }
 

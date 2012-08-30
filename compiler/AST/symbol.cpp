@@ -145,6 +145,10 @@ void Symbol::removeFlag(Flag flag) {
   flags.reset(flag);
 }
 
+bool Symbol::hasEitherFlag(Flag aflag, Flag bflag) {
+  return hasFlag(aflag) || hasFlag(bflag);
+}
+
 
 bool Symbol::isImmediate() {
   return false;
@@ -154,7 +158,8 @@ bool Symbol::isImmediate() {
 VarSymbol::VarSymbol(const char *init_name,
                      Type    *init_type) :
   Symbol(E_VarSymbol, init_name, init_type),
-  immediate(NULL)
+  immediate(NULL),
+  doc(NULL)
 {
   gVarSymbols.add(this);
 }
@@ -255,9 +260,9 @@ static void zeroInitializeRecord(FILE* outfile, ClassType* ct) {
 
 
 void VarSymbol::codegenDef(FILE* outfile) {
-  if (this->hasFlag(FLAG_EXTERN)) {
+  if (this->hasFlag(FLAG_EXTERN))
     return;
-  }
+
   if (type == dtVoid)
     return;
   if (this->hasFlag(FLAG_SUPER_CLASS))
@@ -364,8 +369,8 @@ void ArgSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 
 
 bool ArgSymbol::requiresCPtr(void) {
-  if (intent == INTENT_REF)
-    return true;
+  /* This used to be true for INTENT_REF, but that is handled with the "_ref"
+     class and we don't need to generate a pointer for it directly */
   if (hasFlag(FLAG_ARG_THIS)) {
       if (is_complex_type(type))
         return true;
@@ -474,7 +479,8 @@ FnSymbol::FnSymbol(const char* initName) :
   basicBlocks(NULL),
   calledBy(NULL),
   userString(NULL),
-  valueFunction(NULL)
+  valueFunction(NULL),
+  doc(NULL)
 {
   substitutions.clear();
   gFnSymbols.add(this);
@@ -485,12 +491,8 @@ FnSymbol::FnSymbol(const char* initName) :
 FnSymbol::~FnSymbol() {
   if (iteratorInfo)
     delete iteratorInfo;
-  if (basicBlocks) {
-    forv_Vec(BasicBlock, bb, *basicBlocks) {
-      delete bb;
-    }
-    delete basicBlocks;
-  }
+  BasicBlock::clear(this);
+  delete basicBlocks; basicBlocks = 0;
   if (calledBy)
     delete calledBy;
 }
@@ -595,7 +597,9 @@ void FnSymbol::codegenHeader(FILE* outfile) {
 
 
 void FnSymbol::codegenPrototype(FILE* outfile) {
-  INT_ASSERT(!hasFlag(FLAG_EXTERN));
+  if (hasFlag(FLAG_EXTERN) && !genExternPrototypes) return;
+  if (hasFlag(FLAG_NO_PROTOTYPE)) return;
+  if (hasFlag(FLAG_NO_CODEGEN)) return;
   codegenHeader(outfile);
   fprintf(outfile, ";\n");
 }
@@ -620,6 +624,8 @@ codegenNullAssignments(FILE* outfile, const char* cname, ClassType* ct) {
 
 
 void FnSymbol::codegenDef(FILE* outfile) {
+  if( hasFlag(FLAG_NO_CODEGEN) ) return;
+
   if (strcmp(saveCDir, "")) {
    if (const char* rawname = fname()) {
     const char* name = strrchr(rawname, '/');
@@ -832,13 +838,23 @@ bool EnumSymbol::isParameter(void) { return true; }
 
 void EnumSymbol::codegenDef(FILE* outfile) { }
 
+Immediate* EnumSymbol::getImmediate(void) {
+  if (SymExpr* init = toSymExpr(defPoint->init)) {
+    if (VarSymbol* initvar = toVarSymbol(init->var)) {
+      return initvar->immediate;
+    }
+  }
+  return NULL;
+}
+
 
 ModuleSymbol::ModuleSymbol(const char* iName, ModTag iModTag, BlockStmt* iBlock) :
   Symbol(E_ModuleSymbol, iName),
   modTag(iModTag),
   block(iBlock),
   initFn(NULL),
-  filename(NULL)
+  filename(NULL),
+  doc(NULL)
 {
   block->parentSymbol = this;
   registerModule(this);
@@ -879,21 +895,98 @@ static int compareLineno(const void* v1, const void* v2) {
     return 0;
 }
 
+Vec<ClassType*> ModuleSymbol::getClasses() {
+  Vec<ClassType*> classes;
+  for_alist(expr, block->body) {
+    if (DefExpr* def = toDefExpr(expr))
+      if (FnSymbol* fn = toFnSymbol(def->sym)) {
+        // Ignore external and prototype functions.
+        if (fn->hasFlag(FLAG_MODULE_INIT)) {
+          for_alist(expr2, fn->body->body) {
+            if (DefExpr* def2 = toDefExpr(expr2))
+              if (TypeSymbol* type = toTypeSymbol(def2->sym)) 
+                if (ClassType* cl = toClassType(type->type)) {
+                  classes.add(cl);
+                }
+          }
+        }
+      }
+  }
+  return classes;
+}
 
-void ModuleSymbol::codegenDef(FILE* outfile) {
-  fileinfo gpufile;
-  gpufile.fptr = NULL;
- 
+Vec<VarSymbol*> ModuleSymbol::getConfigVars() {
+  Vec<VarSymbol*> configs;
+  for_alist(expr, block->body) {
+    if (DefExpr* def = toDefExpr(expr))
+      if (FnSymbol* fn = toFnSymbol(def->sym)) {
+        // Ignore external and prototype functions.
+        if (fn->hasFlag(FLAG_MODULE_INIT)) {
+          for_alist(expr2, fn->body->body) {
+            if (DefExpr* def2 = toDefExpr(expr2))
+              if (VarSymbol* var = toVarSymbol(def2->sym)) {
+                if (var->hasFlag(FLAG_CONFIG)) {
+                  configs.add(var);
+                }
+              }
+          }
+        }
+      }
+  }
+  return configs;
+}
+
+Vec<ModuleSymbol*> ModuleSymbol::getModules() {
+  Vec<ModuleSymbol*> mods;
+  for_alist(expr, block->body) {
+    if (DefExpr* def = toDefExpr(expr))
+      if (ModuleSymbol* mod = toModuleSymbol(def->sym)) {
+        if (strcmp(mod->defPoint->parentSymbol->name, name) == 0)
+          mods.add(mod);
+      }
+  }
+  return mods;
+}
+
+Vec<FnSymbol*> ModuleSymbol::getFunctions() {
   Vec<FnSymbol*> fns;
   for_alist(expr, block->body) {
     if (DefExpr* def = toDefExpr(expr))
       if (FnSymbol* fn = toFnSymbol(def->sym)) {
         // Ignore external and prototype functions.
-        if (fn->hasFlag(FLAG_EXTERN) || fn->hasFlag(FLAG_FUNCTION_PROTOTYPE))
+        if (!genExternPrototypes &&
+            (fn->hasFlag(FLAG_EXTERN) ||
+             fn->hasFlag(FLAG_FUNCTION_PROTOTYPE)))
           continue;
         fns.add(fn);
+        // The following additional overhead and that present in getConfigVars 
+        // and getClasses is a result of the docs pass occurring before
+        // the functions/configvars/classes are taken out of the module
+        // initializer function and put on the same level as that function.
+        // If and when that changes, the code encapsulated in this if
+        // statement may be removed.
+        if (fn->hasFlag(FLAG_MODULE_INIT)) {
+          for_alist(expr2, fn->body->body) {
+            if (DefExpr* def2 = toDefExpr(expr2))
+              if (FnSymbol* fn2 = toFnSymbol(def2->sym)) {
+                if (!genExternPrototypes &&
+                    (fn->hasFlag(FLAG_EXTERN) ||
+                     fn->hasFlag(FLAG_FUNCTION_PROTOTYPE)))
+                  continue;
+                fns.add(fn2);
+              }
+          }
+        }
       }
   }
+  return fns;
+}
+
+
+void ModuleSymbol::codegenDef(FILE* outfile) {
+  fileinfo gpufile;
+  gpufile.fptr = NULL;
+  Vec<FnSymbol*> fns = getFunctions();
   qsort(fns.v, fns.n, sizeof(fns.v[0]), compareLineno);
   forv_Vec(FnSymbol, fn, fns) {
     // Create external file to be compiled by GPU compiler
@@ -1131,10 +1224,10 @@ VarSymbol *new_ComplexSymbol(const char *n, long double r, long double i, IF1_co
   imm.const_kind = NUM_KIND_COMPLEX;
   imm.num_index = size;
   VarSymbol *s = uniqueConstantsHash.get(&imm);
-  PrimitiveType* dtRetType = dtComplex[size];
   if (s) {
     return s;
   }
+  Type* dtRetType = dtComplex[size];
   s = new VarSymbol(astr("_literal_", istr(literal_id++)), dtRetType);
   rootModule->block->insertAtTail(new DefExpr(s));
   s->immediate = new Immediate;
@@ -1144,7 +1237,7 @@ VarSymbol *new_ComplexSymbol(const char *n, long double r, long double i, IF1_co
   return s;
 }
 
-static PrimitiveType*
+static Type*
 immediate_type(Immediate *imm) {
   switch (imm->const_kind) {
     case CONST_KIND_STRING:
@@ -1170,7 +1263,7 @@ VarSymbol *new_ImmediateSymbol(Immediate *imm) {
   VarSymbol *s = uniqueConstantsHash.get(imm);
   if (s)
     return s;
-  PrimitiveType *t = immediate_type(imm);
+  Type *t = immediate_type(imm);
   s = new VarSymbol(astr("_literal_", istr(literal_id++)), t);
   rootModule->block->insertAtTail(new DefExpr(s));
   s->immediate = new Immediate;

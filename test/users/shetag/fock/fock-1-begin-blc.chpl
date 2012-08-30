@@ -1,14 +1,14 @@
 config const natom = 5;
 const n = (natom/2)*10 + ((natom+1)/2)*5;
-// const bas_info : [[1..natom, 1..2]] int = [(i,j) in [1..natom, 1..2]] 5*(i/2) + 10*((i-1)/2) + if (j==1) then 1 else 10/(i%2+1);
-const bas_info : [[1..natom, 1..2]] int = [(i,j) in [1..natom, 1..2]] bas_init(i,j);
+// const bas_info : [{1..natom, 1..2}] int = [(i,j) in {1..natom, 1..2}] 5*(i/2) + 10*((i-1)/2) + if (j==1) then 1 else 10/(i%2+1);
+const bas_info : [{1..natom, 1..2}] int = [(i,j) in {1..natom, 1..2}] bas_init(i,j);
 
 proc bas_init(i,j) {
   return 5*(i/2) + 10*((i-1)/2) + if (j==1) then 1 else 10/(i%2+1);
 }
 
 type elemType = real(64);
-const matD : domain(2) = [1..n, 1..n]; 
+const matD : domain(2) = {1..n, 1..n}; 
 const dmat : [matD] elemType = [(i,j) in matD] 1.0/(i+j); 
 var jmat2, kmat2, jmat2T, kmat2T : [matD] elemType; 
 
@@ -92,12 +92,12 @@ var oneAtATime: sync bool = true;
 proc buildjk_atom4(bI) {
   const ilo = bI.ilo, ihi = bI.ihi, jlo = bI.jlo, jhi = bI.jhi, klo = bI.klo, khi = bI.khi, llo = bI.llo, lhi = bI.lhi;
   
-  const ijD = [ilo..ihi, jlo..jhi];
-  const ikD = [ilo..ihi, klo..khi];
-  const ilD = [ilo..ihi, llo..lhi];	
-  const jkD = [jlo..jhi, klo..khi];
-  const jlD = [jlo..jhi, llo..lhi];
-  const klD = [klo..khi, llo..lhi];
+  const ijD = {ilo..ihi, jlo..jhi};
+  const ikD = {ilo..ihi, klo..khi};
+  const ilD = {ilo..ihi, llo..lhi};	
+  const jkD = {jlo..jhi, klo..khi};
+  const jlD = {jlo..jhi, llo..lhi};
+  const klD = {klo..khi, llo..lhi};
   
   const dij = dmat(ijD);
   const dik = dmat(ikD);

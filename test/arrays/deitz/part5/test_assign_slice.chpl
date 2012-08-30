@@ -1,5 +1,5 @@
-var D = [1..5];
-var InD = [2..4];
+var D = {1..5};
+var InD = {2..4};
 
 var A, B: [D] int;
 

@@ -211,7 +211,7 @@ proc GridVariable.writeData (
     [d in dimensions] range_tuple(d) = grid.cells.dim(1 + dimension - d);
 
     var cells_transposed: domain(dimension, stridable=true);
-    cells_transposed = [(...range_tuple)];
+    cells_transposed = {(...range_tuple)};
 
     var cell:       dimension*int;
     var n_newlines: int;
@@ -240,7 +240,7 @@ proc GridVariable.writeData (
 
       if n_newlines == dimension then n_newlines = 0;
 
-      for n in [1..n_newlines] do outfile.writeln("  ");
+      for n in {1..n_newlines} do outfile.writeln("  ");
       //<=== Newlines at the end of each dimension <===
     }
   }

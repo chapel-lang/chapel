@@ -18,7 +18,7 @@ config const rows = 201,
 
 proc main() {
   // The set of indices over which the image is defined.
-  var ImgSpace = [0..#rows, 0..#cols];
+  var ImgSpace = {0..#rows, 0..#cols};
 
   //
   // A dummy array just to show that this works.

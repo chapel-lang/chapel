@@ -1,0 +1,9 @@
+bug: overloading operator breaks reduction
+
+Overloading the ^ operator breaks the user's ability to apply a ^
+reduction to a type of their choosing.  Strangely, though, this
+doesn't occur for overloading the + operator and using a + reduce (see
+badoverload-works.chpl).  Also strange is that we seem to be trying to
+get the "min" value of the record type, which seems like one wouldn't
+need to do for an ^ reduction (unless that's the way we compute the
+identity).  That's as far as I got in looking into it, though.

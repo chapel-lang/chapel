@@ -1,5 +1,5 @@
 config const n=2, m=3;
-var D_orig: domain(2) = [1..n, 1..m];
+var D_orig: domain(2) = {1..n, 1..m};
 const dist = new dmap(new GlobalDistribution());
 var D: domain(2) dmapped dist = D_orig;
 var a: [D] real;

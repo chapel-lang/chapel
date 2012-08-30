@@ -2,7 +2,7 @@ proc foo(X: [1..3] int) {
   writeln("X is: ", X);
 }
 
-const D = [1..6];
+const D = {1..6};
 
 var A: [D] int;
 
@@ -15,8 +15,8 @@ foo(A[D by 2]);     // this does!?
 
 foo(A[2..6 by 2]);  // this doesn't
 
-const D2 = [2..6 by 2];
+const D2 = {2..6 by 2};
 foo(A[D2]);          // this does
 
-const D3 = [1..3];
+const D3 = {1..3};
 foo(A[D3]);          // as does this

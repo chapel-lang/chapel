@@ -1,4 +1,4 @@
-var D = [1..8];
+var D = {1..8};
 writeln("D = ", D);
 
 class CD { const D; }

@@ -1,7 +1,7 @@
 // This is an extract from KM's code, May 2011.
 
 const N_VERTICES = 64;
-const vertex_domain = [1..N_VERTICES] ;
+const vertex_domain = {1..N_VERTICES} ;
 
 record vertex_struct {
 
@@ -18,4 +18,4 @@ record vertex_struct {
 
 // bug note: uncommenting the type of Vertices eliminates the symptoms
 var Vertices // : [vertex_domain] vertex_struct
-  = [i in vertex_domain] new vertex_struct(nd=[1..5]);
+  = [i in vertex_domain] new vertex_struct(nd={1..5});

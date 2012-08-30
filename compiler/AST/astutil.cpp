@@ -189,7 +189,7 @@ void addUse(Map<Symbol*,Vec<SymExpr*>*>& useMap, SymExpr* use) {
 // return & 1 is true if se is a def
 // return & 2 is true if se is a use
 //
-static int isDefAndOrUse(SymExpr* se) {
+int isDefAndOrUse(SymExpr* se) {
   if (CallExpr* call = toCallExpr(se->parentExpr)) {
     if (call->isPrimitive(PRIM_MOVE) && call->get(1) == se) {
       return 1;

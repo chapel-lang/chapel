@@ -21,7 +21,7 @@ module Graph500_defs
 // The data structure used to store the edges is an array of records
 
   const edgelist_domain =
-      [1..N_RAWEDGES] dmapped Block ( [1..N_RAWEDGES] );
+    {1..N_RAWEDGES} dmapped Block ( {1..N_RAWEDGES} );
 
   record directed_vertex_pair {
     var start = 1: int;
@@ -40,9 +40,9 @@ module Graph500_defs
 
     const vertex_domain =
       if DISTRIBUTION_TYPE == "BLOCK" then
-        [1..N_VERTICES] dmapped Block ( [1..N_VERTICES] )
+        {1..N_VERTICES} dmapped Block ( {1..N_VERTICES} )
       else
-        [1..N_VERTICES] ;
+        {1..N_VERTICES} ;
 
     type vertex_id = int;
 
@@ -96,7 +96,7 @@ module Graph500_defs
       proc grow_helper() { 
           halt("Should not call grow_helper");
           var new_nd = Neighbors.numElements + 1;
-          nd = [1..new_nd];
+          nd = {1..new_nd};
       }
 
     }

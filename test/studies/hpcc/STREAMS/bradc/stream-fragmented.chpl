@@ -25,7 +25,7 @@ config const printParams = true,
 proc main() {
   printConfiguration();
 
-  const ProblemSpace: domain(1, indexType) = [1..m];
+  const ProblemSpace: domain(1, indexType) = {1..m};
 
   const allExecTime: [LocaleSpace] [1..numTrials] real;
   const allValidAnswer: [LocaleSpace] bool;

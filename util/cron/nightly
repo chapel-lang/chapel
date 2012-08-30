@@ -52,6 +52,10 @@ while (@ARGV) {
         $multilocale = 1;
     } elsif ($flag eq "-performance") {
         $performance = 1;
+    } elsif ($flag eq "-compopts") {
+	$compopts = shift @ARGV;
+    } elsif ($flag eq "-execopts") {
+	$execopts = shift @ARGV;
     } elsif ($flag eq "-startdate") {
 	$startdate = shift @ARGV;
     } elsif ($flag eq "-baseline") {
@@ -252,7 +256,6 @@ if ($debug == 1) {
 }
 $chapeldir = "$tmpdir/chapel";
 $testdir = "$chapeldir/test";
-$thirdpartydir = "$tmpdir/chapel-third-party-norelease";
 
 
 
@@ -424,19 +427,6 @@ $svnroot = $ENV{'CHPL_HOME_REPOSITORY'};
 if ($svnroot eq "") {
     $svnroot = "https://chapel.svn.sourceforge.net/svnroot/chapel/trunk";
 }
-$svnthirdpartyroot = "https://chapel.svn.sourceforge.net/svnroot/chapel/third-party-norelease";
-
-$readonlythirdpartydirname = "chapel-third-party-cron-$user-readonly";
-$readonlythirdpartydir = "$basetmpdir/$readonlythirdpartydirname";
-if (! (-r $readonlythirdpartydir && -d $readonlythirdpartydir)) {
-    print "The third-party SVN directory has not been checked out yet\n";
-    mysystem("cd $basetmpdir && svn checkout -q $svnrevopt $svnthirdpartyroot $readonlythirdpartydirname", "svn third party checkout", 1, 1);
-} else {
-    print "The third-party SVN directory has already been checkout out\n";
-    mysystem ("cd $basetmpdir && svn update -q $svnrevopt $readonlythirdpartydirname", "svn third party update", 1, 1);
-}
-mysystem("rm -rf $thirdpartydir", "removing previous writeable third-party dir", 0, 1);
-mysystem("cp -r $readonlythirdpartydir $thirdpartydir", "creating writeable third-party dir");
 
 $readonlydirname = "chapel-cron-$user-readonly";
 $readonlydir = "$basetmpdir/$readonlydirname";
@@ -452,10 +442,6 @@ if (! (-r $readonlydir && -d $readonlydir)) {
 $revision = `svn info $readonlydir | grep Revision`; chomp($revision);
 mysystem("rm -rf $chapeldir", "removing previous writeable chapel dir", 0, 1);
 mysystem("cp -r $readonlydir $chapeldir", "creating writeable chapel dir");
-
-if ($mpi == 1) {
-    mysystem("cd $chapeldir/third-party && cp -r $thirdpartydir/openmpi .", "copying openmpi directory", 1, 1);
-}
 
 
 #

@@ -1,13 +1,7 @@
 #!/usr/bin/env perl
 
-$chplhome = $ENV{'CHPL_HOME'};
-if ($chplhome eq "") {
-    print "Error: CHPL_HOME must be set to use $0\n";
-    exit(0);
-}
-
-$svnlogfile = "$chplhome/SVNLOG";
-$svnnumfile = "$chplhome/.SVNLOG-revnum";
+$svnlogfile = "./SVNLOG";
+$svnnumfile = "./.SVNLOG-revnum";
 $completelog = 0;
 
 open SVNLOGNUM, "$svnnumfile" or $completelog = 1;
@@ -37,26 +31,26 @@ if ($update_to_users_local_version == 0) {
     $svninfoflags = "-rHEAD";
 }
 
-$revline = `svn info $svninfoflags $chplhome | grep Revision`;
+$revline = `svn info $svninfoflags . | grep Revision`;
 chomp($revline);
 
 if ($revline =~ m/Revision: (\d*)/) {
     $currentrevnum = $1;
 } else {
-    print "ERROR: couldn't determine revision number of $chplhome\n";
+    print "ERROR: couldn't determine revision number of this directory\n";
     exit(1);
 }
 
 if ($completelog == 1) {
     print "SVNLOG being recomputed from scratch\n";
-    `cd $chplhome && svn log --verbose --incremental -r1:$currentrevnum > SVNLOG`;
+    `svn log --verbose --incremental -r1:$currentrevnum > SVNLOG`;
 } else {
     if ($revnum eq $currentrevnum) {
         print "SVNLOG is already up-to-date\n";
     } else {
         $revnum += 1;
         print "SVNLOG being updated from $revnum to $currentrevnum\n";
-        `cd $chplhome && svn log --verbose --incremental -r$revnum:$currentrevnum >> SVNLOG`;
+        `svn log --verbose --incremental -r$revnum:$currentrevnum >> SVNLOG`;
     }
 }
 

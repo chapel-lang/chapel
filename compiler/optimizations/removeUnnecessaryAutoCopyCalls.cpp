@@ -11,10 +11,11 @@
 //
 static void removeUnnecessaryAutoCopyCalls(FnSymbol* fn) {
   buildBasicBlocks(fn);
-  forv_Vec(BasicBlock, bb, *fn->basicBlocks) {
+
+  for_vector(BasicBlock, bb, *fn->basicBlocks) {
     Map<Symbol*,Symbol*> equivalenceMap;
     Map<Symbol*,CallExpr*> autoCopyMap;
-    forv_Vec(Expr, expr, bb->exprs) {
+    for_vector(Expr, expr, bb->exprs) {
       if (CallExpr* call = toCallExpr(expr)) {
         if (call->isPrimitive(PRIM_MOVE)) {
           SymExpr* lhs = toSymExpr(call->get(1));

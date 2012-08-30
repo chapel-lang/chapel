@@ -1,8 +1,8 @@
 
 var first: bool = true;
 proc main {
-  var aliasDom: domain(1) = [1..5];
-  var notAliasDom: domain(1) = [1..20];
+  var aliasDom: domain(1) = {1..5};
+  var notAliasDom: domain(1) = {1..20};
   var A: [notAliasDom] int = [i in notAliasDom] i;
 
   {

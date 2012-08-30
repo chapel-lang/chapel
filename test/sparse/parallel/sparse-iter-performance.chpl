@@ -5,8 +5,8 @@ config var n = 1200000;
 use Time;
 var tm: Timer;
 
-var d1: domain(1) = [1..n];
-var d2: domain(2) = [1..n,1..n];
+var d1: domain(1) = {1..n};
+var d2: domain(2) = {1..n,1..n};
 
 test(1, d1);
 test(2, d2);

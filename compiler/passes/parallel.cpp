@@ -203,6 +203,64 @@ insertEndCount(FnSymbol* fn,
 }
 
 
+static void
+replicateGlobalRecordWrappedVars(DefExpr *def) {
+  ModuleSymbol* mod = toModuleSymbol(def->parentSymbol);
+  Expr* stmt = mod->initFn->body->body.head;
+  Expr* useFirst = NULL;
+  Symbol *currDefSym = def->sym;
+  bool found = false;
+  // Try to find the first definition of this variable in the
+  //   module initialization function
+  while (stmt->next && !found) {
+    stmt = stmt->next;
+    Vec<SymExpr*> symExprs;
+    collectSymExprs(stmt, symExprs);
+    forv_Vec(SymExpr, se, symExprs) {
+      if (se->var == currDefSym) {
+        INT_ASSERT(se->parentExpr);
+        int result = isDefAndOrUse(se);
+        if (result & 1) {
+          // first use/def of the variable is a def (normal case)
+          INT_ASSERT(useFirst==NULL);
+          found = true;
+          break;
+        } else if (result & 2) {
+          if (useFirst == NULL) {
+            // This statement captures a reference to the variable
+            // to pass it to the function that builds the initializing
+            // expression
+            CallExpr *parent = toCallExpr(se->parentExpr);
+            INT_ASSERT(parent);
+            INT_ASSERT(parent->isPrimitive(PRIM_ADDR_OF));
+            INT_ASSERT(isCallExpr(parent->parentExpr));
+            // Now start looking for the first use of the captured
+            // reference
+            currDefSym = toSymExpr(toCallExpr(parent->parentExpr)->get(1))->var;
+            INT_ASSERT(currDefSym);
+            // This is used to flag that we have found the first use
+            // of the variable
+            useFirst = stmt;
+          } else {
+            // This statement builds the initializing expression, so
+            // we can insert the broadcast after this statement
+
+            // These checks may need to change if we change the way
+            // we handle domain literals, forall expressions, and/or
+            // depending on how we add array literals to the language
+            INT_ASSERT(toCallExpr(stmt));
+            INT_ASSERT(toCallExpr(stmt)->primitive==NULL);
+            found = true;
+            break;
+          }
+        }
+      }
+    }
+  }
+  stmt->insertAfter(new CallExpr(PRIM_PRIVATE_BROADCAST, def->sym));
+}
+
+
 static ClassType*
 buildHeapType(Type* type) {
   static Map<Type*,ClassType*> heapTypeMap;
@@ -400,20 +458,8 @@ makeHeapAllocations() {
           se->getStmtExpr()->insertAfter(new CallExpr(PRIM_PRIVATE_BROADCAST, def->sym));
         }
       } else if (isRecordWrappedType(def->sym->type)) {
-        ModuleSymbol* mod = toModuleSymbol(def->parentSymbol);
-        Expr* stmt = mod->initFn->body->body.head;
-        bool found = false;
-        while (stmt->next && !found) {
-          stmt = stmt->next;
-          Vec<SymExpr*> symExprs;
-          collectSymExprs(stmt, symExprs);
-          forv_Vec(SymExpr, se, symExprs) {
-            if (se->var == def->sym)
-              found = true;
-          }
-        }
-        INT_ASSERT(found);
-        stmt->insertAfter(new CallExpr(PRIM_PRIVATE_BROADCAST, def->sym));
+        // replicate address of global arrays, domains, and distributions
+        replicateGlobalRecordWrappedVars(def);
       } else {
         // put other global constants and all global variables on the heap
         varSet.set_add(def->sym);
@@ -1159,11 +1205,11 @@ insertWideReferences(void) {
 
     if (FnSymbol* fn = toFnSymbol(def->sym)) {
       if (Type* wide = wideClassMap.get(fn->retType))
-        if (!fn->hasFlag(FLAG_EXTERN))
+        if (!fn->hasEitherFlag(FLAG_EXTERN,FLAG_LOCAL))
           fn->retType = wide;
     } else if (!isTypeSymbol(def->sym)) {
       if (Type* wide = wideClassMap.get(def->sym->type)) {
-        if (def->parentSymbol->hasFlag(FLAG_EXTERN)) {
+        if (def->parentSymbol->hasEitherFlag(FLAG_EXTERN,FLAG_LOCAL)) {
           if (toArgSymbol(def->sym))
             continue; // don't change extern function's arguments
         }
@@ -1236,7 +1282,7 @@ insertWideReferences(void) {
         if (var->immediate) {
           if (CallExpr* call = toCallExpr(se->parentExpr)) {
             if (call->isPrimitive(PRIM_VMT_CALL) ||
-                (call->isResolved() && !call->isResolved()->hasFlag(FLAG_EXTERN))) {
+                (call->isResolved() && !call->isResolved()->hasEitherFlag(FLAG_EXTERN,FLAG_LOCAL))) {
               if (Type* type = actual_to_formal(se)->typeInfo()) {
                 VarSymbol* tmp = newTemp(type);
                 SET_LINENO(se);
@@ -1284,7 +1330,7 @@ insertWideReferences(void) {
   // After the call, copy the value back into the wide class.
   //
   forv_Vec(CallExpr, call, gCallExprs) {
-    if (call->isResolved() && call->isResolved()->hasFlag(FLAG_EXTERN)) {
+    if (call->isResolved() && call->isResolved()->hasEitherFlag(FLAG_EXTERN,FLAG_LOCAL)) {
       for_alist(arg, call->argList) {
         SymExpr* sym = toSymExpr(arg);
         INT_ASSERT(sym);
@@ -1297,7 +1343,7 @@ insertWideReferences(void) {
           SET_LINENO(call);
           call->getStmtExpr()->insertBefore(new DefExpr(var));
           if ((symType->symbol->hasFlag(FLAG_WIDE_CLASS) &&
-               var->type->symbol->hasFlag(FLAG_EXTERN)) ||
+               var->type->symbol->hasEitherFlag(FLAG_EXTERN,FLAG_LOCAL)) ||
               passingWideStringToExtern(narrowType)) {
             // Insert a local check because we cannot reflect any changes
             // made to the class back to another locale
@@ -1306,7 +1352,7 @@ insertWideReferences(void) {
             // If we pass a extern class to an extern function, we must treat
             // it like a reference (this is by definition)
             call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, var, sym->copy()));
-          } else if (var->type->symbol->hasFlag(FLAG_REF))
+          } else if (var->type->symbol->hasEitherFlag(FLAG_REF,FLAG_DATA_CLASS))
             call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, var, sym->copy()));
           else
             call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, var, new CallExpr(PRIM_DEREF, sym->copy())));

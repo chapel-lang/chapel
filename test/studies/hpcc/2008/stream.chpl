@@ -60,7 +60,7 @@ proc main() {
   // BlockDist is a 1D block distribution that is computed by blocking
   // the bounding box 1..m across the set of locales
   //
-  const BlockDist = new dmap(new Block(rank=1, idxType=int(64), boundingBox=[1..m],
+  const BlockDist = new dmap(new Block(rank=1, idxType=int(64), boundingBox={1..m},
                                        dataParTasksPerLocale=tasksPerLocale,
                                        dataParIgnoreRunningTasks=true));
 
@@ -69,7 +69,7 @@ proc main() {
   // is a 1D domain storing 64-bit ints and is distributed according
   // to BlockDist.  It contains the indices 1..m.
   //
-  const ProblemSpace: domain(1, int(64)) dmapped BlockDist = [1..m];
+  const ProblemSpace: domain(1, int(64)) dmapped BlockDist = {1..m};
 
   //
   // A, B, and C are the three distributed vectors, declared to store

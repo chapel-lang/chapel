@@ -1,6 +1,6 @@
 config var n: int = 5;
 
-const D = [0..n+1, 0..n+1];
+const D = {0..n+1, 0..n+1};
 var S: sparse subdomain(D);
 
 for i in 1..n do

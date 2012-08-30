@@ -25,6 +25,18 @@ use DSIUtil;
 
 config param debugBlockCyclicDist = false; // internal development flag (debugging)
 
+proc _determineRankFromArg(startIdx) param {
+  return if isTuple(startIdx) then startIdx.size else 1;
+}
+
+proc _determineIdxTypeFromArg(startIdx) type {
+  return if isTuple(startIdx) then startIdx(1).type else startIdx.type;
+}
+
+proc _ensureTuple(arg) {
+  return if isTuple(arg) then arg else (arg,);
+}
+
 
 ////////////////////////////////////////////////////////////////////////////////
 // BlockCyclic Distribution Class
@@ -45,12 +57,19 @@ class BlockCyclic : BaseDist {
                    blocksize,     // nd*int
                    targetLocales: [] locale = Locales, 
                    tasksPerLocale = 0,
-                   param rank = startIdx.size,
-                   type idxType = startIdx(1).type) {
-    this.lowIdx = startIdx;
-    this.blocksize = blocksize;
+                   param rank: int = _determineRankFromArg(startIdx),
+                   type idxType = _determineIdxTypeFromArg(startIdx))
+  {
+    // argument sanity checks, with friendly error messages
+    if isTuple(startIdx) != isTuple(blocksize) then compilerError("when invoking BlockCyclic constructor, startIdx and blocksize must be either both tuples or both integers");
+    if isTuple(startIdx) && startIdx.size != blocksize.size then compilerError("when invoking BlockCyclic constructor and startIdx and blocksize are tuples, their sizes must match");
+    if !_isIntegralType(idxType) then compilerError("when invoking BlockCyclic constructor, startIdx must be an integer or a tuple of integers");
+    if !_isIntegralType(_determineIdxTypeFromArg(blocksize)) then compilerError("when invoking BlockCyclic constructor, blocksize must be an integer or a tuple of integers");
+
+    this.lowIdx = _ensureTuple(startIdx);
+    this.blocksize = _ensureTuple(blocksize);
     if rank == 1 {
-      targetLocDom = [0..#targetLocales.numElements]; // 0-based for simplicity
+      targetLocDom = {0..#targetLocales.numElements}; // 0-based for simplicity
       this.targetLocales = targetLocales;
     } else if targetLocales.rank == 1 then {
 
@@ -60,7 +79,7 @@ class BlockCyclic : BaseDist {
       var ranges: rank*range;
       for param i in 1..rank do
         ranges(i) = 0..factors(i)-1;
-      targetLocDom = [(...ranges)];
+      targetLocDom = {(...ranges)};
       for (loc1, loc2) in (this.targetLocales, targetLocales) do
         loc1 = loc2;
       if debugBlockCyclicDist {
@@ -77,7 +96,7 @@ class BlockCyclic : BaseDist {
 	ranges(i) = 0..#thisRange.length; 
       }
       
-      targetLocDom = [(...ranges)];
+      targetLocDom = {(...ranges)};
       if debugBlockCyclicDist then writeln(targetLocDom);
 
       this.targetLocales = reshape(targetLocales, targetLocDom);
@@ -377,7 +396,7 @@ iter BlockCyclicDom.these(param tag: iterKind, followThis) where tag == iterKind
     t(i) = (low..high by stride:int) + whole.dim(i).low;
   }
   //  writeln(here.id, ": Changed it into: ", t);
-  for i in [(...t)] {
+  for i in {(...t)} {
     yield i;
   }
 }
@@ -442,7 +461,7 @@ proc BlockCyclicDom.setup() {
                                                    dist.getStarts(whole, localeIdx));
       else {
         locDoms(localeIdx).myStarts = dist.getStarts(whole, localeIdx);
-        locDoms(localeIdx).myFlatInds = [0..#locDoms(localeIdx).computeFlatInds()];
+        locDoms(localeIdx).myFlatInds = {0..#locDoms(localeIdx).computeFlatInds()};
       }
   if debugBlockCyclicDist then
     enumerateBlocks();
@@ -519,7 +538,7 @@ class LocBlockCyclicDom {
   // indices back to the local index type.
   //
   var myStarts: domain(rank, idxType, stridable=true);
-  var myFlatInds: domain(1) = [0..#computeFlatInds()];
+  var myFlatInds: domain(1) = {0..#computeFlatInds()};
 }
 
 //
@@ -542,7 +561,7 @@ proc LocBlockCyclicDom.writeThis(x:Writer) {
 
 proc LocBlockCyclicDom.enumerateBlocks() {
   for i in myStarts {
-    write(here.id, ": [");
+    write(here.id, ": {");
     for param j in 1..rank {
       if (j != 1) {
         write(", ");
@@ -556,7 +575,7 @@ proc LocBlockCyclicDom.enumerateBlocks() {
       write(lo, "..", min(lo + globDom.dist.blocksize(j)-1, 
                           globDom.whole.dim(j).high));
     }
-    writeln("]");
+    writeln("}");
   } 
 }
   
@@ -684,7 +703,7 @@ iter BlockCyclicArr.these(param tag: iterKind, followThis) var where tag == iter
     myFollowThis(i) = (low..high by stride) + dom.whole.dim(i).low;
     lowIdx(i) = myFollowThis(i).low;
   }
-  const myFollowThisDom = [(...myFollowThis)];
+  const myFollowThisDom = {(...myFollowThis)};
 
   //
   // TODO: The following is a buggy hack that will only work when we're

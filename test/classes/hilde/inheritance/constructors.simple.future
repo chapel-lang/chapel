@@ -1,3 +1,0 @@
-bug: Cannot call the constructor for a derived class when the base class has an explicit constructor.
-
-This is the same bug as constructors.chpl, but shorter code.

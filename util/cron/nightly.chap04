@@ -1,3 +1,2 @@
-#!/usr/bin/tcsh
-
-~/chapel/util/cron/nightly-mpi.cron -cron -examples >&! ~/tmp/nightly.mpi.out
+#!/bin/tcsh
+source ~/.chapelcshrc-cron && setenv CHPL_NIGHTLY_LOGDIR /data/sea/cascade/chapel/NightlyPerformance/chap04 && ~/chapel/util/cron/nightly -cron -performance -startdate 07/28/12 >&! ~/tmp/nightly-perf.linux64.chap04.out

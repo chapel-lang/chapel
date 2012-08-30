@@ -51,12 +51,12 @@ iter it(param tag: iterKind, followThis, N:int) where tag == iterKind.follower {
 /////////////////////////////////
 proc tn(ph:int, N:int, M:int) {
   const rn = 1..N,
-        d1n = [1..N],
-        d2n = [1..2, 1..N];
+        d1n = {1..N},
+        d2n = {1..2, 1..N};
 
   const rm = 1..M,
-        d1m = [1..M],
-        d2m = [1..2, 1..M];
+        d1m = {1..M},
+        d2m = {1..2, 1..M};
 
   fphase(ph); hd("N = ", N, "  M = ", M); tl();
 
@@ -83,8 +83,8 @@ proc tn(ph:int, N:int, M:int) {
 
 config const sz = 4, empty = 0;
 //const er = 1..empty,
-//      e1d = [1..empty],
-//      e2d = [1..2, 1..empty];
+//      e1d = {1..empty},
+//      e2d = {1..2, 1..empty};
 
 proc main() {
   // hd("dataParTasksPerLocale = ", dataParTasksPerLocale); tl();

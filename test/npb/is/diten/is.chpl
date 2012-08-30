@@ -20,8 +20,8 @@ config const maxKey = MaxKey(probClass);
 config const maxIterations = TotalIters(probClass);
 config const numBuckets = NumBuckets(probClass);
 
-const D: domain(1) = [0..#totalKeys];
-const E: domain(1) = [0..#maxKey];
+const D: domain(1) = {0..#totalKeys};
+const E: domain(1) = {0..#maxKey};
 
 // The following should be replaced by two enumerated domain arrays of arrays
 const S_testIndexArray: [0..4] int = ( 48427,17148,23627,62548,4431 );

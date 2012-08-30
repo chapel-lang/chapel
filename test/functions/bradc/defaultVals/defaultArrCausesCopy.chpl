@@ -1,4 +1,4 @@
-var D = [1..10];
+var D = {1..10};
 
 var A: [D] real;
 

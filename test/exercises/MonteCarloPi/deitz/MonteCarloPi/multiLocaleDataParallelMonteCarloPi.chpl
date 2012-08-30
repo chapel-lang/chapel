@@ -37,7 +37,7 @@ var rs = new RandomStream(seed, parSafe=false);
 // the number of points.  Distributed across all the locales using
 // the Block distribution.
 //
-var D = [1..n] dmapped Block([1..n]);
+var D = {1..n} dmapped Block({1..n});
 
 //
 // Run the Monte Carlo simulation using a data parallel reduction to

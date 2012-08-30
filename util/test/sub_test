@@ -490,8 +490,6 @@ if os.access('./EXECOPTS',os.R_OK):
 else:
     globalExecopts=list()
 envExecopts = os.getenv('EXECOPTS')
-if envExecopts != None:
-    globalExecopts += shlex.split(envExecopts)
 # sys.stdout.write('globalExecopts=%s\n'%(globalExecopts))
 
 #
@@ -803,8 +801,9 @@ for testname in testsrc:
                 sys.stdout.write('[Concatenating extra files: %s]\n'%
                                  (execname+'.catfiles'))
                 sys.stdout.flush()
-                output+=subprocess.Popen(['cat', catfiles],
-                                         stdout=subprocess.PIPE).communicate()[0]
+                output+=subprocess.Popen(['cat']+catfiles.split(),
+                                         stdout=subprocess.PIPE,
+                                         stderr=subprocess.STDOUT).communicate()[0]
 
             # Sadly these scripts require an actual file
             complogfile=file(complog, 'w')
@@ -940,6 +939,8 @@ for testname in testsrc:
 
             args+=globalExecopts
             args+=shlex.split(execopts)
+            if envExecopts != None:
+                args+=shlex.split(envExecopts)
 
             #
             # Run program (with timeout)
@@ -968,6 +969,8 @@ for testname in testsrc:
                                      (futuretest, localdir, execname))
                     printTestVariation(compoptsnum, execoptsnum);
                     sys.stdout.write(']\n')
+                    sys.stdout.write('[Execution output was as follows:]\n')
+                    sys.stdout.write(output)
 
             elif useTimedExec:
                 wholecmd = cmd+' '+' '.join(map(ShellEscape, args))
@@ -989,6 +992,8 @@ for testname in testsrc:
                                      (futuretest, localdir, execname))
                     printTestVariation(compoptsnum, execoptsnum);
                     sys.stdout.write(']\n')
+                    sys.stdout.write('[Execution output was as follows:]\n')
+                    sys.stdout.write(output)
 
             else:
                 if redirectin == None:
@@ -1015,7 +1020,8 @@ for testname in testsrc:
                                  (execname+'.catfiles'))
                 sys.stdout.flush()
                 output+=subprocess.Popen(['cat']+catfiles.split(),
-                                         stdout=subprocess.PIPE).communicate()[0]
+                                         stdout=subprocess.PIPE,
+                                         stderr=subprocess.STDOUT).communicate()[0]
 
             # Sadly the scripts used below require an actual file
             execlogfile=file(execlog, 'w')

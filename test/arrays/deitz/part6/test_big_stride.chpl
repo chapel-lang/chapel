@@ -1,4 +1,4 @@
-var D = 1..8;
+var D = {1..8};
 var A: [D] int = D;
 
 writeln(A);

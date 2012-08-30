@@ -3,7 +3,7 @@ proc foo(A: [2..4, 2..4] int) {
     writeln(ie);
 }
 
-var D = [1..5, 1..5];
+var D = {1..5, 1..5};
 var A: [D] int;
 
 for (i,j) in D do

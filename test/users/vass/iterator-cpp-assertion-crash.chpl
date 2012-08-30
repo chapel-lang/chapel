@@ -148,7 +148,7 @@ proc DimensionalDist.checkInvariants(): void {
   assert(targetLocales.eltType == locale, "DimensionalDist-eltType");
   assert(targetIds._value.idxType == locIdxT, "DimensionalDist-idxType");
   // todo: where do we rely on this?
-  assert(targetIds == [0..#numLocs1/*:locIdxT*/, 0..#numLocs2/*:locIdxT*/],
+  assert(targetIds == {0..#numLocs1/*:locIdxT*/, 0..#numLocs2/*:locIdxT*/},
          "DimensionalDist-targetIds");
   assert(rank == targetLocales.rank, "DimensionalDist-rank");
   assert(dataParTasksPerLocale > 0, "DimensionalDist-dataParTasksPerLocale");
@@ -274,7 +274,7 @@ proc DimensionalDom.dsiSetIndices(newIndices: domainT): void {
 }
 
 proc DimensionalDom.dsiSetIndices(newRanges: rank * rangeT): void {
-  whole = [(...newRanges)];
+  whole = {(...newRanges)};
   _dsiSetIndicesHelper(newRanges);
 }
 
@@ -302,9 +302,9 @@ proc LocDimensionalDom._dsiLocalSetIndicesHelper(globDD, locId) {
   var myRange1 = local1dDdescs(1).dsiSetLocalIndices1d(globDD(1),locId(1));
   var myRange2 = local1dDdescs(2).dsiSetLocalIndices1d(globDD(2),locId(2));
 
-  myBlock = [myRange1, myRange2];
-  myStorageDom = [0:stoSzT..#myRange1.length:stoSzT,
-                  0:stoSzT..#myRange2.length:stoSzT];
+  myBlock = {myRange1, myRange2};
+  myStorageDom = {0:stoSzT..#myRange1.length:stoSzT,
+                  0:stoSzT..#myRange2.length:stoSzT};
 
   if traceDimensionalDist then
     writeln("DimensionalDom.dsiSetIndices ", here, " ", locId, " <- ", myBlock,
@@ -547,7 +547,7 @@ iter DimensionalDom.these(param tag: iterKind) where tag == iterKind.leader {
 
 iter DimensionalDom.these(param tag: iterKind, followThis) where tag == iterKind.follower {
   writeln("DimensionalDom follower: got ", followThis);
-  for i in [(...followThis)] do
+  for i in {(...followThis)} do
     yield i;
 }
 
@@ -589,7 +589,7 @@ writeln();
 
 /////////// domain
 
-const dmbase = [1..3,1..4];
+const dmbase = {1..3,1..4};
 var dmdom: domain(2) dmapped new dmap(ddf);
 dmdom = dmbase;
 writeln("dmdom = ", dmdom);

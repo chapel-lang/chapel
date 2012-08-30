@@ -154,7 +154,7 @@ module elemental_cholesky_unsymmetric_index_ranges {
 	    const my_Ax2_cols_transposed = my_Ax2_cols.translate (diag_offset);
 	    const I_compute_L21_rows     = my_L21_rows_to_compute [ A22_rows ];
 
-	    const A11_indices = [A11_rows, A11_cols];
+	    const A11_indices = {A11_rows, A11_cols};
 
 	    var   A11 : [A11_indices] real;
 
@@ -190,8 +190,7 @@ module elemental_cholesky_unsymmetric_index_ranges {
 	      // set of processors.
 	      // ---------------------------------------------------------------
 
-	      const I_compute_L21_indices = [I_compute_L21_rows, A11_cols];
-
+	      const I_compute_L21_indices = {I_compute_L21_rows, A11_cols};
 	      var   I_compute_L21 : [I_compute_L21_indices] real;
 
 	      // the assignment following is an all-gather among processors in
@@ -222,7 +221,7 @@ module elemental_cholesky_unsymmetric_index_ranges {
 	      // The assignment following is an ALL-GATHER among processors in
 	      // a single processor row
 
-	      const L21_Idx              = [my_A2x_rows, A11_cols];
+	      const L21_Idx              = {my_A2x_rows, A11_cols};
 	      const L21 : [L21_Idx] real = A [L21_Idx];
 
 	      barrier (locks);
@@ -237,7 +236,7 @@ module elemental_cholesky_unsymmetric_index_ranges {
 	      // necessary when that replication is available.  It is 
 	      // unnecessary in the current code.
 
-	      const L12_Idx              = [my_Ax2_cols_transposed, A11_cols];
+	      const L12_Idx              = {my_Ax2_cols_transposed, A11_cols};
 	      const L12 : [L12_Idx] real = A [L12_Idx];
 
 	      // -------------------------------------------------------------

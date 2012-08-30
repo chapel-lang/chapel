@@ -24,7 +24,7 @@ proc main {}
 
    type Nbr_List = domain (int);
 
-   var Node_Set            : domain (1) = [1..n_nodes];
+   var Node_Set            : domain (1) = {1..n_nodes};
 
 
    type Adjacency_Structure = [Node_Set] Nbr_List;

@@ -63,7 +63,7 @@ class Block1D : Distribution {
     // TODO: Create a helper function to create a domain like this for
     // arbitrary dimensions (since the k-D case is a bit harder?)
     //
-    targetLocDom = [0..#targetLocales.numElements];
+    targetLocDom = {0..#targetLocales.numElements};
     targetLocs = targetLocales;
 
     for locid in targetLocDom do
@@ -218,7 +218,7 @@ class LocBlock1DDist {
                 else procToData((numelems: real * localeIdx) / numlocs, lo);
     const bhi = if (localeIdx == numlocs - 1) then max(idxType)
                 else procToData((numelems: real * (localeIdx+1)) / numlocs, lo) - 1;
-    myChunk = [blo..bhi];
+    myChunk = {blo..bhi};
     if debugBlock1D then
       writeln(this);
   }
@@ -535,7 +535,7 @@ class LocBlock1DDom {
   //
   proc these(param tag: iterKind) where tag == iterKind.leader {
     halt("This is bogus");
-    yield [1..100];
+    yield {1..100};
   }
 
   proc these(param tag: iterKind, followThis) where tag == iterKind.follower {
@@ -840,7 +840,7 @@ class LocBlock1DArr {
   //
   proc these(param tag: iterKind) where tag == iterKind.leader {
     halt("This is bogus");
-    yield [1..100];
+    yield {1..100};
   }
 
   proc these(param tag: iterKind, followThis) var where tag == iterKind.follower {

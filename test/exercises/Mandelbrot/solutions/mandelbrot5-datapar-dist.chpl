@@ -22,7 +22,7 @@ proc main() {
   // actually not a very good choice for Mandelbrot; Cyclic should be
   // better.
   //
-  var LocImgSpace = [0..#rows, 0..#cols];
+  var LocImgSpace = {0..#rows, 0..#cols};
   var ImgSpace = LocImgSpace dmapped Block(rank=2, boundingBox=LocImgSpace);
   var NumSteps: [ImgSpace] int;
 

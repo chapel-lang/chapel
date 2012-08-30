@@ -12,11 +12,11 @@ config const debug = false;
 config const printTiming = false;
 
 // BLC: note the prevalence of the n-1 upper bound motif
-const tableDom = [0..tableSize-1];
+const tableDom = {0..tableSize-1};
 var Table: [tableDom] tableElem;
 
 const numUpdates = 4*tableSize;
-const updateDom = [0..numUpdates-1];
+const updateDom = {0..numUpdates-1};
 
 config const numRandoms = 128;
 config const errorTolerance = 0.01;
@@ -43,7 +43,7 @@ proc randomAccessUpdate() {
 
   if debug then writeln("Table is: ", Table);
 
-  var ranDom = [0..numRandoms-1];
+  var ranDom = {0..numRandoms-1};
   var Ran: [ranDom] tableElem 
          = [i in ranDom] HPCCstarts((numUpdates:int(64)/numRandoms) * i);
 
@@ -94,7 +94,7 @@ proc HPCCstarts(in n:int(64)) {
   if (n == 0) then return 0x1:tableElem;
 
   param m2DomSize = 64; // BLC: this is a magic number -- better name?
-  var m2Dom = [0..m2DomSize-1];
+  var m2Dom = {0..m2DomSize-1};
   var m2: [m2Dom] tableElem;
 
   // BLC: isn't this redundantly computing the same array m2 over and

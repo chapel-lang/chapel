@@ -22,7 +22,7 @@ config const n = 8,
 const st1=1, st2=1;
 
 // non-distributed version
-const MatVectSpace = [1..n, 1..n+1];
+const MatVectSpace = {1..n, 1..n+1};
 
 const
   rdim1 = new ReplicatedDim(tl1),
@@ -49,9 +49,9 @@ writeln("n ", n, "  blkSize ", blkSize, "  locales ", tl1, "*", tl2);
 
 // the domains for the arrays used for replication
 const
-  replAD = [1..n, 1..blkSize] dmapped
+  replAD = {1..n, 1..blkSize} dmapped
     DimensionalDist2D(tla, bdim1, rdim2, "distBR"),
-  replBD = [1..blkSize, 1..n+1] dmapped
+  replBD = {1..blkSize, 1..n+1} dmapped
     DimensionalDist2D(tla, rdim1, bdim2, "distRB");
 
 var replA: [replAD] elemType,

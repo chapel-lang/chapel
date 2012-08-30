@@ -27,7 +27,7 @@ config const numTasks = here.numCores; // Cores on LOCALE0.
 
 proc main() {
   // The set of indices over which the image is defined.
-  var ImgSpace = [0..#rows, 0..#cols];
+  var ImgSpace = {0..#rows, 0..#cols};
 
   //
   // An array representing the number of iteration steps taken in the

@@ -1,0 +1,1 @@
+warning.chpl:2: warning: Encountered an array literal with range element(s). Did you mean a domain literal here? If so, use {...} instead of [...]. This warning can be disabled by using the --no-warn-domain-literal compiler option.

@@ -1,4 +1,4 @@
-const vectorDomain = [1..5];
+const vectorDomain = {1..5};
 
 var x, y: [vectorDomain] real;
 var alpha = 2.0;

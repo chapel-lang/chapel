@@ -196,6 +196,74 @@ pragma "has runtime type"
 proc chpl__buildArrayRuntimeType(dom: domain, type eltType) type
   return dom.buildArray(eltType);
 
+/*
+ * Support for array literals. 
+ *
+ * Array literals are detected during parsing and converted 
+ * to a call expr.  Array values pass through the various  
+ * compilation phases as regular parameters. 
+ *
+ * NOTE:  It would be nice to define a second, less specific, function
+ *        to handle the case of multiple types, however this is not 
+ *        possible atm due to using var args with a query type. */
+proc chpl__buildArrayLiteral( elems:?t ...?k ){
+  type elemType = elems(1).type;
+  var A : [1..k] elemType;  //This is unfortunate, can't use t here...
+
+  for param i in 1..k {
+    type currType = elems(i).type;
+
+    if currType != elemType {
+      compilerError( "Array literal element " + i:string + 
+                     " expected to be of type " + typeToString(elemType) +
+                     " but is of type " + typeToString(currType) );
+    } 
+    
+    A(i) = elems(i);
+  } 
+      
+  return A; 
+}
+
+
+/* Transitional warning from old domain literal syntax in Chapel 1.5 to 
+ * new domain literal syntax in 1.6.  This is intended to be removed along
+ * with the warnArrayLitRanges in the release following 1.6. 
+ *
+ * NOTE:  After 1.6 this function should be removed entirely and the array 
+ *        literal production modified to only call chpl__buildArrayLiteral.
+ *
+ * NOTE: Oddly one cannot return chpl__buildArrayLiteral here, not sure why.
+ *       Had to copy and paste the body of the function to obtain proper 
+ *       behavior.  */
+proc chpl__buildArrayLiteralWarn( elems:?t ...?k ){
+
+  if chpl__isRange(elems(1)) {
+    compilerWarning("Encountered an array literal with range element(s).",
+                    " Did you mean a domain literal here?",
+                    " If so, use {...} instead of [...].",
+                    " This warning can be disabled by using the",
+                    " --no-warn-domain-literal compiler option." ); 
+  }
+
+  type elemType = elems(1).type;
+  var A : [1..k] elemType;  //This is unfortunate, can't use t here...
+
+  for param i in 1..k {
+    type currType = elems(i).type;
+
+    if currType != elemType {
+      compilerError( "Array literal element " + i:string + 
+                     " expected to be of type " + typeToString(elemType) +
+                     " but is of type " + typeToString(currType) );
+    } 
+    
+    A(i) = elems(i);
+  } 
+      
+  return A; 
+}
+
 proc chpl__convertValueToRuntimeType(arr: []) type
   return chpl__buildArrayRuntimeType(arr.domain, arr.eltType);
 
@@ -204,7 +272,7 @@ proc chpl__getDomainFromArrayType(type arrayType) {
   pragma "no copy" var D = A.domain;
   pragma "dont disable remote value forwarding"
   proc help() {
-    D._value._domCnt.fetchAdd(1);
+    D._value._domCnt.add(1);
   }
   if !noRefCount then
     help();
@@ -412,7 +480,7 @@ record _distribution {
     if x.linksDistribution() {
       _value.add_dom(x);
       if !noRefCount then
-        _value._distCnt.fetchAdd(1);
+        _value._distCnt.add(1);
     }
     return x;
   }
@@ -422,7 +490,7 @@ record _distribution {
     if x.linksDistribution() {
       _value.add_dom(x);
       if !noRefCount then
-        _value._distCnt.fetchAdd(1);
+        _value._distCnt.add(1);
     }
     return x;
   }
@@ -433,7 +501,7 @@ record _distribution {
     if x.linksDistribution() {
       _value.add_dom(x);
       if !noRefCount then
-        _value._distCnt.fetchAdd(1);
+        _value._distCnt.add(1);
     }
     const enumTuple = _enum_enumerate(idxType);
     for param i in 1..enumTuple.size do
@@ -446,7 +514,7 @@ record _distribution {
     if x.linksDistribution() {
       _value.add_dom(x);
       if !noRefCount then
-        _value._distCnt.fetchAdd(1);
+        _value._distCnt.add(1);
     }
     return x;
   }
@@ -456,7 +524,7 @@ record _distribution {
     if x.linksDistribution() {
       _value.add_dom(x);
       if !noRefCount then
-        _value._distCnt.fetchAdd(1);
+        _value._distCnt.add(1);
     }
     return x;
   }
@@ -464,7 +532,7 @@ record _distribution {
   proc idxToLocale(ind) return _value.dsiIndexToLocale(ind);
 
   proc readWriteThis(f) {
-    f & _value;
+    f <~> _value;
   }
 
   proc displayRepresentation() { _value.dsiDisplayRepresentation(); }
@@ -560,7 +628,7 @@ record _domain {
     var d = _value.dsiBuildRectangularDom(rank, _value.idxType, stridable, r);
     if !noRefCount then
       if d.linksDistribution() then
-        d.dist._distCnt.fetchAdd(1);
+        d.dist._distCnt.add(1);
     return _newDomain(d);
   }
 
@@ -587,7 +655,7 @@ record _domain {
         newRanges(i) = 1..0;
       }
     }
-    var d = [(...newRanges)] dmapped newDist;
+    var d = {(...newRanges)} dmapped newDist;
     return d;
   }
 
@@ -615,7 +683,7 @@ record _domain {
     proc help() {
       _value.add_arr(x);
       if !noRefCount then
-        _value._domCnt.fetchAdd(1);
+        _value._domCnt.add(1);
     }
     help();
     return _newArray(x);
@@ -639,6 +707,7 @@ record _domain {
     _value.dsiRemove(i);
   }
 
+  proc size return numIndices;
   proc numIndices return _value.dsiNumIndices;
   proc low return _value.dsiLow;
   proc high return _value.dsiHigh;
@@ -690,7 +759,7 @@ record _domain {
                                          _value.stridable, ranges);
     if !noRefCount then
       if (d.linksDistribution()) then
-        d.dist._distCnt.fetchAdd(1);
+        d.dist._distCnt.add(1);
     return _newDomain(d);
   }
   proc expand(off: _value.idxType) where rank > 1 {
@@ -701,7 +770,7 @@ record _domain {
                                          _value.stridable, ranges);
     if !noRefCount then
       if (d.linksDistribution()) then
-        d.dist._distCnt.fetchAdd(1);
+        d.dist._distCnt.add(1);
     return _newDomain(d);
   }
 
@@ -724,7 +793,7 @@ record _domain {
                                          _value.stridable, ranges);
     if !noRefCount then
       if (d.linksDistribution()) then
-        d.dist._distCnt.fetchAdd(1);
+        d.dist._distCnt.add(1);
     return _newDomain(d);
    }
                   
@@ -752,7 +821,7 @@ record _domain {
                                          _value.stridable, ranges);
     if !noRefCount then
       if (d.linksDistribution()) then
-        d.dist._distCnt.fetchAdd(1);
+        d.dist._distCnt.add(1);
     return _newDomain(d);
   }
 
@@ -784,7 +853,7 @@ record _domain {
                                          _value.stridable, ranges);
     if !noRefCount then
       if (d.linksDistribution()) then
-        d.dist._distCnt.fetchAdd(1);
+        d.dist._distCnt.add(1);
     return _newDomain(d);
    }
 
@@ -800,7 +869,7 @@ record _domain {
                                          _value.stridable, ranges);
     if !noRefCount then
       if (d.linksDistribution()) then
-        d.dist._distCnt.fetchAdd(1);
+        d.dist._distCnt.add(1);
     return _newDomain(d);
   }
 
@@ -941,6 +1010,7 @@ proc -(d1: domain, d2: domain) {
 inline proc ==(d1: domain, d2: domain) where isRectangularDom(d1) &&
                                                       isRectangularDom(d2) {
   if d1._value.rank != d2._value.rank then return false;
+  if d1._value == d2._value then return true;
   for param i in 1..d1._value.rank do
     if (d1.dim(i) != d2.dim(i)) then return false;
   return true;
@@ -949,6 +1019,7 @@ inline proc ==(d1: domain, d2: domain) where isRectangularDom(d1) &&
 inline proc !=(d1: domain, d2: domain) where isRectangularDom(d1) &&
                                                       isRectangularDom(d2) {
   if d1._value.rank != d2._value.rank then return true;
+  if d1._value == d2._value then return false;
   for param i in 1..d1._value.rank do
     if (d1.dim(i) != d2.dim(i)) then return true;
   return false;
@@ -956,6 +1027,7 @@ inline proc !=(d1: domain, d2: domain) where isRectangularDom(d1) &&
 
 inline proc ==(d1: domain, d2: domain) where (isAssociativeDom(d1) &&
                                                        isAssociativeDom(d2)) {
+  if d1._value == d2._value then return true;
   if d1.numIndices != d2.numIndices then return false;
   for idx in d1 do
     if !d2.member(idx) then return false;
@@ -964,6 +1036,7 @@ inline proc ==(d1: domain, d2: domain) where (isAssociativeDom(d1) &&
 
 inline proc !=(d1: domain, d2: domain) where (isAssociativeDom(d1) &&
                                                        isAssociativeDom(d2)) {
+  if d1._value == d2._value then return false;
   if d1.numIndices != d2.numIndices then return true;
   for idx in d1 do
     if !d2.member(idx) then return true;
@@ -972,6 +1045,7 @@ inline proc !=(d1: domain, d2: domain) where (isAssociativeDom(d1) &&
 
 inline proc ==(d1: domain, d2: domain) where (isSparseDom(d1) &&
                                                        isSparseDom(d2)) {
+  if d1._value == d2._value then return true;
   if d1.numIndices != d2.numIndices then return false;
   if d1._value.parentDom != d2._value.parentDom then return false;
   for idx in d1 do
@@ -981,6 +1055,7 @@ inline proc ==(d1: domain, d2: domain) where (isSparseDom(d1) &&
 
 inline proc !=(d1: domain, d2: domain) where (isSparseDom(d1) &&
                                                        isSparseDom(d2)) {
+  if d1._value == d2._value then return false;
   if d1.numIndices != d2.numIndices then return true;
   if d1._value.parentDom != d2._value.parentDom then return true;
   for idx in d1 do
@@ -1072,8 +1147,8 @@ record _array {
     a._arrAlias = _value;
     pragma "dont disable remote value forwarding"
     proc help() {
-      d._value._domCnt.fetchAdd(1);
-      a._arrAlias._arrCnt.fetchAdd(1);
+      d._value._domCnt.add(1);
+      a._arrAlias._arrCnt.add(1);
     }
     if !noRefCount then
       help();
@@ -1087,11 +1162,11 @@ record _array {
     param rank = ranges.size, stridable = chpl__anyStridable(ranges);
     var d = _dom((...args));
     if !noRefCount then
-      d._value._domCnt.fetchAdd(1);
+      d._value._domCnt.add(1);
     var a = _value.dsiRankChange(d._value, rank, stridable, args);
     a._arrAlias = _value;
     if !noRefCount then
-      a._arrAlias._arrCnt.fetchAdd(1);
+      a._arrAlias._arrCnt.add(1);
     return _newArray(a);
   }
 
@@ -1141,32 +1216,50 @@ record _array {
 
   // 1/5/10: do we need this since it always returns domain.numIndices?
   proc numElements return _value.dom.dsiNumIndices;
+  proc size return numElements;
 
   proc newAlias() {
     var x = _value;
     return _newArray(x);
   }
 
-  proc reindex(d: domain) {
+  proc reindex(d: domain)
+    where isRectangularDom(this.domain) && isRectangularDom(d)
+  {
     if rank != d.rank then
       compilerError("illegal implicit rank change");
+
+    // Optimization: Just return an alias of this array if the doms match exactly.
+    if _value.dom.type == d.type then
+      if _value.dom == d then 
+        return newAlias();
+
     for param i in 1..rank do
       if d.dim(i).length != _value.dom.dsiDim(i).length then
         halt("extent in dimension ", i, " does not match actual");
 
     var newDist = new dmap(_value.dom.dist.dsiCreateReindexDist(d.dims(),
                                                                 _value.dom.dsiDims()));
-    var newDom = [(...d.dims())] dmapped newDist;
+    var newDom = {(...d.dims())} dmapped newDist;
     var x = _value.dsiReindex(newDom._value);
     x._arrAlias = _value;
     pragma "dont disable remote value forwarding"
     proc help() {
-      newDom._value._domCnt.fetchAdd(1);
-      x._arrAlias._arrCnt.fetchAdd(1);
+      newDom._value._domCnt.add(1);
+      x._arrAlias._arrCnt.add(1);
     }
     if !noRefCount then
       help();
     return _newArray(x);
+  }
+
+  // reindex for all non-rectangular domain types.
+  // See above for the rectangular version.
+  proc reindex(d:domain) {
+    if this.domain != d then
+      halt("Reindexing of non-rectangular arrays is undefined.");
+    // Does this need to call newAlias()?
+    return newAlias();
   }
 
   proc writeThis(f: Writer) {
@@ -1340,7 +1433,7 @@ proc =(a: domain, b: _tuple) {
 }
 
 proc =(d: domain, r: range(?)) {
-  d = [r];
+  d = {r};
   return d;
 }
 
@@ -1373,7 +1466,7 @@ proc chpl__isLegalRectTupDomAssign(d, t) param {
 }
 
 proc =(d: domain, rt: _tuple) where chpl__isLegalRectTupDomAssign(d, rt) {
-  d = [(...rt)];
+  d = {(...rt)};
   return d;
 }
 
@@ -1563,7 +1656,7 @@ proc by(a: domain, b) {
   var d = a._value.dsiBuildRectangularDom(a.rank, a._value.idxType, true, r);
   if !noRefCount then
     if (d.linksDistribution()) then
-      d.dist._distCnt.fetchAdd(1);
+      d.dist._distCnt.add(1);
   return _newDomain(d);
 }
 
@@ -1575,16 +1668,11 @@ class _OpaqueIndex { }
 //
 // Swap operators for arrays and domains
 //
-inline proc _chpl_swap(x: [], y: []) {
-  for (i,j) in (x.domain, y.domain) do
-    x(i) <=> y(j);
+inline proc <=>(x: [], y: []) {
+  forall (a,b) in (x, y) do
+    a <=> b;
 }
 
-inline proc _chpl_swap(x: domain, y: domain) {
-  const t = y;
-  y = x;
-  x = t;
-}
 
 //
 // reshape function
@@ -1874,7 +1962,7 @@ proc chpl__initCopy(ir: _iteratorRecord) {
   pragma "no copy" var irc = _ir_copy_recursive(ir);
 
   var i = 1, size = 4;
-  pragma "insert auto destroy" var D = [1..size];
+  pragma "insert auto destroy" var D = {1..size};
 
   // note that _getIterator is called in order to copy the iterator
   // class since for arrays we need to iterate once to get the
@@ -1889,13 +1977,13 @@ proc chpl__initCopy(ir: _iteratorRecord) {
     //pragma "no copy" /*pragma "insert auto destroy"*/ var ee = e;
     if i > size {
       size = size * 2;
-      D = [1..size];
+      D = {1..size};
     }
     //A(i) = ee;
     A(i) = e;
     i = i + 1;
   }
-  D = [1..i-1];
+  D = {1..i-1};
   return A;
 }
 

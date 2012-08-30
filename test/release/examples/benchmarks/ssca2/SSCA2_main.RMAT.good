@@ -8,7 +8,7 @@ low scale: 4
 high scale: 6
 
 Code Characteristics
-Not filtering Edges by Weight
+Filtering Edges by Weight
 Reproducible problem
 No additional work for bounds computation
 Not collecting timing statistics
@@ -535,7 +535,8 @@ edge (510) : ((start = 64, end = 7), 32)
 edge (511) : ((start = 44, end = 3), 11)
 edge (512) : ((start = 64, end = 46), 54)
 
-Vertex Set in G:[1..64]
+Vertex Set in G:{1..64}
+Starting Graph Generation
 # of raw edges generated  512
 # of duplicate edges      80
 # of self edges           130
@@ -631,75 +632,75 @@ Edges with largest weight and other neighbors:
 
 
 starting vertices for Betweenness Centrality
-[2 5 9 14 16 17 20 22 24 32 33 36 40 43 44 48]
+{2 5 9 14 16 17 20 22 24 32 33 36 40 43 44 48}
 
 Between Centrality:
-BC(1) = 27.4793
-BC(2) = 24.3683
-BC(3) = 5.41259
-BC(4) = 16.0
-BC(5) = 15.1667
+BC(1) = 15.2829
+BC(2) = 37.0501
+BC(3) = 6.2619
+BC(4) = 0.0
+BC(5) = 16.0179
 BC(6) = 0.0
-BC(7) = 97.6236
-BC(8) = 3.13956
-BC(9) = 73.0311
-BC(10) = 41.4564
-BC(11) = 5.47619
-BC(12) = 6.34194
-BC(13) = 66.9083
-BC(14) = 61.9193
+BC(7) = 117.559
+BC(8) = 1.43571
+BC(9) = 60.8663
+BC(10) = 44.846
+BC(11) = 0.0
+BC(12) = 6.70952
+BC(13) = 35.2333
+BC(14) = 57.3528
 BC(15) = 0.0
-BC(16) = 39.3152
-BC(17) = 51.6951
-BC(18) = 26.1326
-BC(19) = 41.4336
-BC(20) = 29.2297
-BC(21) = 7.47958
-BC(22) = 1.19359
-BC(23) = 25.9343
-BC(24) = 2.075
-BC(25) = 19.9558
-BC(26) = 51.1296
+BC(16) = 35.7825
+BC(17) = 52.2516
+BC(18) = 30.1512
+BC(19) = 25.6631
+BC(20) = 37.0417
+BC(21) = 1.71667
+BC(22) = 2.16667
+BC(23) = 36.4278
+BC(24) = 4.60119
+BC(25) = 22.6655
+BC(26) = 37.4627
 BC(27) = 0.0
-BC(28) = 44.8282
-BC(29) = 29.6098
-BC(30) = 125.367
-BC(31) = 0.5
-BC(32) = 35.4214
-BC(33) = 36.0206
-BC(34) = 18.8092
-BC(35) = 1.575
-BC(36) = 16.3909
+BC(28) = 40.7984
+BC(29) = 39.0275
+BC(30) = 137.125
+BC(31) = 1.4
+BC(32) = 49.6461
+BC(33) = 40.271
+BC(34) = 14.1548
+BC(35) = 1.7
+BC(36) = 4.83333
 BC(37) = 0.0
-BC(38) = 79.9836
-BC(39) = 59.1667
+BC(38) = 66.3421
+BC(39) = 57.0179
 BC(40) = 0.0
-BC(41) = 2.1
-BC(42) = 32.4573
-BC(43) = 14.3524
-BC(44) = 3.93718
+BC(41) = 0.0
+BC(42) = 63.4756
+BC(43) = 34.3286
+BC(44) = 1.50758
 BC(45) = 0.0
-BC(46) = 63.5222
-BC(47) = 12.8923
-BC(48) = 2.6717
-BC(49) = 20.5457
-BC(50) = 17.575
-BC(51) = 22.8808
-BC(52) = 8.72738
-BC(53) = 21.6948
-BC(54) = 37.3565
-BC(55) = 12.7375
-BC(56) = 5.06145
-BC(57) = 13.7583
-BC(58) = 103.57
-BC(59) = 111.202
-BC(60) = 16.3267
+BC(46) = 84.0714
+BC(47) = 16.0921
+BC(48) = 4.06786
+BC(49) = 18.3135
+BC(50) = 17.7
+BC(51) = 19.6159
+BC(52) = 12.194
+BC(53) = 28.1357
+BC(54) = 50.6944
+BC(55) = 17.0798
+BC(56) = 1.05476
+BC(57) = 14.7119
+BC(58) = 104.119
+BC(59) = 78.0321
+BC(60) = 17.0214
 BC(61) = 0.0
 BC(62) = 0.0
-BC(63) = 10.372
-BC(64) = 60.6891
+BC(63) = 26.829
+BC(64) = 66.0929
 
-Max Betweenness Centrality: 125.367
+Max Betweenness Centrality: 137.125
 Min Betweenness Centrality: 0.0
 
 Computed betweenness centrality satisfies vertex count constraint
@@ -707,75 +708,75 @@ All betweenness centrality scores should be in range [0, 4032.0]
 
 
 starting vertices for Betweenness Centrality
-[2 5 6 9 11 13 14 16 17 18 19 20 22 23 24 26 32 33 35 36 37 38 40 42 43 44 47 48 49 55 60 62]
+{2 5 6 9 11 13 14 16 17 18 19 20 22 23 24 26 32 33 35 36 37 38 40 42 43 44 47 48 49 55 60 62}
 
 Between Centrality:
-BC(1) = 43.0396
-BC(2) = 63.9762
-BC(3) = 12.9769
-BC(4) = 64.7048
-BC(5) = 30.1667
+BC(1) = 24.8329
+BC(2) = 72.9028
+BC(3) = 11.8365
+BC(4) = 0.0
+BC(5) = 30.6845
 BC(6) = 0.0
-BC(7) = 171.765
-BC(8) = 8.45623
-BC(9) = 173.373
-BC(10) = 95.7052
-BC(11) = 5.47619
-BC(12) = 9.93639
-BC(13) = 126.664
-BC(14) = 133.687
-BC(15) = 5.10714
-BC(16) = 40.6413
-BC(17) = 116.882
-BC(18) = 120.03
-BC(19) = 75.9186
-BC(20) = 60.1444
-BC(21) = 25.0296
-BC(22) = 2.11978
-BC(23) = 71.3316
-BC(24) = 6.18294
-BC(25) = 33.7689
-BC(26) = 76.4042
+BC(7) = 184.359
+BC(8) = 7.0381
+BC(9) = 171.723
+BC(10) = 90.8468
+BC(11) = 0.0
+BC(12) = 11.6607
+BC(13) = 64.3524
+BC(14) = 115.808
+BC(15) = 0.0
+BC(16) = 37.7698
+BC(17) = 99.9105
+BC(18) = 112.819
+BC(19) = 54.4369
+BC(20) = 68.7749
+BC(21) = 4.65
+BC(22) = 4.48016
+BC(23) = 63.9021
+BC(24) = 5.60119
+BC(25) = 37.8844
+BC(26) = 63.9901
 BC(27) = 0.0
-BC(28) = 92.0518
-BC(29) = 64.2241
-BC(30) = 172.722
-BC(31) = 1.83333
-BC(32) = 65.0945
-BC(33) = 79.6318
-BC(34) = 27.5314
-BC(35) = 11.8917
-BC(36) = 34.2672
+BC(28) = 86.691
+BC(29) = 75.891
+BC(30) = 201.032
+BC(31) = 3.4
+BC(32) = 77.1489
+BC(33) = 90.2198
+BC(34) = 20.6881
+BC(35) = 22.0
+BC(36) = 12.0194
 BC(37) = 0.0
-BC(38) = 136.663
-BC(39) = 59.1667
-BC(40) = 21.7873
-BC(41) = 7.83636
-BC(42) = 59.1002
-BC(43) = 17.523
-BC(44) = 5.98004
+BC(38) = 129.021
+BC(39) = 57.6845
+BC(40) = 16.0476
+BC(41) = 0.0
+BC(42) = 110.109
+BC(43) = 39.9607
+BC(44) = 5.05043
 BC(45) = 0.0
-BC(46) = 127.45
-BC(47) = 25.7519
-BC(48) = 21.3099
-BC(49) = 33.72
-BC(50) = 41.8917
-BC(51) = 46.6633
-BC(52) = 32.0671
-BC(53) = 41.2305
-BC(54) = 57.1796
-BC(55) = 15.7375
-BC(56) = 18.4313
-BC(57) = 15.8934
-BC(58) = 161.582
-BC(59) = 225.177
-BC(60) = 80.9195
+BC(46) = 165.044
+BC(47) = 31.0461
+BC(48) = 47.206
+BC(49) = 33.8135
+BC(50) = 51.0
+BC(51) = 40.2254
+BC(52) = 42.5599
+BC(53) = 51.2548
+BC(54) = 69.5091
+BC(55) = 23.2964
+BC(56) = 11.1819
+BC(57) = 22.894
+BC(58) = 189.136
+BC(59) = 149.765
+BC(60) = 24.2524
 BC(61) = 0.0
 BC(62) = 0.0
-BC(63) = 58.6363
-BC(64) = 104.565
+BC(63) = 91.1731
+BC(64) = 104.414
 
-Max Betweenness Centrality: 225.177
+Max Betweenness Centrality: 201.032
 Min Betweenness Centrality: 0.0
 
 Computed betweenness centrality satisfies vertex count constraint
@@ -785,72 +786,72 @@ All betweenness centrality scores should be in range [0, 4032.0]
 Computing Betweenness Centrality exactly
 
 Between Centrality:
-BC(1) = 84.5678
-BC(2) = 163.657
-BC(3) = 25.3222
-BC(4) = 93.9548
-BC(5) = 63.9659
+BC(1) = 42.2949
+BC(2) = 138.071
+BC(3) = 23.1445
+BC(4) = 0.0
+BC(5) = 122.587
 BC(6) = 0.0
-BC(7) = 338.783
-BC(8) = 15.5203
-BC(9) = 389.966
-BC(10) = 159.765
-BC(11) = 7.45952
-BC(12) = 23.4592
-BC(13) = 250.6
-BC(14) = 262.006
-BC(15) = 12.3834
-BC(16) = 133.035
-BC(17) = 314.699
-BC(18) = 187.217
-BC(19) = 151.742
-BC(20) = 138.724
-BC(21) = 43.7122
-BC(22) = 31.9452
-BC(23) = 116.685
-BC(24) = 30.8242
-BC(25) = 98.2519
-BC(26) = 141.568
+BC(7) = 358.902
+BC(8) = 9.0631
+BC(9) = 343.955
+BC(10) = 161.895
+BC(11) = 0.0
+BC(12) = 23.3861
+BC(13) = 131.986
+BC(14) = 248.612
+BC(15) = 8.625
+BC(16) = 126.927
+BC(17) = 317.624
+BC(18) = 226.212
+BC(19) = 114.891
+BC(20) = 138.34
+BC(21) = 9.21667
+BC(22) = 41.6885
+BC(23) = 132.794
+BC(24) = 18.9762
+BC(25) = 106.797
+BC(26) = 135.298
 BC(27) = 0.0
-BC(28) = 159.116
-BC(29) = 131.0
-BC(30) = 329.994
-BC(31) = 2.5
-BC(32) = 176.021
-BC(33) = 186.834
-BC(34) = 96.5583
-BC(35) = 72.8417
-BC(36) = 141.163
+BC(28) = 155.577
+BC(29) = 151.569
+BC(30) = 391.803
+BC(31) = 5.23333
+BC(32) = 196.423
+BC(33) = 246.924
+BC(34) = 57.7604
+BC(35) = 82.3048
+BC(36) = 37.5806
 BC(37) = 0.0
-BC(38) = 265.489
-BC(39) = 62.9659
-BC(40) = 27.6706
-BC(41) = 12.0387
-BC(42) = 103.492
-BC(43) = 57.3973
-BC(44) = 40.7468
+BC(38) = 257.846
+BC(39) = 120.587
+BC(40) = 21.781
+BC(41) = 0.0
+BC(42) = 192.752
+BC(43) = 115.239
+BC(44) = 45.7278
 BC(45) = 0.0
-BC(46) = 239.858
-BC(47) = 33.6937
-BC(48) = 93.2476
-BC(49) = 70.5587
-BC(50) = 73.8417
-BC(51) = 91.3306
-BC(52) = 51.7977
-BC(53) = 165.118
-BC(54) = 102.402
-BC(55) = 30.1656
-BC(56) = 35.9182
-BC(57) = 26.4363
-BC(58) = 316.168
-BC(59) = 396.343
-BC(60) = 104.504
+BC(46) = 306.776
+BC(47) = 47.0794
+BC(48) = 123.14
+BC(49) = 66.3871
+BC(50) = 84.3048
+BC(51) = 69.8207
+BC(52) = 59.6771
+BC(53) = 187.271
+BC(54) = 124.657
+BC(55) = 39.8381
+BC(56) = 17.1053
+BC(57) = 45.841
+BC(58) = 390.969
+BC(59) = 272.093
+BC(60) = 58.9489
 BC(61) = 0.0
 BC(62) = 0.0
-BC(63) = 94.478
-BC(64) = 210.497
+BC(63) = 159.558
+BC(64) = 193.142
 
-Max Betweenness Centrality: 396.343
+Max Betweenness Centrality: 391.803
 Min Betweenness Centrality: 0.0
 
 Computed betweenness centrality satisfies vertex count constraint
@@ -1026,10 +1027,10 @@ All betweenness centrality scores should be in range [0, 4032.0]
 [0] expanding from starting node 9
 [0] expanding from starting node 9
 [0] expanding from starting node 9
-[0] graph diameter from starting node 1  is 5
+[0] graph diameter from starting node 1  is 6
 [0] graph diameter from starting node 10  is 5
-[0] graph diameter from starting node 11  is 6
-[0] graph diameter from starting node 11  is 6
+[0] graph diameter from starting node 11  is 0
+[0] graph diameter from starting node 11  is 0
 [0] graph diameter from starting node 12  is 5
 [0] graph diameter from starting node 13  is 6
 [0] graph diameter from starting node 13  is 6
@@ -1053,7 +1054,7 @@ All betweenness centrality scores should be in range [0, 4032.0]
 [0] graph diameter from starting node 20  is 5
 [0] graph diameter from starting node 20  is 5
 [0] graph diameter from starting node 20  is 5
-[0] graph diameter from starting node 21  is 5
+[0] graph diameter from starting node 21  is 8
 [0] graph diameter from starting node 22  is 6
 [0] graph diameter from starting node 22  is 6
 [0] graph diameter from starting node 22  is 6
@@ -1062,12 +1063,12 @@ All betweenness centrality scores should be in range [0, 4032.0]
 [0] graph diameter from starting node 24  is 5
 [0] graph diameter from starting node 24  is 5
 [0] graph diameter from starting node 24  is 5
-[0] graph diameter from starting node 25  is 5
+[0] graph diameter from starting node 25  is 6
 [0] graph diameter from starting node 26  is 5
 [0] graph diameter from starting node 26  is 5
 [0] graph diameter from starting node 27  is 6
 [0] graph diameter from starting node 28  is 5
-[0] graph diameter from starting node 29  is 5
+[0] graph diameter from starting node 29  is 6
 [0] graph diameter from starting node 3  is 6
 [0] graph diameter from starting node 30  is 5
 [0] graph diameter from starting node 31  is 7
@@ -1077,9 +1078,9 @@ All betweenness centrality scores should be in range [0, 4032.0]
 [0] graph diameter from starting node 33  is 5
 [0] graph diameter from starting node 33  is 5
 [0] graph diameter from starting node 33  is 5
-[0] graph diameter from starting node 34  is 5
-[0] graph diameter from starting node 35  is 6
-[0] graph diameter from starting node 35  is 6
+[0] graph diameter from starting node 34  is 6
+[0] graph diameter from starting node 35  is 5
+[0] graph diameter from starting node 35  is 5
 [0] graph diameter from starting node 36  is 5
 [0] graph diameter from starting node 36  is 5
 [0] graph diameter from starting node 36  is 5
@@ -1089,10 +1090,10 @@ All betweenness centrality scores should be in range [0, 4032.0]
 [0] graph diameter from starting node 38  is 4
 [0] graph diameter from starting node 39  is 6
 [0] graph diameter from starting node 4  is 5
-[0] graph diameter from starting node 40  is 5
-[0] graph diameter from starting node 40  is 5
-[0] graph diameter from starting node 40  is 5
-[0] graph diameter from starting node 41  is 6
+[0] graph diameter from starting node 40  is 6
+[0] graph diameter from starting node 40  is 6
+[0] graph diameter from starting node 40  is 6
+[0] graph diameter from starting node 41  is 0
 [0] graph diameter from starting node 42  is 5
 [0] graph diameter from starting node 42  is 5
 [0] graph diameter from starting node 43  is 6
@@ -1113,8 +1114,8 @@ All betweenness centrality scores should be in range [0, 4032.0]
 [0] graph diameter from starting node 5  is 7
 [0] graph diameter from starting node 5  is 7
 [0] graph diameter from starting node 5  is 7
-[0] graph diameter from starting node 50  is 7
-[0] graph diameter from starting node 51  is 5
+[0] graph diameter from starting node 50  is 6
+[0] graph diameter from starting node 51  is 6
 [0] graph diameter from starting node 52  is 5
 [0] graph diameter from starting node 53  is 5
 [0] graph diameter from starting node 54  is 6
@@ -1129,12 +1130,12 @@ All betweenness centrality scores should be in range [0, 4032.0]
 [0] graph diameter from starting node 60  is 5
 [0] graph diameter from starting node 60  is 5
 [0] graph diameter from starting node 61  is 0
-[0] graph diameter from starting node 62  is 6
-[0] graph diameter from starting node 62  is 6
+[0] graph diameter from starting node 62  is 4
+[0] graph diameter from starting node 62  is 4
 [0] graph diameter from starting node 63  is 5
-[0] graph diameter from starting node 64  is 4
+[0] graph diameter from starting node 64  is 5
 [0] graph diameter from starting node 7  is 4
-[0] graph diameter from starting node 8  is 6
+[0] graph diameter from starting node 8  is 7
 [0] graph diameter from starting node 9  is 5
 [0] graph diameter from starting node 9  is 5
 [0] graph diameter from starting node 9  is 5

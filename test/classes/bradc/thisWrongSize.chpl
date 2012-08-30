@@ -1,7 +1,7 @@
 class C {
   type idxtype;
 
-  var dom: domain(1) = [1..2];
+  var dom: domain(1) = {1..2};
   var data: [dom] D(idxtype);
 
   proc C(type idxtype) {

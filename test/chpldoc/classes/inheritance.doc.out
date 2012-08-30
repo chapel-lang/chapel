@@ -1,0 +1,49 @@
+Module: inheritance
+   Class: Grandparent
+       The eldest 
+      getOffMyLawn()
+          You durn kids! 
+
+      backInMyDay()
+
+      inherited from object
+
+   Class: Parent
+       Second generation 
+      goToYourRoom()
+          Grounded! 
+
+      curfew()
+
+      inherited from Grandparent
+         getOffMyLawn()
+             You durn kids! 
+
+         backInMyDay()
+
+
+      inherited from object
+
+   Class: Child
+       Reaping the benefits of third generation status 
+      whine()
+          But I was going to go pick up some power converters! 
+
+      youNeverLetMeDoAnythingFun()
+
+      inherited from Parent
+         goToYourRoom()
+             Grounded! 
+
+         curfew()
+
+
+      inherited from Grandparent
+         getOffMyLawn()
+             You durn kids! 
+
+         backInMyDay()
+
+
+      inherited from object
+

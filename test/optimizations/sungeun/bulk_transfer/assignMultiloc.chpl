@@ -31,7 +31,7 @@ if printOutput {
     writeln("Exercising remote get on ", remoteLocale);
 }
 
-var Dom: domain(3) = [1..m, 1..n, 1..o];
+var Dom: domain(3) = {1..m, 1..n, 1..o};
 
 var Ref: [Dom] real;
 var B: [Dom] real;
@@ -92,7 +92,7 @@ on declLocale {
 }
 
 // aliased arrays
-var DomSlice = [1..m/2, 1..n, 1..o];
+var DomSlice = {1..m/2, 1..n, 1..o};
 var Refa => Ref[DomSlice];
 var Ba => B[DomSlice];
 if initialize then {
@@ -100,7 +100,7 @@ if initialize then {
   fillRandom(Refa, 31415);
 }
 on declLocale {
-  var DomSlice = [1..m/2, 1..n, 1..o]; // this declaration is here due to a bug
+  var DomSlice = {1..m/2, 1..n, 1..o}; // this declaration is here due to a bug
   var A: [Dom] real;
   var Aa => A[DomSlice];
   A = 0;
@@ -121,7 +121,7 @@ if initialize {
   fillRandom(Refa, 92653);
 }
 on declLocale {
-  var DomSlice = [1..m/2, 1..n, 1..o]; // this declaration is here due to a bug
+  var DomSlice = {1..m/2, 1..n, 1..o}; // this declaration is here due to a bug
   var A: [Dom] real;
   var Aa => A[DomSlice];
   A = 0;
@@ -142,7 +142,7 @@ if initialize {
   fillRandom(Refa, 58979);
 }
 on declLocale {
-  var DomSlice = [1..m/2, 1..n, 1..o]; // this declaration is here due to a bug
+  var DomSlice = {1..m/2, 1..n, 1..o}; // this declaration is here due to a bug
   var A: [Dom] real;
   var Aa => A[DomSlice];
   A = 0;

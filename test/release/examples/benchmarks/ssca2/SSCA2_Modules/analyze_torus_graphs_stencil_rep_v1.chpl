@@ -35,6 +35,58 @@ module analyze_torus_graphs {
     var Neighbors   : [vertex_domain] [torus_stencil] vertex;
     var edge_weight : [vertex_domain] [torus_stencil] int;
 
+    proc num_edges {
+      return + reduce [v in vertex_domain] n_Neighbors (v);
+    }
+
+    iter FilteredNeighbors( v : index (vertices) ) {
+      const neighbors => Neighbors[v];
+      const weights => edge_weight[v];
+      for n in torus_stencil do
+        if (FILTERING && weights(n)%8 != 0) || !FILTERING then
+          yield neighbors(n);
+    }
+
+    // Simply forward the domain's parallel iterator
+    iter FilteredNeighbors( v : index (vertices), param tag: iterKind)
+    where tag == iterKind.leader {
+      for block in torus_stencil._value.these(tag) do
+        yield block;
+    }
+
+    iter FilteredNeighbors( v : index (vertices), param tag: iterKind, followThis)
+    where tag == iterKind.follower {
+      const neighbors => Neighbors[v];
+      const weights => edge_weight[v];
+      for n in torus_stencil._value.these(tag, followThis) do
+        if (FILTERING && weights(n)%8 != 0) || !FILTERING then
+          yield neighbors(n);
+    }
+
+    // iterate over all neighbor (ID, weight) pairs
+
+    iter NeighborPairs( v : index (vertices) ) {
+      const neighbors => Neighbors[v];
+      const weights => edge_weight[v];
+      for n in torus_stencil do
+        yield (neighbors(n), weights(n));
+    }
+
+    // Simply forward the domain's parallel iterator
+    iter NeighborPairs( v : index (vertices), param tag: iterKind)
+    where tag == iterKind.leader {
+      for block in torus_stencil._value.these(tag) do
+        yield block;
+    }
+
+    iter NeighborPairs( v : index (vertices), param tag: iterKind, followThis)
+    where tag == iterKind.follower {
+      const neighbors => Neighbors[v];
+      const weights => edge_weight[v];
+      for n in torus_stencil._value.these(tag, followThis) do
+        yield (neighbors(n), weights(n));
+    }
+
     proc n_Neighbors (v : index (vertices) ) return 2*dimensions;
   }
 
@@ -50,13 +102,13 @@ module analyze_torus_graphs {
 
     const vertex_domain = 
       if DISTRIBUTION_TYPE == "BLOCK" then
-        [ Torus_Base_Index..#d ] dmapped Block ( [Torus_Base_Index..#d] )
+        { Torus_Base_Index..#d } dmapped Block ( {Torus_Base_Index..#d} )
       else
-        [ Torus_Base_Index..#d ];
+        { Torus_Base_Index..#d };
 
     type  vertex = index (vertex_domain);
 
-    const dense_stencil = [-1..1];
+    const dense_stencil = {-1..1};
     const torus_stencil : sparse subdomain (dense_stencil) = ( -1, 1 );
 
     var G = new torus_explicit_stencil_graph ( vertex_domain, 
@@ -131,17 +183,17 @@ module analyze_torus_graphs {
 
     const vertex_domain = 
      if DISTRIBUTION_TYPE == "BLOCK" then
-       [ Torus_Base_Index..#d1,
-	 Torus_Base_Index..#d2 ] 
-	 dmapped Block ( [ Torus_Base_Index..#d1,
-			   Torus_Base_Index..#d2 ] )
+       { Torus_Base_Index..#d1,
+	 Torus_Base_Index..#d2 }
+	 dmapped Block ( { Torus_Base_Index..#d1,
+			   Torus_Base_Index..#d2 } )
      else
-       [ Torus_Base_Index..#d1,
-	 Torus_Base_Index..#d2 ];
+       { Torus_Base_Index..#d1,
+	 Torus_Base_Index..#d2 };
 
     type  vertex = index (vertex_domain);
 
-    const dense_stencil = [-1..1,-1..1];
+    const dense_stencil = {1..1,-1..1};
     const torus_stencil : sparse subdomain (dense_stencil) = 
                                         ( (-1,0), (1,0), (0,-1), (0,1) );
 
@@ -230,19 +282,19 @@ module analyze_torus_graphs {
 
     const vertex_domain = 
      if DISTRIBUTION_TYPE == "BLOCK" then
-       [ Torus_Base_Index..#d1, 
+       { Torus_Base_Index..#d1, 
 	 Torus_Base_Index..#d2, 
-	 Torus_Base_Index..#d3 ]
-	 dmapped Block ( [ Torus_Base_Index..#d1,
+	 Torus_Base_Index..#d3 }
+	 dmapped Block ( { Torus_Base_Index..#d1,
 			   Torus_Base_Index..#d2, 
-			   Torus_Base_Index..#d3 ] )
+			   Torus_Base_Index..#d3 } )
      else
-       [ Torus_Base_Index..#d1, 
+       { Torus_Base_Index..#d1, 
 	 Torus_Base_Index..#d2, 
-	 Torus_Base_Index..#d3 ];
+	 Torus_Base_Index..#d3 };
 
     type  vertex = index (vertex_domain);
-    const dense_stencil = [-1..1, -1..1, -1..1];
+    const dense_stencil = {-1..1, -1..1, -1..1};
     const torus_stencil : sparse subdomain (dense_stencil) = 
       ( (-1, 0, 0 ), (1, 0, 0), (0, -1, 0), (0, 1, 0), (0, 0, -1), (0, 0, 1) );
 
@@ -320,22 +372,22 @@ module analyze_torus_graphs {
 
     const vertex_domain = 
      if DISTRIBUTION_TYPE == "BLOCK" then 
-       [ Torus_Base_Index..#d1, 
+       { Torus_Base_Index..#d1, 
 	 Torus_Base_Index..#d2, 
 	 Torus_Base_Index..#d3, 
-	 Torus_Base_Index..#d4 ]
-	 dmapped Block ( [ Torus_Base_Index..#d1,
+	 Torus_Base_Index..#d4 }
+	 dmapped Block ( { Torus_Base_Index..#d1,
 			   Torus_Base_Index..#d2, 
 			   Torus_Base_Index..#d3, 
-			   Torus_Base_Index..#d4 ])
+			   Torus_Base_Index..#d4 })
      else
-       [ Torus_Base_Index..#d1, 
+       { Torus_Base_Index..#d1, 
 	 Torus_Base_Index..#d2, 
 	 Torus_Base_Index..#d3, 
-	 Torus_Base_Index..#d4 ];
+	 Torus_Base_Index..#d4 };
 
     type  vertex = index (vertex_domain);
-    const dense_stencil = [-1..1, -1..1, -1..1, -1..1];
+    const dense_stencil = {-1..1, -1..1, -1..1, -1..1};
     const torus_stencil : sparse subdomain (dense_stencil) = 
       ( (-1, 0, 0, 0), (1, 0, 0, 0), (0, -1, 0, 0), (0, 1, 0, 0), 
 	(0, 0, -1, 0), (0, 0, 1, 0), (0, 0, 0, -1), (0, 0, 0, 1) );

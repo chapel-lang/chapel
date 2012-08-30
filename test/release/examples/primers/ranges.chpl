@@ -37,7 +37,7 @@ writeln();
 // we use the range r to build up a 2-D domain and an array.
 //
 writeln("Domains and arrays");
-const D: domain(2) = [r, r];
+const D: domain(2) = {r, r};
 var A: [D] real;
 writeln("D = ", D);
 writeln("Array A");

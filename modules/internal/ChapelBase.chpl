@@ -40,6 +40,21 @@ if (CHPL_COMM == "unset") {
   compilerWarning("CHPL_COMM not set");
 }
 
+config param CHPL_ATOMICS: string = "unset";
+if (CHPL_ATOMICS == "unset") {
+  compilerWarning("CHPL_ATOMICS not set");
+}
+
+config param CHPL_NETWORK_ATOMICS: string = "unset";
+if (CHPL_NETWORK_ATOMICS == "unset") {
+  compilerWarning("CHPL_NETWORK_ATOMICS not set");
+}
+
+config param CHPL_GMP: string = "unset";
+if (CHPL_GMP == "unset") {
+  compilerWarning("CHPL_GMP not set");
+}
+
 config param warnMaximalRange = false;	// Warns if integer rollover will cause
 					// the iterator to yield zero times.
 
@@ -649,6 +664,7 @@ inline proc _r2i(a: real(?w)) return __primitive("cast", imag(w), a);
 //
 inline proc ascii(a: string) return __primitive("ascii", a);
 inline proc string.length return __primitive("string_length", this);
+inline proc string.size return this.length;
 inline proc string.substring(i: int) return __primitive("string_index", this, i);
 inline proc _string_contains(a: string, b: string) return __primitive("string_contains", a, b);
 
@@ -689,21 +705,86 @@ proc init_elts(x, s, type t) {
   }
 }
 
+// Make sure that the compiler constructs the type _ref(t).
+pragma "no codegen"
+proc _ensure_reference_type(type t)
+{
+  // type t where we have _ddata(t) needs to also have
+  // a reference type created. So here we just add
+  // some otherwise useless code to do that.
+  // This code could be removed if we had some other way
+  // making sure the reference type is created.
+  proc setbyref(inout zz:t) { }
+  var unused:t;
+  setbyref(unused);
+}
+
 // dynamic data block class
 pragma "data class"
+pragma "no object"
+pragma "no default functions"
 class _ddata {
   type eltType;
+  /*
+     If we had a way to do 'static' routines, this
+     could stay here, but since we don't at the moment,
+     we've wired the compiler to call _ddata_free.
+
   proc ~_ddata() {
     __primitive("array_free", this);
   }
+
+   If we had a way to do 'static' routines, this
+     could stay here, but since we don't at the moment,
+     we've wired the compiler to call _ddata_allocate.
   inline proc init(size: integral) {
     __primitive("array_alloc", this, eltType, size);
     init_elts(this, size, eltType);
-  }
+  }*/
   inline proc this(i: integral) var {
     return __primitive("array_get", this, i);
   }
 }
+
+
+inline proc _cast(type t, x) where t:_ddata && x:_nilType {
+  return __primitive("cast", t, x);
+}
+
+inline proc _ddata_allocate(type eltType, size: integral) {
+  var ret:_ddata(eltType);
+  __primitive("array_alloc", ret, eltType, size);
+  init_elts(ret, size, eltType);
+  return ret;
+}
+
+inline proc _ddata_free(data: _ddata) {
+  __primitive("array_free", data);
+}
+
+inline proc ==(a: _ddata, b: _ddata) where a.eltType == b.eltType {
+  return __primitive("ptr_eq", a, b);
+}
+inline proc ==(a: _ddata, b: _nilType) {
+  return __primitive("ptr_eq", a, nil);
+}
+inline proc ==(a: _nilType, b: _ddata) {
+  return __primitive("ptr_eq", nil, b);
+}
+
+inline proc !=(a: _ddata, b: _ddata) where a.eltType == b.eltType {
+  return __primitive("ptr_neq", a, b);
+}
+inline proc !=(a: _ddata, b: _nilType) {
+  return __primitive("ptr_neq", a, nil);
+}
+inline proc !=(a: _nilType, b: _ddata) {
+  return __primitive("ptr_neq", nil, b);
+}
+
+
+inline proc _cond_test(x: _ddata) return x != nil;
+
 
 //
 // internal reference type
@@ -976,71 +1057,64 @@ proc _singlevar.isFull {
 }
 
 //
-// data structures for naive implementation of end
+// data structures for naive implementation of end used for
+// sync statements and for joining coforall and cobegin tasks
 //
 
 pragma "no default functions"
 class _EndCount {
-  var i: sync int(64) = 0,
-      b: sync bool = true,
+  var i: atomic int,
       taskList: _task_list = _nullTaskList;
 }
 
+// This function is called once by the initiating task.  No on
+// statement needed, because the task should be running on the same
+// locale as the sync/cofall/cobegin was initiated on and thus the
+// same locale on which the object is allocated.
 pragma "dont disable remote value forwarding"
-proc _endCountAlloc() return new _EndCount();
+inline proc _endCountAlloc() return new _EndCount();
 
+// This function is called once by the initiating task.  As above, no
+// on statement needed.
 pragma "dont disable remote value forwarding"
-proc _endCountFree(e: _EndCount) {
+inline proc _endCountFree(e: _EndCount) {
   delete e;
 }
 
+// This function is called by the initiating task once for each new
+// task *before* any of the tasks are started.  As above, no on
+// statement needed.
 pragma "dont disable remote value forwarding"
 proc _upEndCount(e: _EndCount) {
-  on e {
-    _upEndCountInternal(e);
-    pragma "dont disable remote value forwarding" 
-    inline proc _upEndCountInternal(e: _EndCount) {
-      //
-      // By hiding this code in its own function, remote value
-      // forwarding can be applied to the reference 'e' in order to
-      // pass the class to the on-statement rather than a reference to
-      // it.  Since the class is local, we avoid remote accesses in
-      // this case.  Remote value forwarding is disabled otherwise
-      // because of the sync variable accesses within this function.
-      //
-      var i = e.i;
-      if i == 0 then
-        e.b.reset();
-      e.i = i + 1;
-    }
-  }
+  e.i.add(1);
 }
 
+// This function is called once by each newly initiated task.  No on
+// statement is needed because the call to sub() will do a remote
+// fork (on) if needed.
 pragma "dont disable remote value forwarding"
 proc _downEndCount(e: _EndCount) {
-  on e {
-    _downEndCountInternal(e);
-    // This function seems unnecessary; sse comment in _upEndCountInternal.
-    pragma "dont disable remote value forwarding"
-    inline proc _downEndCountInternal(e: _EndCount) {
-      var i = e.i;
-      if i == 1 then
-        e.b = true;
-      e.i = i - 1;
-    }
-  }
+  e.i.sub(1);
 }
 
+// This function is called once by the initiating task.  As above, no
+// on statement needed.
 pragma "dont disable remote value forwarding"
 proc _waitEndCount(e: _EndCount) {
+  // See if we can help with any of the started tasks
   __primitive("execute tasks in list", e.taskList);
-  // First wait for the signal to be set.
-  e.b.readFE();
-  // Then wait for e.i to be updated because we may free the end count
-  // class next; note that e.b needs to be signaled when e.i is in an
-  // empty state in cases where the upEndCount and downEndCount calls
-  // alternate.
-  e.i;
+
+  // Wait for all tasks to finish
+  e.i.waitFor(0);
+
+  // It is now safe to free the task list, because we know that all the
+  // tasks have been completed.  We could free this list when all the
+  // tasks have been started, but this seems cleaner.  The alternative
+  // would be for the tasking layer to free the elements of the list
+  // when when they are no longer needed, but then every tasking layer
+  // would have to implement the free, and it's not clear that it
+  // would be of any benefit.  Another option would be for the
+  // starting task to free its own list element.
   __primitive("free task list", e.taskList);
 }
 
@@ -1187,16 +1261,6 @@ inline proc _cast(type t, x: imag(?w)) where _isRealType(t) || _isIntegralType(t
 inline proc _cast(type t, x: imag(?w)) where _isBooleanType(t)
   return if x != 0i then true else false;
 
-
-//
-// Default swap operator for most types
-//
-inline proc _chpl_swap(inout x, inout y) {
-  const t = y;
-  y = x;
-  x = t;
-}
-
 inline proc chpl__typeAliasInit(type t) type return t;
 inline proc chpl__typeAliasInit(v) {
   compilerError("illegal assignment of value to type");
@@ -1261,21 +1325,21 @@ inline proc chpl__initCopy(x: _tuple) {
 pragma "dont disable remote value forwarding"
 pragma "removable auto copy" proc chpl__autoCopy(x: _distribution) {
   if !noRefCount then
-    if x._value then x._value._distCnt.fetchAdd(1);
+    if x._value then x._value._distCnt.add(1);
   return x;
 }
 
 pragma "dont disable remote value forwarding"
 pragma "removable auto copy" proc chpl__autoCopy(x: domain) {
   if !noRefCount then
-    x._value._domCnt.fetchAdd(1);
+    x._value._domCnt.add(1);
   return x;
 }
 
 pragma "dont disable remote value forwarding"
 pragma "removable auto copy" proc chpl__autoCopy(x: []) {
   if !noRefCount then
-    x._value._arrCnt.fetchAdd(1);
+    x._value._arrCnt.add(1);
   return x;
 }
 
@@ -1360,6 +1424,154 @@ proc chpldev_refToString(inout arg) {
   proc chpldev_classToString(x) return "";
 
   return __primitive("ref to string", arg) + chpldev_classToString(arg);
+}
+
+proc isIterator(ic: _iteratorClass) param return true;
+proc isIterator(ir: _iteratorRecord) param return true;
+proc isIterator(not_an_iterator) param return false;
+
+proc typesRequireCastForOpEqual(type ltype, type rtype) param {
+  return ltype == rtype || (_isIntegralType(ltype) && _isBooleanType(rtype));
+}
+
+
+/* op= operators
+ * The cast is required when the types match in order to allow
+ * e.g.  int(8) op= int(8);
+ * but disallow e.g. int(8) op= int(16);
+ * Also, need to add a cast for integral op= bool
+ */
+inline proc +=(ref lhs, rhs) where !chpl__isDomain(lhs) && !isIterator(lhs) {
+  lhs = if typesRequireCastForOpEqual(lhs.type, rhs.type)
+        then (lhs+rhs):lhs.type else (lhs+rhs);
+}
+inline proc -=(ref lhs, rhs) where !chpl__isDomain(lhs) && !isIterator(lhs) {
+  lhs = if typesRequireCastForOpEqual(lhs.type, rhs.type) then (lhs-rhs):lhs.type else (lhs-rhs);
+}
+inline proc *=(ref lhs, rhs) where !isIterator(lhs) {
+  lhs = if typesRequireCastForOpEqual(lhs.type, rhs.type) then (lhs*rhs):lhs.type else (lhs*rhs);
+}
+inline proc /=(ref lhs, rhs) where !isIterator(lhs) {
+  lhs = if typesRequireCastForOpEqual(lhs.type, rhs.type) then (lhs/rhs):lhs.type else (lhs/rhs);
+}
+inline proc %=(ref lhs, rhs) where !isIterator(lhs) {
+  lhs = if typesRequireCastForOpEqual(lhs.type, rhs.type) then (lhs%rhs):lhs.type else (lhs%rhs);
+}
+inline proc **=(ref lhs, rhs) where !isIterator(lhs) {
+  lhs = if typesRequireCastForOpEqual(lhs.type, rhs.type) then (lhs**rhs):lhs.type else (lhs**rhs);
+}
+inline proc &=(ref lhs, rhs) where !isIterator(lhs) {
+  lhs = if typesRequireCastForOpEqual(lhs.type, rhs.type) then (lhs&rhs):lhs.type else (lhs&rhs);
+}
+inline proc |=(ref lhs, rhs) where !isIterator(lhs) {
+  lhs = if typesRequireCastForOpEqual(lhs.type, rhs.type)
+        then (lhs|rhs):lhs.type else (lhs|rhs);
+}
+inline proc ^=(ref lhs, rhs) where !isIterator(lhs) {
+  lhs = if typesRequireCastForOpEqual(lhs.type, rhs.type) then (lhs^rhs):lhs.type else (lhs^rhs);
+}
+inline proc >>=(ref lhs, rhs) where !isIterator(lhs) {
+  lhs = if typesRequireCastForOpEqual(lhs.type, rhs.type) then (lhs>>rhs):lhs.type else (lhs>>rhs);
+}
+inline proc <<=(ref lhs, rhs) where !isIterator(lhs) {
+  lhs = if typesRequireCastForOpEqual(lhs.type, rhs.type) then (lhs<<rhs):lhs.type else (lhs<<rhs);
+}
+
+/* This set of overloads should not be required, but the fully generic versions
+ * are leaking memory when passed two arrays.
+ */
+inline proc +=(lhs:[], rhs:[]) { lhs = lhs + rhs; }
+inline proc -=(lhs:[], rhs:[]) { lhs = lhs - rhs; }
+inline proc *=(lhs:[], rhs:[]) { lhs = lhs * rhs; }
+inline proc /=(lhs:[], rhs:[]) { lhs = lhs / rhs; }
+inline proc %=(lhs:[], rhs:[]) { lhs = lhs % rhs; }
+inline proc **=(lhs:[], rhs:[]) { lhs = lhs ** rhs; }
+inline proc &=(lhs:[], rhs:[]) { lhs = lhs & rhs; }
+inline proc |=(lhs:[], rhs:[]) { lhs = lhs | rhs; }
+inline proc ^=(lhs:[], rhs:[]) { lhs = lhs ^ rhs; }
+inline proc >>=(lhs:[], rhs:[]) { lhs = lhs >> rhs; }
+inline proc <<=(lhs:[], rhs:[]) { lhs = lhs << rhs; }
+
+inline proc +=(ref lhs, rhs) where isIterator(lhs) { lhs = lhs + rhs; }
+inline proc -=(ref lhs, rhs) where isIterator(lhs) { lhs = lhs - rhs; }
+inline proc *=(ref lhs, rhs) where isIterator(lhs) { lhs = lhs * rhs; }
+inline proc /=(ref lhs, rhs) where isIterator(lhs) { lhs = lhs / rhs; }
+inline proc %=(ref lhs, rhs) where isIterator(lhs) { lhs = lhs % rhs; }
+inline proc **=(ref lhs, rhs) where isIterator(lhs) { lhs = lhs ** rhs; }
+inline proc &=(ref lhs, rhs) where isIterator(lhs) { lhs = lhs & rhs; }
+inline proc |=(ref lhs, rhs) where isIterator(lhs) { lhs = lhs | rhs; }
+inline proc ^=(ref lhs, rhs) where isIterator(lhs) { lhs = lhs ^ rhs; }
+inline proc >>=(ref lhs, rhs) where isIterator(lhs) { lhs = lhs >> rhs; }
+inline proc <<=(ref lhs, rhs) where isIterator(lhs) { lhs = lhs << rhs; }
+
+/* second argument is param to handle e.g. uint(64) += 1; where 1 is int(64) */
+inline proc +=(ref lhs, param rhs)  where !chpl__isDomain(lhs) && !isIterator(lhs) { lhs = (lhs + rhs):lhs.type; }
+inline proc -=(ref lhs, param rhs)  where !chpl__isDomain(lhs) && !isIterator(lhs) { lhs = (lhs - rhs):lhs.type; }
+inline proc *=(ref lhs, param rhs)  { lhs = (lhs * rhs):lhs.type; }
+inline proc /=(ref lhs, param rhs)  { lhs = (lhs / rhs):lhs.type; }
+inline proc %=(ref lhs, param rhs)  { lhs = (lhs % rhs):lhs.type; }
+inline proc **=(ref lhs, param rhs) { lhs = (lhs ** rhs):lhs.type; }
+inline proc &=(ref lhs, param rhs)  { lhs = (lhs & rhs):lhs.type; }
+inline proc |=(ref lhs, param rhs)  { lhs = (lhs | rhs):lhs.type; }
+inline proc ^=(ref lhs, param rhs)  { lhs = (lhs ^ rhs):lhs.type; }
+inline proc >>=(ref lhs, param rhs) { lhs = (lhs >> rhs):lhs.type; }
+inline proc <<=(ref lhs, param rhs) { lhs = (lhs << rhs):lhs.type; }
+
+/* op= for sync variables */
+inline proc +=(lhs: sync, rhs)  { lhs = lhs + rhs; }
+inline proc -=(lhs: sync, rhs)  { lhs = lhs - rhs; }
+inline proc *=(lhs: sync, rhs)  { lhs = lhs * rhs; }
+inline proc /=(lhs: sync, rhs)  { lhs = lhs / rhs; }
+inline proc %=(lhs: sync, rhs)  { lhs = lhs % rhs; }
+inline proc **=(lhs: sync, rhs) { lhs = lhs ** rhs; }
+inline proc &=(lhs: sync, rhs)  { lhs = lhs & rhs; }
+inline proc |=(lhs: sync, rhs)  { lhs = lhs | rhs; }
+inline proc ^=(lhs: sync, rhs)  { lhs = lhs ^ rhs; }
+inline proc >>=(lhs: sync, rhs) { lhs = lhs >> rhs; }
+inline proc <<=(lhs: sync, rhs) { lhs = lhs << rhs; }
+
+/* op= for sync variables with param rhs */
+inline proc +=(lhs: sync, param rhs)  { lhs = lhs + rhs; }
+inline proc -=(lhs: sync, param rhs)  { lhs = lhs - rhs; }
+inline proc *=(lhs: sync, param rhs)  { lhs = lhs * rhs; }
+inline proc /=(lhs: sync, param rhs)  { lhs = lhs / rhs; }
+inline proc %=(lhs: sync, param rhs)  { lhs = lhs % rhs; }
+inline proc **=(lhs: sync, param rhs) { lhs = lhs ** rhs; }
+inline proc &=(lhs: sync, param rhs)  { lhs = lhs & rhs; }
+inline proc |=(lhs: sync, param rhs)  { lhs = lhs | rhs; }
+inline proc ^=(lhs: sync, param rhs)  { lhs = lhs ^ rhs; }
+inline proc >>=(lhs: sync, param rhs) { lhs = lhs >> rhs; }
+inline proc <<=(lhs: sync, param rhs) { lhs = lhs << rhs; }
+
+/* domain += and -= add and remove indices */
+inline proc +=(D: domain, idx) { D.add(idx); }
+inline proc -=(D: domain, idx) { D.remove(idx); }
+inline proc +=(D: domain, param idx) { D.add(idx); }
+inline proc -=(D: domain, param idx) { D.remove(idx); }
+
+/* swap operator */
+inline proc <=>(ref lhs, ref rhs) {
+  const tmp = lhs;
+  lhs = rhs;
+  rhs = tmp;
+}
+
+inline proc <=>(lhs: sync, ref rhs) {
+  const tmp = lhs;
+  lhs = rhs;
+  rhs = tmp;
+}
+
+inline proc <=>(ref lhs, rhs: sync) {
+  const tmp = lhs;
+  lhs = rhs;
+  rhs = tmp;
+}
+
+inline proc <=>(lhs: sync, rhs: sync) {
+  const tmp = lhs;
+  lhs = rhs;
+  rhs = tmp;
 }
 
 
@@ -1642,5 +1854,23 @@ proc isClassType(type t) param return false;
 proc isUnionType(type t) param {
   return __primitive("is union type", t);
 }
+
+_ensure_reference_type(int(8));
+_ensure_reference_type(int(16));
+_ensure_reference_type(int(32));
+_ensure_reference_type(int(64));
+_ensure_reference_type(uint(8));
+_ensure_reference_type(uint(16));
+_ensure_reference_type(uint(32));
+_ensure_reference_type(uint(64));
+_ensure_reference_type(real(32));
+_ensure_reference_type(real(64));
+_ensure_reference_type(imag(32));
+_ensure_reference_type(imag(64));
+_ensure_reference_type(complex(64));
+_ensure_reference_type(complex(128));
+_ensure_reference_type(bool);
+_ensure_reference_type(_task_list);
+_ensure_reference_type(string);
 
 }

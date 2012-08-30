@@ -47,14 +47,14 @@ module blocked_elemental_schur_complement {
        // the diagonal block itself is symmetric, so we cannot use
        // a standard matrix-matrix product
 
-      for (i, j, k) in [ AII_row_indices, AxI_cols, Lx1_cols ] do
+      for (i, j, k) in { AII_row_indices, AxI_cols, Lx1_cols } do
 	if j <= i then
 	  A (i,j) -= + L21 (i,k) * L12 (j,k);
     
       for AJI_row_indices in 
 	  strided_vector_block_partition ( AIPI_row_indices, 
 					   schur_complement_block_size )  do
-	for (i, j, k) in [AJI_row_indices, AxI_cols, Lx1_cols] do
+	for (i, j, k) in {AJI_row_indices, AxI_cols, Lx1_cols} do
 	  A (i,j) -= + L21 (i,k) * L12 (j,k);
     }
   }

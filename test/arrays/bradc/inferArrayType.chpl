@@ -1,7 +1,7 @@
 config var n = 5;
 
-var D = [1..n, 1..n];
-var E = [0..n-1, 0..n-1];
+var D = {1..n, 1..n};
+var E = {0..n-1, 0..n-1};
 
 var A: [D] real = [(i,j) in D] (i-1)*n + j;
 var B: [E] real = -A;

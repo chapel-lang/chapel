@@ -176,7 +176,7 @@ class FTree {
             halt("FTree must be initialized with an order > 0");
 
         this.order = order;
-        this.coeffDom = [0..order-1];
+        this.coeffDom = {0..order-1};
 
         coforall loc in Locales do
             on loc do tree[loc.id] = new LocTree(coeffDom);
@@ -267,7 +267,7 @@ class FTree {
 proc main() {
     var f = new FTree(2);
 
-    for (i, j) in [1..3, 2..4] {
+    for (i, j) in {1..3, 2..4} {
         const node = new Node(i, j); 
         f[node] = (i, j);
     }

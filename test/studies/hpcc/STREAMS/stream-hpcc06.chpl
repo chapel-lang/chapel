@@ -25,7 +25,7 @@ config const printParams = true,
 proc main() {
   printConfiguration();
 
-  const ProblemSpace: domain(1) = [1..m];
+  const ProblemSpace: domain(1) = {1..m};
   var A, B, C: [ProblemSpace] elemType;
 
   initVectors(B, C);

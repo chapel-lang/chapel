@@ -17,11 +17,11 @@ BasicBlock::BasicBlock()
 #define BB_ADD(expr)                            \
   do {                                          \
     INT_ASSERT(expr);                           \
-    basicBlock->exprs.add(expr);                \
+    basicBlock->exprs.push_back(expr);          \
   } while (0)
 
 #define BB_STOP()                               \
-  fn->basicBlocks->add(Steal())
+  fn->basicBlocks->push_back(Steal())
 
 #define BB_RESTART()                            \
   do {                                          \
@@ -34,14 +34,14 @@ BasicBlock::BasicBlock()
 
 #define BB_THREAD(src, dst)                     \
   do {                                          \
-    dst->ins.add(src);                          \
-    src->outs.add(dst);                         \
+    (dst)->ins.push_back(src);                  \
+    (src)->outs.push_back(dst);                 \
   } while (0)
 
 
 //# Statics
 BasicBlock* BasicBlock::basicBlock;
-Map<LabelSymbol*,Vec<BasicBlock*>*> BasicBlock::gotoMaps;
+Map<LabelSymbol*,std::vector<BasicBlock*>*> BasicBlock::gotoMaps;
 Map<LabelSymbol*,BasicBlock*> BasicBlock::labelMaps;
 int BasicBlock::nextid;
 
@@ -50,21 +50,21 @@ int BasicBlock::nextid;
 bool BasicBlock::isOK()
 {
   // Expressions must be live (non-NULL);
-  forv_Vec(Expr, expr, exprs)
+  for_vector(Expr, expr, exprs)
     if (expr == 0) return false;
 
   // Every in edge must have a corresponding out edge in the source block.
-  forv_Vec(BasicBlock, source, ins) {
+  for_vector(BasicBlock, source, ins) {
     bool found = false;
-    forv_Vec(BasicBlock, bb, source->outs)
+    for_vector(BasicBlock, bb, source->outs)
       if (bb == this) { found = true; break; }
     if (!found) return false;
   }
 
   // Every out edge must have a corresponding in edge in the target block.
-  forv_Vec(BasicBlock, target, outs) {
+  for_vector(BasicBlock, target, outs) {
     bool found = false;
-    forv_Vec(BasicBlock, bb, target->ins)
+    for_vector(BasicBlock, bb, target->ins)
       if (bb == this) { found = true; break; }
     if (!found) return false;
   }
@@ -72,18 +72,23 @@ bool BasicBlock::isOK()
   return true;
 }
 
+void BasicBlock::clear(FnSymbol* fn)
+{
+  if (!fn->basicBlocks)
+    return;
+
+  for_vector(BasicBlock, bb, *fn->basicBlocks)
+    delete bb, bb = 0;
+  delete fn->basicBlocks; fn->basicBlocks = 0;
+}
+
 // Reset the shared statics.
 void BasicBlock::reset(FnSymbol* fn)
 {
-  if (fn->basicBlocks)
-  {
-    forv_Vec(BasicBlock, bb, *fn->basicBlocks)
-      delete bb;
-    delete fn->basicBlocks;
-  }
-  fn->basicBlocks = new Vec<BasicBlock*>();
+  clear(fn);
   gotoMaps.clear();
   labelMaps.clear();
+  fn->basicBlocks = new std::vector<BasicBlock*>();
   nextid = 0;
 }
 
@@ -100,7 +105,7 @@ void buildBasicBlocks(FnSymbol* fn)
   BasicBlock::reset(fn);
   BasicBlock::basicBlock = new BasicBlock();    // BB_START();
   BasicBlock::buildBasicBlocks(fn, fn->body);   // BBB(fn->body);
-  fn->basicBlocks->add(BasicBlock::Steal());    // BB_STOP();
+  fn->basicBlocks->push_back(BasicBlock::Steal());    // BB_STOP();
 
   INT_ASSERT(verifyBasicBlocks(fn));
 }
@@ -164,10 +169,10 @@ void BasicBlock::buildBasicBlocks(FnSymbol* fn, Expr* stmt)
     if (BasicBlock* bb = labelMaps.get(label)) {
       BB_THREAD(basicBlock, bb);
     } else {
-      Vec<BasicBlock*>* vbb = gotoMaps.get(label);
+      std::vector<BasicBlock*>* vbb = gotoMaps.get(label);
       if (!vbb)
-        vbb = new Vec<BasicBlock*>();
-      vbb->add(basicBlock);
+        vbb = new std::vector<BasicBlock*>();
+      vbb->push_back(basicBlock);
       gotoMaps.put(label, vbb);
     }
     BB_ADD(s); // Put the goto at the end of its block.
@@ -177,7 +182,7 @@ void BasicBlock::buildBasicBlocks(FnSymbol* fn, Expr* stmt)
     if (def && toLabelSymbol(def->sym)) {
       // If a label appears in the middle of a block,
       // we start a new block.
-      if (basicBlock->exprs.count() > 0)
+      if (basicBlock->exprs.size() > 0)
       {
         BasicBlock* top = basicBlock;
         BB_RESTART();
@@ -190,8 +195,8 @@ void BasicBlock::buildBasicBlocks(FnSymbol* fn, Expr* stmt)
 
       // See if we have any unresolved references to this label,
       // and resolve them.
-      if (Vec<BasicBlock*>* vbb = gotoMaps.get(label)) {
-        forv_Vec(BasicBlock, bb, *vbb) {
+      if (std::vector<BasicBlock*>* vbb = gotoMaps.get(label)) {
+        for_vector(BasicBlock, bb, *vbb) {
           BB_THREAD(bb, basicBlock);
         }
       }
@@ -205,7 +210,7 @@ void BasicBlock::buildBasicBlocks(FnSymbol* fn, Expr* stmt)
 // Returns true if the basic block structure is OK, false otherwise.
 bool verifyBasicBlocks(FnSymbol* fn)
 {
-  forv_Vec(BasicBlock, bb, *fn->basicBlocks)
+  for_vector(BasicBlock, bb, *fn->basicBlocks)
   {
     if (! bb->isOK())
       return false;
@@ -217,8 +222,8 @@ void buildLocalsVectorMap(FnSymbol* fn,
                           Vec<Symbol*>& locals,
                           Map<Symbol*,int>& localMap) {
   int i = 0;
-  forv_Vec(BasicBlock, bb, *fn->basicBlocks) {
-    forv_Vec(Expr, expr, bb->exprs) {
+  for_vector(BasicBlock, bb, *fn->basicBlocks) {
+    for_vector(Expr, expr, bb->exprs) {
       if (DefExpr* def = toDefExpr(expr)) {
         if (toVarSymbol(def->sym)) {
           locals.add(def->sym);
@@ -232,27 +237,27 @@ void buildLocalsVectorMap(FnSymbol* fn,
 
 //#define DEBUG_FLOW
 void backwardFlowAnalysis(FnSymbol* fn,
-                          Vec<BitVec*>& GEN,
-                          Vec<BitVec*>& KILL,
-                          Vec<BitVec*>& IN,
-                          Vec<BitVec*>& OUT) {
+                          std::vector<BitVec*>& GEN,
+                          std::vector<BitVec*>& KILL,
+                          std::vector<BitVec*>& IN,
+                          std::vector<BitVec*>& OUT) {
   bool iterate = true;
   while (iterate) {
     iterate = false;
     int i = 0;
-    forv_Vec(BasicBlock, bb, *fn->basicBlocks) {
-      for (int j = 0; j < IN.v[i]->ndata; j++) {
-        unsigned new_in = (OUT.v[i]->data[j] & ~KILL.v[i]->data[j]) | GEN.v[i]->data[j];
-        if (new_in != IN.v[i]->data[j]) {
-          IN.v[i]->data[j] = new_in;
+    for_vector(BasicBlock, bb, *fn->basicBlocks) {
+      for (int j = 0; j < IN[i]->ndata; j++) {
+        unsigned new_in = (OUT[i]->data[j] & ~KILL[i]->data[j]) | GEN[i]->data[j];
+        if (new_in != IN[i]->data[j]) {
+          IN[i]->data[j] = new_in;
           iterate = true;
         }
         unsigned new_out = 0;
-        forv_Vec(BasicBlock, bbout, bb->outs) {
-          new_out = new_out | IN.v[bbout->id]->data[j];
+        for_vector(BasicBlock, bbout, bb->outs) {
+          new_out = new_out | IN[bbout->id]->data[j];
         }
-        if (new_out != OUT.v[i]->data[j]) {
-          OUT.v[i]->data[j] = new_out;
+        if (new_out != OUT[i]->data[j]) {
+          OUT[i]->data[j] = new_out;
           iterate = true;
         }
       }
@@ -267,22 +272,22 @@ void backwardFlowAnalysis(FnSymbol* fn,
 
 
 void forwardFlowAnalysis(FnSymbol* fn,
-                         Vec<BitVec*>& GEN,
-                         Vec<BitVec*>& KILL,
-                         Vec<BitVec*>& IN,
-                         Vec<BitVec*>& OUT,
+                         std::vector<BitVec*>& GEN,
+                         std::vector<BitVec*>& KILL,
+                         std::vector<BitVec*>& IN,
+                         std::vector<BitVec*>& OUT,
                          bool intersect) {
-  int nbbq = fn->basicBlocks->n; // size of bb queue
-  Vec<int> bbq;
+  size_t nbbq = fn->basicBlocks->size(); // size of bb queue
+  std::vector<int> bbq;
   BitVec bbs(nbbq);
   int iq = -1, nq = nbbq-1;      // index to first and last bb in bbq
-  for (int i = 0; i < fn->basicBlocks->n; i++) {
-    bbq.add(i);
+  for (size_t i = 0; i < nbbq; i++) {
+    bbq.push_back(i);
     bbs.set(i);
   }
   while (iq != nq) {
     iq = (iq + 1) % nbbq;
-    int i = bbq.v[iq];
+    int i = bbq[iq];
     bbs.unset(i);
 #ifdef DEBUG_FLOW
     if (iq == 0) {
@@ -290,34 +295,34 @@ void forwardFlowAnalysis(FnSymbol* fn,
       printf("OUT\n"); printBitVectorSets(OUT);
     }
 #endif
-    BasicBlock* bb = fn->basicBlocks->v[i];
+    BasicBlock* bb = (*fn->basicBlocks)[i];
     bool change = false;
-    for (int j = 0; j < IN.v[i]->ndata; j++) {
-      if (bb->ins.n > 0) {
+    for (int j = 0; j < IN[i]->ndata; j++) {
+      if (bb->ins.size() > 0) {
         unsigned new_in = (intersect) ? (unsigned)(-1) : 0;
-        forv_Vec(BasicBlock, bbin, bb->ins) {
+        for_vector(BasicBlock, bbin, bb->ins) {
           if (intersect)
-            new_in &= OUT.v[bbin->id]->data[j];
+            new_in &= OUT[bbin->id]->data[j];
           else
-            new_in |= OUT.v[bbin->id]->data[j];
+            new_in |= OUT[bbin->id]->data[j];
         }
-        if (new_in != IN.v[i]->data[j]) {
-          IN.v[i]->data[j] = new_in;
+        if (new_in != IN[i]->data[j]) {
+          IN[i]->data[j] = new_in;
           change = true;
         }
       }
-      unsigned new_out = (IN.v[i]->data[j] & ~KILL.v[i]->data[j]) | GEN.v[i]->data[j];
-      if (new_out != OUT.v[i]->data[j]) {
-        OUT.v[i]->data[j] = new_out;
+      unsigned new_out = (IN[i]->data[j] & ~KILL[i]->data[j]) | GEN[i]->data[j];
+      if (new_out != OUT[i]->data[j]) {
+        OUT[i]->data[j] = new_out;
         change = true;
       }
     }
     if (change) {
-      forv_Vec(BasicBlock, bbout, bb->outs) {
+      for_vector(BasicBlock, bbout, bb->outs) {
         if (!bbs.get(bbout->id)) {
           nq = (nq + 1) % nbbq;
           bbs.set(bbout->id);
-          bbq.v[nq] = bbout->id;
+          bbq[nq] = bbout->id;
         }
       }
     }
@@ -326,17 +331,17 @@ void forwardFlowAnalysis(FnSymbol* fn,
 
 
 void printBasicBlocks(FnSymbol* fn) {
-  forv_Vec(BasicBlock, b, *fn->basicBlocks) {
+  for_vector(BasicBlock, b, *fn->basicBlocks) {
     printf("%2d:  ", b->id);
-    forv_Vec(BasicBlock, bb, b->ins) {
+    for_vector(BasicBlock, bb, b->ins) {
       printf("%d ", bb->id);
     }
     printf(" >  ");
-    forv_Vec(BasicBlock, bb, b->outs) {
-      printf("%d ", bb->id);
+    for_vector(BasicBlock, bc, b->outs) {
+      printf("%d ", bc->id);
     }
     printf("\n");
-    forv_Vec(Expr, expr, b->exprs) {
+    for_vector(Expr, expr, b->exprs) {
       if (expr)
         list_view_noline(expr);
       else
@@ -354,18 +359,18 @@ void printLocalsVector(Vec<Symbol*> locals, Map<Symbol*,int>& localMap) {
   printf("\n");
 }
 
-void printDefsVector(Vec<SymExpr*> defs, Map<SymExpr*,int>& defMap) {
+void printDefsVector(std::vector<SymExpr*> defs, Map<SymExpr*,int>& defMap) {
   printf("Variable Definitions\n");
-  forv_Vec(SymExpr, def, defs) {
+  for_vector(SymExpr, def, defs) {
     printf("%2d: %s[%d] in %d\n", defMap.get(def), def->var->name,
            def->var->id, def->getStmtExpr()->id);
   }
   printf("\n");
 }
 
-void printLocalsVectorSets(Vec<BitVec*>& sets, Vec<Symbol*> locals) {
+void printLocalsVectorSets(std::vector<BitVec*>& sets, Vec<Symbol*> locals) {
   int i = 0;
-  forv_Vec(BitVec, set, sets) {
+  for_vector(BitVec, set, sets) {
     printf("%2d: ", i);
     for (int j = 0; j < set->size; j++) {
       if (set->get(j))
@@ -377,9 +382,9 @@ void printLocalsVectorSets(Vec<BitVec*>& sets, Vec<Symbol*> locals) {
   printf("\n");
 }
 
-void printBitVectorSets(Vec<BitVec*>& sets) {
+void printBitVectorSets(std::vector<BitVec*>& sets) {
   int i = 0;
-  forv_Vec(BitVec, set, sets) {
+  for_vector(BitVec, set, sets) {
     printf("%2d: ", i);
     for (int j = 0; j < set->size; j++) {
       printf("%d", (set->get(j)) ? 1 : 0);

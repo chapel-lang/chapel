@@ -197,7 +197,7 @@ extern unsigned int open_hash_multipliers[256];
 template <class K, class C> inline C 
 Map<K,C>::get(K akey) {
   MapElem<K,C> e(akey, (C)0);
-  MapElem<K,C> *x = set_in(e);
+  MapElem<K,C> *x = this->set_in(e);
   if (x)
     return x->value;
   return (C)0;
@@ -206,12 +206,12 @@ Map<K,C>::get(K akey) {
 template <class K, class C> inline MapElem<K,C> *
 Map<K,C>::put(K akey, C avalue) {
   MapElem<K,C> e(akey, avalue);
-  MapElem<K,C> *x = set_in(e);
+  MapElem<K,C> *x = this->set_in(e);
   if (x) {
     x->value = avalue;
     return x;
   } else
-    return set_add(e);
+    return this->set_add(e);
 }
 
 template <class K, class C> inline void
@@ -239,7 +239,7 @@ Map<K,C>::get_values(Vec<C> &values) {
 template <class K, class C> inline MapElem<K,C> *
 Map<K,C>::get_record(K akey) {
   MapElem<K,C> e(akey, (C)0);
-  MapElem<K,C> *x = set_in(e);
+  MapElem<K,C> *x = this->set_in(e);
   return x;
 }
 
@@ -360,7 +360,7 @@ ChainHash<C, AHashFns>::put(C c) {
   unsigned int h = AHashFns::hash(c);
   List<C> *l;
   MapElem<unsigned int,List<C> > e(h, (C)0);
-  MapElem<unsigned int,List<C> > *x = set_in(e);
+  MapElem<unsigned int,List<C> > *x = this->set_in(e);
   if (x)
     l = &x->value;
   else {
@@ -379,7 +379,7 @@ ChainHash<C, AHashFns>::get(C c) {
   unsigned int h = AHashFns::hash(c);
   List<C> empty;
   MapElem<unsigned int,List<C> > e(h, empty);
-  MapElem<unsigned int,List<C> > *x = set_in(e);
+  MapElem<unsigned int,List<C> > *x = this->set_in(e);
   if (!x)
     return 0;
   List<C> *l = &x->value;
@@ -403,7 +403,7 @@ ChainHash<C, AHashFns>::del(C c) {
   unsigned int h = AHashFns::hash(c);
   List<C> *l;
   MapElem<unsigned int,List<C> > e(h, (C)0);
-  MapElem<unsigned int,List<C> > *x = set_in(e);
+  MapElem<unsigned int,List<C> > *x = this->set_in(e);
   if (x)
     l = &x->value;
   else
@@ -429,7 +429,7 @@ ChainHashMap<K, AHashFns, C>::put(K akey, C avalue) {
   List<MapElem<K,C> > *l;
   MapElem<K, C> c(akey, avalue);
   MapElem<unsigned int,List<MapElem<K,C> > > e(h, empty);
-  MapElem<unsigned int,List<MapElem<K,C> > > *x = set_in(e);
+  MapElem<unsigned int,List<MapElem<K,C> > > *x = this->set_in(e);
   if (x)
     l = &x->value;
   else {
@@ -450,7 +450,7 @@ ChainHashMap<K, AHashFns, C>::get(K akey) {
   unsigned int h = AHashFns::hash(akey);
   List<MapElem<K,C> > empty;
   MapElem<unsigned int,List<MapElem<K,C> > > e(h, empty);
-  MapElem<unsigned int,List<MapElem<K,C> > > *x = set_in(e);
+  MapElem<unsigned int,List<MapElem<K,C> > > *x = this->set_in(e);
   if (!x)
     return 0;
   List<MapElem<K,C> > *l = &x->value;
@@ -467,7 +467,7 @@ ChainHashMap<K, AHashFns, C>::del(K akey) {
   List<MapElem<K,C> > empty;
   List<MapElem<K,C> > *l;
   MapElem<unsigned int,List<MapElem<K,C> > > e(h, empty);
-  MapElem<unsigned int,List<MapElem<K,C> > > *x = set_in(e);
+  MapElem<unsigned int,List<MapElem<K,C> > > *x = this->set_in(e);
   if (x)
     l = &x->value;
   else
@@ -517,7 +517,7 @@ StringChainHash::canonicalize(char *s, char *e) {
     while (*a) h = h * 27 + (unsigned char)*a++;  
   List<char*> *l;
   MapElem<unsigned int,List<char*> > me(h, (char*)0);
-  MapElem<unsigned int,List<char*> > *x = set_in(me);
+  MapElem<unsigned int,List<char*> > *x = this->set_in(me);
   if (x) {
     l = &x->value;
     forc_List(char *, x, *l) {

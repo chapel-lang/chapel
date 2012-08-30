@@ -1,4 +1,6 @@
 #!/bin/csh -f
-cp testVerboseFlag.comm-$CHPL_COMM.goodstart $1.good
+cp testVFlag.comm-$CHPL_COMM.goodstart $1.good
 uname -n >> $1.good
-cat testVerboseFlag.goodstop >> $1.good
+cat testVFlag.goodstop >> $1.good
+sed -e "s/^.*amudprun/amudprun/" $2 > $1.sed
+mv $1.sed $2

@@ -1,6 +1,6 @@
 use BlockDist;
 
-const D = [1..20] dmapped Block([1..20]);
+const D = {1..20} dmapped Block({1..20});
 
 var A: [D] real = 1..20;
 writeln(A);

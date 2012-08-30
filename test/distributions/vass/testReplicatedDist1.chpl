@@ -5,8 +5,8 @@ use ReplicatedDist, BlockDist, CyclicDist;
 config const n = 5;
 config const lo = 2, b = 3;
 
-const Dbase = [1..n, 1..n];
-const Dsub = [lo..#b, lo..#b];
+const Dbase = {1..n, 1..n};
+const Dsub = {lo..#b, lo..#b};
 
 // array element type
 

@@ -74,8 +74,8 @@ proc rangeBase.rangeBase(type idxType = int,
     if boundedType == BoundedRangeType.bounded
     {
       if _low <= _high && this.last + stride : idxType == this.first then
-        writeln("Maximal range declared.  ",
-        "A for loop on this range will execute zero times.  ",
+        __primitive("chpl_warning", "Maximal range declared.  " +
+        "A for loop on this range will execute zero times.  " +
         "Try using a wider index type.");
     }
   }
@@ -155,6 +155,11 @@ proc rangeBase.length: idxType
     const s = abs(this.stride): idxType;
     return (this.alignedHigh - this.alignedLow) / s + 1:idxType;
   }
+}
+
+proc rangeBase.size: idxType
+{
+    return this.length;
 }
 
 //################################################################################
@@ -930,29 +935,29 @@ iter rangeBase.these(param tag: iterKind, followThis) where tag == iterKind.foll
 proc rangeBase.readWriteThis(f)
 {
   if hasLowBound() then
-    f & _low;
-  f & new ioLiteral("..");
+    f <~> _low;
+  f <~> new ioLiteral("..");
   if hasHighBound() then
-    f & _high;
+    f <~> _high;
   if stride != 1 then
-    f & new ioLiteral(" by ") & stride;
+    f <~> new ioLiteral(" by ") <~> stride;
 
   // Write out the alignment only if it differs from natural alignment.
   // We take alignment modulo the stride for consistency.
   if f.writing {
     if ! isNaturallyAligned() then
-      f & new ioLiteral(" align ") & chpl__mod(_alignment, stride);
+      f <~> new ioLiteral(" align ") <~> chpl__mod(_alignment, stride);
   } else {
     // try reading an 'align'
     if !f.error() {
-      f & new ioLiteral(" align ");
+      f <~> new ioLiteral(" align ");
       if f.error() == EFORMAT then {
         // naturally aligned.
         f.clearError();
       } else {
         // un-naturally aligned - read the un-natural alignment
         var a: idxType;
-        f & a;
+        f <~> a;
         _alignment = a;
       }
     }

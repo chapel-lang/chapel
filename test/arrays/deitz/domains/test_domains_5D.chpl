@@ -3,7 +3,7 @@ writeln(x);
 
 config var n : int = 3;
 
-var D : domain(5) = [1..n, 1..n, 1..n, 1..n, 1..n];
+var D : domain(5) = {1..n, 1..n, 1..n, 1..n, 1..n};
 
 writeln(D);
 

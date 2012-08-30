@@ -73,8 +73,8 @@ proc main() {
    /* Declarations */
    /* ------------ */
    
-   const ProblemSpace2d = [1..n, 1..n],       // domain for interior grid points
-         BigDomain2d    = [0..n+1, 0..n+1];   // domain with boundary points
+   const ProblemSpace2d = {1..n, 1..n},       // domain for interior grid points
+         BigDomain2d    = {0..n+1, 0..n+1};   // domain with boundary points
 
    var 
       max_iter = 60;                      // Maximum number of iterations.

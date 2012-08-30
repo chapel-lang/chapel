@@ -56,4 +56,8 @@ const char* stdModNameToFilename(const char* modName);
 
 void printModuleSearchPath(void);
 
+char* dirHasFile(const char *dir, const char *file);
+char* findProgramPath(const char* argv0);
+bool isSameFile(const char* pathA, const char* pathB);
+
 #endif

@@ -643,31 +643,58 @@ err_t qio_file_init(qio_file_t** file_out, FILE* fp, fd_t fd, qio_hint_t iohints
   struct stat stats;
   off_t seek_ret;
   qio_chtype_t hinted_type;
+  int seekable = 0;
+  mode_t ftype;
 
   if( fp ) {
     fd = fileno(fp);
     if( fd == -1 ) return errno; 
   }
 
-  // try to seek.
-  err = sys_lseek(fd, 0, SEEK_CUR, &seek_ret);
-  if( err == ESPIPE ) {
-    // not seekable. Don't worry about it.
-    initial_pos = 0;
-  } else if( err ) {
-    return err;
+  err = sys_fstat(fd, &stats);
+  if( err ) return err;
+
+  ftype = stats.st_mode & S_IFMT;
+
+  if( ftype == S_IFIFO ||
+      ftype == S_IFCHR ||
+      ftype == S_IFSOCK ) {
+    // FIFO/named pipe, character device, or socket cannot seek
+    seekable = 0;
+  } else if( ftype == S_IFREG ||
+             ftype == S_IFBLK ) {
+    // regular file or block device can seek
+    seekable = 1;
   } else {
+    // ftype == S_IFDIR
+    // ftype == S_IFLNK
+    // ftype == S_IFWHT on Mac OS X
+    return EINVAL; // can't open symlink/dir/whiteout
+  }
+
+  if( seekable ) {
+    // try to seek.
+    err = sys_lseek(fd, 0, SEEK_CUR, &seek_ret);
+    if( err == ESPIPE ) {
+      // not seekable. Don't worry about it.
+      seekable = 0;
+    } else if( err ) {
+      return err;
+    } else {
+      seekable = 1;
+    }
+  }
+
+  if( seekable ) {
     // seekable.
     fdflags |= QIO_FDFLAG_SEEKABLE;
-
     initial_pos = seek_ret;
-
     // get the file length, using stat (not seek)
     // so that this is thread-safe.
-    err = sys_fstat(fd, &stats);
-    if( err ) return err;
-
     initial_length = stats.st_size;
+  } else {
+     // Not seekable.
+    initial_pos = 0;
   }
 
   // try to fcntl
@@ -2534,8 +2561,10 @@ err_t _qio_channel_flush_unlocked(qio_channel_t* ch)
 
   err = _qio_channel_flush_qio_unlocked(ch);
 
-  // Also flush cstdio buffer if we're using fread/fwrite.
-  if( method == QIO_METHOD_FREADFWRITE ) {
+  // Also flush cstdio buffer if we're using fread/fwrite
+  // and we're writing.
+  if( method == QIO_METHOD_FREADFWRITE &&
+      (ch->flags & QIO_FDFLAG_WRITEABLE) ) {
     int got = fflush(ch->file->fp);
     if( got && err == 0 ) err = errno;
   }

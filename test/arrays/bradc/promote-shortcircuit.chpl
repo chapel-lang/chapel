@@ -1,6 +1,6 @@
 config const n = 10;
 
-const D = [1..n];
+const D = {1..n};
 
 var A: [D] int = [i in D] i-(n/2),
     B: [D] int = [i in D] n;

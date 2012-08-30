@@ -1,6 +1,6 @@
 var myvariable = 100;
 
-var D = [1..myvariable];
+var D = {1..myvariable};
 
 var A: [D] real;
 

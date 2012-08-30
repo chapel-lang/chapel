@@ -251,10 +251,10 @@ outputs \chpl{3 4 3 4}.
 \end{chapelexample}
 
 \index{tuples!omitting components}
-When splitting a tuple with assignment, the expressions that are
-grouped using the tuple notation may be omitted.  In this case, the
-expression on the right-hand side of the assignment operator is
-evaluated, but its value is not assigned.
+When splitting a tuple with assignment, the underscore token can
+be used to omit storing some of the components.  In this case, the
+full expression on the right-hand side of the assignment operator is
+evaluated, but the omitted values will not assigned to anything.
 
 \begin{chapelexample}{omit-component.chpl}
 The code
@@ -263,7 +263,7 @@ proc f()
   return (1, 2);
 
 var x: int;
-(x, ) = f();
+(x,_) = f();
 \end{chapel}
 defines a function that returns a 2-tuple, declares an integer
 variable \chpl{x}, calls the function, assigns the first component in
@@ -325,9 +325,10 @@ writeln(a);
 \end{chapelexample}
 
 \index{tuples!omitting components}
-When splitting a tuple into multiple variable declarations, variable
-names in the declarator on the left-hand side may be omitted.  In
-this case, no variables are defined for the omitted components.
+When splitting a tuple into multiple variable declarations, the
+underscore token may be used to omit components of the tuple rather
+than declaring a new variable for them.  In this case, no variables
+are defined for the omitted components.
 
 \begin{chapelexample}{omit-component-decl.chpl}
 The code
@@ -335,7 +336,7 @@ The code
 proc f()
   return (1, 2);
 
-var (x, ) = f();
+var (x,_) = f();
 \end{chapel}
 defines a function that returns a 2-tuple, calls the function,
 declares and initializes variable \chpl{x} to the first component in

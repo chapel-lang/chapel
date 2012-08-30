@@ -1,4 +1,4 @@
-var S = [0..8,0..8], A: [S] int = for i in S do read(int);
+var S = {0..8,0..8}, A: [S] int = for i in S do read(int);
 proc R {
   iter I(i...?k) { for param a in 1..k { for b in i(a) { yield b; }}}
   for (i,j) in S { if A(i,j) == 0 {

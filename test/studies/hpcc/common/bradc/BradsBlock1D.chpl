@@ -135,7 +135,7 @@ class LocBlock1DDist {
                 else procToData((numelems: real * locid) / numlocs, lo);
     const bhi = if (locid == numlocs - 1) then max(glbIdxType)
                 else procToData((numelems: real * (locid+1)) / numlocs, lo) - 1;
-    const retval = [blo..bhi];
+    const retval = {blo..bhi};
     if debugBradsBlock1D then
       writeln("locale ", locid, " owns ", retval);
     return retval;

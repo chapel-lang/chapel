@@ -5,6 +5,24 @@
 #include "map.h"
 #include "chpl.h"
 
+// For versions of bison beyond 2.3, this struct and the following
+// two defines should be moved back into chapel.ypp into a %code requires
+// block so that YYLTYPE is near the YYLLOC_DEFAULT definition.
+typedef struct YYLTYPE {    
+       int first_line;      
+       int first_column;    
+       int last_line;       
+       int last_column;     
+       char *comment;       
+} YYLTYPE;
+#define YYLTYPE_IS_DECLARED 1
+#define YYLTYPE_IS_TRIVIAL 1
+
+
+
+
+extern char *chplBinaryName;
+
 extern FILE* html_index_file;
 extern FILE* deletedIdHandle;
 extern char deletedIdFilename[FILENAME_MAX+1];
@@ -37,6 +55,11 @@ extern bool fNoInline;
 extern bool fNoLiveAnalysis;
 extern bool fNoLocalChecks;
 extern bool fNoNilChecks;
+
+//Disable flag for transitional warning of 1.5 domain literal syntax.
+//This option should be removed after 1.6 is released!
+extern bool fNoWarnDomainLiteral; 
+
 extern bool fNoRemoteValueForwarding;
 extern bool fNoRemoveCopyCalls;
 extern bool fNoRepositionDefExpr;
@@ -84,10 +107,13 @@ extern int fLinkStyle;
 extern int debugParserLevel;
 extern bool fLibraryCompile;
 extern bool no_codegen;
+extern bool genExternPrototypes;
 extern bool developer;
 extern int num_constants_per_variable;
 extern bool printCppLineno;
 
+extern bool fdocs;
+extern bool alphabetize;
 extern char defaultDist[256];
 extern char mainModuleName[256];
 extern bool printSearchDirs;

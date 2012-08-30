@@ -1,6 +1,6 @@
 // This is an extract from KM's code, May 2011.
 
-const vertex_domain = [1..64];
+const vertex_domain = {1..64};
 
 record vertex_struct {
 

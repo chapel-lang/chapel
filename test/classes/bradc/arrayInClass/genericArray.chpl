@@ -10,7 +10,7 @@ class C {
   var d: D = new D();
 
   var n = 10;
-  var Dom = [d(1)];
+  var Dom = {d(1)};
   var A: [Dom] t;
 }
 

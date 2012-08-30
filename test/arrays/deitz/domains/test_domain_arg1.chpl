@@ -5,8 +5,8 @@ proc foo(d : domain(2)) {
   writeln(a);
 }
 
-var d = [1..5, 1..5];
+var d = {1..5, 1..5};
 
 foo(d);
 
-foo([4..6, 1..3]);
+foo({4..6, 1..3});

@@ -8,7 +8,7 @@ for i in 1..n do
 proc foo(i: int) {
   const modi = i % 20;
 
-  const D: domain(2) dmapped Dist2D = [1..modi, 1..modi];
+  const D: domain(2) dmapped Dist2D = {1..modi, 1..modi};
 
   const sum = + reduce [(i,j) in D] i;
 

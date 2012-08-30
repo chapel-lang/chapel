@@ -65,6 +65,15 @@ callReplaceChild(Expr* expr, Expr* new_ast) {
   }
 }
 
+void Expr::prettyPrint(std::ofstream *o) {
+  if (BlockStmt *stmt = toBlockStmt(this))
+    printf("blockstmt %s", stmt->userLabel);
+  else if (CondStmt *stmt = toCondStmt(this))
+    printf("condstmt %s", stmt->condExpr->parentSymbol->name);
+  else if (GotoStmt *stmt = toGotoStmt(this))
+    printf("gotostmt %s", stmt->label->parentSymbol->name);
+  printf("Oh no! This method hasn't been defined for this class!\n");
+}
 
 Expr* Expr::remove(void) {
   if (!this)
@@ -214,6 +223,26 @@ void SymExpr::codegen(FILE* outfile) {
 }
 
 
+void SymExpr::prettyPrint(std::ofstream *o) {
+  if (strcmp(var->name, "nil") != 0) {
+    if (var->isImmediate()) {
+      if (VarSymbol *sym = toVarSymbol(var)) {
+        if (sym->immediate->num_index == INT_SIZE_1)
+          *o << sym->immediate->v_bool;
+        else if (sym->immediate->const_kind == NUM_KIND_INT)
+          *o << sym->immediate->int_value();
+        else if (sym->immediate->const_kind == NUM_KIND_UINT)
+          *o << sym->immediate->uint_value();
+        else if (sym->immediate->const_kind == CONST_KIND_STRING)
+          *o << sym->immediate->v_string;
+      }
+    } else {
+      *o << var->name;
+    }
+  }
+}
+
+
 UnresolvedSymExpr::UnresolvedSymExpr(const char* i_unresolved) :
   Expr(E_UnresolvedSymExpr),
   unresolved(astr(i_unresolved))
@@ -254,6 +283,10 @@ Type* UnresolvedSymExpr::typeInfo(void) {
 void UnresolvedSymExpr::codegen(FILE* outfile) {
   INT_FATAL(this, "UnresolvedSymExpr::codegen called");
   fprintf(outfile, "%s /* unresolved symbol */", unresolved);
+}
+
+void UnresolvedSymExpr::prettyPrint(std::ofstream *o) {
+  *o << unresolved;
 }
 
 
@@ -338,6 +371,11 @@ Type* DefExpr::typeInfo(void) {
 void DefExpr::codegen(FILE* outfile) {
   if (toLabelSymbol(sym))
     fprintf(outfile, "%s:;\n", sym->cname);
+}
+
+
+void DefExpr::prettyPrint(std::ofstream *o) {
+  *o << "<DefExprType>";
 }
 
 
@@ -533,7 +571,7 @@ CallExpr::copyInner(SymbolMap* map) {
     _this = new CallExpr(COPY_INT(baseExpr));
   for_actuals(expr, this)
     _this->insertAtTail(COPY_INT(expr));
-  _this->primitive = primitive;;
+  _this->primitive = primitive;
   _this->partialTag = partialTag;
   _this->methodTag = methodTag;
   _this->square = square;
@@ -614,6 +652,75 @@ Type* CallExpr::typeInfo(void) {
     return dtUnknown;
 }
 
+void CallExpr::prettyPrint(std::ofstream *o) {
+  if (isResolved()) {
+    if (isResolved()->hasFlag(FLAG_BEGIN_BLOCK))
+      *o << "begin";
+    else if (isResolved()->hasFlag(FLAG_ON_BLOCK))
+      *o << "on";
+  }
+  bool array = false;
+  bool unusual = false;
+  if (baseExpr != NULL) {
+    if (UnresolvedSymExpr *expr = toUnresolvedSymExpr(baseExpr)) {
+      if (strcmp(expr->unresolved, "chpl__buildArrayRuntimeType") == 0) {
+        *o << "[";
+        array = true;
+      } else if (strcmp(expr->unresolved, 
+                        "chpl__buildDomainRuntimeType") == 0) {
+        *o << "domain(";
+        argList.last()->prettyPrint(o);
+        *o << ")";
+        unusual = true;
+      } else if (strcmp(expr->unresolved, 
+                        "_build_range") == 0) {
+        argList.first()->prettyPrint(o);
+        *o << "..";
+        argList.last()->prettyPrint(o);
+        unusual = true;
+      } else if (strcmp(expr->unresolved, "*") == 0){
+        unusual = true;
+        argList.first()->prettyPrint(o);
+        *o << "*(";
+        argList.last()->prettyPrint(o);
+        *o << ")";
+      } else if (strcmp(expr->unresolved,
+                        "chpl__buildDomainExpr") == 0) {
+        unusual = true;
+        for_alist(expr, argList) {
+          if (expr != argList.first()) {
+            *o << ", ";
+          }
+          expr->prettyPrint(o);
+        }
+      } else if (strcmp(expr->unresolved,
+                        "_build_tuple") != 0) {
+        baseExpr->prettyPrint(o);
+      }
+    } else {
+      baseExpr->prettyPrint(o);
+    }
+  } 
+  if (!array && !unusual)
+    *o << "(";
+  if (!unusual) {
+    for_alist(expr, argList) {
+      if (expr != argList.first()) {
+        if (array && expr == argList.last()) {
+          *o << "] ";
+        } else {
+          *o << ", "; 
+        }     
+      }
+      expr->prettyPrint(o);         
+    }
+    if (array && argList.first() == argList.last())
+      *o << "]"; 
+  }
+  if (!array && !unusual) {
+    *o << ")";
+  }
+}
 
 static void codegenWideDynamicCastCheck(FILE* outfile, Type* type) {
   fprintf(outfile, "chpl_macro_tmp == chpl__cid_%s", type->symbol->cname);
@@ -778,8 +885,8 @@ void CallExpr::codegen(FILE* outfile) {
           gen(outfile, "CHPL_COMM_WIDE_ARRAY_SET_VALUE_SVEC");
         else
           gen(outfile, "CHPL_COMM_WIDE_ARRAY_SET_VALUE");
-        gen(outfile, "(%A, %A, %A, %A, _data, %A, ",
-            wideElementType, get(1), get(2), classType, elementType);
+        gen(outfile, "(%A, %A, %A, %A, ",
+            wideElementType, get(1), get(2), elementType);
         genTypeStructureIndex(outfile, elementType->symbol);
         gen(outfile, ", %A, %A, %A)", get(3), get(4), get(5));
       } else if (getDataClassType(get(1)->typeInfo()->symbol)->type->symbol->hasFlag(FLAG_STAR_TUPLE))
@@ -883,8 +990,6 @@ void CallExpr::codegen(FILE* outfile) {
             INT_ASSERT(valueType == get(1)->typeInfo());
             if (valueType == dtString)
               fprintf(outfile, "CHPL_COMM_WIDE_GET_STRING");
-            else if (valueType->symbol->hasFlag(FLAG_STAR_TUPLE))
-              fprintf(outfile, "CHPL_COMM_WIDE_GET_SVEC");
             else
               fprintf(outfile, "CHPL_COMM_WIDE_GET");
             gen(outfile, "(%A, %A, ", get(1), call->get(1));
@@ -1076,12 +1181,8 @@ void CallExpr::codegen(FILE* outfile) {
         }
         if (call->isPrimitive(PRIM_ARRAY_GET)) {
           if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-            Type* classType = call->get(1)->typeInfo()->getField("addr")->type;
-            Type* eltType = get(1)->typeInfo()->getField("addr")->type;
-            gen(outfile, "CHPL_COMM_WIDE_ARRAY_GET(%A, %A, %A, %A, _data, %A, ",
-                get(1), call->get(1), call->get(2), classType, eltType);
-            genTypeStructureIndex(outfile, eltType->symbol);
-            gen(outfile, ", %A, %A)", call->get(3), call->get(4));
+            gen(outfile, "CHPL_COMM_WIDE_ARRAY_GET(%A, %A, %A, %A, %A)",
+                get(1), call->get(1), call->get(2), call->get(3), call->get(4));
           } else {
             gen(outfile, "%A = _ARRAY_GET(%A, ", get(1), call->get(1));
             if (call->get(2)->typeInfo()->symbol->hasFlag(FLAG_REF)) {
@@ -1097,13 +1198,8 @@ void CallExpr::codegen(FILE* outfile) {
             Type* tt = wideRefMap.get(getDataClassType(call->get(1)->typeInfo()->getField("addr")->type->symbol)->type->refType);
             gen(outfile, "%A, %A, %A, %A, ",
                 tt->symbol, get(1), call->get(1), call->get(2));
-            TypeSymbol* ts0 = call->get(1)->typeInfo()->getField("addr")->type->symbol;
-            gen(outfile, "%A, _data, ", ts0);
             TypeSymbol* ts = getDataClassType(call->get(1)->typeInfo()->getField("addr")->type->symbol);
-            TypeSymbol* ts2 = tt->getField("addr")->type->symbol;
-            gen(outfile, "%A, ", ts2);
-            genTypeStructureIndex(outfile, ts2);
-            gen(outfile, ", %A, ", ts);
+            gen(outfile, "%A, ", ts);
             genTypeStructureIndex(outfile, ts);
             gen(outfile, ", %A, %A)", call->get(3), call->get(4));
           } else {
@@ -2119,6 +2215,8 @@ void CallExpr::codegen(FILE* outfile) {
       for_actuals(actual, this) {
         if (!first_actual)
           fputs(", ", outfile);
+        if( actual->typeInfo()->symbol->hasFlag(FLAG_DATA_CLASS))
+          INT_FATAL(this, "cannot delete data class");
         if (actual->typeInfo()->symbol->hasFlag(FLAG_REF) ||
             actual->typeInfo()->symbol->hasFlag(FLAG_WIDE))
           fputc('*', outfile);
@@ -2510,6 +2608,10 @@ void CallExpr::codegen(FILE* outfile) {
     return;
   }
 
+  // Do not code generate calls to functions marked FLAG_NO_CODEGEN.
+  if (FnSymbol* fsym = isResolved())
+    if (fsym->hasFlag(FLAG_NO_CODEGEN)) return;
+
   baseExpr->codegen(outfile);
   if (fn->hasFlag(FLAG_GPU_ON)) {
     fprintf(outfile,"<<<");
@@ -2639,6 +2741,11 @@ Type* NamedExpr::typeInfo(void) {
 
 void NamedExpr::codegen(FILE* outfile) {
   INT_FATAL(this, "NamedExpr::codegen not implemented");
+}
+
+
+void NamedExpr::prettyPrint(std::ofstream *o) {
+  *o << "<NamedExprType>";
 }
 
 

@@ -400,6 +400,13 @@
    #define GASNETI_RMB_IS_MB
    #define GASNETI_WMB_IS_MB
 /* ------------------------------------------------------------------------------------ */
+#elif PLATFORM_ARCH_TILE && PLATFORM_COMPILER_GNU
+   #define gasneti_local_mb() __sync_synchronize()
+   #define gasneti_local_wmb() gasneti_local_mb()
+   #define gasneti_local_rmb() gasneti_local_mb()
+   #define GASNETI_RMB_IS_MB
+   #define GASNETI_WMB_IS_MB
+/* ------------------------------------------------------------------------------------ */
 #else
  #error unknown CPU - dont know how to do a local memory barrier for your CPU/OS
 #endif

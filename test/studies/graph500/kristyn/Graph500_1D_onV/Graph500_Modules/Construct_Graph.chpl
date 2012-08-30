@@ -23,7 +23,7 @@ proc constructGraph(Edges:[?ArrD] , G)
    // Resize Neighbor lists for each vertex based on Histogram
 
    forall v in G.my_vertices {
-       G.Vertices[v].nd = [1..Histogram$[v].readFF()];
+       G.Vertices[v].nd = {1..Histogram$[v].readFF()};
    }
 
 
@@ -51,7 +51,7 @@ proc constructGraph(Edges:[?ArrD] , G)
    }
 
    forall v in G.Vertices do {
-     v.nd  = [1..v.neighbor_count];
+     v.nd  = {1..v.neighbor_count};
    }
 
 

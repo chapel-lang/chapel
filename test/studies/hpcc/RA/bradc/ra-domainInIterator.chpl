@@ -5,7 +5,7 @@ iter foo(): int {
 }
 
 iter bar(): int {
-  for i in [0..4] {
+  for i in {0..4} {
     yield i;
   }
 }

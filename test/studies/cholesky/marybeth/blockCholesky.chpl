@@ -43,7 +43,7 @@ proc main() {
   blk = min(blk,n);
 
   var A1D = 1..n;
-  const A2D = [A1D,A1D]; 
+  const A2D = {A1D,A1D}; 
   var A: [A2D] real;
   initA(A,Adat);
   Adat.close();
@@ -121,17 +121,17 @@ iter Block(D:range,blksize,upper) {
   for i in D by blksize {
     hi = min(i+blksize-1,stop);
     if upper {
-      var D1 = [start..i-1,i..hi];
-      var D2 = [start..i-1,hi+1..stop];     
-      var D3 = [i..hi,i..hi];
-      var D4 = [i..hi,hi+1..stop];
+      var D1 = {start..i-1,i..hi};
+      var D2 = {start..i-1,hi+1..stop};     
+      var D3 = {i..hi,i..hi};
+      var D4 = {i..hi,hi+1..stop};
       yield (D1, D2, D3, D4);
     }
     else {
-      var D1 = [i..hi,start..i-1];
-      var D2 = [hi+1..stop,start..i-1];     
-      var D3 = [i..hi,i..hi];
-      var D4 = [hi+1..stop,i..hi];
+      var D1 = {i..hi,start..i-1};
+      var D2 = {hi+1..stop,start..i-1};     
+      var D3 = {i..hi,i..hi};
+      var D4 = {hi+1..stop,i..hi};
       yield (D1, D2, D3, D4);
     }
   
@@ -156,11 +156,11 @@ iter IterSyrk(D, upper) {
 
   if (upper) then
     for j in cols do
-      for (i,k) in [cols(..j), rows] do
+      for (i,k) in {cols(..j), rows} do
         yield ((i,j), (k,i), (k,j));
   else
     for j in rows do
-      for (k,i) in [cols, rows(j..)] do
+      for (k,i) in {cols, rows(j..)} do
         yield((i,j), (j,k), (i,k));
 }  
 

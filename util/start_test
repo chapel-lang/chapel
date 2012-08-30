@@ -79,7 +79,7 @@
 #   -interpret (DEPRECATED)
 #   -logfile   <log filename>         $testdir/Logs/<username>.<platform>.log
 #                                     (where $testdir is $CHPL_HOME/test if
-#                                     it exists, $CHPL_HOME/example, if it
+#                                     it exists, $CHPL_HOME/examples, if it
 #                                     exists, . otherwise)
 #   -memleaks
 #
@@ -622,7 +622,6 @@ if (! -d $logsdir || ! -x $logsdir || ! -w $logsdir) then
     exit -1
 endif
 
-set logtmp = $logsdir/$user.tmp.$$.log
 set datestr = `date +"%y%m%d.%H%M%S"`
 
 set platform = `$CHPL_HOME/util/chplenv/platform`
@@ -698,12 +697,6 @@ while ( $#argv > 0 )
     case --logfile:
         shift
         set logfile = $argv[1]
-        shift
-        breaksw
-    case -logtmp:
-    case --logtmp:
-        shift
-        set logtmp = $argv[1]
         shift
         breaksw
     case -memleaks:
@@ -865,31 +858,48 @@ endif
 
 set invocationDir = "$cwd"
 
-echo \[Starting Chapel regression tests - $datestr\] |& $tee $logtmp
-echo \[starting directory: \"$invocationDir\"] |& $tee -a $logtmp
-echo \[Logs directory: \"$logsdir\"\] |& $tee -a $logtmp
+#if logfile directory exists, then get absolute path for
+if ( -d `dirname $logfile` && -x `dirname $logfile` && -w `dirname $logfile` ) then
+    pushd `dirname $logfile` >& /dev/null
+    set logfile = `pwd`/`basename $logfile`
+    popd >& /dev/null
+else
+    echo \[Permission denied for logfile directory: \"`dirname $logfile`\"\] \
+    exit 1
+endif
 
-echo \[CHPL_HOME: $CHPL_HOME\] |& $tee -a $logtmp
-echo \[platform: $platform\] |& $tee -a $logtmp
+if ( -w $logfile ) then
+    echo ""
+    echo \[Removing log file with duplicate name \"$logfile\"\]
+    rm -f $logfile
+endif
+
+echo \[Starting Chapel regression tests - $datestr\] |& $tee $logfile
+echo \[starting directory: \"$invocationDir\"] |& $tee -a $logfile
+echo \[Logs directory: \"$logsdir\"\] |& $tee -a $logfile
+echo \[logfile: \"$logfile\"\] |& $tee -a $logfile
+
+echo \[CHPL_HOME: $CHPL_HOME\] |& $tee -a $logfile
+echo \[platform: $platform\] |& $tee -a $logfile
 # see if valgrind is on.  If it is, reset the compiler
 if ($valgrind) then
-    echo \[valgrind: ON\] |& $tee -a $logtmp
-    echo \[valgrind binary: `which valgrind` \] |& $tee -a $logtmp
-    echo \[valgrind version: `valgrind --version` \] |& $tee -a $logtmp
-    setenv CHPL_TEST_VGRND_COMP on
-    setenv CHPL_TEST_VGRND_EXE on
+    echo \[valgrind: ON\] |& $tee -a $logfile
     which valgrind > /dev/null
     if ( $status != 0 ) then
-    echo ERROR: can\'t find valgrind |& $tee -a $logtmp
-    exit 1
+       echo "[Error: Could not find valgrind]" |& $tee -a $logfile
+       goto err_exit
     endif
+    echo \[valgrind binary: `which valgrind` \] |& $tee -a $logfile
+    echo \[valgrind version: `valgrind --version` \] |& $tee -a $logfile
+    setenv CHPL_TEST_VGRND_COMP on
+    setenv CHPL_TEST_VGRND_EXE on
 else
     setenv CHPL_TEST_VGRND_COMP off
     if ($valgrindexe) then
-        echo \[valgrind: EXE only\] |& $tee -a $logtmp
+        echo \[valgrind: EXE only\] |& $tee -a $logfile
         setenv CHPL_TEST_VGRND_EXE on
     else
-        echo \[valgrind: OFF\] |& $tee -a $logtmp
+        echo \[valgrind: OFF\] |& $tee -a $logfile
         setenv CHPL_TEST_VGRND_EXE off
     endif
 endif
@@ -899,25 +909,25 @@ if ($compiler == "") then
 endif
 
 if ($interpret) then
-#     echo \[interpreter: ON\] |& $tee -a $logtmp
+#     echo \[interpreter: ON\] |& $tee -a $logfile
 #    set compopts = "-i $compopts"
     setenv CHPL_TEST_INTERP on
 else
-#    echo \[interpreter: OFF\] |& $tee -a $logtmp
+#    echo \[interpreter: OFF\] |& $tee -a $logfile
     setenv CHPL_TEST_INTERP off
 endif
 
 if ($performance) then
-    echo \[performance tests: ON\] |& $tee -a $logtmp
+    echo \[performance tests: ON\] |& $tee -a $logfile
     setenv CHPL_TEST_PERF on
 else
-    echo \[performance tests: OFF\] |& $tee -a $logtmp
+    echo \[performance tests: OFF\] |& $tee -a $logfile
 endif
 
 if ($gengraphs) then
-    echo \[performance graph generation: ON\] |& $tee -a $logtmp
+    echo \[performance graph generation: ON\] |& $tee -a $logfile
 else
-    echo \[performance graph generation: OFF\] |& $tee -a $logtmp
+    echo \[performance graph generation: OFF\] |& $tee -a $logfile
 endif
 
 
@@ -927,29 +937,28 @@ if ( -f $compiler && -x $compiler ) then
     set compiler = $cwd/`basename $compiler`
     popd >& /dev/null
 
-    echo \[compiler: \"$compiler\"\] |& $tee -a $logtmp
+    echo \[compiler: \"$compiler\"\] |& $tee -a $logfile
 else
-    echo \[Cannot find or execute compiler: \"$compiler\"\] \
-        |& $tee -a $logtmp
-        exit 1
+    echo "[Error: Cannot find or execute compiler: $compiler]" |& $tee -a $logfile
+    goto err_exit
 endif
 
-echo \[compopts: \"$compopts\"\] |& $tee -a $logtmp
+echo \[compopts: \"$compopts\"\] |& $tee -a $logfile
 setenv COMPOPTS "$compopts"
 
-echo \[execopts: \"$execopts\"\] |& $tee -a $logtmp
+echo \[execopts: \"$execopts\"\] |& $tee -a $logfile
 setenv EXECOPTS "$execopts"
 
-echo \[launchcmd: \"$launchcmd\"\] |& $tee -a $logtmp
+echo \[launchcmd: \"$launchcmd\"\] |& $tee -a $logfile
 setenv LAUNCHCMD "$launchcmd"
 
-echo \[comm: \"$comm\"\] |& $tee -a $logtmp
+echo \[comm: \"$comm\"\] |& $tee -a $logfile
 setenv CHPL_COMM $comm
 
 if ($numlocales == "0") then
-    echo \[numlocales: \"\(default\)\"\] |& $tee -a $logtmp
+    echo \[numlocales: \"\(default\)\"\] |& $tee -a $logfile
 else
-    echo \[numlocales: \"$numlocales\"\] |& $tee -a $logtmp
+    echo \[numlocales: \"$numlocales\"\] |& $tee -a $logfile
 endif
 setenv NUMLOCALES "$numlocales"
 
@@ -960,11 +969,10 @@ if ($?CHPL_SYSTEM_PREDIFF) then
         setenv CHPL_SYSTEM_PREDIFF  $cwd/`basename $CHPL_SYSTEM_PREDIFF`
         popd >& /dev/null
 
-        echo \[system-wide prediff: \"$CHPL_SYSTEM_PREDIFF\"\] |& $tee -a $logtmp
+        echo "[system-wide prediff: $CHPL_SYSTEM_PREDIFF]" |& $tee -a $logfile
     else
-    echo \[Cannot find or execute system-wide prediff: \"$CHPL_SYSTEM_PREDIFF\"\] \
-        |& $tee -a $logtmp
-        exit 1
+        echo "[Error: Cannot find or execute system-wide prediff: $CHPL_SYSTEM_PREDIFF]" |& $tee -a $logfile
+        goto err_exit
     endif
 endif
 
@@ -989,8 +997,8 @@ if ("$dirlist" == "" && "$testlist" == "") then
             set blah=`make spectests >& test/spectests.exec.out.tmp`
             set exitval = $?            
             if ( $exitval != 0 ) then
-                echo \[Error generating Spec tests.  Run \'make spectests\' in $chplhome for more info\] |& $tee -a $logfile
-                exit $exitval
+                echo "[Error: Failed to generate Spec tests.  Run 'make spectests' in $chplhome for more info]" |& $tee -a $logfile
+                goto err_exit
             endif
             pushd $CHPL_HOME/test >& /dev/null
             if (! -e $perfdir) then
@@ -999,8 +1007,8 @@ if ("$dirlist" == "" && "$testlist" == "") then
             set blah=`$utildir/computePerfStats spectests "$perfdir"`
             set exitval = $?
             if ( $exitval != 0 ) then
-                echo \[Error computing perf stats for Spec tests\] |& $tee -a $logfile
-                exit $exitval
+                echo "[Error: Failed to compute perf stats for Spec tests]" |& $tee -a $logfile
+                goto err_exit
             endif
             rm spectests.exec.out.tmp
             popd >& /dev/null
@@ -1009,8 +1017,8 @@ if ("$dirlist" == "" && "$testlist" == "") then
                 set autogen=`make spectests` # capture output to keep it quiet
                 set exitval = $?
                 if ( $exitval != 0 ) then
-                    echo \[Error generating Spec tests.  Run \'make spectests\' in $chplhome for more info\] |& $tee -a $logfile
-                    exit $exitval
+                    echo "[Error: Failed to generate Spec tests.  Run 'make spectests' in $chplhome for more info]" |& $tee -a $logfile
+                    goto err_exit
                 endif
             endif
         endif
@@ -1049,37 +1057,13 @@ foreach dir ($dirlist)
 end
 
 
-echo \[tests: \"$testlist\"] |& $tee -a $logtmp
+echo \[tests: \"$testlist\"] |& $tee -a $logfile
 
 if ($recurse == 1) then
-    echo \[directories: \"$absdirs\"] |& $tee -a $logtmp
+    echo \[directories: \"$absdirs\"] |& $tee -a $logfile
 else
-    echo \[directories: \(nonrecursive\): \"$absdirs\"] |& $tee -a $logtmp
+    echo \[directories: \(nonrecursive\): \"$absdirs\"] |& $tee -a $logfile
 endif
-
-#if logfile directory exists, then get absolute path for
-if ( -d `dirname $logfile` && -x `dirname $logfile` ) then
-    pushd `dirname $logfile` >& /dev/null
-    set logfile = `pwd`/`basename $logfile`
-    popd >& /dev/null
-
-    echo \[logfile: \"$logfile\"\] |& $tee -a $logtmp
-else
-    echo \[Permission denied for logfile directory: \"`dirname $logfile`\"\] \
-        |& $tee -a $logtmp
-    exit 1
-endif
-
-if ( -w $logfile ) then
-    echo ""
-    echo \[Removing log file with duplicate name \"$logfile\"\]
-    rm -f $logfile
-endif
-
-# Move temp log file ($logtmp) we have been accumulating to actual log file
-#   now that we know the name of the actual log file
-mv $logtmp $logfile
-
 
 # If we are running the performance tests, then check for unique .dat
 #  filenames.  Issue a error and exit if we have specified a common
@@ -1122,7 +1106,7 @@ if ($performance) then
     end
     rm $yucktmpfile
     if ($duperror != 0) then
-        exit 1
+        goto err_exit
     endif
     echo ""
 endif
@@ -1340,6 +1324,9 @@ if ($gengraphs && $?CHPL_TEST_PERF_DIR) then
     endif
 endif
 
+# exit here if there were errors before running the tests
+err_exit:
+
 # return to where we started
 cd $invocationDir
 
@@ -1393,3 +1380,6 @@ cat $logfile.summary >> $logfile
 
 echo ''
 echo
+
+exit 0
+

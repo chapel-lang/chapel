@@ -28,10 +28,10 @@ config const printParams = true,
 proc main() {
   printConfiguration();
 
-  const TwiddleDom = [0:int(64)..#m/4];
+  const TwiddleDom = {0:int(64)..#m/4};
   var Twiddles: [TwiddleDom] elemType;
 
-  const ProblemDom = [0:int(64)..#m];
+  const ProblemDom = {0:int(64)..#m};
   var Z, z: [ProblemDom] elemType;
 
   initVectors(Twiddles, z);

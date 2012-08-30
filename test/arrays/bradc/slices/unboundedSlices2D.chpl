@@ -1,6 +1,6 @@
 config const n = 5;
 
-const D = [1..n, 1..n];
+const D = {1..n, 1..n};
 
 var A: [D] real = [(i,j) in D] (i-1)*n + j;
 

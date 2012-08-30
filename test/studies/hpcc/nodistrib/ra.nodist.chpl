@@ -1,5 +1,5 @@
 //
-// Use standard modules for Block distributions and Timing routines
+// Use standard modules for Timing routines
 //
 use Time;
 
@@ -33,6 +33,19 @@ const m = 2**n,
       indexMask = m-1;
 
 //
+// Constants having to do with preventing errors during verification.
+// The verification pass can get wrong answers due to races in the
+// same way that the main computation can.  To prevent this, we use
+// a sync variable to protect each block of verifyBlockSize main
+// table elements from concurrent access during verification.
+//
+//
+config const coreConcurrencyFactor = 4;
+config const verifyBlockSize = m / (numLocales
+                                    * here.numCores
+                                    * coreConcurrencyFactor):indexType;
+
+//
 // Configuration constant defining the number of errors to allow (as a
 // fraction of the number of updates, N_U)
 //
@@ -58,9 +71,9 @@ config const printParams = true,
 // distribution that is computed by blocking the indices 0..N_U-1
 // across the locales.
 //
-//const TableDist = new dmap(new Block(1, indexType, boundingBox=[0..m-1], 
+//const TableDist = new dmap(new Block(1, indexType, boundingBox={0..m-1}, 
 //                                              tasksPerLocale=tasksPerLocale)),
-//      UpdateDist = new dmap(new Block(1, indexType, boundingBox=[0..N_U-1],
+//      UpdateDist = new dmap(new Block(1, indexType, boundingBox={0..N_U-1},
 //                                               tasksPerLocale=tasksPerLocale));
 
 //
@@ -71,8 +84,8 @@ config const printParams = true,
 // It is distributed according to UpdateDist and contains the
 // indices 0..N_U-1.
 //
-const TableSpace: domain(1, indexType) = [0..m-1],
-      Updates: domain(1, indexType) = [0..N_U-1];
+const TableSpace: domain(1, indexType) = {0..m-1},
+      Updates: domain(1, indexType) = {0..N_U-1};
 
 //
 // T is the distributed table itself, storing a variable of type
@@ -99,12 +112,10 @@ proc main() {
   // The main computation: Iterate over the set of updates and the
   // stream of random values in a parallel, zippered manner, dropping
   // the update index on the ground and storing the random value
-  // in r.  Use an on-clause to force the table update to be executed on
-  // the locale which owns the table element in question to minimize
-  // communications.  Compute the update using r both to compute the
-  // index and as the update value.
+  // in r.  Compute the update using r both to compute the index and
+  // as the update value.
   //
-  forall ( , r) in (Updates, RAStream()) do {
+  forall (_, r) in (Updates, RAStream()) do {
     const myR = r;
     T(myR & indexMask) ^= myR;
   }
@@ -130,16 +141,31 @@ proc printConfiguration() {
 //
 proc verifyResults() {
   //
+  // We protect against errors in verification by using sync variables
+  // to single-threads accesses to each block of verifyBlockSize table
+  // elements.
+  //
+  const lockStride = if verifyBlockSize < 1
+                     then 1
+                     else 2 ** log2(verifyBlockSize),
+        lockIndexMask = indexMask & ~(lockStride - 1);
+  const lockSpace = TableSpace by lockStride;
+  var locks$: [lockSpace] sync bool;
+
+  //
   // Print the table, if requested
   //
   if (printArrays) then writeln("After updates, T is: ", T, "\n");
 
   //
-  // Reverse the updates by recomputing them, this time using an
-  // atomic statement to ensure no conflicting updates
+  // Reverse the updates by recomputing them, this time using sync
+  // variables to ensure no conflicting updates.
   //
-  forall ( , r) in (Updates, RAStream()) do
-    atomic T(r & indexMask) ^= r;
+  forall (_, r) in (Updates, RAStream()) do {
+    locks$(r & lockIndexMask) = true;
+    T(r & indexMask) ^= r;
+    locks$(r & lockIndexMask);
+  }
 
   //
   // Print the table again after the updates have been reversed

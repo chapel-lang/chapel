@@ -1,6 +1,6 @@
 param n = 10;
 
-var D: domain(1) = [1..n];
+var D: domain(1) = {1..n};
 
 var x : [D] real;
 var y : [D] real;

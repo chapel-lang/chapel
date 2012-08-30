@@ -1,5 +1,5 @@
-Initially, spsDom is: [
-]
+Initially, spsDom is: {
+}
 
 Initially, spsArr is: 
 
@@ -37,10 +37,10 @@ Printing spsArr after adding the corner indices:
 7.7 7.7 7.7 7.7 7.7 7.7 7.7 7.7 7.7 
 
 After adding corners, spsDom is:
-[
+{
  (1, 1) (1, 9)
  (9, 1) (9, 9)
-]
+}
 
 After adding corners, spsArr is:
 7.7 7.7

@@ -1,2 +1,4 @@
-writeln("In my math!");
+proc testmath() {
+  writeln("In my math!");
+}
 

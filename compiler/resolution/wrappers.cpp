@@ -33,7 +33,6 @@
 static FnSymbol*
 buildEmptyWrapper(FnSymbol* fn, CallInfo* info);
 static ArgSymbol* copyFormalForWrapper(ArgSymbol* formal);
-//static bool isShadowedField(ArgSymbol* formal);
 static void
 insertWrappedCall(FnSymbol* fn, FnSymbol* wrapper, CallExpr* call);
 static FnSymbol*
@@ -84,6 +83,7 @@ buildEmptyWrapper(FnSymbol* fn, CallInfo* info) {
 //
 // copy a formal and make the copy have blank intent. If the formal to copy has
 // out intent or inout intent, flag the copy to make sure it is a reference
+// If the formal is ref intent, leave it as ref on the wrapper formal.
 //
 static ArgSymbol* copyFormalForWrapper(ArgSymbol* formal) {
   ArgSymbol* wrapperFormal = formal->copy();
@@ -91,23 +91,10 @@ static ArgSymbol* copyFormalForWrapper(ArgSymbol* formal) {
       formal->hasFlag(FLAG_WRAP_OUT_INTENT)) {
     wrapperFormal->addFlag(FLAG_WRAP_OUT_INTENT);
   }
-  wrapperFormal->intent = INTENT_BLANK;
-  return wrapperFormal;
-}
-
-
-//
-// return true if formal matches name of a subsequent formal
-//
-static bool
-isShadowedField(ArgSymbol* formal) {
-  DefExpr* tmp = toDefExpr(formal->defPoint->next);
-  while (tmp) {
-    if (!strcmp(tmp->sym->name, formal->name))
-      return true;
-    tmp = toDefExpr(tmp->next);
+  if (formal->intent != INTENT_REF) {
+    wrapperFormal->intent = INTENT_BLANK;
   }
-  return false;
+  return wrapperFormal;
 }
 
 
@@ -269,16 +256,16 @@ buildDefaultWrapper(FnSymbol* fn,
         if (!formal->hasFlag(FLAG_TYPE_VARIABLE) && !paramMap->get(formal) && formal->type != dtMethodToken)
           if (Symbol* field = wrapper->_this->type->getField(formal->name, false))
             if (field->defPoint->parentSymbol == wrapper->_this->type->symbol)
-              if (!isShadowedField(formal)) {
-                Symbol* copyTemp = newTemp();
-                wrapper->insertAtTail(new DefExpr(copyTemp));
-                wrapper->insertAtTail(new CallExpr(PRIM_MOVE, copyTemp, new CallExpr("chpl__autoCopy", temp)));
-                wrapper->insertAtTail(
-                  new CallExpr(PRIM_SET_MEMBER, wrapper->_this,
-                               new_StringSymbol(formal->name), copyTemp));
-                copy_map.put(formal, copyTemp);
-                call->argList.tail->replace(new SymExpr(copyTemp));
-              }
+            {
+              Symbol* copyTemp = newTemp();
+              wrapper->insertAtTail(new DefExpr(copyTemp));
+              wrapper->insertAtTail(new CallExpr(PRIM_MOVE, copyTemp, new CallExpr("chpl__autoCopy", temp)));
+              wrapper->insertAtTail(
+                new CallExpr(PRIM_SET_MEMBER, wrapper->_this,
+                             new_StringSymbol(formal->name), copyTemp));
+              copy_map.put(formal, copyTemp);
+              call->argList.tail->replace(new SymExpr(copyTemp));
+            }
     } else if (paramMap->get(formal)) {
       // handle instantiated param formals
       call->insertAtTail(paramMap->get(formal));
@@ -340,10 +327,9 @@ buildDefaultWrapper(FnSymbol* fn,
         if (!formal->hasFlag(FLAG_TYPE_VARIABLE))
           if (Symbol* field = wrapper->_this->type->getField(formal->name, false))
             if (field->defPoint->parentSymbol == wrapper->_this->type->symbol)
-              if (!isShadowedField(formal))
-                wrapper->insertAtTail(
-                  new CallExpr(PRIM_SET_MEMBER, wrapper->_this,
-                               new_StringSymbol(formal->name), temp));
+              wrapper->insertAtTail(
+                new CallExpr(PRIM_SET_MEMBER, wrapper->_this,
+                             new_StringSymbol(formal->name), temp));
     }
   }
   update_symbols(wrapper->body, &copy_map);
@@ -586,7 +572,7 @@ buildPromotionWrapper(FnSymbol* fn,
   wrapper->addFlag(FLAG_PROMOTION_WRAPPER);
   wrapper->cname = astr("_promotion_wrap_", fn->cname);
   CallExpr* indicesCall = new CallExpr("_build_tuple"); // destructured in build
-  CallExpr* iterator = new CallExpr("_build_tuple");
+  CallExpr* iteratorCall = new CallExpr("_build_tuple");
   CallExpr* actualCall = new CallExpr(fn);
   int i = 1;
   for_formals(formal, fn) {
@@ -602,7 +588,7 @@ buildPromotionWrapper(FnSymbol* fn,
         INT_FATAL(fn, "error building promotion wrapper");
       new_formal->type = ts->type;
       wrapper->insertFormalAtTail(new_formal);
-      iterator->insertAtTail(new_formal);
+      iteratorCall->insertAtTail(new_formal);
       VarSymbol* index = newTemp(astr("_p_i_", istr(i)));
       wrapper->insertAtTail(new DefExpr(index));
       indicesCall->insertAtTail(index);
@@ -614,9 +600,15 @@ buildPromotionWrapper(FnSymbol* fn,
     i++;
   }
 
+  // Convert 1-tuples to their contents for the second half of this function
   Expr* indices = indicesCall;
   if (indicesCall->numActuals() == 1)
     indices = indicesCall->get(1)->remove();
+  Expr* iterator = iteratorCall;
+  if (iteratorCall->numActuals() == 1)
+    iterator = iteratorCall->get(1)->remove();
+
+
   if ((!fn->hasFlag(FLAG_EXTERN) && fn->getReturnSymbol() == gVoid) ||
       (fn->hasFlag(FLAG_EXTERN) && fn->retType == dtVoid)) {
     if (fSerial || fSerialForall)

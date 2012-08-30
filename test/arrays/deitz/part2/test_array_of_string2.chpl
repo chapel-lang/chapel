@@ -1,4 +1,4 @@
-var d : domain(2) = [1..3, 1..5];
+var d : domain(2) = {1..3, 1..5};
 
 var a : [d] string = "nada";
 

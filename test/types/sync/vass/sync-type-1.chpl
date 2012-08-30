@@ -1,0 +1,1 @@
+compilerWarning(typeToString(sync int));

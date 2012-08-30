@@ -1,6 +1,7 @@
 #define EXTERN
 #define __STDC_FORMAT_MACROS
 #include <inttypes.h>
+
 #include "chpl.h"
 #include "arg.h"
 #include "countTokens.h"
@@ -17,6 +18,7 @@
 #include "symbol.h"
 #include "config.h"
 
+char *chplBinaryName = NULL;
 FILE* html_index_file = NULL;
 
 char deletedIdFilename[FILENAME_MAX+1] = "";
@@ -40,6 +42,9 @@ const char* CHPL_TARGET_COMPILER = NULL;
 const char* CHPL_TASKS = NULL;
 const char* CHPL_THREADS = NULL;
 const char* CHPL_COMM = NULL;
+const char* CHPL_ATOMICS = NULL;
+const char* CHPL_NETWORK_ATOMICS = NULL;
+const char* CHPL_GMP = NULL;
 
 int fdump_html = 0;
 bool fdump_html_incude_system_modules = true;
@@ -50,6 +55,7 @@ static char log_flags[512] = "";
 static bool rungdb = false;
 bool fLibraryCompile = false;
 bool no_codegen = false;
+bool genExternPrototypes = false;
 int debugParserLevel = 0;
 bool developer = false;
 bool ignore_errors = false;
@@ -73,11 +79,16 @@ bool fNoLiveAnalysis = false;
 bool fNoBoundsChecks = false;
 bool fNoLocalChecks = false;
 bool fNoNilChecks = false;
+
+//Disable flag for transitional warning of 1.5 domain literal syntax.
+//This option should be removed after 1.6 is released!
+bool fNoWarnDomainLiteral = false;
+
 bool fNoChecks = false;
 bool fNoInline = false;
 bool fNoPrivatization = false;
 bool fNoOptimizeOnClauses = false;
-bool fNoRemoveEmptyRecords = false;
+bool fNoRemoveEmptyRecords = true;
 bool fNoRepositionDefExpr = false; // re-initialized in setupOrderedGlobals()
 int optimize_on_clause_limit = 20;
 int scalar_replace_limit = 8;
@@ -108,6 +119,8 @@ bool userSetCppLineno = false;
 int num_constants_per_variable = 1;
 char defaultDist[256] = "DefaultDist";
 int instantiation_limit = 256;
+bool fdocs = false;
+bool alphabetize = false;
 char mainModuleName[256] = "";
 bool printSearchDirs = false;
 bool printModuleFiles = false;
@@ -135,15 +148,102 @@ static bool printEnvHelp = false;
 static bool printSettingsHelp = false;
 static bool printLicense = false;
 static bool printVersion = false;
+static bool printChplHome = false;
 
 
-static void setupChplHome(void) {
+static bool isMaybeChplHome(const char* path)
+{
+  bool ret = false;
+  char* real = dirHasFile(path, "util/chplenv");
+  
+  if( real ) ret = true;
+
+  free(real);
+
+  return ret;
+}
+
+static void setupChplHome(const char* argv0) {
   const char* chpl_home = getenv("CHPL_HOME");
-  if (chpl_home == NULL) {
-    USR_FATAL("$CHPL_HOME must be set to run chpl");
-  } else {
-    strncpy(CHPL_HOME, chpl_home, FILENAME_MAX);
+  char* guess = NULL;
+
+
+  // Get the executable path.
+  guess = findProgramPath(argv0);
+  if (guess) {
+    // Determine CHPL_HOME based on the exe path.
+    // Determined exe path, but don't have a env var set
+    // Look for ../../../util/chplenv
+    // Remove the /bin/some-platform/chpl part
+    // from the path.
+    if( guess[0] ) {
+      int j = strlen(guess) - 5; // /bin and '\0'
+      for( ; j >= 0; j-- ) {
+        if( guess[j] == '/' &&
+            guess[j+1] == 'b' &&
+            guess[j+2] == 'i' &&
+            guess[j+3] == 'n' ) {
+          guess[j] = '\0';
+          break;
+        }
+      }
+    }
+
+    if( isMaybeChplHome(guess) ) {
+      // OK!
+    } else {
+      // Maybe we are in e.g. /usr/bin.
+      free(guess);
+      guess = NULL;
+    }
   }
+
+  if( chpl_home ) {
+    if( strlen(chpl_home) > FILENAME_MAX )
+      USR_FATAL("$CHPL_HOME=%s path too long", chpl_home);
+
+    if( guess == NULL ) {
+      // Could not find exe path, but have a env var set
+      strncpy(CHPL_HOME, chpl_home, FILENAME_MAX);
+    } else {
+      // We have env var and found exe path.
+      // Check that they match and emit a warning if not.
+
+      if( ! isSameFile(chpl_home, guess) ) {
+        // Not the same. Emit warning.
+        USR_WARN("$CHPL_HOME=%s mismatched with executable home=%s",
+                 chpl_home, guess);
+      }
+      // Since we have an enviro var, always use that.
+      strncpy(CHPL_HOME, chpl_home, FILENAME_MAX);
+    }
+  } else {
+    if( guess == NULL ) {
+      // Could not find enviro var, and could not
+      // guess at exe's path name.
+      USR_FATAL("$CHPL_HOME must be set to run chpl");
+    } else {
+      int rc;
+      
+      if( strlen(guess) > FILENAME_MAX )
+        USR_FATAL("chpl guessed home %s too long", guess);
+
+      // Determined exe path, but don't have a env var set
+      strncpy(CHPL_HOME, guess, FILENAME_MAX);
+      // Also need to setenv in this case.
+      rc = setenv("CHPL_HOME", guess, 0);
+      if( rc ) USR_FATAL("Could not setenv CHPL_HOME");
+    }
+  }
+
+  // Check that the resulting path is a Chapel distribution.
+  if( ! isMaybeChplHome(CHPL_HOME) ) {
+    // Bad enviro var.
+    USR_WARN("CHPL_HOME=%s is not a Chapel distribution", CHPL_HOME);
+  }
+
+  if( guess ) free(guess);
+
 }
 
 static const char* setupEnvVar(const char* varname, const char* script) {
@@ -159,9 +259,9 @@ static const char* setupEnvVar(const char* varname, const char* script) {
 // Can't rely on a variable initialization order for globals, so any
 // variables that need to be initialized in a particular order go here
 //
-static void setupOrderedGlobals(void) {
+static void setupOrderedGlobals(const char* argv0) {
   // Set up CHPL_HOME first
-  setupChplHome();
+  setupChplHome(argv0);
   
   // Then CHPL_* variables
   SETUP_ENV_VAR(CHPL_HOST_PLATFORM, "chplenv/platform --host");
@@ -171,6 +271,9 @@ static void setupOrderedGlobals(void) {
   SETUP_ENV_VAR(CHPL_TASKS, "chplenv/tasks");
   SETUP_ENV_VAR(CHPL_THREADS, "chplenv/threads");
   SETUP_ENV_VAR(CHPL_COMM, "chplenv/comm");
+  SETUP_ENV_VAR(CHPL_ATOMICS, "chplenv/atomics");
+  SETUP_ENV_VAR(CHPL_NETWORK_ATOMICS, "chplenv/atomics --network");
+  SETUP_ENV_VAR(CHPL_GMP, "chplenv/gmp");
 
   // These depend on the environment variables being set
   fLocal = !strcmp(CHPL_COMM, "none");
@@ -264,6 +367,7 @@ compute_program_name_loc(char* orig_argv0, const char** name, const char** loc) 
     *name = lastslash+1;
     *loc = argv0;
   }
+  chplBinaryName = (char*)*name;
 }
 
 
@@ -404,6 +508,8 @@ Record components:
 static ArgumentDescription arg_desc[] = {
  {"", ' ', NULL, "Module Processing Options", NULL, NULL, NULL, NULL},
  {"count-tokens", ' ', NULL, "Count tokens in main modules", "F", &countTokens, "CHPL_COUNT_TOKENS", NULL},
+ {"docs", ' ', NULL, "Runs documentation on the source file", "N", &fdocs, "CHPL_DOC", NULL },
+ {"docs-alphabetical", ' ', NULL, "Alphabetizes the documentation", "N", &alphabetize, NULL, NULL},
  {"main-module", ' ', "<module>", "Specify entry point module", "S256", mainModuleName, NULL, NULL},
  {"module-dir", 'M', "<directory>", "Add directory to module search path", "P", moduleSearchPath, NULL, addModulePath},
  {"print-code-size", ' ', NULL, "Print code size of main modules", "F", &printTokens, "CHPL_PRINT_TOKENS", NULL},
@@ -442,10 +548,13 @@ static ArgumentDescription arg_desc[] = {
  {"bounds-checks", ' ', NULL, "Enable [disable] bounds checking", "n", &fNoBoundsChecks, "CHPL_NO_BOUNDS_CHECKING", NULL},
  {"local-checks", ' ', NULL, "Enable [disable] local block checking", "n", &fNoLocalChecks, NULL, NULL},
  {"nil-checks", ' ', NULL, "Enable [disable] nil checking", "n", &fNoNilChecks, "CHPL_NO_NIL_CHECKS", NULL},
+ //Disable flag for transitional warning of 1.5 domain literal syntax.  This option should be removed after 1.6 is released!
+ {"warn-domain-literal", ' ', NULL, "[Disable] Enable old domain literal syntax warnings", "n", &fNoWarnDomainLiteral, "CHPL_NO_WARN_DOMAIN_LITERAL", NULL},
 
  {"", ' ', NULL, "C Code Generation Options", NULL, NULL, NULL, NULL},
  {"codegen", ' ', NULL, "[Don't] Do code generation", "n", &no_codegen, "CHPL_NO_CODEGEN", NULL},
  {"cpp-lines", ' ', NULL, "[Don't] Generate #line annotations", "N", &printCppLineno, "CHPL_CG_CPP_LINES", noteCppLinesSet},
+ {"gen-extern-prototypes", ' ', NULL, "[Don't] generate C prototypes for extern declarations", "F", &genExternPrototypes, "CHPL_GEN_EXTERN_PROTOTYPES", NULL},
  {"max-c-ident-len", ' ', NULL, "Maximum length of identifiers in generated code, 0 for unlimited", "I", &fMaxCIdentLen, "CHPL_MAX_C_IDENT_LEN", NULL},
  {"savec", ' ', "<directory>", "Save generated C code in directory", "P", saveCDir, "CHPL_SAVEC_DIR", verifySaveCDir},
 
@@ -489,11 +598,11 @@ static ArgumentDescription arg_desc[] = {
  {"gen-ids", ' ', NULL, "Pepper generated code with BaseAST::ids", "F", &fGenIDS, "CHPL_GEN_IDS", NULL},
  {"html", 't', NULL, "Dump IR in HTML format", "T", &fdump_html, "CHPL_HTML", NULL},
  {"html-user", ' ', NULL, "Dump IR in HTML for user module(s) only", "T", &fdump_html, NULL, setHtmlUser},
- {"log", 'd', "<letters>", "Dump IR in text format", "S512", log_flags, "CHPL_LOG_FLAGS", log_flags_arg},
+ {"log", 'd', "<letters>", "Dump IR in text format. See log.h for definition of <letters>. Empty argument (\"-d=\" or \"--log=\") means \"log all passes\"", "S512", log_flags, "CHPL_LOG_FLAGS", log_flags_arg},
  {"log-dir", ' ', "<path>", "Specify log directory", "P", log_dir, "CHPL_LOG_DIR", NULL},
  {"log-ids", ' ', NULL, "Include BaseAST::ids in log files", "F", &fLogIds, "CHPL_LOG_IDS", NULL},
  {"log-module", ' ', "<module-name>", "Restrict IR dump to the named module", "S256", log_module, "CHPL_LOG_MODULE", NULL},
- {"log-symbol", ' ', "<symbol-name>", "Restrict IR dump to the named symbol(s)", "S256", log_symbol, "CHPL_LOG_SYMBOL", NULL},
+// {"log-symbol", ' ', "<symbol-name>", "Restrict IR dump to the named symbol(s)", "S256", log_symbol, "CHPL_LOG_SYMBOL", NULL}, // This doesn't work yet.
  {"parser-debug", 'D', NULL, "Set parser debug level", "+", &debugParserLevel, "CHPL_PARSER_DEBUG", NULL},
  {"print-dispatch", ' ', NULL, "Print dynamic dispatch table", "F", &fPrintDispatch, NULL, NULL},
  {"print-statistics", ' ', "[n|k|t]", "Print AST statistics", "S256", fPrintStatistics, NULL, NULL},
@@ -520,6 +629,7 @@ static ArgumentDescription arg_desc[] = {
  {"reposition-def-expressions", ' ', NULL, "Enable [disable] repositioning of def expressions to usage points", "n", &fNoRepositionDefExpr, "CHPL_DISABLE_REPOSITION_DEF_EXPR", NULL},
  {"timers", ' ', NULL, "Enable general timers one to five", "F", &fEnableTimers, "CHPL_ENABLE_TIMERS", NULL},
  {"warn-promotion", ' ', NULL, "Warn about scalar promotion", "F", &fWarnPromotion, NULL, NULL},
+ {"print-chpl-home", ' ', NULL, "Print CHPL_HOME and path to this executable and exit", "F", &printChplHome, NULL, NULL},
  {0}
 };
 
@@ -539,7 +649,7 @@ static void setupDependentVars(void) {
 }
 
 
-static void printStuff(void) {
+static void printStuff(const char* argv0) {
   bool shouldExit = false;
   bool printedSomething = false;
 
@@ -563,9 +673,16 @@ static void printStuff(void) {
             );
     printedSomething = true;
   }
+  if( printChplHome ) {
+    char* guess = findProgramPath(argv0);
+    printf("%s\t%s\n", CHPL_HOME, guess);
+    free(guess);
+    printedSomething = true;
+  }
+
   if (printHelp || (!printedSomething && arg_state.nfile_arguments < 1)) {
     if (printedSomething) printf("\n");
-    usage(&arg_state, (printHelp == false), printEnvHelp, printSettingsHelp);
+    usage(&arg_state, (!printHelp), printEnvHelp, printSettingsHelp);
     shouldExit = true;
     printedSomething = true;
   }
@@ -591,7 +708,7 @@ int main(int argc, char *argv[]) {
   initPrimitive();
   initPrimitiveTypes();
   initTheProgram();
-  setupOrderedGlobals();
+  setupOrderedGlobals(argv[0]);
   compute_program_name_loc(argv[0], &(arg_state.program_name),
                            &(arg_state.program_loc));
   process_args(&arg_state, argc, argv);
@@ -599,7 +716,7 @@ int main(int argc, char *argv[]) {
   setupDependentVars();
   setupModulePaths();
   recordCodeGenStrings(argc, argv);
-  printStuff();
+  printStuff(argv[0]);
   if (rungdb)
     runCompilerInGDB(argc, argv);
   if (fdump_html || strcmp(log_flags, ""))

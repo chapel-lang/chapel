@@ -13,8 +13,8 @@ var D: [1..n, 1..n] (vec3, vec3, vec3);
 var E: [1..n, 1..n] 3*(real, real, real);
 var F: [1..n, 1..n] ((real, real, real), (real, real, real), (real, real, real));
 
-forall (i,j) in [1..n, 1..n] {
-  forall (x,y) in [1..3, 1..3] {
+forall (i,j) in {1..n, 1..n} {
+  forall (x,y) in {1..3, 1..3} {
     A(i,j)(x)(y) = (i-1)*9*n + (j-1)*9 + (x-1)*3 + y;
     B(i,j)(x)(y) = (i-1)*9*n + (j-1)*9 + (x-1)*3 + y;
     C(i,j)(x)(y) = (i-1)*9*n + (j-1)*9 + (x-1)*3 + y;

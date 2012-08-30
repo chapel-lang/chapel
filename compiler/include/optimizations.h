@@ -1,6 +1,8 @@
 #ifndef _OPTIMIZATIONS_H_
 #define _OPTIMIZATIONS_H_
 
+#include <map>
+
 class BitVec;
 
 void collapseBlocks(BlockStmt* block);
@@ -23,16 +25,16 @@ void liveVariableAnalysis(FnSymbol* fn,
                           Map<Symbol*,int>& localID,
                           Vec<SymExpr*>& useSet,
                           Vec<SymExpr*>& defSet,
-                          Vec<BitVec*>& OUT);
+                          std::vector<BitVec*>& OUT);
 
 void
 buildDefUseChains(FnSymbol* fn,
-                  Map<SymExpr*,Vec<SymExpr*>*>& DU,
-                  Map<SymExpr*,Vec<SymExpr*>*>& UD);
+                  std::map<SymExpr*,Vec<SymExpr*>*>& DU,
+                  std::map<SymExpr*,Vec<SymExpr*>*>& UD);
 
 void
-freeDefUseChains(Map<SymExpr*,Vec<SymExpr*>*>& DU,
-                 Map<SymExpr*,Vec<SymExpr*>*>& UD);
+freeDefUseChains(std::map<SymExpr*,Vec<SymExpr*>*>& DU,
+                 std::map<SymExpr*,Vec<SymExpr*>*>& UD);
 
 void
 remoteValueForwarding(Vec<FnSymbol*>& fns);

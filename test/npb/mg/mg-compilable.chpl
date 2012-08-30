@@ -147,10 +147,10 @@ type coeff = 4*real; // HACK
 //     used in this computation
 
 /* HACK: domains don't parse yet
-const Levels: domain(1) = [1..numLevels];
-const Base: domain(3) dmapped(Block(3)) = [1..nx, 1..ny, 1..nz];
+const Levels: domain(1) = {1..numLevels};
+const Base: domain(3) dmapped(Block(3)) = {1..nx, 1..ny, 1..nz};
 const Hier: [lvl in Levels] domain(Base) = Base by -2**(lvl-1);
-const Stencil: domain(3) = [-1..1, -1..1, -1..1];
+const Stencil: domain(3) = {-1..1, -1..1, -1..1};
 */
 class mydomain { }       // HACK
 const Levels: mydomain;  // HACK
@@ -415,14 +415,14 @@ proc rprj3(S, R) {
 
 // the computation proceeds very similarly to the previous stencils,
 // except that we perform the eight topologies in parallel.  We also
-// iterate over the coarser (S) array's domain, and apply offsets to
+// iterate over the coarser (S) array's domain,] and apply offsets to
 // the finer (R) array offsets in order to get the different
 // topologies.
 
 proc interp(R, S) {
 /* HACK: domains and arrays don't parse yet
-  const IDom: domain(3) = [-1..0, -1..0, -1..0];
-  const IStn: [(i,j,k) in IDom] domain(3) = [i..0, j..0, k..0];
+  const IDom: domain(3) = {-1..0, -1..0, -1..0};
+  const IStn: [(i,j,k) in IDom] domain(3) = {i..0, j..0, k..0};
   const w: [ijk in IDom] real = 1.0 / IStn.numIndices();
 */
   const IDom: mydomain;  // HACK

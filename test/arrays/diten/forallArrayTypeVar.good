@@ -1,1 +1,1 @@
-forallArrayTypeVar.chpl:1: error: illegal assignment of value to type
+forallArrayTypeVar.chpl:1: syntax error: near ';'

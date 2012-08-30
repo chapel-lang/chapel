@@ -44,7 +44,7 @@ class PrivateDom: BaseRectangularDom {
   proc dsiHigh return numLocales-1;
   proc dsiStride return 0;
   proc dsiSetIndices(x: domain) { compilerError("cannot reassign private domain"); }
-  proc dsiGetIndices() { return [0..numLocales-1]; }
+  proc dsiGetIndices() { return {0..numLocales-1}; }
 
   proc dsiRequiresPrivatization() param return true;
   proc linksDistribution() param return false;

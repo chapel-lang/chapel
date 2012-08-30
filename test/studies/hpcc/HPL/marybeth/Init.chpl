@@ -72,7 +72,7 @@ record HPLparams {
      infile.readln(numProbSizes);
      if numProbSizes < 1 then 
         stderr.writeln("HPL ERROR: Number of values of N is less than 1");
-        else NDom = [1..numProbSizes];
+        else NDom = {1..numProbSizes};
      for n in N { 
        infile.read(n);
        if n < 0 then 
@@ -83,7 +83,7 @@ record HPLparams {
      infile.readln(numBlockSizes);
      if numBlockSizes < 1 then 
         stderr.writeln("HPL ERROR: Number of values of NB is less than 1");
-        else NBDom = [1..numBlockSizes];
+        else NBDom = {1..numBlockSizes};
      for nb in NB { 
        infile.read(nb);
        if nb < 1 then 
@@ -96,7 +96,7 @@ record HPLparams {
      infile.readln(numProcessGrids);
      if numProcessGrids < 1 then 
         stderr.writeln("HPL ERROR: Number of values of grids is less than 1");
-        else GridDom = [1..numProcessGrids];
+        else GridDom = {1..numProcessGrids};
      for p in P {
        infile.read(p);
        if p < 1 then 
@@ -115,14 +115,14 @@ record HPLparams {
      infile.readln(numPanelFacts);
      if numPanelFacts < 1 then 
         stderr.writeln("HPL ERROR: Number of values of PFACT is less than 1");
-        else PFactDom = [1..numPanelFacts];
+        else PFactDom = {1..numPanelFacts};
      for pf in PFact do pf = infile.read(int):factortype;
      infile.readln();
 
      infile.readln(numRecurStops);
      if numRecurStops < 1 then 
         stderr.writeln("HPL ERROR: Number of values of NBMIN is less than 1");
-        else NBMinDom = [1..numRecurStops];
+        else NBMinDom = {1..numRecurStops};
      for nbmin in NBMin {
        infile.read(nbmin);
        if nbmin < 1 then 
@@ -133,7 +133,7 @@ record HPLparams {
      infile.readln(numPanels);
      if numPanels < 1 then 
         stderr.writeln("HPL ERROR: Number of values of NDIV is less than 1");
-        else NDivDom = [1..numPanels];
+        else NDivDom = {1..numPanels};
      for nd in NDiv {
        infile.read(nd);
        if nd < 2 then 
@@ -144,21 +144,21 @@ record HPLparams {
      infile.readln(numRecurPanelFacts);
      if numRecurPanelFacts < 1 then 
         stderr.writeln("HPL ERROR: Number of values of RFACT is less than 1");
-        else RFactDom = [1..numRecurPanelFacts];
+        else RFactDom = {1..numRecurPanelFacts};
      for rf in RFact do rf = infile.read(int):factortype; 
      infile.readln();
 
      infile.readln(numBCasts);
      if numBCasts < 1 then 
         stderr.writeln("HPL ERROR: Number of values of BCAST is less than 1");
-        else BCastDom = [1..numBCasts];
+        else BCastDom = {1..numBCasts};
      for bc in BCast do bc = infile.read(int):bcasttype;
      infile.readln();
          
      infile.readln(numDepths);
      if numDepths < 1 then 
         stderr.writeln("HPL ERROR: Number of values of DEPTH is less than 1");
-        else DepthDom = [1..numDepths];
+        else DepthDom = {1..numDepths};
      for d in Depth {
        d = infile.read(int);
        if d < 0 then 

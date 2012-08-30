@@ -11,6 +11,30 @@
 #include "chpltypes.h"
 #include "error.h"
 
+// FIX ME WHEN WE SORT OUT THIS BATCH SCHEDULER + LAUNCHER STUFF
+// THIS SHOULD GO INTO SOME HEADER FILE
+typedef enum {
+  aprun_cc,   // binding policy
+  aprun_n,    // cores per locale
+  aprun_d,    // num locales
+  aprun_N,    // locales per node
+  aprun_j,    // cpus per node (newer versions of aprun)
+  aprun_none
+} aprun_arg_t;
+
+void initAprunAttributes(void);
+const char* getCoresPerLocaleStr(void);
+int getCoresPerLocale(void);
+const char* getLocalesPerNodeStr(void);
+int getLocalesPerNode(void);
+const char* getCPUsPerNodeStr(void);
+int getCPUsPerNode(void);
+const char* getNumLocalesStr(void);
+const char* getAprunArgStr(aprun_arg_t arg); // possibly inline
+int getAprunArg(aprun_arg_t argt);           // possibly inline
+//
+// FIX ME ABOVE
+//
 
 #define baseExpectFilename ".chpl-expect-"
 #define EXPECT "expect"
@@ -18,11 +42,13 @@
 #define CHPL_CC_ARG "-cc"
 #define CHPL_WALLTIME_FLAG "--walltime"
 #define CHPL_QUEUE_FLAG "--queue"
+#define CHPL_GENERATE_QSUB_SCRIPT "--generate-qsub-script"
 
 static char *_ccArg = NULL;
 static char* debug = NULL;
 static char* walltime = NULL;
 static char* queue = NULL;
+static int generate_qsub_script = 0;
 
 static char expectFilename[FILENAME_MAX];
 
@@ -63,90 +89,96 @@ static qsubVersion determineQsubVersion(void) {
   }
 }
 
-static int getNumCoresPerLocale(void) {
-  const int buflen = 256;
-  char buf[buflen];
-  int coreMask;
-  int bitMask = 0x1;
-  int numCores = -1;
-  char* numCoresString = getenv("CHPL_LAUNCHER_CORES_PER_LOCALE");
-
-  if (numCoresString) {
-    numCores = atoi(numCoresString);
-    if (numCores <= 0)
-      chpl_warning("CHPL_LAUNCHER_CORES_PER_LOCALE set to invalid value.", 0, 0);
-  }
-
-  if (numCores <= 0) {
-    char *argv[3];
-    int charsRead;
-    argv[0] = (char *) "cnselect";
-    argv[1] = (char *) "-Lcoremask";
-    argv[2] = NULL;
-  
-    memset(buf, 0, buflen);
-    if ((charsRead = chpl_run_utility1K("cnselect", argv, buf, buflen)) <= 0) {
-      chpl_error("Error trying to determine number of cores per node", 0, 0);
-    }
-
-    if (sscanf(buf, "%d", &coreMask) != 1) {
-      chpl_error("unable to determine number of cores per locale; please set CHPL_LAUNCHER_CORES_PER_LOCALE", 0, 0);
-    }
-    coreMask >>= 1;
-    numCores = 1;
-    while (coreMask & bitMask) {
-      coreMask >>= 1;
-      numCores += 1;
-    }
-  }
-
-  return numCores;
-}
-
+//
+// If generate_qsub_script, return the filename of the qsub script that
+//   was written with the qsub options
+// else return the qsub options for the command line as a string
+//
 static char* genQsubOptions(char* genFilename, char* projectString, qsubVersion qsub, 
                             int32_t numLocales, int32_t numCoresPerLocale) {
   const size_t maxOptLength = 256;
-  char* optionString;
+  char* optionString = NULL;
   int length = 0;
+  FILE *qsubScript = NULL;
+  char *qsubFilename = expectFilename;
+
   if (!queue) {
     queue = getenv("CHPL_LAUNCHER_QUEUE");
   }
   if (!walltime) {
     walltime = getenv("CHPL_LAUNCHER_WALLTIME");
   }
-  optionString = chpl_mem_allocMany(maxOptLength, sizeof(char), CHPL_RT_MD_COMMAND_BUFFER, -1, "");
 
-  length += snprintf(optionString + length, maxOptLength - length,
-                     "-z -V -I -N Chpl-%.10s", genFilename);
+  if (generate_qsub_script) {
+    pid_t mypid = debug ? 0 : getpid();
+    sprintf(qsubFilename, "qsub.%s-%d", genFilename, (int) mypid);
+    qsubScript = fopen(qsubFilename, "w");
+    fprintf(qsubScript, "#PBS -j oe\n");
+    fprintf(qsubScript, "#PBS -zV\n");
+    fprintf(qsubScript, "#PBS -N Chpl-%.10s\n", genFilename);
+  } else {
+    optionString = chpl_mem_allocMany(maxOptLength, sizeof(char),
+                                      CHPL_RT_MD_COMMAND_BUFFER, -1, "");
+    length += snprintf(optionString + length, maxOptLength - length,
+                       "-z -V -I -N Chpl-%.10s", genFilename);
+  }
 
   if (projectString && strlen(projectString) != 0) {
-    length += snprintf(optionString + length, maxOptLength - length,
-                       " -A %s", projectString);
+    if (generate_qsub_script) {
+      fprintf(qsubScript, "#PBS -A %s\n", projectString);
+    } else {
+      length += snprintf(optionString + length, maxOptLength - length,
+                         " -A %s", projectString);
+    }
   }
   if (queue) {
-    length += snprintf(optionString + length, maxOptLength - length,
-                       " -q %s", queue);
+    if (generate_qsub_script) {
+      fprintf(qsubScript, "#PBS -q %s\n", queue);
+    } else {
+      length += snprintf(optionString + length, maxOptLength - length,
+                         " -q %s", queue);
+    }
   }
   if (walltime) {
-    length += snprintf(optionString + length, maxOptLength - length,
-                       " -l walltime=%s", walltime);
+    if (generate_qsub_script) {
+      fprintf(qsubScript, "#PBS -l walltime=%s\n", walltime);
+    } else {
+      length += snprintf(optionString + length, maxOptLength - length,
+                         " -l walltime=%s", walltime);
+    }
   }
   switch (qsub) {
   case pbspro:
   case unknown:
-    length += snprintf(optionString + length, maxOptLength - length,
-                       " -l mppwidth=%d -l mppnppn=%d -l mppdepth=%d",
-                       numLocales, procsPerNode, numCoresPerLocale);
+    if (generate_qsub_script) {
+      fprintf(qsubScript, "#PBS -l mppwidth=%d\n", numLocales);
+      fprintf(qsubScript, "#PBS -l mppnppn=%d\n", procsPerNode);
+      fprintf(qsubScript, "#PBS -l mppdepth=%d\n", numCoresPerLocale);
+    } else {
+      length += snprintf(optionString + length, maxOptLength - length,
+                         " -l mppwidth=%d -l mppnppn=%d -l mppdepth=%d",
+                         numLocales, procsPerNode, numCoresPerLocale);
+    }
     break;
   case nccs:
-    if (!queue && !walltime)
-      chpl_error("An execution time must be specified for the NCCS launcher if no queue is\n"
-                 "specified -- use the CHPL_LAUNCHER_WALLTIME and/or CHPL_LAUNCHER_QUEUE\n"
-                 "environment variables", 0, 0);
-    length += snprintf(optionString + length, maxOptLength - length,
-                       " -l size=%d\n", numCoresPerLocale*numLocales);
+    if (generate_qsub_script) {
+      fprintf(qsubScript, "#PBS -l size=%d\n", numCoresPerLocale*numLocales);
+    } else {
+      if (!queue && !walltime)
+        chpl_error("An execution time must be specified for the NCCS launcher if no queue is\n"
+                   "specified -- use the CHPL_LAUNCHER_WALLTIME and/or CHPL_LAUNCHER_QUEUE\n"
+                   "environment variables", 0, 0);
+      length += snprintf(optionString + length, maxOptLength - length,
+                         " -l size=%d\n", numCoresPerLocale*numLocales);
+    }
     break;
   }
+
+  if (generate_qsub_script) {
+    fclose(qsubScript);
+    optionString = qsubFilename;
+  }
+
   return optionString;
 }
 
@@ -155,15 +187,17 @@ static char** chpl_launch_create_argv(int argc, char* argv[],
   const int largc = 2;
   char *largv[largc];
   int i;
-  FILE* expectFile;
+  FILE* expectFile = NULL;
   char* projectString = getenv(launcherAccountEnvvar);
   char* basenamePtr = strrchr(argv[0], '/');
   char* qsubOptions;
+  FILE* qsubScript = NULL;
+  FILE *outfile;
   pid_t mypid;
   int numCoresPerLocale;
-  const char *host = getenv("CHPL_HOST_PLATFORM");
-  const char *ccArg = _ccArg ? _ccArg :
-    (host && !strcmp(host, "xe-cle") ? "none" : "cpu");
+  int CPUsPerNode;
+  int LocalesPerNode;
+  const char *ccArg = _ccArg ? _ccArg : "none";
 
   if (basenamePtr == NULL) {
       basenamePtr = argv[0];
@@ -177,103 +211,161 @@ static char** chpl_launch_create_argv(int argc, char* argv[],
   } else {
     mypid = 0;
   }
-  sprintf(expectFilename, "%s%d", baseExpectFilename, (int)mypid);
+  snprintf(expectFilename, FILENAME_MAX, "%s%d",
+           baseExpectFilename, (int)mypid);
 
-  numCoresPerLocale = getNumCoresPerLocale();
+  initAprunAttributes();
+  numCoresPerLocale = getCoresPerLocale();
+  CPUsPerNode = getCPUsPerNode();
+  LocalesPerNode = getLocalesPerNode();
 
-  qsubOptions = genQsubOptions(basenamePtr, projectString, determineQsubVersion(),
+  qsubOptions = genQsubOptions(basenamePtr, projectString,
+                               determineQsubVersion(),
                                numLocales, numCoresPerLocale);
 
-  expectFile = fopen(expectFilename, "w");
-  if (verbosity < 2) {
-    fprintf(expectFile, "log_user 0\n");
-  }
-  fprintf(expectFile, "set timeout -1\n");
-  fprintf(expectFile, "set prompt \"(%%|#|\\\\$|>) $\"\n");
-  if (verbosity > 0) {
-    fprintf(expectFile, "spawn tcsh -f\n");
-    fprintf(expectFile, "expect -re $prompt\n");
-    fprintf(expectFile, "send \"df -T . \\n\"\n");
+  if (generate_qsub_script) {
+    qsubScript = fopen(qsubOptions, "a");
+    if (!qsubScript) {
+      char msg[256];
+      snprintf(msg, 256, "Error creating qsub script '%s': %s",
+               qsubOptions, strerror(errno));
+      chpl_error(msg, 0, 0);
+    }
+    fprintf(qsubScript, "cd $PBS_O_WORKDIR\n");
+    fprintf(qsubScript, "aprun ");
+  } else {
+    expectFile = fopen(expectFilename, "w");
+    if (!expectFile) {
+      char msg[256];
+      snprintf(msg, 256, "Error creating temporary script '%s': %s",
+               qsubOptions, strerror(errno));
+      chpl_error(msg, 0, 0);
+    }
+
+    if (verbosity < 2) {
+      fprintf(expectFile, "log_user 0\n");
+    }
+    fprintf(expectFile, "set timeout -1\n");
+    fprintf(expectFile, "set chpl_prompt \"chpl-%d # \"\n", mypid);
+    if (verbosity > 0) {
+      fprintf(expectFile, "spawn tcsh -f\n");
+      fprintf(expectFile, "send \"set prompt=\\\"$chpl_prompt\\\"\\n\"\n");
+      fprintf(expectFile, "expect -re \"\\n$chpl_prompt\" {}\n");
+      fprintf(expectFile, "send \"df -T . \\n\"\n");
+      fprintf(expectFile, "expect {\n");
+      fprintf(expectFile, "  -ex lustre {}\n");
+      fprintf(expectFile, "  -re \"\\n$chpl_prompt\" {\n");
+      fprintf(expectFile, "    send_user \"warning: Executing this program from a non-Lustre file system may cause it \\nto be unlaunchable, or for file I/O to be performed on a non-local file system.\\nContinue anyway? (\\[y\\]/n) \"\n");
+      fprintf(expectFile, "    interact {\n");
+      fprintf(expectFile, "      \\015           {return}\n");
+      fprintf(expectFile, "      -echo -re \"y|Y\" {return}\n");
+      fprintf(expectFile, "      -echo -re \"n|N\" {send_user \"\\n\" ; exit 0}\n");
+      fprintf(expectFile, "      eof               {send_user \"\\n\" ; exit 0}\n");
+      fprintf(expectFile, "      \003              {send_user \"\\n\" ; exit 0}\n");
+      fprintf(expectFile, "      -echo -re \".\"   {send_user \"\\nContinue anyway? (\\[y\\]/n) \"}\n");
+      fprintf(expectFile, "    }\n");
+      fprintf(expectFile, "    send_user  \"\\n\"\n");
+      fprintf(expectFile, "  }\n");
+      fprintf(expectFile, "}\n");
+      fprintf(expectFile, "send \"exit\\n\"\n");
+      fprintf(expectFile, "close\n");
+    }
+    fprintf(expectFile, "spawn qsub %s\n", qsubOptions);
     fprintf(expectFile, "expect {\n");
-    fprintf(expectFile, "  -ex lustre {}\n");
-    fprintf(expectFile, "  -re $prompt {\n");
-    fprintf(expectFile, "    send_user \"warning: Executing this program from a non-Lustre file system may cause it \\nto be unlaunchable, or for file I/O to be performed on a non-local file system.\\nContinue anyway? (\\[y\\]/n) \"\n");
-    fprintf(expectFile, "    interact {\n");
-    fprintf(expectFile, "      \\015           {return}\n");
-    fprintf(expectFile, "      -echo -re \"y|Y\" {return}\n");
-    fprintf(expectFile, "      -echo -re \"n|N\" {send_user \"\\n\" ; exit 0}\n");
-    fprintf(expectFile, "      eof               {send_user \"\\n\" ; exit 0}\n");
-    fprintf(expectFile, "      \003              {send_user \"\\n\" ; exit 0}\n");
-    fprintf(expectFile, "      -echo -re \".\"   {send_user \"\\nContinue anyway? (\\[y\\]/n) \"}\n");
-    fprintf(expectFile, "    }\n");
-    fprintf(expectFile, "    send_user  \"\\n\"\n");
-    fprintf(expectFile, "  }\n");
+    fprintf(expectFile, "  \"A project was not specified\" {send_user "
+            "\"error: A project account must be specified via \\$" 
+            launcherAccountEnvvar "\\n\" ; exit 1}\n");
+    fprintf(expectFile, "  -ex \"qsub: waiting\" {}\n");
     fprintf(expectFile, "}\n");
-    fprintf(expectFile, "send \"exit\\n\"\n");
+    fprintf(expectFile, "expect -re \"qsub:.*ready\" {}\n");
+    fprintf(expectFile, "send \"tcsh -f\\n\"\n");
+    fprintf(expectFile, "send \"set prompt=\\\"$chpl_prompt\\\"\\n\"\n");
+    fprintf(expectFile, "expect -re \"\\n$chpl_prompt\" {}\n");
+    fprintf(expectFile, "send \"cd \\$PBS_O_WORKDIR\\n\"\n");
+    fprintf(expectFile, "expect -re \"\\n$chpl_prompt\" {}\n");
+    if (verbosity > 2) {
+      fprintf(expectFile, "send \"aprun -cc %s -q -b %s%d %s%d %s%d ", ccArg,
+              getCoresPerLocaleStr(), numCoresPerLocale,
+              getNumLocalesStr(), 1 /* only run on one locale */,
+              getLocalesPerNodeStr(), LocalesPerNode);
+      if (CPUsPerNode != -1) {
+        fprintf(expectFile, "%s%d ", getCPUsPerNodeStr(), CPUsPerNode);
+      }
+      fprintf(expectFile, "ls %s\\n\"\n", chpl_get_real_binary_name());
+      fprintf(expectFile, "expect {\n");
+      fprintf(expectFile, "  \"failed: chdir\" {send_user "
+              "\"error: %s must be launched from and/or stored on a "
+              "cross-mounted file system\\n\" ; exit 1}\n", 
+              basenamePtr);
+      fprintf(expectFile, "  -ex \"$chpl_prompt\" {}\n");
+      fprintf(expectFile, "}\n");
+    }
+    fprintf(expectFile, "send \"%s aprun ",
+            isatty(fileno(stdout)) ? "" : "stty -onlcr;");
   }
-  fprintf(expectFile, "spawn qsub %s\n", qsubOptions);
-  fprintf(expectFile, "expect {\n");
-  fprintf(expectFile, "  \"A project was not specified\" {send_user "
-          "\"error: A project account must be specified via \\$" 
-          launcherAccountEnvvar "\\n\" ; exit 1}\n");
-  fprintf(expectFile, "  -re $prompt\n");
-  fprintf(expectFile, "}\n");
-  fprintf(expectFile, "send \"cd \\$PBS_O_WORKDIR\\n\"\n");
-  fprintf(expectFile, "expect -re $prompt\n");
-  fprintf(expectFile, "send \"tcsh -f\\n\"\n");
-  fprintf(expectFile, "expect -re $prompt\n");
-  fprintf(expectFile, "set chpl_prompt \"chpl-%d # \"\n", mypid);
-  fprintf(expectFile, "send \"set prompt=\\\"$chpl_prompt\\\"\\n\"\n");
-  fprintf(expectFile, "expect -ex $chpl_prompt\n");
-  fprintf(expectFile, "expect -ex $chpl_prompt\n");
-  if (verbosity > 2) {
-    fprintf(expectFile, "send \"aprun -cc %s -q -b -d%d -n1 -N1 ls %s\\n\"\n",
-            ccArg, numCoresPerLocale, chpl_get_real_binary_name());
-    fprintf(expectFile, "expect {\n");
-    fprintf(expectFile, "  \"failed: chdir\" {send_user "
-            "\"error: %s must be launched from and/or stored on a "
-            "cross-mounted file system\\n\" ; exit 1}\n", 
-            basenamePtr);
-    fprintf(expectFile, "  -ex $chpl_prompt\n");
-    fprintf(expectFile, "}\n");
+
+  if (generate_qsub_script) {
+    outfile = qsubScript;
+  } else {
+    outfile = expectFile;
   }
-  fprintf(expectFile, "send \"%s aprun ",
-          isatty(fileno(stdout)) ? "" : "stty -onlcr;");
+
   if (verbosity < 2) {
-    fprintf(expectFile, "-q ");
+    fprintf(outfile, "-q ");
   }
-  fprintf(expectFile, "-cc %s -d%d -n%d -N%d %s", ccArg, numCoresPerLocale,
-          numLocales, procsPerNode, chpl_get_real_binary_name());
+  fprintf(outfile, "-cc %s %s%d %s%d %s%d ", ccArg,
+          getCoresPerLocaleStr(), numCoresPerLocale,
+          getNumLocalesStr(), numLocales,
+          getLocalesPerNodeStr(), LocalesPerNode);
+  if (CPUsPerNode != -1) {
+    fprintf(outfile, "%s%d ", getCPUsPerNodeStr(), CPUsPerNode);
+  }
+  fprintf(outfile, "%s", chpl_get_real_binary_name());
   for (i=1; i<argc; i++) {
-    fprintf(expectFile, " '%s'", argv[i]);
+    fprintf(outfile, " '%s'", argv[i]);
   }
-  fprintf(expectFile, "; echo CHPL_EXIT_CODE:\\$?\\n\"\n");
-  // Suck up the aprun command
-  fprintf(expectFile, "expect -re {.+\\n}\n");
-  fprintf(expectFile, "interact -o -ex \"CHPL_EXIT_CODE:\" {return}\n");
-  fprintf(expectFile, "expect {\n");
-  fprintf(expectFile, "  -ex \"0\" {set exitval \"0\"}\n");
-  fprintf(expectFile, "  -re {\\d+} {set exitval \"1\"}\n");
-  fprintf(expectFile, "}\n");
-  fprintf(expectFile, "expect -ex $chpl_prompt\n");
-  if (verbosity > 1) {
-    fprintf(expectFile, "send_user \"\\n\"\n");
+
+  if (generate_qsub_script) {
+    fprintf(qsubScript, "\n\n");
+    fclose(qsubScript);
+    fprintf(stdout, "QSUB script written to '%s'\n", qsubOptions);
+    return NULL;
+  } else {
+  fprintf(expectFile, "\\n\"\n");
+    fprintf(expectFile, "interact -o -ex \"$chpl_prompt\" {return}\n");
+    fprintf(expectFile, "send \"echo CHPL_EXIT_CODE:\\$?\\n\"\n");
+    fprintf(expectFile, "expect {\n");
+    fprintf(expectFile, "  -ex \"CHPL_EXIT_CODE:0\" {set exitval \"0\"}\n");
+    fprintf(expectFile, "  -re \"CHPL_EXIT_CODE:.\" {set exitval \"1\"}\n");
+    fprintf(expectFile, "}\n");
+    fprintf(expectFile, "expect -re \"\\n$chpl_prompt\" {}\n");
+    fprintf(expectFile, "send \"exit\\n\"\n"); // exit tcsh
+    fprintf(expectFile, "send \"exit\\n\"\n"); // exit qsub
+    fprintf(expectFile, "close\n");
+    if (verbosity > 1) {
+      fprintf(expectFile, "send_user \"\\n\\n\"\n");
+    }
+    fprintf(expectFile, "exit $exitval\n");    // exit
+    fclose(expectFile);
+
+    largv[0] = (char *) EXPECT;
+    largv[1] = expectFilename;
+
+    return chpl_bundle_exec_args(0, NULL, largc, largv);
   }
-  fprintf(expectFile, "exit $exitval\n");
-  fclose(expectFile);
 
-  largv[0] = (char *) EXPECT;
-  largv[1] = expectFilename;
+}
 
-  return chpl_bundle_exec_args(0, NULL, largc, largv);
+static void genQsubScript(int argc, char *argv[], int numLocales) {
+  chpl_launch_create_argv(argc, argv, numLocales);
 }
 
 static void chpl_launch_cleanup(void) {
   if (!debug) {
     if (unlink(expectFilename)) {
       char msg[1024];
-      sprintf(msg, "Error removing temporary file '%s': %s", expectFilename,
-              strerror(errno));
+      snprintf(msg, 1024, "Error removing temporary file '%s': %s",
+               expectFilename, strerror(errno));
       chpl_warning(msg, 0, 0);
     }
   }
@@ -283,11 +375,19 @@ static void chpl_launch_cleanup(void) {
 int chpl_launch(int argc, char* argv[], int32_t numLocales) {
   int retcode;
   debug = getenv("CHPL_LAUNCHER_DEBUG");
-  retcode =
-    chpl_launch_using_fork_exec(EXPECT,
-                                chpl_launch_create_argv(argc, argv, numLocales),
-                                argv[0]);
-  chpl_launch_cleanup();
+
+  if (generate_qsub_script) {
+    genQsubScript(argc, argv, numLocales);
+    retcode = 0;
+  } else {
+    retcode =
+      chpl_launch_using_fork_exec(EXPECT,
+                                  chpl_launch_create_argv(argc, argv,
+                                                          numLocales),
+                                  argv[0]);
+    chpl_launch_cleanup();
+  }
+
   return retcode;
 }
 
@@ -309,6 +409,10 @@ int chpl_launch_handle_arg(int argc, char* argv[], int argNum,
     queue = &(argv[argNum][strlen(CHPL_QUEUE_FLAG)+1]);
     return 1;
   }
+  if (!strcmp(argv[argNum], CHPL_GENERATE_QSUB_SCRIPT)) {
+    generate_qsub_script = 1;
+    return 1;
+  }
   if (!strcmp(argv[argNum], CHPL_CC_ARG)) {
     _ccArg = argv[argNum+1];
     numArgs = 2;
@@ -321,7 +425,7 @@ int chpl_launch_handle_arg(int argc, char* argv[], int argNum,
         strcmp(_ccArg, "numa_node") &&
         strcmp(_ccArg, "cpu")) {
       char msg[256];
-      sprintf(msg, "'%s' is not a valid cpu assignment", _ccArg);
+      snprintf(msg, 256, "'%s' is not a valid cpu assignment", _ccArg);
       chpl_error(msg, 0, 0);
     }
     return numArgs;
@@ -334,6 +438,7 @@ void chpl_launch_print_help(void) {
   fprintf(stdout, "===============\n");
   fprintf(stdout, "  %s <cpu assignment>   : specify cpu assignment within a node:\n", CHPL_CC_ARG);
   fprintf(stdout, "                           none (default), numa_node, cpu\n");
+  fprintf(stdout, "  %s : generate a qsub script and exit\n", CHPL_GENERATE_QSUB_SCRIPT);
   fprintf(stdout, "  %s <queue>        : specify a queue\n", CHPL_QUEUE_FLAG);
   fprintf(stdout, "                           (or use $CHPL_LAUNCHER_QUEUE)\n");
   fprintf(stdout, "  %s <HH:MM:SS>  : specify a wallclock time limit\n", CHPL_WALLTIME_FLAG);

@@ -126,6 +126,8 @@ void processMultiLineComment(void) {
 
   newString();
   countCommentLine();
+
+  std::string wholeComment = "";
   
   while (depth > 0) {
     lastc = c;
@@ -133,6 +135,10 @@ void processMultiLineComment(void) {
     if( c == '\n' ) {
       countMultiLineComment(stringBuffer);
       processNewline();
+      if (fdocs) {
+        wholeComment += stringBuffer;
+        wholeComment += '\n';
+      }
       newString();
       countCommentLine();
     } else {
@@ -150,6 +156,22 @@ void processMultiLineComment(void) {
   // back up two to not print */ again.
   if( stringLen >= 2 ) stringLen -= 2;
   stringBuffer[stringLen] = '\0';
+  
+  // Saves the comment grabbed to the comment field of the location struct,
+  // for use when the --docs flag is implemented
+  if (fdocs) {
+    wholeComment += stringBuffer;
+    
+    // Also, only need to fix indentation failure when the comment matters
+    size_t location = wholeComment.find("\\x09");
+    while (location != std::string::npos) {
+      wholeComment = wholeComment.substr(0, location) + wholeComment.substr(location + 4);
+      wholeComment.insert(location, "\t");
+      location = wholeComment.find("\\x09");
+    }
+    yylloc.comment = (char *)astr(wholeComment.c_str());
+  }
+
   countMultiLineComment(stringBuffer);
   newString();
 }

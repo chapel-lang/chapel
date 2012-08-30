@@ -1,11 +1,22 @@
+// Time.chpl
+//
+
+// These functions are defined as macros: chpl_init_timer, chpl_now_timer,
+// chpl_new_timer, chpl_seconds_timer, chpl_microseconds_timer.
+// We can't generate prototypes for them, because the macros substituting in
+// the prototypes really confuses the compiler.
+pragma "no prototype"
 extern proc chpl_init_timer(timer);
+pragma "no prototype"
 extern proc chpl_now_timer(timer): _timervalue;
+pragma "no prototype"
 extern proc chpl_seconds_timer(timer): real;
+pragma "no prototype"
 extern proc chpl_microseconds_timer(timer): real;
-extern proc chpl_now_year(): int;
-extern proc chpl_now_month(): int;
-extern proc chpl_now_day(): int;
-extern proc chpl_now_dow(): int;
+extern proc chpl_now_year(): int(32);
+extern proc chpl_now_month(): int(32);
+extern proc chpl_now_day(): int(32);
+extern proc chpl_now_dow(): int(32);
 extern proc chpl_now_time(): real;
 
 enum TimeUnits { microseconds, milliseconds, seconds, minutes, hours };
@@ -36,7 +47,6 @@ record Timer {
 
   proc clear() {
     accumulated = 0.0;
-    running = false;
   }
 
   proc start() {

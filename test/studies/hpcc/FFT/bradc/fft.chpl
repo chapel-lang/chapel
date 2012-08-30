@@ -34,14 +34,14 @@ proc main() {
   const N = 1 << logN;
 
   // twiddle domain and arrays
-  const TwiddleDom = [0..#N/4];
+  const TwiddleDom = {0..#N/4};
   var Twiddles: [TwiddleDom] complex;
 
   computeTwiddles(Twiddles);
   bitReverseShuffle(Twiddles);
 
   // problem domain and arrays
-  const ProblemDom = [0..#N];
+  const ProblemDom = {0..#N};
   var Z, z: [ProblemDom] complex;
 
   // generate pseudo-random input

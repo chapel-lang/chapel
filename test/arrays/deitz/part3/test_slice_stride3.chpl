@@ -8,7 +8,7 @@ proc foo(n: int, m: int, A: [1..n, 1..m] int) {
 }
 
 
-var D = [1..6, 1..6];
+var D = {1..6, 1..6};
 var A: [D] int;
 
 writeln(A);writeln();

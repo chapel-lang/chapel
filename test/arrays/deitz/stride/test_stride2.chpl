@@ -1,6 +1,6 @@
 config var n: int = 8;
 
-var D = [1..n, 1..n] by 2;
+var D = {1..n, 1..n} by 2;
 
 writeln(D);
 
@@ -12,17 +12,17 @@ for (i,j) in D do
 writeln(D);
 writeln(A);
 
-D = [1..n, 1..n] by 1;
+D = {1..n, 1..n} by 1;
 
 writeln(D);
 writeln(A);
 
-D = [1..n, 1..n] by 3;
+D = {1..n, 1..n} by 3;
 
 writeln(D);
 writeln(A);
 
-D = [1..n, 1..n] by 2;
+D = {1..n, 1..n} by 2;
 
 writeln(D);
 writeln(A);

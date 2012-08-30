@@ -53,8 +53,8 @@ config const printParams = true,
 // distribution that is computed by blocking the indices 0..N_U-1
 // across the locales.
 //
-const TableDist = new dmap(new Block(boundingBox=[0..m-1])),
-      UpdateDist = new dmap(new Block(boundingBox=[0..N_U-1]));
+const TableDist = new dmap(new Block(boundingBox={0..m-1})),
+      UpdateDist = new dmap(new Block(boundingBox={0..N_U-1}));
 
 //
 // TableSpace describes the index set for the table.  It is a 1D
@@ -64,8 +64,8 @@ const TableDist = new dmap(new Block(boundingBox=[0..m-1])),
 // It is distributed according to UpdateDist and contains the
 // indices 0..N_U-1.
 //
-const TableSpace: domain(1, indexType) dmapped TableDist = [0..m-1],
-      Updates: domain(1, indexType) dmapped UpdateDist = [0..N_U-1];
+const TableSpace: domain(1, indexType) dmapped TableDist = {0..m-1},
+      Updates: domain(1, indexType) dmapped UpdateDist = {0..N_U-1};
 
 //
 // T is the distributed table itself, storing a variable of type

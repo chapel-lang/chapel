@@ -1,0 +1,26 @@
+Module: M
+    This module has a comment 
+   commentless()
+
+Module: N
+    So does this module 
+   hasArgCommentless(val: int(64))
+
+Module: O
+    And this one 
+   hasBodyCommentless()
+
+Module: P
+    What?  Even this one! 
+   hasBodyAndArgCommentless(val: int(64))
+
+   useless()
+
+Module: Q
+   main()
+       Sadly, this method's module does not 
+
+Module: R
+   furthermore()
+       Nor this method's module 
+

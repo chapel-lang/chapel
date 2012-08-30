@@ -1,4 +1,5 @@
 config const useVerboseComm = false;
+config var token = 0;
 
 proc main() {
   coforall loc in Locales do on loc do
@@ -12,11 +13,9 @@ proc fragmentedMain() {
   if useVerboseComm then startVerboseCommHere();
 
   if rank == size-1 {
-    var token = read(int);
-    chpl_send_int(token, 0);
+    chpl_send_int(token, 0); 
   }
 
-  var token: int;
   chpl_recv_int(token, (rank-1+size)%size);
 
   if !useVerboseComm then

@@ -1,6 +1,6 @@
 // This is rewritten from a version that used sequences.
 //proc main() {
-//  const D = [1..10];
+//  const D = {1..10};
 //  var x: [D] int;
 //  var y: [D] real;
 //
@@ -40,7 +40,7 @@
 //}
 
 proc main() {
-  const D = [1..10];
+  const D = {1..10};
   var x: [D] int;
   var y: [D] real;
 

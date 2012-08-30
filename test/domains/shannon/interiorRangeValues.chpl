@@ -1,6 +1,6 @@
 config var n: int = 16;
 
-var d1 : domain(1) = [1..n];
+var d1 : domain(1) = {1..n};
 writeln("domain(1): \t\t", d1);
 writeln("interior(-5): \t\t", d1.interior(-5));
 writeln("interior(-4): \t\t", d1.interior(-4));

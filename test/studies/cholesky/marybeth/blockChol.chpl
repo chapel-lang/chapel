@@ -15,7 +15,7 @@ proc main() {
   blk = min(blk,n);
 
   var A1D = 1..n;
-  const A2D = [A1D,A1D]; 
+  const A2D = {A1D,A1D}; 
   var A: [A2D] real;
   initA(A,Adat);
   Adat.close();
@@ -45,13 +45,13 @@ proc blockChol(A:[?D],blk) where (D.rank == 2) {
     var A1 => A[CurrentBlockInds,CurrentBlockInds];
     var A2 => A[TrailingBlockInds,CurrentBlockInds];
 
-    for j in [CurrentBlockInds] {
-      for (i,k) in [CurrentBlockInds(j..),PrecedingBlockInds] {
+    for j in {CurrentBlockInds} {
+      for (i,k) in {CurrentBlockInds(j..),PrecedingBlockInds} {
           A1(i,j) -= G1(j,k)*G1(i,k);
       }
     }
-    for j in [CurrentBlockInds] {
-      for k in [CurrentBlockInds(..j-1)] {
+    for j in {CurrentBlockInds} {
+      for k in {CurrentBlockInds(..j-1)} {
         A1(j,j) -= A1(j,k)*A1(j,k);
       }
 
@@ -60,27 +60,27 @@ proc blockChol(A:[?D],blk) where (D.rank == 2) {
       else
         A1(j,j) = sqrt(A1(j,j));
 
-      for i in [CurrentBlockInds(j+1..)] {
-        for k in [CurrentBlockInds(..j-1)] {
+      for i in {CurrentBlockInds(j+1..)} {
+        for k in {CurrentBlockInds(..j-1)} {
           A1(i,j) -= A1(i,k)*A1(j,k);
         }
         A1(i,j) /= A1(j,j);
       }
     }
 
-    for j in [CurrentBlockInds] {
-      for k in [PrecedingBlockInds] {
-        for i in [TrailingBlockInds] {
+    for j in {CurrentBlockInds} {
+      for k in {PrecedingBlockInds} {
+        for i in {TrailingBlockInds} {
           A2(i,j) -= G1(j,k)*G2(i,k);
         }
       }
     }
     
-    for k in [CurrentBlockInds] {
-      for i in [TrailingBlockInds] {
+    for k in {CurrentBlockInds} {
+      for i in {TrailingBlockInds} {
         A2(i,k) = A2(i,k)/A1(k,k);
       }
-      for (i,j) in [TrailingBlockInds,CurrentBlockInds(k+1..)] {
+      for (i,j) in {TrailingBlockInds,CurrentBlockInds(k+1..)} {
         A2(i,j) -= A1(j,k)*A2(i,k);
       }
     }  

@@ -36,7 +36,7 @@ i2lTest(ddfm, (3,6));
 
 /////////// domain
 
-const dmbase = [1..5,1..7];
+const dmbase = {1..5,1..7};
 
 fphase(10);
 hd("dmdom - creating");

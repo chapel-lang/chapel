@@ -1,6 +1,6 @@
 use driver_domains;
 
-var A: [Dom4D] 4*int = [(...Dom4D.dims())];
+var A: [Dom4D] 4*int = {(...Dom4D.dims())};
 var B: [Dom4D] 4*int;
 
 resetCommDiagnostics();

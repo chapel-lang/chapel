@@ -20,8 +20,8 @@ config var initial_spike = 1000.0;
    
 proc main() {
 
-   const ProblemSpace = [1..n, 1..n],       // domain for interior grid points
-         BigDomain    = [0..n+1, 0..n+1];   // domain with boundary points
+   const ProblemSpace = {1..n, 1..n},       // domain for interior grid points
+         BigDomain    = {0..n+1, 0..n+1};   // domain with boundary points
 
    var 
       grid1,   // 

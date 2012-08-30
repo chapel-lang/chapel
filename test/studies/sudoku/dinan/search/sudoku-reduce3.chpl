@@ -1,4 +1,4 @@
-var S = [0..8,0..8], A: [S] int = for S do read(int);
+var S = {0..8,0..8}, A: [S] int = for S do read(int);
 
 proc R {
   proc !=(A: [], k) return && reduce [i in A] i != k;

@@ -1,6 +1,6 @@
 use Cyclic;
 
-var myLocalesDom = [1..3];
+var myLocalesDom = {1..3};
 var myLocales: [myLocalesDom] locale = [i in myLocalesDom] Locales(i%numLocales);
 
 writeln("myLocales = ", myLocales);
@@ -10,7 +10,7 @@ writeln("myLocales = ", myLocales);
 // domains and ranges and the obvious conversions between them.
 // 
 const ProblemDist = new Cyclic1DDist(targetLocales=myLocales);
-const ProblemDom = ProblemDist.newDomain([-5..5:int(64)]);
+const ProblemDom = ProblemDist.newDomain({-5..5:int(64)});
 
 var A = ProblemDom.newArray(real);
 var B = ProblemDom.newArray(real);

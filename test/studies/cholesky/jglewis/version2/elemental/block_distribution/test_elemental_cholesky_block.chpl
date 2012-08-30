@@ -28,7 +28,7 @@ module cholesky_test_elemental_symmetric_ranges {
 
     var Rand = new RandomStream ( seed = 314159) ;
 
-    const MatIdx = [ index_base .. #n, index_base .. #n ];
+    const MatIdx = { index_base .. #n, index_base .. #n };
 
     const mat_dom : domain (2) dmapped Block ( boundingBox = MatIdx )
       = MatIdx;   // BLOCK Version

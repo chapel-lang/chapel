@@ -11,7 +11,7 @@ module RARandomStream {
   // the bit positions in the random values.  m2 is a table of helper
   // values used to fast-forward through the random stream.
   //
-  const bitDom = [0..#randWidth],
+  const bitDom = {0..#randWidth},
         m2: [bitDom] randType = computeM2Vals(randWidth);
 
   //

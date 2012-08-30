@@ -1,6 +1,6 @@
 var x = (0, 0);
 
-var D : domain(2) = [1..4, 1..4];
+var D : domain(2) = {1..4, 1..4};
 
 for ij in D {
   var i = ij(1);

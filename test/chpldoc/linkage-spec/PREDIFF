@@ -1,0 +1,8 @@
+#!/bin/sh
+
+if [ "$CHPL_HOME/bin/linux64/chpldoc" == "$3" ]; 
+then
+   cat $1.doc.out > $1.good
+else
+   cat $1.exec.out $1.doc.out > $1.good
+fi

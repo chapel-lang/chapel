@@ -99,13 +99,15 @@ module SSCA2_RMAT_graph_generator
 		       b : real, 
 		       c : real, 
 		       d : real, 
-		       SCALE :int, 
+                       vertex_domain,
+		       SCALE :int,
 		       N_VERTICES : int,
 		       n_raw_edges : int,
 		       MAX_EDGE_WEIGHT :int,
 		       G ) 
 
-    { use Random; 
+    { use Random;
+      use analyze_RMAT_graph_associative_array;
 
       if PRINT_TIMING_STATISTICS then stopwatch.start ();
 
@@ -262,6 +264,9 @@ module SSCA2_RMAT_graph_generator
       // wins) or also use += instead of = (to sum duplicates' weights).
       // ----------------------------------------------------------
 
+      var firstAvailNeighbor$: [vertex_domain] sync int = initialFirstAvail;
+
+      writeln("Starting Graph Generation");
       if PRINT_TIMING_STATISTICS then stopwatch.start ();
 
       var collisions = 0, self_edges = 0;
@@ -269,18 +274,20 @@ module SSCA2_RMAT_graph_generator
 	var u = Edges (e).start;
 	var v = Edges (e).end  ;
 
-	if ( v != u ) then {
-	  if G.Neighbors (u).member(v) then {
-	    collisions += 1;
-	  }
-	  else {
-	    G.Neighbors (u).add (v);
-	    G.Row(u).Weight (v) = Edge_Weight (e);
-	  }
+	if ( v == u ) then {
+          // self-edge, ignore
+          self_edges += 1;
+        } else {
+          const w = Edge_Weight(e);
+          // both the vertex and firstAvail must be passed by reference
+          G.Row[u].addEdgeOnVertex(u, v, w, firstAvailNeighbor$[u]);
 	}
 	else
 	  self_edges += 1;
       }
+
+      forall (vx, firstAvail$) in (G.Row, firstAvailNeighbor$) do
+        vx.tidyNeighbors(firstAvail$);
 
       if PRINT_TIMING_STATISTICS then {
 	stopwatch.stop ();
@@ -289,11 +296,13 @@ module SSCA2_RMAT_graph_generator
 	stopwatch.clear ();
       }
 
+      G.num_edges = + reduce [v in G.vertices] G.n_Neighbors (v);
+
       writeln ( "# of raw edges generated  ", n_raw_edges );
       writeln ( "# of duplicate edges      ", collisions );
       writeln ( "# of self edges           ", self_edges );
-      writeln ( "# of edges in final graph ", 
-		+ reduce [v in G.vertices] G.n_Neighbors (v) );
+      writeln ( "# of edges in final graph ", G.num_edges );
+
 
       if DEBUG_GRAPH_GENERATOR then {
 	writeln ();
@@ -301,7 +310,7 @@ module SSCA2_RMAT_graph_generator
 	writeln ();
 	for u in G.vertices do {
 	  write ( "row ", u, ": [", G.n_Neighbors (u), "] " );
-	  for (v,w) in (G .Neighbors (u), G.edge_weight (u) ) do
+	  for (v,w) in G .NeighborPairs (u) do
 	    write ( (v, w) );
 	  writeln (); 
 	}

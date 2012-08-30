@@ -5,9 +5,9 @@ class C {
   }
 
   iter these(param tag: iterKind) where tag == iterKind.leader {
-    yield [1..3];
-    yield [4..7];
-    yield [8..10];
+    yield {1..3};
+    yield {4..7};
+    yield {8..10};
   }
 
   iter these(param tag: iterKind, followThis) where tag == iterKind.follower {

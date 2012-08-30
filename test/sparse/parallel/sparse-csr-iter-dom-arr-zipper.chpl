@@ -2,7 +2,7 @@ use LayoutCSR;
 
 config var n = 8;
 
-var d2: domain(2) = [1..n,1..n];
+var d2: domain(2) = {1..n,1..n};
 test(2, d2);
 
 // main test driver

@@ -12,8 +12,8 @@ const se = south + east;
 config const size = 20: int; // size of the square life game to simulate
 config const iters = 36: int;
 
-var full_domain = [0..size, 0..size];
-var life_domain = [1..size-1, 1..size-1];
+var full_domain = {0..size, 0..size};
+var life_domain = {1..size-1, 1..size-1};
 
 proc main(){
   var life: [full_domain] int;

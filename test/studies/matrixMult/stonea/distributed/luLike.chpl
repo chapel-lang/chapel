@@ -30,7 +30,7 @@ class WrappedArray {
     proc WrappedArray() { }
 
     proc WrappedArray(row, col, numRows, numCols) {
-        dom = [row..row+numRows-1, col..col+numCols-1];
+        dom = {row..row+numRows-1, col..col+numCols-1};
     }
 
     proc this(i,j : int) var { return data[i,j]; }
@@ -143,18 +143,18 @@ proc main() {
         }
     }
 
-    var aLocales   : subdomain(myLocales.domain) = [2..localesAcross, 1..1];
-    var bLocales   : subdomain(myLocales.domain) = [1..1, 2..localesAcross];
+    var aLocales   : subdomain(myLocales.domain) = {2..localesAcross, 1..1};
+    var bLocales   : subdomain(myLocales.domain) = {1..1, 2..localesAcross};
     var solLocales : subdomain(myLocales.domain) =
-        [2..localesAcross, 2..localesAcross];
+        {2..localesAcross, 2..localesAcross};
 
     // Perform the multiplication in parallel
     luLikeMultiply(myLocales, A, aLocales, bLocales, solLocales);
 
     // Perform the multiplication using a serial algorithm we know works
-    var aRegion   :domain(2) = [1+blkSize..n, 1..1+blkSize-1];
-    var bRegion   :domain(2) = [1..1+blkSize-1, 1+blkSize..n];
-    var solRegion :domain(2) = [1+blkSize..n, 1+blkSize..n];
+    var aRegion   :domain(2) = {1+blkSize..n, 1..1+blkSize-1};
+    var bRegion   :domain(2) = {1..1+blkSize-1, 1+blkSize..n};
+    var solRegion :domain(2) = {1+blkSize..n, 1+blkSize..n};
 
     var data : [1..n, 1..n] int;
     forall (i,j) in data.domain do {

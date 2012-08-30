@@ -4,7 +4,7 @@ for i in 2..4 do
   A(i,1) = A(i-1,1) + 1.0;
 for i in 2..4 do
   A(1,i) = A(1,i-1) + 1.0;
-for (i,j) in [2..4, 2..4] do
+for (i,j) in {2..4, 2..4} do
   A(i,j) = A(i-1,j-1) + 1.0;
 writeln(A);
 

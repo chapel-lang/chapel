@@ -4,7 +4,7 @@ class two_d_array {
   var a: [D] real;
 
   proc initialize(){
-    D = [1..h, 1..w];
+    D = {1..h, 1..w};
   }
 }
 

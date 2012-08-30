@@ -1,0 +1,9 @@
+Module: empty
+   noComment()
+
+   noBody()
+
+   noBodyButArgs(num: int(64), bleah: bool)
+
+   noCommentButArgs(num: real(64), fleas: bool)
+

@@ -5,11 +5,11 @@ config const n = 25;
 var MyBlkCyc = new dmap(new BlockCyclic(startIdx=tuple(1), blocksize=tuple(4)));
 
 writeln("Declaring D:");
-var D: domain(1) dmapped MyBlkCyc = [1..n];
+var D: domain(1) dmapped MyBlkCyc = {1..n};
 writeln();
 
 writeln("Declaring D2:");
-var D2: domain(1) dmapped MyBlkCyc = [1..7];
+var D2: domain(1) dmapped MyBlkCyc = {1..7};
 writeln();
 
 writeln("D is: ", D);

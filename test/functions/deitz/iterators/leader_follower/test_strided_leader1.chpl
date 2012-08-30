@@ -31,7 +31,7 @@ use Random;
 
   var rs = new RandomStream(seed=315);
 
-  forall (i, r) in ([1..n], rs.iterate([1..n])) do
+  forall (i, r) in ({1..n}, rs.iterate({1..n})) do
     B(i) = r;
 
   writeln(B);
@@ -42,7 +42,7 @@ use Random;
 
   var rs = new RandomStream(seed=315);
 
-  forall (f, r) in (foo(n), rs.iterate([1..n])) do
+  forall (f, r) in (foo(n), rs.iterate({1..n})) do
     B(f) = r;
 
   writeln(B);

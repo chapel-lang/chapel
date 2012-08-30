@@ -1,5 +1,8 @@
 This directory contains several versions of Kristi's Graph500 code.
 
+v3/ is a staging area for improvements to kristyn/Graph500_1D_onV/
+(branched at r20229).
+
 Differences between v1/ and v2/, as of rr18792:
 
 * v2 removes a lock guarding associative domain adds.

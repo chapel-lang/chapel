@@ -127,7 +127,7 @@ class CandidateDomain {
     
     //---- Calculate signatures ----
     for d in 1..rank do
-      signatures(d) = new ArrayWrapper( [D.dim(d)] );
+      signatures(d) = new ArrayWrapper( {D.dim(d)} );
       
     for idx in D 
     {
@@ -245,7 +245,7 @@ proc CandidateDomain.trim()
   //---- Resize domain and signatures ----
   
   D = trimmed_ranges;
-  for d in 1..rank do signatures(d).Domain = [D.dim(d)];
+  for d in 1..rank do signatures(d).Domain = {D.dim(d)};
 
 }
 // /|"""""""""""""""""""""""""""""/|
@@ -510,7 +510,7 @@ proc main {
 
  
   //===> Initialize array of flags ===>
-  var D = [-19..19 by 2, -19..19 by 2];
+  var D = {-19..19 by 2, -19..19 by 2};
   var F: [D] bool = false;
   
   var a1: real = 20.0;

@@ -31,7 +31,7 @@ iter aawindow(W:range,H:range,filter_width:int,filter_height:int){
       var hi1 : int = i+filter_width/2; //next pixel
       var hi2 : int = j+filter_width/2; //next row
             
-      yield ([lo1..hi1,lo2..hi2],i,j);
+      yield ({lo1..hi1,lo2..hi2},i,j);
     }
   }
 }
@@ -43,7 +43,7 @@ proc main() {
   const m = reader.read(int),
         n = reader.read(int);
 
-  const Width = 0..m-1, Height = 0..n-1, ImgDom = [Width, Height];
+  const Width = 0..m-1, Height = 0..n-1, ImgDom = {Width, Height};
   var Img: [ImgDom] real;
   var outImg: [ImgDom] real;
 
@@ -58,7 +58,7 @@ proc main() {
   var freader = finfile.reader();
   
   const fx = freader.read(int), fy = freader.read(int); 
-  const FilterDom = [0..((fx*fy)-1)];
+  const FilterDom = {0..((fx*fy)-1)};
   const Filter : [FilterDom] real;
   for i in FilterDom do{
     freader.read(Filter(i));

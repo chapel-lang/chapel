@@ -1,10 +1,10 @@
-var D = [1..5, 1..5];
-var D2 = [1..5, 1..5].translate(2, 3);
+var D = {1..5, 1..5};
+var D2 = D.translate(2, 3);
 //
 // +/- on domains is now illegal
 // Below is the test as originally written.
 //
-// var D2 = (2, 3) + [1..5, 1..5];
+// var D2 = (2, 3) + {1..5, 1..5};
 // Should be the same as:
 // 
 // var D2 = [D.dim(1).low+2..D.dim(2).high+2,

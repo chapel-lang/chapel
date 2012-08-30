@@ -20,12 +20,12 @@ Dom = Space2;
 writeln(A);
 writeln(B);
 
-Dom = [1..n2+2, 1..n2-2];
+Dom = {1..n2+2, 1..n2-2};
 
 writeln(A);
 writeln(B);
 
-Dom = [1..n2-2, 1..n2+2];
+Dom = {1..n2-2, 1..n2+2};
 
 writeln(A);
 writeln(B);

@@ -14,7 +14,7 @@ proc f(i: [] int, j) {
   writeln("In f(:[] int, :any)");
 }
 
-var D = [1..4];
+var D = {1..4};
 var A: [D] int = [i in D] i;
 var B: [D] int = [i in D] i;
 

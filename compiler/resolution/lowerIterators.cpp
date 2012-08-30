@@ -834,13 +834,13 @@ inlineSingleYieldIterator(CallExpr* call) {
           afterYield = true;
           noop->insertAfter(new CallExpr(PRIM_MOVE, indices.v[i], curr_expr->get(1)->remove()));
         } else if (!curr_expr->isPrimitive(PRIM_RETURN)) {
-          if (afterYield == false)
+          if (!afterYield)
             noop->insertBefore(curr_expr->remove());
           else 
             block->insertAtTail(curr_expr->remove());
         }
       } else {
-        if (afterYield == false)
+        if (!afterYield)
           noop->insertBefore(expr->remove());
         else 
           block->insertAtTail(expr->remove());

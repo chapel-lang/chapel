@@ -1,0 +1,6 @@
+Module: hello
+   chpl__init_hello()
+
+   hello()
+       This method prints out a greeting.
+

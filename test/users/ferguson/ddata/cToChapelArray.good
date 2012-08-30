@@ -1,0 +1,44 @@
+before chapelProc, a[1] is 1
+in chapelProc
+a[0] is 0
+a[1] is 1
+a[2] is 2
+a[3] is 3
+a[4] is 4
+a[5] is 5
+a[6] is 6
+a[7] is 7
+a[8] is 8
+a[9] is 9
+done chapelProc
+after chapelProc, a[1] is 1
+
+Hello from Chapel, calling C
+before cProc, a[1] is 1
+Hello from cProc
+a[0] is 0
+a[1] is 10
+a[2] is 20
+a[3] is 30
+a[4] is 40
+a[5] is 50
+a[6] is 60
+a[7] is 70
+a[8] is 80
+a[9] is 90
+calling Chapel
+in chapelProc
+a[0] is 0
+a[1] is 10
+a[2] is 20
+a[3] is 30
+a[4] is 40
+a[5] is 50
+a[6] is 60
+a[7] is 70
+a[8] is 80
+a[9] is 90
+done chapelProc
+cProc done
+after cProc, a[1] is 10
+Hello from Chapel, done

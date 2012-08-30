@@ -188,7 +188,7 @@ proc DimensionalDist.DimensionalDist(
 proc DimensionalDist.checkInvariants(): void {
   assert(targetLocales.eltType == locale, "DimensionalDist-targetLocales.eltType");
   assert(targetIds.idxType == locIdT, "DimensionalDist-targetIdx.idxType");
-  assert(targetIds == [0..#numLocs1, 0..#numLocs2],
+  assert(targetIds == {0..#numLocs1, 0..#numLocs2},
          "DimensionalDist-targetIds");
   assert(di1.numLocales == numLocs1, "DimensionalDist-numLocales-1");
   assert(di2.numLocales == numLocs2, "DimensionalDist-numLocales-2");
@@ -554,7 +554,7 @@ proc DimensionalDom.dsiSetIndices(newIndices: domainT): void {
 }
 
 proc DimensionalDom.dsiSetIndices(newRanges: rank * rangeT): void {
-  whole = [(...newRanges)];
+  whole = {(...newRanges)};
   _dsiSetIndicesHelper(newRanges);
 }
 
@@ -581,9 +581,9 @@ proc LocDimensionalDom._dsiLocalSetIndicesHelper(globDD, locId) {
   var myRange1 = doml1.dsiSetLocalIndices1d(globDD(1),locId(1));
   var myRange2 = doml2.dsiSetLocalIndices1d(globDD(2),locId(2));
 
-  myBlock = [myRange1, myRange2];
-  myStorageDom = [0:stoSzT..#myRange1.length:stoSzT,
-                  0:stoSzT..#myRange2.length:stoSzT];
+  myBlock = {myRange1, myRange2};
+  myStorageDom = {0:stoSzT..#myRange1.length:stoSzT,
+                  0:stoSzT..#myRange2.length:stoSzT};
 
   _traceddd("DimensionalDom.dsiSetIndices on ", here.id, " ", locId, " <- ",
            myBlock, "  storage ", myRange1.length, "*", myRange2.length);
@@ -737,7 +737,7 @@ iter DimensionalDom.these(param tag: iterKind) where tag == iterKind.leader {
       return dist.targetIds.dim(dd);
   }
   const overTargetIds = if dom1.dsiIsReplicated() || dom2.dsiIsReplicated()
-    then [helpTargetIds(dom1,1), helpTargetIds(dom2,2)]
+    then {helpTargetIds(dom1,1), helpTargetIds(dom2,2)}
     else dist.targetIds; // in this case, avoid re-building the domain
 
   // todo: lls is needed only for debugging printing?
@@ -858,7 +858,7 @@ iter DimensionalDom.these(param tag: iterKind, followThis) where tag == iterKind
   // This is pre-defined by DSI, so no need to consult
   // the subordinate 1-d distributions.
 
-  for i in [(...unDensify(followThis, whole.dims()))] do
+  for i in {(...unDensify(followThis, whole.dims()))} do
     yield i;
 }
 
@@ -1298,7 +1298,7 @@ proc sdom._dsiComputeMyRange(locId): rangeT {
   // see LocBlock.LocBlock()
   const (blo, bhi) = _computeBlock(dist.bbLength, dist.numLocales,
            locId, max(dom.idxType), min(dom.idxType), dist.bbStart);
-  const myChunk = [blo..bhi];
+  const myChunk = {blo..bhi};
   // see Block.getChunk()
   const chunk = myChunk(dom.wholeR);
   return chunk.dim(1);
@@ -1448,7 +1448,7 @@ var manylocs: bool;
 //
 proc setupLocales(s1:int, s2:int, ensureManyLocs: bool = false) {
   hd("setupLocales ", s1, "*", s2);
-  mylocdom = [0..#s1,0..#s2];
+  mylocdom = {0..#s1,0..#s2};
   manylocs = (numLocales >= mylocs.numElements);
 
   if manylocs {
@@ -1633,7 +1633,7 @@ proc test(d) {
   tl();
 }
 
-test([1..1, 0..9] dmapped dm);
-test([1..1, 0..9 by -1] dmapped dm);
-test([1..1, 0..9 by -2] dmapped dm);
-test([1..1, 0..9 by 3] dmapped dm);
+test({1..1, 0..9} dmapped dm);
+test({1..1, 0..9 by -1} dmapped dm);
+test({1..1, 0..9 by -2} dmapped dm);
+test({1..1, 0..9 by 3} dmapped dm);

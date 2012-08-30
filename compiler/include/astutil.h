@@ -4,6 +4,8 @@
 #include "baseAST.h"
 #include "alist.h"
 
+#include <vector>
+
 class Type;
 class FnSymbol;
 class VarSymbol;
@@ -46,6 +48,12 @@ void compute_call_sites();
 void collectSymbolSetSymExprVec(BaseAST* ast,
                                 Vec<Symbol*>& symSet,
                                 Vec<SymExpr*>& symExprs);
+
+//
+// Return value & 1 is true if se is a def
+// Return value & 2 is true if se is a use
+//
+int isDefAndOrUse(SymExpr* se);
 
 //
 // build defMap and useMap such that defMap is a map from symbols to

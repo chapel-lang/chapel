@@ -1,5 +1,5 @@
-var D1: domain(1, int(32)) = [1..4:int(32)];
-var D2: domain(1, int(64)) = [1..4:int];
+var D1: domain(1, int(32)) = {1..4:int(32)};
+var D2: domain(1, int(64)) = {1..4:int};
 
 var A: [D1] real;
 var B: [D2] real = [i in D2] i;

@@ -9,6 +9,8 @@
 #include "flags.h"
 #include "type.h"
 
+#include <vector>
+
 //
 // The function that represents the compiler-generated entry point
 //
@@ -81,6 +83,8 @@ class Symbol : public BaseAST {
   void addFlag(Flag flag);
   void copyFlags(Symbol* other);
   void removeFlag(Flag flag);
+
+  bool hasEitherFlag(Flag aflag, Flag bflag);
 };
 #define forv_Symbol(_p, _v) forv_Vec(Symbol, _p, _v)
 
@@ -98,6 +102,7 @@ class VarSymbol : public Symbol {
 
   bool isConstant(void);
   bool isParameter(void);
+  const char* doc;
 
   void codegen(FILE* outfile);
   void codegenDef(FILE* outfile);
@@ -160,11 +165,12 @@ class FnSymbol : public Symbol {
   FnSymbol *instantiatedFrom;
   SymbolMap substitutions;
   BlockStmt* instantiationPoint; // point of instantiation
-  Vec<BasicBlock*>* basicBlocks;
+  std::vector<BasicBlock*>* basicBlocks;
   Vec<CallExpr*>* calledBy;
   const char* userString;
   FnSymbol* valueFunction; // pointer to value function (created in
                            // resolve and used in cullOverReferences)
+  const char *doc;
 
   FnSymbol(const char* initName);
   ~FnSymbol();
@@ -208,6 +214,7 @@ class EnumSymbol : public Symbol {
   void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void codegenDef(FILE* outfile);
   bool isParameter(void);
+  Immediate* getImmediate(void);
 };
 
 
@@ -219,11 +226,16 @@ class ModuleSymbol : public Symbol {
   const char* filename;
   Vec<ModuleSymbol*> modUseList;
   Vec<ModuleSymbol*> modUseSet;
-
+  const char *doc;
+  
   ModuleSymbol(const char* iName, ModTag iModTag, BlockStmt* iBlock);
   ~ModuleSymbol();
   void verify(); 
   DECLARE_SYMBOL_COPY(ModuleSymbol);
+  Vec<VarSymbol*> getConfigVars();
+  Vec<FnSymbol*> getFunctions();
+  Vec<ModuleSymbol*> getModules();
+  Vec<ClassType*> getClasses();
   void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void codegenDef(FILE* outfile);
 };

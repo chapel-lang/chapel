@@ -9,6 +9,7 @@ config param debugDefaultDistBulkTransfer = false;
 config param debugDataPar = false;
 
 config param defaultDoRADOpt = true;
+config param defaultDisableLazyRADOpt = false;
 
 class DefaultDist: BaseDist {
   proc dsiNewRectangularDom(param rank: int, type idxType, param stridable: bool)
@@ -377,6 +378,7 @@ record _remoteAccessData {
   var str: rank*chpl__signedType(idxType);
   var origin: idxType;
   var factoredOffs: idxType;
+  var data: _ddata(eltType);
 }
 
 //
@@ -388,7 +390,6 @@ class LocRADCache {
   type idxType;
   var targetLocDom: domain(rank);
   var RAD: [targetLocDom] _remoteAccessData(eltType, rank, idxType);
-  var ddata: [targetLocDom] _ddata(eltType);
 
   proc LocRADCache(type eltType, param rank: int, type idxType,
                    newTargetLocDom: domain(rank)) {
@@ -446,7 +447,7 @@ class DefaultRectangularArr: BaseArr {
         }
       }
     }
-    delete data;
+    _ddata_free(data);
   }
 
   iter these() var {
@@ -511,15 +512,11 @@ class DefaultRectangularArr: BaseArr {
       str(dim) = dom.dsiDim(dim).stride;
     }
     blk(rank) = 1:idxType;
-    for param dim in 1..rank-1 by -1 do
+    for param dim in 1..(rank-1) by -1 do
       blk(dim) = blk(dim+1) * dom.dsiDim(dim+1).length;
     computeFactoredOffs();
     var size = blk(1) * dom.dsiDim(1).length;
-    data = new _ddata(eltType);
-    //assert(size >= 0);
-    //assert(size:int(64) <= max(int):int(64));
-    //numelm = size: int;
-    data.init(size);
+    data = _ddata_allocate(eltType, size);
   }
 
   inline proc getDataIndex(ind: idxType ...1) where rank == 1
@@ -648,15 +645,20 @@ class DefaultRectangularArr: BaseArr {
     rad.str = str;
     rad.origin = origin;
     rad.factoredOffs = factoredOffs;
+    rad.data = data;
     return rad;
   }
 }
 
 proc DefaultRectangularDom.dsiSerialReadWrite(f /*: Reader or Writer*/) {
-  f & new ioLiteral("[") & ranges(1);
+  f 
+      <~> 
+        new ioLiteral("{") 
+            <~> 
+                ranges(1);
   for i in 2..rank do
-    f & new ioLiteral(", ") & ranges(i);
-  f & new ioLiteral("]");
+    f <~> new ioLiteral(", ") <~> ranges(i);
+  f <~> new ioLiteral("}");
 }
 
 proc DefaultRectangularDom.dsiSerialWrite(f: Writer) { this.dsiSerialReadWrite(f); }
@@ -670,9 +672,9 @@ proc DefaultRectangularArr.dsiSerialReadWrite(f /*: Reader or Writer*/) {
       var first = true;
       if debugDefaultDist && f.writing then f.writeln(dom.ranges(dim));
       for j in dom.ranges(dim) by makeStridePositive {
-        if first then first = false; else f & new ioLiteral(" ");
+        if first then first = false; else f <~> new ioLiteral(" ");
         idx(dim) = j;
-        f & dsiAccess(idx);
+        f <~> dsiAccess(idx);
       }
     } else {
       for j in dom.ranges(dim) by makeStridePositive {
@@ -683,7 +685,7 @@ proc DefaultRectangularArr.dsiSerialReadWrite(f /*: Reader or Writer*/) {
       }
     }
     if !last && dim != 1 then
-      f & new ioNewline();
+      f <~> new ioNewline();
   }
   const zeroTup: rank*idxType;
   recursiveArrayWriter(zeroTup);
@@ -704,7 +706,7 @@ proc DefaultRectangularArr.isDataContiguous() {
 
   if blk(rank) != 1 then return false;
 
-  for param dim in 1..rank-1 by -1 do
+  for param dim in 1..(rank-1) by -1 do
     if blk(dim) != blk(dim+1)*dom.dsiDim(dim+1).length then return false;
 
   if debugDefaultDistBulkTransfer then
@@ -737,7 +739,6 @@ proc DefaultRectangularArr.doiBulkTransfer(B) {
     Blo(i) = Bdims(i).first;
 
   const len = dom.dsiNumIndices:int(32);
-  extern proc sizeof(type x): int(32);  // should be c_int or size_t or ...
   if debugBulkTransfer {
     const elemSize =sizeof(B._value.eltType);
     writeln("In doiBulkTransfer(): Alo=", Alo, ", Blo=", Blo,

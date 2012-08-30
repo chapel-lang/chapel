@@ -1,2 +1,5 @@
 #!/usr/bin/env tcsh
 source ~/.chapelcshrc-cron && ~/chapel/util/cron/nightly -cron -examples >&! ~/tmp/nightly.linux32virt.out
+
+source ~/.chapelcshrc-cron-gasnet && $CHPL_HOME/util/cron/nightly -cron -examples >&! ~/tmp/nightly.linux32virt-gasnet.out
+

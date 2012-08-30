@@ -2,7 +2,7 @@ use Memory;
 
 config const serially = true;
 
-var D: domain(1) = [1..10];
+var D: domain(1) = {1..10};
 var A: [D] real;
 
 proc foo() {

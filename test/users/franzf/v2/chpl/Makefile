@@ -1,4 +1,4 @@
-NUMRUNS ?= 50000
+NUMRUNS ?= 1000
 CHPL = chpl
 #FLAGS = --chplhome ~/chapel -O --no-checks --print-commands --ccflags "-Wall -O2 -fomit-frame-pointer -msse3 -std=c99"
 FLAGS = -O --no-checks --print-commands --ccflags "-Wall -O3 -fomit-frame-pointer -std=c99"

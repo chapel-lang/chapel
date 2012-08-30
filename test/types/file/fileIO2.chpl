@@ -1,7 +1,7 @@
 config var n = 10,
            filename = "arr2.out";
 
-const ADom = [1..n, 1..n];
+const ADom = {1..n, 1..n};
 
 var A: [ADom] real = [(i,j) in ADom] (i-1) + ((j-1)/10.0);
 
@@ -34,7 +34,7 @@ proc readArray(filename) {
   infile.read(m);
   infile.read(n);
 
-  const XDom = [1..m, 1..n];
+  const XDom = {1..m, 1..n};
   var X: [XDom] real;
 
   for ij in XDom do infile.read(X(ij));

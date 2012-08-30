@@ -1,5 +1,5 @@
-var aliasDom: domain(2) = [1..5, 1..5];
-var notAliasDom: domain(2) = [1..9, 1..9];
+var aliasDom: domain(2) = {1..5, 1..5};
+var notAliasDom: domain(2) = {1..9, 1..9};
 
 var A: [notAliasDom] int;
 

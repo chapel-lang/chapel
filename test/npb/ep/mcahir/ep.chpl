@@ -61,7 +61,7 @@ const mm = m - mk,  //log2(numBatches)
 const epsilon = 1.0e-8,
       seed = 271828183:int(64);
 	 
-const WorkSpace = [0:int(64)..#nn],
+const WorkSpace = {0:int(64)..#nn},
       WorkDist  = WorkSpace dmapped Block(WorkSpace);
 
 var totalTime: Timer;
