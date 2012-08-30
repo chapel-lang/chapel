@@ -1,0 +1,5 @@
+#!/bin/sh
+sed -r 's/iteration [0-9]+/iteration n/' $2 >$2.prediff1
+sed -r 's/CPU 1[2-5]/CPU OK/' $2.prediff1 >$2
+rm $2.prediff1 2> /dev/null
+
