@@ -6,9 +6,11 @@
 #include "sys_basic.h"
 #include <stdint.h>
 #include <stdbool.h>
-typedef bool chpl_bool;
+typedef bool chpl_bool; // these are required to enable chpl_bools and floating
+typedef float _real32;  // point atomics in the C tests (and also to keep them 
+typedef double _real64; // from breaking!)
 #else
-#include "chpltypes.h" // chpl_bool -- but that undefines printf, which
+#include "chpltypes.h" // this undefines printf, which
                        // causes problems with the C test cases.
 #endif
 
