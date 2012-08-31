@@ -1,16 +1,16 @@
 Module: tuples
-   smallTuple(val: (bool, bool))
+   proc smallTuple(val: (bool, bool))
        This method takes a tuple of bools as an argument 
 
-   difTypes(val: (real(64), int(64), imag(64)))
+   proc difTypes(val: (real(64), int(64), imag(64)))
        This method takes a heterogeneous tuple as an argument 
 
-   difDecl(val: 3*(string))
+   proc difDecl(val: 3*(string))
        This method takes a tuple of strings as an argument 
 
-   multiDimension(val: 3*(4*(complex(128))))
+   proc multiDimension(val: 3*(4*(complex(128))))
        This method takes a tuple of tuples of complex numbers 
 
-   singleDimension(val: (uint(64)))
+   proc singleDimension(val: (uint(64)))
        This method takes a one dimensional tuple 
 

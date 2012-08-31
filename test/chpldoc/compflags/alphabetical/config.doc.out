@@ -1,11 +1,11 @@
 Module: config
-   config const constant
+   config const var constant
        This is a config const 
-   config const constantTyped: bool
+   config const var constantTyped: bool
        This is a config const with a type 
-   config normal
+   config var normal
        This is a normal config var 
-   config normalTyped: string
+   config var normalTyped: string
        This is a normal config var with a type 
    config param other
        This is a config param 

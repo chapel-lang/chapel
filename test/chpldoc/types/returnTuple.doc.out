@@ -1,16 +1,16 @@
 Module: returnTuple
-   smallTuple(): (bool, bool)
+   proc smallTuple(): (bool, bool)
        This method returns a tuple of bools as an argument 
 
-   difTypes(): (real(64), int(64), imag(64))
+   proc difTypes(): (real(64), int(64), imag(64))
        This method returns a heterogeneous tuple as an argument 
 
-   difDecl(): 3*(string)
+   proc difDecl(): 3*(string)
        This method returns a tuple of strings as an argument 
 
-   multiDimension(): 3*(4*(complex(128)))
+   proc multiDimension(): 3*(4*(complex(128)))
        This method returns a tuple of tuples of complex numbers 
 
-   singleDimension(): (uint(64))
+   proc singleDimension(): (uint(64))
        This method returns a one dimensional tuple 
 

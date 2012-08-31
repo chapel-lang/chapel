@@ -1,92 +1,92 @@
 Module: intents
-   one(in val)
+   proc one(in val)
        This function has an argument with the in intent 
 
-   two(out val)
+   proc two(out val)
        This function has an argument with the out intent 
 
-   three(inout val)
+   proc three(inout val)
        This function has an argument with the inout intent 
 
-   four(param val)
+   proc four(param val)
        This function has an argument with the param intent 
 
-   five(type val)
+   proc five(type val)
        This function has an argument with the type intent 
 
-   fiveA(const val)
+   proc fiveA(const val)
        This function has an argument with the const intent 
 
-   fiveB(ref val)
+   proc fiveB(ref val)
        This function has an argument with the ref intent 
 
-   six(in val: int(64))
+   proc six(in val: int(64))
        This function has an argument with an intent and a type 
 
-   seven() var
+   proc seven() var
        This function has a return intent of var 
 
-   eight()
+   proc eight()
        This function has a return intent of const 
 
-   nine() param
+   proc nine() param
        This function has a return intent of param 
 
-   ten() type
+   proc ten() type
        This function has a return intent of type 
 
-   twelve(val: int(64)) param
+   proc twelve(val: int(64)) param
        This function has both an argument and a return intent 
 
-   thirteen(inout val) param
+   proc thirteen(inout val) param
        This function has both an argument intent and a return intent 
 
-   fourteen()
+   proc fourteen()
        This function has a return intent (other than var) and a body 
 
    Module: intents.Inner
-      one(in val)
+      proc one(in val)
           This function has an argument with the in intent 
 
-      two(out val)
+      proc two(out val)
           This function has an argument with the out intent 
 
-      three(inout val)
+      proc three(inout val)
           This function has an argument with the inout intent 
 
-      four(param val)
+      proc four(param val)
           This function has an argument with the param intent 
 
-      five(type val)
+      proc five(type val)
           This function has an argument with the type intent 
 
-      fiveA(const val)
+      proc fiveA(const val)
           This function has an argument with the const intent 
 
-      fiveB(ref val)
+      proc fiveB(ref val)
           This function has an argument with the ref intent 
 
-      six(in val: int(64))
+      proc six(in val: int(64))
           This function has an argument with an intent and a type 
 
-      seven() var
+      proc seven() var
           This function has a return intent of var 
 
-      eight()
+      proc eight()
           This function has a return intent of const 
 
-      nine() param
+      proc nine() param
           This function has a return intent of param 
 
-      ten() type
+      proc ten() type
           This function has a return intent of type 
 
-      twelve(val: int(64)) param
+      proc twelve(val: int(64)) param
           This function has both an argument and a return intent 
 
-      thirteen(inout val) param
+      proc thirteen(inout val) param
           This function has both an argument intent and a return intent 
 
-      fourteen()
+      proc fourteen()
           This function has a return intent (other than var) and a body 
 

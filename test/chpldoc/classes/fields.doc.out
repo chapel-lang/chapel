@@ -1,21 +1,23 @@
 Module: fields
    Class: fullOfFields
-      field thing1
-      field thing2
-      field typedField: int(64)
-      field alsoTyped: string
-      field commented
+      var thing1
+      var thing2
+      var typedField: int(64)
+      var alsoTyped: string
+      var commented
           This field has a doc attached, does that work? 
-      field typeComment: int(64)
+      var typeComment: int(64)
           This field has a doc and an explicit type 
+      var initialized = "bleah"
+      var initializedType: int(64)
       inherited from object
 
    Record: fullOfFieldsToo
-      field thing1
-      field thing2
-      field typedField: int(64)
-      field alsoTyped: string
-      field commented
+      var thing1
+      var thing2
+      var typedField: int(64)
+      var alsoTyped: string
+      var commented
           This field has a doc attached, does that work? 
-      field typeComment: int(64)
+      var typeComment: int(64)
           This field has a doc and an explicit type 

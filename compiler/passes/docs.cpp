@@ -29,39 +29,35 @@ static int compareClasses(const void *v1, const void* v2) {
 
 void docs(void) {
   if (fdocs) {
-    std::map<std::string, std::ofstream *> files; 
-    // Stores the list of open files that can be written to.
     mkdir(FOLDERNAME.c_str(), S_IWUSR|S_IRUSR|S_IXUSR);
     
     forv_Vec(ModuleSymbol, mod, gModuleSymbols) {
       if (!devOnlyModule(mod) || developer) {
         std::string filename = mod->filename;
-        if (filename.find(".chpl") != std::string::npos) {
-          // removes .chpl from the end of the file name
-          filename = filename.substr(0, filename.find(".chpl"));
+
+        if (mod->modTag == MOD_INTERNAL) {
+          filename = "internal-modules/";
+        } else if (mod ->modTag == MOD_STANDARD) {
+          filename = "standard-modules/";
+        } else {
+          size_t location = filename.rfind("/");
+          if (location != std::string::npos) {
+            filename = filename.substr(0, location + 1);
+          } else {
+            filename = "";
+          }
         }
         filename = FOLDERNAME + "/" + filename;
-        filename += ".txt";
-        
         createDocsFileFolders(filename);
         
-        // If the file we want to write to was not previously created,
-        // create it here.  
-        if (files[mod->filename] == NULL) {
-          files[mod->filename] = 
-            new std::ofstream(filename.c_str(), std::ios::out);
-        }
-        
         if (isNotSubmodule(mod)) {
-          printModule(files[mod->filename], mod, mod->name);
+          // Creates files for each top level module
+          filename = filename + mod->name + ".txt";
+          std::ofstream file(filename.c_str(), std::ios::out);
+          printModule(&file, mod, mod->name);
+          file.close();
         }
       }
-    }
-    // Goes through and closes all the open files
-    std::map<std::string, std::ofstream *>::iterator iter = files.begin();
-    for (size_t i = 0; iter != files.end(); i++) {   
-      (*(iter->second)).close();
-      advance(iter, 1);
     }
   }
 }
@@ -104,19 +100,36 @@ void printArg(std::ofstream *file, ArgSymbol *arg) {
   if (arg->typeExpr != NULL) {
     *file << ": ";
     arg->typeExpr->body.tail->prettyPrint(file);
-  } else if (arg->type != NULL) {
-    if (strcmp(arg->type->symbol->name, "_any") != 0)
-      *file << ": " << arg->type->symbol->name;
+  } else if (arg->type != NULL && arg->type != dtAny) {
+    *file << ": " << arg->type->symbol->name;
   }
 }
 
 void printFields(std::ofstream *file, ClassType *cl) {
-  for_fields(tmp, cl) {
-    if (VarSymbol* field = toVarSymbol(tmp)) {
-      if (strcmp(field->name, "super") != 0) {
+  for (int i = 1; i <= cl->fields.length; i++) {
+    if (VarSymbol *var = toVarSymbol(((DefExpr *)cl->fields.get(i))->sym)) {
+      if (!var->hasFlag(FLAG_SUPER_CLASS)) {
         printTabs(file);
-        *file << "field ";
-        printVar(file, field);
+        printVarStart(file, var);
+        Expr *expr;
+        if (cl->classTag == CLASS_CLASS) {
+          expr = cl->defaultTypeConstructor->body->body.get(i);
+        } else {
+          expr = cl->defaultTypeConstructor->body->body.get(i+1);
+        }
+        if (CallExpr *list = toCallExpr(expr)) {
+          if (CallExpr *end = toCallExpr(list->argList.tail)) {
+            if (end->primitive != NULL) {
+              *file << ": ";
+              end->prettyPrint(file);
+            } else if (SymExpr* sym = toSymExpr(end->argList.tail)) {
+              *file << " = ";
+              sym->prettyPrint(file);
+            }
+          }
+        }        
+        *file << std::endl;
+        printVarDocs(file, var);
       }
     }
   }
@@ -164,7 +177,8 @@ void printClass(std::ofstream *file, ClassType *cl) {
     
     forv_Vec(ClassType, c, list) {
       printTabs(file);
-      *file << "inherited from " << c->symbol->name << std::endl;
+      *file << "inherited from " << c->symbol->name;
+      *file << std::endl;
       NUMTABS++;
       printFields(file, c);
     
@@ -179,17 +193,27 @@ void printClass(std::ofstream *file, ClassType *cl) {
   }
 }
 
-void printVar(std::ofstream *file, VarSymbol *var) {
+void printVarStart(std::ofstream *file, VarSymbol *var) {
   if (var->isConstant())
     *file << "const ";
   if (var->isParameter())
     *file << "param ";
-
+  else 
+    *file << "var ";
+  
+  
   *file << var->name;
-  // Change to output type correctly
-  if (strcmp(var->type->symbol->name, "_any") != 0) 
-    *file << ": " << var->type->symbol->name; 
+}
+
+void printVarType(std::ofstream *file, VarSymbol *var) {  
+  if (var->defPoint->exprType != NULL) {
+    *file << ": ";
+    var->defPoint->exprType->prettyPrint(file); 
+  }
   *file << std::endl;
+}
+
+void printVarDocs(std::ofstream *file, VarSymbol *var) {
   NUMTABS++;
   if (var->doc != NULL) {
     printTabs(file);
@@ -200,7 +224,8 @@ void printVar(std::ofstream *file, VarSymbol *var) {
 
 void printTabs(std::ofstream *file) {
   for (int i = 1; i <= NUMTABS; i++) {
-    *file << "   ";
+      *file << "   ";
+    
   }
 }
 
@@ -234,7 +259,9 @@ void printModule(std::ofstream *file, ModuleSymbol *mod, std::string name) {
   forv_Vec(VarSymbol, var, configs) {
     printTabs(file);
     *file << "config ";
-    printVar(file, var);
+    printVarStart(file, var);
+    printVarType(file, var);
+    printVarDocs(file, var);
   }
 
   Vec<FnSymbol*> fns = mod->getFunctions();
@@ -280,6 +307,8 @@ void printFunction(std::ofstream *file, FnSymbol *fn) {
   
   if (fn->hasFlag(FLAG_ITERATOR_FN)) {
     *file << "iter ";
+  } else {
+    *file << "proc ";
   }
 
   *file << fn->name << "(";

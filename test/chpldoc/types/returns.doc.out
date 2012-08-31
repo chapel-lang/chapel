@@ -1,67 +1,67 @@
 Module: returns
-   method1(): string
+   proc method1(): string
        Comment for method1 
 
-   method1Commentless(): string
+   proc method1Commentless(): string
 
-   body(): complex(128)
+   proc body(): complex(128)
        Comment for method with a body 
 
-   bodyCommentless(): complex(128)
+   proc bodyCommentless(): complex(128)
 
-   hasArg(val: int(64)): uint(64)
+   proc hasArg(val: int(64)): uint(64)
        Comment for method with an argument 
 
-   hasArgCommentless(val: int(64)): uint(64)
+   proc hasArgCommentless(val: int(64)): uint(64)
 
-   argAndBody(val: int(64)): imag(64)
+   proc argAndBody(val: int(64)): imag(64)
        Comment for method with argument and body 
 
-   argAndBodyCommentless(val: int(64)): imag(64)
+   proc argAndBodyCommentless(val: int(64)): imag(64)
 
-   longComment(): int(64)
+   proc longComment(): int(64)
        This comment is rather long
    And spans for
    Multiple lines 
 
-   implicit()
+   proc implicit()
        This proc has an implicit return type 
 
-   implicitCommentless()
+   proc implicitCommentless()
 
-   returnStatement()
+   proc returnStatement()
        This proc has an implicit return type and a return statement 
 
-   returnCommentless()
+   proc returnCommentless()
 
    Module: returns.Other
-      inside(): int(64)
+      proc inside(): int(64)
           Comment for method inside module 
 
-      insideCommentless(): int(64)
+      proc insideCommentless(): int(64)
 
-      body(): real(64)
+      proc body(): real(64)
           Comment for method with a body inside module 
 
-      bodyCommentless(): real(64)
+      proc bodyCommentless(): real(64)
 
-      hasArg(val: int(64)): real(64)
+      proc hasArg(val: int(64)): real(64)
           Comment for method with an argument inside module 
 
-      hasArgCommentless(val: int(64)): real(64)
+      proc hasArgCommentless(val: int(64)): real(64)
 
-      argAndBody(val: int(64)): bool
+      proc argAndBody(val: int(64)): bool
           Comment for method with argument and body inside module 
 
-      argAndBodyCommentless(val: int(64)): bool
+      proc argAndBodyCommentless(val: int(64)): bool
 
-      implicit()
+      proc implicit()
           This proc has an implicit return type 
 
-      implicitCommentless()
+      proc implicitCommentless()
 
-      returnStatement()
+      proc returnStatement()
           This proc has an implicit return type and a return statement 
 
-      returnCommentless()
+      proc returnCommentless()
 

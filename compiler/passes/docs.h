@@ -12,7 +12,11 @@ void printModule(std::ofstream *file, ModuleSymbol *mod, std::string name);
 
 void printFunction(std::ofstream *file, FnSymbol *fn);
 
-void printVar(std::ofstream *file, VarSymbol *var);
+void printVarStart(std::ofstream *file, VarSymbol *var);
+
+void printVarType(std::ofstream *file, VarSymbol *var);
+
+void printVarDocs(std::ofstream *file, VarSymbol *var);
 
 void printClass(std::ofstream *file, ClassType *cl);
 

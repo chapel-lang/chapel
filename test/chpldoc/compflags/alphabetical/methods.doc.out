@@ -1,8 +1,8 @@
 Module: methods
    Class: fullOfMethods
-      commentless()
+      proc commentless()
 
-      hasComment()
+      proc hasComment()
           This is just a normal method with a comment.  I shouldn't
      need to test various other forms of methods, because those
      are tested elsewhere 
@@ -10,9 +10,9 @@ Module: methods
       inherited from object
 
    Record: fullOfMethodsToo
-      commentless()
+      proc commentless()
 
-      hasComment()
+      proc hasComment()
           This is just a normal method with a comment.  I shouldn't
      need to test various other forms of methods, because those
      are tested elsewhere 

@@ -1,11 +1,11 @@
 Module: surroundingModule
-   before()
+   proc before()
        This comment and its proc lies before the defined module 
 
-   after()
+   proc after()
        This comment and its proc lies after the defined module 
 
    Module: surroundingModule.Middle
-      inside()
+      proc inside()
           This comment and its proc lies inside the defined module 
 

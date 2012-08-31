@@ -1,48 +1,48 @@
 Module: inheritance
    Class: Grandparent
        The eldest 
-      getOffMyLawn()
+      proc getOffMyLawn()
           You durn kids! 
 
-      backInMyDay()
+      proc backInMyDay()
 
       inherited from object
 
    Class: Parent
        Second generation 
-      goToYourRoom()
+      proc goToYourRoom()
           Grounded! 
 
-      curfew()
+      proc curfew()
 
       inherited from Grandparent
-         getOffMyLawn()
+         proc getOffMyLawn()
              You durn kids! 
 
-         backInMyDay()
+         proc backInMyDay()
 
 
       inherited from object
 
    Class: Child
        Reaping the benefits of third generation status 
-      whine()
+      proc whine()
           But I was going to go pick up some power converters! 
 
-      youNeverLetMeDoAnythingFun()
+      proc youNeverLetMeDoAnythingFun()
 
       inherited from Parent
-         goToYourRoom()
+         proc goToYourRoom()
              Grounded! 
 
-         curfew()
+         proc curfew()
 
 
       inherited from Grandparent
-         getOffMyLawn()
+         proc getOffMyLawn()
              You durn kids! 
 
-         backInMyDay()
+         proc backInMyDay()
 
 
       inherited from object

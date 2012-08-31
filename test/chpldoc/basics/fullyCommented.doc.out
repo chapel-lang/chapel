@@ -1,26 +1,26 @@
 Module: fullyCommented
-   method1()
+   proc method1()
        Comment for method1 
 
-   body()
+   proc body()
        Comment for method with a body 
 
-   hasArg(val: int(64))
+   proc hasArg(val: int(64))
        Comment for method with an argument 
 
-   argAndBody(val: int(64))
+   proc argAndBody(val: int(64))
        Comment for method with argument and body 
 
    Module: fullyCommented.Other
-      inside()
+      proc inside()
           Comment for method inside module 
 
-      body()
+      proc body()
           Comment for method with a body inside module 
 
-      hasArg(val: int(64))
+      proc hasArg(val: int(64))
           Comment for method with an argument inside module 
 
-      argAndBody(val: int(64))
+      proc argAndBody(val: int(64))
           Comment for method with argument and body inside module 
 

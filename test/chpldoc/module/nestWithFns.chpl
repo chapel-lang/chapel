@@ -1,5 +1,5 @@
 /* This module has a comment, but uncommented first method */
-module Outer {
+module OuterMod {
 
   proc outerFn() {
 
