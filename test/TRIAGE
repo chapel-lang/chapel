@@ -4,32 +4,6 @@
 # (benchmark, compiler, or platform).
 #
 
-
-====================================
-Things to watch for across a handoff
-====================================
-
-* 08/10/12: SSCA2 comm diagnostics test should start passing in the
-  next few days for GASNet runs (at which point this note can be
-  retired); if it doesn't, alert bradc
-
-* 08/10/12: The next xt-cle.cray-xt-cray.none.fifo.pthreads on
-  chpbld01 anyway ought to have a bunch of resolved errors as we were
-  getting gemini-related warnings breaking everything for the 08/09/12
-  commit.  I've committed changes to the nightly.chpbld0* scripts that
-  ought to fix this, but did not have a chance to verify.  If we don't
-  see these go away, we should look again.
-
-* 08/10/12: The last vcalgrind run got ~44 new failures due to not
-  having enough thread slots; best theory as to what happened is that
-  Rachel had a runaway process that was consuming resources and
-  leaving valgrind out in the cold (?).  If these persist, we might
-  want to either look into what changed to make things worse or else
-  finally get around to reading the FAQ to see if we should bump up a
-  setting to permit valgrind to handle more threads (something that
-  might benefit other tests anyway).
-
-
 ==============================================
 These things regularly cause noise in testing:
 ==============================================
@@ -40,16 +14,16 @@ proposed approach is to see whether reference version is similarly
 noisy, and if not to see whether ours has inadvertant nondeterminisms.
 (still noisy as of 2012/08/14-8/24: gnfp, gnfp-nolocal)
 
+8/31/12: This is still causing regular failures.  Tom came up with
+some way tot rewrite the algorithm to maybe help (?) but neither he
+nor Vass know whether this violates the definition of the benchmark.
 
 madness (sungeun)
 -----------------
-*** Resolved after 7/7/12 changes to gasnet testing configuration?
-*** johnk: Consider removing next week if it doesn't show up again by
-*** the end of the week.
 Sung's been working on dialing down parallelism to avoid timeouts
 in oversubscribed setting, but it's not yet perfect: test_likepy
 timed out 06/05/12.
-
+- Added a .timeout file for test_likepy (sungeun: 8/29/2012)
 
 ra* (gbt)
 ---------
@@ -68,14 +42,6 @@ Times out sometimes in XMT testing, but seems to have stabilized in
 other cases.
 
 
-cray-xt-cray (diten)
---------------------
-This appears to be resolved.
-
-compiler segfaults under xt-cle.cray-xt-cray.none.fifo.pthreads (UNASSIGNED)
-----------------------------------------------------------------------------
-intermittent compiler segfaults (reported as internal failure MIS0275) (8/20/2012, 8/21, 8/22) (see *-xt-cle.cray-xt-cray.none.fifo.pthreads-exm.log)
-
 TooManyThreads (unassigned)
 ---------------------------
 Fails periodically.  Lately observed pthreads.tcmalloc (2012/08/15).
@@ -91,12 +57,6 @@ linux64.gnu.gasnet.qthreads.none (UNASSIGNED)
 4) seg fault during program execution (same as #2?):
    distributions/robust/arithmetic/optimizations/optimizeOnClauses_basic_tuple (7/10)
    release/examples/spec/Classes/delete (7/12)
-5) The following showed up a while ago, but doesn't seem to be
-   documented:
-
-   warning: inlining failed in call to 'atomic_destroy_int_least64_t': --param large-function-growth limit reached
-
-   Seen with SSCA2, lulesh, distributions/robust/arithmetic/kernels/hpl
 
 
 baseline (UNASSIGNED)
@@ -106,15 +66,23 @@ studies/hpcc/HPL/vass/bl.md
 studies/shootout/mandelbrot/mandelbrot-fancy
 
 
-valgrind (UNASSIGNED)
----------------------
+valgrind (sungeun)
+------------------
 *** It's a little difficult to follow the trend since we only run this
 *** once a week, so only the last log file is preserved.  We should
 *** considering saving the logs week-over-week (which we should
 *** probably do for all the tests too since we have the space to).
 1) Nondeterministic "the impossible has happened" failures
    2012/08/13 -- Only one test case failed: MultiBlockDist2DLocales
+
+   8/30/12: Passed --numThreadsPerLocale=100 to all tests to try and
+   avoid VG_N_THREADS error that is causing all the impossible errors.
+
 2) Nondeterministic timeouts (could raise timeout value even further)
+   8/30/12: Timed out when running start_test by hand (versus in
+   parallel as the nightly does), so I don't think it's worth
+   disabling parallel testing for the sake of the time outs.
+
 
 
 xmt build (UNASSIGNED)
@@ -127,17 +95,6 @@ sort?  If not, file bug against XMT compiler.
 =========================================
 Not so noisy as to be familiar annoyances
 =========================================
-
-release/examples/primers/chpldoc - linux32.gnu.gasnet.fifo.pthreads (UNASSIGNED)
---------------------------------------------------------------------------------
-crashed with error: internal failure MIS0275 (8/24/12)
-
-variance in comm counts - linux64.gnu.gasnet-everything.fifo.pthreads (sungeun)
--------------------------------------------------------------------------------
-examples:
- performance/sungeun/multilocale/syncsingle  (06/17/12, 6/21)
- - FYI, I did not see during (7/7-7/13)
-
 
 parallel/cobegin/diten/cobeginRace (UNASSIGNED)
 ----------------------------------------------------
