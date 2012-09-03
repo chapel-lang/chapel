@@ -1,53 +1,53 @@
 Module: chpldoc
-   commented(val: int(64)): string
+   proc commented(val: int(64)): string
       
- * Multiline comments found before a method are associated with that method
- * as long as there are no code blocks between them.
- 
+  Multiline comments found before a method are associated with that method
+  as long as there are no code blocks between them.
 
-   stub(val): bool
+
+   proc stub(val): bool
       
- * The method can be a stub and still output its comment
- 
+  The method can be a stub and still output its comment
 
-   uncommented()
+
+   proc uncommented()
 
    Module: chpldoc.Defined
       
- * If the source code defines a module, it can also have a comment associated
- * with it
- 
+  If the source code defines a module, it can also have a comment associated
+  with it
+
       Class: Foo
          
-   * And classes can display their comments, too
-   
-         field a: _unknown
-             
-     * Including the comments associated with their fields
-     
-         getA(): int(64)
+    And classes can display their comments, too
+  
+         var a
             
-     * And class specific methods
-     
+      Including the comments associated with their fields
+    
+         proc getA(): int(64)
+            
+      And class specific methods
+    
 
          inherited from object
 
       Class: Bar
          
-   * If a class inherits from another class, those fields, methods, and their
-   * comments are output in both the super and the subclass
-   
-         setA(newVal: int(64))
+    If a class inherits from another class, those fields, methods, and their
+    comments are output in both the super and the subclass
+  
+         proc setA(newVal: int(64))
 
          inherited from Foo
-            field a: _unknown
-                
-     * Including the comments associated with their fields
-     
-            getA(): int(64)
+            var a
                
-     * And class specific methods
-     
+      Including the comments associated with their fields
+    
+            proc getA(): int(64)
+               
+      And class specific methods
+    
 
 
          inherited from object

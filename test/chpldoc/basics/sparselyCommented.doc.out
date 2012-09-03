@@ -1,42 +1,42 @@
 Module: sparselyCommented
-   method1()
+   proc method1()
        Comment for method1 
 
-   method1Commentless()
+   proc method1Commentless()
 
-   body()
+   proc body()
        Comment for method with a body 
 
-   bodyCommentless()
+   proc bodyCommentless()
 
-   hasArg(val: int(64))
+   proc hasArg(val: int(64))
        Comment for method with an argument 
 
-   hasArgCommentless(val: int(64))
+   proc hasArgCommentless(val: int(64))
 
-   argAndBody(val: int(64))
+   proc argAndBody(val: int(64))
        Comment for method with argument and body 
 
-   argAndBodyCommentless(val: int(64))
+   proc argAndBodyCommentless(val: int(64))
 
    Module: sparselyCommented.Other
-      inside()
+      proc inside()
           Comment for method inside module 
 
-      insideCommentless()
+      proc insideCommentless()
 
-      body()
+      proc body()
           Comment for method with a body inside module 
 
-      bodyCommentless()
+      proc bodyCommentless()
 
-      hasArg(val: int(64))
+      proc hasArg(val: int(64))
           Comment for method with an argument inside module 
 
-      hasArgCommentless(val: int(64))
+      proc hasArgCommentless(val: int(64))
 
-      argAndBody(val: int(64))
+      proc argAndBody(val: int(64))
           Comment for method with argument and body inside module 
 
-      argAndBodyCommentless(val: int(64))
+      proc argAndBodyCommentless(val: int(64))
 

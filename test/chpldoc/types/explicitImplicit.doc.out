@@ -1,25 +1,25 @@
 Module: explicitImplicit
-   foo(bar: int(64))
+   proc foo(bar: int(64))
        This proc has an explicit type argument of type int 
 
-   foo(bar: real(64))
+   proc foo(bar: real(64))
        This proc has an explicit type argument of type real 
 
-   foo(bar: bool)
+   proc foo(bar: bool)
        This proc has an explicit type argument of type bool 
 
-   foo(bar: uint(64))
+   proc foo(bar: uint(64))
        This proc has an explicit type argument of type uint 
 
-   foo(bar: imag(64))
+   proc foo(bar: imag(64))
        This proc has an explicit type argument of type imag 
 
-   foo(bar: complex(128))
+   proc foo(bar: complex(128))
        This proc has an explicit type argument of type complex 
 
-   foo(bar: string)
+   proc foo(bar: string)
        This proc has an explicit type argument of type string 
 
-   bar(baz)
+   proc bar(baz)
        This proc has an implicit type argument 
 

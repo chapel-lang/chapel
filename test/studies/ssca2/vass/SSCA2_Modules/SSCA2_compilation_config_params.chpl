@@ -22,13 +22,15 @@ module SSCA2_compilation_config_params
 // +==========================================================================+
 
 {
-  config param FILTERING = false;
+  config param FILTERING = true;
 
   config param VALIDATE_BC = false;
 
   config param DEBUG_GRAPH_GENERATOR = false;
 
   config param DEBUG_WEIGHT_GENERATOR = false;
+
+  config param DEBUG_NEIGHBOR_HISTOGRAM = false;
 
   config param DEBUG_KERNEL2 = false;
 

@@ -7,7 +7,8 @@ class fullOfFields {
   var commented;
   /* This field has a doc and an explicit type */
   var typeComment: int;
-
+  var initialized = "bleah";
+  var initializedType: int = 3;
 }
 
 record fullOfFieldsToo {

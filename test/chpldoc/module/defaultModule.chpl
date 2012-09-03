@@ -3,4 +3,4 @@ proc foo() {
 
 }
 
-/* This comment should end up attached to the module */
+/* This comment should not end up attached to the module */

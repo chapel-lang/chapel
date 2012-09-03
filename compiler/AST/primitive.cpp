@@ -99,7 +99,7 @@ static Type*
 returnIteratorType(CallExpr* call) {
   Type* ict = call->get(1)->typeInfo();
   INT_ASSERT(ict->symbol->hasFlag(FLAG_ITERATOR_CLASS));
-  return ict->defaultConstructor->getReturnSymbol()->type;
+  return ict->initializer->getReturnSymbol()->type;
 }
 
 static Type*
@@ -460,12 +460,6 @@ initPrimitive() {
   prim_def(PRIM_CAST, "cast", returnInfoCast, false, true);
   prim_def(PRIM_DYNAMIC_CAST, "dynamic_cast", returnInfoCast, false, true);
   prim_def(PRIM_TYPEOF, "typeof", returnInfoFirstDeref);
-
-  /* New primitives for hierlocales */
-  prim_def(PRIM_RESOLVE_TYPEOF, "resolve_typeof", returnInfoInt32);
-  prim_def(PRIM_RESOLVE_MD_NUM, "resolve_md_num", returnInfoInt32);
-  prim_def(PRIM_HERE, "here", returnInfoVoid);
-
   prim_def(PRIM_GET_ITERATOR_RETURN, "get iterator return", returnIteratorType);
   prim_def(PRIM_USE, "use", returnInfoVoid, true);
   prim_def(PRIM_USED_MODULES_LIST, "used modules list", returnInfoVoid);

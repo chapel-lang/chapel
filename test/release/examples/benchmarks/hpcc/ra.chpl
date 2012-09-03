@@ -77,6 +77,11 @@ config const printParams = true,
              printStats = true;
 
 //
+// Use "on" statement in kernel, or remote memory references?
+//
+config const useOn = (CHPL_COMM != "ugni");
+
+//
 // TableDist is a 1D block distribution for domains storing indices
 // of type "indexType", and it is computed by blocking the bounding
 // box 0..m-1 across the set of locales.  UpdateDist is a similar
@@ -123,9 +128,12 @@ proc main() {
   // The main computation: Iterate over the set of updates and the
   // stream of random values in a parallel, zippered manner, dropping
   // the update index on the ground and storing the random value
-  // in r.  Use an on-clause to force the table update to be executed on
-  // the locale which owns the table element in question to minimize
-  // communications.  Compute the update using r both to compute the
+  // in r.  Depending on the value of the useOn config variable, we
+  // either use an on-clause to force the table updates to be executed
+  // on the locales which own the table elements in question, or we
+  // do the updates using direct GETs and PUTs.  Either way could be
+  // faster, depending on the characteristics of the paricular comm
+  // layer in use.  Compute the update using r both to compute the
   // index and as the update value.
   //
   if (useOn) then

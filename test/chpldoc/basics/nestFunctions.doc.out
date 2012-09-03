@@ -1,4 +1,4 @@
 Module: nestFunctions
-   outer()
+   proc outer()
        This the comment for the outer function 
 

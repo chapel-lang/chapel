@@ -139,6 +139,36 @@ html_file_name( int pass, const char *module) {
   return astr( "pass", istr(pass), "_module_", astr(module, ".html"));
 }
 
+
+static void view_sym(Symbol* sym, bool number, int mark) {
+  putchar('\'');
+  if (sym->id == mark)
+    printf("***");
+  if (toFnSymbol(sym)) {
+    printf("fn ");
+  } else if (toArgSymbol(sym)) {
+    printf("arg ");
+  } else if (toTypeSymbol(sym)) {
+    printf("type ");
+  }
+  printf("%s", sym->name);
+  if (number)
+    printf("[%d]", sym->id);
+  if (FnSymbol* fn = toFnSymbol(sym)) {
+    printf(":%s", fn->retType->symbol->name);
+    if (number)
+      printf("[%d]", fn->retType->symbol->id);
+  } else if (sym->type && sym->type->symbol) {
+    printf(":%s", sym->type->symbol->name);
+    if (number)
+      printf("[%d]", sym->type->symbol->id);
+  }
+  if (sym->hasFlag(FLAG_GENERIC))
+    putchar('?');
+  putchar('\'');
+}
+
+
 static void
 view_ast(BaseAST* ast, bool number = false, int mark = -1, int indent = 0) {
   if (!ast)
@@ -153,6 +183,11 @@ view_ast(BaseAST* ast, bool number = false, int mark = -1, int indent = 0) {
     if (number)
       printf("%d ", ast->id);
     printf("%s", astTagName[expr->astTag]);
+
+    if (isBlockStmt(expr))
+      if (FnSymbol* fn = toFnSymbol(expr->parentSymbol))
+        if (expr == fn->where)
+          printf(" where");
 
     if (GotoStmt *gs= toGotoStmt(ast)) {
       printf( " ");
@@ -178,58 +213,14 @@ view_ast(BaseAST* ast, bool number = false, int mark = -1, int indent = 0) {
     }
 
     if (SymExpr* sym = toSymExpr(expr)) {
-      printf(" '");
-      if (sym->var->id == mark)
-        printf("***");
-      if (toFnSymbol(sym->var)) {
-        printf("fn ");
-      } else if (toArgSymbol(sym->var)) {
-        printf("arg ");
-      } else if (toTypeSymbol(sym->var)) {
-        printf("type ");
-      }
-      printf("%s", sym->var->name);
-      if (number)
-        printf("[%d]", sym->var->id);
-      if (FnSymbol* fn = toFnSymbol(sym->var)) {
-        printf(":%s", fn->retType->symbol->name);
-        if (number)
-          printf("[%d]", fn->retType->symbol->id);
-      } else if (sym->var->type && sym->var->type->symbol) {
-        printf(":%s", sym->var->type->symbol->name);
-        if (number)
-          printf("[%d]", sym->var->type->symbol->id);
-      }
-      printf("'");
+      view_sym(sym->var, number, mark);
     } else if (UnresolvedSymExpr* sym = toUnresolvedSymExpr(expr)) {
       printf(" '%s'", sym->unresolved);
     }
   }
 
   if (Symbol* sym = toSymbol(ast)) {
-    printf("'");
-    if (ast->id == mark)
-      printf("***");
-    if (toFnSymbol(sym)) {
-      printf("fn ");
-    } else if (toArgSymbol(sym)) {
-      printf("arg ");
-    } else if (toTypeSymbol(sym)) {
-      printf("type ");
-    }
-    printf("%s", sym->name);
-    if (number)
-      printf("[%d]", sym->id);
-    if (FnSymbol* fn = toFnSymbol(sym)) {
-      printf(":%s", fn->retType->symbol->name);
-      if (number)
-        printf("[%d]", fn->retType->symbol->id);
-    } else if (sym->type && sym->type->symbol) {
-      printf(":%s", sym->type->symbol->name);
-      if (number)
-        printf("[%d]", sym->type->symbol->id);
-    }
-    printf("'");
+    view_sym(sym, number, mark);
   }
 
   AST_CHILDREN_CALL(ast, view_ast, number, mark, indent+2);
@@ -246,8 +237,12 @@ static void type_nprint_view(BaseAST* ast) {
 }
 static void type_print_view(BaseAST* ast) {
   if (Type* type = toType(ast))
-    if (Symbol* ts = type->symbol)
-      printf(":%s\n", ts->name);
+    if (Symbol* ts = type->symbol) {
+      printf(":%s", ts->name);
+      if (type->symbol->hasFlag(FLAG_GENERIC))
+        putchar('?');
+      putchar('\n');
+    }
 }
 
 void list_view(BaseAST* ast) {
@@ -415,6 +410,9 @@ html_view_ast(BaseAST* ast, FILE* html_file, int pass) {
   if (Expr* expr = toExpr(ast)) {
     if (isBlockStmt(expr)) {
       fprintf(html_file, "<DL>\n");
+      if (FnSymbol* fn = toFnSymbol(expr->parentSymbol))
+        if (expr == fn->where)
+          fprintf(html_file, "<B>where</B>\n");
       fprintf(html_file, "{");
     } else if (GotoStmt* s = toGotoStmt(expr)) {
       fprintf(html_file, "<DL>\n");
@@ -668,6 +666,9 @@ log_ast_header(BaseAST* ast, FILE* file) {
   if (Expr* expr = toExpr(ast)) {
     if (isBlockStmt(expr)) {
       log_newline(file);
+      if (FnSymbol* fn = toFnSymbol(expr->parentSymbol))
+        if (expr == fn->where)
+          log_write(file, false, "where ", false);
       log_write(file, false, "{", true);
       ++log_indent;
     } else if (GotoStmt* s = toGotoStmt(expr)) {
@@ -822,6 +823,7 @@ log_ast_symbol(FILE* file, Symbol* sym, bool def) {
 
   if (fLogIds)
     fprintf(file, "[%d]", sym->id);
+
   if (def &&
       !toTypeSymbol(sym) &&
       sym->type &&
@@ -830,6 +832,10 @@ log_ast_symbol(FILE* file, Symbol* sym, bool def) {
     log_write(file, false, ":", false);
     log_ast_symbol(file, sym->type->symbol, false);
   }
+
+  if (sym->hasFlag(FLAG_GENERIC))
+    log_write(file, false, "?", false);
+
   log_need_space = true;
 }
 
@@ -843,18 +849,28 @@ log_ast_fnsymbol(FILE* file, FnSymbol* fn) {
   log_write(file, false, "(", false);
   bool first = true;
   for_formals(formal, fn) {
-    if (!first) {
-      log_write(file, false, ",", true);
-    } else {
+    if (first) {
       first = false;
+    } else {
+      log_write(file, false, ",", true);
     }
     log_ast_symbol(file, formal, true);
+    if (formal->typeExpr) {
+      log_write(file, true, ":", true);
+      if (BlockStmt* block = toBlockStmt(formal->typeExpr))
+        log_ast(block->body.first(), file);
+      else
+        log_ast(formal->typeExpr, file);
+    }
     if (formal->defaultExpr) {
-      fprintf(file, " = ");
-      log_ast(formal->defaultExpr->body.first(), file);
+      log_write(file, true, "=", true);
+      if (BlockStmt* block = toBlockStmt(formal->defaultExpr))
+        log_ast(block->body.first(), file);
+      else
+        log_ast(formal->defaultExpr, file);
     }
   }
-  log_write(file, false, ")", false);
+  log_write(file, false, ")", true);
   if (fn->retTag == RET_VAR)
     log_write(file, true, "var", true);
   else if (fn->retTag == RET_PARAM)

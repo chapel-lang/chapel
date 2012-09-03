@@ -26,7 +26,6 @@ typedef struct chpl_pool_struct {
   chpl_fn_p fun;          // function to call for task
   void*     arg;          // argument to the function
   chpl_bool serial_state; // whether new tasks can be created while executing fun
-  /* void* or typedef*/ int32_t here_state;     // current localeid of task in hierarchy
   chpl_task_pool_p next;
 } task_pool_t;
 
@@ -173,7 +172,7 @@ void chpl_task_begin(chpl_fn_p fp, void* a, chpl_bool ignore_serial,
     // and append it to the end of the task pool for later execution
     chpl_task_pool_p task;
 
-    task = (chpl_task_pool_p)chpl_mem_allocMany(1,sizeof(task_pool_t),
+    task = (chpl_task_pool_p)chpl_mem_alloc(sizeof(task_pool_t),
                                             CHPL_RT_MD_TASK_DESCRIPTOR,
                                             0, 0);
     task->id = next_taskID++;
@@ -206,17 +205,6 @@ chpl_bool chpl_task_getSerial(void) { return serial_state; }
 
 void chpl_task_setSerial(chpl_bool new_state) {
   serial_state = new_state;
-}
-
-// Should be pointers to local locale types 
-// Exported symbol from module / or / void*, use macro to cast
-// Inside compiler-generated code
-// Communication code as example runtime/include/chpl-comm-compiler-macros.h?
-// expr.c, code generation path for macros
-int32_t chpl_task_getHere(void) { return here_state; }
-
-void chpl_task_setHere(int32_t new_here) {
-  here_state = new_here;
 }
 
 

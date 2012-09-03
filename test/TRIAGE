@@ -1,0 +1,184 @@
+# USAGE:
+#
+# Current notes on triage results, sorted by type of failure
+# (benchmark, compiler, or platform).
+#
+
+==============================================
+These things regularly cause noise in testing:
+==============================================
+
+spectralnorm (vass)
+-------------------
+proposed approach is to see whether reference version is similarly
+noisy, and if not to see whether ours has inadvertant nondeterminisms.
+(still noisy as of 2012/08/14-8/24: gnfp, gnfp-nolocal)
+
+8/31/12: This is still causing regular failures.  Tom came up with
+some way tot rewrite the algorithm to maybe help (?) but neither he
+nor Vass know whether this violates the definition of the benchmark.
+
+madness (sungeun)
+-----------------
+Sung's been working on dialing down parallelism to avoid timeouts
+in oversubscribed setting, but it's not yet perfect: test_likepy
+timed out 06/05/12.
+- Added a .timeout file for test_likepy (sungeun: 8/29/2012)
+
+ra* (gbt)
+---------
+Greg committed a fix to resolve the race in the main version (r20301),
+and now just needs to propagate it to the other versions, as well as
+to the else-clause of the 'useOn' conditional.
+  release/examples/benchmarks/hpcc/variants/ra-cleanloop: fixed by r20326
+  studies/hpcc/2008/ra: not fixed yet, failed 8/14/12
+  studies/hpcc/nodistrib/ra.nodist: not fixed yet, failed 8/14/12
+  studies/hpcc/RA/bradc/parallel/ra-dist: not fixed yet, last failure unknown
+
+
+lulesh (bradc)
+--------------
+Times out sometimes in XMT testing, but seems to have stabilized in
+other cases.
+
+
+TooManyThreads (unassigned)
+---------------------------
+Fails periodically.  Lately observed pthreads.tcmalloc (2012/08/15).
+
+
+linux64.gnu.gasnet.qthreads.none (UNASSIGNED)
+---------------------------------------------
+0) We moved to a non-oversubscribed setting on a beefier machine
+1) Continue to have a lot of noise in testing.
+   - Often the execution times out nondeterministically
+2) Got a seg fault (06/06/12, 6/16, stream-ep 8/23/12)
+3) Intermitent seg fault on exit (7/7 7/9, 7/12, 7/13, same as #2?)
+4) seg fault during program execution (same as #2?):
+   distributions/robust/arithmetic/optimizations/optimizeOnClauses_basic_tuple (7/10)
+   release/examples/spec/Classes/delete (7/12)
+
+
+baseline (UNASSIGNED)
+---------------------
+distributions/nelson/MultiBlockDist2DLocales
+studies/hpcc/HPL/vass/bl.md
+studies/shootout/mandelbrot/mandelbrot-fancy
+
+
+valgrind (sungeun)
+------------------
+*** It's a little difficult to follow the trend since we only run this
+*** once a week, so only the last log file is preserved.  We should
+*** considering saving the logs week-over-week (which we should
+*** probably do for all the tests too since we have the space to).
+1) Nondeterministic "the impossible has happened" failures
+   2012/08/13 -- Only one test case failed: MultiBlockDist2DLocales
+
+   8/30/12: Passed --numThreadsPerLocale=100 to all tests to try and
+   avoid VG_N_THREADS error that is causing all the impossible errors.
+
+2) Nondeterministic timeouts (could raise timeout value even further)
+   8/30/12: Timed out when running start_test by hand (versus in
+   parallel as the nightly does), so I don't think it's worth
+   disabling parallel testing for the sake of the time outs.
+
+
+
+xmt build (UNASSIGNED)
+----------------------
+Every night, first XMT compile fails; second one succeeds.  Is there
+any chance that this is due to a leftover program library of some
+sort?  If not, file bug against XMT compiler.
+
+
+=========================================
+Not so noisy as to be familiar annoyances
+=========================================
+
+parallel/cobegin/diten/cobeginRace (UNASSIGNED)
+----------------------------------------------------
+"timedexec died with signal 11" - pgi compiler (06/18/12)
+unknown cause - baseline (06/17/12)
+
+
+non-deterministic timeouts with gasnet (UNASSIGNED)
+---------------------------------------------------
+The following configurations are affected:
+ linux64.gnu.gasnet.qthreads.none
+ linux64.gnu.gasnet.fifo.pthreads.tcmalloc
+ linux64.gnu.gasnet-fast.fifo.pthreads.dlmalloc
+ linux64.gnu.gasnet-everything.fifo.pthreads
+examples of what times out:
+ distributions/robust/arithmetic/kernels/jacobi (still timing out 7/7-8/13)
+ distributions/nelson/MultiBlockDist2DLocales (maybe resolved?)
+ distributions/robust/arithmetic/modules/test_module_Sort (maybe resolved?)
+ distributions/robust/arithmetci/stress/test_many_domains (08/13)
+ distributions/dm/t2 (2012/08/15)
+ etc.
+
+
+"in routine alloca() there is a stack overflow" under PGI (UNASSIGNED)
+----------------------------------------------------------------------
+Somewhat? nondeterministic.
+These configurations:
+ linux64.pgi.none.fifo.pthreads
+ xt-cle.cray-xt-pgi.none.fifo.pthreads
+ xt-cle.cray-xt-pgi.none.fifo.pthreads--linux64.gnu
+
+
+minus_equals nondeterminism (UNASSIGNED)
+----------------------------------------
+noted in regressions (week of 07/02)
+
+atomics nondeterminisms (UNASSIGNED)
+------------------------------------
+release/examples/primers/atomics (06/30/12:xt-intel, 07/04/12:linux32, 08/14/12:xt-cle)
+
+gasnet-everything nondeterminisms (UNASSIGNED)
+----------------------------------------------
+MultiBlockDist2DLocales (06/05/12, 6/16)
+test_module_Sort (06/06/12, 6/16)
+test_array_slicing3 (06/08/12, 6/16)
+
+no-local nondeterminisms (UNASSIGNED)
+-------------------------------------
+cg-sparse-timecomp (06/05/12)
+studies/ssca2/atomic/SSCA2_main_atomic (07/04/12)
+
+memory/vass/crash-memory-module-1 (vass)
+----------------------------------------
+fails intermittently
+
+tcmalloc failures (08/08/12)
+----------------------------
+[Error: Timed out executing program distributions/robust/arithmetic/kernels/hpl (compopts: 1)]
+[Error: Timed out executing program distributions/robust/arithmetic/kernels/jacobi]
+[Error: Timed out executing program distributions/robust/arithmetic/modules/test_module_Sort]
+
+nondet. tmalloc failures
+------------------------
+[Error: Timed out executing program distributions/robust/arithmetic/stress/test_many_domains] (08/08/12)
+
+parallel/begin/deitz/test_big_recursive_begin future succeeded
+--------------------------------------------------------------
+only in these two runs:
+ 120818/Nightly-day6-Sat-linux64.gnu.none.fifo.pthreads-std.log
+ 120821/Nightly-day2-Tue-linux64.gnu.none.fifo.pthreads-nlc.log
+
+===========================================
+Not noisy, but need some attention sometime
+===========================================
+
+types/range/hilde/align64
+-------------------------
+This test gets a false positive pass on intel and pgi it seems, for
+reasons that are not clear to me (i.e., why are they behaving differently
+than gcc?).  If the future should remain, a .skipif should be added to
+skip it in these cases.
+ 
+I wouldn't call the future a bug so much as a 'feature request' or
+'semantic' future -- it suggests a change in the language definition
+that should be considered and agreed upon rather than reflecting a way
+in which the compiler is incorrect w.r.t. the language definition (as
+I understand it.

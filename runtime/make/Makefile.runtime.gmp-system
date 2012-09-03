@@ -1,0 +1,3 @@
+RUNTIME_DEFS += -DCHPL_HAS_GMP
+# assumes gmp.h is in system path.
+

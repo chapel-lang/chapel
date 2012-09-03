@@ -1,8 +1,8 @@
 Module: recordsAndClasses
-   takesAThingy(val: thingy)
+   proc takesAThingy(val: thingy)
        This method takes a record as its argument 
 
-   takesAWhatchamacallit(val: whatchamacallit)
+   proc takesAWhatchamacallit(val: whatchamacallit)
        This method takes a whatchamacallit as its argument 
 
    Record: thingy

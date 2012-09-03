@@ -1,6 +1,6 @@
 Module: basic
     This is the module that Lydia built 
-   inner()
+   proc inner()
        This is the proc that lies in the module that Lydia built 
 
    Module: basic.sadAndAlone
@@ -17,7 +17,7 @@ Module: basic
        class with nary a tone, declared in the module all sad and
        alone, listed behind the proc that lies in the module that
        Lydia built 
-         thoroughlyMiffed()
+         proc thoroughlyMiffed()
              This is the proc that is thoroughly miffed, raised in 
 	 the module whose classes are grown, sister of the class
 	 with nary a tone, declared in the module all sad and

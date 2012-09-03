@@ -22,6 +22,8 @@ $dist = "";
 $memleaks = "";
 $multilocale = 0;
 $svnrevopt = "";
+$compopts = "";
+$execopts = "";
 $startdate = "-1";
 
 while (@ARGV) {
@@ -474,10 +476,6 @@ if ($buildruntime == 0) {
     exit 0;
 }
 
-if ($tasks eq "qthreads") {
-    $qthreadopts = "CHPL_QTHREAD_CFG_OPTIONS='--with-scheduler=nemesis --enable-condwait-queue'";
-}
-
 $makestat = mysystem("cd $chapeldir && $make DEBUG=0 OPTIMIZE=1 $qthreadopts runtime", "making chapel runtime", 0, 1);
 if ($makestat != 0) {
     mysystem("cd $chapeldir && $make DEBUG=0 $qthreadopts runtime", "making chapel runtime", 1, 1);
@@ -491,11 +489,11 @@ $makestat = mysystem("cd $chapeldir && $make modules", "making chapel modules", 
 #
 
 $testflags = "-logfile $rawlog";
-if ($ENV{'CHPL_TARGET_PLATFORM'} eq "mta") {
-    $testflags = "$testflags -compopts '--ldflags -static'";
+if ($compopts ne "") {
+$testflags = "$testflags -compopts '$compopts'";
 }
-if ($ENV{'CHPL_TARGET_PLATFORM'} eq "xmt-sim") {
-    $testflags = "$testflags -compopts '--savec output'";
+if ($execopts ne "") {
+$testflags = "$testflags -execopts '$execopts'";
 }
 if ($interpret == 1) {
     $testflags = "$testflags -interpret";
@@ -598,10 +596,7 @@ if ($runtests == 0) {
 } else {
     $ENV{'CHPL_HOME'} = $chapeldir;
     if ($parnodefile eq "") {
-        if ($tasks eq "qthreads") {
-            $start_test_env = "export QT_AFFINITY=no &&"
-        }
-        $testcommand = "$start_test_env cd $testdir && ../util/start_test $testflags";
+        $testcommand = "cd $testdir && ../util/start_test $testflags";
         print "Executing $testcommand\n";
         $status = mysystem($testcommand, "running standard tests", 0, 0);
     } else {

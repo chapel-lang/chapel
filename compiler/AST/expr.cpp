@@ -227,14 +227,14 @@ void SymExpr::prettyPrint(std::ofstream *o) {
   if (strcmp(var->name, "nil") != 0) {
     if (var->isImmediate()) {
       if (VarSymbol *sym = toVarSymbol(var)) {
-        if (sym->immediate->num_index == INT_SIZE_1)
+        if (sym->immediate->const_kind == CONST_KIND_STRING)
+          *o << "\"" << sym->immediate->v_string << "\"";
+        else if (sym->immediate->num_index == INT_SIZE_1)
           *o << sym->immediate->v_bool;
         else if (sym->immediate->const_kind == NUM_KIND_INT)
           *o << sym->immediate->int_value();
         else if (sym->immediate->const_kind == NUM_KIND_UINT)
           *o << sym->immediate->uint_value();
-        else if (sym->immediate->const_kind == CONST_KIND_STRING)
-          *o << sym->immediate->v_string;
       }
     } else {
       *o << var->name;
@@ -663,27 +663,18 @@ void CallExpr::prettyPrint(std::ofstream *o) {
   bool unusual = false;
   if (baseExpr != NULL) {
     if (UnresolvedSymExpr *expr = toUnresolvedSymExpr(baseExpr)) {
-      if (strcmp(expr->unresolved, "chpl__buildArrayRuntimeType") == 0) {
-        *o << "[";
-        array = true;
-      } else if (strcmp(expr->unresolved, 
-                        "chpl__buildDomainRuntimeType") == 0) {
-        *o << "domain(";
+      if (strcmp(expr->unresolved, "*") == 0){
+        unusual = true;
+        argList.first()->prettyPrint(o);
+        *o << "*(";
         argList.last()->prettyPrint(o);
         *o << ")";
-        unusual = true;
       } else if (strcmp(expr->unresolved, 
                         "_build_range") == 0) {
         argList.first()->prettyPrint(o);
         *o << "..";
         argList.last()->prettyPrint(o);
         unusual = true;
-      } else if (strcmp(expr->unresolved, "*") == 0){
-        unusual = true;
-        argList.first()->prettyPrint(o);
-        *o << "*(";
-        argList.last()->prettyPrint(o);
-        *o << ")";
       } else if (strcmp(expr->unresolved,
                         "chpl__buildDomainExpr") == 0) {
         unusual = true;
@@ -693,6 +684,15 @@ void CallExpr::prettyPrint(std::ofstream *o) {
           }
           expr->prettyPrint(o);
         }
+      } else if (strcmp(expr->unresolved, "chpl__buildArrayRuntimeType") == 0) {
+        *o << "[";
+        array = true;
+      } else if (strcmp(expr->unresolved, 
+                        "chpl__buildDomainRuntimeType") == 0) {
+        *o << "domain(";
+        argList.last()->prettyPrint(o);
+        *o << ")";
+        unusual = true;
       } else if (strcmp(expr->unresolved,
                         "_build_tuple") != 0) {
         baseExpr->prettyPrint(o);
@@ -700,7 +700,13 @@ void CallExpr::prettyPrint(std::ofstream *o) {
     } else {
       baseExpr->prettyPrint(o);
     }
-  } 
+  } else if (primitive != NULL) {
+    if (primitive->tag == PRIM_INIT) {
+      unusual = true;
+      argList.head->prettyPrint(o);
+    }
+  }
+
   if (!array && !unusual)
     *o << "(";
   if (!unusual) {
@@ -1416,32 +1422,6 @@ void CallExpr::codegen(FILE* outfile) {
     case PRIM_RSH:
       gen(outfile, "(%A >> %A)", get(1), get(2));
       break;
-    case PRIM_RESOLVE_TYPEOF:
-    {
-      bool is_struct = false;
-      if (TypeSymbol *t = toTypeSymbol(get(1)->typeInfo()->symbol)) {
-        if (toClassType(t->type)) {
-          is_struct = true;
-        }
-      }
-
-      fprintf(outfile, "sizeof(");
-      if (is_struct) fprintf( outfile, "_");          // need struct of class
-      get(1)->typeInfo()->symbol->codegen( outfile);
-      fprintf( outfile, ")");
-      break;
-    }
-    case PRIM_HERE:
-    {
-      fprintf( outfile, "_here");
-      break;
-    }
-    case PRIM_RESOLVE_MD_NUM:
-    {
-      get(1)->codegen( outfile);
-      fprintf( outfile, " + CHPL_RT_MD_NUM");
-      break;
-    }
     case PRIM_PTR_EQUAL:
     case PRIM_EQUAL:
       if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) &&

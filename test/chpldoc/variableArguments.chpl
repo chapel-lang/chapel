@@ -1,5 +1,5 @@
 module Other {
-  /*  This method has a variable number of arguments */
+  /* This method has a variable number of arguments */
   proc variable(x ...) {
 
   }
@@ -29,7 +29,7 @@ module Other {
 
 }
 
-/*  This method has a variable number of arguments */
+/* This method has a variable number of arguments */
 proc variable(x ...) {
 
 }

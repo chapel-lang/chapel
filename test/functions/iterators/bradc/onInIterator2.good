@@ -1,0 +1,2 @@
+onInIterator2.chpl:1: In iterator 'foo':
+onInIterator2.chpl:3: error: invalid use of 'yield' within 'on' in serial iterator

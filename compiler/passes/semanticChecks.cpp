@@ -257,7 +257,7 @@ checkResolved(void) {
     checkReturnPaths(fn);
     if (fn->retType->symbol->hasFlag(FLAG_ITERATOR_RECORD) &&
         !fn->hasFlag(FLAG_ITERATOR_FN) &&
-        fn->retType->defaultConstructor->defPoint->parentSymbol == fn)
+        fn->retType->initializer->defPoint->parentSymbol == fn)
       USR_FATAL_CONT(fn, "functions cannot return nested iterators or loop expressions");
   }
 

@@ -1,9 +1,9 @@
 Module: empty
-   noComment()
+   proc noComment()
 
-   noBody()
+   proc noBody()
 
-   noBodyButArgs(num: int(64), bleah: bool)
+   proc noBodyButArgs(num: int(64), bleah: bool)
 
-   noCommentButArgs(num: real(64), fleas: bool)
+   proc noCommentButArgs(num: real(64), fleas: bool)
 

@@ -1,5 +1,4 @@
 Module: defaultModule
-    This comment should end up attached to the module 
-   foo()
+   proc foo()
        This proc doesn't matter very much 
 

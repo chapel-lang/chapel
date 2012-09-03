@@ -2,9 +2,9 @@ class mything {
   var x:int;
   var y:int;
   proc readWriteThis(rw) {
-    rw & x;
-    rw & new ioLiteral(" ");
-    rw & y;
+    rw <~> x;
+    rw <~> new ioLiteral(" ");
+    rw <~> y;
   }
 }
 

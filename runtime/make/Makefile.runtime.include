@@ -1,0 +1,47 @@
+# Define the -I options for using the runtime.
+# This is used both when building the runtime and
+# when building Chapel programs.
+#
+
+ifndef RUNTIME_ROOT
+RUNTIME_ROOT=$(CHPL_MAKE_HOME)/runtime/
+endif
+
+RUNTIME_INCLUDE_ROOT = $(RUNTIME_ROOT)/include
+
+RUNTIME_DEFS += \
+        -DCHPL_TASKS_MODEL_H=\"tasks-$(CHPL_MAKE_TASKS).h\" \
+        -DCHPL_THREADS_MODEL_H=\"threads-$(CHPL_MAKE_THREADS).h\"
+
+ifeq ($(DEBUG),1)
+RUNTIME_DEFS += -DCHPL_DEBUG
+endif
+
+ifeq ($(OPTIMIZE),1)
+RUNTIME_DEFS += -DCHPL_OPTIMIZE
+endif
+
+RUNTIME_INCLS = \
+        -I. \
+        -I$(RUNTIME_INCLUDE_ROOT)/comm/$(CHPL_MAKE_COMM) \
+        -I$(RUNTIME_INCLUDE_ROOT)/tasks/$(CHPL_MAKE_TASKS) \
+        -I$(RUNTIME_INCLUDE_ROOT)/threads/$(CHPL_MAKE_THREADS) \
+        -I$(RUNTIME_INCLUDE_ROOT)/comp-$(CHPL_MAKE_COMPILER) \
+        -I$(RUNTIME_INCLUDE_ROOT)/$(subst -sim,,$(CHPL_MAKE_TARGET_PLATFORM)) \
+        -I$(RUNTIME_INCLUDE_ROOT) \
+        -I$(RUNTIME_INCLUDE_ROOT)/atomics/$(CHPL_MAKE_ATOMICS) \
+        -I$(RUNTIME_INCLUDE_ROOT)/mem/$(CHPL_MAKE_MEM) \
+        -I$(THIRD_PARTY_DIR)/utf8-decoder \
+
+# Add any further includes (e.g. third party tcmalloc dir) for memory
+MEM_INCLUDE=$(RUNTIME_ROOT)/make/Makefile.runtime.mem-$(CHPL_MAKE_MEM)
+ifneq ($(strip $(wildcard $(MEM_INCLUDE))),)
+  include $(MEM_INCLUDE)
+endif
+
+# Add any further includes for GMP.
+GMP_INCLUDE=$(RUNTIME_ROOT)/make/Makefile.runtime.gmp-$(CHPL_MAKE_GMP)
+-include $(GMP_INCLUDE)
+
+RUNTIME_CFLAGS += $(RUNTIME_DEFS)
+

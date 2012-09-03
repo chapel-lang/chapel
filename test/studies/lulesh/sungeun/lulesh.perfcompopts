@@ -1,2 +1,2 @@
--sedgeElems=10 -sdoTiming -sprintArrays=false                 # lulesh.default.perfkeys
--sedgeElems=10 -sdoTiming -sprintArrays=false -suseBlockDist  # lulesh.block.perfkeys
+-sedgeElems=10 -sdoTiming                 # lulesh.default.perfkeys
+-sedgeElems=10 -sdoTiming -suseBlockDist  # lulesh.block.perfkeys

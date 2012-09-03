@@ -270,9 +270,10 @@ module SSCA2_RMAT_graph_generator
       if PRINT_TIMING_STATISTICS then stopwatch.start ();
 
       var collisions = 0, self_edges = 0;
+      // TODO: switch to forall
       for e in edge_range do {
-	var u = Edges (e).start;
-	var v = Edges (e).end  ;
+	const u = Edges (e).start;
+	const v = Edges (e).end  ;
 
 	if ( v == u ) then {
           // self-edge, ignore
@@ -282,8 +283,6 @@ module SSCA2_RMAT_graph_generator
           // both the vertex and firstAvail must be passed by reference
           G.Row[u].addEdgeOnVertex(u, v, w, firstAvailNeighbor$[u]);
 	}
-	else
-	  self_edges += 1;
       }
 
       forall (vx, firstAvail$) in (G.Row, firstAvailNeighbor$) do
@@ -299,7 +298,7 @@ module SSCA2_RMAT_graph_generator
       G.num_edges = + reduce [v in G.vertices] G.n_Neighbors (v);
 
       writeln ( "# of raw edges generated  ", n_raw_edges );
-      writeln ( "# of duplicate edges      ", collisions );
+      writeln ( "# of duplicate edges      ", "not counted" /*collisions*/ );
       writeln ( "# of self edges           ", self_edges );
       writeln ( "# of edges in final graph ", G.num_edges );
 
@@ -317,7 +316,9 @@ module SSCA2_RMAT_graph_generator
       }
 
       var max_edges = max reduce [v in vertex_range] G.n_Neighbors (v);
+      writeln ("max number of outgoing edges ", max_edges);
 
+     if DEBUG_NEIGHBOR_HISTOGRAM {
       var edge_count : [0..max_edges] int = 0;
 
       for v in G.vertices do
@@ -327,6 +328,7 @@ module SSCA2_RMAT_graph_generator
       writeln ( "# edges  # nodes");
       for count in 0..max_edges do
 	writeln ( count, "  ", edge_count (count) );
+     }
 
       writeln ();
       

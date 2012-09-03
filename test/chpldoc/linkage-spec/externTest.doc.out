@@ -1,47 +1,47 @@
 Module: externTest
-   extern method1()
+   extern proc method1()
        Comment for method1 
 
-   extern commentless()
+   extern proc commentless()
 
-   extern hasArg(val: int(64))
+   extern proc hasArg(val: int(64))
        Comment for method with an argument 
 
-   extern hasArgCommentless(val: int(64))
+   extern proc hasArgCommentless(val: int(64))
 
-   extern longComment()
+   extern proc longComment()
        This comment is rather long
    And spans for
    Multiple lines 
 
-   extern hasReturnType(): int(64)
+   extern proc hasReturnType(): int(64)
        This method has a return type 
 
-   extern hasReturnTypeCommentless(): int(64)
+   extern proc hasReturnTypeCommentless(): int(64)
 
-   extern hasReturnTypeAndArg(val: int(64)): int(64)
+   extern proc hasReturnTypeAndArg(val: int(64)): int(64)
        This method has a return type and an argument 
 
-   extern hasReturnTypeAndArgCommentless(val: int(64)): int(64)
+   extern proc hasReturnTypeAndArgCommentless(val: int(64)): int(64)
 
    Module: externTest.Other
-      extern inside()
+      extern proc inside()
           Comment for method inside module 
 
-      extern commentless()
+      extern proc commentless()
 
-      extern hasArg(val: int(64))
+      extern proc hasArg(val: int(64))
           Comment for method with an argument inside module 
 
-      extern hasArgCommentless(val: int(64))
+      extern proc hasArgCommentless(val: int(64))
 
-      extern hasReturnType(): int(64)
+      extern proc hasReturnType(): int(64)
           This method has a return type 
 
-      extern hasReturnTypeCommentless(): int(64)
+      extern proc hasReturnTypeCommentless(): int(64)
 
-      extern hasReturnTypeAndArg(val: int(64)): int(64)
+      extern proc hasReturnTypeAndArg(val: int(64)): int(64)
           This method has a return type and an argument 
 
-      extern hasReturnTypeAndArgCommentless(val: int(64)): int(64)
+      extern proc hasReturnTypeAndArgCommentless(val: int(64)): int(64)
 

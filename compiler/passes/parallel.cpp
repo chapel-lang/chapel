@@ -52,26 +52,13 @@ bundleArgs(CallExpr* fcall) {
   // create the class variable instance and allocate it
   VarSymbol *tempc = newTemp(astr("_args_for", fn->name), ctype);
   fcall->insertBefore( new DefExpr( tempc));
-
-//#define DO_DEFAULT_ALLOC
-//#ifdef DO_DEFAULT_ALLOC
   CallExpr *tempc_alloc = new CallExpr(PRIM_CHPL_ALLOC_PERMIT_ZERO,
                                        ctype->symbol,
                                        newMemDesc("compiler-inserted argument bundle"));
-
   fcall->insertBefore( new CallExpr( PRIM_MOVE,
                                      tempc,
                                      tempc_alloc));
-//#else
-//      allocCall = new CallExpr(PRIM_CHPL_ALLOC, fn->_this,
-//                         newMemDesc(ct->symbol->name));
-//      fn->insertAtTail(new CallExpr(PRIM_MOVE, fn->_this, allocCall));
-//      CallExpr* typeOfCall = new CallExpr(PRIM_RESOLVE_TYPEOF, ctype->symbol);
-//      CallExpr* mdCall = new CallExpr(PRIM_RESOLVE_MD_NUM, newMemDesc("compiler-inserted argument bundle"));
-//      CallExpr* tempc_alloc = new CallExpr("here_alloc", typeOfCall, mdCall, 0, new_StringSymbol("unknown"));
-//      //CallExpr *tempc_alloc = new CallExpr(memberAccess, typeOfCall, mdCall, 0, new_StringSymbol("unknown"));
-//      fcall->insertBefore(new CallExpr(PRIM_MOVE, tempc, new CallExpr(PRIM_CAST, ctype->symbol, tempc_alloc)));
-//#endif
+  
   // set the references in the class instance
   i = 1;
   first = true;
@@ -582,20 +569,7 @@ makeHeapAllocations() {
     if (!isModuleSymbol(var->defPoint->parentSymbol) &&
         ((useMap.get(var) && useMap.get(var)->n > 0) ||
          (defMap.get(var) && defMap.get(var)->n > 0))) {
-
-
-//#if 1 //DO_DEFAULT_ALLOC
       var->defPoint->getStmtExpr()->insertAfter(new CallExpr(PRIM_MOVE, var, new CallExpr(PRIM_CHPL_ALLOC, heapType->symbol, newMemDesc("local heap-converted data"))));
-//#else
-//      allocCall = new CallExpr(PRIM_CHPL_ALLOC, fn->_this,
-//                         newMemDesc(ct->symbol->name));
-//      fn->insertAtTail(new CallExpr(PRIM_MOVE, fn->_this, allocCall));
-//      CallExpr* typeOfCall = new CallExpr(PRIM_RESOLVE_TYPEOF, heapType->symbol);
-//      CallExpr* mdCall = new CallExpr(PRIM_RESOLVE_MD_NUM, newMemDesc("local heap-converted data"));
-//      CallExpr* memberAccess = new CallExpr(".", new UnresolvedSymExpr("here"), new_StringSymbol("alloc"));
-//      CallExpr *tempc_alloc = new CallExpr(memberAccess, typeOfCall, mdCall, 0, new_StringSymbol("unknown"));
-//     var->defPoint->getStmtExpr()->insertAfter(new CallExpr(PRIM_MOVE, var, new CallExpr(PRIM_CAST, heapType->symbol, tempc_alloc)));
-//#endif
       heapAllocatedVars.add(var);
     }
 

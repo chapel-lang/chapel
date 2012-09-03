@@ -1,13 +1,16 @@
 #ifndef _chpl_atomics_h_
 #define _chpl_atomics_h_
 
+#include <assert.h>
 #ifdef SIMPLE_TEST
 #include "sys_basic.h"
 #include <stdint.h>
 #include <stdbool.h>
-typedef bool chpl_bool;
+typedef bool chpl_bool; // these are required to enable chpl_bools and floating
+typedef float _real32;  // point atomics in the C tests (and also to keep them 
+typedef double _real64; // from breaking!)
 #else
-#include "chpltypes.h" // chpl_bool -- but that undefines printf, which
+#include "chpltypes.h" // this undefines printf, which
                        // causes problems with the C test cases.
 #endif
 
@@ -21,6 +24,8 @@ typedef uint_least32_t atomic_uint_least32_t;
 typedef uint_least64_t atomic_uint_least64_t;
 typedef uintptr_t atomic_uintptr_t;
 typedef chpl_bool atomic_flag;
+typedef _real64 atomic__real64;
+typedef _real32 atomic__real32;
 
 typedef enum {
  memory_order_relaxed,
@@ -138,6 +143,94 @@ static inline type atomic_fetch_xor_ ## type(atomic_ ## type * obj, type operand
   return atomic_fetch_xor_explicit_ ## type(obj, operand, memory_order_seq_cst); \
 }
 
+#define DECLARE_REAL_ATOMICS_BASE(type) \
+static inline void atomic_destroy_ ## type(atomic_ ## type * obj) { \
+} \
+static inline type atomic_load_explicit_ ## type(atomic_ ## type * obj, memory_order order) { \
+  __sync_synchronize(); \
+  return *obj; \
+} \
+static inline type atomic_load_ ## type(atomic_ ## type * obj) { \
+  return atomic_load_explicit_ ## type(obj, memory_order_seq_cst); \
+} \
+static inline void atomic_store_explicit_ ## type(atomic_ ## type * obj, type value, memory_order order) { \
+  *obj = value; \
+  __sync_synchronize(); \
+} \
+static inline void atomic_store_ ## type(atomic_ ## type * obj, type value) { \
+  atomic_store_explicit_ ## type(obj, value, memory_order_seq_cst); \
+}
+
+#define DECLARE_REAL_ATOMICS_CASTING(type, uinttype) \
+static inline void atomic_init_ ## type(atomic_ ## type * obj, type value) { \
+  assert(sizeof(type) == sizeof(uinttype)); \
+  *obj = value; \
+} \
+static inline type atomic_fetch_add_explicit_ ## type(atomic_ ## type * obj, type operand, memory_order order) { \
+  type desired; \
+  int success; \
+  uinttype * cur_as_uint; \
+  uinttype * desired_as_uint; \
+  type cur; \
+  success = false; \
+  while(!success) { \
+    __sync_synchronize(); \
+    cur = *obj; \
+    desired = cur + operand; \
+    cur_as_uint = (uinttype *) &cur; \
+    desired_as_uint = (uinttype *) &desired; \
+    success = __sync_bool_compare_and_swap((uinttype *) obj, *cur_as_uint, *desired_as_uint); \
+  } \
+  return desired; \
+} \
+static inline type atomic_fetch_add_ ## type(atomic_ ## type * obj, type operand) { \
+  return atomic_fetch_add_explicit_ ## type(obj, operand, memory_order_seq_cst); \
+} \
+static inline type atomic_fetch_sub_explicit_ ## type(atomic_ ## type * obj, type operand, memory_order order) { \
+  type desired; \
+  int success; \
+  uinttype * cur_as_uint; \
+  uinttype * desired_as_uint; \
+  type cur; \
+  success = false; \
+  while(!success) { \
+    __sync_synchronize(); \
+    cur = *obj; \
+    desired = cur - operand; \
+    cur_as_uint = (uinttype *) &cur; \
+    desired_as_uint = (uinttype *) &desired; \
+    success = __sync_bool_compare_and_swap((uinttype *) obj, *cur_as_uint, *desired_as_uint); \
+  } \
+  return desired; \
+} \
+static inline type atomic_fetch_sub_ ## type(atomic_ ## type * obj, type operand) { \
+  return atomic_fetch_sub_explicit_ ## type(obj, operand, memory_order_seq_cst); \
+} \
+static inline chpl_bool atomic_compare_exchange_strong_explicit_ ## type(atomic_ ## type * obj, type expected, type desired, memory_order order) { \
+  uinttype * expected_as_uint; \
+  uinttype * desired_as_uint; \
+  expected_as_uint = (uinttype *) &expected; \
+  desired_as_uint = (uinttype *) &desired; \
+  return __sync_bool_compare_and_swap((uinttype *) obj, *expected_as_uint, *desired_as_uint); \
+} \
+static inline chpl_bool atomic_compare_exchange_strong_ ## type(atomic_ ## type * obj, type expected, type desired) { \
+  return atomic_compare_exchange_strong_explicit_ ## type(obj, expected, desired, memory_order_seq_cst); \
+} \
+static inline chpl_bool atomic_compare_exchange_weak_explicit_ ## type(atomic_ ## type * obj, type expected, type desired, memory_order order) { \
+  return atomic_compare_exchange_strong_explicit_ ## type(obj, expected, desired, order); \
+} \
+static inline chpl_bool atomic_compare_exchange_weak_ ## type(atomic_ ## type * obj, type expected, type desired) { \
+  return atomic_compare_exchange_weak_explicit_ ## type(obj, expected, desired, memory_order_seq_cst); \
+} \
+static inline type atomic_exchange_explicit_ ## type(atomic_ ## type * obj, type value, memory_order order) { \
+  uinttype * value_as_uint; \
+  value_as_uint = (uinttype *) &value; \
+  return (type) __sync_lock_test_and_set((uinttype *) obj, *value_as_uint); \
+} \
+static inline type atomic_exchange_ ## type(atomic_ ## type * obj, type value) { \
+  return atomic_exchange_explicit_ ## type(obj, value, memory_order_seq_cst); \
+}
+
 DECLARE_ATOMICS_BASE(flag, chpl_bool);
 
 #define DECLARE_ATOMICS(type) \
@@ -154,9 +247,20 @@ DECLARE_ATOMICS(uint_least32_t);
 DECLARE_ATOMICS(uint_least64_t);
 DECLARE_ATOMICS(uintptr_t);
 
+
+#define DECLARE_REAL_ATOMICS(type, uinttype) \
+  DECLARE_REAL_ATOMICS_BASE(type) \
+  DECLARE_REAL_ATOMICS_CASTING(type, uinttype)
+
+DECLARE_REAL_ATOMICS(_real32, uint32_t);
+DECLARE_REAL_ATOMICS(_real64, uint64_t);
+
 #undef DECLARE_ATOMICS_BASE
 #undef DECLARE_ATOMICS_FETCH_OPS
+#undef DECLARE_REAL_ATOMICS_BASE
+#undef DECLARE_REAL_ATOMICS_CASTING
 #undef DECLARE_ATOMICS
+#undef DECLARE_REAL_ATOMICS
 
 /*
 #define atomic_is_lock_free(obj) (1)

@@ -149,12 +149,6 @@ chpl_bool chpl_task_getSerial(void);
 void      chpl_task_setSerial(chpl_bool);
 
 //
-// Get and set dynamic ``here'' state
-//
-int32_t     chpl_task_getHere(void);
-void        chpl_task_setHere(int32_t);
-
-//
 // returns the value of the call stack size limit being used in
 // practice; the value returned may potentially differ from one locale
 // to the next

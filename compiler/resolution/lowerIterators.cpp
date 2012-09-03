@@ -425,7 +425,7 @@ static void
 expandIteratorInline(CallExpr* call) {
   Symbol* index = toSymExpr(call->get(1))->var;
   Symbol* ic = toSymExpr(call->get(2))->var;
-  FnSymbol* iterator = ic->type->defaultConstructor->getFormal(1)->type->defaultConstructor;
+  FnSymbol* iterator = ic->type->initializer->getFormal(1)->type->initializer;
 
   if (recursiveIteratorSet.set_in(iterator)) {
 
@@ -673,7 +673,7 @@ canInlineSingleYieldIterator(Symbol* gIterator) {
   Vec<Symbol*> iterators;
   getRecursiveIterators(iterators, gIterator);
   for (int i = 0; i < iterators.n; i++) {
-    FnSymbol* iterator= iterators.v[i]->type->defaultConstructor->getFormal(1)->type->defaultConstructor;
+    FnSymbol* iterator= iterators.v[i]->type->initializer->getFormal(1)->type->initializer;
     BlockStmt *block = iterator->body;
 
     INT_ASSERT(block);
@@ -756,7 +756,7 @@ getIteratorChildren(Vec<Type*>& children, Type* type) {
 
 static void
 buildIteratorCallInner(BlockStmt* block, Symbol* ret, int fnid, Symbol* iterator) {
-  IteratorInfo* ii = iterator->type->defaultConstructor->getFormal(1)->type->defaultConstructor->iteratorInfo;
+  IteratorInfo* ii = iterator->type->initializer->getFormal(1)->type->initializer->iteratorInfo;
   FnSymbol* fn = NULL;
   switch (fnid) {
   case ZIP1: fn = ii->zip1; break;
@@ -820,7 +820,7 @@ inlineSingleYieldIterator(CallExpr* call) {
   CallExpr *noop = new CallExpr(PRIM_NOOP);
   block->insertAtHead(noop);
   for (int i = 0; i < iterators.n; i++) {
-    FnSymbol *iterator = iterators.v[i]->type->defaultConstructor->getFormal(1)->type->defaultConstructor;
+    FnSymbol *iterator = iterators.v[i]->type->initializer->getFormal(1)->type->initializer;
     Vec<Expr*> exprs;
 
     BlockStmt *ibody = iterator->body->copy();
@@ -886,8 +886,8 @@ expand_for_loop(CallExpr* call) {
     INT_FATAL(call, "bad for loop primitive");
 
   if (!fNoInlineIterators &&
-      iterator->type->defaultConstructor->getFormal(1)->type->defaultConstructor->iteratorInfo &&
-      canInlineIterator(iterator->type->defaultConstructor->getFormal(1)->type->defaultConstructor) &&
+      iterator->type->initializer->getFormal(1)->type->initializer->iteratorInfo &&
+      canInlineIterator(iterator->type->initializer->getFormal(1)->type->initializer) &&
       (iterator->type->dispatchChildren.n == 0 ||
        (iterator->type->dispatchChildren.n == 1 &&
        iterator->type->dispatchChildren.v[0] == dtObject))) {
@@ -916,8 +916,8 @@ expand_for_loop(CallExpr* call) {
       block->insertAtTail(buildIteratorCall(cond, HASMORE, iterators.v[i], children));
 
       // hilde sez: This seems like a kludge.
-      // Why is the pragma applied to the default constructor rather than the type itself?
-      if (isBoundedIterator(iterators.v[i]->type->defaultConstructor->getFormal(1)->type->defaultConstructor)) {
+      // Why is the pragma applied to the initializer rather than the type itself?
+      if (isBoundedIterator(iterators.v[i]->type->initializer->getFormal(1)->type->initializer)) {
         if (!firstCond) {
           firstCond = cond;
         } else if (!fNoBoundsChecks) {
@@ -949,7 +949,7 @@ inlineIterators() {
     if (block->parentSymbol) {
       if (block->blockInfo && block->blockInfo->isPrimitive(PRIM_BLOCK_FOR_LOOP)) {
         Symbol* iterator = toSymExpr(block->blockInfo->get(2))->var;
-        if (iterator->type->defaultConstructor->getFormal(1)->type->defaultConstructor->hasFlag(FLAG_INLINE_ITERATOR)) {
+        if (iterator->type->initializer->getFormal(1)->type->initializer->hasFlag(FLAG_INLINE_ITERATOR)) {
           expandIteratorInline(block->blockInfo);
         }
       }
@@ -1104,7 +1104,7 @@ void lowerIterators() {
           VarSymbol* cid = newTemp(dtBool);
           BlockStmt* thenStmt = new BlockStmt();
           VarSymbol* recordTmp = newTemp(type);
-          VarSymbol* classTmp = newTemp(type->defaultConstructor->iteratorInfo->getIterator->retType);
+          VarSymbol* classTmp = newTemp(type->initializer->iteratorInfo->getIterator->retType);
           thenStmt->insertAtTail(new DefExpr(recordTmp));
           thenStmt->insertAtTail(new DefExpr(classTmp));
           ClassType* ct = toClassType(type);
@@ -1121,11 +1121,11 @@ void lowerIterators() {
               thenStmt->insertAtTail(new CallExpr(PRIM_SET_MEMBER, recordTmp, field, ftmp2));
             }
           }
-          thenStmt->insertAtTail(new CallExpr(PRIM_MOVE, classTmp, new CallExpr(type->defaultConstructor->iteratorInfo->getIterator, recordTmp)));
+          thenStmt->insertAtTail(new CallExpr(PRIM_MOVE, classTmp, new CallExpr(type->initializer->iteratorInfo->getIterator, recordTmp)));
           thenStmt->insertAtTail(new CallExpr(PRIM_MOVE, ret, new CallExpr(PRIM_CAST, ret->type->symbol, classTmp)));
           thenStmt->insertAtTail(new GotoStmt(GOTO_GETITER_END, label));
           ret->defPoint->insertAfter(new CondStmt(new SymExpr(cid), thenStmt));
-          ret->defPoint->insertAfter(new CallExpr(PRIM_MOVE, cid, new CallExpr(PRIM_TESTCID, tmp, type->defaultConstructor->iteratorInfo->irecord->getField(1)->type->symbol)));
+          ret->defPoint->insertAfter(new CallExpr(PRIM_MOVE, cid, new CallExpr(PRIM_TESTCID, tmp, type->initializer->iteratorInfo->irecord->getField(1)->type->symbol)));
           ret->defPoint->insertAfter(new DefExpr(cid));
           ret->defPoint->insertAfter(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER_VALUE, getIterator->getFormal(1), irecord->getField(1))));
           ret->defPoint->insertAfter(new DefExpr(tmp));

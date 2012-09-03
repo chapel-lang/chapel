@@ -220,22 +220,9 @@ module analyze_RMAT_graph_associative_array {
 
     // ------------------------------------------------------------------------
     // The data structures below are chosen to implement an irregular (sparse)
-    // graph using associative domains and arrays.  
+    // graph using rectangular domains and arrays.  
     // Each node in the graph has a list of neighbors and a corresponding list
     // of (integer) weights for the implicit edges.  
-    // The list of neighbors is really just a set; the only properties we need
-    // are that we be able to build it (add vertices to it) and that we be
-    // able to iterate over it.  Those properties are satisfied by Chapel's
-    // associative domains, so each neighbor set is represented by an
-    // associative domain.  The weights are an integer array over the 
-    // neighbor domain.
-    //
-    // We would have liked to have defined the global set of neighbors as
-    // an array of associative domains, but that is not supported in Chapel.
-    // Consequently we build an array of records, where each record provides
-    // the neighbor set and the weights for a particular node.  The name
-    // "row_struct" anticipates the planned use of sparse matrices for this same
-    // kind of graph structure.  
     // ------------------------------------------------------------------------
 
     const vertex_domain = 
@@ -243,16 +230,10 @@ module analyze_RMAT_graph_associative_array {
         {1..N_VERTICES} dmapped Block ( {1..N_VERTICES} )
       else
     {1..N_VERTICES} ;
-
-    record row_struct {
-      type vertex;
-      var Row_Neighbors : domain (vertex);
-      var Weight        : [Row_Neighbors] int;
-    }
 	
     class Associative_Graph {
       const vertices;
-      var   Row      : [vertices] row_struct (index (vertices));
+      var   Row      : [vertices] VertexData;
       var num_edges = -1;
 
       // iterate over neighbor IDs, with filtering
@@ -337,6 +318,9 @@ module analyze_RMAT_graph_associative_array {
       proc   n_Neighbors (v : index (vertices) ) 
       {return Row (v).numNeighbors();}
 
+    } // class Associative_Graph
+
+    writeln("allocating Associative_Graph");
     var G = new Associative_Graph (vertex_domain);
 
     // ------------------------------------------------------------------

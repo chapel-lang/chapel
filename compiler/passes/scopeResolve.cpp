@@ -1,3 +1,6 @@
+// scopeResolve.cpp
+//
+
 #include "astutil.h"
 #include "build.h"
 #include "expr.h"
@@ -7,6 +10,13 @@
 #include "stringutil.h"
 #include "symbol.h"
 #include <map>
+
+//
+// static functions (forward declaration)
+//
+static void build_type_constructor(ClassType* ct);
+static void build_constructor(ClassType* ct);
+
 
 //
 // The symbolTable maps BaseAST* pointers to entries based on scope
@@ -433,8 +443,15 @@ static void resolveEnumeratedTypes() {
 }
 
 
-/********* build constructor ***************/
-void build_type_constructor(ClassType* ct) {
+/********* build constructors ***************/
+void build_constructors(ClassType* ct)
+{
+  build_type_constructor(ct);
+  build_constructor(ct);
+}
+
+
+static void build_type_constructor(ClassType* ct) {
   if (ct->defaultTypeConstructor)
     return;
 
@@ -592,7 +609,7 @@ static void build_constructor(ClassType* ct) {
   FnSymbol* fn = new FnSymbol(astr("_construct_", ct->symbol->name));
   fn->addFlag(FLAG_DEFAULT_CONSTRUCTOR);
   fn->addFlag(FLAG_CONSTRUCTOR);
-  ct->defaultConstructor = fn;
+  ct->initializer = fn;
   fn->cname = astr("_construct_", ct->symbol->cname);
   fn->addFlag(FLAG_TEMP); // compiler inserted
 
@@ -631,29 +648,13 @@ static void build_constructor(ClassType* ct) {
 
   ArgSymbol* meme = NULL;
   CallExpr* superCall = NULL;
-//#define DO_DEFAULT_ALLOC
-#ifdef DO_DEFAULT_ALLOC
   CallExpr* allocCall = NULL;
-#endif
   if (ct->symbol->hasFlag(FLAG_REF) ||
       isSyncType(ct)) {
     // For ref, sync and single classes, just allocate space.
-
-    CallExpr* defaultAllocCall = new CallExpr(PRIM_CHPL_ALLOC, fn->_this, newMemDesc(ct->symbol->name));
-    CallExpr* defaultAssignmentCall = new CallExpr(PRIM_MOVE, fn->_this, defaultAllocCall);
-
-    CallExpr* typeOfCall = new CallExpr(PRIM_RESOLVE_TYPEOF, fn->_this);
-    CallExpr* mdCall = new CallExpr(PRIM_RESOLVE_MD_NUM, newMemDesc(ct->symbol->name));
-    CallExpr* memberAccess = new CallExpr(".", new UnresolvedSymExpr("here"), new_StringSymbol("alloc"));
-    CallExpr* hereAllocCall = new CallExpr(memberAccess, typeOfCall, mdCall, buildIntLiteral("0"), new_StringSymbol("unknown"));
-    //CallExpr("sizeof" ? 
-    CallExpr* hereAssignmentCall = new CallExpr(PRIM_MOVE, fn->_this, new CallExpr(PRIM_CAST, fn->_this, hereAllocCall));
-
-    CallExpr* condExpr = new CallExpr("==", new UnresolvedSymExpr("here"), gNil);
-
-    BlockStmt* allocation = buildIfStmt(condExpr, defaultAssignmentCall, hereAssignmentCall);
-    fn->insertAtTail(allocation);
-
+    allocCall = new CallExpr(PRIM_CHPL_ALLOC, fn->_this,
+                         newMemDesc(ct->symbol->name));
+    fn->insertAtTail(new CallExpr(PRIM_MOVE, fn->_this, allocCall));
   } else if (!ct->symbol->hasFlag(FLAG_TUPLE)) {
     // Create a meme (whatever that is).
     meme = new ArgSymbol(INTENT_BLANK, "meme", ct, NULL, new SymExpr(gTypeDefaultToken));
@@ -663,17 +664,16 @@ static void build_constructor(ClassType* ct) {
     if (isClass(ct)) {
       if (ct->dispatchParents.n > 0 && !ct->symbol->hasFlag(FLAG_EXTERN)) {
         // This class has a parent class.
-        if (!ct->dispatchParents.v[0]->defaultConstructor) {
-          // If it doesn't yet have a default constructor, make one.
-          build_type_constructor(toClassType(ct->dispatchParents.v[0]));
-          build_constructor(toClassType(ct->dispatchParents.v[0]));
+        if (!ct->dispatchParents.v[0]->initializer) {
+          // If it doesn't yet have an initializer, make one.
+          build_constructors(toClassType(ct->dispatchParents.v[0]));
         }
 
         // Get the parent constructor.
         // Note that since we only pay attention to the first entry in the
         // dispatchParents list, we are effectively implementing
         // single class inheritance, multiple interface inheritance.
-        FnSymbol* superCtor = ct->dispatchParents.v[0]->defaultConstructor;
+        FnSymbol* superCtor = ct->dispatchParents.v[0]->initializer;
 
         // Create a call to the superclass constructor.
         superCall = new CallExpr(superCtor->name);
@@ -1097,8 +1097,7 @@ void scopeResolve(void) {
   //
   forv_Vec(ClassType, ct, gClassTypes) {
     SET_LINENO(ct->symbol);
-    build_type_constructor(ct);
-    build_constructor(ct);
+    build_constructors(ct);
   }
 
   //

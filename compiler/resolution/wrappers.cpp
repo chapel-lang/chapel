@@ -153,16 +153,6 @@ buildDefaultWrapper(FnSymbol* fn,
         wrapper->insertAtTail(new CallExpr(PRIM_MOVE, wrapper->_this,
                                 new CallExpr(PRIM_CHPL_ALLOC, wrapper->_this,
                                 newMemDesc(fn->_this->type->symbol->name))));
-
-
-        //CallExpr* typeOfCall = new CallExpr(PRIM_RESOLVE_TYPEOF, wrapper->_this);
-        //CallExpr* mdCall = new CallExpr(PRIM_RESOLVE_MD_NUM, newMemDesc(fn->_this->type->symbol->name));
-        //CallExpr* memberAccess = new CallExpr(".", new UnresolvedSymExpr("here"), new_StringSymbol("alloc"));
-        //CallExpr* hereAllocCall = new CallExpr(memberAccess, typeOfCall, mdCall, buildIntLiteral("0"), new_StringSymbol("unknown"));
-        //CallExpr* hereAssignmentCall = new CallExpr(PRIM_MOVE, wrapper->_this, new CallExpr(PRIM_CAST, wrapper->_this, hereAllocCall));
-        //wrapper->insertAtTail(hereAssignmentCall);
-
-
         wrapper->insertAtTail(new CallExpr(PRIM_SETCID, wrapper->_this));
       }
     }
