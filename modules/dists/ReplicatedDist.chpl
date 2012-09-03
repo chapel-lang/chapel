@@ -128,7 +128,7 @@ How to use replicated variables:
 
     // "collect": assign from each copy of 'myRepVar' to
     // corresponding element of an array 'collected'
-    var collected: [LocaleSpace] MyType;
+    var collected: [rootLocale.getLocaleSpace()] MyType;
     rcCollect(myRepVar, collected);
 
     // access directly a remote copy on the locale 'remoteLoc' (read or write)
@@ -182,7 +182,7 @@ class ReplicatedDist : BaseDist {
 
 // constructor: replicate over the given locales
 // (by default, over all locales)
-proc ReplicatedDist.ReplicatedDist(targetLocales: [] locale = Locales,
+proc ReplicatedDist.ReplicatedDist(targetLocales: [] locale = rootLocale.getLocales(),
                  purposeMessage: string = "used to create a ReplicatedDist")
 {
   if traceReplicatedDist then
@@ -703,7 +703,7 @@ proc ReplicatedDist.dsiCreateRankChangeDist(param newRank, args) return this;
 
 const rcDomainIx   = 1;
 const rcDomainBase = {rcDomainIx..rcDomainIx};
-const rcLocales    = Locales;
+const rcLocales    = rootLocale.getLocales();
 const rcDomainMap  = new ReplicatedDist(rcLocales);
 const rcDomain     = rcDomainBase dmapped new dmap(rcDomainMap);
 const rcCollectDomaim = rcLocales.domain;
@@ -789,7 +789,7 @@ proc rcExample(initVal: ?MyType, newVal: MyType, newLocale: locale): void {
   writeln("\nafter update, myRepVar copies are:\n", myRepVar);
 
   // collect all copies of 'myRepVar' into an array
-  var collected: [LocaleSpace] MyType;
+  var collected: [rootLocale.getLocaleSpace()] MyType;
   rcCollect(myRepVar, collected);
 
   writeln("\ncollected copies of myRepVar are:\n", collected);
@@ -799,7 +799,7 @@ proc rcExample(initVal: ?MyType, newVal: MyType, newLocale: locale): void {
 // specific locales to replicate over. The two differences are marked.
 //
 proc rcExampleOverLocales(initVal: ?MyType, newVal: MyType, newLocale: locale,
-                          localesToReplicateOver: [] locale = Locales): void {
+                          localesToReplicateOver: [] locale = rootLocale.getLocales()): void {
   writeln("starting rcExampleOverLocales over ", localesToReplicateOver);
 
   // declare a replicated variable

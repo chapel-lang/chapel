@@ -110,7 +110,7 @@ if manylocs {
     test((1,1), (3,3), 0);
   }
 } else {
-  msg("skipped because of oversubscribing Locales(0)");
+  msg("skipped because of oversubscribing Locale(0)");
 }
 tl();
 

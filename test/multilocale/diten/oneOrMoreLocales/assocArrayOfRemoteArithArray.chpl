@@ -1,7 +1,7 @@
 config var size = 5;
 proc main {
   var D: domain(locale);
-  for loc in Locales {
+  for loc in rootLocale.getLocales() {
     D += loc;
   }
   // A is an associative array indexed by locales of arithmetic arrays of reals
@@ -13,7 +13,7 @@ proc main {
         A(loc)(i) = loc.id + i / 10.0;
     }
   }
-  for loc in Locales {
+  for loc in rootLocale.getLocales() {
     writeln(A(loc));
   }
 }

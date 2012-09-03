@@ -5,7 +5,7 @@ class C {
 
 var c1, c2: C;
 
-on Locales(1) {
+on rootLocale.getLocales()(1) {
   c1 = new C();
   c2 = new C();
 }

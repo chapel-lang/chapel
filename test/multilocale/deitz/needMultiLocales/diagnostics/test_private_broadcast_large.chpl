@@ -11,7 +11,7 @@ startVerboseComm();
 
 extern proc printf(x...);
 
-on Locales(1) {
+on rootLocale.getLocales()(1) {
   for param i in 1..256 do
     printf("%s\n", x(i):string);
 }

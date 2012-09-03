@@ -5,7 +5,7 @@ if doit {
     var r: int;
   }
 
-  on Locales(0) do {
+  on rootLocale.getLocales()(0) do {
     local {
       var r:R;
       r.r = 5;

@@ -24,7 +24,7 @@ class Block1DDist {
   //
   // the set of target locales to which the indices are mapped
   //
-  const targetLocs = Locales; // TODO: would like to assert that this is a 1D 
+  const targetLocs = rootLocale.getLocales(); // TODO: would like to assert that this is a 1D 
                               // array of locales and maybe remove the default 
                               // initializer
 

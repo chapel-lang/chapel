@@ -117,11 +117,11 @@ proc setupTargetLocales() {
   if tld {
     if numLocales > tla.numElements then
       writeln("UNUSED LOCALES ", numLocales - tla.numElements);
-    for (l,i) in (tla,0..) do l = Locales[i];
+    for (l,i) in (tla,0..) do l = rootLocale.getLocales()[i];
   } else {
 writeln("insufficient locales");
 halt();
-    writeln("oversubscribing Locales(0)");
-    tla = Locales(0);
+    writeln("oversubscribing Locale(0)");
+    tla = rootLocale.getLocale(0);
   }
 }

@@ -5,7 +5,7 @@ proc main() {
   var s: string = "a string";
   var b: int;
   writeln(s);
-  on Locales(1) {
+  on rootLocale.getLocales()(1) {
     var i = 0;
     var r: sync int;
     cobegin {

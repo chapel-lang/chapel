@@ -5,7 +5,7 @@ class C {
 
 var A: [1..5] C;
 
-on Locales(1) {
+on rootLocale.getLocales()(1) {
   [i in A.domain] A(i) = new C(i);
 }
 
@@ -21,7 +21,7 @@ proc foo(c: C) {
   c.a = c.a - 3;
 }
 
-on Locales(1) {
+on rootLocale.getLocales()(1) {
   var localA: [A.domain.low..A.domain.high] C;
   localA = A;
 writeln("Second local block");

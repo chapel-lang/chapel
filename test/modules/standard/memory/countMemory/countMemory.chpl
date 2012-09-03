@@ -1,11 +1,11 @@
 use Memory;
 
 proc output(type retType) {
-  const mem = Locales(0).physicalMemory(retType = retType),
-        bytes = Locales(0).physicalMemory(MemUnits.Bytes, retType),
-        kb = Locales(0).physicalMemory(MemUnits.KB, retType),
-        mb = Locales(0).physicalMemory(MemUnits.MB, retType),
-        gb = Locales(0).physicalMemory(MemUnits.GB, retType);
+  const mem = rootLocale.getLocales()(0).physicalMemory(retType = retType),
+    bytes = rootLocale.getLocales()(0).physicalMemory(MemUnits.Bytes, retType),
+    kb = rootLocale.getLocales()(0).physicalMemory(MemUnits.KB, retType),
+    mb = rootLocale.getLocales()(0).physicalMemory(MemUnits.MB, retType),
+    gb = rootLocale.getLocales()(0).physicalMemory(MemUnits.GB, retType);
 
   writeln("memory is: ", mem);
   writeln(" in bytes: ", bytes);
@@ -14,11 +14,11 @@ proc output(type retType) {
   writeln("    in gb: ", gb);
 }
 
-const mem = Locales(0).physicalMemory(),
-      bytes = Locales(0).physicalMemory(MemUnits.Bytes),
-      kb = Locales(0).physicalMemory(MemUnits.KB),
-      mb = Locales(0).physicalMemory(MemUnits.MB),
-      gb = Locales(0).physicalMemory(MemUnits.GB);
+const mem = rootLocale.getLocales()(0).physicalMemory(),
+  bytes = rootLocale.getLocales()(0).physicalMemory(MemUnits.Bytes),
+  kb = rootLocale.getLocales()(0).physicalMemory(MemUnits.KB),
+  mb = rootLocale.getLocales()(0).physicalMemory(MemUnits.MB),
+  gb = rootLocale.getLocales()(0).physicalMemory(MemUnits.GB);
 
 writeln("memory is: ", mem);
 writeln(" in bytes: ", bytes);

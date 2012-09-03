@@ -10,7 +10,7 @@ writeln(Dom);
 writeln(A);
 writeln();
 writeln("element locales");
-on Locales(1) {
+on rootLocale.getLocales()(1) {
   for i in Dom {
     write(A(i).locale.id, " ");
   }

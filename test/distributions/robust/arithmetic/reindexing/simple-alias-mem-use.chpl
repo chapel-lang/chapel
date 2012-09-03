@@ -3,7 +3,7 @@ use driver;
 
 writeln("start");
 
-for l in Locales do on l {
+for l in rootLocale.getLocales() do on l {
   writeln("testing on ", here);
   const m1 = memoryUsed();
   testit(false);

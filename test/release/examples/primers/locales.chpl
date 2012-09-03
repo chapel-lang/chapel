@@ -63,7 +63,7 @@ writeln();
 // loop we use 'here' and the '.id' query to indicate what locale
 // each iteration of the loop body is executing on.
 //
-for loc in Locales do
+for loc in rootLocale.getLocales() do
   on loc do
     writeln("hello locale ", here.id);
 writeln();
@@ -88,7 +88,7 @@ writeln();
 var MyLocaleArray: [1..10] locale;
 
 for i in 1..10 do
-  MyLocaleArray[i] = Locales[(i-1)%numLocales];
+  MyLocaleArray[i] = rootLocale.getLocale((i-1)%numLocales);
 
 for i in 1..10 do
   on MyLocaleArray[i] do
@@ -114,7 +114,7 @@ writeln();
 config const printLocaleInfo = true;  // permit testing to turn this off
 
 if printLocaleInfo then
-  for loc in Locales do
+  for loc in rootLocale.getLocales() do
     on loc {
       writeln("locale #", here.id, "...");
       writeln("  ...is named: ", here.name);
@@ -134,10 +134,10 @@ writeln();
 
 {
   var x: int = 2;
-  on Locales[1 % numLocales] {
+  on rootLocale.getLocale(1 % numLocales) {
     var y: int = 3;
     writeln("From locale ", here.id, ", x is: ", x, " and y is: ", y);
-    on Locales[0] {
+    on rootLocale.getLocale(0) {
       writeln("From locale 0, x is: ", x, " and y is: ", y);
     }
   }
@@ -164,7 +164,7 @@ writeln();
 
 {
   var x: int = 2;
-  on Locales[1 % numLocales] {
+  on rootLocale.getLocale(1 % numLocales) {
     var y: int = 3;
     writeln("x is stored on locale ", x.locale.id, ", while y lives on ",
             y.locale.id);
@@ -181,7 +181,7 @@ writeln();
 
 {
   var x: int = 2;
-  on Locales[1 % numLocales] {
+  on rootLocale.getLocale(1 % numLocales) {
     var y: int = 3;
     on x do
       writeln("Using a data-driven on-clause, I'm now executing on locale ", 
@@ -225,7 +225,7 @@ class Node {
 var head = new Node(0);
 var current = head;
 for i in 1..numLocales-1 do
-  on Locales[i] {
+  on rootLocale.getLocales()[i] {
     current.next = new Node(i);
     current = current.next;
   }

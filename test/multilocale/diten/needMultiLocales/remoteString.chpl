@@ -6,11 +6,11 @@ proc main() {
   var b: int;
   writeln(s);
   cobegin {
-    on Locales(1) {
+    on rootLocale.getLocales()(1) {
       while (s != "done") { b += 1; }
       s = "another string";
     }
-    on Locales(0) {
+    on rootLocale.getLocales()(0) {
       sleep(sleepTime);
       s = "done";
     }

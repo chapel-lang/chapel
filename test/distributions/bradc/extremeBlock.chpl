@@ -7,7 +7,7 @@ proc testit(type t, m: t) {
   const BD = new dmap(new Block(boundingBox={0:t..#m}));
   const D: domain(1, t) dmapped BD = {0:t..#m};
 
-  for l in Locales do
+  for l in rootLocale.getLocales() do
     writeln(l.id, ": ", D._value.locDoms[l.id].myBlock);
 }
 

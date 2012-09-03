@@ -135,7 +135,7 @@ if manylocs {
     test((0,2), (5,1), 51);
   }
 } else {
-  msg("skipped because of oversubscribing Locales(0)");
+  msg("skipped because of oversubscribing Locale(0)");
 }
 tl();
 

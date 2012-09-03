@@ -28,7 +28,7 @@ proc multi_array(P: int=100) {
 
   cobegin {
     // Producer
-    on Locales(0) {
+    on rootLocale.getLocale(0) {
       var put = 1;
       for i in 1..P {
         // put product in all array elements
@@ -41,7 +41,7 @@ proc multi_array(P: int=100) {
       }
     }
     // Consumers
-    coforall j in D do on Locales(j%numLocales) {
+    coforall j in D do on rootLocale.getLocale(j%numLocales) {
       var  get: int;
       for i in 1..P {
         // read the product

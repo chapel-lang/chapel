@@ -50,7 +50,7 @@ module RARandomStream {
     n %= period;
     if (n == 0) then return 0x1;
 
-    on Locales(0) {
+    on rootLocale.getLocales()(0) {
       var ran: randType = 0x2;
       for i in 0..log2(n)-1 by -1 {
         var val: randType = 0;

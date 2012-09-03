@@ -16,7 +16,7 @@ proc main()
   //const myLocales : [ell in 0..#(bytesRequired:int)] locale = Locales(ell % numLocales);
   var myLocales : [0..#(bytesRequired:int)] locale;
   forall loc in 0..#(bytesRequired:int) do {
-    myLocales(loc) = Locales(loc % numLocales);
+    myLocales(loc) = rootLocale.getLocale(loc % numLocales);
   }
 
   var ByteDist = new dmap(new Block(rank=2,idxType=int(64),

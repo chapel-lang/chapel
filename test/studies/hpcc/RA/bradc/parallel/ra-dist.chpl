@@ -26,8 +26,8 @@ config const printParams = true,
 proc main() {
   printConfiguration();
 
-  const TableDist = new dmap(new Block(rank=1, idxType=indexType, boundingBox={0..m-1}, targetLocales=Locales)),
-       UpdateDist = new dmap(new Block(rank=1, idxType=indexType, boundingBox={0..N_U-1}, targetLocales=Locales));
+  const TableDist = new dmap(new Block(rank=1, idxType=indexType, boundingBox={0..m-1}, targetLocales=rootLocale.getLocales())),
+    UpdateDist = new dmap(new Block(rank=1, idxType=indexType, boundingBox={0..N_U-1}, targetLocales=rootLocale.getLocales()));
 
   const TableSpace: domain(1, indexType) dmapped TableDist = {0..m-1};
   var T: [TableSpace] elemType;

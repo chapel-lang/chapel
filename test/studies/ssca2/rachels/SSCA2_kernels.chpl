@@ -171,7 +171,8 @@ module SSCA2_kernels
   config const defaultNumTPVs = 16;
   config var numTPVs = min(defaultNumTPVs, numLocales);
   // Would be nice to use PriavteDist, but aliasing is not supported (yet)
-  const PrivateSpace = {LocaleSpace} dmapped Block(boundingBox={LocaleSpace});
+  const PrivateSpace = {rootLocale.getLocaleSpace()}
+  dmapped Block(boundingBox={rootLocale.getLocaleSpace()});
 
   // ==================================================================
   //                              KERNEL 4
@@ -237,8 +238,8 @@ module SSCA2_kernels
       // variables.  We use _computChunkStartEnd() to distribute the
       // variables approximately evenly across the 1d locales array.
       for t in TPVSpace {
-        TPVLocales[t] = Locales[_computeChunkStartEnd(numLocales,
-                                                      numTPVs, t+1)[1]-1];
+        TPVLocales[t] = rootLocale.getLocale
+          (_computeChunkStartEnd(numLocales, numTPVs, t+1)[1]-1);
       }
       const TPVLocaleSpace = {TPVSpace} dmapped Block(boundingBox={TPVSpace},
                                                       targetLocales=TPVLocales);
@@ -254,7 +255,7 @@ module SSCA2_kernels
           var tpv = TPV[i];
           forall v in vertex_domain do
             tpv.BCaux[v].children_list.nd = {1..G.n_Neighbors[v]};
-          for loc in Locales do on loc {
+          for loc in rootLocale.getLocales() do on loc {
             tpv.Active_Level[here.id] = new Level_Set (Sparse_Vertex_List);
             tpv.Active_Level[here.id].previous = nil;
             tpv.Active_Level[here.id].next = new Level_Set (Sparse_Vertex_List);;

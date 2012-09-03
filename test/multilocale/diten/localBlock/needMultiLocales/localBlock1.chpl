@@ -6,7 +6,7 @@ class C {
 proc main {
   var c = new C(1, 1.0);
 
-  on Locales(1) {
+  on rootLocale.getLocales()(1) {
     c = new C(2, 2.0);
   }
 

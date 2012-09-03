@@ -15,10 +15,10 @@ for i in B.domain do
   if A(i) != B(i) then
     writeln("Error: B(", i, ")=", B(i));
 
-on Locales(numLocales-1) {
+on rootLocale.getLocale(numLocales-1) {
   var C: [1..n] int = -1;
   var Cd = C._value.data;
-  on Locales(0) {
+  on rootLocale.getLocales()(0) {
     __primitive("chpl_comm_put",
                 __primitive("array_get", Ad, A._value.getDataIndex(1)),
                 numLocales-1,
@@ -32,13 +32,13 @@ on Locales(numLocales-1) {
 
 }
 
-on Locales(numLocales-1) {
+on rootLocale.getLocale(numLocales-1) {
   var D: [1..n] int = 777;
   var Dd = D._value.data;
-  on Locales(0) {
+  on rootLocale.getLocale(0) {
     var E: [1..n] int = -1;
     var Ed = E._value.data;
-    on Locales(numLocales-1) {
+    on rootLocale.getLocale(numLocales-1) {
       __primitive("chpl_comm_put",
                   __primitive("array_get", Dd, D._value.getDataIndex(1)),
                   0,

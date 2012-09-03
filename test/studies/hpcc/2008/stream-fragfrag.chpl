@@ -14,7 +14,7 @@ config const m = computeProblemSize(numVectors, elemType),
 config const numTrials = 10,
              epsilon = 0.0;
 
-config const tasksPerLocale = min reduce Locales.numCores;
+                                                         config const tasksPerLocale = min reduce rootLocale.getLocales().numCores;
 
 config const useRandomSeed = true,
              seed = if useRandomSeed then SeedGenerator.currentTime else 314159265;
@@ -29,10 +29,10 @@ proc main() {
 
   const ProblemSpace: domain(1, indexType) = {1..m};
 
-  var localGBs: [LocaleSpace] real,
-      allValidAnswer: [LocaleSpace] bool;
+  var localGBs: [rootLocale.getLocaleSpace()] real,
+    allValidAnswer: [rootLocale.getLocaleSpace()] bool;
   
-  coforall loc in Locales {
+  coforall loc in rootLocale.getLocales() {
     on loc {
       const myProblemSpace: domain(1, indexType)
                           = BlockPartition(ProblemSpace, here.id, numLocales);

@@ -16,7 +16,7 @@ const t = new taskpool(poolSize);
 
 proc buildjk() {
   cobegin {
-    coforall loc in LocaleSpace do on Locales(loc) do
+    coforall loc in rootLocale.getLocaleSpace() do on rootLocale.getLocale(loc) do
       consumer();
     producer();
   }
@@ -60,7 +60,7 @@ iter genBlocks() {
       for lat in 1..lattop do
         yield new blockIndices(iat, jat, kat, lat);
     }
-  for loc in LocaleSpace do
+  for loc in rootLocale.getLocaleSpace() do
     yield nil;
 }
 

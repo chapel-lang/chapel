@@ -2,7 +2,7 @@
 
 use ReplicatedDist;
 
-const ls = Locales;
+const ls = rootLocale.getLocales();
 writeln("running on locales ", ls.domain);
 
 var d = {1..3,1..3} dmapped ReplicatedDist(ls);

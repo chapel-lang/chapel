@@ -82,7 +82,7 @@ writeln();
 //
 
 var MyLocaleView = {0..#numLocales, 1..1};
-var MyLocales: [MyLocaleView] locale = reshape(Locales, MyLocaleView);
+var MyLocales: [MyLocaleView] locale = reshape(rootLocale.getLocales(), MyLocaleView);
 
 //
 // Then we'll declare a distributed domain/array that targets
@@ -201,14 +201,14 @@ forall ra in RA do
 // and consistency is NOT maintained - when:
 // (a) the replicated array is indexed - an individual element is read...
 //
-on Locales(0) do
+on rootLocale.getLocale(0) do
   writeln("on ", here, ": ", RA(Space.low));
-on Locales(LocaleSpace.high) do
+on rootLocale.getLocale(rootLocale.getLocaleSpace().high) do
   writeln("on ", here, ": ", RA(Space.low));
 writeln();
 
 // ...or an individual element is written;
-on Locales(LocaleSpace.high) do
+on rootLocale.getLocale(rootLocale.getLocaleSpace().high) do
   RA(Space.low) = 7777;
 
 writeln("Replicated Array after being indexed into");
@@ -218,7 +218,7 @@ writeln();
 //
 // (b) the replicated array is on the right-hand side of an assignment...
 //
-on Locales(LocaleSpace.high) do
+on rootLocale.getLocale(rootLocale.getLocaleSpace().high) do
   A = RA + 4;
 writeln("Non-Replicated Array after assignment from Replicated Array + 4");
 writeln(A);
@@ -267,7 +267,7 @@ writeln();
 
 var (nl1, nl2) = if numLocales == 1 then (1, 1) else (2, numLocales/2);
 MyLocaleView = {0..#nl1, 0..#nl2};
-MyLocales = reshape(Locales[0..#nl1*nl2], MyLocaleView);
+MyLocales = reshape(rootLocale.getLocales()[0..#nl1*nl2], MyLocaleView);
 
 const DimReplicatedBlockcyclicSpace = Space
   dmapped DimensionalDist2D(MyLocales,

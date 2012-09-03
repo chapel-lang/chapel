@@ -2,7 +2,7 @@ config const useVerboseComm = false;
 config var token = 0;
 
 proc main() {
-  coforall loc in Locales do on loc do
+  coforall loc in rootLocale.getLocales() do on loc do
     fragmentedMain();
 }
 

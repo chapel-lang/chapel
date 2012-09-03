@@ -1,6 +1,6 @@
 proc foo(inout x: int) {
   writeln(x);
-  on Locales(1) {
+  on rootLocale.getLocales()(1) {
     writeln(x);
     x += 1;
     writeln(x);

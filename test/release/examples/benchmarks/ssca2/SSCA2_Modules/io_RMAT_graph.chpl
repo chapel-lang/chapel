@@ -201,11 +201,11 @@ module io_RMAT_graph
 
     } else {
       // !IOserial
-      const repfileMap = new ReplicatedDist(Locales);
+      const repfileMap = new ReplicatedDist(rootLocale.getLocales());
       const repfileDom = repfileBase dmapped new dmap(repfileMap);
       var repfiles: [repfileDom] file;
 
-      coforall l in Locales do on l {
+      coforall l in rootLocale.getLocales() do on l {
  repfiles[repfileSV] = createGraphFile(snapshot_prefix, SV2_FILENAME, rea);
  repfiles[repfileEV] = createGraphFile(snapshot_prefix, EV2_FILENAME, rea);
  repfiles[repfileWW] = createGraphFile(snapshot_prefix, WEIGHT_FILENAME, rea);
@@ -234,7 +234,7 @@ module io_RMAT_graph
 
      } // if IOsingleTaskPerLocale
 
-      coforall l in Locales do on l {
+      coforall l in rootLocale.getLocales() do on l {
           repfiles[repfileSV].close();
           repfiles[repfileEV].close();
           repfiles[repfileWW].close();

@@ -3,7 +3,7 @@ proc foo(i: int): int
 
 proc main() {
   var r = foo(3), s = 0;
-  on Locales(1) {
+  on rootLocale.getLocales()(1) {
     startCommDiagnostics();
     s = r;
     stopCommDiagnostics();

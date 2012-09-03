@@ -14,7 +14,7 @@ var jmat2, kmat2, jmat2T, kmat2T : [matD] elemType;
 var G : sync int = 0;
 
 proc buildjk() {
-  coforall loc in LocaleSpace do on Locales(loc) {
+  coforall loc in rootLocale.getLocaleSpace() do on rootLocale.getLocale(loc) {
       var (L,lattop,myG) = (0,0,readAndIncrementG());
       for iat in 1..natom do
         for (jat, kat) in {1..iat, 1..iat} {

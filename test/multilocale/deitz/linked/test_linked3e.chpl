@@ -1,5 +1,5 @@
 var d: domain(1);
 
-on Locales(1) do d = {1..4};
+on rootLocale.getLocales()(1) do d = {1..4};
 
 writeln(d);

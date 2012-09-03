@@ -5,20 +5,12 @@ module ChapelLocale {
 
 use DefaultRectangular;
 
-// would like this to be the following, but it breaks about 20 tests:
-//const LocaleSpace: domain(1) distributed(OnePer) = [0..numLocales-1];
-const LocaleSpace: domain(1) = {0..numLocales-1};
-
-var doneCreatingLocales: bool;
 
 class locale {
   const chpl_id: int;
   const numCores: int;
 
   proc locale(id = -1) {
-    if doneCreatingLocales {
-      halt("locales cannot be created");
-    }
     chpl_id = id;
 
     extern proc chpl_numCoresOnThisLocale(): int;
@@ -48,34 +40,74 @@ class locale {
   }
 }
 
+// Would like to do away with _here altogether.
+// Because it is declared in module scope and labelled "private", it exists
+// at the node level.
+// Every node has a corresponding _here locale, but may contain 
+// other locales as well.
 pragma "private" var _here: locale;
+// The concept of here is necessary for privatization, 
+// but should not generally be used in distributions.
 
 proc here return _here;
+class RootLocale
+{
+  // would like this to be the following, but it breaks about 20 tests:
+  //const LocaleSpace: domain(1) distributed(OnePer) = [0..numLocales-1];
+  const LocaleSpace: domain(1) = {0..numLocales-1};
+  const Locales: [LocaleSpace] locale;
 
-// Perform locale-specific initialization.
-// This is where global variables declared 'pragma "private"' are initialized.
-// That initialization is not currently arranged automatically by the compiler.
-proc chpl_setupLocale(id) {
-  var tmp: locale;
-  on __primitive("chpl_on_locale_num", id) {
-    tmp = new locale(id);
-    _here = tmp;
-    if (defaultDist._value == nil) {
-      defaultDist = new dmap(new DefaultDist());
+  // [DEPRECATED]
+  // Perform locale-specific initialization.
+  // This is where global variables declared 'pragma "private"' are initialized.
+  // That initialization is not currently arranged automatically by the compiler.
+  proc chpl_setupLocale(id) {
+    var tmp: locale;
+    on __primitive("chpl_on_locale_num", id) {
+      tmp = new locale(id);
+      _here = tmp;
+      if (defaultDist._value == nil) {
+        defaultDist = new dmap(new DefaultDist());
+      }
     }
+    return tmp;
   }
-  return tmp;
+
+  proc setLocale(idx:int, loc:locale)
+  {
+    on __primitive("chpl_on_locale_num", idx)
+    {
+      // When you use "on <object>", this goes to the locale
+      // represented by the locale field of the wide pointer used to store
+      // the object's address.  Therefore, we expect the locale ID associated
+      // with the passed-in loc to equal the ID of the current node.
+      if __primitive("chpl_localeID") != __primitive("_get_locale", loc) then
+        halt(".locale field of locale object must match node ID");
+      _here = loc;
+    }
+    Locales[idx] = loc;
+  }
+
+  // We cannot use a forall here because the default leader iterator will
+  // access data structures that are not yet initialized (i.e., Locales
+  // array/here).  An alternative would be to use a coforall+on and refactor
+  // chpl_setupLocale().
+  proc RootLocale()
+  {
+    for locIdx in LocaleSpace do
+      on __primitive("chpl_on_locale_num", locIdx)
+      {
+        var loc = new locale(locIdx);
+        setLocale(locIdx, loc);
+      }
+  }
+
+  proc getLocaleSpace() return this.LocaleSpace;
+  proc getLocales() return this.Locales;
+  proc getLocale(idx:int) return this.Locales[idx];
 }
 
-const Locales: [LocaleSpace] locale;
-// We cannot use a forall here because the default leader iterator will
-// access data structures that are not yet initialized (i.e., Locales
-// array/here).  An alternative would be to use a coforall+on and refactor
-// chpl_setupLocale().
-for loc in LocaleSpace do
-  Locales(loc) = chpl_setupLocale(loc);
-
-doneCreatingLocales = true;
+var rootLocale = new RootLocale();
 
 //
 // tree for recursive task invocation during privatization
@@ -86,17 +118,17 @@ record chpl_localeTreeRecord {
 pragma "private" var chpl_localeTree: chpl_localeTreeRecord;
 
 proc chpl_initLocaleTree() {
-  for i in LocaleSpace {
+  for i in rootLocale.getLocaleSpace() {
     var left: locale = nil;
     var right: locale = nil;
     var child = (i+1)*2-1;
     if child < numLocales {
-      left = Locales[child];
+      left = rootLocale.getLocale(child);
       child += 1;
       if child < numLocales then
-        right = Locales[child];
+        right = rootLocale.getLocale(child);
     }
-    on Locales(i) {
+    on rootLocale.getLocale(i) {
       chpl_localeTree.left = left;
       chpl_localeTree.right = right;
     }
@@ -112,7 +144,7 @@ chpl_initLocaleTree();
 //}
 
 proc chpl_int_to_locale(id) {
-  return Locales(id);
+  return rootLocale.getLocale(id);
 }
 
 
@@ -205,7 +237,7 @@ proc startCommDiagnosticsHere() { chpl_startCommDiagnosticsHere(); }
 proc stopCommDiagnosticsHere() { chpl_stopCommDiagnosticsHere(); }
 
 proc resetCommDiagnostics() {
-  for loc in Locales do on loc do
+  for loc in rootLocale.getLocales() do on loc do
     resetCommDiagnosticsHere();
 }
 
@@ -224,8 +256,8 @@ extern proc chpl_numCommFastForks(): uint(64);
 extern proc chpl_numCommNBForks(): uint(64);
 
 proc getCommDiagnostics() {
-  var D: [LocaleSpace] commDiagnostics;
-  for loc in Locales do on loc {
+  var D: [rootLocale.getLocaleSpace()] commDiagnostics;
+  for loc in rootLocale.getLocales() do on loc {
     // See note above regarding extern records
     D(loc.id).get = chpl_numCommGets();
     D(loc.id).put = chpl_numCommPuts();
@@ -266,8 +298,8 @@ config const
   memLeaksLog: string = "";
 
 proc chpl_startTrackingMemory() {
-  if Locales(0) == here {
-    coforall loc in Locales {
+  if rootLocale.getLocale(0) == here {
+    coforall loc in rootLocale.getLocales() {
       if loc == here {
         __primitive("chpl_setMemFlags", memTrack, memStats, memLeaks, memLeaksTable, memMax, memThreshold, memLog, memLeaksLog);
       } else on loc {

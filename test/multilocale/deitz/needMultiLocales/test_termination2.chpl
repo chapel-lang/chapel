@@ -2,10 +2,10 @@ use Time;
 
 proc main {
   var s1, s2: sync bool;
-  on Locales(1) {
+  on rootLocale.getLocales()(1) {
     begin {
       s1;
-      on Locales(0) {
+      on rootLocale.getLocales()(0) {
         begin {
           s2;
           writeln("executing on locale ", here.id);

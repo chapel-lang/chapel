@@ -169,7 +169,7 @@ proc main {
   var locales: [localeDom] locale;
 
   for (i,j) in {localeDom} do
-    locales(i,j) = Locales((i*nLocCols + j)%numLocales);
+    locales(i,j) = rootLocale.getLocale((i*nLocCols + j)%numLocales);
 
   var dims: nDims*DimensionDistributor = (new Cyclic(1), new Cyclic(2));
   var dist = new Dimensional(2, int, dims, localeDom, locales);

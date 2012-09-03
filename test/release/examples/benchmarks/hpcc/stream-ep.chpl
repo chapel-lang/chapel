@@ -79,14 +79,14 @@ proc main() {
   // *** Aggregates for collecting per-locale results for the minimum
   // *** execution time per trial, and whether verification passed
   //
-  var minTimes: [LocaleSpace] real;
-  var validAnswers: [LocaleSpace] bool;
+  var minTimes: [rootLocale.getLocaleSpace()] real;
+  var validAnswers: [rootLocale.getLocaleSpace()] bool;
 
   //
   // *** Fragment control so that we have a single task running on
   // *** every locale.
   //
-  coforall loc in Locales do on loc {
+  coforall loc in rootLocale.getLocales() do on loc {
 
     //
     // *** We declare these variables outside of the local block since

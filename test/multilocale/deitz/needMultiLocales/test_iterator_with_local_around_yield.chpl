@@ -12,7 +12,7 @@ class C {
 
 var c = new C();
 
-on Locales(1) {
+on rootLocale.getLocales()(1) {
   for i in ii() {
     writeln(c.i);
   }

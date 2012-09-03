@@ -1,7 +1,7 @@
 config const l = numLocales-1;
 config const rl = 0;
 
-on Locales(l) {
+on rootLocale.getLocales()(l) {
   extern class C { var x: int; }
   proc my_foo(c: C, x: int) {
     c.x = x;
@@ -10,7 +10,7 @@ on Locales(l) {
 
   writeln(myC);
 
-  on Locales(rl) {
+  on rootLocale.getLocales()(rl) {
     my_foo(myC, 3);
   }
 

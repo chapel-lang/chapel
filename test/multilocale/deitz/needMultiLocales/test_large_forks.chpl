@@ -10,14 +10,14 @@ proc main() {
 
   writeln(x);
 
-  on Locales(1) {
+  on rootLocale.getLocales()(1) {
     y = x;
   }
 
   writeln(y);
 
   sync {
-    on Locales(1) {
+    on rootLocale.getLocales()(1) {
       begin {
         z = x;
       }

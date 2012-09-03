@@ -7,7 +7,7 @@ record C {
 var cs: [0..numLocales-1] C;
 
 coforall i in 0..numLocales-1 do 
-  on Locales(i) do
+  on rootLocale.getLocales()(i) do
     cs[i] = new C(i);
 
 writeln(cs);

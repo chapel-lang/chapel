@@ -1,5 +1,5 @@
 iter foo() {
-  on Locales[numLocales-1] do
+  on rootLocale.getLocale(numLocales-1) do
     writeln("On locale ", here.id);
   yield 3;
 }

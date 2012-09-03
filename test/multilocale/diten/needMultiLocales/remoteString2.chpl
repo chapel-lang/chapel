@@ -5,7 +5,7 @@ proc main() {
   var s: string = "a string";
   var b: int;
   writeln(s);
-  on Locales(1) {
+  on rootLocale.getLocales()(1) {
     while (s != "done") {
       b += 1;
       s = "done";

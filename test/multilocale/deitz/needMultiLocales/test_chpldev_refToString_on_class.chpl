@@ -4,7 +4,7 @@ class C {
 
 var c: C;
 
-on Locales(1) {
+on rootLocale.getLocales()(1) {
   c = new C();
 }
 

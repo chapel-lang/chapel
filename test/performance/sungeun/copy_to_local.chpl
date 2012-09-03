@@ -18,7 +18,7 @@ forall a in A do
 if printOutput then writeln(A);
 
 var st = getCurrentTime();
-coforall loc in Locales do on loc {
+coforall loc in rootLocale.getLocales() do on loc {
   const l = (here.id+1)%numLocales;
   var myA: [D] int(64);
   var Aalias => A[l];

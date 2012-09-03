@@ -4,7 +4,7 @@ startVerboseComm();
 
 extern proc printf(x...);
 
-on Locales(1) {
+on rootLocale.getLocales()(1) {
   printf("%s\n", x(1):string + x(2));
 }
 

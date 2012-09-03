@@ -10,7 +10,7 @@ var A3D: [Dom3D] R;
 var A4D: [Dom4D] R;
 var A2D64: [Dom2D64] R;
 
-on (Locales(numLocales-1)) do {
+on (rootLocale.getLocale(numLocales-1)) do {
   local {
     A1D(n1).r = n1;
     A2D(n2,n2).r = n2;

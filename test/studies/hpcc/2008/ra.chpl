@@ -41,7 +41,7 @@ config const errorTolerance = 1e-2;
 //
 // The number of tasks to use per Chapel locale
 //
-config const tasksPerLocale = min reduce Locales.numCores;
+config const tasksPerLocale = min reduce rootLocale.getLocales().numCores;
 
 //
 // Configuration constants to control what's printed -- benchmark

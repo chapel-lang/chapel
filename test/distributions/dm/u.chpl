@@ -54,10 +54,10 @@ proc setupLocales(s1:int, s2:int, ensureManyLocs: bool = false) {
 
   if manylocs {
     var i = 0;
-    for ml in mylocs { ml = Locales(i); i += 1; }
+    for ml in mylocs { ml = rootLocale.getLocales()(i); i += 1; }
   } else {
-    msg("oversubscribing Locales(0)");
-    mylocs = Locales(0);
+    msg("oversubscribing Locale(0)");
+    mylocs = rootLocale.getLocale(0);
   }
 
   if !manylocs && ensureManyLocs then halt("not enough locales: wanted ",
@@ -190,6 +190,6 @@ proc privTest(dmarr, locIds, arrIdx, expVal) {
       }
     }
   } else {
-    warn("skipped because of oversubscribing Locales(0)");
+    warn("skipped because of oversubscribing Locale(0)");
   }
 }

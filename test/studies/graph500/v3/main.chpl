@@ -31,7 +31,7 @@ module Graph500_main
   writeln ( "        Edge factor: ", EDGEFACTOR );
 
   if (PRINT_LOCALE_INFORMATION) {
-  coforall loc in Locales do
+    coforall loc in rootLocale.getLocales() do
     {
     on loc do
       writeln("Locale ID: ", loc.id, " of ", numLocales);

@@ -11,14 +11,14 @@ class DistribArray {
   type arrType;
   const arrSize: int;
   const localSize:int = arrSize / numLocales;
-  var internalArr: [LocaleSpace] DistribArrayNode(arrType);
+  var internalArr: [rootLocale.getLocaleSpace()] DistribArrayNode(arrType);
   var isLocalize = false;
 
   proc initialize() {
     if isLocalize then return;
 
-    for loc in LocaleSpace {
-      on Locales(loc) {
+    for loc in rootLocale.getLocaleSpace() {
+      on rootLocale.getLocales()(loc) {
         if (loc != numLocales-1) {
           internalArr(loc) = new DistribArrayNode(arrType, localSize);
         } else {
@@ -30,11 +30,11 @@ class DistribArray {
   }
 
   proc localize() {
-    var localArrays: [LocaleSpace] DistribArray(arrType);
-    for loc in LocaleSpace {
-      on Locales(loc) {
+    var localArrays: [rootLocale.getLocaleSpace()] DistribArray(arrType);
+    for loc in rootLocale.getLocaleSpace() {
+      on rootLocale.getLocales()(loc) {
         var x = new DistribArray(arrType, arrSize, localSize, isLocalize=true);
-        [i in LocaleSpace] x.internalArr(i) = internalArr(i);
+        [i in rootLocale.getLocaleSpace()] x.internalArr(i) = internalArr(i);
         localArrays(loc) = x;
       }
     }
@@ -49,7 +49,7 @@ class DistribArray {
 
   iter getLocales() {
     // One could imagine not distributing it across all locales
-    for i in LocaleSpace do yield i;
+    for i in rootLocale.getLocaleSpace() do yield i;
   }
   
   iter getLocalIndices() {
@@ -65,7 +65,7 @@ class DistribArray {
   }
 
   proc writeThis(w: Writer) {
-    on Locales(0) {
+    on rootLocale.getLocales()(0) {
       for i in 0..arrSize-1 {
         w.writeln(element(i));
       }
@@ -77,7 +77,7 @@ class DistribArray {
       halt("Bad sizes in DistribArray.copy");
 
     forall loc in getLocales() {
-      on Locales(loc) {
+      on rootLocale.getLocales()(loc) {
         // hope that most indices match locale between the arrays
         // With this DistribArray class, they are.
         forall i in getLocalIndices() {
@@ -97,7 +97,7 @@ proc main {
   do {
     delta = 0.0;
     coforall loc in localAs(0).getLocales() {
-      on Locales(loc) {
+      on rootLocale.getLocales()(loc) {
         var localDelta: real;
         var A = localAs(loc);
         var B = localBs(loc);

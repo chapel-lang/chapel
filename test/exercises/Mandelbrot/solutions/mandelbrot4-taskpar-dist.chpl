@@ -37,7 +37,7 @@ proc main() {
   // We partition the work among locales (in vertical stripes)
   // and tasks (in horizontal stripes).
   coforall tid in 0..#tasksPerLocale do
-    coforall loc in Locales do
+    coforall loc in rootLocale.getLocales() do
       on loc do
         // This performs a portion of the computation, based on the locale and task IDs.
         blockCompute(tid, tasksPerLocale, NumSteps);

@@ -43,6 +43,9 @@ proc eval_AtA_times_u(u,AtAu,v : [] real, inRange, range1, range2 : int)
 //#pragma omp barrier
 }
 
+// hilde sez: Because it uses the same vector for input and output in a loop within a cobegin, 
+// and there is no synchronization to ensure that one iteration has completed before the next is begun,
+// it appears that this computation will be unstable under parallel execution.
 proc spectral_game(N : int) : real
 {
 	var tmp, u, v : [0..#N] real;

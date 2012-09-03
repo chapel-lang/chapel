@@ -29,7 +29,7 @@ pragma "private" var wakeup: WakeupSyncVarHack;
 pragma "private" var endCount: MyEndCount;
 
 proc setupTerminationDetection() {
-  for loc in Locales do on loc {
+  for loc in rootLocale.getLocales() do on loc {
     endCount = new MyEndCount();
     wakeup = new WakeupSyncVarHack();
     if here.id == 0 {
@@ -122,7 +122,7 @@ use Time;
 proc foo() {
   sleep(5);
   turnBlack;
-  on Locales(0) {
+  on rootLocale.getLocales()(0) {
     incEndCount;
     begin {
       sleep(3);
@@ -143,7 +143,7 @@ proc main {
   incEndCount;
   begin {
     turnBlack;
-    on Locales(1) {
+    on rootLocale.getLocales()(1) {
       sleep(3);
       a += 1;
     }
@@ -158,7 +158,7 @@ proc main {
   incEndCount;
   begin {
     turnBlack;
-    on Locales(1) {
+    on rootLocale.getLocales()(1) {
       incEndCount;
       begin {
         foo();

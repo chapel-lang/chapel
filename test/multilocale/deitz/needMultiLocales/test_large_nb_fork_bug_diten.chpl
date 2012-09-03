@@ -1,7 +1,7 @@
 use Time;
 
 proc main {
-  on Locales(1) {
+  on rootLocale.getLocales()(1) {
     cobegin {
       coforall i in 1..100 {
         sleep(3);
@@ -17,7 +17,7 @@ proc main {
 
   var tup: 300*int;
 
-  on Locales(1) {
+  on rootLocale.getLocales()(1) {
     begin {
       var t = tup;
     }

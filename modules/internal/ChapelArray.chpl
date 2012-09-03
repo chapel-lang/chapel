@@ -22,7 +22,7 @@ proc _newPrivatizedClass(value) {
   var n = __primitive("chpl_numPrivatizedClasses");
   var hereID = here.id;
   const privatizeData = value.dsiGetPrivatizeData();
-  on Locales[0] do
+  on rootLocale.getLocale(0) do
     _newPrivatizedClassHelp(value, value, n, hereID, privatizeData);
 
   proc _newPrivatizedClassHelp(parentValue, originalValue, n, hereID, privatizeData) {
@@ -53,7 +53,7 @@ proc _reprivatize(value) {
   var pid = value.pid;
   var hereID = here.id;
   const reprivatizeData = value.dsiGetReprivatizeData();
-  on Locales[0] do
+  on rootLocale.getLocale(0) do
     _reprivatizeHelp(value, value, pid, hereID, reprivatizeData);
 
   proc _reprivatizeHelp(parentValue, originalValue, pid, hereID, reprivatizeData) {

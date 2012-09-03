@@ -565,10 +565,10 @@ var manylocs = true;
 
 if numLocales >= s1 * s2 {
   var i = 0;
-  for ml in mylocs { ml = Locales(i); i += 1; }
+  for ml in mylocs { ml = rootLocale.getLocales()(i); i += 1; }
 } else {
-  writeln("oversubscribing Locales(0)");
-  mylocs = Locales(0);
+  writeln("oversubscribing Locale(0)");
+  mylocs = rootLocale.getLocale(0);
   manylocs = false;
 }
 writeln("mylocs = ", mylocs);
@@ -582,7 +582,7 @@ var ddf = new DimensionalDist(mylocs, vdf, sdf, "ddf");
 
 var dilTest = (2,3);
 writeln(dilTest, " is on locale:");
-for l in Locales do
+for l in rootLocale.getLocales() do
   on l do
     writeln(l, ": ", ddf.dsiIndexLocale((2,3)));
 writeln();

@@ -15,7 +15,7 @@ use DimensionalDist2D, ReplicatedDim, BlockCycDim;
 
 const dim1 = new ReplicatedDim(numLocales);
 const dim2 = new BlockCyclicDim(1, 1, 2);
-const dmp = newDimensionalDist2D(dim1, dim2, Locales);
+const dmp = newDimensionalDist2D(dim1, dim2, rootLocale.getLocales());
 
 const ix = (1, 1);
 const D = [1..1, 1..1];
@@ -23,13 +23,13 @@ const R = D dmapped new dmap(dmp);
 var A: [R] int;
 
 writeln("initializing");
-for l in Locales do on l do A[ix] = here.id;
+for l in rootLocale.getLocales() do on l do A[ix] = here.id;
 
 writeln("printing element directly");
-for l in Locales do on l do writeln(A[ix]);
+for l in rootLocale.getLocales() do on l do writeln(A[ix]);
 
 writeln("printing array directly");
-for l in Locales do on l do writeln(A);
+for l in rootLocale.getLocales() do on l do writeln(A);
 
 writeln("printing array via temp");
-for l in Locales do on l do { const temp: [D] int = A; writeln(temp); }
+for l in rootLocale.getLocales() do on l do { const temp: [D] int = A; writeln(temp); }

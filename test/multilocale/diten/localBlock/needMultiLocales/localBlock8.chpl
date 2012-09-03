@@ -10,7 +10,7 @@ var c2: C;
 
 c = new D(1, 2);
 
-on Locales(1) {
+on rootLocale.getLocales()(1) {
   c2 = new D(1, 2);
 }
 

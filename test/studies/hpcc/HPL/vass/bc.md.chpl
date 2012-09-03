@@ -189,10 +189,10 @@ proc setupTargetLocales() {
   tld = numLocales >= tla.numElements;
   if tld {
     var i = 0;
-    for l in tla { l = Locales[i]; i += 1; }
+    for l in tla { l = rootLocale.getLocales()[i]; i += 1; }
   } else {
-    vwln("oversubscribing Locales(0)");
-    tla = Locales(0);
+    vwln("oversubscribing Locale(0)");
+    tla = rootLocale.getLocale(0);
   }
   vwln("target locales =\n", tla, "\n");
 }

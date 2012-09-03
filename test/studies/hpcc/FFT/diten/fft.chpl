@@ -61,7 +61,7 @@ proc main() {
   // to m/4-1.  Twiddles is the vector of twiddle values.
   //
   //const TwiddleDist = new dmap(new Cyclic(startIdx=0:idxType, tasksPerLocale=tasksPerLocale));
-  const TwiddleDist = new dmap(new Block(rank=1, idxType=idxType, boundingBox={0..m/4-1}, targetLocales=Locales));
+  const TwiddleDist = new dmap(new Block(rank=1, idxType=idxType, boundingBox={0..m/4-1}, targetLocales=rootLocale.getLocales()));
   const TwiddleDom: domain(1, int(64)) dmapped TwiddleDist = {0..m/4-1};
   var Twiddles: [TwiddleDom] elemType;
 
@@ -72,13 +72,13 @@ proc main() {
   // locales using the Block distribution.
   //
   const BlkDist = new dmap(new Block(rank=1, idxType=idxType, boundingBox={0..m-1},
-                                     targetLocales=Locales,
+                                     targetLocales=rootLocale.getLocales(),
                                      dataParTasksPerLocale=tasksPerLocale,
                                      dataParIgnoreRunningTasks=true));
   const BlkDom: domain(1, int(64)) dmapped BlkDist = {0..m-1};
   var Z, z: [BlkDom] elemType;
 
-  const CycDist = new dmap(new Cyclic(startIdx=0:idxType, targetLocales=Locales,
+  const CycDist = new dmap(new Cyclic(startIdx=0:idxType, targetLocales=rootLocale.getLocales(),
                                       dataParTasksPerLocale=tasksPerLocale,
                                       dataParIgnoreRunningTasks=true));
   const CycDom: domain(1, int(64)) dmapped CycDist = {0..m-1};

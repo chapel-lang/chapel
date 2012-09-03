@@ -169,7 +169,7 @@ class LocTree {
 class FTree {
     const order   : int;
     const coeffDom: domain(1);
-    const tree    : [LocaleSpace] LocTree;
+  const tree    : [rootLocale.getLocaleSpace()] LocTree;
 
     proc FTree(order: int) {
         if order == 0 then
@@ -178,18 +178,18 @@ class FTree {
         this.order = order;
         this.coeffDom = {0..order-1};
 
-        coforall loc in Locales do
+        coforall loc in rootLocale.getLocales() do
             on loc do tree[loc.id] = new LocTree(coeffDom);
     }
 
     proc ~FTree() {
-        coforall loc in Locales do
+      coforall loc in rootLocale.getLocales() do
             on loc do delete tree[loc.id];
     }
 
     proc node2loc(node: Node) {
         const loc = (2**node.lvl + node.idx)%numLocales;
-        return Locales(loc);
+        return rootLocale.getLocales()(loc);
     }
 
     proc this(node: Node) var {
@@ -246,7 +246,7 @@ class FTree {
      */
     proc copy() {
         const f = new FTree(order);
-        for loc in LocaleSpace do
+        for loc in rootLocale.getLocaleSpace() do
             f.tree[loc].copy(tree[loc]);
         return f;
     }
@@ -272,7 +272,7 @@ proc main() {
         f[node] = (i, j);
     }
 
-    for loc in LocaleSpace {
+    for loc in rootLocale.getLocaleSpace() {
         writeln("\n\ntree on loc ", loc, " = ");
         for coeffs in f[loc] do
             writeln(coeffs);
@@ -298,7 +298,7 @@ proc main() {
     writeln("\n\nf.remove((3, 4))");
     f.remove(node);
 
-    for loc in LocaleSpace {
+    for loc in rootLocale.getLocaleSpace() {
         writeln("\n\ntree on loc ", loc, " = ");
         for coeffs in f[loc] do
             writeln(coeffs);

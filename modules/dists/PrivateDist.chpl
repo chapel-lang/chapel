@@ -22,7 +22,7 @@ class PrivateDom: BaseRectangularDom {
   iter these() { for i in 0..numLocales-1 do yield i; }
 
   iter these(param tag: iterKind) where tag == iterKind.leader {
-    coforall loc in Locales do on loc {
+    coforall loc in rootLocale.getLocales() do on loc {
       var t: 1*range(idxType);
       t(1) = here.id..here.id;
       yield t;

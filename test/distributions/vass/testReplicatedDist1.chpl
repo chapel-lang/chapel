@@ -14,7 +14,7 @@ config type elt = int;
 
 // ARepl - the replicated array to be tested
 
-const repllocales = Locales;  // in case this changes
+const repllocales = rootLocale.getLocales();  // in case this changes
 var ReplBlockDist = new dmap(new ReplicatedDist());
 var DRepl: domain(2) dmapped ReplBlockDist = Dsub;
 var ARepl: [DRepl] elt;
@@ -169,12 +169,12 @@ on teston {
 
 // driver for trydist()
 
-write("available locales: ", Locales, "\n");
+write("available locales: ", rootLocale.getLocales(), "\n");
 start("ARepl before reset"); show();
 
 iter testLocs(): locale {
-  yield Locales[0];
-  if numLocales > 2 then yield Locales[2];
+  yield rootLocale.getLocale(0);
+  if numLocales > 2 then yield rootLocale.getLocale(2);
 }
 
 for tloc in testLocs() {

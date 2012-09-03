@@ -31,7 +31,7 @@ config const typeSim = cpl;
 
 /* Code for 3D distribution of atmosphere grid 
 const atmP : domain(3) = {1..apx, 1..apy, 1..apz};
-const atmL : [atmP] locale = reshape(Locales);
+const atmL : [atmP] locale = reshape(rootLocale.getLocales());
 const atmD : domain(3) dmapped(Block, Block, Block) on atmL = {1..anx, 1..any, 1..anz};
 const atmA : [atmD] real; 
 */

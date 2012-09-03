@@ -90,7 +90,7 @@ proc main() {
     // allocate 2D mesh of locales
     var myLocales : [1..localesAcross, 1..localesAcross] locale;
     forall (i,j) in myLocales.domain {
-        myLocales[i,j] = Locales[(i-1) * localesAcross + (j-1)];
+      myLocales[i,j] = rootLocale.getLocale((i-1) * localesAcross + (j-1));
     }
 
     // Initialize A, B, and C arrays

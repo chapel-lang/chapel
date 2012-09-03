@@ -10,8 +10,8 @@ class C {
   iter these(param tag: iterKind) where tag == iterKind.leader {
     writeln("leader method invoked");
     cobegin {
-      on Locales(0) do yield 1..n/2;
-      on Locales(1) do yield n/2+1..n;
+      on rootLocale.getLocales()(0) do yield 1..n/2;
+      on rootLocale.getLocales()(1) do yield n/2+1..n;
     }
   }
 

@@ -4,5 +4,5 @@ use Memory;  // This should not be necessary, but currently I cannot
              // 1D uint arrays.
 
 writeln("numLocales = ", numLocales);
-writeln("LocaleSpace = ", LocaleSpace);
-writeln("Locales = ", Locales);
+writeln("LocaleSpace = ", rootLocale.getLocaleSpace());
+writeln("Locales = ", rootLocale.getLocales());

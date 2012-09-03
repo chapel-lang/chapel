@@ -228,7 +228,7 @@ proc DimensionalDist2D.DimensionalDist2D(
 proc newDimensionalDist2D(
   di1,
   di2,
-  targetLocales: [] locale = Locales,
+  targetLocales: [] locale = rootLocale.getLocales(),
   name: string = "dimensional distribution",
   type idxType = int,
   dataParTasksPerLocale: int      = getDataParTasksPerLocale(),

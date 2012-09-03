@@ -55,7 +55,7 @@ class BlockCyclic : BaseDist {
 
   proc BlockCyclic(startIdx,  // ?nd*?idxType
                    blocksize,     // nd*int
-                   targetLocales: [] locale = Locales, 
+                   targetLocales: [] locale = rootLocale.getLocales(), 
                    tasksPerLocale = 0,
                    param rank: int = _determineRankFromArg(startIdx),
                    type idxType = _determineIdxTypeFromArg(startIdx))

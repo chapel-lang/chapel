@@ -2,15 +2,15 @@ class C {
   var myid: int;
 }
 
-var x: [LocaleSpace] C;
+var x: [rootLocale.getLocaleSpace()] C;
 
-for i in LocaleSpace {
-  on Locales(i) do x(i) = new C(i);
+for i in rootLocale.getLocaleSpace() {
+  on rootLocale.getLocales()(i) do x(i) = new C(i);
 }
 
 writeln("x is: ", x);
 
-for i in LocaleSpace {
+for i in rootLocale.getLocaleSpace() {
   writeln("x[", i, "] is on locale: ", x(i).locale.id);
   writeln("x[", i, "].myid is on locale: ", x(i).myid.locale.id);
 }

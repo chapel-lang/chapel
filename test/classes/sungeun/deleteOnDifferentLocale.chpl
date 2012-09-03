@@ -3,11 +3,11 @@ class C {
 };
 
 var c: C;
-on Locales[numLocales-1] do c = new C();
+on rootLocale.getLocale(numLocales-1) do c = new C();
 writeln(c.locale);
 delete c;
 
 c = new C();
 writeln(c.locale);
-on Locales[numLocales-1] do delete c;
+on rootLocale.getLocale(numLocales-1) do delete c;
 

@@ -2,7 +2,7 @@ use Time;
 
 proc main {
   var a: atomic int;
-  on Locales(1) {
+  on rootLocale.getLocales()(1) {
     begin {
       a.write(1);
     }

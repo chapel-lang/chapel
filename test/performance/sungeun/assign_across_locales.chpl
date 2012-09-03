@@ -15,7 +15,7 @@ writeln("n=", n, " m=", m);
 enum testTypes {init, lhs, rhs, both};
 
 proc dit (A, param ttype: testTypes) {
-  for loc in Locales do
+  for loc in rootLocale.getLocales() do
     on loc {
       var B: [1..n,1..m] real;
       if ttype != testTypes.init then B = loc.id+1;
@@ -34,7 +34,7 @@ proc dit (A, param ttype: testTypes) {
       if printOutput {
         writeln("Remote ", ttype:string, " (Locale ", loc.id, "):");
         writeln("A:");
-        on Locales(0) do writeln(A);
+        on rootLocale.getLocales()(0) do writeln(A);
         writeln("B:");
         writeln(B);
       }

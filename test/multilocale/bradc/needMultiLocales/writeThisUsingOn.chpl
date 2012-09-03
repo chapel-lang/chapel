@@ -11,19 +11,19 @@ class LocC {
 }
 
 class C {
-  var locCs: [LocaleSpace] LocC;
+  var locCs: [rootLocale.getLocaleSpace()] LocC;
 
   proc initialize() {
-    for loc in LocaleSpace {
-      on Locales(loc) {
+    for loc in rootLocale.getLocaleSpace() {
+      on rootLocale.getLocales()(loc) {
         locCs(loc) = new LocC(loc);
       }
     }
   }
 
   proc writeThis(x: Writer) {
-    for loc in LocaleSpace {
-      on Locales(loc) {
+    for loc in rootLocale.getLocaleSpace() {
+      on rootLocale.getLocales()(loc) {
         if loc != 0 then
           write(" ");
         write(locCs(loc));

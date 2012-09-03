@@ -1,5 +1,5 @@
 iter foo() {
-  on Locales[numLocales-1] do
+  on rootLocale.getLocale(numLocales-1) do
     yield 3;
 }
 

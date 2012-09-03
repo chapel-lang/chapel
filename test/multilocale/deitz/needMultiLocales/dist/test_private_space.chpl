@@ -13,7 +13,7 @@ var D: domain(1) dmapped new dmap(new Block(boundingBox={1..n})) = {1..n};
 var A: [D] int;
 
 startCommDiagnostics();
-coforall loc in Locales do on loc {
+coforall loc in rootLocale.getLocales() do on loc {
   P(loc.id).write(loc.id);
 }
 stopCommDiagnostics();

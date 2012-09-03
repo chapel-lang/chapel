@@ -6,7 +6,7 @@ record R {
 }
 var r:R;
 
-on (Locales(0)) do {
+on (rootLocale.getLocales()(0)) do {
   local {
     r.r = l;
   }

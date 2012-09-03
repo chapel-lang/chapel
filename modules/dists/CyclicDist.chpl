@@ -41,7 +41,7 @@ class Cyclic: BaseDist {
   var pid: int = -1;
 
   proc Cyclic(startIdx,
-             targetLocales: [] locale = Locales,
+              targetLocales: [] locale = rootLocale.getLocales(),
              dataParTasksPerLocale=getDataParTasksPerLocale(),
              dataParIgnoreRunningTasks=getDataParIgnoreRunningTasks(),
              dataParMinGranularity=getDataParMinGranularity(),

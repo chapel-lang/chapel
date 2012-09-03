@@ -6,7 +6,7 @@ var A3D: [Dom3D] 2*int;
 var A4D: [Dom4D] 2*int;
 var A2D64: [Dom2D64] 2*int;
 
-on (Locales(numLocales-1)) do {
+on (rootLocale.getLocale(numLocales-1)) do {
   local {
     A1D(n1) = (n1,n1);
     A2D(n2,n2) = (n2,n2);

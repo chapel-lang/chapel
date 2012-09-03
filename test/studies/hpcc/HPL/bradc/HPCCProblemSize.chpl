@@ -24,7 +24,7 @@ module HPCCProblemSize {
     // number of bytes we want to use as defined by memFraction and the
     // number that will be required by each index in the problem size.
     //
-    const totalMem = + reduce Locales.physicalMemory(unit = MemUnits.Bytes),
+    const totalMem = + reduce rootLocale.getLocales().physicalMemory(unit = MemUnits.Bytes),
           memoryTarget = totalMem / memFraction,
           bytesPerIndex = numArrays * numBytes(elemType);
 
@@ -53,7 +53,7 @@ module HPCCProblemSize {
     // using a min reduction and ensure that it is sufficient to hold
     // an even portion of the problem size.
     //
-    const smallestMem = min reduce Locales.physicalMemory(unit = MemUnits.Bytes);
+    const smallestMem = min reduce rootLocale.getLocales().physicalMemory(unit = MemUnits.Bytes);
     if ((numIndices * bytesPerIndex)/numLocales > smallestMem) then
       halt("System is too heterogeneous: blocked data won't fit into memory");
 

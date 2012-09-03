@@ -1,7 +1,7 @@
    1  
    1   LOCALE0 LOCALE0 LOCALE0 LOCALE0
    1  mylocs
-   1  oversubscribing Locales(0)
+   1  oversubscribing Locale(0)
    1  setupLocales 2*2
    2  
    2  writeln(Ab)

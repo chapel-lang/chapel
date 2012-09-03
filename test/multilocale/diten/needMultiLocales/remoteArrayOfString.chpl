@@ -3,7 +3,7 @@ proc main {
   a(1) = "one";
   a(2) = "two";
   a(3) = "three";
-  on Locales(1) {
+  on rootLocale.getLocales()(1) {
     var tmp: string;
     tmp = a(1);
     a(1) = a(3);

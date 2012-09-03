@@ -12,13 +12,13 @@ const dmat : [matD] elemType = [(i,j) in matD] 1.0/(i+j);
 var jmat2, kmat2, jmat2T, kmat2T : [matD] elemType; 
 
 proc buildjk() {
-  var loc = LocaleSpace.low;
+  var loc = rootLocale.getLocaleSpace().low;
   sync {
     for iat in 1..natom do
       for (jat, kat) in {1..iat, 1..iat} {
         const lattop = if (kat==iat) then jat else kat;
         for lat in 1..lattop {
-          on Locales(loc) do begin buildjk_atom4(new blockIndices(iat, jat, kat, lat));
+          on rootLocale.getLocales()(loc) do begin buildjk_atom4(new blockIndices(iat, jat, kat, lat));
           loc = (loc+1)%numLocales;
         }
       }

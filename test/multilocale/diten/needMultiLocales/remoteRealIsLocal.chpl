@@ -6,7 +6,7 @@ proc main {
   var D: real;
   writeln(D);
   writeln(D.locale.id);
-  on Locales(1) {
+  on rootLocale.getLocales()(1) {
     var c = new C(1.10);
     writeln(D.locale.id);
     D = c.D;

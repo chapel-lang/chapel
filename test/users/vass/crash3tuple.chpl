@@ -1315,7 +1315,7 @@ writeln(myLocId, "-", taskid, " -wholeR ", globDD.wholeR,
 config const s2 = 3;
 
 var mylocs: [0..0, 0..#s2] locale;
-mylocs[0, 0..#s2] = Locales[0..#s2];
+mylocs[0, 0..#s2] = rootLocale.getLocales()[0..#s2];
 writeln("mylocs = ", mylocs);
 writeln();
 

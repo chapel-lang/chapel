@@ -33,8 +33,8 @@ writeln("Number of tasks     = ", tasks, " (per locale)");
 // parallel accesses to the RandomStream object (each task has its own
 // object), set parSafe to false to avoid locking overhead.
 //
-var counts: [LocaleSpace] [1..tasks] int;
-coforall loc in Locales do on loc {
+var counts: [rootLocale.getLocaleSpace()] [1..tasks] int;
+coforall loc in rootLocale.getLocales() do on loc {
   var myN = (loc.id+1)*n/numLocales - (loc.id)*n/numLocales;
   coforall task in 1..tasks {
     var rs = new RandomStream(seed + loc.id*tasks*2 + task*2, parSafe=false);
@@ -50,7 +50,7 @@ coforall loc in Locales do on loc {
 // Sum the counts across all the tasks.
 //
 var count = 0;
-for loc in Locales do
+for loc in rootLocale.getLocales() do
   for task in 1..tasks do
     count += counts[loc.id][task];
 

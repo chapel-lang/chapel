@@ -7,7 +7,7 @@ proc doDebugWrite(x, y):err_t {
 
 proc test(arg:string, out error:err_t):bool {
   error = ENOERR;
-  on Locales[0] {
+  on rootLocale.getLocales()[0] {
     if ! error {
       error = doDebugWrite("test ", arg);
     }

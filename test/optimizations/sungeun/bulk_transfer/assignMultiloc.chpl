@@ -20,7 +20,7 @@ use Random, Time, UtilMath;
 
 if numLocales < 3 then halt("numLocales must be >= 3");
 var declLocale = Locales(numLocales-1);
-var putLocale = Locales(0);
+var putLocale = rootLocale.getLocales()(0);
 var remoteLocale = Locales(divfloorpos(numLocales, 2));
 if printOutput {
   if ttype==testType.localGet then

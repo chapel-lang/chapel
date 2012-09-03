@@ -5,11 +5,11 @@ proc main() {
     return z;
   }
 
-  on Locales(1) {
+  on rootLocale.getLocales()(1) {
     x = 1;
     y = 2;
     z = x + y;
-    on Locales(0) {
+    on rootLocale.getLocales()(0) {
       local {
         x = y + z;
         foo() = 8;

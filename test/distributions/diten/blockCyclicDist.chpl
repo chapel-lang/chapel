@@ -138,7 +138,7 @@ proc main {
   var locs: [locDom] locale;
   var undistributedDom: domain(2) = {1..5, 1..5};
 
-  [(i,j) in locDom] locs(i,j) = Locales((i*n + j) % numLocales);
+  [(i,j) in locDom] locs(i,j) = rootLocale.getLocale((i*n + j) % numLocales);
 
   var dist = new BlockCyclicDist(idxType=int, nDims=2,
                                    blockSize=(2,2), startLoc=(0,0),

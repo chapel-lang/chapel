@@ -1,4 +1,4 @@
-var myTurn$: [LocaleSpace] sync bool;
+var myTurn$: [rootLocale.getLocaleSpace()] sync bool;
 myTurn$(0) = true;
 
 

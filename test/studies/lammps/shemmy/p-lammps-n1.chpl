@@ -26,7 +26,7 @@ const locExt:domain(1) = {0..numLocales-1};
 const locDist:domain(1) dmapped Block(locExt) = locExt;
 
 const locGridExt:domain(2) = {0..numLocales-1,1..1};		
-const locGrid:[locGridExt] locale = reshape(Locales,locGridExt);
+const locGrid:[locGridExt] locale = reshape(rootLocale.getLocales(),locGridExt);
 
 const copyExt:domain(2) = {0..numLocales-1, 0..numAtoms-1};
 const copyDist:domain(2) dmapped Block(copyExt,locGrid) = copyExt;

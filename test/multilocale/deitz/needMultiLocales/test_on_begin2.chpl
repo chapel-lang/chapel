@@ -4,7 +4,7 @@ extern proc printf(x...);
 
 proc foo() {
   var x: int = 2;
-  on Locales(1) {
+  on rootLocale.getLocales()(1) {
     begin {
       sleep(2);
       printf("%s\n", here.id + " x=" + x);

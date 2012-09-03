@@ -6,7 +6,7 @@ record R {
 proc main() {
   var r: R;
   coforall i in 0..numLocales-1 {
-    on Locales(i) {
+    on rootLocale.getLocales()(i) {
       select i {
         when 0 {
           r.a;

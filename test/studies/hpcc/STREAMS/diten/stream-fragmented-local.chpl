@@ -27,10 +27,10 @@ proc main() {
 
   const ProblemSpace: domain(1, indexType) = {1..m};
 
-  const allExecTime: [LocaleSpace] [1..numTrials] real;
-  const allValidAnswer: [LocaleSpace] bool;
+  const allExecTime: [rootLocale.getLocaleSpace()] [1..numTrials] real;
+  const allValidAnswer: [rootLocale.getLocaleSpace()] bool;
   
-  coforall loc in Locales {
+  coforall loc in rootLocale.getLocales() {
     on loc {
       const MyProblemSpace: domain(1, indexType) 
                           = BlockPartition(ProblemSpace, here.id, numLocales);
@@ -50,7 +50,7 @@ proc main() {
   }
 
   const execTime: [1..numTrials] real 
-                = [t in 1..numTrials] max reduce [loc in LocaleSpace] allExecTime(loc)(t);
+    = [t in 1..numTrials] max reduce [loc in rootLocale.getLocaleSpace()] allExecTime(loc)(t);
 
   const validAnswer = & reduce allValidAnswer;
 

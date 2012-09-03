@@ -62,7 +62,7 @@ module test_elemental_explicitly_strided_cholesky {
     writeln ("");
     writeln ("Parallel Environment");
     writeln ("   Number of Locales         : ", numLocales );
-    writeln ("   Number of cores per locale: ", Locales.numCores );
+    writeln ("   Number of cores per locale: ", rootLocale.getLocales().numCores );
  
     // ---------------------------------------------------------------
     // create a test problem, starting with a random general matrix B.

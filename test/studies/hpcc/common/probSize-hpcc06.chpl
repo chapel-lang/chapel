@@ -5,7 +5,7 @@ module HPCCProblemSize {
   config const memRatio = 4;
 
   proc computeProblemSize(type elemType, numArrays, returnLog2 = false) {
-    const totalMem = + reduce Locales.physicalMemory(unit = MemUnits.Bytes),
+    const totalMem = + reduce rootLocale.getLocales().physicalMemory(unit = MemUnits.Bytes),
           memoryTarget = totalMem / memRatio,
           bytesPerIndex = numArrays * numBytes(elemType);
 
@@ -20,7 +20,7 @@ module HPCCProblemSize {
       }
     }
 
-    const smallestMem = min reduce Locales.physicalMemory(unit = MemUnits.Bytes);
+    const smallestMem = min reduce rootLocale.getLocales().physicalMemory(unit = MemUnits.Bytes);
     if ((numIndices * bytesPerIndex)/numLocales > smallestMem) then
       halt("System is too heterogeneous: blocked data won't fit into memory");
 

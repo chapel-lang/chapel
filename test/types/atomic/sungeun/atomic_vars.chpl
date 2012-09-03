@@ -11,7 +11,7 @@ proc doit(type myType) {
             " (should be ", numBits(myType), ")");
   if printResults then writeln(numBits(x.type));
 
-  on Locales[numLocales-1] do ax.write(min(myType));
+  on rootLocale.getLocale(numLocales-1) do ax.write(min(myType));
   if ax.read() != min(myType) then
     writeln(typeToString(myType), ": ERROR: ax=", ax.read(),
             " (should be ", min(myType), ")");
@@ -24,7 +24,7 @@ proc doit(type myType) {
             " (should be ", max(myType), ")");
 
   ax.write(0:myType);
-  coforall i in 1..15 do on Locales[i%numLocales] { // 15 is max for int(8)
+  coforall i in 1..15 do on rootLocale.getLocale(i%numLocales) { // 15 is max for int(8)
       var a = (ax.fetchAdd(i:myType)+i:myType):myType;
       ax.compareExchange(a, a);
     }
@@ -43,7 +43,7 @@ proc doit(type myType) {
     if printResults then writeln(x);
     b.testAndSet();
   }
-  coforall i in 1..15 do on Locales[i%numLocales] { // 15 is max for int(8)
+  coforall i in 1..15 do on rootLocale.getLocale(i%numLocales) { // 15 is max for int(8)
       ax.add(i:myType);
     }
   b.waitFor(true);

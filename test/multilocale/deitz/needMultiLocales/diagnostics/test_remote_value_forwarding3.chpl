@@ -2,7 +2,7 @@ proc main() {
   var x: int = 3;
   var r, s, t: int;
 
-  on Locales(1) {
+  on rootLocale.getLocales()(1) {
     foo(2);
     startCommDiagnostics();
     r = x;

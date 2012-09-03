@@ -14,7 +14,7 @@ if ax.testAndSet() then
  else
    writeln("not set");
 
-on Locales[numLocales-1] {
+on rootLocale.getLocale(numLocales-1) {
   if ax.testAndSet() then
     writeln("set");
   else

@@ -24,7 +24,7 @@ config const printParams = true,
 proc main() {
   printConfiguration();
 
-  const BlockDist = new dmap(new Block(rank=1, boundingBox={1..m}, targetLocales=Locales, idxType=int(64)));
+  const BlockDist = new dmap(new Block(rank=1, boundingBox={1..m}, targetLocales=rootLocale.getLocales(), idxType=int(64)));
   const ProblemSpace: domain(1, int(64)) dmapped BlockDist = {1..m};
   var A, B, C: [ProblemSpace] elemType;
 

@@ -341,7 +341,7 @@ proc setupLocaleGrid() {
            " out of ", numLocales, " locales.\n",
            "Pass the option --allowUnusedLocales to suppress this check");
 
-  return reshape(Locales#numLocsUsed, {0..#gridRows, 0..#gridCols});
+  return reshape(rootLocale.getLocales()#numLocsUsed, {0..#gridRows, 0..#gridCols});
 }
 
 //

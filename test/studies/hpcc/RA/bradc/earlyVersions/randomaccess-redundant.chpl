@@ -6,7 +6,7 @@ if (n < 1 || n > 64) {
 
 type int64: int(64);
 
-forall l in Locales {
+forall l in rootLocale.getLocales() {
   const tableSize: int = 2**n;
   const TableInds: domain(1) = [1..tableSize];
   var T: [TableInds] int64 = 0;

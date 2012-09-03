@@ -3,11 +3,11 @@
 
 use ReplicatedDist;
 
-rcExample(5.0, 33, Locales[0]);
+rcExample(5.0, 33, rootLocale.getLocale(0));
 
 if (numLocales >= 4) {
   writeln();
-  rcExample(6.1, 44, Locales[2]);
+  rcExample(6.1, 44, rootLocale.getLocale(2));
   writeln();
-  rcExampleOverLocales(7.6, 55, Locales[3], Locales(1..3 by 2));
+  rcExampleOverLocales(7.6, 55, rootLocale.getLocale(3), rootLocale.getLocales()(1..3 by 2));
 }

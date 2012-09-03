@@ -2,7 +2,7 @@ proc main {
   var t: 2*string;
   t = ("hi", "hello");
   writeln(t);
-  on Locales(1) {
+  on rootLocale.getLocales()(1) {
     var tmp: string;
     tmp = t(1);
     t(1) = t(2);

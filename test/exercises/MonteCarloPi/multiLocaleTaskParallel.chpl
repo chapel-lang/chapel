@@ -14,7 +14,7 @@ writeln("Number of tasks/loc = ", tasksPerLocale);
 // Allocate a distributed array of counts (one per locale) using
 // LocaleSpace as the domain.
 //
-var counts: [LocaleSpace] int;
+var counts: [rootLocale.getLocaleSpace()] int;
 
 //
 
@@ -22,7 +22,7 @@ var counts: [LocaleSpace] int;
 // locale's unique ID and compute what portion of the random points
 // that locale owns.
 //
-coforall loc in Locales {
+coforall loc in rootLocale.getLocales() {
   on loc {
     //
     // locid = the unique ID of this locale (0..numLocales-1)

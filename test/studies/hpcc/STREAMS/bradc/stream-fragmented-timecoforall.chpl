@@ -28,11 +28,11 @@ proc main() {
   const ProblemSpace: domain(1, indexType) = {1..m};
 
   var execTime: [1..numTrials] real;
-  var allValidAnswer: [LocaleSpace] bool;
+  var allValidAnswer: [rootLocale.getLocaleSpace()] bool;
   
   for trial in 1..numTrials {
     const startTime = getCurrentTime();
-    coforall loc in Locales {
+    coforall loc in rootLocale.getLocales() {
       on loc {
         const MyProblemSpace: domain(1, indexType) 
                             = BlockPartition(ProblemSpace, here.id, numLocales);

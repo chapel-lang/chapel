@@ -9,12 +9,12 @@ class D {
 
   proc initialize() {
     coforall i in 0..numLocales-1 do 
-      on Locales(i) do cs[i] = new C(i);
+      on rootLocale.getLocales()(i) do cs[i] = new C(i);
   }
 
   proc ~D() {
     coforall i in 0..numLocales-1 do
-      on Locales(i) do delete cs[i];
+      on rootLocale.getLocales()(i) do delete cs[i];
   }
 
 }

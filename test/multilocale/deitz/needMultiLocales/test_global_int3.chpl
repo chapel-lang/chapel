@@ -1,6 +1,6 @@
 var x = 1;
 writeln("(x, x.locale.id) = ", (x, x.locale.id));
-on Locales(1) {
+on rootLocale.getLocales()(1) {
   x = x + 1;
   writeln("(x, x.locale.id) = ", (x, x.locale.id));
   var y = x + 1;

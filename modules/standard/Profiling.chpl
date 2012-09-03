@@ -19,7 +19,7 @@ record Profiler {
   }
 }
 
-const Profilers : [LocaleSpace] Profiler;
+const Profilers : [rootLocale.getLocaleSpace()] Profiler;
 
 
 type RegionID = __primitive("_next_uint32");

@@ -8,7 +8,7 @@ iter bar(n: int, i: int) {
 iter bar(param tag: iterKind, n: int, i: int): int where tag == iterKind.leader {
   if i == 1 then
     coforall j in 2..n do
-      on Locales((j-1)%numLocales) do
+      on rootLocale.getLocale((j-1)%numLocales) do
         for k in bar(tag, n, j) do
           yield k;
   yield i;

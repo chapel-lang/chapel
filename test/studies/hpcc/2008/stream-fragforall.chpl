@@ -27,10 +27,10 @@ proc main() {
 
   const ProblemSpace: domain(1, indexType) = {1..m};
 
-  var localGBs: [LocaleSpace] real,
-      allValidAnswer: [LocaleSpace] bool;
+  var localGBs: [rootLocale.getLocaleSpace()] real,
+    allValidAnswer: [rootLocale.getLocaleSpace()] bool;
   
-  coforall loc in Locales {
+  coforall loc in rootLocale.getLocales() {
     on loc {
       const myProblemSpace: domain(1, indexType)
                           = BlockPartition(ProblemSpace, here.id, numLocales);

@@ -57,7 +57,7 @@ class Block1DDist {
   // CONSTRUCTORS:
 
   proc Block1DDist(type idxType = int(64), bbox: domain(1, idxType),
-                  targetLocales: [] locale = Locales) {
+                   targetLocales: [] locale = rootLocale.getLocales()) {
     boundingBox = bbox;
     //
     // 0-base the local capture of the targetLocDom for simplicity

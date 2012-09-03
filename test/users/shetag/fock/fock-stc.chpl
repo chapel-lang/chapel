@@ -12,7 +12,7 @@ const dmat : [matD] elemType = [(i,j) in matD] 1.0/(i+j);
 var jmat2, kmat2, jmat2T, kmat2T : [matD] elemType; 
 
 proc buildjk() {
-  for (loc, blk) in genBlocks() do on Locales(loc) do  // sjd: changed forall to for
+  for (loc, blk) in genBlocks() do on rootLocale.getLocales()(loc) do  // sjd: changed forall to for
     buildjk_atom4(blk);
 
   cobegin {
@@ -32,7 +32,7 @@ proc buildjk() {
 }
 
 iter genBlocks() {
-  var loc = LocaleSpace.low;
+  var loc = rootLocale.getLocaleSpace().low;
   for iat in 1..natom do
     for (jat, kat) in {1..iat, 1..iat} {
       const lattop = if (kat==iat) then jat else kat;

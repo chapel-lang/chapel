@@ -9,7 +9,7 @@ class C {
 proc main {
   var c = new C();
   writeln(c);
-  on Locales(1) {
+  on rootLocale.getLocales()(1) {
     c.d = nil; 
   }
   writeln(c);

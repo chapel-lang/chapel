@@ -221,7 +221,7 @@ class LocBlockArr {
 // Block constructor for clients of the Block distribution
 //
 proc Block.Block(boundingBox: domain,
-                targetLocales: [] locale = Locales,
+                 targetLocales: [] locale = rootLocale.getLocales(),
                 dataParTasksPerLocale=getDataParTasksPerLocale(),
                 dataParIgnoreRunningTasks=getDataParIgnoreRunningTasks(),
                 dataParMinGranularity=getDataParMinGranularity(),

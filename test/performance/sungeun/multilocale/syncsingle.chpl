@@ -1,7 +1,7 @@
 var si: single bool;
 resetCommDiagnostics();
 startCommDiagnostics();
-coforall l in Locales do on l {
+coforall l in rootLocale.getLocales() do on l {
   if l.id == numLocales-1 then
     begin si.writeEF(true);
   si.readFF();
@@ -12,7 +12,7 @@ writeln(getCommDiagnostics());
 var sy: sync bool;
 resetCommDiagnostics();
 startCommDiagnostics();
-coforall l in Locales do on l {
+coforall l in rootLocale.getLocales() do on l {
   if l.id == numLocales-1 then
     begin sy.writeEF(true);
   sy.readFF();

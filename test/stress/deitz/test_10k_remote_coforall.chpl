@@ -2,7 +2,7 @@ config const n = 10000;
 
 var A: [1..n] int;
 
-on Locales(1) {
+on rootLocale.getLocales()(1) {
   coforall i in 1..n {
     A(i) += 1;
   }

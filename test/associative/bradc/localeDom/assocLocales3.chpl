@@ -9,7 +9,7 @@ class LocC {
 class C {
   type idxType = int(64);
 
-  const targetLocs = Locales;
+  const targetLocs = rootLocale.getLocales();
 
   var D: domain(locale) = targetLocs;
 
@@ -22,7 +22,7 @@ class C {
   }
 }
 
-var myC = new C(targetLocs=Locales);
+var myC = new C(targetLocs=rootLocale.getLocales());
 
 writeln("myC = ", myC);
 

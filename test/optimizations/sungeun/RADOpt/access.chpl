@@ -59,7 +59,7 @@ proc doit(D, str) {
   const s = "["+rank+"D "+str+"]";
   if debug then [i in D] writeln("A[", i, "] is on ", A[i].locale);
 
-  for l in Locales {
+  for l in rootLocale.getLocales() {
     A = [i in D] -here.id;
     on l {
       if debug then writeln("on ", here, ":");

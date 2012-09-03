@@ -6,9 +6,9 @@ var syncvar: sync int = 3,
 
 begin {sleep(singlevar1:uint); singlevar2 = syncvar + 10;}
 
-on Locales(1) do
+on rootLocale.getLocales()(1) do
 serial true do
-on Locales(0) do
+  on rootLocale.getLocales()(0) do
 cobegin {
   {singlevar1 = 5; syncvar = singlevar2;}
   writeln ("syncvar is ", syncvar.readXX());

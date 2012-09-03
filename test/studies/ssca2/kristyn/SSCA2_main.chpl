@@ -114,7 +114,7 @@ module SSCA2_main
         BlockDist;
 
 //  Write out locale information
-    coforall loc in Locales do
+    coforall loc in rootLocale.getLocales() do
     {
     on loc do
       writeln("Locale ID: ", loc.id, " of ", numLocales);

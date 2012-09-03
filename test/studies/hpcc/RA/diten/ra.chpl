@@ -103,7 +103,7 @@ proc main() {
   // i in TableSpace"
   //
   [i in TableSpace] T(i) = i;
-  for loc in Locales {
+  for loc in rootLocale.getLocales() {
     on loc {
       myBuckets = new Buckets();
     }
@@ -139,7 +139,7 @@ proc main() {
   // The number of updates done here is small enough that they can be
   // ignored while still passing the benchmark.
 /*
-  coforall loc in Locales {
+  coforall loc in rootLocale.getLocales() {
     on loc {
       var buffer: [0..#maxLookahead] uint(64);
       while myBuckets.pendingUpdates > 0 {

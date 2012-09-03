@@ -1,7 +1,7 @@
 use BlockDist;
 
 var myLocalesDom = {0..2};
-var myLocales: [myLocalesDom] locale = [i in myLocalesDom] Locales(i%numLocales);
+var myLocales: [myLocalesDom] locale = [i in myLocalesDom] rootLocale.getLocale(i%numLocales);
 
 const ProblemDist = new dmap(new Block(rank=1, idxType=int, boundingBox={1..10}, targetLocales=myLocales, dataParTasksPerLocale=1));
 

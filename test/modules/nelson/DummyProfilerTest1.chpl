@@ -31,9 +31,9 @@ proc main() {
     writeln("loop");    
   }
 
-  [l in Locales] Profilers(l.id).enable(false);
+  [l in rootLocale.getLocales()] Profilers(l.id).enable(false);
   writeln("no profiling here");
-  [l in Locales] Profilers(l.id).enable(true);
+  [l in rootLocale.getLocales()] Profilers(l.id).enable(true);
 
   writeln("done");
 }

@@ -1,7 +1,7 @@
 use BlockDist;
 
 var myLocalesDom = {0..3};
-var myLocales: [myLocalesDom] locale = [i in myLocalesDom] Locales(i%numLocales);
+var myLocales: [myLocalesDom] locale = [i in myLocalesDom] rootLocale.getLocale(i%numLocales);
 
 writeln("myLocales = ", myLocales);
 

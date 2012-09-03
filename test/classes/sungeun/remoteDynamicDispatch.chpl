@@ -24,7 +24,7 @@ var c = new C();
 var c0 = new C0();
 var c1 = new C1();
 
-for loc in Locales do on loc {
+for loc in rootLocale.getLocales() do on loc {
   blah(c);
   blah(c0);
   blah(c1);

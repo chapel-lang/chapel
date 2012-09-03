@@ -166,7 +166,8 @@ module SSCA2_kernels
 
   use BlockDist;
   // Would be nice to use PriavteDist, but aliasing is not supported (yet)
-  const PrivateSpace = {LocaleSpace} dmapped Block(boundingBox={LocaleSpace});
+  const PrivateSpace = {rootLocale.getLocaleSpace()}
+    dmapped Block(boundingBox={rootLocale.getLocaleSpace()});
 
   // ==================================================================
   //                              KERNEL 4
@@ -233,7 +234,7 @@ module SSCA2_kernels
           t = new taskPrivateData(domain(index(vertex_domain)), vertex_domain);
           forall v in vertex_domain do
             t.BCaux[v].children_list.nd = {1..G.n_Neighbors[v]};
-          for loc in Locales do on loc {
+          for loc in rootLocale.getLocales() do on loc {
               t.Active_Level[here.id] = new Level_Set (Sparse_Vertex_List);
               t.Active_Level[here.id].previous = nil;
               t.Active_Level[here.id].next = new Level_Set (Sparse_Vertex_List);;

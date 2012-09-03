@@ -61,7 +61,7 @@ class UserMapAssoc : BaseDist {
   // CONSTRUCTORS:
 
   proc UserMapAssoc(type idxType = int(64), initMapper: AbstractMapper,
-                   targetLocales: [] locale = Locales) {
+                    targetLocales: [] locale = rootLocale.getLocales()) {
     mapper = initMapper;
     //
     // 0-base the local capture of the targetLocDom for simplicity

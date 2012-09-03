@@ -1,5 +1,5 @@
 var D: domain(locale);
 
-D = Locales;
+D = rootLocale.getLocales();
 
 writeln("D is: ", D);

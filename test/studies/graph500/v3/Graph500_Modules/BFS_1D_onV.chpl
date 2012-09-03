@@ -20,11 +20,11 @@ proc BFS ( root : vertex_id, ParentTree, G )
 
   var Active_Level: [rcDomain] Level_Set (Vertex_List);
   var Next_Level: [rcDomain] Level_Set (Vertex_List);
-  var Active_Remaining: [LocaleSpace] bool = true;
+  var Active_Remaining: [rootLocale.getLocaleSpace()] bool = true;
 
   var Root_vertex : vertex_id = root;
 
-  coforall loc in Locales do on loc {
+  coforall loc in rootLocale.getLocales() do on loc {
     rcLocal(Active_Level) = new Level_Set (Vertex_List);
     rcLocal(Active_Level).previous = nil;
     rcLocal(Next_Level) = new Level_Set (Vertex_List);
@@ -47,7 +47,7 @@ proc BFS ( root : vertex_id, ParentTree, G )
     var count: sync int = numLocales;
     var barrier: single bool;
 
-    coforall loc in Locales do on loc {
+    coforall loc in rootLocale.getLocales() do on loc {
       forall u in rcLocal(Active_Level).Members do {
 
         forall v in G.Neighbors (u) do on v {

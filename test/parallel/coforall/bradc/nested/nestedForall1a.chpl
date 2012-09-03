@@ -6,7 +6,7 @@ iter leadfollow() {
 }
 
 iter leadfollow(param tag: iterKind) where tag == iterKind.leader {
-  coforall loc in Locales {
+  coforall loc in rootLocale.getLocales() {
     on loc {
       coforall taskid in 0..#numTasks {
         const lo = loc.id*numTasks + taskid;
