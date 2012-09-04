@@ -32,10 +32,20 @@ del myLines
 fh = open(execout, 'r')
 myLines = fh.readlines()
 fh.close()
+
+inBuiltIns = False
 fh = open(execout, 'w')
 for line in myLines:
     # ignore blank lines
     if not line.strip(): continue
+    if inBuiltIns:
+        if line.strip().find(' config vars:') != -1:
+            inBuiltIns = False
+        else:
+            # Remove "(configured to XXX)" from output
+            line = line.split('(configured to')[0]
+    if line.strip().find('Built-in config vars:') != -1:
+        inBuiltIns = True
     # replace all white space with a single space
     fh.write(re.sub("\s+", " ", line)+'\n')
 fh.close()
