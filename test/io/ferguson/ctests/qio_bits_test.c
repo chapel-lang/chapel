@@ -154,9 +154,72 @@ void check_bits(int offset, int padding)
   qio_file_release(f);
 }
 
+void check_write_read_pat(int width, int num, int pat)
+{
+  qio_file_t* f;
+  qio_channel_t* writing;
+  qio_channel_t* reading;
+  err_t err;
+  uint64_t one = 1;
+  uint64_t mask = (one << width) - 1;
+  if( width == 64 ) mask = -1;
+ 
+  err = qio_file_open_tmp(&f, 0, NULL);
+  assert(!err);
+
+  err = qio_channel_create(&writing, f, 0, 0, 1, 0, INT64_MAX, NULL);
+  assert(!err);
+
+  for( int i = 0; i < num; i++ ) {
+    uint64_t x;
+    if( pat == 0 ) {
+      if( i & 1 ) x = mask;
+      else x = 0;
+    } else {
+      x = ((uint64_t) i) & mask;
+    }
+    err = qio_channel_write_bits(false, writing, x, width);
+    assert(!err);
+  }
+  qio_channel_release(writing);
+
+  err = qio_channel_create(&reading, f, 0, 1, 0, 0, INT64_MAX, NULL);
+  assert(!err);
+
+  for( int i = 0; i < num; i++ ) {
+    uint64_t got = 0;
+    uint64_t x;
+    if( pat == 0 ) {
+      if( i & 1 ) x = mask;
+      else x = 0;
+    } else {
+      x = ((uint64_t) i) & mask;
+    }
+    err = qio_channel_read_bits(true, reading, &got, width);
+    assert(!err);
+    if( got != x ) {
+      printf("Fails (%i %i %i) at %i got=%llx expect=%llx\n", width, num, pat, i, (unsigned long long int) got, (unsigned long long int) x);
+      assert(got == x);
+      break;
+    }
+  }
+
+  qio_channel_release(reading);
+
+  // Close the file.
+  qio_file_release(f);
+}
+
+void check_write_read(int width, int num)
+{
+  check_write_read_pat(width, num, 0);
+  check_write_read_pat(width, num, 1);
+}
+
 int main(int argc, char** argv)
 {
   int offset, padding;
+  int width, logn;
 
 
   if( argc == 1 ) {
@@ -164,6 +227,11 @@ int main(int argc, char** argv)
     for( offset = 0; offset < 63; offset++ ) {
       for( padding = 0; padding < 63; padding++ ) {
         check_bits(offset, padding);
+      }
+    }
+    for( width = 1; width <= 64; width++ ) {
+      for( logn = 0; logn < 18; logn++ ) {
+        check_write_read(width, 1 << logn);
       }
     }
   }
