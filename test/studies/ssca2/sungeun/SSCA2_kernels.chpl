@@ -332,7 +332,7 @@ module SSCA2_kernels
 
         var barrier = new Barrier(numLocales);
 
-        coforall loc in Locales do on loc {
+        coforall loc in rootLocale.getLocales() do on loc {
           Active_Level[here.id].Members.clear();
           Active_Level[here.id].next.Members.clear();
           if vertex_domain.dist.idxToLocale(s) == here {
@@ -518,7 +518,7 @@ module SSCA2_kernels
         coforall t in TPVSpace do on t {
           var tpv = TPV[t];
           var al = tpv.Active_Level;
-          coforall loc in Locales do on loc {
+          coforall loc in rootLocale.getLocales() do on loc {
             var level = al[here.id];
             while level != nil {
                 var l2 = level.next;
