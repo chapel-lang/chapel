@@ -165,7 +165,6 @@ module SSCA2_kernels
 
 
   use BlockDist;
-  config param useAtomicReal = CHPL_NETWORK_ATOMICS=="ugni";
   config param useOnClause = CHPL_NETWORK_ATOMICS!="ugni";
   // For task-private temporary variables
   config const defaultNumTPVs = 16;
@@ -283,11 +282,8 @@ module SSCA2_kernels
         const tpv = TPVM.getTPV(tid);
         var BCaux => tpv.BCaux;
         pragma "dont disable remote value forwarding"
-          inline proc f1(BCaux, v) {
-	  if useAtomicReal then
-            BCaux[v].path_count$.write(0.0);
-	  else
-            BCaux[v].path_count$.writeXF(0.0);
+        inline proc f1(BCaux, v) {
+          BCaux[v].path_count$.write(0.0);
         }
         forall v in vertex_domain do {
           BCaux[v].depend = 0.0;
@@ -322,11 +318,8 @@ module SSCA2_kernels
         //
         var Active_Level => tpv.Active_Level;
         pragma "dont disable remote value forwarding"
-          inline proc f2(BCaux, s) {
-	  if useAtomicReal then
-            BCaux[s].path_count$.write(1.0);
-	  else
-            BCaux[s].path_count$.writeXF(1.0);
+        inline proc f2(BCaux, s) {
+          BCaux[s].path_count$.write(1.0);
         }
 
         var barrier = new Barrier(numLocales);
@@ -361,11 +354,8 @@ module SSCA2_kernels
             // coforall loop.
             const current_distance_c = current_distance;
             pragma "dont disable remote value forwarding"
-              inline proc f3(BCaux, v, u) {
-	      if useAtomicReal then
+            inline proc f3(BCaux, v, u) {
                 BCaux[v].path_count$.add(BCaux[u].path_count$.read());
-              else
-                BCaux[v].path_count$ += BCaux[u].path_count$.readFF();
             }
 
             forall u in Active_Level[here.id].Members do {
@@ -449,16 +439,10 @@ module SSCA2_kernels
           }
 
           pragma "dont disable remote value forwarding"
-            inline proc f4(BCaux, Between_Cent$, u) {
-	    if useAtomicReal then
+          inline proc f4(BCaux, Between_Cent$, u) {
             BCaux[u].depend = + reduce [v in BCaux[u].children_list.Row_Children[1..BCaux[u].children_list.child_count.read()]]
               ( BCaux[u].path_count$.read() / 
                 BCaux[v].path_count$.read() )      *
-              ( 1.0 + BCaux[v].depend );
-	    else
-            BCaux[u].depend = + reduce [v in BCaux[u].children_list.Row_Children[1..BCaux[u].children_list.child_count.read()]]
-              ( BCaux[u].path_count$.readFF() / 
-                BCaux[v].path_count$.readFF() )      *
               ( 1.0 + BCaux[v].depend );
             Between_Cent$ (u) += BCaux[u].depend;
           }
@@ -576,7 +560,7 @@ module SSCA2_kernels
   record taskPrivateArrayData {
     type vertex;
     var min_distance  : atomic int;
-    var path_count$   : if useAtomicReal then atomic real else sync real;
+    var path_count$   : atomic real;
     var depend        : real;
     var children_list : child_struct(vertex);
   }
