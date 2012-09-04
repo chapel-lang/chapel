@@ -21,7 +21,7 @@ Module: chpldoc
          
     And classes can display their comments, too
   
-         var a
+         var a: int(64)
             
       Including the comments associated with their fields
     
@@ -40,7 +40,7 @@ Module: chpldoc
          proc setA(newVal: int(64))
 
          inherited from Foo
-            var a
+            var a: int(64)
                
       Including the comments associated with their fields
     
