@@ -5,7 +5,7 @@ proc main {
   writeln(here.id, " y=", y);
   x = x + 1;
   y = y + 1;
-  on Locales(1) {
+  on rootLocale.getLocale(1) {
     writeln(here.id, " x=", x);
     writeln(here.id, " y=", y);
     x = x + 1;

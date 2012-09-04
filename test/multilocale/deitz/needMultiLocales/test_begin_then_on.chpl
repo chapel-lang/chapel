@@ -11,7 +11,7 @@ proc main {
   t = 1;
   s.readFE();
   writeln(here.id, " x=", x, " y=", y);
-  on Locales(1) {
+  on rootLocale.getLocale(1) {
     writeln(here.id, " x=", x, " y=", y);
     x = 3;
     y = 3;

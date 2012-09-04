@@ -19,7 +19,7 @@ proc DistributedArray.this(i: int) var {
 }
 
 proc DistributedArray.writeThis(W: Writer) {
-  for loc in Locales {
+  for loc in rootLocale.getLocales() {
     W.write(if loc == here then data else others[loc.id].data);
     if loc.id != numLocales-1 then
       W.write(" ");
@@ -33,14 +33,14 @@ pragma "private" var A: DistributedArray;
 //
 {
   var AS: [0..numLocales-1] DistributedArray;
-  for loc in Locales do on loc {
+  for loc in rootLocale.getLocales() do on loc {
     A = new DistributedArray(n*here.id/numLocales+1..n*(here.id+1)/numLocales);
     AS[here.id] = A;
     if verbose then
       writeln(here.id, ": data[", A.ndata, "] = ", A.data);
   }
 
-  for loc in Locales do on loc {
+  for loc in rootLocale.getLocales() do on loc {
     A.others = AS;
   }
 }

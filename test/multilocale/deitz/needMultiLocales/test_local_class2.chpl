@@ -5,7 +5,7 @@ class C {
 proc main {
   var c = new C(18);
   writeln(here.id, " ", c.x);
-  on Locales(1) {
+  on rootLocale.getLocale(1) {
     c = new C(19);
     writeln(here.id, " ", c.x);
   }

@@ -11,7 +11,7 @@ proc main {
   r.x3 = 23;
   writeln(here.id, ": ", r.x1, " ", r.x2, " ", r.x3);
 
-  on Locales(1) {
+  on rootLocale.getLocale(1) {
     writeln(here.id, ": ", r.x1, " ", r.x2, " ", r.x3);
   }
 

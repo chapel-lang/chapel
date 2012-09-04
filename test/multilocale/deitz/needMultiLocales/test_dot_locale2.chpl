@@ -4,7 +4,7 @@ class C {
 
 var c: C;
 
-on rootLocale.getLocales()(1) {
+on rootLocale.getLocale(1) {
   c = new C();
 }
 
@@ -18,14 +18,14 @@ proc C.foo() {
 c.foo();
 
 proc C.goo() {
-  on Locales(1) do
+  on rootLocale.getLocale(1) do
     foo();
   writeln(here.id, " this.locale.id = ", this.locale.id);
 }
 
 c.goo();
 
-on Locales(1) do
+on rootLocale.getLocale(1) do
   c.goo();
 
 proc bar() {

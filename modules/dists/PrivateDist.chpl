@@ -93,7 +93,7 @@ proc PrivateArr.dsiAccess(i: idxType) var {
       if i < 0 || i >= numLocales then
         halt("array index out of bounds: ", i);
     var privarr = this;
-    on Locales(i) {
+    on rootLocale.getLocale(i) {
       privarr = chpl_getPrivatizedCopy(this.type, this.pid);
     }
     return privarr.data;
@@ -109,7 +109,7 @@ iter PrivateArr.these() var {
 }
 
 iter PrivateArr.these(param tag: iterKind) where tag == iterKind.leader {
-  coforall loc in Locales do on loc {
+  coforall loc in rootLocale.getLocales() do on loc {
     var t: 1*range(idxType);
     t(1) = here.id..here.id;
     yield t;

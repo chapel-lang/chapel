@@ -1,8 +1,8 @@
 extern proc foo(x: int);
 
-on Locales(numLocales-1) {
+on rootLocale.getLocale(numLocales-1) {
   for l in 1..numLocales-1 by -1 do
-    on rootLocale.getLocales()(l) {
+    on rootLocale.getLocale(l) {
       foo(l);
     }
 }

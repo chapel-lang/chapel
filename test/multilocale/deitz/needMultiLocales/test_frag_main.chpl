@@ -41,12 +41,12 @@ use PrivateDist;
 
 var buffer: [PrivateSpace] [0..numLocales-1] list;
 forall p in PrivateSpace do
-  forall l in LocaleSpace do
+  forall l in rootLocale.getLocaleSpace() do
     buffer[p][l] = new list();
 
 proc chpl_send_int(data: int, loc) {
   var from = here.id;
-  on Locales[loc] {
+  on rootLocale.getLocale(loc) {
     var b = buffer[here.id][from];
     b.lock$ = true;
     b.tail = new node(data, b.tail);

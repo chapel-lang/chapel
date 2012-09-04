@@ -5,14 +5,14 @@ proc main {
 
   s = 2;
 
-  on Locales(1) {
+  on rootLocale.getLocale(1) {
     var i = s;
     printf("%s\n", here.id + " " + i);
   }
 
   s = 3;
 
-  on Locales(1) {
+  on rootLocale.getLocale(1) {
     var i = s;
     printf("%s\n", here.id + " " + i);
   }

@@ -8,7 +8,7 @@ module M2 {
   writeln(here.id, " initializing M2");
   proc main() {
     writeln(here.id, " starting main");
-    on Locales(1) {
+    on rootLocale.getLocale(1) {
       writeln(here.id, " using M1");
       use M1;
       writeln(here.id, " in main x = ", x);
