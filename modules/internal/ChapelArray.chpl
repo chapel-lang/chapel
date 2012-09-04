@@ -1524,6 +1524,25 @@ proc chpl__compatibleForBulkTransfer(a:[], b:[]) param {
   return true;
 }
 
+//config param nue = false;
+proc chpl__compatibleForBulkTransferStride(a:[], b:[]) param {
+  if a.eltType != b.eltType then return false;
+  if !chpl__supportedDataTypeForBulkTransfer(a.eltType) then return false;
+  if a._value.type != b._value.type {
+    if (!a._value.isDefaultRectangular() || !b._value.isBlockDist()) then return false;
+  }
+  if !a._value.dsiSupportsBulkTransfer() then return false;
+  return true;
+}
+
+/*proc chpl__compatibleForBulkTransfer_(a:[], b:[]) param {
+ param result = chpl__compatibleForBulkTransfer_doit(a,b);
+ 
+ compilerWarning("chpl__compatibleForBulkTransfer",
+                  typeToString(a.type), " ", typeToString(b.type)," --> ", result:string);
+ return result;
+}
+*/
 // This must be a param function
 proc chpl__supportedDataTypeForBulkTransfer(type t) param {
   var x:t;
@@ -1579,16 +1598,16 @@ proc chpl__useBulkTransfer(a: [], b) param return false;
 inline proc =(a: [], b) {
   if (chpl__isArray(b) || chpl__isDomain(b)) && a.rank != b.rank then
     compilerError("rank mismatch in array assignment");
+  
   if chpl__isArray(b) && b._value == nil then
     return a;
   // This outer conditional must result in a param
   if useBulkTransfer && chpl__isArray(b) &&
-     chpl__compatibleForBulkTransfer(a, b) &&
     !chpl__serializeAssignment(a, b) {
-    if chpl__useBulkTransferStride(a, b) { //First tries the bulkStride
+    if (chpl__compatibleForBulkTransferStride(a, b) && chpl__useBulkTransferStride(a, b)) { //First tries the bulkStride
       a._value.doiBulkTransferStride(b);
       return a;
-    }else if chpl__useBulkTransfer(a, b) { //If not possible, the plain bulk
+    }else if (chpl__compatibleForBulkTransfer(a, b) && chpl__useBulkTransfer(a, b)){ //If not possible, the plain bulk
       a._value.doiBulkTransfer(b);
       return a;
     }

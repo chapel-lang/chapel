@@ -811,9 +811,11 @@ More info in: http://www.escholarship.org/uc/item/5hg5r5fs?display=all
 Proposal for Extending the UPC Memory Copy Library Functions and Supporting 
 Extensions to GASNet, Version 2.0. Author: Dan Bonachea 
 */
+
 proc DefaultRectangularArr.doiBulkTransferStride(B) {
   if debugDefaultDistBulkTransfer then 
     writeln("In DefaultRectangularArr.doiBulkTransferStride ");
+ //   writeln("Prueba: ",this.isBlockDist()," - ", this.isDefaultRectangular()," - ",B._value.isBlockDist()," - ", B._value.isDefaultRectangular());
  //     writeln("Locale: ", here.id, " Blk: ",blk," Src.blk:",B._value.blk, " dom: ",dom.dsiDims());
 
   extern proc sizeof(type x): int;
@@ -969,7 +971,7 @@ proc DefaultRectangularArr.doiBulkTransferStride2(B) {
 
  proc DefaultRectangularArr.doiBulkTransferStrideComm(B, stridelevels, dstStride/*:(rank+1)*int(32)*/, srcStride/*:(rank+1)*int(32)*/, dstCount/*:(rank+1)*int(32)*/, srcCount/*:(rank+1)*int(32)*/, Alo, Blo)
  { 
-// writeln("Locale: ", here.id, " stridelvl: ", stridelevels, " DstStride: ", dstStride," SrcStride: ",srcStride, " Count: ", dstCount, " dst.Blk: ",blk, " src.Blk: ",B._value.blk/*, " dom: ",dom.dsiDims()," B.blk: ",B._value.blk," B.dom: ",B._value.dom.dsiDims()*/);
+ //writeln("Locale: ", here.id, " stridelvl: ", stridelevels, " DstStride: ", dstStride," SrcStride: ",srcStride, " Count: ", dstCount, " dst.Blk: ",blk, " src.Blk: ",B._value.blk/*, " dom: ",dom.dsiDims()," B.blk: ",B._value.blk," B.dom: ",B._value.dom.dsiDims()*/);
   if this.data.locale==here // IF 1
   {
     var dest = this.data;
@@ -1324,4 +1326,91 @@ proc DefaultRectangularArr.assig(d1:[]/*(rank+1)*int(32)*/,d2:[]/*(rank+1)*int(3
 {
   for i in 1..tam do d1[i]=d2[i];
 }
+
+proc DefaultRectangularArr.doiBulkTransferStride(B) where B._value.isBlockDist()
+{
+  if rank ==1
+    {
+      var r2: range(stridable = true);
+      for j in B._value.dom.dist.targetLocDom {
+	var inters=B._value.dom.locDoms[j].myBlock;
+	if(inters.numIndices>0 && dom.dsiNumIndices >0)
+	  {
+	    var ini_src=corr_inverse(inters.first,B._value,1);
+	    var end_src=corr_inverse(inters.last,B._value,0);
+	    var sa =dom.dsiStride;//this.str;//dom.whole.stride
+
+	    r2 = (ini_src..end_src by sa);
+	    const d2 ={r2};
+	    const slice2 = this.dsiSlice(d2._value);
+
+	    writeln(" ",r2," = ",B._value.dom.locDoms(j).myBlock);
+	    slice2.doiBulkTransferStride(B._value.locArr[j].myElems);
+	    delete slice2;
+	  }
+      }
+    }
+  else
+    {
+      var r2: rank * range(stridable = true);
+      for j in B._value.dom.dist.targetLocDom
+	{
+	  var inters=B._value.dom.locDoms[j].myBlock;
+	  if(inters.numIndices>0 && dom.dsiNumIndices >0)
+	    {
+	      var ini_src=corr_inverse(inters.first,B._value,1);
+	      var end_src=corr_inverse(inters.last,B._value,0);
+	      var sa =dom.dsiStride;
+
+	      for param t in 1..rank do
+		r2[t] = (ini_src[t]..end_src[t] by sa[t]);
+
+	      const d2 ={(...r2)};
+	      const slice2 = this.dsiSlice(d2._value);
+
+	      if (dom.stridable || B._value.dom.locDoms[j].myBlock.stridable) then
+		slice2.doiBulkTransferStride2(B._value.locArr[j].myElems);
+	      else		   
+		slice2.doiBulkTransferStride(B._value.locArr[j].myElems);
+	      delete slice2;
+	    }
+	}
+    }
+}
+
+//These helping function is the main contribution of Juan Lopez, and later improved by Alberto. 
+//It is used to compute the low and high values of the ranges of the destination subdomain from 
+//the low and high values of the source subdomain and low values of the source whole domain.
+//When computing the low bounds, parameter low has to be =1 to account for unaligned low values.
+
+proc DefaultRectangularArr.corr_inverse (b,B,low) where rank ==1
+{
+  //It finds out the initial domain coordinate and strides of destination Domain (of A)
+  var la=dom.ranges(1).low;
+  var sa=dom.dsiStride;
+  var lb=B.dom.whole.low;
+  var sb=B.dom.whole.stride;
+
+  var a=la+((b-lb)/sb)*sa;
+  if low==1 then
+    if(b-lb)%sb>0 then a=a+sa;
+    
+  return a;
+}
+
+proc DefaultRectangularArr.corr_inverse (b,B,low) where rank > 1
+{
+  //It finds out the initial domain coordinate and strides of destination Domain (of A)
+  var la: rank*int;
+  for i in 1..rank do
+    la[i]=dom.ranges(i).low;
+  
+  var sa=dom.dsiStride;
+  var lb=B.dom.whole.low;
+  var sb=B.dom.whole.stride;
+  var a: rank * int; 
+  forall i in 1..rank do a[i]=la[i]+((b[i]-lb[i])/sb[i])*sa(i);
+  return a;
+}
+
 }
