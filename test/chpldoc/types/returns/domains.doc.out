@@ -1,4 +1,4 @@
-Module: returnDomain
+Module: domains
    proc baseCase(): domain(1)
        This proc returns a one dimensional array 
 

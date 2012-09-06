@@ -1,4 +1,4 @@
-Module: returnTuple
+Module: tuples
    proc smallTuple(): (bool, bool)
        This method returns a tuple of bools as an argument 
 

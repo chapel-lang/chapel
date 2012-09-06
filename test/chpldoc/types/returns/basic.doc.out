@@ -1,4 +1,4 @@
-Module: returns
+Module: basic
    proc method1(): string
        Comment for method1 
 
@@ -34,7 +34,7 @@ Module: returns
 
    proc returnCommentless()
 
-   Module: returns.Other
+   Module: basic.Other
       proc inside(): int(64)
           Comment for method inside module 
 
