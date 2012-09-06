@@ -13,7 +13,6 @@
 #include "docs.h"
 
 int NUMTABS = 0;
-std::string FOLDERNAME = "docs";
 
 static int compareNames(const void* v1, const void* v2) {
   Symbol* s1 = *(Symbol**)v1;
@@ -29,7 +28,10 @@ static int compareClasses(const void *v1, const void* v2) {
 
 void docs(void) {
   if (fdocs) {
-    mkdir(FOLDERNAME.c_str(), S_IWUSR|S_IRUSR|S_IXUSR);
+    std::string folderName = (strlen(docsFolder) != 0) ? docsFolder : "docs";
+
+
+    mkdir(folderName.c_str(), S_IWUSR|S_IRUSR|S_IXUSR);
     
     forv_Vec(ModuleSymbol, mod, gModuleSymbols) {
       if (!devOnlyModule(mod) || developer) {
@@ -47,7 +49,7 @@ void docs(void) {
             filename = "";
           }
         }
-        filename = FOLDERNAME + "/" + filename;
+        filename = folderName + "/" + filename;
         createDocsFileFolders(filename);
         
         if (isNotSubmodule(mod)) {
@@ -127,7 +129,7 @@ void printFields(std::ofstream *file, ClassType *cl) {
               sym->prettyPrint(file);
             }
           }
-        }        
+        } 
         *file << std::endl;
         printVarDocs(file, var);
       }
@@ -196,11 +198,10 @@ void printClass(std::ofstream *file, ClassType *cl) {
 void printVarStart(std::ofstream *file, VarSymbol *var) {
   if (var->isConstant())
     *file << "const ";
-  if (var->isParameter())
+  else if (var->isParameter())
     *file << "param ";
   else 
     *file << "var ";
-  
   
   *file << var->name;
 }

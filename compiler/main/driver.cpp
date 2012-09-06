@@ -121,6 +121,8 @@ char defaultDist[256] = "DefaultDist";
 int instantiation_limit = 256;
 bool fdocs = false;
 bool alphabetize = false;
+char commentLabel[256] = "";
+char docsFolder[256] = "";
 char mainModuleName[256] = "";
 bool printSearchDirs = false;
 bool printModuleFiles = false;
@@ -246,6 +248,21 @@ static void setupChplHome(const char* argv0) {
 
 }
 
+static void setCommentLabel(ArgumentState *arg_state, char* label) {
+  assert(label != NULL);
+  size_t len = strlen(label);
+  if (len != 0) {
+    if (len > sizeof(commentLabel)) {
+      USR_FATAL("the label is too large!");
+    }else if (label[0] != '/' || label[1] != '*') {
+      USR_FATAL("comment label should start with /*");
+    } else {
+      strcpy(commentLabel, label);
+    }
+  }
+}
+
+
 static const char* setupEnvVar(const char* varname, const char* script) {
   const char* val = runUtilScript(script);
   parseCmdLineConfig(varname, astr("\"", val, "\""));
@@ -254,6 +271,7 @@ static const char* setupEnvVar(const char* varname, const char* script) {
 
 #define SETUP_ENV_VAR(varname, script)          \
   varname = setupEnvVar(#varname, script);
+
 
 //
 // Can't rely on a variable initialization order for globals, so any
@@ -510,6 +528,8 @@ static ArgumentDescription arg_desc[] = {
  {"count-tokens", ' ', NULL, "Count tokens in main modules", "F", &countTokens, "CHPL_COUNT_TOKENS", NULL},
  {"docs", ' ', NULL, "Runs documentation on the source file", "N", &fdocs, "CHPL_DOC", NULL },
  {"docs-alphabetical", ' ', NULL, "Alphabetizes the documentation", "N", &alphabetize, NULL, NULL},
+ {"docs-comment-style", ' ', "<indicator>", "Only includes comments that start with <indicator>", "S256", commentLabel, NULL, setCommentLabel},
+ {"docs-folder", ' ', "<foldername>", "Sets the documentation folder to <foldername>", "S256", docsFolder, NULL, NULL},
  {"main-module", ' ', "<module>", "Specify entry point module", "S256", mainModuleName, NULL, NULL},
  {"module-dir", 'M', "<directory>", "Add directory to module search path", "P", moduleSearchPath, NULL, addModulePath},
  {"print-code-size", ' ', NULL, "Print code size of main modules", "F", &printTokens, "CHPL_PRINT_TOKENS", NULL},

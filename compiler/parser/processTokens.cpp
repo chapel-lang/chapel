@@ -127,6 +127,12 @@ void processMultiLineComment(void) {
   newString();
   countCommentLine();
 
+  int labelIndex = 0;
+  int len = strlen(commentLabel);
+  if (len >= 2) {
+    labelIndex = 2;
+  }
+
   std::string wholeComment = "";
   
   while (depth > 0) {
@@ -135,13 +141,20 @@ void processMultiLineComment(void) {
     if( c == '\n' ) {
       countMultiLineComment(stringBuffer);
       processNewline();
-      if (fdocs) {
+      if (fdocs && labelIndex == len) {
         wholeComment += stringBuffer;
         wholeComment += '\n';
       }
       newString();
       countCommentLine();
     } else {
+      if ((labelIndex < len) && (labelIndex != -1)) {
+        if (c == commentLabel[labelIndex]) {
+          labelIndex++;
+        } else {
+          labelIndex = -1;
+        }
+      }
       addChar(c);
     }
     if( lastc == '*' && c == '/' ) { // close comment
@@ -155,13 +168,21 @@ void processMultiLineComment(void) {
 
   // back up two to not print */ again.
   if( stringLen >= 2 ) stringLen -= 2;
+  // back up further if the user has specified a special form of commenting
+  if (len > 2 && labelIndex == len) stringLen -= (len - 2);
   stringBuffer[stringLen] = '\0';
   
   // Saves the comment grabbed to the comment field of the location struct,
   // for use when the --docs flag is implemented
-  if (fdocs) {
+  if (fdocs && labelIndex == len) {
     wholeComment += stringBuffer;
-    
+    if (len > 2) {
+      len -= 2;
+      wholeComment = wholeComment.substr(len);
+      // Trim the start of the string if the user has specified a special form
+      // of commenting
+    }
+
     // Also, only need to fix indentation failure when the comment matters
     size_t location = wholeComment.find("\\x09");
     while (location != std::string::npos) {
