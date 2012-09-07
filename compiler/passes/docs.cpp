@@ -130,6 +130,11 @@ void printFields(std::ofstream *file, ClassType *cl) {
             }
           }
         } 
+        if (!nocreole)
+          *file << "\\\\"; 
+        // The set of '\' is only when using creoleparser instead of 
+        // python-creole    
+  
         *file << std::endl;
         printVarDocs(file, var);
       }
@@ -149,6 +154,8 @@ void inheritance(Vec<ClassType*> *list, ClassType *cl) {
 void printClass(std::ofstream *file, ClassType *cl) {
   if (cl->classTag != CLASS_UNION) {
     printTabs(file);
+    if (!nocreole)
+      *file << "===";
     if (cl->classTag == CLASS_CLASS) {
       *file << "Class: " ;
     } else if (cl->classTag == CLASS_RECORD) {
@@ -179,7 +186,12 @@ void printClass(std::ofstream *file, ClassType *cl) {
     
     forv_Vec(ClassType, c, list) {
       printTabs(file);
+      if (!nocreole)
+        *file << "//";
       *file << "inherited from " << c->symbol->name;
+      if (!nocreole)
+        *file << "//" << "\\\\\\\\"; 
+      // The set of '\' is only when using creoleparser instead of python-creole
       *file << std::endl;
       NUMTABS++;
       printFields(file, c);
@@ -196,12 +208,18 @@ void printClass(std::ofstream *file, ClassType *cl) {
 }
 
 void printVarStart(std::ofstream *file, VarSymbol *var) {
+  if (!nocreole)
+    *file << "**";
+
   if (var->isConstant())
     *file << "const ";
   else if (var->isParameter())
     *file << "param ";
   else 
     *file << "var ";
+  
+  if (!nocreole)
+    *file << "**";
   
   *file << var->name;
 }
@@ -211,6 +229,9 @@ void printVarType(std::ofstream *file, VarSymbol *var) {
     *file << ": ";
     var->defPoint->exprType->prettyPrint(file); 
   }
+  if (!nocreole)
+    *file << "\\\\"; 
+  // The set of '\' is only when using creoleparser instead of python-creole    
   *file << std::endl;
 }
 
@@ -218,15 +239,20 @@ void printVarDocs(std::ofstream *file, VarSymbol *var) {
   NUMTABS++;
   if (var->doc != NULL) {
     printTabs(file);
-    *file << var->doc << std::endl;
+    *file << var->doc;
+    if (!nocreole)
+      *file << "\\\\"; 
+    // The set of '\' is only when using creoleparser instead of python-creole  
+    *file << std::endl;
   }
   NUMTABS--;
 }
 
 void printTabs(std::ofstream *file) {
-  for (int i = 1; i <= NUMTABS; i++) {
+  if (nocreole) {
+    for (int i = 1; i <= NUMTABS; i++) {
       *file << "   ";
-    
+    }
   }
 }
 
@@ -247,7 +273,11 @@ bool devOnlyModule(ModuleSymbol *mod) {
 }
 
 void printModule(std::ofstream *file, ModuleSymbol *mod, std::string name) {
+  if (!nocreole)
+    *file << "----" << std::endl;
   printTabs(file);
+  if (!nocreole)
+    *file << "==";
   *file << "Module: " << name << std::endl;
   NUMTABS++;
   if (mod->doc != NULL) {
@@ -259,7 +289,10 @@ void printModule(std::ofstream *file, ModuleSymbol *mod, std::string name) {
     qsort(configs.v, configs.n, sizeof(configs.v[0]), compareNames);
   forv_Vec(VarSymbol, var, configs) {
     printTabs(file);
-    *file << "config ";
+    if (!nocreole)
+      *file << "**config** ";
+    else 
+      *file << "config ";
     printVarStart(file, var);
     printVarType(file, var);
     printVarDocs(file, var);
@@ -298,6 +331,8 @@ void printModule(std::ofstream *file, ModuleSymbol *mod, std::string name) {
 void printFunction(std::ofstream *file, FnSymbol *fn) {
   printTabs(file);
   NUMTABS++;
+  if (!nocreole)
+    *file << "====";
   if (fn->hasFlag(FLAG_INLINE)) {
     *file << "inline ";
   } else if (fn->hasFlag(FLAG_EXPORT)) {

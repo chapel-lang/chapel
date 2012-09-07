@@ -116,6 +116,7 @@ extern bool fdocs;
 extern bool alphabetize;
 extern char commentLabel[256];
 extern char docsFolder[256];
+extern bool nocreole;
 extern char defaultDist[256];
 extern char mainModuleName[256];
 extern bool printSearchDirs;

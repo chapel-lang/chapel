@@ -9,6 +9,8 @@ Module Processing Options:
                                       <indicator>
       --docs-folder <foldername>      Sets the documentation folder to
                                       <foldername>
+      --docs-no-creole                Does not add creole tags to
+                                      documentation
       --main-module <module>          Specify entry point module
   -M, --module-dir <directory>        Add directory to module search path
       --print-code-size               Print code size of main modules

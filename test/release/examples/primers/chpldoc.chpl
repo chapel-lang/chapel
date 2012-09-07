@@ -24,7 +24,7 @@
 // Documentation within the code:
 
 /*
-  Multiline comments found before a method are associated with that method
+  Multiline comments found before a method are **associated** with that method
   as long as there are no code blocks between them.
 */
 

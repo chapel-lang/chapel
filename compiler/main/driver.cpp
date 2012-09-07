@@ -123,6 +123,7 @@ bool fdocs = false;
 bool alphabetize = false;
 char commentLabel[256] = "";
 char docsFolder[256] = "";
+bool nocreole = false;
 char mainModuleName[256] = "";
 bool printSearchDirs = false;
 bool printModuleFiles = false;
@@ -530,6 +531,7 @@ static ArgumentDescription arg_desc[] = {
  {"docs-alphabetical", ' ', NULL, "Alphabetizes the documentation", "N", &alphabetize, NULL, NULL},
  {"docs-comment-style", ' ', "<indicator>", "Only includes comments that start with <indicator>", "S256", commentLabel, NULL, setCommentLabel},
  {"docs-folder", ' ', "<foldername>", "Sets the documentation folder to <foldername>", "S256", docsFolder, NULL, NULL},
+ {"docs-no-creole", ' ', NULL, "Does not add creole tags to documentation", "F", &nocreole, NULL, NULL},
  {"main-module", ' ', "<module>", "Specify entry point module", "S256", mainModuleName, NULL, NULL},
  {"module-dir", 'M', "<directory>", "Add directory to module search path", "P", moduleSearchPath, NULL, addModulePath},
  {"print-code-size", ' ', NULL, "Print code size of main modules", "F", &printTokens, "CHPL_PRINT_TOKENS", NULL},
