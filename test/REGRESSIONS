@@ -134,12 +134,12 @@ stack overflow
 
 chpldoc invalid reads during compilation
 ----------------------------------------
-NOTE: This is not a problem withe chpldocs (should file a separate future)
+NOTE: This is not a problem with chpldocs (should file a separate future)
 
 [Error matching program output for release/examples/primers/chpldoc (compopts: 1)] (8/28/2012)
+[Error matching compiler output for release/examples/primers/chpldoc (compopts: 1)] (9/07/2012)
 
-
-====================
+rrrrrrrrrrrrrrrrrrrr
 no-local regressions
 ===================
 
