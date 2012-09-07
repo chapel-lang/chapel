@@ -1,7 +1,7 @@
 Module: config
-   config const var constant
+   config const constant
        This is a config const 
-   config const var constantTyped: bool
+   config const constantTyped: bool
        This is a config const with a type 
    config var normal
        This is a normal config var 
