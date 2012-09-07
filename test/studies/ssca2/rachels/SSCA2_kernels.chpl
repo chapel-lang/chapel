@@ -329,7 +329,7 @@ module SSCA2_kernels
             BCaux[s].path_count$.writeXF(1.0);
         }
 
-        var barrier = new Barrier(numLocales);
+        var barrier = new Barrier();
 
         coforall loc in Locales do on loc {
           Active_Level[here.id].Members.clear();
@@ -614,68 +614,72 @@ module SSCA2_kernels
   record Barrier {
     param reusable = true;
     var n: int;
-    var count: atomic_int64;
-    var done: atomicflag;
+    var count: atomic int;
+    var tasksFinished: [PrivateSpace] atomic bool;
 
-    proc Barrier(_n: int) {
-      reset(_n);
+    proc Barrier() {
+      reset(numLocales);
     }
-
+  
     inline proc reset(_n: int) {
       on this {
         n = _n;
         count.write(n);
-        done.write(false);
+        for loc in tasksFinished {
+          loc.write(false);
+        }
       }
     }
-
+  
     inline proc barrier() {
-      on this {
-        const myc = count.fetchSub(1);
-        if myc<=1 {
-          if done.testAndSet() then
-            halt("Too many callers to barrier()");
-          if reusable {
-            count.waitFor(n-1);
-            count.add(1);
-            done.clear();
-          }
-        } else {
-          done.waitFor(true);
-          if reusable {
-            count.add(1);
-            done.waitFor(false);
-          }
+      const myc = count.fetchSub(1);
+      if myc <= 1 {
+        if tasksFinished[here.id].read() {
+          halt("too many callers to barrier()");
+        } 
+        for loc in tasksFinished {
+          loc.write(true);
         }
-      }
-    }
-
-    inline proc notify() {
-      on this {
-        const myc = count.fetchSub(1);
-        if myc<=1 {
-          if done.testAndSet() then
-            halt("Too many callers to notify()");
-        }
-      }
-    }
-
-    inline proc wait() {
-      on this {
-        done.waitFor(true);
         if reusable {
-          const myc = count.fetchAdd(1);
-          if myc == n-1 then
-            done.clear();
-          done.waitFor(false);
+          count.waitFor(n-1);
+          count.add(1);
+          for loc in tasksFinished {
+            loc.clear();
+          }
+        }
+      } else {
+        tasksFinished[here.id].waitFor(true);
+        if reusable {
+          count.add(1);
+          tasksFinished[here.id].waitFor(false);
         }
       }
     }
-
+  
+    inline proc notify() {
+      const myc = count.fetchSub(1);
+      if myc <= 1 {
+        if tasksFinished[here.id].read() {
+          halt("too many callers to notify()");
+        }
+        for loc in tasksFinished {
+          loc.write(true);
+        }
+      }
+   }
+  
+    inline proc wait() {
+      tasksFinished[here.id].waitFor(true);
+      if reusable {
+        var sum = count.fetchAdd(1);
+        if sum == n-1 then tasksFinished.clear();
+        else tasksFinished[here.id].waitFor(false);
+      }
+    }
+  
     inline proc try() {
-      return done.read();
+      return tasksFinished[here.id].read();
     }
   }
-
 }
 
