@@ -167,19 +167,23 @@ static inline void atomic_init_ ## type(atomic_ ## type * obj, type value) { \
   *obj = value; \
 } \
 static inline type atomic_fetch_add_explicit_ ## type(atomic_ ## type * obj, type operand, memory_order order) { \
-  type desired; \
   int success; \
-  uinttype * cur_as_uint; \
-  uinttype * desired_as_uint; \
-  type cur; \
+  type volatile cur; \
+  type volatile desired; \
+  uinttype volatile cur_as_uint; \
+  uinttype volatile desired_as_uint; \
+  uinttype volatile * cur_as_uint_p; \
+  uinttype volatile * desired_as_uint_p; \
+  cur_as_uint_p = (uinttype volatile *) &cur; \
+  desired_as_uint_p = (uinttype volatile *) &desired; \
   success = false; \
   while(!success) { \
     __sync_synchronize(); \
     cur = *obj; \
     desired = cur + operand; \
-    cur_as_uint = (uinttype *) &cur; \
-    desired_as_uint = (uinttype *) &desired; \
-    success = __sync_bool_compare_and_swap((uinttype *) obj, *cur_as_uint, *desired_as_uint); \
+    cur_as_uint = *cur_as_uint_p; \
+    desired_as_uint = *desired_as_uint_p; \
+    success = __sync_bool_compare_and_swap((uinttype *) obj, cur_as_uint, desired_as_uint); \
   } \
   return desired; \
 } \
@@ -187,19 +191,23 @@ static inline type atomic_fetch_add_ ## type(atomic_ ## type * obj, type operand
   return atomic_fetch_add_explicit_ ## type(obj, operand, memory_order_seq_cst); \
 } \
 static inline type atomic_fetch_sub_explicit_ ## type(atomic_ ## type * obj, type operand, memory_order order) { \
-  type desired; \
   int success; \
-  uinttype * cur_as_uint; \
-  uinttype * desired_as_uint; \
-  type cur; \
+  type volatile cur; \
+  type volatile desired; \
+  uinttype volatile cur_as_uint; \
+  uinttype volatile desired_as_uint; \
+  uinttype volatile * cur_as_uint_p; \
+  uinttype volatile * desired_as_uint_p; \
+  cur_as_uint_p = (uinttype volatile *) &cur; \
+  desired_as_uint_p = (uinttype volatile *) &desired; \
   success = false; \
   while(!success) { \
     __sync_synchronize(); \
     cur = *obj; \
     desired = cur - operand; \
-    cur_as_uint = (uinttype *) &cur; \
-    desired_as_uint = (uinttype *) &desired; \
-    success = __sync_bool_compare_and_swap((uinttype *) obj, *cur_as_uint, *desired_as_uint); \
+    cur_as_uint = *cur_as_uint_p; \
+    desired_as_uint = *desired_as_uint_p; \
+    success = __sync_bool_compare_and_swap((uinttype *) obj, cur_as_uint, desired_as_uint); \
   } \
   return desired; \
 } \
@@ -207,11 +215,15 @@ static inline type atomic_fetch_sub_ ## type(atomic_ ## type * obj, type operand
   return atomic_fetch_sub_explicit_ ## type(obj, operand, memory_order_seq_cst); \
 } \
 static inline chpl_bool atomic_compare_exchange_strong_explicit_ ## type(atomic_ ## type * obj, type expected, type desired, memory_order order) { \
-  uinttype * expected_as_uint; \
-  uinttype * desired_as_uint; \
-  expected_as_uint = (uinttype *) &expected; \
-  desired_as_uint = (uinttype *) &desired; \
-  return __sync_bool_compare_and_swap((uinttype *) obj, *expected_as_uint, *desired_as_uint); \
+  uinttype volatile expected_as_uint; \
+  uinttype volatile desired_as_uint; \
+  uinttype volatile * expected_as_uint_p; \
+  uinttype volatile * desired_as_uint_p; \
+  expected_as_uint_p = (uinttype volatile *) &expected; \
+  desired_as_uint_p = (uinttype volatile *) &desired; \
+  expected_as_uint = *expected_as_uint_p; \
+  desired_as_uint = *desired_as_uint_p; \
+  return __sync_bool_compare_and_swap((uinttype *) obj, expected_as_uint, desired_as_uint); \
 } \
 static inline chpl_bool atomic_compare_exchange_strong_ ## type(atomic_ ## type * obj, type expected, type desired) { \
   return atomic_compare_exchange_strong_explicit_ ## type(obj, expected, desired, memory_order_seq_cst); \
@@ -222,10 +234,20 @@ static inline chpl_bool atomic_compare_exchange_weak_explicit_ ## type(atomic_ #
 static inline chpl_bool atomic_compare_exchange_weak_ ## type(atomic_ ## type * obj, type expected, type desired) { \
   return atomic_compare_exchange_weak_explicit_ ## type(obj, expected, desired, memory_order_seq_cst); \
 } \
-static inline type atomic_exchange_explicit_ ## type(atomic_ ## type * obj, type value, memory_order order) { \
-  uinttype * value_as_uint; \
-  value_as_uint = (uinttype *) &value; \
-  return (type) __sync_lock_test_and_set((uinttype *) obj, *value_as_uint); \
+static inline type atomic_exchange_explicit_ ## type(atomic_ ## type * obj, type _value, memory_order order) { \
+  type volatile ret; \
+  type volatile *ret_p; \
+  type volatile value; \
+  uinttype volatile value_as_uint; \
+  uinttype volatile ret_as_uint; \
+  uinttype volatile * value_as_uint_p; \
+  value = _value; \
+  ret_p = (type volatile *) &ret_as_uint; \
+  value_as_uint_p = (uinttype volatile *) &value; \
+  value_as_uint = *value_as_uint_p; \
+  ret_as_uint = __sync_lock_test_and_set((uinttype *) obj, value_as_uint); \
+  ret = *ret_p; \
+  return ret; \
 } \
 static inline type atomic_exchange_ ## type(atomic_ ## type * obj, type value) { \
   return atomic_exchange_explicit_ ## type(obj, value, memory_order_seq_cst); \
