@@ -24,6 +24,11 @@ returnInfoString(CallExpr* call) {
 }
 
 static Type*
+returnInfoLocaleID(CallExpr* call) {
+  return dtLocaleID;
+}
+
+static Type*
 returnInfoInt32(CallExpr* call) {
   return dtInt[INT_SIZE_32];
 }
@@ -525,9 +530,12 @@ initPrimitive() {
 
   prim_def(PRIM_LOGICAL_FOLDER, "_paramFoldLogical", returnInfoBool);
 
-  prim_def(PRIM_GET_LOCALEID, "_get_locale", returnInfoInt64, false, true);
-  prim_def(PRIM_LOCALE_ID, "chpl_localeID", returnInfoInt64);
-  prim_def(PRIM_ON_LOCALE_NUM, "chpl_on_locale_num", returnInfoInt64);
+  prim_def(PRIM_GET_LOCALE_ID, "_get_locale_id", returnInfoLocaleID, false, true);
+
+  prim_def(PRIM_GET_NODE_ID, "_get_node_id", returnInfoInt32, false, true);
+  prim_def(PRIM_GET_SUBLOC_ID, "_get_subloc_id", returnInfoInt32, false, true);
+  prim_def(PRIM_LOCALE_ID, "chpl_localeID", returnInfoInt32);	// Our GASNet node ID.
+  prim_def(PRIM_ON_LOCALE_NUM, "chpl_on_locale_num", returnInfoLocaleID);
 
   prim_def(PRIM_ALLOC_GVR, "allocchpl_globals_registry", returnInfoVoid);
   prim_def(PRIM_HEAP_REGISTER_GLOBAL_VAR, "_heap_register_global_var", returnInfoVoid, true, true);

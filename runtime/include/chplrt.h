@@ -44,9 +44,9 @@ extern int chpl_threads_initialized;
   (x) = (size == 0) ? (void*)(0x0) : chpl_mem_allocMany(size, sizeof(type), CHPL_RT_MD_ARRAY_ELEMENTS, lineno, filename)
 
 #define _WIDE_ARRAY_ALLOC(x, type, size, lineno, filename)              \
-  do {                                                                 \
-    if (x.locale != chpl_localeID)                                         \
-      chpl_error("array vector data is not local", lineno, filename); \
+  do {                                                                  \
+    if (x.locale.as_struct.node != chpl_localeID)                       \
+      chpl_error("array vector data is not local", lineno, filename);   \
     _ARRAY_ALLOC((x).addr, type, size, lineno, filename);               \
   } while (0)
 
@@ -58,7 +58,7 @@ extern int chpl_threads_initialized;
 
 #define _WIDE_ARRAY_FREE(x, lineno, filename)                          \
   do {                                                                 \
-    if (x.locale != chpl_localeID)                                         \
+    if (x.locale.as_struct.node != chpl_localeID)                      \
       chpl_error("array vector data is not local", lineno, filename);  \
     _ARRAY_FREE((x).addr, lineno, filename);                           \
   } while (0)

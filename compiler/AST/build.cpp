@@ -208,7 +208,7 @@ Expr* buildStringLiteral(const char* pch) {
 Expr* buildDotExpr(BaseAST* base, const char* member) {
   // The following optimization was added to avoid calling chpl_int_to_locale
   // when all we end up doing is extracting the locale id, thus:
-  // chpl_int_to_locale(_get_locale(x)).id ==> _get_locale(x)
+  // OPTIMIZATION: chpl_int_to_locale(_get_locale_id(x)).id ==> _get_locale_id(x)
 
   // This broke when realms were removed and uid was renamed as id.
   // It might be better coding practice to label very special module code
@@ -217,13 +217,13 @@ Expr* buildDotExpr(BaseAST* base, const char* member) {
     if (CallExpr* intToLocale = toCallExpr(base))
       if (intToLocale->isNamed("chpl_int_to_locale"))
         if (CallExpr* getLocale = toCallExpr(intToLocale->get(1)))
-          if (getLocale->isPrimitive(PRIM_GET_LOCALEID))
+          if (getLocale->isPrimitive(PRIM_GET_LOCALE_ID))
             return getLocale->remove();
 
-  // "x.locale" member access expressions are rendered as chpl_int_to_locale(_get_locale(x)).
+  // MAGIC: "x.locale" member access expressions are rendered as chpl_int_to_locale(_get_locale_id(x)).
   if (!strcmp("locale", member))
     return new CallExpr("chpl_int_to_locale", 
-                        new CallExpr(PRIM_GET_LOCALEID, base));
+                        new CallExpr(PRIM_GET_LOCALE_ID, base));
   else
     return new CallExpr(".", base, new_StringSymbol(member));
 }
@@ -1641,15 +1641,18 @@ static Expr* extractLocaleID(Expr* expr) {
   // If the on <x> expression is a primitive_on_locale_num, we just want
   // to strip off the primitive and have the naked integer value be the
   // locale ID.
+
+  // PRIM_ON_LOCAL_NUM is now passed through to the backend,
+  // but we don't want to wrap it in PRIM_GET_LOCALE_ID.
   if (CallExpr* call = toCallExpr(expr)) {
     if (call->isPrimitive(PRIM_ON_LOCALE_NUM)) {
-      return call->get(1);
+      return expr;
     }
   }
 
   // Otherwise, we need to wrap the expression in a primitive to query
   // the locale ID of the expression
-  return new CallExpr(PRIM_GET_LOCALEID, expr);
+  return new CallExpr(PRIM_GET_LOCALE_ID, expr);
 }
 
 
@@ -1702,6 +1705,13 @@ buildOnStmt(Expr* expr, Expr* stmt) {
   }
 
   if (beginBlock) {
+    // OPTIMIZATION: If "on x" is immediately followed by a "begin", then collapse
+    // remote_fork (node) {
+    //   branch /*local*/ { foo(); }
+    // } wait;
+    // to 
+    // remote_fork (node) { foo(); } // no wait();
+
     // Execute the construct "on x begin ..." asynchronously.
     Symbol* tmp = newTemp();
     body->insertAtHead(new CallExpr(PRIM_MOVE, tmp, onExpr));

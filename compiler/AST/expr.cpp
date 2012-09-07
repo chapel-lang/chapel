@@ -965,15 +965,15 @@ void CallExpr::codegen(FILE* outfile) {
         break;
       }
       if (CallExpr* call = toCallExpr(get(2))) {
-        if (call->isPrimitive(PRIM_GET_LOCALEID)) {
+        if (call->isPrimitive(PRIM_GET_LOCALE_ID)) {
           if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
             if (call->get(1)->getValType()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
               // get locale field of wide class via wide reference
               gen(outfile, "CHPL_COMM_WIDE_GET_LOCALE(%A, %A, %A, ",
                   get(1), call->get(1),
-                  dtLocale->getField("chpl_id")->typeInfo());
+                  dtLocaleID->typeInfo());
               genTypeStructureIndex(outfile,
-                                    dtLocale->getField("chpl_id")->typeInfo()->symbol);
+                                    dtLocaleID->typeInfo()->symbol); // needed?
               gen(outfile, ", %A, %A)", call->get(2), call->get(3));
             } else {
               gen(outfile, "%A = (%A).locale", get(1), call->get(1));
@@ -981,10 +981,33 @@ void CallExpr::codegen(FILE* outfile) {
           } else if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
             gen(outfile, "%A = (%A).locale", get(1), call->get(1));
           } else {
-            gen(outfile, "%A = chpl_localeID", get(1));
+            gen(outfile, "(%A).as_struct.node = chpl_localeID;\n", get(1));
+            gen(outfile, "(%A).as_struct.subloc = chpl_task_getSubLoc()", get(1));
           }
           break;
         }
+        if (call->isPrimitive(PRIM_GET_NODE_ID)) {
+          if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
+            if (call->get(1)->getValType()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
+              // get locale field of wide class via wide reference
+              gen(outfile, "CHPL_COMM_WIDE_GET_NODE(%A, %A, %A, ",
+                  get(1), call->get(1),
+                  dtLocaleID->typeInfo());
+              genTypeStructureIndex(outfile,
+                                    dtInt[INT_SIZE_32]->typeInfo()->symbol); // needed?
+              gen(outfile, ", %A, %A)", call->get(2), call->get(3));
+            } else {
+              gen(outfile, "%A = (%A).locale.as_struct.node", get(1), call->get(1));
+            }
+          } else if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
+            gen(outfile, "%A = (%A).locale.as_struct.node", get(1), call->get(1));
+          } else {
+            // Assume that this is a literal c_locale_t
+            gen(outfile, "%A = (%A).as_struct.node;\n", get(1), call->get(1));
+          }
+          break;
+        }
+
         if (call->isPrimitive(PRIM_DEREF)) {
           if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE) ||
               call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
@@ -1290,15 +1313,25 @@ void CallExpr::codegen(FILE* outfile) {
       }
       if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) &&
           !get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-        if (get(2)->typeInfo() != dtString)
-          gen(outfile, "CHPL_WIDEN(%A, %A)", get(1), get(2));
-        else
-          gen(outfile, "CHPL_WIDEN_STRING(%A, %A)", get(1), get(2));
+        if (get(2)->typeInfo() != dtString) {
+          if (toSymExpr(get(1)) && toSymExpr(get(1))->var->hasFlag(FLAG_HEAP))
+            gen(outfile, "CHPL_WIDEN_TO_ROOT(%A, %A)", get(1), get(2));
+          else
+            gen(outfile, "CHPL_WIDEN(%A, %A)", get(1), get(2));
+        } else {
+          if (toSymExpr(get(1)) && toSymExpr(get(1))->var->hasFlag(FLAG_HEAP))
+            gen(outfile, "CHPL_WIDEN_STRING_TO_ROOT(%A, %A)", get(1), get(2));
+          else
+            gen(outfile, "CHPL_WIDEN_STRING(%A, %A)", get(1), get(2));
+        }
         break;
       }
       if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE) &&
           get(2)->typeInfo()->symbol->hasFlag(FLAG_REF)) {
-        gen(outfile, "CHPL_WIDEN(%A, %A)", get(1), get(2));
+        if (toSymExpr(get(1)) && toSymExpr(get(1))->var->hasFlag(FLAG_HEAP))
+          gen(outfile, "CHPL_WIDEN_TO_ROOT(%A, %A)", get(1), get(2));
+        else
+          gen(outfile, "CHPL_WIDEN(%A, %A)", get(1), get(2));
         break;
       }
       if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE) &&
@@ -1363,7 +1396,7 @@ void CallExpr::codegen(FILE* outfile) {
     case PRIM_DEREF:
     case PRIM_GET_SVEC_MEMBER_VALUE:
     case PRIM_GET_MEMBER_VALUE:
-    case PRIM_GET_LOCALEID:
+    case PRIM_GET_LOCALE_ID:
     case PRIM_GET_PRIV_CLASS:
     case PRIM_ARRAY_GET:
     case PRIM_ARRAY_GET_VALUE:
@@ -2296,6 +2329,9 @@ void CallExpr::codegen(FILE* outfile) {
     case PRIM_LOCALE_ID:
       fprintf(outfile, "chpl_localeID");
       break;
+     case PRIM_ON_LOCALE_NUM:
+      gen(outfile, "chpl_on_locale_num(%A)", get(1));
+      break;
     case PRIM_ALLOC_GVR:
       fprintf(outfile, "chpl_comm_alloc_registry(%d)", numGlobalsOnHeap);
       break;
@@ -2484,7 +2520,7 @@ void CallExpr::codegen(FILE* outfile) {
       get(1)->codegen(outfile);
       fputs(")->", outfile);
       bundledArgsType->getField(lastField)->codegen(outfile);
-      fputs(".locale != chpl_localeID ? NULL : &((", outfile);
+      fputs(".locale.as_struct.node != chpl_localeID ? NULL : &((", outfile);
       get(1)->codegen(outfile);
       fputs(")->", outfile);
       bundledArgsType->getField(lastField)->codegen(outfile);
@@ -2500,7 +2536,7 @@ void CallExpr::codegen(FILE* outfile) {
       get(1)->codegen(outfile);
       fputs(")->", outfile);
       bundledArgsType->getField(lastField)->codegen(outfile);
-      fputs(".locale", outfile);
+      fputs(".locale.as_struct.node", outfile);
     } else
       fputs("chpl_localeID)", outfile);
     fprintf(outfile, ", true, %d, \"%s\");\n",
@@ -2537,7 +2573,7 @@ void CallExpr::codegen(FILE* outfile) {
       get(1)->codegen(outfile);
       fputs(")->", outfile);
       bundledArgsType->getField(endCountField)->codegen(outfile);
-      fputs(".locale != chpl_localeID ? NULL : &((", outfile);
+      fputs(".locale.as_struct.node != chpl_localeID ? NULL : &((", outfile);
       get(1)->codegen(outfile);
       fputs(")->", outfile);
       bundledArgsType->getField(endCountField)->codegen(outfile);
@@ -2547,7 +2583,7 @@ void CallExpr::codegen(FILE* outfile) {
       get(1)->codegen(outfile);
       fputs(")->", outfile);
       bundledArgsType->getField(endCountField)->codegen(outfile);
-      fputs(".locale != chpl_localeID ? NULL : &((", outfile);
+      fputs(".locale.as_struct.node != chpl_localeID ? NULL : &((", outfile);
       get(1)->codegen(outfile);
       fputs(")->", outfile);
       bundledArgsType->getField(endCountField)->codegen(outfile);
@@ -2576,7 +2612,7 @@ void CallExpr::codegen(FILE* outfile) {
       fprintf(outfile, "chpl_comm_fork_fast");
     else
       fprintf(outfile, "chpl_comm_fork");
-    gen(outfile, "(%A, /* %s */ %d, %A", get(1), fn->cname,
+    gen(outfile, "((%A).as_int, /* %s */ %d, %A", get(1), fn->cname,
         ftableMap.get(fn), get(2));
     TypeSymbol* argType = toTypeSymbol(get(2)->typeInfo()->symbol);
     if (argType == NULL) {

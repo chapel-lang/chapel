@@ -14,7 +14,12 @@
 //
 // Shared interface (implemented in chpl-comm.c)
 //
-extern int32_t chpl_localeID; // unique ID for each locale: 0, 1, 2, ...
+extern c_nodeid_t chpl_localeID; // unique ID for each locale: 0, 1, 2, ...
+// Note that this is actually the comm node ID: it carries only the .node
+// portion of the c_locale_t structure representing the locale on which
+// the current task is running.
+// Note also that this value is set only in chpl_comm_init to a value which is
+// (hopefully) unique to the running image, and never changed again.
 extern int32_t chpl_numLocales; // number of locales
 
 extern int32_t chpl_numPrivateObjects;
@@ -157,7 +162,7 @@ void chpl_comm_exit(int all, int status);
 //   address is arbitrary
 //   size and locale are part of p
 //
-void  chpl_comm_put(void* addr, int32_t locale, void* raddr,
+void  chpl_comm_put(void* addr, c_nodeid_t node, void* raddr,
                     int32_t elemSize, int32_t typeIndex, int32_t len,
                     int ln, chpl_string fn);
 
@@ -168,7 +173,7 @@ void  chpl_comm_put(void* addr, int32_t locale, void* raddr,
 //   address is arbitrary
 //   size and locale are part of p
 //
-void  chpl_comm_get(void *addr, int32_t locale, void* raddr,
+void  chpl_comm_get(void *addr, c_nodeid_t node, void* raddr,
                     int32_t elemSize, int32_t typeIndex, int32_t len,
                     int ln, chpl_string fn);
 
@@ -178,19 +183,19 @@ void  chpl_comm_get(void *addr, int32_t locale, void* raddr,
 // notes:
 //   multiple forks to the same locale should be handled concurrently
 //
-void chpl_comm_fork(int locale, chpl_fn_int_t fid,
+void chpl_comm_fork(c_nodeid_t node, chpl_fn_int_t fid,
                     void *arg, int32_t arg_size, int32_t arg_tid);
 
 //
 // non-blocking fork
 //
-void chpl_comm_fork_nb(int locale, chpl_fn_int_t fid,
+void chpl_comm_fork_nb(c_nodeid_t node, chpl_fn_int_t fid,
                        void *arg, int32_t arg_size, int32_t arg_tid);
 
 //
 // fast (non-forking) fork (i.e., run in handler)
 //
-void chpl_comm_fork_fast(int locale, chpl_fn_int_t fid, void *arg,
+void chpl_comm_fork_fast(c_nodeid_t node, chpl_fn_int_t fid, void *arg,
                          int32_t arg_size, int32_t arg_tid);
 
 

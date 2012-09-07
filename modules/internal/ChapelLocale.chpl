@@ -57,22 +57,6 @@ class RootLocale
   const LocaleSpace: domain(1) = {0..numLocales-1};
   const Locales: [LocaleSpace] locale;
 
-  // [DEPRECATED]
-  // Perform locale-specific initialization.
-  // This is where global variables declared 'pragma "private"' are initialized.
-  // That initialization is not currently arranged automatically by the compiler.
-  proc chpl_setupLocale(id) {
-    var tmp: locale;
-    on __primitive("chpl_on_locale_num", id) {
-      tmp = new locale(id);
-      _here = tmp;
-      if (defaultDist._value == nil) {
-        defaultDist = new dmap(new DefaultDist());
-      }
-    }
-    return tmp;
-  }
-
   proc setLocale(idx:int, loc:locale)
   {
     on __primitive("chpl_on_locale_num", idx)
@@ -81,7 +65,7 @@ class RootLocale
       // represented by the locale field of the wide pointer used to store
       // the object's address.  Therefore, we expect the locale ID associated
       // with the passed-in loc to equal the ID of the current node.
-      if __primitive("chpl_localeID") != __primitive("_get_locale", loc) then
+      if __primitive("chpl_localeID") != __primitive("_get_node_id", loc) then
         halt(".locale field of locale object must match node ID");
       _here = loc;
     }

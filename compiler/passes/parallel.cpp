@@ -122,7 +122,8 @@ bundleArgs(CallExpr* fcall) {
     wrap_fn->addFlag(FLAG_ON_BLOCK);
     if (fn->hasFlag(FLAG_NON_BLOCKING))
       wrap_fn->addFlag(FLAG_NON_BLOCKING);
-    ArgSymbol* locale = new ArgSymbol(INTENT_BLANK, "_dummy_locale_arg", dtInt[INT_SIZE_DEFAULT]);
+    // KLUDGE: We pass along the locale ID as an integer, because it's easier than dealing with the union.
+    ArgSymbol* locale = new ArgSymbol(INTENT_BLANK, "_dummy_locale_arg", dtLocaleID);
     wrap_fn->insertFormalAtTail(locale);
   } else if (fn->hasFlag(FLAG_COBEGIN_OR_COFORALL)) {
     wrap_fn->addFlag(FLAG_COBEGIN_OR_COFORALL_BLOCK);
@@ -132,6 +133,7 @@ bundleArgs(CallExpr* fcall) {
 
   mod->block->insertAtTail(new DefExpr(wrap_fn));
   if (fn->hasFlag(FLAG_ON)) {
+    // This passes the localeID on to the wrapped function.
     fcall->insertBefore(new CallExpr(wrap_fn, fcall->get(1)->remove(), tempc));
   } else
     fcall->insertBefore(new CallExpr(wrap_fn, tempc));
@@ -143,7 +145,9 @@ bundleArgs(CallExpr* fcall) {
   // translate the original cobegin function
   CallExpr *new_cofn = new CallExpr( (toSymExpr(fcall->baseExpr))->var);
   if (fn->hasFlag(FLAG_ON))
-    new_cofn->insertAtTail(new_IntSymbol(0)); // bogus actual
+    // If using a union, we would have to create an initialized temp of the union type, and pass
+    // that in.  Much easier (and lazier) to use a literal.
+    new_cofn->insertAtTail(gLocaleID); // bogus actual
   for_fields(field, ctype) {  // insert args
 
     VarSymbol* tmp = newTemp(field->type);
@@ -320,7 +324,7 @@ freeHeapAllocatedVars(Vec<Symbol*> heapAllocatedVars) {
               if (call->isPrimitive(PRIM_ADDR_OF) ||
                   call->isPrimitive(PRIM_GET_MEMBER) ||
                   call->isPrimitive(PRIM_GET_SVEC_MEMBER) ||
-                  call->isPrimitive(PRIM_GET_LOCALEID))
+                  call->isPrimitive(PRIM_GET_LOCALE_ID))
                 call = toCallExpr(call->parentExpr);
               if (call->isPrimitive(PRIM_MOVE))
                 varsToTrack.add(toSymExpr(call->get(1))->var);
@@ -618,7 +622,7 @@ makeHeapAllocations() {
                     call->isPrimitive(PRIM_GET_SVEC_MEMBER) ||
                     call->isPrimitive(PRIM_GET_MEMBER_VALUE) ||
                     call->isPrimitive(PRIM_GET_SVEC_MEMBER_VALUE) ||
-                    call->isPrimitive(PRIM_GET_LOCALEID) ||
+                    call->isPrimitive(PRIM_GET_LOCALE_ID) ||
                     call->isPrimitive(PRIM_SET_SVEC_MEMBER) ||
                     call->isPrimitive(PRIM_SET_MEMBER)) &&
                    call->get(1) == use) {
@@ -728,7 +732,7 @@ parallel(void) {
         fn->addFlag(FLAG_ON);
         if (block->blockInfo->isPrimitive(PRIM_BLOCK_ON_NB))
           fn->addFlag(FLAG_NON_BLOCKING);
-        ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "_dummy_locale_arg", dtInt[INT_SIZE_DEFAULT]);
+        ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "_dummy_locale_arg", dtLocaleID);
         fn->insertFormalAtTail(arg);
       }
       else if (block->blockInfo->isPrimitive(PRIM_ON_GPU)) {
@@ -820,15 +824,18 @@ parallel(void) {
         BlockStmt* rblock = new BlockStmt();
 
         INT_ASSERT(call->get(1));
+        CallExpr* nodeID = new CallExpr(PRIM_GET_NODE_ID, call->get(1)->copy());
         CallExpr* localeID = new CallExpr(PRIM_LOCALE_ID);
-        VarSymbol* tmp = newTemp(localeID->typeInfo());
+        VarSymbol* tmpNode = newTemp(nodeID->typeInfo());
+        VarSymbol* tmpLoc = newTemp(localeID->typeInfo());
         VarSymbol* tmpBool = newTemp(dtBool);
-        call->insertBefore(new DefExpr(tmp));
+        call->insertBefore(new DefExpr(tmpNode));
+        call->insertBefore(new DefExpr(tmpLoc));
         call->insertBefore(new DefExpr(tmpBool));
-        call->insertBefore(new CallExpr(PRIM_MOVE, tmp, localeID));
+        call->insertBefore(new CallExpr(PRIM_MOVE, tmpNode, nodeID));
+        call->insertBefore(new CallExpr(PRIM_MOVE, tmpLoc, localeID));
         call->insertBefore(new CallExpr(PRIM_MOVE, tmpBool,
-                                        new CallExpr(PRIM_EQUAL, tmp,
-                                                     call->get(1)->copy())));
+                                        new CallExpr(PRIM_EQUAL, tmpNode, tmpLoc)));
         call->insertBefore(new CondStmt(new SymExpr(tmpBool), lblock, rblock));
         rblock->insertAtHead(call->remove());
       }
@@ -846,7 +853,7 @@ buildWideClass(Type* type) {
   TypeSymbol* wts = new TypeSymbol(astr("__wide_", type->symbol->cname), wide);
   wts->addFlag(FLAG_WIDE_CLASS);
   theProgram->block->insertAtTail(new DefExpr(wts));
-  wide->fields.insertAtTail(new DefExpr(new VarSymbol("locale", dtInt[INT_SIZE_DEFAULT])));
+  wide->fields.insertAtTail(new DefExpr(new VarSymbol("locale", dtLocaleID)));
   wide->fields.insertAtTail(new DefExpr(new VarSymbol("addr", type)));
 
   //
@@ -926,7 +933,7 @@ static void localizeCall(CallExpr* call) {
       break;
     case PRIM_MOVE:
       if (CallExpr* rhs = toCallExpr(call->get(2))) {
-        if (rhs->isPrimitive(PRIM_GET_LOCALEID)) {
+        if (rhs->isPrimitive(PRIM_GET_LOCALE_ID)) {
           if (rhs->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
             if (rhs->get(1)->getValType()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
               insertLocalTemp(rhs->get(1));
@@ -1214,7 +1221,7 @@ insertWideReferences(void) {
       TypeSymbol* wts = new TypeSymbol(astr("__wide_", ts->cname), wide);
       wts->addFlag(FLAG_WIDE);
       theProgram->block->insertAtTail(new DefExpr(wts));
-      wide->fields.insertAtTail(new DefExpr(new VarSymbol("locale", dtInt[INT_SIZE_DEFAULT])));
+      wide->fields.insertAtTail(new DefExpr(new VarSymbol("locale", dtLocaleID)));
       wide->fields.insertAtTail(new DefExpr(new VarSymbol("addr", ts->type)));
       wideRefMap.put(ts->type, wide);
     }
@@ -1486,6 +1493,8 @@ insertWideReferences(void) {
   heapAllocateGlobals->insertAtTail(new CallExpr(PRIM_MOVE, tmpBool, new CallExpr(PRIM_EQUAL, tmp, new_IntSymbol(0))));
   BlockStmt* block = new BlockStmt();
   forv_Vec(Symbol, sym, heapVars) {
+    // KLUDGE: Use the HEAP flag to indicate this is a global heap-allocated variable.
+    sym->addFlag(FLAG_HEAP);
     block->insertAtTail(new CallExpr(PRIM_MOVE, sym, new CallExpr(PRIM_CHPL_ALLOC, sym->type->getField("addr")->type->symbol, newMemDesc("global heap-converted data"))));
   }
   heapAllocateGlobals->insertAtTail(new CondStmt(new SymExpr(tmpBool), block));

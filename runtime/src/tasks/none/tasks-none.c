@@ -26,6 +26,7 @@ typedef struct chpl_pool_struct {
   chpl_fn_p fun;          // function to call for task
   void*     arg;          // argument to the function
   chpl_bool serial_state; // whether new tasks can be created while executing fun
+  c_subloc_t sublocale;  // subloc id associated with the current task.
   chpl_task_pool_p next;
 } task_pool_t;
 
@@ -207,6 +208,10 @@ void chpl_task_setSerial(chpl_bool new_state) {
   serial_state = new_state;
 }
 
+c_subloc_t chpl_task_getSubLoc(void) { return sublocale; }
+
+void chpl_task_setSubLoc(c_subloc_t new_subloc)
+{ sublocale = new_subloc; }
 
 uint64_t chpl_task_getCallStackSize(void) {
   return taskCallStackSize;

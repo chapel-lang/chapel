@@ -44,6 +44,26 @@ typedef struct _chpl_fieldType {
   size_t offset;
 } chpl_fieldType;
 
+// This allocation of bits is arbitrary.
+// Seemingly, 64 bits is enough to represent both the node_id and sublocale_id portions 
+// of a locale ID, and an even split is a good first guess.
+typedef int32_t c_nodeid_t;
+typedef int32_t c_subloc_t;
+
+typedef union
+{
+  // This field is listed first, so we can initialize the union with the literal {0}.
+  int64_t as_int;   // This representation allows a localeID (== nodeID + sublocaleID)
+                    // to be handled opaquely in Chapel.
+  struct
+  {
+    c_nodeid_t node;    // This is the comm node index.
+    c_subloc_t subloc;  // This carries the sublocale index if there is one, otherwise zero.
+  } as_struct;
+} c_locale_t;
+
+extern const c_locale_t _rootLocaleID;
+
 #define nil 0
 #define _nilType void*
 
@@ -150,6 +170,7 @@ int64_t string_length(chpl_string x);
 int64_t real2int( _real64 f);       // return the raw bytes of the float
 int64_t object2int( _chpl_object o);  // return the ptr
 
+//vvvvv This should go in chpltimers.h
 typedef struct timeval _timervalue;
 #define chpl_init_timer(time)
 extern _timervalue* chpl_now_timer_help(_timervalue* time);
@@ -162,6 +183,20 @@ int32_t chpl_now_year(void);
 int32_t chpl_now_month(void);
 int32_t chpl_now_day(void);
 int32_t chpl_now_dow(void);
+//^^^^^
+
+// Bootstrap routine which allows us to move execution to a node for which we do not
+// yet have a locale structure defined.
+// CAUTION: Note that this always assumes that we're running on sublocale 0.
+// It is intended primarily for locale setup, before there exist sublocales
+// on which to run.
+static inline c_locale_t chpl_on_locale_num(int32_t node_id)
+{
+  c_locale_t tmp;
+  tmp.as_struct.node = node_id;
+  tmp.as_struct.subloc = 0;
+  return tmp;
+}
 
 typedef int32_t chpl__class_id;
 

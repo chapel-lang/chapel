@@ -20,6 +20,8 @@
 #define NEGINFSTRING "-inf"
 #define POSINFSTRING "inf"
 
+const c_locale_t _rootLocaleID = {0};
+
 const char* _default_format_write_complex64 = "%g + %gi";
 const char* _default_format_write_complex128 = "%g + %gi";
 
@@ -60,14 +62,14 @@ chpl_string chpl_format(chpl_string format, ...) {
 
 #ifndef LAUNCHER
 struct __chpl____wide_chpl_string {
-  int64_t locale;
+  c_locale_t locale;
   chpl_string addr;
   int64_t size;
 };
 
 chpl_string
 chpl_wide_string_copy(struct __chpl____wide_chpl_string* x, int32_t lineno, chpl_string filename) {
-  if (x->locale == chpl_localeID)
+  if (x->locale.as_struct.node == chpl_localeID)
     return string_copy(x->addr, lineno, filename);
   else {
     chpl_string s;

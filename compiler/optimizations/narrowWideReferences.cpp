@@ -264,7 +264,7 @@ narrowSym(Symbol* sym, WideInfo* wi) {
           (call->isPrimitive(PRIM_GET_SVEC_MEMBER_VALUE) && call->get(1) == use) ||
           (call->isPrimitive(PRIM_CAST) && call->get(2) == use) ||
           (call->isPrimitive(PRIM_DEREF)) ||
-          //          (call->isPrimitive(PRIM_GET_LOCALEID)) ||
+          //          (call->isPrimitive(PRIM_GET_LOCALE_ID)) ||
           (call->isPrimitive(PRIM_SYNC_INIT)) ||
           (call->isPrimitive(PRIM_SYNC_LOCK)) ||
           (call->isPrimitive(PRIM_SYNC_DESTROY)) ||

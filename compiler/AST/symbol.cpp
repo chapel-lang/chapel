@@ -31,6 +31,7 @@ Symbol *gMethodToken = NULL;
 Symbol *gTypeDefaultToken = NULL;
 Symbol *gLeaderTag = NULL, *gFollowerTag = NULL;
 Symbol *gModuleToken = NULL;
+Symbol *gLocaleID = NULL;
 Symbol *gVoid = NULL;
 Symbol *gFile = NULL;
 Symbol *gOpaque = NULL;
@@ -278,7 +279,7 @@ void VarSymbol::codegenDef(FILE* outfile) {
     } else if (ct->symbol->hasFlag(FLAG_WIDE) ||
                ct->symbol->hasFlag(FLAG_WIDE_CLASS)) {
       if (isFnSymbol(defPoint->parentSymbol))
-        fprintf(outfile, " = {0,NULL}");
+        fprintf(outfile, " = {{0},NULL}");
     }
   }
   fprintf(outfile, ";\n");

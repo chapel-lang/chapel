@@ -163,6 +163,7 @@ TYPE_EXTERN PrimitiveType* dtReal[FLOAT_SIZE_NUM];
 TYPE_EXTERN PrimitiveType* dtImag[FLOAT_SIZE_NUM];
 TYPE_EXTERN Type* dtComplex[COMPLEX_SIZE_NUM];
 TYPE_EXTERN PrimitiveType* dtString;
+TYPE_EXTERN PrimitiveType* dtLocaleID;
 TYPE_EXTERN PrimitiveType* dtSymbol;
 TYPE_EXTERN PrimitiveType* dtFile; 
 TYPE_EXTERN PrimitiveType* dtOpaque;

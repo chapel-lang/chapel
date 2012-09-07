@@ -838,6 +838,9 @@ void initPrimitiveTypes(void) {
   dtString = createPrimitiveType( "string", "chpl_string");
   dtString->defaultValue = new_StringSymbol("");
 
+  dtLocaleID = createPrimitiveType("_locale_id", "c_locale_t");
+  CREATE_DEFAULT_SYMBOL(dtLocaleID, gLocaleID, "_rootLocaleID");
+
   dtSymbol = createPrimitiveType( "symbol", "_symbol"); 
 
   dtFile = createPrimitiveType ("_file", "_cfile");
@@ -1131,6 +1134,7 @@ void registerTypeToStructurallyCodegen(TypeSymbol* type) {
   }
 }
 
+// ???
 void genTypeStructureIndex(FILE *outfile, TypeSymbol* typesym) {
   if (fHeterogeneous) {
     // strings are special

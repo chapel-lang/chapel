@@ -586,16 +586,16 @@ static void exit_any_dirty(int status) {
 // exit_any with cleanup on all nodes
 static void exit_any_clean(int status) {
   int* status_p = &status;
-  int locale;
+  int node;
 
-  // notify all other locales that this locale is entering a clean exit_any
-  for (locale = 0; locale < chpl_numLocales; locale++) {
-    if (locale != chpl_localeID) {
-      GASNET_Safe(gasnet_AMRequestMedium0(locale, EXIT_ANY, &status_p, sizeof(status_p)));
+  // notify all other nodes that this node is entering a clean exit_any
+  for (node = 0; node < chpl_numLocales; node++) {
+    if (node != chpl_localeID) {
+      GASNET_Safe(gasnet_AMRequestMedium0(node, EXIT_ANY, &status_p, sizeof(status_p)));
     }
   }
     
-  // (for code reuse) ask this locale to perform a clean exit_any
+  // (for code reuse) ask this node to perform a clean exit_any
   GASNET_Safe(gasnet_AMRequestMedium0(chpl_localeID, EXIT_ANY, &status_p, sizeof(status_p)));
 }
 #endif
@@ -610,53 +610,53 @@ void chpl_comm_exit(int all, int status) {
   }
 }
 
-void  chpl_comm_put(void* addr, int32_t locale, void* raddr,
+void  chpl_comm_put(void* addr, int32_t node, void* raddr,
                     int32_t elemSize, int32_t typeIndex, int32_t len,
                     int ln, chpl_string fn) {
   const int size = elemSize*len;
-  if (chpl_localeID == locale) {
+  if (chpl_localeID == node) {
     memcpy(raddr, addr, size);
   } else {
     if (chpl_verbose_comm && !chpl_comm_no_debug_private)
-      printf("%d: %s:%d: remote put to %d\n", chpl_localeID, fn, ln, locale);
+      printf("%d: %s:%d: remote put to %d\n", chpl_localeID, fn, ln, node);
     if (chpl_comm_diagnostics && !chpl_comm_no_debug_private) {
       chpl_sync_lock(&chpl_comm_diagnostics_sync);
       chpl_comm_commDiagnostics.put++;
       chpl_sync_unlock(&chpl_comm_diagnostics_sync);
     }
-    gasnet_put(locale, raddr, addr, size); // node, dest, src, size
+    gasnet_put(node, raddr, addr, size); // node, dest, src, size
   }
 }
 
 ////GASNET - pass trace info to gasnet_get
 ////GASNET - define GASNET_E_ PUTGET always REMOTE
 ////GASNET - look at GASNET tools at top of README.tools has atomic counters
-void  chpl_comm_get(void* addr, int32_t locale, void* raddr,
+void  chpl_comm_get(void* addr, int32_t node, void* raddr,
                     int32_t elemSize, int32_t typeIndex, int32_t len,
                     int ln, chpl_string fn) {
   const int size = elemSize*len;
-  if (chpl_localeID == locale) {
+  if (chpl_localeID == node) {
     memcpy(addr, raddr, size);
   } else {
     if (chpl_verbose_comm && !chpl_comm_no_debug_private)
-      printf("%d: %s:%d: remote get from %d\n", chpl_localeID, fn, ln, locale);
+      printf("%d: %s:%d: remote get from %d\n", chpl_localeID, fn, ln, node);
     if (chpl_comm_diagnostics && !chpl_comm_no_debug_private) {
       chpl_sync_lock(&chpl_comm_diagnostics_sync);
       chpl_comm_commDiagnostics.get++;
       chpl_sync_unlock(&chpl_comm_diagnostics_sync);
     }
-    gasnet_get(addr, locale, raddr, size); // dest, node, src, size
+    gasnet_get(addr, node, raddr, size); // dest, node, src, size
   }
 }
 
 //
 // Optional non-blocking get interface
 //
-void chpl_comm_get_nb(void* addr, int32_t locale, void* raddr,
+void chpl_comm_get_nb(void* addr, int32_t node, void* raddr,
                       int32_t elemSize, int32_t typeIndex, int32_t len,
                       chpl_comm_get_nb_token_t *token, int ln, chpl_string fn) {
   const int size = elemSize*len;
-  if (chpl_localeID == locale) {
+  if (chpl_localeID == node) {
     memcpy(addr, raddr, size);
   } else {
     if (chpl_comm_diagnostics && !chpl_comm_no_debug_private) {
@@ -664,10 +664,10 @@ void chpl_comm_get_nb(void* addr, int32_t locale, void* raddr,
       chpl_comm_commDiagnostics.get_nb++;
       chpl_sync_unlock(&chpl_comm_diagnostics_sync);
     }
-    *token = gasnet_get_nb(addr, locale, raddr, size); // dest, node, src, size
+    *token = gasnet_get_nb(addr, node, raddr, size); // dest, node, src, size
     if (chpl_verbose_comm && !chpl_comm_no_debug_private)
       printf("%d: %s:%d: remote non-blocking get from %d (%p)\n",
-             chpl_localeID, fn, ln, locale, *token);
+             chpl_localeID, fn, ln, node, *token);
   }
 }
 
@@ -700,7 +700,7 @@ void chpl_comm_wait_get_nb(chpl_comm_get_nb_token_t token,
 
 ////GASNET - introduce locale-int size
 ////GASNET - is caller in fork_t redundant? active message can determine this.
-void  chpl_comm_fork(int locale, chpl_fn_int_t fid, void *arg,
+void  chpl_comm_fork(c_nodeid_t node, chpl_fn_int_t fid, void *arg,
                      int32_t arg_size, int32_t arg_tid) {
   fork_t* info;
   int     info_size;
@@ -709,11 +709,11 @@ void  chpl_comm_fork(int locale, chpl_fn_int_t fid, void *arg,
                    should not optimize out any accesses to it. */
   int     passArg = sizeof(fork_t) + arg_size <= gasnet_AMMaxMedium();
 
-  if (chpl_localeID == locale) {
+  if (chpl_localeID == node) {
     (*chpl_ftable[fid])(arg);
   } else {
     if (chpl_verbose_comm && !chpl_comm_no_debug_private)
-      printf("%d: remote task created on %d\n", chpl_localeID, locale);
+      printf("%d: remote task created on %d\n", chpl_localeID, node);
     if (chpl_comm_diagnostics && !chpl_comm_no_debug_private) {
       chpl_sync_lock(&chpl_comm_diagnostics_sync);
       chpl_comm_commDiagnostics.fork++;
@@ -737,10 +737,10 @@ void  chpl_comm_fork(int locale, chpl_fn_int_t fid, void *arg,
     if (passArg) {
       if (arg_size)
         memcpy(&(info->arg), arg, arg_size);
-      GASNET_Safe(gasnet_AMRequestMedium0(locale, FORK, info, info_size));
+      GASNET_Safe(gasnet_AMRequestMedium0(node, FORK, info, info_size));
     } else {
       memcpy(&(info->arg), &arg, sizeof(void*));
-      GASNET_Safe(gasnet_AMRequestMedium0(locale, FORK_LARGE, info, info_size));
+      GASNET_Safe(gasnet_AMRequestMedium0(node, FORK_LARGE, info, info_size));
     }
 #ifndef CHPL_COMM_YIELD_TASK_WHILE_POLLING
     GASNET_BLOCKUNTIL(done==1);
@@ -754,11 +754,11 @@ void  chpl_comm_fork(int locale, chpl_fn_int_t fid, void *arg,
   }
 }
 
-void  chpl_comm_fork_nb(int locale, chpl_fn_int_t fid, void *arg,
+void  chpl_comm_fork_nb(c_nodeid_t node, chpl_fn_int_t fid, void *arg,
                         int32_t arg_size, int32_t arg_tid) {
   fork_t *info;
   int     info_size;
-  int     passArg = chpl_localeID == locale || sizeof(fork_t) + arg_size <= gasnet_AMMaxMedium();
+  int     passArg = chpl_localeID == node || sizeof(fork_t) + arg_size <= gasnet_AMMaxMedium();
 
   void* argCopy = NULL;
 
@@ -782,28 +782,28 @@ void  chpl_comm_fork_nb(int locale, chpl_fn_int_t fid, void *arg,
     memcpy(&(info->arg), &argCopy, sizeof(void*));
   }
 
-  if (chpl_localeID == locale) {
+  if (chpl_localeID == node) {
     chpl_task_begin((chpl_fn_p)fork_nb_wrapper, (void*)info,
                false, info->serial_state, NULL);
   } else {
     if (chpl_verbose_comm && !chpl_comm_no_debug_private)
-      printf("%d: remote non-blocking task created on %d\n", chpl_localeID, locale);
+      printf("%d: remote non-blocking task created on %d\n", chpl_localeID, node);
     if (chpl_comm_diagnostics && !chpl_comm_no_debug_private) {
       chpl_sync_lock(&chpl_comm_diagnostics_sync);
       chpl_comm_commDiagnostics.fork_nb++;
       chpl_sync_unlock(&chpl_comm_diagnostics_sync);
     }
     if (passArg) {
-      GASNET_Safe(gasnet_AMRequestMedium0(locale, FORK_NB, info, info_size));
+      GASNET_Safe(gasnet_AMRequestMedium0(node, FORK_NB, info, info_size));
       chpl_mem_free(info, 0, 0);
     } else {
-      GASNET_Safe(gasnet_AMRequestMedium0(locale, FORK_NB_LARGE, info, info_size));
+      GASNET_Safe(gasnet_AMRequestMedium0(node, FORK_NB_LARGE, info, info_size));
     }
   }
 }
 
 // GASNET - should only be called for "small" functions
-void  chpl_comm_fork_fast(int locale, chpl_fn_int_t fid, void *arg,
+void  chpl_comm_fork_fast(c_nodeid_t node, chpl_fn_int_t fid, void *arg,
                           int32_t arg_size, int32_t arg_tid) {
   char infod[gasnet_AMMaxMedium()];
   fork_t* info;
@@ -811,13 +811,13 @@ void  chpl_comm_fork_fast(int locale, chpl_fn_int_t fid, void *arg,
   int     done; // See chpl_comm_fork() for why this is not volatile
   int     passArg = info_size <= gasnet_AMMaxMedium();
 
-  if (chpl_localeID == locale) {
+  if (chpl_localeID == node) {
     (*chpl_ftable[fid])(arg);
   } else {
     if (passArg) {
       if (chpl_verbose_comm && !chpl_comm_no_debug_private)
         printf("%d: remote (no-fork) task created on %d\n",
-               chpl_localeID, locale);
+               chpl_localeID, node);
       if (chpl_comm_diagnostics && !chpl_comm_no_debug_private) {
         chpl_sync_lock(&chpl_comm_diagnostics_sync);
         chpl_comm_commDiagnostics.fork_fast++;
@@ -835,7 +835,7 @@ void  chpl_comm_fork_fast(int locale, chpl_fn_int_t fid, void *arg,
 
       if (arg_size)
         memcpy(&(info->arg), arg, arg_size);
-      GASNET_Safe(gasnet_AMRequestMedium0(locale, FORK_FAST, info, info_size));
+      GASNET_Safe(gasnet_AMRequestMedium0(node, FORK_FAST, info, info_size));
       // NOTE: We still have to wait for the handler to complete
 #ifndef CHPL_COMM_YIELD_TASK_WHILE_POLLING
       GASNET_BLOCKUNTIL(done==1);
@@ -847,7 +847,7 @@ void  chpl_comm_fork_fast(int locale, chpl_fn_int_t fid, void *arg,
 #endif
     } else {
       // Call the normal chpl_comm_fork()
-      chpl_comm_fork(locale, fid, arg, arg_size, arg_tid);
+      chpl_comm_fork(node, fid, arg, arg_size, arg_tid);
     }
   }
 }
