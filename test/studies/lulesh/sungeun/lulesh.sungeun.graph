@@ -1,5 +1,5 @@
 perfkeys: Total Time:, Total Time:
 graphkeys: default, BlockDist
-files: lulesh.default.dat, lulesh.block.dat
-graphtitle: LULESH
+files: lulesh.sungeun.default.dat, lulesh.sungeun.block.dat
+graphtitle: LULESH (orig)
 ylabel: Time (seconds)
