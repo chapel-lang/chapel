@@ -1,3 +1,10 @@
+/*
+Computes heat equation till convergence
+Array is "manually" distributed on locales so each local has a DR subblock 
+Halo communications are implemented a la MPI: 
+explicit Data[localeA].DR[sliceHalo]=Data[localeB].DR[sliceSource]
+*/
+
 use BlockDist;
 use util;
 
@@ -85,16 +92,22 @@ proc fetch(oddphase: bool) {
   } // forall
 }
 
+var i=0;
 proc progress() {
+  i=i+1;
   fetch(true);          showfetch(true);
-  compute(true, delta); showme(true, delta, "After step 1");
+  compute(true, delta); showme(true, delta, "After odd phase: "+i);
   if delta < epsilon then return true;
 
+  i=i+1;
   fetch(false);          showfetch(false);
-  compute(false, delta); showme(false, delta, "After step 2");
+  compute(false, delta); showme(false, delta, "After even phase: "+i);
   if delta < epsilon then return true;
 
   return false;
 }
 
+
 do {} while !progress();
+
+writeln("Converged with delta=",delta," after ",i," iterations.");

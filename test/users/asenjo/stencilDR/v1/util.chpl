@@ -1,3 +1,5 @@
+//Helper functions for stencil.chpl
+
 use stencil;
 
 var manylocs: bool;
