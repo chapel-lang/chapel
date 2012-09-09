@@ -812,7 +812,7 @@ Proposal for Extending the UPC Memory Copy Library Functions and Supporting
 Extensions to GASNet, Version 2.0. Author: Dan Bonachea 
 */
 
-proc DefaultRectangularArr.doiBulkTransferStride(B) {
+proc DefaultRectangularArr.doiBulkTransferStride(B,aFromBD=false, bFromBD=false) {
   if debugDefaultDistBulkTransfer then 
     writeln("In DefaultRectangularArr.doiBulkTransferStride ");
  //   writeln("Prueba: ",this.isBlockDist()," - ", this.isDefaultRectangular()," - ",B._value.isBlockDist()," - ", B._value.isDefaultRectangular());
@@ -853,7 +853,7 @@ proc DefaultRectangularArr.doiBulkTransferStride(B) {
   /* We now obtain the count arrays for source and destination arrays */
 
   dstCount= getCount(stridelevels,dstCompRank);
-  srcCount= B._value.getCount(stridelevels,srcCompRank); 
+  srcCount= B._value.getCount(stridelevels,srcCompRank);
   
   /*Then the Stride arrays for source and destination arrays*/
 
@@ -867,109 +867,60 @@ proc DefaultRectangularArr.doiBulkTransferStride(B) {
   if !equal(dstCount, srcCount, rank+1) //For different size arrays
     {
     var isDstCountMin:bool=true;
-      for h in 1..stridelevels+1 do
+      for h in 1..stridelevels+1
+	{
 	if dstCount[h]>srcCount[h] {isDstCountMin=false;
 	  assig(dstCount,srcCount, stridelevels+1);break;} //{ dstCount=srcCount;break;}
-      
+        else if dstCount[h]<srcCount[h] then break; 
+	}
       if !isDstCountMin
       {
-        dstStride = getStride(dstCompRank,dstCount,stridelevels);
-        srcStride = B._value.getStride(srcCompRank,stridelevels);
+        if (aFromBD && dom.stridable) then
+          dstStride = getStride2(dstCompRank, dstCount,stridelevels);  
+        else
+          dstStride = getStride(dstCompRank,dstCount,stridelevels);
+        
+        if (bFromBD && B._value.dom.stridable) then
+          srcStride = B._value.getStride2(stridelevels);
+        else
+          srcStride = B._value.getStride(srcCompRank,stridelevels);
       }
       else
       {
-        dstStride = getStride(dstCompRank,stridelevels);
-        srcStride = B._value.getStride(srcCompRank,dstCount,stridelevels);
+        if (aFromBD && dom.stridable) then
+          dstStride = getStride2(stridelevels);
+        else
+          dstStride = getStride(dstCompRank,stridelevels);
+          
+        if (bFromBD && B._value.dom.stridable) then
+          srcStride = B._value.getStride2(srcCompRank, dstCount,stridelevels);
+        else
+          srcStride = B._value.getStride(srcCompRank,dstCount,stridelevels);
       }
     }
-  else
+  else //dstCount = srcCount
   {
-    dstStride = getStride(dstCompRank,stridelevels);
-    srcStride = B._value.getStride(srcCompRank,stridelevels);
-  }
- 
- doiBulkTransferStrideComm(B, stridelevels, dstStride, srcStride, dstCount, srcCount, Alo, Blo);
-}
-
-proc DefaultRectangularArr.doiBulkTransferStride2(B) {
-  if debugDefaultDistBulkTransfer then 
-    writeln("In DefaultRectangularArr.doiBulkTransferStride2 ");
-
-  extern proc sizeof(type x): int;
-  if debugBulkTransfer then
-    writeln("In doiBulkTransferStride: ");
- 
-  const Adims = dom.dsiDims();
-  var Alo: rank*dom.idxType;
-  for param i in 1..rank do
-    Alo(i) = Adims(i).first;
-  
-  const Bdims = B.domain.dims();
-  var Blo: rank*dom.idxType;
-  for param i in 1..rank do
-    Blo(i) = Bdims(i).first;
-  
-  if debugDefaultDistBulkTransfer then
-    writeln("\tlocal get() from ", B.locale.id);
-  
-  var dstCompRank, srcCompRank:[1..rank] bool;
-  var stridelevels:int(32);
-  
-  dstCompRank = assertWholeDim(this);
-  srcCompRank = assertWholeDim(B._value);
-
-  /* If the stridelevels in source and destination arrays are different, we take the larger*/
-  stridelevels=max(getStrideLevels(dstCompRank),B._value.getStrideLevels(srcCompRank));
-  if debugDefaultDistBulkTransfer then 
-    writeln("In DefaultRectangularArr.doiBulkTransferStride, stridelevels: ",stridelevels);
-  
-  //These variables should be actually of size stridelevels+1, but stridelevels is not param...
-  var srcCount, dstCount:[1..rank+1] int(32); 
-  /* We now obtain the count arrays for source and destination arrays */
-  
-  dstCount= getCount(stridelevels,dstCompRank);
-  srcCount= B._value.getCount(stridelevels,srcCompRank);
- 
-  /*Then the Stride arrays for source and destination arrays*/
-  var dstStride, srcStride: [1..rank] int(32);
-  
-  /*When the source and destination arrays have different sizes 
-    (example: A[1..10,1..10] and B[1..20,1..20]), the count arrays obtained are different,
-    so we have to calculate the minimun count array */
-  //Note that we use equal function equal instead of dstCount==srcCount due to the latter fails
-  //The same for the array assigment (using assing function instead of srcCount=dstCount)
-  
-  if !equal(dstCount, srcCount, rank+1) //For different size arrays
+    if (aFromBD && dom.stridable)
     {
-      var isDstCountMin:bool=true;
-      for h in 1..stridelevels+1 do
-	if dstCount[h]>srcCount[h] {isDstCountMin=false;
-	  assig(dstCount,srcCount, stridelevels+1);break;} 
-      
-      if !isDstCountMin
-      {
-        dstStride = getStride2(dstCompRank, srcCount,stridelevels);
-        srcStride = B._value.getStride2(stridelevels);
-      }
-      else
-      {
-        srcStride = B._value.getStride2(srcCompRank, dstCount,stridelevels);
-        dstStride = getStride2(stridelevels);
-      }
+      if blk(rank)>1{/*writeln("AQUI dst: ",getStride2(dstCompRank,dstCount,stridelevels));*/ dstStride = getStride2(stridelevels);}
+      else  dstStride = getStride2(dstCompRank,dstCount,stridelevels);  
     }
-  else
-  {
-    if blk(rank)>1 then dstStride = getStride2(stridelevels);
-    else dstStride = getStride2(dstCompRank,dstCount,stridelevels);
+    else
+      dstStride = getStride(dstCompRank,stridelevels);
     
-    if B._value.blk(rank)>1 then srcStride = B._value.getStride2(stridelevels);
-    else srcStride = B._value.getStride2(srcCompRank,srcCount,stridelevels);
+    if (bFromBD && B._value.dom.stridable)
+    {
+      if B._value.blk(rank)>1 {/*writeln("AQUI Src: ",B._value.getStride2(srcCompRank,srcCount,stridelevels));*/ srcStride = B._value.getStride2(stridelevels);}
+      else srcStride = B._value.getStride2(srcCompRank,srcCount,stridelevels);      
+    }
+    else
+      srcStride = B._value.getStride(srcCompRank,stridelevels);
   }
   
  doiBulkTransferStrideComm(B, stridelevels, dstStride, srcStride, dstCount, srcCount, Alo, Blo);
 }
 
- proc DefaultRectangularArr.doiBulkTransferStrideComm(B, stridelevels, dstStride/*:(rank+1)*int(32)*/, srcStride/*:(rank+1)*int(32)*/, dstCount/*:(rank+1)*int(32)*/, srcCount/*:(rank+1)*int(32)*/, Alo, Blo)
+proc DefaultRectangularArr.doiBulkTransferStrideComm(B, stridelevels, dstStride/*:(rank+1)*int(32)*/, srcStride/*:(rank+1)*int(32)*/, dstCount/*:(rank+1)*int(32)*/, srcCount/*:(rank+1)*int(32)*/, Alo, Blo)
  { 
  //writeln("Locale: ", here.id, " stridelvl: ", stridelevels, " DstStride: ", dstStride," SrcStride: ",srcStride, " Count: ", dstCount, " dst.Blk: ",blk, " src.Blk: ",B._value.blk/*, " dom: ",dom.dsiDims()," B.blk: ",B._value.blk," B.dom: ",B._value.dom.dsiDims()*/);
   if this.data.locale==here // IF 1
@@ -1195,13 +1146,13 @@ proc DefaultRectangularArr.getStride(rankcomp:[],cnt:[],levels:int(32))
   
   return c;
 }
-
+proc DefaultRectangularArr.getStride2(levels:int(32)) where rank==1 {return dom.dsiStride:int(32);}
 proc DefaultRectangularArr.getStride2(levels:int(32)):(rank)*int(32) where rank > 1
 {
   var c: (rank)*int(32);
   var h:int(32) = 1;
   if blk[rank]>1 then
-    if dom.dsiDim(rank).length>0
+    if dom.dsiDim(rank).length>1 //if dom.dsiDim(rank).length>0
       {
         c[h]=blk[rank]:int(32);
         h+=1;
@@ -1211,7 +1162,7 @@ proc DefaultRectangularArr.getStride2(levels:int(32)):(rank)*int(32) where rank 
   {
     if levels>=h || h==1 then
       if blk[i]>1{
-        if (dom.dsiDim(i).length>0 && !distance(i+1))
+        if (dom.dsiDim(i).length>1 && !distance(i+1)) //if (dom.dsiDim(i).length>0 && !distance(i+1))
         {
           c[h]=blk[i]:int(32);
           h+=1;
@@ -1223,7 +1174,7 @@ proc DefaultRectangularArr.getStride2(levels:int(32)):(rank)*int(32) where rank 
     
   return c;
 }
-
+proc DefaultRectangularArr.getStride2(rankcomp:[],cnt:[], levels:int(32)) where rank==1 {return dom.dsiStride:int(32);}
 proc DefaultRectangularArr.getStride2(rankcomp:[],cnt:[], levels:int(32)):(rank)*int(32) where rank > 1
 {
   var c: (rank)*int(32); 
@@ -1236,7 +1187,7 @@ proc DefaultRectangularArr.getStride2(rankcomp:[],cnt:[], levels:int(32)):(rank)
   for i in 2..rank by -1:int(32){
     if (levels>=h)
     {
-      if (!rankcomp[i] && dom.dsiDim(i-1).length>1) || (cnt[h]==dom.dsiDim(i).length*acum && dom.dsiDim(i-1).length>1)
+      if (!rankcomp[i] && dom.dsiDim(i-1).length>1 && !distance(i)) || (cnt[h]==dom.dsiDim(i).length*acum && dom.dsiDim(i-1).length>1)
       {
        c[h]=blk(i-1):int(32);
         h+=1;
@@ -1329,6 +1280,8 @@ proc DefaultRectangularArr.assig(d1:[]/*(rank+1)*int(32)*/,d2:[]/*(rank+1)*int(3
 
 proc DefaultRectangularArr.doiBulkTransferStride(B) where B._value.isBlockDist()
 {
+  if debugDefaultDistBulkTransfer then 
+    writeln("In DefaultRectangularArr.doiBulkTransferStride where B._value.isBlockDist() ");
   if rank ==1
     {
       var r2: range(stridable = true);
@@ -1344,8 +1297,7 @@ proc DefaultRectangularArr.doiBulkTransferStride(B) where B._value.isBlockDist()
 	    const d2 ={r2};
 	    const slice2 = this.dsiSlice(d2._value);
 
-	    writeln(" ",r2," = ",B._value.dom.locDoms(j).myBlock);
-	    slice2.doiBulkTransferStride(B._value.locArr[j].myElems);
+	    slice2.doiBulkTransferStride(B._value.locArr[j].myElems,false,true);
 	    delete slice2;
 	  }
       }
@@ -1368,11 +1320,8 @@ proc DefaultRectangularArr.doiBulkTransferStride(B) where B._value.isBlockDist()
 	      const d2 ={(...r2)};
 	      const slice2 = this.dsiSlice(d2._value);
 
-	      if (dom.stridable || B._value.dom.locDoms[j].myBlock.stridable) then
-		slice2.doiBulkTransferStride2(B._value.locArr[j].myElems);
-	      else		   
-		slice2.doiBulkTransferStride(B._value.locArr[j].myElems);
-	      delete slice2;
+	      slice2.doiBulkTransferStride(B._value.locArr[j].myElems,false,true);
+              delete slice2;
 	    }
 	}
     }

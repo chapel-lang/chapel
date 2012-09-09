@@ -1618,8 +1618,11 @@ proc BlockArr.doiBulkTransferStride(B)
 		  var sa = dom.whole.stride;
          
 		  r2 = (ini_src[1]..end_src[1] by sa);
-                  r3 = (inters.first..inters.last by inters.stride);        
-		  locArr[i].myElems[r2]=B._value.locArr[j].myElems[r3];
+                  r3 = (inters.first..inters.last by inters.stride);
+                  if (dom.locDoms[i].myBlock.stridable || B._value.dom.locDoms[i].myBlock.stridable) then
+                    locArr[i].myElems[r2]._value.doiBulkTransferStride(B._value.locArr[j].myElems[r3],true,true);
+                  else
+                    locArr[i].myElems[r2]=B._value.locArr[j].myElems[r3];
 		}
 	    }
 	  }
@@ -1648,7 +1651,7 @@ proc BlockArr.doiBulkTransferStride(B)
                       r3[t] = (inters.first[t]..inters.last[t] by inters.stride[t]);
 		    }
 		    if (dom.locDoms[i].myBlock.stridable || B._value.dom.locDoms[i].myBlock.stridable) then
-		      locArr[i].myElems[(...r2)]._value.doiBulkTransferStride2(B._value.locArr[j].myElems[(...r3)]);
+		      locArr[i].myElems[(...r2)]._value.doiBulkTransferStride(B._value.locArr[j].myElems[(...r3)],true,true);
 		    else
 		      locArr[i].myElems[(...r2)] = B._value.locArr[j].myElems[(...r3)];
 		  }
@@ -1657,8 +1660,10 @@ proc BlockArr.doiBulkTransferStride(B)
       }
 }
 
-//These two following functios are the main contribution of Juan Lopez, and later improved by Alberto. 
-//They calculate the regions from the origin and destination array that have to be copied.
+//These helping function is the main contribution of Juan Lopez, and later improved by Alberto. 
+//corr_direct is used to compute the low and high values of the ranges of the SOURCE subdomain from 
+//the low and high values of the DESTINATION subdomain and low values of source and dest. whole domain.
+//When computing the low bounds, parameter low has to be =1 to account for unaligned low values.
 
 proc BlockArr.corr_direct(a,B,low)
 {
@@ -1687,6 +1692,10 @@ proc BlockArr.corr_direct(a,B,low)
     }
   return b;
 }
+
+//corr_inverse is used to compute the low and high values of the ranges of the DESTINATION subdomain from 
+//the low and high values of the SOURCE subdomain and low values of the source and dest. whole domain.
+//When computing the low bounds, parameter low has to be =1 to account for unaligned low values.
 
 proc BlockArr.corr_inverse (b,B,low)
 {

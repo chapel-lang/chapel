@@ -1,3 +1,4 @@
+config  const n: int=5;
 var A: [1..5, 1..5] int = 1..;
 var F: [1..5, 1..5] int = 300..;
 
@@ -29,6 +30,8 @@ B = A[1,1..5];
 //writeln("A[1,1..5]:",B);
 for (a,b) in (A[1,1..5],B[1..5]) do if (a!=b) then {writeln("ERROR!!!!");}
 
+for (a,i) in (B,{1..n}) do a=i;
+
 writeln();
 writeln("=====================================");
 writeln("Example 3");
@@ -37,6 +40,7 @@ B=C[1,1,1..5];
 
 for (a,b) in (C[1,1,1..5],B[1..5]) do if (a!=b) then {writeln("ERROR!!!!");}
 
+for (a,i) in (B,{1..n}) do a=i;
 writeln();
 writeln("=====================================");
 writeln("Example 4");
@@ -44,6 +48,7 @@ B=C[1,1..5,1];
 //writeln("C[1,1..5,2]:", B);
 for (a,b) in (C[1,1..5,1],B[1..5]) do if (a!=b) then {writeln("ERROR!!!!");}
 
+for (a,i) in (B,{1..n}) do a=i;
 writeln();
 writeln("=====================================");
 writeln("Example 5");
@@ -51,6 +56,7 @@ B=C[1..5,1,1];
 //writeln("C[1..5,1,1]:", B);
 for (a,b) in (C[1..5,1,1],B[1..5]) do if (a!=b) then {writeln("ERROR!!!!");}
 
+for (a,i) in (B,{1..n}) do a=i;
 writeln();
 writeln("=====================================");
 writeln("Example 6");
@@ -58,6 +64,7 @@ B=D[1,1,1,1..5];
 //writeln("D[1,1,1,1..5]:", B);
 for (a,b) in (D[1,1,1,1..5],B[1..5]) do if (a!=b) then {writeln("ERROR!!!!");}
 
+for (a,i) in (B,{1..n}) do a=i;
 writeln();
 writeln("=====================================");
 writeln("Example 7");
@@ -65,6 +72,7 @@ B=D[1,1,1..5,1];
 //writeln("D[1,1,1..5,1]:", B);
 for (a,b) in (D[1,1,1..5,1],B[1..5]) do if (a!=b) then {writeln("ERROR!!!!");}
 
+for (a,i) in (B,{1..n}) do a=i;
 writeln();
 writeln("=====================================");
 writeln("Example 8");
@@ -72,6 +80,7 @@ B=D[1,1..5,1,1];
 //writeln("D[1,1..5,1,1]:", B);
 for (a,b) in (D[1,1..5,1,1],B[1..5]) do if (a!=b) then {writeln("ERROR!!!!");}
 
+for (a,i) in (B,{1..n}) do a=i;
 writeln();
 writeln("=====================================");
 writeln("Example 9");
@@ -79,6 +88,7 @@ B=D[1..5,1,1,1];
 //writeln("D[1..5,1,1,1]:", B);
 for (a,b) in (D[1..5,1,1,1],B[1..5]) do if (a!=b) then {writeln("ERROR!!!!");}
 
+for (a,i) in (F,{1..n*n}) do a=i;
 writeln();
 writeln("=====================================");
 writeln("Example 10");
@@ -86,12 +96,15 @@ F=C[1,1..5,1..5];
 //writeln("C[1,1..5,1..5]:", F);
 for (a,b) in (C[1,1..5,1..5],F[1..5,1..5]) do if (a!=b) then {writeln("ERROR!!!!");}
 
+for (a,i) in (F,{1..n*n}) do a=i;
 writeln();
 writeln("=====================================");
 writeln("Example 11");
 F=C[1..5,1,1..5];
 //writeln("C[1..5,1,1..5]:", F);
 for (a,b) in (C[1..5,1,1..5],F[1..5,1..5]) do if (a!=b) then {writeln("ERROR!!!!");}
+
+for (a,i) in (F,{1..n*n}) do a=i;
 writeln();
 writeln("=====================================");
 writeln("Example 12");
@@ -107,6 +120,7 @@ for (a,b) in (C[1..5,1..5,1],F[1..5,1..5]) do if (a!=b) then {writeln("ERROR!!!!
 // bulkCopy in proc chpl__useBulkTransferStride(a:[], b:[]).
 /*
 writeln();
+for (a,i) in (E,{1..n*n*n}) do a=i;
 writeln("=====================================");
 writeln("Example 13");
 Dom3={1..1,1..5,1..5};
@@ -114,6 +128,7 @@ E[1..5,1..5,1..5]=C[Dom3];
 //writeln("C[1..1,1..5,1..5]:", E);
 for (a,b) in (C[Dom3],E[Dom3]) do if (a!=b) then {writeln("ERROR!!!!");}
 
+for (a,i) in (E,{1..n*n*n}) do a=i;
 writeln();
 writeln("=====================================");
 writeln("Example 14");
@@ -122,6 +137,7 @@ E=C[Dom3];
 //writeln("C[1..5,1..1,1..5]:", E);
 for (a,b) in (C[Dom3],E[1..1,1..5,1..5]) do if (a!=b) then {writeln("ERROR!!!!");}
 
+for (a,i) in (E,{1..n*n*n}) do a=i;
 writeln();
 writeln("=====================================");
 writeln("Example 15");

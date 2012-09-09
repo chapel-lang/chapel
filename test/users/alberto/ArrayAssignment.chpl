@@ -36,6 +36,7 @@ writeln();
 D1={1..n,1..n by 4,1..n};
 
 if printOutput then writeln("Block Dist. Example 2: A",D1, " = B",D1," on ",numLocales," Locales:");
+for (a,i) in (A,{1..n*n*n}) do a=i;
 st = getCurrentTime();
 
 A[D1]=B[D1];
@@ -50,7 +51,7 @@ D1={1..n by 4,1..n ,1..n by 2};
 st=getCurrentTime();
 
 if printOutput then writeln("Block Dist. Example 3: A",D1, " = B",D1," on ",numLocales," Locales:");
-
+for (a,i) in (A,{1..n*n*n}) do a=i;
 st = getCurrentTime();
 
 A[D1]=B[D1];
@@ -65,7 +66,7 @@ st=getCurrentTime();
 
 if printOutput then writeln("Block Dist. Example 4: A",D1, " = B",D1," on ",numLocales," Locales:");
 st = getCurrentTime();
-
+for (a,i) in (A,{1..n*n*n}) do a=i;
 A[D1]=B[D1];
 
 dt = getCurrentTime()-st;
@@ -78,7 +79,7 @@ st=getCurrentTime();
 
 if printOutput then writeln("Block Dist. Example 5: A",D1, " = B",D1," on ",numLocales," Locales:");
 st = getCurrentTime();
-
+for (a,i) in (A,{1..n*n*n}) do a=i;
 A[D1]=B[D1];
 
 dt = getCurrentTime()-st;
@@ -91,7 +92,7 @@ st=getCurrentTime();
 
 if printOutput then writeln("Block Dist. Example 6: A",D1, " = B",D1," on ",numLocales," Locales:");
 st = getCurrentTime();
-
+for (a,i) in (A,{1..n*n*n}) do a=i;
 A[D1]=B[D1];
 
 dt = getCurrentTime()-st;
@@ -104,7 +105,7 @@ st=getCurrentTime();
 
 if printOutput then writeln("Block Dist. Example 7: A",D1, " = B",D1," on ",numLocales," Locales:");
 st = getCurrentTime();
-
+for (a,i) in (A,{1..n*n*n}) do a=i;
 A[D1]=B[D1];
 
 dt = getCurrentTime()-st;
@@ -118,7 +119,7 @@ st=getCurrentTime();
 
 if printOutput then writeln("Block Dist. Example 8: A",D1, " = B",D2," on ",numLocales," Locales:");
 st = getCurrentTime();
-
+for (a,i) in (A,{1..n*n*n}) do a=i;
 A[D1]=B[D2];
 
 dt = getCurrentTime()-st;
@@ -132,7 +133,7 @@ st=getCurrentTime();
 
 if printOutput then writeln("Block Dist. Example 9: A",D1, " = B",D2," on ",numLocales," Locales:");
 st = getCurrentTime();
-
+for (a,i) in (A,{1..n*n*n}) do a=i;
 A[D1]=B[D2];
 
 dt = getCurrentTime()-st;
@@ -146,7 +147,7 @@ st=getCurrentTime();
 
 if printOutput then writeln("Block Dist. Example 10: A",D1, " = B",D2," on ",numLocales," Locales:");
 st = getCurrentTime();
-
+for (a,i) in (A,{1..n*n*n}) do a=i;
 A[D1]=B[D2];
 
 dt = getCurrentTime()-st;
@@ -160,7 +161,7 @@ st=getCurrentTime();
 
 if printOutput then writeln("Block Dist. Example 11: A",D1, " = B",D2," on ",numLocales," Locales:");
 st = getCurrentTime();
-
+for (a,i) in (A,{1..n*n*n}) do a=i;
 A[D1]=B[D2];
 
 dt = getCurrentTime()-st;
@@ -174,7 +175,7 @@ st=getCurrentTime();
 
 if printOutput then writeln("Block Dist. Example 12: A",D1, " = B",D2," on ",numLocales," Locales:");
 st = getCurrentTime();
-
+for (a,i) in (A,{1..n*n*n}) do a=i;
 A[D1]=B[D2];
 
 dt = getCurrentTime()-st;
@@ -188,7 +189,7 @@ st=getCurrentTime();
 
 if printOutput then writeln("Block Dist. Example 13: A",D1, " = B",D2," on ",numLocales," Locales:");
 st = getCurrentTime();
-
+for (a,i) in (A,{1..n*n*n}) do a=i;
 A[D1]=B[D2];
 
 dt = getCurrentTime()-st;
@@ -210,8 +211,9 @@ for h in {1..Dom1.rank}
 
 if elem==1
 {
-  if printOutput then writeln("Block Dist. Example 15: A",D1, " = B",D2," on ",numLocales," Locales:");
+  if printOutput then writeln("Block Dist. Example 14: A",D1, " = B",D2," on ",numLocales," Locales:");
   st=getCurrentTime();
+  for (a,i) in (A,{1..n*n*n}) do a=i;
   A[D1]=B[D2];
   dt = getCurrentTime()-st;
   if printOutput then writeln("Time: ", dt);
@@ -235,6 +237,7 @@ if elem==1
 {
   if printOutput then writeln("Block Dist. Example 15: A",D1, " = B",D2," on ",numLocales," Locales:");
   st=getCurrentTime();
+  for (a,i) in (A,{1..n*n*n}) do a=i;
   A[D1]=B[D2];
   dt = getCurrentTime()-st;
   if printOutput then writeln("Time: ", dt);
@@ -258,6 +261,7 @@ if elem==1
 {
   if printOutput then writeln("Block Dist. Example 16: A",D1, " = B",D2," on ",numLocales," Locales:");
   st=getCurrentTime();
+  for (a,i) in (A,{1..n*n*n}) do a=i;
   A[D1]=B[D2];
   dt = getCurrentTime()-st;
   if printOutput then writeln("Time: ", dt);
@@ -282,6 +286,7 @@ if elem==1
 {
   if printOutput then writeln("Block Dist. Example 17: A",D1, " = B",D2," on ",numLocales," Locales:");
   st=getCurrentTime();
+  for (a,i) in (A,{1..n*n*n}) do a=i;
   A[D1]=B[D2];
   dt = getCurrentTime()-st;
   if printOutput then writeln("Time: ", dt);
@@ -305,6 +310,7 @@ if elem==1
 {
   if printOutput then writeln("Block Dist. Example 18: A",D1, " = B",D2," on ",numLocales," Locales:");
   st=getCurrentTime();
+  for (a,i) in (A,{1..n*n*n}) do a=i;
   A[D1]=B[D2];
   dt = getCurrentTime()-st;
   if printOutput then writeln("Time: ", dt);
@@ -329,6 +335,7 @@ if elem==1
 {
   if printOutput then writeln("Block Dist. Example 19: A",D1, " = B",D2," on ",numLocales," Locales:");
   st=getCurrentTime();
+  for (a,i) in (A,{1..n*n*n}) do a=i;
   A[D1]=B[D2];
   dt = getCurrentTime()-st;
   if printOutput then writeln("Time: ", dt);
@@ -352,6 +359,7 @@ if elem==1
 {
   if printOutput then writeln("Block Dist. Example 20: A",D1, " = B",D2," on ",numLocales," Locales:");
   st=getCurrentTime();
+  for (a,i) in (A,{1..n*n*n}) do a=i;
   A[D1]=B[D2];
   dt = getCurrentTime()-st;
   if printOutput then writeln("Time: ", dt);
@@ -377,7 +385,7 @@ st=getCurrentTime();
 
 if printOutput then writeln("Block Dist. Example 21: C",D3, " = D",D3," on ",numLocales," Locales:");
 st = getCurrentTime();
-
+for (a,i) in (C,{1..n*n*n*n}) do a=i;
 C[D3]=D[D3];
 
 dt = getCurrentTime()-st;

@@ -449,7 +449,7 @@ proc main(){
   for (a,i) in (ADR,{1..n*n}) do a=i+100;
   D2 ={1..n,1..n};
   D1={1..n,1..n};
-  if printOutput then writeln("Default Rectangular <-- Block Dist. Example 1:A",D1," = ADR",D2);
+  if printOutput then writeln("Default Rectangular <-- Block Dist. Example 1:ADR",D1," = A",D2);
   if doDiagnostics {
     if printComm{
       resetCommDiagnostics();
@@ -477,7 +477,7 @@ proc main(){
 
   D1={1..n/2,n/4..3*n/4};
   D2 = D1;
-  if printOutput then writeln("Default Rectangular <-- Block Dist. Example 2:A",D1," = ADR",D2);
+  if printOutput then writeln("Default Rectangular <-- Block Dist. Example 2:ADR",D1," = A",D2);
   if doDiagnostics {
     if printComm{
       resetCommDiagnostics();
@@ -504,7 +504,7 @@ proc main(){
 
   D1={1..n/2,1..n/2};
   D2 ={1..n/2,n/2+1..n};
-  if printOutput then writeln("Default Rectangular <-- Block Dist. Example 3:A",D2," = ADR",D1);
+  if printOutput then writeln("Default Rectangular <-- Block Dist. Example 3:ADR",D2," = A",D1);
   if doDiagnostics {
     if printComm{
       resetCommDiagnostics();
