@@ -577,18 +577,24 @@ void FnSymbol::codegenHeader(FILE* outfile) {
   if (numFormals() == 0) {
     fprintf(outfile, "void");
   } else {
-    int count = 0;
+    int count = -1;
     bool first = true;
     for_formals(formal, this) {
-      if (formal->defPoint == formals.head && hasFlag(FLAG_ON_BLOCK))
-        continue; // do not print locale argument for on blocks
-      if (hasFlag(FLAG_GPU_ON) && count < 2) {
-        count++;
+      count++;
+      if (hasFlag(FLAG_ON_BLOCK) && count < 1)
+        // Do not emit the dummy locale argument.
+        // This is used internally for communication between the call site
+        // and the fork function, but is stripped off during code generation.
+        // The locale argument does not appear in the actual list of parameters
+        // Used by GASNet to call any instance of the wrapon_fn.
+        continue;
+      if (hasFlag(FLAG_GPU_ON) && count < 2)
+        // A similar pattern is used in setting up GPU (coprocessor) forks.
         continue; // do not print nBlocks and numThreadsPerBlock
-      }
-      if (!first) {
+
+      if (!first)
         fprintf(outfile, ", ");
-      }
+
       formal->codegenDef(outfile);
       first = false;
     }

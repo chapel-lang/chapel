@@ -33,13 +33,8 @@ bundleArgs(CallExpr* fcall) {
   new_c->addFlag(FLAG_NO_WIDE_CLASS);
 
   // add the function args as fields in the class
-  int i = 1;
-  bool first = true;
+  int i = 0;
   for_actuals(arg, fcall) {
-    if (fn->hasFlag(FLAG_ON) && first) {
-      first = false;
-      continue;
-    }
     SymExpr *s = toSymExpr(arg);
     Symbol  *var = s->var; // arg or var
     var->addFlag(FLAG_CONCURRENTLY_ACCESSED);
@@ -61,12 +56,7 @@ bundleArgs(CallExpr* fcall) {
   
   // set the references in the class instance
   i = 1;
-  first = true;
   for_actuals(arg, fcall) {
-    if (fn->hasFlag(FLAG_ON) && first) {
-      first = false;
-      continue;
-    }
     SymExpr *s = toSymExpr(arg);
     Symbol  *var = s->var; // var or arg
     CallExpr *setc=new CallExpr(PRIM_SET_MEMBER,
@@ -122,7 +112,8 @@ bundleArgs(CallExpr* fcall) {
     wrap_fn->addFlag(FLAG_ON_BLOCK);
     if (fn->hasFlag(FLAG_NON_BLOCKING))
       wrap_fn->addFlag(FLAG_NON_BLOCKING);
-    // KLUDGE: We pass along the locale ID as an integer, because it's easier than dealing with the union.
+    // The wrapper function has an additional argument, which is how we pass 
+    // the destination node ID to the fork function in the backend.
     ArgSymbol* locale = new ArgSymbol(INTENT_BLANK, "_dummy_locale_arg", dtLocaleID);
     wrap_fn->insertFormalAtTail(locale);
   } else if (fn->hasFlag(FLAG_COBEGIN_OR_COFORALL)) {
@@ -133,8 +124,8 @@ bundleArgs(CallExpr* fcall) {
 
   mod->block->insertAtTail(new DefExpr(wrap_fn));
   if (fn->hasFlag(FLAG_ON)) {
-    // This passes the localeID on to the wrapped function.
-    fcall->insertBefore(new CallExpr(wrap_fn, fcall->get(1)->remove(), tempc));
+    // The wrapper function is called with a copy of the locale argument.
+    fcall->insertBefore(new CallExpr(wrap_fn, fcall->get(1)->copy(), tempc));
   } else
     fcall->insertBefore(new CallExpr(wrap_fn, tempc));
 
@@ -142,12 +133,9 @@ bundleArgs(CallExpr* fcall) {
     if (fn->hasFlag(FLAG_BEGIN))
       wrap_fn->addFlag(FLAG_BEGIN_BLOCK);
   }
+
   // translate the original cobegin function
   CallExpr *new_cofn = new CallExpr( (toSymExpr(fcall->baseExpr))->var);
-  if (fn->hasFlag(FLAG_ON))
-    // If using a union, we would have to create an initialized temp of the union type, and pass
-    // that in.  Much easier (and lazier) to use a literal.
-    new_cofn->insertAtTail(gLocaleID); // bogus actual
   for_fields(field, ctype) {  // insert args
 
     VarSymbol* tmp = newTemp(field->type);
@@ -732,6 +720,7 @@ parallel(void) {
         fn->addFlag(FLAG_ON);
         if (block->blockInfo->isPrimitive(PRIM_BLOCK_ON_NB))
           fn->addFlag(FLAG_NON_BLOCKING);
+        // This is now a real locale arg.
         ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "_dummy_locale_arg", dtLocaleID);
         fn->insertFormalAtTail(arg);
       }
@@ -752,6 +741,7 @@ parallel(void) {
         CallExpr* call = new CallExpr(fn);
         if (block->blockInfo->isPrimitive(PRIM_BLOCK_ON) ||
             block->blockInfo->isPrimitive(PRIM_BLOCK_ON_NB))
+          // This puts the target locale expression "onExpr" at the start of the call.
           call->insertAtTail(block->blockInfo->get(1)->remove());
         else if (block->blockInfo->isPrimitive(PRIM_ON_GPU)) {
           call->insertAtTail(block->blockInfo->get(1)->remove());
@@ -761,6 +751,7 @@ parallel(void) {
         block->insertBefore(new DefExpr(fn));
         block->insertBefore(call);
         block->blockInfo->remove();
+        // This block becomes the body of the new function.
         fn->insertAtTail(block->remove());
         fn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
         fn->retType = dtVoid;

@@ -2606,20 +2606,25 @@ void CallExpr::codegen(FILE* outfile) {
             baseExpr->linenum(), baseExpr->fname());
     return;
   } else if (fn->hasFlag(FLAG_ON_BLOCK)) {
+    // Generate a call of the form: chpl_comm_fork(node, /*fn_name*/ fid, arg_struct, arg_size, arg_tid)
     if (fn->hasFlag(FLAG_NON_BLOCKING))
       fprintf(outfile, "CHPL_COMM_NONBLOCKING_ON");
     else if (fn->hasFlag(FLAG_FAST_ON))
       fprintf(outfile, "chpl_comm_fork_fast");
     else
       fprintf(outfile, "chpl_comm_fork");
-    gen(outfile, "((%A).as_int, /* %s */ %d, %A", get(1), fn->cname,
-        ftableMap.get(fn), get(2));
+    // Note that we select just the node portion of the localeID.
+    // The comm routines only care about nodes, not sublocales.
+    // The sublocale ID is passed to the called routine via the bundled args.
+    gen(outfile, "((%A).as_struct.node, /* %s */ %d, %A", /*comm-node*/ get(1), fn->cname,
+        /*fid*/ ftableMap.get(fn), /*arg*/ get(2));
     TypeSymbol* argType = toTypeSymbol(get(2)->typeInfo()->symbol);
     if (argType == NULL) {
       INT_FATAL("typeInfo() didn't return a type symbol");
     }
     gen(outfile, ", sizeof(_%A), ", argType);
     genTypeStructureIndex(outfile, argType);
+    // The arg_tid seems to be superfluous.
     gen(outfile, ");\n", argType);
     return;
   }
@@ -2684,10 +2689,13 @@ void CallExpr::codegen(FILE* outfile) {
         fprintf(outfile, ")");
       else if (passingWideStringToExtern(actualType))
         fprintf(outfile,"->addr)");
+      else if (actualType->symbol->hasFlag(FLAG_WIDE))
+        fprintf(outfile, ").addr");
+      else
+        /* No closing paren required. */ ;
     }
-    if (fn->hasFlag(FLAG_EXTERN) && actualType->symbol->hasFlag(FLAG_WIDE))
-      fprintf(outfile, ").addr");
-    else if (closeDeRefParens)
+
+    if (closeDeRefParens)
       fprintf(outfile, ")");
   }
   fprintf(outfile, ")");

@@ -485,6 +485,10 @@ static void codegen_header(FILE* hdrfile, FILE* codefile=NULL) {
   if (fGPU)
     fprintf(hdrfile, "\n#ifndef ENABLE_GPU\n");
 
+  // Functions marked with FLAG_BEGIN_BLOCK or FLAG_COBEGIN_OR_COFORALL_BLOCK or
+  // FLAG_ON_BLOCK are reachable only through the function table.
+  // This is kind-of a home-brew version of dynamic function pointers, so we might be
+  // able to use the standard dynamic linking mechanism and save some code.
   fprintf(hdrfile, "\n/*** Function Pointer Table ***/\n\n");
   fprintf(hdrfile, "chpl_fn_p chpl_ftable[] = {\n");
   forv_Vec(FnSymbol, fn, functions) {
