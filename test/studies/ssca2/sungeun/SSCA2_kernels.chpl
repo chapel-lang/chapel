@@ -288,7 +288,6 @@ module SSCA2_kernels
         forall v in vertex_domain do {
           BCaux[v].depend = 0.0;
           BCaux[v].min_distance.write(-1);
-          // BCaux[v].path_count$.writeXF(0.0);
           f1(BCaux, v);
           BCaux[v].children_list.child_count.write(0);
         }
@@ -332,7 +331,6 @@ module SSCA2_kernels
             // traversal from s
             Active_Level[here.id].Members.add(s);
             BCaux[s].min_distance.write(0);
-            // BCaux[s].path_count$.writeXF(1);
             f2(BCaux, s);
           }
           barrier.barrier();
@@ -382,7 +380,6 @@ module SSCA2_kernels
                   // ------------------------------------------------
   
                   if BCaux[v].min_distance.read() == current_distance_c {
-                    // BCaux[v].path_count$ += BCaux[u].path_count$.readFF();
                     f3(BCaux, v, u);
                     BCaux[u].children_list.add_child (v);
                   }
@@ -419,10 +416,9 @@ module SSCA2_kernels
 
           };  // end forward pass
 
-          if here.id==0 {
-            if VALIDATE_BC then
+          if VALIDATE_BC then
+            if here.id==0 then
               Sum_Min_Dist$.add(Lcl_Sum_Min_Dist);
-          }
 
           // -------------------------------------------------------------
           // compute the dependencies recursively, traversing the vertices 
@@ -432,11 +428,10 @@ module SSCA2_kernels
 
           const graph_diameter = current_distance - 1;
 
-          if here.id==0 {
-            if DEBUG_KERNEL4 then 
+          if DEBUG_KERNEL4 then 
+            if here.id==0 then
               writeln ( " graph diameter from starting node ", s, 
                         "  is ", graph_diameter );
-          }
 
           pragma "dont disable remote value forwarding"
           inline proc f4(BCaux, Between_Cent$, u) {
@@ -455,13 +450,6 @@ module SSCA2_kernels
 
             for u in curr_Level.Members do on vertex_domain.dist.idxToLocale(u) {
                 f4(BCaux, Between_Cent$, u);
-                /*
-              BCaux[u].depend = + reduce [v in BCaux[u].children_list.Row_Children[1..BCaux[u].children_list.child_count.read()]]
-                ( BCaux[u].path_count$.readFF() / 
-                  BCaux[v].path_count$.readFF() )      *
-                ( 1.0 + BCaux[v].depend );
-              Between_Cent$ (u) += BCaux[u].depend;
-                */
             }
 
             barrier.barrier();
