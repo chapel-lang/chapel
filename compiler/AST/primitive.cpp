@@ -534,6 +534,7 @@ initPrimitive() {
 
   prim_def(PRIM_GET_NODE_ID, "_get_node_id", returnInfoInt32, false, true);
   prim_def(PRIM_GET_SUBLOC_ID, "_get_subloc_id", returnInfoInt32, false, true);
+  prim_def(PRIM_SET_SUBLOC_ID, "_set_subloc_id", returnInfoVoid, true);
   prim_def(PRIM_LOCALE_ID, "chpl_localeID", returnInfoInt32);	// Our GASNet node ID.
   prim_def(PRIM_ON_LOCALE_NUM, "chpl_on_locale_num", returnInfoLocaleID);
 

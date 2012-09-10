@@ -104,21 +104,22 @@ bundleArgs(CallExpr* fcall) {
   // create wrapper-function that uses the class instance
 
   FnSymbol *wrap_fn = new FnSymbol( astr("wrap", fn->name));
-  // Add a special flag for the wrapper-function (caller) of the GPU kernel
-  if (fn->hasFlag(FLAG_GPU_ON))
-    wrap_fn->addFlag(FLAG_GPU_CALL);
-  DefExpr  *fcall_def= (toSymExpr( fcall->baseExpr))->var->defPoint;
+  // Add a special flag to the wrapper-function as appropriate.
+  // These control aspects of code generation.
+  if (fn->hasFlag(FLAG_GPU_ON))				    wrap_fn->addFlag(FLAG_GPU_CALL);
+  if (fn->hasFlag(FLAG_ON))     				wrap_fn->addFlag(FLAG_ON_BLOCK);
+  if (fn->hasFlag(FLAG_NON_BLOCKING))		    wrap_fn->addFlag(FLAG_NON_BLOCKING);
+  if (fn->hasFlag(FLAG_COBEGIN_OR_COFORALL))    wrap_fn->addFlag(FLAG_COBEGIN_OR_COFORALL_BLOCK);
+  if (fn->hasFlag(FLAG_BEGIN))    				wrap_fn->addFlag(FLAG_BEGIN_BLOCK);
+
   if (fn->hasFlag(FLAG_ON)) {
-    wrap_fn->addFlag(FLAG_ON_BLOCK);
-    if (fn->hasFlag(FLAG_NON_BLOCKING))
-      wrap_fn->addFlag(FLAG_NON_BLOCKING);
     // The wrapper function has an additional argument, which is how we pass 
     // the destination node ID to the fork function in the backend.
+    // This argument is not emitted in the generated C code.
     ArgSymbol* locale = new ArgSymbol(INTENT_BLANK, "_dummy_locale_arg", dtLocaleID);
     wrap_fn->insertFormalAtTail(locale);
-  } else if (fn->hasFlag(FLAG_COBEGIN_OR_COFORALL)) {
-    wrap_fn->addFlag(FLAG_COBEGIN_OR_COFORALL_BLOCK);
   }
+
   ArgSymbol *wrap_c = new ArgSymbol( INTENT_BLANK, "c", ctype);
   wrap_fn->insertFormalAtTail( wrap_c);
 
@@ -129,30 +130,33 @@ bundleArgs(CallExpr* fcall) {
   } else
     fcall->insertBefore(new CallExpr(wrap_fn, tempc));
 
-  if (fn->hasFlag(FLAG_BEGIN) || fn->hasFlag(FLAG_COBEGIN_OR_COFORALL)) {
-    if (fn->hasFlag(FLAG_BEGIN))
-      wrap_fn->addFlag(FLAG_BEGIN_BLOCK);
-  }
-
-  // translate the original cobegin function
-  CallExpr *new_cofn = new CallExpr( (toSymExpr(fcall->baseExpr))->var);
-  for_fields(field, ctype) {  // insert args
-
+  // Create a call to the original function
+  CallExpr *call_orig = new CallExpr( (toSymExpr(fcall->baseExpr))->var);
+  int count = -1;
+  for_fields(field, ctype)
+  {
+    // insert args
+    ++count;
     VarSymbol* tmp = newTemp(field->type);
     wrap_fn->insertAtTail(new DefExpr(tmp));
     wrap_fn->insertAtTail(
         new CallExpr(PRIM_MOVE, tmp,
         new CallExpr(PRIM_GET_MEMBER_VALUE, wrap_c, field)));
-    new_cofn->insertAtTail(tmp);
+    if (count == 0 && fn->hasFlag(FLAG_ON))
+      // Special case for the first argument of an on_fn, which carries the destination locale ID.
+      // We set the sublocale field in task-private data before jumping to the body of the task.
+      wrap_fn->insertAtTail(new CallExpr(PRIM_SET_SUBLOC_ID, tmp));
+    call_orig->insertAtTail(tmp);
   }
 
   wrap_fn->retType = dtVoid;
-  wrap_fn->insertAtTail(new_cofn);     // add new call
+  wrap_fn->insertAtTail(call_orig);     // add new call
   if (fn->hasFlag(FLAG_ON) || fn->hasFlag(FLAG_GPU_ON))
     fcall->insertAfter(new CallExpr(PRIM_CHPL_FREE, tempc));
   else
     wrap_fn->insertAtTail(new CallExpr(PRIM_CHPL_FREE, wrap_c));
 
+  DefExpr  *fcall_def= (toSymExpr( fcall->baseExpr))->var->defPoint;
   fcall->remove();                     // rm orig. call
   fcall_def->remove();                 // move orig. def
   mod->block->insertAtTail(fcall_def); // to top-level

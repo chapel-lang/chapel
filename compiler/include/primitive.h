@@ -178,6 +178,7 @@ enum PrimitiveTag {
                         // Otherwise, returns zero.
   PRIM_GET_NODE_ID,     // Get just the node portion of a wide address.
   PRIM_GET_SUBLOC_ID,   // Get just the sublocale portion of a wide address.
+  PRIM_SET_SUBLOC_ID,	// Set the sublocale ID in task-private data.
   PRIM_LOCALE_ID,       // Returns the (GASNet) node ID on which the current task is running.
   PRIM_ON_LOCALE_NUM,   // specify a particular locale # for an on clause
 

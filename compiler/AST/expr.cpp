@@ -2109,6 +2109,9 @@ void CallExpr::codegen(FILE* outfile) {
     case PRIM_SET_SERIAL:
       gen(outfile, "chpl_task_setSerial(%A)", get(1));
       break;
+    case PRIM_SET_SUBLOC_ID:
+      gen(outfile, "chpl_task_setSubLoc((%A).as_struct.subloc)", get(1));
+      break;
     case PRIM_CHPL_COMM_GET:
     case PRIM_CHPL_COMM_PUT: {
       if (primitive->tag == PRIM_CHPL_COMM_GET) {
