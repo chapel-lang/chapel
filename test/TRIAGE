@@ -91,6 +91,12 @@ Every night, first XMT compile fails; second one succeeds.  Is there
 any chance that this is due to a leftover program library of some
 sort?  If not, file bug against XMT compiler.
 
+compflags/ferguson/sub_test
+---------------------------
+chpbld02 has /tmp mounted on /ptmp.  The path search in findProgramPath appears
+to be finding chpl in /ptmp instead of /tmp even though the /ptmp directory
+it is finding is not in path. The /ptmp path it is finding is actually the
+same directory as the /tmp directory it is looking for.
 
 =========================================
 Not so noisy as to be familiar annoyances
