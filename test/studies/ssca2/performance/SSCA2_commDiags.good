@@ -37,7 +37,7 @@ Kernel 3: (get = 4980, get_nb = 0, get_nb_test = 0, get_nb_wait = 0, put = 0, fo
 
 Computing Betweenness Centrality exactly
 Kernel 4:
-0: get: 31859-35044
+0: get: 24812-27293
 0: get_nb: 0
 0: get_nb_test: 0
 0: get_nb_wait: 0
@@ -45,7 +45,7 @@ Kernel 4:
 0: fork: 6566 (~1%)
 0: fork_fast: 0
 0: fork_nb: 99
-1: get: 41237-45360
+1: get: 33816-37197
 1: get_nb: 0
 1: get_nb_test: 0
 1: get_nb_wait: 0
@@ -53,7 +53,7 @@ Kernel 4:
 1: fork: 7318 (~1%)
 1: fork_fast: 0
 1: fork_nb: 96
-2: get: 37823-41605
+2: get: 30635-33698
 2: get_nb: 0
 2: get_nb_test: 0
 2: get_nb_wait: 0
@@ -61,7 +61,7 @@ Kernel 4:
 2: fork: 6742 (~1%)
 2: fork_fast: 0
 2: fork_nb: 96
-3: get: 39865-43851
+3: get: 32313-35544
 3: get_nb: 0
 3: get_nb_test: 0
 3: get_nb_wait: 0

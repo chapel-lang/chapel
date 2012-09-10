@@ -165,7 +165,6 @@ module SSCA2_kernels
 
 
   use BlockDist;
-  config param useAtomicReal = CHPL_NETWORK_ATOMICS=="ugni";
   config param useOnClause = CHPL_NETWORK_ATOMICS!="ugni";
   // For task-private temporary variables
   config const defaultNumTPVs = 16;
@@ -208,8 +207,8 @@ module SSCA2_kernels
       // probably be more efficient.
       type Sparse_Vertex_List = domain(index(vertex_domain));
 
-      var Between_Cent$ : [vertex_domain] sync real = 0.0;
-      var Sum_Min_Dist$ : sync real = 0.0;
+      var Between_Cent$ : [vertex_domain] atomic real;
+      var Sum_Min_Dist$ : atomic real;
 
       //
       // Throughout kernel 4, we use distributed arrays that are
@@ -283,20 +282,16 @@ module SSCA2_kernels
         const tpv = TPVM.getTPV(tid);
         var BCaux => tpv.BCaux;
         pragma "dont disable remote value forwarding"
-          inline proc f1(BCaux, v) {
-	  if useAtomicReal then
-            BCaux[v].path_count$.write(0.0);
-	  else
-            BCaux[v].path_count$.writeXF(0.0);
+        inline proc f1(BCaux, v) {
+          BCaux[v].path_count$.write(0.0);
         }
         forall v in vertex_domain do {
           BCaux[v].depend = 0.0;
           BCaux[v].min_distance.write(-1);
-          // BCaux[v].path_count$.writeXF(0.0);
           f1(BCaux, v);
           BCaux[v].children_list.child_count.write(0);
         }
-	var Lcl_Sum_Min_Dist: sync real = 0.0;
+	var Lcl_Sum_Min_Dist: atomic real;
 
 	// The structure of the algorithm depends on a breadth-first
 	// traversal. Each vertex will be marked by the length of
@@ -322,11 +317,8 @@ module SSCA2_kernels
         //
         var Active_Level => tpv.Active_Level;
         pragma "dont disable remote value forwarding"
-          inline proc f2(BCaux, s) {
-	  if useAtomicReal then
-            BCaux[s].path_count$.write(1.0);
-	  else
-            BCaux[s].path_count$.writeXF(1.0);
+        inline proc f2(BCaux, s) {
+          BCaux[s].path_count$.write(1.0);
         }
 
         var barrier = new Barrier(numLocales);
@@ -339,7 +331,6 @@ module SSCA2_kernels
             // traversal from s
             Active_Level[here.id].Members.add(s);
             BCaux[s].min_distance.write(0);
-            // BCaux[s].path_count$.writeXF(1);
             f2(BCaux, s);
           }
           barrier.barrier();
@@ -361,11 +352,8 @@ module SSCA2_kernels
             // coforall loop.
             const current_distance_c = current_distance;
             pragma "dont disable remote value forwarding"
-              inline proc f3(BCaux, v, u) {
-	      if useAtomicReal then
-                BCaux[v].path_count$.add(BCaux[u].path_count$.read());
-              else
-                BCaux[v].path_count$ += BCaux[u].path_count$.readFF();
+            inline proc f3(BCaux, v, u) {
+              BCaux[v].path_count$.add(BCaux[u].path_count$.read());
             }
 
             forall u in Active_Level[here.id].Members do {
@@ -379,7 +367,7 @@ module SSCA2_kernels
                     var aloc = if useOnClause then here.id else vertex_domain.dist.idxToLocale(v).id;
                     Active_Level[aloc].next.Members.add (v);
                     if VALIDATE_BC then
-                      Lcl_Sum_Min_Dist += current_distance_c;
+                      Lcl_Sum_Min_Dist.add(current_distance_c);
                   }
 
 
@@ -392,7 +380,6 @@ module SSCA2_kernels
                   // ------------------------------------------------
   
                   if BCaux[v].min_distance.read() == current_distance_c {
-                    // BCaux[v].path_count$ += BCaux[u].path_count$.readFF();
                     f3(BCaux, v, u);
                     BCaux[u].children_list.add_child (v);
                   }
@@ -429,10 +416,9 @@ module SSCA2_kernels
 
           };  // end forward pass
 
-          if here.id==0 {
-            if VALIDATE_BC then
-              Sum_Min_Dist$ += Lcl_Sum_Min_Dist;
-          }
+          if VALIDATE_BC then
+            if here.id==0 then
+              Sum_Min_Dist$.add(Lcl_Sum_Min_Dist);
 
           // -------------------------------------------------------------
           // compute the dependencies recursively, traversing the vertices 
@@ -442,25 +428,18 @@ module SSCA2_kernels
 
           const graph_diameter = current_distance - 1;
 
-          if here.id==0 {
-            if DEBUG_KERNEL4 then 
+          if DEBUG_KERNEL4 then 
+            if here.id==0 then
               writeln ( " graph diameter from starting node ", s, 
                         "  is ", graph_diameter );
-          }
 
           pragma "dont disable remote value forwarding"
-            inline proc f4(BCaux, Between_Cent$, u) {
-	    if useAtomicReal then
+          inline proc f4(BCaux, Between_Cent$, u) {
             BCaux[u].depend = + reduce [v in BCaux[u].children_list.Row_Children[1..BCaux[u].children_list.child_count.read()]]
               ( BCaux[u].path_count$.read() / 
                 BCaux[v].path_count$.read() )      *
               ( 1.0 + BCaux[v].depend );
-	    else
-            BCaux[u].depend = + reduce [v in BCaux[u].children_list.Row_Children[1..BCaux[u].children_list.child_count.read()]]
-              ( BCaux[u].path_count$.readFF() / 
-                BCaux[v].path_count$.readFF() )      *
-              ( 1.0 + BCaux[v].depend );
-            Between_Cent$ (u) += BCaux[u].depend;
+            Between_Cent$(u).add(BCaux[u].depend);
           }
 
           // back up to last level
@@ -471,13 +450,6 @@ module SSCA2_kernels
 
             for u in curr_Level.Members do on vertex_domain.dist.idxToLocale(u) {
                 f4(BCaux, Between_Cent$, u);
-                /*
-              BCaux[u].depend = + reduce [v in BCaux[u].children_list.Row_Children[1..BCaux[u].children_list.child_count.read()]]
-                ( BCaux[u].path_count$.readFF() / 
-                  BCaux[v].path_count$.readFF() )      *
-                ( 1.0 + BCaux[v].depend );
-              Between_Cent$ (u) += BCaux[u].depend;
-                */
             }
 
             barrier.barrier();
@@ -509,9 +481,9 @@ module SSCA2_kernels
       }
 
       if VALIDATE_BC then
-	Sum_Min_Dist = Sum_Min_Dist$;
+        Sum_Min_Dist = Sum_Min_Dist$.read();
       
-      Between_Cent = Between_Cent$;
+      Between_Cent = Between_Cent$.read();
 
       if DELETE_KERNEL4_DS {
         coforall t in TPVSpace do on t {
@@ -576,7 +548,7 @@ module SSCA2_kernels
   record taskPrivateArrayData {
     type vertex;
     var min_distance  : atomic int;
-    var path_count$   : if useAtomicReal then atomic real else sync real;
+    var path_count$   : atomic real;
     var depend        : real;
     var children_list : child_struct(vertex);
   }
