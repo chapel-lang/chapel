@@ -48,6 +48,23 @@ proc showme(oddphase: bool, delta: elType, msg = "") {
   }
 }
 
+
+proc showref(oddphase: bool, msg = "") {
+  if !vcalc then return;
+  writeln(msg);
+  writeln();
+
+  if oddphase {
+    writeln("refdataA =");
+    writeln(refdataA, fpstyle);
+  } else {
+    writeln("refdataB =");
+    writeln(refdataB, fpstyle);
+  }
+  writeln();
+}
+
+
 //const showdummy: [0..n+1, 0..m+1] eltype;
 const colsep = "  ";
 proc showdummyrow() {

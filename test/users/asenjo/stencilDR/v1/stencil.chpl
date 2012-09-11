@@ -1,6 +1,6 @@
 /*
-Computes heat equation till convergence
-Array is "manually" distributed on locales so each local has a DR subblock 
+Computes heat equation until convergence
+Array is "manually" distributed on locales so each locale has a DR subblock 
 Halo communications are implemented a la MPI: 
 explicit Data[localeA].DR[sliceHalo]=Data[localeB].DR[sliceSource]
 */
@@ -15,7 +15,7 @@ var gridLocales: [gridDom] locale;
 setupGridLocales();
 
 type elType = real;
-const adjcoords = ((0,-1), (-1,0), (0,1), (1,0));
+//const adjcoords = ((0,-1), (-1,0), (0,1), (1,0));
 
 record localInfo {
   const domAlloc = {0..n+1, 0..m+1};
@@ -41,19 +41,64 @@ forall (dat, loc) in (Data, gridLocales) {
   assert(dat.locale == loc);
 }
 
+// reference computation
+
+const globN = n * g, globM = m * h;
+var domRef ={0..globN+1,0..globM+1};
+var refdataB, refdataA: [domRef] elType;
+var refdelta: elType;
+var errCount = 0;
+
+// oddphase: refdataB -> refdataA
+proc refcomp(oddphase: bool, out delta: elType) {
+  if oddphase {
+    forall (i,j) in {1..globN, 1..globM} {
+      refdataA[i,j] = (refdataB[i-1,j] + refdataB[i,j+1] + refdataB[i+1,j] + refdataB[i,j-1]) / 4;
+    }
+  } else {
+    forall (i,j) in {1..globN, 1..globM} {
+      refdataB[i,j] = (refdataA[i-1,j] + refdataA[i,j+1] + refdataA[i+1,j] + refdataA[i,j-1]) / 4;
+    }
+  }
+  delta = max reduce [(i,j) in (1..globN, 1..globM)] abs(refdataB(i,j) - refdataA(i,j));
+}
+// oddphase: A vs. refdataA
+proc verify(oddphase: bool) {
+  var globdiff$: sync elType = min(elType);
+  forall ((gi,gj), dat) in (gridDom, Data) {
+    const locdiff = max reduce [(i,j) in dat.domCompute]
+      abs( (if oddphase then dat.A[i,j] else dat.B[i,j]) -
+	   (if oddphase then refdataA[work2ref(i,j,gi,gj)]
+	                else refdataB[work2ref(i,j,gi,gj)]) );
+    globdiff$ = max(globdiff$, locdiff);
+  } // forall
+
+  if globdiff$.readXX() > 0.000001 {
+    writeln("too much of a difference from reference: ", globdiff$.readXX());
+    errCount += 1;
+  }
+}
+proc work2ref(i,j,gi,gj) {
+  return (n*(gi-1) + i, m*(gj-1) + j);
+}
+
 // initialize B
 
 config const singleinit = true;
-forall dat in Data {
+forall (dat, (gi,gj)) in (Data, gridDom) {
   if singleinit {
     dat.B[2,2] = 100;
+    refdataB[work2ref(2,2,gi,gj)] = 100;
   } else {
-    forall ((i,j), a) in (dat.domCompute, dat.Bcompute) do
+    forall ((i,j), a) in (dat.domCompute, dat.Bcompute) {
       a = i*0.1 + j;
+      refdataB[work2ref(i,j,gi,gj)] = a;
+    }
   }
 }
 
-showme(false, 0, "After initialization");
+showref(false,  "After initialization");
+verify(false);
 
 // oddphase=true: fetch from B -> B; compute from B -> A
 
@@ -95,13 +140,17 @@ proc fetch(oddphase: bool) {
 var i=0;
 proc progress() {
   i=i+1;
-  fetch(true);          showfetch(true);
+  fetch(true);          showfetch(true); 
   compute(true, delta); showme(true, delta, "After odd phase: "+i);
+  refcomp(true, refdelta); showref(true);
+  verify(true);
   if delta < epsilon then return true;
 
   i=i+1;
   fetch(false);          showfetch(false);
   compute(false, delta); showme(false, delta, "After even phase: "+i);
+  refcomp(false, refdelta);showref(false);
+  verify(false);
   if delta < epsilon then return true;
 
   return false;
@@ -111,3 +160,4 @@ proc progress() {
 do {} while !progress();
 
 writeln("Converged with delta=",delta," after ",i," iterations.");
+if errCount > 0 then writeln("Got ", errCount, " ERRORS.");
