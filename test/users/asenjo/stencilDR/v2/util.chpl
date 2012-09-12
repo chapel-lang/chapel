@@ -32,6 +32,7 @@ proc setupGridLocales(ensureManyLocs = false) {
 config const vcalc = true, vsend = true;
 const fpstyle = new iostyle(realfmt = 1, precision = 2, min_width = 6);
 
+/*
 proc showme(oddphase: bool, delta: elType, msg = "") {
   if !vcalc then return;
   writeln(msg, "  delta ", delta, if oddphase then "  (B->A)" else "  (A->B)");
@@ -174,3 +175,4 @@ proc computeOld(oddphase: bool, out delta: elType) {
 
   delta =  max reduce [dat in Data] dat.localDelta;
 }
+*/

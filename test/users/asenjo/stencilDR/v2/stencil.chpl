@@ -1,8 +1,21 @@
+/*
+- make 'forall gridDist' distribute over locales
+- ensure all component objects get created on the right locales as intended
+- add a printout of sizes, grid, etc. at start of program
+- add verification that our cached slices survived after we have
+  finished initializing everything.
+  E.g. by dsiAccess-indexing into them.
+ - remove the debugging writeln() and re-enable asserts a1-a3
+*/
+
+
+
+
 use BlockDist;
 use util;
 
-config bool chk = true;
-config bool init1 = true;
+config var chk = true;
+config var init1 = true;
 
 /////////// grid of locales ///////////
 
@@ -41,7 +54,7 @@ class LocalInfo {
 
   // frequently-used domains
   const domAlloc = {mylowx-1 .. myhighx+1, mylowy-1 .. myhighy+1};
-  const domCompute = {mylowx..mhyhighx, mylowy..myhighy};
+  const domCompute = {mylowx..myhighx, mylowy..myhighy};
 }
 
 // A class for all the node-local domains.
@@ -53,6 +66,8 @@ class GlobalInfo {
 proc GlobalInfo.GlobalInfo() {
   coforall ((ix,iy), inf) in (gridDist, infos) {
     inf = new LocalInfo(mygx=ix, mygy=iy);
+    writeln("GlobalInfo constructor ", (ix,iy), "  on ", here.id,
+	    "  inf.locale=", inf.locale.id);
   }
 }
 
@@ -80,37 +95,46 @@ class GlobalData {
 }
 
 // constructor for GlobalData
-proc GlobalData.GlobalData() {
-  coforall (inf, dat, loc) in (WI.infos, datas, gridLocales) {
+proc GlobalData.GlobalData(nameArg: string) {
+  name=nameArg;
+  coforall (_, inf, dat, loc) in (gridDist, WI.infos, datas, gridLocales) {
     dat = new LocalData(inf);
+    writeln("GlobalData constructor for ", (inf.mygx, inf.mygy),
+	    "  here=", here.id,
+	    "  loc=", loc.id,
+	    "  dat.locale=", dat.locale.id);
     // sanity checks
-    assert(dat.locale == loc);
-    assert(dat.linfo.locale == loc);
-    assert(dat.linfo == inf);
+    if false {
+    assert(dat.locale == loc, "a1");
+    assert(dat.linfo.locale == loc, "a2");
+    assert(dat.linfo == inf, "a3");
+    }
   }
-
+  exit(0); //vass
   /// get and store pointers to neighbor data slices ///
 
-  serial(v1) forall ((ix,iy), dat, inf) in (gridDist, ldata, WI.infos) {
-    msg1("neighbors for ", name, (ix, iy));
-    storecache(dat.cnorth, -1,0, inf.mylowx-1,  inf.mylowy..inf.myhighy);
-    storecache(dat.csouth, +1,0, inf.myhighx+1, inf.mylowy..inf.myhighy);
-    storecache(dat.cwest, 0,-1, inf.mylowx..inf.mhyhighx, inf.mylowy-1);
-    storecache(dat.ceast, 0,+1, inf.mylowx..inf.mhyhighx, inf.myhighy+1);
+  serial(v1) do forall ((ix,iy), dat, inf) in (gridDist, datas, WI.infos) {
+    msg1("neighbors for ", name, (ix, iy), "  domCompute ", inf.domCompute);
+    dat.cnorth = storecache(-1,0, inf.mylowx-1,  inf.mylowy..inf.myhighy);
+    dat.csouth = storecache(+1,0, inf.myhighx+1, inf.mylowy..inf.myhighy);
+    dat.cwest = storecache(0,-1, inf.mylowx..inf.myhighx, inf.mylowy-1);
+    dat.ceast = storecache(0,+1, inf.mylowx..inf.myhighx, inf.myhighy+1);
 
-    proc storecache(ref cache, dx, dy, slicex, slicey) {
+    proc storecache(dx, dy, slicex, slicey) {
       const ind = (ix+dx, iy+dy);
       if !gridDist.member(ind) {
 	msg1("  ", ind, "  no neighbor");
-	return;
+	return nil;
       }
       const nbr = datas[ind]; // our neighbor
+      var result: cacheType;
       on nbr {
 	msg1("  ", ind, "  slice at [", slicex, ",", slicey, "]");
-	var slice => nbr[slicex, slicey];
-	cache = slice._value;
-	if !noRefCount then cache._arrCnt.add(1);  // this is a bit low-level
+	var slice => nbr.ldata[slicex, slicey];
+	result = slice._value;
+	if !noRefCount then result._arrCnt.add(1);  // this is a bit low-level
       }
+      return result;
     }  // storecache()
 
   }  // coforall
@@ -123,7 +147,8 @@ const WA = new GlobalData("WA"),
 // Reuse the name for an indexing operation.
 // This does not access neighbor caches.
 proc GlobalData.dsiAccess(ix,iy) var {
-  if chk then assert(1 <= ix && ix <= ldx * gx && 1 <= iy && iy <= ldy * gy);
+  if chk then assert(1 <= ix && ix <= ldx * gx && 1 <= iy && iy <= ldy * gy,
+		     "a5 ", (ix,ldx,gx), (iy,ldy,gy));
   const gridx = (ix-1) / gx + 1, gridy = (iy-1) / gy + 1;
   return datas[gridx, gridy].ldata[ix,iy];
 }
@@ -132,8 +157,8 @@ proc GlobalData.dsiAccess(ix,iy) var {
 
 const refx = ldx * gx,
       refy = ldy * gy;
-assert(refx == WI.infos[gx,gy].myhighx);
-assert(refy == WI.infos[gx,gy].myhighy);
+assert(refx == WI.infos[gx,gy].myhighx, "a6 ");
+assert(refy == WI.infos[gx,gy].myhighy, "a7");
 
 const refAlloc = {0..refx+1, 0..refy+1},
     refCompute = {1..refx, 1..refy},
