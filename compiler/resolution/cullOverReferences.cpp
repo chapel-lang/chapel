@@ -39,7 +39,7 @@ refNecessary(SymExpr* se,
           return true;
       } else if (call->isPrimitive(PRIM_RETURN)) {
         return true;
-      } else if (call->isPrimitive(PRIM_GET_LOCALE_ID)) {
+      } else if (call->isPrimitive(PRIM_WIDE_GET_LOCALE)) {
         return true;
       }
     }

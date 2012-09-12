@@ -185,16 +185,15 @@ int32_t chpl_now_day(void);
 int32_t chpl_now_dow(void);
 //^^^^^
 
-// Bootstrap routine which allows us to move execution to a node for which we do not
-// yet have a locale structure defined.
-// CAUTION: Note that this always assumes that we're running on sublocale 0.
-// It is intended primarily for locale setup, before there exist sublocales
-// on which to run.
-static inline c_locale_t chpl_on_locale_num(int32_t node_id)
+// Bootstrap routine which allows us to move execution to a node and/or sublocale
+// for which we do not yet have a locale structure defined.
+// We should probably move the c_locale_t struct into the Chapel internal modules;
+// then, this routine becomes unnecessary.
+static inline c_locale_t chpl_on_locale_num(c_nodeid_t node_id, c_subloc_t subloc_id)
 {
   c_locale_t tmp;
   tmp.as_struct.node = node_id;
-  tmp.as_struct.subloc = 0;
+  tmp.as_struct.subloc = subloc_id;
   return tmp;
 }
 

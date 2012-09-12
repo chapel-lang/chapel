@@ -77,7 +77,7 @@ replaceVarUsesWithFormals(FnSymbol* fn, SymbolMap* vars) {
                   (call->isPrimitive(PRIM_SET_MEMBER) && call->get(1) == se) ||
                   (call->isPrimitive(PRIM_GET_MEMBER)) ||
                   (call->isPrimitive(PRIM_GET_MEMBER_VALUE)) ||
-                  (call->isPrimitive(PRIM_GET_LOCALE_ID)) ||
+                  (call->isPrimitive(PRIM_WIDE_GET_LOCALE)) ||
                   (fn && arg->type == actual_to_formal(se)->type)) {
                 se->var = arg; // do not dereference argument in these cases
               } else if (call->isPrimitive(PRIM_ADDR_OF)) {

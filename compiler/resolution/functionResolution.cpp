@@ -3655,7 +3655,7 @@ preFold(Expr* expr) {
       INT_ASSERT(se && se->var->hasFlag(FLAG_TYPE_VARIABLE));
       result = new SymExpr(new_StringSymbol(se->var->type->symbol->name));
       call->replace(result);
-    } else if (call->isPrimitive(PRIM_GET_LOCALE_ID)) {
+    } else if (call->isPrimitive(PRIM_WIDE_GET_LOCALE)) {
       Type* type = call->get(1)->getValType();
 
       //

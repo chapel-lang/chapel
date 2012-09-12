@@ -10,8 +10,9 @@ class locale {
   const chpl_id: int;
   const numCores: int;
 
-  proc locale(id = -1) {
-    chpl_id = id;
+  proc locale() {
+    chpl_id = __primitive("chpl_localeID");  // Misnamed.
+    // chpl_localeID really returns the current (GASNet) node ID.
 
     extern proc chpl_numCoresOnThisLocale(): int;
     numCores = chpl_numCoresOnThisLocale();
@@ -65,7 +66,7 @@ class RootLocale
       // represented by the locale field of the wide pointer used to store
       // the object's address.  Therefore, we expect the locale ID associated
       // with the passed-in loc to equal the ID of the current node.
-      if __primitive("chpl_localeID") != __primitive("_get_node_id", loc) then
+      if __primitive("chpl_localeID") != __primitive("_wide_get_node", loc) then
         halt(".locale field of locale object must match node ID");
       _here = loc;
     }
@@ -81,7 +82,7 @@ class RootLocale
     for locIdx in LocaleSpace do
       on __primitive("chpl_on_locale_num", locIdx)
       {
-        var loc = new locale(locIdx);
+        var loc = new locale();
         setLocale(locIdx, loc);
       }
   }

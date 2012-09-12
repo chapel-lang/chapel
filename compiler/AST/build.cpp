@@ -213,17 +213,18 @@ Expr* buildDotExpr(BaseAST* base, const char* member) {
   // This broke when realms were removed and uid was renamed as id.
   // It might be better coding practice to label very special module code
   // (i.e. types, fields, values known to the compiler) using pragmas. <hilde>
+  // TODO: We shouldn't have optimizations in the parser.
   if (!strcmp("id", member))
     if (CallExpr* intToLocale = toCallExpr(base))
       if (intToLocale->isNamed("chpl_int_to_locale"))
         if (CallExpr* getLocale = toCallExpr(intToLocale->get(1)))
-          if (getLocale->isPrimitive(PRIM_GET_LOCALE_ID))
+          if (getLocale->isPrimitive(PRIM_WIDE_GET_LOCALE))
             return getLocale->remove();
 
   // MAGIC: "x.locale" member access expressions are rendered as chpl_int_to_locale(_get_locale_id(x)).
   if (!strcmp("locale", member))
     return new CallExpr("chpl_int_to_locale", 
-                        new CallExpr(PRIM_GET_LOCALE_ID, base));
+                        new CallExpr(PRIM_WIDE_GET_LOCALE, base));
   else
     return new CallExpr(".", base, new_StringSymbol(member));
 }
@@ -1638,21 +1639,21 @@ BlockStmt* buildLocalStmt(Expr* stmt) {
 
 
 static Expr* extractLocaleID(Expr* expr) {
-  // If the on <x> expression is a primitive_on_locale_num, we just want
-  // to strip off the primitive and have the naked integer value be the
-  // locale ID.
+  // If the on <x> expression is a primitive_on_locale_num, we just 
+  // return the primitive.
 
   // PRIM_ON_LOCAL_NUM is now passed through to the backend,
-  // but we don't want to wrap it in PRIM_GET_LOCALE_ID.
+  // but we don't want to wrap it in PRIM_WIDE_GET_LOCALE.
   if (CallExpr* call = toCallExpr(expr)) {
     if (call->isPrimitive(PRIM_ON_LOCALE_NUM)) {
+      // Can probably use some semantic checks, like the number of args being 1 or 2, etc.
       return expr;
     }
   }
 
   // Otherwise, we need to wrap the expression in a primitive to query
   // the locale ID of the expression
-  return new CallExpr(PRIM_GET_LOCALE_ID, expr);
+  return new CallExpr(PRIM_WIDE_GET_LOCALE, expr);
 }
 
 

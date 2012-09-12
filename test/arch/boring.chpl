@@ -3,11 +3,11 @@
 // A boring architecture
 class Boring : locale
 {
-  // Unfortunately, we don't currently have a way to call a base-class
-  // constructor, so anything it does has to be copied verbatim here.
-  proc Boring(id = -1)
+  proc Boring()
   {
-    chpl_id = id;
+    // Unfortunately, we don't currently have a way to call a base-class
+    // constructor, so anything it does has to be copied verbatim here.
+    chpl_id = __primitive("chpl_localeID");
     extern proc chpl_numCoresOnThisLocale(): int;
     numCores = chpl_numCoresOnThisLocale();
   }
@@ -59,7 +59,7 @@ coforall loc in rootLocale.getLocales() do
 
 coforall loc in rootLocale.getLocales() do
   on loc do
-    rootLocale.setLocale(loc.id, new Boring(loc.id));
+    rootLocale.setLocale(loc.id, new Boring());
 
 
 // 3) Show output from overriding locales.

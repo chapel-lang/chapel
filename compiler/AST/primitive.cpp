@@ -530,13 +530,15 @@ initPrimitive() {
 
   prim_def(PRIM_LOGICAL_FOLDER, "_paramFoldLogical", returnInfoBool);
 
-  prim_def(PRIM_GET_LOCALE_ID, "_get_locale_id", returnInfoLocaleID, false, true);
+  prim_def(PRIM_WIDE_GET_LOCALE, "_wide_get_locale", returnInfoLocaleID, false, true);
+  // These two are unnecessary after Chapel understands the c_locale_t structure.
+  prim_def(PRIM_WIDE_GET_NODE, "_wide_get_node", returnInfoInt32, false, true);
+  prim_def(PRIM_WIDE_GET_SUBLOC, "_wide_get_subloc", returnInfoInt32, false, true);
+  prim_def(PRIM_WIDE_GET_ADDR, "_wide_get_addr", returnInfoInt64, false, true);
 
-  prim_def(PRIM_GET_NODE_ID, "_get_node_id", returnInfoInt32, false, true);
-  prim_def(PRIM_GET_SUBLOC_ID, "_get_subloc_id", returnInfoInt32, false, true);
-  prim_def(PRIM_SET_SUBLOC_ID, "_set_subloc_id", returnInfoVoid, true);
   prim_def(PRIM_LOCALE_ID, "chpl_localeID", returnInfoInt32);	// Our GASNet node ID.
   prim_def(PRIM_ON_LOCALE_NUM, "chpl_on_locale_num", returnInfoLocaleID);
+  prim_def(PRIM_SET_SUBLOC_ID, "_set_subloc_id", returnInfoVoid, true);
 
   prim_def(PRIM_ALLOC_GVR, "allocchpl_globals_registry", returnInfoVoid);
   prim_def(PRIM_HEAP_REGISTER_GLOBAL_VAR, "_heap_register_global_var", returnInfoVoid, true, true);

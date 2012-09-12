@@ -316,7 +316,7 @@ freeHeapAllocatedVars(Vec<Symbol*> heapAllocatedVars) {
               if (call->isPrimitive(PRIM_ADDR_OF) ||
                   call->isPrimitive(PRIM_GET_MEMBER) ||
                   call->isPrimitive(PRIM_GET_SVEC_MEMBER) ||
-                  call->isPrimitive(PRIM_GET_LOCALE_ID))
+                  call->isPrimitive(PRIM_WIDE_GET_LOCALE))
                 call = toCallExpr(call->parentExpr);
               if (call->isPrimitive(PRIM_MOVE))
                 varsToTrack.add(toSymExpr(call->get(1))->var);
@@ -614,7 +614,7 @@ makeHeapAllocations() {
                     call->isPrimitive(PRIM_GET_SVEC_MEMBER) ||
                     call->isPrimitive(PRIM_GET_MEMBER_VALUE) ||
                     call->isPrimitive(PRIM_GET_SVEC_MEMBER_VALUE) ||
-                    call->isPrimitive(PRIM_GET_LOCALE_ID) ||
+                    call->isPrimitive(PRIM_WIDE_GET_LOCALE) ||
                     call->isPrimitive(PRIM_SET_SVEC_MEMBER) ||
                     call->isPrimitive(PRIM_SET_MEMBER)) &&
                    call->get(1) == use) {
@@ -819,8 +819,9 @@ parallel(void) {
         BlockStmt* rblock = new BlockStmt();
 
         INT_ASSERT(call->get(1));
-        CallExpr* nodeID = new CallExpr(PRIM_GET_NODE_ID, call->get(1)->copy());
-        CallExpr* localeID = new CallExpr(PRIM_LOCALE_ID);
+        // nodeID is the node ID for the datum used in the "on" expression.
+        CallExpr* nodeID = new CallExpr(PRIM_WIDE_GET_NODE, call->get(1)->copy());
+        CallExpr* localeID = new CallExpr(PRIM_LOCALE_ID);	// Runtime (GASNet) node.
         VarSymbol* tmpNode = newTemp(nodeID->typeInfo());
         VarSymbol* tmpLoc = newTemp(localeID->typeInfo());
         VarSymbol* tmpBool = newTemp(dtBool);
@@ -928,7 +929,7 @@ static void localizeCall(CallExpr* call) {
       break;
     case PRIM_MOVE:
       if (CallExpr* rhs = toCallExpr(call->get(2))) {
-        if (rhs->isPrimitive(PRIM_GET_LOCALE_ID)) {
+        if (rhs->isPrimitive(PRIM_WIDE_GET_LOCALE)) {
           if (rhs->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
             if (rhs->get(1)->getValType()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
               insertLocalTemp(rhs->get(1));

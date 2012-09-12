@@ -965,7 +965,7 @@ void CallExpr::codegen(FILE* outfile) {
         break;
       }
       if (CallExpr* call = toCallExpr(get(2))) {
-        if (call->isPrimitive(PRIM_GET_LOCALE_ID)) {
+        if (call->isPrimitive(PRIM_WIDE_GET_LOCALE)) {
           if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
             if (call->get(1)->getValType()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
               // get locale field of wide class via wide reference
@@ -986,10 +986,10 @@ void CallExpr::codegen(FILE* outfile) {
           }
           break;
         }
-        if (call->isPrimitive(PRIM_GET_NODE_ID)) {
+        if (call->isPrimitive(PRIM_WIDE_GET_NODE)) {
           if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
             if (call->get(1)->getValType()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-              // get locale field of wide class via wide reference
+              // get node field of wide class via wide reference
               gen(outfile, "CHPL_COMM_WIDE_GET_NODE(%A, %A, %A, ",
                   get(1), call->get(1),
                   dtLocaleID->typeInfo());
@@ -1004,6 +1004,48 @@ void CallExpr::codegen(FILE* outfile) {
           } else {
             // Assume that this is a literal c_locale_t
             gen(outfile, "%A = (%A).as_struct.node;\n", get(1), call->get(1));
+          }
+          break;
+        }
+        if (call->isPrimitive(PRIM_WIDE_GET_SUBLOC)) {
+          if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
+            if (call->get(1)->getValType()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
+              // get sublocale field of wide class via wide reference
+              gen(outfile, "CHPL_COMM_WIDE_GET_SUBLOC(%A, %A, %A, ",
+                  get(1), call->get(1),
+                  dtLocaleID->typeInfo());
+              genTypeStructureIndex(outfile,
+                                    dtInt[INT_SIZE_32]->typeInfo()->symbol); // needed?
+              gen(outfile, ", %A, %A)", call->get(2), call->get(3));
+            } else {
+              gen(outfile, "%A = (%A).locale.as_struct.subloc", get(1), call->get(1));
+            }
+          } else if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
+            gen(outfile, "%A = (%A).locale.as_struct.subloc", get(1), call->get(1));
+          } else {
+            // Assume that this is a literal c_locale_t
+            gen(outfile, "%A = (%A).as_struct.subloc;\n", get(1), call->get(1));
+          }
+          break;
+        }
+        if (call->isPrimitive(PRIM_WIDE_GET_ADDR)) {
+          if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
+            if (call->get(1)->getValType()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
+              // get addr field of wide class via wide reference
+              gen(outfile, "CHPL_COMM_WIDE_GET_ADDR(%A, %A, %A, ",
+                  get(1), call->get(1),
+                  dtInt[INT_SIZE_64]->typeInfo());
+//              genTypeStructureIndex(outfile,
+//                                    dtInt[INT_SIZE_32]->typeInfo()->symbol); // needed?
+              gen(outfile, ", %A, %A)", call->get(2), call->get(3));
+            } else {
+              gen(outfile, "%A = (%A).addr", get(1), call->get(1));
+            }
+          } else if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
+            gen(outfile, "%A = (%A).addr", get(1), call->get(1));
+          } else {
+            // Assume that this is a literal address.
+            gen(outfile, "%A = (%A);\n", get(1), call->get(1));
           }
           break;
         }
@@ -1060,6 +1102,7 @@ void CallExpr::codegen(FILE* outfile) {
           }
           break;
         }
+
         if (call->isPrimitive(PRIM_GET_MEMBER_VALUE)) {
           if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
             Type* classType = call->get(1)->typeInfo()->getField("addr")->type;
@@ -1131,6 +1174,7 @@ void CallExpr::codegen(FILE* outfile) {
           }
           break;
         }
+
         if (call->isPrimitive(PRIM_GET_MEMBER)) {
           if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
             Type* classType = call->get(1)->typeInfo()->getField("addr")->type;
@@ -1169,6 +1213,7 @@ void CallExpr::codegen(FILE* outfile) {
             break;
           }
         }
+
         if (call->isPrimitive(PRIM_GET_SVEC_MEMBER)) {
           if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
             gen(outfile, "CHPL_WIDE_GET_TUPLE_COMPONENT(%A, %A, ",
@@ -1178,6 +1223,7 @@ void CallExpr::codegen(FILE* outfile) {
             break;
           }
         }
+
         if (call->isPrimitive(PRIM_GET_SVEC_MEMBER_VALUE)) {
           if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
             Type* valueType = call->get(1)->getValType();
@@ -1208,6 +1254,7 @@ void CallExpr::codegen(FILE* outfile) {
           }
           break;
         }
+
         if (call->isPrimitive(PRIM_ARRAY_GET)) {
           if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
             gen(outfile, "CHPL_COMM_WIDE_ARRAY_GET(%A, %A, %A, %A, %A)",
@@ -1221,6 +1268,7 @@ void CallExpr::codegen(FILE* outfile) {
           }
           break;
         }
+
         if (call->isPrimitive(PRIM_ARRAY_GET_VALUE)) {
           if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
             fprintf(outfile, "CHPL_COMM_WIDE_ARRAY_GET_VALUE(");
@@ -1237,20 +1285,24 @@ void CallExpr::codegen(FILE* outfile) {
           }
           break;
         }
+
         if (call->isPrimitive(PRIM_GPU_GET_VALUE)) {
           gen(outfile, "%A = _GPU_GET_VALUE(%A, %A)",
               get(1), call->get(1), call->get(2));
           break;
         }
+
         if (call->isPrimitive(PRIM_GPU_GET_VAL)) {
           gen(outfile, "%A = _GPU_GET_VAL(%A, %A)",
               get(1), call->get(1), call->get(2));
           break;
         }
+
         if (call->isPrimitive(PRIM_GPU_GET_ARRAY)) {
           gen(outfile, "%A = _GPU_GET_ARRAY(%A)", get(1), call->get(1));
           break;
         }
+
         if (call->isPrimitive(PRIM_UNION_GETID)) {
           if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
             gen(outfile,
@@ -1262,6 +1314,7 @@ void CallExpr::codegen(FILE* outfile) {
             break;
           }
         }
+
         if (call->isPrimitive(PRIM_TESTCID)) {
           if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
             gen(outfile,
@@ -1274,6 +1327,7 @@ void CallExpr::codegen(FILE* outfile) {
             break;
           }
         }
+
         if (call->isPrimitive(PRIM_GETCID)) {
           if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
             gen(outfile, "CHPL_COMM_WIDE_CLASS_GET_CID(%A, %A, %A, ",
@@ -1284,6 +1338,7 @@ void CallExpr::codegen(FILE* outfile) {
             break;
           }
         }
+
         if (call->isPrimitive(PRIM_CAST)) {
           if (call->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) ||
               call->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
@@ -1292,6 +1347,7 @@ void CallExpr::codegen(FILE* outfile) {
             break;
           }
         }
+
         if (call->isPrimitive(PRIM_DYNAMIC_CAST)) {
           if (call->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
             gen(outfile, "CHPL_COMM_WIDE_DYNAMIC_CAST(%A, %A, (",
@@ -1302,6 +1358,7 @@ void CallExpr::codegen(FILE* outfile) {
             break;
           }
         }
+
         if (call->isPrimitive(PRIM_GET_PRIV_CLASS)) {
           if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
             gen(outfile, "CHPL_WIDE_GET_PRIVATIZED_CLASS(%A, %A)", get(1), call->get(2));
@@ -1396,7 +1453,7 @@ void CallExpr::codegen(FILE* outfile) {
     case PRIM_DEREF:
     case PRIM_GET_SVEC_MEMBER_VALUE:
     case PRIM_GET_MEMBER_VALUE:
-    case PRIM_GET_LOCALE_ID:
+    case PRIM_WIDE_GET_LOCALE:
     case PRIM_GET_PRIV_CLASS:
     case PRIM_ARRAY_GET:
     case PRIM_ARRAY_GET_VALUE:
@@ -2333,7 +2390,10 @@ void CallExpr::codegen(FILE* outfile) {
       fprintf(outfile, "chpl_localeID");
       break;
      case PRIM_ON_LOCALE_NUM:
-      gen(outfile, "chpl_on_locale_num(%A)", get(1));
+      if (numActuals() < 2)
+        gen(outfile, "chpl_on_locale_num(%A, 0)", get(1));
+      else
+        gen(outfile, "chpl_on_locale_num(%A, %A)", get(1), get(2));
       break;
     case PRIM_ALLOC_GVR:
       fprintf(outfile, "chpl_comm_alloc_registry(%d)", numGlobalsOnHeap);
