@@ -1,21 +1,16 @@
 /*
-- make 'forall gridDist' distribute over locales
-- ensure all component objects get created on the right locales as intended
-- add a printout of sizes, grid, etc. at start of program
+Suggested TODO, in addition to implementing the actual computations:
+- add a printout of grid/problem sizes etc. at start of program
 - add verification that our cached slices survived after we have
   finished initializing everything.
-  E.g. by dsiAccess-indexing into them.
- - remove the debugging writeln() and re-enable asserts a1-a3
+  E.g. by dsiAccess-indexing into them and querying their domains.
+- v1 messages can be now turned off (see util.chpl)
 */
-
-
-
 
 use BlockDist;
 use util;
 
 config var chk = true;
-config var init1 = true;
 
 /////////// grid of locales ///////////
 
@@ -35,6 +30,10 @@ const gridDist = gridDom dmapped Block(gridDom, gridLocales);
 // the size of node-local data
 config const ldx=2, ldy=3;
 type elType = real;
+
+// the size of all data
+const allx = ldx * gx,
+      ally = ldy * gy;
 
 // for neighbor-cache pointers
 var auxArr: [1..1] elType;
@@ -64,15 +63,16 @@ class GlobalInfo {
 
 // constructor for GlobalInfo
 proc GlobalInfo.GlobalInfo() {
-  coforall ((ix,iy), inf) in (gridDist, infos) {
+  forall ((ix,iy), inf) in (gridDist, infos) {
     inf = new LocalInfo(mygx=ix, mygy=iy);
-    writeln("GlobalInfo constructor ", (ix,iy), "  on ", here.id,
-	    "  inf.locale=", inf.locale.id);
   }
 }
 
-// Here are all our local domains. WI <- Working Indices.
+// Here are all our local domains. WI <- "Working Indices".
 const WI = new GlobalInfo();
+
+assert(allx == WI.infos[gx,gy].myhighx, "a6 ");
+assert(ally == WI.infos[gx,gy].myhighy, "a7");
 
 ///////////
 
@@ -97,24 +97,18 @@ class GlobalData {
 // constructor for GlobalData
 proc GlobalData.GlobalData(nameArg: string) {
   name=nameArg;
-  coforall (_, inf, dat, loc) in (gridDist, WI.infos, datas, gridLocales) {
+  forall (inf, dat, loc) in (WI.infos, datas, gridLocales) {
     dat = new LocalData(inf);
-    writeln("GlobalData constructor for ", (inf.mygx, inf.mygy),
-	    "  here=", here.id,
-	    "  loc=", loc.id,
-	    "  dat.locale=", dat.locale.id);
     // sanity checks
-    if false {
-    assert(dat.locale == loc, "a1");
-    assert(dat.linfo.locale == loc, "a2");
-    assert(dat.linfo == inf, "a3");
-    }
+    assert(dat.locale == loc);
+    assert(dat.linfo.locale == loc);
+    assert(dat.linfo == inf);
   }
-  exit(0); //vass
+
   /// get and store pointers to neighbor data slices ///
 
   serial(v1) do forall ((ix,iy), dat, inf) in (gridDist, datas, WI.infos) {
-    msg1("neighbors for ", name, (ix, iy), "  domCompute ", inf.domCompute);
+    msg1("neighbors for ", name, (ix, iy), "  domCompute=", inf.domCompute);
     dat.cnorth = storecache(-1,0, inf.mylowx-1,  inf.mylowy..inf.myhighy);
     dat.csouth = storecache(+1,0, inf.myhighx+1, inf.mylowy..inf.myhighy);
     dat.cwest = storecache(0,-1, inf.mylowx..inf.myhighx, inf.mylowy-1);
@@ -137,7 +131,7 @@ proc GlobalData.GlobalData(nameArg: string) {
       return result;
     }  // storecache()
 
-  }  // coforall
+  }  // forall
 }  // GlobalData constructor
 
 // Our two global arrays, to switch between.
@@ -147,21 +141,20 @@ const WA = new GlobalData("WA"),
 // Reuse the name for an indexing operation.
 // This does not access neighbor caches.
 proc GlobalData.dsiAccess(ix,iy) var {
-  if chk then assert(1 <= ix && ix <= ldx * gx && 1 <= iy && iy <= ldy * gy,
-		     "a5 ", (ix,ldx,gx), (iy,ldy,gy));
+  if chk {
+    if 1 <= ix && ix <= ldx * gx && 1 <= iy && iy <= ldy * gy
+      then {/*OK*/}
+      else halt("GlobalData.dsiAccess: index out of bounds ",
+                (ix,ldx,gx), (iy,ldy,gy));
+  }
   const gridx = (ix-1) / gx + 1, gridy = (iy-1) / gy + 1;
   return datas[gridx, gridy].ldata[ix,iy];
 }
 
 /////////// reference data ///////////
 
-const refx = ldx * gx,
-      refy = ldy * gy;
-assert(refx == WI.infos[gx,gy].myhighx, "a6 ");
-assert(refy == WI.infos[gx,gy].myhighy, "a7");
-
-const refAlloc = {0..refx+1, 0..refy+1},
-    refCompute = {1..refx, 1..refy},
+const refAlloc = {0..allx+1, 0..ally+1},
+    refCompute = {1..allx, 1..ally},
   refAllocDist = refAlloc dmapped Block(refAlloc, gridLocales);
 
 // Our reference data arrays, corresponding to WA, WB.
