@@ -1,0 +1,35 @@
+.TH qt_sinc_destroy 3 "AUGUST 2012" libqthread "libqthread"
+.SH NAME
+.B qt_sinc_destroy
+\- deallocate and clean-up a sinc
+.SH SYNOPSIS
+.B #include <qthread/sinc.h>
+
+.I void
+.br
+.B qt_sinc_destroy
+.RI "(qt_sinc_t *" sinc);
+
+.PP
+.I void
+.br
+.B qt_sinc_fini
+.RI "(qt_sinc_t *" sinc);
+
+.SH DESCRIPTION
+These functions deallocate and clean-up a qt_sinc_t object. The
+.BR qt_sinc_destroy ()
+function is for use on sincs that were created with
+.BR qt_sinc_create (),
+whereas the
+.BR qt_sinc_fini ()
+function is for use on sincs that were initialized with
+.BR qt_sinc_init ().
+The sinc is immediately destroyed and any internal memory associated with it is deallocated.
+.SH SEE ALSO
+.BR qt_sinc_create (3),
+.BR qt_sinc_expect (3),
+.BR qt_sinc_init (3),
+.BR qt_sinc_reset (3),
+.BR qt_sinc_submit (3),
+.BR qt_sinc_wait (3)
