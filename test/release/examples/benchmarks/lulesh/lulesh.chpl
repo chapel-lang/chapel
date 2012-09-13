@@ -356,7 +356,7 @@ proc LuleshData() {
 
 proc initializeFieldData() {
   // This is a temporary array used to accumulate masses in parallel
-  // without losing updates by using the sync vars' full/empty semantics
+  // without losing updates by using 'atomic' variables
   var massAccum$: [Nodes] atomic real;
   for i in Nodes {
     massAccum$[i].write(0.0);
@@ -993,7 +993,7 @@ proc IntegrateStressForElems(sigxx, sigyy, sigzz, determ) {
 
     var fx_local, fy_local, fz_local: 8*real;
 
-    //    local {
+    local {
       /* Volume calculation involves extra work for numerical consistency. */
       CalcElemShapeFunctionDerivatives(x_local, y_local, z_local, 
                                        b_x, b_y, b_z, determ[k]);
@@ -1002,7 +1002,7 @@ proc IntegrateStressForElems(sigxx, sigyy, sigzz, determ) {
 
       SumElemStressesToNodeForces(b_x, b_y, b_z, sigxx[k], sigyy[k], sigzz[k], 
                                   fx_local, fy_local, fz_local);
-      //    }
+    }
 
     for (noi, t) in elemToNodesTuple(k) {
       fx$[noi].add(fx_local[t]);
