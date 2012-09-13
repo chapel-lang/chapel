@@ -165,7 +165,6 @@ module SSCA2_kernels
 
 
   use BlockDist;
-  config param useOnClause = CHPL_NETWORK_ATOMICS!="ugni";
   // For task-private temporary variables
   config const defaultNumTPVs = 16;
   config var numTPVs = min(defaultNumTPVs, numLocales);
@@ -321,7 +320,7 @@ module SSCA2_kernels
           BCaux[s].path_count$.write(1.0);
         }
 
-        var barrier = new Barrier(numLocales);
+        const barrier = tpv.barrier;
 
         coforall loc in Locales do on loc {
           Active_Level[here.id].Members.clear();
@@ -352,20 +351,14 @@ module SSCA2_kernels
             // coforall loop.
             const current_distance_c = current_distance;
             pragma "dont disable remote value forwarding"
-            inline proc f3(BCaux, v, u) {
-              BCaux[v].path_count$.add(BCaux[u].path_count$.read());
-            }
+            inline proc f3(BCaux, v, u, current_distance_c, Active_Level, Lcl_Sum_Min_Dist) {
 
-            forall u in Active_Level[here.id].Members do {
-              forall v in G.FilteredNeighbors(u) do
-                on if useOnClause then vertex_domain.dist.idxToLocale(v) else here {
                   // --------------------------------------------
                   // add any unmarked neighbors to the next level
                   // --------------------------------------------
   
                   if  BCaux[v].min_distance.compareExchangeStrong(-1, current_distance_c) {
-                    var aloc = if useOnClause then here.id else vertex_domain.dist.idxToLocale(v).id;
-                    Active_Level[aloc].next.Members.add (v);
+                    Active_Level[here.id].next.Members.add (v);
                     if VALIDATE_BC then
                       Lcl_Sum_Min_Dist.add(current_distance_c);
                   }
@@ -380,10 +373,16 @@ module SSCA2_kernels
                   // ------------------------------------------------
   
                   if BCaux[v].min_distance.read() == current_distance_c {
-                    f3(BCaux, v, u);
+                    BCaux[v].path_count$.add(BCaux[u].path_count$.read());
+                    //f3(BCaux, v, u);
                     BCaux[u].children_list.add_child (v);
                   }
 
+            }
+
+            forall u in Active_Level[here.id].Members do {
+              forall v in G.FilteredNeighbors(u) do on vertex_domain.dist.idxToLocale(v) {
+                      f3(BCaux, v, u, current_distance_c, Active_Level, Lcl_Sum_Min_Dist);
                 }
             };
 
@@ -488,6 +487,7 @@ module SSCA2_kernels
       if DELETE_KERNEL4_DS {
         coforall t in TPVSpace do on t {
           var tpv = TPV[t];
+          delete tpv.barrier;
           var al = tpv.Active_Level;
           coforall loc in Locales do on loc {
             var level = al[here.id];
@@ -547,7 +547,7 @@ module SSCA2_kernels
   //
   record taskPrivateArrayData {
     type vertex;
-    var min_distance  : atomic int;
+    var min_distance  : atomic_int64; // used only on home locale
     var path_count$   : atomic real;
     var depend        : real;
     var children_list : child_struct(vertex);
@@ -558,6 +558,7 @@ module SSCA2_kernels
     const vertex_domain;
     var used  : atomic bool;
     var BCaux : [vertex_domain] taskPrivateArrayData(index(vertex_domain));
+    var barrier = new Barrier(numLocales);
     var Active_Level : [PrivateSpace] Level_Set (Sparse_Vertex_List);
   }
 
@@ -583,71 +584,75 @@ module SSCA2_kernels
   //
   // reusable barrier implementation
   //
-  record Barrier {
+  class Barrier {
     param reusable = true;
     var n: int;
-    var count: atomic_int64;
-    var done: atomicflag;
+    var count: atomic int;
+    var tasksFinished: [PrivateSpace] atomic bool;
 
     proc Barrier(_n: int) {
       reset(_n);
     }
-
+  
     inline proc reset(_n: int) {
       on this {
         n = _n;
         count.write(n);
-        done.write(false);
+        for loc in tasksFinished {
+          loc.write(false);
+        }
       }
     }
-
+  
     inline proc barrier() {
-      on this {
-        const myc = count.fetchSub(1);
-        if myc<=1 {
-          if done.testAndSet() then
-            halt("Too many callers to barrier()");
-          if reusable {
-            count.waitFor(n-1);
-            count.add(1);
-            done.clear();
-          }
-        } else {
-          done.waitFor(true);
-          if reusable {
-            count.add(1);
-            done.waitFor(false);
-          }
+      const myc = count.fetchSub(1);
+      if myc <= 1 {
+        if tasksFinished[here.id].read() {
+          halt("too many callers to barrier()");
+        } 
+        for loc in tasksFinished {
+          loc.write(true);
         }
-      }
-    }
-
-    inline proc notify() {
-      on this {
-        const myc = count.fetchSub(1);
-        if myc<=1 {
-          if done.testAndSet() then
-            halt("Too many callers to notify()");
-        }
-      }
-    }
-
-    inline proc wait() {
-      on this {
-        done.waitFor(true);
         if reusable {
-          const myc = count.fetchAdd(1);
-          if myc == n-1 then
-            done.clear();
-          done.waitFor(false);
+          count.waitFor(n-1);
+          count.add(1);
+          for loc in tasksFinished {
+            loc.clear();
+          }
+        }
+      } else {
+        tasksFinished[here.id].waitFor(true);
+        if reusable {
+          count.add(1);
+          tasksFinished[here.id].waitFor(false);
         }
       }
     }
-
+  
+    inline proc notify() {
+      const myc = count.fetchSub(1);
+      if myc <= 1 {
+        if tasksFinished[here.id].read() {
+          halt("too many callers to notify()");
+        }
+        for loc in tasksFinished {
+          loc.write(true);
+        }
+      }
+   }
+  
+    inline proc wait() {
+      tasksFinished[here.id].waitFor(true);
+      if reusable {
+        var sum = count.fetchAdd(1);
+        if sum == n-1 then tasksFinished.clear();
+        else tasksFinished[here.id].waitFor(false);
+      }
+    }
+  
     inline proc try() {
-      return done.read();
+      return tasksFinished[here.id].read();
     }
   }
-
 }
 
