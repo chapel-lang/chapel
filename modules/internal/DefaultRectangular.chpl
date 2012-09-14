@@ -1257,10 +1257,10 @@ proc DefaultRectangularArr.doiBulkTransferStride(B) where B._value.isBlockDist()
   }
 }
 
-//These helping function is the main contribution of Juan Lopez, and later improved by Alberto. 
-//It is used to compute the low and high values of the ranges of the destination subdomain from 
+//corr_inverse() computes the low and high values of the ranges of the destination subdomain from 
 //the low and high values of the source subdomain and low values of the source whole domain.
 //When computing the low bounds, parameter low has to be =1 to account for unaligned low values.
+//It was contributed by Juan Lopez and later improved by Alberto.
 
 proc DefaultRectangularArr.corr_inverse (b,B,low) where rank ==1
 {
@@ -1281,14 +1281,14 @@ proc DefaultRectangularArr.corr_inverse (b,B,low) where rank > 1
 {
   //It finds out the initial domain coordinate and strides of destination Domain (of A)
   var la: rank*int;
-  for i in 1..rank do
+  for param i in 1..rank do
     la[i]=dom.ranges(i).low;
   
   var sa=dom.dsiStride;
   var lb=B.dom.whole.low;
   var sb=B.dom.whole.stride;
   var a: rank * int; 
-  forall i in 1..rank do a[i]=la[i]+((b[i]-lb[i])/sb[i])*sa(i);
+  for param i in 1..rank do a[i]=la[i]+((b[i]-lb[i])/sb[i])*sa(i);
   return a;
 }
 

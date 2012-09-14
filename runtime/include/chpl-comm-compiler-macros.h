@@ -98,7 +98,7 @@
 #endif
 
 
-#define CHPL_COMM_WIDE_GET(local, wide, type, tid, len, ln, fn)  \
+#define CHPL_COMM_WIDE_GET(local, wide, type, tid, len, ln, fn)         \
   do {                                                                  \
     if (chpl_localeID == (wide).locale)                                 \
       memcpy(&local, (wide).addr, len*sizeof(type) );                   \

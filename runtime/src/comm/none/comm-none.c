@@ -96,6 +96,8 @@ void  chpl_comm_puts(void* dstaddr, void* dststrides, int32_t dstlocale,
 {
   const size_t strlvls=(size_t)stridelevels;
   int i,t,j,total;
+  // Vass suggests to allocate these on the stack (see GASNet's verion)
+  // or avoid using them altogether.
   size_t *dststr=(size_t*)chpl_mem_allocMany(strlvls,sizeof(size_t),CHPL_RT_MD_GETS_PUTS_STRIDES,0,0); 
   size_t *srcstr=(size_t*)chpl_mem_allocMany(strlvls,sizeof(size_t),CHPL_RT_MD_GETS_PUTS_STRIDES,0,0); 
   size_t *cnt=(size_t*)chpl_mem_allocMany(strlvls+1,sizeof(size_t),CHPL_RT_MD_GETS_PUTS_COUNTS,0,0); 
@@ -104,8 +106,8 @@ void  chpl_comm_puts(void* dstaddr, void* dststrides, int32_t dstlocale,
   int *x=chpl_mem_allocMany(total,sizeof(int),CHPL_RT_MD_GETS_PUTS_STRIDES,0,0);
   
   //displacement from the dstaddr and srcaddr start points
-  int *srcdesp=chpl_mem_allocMany(total,sizeof(int),CHPL_RT_MD_GETS_PUTS_STRIDES,0,0);
-  int *dstdesp=chpl_mem_allocMany(total,sizeof(int),CHPL_RT_MD_GETS_PUTS_STRIDES,0,0); 
+  int *srcdisp=chpl_mem_allocMany(total,sizeof(int),CHPL_RT_MD_GETS_PUTS_STRIDES,0,0);
+  int *dstdisp=chpl_mem_allocMany(total,sizeof(int),CHPL_RT_MD_GETS_PUTS_STRIDES,0,0); 
  
   int off;
 
@@ -113,7 +115,7 @@ void  chpl_comm_puts(void* dstaddr, void* dststrides, int32_t dstlocale,
   cnt[0] = ((int32_t*)count)[0] * elemSize;
   srcstr[0] = ((int32_t*)srcstrides)[0] * elemSize;
   dststr[0] = ((int32_t*)dststrides)[0] * elemSize;
-  for (i=1;i<strlvls;i++)
+  for (i=1; i<strlvls; i++)
     { 
       srcstr[i] = ((int32_t*)srcstrides)[i] * elemSize;
       dststr[i] = ((int32_t*)dststrides)[i] * elemSize;
@@ -125,6 +127,8 @@ void  chpl_comm_puts(void* dstaddr, void* dststrides, int32_t dstlocale,
   total=1;
   for (i=0; i<=stridelevels-1; i++)
     total=total*cnt[i+1];
+
+  // How about caching cnt[0] into a variable for use in memcpy below?
    
   for (j=0; j<total; j++)
     {     
@@ -138,15 +142,15 @@ void  chpl_comm_puts(void* dstaddr, void* dststrides, int32_t dstlocale,
         
 	      if (carry[j]!=1) //IF 2
 		{
-		  srcdesp[j]=srcstr[t-1]*x[j]+srcdesp[off];
-		  dstdesp[j]=dststr[t-1]*x[j]+dstdesp[off];
+		  srcdisp[j]=srcstr[t-1]*x[j]+srcdisp[off];
+		  dstdisp[j]=dststr[t-1]*x[j]+dstdisp[off];
 		}
 	      else //ELSE 2
 		{
-		  srcdesp[j]=srcstr[t-1]*x[j];
-		  dstdesp[j]=dststr[t-1]*x[j];
+		  srcdisp[j]=srcstr[t-1]*x[j];
+		  dstdisp[j]=dststr[t-1]*x[j];
 		}   
-	      memcpy((int8_t*)srcaddr+srcdesp[j],(int8_t*)dstaddr+dstdesp[j],cnt[0]);
+	      memcpy((int8_t*)srcaddr+srcdisp[j],(int8_t*)dstaddr+dstdisp[j],cnt[0]);
 	      break;
 	    }
 	  else //ELSE 1
@@ -155,8 +159,8 @@ void  chpl_comm_puts(void* dstaddr, void* dststrides, int32_t dstlocale,
     }
   chpl_mem_free(carry,0,0);
   chpl_mem_free(x,0,0);
-  chpl_mem_free(srcdesp,0,0);
-  chpl_mem_free(dstdesp,0,0);
+  chpl_mem_free(srcdisp,0,0);
+  chpl_mem_free(dstdisp,0,0);
   chpl_mem_free(cnt,0,0);
   chpl_mem_free(srcstr,0,0);
   chpl_mem_free(dststr,0,0); 
@@ -186,7 +190,7 @@ void  chpl_comm_gets(void* dstaddr, void* dststrides, int32_t srclocale,
   cnt[0]=((int32_t*)count)[0] * elemSize;
   srcstr[0] = ((int32_t*)srcstrides)[0] * elemSize;
   dststr[0] = ((int32_t*)dststrides)[0] * elemSize;
-  for (i=1;i<strlvls;i++)
+  for (i=1; i<strlvls; i++)
     { 
       srcstr[i] = ((int32_t*)srcstrides)[i] * elemSize;
       dststr[i] = ((int32_t*)dststrides)[i] * elemSize;

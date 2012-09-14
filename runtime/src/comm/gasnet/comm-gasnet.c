@@ -651,6 +651,14 @@ void  chpl_comm_get(void* addr, int32_t locale, void* raddr,
   }
 }
 
+//
+// This is an adaptor from Chapel code to GASNet's gasnet_gets_bulk. It does:
+// * convert count[0] and all of 'srcstr' and 'dststr' from counts of element
+//   to counts of bytes,
+// * convert the element types of the above C arrays from int32_t to size_t.
+// While the former can be done in Chapel (but as efficiently?),
+// for the latter it might be more challenging.
+//
 void  chpl_comm_gets(void* dstaddr, void* dststrides, int32_t srclocale, 
 		     void* srcaddr, void* srcstrides, void* count,
 		     int32_t stridelevels, int32_t elemSize, int32_t typeIndex, 
@@ -659,9 +667,15 @@ void  chpl_comm_gets(void* dstaddr, void* dststrides, int32_t srclocale,
   const size_t strlvls=(size_t)stridelevels;
   const gasnet_node_t srcnode=(gasnet_node_t)srclocale;
 
+/* Vass suggests allocating these arrays on the stack, e.g.:
+assert(strlvls < 100); // otherwise need to allocate more below
+size_t dststr[128];
+   Be sure to remove the matching deletes at the end.
+   Same for chpl_comm_puts.
+*/
   //new arrays for count and strides. The advantages are that 
   // 1.) Can multiply by elemSize to convert to bytes without modifying the originals
-  // 2.) Can be casted to size_t type (typically 64 bits) as spected by gasnet
+  // 2.) Can be cast to size_t type (typically 64 bits) as spected by gasnet
   size_t *dststr=(size_t*)chpl_mem_allocMany(strlvls,sizeof(size_t),CHPL_RT_MD_GETS_PUTS_STRIDES,0,0); 
   size_t *srcstr=(size_t*)chpl_mem_allocMany(strlvls,sizeof(size_t),CHPL_RT_MD_GETS_PUTS_STRIDES,0,0); 
   size_t *cnt=(size_t*)chpl_mem_allocMany(strlvls+1,sizeof(size_t),CHPL_RT_MD_GETS_PUTS_COUNTS,0,0); 
@@ -669,7 +683,7 @@ void  chpl_comm_gets(void* dstaddr, void* dststrides, int32_t srclocale,
   cnt[0]=((int32_t*)count)[0] * elemSize;
   srcstr[0] = ((int32_t*)srcstrides)[0] * elemSize;
   dststr[0] = ((int32_t*)dststrides)[0] * elemSize;
-  for (i=1;i<strlvls;i++)
+  for (i=1; i<strlvls; i++)
     { 
       srcstr[i] = ((int32_t*)srcstrides)[i] * elemSize;
       dststr[i] = ((int32_t*)dststrides)[i] * elemSize;
@@ -705,6 +719,7 @@ void  chpl_comm_gets(void* dstaddr, void* dststrides, int32_t srclocale,
   chpl_mem_free(dststr,0,0);
 }
 
+// See the comment for cmpl_comm_gets().
 void  chpl_comm_puts(void* dstaddr, void* dststrides, int32_t dstlocale, 
 		     void* srcaddr, void* srcstrides, void* count,
 		     int32_t stridelevels, int32_t elemSize, int32_t typeIndex, 
@@ -723,7 +738,7 @@ void  chpl_comm_puts(void* dstaddr, void* dststrides, int32_t dstlocale,
   cnt[0]=((int32_t*)count)[0] * elemSize;
   srcstr[0] = ((int32_t*)srcstrides)[0] * elemSize;
   dststr[0] = ((int32_t*)dststrides)[0] * elemSize;
-  for (i=1;i<strlvls;i++)
+  for (i=1; i<strlvls; i++)
     { 
       srcstr[i] = ((int32_t*)srcstrides)[i] * elemSize;
       dststr[i] = ((int32_t*)dststrides)[i] * elemSize;
