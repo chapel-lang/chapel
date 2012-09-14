@@ -135,9 +135,10 @@ stack overflow
 chpldoc invalid reads during compilation
 ----------------------------------------
 NOTE: This is not a problem with chpldocs (should file a separate future)
+There is an intermittent compile-time segfault during cullOverReferences. The
+type of Bar.super is at least partially corrupt at that point.
 
-[Error matching program output for release/examples/primers/chpldoc (compopts: 1)] (8/28/2012)
-[Error matching compiler output for release/examples/primers/chpldoc (compopts: 1)] (9/07/2012)
+[Error matching program output for release/examples/primers/chpldoc (compopts: 1)] (8/28/2012) (9/07/2012) (9/11/2012)
 
 rrrrrrrrrrrrrrrrrrrr
 no-local regressions
@@ -788,6 +789,10 @@ execution timeouts (ever since switching to 4 shepherds)
 qthreads-specific tests
 =======================
 
+Timed out after update to qthreads/1.8
+--------------------------------------
+[Error: Timed out executing program release/examples/spec/Task_Parallelism_and_Synchronization/syncCounter]
+
 
 =========================================================
 qthreads+gasnet-specific tests (in addition to the above)
@@ -819,6 +824,8 @@ nondet. execution timeout/deadlock
 [Error: Timed out executing program release/examples/benchmarks/ssca2/SSCA2_main (compopts: 4, execopts: 1)] (03/16/12)
 [Error: Timed out executing program release/examples/benchmarks/ssca2/SSCA2_main (compopts: 5, execopts: 1)] (03/16/12)
 
+[Error: Timed out executing program distributions/robust/arithmetic/stress/test_many_domains] (09/14/12)
+[Error: Timed out executing program multilocale/diten/needMultiLocales/beginInOn]             (09/14/12)
 
 
 =======================
@@ -844,6 +851,10 @@ wrong output (02/16/12 -- first run in awhile)
 problems in generated code (02/16/12 -- first run in awhile)
 ------------------------------------------------------------
 [Error matching compiler output for types/typedefs/bradc/redefineTypeNames]
+
+error: likely type-punning may break strict-aliasing rules
+----------------------------------------------------------
+[Error matching compiler output for types/atomic/sungeun/atomic_vars]
 
 times out (since checked in)
 ----------------------------
