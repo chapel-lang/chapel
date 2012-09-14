@@ -1002,8 +1002,8 @@ void CallExpr::codegen(FILE* outfile) {
           } else if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
             gen(outfile, "%A = (%A).locale.as_struct.node", get(1), call->get(1));
           } else {
-            // Assume that this is a literal c_locale_t
-            gen(outfile, "%A = (%A).as_struct.node;\n", get(1), call->get(1));
+            // Narrow pointer.  The argument is ignored and zero is returned.
+            gen(outfile, "%A = 0", get(1));
           }
           break;
         }
@@ -2165,6 +2165,9 @@ void CallExpr::codegen(FILE* outfile) {
       break;
     case PRIM_SET_SERIAL:
       gen(outfile, "chpl_task_setSerial(%A)", get(1));
+      break;
+    case PRIM_GET_SUBLOC_ID:
+      gen(outfile, "chpl_task_getSubLoc()");
       break;
     case PRIM_SET_SUBLOC_ID:
       gen(outfile, "chpl_task_setSubLoc((%A).as_struct.subloc)", get(1));

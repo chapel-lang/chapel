@@ -180,6 +180,7 @@ enum PrimitiveTag {
   PRIM_LOCALE_ID,       // Returns the current (GASNet) node ID.
   PRIM_ON_LOCALE_NUM,   // specify a particular (node,subloc) for an on clause.
   PRIM_SET_SUBLOC_ID,	// Set the sublocale ID in task-private data.
+  PRIM_GET_SUBLOC_ID,	// Get the sublocale ID from task-private data.
 
   PRIM_ALLOC_GVR,       // allocate space for global vars registry
   PRIM_HEAP_REGISTER_GLOBAL_VAR,

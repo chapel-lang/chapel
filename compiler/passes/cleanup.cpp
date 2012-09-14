@@ -160,6 +160,30 @@ static void change_cast_in_where(FnSymbol* fn) {
 }
 
 
+// MAGIC: 'on' blocks automatically call initTask() w.r.t. the current 
+// sublocale, as in:
+//  ChapelLocale.here.getChild(__primitive("_get_subloc_id").initTask();
+//
+// This transformation needs to take place before scopeResolve(), so we can find "here".
+//
+static void addInitTaskCallInOnBlocks() {
+  forv_Vec(BlockStmt, block, gBlockStmts) {
+    if (CallExpr* info = block->blockInfo)
+      if (info->isPrimitive(PRIM_BLOCK_ON) ||
+          info->isPrimitive(PRIM_BLOCK_ON_NB)) {
+        // This is an on or on ... begin block.
+        CallExpr* here = new CallExpr(".", new UnresolvedSymExpr("ChapelLocale"),
+                                      new_StringSymbol("here"));
+        CallExpr* getChildPartial = new CallExpr(".", here,
+                                                 new_StringSymbol("getChild"));
+        CallExpr* getChild = new CallExpr(getChildPartial, new CallExpr(PRIM_GET_SUBLOC_ID));
+        CallExpr* initTaskPartial =new CallExpr(".", getChild,
+                                                new_StringSymbol("initTask"));
+        block->insertAtHead(new CallExpr(initTaskPartial));
+      }
+  }
+}
+
 void cleanup(void) {
   Vec<BaseAST*> asts;
   collect_asts(rootModule, asts);
@@ -186,4 +210,6 @@ void cleanup(void) {
       }
     }
   }
+
+  addInitTaskCallInOnBlocks();
 }

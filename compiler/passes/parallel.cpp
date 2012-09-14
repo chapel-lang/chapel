@@ -142,10 +142,6 @@ bundleArgs(CallExpr* fcall) {
     wrap_fn->insertAtTail(
         new CallExpr(PRIM_MOVE, tmp,
         new CallExpr(PRIM_GET_MEMBER_VALUE, wrap_c, field)));
-    if (count == 0 && fn->hasFlag(FLAG_ON))
-      // Special case for the first argument of an on_fn, which carries the destination locale ID.
-      // We set the sublocale field in task-private data before jumping to the body of the task.
-      wrap_fn->insertAtTail(new CallExpr(PRIM_SET_SUBLOC_ID, tmp));
     call_orig->insertAtTail(tmp);
   }
 
@@ -706,29 +702,32 @@ parallel(void) {
   //
   Vec<FnSymbol*> nestedFunctions;
   forv_Vec(BlockStmt, block, gBlockStmts) {
-    if (block->blockInfo) {
+    if (CallExpr* info = block->blockInfo) {
       SET_LINENO(block);
       FnSymbol* fn = NULL;
-      if (block->blockInfo->isPrimitive(PRIM_BLOCK_BEGIN)) {
+      if (info->isPrimitive(PRIM_BLOCK_BEGIN)) {
         fn = new FnSymbol("begin_fn");
         fn->addFlag(FLAG_BEGIN);
-      } else if (block->blockInfo->isPrimitive(PRIM_BLOCK_COBEGIN)) {
+      } else if (info->isPrimitive(PRIM_BLOCK_COBEGIN)) {
         fn = new FnSymbol("cobegin_fn");
         fn->addFlag(FLAG_COBEGIN_OR_COFORALL);
-      } else if (block->blockInfo->isPrimitive(PRIM_BLOCK_COFORALL)) {
+      } else if (info->isPrimitive(PRIM_BLOCK_COFORALL)) {
         fn = new FnSymbol("coforall_fn");
         fn->addFlag(FLAG_COBEGIN_OR_COFORALL);
-      } else if (block->blockInfo->isPrimitive(PRIM_BLOCK_ON) ||
-                 block->blockInfo->isPrimitive(PRIM_BLOCK_ON_NB)) {
+      } else if (info->isPrimitive(PRIM_BLOCK_ON) ||
+                 info->isPrimitive(PRIM_BLOCK_ON_NB)) {
         fn = new FnSymbol("on_fn");
         fn->addFlag(FLAG_ON);
         if (block->blockInfo->isPrimitive(PRIM_BLOCK_ON_NB))
           fn->addFlag(FLAG_NON_BLOCKING);
         // This is now a real locale arg.
-        ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "_dummy_locale_arg", dtLocaleID);
+        ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "_locale_arg", dtLocaleID);
         fn->insertFormalAtTail(arg);
+        // Special case for the first argument of an on_fn, which carries the destination locale ID.
+        // We set the sublocale field in task-private data before executing the body of the task.
+        fn->insertAtTail(new CallExpr(PRIM_SET_SUBLOC_ID, arg));
       }
-      else if (block->blockInfo->isPrimitive(PRIM_ON_GPU)) {
+      else if (info->isPrimitive(PRIM_ON_GPU)) {
         fn = new FnSymbol("on_gpu_kernel");
         fn->addFlag(FLAG_GPU_ON);
         //Add two formal arguments:
@@ -739,6 +738,17 @@ parallel(void) {
         fn->insertFormalAtTail(arg1);
         fn->insertFormalAtTail(arg2);
       }
+      else if (// info->isPrimitive(PRIM_BLOCK_PARAM_LOOP) || // resolution should remove this case.
+               info->isPrimitive(PRIM_BLOCK_WHILEDO_LOOP) ||
+               info->isPrimitive(PRIM_BLOCK_DOWHILE_LOOP) ||
+               info->isPrimitive(PRIM_BLOCK_FOR_LOOP) ||
+               info->isPrimitive(PRIM_BLOCK_XMT_PRAGMA_FORALL_I_IN_N) ||
+               info->isPrimitive(PRIM_BLOCK_XMT_PRAGMA_NOALIAS) ||
+               info->isPrimitive(PRIM_BLOCK_LOCAL) ||
+               info->isPrimitive(PRIM_BLOCK_UNLOCAL))
+        ; // Not a parallel block construct, so do nothing special.
+      else
+        INT_FATAL(block, "Unhandled blockInfo case.");
 
       if (fn) {
         nestedFunctions.add(fn);

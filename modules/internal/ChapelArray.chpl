@@ -4,9 +4,9 @@ pragma "no use ChapelStandard"
 module ChapelArray {
 
 use ChapelBase; // For opaque type.
+use ChapelSyncvar;
 use ChapelTuple;
-
-config param noRefCount = false;
+use ChapelRootLocale;
 
 var privatizeLock$: sync int;
 

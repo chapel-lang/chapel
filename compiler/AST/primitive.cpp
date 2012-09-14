@@ -501,6 +501,7 @@ initPrimitive() {
   prim_def(PRIM_WHEN, "when case expressions", returnInfoVoid);
   prim_def(PRIM_TYPE_TO_STRING, "typeToString", returnInfoString);
 
+  // These are the block info primitives.
   prim_def(PRIM_BLOCK_PARAM_LOOP, "param loop", returnInfoVoid);
   prim_def(PRIM_BLOCK_WHILEDO_LOOP, "while...do loop", returnInfoVoid);
   prim_def(PRIM_BLOCK_DOWHILE_LOOP, "do...while loop", returnInfoVoid);
@@ -539,6 +540,7 @@ initPrimitive() {
   prim_def(PRIM_LOCALE_ID, "chpl_localeID", returnInfoInt32);	// Our GASNet node ID.
   prim_def(PRIM_ON_LOCALE_NUM, "chpl_on_locale_num", returnInfoLocaleID);
   prim_def(PRIM_SET_SUBLOC_ID, "_set_subloc_id", returnInfoVoid, true);
+  prim_def(PRIM_GET_SUBLOC_ID, "_get_subloc_id", returnInfoInt32);
 
   prim_def(PRIM_ALLOC_GVR, "allocchpl_globals_registry", returnInfoVoid);
   prim_def(PRIM_HEAP_REGISTER_GLOBAL_VAR, "_heap_register_global_var", returnInfoVoid, true, true);

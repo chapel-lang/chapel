@@ -19,7 +19,7 @@ bool normalized = false;
 // 
 static void checkUseBeforeDefs();
 static void flattenGlobalFunctions();
-static void insertUseForExplicitModuleCalls(void);
+static void insertUseForExplicitModuleCalls();
 static void processSyntacticDistributions(CallExpr* call);
 static bool is_void_return(CallExpr* call);
 static void normalize_returns(FnSymbol* fn);
@@ -263,7 +263,7 @@ flattenGlobalFunctions() {
 }
 
 static void
-insertUseForExplicitModuleCalls(void) {
+insertUseForExplicitModuleCalls() {
   forv_Vec(SymExpr, se, gSymExprs) {
     if (se->parentSymbol && se->var == gModuleToken) {
       CallExpr* call = toCallExpr(se->parentExpr);
