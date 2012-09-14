@@ -55,6 +55,11 @@ $make = `$utildirname/chplmake`; chomp($make);
 print "CHPL_MAKE: $make\n";
 $atomics = `$utildirname/atomics`; chomp($atomics);
 print "CHPL_ATOMICS: $atomics\n";
+if ($comm eq "none") {
+} else {
+$network_atomics = `$utildirname/atomics --network`; chomp($network_atomics);
+print "  CHPL_NETWORK_ATOMICS: $network_atomics\n";
+}
 $gmp = `$utildirname/gmp`; chomp($gmp);
 print "CHPL_GMP: $gmp\n";
 

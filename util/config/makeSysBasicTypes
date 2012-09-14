@@ -174,15 +174,22 @@ if( not $handled_c_ptr ) {
 
 int(@values) == int(@rhstypes) or die "Got wrong number of type aliases";
 
+# Note: Compiler treats the outermost block as an anonymous module declaration,
+# not as a block statement.
+# The problem was earlier avoid because a redundent extern declaration for sizeof()
+# in DefaultRectangular.chpl was being used instead of the "official" version being
+# produced here.
+# The block has been removed as a workaround.  Probably we *do* want an outermost 
+# block that is not introduced by the 'module' keyword to be interpreted as a 
+# compound statement.  <2012-08-19 hilde>
 print "\n";
-print "{\n";
-print "  extern proc sizeof(type t): size_t;\n";
+print "pragma \"no prototype\" extern proc sizeof(type t): size_t;\n";
 for (my $i = 0; $i < @values; $i++ ) {
     my $typelhs = $max_to_type[2*$i+1];
     my $typerhs = $rhstypes[$i];
-    print "  assert(sizeof($typelhs) == sizeof($typerhs));\n";
+    print "assert(sizeof($typelhs) == sizeof($typerhs));\n";
 }
-print "}\n";
+print "\n";
 
 unlink($HTMP) or die "Could not delete $HTMP:$!";
 unlink($CALCTMP) or die "Could not delete $CALCTMP:$!";

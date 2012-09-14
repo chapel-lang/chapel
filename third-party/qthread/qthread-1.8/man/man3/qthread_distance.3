@@ -1,0 +1,29 @@
+.TH qthread_distance 3 "APRIL 2011" libqthread "libqthread"
+.SH NAME
+.B qthread_distance
+\- returns the distance between shepherds
+.SH SYNOPSIS
+.B #include <qthread.h>
+
+.I int
+.br
+.B qthread_distance
+.RI "(const qthread_shepherd_id_t " src ", const qthread_shepherd_id_t " dest );
+.SH DESCRIPTION
+This function returns the distance from the
+.I src
+shepherd to the memory of the
+.I dest
+shepherd. The distances are arbitrary, and may not exactly measure latency to
+memory, but do give an indication of relative distance. Shepherds that do not
+have a specific CPU affinity can be anywhere, and so the distance from or to
+such shepherds is considered 0.
+.RE
+.SH RETURN VALUE
+This function either returns the distance between the two specified shepherds, or returns
+.B QTHREAD_BADARGS
+if a shepherd identifier is invalid.
+.SH SEE ALSO
+.BR qthread_retloc (3),
+.BR qthread_stackleft (3),
+.BR qthread_id (3)

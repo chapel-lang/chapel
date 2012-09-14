@@ -5,6 +5,8 @@ module ChapelStandard {
   // Internal modules.
   use ChapelBase;
   use Atomics;
+  use NetworkAtomics;
+  use NetworkAtomicTypes;
   use ChapelNumLocales;
   use ChapelThreads;
   use ChapelThreadsInternal;

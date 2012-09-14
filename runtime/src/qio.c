@@ -3291,6 +3291,7 @@ err_t _qio_channel_write_bits_slow(qio_channel_t* restrict ch, uint64_t v, int8_
   qio_bitbuffer_t part_one, part_two;
   qio_bitbuffer_t parts_be[2];
   qio_bitbuffer_t tmp_bits;
+  uint64_t tmpv;
   int tmp_live;
   int tmp_leftshift;
   int part_bits;
@@ -3300,6 +3301,7 @@ err_t _qio_channel_write_bits_slow(qio_channel_t* restrict ch, uint64_t v, int8_
 
   tmp_live = ch->bit_buffer_bits;
   tmp_bits = ch->bit_buffer;
+  if( tmp_live == 0 ) tmp_bits = 0;
 
   //printf("In write bits slow\n");
 
@@ -3311,12 +3313,15 @@ err_t _qio_channel_write_bits_slow(qio_channel_t* restrict ch, uint64_t v, int8_
   if( nbits > tmp_leftshift ) {
     // we will need more than one word...
     v_rightshift = nbits - tmp_leftshift;
-    part_one = (tmp_bits << tmp_leftshift) | (v >> v_rightshift);
-    part_two = v << (8*sizeof(qio_bitbuffer_t) - v_rightshift);
+    tmpv = (v_rightshift < 64) ? v : 0;
+    part_one = (tmp_bits << tmp_leftshift) | (tmpv >> v_rightshift);
+    tmpv = (v_rightshift > 0) ? v : 0;
+    part_two = tmpv << (8*sizeof(qio_bitbuffer_t) - v_rightshift);
   } else {
     // otherwise, we will not spill over..
     v_leftshift = tmp_leftshift - nbits;
-    part_one = (tmp_bits << tmp_leftshift) | (v << v_leftshift);
+    tmpv = (v_leftshift < 64) ? v : 0;
+    part_one = (tmp_bits << tmp_leftshift) | (tmpv << v_leftshift);
     part_two = 0;
   }
 
@@ -3356,7 +3361,7 @@ err_t _qio_channel_write_bits_slow(qio_channel_t* restrict ch, uint64_t v, int8_
     tmp_bits = part_one << (8*writebytes);
   } else {
     // put the byte in question to the hi byte
-    tmp_bits = part_one << (8*(writebytes-sizeof(qio_bitbuffer_t)));
+    tmp_bits = part_two << (8*(writebytes-sizeof(qio_bitbuffer_t)));
   }
   // put the byte in question to the lo byte
   tmp_bits = tmp_bits >> (8*sizeof(qio_bitbuffer_t) - 8);

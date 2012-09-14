@@ -1,0 +1,33 @@
+.TH qthread_sorted_sheps 3 "APRIL 2011" libqthread "libqthread"
+.SH NAME
+.BR qthread_sorted_sheps ,
+.B qthread_sorted_sheps_remote
+\- returns a list of other shepherds, sorted by their distance
+.SH SYNOPSIS
+.B #include <qthread.h>
+
+.I const qthread_shepherd_id_t *
+.br
+.B qthread_sorted_sheps
+(void);
+.PP
+.I const qthread_shepherd_id_t *
+.br
+.B qthread_sorted_sheps_remote
+.RI "(const qthread_shepherd_id_t " src );
+.SH DESCRIPTION
+This function returns a list of shepherds, sorted by their distance from either
+the current shepherd or the specified shepherd
+.IR src .
+This list is an array of qthread_shepherd_id_t objects with a length of one
+less than the number of shepherds (as determined by
+.BR qthread_num_shepherds ()).
+The source shepherd is not included in the list.
+.PP
+The returned array
+.I must not
+be altered.
+.SH RETURN VALUE
+These functions will return either a pointer to an array of
+qthread_shepherd_id_t objects, or NULL if the specified shepherd is either
+invalid or does not have a specific CPU affinity.

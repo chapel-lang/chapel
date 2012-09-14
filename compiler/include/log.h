@@ -45,6 +45,7 @@ class ArgumentState;
 // with these slightly more mnemonic #defines.
 #define LOG_parse               'p'
 #define LOG_checkParsed         NUL
+#define LOG_docs                NUL
 #define LOG_cleanup             'u'
 #define LOG_scopeResolve        'S'
 #define LOG_flattenClasses      'b'

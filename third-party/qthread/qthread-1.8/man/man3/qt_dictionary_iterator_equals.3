@@ -1,0 +1,32 @@
+.TH qt_dictionary_iterator_equals 3 "AUGUST 2012" libqthread "libqthread"
+.SH NAME
+.B qt_dictionary_iterator_equals
+\- compare two iterators
+.SH SYNOPSIS
+.B #include <qthread/dictionary.h>
+
+.I int
+.br
+.B qt_dictionary_iterator_equals
+.RI "(qt_dictionary_iterator *" a ,
+.br
+.ti +31
+.RI "qt_dictionary_iterator *" b );
+
+.SH DESCRIPTION
+This function compares two iterators to test for equality. To be equal, they must both be associated with the same dictionary and must indicate the same positions within the dictionary.
+.SH RETURN VALUES
+Returns the value one if the iterators are equal, and zero otherwise.
+.SH SEE ALSO
+.BR qt_dictionary_create (3),
+.BR qt_dictionary_delete (3),
+.BR qt_dictionary_destroy (3),
+.BR qt_dictionary_end (3),
+.BR qt_dictionary_get (3),
+.BR qt_dictionary_iterator_copy (3),
+.BR qt_dictionary_iterator_create (3),
+.BR qt_dictionary_iterator_destroy (3),
+.BR qt_dictionary_iterator_get (3),
+.BR qt_dictionary_iterator_next (3),
+.BR qt_dictionary_put (3),
+.BR qt_dictionary_put_if_absent (3)

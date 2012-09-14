@@ -390,7 +390,8 @@ ClassType::ClassType(ClassTag initClassTag) :
   classTag(initClassTag),
   fields(),
   inherits(),
-  outer(NULL)
+  outer(NULL),
+  doc(NULL)
 {
   if (classTag == CLASS_CLASS) { // set defaultValue to nil to keep it
                                  // from being constructed
@@ -913,7 +914,7 @@ void initTheProgram(void) {
   //  in possibly more special case code.
   //
   DefExpr* objectDef = buildClassDefExpr("object", dtObject,
-                                         NULL, new BlockStmt(), FLAG_UNKNOWN);
+                                         NULL, new BlockStmt(), FLAG_UNKNOWN, NULL);
   objectDef->sym->addFlag(FLAG_OBJECT_CLASS);
   objectDef->sym->addFlag(FLAG_NO_OBJECT);
   theProgram->initFn->insertAtHead(objectDef);

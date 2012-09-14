@@ -98,6 +98,7 @@ ModuleSymbol* ParseFile(const char* filename, ModTag modType) {
 
   yylloc.first_column = yylloc.last_column = 0;
   yylloc.first_line = yylloc.last_line = yystartlineno = chplLineno = 1;
+  yylloc.comment = NULL;
   yyin = openInputFile(filename);
 
   if (printModuleFiles && (modType != MOD_INTERNAL || developer)) {
@@ -121,7 +122,8 @@ ModuleSymbol* ParseFile(const char* filename, ModTag modType) {
 
   if (!yyblock->body.head || !containsOnlyModules(yyblock, filename)) {
     const char* modulename = filenameToModulename(filename);
-    newModule = buildModule(modulename, yyblock, yyfilename);
+    newModule = buildModule(modulename, yyblock, yyfilename, NULL);
+    yylloc.comment = NULL;
   }
   if (newModule) {
     theProgram->block->insertAtTail(new DefExpr(newModule));

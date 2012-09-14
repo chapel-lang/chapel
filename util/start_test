@@ -470,8 +470,13 @@
 #
 #  - also added support for a LASTCOMPOPTS file that contains
 #    compiler options to be added after the source file.  Thus:
-#    ./chpl <-compopts> <COMPOPTS> source.chpl <LASTCOMPOPTS>.
+#    ./chpl <COMPOPTS> <-compopts> source.chpl <LASTCOMPOPTS>.
 #    This can be specified on a test by test basis using foo.lastcompopts.
+# 
+#  - also added support for a LASTEXECOPTS file that contains
+#    program options to be added after the other execopts.  Thus:
+#    ./a.out <EXECOPTS> <-execopts> <LASTEXECOPTS>.
+#    This can be specified on a test by test basis using foo.lastexecopts.
 # 
 #  - if the subdirectory contains a COMPSTDIN file, the contents of
 #    COMPSTDIN will be piped into the execution of the compile step as

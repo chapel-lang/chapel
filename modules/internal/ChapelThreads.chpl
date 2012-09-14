@@ -20,7 +20,7 @@ use ChapelBase; // for uint().
 
 config const numThreadsPerLocale = 0;
 
-extern proc chpl_maxThreads(): int;
+extern proc chpl_maxThreads(): int(32);
 const chpl__maxThreadsPerLocale = chpl_maxThreads();
 
 //

@@ -55,15 +55,6 @@ PERFORMANCE TODOs:
 * localizeNeighborNodes seems a little weird/inefficient.  Review its
   role and look for ways to improve.
 
-* In IntegrateStressForElems, there is a local block that was disabled
-  when switching the force arrays to sync arrays, perhaps due to
-  disabling remote value forwarding.  Ultimately, we should be able to
-  enable this, either through smarter compiler analysis or help from
-  the user.  Try to do so.
-
-* Add support for atomic floats to Chapel and replace sync vars with
-  them
-
 
 INPUT FILE TODOs:
 -----------------

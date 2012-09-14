@@ -388,7 +388,8 @@ proc halt(args ...?numArgs) {
 }
 
 proc _ddata.writeThis(f: Writer) {
-  halt("cannot write the _ddata class");
+  compilerWarning("printing _ddata class");
+  write("<_ddata class cannot be printed>");
 }
 
 proc chpl_taskID_t.writeThis(f: Writer) {
@@ -428,7 +429,8 @@ proc string.write(args ...?n) {
   delete sc;
 }
 
-
+// C can't handle overloaded declarations, so just don't prototype this one.
+pragma "no prototype"
 extern proc chpl_format(fmt: string, x): string;
 
 proc format(fmt: string, x:?t) where _isIntegralType(t) || _isFloatType(t) {

@@ -2,6 +2,15 @@ Usage: chpl [flags] [source files]
 
 Module Processing Options:
       --count-tokens                  Count tokens in main modules
+      --[no-]docs                     Runs documentation on the source file
+      --[no-]docs-alphabetical        Alphabetizes the documentation
+      --docs-comment-style <indicator>
+                                      Only includes comments that start with
+                                      <indicator>
+      --docs-folder <foldername>      Sets the documentation folder to
+                                      <foldername>
+      --docs-no-creole                Does not add creole tags to
+                                      documentation
       --main-module <module>          Specify entry point module
   -M, --module-dir <directory>        Add directory to module search path
       --print-code-size               Print code size of main modules
@@ -57,6 +66,8 @@ Run-time Semantic Check Options:
 C Code Generation Options:
       --[no-]codegen                  [Don't] Do code generation
       --[no-]cpp-lines                [Don't] Generate #line annotations
+      --gen-extern-prototypes         [Don't] generate C prototypes for extern
+                                      declarations
       --max-c-ident-len               Maximum length of identifiers in
                                       generated code, 0 for unlimited
       --savec <directory>             Save generated C code in directory

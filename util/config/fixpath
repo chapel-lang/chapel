@@ -1,0 +1,19 @@
+#!/usr/bin/env perl
+
+# This script takes in two arguments: $PATH and the separator for it
+# (since fish uses ' ' and everybody else uses ':')
+# Then, we remove path components that begin with $CHPL_HOME
+$home = $ENV{"CHPL_HOME"};
+$_ = $ARGV[0];
+$sep = $ARGV[1];
+@oldpath = split /$sep/;
+@newpath = ( );
+for (@oldpath) {
+  if( $home ne "" and /^$home/ ) {
+    # CHPL_HOME is defined and this element begins with CHPL_HOME
+  } else {
+    push(@newpath, $_);
+  }
+}
+
+print join($sep, @newpath) . "\n";

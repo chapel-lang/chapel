@@ -236,7 +236,7 @@ static FnSymbol* chpl_gen_main_exists(void) {
       }
     }
   }
-  if (firstProblem == false) {
+  if (!firstProblem) {
     USR_STOP();
   }
   return match;

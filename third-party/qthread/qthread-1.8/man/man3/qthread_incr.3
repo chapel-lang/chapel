@@ -1,0 +1,52 @@
+.TH qthread_incr 3 "JULY 2008" libqthread "libqthread"
+.SH NAME
+.BR qthread_incr ,
+.BR qthread_dincr ,
+.B qthread_fincr
+\- atomically increment a value
+.SH SYNOPSIS
+.B #include <qthread.h>
+
+.I aligned_t
+.br
+.B qthread_incr
+.RI "(aligned_t *" operand ", int " incr );
+.PP
+.I float
+.br
+.B qthread_fincr
+.RI "(float *" operand ", float " incr );
+.PP
+.I double
+.br
+.B qthread_dincr
+.RI "(double *" operand ", double " incr );
+.SH DESCRIPTION
+This function atomically increments the variable pointed to by
+.I operand
+by
+.IR incr .
+In short, this is a thread-safe version of:
+.RS
+.PP
+.RI * operand " += " incr ;
+.RE
+.PP
+This function uses architecture-specific assembly to achieve this, but on
+unrecognized hardware will fall back to using
+.BR qthread_lock ()
+and
+.BR qthread_unlock ()
+to be thread-safe. Ordinarily, however, it does not use any of the available
+address locking mechanisms. There are exceptions. On 32-bit PowerPC, which has
+64-bit doubles but does not have a 64-bit atomic load-and-reserve-word
+instruction. On this architecture we're forced to use
+.BR qthread_lock ()
+and
+.BR qthread_unlock ().
+.SH RETURN VALUE
+These functions will return the value
+.RI * operand
+had before the increment was performed.
+.SH SEE ALSO
+.BR qthread_cas (3)

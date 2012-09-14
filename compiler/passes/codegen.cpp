@@ -78,9 +78,8 @@ static void legalizeName(Symbol* sym) {
     }
   }
 
-  // hilde sez:  This is very kludgy.  What do we really mean?
-  if ((!strncmp("chpl_", sym->cname, 5) && (strcmp("chpl_gen_main", sym->cname) && strcmp("chpl_user_main", sym->cname))  && sym->cname[5] != '_') ||
-      (sym->cname[0] == '_' && (sym->cname[1] == '_' || (sym->cname[1] >= 'A' && sym->cname[1] <= 'Z')))) {
+  // Add chpl_ to operator names.
+  if ((sym->cname[0] == '_' && (sym->cname[1] == '_' || (sym->cname[1] >= 'A' && sym->cname[1] <= 'Z')))) {
     sym->cname = astr("chpl__", sym->cname);
   }
 }
@@ -477,7 +476,7 @@ static void codegen_header(FILE* hdrfile, FILE* codefile=NULL) {
       fprintf(hdrfile, "#endif\n");
       continue;
     }
-    if (!fnSymbol->hasFlag(FLAG_EXTERN)) {
+    if (!fnSymbol->hasFlag(FLAG_EXTERN) || genExternPrototypes) {
       fnSymbol->codegenPrototype(hdrfile);
     }
   }

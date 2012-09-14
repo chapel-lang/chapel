@@ -1,0 +1,21 @@
+.TH future_exit 3 "APRIL 2011" libqthread "libqthread"
+.SH NAME
+.BR future_exit " \- finalize a future computation"
+.SH SYNOPSIS
+.B #include <qthread/futurelib.h>
+
+.I void
+.br
+.B future_exit
+(void);
+.PP
+
+.SH DESCRIPTION
+Threads created as futures must call this function as their final action
+before termination in order to release resources.
+.SH SEE ALSO
+.BR future_join_all (3),
+.BR future_init (3),
+.BR future_exit (3),
+.BR future_yield (3),
+.BR future_acquire (3)

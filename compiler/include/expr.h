@@ -3,6 +3,7 @@
 
 #include <cstdlib>
 #include <cstdio>
+#include <fstream>
 #include "alist.h"
 #include "baseAST.h"
 #include "symbol.h"
@@ -36,6 +37,8 @@ class Expr : public BaseAST {
   virtual bool inTree();
   virtual Type* typeInfo(void);
 
+  virtual void prettyPrint(std::ofstream *o);
+
   Expr* getStmtExpr();
 
   Expr* remove(void);
@@ -59,7 +62,8 @@ class DefExpr : public Expr {
   void replaceChild(Expr* old_ast, Expr* new_ast);
 
   Type* typeInfo(void);
-
+  void prettyPrint(std::ofstream *o);
+  
   void codegen(FILE* outfile);
 };
 
@@ -72,6 +76,7 @@ class SymExpr : public Expr {
   void replaceChild(Expr* old_ast, Expr* new_ast);
   void verify(); 
   Type* typeInfo(void);
+  void prettyPrint(std::ofstream *o);
   void codegen(FILE* outfile);
 };
 
@@ -84,8 +89,10 @@ class UnresolvedSymExpr : public Expr {
   void replaceChild(Expr* old_ast, Expr* new_ast);
   void verify(); 
   Type* typeInfo(void);
+  void prettyPrint(std::ofstream *o);
   void codegen(FILE* outfile);
 };
+
 
 
 class CallExpr : public Expr {
@@ -110,6 +117,8 @@ class CallExpr : public Expr {
   DECLARE_COPY(CallExpr);
 
   void replaceChild(Expr* old_ast, Expr* new_ast);
+
+  void prettyPrint(std::ofstream *o);
 
   void codegen(FILE* outfile);
 
@@ -137,6 +146,7 @@ class NamedExpr : public Expr {
   DECLARE_COPY(NamedExpr);
   void replaceChild(Expr* old_ast, Expr* new_ast);
   Type* typeInfo(void);
+  void prettyPrint(std::ofstream *o);
   void codegen(FILE* outfile);
 };
 

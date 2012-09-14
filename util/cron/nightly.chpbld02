@@ -43,6 +43,10 @@ compilers="gnu pgi cray intel" # pathscale
 for compiler in $compilers ; do
 (  # fire up a new shell
   module load PrgEnv-${compiler}${PrgEnv_Version}
+  if [ $compiler == "cray" ] ; then   # avoid loading gemini libraries
+      module load craype-target-petest
+      module load mpich2
+  fi
   module list
   export CHPL_TARGET_PLATFORM=xt-cle
   setPgiPrediff

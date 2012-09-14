@@ -280,7 +280,7 @@ var xd, yd, zd: [Nodes] real, // velocities
 
     xdd, ydd, zdd: [Nodes] real, // acceleration
 
-    fx$, fy$, fz$: [Nodes] sync real, // forces
+    fx$, fy$, fz$: [Nodes] atomic real, // forces
 
     nodalMass: [Nodes] real; // mass
 
@@ -356,8 +356,11 @@ proc LuleshData() {
 
 proc initializeFieldData() {
   // This is a temporary array used to accumulate masses in parallel
-  // without losing updates by using the sync vars' full/empty semantics
-  var massAccum$: [Nodes] sync real = 0.0;
+  // without losing updates by using 'atomic' variables
+  var massAccum$: [Nodes] atomic real;
+  for i in Nodes {
+    massAccum$[i].write(0.0);
+  }
 
   forall eli in Elems {
     var x_local, y_local, z_local: 8*real;
@@ -368,8 +371,7 @@ proc initializeFieldData() {
     elemMass[eli] = volume;
 
     for neighbor in elemToNodes[eli] {
-      on massAccum$[neighbor] do
-        massAccum$[neighbor] += volume;
+      massAccum$[neighbor].add(volume);
     }
   }
 
@@ -377,7 +379,9 @@ proc initializeFieldData() {
   // which point the massAccum$ array can go away (and will at the
   // procedure's return
 
-  nodalMass = massAccum$ / 8.0;
+  for i in Nodes {
+    nodalMass[i] = massAccum$[i].read() / 8.0;
+  }
 }
 
 
@@ -948,9 +952,11 @@ proc CalcHydroConstraintForElems() {
 
 proc CalcForceForNodes() {
   //zero out all forces (array assignment)
-  fx$ = 0;
-  fy$ = 0;
-  fz$ = 0;
+  for i in Nodes {
+    fx$[i].write(0);
+    fy$[i].write(0);
+    fz$[i].write(0);
+  }
 
   /* Calcforce calls partial, force, hourq */
   CalcVolumeForceForElems();
@@ -987,7 +993,7 @@ proc IntegrateStressForElems(sigxx, sigyy, sigzz, determ) {
 
     var fx_local, fy_local, fz_local: 8*real;
 
-    //    local {
+    local {
       /* Volume calculation involves extra work for numerical consistency. */
       CalcElemShapeFunctionDerivatives(x_local, y_local, z_local, 
                                        b_x, b_y, b_z, determ[k]);
@@ -996,12 +1002,12 @@ proc IntegrateStressForElems(sigxx, sigyy, sigzz, determ) {
 
       SumElemStressesToNodeForces(b_x, b_y, b_z, sigxx[k], sigyy[k], sigzz[k], 
                                   fx_local, fy_local, fz_local);
-      //    }
+    }
 
     for (noi, t) in elemToNodesTuple(k) {
-      fx$[noi] += fx_local[t];
-      fy$[noi] += fy_local[t];
-      fz$[noi] += fz_local[t];
+      fx$[noi].add(fx_local[t]);
+      fy$[noi].add(fy_local[t]);
+      fz$[noi].add(fz_local[t]);
     }
   }
 }
@@ -1092,9 +1098,9 @@ proc CalcFBHourglassForceForElems(determ, x8n, y8n, z8n, dvdx, dvdy, dvdz) {
       // } // end local
 
     for (noi,i) in elemToNodesTuple(eli) {
-      fx$[noi] += hgfx[i];
-      fy$[noi] += hgfy[i];
-      fz$[noi] += hgfz[i];
+      fx$[noi].add(hgfx[i]);
+      fy$[noi].add(hgfy[i]);
+      fz$[noi].add(hgfz[i]);
     }
   }
 }
@@ -1102,9 +1108,9 @@ proc CalcFBHourglassForceForElems(determ, x8n, y8n, z8n, dvdx, dvdy, dvdz) {
 
 proc CalcAccelerationForNodes() {
   forall noi in Nodes do local {
-      xdd[noi] = fx$[noi] / nodalMass[noi];
-      ydd[noi] = fy$[noi] / nodalMass[noi];
-      zdd[noi] = fz$[noi] / nodalMass[noi];
+      xdd[noi] = fx$[noi].read() / nodalMass[noi];
+      ydd[noi] = fy$[noi].read() / nodalMass[noi];
+      zdd[noi] = fz$[noi].read() / nodalMass[noi];
     }
 }
 

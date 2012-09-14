@@ -1,0 +1,18 @@
+As it stands now, the meteor implementation is incomplete.  We (Rachel Sobel 
+and Lydia Duncan) based the portions of this code that are implemented off of
+the Java solution to meteor, found here: 
+
+http://www.dsc.ufcg.edu.br/~jacques/cursos/2004.2/gr/recursos/j-javaopt.pdf
+
+Going through that document piece by piece (ha, punny) we have implemented 
+several classes required for the solution as outlined above: Cell, PieceCell,
+portions of Piece and a new class (PieceList) created to encapsulate the cells
+in a useful fashion.  The comments for these classes are extensive, and 
+hopefully comprehensive.  BoardCell and Board classes are created as stubs
+but entirely unimplemented.  The algorithm itself is unimplemented.
+
+There are a number of tests in the directory "tests", none of which are in
+start_test form.  If you want them to be, you will have to do it yourself,
+unfortunately.  They do give extensive output relative to the actions of the
+implemented classes after which they are named, which should be useful in 
+the meanwhile.

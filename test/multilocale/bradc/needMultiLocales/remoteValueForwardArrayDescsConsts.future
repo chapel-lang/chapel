@@ -1,0 +1,20 @@
+performance: remote value forwarding disabled for constants
+
+Constants should be remote value forwarded even in the presence of
+sync vars.  The reason this is harder to achieve than with array
+descriptors is that it isn't just a function of the formal argument
+type, but also of the const-ness of the actual.  But the compiler
+does so many temp insertions and function calls between the original
+const and the formal to be r.v.f'd that this is hard to tell.
+
+My proposal is to move such constants (on primitives) off of the heap
+in order to make remote value forwarding a correctness issue rather
+than a performance issue.  We don't really want/need to put such
+consts on the heap and pass them around by wide reference, so let's
+hold ourselves to this.  I hope to take this on in the near future
+(in my copious spare time ;).
+
+Note that once this future is retired,
+remoteValueForwardArrayDesc.chpl could be retired since it is the
+prefix of this test.  I committed this way in order to log the future
+while keeping the partial fix working.

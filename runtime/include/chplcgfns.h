@@ -9,7 +9,7 @@
 /* defined in chpl__header.h: */
 
 extern int64_t numThreadsPerLocale;
-extern int64_t chpl__maxThreadsPerLocale;
+extern int32_t chpl__maxThreadsPerLocale;
 extern int64_t callStackSize;
 
 /* generated */

@@ -70,6 +70,7 @@ proc doit(D, str) {
       var prevId = prevN();
       var prevIdx = getIdx(prevId);
       if doLocal {
+        A[hereIdx];
         if doVerboseComm then startVerboseCommHere();
         resetCommDiagnosticsHere();
         startCommDiagnosticsHere();
@@ -80,6 +81,7 @@ proc doit(D, str) {
         if debug then writeln("hereId=", hereId, "c=", c);
       }
 
+      A[nextIdx];
       if doVerboseComm then startVerboseCommHere();
       resetCommDiagnosticsHere();
       startCommDiagnosticsHere();
@@ -90,6 +92,7 @@ proc doit(D, str) {
       if debug then writeln("nextId=", nextId, " c=", c);
 
       if doLocal {
+        A[nextIdx];
         if doVerboseComm then startVerboseCommHere();
         resetCommDiagnosticsHere();
         startCommDiagnosticsHere();
@@ -101,6 +104,7 @@ proc doit(D, str) {
                               " A[", hereIdx, "]=", A[hereIdx]);
       }
 
+      A[prevIdx];
       if doVerboseComm then startVerboseCommHere();
       resetCommDiagnosticsHere();
       startCommDiagnosticsHere();

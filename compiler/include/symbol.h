@@ -102,6 +102,7 @@ class VarSymbol : public Symbol {
 
   bool isConstant(void);
   bool isParameter(void);
+  const char* doc;
 
   void codegen(FILE* outfile);
   void codegenDef(FILE* outfile);
@@ -169,6 +170,7 @@ class FnSymbol : public Symbol {
   const char* userString;
   FnSymbol* valueFunction; // pointer to value function (created in
                            // resolve and used in cullOverReferences)
+  const char *doc;
 
   FnSymbol(const char* initName);
   ~FnSymbol();
@@ -224,11 +226,16 @@ class ModuleSymbol : public Symbol {
   const char* filename;
   Vec<ModuleSymbol*> modUseList;
   Vec<ModuleSymbol*> modUseSet;
-
+  const char *doc;
+  
   ModuleSymbol(const char* iName, ModTag iModTag, BlockStmt* iBlock);
   ~ModuleSymbol();
   void verify(); 
   DECLARE_SYMBOL_COPY(ModuleSymbol);
+  Vec<VarSymbol*> getConfigVars();
+  Vec<FnSymbol*> getFunctions();
+  Vec<ModuleSymbol*> getModules();
+  Vec<ClassType*> getClasses();
   void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void codegenDef(FILE* outfile);
 };

@@ -22,6 +22,7 @@ void complex2record();
 void copyPropagation();
 void cullOverReferences();
 void deadCodeElimination();
+void docs();
 void flattenClasses();
 void flattenFunctions();
 void gpuFlattenArgs();

@@ -12,6 +12,7 @@ if ($preset_launcher eq "") {
     $comm = `$utildirname/comm --target`; chomp($comm);
     $substrate = `$utildirname/commSubstrate`; chomp($substrate);
     $platform = `$utildirname/platform --target`; chomp($platform);
+    $compiler = `$utildirname/compiler --target`; chomp($compiler);
 
     $launcher = "none";
     if ($platform eq "xt-cle" || $platform eq "xe-cle") {
@@ -26,6 +27,8 @@ if ($preset_launcher eq "") {
         }
     } elsif ($platform eq "marenostrum") {
         $launcher = "marenostrum";
+    } elsif ($compiler eq "tile-cc") {
+        $launcher = "tile-monitor";
     } elsif ($comm eq "gasnet") {
         if ($substrate eq "udp") {
             $launcher = "amudprun";

@@ -1,0 +1,6 @@
+Module: hello
+   proc chpl__init_hello()
+
+   proc hello()
+       This method prints out a greeting.
+

@@ -485,7 +485,7 @@ static void call_constructor_for_class(CallExpr* call) {
           se->replace(new UnresolvedSymExpr(ct->initializer->name));
           parent->replace(call->remove());
         } else if (parentParent && parentParent->isPrimitive(PRIM_NEW) &&
-                   call->partialTag == true) {
+                   call->partialTag) {
           se->replace(new UnresolvedSymExpr(ct->initializer->name));
           parentParent->replace(parent->remove());
         } else {

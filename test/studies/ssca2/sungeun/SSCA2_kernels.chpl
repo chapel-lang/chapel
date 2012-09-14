@@ -115,7 +115,7 @@ module SSCA2_kernels
       
       forall ( x, y ) in Heavy_Edge_List do {
 	var Active_Level, Next_Level : domain ( index (vertex_domain) );
-	var min_distance             : [vertex_domain] nativeAtomic(int);
+	var min_distance             : [vertex_domain] atomic int;
         forall m in min_distance do m.write(-1);
 	  
 	if DEBUG_KERNEL3 then 
@@ -165,9 +165,9 @@ module SSCA2_kernels
 
 
   use BlockDist;
-  use remoteAtomics;
-  config param useNativeAtomicReal = CHPL_COMM=="ugni";
-  config param useOnClause = CHPL_COMM!="ugni";
+  // For task-private temporary variables
+  config const defaultNumTPVs = 16;
+  config var numTPVs = min(defaultNumTPVs, numLocales);
   // Would be nice to use PriavteDist, but aliasing is not supported (yet)
   const PrivateSpace = {LocaleSpace} dmapped Block(boundingBox={LocaleSpace});
 
@@ -206,8 +206,8 @@ module SSCA2_kernels
       // probably be more efficient.
       type Sparse_Vertex_List = domain(index(vertex_domain));
 
-      var Between_Cent$ : [vertex_domain] sync real = 0.0;
-      var Sum_Min_Dist$ : sync real = 0.0;
+      var Between_Cent$ : [vertex_domain] atomic real;
+      var Sum_Min_Dist$ : atomic real;
 
       //
       // Throughout kernel 4, we use distributed arrays that are
@@ -227,24 +227,40 @@ module SSCA2_kernels
       // the language.
       //
 
-      // Initialize task private data
-      var localePrivate: [PrivateSpace] localePrivateData(vertex_domain.type);
-      coforall l in localePrivate do on l {
-        l = new localePrivateData(vertex_domain);
-        // put in initialize()
-        for t in l.temps { // this might be bad for first-touch
-          t = new taskPrivateData(domain(index(vertex_domain)), vertex_domain);
-          forall v in vertex_domain do
-            t.BCaux[v].children_list.nd = {1..G.n_Neighbors[v]};
-          for loc in Locales do on loc {
-              t.Active_Level[here.id] = new Level_Set (Sparse_Vertex_List);
-              t.Active_Level[here.id].previous = nil;
-              t.Active_Level[here.id].next = new Level_Set (Sparse_Vertex_List);;
-              t.Active_Level[here.id].next.previous = t.Active_Level[here.id];
-              t.Active_Level[here.id].next.next = nil;
-          }
-        }
+      numTPVs = min(numTPVs, starting_vertices.size);
+      const TPVSpace = {0..#numTPVs};
+      var TPVLocales: [TPVSpace] locale;
+
+      // Here we set up the locales array for our task private temporary
+      // variables.  We use _computChunkStartEnd() to distribute the
+      // variables approximately evenly across the 1d locales array.
+      for t in TPVSpace {
+        TPVLocales[t] = Locales[_computeChunkStartEnd(numLocales,
+                                                      numTPVs, t+1)[1]-1];
       }
+      const TPVLocaleSpace = {TPVSpace} dmapped Block(boundingBox={TPVSpace},
+                                                      targetLocales=TPVLocales);
+
+      // There will be numTPVs copies of the temps, thus throttling the
+      // number of starting vertices being considered simultaneously.
+      var TPV: [TPVLocaleSpace] taskPrivateData(domain(index(vertex_domain)),
+                                                vertex_domain.type);
+
+      // Initialize
+      coforall (t, i) in (TPVLocaleSpace, TPVSpace) do on TPVLocaleSpace.dist.idxToLocale(t) {
+          TPV[i] = new taskPrivateData(domain(index(vertex_domain)), vertex_domain);
+          var tpv = TPV[i];
+          forall v in vertex_domain do
+            tpv.BCaux[v].children_list.nd = {1..G.n_Neighbors[v]};
+          for loc in Locales do on loc {
+            tpv.Active_Level[here.id] = new Level_Set (Sparse_Vertex_List);
+            tpv.Active_Level[here.id].previous = nil;
+            tpv.Active_Level[here.id].next = new Level_Set (Sparse_Vertex_List);;
+            tpv.Active_Level[here.id].next.previous = tpv.Active_Level[here.id];
+            tpv.Active_Level[here.id].next.next = nil;
+          }
+      }
+      var TPVM: TPVManager(TPV.type) = new TPVManager(TPV);
 
       // ------------------------------------------------------ 
       // Each iteration of the outer loop of Brandes's algorithm
@@ -261,24 +277,20 @@ module SSCA2_kernels
 	if DEBUG_KERNEL4 then writeln ( "expanding from starting node ", s );
 
         // Initialize task private variables
-        const lp = localePrivate[here.id];
-        const tid = lp.get_tid();
-        var BCaux => lp.get_BCaux(tid);
+        const tid = TPVM.gettid();
+        const tpv = TPVM.getTPV(tid);
+        var BCaux => tpv.BCaux;
         pragma "dont disable remote value forwarding"
-          inline proc f1(BCaux, v) {
-	  if useNativeAtomicReal then
-            BCaux[v].path_count$.write(0.0);
-	  else
-            BCaux[v].path_count$.writeXF(0.0);
+        inline proc f1(BCaux, v) {
+          BCaux[v].path_count$.write(0.0);
         }
         forall v in vertex_domain do {
           BCaux[v].depend = 0.0;
           BCaux[v].min_distance.write(-1);
-          // BCaux[v].path_count$.writeXF(0.0);
           f1(BCaux, v);
           BCaux[v].children_list.child_count.write(0);
         }
-	var Lcl_Sum_Min_Dist: sync real = 0.0;
+	var Lcl_Sum_Min_Dist: atomic real;
 
 	// The structure of the algorithm depends on a breadth-first
 	// traversal. Each vertex will be marked by the length of
@@ -302,16 +314,13 @@ module SSCA2_kernels
         // will only contain nodes that are physically allocated on that
         // particular locale.
         //
-        var Active_Level => lp.get_Active_Level(tid);
+        var Active_Level => tpv.Active_Level;
         pragma "dont disable remote value forwarding"
-          inline proc f2(BCaux, s) {
-	  if useNativeAtomicReal then
-            BCaux[s].path_count$.write(1.0);
-	  else
-            BCaux[s].path_count$.writeXF(1.0);
+        inline proc f2(BCaux, s) {
+          BCaux[s].path_count$.write(1.0);
         }
 
-        var barrier = new Barrier(numLocales);
+        const barrier = tpv.barrier;
 
         coforall loc in Locales do on loc {
           Active_Level[here.id].Members.clear();
@@ -321,7 +330,6 @@ module SSCA2_kernels
             // traversal from s
             Active_Level[here.id].Members.add(s);
             BCaux[s].min_distance.write(0);
-            // BCaux[s].path_count$.writeXF(1);
             f2(BCaux, s);
           }
           barrier.barrier();
@@ -343,25 +351,16 @@ module SSCA2_kernels
             // coforall loop.
             const current_distance_c = current_distance;
             pragma "dont disable remote value forwarding"
-              inline proc f3(BCaux, v, u) {
-	      if useNativeAtomicReal then
-                BCaux[v].path_count$.add(BCaux[u].path_count$.read());
-              else
-                BCaux[v].path_count$ += BCaux[u].path_count$.readFF();
-            }
+            inline proc f3(BCaux, v, u, current_distance_c, Active_Level, Lcl_Sum_Min_Dist) {
 
-            forall u in Active_Level[here.id].Members do {
-              forall v in G.FilteredNeighbors(u) do
-                on if useOnClause then vertex_domain.dist.idxToLocale(v) else here {
                   // --------------------------------------------
                   // add any unmarked neighbors to the next level
                   // --------------------------------------------
   
                   if  BCaux[v].min_distance.compareExchangeStrong(-1, current_distance_c) {
-                    var aloc = if useOnClause then here.id else vertex_domain.dist.idxToLocale(v).id;
-                    Active_Level[aloc].next.Members.add (v);
+                    Active_Level[here.id].next.Members.add (v);
                     if VALIDATE_BC then
-                      Lcl_Sum_Min_Dist += current_distance_c;
+                      Lcl_Sum_Min_Dist.add(current_distance_c);
                   }
 
 
@@ -374,11 +373,16 @@ module SSCA2_kernels
                   // ------------------------------------------------
   
                   if BCaux[v].min_distance.read() == current_distance_c {
-                    // BCaux[v].path_count$ += BCaux[u].path_count$.readFF();
-                    f3(BCaux, v, u);
+                    BCaux[v].path_count$.add(BCaux[u].path_count$.read());
+                    //f3(BCaux, v, u);
                     BCaux[u].children_list.add_child (v);
                   }
 
+            }
+
+            forall u in Active_Level[here.id].Members do {
+              forall v in G.FilteredNeighbors(u) do on vertex_domain.dist.idxToLocale(v) {
+                      f3(BCaux, v, u, current_distance_c, Active_Level, Lcl_Sum_Min_Dist);
                 }
             };
 
@@ -411,10 +415,9 @@ module SSCA2_kernels
 
           };  // end forward pass
 
-          if here.id==0 {
-            if VALIDATE_BC then
-              Sum_Min_Dist$ += Lcl_Sum_Min_Dist;
-          }
+          if VALIDATE_BC then
+            if here.id==0 then
+              Sum_Min_Dist$.add(Lcl_Sum_Min_Dist);
 
           // -------------------------------------------------------------
           // compute the dependencies recursively, traversing the vertices 
@@ -424,25 +427,18 @@ module SSCA2_kernels
 
           const graph_diameter = current_distance - 1;
 
-          if here.id==0 {
-            if DEBUG_KERNEL4 then 
+          if DEBUG_KERNEL4 then 
+            if here.id==0 then
               writeln ( " graph diameter from starting node ", s, 
                         "  is ", graph_diameter );
-          }
 
           pragma "dont disable remote value forwarding"
-            inline proc f4(BCaux, Between_Cent$, u) {
-	    if useNativeAtomicReal then
+          inline proc f4(BCaux, Between_Cent$, u) {
             BCaux[u].depend = + reduce [v in BCaux[u].children_list.Row_Children[1..BCaux[u].children_list.child_count.read()]]
               ( BCaux[u].path_count$.read() / 
                 BCaux[v].path_count$.read() )      *
               ( 1.0 + BCaux[v].depend );
-	    else
-            BCaux[u].depend = + reduce [v in BCaux[u].children_list.Row_Children[1..BCaux[u].children_list.child_count.read()]]
-              ( BCaux[u].path_count$.readFF() / 
-                BCaux[v].path_count$.readFF() )      *
-              ( 1.0 + BCaux[v].depend );
-            Between_Cent$ (u) += BCaux[u].depend;
+            Between_Cent$(u).add(BCaux[u].depend);
           }
 
           // back up to last level
@@ -453,20 +449,13 @@ module SSCA2_kernels
 
             for u in curr_Level.Members do on vertex_domain.dist.idxToLocale(u) {
                 f4(BCaux, Between_Cent$, u);
-                /*
-              BCaux[u].depend = + reduce [v in BCaux[u].children_list.Row_Children[1..BCaux[u].children_list.child_count.read()]]
-                ( BCaux[u].path_count$.readFF() / 
-                  BCaux[v].path_count$.readFF() )      *
-                ( 1.0 + BCaux[v].depend );
-              Between_Cent$ (u) += BCaux[u].depend;
-                */
             }
 
             barrier.barrier();
           }
         }
 
-        lp.release_tid(tid);
+        TPVM.releaseTPV(tid);
 
       }; // closure of outer embarassingly parallel forall
 
@@ -476,39 +465,41 @@ module SSCA2_kernels
 	stopwatch.clear ();
 	writeln ( "Elapsed time for Kernel 4: ", K4_time, " seconds");
 
-	var n_edges          = + reduce [v in vertex_domain] G.n_Neighbors (v);
-	var N_VERTICES       = vertex_domain.numIndices;
-	var N_START_VERTICES = if starting_vertices == G.vertices
-			       then N_VERTICES
-				    - + reduce [v in vertex_domain]
-					       (G.n_Neighbors (v) == 0)
-			       else starting_vertices.numIndices;
-	var TEPS             = 7.0 * N_VERTICES * N_START_VERTICES / K4_time;
-	var Adjusted_TEPS    = n_edges * N_START_VERTICES / K4_time;
+	const n_edges          = G.num_edges;
+	const N_VERTICES       = vertex_domain.numIndices;
+	const N_START_VERTICES = if starting_vertices == G.vertices
+                                 then N_VERTICES
+                                      - + reduce [v in vertex_domain]
+                                        (G.n_Neighbors (v) == 0)
+                                 else starting_vertices.numIndices;
+	const TEPS             = 7.0 * N_VERTICES * N_START_VERTICES / K4_time;
+	const Adjusted_TEPS    = n_edges * N_START_VERTICES / K4_time;
 
 	writeln ( "                     TEPS: ", TEPS );
 	writeln ( " edge count adjusted TEPS: ", Adjusted_TEPS );
       }
 
       if VALIDATE_BC then
-	Sum_Min_Dist = Sum_Min_Dist$;
+        Sum_Min_Dist = Sum_Min_Dist$.read();
       
-      Between_Cent = Between_Cent$;
+      Between_Cent = Between_Cent$.read();
 
-      forall l in localePrivate do on l {
-          for i in l.r {
-            var al  => l.temps[i].Active_Level;
-            coforall loc in Locales do on loc {
-                var level = al[here.id];
-                while level != nil {
-                    var l2 = level.next;
-                    delete level;
-                    level = l2;
-                }
+      if DELETE_KERNEL4_DS {
+        coforall t in TPVSpace do on t {
+          var tpv = TPV[t];
+          delete tpv.barrier;
+          var al = tpv.Active_Level;
+          coforall loc in Locales do on loc {
+            var level = al[here.id];
+            while level != nil {
+                var l2 = level.next;
+                delete level;
+                level = l2;
             }
-            delete l.temps[i];
           }
-          delete l;
+          delete TPV[t];
+        }
+        delete TPVM;
       }
 
     } // end of Brandes' betweenness centrality calculation
@@ -542,7 +533,7 @@ module SSCA2_kernels
     type vertex;
     var nd: domain(1);
     var Row_Children: [nd] vertex;
-    var child_count: nativeAtomic(int);
+    var child_count: atomic int;
 
     // This function should only be called using unique vertices
     proc add_child ( new_child: vertex ) {
@@ -551,123 +542,117 @@ module SSCA2_kernels
     }
   }
 
+  //
+  // Implementation of task-private variables for kernel 4
+  //
   record taskPrivateArrayData {
     type vertex;
-    var min_distance  : nativeAtomic(int);
-    var path_count$   : if useNativeAtomicReal then nativeAtomic(real) else sync real;
+    var min_distance  : atomic_int64; // used only on home locale
+    var path_count$   : atomic real;
     var depend        : real;
     var children_list : child_struct(vertex);
   }
 
-  //
-  // Implementation of task-private variables for kernel 4
-  //
   class taskPrivateData {
     type Sparse_Vertex_List;
     const vertex_domain;
-    // This code assumes that chpl_taskID_t is an integral type
-    var tid   : nativeAtomic(int);
+    var used  : atomic bool;
     var BCaux : [vertex_domain] taskPrivateArrayData(index(vertex_domain));
+    var barrier = new Barrier(numLocales);
     var Active_Level : [PrivateSpace] Level_Set (Sparse_Vertex_List);
-    proc initialize() {
-      tid.write(chpl_nullTaskID:int);
+  }
+
+  // This is a simple class that hands out task private variables from the
+  // array of task private variables, TPV.
+  class TPVManager {
+    const TPV;
+    var currTPV: atomic int;
+    proc gettid() {
+      const tid = this.currTPV.fetchAdd(1)%numTPVs;
+      on this.TPV[tid] do
+        while this.TPV[tid].used.testAndSet() do chpl_task_yield();
+      return tid;
     }
-  };
-  inline proc =(a: chpl_taskID_t, b: chpl_taskID_t) return b;
-  inline proc !=(a: chpl_taskID_t, b: chpl_taskID_t) return __primitive("!=", a, b);
-  class localePrivateData {
-    const vertex_domain;
-    const numTasks = if dataParTasksPerLocale==0 then here.numCores
-      else dataParTasksPerLocale;
-    var r = {0..#numTasks};
-    var temps: [r] taskPrivateData(domain(index(vertex_domain)),
-                                   vertex_domain.type);
-    proc get_tid() {
-      extern proc chpl_task_getId(): chpl_taskID_t;
-      const mytid = chpl_task_getId():int;
-      var slot = mytid % numTasks;
-      while !temps[slot].tid.compareExchangeWeak(chpl_nullTaskID:int, mytid) {
-        slot = (slot+1)%numTasks;
-      }
-      return slot;
+    proc getTPV(tid) {
+      return this.TPV[tid];
     }
-    proc release_tid(slot) {
-      extern proc chpl_task_getId(): chpl_taskID_t;
-      const mytid = chpl_task_getId():int;
-      assert(temps[slot].tid.compareExchangeStrong(mytid, chpl_nullTaskID:int));
+    proc releaseTPV(tid) {
+      this.TPV[tid].used.clear();
     }
-    inline proc get_BCaux(tid) return temps[tid].BCaux;
-    inline proc get_Active_Level(tid) return temps[tid].Active_Level;
   }
 
   //
   // reusable barrier implementation
   //
-  record Barrier {
+  class Barrier {
     param reusable = true;
     var n: int;
-    var count: nativeAtomic(int);
-    var done: nativeAtomic(bool);
+    var count: atomic int;
+    var tasksFinished: [PrivateSpace] atomic bool;
 
     proc Barrier(_n: int) {
       reset(_n);
     }
-
+  
     inline proc reset(_n: int) {
       on this {
         n = _n;
         count.write(n);
-        done.write(false);
+        for loc in tasksFinished {
+          loc.write(false);
+        }
       }
     }
-
+  
     inline proc barrier() {
-      on this {
-        const myc = count.fetchSub(1);
-        if myc<=1 {
-          if done.testAndSet() then
-            halt("Too many callers to barrier()");
-          if reusable {
-            count.waitFor(n-1);
-            count.add(1);
-            done.clear();
-          }
-        } else {
-          done.waitFor(true);
-          if reusable {
-            count.add(1);
-            done.waitFor(false);
-          }
+      const myc = count.fetchSub(1);
+      if myc <= 1 {
+        if tasksFinished[here.id].read() {
+          halt("too many callers to barrier()");
+        } 
+        for loc in tasksFinished {
+          loc.write(true);
         }
-      }
-    }
-
-    inline proc notify() {
-      on this {
-        const myc = count.fetchSub(1);
-        if myc<=1 {
-          if done.testAndSet() then
-            halt("Too many callers to notify()");
-        }
-      }
-    }
-
-    inline proc wait() {
-      on this {
-        done.waitFor(true);
         if reusable {
-          const myc = count.fetchAdd(1);
-          if myc == n-1 then
-            done.clear();
-          done.waitFor(false);
+          count.waitFor(n-1);
+          count.add(1);
+          for loc in tasksFinished {
+            loc.clear();
+          }
+        }
+      } else {
+        tasksFinished[here.id].waitFor(true);
+        if reusable {
+          count.add(1);
+          tasksFinished[here.id].waitFor(false);
         }
       }
     }
-
+  
+    inline proc notify() {
+      const myc = count.fetchSub(1);
+      if myc <= 1 {
+        if tasksFinished[here.id].read() {
+          halt("too many callers to notify()");
+        }
+        for loc in tasksFinished {
+          loc.write(true);
+        }
+      }
+   }
+  
+    inline proc wait() {
+      tasksFinished[here.id].waitFor(true);
+      if reusable {
+        var sum = count.fetchAdd(1);
+        if sum == n-1 then tasksFinished.clear();
+        else tasksFinished[here.id].waitFor(false);
+      }
+    }
+  
     inline proc try() {
-      return done.read();
+      return tasksFinished[here.id].read();
     }
   }
-
 }
 

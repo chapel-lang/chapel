@@ -9,6 +9,7 @@ config param debugDefaultDistBulkTransfer = false;
 config param debugDataPar = false;
 
 config param defaultDoRADOpt = true;
+config param defaultDisableLazyRADOpt = false;
 
 class DefaultDist: BaseDist {
   proc dsiNewRectangularDom(param rank: int, type idxType, param stridable: bool)
@@ -377,6 +378,7 @@ record _remoteAccessData {
   var str: rank*chpl__signedType(idxType);
   var origin: idxType;
   var factoredOffs: idxType;
+  var data: _ddata(eltType);
 }
 
 //
@@ -388,7 +390,6 @@ class LocRADCache {
   type idxType;
   var targetLocDom: domain(rank);
   var RAD: [targetLocDom] _remoteAccessData(eltType, rank, idxType);
-  var ddata: [targetLocDom] _ddata(eltType);
 
   proc LocRADCache(type eltType, param rank: int, type idxType,
                    newTargetLocDom: domain(rank)) {
@@ -645,6 +646,7 @@ class DefaultRectangularArr: BaseArr {
     rad.str = str;
     rad.origin = origin;
     rad.factoredOffs = factoredOffs;
+    rad.data = data;
     return rad;
   }
 }
@@ -749,7 +751,6 @@ proc DefaultRectangularArr.doiBulkTransfer(B) {
     Blo(i) = Bdims(i).first;
 
   const len = dom.dsiNumIndices:int(32);
-  extern proc sizeof(type x): int(32);  // should be c_int or size_t or ...
   if debugBulkTransfer {
     const elemSize =sizeof(B._value.eltType);
     //writeln("In doiBulkTransfer(): Alo=", Alo);

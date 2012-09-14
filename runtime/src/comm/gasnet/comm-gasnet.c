@@ -241,7 +241,7 @@ static void AM_free(gasnet_token_t token, void* buf, size_t nbytes) {
 // this is currently unused; it's intended to be used to implement
 // exit_any with cleanup on all nodes. 
 static void AM_exit_any(gasnet_token_t token, void* buf, size_t nbytes) {
-  int **status = (int**)buf;
+//  int **status = (int**)buf; // Some compilers complain about unused variable 'status'.
   chpl_internal_error("clean exit_any is not implemented.");
   // here we basically need to call chpl_exit_all, but we need to
   // ensure only one thread calls chpl_exit_all on this locale.
@@ -324,7 +324,7 @@ static void chpl_comm_gasnet_set_max_segsize() {
 #endif
 
 void chpl_comm_init(int *argc_p, char ***argv_p) {
-  int status;
+//  int status; // Some compilers complain about unused variable 'status'.
 
   CHPL_COMM_GASNET_SETENV
 
@@ -583,6 +583,7 @@ static void exit_any_dirty(int status) {
   gasnet_exit(status);
 }
 
+#ifdef GASNET_NEEDS_EXIT_ANY_CLEAN
 // this is currently unused; it's intended to be used to implement
 // exit_any with cleanup on all nodes
 static void exit_any_clean(int status) {
@@ -599,6 +600,7 @@ static void exit_any_clean(int status) {
   // (for code reuse) ask this locale to perform a clean exit_any
   GASNET_Safe(gasnet_AMRequestMedium0(chpl_localeID, EXIT_ANY, &status_p, sizeof(status_p)));
 }
+#endif
 
 void chpl_comm_exit(int all, int status) {
   if (all) {

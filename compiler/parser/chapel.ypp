@@ -9,7 +9,6 @@
 //
 // The rules are listed in depth-first order from stmt and expr
 //
-
 %{
 
 #include <cstdio>
@@ -23,14 +22,18 @@
   int captureTokens;
   char captureString[1024];
 
-#define YYLLOC_DEFAULT(Current, Rhs, N)                             \
-  if (N) {                                                          \
-    (Current).first_line   = (Rhs)[1].first_line;                   \
-    if ((Current).first_line) yystartlineno = (Current).first_line; \
-    (Current).first_column = (Rhs)[1].first_column;                 \
-    (Current).last_line    = (Rhs)[N].last_line;                    \
-    (Current).last_column  = (Rhs)[N].last_column;                  \
-  } else (Current) = yylloc;
+ 
+#define YYLLOC_DEFAULT(Current, Rhs, N)                                 \
+  if (N) {                                                              \
+        (Current).first_line   = (Rhs)[1].first_line;                   \
+        if ((Current).first_line) yystartlineno = (Current).first_line; \
+        (Current).first_column = (Rhs)[1].first_column;                 \
+        (Current).last_line    = (Rhs)[N].last_line;                    \
+        (Current).last_column  = (Rhs)[N].last_column;                  \
+        (Current).comment = NULL;                                       \
+  } else  {                                                             \
+    (Current) = yylloc;                                                 \
+  }                                                                     \
 
 %}
 
@@ -347,17 +350,20 @@ type_select_stmt:
 
 class_decl_stmt:
   opt_extern class_tag ident opt_inherit TLCBR class_level_stmt_ls TRCBR
-    { $$ = buildChapelStmt(buildClassDefExpr($3, $2, $4, $6, $1)); }
+    { $$ = buildChapelStmt(buildClassDefExpr($3, $2, $4, $6, $1, @1.comment));
+      yylloc.comment = NULL; }
 ;
 
 opt_extern:
            { $$ = FLAG_UNKNOWN; }
-| TEXTERN  { $$ = FLAG_EXTERN; }
+| TEXTERN  { $$ = FLAG_EXTERN; @$.comment = yylloc.comment; yylloc.comment = NULL;}
 ;
 
 class_tag:
-  TCLASS   { $$ = new ClassType(CLASS_CLASS); }
-| TRECORD  { $$ = new ClassType(CLASS_RECORD); }
+  TCLASS   { $$ = new ClassType(CLASS_CLASS); @$.comment = yylloc.comment; 
+             yylloc.comment = NULL;}
+| TRECORD  { $$ = new ClassType(CLASS_RECORD); @$.comment = yylloc.comment; 
+             yylloc.comment = NULL;}
 | TUNION   { $$ = new ClassType(CLASS_UNION); }
 ;
 
@@ -442,11 +448,16 @@ lambda_decl_expr:
 // (for exports only) the cname of the function.
 linkage_spec:
                 { $$ = new FnSymbol(""); }
-| TINLINE       { $$ = new FnSymbol(""); $$->addFlag(FLAG_INLINE); }
-| TEXPORT       { $$ = new FnSymbol(""); $$->addFlag(FLAG_EXPORT); }
-| TEXPORT ident { $$ = new FnSymbol($2); $$->addFlag(FLAG_EXPORT); }
-| TEXTERN       { $$ = new FnSymbol(""); $$->addFlag(FLAG_EXTERN); }
-| TEXTERN ident { $$ = new FnSymbol($2); $$->addFlag(FLAG_EXTERN); }
+| TINLINE       { $$ = new FnSymbol(""); $$->addFlag(FLAG_INLINE); 
+                  @$.comment = yylloc.comment; yylloc.comment = NULL;}
+| TEXPORT       { $$ = new FnSymbol(""); $$->addFlag(FLAG_EXPORT);  
+                  @$.comment = yylloc.comment; yylloc.comment = NULL;}
+| TEXPORT ident { $$ = new FnSymbol($2); $$->addFlag(FLAG_EXPORT);  
+                  @$.comment = yylloc.comment; yylloc.comment = NULL;}
+| TEXTERN       { $$ = new FnSymbol(""); $$->addFlag(FLAG_EXTERN);  
+                  @$.comment = yylloc.comment; yylloc.comment = NULL;}
+| TEXTERN ident { $$ = new FnSymbol($2); $$->addFlag(FLAG_EXTERN);  
+                  @$.comment = yylloc.comment; yylloc.comment = NULL;}
 
 fn_decl_stmt:
   linkage_spec proc_or_iter
@@ -480,7 +491,8 @@ fn_decl_stmt:
         fn->addFlag(FLAG_ITERATOR_FN);
       }
 
-      $$ = buildFunctionDecl($4, $6, $7, $8, $9);
+      $$ = buildFunctionDecl($4, $6, $7, $8, $9, @1.comment);
+      yylloc.comment = NULL;
     }
 ;
 
@@ -638,10 +650,15 @@ opt_where_part:
 ;
 
 module_decl_stmt:
-  TMODULE ident TLCBR TRCBR
-    { $$ = buildChapelStmt(new DefExpr(buildModule($2, new BlockStmt(), yyfilename))); }
-| TMODULE ident TLCBR stmt_ls TRCBR
-    { $$ = buildChapelStmt(new DefExpr(buildModule($2, $4, yyfilename))); }
+  module ident TLCBR TRCBR
+    { $$ = buildChapelStmt(new DefExpr(buildModule($2, new BlockStmt(), yyfilename, @1.comment))); }
+| module ident TLCBR stmt_ls TRCBR
+    { $$ = buildChapelStmt(new DefExpr(buildModule($2, $4, yyfilename, @1.comment))); }
+;
+
+module:
+  TMODULE 
+  {@$.comment = yylloc.comment; yylloc.comment = NULL;}
 ;
 
 type_alias_decl_stmt:
@@ -680,22 +697,22 @@ opt_init_type:
 var_decl_stmt:
   opt_config TPARAM var_decl_stmt_inner_ls TSEMI
     {
-      $$ = buildVarDecls($3, $1, FLAG_PARAM);
+      $$ = buildVarDecls($3, $1, FLAG_PARAM, @1.comment);
     }
 | opt_config TCONST var_decl_stmt_inner_ls TSEMI
     {
-      $$ = buildVarDecls($3, $1, FLAG_CONST);
+      $$ = buildVarDecls($3, $1, FLAG_CONST, @1.comment);
     }
 | opt_config TVAR var_decl_stmt_inner_ls TSEMI
     {
-      $$ = buildVarDecls($3, $1, FLAG_UNKNOWN);
+      $$ = buildVarDecls($3, $1, FLAG_UNKNOWN, @1.comment);
     }
 ;
 
 opt_config:
-            { $$ = FLAG_UNKNOWN; }
-| TCONFIG   { $$ = FLAG_CONFIG; }
-| TEXTERN   { $$ = FLAG_EXTERN; }
+            { $$ = FLAG_UNKNOWN; @$.comment = yylloc.comment; yylloc.comment = NULL;}
+| TCONFIG   { $$ = FLAG_CONFIG; @$.comment = yylloc.comment; yylloc.comment = NULL;}
+| TEXTERN   { $$ = FLAG_EXTERN; @$.comment = yylloc.comment; yylloc.comment = NULL;}
 ;
  
 var_decl_stmt_inner_ls:

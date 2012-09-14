@@ -209,10 +209,13 @@ proc verifyResults(T) {
           T(myR & indexMask) ^= myR;
         }
         locks$(myR & lockIndexMask);
-     }
+      }
   else
-   forall (_, r) in (Updates, RAStream()) do
+    forall (_, r) in (Updates, RAStream()) do {
+      locks$(r & lockIndexMask) = true;
       T(r & indexMask) ^= r;
+      locks$(r & lockIndexMask);
+    }
 
   //
   // Print the table again after the updates have been reversed

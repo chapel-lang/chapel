@@ -7,10 +7,6 @@
 
 void
 removeEmptyRecords() {
-  // MPF - I was getting errors with this optimization causing
-  // test cases to fail in formal_to_actual with new I/O code.
-  return;
-
   if (fNoRemoveEmptyRecords)
     return;
 

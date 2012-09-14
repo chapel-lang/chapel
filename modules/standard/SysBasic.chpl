@@ -25,6 +25,9 @@ extern type fd_t = c_int;
 
 // NULL
 extern const c_nil:c_ptr;
+// To generate legal C prototypes, we have to manually instantiate this prototype
+// for each pointer type that might be associated with 'x'.
+pragma "no prototype"
 extern proc is_c_nil(x):c_int;
 
 // error numbers

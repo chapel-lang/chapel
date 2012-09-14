@@ -25,6 +25,18 @@ use DSIUtil;
 
 config param debugBlockCyclicDist = false; // internal development flag (debugging)
 
+proc _determineRankFromArg(startIdx) param {
+  return if isTuple(startIdx) then startIdx.size else 1;
+}
+
+proc _determineIdxTypeFromArg(startIdx) type {
+  return if isTuple(startIdx) then startIdx(1).type else startIdx.type;
+}
+
+proc _ensureTuple(arg) {
+  return if isTuple(arg) then arg else (arg,);
+}
+
 
 ////////////////////////////////////////////////////////////////////////////////
 // BlockCyclic Distribution Class
@@ -45,10 +57,17 @@ class BlockCyclic : BaseDist {
                    blocksize,     // nd*int
                    targetLocales: [] locale = Locales, 
                    tasksPerLocale = 0,
-                   param rank = startIdx.size,
-                   type idxType = startIdx(1).type) {
-    this.lowIdx = startIdx;
-    this.blocksize = blocksize;
+                   param rank: int = _determineRankFromArg(startIdx),
+                   type idxType = _determineIdxTypeFromArg(startIdx))
+  {
+    // argument sanity checks, with friendly error messages
+    if isTuple(startIdx) != isTuple(blocksize) then compilerError("when invoking BlockCyclic constructor, startIdx and blocksize must be either both tuples or both integers");
+    if isTuple(startIdx) && startIdx.size != blocksize.size then compilerError("when invoking BlockCyclic constructor and startIdx and blocksize are tuples, their sizes must match");
+    if !_isIntegralType(idxType) then compilerError("when invoking BlockCyclic constructor, startIdx must be an integer or a tuple of integers");
+    if !_isIntegralType(_determineIdxTypeFromArg(blocksize)) then compilerError("when invoking BlockCyclic constructor, blocksize must be an integer or a tuple of integers");
+
+    this.lowIdx = _ensureTuple(startIdx);
+    this.blocksize = _ensureTuple(blocksize);
     if rank == 1 {
       targetLocDom = {0..#targetLocales.numElements}; // 0-based for simplicity
       this.targetLocales = targetLocales;
