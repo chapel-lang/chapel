@@ -5,7 +5,7 @@ config const n = 4;
 config const o = 4;
 
 config const initialize = true;
-config const printOutput = false  ;
+config const printOutput = false;
 config const printTiming = false;
 
 const shift = (123, 456, 789);

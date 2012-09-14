@@ -109,7 +109,7 @@ writeln("Example 12: DR",D3," = BD",D5);
 for (a,i) in (H,{1..n*n}) do a=i;
 H[D3] = C[D5];
 for (a,b) in (H[D3],C[D5]) do if (a!=b) then writeln("ERROR!!!!");
-/*
+
 D3={1..n/2 ,1..n/4};
 D5={1..n/2,1..n/2 by 2};
 writeln();
@@ -117,4 +117,6 @@ writeln("Example 13: DR",D3," = BD",D5);
 for (a,i) in (H,{1..n*n}) do a=i;
 H[D3] = C[D5];
 for (a,b) in (H[D3],C[D5]) do if (a!=b) then writeln("ERROR!!!!");
-*/
+
+//writeln(" DR: ", H);
+//writeln(" BD: ", C);

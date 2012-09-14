@@ -1589,74 +1589,52 @@ proc  BlockArr.copyCtoB(B)
 
 proc BlockArr.doiBulkTransferStride(B)
 {
-  if debugDefaultDistBulkTransfer then writeln("In BlockArr.doiBulkTransferStride()");
+  if debugDefaultDistBulkTransfer then
+    writeln("In BlockArr.doiBulkTransferStride()");
+    
   coforall i in dom.dist.targetLocDom do // for all locales
     on dom.dist.targetLocales(i)
       {
-	var regionA = dom.locDoms(i).myBlock;
-	var ini=corr_direct(regionA.low,B._value,1);
-	var end=corr_direct(regionA.high,B._value,0);
-	var sb=B._value.dom.whole.stride;
-    
-	if rank ==1
-	  {
-	    var DomA: domain(rank,int,true);
-	    var r1: range(stridable = true);
-	    var r2: range(stridable = true);
-	    var r3: range(stridable = true);
-	    r1 = (ini[1]..end[1] by sb);
-
-	    DomA=r1; //Necessary to do the intersection
-    
-	    for j in  B._value.dom.dist.targetLocDom
-	    {
-	      var inters=DomA[B._value.dom.locDoms(j).myBlock];
-	      if(inters.numIndices>0 && regionA.numIndices>0)
-		{
-		  var ini_src=corr_inverse(inters.first,B._value,1);
-		  var end_src=corr_inverse(inters.last,B._value,0);
-		  var sa = dom.whole.stride;
-         
-		  r2 = (ini_src[1]..end_src[1] by sa);
-                  r3 = (inters.first..inters.last by inters.stride);
-                  if (dom.locDoms[i].myBlock.stridable || B._value.dom.locDoms[i].myBlock.stridable) then
-                    locArr[i].myElems[r2]._value.doiBulkTransferStride(B._value.locArr[j].myElems[r3],true,true);
-                  else
-                    locArr[i].myElems[r2]=B._value.locArr[j].myElems[r3];
-		}
-	    }
-	  }
-	else
-	  {
-	    var DomA: domain(rank,int,true);
-	    var r1: rank * range(stridable = true);
-	    var r2: rank * range(stridable = true);
-	    var r3: rank * range(stridable = true);
-	    for t in 1..rank do
-	      r1[t] = (ini[t]..end[t] by sb[t]); 
+        var sb,ini,end:rank*int(64);
+        var regionA = dom.locDoms(i).myBlock;
+        ini=corr_direct(regionA.low,B._value,1);//return tuple(rank * int)
+        end=corr_direct(regionA.high,B._value,0);//return tuple(rank * int)
+        if rank==1 then sb[1]=B._value.dom.whole.stride; //return one int
+        else sb=B._value.dom.whole.stride; //return a tuple 
         
-	    DomA=r1; //Necessary to make the intersection
+        var DomA: domain(rank,int,true);
+        var r1: rank * range(stridable = true);
+        var r2: rank * range(stridable = true);
+        var r3: rank * range(stridable = true);
+        for param t in 1..rank do
+          r1[t] = (ini[t]..end[t] by sb[t]); 
     
-	    for j in  B._value.dom.dist.targetLocDom
-	      {
-		var inters=DomA[B._value.dom.locDoms(j).myBlock];
-		if(inters.numIndices>0 && regionA.numIndices>0)
-		  {
-		    var ini_src=corr_inverse(inters.first,B._value,1);
-		    var end_src=corr_inverse(inters.last,B._value,0);
-		    var sa = dom.whole.stride;
-      
-		    for t in 1..rank {
-		      r2[t] = (ini_src[t]..end_src[t] by sa[t]);
-                      r3[t] = (inters.first[t]..inters.last[t] by inters.stride[t]);
-		    }
-		    if (dom.locDoms[i].myBlock.stridable || B._value.dom.locDoms[i].myBlock.stridable) then
-		      locArr[i].myElems[(...r2)]._value.doiBulkTransferStride(B._value.locArr[j].myElems[(...r3)],true,true);
-		    else
-		      locArr[i].myElems[(...r2)] = B._value.locArr[j].myElems[(...r3)];
-		  }
-	      }
-	  }
+        DomA=r1; //Necessary to make the intersection
+
+        for j in  B._value.dom.dist.targetLocDom
+          {
+            var inters:domain(rank,int,true);
+            inters=DomA[B._value.dom.locDoms(j).myBlock]; //return a domain
+            if(inters.numIndices>0 && regionA.numIndices>0)
+              {
+                var sa,ini_src,end_src:rank*int(64);
+                ini_src=corr_inverse(inters.first,B._value,1);//return tuple(rank * int)
+                end_src=corr_inverse(inters.last,B._value,0);//return tuple(rank * int)
+                if rank==1 then sa[1] = dom.whole.stride; //return one int
+                else sa = dom.whole.stride; //return a tuple
+  
+                //inters variable isn't a tuple, it's a domain, so ....
+                if rank ==1 then  r3[1] = (inters.first..inters.last by inters.stride);
+                else for param t in 1..rank do r3[t] = (inters.first[t]..inters.last[t] by inters.stride[t]);
+                
+                for param t in 1..rank do r2[t] = (ini_src[t]..end_src[t] by sa[t]);
+                
+                if (dom.locDoms[i].myBlock.stridable || B._value.dom.locDoms[i].myBlock.stridable) then
+                  locArr[i].myElems[(...r2)]._value.doiBulkTransferStride(B._value.locArr[j].myElems[(...r3)],true,true);
+                else
+                  locArr[i].myElems[(...r2)] = B._value.locArr[j].myElems[(...r3)];
+              }
+          }
       }
 }
 
