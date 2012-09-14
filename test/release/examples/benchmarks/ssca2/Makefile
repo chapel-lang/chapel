@@ -50,6 +50,7 @@ SRCS= \
 	$(MODDIR)/analyze_torus_graphs_stencil_rep_v1.chpl \
 	$(MODDIR)/analyze_torus_graphs_array_rep.chpl \
 	$(MODDIR)/array_rep_torus_graph_generator.chpl \
+	$(MODDIR)/io_RMAT_graph.chpl \
 	$(MODDIR)/torus_graph_generator_utilities.chpl
 
 TARGET= SSCA2_main
