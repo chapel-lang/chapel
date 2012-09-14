@@ -1,0 +1,321 @@
+GASNet-LAPI README file
+=======================
+Mike Welcome <mlwelcome@lbl.gov>
+$Revision: 1.13 $
+
+This is an implementation of the GASNet CORE and EXTENDED
+API using the IBM LAPI communication protocol.
+
+For more information about LAPI, see:
+
+"Scientific Applications in RS/6000 SP Environments" 
+section 3.5.  This is an IBM RedBook written by
+Marcelo Barrios and a cast of thousands.  
+ISBN: 0738415189
+IBM Form Number: SG24-5611-00
+
+===========================================================
+NOTE: See STATUS file for changes and work-arounds.
+===========================================================
+
+===========================================================
+GASNET LAPI Environment Variables:
+
+GASNET_LAPI_MODE=POLLING
+  This will set LAPI to run in POLLING mode.  In this mode
+  progress is made ONLY when calls to the LAPI library are
+  made.  Setting this environment variable may improve the
+  performance of highly synchronous, latency sensitive
+  applications.  It may cause serious performance problems
+  in more asynchronous application.
+
+GASNET_LAPI_MODE=INTERRUPT
+  This is the default mode.  In this mode, progress is
+  guaranteed by the existance of a LAPI-internal thread that
+  wakes up and services the network when new network packets
+  arrive.
+  
+GASNET_LAPI_VERSION={0|1}
+  If this environment variable is defined and non-zero, GASNet
+  will print various information about the LAPI version and 
+  hardware to stderr from task 0 at startup.
+
+GASNET_BARRIER=LAPIGFENCE
+  Enables LAPI_Gfence-based implementation of GASNet barriers.
+  Note this makes barrier_notify entirely blocking
+
+GASNET_BARRIER=LAPIAM
+  Enables centralized implementation of GASNet barriers, using LAPI-AMs
+
+GASNET_EXITTIMEOUT family of environment variables (see top-level README)
+
+===========================================================
+Known Bugs
+
+* In AM-heavy applications, it's possible for the
+LAPIGFENCE barrier algorithm to cause a deadlock, as under 
+some circumstances LAPI_Gfence can prevent other threads on 
+a node from initiating AM operations (eg AMReplys to messages
+sent by other nodes that have not yet reached the barrier).
+Consequently, the LAPIGFENCE barrier algorithm is no longer
+enabled by default, despite the fact it has been shown to 
+outperform the alternatives in some cases. If you wish to 
+try the faster-but-potentially-unsafe Gfence-based barrier,
+then set GASNET_BARRIER=LAPIGFENCE.
+
+===========================================================
+Memory Management
+
+GASNet will allocate the remote access memory segment using
+anonymous mmap, rather than malloc.  On the IBM SP, at least 
+for 32 bit applications, mmap and malloc calls are assigned 
+address space from distinct memory segments.  In 32 bit mode
+the AIX address space is divided into 16, 256MB segments.
+By default, a single 256MB segment is allocated to contain
+the stack, heap and program static data.  Other segments are
+dedicated to special purposes, such as program text, kernel
+address space, and shared library text and data.  10 segments 
+are available to the user for MMAP and system V shared memory
+regions.  If a 32 bit application requires a stack and/or heap
+that will exceed this 256MB limit, the application can be
+linked with the -bmaxstack and/or -bmaxdata options.
+For example, linking with the -bmaxstack:0x10000000 option
+will allocate a full 256MB segment for the stack alone and
+place the heap and static data in another segment, reducing
+the availalble MMAP space by one segment. Note that 0x10000000 
+is hex for 256MB.  
+Similarly, linking with -Bmaxdata=0x40000000 will reserve four 
+full 256MB segments for use by the heap.  The stack (and static
+data?) will be placed in another segment.  Doing this will
+reduce the number of segments available to MMAP and shared
+memory by 4 segments.  
+Unfortunately, these choices must be made at link time and
+not run-time.  Choosing poorly will cause the application to
+fail at run-time due to insufficient heap or mmap address space.
+
+Possibly the best way to avoid this issue is to compile
+the GASNet library and application in 64 bit mode under AIX.
+
+===============================================================
+The GASNet EXTENDED API is implemented directly over LAPI
+PUT, GET and Amsend calls.  It does not use the GASNet CORE
+AM calls.  It is advised that clients use the extended API
+whenever possible.  Note that this is the default and 
+one would have to modify the Makefile to build the extended
+API over the core.
+
+===========================================================
+Some Implementation details:
+
+The implementation of the GASNet CORE, uses LAPI_Amsend()
+active messages to implement the GASNet active messages.
+
+In a LAPI active message call, the user specifies the
+address of a (header) handler to run on the remote node,
+an argument (uhdr), of limited size, which will be passed to the
+handler, and an optional data payload.
+
+LAPI active message handlers on the target task are
+written in two pieces: a "header handler" and an
+(optional) "completion handler".  The header handler
+is executed by the LAPI dispatcher (progress engine)
+when the first packet of the message arrives.  
+When it executes, it is provided with a copy of the
+uhdr and the size of the data payload specified in
+the Amsend call.  The data payload, if specified,
+is not available at the point of this call.
+
+The header handler executes while holding a LAPI lock
+and thus cannot block (indefinately) or issue
+communication calls.  If the user send a data payload,
+the header handler must inform the LAPI dispatcher where
+to place the data as it arrives.  It does this through
+its (void*) return agument.  For example, it might
+malloc space for the data or return the address of a
+know buffer location.  If the handler needs to perform
+a blocking operation or communication, it must
+arrange for a "completion handler" to be run at a
+later time.  It does this by returning the address
+of this function in the (void** comp_h) argument.
+It can also specify an argument to this completion 
+handler in the (void** uinfo) argument.
+
+If the header handler specifies a completion handler, it
+will be run in a seperate "completion" thread created
+by the LAPI subsystem.  This handler will not run until
+all the data spcified in the payload has arrived on the
+target node.  The completion handler can execute 
+arbitrary code, including blocking calls and LAPI 
+communication calls.  
+
+Several Notes:
+
+(1) The LAPI dispatcher maintains a queue of ready
+    completion requests.  The completion thread removes
+    these requests and executes the given completion 
+    handlers with the arguments provided by the
+    header handler.  If there are no completion
+    requests to execute, the completion thread sleeps
+    on a condition variable.  The next time the dispatcher
+    issues a request, it signals the condition variable to
+    wake the completion thread.  The scheduling of a 
+    completion handler can add 40-60 usec of latency to
+    a LAPI active message.
+(2) The (uhdr) arguemnt passed to the header handler
+    cannot be arbirtairly large.  Its size is constrained
+    by the size of a network packet minus the size of
+    a LAPI implementation dependent header.  On the other
+    hand, it is around 800 bytes in length so if the 
+    payload is small enough, it can be packed into the
+    uhdr.  Doing so, for smaller messages may eliminate
+    the need for scheduling a completion handler and
+    thus reduce message latency.
+(3) The uhdr argument provided to the header handler
+    is not available to the completion handler.  Any
+    data that must be passed to the completion handler
+    (through the uinfo argument) must be copied to
+    memory space under the control of the application
+    or GASNet layer.
+(4) GASNet AM REQUEST calls will, in general, issue
+    a REPLY and thus cannot be executed from within
+    the LAPI header handler.  
+
+The implementation of GASNet AM REQUESTS is as follows:
+* gasnet tokens are implemented as follows:
+
+typedef struct {
+    gasnetc_flag_t       flags;
+    gasnet_handler_t     handlerId;
+    gasnet_node_t        sourceId;
+    uintptr_t            destLoc;
+    size_t               dataLen;
+    uintptr_t            uhdrLoc;    /* only used on AsyncLong messages */
+    gasnet_handlerarg_t  args[GASNETC_AM_MAX_ARGS];
+} gasnetc_msg_t;
+
+typedef struct gasnetc_token_rec {
+    struct gasnetc_token_rec  *next;
+    union {
+	char             pad[GASNETC_UHDR_SIZE];
+	gasnetc_msg_t    msg;
+    } buf;
+} gasnetc_token_t;
+
+  That is, there is space for various fields, such as the
+  handler index, flags, the source node ID and the handler
+  arguments.  The remaining space (via the union pad field)
+  is available for packed payload data.
+
+* All uhdr arguments are gasnet tokens.
+* For Medium and Large requests, if the data payload
+  will fit in the remaining uhdr space, then
+  it is copied there and a flag is set to inform the
+  remote header handler the payload is packed.
+  The data payload argument to LAPI_Amsend is set to NULL.
+
+* On the remote task, when the header handler executes,
+  if the message is SHORT, of if all the payload data
+  was packed into the uhdr, the client REQUEST handler
+  is ready to execute.  That is, no additional payload
+  data will arrive.  Client request handlers cannot 
+  execute in the header handler so it must either
+  be done in the completion handler or a client thread.
+  A new token is allocated, the uhdr data is copied
+  to this token and it is placed on a "ready" request
+  queue.
+  If the request is a medium or long message and the
+  payload data is not packed in the uhdr, a completion
+  handler is scheduled and the lapi dispatcher is
+  informed where to place the incoming payload data.
+  For medium messages, the space is allocated via malloc.
+  For large messages, the space is within the remote access
+  region and the location was specified by the remote
+  sender via the destLoc field in the token.  A new token
+  is allocated, the input token is copied to it.  The new
+  token is returned in the uinfo field which will appear
+  as the argument of the completion handler, when it executes.
+
+* Note that gasnet tokens, once allocated, are maintained
+  on a local free list for quick allocation in the future.
+
+* The tokens placed on the ready request queue are processed
+  either in the completion handler, or from within GASNET_AMPOLL
+  (by a client thread), whichever happens first.  In either case,
+  the token is removed from the queue and the specified GASNet
+  REQUEST handler is executed.  The token is then placed back
+  on the free list.
+
+* When client REQUEST handlers are executed, they have access 
+  to the token.
+  They pass this token to the REPLY active message.  The 
+  REPLY code re-used this token as a uhdr argument when it 
+  calls LAPI_Amsend() to implement the reply communication.
+
+GASNet REPLYs are implemented as follows:
+
+* Similar to the request calls, except that short, 
+  and medium and long replys that have the payload
+  packed into the uhdr can be executed directly from
+  within the LAPI header handler.  This is because
+  GASNet replies are restricted not to block or make
+  communication calls.
+
+* Replies with data payloads that are not packed into
+  the uhdr schedule a completion handler as above.
+
+===========================================================
+
+
+
+The LAPI-CONDUIT now exits without hanging on all gasnet testexit
+tests and when receiving a ^C from the keyboard, or other terminating
+signals.  The nice charactisterics are:
+
+(1) It exits quietly for collective exits in which each thread
+    calls gasnet_exit().  It returns the proper error code.
+
+(2) It exits quietly with code 0 if all threads simply return from
+    main without calling gasnet_exit().
+
+(3) It exits, possibly in a noisy manner, if gasnet_exit() is called
+    by one task while others are busy, possibly trying to communicate.
+    In these cases, it almost always returns with the requested 
+    error code.  See below.
+
+The implementation is a multi-staged approach:
+
+(1) gasnet_init() registers a SIGUSR1 handler (see below).
+(2) gasnet_init() registers an "atexit" handler that calls
+    gasnet_exit(0) for the case where the task returns from
+    main without doing so.  The atexit handler will only call
+    gasnet_exit() if it has not already been called.
+
+(3) gasnet_exit(exitcode):
+
+    * resets handlers for SIGQUIT, SIGTERM and SIGUSR1 to SIG_IGN.
+    * grabs exit lock to ensure only one thread enters.
+    * performs cleanup code
+    * registers a "failsafe" alarm handler to forcefully terminate the
+      task in the case where the the clean exit would hang.
+      The alarm handler sets the SIGQUIT handler to SIG_DFL and kills
+      itself with SIGQUIT.  This causes POE to propogate SIGTERMs to
+      the other tasks, causing them to call gasnet_exit if they have
+      not done so already.
+      The alarm is currently set to 5 seconds plus 0.05 per node.
+      This may be adjusted with the GASNET_EXITTIMEOUT* environment
+      variables.
+    * if "got_exit_signal" has not been set, then this task tries for
+      a clean exit.  it sets "got_exit_signal", then sends a LAPI
+      active message to all the other tasks in the job.
+      - The AM header handler registers a completion handler
+      - The AM completion handler sets got_exit_signal and raises SIGUSR1.
+      - The SIGUSR1 handler calls gasnet_exit() with the exit code
+        passed in the active message.
+      It then tries to exit cleanly, calling LAPI_Term(), etc.
+    * If "got_exit_signal" has been set upon enter to gasnet_exit, 
+      it just exits (after the cleanup).  It does not call LAPI_Term()
+      because this appears to hang in all cases I've seen.  It does not
+      seem to cause any harm to exit without calling LAPI_Term() in 
+      these cases.
+
+Yes... Its ugly but it seems to work!

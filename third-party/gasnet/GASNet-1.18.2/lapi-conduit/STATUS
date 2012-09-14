@@ -1,0 +1,90 @@
+lapi-conduit status
+===================
+$Revision: 1.9 $
+
+* * * 08/18/2004
+* This version does not yet take advantage of new LAPI functionality
+  with the exception of using LAPI_Msgpoll rather than LAPI_Probe
+  when on Federation hardware.
+
+* This version automatically detects (at configuration time) the
+  LAPI version number and whether Federation or Colony hardware is present.
+
+* This version implements a workaround for a flowcontrol bug present in early
+  LAPI/Federation systems.  The workaround requires the use of blocking calls
+  rather than polling calls when waiting on a counter value.  It also
+  effectively turns all non-blocking gasnet operations into blocking
+  operations to control the number of in-flight messages.  The workaround
+  is a bit extreem but the alternative renders the implementation 
+  nearly useless for any application that may issue multiple put
+  operations before a sync.
+  The problem was resolved by IBM in fileset rsct.lapi.rte version 2.3.2.0.
+  Run the 'lslpp -l | grep lapi' to get the current LAPI version.
+  Note that the problem was not observed on the older Colony based 
+  systems.
+==================================================================
+* * * 12/06/2002
+
+Complete:
+========
+* Working implementation of LAPI conduit, core and extended API.
+
+* Works with GASNET_PAR.  No point in using anything else
+  on SP since we need locking between client and LAPI threads anyhow.
+  Has been tested and appears to work with SEQ and PARSYNC.
+
+* optimizations for AM
+   - uhdr (token) buffer pool to reduce calls to malloc/free
+   - Execution of REPLY handler in LAPI header handler, when possible.
+   - Pack medium/large data into uhdr (token)
+   - re-use of tokens when executing replies in request handlers.
+   - Use of request queue for requests that have all  of their
+     data when the header handler runs.  These request tokens are
+     put on a queue.  AMPoll will attempt to drain this queue
+     after a call to probe.  these requests may also be executed
+     in the completion handler, whichever executes first.
+     This reduced latencies by 30-40 usec to 65 usec for some polling apps.
+   - Implemented a simple spinlock for queue management in token
+     freelist and request queue.
+
+* Loopback working
+
+* All GASNET_SEGMENT types (FAST, LARGE, EVERYTHING compile
+  and appear to work.
+
+* Extended API implemented without any CORE AM calls.  Only 
+  LAPI calls.
+
+* Can specify LAPI POLLING mode by defining environment variable:
+  GASNET_LAPI_MODE=POLLING (all upper case)
+
+ToDo List
+=========
+* BUGS:  Got a SEGV during a testlarge when using extended API over the 
+  GASNET CORE.  If set MAX_MEDIUM to 740 and run testlarge 5000, when
+  it attempts to get_nbi 5000 64K messages this requires to remote
+  task to send over 300000 medium replies.  We get a segv on the 
+  receiving task.  I can't tell if we are seeing a LAPI-conduit bug
+  of if we have over-run some internal LAPI limit.  If we up the
+  size of MAX_MEDIUM to a more reasonable 16K, the code runs without
+  problems.
+
+* Compile and test in 64 bit mode.
+  NOTE: Started this.  Must figure out how to tell the confirure
+  script how to add "-q64" to CFLAGS in Makefiles and how to
+  run the configure compile tests with -q64.  
+  Currently, I run configure, hand edit gasnet_config.h to define
+  the proper SIZEOF macros and edit the Makefiles to add the
+  -q64 option to CFLAGS and the '-X 32_64" option to the archive
+  commands (to create the libraries).
+  Got things to compile and run the test suite in 64 bit mode
+  using the LAPI extended API.  When trying to use the extended-ref
+  over the LAPI core, testcore either hung or hit an infinite loop.
+
+* CLEANUP of barrier code in extended api:
+  - remove extranious fields of barrier_uhdr structure
+  - time barrier calls and try a fat-tree based boradcast
+  - If master is waiting on barrier, don't schedule a completion
+    handler, let master issue Amsend calls to complete barrier.  
+    Do similar trick to AM request token queue?  Possibility of
+    using AIX atomic ops to signal these cases without locking?
