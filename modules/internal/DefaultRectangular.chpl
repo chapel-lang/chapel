@@ -811,9 +811,13 @@ Data needed to use strided copy of data:
 More info in: http://www.escholarship.org/uc/item/5hg5r5fs?display=all
 Proposal for Extending the UPC Memory Copy Library Functions and Supporting 
 Extensions to GASNet, Version 2.0. Author: Dan Bonachea 
+
+A.doiBulkTransferStride(B) copies B-->A.
 */
 
-proc DefaultRectangularArr.doiBulkTransferStride(B,aFromBD=false, bFromBD=false) {
+proc DefaultRectangularArr.doiBulkTransferStride(Barg,aFromBD=false, bFromBD=false) {
+  const A = this, B = Barg._value;
+
   if debugDefaultDistBulkTransfer then 
     writeln("In DefaultRectangularArr.doiBulkTransferStride ");
 
@@ -821,12 +825,12 @@ proc DefaultRectangularArr.doiBulkTransferStride(B,aFromBD=false, bFromBD=false)
   if debugBulkTransfer then
     writeln("In doiBulkTransferStride: ");
  
-  const Adims = dom.dsiDims();
+  const Adims = A.dom.dsiDims();
   var Alo: rank*dom.idxType;
   for param i in 1..rank do
     Alo(i) = Adims(i).first;
   
-  const Bdims = B.domain.dims();
+  const Bdims = B.dom.dsiDims();
   var Blo: rank*dom.idxType;
   for param i in 1..rank do
     Blo(i) = Bdims(i).first;
@@ -834,14 +838,12 @@ proc DefaultRectangularArr.doiBulkTransferStride(B,aFromBD=false, bFromBD=false)
   if debugDefaultDistBulkTransfer then
     writeln("\tlocal get() from ", B.locale.id);
   
-  var dstCompRank, srcCompRank:[1..rank] bool;
-  var stridelevels:int(32);
+  var dstCompRank = assertWholeDim(A), // [1..rank] bool
+      srcCompRank = assertWholeDim(B);
+  var stridelevels:int;
   
-  dstCompRank = assertWholeDim(this);
-  srcCompRank = assertWholeDim(B._value);
-
   /* If the stridelevels in source and destination arrays are different, we take the larger*/
-  stridelevels=max(getStrideLevels(dstCompRank),B._value.getStrideLevels(srcCompRank));
+  stridelevels=max(A.getStrideLevels(dstCompRank),B.getStrideLevels(srcCompRank));
   if debugDefaultDistBulkTransfer then 
     writeln("In DefaultRectangularArr.doiBulkTransferStride, stridelevels: ",stridelevels);
   
@@ -851,19 +853,19 @@ proc DefaultRectangularArr.doiBulkTransferStride(B,aFromBD=false, bFromBD=false)
   var dstAux:bool = false;
   var srcAux:bool = false;
   /* We now obtain the count arrays for source and destination arrays */
-    if (dom.dsiDim(rank).stride>1 && B._value.dom.dsiDim(rank).stride==1)
+    if (A.dom.dsiDim(rank).stride>1 && B.dom.dsiDim(rank).stride==1)
     {
       if stridelevels < rank then stridelevels+=1;
-     dstAux = true;
+      dstAux = true;
     }
-    else if (B._value.dom.dsiDim(rank).stride>1 && dom.dsiDim(rank).stride==1)
+    else if (B.dom.dsiDim(rank).stride>1 && A.dom.dsiDim(rank).stride==1)
     {
       if stridelevels < rank then stridelevels+=1;
       srcAux = true;
     }
   
-  dstCount= getCount(stridelevels,dstCompRank,dstAux);
-  srcCount= B._value.getCount(stridelevels,srcCompRank,srcAux);
+  dstCount= A.getCount(stridelevels,dstCompRank,dstAux);
+  srcCount= B.getCount(stridelevels,srcCompRank,srcAux);
   /*Then the Stride arrays for source and destination arrays*/
 
   var dstStride, srcStride: [1..rank] int(32);
@@ -886,16 +888,21 @@ proc DefaultRectangularArr.doiBulkTransferStride(B,aFromBD=false, bFromBD=false)
       }
   }
     
-  if (aFromBD && dom.stridable) then dstStride = getStride2(dstCompRank, dstCount,stridelevels);
+  if (aFromBD && A.dom.stridable) then dstStride = getStride2(dstCompRank, dstCount,stridelevels);
   else dstStride = getStride(dstCompRank,dstCount,stridelevels);
   
-  if (bFromBD && B._value.dom.stridable) then srcStride = B._value.getStride2(dstCompRank,dstCount,stridelevels);
-  else srcStride = B._value.getStride(srcCompRank,dstCount,stridelevels);
+  if (bFromBD && B.dom.stridable) then srcStride = B.getStride2(dstCompRank,dstCount,stridelevels);
+  else srcStride = B.getStride(srcCompRank,dstCount,stridelevels);
   
- doiBulkTransferStrideComm(B, stridelevels, dstStride, srcStride, dstCount, srcCount, Alo, Blo);
+ doiBulkTransferStrideComm(Barg, stridelevels, dstStride, srcStride, dstCount, srcCount, Alo, Blo);
 }
 
- proc DefaultRectangularArr.doiBulkTransferStrideComm(B, stridelevels, dstStride/*:(rank+1)*int(32)*/, srcStride/*:(rank+1)*int(32)*/, dstCount/*:(rank+1)*int(32)*/, srcCount/*:(rank+1)*int(32)*/, Alo, Blo)
+//
+// Invoke the primitives chpl_comm_gets/puts, depending on what locale
+// we are on vs. where the source and destination are.
+// The logic mimics that in doiBulkTransfer().
+//
+proc DefaultRectangularArr.doiBulkTransferStrideComm(B, stridelevels, dstStride, srcStride, dstCount, srcCount, Alo, Blo)
  { 
  //writeln("Locale: ", here.id, " stridelvl: ", stridelevels, " DstStride: ", dstStride," SrcStride: ",srcStride, " Count: ", dstCount, " dst.Blk: ",blk, " src.Blk: ",B._value.blk/*, " dom: ",dom.dsiDims()," B.blk: ",B._value.blk," B.dom: ",B._value.dom.dsiDims()*/);
   if this.data.locale==here // IF 1
@@ -1008,11 +1015,11 @@ proc DefaultRectangularArr.getStrideLevels(rankcomp):int(32) where rank == 1
 
 proc DefaultRectangularArr.getStrideLevels(rankcomp):int(32) where rank > 1 
 {
-  var stridelevels:int(32);
+  var stridelevels:int(32) = 0;
  
   if (dom.dsiStride(rank)>1 && dom.dsiDim(rank).length>1)||(blk(rank)>1 && dom.dsiDim(rank).length>1) then stridelevels+=1;
  
-  for i in 2..rank by -1{ //writeln("distance[",i,"]=",distance[i]);
+  for i in 2..rank by -1 {
     if (!rankcomp[i] && dom.dsiDim(i-1).length>1 && !distance(i)) then stridelevels+=1;
     else if(dom.dsiDim(i).length>1 && !distance(i)) then stridelevels+=1;
   }
@@ -1260,11 +1267,14 @@ proc DefaultRectangularArr.doiBulkTransferStride(Barg) where Barg._value.isBlock
 }
 
 //
-// bulkConvertCoordinate() produces a point
-// whose indexOrder in each dimension w.r.t. Aarr.domain
-// equals that of 'b' w.r.t. Barr.domain.
-// It was contributed by Juan Lopez and later improved by Alberto.
-// This function in the SBAC'12 paper is called m().
+// bulkConvertCoordinate() converts
+//   point 'b' within 'Barr.domain'
+// to
+//   point within 'Aarr.domain'
+// that has the same indexOrder in each dimension.
+//
+// This function was contributed by Juan Lopez and later improved by Alberto.
+// In the SBAC'12 paper it is called m().
 //
 proc bulkCommConvertCoordinate(b, Aarr, Barr)
 {
