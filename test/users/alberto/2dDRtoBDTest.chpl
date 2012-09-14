@@ -22,7 +22,6 @@ var H: [1..n,1..n] real(64);
 
 writeln(" DR defining in ",{1..n,1..n});
 writeln(" BD defining in ",{1..n,1..n});
-writeln(" NumLocales:", numLocales);
 writeln();
 C = 1..;
 H =500..;

@@ -1200,50 +1200,52 @@ proc DefaultRectangularArr.distance(x: int)
   return cont;
 }
 
-/*This function checks if the first 'tam' elements from array 'd2' are equal than array 'd1' 
-This is a pending question: this functions replaces the operator == due to it stopped working
-at some point. We will be grateful if anyone can shed light on this problem.
-*/
-proc DefaultRectangularArr.equal(d1:[]/*(rank+1)*int(32)*/,d2:[]/*(rank+1)*int(32)*/,tam: int(32))
+//
+// Check whether the first 'tam' elements in arrays 'd1' and 'd2' are equal.
+// This is better than 'd1==d2' because it does not result in a forall.
+// TODO: convert to 'for' for rank 1..5. (The caller must ensure that
+// d1 and d2 are always equal at indices tam+1..rank.)
+// Ideally, d1 and d2 will become tuples.
+//
+proc DefaultRectangularArr.equal(d1:[], d2:[], tam:int)
 {
-  var c:bool=true;
-  for i in 1..tam do if d1[i]!=d2[i]{ c=false;break;}
+  var c:bool = true;
+  for i in 1..tam do if d1[i]!=d2[i]{ c=false; break; }
   return c;
 }
 
-
-/*This function assigns the first 'tam' elements from array 'd2' to array 'd1' 
-This is a pending question: this functions replaces the operator = due to it stopped working
-at some point. We will be grateful if anyone can shed light on this problem.
-*/
-proc DefaultRectangularArr.assig(d1:[]/*(rank+1)*int(32)*/,d2:[]/*(rank+1)*int(32)*/,tam: int(32))
+//
+// Assign the first 'tam' elements from array 'd2' to array 'd1'.
+// This is better than 'd1=d2' because it does not result in a forall.
+// TODO: convert to 'for' for rank 1..5.
+// Ideally, d1 and d2 will become tuples.
+//
+proc DefaultRectangularArr.assig(d1:[], d2:[], tam: int)
 {
   for i in 1..tam do d1[i]=d2[i];
 }
 
-proc DefaultRectangularArr.doiBulkTransferStride(B) where B._value.isBlockDist()
+// Work around the tuple(1) vs. scalar issue.
+proc DefaultRectangularArr.tuplify(arg) {
+  if isTuple(arg) then return arg; else return tuple(arg);
+}
+
+proc DefaultRectangularArr.doiBulkTransferStride(Barg) where Barg._value.isBlockDist()
 {
+  const A = this, B = Barg._value;
+
   if debugDefaultDistBulkTransfer then 
     writeln("In DefaultRectangularArr.doiBulkTransferStride where B._value.isBlockDist() ");
   var r2: rank * range(stridable = true);
-  for j in B._value.dom.dist.targetLocDom
+  for j in B.dom.dist.targetLocDom
   {
-    var inters=B._value.dom.locDoms[j].myBlock;
+    var inters=B.dom.locDoms[j].myBlock;
     if(inters.numIndices>0 && dom.dsiNumIndices >0)
     {
       var sa,ini_src,end_src:rank*int(64);
-      if rank==1
-      {
-        ini_src[1]=corr_inverse(inters.first,B._value,1);
-        end_src[1]=corr_inverse(inters.last,B._value,0);
-        sa[1] =dom.dsiStride;
-      }
-      else
-      {
-        ini_src=corr_inverse(inters.first,B._value,1);
-        end_src=corr_inverse(inters.last,B._value,0);
-        sa =dom.dsiStride;
-      }
+      ini_src = bulkCommConvertCoordinate(inters.first, A, B);
+      end_src = bulkCommConvertCoordinate(inters.last, A, B);
+      sa = tuplify(A.dom.dsiStride);
       
       for param t in 1..rank do
         r2[t] = (ini_src[t]..end_src[t] by sa[t]);
@@ -1251,45 +1253,32 @@ proc DefaultRectangularArr.doiBulkTransferStride(B) where B._value.isBlockDist()
       const d2 ={(...r2)};
       const slice2 = this.dsiSlice(d2._value);
 
-      slice2.doiBulkTransferStride(B._value.locArr[j].myElems,false,true);
+      slice2.doiBulkTransferStride(B.locArr[j].myElems,false,true);
       delete slice2;
     }
   }
 }
 
-//corr_inverse() computes the low and high values of the ranges of the destination subdomain from 
-//the low and high values of the source subdomain and low values of the source whole domain.
-//When computing the low bounds, parameter low has to be =1 to account for unaligned low values.
-//It was contributed by Juan Lopez and later improved by Alberto.
-
-proc DefaultRectangularArr.corr_inverse (b,B,low) where rank ==1
+//
+// bulkConvertCoordinate() produces a point
+// whose indexOrder in each dimension w.r.t. Aarr.domain
+// equals that of 'b' w.r.t. Barr.domain.
+// It was contributed by Juan Lopez and later improved by Alberto.
+// This function in the SBAC'12 paper is called m().
+//
+proc bulkCommConvertCoordinate(b, Aarr, Barr)
 {
-  //It finds out the initial domain coordinate and strides of destination Domain (of A)
-  var la=dom.ranges(1).low;
-  var sa=dom.dsiStride;
-  var lb=B.dom.whole.low;
-  var sb=B.dom.whole.stride;
-
-  var a=la+((b-lb)/sb)*sa;
-  if low==1 then
-    if(b-lb)%sb>0 then a=a+sa;
-    
-  return a;
-}
-
-proc DefaultRectangularArr.corr_inverse (b,B,low) where rank > 1
-{
-  //It finds out the initial domain coordinate and strides of destination Domain (of A)
-  var la: rank*int;
-  for param i in 1..rank do
-    la[i]=dom.ranges(i).low;
-  
-  var sa=dom.dsiStride;
-  var lb=B.dom.whole.low;
-  var sb=B.dom.whole.stride;
-  var a: rank * int; 
-  for param i in 1..rank do a[i]=la[i]+((b[i]-lb[i])/sb[i])*sa(i);
-  return a;
+  compilerAssert(Aarr.rank == Barr.rank);
+  param rank = Aarr.rank;
+  const AD = Aarr.dom.dsiDims();
+  const BD = Barr.dom.dsiDims();
+  var result: rank * int; 
+  for param i in 1..rank {
+    const ar = AD(i), br = BD(i);
+    if boundsChecking then assert(br.member(b(i)));
+    result(i) = ar.orderToIndex(br.indexOrder(b(i)));
+  }
+  return result;
 }
 
 }
