@@ -124,7 +124,7 @@ forall i in Nodes do local {
 
 if debug {
   writeln("locations are:");
-  for (locX,locY,locZ) in (x,y,z) do
+  for (locX,locY,locZ) in zip(x,y,z) do
     writeln((locX, locY, locZ));
 }
 
@@ -823,7 +823,7 @@ proc CalcCourantConstraintForElems() {
   var courant_elem: index(Elems);
 
   const (val, loc) = minloc reduce
-                       ([indx in MatElems] computeDTF(indx),
+                       zip([indx in MatElems] computeDTF(indx),
                         MatElems);
 
   if (val == max(real)) {
@@ -839,7 +839,7 @@ proc CalcHydroConstraintForElems() {
   var dthydro_elem: index(Elems);
 
   const (val, loc) = minloc reduce 
-                       ([indx in MatElems] 
+                       zip([indx in MatElems] 
                           (if vdov[indx] == 0.0 
                              then max(real)
                              else dvovmax / (abs(vdov[indx])+1.0e-20)),
@@ -1564,7 +1564,7 @@ iter elemToNodes(i: index(Elems)) {
 }
 
 iter elemToNodesTuple(i: index(Elems)) {
-  for (node,num) in (elemToNodes(i), 1..8) do
+  for (node,num) in zip(elemToNodes(i), 1..8) do
     yield (node, num);
 }
 

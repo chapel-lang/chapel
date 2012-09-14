@@ -258,7 +258,7 @@ proc panelSolve(Ab: [] ?t,
     if col.dim(1).length == 0 then return;
     
     // Find the pivot, the element with the largest absolute value.
-    const (_, (pivotRow, _)) = maxloc reduce(abs(Ab(col)), col),
+    const (_, (pivotRow, _)) = maxloc reduce zip(abs(Ab(col)), col),
           pivot = Ab[pivotRow, k];
     
     // Swap the current row with the pivot row

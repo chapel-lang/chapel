@@ -157,7 +157,7 @@ iter generateBlockLURanges(D:domain(2), blksize) {
 
 iter MMIterator(D1, D2) {
   for j in D2.dim(2) do
-    for (k1, k2) in (D1.dim(2), D2.dim(1)) do
+    for (k1, k2) in zip(D1.dim(2), D2.dim(1)) do
       for i in D1.dim(1) do
         yield (i,j,k1,k2);
 }
@@ -169,7 +169,7 @@ iter MMIterator(D1, D2) {
 // underscore operator, and returning the row of the resulting index.
 
 proc computePivotRow(A:[?D]) {
-   const (_, ind) = maxloc reduce (abs(A), D);
+   const (_, ind) = maxloc reduce zip(abs(A), D);
    return ind(1);
 }
 

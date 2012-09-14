@@ -11,7 +11,7 @@ proc test(d) {
     if e != 0 then
       OK = false;
   if !OK then writeln("  error in first loop");
-  for (ix,e) in (d,a) do
+  for (ix,e) in zip(d,a) do
     if e != 0 then
       writeln("  error in second loop: a", ix, " = ", e);
 }

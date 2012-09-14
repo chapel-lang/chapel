@@ -37,7 +37,7 @@ proc main() {
         delete H;
     }
 
-    for (f,d) in (fcn,dfcn) {
+    for (f,d) in zip(fcn,dfcn) {
       delete f;
       delete d;
     }

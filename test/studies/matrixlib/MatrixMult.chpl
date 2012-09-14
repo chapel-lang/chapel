@@ -11,7 +11,7 @@ proc *(A:[?D1],B:[?D2]) {
 
   iter MMIterator(D1,D2) {
     for j in D2.dim(2) do 
-      for (k1,k2) in (D1.dim(2),D2.dim(1)) do 
+      for (k1,k2) in zip(D1.dim(2),D2.dim(1)) do 
         for i in D1.dim(1) do 
           yield (i,j,k1,k2);
   }

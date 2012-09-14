@@ -12,5 +12,5 @@ iter i2() {
   yield 1;
 }
 
-for ij in ((i1(), i2()), i1()) do
+for ij in zip((i1(), i2()), i1()) do
   writeln(ij);

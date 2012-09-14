@@ -269,7 +269,7 @@ f(s1, s2, ..., a1, a2, ...)
 \end{chapel}
 is equivalent to
 \begin{chapel}
-[(e1, e2, ...) in (s1, s2, ...)] f(e1, e2, ..., a1, a2, ...)
+[(e1, e2, ...) in zip(s1, s2, ...)] f(e1, e2, ..., a1, a2, ...)
 \end{chapel}
 The usual constraints of zipper iteration apply to zipper promotion so
 the promoted actuals must have the same shape.
@@ -304,7 +304,7 @@ LHS = RHS;
 \end{chapel}
 is equivalent to
 \begin{chapel}
-forall (e1,e2) in (LHS,RHS) do
+forall (e1,e2) in zip(LHS,RHS) do
   e1 = e2;
 \end{chapel}
 
@@ -418,8 +418,8 @@ var A: [D] int = [i in D] i % 7;
 proc foo(x) return x % 7;
 \end{chapelnoprint}
 \begin{chapel}
-var (minA, minALoc) = minloc reduce (A, A.domain); 
-var (maxVal, maxValNum) = maxloc reduce ([i in 1..n] foo(i), 1..n);
+var (minA, minALoc) = minloc reduce zip(A, A.domain); 
+var (maxVal, maxValNum) = maxloc reduce zip([i in 1..n] foo(i), 1..n);
 \end{chapel}
 \begin{chapelnoprint}
 writeln((minA, minALoc));

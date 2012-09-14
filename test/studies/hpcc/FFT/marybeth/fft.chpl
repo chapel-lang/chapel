@@ -113,7 +113,7 @@ proc dfft(A, W) {
     m = 4*span;
     m2 = 2*m;
     if (m2 > numElements) then break;
-    forall (k,k1) in (0..#numElements by m2,0..) {
+    forall (k,k1) in zip(0..#numElements by m2,0..) {
       var wk2 = W[k1];
       var wk1 = W[2*k1];
       var wk3 = (wk1.re - 2 * wk2.im * wk1.im,

@@ -1262,7 +1262,7 @@ proc BlockArr.doiBulkTransfer(B) {
   // Use zippered iteration to piggyback data movement with the remote
   //  fork.  This avoids remote gets for each access to locArr[i] and
   //  B._value.locArr[i]
-  coforall (i, myLocArr, BmyLocArr) in (dom.dist.targetLocDom,
+  coforall (i, myLocArr, BmyLocArr) in zip(dom.dist.targetLocDom,
                                         locArr,
                                         B._value.locArr) do
     on dom.dist.targetLocales(i) {

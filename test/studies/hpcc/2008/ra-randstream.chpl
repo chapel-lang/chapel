@@ -34,7 +34,7 @@ module RARandomStream {
   //
   iter RAStream(param tag: iterKind, followThis) where tag == iterKind.follower {
     var val = getNthRandom(followThis(1).low);
-    for followThis {
+    for zip((...followThis)) {
       getNextRandom(val);
       yield val;
     }

@@ -18,7 +18,7 @@ randStr1.fillRandom(A);
 for b in B do
   b = randStr2.getNext();
 
-for (i,a,b) in (ProblemSpace,A,B) {
+for (i,a,b) in zip(ProblemSpace,A,B) {
   if (a != b) then
     writeln("mismatch at #", format("#####", i), ": ", a, " != ", b);
   else

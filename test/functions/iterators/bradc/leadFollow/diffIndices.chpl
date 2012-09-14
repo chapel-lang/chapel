@@ -6,14 +6,14 @@ var B: [D2] real = [i in D2] i;
 
 writeln("B is: ", B);
 
-forall (a,b) in (A,B) do
+forall (a,b) in zip(A,B) do
   a = b;
 
 writeln("A is: ", A);
 
 B = 0;
 
-forall (b,a) in (B,A) do
+forall (b,a) in zip(B,A) do
   b = -a;
 
 writeln("B is: ", B);

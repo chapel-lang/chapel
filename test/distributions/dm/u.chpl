@@ -134,18 +134,18 @@ proc doShowArr(dmdom, dmarr, dmhelp) {
   //dmarr.writeThis(stdout); writeln(); -- works by chance
 
   hhd("dmdom, dmarr - zippered iteration");
-  forall (ix,elm) in (dmdom,dmarr) do
+  forall (ix,elm) in zip(dmdom,dmarr) do
     msg(" ", ix, " ", elm, "  eon ", elm.locale.id, "  on ", here.id);
   tl();
 
   hhd("dmarr, dmdom - zippered iteration");
-  forall (elm,ix) in (dmarr,dmdom) do
+  forall (elm,ix) in zip(dmarr,dmdom) do
     msg(" ", ix, " ", elm, "  eon ", elm.locale.id, "  on ", here.id);
   tl();
 
   hhd("dmarr, dmhelp - zippered iteration");
   resetDmhelp(dmhelp);
-  forall (elm,hlp) in (dmarr,dmhelp) do
+  forall (elm,hlp) in zip(dmarr,dmhelp) do
     msg(" ", elm, " ", hlp, "  on ", here.id);
   tl();
 }
@@ -154,7 +154,7 @@ proc resetDmhelp(dmhelp: []) {
   if dmhelp.rank != 2 then
     compilerError("resetDmhelp is implemented only for 2-d arrays");
 
-  for (ix, elm) in (dmhelp.domain, dmhelp) do
+  for (ix, elm) in zip(dmhelp.domain, dmhelp) do
     elm = ix(1)*100 + ix(2);
 }
 

@@ -16,7 +16,7 @@ class C {
   var A: [D] LocC(idxType);
 
   proc initialize() {
-    for (loc, locid) in (targetLocs, 0..) do
+    for (loc, locid) in zip(targetLocs, 0..) do
       on loc do
         A(loc) = new LocC(idxType);
   }

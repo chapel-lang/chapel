@@ -91,10 +91,10 @@ proc main() {
   Z = conjg(z);                        // store the conjugate of z in Z
   bitReverseShuffle(Z);                // permute Z
   dfft(Z, Twiddles, 0);   // compute the Fourier transform block phase
-  forall (b, c) in (Z, Zcyc) do
+  forall (b, c) in zip(Z, Zcyc) do
     c = b;
   dfft(Zcyc, Twiddles, 1); // compute the Fourier transform cyclic phase
-  forall (b, c) in (Z, Zcyc) do
+  forall (b, c) in zip(Z, Zcyc) do
     b = c;
 
   const execTime = getCurrentTime() - startTime;     // store the elapsed time
@@ -120,7 +120,7 @@ proc dfft(A: [?ADom], W, phase) {
     // shared twiddle factors, zippering with the unbounded range
     // 0.. to get the base twiddle indices
     //
-    forall (bankStart, twidIndex) in (ADom by 2*span, 0..) {
+    forall (bankStart, twidIndex) in zip(ADom by 2*span, 0..) {
       //
       // compute the first set of multipliers for the low bank
       //
@@ -207,10 +207,10 @@ proc butterfly(wk1, wk2, wk3, X:[0..3]) {
 
 proc butterfly(wk1, wk2, wk3, A, rng) {
   var X: [0..#radix] elemType;
-  for (x,r) in (X, rng) do
+  for (x,r) in zip(X, rng) do
     x = A(r);
   butterfly(wk1, wk2, wk3, X);
-  for (x,r) in (X, rng) do
+  for (x,r) in zip(X, rng) do
     A(r) = x;
 }
 
@@ -317,10 +317,10 @@ proc verifyResults(z, Z, Cyc, Twiddles) {
   Z = conjg(Z) / m;
   bitReverseShuffle(Z);
   dfft(Z, Twiddles, 0);
-  forall (b, c) in (Z, Cyc) do
+  forall (b, c) in zip(Z, Cyc) do
     c = b;
   dfft(Cyc, Twiddles, 1);
-  forall (b, c) in (Z, Cyc) do
+  forall (b, c) in zip(Z, Cyc) do
     b = c;
 
   if (printArrays) then writeln("After inverse FFT, Z is: ", Z, "\n");

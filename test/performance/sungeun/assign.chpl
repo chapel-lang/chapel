@@ -26,7 +26,7 @@ if printTiming then
 if initialize then
   fillRandom(B, 31415);
 st = getCurrentTime();
-for (a,b) in (A,B) do
+for (a,b) in zip(A,B) do
   a = b;
 dt = getCurrentTime()-st;
 if printOutput then
@@ -73,7 +73,7 @@ if printTiming then
 if initialize then
   fillRandom(B, 31415);
 st = getCurrentTime();
-forall (a,b) in (A,B) do
+forall (a,b) in zip(A,B) do
   a = b;
 dt = getCurrentTime()-st;
 if printOutput then

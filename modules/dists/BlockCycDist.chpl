@@ -80,7 +80,7 @@ class BlockCyclic : BaseDist {
       for param i in 1..rank do
         ranges(i) = 0..factors(i)-1;
       targetLocDom = {(...ranges)};
-      for (loc1, loc2) in (this.targetLocales, targetLocales) do
+      for (loc1, loc2) in zip(this.targetLocales, targetLocales) do
         loc1 = loc2;
       if debugBlockCyclicDist {
         writeln(targetLocDom);

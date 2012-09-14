@@ -267,7 +267,7 @@ class DefaultAssociativeDom: BaseAssociativeDom {
   iter dsiSorted() {
     var tableCopy: [0..#numEntries.read()] idxType;
 
-    for (tmp, slot) in (tableCopy.domain, _fullSlots()) do
+    for (tmp, slot) in zip(tableCopy.domain, _fullSlots()) do
       tableCopy(tmp) = table(slot).idx;
 
     QuickSort(tableCopy);
@@ -437,7 +437,7 @@ class DefaultAssociativeArr: BaseArr {
 
   iter dsiSorted() {
     var tableCopy: [0..dom.dsiNumIndices-1] eltType;
-    for (copy, slot) in (tableCopy.domain, dom._fullSlots()) do
+    for (copy, slot) in zip(tableCopy.domain, dom._fullSlots()) do
       tableCopy(copy) = data(slot);
 
     QuickSort(tableCopy);

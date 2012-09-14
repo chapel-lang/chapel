@@ -29,7 +29,7 @@ proc test(d) {
   }
 
   hd("storage");
-  for (ix, locDdesc) in (d._value.dist.targetIds, d._value.localDdescs) do
+  for (ix, locDdesc) in zip(d._value.dist.targetIds, d._value.localDdescs) do
     msg(" ", ix, "   ", locDdesc.myStorageDom);
   tl();
 
@@ -66,11 +66,11 @@ proc test(d) {
   tl();
 
   hd("zippered iterator over (domain, array)");
-  forall (ix,a) in (d,a) do msg(ix, "  ", a);
+  forall (ix,a) in zip(d,a) do msg(ix, "  ", a);
   tl();
 
   hd("zippered iterator over (array, domain)");
-  forall (a,ix) in (a,d) do msg(ix, "  ", a);
+  forall (a,ix) in zip(a,d) do msg(ix, "  ", a);
   tl();
 
 } // test()

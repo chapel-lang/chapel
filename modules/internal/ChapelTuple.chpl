@@ -93,6 +93,69 @@ proc _tuple.this(i : integral) var {
 }
 
 //
+// iterator support for tuples
+//
+iter _tuple.these() {
+
+  compilerError("Iteration over tuples is not supported.");
+
+  // johnk: This is just a draft.
+  // At the time of writting only homogeneous tuple iteration was supported
+  // and it was decided to not permit tuple iteration at all.  Rather than 
+  // remove this code, it was left in to save reimplementation.
+  for i in 1..this.size {
+    yield(this(i));
+  }
+}
+
+iter _tuple.these(param tag:iterKind) 
+    where tag == iterKind.leader 
+{
+  
+  compilerError("Iteration over tuples is not supported.");
+
+  // johnk: This is just a draft.
+  // At the time of writting only homogeneous tuple iteration was supported
+  // and it was decided to not permit tuple iteration at all.  Rather than 
+  // remove this code, it was left in to save reimplementation.
+  const maxTasks = dataParTasksPerLocale;
+  const ignoreRunning = dataParIgnoreRunningTasks;
+  const minSize = dataParMinGranularity;
+  const chunks = _computeNumChunks(maxTasks, ignoreRunning, minSize, this.size);
+  const chunkSize = this.size;
+
+  if chunks == 0 {
+    yield 1..this.size;
+  } else {
+
+    const chunkSize = this.size / chunks;
+    const spill = if this.size % chunks then 1 else 0;
+
+    coforall i in 1..(chunks+spill) {
+      var low = ((i - 1) * chunkSize) + 1;
+      var high = low + chunkSize - 1;
+   
+      //Upper bound
+      if high > this.size then high = this.size;
+
+      yield(low..high);
+    }
+  }
+}
+
+iter _tuple.these(param tag:iterKind, followThis)
+    where tag == iterKind.follower
+{
+  compilerError("Iteration over tuples is not supported.");
+  
+  // johnk: This is just a draft.
+  // At the time of writting only homogeneous tuple iteration was supported
+  // and it was decided to no permit tuple iteration.  Rather than remove
+  // this code, it was left in to save reimplementation.
+  for i in followThis do yield(this(i));;
+}
+
+//
 // tuple methods
 //
 proc _tuple.readWriteThis(f) {

@@ -16,6 +16,6 @@ A[3] = 3.4;
 B[1] = 5.6;
 writelnSortedByDom(A);
 writelnSortedByDom(B);
-for (a, b) in (A, B) do b = a;
+for (a, b) in zip(A, B) do b = a;
 writelnSorted(B); // can't write sorted by domain because we can't anticipate
                   // the order that B's elements will be in

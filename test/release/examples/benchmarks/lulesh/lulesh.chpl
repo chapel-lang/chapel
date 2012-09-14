@@ -117,11 +117,11 @@ var x, y, z: [Nodes] real; //coordinates
 
 /* Read input coordinates */
 
-for (locX,locY,locZ) in (x,y,z) do reader.read(locX, locY, locZ);
+for (locX,locY,locZ) in zip(x,y,z) do reader.read(locX, locY, locZ);
 
 if debug {
   writeln("locations are:");
-  for (locX,locY,locZ) in (x,y,z) do
+  for (locX,locY,locZ) in zip(x,y,z) do
     writeln((locX, locY, locZ));
 }
 
@@ -156,12 +156,12 @@ if debugIO {
 
 var lxim, lxip, letam, letap, lzetam, lzetap: [Elems] index(Elems);
 
-for (xm,xp,em,ep,zm,zp) in (lxim, lxip, letam, letap, lzetam, lzetap) do
+for (xm,xp,em,ep,zm,zp) in zip(lxim, lxip, letam, letap, lzetam, lzetap) do
   reader.read(xm,xp,em,ep,zm,zp);
 
 if debugIO {
   writeln("greek stuff:");
-  for (xm,xp,em,ep,zm,zp) in (lxim, lxip, letam, letap, lzetam, lzetap) do
+  for (xm,xp,em,ep,zm,zp) in zip(lxim, lxip, letam, letap, lzetam, lzetap) do
     writeln((xm,xp,em,ep,zm,zp));
 }
 
@@ -416,7 +416,7 @@ proc setupBoundaryConditions() {
   // all three SYMM flags set, which will have the largest
   // integral value.  Thus, we can use a maxloc to identify it.
   //
-  var (check, loc) = maxloc reduce (elemBC, Elems);
+  var (check, loc) = maxloc reduce zip(elemBC, Elems);
 
   if debug then writeln("Found the octant corner at: ", loc);
 
@@ -917,7 +917,7 @@ proc CalcCourantConstraintForElems() {
   var courant_elem: index(Elems);
 
   const (val, loc) = minloc reduce
-                       ([indx in MatElems] computeDTF(indx),
+                       zip([indx in MatElems] computeDTF(indx),
                         MatElems);
 
   if (val == max(real)) {
@@ -933,7 +933,7 @@ proc CalcHydroConstraintForElems() {
   var dthydro_elem: index(Elems);
 
   const (val, loc) = minloc reduce 
-                       ([indx in MatElems] 
+                       zip([indx in MatElems] 
                           (if vdov[indx] == 0.0 
                              then max(real)
                              else dvovmax / (abs(vdov[indx])+1.0e-20)),

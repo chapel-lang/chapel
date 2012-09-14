@@ -31,7 +31,7 @@ proc main()
   const maxIter : int = 50;
 
 
-  forall (byte,(y,bytex)) in (bytes,bytes.domain) do
+  forall (byte,(y,bytex)) in zip(bytes,bytes.domain) do
     {
       var byte_acc : uint(8) = 0;
 

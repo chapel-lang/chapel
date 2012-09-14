@@ -49,7 +49,7 @@ proc main() {
       on block {
         if debugBradsBlock1D then
           writeln("locale ", here, " is being asked to follow ", block);
-        for (a, b, c) in (A.newThese(IteratorType.follower, block),
+        for (a, b, c) in zip(A.newThese(IteratorType.follower, block),
                           B.newThese(IteratorType.follower, block),
                           C.newThese(IteratorType.follower, block)) {
           a = b + alpha * c;

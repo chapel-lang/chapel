@@ -37,7 +37,7 @@ module elemental_gen_schur_complement {
     //      assert (i.locale == my_locale);
 
     for i in schur_complement_rows do
-      for (ja, jl12) in (schur_complement_cols, L1x_rows) do
+      for (ja, jl12) in zip(schur_complement_cols, L1x_rows) do
         for k in Lx1_cols do
           if ja + A_diag_offset <= i then
             A (i,ja) -= + L21 (i,k) * L12 (jl12,k);

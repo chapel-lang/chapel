@@ -5,7 +5,7 @@ iter f(n) {
 }
 
 var x: sync int = 0;
-for (i, j) in (f(4), f(4)) {
+for (i, j) in zip(f(4), f(4)) {
   x += i + j;
 }
 

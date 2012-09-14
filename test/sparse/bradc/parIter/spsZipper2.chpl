@@ -9,7 +9,7 @@ var S: sparse subdomain(D),
 for i in 1..n do
   S += (i,i);
 
-forall (ij, ij2) in (S, S2) {
+forall (ij, ij2) in zip(S, S2) {
   STot += ij;
   STot += ij2;
 }

@@ -306,7 +306,7 @@ writeln(B);
 \end{chapelnoprint}
 is equivalent to
 \begin{chapel}
-forall (a,b) in (A,B) do
+forall (a,b) in zip(A,B) do
   a = b;
 \end{chapel}
 \begin{chapelpost}

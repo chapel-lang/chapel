@@ -429,18 +429,18 @@ Arepl[3] = 4;
 
 // these iterate over Dbase, so
 // only the current locale's replicand is accessed
-forall (b,r) in (Abase,Arepl) b = r;
+forall (b,r) in zip(Abase,Arepl) b = r;
 Abase = Arepl;
 
 // these iterate over Drepl;
 // each replicand of Arepl will be zippered against
 // (and copied from) the entire Abase
-forall (r,b) in (Arepl,Abase) r = b;
+forall (r,b) in zip(Arepl,Abase) r = b;
 Arepl = Abase;
 
 // sequential zippering will detect difference in sizes
 // (if multiple locales)
-for (b,r) in (Abase,Arepl) ... // error
-for (r,b) in (Arepl,Abase) ... // error
+for (b,r) in zip(Abase,Arepl) ... // error
+for (r,b) in zip(Arepl,Abase) ... // error
 \end{chapel}
 \end{example}

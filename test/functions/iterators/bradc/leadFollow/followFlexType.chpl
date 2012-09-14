@@ -33,19 +33,19 @@ class D {
 var myC = new C();
 var myD = new D();
 
-forall (i,j) in (myC, myC) do
+forall (i,j) in zip(myC, myC) do
   writeln("(i,j) = ", (i,j));
 writeln();
 
-forall (i,j) in (myD, myD) do
+forall (i,j) in zip(myD, myD) do
   writeln("(i,j) = ", (i,j));
 writeln();
 
-forall (i,j) in (myC,myD) do
+forall (i,j) in zip(myC,myD) do
   writeln("(i,j) = ", (i,j));
 writeln();
 
-forall (i,j) in (myD,myC) do
+forall (i,j) in zip(myD,myC) do
   writeln("(i,j) = ", (i,j));
 writeln();
 

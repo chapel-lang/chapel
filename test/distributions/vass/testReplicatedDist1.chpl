@@ -78,18 +78,18 @@ on teston {
   show();
 
   // equivalent to the assignment
-  start("forall (a,b) in (ARepl, A[Dsub]) do a = b;");
+  start("forall (a,b) in zip(ARepl, A[Dsub]) do a = b;");
   reset();
-  forall (a,b) in (ARepl, A[Dsub]) do a = b;
+  forall (a,b) in zip(ARepl, A[Dsub]) do a = b;
   show();
 
 /* Given the current implementation and the semantics of zippered 'for',
    this fails with "zippered iterations have non-equal lengths":
 
   // sequential loop
-  start("for (a,b) in (ARepl, A[Dsub]) do a = b;");
+  start("for (a,b) in zip(ARepl, A[Dsub]) do a = b;");
   reset();
-  for (a,b) in (ARepl, A[Dsub]) do a = b;
+  for (a,b) in zip(ARepl, A[Dsub]) do a = b;
   show();
 
 */
@@ -119,18 +119,18 @@ on teston {
   resetA();
 
   // parallel loop
-  start("forall (b,a) in (A[Dsub],ARepl) do a = b;");
+  start("forall (b,a) in zip(A[Dsub],ARepl) do a = b;");
   reset();
-  forall (b,a) in (A[Dsub],ARepl) do a = b;
+  forall (b,a) in zip(A[Dsub],ARepl) do a = b;
   show();
 
 /* Given the current implementation and the semantics of zippered 'for',
    this fails with "zippered iterations have non-equal lengths":
 
   // sequential loop
-  start("for (b,a) in (A[Dsub],ARepl) do a = b;");
+  start("for (b,a) in zip(A[Dsub],ARepl) do a = b;");
   reset();
-  for (b,a) in (A[Dsub],ARepl) do a = b;
+  for (b,a) in zip(A[Dsub],ARepl) do a = b;
   show();
 
 */

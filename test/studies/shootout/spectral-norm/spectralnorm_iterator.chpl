@@ -8,6 +8,6 @@ var Au : [Dom] real;
 
 var vv : real;
 
-forall (au,i) in (Au,0..#N) do
+forall (au,i) in zip(Au,0..#N) do
 	vv += au;
 writeln(vv);

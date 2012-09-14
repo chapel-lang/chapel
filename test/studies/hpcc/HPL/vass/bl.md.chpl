@@ -213,7 +213,7 @@ proc initABref() {
 
     var Abtemp: [MatVectSpace] real;
     fillRandom(Abtemp, seed);
-    for (r,t) in (Abref,Abtemp) do
+    for (r,t) in zip(Abref,Abtemp) do
       r = (t * 2000 - 1000):elemType;
 
   } else {
@@ -276,8 +276,8 @@ proc schurComplementRef(Ab: [?AbD] elemType, AD: domain, BD: domain, Rest: domai
 proc dgemmNativeInds(A: [] elemType,
                     B: [] elemType,
                     C: [] elemType) {
-  for (iA, iC) in (A.domain.dim(1), C.domain.dim(1)) do
-    for (jA, iB) in (A.domain.dim(2), B.domain.dim(1)) do
-      for (jB, jC) in (B.domain.dim(2), C.domain.dim(2)) do
+  for (iA, iC) in zip(A.domain.dim(1), C.domain.dim(1)) do
+    for (jA, iB) in zip(A.domain.dim(2), B.domain.dim(1)) do
+      for (jB, jC) in zip(B.domain.dim(2), C.domain.dim(2)) do
         C[iC,jC] -= A[iA, jA] * B[iB, jB];
 }

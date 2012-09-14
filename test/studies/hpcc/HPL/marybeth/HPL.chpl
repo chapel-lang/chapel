@@ -88,8 +88,8 @@ proc testSolution(A: [?ADom], x: [?xDom], in eps: real,
   var b => A(..,n+1);
   var bHat: [xDom] real;
 
-  for (i1, i2) in (ADom.dim(1), xDom) {
-    for (j1, j2) in (ADom.dim(1), xDom) {
+  for (i1, i2) in zip(ADom.dim(1), xDom) {
+    for (j1, j2) in zip(ADom.dim(1), xDom) {
        bHat(i1) += A(i1,j1)*x(j2);
     }
   }

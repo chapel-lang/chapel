@@ -35,7 +35,7 @@ checkCorrectness(B,rngs);
 
 writeln("Checking a zippered iteration ");
 // The iterator 
-forall (i,j) in (adaptive(rngs,nTasks),rng) do {
+forall (i,j) in zip(adaptive(rngs,nTasks),rng) do {
   C[i,j]=C[i,j]+1;
  }
 
@@ -61,7 +61,7 @@ proc checkCorrectness(Arr:[]int, r:range(?))
 proc checkCorrectness2(Arr:[]int,r:range(?), r2:range(?))
 {
   var check=true;
-  for (i,j) in (r,r2) do {
+  for (i,j) in zip(r,r2) do {
     if Arr[i,j] != 1 then {
       check=false;
       writeln(" ");

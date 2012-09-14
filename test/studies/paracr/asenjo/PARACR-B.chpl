@@ -65,10 +65,10 @@ proc main(){
 /**********************/
 	
   if(stages&1){ //If odd number of stages, diagonal is in BB and RHS in DD
-    forall (x,d,b) in (X,DD,BB) do x=d/b;
+    forall (x,d,b) in zip(X,DD,BB) do x=d/b;
   }
   else{ //else, diagonal is in B and RHS in D
-    forall (x,d,b) in (X,D,B) do x=d/b;
+    forall (x,d,b) in zip(X,D,B) do x=d/b;
   }
 
   if timer then t2=getCurrentTime();

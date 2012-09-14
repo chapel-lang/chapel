@@ -500,7 +500,7 @@ to match the other iterator(s).
 \begin{chapelexample}{zipWithUnbounded.chpl}
 The code
 \begin{chapel}
-for i in (1..5, 3..) do
+for i in zip(1..5, 3..) do
   write(i, "; ");
 \end{chapel}
 \begin{chapelpost}

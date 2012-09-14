@@ -10,7 +10,7 @@ coforall i in 1..n {
   A(i) = 2000+i;
 }
 
-for (e,i) in (A,2001..) do
+for (e,i) in zip(A,2001..) do
   if e != i then
     halt("fail: ", A);
 
@@ -33,7 +33,7 @@ for i in 1..n {
 
 flag$;
 
-for (e,i) in (A,3001..) do
+for (e,i) in zip(A,3001..) do
   if e != i then
     halt("fail: ", A);
 

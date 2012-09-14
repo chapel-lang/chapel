@@ -154,7 +154,7 @@ var
 // TODO: Support comments in file between major sections for clarity
                                                                          
 if debug then writeln("reading coordinates");
-for (locX,locY,locZ) in (x,y,z) do reader.read(locX, locY, locZ);
+for (locX,locY,locZ) in zip(x,y,z) do reader.read(locX, locY, locZ);
 
 param nodesPerElem = 8;
 
@@ -194,7 +194,7 @@ var lxim, lxip, letam, letap, lzetam, lzetap: [ElemDist] index(ElemDist);
 
 if debug then writeln("reading greek stuff");
 
-for (xm,xp,em,ep,zm,zp) in (lxim, lxip, letam, letap, lzetam, lzetap) do
+for (xm,xp,em,ep,zm,zp) in zip(lxim, lxip, letam, letap, lzetam, lzetap) do
   reader.read(xm,xp,em,ep,zm,zp);
 
 

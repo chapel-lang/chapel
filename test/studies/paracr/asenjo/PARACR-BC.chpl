@@ -105,10 +105,10 @@ proc main(){
 /* Substitution Phase */
 /**********************/
   if((stages-RedistStage)&1){ //If odd number of final stages, diagonal is in SS and RHS in QQ
-    forall (x,s,q) in (X,SS,QQ) do x=s/q;
+    forall (x,s,q) in zip(X,SS,QQ) do x=s/q;
   }
   else{ //else, diagonal is in S and RHS in Q
-    forall (x,s,q) in (X,S,Q) do x=s/q;
+    forall (x,s,q) in zip(X,S,Q) do x=s/q;
   }
 
  if timer then t2=getCurrentTime();

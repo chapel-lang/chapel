@@ -1,0 +1,1 @@
+feature request: As iteration over heterogeneous tuples is unable to supported, I elected to not permit iteration of homogeneous tuples for consistency.  If desired, the compilerError calls in _tuple.these calls can be removed after 1.6 to permit iteration over homogeneous tuples. 

@@ -18,6 +18,7 @@
       strcat(captureString, yytext);            \
     if (t == TCOMMA ||                          \
         t == TPARAM ||                          \
+        t == TZIP  ||                           \
         t == TTYPE ||                           \
         t == TCONST ||                          \
         t == TIN ||                             \
@@ -100,6 +101,7 @@ on               processToken(TON);
 otherwise        processToken(TOTHERWISE);
 out              processToken(TOUT);
 param            processToken(TPARAM);
+zip              processToken(TZIP);
 pragma           processToken(TPRAGMA);
 __primitive      processToken(TPRIMITIVE);
 __primitive_loop processToken(TPRIMITIVELOOP);

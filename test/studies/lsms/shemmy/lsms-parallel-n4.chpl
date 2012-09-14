@@ -57,7 +57,7 @@ proc main() {
 	}
 
 	//compute LIZ and caches
-	forall (a, liz) in (GridDist, lizDoms) {
+	forall (a, liz) in zip(GridDist, lizDoms) {
 		for ac in GridDom do if a != ac {
 			local {
 				var dist = atomSpacing * sqrt( + reduce ([d in 1..3] circularDistance(a[d],ac[d],spanTuple[d])**2));
@@ -71,7 +71,7 @@ proc main() {
 	if displayLIZ then writeln("LIZ counts: ", [liz in lizDoms] liz.numIndices);
 
 	//initialize atom values
-	forall (i, atom) in (GridDist, atoms) {
+	forall (i, atom) in zip(GridDist, atoms) {
 		local for param e in 1..nExtent do atom[e] = GridDist.indexOrder(i);
 	}
 	
@@ -88,7 +88,7 @@ proc main() {
 			}
 		}
 		//add up neighbors' contributions
-		forall (a, liz) in (GridDist, lizDoms) {
+		forall (a, liz) in zip(GridDist, lizDoms) {
 			local {
 				var total: AtomMatrix;
 				for ac in liz {

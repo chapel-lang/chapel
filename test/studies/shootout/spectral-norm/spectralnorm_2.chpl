@@ -25,14 +25,14 @@ proc eval_A(i,j) : real
 
 proc eval_A_times_u(U : [] real, inRange, Au : [] real)
 {
-	forall (au,i) in (Au, {0..#inRange}) do 
+	forall (au,i) in zip(Au, {0..#inRange}) do 
 		au = + reduce [j in 0..#inRange] (U(j) * eval_A(i,j));
 
 }
 
 proc eval_At_times_u(U : [] real, inRange, Au : [] real)
 {
-	forall (au,i) in (Au, {0..#inRange}) do
+	forall (au,i) in zip(Au, {0..#inRange}) do
 		au = + reduce [j in 0..#inRange] (U(j) * eval_A(j,i));
 }
 
@@ -58,7 +58,7 @@ proc spectral_game(N) : real
 	}
 
 	var vv = + reduce [v in V] (v * v);
-	var vBv = + reduce [(u,v) in (U,V)] (u * v);
+	var vBv = + reduce [(u,v) in zip(U,V)] (u * v);
 
 	return sqrt(vBv/vv);
 }

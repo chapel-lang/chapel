@@ -321,7 +321,7 @@ module performance_cholesky_test {
   proc print_lower_triangle ( L : [] ) {
    
     if print_matrix_details then
-      for (i_row, i_col) in ( L.domain.dim(1), L.domain.dim(2) ) do
+      for (i_row, i_col) in zip( L.domain.dim(1), L.domain.dim(2) ) do
 	writeln (i_row, ":  ", L(i_row, ..i_col) );
   }
 }

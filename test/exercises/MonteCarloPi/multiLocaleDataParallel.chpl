@@ -19,7 +19,7 @@ var D = {1..n} dmapped Block({1..n});
 //
 // The computation is identical to the non-distributed case.
 //
-var count = + reduce [(x,y) in (rs.iterate(D), rs.iterate(D))]
+var count = + reduce [(x,y) in zip(rs.iterate(D), rs.iterate(D))]
                        (x**2 + y**2) <= 1.0;
 
 writeln("Approximation of pi   = ", format("#.#######", count * 4.0 / n));

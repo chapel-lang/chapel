@@ -21,7 +21,7 @@ proc main() {
   chpl__testParStart();
   for trial in 1..numTrials {
     writeln("BEGIN TRIAL ", trial);
-    forall (a, b, c) in (A, B, C) do
+    forall (a, b, c) in zip(A, B, C) do
       a = b + alpha * c;
     writeln("END TRIAL ", trial);
   }

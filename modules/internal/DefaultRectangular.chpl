@@ -215,7 +215,7 @@ class DefaultRectangularDom: BaseRectangularDom {
     }
 
     if rank == 1 {
-      for i in block {
+      for i in zip((...block)) {
         __primitive("noalias pragma");
         yield i;
       }

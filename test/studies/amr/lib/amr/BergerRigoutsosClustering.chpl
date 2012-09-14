@@ -491,7 +491,7 @@ proc writeFlags( flags: [?D] bool )
 {
 
   var I: [D] int;
-  for (i,flag) in (I,flags) do
+  for (i,flag) in zip(I,flags) do
     if flag then i=1;
     
   writeln("On domain ", flags.domain, ":");

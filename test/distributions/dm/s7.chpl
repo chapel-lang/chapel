@@ -58,18 +58,18 @@ var replA: [replAD] elemType,
     replB: [replBD] elemType;
 
 // initialize some arrays
-for (iloc,l) in (tla.domain.dim(2), tla[0,..]) do
+for (iloc,l) in zip(tla.domain.dim(2), tla[0,..]) do
   on l do
-    forall (iarr, a) in (replAD, replA) do
+    forall (iarr, a) in zip(replAD, replA) do
       a = (iloc*1000 + iarr(1) * 10 + iarr(2)) * 1000000;
 //
-for (iloc,l) in (tla.domain.dim(1), tla[..,0]) do
+for (iloc,l) in zip(tla.domain.dim(1), tla[..,0]) do
   on l do
-    forall (iarr, a) in (replBD, replB) do
+    forall (iarr, a) in zip(replBD, replB) do
       a = iloc*1000 + iarr(1)*100 + iarr(2);
 
 if verb then
-  for (iloc, l) in (tla.domain, tla) do
+  for (iloc, l) in zip(tla.domain, tla) do
     on l do
       writeln("on ", l, " ", iloc,
               "\nreplA\n", copyToDF(replA),
@@ -99,7 +99,7 @@ writeln(Ab);
 writeln("DONE");
 
 proc test(X, Y, Z) {
-  for (x, y, z) in (X, Y, Z) do x = y + z;
+  for (x, y, z) in zip(X, Y, Z) do x = y + z;
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -117,7 +117,7 @@ proc setupTargetLocales() {
   if tld {
     if numLocales > tla.numElements then
       writeln("UNUSED LOCALES ", numLocales - tla.numElements);
-    for (l,i) in (tla,0..) do l = Locales[i];
+    for (l,i) in zip(tla,0..) do l = Locales[i];
   } else {
 writeln("insufficient locales");
 halt();

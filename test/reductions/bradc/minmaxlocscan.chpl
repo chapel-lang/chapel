@@ -8,8 +8,8 @@ forall (i,j) in D {
   A(i,j) = i + j/10.0;
 }
 
-Res =  minloc scan (A, A.domain);
+Res =  minloc scan zip(A, A.domain);
 writeln("Res = ", Res);
 
-Res = maxloc scan (A, A.domain);
+Res = maxloc scan zip(A, A.domain);
 writeln("Res = ", Res);

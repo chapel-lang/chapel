@@ -5,7 +5,7 @@ proc f(e) {
 
 proc f(type t) {
   var a: t;
-  for (aa,i) in (a,1..) do
+  for (aa,i) in zip(a,1..) do
     aa = i;
   return a;
 }

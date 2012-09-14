@@ -34,7 +34,7 @@ module RARandomStream {
     if followThis.size != 1 then
       halt("RAStream cannot use multi-dimensional iterator");
     var val = getNthRandom(followThis(1).low);
-    for followThis {
+    for zip((...followThis)) {
       getNextRandom(val);
       yield val;
     }

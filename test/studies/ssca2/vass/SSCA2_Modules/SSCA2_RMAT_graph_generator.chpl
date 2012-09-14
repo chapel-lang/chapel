@@ -185,7 +185,7 @@ module SSCA2_RMAT_graph_generator
         bit >>= 1;
 
         // TODO: rename RandomPrivate_iterate() in the Random module
-        forall (e, r1, r2, r3, r4, r5) in (Edges,
+        forall (e, r1, r2, r3, r4, r5) in zip(Edges,
  RandomPrivate_iterate(real, edge_domain, seed, start=rndPos+0*delta),
  RandomPrivate_iterate(real, edge_domain, seed, start=rndPos+1*delta),
  RandomPrivate_iterate(real, edge_domain, seed, start=rndPos+2*delta),
@@ -214,7 +214,7 @@ module SSCA2_RMAT_graph_generator
 
       }  // for depth
 
-      forall (w, rnd) in (Edge_Weight,
+      forall (w, rnd) in zip(Edge_Weight,
         RandomPrivate_iterate(real, edge_domain, seed, start=rndPos-1))
       do
         w = floor (1 + rnd * MAX_EDGE_WEIGHT) : int;
@@ -226,7 +226,7 @@ module SSCA2_RMAT_graph_generator
         debugmsg("permutation parallel - array decl");
 
         serial(SERIAL_GRAPH_GEN) {
-          forall (v, rnd) in (vertex_domain,
+          forall (v, rnd) in zip(vertex_domain,
             RandomPrivate_iterate(real, edge_domain, seed, start=rndPos-1))
           {
             const u = floor (1 + rnd * N_VERTICES) : int;
@@ -260,13 +260,13 @@ module SSCA2_RMAT_graph_generator
         rndPos += N_VERTICES;
         debugmsg("permutation parallel - computing");
 
-        forall (pm, pm$) in (permutation, permutation$) {
+        forall (pm, pm$) in zip(permutation, permutation$) {
           pm = pm$.readXX();
         }
         debugmsg("permutation parallel - copying");
 
       } else {  // !parEG
-        for (v, rnd) in (vertex_domain,
+        for (v, rnd) in zip(vertex_domain,
           RandomPrivate_iterate(real, vertex_domain, seed, start=rndPos-1))
         {
           const new_id = floor (1 + rnd * N_VERTICES) : int;
@@ -379,7 +379,7 @@ module SSCA2_RMAT_graph_generator
         writeln("writing edges to ", rmatEdgeGenFile);
         const fl = open(rmatEdgeGenFile, iomode.cw);
         const ch = fl.writer();
-	for (ed, w) in (Edges, Edge_Weight) do
+	for (ed, w) in zip(Edges, Edge_Weight) do
           ch.writeln (ed.start, " ", ed.end, " ", w);
         ch.close();
         fl.close();
@@ -399,13 +399,13 @@ module SSCA2_RMAT_graph_generator
         var permuteCounts : [vertex_domain] atomic int;
         forall p in permutation do
           permuteCounts[p].add(1);
-        forall (pc, ix) in (permuteCounts, vertex_domain) do
+        forall (pc, ix) in zip(permuteCounts, vertex_domain) do
           if !(pc.read() == 1) then halt(
                "'permutation' is not a permutation: vertex ", ix,
                " is mentioned ", pc.read(), " times");
 
         // Sanity checks on edges and weights.
-        forall (e, w) in (Edges, Edge_Weight) {
+        forall (e, w) in zip(Edges, Edge_Weight) {
 
           if !(e.start > 0) then halt(
 	       "edge start vertices out of low end of range");
@@ -451,7 +451,7 @@ module SSCA2_RMAT_graph_generator
 
       var self_edges$: atomic int;
       serial(SERIAL_GRAPH_GEN) {
-        forall (e, w) in (Edges, Edge_Weight) do {
+        forall (e, w) in zip(Edges, Edge_Weight) do {
           const u = e.start;
           const v = e.end;
 
@@ -490,7 +490,7 @@ module SSCA2_RMAT_graph_generator
 
     } // if parGC
 
-      forall (vx, firstAvail$) in (G.Row, firstAvailNeighbor$) do
+      forall (vx, firstAvail$) in zip(G.Row, firstAvailNeighbor$) do
         vx.tidyNeighbors(firstAvail$);
       debugmsg("neighbor lists - tidying");
 
@@ -513,7 +513,7 @@ module SSCA2_RMAT_graph_generator
         writeln("writing neighbor lists to ", rmatGraphConFile);
         const fl = open(rmatGraphConFile, iomode.cw);
         const ch = fl.writer();
-        for (u, vx) in (G.vertices, G.Row) do
+        for (u, vx) in zip(G.vertices, G.Row) do
           for (v, w) in vx.neighborList do
             ch.writeln(u, " ", v, " ", w);
         ch.close();

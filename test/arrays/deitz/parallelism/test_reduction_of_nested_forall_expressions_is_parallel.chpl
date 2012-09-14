@@ -19,5 +19,5 @@ for b in B {
 writeln(B);
 
 chpl__testParStart();
-writeln(+ reduce forall v in forall (a,b) in (A,B) do a + b do v);
+writeln(+ reduce forall v in forall (a,b) in zip(A,B) do a + b do v);
 chpl__testParStop();

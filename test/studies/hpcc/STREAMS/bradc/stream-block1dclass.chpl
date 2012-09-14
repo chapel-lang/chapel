@@ -42,7 +42,7 @@ proc main() {
     // A = B + alpha * C;
     // But this doesn't work because we don't support promotion over classes
 
-    forall (a, b, c) in (A, B, C) {
+    forall (a, b, c) in zip(A, B, C) {
       a = b + alpha * c;
     }
 

@@ -3,6 +3,14 @@
 pragma "no use ChapelStandard"
 module ChapelReduce {
 
+iter chpl__scanIteratorZip(op, data) {
+  for e in zip((...data)) {
+    op.accumulate(e);
+    yield op.generate();
+  }
+  delete op;
+}
+
 iter chpl__scanIterator(op, data) {
   for e in data {
     op.accumulate(e);

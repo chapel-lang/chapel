@@ -10,7 +10,7 @@ iter foo() {
   n4 += 4;
 }
 
-for i in (1..10, foo()) do
+for i in zip(1..10, foo()) do
   writeln(i);
 
 writeln((n1, n2, n3, n4));
