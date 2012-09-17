@@ -44,6 +44,7 @@ extern int currentPassNo;
 extern const char* currentPassName;
 
 // optimization control flags
+extern bool fFastFlag;
 extern int fConditionalDynamicDispatchLimit;
 extern bool fNoBoundsChecks;
 extern bool fNoCopyPropagation;
@@ -101,6 +102,9 @@ extern bool fHeterogeneous;
 extern bool fieeefloat;
 extern int  fMaxCIdentLen;
 
+extern bool llvmCodegen;
+extern char breakOnCodegenCname[256];
+
 enum { LS_DEFAULT=0, LS_STATIC, LS_DYNAMIC };
 extern int fLinkStyle;
 
@@ -149,5 +153,9 @@ extern int breakOnDeleteID;
 // code generation strings
 extern const char* compileCommand;
 extern char compileVersion[64];
+
+// This flag is useful for testing
+// the compiler but breaks the language!
+extern bool fNoInternalModules;
 
 #endif

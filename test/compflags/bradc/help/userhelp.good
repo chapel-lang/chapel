@@ -86,6 +86,9 @@ C Code Compilation Options:
   -o, --output <filename>             Name output executable
       --static                        Generate a statically linked binary
 
+LLVM Code Generation Options:
+      --llvm                          Use the LLVM code generator
+
 Compilation Trace Options:
       --print-commands                Print system commands
       --print-passes                  Print compiler passes

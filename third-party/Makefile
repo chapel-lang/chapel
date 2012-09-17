@@ -5,7 +5,7 @@ include $(CHPL_MAKE_HOME)/make/Makefile.base
 
 default: all
 
-all: dlmalloc gasnet gmp nanox qthread tcmalloc
+all: dlmalloc gasnet gmp nanox qthread tcmalloc llvm
 
 clean: FORCE
 	cd dlmalloc && $(MAKE) clean
@@ -50,6 +50,10 @@ $(QTHREAD_ALIASES): qthread
 tcmalloc: $(TCMALLOC_INSTALL_DIR)
 $(TCMALLOC_INSTALL_DIR):
 	cd tcmalloc && $(MAKE)
+
+llvm: FORCE
+	cd llvm && $(MAKE)
+
 
 -include Makefile.devel
 

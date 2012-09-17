@@ -911,6 +911,59 @@ buildWideClass(Type* type) {
   wideClassMap.put(type, wide);
 }
 
+Type* getOrMakeRefTypeDuringCodegen(Type* type) {
+  Type* refType;
+  refType = type->refType;
+  if( ! refType ) {
+    ClassType* ref = new ClassType(CLASS_RECORD);
+    TypeSymbol* refTs = new TypeSymbol(astr("_ref_", type->symbol->cname), ref);
+    refTs->addFlag(FLAG_REF);
+    refTs->addFlag(FLAG_NO_DEFAULT_FUNCTIONS);
+    refTs->addFlag(FLAG_NO_OBJECT);
+    theProgram->block->insertAtTail(new DefExpr(refTs));
+    ref->fields.insertAtTail(new DefExpr(new VarSymbol("_val", type)));
+    refType = ref;
+    type->refType = ref;
+  }
+  return refType;
+}
+
+// This function is called if the wide reference type does not already
+// exist to cause it to be code generated even though it was not
+// needed by earlier passes.
+Type* getOrMakeWideTypeDuringCodegen(Type* refType) {
+  Type* wideType;
+  INT_ASSERT(refType == dtNil ||
+             isClass(refType) ||
+             refType->symbol->hasFlag(FLAG_REF));
+  // First, check if the wide type already exists.
+  if( isClass(refType) ) {
+    wideType = wideClassMap.get(refType);
+    if( wideType ) return wideType;
+  }
+  // For a ref to a class, isClass seems to return true...
+  wideType = wideRefMap.get(refType);
+  if( wideType ) return wideType;
+
+  // Now, create a wide pointer type.
+  ClassType* wide = new ClassType(CLASS_RECORD);
+  TypeSymbol* wts = new TypeSymbol(astr("chpl____wide_", refType->symbol->cname), wide);
+  if( refType->symbol->hasFlag(FLAG_REF) || refType == dtNil )
+    wts->addFlag(FLAG_WIDE);
+  else
+    wts->addFlag(FLAG_WIDE_CLASS);
+  theProgram->block->insertAtTail(new DefExpr(wts));
+  wide->fields.insertAtTail(new DefExpr(new VarSymbol("locale", dtInt[INT_SIZE_DEFAULT])));
+  wide->fields.insertAtTail(new DefExpr(new VarSymbol("addr", refType)));
+  if( isClass(refType) ) {
+    wideClassMap.put(refType, wide);
+  } else {
+    wideRefMap.put(refType, wide);
+  }
+  return wide;
+}
+
+ 
 //
 // This is a utility function that handles a case when wide strings
 // are passed to extern functions.  If strings were a little better

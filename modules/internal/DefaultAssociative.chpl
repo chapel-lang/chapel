@@ -16,6 +16,7 @@ type chpl_table_index_type = int;
 /* These declarations could/should both be nested within
    DefaultAssociativeDom? */
 enum chpl__hash_status { empty, full, deleted };
+_ensure_reference_type(chpl__hash_status);
 
 record chpl_TableEntry {
   type idxType;

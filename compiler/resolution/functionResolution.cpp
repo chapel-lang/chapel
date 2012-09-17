@@ -1,4 +1,6 @@
+#ifndef __STDC_FORMAT_MACROS
 #define __STDC_FORMAT_MACROS
+#endif
 #include <sstream>
 #include <inttypes.h>
 #include <map>
@@ -5459,6 +5461,7 @@ buildRuntimeTypeInfo(FnSymbol* fn) {
   }
   theProgram->block->insertAtTail(new DefExpr(ts));
   ct->symbol->addFlag(FLAG_RUNTIME_TYPE_VALUE);
+  makeRefType(ts->type); // make sure the new type has a ref type.
   return ct;
 }
 

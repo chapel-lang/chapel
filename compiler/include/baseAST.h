@@ -17,6 +17,8 @@
 #include "chpl.h"
 #include "stringutil.h"
 
+#include "genret.h"
+
 //
 // foreach_ast_sep: invoke a 'macro' for every AST node type,
 //                  separating invocations by 'sep'
@@ -182,7 +184,7 @@ class BaseAST {
   virtual BaseAST* copy(SymbolMap* map = NULL, bool internal = false) = 0;
   virtual BaseAST* copyInner(SymbolMap* map) = 0;
   virtual bool inTree(void) = 0;
-  virtual void codegen(FILE* outfile) = 0;
+  virtual GenRet codegen() = 0;
 
   const char* stringLoc(void);
   ModuleSymbol* getModule();
@@ -195,6 +197,10 @@ class BaseAST {
   Type* getRefType();
   Type* getWideRefType();
 };
+
+GenRet baseASTCodegen(BaseAST* ast);
+GenRet baseASTCodegenInt(int x);
+GenRet baseASTCodegenString(const char* str);
 
 //
 // macro to update the global line number used to set the line number
@@ -218,7 +224,9 @@ extern Vec<ModuleSymbol*> mainModules; // contains main modules
 //
 #define isExpr(a)   ((a) && (a)->astTag < E_Expr)
 #define isSymbol(a) ((a) && (a)->astTag > E_Expr && (a)->astTag < E_Symbol)
-#define isType(a)   ((a) && (a)->astTag > E_Symbol && (a)->astTag < E_Type)
+static inline bool isType(BaseAST* a) {
+  return (a && a->astTag > E_Symbol && a->astTag < E_Type);
+}
 
 #define isSymExpr(a)           ((a) && (a)->astTag == E_SymExpr)
 #define isUnresolvedSymExpr(a) ((a) && (a)->astTag == E_UnresolvedSymExpr)
@@ -235,9 +243,13 @@ extern Vec<ModuleSymbol*> mainModules; // contains main modules
 #define isFnSymbol(a)          ((a) && (a)->astTag == E_FnSymbol)
 #define isEnumSymbol(a)        ((a) && (a)->astTag == E_EnumSymbol)
 #define isLabelSymbol(a)       ((a) && (a)->astTag == E_LabelSymbol)
-#define isPrimitiveType(a)     ((a) && (a)->astTag == E_PrimitiveType)
+static inline bool isPrimitiveType(BaseAST* a) {
+  return (a && a->astTag == E_PrimitiveType);
+}
 #define isEnumType(a)          ((a) && (a)->astTag == E_EnumType)
-#define isClassType(a)         ((a) && (a)->astTag == E_ClassType)
+static inline bool isClassType(BaseAST* a) {
+  return (a && a->astTag == E_ClassType);
+}
 
 //
 // safe downcast macros: downcast BaseAST*, Expr*, Symbol*, or Type*

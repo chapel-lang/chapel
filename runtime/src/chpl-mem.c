@@ -43,7 +43,7 @@ confirm(void* memAlloc, chpl_mem_descInt_t description, int32_t lineno,
 static size_t
 computeChunkSize(size_t number, size_t size, chpl_bool zeroOK, 
                  int32_t lineno, chpl_string filename) {
-  if (number == 0 && size == 0 && !zeroOK) {
+  if ((number == 0 || size == 0) && !zeroOK) {
     chpl_internal_error("Attempting to allocate 0 bytes of memory");
   } else if (number > 0 && size > SIZE_MAX/number) {
     chpl_error("Attempting to allocate > max(size_t) bytes of memory", lineno, filename);

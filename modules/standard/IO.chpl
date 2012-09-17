@@ -119,7 +119,6 @@ extern const QIO_METHOD_READWRITE:c_int;
 extern const QIO_METHOD_PREADPWRITE:c_int;
 extern const QIO_METHOD_FREADFWRITE:c_int;
 extern const QIO_METHOD_MMAP:c_int;
-extern const QIO_METHODNUM:c_int;
 extern const QIO_METHODMASK:c_int;
 extern const QIO_HINT_RANDOM:c_int;
 extern const QIO_HINT_SEQUENTIAL:c_int;
@@ -220,8 +219,6 @@ extern record iostyle { // aka qio_style_t
 
   var complex_style:uint(8) = 0;
 }
-
-extern const QIO_STYLE_SIZE:size_t;
 
 extern proc qio_style_init_default(inout s: iostyle);
 

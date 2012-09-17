@@ -7,6 +7,8 @@
 #include "chpl.h"
 #include "baseAST.h"
 
+#include "genret.h"
+
 class AList {
  public:
   Expr* head;
@@ -31,8 +33,8 @@ class AList {
   // add element(s) at end of list
   void insertAtTail(Expr* new_ast);
 
-  // codegen list
-  void codegen(FILE* outfile, const char* separator = ", ");
+  // codegen list. Separator only used for C codegenning.
+  GenRet codegen(const char* separator = ", ");
 };
 
 #define for_alist(node, list)                                           \

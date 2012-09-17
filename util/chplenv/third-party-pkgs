@@ -19,6 +19,9 @@
 #   for the package name in a variable called XXX_ALIASES where XXX
 #   is the directory name in all caps.
 #
+# - if the file COMPILERONLY exists in the third party directory,
+#   that package is emitted if --compiler is passed,
+#   and not by default (which gives dependencies for runtime).
 #
 import os, os.path, sys, subprocess
 
@@ -65,6 +68,23 @@ for l in chplenv.split('\n'):
                 pkgs += val+' '
             elif pkg_aliases.count(val)==1:
                 pkgs += val+' '
+
+pkgs = pkgs.strip()
+# Filter dependencies into 2 list: compiler and runtime dependencies.
+comppkgs=''
+runpkgs=''
+for p in pkgs.split(' '):
+  if os.path.isfile(third_party + "/" + p + "/COMPILERONLY"):
+    comppkgs += p+' '
+  else:
+    runpkgs += p+' '
+
+if len(sys.argv) > 1 and sys.argv[1] == "--compiler":
+  pkgs = comppkgs
+else:
+  pkgs = runpkgs
+
+pkgs = pkgs.strip()
 
 print pkgs
 

@@ -1,5 +1,8 @@
-extern const INFINITY: real(64);
-extern const NAN: real(64);
+extern proc chpl_macro_INFINITY():real(32);
+extern proc chpl_macro_NAN():real(32);
+
+inline proc INFINITY return chpl_macro_INFINITY();
+inline proc NAN return chpl_macro_NAN();
 
 inline proc abs(i : int(?w)) return if i < 0 then -i else i;
 inline proc abs(i : uint(?w)) return i;
@@ -17,22 +20,18 @@ inline proc sgn(x : real(?w))
 
 inline proc conjg(a: complex(?w)) return (a.re, -a.im):complex;
 
-// The functions isinf, isfinite and isnan are defined by macros in math.h.
-// We need to add pragma "no prototype".  Otherwise, the macro is
-// expanded in the prototype, and then the C compiler barfs.
-pragma "no prototype"
-extern proc isinf(x: real(64)): bool;
-pragma "no prototype"
-extern proc isinf(x: real(32)): bool;
-pragma "no prototype"
-extern proc isfinite(x: real(64)): bool;
-pragma "no prototype"
-extern proc isfinite(x: real(32)): bool;
-pragma "no prototype"
-extern proc isnan(x: real(64)): bool;
-pragma "no prototype"
-extern proc isnan(x: real(32)): bool;
-pragma "no prototype"
+extern proc chpl_macro_double_isinf(x: real(64)): c_int;
+extern proc chpl_macro_float_isinf(x: real(32)): c_int;
+extern proc chpl_macro_double_isfinite(x: real(64)): c_int;
+extern proc chpl_macro_float_isfinite(x: real(32)): c_int;
+extern proc chpl_macro_double_isnan(x: real(64)): c_int;
+extern proc chpl_macro_float_isnan(x: real(32)): c_int;
+inline proc isinf(x: real(64)) return chpl_macro_double_isinf(x):bool;
+inline proc isinf(x: real(32)) return chpl_macro_float_isinf(x):bool;
+inline proc isfinite(x: real(64)) return chpl_macro_double_isfinite(x):bool;
+inline proc isfinite(x: real(32)) return chpl_macro_float_isfinite(x):bool;
+inline proc isnan(x: real(64)) return chpl_macro_double_isnan(x):bool;
+inline proc isnan(x: real(32)) return chpl_macro_float_isnan(x):bool;
 
 extern proc acos(x: real(64)): real(64);
 extern proc acosh(x: real(64)): real(64);

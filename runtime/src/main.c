@@ -14,7 +14,10 @@
 #include <stdint.h>
 #include <string.h>
 #include <locale.h>
+#include <time.h>
 #include "sys.h"
+
+extern int chpl_no_stdmodules;
 
 static const char myFilename[] = 
 #ifdef CHPL_DEVELOPER
@@ -58,16 +61,18 @@ static void chpl_main(void) {
   chpl_task_setSerial(false);
 
   // Initialize the internal modules.
-  chpl__init_ChapelStandard(0, myFilename);
-  // Note that in general, module code can contain "on" clauses
-  // and should therefore not be called before the call to
-  // chpl_comm_startPollingTask().
+  if( ! chpl_no_stdmodules ) {
+    chpl__init_ChapelStandard(0, myFilename);
+    // Note that in general, module code can contain "on" clauses
+    // and should therefore not be called before the call to
+    // chpl_comm_startPollingTask().
 
-  //
-  // Permit the tasking layer to do anything it would like to now that
-  // the standard modules are initialized.
-  //
-  CHPL_TASK_STD_MODULES_INITIALIZED();
+    //
+    // Permit the tasking layer to do anything it would like to now that
+    // the standard modules are initialized.
+    //
+    CHPL_TASK_STD_MODULES_INITIALIZED();
+  }
 
   //
   // Call the compiler-generated main() routine
@@ -88,6 +93,8 @@ int main(int argc, char* argv[]) {
   // UTF-8 functions (e.g. wcrtomb) work as
   // indicated by the locale environment variables.
   setlocale(LC_CTYPE,"");
+  // So that use of localtime_r is portable.
+  tzset();
 
   chpl_error_init();  // This does local-only initialization
   chpl_comm_init(&argc, &argv);

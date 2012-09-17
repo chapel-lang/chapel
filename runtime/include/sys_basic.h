@@ -53,25 +53,31 @@
 #include <stdint.h>
 #include <limits.h>
 
+typedef char c_char;
+typedef signed char c_schar;
+typedef unsigned char c_uchar;
+typedef short c_short;
+typedef unsigned short c_ushort;
 typedef int c_int;
 typedef unsigned int c_uint;
 typedef long c_long;
 typedef unsigned long c_ulong;
 typedef long long c_longlong;
 typedef unsigned long long c_ulonglong;
+typedef float c_float;
 typedef double c_double;
 typedef void* c_ptr;
 typedef int err_t;
 typedef err_t syserr;
 typedef int fd_t;
-typedef char c_char_t;
 typedef FILE* c_file;
+
 
 static inline c_file chpl_cstdin(void) { return stdin; }
 static inline c_file chpl_cstdout(void) { return stdout; }
 static inline c_file chpl_cstderr(void) { return stderr; }
 
-#define c_nil NULL;
+#define c_nil NULL
 
 enum { EXTEND_ERROR_OFFSET = 1000 };
 enum { GAI_ERROR_OFFSET = (EXTEND_ERROR_OFFSET+10000) };
@@ -85,14 +91,17 @@ static inline err_t chpl_int_to_err(int32_t a) { return a; }
 #ifndef EEOF
 #define EEOF (EXTEND_ERROR_OFFSET+0)
 #endif
+static inline int chpl_macro_int_EEOF(void) { return EEOF; }
 
 #ifndef ESHORT
 #define ESHORT (EXTEND_ERROR_OFFSET+1)
 #endif
+static inline int chpl_macro_int_ESHORT(void) { return ESHORT; }
 
 #ifndef EFORMAT
 #define EFORMAT (EXTEND_ERROR_OFFSET+2)
 #endif
+static inline int chpl_macro_int_EFORMAT(void) { return EFORMAT; }
 
 // Make sure we have an EILSEQ (missing on XMT)
 #ifndef EILSEQ

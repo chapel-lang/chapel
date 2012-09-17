@@ -74,6 +74,7 @@
   fscanf
   clone
   new
+  delete
   register
   signal
   ceil
@@ -108,6 +109,8 @@
   div
   max
   min
+  malloc
+  free
 
   unlink
 

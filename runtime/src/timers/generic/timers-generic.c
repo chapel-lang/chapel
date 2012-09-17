@@ -5,7 +5,7 @@
 
 _real64 chpl_now_time(void) {
   struct tm * now;
-  _timervalue t;
+  _timevalue t;
   gettimeofday(&t, NULL);
   now = localtime(&t.tv_sec);
   return (_real64)(now->tm_hour)*3600.0e+6 +

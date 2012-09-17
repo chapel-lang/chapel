@@ -673,17 +673,6 @@ inline proc param string.length param return __primitive("string_length", this);
 inline proc _string_contains(param a: string, param b: string) param return __primitive("string_contains", a, b);
 
 //
-// identity functions (for reductions)
-//
-inline proc _prod_id(type t) return __primitive("_prod_id", t);
-inline proc _land_id(type t) return __primitive("_land_id", t);
-inline proc _lor_id(type t) return __primitive("_lor_id", t);
-inline proc _lxor_id(type t) return __primitive("_lxor_id", t);
-inline proc _band_id(type t) return __primitive("_band_id", t);
-inline proc _bor_id(type t) return __primitive("_bor_id", t);
-inline proc _bxor_id(type t) return __primitive("_bxor_id", t);
-
-//
 // min and max
 //
 inline proc min(x, y) return if x < y then x else y;
@@ -1872,5 +1861,5 @@ _ensure_reference_type(complex(128));
 _ensure_reference_type(bool);
 _ensure_reference_type(_task_list);
 _ensure_reference_type(string);
-
+_ensure_reference_type(chpl_taskID_t);
 }

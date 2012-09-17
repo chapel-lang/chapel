@@ -32,20 +32,28 @@ void      chpl_sync_destroyAux(chpl_sync_aux_t *);
 
 typedef chpl_sync_aux_t chpl_single_aux_t;
 
-#define chpl_single_lock(s) \
-        chpl_sync_lock(s)
-#define chpl_single_unlock(s) \
-        chpl_sync_unlock(s)
-#define chpl_single_waitFullAndLock(s, lineno, filename) \
-        chpl_sync_waitFullAndLock(s, lineno, filename)
-#define chpl_single_markAndSignalFull(s) \
-        chpl_sync_markAndSignalFull(s)
-#define chpl_single_isFull(val_ptr, s, simple_sync_var) \
-        chpl_sync_isFull(val_ptr, s, simple_sync_var)
-#define chpl_single_initAux(s) \
-        chpl_sync_initAux(s)
-#define chpl_single_destroyAux(s) \
-        chpl_sync_destroyAux(s)
+static ___always_inline
+void chpl_single_lock(chpl_sync_aux_t * s) { chpl_sync_lock(s); }
+static ___always_inline
+void chpl_single_unlock(chpl_sync_aux_t * s) { chpl_sync_unlock(s); }
+static ___always_inline
+void chpl_single_waitFullAndLock(chpl_sync_aux_t * s,
+                                 int32_t lineno, chpl_string filename) {
+  chpl_sync_waitFullAndLock(s,lineno,filename);
+}
+static ___always_inline
+void chpl_single_markAndSignalFull(chpl_sync_aux_t * s) {
+  chpl_sync_markAndSignalFull(s);
+}
+static ___always_inline
+chpl_bool chpl_single_isFull(void *val_ptr, chpl_sync_aux_t *s,
+                                           chpl_bool simple_sync_var) {
+  return chpl_sync_isFull(val_ptr, s, simple_sync_var);
+}
+static ___always_inline
+void chpl_single_initAux(chpl_sync_aux_t * s) { chpl_sync_initAux(s); }
+static ___always_inline
+void chpl_single_destroyAux(chpl_sync_aux_t * s) { chpl_sync_destroyAux(s); }
 
 
 // Tasks
