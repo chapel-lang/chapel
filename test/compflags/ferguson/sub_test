@@ -2,6 +2,7 @@
 
 use File::Temp qw/ tempdir /;
 use File::Path qw/ mkpath /;
+use Cwd qw/ realpath /;
 
 #$TMP = shift @ARGV;
 
@@ -112,14 +113,14 @@ sub check {
 
   #print "[Success compiling --print-chpl-home]\n";
   if ($expecthome ne "") {
-    if( $gothome eq $expecthome ) {
+    if( realpath($gothome) eq realpath($expecthome) ) {
       print "[Success matching --print-chpl-home home $name]\n";
     } else {
       print "[Error matching --print-chpl-home home $name (got $gothome but expected $expecthome)]\n";
     }
   }
   if ($expectexe ne "") {
-    if( $gotexe eq $expectexe ) {
+    if( realpath($gotexe) eq realpath($expectexe) ) {
       print "[Success matching --print-chpl-home exe $name]\n";
     } else {
       print "[Error matching --print-chpl-home exe $name (got $gotexe but expected $expectexe)]\n";
