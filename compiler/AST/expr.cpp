@@ -2749,7 +2749,7 @@ GenRet CallExpr::codegen() {
                   genTypeStructureIndex(valueType->symbol), call->get(2), call->get(3));
             } else {
               // set get(1) = *(call->get(1));
-	      codegenAssign(get(1),codegenDeref(call->get(1)));
+              codegenAssign(get(1),codegenDeref(call->get(1)));
             }
           } else if (get(1)->typeInfo()->symbol->hasFlag(FLAG_STAR_TUPLE) ||
                      get(1)->typeInfo()->symbol->hasFlag(FLAG_FIXED_STRING)) {
