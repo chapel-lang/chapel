@@ -3,7 +3,6 @@
 pragma "no use ChapelStandard"
 module ChapelLocale {
 
-
 class locale {
   const chpl_id: int;
   const numCores: int;
@@ -24,12 +23,15 @@ class locale {
     f <~> new ioLiteral("LOCALE") <~> chpl_id;
   }
 
-  // Required by the sublocale interface
+// Required by the sublocale interface
+  proc addChild(child : locale) : void
+  { /* Do nothing. */ }
+
   // By convention, the child corresponding to sublocale 0
   // is the locale itself.
   // In this default case, there are no sublocales, so the index is ignored
   // (assumed to be zero).
-  proc getChild(subloc : int) { return this; }
+  proc getChild(subloc_id : int) : locale { return this; }
 
   // Also required by the sublocale interface.
   proc initTask() {} // Do nothing.

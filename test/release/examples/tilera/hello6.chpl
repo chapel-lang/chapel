@@ -31,7 +31,7 @@ config const tasksPerLocale = 1;
 // running.  Thus, each iteration corresponds to one of the locale
 // values, stored in the loop index variable 'loc'.
 //
-coforall loc in Locales {
+coforall loc in rootLocale.getLocales() {
 
   //
   // Migrate the task to the locale in question.  This is done using
