@@ -216,7 +216,7 @@ static int gasnetc_init(int *argc, char ***argv) {
       GASNETI_RETURN_ERRR(NOT_INIT, errstring);
     }
 
-    if (!gasneti_mynode) {
+    if (!gasneti_mynode && !getenv("CHPL_GASNET_QUIET")) {
       fflush(NULL);
       fprintf(stdout,
               "-----------------------------------------------------------------------\n"
