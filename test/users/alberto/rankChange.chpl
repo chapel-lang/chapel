@@ -1,5 +1,6 @@
 use BlockDist;
 
+config const printOutput=false;
 config  const n: int=10;
 var Dist1 = new dmap(new Block({1..n,1..n,1..n}));
 var Dist2 = new dmap(new Block({1..(2*n),1..(2*n),1..(2*n)}));
@@ -17,6 +18,7 @@ A[Dom3]=B[Dom4];
 writeln(A[Dom3]);
 writeln();
 writeln(B[Dom4]);
+if printOutput then writeln("Example 1");
 for (a,b) in (A[Dom3],B[Dom4]) do if (a!=b) then {writeln("ERROR!!!!");}
 writeln('=========');
 
@@ -27,6 +29,7 @@ A[Dom3]=B[Dom4];
 writeln(A[Dom3]);
 writeln();
 writeln(B[Dom4]);
+if printOutput then writeln("Example 2");
 for (a,b) in (A[Dom3],B[Dom4]) do if (a!=b) then {writeln("ERROR!!!!");}
 writeln('=========');
 
@@ -37,6 +40,7 @@ A[Dom3]=B[Dom4];
 writeln(A[Dom3]);
 writeln();
 writeln(B[Dom4]);
+if printOutput then writeln("Example 3");
 for (a,b) in (A[Dom3],B[Dom4]) do if (a!=b) then {writeln("ERROR!!!!");}
 writeln('=========');
 
@@ -49,6 +53,7 @@ for (a,b) in (A[5,2..6,1..4],B[2,5..9,3..6]) do if (a!=b) then {writeln("ERROR!!
 writeln('=========');
 
 A = -1;
+if printOutput then writeln("Example 4");
 A[5..8,2,1..4]=B[2..5,5,3..6];
 writeln();
 writeln(A[5..8,2,1..4]);
@@ -58,6 +63,7 @@ for (a,b) in (A[5..8,2,1..4],B[2..5,5,3..6]) do if (a!=b) then {writeln("ERROR!!
 writeln('=========');
 
 A = -1;
+if printOutput then writeln("Example 5");
 A[5..8,2..6,2]=B[2..5,5..9,4];
 writeln();
 writeln(A[5..8,2..6,2]);

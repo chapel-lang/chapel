@@ -5,24 +5,17 @@ const mygridlocs: [mygriddom] locale = Locales(0);
 use BlockDist;
 config const n=500;
 var DA = {1..n,1..n};
-//var DB = {1..2*n,1..2*n};
 var Dom1 = DA dmapped Block(DA);
-//var Dom2 = DB dmapped Block(DB);
-//var A:[Dom1] real(64);
-//var B:[Dom2] real(64);
 var C:[Dom1] real(64);
-
 var D5 = {1..10, 1..10 by 2};
 var D6 = {1..10, 1..5};
 var D3 = {101..400 by 2,51..350 by 3};
-//var D4 = {201..500 by 2,151..450 by 3};
-
 var H: [1..n,1..n] real(64);
-//var F: [1..n/2,1..n/2] real(64);
 
 writeln(" DR defining in ",{1..n,1..n});
 writeln(" BD defining in ",{1..n,1..n});
 writeln();
+
 C = 1..;
 H =500..;
 

@@ -89,8 +89,8 @@ proc main(){
   //Reset array A
   for (a,i) in (A2,{1..n*n}) do a=i;
 
-  D1 ={1..n/2,n/4..3*n/4};
-  D2={1..n/2,n/4..3*n/4};
+  D1 ={1..n/2,n/4+1..3*n/4};
+  D2={1..n/2,n/4+1..3*n/4};
 
   if printOutput then  writeln("Block Dist. Example 3:A",D1," = C",D2);
   if doDiagnostics {
@@ -116,8 +116,8 @@ proc main(){
   
   //Reset array A
   for (a,i) in (A2,{1..n*n}) do a=i;
-  D1 ={1..n/2,n/2..n};
-  D2={1..n/2,n/4..3*n/4};
+  D1 ={1..n/2,n/2+1..n};
+  D2={1..n/2,n/4+1..3*n/4};
 
   if printOutput then writeln("Block Dist. Example 4:A",D1," = C",D2);
   if doDiagnostics {
@@ -219,7 +219,6 @@ proc main(){
   }
   
   for (a,b) in (A2[D7],C2[D7]) do if (a!=b) then writeln("ERROR!!!!");
-  
   
   // ==============================================================================
   
@@ -940,6 +939,6 @@ proc main(){
       for (a,b) in (CDR[D5],ADR[D5]) do if (a!=b) then writeln("ERROR!!!!");
     }
   }
- 
+  
   // ============================================================================== 
 }

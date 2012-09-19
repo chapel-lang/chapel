@@ -34,7 +34,7 @@ proc main(){
   }
   var DomA = {1..3,2..7};
   var DomB = {3..5,5..10};
-  
+
   if printOutput {
     writeln("A of DomA Distribution: ");
     LocaleDistribution(A[DomA]);
@@ -63,7 +63,7 @@ proc main(){
   if printOutput {
     writeln();
   }
-  
+
   //EXAMPLE 2
   for (a,i) in (A,{1..n*n}) do a=i;
   for (b,i) in (B,{1..2*2*n*n}) do b=i+100;

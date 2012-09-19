@@ -732,7 +732,7 @@ proc DefaultRectangularArr.doiCanBulkTransfer() {
 proc DefaultRectangularArr.doiCanBulkTransferStride() {
   if debugDefaultDistBulkTransfer then writeln("In DefaultRectangularArr.doiCanBulkTransferStride()");
   //If there is no stride we return false so as to rely in the original BulkTransfer (without stride)
-  if getStrideLevels(assertWholeDim(this)) == 0 then return false;    
+  if computeBulkStrideLevels(assertWholeDim(this)) == 0 then return false;    
   return true;
 }
 
@@ -751,13 +751,8 @@ proc DefaultRectangularArr.doiBulkTransfer(B) {
     Blo(i) = Bdims(i).first;
 
   const len = dom.dsiNumIndices:int(32);
-  if debugBulkTransfer {
+  if debugBulkTransfer then
     const elemSize =sizeof(B._value.eltType);
-    //writeln("In doiBulkTransfer(): Alo=", Alo);
-//    writeln(", Blo=", Blo);
-    //writeln(", len=", len);
-//    writeln(", elemSize=", elemSize);
-  }
 
   // NOTE: This does not work with --heterogeneous, but heterogeneous
   // compilation does not work right now.  The calls to chpl_comm_get
@@ -838,12 +833,12 @@ proc DefaultRectangularArr.doiBulkTransferStride(Barg,aFromBD=false, bFromBD=fal
   if debugDefaultDistBulkTransfer then
     writeln("\tlocal get() from ", B.locale.id);
   
-  var dstCompRank = assertWholeDim(A), // [1..rank] bool
-      srcCompRank = assertWholeDim(B);
-  var stridelevels:int;
+  var dstWholeDim = assertWholeDim(A),
+      srcWholeDim = assertWholeDim(B);
+  var stridelevels:int(32);
   
   /* If the stridelevels in source and destination arrays are different, we take the larger*/
-  stridelevels=max(A.getStrideLevels(dstCompRank),B.getStrideLevels(srcCompRank));
+  stridelevels=max(A.computeBulkStrideLevels(dstWholeDim),B.computeBulkStrideLevels(srcWholeDim));
   if debugDefaultDistBulkTransfer then 
     writeln("In DefaultRectangularArr.doiBulkTransferStride, stridelevels: ",stridelevels);
   
@@ -864,8 +859,8 @@ proc DefaultRectangularArr.doiBulkTransferStride(Barg,aFromBD=false, bFromBD=fal
       srcAux = true;
     }
   
-  dstCount= A.getCount(stridelevels,dstCompRank,dstAux);
-  srcCount= B.getCount(stridelevels,srcCompRank,srcAux);
+  dstCount= A.computeBulkCount(stridelevels,dstWholeDim,dstAux);
+  srcCount= B.computeBulkCount(stridelevels,srcWholeDim,srcAux);
   /*Then the Stride arrays for source and destination arrays*/
 
   var dstStride, srcStride: [1..rank] int(32);
@@ -888,13 +883,13 @@ proc DefaultRectangularArr.doiBulkTransferStride(Barg,aFromBD=false, bFromBD=fal
       }
   }
     
-  if (aFromBD && A.dom.stridable) then dstStride = getStride2(dstCompRank, dstCount,stridelevels);
-  else dstStride = getStride(dstCompRank,dstCount,stridelevels);
+  if (aFromBD && A.dom.stridable) then dstStride = computeBulkStride2(dstWholeDim, dstCount,stridelevels);
+  else dstStride = computeBulkStride(dstWholeDim,dstCount,stridelevels);
   
-  if (bFromBD && B.dom.stridable) then srcStride = B.getStride2(dstCompRank,dstCount,stridelevels);
-  else srcStride = B.getStride(srcCompRank,dstCount,stridelevels);
+  if (bFromBD && B.dom.stridable) then srcStride = B.computeBulkStride2(dstWholeDim,dstCount,stridelevels);
+  else srcStride = B.computeBulkStride(srcWholeDim,dstCount,stridelevels);
   
- doiBulkTransferStrideComm(Barg, stridelevels, dstStride, srcStride, dstCount, srcCount, Alo, Blo);
+  doiBulkTransferStrideComm(Barg, stridelevels, dstStride, srcStride, dstCount, srcCount, Alo, Blo);
 }
 
 //
@@ -905,7 +900,8 @@ proc DefaultRectangularArr.doiBulkTransferStride(Barg,aFromBD=false, bFromBD=fal
 proc DefaultRectangularArr.doiBulkTransferStrideComm(B, stridelevels, dstStride, srcStride, dstCount, srcCount, Alo, Blo)
  { 
  //writeln("Locale: ", here.id, " stridelvl: ", stridelevels, " DstStride: ", dstStride," SrcStride: ",srcStride, " Count: ", dstCount, " dst.Blk: ",blk, " src.Blk: ",B._value.blk/*, " dom: ",dom.dsiDims()," B.blk: ",B._value.blk," B.dom: ",B._value.dom.dsiDims()*/);
-  if this.data.locale==here // IF 1
+  //CASE 1: when the data in destination array is stored "here", it will use "chpl_comm_gets". 
+  if this.data.locale==here
   {
     var dest = this.data;
     var src = B._value.data;
@@ -927,12 +923,12 @@ proc DefaultRectangularArr.doiBulkTransferStrideComm(B, stridelevels, dstStride,
                     __primitive("array_get",dststr,dstStride._value.getDataIndex(1)), 
 		    srclocale,
                     __primitive("array_get",src, B._value.getDataIndex(Blo)),
-                    //__primitive("array_get",srcstr,dstStride._value.getDataIndex(1)),
                     __primitive("array_get",srcstr,srcStride._value.getDataIndex(1)),
                     __primitive("array_get",cnt, dstCount._value.getDataIndex(1)),
                     stridelevels);
-  } //END IF 1
-  else if B._value.data.locale==here //IF 2
+  }
+  //CASE 2: when the data in source array is stored "here", it will use "chpl_comm_puts". 
+  else if B._value.data.locale==here
   {
     if debugDefaultDistBulkTransfer then
       writeln("\tlocal put() to ", this.locale.id);
@@ -962,7 +958,8 @@ proc DefaultRectangularArr.doiBulkTransferStrideComm(B, stridelevels, dstStride,
       		  __primitive("array_get",srcstr,srcStride._value.getDataIndex(1)),
       		  __primitive("array_get",cnt, srcCount._value.getDataIndex(1)),
       		  stridelevels);
-  } //END IF 2
+  }
+  //CASE 3: other case, it will use "chpl_comm_gets". 
   else on this.data.locale
   {   
     var dest = this.data;
@@ -970,14 +967,12 @@ proc DefaultRectangularArr.doiBulkTransferStrideComm(B, stridelevels, dstStride,
 
     //We are in a locale that doesn't store neither A nor B so we need to copy the auxiliarry
     //arrays to the locale that hosts A. This should translate into some more gets...
-    //COUNT
     var count:[1..(stridelevels+1)] int(32);
-    count=dstCount; //    assig(count,dstCount,stridelevels+1);
+    count=dstCount;
   
-    //DSTSTRIDES AND SRCSTRIDE
     var dststrides,srcstrides:[1..stridelevels] int(32);
-    srcstrides=srcStride; //    assig(srcstrides,srcStride,stridelevels);
-    dststrides=dstStride; //    assig(dststrides,dstStride,stridelevels);
+    srcstrides=srcStride;
+    dststrides=dstStride;
     
     var dststr=dststrides._value.data;
     var srcstr=srcstrides._value.data;
@@ -1000,152 +995,143 @@ proc DefaultRectangularArr.doiBulkTransferStrideComm(B, stridelevels, dstStride,
                     __primitive("array_get",srcstr,dststrides._value.getDataIndex(1)),
                     __primitive("array_get",cnt, count._value.getDataIndex(1)),
                     stridelevels);   
-  }//END ELSE1
- // writeln(" Fin Locale ",here.id);
+  }
 }
 
 proc DefaultRectangularArr.isDefaultRectangular() param{return true;}
 
-/* This function returns the stride level for the default rectangular array. */
-proc DefaultRectangularArr.getStrideLevels(rankcomp):int(32) where rank == 1
+/* This function returns the stride level for the default rectangular array.
+  + Stridelevels: the number of stride level (not really the number of dimensions because:
+     - Stridelevels < rank if we can aggregate several dimensions due to they are consecutive 
+         -- for exameple, whole rows --
+     - Stridelevels == rank if there is a "by X" whith X>1 in the range description for 
+         the rightmost dimension)*/
+proc DefaultRectangularArr.computeBulkStrideLevels(rankcomp):int(32) where rank == 1
 {
   if dom.dsiStride==1 then return 0;
   else return 1;
 }
 
-proc DefaultRectangularArr.getStrideLevels(rankcomp):int(32) where rank > 1 
+proc DefaultRectangularArr.computeBulkStrideLevels(rankcomp):int(32) where rank > 1 
 {
   var stridelevels:int(32) = 0;
+
+  if (dom.dsiStride(rank)>1 && dom.dsiDim(rank).length>1) //CASE 1: See test/users/alberto/2dDRtoBDTest.chpl (example 8)
+  || (blk(rank)>1 && dom.dsiDim(rank).length>1) //CASE 2: See test/users/alberto/rankchange.chpl (example 5)
+  //In many test, both cases are true
+  then stridelevels+=1;
  
-  if (dom.dsiStride(rank)>1 && dom.dsiDim(rank).length>1)||(blk(rank)>1 && dom.dsiDim(rank).length>1) then stridelevels+=1;
- 
-  for i in 2..rank by -1 {
-    if (!rankcomp[i] && dom.dsiDim(i-1).length>1 && !distance(i)) then stridelevels+=1;
-    else if(dom.dsiDim(i).length>1 && !distance(i)) then stridelevels+=1;
-  }
- if stridelevels==0 then stridelevels=1; 
- return stridelevels; 
+  for param i in 2..rank by -1 do
+    if (dom.dsiDim(i-1).length>1 && !checkStrideDistance(i)) then stridelevels+=1; //CASE 3: See test/users/alberto/2dDRtoBDTest.chpl (example 4)
+  
+  if stridelevels==0 && dom.stridable then stridelevels=1; //CASE 5: See test/users/alberto/2dDRtoBDTest.chpl (example 7). 
+  //In that example the slice ends up with a single array element to be transferred.
+  
+  return stridelevels;
 }
 
 
 /* This function returns the count array for the default rectangular array. */
-proc DefaultRectangularArr.getCount(stridelevels:int(32), rankcomp:[], aux = false):(rank+1)*int(32) where rank ==1
+proc DefaultRectangularArr.computeBulkCount(stridelevels:int(32), rankcomp, aux = false):(rank+1)*int(32) where rank ==1
 {
   var c: (rank+1)*int(32);
   c[1]=1;
-  c[2]=dom.dsiDim(1).length:int(32); 
+  c[2]=dom.dsiDim(1).length:int(32);//Case 1: See test/users/alberto/test_rank_change2.chpl (example 2). 
   return c;
 }
 
-proc DefaultRectangularArr.getCount(stridelevels:int(32), rankcomp:[], aux = false):(rank+1)*int(32) where rank >1
+proc DefaultRectangularArr.computeBulkCount(stridelevels:int(32), rankcomp, aux = false):(rank+1)*int(32) where rank >1
 {
-  var c: (rank+1)*int(32);
-  var cont:int(32)=0;
-  var tmp:int(32)=0;
-  for i in 1..rank do
+  var c: (rank+1)*int(32) ;
+  var init:int(32)=1;
+  var dim:int =rank;//The aim of this variable is to know the number of the dimension to obtain the count value
+  var tmp:int(32)=1;
+  for param i in 1..rank do c(i)=1;
+    if (dom.dsiStride(rank)>1 && dom.dsiDim(rank).length>1) //CASE 1: See test/users/alberto/perfTest.chpl (DR <- DR example 8)
+    ||(blk(rank)>1 && dom.dsiDim(rank).length>1) //CASE 2: See test/users/alberto/test_rank_change2.chpl (example 12)
+      {c[1]=1; init=2;}//The first value of count have been already computed. Now compute the rest of count starting at dim 2
   
-  if (dom.dsiStride(rank)>1 && dom.dsiDim(rank).length>1)||(blk(rank)>1 && dom.dsiDim(rank).length>1) 
-    {c[1]=1; cont=1;}
-  tmp = cont;
-
-  if blk(rank)> 1 then if(this.dom.dsiDim(rank).length:int(32)==1) then cont+=1;
-  
-  for i in 0+tmp..stridelevels do
-    if cont == rank then
-      if (rankcomp[cont]&&dom.dsiDim(cont).stride==1) then c[i+1]=1;
-      else c[i+1]=dom.dsiDim(1).length:int(32); 
+  for i in init..stridelevels+1 do
+  {
+    if dim == 0 then c[i]=1;//the leftmost dimension 
     else
       {
-        c[i+1]=this.dom.dsiDim(rank-cont+tmp).length:int(32);
-        
-	for h in 2..rank-cont+tmp by -1:int(32){
-	  if( (distance(h)&&dom.dsiDim(h-1+tmp).length>1 && (!aux || h!=rank)) || (dom.dsiDim(h).length==1&&(h)!=rank))
+        c[i]=this.dom.dsiDim(dim).length:int(32);
+	for h in 2..dim by -1:int(32) //find the next dimension for which the next different stride arises
+        {
+	  if( (checkStrideDistance(h)&&dom.dsiDim(h-1).length>1 && (!aux || h!=rank))// (!aux || h!=rank) special case when the DR is part of a BD
+             || (dom.dsiDim(h).length==1&& h!=rank)) //CASE 3: See test/users/alberto/3dAgTestStride.chpl (example 6 and 7)
 	    {
-	      c[i+1]*=dom.dsiDim(h-1).length:int(32);
-	      cont=rank-h+2;
+	      c[i]*=dom.dsiDim(h-1).length:int(32);
+              dim -= 1;
 	    }
-	  else
-	    {
-	      cont=rank-h+1+tmp;
-	      break;
-	    }
+	  else break;
+  
         }
+        dim -= 1;
       }
-    if blk(rank)>1 then c[1]=1;
+  }
   
   return c;
 }
 
 /* This function returns the stride array for the default rectangular array. */
-proc DefaultRectangularArr.getStride(rankcomp:[],cnt:[],levels:int(32))
+proc DefaultRectangularArr.computeBulkStride(rankcomp,cnt:[],levels:int(32))
 {
-  var c: (rank)*int(32); 
-  var h=1;
-  var acum=1;
-  //Special case. See test/users/alberto/test_rank_change2.chpl (example 12)
-  if (blk(rank)>1 && dom.dsiDim(rank).length>1)
+  var c: rank*int(32); 
+  var h=1; //Stride array index
+  var cum=1; //cumulative variable
+  
+  if (blk(rank)>1 && dom.dsiDim(rank).length>1) //CASE 1: See test/users/alberto/test_rank_change2.chpl (example 12)
   {
-    c[h]=blk(rank):int(32);//c[1]=1;
+    c[h]=blk(rank):int(32);
     h+=1;
   }
-  else if (cnt[1]==1 && dom.dsiDim(rank).length>1)
+  else if (cnt[h]==1 && dom.dsiDim(rank).length>1) //CASE 2: See test/users/alberto/perfTest.chpl (DR <- DR example 8)
   {
     c[h]=dom.dsiDim(rank).stride:int(32);
     h+=1;
   }
-    
-  for i in 2..rank by -1:int(32){
+
+  for param i in 2..rank by -1:int(32){
     if (levels>=h)
     {
-     if (cnt[h]==dom.dsiDim(i).length*acum )//&& dom.dsiDim(i-1).length>1)
-      {
-        if(dom.dsiDim(i-1).length==1)
-        {
-          for t in 1..(i-1) by -1 do
-            if dom.dsiDim(t).length!=1
-            {
-              c[h]=blk(t):int(32)* dom.dsiDim(t).stride:int(32);
-              h+=1;
-              acum=1;
-              break;
-            }
-        }
-        else
-        {
-           c[h]=blk(i-1):int(32)* dom.dsiDim(i-1).stride:int(32);
-          h+=1;
-          acum=1;
-        }
+      if (cnt[h]==dom.dsiDim(i).length*cum && dom.dsiDim(i-1).length>1) 
+      {//now, we are in the right dimension (i dimension) to obtain the stride value
+        c[h]=blk(i-1):int(32)* dom.dsiDim(i-1).stride:int(32); //And now, in the right dimension, we get the stride value ...
+        h+=1; //Increment the index
+        cum=1; //reset the cumulative variable
       }
-      else acum=acum*dom.dsiDim(i).length;
+      else cum=cum*dom.dsiDim(i).length;
     }
   }
   return c;
 }
 
-
-proc DefaultRectangularArr.getStride2(rankcomp:[],cnt:[], levels:int(32)) where rank==1 {return dom.dsiStride:int(32);}
-proc DefaultRectangularArr.getStride2(rankcomp:[],cnt:[], levels:int(32)):(rank)*int(32) where rank > 1
+/* This function returns the stride array for the default rectangular array when the DR array is part of a BD Array, and it is stridable (aFromBD && A.dom.stridable) */
+proc DefaultRectangularArr.computeBulkStride2(rankcomp,cnt:[], levels:int(32)) where rank==1 {return dom.dsiStride:int(32);}
+proc DefaultRectangularArr.computeBulkStride2(rankcomp,cnt:[], levels:int(32)):rank*int(32) where rank > 1
 {
   var c: rank*int(32); 
-  var h=1;
-  var acum=1;
-  if (cnt[h]==1 || blk[rank]>1) && dom.dsiDim(rank).length>1
-  {
+  var h=1;//Stride array index
+  var cum=1;//cumulative variable
+  
+  if (cnt[h]==1 || blk[rank]>1) && dom.dsiDim(rank).length>1 //CASE 1(cnt[h]==1) : See test/users/alberto/2dDRtoBDTest.chpl (example 10)
+  {                               //CASE 2(blk[rank]>1): See test/users/alberto/
     c[h]=blk[rank]:int(32);
     h+=1;
   }
   
-  for i in 2..rank by -1:int(32){
+  for param i in 2..rank by -1:int(32){
     if (levels>=h)
-    {
-      if (cnt[h]==dom.dsiDim(i).length*acum && dom.dsiDim(i-1).length>1)
-      {
-        c[h]=blk(i-1):int(32);
-        h+=1;
-        acum=1;
+    { 
+      if (cnt[h]==dom.dsiDim(i).length*cum && dom.dsiDim(i-1).length>1)
+      {//now, we are in the right dimension (i dimension) to obtain the stride value
+        c[h]=blk(i-1):int(32);//And now, in the right dimension, we get the stride value ...
+        h+=1; //Increment the index
+        cum=1; //reset the cumulative variable
       }
-      else acum=acum*dom.dsiDim(i).length;
+      else cum=cum*dom.dsiDim(i).length;
     }
   }
   return c;
@@ -1170,7 +1156,7 @@ proc DefaultRectangularArr.assertWholeDim(d) where rank==1
 proc DefaultRectangularArr.assertWholeDim(d) where rank>1
 {
  var c:d.rank*bool;
-  for i in 2..rank do
+  for param i in 2..rank do
     if (d.dom.dsiDim(i).length==d.blk(i-1)/d.blk(i) && dom.dsiStride(i)==1) then c[i]=true;
 
   return c;
@@ -1181,14 +1167,14 @@ between the last element in dimension 'x' and  the first in dimension 'x-1'.
 If the distances are equal, we can aggregate these two dimmensions. 
 Example: 
 array A, the domain is D=[1..6, 1..6, 1..6]
-Let's A[1..6 by 2, 1..6, 1..6 by 2], then, distance(3) returns true, due to when jumping from
+Let's A[1..6 by 2, 1..6, 1..6 by 2], then, checkStrideDistance(3) returns true, due to when jumping from
 row to row (from the last element of one row, to the first element of the next one) the stride
 is the same than when jumping from elements inside the row. 
 */
-proc DefaultRectangularArr.distance(x: int)
+proc DefaultRectangularArr.checkStrideDistance(x: int)
 {
   var cont:bool=false;
-  if dom.dsiDim(x-1).length==1 then cont=false;//cont=true;
+  if dom.dsiDim(x-1).length==1 then cont=false;
   else
   {
     if blk(rank)==1
@@ -1217,7 +1203,7 @@ proc DefaultRectangularArr.distance(x: int)
 proc DefaultRectangularArr.equal(d1:[], d2:[], tam:int)
 {
   var c:bool = true;
-  for i in 1..tam do if d1[i]!=d2[i]{ c=false; break; }
+  for i in 1..tam do if d1[i]!=d2[i] then c=false;
   return c;
 }
 
@@ -1249,9 +1235,9 @@ proc DefaultRectangularArr.doiBulkTransferStride(Barg) where Barg._value.isBlock
     var inters=B.dom.locDoms[j].myBlock;
     if(inters.numIndices>0 && dom.dsiNumIndices >0)
     {
-      var sa,ini_src,end_src:rank*int(64);
-      ini_src = bulkCommConvertCoordinate(inters.first, A, B);
-      end_src = bulkCommConvertCoordinate(inters.last, A, B);
+      var sa,ini_src,end_src:rank*int;
+      ini_src = bulkCommConvertCoordinate(tuplify(inters.first), B, A);
+      end_src = bulkCommConvertCoordinate(tuplify(inters.last), B, A);
       sa = tuplify(A.dom.dsiStride);
       
       for param t in 1..rank do
@@ -1276,15 +1262,16 @@ proc DefaultRectangularArr.doiBulkTransferStride(Barg) where Barg._value.isBlock
 // This function was contributed by Juan Lopez and later improved by Alberto.
 // In the SBAC'12 paper it is called m().
 //
-proc bulkCommConvertCoordinate(b, Aarr, Barr)
+proc bulkCommConvertCoordinate(b, Barr,Aarr)
 {
   compilerAssert(Aarr.rank == Barr.rank);
   param rank = Aarr.rank;
   const AD = Aarr.dom.dsiDims();
   const BD = Barr.dom.dsiDims();
-  var result: rank * int; 
+  var result: rank * int;
   for param i in 1..rank {
     const ar = AD(i), br = BD(i);
+    //writeln("ar: ",ar," br: ",br," b: ",b," b(i): ",b(i)," br.indexOrder(b(i)): ",br.indexOrder(b(i)));
     if boundsChecking then assert(br.member(b(i)));
     result(i) = ar.orderToIndex(br.indexOrder(b(i)));
   }

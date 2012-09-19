@@ -1628,8 +1628,10 @@ proc  BlockArr.copyCtoB(B)
 //Most of this code would be refactored out in that function which
 //overloads the op= for that case.
 
-proc BlockArr.doiBulkTransferStride(B)
+proc BlockArr.doiBulkTransferStride(Barg)
 {
+  const A = this, B = Barg._value;
+  
   if debugDefaultDistBulkTransfer then
     writeln("In BlockArr.doiBulkTransferStride()");
     
@@ -1638,43 +1640,43 @@ proc BlockArr.doiBulkTransferStride(B)
       {
         var sb,ini,end:rank*int(64);
         var regionA = dom.locDoms(i).myBlock;
-        ini=corr_direct(regionA.low,B._value,1);//return tuple(rank * int)
-        end=corr_direct(regionA.high,B._value,0);//return tuple(rank * int)
-        if rank==1 then sb[1]=B._value.dom.whole.stride; //return one int
-        else sb=B._value.dom.whole.stride; //return a tuple 
-        
-        var DomA: domain(rank,int,true);
-        var r1: rank * range(stridable = true);
-        var r2: rank * range(stridable = true);
-        var r3: rank * range(stridable = true);
-        for param t in 1..rank do
-          r1[t] = (ini[t]..end[t] by sb[t]); 
+      
+        if regionA.numIndices>0
+        {
+          ini=bulkCommConvertCoordinate(tuplify(regionA.first),A,B);//return tuple(rank * int)
+          end=bulkCommConvertCoordinate(tuplify(regionA.last),A,B);//return tuple(rank * int)
+          sb=tuplify(B.dom.whole.stride);
+          
+          var DomA: domain(rank,int,true);
+          var r1,r2,r3: rank * range(stridable = true);
+          for param t in 1..rank do
+            r1[t] = (ini[t]..end[t] by sb[t]); 
     
-        DomA=r1; //Necessary to make the intersection
-
-        for j in  B._value.dom.dist.targetLocDom
-          {
-            var inters:domain(rank,int,true);
-            inters=DomA[B._value.dom.locDoms(j).myBlock]; //return a domain
-            if(inters.numIndices>0 && regionA.numIndices>0)
-              {
-                var sa,ini_src,end_src:rank*int(64);
-                ini_src=corr_inverse(inters.first,B._value,1);//return tuple(rank * int)
-                end_src=corr_inverse(inters.last,B._value,0);//return tuple(rank * int)
-                if rank==1 then sa[1] = dom.whole.stride; //return one int
-                else sa = dom.whole.stride; //return a tuple
+          DomA=r1; //Necessary to make the intersection
   
-                //inters variable isn't a tuple, it's a domain, so ....
-                if rank ==1 then  r3[1] = (inters.first..inters.last by inters.stride);
-                else for param t in 1..rank do r3[t] = (inters.first[t]..inters.last[t] by inters.stride[t]);
-                
-                for param t in 1..rank do r2[t] = (ini_src[t]..end_src[t] by sa[t]);
-                
-                if (dom.locDoms[i].myBlock.stridable || B._value.dom.locDoms[i].myBlock.stridable) then
-                  locArr[i].myElems[(...r2)]._value.doiBulkTransferStride(B._value.locArr[j].myElems[(...r3)],true,true);
-                else
-                  locArr[i].myElems[(...r2)] = B._value.locArr[j].myElems[(...r3)];
-              }
+          for j in  B.dom.dist.targetLocDom
+            {
+              var inters:domain(rank,int,true);
+              inters=DomA[B.dom.locDoms(j).myBlock]; //return a domain
+              if(inters.numIndices>0 && regionA.numIndices>0)
+                {
+                  var sa,ini_src,end_src:rank*int;
+                  ini_src=bulkCommConvertCoordinate(tuplify(inters.first), B, A);//return tuple(rank * int)
+                  end_src=bulkCommConvertCoordinate(tuplify(inters.last), B, A);//return tuple(rank * int)
+                  sa = tuplify(dom.whole.stride); //return a tuple
+   
+                  for param t in 1..rank
+                  {
+                    r3[t] = (tuplify(inters.first)[t]..tuplify(inters.last)[t] by tuplify(inters.stride)[t]);
+                    r2[t] = (ini_src[t]..end_src[t] by sa[t]);
+                  }
+
+                  if (dom.locDoms[i].myBlock.stridable || B.dom.locDoms[i].myBlock.stridable) then
+                    locArr[i].myElems[(...r2)]._value.doiBulkTransferStride(B.locArr[j].myElems[(...r3)],true,true);
+                  else
+                    locArr[i].myElems[(...r2)] = B.locArr[j].myElems[(...r3)];
+                }
+            }
           }
       }
 }
@@ -1683,56 +1685,8 @@ proc BlockArr.doiBulkTransferStride(B)
 //corr_direct is used to compute the low and high values of the ranges of the SOURCE subdomain from 
 //the low and high values of the DESTINATION subdomain and low values of source and dest. whole domain.
 //When computing the low bounds, parameter low has to be =1 to account for unaligned low values.
-
-proc BlockArr.corr_direct(a,B,low)
-{
-  //It finds out the initial domain coordinate and strides of destination and source Domain
-  var la=dom.whole.low;
-  var sa=dom.whole.stride;
-  var lb=B.dom.whole.low;
-  var sb=B.dom.whole.stride;
-  var b: rank * int;
-  
-  if rank>1 then 
-    forall i in 1..rank
-      {
-	var div:int(32); 
-
-	div=((a[i]-la[i])/sa[i]):int(32);  
-	b[i]=lb[i]+div*sb[i];
-	if low==1 then 
-	  if(a[i]-la[i])%sa[i]>0 then b[i]=b[i]+sb[i];
-      }
-  else
-    {
-      b[1]=lb+((a-la)/sa)*sb;
-      if low==1 then
-	if(a-la)%sa>0 then b[1]=b[1]+sb;
-    }
-  return b;
+proc BlockArr.tuplify(arg) {
+  if isTuple(arg) then return arg; else return tuple(arg);
 }
-
-//corr_inverse is used to compute the low and high values of the ranges of the DESTINATION subdomain from 
-//the low and high values of the SOURCE subdomain and low values of the source and dest. whole domain.
-//When computing the low bounds, parameter low has to be =1 to account for unaligned low values.
-
-proc BlockArr.corr_inverse (b,B,low)
-{
-  //It finds out the initial domain coordinate and strides of destination Domain (of A)
-  var la=dom.whole.low;
-  var sa=dom.whole.stride;
-  var lb=B.dom.whole.low;
-  var sb=B.dom.whole.stride;
-  var a: rank * int;
-  if rank>1 then 
-    forall i in 1..rank do a[i]=la[i]+((b[i]-lb[i])/sb[i])*sa[i];
-  else
-    {
-      a[1]=la+((b-lb)/sb)*sa;
-      if low==1 then
-	if(b-lb)%sb>0 then a[1]=a[1]+sa;
-    }
-  return a;
-}        
 
 proc BlockArr.isBlockDist() param {return true;}
