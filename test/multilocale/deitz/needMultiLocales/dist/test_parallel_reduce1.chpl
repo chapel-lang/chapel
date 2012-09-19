@@ -9,7 +9,7 @@ var A, B: [Dom] real;
 
 var s$: sync int = 1;
 
-forall (a,b) in (A,B) {
+forall (a,b) in zip(A,B) {
   const ss = s$;
   a = ss;
   b = ss + 1;
@@ -22,5 +22,5 @@ if verbose {
 }
 
 for i in 1..iters do
-  write(max reduce [(a,b) in (A,B)] abs(a + b));
+  write(max reduce [(a,b) in zip(A,B)] abs(a + b));
 writeln();
