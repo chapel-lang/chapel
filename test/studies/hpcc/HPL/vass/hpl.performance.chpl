@@ -237,12 +237,12 @@ proc schurComplement(blk, AD: domain, BD: domain, Rest: domain) {
   const AbSlice1 => Ab[1..n, AD.dim(2)],
         AbSlice2 => Ab[BD.dim(1), 1..n+1];
 
-  forall (ab, ra) in (AbSlice1, replA) do
+  forall (ab, ra) in zip(AbSlice1, replA) do
     local
       ra = ab;
   replicateA(blk);
 
-  forall (ab, rb) in (AbSlice2, replB) do
+  forall (ab, rb) in zip(AbSlice2, replB) do
     local
       rb = ab;
   replicateB(blk);
