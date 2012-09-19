@@ -368,7 +368,7 @@ class UserMapAssocDom: BaseAssociativeDom {
   // queries for the number of indices, low, and high bounds
   //
   proc dsiNumIndices {
-    halt("numIndices not yet implemented");
+    return + reduce [loc in dist.targetLocDom] locDoms[loc].myInds.numIndices;
   }
 
   //
