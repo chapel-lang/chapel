@@ -1248,7 +1248,6 @@ proc BlockArr.doiCanBulkTransfer() {
       if dom.whole.dim(i).stride != 1 then return false;
 
   // See above note regarding aliased arrays
-
   if disableAliasedBulkTransfer then
     if _arrAlias != nil then return false;
 
@@ -1257,14 +1256,9 @@ proc BlockArr.doiCanBulkTransfer() {
 
 proc BlockArr.doiCanBulkTransferStride() {
   if debugDefaultDistBulkTransfer then writeln("In BlockArr.doiCanBulkTransferStride");
-//if dom.stridable then
-//  if disableAliasedBulkTransfer then
-//writeln("_arrAlias: ",_arrAlias);
 
-//if _arrAlias != nil then return false;
-  
-//writeln("doiCanBulkTransfer TRUE!");
-
+  // A BlockArr is a bunch of DefaultRectangular arrays,
+  // so strided bulk transfer gotta be always possible.
   return true;
 }
 
