@@ -1675,10 +1675,7 @@ proc BlockArr.doiBulkTransferStride(Barg)
       }
 }
 
-//These helping function is the main contribution of Juan Lopez, and later improved by Alberto. 
-//corr_direct is used to compute the low and high values of the ranges of the SOURCE subdomain from 
-//the low and high values of the DESTINATION subdomain and low values of source and dest. whole domain.
-//When computing the low bounds, parameter low has to be =1 to account for unaligned low values.
+// Ensure we have a tuple.
 proc BlockArr.tuplify(arg) {
   if isTuple(arg) then return arg; else return tuple(arg);
 }
