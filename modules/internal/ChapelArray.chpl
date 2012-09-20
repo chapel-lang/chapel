@@ -2026,11 +2026,6 @@ proc chpl__initCopy(ir: _iteratorRecord) {
   return A;
 }
 
-proc TestGetsPuts(A:[], B:[])
-{
-  A._value.TestGetsPuts(B);
-}
-
 proc copyBtoC(A:[], B:[])
 {
   A._value.copyBtoC(B);

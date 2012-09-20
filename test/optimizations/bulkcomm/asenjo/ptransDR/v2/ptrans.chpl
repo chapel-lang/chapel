@@ -42,7 +42,7 @@ init();
 transpose();          
 showfetch(false);
 verify();
-writeln("Done");
+//writeln("Done");
 if errCount.read() != 0 then writeln(errCount.read(), " ERRORS");
 
 /////////////////////////////////

@@ -9,12 +9,12 @@ proc setupGridLocales(ensureManyLocs = false) {
   if manylocs {
     var i = 0;
     for ml in gridLocales { ml = Locales(i); i += 1; }
-    write("set up with ", i, " distinct locales");
+    //write("set up with ", i, " distinct locales");
     if i < numLocales then write(" out of ", numLocales);
-    writeln();
+    //writeln();
   } else {
     gridLocales = Locales(0);
-    writeln("oversubscribed Locales(0) over ", gridLocales.numElements, " locales");
+    //writeln("oversubscribed Locales(0) over ", gridLocales.numElements, " locales");
   }
 
   if !manylocs && ensureManyLocs then halt("not enough locales: wanted ",
@@ -23,31 +23,9 @@ proc setupGridLocales(ensureManyLocs = false) {
 }
 
 // show what we have
-config const vcalc = true, vsend = true;
+config const vsend = true;
 const fpstyle = new iostyle(realfmt = 1, precision = 2, min_width = 6);
 
-proc showme(oddphase: bool, msg = "") {
-  if !vcalc then return;
-
-  for (gix, dat) in (gridDom, Data) {
-    writeln("Transposed matrices");
-    if oddphase {
-      writeln("B =");
-      writeln(dat.B, fpstyle);
-      writeln("A =");
-      writeln(dat.A, fpstyle);
-    } else {
-      writeln("A =");
-      writeln(dat.A, fpstyle);
-      writeln("B =");
-      writeln(dat.B, fpstyle);
-    }
-    writeln();
-  }
-}
-
-
-//const showdummy: [1..n, 1..m] eltype;
 const colsep = "  ";
 proc showdummyrow() {
   const width = (m) * fpstyle.min_width;
@@ -65,7 +43,7 @@ proc showrealrow(ARR, i:int) {
 
 proc showfetch(oddphase: bool, msg = "") {
   if !vsend then return;
-  writeln(msg, if oddphase then " (fetch B->B)" else " (fetch A->A)");
+  writeln(msg, if oddphase then " (transpose A->B)" else " (transpose B->A)");
   writeln();
 
   const innerGrid = { if g <= 2 then 1..1 else 2..g-1,
@@ -114,39 +92,7 @@ proc showfetch(oddphase: bool, msg = "") {
     writeln();
   } // for gridDom
 
-  writeln("done ", msg);
+  writeln("Done ", msg);
   writeln();
 }
 
-proc computeOld(oddphase: bool, out delta: elType) {
-  forall dat in Data {
-
-    if oddphase {
-
-      forall ((i,j), a, b1, b2, b3, b4) in (dat.domCompute, dat.Acompute,
-        dat.B[dat.domCompute.translate(adjcoords(1))],
-        dat.B[dat.domCompute.translate(adjcoords(2))],
-        dat.B[dat.domCompute.translate(adjcoords(3))],
-        dat.B[dat.domCompute.translate(adjcoords(4))])
-      {
-        a = (b1 + b2 + b3 + b4) / 4;
-      }
-
-    } else { //  !oddphase
-
-      forall ((i,j), a, b1, b2, b3, b4) in (dat.domCompute, dat.Bcompute,
-        dat.A[dat.domCompute.translate(adjcoords(1))],
-        dat.A[dat.domCompute.translate(adjcoords(2))],
-        dat.A[dat.domCompute.translate(adjcoords(3))],
-        dat.A[dat.domCompute.translate(adjcoords(4))])
-      {
-        a = (b1 + b2 + b3 + b4) / 4;
-      }
-
-    } // if oddphase
-
-    dat.localDelta = max reduce [(a,b) in (dat.Acompute, dat.Bcompute)] abs(a-b);
-  } // forall dat
-
-  delta =  max reduce [dat in Data] dat.localDelta;
-}

@@ -15,12 +15,12 @@ proc setupGridLocales(ensureManyLocs = false) {
   if manylocs {
     var i = 0;
     for ml in gridLocales { ml = Locales(i); i += 1; }
-    write("set up with ", i, " distinct locales");
+    //write("set up with ", i, " distinct locales");
     if i < numLocales then write(" out of ", numLocales);
-    writeln();
+    //writeln();
   } else {
     gridLocales = Locales(0);
-    writeln("oversubscribed Locales(0) over ", gridLocales.numElements, " locales");
+    //writeln("oversubscribed Locales(0) over ", gridLocales.numElements, " locales");
   }
 
   if !manylocs && ensureManyLocs then halt("not enough locales: wanted ",
@@ -29,7 +29,7 @@ proc setupGridLocales(ensureManyLocs = false) {
 }
 
 // show what we have
-config const vcalc = true, vsend = true;
+config const vcalc = false, vsend = false;
 const fpstyle = new iostyle(realfmt = 1, precision = 2, min_width = 6);
 
 proc showme(oddphase: bool, delta: elType, msg = "") {
