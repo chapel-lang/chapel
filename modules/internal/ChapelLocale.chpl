@@ -3,6 +3,10 @@
 pragma "no use ChapelStandard"
 module ChapelLocale {
 
+config const dataParTasksPerLocale = 0;
+config const dataParIgnoreRunningTasks = true;
+config const dataParMinGranularity: int = 1;
+
 class locale {
   const chpl_id: int;
   const numCores: int;

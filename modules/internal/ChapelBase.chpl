@@ -58,6 +58,8 @@ if (CHPL_GMP == "unset") {
 config param warnMaximalRange = false;	// Warns if integer rollover will cause
 					// the iterator to yield zero times.
 
+config param chpl__testParFlag = false;
+
 inline proc +(s: string, x: numeric)
   return s + x:string;
 

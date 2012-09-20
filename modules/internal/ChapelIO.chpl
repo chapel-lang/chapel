@@ -474,7 +474,6 @@ proc _getoutputformat(s: string):string {
 // parallelized.
 //
 
-config param chpl__testParFlag = false;
 var chpl__testParOn = false;
 
 proc chpl__testParStart() {
