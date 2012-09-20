@@ -1425,7 +1425,9 @@ proc chpl__serializeAssignment(a: [], b) param {
 }
 
 // This must be a param function
+//proc chpl__compatibleForBulkTransfer(a:[], b:[]) param {
 proc chpl__compatibleForBulkTransfer(a:[], b:[]) param {
+	writeln("********chpl__compatibleForBulkTransfer");
   if a.eltType != b.eltType then return false;
   if !chpl__supportedDataTypeForBulkTransfer(a.eltType) then return false;
   if a._value.type != b._value.type then return false;
@@ -1468,6 +1470,7 @@ proc chpl__useBulkTransfer(a:[], b:[]) {
 
 proc chpl__useBulkTransferStride(a:[], b:[]) {
   if debugDefaultDistBulkTransfer then writeln("chpl__useBulkTransferStride");
+  writeln("***************************************chpl__useBulkTransferStride");
 
   // constraints specific to a particular domain map array type
   if !a._value.doiCanBulkTransferStride() then return false;
@@ -1487,15 +1490,33 @@ proc chpl__useBulkTransferStride(a:[], b:[]) {
 proc chpl__useBulkTransfer(a: [], b) param return false;
 
 inline proc =(a: [], b) {
+    if debugDefaultDistBulkTransfer then writeln("a equals b:",a," b:",b);
+/*	
+		if b.doiCanIO() {
+			writeln("Inside = b is IODist, support IO Read----filename ", b._value.getFilename(),"--------");
+			b._value.setFilename("equalb.bor");
+			writeln("2Inside = b is IODist, support IO Read----filename ", b._value.getFilename(),"--------");
+		}
+			*/
+		
+		if a._value.doiCanIO() {
+			writeln("Inside = a is IODist, support IO ----filename ", a._value.getFilename(),"--------");
+			if ( a._value.getFilename()=="" ) then a._value.setFilename("equala.bor");
+			writeln("2Inside = a is IODist, support IO ----filename ", a._value.getFilename(),"--------");
+		}
   if (chpl__isArray(b) || chpl__isDomain(b)) && a.rank != b.rank then
     compilerError("rank mismatch in array assignment");
   if chpl__isArray(b) && b._value == nil then
     return a;
   // This outer conditional must result in a param
+ if debugDefaultDistBulkTransfer then  writeln(" serialize(b):",chpl__serializeAssignment(a, b)," b:",b,"---");
   if useBulkTransfer && chpl__isArray(b) &&
      chpl__compatibleForBulkTransfer(a, b) &&
     !chpl__serializeAssignment(a, b) {
+
+
     if chpl__useBulkTransferStride(a, b) { //First tries the bulkStride
+  writeln("Rafa: a._value.doiBulkTransferStride");
       a._value.doiBulkTransferStride(b);
       return a;
     }else if chpl__useBulkTransfer(a, b) { //If not possible, the plain bulk
@@ -1503,23 +1524,79 @@ inline proc =(a: [], b) {
       return a;
     }
     if debugDefaultDistBulkTransfer then writeln("Leaving proc =(a:[],b)");
+    writeln("Leaving proc =(a:[],b)");
   }
+  //writeln("Rafa: checking for bulk 2:", chpl__compatibleForBulkTransfer(a, b));
+    writeln("1Checked useBulkTransfer");
 
+// New code for IO
+  if useBulkTransfer && chpl__isArray(b) {
+	    if a.eltType != b.eltType then writeln("false");
+	    if !chpl__supportedDataTypeForBulkTransfer(a.eltType) then writeln("false");
+	    if a._value.type != b._value.type then writeln("false");
+	    if !a._value.dsiSupportsBulkTransfer() then writeln("false");
+  if b._value.doiCanIO() {
+	  //newtest
+//	 a._value.doiBulkTransferStride(b); 
+	  writeln("Inside = b is IODist, support IO Read----filename ", b._value.getFilename(),"--------");
+	  if ( b._value.getFilename()=="" ) then {  b._value.setFilename("equalb.bor");
+		  writeln("2Inside = b is IODist, support IO Read----filename ", b._value.getFilename(),"--------");
+	  }
+	  writeln("B is IODist, support IO Read--------------------------------");
+	  b._value.doIORead(a);
+	  writeln("Equal return B --------------------------------");
+	  return a;   // Rafa: Should be b ?
+  }
+  if a._value.doiCanIO() {
+	  writeln("Inside = a is IODist, support IO Read----filename ", a._value.getFilename(),"--------");
+	  if ( a._value.getFilename()=="" ) then { a._value.setFilename("equala.bor");
+		  writeln("2Inside = a is IODist, support IO Read----filename ", a._value.getFilename(),"--------");
+	  }
+	  writeln("A is IODist, support IO Write--------------------------------");
+	  a._value.doIOWrite(b);
+	  writeln("Equal return A --------------------------------");
+	  return a;
+  }
+  }
+// End new code for IO
+  
+
+  
+//		if (typeToString(b._value.type) == "[DistIODom(1,int(64),false)] real(64)" ) 
+
+//		if ( b._value.type == IODistDom )  writeln("A is IODist-------------------------------");
+//		if b.isIODist()  writeln("B is IODist--------------------------------");
+//    if  (a._value.doiCanIO() || b._value.doiCanIO()) {
   if chpl__serializeAssignment(a, b) {
     compilerWarning("whole array assignment has been serialized (see note in $CHPL_HOME/STATUS)");
+  writeln("chpl__serializeAssignment--------------------------------");
     for (aa,bb) in (a,b) do
       aa = bb;
   } else if chpl__tryToken { // try to parallelize using leader and follower iterators
+  writeln("chpl__tryToken--------------------------------");
     forall (aa,bb) in (a,b) do
+    {
       aa = bb;
+    }
   } else {
     compilerWarning("whole array assignment has been serialized (see note in $CHPL_HOME/STATUS)");
+  writeln("serialized 2--------------------------------");
     for (aa,bb) in (a,b) do
       aa = bb;
   }
+
   return a;
 }
-
+/*
+proc =(a: IODist, b) {  // b is iteratable
+	writeln("To copy b in a");
+	  b.write();
+//	    for ind in b {
+//		        a.add(ind);
+//			  }
+	      return a;
+}
+*/
 proc =(a: [], b: _tuple) where isEnumArr(a) {
     if b.size != a.numElements then
       halt("tuple array initializer size mismatch");
@@ -1653,6 +1730,7 @@ proc iteratorIndexType(x) type {
 }
 
 proc _iteratorRecord.writeThis(f: Writer) {
+  writeln("Rafa:writeThis ChapelArray");
   var first: bool = true;
   for e in this {
     if !first then
