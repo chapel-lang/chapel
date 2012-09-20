@@ -5,6 +5,12 @@
  * Original C contributed by Sebastien Loisel
  * Conversion to Chapel by Albert Sidelnik
  */
+// TODO: This test has been removed from the set of standard regressions
+// (by means of the spectralnorm.notest file).  The syncronization primitives in
+// the original code are important, since some variables are being reused on each
+// iteration.  See comments with "#pragma omp barrier" below.
+// As it stands, the program is "potentially" nondeterministic when running in
+// a parallel execution environment.
 
 use Time;
 config const timer : bool = false;
