@@ -97,7 +97,7 @@ proc _tuple.this(i : integral) var {
 //
 iter _tuple.these() {
 
-  compilerError("Iteration over tuples is not supported.");
+  compilerError("Iteration over tuples is not yet supported. If you intended to use zippered iteration, you need to add the new keyword 'zip' before the tuple of iteratable expressions.");
 
   // johnk: This is just a draft.
   // At the time of writting only homogeneous tuple iteration was supported
@@ -112,7 +112,7 @@ iter _tuple.these(param tag:iterKind)
     where tag == iterKind.leader 
 {
   
-  compilerError("Iteration over tuples is not supported.");
+  compilerError("Iteration over tuples is not yet supported. If you intended to use zippered iteration, you need to add the new keyword 'zip' before the tuple of iteratable expressions.");
 
   // johnk: This is just a draft.
   // At the time of writting only homogeneous tuple iteration was supported
@@ -146,7 +146,7 @@ iter _tuple.these(param tag:iterKind)
 iter _tuple.these(param tag:iterKind, followThis)
     where tag == iterKind.follower
 {
-  compilerError("Iteration over tuples is not supported.");
+  compilerError("Iteration over tuples is not yet supported. If you intended to use zippered iteration, you need to add the new keyword 'zip' before the tuple of iteratable expressions.");
   
   // johnk: This is just a draft.
   // At the time of writting only homogeneous tuple iteration was supported
