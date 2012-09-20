@@ -13,11 +13,13 @@ proc TestGetsPuts(A:[], B:[])
 
 proc BlockArr.TestGetsPuts(B)
 {
-  param stridelevels=1;
-  //Errors below if stridelevels=0 !!
-  var dststrides:[1..#stridelevels] int(32);
-  var srcstrides: [1..#stridelevels] int(32);
-  var count: [1..#(stridelevels+1)] int(32);
+  param stridelevels=0;
+  //  var dststrides:[1..#stridelevels] int(32);
+  var dststrides:[1..1] int(32);
+  //  var srcstrides: [1..#stridelevels] int(32);
+  var srcstrides: [1..1] int(32);
+  //  var count: [1..#(stridelevels+1)] int(32);
+  var count: [1..2] int(32);
   var rid=1; //remote locale id
   var lid=0; //local locale id
 
@@ -37,7 +39,7 @@ proc BlockArr.TestGetsPuts(B)
       var srcstr=srcstrides._value.data;
       var cnt=count._value.data;
 
-// 1.- get some elements from B on locale 1 to A on locale 0      
+// 1.- get 2 elements from B (B[58..59]) on locale 1 to A[8..9] on locale 0      
       __primitive("chpl_comm_gets",
       		  __primitive("array_get",dest,
       			      locArr[0].myElems._value.getDataIndex(8)),
@@ -49,7 +51,7 @@ proc BlockArr.TestGetsPuts(B)
       		  __primitive("array_get",cnt, count._value.getDataIndex(1)),
       		  stridelevels);
 
-// 2.- get some elements from B on locale 0 to A on locale 0
+// 2.- get 2 elements from B (B[8..9]) on locale 0 to A[24..25] on locale 0
       __primitive("chpl_comm_gets",
       		  __primitive("array_get",dest,
       			      locArr[0].myElems._value.getDataIndex(24)),
@@ -65,7 +67,7 @@ proc BlockArr.TestGetsPuts(B)
       var destl = B._value.locArr[lid].myElems._value.data;
       var destr = B._value.locArr[rid].myElems._value.data;
 
-// 3.- put some elements from A on locale 0 to B on locale 1
+// 3.- put 2 elements from A (A[26..27]) on locale 0 to B[76..77] on locale 1
       __primitive("chpl_comm_puts",
       		  __primitive("array_get",destr,
 			      B._value.locArr[rid].myElems._value.getDataIndex(76)),
@@ -77,7 +79,7 @@ proc BlockArr.TestGetsPuts(B)
       		  __primitive("array_get",cnt, count._value.getDataIndex(1)),
       		  stridelevels);
 
-// 4.- put some elements from A on locale 0 to B on locale 0
+// 4.- put 2 elements from A (A[2..3]) on locale 0 to B[16..17] on locale 0
       __primitive("chpl_comm_puts",
       		  __primitive("array_get",destl,
 			      B._value.locArr[lid].myElems._value.getDataIndex(16)),
