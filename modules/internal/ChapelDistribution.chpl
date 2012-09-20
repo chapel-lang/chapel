@@ -244,6 +244,8 @@ pragma "base array"
 class BaseArr {
   var _arrCnt: atomic int; // array reference count
   var _arrAlias: BaseArr;  // reference to base array if an alias
+  var _filename: string;   // Rafa : filename
+    
 
   proc dsiStaticFastFollowCheck(type leadType) param return false;
 
@@ -349,6 +351,20 @@ class BaseArr {
 
   proc dsiSupportsBulkTransfer() param return false;
   proc doiCanBulkTransfer() param return false;
+  proc doiCanIO() param return false;
+  proc doIORead(B){ 
+    halt("This array type does not support IO Read.");
+  }
+  proc doIOWrite(B){ 
+    halt("This array type does not support IO Write.");
+  }
+  proc getFilename():string{ 
+    halt("This array type does not support getting the filename.");
+    return "nil";
+  }
+  proc setFilename(fn){ 
+    halt("This array type does not support setting the filename.");
+  }
   proc doiBulkTransfer(B){ 
     halt("This array type does not support bulk transfer.");
   }
