@@ -1562,9 +1562,9 @@ proc BlockArr.doiBulkTransferStride(Barg)
       
         if regionA.numIndices>0
         {
-          ini=bulkCommConvertCoordinate(tuplify(regionA.first),A,B);//return tuple(rank * int)
-          end=bulkCommConvertCoordinate(tuplify(regionA.last),A,B);//return tuple(rank * int)
-          sb=tuplify(B.dom.whole.stride);
+          ini=bulkCommConvertCoordinate(bulkCommTuplify(regionA.first),A,B);//return tuple(rank * int)
+          end=bulkCommConvertCoordinate(bulkCommTuplify(regionA.last),A,B);//return tuple(rank * int)
+          sb=bulkCommTuplify(B.dom.whole.stride);
           
           var DomA: domain(rank,int,true);
           var r1,r2,r3: rank * range(stridable = true);
@@ -1580,28 +1580,54 @@ proc BlockArr.doiBulkTransferStride(Barg)
               if(inters.numIndices>0 && regionA.numIndices>0)
                 {
                   var sa,ini_src,end_src:rank*int;
-                  ini_src=bulkCommConvertCoordinate(tuplify(inters.first), B, A);//return tuple(rank * int)
-                  end_src=bulkCommConvertCoordinate(tuplify(inters.last), B, A);//return tuple(rank * int)
-                  sa = tuplify(dom.whole.stride); //return a tuple
+                  ini_src=bulkCommConvertCoordinate(bulkCommTuplify(inters.first), B, A);//return tuple(rank * int)
+                  end_src=bulkCommConvertCoordinate(bulkCommTuplify(inters.last), B, A);//return tuple(rank * int)
+                  sa = bulkCommTuplify(dom.whole.stride); //return a tuple
    
                   for param t in 1..rank
                   {
-                    r3[t] = (tuplify(inters.first)[t]..tuplify(inters.last)[t] by tuplify(inters.stride)[t]);
+                    r3[t] = (bulkCommTuplify(inters.first)[t]..bulkCommTuplify(inters.last)[t] by bulkCommTuplify(inters.stride)[t]);
                     r2[t] = (ini_src[t]..end_src[t] by sa[t]);
                   }
 
-                  if (dom.locDoms[i].myBlock.stridable || B.dom.locDoms[i].myBlock.stridable) then
-                    locArr[i].myElems[(...r2)]._value.doiBulkTransferStride(B.locArr[j].myElems[(...r3)],true,true);
-                  else
-                    locArr[i].myElems[(...r2)] = B.locArr[j].myElems[(...r3)];
+		  locArr[i].myElems[(...r2)]._value.doiBulkTransferStride(B.locArr[j].myElems[(...r3)],true,true);
                 }
             }
           }
       }
 }
 
+proc DefaultRectangularArr.doiBulkTransferStride(Barg) where Barg._value.isBlockDist()
+{
+  const A = this, B = Barg._value;
+
+  if debugDefaultDistBulkTransfer then 
+    writeln("In DefaultRectangularArr.doiBulkTransferStride where B._value.isBlockDist() ");
+  var r2: rank * range(stridable = true);
+  for j in B.dom.dist.targetLocDom
+  {
+    var inters=B.dom.locDoms[j].myBlock;
+    if(inters.numIndices>0 && dom.dsiNumIndices >0)
+    {
+      var sa,ini_src,end_src:rank*int;
+      ini_src = bulkCommConvertCoordinate(bulkCommTuplify(inters.first), B, A);
+      end_src = bulkCommConvertCoordinate(bulkCommTuplify(inters.last), B, A);
+      sa = bulkCommTuplify(A.dom.dsiStride);
+      
+      for param t in 1..rank do
+        r2[t] = (ini_src[t]..end_src[t] by sa[t]);
+
+      const d2 ={(...r2)};
+      const slice2 = this.dsiSlice(d2._value);
+
+      slice2.doiBulkTransferStride(B.locArr[j].myElems,false,true);
+      delete slice2;
+    }
+  }
+}
+
 // Ensure we have a tuple.
-proc BlockArr.tuplify(arg) {
+proc bulkCommTuplify(arg) {
   if isTuple(arg) then return arg; else return tuple(arg);
 }
 
