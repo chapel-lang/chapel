@@ -3,13 +3,42 @@
 # Current notes on triage results, sorted by type of failure
 # (benchmark, compiler, or platform).
 #
+========================================================
+Problems analyzed and dispatched to responsible parties:
+========================================================
+2012-09-21 General build failure.
+  Problem was cause by a bad chpl-atomics.h file checked in by hilde.
+  Revised file checked in.  New cron results pending.
+
+2012-09-20 specralnorm
+  The basic version is nondeterministic "by inspection", so it was disabled
+  using a .notest file.
+
+2012-09-19 stack overflow on SSCA2
+  No clue.
+
+2012-09-19 p-lammps timeout failures
+  Not addressed.
+
+2012-09-18 gasnet testing failures.  raCommCheck and kin.
+  Due to zippered iteration syntax change not propagating to parallel-only tests.
+  John's sieve was to actually run the tests and fix failures rather than to 
+    identify a standard syntax pattern to use in a global search.
+  John submitted a patch and this issue is resolved.
+
+2012-09-17 qthreads build failure.
+  Due to LLVM backend checkin.
+  Michael was alerted and submitted a patch for review.
+  Brad is responding to Michael -- perhaps suggesting a less invasive solution.
 
 ==============================================
 These things regularly cause noise in testing:
 ==============================================
 
-spectralnorm (vass)
--------------------
+spectralnorm
+------------
+Removed from further consideration <hilde 2012-09-20>
+
 proposed approach is to see whether reference version is similarly
 noisy, and if not to see whether ours has inadvertant nondeterminisms.
 (still noisy as of 2012/08/14-8/24: gnfp, gnfp-nolocal)
@@ -32,7 +61,7 @@ and now just needs to propagate it to the other versions, as well as
 to the else-clause of the 'useOn' conditional.
   release/examples/benchmarks/hpcc/variants/ra-cleanloop: fixed by r20326
   studies/hpcc/2008/ra: not fixed yet, failed 8/14/12
-  studies/hpcc/nodistrib/ra.nodist: not fixed yet, failed 8/14/12
+  studies/hpcc/nodistrib/ra.nodist: not fixed yet, failed 8/14/12, still failing 2012/09/21.
   studies/hpcc/RA/bradc/parallel/ra-dist: not fixed yet, last failure unknown
 
 
