@@ -672,11 +672,12 @@ void  chpl_comm_gets(void* dstaddr, void* dststrides, int32_t srclocale,
   // 1.) Can multiply by elemSize to convert to bytes without modifying the originals
   // 2.) Can be cast to size_t type (typically 64 bits) as spected by gasnet
 
-  assert(strlvls < 64); // otherwise need to allocate more below
-
   size_t dststr[64];
   size_t srcstr[64];
   size_t cnt[65];
+
+  assert(strlvls < 64); // otherwise need to allocate more below
+
   /*
   size_t *dststr=(size_t*)chpl_mem_allocMany(strlvls,sizeof(size_t),CHPL_RT_MD_GETS_PUTS_STRIDES,0,0); 
   size_t *srcstr=(size_t*)chpl_mem_allocMany(strlvls,sizeof(size_t),CHPL_RT_MD_GETS_PUTS_STRIDES,0,0); 
@@ -740,11 +741,12 @@ void  chpl_comm_puts(void* dstaddr, void* dststrides, int32_t dstlocale,
   // 1.) Can multiply by elemSize to convert to bytes without modifying the originals
   // 2.) Can be casted to size_t type (typically 64 bits) as spected by gasnet
 
-  assert(strlvls < 64); // otherwise need to allocate more below
-
   size_t dststr[64];
   size_t srcstr[64];
   size_t cnt[65];
+
+  assert(strlvls < 64); // otherwise need to allocate more below
+
   /*
   size_t *dststr=(size_t*)chpl_mem_allocMany(strlvls,sizeof(size_t),CHPL_RT_MD_GETS_PUTS_STRIDES,0,0); 
   size_t *srcstr=(size_t*)chpl_mem_allocMany(strlvls,sizeof(size_t),CHPL_RT_MD_GETS_PUTS_STRIDES,0,0); 
