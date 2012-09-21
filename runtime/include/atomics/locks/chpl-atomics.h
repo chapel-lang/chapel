@@ -2,7 +2,7 @@
 //
 // Since some of these non-intrinsic atomic routines are somewhat verbose, the GNU
 // compiler issues a warning if inlining is requested and denied.
-// If inlining is desired anyway, supply -DINLINE_LOCK_BASED_ATOMICS=inline.
+// If inlining is desired anyway, supply -DINLINE_LOCK_BASED_ATOMICS
 //
 
 #ifndef _chpl_atomics_h_
@@ -10,6 +10,15 @@
 
 #include "chpltypes.h" // chpl_bool
 #include "chpl-tasks.h" // chpl_sync_aux_t
+
+#ifdef MAYBE_INLINE
+ #error No fair.  I want to use this name.
+#endif
+#ifdef INLINE_LOCK_BASED_ATOMICS
+ #define MAYBE_INLINE inline
+#else
+ #define MAYBE_INLINE
+#endif
 
 typedef struct atomic_int_least8_s {
   chpl_sync_aux_t sv;
@@ -83,7 +92,7 @@ void atomic_signal_thread_fence(memory_order order)
   // No idea!
 }
 
-static INLINE_LOCK_BASED_ATOMICS chpl_bool
+static MAYBE_INLINE chpl_bool
 atomic_flag_test_and_set_explicit(atomic_flag *obj, memory_order order) {
   chpl_bool ret;
   chpl_sync_lock(&obj->sv);
@@ -95,7 +104,7 @@ atomic_flag_test_and_set_explicit(atomic_flag *obj, memory_order order) {
 static inline chpl_bool atomic_flag_test_and_set(atomic_flag *obj) {
   return atomic_flag_test_and_set_explicit(obj, memory_order_seq_cst);
 }
-static INLINE_LOCK_BASED_ATOMICS void
+static MAYBE_INLINE void
 atomic_flag_clear_explicit(atomic_flag *obj, memory_order order) {
   chpl_sync_lock(&obj->sv);
   obj->v = false;
@@ -116,7 +125,7 @@ static inline void atomic_init_ ## type(atomic_ ## type * obj, basetype value) {
 static inline void atomic_destroy_ ## type(atomic_ ## type * obj) { \
   chpl_sync_destroyAux(&obj->sv); \
 } \
-static INLINE_LOCK_BASED_ATOMICS void \
+static MAYBE_INLINE void \
 atomic_store_explicit_ ## type(atomic_ ## type * obj, basetype value, memory_order order) { \
   chpl_sync_lock(&obj->sv); \
   obj->v = value; \
@@ -125,7 +134,7 @@ atomic_store_explicit_ ## type(atomic_ ## type * obj, basetype value, memory_ord
 static inline void atomic_store_ ## type(atomic_ ## type * obj, basetype value) { \
   atomic_store_explicit_ ## type(obj, value, memory_order_seq_cst); \
 } \
-static INLINE_LOCK_BASED_ATOMICS basetype \
+static MAYBE_INLINE basetype \
 atomic_load_explicit_ ## type(atomic_ ## type * obj, memory_order order) { \
   basetype ret; \
   chpl_sync_lock(&obj->sv); \
@@ -136,7 +145,7 @@ atomic_load_explicit_ ## type(atomic_ ## type * obj, memory_order order) { \
 static inline basetype atomic_load_ ## type(atomic_ ## type * obj) { \
   return atomic_load_explicit_ ## type(obj, memory_order_seq_cst); \
 } \
-static INLINE_LOCK_BASED_ATOMICS basetype \
+static MAYBE_INLINE basetype \
 atomic_exchange_explicit_ ## type(atomic_ ## type * obj, basetype value, memory_order order) { \
   basetype ret; \
   chpl_sync_lock(&obj->sv); \
@@ -148,7 +157,7 @@ atomic_exchange_explicit_ ## type(atomic_ ## type * obj, basetype value, memory_
 static inline basetype atomic_exchange_ ## type(atomic_ ## type * obj, basetype value) { \
   return atomic_exchange_explicit_ ## type(obj, value, memory_order_seq_cst); \
 } \
-static INLINE_LOCK_BASED_ATOMICS chpl_bool \
+static MAYBE_INLINE chpl_bool \
 atomic_compare_exchange_strong_explicit_ ## type(atomic_ ## type * obj, basetype expected, basetype desired, memory_order order) { \
   basetype ret; \
   chpl_sync_lock(&obj->sv); \
@@ -172,7 +181,7 @@ static inline chpl_bool atomic_compare_exchange_weak_ ## type(atomic_ ## type * 
 }
 
 #define DECLARE_ATOMICS_FETCH_OPS(type) \
-static INLINE_LOCK_BASED_ATOMICS type \
+static MAYBE_INLINE type \
 atomic_fetch_add_explicit_ ## type(atomic_ ## type * obj, type operand, memory_order order) { \
   type ret; \
   chpl_sync_lock(&obj->sv); \
@@ -184,7 +193,7 @@ atomic_fetch_add_explicit_ ## type(atomic_ ## type * obj, type operand, memory_o
 static inline type atomic_fetch_add_ ## type(atomic_ ## type * obj, type operand) { \
   return atomic_fetch_add_explicit_ ## type(obj, operand, memory_order_seq_cst); \
 } \
-static INLINE_LOCK_BASED_ATOMICS type \
+static MAYBE_INLINE type \
 atomic_fetch_sub_explicit_ ## type(atomic_ ## type * obj, type operand, memory_order order) { \
   type ret; \
   chpl_sync_lock(&obj->sv); \
@@ -196,7 +205,7 @@ atomic_fetch_sub_explicit_ ## type(atomic_ ## type * obj, type operand, memory_o
 static inline type atomic_fetch_sub_ ## type(atomic_ ## type * obj, type operand) { \
   return atomic_fetch_sub_explicit_ ## type(obj, operand, memory_order_seq_cst); \
 } \
-static INLINE_LOCK_BASED_ATOMICS type \
+static MAYBE_INLINE type \
 atomic_fetch_or_explicit_ ## type(atomic_ ## type * obj, type operand, memory_order order) { \
   type ret; \
   chpl_sync_lock(&obj->sv); \
@@ -208,7 +217,7 @@ atomic_fetch_or_explicit_ ## type(atomic_ ## type * obj, type operand, memory_or
 static inline type atomic_fetch_or_ ## type(atomic_ ## type * obj, type operand) { \
   return atomic_fetch_or_explicit_ ## type(obj, operand, memory_order_seq_cst); \
 } \
-static INLINE_LOCK_BASED_ATOMICS type \
+static MAYBE_INLINE type \
 atomic_fetch_and_explicit_ ## type(atomic_ ## type * obj, type operand, memory_order order) { \
   type ret; \
   chpl_sync_lock(&obj->sv); \
@@ -220,7 +229,7 @@ atomic_fetch_and_explicit_ ## type(atomic_ ## type * obj, type operand, memory_o
 static inline type atomic_fetch_and_ ## type(atomic_ ## type * obj, type operand) { \
   return atomic_fetch_and_explicit_ ## type(obj, operand, memory_order_seq_cst); \
 } \
-static INLINE_LOCK_BASED_ATOMICS type \
+static MAYBE_INLINE type \
 atomic_fetch_xor_explicit_ ## type(atomic_ ## type * obj, type operand, memory_order order) { \
   type ret; \
   chpl_sync_lock(&obj->sv); \
@@ -234,7 +243,7 @@ static inline type atomic_fetch_xor_ ## type(atomic_ ## type * obj, type operand
 }
 
 #define DECLARE_REAL_ATOMICS_FETCH_OPS(type) \
-static INLINE_LOCK_BASED_ATOMICS type \
+static MAYBE_INLINE type \
 atomic_fetch_add_explicit_ ## type(atomic_ ## type * obj, type operand, memory_order order) { \
   type ret; \
   chpl_sync_lock(&obj->sv); \
@@ -246,7 +255,7 @@ atomic_fetch_add_explicit_ ## type(atomic_ ## type * obj, type operand, memory_o
 static inline type atomic_fetch_add_ ## type(atomic_ ## type * obj, type operand) { \
   return atomic_fetch_add_explicit_ ## type(obj, operand, memory_order_seq_cst); \
 } \
-static INLINE_LOCK_BASED_ATOMICS type \
+static MAYBE_INLINE type \
 atomic_fetch_sub_explicit_ ## type(atomic_ ## type * obj, type operand, memory_order order) { \
   type ret; \
   chpl_sync_lock(&obj->sv); \
@@ -318,5 +327,7 @@ static inline int leadz64(uint64_t x) {
   }
   return i;
 }
+
+#undef MAYBE_INLINE
 
 #endif // _chpl_atomics_h_
