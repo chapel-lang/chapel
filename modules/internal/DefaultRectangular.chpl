@@ -737,9 +737,6 @@ proc DefaultRectangularArr.doiCanBulkTransferStride() {
 }
 
 proc DefaultRectangularArr.doiBulkTransfer(B) {
-    if debugDefaultDistBulkTransfer then
-    writeln("In DefaultRectangularArr.doiBulkTransfer");
-
   const Adims = dom.dsiDims();
   var Alo: rank*dom.idxType;
   for param i in 1..rank do
@@ -751,8 +748,12 @@ proc DefaultRectangularArr.doiBulkTransfer(B) {
     Blo(i) = Bdims(i).first;
 
   const len = dom.dsiNumIndices:int(32);
-  if debugBulkTransfer then
+  if debugBulkTransfer {
     const elemSize =sizeof(B._value.eltType);
+    writeln("In DefaultRectangularArr.doiBulkTransfer():",
+            " Alo=", Alo, ", Blo=", Blo,
+            ", len=", len, ", elemSize=", elemSize);
+  }
 
   // NOTE: This does not work with --heterogeneous, but heterogeneous
   // compilation does not work right now.  The calls to chpl_comm_get
@@ -767,7 +768,7 @@ proc DefaultRectangularArr.doiBulkTransfer(B) {
                 B._value.data.locale.id,
                 __primitive("array_get", src, B._value.getDataIndex(Blo)),
                 len);
-  }else if B._value.data.locale.id==here.id {
+  } else if B._value.data.locale.id==here.id {
     if debugDefaultDistBulkTransfer then
       writeln("\tlocal put() to ", this.locale.id);
     var dest = this.data;
@@ -870,13 +871,13 @@ proc DefaultRectangularArr.doiBulkTransferStride(Barg,aFromBD=false, bFromBD=fal
   //Note that we use equal function equal instead of dstCount==srcCount due to the latter fails
   //The same for the array assigment (using assing function instead of srcCount=dstCount)
   
-  if !equal(dstCount, srcCount, rank+1) //For different size arrays
+  if !bulkCommEqual(dstCount, srcCount, rank+1) //For different size arrays
   {
       for h in 1..stridelevels+1
       {
 	if dstCount[h]>srcCount[h]
         {
-	  assig(dstCount,srcCount, stridelevels+1);
+	  bulkCommAssign(dstCount,srcCount, stridelevels+1);
           break;
         }
         else if dstCount[h]<srcCount[h] then break; 
@@ -1147,7 +1148,7 @@ proc DefaultRectangularArr.computeBulkStride(rankcomp,cnt:[],levels:int(32))
     h+=1;
   }
 
-  for param i in 2..rank by -1:int(32){
+  for param i in 2..rank by -1 {
     if (levels>=h)
     {
       if (cnt[h]==dom.dsiDim(i).length*cum && dom.dsiDim(i-1).length>1) 
@@ -1234,24 +1235,14 @@ elements inside the row.
 */
 proc DefaultRectangularArr.checkStrideDistance(x: int)
 {
-  var cont:bool=false;
-  if dom.dsiDim(x-1).length==1 then cont=false;
-  else
-  {
-    if blk(rank)==1
-    {
-      if (((blk(x-1)*dom.dsiStride(x))/blk(x) - (1+dom.dsiDim(x).last - dom.dsiDim(x).first)) == dom.dsiStride(x)-1)
-        && dom.dsiDim(x).length>1 && (dom.dsiStride(x-1)==1||dom.dsiDim(x-1).length==1 )
-        then cont=true;
-    }
-    else
-    {
-      if ((blk(x-1)*dom.dsiStride(x))/blk(x) - (1+dom.dsiDim(x).last - dom.dsiDim(x).first) == dom.dsiStride(x)-1)
-        && dom.dsiDim(x).length>1 && (dom.dsiStride(x-1)==1||dom.dsiDim(x-1).length==1 )
-        then cont=true;
-    }
-  }
-  return cont;
+  if dom.dsiDim(x-1).length==1 then return false;
+
+  if (blk(x-1)*dom.dsiStride(x))/blk(x) - (1+dom.dsiDim(x).last - dom.dsiDim(x).first) == dom.dsiStride(x)-1
+  && dom.dsiDim(x).length>1
+  && (dom.dsiStride(x-1)==1 || dom.dsiDim(x-1).length==1)
+  then return true;
+
+  return false;
 }
 
 //
@@ -1261,7 +1252,7 @@ proc DefaultRectangularArr.checkStrideDistance(x: int)
 // d1 and d2 are always equal at indices tam+1..rank.)
 // Ideally, d1 and d2 will become tuples.
 //
-proc DefaultRectangularArr.equal(d1:[], d2:[], tam:int)
+proc bulkCommEqual(d1:[], d2:[], tam:int)
 {
   var c:bool = true;
   for i in 1..tam do if d1[i]!=d2[i] then c=false;
@@ -1274,7 +1265,7 @@ proc DefaultRectangularArr.equal(d1:[], d2:[], tam:int)
 // TODO: convert to 'for' for rank 1..5.
 // Ideally, d1 and d2 will become tuples.
 //
-proc DefaultRectangularArr.assig(d1:[], d2:[], tam: int)
+proc bulkCommAssign(d1:[], d2:[], tam: int)
 {
   for i in 1..tam do d1[i]=d2[i];
 }
@@ -1294,9 +1285,10 @@ proc DefaultRectangularArr.tuplify(arg) {
 // This function was contributed by Juan Lopez and later improved by Alberto.
 // In the SBAC'12 paper it is called m().
 //
-proc bulkCommConvertCoordinate(b, Barr,Aarr)
+proc bulkCommConvertCoordinate(bArg, Barr, Aarr)
 {
   compilerAssert(Aarr.rank == Barr.rank);
+  const b = chpl__tuplify(bArg);
   param rank = Aarr.rank;
   const AD = Aarr.dom.dsiDims();
   const BD = Barr.dom.dsiDims();

@@ -656,8 +656,7 @@ void  chpl_comm_get(void* addr, int32_t locale, void* raddr,
 // * convert count[0] and all of 'srcstr' and 'dststr' from counts of element
 //   to counts of bytes,
 // * convert the element types of the above C arrays from int32_t to size_t.
-// While the former can be done in Chapel (but as efficiently?),
-// for the latter it might be more challenging.
+// Maybe this can be done in Chapel, but would it be as efficient?
 //
 void  chpl_comm_gets(void* dstaddr, void* dststrides, int32_t srclocale, 
 		     void* srcaddr, void* srcstrides, void* count,
@@ -667,22 +666,11 @@ void  chpl_comm_gets(void* dstaddr, void* dststrides, int32_t srclocale,
   const size_t strlvls=(size_t)stridelevels;
   const gasnet_node_t srcnode=(gasnet_node_t)srclocale;
 
-  // Vass suggests allocating these arrays on the stack, e.g.:
-  //new arrays for count and strides. The advantages are that 
-  // 1.) Can multiply by elemSize to convert to bytes without modifying the originals
-  // 2.) Can be cast to size_t type (typically 64 bits) as spected by gasnet
+  size_t dststr[16];
+  size_t srcstr[16];
+  size_t cnt[17];
+  assert(strlvls < 16); // otherwise need to make the above arrays bigger
 
-  size_t dststr[64];
-  size_t srcstr[64];
-  size_t cnt[65];
-
-  assert(strlvls < 64); // otherwise need to allocate more below
-
-  /*
-  size_t *dststr=(size_t*)chpl_mem_allocMany(strlvls,sizeof(size_t),CHPL_RT_MD_GETS_PUTS_STRIDES,0,0); 
-  size_t *srcstr=(size_t*)chpl_mem_allocMany(strlvls,sizeof(size_t),CHPL_RT_MD_GETS_PUTS_STRIDES,0,0); 
-  size_t *cnt=(size_t*)chpl_mem_allocMany(strlvls+1,sizeof(size_t),CHPL_RT_MD_GETS_PUTS_COUNTS,0,0); 
-  */
   //Only count[0] and strides are meassured in number of bytes.
   cnt[0]=((int32_t*)count)[0] * elemSize;
 
@@ -711,7 +699,7 @@ void  chpl_comm_gets(void* dstaddr, void* dststrides, int32_t srclocale,
     for (i=0;i<=strlvls;i++) printf(" %d ",(int)cnt[i]);
     printf("\n");		      
   }
-  // the case if (chpl_localeID == srclocale) is internally managed inside gasnet
+  // the case (chpl_localeID == srclocale) is internally managed inside gasnet
   if (chpl_verbose_comm && !chpl_comm_no_debug_private)
     printf("%d: %s:%d: remote get from %d\n", chpl_localeID, fn, ln, srclocale);
   if (chpl_comm_diagnostics && !chpl_comm_no_debug_private) {
@@ -720,12 +708,6 @@ void  chpl_comm_gets(void* dstaddr, void* dststrides, int32_t srclocale,
     chpl_sync_unlock(&chpl_comm_diagnostics_sync);
   }
   gasnet_gets_bulk(dstaddr, dststr, srcnode, srcaddr, srcstr, cnt, strlvls); 
-
-  /* Now in the stack
-  chpl_mem_free(cnt,0,0);
-  chpl_mem_free(srcstr,0,0);
-  chpl_mem_free(dststr,0,0);
-  */
 }
 
 // See the comment for cmpl_comm_gets().
@@ -737,21 +719,11 @@ void  chpl_comm_puts(void* dstaddr, void* dststrides, int32_t dstlocale,
   const size_t strlvls=(size_t)stridelevels;
   const gasnet_node_t dstnode=(gasnet_node_t)dstlocale;
 
-  //new arrays for count and strides. The advantages are that 
-  // 1.) Can multiply by elemSize to convert to bytes without modifying the originals
-  // 2.) Can be casted to size_t type (typically 64 bits) as spected by gasnet
+  size_t dststr[16];
+  size_t srcstr[16];
+  size_t cnt[17];
+  assert(strlvls < 16); // otherwise need to make the above arrays bigger
 
-  size_t dststr[64];
-  size_t srcstr[64];
-  size_t cnt[65];
-
-  assert(strlvls < 64); // otherwise need to allocate more below
-
-  /*
-  size_t *dststr=(size_t*)chpl_mem_allocMany(strlvls,sizeof(size_t),CHPL_RT_MD_GETS_PUTS_STRIDES,0,0); 
-  size_t *srcstr=(size_t*)chpl_mem_allocMany(strlvls,sizeof(size_t),CHPL_RT_MD_GETS_PUTS_STRIDES,0,0); 
-  size_t *cnt=(size_t*)chpl_mem_allocMany(strlvls+1,sizeof(size_t),CHPL_RT_MD_GETS_PUTS_COUNTS,0,0); 
-  */
   //Only count[0] and strides are meassured in number of bytes.
   cnt[0]=((int32_t*)count)[0] * elemSize;
   if(strlvls>0){
@@ -779,7 +751,7 @@ void  chpl_comm_puts(void* dstaddr, void* dststrides, int32_t dstlocale,
     printf("\n");		      
   }
 
-  // the case if (chpl_localeID == dstlocale) is internally managed inside gasnet
+  // the case (chpl_localeID == dstlocale) is internally managed inside gasnet
   if (chpl_verbose_comm && !chpl_comm_no_debug_private)
     printf("%d: %s:%d: remote get from %d\n", chpl_localeID, fn, ln, dstlocale);
   if (chpl_comm_diagnostics && !chpl_comm_no_debug_private) {
@@ -788,12 +760,6 @@ void  chpl_comm_puts(void* dstaddr, void* dststrides, int32_t dstlocale,
     chpl_sync_unlock(&chpl_comm_diagnostics_sync);
   }
   gasnet_puts_bulk(dstnode, dstaddr, dststr, srcaddr, srcstr, cnt, strlvls); 
-
- /* Now in the stack  
-  chpl_mem_free(cnt,0,0);
-  chpl_mem_free(srcstr,0,0);
-  chpl_mem_free(dststr,0,0);
- */
 }
 
 

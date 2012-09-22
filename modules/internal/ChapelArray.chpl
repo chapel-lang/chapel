@@ -1524,7 +1524,6 @@ proc chpl__compatibleForBulkTransfer(a:[], b:[]) param {
   return true;
 }
 
-//config param nue = false;
 proc chpl__compatibleForBulkTransferStride(a:[], b:[]) param {
   if a.eltType != b.eltType then return false;
   if !chpl__supportedDataTypeForBulkTransfer(a.eltType) then return false;
@@ -1535,14 +1534,6 @@ proc chpl__compatibleForBulkTransferStride(a:[], b:[]) param {
   return true;
 }
 
-/*proc chpl__compatibleForBulkTransfer_(a:[], b:[]) param {
- param result = chpl__compatibleForBulkTransfer_doit(a,b);
- 
- compilerWarning("chpl__compatibleForBulkTransfer",
-                  typeToString(a.type), " ", typeToString(b.type)," --> ", result:string);
- return result;
-}
-*/
 // This must be a param function
 proc chpl__supportedDataTypeForBulkTransfer(type t) param {
   var x:t;

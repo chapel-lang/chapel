@@ -1562,9 +1562,9 @@ proc BlockArr.doiBulkTransferStride(Barg)
       
         if regionA.numIndices>0
         {
-          ini=bulkCommConvertCoordinate(bulkCommTuplify(regionA.first),A,B);//return tuple(rank * int)
-          end=bulkCommConvertCoordinate(bulkCommTuplify(regionA.last),A,B);//return tuple(rank * int)
-          sb=bulkCommTuplify(B.dom.whole.stride);
+          ini=bulkCommConvertCoordinate(regionA.first, A, B);//return tuple(rank * int)
+          end=bulkCommConvertCoordinate(regionA.last, A, B);//return tuple(rank * int)
+          sb=chpl__tuplify(B.dom.whole.stride);
           
           var DomA: domain(rank,int,true);
           var r1,r2,r3: rank * range(stridable = true);
@@ -1580,13 +1580,13 @@ proc BlockArr.doiBulkTransferStride(Barg)
               if(inters.numIndices>0 && regionA.numIndices>0)
                 {
                   var sa,ini_src,end_src:rank*int;
-                  ini_src=bulkCommConvertCoordinate(bulkCommTuplify(inters.first), B, A);//return tuple(rank * int)
-                  end_src=bulkCommConvertCoordinate(bulkCommTuplify(inters.last), B, A);//return tuple(rank * int)
-                  sa = bulkCommTuplify(dom.whole.stride); //return a tuple
+                  ini_src=bulkCommConvertCoordinate(inters.first, B, A);//return tuple(rank * int)
+                  end_src=bulkCommConvertCoordinate(inters.last, B, A);//return tuple(rank * int)
+                  sa = chpl__tuplify(dom.whole.stride); //return a tuple
    
                   for param t in 1..rank
                   {
-                    r3[t] = (bulkCommTuplify(inters.first)[t]..bulkCommTuplify(inters.last)[t] by bulkCommTuplify(inters.stride)[t]);
+                    r3[t] = (chpl__tuplify(inters.first)[t]..chpl__tuplify(inters.last)[t] by chpl__tuplify(inters.stride)[t]);
                     r2[t] = (ini_src[t]..end_src[t] by sa[t]);
                   }
 
@@ -1610,9 +1610,9 @@ proc DefaultRectangularArr.doiBulkTransferStride(Barg) where Barg._value.isBlock
     if(inters.numIndices>0 && dom.dsiNumIndices >0)
     {
       var sa,ini_src,end_src:rank*int;
-      ini_src = bulkCommConvertCoordinate(bulkCommTuplify(inters.first), B, A);
-      end_src = bulkCommConvertCoordinate(bulkCommTuplify(inters.last), B, A);
-      sa = bulkCommTuplify(A.dom.dsiStride);
+      ini_src = bulkCommConvertCoordinate(inters.first, B, A);
+      end_src = bulkCommConvertCoordinate(inters.last, B, A);
+      sa = chpl__tuplify(A.dom.dsiStride);
       
       for param t in 1..rank do
         r2[t] = (ini_src[t]..end_src[t] by sa[t]);
@@ -1624,11 +1624,6 @@ proc DefaultRectangularArr.doiBulkTransferStride(Barg) where Barg._value.isBlock
       delete slice2;
     }
   }
-}
-
-// Ensure we have a tuple.
-proc bulkCommTuplify(arg) {
-  if isTuple(arg) then return arg; else return tuple(arg);
 }
 
 proc BlockArr.isBlockDist() param {return true;}
