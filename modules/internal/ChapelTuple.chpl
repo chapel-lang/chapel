@@ -54,6 +54,11 @@ proc *(p: int, type t) type {
 inline proc tuple(x ...?size)
   return x;
 
+// make it a tuple if it is not already
+inline proc chpl__tuplify(x) {
+  if isTuple(x) then return x; else return tuple(x);
+}
+
 //
 // isTuple, isTupleType and isHomogeneousTuple param functions
 //
