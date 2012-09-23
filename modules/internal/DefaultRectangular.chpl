@@ -884,11 +884,8 @@ proc DefaultRectangularArr.doiBulkTransferStride(Barg,aFromBD=false, bFromBD=fal
       }
   }
     
-  if (aFromBD && A.dom.stridable) then dstStride = computeBulkStride2(dstWholeDim, dstCount,stridelevels);
-  else dstStride = computeBulkStride(dstWholeDim,dstCount,stridelevels);
-  
-  if (bFromBD && B.dom.stridable) then srcStride = B.computeBulkStride2(dstWholeDim,dstCount,stridelevels);
-  else srcStride = B.computeBulkStride(srcWholeDim,dstCount,stridelevels);
+  dstStride = computeBulkStride(dstWholeDim,dstCount,stridelevels,aFromBD);
+  srcStride = B.computeBulkStride(srcWholeDim,dstCount,stridelevels,bFromBD);
   
   doiBulkTransferStrideComm(Barg, stridelevels, dstStride, srcStride, dstCount, srcCount, Alo, Blo);
 }
@@ -1014,13 +1011,14 @@ proc DefaultRectangularArr.computeBulkStrideLevels(rankcomp):int(32) where rank 
 }
 
 //Cases for computeBulkStrideLevels where rank>1:
-//Example for Case 1:  
+//Case 1:  
 //  var A: [1..4,1..4,1..4] real; A[1..4,3..4,1..4 by 2] 
-// --> In dimension 2 there is stride, because the elements are not
+// --> In dimension 3 there is stride, because the elements are not
 //     consecutives, so stridelevels +=1
 //More in test/optimizations/bulkcomm/alberto/2dDRtoBDTest.chpl (example 8)
 
-//Example for Case 2:  
+//Case 2:
+//   Locales = 4
 //   var Dist1 = new dmap(new Block({1..4,1..4,1..4}));
 //   var Dom1: domain(3,int) dmapped Dist1 ={1..4,1..4,1..4};
 //   var A:[Dom1] int;
@@ -1065,15 +1063,16 @@ proc DefaultRectangularArr.computeBulkCount(stridelevels:int(32), rankcomp, aux 
 //Cases for computeBulkCount where rank>1:
 //Case 1:  
 //  var A: [1..4,1..4,1..4] real; A[1..4,3..4,1..4 by 2] 
-//    --> In dimension 2 there is stride, because the elements 
+//    --> In dimension 3 there is stride, because the elements 
 //        are not consecutive, so c[1] = 1
 //More in test/optimizations/bulkcomm/alberto/perfTest.chpl (DR <- DR example 8)
 
-//Case 2:  
+//Case 2:
+//    Locales = 4
 //    var Dist1 = new dmap(new Block({1..4,1..4,1..4}));
 //    var Dom1: domain(3,int) dmapped Dist1 ={1..4,1..4,1..4};
 //    var A:[Dom1] int;
-//    A[1..4,2..4..3,1..1]--> blk:(8,4,1) 
+//    A[1..4,2..4,1..1]--> blk:(8,4,1) 
 //    A[1..4,2..4,1]--> A[1..4,2..4] --> blk:(8,4) --> c[1] = 1;
 //More in test/optimizations/bulkcomm/alberto/rankchange.chpl (example 5)
 
@@ -1098,7 +1097,6 @@ proc DefaultRectangularArr.computeBulkCount(stridelevels:int(32), rankcomp, aux 
 //due to the same stride can be valid across two contiguous dimensions
   var dim:int =rank;
   var tmp:int(32)=1;
-  for param i in 1..rank do c(i)=1;
   if (dom.dsiStride(rank)>1 && dom.dsiDim(rank).length>1) //CASE 1
     ||(blk(rank)>1 && dom.dsiDim(rank).length>1) //CASE 2
     {c[1]=1; init=2;}
@@ -1128,33 +1126,64 @@ proc DefaultRectangularArr.computeBulkCount(stridelevels:int(32), rankcomp, aux 
   return c;
 }
 
+proc DefaultRectangularArr.computeBulkStride(rankcomp,cnt:[], levels:int(32), aFromBD=false) where rank==1 {return dom.dsiStride:int(32);}
+
 /* This function returns the stride array for the default rectangular array. */
-proc DefaultRectangularArr.computeBulkStride(rankcomp,cnt:[],levels:int(32))
+//Case 1:  
+//  var A: [1..4,1..4,1..4] real; A[1..4,3..4,1..4 by 2] 
+//    --> In the rightmost dimension(3) there is stride, so Stride[1] = 2
+//More in test/optimizations/bulkcomm/alberto/perfTest.chpl (DR <- DR example 8)
+
+//Case 2:
+//    Locales = 4
+//    var Dist1 = new dmap(new Block({1..4,1..4,1..4}));
+//    var Dom1: domain(3,int) dmapped Dist1 ={1..4,1..4,1..4};
+//    var A:[Dom1] int;
+//    A[1..4,2..4,1..1]--> blk:(8,4,1) 
+//    A[1..4,2..4,1]--> A[1..4,2..4] --> blk:(8,4) --> Stride[1] = blk(2) = 4;
+//More in test/optimizations/bulkcomm/alberto/rankchange.chpl (example 5)
+
+//Case 3:
+//    Locales = 4
+//    var Dist1 = new dmap(new Block({1..4,1..4,1..4}));
+//    var Dom1: domain(3,int) dmapped Dist1 ={1..4,1..4,1..4};
+//    var A:[Dom1] int;
+//    A[1..4 by 2,4..4,1..4 by 3]--> blk:(16,3)
+//    --> There is only 1 element in dimension 2, so to obtain Stride[2] it's 
+//        necessary to explore dimension 1 in order to obtain the stride value. 
+//        To do this, we use a cumulative variable until the number of elements 
+//        are equal to count[3]. Then Stride[2] = blk(1) = 16
+//More in test/optimizations/bulkcomm/alberto/perfTest_v2.chpl (BD <- BD Example 13)
+
+//Case 4:  
+//    var A: [1..4,1..4,1..4] real; A[1..4 by 2,4..4,1..4 by 3] 
+//      --> There is only 1 element in dimension 2, so to obtain Stride[2] it's 
+//        necessary to explore dimension 1 to obtain the stride value. To do this,
+//        we use a cumulative variable until the number of elements are equal to
+//        count[3]. Then Stride[2] = blk(1) * Dim(1).stride = 16 * 2 = 32
+//More in test/optimizations/bulkcomms/alberto/3dAgTestStride.chpl (examples 6 and 7)
+
+proc DefaultRectangularArr.computeBulkStride(rankcomp,cnt:[],levels:int(32), aFromBD=false)
 {
   var c: rank*int(32); 
   var h=1; //Stride array index
   var cum=1; //cumulative variable
-
-//CASE 1: See test/optimizations/bulkcomm/alberto/test_rank_change2.chpl (example 12)
-  if (blk(rank)>1 && dom.dsiDim(rank).length>1) 
+  
+  if (cnt[h]==1 && dom.dsiDim(rank).length>1)
   {
-    c[h]=blk(rank):int(32);
+    if !aFromBD then c[h]=dom.dsiDim(rank).stride:int(32); //CASE 1
+    else c[h]=blk[rank]:int(32); //CASE 2
     h+=1;
   }
-//CASE 2: See test/optimizations/bulkcomm/alberto/perfTest.chpl (DR <- DR example 8)
-  else if (cnt[h]==1 && dom.dsiDim(rank).length>1) 
-  {
-    c[h]=dom.dsiDim(rank).stride:int(32);
-    h+=1;
-  }
-
-  for param i in 2..rank by -1 {
+ 
+  for param i in 2..rank by -1:int(32){
     if (levels>=h)
     {
-      if (cnt[h]==dom.dsiDim(i).length*cum && dom.dsiDim(i-1).length>1) 
+      if (cnt[h]==dom.dsiDim(i).length*cum && dom.dsiDim(i-1).length>1) //CASE 3
       {//now, we are in the right dimension (i dimension) to obtain the stride value
-        c[h]=blk(i-1):int(32)* dom.dsiDim(i-1).stride:int(32); 
-//And now, in the right dimension, we get the stride value ...
+        c[h]=blk(i-1):int(32);
+        if !aFromBD then //CASE 4
+          c[h]*= dom.dsiDim(i-1).stride:int(32); 
         h+=1; //Increment the index
         cum=1; //reset the cumulative variable
       }
@@ -1163,40 +1192,6 @@ proc DefaultRectangularArr.computeBulkStride(rankcomp,cnt:[],levels:int(32))
   }
   return c;
 }
-
-/* This function returns the stride array for the default rectangular
-   array when the DR array is part of a BD Array, and it is stridable
-   (aFromBD && A.dom.stridable) */
-
-proc DefaultRectangularArr.computeBulkStride2(rankcomp,cnt:[], levels:int(32)) where rank==1 {return dom.dsiStride:int(32);}
-proc DefaultRectangularArr.computeBulkStride2(rankcomp,cnt:[], levels:int(32)):rank*int(32) where rank > 1
-{
-  var c: rank*int(32); 
-  var h=1;//Stride array index
-  var cum=1;//cumulative variable
-
-//CASE 1(cnt[h]==1) : See test/optimizations/bulkcomm/alberto/2dDRtoBDTest.chpl (example 10)
-  if (cnt[h]==1 && dom.dsiDim(rank).length>1) 
-  {                               
-    c[h]=blk[rank]:int(32);
-    h+=1;
-  }
-  
-  for param i in 2..rank by -1:int(32){
-    if (levels>=h)
-    { 
-      if (cnt[h]==dom.dsiDim(i).length*cum && dom.dsiDim(i-1).length>1)
-      {//now, we are in the right dimension (i dimension) to obtain the stride value
-        c[h]=blk(i-1):int(32);
-//And now, in the right dimension, we get the stride value ...
-        h+=1; //Increment the index
-        cum=1; //reset the cumulative variable
-      }
-      else cum=cum*dom.dsiDim(i).length;
-    }
-  }
-  return c;
-}                                                                           
 
 /*
 This function is used to help in the aggregation of data from different array dimensions.
