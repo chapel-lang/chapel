@@ -21,6 +21,10 @@ Problems analyzed and dispatched to responsible parties:
   Michael was alerted and submitted a patch for review.
   Brad is responding to Michael -- perhaps suggesting a less invasive solution.
 
+===========================================
+Unresolved failures by test/configuration:
+===========================================
+
 classes/figueroa/RecordDestructor1
   Failed: 9/23 (64ggffpd) -- destructor not called?
 
@@ -49,7 +53,6 @@ studies/lammps/shemmy/p-lammps-n1
 studies/lammps/shemmy/p-lammps-n2
 studies/lammps/shemmy/p-lammps-n4
   Failed: 9/19 (baseline), 9/23 (baseline)
-  Not addressed.
 
 
 ==============================================
