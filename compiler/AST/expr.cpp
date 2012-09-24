@@ -986,6 +986,14 @@ void CallExpr::codegen(FILE* outfile) {
           }
           break;
         }
+        if (call->isPrimitive(PRIM_LOC_SET_NODE)) {
+          gen(outfile, "(%A).as_struct.node = %A", get(1), call->get(1));
+          break;
+        }
+        if (call->isPrimitive(PRIM_LOC_SET_SUBLOC)) {
+          gen(outfile, "(%A).as_struct.subloc = %A", get(1), call->get(1));
+          break;
+        }
         if (call->isPrimitive(PRIM_WIDE_GET_NODE)) {
           if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
             if (call->get(1)->getValType()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
@@ -1454,6 +1462,8 @@ void CallExpr::codegen(FILE* outfile) {
     case PRIM_GET_SVEC_MEMBER_VALUE:
     case PRIM_GET_MEMBER_VALUE:
     case PRIM_WIDE_GET_LOCALE:
+     case PRIM_LOC_SET_NODE:
+     case PRIM_LOC_SET_SUBLOC:
     case PRIM_GET_PRIV_CLASS:
     case PRIM_ARRAY_GET:
     case PRIM_ARRAY_GET_VALUE:
@@ -2170,7 +2180,13 @@ void CallExpr::codegen(FILE* outfile) {
       gen(outfile, "chpl_task_getSubLoc()");
       break;
     case PRIM_SET_SUBLOC_ID:
-      gen(outfile, "chpl_task_setSubLoc((%A).as_struct.subloc)", get(1));
+      gen(outfile, "chpl_task_setSubLoc(%A)", get(1));
+      break;
+     case PRIM_LOC_GET_NODE:
+      gen(outfile, "(%A).as_struct.node", get(1));
+      break;
+     case PRIM_LOC_GET_SUBLOC:
+      gen(outfile, "(%A).as_struct.subloc", get(1));
       break;
     case PRIM_CHPL_COMM_GET:
     case PRIM_CHPL_COMM_PUT: {

@@ -705,6 +705,7 @@ parallel(void) {
     if (CallExpr* info = block->blockInfo) {
       SET_LINENO(block);
       FnSymbol* fn = NULL;
+      VarSymbol* oldSubLoc = NULL;
       if (info->isPrimitive(PRIM_BLOCK_BEGIN)) {
         fn = new FnSymbol("begin_fn");
         fn->addFlag(FLAG_BEGIN);
@@ -724,8 +725,12 @@ parallel(void) {
         ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "_locale_arg", dtLocaleID);
         fn->insertFormalAtTail(arg);
         // Special case for the first argument of an on_fn, which carries the destination locale ID.
-        // We set the sublocale field in task-private data before executing the body of the task.
-        fn->insertAtTail(new CallExpr(PRIM_SET_SUBLOC_ID, arg));
+        // We set the sublocale field in task-private data before executing the body of the task,
+        // saving off a copy for restoration at the end of the on block.
+        oldSubLoc = newTemp(dtInt[INT_SIZE_32]);
+        fn->insertAtTail(new DefExpr(oldSubLoc));
+        fn->insertAtTail(new CallExpr(PRIM_MOVE, oldSubLoc, new CallExpr(PRIM_GET_SUBLOC_ID)));
+        fn->insertAtTail(new CallExpr(PRIM_SET_SUBLOC_ID, new CallExpr(PRIM_LOC_GET_SUBLOC, arg)));
       }
       else if (info->isPrimitive(PRIM_ON_GPU)) {
         fn = new FnSymbol("on_gpu_kernel");
@@ -767,6 +772,8 @@ parallel(void) {
         block->blockInfo->remove();
         // This block becomes the body of the new function.
         fn->insertAtTail(block->remove());
+        if (oldSubLoc) // only true for ON blocks
+          fn->insertAtTail(new CallExpr(PRIM_SET_SUBLOC_ID, oldSubLoc));
         fn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
         fn->retType = dtVoid;
       }

@@ -537,6 +537,11 @@ initPrimitive() {
   prim_def(PRIM_WIDE_GET_SUBLOC, "_wide_get_subloc", returnInfoInt32, false, true);
   prim_def(PRIM_WIDE_GET_ADDR, "_wide_get_addr", returnInfoInt64, false, true);
 
+  prim_def(PRIM_LOC_GET_NODE, "_loc_get_node", returnInfoInt32);
+  prim_def(PRIM_LOC_SET_NODE, "_loc_set_node", returnInfoVoid);
+  prim_def(PRIM_LOC_GET_SUBLOC, "_loc_get_subloc", returnInfoInt32);
+  prim_def(PRIM_LOC_SET_SUBLOC, "_loc_set_subloc", returnInfoVoid);
+
   prim_def(PRIM_LOCALE_ID, "chpl_localeID", returnInfoInt32);	// Our GASNet node ID.
   prim_def(PRIM_ON_LOCALE_NUM, "chpl_on_locale_num", returnInfoLocaleID);
   prim_def(PRIM_SET_SUBLOC_ID, "_set_subloc_id", returnInfoVoid, true);
