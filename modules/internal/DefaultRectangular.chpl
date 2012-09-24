@@ -846,9 +846,32 @@ proc DefaultRectangularArr.doiBulkTransferStride(Barg,aFromBD=false, bFromBD=fal
   //These variables should be actually of size stridelevels+1, but stridelevels is not param...
   
   var srcCount, dstCount:[1..rank+1] int(32);
+  
+  // Covering the case in which stridelevels has to be incremented after
+  // unifying srcCount and dstCount into a single count array. To illustrate the problem:
+  
+  // config const n = 10 
+  // var A: [1..n,1..n] real(64);
+  // var B: [1..n,1..n] real(64);
+  
+  // A[1..10,1..5] = B[1..10, 1..10 by 2]
+  
+  // Computed variables for chpl_comm_gets/puts are:
+  //	stridelevels =1
+  //	srcCount = (1,50) //In B you read 1 element 50 times
+  //	(srcStride=(2) = distance between 1 element and the next one)
+  //	dstCount = (5,10) //In A you write a chunk of 5 elments 10
+  //	times (dstStride=(10) distance between 1 chunk and the next one)
+  
+  
+  // Since GASNet strided put/get only have a count array, it is
+  // necessary to choose the count array that follows the smaller size of
+  // the chunks either at the source or destination array. That way the
+  // right unified cnt=(1,5,10), which forces to increment stridelevels to
+  // 2 and and now srcStride=(2,10) and dstStride=(1,10).
   var dstAux:bool = false;
   var srcAux:bool = false;
-  /* We now obtain the count arrays for source and destination arrays */
+  
     if (A.dom.dsiDim(rank).stride>1 && B.dom.dsiDim(rank).stride==1)
     {
       if stridelevels < rank then stridelevels+=1;
@@ -859,11 +882,11 @@ proc DefaultRectangularArr.doiBulkTransferStride(Barg,aFromBD=false, bFromBD=fal
       if stridelevels < rank then stridelevels+=1;
       srcAux = true;
     }
-  
+  /* We now obtain the count arrays for source and destination arrays */
   dstCount= A.computeBulkCount(stridelevels,dstWholeDim,dstAux);
   srcCount= B.computeBulkCount(stridelevels,srcWholeDim,srcAux);
-  /*Then the Stride arrays for source and destination arrays*/
-
+  
+/*Then the Stride arrays for source and destination arrays*/
   var dstStride, srcStride: [1..rank] int(32);
   /*When the source and destination arrays have different sizes 
     (example: A[1..10,1..10] and B[1..20,1..20]), the count arrays obtained are different,
@@ -1111,8 +1134,12 @@ proc DefaultRectangularArr.computeBulkCount(stridelevels:int(32), rankcomp, aux 
 //find the next dimension for which the next different stride arises
 	for h in 2..dim by -1:int(32) 
         {
-//CASE 3: Condition (!aux || h!=rank) deals with special case when the DR is part of a BD
-	  if( (checkStrideDistance(h)&&dom.dsiDim(h-1).length>1 && (!aux || h!=rank))
+//The aux variable is to cover the case in which stridelevels has to be
+// incremented after unifying srcCount and dstCount into a single count array,
+// and the condition h!=rank is because the new count value it's always in the 
+// rightmost dimension.
+// See lines 850-871
+	  if( (checkStrideDistance(h) && (!aux || h!=rank))//CASE 3
              || (dom.dsiDim(h).length==1&& h!=rank)) //CASE 4
 	    {
 	      c[i]*=dom.dsiDim(h-1).length:int(32);
@@ -1125,8 +1152,6 @@ proc DefaultRectangularArr.computeBulkCount(stridelevels:int(32), rankcomp, aux 
   }
   return c;
 }
-
-proc DefaultRectangularArr.computeBulkStride(rankcomp,cnt:[], levels:int(32), aFromBD=false) where rank==1 {return dom.dsiStride:int(32);}
 
 /* This function returns the stride array for the default rectangular array. */
 //Case 1:  
@@ -1144,24 +1169,29 @@ proc DefaultRectangularArr.computeBulkStride(rankcomp,cnt:[], levels:int(32), aF
 //More in test/optimizations/bulkcomm/alberto/rankchange.chpl (example 5)
 
 //Case 3:
-//    Locales = 4
+//    Locales = 2
 //    var Dist1 = new dmap(new Block({1..4,1..4,1..4}));
 //    var Dom1: domain(3,int) dmapped Dist1 ={1..4,1..4,1..4};
 //    var A:[Dom1] int;
-//    A[1..4 by 2,4..4,1..4 by 3]--> blk:(16,3)
-//    --> There is only 1 element in dimension 2, so to obtain Stride[2] it's 
-//        necessary to explore dimension 1 in order to obtain the stride value. 
+//    A[1..4 by 2,2..4 by 2,1..4 by 3]--> blk:(32,8,3)
+//    --> To get the value in Stride[2] we only need to check if the actual
+//        dimension has enough number of elements.
 //        To do this, we use a cumulative variable until the number of elements 
-//        are equal to count[3]. Then Stride[2] = blk(1) = 16
+//        are equal to count[3]. Then Stride[2] = blk(2) = 8, because this DR
+//        is part of a BD array.
 //More in test/optimizations/bulkcomm/alberto/perfTest_v2.chpl (BD <- BD Example 13)
 
 //Case 4:  
-//    var A: [1..4,1..4,1..4] real; A[1..4 by 2,4..4,1..4 by 3] 
-//      --> There is only 1 element in dimension 2, so to obtain Stride[2] it's 
-//        necessary to explore dimension 1 to obtain the stride value. To do this,
-//        we use a cumulative variable until the number of elements are equal to
-//        count[3]. Then Stride[2] = blk(1) * Dim(1).stride = 16 * 2 = 32
-//More in test/optimizations/bulkcomms/alberto/3dAgTestStride.chpl (examples 6 and 7)
+//    var A: [1..4,1..4,1..4] real; A[1..4 by 2,2..4 by 2,1..4 by 3] --> blk(16,4,1)
+//      --> To get the value in Stride[2] we only need to check if the actual
+//        dimension has enough number of elements.
+//        To do this, we use a cumulative variable until the number of elements
+//        are equal to count[3]. Then Stride[2] = blk(1) * Dim(1).stride = 16 * 2 = 32.
+//        In this case it's necessary to use the "Dim(1).stride" because the DR is not
+//        part of a BD Array, so the aFromBD variable is set to false, and the
+//        value of blk array is different than when that variable is set to true,
+//        as you can observe in the previous example (case 3)
+//More in test/optimizations/bulkcomms/alberto/3dAgTestStride.chpl (example 6 and 7)
 
 proc DefaultRectangularArr.computeBulkStride(rankcomp,cnt:[],levels:int(32), aFromBD=false)
 {
