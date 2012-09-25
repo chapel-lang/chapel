@@ -4,6 +4,7 @@
 #ifndef LAUNCHER
 
 #include <stdint.h>
+#include "chpltypes.h"
 
 #ifdef CHPL_TASKS_MODEL_H
 #include CHPL_TASKS_MODEL_H

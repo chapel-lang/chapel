@@ -3,6 +3,8 @@
 
 #ifndef LAUNCHER
 
+#include "chpl-mem.h"
+
 //
 // Multi-locale macros used for compiler code generation
 //
@@ -41,6 +43,8 @@ void chpl_gen_comm_put(void* addr, int32_t locale, void* raddr,
 #endif
   }
 }
+
+#include "error.h"
 
 static ___always_inline
 void chpl_test_local(int32_t locale, int32_t ln, const char* file, const char* error)
@@ -88,6 +92,38 @@ void chpl_gen_comm_broadcast_global_vars(int numGlobals)
   chpl_comm_broadcast_global_vars(numGlobals);
   CHPL_COMM_DEBUG_BROADCAST_GLOBAL_VARS(numGlobals);
   chpl_comm_barrier("barrier after broadcasting globals");
+}
+
+static ___always_inline
+void chpl_check_nil(void* ptr, int32_t lineno, const char* filename)
+{
+  if (ptr == nil)
+    chpl_error("attempt to dereference nil", lineno, filename);
+}
+
+static ___always_inline
+void* chpl_array_alloc(size_t nmemb, size_t eltSize, int32_t lineno, const char* filename) {
+  return (nmemb == 0) ? (void*)(0x0) : chpl_mem_allocMany(nmemb, eltSize, CHPL_RT_MD_ARRAY_ELEMENTS, lineno, filename);
+}
+
+static ___always_inline
+void* chpl_wide_array_alloc(int32_t dstLocale, size_t nmemb, size_t eltSize, int32_t lineno, const char* filename) {
+  if (dstLocale != chpl_localeID)
+    chpl_error("array vector data is not local", lineno, filename);;
+  return chpl_array_alloc(nmemb, eltSize, lineno, filename);
+}
+
+static ___always_inline
+void chpl_array_free(void* x, int32_t lineno, const char* filename)
+{
+  chpl_mem_free(x, lineno, filename);
+}
+static ___always_inline
+void chpl_wide_array_free(int32_t dstLocale, void* x, int32_t lineno, const char* filename)
+{
+  if (dstLocale != chpl_localeID)
+    chpl_error("array vector data is not local", lineno, filename);
+  chpl_array_free(x, lineno, filename);
 }
 
 #endif // LAUNCHER
