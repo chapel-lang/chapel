@@ -1,4 +1,0 @@
-This test is known to produce incorrect results nondeterministically.
-Parallelization of the original serial algorithm has not been done correctly.
-See the shootout benchmark site for other (possibly correct) implementations:
-    http://shootout.alioth.debian.org/
