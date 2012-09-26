@@ -369,8 +369,8 @@ the sum of all the elements in the input aggregate expression.
 The syntax for a reduction expression is given by:
 \begin{syntax}
 reduce-expression:
-  reduce-scan-operator `reduce' expression
-  class-type `reduce' expression
+  reduce-scan-operator `reduce' iteratable-expression
+  class-type `reduce' iteratable-expression
 
 reduce-scan-operator: one of
   + * && || & | ^ `min' `max' `minloc' `maxloc'
@@ -448,8 +448,8 @@ elements up to and including the corresponding element in the input.
 The syntax for a scan expression is given by:
 \begin{syntax}
 scan-expression:
-  reduce-scan-operator `scan' expression
-  class-type `scan' expression
+  reduce-scan-operator `scan' iteratable-expression
+  class-type `scan' iteratable-expression
 \end{syntax}
 
 The predefined scans are defined by \sntx{reduce-scan-operator}.  These
