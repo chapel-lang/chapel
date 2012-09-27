@@ -1,0 +1,31 @@
+#!/bin/bash
+
+USAGE="usage: $0 N STEPS WORKERS"
+
+if [ "$#" != 3 ]; then
+	echo ${USAGE}
+	exit 1
+fi
+
+N=$1
+STEPS=$2
+WORKERS=$3
+EXE=./nbody
+
+if [ ! -f ${EXE} ]; then
+	echo "Executable does not exist, building..."
+	make -f Makefile
+	if [ "$?" -eq 0 ]; then
+		echo "Done."
+	else
+		echo "Build failed"
+		exit 1
+	fi
+	echo ""
+fi
+
+export LD_LIBRARY_PATH=../../.libs
+export MYTH_WORKER_NUM=${WORKERS}
+export MALLOC_TRACE=nbody.log
+echo "Executing ${EXE} ${N} ${STEPS} with ${WORKERS} workers..."
+${EXE} ${N} ${STEPS}
