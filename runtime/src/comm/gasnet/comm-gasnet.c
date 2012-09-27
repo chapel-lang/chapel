@@ -615,7 +615,7 @@ void  chpl_comm_put(void* addr, int32_t locale, void* raddr,
                     int ln, chpl_string fn) {
   const int size = elemSize*len;
   if (chpl_localeID == locale) {
-    memcpy(raddr, addr, size);
+    memmove(raddr, addr, size);
   } else {
     if (chpl_verbose_comm && !chpl_comm_no_debug_private)
       printf("%d: %s:%d: remote put to %d\n", chpl_localeID, fn, ln, locale);
@@ -636,7 +636,7 @@ void  chpl_comm_get(void* addr, int32_t locale, void* raddr,
                     int ln, chpl_string fn) {
   const int size = elemSize*len;
   if (chpl_localeID == locale) {
-    memcpy(addr, raddr, size);
+    memmove(addr, raddr, size);
   } else {
     if (chpl_verbose_comm && !chpl_comm_no_debug_private)
       printf("%d: %s:%d: remote get from %d\n", chpl_localeID, fn, ln, locale);
