@@ -231,12 +231,18 @@ module SSCA2_kernels
       const TPVSpace = {0..#numTPVs};
       var TPVLocales: [TPVSpace] locale;
 
-      // Here we set up the locales array for our task private temporary
-      // variables.  We use _computChunkStartEnd() to distribute the
-      // variables approximately evenly across the 1d locales array.
-      for t in TPVSpace {
-        TPVLocales[t] = Locales[_computeChunkStartEnd(numLocales,
-                                                      numTPVs, t+1)[1]-1];
+      if numTPVs <= numLocales {
+        // Here we set up the locales array for our task private temporary
+        // variables.  We use _computChunkStartEnd() to distribute the
+        // variables approximately evenly across the 1d locales array.
+        for t in TPVSpace {
+          TPVLocales[t] = Locales[_computeChunkStartEnd(numLocales,
+                                                        numTPVs, t+1)[1]-1];
+        }
+      } else {
+        for t in TPVSpace {
+          TPVLocales[t] = Locales[((t-1)/numTPVs)/numLocales];
+        }
       }
       const TPVLocaleSpace = {TPVSpace} dmapped Block(boundingBox={TPVSpace},
                                                       targetLocales=TPVLocales);
