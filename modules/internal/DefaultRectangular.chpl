@@ -732,7 +732,7 @@ proc DefaultRectangularArr.doiCanBulkTransfer() {
 proc DefaultRectangularArr.doiCanBulkTransferStride() {
   if debugDefaultDistBulkTransfer then writeln("In DefaultRectangularArr.doiCanBulkTransferStride()");
   //If there is no stride we return false so as to rely in the original BulkTransfer (without stride)
-  if computeBulkStrideLevels(assertWholeDim(this)) == 0 then return false;    
+  if computeBulkStrideLevels(isWholeDim(this)) == 0 then return false;    
   return true;
 }
 
@@ -834,8 +834,8 @@ proc DefaultRectangularArr.doiBulkTransferStride(Barg,aFromBD=false, bFromBD=fal
   if debugDefaultDistBulkTransfer then
     writeln("\tlocal get() from ", B.locale.id);
   
-  var dstWholeDim = assertWholeDim(A),
-      srcWholeDim = assertWholeDim(B);
+  var dstWholeDim = isWholeDim(A),
+      srcWholeDim = isWholeDim(B);
   var stridelevels:int(32);
   
   /* If the stridelevels in source and destination arrays are different, we take the larger*/
@@ -1234,12 +1234,12 @@ Note that the leftmost dimension is really not necessary due to the first dimens
 aggregated with any other one (there is no more dimensions beyond the first one). Therefore, a 
 subtle possible optimization would be to declare the resulting array 2..rank instead of 1..rank
 */ 
-proc DefaultRectangularArr.assertWholeDim(d) where rank==1
+proc DefaultRectangularArr.isWholeDim(d) where rank==1
 {
   return true;
 }
 
-proc DefaultRectangularArr.assertWholeDim(d) where rank>1
+proc DefaultRectangularArr.isWholeDim(d) where rank>1
 {
  var c:d.rank*bool;
   for param i in 2..rank do

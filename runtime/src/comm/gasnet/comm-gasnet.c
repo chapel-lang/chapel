@@ -666,10 +666,9 @@ void  chpl_comm_get_strd(void* dstaddr, void* dststrides, int32_t srclocale,
   const size_t strlvls=(size_t)stridelevels;
   const gasnet_node_t srcnode=(gasnet_node_t)srclocale;
 
-  size_t dststr[16];
-  size_t srcstr[16];
-  size_t cnt[17];
-  assert(strlvls < 16); // otherwise need to make the above arrays bigger
+  size_t dststr[strlvls];
+  size_t srcstr[strlvls];
+  size_t cnt[strlvls+1];
 
   //Only count[0] and strides are meassured in number of bytes.
   cnt[0]=((int32_t*)count)[0] * elemSize;
@@ -719,10 +718,9 @@ void  chpl_comm_put_strd(void* dstaddr, void* dststrides, int32_t dstlocale,
   const size_t strlvls=(size_t)stridelevels;
   const gasnet_node_t dstnode=(gasnet_node_t)dstlocale;
 
-  size_t dststr[16];
-  size_t srcstr[16];
-  size_t cnt[17];
-  assert(strlvls < 16); // otherwise need to make the above arrays bigger
+  size_t dststr[strlvls];
+  size_t srcstr[strlvls];
+  size_t cnt[strlvls+1];
 
   //Only count[0] and strides are meassured in number of bytes.
   cnt[0]=((int32_t*)count)[0] * elemSize;
