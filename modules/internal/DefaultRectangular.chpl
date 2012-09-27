@@ -856,7 +856,7 @@ proc DefaultRectangularArr.doiBulkTransferStride(Barg,aFromBD=false, bFromBD=fal
   
   // A[1..10,1..5] = B[1..10, 1..10 by 2]
   
-  // Computed variables for chpl_comm_gets/puts are:
+  // Computed variables for chpl_comm_get_strd/puts are:
   //	stridelevels =1
   //	srcCount = (1,50) //In B you read 1 element 50 times
   //	(srcStride=(2) = distance between 1 element and the next one)
@@ -914,14 +914,14 @@ proc DefaultRectangularArr.doiBulkTransferStride(Barg,aFromBD=false, bFromBD=fal
 }
 
 //
-// Invoke the primitives chpl_comm_gets/puts, depending on what locale
+// Invoke the primitives chpl_comm_get_strd/puts, depending on what locale
 // we are on vs. where the source and destination are.
 // The logic mimics that in doiBulkTransfer().
 //
 proc DefaultRectangularArr.doiBulkTransferStrideComm(B, stridelevels, dstStride, srcStride, dstCount, srcCount, Alo, Blo)
  { 
  //writeln("Locale: ", here.id, " stridelvl: ", stridelevels, " DstStride: ", dstStride," SrcStride: ",srcStride, " Count: ", dstCount, " dst.Blk: ",blk, " src.Blk: ",B._value.blk/*, " dom: ",dom.dsiDims()," B.blk: ",B._value.blk," B.dom: ",B._value.dom.dsiDims()*/);
-  //CASE 1: when the data in destination array is stored "here", it will use "chpl_comm_gets". 
+  //CASE 1: when the data in destination array is stored "here", it will use "chpl_comm_get_strd". 
   if this.data.locale==here
   {
     var dest = this.data;
@@ -939,7 +939,7 @@ proc DefaultRectangularArr.doiBulkTransferStrideComm(B, stridelevels, dstStride,
       writeln("Locale:",here.id,",srcstrides: ",srcStride);
     }
     var srclocale =B._value.data.locale.id : int(32);
-       __primitive("chpl_comm_gets",
+       __primitive("chpl_comm_get_strd",
                     __primitive("array_get",dest, getDataIndex(Alo)),
                     __primitive("array_get",dststr,dstStride._value.getDataIndex(1)), 
 		    srclocale,
@@ -948,7 +948,7 @@ proc DefaultRectangularArr.doiBulkTransferStrideComm(B, stridelevels, dstStride,
                     __primitive("array_get",cnt, dstCount._value.getDataIndex(1)),
                     stridelevels);
   }
-  //CASE 2: when the data in source array is stored "here", it will use "chpl_comm_puts". 
+  //CASE 2: when the data in source array is stored "here", it will use "chpl_comm_put_strd". 
   else if B._value.data.locale==here
   {
     if debugDefaultDistBulkTransfer then
@@ -971,7 +971,7 @@ proc DefaultRectangularArr.doiBulkTransferStrideComm(B, stridelevels, dstStride,
     var src = B._value.data;
     var destlocale =this.data.locale.id : int(32);
 
-    __primitive("chpl_comm_puts",
+    __primitive("chpl_comm_put_strd",
       		  __primitive("array_get",dest,getDataIndex(Alo)),
       		  __primitive("array_get",dststr,dstStride._value.getDataIndex(1)),
                   destlocale,
@@ -980,7 +980,7 @@ proc DefaultRectangularArr.doiBulkTransferStrideComm(B, stridelevels, dstStride,
       		  __primitive("array_get",cnt, srcCount._value.getDataIndex(1)),
       		  stridelevels);
   }
-  //CASE 3: other case, it will use "chpl_comm_gets". 
+  //CASE 3: other case, it will use "chpl_comm_get_strd". 
   else on this.data.locale
   {   
     var dest = this.data;
@@ -1008,7 +1008,7 @@ proc DefaultRectangularArr.doiBulkTransferStrideComm(B, stridelevels, dstStride,
     }
     
     var srclocale =B._value.data.locale.id : int(32);
-       __primitive("chpl_comm_gets",
+       __primitive("chpl_comm_get_strd",
                     __primitive("array_get",dest, getDataIndex(Alo)),
                     __primitive("array_get",dststr,dststrides._value.getDataIndex(1)), 
                     srclocale,

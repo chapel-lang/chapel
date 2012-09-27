@@ -658,7 +658,7 @@ void  chpl_comm_get(void* addr, int32_t locale, void* raddr,
 // * convert the element types of the above C arrays from int32_t to size_t.
 // Maybe this can be done in Chapel, but would it be as efficient?
 //
-void  chpl_comm_gets(void* dstaddr, void* dststrides, int32_t srclocale, 
+void  chpl_comm_get_strd(void* dstaddr, void* dststrides, int32_t srclocale, 
 		     void* srcaddr, void* srcstrides, void* count,
 		     int32_t stridelevels, int32_t elemSize, int32_t typeIndex, 
 		     int ln, chpl_string fn) {
@@ -711,7 +711,7 @@ void  chpl_comm_gets(void* dstaddr, void* dststrides, int32_t srclocale,
 }
 
 // See the comment for cmpl_comm_gets().
-void  chpl_comm_puts(void* dstaddr, void* dststrides, int32_t dstlocale, 
+void  chpl_comm_put_strd(void* dstaddr, void* dststrides, int32_t dstlocale, 
 		     void* srcaddr, void* srcstrides, void* count,
 		     int32_t stridelevels, int32_t elemSize, int32_t typeIndex, 
 		     int ln, chpl_string fn) {

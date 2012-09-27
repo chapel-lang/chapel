@@ -1445,7 +1445,7 @@ proc BlockArr.copyBtoC(B)
     var t1,t2: real;
     var schunkini: int;
     var chunksize: int(32);
-    //Loop of strided chunk sends (chpl_comm_puts)
+    //Loop of strided chunk sends (chpl_comm_put_strd)
     for k in 0..#numLocales do {
 
       var dst=(lid+k)%numLocales;
@@ -1462,7 +1462,7 @@ proc BlockArr.copyBtoC(B)
       count[1]=1;
       count[2]=chunksize;
 
-      __primitive("chpl_comm_puts",
+      __primitive("chpl_comm_put_strd",
 		  __primitive("array_get",destr,
 			      privB.locArr[dst].myElems._value.getDataIndex(schunkini)),
 		  __primitive("array_get",dststr,dststrides._value.getDataIndex(1)),
@@ -1527,7 +1527,7 @@ proc  BlockArr.copyCtoB(B)
       count[1]=1;
       count[2]=chunksize:int(32);
 
-      __primitive("chpl_comm_gets",
+      __primitive("chpl_comm_get_strd",
 		  __primitive("array_get",src,
 			      privarr.locArr[lid].myElems._value.getDataIndex(schunkini)),
 		  __primitive("array_get",dststr,dststrides._value.getDataIndex(1)),

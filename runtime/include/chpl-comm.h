@@ -186,7 +186,7 @@ void  chpl_comm_get(void *addr, int32_t locale, void* raddr,
 //   Proposal for Extending the UPC Memory Copy Library Functions and Supporting 
 //   Extensions to GASNet, Version 2.0. Author: Dan Bonachea 
 //
-void  chpl_comm_puts(void* dstaddr, void* dststrides, int32_t dstlocale, 
+void  chpl_comm_put_strd(void* dstaddr, void* dststrides, int32_t dstlocale, 
 		     void* srcaddr, void* srcstrides, void* count,
 		     int32_t stridelevels, int32_t elemSize, int32_t typeIndex, 
 		     int ln, chpl_string fn);
@@ -194,7 +194,7 @@ void  chpl_comm_puts(void* dstaddr, void* dststrides, int32_t dstlocale,
 //
 // same as chpl_comm_puts(), but do get instead
 //
-void  chpl_comm_gets(void* dstaddr, void* dststrides, int32_t srclocale, 
+void  chpl_comm_get_strd(void* dstaddr, void* dststrides, int32_t srclocale, 
 		     void* srcaddr, void* srcstrides, void* count,
 		     int32_t stridelevels, int32_t elemSize, int32_t typeIndex, 
 		     int ln, chpl_string fn);

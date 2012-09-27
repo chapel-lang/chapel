@@ -3731,15 +3731,15 @@ GenRet CallExpr::codegen() {
       break;
     }
       //Strided versions of get and put
-    case PRIM_CHPL_COMM_PUTS: 
-    case PRIM_CHPL_COMM_GETS: {
+    case PRIM_CHPL_COMM_PUT_STRD: 
+    case PRIM_CHPL_COMM_GET_STRD: {
       //args are: localvar, dststr addr, locale, remote addr, srcstr addr
       // count addr, strlevels, elem
       const char* fn;
-      if (primitive->tag == PRIM_CHPL_COMM_GETS) {
-	fn = "chpl_gen_comm_gets";
+      if (primitive->tag == PRIM_CHPL_COMM_GET_STRD) {
+	fn = "chpl_gen_comm_get_strd";
       } else {
-	fn = "chpl_gen_comm_puts";
+	fn = "chpl_gen_comm_put_strd";
       }
       TypeSymbol *dt;
       TypeSymbol *dt2;

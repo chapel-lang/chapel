@@ -90,7 +90,7 @@ void  chpl_comm_get(void* addr, int32_t locale, void* raddr,
   memcpy(addr, raddr, size*len);
 }
 
-void  chpl_comm_puts(void* dstaddr_arg, void* dststrides, int32_t dstlocale, 
+void  chpl_comm_put_strd(void* dstaddr_arg, void* dststrides, int32_t dstlocale, 
 		     void* srcaddr_arg, void* srcstrides, void* count,
 		     int32_t stridelevels, int32_t elemSize, int32_t typeIndex, 
 		     int ln, chpl_string fn)
@@ -249,7 +249,7 @@ void  chpl_comm_puts(void* dstaddr_arg, void* dststrides, int32_t dstlocale,
   }
 }
 
-void  chpl_comm_gets(void* dstaddr_arg, void* dststrides, int32_t srclocale, 
+void  chpl_comm_get_strd(void* dstaddr_arg, void* dststrides, int32_t srclocale, 
 		     void* srcaddr_arg, void* srcstrides, void* count,
 		     int32_t stridelevels, int32_t elemSize, int32_t typeIndex, 
 		     int ln, chpl_string fn)
