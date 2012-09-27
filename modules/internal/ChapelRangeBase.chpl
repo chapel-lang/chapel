@@ -252,6 +252,15 @@ proc rangeBase.member(i: idxType)
 // Returns true if the other range is contained within this one.
 inline proc rangeBase.member(other: rangeBase(?))
 {
+  // Since slicing preserves the direction of the first arg, may need
+  // to negate one of the strides (shouldn't matter which).
+  if stridable {
+    if (stride > 0 && other.stride < 0) || (stride < 0 && other.stride > 0)
+      then  _stride = -_stride;
+  } else {
+    if other.stride < 0
+      then other._stride = -other._stride;
+  }
   return other == this(other);
 }
 
