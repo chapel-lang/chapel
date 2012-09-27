@@ -18,19 +18,17 @@ default: all
 all: massivethreads
 
 clean: FORCE
-	rm -rf $(MASSIVETHREADS_BUILD_DIR)
 
 clobber: FORCE
 	rm -rf build install
 
 
 massivethreads-config: FORCE
-	mkdir -p $(MASSIVETHREADS_BUILD_DIR)
-	cd $(MASSIVETHREADS_BUILD_DIR) && $(MASSIVETHREADS_SUBDIR)/configure CC='$(CC)' CXX='$(CXX)' --prefix=$(MASSIVETHREADS_INSTALL_DIR)
+	cd $(MASSIVETHREADS_SUBDIR) && $(MASSIVETHREADS_SUBDIR)/configure CC='$(CC)' CXX='$(CXX)' --prefix=$(MASSIVETHREADS_INSTALL_DIR)
 
 massivethreads-build: FORCE
-	cd $(MASSIVETHREADS_BUILD_DIR) && $(MAKE)
-	cd $(MASSIVETHREADS_BUILD_DIR) && $(MAKE) install
+	cd $(MASSIVETHREADS_SUBDIR) && $(MAKE)
+	cd $(MASSIVETHREADS_SUBDIR) && $(MAKE) install
 
 massivethreads: massivethreads-config massivethreads-build
 
