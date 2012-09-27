@@ -27,10 +27,10 @@ if ($preset_launcher eq "") {
         }
     } elsif ($platform eq "marenostrum") {
         $launcher = "marenostrum";
-    } elsif ($compiler eq "tile-cc") {
-        $launcher = "tile-monitor";
     } elsif ($comm eq "gasnet") {
-        if ($substrate eq "udp") {
+        if ($compiler eq "tile-cc") {
+            $launcher = "tile-monitor";
+        } elsif ($substrate eq "udp") {
             $launcher = "amudprun";
         } elsif ($substrate eq "ibv") {
 	    if ($platform eq "pwr6") {

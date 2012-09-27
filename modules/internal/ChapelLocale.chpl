@@ -31,11 +31,15 @@ class locale {
   proc addChild(child : locale) : void
   { /* Do nothing. */ }
 
+  proc getChildCount() : int { return 0; }
+
   // By convention, the child corresponding to sublocale 0
   // is the locale itself.
   // In this default case, there are no sublocales, so the index is ignored
   // (assumed to be zero).
   proc getChild(subloc_id : int) : locale { return this; }
+
+  iter getChildren() : locale { yield this; }
 
   // Also required by the sublocale interface.
   proc initTask() {} // Do nothing.

@@ -1,8 +1,5 @@
-// tilera36.chpl
+// tilera.chpl
 //
-// Set up a Tilera architecture with 36 independent CPUs.
-
-config const debugArchitecture = false;
 
 extern type cpu_set_t;
 extern proc tmc_cpus_get_online_cpus(inout cpus:cpu_set_t): int;
@@ -104,9 +101,6 @@ class Tilera : locale
     for idx in sublocDom do
       yield subLocales[idx];
   }
-
-  proc getChildCount() : int
-  { return sublocDom.numIndices; }
 }
 
 //################################################################################
@@ -129,8 +123,130 @@ for idx in {1..36} do
     here.addChild(my_subloc);
   }
 
-if debugArchitecture then
-  coforall loc in (here:Tilera).getChildren() do
-    on loc do
-      writeln(loc);
+// SURPRISE! iterators are statically bound.
+//coforall loc in (here:Tilera).getChildren() do
+//  on loc do
+//    writeln(loc);
+
+//################################################################################{
+//# Streams copied verbatim here.
+//#
+use Time;
+use Types;
+use Random;
+
+use HPCCProblemSize;
+
+
+param numVectors = 3;
+type elemType = real(64);
+
+config const m = computeProblemSize(elemType, numVectors),
+             alpha = 3.0;
+
+config const numTrials = 10,
+             epsilon = 0.0;
+
+config const useRandomSeed = true,
+             seed = if useRandomSeed then SeedGenerator.currentTime else 314159265;
+
+config const printParams = true,
+             printArrays = false,
+             printStats = true;
+
+
+proc main() {
+  printConfiguration();
+
+  const ProblemSpace: domain(1) = {1..m};
+  var A, B, C: [ProblemSpace] elemType;
+
+  initVectors(B, C);
+
+  var execTime: [1..numTrials] real;
+
+  for trial in 1..numTrials {
+    const startTime = getCurrentTime();
+//    [i in ProblemSpace] A(i) = B(i) + alpha * C(i);
+    // Parallelize across sublocales
+    coforall loc in (here:Tilera).getChildren() do
+//      for t in {0..1} do
+      {
+        var chunk = getChunk((loc:TileraPart).my_subloc_id, 36, ProblemSpace);
+        for i in chunk do
+          A(i) = B(i) + alpha * C(i);
+      }
+    execTime(trial) = getCurrentTime() - startTime;
+  }
+
+  const validAnswer = verifyResults(A, B, C);
+  printResults(validAnswer, execTime);
+}
+
+
+proc getChunk(nChunk:int, chunkCount, problemSpace)
+{
+  // The CPU number is one-based
+  if nChunk < 1 || nChunk > chunkCount then
+    halt("Invalid chunk number");
+  var low = problemSpace.low;
+  var high = problemSpace.high;
+  var size = 1 + (high - low);
+  var start = ((nChunk-1) * size) / chunkCount + low;
+  var end = (nChunk * size) / chunkCount + low - 1;
+  return {start..end};
+}
+
+proc printConfiguration() {
+  if (printParams) {
+    printProblemSize(elemType, numVectors, m);
+    writeln("Number of trials = ", numTrials, "\n");
+  }
+}
+
+
+proc initVectors(B, C) {
+  var randlist = new RandomStream(seed);
+
+  randlist.fillRandom(B);
+  randlist.fillRandom(C);
+
+  if (printArrays) {
+    writeln("B is: ", B, "\n");
+    writeln("C is: ", C, "\n");
+  }
+
+  delete randlist;
+}
+
+
+proc verifyResults(A, B, C) {
+  if (printArrays) then writeln("A is: ", A, "\n");
+
+  const infNorm = max reduce [i in A.domain] abs(A(i) - (B(i) + alpha * C(i)));
+
+  return (infNorm <= epsilon);
+}
+
+// I key off the "~=" (approximately equals) to strip off lines that are expected
+// to vary from run to run using a prediff file.
+proc printResults(successful, execTimes) {
+  writeln("Validation: ", if successful then "SUCCESS" else "FAILURE");
+  if (printStats) {
+    const totalTime = + reduce execTimes,
+          avgTime = totalTime / numTrials,
+          minTime = min reduce execTimes;
+    writeln("Execution time:");
+    writeln("  tot ~= ", totalTime);
+    writeln("  avg ~= ", avgTime);
+    writeln("  min ~= ", minTime);
+
+    const GBPerSec = numVectors * numBytes(elemType) * (m/minTime) * 1.0e-9;
+    writeln("Performance (GB/s) ~= ", GBPerSec);
+  }
+}
+
+//################################################################################}
+
+writeln("Done.");
 

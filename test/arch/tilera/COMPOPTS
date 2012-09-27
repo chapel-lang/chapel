@@ -1,1 +1,1 @@
-tmc/cpus.h -ltmc
+../../studies/hpcc/common/probSize.chpl --no-local tmc/cpus.h -ltmc
