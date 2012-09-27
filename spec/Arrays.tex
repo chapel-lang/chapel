@@ -115,7 +115,7 @@ array-literal:
 The following example declares a 5 element array literal containing strings,
 then subsequently prints each string element to the console.
 \begin{chapel}
-var A = ["1", "2", "3", 4", "5"];
+var A = ["1", "2", "3", "4", "5"];
 
 for i in 1..5 do
   writeln(A[i]);
@@ -159,8 +159,8 @@ of arrays and a multi-dimensional array.
 \end{openissue}
 
 \index{arrays!default values}
-An array's default value is to have its elements all initialized to
-the default values for their types.
+An array's default value is for each array element to be initialized to
+the default value of the element type.
 
 \subsection{Runtime Representation of Array Values}
 \label{Array_Runtime_Representation}
