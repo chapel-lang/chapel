@@ -1,0 +1,1 @@
+syncArrOfSync.chpl:1: 'sync' can only apply to scalar types
