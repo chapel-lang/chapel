@@ -20,19 +20,22 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+#include <string>
+
 char executableFilename[FILENAME_MAX+1] = "a.out";
 char saveCDir[FILENAME_MAX+1] = "";
 char ccflags[256] = "";
 char ldflags[256] = "";
 bool ccwarnings = false;
 
+extern bool fFastFlag;
 
 static const char* intDirName = NULL; // directory for intermediates; tmpdir or saveCDir
 
 static const int MAX_CHARS_PER_PID = 32;
 
-static int numLibFlags = 0;
-static const char** libFlag = NULL;
+int numLibFlags = 0;
+const char** libFlag = NULL;
 
 Vec<const char*> incDirs;
 
@@ -123,7 +126,7 @@ void deleteTmpDir(void) {
 }
 
 
-static const char* genIntFilename(const char* filename) {
+const char* genIntermediateFilename(const char* filename) {
   const char* slash = "/";
 
   ensureTmpDirExists();    
@@ -133,6 +136,14 @@ static const char* genIntFilename(const char* filename) {
   return newfilename;
 }
 
+// MPF - genIntermediateFilename is a better name, declared in files.h,
+// but didn't want to modify all the code here yet so we have
+// this 2nd name for the same routine. 
+static
+const char* genIntFilename(const char* filename)
+{
+  return genIntermediateFilename(filename);
+}
 
 static const char* stripdirectories(const char* filename) {
   const char* filenamebase = strrchr(filename, '/');
@@ -147,6 +158,11 @@ static const char* stripdirectories(const char* filename) {
   return strippedname;
 }
 
+const char* objectFileForCFile(const char* inputFilename) {
+  const char* pathlessFilename = stripdirectories(inputFilename);
+  const char* objFilename = genIntFilename(astr(pathlessFilename, ".o"));
+  return objFilename;
+}
 
 static FILE* openfile(const char* filename, const char* mode = "w", 
                       bool fatal = true) {
@@ -243,15 +259,15 @@ static bool checkSuffix(const char* filename, const char* suffix) {
 }
 
 
-static bool isCSource(const char* filename) {
+bool isCSource(const char* filename) {
   return checkSuffix(filename, "c");
 }
 
-static bool isCHeader(const char* filename) {
+bool isCHeader(const char* filename) {
   return checkSuffix(filename, "h");
 }
 
-static bool isObjFile(const char* filename) {
+bool isObjFile(const char* filename) {
   return checkSuffix(filename, "o");
 }
 
@@ -345,20 +361,9 @@ const char* runUtilScript(const char* script) {
                             astr("running $CHPL_HOME/util/", script), 0);
 }
 
-
-void makeBinary(void) {
-  if (no_codegen)
-    return;
-
-  if (chplmake[0] == '\0') {
-    strncpy(chplmake, runUtilScript("chplenv/chplmake"), 256);
-  }
-  const char* makeflags = printSystemCommands ? "-f " : "-s -f ";
-  const char* command = astr(astr(chplmake, " "), makeflags, intDirName, 
-                            "/Makefile");
-  mysystem(command, "compiling generated source");
+const char* getIntermediateDirName() {
+  return intDirName;
 }
-
 
 static void genCFiles(FILE* makefile) {
   int filenum = 0;
@@ -380,8 +385,7 @@ static void genCFileBuildRules(FILE* makefile) {
   int filenum = 0;
   while (const char* inputFilename = nthFilename(filenum++)) {
     if (isCSource(inputFilename)) {
-      const char* pathlessFilename = stripdirectories(inputFilename);
-      const char* objFilename = genIntFilename(astr(pathlessFilename, ".o"));
+      const char* objFilename = objectFileForCFile(inputFilename);
       fprintf(makefile, "%s: %s FORCE\n", objFilename, inputFilename);
       fprintf(makefile, "\t$(CC) -c -o $@ $(GEN_CFLAGS) $(COMP_GEN_CFLAGS) $<\n");
       fprintf(makefile, "\n");
@@ -686,6 +690,30 @@ void printModuleSearchPath(void) {
   fprintf(stderr, "end of module search dirs\n");
 }
 
+void readArgsFromCommand(const char* cmd, std::vector<std::string> & args)
+{
+  // Gather information from compileline into clangArgs.
+  if(FILE* fd = popen(cmd,"r")) {
+    int ch;
+    // Read arguments.
+    while( (ch = getc(fd)) != EOF ) {
+      // Read the next argument.
+      // skip leading spaces
+      while( ch != EOF && isspace(ch) ) ch = getc(fd);
+      std::string arg;
+      arg.push_back(ch);
+      // read until space. TODO - handle quoting/spaces
+      ch = getc(fd);
+      while( ch != EOF && !isspace(ch) ) {
+        arg += ch;
+        ch = getc(fd);
+      }
+      // First argument is the clang install directory...
+      args.push_back(arg);
+    }
+  }
+}
+
 // would just use realpath, but it is not supported on all platforms.
 static
 char* chplRealPath(const char* path)
@@ -704,6 +732,7 @@ char* chplRealPath(const char* path)
   return ret;
 #endif
 }
+
 
 // Returns a "real path" to the file in the directory,
 // or NULL if the file did not exist.

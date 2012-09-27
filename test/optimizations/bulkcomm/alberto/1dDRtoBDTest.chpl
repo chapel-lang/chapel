@@ -37,7 +37,7 @@ var F: [1..n/2] real(64);
 
 var D6 = {1..10 by 2};
 H[D6] = C[D6];
-for (a,b) in (H[D6],C[D6]) do if (a!=b) then writeln("ERROR!!!!");
+for (a,b) in zip(H[D6],C[D6]) do if (a!=b) then writeln("ERROR!!!!");
 
 
 

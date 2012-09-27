@@ -1,23 +1,10 @@
-// Time.chpl
-//
-
-// These functions are defined as macros: chpl_init_timer, chpl_now_timer,
-// chpl_new_timer, chpl_seconds_timer, chpl_microseconds_timer.
-// We can't generate prototypes for them, because the macros substituting in
-// the prototypes really confuses the compiler.
-pragma "no prototype"
-extern proc chpl_init_timer(timer);
-pragma "no prototype"
-extern proc chpl_now_timer(timer): _timervalue;
-pragma "no prototype"
-extern proc chpl_seconds_timer(timer): real;
-pragma "no prototype"
-extern proc chpl_microseconds_timer(timer): real;
-extern proc chpl_now_year(): int(32);
-extern proc chpl_now_month(): int(32);
-extern proc chpl_now_day(): int(32);
-extern proc chpl_now_dow(): int(32);
-extern proc chpl_now_time(): real;
+extern type _timevalue;
+extern proc chpl_null_timevalue():_timevalue;
+extern proc chpl_now_timevalue():_timevalue;
+extern proc chpl_timevalue_parts(t:_timevalue, inout seconds:int(32), inout minutes:int(32), inout hours:int(32), inout mday:int(32), inout month:int(32), inout year:int(32), inout wday:int(32), inout yday:int(32), inout isdst:int(32));
+extern proc chpl_timevalue_seconds(t:_timevalue):int(64);
+extern proc chpl_timevalue_microseconds(t:_timevalue):int(64);
+extern proc chpl_now_time():real;
 
 enum TimeUnits { microseconds, milliseconds, seconds, minutes, hours };
 enum Day { sunday=0, monday, tuesday, wednesday, thursday, friday, saturday };
@@ -27,22 +14,29 @@ proc getCurrentTime(unit: TimeUnits = TimeUnits.seconds)
   return _convert_microseconds(unit, chpl_now_time());
 
 // returns (year, month, day) as a tuple of 3 ints
-proc getCurrentDate()
-  return (chpl_now_year()+1900,
-          chpl_now_month()+1,
-          chpl_now_day());
+proc getCurrentDate() {
+  var now = chpl_now_timevalue();
+  var seconds, minutes, hours, mday, month, year, wday, yday, isdst:int(32);
+  chpl_timevalue_parts(now, seconds, minutes, hours, mday, month, year, wday, yday, isdst);
+  return (year+1900,
+          month+1,
+          mday);
+}
 
 proc getCurrentDayOfWeek() {
-    return chpl_now_dow():Day;
+  var now = chpl_now_timevalue();
+  var seconds, minutes, hours, mday, month, year, wday, yday, isdst:int(32);
+  chpl_timevalue_parts(now, seconds, minutes, hours, mday, month, year, wday, yday, isdst);
+  return wday:Day;
 }
 
 record Timer {
-  var time: _timervalue;
+  var time: _timevalue = chpl_null_timevalue();
   var accumulated: real = 0.0;
   var running: bool = false;
 
   proc initialize() {
-    chpl_init_timer(time);
+    // does nothing.
   }
 
   proc clear() {
@@ -52,7 +46,7 @@ record Timer {
   proc start() {
     if !running {
       running = true;
-      time = chpl_now_timer(time);
+      time = chpl_now_timevalue();
     } else {
       halt("start called on a timer that has not been stopped");
     }
@@ -60,9 +54,9 @@ record Timer {
 
   proc stop() {
     if running {
-      var time2: _timervalue;
-      time2 = chpl_now_timer(time2);
-      accumulated += _diff_timer(time2, time);
+      var time2: _timevalue;
+      time2 = chpl_now_timevalue();
+      accumulated += _diff_time(time2, time);
       running = false;
     } else {
       halt("stop called on a timer that has not been started");
@@ -71,21 +65,21 @@ record Timer {
 
   proc elapsed(unit: TimeUnits = TimeUnits.seconds) {
     if running {
-      var time2: _timervalue;
-      time2 = chpl_now_timer(time2);
-      return _convert_microseconds(unit, accumulated + _diff_timer(time2, time));
+      var time2: _timevalue;
+      time2 = chpl_now_timevalue();
+      return _convert_microseconds(unit, accumulated + _diff_time(time2, time));
     } else {
       return _convert_microseconds(unit, accumulated);
     }
   }
 }
 
-// returns diff of two timer values in microseconds
-inline proc _diff_timer(t1: _timervalue, t2: _timervalue) {
-  var s1 = chpl_seconds_timer(t1);
-  var s2 = chpl_seconds_timer(t2);
-  var us1 = chpl_microseconds_timer(t1);
-  var us2 = chpl_microseconds_timer(t2);
+// returns diff of two time values in microseconds
+inline proc _diff_time(t1: _timevalue, t2: _timevalue) {
+  var s1 = chpl_timevalue_seconds(t1);
+  var s2 = chpl_timevalue_seconds(t2);
+  var us1 = chpl_timevalue_microseconds(t1);
+  var us2 = chpl_timevalue_microseconds(t2);
   return (s1*1.0e+6+us1)-(s2*1.0e+6+us2);
 }
 

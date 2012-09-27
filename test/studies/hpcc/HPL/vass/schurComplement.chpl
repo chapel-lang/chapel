@@ -123,13 +123,13 @@ proc schurComplement(blk) {
         AbSlice2 = Ab[BD_dim1, 1..n+1];
   //showCurrTime("AbSlices");
 
-  forall (ab, ra) in (AbSlice1, replA) do
+  forall (ab, ra) in zip(AbSlice1, replA) do
     local
       ra = ab;
 
   replicateA(blk);
 
-  forall (ab, rb) in (AbSlice2, replB) do
+  forall (ab, rb) in zip(AbSlice2, replB) do
     local
       rb = ab;
 
@@ -261,7 +261,7 @@ proc setupTargetLocales() {
   if tld {
     if numLocales > tla.numElements then
       writeln("UNUSED LOCALES ", numLocales - tla.numElements);
-    for (l,i) in (tla,0..) do l = Locales[i];
+    for (l,i) in zip(tla,0..) do l = Locales[i];
   } else {
 writeln("insufficient locales");
 halt();

@@ -19,7 +19,7 @@ writeln(A[Dom3]);
 writeln();
 writeln(B[Dom4]);
 if printOutput then writeln("Example 1");
-for (a,b) in (A[Dom3],B[Dom4]) do if (a!=b) then {writeln("ERROR!!!!");}
+for (a,b) in zip(A[Dom3],B[Dom4]) do if (a!=b) then {writeln("ERROR!!!!");}
 writeln('=========');
 
 A = -1;
@@ -30,7 +30,7 @@ writeln(A[Dom3]);
 writeln();
 writeln(B[Dom4]);
 if printOutput then writeln("Example 2");
-for (a,b) in (A[Dom3],B[Dom4]) do if (a!=b) then {writeln("ERROR!!!!");}
+for (a,b) in zip(A[Dom3],B[Dom4]) do if (a!=b) then {writeln("ERROR!!!!");}
 writeln('=========');
 
 A = -1;
@@ -41,7 +41,7 @@ writeln(A[Dom3]);
 writeln();
 writeln(B[Dom4]);
 if printOutput then writeln("Example 3");
-for (a,b) in (A[Dom3],B[Dom4]) do if (a!=b) then {writeln("ERROR!!!!");}
+for (a,b) in zip(A[Dom3],B[Dom4]) do if (a!=b) then {writeln("ERROR!!!!");}
 writeln('=========');
 
 A = -1;
@@ -49,7 +49,7 @@ A[5,2..6,1..4]=B[2,5..9,3..6];
 writeln(A[5,2..6,1..4]);
 writeln();
 writeln(B[2,5..9,3..6]);
-for (a,b) in (A[5,2..6,1..4],B[2,5..9,3..6]) do if (a!=b) then {writeln("ERROR!!!!");}
+for (a,b) in zip(A[5,2..6,1..4],B[2,5..9,3..6]) do if (a!=b) then {writeln("ERROR!!!!");}
 writeln('=========');
 
 A = -1;
@@ -59,7 +59,7 @@ writeln();
 writeln(A[5..8,2,1..4]);
 writeln();
 writeln(B[2..5,5,3..6]);
-for (a,b) in (A[5..8,2,1..4],B[2..5,5,3..6]) do if (a!=b) then {writeln("ERROR!!!!");}
+for (a,b) in zip(A[5..8,2,1..4],B[2..5,5,3..6]) do if (a!=b) then {writeln("ERROR!!!!");}
 writeln('=========');
 
 A = -1;
@@ -69,5 +69,5 @@ writeln();
 writeln(A[5..8,2..6,2]);
 writeln();
 writeln(B[2..5,5..9,4]);
-for (a,b) in (A[5..8,2..6,2],B[2..5,5..9,4]) do if (a!=b) then {writeln("ERROR!!!!");}
+for (a,b) in zip(A[5..8,2..6,2],B[2..5,5..9,4]) do if (a!=b) then {writeln("ERROR!!!!");}
 writeln('=========');

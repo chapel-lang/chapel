@@ -190,7 +190,7 @@ proc cft1st(A, W) {
   x0 = (x3.im + x1.re, x3.re - x1.im):complex;
   A(7) = wk1r * (x0.im - x0.re, x0.im + x0.re):complex;
 
-  forall (j,k1) in (8..A.numElements-1 by 8, 1..) {
+  forall (j,k1) in zip(8..A.numElements-1 by 8, 1..) {
     var wk2 = W(k1),
         wk1 = W(2*k1),
         wk3 = (wk1.re - 2* wk2.im * wk1.im,
@@ -225,7 +225,7 @@ proc cftmd1(span, A, W) {
         m2 = 2*m;
 
   cftmd0(span, A, W);
-  forall (k,k1) in (m2..A.numElements-1 by m2, 1..) {
+  forall (k,k1) in zip(m2..A.numElements-1 by m2, 1..) {
     var wk2 = W(k1),
         wk1 = W(2*k1),
         wk3 = interpIm(wk1, wk2);
@@ -254,14 +254,14 @@ proc cftmd2(span, A, W) {
   }
 
   forall j in 0..#span {
-    forall (k,k1) in (m2..numElems-1 by m2, 1..) {
+    forall (k,k1) in zip(m2..numElems-1 by m2, 1..) {
       const wk2 = W(k1),
             wk1 = W(k1 + k1),
             wk3 = interpIm(wk1, wk2);
       butterfly(wk1, wk2, wk3, A[j+k..j+k+3*span by span]);
     }
 
-    forall (k,k1) in (m2..numElems-1 by m2, 1..) {
+    forall (k,k1) in zip(m2..numElems-1 by m2, 1..) {
       const wk2 = W(k1),
             wk1 = W(2*k1 + 1),
             wk3 = interpRe(wk1, wk2);
@@ -276,7 +276,7 @@ proc cftmd21(span, A, W) {
   const m = radix*span,
         m2 = 2*m;
 
-  for (k,k1) in (m2..A.numElements-1 by m2, 1..) {
+  for (k,k1) in zip(m2..A.numElements-1 by m2, 1..) {
     var wk2 = W(k1),
         wk1 = W(2*k1),
         wk3 = interpIm(wk1, wk2);

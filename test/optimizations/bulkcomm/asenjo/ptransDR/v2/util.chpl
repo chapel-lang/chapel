@@ -48,7 +48,7 @@ proc showfetch(oddphase: bool, msg = "") {
 
   const innerGrid = { if g <= 2 then 1..1 else 2..g-1,
                       if h <= 2 then 1..1 else 2..h-1 };
-  for ((gi,gj), dat) in (innerGrid, Data[innerGrid]) {
+  for ((gi,gj), dat) in zip(innerGrid, Data[innerGrid]) {
     writeln("TRANSPOSED MATRICES");
     // first row
     if gi > 1 {

@@ -61,7 +61,7 @@ class Cyclic: BaseDist {
         ranges(i) = 0..#factors(i);
       }
       targetLocDom = {(...ranges)};
-      for (loc1, loc2) in (targetLocs, targetLocales) {
+      for (loc1, loc2) in zip(targetLocs, targetLocales) {
         loc1 = loc2;
       }
     } else {

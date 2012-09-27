@@ -40,7 +40,7 @@ proc main() {
     // A = B + alpha * C;
     // But this doesn't yet result in parallelism
 
-    forall (i,j,k) in (A.domain, B.domain, C.domain) {
+    forall (i,j,k) in zip(A.domain, B.domain, C.domain) {
       A(i) = B(j) + alpha * C(k);
     }
 

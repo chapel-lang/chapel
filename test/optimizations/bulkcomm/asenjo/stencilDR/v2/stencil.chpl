@@ -63,7 +63,7 @@ class GlobalInfo {
 
 // constructor for GlobalInfo
 proc GlobalInfo.GlobalInfo() {
-  forall ((ix,iy), inf) in (gridDist, infos) {
+  forall ((ix,iy), inf) in zip(gridDist, infos) {
     inf = new LocalInfo(mygx=ix, mygy=iy);
   }
 }
@@ -97,7 +97,7 @@ class GlobalData {
 // constructor for GlobalData
 proc GlobalData.GlobalData(nameArg: string) {
   name=nameArg;
-  forall (inf, dat, loc) in (WI.infos, datas, gridLocales) {
+  forall (inf, dat, loc) in zip(WI.infos, datas, gridLocales) {
     dat = new LocalData(inf);
     // sanity checks
     assert(dat.locale == loc);
@@ -107,7 +107,7 @@ proc GlobalData.GlobalData(nameArg: string) {
 
   /// get and store pointers to neighbor data slices ///
 
-  serial(v1) do forall ((ix,iy), dat, inf) in (gridDist, datas, WI.infos) {
+  serial(v1) do forall ((ix,iy), dat, inf) in zip(gridDist, datas, WI.infos) {
     msg1("neighbors for ", name, (ix, iy), "  domCompute=", inf.domCompute);
     dat.cnorth = storecache(-1,0, inf.mylowx-1,  inf.mylowy..inf.myhighy);
     dat.csouth = storecache(+1,0, inf.myhighx+1, inf.mylowy..inf.myhighy);

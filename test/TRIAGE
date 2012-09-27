@@ -3,13 +3,66 @@
 # Current notes on triage results, sorted by type of failure
 # (benchmark, compiler, or platform).
 #
+========================================================
+Problems analyzed and dispatched to responsible parties:
+========================================================
+
+2012-09-19 stack overflow on SSCA2
+  No clue.
+
+2012-09-18 gasnet testing failures.  raCommCheck and kin.
+  Due to zippered iteration syntax change not propagating to parallel-only tests.
+  John's sieve was to actually run the tests and fix failures rather than to 
+    identify a standard syntax pattern to use in a global search.
+  John submitted a patch and this issue is resolved.
+
+2012-09-17 qthreads build failure.
+  Due to LLVM backend checkin.
+  Michael was alerted and submitted a patch for review.
+  Brad is responding to Michael -- perhaps suggesting a less invasive solution.
+
+===========================================
+Unresolved failures by test/configuration:
+===========================================
+
+classes/figueroa/RecordDestructor1
+  Failed: 9/23 (64ggffpd) -- destructor not called?
+
+distributions/deitz/test_block_representation
+  Failed: 9/23 (64ggffpd) -- line number sensitivity
+
+distributions/robust/associative/basic/array_write
+distributions/robust/associative/basic/domain_write
+distributions/robust/associative/basic/whole_domain_assign
+  Failed: 9/23 (64ggffpd) -- no output
+
+functions/deiz/iterators/leader_follower/test_strided_leader1
+  Failed: 9/23 (64ggffpd)
+
+multilocale/diten/needMultiLocales/coforallon_maxThreads
+  Failed: 9/23 (64ggfpt)
+
+types/file/freadIntFailed
+types/file/fwriteIntFailed
+  Failed: 9/23 (64ggffpd) -- path sensitivity
+
+studies/590o/blerner/nilClassCheck
+  Failed: 9/23 (baseline) -- line number sensitivlty
+
+studies/lammps/shemmy/p-lammps-n1
+studies/lammps/shemmy/p-lammps-n2
+studies/lammps/shemmy/p-lammps-n4
+  Failed: 9/19 (baseline), 9/23 (baseline)
+
 
 ==============================================
 These things regularly cause noise in testing:
 ==============================================
 
-spectralnorm (vass)
--------------------
+spectralnorm
+------------
+Removed from further consideration <hilde 2012-09-20>
+
 proposed approach is to see whether reference version is similarly
 noisy, and if not to see whether ours has inadvertant nondeterminisms.
 (still noisy as of 2012/08/14-8/24: gnfp, gnfp-nolocal)
@@ -32,7 +85,7 @@ and now just needs to propagate it to the other versions, as well as
 to the else-clause of the 'useOn' conditional.
   release/examples/benchmarks/hpcc/variants/ra-cleanloop: fixed by r20326
   studies/hpcc/2008/ra: not fixed yet, failed 8/14/12
-  studies/hpcc/nodistrib/ra.nodist: not fixed yet, failed 8/14/12
+  studies/hpcc/nodistrib/ra.nodist: not fixed yet, failed 8/14/12, still failing 2012/09/21.
   studies/hpcc/RA/bradc/parallel/ra-dist: not fixed yet, last failure unknown
 
 
@@ -46,6 +99,14 @@ TooManyThreads (unassigned)
 ---------------------------
 Fails periodically.  Lately observed pthreads.tcmalloc (2012/08/15).
 
+
+mutilocale/deitz/needMultiLocales/diagnostics/test_private_broadcast_large
+--------------------------------------------------------------------------
+  Succeeded: 9/23 (64ggffpd)
+
+parallel/sync/diten/syncArrOfSync (future)
+---------------------------------
+  Succeeded: 9/23 (64ggffpd)
 
 linux64.gnu.gasnet.qthreads.none (UNASSIGNED)
 ---------------------------------------------
@@ -135,7 +196,7 @@ These configurations:
 
 minus_equals nondeterminism (UNASSIGNED)
 ----------------------------------------
-noted in regressions (week of 07/02)
+noted in regressions (week of 07/02, still present 9/23)
 
 atomics nondeterminisms (UNASSIGNED)
 ------------------------------------

@@ -61,7 +61,7 @@ module CGMakeA {
 
     // copy into arithmetic domain/array
     var IndArr: [1..Inds.numIndices] index(2);
-    for (i,j) in (Inds, 1..) {
+    for (i,j) in zip(Inds, 1..) {
       IndArr[j] = i;
     }
     //  writeln("IndArr is: ", IndArr);

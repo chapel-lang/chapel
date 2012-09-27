@@ -45,7 +45,7 @@ proc runTest(D, alpha: real) {
   initialize(B);
 
   timer.start();
-  for (a,b) in (A, B) {
+  for (a,b) in zip(A, B) {
     a = alpha * b;
   }
   timer.stop();

@@ -186,7 +186,7 @@ Will we support domains with heterogeneous index types?
 
 \begin{syntax}
 domain-literal:
-  [ range-expression-list ]
+  { range-expression-list }
 
 range-expression-list:
   range-expression
@@ -206,7 +206,7 @@ promoted to the same type, then that type is used as the \chpl{idxType}.
 Otherwise, the domain literal is invalid.
 
 \begin{example}
-The expression \chpl{[1..5, 1..5]} defines a rectangular domain with
+The expression \chpl{{1..5, 1..5}} defines a rectangular domain with
 type \chpl{domain(rank=2,} \chpl{ idxType=int,} \chpl{ strided=false)}.
 It is a $5 \times 5$ domain with the indices:
 \begin{equation}
@@ -218,7 +218,7 @@ A domain expression may contain bounds which are evaluated at runtime.
 \begin{example}
 In the code
 \begin{chapel}
-var D: domain(2) = [1..n, 1..n];
+var D: domain(2) = {1..n, 1..n};
 \end{chapel}
 
 \chpl{D} is defined as a two-dimensional, nonstridable rectangular
@@ -527,7 +527,7 @@ followed by a two dimensional sparse subdomain of \chpl{D}
 named \chpl{SpsD}.  Since \chpl{SpsD} is uninitialized, it will
 initially describe an empty set of indices from \chpl{D}.
 \begin{chapel}
-const D: domain(2) = [1..n, 1..n];
+const D: domain(2) = {1..n, 1..n};
 var SpsD: sparse subdomain(D);
 \end{chapel}
 \end{example}
@@ -638,7 +638,7 @@ A = D;
 \end{chapel}
 This is equivalent to:
 \begin{chapel}
-forall (a,i) in (A,D) do
+forall (a,i) in zip(A,D) do
   a = i;
 \end{chapel}
 \end{example}
@@ -790,7 +790,7 @@ D, \chpl{Col2OfD} describes the 2nd column of
 for the last row.
 
 \begin{chapel}
-const D: domain(2) = [1..n, 1..n],
+const D: domain(2) = {1..n, 1..n},
       InnerD = D[2..n-1, 2..n-1],
       Col2OfD = D[.., 2..2],
       AllButLastRow = D[..n-1, ..];
@@ -988,7 +988,6 @@ proc $Domain$.numIndices: capType
 Returns the number of indices in the domain as a value of the capacity type.
 \end{protobody}
 
-
 \subsection{Methods on Regular Domains}
 \index{domains!methods!regular}
 \index{regular domains!methods}
@@ -1098,6 +1097,15 @@ proc $Domain$.rank param : int
 \end{protohead}
 \begin{protobody}
 Returns the rank of the domain.
+\end{protobody}
+
+\index{domains!size@\chpl{size}}
+\index{predefined functions!size (domain)@\chpl{size} (domain)}
+\begin{protohead}
+proc $Domain$.size: capType
+\end{protohead}
+\begin{protobody}
+Same as $Domain$.numIndices.
 \end{protobody}
 
 \index{domains!stridable@\chpl{stridable}}

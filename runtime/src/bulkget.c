@@ -1,6 +1,6 @@
 #include "chplrt.h"
-#include "chpl-comm-compiler-macros.h"
 #include "chpl-comm.h"
+#include "chpl-comm-compiler-macros.h"
 
 #include "bulkget.h"
 
@@ -11,7 +11,7 @@ qbytes_t* bulk_get_bytes(int64_t src_locale, qbytes_t* src_addr)
   err_t err;
 
   // First, get the length of the bytes.
-  CHPL_COMM_GET( src_len, src_locale, & src_addr->len, int64_t, CHPL_TYPE_int64_t, 1, -1, "<internal>");
+  chpl_gen_comm_get( &src_len, src_locale, & src_addr->len, sizeof(int64_t), CHPL_TYPE_int64_t, 1, -1, "<internal>");
 //  chpl_comm_get
 
   err = qbytes_create_calloc(&ret, src_len);
@@ -22,7 +22,7 @@ qbytes_t* bulk_get_bytes(int64_t src_locale, qbytes_t* src_addr)
   // since we don't want to require src/dst to have a particular alignment.
 
   // Next, get the data itself.
-  CHPL_COMM_GET( *(uint8_t*)ret->data, src_locale, & src_addr->data, uint8_t, CHPL_TYPE_uint8_t, src_len, -1, "<internal>");
+  chpl_gen_comm_get( ret->data, src_locale, & src_addr->data, sizeof(uint8_t), CHPL_TYPE_uint8_t, src_len, -1, "<internal>");
 
   // Great! All done.
   return ret; 
@@ -54,12 +54,12 @@ err_t bulk_put_buffer(int64_t dst_locale, void* dst_addr, int64_t dst_len,
 
     // TODO -- note -- technically, this should be gasnet_put_bulk,
     // since we don't want to require src/dst to have a particular alignment.
-    CHPL_COMM_PUT( (*(uint8_t*)iov[i].iov_base), // macro gets ptr to this
-                    dst_locale,
-                    PTR_ADDBYTES(dst_addr, j),
-                    uint8_t, CHPL_TYPE_uint8_t,
-                    iov[i].iov_len,
-                    -1, "<internal>" );
+    chpl_gen_comm_put( iov[i].iov_base,
+                       dst_locale,
+                       PTR_ADDBYTES(dst_addr, j),
+                       sizeof(uint8_t), CHPL_TYPE_uint8_t,
+                       iov[i].iov_len,
+                       -1, "<internal>" );
 
     j += iov[i].iov_len;
   }
@@ -74,4 +74,3 @@ error:
   return err;
 }
 
-         

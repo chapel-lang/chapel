@@ -38,6 +38,11 @@ complex2record() {
   ClassType* complex64 = buildComplexRecord("_complex64", dtReal[FLOAT_SIZE_32]);
   ClassType* complex128 = buildComplexRecord("_complex128", dtReal[FLOAT_SIZE_64]);
 
+  complex64->GEPMap.insert(std::pair<std::string, int>("re", 0));
+  complex64->GEPMap.insert(std::pair<std::string, int>("im", 1));
+  complex128->GEPMap.insert(std::pair<std::string, int>("re", 0));
+  complex128->GEPMap.insert(std::pair<std::string, int>("im", 1));
+
   complex64->refType = dtComplex[COMPLEX_SIZE_64]->refType;
   dtComplex[COMPLEX_SIZE_64]->refType = NULL;
   complex128->refType = dtComplex[COMPLEX_SIZE_128]->refType;

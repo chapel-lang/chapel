@@ -9,6 +9,8 @@
 #include "symbol.h"
 #include "primitive.h"
 
+#include "genret.h"
+
 class FnSymbol;
 
 #define IS_EXPR(e)                                          \
@@ -64,7 +66,7 @@ class DefExpr : public Expr {
   Type* typeInfo(void);
   void prettyPrint(std::ofstream *o);
   
-  void codegen(FILE* outfile);
+  GenRet codegen();
 };
 
 
@@ -76,8 +78,8 @@ class SymExpr : public Expr {
   void replaceChild(Expr* old_ast, Expr* new_ast);
   void verify(); 
   Type* typeInfo(void);
+  GenRet codegen();
   void prettyPrint(std::ofstream *o);
-  void codegen(FILE* outfile);
 };
 
 
@@ -89,8 +91,8 @@ class UnresolvedSymExpr : public Expr {
   void replaceChild(Expr* old_ast, Expr* new_ast);
   void verify(); 
   Type* typeInfo(void);
+  GenRet codegen();
   void prettyPrint(std::ofstream *o);
-  void codegen(FILE* outfile);
 };
 
 
@@ -118,9 +120,8 @@ class CallExpr : public Expr {
 
   void replaceChild(Expr* old_ast, Expr* new_ast);
 
+  GenRet codegen();
   void prettyPrint(std::ofstream *o);
-
-  void codegen(FILE* outfile);
 
   void insertAtHead(BaseAST* ast);
   void insertAtTail(BaseAST* ast);
@@ -146,8 +147,8 @@ class NamedExpr : public Expr {
   DECLARE_COPY(NamedExpr);
   void replaceChild(Expr* old_ast, Expr* new_ast);
   Type* typeInfo(void);
+  GenRet codegen();
   void prettyPrint(std::ofstream *o);
-  void codegen(FILE* outfile);
 };
 
 
@@ -192,5 +193,17 @@ Expr* getNextExpr(Expr* expr);
 
 Expr* new_Expr(const char* format, ...);
 Expr* new_Expr(const char* format, va_list vl);
+
+GenRet codegenValue(GenRet r);
+GenRet codegenValuePtr(GenRet r);
+#ifdef HAVE_LLVM
+llvm::Value* createTempVarLLVM(llvm::Type* type, const char* name);
+llvm::Value* createTempVarLLVM(llvm::Type* type);
+#endif
+GenRet createTempVarWith(GenRet v);
+GenRet createTempVar(Type *t);
+
+GenRet codegenDeref(GenRet toDeref);
+GenRet codegenLocalDeref(GenRet toDeref);
 
 #endif

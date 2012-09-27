@@ -389,7 +389,7 @@ proc _CurrentLocaleToLocIDs(targetLocales): (targetLocales.rank*locIdT, bool)
   var result: targetLocales.rank * locIdT;
   // guard updates to 'result' to ensure atomicity of updates
   var gotresult$: sync bool = false;
-  forall (lls, loc) in (targetLocales.domain, targetLocales) do
+  forall (lls, loc) in zip(targetLocales.domain, targetLocales) do
     if loc == here {
       // if we get multiple matches, we do not specify which is returned
       // could add a pre-test if it were cheap: if !gotresult$.readXX()
@@ -611,7 +611,7 @@ proc DimensionalDist2D.dsiNewRectangularDom(param rank: int,
     compilerError("bug in DimensionalDist2D: inconsistent stoIndexT");
 
   coforall (loc, locIds, locDdesc)
-   in (targetLocales, targetIds, result.localDdescs) do
+   in zip(targetLocales, targetIds, result.localDdescs) do
     on loc do
       locDdesc = new LocDimensionalDom(result.stoDomainT,
                        doml1 = dom1.dsiNewLocalDom1d(stoIndexT, locIds(1)),
@@ -645,7 +645,7 @@ proc DimensionalDom._dsiSetIndicesHelper(newRanges: rank * rangeT): void {
     then if _arrs.length > 0 then
       stderr.writeln("warning: array resizing will not preserve array contents upon change in dimension stride with 1-d BlockCyclic distribution");
 
-  coforall (locId, locDD) in (targetIds, localDdescs) do
+  coforall (locId, locDD) in zip(targetIds, localDdescs) do
     on locDD do
      locDD._dsiLocalSetIndicesHelper(stoRangeT, (dom1,dom2), locId);
 }
@@ -720,7 +720,7 @@ proc DimensionalDom.dsiBuildRectangularDom(param rank: int,
   // obtain the locale/locId from 'this' and its components instead.
   // (Is that more efficient?)
   coforall (oldLocDdesc, newLocDdesc, locIds)
-   in (this.localDdescs, result.localDdescs, this.targetIds) do
+   in zip(this.localDdescs, result.localDdescs, this.targetIds) do
     on oldLocDdesc {
       var (doml1, myRange1) = oldLocDdesc.doml1.dsiBuildLocalDom1d(dom1, locIds(1));
       var (doml2, myRange2) = oldLocDdesc.doml2.dsiBuildLocalDom1d(dom2, locIds(2));
@@ -805,7 +805,7 @@ proc DimensionalDom.dsiBuildArray(type eltType)
                                     dom      = this,
                                     allocDom = this);
   coforall (loc, locDdesc, locAdesc)
-   in (dist.targetLocales, localDdescs, result.localAdescs) do
+   in zip(dist.targetLocales, localDdescs, result.localAdescs) do
     on loc do
       locAdesc = new LocDimensionalArr(eltType, locDdesc);
 
@@ -1013,7 +1013,7 @@ iter DimensionalDom.these(param tag: iterKind) where tag == iterKind.leader {
   //     coforall ((l1,l2), locDdesc) in (targetIds, localDdescs) do
   //   presently it will crash the compiler on an assertion.
   //
-  coforall (lls, locDdesc) in (overTargetIds, localDdescs[overTargetIds]) do
+  coforall (lls, locDdesc) in zip(overTargetIds, localDdescs[overTargetIds]) do
     on locDdesc {
       // mimic BlockDom leader, except computing parDim is more involved here
 

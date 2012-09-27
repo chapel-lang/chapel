@@ -393,6 +393,7 @@ index-var-declaration:
 
 iteratable-expression:
   expression
+  `zip' ( expression-list )
 \end{syntax}
 
 The \sntx{index-var-declaration} declares new variables for the scope
@@ -404,11 +405,9 @@ in~\rsec{Indices_in_a_Tuple}.
 The \sntx{index-var-declaration} is optional and may be omitted if the
 indices do not need to be referenced in the loop.
 
-%
-% sungeun: Will we allow square brackets also?
-%
-If the iteratable-expression is a tuple delimited by parentheses, the
-components of the tuple must support zipper iteration.
+If the iteratable-expression begins with the keyword \chpl{zip} followed
+by a parenthesized expression-list, the listed expressions must support 
+zipper iteration.
 
 \subsection{Zipper Iteration}
 \label{Zipper_Iteration}
@@ -426,7 +425,7 @@ dimension, must be identical.
 \begin{chapelexample}{zipper.chpl}
 The output of
 \begin{chapel}
-for (i, j) in (1..3, 4..6) do
+for (i, j) in zip(1..3, 4..6) do
   write(i, " ", j, " ");
 \end{chapel}
 \begin{chapelpost}

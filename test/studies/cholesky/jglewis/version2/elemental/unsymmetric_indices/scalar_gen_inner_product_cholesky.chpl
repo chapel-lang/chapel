@@ -32,7 +32,7 @@ module scalar_gen_inner_product_cholesky {
 
     // compute L from A
 
-    for (j_row, j_col) in (row_indices, col_indices) do {
+    for (j_row, j_col) in zip(row_indices, col_indices) do {
 
       // modify the jth column of A with the combined effects of the
       // elimination steps on all previous columns

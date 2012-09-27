@@ -16,6 +16,7 @@ type chpl_table_index_type = int;
 /* These declarations could/should both be nested within
    DefaultAssociativeDom? */
 enum chpl__hash_status { empty, full, deleted };
+_ensure_reference_type(chpl__hash_status);
 
 record chpl_TableEntry {
   type idxType;
@@ -267,7 +268,7 @@ class DefaultAssociativeDom: BaseAssociativeDom {
   iter dsiSorted() {
     var tableCopy: [0..#numEntries.read()] idxType;
 
-    for (tmp, slot) in (tableCopy.domain, _fullSlots()) do
+    for (tmp, slot) in zip(tableCopy.domain, _fullSlots()) do
       tableCopy(tmp) = table(slot).idx;
 
     QuickSort(tableCopy);
@@ -437,7 +438,7 @@ class DefaultAssociativeArr: BaseArr {
 
   iter dsiSorted() {
     var tableCopy: [0..dom.dsiNumIndices-1] eltType;
-    for (copy, slot) in (tableCopy.domain, dom._fullSlots()) do
+    for (copy, slot) in zip(tableCopy.domain, dom._fullSlots()) do
       tableCopy(copy) = data(slot);
 
     QuickSort(tableCopy);

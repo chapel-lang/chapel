@@ -115,7 +115,7 @@ proc main() {
   // in r.  Compute the update using r both to compute the index and
   // as the update value.
   //
-  forall (_, r) in (Updates, RAStream()) do {
+  forall (_, r) in zip(Updates, RAStream()) do {
     const myR = r;
     T(myR & indexMask) ^= myR;
   }
@@ -161,7 +161,7 @@ proc verifyResults() {
   // Reverse the updates by recomputing them, this time using sync
   // variables to ensure no conflicting updates.
   //
-  forall (_, r) in (Updates, RAStream()) do {
+  forall (_, r) in zip(Updates, RAStream()) do {
     locks$(r & lockIndexMask) = true;
     T(r & indexMask) ^= r;
     locks$(r & lockIndexMask);

@@ -30,13 +30,13 @@ A[D1]=B[D1];
 
 dt = getCurrentTime()-st;
 if printOutput then writeln("Time: ", dt);
-forall (a,b) in (A[D1],B[D1]) do if (a!=b) then writeln("ERROR!!!!");
+forall (a,b) in zip(A[D1],B[D1]) do if (a!=b) then writeln("ERROR!!!!");
 
 writeln();
 D1={1..n,1..n by 4,1..n};
 
 if printOutput then writeln("Block Dist. Example 2: A",D1, " = B",D1," on ",numLocales," Locales:");
-for (a,i) in (A,{1..n*n*n}) do a=i;
+for (a,i) in zip(A,{1..n*n*n}) do a=i;
 st = getCurrentTime();
 
 A[D1]=B[D1];
@@ -44,21 +44,21 @@ A[D1]=B[D1];
 dt = getCurrentTime()-st;
 if printOutput then writeln("Time: ", dt);
 
-forall (a,b) in (A[D1],B[D1]) do if (a!=b) then writeln("ERROR!!!!");
+forall (a,b) in zip(A[D1],B[D1]) do if (a!=b) then writeln("ERROR!!!!");
 
 writeln();
 D1={1..n by 4,1..n ,1..n by 2};
 st=getCurrentTime();
 
 if printOutput then writeln("Block Dist. Example 3: A",D1, " = B",D1," on ",numLocales," Locales:");
-for (a,i) in (A,{1..n*n*n}) do a=i;
+for (a,i) in zip(A,{1..n*n*n}) do a=i;
 st = getCurrentTime();
 
 A[D1]=B[D1];
 
 dt = getCurrentTime()-st;
 if printOutput then writeln("Time: ", dt);
-forall (a,b) in (A[D1],B[D1]) do if (a!=b) then writeln("ERROR!!!!");
+forall (a,b) in zip(A[D1],B[D1]) do if (a!=b) then writeln("ERROR!!!!");
 
 writeln();
 D1={1..n by 4,1..n by 3 ,1..n};
@@ -66,12 +66,12 @@ st=getCurrentTime();
 
 if printOutput then writeln("Block Dist. Example 4: A",D1, " = B",D1," on ",numLocales," Locales:");
 st = getCurrentTime();
-for (a,i) in (A,{1..n*n*n}) do a=i;
+for (a,i) in zip(A,{1..n*n*n}) do a=i;
 A[D1]=B[D1];
 
 dt = getCurrentTime()-st;
 if printOutput then writeln("Time: ", dt);
-forall (a,b) in (A[D1],B[D1]) do if (a!=b) then writeln("ERROR!!!!");
+forall (a,b) in zip(A[D1],B[D1]) do if (a!=b) then writeln("ERROR!!!!");
 
 writeln();
 D1={1..n,1..n by 3 ,1..n by 2};
@@ -79,12 +79,12 @@ st=getCurrentTime();
 
 if printOutput then writeln("Block Dist. Example 5: A",D1, " = B",D1," on ",numLocales," Locales:");
 st = getCurrentTime();
-for (a,i) in (A,{1..n*n*n}) do a=i;
+for (a,i) in zip(A,{1..n*n*n}) do a=i;
 A[D1]=B[D1];
 
 dt = getCurrentTime()-st;
 if printOutput then writeln("Time: ", dt);
-forall (a,b) in (A[D1],B[D1]) do if (a!=b) then writeln("ERROR!!!!");
+forall (a,b) in zip(A[D1],B[D1]) do if (a!=b) then writeln("ERROR!!!!");
 
 writeln();
 D1={1..n by 4,1..n,1..n};
@@ -92,12 +92,12 @@ st=getCurrentTime();
 
 if printOutput then writeln("Block Dist. Example 6: A",D1, " = B",D1," on ",numLocales," Locales:");
 st = getCurrentTime();
-for (a,i) in (A,{1..n*n*n}) do a=i;
+for (a,i) in zip(A,{1..n*n*n}) do a=i;
 A[D1]=B[D1];
 
 dt = getCurrentTime()-st;
 if printOutput then writeln("Time: ", dt);
-forall (a,b) in (A[D1],B[D1]) do if (a!=b){ writeln("ERROR!!!!");}
+forall (a,b) in zip(A[D1],B[D1]) do if (a!=b){ writeln("ERROR!!!!");}
 
 writeln();
 D1={1..n,1..n ,1..n by 2};
@@ -105,12 +105,12 @@ st=getCurrentTime();
 
 if printOutput then writeln("Block Dist. Example 7: A",D1, " = B",D1," on ",numLocales," Locales:");
 st = getCurrentTime();
-for (a,i) in (A,{1..n*n*n}) do a=i;
+for (a,i) in zip(A,{1..n*n*n}) do a=i;
 A[D1]=B[D1];
 
 dt = getCurrentTime()-st;
 if printOutput then writeln("Time: ", dt);
-forall (a,b) in (A[D1],B[D1]) do if (a!=b) then writeln("ERROR!!!!");
+forall (a,b) in zip(A[D1],B[D1]) do if (a!=b) then writeln("ERROR!!!!");
 
 writeln();
 D1={1..n,1..n ,1..n by 2}; //001
@@ -119,12 +119,12 @@ st=getCurrentTime();
 
 if printOutput then writeln("Block Dist. Example 8: A",D1, " = B",D2," on ",numLocales," Locales:");
 st = getCurrentTime();
-for (a,i) in (A,{1..n*n*n}) do a=i;
+for (a,i) in zip(A,{1..n*n*n}) do a=i;
 A[D1]=B[D2];
 
 dt = getCurrentTime()-st;
 if printOutput then writeln("Time: ", dt);
-forall (a,b) in (A[D1],B[D2]) do if (a!=b) then writeln("ERROR!!!!");
+forall (a,b) in zip(A[D1],B[D2]) do if (a!=b) then writeln("ERROR!!!!");
 
 writeln();
 D1={1..n,1..n by 2,1..n by 2}; //011
@@ -133,12 +133,12 @@ st=getCurrentTime();
 
 if printOutput then writeln("Block Dist. Example 9: A",D1, " = B",D2," on ",numLocales," Locales:");
 st = getCurrentTime();
-for (a,i) in (A,{1..n*n*n}) do a=i;
+for (a,i) in zip(A,{1..n*n*n}) do a=i;
 A[D1]=B[D2];
 
 dt = getCurrentTime()-st;
 if printOutput then writeln("Time: ", dt);
-forall (a,b) in (A[D1],B[D2]) do if (a!=b){ writeln("ERROR!!!!");}
+forall (a,b) in zip(A[D1],B[D2]) do if (a!=b){ writeln("ERROR!!!!");}
 
 writeln();
 D1={1..n by 3,1..n by 2,1..n by 2}; //111
@@ -147,12 +147,12 @@ st=getCurrentTime();
 
 if printOutput then writeln("Block Dist. Example 10: A",D1, " = B",D2," on ",numLocales," Locales:");
 st = getCurrentTime();
-for (a,i) in (A,{1..n*n*n}) do a=i;
+for (a,i) in zip(A,{1..n*n*n}) do a=i;
 A[D1]=B[D2];
 
 dt = getCurrentTime()-st;
 if printOutput then writeln("Time: ", dt);
-forall (a,b) in (A[D1],B[D2]) do if (a!=b) then writeln("ERROR!!!!");
+forall (a,b) in zip(A[D1],B[D2]) do if (a!=b) then writeln("ERROR!!!!");
 
 writeln();
 D1={1..n by 2,1..n,1..n by 2};
@@ -161,12 +161,12 @@ st=getCurrentTime();
 
 if printOutput then writeln("Block Dist. Example 11: A",D1, " = B",D2," on ",numLocales," Locales:");
 st = getCurrentTime();
-for (a,i) in (A,{1..n*n*n}) do a=i;
+for (a,i) in zip(A,{1..n*n*n}) do a=i;
 A[D1]=B[D2];
 
 dt = getCurrentTime()-st;
 if printOutput then writeln("Time: ", dt);
-forall (a,b) in (A[D1],B[D2]) do if (a!=b) then writeln("ERROR!!!!");
+forall (a,b) in zip(A[D1],B[D2]) do if (a!=b) then writeln("ERROR!!!!");
 
 writeln();
 D1={1..n by 2,1..n,1..n};
@@ -175,12 +175,12 @@ st=getCurrentTime();
 
 if printOutput then writeln("Block Dist. Example 12: A",D1, " = B",D2," on ",numLocales," Locales:");
 st = getCurrentTime();
-for (a,i) in (A,{1..n*n*n}) do a=i;
+for (a,i) in zip(A,{1..n*n*n}) do a=i;
 A[D1]=B[D2];
 
 dt = getCurrentTime()-st;
 if printOutput then writeln("Time: ", dt);
-forall (a,b) in (A[D1],B[D2]) do if (a!=b) then writeln("ERROR!!!!");
+forall (a,b) in zip(A[D1],B[D2]) do if (a!=b) then writeln("ERROR!!!!");
 
 writeln();
 D1={1..n,1..n by 2,1..n};
@@ -189,12 +189,12 @@ st=getCurrentTime();
 
 if printOutput then writeln("Block Dist. Example 13: A",D1, " = B",D2," on ",numLocales," Locales:");
 st = getCurrentTime();
-for (a,i) in (A,{1..n*n*n}) do a=i;
+for (a,i) in zip(A,{1..n*n*n}) do a=i;
 A[D1]=B[D2];
 
 dt = getCurrentTime()-st;
 if printOutput then writeln("Time: ", dt);
-forall (a,b) in (A[D1],B[D2]) do if (a!=b) then writeln("ERROR!!!!");
+forall (a,b) in zip(A[D1],B[D2]) do if (a!=b) then writeln("ERROR!!!!");
 
 D1={1..n,2..n by 2,5..n-1};
 D2={1..n,2..2*n by 4,4..n-2};
@@ -213,11 +213,11 @@ if elem==1
 {
   if printOutput then writeln("Block Dist. Example 14: A",D1, " = B",D2," on ",numLocales," Locales:");
   st=getCurrentTime();
-  for (a,i) in (A,{1..n*n*n}) do a=i;
+  for (a,i) in zip(A,{1..n*n*n}) do a=i;
   A[D1]=B[D2];
   dt = getCurrentTime()-st;
   if printOutput then writeln("Time: ", dt);
-  for (a,b) in (A[D1],B[D2]) do if (a!=b) then writeln("ERROR!!!!");
+  for (a,b) in zip(A[D1],B[D2]) do if (a!=b) then writeln("ERROR!!!!");
 }
 
 D1={1..n-1 by 3,2..n/2 by 2,5..n-1};
@@ -237,11 +237,11 @@ if elem==1
 {
   if printOutput then writeln("Block Dist. Example 15: A",D1, " = B",D2," on ",numLocales," Locales:");
   st=getCurrentTime();
-  for (a,i) in (A,{1..n*n*n}) do a=i;
+  for (a,i) in zip(A,{1..n*n*n}) do a=i;
   A[D1]=B[D2];
   dt = getCurrentTime()-st;
   if printOutput then writeln("Time: ", dt);
-  for (a,b) in (A[D1],B[D2]) do if (a!=b) then writeln("ERROR!!!!");
+  for (a,b) in zip(A[D1],B[D2]) do if (a!=b) then writeln("ERROR!!!!");
 }
 
 D1={2..n by 4,2..n/2 by 2,1..n/2 by 5};
@@ -261,11 +261,11 @@ if elem==1
 {
   if printOutput then writeln("Block Dist. Example 16: A",D1, " = B",D2," on ",numLocales," Locales:");
   st=getCurrentTime();
-  for (a,i) in (A,{1..n*n*n}) do a=i;
+  for (a,i) in zip(A,{1..n*n*n}) do a=i;
   A[D1]=B[D2];
   dt = getCurrentTime()-st;
   if printOutput then writeln("Time: ", dt);
-  for (a,b) in (A[D1],B[D2]) do if (a!=b) then writeln("ERROR!!!!");
+  for (a,b) in zip(A[D1],B[D2]) do if (a!=b) then writeln("ERROR!!!!");
 }
 
 
@@ -286,11 +286,11 @@ if elem==1
 {
   if printOutput then writeln("Block Dist. Example 17: A",D1, " = B",D2," on ",numLocales," Locales:");
   st=getCurrentTime();
-  for (a,i) in (A,{1..n*n*n}) do a=i;
+  for (a,i) in zip(A,{1..n*n*n}) do a=i;
   A[D1]=B[D2];
   dt = getCurrentTime()-st;
   if printOutput then writeln("Time: ", dt);
-  for (a,b) in (A[D1],B[D2]) do if (a!=b) then writeln("ERROR!!!!");
+  for (a,b) in zip(A[D1],B[D2]) do if (a!=b) then writeln("ERROR!!!!");
 }
 
 D1={n/2+1..n by 2,1..n by 4,n/4+1..n/2 by 2};
@@ -310,11 +310,11 @@ if elem==1
 {
   if printOutput then writeln("Block Dist. Example 18: A",D1, " = B",D2," on ",numLocales," Locales:");
   st=getCurrentTime();
-  for (a,i) in (A,{1..n*n*n}) do a=i;
+  for (a,i) in zip(A,{1..n*n*n}) do a=i;
   A[D1]=B[D2];
   dt = getCurrentTime()-st;
   if printOutput then writeln("Time: ", dt);
-  for (a,b) in (A[D1],B[D2]) do if (a!=b) then writeln("ERROR!!!!");
+  for (a,b) in zip(A[D1],B[D2]) do if (a!=b) then writeln("ERROR!!!!");
 }
 
 
@@ -335,11 +335,11 @@ if elem==1
 {
   if printOutput then writeln("Block Dist. Example 19: A",D1, " = B",D2," on ",numLocales," Locales:");
   st=getCurrentTime();
-  for (a,i) in (A,{1..n*n*n}) do a=i;
+  for (a,i) in zip(A,{1..n*n*n}) do a=i;
   A[D1]=B[D2];
   dt = getCurrentTime()-st;
   if printOutput then writeln("Time: ", dt);
-  for (a,b) in (A[D1],B[D2]) do if (a!=b) then writeln("ERROR!!!!");
+  for (a,b) in zip(A[D1],B[D2]) do if (a!=b) then writeln("ERROR!!!!");
 }
 
 D1={n/4+1..3*n/4 by 2,n/2+1..3*n/4 by 1,n/4+1..n/2 by 2};
@@ -359,11 +359,11 @@ if elem==1
 {
   if printOutput then writeln("Block Dist. Example 20: A",D1, " = B",D2," on ",numLocales," Locales:");
   st=getCurrentTime();
-  for (a,i) in (A,{1..n*n*n}) do a=i;
+  for (a,i) in zip(A,{1..n*n*n}) do a=i;
   A[D1]=B[D2];
   dt = getCurrentTime()-st;
   if printOutput then writeln("Time: ", dt);
-  for (a,b) in (A[D1],B[D2]) do if (a!=b) then writeln("ERROR!!!!");
+  for (a,b) in zip(A[D1],B[D2]) do if (a!=b) then writeln("ERROR!!!!");
 }
 
 var Dist3 = new dmap(new Block({1..n,1..n,1..n,1..n}));
@@ -385,9 +385,9 @@ st=getCurrentTime();
 
 if printOutput then writeln("Block Dist. Example 21: C",D3, " = D",D3," on ",numLocales," Locales:");
 st = getCurrentTime();
-for (a,i) in (C,{1..n*n*n*n}) do a=i;
+for (a,i) in zip(C,{1..n*n*n*n}) do a=i;
 C[D3]=D[D3];
 
 dt = getCurrentTime()-st;
 if printOutput then writeln("Time: ", dt);
-forall (a,b) in (C[D3],D[D3]) do if (a!=b) then writeln("ERROR!!!!");
+forall (a,b) in zip(C[D3],D[D3]) do if (a!=b) then writeln("ERROR!!!!");

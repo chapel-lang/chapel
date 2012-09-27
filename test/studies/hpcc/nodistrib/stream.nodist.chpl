@@ -87,7 +87,7 @@ proc main() {
     // parallel, zippered manner storing the elements as a, b, and c.
     // Compute the multiply-add on b and c, storing the result to a.
     //
-    forall (a, b, c) in (A, B, C) do
+    forall (a, b, c) in zip(A, B, C) do
       a = b + alpha * c;
 
     execTime(trial) = getCurrentTime() - startTime;  // store the elapsed time
@@ -135,7 +135,7 @@ proc verifyResults(A, B, C) {
   //
   // recompute the computation, destructively storing into B to save space
   //
-  forall (b, c) in (B, C) do
+  forall (b, c) in zip(B, C) do
     b += alpha *c;  
 
   if (printArrays) then writeln("A-hat is: ", B, "\n");  // and A-hat too
@@ -145,7 +145,7 @@ proc verifyResults(A, B, C) {
   // absolute value of A's elements minus the new result computed in B.
   // "[i in I]" represents an expression-level loop: "forall i in I"
   //
-  const infNorm = max reduce [(a,b) in (A,B)] abs(a - b);
+  const infNorm = max reduce [(a,b) in zip(A,B)] abs(a - b);
 
   return (infNorm <= epsilon);    // return whether the error is acceptable
 }

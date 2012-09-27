@@ -48,7 +48,7 @@ coforall block in singleLocaleIterator(myLow, myHigh, true, 0) {
 // The compiler would translate this into the following:
 //
 coforall block in singleLocaleIterator(myLow, myHigh, true, 0) {
-  for i in (singleLocaleIterator(myLow, myHigh, false, block),
+  for i in zip(singleLocaleIterator(myLow, myHigh, false, block),
             singleLocaleIterator(myLow+2, myHigh+2, false, block)) {
     writeln(i);
   }

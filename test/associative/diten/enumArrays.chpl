@@ -32,7 +32,7 @@ writeln(D2);
 writeln(D2.sorted());
 
 var A2: [D2] int;
-for (a,i) in (A2, 1..) {
+for (a,i) in zip(A2, 1..) {
   a = i;
 }
 
@@ -43,7 +43,7 @@ for d in D2 {
   writeln((d, A2(d)));
 }
 
-for (a, d) in (A2, D2) {
+for (a, d) in zip(A2, D2) {
   if a != A2(d) then
     writeln("Error A2(", d, ") = ", A2(d), " a = ", a);
 }

@@ -50,7 +50,7 @@ proc runSuite(/*param*/ len:int, /*param*/ sa:int, /*param*/ ssign:int, w: range
   const a: [1..len] w.idxType;
 
   // workaround for bug in implementing 'a = w;'
-  for (aa,ww) in (a,w) do aa = ww;
+  for (aa,ww) in zip(a,w) do aa = ww;
 
   // test with r.length == 1
   if len <= 1 then return;
@@ -108,7 +108,7 @@ proc verify(w, r) {
     writeln("  UNEXPECTED: different length");
     return;
   }
-  for (inp,outp) in (r,res) {
+  for (inp,outp) in zip(r,res) {
     if outp != w.indexOrder(inp) {
       if !verbose then report();
       writeln("  UNEXPECTED: ", outp, " is not indexOrder of ", inp);

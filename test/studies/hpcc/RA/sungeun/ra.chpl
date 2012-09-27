@@ -128,7 +128,7 @@ proc main() {
   // in r.  Compute the update using r both to compute the index and
   // as the update value.
   //
-  forall (_, r) in (Updates, RAStream()) do
+  forall (_, r) in zip(Updates, RAStream()) do
     T(r & indexMask).xor(r);
 
   const execTime = getCurrentTime() - startTime;   // capture the elapsed time
@@ -183,7 +183,7 @@ proc verifyResults(T) {
   // locale with that table element, but not always, so we cannot
   // reference it safely in the "local" statement.
   //
-   forall (_, r) in (Updates, RAStream()) do
+   forall (_, r) in zip(Updates, RAStream()) do
      T(r & indexMask).xor(r);
 
   //

@@ -29,7 +29,7 @@ const gridDist = gridDom dmapped Block(gridDom, gridLocales);
 var Data: [gridDist] localInfo;
 
 // make sure we got it right
-forall (dat, loc) in (Data, gridLocales) {
+forall (dat, loc) in zip(Data, gridLocales) {
   assert(here == dat.locale);
   assert(dat.locale == loc);
 }
@@ -48,11 +48,11 @@ if errCount.read() != 0 then writeln(errCount.read(), " ERRORS");
 /////////////////////////////////
 
 proc init(){
-  forall (dat, (gi,gj)) in (Data, gridDom) {
+  forall (dat, (gi,gj)) in zip(Data, gridDom) {
     if singleinit {
       dat.B[2,2] = 99;
     } else {
-      forall ((i,j), b) in (dat.domB, dat.B) {
+      forall ((i,j), b) in zip(dat.domB, dat.B) {
 	b = i+ j*0.1;
       }
     }
@@ -60,7 +60,7 @@ proc init(){
 }
 
 proc verify() {
-  forall (dat, (gi,gj)) in (Data, gridDom) {
+  forall (dat, (gi,gj)) in zip(Data, gridDom) {
     proc check(act, exp, i, j) {
       if act == exp then return;
       errCount.add(1);
@@ -69,7 +69,7 @@ proc verify() {
     if singleinit {
       check(dat.A[2,2], 99, 2, 2);
     } else {
-      forall ((j,i), b) in (dat.domA, dat.A) {
+      forall ((j,i), b) in zip(dat.domA, dat.A) {
 	check(b, i+ j*0.1, j, i);
       }
     }
@@ -78,7 +78,7 @@ proc verify() {
 
 proc transposeColumnwise() {
   var k: int;
-  forall (dat, (gi,gj)) in (Data, gridDom) 
+  forall (dat, (gi,gj)) in zip(Data, gridDom) 
   {
      for k in 1..m do {
          dat.A[1..n,k] = Data[gj, gi].B[k, 1..n];
@@ -95,7 +95,7 @@ proc transpose() {
     }
   }  
   // global transpose (comms)
-  forall (dat, (gi,gj)) in (Data, gridDom) {
+  forall (dat, (gi,gj)) in zip(Data, gridDom) {
     Data[gj,gi].A = dat.C;
   }
 }

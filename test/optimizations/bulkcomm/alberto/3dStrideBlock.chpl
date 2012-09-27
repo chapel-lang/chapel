@@ -27,8 +27,8 @@ proc main(){
 
   var a,b:real;
   var i:int;
-  for (a,i) in (A,{1..m*n*o}) do a=i;
-  for (b,i) in (B,{1..m*n*o}) do b=i+100;
+  for (a,i) in zip(A,{1..m*n*o}) do a=i;
+  for (b,i) in zip(B,{1..m*n*o}) do b=i+100;
 
   if printOutput {
     writeln();
@@ -42,7 +42,7 @@ proc main(){
 
   A[Dom2]=B[Dom1];
 
-  for (a,b) in (A[Dom2],B[Dom1]) do if (a!=b) then {writeln("ERROR!!!!");e=true;};
+  for (a,b) in zip(A[Dom2],B[Dom1]) do if (a!=b) then {writeln("ERROR!!!!");e=true;};
 
   if printOutput
     {
@@ -55,12 +55,12 @@ proc main(){
   Dom2={1..2,3..4,4..4};
   Dom1={3..4,2..3,3..3};
 
-  for (a,i) in (A,{1..m*n*o}) do a = i;
-  for (b,i) in (B,{1..m*n*o}) do b = i+500;
+  for (a,i) in zip(A,{1..m*n*o}) do a = i;
+  for (b,i) in zip(B,{1..m*n*o}) do b = i+500;
 
   A[Dom2]=B[Dom1];
 
-  for (a,b) in (A[Dom2],B[Dom1]) do if (a!=b) then {writeln("ERROR!!!!");e=true;};
+  for (a,b) in zip(A[Dom2],B[Dom1]) do if (a!=b) then {writeln("ERROR!!!!");e=true;};
 
   if printOutput
     {
@@ -71,15 +71,15 @@ proc main(){
 
 
   //EXAMPLE 3
-  for (a,i) in (A,{1..m*n*o}) do a = i;
-  for (b,i) in (B,{1..m*n*o}) do b = i+500;
+  for (a,i) in zip(A,{1..m*n*o}) do a = i;
+  for (b,i) in zip(B,{1..m*n*o}) do b = i+500;
 
   Dom2={1..2,3..3,3..4};
   Dom1={2..3,1..1,2..3};
 
   A[Dom2]=B[Dom1];
 
-  for (a,b) in (A[Dom2],B[Dom1]) do if (a!=b) then {writeln("ERROR!!!!");e=true;};
+  for (a,b) in zip(A[Dom2],B[Dom1]) do if (a!=b) then {writeln("ERROR!!!!");e=true;};
 
   if printOutput
     {
@@ -89,14 +89,14 @@ proc main(){
     }
 
   //EXAMPLE 4
-  for (a,i) in (A,{1..m*n*o}) do a = i;
-  for (b,i) in (B,{1..m*n*o}) do b = i+500;
+  for (a,i) in zip(A,{1..m*n*o}) do a = i;
+  for (b,i) in zip(B,{1..m*n*o}) do b = i+500;
 
   Dom2={1..2,1..4,4..4};
   Dom1={3..4,1..4,1..1};
   A[Dom2]=B[Dom1];
 
-  for (a,b) in (A[Dom2],B[Dom1]) do if (a!=b) then {writeln("ERROR!!!!");e=true;};
+  for (a,b) in zip(A[Dom2],B[Dom1]) do if (a!=b) then {writeln("ERROR!!!!");e=true;};
 
   if printOutput
     {
@@ -106,15 +106,15 @@ proc main(){
     }
 
   //EXAMPLE 5
-  for (a,i) in (A,{1..m*n*o}) do a = i;
-  for (b,i) in (B,{1..m*n*o}) do b = i+500;
+  for (a,i) in zip(A,{1..m*n*o}) do a = i;
+  for (b,i) in zip(B,{1..m*n*o}) do b = i+500;
 
   Dom2={1..2,3..3,1..4};
   Dom1={3..4,3..3,1..4};
 
   A[Dom2]=B[Dom1];
 
-  for (a,b) in (A[Dom2],B[Dom1]) do if (a!=b) then {writeln("ERROR!!!!");e=true;};
+  for (a,b) in zip(A[Dom2],B[Dom1]) do if (a!=b) then {writeln("ERROR!!!!");e=true;};
 
   if printOutput
     {
@@ -124,15 +124,15 @@ proc main(){
     }
 
   //EXAMPLE 6
-  for (a,i) in (A,{1..m*n*o}) do a = i;
-  for (b,i) in (B,{1..m*n*o}) do b = i+500;
+  for (a,i) in zip(A,{1..m*n*o}) do a = i;
+  for (b,i) in zip(B,{1..m*n*o}) do b = i+500;
 
   Dom2={1..2,1..4,3..4};
   Dom1={3..4,1..4,2..3};
 
   A[Dom2]=B[Dom1];
 
-  for (a,b) in (A[Dom2],B[Dom1]) do if (a!=b) then {writeln("ERROR!!!!");e=true;};
+  for (a,b) in zip(A[Dom2],B[Dom1]) do if (a!=b) then {writeln("ERROR!!!!");e=true;};
 
   if printOutput
     {
@@ -142,15 +142,15 @@ proc main(){
     }
 
   //EXAMPLE 7
-  for (a,i) in (A,{1..m*n*o}) do a = i;
-  for (b,i) in (B,{1..m*n*o}) do b = i+500;
+  for (a,i) in zip(A,{1..m*n*o}) do a = i;
+  for (b,i) in zip(B,{1..m*n*o}) do b = i+500;
 
   Dom2={1..2,3..4,1..4};
   Dom1=Dom2;
 
   A[Dom2]=B[Dom1];
 
-  for (a,b) in (A[Dom2],B[Dom1]) do if (a!=b) then {writeln("ERROR!!!!");e=true;};
+  for (a,b) in zip(A[Dom2],B[Dom1]) do if (a!=b) then {writeln("ERROR!!!!");e=true;};
 
   if printOutput
     {
@@ -160,15 +160,15 @@ proc main(){
     }
 
   //EXAMPLE 8
-  for (a,i) in (A,{1..m*n*o}) do a = i;
-  for (b,i) in (B,{1..m*n*o}) do b = i+500;
+  for (a,i) in zip(A,{1..m*n*o}) do a = i;
+  for (b,i) in zip(B,{1..m*n*o}) do b = i+500;
 
   Dom2={1..2,3..4,2..4};
   Dom1=Dom2;
 
   A[Dom2]=B[Dom1];
 
-  for (a,b) in (A[Dom2],B[Dom1]) do if (a!=b) then {writeln("ERROR!!!!");e=true;};
+  for (a,b) in zip(A[Dom2],B[Dom1]) do if (a!=b) then {writeln("ERROR!!!!");e=true;};
 
   if printOutput
     {

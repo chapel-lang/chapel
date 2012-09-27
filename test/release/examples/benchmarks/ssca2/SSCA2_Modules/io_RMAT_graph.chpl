@@ -65,7 +65,7 @@ module io_RMAT_graph
     resetProgress();
 
     // iterate sequentially
-    for (u, ux) in (G.vertices, G.Row) {
+    for (u, ux) in zip(G.vertices, G.Row) {
       if dRow then write("row ", u, ": [", ux.numNeighbors(), "] ");
       if dEdge then writeln(dstyle, " vertex ", u);
       writeNum(sta, startIx);
@@ -227,7 +227,7 @@ module io_RMAT_graph
 
       // All work is done in graphReaderIterator() follower iterator.
       // GRow is used only to distribute/parallelize the computation.
-      forall (_,_) in (GRow,
+      forall (_,_) in zip(GRow,
         graphReaderIterator(GRow, uxIDs, VType, vCount, eCount, repfiles,
                             dON, dRow, dEdge, dstyle))
           do;

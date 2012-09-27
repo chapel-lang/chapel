@@ -28,19 +28,19 @@ forall (i,j) in D2 do
 writeln("A is: ", A);
 writeln("A2 is: ", A2);
 
-forall ((i,j), a) in (D, A) do
+forall ((i,j), a) in zip(D, A) do
   a = j + i/100.0;
 
-forall ((i,j), a) in (D2, A2) do
+forall ((i,j), a) in zip(D2, A2) do
   a = j + i/100.0;
 
 writeln("A is: ", A);
 writeln("A2 is: ", A2);
 
-forall (a, (i,j)) in (A, D) do
+forall (a, (i,j)) in zip(A, D) do
   a = i + j/100.0;
 
-forall (a, (i,j)) in (A2, D2) do
+forall (a, (i,j)) in zip(A2, D2) do
   a = i + j/100.0;
 
 writeln("A is: ", A);

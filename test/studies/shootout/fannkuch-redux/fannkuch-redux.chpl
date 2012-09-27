@@ -77,7 +77,7 @@ proc do_fannkuch(pos: int):int {
 	}
 	// "physically" flip only elements 2..k-1
 	// j = k-1;
-	for (i,j) in (2..k-1, ..k-1 by -1) do { // use range instead of domain
+	for (i,j) in zip(2..k-1, ..k-1 by -1) do { // use range instead of domain
 	  if i > j then break;
 	  if (debug > 1) {
 	    write((i,j));

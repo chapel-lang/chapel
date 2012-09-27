@@ -21,7 +21,7 @@ var Dom2 = {1..n by 4};
 writeln("Example 1: B",Dom2,"(",Dom2.numIndices,") = A",Dom1,"(",Dom1.numIndices,")");
 B[Dom2]=A[Dom1];
 
-for (a,b) in (A[Dom1],B[Dom2]) do if (a!=b) then {writeln("ERROR!!!!");}
+for (a,b) in zip(A[Dom1],B[Dom2]) do if (a!=b) then {writeln("ERROR!!!!");}
 
 Dom1 = {1..n/2 by 2};
 Dom2 = {1..n by 4};
@@ -29,7 +29,7 @@ writeln("Example 2: B",Dom2,"(",Dom2.numIndices,") = A",Dom1,"(",Dom1.numIndices
 if (Dom2.numIndices == Dom1.numIndices)
 {
 	B[Dom2]=A[Dom1];
-	for (a,b) in (A[Dom1],B[Dom2]) do if (a!=b) then {writeln("ERROR!!!!");}
+	for (a,b) in zip(A[Dom1],B[Dom2]) do if (a!=b) then {writeln("ERROR!!!!");}
 }
 
 Dom1 = {1..n/4 by 2};
@@ -39,7 +39,7 @@ if (Dom2.numIndices == Dom1.numIndices)
 //if ((n/4)%2 == (n/2)%4)
 {
 	B[Dom2]=A[Dom1];
-	for (a,b) in (A[Dom1],B[Dom2]) do if (a!=b) then {writeln("ERROR!!!!");}
+	for (a,b) in zip(A[Dom1],B[Dom2]) do if (a!=b) then {writeln("ERROR!!!!");}
 }
 
 Dom1 = {1..n by n};
@@ -48,7 +48,7 @@ writeln("Example 4: B",Dom2,"(",Dom2.numIndices,") = A",Dom1,"(",Dom1.numIndices
 if (Dom2.numIndices == Dom1.numIndices)
 {
 	B[Dom2]=A[Dom1];
-	for (a,b) in (A[Dom1],B[Dom2]) do if (a!=b) then {writeln("ERROR!!!!");}
+	for (a,b) in zip(A[Dom1],B[Dom2]) do if (a!=b) then {writeln("ERROR!!!!");}
 }
 
 Dom1 = {1..n/2 by 3};
@@ -58,7 +58,7 @@ if (Dom2.numIndices == Dom1.numIndices)
 //if ((n/2)%3 == (n/3)%2)
 {
 	B[Dom2]=A[Dom1];
-	for (a,b) in (A[Dom1],B[Dom2]) do if (a!=b) then {writeln("ERROR!!!!");}
+	for (a,b) in zip(A[Dom1],B[Dom2]) do if (a!=b) then {writeln("ERROR!!!!");}
 }
 
 Dom1 = {2..n by n};
@@ -67,7 +67,7 @@ writeln("Example 6: B",Dom2,"(",Dom2.numIndices,") = A",Dom1,"(",Dom1.numIndices
 if (Dom2.numIndices == Dom1.numIndices)
 {
 	B[Dom2]=A[Dom1];
-	for (a,b) in (A[Dom1],B[Dom2]) do if (a!=b) then {writeln("ERROR!!!!");}
+	for (a,b) in zip(A[Dom1],B[Dom2]) do if (a!=b) then {writeln("ERROR!!!!");}
 }
 
 Dom1 = {2..n by 4};
@@ -76,7 +76,7 @@ writeln("Example 7: B",Dom2,"(",Dom2.numIndices,") = A",Dom1,"(",Dom1.numIndices
 if (Dom2.numIndices == Dom1.numIndices)
 {
 	B[Dom2]=A[Dom1];
-	for (a,b) in (A[Dom1],B[Dom2]) do if (a!=b) then {writeln("ERROR!!!!");}
+	for (a,b) in zip(A[Dom1],B[Dom2]) do if (a!=b) then {writeln("ERROR!!!!");}
 }
 
 Dom1 = {2..n/2 by 2};
@@ -86,7 +86,7 @@ if (Dom2.numIndices == Dom1.numIndices)
 //if ((n-1)%4 == ((n-1)/2)%2)
 {
 	B[Dom2]=A[Dom1];
-	for (a,b) in (A[Dom1],B[Dom2]) do if (a!=b) then {writeln("ERROR!!!!");}
+	for (a,b) in zip(A[Dom1],B[Dom2]) do if (a!=b) then {writeln("ERROR!!!!");}
 }
 
 Dom1 = {2..n/2 by 2};
@@ -95,7 +95,7 @@ writeln("Example 9: B: ",Dom2,"(",Dom2.numIndices,") = A: ",Dom1,"(",Dom1.numInd
 if (Dom2.numIndices == Dom1.numIndices)
 {
 	B[Dom2]=A[Dom1];
-	for (a,b) in (A[Dom1],B[Dom2]) do if (a!=b) then {writeln("ERROR!!!!");}
+	for (a,b) in zip(A[Dom1],B[Dom2]) do if (a!=b) then {writeln("ERROR!!!!");}
 }
 
 Dom1 = {2..n/2-1 by 2};
@@ -104,7 +104,7 @@ writeln("Example 10: B: ",Dom2,"(",Dom2.numIndices,") = A: ",Dom1,"(",Dom1.numIn
 if (Dom2.numIndices == Dom1.numIndices)
 {
 	B[Dom2]=A[Dom1];
-	for (a,b) in (A[Dom1],B[Dom2]) do if (a!=b) then {writeln("ERROR!!!!");}
+	for (a,b) in zip(A[Dom1],B[Dom2]) do if (a!=b) then {writeln("ERROR!!!!");}
 }
 
 Dom1 = {1..n/2-1 by 2};
@@ -113,7 +113,7 @@ writeln("Example 11: B: ",Dom2,"(",Dom2.numIndices,") = A: ",Dom1,"(",Dom1.numIn
 if (Dom2.numIndices == Dom1.numIndices)
 {
 	B[Dom2]=A[Dom1];
-	for (a,b) in (A[Dom1],B[Dom2]) do if (a!=b) then {writeln("ERROR!!!!");}
+	for (a,b) in zip(A[Dom1],B[Dom2]) do if (a!=b) then {writeln("ERROR!!!!");}
 }
 
 Dom1 = {(n/2)+1..n by 2};
@@ -122,7 +122,7 @@ writeln("Example 12: B: ",Dom2,"(",Dom2.numIndices,") = A: ",Dom1,"(",Dom1.numIn
 if (Dom2.numIndices == Dom1.numIndices)
 {
 	B[Dom2]=A[Dom1];
-	for (a,b) in (A[Dom1],B[Dom2]) do if (a!=b) then {writeln("ERROR!!!!");}
+	for (a,b) in zip(A[Dom1],B[Dom2]) do if (a!=b) then {writeln("ERROR!!!!");}
 }
 
 Dom1 = {(n/2)+1..3*n/4 by 2};
@@ -131,7 +131,7 @@ writeln("Example 13: B: ",Dom2,"(",Dom2.numIndices,") = A: ",Dom1,"(",Dom1.numIn
 if (Dom2.numIndices == Dom1.numIndices)
 {
 	B[Dom2]=A[Dom1];
-	for (a,b) in (A[Dom1],B[Dom2]) do if (a!=b) then {writeln("ERROR!!!!");}
+	for (a,b) in zip(A[Dom1],B[Dom2]) do if (a!=b) then {writeln("ERROR!!!!");}
 }
 
 
@@ -141,7 +141,7 @@ writeln("Example 14: B: ",Dom2,"(",Dom2.numIndices,") = A: ",Dom1,"(",Dom1.numIn
 if (Dom2.numIndices == Dom1.numIndices)
 {
 	B[Dom2]=A[Dom1];
-	for (a,b) in (A[Dom1],B[Dom2]) do if (a!=b) then {writeln("ERROR!!!!");}
+	for (a,b) in zip(A[Dom1],B[Dom2]) do if (a!=b) then {writeln("ERROR!!!!");}
 }
 
 
@@ -151,7 +151,7 @@ writeln("Example 15: B: ",Dom2,"(",Dom2.numIndices,") = A: ",Dom1,"(",Dom1.numIn
 if (Dom2.numIndices == Dom1.numIndices)
 {
 	B[Dom2]=A[Dom1];
-	for (a,b) in (A[Dom1],B[Dom2]) do if (a!=b) then {writeln("ERROR!!!!");}
+	for (a,b) in zip(A[Dom1],B[Dom2]) do if (a!=b) then {writeln("ERROR!!!!");}
 }
 
 Dom1 = {(n/2)+1..3*n/4 by 2};
@@ -160,7 +160,7 @@ writeln("Example 16: B: ",Dom2,"(",Dom2.numIndices,") = A: ",Dom1,"(",Dom1.numIn
 if (Dom2.numIndices == Dom1.numIndices)
 {
 	B[Dom2]=A[Dom1];
-	for (a,b) in (A[Dom1],B[Dom2]) do if (a!=b) then {writeln("ERROR!!!!");}
+	for (a,b) in zip(A[Dom1],B[Dom2]) do if (a!=b) then {writeln("ERROR!!!!");}
 }
 
 const R = {n/2+1..3*n/2};
@@ -183,7 +183,7 @@ var Dom4 = {(n/2)+1..n by 4};
 if (Dom4.numIndices == Dom3.numIndices)
 {
 	D[Dom4]=C[Dom3];
-	for (a,b) in (C[Dom3],D[Dom4]) do if (a!=b) then {writeln("ERROR!!!!");}
+	for (a,b) in zip(C[Dom3],D[Dom4]) do if (a!=b) then {writeln("ERROR!!!!");}
 }
 
 Dom3 = {3*n/4..n by 2};
@@ -192,7 +192,7 @@ writeln("Example 18: D: ",Dom4,"(",Dom4.numIndices,") = C: ",Dom3,"(",Dom3.numIn
 if (Dom4.numIndices == Dom3.numIndices)
 {
 	D[Dom4]=C[Dom3];
-	for (a,b) in (C[Dom3],D[Dom4]) do if (a!=b) then {writeln("ERROR!!!!");}
+	for (a,b) in zip(C[Dom3],D[Dom4]) do if (a!=b) then {writeln("ERROR!!!!");}
 }
 
 Dom3 = {3*n/4..5*n/4 by 2};
@@ -201,7 +201,7 @@ writeln("Example 19: D: ",Dom4,"(",Dom4.numIndices,") = C: ",Dom3,"(",Dom3.numIn
 if (Dom4.numIndices == Dom3.numIndices)
 {
 	D[Dom4]=C[Dom3];
-	for (a,b) in (C[Dom3],D[Dom4]) do if (a!=b) then {writeln("ERROR!!!!");}
+	for (a,b) in zip(C[Dom3],D[Dom4]) do if (a!=b) then {writeln("ERROR!!!!");}
 }
 
 Dom3 = {n+1..3*n/2 by 2};
@@ -210,7 +210,7 @@ writeln("Example 20: D: ",Dom4,"(",Dom4.numIndices,") = C: ",Dom3,"(",Dom3.numIn
 if (Dom4.numIndices == Dom3.numIndices)
 {
 	D[Dom4]=C[Dom3];
-	for (a,b) in (C[Dom3],D[Dom4]) do if (a!=b) then {writeln("ERROR!!!!");}
+	for (a,b) in zip(C[Dom3],D[Dom4]) do if (a!=b) then {writeln("ERROR!!!!");}
 }
 
 const T = {n/2+1..5*n/2};
@@ -227,14 +227,14 @@ writeln("Example 21: A: ",Dom1,"(",Dom1.numIndices,") = E: ",Dom5,"(",Dom5.numIn
 if (Dom1.numIndices == Dom5.numIndices)
 {
 	A[Dom1]=E[Dom5];
-	for (a,b) in (A[Dom1],E[Dom5]) do if (a!=b) then {writeln("ERROR!!!!");}
+	for (a,b) in zip(A[Dom1],E[Dom5]) do if (a!=b) then {writeln("ERROR!!!!");}
 }
 
 writeln("Example 22: E: ",Dom5,"(",Dom5.numIndices,") = A: ",Dom1,"(",Dom1.numIndices,")");
 if (Dom1.numIndices == Dom5.numIndices)
 {
 	E[Dom5]=A[Dom1];
-	for (a,b) in (A[Dom1],E[Dom5]) do if (a!=b) then {writeln("ERROR!!!!");}
+	for (a,b) in zip(A[Dom1],E[Dom5]) do if (a!=b) then {writeln("ERROR!!!!");}
 }
 
 Dom5 = {(4*n/2)+1..5*n/2 by 2};
@@ -243,7 +243,7 @@ writeln("Example 23: A: ",Dom1,"(",Dom1.numIndices,") = E: ",Dom5,"(",Dom5.numIn
 if (Dom1.numIndices == Dom5.numIndices)
 {
 	A[Dom1]=E[Dom5];
-	for (a,b) in (A[Dom1],E[Dom5]) do if (a!=b) then {writeln("ERROR!!!!");}
+	for (a,b) in zip(A[Dom1],E[Dom5]) do if (a!=b) then {writeln("ERROR!!!!");}
 }
 
 
@@ -253,7 +253,7 @@ writeln("Example 24: A: ",Dom1,"(",Dom1.numIndices,") = E: ",Dom5,"(",Dom5.numIn
 if (Dom1.numIndices == Dom5.numIndices)
 {
 	A[Dom1]=E[Dom5];
-	for (a,b) in (A[Dom1],E[Dom5]) do if (a!=b) then {writeln("ERROR!!!!");}
+	for (a,b) in zip(A[Dom1],E[Dom5]) do if (a!=b) then {writeln("ERROR!!!!");}
 }
 
 Dom5 = {(3*n/2)+1..7*n/4 by 2};
@@ -262,7 +262,7 @@ writeln("Example 25: A: ",Dom1,"(",Dom1.numIndices,") = E: ",Dom5,"(",Dom5.numIn
 if (Dom1.numIndices == Dom5.numIndices)
 {
 	A[Dom1]=E[Dom5];
-	for (a,b) in (A[Dom1],E[Dom5]) do if (a!=b) then {writeln("ERROR!!!!");}
+	for (a,b) in zip(A[Dom1],E[Dom5]) do if (a!=b) then {writeln("ERROR!!!!");}
 }
 
 
@@ -272,5 +272,5 @@ writeln("Example 26: A: ",Dom1,"(",Dom1.numIndices,") = E: ",Dom5,"(",Dom5.numIn
 if (Dom1.numIndices == Dom5.numIndices)
 {
 	A[Dom1]=E[Dom5];
-	for (a,b) in (A[Dom1],E[Dom5]) do if (a!=b) then {writeln("ERROR!!!!");}
+	for (a,b) in zip(A[Dom1],E[Dom5]) do if (a!=b) then {writeln("ERROR!!!!");}
 }

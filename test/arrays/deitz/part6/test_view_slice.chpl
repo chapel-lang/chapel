@@ -1,5 +1,5 @@
 proc foo(A: [2..4, 2..4] int) {
-  for ie in (A.domain,A) do
+  for ie in zip(A.domain,A) do
     writeln(ie);
 }
 

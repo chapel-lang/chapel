@@ -13,7 +13,7 @@ proc test1d() {
     B(i) = i;
   }
 
-  forall (a, b) in (A, B) {
+  forall (a, b) in zip(A, B) {
     a = b * r;
   }
 

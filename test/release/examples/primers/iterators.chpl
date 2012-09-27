@@ -39,7 +39,7 @@ iter fibonacci(n: int) {
 // and the two values they return are used together.
 //
 writeln("Fibonacci Numbers");
-for (i, j) in (1.., fibonacci(10)) {
+for (i, j) in zip(1.., fibonacci(10)) {
   write("The ", i);
   select i {
     when 1 do write("st");

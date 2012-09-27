@@ -1,3 +1,4 @@
+#if 0
 #include <stdio.h>
 #include <string.h>
 #include <stdint.h>
@@ -159,3 +160,4 @@ void _chpl_gc_cleanup(void) {
   chpl_mem_free(_to_space, __LINE__, __FILE__);
   chpl_mem_free(_from_space, __LINE__, __FILE__);
 }
+#endif

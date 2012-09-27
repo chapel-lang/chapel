@@ -50,7 +50,7 @@ class Block1DDist {
   var locDist: [targetLocDom] LocBlock1DDist(glbIdxType, index(targetLocs.domain));
 
   proc initialize() {
-    for (loc, locid) in (targetLocs, 0..) do
+    for (loc, locid) in zip(targetLocs, 0..) do
       on loc do
         locDist(loc) = new LocBlock1DDist(glbIdxType, locid, this);
   }

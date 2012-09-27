@@ -4,5 +4,5 @@ B = 4..6;
 C = 7..9;
 D = 10..12;
 
-for t in (A, B, C, D) do
+for t in zip(A, B, C, D) do
   writeln(t);

@@ -1,10 +1,12 @@
 #ifndef _TYPE_H_
 #define _TYPE_H_
 
-
 #include <cstdio>
 #include "baseAST.h"
 #include "../ifa/num.h"
+
+#include "genret.h"
+#include <map>
 
 /*
   Things which must be changed if instance variables are added
@@ -47,6 +49,9 @@ class Type : public BaseAST {
   ClassType* refType;  // pointer to references for non-reference types
   bool isInternalType; // Used only in PrimitiveType; replace with flag?
 
+  // Only used for LLVM.
+  std::map<std::string, int> GEPMap;
+
   Type(AstTag astTag, Symbol* init_defaultVal);
   virtual ~Type();
   virtual Type* copy(SymbolMap* map = NULL, bool internal = false) = 0;
@@ -59,11 +64,13 @@ class Type : public BaseAST {
 
   void addSymbol(TypeSymbol* newSymbol);
 
-  virtual void codegen(FILE* outfile);
-  virtual void codegenDef(FILE* outfile);
-  virtual void codegenPrototype(FILE* outfile);
-  virtual int codegenStructure(FILE* outfile, const char* baseoffset);
+  virtual GenRet codegen();
+  virtual void codegenDef();
+  virtual void codegenPrototype();
 
+  // only used for emitting CUDA
+  virtual int codegenStructure(FILE* outfile, const char* baseoffset);
+  
   virtual Symbol* getField(const char* name, bool fatal=true);
 };
 
@@ -72,8 +79,10 @@ class Type : public BaseAST {
 class EnumType : public Type {
  public:
   AList constants; // EnumSymbols
-  PrimitiveType* integerType; // what integer type contains all of this enum values?
-                              // if this is NULL it will just be recomputed when needed.
+
+  // what integer type contains all of this enum values?
+  // if this is NULL it will just be recomputed when needed.
+  PrimitiveType* integerType;
 
   EnumType();
   ~EnumType();
@@ -81,7 +90,7 @@ class EnumType : public Type {
   DECLARE_COPY(EnumType);
   void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
 
-  void codegenDef(FILE* outfile);
+  void codegenDef();
   int codegenStructure(FILE* outfile, const char* baseoffset);
 
   // computes integerType and does the next=last+1 assignments.
@@ -112,12 +121,16 @@ class ClassType : public Type {
   void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void addDeclarations(Expr* expr, bool tail = true);
 
-  void codegenDef(FILE* outfile);
-  void codegenPrototype(FILE* outfile);
+  GenRet codegenClassStructType();
+  void codegenDef();
+  void codegenPrototype();
   int codegenStructure(FILE* outfile, const char* baseoffset);
   int codegenFieldStructure(FILE* outfile, bool nested, const char* baseoffset);
 
-  Symbol* getField(const char* name, bool fatal=true);
+  int getMemberGEP(const char *name);
+
+  int getFieldPosition(const char* name, bool fatal = true);
+  Symbol* getField(const char* name, bool fatal = true);
   Symbol* getField(int i);
 };
 
@@ -128,6 +141,7 @@ class PrimitiveType : public Type {
   void verify(); 
   DECLARE_COPY(PrimitiveType);
   void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
+  void codegenDef();
   int codegenStructure(FILE* outfile, const char* baseoffset);
 };
 
@@ -166,7 +180,6 @@ TYPE_EXTERN PrimitiveType* dtString;
 TYPE_EXTERN PrimitiveType* dtSymbol;
 TYPE_EXTERN PrimitiveType* dtFile; 
 TYPE_EXTERN PrimitiveType* dtOpaque;
-TYPE_EXTERN PrimitiveType* dtTimer; 
 TYPE_EXTERN PrimitiveType* dtTaskID;
 TYPE_EXTERN PrimitiveType* dtSyncVarAuxFields;
 TYPE_EXTERN PrimitiveType* dtSingleVarAuxFields;
@@ -196,13 +209,16 @@ void initPrimitiveTypes(void);
 void initTheProgram(void);
 void initCompilerGlobals(void);
 
+bool is_void_type(Type*);
 bool is_bool_type(Type*);
 bool is_int_type(Type*);
 bool is_uint_type(Type*);
+bool is_signed(Type*);
 bool is_real_type(Type*);
 bool is_imag_type(Type*);
 bool is_complex_type(Type*);
 bool is_enum_type(Type*);
+bool is_string_type(Type*);
 #define is_arithmetic_type(t) (is_int_type(t) || is_uint_type(t) || is_real_type(t) || is_imag_type(t) || is_complex_type(t))
 int  get_width(Type*);
 bool isClass(Type* t);
@@ -220,8 +236,19 @@ bool isDomainClass(Type* type);
 bool isArrayClass(Type* type);
 
 void registerTypeToStructurallyCodegen(TypeSymbol* type);
-void genTypeStructureIndex(FILE *outfile, TypeSymbol* typesym);
+GenRet genTypeStructureIndex(TypeSymbol* typesym);
 void codegenTypeStructures(FILE* hdrfile);
 void codegenTypeStructureInclude(FILE* outfile);
+
+Type* getNamedType(std::string name);
+
+VarSymbol* resizeImmediate(VarSymbol* s, PrimitiveType* t);
+
+// defined in codegen.cpp
+GenRet codegenImmediate(Immediate* i);
+#define CLASS_ID_TYPE dtInt[INT_SIZE_32]
+#define UNION_ID_TYPE dtInt[INT_SIZE_64]
+#define SIZE_TYPE dtInt[INT_SIZE_64]
+#define LOCALE_ID_TYPE dtLocale->getField("chpl_id")->typeInfo();
 
 #endif

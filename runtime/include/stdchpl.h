@@ -22,7 +22,6 @@
 #include "chplcast.h"
 #include "chplcgfns.h"
 #include "chpl-comm.h"
-#include "chpl-comm-compiler-macros.h"
 #include "chplcopygc.h"
 #include "chplexit.h"
 #include <chplfp.h>
@@ -43,5 +42,7 @@
 #include "qio_formatted.h"
 #include "bulkget.h"
 #include "chplgmp.h"
+
+#include "chpl-comm-compiler-macros.h"
 
 #endif

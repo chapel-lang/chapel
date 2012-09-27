@@ -1,6 +1,17 @@
 #ifndef _CHPL_MATH_H_
 #define _CHPL_MATH_H_
 
+static inline float chpl_macro_INFINITY(void) { return INFINITY; }
+static inline float chpl_macro_NAN(void) { return NAN; }
+
+static inline int chpl_macro_double_isinf(double x) { return isinf(x); }
+static inline int chpl_macro_float_isinf(float x) { return isinf(x); }
+static inline int chpl_macro_double_isfinite(double x) { return isfinite(x); }
+static inline int chpl_macro_float_isfinite(float x) { return isfinite(x); }
+static inline int chpl_macro_double_isnan(double x) { return isnan(x); }
+static inline int chpl_macro_float_isnan(float x) { return isnan(x); }
+
+
 #ifdef DEFINE_32_BIT_MATH_FNS
 #define fabsf(x) (float)fabs(x)
 #define cosf(x) (float)cos(x)

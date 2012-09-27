@@ -36,7 +36,7 @@ typedef uint32_t qio_hint_t;
 
 #ifdef _chplrt_H_
 // also export iohint_t and fdflag_t
-typedef qio_hint_t iohint_t;
+typedef qio_hint_t iohints;
 typedef qio_fdflag_t fdflag_t;
 
 

@@ -36,7 +36,7 @@ var delta: elType;
 config const epsilon = 0.1;
 
 // make sure we got it right
-forall (dat, loc) in (Data, gridLocales) {
+forall (dat, loc) in zip(Data, gridLocales) {
   assert(here == dat.locale);
   assert(dat.locale == loc);
 }
@@ -60,12 +60,12 @@ proc refcomp(oddphase: bool, out delta: elType) {
       refdataB[i,j] = (refdataA[i-1,j] + refdataA[i,j+1] + refdataA[i+1,j] + refdataA[i,j-1]) / 4;
     }
   }
-  delta = max reduce [(i,j) in (1..globN, 1..globM)] abs(refdataB(i,j) - refdataA(i,j));
+  delta = max reduce [(i,j) in zip(1..globN, 1..globM)] abs(refdataB(i,j) - refdataA(i,j));
 }
 // oddphase: A vs. refdataA
 proc verify(oddphase: bool) {
   var globdiff$: sync elType = min(elType);
-  forall ((gi,gj), dat) in (gridDom, Data) {
+  forall ((gi,gj), dat) in zip(gridDom, Data) {
     const locdiff = max reduce [(i,j) in dat.domCompute]
       abs( (if oddphase then dat.A[i,j] else dat.B[i,j]) -
 	   (if oddphase then refdataA[work2ref(i,j,gi,gj)]
@@ -85,12 +85,12 @@ proc work2ref(i,j,gi,gj) {
 // initialize B
 
 config const singleinit = true;
-forall (dat, (gi,gj)) in (Data, gridDom) {
+forall (dat, (gi,gj)) in zip(Data, gridDom) {
   if singleinit {
     dat.B[2,2] = 100;
     refdataB[work2ref(2,2,gi,gj)] = 100;
   } else {
-    forall ((i,j), a) in (dat.domCompute, dat.Bcompute) {
+    forall ((i,j), a) in zip(dat.domCompute, dat.Bcompute) {
       a = i*0.1 + j;
       refdataB[work2ref(i,j,gi,gj)] = a;
     }
@@ -115,14 +115,14 @@ proc compute(oddphase: bool, out delta: elType) {
 
     } // if oddphase
 
-    dat.localDelta = max reduce [(a,b) in (dat.Acompute, dat.Bcompute)] abs(a-b);
+    dat.localDelta = max reduce [(a,b) in zip(dat.Acompute, dat.Bcompute)] abs(a-b);
   } // forall dat
 
   delta =  max reduce [dat in Data] dat.localDelta;
 }
 
 proc fetch(oddphase: bool) {
-  forall (dat, (gi,gj)) in (Data, gridDom) {
+  forall (dat, (gi,gj)) in zip(Data, gridDom) {
     if oddphase {
       if gi > 1 then dat.B[0,   1..m] = Data[gi-1, gj].B[n, 1..m]; // north
       if gi < g then dat.B[n+1, 1..m] = Data[gi+1, gj].B[1, 1..m]; // south

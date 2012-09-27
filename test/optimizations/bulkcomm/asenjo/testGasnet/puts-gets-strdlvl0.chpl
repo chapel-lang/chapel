@@ -110,8 +110,8 @@ proc main(){
 
   var a,b:int;
   var i:int;
-  for (a,i) in (A,{1..n}) do a=i;
-  for (b,i) in (B,{1..n}) do b=i*100;
+  for (a,i) in zip(A,{1..n}) do a=i;
+  for (b,i) in zip(B,{1..n}) do b=i*100;
   writeln("Original vector:");
   writeln("===================");
   writeln("A= ", A);

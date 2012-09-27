@@ -181,7 +181,7 @@ proc main {
   for blk in arr.newThese(IteratorType.leader) {
     on blk {
       writeln(here.id, ": blk is: ", blk);
-      for (elt,elt2) in ( arr.newThese(IteratorType.follower, blk),
+      for (elt,elt2) in zip( arr.newThese(IteratorType.follower, blk),
                          arr2.newThese(IteratorType.follower, blk)) {
          elt = r;
          elt2 = r*2;

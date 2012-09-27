@@ -16,8 +16,8 @@ proc main(){
   var a,b:real;
   var i:int;
 
-  for (a,i) in (A,{1..n}) do a=i;
-  for (b,i) in (B,{1..n}) do b=i+100.0;
+  for (a,i) in zip(A,{1..n}) do a=i;
+  for (b,i) in zip(B,{1..n}) do b=i+100.0;
   /* writeln("Original vectors:"); */
   /* writeln("==================="); */
   /* writeln("A= ", A); */
@@ -31,10 +31,10 @@ proc main(){
     myPrintComms("");
   }
   writeln("===============");
-  for (a,b) in (A,B) do if (a!=b) then writeln("ERROR!!!!");
+  for (a,b) in zip(A,B) do if (a!=b) then writeln("ERROR!!!!");
 
   //Reset array A
-  for (a,i) in (A,{1..n}) do a=i;
+  for (a,i) in zip(A,{1..n}) do a=i;
 
   writeln("Data movement with Slicing and useBulkTransfer=",useBulkTransfer);
   if doDiagnostics {

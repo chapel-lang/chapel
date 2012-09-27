@@ -1,23 +1,21 @@
 #!/bin/bash --norc
 
 #
-# Usage: historify-logs DIRECTORY...
-#
-# Each DIRECTORY specifies a location for log files to historify.
+# Each entry in $logsources below specifies a location for log files to historify.
 # * It must be an absolute path or relative to $loghome.
 # * It must not contain spaces or special symbols.
 # * Subdirectories, when needed, must be listed separately.
 
 set -ue
 
-if [ -z "$*" ]; then
-  echo $0: ERROR: Must provide directories to historify
+if [ -n "$*" ]; then
+  echo $0: ERROR: unexpected arguments: "$*" .
   exit 1
 fi
 
 loghome=/data/sea/cascade/chapel
 loghistdir=NightlyHistory
-logsources="$*"
+logsources="Nightly Nightly/weekend NightlyBaseline NightlyDists NightlyMemLeaks NightlyPerformance/bradc-lnx NightlyPerformance/chap03 NightlyPerformance/chap04"
 
 verbose=false
 numerrors=

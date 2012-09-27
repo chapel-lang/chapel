@@ -35,14 +35,14 @@ proc main() {
 
     var buf = "                           ";
 
-    for (test, dtest) in (tests, dtests) {
+    for (test, dtest) in zip(tests, dtests) {
         writeln("\n\n");
         var f = new Function(k, thresh, test);
         writeln("norm of function is ", f.norm2());
         delete f;
     }
 
-    for (test, dtest) in (tests, dtests) {
+    for (test, dtest) in zip(tests, dtests) {
       delete test;
       delete dtest;
     }

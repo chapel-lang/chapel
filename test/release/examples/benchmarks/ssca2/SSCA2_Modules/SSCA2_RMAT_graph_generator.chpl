@@ -285,7 +285,7 @@ module SSCA2_RMAT_graph_generator
 	}
       }
 
-      forall (vx, firstAvail$) in (G.Row, firstAvailNeighbor$) do
+      forall (vx, firstAvail$) in zip(G.Row, firstAvailNeighbor$) do
         vx.tidyNeighbors(firstAvail$);
 
       if PRINT_TIMING_STATISTICS then {

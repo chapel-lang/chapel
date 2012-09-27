@@ -20,7 +20,9 @@ extern int32_t chpl_numLocales; // number of locales
 extern int32_t chpl_numPrivateObjects;
 extern void** chpl_privateObjects; // privatized array and domain objects
 
-#define chpl_numPrivatizedClasses() chpl_numPrivateObjects
+static ___always_inline
+int32_t chpl_numPrivatizedClasses(void) { return chpl_numPrivateObjects; }
+
 extern void chpl_newPrivatizedClass(void*);
 extern void* chpl_getPrivatizedClass(int32_t);
 

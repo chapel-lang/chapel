@@ -17,7 +17,7 @@ writeln("aligned forall:");
 writeln(for a in A do a.locale.id);
 writeln(for b in B do b.locale.id);
 
-forall (b,a) in (B,A) do
+forall (b,a) in zip(B,A) do
   b = a;
 
 writeln(B);
@@ -26,7 +26,7 @@ writeln("unaligned forall:");
 writeln(for a in A do a.locale.id);
 writeln(for c in C do c.locale.id);
 
-forall (c,a) in (C,A) do
+forall (c,a) in zip(C,A) do
   c = a;
 
 writeln(C);

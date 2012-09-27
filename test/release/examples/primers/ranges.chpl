@@ -64,7 +64,7 @@ writeRange(..);
 // an iteration. This includes all the above ranges except .. and ..5 .
 //
 writeln("Iterating over (312..315, 1..) generates");
-for (i, j) in (312..315, 1..) {
+for (i, j) in zip(312..315, 1..) {
   write(" ", (i, j));
 }
 writeln();

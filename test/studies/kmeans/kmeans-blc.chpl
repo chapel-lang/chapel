@@ -85,7 +85,7 @@ writeln("final centers are: ", centers);
 // helper function to find the best center for a given coordinate
 //
 proc findBestCenter(loc: coord, centers: [] coord) {
-  return minloc reduce (dist(loc, centers), centerSpace);
+  return minloc reduce zip(dist(loc, centers), centerSpace);
 }
 
 

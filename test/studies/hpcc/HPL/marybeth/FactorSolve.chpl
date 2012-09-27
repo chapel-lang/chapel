@@ -214,7 +214,7 @@ iter blkIter2D(rowRange, colRange, blksize) {
 // underscore operator, and returning the row of the resulting index.
 
 proc computePivotRow(A:[?D]) {
-   const (_, ind) = maxloc reduce (abs(A), D);
+   const (_, ind) = maxloc reduce zip(abs(A), D);
    return ind(1);
 }
 
@@ -228,7 +228,7 @@ proc LUSolve (A: [?ADom], x: [?xDom]) {
    x = b;
    for j in (2..n) by -1 {
      x(j) /= A(j,j);
-     for (i1, i2) in (xDom(1..j-1), AD1(1..j-1)) {
+     for (i1, i2) in zip(xDom(1..j-1), AD1(1..j-1)) {
        x(i1) -= x(j)*A(i2, j); 
      }
    }

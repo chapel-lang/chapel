@@ -13,6 +13,25 @@
 #include "driver.h"
 #include "files.h"
 
+static void create_block_fn_wrapper(CallExpr* fcall, ClassType* ctype, VarSymbol* tempc);
+static void findBlockRefActuals(Vec<Symbol*>& refSet, Vec<Symbol*>& refVec);
+static void findHeapVarsAndRefs(Map<Symbol*,Vec<SymExpr*>*>& defMap,
+                                Vec<Symbol*>& refSet, Vec<Symbol*>& refVec,
+                                Vec<Symbol*>& varSet, Vec<Symbol*>& varVec);
+static void convertNilToObject();
+static void buildWideClasses();
+static void widenClasses();
+static void buildWideRefMap();
+static void widenRefs();
+static void insertElementAccessTemps();
+static void narrowWideClassesThroughCalls();
+static void insertWideClassTempsForNil();
+static void insertWideCastTemps();
+static void derefWideStringActuals();
+static void derefWideRefsToWideClasses();
+static void widenGetPrivClass();
+static void moveAddressSourcesToTemp(void);
+
 // Package args into a class and call a wrapper function with that
 // object. The wrapper function will then call the function
 // created by the previous parallel pass. This is a way to pass along
@@ -110,23 +129,33 @@ bundleArgs(CallExpr* fcall) {
     }
   }
 
-
   // create wrapper-function that uses the class instance
+  create_block_fn_wrapper(fcall, ctype, tempc);
+}
 
+
+static void create_block_fn_wrapper(CallExpr* fcall, ClassType* ctype, VarSymbol* tempc)
+{
+  ModuleSymbol* mod = fcall->getModule();
+  FnSymbol* fn = fcall->isResolved();
   FnSymbol *wrap_fn = new FnSymbol( astr("wrap", fn->name));
-  // Add a special flag for the wrapper-function (caller) of the GPU kernel
-  if (fn->hasFlag(FLAG_GPU_ON))
-    wrap_fn->addFlag(FLAG_GPU_CALL);
-  DefExpr  *fcall_def= (toSymExpr( fcall->baseExpr))->var->defPoint;
+
+  // Add special flags to the wrapper-function as appropriate.
+  // These control aspects of code generation.
+  if (fn->hasFlag(FLAG_GPU_ON))                 wrap_fn->addFlag(FLAG_GPU_CALL);
+  if (fn->hasFlag(FLAG_ON))                     wrap_fn->addFlag(FLAG_ON_BLOCK);
+  if (fn->hasFlag(FLAG_NON_BLOCKING))           wrap_fn->addFlag(FLAG_NON_BLOCKING);
+  if (fn->hasFlag(FLAG_COBEGIN_OR_COFORALL))    wrap_fn->addFlag(FLAG_COBEGIN_OR_COFORALL_BLOCK);
+  if (fn->hasFlag(FLAG_BEGIN))                  wrap_fn->addFlag(FLAG_BEGIN_BLOCK);
+
   if (fn->hasFlag(FLAG_ON)) {
-    wrap_fn->addFlag(FLAG_ON_BLOCK);
-    if (fn->hasFlag(FLAG_NON_BLOCKING))
-      wrap_fn->addFlag(FLAG_NON_BLOCKING);
+    // The wrapper function for 'on' block has an additional argument,
+    // which is how we pass the destination node ID to the forking function.
+    // This argument is not emitted in the generated C code.
     ArgSymbol* locale = new ArgSymbol(INTENT_BLANK, "_dummy_locale_arg", dtInt[INT_SIZE_DEFAULT]);
     wrap_fn->insertFormalAtTail(locale);
-  } else if (fn->hasFlag(FLAG_COBEGIN_OR_COFORALL)) {
-    wrap_fn->addFlag(FLAG_COBEGIN_OR_COFORALL_BLOCK);
   }
+
   ArgSymbol *wrap_c = new ArgSymbol( INTENT_BLANK, "c", ctype);
   wrap_fn->insertFormalAtTail( wrap_c);
 
@@ -136,10 +165,6 @@ bundleArgs(CallExpr* fcall) {
   } else
     fcall->insertBefore(new CallExpr(wrap_fn, tempc));
 
-  if (fn->hasFlag(FLAG_BEGIN) || fn->hasFlag(FLAG_COBEGIN_OR_COFORALL)) {
-    if (fn->hasFlag(FLAG_BEGIN))
-      wrap_fn->addFlag(FLAG_BEGIN_BLOCK);
-  }
   // translate the original cobegin function
   CallExpr *new_cofn = new CallExpr( (toSymExpr(fcall->baseExpr))->var);
   if (fn->hasFlag(FLAG_ON))
@@ -161,6 +186,7 @@ bundleArgs(CallExpr* fcall) {
   else
     wrap_fn->insertAtTail(new CallExpr(PRIM_CHPL_FREE, wrap_c));
 
+  DefExpr  *fcall_def= (toSymExpr( fcall->baseExpr))->var->defPoint;
   fcall->remove();                     // rm orig. call
   fcall_def->remove();                 // move orig. def
   mod->block->insertAtTail(fcall_def); // to top-level
@@ -393,17 +419,8 @@ freeHeapAllocatedVars(Vec<Symbol*> heapAllocatedVars) {
 }
 
 
-static void
-makeHeapAllocations() {
-  Vec<Symbol*> refSet;
-  Vec<Symbol*> refVec;
-  Vec<Symbol*> varSet;
-  Vec<Symbol*> varVec;
-
-  Map<Symbol*,Vec<SymExpr*>*> defMap;
-  Map<Symbol*,Vec<SymExpr*>*> useMap;
-  buildDefUseMaps(defMap, useMap);
-
+static void findBlockRefActuals(Vec<Symbol*>& refSet, Vec<Symbol*>& refVec)
+{
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->hasFlag(FLAG_BEGIN) || fn->hasFlag(FLAG_ON)) {
       for_formals(formal, fn) {
@@ -414,7 +431,13 @@ makeHeapAllocations() {
       }
     }
   }
+}
 
+
+static void findHeapVarsAndRefs(Map<Symbol*,Vec<SymExpr*>*>& defMap,
+                                Vec<Symbol*>& refSet, Vec<Symbol*>& refVec,
+                                Vec<Symbol*>& varSet, Vec<Symbol*>& varVec)
+{
   forv_Vec(DefExpr, def, gDefExprs) {
     if (def->sym->hasFlag(FLAG_HEAP_ALLOCATE)) {
       if (def->sym->type->symbol->hasFlag(FLAG_REF)) {
@@ -454,6 +477,22 @@ makeHeapAllocations() {
       }
     }
   }
+}
+
+
+static void
+makeHeapAllocations() {
+  Vec<Symbol*> refSet;
+  Vec<Symbol*> refVec;
+  Vec<Symbol*> varSet;
+  Vec<Symbol*> varVec;
+
+  Map<Symbol*,Vec<SymExpr*>*> defMap;
+  Map<Symbol*,Vec<SymExpr*>*> useMap;
+  buildDefUseMaps(defMap, useMap);
+
+  findBlockRefActuals(refSet, refVec);
+  findHeapVarsAndRefs(defMap, refSet, refVec, varSet, varVec);
 
   forv_Vec(Symbol, ref, refVec) {
     if (ArgSymbol* arg = toArgSymbol(ref)) {
@@ -748,6 +787,7 @@ parallel(void) {
         CallExpr* call = new CallExpr(fn);
         if (block->blockInfo->isPrimitive(PRIM_BLOCK_ON) ||
             block->blockInfo->isPrimitive(PRIM_BLOCK_ON_NB))
+          // This puts the target locale expression "onExpr" at the start of the call.
           call->insertAtTail(block->blockInfo->get(1)->remove());
         else if (block->blockInfo->isPrimitive(PRIM_ON_GPU)) {
           call->insertAtTail(block->blockInfo->get(1)->remove());
@@ -757,6 +797,7 @@ parallel(void) {
         block->insertBefore(new DefExpr(fn));
         block->insertBefore(call);
         block->blockInfo->remove();
+        // This block becomes the body of the new function.
         fn->insertAtTail(block->remove());
         fn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
         fn->retType = dtVoid;
@@ -870,6 +911,59 @@ buildWideClass(Type* type) {
   wideClassMap.put(type, wide);
 }
 
+Type* getOrMakeRefTypeDuringCodegen(Type* type) {
+  Type* refType;
+  refType = type->refType;
+  if( ! refType ) {
+    ClassType* ref = new ClassType(CLASS_RECORD);
+    TypeSymbol* refTs = new TypeSymbol(astr("_ref_", type->symbol->cname), ref);
+    refTs->addFlag(FLAG_REF);
+    refTs->addFlag(FLAG_NO_DEFAULT_FUNCTIONS);
+    refTs->addFlag(FLAG_NO_OBJECT);
+    theProgram->block->insertAtTail(new DefExpr(refTs));
+    ref->fields.insertAtTail(new DefExpr(new VarSymbol("_val", type)));
+    refType = ref;
+    type->refType = ref;
+  }
+  return refType;
+}
+
+// This function is called if the wide reference type does not already
+// exist to cause it to be code generated even though it was not
+// needed by earlier passes.
+Type* getOrMakeWideTypeDuringCodegen(Type* refType) {
+  Type* wideType;
+  INT_ASSERT(refType == dtNil ||
+             isClass(refType) ||
+             refType->symbol->hasFlag(FLAG_REF));
+  // First, check if the wide type already exists.
+  if( isClass(refType) ) {
+    wideType = wideClassMap.get(refType);
+    if( wideType ) return wideType;
+  }
+  // For a ref to a class, isClass seems to return true...
+  wideType = wideRefMap.get(refType);
+  if( wideType ) return wideType;
+
+  // Now, create a wide pointer type.
+  ClassType* wide = new ClassType(CLASS_RECORD);
+  TypeSymbol* wts = new TypeSymbol(astr("chpl____wide_", refType->symbol->cname), wide);
+  if( refType->symbol->hasFlag(FLAG_REF) || refType == dtNil )
+    wts->addFlag(FLAG_WIDE);
+  else
+    wts->addFlag(FLAG_WIDE_CLASS);
+  theProgram->block->insertAtTail(new DefExpr(wts));
+  wide->fields.insertAtTail(new DefExpr(new VarSymbol("locale", dtInt[INT_SIZE_DEFAULT])));
+  wide->fields.insertAtTail(new DefExpr(new VarSymbol("addr", refType)));
+  if( isClass(refType) ) {
+    wideClassMap.put(refType, wide);
+  } else {
+    wideRefMap.put(refType, wide);
+  }
+  return wide;
+}
+
+ 
 //
 // This is a utility function that handles a case when wide strings
 // are passed to extern functions.  If strings were a little better
@@ -1117,6 +1211,51 @@ insertWideReferences(void) {
     }
   }
 
+  convertNilToObject();
+  wideClassMap.clear();
+  buildWideClasses();
+  widenClasses();
+
+  wideRefMap.clear();
+  buildWideRefMap();
+  widenRefs();
+  insertElementAccessTemps();
+  narrowWideClassesThroughCalls();
+  insertWideClassTempsForNil();
+  insertWideCastTemps();
+  derefWideStringActuals();
+  derefWideRefsToWideClasses();
+  widenGetPrivClass();
+
+  CallExpr* localeID = new CallExpr(PRIM_LOCALE_ID);
+  VarSymbol* tmp = newTemp(localeID->typeInfo());
+  VarSymbol* tmpBool = newTemp(dtBool);
+
+  heapAllocateGlobals->insertAtTail(new DefExpr(tmp));
+  heapAllocateGlobals->insertAtTail(new DefExpr(tmpBool));
+  heapAllocateGlobals->insertAtTail(new CallExpr(PRIM_MOVE, tmp, localeID));
+  heapAllocateGlobals->insertAtTail(new CallExpr(PRIM_MOVE, tmpBool, new CallExpr(PRIM_EQUAL, tmp, new_IntSymbol(0))));
+  BlockStmt* block = new BlockStmt();
+  forv_Vec(Symbol, sym, heapVars) {
+    block->insertAtTail(new CallExpr(PRIM_MOVE, sym, new CallExpr(PRIM_CHPL_ALLOC, sym->type->getField("addr")->type->symbol, newMemDesc("global heap-converted data"))));
+  }
+  heapAllocateGlobals->insertAtTail(new CondStmt(new SymExpr(tmpBool), block));
+  int i = 0;
+  forv_Vec(Symbol, sym, heapVars) {
+    heapAllocateGlobals->insertAtTail(new CallExpr(PRIM_HEAP_REGISTER_GLOBAL_VAR, new_IntSymbol(i++), sym));
+  }
+  heapAllocateGlobals->insertAtTail(new CallExpr(PRIM_HEAP_BROADCAST_GLOBAL_VARS, new_IntSymbol(i)));
+  heapAllocateGlobals->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
+  numGlobalsOnHeap = i;
+
+  handleLocalBlocks();
+  narrowWideReferences();
+  moveAddressSourcesToTemp();
+}
+
+
+static void convertNilToObject()
+{
   //
   // change dtNil return type into dtObject
   // replace symbols of type nil by nil
@@ -1140,9 +1279,11 @@ insertWideReferences(void) {
           parent->remove();
     }
   }
+}
 
-  wideClassMap.clear();
 
+static void buildWideClasses()
+{
   //
   // build wide class type for every class type
   //
@@ -1153,6 +1294,11 @@ insertWideReferences(void) {
     }
   }
   buildWideClass(dtString);
+}
+
+
+static void widenClasses()
+{
   //
   // change all classes into wide classes
   //
@@ -1202,9 +1348,11 @@ insertWideReferences(void) {
       }
     }
   }
+}
 
-  wideRefMap.clear();
 
+static void buildWideRefMap()
+{
   //
   // build wide reference type for every reference type
   //
@@ -1219,7 +1367,11 @@ insertWideReferences(void) {
       wideRefMap.put(ts->type, wide);
     }
   }
+}
 
+
+static void widenRefs()
+{
   //
   // change all references into wide references
   //
@@ -1245,7 +1397,11 @@ insertWideReferences(void) {
         def->sym->type = wide;
     }
   }
+}
 
+
+static void insertElementAccessTemps()
+{
   //
   // Special case string literals passed to functions, set member primitives
   // and array element initializers by pushing them into temps first.
@@ -1297,7 +1453,11 @@ insertWideReferences(void) {
       }
     }
   }
+}
 
+
+static void narrowWideClassesThroughCalls()
+{
   //
   // Turn calls to extern functions involving wide classes into moves
   // of the wide class into a non-wide type and then use that in the call.
@@ -1336,7 +1496,11 @@ insertWideReferences(void) {
       }
     }
   }
+}
 
+
+static void insertWideClassTempsForNil()
+{
   //
   // insert wide class temps for nil
   //
@@ -1401,7 +1565,11 @@ insertWideReferences(void) {
       }
     }
   }
+}
 
+
+static void insertWideCastTemps()
+{
   //
   // insert cast temps if lhs type does not match cast type
   //   allows separation of the remote put with the wide cast
@@ -1421,7 +1589,11 @@ insertWideReferences(void) {
       }
     }
   }
+}
 
+
+static void derefWideStringActuals()
+{
   //
   // dereference wide string actual argument to primitive
   //
@@ -1443,7 +1615,11 @@ insertWideReferences(void) {
       }
     }
   }
+}
 
+
+static void derefWideRefsToWideClasses()
+{
   //
   // dereference wide references to wide classes in select primitives;
   // this simplifies the implementation of these primitives
@@ -1462,7 +1638,11 @@ insertWideReferences(void) {
       }
     }
   }
+}
 
+
+static void widenGetPrivClass()
+{
   //
   // widen class types in certain primitives, e.g., GET_PRIV_CLASS
   //
@@ -1475,31 +1655,10 @@ insertWideReferences(void) {
         call->get(1)->replace(new SymExpr(call->get(1)->typeInfo()->symbol));
     }
   }
+}
 
-  CallExpr* localeID = new CallExpr(PRIM_LOCALE_ID);
-  VarSymbol* tmp = newTemp(localeID->typeInfo());
-  VarSymbol* tmpBool = newTemp(dtBool);
-
-  heapAllocateGlobals->insertAtTail(new DefExpr(tmp));
-  heapAllocateGlobals->insertAtTail(new DefExpr(tmpBool));
-  heapAllocateGlobals->insertAtTail(new CallExpr(PRIM_MOVE, tmp, localeID));
-  heapAllocateGlobals->insertAtTail(new CallExpr(PRIM_MOVE, tmpBool, new CallExpr(PRIM_EQUAL, tmp, new_IntSymbol(0))));
-  BlockStmt* block = new BlockStmt();
-  forv_Vec(Symbol, sym, heapVars) {
-    block->insertAtTail(new CallExpr(PRIM_MOVE, sym, new CallExpr(PRIM_CHPL_ALLOC, sym->type->getField("addr")->type->symbol, newMemDesc("global heap-converted data"))));
-  }
-  heapAllocateGlobals->insertAtTail(new CondStmt(new SymExpr(tmpBool), block));
-  int i = 0;
-  forv_Vec(Symbol, sym, heapVars) {
-    heapAllocateGlobals->insertAtTail(new CallExpr(PRIM_HEAP_REGISTER_GLOBAL_VAR, new_IntSymbol(i++), sym));
-  }
-  heapAllocateGlobals->insertAtTail(new CallExpr(PRIM_HEAP_BROADCAST_GLOBAL_VARS, new_IntSymbol(i)));
-  heapAllocateGlobals->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
-  numGlobalsOnHeap = i;
-
-  handleLocalBlocks();
-  narrowWideReferences();
-
+static void moveAddressSourcesToTemp()
+{
   forv_Vec(CallExpr, call, gCallExprs) {
     if (call->isPrimitive(PRIM_MOVE)) {
       if ((call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE) ||
@@ -1518,5 +1677,3 @@ insertWideReferences(void) {
     }
   }
 }
-
-

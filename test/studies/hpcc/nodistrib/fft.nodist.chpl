@@ -117,17 +117,17 @@ proc main() {
 
   const startTime = getCurrentTime();  // capture the start time
 
-  [(a,b) in (Zblk, z)] a = conjg(b);      // store the conjugate of z in Zblk
+  [(a,b) in zip(Zblk, z)] a = conjg(b);      // store the conjugate of z in Zblk
   bitReverseShuffle(Zblk);                // permute Zblk
 
   dfft(Zblk, Twiddles, cyclicPhase=false); // compute the DFFT, block phases
 
-  forall (b, c) in (Zblk, Zcyc) do       // copy vector to Cyclic storage
+  forall (b, c) in zip(Zblk, Zcyc) do       // copy vector to Cyclic storage
     c = b;
 
   dfft(Zcyc, Twiddles, cyclicPhase=true); // compute the DFFT, cyclic phases
 
-  forall (b, c) in (Zblk, Zcyc) do        // copy vector back to Block storage
+  forall (b, c) in zip(Zblk, Zcyc) do        // copy vector back to Block storage
     b = c;
 
   const execTime = getCurrentTime() - startTime;     // store the elapsed time
@@ -153,7 +153,7 @@ proc dfft(A: [?ADom], W, cyclicPhase) {
     // shared twiddle factors, zippering with the unbounded range
     // 0.. to get the base twiddle indices
     //
-    forall (bankStart, twidIndex) in (ADom by 2*span, 0..) {
+    forall (bankStart, twidIndex) in zip(ADom by 2*span, 0..) {
       //
       // compute the first set of multipliers for the low bank
       //
@@ -325,10 +325,10 @@ proc verifyResults(z, Zblk, Zcyc, Twiddles) {
   [z in Zblk] z = conjg(z) / m;
   bitReverseShuffle(Zblk);
   dfft(Zblk, Twiddles, cyclicPhase=false);
-  forall (b, c) in (Zblk, Zcyc) do
+  forall (b, c) in zip(Zblk, Zcyc) do
     c = b;
   dfft(Zcyc, Twiddles, true);
-  forall (b, c) in (Zblk, Zcyc) do
+  forall (b, c) in zip(Zblk, Zcyc) do
     b = c;
 
   if (printArrays) then writeln("After inverse FFT, Z is: ", Zblk, "\n");

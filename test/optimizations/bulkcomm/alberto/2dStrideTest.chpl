@@ -22,12 +22,12 @@ var Dom2={1..1,2..2};
 
 //EXAMPLE 1
 
-for (a,i) in (A,{1..m*n}) do a = i;
-for (b,i) in (B,{1..m*n}) do b = i+500;
+for (a,i) in zip(A,{1..m*n}) do a = i;
+for (b,i) in zip(B,{1..m*n}) do b = i+500;
 
   A[Dom2]=B[Dom1];
 
-for (a,b) in (A[Dom2],B[Dom1]) do if (a!=b) then {writeln("ERROR!!!!");e=true;};
+for (a,b) in zip(A[Dom2],B[Dom1]) do if (a!=b) then {writeln("ERROR!!!!");e=true;};
 
 if printOutput
 {
@@ -39,12 +39,12 @@ if printOutput
 Dom2={2..2,3..4};
 Dom1={4..4,1..2};
 
-for (a,i) in (A,{1..m*n}) do a = i;
-for (b,i) in (B,{1..m*n}) do b = i+500;
+for (a,i) in zip(A,{1..m*n}) do a = i;
+for (b,i) in zip(B,{1..m*n}) do b = i+500;
 
   A[Dom2]=B[Dom1];
 
-for (a,b) in (A[Dom2],B[Dom1]) do if (a!=b) then {writeln("ERROR!!!!");e=true;};
+for (a,b) in zip(A[Dom2],B[Dom1]) do if (a!=b) then {writeln("ERROR!!!!");e=true;};
 
 if printOutput
 {
@@ -58,7 +58,7 @@ Dom1={3..4,2..2};
 
   A[Dom2]=B[Dom1];
 
-for (a,b) in (A[Dom2],B[Dom1]) do if (a!=b) then {writeln("ERROR!!!!");e=true;};
+for (a,b) in zip(A[Dom2],B[Dom1]) do if (a!=b) then {writeln("ERROR!!!!");e=true;};
 if printOutput
 {
 writeln("Example 3: A",Dom2," = B",Dom1);
@@ -66,15 +66,15 @@ writeln("Example 3: A",Dom2," = B",Dom1);
   for (i,j) in Dom do writeln("B[",i,",", j,"] = ",B[i,j]);
 }
 
-for (a,i) in (A,{1..m*n}) do a = i;
-for (b,i) in (B,{1..m*n}) do b = i+500;
+for (a,i) in zip(A,{1..m*n}) do a = i;
+for (b,i) in zip(B,{1..m*n}) do b = i+500;
 
 Dom2={1..2,3..4};
 Dom1={3..4,1..2};
   
   A[Dom2]=B[Dom1];
 
-for (a,b) in (A[Dom2],B[Dom1]) do if (a!=b) then {writeln("ERROR!!!!");e=true;};
+for (a,b) in zip(A[Dom2],B[Dom1]) do if (a!=b) then {writeln("ERROR!!!!");e=true;};
 
 if printOutput
 {
@@ -83,15 +83,15 @@ if printOutput
   for (i,j) in Dom do writeln("B[",i,",", j,"] = ",B[i,j]);
 }
 
-for (a,i) in (A,{1..m*n}) do a = i;
-for (b,i) in (B,{1..m*n}) do b = i+500;
+for (a,i) in zip(A,{1..m*n}) do a = i;
+for (b,i) in zip(B,{1..m*n}) do b = i+500;
 
 Dom2={1..m,4..4};
 Dom1={1..m,2..2};
   
   A[Dom2]=B[Dom1];
 
-for (a,b) in (A[Dom2],B[Dom1]) do if (a!=b) then {writeln("ERROR!!!!");e=true;};
+for (a,b) in zip(A[Dom2],B[Dom1]) do if (a!=b) then {writeln("ERROR!!!!");e=true;};
 
 if printOutput
 {
@@ -100,15 +100,15 @@ if printOutput
   for (i,j) in Dom do writeln("B[",i,",", j,"] = ",B[i,j]);
 }
 
-for (a,i) in (A,{1..m*n}) do a = i;
-for (b,i) in (B,{1..m*n}) do b = i+500;
+for (a,i) in zip(A,{1..m*n}) do a = i;
+for (b,i) in zip(B,{1..m*n}) do b = i+500;
 
 Dom2={1..m,3..4};
 Dom1={1..m,1..2};
   
   A[Dom2]=B[Dom1];
 
-for (a,b) in (A[Dom2],B[Dom1]) do if (a!=b) then {writeln("ERROR!!!!");e=true;};
+for (a,b) in zip(A[Dom2],B[Dom1]) do if (a!=b) then {writeln("ERROR!!!!");e=true;};
 
 if printOutput
 {
@@ -117,15 +117,15 @@ if printOutput
   for (i,j) in Dom do writeln("B[",i,",", j,"] = ",B[i,j]);
 }
 
-for (a,i) in (A,{1..m*n}) do a = i;
-for (b,i) in (B,{1..m*n}) do b = i+500;
+for (a,i) in zip(A,{1..m*n}) do a = i;
+for (b,i) in zip(B,{1..m*n}) do b = i+500;
 
 Dom2={1..1,1..n};
 Dom1={3..3,1..n};
   
   A[Dom2]=B[Dom1];
 
-for (a,b) in (A[Dom2],B[Dom1]) do if (a!=b) then {writeln("ERROR!!!!");e=true;};
+for (a,b) in zip(A[Dom2],B[Dom1]) do if (a!=b) then {writeln("ERROR!!!!");e=true;};
 if printOutput
 {
   writeln("Example 7: A",Dom2," = B",Dom1);
@@ -133,15 +133,15 @@ if printOutput
   for (i,j) in Dom do writeln("B[",i,",", j,"] = ",B[i,j]);
 }
 
-for (a,i) in (A,{1..m*n}) do a = i;
-for (b,i) in (B,{1..m*n}) do b = i+500;
+for (a,i) in zip(A,{1..m*n}) do a = i;
+for (b,i) in zip(B,{1..m*n}) do b = i+500;
 
 Dom2={1..2,1..n};
 Dom1={3..4,1..n};
   
   A[Dom2]=B[Dom1];
 
-for (a,b) in (A[Dom2],B[Dom1]) do if (a!=b) then {writeln("ERROR!!!!");e=true;};
+for (a,b) in zip(A[Dom2],B[Dom1]) do if (a!=b) then {writeln("ERROR!!!!");e=true;};
 if printOutput
 {
   writeln("Example 8: A",Dom2," = B",Dom1);
@@ -149,15 +149,15 @@ if printOutput
   for (i,j) in Dom do writeln("B[",i,",", j,"] = ",B[i,j]);
 }
 
-for (a,i) in (A,{1..m*n}) do a = i;
-for (b,i) in (B,{1..m*n}) do b = i+500;
+for (a,i) in zip(A,{1..m*n}) do a = i;
+for (b,i) in zip(B,{1..m*n}) do b = i+500;
 
 Dom2={1..m,1..n};
 Dom1={1..m,1..n};
   
   A[Dom2]=B[Dom1];
 
-for (a,b) in (A[Dom2],B[Dom1]) do if (a!=b) then {writeln("ERROR!!!!");e=true;};
+for (a,b) in zip(A[Dom2],B[Dom1]) do if (a!=b) then {writeln("ERROR!!!!");e=true;};
 if printOutput
 {
   writeln("Example 9: A",Dom2," = B",Dom1);

@@ -7,5 +7,5 @@ var D2 = Dist.newRectangularDom(1, int(64), false);
 D1.dsiSetIndices({1..9});
 D2.dsiSetIndices({2..10});
 
-forall (i,j) in (D1, D2) do
+forall (i,j) in zip(D1, D2) do
   writeln("(i,j) is: ", (i,j));

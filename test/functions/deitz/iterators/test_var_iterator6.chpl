@@ -1,6 +1,6 @@
 var A, B, C: [1..5] int;
 
-for (a, b, c, i, j, k) in (A, B, C, 1..5, 6..10, 11..15) {
+for (a, b, c, i, j, k) in zip(A, B, C, 1..5, 6..10, 11..15) {
   a = i;
   b = j;
   c = k;
@@ -10,7 +10,7 @@ writeln((A, B, C));
 
 A = 0; B = 0; C = 0; // reset
 
-for (a, (b, (c, (i, (j, k))))) in (A, (B, (C, (1..5, (6..10, 11..15))))) {
+for (a, (b, (c, (i, (j, k))))) in zip(A, (B, (C, (1..5, (6..10, 11..15))))) {
   a = i;
   b = j;
   c = k;
@@ -18,13 +18,13 @@ for (a, (b, (c, (i, (j, k))))) in (A, (B, (C, (1..5, (6..10, 11..15))))) {
 
 writeln((A, B, C));
 
-for (a, b, c) in (A, B, C) {
+for (a, b, c) in zip(A, B, C) {
   a += b + c;
 }
 
 writeln((A, B, C));
 
-for t in (A, B, C) {
+for t in zip(A, B, C) {
   t(2) += t(1) + t(3);
 }
 

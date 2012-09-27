@@ -1,4 +1,6 @@
+#ifndef __STDC_FORMAT_MACROS
 #define __STDC_FORMAT_MACROS
+#endif
 #include <sstream>
 #include <inttypes.h>
 #include <map>
@@ -5459,6 +5461,7 @@ buildRuntimeTypeInfo(FnSymbol* fn) {
   }
   theProgram->block->insertAtTail(new DefExpr(ts));
   ct->symbol->addFlag(FLAG_RUNTIME_TYPE_VALUE);
+  makeRefType(ts->type); // make sure the new type has a ref type.
   return ct;
 }
 
@@ -5560,19 +5563,16 @@ isUnusedClass(ClassType *ct) {
     return false;
   }
 
-  // TRUE if fields are not all type vars, params, or super class
-  for_fields(field, ct) {
-    if (!field->hasFlag(FLAG_PARAM) &&
-        !field->hasFlag(FLAG_TYPE_VARIABLE) &&
-        !field->hasFlag(FLAG_SUPER_CLASS)) {
-      return true;
+  bool allChildrenUnused = true;
+  forv_Vec(Type, child, ct->dispatchChildren) {
+    ClassType* childClass = toClassType(child);
+    INT_ASSERT(childClass);
+    if (!isUnusedClass(childClass)) {
+      allChildrenUnused = false;
+      break;
     }
   }
-
-  // Otherwise be conservative and keep it around because it maybe
-  //  be used by a child class that is used (need multiple passes
-  //  over the global type symbols determine this accurately)
-  return false;
+  return allChildrenUnused;
 }
 
 static void removeUnusedTypes() {

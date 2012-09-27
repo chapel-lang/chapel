@@ -137,7 +137,7 @@ proc main() {
   // index and as the update value.
   //
   if (useOn) then
-    forall (_, r) in (Updates, RAStream()) do
+    forall (_, r) in zip(Updates, RAStream()) do
       on TableDist.idxToLocale(r & indexMask) do {
         const myR = r;
         local {
@@ -145,7 +145,7 @@ proc main() {
         }
       }
   else
-    forall (_, r) in (Updates, RAStream()) do
+    forall (_, r) in zip(Updates, RAStream()) do
       T(r & indexMask) ^= r;
 
   const execTime = getCurrentTime() - startTime;   // capture the elapsed time
@@ -201,7 +201,7 @@ proc verifyResults(T) {
   // reference it safely in the "local" statement.
   //
   if (useOn) then
-    forall (_, r) in (Updates, RAStream()) do
+    forall (_, r) in zip(Updates, RAStream()) do
       on TableDist.idxToLocale(r & indexMask) do {
         const myR = r;
         locks$(myR & lockIndexMask) = true;
@@ -211,7 +211,7 @@ proc verifyResults(T) {
         locks$(myR & lockIndexMask);
       }
   else
-    forall (_, r) in (Updates, RAStream()) do {
+    forall (_, r) in zip(Updates, RAStream()) do {
       locks$(r & lockIndexMask) = true;
       T(r & indexMask) ^= r;
       locks$(r & lockIndexMask);

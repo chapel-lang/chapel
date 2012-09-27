@@ -7,7 +7,7 @@ iter xs var {
 
 writeln(x);
 
-for (e,i) in (xs,1..5) do
+for (e,i) in zip(xs,1..5) do
   e = i;
 
 writeln(x);

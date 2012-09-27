@@ -168,7 +168,7 @@ writeln();
 // this single iterator:
 //
 
-for (i, a) in (count(probSize), A) do
+for (i, a) in zip(count(probSize), A) do
   a = i/10.0;
                          
 writeln("After reassigning A using zippering:");
@@ -320,7 +320,7 @@ writeln();
 // yielded (range vs. 1-tuple of range), nor the description of
 // the work (low-based indices vs. 0-based indices).
 //
-forall (i, a) in (count(probSize), A) do
+forall (i, a) in zip(count(probSize), A) do
   a = i/10.0;
                          
 writeln("After reassigning A using parallel zippering:");
@@ -337,7 +337,7 @@ writeln();
 // iterators are controlled by the dataPar* configuration constants
 // as described in doc/README.executing.
 //
-forall (a, i) in (A, count(probSize)) do
+forall (a, i) in zip(A, count(probSize)) do
   a = i/100.0;
 
 writeln("After reassigning A using parallel zippering and A as the leader:");

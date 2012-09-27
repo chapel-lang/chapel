@@ -6,7 +6,7 @@ var A: [1..3] real = (1.1, 2.2, 3.3);
 var str1: [1..3] string;
 var str2: [1..3] string;
 
-for (a,s) in (A,str1) {
+for (a,s) in zip(A,str1) {
   s = chpldev_refToString(a);
 }
 

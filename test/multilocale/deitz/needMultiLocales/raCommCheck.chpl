@@ -98,7 +98,7 @@ proc main() {
   // index and as the update value.
   //
   startCommDiagnostics();
-  forall (_, r) in (Updates, RAStream()) do
+  forall (_, r) in zip(Updates, RAStream()) do
     on TableDist.idxToLocale(r & indexMask) do
       T(r & indexMask) ^= r;
   stopCommDiagnostics();
@@ -107,7 +107,7 @@ proc main() {
 
   var Diagnostics = getCommDiagnostics();
   writeln("Locale: (gets, puts, forks, fast forks, non-blocking forks)");
-  for (lid, diagnostics) in (1..,Diagnostics) do
+  for (lid, diagnostics) in zip(1..,Diagnostics) do
     writeln(lid, ": ", diagnostics);
 
   const validAnswer = verifyResults();             // verify the updates
@@ -138,7 +138,7 @@ proc verifyResults() {
   // Reverse the updates by recomputing them, this time using an
   // atomic statement to ensure no conflicting updates
   //
-  forall (_, r) in (Updates, RAStream()) do
+  forall (_, r) in zip(Updates, RAStream()) do
     on TableDist.idxToLocale(r & indexMask) do
       atomic T(r & indexMask) ^= r;
 

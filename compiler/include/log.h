@@ -80,7 +80,7 @@ class ArgumentState;
 #define LOG_repositionDefExpressions 'f'
 #define LOG_codegen             'E'
 #define LOG_makeBinary          NUL
-
+#define LOG_readCTypes          'c'
 #define LOG_ANY -1
 
 void init_logs();

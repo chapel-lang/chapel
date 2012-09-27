@@ -1607,14 +1607,14 @@ inline proc =(a: [], b) {
 
   if chpl__serializeAssignment(a, b) {
     compilerWarning("whole array assignment has been serialized (see note in $CHPL_HOME/STATUS)");
-    for (aa,bb) in (a,b) do
+    for (aa,bb) in zip(a,b) do
       aa = bb;
   } else if chpl__tryToken { // try to parallelize using leader and follower iterators
-    forall (aa,bb) in (a,b) do
+    forall (aa,bb) in zip(a,b) do
       aa = bb;
   } else {
     compilerWarning("whole array assignment has been serialized (see note in $CHPL_HOME/STATUS)");
-    for (aa,bb) in (a,b) do
+    for (aa,bb) in zip(a,b) do
       aa = bb;
   }
   return a;
@@ -1623,7 +1623,7 @@ inline proc =(a: [], b) {
 proc =(a: [], b: _tuple) where isEnumArr(a) {
     if b.size != a.numElements then
       halt("tuple array initializer size mismatch");
-    for (i,j) in (chpl_enumerate(index(a.domain)), 1..) {
+    for (i,j) in zip(chpl_enumerate(index(a.domain)), 1..) {
       a(i) = b(j);
     }
     return a;
@@ -1699,17 +1699,16 @@ class _OpaqueIndex { }
 // Swap operators for arrays and domains
 //
 inline proc <=>(x: [], y: []) {
-  forall (a,b) in (x, y) do
+  forall (a,b) in zip(x, y) do
     a <=> b;
 }
-
 
 //
 // reshape function
 //
 proc reshape(A: [], D: domain) {
   var B: [D] A.eltType;
-  for (i,a) in (D,A) do
+  for (i,a) in zip(D,A) do
     B(i) = a;
   return B;
 }
@@ -1759,7 +1758,7 @@ proc _iteratorRecord.writeThis(f: Writer) {
 }
 
 proc =(ic: _iteratorRecord, xs) {
-  for (e, x) in (ic, xs) do
+  for (e, x) in zip(ic, xs) do
     e = x;
   return ic;
 }
@@ -1777,21 +1776,25 @@ inline proc _getIterator(x) {
 inline proc _getIterator(ic: _iteratorClass)
   return ic;
 
-inline proc _getIterator(x: _tuple) {
-  inline proc _getIteratorHelp(x: _tuple, param dim: int) {
-    if dim == x.size then
-      return tuple(_getIterator(x(dim)));
-    else
-      return (_getIterator(x(dim)), (..._getIteratorHelp(x, dim+1)));
-  }
-  if x.size == 1 then
-    return _getIterator(x(1));
-  else
-    return _getIteratorHelp(x, 1);
-}
-
 proc _getIterator(type t) {
   compilerError("cannot iterate over a type");
+}
+
+inline proc _getIteratorZip(x) {
+  return _getIterator(x);
+}
+
+inline proc _getIteratorZip(x: _tuple) {
+  inline proc _getIteratorZipInternal(x: _tuple, param dim: int) {
+    if dim == x.size then
+      return tuple(_getIteratorZip(x(dim)));
+    else
+      return (_getIteratorZip(x(dim)), (..._getIteratorZipInternal(x, dim+1)));
+  }
+  if x.size == 1 then
+    return _getIteratorZip(x(1));
+  else
+    return _getIteratorZipInternal(x, 1);
 }
 
 proc _checkIterator(type t) {
@@ -1822,35 +1825,25 @@ inline proc _toLeader(ir: _iteratorRecord) {
   return leader;
 }
 
-inline proc _toLeader(x: _tuple)
-  return _toLeader(x(1));
-
 inline proc _toLeader(x)
   return _toLeader(x.these());
 
-//
-// returns lead entity
-//
-proc chpl__lead(x: _tuple) return chpl__lead(x(1));
-proc chpl__lead(x) return x;
+inline proc _toLeaderZip(x)
+  return _toLeader(x);
+
+inline proc _toLeaderZip(x: _tuple)
+  return _toLeaderZip(x(1));
 
 //
 // return true if any iterator supports fast followers
 //
 proc chpl__staticFastFollowCheck(x) param {
-  pragma "no copy" const lead = chpl__lead(x);
+  pragma "no copy" const lead = x;
   if chpl__isDomain(lead) || chpl__isArray(lead) then
     return chpl__staticFastFollowCheck(x, lead);
   else
     return false;
 }  
-
-proc chpl__staticFastFollowCheck(x: _tuple, lead, param dim = 1) param {
-  if x.size == dim then
-    return chpl__staticFastFollowCheck(x(dim), lead);
-  else
-    return chpl__staticFastFollowCheck(x(dim), lead) || chpl__staticFastFollowCheck(x, lead, dim+1);
-}
 
 proc chpl__staticFastFollowCheck(x, lead) param {
   return false;
@@ -1860,19 +1853,31 @@ proc chpl__staticFastFollowCheck(x: [], lead) param {
   return x._value.dsiStaticFastFollowCheck(lead._value.type);
 }
 
+proc chpl__staticFastFollowCheckZip(x: _tuple) param {
+  pragma "no copy" const lead = x(1);
+  if chpl__isDomain(lead) || chpl__isArray(lead) then
+    return chpl__staticFastFollowCheckZip(x, lead);
+  else
+    return false;
+} 
+
+proc chpl__staticFastFollowCheckZip(x, lead) param {
+  return chpl__staticFastFollowCheck(x, lead);
+}
+
+proc chpl__staticFastFollowCheckZip(x: _tuple, lead, param dim = 1) param {
+  if x.size == dim then
+    return chpl__staticFastFollowCheckZip(x(dim), lead);
+  else
+    return chpl__staticFastFollowCheckZip(x(dim), lead) || chpl__staticFastFollowCheckZip(x, lead, dim+1);
+}
+
 //
 // return true if all iterators that support fast followers can use
 // their fast followers
 //
 proc chpl__dynamicFastFollowCheck(x) {
-  return chpl__dynamicFastFollowCheck(x, chpl__lead(x));
-}
-
-proc chpl__dynamicFastFollowCheck(x: _tuple, lead, param dim = 1) {
-  if x.size == dim then
-    return chpl__dynamicFastFollowCheck(x(dim), lead);
-  else
-    return chpl__dynamicFastFollowCheck(x(dim), lead) && chpl__dynamicFastFollowCheck(x, lead, dim+1);
+  return chpl__dynamicFastFollowCheck(x, x);
 }
 
 proc chpl__dynamicFastFollowCheck(x, lead) {
@@ -1884,6 +1889,21 @@ proc chpl__dynamicFastFollowCheck(x: [], lead) {
     return x._value.dsiDynamicFastFollowCheck(lead);
   else
     return false;
+}
+
+proc chpl__dynamicFastFollowCheckZip(x: _tuple) {
+  return chpl__dynamicFastFollowCheckZip(x, x(1));
+}
+
+proc chpl__dynamicFastFollowCheckZip(x, lead) {
+  return chpl__dynamicFastFollowCheck(x, lead);
+}
+
+proc chpl__dynamicFastFollowCheckZip(x: _tuple, lead, param dim = 1) {
+  if x.size == dim then
+    return chpl__dynamicFastFollowCheckZip(x(dim), lead);
+  else
+    return chpl__dynamicFastFollowCheckZip(x(dim), lead) && chpl__dynamicFastFollowCheckZip(x, lead, dim+1);
 }
 
 pragma "no implicit copy"
@@ -1901,17 +1921,21 @@ inline proc _toFollower(x, leaderIndex) {
   return _toFollower(x.these(), leaderIndex);
 }
 
-inline proc _toFollowerHelp(x: _tuple, leaderIndex, param dim: int) {
-  if dim == x.size-1 then
-    return (_toFollower(x(dim), leaderIndex),
-            _toFollower(x(dim+1), leaderIndex));
-  else
-    return (_toFollower(x(dim), leaderIndex),
-            (..._toFollowerHelp(x, leaderIndex, dim+1)));
+inline proc _toFollowerZip(x, leaderIndex) {
+  return _toFollower(x, leaderIndex);
 }
 
-inline proc _toFollower(x: _tuple, leaderIndex) {
-  return _toFollowerHelp(x, leaderIndex, 1);
+inline proc _toFollowerZip(x: _tuple, leaderIndex) {
+  return _toFollowerZip(x, leaderIndex, 1);
+}
+
+inline proc _toFollowerZip(x: _tuple, leaderIndex, param dim: int) {
+  if dim == x.size-1 then
+    return (_toFollowerZip(x(dim), leaderIndex),
+            _toFollowerZip(x(dim+1), leaderIndex));
+  else
+    return (_toFollowerZip(x(dim), leaderIndex),
+            (..._toFollowerZip(x, leaderIndex, dim+1)));
 }
 
 pragma "no implicit copy"
@@ -1942,17 +1966,21 @@ inline proc _toFastFollower(x, leaderIndex) {
     return _toFollower(x.these(), leaderIndex);
 }
 
-inline proc _toFastFollowerHelp(x: _tuple, leaderIndex, param dim: int) {
-  if dim == x.size-1 then
-    return (_toFastFollower(x(dim), leaderIndex),
-            _toFastFollower(x(dim+1), leaderIndex));
-  else
-    return (_toFastFollower(x(dim), leaderIndex),
-            (..._toFastFollowerHelp(x, leaderIndex, dim+1)));
+inline proc _toFastFollowerZip(x, leaderIndex) {
+  return _toFastFollower(x, leaderIndex);
 }
 
-inline proc _toFastFollower(x: _tuple, leaderIndex) {
-  return _toFastFollowerHelp(x, leaderIndex, 1);
+inline proc _toFastFollowerZip(x: _tuple, leaderIndex) {
+  return _toFastFollowerZip(x, leaderIndex, 1);
+}
+
+inline proc _toFastFollowerZip(x: _tuple, leaderIndex, param dim: int) {
+  if dim == x.size-1 then
+    return (_toFastFollowerZip(x(dim), leaderIndex),
+            _toFastFollowerZip(x(dim+1), leaderIndex));
+  else
+    return (_toFastFollowerZip(x(dim), leaderIndex),
+            (..._toFastFollowerZip(x, leaderIndex, dim+1)));
 }
 
 proc chpl__initCopy(a: _distribution) {

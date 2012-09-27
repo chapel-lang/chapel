@@ -38,7 +38,7 @@ proc showme(oddphase: bool, delta: elType, msg = "") {
   writeln(msg, "  delta ", delta, if oddphase then "  (B->A)" else "  (A->B)");
   writeln();
 
-  for (gix, dat) in (gridDom, Data) {
+  for (gix, dat) in zip(gridDom, Data) {
     writeln("Grid point ", gix, " on locale ", dat.locale.id);
     if oddphase {
       writeln("B =");
@@ -95,7 +95,7 @@ proc showfetch(oddphase: bool, msg = "") {
 
   const innerGrid = { if g <= 2 then 1..1 else 2..g-1,
                       if h <= 2 then 1..1 else 2..h-1 };
-  for ((gi,gj), dat) in (innerGrid, Data[innerGrid]) {
+  for ((gi,gj), dat) in zip(innerGrid, Data[innerGrid]) {
     writeln("Grid point ", (gi, gj), " on locale ", dat.locale.id);
     // first row
     if gi > 1 {
@@ -148,7 +148,7 @@ proc computeOld(oddphase: bool, out delta: elType) {
 
     if oddphase {
 
-      forall ((i,j), a, b1, b2, b3, b4) in (dat.domCompute, dat.Acompute,
+      forall ((i,j), a, b1, b2, b3, b4) in zip(dat.domCompute, dat.Acompute,
         dat.B[dat.domCompute.translate(adjcoords(1))],
         dat.B[dat.domCompute.translate(adjcoords(2))],
         dat.B[dat.domCompute.translate(adjcoords(3))],
@@ -159,7 +159,7 @@ proc computeOld(oddphase: bool, out delta: elType) {
 
     } else { //  !oddphase
 
-      forall ((i,j), a, b1, b2, b3, b4) in (dat.domCompute, dat.Bcompute,
+      forall ((i,j), a, b1, b2, b3, b4) in zip(dat.domCompute, dat.Bcompute,
         dat.A[dat.domCompute.translate(adjcoords(1))],
         dat.A[dat.domCompute.translate(adjcoords(2))],
         dat.A[dat.domCompute.translate(adjcoords(3))],
@@ -170,7 +170,7 @@ proc computeOld(oddphase: bool, out delta: elType) {
 
     } // if oddphase
 
-    dat.localDelta = max reduce [(a,b) in (dat.Acompute, dat.Bcompute)] abs(a-b);
+    dat.localDelta = max reduce [(a,b) in zip(dat.Acompute, dat.Bcompute)] abs(a-b);
   } // forall dat
 
   delta =  max reduce [dat in Data] dat.localDelta;

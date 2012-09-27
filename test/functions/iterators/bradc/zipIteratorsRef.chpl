@@ -27,7 +27,7 @@ writeln("otherC is: ");
 for c in otherC do
   writeln(c, " ");
 
-for (c1, c2) in (otherC, myC) {
+for (c1, c2) in zip(otherC, myC) {
   c1 = c2;
 }
 

@@ -18,7 +18,7 @@ var C = ProblemDom.newArray(real);
 
 var i = 0;
 
-for (b, c) in (B, C) {
+for (b, c) in zip(B, C) {
   b = i;
   c = i+1;
   i += 1;
@@ -34,9 +34,9 @@ for block in A.newThese(IteratorType.leader) {
   writeln("block is: ", block);
   on block {
     var myalpha = alpha;
-    for (a,b,c) in (A.newThese(IteratorType.follower, block),
-                    B.newThese(IteratorType.follower, block),
-                    C.newThese(IteratorType.follower, block)) {
+    for (a,b,c) in zip(A.newThese(IteratorType.follower, block),
+                       B.newThese(IteratorType.follower, block),
+                       C.newThese(IteratorType.follower, block)) {
       a = b + myalpha * c;
     }
   }

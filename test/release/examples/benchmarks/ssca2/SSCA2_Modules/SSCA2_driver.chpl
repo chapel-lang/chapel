@@ -127,7 +127,7 @@ module SSCA2_driver
                 }
               };
 
-            for (s, linear_index) in ( G.vertices, 1.. ) do
+            for (s, linear_index) in zip( G.vertices, 1.. ) do
               if random_indices.member (linear_index) then
                 BC_starting_vertices.add (s);
 

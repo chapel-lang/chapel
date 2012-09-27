@@ -749,7 +749,7 @@ static int loopexpr_uid = 1;
 
 // builds body of for expression iterator
 CallExpr*
-buildForLoopExpr(Expr* indices, Expr* iteratorExpr, Expr* expr, Expr* cond, bool maybeArrayType) {
+buildForLoopExpr(Expr* indices, Expr* iteratorExpr, Expr* expr, Expr* cond, bool maybeArrayType, bool zippered) {
   FnSymbol* fn = new FnSymbol(astr("_seqloopexpr", istr(loopexpr_uid++)));
   BlockStmt* block = fn->body;
 
@@ -776,15 +776,15 @@ buildForLoopExpr(Expr* indices, Expr* iteratorExpr, Expr* expr, Expr* cond, bool
   Expr* stmt = new CallExpr(PRIM_YIELD, expr);
   if (cond)
     stmt = new CondStmt(new CallExpr("_cond_test", cond), stmt);
-  sifn->insertAtTail(buildForLoopStmt(indices, new SymExpr(sifnIterator), new BlockStmt(stmt)));
+  sifn->insertAtTail(buildForLoopStmt(indices, new SymExpr(sifnIterator), new BlockStmt(stmt), false, zippered));
   return new CallExpr(new DefExpr(fn));
 }
 
 
 CallExpr*
-buildForallLoopExpr(Expr* indices, Expr* iteratorExpr, Expr* expr, Expr* cond, bool maybeArrayType) {
+buildForallLoopExpr(Expr* indices, Expr* iteratorExpr, Expr* expr, Expr* cond, bool maybeArrayType, bool zippered) {
   if (fSerial || fSerialForall)
-    return buildForLoopExpr(indices, iteratorExpr, expr, cond, maybeArrayType);
+    return buildForLoopExpr(indices, iteratorExpr, expr, cond, maybeArrayType, zippered);
 
   FnSymbol* fn = new FnSymbol(astr("_parloopexpr", istr(loopexpr_uid++)));
   BlockStmt* block = fn->body;
@@ -812,7 +812,7 @@ buildForallLoopExpr(Expr* indices, Expr* iteratorExpr, Expr* expr, Expr* cond, b
   Expr* stmt = new CallExpr(PRIM_YIELD, expr);
   if (cond)
     stmt = new CondStmt(new CallExpr("_cond_test", cond), stmt);
-  sifn->insertAtTail(buildForLoopStmt(indices, new SymExpr(sifnIterator), new BlockStmt(stmt)));
+  sifn->insertAtTail(buildForLoopStmt(indices, new SymExpr(sifnIterator), new BlockStmt(stmt), false, zippered));
 
   //
   // build leader iterator function
@@ -831,7 +831,13 @@ buildForallLoopExpr(Expr* indices, Expr* iteratorExpr, Expr* expr, Expr* cond, b
   VarSymbol* leaderIterator = newTemp("_leaderIterator");
   leaderIterator->addFlag(FLAG_EXPR_TEMP);
   lifn->insertAtTail(new DefExpr(leaderIterator));
-  lifn->insertAtTail(new CallExpr(PRIM_MOVE, leaderIterator, new CallExpr("_toLeader", lifnIterator)));
+  
+  if( !zippered ) {
+    lifn->insertAtTail(new CallExpr(PRIM_MOVE, leaderIterator, new CallExpr("_toLeader", lifnIterator)));
+  } else {
+    lifn->insertAtTail(new CallExpr(PRIM_MOVE, leaderIterator, new CallExpr("_toLeaderZip", lifnIterator)));
+  }
+
   lifn->insertAtTail(new CallExpr(PRIM_RETURN, leaderIterator));
 
   //
@@ -854,20 +860,26 @@ buildForallLoopExpr(Expr* indices, Expr* iteratorExpr, Expr* expr, Expr* cond, b
   VarSymbol* followerIterator = newTemp("_followerIterator");
   followerIterator->addFlag(FLAG_EXPR_TEMP);
   fifn->insertAtTail(new DefExpr(followerIterator));
-  fifn->insertAtTail(new CallExpr(PRIM_MOVE, followerIterator, new CallExpr("_toFollower", fifnIterator, fifnFollower)));
+
+  if( !zippered ) {
+    fifn->insertAtTail(new CallExpr(PRIM_MOVE, followerIterator, new CallExpr("_toFollower", fifnIterator, fifnFollower)));
+  } else {
+    fifn->insertAtTail(new CallExpr(PRIM_MOVE, followerIterator, new CallExpr("_toFollowerZip", fifnIterator, fifnFollower)));
+  }
+
   // do we need to use this map since symbols have not been resolved?
   SymbolMap map;
   Expr* indicesCopy = (indices) ? indices->copy(&map) : NULL;
   Expr* bodyCopy = stmt->copy(&map);
-  fifn->insertAtTail(buildForLoopStmt(indicesCopy, new SymExpr(followerIterator), new BlockStmt(bodyCopy)));
+  fifn->insertAtTail(buildForLoopStmt(indicesCopy, new SymExpr(followerIterator), new BlockStmt(bodyCopy), false, zippered));
   return new CallExpr(new DefExpr(fn));
 }
-
 
 BlockStmt* buildForLoopStmt(Expr* indices,
                             Expr* iteratorExpr,
                             BlockStmt* body,
-                            bool coforall) {
+                            bool coforall,
+                            bool zippered) {
   //
   // insert temporary index when elided by user
   //
@@ -890,7 +902,16 @@ BlockStmt* buildForLoopStmt(Expr* indices,
   VarSymbol* iterator = newTemp("_iterator");
   iterator->addFlag(FLAG_EXPR_TEMP);
   stmts->insertAtTail(new DefExpr(iterator));
-  stmts->insertAtTail(new CallExpr(PRIM_MOVE, iterator, new CallExpr("_getIterator", iteratorExpr)));
+
+  if( !zippered ) {
+    //Unzippered loop, treat all objects (including tuples) the same
+    stmts->insertAtTail(new CallExpr(PRIM_MOVE, iterator, new CallExpr("_getIterator", iteratorExpr)));
+  } else {
+
+    //Expand tuple to a tuple containing appropriate iterators for each value.
+    stmts->insertAtTail(new CallExpr(PRIM_MOVE, iterator, new CallExpr("_getIteratorZip", iteratorExpr)));
+  }
+
   VarSymbol* index = newTemp("_indexOfInterest");
   stmts->insertAtTail(new DefExpr(index));
   stmts->insertAtTail(new BlockStmt(
@@ -898,12 +919,14 @@ BlockStmt* buildForLoopStmt(Expr* indices,
       new CallExpr("iteratorIndex", iterator)),
     BLOCK_TYPE));
   destructureIndices(body, indices, new SymExpr(index), coforall);
+  
   body->blockInfo = new CallExpr(PRIM_BLOCK_FOR_LOOP, index, iterator);
 
   body->insertAtTail(new DefExpr(continueLabel));
   stmts->insertAtTail(body);
   stmts->insertAtTail(new DefExpr(breakLabel));
   stmts->insertAtTail(new CallExpr("_freeIterator", iterator));
+
   return stmts;
 }
 
@@ -911,13 +934,26 @@ BlockStmt* buildForLoopStmt(Expr* indices,
 static BlockStmt*
 buildFollowLoop(Symbol* iter, Symbol* leadIdxCopy, Symbol* followIter,
                 Symbol* followIdx, Expr* indices, BlockStmt* loopBody,
-                bool fast) {
+                bool fast, bool zippered) {
   BlockStmt* followBlock = new BlockStmt();
   followBlock->insertAtTail(new DefExpr(followIter));
-  if (fast)
-    followBlock->insertAtTail("'move'(%S, _getIterator(_toFastFollower(%S, %S)))", followIter, iter, leadIdxCopy);
-  else
-    followBlock->insertAtTail("'move'(%S, _getIterator(_toFollower(%S, %S)))", followIter, iter, leadIdxCopy);
+
+  if( fast ) {
+    
+    if( zippered ) {
+      followBlock->insertAtTail("'move'(%S, _getIteratorZip(_toFastFollowerZip(%S, %S)))", followIter, iter, leadIdxCopy);
+    } else {
+      followBlock->insertAtTail("'move'(%S, _getIterator(_toFastFollower(%S, %S)))", followIter, iter, leadIdxCopy);
+    }
+  } else {
+
+    if( zippered ) {
+      followBlock->insertAtTail("'move'(%S, _getIteratorZip(_toFollowerZip(%S, %S)))", followIter, iter, leadIdxCopy);
+    } else {
+      followBlock->insertAtTail("'move'(%S, _getIterator(_toFollower(%S, %S)))", followIter, iter, leadIdxCopy);
+    } 
+  }
+  
   followBlock->insertAtTail(new DefExpr(followIdx));
   followBlock->insertAtTail("{TYPE 'move'(%S, iteratorIndex(%S)) }", followIdx, followIter);
   BlockStmt* followBody = new BlockStmt();
@@ -929,13 +965,15 @@ buildFollowLoop(Symbol* iter, Symbol* leadIdxCopy, Symbol* followIter,
   return followBlock;
 }
 
-
 BlockStmt*
-buildForallLoopStmt(Expr* indices, Expr* iterExpr, BlockStmt* loopBody) {
+buildForallLoopStmt(Expr* indices, 
+                    Expr* iterExpr, 
+                    BlockStmt* loopBody, 
+                    bool zippered) {
   checkControlFlow(loopBody, "forall statement");
 
   if (fSerial || fSerialForall)
-    return buildForLoopStmt(indices, iterExpr, loopBody);
+    return buildForLoopStmt(indices, iterExpr, loopBody, false, zippered);
 
   SET_LINENO(loopBody);
 
@@ -966,24 +1004,45 @@ buildForallLoopStmt(Expr* indices, Expr* iterExpr, BlockStmt* loopBody) {
   leadBlock->insertAtTail(new DefExpr(iter));
   leadBlock->insertAtTail(new DefExpr(leadIdx));
   leadBlock->insertAtTail(new DefExpr(leadIter));
-  leadBlock->insertAtTail("'move'(%S, _checkIterator(%E))",
+
+  leadBlock->insertAtTail("'move'(%S, _checkIterator(%E))", 
                           iter, iterExpr);
-  leadBlock->insertAtTail("'move'(%S, _getIterator(_toLeader(%S)))",
+
+  if( !zippered ) {
+    leadBlock->insertAtTail("'move'(%S, _getIterator(_toLeader(%S)))",
                           leadIter, iter);
+
+  } else {
+    leadBlock->insertAtTail("'move'(%S, _getIterator(_toLeaderZip(%S)))",
+                          leadIter, iter);
+  }
+
   leadBlock->insertAtTail("{TYPE 'move'(%S, iteratorIndex(%S)) }",
                           leadIdx, leadIter);
+
   BlockStmt* leadBody = new BlockStmt();
   leadBody->insertAtTail(new DefExpr(leadIdxCopy));
   leadBody->insertAtTail("'move'(%S, %S)", leadIdxCopy, leadIdx);
-  BlockStmt* followBlock = buildFollowLoop(iter, leadIdxCopy, followIter, followIdx, indices, loopBody->copy(), false);
+  BlockStmt* followBlock = buildFollowLoop(iter, leadIdxCopy, followIter,
+          followIdx, indices, loopBody->copy(), false, zippered);
   if (!fNoFastFollowers) {
     leadBody->insertAtTail(new DefExpr(T1));
     leadBody->insertAtTail(new DefExpr(T2));
-    leadBody->insertAtTail("'move'(%S, chpl__staticFastFollowCheck(%S))", T1, iter);
-    leadBody->insertAtTail(new CondStmt(new SymExpr(T1),
-                             new_Expr("'move'(%S, chpl__dynamicFastFollowCheck(%S))", T2, iter),
-                             new_Expr("'move'(%S, %S)", T2, gFalse)));
-    BlockStmt* fastFollowBlock = buildFollowLoop(iter, leadIdxCopy, fastFollowIter, fastFollowIdx, indices, loopBody, true);
+
+    if( !zippered ) {
+      leadBody->insertAtTail("'move'(%S, chpl__staticFastFollowCheck(%S))", T1, iter);
+      leadBody->insertAtTail(new CondStmt(new SymExpr(T1),
+                               new_Expr("'move'(%S, chpl__dynamicFastFollowCheck(%S))", T2, iter),
+                               new_Expr("'move'(%S, %S)", T2, gFalse)));
+    } else {
+      leadBody->insertAtTail("'move'(%S, chpl__staticFastFollowCheckZip(%S))", T1, iter);
+      leadBody->insertAtTail(new CondStmt(new SymExpr(T1),
+                               new_Expr("'move'(%S, chpl__dynamicFastFollowCheckZip(%S))", T2, iter),
+                               new_Expr("'move'(%S, %S)", T2, gFalse)));
+    }
+
+    BlockStmt* fastFollowBlock = buildFollowLoop(iter, leadIdxCopy,
+            fastFollowIter, fastFollowIdx, indices, loopBody, true, zippered);
     leadBody->insertAtTail(new CondStmt(new SymExpr(T2), fastFollowBlock, followBlock));
   } else {
     leadBody->insertAtTail(followBlock);
@@ -996,11 +1055,15 @@ buildForallLoopStmt(Expr* indices, Expr* iterExpr, BlockStmt* loopBody) {
 }
 
 
-BlockStmt* buildCoforallLoopStmt(Expr* indices, Expr* iterator, BlockStmt* body) {
+BlockStmt* buildCoforallLoopStmt(Expr* indices, 
+                                 Expr* iterator, 
+                                 BlockStmt* body,
+                                 bool zippered ) 
+{
   checkControlFlow(body, "coforall statement");
 
   if (fSerial)
-    return buildForLoopStmt(indices, iterator, body);
+    return buildForLoopStmt(indices, iterator, body, false, zippered);
 
   //
   // insert temporary index when elided by user
@@ -1041,7 +1104,7 @@ BlockStmt* buildCoforallLoopStmt(Expr* indices, Expr* iterator, BlockStmt* body)
     //   on-statement.
     //
     VarSymbol* coforallCount = newTemp("_coforallCount");
-    BlockStmt* block = buildForLoopStmt(indices, iterator, body, true);
+    BlockStmt* block = buildForLoopStmt(indices, iterator, body, true, zippered);
     block->insertAtHead(new CallExpr(PRIM_MOVE, coforallCount, new CallExpr("_endCountAlloc")));
     block->insertAtHead(new DefExpr(coforallCount));
     body->insertAtHead(new CallExpr("_upEndCount", coforallCount));
@@ -1061,7 +1124,7 @@ BlockStmt* buildCoforallLoopStmt(Expr* indices, Expr* iterator, BlockStmt* body)
     beginBlk->blockInfo = new CallExpr(PRIM_BLOCK_COFORALL);
     beginBlk->insertAtHead(body);
     beginBlk->insertAtTail(new CallExpr("_downEndCount", coforallCount));
-    BlockStmt* block = buildForLoopStmt(indices, iterator, beginBlk, true);
+    BlockStmt* block = buildForLoopStmt(indices, iterator, beginBlk, true, zippered);
     block->insertAtHead(new CallExpr(PRIM_MOVE, coforallCount, new CallExpr("_endCountAlloc")));
     block->insertAtHead(new DefExpr(coforallCount));
     block->insertAtTail(new CallExpr(PRIM_PROCESS_TASK_LIST, coforallCount));
@@ -1249,7 +1312,7 @@ BlockStmt* buildTypeSelectStmt(CallExpr* exprs, BlockStmt* whenstmts) {
 
 static void
 buildReduceScanPreface(FnSymbol* fn, Symbol* data, Symbol* eltType, Symbol* globalOp,
-                       Expr* opExpr, Expr* dataExpr) {
+                       Expr* opExpr, Expr* dataExpr, bool zippered=false) {
   if (UnresolvedSymExpr* sym = toUnresolvedSymExpr(opExpr)) {
     if (!strcmp(sym->unresolved, "max"))
       sym->unresolved = astr("MaxReduceScanOp");
@@ -1264,12 +1327,18 @@ buildReduceScanPreface(FnSymbol* fn, Symbol* data, Symbol* eltType, Symbol* glob
   fn->insertAtTail(new DefExpr(eltType));
   fn->insertAtTail(new DefExpr(globalOp));
   fn->insertAtTail("'move'(%S, %E)", data, dataExpr);
-  fn->insertAtTail("{TYPE 'move'(%S, 'typeof'(chpl__initCopy(iteratorIndex(_getIterator(%S)))))}", eltType, data);
+
+  if( !zippered ) {
+    fn->insertAtTail("{TYPE 'move'(%S, 'typeof'(chpl__initCopy(iteratorIndex(_getIterator(%S)))))}", eltType, data);
+  } else {
+    fn->insertAtTail("{TYPE 'move'(%S, 'typeof'(chpl__initCopy(iteratorIndex(_getIteratorZip(%S)))))}", eltType, data);
+  }
+
   fn->insertAtTail("'move'(%S, 'new'(%E(%E)))", globalOp, opExpr, new NamedExpr("eltType", new SymExpr(eltType)));
 }
 
 
-CallExpr* buildReduceExpr(Expr* opExpr, Expr* dataExpr) {
+CallExpr* buildReduceExpr(Expr* opExpr, Expr* dataExpr, bool zippered) {
   static int uid = 1;
 
   FnSymbol* fn = new FnSymbol(astr("chpl__reduce", istr(uid++)));
@@ -1281,12 +1350,12 @@ CallExpr* buildReduceExpr(Expr* opExpr, Expr* dataExpr) {
   VarSymbol* eltType = newTemp();
   VarSymbol* globalOp = newTemp();
 
-  buildReduceScanPreface(fn, data, eltType, globalOp, opExpr, dataExpr);
+  buildReduceScanPreface(fn, data, eltType, globalOp, opExpr, dataExpr, zippered);
 
   BlockStmt* serialBlock = buildChapelStmt();
   VarSymbol* index = newTemp("_index");
   serialBlock->insertAtTail(new DefExpr(index));
-  serialBlock->insertAtTail(buildForLoopStmt(new SymExpr(index), new SymExpr(data), new BlockStmt(new CallExpr(new CallExpr(".", globalOp, new_StringSymbol("accumulate")), index))));
+  serialBlock->insertAtTail(buildForLoopStmt(new SymExpr(index), new SymExpr(data), new BlockStmt(new CallExpr(new CallExpr(".", globalOp, new_StringSymbol("accumulate")), index)), false, zippered));
 
   if (fSerial || fSerialForall) {
     fn->insertAtTail(serialBlock);
@@ -1306,7 +1375,13 @@ CallExpr* buildReduceExpr(Expr* opExpr, Expr* dataExpr) {
     followBlock->insertAtTail(new DefExpr(followIter));
     followBlock->insertAtTail(new DefExpr(followIdx));
     followBlock->insertAtTail(new DefExpr(localOp));
-    followBlock->insertAtTail("'move'(%S, _getIterator(_toFollower(%S, %S)))", followIter, data, leadIdxCopy);
+
+    if( !zippered ) {
+      followBlock->insertAtTail("'move'(%S, _getIterator(_toFollower(%S, %S)))", followIter, data, leadIdxCopy);
+    } else {
+      followBlock->insertAtTail("'move'(%S, _getIteratorZip(_toFollowerZip(%S, %S)))", followIter, data, leadIdxCopy);
+    }
+    
     followBlock->insertAtTail("{TYPE 'move'(%S, iteratorIndex(%S))}", followIdx, followIter);
     followBlock->insertAtTail("'move'(%S, 'new'(%E(%E)))", localOp, opExpr->copy(), new NamedExpr("eltType", new SymExpr(eltType)));
     followBlock->insertAtTail(followBody);
@@ -1321,11 +1396,18 @@ CallExpr* buildReduceExpr(Expr* opExpr, Expr* dataExpr) {
     BlockStmt* leadBlock = buildChapelStmt();
     leadBlock->insertAtTail(new DefExpr(leadIdx));
     leadBlock->insertAtTail(new DefExpr(leadIter));
-    leadBlock->insertAtTail("'move'(%S, _getIterator(_toLeader(%S)))", leadIter, data);
+
+    if( !zippered ) {
+      leadBlock->insertAtTail("'move'(%S, _getIterator(_toLeader(%S)))", leadIter, data);
+    } else {
+      leadBlock->insertAtTail("'move'(%S, _getIterator(_toLeaderZip(%S)))", leadIter, data);
+    }
+
     leadBlock->insertAtTail("{TYPE 'move'(%S, iteratorIndex(%S))}", leadIdx, leadIter);
     leadBlock->insertAtTail(leadBody);
     leadBlock->insertAtTail("_freeIterator(%S)", leadIter);
     serialBlock->insertAtHead("compilerWarning('reduce has been serialized (see note in $CHPL_HOME/STATUS)')");
+    
     fn->insertAtTail(new CondStmt(new SymExpr(gTryToken), leadBlock, serialBlock));
   }
 
@@ -1337,7 +1419,7 @@ CallExpr* buildReduceExpr(Expr* opExpr, Expr* dataExpr) {
 }
 
 
-CallExpr* buildScanExpr(Expr* opExpr, Expr* dataExpr) {
+CallExpr* buildScanExpr(Expr* opExpr, Expr* dataExpr, bool zippered) {
   static int uid = 1;
 
   FnSymbol* fn = new FnSymbol(astr("chpl__scan", istr(uid++)));
@@ -1347,12 +1429,16 @@ CallExpr* buildScanExpr(Expr* opExpr, Expr* dataExpr) {
   VarSymbol* eltType = newTemp();
   VarSymbol* globalOp = newTemp();
 
-  buildReduceScanPreface(fn, data, eltType, globalOp, opExpr, dataExpr);
+  buildReduceScanPreface(fn, data, eltType, globalOp, opExpr, dataExpr, zippered);
 
   if (!fSerial && !fSerialForall)
     fn->insertAtTail("compilerWarning('scan has been serialized (see note in $CHPL_HOME/STATUS)')");
 
-  fn->insertAtTail("'return'(chpl__scanIterator(%S, %S))", globalOp, data);
+  if( !zippered ) {
+    fn->insertAtTail("'return'(chpl__scanIterator(%S, %S))", globalOp, data);
+  } else {
+    fn->insertAtTail("'return'(chpl__scanIteratorZip(%S, %S))", globalOp, data);
+  }
 
   return new CallExpr(new DefExpr(fn));
 }

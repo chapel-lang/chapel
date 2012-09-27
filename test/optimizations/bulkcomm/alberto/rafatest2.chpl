@@ -28,7 +28,7 @@ writeln("Example 1: B after B[1..10 by 20]=A[1..10 by 30]: ",B);
 for (i) in B.domain do B(i)=2*i;
 
 B[3..8]=A[2..7];
-for (a,b) in (B[3..8],A[2..7]) do if (a!=b) then writeln("ERROR!!!!");
+for (a,b) in zip(B[3..8],A[2..7]) do if (a!=b) then writeln("ERROR!!!!");
 
 writeln("Example 2: B after B[3..8]=A[2..7]: ",B);
 
@@ -40,4 +40,4 @@ C[1..n by 20,1..n]=D[1..n by 20,1..n];
 
 writeln("C: ", C);
 writeln("D: ", D);
-for (a,b) in (C[1..n by 20,1..n],D[1..n by 20,1..n]) do if (a!=b) then writeln("ERROR!!!!");
+for (a,b) in zip(C[1..n by 20,1..n],D[1..n by 20,1..n]) do if (a!=b) then writeln("ERROR!!!!");

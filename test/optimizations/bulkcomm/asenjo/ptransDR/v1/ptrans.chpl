@@ -34,7 +34,7 @@ const gridDist = gridDom dmapped Block(gridDom, gridLocales);
 var Data: [gridDist] localInfo;
 
 // make sure we got it right
-forall (dat, loc) in (Data, gridLocales) {
+forall (dat, loc) in zip(Data, gridLocales) {
   assert(here == dat.locale);
   assert(dat.locale == loc);
 }
@@ -42,7 +42,7 @@ forall (dat, loc) in (Data, gridLocales) {
 var errCount = 0;
 
 proc verify() {
-  forall ((gi,gj), dat) in (gridDom, Data) {
+  forall ((gi,gj), dat) in zip(gridDom, Data) {
   if false {
     writeln("Error: ");
     errCount += 1;
@@ -54,11 +54,11 @@ proc verify() {
 // initialize B
 
 config const singleinit = false;
-forall (dat, (gi,gj)) in (Data, gridDom) {
+forall (dat, (gi,gj)) in zip(Data, gridDom) {
   if singleinit {
     dat.B[2,2] = 100;
    } else {
-    forall ((i,j), a) in (dat.domB, dat.Bcompute) {
+    forall ((i,j), a) in zip(dat.domB, dat.Bcompute) {
       a = i+ j*0.1;
      }
   }
@@ -69,7 +69,7 @@ forall (dat, (gi,gj)) in (Data, gridDom) {
 
 proc transpose() {
   var k: int;
-  forall (dat, (gi,gj)) in (Data, gridDom) 
+  forall (dat, (gi,gj)) in zip(Data, gridDom) 
   {
      for k in 1..m do {
          dat.A[1..n,k] = Data[gj, gi].B[k, 1..n];

@@ -831,7 +831,7 @@ class ThreeArray {
 \end{chapel}
 \begin{chapelpost}
 var ta = new ThreeArray();
-for (i, j) in (ta, 1..) do
+for (i, j) in zip(ta, 1..) do
   i = j;
 
 for i in ta do

@@ -5,7 +5,7 @@ iter foo() {
     yield {i..5};
 }
 
-coforall (i, j) in (foo(), 1..3) do
+coforall (i, j) in zip(foo(), 1..3) do
   A(j) = i;
 
 writeln(A);

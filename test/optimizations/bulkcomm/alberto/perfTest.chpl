@@ -30,7 +30,7 @@ proc main(){
   var D1={1..n,1..n};
   var D2={1..n,1..n};
   var st,dt=getCurrentTime();
-  for (a,i) in (A2,{1..n*n}) do a=i;
+  for (a,i) in zip(A2,{1..n*n}) do a=i;
 
   if printOutput then writeln("Block Dist. Example 1:");
   if doDiagnostics then startCommDiagnostics();
@@ -42,7 +42,7 @@ proc main(){
     }
   }
  
-  for (a,i) in (A2,{1..n*n}) do a=i;
+  for (a,i) in zip(A2,{1..n*n}) do a=i;
 
   if printOutput then writeln("Block Dist. Example 1b: A",D1," = B",D2);
   if doDiagnostics {
@@ -62,12 +62,12 @@ proc main(){
     writeln("Time: ", dt);
   }
 
-  for (a,b) in (A2[D1],C2[D2]) do if (a!=b) then writeln("ERROR!!!!");
+  for (a,b) in zip(A2[D1],C2[D2]) do if (a!=b) then writeln("ERROR!!!!");
   
   // ==============================================================================
   
-  for (a,i) in (A2,{1..n*n}) do a=i;
-  for (b,i) in (B2,{1..2*n*2*n}) do b=i+100.0;
+  for (a,i) in zip(A2,{1..n*n}) do a=i;
+  for (b,i) in zip(B2,{1..2*n*2*n}) do b=i+100.0;
   D1={1..n ,1..n};
   D2={1..n ,1..n};
   if printOutput then writeln("Block Dist. Example 2:A",D1," = C",D2);
@@ -83,11 +83,11 @@ proc main(){
     writeln("Time: ", dt);
   }
   
-  for (a,b) in (A2[D1],B2[D2]) do if (a!=b) then writeln("ERROR!!!!");
+  for (a,b) in zip(A2[D1],B2[D2]) do if (a!=b) then writeln("ERROR!!!!");
   // ==============================================================================
   
   //Reset array A
-  for (a,i) in (A2,{1..n*n}) do a=i;
+  for (a,i) in zip(A2,{1..n*n}) do a=i;
 
   D1 ={1..n/2,n/4+1..3*n/4};
   D2={1..n/2,n/4+1..3*n/4};
@@ -110,12 +110,12 @@ proc main(){
     writeln("Time: ", dt);
   }
   
-  for (a,b) in (A2[D1],C2[D2]) do if (a!=b) then writeln("ERROR!!!!");
+  for (a,b) in zip(A2[D1],C2[D2]) do if (a!=b) then writeln("ERROR!!!!");
   
   // ==============================================================================
   
   //Reset array A
-  for (a,i) in (A2,{1..n*n}) do a=i;
+  for (a,i) in zip(A2,{1..n*n}) do a=i;
   D1 ={1..n/2,n/2+1..n};
   D2={1..n/2,n/4+1..3*n/4};
 
@@ -136,12 +136,12 @@ proc main(){
     }
     writeln("Time: ", dt);
   }
-  for (a,b) in (A2[D1],C2[D2]) do if (a!=b) then writeln("ERROR!!!!");
+  for (a,b) in zip(A2[D1],C2[D2]) do if (a!=b) then writeln("ERROR!!!!");
 
   // ==============================================================================
   
   //Reset array A
-  for (a,i) in (A2,{1..n*n}) do a=i;
+  for (a,i) in zip(A2,{1..n*n}) do a=i;
   D2 ={1..n/2,n/2..n};
   D1={1..n/2,n/4..3*n/4};
 
@@ -163,12 +163,12 @@ proc main(){
     writeln("Time: ", dt);
   }
   
-  for (a,b) in (A2[D1],B2[D2]) do if (a!=b) then writeln("ERROR!!!!");
+  for (a,b) in zip(A2[D1],B2[D2]) do if (a!=b) then writeln("ERROR!!!!");
  
   // ==============================================================================
   
   //Reset array A
-  for (a,i) in (A2,{1..n*n}) do a=i;
+  for (a,i) in zip(A2,{1..n*n}) do a=i;
   var D6 ={2..10 by 2,2..10};
   C2[1..n,1..n]=999;
   if printOutput then  writeln("Block Dist. Example 6:A",D6," = C",D6);
@@ -190,12 +190,12 @@ proc main(){
   }
   //writeln("A2: ", A2);
   //writeln("C2: ", C2);
-  for (a,b) in (A2[D6],C2[D6]) do if (a!=b) then writeln("ERROR!!!!");
+  for (a,b) in zip(A2[D6],C2[D6]) do if (a!=b) then writeln("ERROR!!!!");
   
   // ==============================================================================
   
   //Reset array A
-  for (a,i) in (A2,{1..n*n}) do a=i;
+  for (a,i) in zip(A2,{1..n*n}) do a=i;
   var D7 ={1..n by 2,1..n by 2};
 
   if printOutput then writeln("Block Dist. Example 7:A",D7," = C",D7);
@@ -218,12 +218,12 @@ proc main(){
     writeln("Time: ", dt);
   }
   
-  for (a,b) in (A2[D7],C2[D7]) do if (a!=b) then writeln("ERROR!!!!");
+  for (a,b) in zip(A2[D7],C2[D7]) do if (a!=b) then writeln("ERROR!!!!");
   
   // ==============================================================================
   
   //Reset array A
-  for (a,i) in (A2,{1..n*n}) do a=i;
+  for (a,i) in zip(A2,{1..n*n}) do a=i;
   var D8 ={1..n by 3,1..n by 2};
   if printOutput then writeln("Block Dist. Example 8:A",D8," = C",D8);
   if doDiagnostics {
@@ -245,12 +245,12 @@ proc main(){
     writeln("Time: ", dt);
   }
  
-  for (a,b) in (A2[D8],C2[D8]) do if (a!=b) then writeln("ERROR!!!!");
+  for (a,b) in zip(A2[D8],C2[D8]) do if (a!=b) then writeln("ERROR!!!!");
 
   // ==============================================================================
 
   //Reset array A
-  for (a,i) in (A2,{1..n*n}) do a=i;
+  for (a,i) in zip(A2,{1..n*n}) do a=i;
   D6 ={2..n by 2,2..n};
 
   if printOutput then  writeln("Block Dist. Example 9:A",D6," = B",D6);
@@ -271,12 +271,12 @@ proc main(){
     writeln("Time: ", dt);
   }
 
-  for (a,b) in (A2[D6],B2[D6]) do if (a!=b) then writeln("ERROR!!!!");
+  for (a,b) in zip(A2[D6],B2[D6]) do if (a!=b) then writeln("ERROR!!!!");
   
   // ==============================================================================
 
   //Reset array A
-  for (a,i) in (A2,{1..n*n}) do a=i;
+  for (a,i) in zip(A2,{1..n*n}) do a=i;
   D6 ={2..n by 2,2..n};
   D7 ={1..n-1 by 2,1..n-1};
   //C2[1..n,1..n]=999;
@@ -299,12 +299,12 @@ proc main(){
   }
   //writeln("A2: ", A2);
   //writeln("C2: ", C2);
-  for (a,b) in (A2[D6],B2[D7]) do if (a!=b) then writeln("ERROR!!!!");
+  for (a,b) in zip(A2[D6],B2[D7]) do if (a!=b) then writeln("ERROR!!!!");
   
   // ==============================================================================
 
   //Reset array A
-  for (a,i) in (A2,{1..n*n}) do a=i;
+  for (a,i) in zip(A2,{1..n*n}) do a=i;
   D6 ={2..n by 20,2..n};
   D7 ={1..n-1 by 20,1..n-1};
 
@@ -327,12 +327,12 @@ proc main(){
   }
   //writeln("A2: ", A2);
   //writeln("C2: ", C2);
-  for (a,b) in (A2[D6],B2[D7]) do if (a!=b) then writeln("ERROR!!!!");
+  for (a,b) in zip(A2[D6],B2[D7]) do if (a!=b) then writeln("ERROR!!!!");
 
   // ==============================================================================
 
   //Reset array A
-  for (a,i) in (A2,{1..n*n}) do a=i;
+  for (a,i) in zip(A2,{1..n*n}) do a=i;
   D6 ={1..n ,1..n by 2};
   D7 ={1..n ,1..2*n by 4};
 
@@ -355,13 +355,13 @@ proc main(){
   }
   //writeln("A2: ", A2);
   //writeln("C2: ", C2);
-  for (a,b) in (A2[D6],B2[D7]) do if (a!=b) then writeln("ERROR!!!!");
+  for (a,b) in zip(A2[D6],B2[D7]) do if (a!=b) then writeln("ERROR!!!!");
  
   // ==============================================================================
  
   //Reset array A
-  for (a,i) in (A2,{1..n*n}) do a=i;
-  for (a,i) in (ADR,{1..n*n}) do a=i+100;
+  for (a,i) in zip(A2,{1..n*n}) do a=i;
+  for (a,i) in zip(ADR,{1..n*n}) do a=i+100;
   D2 ={1..n,1..n};
   D1={1..n,1..n};
   if printOutput then writeln("Block Dist <-- Default Rectangular. Example 1:A",D1," = ADR",D2);
@@ -382,13 +382,13 @@ proc main(){
     writeln("Time: ", dt);
   }
 
-  for (a,b) in (A2[D1],ADR[D2]) do if (a!=b) then writeln("ERROR!!!!");
+  for (a,b) in zip(A2[D1],ADR[D2]) do if (a!=b) then writeln("ERROR!!!!");
   
   // ==============================================================================
   
   //Reset array A
-  for (a,i) in (A2,{1..n*n}) do a=i;
-  for (a,i) in (ADR,{1..n*n}) do a=i+100;
+  for (a,i) in zip(A2,{1..n*n}) do a=i;
+  for (a,i) in zip(ADR,{1..n*n}) do a=i+100;
 
   D1={1..n/2,n/4..3*n/4};
   D2 = D1;
@@ -410,14 +410,14 @@ proc main(){
     writeln("Time: ", dt);
   }
  
-  for (a,b) in (A2[D1],ADR[D2]) do if (a!=b) then writeln("ERROR!!!!");
+  for (a,b) in zip(A2[D1],ADR[D2]) do if (a!=b) then writeln("ERROR!!!!");
   
 
   // ==============================================================================
   
   //Reset array A
-  for (a,i) in (A2,{1..n*n}) do a=i;
-  for (a,i) in (ADR,{1..n*n}) do a=i+100;
+  for (a,i) in zip(A2,{1..n*n}) do a=i;
+  for (a,i) in zip(ADR,{1..n*n}) do a=i+100;
 
   D1={1..n/2,1..n/2};
   D2 ={1..n/2,n/2+1..n};
@@ -439,13 +439,13 @@ proc main(){
     writeln("Time: ", dt);
   }
   
-  for (a,b) in (A2[D2],ADR[D1]) do if (a!=b) then writeln("ERROR!!!!");
+  for (a,b) in zip(A2[D2],ADR[D1]) do if (a!=b) then writeln("ERROR!!!!");
  
   // ==============================================================================
   
   //Reset array A
-  for (a,i) in (A2,{1..n*n}) do a=i;
-  for (a,i) in (ADR,{1..n*n}) do a=i+100;
+  for (a,i) in zip(A2,{1..n*n}) do a=i;
+  for (a,i) in zip(ADR,{1..n*n}) do a=i+100;
   D2 ={1..n,1..n};
   D1={1..n,1..n};
   if printOutput then writeln("Default Rectangular <-- Block Dist. Example 1:ADR",D1," = A",D2);
@@ -466,13 +466,13 @@ proc main(){
     writeln("Time: ", dt);
   }
  
-  for (a,b) in (A2[D2],ADR[D1]) do if (a!=b) then writeln("ERROR!!!!");
+  for (a,b) in zip(A2[D2],ADR[D1]) do if (a!=b) then writeln("ERROR!!!!");
   
   // ==============================================================================
   
   //Reset array A
-  for (a,i) in (A2,{1..n*n}) do a=i;
-  for (a,i) in (ADR,{1..n*n}) do a=i+100;
+  for (a,i) in zip(A2,{1..n*n}) do a=i;
+  for (a,i) in zip(ADR,{1..n*n}) do a=i+100;
 
   D1={1..n/2,n/4..3*n/4};
   D2 = D1;
@@ -494,12 +494,12 @@ proc main(){
     writeln("Time: ", dt);
   }
  
-  for (a,b) in (A2[D1],ADR[D2]) do if (a!=b) then writeln("ERROR!!!!");
+  for (a,b) in zip(A2[D1],ADR[D2]) do if (a!=b) then writeln("ERROR!!!!");
   
   // ==============================================================================
   //Reset array A
-  for (a,i) in (A2,{1..n*n}) do a=i;
-  for (a,i) in (ADR,{1..n*n}) do a=i+100;
+  for (a,i) in zip(A2,{1..n*n}) do a=i;
+  for (a,i) in zip(ADR,{1..n*n}) do a=i+100;
 
   D1={1..n/2,1..n/2};
   D2 ={1..n/2,n/2+1..n};
@@ -521,7 +521,7 @@ proc main(){
     writeln("Time: ", dt);
   }
   
-  for (a,b) in (A2[D2],ADR[D1]) do if (a!=b) then writeln("ERROR!!!!");
+  for (a,b) in zip(A2[D2],ADR[D1]) do if (a!=b) then writeln("ERROR!!!!");
   
   // ============================================================================== 
   
@@ -531,8 +531,8 @@ proc main(){
 
   //var D:[D1] real;
   
-  for (a,i) in (BDR,{1..n*n}) do a=i+100;
-  for (a,i) in (ADR,{1..n*n}) do a=i;
+  for (a,i) in zip(BDR,{1..n*n}) do a=i+100;
+  for (a,i) in zip(ADR,{1..n*n}) do a=i;
   
   if doDiagnostics {
     if printComm{
@@ -552,12 +552,12 @@ proc main(){
   
   }
  
-  for (a,b) in (BDR[D2],ADR[D1]) do if (a!=b) then writeln("ERROR!!!!");
+  for (a,b) in zip(BDR[D2],ADR[D1]) do if (a!=b) then writeln("ERROR!!!!");
   
   // ==============================================================================
   
   //  writeln("Default Rectangular <-- Default Rectangular. Example 2 :ADR",D1,"(L0) = BDR",D2,"(L0) on Locale 1");
-  for (a,i) in (ADR,{1..n*n}) do a=i;
+  for (a,i) in zip(ADR,{1..n*n}) do a=i;
   D1={1..n,1..n};
   D2=D1;
   if(numLocales<2){
@@ -585,7 +585,7 @@ proc main(){
 	}
 	writeln("Time: ", dt);
       }
-  for (a,b) in (BDR[D2],ADR[D1]) do if (a!=b) then writeln("ERROR!!!!");
+  for (a,b) in zip(BDR[D2],ADR[D1]) do if (a!=b) then writeln("ERROR!!!!");
     }
   }
  
@@ -600,13 +600,13 @@ proc main(){
   }
   else{
     if printOutput then writeln("Default Rectangular <-- Default Rectangular. Example 3 :ADR",D1,"(L0) = BDR",D2,"(L2) on Locale 1");
-    for (a,i) in (ADR,{1..n*n}) do a=i;
+    for (a,i) in zip(ADR,{1..n*n}) do a=i;
 
     on Locales(2)
       {
   
 	var CDR: [1..n,1..n] real;
-	for (a,i) in (CDR,{1..n*n}) do a=i+100;
+	for (a,i) in zip(CDR,{1..n*n}) do a=i+100;
 	if doDiagnostics {
 	  if printComm{
 	    resetCommDiagnostics();
@@ -628,7 +628,7 @@ proc main(){
 	  }
 	  writeln("Time: ", dt);
 	}
-	for (a,b) in (CDR[D2],ADR[D1]) do if (a!=b) then writeln("ERROR!!!!");
+	for (a,b) in zip(CDR[D2],ADR[D1]) do if (a!=b) then writeln("ERROR!!!!");
       }
   } 
 
@@ -636,9 +636,9 @@ proc main(){
 
 
   if printOutput then  writeln("Default Rectangular <-- Default Rectangular. Example 4 :ADR",D1,"(L0) = CDR",D2,"(L1) on Locale 1"); 
-  for (a,i) in (ADR,{1..n*n}) do a=i;
+  for (a,i) in zip(ADR,{1..n*n}) do a=i;
 
-  //for (a,i) in (CDR,{1..n*n}) do a=i+100;
+  //for (a,i) in zip(CDR,{1..n*n}) do a=i+100;
   if(numLocales<2){
     if printOutput then writeln("Default Rectangular <-- Default Rectangular. Example 4: Not enough number of Locales ",numLocales," (2 needed)");
   }
@@ -648,7 +648,7 @@ proc main(){
     {
 
       var CDR: [1..n,1..n] real;
-      for (a,i) in (CDR,{1..n*n}) do a=i+100;
+      for (a,i) in zip(CDR,{1..n*n}) do a=i+100;
       if doDiagnostics {
 	if printComm{
 	  resetCommDiagnostics();
@@ -670,16 +670,16 @@ proc main(){
 	}
 	writeln("Time: ", dt);
       }
-      for (a,b) in (CDR[D2],ADR[D1]) do if (a!=b) then writeln("ERROR!!!!");
+      for (a,b) in zip(CDR[D2],ADR[D1]) do if (a!=b) then writeln("ERROR!!!!");
     }
   }
   // ==============================================================================
 
   if printOutput then  writeln("Default Rectangular <-- Default Rectangular. Example 5 :ADR",D1,"(L1) = BDR",D2,"(L0) on Locale 1"); 
-  for (a,i) in (ADR,{1..n*n}) do a=i;
+  for (a,i) in zip(ADR,{1..n*n}) do a=i;
 
   //var CCDR:[1..n,1..n] real;
-  for (a,i) in (ADR,{1..n*n}) do a=i+100;
+  for (a,i) in zip(ADR,{1..n*n}) do a=i+100;
  
   if(numLocales<2){
     if printOutput then writeln("Default Rectangular <-- Default Rectangular. Example 5: Not enough number of Locales ",numLocales," (2 needed)");
@@ -690,7 +690,7 @@ proc main(){
     {
 
       var CDR: [1..n,1..n] real;
-      for (a,i) in (CDR,{1..n*n}) do a=i;
+      for (a,i) in zip(CDR,{1..n*n}) do a=i;
       if doDiagnostics {
 	if printComm{
 	  resetCommDiagnostics();
@@ -712,7 +712,7 @@ proc main(){
 	}
 	writeln("Time: ", dt);
       }
-      for (a,b) in (CDR[D1],ADR[D2]) do if (a!=b) then writeln("ERROR!!!!");
+      for (a,b) in zip(CDR[D1],ADR[D2]) do if (a!=b) then writeln("ERROR!!!!");
     }
   }
   // ==============================================================================
@@ -722,13 +722,13 @@ proc main(){
   var H: [D3] real;
   var G: [D3] real;
   if printOutput then  writeln("Default Rectangular <-- Default Rectangular. Example 6 :ADR",D3,"(L0) = CDR",D3,"(L1) on Locale 1");
-  // for (a,i) in (ADR,{1..n*n}) do a=i;
+  // for (a,i) in zip(ADR,{1..n*n}) do a=i;
 
   // on Locales(1)
   // {
   //var G: [D3] real;
   //  var CDR: [1..n,1..n] real;
-  //  for (a,i) in (G,{1..n*n}) do a=i+100;
+  //  for (a,i) in zip(G,{1..n*n}) do a=i+100;
   //  if doDiagnostics {
   //    resetCommDiagnostics();
   //    startCommDiagnostics();
@@ -749,17 +749,17 @@ proc main(){
   //    myPrintComms("");
   //    writeln("Time: ", dt);
   //  }
-  for (a,b) in (G[D3],H[D3]) do if (a!=b) then writeln("ERROR!!!!");
+  for (a,b) in zip(G[D3],H[D3]) do if (a!=b) then writeln("ERROR!!!!");
   // }
   // ==============================================================================
   //D1 = [1..n, 1..n by 2};
   //D2=D1;
 
   if printOutput then   writeln("Default Rectangular <-- Default Rectangular. Example 7 :ADR",D3,"(L1) = BDR",D3,"(L0) on Locale 1");
-  for (a,i) in (ADR,{1..n*n}) do a=i;
+  for (a,i) in zip(ADR,{1..n*n}) do a=i;
 
   //var CDR:[1..n,1..n] real;
-  for (a,i) in (ADR,{1..n*n}) do a=i+100;
+  for (a,i) in zip(ADR,{1..n*n}) do a=i+100;
    if(numLocales<2){
     if printOutput then writeln("Default Rectangular <-- Default Rectangular. Example 7: Not enough number of Locales ",numLocales," (2 needed)");
   }
@@ -769,7 +769,7 @@ proc main(){
     {
 
       var CDR: [1..n,1..n] real;
-      for (a,i) in (CDR,{1..n*n}) do a=i;
+      for (a,i) in zip(CDR,{1..n*n}) do a=i;
       if doDiagnostics {
 	resetCommDiagnostics();
 	startCommDiagnostics();
@@ -787,7 +787,7 @@ proc main(){
 	myPrintComms("");
 	writeln("Time: ", dt);
       }
-      for (a,b) in (CDR[D3],ADR[D3]) do if (a!=b) then writeln("ERROR!!!!");
+      for (a,b) in zip(CDR[D3],ADR[D3]) do if (a!=b) then writeln("ERROR!!!!");
     }
   }
 
@@ -795,7 +795,7 @@ proc main(){
 
   var D4 = {1..n by 2, 1..n by 2};
   if printOutput then writeln("Default Rectangular <-- Default Rectangular. Example 8 :ADR",D4,"(L0) = CDR",D4,"(L1) on Locale 1");
-  for (a,i) in (ADR,{1..n*n}) do a=i;
+  for (a,i) in zip(ADR,{1..n*n}) do a=i;
   
   if(numLocales<2){
     if printOutput then writeln("Default Rectangular <-- Default Rectangular. Example 8: Not enough number of Locales ",numLocales," (2 needed)");
@@ -806,7 +806,7 @@ proc main(){
     {
 
       var CDR: [1..n,1..n] real;
-      for (a,i) in (CDR,{1..n*n}) do a=i+100;
+      for (a,i) in zip(CDR,{1..n*n}) do a=i+100;
       if doDiagnostics {
 	resetCommDiagnostics();
 	startCommDiagnostics();
@@ -824,16 +824,16 @@ proc main(){
 	myPrintComms("");
 	writeln("Time: ", dt);
       }
-      for (a,b) in (CDR[D4],ADR[D4]) do if (a!=b) then writeln("ERROR!!!!");
+      for (a,b) in zip(CDR[D4],ADR[D4]) do if (a!=b) then writeln("ERROR!!!!");
     }
   }
 
   // ==============================================================================
 
   if printOutput then writeln("Default Rectangular <-- Default Rectangular. Example 9 :ADR",D4,"(L1) = BDR",D4,"(L0) on Locale 1");
-  for (a,i) in (ADR,{1..n*n}) do a=i;
+  for (a,i) in zip(ADR,{1..n*n}) do a=i;
 
-  for (a,i) in (ADR,{1..n*n}) do a=i+100;
+  for (a,i) in zip(ADR,{1..n*n}) do a=i+100;
    if(numLocales<2){
     if printOutput then writeln("Default Rectangular <-- Default Rectangular. Example 9: Not enough number of Locales ",numLocales," (2 needed)");
   }
@@ -843,7 +843,7 @@ proc main(){
     {
 
       var CDR: [1..n,1..n] real;
-      for (a,i) in (CDR,{1..n*n}) do a=i;
+      for (a,i) in zip(CDR,{1..n*n}) do a=i;
       if doDiagnostics {
 	resetCommDiagnostics();
 	startCommDiagnostics();
@@ -861,7 +861,7 @@ proc main(){
 	myPrintComms("");
 	writeln("Time: ", dt);
       }
-      for (a,b) in (CDR[D4],ADR[D4]) do if (a!=b) then writeln("ERROR!!!!");
+      for (a,b) in zip(CDR[D4],ADR[D4]) do if (a!=b) then writeln("ERROR!!!!");
     }
   }
 
@@ -870,7 +870,7 @@ proc main(){
   var D5 = {1..n by 10, 1..n};
 
   if printOutput then  writeln("Default Rectangular <-- Default Rectangular. Example 10 :ADR",D5,"(L0) = CDR",D5,"(L1) on Locale 1");
-  for (a,i) in (ADR,{1..n*n}) do a=i;
+  for (a,i) in zip(ADR,{1..n*n}) do a=i;
 
  if(numLocales<2){
     if printOutput then writeln("Default Rectangular <-- Default Rectangular. Example 10: Not enough number of Locales ",numLocales," (2 needed)");
@@ -881,7 +881,7 @@ proc main(){
     {
 
       var CDR: [1..n,1..n] real;
-      for (a,i) in (CDR,{1..n*n}) do a=i+100;
+      for (a,i) in zip(CDR,{1..n*n}) do a=i+100;
       if doDiagnostics {
 	resetCommDiagnostics();
 	startCommDiagnostics();
@@ -899,16 +899,16 @@ proc main(){
 	myPrintComms("");
 	writeln("Time: ", dt);
       }
-      for (a,b) in (CDR[D5],ADR[D5]) do if (a!=b) then writeln("ERROR!!!!");
+      for (a,b) in zip(CDR[D5],ADR[D5]) do if (a!=b) then writeln("ERROR!!!!");
     }
   }
   // ==============================================================================
 
   if printOutput then  writeln("Default Rectangular <-- Default Rectangular. Example 11 :ADR",D5,"(L1) = BDR",D5,"(L0) on Locale 1");
-  for (a,i) in (ADR,{1..n*n}) do a=i;
+  for (a,i) in zip(ADR,{1..n*n}) do a=i;
 
   //var CDR:[1..n,1..n] real;
-  for (a,i) in (ADR,{1..n*n}) do a=i+100;
+  for (a,i) in zip(ADR,{1..n*n}) do a=i+100;
   if(numLocales<2){
     if printOutput then writeln("Default Rectangular <-- Default Rectangular. Example 11: Not enough number of Locales ",numLocales," (2 needed)");
   }
@@ -918,7 +918,7 @@ proc main(){
     {
 
       var CDR: [1..n,1..n] real;
-      for (a,i) in (CDR,{1..n*n}) do a=i;
+      for (a,i) in zip(CDR,{1..n*n}) do a=i;
       if doDiagnostics {
 	resetCommDiagnostics();
 	startCommDiagnostics();
@@ -936,7 +936,7 @@ proc main(){
 	myPrintComms("");
 	writeln("Time: ", dt);
       }
-      for (a,b) in (CDR[D5],ADR[D5]) do if (a!=b) then writeln("ERROR!!!!");
+      for (a,b) in zip(CDR[D5],ADR[D5]) do if (a!=b) then writeln("ERROR!!!!");
     }
   }
   

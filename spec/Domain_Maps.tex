@@ -106,17 +106,17 @@ detail in~\rsec{Block_Dist}.
 The code
 \begin{chapel}
 use BlockDist;
-var MyBlockDist: dmap(Block(rank=2)) = new dmap(new Block([1..5,1..6]));
+var MyBlockDist: dmap(Block(rank=2)) = new dmap(new Block({1..5,1..6}));
 \end{chapel}
 creates a dmap value wrapping a two-dimensional Block distribution with a
-bounding box of \chpl{[1..5, 1..6]} over all of the locales.
+bounding box of \chpl{{1..5, 1..6}} over all of the locales.
 \end{example}
 
 \begin{example}
 The code
 \begin{chapel}
 use BlockDist;
-var MyBlockDist = new dmap(new Block([1..5,1..6]));
+var MyBlockDist = new dmap(new Block({1..5,1..6}));
 type MyBlockedDom = domain(2) dmapped MyBlockDist;
 \end{chapel}
 defines a two-dimensional rectangular domain type
@@ -133,12 +133,12 @@ instance of \chpl{dmap} implicitly.
 The code
 \begin{chapel}
 use BlockDist;
-type BlockDom = domain(2) dmapped Block([1..5,1..6]);
+type BlockDom = domain(2) dmapped Block({1..5,1..6});
 \end{chapel}
 is equivalent to
 \begin{chapel}
 use BlockDist;
-type BlockDom = domain(2) dmapped new dmap(new Block([1..5,1..6]));
+type BlockDom = domain(2) dmapped new dmap(new Block({1..5,1..6}));
 \end{chapel}
 \end{example}
 
@@ -156,8 +156,8 @@ has a default domain map.
 In the following code
 \begin{chapel}
 use BlockDist;
-var MyDomLiteral = [1..2,1..3];
-var MyBlockedDom: domain(2) dmapped Block([1..5,1..6]) = MyDomLiteral;
+var MyDomLiteral = {1..2,1..3};
+var MyBlockedDom: domain(2) dmapped Block({1..5,1..6}) = MyDomLiteral;
 \end{chapel}
 \chpl{MyDomLiteral} is given the inferred type of the domain literal
 and so will be mapped using a default map.
@@ -177,8 +177,8 @@ mapped-domain-expression:
 In the following code
 \begin{chapel}
 use BlockDist;
-var MyBlockedDomLiteral1 = [1..2,1..3] dmapped new dmap(new Block([1..5,1..6]));
-var MyBlockedDomLiteral2 = [1..2,1..3] dmapped Block([1..5,1..6]);
+var MyBlockedDomLiteral1 = {1..2,1..3} dmapped new dmap(new Block({1..5,1..6}));
+var MyBlockedDomLiteral2 = {1..2,1..3} dmapped Block({1..5,1..6});
 \end{chapel}
 both \chpl{MyBlockedDomLiteral1} and \chpl{MyBlockedDomLiteral2}
 will be mapped using a Block distribution.
@@ -197,7 +197,7 @@ over which the array was declared.
 In the code
 \begin{chapel}
 use BlockDist;
-var Dom: domain(2) dmapped Block([1..5,1..6]) = [1..5,1..6];
+var Dom: domain(2) dmapped Block({1..5,1..6}) = {1..5,1..6};
 var MyArray: [Dom] real;
 \end{chapel}
 the domain map used for \chpl{MyArray} is the Block
@@ -219,7 +219,7 @@ determined by its type and so does not change upon a domain assignment.
 In the code
 \begin{chapel}
 use BlockDist;
-var Dom1: domain(2) dmapped Block([1..5,1..6]) = [1..5,1..6];
+var Dom1: domain(2) dmapped Block({1..5,1..6}) = {1..5,1..6};
 var Dom2: domain(2) = Dom1;
 \end{chapel}
 \chpl{Dom2} is mapped using the default distribution, despite
@@ -230,7 +230,7 @@ var Dom2: domain(2) = Dom1;
 In the code
 \begin{chapel}
 use BlockDist;
-var Dom1: domain(2) dmapped Block([1..5,1..6]) = [1..5,1..6];
+var Dom1: domain(2) dmapped Block({1..5,1..6}) = {1..5,1..6};
 var Dom2 = Dom1;
 \end{chapel}
 \chpl{Dom2} is mapped using the same distribution as \chpl{Dom1}.

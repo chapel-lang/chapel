@@ -4,6 +4,7 @@ UTIL_SRCS = \
 	mysystem.cpp \
 	stringutil.cpp \
 	timer.cpp \
+	llvmUtil.cpp \
         tmpdirname.cpp
 
 SVN_SRCS = $(UTIL_SRCS)

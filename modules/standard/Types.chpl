@@ -169,6 +169,9 @@ proc numBytes(type t) param return numBits(t)/8;
 // min(type) -- returns the minimum value a type can store
 //
 
+proc min(type t) where t == bool
+  return false;
+
 proc min(type t) where _isIntegralType(t) || _isFloatType(t)
   return __primitive( "_min", t);
 
@@ -182,6 +185,9 @@ proc min(type t) where _isComplexType(t) {
 //
 // max(type) -- returns the maximum value a type can store
 //
+
+proc max(type t) where t == bool
+  return true;
 
 proc max(type t) where _isIntegralType(t) || _isFloatType(t)
   return __primitive( "_max", t);
@@ -218,4 +224,33 @@ proc enum_mintype(type t: enumerated) type {
 proc numBits(type t: enumerated) param {
   return numBits(enum_mintype(t));
 }
+
+
+//
+// identity functions (for reductions)
+//
+inline proc _prod_id(type t) return 1:t;
+inline proc _land_id(type t) return true;
+inline proc _lor_id(type t) return false;
+inline proc _lxor_id(type t) return false;
+inline proc _band_id(type t) {
+  // MPF - this doesn't really make sense for floating-point types,
+  // but old code had it casting MAX_UINT to the same type...
+  // I just moved it from the code generator since we don't need
+  // a primitive to generate constants.
+  if t == bool then return true;
+  if t == int(8) then return -1:t;
+  if t == int(16) then return -1:t;
+  if t == int(32) then return -1:t;
+  if t == int(64) then return -1:t;
+  if t == real(32) then return max(uint(32)):t;
+  if t == real(64) then return max(uint(64)):t;
+  if t == imag(32) then return max(uint(32)):t;
+  if t == imag(64) then return max(uint(64)):t;
+  if t == complex(64) then return (max(uint(32)):real(32), max(uint(32)):real(32)):t;
+  if t == complex(128) then return (max(uint(64)):real(64), max(uint(64)):real(64)):t;
+  return max(t);
+}
+inline proc _bor_id(type t) return 0:t;
+inline proc _bxor_id(type t) return 0:t;
 

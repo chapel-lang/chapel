@@ -39,7 +39,7 @@ for block in Dom1.newThese(IteratorType.leader) {
   // 
   on block {
     writeln("locale ", here, " is being asked to follow ", block);
-    for ijk in (Dom1.newThese(IteratorType.follower, block),
+    for ijk in zip(Dom1.newThese(IteratorType.follower, block),
                 Dom2.newThese(IteratorType.follower, block),
                 Dom3.newThese(IteratorType.follower, block)) {
       writeln("ijk = ", ijk);
@@ -57,7 +57,7 @@ writeln();
 for block in Dom2.newThese(IteratorType.leader) {
   on block {
     writeln("locale ", here, " is being asked to follow ", block);
-    for ijk in (Dom1.newThese(IteratorType.follower, block),
+    for ijk in zip(Dom1.newThese(IteratorType.follower, block),
                 Dom2.newThese(IteratorType.follower, block),
                 Dom3.newThese(IteratorType.follower, block)) {
       writeln("ijk = ", ijk);
@@ -70,7 +70,7 @@ writeln();
 for block in Dom3.newThese(IteratorType.leader) {
   on block {
     writeln("locale ", here, " is being asked to follow ", block);
-    for ijk in (Dom1.newThese(IteratorType.follower, block),
+    for ijk in zip(Dom1.newThese(IteratorType.follower, block),
                 Dom2.newThese(IteratorType.follower, block),
                 Dom3.newThese(IteratorType.follower, block)) {
       writeln("ijk = ", ijk);

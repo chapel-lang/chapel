@@ -44,7 +44,7 @@ proc main() {
       for trial in 1..numTrials {
         const startTime = getCurrentTime();
         local {
-	forall (a, b, c) in (myA, myB, myC) do
+	forall (a, b, c) in zip(myA, myB, myC) do
 	  a = b + alpha * c;
         }
         localTimings(trial) = getCurrentTime() - startTime;
@@ -96,12 +96,12 @@ proc initVectors(B, C, ProblemSpace) {
 proc verifyResults(A, B, C) {
   if (printArrays) then writelnFragArray("A is:     ", A, "\n");
 
-  forall (b, c) in (B, C) do
+  forall (b, c) in zip(B, C) do
     b += alpha *c;  
 
   if (printArrays) then writelnFragArray("A-hat is: ", B, "\n");
 
-  const infNorm = max reduce [(a,b) in (A,B)] abs(a - b);
+  const infNorm = max reduce [(a,b) in zip(A,B)] abs(a - b);
 
   return (infNorm <= epsilon);
 }

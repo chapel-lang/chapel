@@ -247,7 +247,7 @@ module SSCA2_kernels
                                                 vertex_domain.type);
 
       // Initialize
-      coforall (t, i) in (TPVLocaleSpace, TPVSpace) do on TPVLocaleSpace.dist.idxToLocale(t) {
+      coforall (t, i) in zip(TPVLocaleSpace, TPVSpace) do on TPVLocaleSpace.dist.idxToLocale(t) {
           TPV[i] = new taskPrivateData(domain(index(vertex_domain)), vertex_domain);
           var tpv = TPV[i];
           forall v in vertex_domain do

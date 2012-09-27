@@ -48,26 +48,31 @@ BlockStmt* buildDoWhileLoopStmt(Expr* cond, BlockStmt* body);
 BlockStmt* buildSerialStmt(Expr* cond, BlockStmt* body);
 BlockStmt* buildCoforallLoopStmt(Expr* indices,
                                  Expr* iterator,
-                                 BlockStmt* body);
+                                 BlockStmt* body,
+                                 bool zippered = false);
 BlockStmt* buildGotoStmt(GotoTag tag, const char* name);
 BlockStmt* buildPrimitiveStmt(PrimitiveTag tag, Expr* e1 = NULL, Expr* e2 = NULL);
 BlockStmt* buildForLoopStmt(Expr* indices,
                             Expr* iterator,
                             BlockStmt* body,
-                            bool coforall = false);
+                            bool coforall = false,
+                            bool zippered = false);
 BlockStmt* buildForallLoopStmt(Expr* indices,
                                Expr* iterator,
-                               BlockStmt* body);
+                               BlockStmt* body,
+                               bool zippered = false);
 CallExpr* buildForLoopExpr(Expr* indices,
                            Expr* iterator,
                            Expr* expr,
                            Expr* cond = NULL,
-                           bool maybeArrayType = false);
+                           bool maybeArrayType = false,
+                           bool zippered = false);
 CallExpr* buildForallLoopExpr(Expr* indices,
                               Expr* iterator,
                               Expr* expr,
                               Expr* cond = NULL,
-                              bool maybeArrayType = false);
+                              bool maybeArrayType = false,
+                              bool zippered = false);
 BlockStmt* buildParamForLoopStmt(const char* index, Expr* range, BlockStmt* block);
 BlockStmt* buildAssignment(Expr* lhs, Expr* rhs, const char* op = NULL);
 BlockStmt* buildLAndAssignment(Expr* lhs, Expr* rhs);
@@ -75,8 +80,8 @@ BlockStmt* buildLOrAssignment(Expr* lhs, Expr* rhs);
 BlockStmt* buildSelectStmt(Expr* s, BlockStmt* whenstmts);
 BlockStmt* buildTypeSelectStmt(CallExpr* s, BlockStmt* whenstmts);
 
-CallExpr* buildReduceExpr(Expr* op, Expr* data);
-CallExpr* buildScanExpr(Expr* op, Expr* data);
+CallExpr* buildReduceExpr(Expr* op, Expr* data, bool zippered = false);
+CallExpr* buildScanExpr(Expr* op, Expr* data, bool zippered = false);
 
 BlockStmt* buildVarDecls(BlockStmt* stmts, Flag externconfig, Flag varconst, char* docs);
 

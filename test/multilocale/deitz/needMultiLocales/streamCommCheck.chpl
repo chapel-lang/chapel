@@ -17,7 +17,7 @@ proc main() {
   randlist.fillRandom(B);
   randlist.fillRandom(C);
   startCommDiagnostics();
-  forall (a, b, c) in (A, B, C) do
+  forall (a, b, c) in zip(A, B, C) do
     a = b + alpha * c;
   stopCommDiagnostics();
 

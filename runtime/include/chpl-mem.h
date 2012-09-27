@@ -58,11 +58,6 @@ void chpl_mem_exit(void);
 //
 void chpl_mem_actualSharedHeap(void** start_p, size_t* size_p);
 
-#define chpl_mem_allocPermitZero(s,d,l,f) ((s == 0) \
-                                           ? NULL \
-                                           : chpl_mem_alloc(s,d,l,f))
-#define chpl_mem_alloc(size, description, lineno, filename) \
-  chpl_mem_allocMany(1, size, description, lineno, filename)
 
 void chpl_mem_check_pre(size_t number, size_t size, chpl_bool zeroOK,
                          chpl_mem_descInt_t description,
@@ -89,6 +84,17 @@ void* chpl_mem_allocMany(size_t number, size_t size,
   }
   return memAlloc;
 }
+
+static ___always_inline
+void* chpl_mem_alloc(size_t size, chpl_mem_descInt_t description, int32_t lineno, chpl_string filename) {
+  return chpl_mem_allocMany(1, size, description, lineno, filename);
+}
+static ___always_inline
+void* chpl_mem_allocPermitZero(size_t size, chpl_mem_descInt_t description, int32_t lineno, chpl_string filename) {
+  return (size==0) ? NULL : chpl_mem_alloc(size, description, lineno, filename);
+}
+
+
 
 static ___always_inline
 void* chpl_mem_allocManyZero(size_t number, size_t size,

@@ -45,7 +45,7 @@ proc main() {
     // A = B + alpha * C;
     // But this doesn't yet result in parallelism
 
-    forall (a, b, c) in (A, B, C) {
+    forall (a, b, c) in zip(A, B, C) {
       a = b + alpha * c;
     }
 
@@ -88,7 +88,7 @@ proc initVectors(B, C) {
 proc verifyResults(A, B, C) {
   if (printArrays) then writeln("A is: ", A, "\n");
 
-  const infNorm = max reduce [(a,b,c) in (A,B,C)] abs(a - (b + alpha * c));
+  const infNorm = max reduce [(a,b,c) in zip(A,B,C)] abs(a - (b + alpha * c));
 
   return (infNorm <= epsilon);
 }

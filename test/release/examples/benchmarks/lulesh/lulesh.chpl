@@ -117,11 +117,11 @@ var x, y, z: [Nodes] real; //coordinates
 
 /* Read input coordinates */
 
-for (locX,locY,locZ) in (x,y,z) do reader.read(locX, locY, locZ);
+for (locX,locY,locZ) in zip(x,y,z) do reader.read(locX, locY, locZ);
 
 if debug {
   writeln("locations are:");
-  for (locX,locY,locZ) in (x,y,z) do
+  for (locX,locY,locZ) in zip(x,y,z) do
     writeln((locX, locY, locZ));
 }
 
@@ -156,12 +156,12 @@ if debugIO {
 
 var lxim, lxip, letam, letap, lzetam, lzetap: [Elems] index(Elems);
 
-for (xm,xp,em,ep,zm,zp) in (lxim, lxip, letam, letap, lzetam, lzetap) do
+for (xm,xp,em,ep,zm,zp) in zip(lxim, lxip, letam, letap, lzetam, lzetap) do
   reader.read(xm,xp,em,ep,zm,zp);
 
 if debugIO {
   writeln("greek stuff:");
-  for (xm,xp,em,ep,zm,zp) in (lxim, lxip, letam, letap, lzetam, lzetap) do
+  for (xm,xp,em,ep,zm,zp) in zip(lxim, lxip, letam, letap, lzetam, lzetap) do
     writeln((xm,xp,em,ep,zm,zp));
 }
 
@@ -280,7 +280,7 @@ var xd, yd, zd: [Nodes] real, // velocities
 
     xdd, ydd, zdd: [Nodes] real, // acceleration
 
-    fx$, fy$, fz$: [Nodes] atomic real, // forces
+    fx, fy, fz: [Nodes] atomic real, // forces
 
     nodalMass: [Nodes] real; // mass
 
@@ -309,7 +309,7 @@ proc main() {
     LagrangeLeapFrog();
 
     if debug {
-      //      deprint("[[ Forces ]]", fx$, fy$, fz$);
+      //      deprint("[[ Forces ]]", fx, fy, fz);
       deprint("[[ Positions ]]", x, y, z);
       deprint("[[ p, e, q ]]", p, e, q);
     }
@@ -357,9 +357,9 @@ proc LuleshData() {
 proc initializeFieldData() {
   // This is a temporary array used to accumulate masses in parallel
   // without losing updates by using 'atomic' variables
-  var massAccum$: [Nodes] atomic real;
+  var massAccum: [Nodes] atomic real;
   for i in Nodes {
-    massAccum$[i].write(0.0);
+    massAccum[i].write(0.0);
   }
 
   forall eli in Elems {
@@ -371,16 +371,16 @@ proc initializeFieldData() {
     elemMass[eli] = volume;
 
     for neighbor in elemToNodes[eli] {
-      massAccum$[neighbor].add(volume);
+      massAccum[neighbor].add(volume);
     }
   }
 
   // When we're done, copy the accumulated masses into nodalMass, at
-  // which point the massAccum$ array can go away (and will at the
+  // which point the massAccum array can go away (and will at the
   // procedure's return
 
   for i in Nodes {
-    nodalMass[i] = massAccum$[i].read() / 8.0;
+    nodalMass[i] = massAccum[i].read() / 8.0;
   }
 }
 
@@ -416,7 +416,7 @@ proc setupBoundaryConditions() {
   // all three SYMM flags set, which will have the largest
   // integral value.  Thus, we can use a maxloc to identify it.
   //
-  var (check, loc) = maxloc reduce (elemBC, Elems);
+  var (check, loc) = maxloc reduce zip(elemBC, Elems);
 
   if debug then writeln("Found the octant corner at: ", loc);
 
@@ -917,7 +917,7 @@ proc CalcCourantConstraintForElems() {
   var courant_elem: index(Elems);
 
   const (val, loc) = minloc reduce
-                       ([indx in MatElems] computeDTF(indx),
+                       zip([indx in MatElems] computeDTF(indx),
                         MatElems);
 
   if (val == max(real)) {
@@ -933,7 +933,7 @@ proc CalcHydroConstraintForElems() {
   var dthydro_elem: index(Elems);
 
   const (val, loc) = minloc reduce 
-                       ([indx in MatElems] 
+                       zip([indx in MatElems] 
                           (if vdov[indx] == 0.0 
                              then max(real)
                              else dvovmax / (abs(vdov[indx])+1.0e-20)),
@@ -951,12 +951,10 @@ proc CalcHydroConstraintForElems() {
  * applied boundary conditions and slide surface considerations */
 
 proc CalcForceForNodes() {
-  //zero out all forces (array assignment)
-  for i in Nodes {
-    fx$[i].write(0);
-    fy$[i].write(0);
-    fz$[i].write(0);
-  }
+  //zero out all forces
+  forall x in fx do x.write(0);
+  forall y in fy do y.write(0);
+  forall z in fz do z.write(0);
 
   /* Calcforce calls partial, force, hourq */
   CalcVolumeForceForElems();
@@ -1005,9 +1003,9 @@ proc IntegrateStressForElems(sigxx, sigyy, sigzz, determ) {
     }
 
     for (noi, t) in elemToNodesTuple(k) {
-      fx$[noi].add(fx_local[t]);
-      fy$[noi].add(fy_local[t]);
-      fz$[noi].add(fz_local[t]);
+      fx[noi].add(fx_local[t]);
+      fy[noi].add(fy_local[t]);
+      fz[noi].add(fz_local[t]);
     }
   }
 }
@@ -1047,7 +1045,7 @@ proc CalcHourglassControlForElems(determ: [Elems] real) {
 }
 
 
-const gammaCoef: [1..4, 1..8] real = 
+const gammaCoef: 4*(8*real) = // WAS: [1..4, 1..8] real = 
                 (( 1.0,  1.0, -1.0, -1.0, -1.0, -1.0,  1.0,  1.0),
                  ( 1.0, -1.0, -1.0,  1.0, -1.0,  1.0,  1.0, -1.0),
                  ( 1.0, -1.0,  1.0, -1.0,  1.0, -1.0,  1.0, -1.0),
@@ -1073,13 +1071,13 @@ proc CalcFBHourglassForceForElems(determ, x8n, y8n, z8n, dvdx, dvdy, dvdz) {
         var hourmodx, hourmody, hourmodz: real;
         // reduction
         for param j in 1..8 {
-          hourmodx += x8n[eli][j] * gammaCoef[i,j];
-          hourmody += y8n[eli][j] * gammaCoef[i,j];
-          hourmodz += z8n[eli][j] * gammaCoef[i,j];
+          hourmodx += x8n[eli][j] * gammaCoef[i][j];
+          hourmody += y8n[eli][j] * gammaCoef[i][j];
+          hourmodz += z8n[eli][j] * gammaCoef[i][j];
         }
 
         for param j in 1..8 {
-          hourgam(j)(i) = gammaCoef[i,j] - volinv * 
+          hourgam(j)(i) = gammaCoef[i][j] - volinv * 
             (dvdx[eli][j] * hourmodx +
              dvdy[eli][j] * hourmody +
              dvdz[eli][j] * hourmodz);
@@ -1098,9 +1096,9 @@ proc CalcFBHourglassForceForElems(determ, x8n, y8n, z8n, dvdx, dvdy, dvdz) {
       // } // end local
 
     for (noi,i) in elemToNodesTuple(eli) {
-      fx$[noi].add(hgfx[i]);
-      fy$[noi].add(hgfy[i]);
-      fz$[noi].add(hgfz[i]);
+      fx[noi].add(hgfx[i]);
+      fy[noi].add(hgfy[i]);
+      fz[noi].add(hgfz[i]);
     }
   }
 }
@@ -1108,9 +1106,9 @@ proc CalcFBHourglassForceForElems(determ, x8n, y8n, z8n, dvdx, dvdy, dvdz) {
 
 proc CalcAccelerationForNodes() {
   forall noi in Nodes do local {
-      xdd[noi] = fx$[noi].read() / nodalMass[noi];
-      ydd[noi] = fy$[noi].read() / nodalMass[noi];
-      zdd[noi] = fz$[noi].read() / nodalMass[noi];
+      xdd[noi] = fx[noi].read() / nodalMass[noi];
+      ydd[noi] = fy[noi].read() / nodalMass[noi];
+      zdd[noi] = fz[noi].read() / nodalMass[noi];
     }
 }
 
