@@ -1,0 +1,17 @@
+================================
+MassiveThreads README for Chapel
+================================
+
+This copy of MassiveThreads is being released with Chapel for
+convenience and uses a snapshot obtained from the MassiveThreads
+team at:
+
+   http://code.google.com/p/massivethreads/
+
+We have made the following local modifications to the official
+sources:
+
+* performed the recommended update to myth_config.h from the
+  massivethreads README for Chapel users to save individuals
+  the trouble.
+
