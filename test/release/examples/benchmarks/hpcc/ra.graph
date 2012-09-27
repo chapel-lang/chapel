@@ -1,11 +1,11 @@
-perfkeys: Execution time =
-files: hpcc-ra.dat
+perfkeys: Execution time =, Execution time =
+files: hpcc-ra.dat, hpcc-ra-atomics.dat
 graphtitle: HPCC RA Performance
 ylabel: Time (seconds)
 graphname: hpcc-ra
 
-perfkeys: Performance (GUPS) =
-files: hpcc-ra.dat
+perfkeys: Performance (GUPS) =, Performance (GUPS) =
+files: hpcc-ra.dat, hpcc-ra-atomics.dat
 graphtitle: HPCC RA Performance (GUPS)
 ylabel: Performance (GUPS)
 graphname: hpcc-ra-gups
