@@ -1,4 +1,4 @@
-TASKS_SRCS = tasks-myth.c
+TASKS_SRCS = tasks-massivethreads.c
 
 SVN_SRCS = $(TASKS_SRCS)
 SRCS = $(SVN_SRCS)
