@@ -11,6 +11,7 @@ clean: FORCE
 	cd dlmalloc && $(MAKE) clean
 	cd gasnet && $(MAKE) clean
 	cd gmp && $(MAKE) clean
+	cd massivethreads && $(MAKE) clean
 	cd nanox && $(MAKE) clean
 	cd qthread && $(MAKE) clean
 	cd tcmalloc && $(MAKE) clean
@@ -19,6 +20,7 @@ clobber: FORCE
 	cd dlmalloc && $(MAKE) clobber
 	cd gasnet && $(MAKE) clobber
 	cd gmp && $(MAKE) clobber
+	cd massivethreads && $(MAKE) clobber
 	cd nanox && $(MAKE) clobber
 	cd qthread && $(MAKE) clobber
 	cd tcmalloc && $(MAKE) clobber
@@ -37,6 +39,10 @@ $(GASNET_INSTALL_DIR):
 gmp: $(GMP_INSTALL_DIR)
 $(GMP_INSTALL_DIR):
 	cd gmp && $(MAKE)
+
+massivethreads: $(MASSIVETHREADS_INSTALL_DIR)
+$(MASSIVETHREADS_INSTALL_DIR):
+	cd massivethreads && $(MAKE)
 
 nanox: $(NANOX_INSTALL_DIR)
 $(NANOX_INSTALL_DIR):

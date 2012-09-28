@@ -1,0 +1,1 @@
+--no-warnings --fast -sN_U="2**(n-10)"
