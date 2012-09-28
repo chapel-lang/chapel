@@ -4,6 +4,8 @@
 #include <string.h>
 #include <assert.h>
 #include "gasnet.h"
+#include "gasnet_vis.h"
+#include "gasnet_coll.h"
 #include "gasnet_tools.h"
 #include "chplrt.h"
 #include "chpl-comm.h"
@@ -649,6 +651,114 @@ void  chpl_comm_get(void* addr, int32_t locale, void* raddr,
   }
 }
 
+//
+// This is an adaptor from Chapel code to GASNet's gasnet_gets_bulk. It does:
+// * convert count[0] and all of 'srcstr' and 'dststr' from counts of element
+//   to counts of bytes,
+// * convert the element types of the above C arrays from int32_t to size_t.
+// Maybe this can be done in Chapel, but would it be as efficient?
+//
+void  chpl_comm_get_strd(void* dstaddr, void* dststrides, int32_t srclocale, 
+		     void* srcaddr, void* srcstrides, void* count,
+		     int32_t stridelevels, int32_t elemSize, int32_t typeIndex, 
+		     int ln, chpl_string fn) {
+  int i;
+  const size_t strlvls=(size_t)stridelevels;
+  const gasnet_node_t srcnode=(gasnet_node_t)srclocale;
+
+  size_t dststr[strlvls];
+  size_t srcstr[strlvls];
+  size_t cnt[strlvls+1];
+
+  //Only count[0] and strides are meassured in number of bytes.
+  cnt[0]=((int32_t*)count)[0] * elemSize;
+
+  if(strlvls>0){
+    srcstr[0] = ((int32_t*)srcstrides)[0] * elemSize;
+    dststr[0] = ((int32_t*)dststrides)[0] * elemSize;
+    for (i=1; i<strlvls; i++)
+      { 
+	srcstr[i] = ((int32_t*)srcstrides)[i] * elemSize;
+	dststr[i] = ((int32_t*)dststrides)[i] * elemSize;
+	cnt[i]=((int32_t*)count)[i];
+      }
+    cnt[strlvls]=((int32_t*)count)[strlvls];
+  }
+
+  if (chpl_verbose_comm && !chpl_comm_no_debug_private){
+    printf("%d: %s:%d: remote get from %d. strlvls:%d. elemSize:%d  sizeof(size_t):%d  sizeof(gasnet_node_t):%d\n", chpl_localeID, fn, ln, srclocale,(int)strlvls,elemSize,(int)sizeof(size_t),(int)sizeof(gasnet_node_t));
+
+    printf("dststrides in bytes:\n");		      
+    for (i=0;i<strlvls;i++) printf(" %d ",(int)dststr[i]);
+    printf("\n");		      
+    printf("srcstrides in bytes:\n");		      
+    for (i=0;i<strlvls;i++) printf(" %d ",(int)srcstr[i]);
+    printf("\n");		      
+    printf("count (count[0] in bytes):\n");		      
+    for (i=0;i<=strlvls;i++) printf(" %d ",(int)cnt[i]);
+    printf("\n");		      
+  }
+  // the case (chpl_localeID == srclocale) is internally managed inside gasnet
+  if (chpl_verbose_comm && !chpl_comm_no_debug_private)
+    printf("%d: %s:%d: remote get from %d\n", chpl_localeID, fn, ln, srclocale);
+  if (chpl_comm_diagnostics && !chpl_comm_no_debug_private) {
+    chpl_sync_lock(&chpl_comm_diagnostics_sync);
+    chpl_comm_commDiagnostics.get++;
+    chpl_sync_unlock(&chpl_comm_diagnostics_sync);
+  }
+  gasnet_gets_bulk(dstaddr, dststr, srcnode, srcaddr, srcstr, cnt, strlvls); 
+}
+
+// See the comment for cmpl_comm_gets().
+void  chpl_comm_put_strd(void* dstaddr, void* dststrides, int32_t dstlocale, 
+		     void* srcaddr, void* srcstrides, void* count,
+		     int32_t stridelevels, int32_t elemSize, int32_t typeIndex, 
+		     int ln, chpl_string fn) {
+  int i;
+  const size_t strlvls=(size_t)stridelevels;
+  const gasnet_node_t dstnode=(gasnet_node_t)dstlocale;
+
+  size_t dststr[strlvls];
+  size_t srcstr[strlvls];
+  size_t cnt[strlvls+1];
+
+  //Only count[0] and strides are meassured in number of bytes.
+  cnt[0]=((int32_t*)count)[0] * elemSize;
+  if(strlvls>0){
+    srcstr[0] = ((int32_t*)srcstrides)[0] * elemSize;
+    dststr[0] = ((int32_t*)dststrides)[0] * elemSize;
+    for (i=1; i<strlvls; i++)
+      { 
+	srcstr[i] = ((int32_t*)srcstrides)[i] * elemSize;
+	dststr[i] = ((int32_t*)dststrides)[i] * elemSize;
+	cnt[i]=((int32_t*)count)[i];
+      }
+    cnt[strlvls]=((int32_t*)count)[strlvls];
+  }
+  if (chpl_verbose_comm && !chpl_comm_no_debug_private){
+    printf("%d: %s:%d: remote get from %d. strlvls:%d. elemSize:%d  sizeof(size_t):%d  sizeof(gasnet_node_t):%d\n", chpl_localeID, fn, ln, dstlocale,(int)strlvls,elemSize,(int)sizeof(size_t),(int)sizeof(gasnet_node_t));
+
+    printf("dststrides in bytes:\n");		      
+    for (i=0;i<strlvls;i++) printf(" %d ",(int)dststr[i]);
+    printf("\n");		      
+    printf("srcstrides in bytes:\n");		      
+    for (i=0;i<strlvls;i++) printf(" %d ",(int)srcstr[i]);
+    printf("\n");		      
+    printf("count (count[0] in bytes):\n");		      
+    for (i=0;i<=strlvls;i++) printf(" %d ",(int)cnt[i]);
+    printf("\n");		      
+  }
+
+  // the case (chpl_localeID == dstlocale) is internally managed inside gasnet
+  if (chpl_verbose_comm && !chpl_comm_no_debug_private)
+    printf("%d: %s:%d: remote get from %d\n", chpl_localeID, fn, ln, dstlocale);
+  if (chpl_comm_diagnostics && !chpl_comm_no_debug_private) {
+    chpl_sync_lock(&chpl_comm_diagnostics_sync);
+    chpl_comm_commDiagnostics.put++;
+    chpl_sync_unlock(&chpl_comm_diagnostics_sync);
+  }
+  gasnet_puts_bulk(dstnode, dstaddr, dststr, srcaddr, srcstr, cnt, strlvls); 
+}
 
 ////GASNET - introduce locale-int size
 ////GASNET - is caller in fork_t redundant? active message can determine this.

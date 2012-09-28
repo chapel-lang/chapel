@@ -12,6 +12,7 @@ var privatizeLock$: sync int;
 
 config param debugBulkTransfer = false;
 config param useBulkTransfer = true;
+config param useBulkTransferStride = false;
 
 pragma "privatized class"
 proc _isPrivatized(value) param
@@ -1524,6 +1525,16 @@ proc chpl__compatibleForBulkTransfer(a:[], b:[]) param {
   return true;
 }
 
+proc chpl__compatibleForBulkTransferStride(a:[], b:[]) param {
+  if a.eltType != b.eltType then return false;
+  if !chpl__supportedDataTypeForBulkTransfer(a.eltType) then return false;
+  if a._value.type != b._value.type {
+    if (!a._value.isDefaultRectangular() || !b._value.isBlockDist()) then return false;
+  }
+  if !a._value.dsiSupportsBulkTransfer() then return false;
+  return true;
+}
+
 // This must be a param function
 proc chpl__supportedDataTypeForBulkTransfer(type t) param {
   var x:t;
@@ -1543,6 +1554,7 @@ proc chpl__supportedDataTypeForBulkTransfer(x) param return true;
 
 
 proc chpl__useBulkTransfer(a:[], b:[]) {
+  //if debugDefaultDistBulkTransfer then writeln("chpl__useBulkTransfer");
 
   // constraints specific to a particular domain map array type
   if !a._value.doiCanBulkTransfer() then return false;
@@ -1553,7 +1565,24 @@ proc chpl__useBulkTransfer(a:[], b:[]) {
     if a._value.dom.dsiDim(i).length !=
        b._value.dom.dsiDim(i).length then return false;
   }
+  return true;
+}
 
+//NOTE: This function also checks for equal lengths in all dimensions, 
+//as the previous one (chpl__useBulkTransfer) so depending on the order they
+//are called, this can be factored out.
+proc chpl__useBulkTransferStride(a:[], b:[]) {
+  //if debugDefaultDistBulkTransfer then writeln("chpl__useBulkTransferStride");
+  
+  // constraints specific to a particular domain map array type
+  if !a._value.doiCanBulkTransferStride() then return false;
+  if !b._value.doiCanBulkTransferStride() then return false;
+  
+  for param i in 1..a._value.rank {
+    // size must be the same in each dimension
+    if a._value.dom.dsiDim(i).length !=
+       b._value.dom.dsiDim(i).length then return false;
+  }
   return true;
 }
 
@@ -1562,17 +1591,28 @@ proc chpl__useBulkTransfer(a: [], b) param return false;
 inline proc =(a: [], b) {
   if (chpl__isArray(b) || chpl__isDomain(b)) && a.rank != b.rank then
     compilerError("rank mismatch in array assignment");
+  
   if chpl__isArray(b) && b._value == nil then
     return a;
 
-  // This outer conditional must result in a param
-  if useBulkTransfer && chpl__isArray(b) &&
-     chpl__compatibleForBulkTransfer(a, b) &&
-    !chpl__serializeAssignment(a, b) {
-    if chpl__useBulkTransfer(a, b) {
+  // try bulk transfer
+  if chpl__isArray(b) && !chpl__serializeAssignment(a, b) {
+    if (useBulkTransfer &&
+        chpl__compatibleForBulkTransfer(a, b) &&
+        chpl__useBulkTransfer(a, b))
+    {
       a._value.doiBulkTransfer(b);
       return a;
     }
+    if (useBulkTransferStride &&
+        chpl__compatibleForBulkTransferStride(a, b) &&
+        chpl__useBulkTransferStride(a, b))
+    {
+      a._value.doiBulkTransferStride(b);
+      return a;
+    }
+    //if debugDefaultDistBulkTransfer then
+    //  writeln("proc =(a:[],b): bulk transfer did not happen");
   }
 
   if chpl__serializeAssignment(a, b) {

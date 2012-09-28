@@ -54,7 +54,9 @@ typedef enum {
   CHPL_RT_MD_THREAD_LIST_DESCRIPTOR,
   CHPL_RT_MD_IO_BUFFER,
   CHPL_RT_MD_GMP,
-  CHPL_RT_MD_NUM
+  CHPL_RT_MD_GETS_PUTS_STRIDES,
+  CHPL_RT_MD_GETS_PUTS_COUNTS,
+  CHPL_RT_MD_NUM                        // this must be the last entry
 } chpl_mem_rtMemDesc_t;
 
 

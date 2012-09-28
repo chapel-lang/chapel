@@ -1907,6 +1907,24 @@ void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3, GenRet a4,
   codegenCall(fnName, args);
 }*/
 
+static
+void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3, GenRet a4, GenRet a5, GenRet a6, GenRet a7, GenRet a8, GenRet a9, GenRet a10, GenRet a11)
+{
+  std::vector<GenRet> args;
+  args.push_back(a1);
+  args.push_back(a2);
+  args.push_back(a3);
+  args.push_back(a4);
+  args.push_back(a5);
+  args.push_back(a6);
+  args.push_back(a7);
+  args.push_back(a8);
+  args.push_back(a9);
+  args.push_back(a10);
+  args.push_back(a11);
+  codegenCall(fnName, args);
+}
+
 static 
 GenRet codegenBasicPrimitiveExpr(CallExpr* call) {
   std::vector<GenRet> args;
@@ -3651,7 +3669,7 @@ GenRet CallExpr::codegen() {
       break;
     case PRIM_CHPL_COMM_GET:
     case PRIM_CHPL_COMM_PUT: {
-      // args are  localvar, locale, remote addr, get(4)==length, line, file
+      // args are  localvar, locale, remote addr, eltSize, get(4)==length, line, file
       const char* fn;
       if (primitive->tag == PRIM_CHPL_COMM_GET) {
         fn = "chpl_gen_comm_get";
@@ -3710,6 +3728,118 @@ GenRet CallExpr::codegen() {
           eltSize,genTypeStructureIndex(dt), len,
           get(5), get(6));
                    
+      break;
+    }
+      //Strided versions of get and put
+    case PRIM_CHPL_COMM_PUT_STRD: 
+    case PRIM_CHPL_COMM_GET_STRD: {
+      //args are: localvar, dststr addr, locale, remote addr, srcstr addr
+      // count addr, strlevels, elem
+      const char* fn;
+      if (primitive->tag == PRIM_CHPL_COMM_GET_STRD) {
+	fn = "chpl_gen_comm_get_strd";
+      } else {
+	fn = "chpl_gen_comm_put_strd";
+      }
+      TypeSymbol *dt;
+      TypeSymbol *dt2;
+
+      GenRet localAddr = codegenValuePtr(get(1));
+
+      // destination data array
+      if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
+        Symbol *sym = get(1)->typeInfo()->getField("addr", true);
+        INT_ASSERT(sym);
+        dt = sym->typeInfo()->getValType()->symbol;
+        localAddr = codegenRaddr(localAddr);
+      } else {
+        dt = get(1)->typeInfo()->getValType()->symbol;
+        if (get(1)->typeInfo()->symbol->hasFlag(FLAG_REF)) {
+          localAddr = codegenDeref(localAddr);
+        }
+      }
+
+      // destination strides local array
+      GenRet dststr = codegenValuePtr(get(2));
+
+      if (get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
+        Symbol *sym = get(2)->typeInfo()->getField("addr", true);
+        INT_ASSERT(sym);
+        dt2 = sym->typeInfo()->getValType()->symbol;
+        dststr = codegenRaddr(dststr);
+      } else {
+        dt2 = get(2)->typeInfo()->getValType()->symbol;
+        if (get(2)->typeInfo()->symbol->hasFlag(FLAG_REF)) {
+          dststr = codegenDeref(dststr);
+        }
+      }
+
+      // locale id 
+      GenRet locale;
+      if( get(3)->typeInfo()->symbol->hasEitherFlag(FLAG_WIDE,FLAG_REF) ) {
+        locale = codegenValue(codegenDeref(get(3)));
+      } else {
+        locale = codegenValue(get(3));
+      } 
+
+      // source data array
+      GenRet remoteAddr = get(4);
+      SymExpr *sym = toSymExpr(get(4));
+      INT_ASSERT(sym);
+      if( sym->typeInfo()->symbol->hasFlag(FLAG_WIDE) ) {
+        remoteAddr = codegenRaddr(remoteAddr);
+      } else {
+        if( !sym->typeInfo()->symbol->hasFlag(FLAG_REF) ) {
+          remoteAddr = codegenAddrOf(remoteAddr);
+        }
+      }
+
+      // source strides local array
+      GenRet srcstr = codegenValuePtr(get(5));
+
+      if (get(5)->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
+        Symbol *sym = get(5)->typeInfo()->getField("addr", true);
+        INT_ASSERT(sym);
+        dt2 = sym->typeInfo()->getValType()->symbol;
+        srcstr = codegenRaddr(srcstr);
+      } else {
+        dt2 = get(5)->typeInfo()->getValType()->symbol;
+        if (get(5)->typeInfo()->symbol->hasFlag(FLAG_REF)) {
+          srcstr = codegenDeref(srcstr);
+        }
+      }
+
+      // count local array
+      GenRet count = codegenValuePtr(get(6));
+
+      if (get(6)->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
+        Symbol *sym = get(6)->typeInfo()->getField("addr", true);
+        INT_ASSERT(sym);
+        dt2 = sym->typeInfo()->getValType()->symbol;
+        count = codegenRaddr(count);
+      } else {
+        dt2 = get(6)->typeInfo()->getValType()->symbol;
+        if (get(6)->typeInfo()->symbol->hasFlag(FLAG_REF)) {
+          count = codegenDeref(count);
+        }
+      }
+
+      // stridelevels
+      GenRet stridelevels;
+      if( get(7)->typeInfo()->symbol->hasEitherFlag(FLAG_WIDE,FLAG_REF) ) {
+        stridelevels = codegenValue(codegenDeref(get(7)));
+      } else {
+        stridelevels = codegenValue(get(7));
+      } 
+
+      // eltSize
+      GenRet eltSize = codegenSizeof(dt->typeInfo());
+
+      codegenCall(fn, codegenCastToVoidStar(localAddr), codegenCastToVoidStar(dststr),
+		  locale, remoteAddr, codegenCastToVoidStar(srcstr),
+		  codegenCastToVoidStar(count), stridelevels, eltSize,
+		  genTypeStructureIndex(dt), get(8), get(9));
+
       break;
     }
     case PRIM_CHPL_ALLOC:

@@ -122,6 +122,8 @@ const char* chpl_mem_descString(chpl_mem_descInt_t mdi) {
     "thread list descriptor",
     "io buffer or bytes",
     "gmp data",
+    "put_strd/get_strd array of strides",
+    "put_strd/get_strd array of count",
   };
 
   if (mdi < CHPL_RT_MD_NUM)

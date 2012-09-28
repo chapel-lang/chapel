@@ -1241,6 +1241,8 @@ proc BlockArr.dsiPrivatize(privatizeData) {
 proc BlockArr.dsiSupportsBulkTransfer() param return true;
 
 proc BlockArr.doiCanBulkTransfer() {
+  if debugDefaultDistBulkTransfer then writeln("In BlockArr.doiCanBulkTransfer");
+
   if dom.stridable then
     for param i in 1..rank do
       if dom.whole.dim(i).stride != 1 then return false;
@@ -1252,7 +1254,17 @@ proc BlockArr.doiCanBulkTransfer() {
   return true;
 }
 
+proc BlockArr.doiCanBulkTransferStride() param {
+  if debugDefaultDistBulkTransfer then writeln("In BlockArr.doiCanBulkTransferStride");
+
+  // A BlockArr is a bunch of DefaultRectangular arrays,
+  // so strided bulk transfer gotta be always possible.
+  return true;
+}
+
 proc BlockArr.doiBulkTransfer(B) {
+  if debugBlockDistBulkTransfer then writeln("In BlockArr.doiBulkTransfer");
+
   if debugBlockDistBulkTransfer then resetCommDiagnostics();
   var sameDomain: bool;
   // We need to do the following on the locale where 'this' was allocated,
@@ -1391,3 +1403,90 @@ proc dropDims(D: domain, dims...) {
   return DResult;
 }
 
+
+//This function should be improved so as to call a
+//DefaultRectangular=BlockDist function for each
+//DefaultRectangularArray.
+//Most of this code would be refactored out in that function which
+//overloads the op= for that case.
+
+proc BlockArr.doiBulkTransferStride(Barg)
+{
+  const A = this, B = Barg._value;
+  
+  if debugDefaultDistBulkTransfer then
+    writeln("In BlockArr.doiBulkTransferStride()");
+    
+  coforall i in dom.dist.targetLocDom do // for all locales
+    on dom.dist.targetLocales(i)
+      {
+        var sb,ini,end:rank*int(64);
+        var regionA = dom.locDoms(i).myBlock;
+      
+        if regionA.numIndices>0
+        {
+          ini=bulkCommConvertCoordinate(regionA.first, A, B);//return tuple(rank * int)
+          end=bulkCommConvertCoordinate(regionA.last, A, B);//return tuple(rank * int)
+          sb=chpl__tuplify(B.dom.whole.stride);
+          
+          var DomA: domain(rank,int,true);
+          var r1,r2,r3: rank * range(stridable = true);
+          for param t in 1..rank do
+            r1[t] = (ini[t]..end[t] by sb[t]); 
+    
+          DomA=r1; //Necessary to make the intersection
+  
+          for j in  B.dom.dist.targetLocDom
+            {
+              var inters:domain(rank,int,true);
+              inters=DomA[B.dom.locDoms(j).myBlock]; //return a domain
+              if(inters.numIndices>0 && regionA.numIndices>0)
+                {
+                  var sa,ini_src,end_src:rank*int;
+                  ini_src=bulkCommConvertCoordinate(inters.first, B, A);//return tuple(rank * int)
+                  end_src=bulkCommConvertCoordinate(inters.last, B, A);//return tuple(rank * int)
+                  sa = chpl__tuplify(dom.whole.stride); //return a tuple
+   
+                  for param t in 1..rank
+                  {
+                    r3[t] = (chpl__tuplify(inters.first)[t]..chpl__tuplify(inters.last)[t] by chpl__tuplify(inters.stride)[t]);
+                    r2[t] = (ini_src[t]..end_src[t] by sa[t]);
+                  }
+
+		  locArr[i].myElems[(...r2)]._value.doiBulkTransferStride(B.locArr[j].myElems[(...r3)],true,true);
+                }
+            }
+          }
+      }
+}
+
+proc DefaultRectangularArr.doiBulkTransferStride(Barg) where Barg._value.isBlockDist()
+{
+  const A = this, B = Barg._value;
+
+  if debugDefaultDistBulkTransfer then 
+    writeln("In DefaultRectangularArr.doiBulkTransferStride where B._value.isBlockDist() ");
+  var r2: rank * range(stridable = true);
+  for j in B.dom.dist.targetLocDom
+  {
+    var inters=B.dom.locDoms[j].myBlock;
+    if(inters.numIndices>0 && dom.dsiNumIndices >0)
+    {
+      var sa,ini_src,end_src:rank*int;
+      ini_src = bulkCommConvertCoordinate(inters.first, B, A);
+      end_src = bulkCommConvertCoordinate(inters.last, B, A);
+      sa = chpl__tuplify(A.dom.dsiStride);
+      
+      for param t in 1..rank do
+        r2[t] = (ini_src[t]..end_src[t] by sa[t]);
+
+      const d2 ={(...r2)};
+      const slice2 = this.dsiSlice(d2._value);
+
+      slice2.doiBulkTransferStride(B.locArr[j].myElems,false,true);
+      delete slice2;
+    }
+  }
+}
+
+proc BlockArr.isBlockDist() param {return true;}
