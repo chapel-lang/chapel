@@ -12,19 +12,15 @@ proc BlockArr.copyBtoC(B)
 {
   coforall loc in Locales do on loc
   {
-    const privarr=this.dsiPrivatize(dom.pid);
-    const privdom=dom.dsiPrivatize((dom.dist.pid,dom.dsiDims()));
-    const privB=B._value.dsiPrivatize(B._value.dom.pid);
-
     param stridelevels=1;
     var dststrides:[1..#stridelevels] int(32); 
     var srcstrides: [1..#stridelevels] int(32);
     var count: [1..#(stridelevels+1)] int(32);
     var lid=loc.id; 
 
-    var numLocales: int(32)=privdom.dist.targetLocDom.dim(1).length:int(32);
-    var n:int(32)=privdom.dist.boundingBox.dim(1).length:int(32);
-    var src = privarr.locArr[lid].myElems._value.data; 
+    var numLocales: int(32)=dom.dist.targetLocDom.dim(1).length:int(32);
+    var n:int(32)=dom.dist.boundingBox.dim(1).length:int(32);
+    var src = locArr[lid].myElems._value.data;
 
     dststrides[1]=1;
     srcstrides[1]=numLocales;
@@ -40,11 +36,9 @@ proc BlockArr.copyBtoC(B)
     //writeln("Domain: ",dom.whole.dims());
 
     //a,b: first and last global indices in each locale
-
-    var a: int(32)=privdom.locDoms[lid].myBlock.low:int(32); 
-    var b: int(32)=privdom.locDoms[lid].myBlock.high:int(32);
+    var a: int(32)=dom.locDoms[lid].myBlock.low:int(32); 
+    var b: int(32)=dom.locDoms[lid].myBlock.high:int(32);
     var blksize=b-a+1;
-
     //writeln("Locale", here.id," : blksize ",blksize," subblock first index  a ",a,
 
     var t1,t2: real;
@@ -63,17 +57,18 @@ proc BlockArr.copyBtoC(B)
       if (schunkini+(blksize/numLocales)*numLocales>b) then chunksize=blksize/numLocales;
       else chunksize=blksize/numLocales+1;
 
-      var destr = privB.locArr[dst].myElems._value.data;
+      //var destr = privB.locArr[dst].myElems._value.data;
+      var destr = B._value.locArr[dst].myElems._value.data;
       count[1]=1;
       count[2]=chunksize;
 
       __primitive("chpl_comm_put_strd",
 		  __primitive("array_get",destr,
-			      privB.locArr[dst].myElems._value.getDataIndex(schunkini)),
+			      B._value.locArr[dst].myElems._value.getDataIndex(schunkini)),
 		  __primitive("array_get",dststr,dststrides._value.getDataIndex(1)),
 		  dst,
 		  __primitive("array_get",src,
-			      privarr.locArr[lid].myElems._value.getDataIndex(schunkini)),  
+			      locArr[lid].myElems._value.getDataIndex(schunkini)),  
 		  __primitive("array_get",srcstr,srcstrides._value.getDataIndex(1)),
 		  __primitive("array_get",cnt, count._value.getDataIndex(1)),
 		  stridelevels);
@@ -87,17 +82,13 @@ proc  BlockArr.copyCtoB(B)
  
   coforall loc in Locales do on loc
   {
-    const privarr=this.dsiPrivatize(dom.pid);
-    const privdom=dom.dsiPrivatize((dom.dist.pid,dom.dsiDims()));
-    const privB=B._value.dsiPrivatize(B._value.dom.pid);
-
     param stridelevels=1;
     var dststrides:[1..#stridelevels] int(32);
     var srcstrides: [1..#stridelevels] int(32);
     var count: [1..#(stridelevels+1)] int(32); 
     var lid=loc.id;
-    var numLocales: int=privdom.dist.targetLocDom.dim(1).length;
-    var n:int(32)=privdom.dist.boundingBox.dim(1).length:int(32);
+    var numLocales: int=dom.dist.targetLocDom.dim(1).length;
+    var n:int(32)=dom.dist.boundingBox.dim(1).length:int(32);
 
     var dststr=dststrides._value.data;
     var srcstr=srcstrides._value.data;
@@ -107,11 +98,11 @@ proc  BlockArr.copyCtoB(B)
     var num: int;
     var schunkini: int;
     var chunksize: int;
-    var a: int(32)=privdom.locDoms[lid].myBlock.low:int(32); 
-    var b: int(32)=privdom.locDoms[lid].myBlock.high:int(32);
+    var a: int(32)=dom.locDoms[lid].myBlock.low:int(32); 
+    var b: int(32)=dom.locDoms[lid].myBlock.high:int(32);
     num=b-a+1;
 
-    var src = privarr.locArr[lid].myElems._value.data;
+    var src = locArr[lid].myElems._value.data;
     var arrayini:int(32)=dom.dsiLow:int(32);
 
     var t,t1,t2: real;
@@ -126,7 +117,7 @@ proc  BlockArr.copyCtoB(B)
       if (schunkini+(num/numLocales)*numLocales>b) then chunksize=num/numLocales;
       else chunksize=num/numLocales+1;
 
-      var destr = privB.locArr[dst].myElems._value.data;
+      var destr = B._value.locArr[dst].myElems._value.data;
       dststrides[1]=numLocales:int(32);
       srcstrides[1]=1;
       count[1]=1;
@@ -134,11 +125,11 @@ proc  BlockArr.copyCtoB(B)
 
       __primitive("chpl_comm_get_strd",
 		  __primitive("array_get",src,
-			      privarr.locArr[lid].myElems._value.getDataIndex(schunkini)),
+			        locArr[lid].myElems._value.getDataIndex(schunkini)),
 		  __primitive("array_get",dststr,dststrides._value.getDataIndex(1)),
 		  dst,
 		  __primitive("array_get",destr,
-			      privB.locArr[dst].myElems._value.getDataIndex(schunkini)),
+			      B._value.locArr[dst].myElems._value.getDataIndex(schunkini)),
 		  __primitive("array_get",srcstr,srcstrides._value.getDataIndex(1)),
 		  __primitive("array_get",cnt,count._value.getDataIndex(1)),
 		  stridelevels);
