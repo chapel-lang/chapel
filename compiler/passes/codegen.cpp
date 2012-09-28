@@ -1198,11 +1198,8 @@ void makeBinary(void) {
     mysystem(command.c_str(), "Make Binary - Linking");
 #endif
   } else {
-    if (chplmake[0] == '\0') {
-      strncpy(chplmake, runUtilScript("chplenv/chplmake"), 256);
-    }
     const char* makeflags = printSystemCommands ? "-f " : "-s -f ";
-    const char* command = astr(astr(chplmake, " "), makeflags, getIntermediateDirName(),
+    const char* command = astr(astr(CHPL_MAKE, " "), makeflags, getIntermediateDirName(),
                               "/Makefile");
     mysystem(command, "compiling generated source");
   }

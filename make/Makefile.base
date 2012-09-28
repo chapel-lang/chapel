@@ -76,7 +76,9 @@ endif
 #
 THIRD_PARTY_DIR = $(CHPL_MAKE_HOME)/third-party
 
+include $(THIRD_PARTY_DIR)/creoleparser/Makefile.include
 include $(THIRD_PARTY_DIR)/gasnet/Makefile.include
+include $(THIRD_PARTY_DIR)/genshi/Makefile.include
 include $(THIRD_PARTY_DIR)/dlmalloc/Makefile.include
 include $(THIRD_PARTY_DIR)/massivethreads/Makefile.include
 include $(THIRD_PARTY_DIR)/nanox/Makefile.include

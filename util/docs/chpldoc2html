@@ -162,7 +162,7 @@ except getopt.GetoptError:
    help()
    sys.exit()
 
-style = os.environ['CHPL_HOME'] + "/util/docs/official.css"
+style = os.environ['CHPL_HOME'] + "/util/docs/plain.css"
 logo = ""
 color = ""
 embed = False

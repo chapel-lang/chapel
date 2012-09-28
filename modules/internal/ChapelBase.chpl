@@ -55,6 +55,11 @@ if (CHPL_GMP == "unset") {
   compilerWarning("CHPL_GMP not set");
 }
 
+config param CHPL_MAKE: string = "unset";
+if (CHPL_MAKE == "unset") {
+  compilerWarning("CHPL_MAKE not set");
+}
+
 config param warnMaximalRange = false;	// Warns if integer rollover will cause
 					// the iterator to yield zero times.
 

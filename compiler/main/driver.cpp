@@ -47,6 +47,7 @@ const char* CHPL_COMM = NULL;
 const char* CHPL_ATOMICS = NULL;
 const char* CHPL_NETWORK_ATOMICS = NULL;
 const char* CHPL_GMP = NULL;
+const char* CHPL_MAKE = NULL;
 
 int fdump_html = 0;
 bool fdump_html_incude_system_modules = true;
@@ -105,7 +106,6 @@ bool fHeterogeneous = false; // re-initialized in setupOrderedGlobals() below
 bool fGPU;
 bool fieeefloat = true;
 bool report_inlining = false;
-char chplmake[256] = "";
 char fExplainCall[256] = "";
 char fExplainInstantiation[256] = "";
 bool fPrintCallStackOnError = false;
@@ -311,6 +311,7 @@ static void setupOrderedGlobals(const char* argv0) {
   SETUP_ENV_VAR(CHPL_ATOMICS, "chplenv/atomics");
   SETUP_ENV_VAR(CHPL_NETWORK_ATOMICS, "chplenv/atomics --network");
   SETUP_ENV_VAR(CHPL_GMP, "chplenv/gmp");
+  SETUP_ENV_VAR(CHPL_MAKE, "chplenv/chplmake");
 
   // These depend on the environment variables being set
   fLocal = !strcmp(CHPL_COMM, "none");
@@ -606,7 +607,7 @@ static ArgumentDescription arg_desc[] = {
  {"ldflags", ' ', "<flags>", "Back-end C linker flags", "S256", ldflags, "CHPL_LD_FLAGS", NULL},
  {"lib-linkage", 'l', "<library>", "C library linkage", "P", libraryFilename, "CHPL_LIB_NAME", handleLibrary},
  {"lib-search-path", 'L', "<directory>", "C library search path", "P", libraryFilename, "CHPL_LIB_PATH", handleLibPath},
- {"make", ' ', "<make utility>", "Make utility for generated code", "S256", &chplmake, "CHPL_MAKE", NULL},
+ {"make", ' ', "<make utility>", "Make utility for generated code", "S256", &CHPL_MAKE, "CHPL_MAKE", NULL},
  {"optimize", 'O', NULL, "[Don't] Optimize generated C code", "N", &optimizeCCode, "CHPL_OPTIMIZE", NULL},
  {"output", 'o', "<filename>", "Name output executable", "P", executableFilename, "CHPL_EXE_NAME", NULL},
  {"static", ' ', NULL, "Generate a statically linked binary", "F", &fLinkStyle, NULL, setStaticLink},

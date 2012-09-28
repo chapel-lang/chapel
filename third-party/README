@@ -6,6 +6,18 @@ This directory is designed to hold sources that were not developed by
 the Chapel team and which are released under distinct licenses from
 Chapel itself.  Current subdirectories include:
 
+
+creoleparser/
+  Summary: This is a directory in which the python Creoleparser
+           package will be downloaded when running 'make creoleparser'
+           in the third-party directory.
+
+  License: MIT
+
+  Contact: For more information, please refer to:
+             http://pypi.python.org/pypi/Creoleparser
+
+
 dlmalloc/
   Summary: Doug Lea's memory allocator (dlmalloc) which we use to
            support malloc/free calls when running GASNet programs
@@ -32,6 +44,17 @@ gasnet/
            http://gasnet.cs.berkeley.edu
 
   See also: gasnet/README
+
+
+genshi/
+  Summary: This is a directory in which the python Genshi package
+           will be downloaded when running 'make genshi' in the
+           third-party directory.
+
+  License: Revised BSD
+
+  Contact: For more information, please refer to:
+           http://genshi.edgewall.org/
 
 
 gmp/
