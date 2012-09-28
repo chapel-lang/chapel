@@ -39,11 +39,12 @@ This release contains five distinct implementations of Chapel tasks.
 The user can select between these options by setting the CHPL_TASKS
 environment variable to one of the following options:
 
-fifo     : the default and most portable/stable option; heavyweight
-qthreads : a prototype option based on Sandia's Qthreads user-level tasks
-nanox    : a prototype option based on BSC's Nanos++ user-level tasks
-mta      : an option specific to the Cray XMT (TM)
-none     : execute the program serially using a single task
+fifo           : the default and most portable/stable option; heavyweight
+qthreads       : a prototype option based on Sandia's Qthreads user-level tasks
+massivethreads : a prototype option based on U Tokyo's MassiveThreads library
+nanox          : a prototype option based on BSC's Nanos++ user-level tasks
+mta            : an option specific to the Cray XMT (TM)
+none           : execute the program serially using a single task
 
 Each task layer has a default logical corresponding threading
 implementation.  Note that generally only the CHPL_TASKS variable
@@ -126,6 +127,31 @@ only a single thread, the process itself.  Deadlock can occur if a
 program requires more than one task to be active at the same time.
 The effect is essentially equivalent to using pthreads threading with
 numThreadsPerLocale=1.
+
+
+CHPL_TASKS == massivethreads, CHPL_THREADS == none
+--------------------------------------------------
+
+The MassiveThreads team at the University of Tokyo has provided an
+implementation of Chapel tasking via their MassiveThreads library
+('massivethreads') in order to create a lighter-weight implementation
+of Chapel tasks.  To try MassiveThreads tasking, please take the
+following steps (bash commands are shown):
+
+1) Ensure that the environment variable CHPL_HOME points to the
+   top-level Chapel directory, as always.
+
+2) Set up your environment to use MassiveThreads:
+
+     export CHPL_TASKS=massivethreads
+
+   (Also, be sure that CHPL_THREADS is unset, or set it to 'none')
+
+3) Follow the "Quick Start" instructions in $CHPL_HOME/README
+   to set up, compile and run your Chapel programs.
+
+For more information on MassiveThreads, please see its entry in:
+$CHPL_HOME/third-party/README.
 
 
 CHPL_TASKS == qthreads, CHPL_THREADS == none

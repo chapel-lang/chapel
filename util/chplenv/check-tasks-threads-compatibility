@@ -7,6 +7,7 @@ $threads=$ARGV[1];
 
 unless (($tasks =~ /^muxed|fifo$/ &&
          $threads =~ /^minimal|pthreads|soft-threads$/) ||
+        ($tasks eq "massivethreads" && $threads eq "none") ||
 	($tasks eq "mta" && $threads eq "none") ||
 	($tasks eq "nanox" && $threads eq "none") ||
 	($tasks eq "qthreads" && $threads eq "none") ||

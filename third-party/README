@@ -44,6 +44,22 @@ gmp/
   See also: gmp/README and gmp/gmp-*/README
 
 
+massivethreads/
+  Summary: MassiveThreads is a lightweight thread library being
+           developed by the University of Tokyo.  This package
+           represents another lighter-weight tasking alternative
+           to the default fifo/pthreads choice.
+
+  License: MassiveThreads is released under the Simplified BSD License,
+           which can be found in:
+             massivethreads/massivethreads-<version>/COPYRIGHT
+
+  Contact: For more information, please refer to:
+             http://code.google.com/p/massivethreads/
+
+  See also: massivethreads/massivethreads-<version>/README
+
+
 nanox/
   Summary: the Nanos++ user-level tasking library being developed by
            Barcelona Supercompting Center (BSC).  We are working on
