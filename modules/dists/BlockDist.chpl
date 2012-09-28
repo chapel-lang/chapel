@@ -1254,7 +1254,7 @@ proc BlockArr.doiCanBulkTransfer() {
   return true;
 }
 
-proc BlockArr.doiCanBulkTransferStride() {
+proc BlockArr.doiCanBulkTransferStride() param {
   if debugDefaultDistBulkTransfer then writeln("In BlockArr.doiCanBulkTransferStride");
 
   // A BlockArr is a bunch of DefaultRectangular arrays,

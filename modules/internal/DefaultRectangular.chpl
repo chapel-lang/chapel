@@ -729,10 +729,9 @@ proc DefaultRectangularArr.doiCanBulkTransfer() {
   return true;
 }
 
-proc DefaultRectangularArr.doiCanBulkTransferStride() {
+proc DefaultRectangularArr.doiCanBulkTransferStride() param {
   if debugDefaultDistBulkTransfer then writeln("In DefaultRectangularArr.doiCanBulkTransferStride()");
-  //If there is no stride we return false so as to rely in the original BulkTransfer (without stride)
-  if computeBulkStrideLevels(isWholeDim(this)) == 0 then return false;    
+  // A DefaultRectangular array is always regular, so bulk should be possible.
   return true;
 }
 
@@ -1028,8 +1027,9 @@ proc DefaultRectangularArr.isDefaultRectangular() param{return true;}
      - Stridelevels == rank if there is a "by X" whith X>1 in the range description for 
          the rightmost dimension)*/
 proc DefaultRectangularArr.computeBulkStrideLevels(rankcomp):int(32) where rank == 1
-{
-  if dom.dsiStride==1 then return 0;
+{//To understand the blk(1)==1 condition,
+  //see test/optimizations/bulkcomm/alberto/test_rank_change2.chpl(example 4)
+  if dom.dsiStride==1 && blk(1)==1 then return 0;
   else return 1;
 }
 
@@ -1074,7 +1074,9 @@ proc DefaultRectangularArr.computeBulkStrideLevels(rankcomp):int(32) where rank 
 proc DefaultRectangularArr.computeBulkCount(stridelevels:int(32), rankcomp, aux = false):(rank+1)*int(32) where rank ==1
 {
   var c: (rank+1)*int(32);
-  if dom.dsiStride > 1 {
+  //To understand the blk(1)>1 condition,
+  //see test/optimizations/bulkcomm/alberto/test_rank_change2.chpl(example 4)
+  if dom.dsiStride > 1 || blk(1)>1 {
     c[1]=1;
     c[2]=dom.dsiDim(1).length:int(32);
   }
@@ -1200,8 +1202,9 @@ proc DefaultRectangularArr.computeBulkStride(rankcomp,cnt:[],levels:int(32), aFr
   var cum=1; //cumulative variable
   
   if (cnt[h]==1 && dom.dsiDim(rank).length>1)
-  {
-    if !aFromBD then c[h]=dom.dsiDim(rank).stride:int(32); //CASE 1
+  {//To understand the blk[rank]==1 condition,
+  //see test/optimizations/bulkcomm/alberto/test_rank_change2.chpl(example 12)
+    if !aFromBD && blk[rank]==1 then c[h]=dom.dsiDim(rank).stride:int(32); //CASE 1
     else c[h]=blk[rank]:int(32); //CASE 2
     h+=1;
   }

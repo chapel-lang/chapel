@@ -1,4 +1,4 @@
-//This tests directly call chpl_comm_gets to 
+//This tests directly call chpl_comm_get_strd to 
 // 1.- get some elements from B on locale 1 to A on locale 0
 // 2.- get some elements from B on locale 0 to A on locale 0
 // 3.- put some elements from A on locale 0 to B on locale 1
@@ -40,7 +40,7 @@ proc BlockArr.TestGetsPuts(B)
       var cnt=count._value.data;
 
 // 1.- get 2 elements from B (B[58..59]) on locale 1 to A[8..9] on locale 0      
-      __primitive("chpl_comm_gets",
+      __primitive("chpl_comm_get_strd",
       		  __primitive("array_get",dest,
       			      locArr[0].myElems._value.getDataIndex(8)),
       		  __primitive("array_get",dststr,dststrides._value.getDataIndex(1)),
@@ -52,7 +52,7 @@ proc BlockArr.TestGetsPuts(B)
       		  stridelevels);
 
 // 2.- get 2 elements from B (B[8..9]) on locale 0 to A[24..25] on locale 0
-      __primitive("chpl_comm_gets",
+      __primitive("chpl_comm_get_strd",
       		  __primitive("array_get",dest,
       			      locArr[0].myElems._value.getDataIndex(24)),
       		  __primitive("array_get",dststr,dststrides._value.getDataIndex(1)),
@@ -68,7 +68,7 @@ proc BlockArr.TestGetsPuts(B)
       var destr = B._value.locArr[rid].myElems._value.data;
 
 // 3.- put 2 elements from A (A[26..27]) on locale 0 to B[76..77] on locale 1
-      __primitive("chpl_comm_puts",
+      __primitive("chpl_comm_put_strd",
       		  __primitive("array_get",destr,
 			      B._value.locArr[rid].myElems._value.getDataIndex(76)),
       		  __primitive("array_get",dststr,dststrides._value.getDataIndex(1)),
@@ -80,7 +80,7 @@ proc BlockArr.TestGetsPuts(B)
       		  stridelevels);
 
 // 4.- put 2 elements from A (A[2..3]) on locale 0 to B[16..17] on locale 0
-      __primitive("chpl_comm_puts",
+      __primitive("chpl_comm_put_strd",
       		  __primitive("array_get",destl,
 			      B._value.locArr[lid].myElems._value.getDataIndex(16)),
       		  __primitive("array_get",dststr,dststrides._value.getDataIndex(1)),
