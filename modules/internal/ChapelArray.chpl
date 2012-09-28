@@ -12,7 +12,7 @@ var privatizeLock$: sync int;
 
 config param debugBulkTransfer = false;
 config param useBulkTransfer = true;
-config param useBulkTransferStride = true;
+config param useBulkTransferStride = false;
 
 pragma "privatized class"
 proc _isPrivatized(value) param
