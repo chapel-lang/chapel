@@ -2055,15 +2055,4 @@ proc chpl__initCopy(ir: _iteratorRecord) {
   return A;
 }
 
-proc copyBtoC(A:[], B:[])
-{
-  A._value.copyBtoC(B);
-}
-
-proc copyCtoB(A:[], B:[])
-{
-  A._value.copyCtoB(B);
-}
-
-
 }
