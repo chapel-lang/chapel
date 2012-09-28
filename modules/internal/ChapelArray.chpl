@@ -1554,7 +1554,7 @@ proc chpl__supportedDataTypeForBulkTransfer(x) param return true;
 
 
 proc chpl__useBulkTransfer(a:[], b:[]) {
-  if debugDefaultDistBulkTransfer then writeln("chpl__useBulkTransfer");
+  //if debugDefaultDistBulkTransfer then writeln("chpl__useBulkTransfer");
 
   // constraints specific to a particular domain map array type
   if !a._value.doiCanBulkTransfer() then return false;
@@ -1572,7 +1572,7 @@ proc chpl__useBulkTransfer(a:[], b:[]) {
 //as the previous one (chpl__useBulkTransfer) so depending on the order they
 //are called, this can be factored out.
 proc chpl__useBulkTransferStride(a:[], b:[]) {
-  if debugDefaultDistBulkTransfer then writeln("chpl__useBulkTransferStride");
+  //if debugDefaultDistBulkTransfer then writeln("chpl__useBulkTransferStride");
   
   // constraints specific to a particular domain map array type
   if !a._value.doiCanBulkTransferStride() then return false;
@@ -1611,8 +1611,8 @@ inline proc =(a: [], b) {
       a._value.doiBulkTransferStride(b);
       return a;
     }
-    if debugDefaultDistBulkTransfer then
-      writeln("proc =(a:[],b): bulk transfer did not happen");
+    //if debugDefaultDistBulkTransfer then
+    //  writeln("proc =(a:[],b): bulk transfer did not happen");
   }
 
   if chpl__serializeAssignment(a, b) {
