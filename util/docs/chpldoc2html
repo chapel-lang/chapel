@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """
 This program requires the installation of python, and either python-creole
 (1.0.4) or a combination of Genshi (0.6) and Creoleparser(0.7.4).  Please
@@ -146,8 +147,6 @@ import os
     validation.  Creoleparser writes <hr> instead of <hr /> and <br> instead of
     <br />
 """
-sys.path.append(os.environ['HOME'] + '/Genshi-0.6')
-sys.path.append(os.environ['HOME'] + '/Creoleparser-0.7.4')
 from creoleparser import creole2html
 
 """ python-creole-1.0.4 version """
