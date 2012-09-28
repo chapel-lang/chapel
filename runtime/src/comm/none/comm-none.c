@@ -123,13 +123,13 @@ void  chpl_comm_put_strd(void* dstaddr_arg, void* dststrides, int32_t dstlocale,
 
   switch(strlvls) {
   case 0:
-    memmove(srcaddr_arg,dstaddr_arg,cnt[0]);
+    memmove(dstaddr_arg,srcaddr_arg,cnt[0]);
     break;
   case 1:
     dstaddr=(int8_t*)dstaddr_arg;
     srcaddr=(int8_t*)srcaddr_arg;
     for(i=0; i<cnt[1]; i++) {
-      memmove((void*)srcaddr,(void*)dstaddr,cnt[0]);
+      memmove((void*)dstaddr,(void*)srcaddr,cnt[0]);
       srcaddr+=srcstr[0];
       dstaddr+=dststr[0];
     }
@@ -139,7 +139,7 @@ void  chpl_comm_put_strd(void* dstaddr_arg, void* dststrides, int32_t dstlocale,
       srcaddr = (int8_t*)srcaddr_arg + srcstr[1]*i;
       dstaddr = (int8_t*)dstaddr_arg + dststr[1]*i;
       for(j=0; j<cnt[1]; j++) {
-	memmove(srcaddr,dstaddr,cnt[0]);
+	memmove(dstaddr,srcaddr,cnt[0]);
 	srcaddr+=srcstr[0];
 	dstaddr+=dststr[0];
       }
@@ -153,7 +153,7 @@ void  chpl_comm_put_strd(void* dstaddr_arg, void* dststrides, int32_t dstlocale,
 	srcaddr = srcaddr1 + srcstr[1]*j;
 	dstaddr = dstaddr1 + dststr[1]*j;
 	for(k=0; k<cnt[1]; k++) {
-	  memmove(srcaddr,dstaddr,cnt[0]);
+	  memmove(dstaddr,srcaddr,cnt[0]);
 	  srcaddr+=srcstr[0];
 	  dstaddr+=dststr[0];
 	}
@@ -171,7 +171,7 @@ void  chpl_comm_put_strd(void* dstaddr_arg, void* dststrides, int32_t dstlocale,
           srcaddr = srcaddr1 + srcstr[1]*k;
           dstaddr = dstaddr1 + dststr[1]*k;
           for(l=0; l<cnt[1]; l++) {
-            memmove(srcaddr,dstaddr,cnt[0]);
+            memmove(dstaddr,srcaddr,cnt[0]);
             srcaddr+=srcstr[0];
             dstaddr+=dststr[0];
           }
@@ -193,7 +193,7 @@ void  chpl_comm_put_strd(void* dstaddr_arg, void* dststrides, int32_t dstlocale,
             srcaddr = srcaddr1 + srcstr[1]*l;
             dstaddr = dstaddr1 + dststr[1]*l;
             for(m=0; m<cnt[1]; m++) {
-              memmove(srcaddr,dstaddr,cnt[0]);
+              memmove(dstaddr,srcaddr,cnt[0]);
               srcaddr+=srcstr[0];
               dstaddr+=dststr[0];
             }
@@ -235,7 +235,7 @@ void  chpl_comm_put_strd(void* dstaddr_arg, void* dststrides, int32_t dstlocale,
 		    srcdisp[j]=srcstr[t-1]*x;
 		    dstdisp[j]=dststr[t-1]*x;
 		  }   
-                memmove(srcaddr+srcdisp[j],dstaddr+dstdisp[j],cnt[0]);
+                memmove(dstaddr+dstdisp[j],srcaddr+srcdisp[j],cnt[0]);
 		break;
 	      }
 	    else //ELSE 1
