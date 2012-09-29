@@ -28,8 +28,8 @@ static int compareClasses(const void *v1, const void* v2) {
 }
 
 void docs(void) {
-  if (fdocs) {
-    std::string folderName = (strlen(docsFolder) != 0) ? docsFolder : "docs";
+  if (fDocs) {
+    std::string folderName = (strlen(fDocsFolder) != 0) ? fDocsFolder : "docs";
 
 
     mkdir(folderName.c_str(), S_IWUSR|S_IRUSR|S_IXUSR);
@@ -62,7 +62,7 @@ void docs(void) {
         }
       }
     }
-    if (!nocreole) {
+    if (!fDocsTextOnly) {
       char command[1024];
       sprintf(command, "PYTHONPATH=%s/third-party/creoleparser/install:%s/third-party/genshi/install:$PYTHONPATH && python %s/util/docs/chpldoc2html %s", CHPL_HOME, CHPL_HOME, CHPL_HOME, folderName.c_str());
       if (mysystem(command, "converting creole docs to html", 1) != 0) {
@@ -141,7 +141,7 @@ void printFields(std::ofstream *file, ClassType *cl) {
             }
           }
         } 
-        if (!nocreole)
+        if (!fDocsTextOnly)
           *file << "\\\\"; 
         // The set of '\' is only when using creoleparser instead of 
         // python-creole    
@@ -165,7 +165,7 @@ void inheritance(Vec<ClassType*> *list, ClassType *cl) {
 void printClass(std::ofstream *file, ClassType *cl) {
   if (cl->classTag != CLASS_UNION) {
     printTabs(file);
-    if (!nocreole)
+    if (!fDocsTextOnly)
       *file << "===";
     if (cl->classTag == CLASS_CLASS) {
       *file << "Class: " ;
@@ -181,7 +181,7 @@ void printClass(std::ofstream *file, ClassType *cl) {
     }
     printFields(file, cl);
         // If alphabetical option passed, alphabetizes the output 
-    if (alphabetize) 
+    if (fDocsAlphabetize) 
       qsort(cl->methods.v, cl->methods.n, sizeof(cl->methods.v[0]), 
         compareNames);
     
@@ -192,15 +192,15 @@ void printClass(std::ofstream *file, ClassType *cl) {
     Vec<ClassType*> list;
     inheritance(&list, cl);
 
-    if (alphabetize)
+    if (fDocsAlphabetize)
       qsort(list.v, list.n, sizeof(list.v[0]), compareClasses);
     
     forv_Vec(ClassType, c, list) {
       printTabs(file);
-      if (!nocreole)
+      if (!fDocsTextOnly)
         *file << "//";
       *file << "inherited from " << c->symbol->name;
-      if (!nocreole)
+      if (!fDocsTextOnly)
         *file << "//" << "\\\\\\\\"; 
       // The set of '\' is only when using creoleparser instead of python-creole
       *file << std::endl;
@@ -219,7 +219,7 @@ void printClass(std::ofstream *file, ClassType *cl) {
 }
 
 void printVarStart(std::ofstream *file, VarSymbol *var) {
-  if (!nocreole)
+  if (!fDocsTextOnly)
     *file << "**";
 
   if (var->isConstant())
@@ -229,7 +229,7 @@ void printVarStart(std::ofstream *file, VarSymbol *var) {
   else 
     *file << "var ";
   
-  if (!nocreole)
+  if (!fDocsTextOnly)
     *file << "**";
   
   *file << var->name;
@@ -240,7 +240,7 @@ void printVarType(std::ofstream *file, VarSymbol *var) {
     *file << ": ";
     var->defPoint->exprType->prettyPrint(file); 
   }
-  if (!nocreole)
+  if (!fDocsTextOnly)
     *file << "\\\\"; 
   // The set of '\' is only when using creoleparser instead of python-creole    
   *file << std::endl;
@@ -251,7 +251,7 @@ void printVarDocs(std::ofstream *file, VarSymbol *var) {
   if (var->doc != NULL) {
     printTabs(file);
     *file << var->doc;
-    if (!nocreole)
+    if (!fDocsTextOnly)
       *file << "\\\\"; 
     // The set of '\' is only when using creoleparser instead of python-creole  
     *file << std::endl;
@@ -260,7 +260,7 @@ void printVarDocs(std::ofstream *file, VarSymbol *var) {
 }
 
 void printTabs(std::ofstream *file) {
-  if (nocreole) {
+  if (fDocsTextOnly) {
     for (int i = 1; i <= NUMTABS; i++) {
       *file << "   ";
     }
@@ -284,10 +284,10 @@ bool devOnlyModule(ModuleSymbol *mod) {
 }
 
 void printModule(std::ofstream *file, ModuleSymbol *mod, std::string name) {
-  if (!nocreole)
+  if (!fDocsTextOnly)
     *file << "----" << std::endl;
   printTabs(file);
-  if (!nocreole)
+  if (!fDocsTextOnly)
     *file << "==";
   *file << "Module: " << name << std::endl;
   NUMTABS++;
@@ -296,11 +296,11 @@ void printModule(std::ofstream *file, ModuleSymbol *mod, std::string name) {
     *file << mod->doc << std::endl;
   }
   Vec<VarSymbol*> configs = mod->getConfigVars();
-  if (alphabetize)
+  if (fDocsAlphabetize)
     qsort(configs.v, configs.n, sizeof(configs.v[0]), compareNames);
   forv_Vec(VarSymbol, var, configs) {
     printTabs(file);
-    if (!nocreole)
+    if (!fDocsTextOnly)
       *file << "**config** ";
     else 
       *file << "config ";
@@ -310,8 +310,8 @@ void printModule(std::ofstream *file, ModuleSymbol *mod, std::string name) {
   }
 
   Vec<FnSymbol*> fns = mod->getFunctions();
-  // If alphabetical option passed, alphabetizes the output 
-  if (alphabetize) 
+  // If alphabetical option passed, fDocsAlphabetizes the output 
+  if (fDocsAlphabetize) 
     qsort(fns.v, fns.n, sizeof(fns.v[0]), compareNames);
   
   forv_Vec(FnSymbol, fn, fns) {
@@ -321,7 +321,7 @@ void printModule(std::ofstream *file, ModuleSymbol *mod, std::string name) {
   }
 
   Vec<ClassType*> classes = mod->getClasses();
-  if (alphabetize)
+  if (fDocsAlphabetize)
     qsort(classes.v, classes.n, sizeof(classes.v[0]), compareClasses);
 
   forv_Vec(ClassType, cl, classes) {
@@ -329,7 +329,7 @@ void printModule(std::ofstream *file, ModuleSymbol *mod, std::string name) {
   }
 
   Vec<ModuleSymbol*> mods = mod->getModules();
-  if (alphabetize)
+  if (fDocsAlphabetize)
     qsort(mods.v, mods.n, sizeof(mods.v[0]), compareNames);
   
   forv_Vec(ModuleSymbol, md, mods) {
@@ -342,7 +342,7 @@ void printModule(std::ofstream *file, ModuleSymbol *mod, std::string name) {
 void printFunction(std::ofstream *file, FnSymbol *fn) {
   printTabs(file);
   NUMTABS++;
-  if (!nocreole)
+  if (!fDocsTextOnly)
     *file << "====";
   if (fn->hasFlag(FLAG_INLINE)) {
     *file << "inline ";

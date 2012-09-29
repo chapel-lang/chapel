@@ -122,11 +122,11 @@ bool userSetCppLineno = false;
 int num_constants_per_variable = 1;
 char defaultDist[256] = "DefaultDist";
 int instantiation_limit = 256;
-bool fdocs = false;
-bool alphabetize = false;
-char commentLabel[256] = "";
-char docsFolder[256] = "";
-bool nocreole = false;
+bool fDocs = false;
+bool fDocsAlphabetize = false;
+char fDocsCommentLabel[256] = "";
+char fDocsFolder[256] = "";
+bool fDocsTextOnly = false;
 char mainModuleName[256] = "";
 bool printSearchDirs = false;
 bool printModuleFiles = false;
@@ -271,12 +271,12 @@ static void setCommentLabel(ArgumentState *arg_state, char* label) {
   assert(label != NULL);
   size_t len = strlen(label);
   if (len != 0) {
-    if (len > sizeof(commentLabel)) {
+    if (len > sizeof(fDocsCommentLabel)) {
       USR_FATAL("the label is too large!");
     }else if (label[0] != '/' || label[1] != '*') {
       USR_FATAL("comment label should start with /*");
     } else {
-      strcpy(commentLabel, label);
+      strcpy(fDocsCommentLabel, label);
     }
   }
 }
@@ -546,11 +546,11 @@ Record components:
 static ArgumentDescription arg_desc[] = {
  {"", ' ', NULL, "Module Processing Options", NULL, NULL, NULL, NULL},
  {"count-tokens", ' ', NULL, "Count tokens in main modules", "F", &countTokens, "CHPL_COUNT_TOKENS", NULL},
- {"docs", ' ', NULL, "Runs documentation on the source file", "N", &fdocs, "CHPL_DOC", NULL },
- {"docs-alphabetical", ' ', NULL, "Alphabetizes the documentation", "N", &alphabetize, NULL, NULL},
- {"docs-comment-style", ' ', "<indicator>", "Only includes comments that start with <indicator>", "S256", commentLabel, NULL, setCommentLabel},
- {"docs-folder", ' ', "<foldername>", "Sets the documentation folder to <foldername>", "S256", docsFolder, NULL, NULL},
- {"docs-no-creole", ' ', NULL, "Does not add creole tags to documentation", "F", &nocreole, NULL, NULL},
+ {"docs", ' ', NULL, "Runs documentation on the source file", "N", &fDocs, "CHPL_DOC", NULL },
+ {"docs-alphabetical", ' ', NULL, "Alphabetizes the documentation", "N", &fDocsAlphabetize, NULL, NULL},
+ {"docs-comment-style", ' ', "<indicator>", "Only includes comments that start with <indicator>", "S256", fDocsCommentLabel, NULL, setCommentLabel},
+ {"docs-folder", ' ', "<foldername>", "Sets the documentation folder to <foldername>", "S256", fDocsFolder, NULL, NULL},
+ {"docs-text-only", ' ', NULL, "Generate text only documentation", "F", &fDocsTextOnly, NULL, NULL},
  {"main-module", ' ', "<module>", "Specify entry point module", "S256", mainModuleName, NULL, NULL},
  {"module-dir", 'M', "<directory>", "Add directory to module search path", "P", moduleSearchPath, NULL, addModulePath},
  {"print-code-size", ' ', NULL, "Print code size of main modules", "F", &printTokens, "CHPL_PRINT_TOKENS", NULL},

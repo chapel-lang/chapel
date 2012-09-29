@@ -116,11 +116,11 @@ extern bool developer;
 extern int num_constants_per_variable;
 extern bool printCppLineno;
 
-extern bool fdocs;
-extern bool alphabetize;
-extern char commentLabel[256];
-extern char docsFolder[256];
-extern bool nocreole;
+extern bool fDocs;
+extern bool fDocsAlphabetize;
+extern char fDocsCommentLabel[256];
+extern char fDocsFolder[256];
+extern bool fDocsTextOnly;
 extern char defaultDist[256];
 extern char mainModuleName[256];
 extern bool printSearchDirs;

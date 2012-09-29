@@ -145,7 +145,7 @@ void runPasses(void) {
   PassInfo* pass = passlist+1;  // skip over FIRST
   bool chpldoc = strcmp(chplBinaryName, "chpldoc") == 0;
   if (chpldoc) 
-    fdocs = true;
+    fDocs = true;
   while (pass->name != NULL) {
     advanceCurrentPass(pass->name);
     runPass(pass->name, pass->fn, pass->log_tag);
