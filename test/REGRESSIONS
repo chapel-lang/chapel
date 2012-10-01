@@ -251,7 +251,7 @@ nondet. compilation timeout
 
 det. compilation timeout
 ------------------------
-[Error: Timed out compilation for multilocale/diten/needMultiLocales/coforallon_maxThreads] (from 9/18/12 on, except 9/19)
+[Error: Timed out compilation for multilocale/diten/needMultiLocales/coforallon_maxThreads] (from 9/18/12 on, except 9/19, 9/26)
 
 
 nondet. execution timeout
