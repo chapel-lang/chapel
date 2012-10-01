@@ -16,11 +16,6 @@ Problems analyzed and dispatched to responsible parties:
     identify a standard syntax pattern to use in a global search.
   John submitted a patch and this issue is resolved.
 
-2012-09-17 qthreads build failure.
-  Due to LLVM backend checkin.
-  Michael was alerted and submitted a patch for review.
-  Brad is responding to Michael -- perhaps suggesting a less invasive solution.
-
 ===========================================
 Unresolved failures by test/configuration:
 ===========================================
@@ -28,19 +23,8 @@ Unresolved failures by test/configuration:
 classes/figueroa/RecordDestructor1
   Failed: 9/23 (64ggffpd) -- destructor not called?
 
-distributions/deitz/test_block_representation
-  Failed: 9/23 (64ggffpd) -- line number sensitivity
-
-distributions/robust/associative/basic/array_write
-distributions/robust/associative/basic/domain_write
-distributions/robust/associative/basic/whole_domain_assign
-  Failed: 9/23 (64ggffpd) -- no output
-
 functions/deiz/iterators/leader_follower/test_strided_leader1
   Failed: 9/23 (64ggffpd)
-
-multilocale/diten/needMultiLocales/coforallon_maxThreads
-  Failed: 9/23 (64ggfpt)
 
 types/file/freadIntFailed
 types/file/fwriteIntFailed
@@ -58,18 +42,6 @@ studies/lammps/shemmy/p-lammps-n4
 ==============================================
 These things regularly cause noise in testing:
 ==============================================
-
-spectralnorm
-------------
-Removed from further consideration <hilde 2012-09-20>
-
-proposed approach is to see whether reference version is similarly
-noisy, and if not to see whether ours has inadvertant nondeterminisms.
-(still noisy as of 2012/08/14-8/24: gnfp, gnfp-nolocal)
-
-8/31/12: This is still causing regular failures.  Tom came up with
-some way tot rewrite the algorithm to maybe help (?) but neither he
-nor Vass know whether this violates the definition of the benchmark.
 
 madness (sungeun)
 -----------------
@@ -104,10 +76,6 @@ mutilocale/deitz/needMultiLocales/diagnostics/test_private_broadcast_large
 --------------------------------------------------------------------------
   Succeeded: 9/23 (64ggffpd)
 
-parallel/sync/diten/syncArrOfSync (future)
----------------------------------
-  Succeeded: 9/23 (64ggffpd)
-
 linux64.gnu.gasnet.qthreads.none (UNASSIGNED)
 ---------------------------------------------
 0) We moved to a non-oversubscribed setting on a beefier machine
@@ -123,9 +91,7 @@ linux64.gnu.gasnet.qthreads.none (UNASSIGNED)
 baseline (UNASSIGNED)
 ---------------------
 distributions/nelson/MultiBlockDist2DLocales
-studies/hpcc/HPL/vass/bl.md
-studies/shootout/mandelbrot/mandelbrot-fancy
-
+studies/shootout/mandelbrot/mandelbrot-fancy (alternates between timing out and error matching program output)
 
 valgrind (sungeun)
 ------------------
@@ -177,7 +143,7 @@ The following configurations are affected:
  linux64.gnu.gasnet-fast.fifo.pthreads.dlmalloc
  linux64.gnu.gasnet-everything.fifo.pthreads
 examples of what times out:
- distributions/robust/arithmetic/kernels/jacobi (still timing out 7/7-8/13)
+ distributions/robust/arithmetic/kernels/jacobi (still timing out 7/7-9/28)
  distributions/nelson/MultiBlockDist2DLocales (maybe resolved?)
  distributions/robust/arithmetic/modules/test_module_Sort (maybe resolved?)
  distributions/robust/arithmetci/stress/test_many_domains (08/13)
@@ -229,9 +195,9 @@ nondet. tmalloc failures
 
 parallel/begin/deitz/test_big_recursive_begin future succeeded
 --------------------------------------------------------------
-only in these two runs:
- 120818/Nightly-day6-Sat-linux64.gnu.none.fifo.pthreads-std.log
- 120821/Nightly-day2-Tue-linux64.gnu.none.fifo.pthreads-nlc.log
+*-linux64.gnu.none.fifo.pthreads-std.log (8/18,9/2,9/9,9/13/12)
+*-linux64.gnu.none.fifo.pthreads-npt.log (baseline) (9/{4,5,14,22,30}/12)
+120821/Nightly-day2-Tue-linux64.gnu.none.fifo.pthreads-nlc.log
 
 ===========================================
 Not noisy, but need some attention sometime
@@ -249,3 +215,11 @@ I wouldn't call the future a bug so much as a 'feature request' or
 that should be considered and agreed upon rather than reflecting a way
 in which the compiler is incorrect w.r.t. the language definition (as
 I understand it.
+
+xt-cle.cray-xt-cray.none.fifo.pthreads
+--------------------------------------
+The following compiler segfaults(?) appeared only once on 9/28/12
+[Error matching compiler output for release/examples/primers/opaque]
+[Error matching compiler output for release/examples/spec/Generics/fillTuple2]
+[Error matching compiler output for release/examples/spec/Iterators/as-arrays]
+[Error matching compiler output for release/examples/spec/Ranges/alignedNegStride]

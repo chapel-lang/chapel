@@ -140,22 +140,9 @@ type of Bar.super is at least partially corrupt at that point.
 
 [Error matching program output for release/examples/primers/chpldoc (compopts: 1)] (8/28/2012) (9/07/2012) (9/11/2012)
 
-rrrrrrrrrrrrrrrrrrrr
+====================
 no-local regressions
-===================
-
-compiler segfaults
-------------------
-Started in testing on 8/20/2012, occurs under --no-local or gasnet:
-[Error matching compiler output for arrays/johnk/refTypes]
-[Error matching compiler output for users/ferguson/ddata/c]
-[Error matching compiler output for users/ferguson/ddata/d]
-[Error matching compiler output for users/ferguson/ddata/e]
-[Error matching compiler output for users/ferguson/ddata/f]
-[Error matching compiler output for users/ferguson/ddata/g]
-[Error matching compiler output for users/ferguson/ddata/h]
-[Error matching compiler output for users/ferguson/ddata/i]
-[Error matching compiler output for users/ferguson/ddata/j]
+====================
 
 nondet. compilation timeout
 ---------------------------
@@ -261,6 +248,11 @@ nondet. seg fault at execution time
 nondet. compilation timeout
 ---------------------------
 [Error: Timed out compilation for studies/shootout/pidigits/bradc/pidigits-blc] (10/09/11)
+
+det. compilation timeout
+------------------------
+[Error: Timed out compilation for multilocale/diten/needMultiLocales/coforallon_maxThreads] (from 9/18/12 on, except 9/19)
+
 
 nondet. execution timeout
 -------------------------
@@ -405,9 +397,9 @@ countMemory prediff script doesn't get ".0" correct for round numbers
 ---------------------------------------------------------------------
 [Error matching program output for modules/standard/memory/countMemory/countMemory]
 
-gets "that wasn't very random looking" failure (09/26/11 -- first run in ages)
+gets "that wasn't very random looking" failure
 ------------------------------------------------------------------------------
-[Error matching program output for modules/standard/Random/diten/testRandomSeed]
+[Error matching program output for modules/standard/Random/diten/testRandomSeed] (first mentioned 09/26/11; still observed intermittently on chpbld02 in 8'2012 and 9'2012)
 
 nondet. execution timeouts
 --------------------------
@@ -902,6 +894,15 @@ timeouts due to removal of -O
 [Error: Timed out executing program users/franzf/v1/chpl/main (compopts: 1)]
 [Error: Timed out executing program users/franzf/v2/chpl/main (compopts: 1)]
 
+attempt to dereference nil OR timedexec: target program died with signal 11
+---------------------------------------------------------------------------
+(happens before any output is generated)
+[Error matching program output for studies/hpcc/HPL/vass/bl.md] (already fails in 8/16/12)
+[Error matching program output for optimizations/bulkcomm/asenjo/ptransDR/v2/ptrans] (since added, 9/29/12)
+[Error matching program output for optimizations/bulkcomm/asenjo/ptransDR/v1/ptrans] (ditto)
+[Error matching program output for optimizations/bulkcomm/asenjo/stencilDR/v2/stencil] (ditto)
+[Error matching program output for optimizations/bulkcomm/asenjo/stencilDR/v1/stencil] (ditto)
+
 
 =====================
 mpi-specific failures
@@ -1002,6 +1003,11 @@ array index out of bounds due to bug in XMT compiler
 sparse regression recurred after latest range changes (03/17/11)
 ----------------------------------------------------------------
 [Error matching program output for release/examples/primers/sparse]
+
+identifier "INFINITY" is undefined; identifier "NAN" is undefined
+-----------------------------------------------------------------
+This compilation error seems reported for any test that uses INFINITY or NAN.
+As of 10/1/12, 176 tests get the INFINITY error.
 
 execution timeouts
 ------------------
