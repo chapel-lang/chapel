@@ -53,7 +53,7 @@ Currently-supported launchers include:
 A specific launcher can be requested by setting the CHPL_LAUNCHER
 environment variable.  If left unset, a default is picked as follows:
 
-  CHPL_PLATFORM=xt-cle or xe-cle
+  CHPL_PLATFORM=cray-cascade, cray-xe, cray-xk, or cray-xt.
   + qsub & aprun in user's path -> qsub-aprun
   + only aprun in user's path   -> aprun
   (otherwise)                   -> none

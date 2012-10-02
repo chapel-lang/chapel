@@ -36,21 +36,23 @@ Recommended Settings
         setenv CHPL_HOST_PLATFORM `$CHPL_HOME/util/chplenv/platform`
 
    For other platforms that appear very similar to a UNIX workstation
-   from the shell prompt (e.g., a Cray XT), the value may need to be
-   set explicitly.  The strings for our currently-supported host
+   from the shell prompt (e.g., a Cray XK (TM)), the value may need to
+   be set explicitly.  The strings for our currently-supported host
    platforms are as follows:
 
-        cygwin      : Cygwin (Windows) platforms
-        darwin      : Macintosh OS X platforms
-        linux32     : 32-bit Linux platforms
-        linux64     : 64-bit Linux platforms
-        marenostrum : BSC's MareNostrum platform
-        netbsd      : NetBSD platforms
-        pwr5        : IBM Power5 SMP cluster
-        pwr6        : IBM Power6 SMP cluster
-        sunos       : SunOS platforms
-        xe-cle      : Cray XE running the Cray Linux Environment (CLE)
-        xt-cle      : Cray XT running the Cray Linux Environment (CLE)
+        cygwin       : Cygwin (Windows) platforms
+        darwin       : Macintosh OS X platforms
+        linux32      : 32-bit Linux platforms
+        linux64      : 64-bit Linux platforms
+        marenostrum  : BSC's MareNostrum platform
+        netbsd       : NetBSD platforms
+        pwr5         : IBM Power5 SMP cluster
+        pwr6         : IBM Power6 SMP cluster
+        sunos        : SunOS platforms
+        cray-cascade : Cray Cascade (TM)
+        cray-xe      : Cray XE (TM)
+        cray-xk      : Cray XK (TM)
+        cray-xt      : Cray XT (TM)
 
    Platform-specific READMEs are available for most of these platforms
    in $CHPL_HOME/doc/platforms.  See $CHPL_HOME/doc/README for a
@@ -95,9 +97,10 @@ Optional Settings
    variable to describe that platform.  Currently supported
    cross-compilation target platforms include:
 
-        x1  : Cray X1 (TM)
-        x2  : Cray X2 (TM)
-        xmt : Cray XMT (TM)
+        cray-cascade : Cray Cascade
+        cray-xe      : Cray XE
+        cray-xk      : Cray XK
+        cray-xt      : Cray XT
 
    If CHPL_TARGET_PLATFORM is not set, the target platform defaults to
    the same value as $CHPL_HOST_PLATFORM.
@@ -112,9 +115,11 @@ Optional Settings
    CHPL_TARGET_PLATFORM.  Currently supported values are as follows:
 
         cray-mta          : the Cray compiler for multithreaded architectures
-        cray-vec          : the Cray compiler for vector architectures
-        cray-xt-gnu       : the Cray XT compiler using the GNU backend
-        cray-xt-pgi       : the Cray XT compiler using the PGI backend
+        cray-*-cray       : the Cray PrgEnv compiler using the Cray CCE backend
+                            (where * = cascade, xe, xk, or xt)
+        cray-*-gnu        : the Cray PrgEnv compiler using the GNU backend
+        cray-*-intel      : the Cray PrgEnv compiler using the Intel backend
+        cray-*-pgi        : the Cray PrgEnv compiler using the PGI backend
         gnu               : the GNU compiler suite -- gcc and g++
         ibm               : the IBM compiler suite -- xlc and xlC
         intel             : the Intel compiler suite -- icc and icpc
@@ -129,7 +134,7 @@ Optional Settings
         pwr5, pwr6  ->  ibm
         x1, x2      ->  cray-vec
         xmt         ->  cray-mta
-        xt-cle      ->  cray-xt-$PE_ENV (PE_ENV is set by the PrgEnv-* module)
+        cray-*      ->  cray-xt-$PE_ENV (PE_ENV is set by the PrgEnv-* module)
         other       ->  gnu
 
    The default for CHPL_TARGET_COMPILER is CHPL_HOST_COMPILER if it is
