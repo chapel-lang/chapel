@@ -652,11 +652,7 @@ class DefaultRectangularArr: BaseArr {
 }
 
 proc DefaultRectangularDom.dsiSerialReadWrite(f /*: Reader or Writer*/) {
-  f 
-      <~> 
-        new ioLiteral("{") 
-            <~> 
-                ranges(1);
+  f <~> new ioLiteral("{") <~> ranges(1);
   for i in 2..rank do
     f <~> new ioLiteral(", ") <~> ranges(i);
   f <~> new ioLiteral("}");
@@ -673,7 +669,8 @@ proc DefaultRectangularArr.dsiSerialReadWrite(f /*: Reader or Writer*/) {
       var first = true;
       if debugDefaultDist && f.writing then f.writeln(dom.ranges(dim));
       for j in dom.ranges(dim) by makeStridePositive {
-        if first then first = false; else f <~> new ioLiteral(" ");
+        if first then first = false;
+        else if ! f.binary then f <~> new ioLiteral(" ");
         idx(dim) = j;
         f <~> dsiAccess(idx);
       }
@@ -685,7 +682,7 @@ proc DefaultRectangularArr.dsiSerialReadWrite(f /*: Reader or Writer*/) {
                              last=(last || dim == 1) && (j == lastIdx));
       }
     }
-    if !last && dim != 1 then
+    if !last && dim != 1 && ! f.binary then
       f <~> new ioNewline();
   }
   const zeroTup: rank*idxType;

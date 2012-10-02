@@ -740,6 +740,10 @@ proc channel.channel(param writing:bool, param kind:iokind, param locking:bool, 
   on f.home {
     this.home = f.home;
     var local_style = style;
+    if kind != iokind.dynamic {
+      local_style.binary = true;
+      local_style.byteorder = kind:uint(8);
+    }
     error = qio_channel_create(this._channel_internal, f._file_internal, hints, !writing, writing, start, end, local_style);
   }
 }
@@ -1715,7 +1719,9 @@ class ChannelWriter : Writer {
   }
   proc writePrimitive(x) {
     if !err {
-      err = _write_one_internal(_channel_internal, iokind.dynamic, x);
+      on this {
+        err = _write_one_internal(_channel_internal, iokind.dynamic, x);
+      }
     }
   }
   proc writeThis(w:Writer) {
@@ -1743,7 +1749,9 @@ class ChannelReader : Reader {
   }
   proc readPrimitive(inout x:?t) where _isIoPrimitiveTypeOrNewline(t) {
     if !err {
-      err = _read_one_internal(_channel_internal, iokind.dynamic, x);
+      on this {
+        err = _read_one_internal(_channel_internal, iokind.dynamic, x);
+      }
     }
   }
   proc writeThis(w:Writer) {

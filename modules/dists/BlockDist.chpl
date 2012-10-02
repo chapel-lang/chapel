@@ -964,7 +964,7 @@ proc BlockArr.dsiSerialWrite(f: Writer) {
   label next while true {
     f.write(dsiAccess(i));
     if i(rank) <= (dom.dsiDim(rank).high - dom.dsiDim(rank).stride:idxType) {
-      f.write(" ");
+      if ! f.binary then f.write(" ");
       i(rank) += dom.dsiDim(rank).stride:idxType;
     } else {
       for dim in 1..rank-1 by -1 {
