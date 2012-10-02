@@ -1,0 +1,8 @@
+bug: can't write to a remote Writer
+
+This is a bug I ran into when implementing I/O functions for
+block-sparse distributions where I wanted each locale to write out its
+own index set by using an on-clause to move onto each locale in
+question.  It turned out that there was no on-clause within the
+writer implementation itself.  Michael has since added a fix and
+will commit it imminently.
