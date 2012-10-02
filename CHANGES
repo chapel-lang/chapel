@@ -2,6 +2,213 @@
 Release Changes List
 ====================
 
+*** Stopped at 20572 ***
+
+=============
+version 1.6.0
+=============
+
+Ninth public release of Chapel, October 18, 2012
+
+Highlights (see entries in subsequent categories for details)
+-------------------------------------------------------------
+- syntax improvements: domain/array literals, zippered iteration
+- improved atomic types: new methods, support for floating point atomics
+- added support for 'ref' intents to support pass-by-reference arguments
+- added support for user overloads of '<=>' and 'op=' assignments
+- added a prototype implementation of a code-based documentation feature
+- added an LLVM-based back-end
+- added support for a strided bulk communication optimization
+- additional performance improvements and bug fixes
+- significant improvements to the SSCA2, RA, and LULESH example codes
+- added a new tasking implementation that uses U Tokyo's MassiveThreads library
+- added support for network-based atomics in the Chapel module on Cray systems
+- improved support for the Tilera chip architecture
+
+Environment Changes
+-------------------
+- made compiler infer CHPL_HOME if unset, or complain if mis-set
+- made util/setchplenv.* scripts more cleanly re-runnable
+- added new platforms: 'cray-cascade' and 'cray-xk'
+- renamed 'xe-cle' and 'xt-cle' to 'cray-xe' and 'cray-xt', respectively
+- made CHPL_MEM default to 'tcmalloc' when CHPL_COMM is 'ugni'
+- made CHPL_ATOMICS default to 'intrinsics' for CHPL_TARGET_COMPILER=PrgEnv-gnu
+
+Syntactic/Naming Changes
+------------------------
+- changed domain literals to use curly brackets rather than square brackets
+  (e.g., '[1..n, 1..n]' would now be written '{1..n, 1..n}')
+- introduced array literals using square brackets
+  (e.g., '[3, 5, 7, 11]' describes an array of type '[1..4] int')
+- added a 'zip' keyword to express zippered iterations rather than using tuples
+  (e.g., 'for (a,b) in (A,B)' is now written 'for (a,b) in zip(A,B)')
+- added a bidirectional I/O operator (<~>) for reading from/writing to channels
+  (e.g., 'myChannel <~> myStr;' will read/write 'myStr' from/to 'myChannel')
+- added support for creating one-tuples using the syntax (x,)
+  (e.g., '(1.0,)' describes a tuple of type '1*real')
+- re-established the underscore as the means of ignoring a tuple component
+  (e.g., '(x,,z)' would now be written '(x,_,z)')
+
+Semantic Changes / Changes to Chapel Language
+---------------------------------------------
+- added support for 'ref' intents, supporting pass-by-reference arguments
+  (e.g., 'proc foo(ref x: int) ...' passes an int arg to 'foo' by reference)
+- improved support for atomic variables
+  - added support for floating point atomic types
+    (e.g., 'var x:atomic real;')
+  - added waitFor(val) method
+    (e.g., 'x.waitFor(1.0)' would wait for x to hold the value 1.0)
+  - added non-fetching variations of operations to avoid excess communication
+    (e.g., 'x.add(1)' is like 'x.fetchAdd(1)' but doesn't return a value)
+  - added compareExchange() method as a shorthand for compareExchangeStrong()
+- added support for user-defined overloads of '<=>' and 'op=' assignments
+  (e.g., 'proc <=>(ref x: t, ref y: t) ...' or 'proc +=(ref lhs:t, rhs:t) ...')
+- added a '.size' method to arrays, domains, strings, and ranges
+- made enum types behave more similarly to param ints (or collections thereof)
+- removed certain expression forms as being valid types or standalone stmts
+
+Newly Implemented Features
+--------------------------
+- added a prototype implementation of a code-based documentation feature
+  (see doc/technotes/README.chpldoc)
+- added an LLVM-based back-end
+  (see doc/technotes/README.llvm)
+- added support for degenerate reindexing of non-rectangular arrays
+
+Deprecated Features
+-------------------
+- removed the '_extern' keyword; use 'extern' instead
+- removed the ability to use blanks to drop tuple components -- use '_' instead
+
+Standard Modules
+----------------
+- made Dimensional Block Cyclic distributions support non-default index types
+- added HeapSort() to the standard Sort module
+- added the ability to clear() timers without stopping them
+
+Documentation
+-------------
+- added README.llvm and README.chpldoc to describe new features
+- updated README.atomics to describe new capabilities
+- improved command-line help for -d option
+- noted that Python is now a required feature to build Chapel
+- minor updates and fixes to several chapters of the language specification
+- minor updates to several READMEs
+
+Example Codes
+-------------
+- extensive revisions to SSCA#2 including:
+  - extensive performance and memory improvements
+  - improved ability to 'make' with different options from the command line
+  - changed the neighbor list representation to use 1D arrays of 2-tuples
+  - added support for distributed/parallel graph construction
+  - added ability to read/write graphs from/to files in setting up
+  - fixed a bug in the TEPs computation when starting from a subset of vertices
+  - added the ability to skip various kernels via configs
+  - optimized and fixed a bug in the generation of filtered edge lists
+  - converted uses of sync variables to atomic variables
+- improvements to RA:
+  - extended RA to use either on-clauses or direct array accesses
+  - made verification updates lossless using synchronization variables
+    (see examples/benchmarks/hpcc/ra.chpl)
+  - added a lossless version of RA that uses atomic variables
+    (see examples/benchmarks/hpcc/ra-atomics.chpl)
+- improvements to LULESH
+  - replaced 'sync' variables with 'atomic's
+  - converted a global array into tuples to minimize communication
+  - general code cleanup improvements
+- added a new example code to demonstrate the --docs/chpldoc capability
+  (see examples/primers/chpldoc.chpl)
+- updated examples/primers/atomic_vars.chpl to reflect recent changes
+- updated all examples to reflect syntax changes
+
+Platform-specific Notes
+-----------------------
+- improved support for the Tilera chip architecture
+  (see doc/platforms/README.tilera)
+- added support for Cray Gemini- and Aries-based atomics to the ugni comm layer
+
+Launcher-specific Notes
+-----------------------
+- improved error handling of failed forked processes
+- for aprun-based launchers:
+  - made '-cc none' the default mode used
+  - added -j option to aprun (for supported versions)
+- for the pbs-aprun launcher:
+  - fixed a timing bug
+  - added a flag --generate-qsub-script
+
+Compiler Flags
+--------------
+- added --docs and related flags for generating documentation for Chapel code
+  (see doc/technotes/README.chpldoc)
+- added a --gen-extern-prototypes flag to cross-verify extern prototypes
+
+Bug Fixes / New Semantic Checks (for old semantics)
+---------------------------------------------------
+- fixed a bug with type-inferred module-level domains/arrays
+- fixed a bug relating to strings on distributed memory 32-bit platforms
+- improved support for uint idxTypes in domains and arrays
+- improved the ability to use user-defined constructors in derived classes
+- fixed a bug in which the block-cyclic distribution didn't support 1D domains
+- fixed a bug with using stdin on Mac OS X
+- fixed a bug with bitwise I/O writing
+- fixed a bug in which classes were improperly considered unused and removed
+- fixed a bug in tcmalloc when computing reallocation growth and shrinkage
+
+Packaging Changes
+-----------------
+- added setchplenv.fish to the release (intended for 1.5.0, but mis-packaged)
+- made the subdirectories used to store object files more unique
+- added a 'chpldoc' alias to the 'chpl' compiler to just generate documentation
+
+Performance Improvements
+------------------------
+- added a strided bulk communication optimization, disabled by default
+  (to enable, compile with -s useBulkTransferStride)
+- replaced internal sync var counters with atomics when appropriate
+- made initialization of remote array access caches lazy to reduce setup time
+- removed a level of pointer indirection in the implementation of array data
+- reduced the runtime cost of creating array aliases
+- optimized reindexing for the case when the original and new domains match
+- optimized the performance of equality/inequality on identical domains
+- made most associative domain/array ops to occur on the owning locale
+- enabled remote-value forwarding of array descriptors in the presence of syncs
+
+Runtime Library Changes
+-----------------------
+- added support for MassiveThreads-based tasking (courtesey U Tokyo)
+  (see doc/README.tasks)
+- added the ability to implement atomic variables using network-based AMOs
+- made counters used for communication diagnostics 64 bits to avoid overflow
+- turned off the cooperative comm/task non-blocking get interface for GASNet
+
+Third-Party Software Changes
+----------------------------
+- updated Qthreads to version 1.8
+- updated GASNet to version 1.18.2
+- added MassiveThreads 0.3beta to the third-party directory
+
+Testing System
+--------------
+- reordered the order in which execution options are passed to tests
+  (see #comments at top of start_test for details)
+- added a 'lastexecopts' capability to require an execution option to come last
+
+Internal/Developer-oriented
+---------------------------
+- significantly refactored the code generation pass
+- began the process of replacing homegrown ADTs with STL classes
+- removed pragma "inline" (use 'inline' keyword instead)
+- renamed some primitives: 'get ref' -> 'deref' and 'set ref' -> 'addr of'
+- fixed type-punned pointers in comm-gasnet.c
+- fixed a case of deleting global type symbols prematurely
+- fixed a use-before-def warning for default-initialized vars of extern type
+- added consistency checking to basic block analysis
+- made use of BLOCK_TYPE tag more consistent
+- reduced reliance on primitives and locale internals in standard modules
+
+
 =============
 version 1.5.0
 =============
@@ -99,12 +306,10 @@ Example Codes
 
 Platform-specific Notes
 -----------------------
-
 - added Cray XE-specific tasking/thread/communication layers to the
   Cray XE module (available using 'module load chapel', see
   doc/platforms/README.xe-cle-system-specific-layers)
 - fixed GASNet executions on Mac OS X Lion
-
 - generated C identifier lengths are now capped to avoid PGI warnings
 
 Compiler Flags
