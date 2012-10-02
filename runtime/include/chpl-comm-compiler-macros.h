@@ -47,7 +47,7 @@ void chpl_gen_comm_put(void* addr, int32_t locale, void* raddr,
 static ___always_inline
 void chpl_gen_comm_get_strd(void *addr, void *dststr, int32_t locale, void *raddr,
                        void *srcstr, void *count, int32_t strlevels, 
-		       int32_t elemSize, int32_t typeIndex,
+                       int32_t elemSize, int32_t typeIndex,
                        int ln, chpl_string fn)
 {
 #ifdef CHPL_TASK_COMM_GET_STRD
@@ -60,7 +60,7 @@ void chpl_gen_comm_get_strd(void *addr, void *dststr, int32_t locale, void *radd
 static ___always_inline
 void chpl_gen_comm_put_strd(void *addr, void *dststr, int32_t locale, void *raddr,
                        void *srcstr, void *count, int32_t strlevels, 
-		       int32_t elemSize, int32_t typeIndex,
+                       int32_t elemSize, int32_t typeIndex,
                        int ln, chpl_string fn)
 {
 #ifdef CHPL_TASK_COMM_PUT_STRD

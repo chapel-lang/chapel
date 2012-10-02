@@ -3737,9 +3737,9 @@ GenRet CallExpr::codegen() {
       // count addr, strlevels, elem
       const char* fn;
       if (primitive->tag == PRIM_CHPL_COMM_GET_STRD) {
-	fn = "chpl_gen_comm_get_strd";
+        fn = "chpl_gen_comm_get_strd";
       } else {
-	fn = "chpl_gen_comm_put_strd";
+        fn = "chpl_gen_comm_put_strd";
       }
       TypeSymbol *dt;
       TypeSymbol *dt2;
@@ -3836,9 +3836,9 @@ GenRet CallExpr::codegen() {
       GenRet eltSize = codegenSizeof(dt->typeInfo());
 
       codegenCall(fn, codegenCastToVoidStar(localAddr), codegenCastToVoidStar(dststr),
-		  locale, remoteAddr, codegenCastToVoidStar(srcstr),
-		  codegenCastToVoidStar(count), stridelevels, eltSize,
-		  genTypeStructureIndex(dt), get(8), get(9));
+                  locale, remoteAddr, codegenCastToVoidStar(srcstr),
+                  codegenCastToVoidStar(count), stridelevels, eltSize,
+                  genTypeStructureIndex(dt), get(8), get(9));
 
       break;
     }

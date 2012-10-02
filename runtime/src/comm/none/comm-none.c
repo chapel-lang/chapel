@@ -91,9 +91,9 @@ void  chpl_comm_get(void* addr, int32_t locale, void* raddr,
 }
 
 void  chpl_comm_put_strd(void* dstaddr_arg, void* dststrides, int32_t dstlocale, 
-		     void* srcaddr_arg, void* srcstrides, void* count,
-		     int32_t stridelevels, int32_t elemSize, int32_t typeIndex, 
-		     int ln, chpl_string fn)
+                     void* srcaddr_arg, void* srcstrides, void* count,
+                     int32_t stridelevels, int32_t elemSize, int32_t typeIndex, 
+                     int ln, chpl_string fn)
 {
   const size_t strlvls=(size_t)stridelevels;
   int i,j,k,l,m,t,total,off,x,carry;
@@ -114,9 +114,9 @@ void  chpl_comm_put_strd(void* dstaddr_arg, void* dststrides, int32_t dstlocale,
     dststr[0] = ((int32_t*)dststrides)[0] * elemSize;
     for (i=1;i<strlvls;i++)
       { 
-	srcstr[i] = ((int32_t*)srcstrides)[i] * elemSize;
-	dststr[i] = ((int32_t*)dststrides)[i] * elemSize;
-	cnt[i]=((int32_t*)count)[i];
+        srcstr[i] = ((int32_t*)srcstrides)[i] * elemSize;
+        dststr[i] = ((int32_t*)dststrides)[i] * elemSize;
+        cnt[i]=((int32_t*)count)[i];
       }
     cnt[strlvls]=((int32_t*)count)[strlvls];
   }
@@ -139,9 +139,9 @@ void  chpl_comm_put_strd(void* dstaddr_arg, void* dststrides, int32_t dstlocale,
       srcaddr = (int8_t*)srcaddr_arg + srcstr[1]*i;
       dstaddr = (int8_t*)dstaddr_arg + dststr[1]*i;
       for(j=0; j<cnt[1]; j++) {
-	memmove(dstaddr,srcaddr,cnt[0]);
-	srcaddr+=srcstr[0];
-	dstaddr+=dststr[0];
+        memmove(dstaddr,srcaddr,cnt[0]);
+        srcaddr+=srcstr[0];
+        dstaddr+=dststr[0];
       }
     }
     break;
@@ -150,13 +150,13 @@ void  chpl_comm_put_strd(void* dstaddr_arg, void* dststrides, int32_t dstlocale,
       srcaddr1 = (int8_t*)srcaddr_arg + srcstr[2]*i;
       dstaddr1 = (int8_t*)dstaddr_arg + dststr[2]*i;
       for(j=0; j<cnt[2]; j++) {
-	srcaddr = srcaddr1 + srcstr[1]*j;
-	dstaddr = dstaddr1 + dststr[1]*j;
-	for(k=0; k<cnt[1]; k++) {
-	  memmove(dstaddr,srcaddr,cnt[0]);
-	  srcaddr+=srcstr[0];
-	  dstaddr+=dststr[0];
-	}
+        srcaddr = srcaddr1 + srcstr[1]*j;
+        dstaddr = dstaddr1 + dststr[1]*j;
+        for(k=0; k<cnt[1]; k++) {
+          memmove(dstaddr,srcaddr,cnt[0]);
+          srcaddr+=srcstr[0];
+          dstaddr+=dststr[0];
+        }
       }
     }
     break;
@@ -217,30 +217,30 @@ void  chpl_comm_put_strd(void* dstaddr_arg, void* dststrides, int32_t dstlocale,
     
     for (j=0; j<total; j++)
       {     
-	carry=1;
-	for (t=1;t<=strlvls;t++)
-	  {
-	    if (cnt[t]*carry>=j+1) //IF 1
-	      {
-		x=j/carry;
-		off =j-(carry*x);
+        carry=1;
+        for (t=1;t<=strlvls;t++)
+          {
+            if (cnt[t]*carry>=j+1) //IF 1
+              {
+                x=j/carry;
+                off =j-(carry*x);
         
-		if (carry!=1) //IF 2
-		  {
-		    srcdisp[j]=srcstr[t-1]*x+srcdisp[off];
-		    dstdisp[j]=dststr[t-1]*x+dstdisp[off];
-		  }
-		else //ELSE 2
-		  {
-		    srcdisp[j]=srcstr[t-1]*x;
-		    dstdisp[j]=dststr[t-1]*x;
-		  }   
+                if (carry!=1) //IF 2
+                  {
+                    srcdisp[j]=srcstr[t-1]*x+srcdisp[off];
+                    dstdisp[j]=dststr[t-1]*x+dstdisp[off];
+                  }
+                else //ELSE 2
+                  {
+                    srcdisp[j]=srcstr[t-1]*x;
+                    dstdisp[j]=dststr[t-1]*x;
+                  }   
                 memmove(dstaddr+dstdisp[j],srcaddr+srcdisp[j],cnt[0]);
-		break;
-	      }
-	    else //ELSE 1
-	      carry=carry*cnt[t];
-	  }
+                break;
+              }
+            else //ELSE 1
+              carry=carry*cnt[t];
+          }
       }
     chpl_mem_free(srcdisp,0,0);
     chpl_mem_free(dstdisp,0,0); 
@@ -249,9 +249,9 @@ void  chpl_comm_put_strd(void* dstaddr_arg, void* dststrides, int32_t dstlocale,
 }
 
 void  chpl_comm_get_strd(void* dstaddr_arg, void* dststrides, int32_t srclocale, 
-		     void* srcaddr_arg, void* srcstrides, void* count,
-		     int32_t stridelevels, int32_t elemSize, int32_t typeIndex, 
-		     int ln, chpl_string fn)
+                     void* srcaddr_arg, void* srcstrides, void* count,
+                     int32_t stridelevels, int32_t elemSize, int32_t typeIndex, 
+                     int ln, chpl_string fn)
 {
   const size_t strlvls=(size_t)stridelevels;
   int i,j,k,l,m,t,total,off,x,carry;
@@ -271,9 +271,9 @@ void  chpl_comm_get_strd(void* dstaddr_arg, void* dststrides, int32_t srclocale,
     dststr[0] = ((int32_t*)dststrides)[0] * elemSize;
     for (i=1;i<strlvls;i++)
       { 
-	srcstr[i] = ((int32_t*)srcstrides)[i] * elemSize;
-	dststr[i] = ((int32_t*)dststrides)[i] * elemSize;
-	cnt[i]=((int32_t*)count)[i];
+        srcstr[i] = ((int32_t*)srcstrides)[i] * elemSize;
+        dststr[i] = ((int32_t*)dststrides)[i] * elemSize;
+        cnt[i]=((int32_t*)count)[i];
       }
     cnt[strlvls]=((int32_t*)count)[strlvls];
   }
@@ -298,9 +298,9 @@ void  chpl_comm_get_strd(void* dstaddr_arg, void* dststrides, int32_t srclocale,
       srcaddr = (int8_t*)srcaddr_arg + srcstr[1]*i;
       dstaddr = (int8_t*)dstaddr_arg + dststr[1]*i;
       for(j=0; j<cnt[1]; j++) {
-	memmove(dstaddr,srcaddr,cnt[0]);
-	srcaddr+=srcstr[0];
-	dstaddr+=dststr[0];
+        memmove(dstaddr,srcaddr,cnt[0]);
+        srcaddr+=srcstr[0];
+        dstaddr+=dststr[0];
       }
     }
     break;
@@ -309,13 +309,13 @@ void  chpl_comm_get_strd(void* dstaddr_arg, void* dststrides, int32_t srclocale,
       srcaddr1 = (int8_t*)srcaddr_arg + srcstr[2]*i;
       dstaddr1 = (int8_t*)dstaddr_arg + dststr[2]*i;
       for(j=0; j<cnt[2]; j++) {
-	srcaddr = srcaddr1 + srcstr[1]*j;
-	dstaddr = dstaddr1 + dststr[1]*j;
-	for(k=0; k<cnt[1]; k++) {
-	  memmove(dstaddr,srcaddr,cnt[0]);
-	  srcaddr+=srcstr[0];
-	  dstaddr+=dststr[0];
-	}
+        srcaddr = srcaddr1 + srcstr[1]*j;
+        dstaddr = dstaddr1 + dststr[1]*j;
+        for(k=0; k<cnt[1]; k++) {
+          memmove(dstaddr,srcaddr,cnt[0]);
+          srcaddr+=srcstr[0];
+          dstaddr+=dststr[0];
+        }
       }
     }
     break;
@@ -376,30 +376,30 @@ void  chpl_comm_get_strd(void* dstaddr_arg, void* dststrides, int32_t srclocale,
     
     for (j=0; j<total; j++)
       {     
-	carry=1;
-	for (t=1;t<=strlvls;t++)
-	  {
-	    if (cnt[t]*carry>=j+1) //IF 1
-	      {
-		x=j/carry;
-		off =j-(carry*x);
+        carry=1;
+        for (t=1;t<=strlvls;t++)
+          {
+            if (cnt[t]*carry>=j+1) //IF 1
+              {
+                x=j/carry;
+                off =j-(carry*x);
         
-		if (carry!=1) //IF 2
-		  {
-		    srcdisp[j]=srcstr[t-1]*x+srcdisp[off];
-		    dstdisp[j]=dststr[t-1]*x+dstdisp[off];
-		  }
-		else //ELSE 2
-		  {
-		    srcdisp[j]=srcstr[t-1]*x;
-		    dstdisp[j]=dststr[t-1]*x;
-		  }   
+                if (carry!=1) //IF 2
+                  {
+                    srcdisp[j]=srcstr[t-1]*x+srcdisp[off];
+                    dstdisp[j]=dststr[t-1]*x+dstdisp[off];
+                  }
+                else //ELSE 2
+                  {
+                    srcdisp[j]=srcstr[t-1]*x;
+                    dstdisp[j]=dststr[t-1]*x;
+                  }   
                 memmove(dstaddr+dstdisp[j],srcaddr+srcdisp[j],cnt[0]);
-		break;
-	      }
-	    else //ELSE 1
-	      carry=carry*cnt[t];
-	  }
+                break;
+              }
+            else //ELSE 1
+              carry=carry*cnt[t];
+          }
       }
     chpl_mem_free(srcdisp,0,0);
     chpl_mem_free(dstdisp,0,0); 

@@ -659,9 +659,9 @@ void  chpl_comm_get(void* addr, int32_t locale, void* raddr,
 // Maybe this can be done in Chapel, but would it be as efficient?
 //
 void  chpl_comm_get_strd(void* dstaddr, void* dststrides, int32_t srclocale, 
-		     void* srcaddr, void* srcstrides, void* count,
-		     int32_t stridelevels, int32_t elemSize, int32_t typeIndex, 
-		     int ln, chpl_string fn) {
+                     void* srcaddr, void* srcstrides, void* count,
+                     int32_t stridelevels, int32_t elemSize, int32_t typeIndex, 
+                     int ln, chpl_string fn) {
   int i;
   const size_t strlvls=(size_t)stridelevels;
   const gasnet_node_t srcnode=(gasnet_node_t)srclocale;
@@ -678,9 +678,9 @@ void  chpl_comm_get_strd(void* dstaddr, void* dststrides, int32_t srclocale,
     dststr[0] = ((int32_t*)dststrides)[0] * elemSize;
     for (i=1; i<strlvls; i++)
       { 
-	srcstr[i] = ((int32_t*)srcstrides)[i] * elemSize;
-	dststr[i] = ((int32_t*)dststrides)[i] * elemSize;
-	cnt[i]=((int32_t*)count)[i];
+        srcstr[i] = ((int32_t*)srcstrides)[i] * elemSize;
+        dststr[i] = ((int32_t*)dststrides)[i] * elemSize;
+        cnt[i]=((int32_t*)count)[i];
       }
     cnt[strlvls]=((int32_t*)count)[strlvls];
   }
@@ -688,15 +688,15 @@ void  chpl_comm_get_strd(void* dstaddr, void* dststrides, int32_t srclocale,
   if (chpl_verbose_comm && !chpl_comm_no_debug_private){
     printf("%d: %s:%d: remote get from %d. strlvls:%d. elemSize:%d  sizeof(size_t):%d  sizeof(gasnet_node_t):%d\n", chpl_localeID, fn, ln, srclocale,(int)strlvls,elemSize,(int)sizeof(size_t),(int)sizeof(gasnet_node_t));
 
-    printf("dststrides in bytes:\n");		      
+    printf("dststrides in bytes:\n");                 
     for (i=0;i<strlvls;i++) printf(" %d ",(int)dststr[i]);
-    printf("\n");		      
-    printf("srcstrides in bytes:\n");		      
+    printf("\n");                     
+    printf("srcstrides in bytes:\n");                 
     for (i=0;i<strlvls;i++) printf(" %d ",(int)srcstr[i]);
-    printf("\n");		      
-    printf("count (count[0] in bytes):\n");		      
+    printf("\n");                     
+    printf("count (count[0] in bytes):\n");                   
     for (i=0;i<=strlvls;i++) printf(" %d ",(int)cnt[i]);
-    printf("\n");		      
+    printf("\n");                     
   }
   // the case (chpl_localeID == srclocale) is internally managed inside gasnet
   if (chpl_verbose_comm && !chpl_comm_no_debug_private)
@@ -711,9 +711,9 @@ void  chpl_comm_get_strd(void* dstaddr, void* dststrides, int32_t srclocale,
 
 // See the comment for cmpl_comm_gets().
 void  chpl_comm_put_strd(void* dstaddr, void* dststrides, int32_t dstlocale, 
-		     void* srcaddr, void* srcstrides, void* count,
-		     int32_t stridelevels, int32_t elemSize, int32_t typeIndex, 
-		     int ln, chpl_string fn) {
+                     void* srcaddr, void* srcstrides, void* count,
+                     int32_t stridelevels, int32_t elemSize, int32_t typeIndex, 
+                     int ln, chpl_string fn) {
   int i;
   const size_t strlvls=(size_t)stridelevels;
   const gasnet_node_t dstnode=(gasnet_node_t)dstlocale;
@@ -729,24 +729,24 @@ void  chpl_comm_put_strd(void* dstaddr, void* dststrides, int32_t dstlocale,
     dststr[0] = ((int32_t*)dststrides)[0] * elemSize;
     for (i=1; i<strlvls; i++)
       { 
-	srcstr[i] = ((int32_t*)srcstrides)[i] * elemSize;
-	dststr[i] = ((int32_t*)dststrides)[i] * elemSize;
-	cnt[i]=((int32_t*)count)[i];
+        srcstr[i] = ((int32_t*)srcstrides)[i] * elemSize;
+        dststr[i] = ((int32_t*)dststrides)[i] * elemSize;
+        cnt[i]=((int32_t*)count)[i];
       }
     cnt[strlvls]=((int32_t*)count)[strlvls];
   }
   if (chpl_verbose_comm && !chpl_comm_no_debug_private){
     printf("%d: %s:%d: remote get from %d. strlvls:%d. elemSize:%d  sizeof(size_t):%d  sizeof(gasnet_node_t):%d\n", chpl_localeID, fn, ln, dstlocale,(int)strlvls,elemSize,(int)sizeof(size_t),(int)sizeof(gasnet_node_t));
 
-    printf("dststrides in bytes:\n");		      
+    printf("dststrides in bytes:\n");                 
     for (i=0;i<strlvls;i++) printf(" %d ",(int)dststr[i]);
-    printf("\n");		      
-    printf("srcstrides in bytes:\n");		      
+    printf("\n");                     
+    printf("srcstrides in bytes:\n");                 
     for (i=0;i<strlvls;i++) printf(" %d ",(int)srcstr[i]);
-    printf("\n");		      
-    printf("count (count[0] in bytes):\n");		      
+    printf("\n");                     
+    printf("count (count[0] in bytes):\n");                   
     for (i=0;i<=strlvls;i++) printf(" %d ",(int)cnt[i]);
-    printf("\n");		      
+    printf("\n");                     
   }
 
   // the case (chpl_localeID == dstlocale) is internally managed inside gasnet

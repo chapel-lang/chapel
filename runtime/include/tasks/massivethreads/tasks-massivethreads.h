@@ -6,8 +6,8 @@
 #include "myth.h"
 
 typedef struct{
-	myth_felock_t lock;
-	volatile int is_full;
+        myth_felock_t lock;
+        volatile int is_full;
 }chpl_sync_aux_t;
 
 // type (and default value) used to communicate task identifiers
