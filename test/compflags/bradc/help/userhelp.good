@@ -2,14 +2,6 @@ Usage: chpl [flags] [source files]
 
 Module Processing Options:
       --count-tokens                  Count tokens in main modules
-      --[no-]docs                     Runs documentation on the source file
-      --[no-]docs-alphabetical        Alphabetizes the documentation
-      --docs-comment-style <indicator>
-                                      Only includes comments that start with
-                                      <indicator>
-      --docs-folder <foldername>      Sets the documentation folder to
-                                      <foldername>
-      --docs-text-only                Generate text only documentation
       --main-module <module>          Specify entry point module
   -M, --module-dir <directory>        Add directory to module search path
       --print-code-size               Print code size of main modules
@@ -87,6 +79,16 @@ C Code Compilation Options:
 
 LLVM Code Generation Options:
       --llvm                          Use the LLVM code generator
+
+Documentation Options:
+      --[no-]docs                     Runs documentation on the source file
+      --[no-]docs-alphabetical        Alphabetizes the documentation
+      --docs-comment-style <indicator>
+                                      Only includes comments that start with
+                                      <indicator>
+      --docs-dir <dirname>            Sets the documentation directory to
+                                      <dirname>
+      --docs-text-only                Generate text only documentation
 
 Compilation Trace Options:
       --print-commands                Print system commands
