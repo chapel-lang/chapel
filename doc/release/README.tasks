@@ -183,6 +183,9 @@ variables.  To try Qthreads tasking, please take the following steps
 Please report any apparent bugs in Qthreads tasking to the Chapel team.
 For more information on Qthreads, please see $CHPL_HOME/third-party/README
 
+For best results, make sure that you have installed the libhwloc library
+which qthreads will auto-detect during configuration and use for processor
+affinity.
 
 CHPL_TASKS == nanox, CHPL_THREADS == none
 -----------------------------------------
