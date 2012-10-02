@@ -10,16 +10,16 @@ Overview
 
 Atomic variables are variables that support atomic operations.
 Currently, Chapel supports processor-provided atomic operations on
-bools and all supported sized of signed and unsigned integer types.
-Initial support for network-provided atomic operations is also
-available.  See the appropriate README for a particular platform to
-see if network-based atomics are available.
+bools, all supported sized of signed and unsigned integer types, and
+real(32) and real(64).  Initial support for network-provided atomic
+operations is also available.  See the appropriate README for a
+particular platform to see if network-based atomics are available.
 
 The choice of supported atomic variable types as well as the atomic
 operations was strongly influenced by the upcoming C standard, C1x.
-In subsequent release, we plan to include other types and operations,
+In subsequent releases, we plan to include other types and operations,
 especially those specified in C/C++ standards or supported directly
-hardware.
+in hardware.
 
 The specific implementation of atomics can be selected via the
 environment variable CHPL_ATOMICS.  Similar to the other Chapel
@@ -31,10 +31,10 @@ atomic implementation used by the Chapel runtime.
 
 If supported, the network atomics implementation can be selected via
 the environment variable CHPL_NETWORK_ATOMICS.  If set, all variables
-declared to be atomic, will use the network's atomic operations.  It
-is possible to override this default by using the explicit type name
-for the processor-based atomics (available in the type function
-chpl__atomicType() defined in the file
+declared to be atomic will use the specified network's atomic
+operations.  It is possible to override this default by using the
+explicit type name for the processor-based atomics (available in the
+type function chpl__atomicType() defined in the file
 $CHPL_HOME/modules/internal/Atomics.chpl).
 
 
@@ -53,8 +53,10 @@ methods automatically.
 
 All atomic types support read(), write(), exchange(),
 compareExchangeWeak(), and compareExchangeStrong(), and
-compareExchange().  Integer atomics types support atomic fetch
-operations.  Bool atomics support testAndSet() and clear().
+compareExchange().  Integer atomics types support all atomic
+operations (fetching and non-fetching).  Real atomics types support
+add(), fetchAdd(), sub() and fetchsub().  Bool atomics support
+testAndSet() and clear().
 
 The following summarizes the methods and supported types.
 
@@ -87,9 +89,9 @@ The following summarizes the methods and supported types.
    and(x), fetchAnd(x):
    xor(x), fetchXor(x):
      Applies the appropriate operator (+, -, |, &, or ^) to the
-     original value and x and stores the result.  For the fetch
-     varieties, returns the original value.  Only defined for the
-     integral atomic types.
+     original value and x and stores the result.  Only defined for
+     integral atomic types (all) and real atomic types (+ and -
+     varieties only).  The fetch varieties return the original value.
 
    testAndSet(x):
      Stores true as the new value.  Returns the original value.  Only
@@ -131,17 +133,17 @@ Below are a few of the known open issues with Chapel atomics.
   implementation and/or as of yet undefined semantics.  These
   functions include a 'fence' operation, a 'lock free' test, and
   weaker accesses (peek/poke).  To see a full list of available
-  functions, see the extern declarations at the top of
-  $CHPL_HOME/modules/internal/Atomics.chpl.
+  functions, see $CHPL_HOME/modules/internal/Atomics.chpl.
 
 - Default argument passing semantics are not yet defined for atomics.
   Currently, atomics are implemented using records, and as a result
   they adopt the semantics of records (default intent passed by
   value).  We not expect this to be the case in future releases.
 
-- Currently, all remote atomic operations will result in the calling
-  task effectively migrating to the locale on which the atomic
-  variable was allocated and performing the atomic operations locally.
+- Currently, unless using network atomics, all remote atomic
+  operations will result in the calling task effectively migrating to
+  the locale on which the atomic variable was allocated and performing
+  the atomic operations locally.
 
 Feedback
 --------
