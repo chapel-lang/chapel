@@ -38,6 +38,21 @@ if ($preset_platform eq "") {
     $platform = $preset_platform;
 }
 
+if ($platform eq "xt-cle"){  
+    $platform = "cray-xt";
+
+    if( $ARGV[1] eq 1 ) {
+        warn "Warning: 'xt-cle' is deprecated.  Using 'cray-xt' instead.";
+    }
+} 
+
+if ($platform eq "xe-cle"){
+    $platform = "cray-xe";
+
+    if ($ARGV[1] eq 1) {
+        warn "Warning: 'xe-cle' is deprecated.  Using 'cray-xe' instead."
+    }
+} 
 
 print "$platform\n";
 exit(0);

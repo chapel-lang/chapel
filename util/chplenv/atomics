@@ -42,7 +42,9 @@ if ($network_atomics == 1) {
 
     if ($platform eq "linux32") {
 	$atomics = "locks";
-    } elsif ($compiler eq "gnu" || $compiler eq "cray-xt-gnu" || $compiler eq "cray-xe-gnu" ) {
+    } elsif ($compiler eq "gnu" || $compiler eq "cray-xt-gnu" || 
+             $compiler eq "cray-xe-gnu" || $compiler eq "cray-cascade-gnu" || 
+             $compiler eq "cray-xk-gnu") {
       # Check the compiler version
       my $version = `gcc -dumpversion`;
       my @vers = split(/\./, $version);

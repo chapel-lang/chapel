@@ -1,0 +1,4 @@
+#
+# Settings for the Cray Cascade series
+#
+include Makefile.cray-xe

@@ -1,0 +1,3 @@
+# put cascade cross-compilation pgi-specific settings here
+
+include $(CHPL_MAKE_HOME)/make/compiler/Makefile.cray-xe-pgi

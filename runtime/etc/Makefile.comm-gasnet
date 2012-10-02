@@ -26,19 +26,13 @@ endif
 # contain a full path) to simply be the default cc as specified by the
 # current PrgEnv.
 #
-ifneq ($(CHPL_MAKE_TARGET_PLATFORM),xt-cle)
-ifneq ($(CHPL_MAKE_TARGET_PLATFORM),xe-cle)
+ifneq (, $(filter $(CHPL_MAKE_TARGET_PLATFORM),cray-xt cray-xe cray-cascade cray-xk))
+CC = cc $(CHPL_GASNET_CFLAGS)
+LD = cc $(CHPL_GASNET_LFLAGS)
+else
 CC = $(GASNET_CC) $(CHPL_GASNET_CFLAGS)
 LD = $(GASNET_LD) $(CHPL_GASNET_LFLAGS)
-else
-CC = cc $(CHPL_GASNET_CFLAGS)
-LD = cc $(CHPL_GASNET_LFLAGS)
 endif
-else
-CC = cc $(CHPL_GASNET_CFLAGS)
-LD = cc $(CHPL_GASNET_LFLAGS)
-endif
-
 
 LIBS += $(GASNET_LIBS)
 endif

@@ -11,7 +11,7 @@ print "uname -a: $uname";
 print "\$CHPL_HOME: $ENV{'CHPL_HOME'}\n";
 print "script location: $utildirname\n";
 
-$hostplatform = `$utildirname/platform --host`; chomp($hostplatform);
+$hostplatform = `$utildirname/platform --host 1`; chomp($hostplatform);
 $hostcompiler = `$utildirname/compiler --host`; chomp($hostcompiler);
 
 print "CHPL_HOST_PLATFORM: $hostplatform\n";
