@@ -22,6 +22,7 @@ clobber: clean
 creoleparser: $(CREOLEPARSER_INSTALL_DIR)
 
 $(CREOLEPARSER_INSTALL_DIR):
+	mkdir $(CREOLEPARSER_INSTALL_DIR)
 	PYTHONPATH=$(CREOLEPARSER_INSTALL_DIR) && easy_install --install-dir=$(CREOLEPARSER_INSTALL_DIR) Creoleparser
 
 FORCE:

@@ -64,12 +64,12 @@ void docs(void) {
     }
     if (!fDocsTextOnly) {
       char command[1024];
-      sprintf(command, "PYTHONPATH=%s/third-party/creoleparser/install:%s/third-party/genshi/install:$PYTHONPATH && python %s/util/docs/chpldoc2html %s", CHPL_HOME, CHPL_HOME, CHPL_HOME, folderName.c_str());
+      sprintf(command, "PYTHONPATH=%s/third-party/creoleparser/install:$PYTHONPATH && python %s/util/docs/chpldoc2html %s", CHPL_HOME, CHPL_HOME, CHPL_HOME, folderName.c_str());
       if (mysystem(command, "converting creole docs to html", 1) != 0) {
         fprintf(stderr, "\n");
         USR_FATAL("chpldoc2html failed when creating your --docs output.\n"
                   "       Make sure the Creoleparser and Genshi Python packages are in your path.\n"
-                  "       One way to do so is: '%s -C $CHPL_HOME/third-party creoleparser genshi'\n", CHPL_MAKE);
+                  "       One way to do so is: '%s -C $CHPL_HOME/third-party creoleparser'\n", CHPL_MAKE);
       }
     }
   }
