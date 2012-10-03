@@ -64,7 +64,7 @@ void docs(void) {
     }
     if (!fDocsTextOnly) {
       char command[1024];
-      sprintf(command, "PYTHONPATH=%s/third-party/creoleparser/install:$PYTHONPATH && python %s/util/docs/chpldoc2html %s", CHPL_HOME, CHPL_HOME, folderName.c_str());
+      sprintf(command, "export PYTHONPATH=%s/third-party/creoleparser/install:$PYTHONPATH && python %s/util/docs/chpldoc2html %s", CHPL_HOME, CHPL_HOME, folderName.c_str());
       if (mysystem(command, "converting creole docs to html", 1) != 0) {
         fprintf(stderr, "\n");
         USR_FATAL("chpldoc2html failed when creating your --docs output.\n"
