@@ -3,8 +3,8 @@ NAME
 
 SYNOPSIS
   chpl [-O] [--no-checks] [--fast]
-       [-g] [--savec dir]
-       [-M dir...] [--main-module mod]
+       [-g] [--savec directory]
+       [-M directory...] [--main-module mod]
        [-o outfile] [flags...] source-files...
 
 DESCRIPTION
@@ -54,7 +54,7 @@ OPTIONS
                      to specify which module should serve as the starting 
                      point for program execution.
 
-  -M, --module-dir <dir>   Add the specified directory to the module search 
+  -M, --module-dir <directory>   Add the specified directory to the module search 
                     path. See the description of $CHPL_MODULE_PATH in the 
                     ENVIRONMENT section of this man page for more details.
 
@@ -269,6 +269,32 @@ OPTIONS
              neither --static or --dynamic are specified, use the
              backend compiler's default.
 
+  LLVM Code Generation Options
+
+  --llvm            Use LLVM as the code generation target rather than C. See
+                    $CHPL_HOME/doc/technotes/README.llvm for details.
+
+  Documentation Options
+
+  --[no-]docs       Create [Don't create] documents based on comments
+                    preceding symbol declarations. See
+                    $CHPL_HOME/doc/technotes/README.chpldoc for more
+                    information.
+
+  --[no-]docs-alphabetical  [Don't] Alphabetize the documentation within
+                    each lexical scope rather than using the declaration
+                    order within the code.
+
+  --docs-comment-style <string>  Specify the opening comment character
+                    sequence used to distinguish a documentation comment
+                    from a normal one (defaults to '/*' if unspecified).
+
+  --docs-dir <dirname>  Specify the directory name into which documentation
+                    should be saved (defaults to 'docs' if unspecified).
+
+  --docs-text-only  Specify that documents should use a text output file
+                    format rather than HTML.
+
   Compilation Trace Options
 
   --print-commands  Prints the system commands that the compiler 
@@ -349,7 +375,7 @@ ENVIRONMENT
   settings (as explicitly set and inferred). Some of the most
   commonly-used environment variables are summarized here.
 
-  CHPL_HOME           Specifies the location of the Chapel installation directory
+  CHPL_HOME           Specifies the location of the Chapel installation directory.
 
   CHPL_MODULE_PATH    Specifies a list of colon-separated directories to be 
                       added to the module search path. The module search path
@@ -372,32 +398,38 @@ ENVIRONMENT
                       compiler's standard module search path. 
 
   CHPL_HOST_PLATFORM  Specifies the platform on which the Chapel compiler is
-                      running (defaults to our best guess)
+                      running (defaults to our best guess).
 
   CHPL_TARGET_PLATFORM   Specifies the platform on which the target executable
                          is to be run for the purposes of cross-compiling
-                         (defaults to $CHPL_HOST_PLATFORM)
+                         (defaults to $CHPL_HOST_PLATFORM).
 
   CHPL_HOST_COMPILER  Specifies the compiler suite that should be used
                       to build the Chapel compiler (defaults to a best
-                      guess based on $CHPL_HOST_PLATFORM)
+                      guess based on $CHPL_HOST_PLATFORM).
 
   CHPL_TARGET_COMPILER  Specifies the compiler suite that should be used
                       to build the generated C code for a Chapel program
                       and the Chapel runtime (defaults to a best guess 
                       based on $CHPL_HOST_PLATFORM, $CHPL_TARGET_PLATFORM,
-                      and $CHPL_HOST_COMPILER)
+                      and $CHPL_HOST_COMPILER).
 
   CHPL_TASKS          Specified the tasking layer to use for implementing
                       tasks (defaults to a best guess based on
-                      $CHPL_TARGET_PLATFORM)
+                      $CHPL_TARGET_PLATFORM).
 
   CHPL_COMM           Specifies the communication layer to use for
-                      inter-locale data transfers (defaults to 'none')
+                      inter-locale data transfers (defaults to 'none').
 
   CHPL_LAUNCHER       Specifies the launcher, if any, used to start job
                       execution (defaults to a best guess based on
-                      $CHPL_COMM and $CHPL_TARGET_PLATFORM)
+                      $CHPL_COMM and $CHPL_TARGET_PLATFORM).
+
+  CHPL_MEM            Specifies the memory allocator used for dynamic memory
+                      management (defaults to a best guess based on $CHPL_COMM).
+
+  CHPL_ATOMICS        Specifies the implementation to use for Chapel's atomic
+                      variables (defaults to a best guess based on $CHPL_TARGET_COMPILER, $CHPL_TARGET_PLATFORM, and $CHPL_COMM).
 
   Most compiler command-line options have an environment variable that can
   be used to specify a default value. Use the --help-env option to list the 
