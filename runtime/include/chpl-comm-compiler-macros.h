@@ -18,7 +18,7 @@ void chpl_gen_comm_get(void *addr, int32_t locale, void* raddr,
                        int ln, chpl_string fn)
 {
   if (chpl_localeID == locale) {
-    memmove(addr, raddr, elemSize*len);
+    memcpy(addr, raddr, elemSize*len);
   } else {
 #ifdef CHPL_TASK_COMM_GET
     chpl_task_comm_get(addr, locale, raddr, elemSize, typeIndex, len, ln, fn);
@@ -34,7 +34,7 @@ void chpl_gen_comm_put(void* addr, int32_t locale, void* raddr,
                        int ln, chpl_string fn)
 {
   if (chpl_localeID == locale) {
-    memmove(raddr, addr, elemSize*len);
+    memcpy(raddr, addr, elemSize*len);
   } else {
 #ifdef CHPL_TASK_COMM_PUT
     chpl_task_comm_put(addr, locale, raddr, elemSize, typeIndex, len, ln, fn);
