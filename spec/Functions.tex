@@ -150,7 +150,7 @@ variable-argument-expression:
   ...
 
 formal-intent: one of
-  `in' `out' `inout' `param' `type'
+  `in' `out' `inout' `ref' `param' `type'
 
 return-intent: one of
   `var' `const' `param' `type'
@@ -179,7 +179,7 @@ Default expressions allow for the omission of actual arguments at the
 call site, resulting in the implicit passing of a default value.
 Default values are discussed in~\rsec{Default_Values}.
 
-The intents \chpl{in}, \chpl{out}, and \chpl{inout} are discussed
+The intents \chpl{in}, \chpl{out}, \chpl{inout} and \chpl{ref} are discussed
 in~\rsec{Intents}.  The intents \chpl{param} and \chpl{type} make
 a function generic and are discussed in~\rsec{Generic_Functions}.  If the
 formal argument's type is omitted, generic, or prefixed with a question
@@ -390,9 +390,10 @@ is assigned to the actual argument at the call site.  The actual
 argument must be a valid lvalue.  The formal argument can be assigned
 to and read from within the function.
 
-The formal argument cannot not be generic and is treated as a variable
-declaration. It is initialized to the default value for its type,
-unless it has a default expression.
+The formal argument can be generic and is treated as a variable
+declaration.  If the type is generic, it is taken from the type of
+the actual argument.  It is initialized to the default value for its
+type unless it has a default expression.
 
 \subsection{The Inout Intent}
 \label{The_Inout_Intent}
@@ -405,6 +406,22 @@ and then copied back as if the \chpl{out} intent applied.  The formal
 argument can be generic and takes its type from the actual argument.
 The formal argument can be assigned to and read from within the
 function.
+
+\subsection{The Ref Intent}
+\label{The_Ref_Intent}
+\index{ref (intent)@\chpl{ref} (intent)}
+\index{intents!ref@\chpl{ref}}
+
+If \chpl{ref} is specified as the intent, the actual argument is passed
+by reference.  The formal argument can be assigned to and read from within
+the function and changes are reflected in the actual at the call site.
+The actual argument must be an lvalue.
+
+The \chpl{ref} intent is different from the \chpl{inout} intent in that
+the \chpl{inout} intent specifies to make a copy of the argument upon
+entry into the function and to copy it back after exiting the function,
+while \chpl{ref} allows direct access to the actual argument through the
+formal argument without copies.
 
 
 \section{Variable Number of Arguments}
@@ -464,7 +481,7 @@ ensure that the actuals all have the same type.
 \begin{chapelexample}{varargs-with-type.chpl}
 Either or both the number of variable arguments and their types can be
 specified.  For example, a basic procedure to sum the values of three
-integers can be wrtten as
+integers can be written as
 \begin{chapel}
 proc sum(x: int...3) return x(1) + x(2) + x(3);
 \end{chapel}
@@ -524,8 +541,8 @@ the \chpl{var} keyword.  A variable function must return or yield an lvalue.
 
 When a variable procedure is called on the left-hand side of an
 assignment statement or in the context of a call to a formal argument
-by out or inout intent, the lvalue that is returned by the procedure is
-assigned a value.
+by \chpl{out}, \chpl{inout}, or \chpl{ref} intent, the lvalue that is
+returned by the procedure is assigned a value.
 
 Variable functions provide an implicit param formal argument \chpl{setter}
 of type \chpl{bool}.  If the
@@ -682,7 +699,7 @@ procedure defined in the Types module~(\rsec{Types_standard_module}).
 \section{The Return Statement}
 \label{The_Return_Statement}
 \index{return@\chpl{return}}
-\index{statments!return}
+\index{statements!return}
 
 The return statement can only appear in a function.  It exits that
 function, returning control to the point at which that function was

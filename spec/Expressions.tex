@@ -253,7 +253,7 @@ explicit conversion:
 An {\em lvalue} is an expression that can be used on the left-hand
 side of an assignment statement or on either side of a swap statement,
 that can be passed to a formal argument of a function that
-has \chpl{out} or \chpl{inout} intent, or that can be returned by a
+has \chpl{out}, \chpl{inout} or \chpl{ref} intent, or that can be returned by a
 variable function.  Valid lvalue expressions include the following:
 \begin{itemize}
 \item
@@ -496,7 +496,7 @@ For each operator, implicit conversions are applied to the operands of
 an operator such that they are compatible with one of the function
 forms listed, those listed earlier in the list being given
 preference.  If no compatible implicit conversions exist, then a
-compile-time error occurs.  In these cases, an explict cast is required.
+compile-time error occurs.  In these cases, an explicit cast is required.
 
 All integral arithmetic operators are implemented over integral types
 of size 32 and 64 bits only.  For example, adding two 8-bit integers
