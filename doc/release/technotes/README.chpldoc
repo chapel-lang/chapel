@@ -142,3 +142,28 @@ http://creoleparser.googlecode.com and http://wikicreole.org):
 
   {{{//ignore markups//}}} : ignores markupts/treats test as pre-formatted
   ~**escape markups    : tilde (~) causes the next markup symbol to be ignored
+
+
+Future Directions
+-----------------
+
+Here are some directions we intend to take this feature in future
+versions.  If there are other features you'd like to request, please
+let us know.
+
+* improve visual separation between components
+
+* make generated files relocatable (i.e., don't embed absolute paths)
+
+* improve placement of documentation files for .chpl files specified
+  with absolute or relative paths
+
+* reconsider what closing comment forms are accepted for the
+  --docs-comment-style flag
+
+* add visibility control (public/private) to Chapel and have chapeldoc
+  only represent public elements by default
+
+* consider adding the ability to embed unit tests within documentation
+
+* document existing Chapel libraries
