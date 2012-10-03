@@ -2,19 +2,14 @@ ifneq ($(MAKE_LAUNCHER), 1)
 include $(GASNET_INC_MAKEFILE)
 
 #
-# Because we build GASNet using PrgEnv/gnu for the cray-x[et]-cray
+# Because we build GASNet using PrgEnv/gnu for the cray-prgenv-cray
 # compiler, we need to drop the flags it used to avoid conflicts.
 # Otherwise, we'd like to inherit the GASNet flags
 #
-ifneq ($(CHPL_MAKE_TARGET_COMPILER),cray-xt-cray)
-ifneq ($(CHPL_MAKE_TARGET_COMPILER),cray-xe-cray)
+ifneq ($(CHPL_MAKE_TARGET_COMPILER),cray-prgenv-cray)
 CHPL_GASNET_CFLAGS = $(GASNET_CPPFLAGS) $(GASNET_MISC_CFLAGS) $(MANUAL_CFLAGS)
 OPT_CFLAGS += $(GASNET_OPT_CFLAGS)
 CHPL_GASNET_LFLAGS = $(GASNET_LFLAGS)
-else
-CHPL_GASNET_CFLAGS =
-CHPL_GASNET_LFLAGS =
-endif
 else
 CHPL_GASNET_CFLAGS =
 CHPL_GASNET_LFLAGS =

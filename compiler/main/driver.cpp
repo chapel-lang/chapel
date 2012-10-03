@@ -318,8 +318,7 @@ static void setupOrderedGlobals(const char* argv0) {
   fSerial = !strcmp(CHPL_TASKS, "none"); 
   fNoRepositionDefExpr = strcmp(CHPL_TARGET_PLATFORM, "xmt");
   bool gotPGI = !strcmp(CHPL_TARGET_COMPILER, "pgi")
-             || !strcmp(CHPL_TARGET_COMPILER, "cray-xe-pgi")
-             || !strcmp(CHPL_TARGET_COMPILER, "cray-xt-pgi");
+             || !strcmp(CHPL_TARGET_COMPILER, "cray-prgenv-pgi");
   // conservatively how much is needed for the current PGI compiler
   if (gotPGI) fMaxCIdentLen = 1020;
   // Enable if we are going to use Nvidia's NVCC compiler

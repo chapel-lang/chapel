@@ -216,8 +216,8 @@ OPTIONS
 
   --max-c-ident-len  Limits the length of identifiers in the generated code,
                     except when set to 0. The default is 0, except when
-                    $CHPL_TARGET_COMPILER indicates a PGI compiler (pgi,
-                    cray-xe-pgi or cray-xt-pgi), in which case the default
+                    $CHPL_TARGET_COMPILER indicates a PGI compiler (pgi or
+                    cray-prgenv-pgi), in which case the default
                     is 1020.
 
   --savec <dir>      Saves the compiler-generated C code in the specified 

@@ -133,7 +133,7 @@ Optional Settings
         pwr5, pwr6  ->  ibm
         x1, x2      ->  cray-vec
         xmt         ->  cray-mta
-        cray-*      ->  cray-xt-$PE_ENV (PE_ENV is set by the PrgEnv-* module)
+        cray-*      ->  cray-prgenv-$PE_ENV (PE_ENV is set by the PrgEnv-* module)
         other       ->  gnu
 
    The default for CHPL_TARGET_COMPILER is CHPL_HOST_COMPILER if it is
