@@ -58,10 +58,19 @@ Details regarding concurrency and iterator implementation are
 described in~\ref{Parallel_Iterators}.
 
 This differs from the semantics of the \chpl{coforall} loop, discussed
-in~\rsec{Coforall}, where each iteration is guaranteed to run using
-distinct tasks.  The \chpl{coforall} loop thus has potentially higher
-overhead than a forall loop, but in cases where concurrency is
-required for correctness, it is essential.
+in~\rsec{Coforall}, where each iteration is guaranteed to run using a
+distinct task.  The \chpl{coforall} loop thus has potentially higher
+overhead than a forall loop with the same number of iterations, but in
+cases where concurrency is required for correctness, it is essential.
+
+In practice, the number of tasks that will be used to evaluate
+a \chpl{forall} loop is determined by the object or iterator that
+is \emph{leading} the execution of the loop, as is the mapping of
+iterations to tasks.  This concept will be formalized in future drafts
+of the Chapel specification; for now, please refer
+to \chpl{CHPL_HOME/examples/primers/leaderfollower.chpl} for a brief
+introduction or to \emph{User-Defined Parallel Zippered Iterators in
+Chapel}, published in the PGAS 2011 workshop.
 
 Control continues with the statement following the forall loop only
 after every iteration has been completely evaluated.  At this point,
