@@ -32,15 +32,7 @@ if ($preset_compiler eq "") {
             } else {
                 $subcompiler =~ tr/A-Z/a-z/;
             }
-            if ($platform eq "cray-xt") {
-                $compiler = "cray-xt$subcompiler";
-            } elsif ($platform eq "cray-xe") {
-                $compiler = "cray-xe$subcompiler";
-            } elsif ($platform eq "cray-cascade") {
-                $compiler = "cray-cascade$subcompiler";
-            } elsif ($platform eq "cray-xk") {
-                $compiler = "cray-xk$subcompiler";
-            }
+            $compiler = "cray-prgenv$subcompiler";
         }
     } elsif ($platform eq "pwr5" || $platform eq "pwr6") {
 	$compiler = "ibm";

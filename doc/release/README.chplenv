@@ -115,11 +115,10 @@ Optional Settings
    CHPL_TARGET_PLATFORM.  Currently supported values are as follows:
 
         cray-mta          : the Cray compiler for multithreaded architectures
-        cray-*-cray       : the Cray PrgEnv compiler using the Cray CCE backend
-                            (where * = cascade, xe, xk, or xt)
-        cray-*-gnu        : the Cray PrgEnv compiler using the GNU backend
-        cray-*-intel      : the Cray PrgEnv compiler using the Intel backend
-        cray-*-pgi        : the Cray PrgEnv compiler using the PGI backend
+        cray-prgenv-cray  : the Cray PrgEnv compiler using the Cray CCE backend
+        cray-prgenv-gnu   : the Cray PrgEnv compiler using the GNU backend
+        cray-prgenv-intel : the Cray PrgEnv compiler using the Intel backend
+        cray-prgenv-pgi   : the Cray PrgEnv compiler using the PGI backend
         gnu               : the GNU compiler suite -- gcc and g++
         ibm               : the IBM compiler suite -- xlc and xlC
         intel             : the Intel compiler suite -- icc and icpc
