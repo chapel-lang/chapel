@@ -1,4 +1,4 @@
-$CHPL_HOME/modules/standard/IO.chpl:1251: warning: printing _ddata class
+$CHPL_HOME/modules/standard/IO.chpl:1255: warning: printing _ddata class
 Distribution Representation
 
 boundingBox = {1..4, 1..4}
