@@ -151,9 +151,15 @@ Here are some directions we intend to take this feature in future
 versions.  If there are other features you'd like to request, please
 let us know.
 
-* improve visual separation between components
+* improve visual separation between distinct language components
 
 * make generated files relocatable (i.e., don't embed absolute paths)
+
+* add ability to create anchors within a document
+
+* add support for file-level comments for implicit/file-oriented modules
+
+* add mode in which symbols are not emitted if they have no documentation
 
 * improve placement of documentation files for .chpl files specified
   with absolute or relative paths
