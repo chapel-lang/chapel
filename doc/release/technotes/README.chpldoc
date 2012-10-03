@@ -54,6 +54,20 @@ tend to yield the best results.
 By default, docs will be created in HTML format.  If text-only docs
 are preferred, use the --docs-text-only flag.
 
+As a sample, there is a primer on the chpldoc capability in
+$CHPL_HOME/examples/primers/ that can be turned into documentation
+using:
+
+	cd $CHPL_HOME/examples/primers
+	chpl --docs chpldoc.chpl
+OR:
+	chpldoc chpldoc.chpl
+
+After running either of these commands, the output documentation will
+be located in:
+
+   	$CHPL_HOME/examples/primers/docs/chpldoc.html
+
 
 Documenting Chapel code
 -----------------------
@@ -70,11 +84,61 @@ also establishes that the closing comment style should have the same
 number of characters (though they can be different ones).  This may
 change in future versions.
 
-Comment text can use the Creole Wiki markup notation to request
-specific formatting choices within the generated HTML.  For example
-**this text would appear bold** when rendered within the generated
-HTML.  For more information on Creole, see http://www.wikicreole.org
-
 By default, documentation elements will be emitted in code order.  If
 the --docs-alphabetical flag is used, they will be sorted into
 alphabetical order within each lexical scope.
+
+Documentation text within comments can use the Creole Wiki markup
+notation to request specific formatting choices within the generated
+HTML.  For example **this text would appear bold** when rendered
+within the generated HTML.  For more information on Creole, see
+
+       http://www.wikicreole.org
+
+
+Creole Markup Quick Reference
+-----------------------------
+
+Here is a quick reference (developed from similar resources at
+http://creoleparser.googlecode.com and http://wikicreole.org):
+
+  //italics//          : italic text
+  **bold**             : bold text
+
+  * Bullet list
+  * Second item        : a bulleted list and sub-list
+  ** Sub item
+
+  # Numbered list
+  # Second item        : a numbered list and sub-list
+  ## Sub item
+
+  [[wiki page]]        : hyperlink named 'wiki page' to anchor with same name
+  [[wiki page|here]]   : hyperlink named 'here' to anchor named 'wiki page'
+  [[URL|link name]]    : link named 'link name' to URL
+
+  == Large heading
+  === Medium heading   : different text heading sizes
+  ==== Small heading
+
+  No
+  linebreaks           : by default, linebreaks are ignored (treated as spaces)
+  here!                  
+
+  Blank line
+                       : blank lines will insert an empty line/paragraph break
+  in here!
+
+  Forced\\linebreak    : forces a line break at the specified point
+
+  Horizontal line:     : creates a horizontal line
+  ----
+
+  {{Image.jpg|title}}  : insert an image with title/alt-text 'title'
+
+  |=|=table|=header|  
+  |a|table|row|        : creates a table where the first row is a header
+  |b|table|row|
+
+  {{{//ignore markups//}}} : ignores markupts/treats test as pre-formatted
+  ~**escape markups    : tilde (~) causes the next markup symbol to be ignored
