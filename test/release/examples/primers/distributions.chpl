@@ -185,7 +185,7 @@ writeln();
 // (a) when the replicated array is assigned a scalar:
 //       RA = 5;
 // (b) when it appears first in a zippered forall loop:
-//       forall (ra, a) in (RA, A) do ...;
+//       forall (ra, a) in zip(RA, A) do ...;
 // (c) when it appears in a for loop:
 //       for ra in RA do ...;
 //
