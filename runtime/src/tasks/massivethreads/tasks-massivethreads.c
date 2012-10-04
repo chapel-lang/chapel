@@ -93,9 +93,11 @@ void chpl_sync_lock(chpl_sync_aux_t *s)
 {
         //Simple mutex lock
         assert(!is_worker_in_cs());
-        SAVE_SERIAL_STATE();
-        myth_felock_lock(s->lock);
-        RESTORE_SERIAL_STATE();
+        {
+          SAVE_SERIAL_STATE();
+          myth_felock_lock(s->lock);
+          RESTORE_SERIAL_STATE();
+        }
 }
 void chpl_sync_unlock(chpl_sync_aux_t *s)
 {
@@ -108,19 +110,23 @@ void chpl_sync_waitFullAndLock(chpl_sync_aux_t *s,
                                   int32_t lineno, chpl_string filename)
 {
         assert(!is_worker_in_cs());
-        SAVE_SERIAL_STATE();
-        //wait until F/E bit is empty, and acquire lock
-        myth_felock_wait_lock(s->lock,1);
-        RESTORE_SERIAL_STATE();
+        {
+          SAVE_SERIAL_STATE();
+          //wait until F/E bit is empty, and acquire lock
+          myth_felock_wait_lock(s->lock,1);
+          RESTORE_SERIAL_STATE();
+        }
 }
 
 void chpl_sync_waitEmptyAndLock(chpl_sync_aux_t *s,
                                    int32_t lineno, chpl_string filename)
 {
         assert(!is_worker_in_cs());
-        SAVE_SERIAL_STATE();
-        myth_felock_wait_lock(s->lock,0);
-        RESTORE_SERIAL_STATE();
+        {
+          SAVE_SERIAL_STATE();
+          myth_felock_wait_lock(s->lock,0);
+          RESTORE_SERIAL_STATE();
+        }
 }
 
 void chpl_sync_markAndSignalFull(chpl_sync_aux_t *s)
@@ -232,9 +238,11 @@ int chpl_task_createCommTask(chpl_fn_p fn, void* arg) {
         //Since return value is always ignored, this cast is legal unless the definition is changed.
         opt.stack_size=stacksize_for_comm_task;
         opt.switch_immediately=0;
-        SAVE_SERIAL_STATE();
-        th=myth_create_ex((void*(*)(void*))fn,arg,&opt);
-        RESTORE_SERIAL_STATE();
+        {
+          SAVE_SERIAL_STATE();
+          th=myth_create_ex((void*(*)(void*))fn,arg,&opt);
+          RESTORE_SERIAL_STATE();
+        }
         assert(th);
         myth_detach(th);
         return 0;
@@ -295,11 +303,13 @@ static void *ns_task_wrapper(void *args)
 	SET_SERIAL_STATE(ns_args->serial_state);
 	chpl_mem_free(ns_args,0,"");
 	fp(a);
+        return NULL;
 }
 
 void chpl_task_begin(chpl_fn_p fp, void* a, chpl_bool ignore_serial,
                 chpl_bool serial_state, chpl_task_list_p task_list_entry)
 {
+        myth_thread_t th;
         if (!ignore_serial && serial_state){
         	SAVE_SERIAL_STATE();
         	fp(a);
@@ -307,15 +317,14 @@ void chpl_task_begin(chpl_fn_p fp, void* a, chpl_bool ignore_serial,
         	return;
         }
         //Create one task
-        myth_thread_t th;
         //chpl_fn_p is defined as "typedef void (*chpl_fn_p)(void*);" in chpltypes.h at line 85.
         //So this cast is legal unless the definition is changed.
         if (is_worker_in_cs()){
                 //Called from critical section by pthreads.
                 myth_thread_option opt;
+                ns_task_wrapper_args *ns_args;
                 opt.stack_size=0;
                 opt.switch_immediately=0;
-                ns_task_wrapper_args *ns_args;
                 ns_args=chpl_mem_alloc(sizeof(ns_task_wrapper_args), 0, 0, "");
                 ns_args->a=a;
                 ns_args->fn=fp;
