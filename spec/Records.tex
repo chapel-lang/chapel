@@ -482,7 +482,7 @@ That's the abbreviated version.  The extended rationale is that implementing
 this kind of assignment would require carrying the type of the record as a
 run-time type within the class variable.  That further implies that invocation
 of a method associated with that class would be dispatched dynamically.  Either
-the class variable needs to have an auxilliary field that points to a virtual
+the class variable needs to have an auxiliary field that points to a virtual
 function table associated with the record type, or the record itself must now
 accommodate a virtual function table.  In any case, this runs somewhat counter
 to the notion that record types are purely static.

@@ -21,7 +21,7 @@ can be associated with a base domain.  In~\rsec{Simple_Subdomains}, we discuss t
 types and values of simple subdomains that can be created from those base
 domains.  In~\rsec{Sparse_Subdomains}, we discuss the types and values of sparse
 subdomains.  The remaining sections describe the important manipulations
-that can be perfomed with domains, as well as the predefined operators and
+that can be performed with domains, as well as the predefined operators and
 functions defined for domains.
 
 \section{Domain Overview}
@@ -140,7 +140,7 @@ rectangular-domain-type:
 using standard type signature.
 
 \begin{chapelexample}{typeFunctionDomain.chpl}
-The following declarations both create an unintialized rectangular domain with three dimensions, with \chpl{int} indices:
+The following declarations both create an uninitialized rectangular domain with three dimensions, with \chpl{int} indices:
 \begin{chapel}
 var D1 : domain(rank=3, idxType=int, stridable=false);
 var D2 : domain(3*int);
@@ -402,7 +402,7 @@ support subdomains.
 
 Simple subdomains are subdomains which are not sparse.  Sparse subdomains are
 discussed in the following section (\rsec{Sparse_Subdomains}).  A simple
-subdomain inherits its representaion (regular or irregular) from its base domain (or base
+subdomain inherits its representation (regular or irregular) from its base domain (or base
 subdomain).  A sparse subdomain is always irregular, even if its base domain is
 regular.  
 
@@ -513,7 +513,7 @@ the sparse subdomain's are as well.
 \index{domains!sparse!initialization}
 \index{initializations!sparse domains}
 There is no literal syntax for an sparse subdomain.  However, a variable of a
-sparse subdomain type can be initilized using a tuple of values
+sparse subdomain type can be initialized using a tuple of values
 of the parent domain's index type.
 
 \index{sparse domains!default value}
@@ -778,7 +778,7 @@ or unbounded.
 When unbounded, they inherit their bounds from the
 domain or array being sliced.
 %
-The cartesian product of the ranges' index sets is applied for slicing.
+The Cartesian product of the ranges' index sets is applied for slicing.
 
 \begin{example}
 The following code declares a two dimensional rectangular

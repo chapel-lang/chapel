@@ -276,7 +276,7 @@ sign: one of
   + -
 \end{syntax}
 \begin{rationale}
-Why can't a real literal end with '.'?  There is a lexical ambiquity
+Why can't a real literal end with '.'?  There is a lexical ambiguity
 between real literals ending in '.' and the range operator '..' that
 makes it difficult to parse.  For example, we want to
 parse \chpl{1..10} as a range from 1 to 10 without concern

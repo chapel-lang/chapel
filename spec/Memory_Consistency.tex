@@ -23,7 +23,7 @@ Accessing a synchronization variable (\chpl{sync} or \chpl{single}, \rsec{Synchr
 the only way to correctly synchronize between two Chapel tasks.
 Such reads and writes serve as memory fences, preventing
 reordering of reads and writes to traditional variables across the
-synchronization varible's access.  When the same memory location
+synchronization variable's access.  When the same memory location
 is written by one task and read by another, the ordering of the
 read relative to the write is undefined unless there is an intervening
 access to a synchronization variable.
