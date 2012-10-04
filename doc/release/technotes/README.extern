@@ -230,19 +230,15 @@ Frequently Asked Questions About External Routines
 Q: How do I pass a Chapel variable to an external routine that expects
    a pointer?
 
-A: Ultimately, we expect to have direct support in Chapel for
-   declaring an external routine that expects pointer arguments.
-   Today this can be done by declaring the argument to have 'inout'
-   intent.  This causes Chapel to pass a pointer to the argument; and
-   since copy-in/out semantics are implemented in the callee in
-   Chapel, no extra copies are performed.  For example, given a C
-   function:
+A: Today, the preferred way to do this is to declare the argument as
+   having 'ref' intent.  This should cause the Chapel compiler to pass
+   a pointer to the argument.  For example, given a C function:
 
      void foo(double* x);
 
    This could be called in Chapel using:
 
-     extern proc foo(inout x: real);
+     extern proc foo(ref x: real);
 
      var myVal: real = 1.2;
 
