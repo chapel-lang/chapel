@@ -88,7 +88,7 @@ Standard Modules
 
 Documentation
 -------------
-- added README.llvm and README.chpldoc to describe new features
+- added README.llvm & README.chpldoc to doc/technotes/ to describe new features
 - updated README.atomics to describe new capabilities
 - improved command-line help for -d option
 - noted that Python is now a required feature to build Chapel
@@ -143,6 +143,8 @@ Compiler Flags
 - added --docs and related flags for generating documentation for Chapel code
   (see doc/technotes/README.chpldoc)
 - added a --gen-extern-prototypes flag to cross-verify extern prototypes
+- added an --llvm flag for targeting LLVM as the back-end compiler
+  (see doc/technotes/README.llvm)
 
 Bug Fixes / New Semantic Checks (for old semantics)
 ---------------------------------------------------
