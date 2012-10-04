@@ -214,17 +214,22 @@ Expr* buildDotExpr(BaseAST* base, const char* member) {
   // It might be better coding practice to label very special module code
   // (i.e. types, fields, values known to the compiler) using pragmas. <hilde>
   // TODO: We shouldn't have optimizations in the parser.
+#if 0
+  // hilde sez: This optimization no longer works, because "id" returns just the
+  // node ID portion of a locale ID.
   if (!strcmp("id", member))
     if (CallExpr* intToLocale = toCallExpr(base))
       if (intToLocale->isNamed("chpl_int_to_locale"))
         if (CallExpr* getLocale = toCallExpr(intToLocale->get(1)))
           if (getLocale->isPrimitive(PRIM_WIDE_GET_LOCALE))
             return getLocale->remove();
+#endif
 
-  // MAGIC: "x.locale" member access expressions are rendered as chpl_int_to_locale(_get_locale_id(x)).
+  // MAGIC: "x.locale" member access expressions are rendered as chpl_int_to_locale(_wide_get_locale(x)).
+  // This extracts the node ID from the wide reference.
   if (!strcmp("locale", member))
     return new CallExpr("chpl_int_to_locale", 
-                        new CallExpr(PRIM_WIDE_GET_LOCALE, base));
+                        new CallExpr(PRIM_WIDE_GET_NODE, base));
   else
     return new CallExpr(".", base, new_StringSymbol(member));
 }

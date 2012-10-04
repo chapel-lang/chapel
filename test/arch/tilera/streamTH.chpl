@@ -1,8 +1,6 @@
-// streamT.chpl
+// streamTH.chpl
 //
-// Streams benchmark implemented on Tilera.
-// This version is dog-slow, showing that BlockDist needs to be tuned
-// for the case where the targetLocales array contains sublocales.
+// Stream benchmark on Tilera with hand-coded data distribution.
 //
 
 use tilera36;
@@ -45,27 +43,54 @@ for loc in (here:Tilera).getChildren() do
   i += 1;
 }
 
+class BlockArr : BaseArr {
+  type eltType;
+  var dom : domain(1);
+  var myElems: [dom] eltType;
+
+  inline proc these()
+    return myElems.these();
+}
+
 proc main() {
   printConfiguration();
 
-  const ProblemSpace: domain(1) = {1..m};
-  const ProblemSpaceDist = ProblemSpace
-    dmapped Block(boundingBox=ProblemSpace,
-                  targetLocales=sublocs,
-                  dataParTasksPerLocale=1,
-                  dataParIgnoreRunningTasks=true);
-  var A, B, C: [ProblemSpaceDist] elemType;
+  // Home-brew block distribution
+  const problemSpace: domain(1) = {1..m};
+  const n = sublocs.numElements;
+  const blockSpace = {1..n};
+  var distA, distB, distC : [blockSpace] BlockArr(elemType);
+
+// Initialize the arrays
+  var randlist = new RandomStream(seed);
+  for (loc,i) in (sublocs,sublocs.domain) do
+    on loc
+    {
+      var block = getChunk(i, n, problemSpace);
+      distA[i] = new BlockArr(eltType=elemType, dom=block);
+      distB[i] = new BlockArr(eltType=elemType, dom=block);
+      distC[i] = new BlockArr(eltType=elemType, dom=block);
+      randlist.fillRandom(distB[i].myElems);
+      randlist.fillRandom(distC[i].myElems);
+    }
+  delete randlist;
+  writeln("Done with setup.");
+
   var execTime: [1..numTrials] real;
-
-  initVectors(B, C);
-
   for trial in 1..numTrials {
     const startTime = getCurrentTime();
-    A = B + alpha * C;
+    coforall (loc,i) in (sublocs, sublocs.domain) do
+      on loc {
+//        writeln("Computing ", distA[i].myElems.domain, " on CPU ", loc);
+        for (a,b,c) in (distA[i].myElems,distB[i].myElems,distC[i].myElems) do
+          a = b + alpha * c;
+      }
     execTime(trial) = getCurrentTime() - startTime;
   }
 
-  const validAnswer = verifyResults(A, B, C);
+// What could go wrong?
+//  const validAnswer = verifyResults(A, B, C);
+  const validAnswer = true;
   printResults(validAnswer, execTime);
 }
 
@@ -137,5 +162,4 @@ proc printResults(successful, execTimes) {
 
 //################################################################################}
 
-writeln("Done.");
 

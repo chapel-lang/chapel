@@ -1,7 +1,7 @@
 Done.
-Problem size = 384000
-Bytes per array = 3072000
-Total memory required (GB) = 0.00858307
+Problem size = 360
+Bytes per array = 2880
+Total memory required (GB) = 8.04663e-06
 Number of trials = 10
 
 Validation: SUCCESS

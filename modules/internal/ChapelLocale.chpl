@@ -8,7 +8,7 @@ config const dataParIgnoreRunningTasks = true;
 config const dataParMinGranularity: int = 1;
 
 class locale {
-  const chpl_id: int;
+  const chpl_id: int(32);
   const numCores: int;
 
   proc locale() {
@@ -19,6 +19,7 @@ class locale {
     numCores = chpl_numCoresOnThisLocale();
   }
 
+  // In traditional use, the "locale ID" is used to mean the node ID.
   proc id {
     return chpl_id;
   }
