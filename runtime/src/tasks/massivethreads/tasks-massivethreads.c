@@ -28,19 +28,42 @@
 #include "myth.h"
 
 typedef union{
-        int flag;
+        struct{
+        	int flag;
+        	chpl_bool serial_state;
+        }data;
         char size[128];
-}thread_local_flag;
+}thread_local_data;
 
 static int tasking_layer_active=0;
 static int worker_in_cs_beforeinit=0;
-static thread_local_flag* worker_in_cs;
+static thread_local_data* s_tld;
+static const chpl_bool s_def_serial_state=false;
+static const uint64_t c_def_stack_size=32768;
+
+static inline chpl_bool GET_SERIAL_STATE(void)
+{
+	if (tasking_layer_active){
+        int rank=myth_get_worker_num();
+        return s_tld[rank].data.serial_state;
+	}
+	return s_def_serial_state;
+}
+static inline void SET_SERIAL_STATE(chpl_bool newstate)
+{
+	if (tasking_layer_active){
+        int rank=myth_get_worker_num();
+        s_tld[rank].data.serial_state=newstate;
+	}
+}
+#define SAVE_SERIAL_STATE() chpl_bool saved_serial_state=GET_SERIAL_STATE();
+#define RESTORE_SERIAL_STATE() SET_SERIAL_STATE(saved_serial_state);
 
 static int is_worker_in_cs(void)
 {
         if (tasking_layer_active){
                 int rank=myth_get_worker_num();
-                return worker_in_cs[rank].flag;
+                return s_tld[rank].data.flag;
         }
         else return worker_in_cs_beforeinit;
 }
@@ -50,7 +73,7 @@ static void worker_enter_cs(void)
         assert(!is_worker_in_cs());
         if (tasking_layer_active){
                 int rank=myth_get_worker_num();
-                worker_in_cs[rank].flag=1;
+                s_tld[rank].data.flag=1;
         }
         else worker_in_cs_beforeinit=1;
 }
@@ -60,7 +83,7 @@ static void worker_exit_cs(void)
         assert(is_worker_in_cs());
         if (tasking_layer_active){
                 int rank=myth_get_worker_num();
-                worker_in_cs[rank].flag=0;
+                s_tld[rank].data.flag=0;
         }
         else worker_in_cs_beforeinit=0;
 }
@@ -70,7 +93,9 @@ void chpl_sync_lock(chpl_sync_aux_t *s)
 {
         //Simple mutex lock
         assert(!is_worker_in_cs());
+        SAVE_SERIAL_STATE();
         myth_felock_lock(s->lock);
+        RESTORE_SERIAL_STATE();
 }
 void chpl_sync_unlock(chpl_sync_aux_t *s)
 {
@@ -83,15 +108,19 @@ void chpl_sync_waitFullAndLock(chpl_sync_aux_t *s,
                                   int32_t lineno, chpl_string filename)
 {
         assert(!is_worker_in_cs());
+        SAVE_SERIAL_STATE();
         //wait until F/E bit is empty, and acquire lock
         myth_felock_wait_lock(s->lock,1);
+        RESTORE_SERIAL_STATE();
 }
 
 void chpl_sync_waitEmptyAndLock(chpl_sync_aux_t *s,
                                    int32_t lineno, chpl_string filename)
 {
         assert(!is_worker_in_cs());
+        SAVE_SERIAL_STATE();
         myth_felock_wait_lock(s->lock,0);
+        RESTORE_SERIAL_STATE();
 }
 
 void chpl_sync_markAndSignalFull(chpl_sync_aux_t *s)
@@ -165,15 +194,32 @@ void chpl_task_init(int32_t numThreadsPerLocale, int32_t maxThreadsPerLocale,
         int n_workers;
         int i;
         s_num_workers=numThreadsPerLocale;
-        s_stack_size=callStackSize;
+        //If callstack size is not specified by argument,
+        // try to read from environmental variable
+        if (callStackSize==0){
+        	env=getenv("MYTH_DEF_STKSIZE");
+        	if (env){
+        		int i_stk=atoi(env);
+        		if (i_stk>0)
+        		callStackSize=i_stk;
+        	}
+        }
+    	//Otherwise use default size
+    	if (callStackSize==0){
+        	callStackSize=c_def_stack_size;
+    	}
+    	s_stack_size=callStackSize;
         assert(!is_worker_in_cs());
         get_process_affinity_info();
         env=getenv("MYTH_WORKER_NUM");
         n_workers=(int)((numThreadsPerLocale>0)?numThreadsPerLocale:-1);
         if (n_workers<=0 && env){n_workers=atoi(env);}
         if (n_workers<=0){n_workers=get_cpu_num();}
-        worker_in_cs=chpl_mem_allocMany(n_workers+numCommTasks, sizeof(thread_local_flag), 0, 0, "");
-        for (i=0;i<n_workers+numCommTasks;i++){worker_in_cs[i].flag=0;}
+        s_tld=chpl_mem_allocMany(n_workers+numCommTasks, sizeof(thread_local_data), 0, 0, "");
+        for (i=0;i<n_workers+numCommTasks;i++){
+        	s_tld[i].data.flag=0;
+        	s_tld[i].data.serial_state=s_def_serial_state;
+        }
         tasking_layer_active=1;
         myth_init_withparam((int)(n_workers+numCommTasks),(size_t)callStackSize);
 }
@@ -186,7 +232,9 @@ int chpl_task_createCommTask(chpl_fn_p fn, void* arg) {
         //Since return value is always ignored, this cast is legal unless the definition is changed.
         opt.stack_size=stacksize_for_comm_task;
         opt.switch_immediately=0;
+        SAVE_SERIAL_STATE();
         th=myth_create_ex((void*(*)(void*))fn,arg,&opt);
+        RESTORE_SERIAL_STATE();
         assert(th);
         myth_detach(th);
         return 0;
@@ -198,7 +246,7 @@ void chpl_task_exit(void)
         assert(!is_worker_in_cs());
         myth_fini();
         tasking_layer_active=0;
-        chpl_mem_free(worker_in_cs,0,"");
+        chpl_mem_free(s_tld,0,"");
 }
 
 void chpl_task_callMain(void (*chpl_main)(void))
@@ -215,7 +263,7 @@ void chpl_task_addToTaskList(chpl_fn_int_t fid,
                            int lineno,
                            chpl_string filename) {
         //Create a new task directly
-        chpl_task_begin(chpl_ftable[fid], arg, false, false, NULL);
+        chpl_task_begin(chpl_ftable[fid], arg, false, GET_SERIAL_STATE(), NULL);
 }
 
 void chpl_task_processTaskList(chpl_task_list_p task_list)
@@ -233,9 +281,31 @@ void chpl_task_freeTaskList(chpl_task_list_p task_list)
         //Nothing to do because chpl_task_list is not used.
 }
 
+typedef struct{
+	chpl_fn_p fn;
+	chpl_bool serial_state;
+	void *a;
+}ns_task_wrapper_args;
+
+static void *ns_task_wrapper(void *args)
+{
+	ns_task_wrapper_args *ns_args=(ns_task_wrapper_args *)args;
+	chpl_fn_p fp=ns_args->fn;
+	void *a=ns_args->a;
+	SET_SERIAL_STATE(ns_args->serial_state);
+	chpl_mem_free(ns_args,0,"");
+	fp(a);
+}
+
 void chpl_task_begin(chpl_fn_p fp, void* a, chpl_bool ignore_serial,
                 chpl_bool serial_state, chpl_task_list_p task_list_entry)
 {
+        if (!ignore_serial && serial_state){
+        	SAVE_SERIAL_STATE();
+        	fp(a);
+        	RESTORE_SERIAL_STATE();
+        	return;
+        }
         //Create one task
         myth_thread_t th;
         //chpl_fn_p is defined as "typedef void (*chpl_fn_p)(void*);" in chpltypes.h at line 85.
@@ -245,10 +315,18 @@ void chpl_task_begin(chpl_fn_p fp, void* a, chpl_bool ignore_serial,
                 myth_thread_option opt;
                 opt.stack_size=0;
                 opt.switch_immediately=0;
-                th=myth_create_ex((void*(*)(void*))fp,a,&opt);
+                ns_task_wrapper_args *ns_args;
+                ns_args=chpl_mem_alloc(sizeof(ns_task_wrapper_args), 0, 0, "");
+                ns_args->a=a;
+                ns_args->fn=fp;
+                ns_args->serial_state=serial_state;
+                th=myth_create_ex(ns_task_wrapper,ns_args,&opt);
         }
         else{
+                SAVE_SERIAL_STATE();
+                SET_SERIAL_STATE(serial_state);
                 th=myth_create((void*(*)(void*))fp,a);
+                RESTORE_SERIAL_STATE();
         }
         assert(th);
         myth_detach(th);
@@ -271,19 +349,16 @@ void chpl_task_sleep(int secs) {
         sleep(secs);
 }
 
-//FIXME: serial state ignored
-static chpl_bool serial_state;
-
 chpl_bool chpl_task_getSerial(void)
 {
         //get dynamic serial state
-        return serial_state;
+        return GET_SERIAL_STATE();
 }
 
 void chpl_task_setSerial(chpl_bool new_state)
 {
         //set dynamic serial state
-        serial_state=new_state;
+        SET_SERIAL_STATE(new_state);
 }
 
 
