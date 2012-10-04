@@ -29,6 +29,17 @@ var A: [1..n] real;
 writeln("Initially, A is: ", A);
 
 //
+// Arrays can also be declared using the the array literal syntax.
+// Array literals are specified by enclosing a comma separated list of
+// expressions in square brackets.  The domain of the array will be
+// 1-based in each dimension, and the type of the array's element
+// is the type of the first element listed.
+//
+var A2 = [-1.1, -2.2, -3.3, -4.4, -5.5];
+
+writeln("Initially, A2 is: ", A2);
+
+//
 // Arrays can be accessed using scalar index values of the appropriate
 // type, using either parenthesis or square brackets:
 //
