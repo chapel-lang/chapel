@@ -1,4 +1,4 @@
-SSCA2_Modules/SSCA2_execution_config_consts.chpl:42: warning: whole array assignment has been serialized (see note in $CHPL_HOME/STATUS)
+../../../release/examples/benchmarks/ssca2/SSCA2_Modules/SSCA2_execution_config_consts.chpl:42: warning: whole array assignment has been serialized (see note in $CHPL_HOME/STATUS)
 =========================================================
 Problem Dimensions
                    Scale: 6
@@ -540,7 +540,7 @@ edge (511) : ((start = 44, end = 3), 11)
 edge (512) : ((start = 64, end = 46), 54)
 
 Vertex Set in G:{1..64}
-Starting Graph Generation serially
+Starting Graph Generation in parallel
 # of raw edges generated  512
 # of duplicate edges      not counted
 # of self edges           130
