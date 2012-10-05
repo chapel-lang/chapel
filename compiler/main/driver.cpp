@@ -583,13 +583,11 @@ static ArgumentDescription arg_desc[] = {
  {"bounds-checks", ' ', NULL, "Enable [disable] bounds checking", "n", &fNoBoundsChecks, "CHPL_NO_BOUNDS_CHECKING", NULL},
  {"local-checks", ' ', NULL, "Enable [disable] local block checking", "n", &fNoLocalChecks, NULL, NULL},
  {"nil-checks", ' ', NULL, "Enable [disable] nil checking", "n", &fNoNilChecks, "CHPL_NO_NIL_CHECKS", NULL},
- //Disable flag for transitional warning of 1.5 domain literal syntax.  This option should be removed after 1.6 is released!
- {"warn-domain-literal", ' ', NULL, "[Disable] Enable old domain literal syntax warnings", "n", &fNoWarnDomainLiteral, "CHPL_NO_WARN_DOMAIN_LITERAL", NULL},
 
  {"", ' ', NULL, "C Code Generation Options", NULL, NULL, NULL, NULL},
  {"codegen", ' ', NULL, "[Don't] Do code generation", "n", &no_codegen, "CHPL_NO_CODEGEN", NULL},
  {"cpp-lines", ' ', NULL, "[Don't] Generate #line annotations", "N", &printCppLineno, "CHPL_CG_CPP_LINES", noteCppLinesSet},
- {"gen-extern-prototypes", ' ', NULL, "[Don't] generate C prototypes for extern declarations", "F", &genExternPrototypes, "CHPL_GEN_EXTERN_PROTOTYPES", NULL},
+ {"gen-extern-prototypes", ' ', NULL, "Generate C prototypes for extern declarations", "F", &genExternPrototypes, "CHPL_GEN_EXTERN_PROTOTYPES", NULL},
  {"max-c-ident-len", ' ', NULL, "Maximum length of identifiers in generated code, 0 for unlimited", "I", &fMaxCIdentLen, "CHPL_MAX_C_IDENT_LEN", NULL},
  {"savec", ' ', "<directory>", "Save generated C code in directory", "P", saveCDir, "CHPL_SAVEC_DIR", verifySaveCDir},
 
@@ -627,6 +625,8 @@ static ArgumentDescription arg_desc[] = {
  {"instantiate-max", ' ', "<max>", "Limit number of instantiations", "I", &instantiation_limit, "CHPL_INSTANTIATION_LIMIT", NULL},
  {"print-callstack-on-error", ' ', NULL, "print the Chapel call stack leading to each error or warning", "N", &fPrintCallStackOnError, "CHPL_PRINT_CALLSTACK_ON_ERROR", NULL},
  {"set", 's', "<name>[=<value>]", "Set config param value", "S", NULL, NULL, readConfig},
+ //Disable flag for transitional warning of 1.5 domain literal syntax.  This option should be removed after 1.6 is released!
+ {"warn-domain-literal", ' ', NULL, "[Disable] Enable old domain literal syntax warnings", "n", &fNoWarnDomainLiteral, "CHPL_NO_WARN_DOMAIN_LITERAL", NULL},
  {"no-warnings", ' ', NULL, "Disable output of warnings", "F", &ignore_warnings, "CHPL_DISABLE_WARNINGS", NULL},
 
  {"", ' ', NULL, "Compiler Information Options", NULL, NULL, NULL, NULL},
