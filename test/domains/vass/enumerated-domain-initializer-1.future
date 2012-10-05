@@ -1,5 +1,10 @@
 bug: an initializer for an enumerated domain/subdomain, when present, has no effect
 
+This is a special case of assoc-domain-assign-1.future
+where the assignment syntactically is the domain variable's initialization.
+
+Earlier comments:
+
 Apparently an enumerated domain variable starts out full,
 whether it has an initializer or not.
 If there is an initializer, it adds elements to an already full domain,
