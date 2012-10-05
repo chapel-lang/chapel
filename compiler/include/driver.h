@@ -21,7 +21,7 @@ typedef struct YYLTYPE {
 
 
 
-extern char *chplBinaryName;
+extern const char *chplBinaryName;
 
 extern FILE* html_index_file;
 extern FILE* deletedIdHandle;

@@ -20,7 +20,7 @@
 #include "symbol.h"
 #include "config.h"
 
-char *chplBinaryName = NULL;
+const char *chplBinaryName = NULL;
 FILE* html_index_file = NULL;
 
 char deletedIdFilename[FILENAME_MAX+1] = "";
@@ -392,19 +392,18 @@ static void handleIncDir(ArgumentState* arg_state, char* arg_unused) {
 }
 
 static void
-compute_program_name_loc(char* orig_argv0, const char** name, const char** loc) {
+compute_program_name_loc(const char* orig_argv0, const char** name, const char** loc) {
   char* argv0 = strdup(orig_argv0);
   char* lastslash = strrchr(argv0, '/');
   if (lastslash == NULL) {
     *name = argv0;
-    *loc = ".";   // BLC: this is inaccurate; we should search the path.  
-                  // It's no less accurate than what we did previously, though.
+    *loc = findProgramPath(orig_argv0);
   } else {
     *lastslash = '\0';
     *name = lastslash+1;
-    *loc = argv0;
+    *loc = findProgramPath(orig_argv0);
   }
-  chplBinaryName = (char*)*name;
+  chplBinaryName = *name;
 }
 
 
@@ -423,7 +422,7 @@ static void readConfig(ArgumentState* arg_state, char* arg_unused) {
   // 2. name       -- set the boolean config param "name" to NOT("name")
   //                  if name is not type bool, set it to 0.
 
-  char *name = (char*)astr(arg_unused);
+  char *name = strdup(arg_unused);
   char *value;
   value = strstr(name, "=");
   if (value) {
