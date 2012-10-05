@@ -37,6 +37,7 @@ Using Chapel with Cygwin
      Shells
        + tcsh
      Utils
+       + bc
        + diffutils
 
 
