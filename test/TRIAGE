@@ -7,14 +7,42 @@
 Problems analyzed and dispatched to responsible parties:
 ========================================================
 
-2012-09-19 stack overflow on SSCA2
-  No clue.
+classes/vass/generic-method-with-param-arg-4
+parsing/vass/undefined-backslash-combos-in-strings-1
+users/ferguson/extern_class_test
+  linux64.gnu.none.fifo.pthreads-nlc (2012-10-05)
+  New failing future, due to re-enabling -Werror
+  David looked at these.  The problem was already there, but now the expected
+  compile time warning is an error and so we have a mismatch.
 
-2012-09-18 gasnet testing failures.  raCommCheck and kin.
-  Due to zippered iteration syntax change not propagating to parallel-only tests.
-  John's sieve was to actually run the tests and fix failures rather than to 
-    identify a standard syntax pattern to use in a global search.
-  John submitted a patch and this issue is resolved.
+cray-prgenv-pgi (many failures)
+  David looked at this.  They are old failures shown as new because the name
+  changed from cray-xe-pgi to cray-prgenv-pgi.
+
+extern/bradc/copyExternRecord/extern_test
+  linux64.gnu.none.fifo.pthreads-npt (2012-10-05)
+  New failing test, due to re-enabling -Werror
+  Brad looked at this.  The problem was already there, but now the expected
+  compile time warning is an error and so we have a mismatch.
+
+prgenv-gnu compiler build problem in chpbld01, chpbld02
+  (2012-10-05)
+  Sung looked at this.  It is due to "defined but not used" warnings that
+  become errors when -Werror is present.
+
+release/examples/spec/Generics/constructorsForGenericFields
+release/examples/spec/Generics/fieldWithoutType
+release/examples/spec/Generics/genericStack
+  cray-xt.cray-prgenv-cray.none.fifo.pthreads-exm (2012-10-05)
+  Greg looked at this.  These failed because the compiler couldn't get a
+  CLE license.  The problem seems to have been just a temporary glitch;
+  compilations before and after these tests (which were successive) worked
+  fine.
+
+studies/ssca2/performance/SSCA2_commDiags
+  linux64.gnu.gasnet-everything.fifo.pthreads-std (2012-10-02)
+  Sung has this one.  It looks to me (gbt) like the comm diags ranges just
+  need to be wider.
 
 ===========================================
 Unresolved failures by test/configuration:
@@ -26,10 +54,6 @@ classes/figueroa/RecordDestructor1
 functions/deiz/iterators/leader_follower/test_strided_leader1
   Failed: 9/23 (64ggffpd)
 
-types/file/freadIntFailed
-types/file/fwriteIntFailed
-  Failed: 9/23 (64ggffpd) -- path sensitivity
-
 studies/590o/blerner/nilClassCheck
   Failed: 9/23 (baseline) -- line number sensitivlty
 
@@ -38,6 +62,9 @@ studies/lammps/shemmy/p-lammps-n2
 studies/lammps/shemmy/p-lammps-n4
   Failed: 9/19 (baseline), 9/23 (baseline)
 
+types/file/freadIntFailed
+types/file/fwriteIntFailed
+  Failed: 9/23 (64ggffpd) -- path sensitivity
 
 ==============================================
 These things regularly cause noise in testing:
@@ -55,26 +82,29 @@ ra* (gbt)
 Greg committed a fix to resolve the race in the main version (r20301),
 and now just needs to propagate it to the other versions, as well as
 to the else-clause of the 'useOn' conditional.
+New information (10/3/12): the "random" indices are strongly skewed toward
+the bottom of the index range (1/4th of the table updates are to the 0'th
+element), which makes conflicting updates far more common than they should
+be.
   release/examples/benchmarks/hpcc/variants/ra-cleanloop: fixed by r20326
   studies/hpcc/2008/ra: not fixed yet, failed 8/14/12
-  studies/hpcc/nodistrib/ra.nodist: not fixed yet, failed 8/14/12, still failing 2012/09/21.
+  studies/hpcc/nodistrib/ra.nodist: should have been fixed by 20333 (8/14/12),
+    not fixed yet, failed 8/18/12, 9/{16,17,21,30}/12.
   studies/hpcc/RA/bradc/parallel/ra-dist: not fixed yet, last failure unknown
-
 
 lulesh (bradc)
 --------------
 Times out sometimes in XMT testing, but seems to have stabilized in
 other cases.
 
-
 TooManyThreads (unassigned)
 ---------------------------
 Fails periodically.  Lately observed pthreads.tcmalloc (2012/08/15).
 
-
 mutilocale/deitz/needMultiLocales/diagnostics/test_private_broadcast_large
 --------------------------------------------------------------------------
   Succeeded: 9/23 (64ggffpd)
+  Failed: 10/4 (linux64.gnu.gasnet-fast.fifo.pthreads.dlmalloc)
 
 linux64.gnu.gasnet.qthreads.none (UNASSIGNED)
 ---------------------------------------------
@@ -86,7 +116,6 @@ linux64.gnu.gasnet.qthreads.none (UNASSIGNED)
 4) seg fault during program execution (same as #2?):
    distributions/robust/arithmetic/optimizations/optimizeOnClauses_basic_tuple (7/10)
    release/examples/spec/Classes/delete (7/12)
-
 
 baseline (UNASSIGNED)
 ---------------------
@@ -110,8 +139,6 @@ valgrind (sungeun)
    parallel as the nightly does), so I don't think it's worth
    disabling parallel testing for the sake of the time outs.
 
-
-
 xmt build (UNASSIGNED)
 ----------------------
 Every night, first XMT compile fails; second one succeeds.  Is there
@@ -134,7 +161,6 @@ parallel/cobegin/diten/cobeginRace (UNASSIGNED)
 "timedexec died with signal 11" - pgi compiler (06/18/12)
 unknown cause - baseline (06/17/12)
 
-
 non-deterministic timeouts with gasnet (UNASSIGNED)
 ---------------------------------------------------
 The following configurations are affected:
@@ -143,13 +169,12 @@ The following configurations are affected:
  linux64.gnu.gasnet-fast.fifo.pthreads.dlmalloc
  linux64.gnu.gasnet-everything.fifo.pthreads
 examples of what times out:
- distributions/robust/arithmetic/kernels/jacobi (still timing out 7/7-9/28)
+ distributions/robust/arithmetic/kernels/jacobi (still timing out 10/4/12)
  distributions/nelson/MultiBlockDist2DLocales (maybe resolved?)
  distributions/robust/arithmetic/modules/test_module_Sort (maybe resolved?)
  distributions/robust/arithmetci/stress/test_many_domains (08/13)
  distributions/dm/t2 (2012/08/15)
  etc.
-
 
 "in routine alloca() there is a stack overflow" under PGI (UNASSIGNED)
 ----------------------------------------------------------------------
@@ -159,10 +184,9 @@ These configurations:
  xt-cle.cray-xt-pgi.none.fifo.pthreads
  xt-cle.cray-xt-pgi.none.fifo.pthreads--linux64.gnu
 
-
 minus_equals nondeterminism (UNASSIGNED)
 ----------------------------------------
-noted in regressions (week of 07/02, still present 9/23)
+noted in regressions (week of 07/02, still present 10/2)
 
 atomics nondeterminisms (UNASSIGNED)
 ------------------------------------
@@ -196,7 +220,9 @@ nondet. tmalloc failures
 parallel/begin/deitz/test_big_recursive_begin future succeeded
 --------------------------------------------------------------
 *-linux64.gnu.none.fifo.pthreads-std.log (8/18,9/2,9/9,9/13/12)
-*-linux64.gnu.none.fifo.pthreads-npt.log (baseline) (9/{4,5,14,22,30}/12)
+*-linux64.gnu.none.fifo.pthreads-npt.log (baseline)
+  (9/{4,5,14,22,30}/12)
+  (10/2/12)
 120821/Nightly-day2-Tue-linux64.gnu.none.fifo.pthreads-nlc.log
 
 ===========================================
