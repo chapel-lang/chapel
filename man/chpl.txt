@@ -214,12 +214,6 @@ OPTIONS
                     C code back to the Chapel source code that it implements.
                     The [no-] version of this flag turns this feature off.
 
-  --gen-extern-prototypes  Causes the compiler to augment the generated code
-                    with C prototypes for "extern" declarations in the Chapel
-                    program. These could be used for consistency checking
-                    during C compilation against the prototypes in the
-                    header file(s) provided to the Chapel compiler.
-
   --max-c-ident-len  Limits the length of identifiers in the generated code,
                     except when set to 0. The default is 0, except when
                     $CHPL_TARGET_COMPILER indicates a PGI compiler (pgi or

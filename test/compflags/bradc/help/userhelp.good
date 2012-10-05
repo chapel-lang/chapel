@@ -55,8 +55,6 @@ Run-time Semantic Check Options:
 C Code Generation Options:
       --[no-]codegen                  [Don't] Do code generation
       --[no-]cpp-lines                [Don't] Generate #line annotations
-      --gen-extern-prototypes         Generate C prototypes for extern
-                                      declarations
       --max-c-ident-len               Maximum length of identifiers in
                                       generated code, 0 for unlimited
       --savec <directory>             Save generated C code in directory
