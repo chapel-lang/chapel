@@ -372,6 +372,11 @@ gdb output differences
 [Error matching program output for execflags/bradc/gdbddash/declint2]
 [Error matching program output for execflags/bradc/gdbddash/gdbSetConfig]
 
+chpldoc sorting differences
+---------------------------
+[Error matching program output for chpldoc/compflags/alphabetical/alphabetized]
+[Error matching compiler output for chpldoc/compflags/alphabetical/alphabetized]
+
 
 ======================================
 chpbld02 (PrgEnv test system) failures
