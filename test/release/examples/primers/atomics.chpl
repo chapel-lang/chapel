@@ -13,6 +13,7 @@ const R = 1..n;
 // - bool
 // - int (all supported sizes)
 // - uint (all supported sizes)
+// - real (all supported sizes)
 //
 // Atomic variables support a limited number of operations that are
 // currently implemented as methods.
@@ -33,22 +34,24 @@ if x.read() != n then
 // compareExchange() (same as compareExchangeStrong()).
 //
 // The exchange() method atomically swaps the old value with the given
-// argument and returns the old value.  The compareExchangeStrong()
-// and compareExchangeWeak() methods only perform the swap if the
-// current value is equal to the first method argument, returning true
-// if the exchange succeeded.  See README.atomics for the difference
-// between the weak and strong variety.
+// argument and returns the old value.  The compareExchange(),
+// compareExchangeStrong() and compareExchangeWeak() methods only
+// perform the swap if the current value is equal to the first argument,
+// returning true if the exchange was performed  See README.atomics for
+// the difference between the weak and strong variety.
 //
 // In the following example, n parallel tasks are created via a
-// coforall statement.  Each task tries repeatedly to set the current
-// value of x to id-1, but only succeeds when x's current value is
-// equal to id.
+// coforall statement.  Each task tries to set the current value of x
+// id-1, but only will succeed.
 //
+var numFound: atomic int;
 coforall id in R {
-  while !x.compareExchangeWeak(id, id-1) do ;
+  numFound.add(x.compareExchangeWeak(n, id-1));
 }
-if x.read() != 0 then
-  halt("Error: x != 0 (", x.read(), ")");
+if numFound.read() != 1 then
+  halt("Error: numFound != 1 (", numFound.read(), ")");
+if x.read() == n then
+  halt("Error: x == n");
 
 // As a convenience, atomic bools also support testAndSet() and clear().
 // The testAndSet() method atomically reads the value of the variable, sets
@@ -80,13 +83,13 @@ if !found then
 flag.clear();
 
 
-// The integral atomic types also support the following atomic
+// The integral and real atomic types also support the following atomic
 // fetch and non-fetching operations:
 //
 // - fetchAdd() and add()
 // - fetchSub() and sub()
-// - fetchOr() and or() (bit-wise)
-// - fetchAnd() and and() (bit-wise)
+// - fetchOr() and or() (bit-wise) (integral types only)
+// - fetchAnd() and and() (bit-wise) (integral types only)
 //
 // Each of the above atomically reads the variable, stores the result
 // of the operation (+, -, |, or &) using the value and the method
