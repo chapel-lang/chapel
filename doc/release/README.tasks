@@ -297,6 +297,13 @@ CHPL_TASKS == fifo, CHPL_THREADS == pthreads:
   required tasks.  The -b/--blockreport flag can help debug programs
   like this that appear to be deadlocked.
 
+CHPL_TASKS == massivethreads, CHPL_THREADS == none:
+  In the MassiveThreads tasking layer, the value of numThreadsPerLocale
+  indicates the number of system threads used to execute tasks.
+  If the value is 0, the massivethreads tasking layer will create a
+  number of threads equal to the number of processor cores on the
+  locale.
+
 CHPL_TASKS == qthreads, CHPL_THREADS == none
   In the Qthreads tasking layer, the value of numThreadsPerLocale
   indicates the number of system threads, or shepherds, used to
@@ -330,6 +337,9 @@ CHPL_TASKS == fifo, CHPL_THREADS == pthreads:
   and each pthread.  The tasks inherit this call stack size, because the
   execution model is that a task occupies a pthread and uses its stack
   for the duration of the task's existence.
+
+CHPL_TASKS == massivethreads, CHPL_THREADS == none
+  MassiveThreads tasks have a default call stack size of 32k*sizeof(size_t).
 
 CHPL_TASKS == nanox, CHPL_THREADS == none
   Nanox tasks have a typical call stack size of 32k * sizeof(size_t)
