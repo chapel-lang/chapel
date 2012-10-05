@@ -177,6 +177,9 @@ left-hand side is, for example, \chpl{int(8)} because the \chpl{+}
 operator is defined on \chpl{int(32)}, not \chpl{int(8)}.
 \end{rationale}
 
+The compound assignment operators can be overloaded for different
+types using operator overloading~(\rsec{Function_Overloading}).
+
 \section{The Swap Statement}
 \label{The_Swap_Statement}
 \index{swap!statement}
@@ -188,6 +191,9 @@ operator is defined on \chpl{int(32)}, not \chpl{int(8)}.
 The swap statement indicates to swap the values in the expressions
 on either side of the swap operator.  Since both expressions are assigned
 to, each must be a valid lvalue expression~(\rsec{LValue_Expressions}).
+
+The swap operator can be overloaded for different types using operator
+overloading~(\rsec{Function_Overloading}).
 \begin{syntax}
 swap-statement:
   lvalue-expression swap-operator lvalue-expression
@@ -200,7 +206,7 @@ To implement the swap operation, the compiler uses temporary variables
 as necessary.
 
 \begin{example}
-The following swap statement
+When resolved to the default swap operator, the following swap statement
 \begin{chapel}
 var a, b: real;
 

@@ -123,6 +123,7 @@ function-name:
 
 operator-name: one of
   + $ $ $ $ - $ $ $ $ * $ $ $ $ / $ $ $ $ % $ $ $ $ ** $ $ $ $ ! $ $ $ $ == $ $ $ $ != $ $ $ $ <= $ $ $ $ >= $ $ $ $ < $ $ $ $ > $ $ $ $ << $ $ $ $ >> $ $ $ $ & $ $ $ $ | $ $ $ $ ^ $ $ $ $ ~
+  += $ $ $ $ -= $ $ $ $ *= $ $ $ $ /= $ $ $ $ %= $ $ $ $ **= $ $ $ $ &= $ $ $ $ |= $ $ $ $ ^= $ $ $ $ <<= $ $ $ $ >>= $ $ $ $ <=>
 
 argument-list:
   ( formals[OPT] )
@@ -805,7 +806,8 @@ listed in the following table:
 {\bf arity} & {\bf operators} \\
 \hline
 unary & \verb@+ - ! ~@ \\
-binary & \verb@+ - * / % ** ! == <= >= < > << >> & | ^ @ by\\
+binary & \verb@+ - * / % ** == <= >= < > << >> & | ^ by@ \\
+& \verb@+= -= *= /= %= **= &= |= ^= <<= >>= <=>@ \\
 \hline
 \end{tabular}
 \end{center}
