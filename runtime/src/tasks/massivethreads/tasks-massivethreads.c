@@ -39,7 +39,7 @@ static int tasking_layer_active=0;
 static int worker_in_cs_beforeinit=0;
 static thread_local_data* s_tld;
 static const chpl_bool s_def_serial_state=false;
-static const uint64_t c_def_stack_size=32768;
+static const uint64_t c_def_stack_size = 32 * 1024 * sizeof(size_t);
 
 static inline chpl_bool GET_SERIAL_STATE(void)
 {
@@ -290,19 +290,19 @@ void chpl_task_freeTaskList(chpl_task_list_p task_list)
 }
 
 typedef struct{
-	chpl_fn_p fn;
-	chpl_bool serial_state;
-	void *a;
+        chpl_fn_p fn;
+        chpl_bool serial_state;
+        void *a;
 }ns_task_wrapper_args;
 
 static void *ns_task_wrapper(void *args)
 {
-	ns_task_wrapper_args *ns_args=(ns_task_wrapper_args *)args;
-	chpl_fn_p fp=ns_args->fn;
-	void *a=ns_args->a;
-	SET_SERIAL_STATE(ns_args->serial_state);
-	chpl_mem_free(ns_args,0,"");
-	fp(a);
+        ns_task_wrapper_args *ns_args=(ns_task_wrapper_args *)args;
+        chpl_fn_p fp=ns_args->fn;
+        void *a=ns_args->a;
+        SET_SERIAL_STATE(ns_args->serial_state);
+        chpl_mem_free(ns_args,0,"");
+        fp(a);
         return NULL;
 }
 
@@ -318,7 +318,7 @@ void chpl_task_begin(chpl_fn_p fp, void* a, chpl_bool ignore_serial,
         }
         //Create one task
         //chpl_fn_p is defined as "typedef void (*chpl_fn_p)(void*);" in chpltypes.h at line 85.
-        //So this cast is legal unless the definition is changed.
+        //So this cast is OK unless the definition is changed.
         if (is_worker_in_cs()){
                 //Called from critical section by pthreads.
                 myth_thread_option opt;
