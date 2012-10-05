@@ -580,23 +580,30 @@ GenRet codegenRaddrMaybePtr(GenRet wide)
 {
   GenRet ret;
   GenInfo* info = gGenInfo;
+#ifdef HAVE_LLVM
   Type* wideRefType = NULL;
+#endif
   if( wide.chplType ) {
     // Set the resulting Chapel type.
     if( wide.isLVPtr == GEN_WIDE_PTR ) {
       // wide lv-pointer, e.g. to int,
       // so we return a reference to int.
       ret.chplType = getOrMakeRefTypeDuringCodegen(wide.chplType);
+#ifdef HAVE_LLVM
       wideRefType = getOrMakeWideTypeDuringCodegen(ret.chplType);
+#endif
     } else {
       if( wide.chplType->symbol->hasEitherFlag(FLAG_WIDE,FLAG_WIDE_CLASS) ) {
         ret.chplType = wide.chplType->getField("addr")->typeInfo();
+#ifdef HAVE_LLVM
         wideRefType = wide.chplType;
+#endif
       } else {
         INT_ASSERT(0);
       }
     }
   }
+
   if( info->cfile ) {
     if (wide.isLVPtr == GEN_PTR) {
       ret.isLVPtr = GEN_PTR;
@@ -635,6 +642,7 @@ GenRet codegenRlocaleMaybePtr(GenRet wide)
   GenInfo* info = gGenInfo;
   Type* type = LOCALE_ID_TYPE;
   ret.chplType = type;
+#ifdef HAVE_LLVM
   Type* wideRefType = NULL;
   if( wide.chplType ) {
     if( wide.isLVPtr == GEN_WIDE_PTR ) {
@@ -649,6 +657,7 @@ GenRet codegenRlocaleMaybePtr(GenRet wide)
       }
     }
   }
+#endif
 
   if( info->cfile ) {
     if (wide.isLVPtr == GEN_PTR) {
@@ -893,12 +902,15 @@ GenRet codegenElementPtr(GenRet base, GenRet index) {
       return ret;
     }
   }
-  
+#ifdef HAVE_LLVM  
   bool isStarTuple = false;
+#endif
   if( baseType ) {
     if( baseType->symbol->hasFlag(FLAG_STAR_TUPLE) ) {
       eltType = baseType->getField("x1")->typeInfo();
+#ifdef HAVE_LLVM  
       isStarTuple = true;
+#endif
     }
     if( baseType->symbol->hasFlag(FLAG_DATA_CLASS) ) {
       eltType = getDataClassType(baseType->symbol)->typeInfo();
@@ -1374,10 +1386,12 @@ GenRet codegenTernary(GenRet cond, GenRet ifTrue, GenRet ifFalse)
   Type* type = ifTrue.chplType;
   if( ! type ) type = ifFalse.chplType;
   ret.chplType = type;
+#ifdef HAVE_LLVM
   bool ifTrueSigned = !ifTrue.isUnsigned;
   bool ifFalseSigned = !ifFalse.isUnsigned;
   if( ifTrue.chplType ) ifTrueSigned = is_signed(ifTrue.chplType);
   if( ifFalse.chplType ) ifFalseSigned = is_signed(ifFalse.chplType);
+#endif
 
   if( info->cfile ) {
     ret.c = "(" + cond.c + ")?(" + ifTrue.c + "):(" + ifFalse.c + ")";
@@ -3742,7 +3756,6 @@ GenRet CallExpr::codegen() {
         fn = "chpl_gen_comm_put_strd";
       }
       TypeSymbol *dt;
-      TypeSymbol *dt2;
 
       GenRet localAddr = codegenValuePtr(get(1));
 
@@ -3765,10 +3778,8 @@ GenRet CallExpr::codegen() {
       if (get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
         Symbol *sym = get(2)->typeInfo()->getField("addr", true);
         INT_ASSERT(sym);
-        dt2 = sym->typeInfo()->getValType()->symbol;
         dststr = codegenRaddr(dststr);
       } else {
-        dt2 = get(2)->typeInfo()->getValType()->symbol;
         if (get(2)->typeInfo()->symbol->hasFlag(FLAG_REF)) {
           dststr = codegenDeref(dststr);
         }
@@ -3800,10 +3811,8 @@ GenRet CallExpr::codegen() {
       if (get(5)->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
         Symbol *sym = get(5)->typeInfo()->getField("addr", true);
         INT_ASSERT(sym);
-        dt2 = sym->typeInfo()->getValType()->symbol;
         srcstr = codegenRaddr(srcstr);
       } else {
-        dt2 = get(5)->typeInfo()->getValType()->symbol;
         if (get(5)->typeInfo()->symbol->hasFlag(FLAG_REF)) {
           srcstr = codegenDeref(srcstr);
         }
@@ -3815,10 +3824,8 @@ GenRet CallExpr::codegen() {
       if (get(6)->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
         Symbol *sym = get(6)->typeInfo()->getField("addr", true);
         INT_ASSERT(sym);
-        dt2 = sym->typeInfo()->getValType()->symbol;
         count = codegenRaddr(count);
       } else {
-        dt2 = get(6)->typeInfo()->getValType()->symbol;
         if (get(6)->typeInfo()->symbol->hasFlag(FLAG_REF)) {
           count = codegenDeref(count);
         }
