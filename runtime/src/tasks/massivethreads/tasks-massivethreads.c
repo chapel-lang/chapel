@@ -29,8 +29,8 @@
 
 typedef union{
         struct{
-        	int flag;
-        	chpl_bool serial_state;
+                int flag;
+                chpl_bool serial_state;
         }data;
         char size[128];
 }thread_local_data;
@@ -43,18 +43,18 @@ static const uint64_t c_def_stack_size = 32 * 1024 * sizeof(size_t);
 
 static inline chpl_bool GET_SERIAL_STATE(void)
 {
-	if (tasking_layer_active){
+        if (tasking_layer_active){
         int rank=myth_get_worker_num();
         return s_tld[rank].data.serial_state;
-	}
-	return s_def_serial_state;
+        }
+        return s_def_serial_state;
 }
 static inline void SET_SERIAL_STATE(chpl_bool newstate)
 {
-	if (tasking_layer_active){
+        if (tasking_layer_active){
         int rank=myth_get_worker_num();
         s_tld[rank].data.serial_state=newstate;
-	}
+        }
 }
 #define SAVE_SERIAL_STATE() chpl_bool saved_serial_state=GET_SERIAL_STATE();
 #define RESTORE_SERIAL_STATE() SET_SERIAL_STATE(saved_serial_state);
@@ -203,18 +203,18 @@ void chpl_task_init(int32_t numThreadsPerLocale, int32_t maxThreadsPerLocale,
         //If callstack size is not specified by argument,
         // try to read from environmental variable
         if (callStackSize==0){
-        	env=getenv("MYTH_DEF_STKSIZE");
-        	if (env){
-        		int i_stk=atoi(env);
-        		if (i_stk>0)
-        		callStackSize=i_stk;
-        	}
+                env=getenv("MYTH_DEF_STKSIZE");
+                if (env){
+                        int i_stk=atoi(env);
+                        if (i_stk>0)
+                        callStackSize=i_stk;
+                }
         }
-    	//Otherwise use default size
-    	if (callStackSize==0){
-        	callStackSize=c_def_stack_size;
-    	}
-    	s_stack_size=callStackSize;
+            //Otherwise use default size
+            if (callStackSize==0){
+                callStackSize=c_def_stack_size;
+            }
+            s_stack_size=callStackSize;
         assert(!is_worker_in_cs());
         get_process_affinity_info();
         env=getenv("MYTH_WORKER_NUM");
@@ -223,8 +223,8 @@ void chpl_task_init(int32_t numThreadsPerLocale, int32_t maxThreadsPerLocale,
         if (n_workers<=0){n_workers=get_cpu_num();}
         s_tld=chpl_mem_allocMany(n_workers+numCommTasks, sizeof(thread_local_data), 0, 0, "");
         for (i=0;i<n_workers+numCommTasks;i++){
-        	s_tld[i].data.flag=0;
-        	s_tld[i].data.serial_state=s_def_serial_state;
+                s_tld[i].data.flag=0;
+                s_tld[i].data.serial_state=s_def_serial_state;
         }
         tasking_layer_active=1;
         myth_init_withparam((int)(n_workers+numCommTasks),(size_t)callStackSize);
@@ -311,10 +311,10 @@ void chpl_task_begin(chpl_fn_p fp, void* a, chpl_bool ignore_serial,
 {
         myth_thread_t th;
         if (!ignore_serial && serial_state){
-        	SAVE_SERIAL_STATE();
-        	fp(a);
-        	RESTORE_SERIAL_STATE();
-        	return;
+                SAVE_SERIAL_STATE();
+                fp(a);
+                RESTORE_SERIAL_STATE();
+                return;
         }
         //Create one task
         //chpl_fn_p is defined as "typedef void (*chpl_fn_p)(void*);" in chpltypes.h at line 85.
