@@ -1515,6 +1515,9 @@ err_t _qio_channel_final_flush_unlocked(qio_channel_t* ch)
               stats.st_size == max_space_made &&
               ch->file->max_initial_position == ch->start_pos ) {
             // Truncate the file.
+            // NOTE -- this does not work with Cygwin
+            // because (presuambly) Windows does not like to
+            // truncate a file while it is still mapped.
             err = sys_ftruncate(ch->file->fd, max_written );
           }
         } else {
