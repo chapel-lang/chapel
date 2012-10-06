@@ -352,12 +352,23 @@ static inline void myth_startpoint_exit_ex_body(int rank)
 static inline void *myth_worker_thread_fn(void *args)
 {
 	intptr_t rank=(intptr_t)args;
+	int bind_workers;
+	char *env;
 #ifdef WORKER_SET_AFFINITY
-	//Set affinity
-	cpu_set_t cs;
-	cs=myth_get_worker_cpuset(rank);
-	real_pthread_setaffinity_np(real_pthread_self(),sizeof(cpu_set_t),&cs);
+	bind_workers=1;
+#else
+	bind_workers=0;
 #endif
+	env=getenv(ENV_MYTH_BIND_WORKERS);
+	if (env){
+		bind_workers=atoi(env);
+	}
+	if (bind_workers>0){
+		//Set affinity
+		cpu_set_t cs;
+		cs=myth_get_worker_cpuset(rank);
+		real_pthread_setaffinity_np(real_pthread_self(),sizeof(cpu_set_t),&cs);
+	}
 	if (rank == 0) {
 		//setup as a main thread
 		myth_startpoint_init_ex_body(rank);
