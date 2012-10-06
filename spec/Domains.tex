@@ -259,8 +259,9 @@ writeln(A);
 
 Associative domains represent an arbitrary set of indices
 of a given type and can be used to describe sets or to create
-dictionary-style arrays.  Indices may be virtually any value type, including
-integers, reals, objects and enumerators.
+dictionary-style arrays (hash tables).
+The type of indices of an associative domain, or its \chpl{idxType},
+can be any primitive type except \chpl{void} or any class type.
 
 \subsubsection{Associative Domain Types}
 
@@ -269,7 +270,7 @@ integers, reals, objects and enumerators.
 \index{domains!associative}
 
 An associative domain type is parameterized by \chpl{idxType}, the
-type of the index that it stores.  The syntax is as follows:
+type of the indices that it stores.  The syntax is as follows:
 
 \begin{syntax}
 associative-domain-type:
@@ -281,10 +282,6 @@ associative-index-type:
   type-specifier
 \end{syntax}
 
-\begin{openissue}
-Should there be an \chpl{opt_idxTypeEquals} in the domain type above?
-\end{openissue}
-
 \index{types!enumerated domains}
 \index{enumerated domains!types}
 \index{domains!enumerated}
@@ -294,24 +291,23 @@ Should there be an \chpl{opt_idxTypeEquals} in the domain type above?
 The three expansions of \sntx{associative-domain-type} correspond to the three
 kinds of associative domain listed below.
 \begin{enumerate} 
-\item In general, associative domains have an index set whose members are of the
-associative index type.  
-\item Enumerated domains are a special case, in which
-the \sntx{associative-index-type} is an enumerated type.  Enumerated types are
-handled specially during initialization, as described below.
-\item Opaque domain types are parameterized by the type \chpl{opaque},
-indicating that the index values are anonymous and have no obvious
-representational name or value.  
+\item In general, \sntx{associative-index-type} determines \chpl{idxType}
+of the associative domain type.
+\item Enumerated domains are a special case, in which \chpl{idxType}
+is an enumerated type.  Enumerated domains are
+handled specially during initialization and have a defined iteration
+order, as described below.
+\item Opaque domains are a special case, indicated by the type \chpl{opaque}.
+Anonymous values of the type \chpl{opaque} are used as index values
+in this case.
+% TODO: need to define and explain the 'opaque' type elsewhere.
 \end{enumerate}
 
 When an associative domain is used as the index set of an array, the relation
 between the indices and the array elements can be thought of as a map between
 the values of the index set and the elements stored in the array.
-For enumerated domains, the mapping is between values of the enumeration and
-the associated array values.  For opaque domains, the
-indices have no inherent names and are therefore anonymous.  Opaque domains can
-be used to represent sets and to build unstructured arrays (similar to
-pointer-based data structures in conventional languages).
+Opaque domains can be used to build unstructured arrays that are similar to
+pointer-based data structures in conventional languages.
 
 \subsubsection{Associative Domain Values}
 \label{Associative_Domain_Values}
@@ -319,37 +315,24 @@ pointer-based data structures in conventional languages).
 \index{domains!associative!values}
 
 An associative domain's value is simply the set of all index values
-that the domain describes.  The indices of an associative domain are
-typically unordered.  
+that the domain describes.  The iteration order over the indices of
+an associative domain is undefined, except for enumerated domains.
+The iteration order over the indices of an enumerated domain
+is the declaration order of the corresponding enumeration constants.
 
 \index{domains!associative!literals!lack thereof}
 \index{domains!associative!initialization}
 
 There is no literal syntax for an associative domain, though a tuple
-of values of type \chpl{idxType} can be used to initialize a variable
+of values of type \chpl{idxType} can be used to initialize or assign to a variable
 of associative domain type.
 
-% TODO: assign too?
-%Review:hilde Not sure what is needed here.
-
 \index{domains!associative!default values}
 
-In general, the default value for an associative domain is the empty set.
-
-\paragraph{Enumerated Domain Values}
-
-Associative domains over
-enumerated types are ordered according to the order in which the
-enumeration's identifiers were declared.
-
-Being a special case of associative domains, an enumerated domain can be
-initialized by tuple of enumerators.  All of the enumerators must be
-members of the enumeration type used to declare the domain.
-
-\index{domains!associative!default values}
-
-The default value for an enumerated domain is the set of all identifiers in the
-enumeration.
+The default value of an associative domain type is the empty index set,
+except for enumerated domains.
+The default value of an enumerated domain type is the set of all constants
+of the corresponding enumerated type.
 
 \begin{rationale}
 The decision to have enumerated domains start fully populated was
@@ -369,24 +352,8 @@ We may generally support a \chpl{startPopulated} parameter on associative
 domains, to unify this capability with other values.
 \end{future}
 
-\paragraph{Opaque Domain Values}
-\index{opaque domains!values}
-\index{domains!values!opaque}
-\index{domains!opaque!values}
-
-An opaque domain's value is simply the unordered set of anonymous
-indices that the domain describes.
-
-\index{opaque domains!literals, lack thereof}
-\index{domains!opaque!literals}
-
-There is no literal syntax for an opaque domain due to the fact that
-the indices have no inherent names.  The members of an opaque domain can only be
-created using the \chpl{add} function or \chpl{+} operator.
-
-\index{opaque domains!default values}
-
-The default value for an opaque domain is the empty set.
+Indices can be added to or removed from an associative domain
+as described in \rsec{Adding_and_Removing_Domain_Indices}.
 
 
 \section{Simple Subdomains}
@@ -448,13 +415,22 @@ and whether this should be done aggressively or lazily.
 \index{subdomains!simple!values}
 \index{values!subdomains!simple}
 
-By default, the value of subdomain is an empty index set.  A rectangular subdomain
-can be initialized using a domain literal (\rsec{Rectangular_Domain_Values}).
-Associative subdomains must be initialized explicitly, by using the \chpl{add}
-method or \chpl{+} operator.
+The value of a simple subdomain is the set of all index values
+that the subdomain describes.
 
+\index{subdomains!simple!default values}
+
+The default value of a simple subdomain type is the same as the default value
+of its parent's type
+(\rsec{Rectangular_Domain_Values}, \rsec{Associative_Domain_Values}).
+
+A simple subdomain variable can be initialized or assigned to
+with a tuple of values of the parent's \chpl{idxType}.
+Indices can also be added to or removed from a simple subdomain
+as described in \rsec{Adding_and_Removing_Domain_Indices}.
 It is an error to attempt to add an index to a subdomain that is not also
 a member of the parent domain.
+
 
 \section{Sparse Subdomains}
 \label{Sparse_Subdomains}
@@ -499,8 +475,8 @@ subdomains share the same type.
 \index{values!subdomains!sparse}
 
 A sparse subdomain's value is simply the set of all index values that
-the domain describes.  If the parent domain's indices were ordered,
-the sparse subdomain's are as well.
+the domain describes.  If the parent domain defines an iteration order
+over its indices, the sparse subdomain inherits that order.
 
 \index{sparse domains!literals!lack thereof}
 \index{sparse domains!initialization}
@@ -582,13 +558,11 @@ these semantics need to be defined nevertheless.
 
 All domains support iteration via standard \chpl{for}, \chpl{forall}, and \chpl{coforall}
 loops.  These loops iterate over all of the indices that the domain
-describes.  If the domain is ordered, then the indices are visited in the
-prescribed order.  
+describes.  If the domain defines an iteration order of its indices,
+then the indices are visited in that order.  
 
 The type of the iterator variable for an iteration over a
 domain named \chpl{D} is that domain's index type, \chpl{index(D)}.
-If the domain's indices are ordered, a \chpl{for} loop will traverse the
-indices in order.
 
 
 \section{Domains as Arguments}
@@ -847,6 +821,10 @@ they should balk or not?  Or add exceptions...
 As with normal domain assignments, arrays declared in terms of a
 domain being modified in this way will be reallocated as discussed
 in~\rsec{Association_of_Arrays_to_Domains}.
+
+% TODO: describe operations on opaque domains, esp. domain.create().
+% Note that domain.add() (should) work as defined above on
+% opaque domains, taking values of the opaque type for its argument.
 
 
 \section{Predefined Methods on Domains}
