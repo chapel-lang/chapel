@@ -11,7 +11,7 @@ config param traceDimensionalDistDsiAccess = false;
 /// the types for ... ///////////////////////////////////////////////////////
 
 type locCntT = uint(32); // ... locale counts
-type locIdxT =  int(32); // ... indexing into targetLocales
+type locIdxT =  int(64); // ... indexing into targetLocales
 type stoSzT  = uint(32); // ... local storage size and indices (0-based)
 
 
@@ -191,7 +191,7 @@ proc dsiIndexCurrentLocale1d((dimMultiD, numDim): (?, int)): locIdxT {
 }
 
 proc _dsiIndexCurrentLocale1dHelper(dd: DimensionalDist, dim: int) {
-  for (ix, loc) in (dd.targetIds, dd.targetLocales) do
+  for (ix, loc) in zip(dd.targetIds, dd.targetLocales) do
     if loc == here then
       return ix(dim);
   halt("DimensionalDist: the current locale ", here,
@@ -258,7 +258,7 @@ proc DimensionalDist.dsiNewRectangularDom(param rank: int,
                                   dom1 = dom1, dom2 = dom2);
   // result.whole is initialized to the default value (empty domain)
   coforall (loc, locIds, locDdesc)
-   in (targetLocales, targetIds, result.localDdescs) do
+   in zip(targetLocales, targetIds, result.localDdescs) do
     on loc {
       const defaultVal1: result.lddTypeArg1;
       const locD1 = dom1.dsiNewLocalDom1d(locIds(1));
@@ -289,7 +289,7 @@ proc DimensionalDom._dsiSetIndicesHelper(newRanges: rank * rangeT): void {
   dom1.dsiSetIndices1d(newRanges(1));
   dom2.dsiSetIndices1d(newRanges(2));
 
-  coforall (locId, locDD) in (dist.targetIds, localDdescs) do
+  coforall (locId, locDD) in zip(dist.targetIds, localDdescs) do
     on locDD do
       locDD._dsiLocalSetIndicesHelper((dom1, dom2), locId);
 }
@@ -379,7 +379,7 @@ proc DimensionalDom.dsiBuildArray(type eltType)
 
   const result = new DimensionalArr(eltType = eltType, dom = this);
   coforall (loc, locDdesc, locAdesc)
-   in (dist.targetLocales, localDdescs, result.localAdescs) do
+   in zip(dist.targetLocales, localDdescs, result.localAdescs) do
     on loc do
       locAdesc = new LocDimensionalArr(eltType, locDdesc);
   return result;
@@ -477,7 +477,7 @@ iter DimensionalDom.these(param tag: iterKind) where tag == iterKind.leader {
   //   coforall locDdesc in localDdescs do
   // then the crash goes away.
   //
-  coforall ((l1,l2), locDdesc) in (dist.targetIds, localDdescs) do
+  coforall ((l1,l2), locDdesc) in zip(dist.targetIds, localDdescs) do
     on locDdesc {
       // mimic BlockDom leader
 
@@ -616,7 +616,7 @@ proc showArrLocales() {
   //writeln(dmarr); -- on Locale 0
   //dmarr.writeThis(stdout); writeln(); -- works by chance
 
-  for (ix,elm) in (dmdom,dmarr) do
+  for (ix,elm) in zip(dmdom,dmarr) do
     writeln(" ", ix, " on ", elm.locale.id, ": ", elm);
   writeln();
 }
