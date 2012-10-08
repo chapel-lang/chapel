@@ -2,8 +2,6 @@
 Release Changes List
 ====================
 
-*** Stopped at 20572 ***
-
 =============
 version 1.6.0
 =============
@@ -12,17 +10,20 @@ Ninth public release of Chapel, October 18, 2012
 
 Highlights (see entries in subsequent categories for details)
 -------------------------------------------------------------
-- syntax improvements: domain/array literals, zippered iteration
-- improved atomic types: new methods, support for floating point atomics
+- syntax improvements:
+  - added support for array literals using square brackets
+  - improved domain literals to use curly brackets to suggest set notation
+  - changed zippered iteration to use an explicit 'zip' keyword
+- improved atomic variables: new methods, support for floating point atomics
 - added support for 'ref' intents to support pass-by-reference arguments
-- added support for user overloads of '<=>' and 'op=' assignments
-- added a prototype implementation of a code-based documentation feature
-- added an LLVM-based back-end
+- added support for user overloads of 'op=' and '<=>' assignments
+- added a prototype of 'chpldoc', a code-based documentation feature
+- added support for using LLVM as a back-end compiler target rather than C
 - added support for a strided bulk communication optimization
-- additional performance improvements and bug fixes
+- numerous performance improvements and bug fixes
 - significant improvements to the SSCA2, RA, and LULESH example codes
-- added a new tasking implementation that uses U Tokyo's MassiveThreads library
-- added support for network-based atomics in the Chapel module on Cray systems
+- added a new tasking runtime that uses U Tokyo's MassiveThreads library
+- network-based atomic variables for users of the Chapel module on Cray systems
 - improved support for the Tilera chip architecture
 
 Environment Changes
@@ -30,7 +31,10 @@ Environment Changes
 - made compiler infer CHPL_HOME if unset, or complain if mis-set
 - made util/setchplenv.* scripts more cleanly re-runnable
 - added new platforms: 'cray-cascade' and 'cray-xk'
+  (see doc/platforms/README.cray)
 - renamed 'xe-cle' and 'xt-cle' to 'cray-xe' and 'cray-xt', respectively
+- renamed Cray PrgEnv compiler settings to be more platform-independent
+  (e.g., 'cray-xe-cray'/'cray-xe-gnu' -> 'cray-prgenv-cray'/'cray-prgenv-gnu')
 - made CHPL_MEM default to 'tcmalloc' when CHPL_COMM is 'ugni'
 - made CHPL_ATOMICS default to 'intrinsics' for CHPL_TARGET_COMPILER=PrgEnv-gnu
 
@@ -88,11 +92,19 @@ Standard Modules
 
 Documentation
 -------------
-- added README.llvm & README.chpldoc to doc/technotes/ to describe new features
-- updated README.atomics to describe new capabilities
-- improved command-line help for -d option
-- noted that Python is now a required feature to build Chapel
+- added README.llvm to describe new LLVM back-end option
+  (see doc/technotes/README.llvm)
+- added README.chpldoc to describe new chpldoc documentation option
+  (see doc/technotes/README.chpldoc)
+- updated README.atomics to describe new capabilities for atomic variables
+- added doc/platforms/README.tilera to describe using Chapel with Tilera chips
+- noted that Python and bc are now required features to build Chapel
+  (see doc/README.prereqs and doc/platforms/README.cygwin)
+- updated README.extern to utilize 'ref' intents rather than 'inout'
+- updated language specification to describe new features and syntax changes
 - minor updates and fixes to several chapters of the language specification
+- updated the Quick Reference to illustrate new syntax, features
+- improved command-line help for -d option
 - minor updates to several READMEs
 
 Example Codes
@@ -101,14 +113,14 @@ Example Codes
   - extensive performance and memory improvements
   - improved ability to 'make' with different options from the command line
   - changed the neighbor list representation to use 1D arrays of 2-tuples
-  - added support for distributed/parallel graph construction
   - added ability to read/write graphs from/to files in setting up
+  - added support for distributed/parallel graph construction
   - fixed a bug in the TEPs computation when starting from a subset of vertices
   - added the ability to skip various kernels via configs
   - optimized and fixed a bug in the generation of filtered edge lists
   - converted uses of sync variables to atomic variables
 - improvements to RA:
-  - extended RA to use either on-clauses or direct array accesses
+  - extended ra.chpl to use either on-clauses or direct array accesses
   - made verification updates lossless using synchronization variables
     (see examples/benchmarks/hpcc/ra.chpl)
   - added a lossless version of RA that uses atomic variables
@@ -117,9 +129,11 @@ Example Codes
   - replaced 'sync' variables with 'atomic's
   - converted a global array into tuples to minimize communication
   - general code cleanup improvements
-- added a new example code to demonstrate the --docs/chpldoc capability
-  (see examples/primers/chpldoc.chpl)
-- updated examples/primers/atomic_vars.chpl to reflect recent changes
+- examples/primer/ updates:
+  - added a new primer to demonstrate the --docs/chpldoc capability
+    (see examples/primers/chpldoc.chpl)
+  - updated atomic_vars.chpl primer to reflect recent changes
+  - updated arrays.chpl primer to reflect array literal syntax
 - updated all examples to reflect syntax changes
 
 Platform-specific Notes
@@ -153,16 +167,21 @@ Bug Fixes / New Semantic Checks (for old semantics)
 - improved support for uint idxTypes in domains and arrays
 - improved the ability to use user-defined constructors in derived classes
 - fixed a bug in which the block-cyclic distribution didn't support 1D domains
-- fixed a bug with using stdin on Mac OS X
-- fixed a bug with bitwise I/O writing
+- fixed several bugs in I/O:
+  - one related to using stdin on Mac OS X
+  - one related to bitwise writing
+  - one related to writing to/reading from a Writer/Reader from a remote locale
+  - one related to issues on Cygwin
 - fixed a bug in which classes were improperly considered unused and removed
 - fixed a bug in tcmalloc when computing reallocation growth and shrinkage
 
 Packaging Changes
 -----------------
+- simplified the etc/emacs/ directory organization to avoid duplication
+  (emacs users may need to update their .emacs settings -- see etc/emacs/README)
+- added a 'chpldoc' alias to the 'chpl' compiler to just generate documentation
 - added setchplenv.fish to the release (intended for 1.5.0, but mis-packaged)
 - made the subdirectories used to store object files more unique
-- added a 'chpldoc' alias to the 'chpl' compiler to just generate documentation
 
 Performance Improvements
 ------------------------
@@ -190,12 +209,15 @@ Third-Party Software Changes
 - updated Qthreads to version 1.8
 - updated GASNet to version 1.18.2
 - added MassiveThreads 0.3beta to the third-party directory
+- added a directory to download creoleparser into for use with chpldoc
+  (see doc/technotes/README.chpldoc)
 
 Testing System
 --------------
 - reordered the order in which execution options are passed to tests
   (see #comments at top of start_test for details)
 - added a 'lastexecopts' capability to require an execution option to come last
+- improved the 'timedexec' script to kill the child's process group
 
 Internal/Developer-oriented
 ---------------------------
