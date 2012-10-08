@@ -133,24 +133,24 @@ Limiting Per-Task Memory
 
 An active task requires space for its call stack.  This space is created
 at a fixed size when the task starts executing, and remains in existence
-until the task completes.  By default the size of a call stack is set to
-the system stack limit, which for example on Linux-based systems is
-typically 8 mb.  If the system doesn't specify a stack size limit, the
-tasking layer chooses a call stack size itself.  Again for example, this
-is typically 8 mb for tasking layers which use pthreads-based threading
-layers. (README.tasks discusses tasking and threading layers.)
+until the task completes.  The default size of a call stack is set by
+the particular tasking layer in use.  For the default (FIFO) tasking
+layer, the default call stack size is the system stack limit (typically
+8 MiB on Linux-based systems) or 8 MiB if that limit is not set.  The
+README.tasks file discusses tasking and threading layers, including
+their default call stack sizes.
 
-However, this automatically selected call stack size may not be
-appropriate in all cases.  For programs in which some tasks have deep
-call trees it may be too small, leading to stack overflow.  For programs
-which use tasks only for data parallelism it may be unnecessarily large.
+The automatically selected call stack size may not be appropriate in all
+cases.  For programs in which some tasks have deep call trees it may be
+too small, leading to stack overflow.  For programs which use tasks only
+for data parallelism it may be unnecessarily large.
 
 The following built-in configuration constant can be used to change the
 task call stack size:
 
-  callStackSize  : Size, in bytes, of the call stack for a task.
-                   If the size is 0, the default system stack size
-                   will be used.
+  callStackSize  : Size, in bytes, of the call stack for a task.  If the
+                   size is 0, the tasking layer being used will select a
+                   default size.
 
 
 -----------------------------------------

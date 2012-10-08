@@ -333,22 +333,28 @@ constant can be used to adjust the call stack size for active tasks.
 This interacts with the tasking and threading models as follows:
 
 CHPL_TASKS == fifo, CHPL_THREADS == pthreads:
-  The value of callStackSize is used to set the stack size for the process
-  and each pthread.  The tasks inherit this call stack size, because the
-  execution model is that a task occupies a pthread and uses its stack
-  for the duration of the task's existence.
+  The default task call stack size is the system stack limit (typically
+  8 MiB for Linux systems) or 8 MiB if that is not set.  If a value is
+  specified for callStackSize, that value is used to set the stack size
+  for the process and each pthread.  Tasks inherit this call stack size,
+  because the execution model is that a task occupies a pthread and uses
+  its stack for the duration of the task's existence.
 
 CHPL_TASKS == massivethreads, CHPL_THREADS == none
-  MassiveThreads tasks have a default call stack size of 32k*sizeof(size_t).
+  MassiveThreads tasks have a default call stack size of 32k*sizeof(size_t)
+  bytes.  If a value is specified for callStackSize, that value is used
+  for the call stack size instead.
 
 CHPL_TASKS == nanox, CHPL_THREADS == none
-  Nanox tasks have a typical call stack size of 32k * sizeof(size_t)
-  (though in practice some tasks may have the system pthread call
-  stack size limit).  In the current Nanos++ tasking implementation,
-  the callStackSize constant is ignored.
+  Nanox tasks have a typical call stack size of 32k*sizeof(size_t) bytes
+  (though in practice some tasks may have the system pthread call stack
+  size limit).  In the current Nanos++ tasking implementation, the
+  callStackSize constant is ignored.
 
 CHPL_TASKS == qthreads, CHPL_THREADS == none
-  Qthreads tasks have a default call stack size of 32k*sizeof(size_t).
+  Qthreads tasks have a default call stack size of 32k*sizeof(size_t)
+  bytes.  If a value is specified for callStackSize, that value is used
+  for the call stack size instead.
 
 CHPL_TASKS == mta, CHPL_THREADS == none
   The callStackSize configuration constant is ignored.  As in FIFO
@@ -361,10 +367,12 @@ CHPL_TASKS == mta, CHPL_THREADS == none
   overflow stacks that are too small.
 
 CHPL_TASKS == none, CHPL_THREADS == none
-  The value of callStackSize is used to set the stack size for the process.
-  The tasks inherit this call stack size, because the execution model,
-  as described above, is either serial or like FIFO tasking with a
-  single thread.
+  The default task call stack size is the system stack limit (typically
+  8 MiB for Linux systems).  If a value is specified for callStackSize,
+  that value is used to set the stack size for the process.  Tasks
+  inherit this call stack size, because the execution model, as
+  described above, is either serial or like FIFO tasking with a single
+  thread.
 
 
 -------------------------
