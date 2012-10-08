@@ -123,6 +123,9 @@ To use this combination of runtime layers, do the following.
 
 7a) Parameters associated with the ugni communication layer.
 
+    Heap Size
+    ---------
+
     By default the heap will occupy as much of the free memory on the
     locale as the runtime can acquire, less a modest percentage to allow
     for unforeseen demands from other (system) programs running on the
@@ -150,6 +153,10 @@ To use this combination of runtime layers, do the following.
     this will add will depend on the hugepage size in the hugepage
     module you have loaded.
 
+
+    Communication Layer Concurrency
+    -------------------------------
+
     The CHPL_COMM_CONCURRENCY environment variable tells the ugni
     communication layer how much program concurrency it should try to
     support.  It basically controls how much of the communication
@@ -164,6 +171,17 @@ To use this combination of runtime layers, do the following.
 
 
 7b) Parameters associated with the muxed tasking layer.
+
+    Task Stack Size
+    ---------------
+
+    The default task stack size in the muxed tasking layer is 128 KiB.
+    You can change this using the callSTackSize configuration constant,
+    just as in the other tasking layer implementations.
+
+
+    Number of Threads per Locale
+    ----------------------------
 
     The muxed tasking layer gets the threads it uses as task execution
     vehicles from the soft-threads threading layer.  The soft-threads
