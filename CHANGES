@@ -141,6 +141,7 @@ Platform-specific Notes
 - improved support for the Tilera chip architecture
   (see doc/platforms/README.tilera)
 - added support for Cray Gemini- and Aries-based atomics to the ugni comm layer
+  (see doc/platforms/README.cray)
 
 Launcher-specific Notes
 -----------------------

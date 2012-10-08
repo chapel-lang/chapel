@@ -87,8 +87,7 @@ For more detailed information about...      refer to...
   ...how Chapel tasks are mapped to threads  ...doc/README.tasks
 
   ...using Chapel on a specific platform...
-     ...a Cray XE (TM)                       ...doc/platforms/README.cray-xe
-     ...a Cray XT (TM) (CLE)                 ...doc/platforms/README.cray-xt
+     ...a Cray system                        ...doc/platforms/README.cray
      ...Cygwin over Windows                  ...doc/platforms/README.cygwin
      ...an IBM system                        ...doc/platforms/README.ibm
      ...an SGI Altix system                  ...doc/platforms/README.sgi

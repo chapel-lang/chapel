@@ -121,10 +121,11 @@ constants:
                                 of iterations per task is never less than
                                 the specified value (default: 1).
 
-The Chapel standard distributions Block and Cyclic also use
-identically named constructor arguments to control the degree of data
-parallelism within each locale.  The default values for these
-arguments are set to the corresponding global configuration constants.
+Most Chapel standard distributions also use identically named
+constructor arguments to control the degree of data parallelism within
+each locale when iterating over its domains and arrays.  The default
+values for these arguments are set to the corresponding global
+configuration constants.
 
 
 ------------------------
@@ -200,10 +201,11 @@ support, please let us know so that we can prioritize accordingly.
 Flags for Tracking Tasks
 ------------------------
 
-Chapel supports a few experimental capabilities for tracking the status
-of tasks, primarily designed for use in a single-locale execution.
-These flags add a certain amount of runtime overhead to task parallel
-programs. The flags are as follows:
+For certain tasking layers, such as the default fifo/pthreads
+implementation, Chapel supports a few experimental capabilities for
+tracking the status of tasks, primarily designed for use in a
+single-locale execution.  These flags add a fair amount of runtime
+overhead to task parallel programs. The flags are as follows:
 
   -b, --blockreport : when Ctrl-C is entered during a program
                       executing under this flag, it will display a

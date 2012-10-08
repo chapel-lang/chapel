@@ -68,8 +68,7 @@ Recommended Settings
    chapel_info@cray.com
 
 
-3) Set your PATH to include the directory
-     $CHPL_HOME/bin/$CHPL_HOST_PLATFORM
+3) Set your PATH to include the directory $CHPL_HOME/bin/$CHPL_HOST_PLATFORM
    which is created when you build the compiler.  For example:
 
         setenv PATH "$PATH":"$CHPL_HOME/bin/$CHPL_HOST_PLATFORM"
@@ -129,11 +128,11 @@ Optional Settings
 
         platform        compiler
         --------        --------
+        cray-*      ->  cray-prgenv-$PE_ENV (PE_ENV is set by PrgEnv-* modules)
         marenostrum ->  ibm
         pwr5, pwr6  ->  ibm
         x1, x2      ->  cray-vec
         xmt         ->  cray-mta
-        cray-*      ->  cray-prgenv-$PE_ENV (PE_ENV is set by the PrgEnv-* module)
         other       ->  gnu
 
    The default for CHPL_TARGET_COMPILER is CHPL_HOST_COMPILER if it is
@@ -213,6 +212,7 @@ Optional Settings
 
         default  : use the standard C malloc/free commands
         dlmalloc : use Doug Lea's memory allocation package
+        tcmalloc : use the tcmalloc package from Google Performance Tools
 
    If unset, CHPL_MEM defaults to "default" unless CHPL_COMM is
    gasnet and you are using the fast or large segments.  See
@@ -242,8 +242,8 @@ Optional Settings
         none   : do not build GMP support into the Chapel runtime
         gmp    : use the gmp implementation bundled with Chapel in third-party
 
-   If unset, CHPL_GMP defaults to "none". Note that the included gmp distribution
-   may not build on all platforms supported by Chapel.
+   If unset, CHPL_GMP defaults to "none". Note that the included gmp
+   distribution may not build on all platforms supported by Chapel.
 
 -------------------------------------
 Compiler Command Line Option Defaults

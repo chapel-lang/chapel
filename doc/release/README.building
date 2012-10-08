@@ -21,10 +21,9 @@ If everything works as intended, you ought to see:
         $CHPL_HOME/bin/$CHPL_HOST_PLATFORM/chpl
 
 3) the runtime support libraries being compiled, archived, and stored
-   in:
+   in a configuration-specific subdirectory under:
 
-   $CHPL_HOME/lib/$CHPL_TARGET_PLATFORM/$CHPL_TARGET_COMPILER/
-     comm-$CHPL_COMM/threads-$CHPL_THREADS/
+   $CHPL_HOME/lib/$CHPL_TARGET_PLATFORM/$CHPL_TARGET_COMPILER/...
 
 If you get an error or failure during the make process, please let us
 know about it at: chapel-bugs@lists.sourceforge.net (as well as
@@ -35,7 +34,7 @@ Note that each make command only builds the compiler and runtime for
 the current set of CHPL_ environment variables defined by (and
 inferred for) your environment.  Thus, while the directory structure
 above supports the ability to have multiple versions of the compiler
-and runtime built concurrently, only one version will be built for
+and runtime built simultaneously, only one version will be created for
 each make command.  To support additional host/target platforms,
 host/target compilers, or threading/communication layers, you will
 need to reset your environment variables and re-make.
