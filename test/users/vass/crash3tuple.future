@@ -1,4 +1,6 @@
-bug: compiler crashes with INT_ASSERT in iterator.cpp:120
+bug: compiler crashes with INT_ASSERT in iterator.cpp:119
+
+UPDATE: same assertion as crash4replLclsWFlds.chpl
 
 It crashes 'call' points to 'lls.x2' (aka "lls(2)") at crash3tuple.chpl:758.
 tmp is: _tmp[1426393]:_ref(2*int)[531142]

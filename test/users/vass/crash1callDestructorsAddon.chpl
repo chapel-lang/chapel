@@ -12,18 +12,18 @@ config param fakeDimensionalDistParDim = 0;
 var traceDimensionalDistPrefix = "";
 
 // private helpers ("trace DimensionalDist" Conditionally)
-pragma "inline" proc _traceddc(param condition: bool, args...)
+inline proc _traceddc(param condition: bool, args...)
 {
   if condition then writeln(traceDimensionalDistPrefix,(...args));
 }
-pragma "inline" proc _traceddc(param cond, d:DimensionalDist, args...)
+inline proc _traceddc(param cond, d:DimensionalDist, args...)
 { _traceddc(cond, "DimensionalDist(", d.name, ")", (...args)); }
-pragma "inline" proc _traceddc(param cond, d:DimensionalDom, args...)
+inline proc _traceddc(param cond, d:DimensionalDom, args...)
 { _traceddc(cond, "DimensionalDom(", d.dist.name, ")", (...args)); }
-pragma "inline" proc _traceddc(param cond, d:DimensionalArr, args...)
+inline proc _traceddc(param cond, d:DimensionalArr, args...)
 { _traceddc(cond, "DimensionalArr(", d.dom.dist.name, ")", (...args)); }
 // the Default condition
-pragma "inline" proc _traceddd(args...)
+inline proc _traceddd(args...)
 { _traceddc(traceDimensionalDist, (...args)); }
 
 

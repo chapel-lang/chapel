@@ -1,8 +1,10 @@
 bug: compiler crashes with an assertion in replaceLocalsWithFields()
 
+UPDATE: same assertion as crash4replLclsWFlds.chpl
+
 I get this:
 
-error: assertion error [iterator.cpp:120]
+error: assertion error [iterator.cpp:119]
 
 while processing myDims(dd) in crash4replLclsWFlds.chpl:815.
 

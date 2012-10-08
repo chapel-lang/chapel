@@ -1,5 +1,9 @@
 bug: compiler crashes with internal failure VarSymbol::type is NULL [symbol.cpp:168]
 
+UPDATE: This test now compiles, but crashes for comm=none (with and
+without --no-local).  It is set as noexec, so I will leave it up to
+Vass to figure out what to do with this one.
+
 I did not investigate.
 The crashes seem to have started after I added 'seena' and related code.
 It is quite likely that these tests can be trimmed down to very small sizes.
