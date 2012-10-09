@@ -1,4 +1,4 @@
 #
 # Settings for the Cray Cascade series
 #
-include Makefile.cray-xe
+include $(CHPL_MAKE_HOME)/make/compiler/Makefile.cray-xe
