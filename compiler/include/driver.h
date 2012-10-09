@@ -2,6 +2,7 @@
 #define _driver_H_
 
 #include <cstdio>
+#include "timer.h"
 #include "map.h"
 #include "chpl.h"
 
