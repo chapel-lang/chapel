@@ -357,7 +357,7 @@ module SSCA2_kernels
             // coforall loop.
             const current_distance_c = current_distance;
             pragma "dont disable remote value forwarding"
-            inline proc f3(BCaux, v, u, current_distance_c, Active_Level, Lcl_Sum_Min_Dist) {
+            inline proc f3(BCaux, v, u, current_distance_c, Active_Level, out dist_temp) {
 
                   // --------------------------------------------
                   // add any unmarked neighbors to the next level
@@ -366,7 +366,7 @@ module SSCA2_kernels
                   if  BCaux[v].min_distance.compareExchangeStrong(-1, current_distance_c) {
                     Active_Level[here.id].next.Members.add (v);
                     if VALIDATE_BC then
-                      Lcl_Sum_Min_Dist.add(current_distance_c);
+                      dist_temp = current_distance_c;
                   }
 
 
@@ -388,7 +388,10 @@ module SSCA2_kernels
 
             forall u in Active_Level[here.id].Members do {
               forall v in G.FilteredNeighbors(u) do on vertex_domain.dist.idxToLocale(v) {
-                      f3(BCaux, v, u, current_distance_c, Active_Level, Lcl_Sum_Min_Dist);
+                      var dist_temp: real;
+                      f3(BCaux, v, u, current_distance_c, Active_Level, dist_temp);
+                      if VALIDATE_BC && dist_temp != 0 then
+                        Lcl_Sum_Min_Dist.add(dist_temp);
                 }
             };
 
@@ -423,7 +426,7 @@ module SSCA2_kernels
 
           if VALIDATE_BC then
             if here.id==0 then
-              Sum_Min_Dist$.add(Lcl_Sum_Min_Dist);
+              Sum_Min_Dist$.add(Lcl_Sum_Min_Dist.read());
 
           // -------------------------------------------------------------
           // compute the dependencies recursively, traversing the vertices 
