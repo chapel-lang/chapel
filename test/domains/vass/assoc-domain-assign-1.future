@@ -1,3 +1,0 @@
-bug: assignment from a tuple to an associative domain does not clear the domain first
-
-This is a more general version of enumerated-domain-initializer-1.future

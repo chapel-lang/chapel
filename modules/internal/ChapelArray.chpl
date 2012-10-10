@@ -1427,6 +1427,7 @@ proc =(a: domain, b: domain) {
 }
 
 proc =(a: domain, b: _tuple) {
+  a._value.clearForIteratableAssign();
   for ind in 1..b.size {
     a.add(b(ind));
   }

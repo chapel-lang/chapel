@@ -510,6 +510,10 @@ inline proc chpl__defaultHash(c: complex): int(64) {
   return _gen_key(__primitive("real2int", c.re) ^ __primitive("real2int", c.im)); 
 }
 
+inline proc chpl__defaultHash(a: imag): int(64) {
+  return _gen_key(__primitive( "real2int", _i2r(a)));
+}
+
 inline proc chpl__defaultHash(u: chpl_taskID_t): int(64) {
   return _gen_key(u:int(64));
 }
