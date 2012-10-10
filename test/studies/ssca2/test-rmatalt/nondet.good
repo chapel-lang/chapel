@@ -13,7 +13,7 @@ Problem Dimensions
 Code Characteristics
    Filtering Edges by Weight
    Reproducible problem
-   No additional work for bounds computation
+   Collecting graph statistics for bounds computation
    Not collecting timing statistics
    Vertex domain is block distributed
    RMAT graph generation constants:(0.55, 0.1, 0.1, 0.25)
@@ -54,8 +54,11 @@ histograph of node distributions by number of outgoing edges
 
 Approximating Betweenness Centrality with 16 starting nodes
 
-Max Betweenness Centrality: 
+Max Betweenness Centrality: XXX
 Min Betweenness Centrality: 0.0
+
+Computed betweenness centrality satisfies minimum distance constraint
+All betweenness centrality scores should be <= YYY
 
 Computed betweenness centrality satisfies vertex count constraint
 All betweenness centrality scores should be in range [0, 4032.0]
@@ -63,8 +66,11 @@ All betweenness centrality scores should be in range [0, 4032.0]
 
 Approximating Betweenness Centrality with 32 starting nodes
 
-Max Betweenness Centrality: 
+Max Betweenness Centrality: XXX
 Min Betweenness Centrality: 0.0
+
+Computed betweenness centrality satisfies minimum distance constraint
+All betweenness centrality scores should be <= YYY
 
 Computed betweenness centrality satisfies vertex count constraint
 All betweenness centrality scores should be in range [0, 4032.0]
@@ -72,8 +78,11 @@ All betweenness centrality scores should be in range [0, 4032.0]
 
 Computing Betweenness Centrality exactly
 
-Max Betweenness Centrality: 
+Max Betweenness Centrality: XXX
 Min Betweenness Centrality: 0.0
+
+Computed betweenness centrality satisfies minimum distance constraint
+All betweenness centrality scores should be <= YYY
 
 Computed betweenness centrality satisfies vertex count constraint
 All betweenness centrality scores should be in range [0, 4032.0]
