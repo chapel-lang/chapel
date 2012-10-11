@@ -1,4 +1,4 @@
-#define _POSIX_C_SOURCE 1
+#include "sys_basic.h"
 
 #include <inttypes.h>
 #include <math.h>
