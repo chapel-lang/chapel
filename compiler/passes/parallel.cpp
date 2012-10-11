@@ -47,7 +47,7 @@ bundleArgs(CallExpr* fcall) {
   // create the class variable instance and allocate it
   VarSymbol *tempc = newTemp(astr("_args_for", fn->name), ctype);
   fcall->insertBefore( new DefExpr( tempc));
-  CallExpr *tempc_alloc = new CallExpr(PRIM_CHPL_ALLOC_PERMIT_ZERO,
+  CallExpr *tempc_alloc = new CallExpr(PRIM_CHPL_MEM_ALLOC,
                                        ctype->symbol,
                                        newMemDesc("compiler-inserted argument bundle"));
   fcall->insertBefore( new CallExpr( PRIM_MOVE,
@@ -148,9 +148,9 @@ bundleArgs(CallExpr* fcall) {
   wrap_fn->retType = dtVoid;
   wrap_fn->insertAtTail(call_orig);     // add new call
   if (fn->hasFlag(FLAG_ON) || fn->hasFlag(FLAG_GPU_ON))
-    fcall->insertAfter(new CallExpr(PRIM_CHPL_FREE, tempc));
+    fcall->insertAfter(new CallExpr("chpl_here_free", tempc));
   else
-    wrap_fn->insertAtTail(new CallExpr(PRIM_CHPL_FREE, wrap_c));
+    wrap_fn->insertAtTail(new CallExpr("chpl_here_free", wrap_c));
 
   DefExpr  *fcall_def= (toSymExpr( fcall->baseExpr))->var->defPoint;
   fcall->remove();                     // rm orig. call
@@ -373,11 +373,11 @@ freeHeapAllocatedVars(Vec<Symbol*> heapAllocatedVars) {
         }
         FnSymbol* fn = toFnSymbol(move->parentSymbol);
         if (fn && innermostBlock == fn->body)
-          fn->insertBeforeReturnAfterLabel(new CallExpr(PRIM_CHPL_FREE, move->get(1)->copy()));
+          fn->insertBeforeReturnAfterLabel(new CallExpr("chpl_here_free", move->get(1)->copy()));
         else {
           BlockStmt* block = toBlockStmt(innermostBlock);
           INT_ASSERT(block);
-          block->insertAtTailBeforeGoto(new CallExpr(PRIM_CHPL_FREE, move->get(1)->copy()));
+          block->insertAtTailBeforeGoto(new CallExpr("chpl_here_free", move->get(1)->copy()));
         }
       }
     }
@@ -561,7 +561,11 @@ makeHeapAllocations() {
     if (!isModuleSymbol(var->defPoint->parentSymbol) &&
         ((useMap.get(var) && useMap.get(var)->n > 0) ||
          (defMap.get(var) && defMap.get(var)->n > 0))) {
-      var->defPoint->getStmtExpr()->insertAfter(new CallExpr(PRIM_MOVE, var, new CallExpr(PRIM_CHPL_ALLOC, heapType->symbol, newMemDesc("local heap-converted data"))));
+      CallExpr* alloc_call =
+        new CallExpr(PRIM_CHPL_MEM_ALLOC,
+                     heapType->symbol, newMemDesc("local heap-converted data"));
+      var->defPoint->getStmtExpr()->insertAfter
+        (new CallExpr(PRIM_MOVE, var, alloc_call));
       heapAllocatedVars.add(var);
     }
 
@@ -1508,7 +1512,7 @@ insertWideReferences(void) {
   forv_Vec(Symbol, sym, heapVars) {
     // KLUDGE: Use the HEAP flag to indicate this is a global heap-allocated variable.
     sym->addFlag(FLAG_HEAP);
-    block->insertAtTail(new CallExpr(PRIM_MOVE, sym, new CallExpr(PRIM_CHPL_ALLOC, sym->type->getField("addr")->type->symbol, newMemDesc("global heap-converted data"))));
+    block->insertAtTail(new CallExpr(PRIM_MOVE, sym, new CallExpr(PRIM_CHPL_MEM_ALLOC, sym->type->getField("addr")->type->symbol, newMemDesc("global heap-converted data"))));
   }
   heapAllocateGlobals->insertAtTail(new CondStmt(new SymExpr(tmpBool), block));
   int i = 0;

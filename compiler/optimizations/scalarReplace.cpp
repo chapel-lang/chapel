@@ -177,7 +177,7 @@ scalarReplaceClass(ClassType* ct, Symbol* sym) {
   if (!move || !move->isPrimitive(PRIM_MOVE))
     return false;
   CallExpr* alloc = toCallExpr(move->get(2));
-  if (!alloc || !alloc->isPrimitive(PRIM_CHPL_ALLOC))
+  if (!alloc || !alloc->isPrimitive(PRIM_CHPL_MEM_ALLOC))
     return false;
 
   //
@@ -190,7 +190,7 @@ scalarReplaceClass(ClassType* ct, Symbol* sym) {
                      call->isPrimitive(PRIM_GET_MEMBER) ||
                      call->isPrimitive(PRIM_GET_MEMBER_VALUE) ||
                      call->isPrimitive(PRIM_SETCID) ||
-                     call->isPrimitive(PRIM_CHPL_FREE)) ||
+                     call->isPrimitive(PRIM_CHPL_MEM_FREE)) ||
           !(call->get(1) == se))
         return false;
     }
@@ -237,7 +237,7 @@ scalarReplaceClass(ClassType* ct, Symbol* sym) {
         call->replace(use);
         addUse(useMap, use);
       } else if (call && (call->isPrimitive(PRIM_SETCID) ||
-                 call->isPrimitive(PRIM_CHPL_FREE))) {
+                 call->isPrimitive(PRIM_CHPL_MEM_FREE))) {
         //
         // we can remove the setting of the cid because it is never
         // used and we are otherwise able to remove the class

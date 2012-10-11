@@ -3,5 +3,6 @@
 
 
 void build_constructors(ClassType* ct);
+void add_root_type(ClassType* ct);
 
 #endif

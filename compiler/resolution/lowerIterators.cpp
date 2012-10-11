@@ -210,7 +210,7 @@ createArgBundleFreeFn(ClassType* ct, FnSymbol* loopBodyFnWrapper) {
     argBundleFreeFn->retType = dtVoid;
     argBundleFreeFn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_loopBodyFn", dtInt[INT_SIZE_DEFAULT]));
     argBundleFreeFn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_loopBodyFnArgs", ct));
-    argBundleFreeFn->insertAtTail(new CallExpr(PRIM_CHPL_FREE, argBundleFreeFn->getFormal(2)));
+    argBundleFreeFn->insertAtTail(new CallExpr("chpl_here_free", argBundleFreeFn->getFormal(2)));
     argBundleFreeFn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
     ct->symbol->defPoint->insertBefore(new DefExpr(argBundleFreeFn));
   }
@@ -274,8 +274,7 @@ createArgBundleCopyFn(ClassType* ct, FnSymbol* loopBodyFnWrapper) {
   Symbol* argBundle = newTemp(ct);
   block->insertAtTail(new DefExpr(argBundle));
   block->insertAtTail(new CallExpr(PRIM_MOVE, argBundle,
-                        new CallExpr(PRIM_CHPL_ALLOC_PERMIT_ZERO,
-                                     ct->symbol,
+                        new CallExpr("chpl_here_alloc", ct->symbol,
                                      newMemDesc("compiler-inserted argument bundle"))));
   Symbol* loopBodyFnArgsArgTmp = newTemp(ct);
   block->insertAtTail(new DefExpr(loopBodyFnArgsArgTmp));
@@ -342,11 +341,10 @@ bundleLoopBodyFnArgsForIteratorFnCall(CallExpr* iteratorFnCall,
   VarSymbol* argBundle = newTemp(ct);
   iteratorFnCall->insertBefore(new DefExpr(argBundle));
   iteratorFnCall->insertBefore(new CallExpr(PRIM_MOVE, argBundle,
-                                 new CallExpr(PRIM_CHPL_ALLOC_PERMIT_ZERO,
-                                              ts,
+                                 new CallExpr("chpl_here_alloc", ts,
                                               newMemDesc("compiler-inserted argument bundle"))));
   iteratorFnCall->insertAtTail(argBundle);
-  iteratorFnCall->insertAfter(new CallExpr(PRIM_CHPL_FREE, argBundle));
+  iteratorFnCall->insertAfter(new CallExpr("chpl_here_free", argBundle));
 
   ArgSymbol* wrapperIndexArg = loopBodyFn->getFormal(1)->copy();
   loopBodyFnWrapper->insertFormalAtTail(wrapperIndexArg);

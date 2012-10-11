@@ -44,9 +44,23 @@ class locale {
 
   // Also required by the sublocale interface.
   proc initTask() {} // Do nothing.
+
+  proc alloc(nbytes:int) {
+    extern proc chpl_malloc(nbytes:int) : object;
+    return chpl_malloc(nbytes);
+  }
+
+  proc realloc(x:object, nbytes:int) {
+    extern proc chpl_realloc(x:object, nbytes:int) : object;
+    return chpl_realloc(x, nbytes);
+  }
+
+  proc free(x:object) {
+    extern proc chpl_free(x:object) : void;
+    chpl_free(x);
+  }
 }
 
-// Would like to do away with _here altogether.
 // Because it is declared in module scope and labelled "private", it exists
 // at the node level.
 // Every node has a corresponding _here locale, but may contain 
@@ -116,122 +130,31 @@ proc locale.blockedTasks() {
 proc chpl_getPrivatizedCopy(type objectType, objectPid:int): objectType
   return __primitive("chpl_getPrivatizedClass", nil:objectType, objectPid);
 
-// Break out into separate module?
-//
-// multi-locale diagnostics/debugging support
-//
-
-// There should be a type like this declared in chpl-comm.h with a single
-// function that returns the C struct.  We're not doing it that way yet
-// due to some shortcomings in our extern records implementation.
-// Once that gets sorted out, we can turn this into an extern record,
-// and remove the 8 or so individual functions below that return the
-// various counters.
-record chpl_commDiagnostics {
-  var get: uint(64);
-  var get_nb: uint(64);
-  var get_nb_test: uint(64);
-  var get_nb_wait: uint(64);
-  var put: uint(64);
-  var fork: uint(64);
-  var fork_fast: uint(64);
-  var fork_nb: uint(64);
-};
-
-type commDiagnostics = chpl_commDiagnostics;
-
-extern proc chpl_startVerboseComm();
-extern proc chpl_stopVerboseComm();
-extern proc chpl_startVerboseCommHere();
-extern proc chpl_stopVerboseCommHere();
-extern proc chpl_startCommDiagnostics();
-extern proc chpl_stopCommDiagnostics();
-extern proc chpl_startCommDiagnosticsHere();
-extern proc chpl_stopCommDiagnosticsHere();
-extern proc chpl_resetCommDiagnosticsHere();
-extern proc chpl_getCommDiagnosticsHere(out cd: commDiagnostics);
-
-proc startVerboseComm() { chpl_startVerboseComm(); }
-proc stopVerboseComm() { chpl_stopVerboseComm(); }
-proc startVerboseCommHere() { chpl_startVerboseCommHere(); }
-proc stopVerboseCommHere() { chpl_stopVerboseCommHere(); }
-
-proc startCommDiagnostics() { chpl_startCommDiagnostics(); }
-proc stopCommDiagnostics() { chpl_stopCommDiagnostics(); }
-proc startCommDiagnosticsHere() { chpl_startCommDiagnosticsHere(); }
-proc stopCommDiagnosticsHere() { chpl_stopCommDiagnosticsHere(); }
-
-proc resetCommDiagnostics() {
-  for loc in rootLocale.getLocales() do on loc do
-    resetCommDiagnosticsHere();
+// Here be dragons: If the return type is specified, then normalize.cpp inserts
+// an initializer for the return value, which calls its constructor, which calls
+// chpl_here_alloc ad infinitum.  But if the return type is left off, it works!!!
+proc chpl_here_alloc(x, md) {
+  var nbytes = __primitive("sizeof", x);
+  var mem = here.getChild(__primitive("_get_subloc_id")).alloc(nbytes);
+  return __primitive("cast", x.type, mem);
 }
 
-inline proc resetCommDiagnosticsHere() {
-  chpl_resetCommDiagnosticsHere();
+// This one is called from protoIteratorClass().  Can we fix that call and get rid
+// of this specialized version
+proc chpl_here_alloc(type x, md) {
+  var nbytes = __primitive("sizeof", x);
+  var mem = here.getChild(__primitive("_get_subloc_id")).alloc(nbytes);
+  return __primitive("cast", x, mem);
 }
 
-// See note above regarding extern records
-extern proc chpl_numCommGets(): uint(64);
-extern proc chpl_numCommNBGets(): uint(64);
-extern proc chpl_numCommTestNBGets(): uint(64);
-extern proc chpl_numCommWaitNBGets(): uint(64);
-extern proc chpl_numCommPuts(): uint(64);
-extern proc chpl_numCommForks(): uint(64);
-extern proc chpl_numCommFastForks(): uint(64);
-extern proc chpl_numCommNBForks(): uint(64);
-
-proc getCommDiagnostics() {
-  var D: [rootLocale.getLocaleSpace()] commDiagnostics;
-  for loc in rootLocale.getLocales() do on loc {
-    // See note above regarding extern records
-    D(loc.id).get = chpl_numCommGets();
-    D(loc.id).put = chpl_numCommPuts();
-    D(loc.id).fork = chpl_numCommForks();
-    D(loc.id).fork_fast = chpl_numCommFastForks();
-    D(loc.id).fork_nb = chpl_numCommNBForks();
-    D(loc.id).get_nb = chpl_numCommNBGets();
-    D(loc.id).get_nb_test = chpl_numCommTestNBGets();
-    D(loc.id).get_nb_wait = chpl_numCommWaitNBGets();
-  }
-  return D;
+proc chpl_here_realloc(x, md) {
+  var nbytes = __primitive("sizeof", x);
+  var mem = here.getChild(__primitive("_get_subloc_id")).realloc(x, nbytes);
+  return __primitive("cast", x.type, mem);
 }
 
-proc getCommDiagnosticsHere() {
-  var cd: commDiagnostics;
-  cd.get = chpl_numCommGets();
-  cd.put = chpl_numCommPuts();
-  cd.fork = chpl_numCommForks();
-  cd.fork_fast = chpl_numCommFastForks();
-  cd.fork_nb = chpl_numCommNBForks();
-  cd.get_nb = chpl_numCommNBGets();
-  cd.get_nb_test = chpl_numCommTestNBGets();
-  cd.get_nb_wait = chpl_numCommWaitNBGets();
-  return cd;
-}
-
-config const
-  memTrack: bool = false,
-  memStats: bool = false, 
-  memLeaks: bool = false,
-  memLeaksTable: bool = false,
-  memMax: int = 0,
-  memThreshold: int = 0,
-  memLog: string = "";
-
-pragma "no auto destroy"
-config const
-  memLeaksLog: string = "";
-
-proc chpl_startTrackingMemory() {
-  if rootLocale.getLocale(0) == here {
-    coforall loc in rootLocale.getLocales() {
-      if loc == here {
-        __primitive("chpl_setMemFlags", memTrack, memStats, memLeaks, memLeaksTable, memMax, memThreshold, memLog, memLeaksLog);
-      } else on loc {
-          __primitive("chpl_setMemFlags", memTrack, memStats, memLeaks, memLeaksTable, memMax, memThreshold, memLog, memLeaksLog);
-      }
-    }
-  }
+proc chpl_here_free(x) {
+  here.getChild(__primitive("_get_subloc_id")).free(x);
 }
 
 }

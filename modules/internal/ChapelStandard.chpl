@@ -24,6 +24,7 @@ module ChapelStandard {
   use DefaultOpaque;
   use ChapelTaskTable;
   use ChapelUtil;
+  use ChapelCommDiagnostics;
 
   // Standard modules.
   use Types;

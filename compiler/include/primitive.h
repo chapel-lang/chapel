@@ -105,9 +105,11 @@ enum PrimitiveTag {
   PRIM_CHPL_COMM_GET,   // Direct calls to the Chapel comm layer
   PRIM_CHPL_COMM_PUT,   //  may eventually add others (e.g., non-blocking)
 
-  PRIM_CHPL_ALLOC,
-  PRIM_CHPL_ALLOC_PERMIT_ZERO,  // chpl_mem_alloc wrapper that permits size 0
-  PRIM_CHPL_FREE,               // only for variables on heap?
+  PRIM_SIZEOF,
+  PRIM_CHPL_MALLOC,
+  PRIM_CHPL_MEM_ALLOC,
+  PRIM_CHPL_FREE,
+  PRIM_CHPL_MEM_FREE,               // only for variables on heap?
   PRIM_INIT_FIELDS, // initialize fields of a temporary record
   PRIM_PTR_EQUAL,
   PRIM_PTR_NOTEQUAL,
@@ -122,7 +124,7 @@ enum PrimitiveTag {
   PRIM_TUPLE_AND_EXPAND,
   PRIM_ARRAY_FREE,
   PRIM_ARRAY_FREE_ELTS,
-  PRIM_ARRAY_ALLOC,
+  PRIM_ARRAY_ALLOC,	// [_WIDE]_ARRAY_ALLOC(_ddata(eltType), eltType, size, ln, filename)
 
   PRIM_GPU_GET_ARRAY,
   PRIM_GPU_GET_VALUE,

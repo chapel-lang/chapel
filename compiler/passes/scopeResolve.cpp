@@ -602,8 +602,13 @@ static void build_constructor(ClassType* ct) {
 
   SET_LINENO(ct);
 
-  if (isSyncType(ct))
-    ct->defaultValue = NULL;
+//  if (isSyncType(ct)) {
+    // This forces sync types to behave like records, in that initialization code is inserted
+    // in resolveRecordInitializers.
+    // But I don't think this is the right way to insert syntactic sugar making a syncvar declaration
+    // automatically allocate and initialize a copy. <hilde>
+//    ct->defaultValue = NULL;
+//  }
 
   // Create the default constructor.
   FnSymbol* fn = new FnSymbol(astr("_construct_", ct->symbol->name));
@@ -652,7 +657,7 @@ static void build_constructor(ClassType* ct) {
   if (ct->symbol->hasFlag(FLAG_REF) ||
       isSyncType(ct)) {
     // For ref, sync and single classes, just allocate space.
-    allocCall = new CallExpr(PRIM_CHPL_ALLOC, fn->_this,
+    allocCall = new CallExpr("chpl_here_alloc", fn->_this,
                          newMemDesc(ct->symbol->name));
     fn->insertAtTail(new CallExpr(PRIM_MOVE, fn->_this, allocCall));
   } else if (!ct->symbol->hasFlag(FLAG_TUPLE)) {
@@ -932,6 +937,24 @@ process_import_expr(CallExpr* call) {
   call->getStmtExpr()->remove();
 }
 
+void add_root_type(ClassType* ct)
+{
+  // make root records inherit from value
+  // make root classes inherit from object
+  if (ct->inherits.length == 0 && !ct->symbol->hasFlag(FLAG_NO_OBJECT)) {
+    if (isRecord(ct)) {
+      ct->dispatchParents.add(dtValue);
+      dtValue->dispatchChildren.add(ct);
+    } else if (isClass(ct)) {
+      ct->dispatchParents.add(dtObject);
+      dtObject->dispatchChildren.add(ct);
+      VarSymbol* super = new VarSymbol("super", dtObject);
+      super->addFlag(FLAG_SUPER_CLASS);
+      ct->fields.insertAtHead(new DefExpr(super));
+    }
+  }
+}
+
 //
 // Compute dispatchParents and dispatchChildren vectors; add base
 // class fields to subclasses; identify cyclic or illegal class or
@@ -952,20 +975,7 @@ add_class_to_hierarchy(ClassType* ct, Vec<ClassType*>* localSeenPtr = NULL) {
     return;
   globalSeen.set_add(ct);
 
-  // make root records inherit from value
-  // make root classes inherit from object
-  if (ct->inherits.length == 0 && !ct->symbol->hasFlag(FLAG_NO_OBJECT)) {
-    if (isRecord(ct)) {
-      ct->dispatchParents.add(dtValue);
-      dtValue->dispatchChildren.add(ct);
-    } else if (isClass(ct)) {
-      ct->dispatchParents.add(dtObject);
-      dtObject->dispatchChildren.add(ct);
-      VarSymbol* super = new VarSymbol("super", dtObject);
-      super->addFlag(FLAG_SUPER_CLASS);
-      ct->fields.insertAtHead(new DefExpr(super));
-    }
-  }
+  add_root_type(ct);
 
   // Walk the base class list, and add parents into the class hierarchy.
   for_alist(expr, ct->inherits) {

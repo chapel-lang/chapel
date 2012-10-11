@@ -474,8 +474,8 @@ void chpl_comm_broadcast_private(int id, int32_t size, int32_t tid) {
                 (and pass it to a GASNet function), so the compiler should
                 not optimize out any accesses to it. */
 
-  done = (int*) chpl_mem_allocManyZero(chpl_numLocales, sizeof(*done),
-                                       CHPL_RT_MD_COMM_FORK_DONE_FLAG, 0, 0);
+  done = (int*) chpl_mem_allocMany(chpl_numLocales, sizeof(*done),
+                                   CHPL_RT_MD_COMM_FORK_DONE_FLAG, 0, 0);
   if (payloadSize <= gasnet_AMMaxMedium()) {
     priv_bcast_t* pbp = chpl_mem_allocMany(1, payloadSize, CHPL_RT_MD_COMM_PRIVATE_BROADCAST_DATA, 0, 0);
     memcpy(pbp->data, chpl_private_broadcast_table[id], size);

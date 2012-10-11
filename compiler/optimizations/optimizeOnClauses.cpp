@@ -71,7 +71,6 @@ isFastPrimitive(CallExpr *call) {
   case PRIM_PTR_EQUAL:
   case PRIM_PTR_NOTEQUAL:
   case PRIM_CAST:
-  case PRIM_ISSUBTYPE:
   case PRIM_TYPEOF:
   case PRIM_GET_ITERATOR_RETURN:
   case PRIM_USE:

@@ -193,7 +193,7 @@ narrowSym(Symbol* sym, WideInfo* wi) {
     if (CallExpr* call = toCallExpr(def->parentExpr)) {
       if (call->isPrimitive(PRIM_MOVE)) {
         if (CallExpr* rhs = toCallExpr(call->get(2))) {
-          if (rhs->isPrimitive(PRIM_CHPL_ALLOC) ||
+          if (rhs->isPrimitive(PRIM_CHPL_MEM_ALLOC) ||
               rhs->isPrimitive(PRIM_GET_PRIV_CLASS) ||
               rhs->isPrimitive(PRIM_ADDR_OF))
             continue;
@@ -272,8 +272,8 @@ narrowSym(Symbol* sym, WideInfo* wi) {
           (call->isPrimitive(PRIM_PROCESS_TASK_LIST)) ||
           (call->isPrimitive(PRIM_STRING_COPY)) ||
           (call->isPrimitive(PRIM_SETCID)) ||
-          (call->isPrimitive(PRIM_CHPL_ALLOC) && call->get(1) == use) ||
-          (call->isPrimitive(PRIM_CHPL_FREE) && call->get(1) == use))
+          (call->isPrimitive(PRIM_CHPL_MEM_ALLOC) && call->get(1) == use) ||
+          (call->isPrimitive(PRIM_CHPL_MEM_FREE) && call->get(1) == use))
         continue;
       if (call->isResolved() ||
           (call->isPrimitive(PRIM_SET_MEMBER) && call->get(3) == use) ||

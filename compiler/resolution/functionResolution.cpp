@@ -532,10 +532,13 @@ protoIteratorClass(FnSymbol* fn) {
   const char* className = astr(fn->name);
   if (fn->_this)
     className = astr(className, "_", fn->_this->type->symbol->cname);
+
   ii->iclass = new ClassType(CLASS_CLASS);
   TypeSymbol* cts = new TypeSymbol(astr("_ic_", className), ii->iclass);
   cts->addFlag(FLAG_ITERATOR_CLASS);
   fn->defPoint->insertBefore(new DefExpr(cts));
+  add_root_type(ii->iclass);	// Add super : dtObject.
+
   ii->irecord = new ClassType(CLASS_RECORD);
   TypeSymbol* rts = new TypeSymbol(astr("_ir_", className), ii->irecord);
   rts->addFlag(FLAG_ITERATOR_RECORD);
@@ -574,12 +577,12 @@ protoIteratorClass(FnSymbol* fn) {
   ii->getIterator->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "ir", ii->irecord));
   VarSymbol* ret = newTemp("_ic_", ii->iclass);
   ii->getIterator->insertAtTail(new DefExpr(ret));
-  ii->getIterator->insertAtTail(new CallExpr(PRIM_MOVE, ret, new CallExpr(PRIM_CHPL_ALLOC, ii->iclass->symbol, newMemDesc("iterator data"))));
+  ii->getIterator->insertAtTail(new CallExpr(PRIM_MOVE, ret, new CallExpr("chpl_here_alloc", ii->iclass->symbol, newMemDesc("iterator data"))));
   ii->getIterator->insertAtTail(new CallExpr(PRIM_SETCID, ret));
   ii->getIterator->insertAtTail(new CallExpr(PRIM_RETURN, ret));
   fn->defPoint->insertBefore(new DefExpr(ii->getIterator));
   ii->iclass->initializer = ii->getIterator;
-  resolvedFns[ii->getIterator] = true;
+  resolveFns(ii->getIterator); // No shortcuts.
 }
 
 
@@ -3429,11 +3432,9 @@ preFold(Expr* expr) {
       if (!se->var->hasFlag(FLAG_TYPE_VARIABLE))
         USR_FATAL(call, "invalid type specification");
       Type* type = call->get(1)->getValType();
-      if (type->symbol->hasFlag(FLAG_ITERATOR_CLASS)) {
+      // Maybe ensure that iterator classes have gNil as their default value and collapse this conditional.
+      if (type->symbol->hasFlag(FLAG_ITERATOR_CLASS) || type->defaultValue == gNil) {
         result = new CallExpr(PRIM_CAST, type->symbol, gNil);
-        call->replace(result);
-      } else if (type->defaultValue == gNil) {
-        result = new CallExpr("_cast", type->symbol, type->defaultValue);
         call->replace(result);
       } else if (type->defaultValue) {
         result = new SymExpr(type->defaultValue);
@@ -4276,7 +4277,7 @@ postFold(Expr* expr) {
                call->isPrimitive(PRIM_SINGLE_ISFULL) ||
                call->isPrimitive(PRIM_EXECUTE_TASKS_IN_LIST) ||
                call->isPrimitive(PRIM_FREE_TASK_LIST) ||
-               call->isPrimitive(PRIM_CHPL_FREE) ||
+               call->isPrimitive(PRIM_CHPL_MEM_FREE) ||
                (call->primitive && 
                 (!strncmp("_fscan", call->primitive->name, 6) ||
                  !strcmp("_readToEndOfLine", call->primitive->name) ||
@@ -4574,9 +4575,6 @@ resolveFns(FnSymbol* fn) {
   resolvedFns[fn] = true;
 
   if ((fn->hasFlag(FLAG_EXTERN))||(fn->hasFlag(FLAG_FUNCTION_PROTOTYPE)))
-    return;
-
-  if (fn->hasFlag(FLAG_AUTO_II))
     return;
 
   if (fn->retTag == RET_VAR)
@@ -5269,46 +5267,50 @@ static void resolveRecordInitializers() {
   // resolve PRIM_INITs for records
   //
   forv_Vec(CallExpr, init, inits) {
-    if (init->parentSymbol) {
-      Type* type = init->get(1)->typeInfo();
-      if (!type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
-        if (type->symbol->hasFlag(FLAG_REF))
-          type = type->getValType();
-        if (type->defaultValue) {
-          INT_FATAL(init, "PRIM_INIT should have been replaced already");
-        } else if (type->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
-          // why??  --sjd
-          init->replace(init->get(1)->remove());
-        } else if (type->symbol->hasFlag(FLAG_DISTRIBUTION)) {
-          Symbol* tmp = newTemp("_distribution_tmp_");
-          init->getStmtExpr()->insertBefore(new DefExpr(tmp));
-          CallExpr* classCall = new CallExpr(type->getField("_valueType")->type->initializer);
-          CallExpr* move = new CallExpr(PRIM_MOVE, tmp, classCall);
-          init->getStmtExpr()->insertBefore(move);
-          resolveCall(classCall);
-          resolveFns(classCall->isResolved());
-          resolveCall(move);
-          CallExpr* distCall = new CallExpr("chpl__buildDistValue", tmp);
-          init->replace(distCall);
-          resolveCall(distCall);
-          resolveFns(distCall->isResolved());
-        } else if (type->symbol->hasFlag(FLAG_EXTERN)) {
-          // We don't expect initialization code for an externally defined type,
-          // so remove the flag which tells checkReturnPaths() to expect it.
-          FnSymbol* fn = toFnSymbol(init->parentSymbol);
-          if (fn)
-            fn->removeFlag(FLAG_SPECIFIED_RETURN_TYPE);
+
+    if (!init->parentSymbol)
+      continue;
+
+    Type* type = init->get(1)->typeInfo();
+    if (type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE))
+      continue;
+
+    if (type->symbol->hasFlag(FLAG_REF))
+      type = type->getValType();
+
+    if (type->defaultValue)
+      INT_FATAL(init, "PRIM_INIT should have been replaced already");
+
+    if (type->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
+      // why??  --sjd
+      init->replace(init->get(1)->remove());
+    } else if (type->symbol->hasFlag(FLAG_DISTRIBUTION)) {
+      Symbol* tmp = newTemp("_distribution_tmp_");
+      init->getStmtExpr()->insertBefore(new DefExpr(tmp));
+      CallExpr* classCall = new CallExpr(type->getField("_valueType")->type->initializer);
+      CallExpr* move = new CallExpr(PRIM_MOVE, tmp, classCall);
+      init->getStmtExpr()->insertBefore(move);
+      resolveCall(classCall);
+      resolveFns(classCall->isResolved());
+      resolveCall(move);
+      CallExpr* distCall = new CallExpr("chpl__buildDistValue", tmp);
+      init->replace(distCall);
+      resolveCall(distCall);
+      resolveFns(distCall->isResolved());
+    } else if (type->symbol->hasFlag(FLAG_EXTERN)) {
+      // We don't expect initialization code for an externally defined type,
+      // so remove the flag which tells checkReturnPaths() to expect it.
+      FnSymbol* fn = toFnSymbol(init->parentSymbol);
+      if (fn)
+        fn->removeFlag(FLAG_SPECIFIED_RETURN_TYPE);
 //          init->replace(init->get(1)->remove());
-          init->parentExpr->remove();
-        } else {
-          INT_ASSERT(type->initializer);
-          CallExpr* call = new CallExpr(type->initializer);
-          init->replace(call);
-          resolveCall(call);
-          if (call->isResolved())
-            resolveFns(call->isResolved());
-        }
-      }
+      init->parentExpr->remove();
+    } else {
+      CallExpr* call = new CallExpr(type->initializer);
+      init->replace(call);
+      resolveCall(call);
+      if (call->isResolved())
+        resolveFns(call->isResolved());
     }
   }
 }

@@ -150,9 +150,27 @@ buildDefaultWrapper(FnSymbol* fn,
     wrapper->insertAtTail(new DefExpr(wrapper->_this));
     if (defaults->v[defaults->n-1]->hasFlag(FLAG_IS_MEME)) {
       if (!isRecord(fn->_this->type) && !isUnion(fn->_this->type)) {
-        wrapper->insertAtTail(new CallExpr(PRIM_MOVE, wrapper->_this,
-                                new CallExpr(PRIM_CHPL_ALLOC, wrapper->_this,
-                                newMemDesc(fn->_this->type->symbol->name))));
+        CallExpr* allocExpr;
+        if (!strcmp(fn->name, "_construct_locale"))
+          // Very special code to break the dependency loop in the constructor for the locale
+          // class.  We are trying to create the initial instance of locale() to initialize
+          // "here" and stumble over the fact that the type of "here" is not known.
+          // This code would be unnecesary if types of global and static variables were
+          // determined before (e.g.) module initialization code was run.
+          // This might be accomplished by splitting initialization into two phases, where
+          // in the first phase global objects were initialized as nil:<declared_type>.
+          // This would only break the loop if the type is declared explicitly, but that
+          // is good enough to resolve this particular issue.
+          // It is intentional that I use a strcmp here, and match _consruct_locale specifically.
+          // This very special case should continue to nag until the basic problem is resolved.
+          // <hilde>
+          allocExpr = new CallExpr(PRIM_CHPL_MALLOC, wrapper->_this,
+                                   new CallExpr(PRIM_SIZEOF, wrapper->_this));
+        else
+          allocExpr = new CallExpr("chpl_here_alloc", wrapper->_this,
+                                   newMemDesc(fn->_this->type->symbol->name));
+        wrapper->insertAtTail(new CallExpr(PRIM_MOVE, wrapper->_this, allocExpr));
+                                
         wrapper->insertAtTail(new CallExpr(PRIM_SETCID, wrapper->_this));
       }
     }
@@ -482,7 +500,20 @@ buildCoercionWrapper(FnSymbol* fn,
         // apply readFF or readFE to single or sync actual unless this
         // is a member access of the sync or single actual
         //
-        if (fn->numFormals() >= 2 &&
+        if (fn->numFormals() == 3 &&
+            !strcmp(fn->name, "free"))
+          // Special case: Don't do anything special with a sync var when deleting it.
+          call->insertAtTail(new CallExpr("_cast", formal->type->symbol, wrapperFormal));
+        // One could argue that all of the following are in fact the special cases.
+        // Another approach would be to push this complexity out of the resolution step 
+        // (isn't it complex enough already?), by running sync variable accesses through
+        // a normalization: Assuming that sync variables have accessors, this would be a
+        // matter of applying the accessor function in strategic places so that
+        // var x:sync(int); x = 3; would be internally translated to 
+        // var x:sync(int); x.value = 3;.  x.value has the same type as the base
+        // of the syncvar, so types work out, resolution is happy, and all of this
+        // complexity can be removed. <hilde>
+        else if (fn->numFormals() >= 2 &&
             fn->getFormal(1)->type == dtMethodToken &&
             formal == fn->_this)
           call->insertAtTail(new CallExpr("value", gMethodToken, wrapperFormal));

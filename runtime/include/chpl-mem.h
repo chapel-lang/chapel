@@ -91,25 +91,6 @@ void* chpl_mem_allocMany(size_t number, size_t size,
 }
 
 static ___always_inline
-void* chpl_mem_allocManyZero(size_t number, size_t size,
-                             chpl_mem_descInt_t description,
-                             int32_t lineno, chpl_string filename) {
-  void* memAlloc;
-  if( CHPL_MEM_DEBUG ) {
-    chpl_mem_check_pre(number, size, false, description, lineno, filename);
-  }
-  memAlloc = chpl_calloc(number, size);
-  if( CHPL_MEM_DEBUG || ! memAlloc ) {
-    chpl_mem_check_post(memAlloc, description, lineno, filename);
-  }
-  if( CHPL_MEM_DEBUG ) {
-    chpl_track_malloc(memAlloc, number*size, number, size, description,
-                      lineno, filename);
-  }
-  return memAlloc;
-}
-
-static ___always_inline
 void chpl_mem_free(void* memAlloc, int32_t lineno, chpl_string filename) {
   if( CHPL_MEM_DEBUG ) {
     // call this one just to check heap is initialized.

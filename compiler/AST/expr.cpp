@@ -2262,8 +2262,31 @@ void CallExpr::codegen(FILE* outfile) {
       gen(outfile, "%A, %A)", get(5), get(6));
       break;
     }
-    case PRIM_CHPL_ALLOC:
-    case PRIM_CHPL_ALLOC_PERMIT_ZERO: {
+    case PRIM_SIZEOF:
+    {
+      bool is_struct = false;
+
+      // if Chapel class or record
+      if (TypeSymbol *t = toTypeSymbol(get(1)->typeInfo()->symbol)) {
+        if (toClassType(t->type)) {
+          is_struct = true;
+        }
+      }
+
+      fprintf(outfile, "sizeof(");
+      if (is_struct) fprintf(outfile, "_");
+      get(1)->typeInfo()->symbol->codegen(outfile);
+      fprintf(outfile, ")");
+      break;
+    }
+    case PRIM_CHPL_MALLOC:
+      fprintf(outfile, "chpl_malloc(");
+      // get(1) is the result symbol, used only to extract the return type information.
+      get(2)->codegen(outfile);	// nbytes
+      fprintf(outfile, ")");
+      break;
+    case PRIM_CHPL_MEM_ALLOC:
+    {
       bool is_struct = false;
 
       // if Chapel class or record
@@ -2282,10 +2305,7 @@ void CallExpr::codegen(FILE* outfile) {
       fprintf( outfile, ")");
 
       // target: void* chpl_mem_alloc(size_t size, char* description);
-      fprintf(outfile, "%s(sizeof(",
-              (primitive->tag == PRIM_CHPL_ALLOC ?
-               "chpl_mem_alloc" :
-               "chpl_mem_allocPermitZero"));
+      fprintf(outfile, "chpl_mem_alloc(sizeof(");
       if (is_struct) fprintf( outfile, "_");          // need struct of class
       typeInfo()->symbol->codegen( outfile);
       fprintf( outfile, "), ");
@@ -2298,7 +2318,7 @@ void CallExpr::codegen(FILE* outfile) {
       fprintf( outfile, ")");
       break;
     }
-    case PRIM_CHPL_FREE: {
+    case PRIM_CHPL_MEM_FREE: {
       if (fNoMemoryFrees)
         break;
       INT_ASSERT(numActuals() == 3);
@@ -2415,7 +2435,7 @@ void CallExpr::codegen(FILE* outfile) {
         gen(outfile, "chpl_on_locale_num(%A, %A)", get(1), get(2));
       break;
     case PRIM_ALLOC_GVR:
-      fprintf(outfile, "chpl_comm_alloc_registry(%d)", numGlobalsOnHeap);
+      fprintf(outfile, "chpl_comm_alloc_registry(chpl_numGlobalsOnHeap)");
       break;
     case PRIM_HEAP_REGISTER_GLOBAL_VAR:
       gen(outfile, "CHPL_HEAP_REGISTER_GLOBAL_VAR(%A, %A)", get(1), get(2));

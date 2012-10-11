@@ -495,6 +495,7 @@ rebuildIterator(IteratorInfo* ii,
                 SymbolMap& local2field,
                 Vec<Symbol*>& locals) {
   if (ii->iclass->dispatchParents.n == 0) {
+    INT_ASSERT(false); // Is this dead code?
     ii->iclass->dispatchParents.add(dtObject);
     dtObject->dispatchChildren.add(ii->iclass);
   }
@@ -571,10 +572,6 @@ void lowerIterator(FnSymbol* fn) {
     addLiveLocalVariables(locals, fn, singleLoop);
   }
   locals.add_exclusive(fn->getReturnSymbol());
-
-  Symbol* super = new VarSymbol("super", dtObject);
-  super->addFlag(FLAG_SUPER_CLASS);
-  ii->iclass->fields.insertAtTail(new DefExpr(super));
 
   int i = 0;
   forv_Vec(Symbol, local, locals) {

@@ -27,7 +27,6 @@ module ChapelSyncvar {
 
   pragma "sync"
     pragma "no default functions"
-    pragma "no object"
     class _syncvar {
       type base_type;
       var  value: base_type;       // actual data - may need to be declared specially on some targets!
@@ -295,6 +294,13 @@ module ChapelSyncvar {
 
   pragma "dont disable remote value forwarding"
   inline proc chpl__autoCopy(x: single) return x;
+
+  // These permit chpl_here_free to be called with sync and single objects.
+  inline proc _cast(type t, x: sync) where t == object
+    return __primitive("cast", t, x);
+
+  inline proc _cast(type t, x: single) where t == object
+    return __primitive("cast", t, x);
 
   /* op= for sync variables */
   inline proc +=(lhs: sync, rhs)  { lhs = lhs + rhs; }

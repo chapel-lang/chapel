@@ -203,6 +203,16 @@ getNewSubType(FnSymbol* fn, Symbol* key, TypeSymbol* value) {
         // unless sync is explicitly specified as the generic
         if (isSyncType(key->type))
           return value;
+        if (!strcmp(fn->name, "chpl_here_alloc") ||
+            !strcmp(fn->name, "chpl_here_free"))
+          // Very special case for the alloc and free functions, wherein want to free
+          // the _sync object (duh) and not the variable it wraps.
+          // I question whether we want to be dinking around with syncvars passed
+          // as values.  If they are passed as objects, then the state of the FE
+          // bit is only queried/changed when the object is evaluated.  Since
+          // no copies are made as part of the function call interface, all of
+          // this complexity goes away. <hilde>
+          return value;
 
         TypeSymbol* nt = toTypeSymbol(value->type->substitutions.v[0].value);
         return getNewSubType(fn, key, nt);
