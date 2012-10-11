@@ -212,7 +212,6 @@ int getCPUsPerNode() {
     if (sscanf(buf, "%d", &tncpn) == 1) {
       char *tbuf = strstr(buf, "\n")+1;
       numCPUsPerNode = tncpn;
-      chpl_warning("", 0, 0);
       while (sscanf(tbuf, "%d", &tncpn) == 1) {
         if (numCPUsPerNode < tncpn) numCPUsPerNode = tncpn;
         tbuf = strstr(tbuf, "\n")+1;
