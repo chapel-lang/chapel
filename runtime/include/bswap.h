@@ -9,39 +9,7 @@
 #include <sys/param.h>
 #ifdef __GLIBC__
 #include <endian.h>
-
-#endif
-
-// __bswap_64 does not compile with the PGI or Cray compilers,
-// and so we switch to our own versions in those environments.
-#ifdef __PGI 
-#define REDO_BSWAP
-#endif
-
-#ifdef _CRAYC
-#define REDO_BSWAP
-#endif
-
-#ifdef REDO_BSWAP
-// Undo any bswap definitions we might have gotten ...
-#undef __bswap_16
-#undef __bswap_32
-#undef __bswap_64
-// ... and make sure we don't get them back.
-#define _BITS_BYTESWAP_H 1
-
-#undef htobe16
-#undef htobe32
-#undef htobe64
-#undef htole16
-#undef htole32
-#undef htole64
-#undef be16toh
-#undef be32toh
-#undef be64toh
-#undef le16toh
-#undef le32toh
-#undef le64toh
+#include <byteswap.h>
 #endif
 
 #ifdef htobe64
@@ -54,11 +22,6 @@
 #else
 // slow compatability method.
 // stolen from glibc bits/byteswap.h
-#define __bswap_16(x) \
-  ((uint16_t) ((((x) >> 8) & 0xff) | (((x) & 0xff) << 8)))
-#define __bswap_32(x) \
-  ((((x) & 0xff000000) >> 24) | (((x) & 0x00ff0000) >>  8) |               \
-  (((x) & 0x0000ff00) <<  8) | (((x) & 0x000000ff) << 24))
 # define __bswap_64(x) \
      (  (((x) & 0xff00000000000000ull) >> 56)                                 \
       | (((x) & 0x00ff000000000000ull) >> 40)                                 \
