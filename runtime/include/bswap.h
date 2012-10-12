@@ -23,9 +23,13 @@
 #endif
 
 #ifdef REDO_BSWAP
+// Undo any bswap definitions we might have gotten ...
 #undef __bswap_16
 #undef __bswap_32
 #undef __bswap_64
+// ... and make sure we don't get them back.
+#define _BITS_BYTESWAP_H 1
+
 #undef htobe16
 #undef htobe32
 #undef htobe64
