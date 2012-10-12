@@ -1,0 +1,11 @@
+bug: inside a comment, the sequence /*/ is considered a complete nested comment, rather then a start of a nested comment
+
+Cf. when not inside a comment, /*/ opens a comment.
+When inside a comment, then, /*/ should start a nested comment, too,
+for consistency.
+
+Right now I get:
+  comment-nested-slashstarslash-1.chpl:5: error: should not see this one - 2
+
+but instead should be getting "EOF in comment" since the sole */
+on Line 4 should be closing the nested comment opened by /*/.
