@@ -54,6 +54,7 @@
   fread
   main
   open
+  pow
   printf
   quad
   read
