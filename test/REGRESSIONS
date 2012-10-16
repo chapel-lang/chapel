@@ -104,8 +104,8 @@ memory leaks regressions
 valgrind-specific regressions
 =============================
 
-overlapping memcpy (should replace with memmove)
-------------------------------------------------
+overlapping memcpy (root cause should be eliminated)
+----------------------------------------------------
 [Error matching program output for io/bradc/readWholeArr]
 [Error matching program output for io/ferguson/readThis/readarr]
 [Error matching program output for users/ferguson/bulkerr]
