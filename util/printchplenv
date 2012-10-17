@@ -26,7 +26,7 @@ print "CHPL_TARGET_COMPILER: $targcompiler\n";
 
 $comm = `$utildirname/comm`; chomp($comm);
 print "CHPL_COMM: $comm\n";
-if ($comm eq "none") {
+if ($comm eq "none" || $comm eq "ugni") {
 } else {
     $commsubstrate = `$utildirname/commSubstrate`; chomp($commsubstrate);
     print "  CHPL_COMM_SUBSTRATE: $commsubstrate\n";
