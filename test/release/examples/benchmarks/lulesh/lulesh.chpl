@@ -36,6 +36,7 @@
 use Time,       // to get timing routines for benchmarking
     BlockDist;  // for block-distributed arrays
 
+use luleshIO;   // to get I/O version of setting up data structures
 
 /* The 'useBlockDist' configuration parameter says whether or not to
    block-distribute the arrays.  The default depends on the setting of
@@ -48,13 +49,11 @@ config param useBlockDist = (CHPL_COMM != "none"),  // block-distribute arrays?
 
 /* Configuration constants: Override defaults on executable's command-line */
 
-config const filename = "lmeshes/sedov15oct.lmesh",  // input filename
-             initialEnergy = 3.948746e+7;            // initial energy value
+config const initialEnergy = 3.948746e+7;            // initial energy value
 
 
 config const showProgress = false,   // print time and dt values on each step
              debug = false,          // print various debug info
-             debugIO = debug,        // print input values after reading
              doTiming = true,        // time the main timestep loop
              printCoords = true;     // print the final computed coordinates
 
@@ -86,17 +85,9 @@ param XI_M        = 0x003,
       ZETA_P_FREE = 0x800;
 
 
-/* Initialization reads input variables from 'filename' */
+/* Set up the problem size */
 
-var infile = open(filename, iomode.r);  // open the file
-var reader = infile.reader();           // open a reader channel to the file
-
-
-/* Read problem size */
-
-const (numElems, numNodes) = reader.read(int, int);
-
-if debugIO then writeln("Using ", numElems, " elements, and ", numNodes, " nodes");
+const (numElems, numNodes) = getProblemSize();
 
 
 /* Declare abstract problem domains */
@@ -113,17 +104,13 @@ const Elems = if useBlockDist then ElemSpace dmapped Block(ElemSpace)
                               else NodeSpace;
 
 
-var x, y, z: [Nodes] real; //coordinates
+                              
+/* Declare and initialize the coordinates */
 
-/* Read input coordinates */
+var x, y, z: [Nodes] real;
+                              
+InitializeCoordinates(x,y,z);
 
-for (locX,locY,locZ) in zip(x,y,z) do reader.read(locX, locY, locZ);
-
-if debug {
-  writeln("locations are:");
-  for (locX,locY,locZ) in zip(x,y,z) do
-    writeln((locX, locY, locZ));
-}
 
 
 /* The number of nodes per element.  In a rank-independent version,
@@ -141,34 +128,23 @@ param nodesPerElem = 8;
 
 var elemToNode: [Elems] nodesPerElem*index(Nodes);
 
-for nodelist in elemToNode do 
-  for i in 1..nodesPerElem do
-    reader.read(nodelist[i]);
+initElemToNodeMapping(elemToNode);
 
-if debugIO {
-  writeln("elemToNode mappings are:");
-  for nodelist in elemToNode do
-    writeln(nodelist);
-}
-                                                                         
+
+
+
 
 /* Declare and read in the Greek variables */
 
 var lxim, lxip, letam, letap, lzetam, lzetap: [Elems] index(Elems);
 
-for (xm,xp,em,ep,zm,zp) in zip(lxim, lxip, letam, letap, lzetam, lzetap) do
-  reader.read(xm,xp,em,ep,zm,zp);
+initGreekVars(lxim, lxip, letam, letap, lzetam, lzetap);
 
-if debugIO {
-  writeln("greek stuff:");
-  for (xm,xp,em,ep,zm,zp) in zip(lxim, lxip, letam, letap, lzetam, lzetap) do
-    writeln((xm,xp,em,ep,zm,zp));
-}
 
 
 /* Declare and read in the X, Y, Z Symmetry values */
 
-// NOTE: The integers returned by readNodeSet below are not actually
+// NOTE: The integers returned by the init functions are not actually
 // used currently because Chapel prefers iterating over arrays directly
 // (i.e. 'forall x in XSym' rather than 'forall i in 0..#numSymX ... XSym[i]').
 //
@@ -178,28 +154,22 @@ if debugIO {
 // We used the style shown here simply to demonstrate a common idiom
 // in current unstructured codes.
 
-const (numSymX, XSym) = readNodeset(reader),
-      (numSymY, YSym) = readNodeset(reader),
-      (numSymZ, ZSym) = readNodeset(reader);
-
-if debugIO {
-  writeln("XSym:\n", XSym);
-  writeln("YSym:\n", YSym);
-  writeln("ZSym:\n", ZSym);
-}
+                              
+const (numSymX, XSym) = initXSyms(),
+      (numSymY, YSym) = initYSyms(),
+      (numSymZ, ZSym) = initZSyms();
 
 
 /* Declare and read in the free surfaces */
 
-const (numFreeSurf, freeSurface) = readNodeset(reader);
+                              
+const (numFreeSurf, freeSurface) = setupFreeSurface();
 
-if debugIO then
-  writeln("freeSurface:\n", freeSurface);
 
 
 /* Assert that we're at the end of the input file as a sanity check */
 
-reader.assertEOF("Input file format error (extra data at EOF)");
+finalizeInitialization();
 
 
 
@@ -1682,12 +1652,3 @@ proc deprint(title:string, x:[?D] real, y:[D]real, z:[D]real) {
 }
 
 
-proc readNodeset(reader) {
-  const arrSize = reader.read(int);
-  var A: [0..#arrSize] index(Nodes);
-
-  for a in A do
-    reader.read(a);
-
-  return (arrSize, A);
-}

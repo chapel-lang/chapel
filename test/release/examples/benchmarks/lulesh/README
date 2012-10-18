@@ -28,10 +28,11 @@ This directory's contents are as follows:
 ./
   lmeshes/     : input meshes
 
-  lulesh.chpl  : the Chapel source code
+  lulesh.chpl     : the main Chapel source code
+  luleshIO.chpl   : code for reading in the input set
 
-  coords.out   : the coordinates computed by the program are written
-                 to this file, suitable for plotting
+  coords.out      : the coordinates computed by the program are written
+                    to this file, suitable for plotting
 
   CLEANFILES      :\  
   lulesh.catfiles : \
