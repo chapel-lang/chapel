@@ -250,7 +250,7 @@ proc replicateB(abIx) {
 }
 
 proc targetLocalesIndexForAbIndex(param dim, abIx)
-  return (abIx / blkSize) % (if dim == 1 then tl1 else tl2);
+  return (divceilpos(abIx, blkSize) - 1) % (if dim == 1 then tl1 else tl2);
 
 
 /////////////////////////////////////////////////////////////////////////////
