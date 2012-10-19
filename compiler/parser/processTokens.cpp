@@ -118,10 +118,12 @@ void processSingleLineComment(void) {
 void processMultiLineComment(void) {
   int c;
   int lastc;
+  int lastlastc;
   int depth;
 
   c = 0;
   lastc = 0;
+  lastlastc = 0;
   depth = 1;
 
   newString();
@@ -136,6 +138,7 @@ void processMultiLineComment(void) {
   std::string wholeComment = "";
   
   while (depth > 0) {
+    lastlastc = lastc;
     lastc = c;
     c = getNextYYChar();
     if( c == '\n' ) {
@@ -157,7 +160,7 @@ void processMultiLineComment(void) {
       }
       addChar(c);
     }
-    if( lastc == '*' && c == '/' ) { // close comment
+    if( lastc == '*' && c == '/' && lastlastc != '/' ) { // close comment
       depth--;
     } else if( lastc == '/' && c == '*' ) { // start nested
       depth++;
