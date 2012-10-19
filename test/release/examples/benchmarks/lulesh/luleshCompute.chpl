@@ -1,7 +1,9 @@
 param numDims = 3;
 
-config const elemsPerEdge = 45;
+config const elemsPerEdge = 15;
 const        nodesPerEdge = elemsPerEdge + 1;
+
+config const debugInit = false;
 
 const DimElemRange = 0..#elemsPerEdge,
       DimNodeRange = 0..#nodesPerEdge;
@@ -11,6 +13,9 @@ const DimElemSpace = {DimElemRange, DimElemRange, DimElemRange},
       DimNodeSpace = {DimNodeRange, DimNodeRange, DimNodeRange};
 
 proc getProblemSize() {
+  if (debugInit) then
+    writeln(DimElemSpace.size, " ", DimNodeSpace.size);
+
   return (DimElemSpace.size, DimNodeSpace.size); 
 }
 
@@ -46,11 +51,9 @@ inline proc elemIdx1DTo3D(ind) {
   return idx1DTo3D(ind, elemsPerEdge);
 }
 
+proc testit {
+  var problem = false;
 
-// TODO: comment this back into a test, not run by default
-
-//proc testit {
-var problem = false;
   for i in 0..#(elemsPerEdge**3) {
     const j = elemIdx3DTo1D((...elemIdx1DTo3D(i)));
     if (i != j) {
@@ -59,7 +62,6 @@ var problem = false;
       problem = true;
     }
   }
-  
 
   for i in 0..#(nodesPerEdge**3) {
     const j = nodeIdx3DTo1D((...nodeIdx1DTo3D(i)));
@@ -69,9 +71,10 @@ var problem = false;
       problem = true;
     }
   }
-//}
 
-if problem then halt("my mapping functions aren't inverses");
+  if problem then halt("my mapping functions aren't inverses");
+}
+
 
   
 
@@ -82,12 +85,10 @@ proc InitializeCoordinates(X, Y, Z) {
     y = initialWidth * j / elemsPerEdge;
     z = initialWidth * i / elemsPerEdge;
   }
-  /*
-  writeln("locations are:");
-  for (locX,locY,locZ) in zip(X,Y,Z) do
-    writeln((locX, locY, locZ));
-  exit(0);
-  */
+  if debugInit then
+    for (locX,locY,locZ) in zip(X,Y,Z) do
+      writeln(format("%.6f", locX), " ", format("%.6f", locY), " ", 
+              format("%.6f", locZ));
 }
 
 
@@ -103,11 +104,12 @@ proc initElemToNodeMapping(elemToNode) {
     nodelist[7] = nodeIdx3DTo1D(i+1, j+1, k+1);
     nodelist[8] = nodeIdx3DTo1D(i+1, j+1, k  );
   }
-  /*
-  for nodelist in elemToNode do
-    writeln(nodelist);
-  exit(0);
-  */
+  if debugInit then
+    for nodelist in elemToNode {
+      for i in 1..nodelist.size do
+        write(nodelist(i), " ");
+      writeln();
+    }
 }
 
 proc initGreekVars(lxim, lxip, letam, letap, lzetam, lzetap) {
@@ -138,10 +140,9 @@ proc initGreekVars(lxim, lxip, letam, letap, lzetam, lzetap) {
                   then num
                   else elemIdx3DTo1D(i+1,j,k);
   }
-  /*
-  for (xm,xp,em,ep,zm,zp) in zip(lxim, lxip, letam, letap, lzetam, lzetap) do
-    writeln((xm,xp,em,ep,zm,zp));
-  */
+  if (debugInit) then
+    for (xm,xp,em,ep,zm,zp) in zip(lxim, lxip, letam, letap, lzetam, lzetap) do
+      writeln(xm, " ", xp, " ", em, " ", ep, " ", zm, " ", zp);
 }
 
 inline proc initXSyms() {
@@ -151,7 +152,11 @@ inline proc initXSyms() {
   for ((i,j),ind) in zip(DimNodeFace, 0..) do
     A[ind] = nodeIdx3DTo1D(i,j,0);
 
-  //  writeln(A);
+  if debugInit {
+    writeln(size);
+    for a in A do
+      writeln(a);
+  }
 
   return (size, A);
 }
@@ -163,7 +168,11 @@ inline proc initYSyms() {
   for ((i,j),ind) in zip(DimNodeFace, 0..) do
     A[ind] = nodeIdx3DTo1D(i,0,j);
 
-  //  writeln(A);
+  if debugInit {
+    writeln(size);
+    for a in A do
+      writeln(a);
+  }
 
   return (size, A);
 }
@@ -175,10 +184,11 @@ inline proc initZSyms() {
   for ((i,j),ind) in zip(DimNodeFace, 0..) do
     A[ind] = nodeIdx3DTo1D(0,i,j);
 
-  /*
-  writeln(A);
-  exit(0);
-  */
+  if debugInit {
+    writeln(size);
+    for a in A do
+      writeln(a);
+  }
 
   return (size, A);
 }
@@ -209,10 +219,11 @@ inline proc setupFreeSurface() {
   use Sort;
   QuickSort(A);
 
-  /*
-  writeln(A);
-  exit(0);
-  */
+  if debugInit {
+    writeln(size);
+    for a in A do
+      writeln(a);
+  }
 
   return (size, A);
 }
