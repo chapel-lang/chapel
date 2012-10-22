@@ -36,7 +36,7 @@
 use Time,       // to get timing routines for benchmarking
     BlockDist;  // for block-distributed arrays
 
-use luleshIO;   // to get I/O version of setting up data structures
+use luleshInit;   // to get I/O version of setting up data structures
 
 /* The 'useBlockDist' configuration parameter says whether or not to
    block-distribute the arrays.  The default depends on the setting of
