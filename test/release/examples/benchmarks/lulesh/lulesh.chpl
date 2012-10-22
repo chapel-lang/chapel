@@ -144,26 +144,18 @@ initGreekVars(lxim, lxip, letam, letap, lzetam, lzetap);
 
 /* Declare and read in the X, Y, Z Symmetry values */
 
-// NOTE: The integers returned by the init functions are not actually
-// used currently because Chapel prefers iterating over arrays directly
-// (i.e. 'forall x in XSym' rather than 'forall i in 0..#numSymX ... XSym[i]').
-//
-// Moreover, an array's size can also be queried directly
-// (i.e., 'const numSymX = XSym.numElements')
-//
-// We used the style shown here simply to demonstrate a common idiom
-// in current unstructured codes.
-
+var XSym, YSym, ZSym: sparse subdomain(Nodes);
                               
-const (numSymX, XSym) = initXSyms(Nodes),
-      (numSymY, YSym) = initYSyms(Nodes),
-      (numSymZ, ZSym) = initZSyms(Nodes);
+initXSyms(XSym);
+initYSyms(YSym);
+initZSyms(ZSym);
 
 
 /* Declare and read in the free surfaces */
 
+var freeSurface: sparse subdomain(Nodes);
                               
-const (numFreeSurf, freeSurface) = setupFreeSurface(Nodes);
+setupFreeSurface(freeSurface);
 
 
 /* Constants */

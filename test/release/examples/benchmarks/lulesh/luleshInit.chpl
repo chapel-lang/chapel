@@ -160,9 +160,7 @@ proc initGreekVars(lxim, lxip, letam, letap, lzetam, lzetap) {
 
 // read/compute the X, Y, Z symmetry planes
 
-inline proc initXSyms(Nodes) {
-  var XSym: sparse subdomain(Nodes);
-
+inline proc initXSyms(XSym) {
   if (initFromFile) {
     readNodeset(XSym);
   } else {
@@ -179,9 +177,7 @@ inline proc initXSyms(Nodes) {
   return (XSym.numIndices, XSym);
 }
 
-inline proc initYSyms(Nodes) {
-  var YSym: sparse subdomain(Nodes);
-
+inline proc initYSyms(YSym) {
   if (initFromFile) {
     readNodeset(YSym);
   } else {
@@ -198,9 +194,7 @@ inline proc initYSyms(Nodes) {
   return (YSym.numIndices, YSym);
 }
 
-inline proc initZSyms(Nodes) {
-  var ZSym: sparse subdomain(Nodes);
-
+inline proc initZSyms(ZSym) {
   if (initFromFile) {
     readNodeset(ZSym);
   } else {
@@ -220,9 +214,7 @@ inline proc initZSyms(Nodes) {
 
 // read/compute the free surface
 
-inline proc setupFreeSurface(Nodes) {
-  var freeSurface: sparse subdomain(Nodes);
-
+inline proc setupFreeSurface(freeSurface) {
   if (initFromFile) {
     readNodeset(freeSurface);
     reader.assertEOF("Input file format error (extra data at EOF)");
