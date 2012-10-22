@@ -110,19 +110,6 @@ overlapping memcpy (root cause should be eliminated)
 [Error matching program output for io/ferguson/readThis/readarr]
 [Error matching program output for users/ferguson/bulkerr]
 
-nondet. "the impossible has happened" (raise VG_N_THREADS)
-----------------------------------------------------------
-NOTE: Increasing VG_N_THREADS means rebuilding valgrind, so instead
-limited numThreadsPerLocale.
-
-[Error matching program output for domains/sungeun/assoc/stress (compopts: 1, execopts: 3)] (12/27/11, 01/31/12)
-[Error matching program output for studies/nqueens/nqueens-par] (01/03/12, 02/07/12, 02/21/12, 03/06/12)
-[Error matching program output for studies/nqueens/nqueens-2-par] (11/29/11, 01/17/12, 02/07/12, 03/27/12)
-[Error matching program output for distributions/nelson/MultiBlockDist2DLocales] (??/??/??, 12/06/11)
-[Error matching program output for parallel/cobegin/deitz/test_big_recursive_cobegin] (01/10/12, 02/14/12, 03/20/12)
-
-and others..
-
 random failures due to being out of memory (on purpose)
 -------------------------------------------------------
 Consider disabling this test for valgrind:
@@ -515,37 +502,26 @@ compiler timeouts
 pgi-specific regressions (in addition to xt-cle errors above)
 =============================================================
 
-#inclusion of wchar.h generates a warning that breaks testing (11/10/11)
-------------------------------------------------------------------------
-*all*
+Weird stack overflow error from the C runtime:
 
-internal sst_zero problem (04/02/11)
-------------------------------------
-[Error matching compiler output for classes/hannah/volatile_decl]
+  Error: in routine alloca() there is a
+  stack overflow: thread 0, max 8180KB, used 3KB, request 16B
 
-long identifiers
-----------------
-[Error matching program output for arrays/deitz/part5/test_major_nesting_of_arrays]
-[Error matching program output for trivial/deitz/test_longToken]
-[Error matching program output for distributions/dm/t1]
-[Error matching program output for distributions/dm/t8]
-[Error matching program output for distributions/dm/t9]
-[Error matching compiler output for distributions/dm/s9]
-[Error matching program output for studies/hpcc/HPL/vass/bc.dim]
-[Error matching program output for studies/hpcc/HPL/vass/bl.dim]
-[Error matching program output for studies/hpcc/HPL/vass/hpl]
+This happens for many programs including simple ones like
+hello4-datapar-dist and hello5-taskpar.
 
-redeclaration of identifier in scope (01/24/11)
------------------------------------------------
-[Error matching compiler output for associative/waynew/indef2]
+Brad sent out mail to xt-users and PGI regarding this issue, but no
+response.
+
+floating point overflow warning in generated code (03/12/11, 9/14/12)
+---------------------------------------------------------------------
+Could be intermittent, so I put it in the TRIAGE file also
+[Error matching program output for studies/dijkstra/driverEdgeBtw]
+
 
 some sort of gdb compatability issue?
 -------------------------------------
 [Error matching program output for execflags/bradc/gdbddash/declint2]
-
-floating point overflow warning in compilation (ever since added)
------------------------------------------------------------------
-[Error matching program output for modules/standard/math/infinity]
 
 floating point overflow warning in generated code (03/12/11)
 ------------------------------------------------------------
@@ -786,11 +762,6 @@ execution timeouts (ever since switching to 4 shepherds)
 qthreads-specific tests
 =======================
 
-Timed out after update to qthreads/1.8
---------------------------------------
-[Error: Timed out executing program release/examples/spec/Task_Parallelism_and_Synchronization/syncCounter]
-
-
 =========================================================
 qthreads+gasnet-specific tests (in addition to the above)
 =========================================================
@@ -829,15 +800,9 @@ nondet. execution timeout/deadlock
 baseline-specific tests
 =======================
 
-regressions due to extern C 'int' type (03/27/12)
--------------------------------------------------
-[Error matching compiler output for extern/bradc/returnRecord/returnRecord (compopts: 1)]
-[Error matching compiler output for extern/sungeun/classes/extern_class_extern_proc]
-[Error matching compiler output for extern/sungeun/classes/extern_class_nl]
-[Error matching compiler output for extern/sungeun/classes/extern_class_nl_extern_proc]
-[Error matching compiler output for extern/sungeun/classes/extern_class_nl_proc]
-[Error matching compiler output for extern/sungeun/classes/extern_class_proc]
-
+seg fault (don't know when it started, noticed 10/16/12)
+--------------------------------------------------------
+[Error matching program output for distributions/nelson/MultiBlockDist2DLocales]
 
 wrong output (02/16/12 -- first run in awhile)
 ----------------------------------------------
@@ -861,10 +826,6 @@ Bad suppression format (01/05/12)
 ---------------------------------
 [Error: did not find expected suppression optimizations/hilde/removeUnreachable]
 
-nondet. execution timeout
--------------------------
-[Error: Timed out executing program studies/amr/diffusion/level/Level_DiffusionBE_driver] (10/29/11, 03/23/12)
-
 .good assumes dead code elimination has run (since added)
 ---------------------------------------------------------
 [Error: didn't find expected suppression optimizations/hilde/removeUnreachable]
@@ -878,26 +839,13 @@ incorrect output -- expected? (04/03/10)
 [Error matching program output for arrays/deitz/parallelism/stream/test_stream_is_parallel]
 [Error matching program output for arrays/deitz/parallelism/stream/test_whole_array_stream_is_parallel]
 
-???
----
+??? (wrong output)
+------------------
 [Error matching program output for classes/figueroa/RecordConstructor2]
 
-has timed out since test was committed (9/14/10)
-------------------------------------------------
-[Error: Timed out executing program studies/hpcc/PTRANS/PTRANS]
-
-execution timeout (didn't get fixed with the others 04/02/10)
--------------------------------------------------------------
-[Error: Timed out executing program studies/shootout/fannkuch-redux/fannkuch-redux (execopts: 2)]
-
-timed out from first checkin (04/09/11)
----------------------------------------
-[Error: Timed out executing program types/range/bradc/overflowInComputeBlock]
-
-timeouts due to removal of -O
------------------------------
-[Error: Timed out executing program users/franzf/v1/chpl/main (compopts: 1)]
-[Error: Timed out executing program users/franzf/v2/chpl/main (compopts: 1)]
+??? (wrong output)
+------------------
+[Error matching program output for studies/shootout/mandelbrot/mandelbrot-fancy]
 
 attempt to dereference nil OR timedexec: target program died with signal 11
 ---------------------------------------------------------------------------
@@ -907,6 +855,24 @@ attempt to dereference nil OR timedexec: target program died with signal 11
 [Error matching program output for optimizations/bulkcomm/asenjo/ptransDR/v1/ptrans] (ditto)
 [Error matching program output for optimizations/bulkcomm/asenjo/stencilDR/v2/stencil] (ditto)
 [Error matching program output for optimizations/bulkcomm/asenjo/stencilDR/v1/stencil] (ditto)
+[Error matching program output for studies/590o/blerner/nilClassCheck]
+
+
+C90 error
+---------
+[Error matching compiler output for types/typedefs/bradc/redefineTypeNames]
+
+> In file included from /tmp/chpl-chapelu-22614.deleteme/_main.c:27:
+> /tmp/chpl-chapelu-22614.deleteme/redefineTypeNames.c: In function 'chpl_user_main':
+> /tmp/chpl-chapelu-22614.deleteme/redefineTypeNames.c:16: error: two or more data types in declaration specifiers
+> cc1: warnings being treated as errors
+> /tmp/chpl-chapelu-22614.deleteme/redefineTypeNames.c:16: error: useless type name in empty declaration
+> /tmp/chpl-chapelu-22614.deleteme/redefineTypeNames.c:32: error: expected identifier or '(' before '=' token
+> /tmp/chpl-chapelu-22614.deleteme/redefineTypeNames.c:32: error: ISO C90 forbids mixed declarations and code
+> /tmp/chpl-chapelu-22614.deleteme/redefineTypeNames.c:38: error: expected expression before '_Bool'
+> /tmp/chpl-chapelu-22614.deleteme/redefineTypeNames.c:38: error: too few arguments to function 'writeln5'
+> gmake: *** [/tmp/chpl-chapelu-22614.deleteme/redefineTypeNames.tmp] Error 1
+> error: compiling generated source
 
 
 =====================

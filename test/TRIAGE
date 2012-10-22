@@ -7,13 +7,6 @@
 
 Suggested TODO for Sung's week:
 
-1) Once bswap.h gets fixed, see if you can characterize where we are
-   with PGI testing.  There's been a lot of noise in the past week and
-   it's hard to tell what the real issues are.  For that matter, it
-   might be worth diffing all the prgenv, pgi, intel .logs against
-   testing a week or so ago when this clears up to see whether anything
-   got lost in the noise.
-
 2) Look into nondeterministic SIGABRT issue with gasnet-fast on
    test/release/examples/ra*.chpl which seem new to me.
 
@@ -24,16 +17,13 @@ Suggested TODO for Sung's week:
 Problems analyzed and assigned that should be fixed soon:
 =========================================================
 
-darwin/mac runtime build (2012-10-13) (hilde)
-chpl compiles on prgenv-*, pgi (2012-10-13) (hilde)
----------------------------------------------------
-broken due to bswap.h changes
-
 studies/ssca2/performance/SSCA2_commDiags (sungeun)
 ---------------------------------------------------
-  linux64.gnu.gasnet-everything.fifo.pthreads-std (2012-10-02)
-  Sung has this one.  It looks to me (gbt) like the comm diags ranges just
-  need to be wider.
+
+  linux64.gnu.gasnet-everything.fifo.pthreads-std (2012-10-02) Sung
+  has this one.  It looks to me (gbt) like the comm diags ranges just
+  need to be wider.  (sungeun: 10/22/12) It's actually bounded for
+  certain operations, so I'm still working on it in the background.
 
 
 ==============================================
@@ -47,9 +37,10 @@ mutilocale/deitz/needMultiLocales/diagnostics/test_private_broadcast_large (10/1
 ra-atomics (UNASSIGNED) (10/11/12)
 
 SSCA2_main (UNASSIGNED)
------------------------
-Times out in compilation for PGI with regularity (seen throughout week
-of 10/8/12)
+-----------------------y
+Periodically times out for PGI (alternates between time out and stack
+overflow error documented in REGRESSIONS)
+
 
 ra* (gbt)
 ---------
@@ -83,23 +74,30 @@ mutilocale/deitz/needMultiLocales/diagnostics/test_private_broadcast_large
   Failed: 10/4 (linux64.gnu.gasnet-fast.fifo.pthreads.dlmalloc)
   Failed (SIGABRT): 10/11/12 (")
 
+
+linux64.gnu.none.qthreads.none (UNASSIGNED)
+---------------------------------------------
+[Error: Timed out executing program release/examples/spec/Task_Parallelism_and_Synchronization/syncCounter] (10/18/12)
+
 linux64.gnu.gasnet.qthreads.none (UNASSIGNED)
 ---------------------------------------------
-0) We moved to a non-oversubscribed setting on a beefier machine
-1) Continue to have a lot of noise in testing.
-   - Often the execution times out nondeterministically
-     - Arguably some of these cases are due to bad assumptions about task
-       scheduling within a test (syncCounter is an example of this -- should
-       be rewritten; ask Brad for more info if wanting to take this on)
-2) Got a seg fault (06/06/12, 6/16, stream-ep 8/23/12)
-3) Intermitent seg fault on exit (7/7 7/9, 7/12, 7/13, same as #2?)
-4) seg fault during program execution (same as #2?):
+sungeun: 10/18/12.  Things seem quieter, but not perfect
+- Got a seg fault (06/06/12, 6/16, stream-ep 8/23/12)
+- Intermitent seg fault on exit (7/7 7/9, 7/12, 7/13)
+-  seg fault during program execution (same as as previous):
    distributions/robust/arithmetic/optimizations/optimizeOnClauses_basic_tuple (7/10)
    release/examples/spec/Classes/delete (7/12)
+- Intermitent time outs:
+  [Error: Timed out executing program release/examples/spec/Task_Parallelism_and_Synchronization/syncCounter] (10/18/12)
+  [Error: Timed out executing program distributions/robust/arithmetic/slicing/test_array_slicing3] (10/17/12)
+  [Error: Timed out executing program distributions/robust/arithmetic/stress/test_many_array] (10/18/12)
+
 
 baseline (UNASSIGNED)
 ---------------------
-distributions/nelson/MultiBlockDist2DLocales
+[Error: Timed out executing program optimizations/bulkcomm/asenjo/stencilDR/v2/stencil] (10/17/12, normally fails)
+
+
 
 studies/shootout/mandelbrot/mandelbrot-fancy (10/12/12)
 -------------------------------------------------------
@@ -107,20 +105,8 @@ gets incorrect answer using --baseline; sometimes times out
 
 valgrind (sungeun)
 ------------------
-*** It's a little difficult to follow the trend since we only run this
-*** once a week, so only the last log file is preserved.  We should
-*** considering saving the logs week-over-week (which we should
-*** probably do for all the tests too since we have the space to).
-1) Nondeterministic "the impossible has happened" failures
-   2012/08/13 -- Only one test case failed: MultiBlockDist2DLocales
-
-   8/30/12: Passed --numThreadsPerLocale=100 to all tests to try and
-   avoid VG_N_THREADS error that is causing all the impossible errors.
-
-2) Nondeterministic timeouts (could raise timeout value even further)
-   8/30/12: Timed out when running start_test by hand (versus in
-   parallel as the nightly does), so I don't think it's worth
-   disabling parallel testing for the sake of the time outs.
+sungeun (10/16/2012): I believe the non-determinism from valgrind
+errors is now resolved (still have timeouts).
 
 xmt build (UNASSIGNED)
 ----------------------
@@ -139,6 +125,11 @@ same directory as the /tmp directory it is looking for.
 =========================================
 Not so noisy as to be familiar annoyances
 =========================================
+
+studies/dijkstra/driverEdgeBtw
+------------------------------
+PGI only.  Floating point overflow warning in generated code
+(03/12/11, 9/14/12) Also documented in REGRESSIONS file.
 
 errors running sub_test (UNASSIGNED)
 ------------------------------------
@@ -203,8 +194,8 @@ nondet. tmalloc failures
 
 parallel/begin/deitz/test_big_recursive_begin future succeeded
 --------------------------------------------------------------
-*-linux64.gnu.none.fifo.pthreads (10/10/12)
-*-linux64.gnu.none.fifo.pthreads-std.log (8/18,9/2,9/9,9/13/12)
+*-linux64.gnu.none.fifo.pthreads (10/10/12, 10/16/12)
+*-linux64.gnu.none.fifo.pthreads-std.log (8/18,9/2,9/9,9/13/12, 10/17/12)
 *-linux64.gnu.none.fifo.pthreads-npt.log (baseline)
   (9/{4,5,14,22,30}/12)
   (10/2/12)
