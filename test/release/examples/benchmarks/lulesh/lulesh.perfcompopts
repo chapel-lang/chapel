@@ -1,2 +1,2 @@
--sdoTiming --fast                 # lulesh.default.perfkeys
--sdoTiming --fast -suseBlockDist  # lulesh.block.perfkeys
+--fast                            # lulesh.default.perfkeys
+--fast -suseBlockDist --no-local  # lulesh.block.perfkeys

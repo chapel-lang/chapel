@@ -19,6 +19,18 @@ to improve performance and elegance.  See the list below and TODO
 comments in the source code for some known areas for improvement.
 
 
+-------
+Running
+-------
+
+In running the Chapel version of LULESH, the user must either specify
+an input file via the --filename flag or a number of elements to use
+per edge in a cubic data set using the --elemsPerEdge argument.  For
+example, to run using a cubic 2x2x2 input set, you could either use
+'--filename lmeshes/sedov2cube.lmesh' or '--elemsPerEdge 2'.  The
+filename option has the advantage of supporting non-cubic input sets.
+
+
 -----
 Files
 -----
@@ -26,19 +38,20 @@ Files
 This directory's contents are as follows:
 
 ./
-  lmeshes/     : input meshes
-
   lulesh.chpl     : the main Chapel source code
-  luleshIO.chpl   : code for reading in the input set
+  luleshInit.chpl : initialization for LULESH by reading or computing the input
+
+  lmeshes/     : input meshes
 
   coords.out      : the coordinates computed by the program are written
                     to this file, suitable for plotting
 
-  CLEANFILES      :\  
-  lulesh.catfiles : \
-  lulesh.compopts :  used by the Chapel testing system
-  lulesh.execopts : / 
-  lulesh.good     :/ 
+  CLEANFILES       : \
+  lulesh.catfiles  :  \
+  lulesh.compopts  :   used by the Chapel testing system
+  lulesh.execopts  :  /
+  lulesh*.good     : /
+  lulesh*.perf*    :/
 
 
 -----
