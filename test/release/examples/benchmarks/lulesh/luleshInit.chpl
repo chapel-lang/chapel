@@ -36,9 +36,11 @@ if initFromFile {
 
 
 // Helper variables for computing the index set
-const        nodesPerEdge = elemsPerEdge + 1;
 
-const DimNodeRange = 0..#nodesPerEdge,
+param numDims = 3;
+
+const nodesPerEdge = elemsPerEdge + 1,
+      DimNodeRange = 0..#nodesPerEdge,
       DimNodeFace  = {DimNodeRange, DimNodeRange};
 
 
@@ -46,7 +48,6 @@ const DimNodeRange = 0..#nodesPerEdge,
 // read/compute the problem size
 
 proc getProblemSize() {
-  param        numDims = 3;
   const (numElems, numNodes) = if (initFromFile) then
                                  reader.read(int, int)
                                else
@@ -160,55 +161,35 @@ proc initGreekVars(lxim, lxip, letam, letap, lzetam, lzetap) {
 
 // read/compute the X, Y, Z symmetry planes
 
-inline proc initXSyms(XSym) {
+enum dim { X = 3, Y = 2, Z = 1 };
+
+inline proc initSyms(Sym, dir) {
   if (initFromFile) {
-    readNodeset(XSym);
+    readNodeset(Sym);
   } else {
-    for ((i,j),ind) in zip(DimNodeFace, 0..) do
-      XSym += nodeIdx3DTo1D(i,j,0);
+    for ij in DimNodeFace do
+      Sym += nodeIdx2DTo1D(ij, dir, 0);
   }
 
   if debugInit {
-    writeln(XSym.numIndices);
-    for x in XSym do
-      writeln(x);
+    writeln(Sym.numIndices);
+    for n in Sym do
+      writeln(n);
   }
 
-  return (XSym.numIndices, XSym);
+  return (Sym.numIndices, Sym);
+}
+
+inline proc initXSyms(XSym) {
+  initSyms(XSym, dim.X);
 }
 
 inline proc initYSyms(YSym) {
-  if (initFromFile) {
-    readNodeset(YSym);
-  } else {
-    for ((i,j),ind) in zip(DimNodeFace, 0..) do
-      YSym += nodeIdx3DTo1D(i,0,j);
-  }
-
-  if debugInit {
-    writeln(YSym.numIndices);
-    for x in YSym do
-      writeln(x);
-  }
-
-  return (YSym.numIndices, YSym);
+  initSyms(YSym, dim.Y);
 }
 
 inline proc initZSyms(ZSym) {
-  if (initFromFile) {
-    readNodeset(ZSym);
-  } else {
-    for ((i,j),ind) in zip(DimNodeFace, 0..) do
-      ZSym += nodeIdx3DTo1D(0,i,j);
-  }
-
-  if debugInit {
-    writeln(ZSym.numIndices);
-    for x in ZSym do
-      writeln(x);
-  }
-
-  return (ZSym.numIndices, ZSym);
+  initSyms(ZSym, dim.Z);
 }
 
 
@@ -219,14 +200,14 @@ inline proc setupFreeSurface(freeSurface) {
     readNodeset(freeSurface);
     reader.assertEOF("Input file format error (extra data at EOF)");
   } else {
-    for (i,j) in DimNodeFace do
-      freeSurface += nodeIdx3DTo1D(i,j,nodesPerEdge-1);
+    for ij in DimNodeFace do
+      freeSurface += nodeIdx2DTo1D(ij, dim.X, nodesPerEdge-1);
                   
-    for (i,j) in DimNodeFace do
-      freeSurface += nodeIdx3DTo1D(i,nodesPerEdge-1,j);
+    for ij in DimNodeFace do
+      freeSurface += nodeIdx2DTo1D(ij, dim.Y, nodesPerEdge-1);
 
-    for (i,j) in DimNodeFace do
-      freeSurface += nodeIdx3DTo1D(nodesPerEdge-1,i,j);
+    for ij in DimNodeFace do
+      freeSurface += nodeIdx2DTo1D(ij, dim.Z, nodesPerEdge-1);
   }
 
   if debugInit {
@@ -285,4 +266,12 @@ inline proc elemIdx1DTo3D(ind) {
   return idx1DTo3D(ind, elemsPerEdge);
 }
 
+/* Turn a 2D node index into a 3D index by inserting the value
+   'newval' in diemnsion 'newdim' */
 
+inline proc nodeIdx2DTo1D(ij, newdim, newval) {
+  var ijk: 3*int;
+  for i in 1..numDims do
+    ijk[i] = if (i==newdim) then newval else ij[i - (i>newdim):int];
+  return nodeIdx3DTo1D((...ijk));
+}
