@@ -36,6 +36,7 @@
 use Time,       // to get timing routines for benchmarking
     BlockDist;  // for block-distributed arrays
 
+use luleshInit;   // to get I/O version of setting up data structures
 
 /* The 'useBlockDist' configuration parameter says whether or not to
    block-distribute the arrays.  The default depends on the setting of
@@ -48,13 +49,11 @@ config param useBlockDist = (CHPL_COMM != "none"),  // block-distribute arrays?
 
 /* Configuration constants: Override defaults on executable's command-line */
 
-config const filename = "lmeshes/sedov15oct.lmesh",  // input filename
-             initialEnergy = 3.948746e+7;            // initial energy value
+config const initialEnergy = 3.948746e+7;            // initial energy value
 
 
 config const showProgress = false,   // print time and dt values on each step
              debug = false,          // print various debug info
-             debugIO = debug,        // print input values after reading
              doTiming = true,        // time the main timestep loop
              printCoords = true;     // print the final computed coordinates
 
@@ -86,17 +85,9 @@ param XI_M        = 0x003,
       ZETA_P_FREE = 0x800;
 
 
-/* Initialization reads input variables from 'filename' */
+/* Set up the problem size */
 
-var infile = open(filename, iomode.r);  // open the file
-var reader = infile.reader();           // open a reader channel to the file
-
-
-/* Read problem size */
-
-const (numElems, numNodes) = reader.read(int, int);
-
-if debugIO then writeln("Using ", numElems, " elements, and ", numNodes, " nodes");
+const (numElems, numNodes) = initProblemSize();
 
 
 /* Declare abstract problem domains */
@@ -112,18 +103,12 @@ const Elems = if useBlockDist then ElemSpace dmapped Block(ElemSpace)
       Nodes = if useBlockDist then NodeSpace dmapped Block(NodeSpace)
                               else NodeSpace;
 
+                              
+/* The coordinates */
 
-var x, y, z: [Nodes] real; //coordinates
+var x, y, z: [Nodes] real;
+                              
 
-/* Read input coordinates */
-
-for (locX,locY,locZ) in zip(x,y,z) do reader.read(locX, locY, locZ);
-
-if debug {
-  writeln("locations are:");
-  for (locX,locY,locZ) in zip(x,y,z) do
-    writeln((locX, locY, locZ));
-}
 
 
 /* The number of nodes per element.  In a rank-independent version,
@@ -141,65 +126,15 @@ param nodesPerElem = 8;
 
 var elemToNode: [Elems] nodesPerElem*index(Nodes);
 
-for nodelist in elemToNode do 
-  for i in 1..nodesPerElem do
-    reader.read(nodelist[i]);
 
-if debugIO {
-  writeln("elemToNode mappings are:");
-  for nodelist in elemToNode do
-    writeln(nodelist);
-}
-                                                                         
-
-/* Declare and read in the Greek variables */
+/* the Greek variables */
 
 var lxim, lxip, letam, letap, lzetam, lzetap: [Elems] index(Elems);
 
-for (xm,xp,em,ep,zm,zp) in zip(lxim, lxip, letam, letap, lzetam, lzetap) do
-  reader.read(xm,xp,em,ep,zm,zp);
 
-if debugIO {
-  writeln("greek stuff:");
-  for (xm,xp,em,ep,zm,zp) in zip(lxim, lxip, letam, letap, lzetam, lzetap) do
-    writeln((xm,xp,em,ep,zm,zp));
-}
+/* the X, Y, Z Symmetry values */
 
-
-/* Declare and read in the X, Y, Z Symmetry values */
-
-// NOTE: The integers returned by readNodeSet below are not actually
-// used currently because Chapel prefers iterating over arrays directly
-// (i.e. 'forall x in XSym' rather than 'forall i in 0..#numSymX ... XSym[i]').
-//
-// Moreover, an array's size can also be queried directly
-// (i.e., 'const numSymX = XSym.numElements')
-//
-// We used the style shown here simply to demonstrate a common idiom
-// in current unstructured codes.
-
-const (numSymX, XSym) = readNodeset(reader),
-      (numSymY, YSym) = readNodeset(reader),
-      (numSymZ, ZSym) = readNodeset(reader);
-
-if debugIO {
-  writeln("XSym:\n", XSym);
-  writeln("YSym:\n", YSym);
-  writeln("ZSym:\n", ZSym);
-}
-
-
-/* Declare and read in the free surfaces */
-
-const (numFreeSurf, freeSurface) = readNodeset(reader);
-
-if debugIO then
-  writeln("freeSurface:\n", freeSurface);
-
-
-/* Assert that we're at the end of the input file as a sanity check */
-
-reader.assertEOF("Input file format error (extra data at EOF)");
+var XSym, YSym, ZSym: sparse subdomain(Nodes);
 
 
 
@@ -297,8 +232,7 @@ var time = 0.0,          // current time
 proc main() {
   if debug then writeln("Lulesh -- Problem Size = ", numElems);
 
-  LuleshData();
-  if debug then testInit();
+  initLulesh();
 
   var st: real;
   if doTiming then st = getCurrentTime();
@@ -343,22 +277,36 @@ proc main() {
 
 /* Initialization functions */
 
-proc LuleshData() {
+proc initLulesh() {
+  // initialize the coordinates
+  initCoordinates(x,y,z);
+
+  // initialize the element to node mapping
+  initElemToNodeMapping(elemToNode);
+
+  // initialize the greek symbols
+  initGreekVars(lxim, lxip, letam, letap, lzetam, lzetap);
+
+  // initialize the symmetry plane locations
+  initXSyms(XSym);
+  initYSyms(YSym);
+  initZSyms(ZSym);
+
   /* embed hexehedral elements in nodal point lattice */
   //calculated on the fly using: elemToNodes(i: index(Elems)): index(Nodes)
 
-  /* initialize field data */
-  initializeFieldData();
+  // initialize the masses
+  initMasses();
 
-  /* set up boundary condition information */
-  const octantCorner = setupBoundaryConditions();
+  // initialize the boundary conditions
+  const octantCorner = initBoundaryConditions();
 
-  //deposit energy for Sedov Problem
+  // deposit the energy for Sedov Problem
   e[octantCorner] = initialEnergy;
 }
 
 
-proc initializeFieldData() {
+proc initMasses() {
   // This is a temporary array used to accumulate masses in parallel
   // without losing updates by using 'atomic' variables
   var massAccum: [Nodes] atomic real;
@@ -386,10 +334,18 @@ proc initializeFieldData() {
   for i in Nodes {
     nodalMass[i] = massAccum[i].read() / 8.0;
   }
+
+  if debug {
+    writeln("ElemMass:");
+    for mass in elemMass do writeln(mass);
+
+    writeln("NodalMass:");
+    for mass in nodalMass do writeln(mass);
+  }
 }
 
 
-proc setupBoundaryConditions() {
+proc initBoundaryConditions() {
   var surfaceNode: [Nodes] int;
 
   forall n in XSym do
@@ -438,6 +394,13 @@ proc setupBoundaryConditions() {
 
   surfaceNode = 0;
 
+  /* the free surfaces */
+
+  var freeSurface: sparse subdomain(Nodes);
+
+  // initialize the free surface
+  initFreeSurface(freeSurface);
+
   forall n in freeSurface do
     surfaceNode[n] = 1;
 
@@ -452,6 +415,11 @@ proc setupBoundaryConditions() {
     if ((mask & 0xcc) == 0xcc) then elemBC[e] |= ETA_P_FREE;
     if ((mask & 0x99) == 0x99) then elemBC[e] |= XI_M_FREE;
     if ((mask & 0x66) == 0x66) then elemBC[e] |= XI_P_FREE;
+  }
+
+  if debug {
+    writeln("elemBC:");
+    for b in elemBC do writeln(b);
   }
 
   return loc;
@@ -1654,21 +1622,6 @@ iter elemToNodesTuple(e) {
 }
 
 
-/* test & debug routines */
-proc testInit() {
-  writeln("ElemMass:");
-  for mass in elemMass do writeln(mass);
-
-  writeln("NodalMass:");
-  for mass in nodalMass do writeln(mass);
-
-  writeln("elemBC:");
-  for b in elemBC do writeln(b);
-
-  writeln("done with initialization");
-}
-
-
 proc deprint(title:string, x:[?D] real, y:[D]real, z:[D]real) {
   writeln(title);
   for i in D {
@@ -1680,12 +1633,3 @@ proc deprint(title:string, x:[?D] real, y:[D]real, z:[D]real) {
 }
 
 
-proc readNodeset(reader) {
-  const arrSize = reader.read(int);
-  var A: [0..#arrSize] index(Nodes);
-
-  for a in A do
-    reader.read(a);
-
-  return (arrSize, A);
-}

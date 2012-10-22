@@ -1,1 +1,2 @@
---fast -sprintWarnings=false
+--fast -sprintWarnings=false -M../../../release/examples/benchmarks/lulesh
+
