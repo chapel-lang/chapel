@@ -545,6 +545,11 @@ negative floating point 0.0 not supported
 xt-intel-specific regressions (in addition to xt-cle errors above)
 ==================================================================
 
+runtime assertion (started 10/15/12)
+------------------------------------
+[Error matching program output for io/ferguson/io_test]
+
+
 alignment mismatch in output (04/08/12)
 ---------------------------------------
 [Error matching program output for types/range/hilde/align]

@@ -33,7 +33,7 @@ These things regularly cause noise in testing:
 SIGABRT on gasnet-fast runs (UNASSIGNED)
 ----------------------------------------
 release/examples/benchmarks/hpcc/ra (compopts: 1) (10/13/12)
-mutilocale/deitz/needMultiLocales/diagnostics/test_private_broadcast_large (10/11/12)
+mutilocale/deitz/needMultiLocales/diagnostics/test_private_broadcast_large (10/11/12, 10/21/12)
 ra-atomics (UNASSIGNED) (10/11/12)
 
 SSCA2_main (UNASSIGNED)
