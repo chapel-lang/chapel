@@ -160,113 +160,98 @@ proc initGreekVars(lxim, lxip, letam, letap, lzetam, lzetap) {
 
 // read/compute the X, Y, Z symmetry planes
 
-inline proc initXSyms() {
+inline proc initXSyms(Nodes) {
+  var XSym: sparse subdomain(Nodes);
+
   if (initFromFile) {
-    return readNodeset(reader, "XSym");
+    readNodeset(XSym);
   } else {
-    const size = DimNodeFace.size;
-    var A: [0..#size] int;
-
     for ((i,j),ind) in zip(DimNodeFace, 0..) do
-      A[ind] = nodeIdx3DTo1D(i,j,0);
-
-    if debugInit {
-      writeln(size);
-      for a in A do
-        writeln(a);
-    }
-
-    return (size, A);
+      XSym += nodeIdx3DTo1D(i,j,0);
   }
+
+  if debugInit {
+    writeln(XSym.numIndices);
+    for x in XSym do
+      writeln(x);
+  }
+
+  return (XSym.numIndices, XSym);
 }
 
-inline proc initYSyms() {
+inline proc initYSyms(Nodes) {
+  var YSym: sparse subdomain(Nodes);
+
   if (initFromFile) {
-    return readNodeset(reader, "YSym");
+    readNodeset(YSym);
   } else {
-    const size = DimNodeFace.size;
-    var A: [0..#size] int;
-
     for ((i,j),ind) in zip(DimNodeFace, 0..) do
-      A[ind] = nodeIdx3DTo1D(i,0,j);
-
-    if debugInit {
-      writeln(size);
-      for a in A do
-        writeln(a);
-    }
-    return (size, A);
+      YSym += nodeIdx3DTo1D(i,0,j);
   }
+
+  if debugInit {
+    writeln(YSym.numIndices);
+    for x in YSym do
+      writeln(x);
+  }
+
+  return (YSym.numIndices, YSym);
 }
 
-inline proc initZSyms() {
+inline proc initZSyms(Nodes) {
+  var ZSym: sparse subdomain(Nodes);
+
   if (initFromFile) {
-    return readNodeset(reader, "ZSym");
+    readNodeset(ZSym);
   } else {
-    const size = DimNodeFace.size;
-    var A: [0..#size] int;
-
     for ((i,j),ind) in zip(DimNodeFace, 0..) do
-      A[ind] = nodeIdx3DTo1D(0,i,j);
-
-    if debugInit {
-      writeln(size);
-      for a in A do
-        writeln(a);
-    }
-
-    return (size, A);
+      ZSym += nodeIdx3DTo1D(0,i,j);
   }
+
+  if debugInit {
+    writeln(ZSym.numIndices);
+    for x in ZSym do
+      writeln(x);
+  }
+
+  return (ZSym.numIndices, ZSym);
 }
 
 
 // read/compute the free surface
 
-inline proc setupFreeSurface() {
+inline proc setupFreeSurface(Nodes) {
+  var freeSurface: sparse subdomain(Nodes);
+
   if (initFromFile) {
-    return readNodeset(reader, "freeSurface");
-    // TODO: enable    reader.assertEOF("Input file format error (extra data at EOF)");
-  } else {
-    const size = DimNodeFace.size + (DimNodeFace.size - nodesPerEdge) + 
-                   (DimNodeFace.size - (nodesPerEdge + nodesPerEdge - 1));
-    var A: [0..#size] int;
-
-    var ind = 0;
-    for (i,j) in DimNodeFace {
-      A[ind] = nodeIdx3DTo1D(i,j,nodesPerEdge-1);
-      ind += 1;
-    }
-                  
-    for (i,j) in DimNodeFace.interior(0,-(nodesPerEdge-1)) {
-      A[ind] = nodeIdx3DTo1D(i,nodesPerEdge-1,j);
-      ind += 1;
-    }
-
-    for (i,j) in DimNodeFace.interior(-(nodesPerEdge-1),-(nodesPerEdge-1)) {
-      A[ind] = nodeIdx3DTo1D(nodesPerEdge-1,i,j);
-      ind += 1;
-    }
-
-    if (ind != size) then halt("Didn't compute enough free surfaces");
-
-    use Sort;
-    QuickSort(A);
-
-    if debugInit {
-      writeln(size);
-      for a in A do
-        writeln(a);
-    }
-
-    return (size, A);
-  }
-}
-
-proc finalizeInitialization() {
-  if (initFromFile) then
+    readNodeset(freeSurface);
     reader.assertEOF("Input file format error (extra data at EOF)");
-}
+  } else {
+    for (i,j) in DimNodeFace do
+      freeSurface += nodeIdx3DTo1D(i,j,nodesPerEdge-1);
+                  
+    for (i,j) in DimNodeFace do
+      freeSurface += nodeIdx3DTo1D(i,nodesPerEdge-1,j);
 
+    for (i,j) in DimNodeFace do
+      freeSurface += nodeIdx3DTo1D(nodesPerEdge-1,i,j);
+  }
+
+  if debugInit {
+    use Sort;
+
+    const size = freeSurface.size;
+    var sortedSurface: [0..#size] int;
+
+    for (a,b) in zip(sortedSurface, freeSurface) do a = b;
+    QuickSort(sortedSurface);
+
+    writeln(size);
+    for b in sortedSurface do
+      writeln(b);
+  }
+  return (freeSurface.numIndices, freeSurface);
+}
 
 
 // Helper routines for reading from a file
@@ -274,16 +259,11 @@ proc finalizeInitialization() {
 /* This is a helper routine to read a size and array from a file and
    return it */
 
-proc readNodeset(reader, lbl) {
+proc readNodeset(nodeset) {
   const arrSize = reader.read(int);
-  var A: [0..#arrSize] int;  // we may want to make this 'index(Nodes)'
 
-  for a in A do
-    reader.read(a);
-
-  if debugInit then writeln(lbl, ": ", A);
-
-  return (arrSize, A);
+  for a in 0..#arrSize do
+    nodeset += reader.read(int);
 }
 
 

@@ -155,22 +155,15 @@ initGreekVars(lxim, lxip, letam, letap, lzetam, lzetap);
 // in current unstructured codes.
 
                               
-const (numSymX, XSym) = initXSyms(),
-      (numSymY, YSym) = initYSyms(),
-      (numSymZ, ZSym) = initZSyms();
+const (numSymX, XSym) = initXSyms(Nodes),
+      (numSymY, YSym) = initYSyms(Nodes),
+      (numSymZ, ZSym) = initZSyms(Nodes);
 
 
 /* Declare and read in the free surfaces */
 
                               
-const (numFreeSurf, freeSurface) = setupFreeSurface();
-
-
-
-/* Assert that we're at the end of the input file as a sanity check */
-
-finalizeInitialization();
-
+const (numFreeSurf, freeSurface) = setupFreeSurface(Nodes);
 
 
 /* Constants */
