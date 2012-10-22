@@ -87,7 +87,7 @@ param XI_M        = 0x003,
 
 /* Set up the problem size */
 
-const (numElems, numNodes) = getProblemSize();
+const (numElems, numNodes) = initProblemSize();
 
 
 /* Declare abstract problem domains */
@@ -103,13 +103,11 @@ const Elems = if useBlockDist then ElemSpace dmapped Block(ElemSpace)
       Nodes = if useBlockDist then NodeSpace dmapped Block(NodeSpace)
                               else NodeSpace;
 
-
                               
-/* Declare and initialize the coordinates */
+/* The coordinates */
 
 var x, y, z: [Nodes] real;
                               
-InitializeCoordinates(x,y,z);
 
 
 
@@ -128,34 +126,16 @@ param nodesPerElem = 8;
 
 var elemToNode: [Elems] nodesPerElem*index(Nodes);
 
-initElemToNodeMapping(elemToNode);
 
-
-
-
-
-/* Declare and read in the Greek variables */
+/* the Greek variables */
 
 var lxim, lxip, letam, letap, lzetam, lzetap: [Elems] index(Elems);
 
-initGreekVars(lxim, lxip, letam, letap, lzetam, lzetap);
 
-
-
-/* Declare and read in the X, Y, Z Symmetry values */
+/* the X, Y, Z Symmetry values */
 
 var XSym, YSym, ZSym: sparse subdomain(Nodes);
-                              
-initXSyms(XSym);
-initYSyms(YSym);
-initZSyms(ZSym);
 
-
-/* Declare and read in the free surfaces */
-
-var freeSurface: sparse subdomain(Nodes);
-                              
-setupFreeSurface(freeSurface);
 
 
 /* Constants */
@@ -253,8 +233,7 @@ var time = 0.0,          // current time
 proc main() {
   if debug then writeln("Lulesh -- Problem Size = ", numElems);
 
-  LuleshData();
-  if debug then testInit();
+  initLulesh();
 
   var st: real;
   if doTiming then st = getCurrentTime();
@@ -294,22 +273,36 @@ proc main() {
 
 /* Initialization functions */
 
-proc LuleshData() {
+proc initLulesh() {
+  // initialize the coordinates
+  initCoordinates(x,y,z);
+
+  // initialize the element to node mapping
+  initElemToNodeMapping(elemToNode);
+
+  // initialize the greek symbols
+  initGreekVars(lxim, lxip, letam, letap, lzetam, lzetap);
+
+  // initialize the symmetry plane locations
+  initXSyms(XSym);
+  initYSyms(YSym);
+  initZSyms(ZSym);
+
   /* embed hexehedral elements in nodal point lattice */
   //calculated on the fly using: elemToNodes(i: index(Elems)): index(Nodes)
 
-  /* initialize field data */
-  initializeFieldData();
+  // initialize the masses
+  initMasses();
 
-  /* set up boundary condition information */
-  const octantCorner = setupBoundaryConditions();
+  // initialize the boundary conditions
+  const octantCorner = initBoundaryConditions();
 
-  //deposit energy for Sedov Problem
+  // deposit the energy for Sedov Problem
   e[octantCorner] = initialEnergy;
 }
 
 
-proc initializeFieldData() {
+proc initMasses() {
   // This is a temporary array used to accumulate masses in parallel
   // without losing updates by using 'atomic' variables
   var massAccum: [Nodes] atomic real;
@@ -337,10 +330,18 @@ proc initializeFieldData() {
   for i in Nodes {
     nodalMass[i] = massAccum[i].read() / 8.0;
   }
+
+  if debug {
+    writeln("ElemMass:");
+    for mass in elemMass do writeln(mass);
+
+    writeln("NodalMass:");
+    for mass in nodalMass do writeln(mass);
+  }
 }
 
 
-proc setupBoundaryConditions() {
+proc initBoundaryConditions() {
   var surfaceNode: [Nodes] int;
 
   forall n in XSym do
@@ -389,6 +390,13 @@ proc setupBoundaryConditions() {
 
   surfaceNode = 0;
 
+  /* the free surfaces */
+
+  var freeSurface: sparse subdomain(Nodes);
+
+  // initialize the free surface
+  initFreeSurface(freeSurface);
+
   forall n in freeSurface do
     surfaceNode[n] = 1;
 
@@ -403,6 +411,11 @@ proc setupBoundaryConditions() {
     if ((mask & 0xcc) == 0xcc) then elemBC[e] |= ETA_P_FREE;
     if ((mask & 0x99) == 0x99) then elemBC[e] |= XI_M_FREE;
     if ((mask & 0x66) == 0x66) then elemBC[e] |= XI_P_FREE;
+  }
+
+  if debug {
+    writeln("elemBC:");
+    for b in elemBC do writeln(b);
   }
 
   return loc;
@@ -1608,21 +1621,6 @@ iter elemToNodes(elem) {
 iter elemToNodesTuple(e) {
   for i in 1..nodesPerElem do
     yield (elemToNode[e][i], i);
-}
-
-
-/* test & debug routines */
-proc testInit() {
-  writeln("ElemMass:");
-  for mass in elemMass do writeln(mass);
-
-  writeln("NodalMass:");
-  for mass in nodalMass do writeln(mass);
-
-  writeln("elemBC:");
-  for b in elemBC do writeln(b);
-
-  writeln("done with initialization");
 }
 
 

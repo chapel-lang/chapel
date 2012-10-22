@@ -54,6 +54,69 @@ This directory's contents are as follows:
   lulesh*.perf*    :/
 
 
+---------
+Callgraph
+---------
+
+module-level initialization
+main
+ -> initLulesh
+    -> initCoordinates
+    -> initElemToNodeMapping
+    -> initGreekVars
+    -> initXSyms
+    -> initYSyms
+    -> initZSyms
+    -> initMasses
+       -> localizeNeighborNodes
+    -> initBoundaryConditions
+       -> initFreeSurface
+ main loop {
+   -> TimeIncrement
+   -> LagrangeLeapFrog
+      -> LagrangeNodal
+         -> CalcForceForNodes
+            -> CalcVolumeForceForElems
+               -> InitStressTermsForElems
+               -> IntegrateStressForElems
+                  -> localizeNeighborNodes
+                  -> CalcElemShapeFunctionDerivatives
+                  -> CalcElemNodeNormals
+                     -> ElemFaceNormal (nested)
+                  -> SumElemStressesToNodeForces
+               -> CalcHourglassControlForElems
+                  -> localizeNeighborNodes
+                  -> CalcElemVolumeDerivative
+                  -> CalcFBHourglassForceForElems
+                     -> localizeNeighborNodes
+                     -> CalcElemFBHourglassForce
+         -> CalcAccelerationForNodes
+         -> ApplyAccelerationBoundaryConditionsForNodes
+         -> CalcVelocityForNodes
+         -> CalcPositionForNodes
+      -> LagrangeElements
+         -> CalcLagrangeElements
+            -> CalcKinematicsForElems
+               -> localizeNeighborNodes
+               -> CalcElemVolume
+                  -> TripleProduct
+               -> CalcElemCharacteristicLength
+               -> CalcElemShapeFunctionDerivatives
+               -> CalcElemVelocityGradient
+         -> CalcQForElems
+            -> CalcMonotonicQGradientsForElems
+               -> localizeNeighborNodes
+            -> CalcMonotonicQForElems
+         -> ApplyMaterialPropertiesForElems
+            -> EvalEOSForElems
+         -> UpdateVolumesForElems
+      -> CalcTimeConstraintsForElems
+         -> CalcCourantConstraintForElems
+            -> computeDTF
+         -> CalcHydryoConstraintForElems
+   -> deprint (if debug)
+ }
+
 -----
 TODOs
 -----

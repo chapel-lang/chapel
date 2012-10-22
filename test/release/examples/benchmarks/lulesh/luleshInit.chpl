@@ -47,7 +47,7 @@ const nodesPerEdge = elemsPerEdge + 1,
 
 // read/compute the problem size
 
-proc getProblemSize() {
+proc initProblemSize() {
   const (numElems, numNodes) = if (initFromFile) then
                                  reader.read(int, int)
                                else
@@ -62,7 +62,7 @@ proc getProblemSize() {
 
 // read/compute the coordinates
 
-proc InitializeCoordinates(X, Y, Z) {
+proc initCoordinates(X, Y, Z) {
   if (initFromFile) {
     for (x,y,z) in zip(X,Y,Z) do
       reader.read(x, y, z);
@@ -195,7 +195,7 @@ inline proc initZSyms(ZSym) {
 
 // read/compute the free surface
 
-inline proc setupFreeSurface(freeSurface) {
+inline proc initFreeSurface(freeSurface) {
   if (initFromFile) {
     readNodeset(freeSurface);
     reader.assertEOF("Input file format error (extra data at EOF)");

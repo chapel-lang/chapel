@@ -15,7 +15,7 @@ all: $(TARGETS)
 clean: FORCE
 	rm -f $(TARGETS) $(REALS)
 
-lulesh: lulesh.chpl
+lulesh: lulesh.chpl luleshInit.chpl
 	$(CHPL) -o $@ $(CHPL_FLAGS) $<
 
 FORCE:
