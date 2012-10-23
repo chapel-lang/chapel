@@ -166,7 +166,9 @@ const u_cut = 1.0e-7,           /* velocity tolerance */
       deltatimemultub = 1.2,
       dtmax = 1.0e-2;           /* maximum allowable time increment */
 
-config const stoptime = 1.0e-2;        /* end time for simulation */
+                              
+config const stoptime = 1.0e-2,        /* end time for simulation */
+             maxcycles = max(int);     /* max number of cycles to simulate */
 
 
 /* The list of material elements */
@@ -237,7 +239,7 @@ proc main() {
 
   var st: real;
   if doTiming then st = getCurrentTime();
-  while (time < stoptime) {
+  while (time < stoptime && cycle < maxcycles) {
     TimeIncrement();
 
     LagrangeLeapFrog();
@@ -249,6 +251,9 @@ proc main() {
     }
     if showProgress then writeln("time = ", format("%e", time), 
                                  ", dt=", format("%e", deltatime));
+  }
+  if (cycle == maxcycles) {
+    writeln("Stopped early due to reaching maxnumsteps");
   }
   if doTiming {
     const et = getCurrentTime();

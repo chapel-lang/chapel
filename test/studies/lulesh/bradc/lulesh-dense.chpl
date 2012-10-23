@@ -165,7 +165,7 @@ const u_cut = 1.0e-7,           /* velocity tolerance */
       dtmax = 1.0e-2;           /* maximum allowable time increment */
 
 config const stoptime = 1.0e-2,      /* end time for simulation */
-             maxnumsteps = max(int), /* max # of steps to take */
+             maxcycles = max(int),   /* max # of steps to take */
              dtfixed = -1.0e-7       /* fixed time increment */
             ;        
 
@@ -235,8 +235,7 @@ proc main() {
 
   var st: real;
   if doTiming then st = getCurrentTime();
-  var numsteps = 0;
-  while (time < stoptime && numsteps < maxnumsteps) {
+  while (time < stoptime && cycle < maxcycles) {
     TimeIncrement();
 
     LagrangeLeapFrog();
@@ -248,9 +247,8 @@ proc main() {
     }
     if showProgress then writeln("time = ", format("%e", time), 
                                  ", dt=", format("%e", deltatime));
-    numsteps += 1;
   }
-  if (numsteps == maxnumsteps) {
+  if (cycle == maxcycles) {
     writeln("Stopped early due to reaching maxnumsteps");
   }
   if doTiming {
@@ -772,9 +770,6 @@ proc CalcPressureForElems(p_new: [?D] real, bvc, pbvc,
                           e_old, compression, vnewc,
                           pmin: real, p_cut: real, eosvmax: real) {
 
-  //
-  // TODO: Uncomment local once sparse domain is distributed
-  //
   forall i in D do local {
     const c1s = 2.0 / 3.0;
     bvc[i] = c1s * (compression[i] + 1.0);
