@@ -58,6 +58,8 @@ config var reproducible = false, verbose = false;
 
 // skip some things
 config var verify = true;
+config param maxBlkSize = 200;
+assert(blkSize <= maxBlkSize);
 
 //
 // The program entry point, currently module initialization
@@ -558,17 +560,24 @@ proc psSwap(k, pr, out wasLocal) {
         } else {
           // need to copy the two sub-rows between two locales
           var locABk => Ab._value.dsiLocalSlice1((k, mycol));
-          //var locKk  => K._value.dsiLocalSlice1((0, mycol));
-          //for j in mycol do locKk[j] = locABk;
-          
+
+          // using a tuple for more efficient data transfer
+          var tt: maxBlkSize*elemType;
+          for j in mycol do tt[j-js+1] = locABk[j];
+
+          // needed? for value forwarding
+          const myStart = mycol.low, myEnd = mycol.high;
           on targetLocalesRepl[lidpr1, lid2] {
-            var locABpr => Ab._value.dsiLocalSlice1((pr, mycol));
-            // replK is available for temp storate
-            var locKpr  => replK._value.dsiLocalSlice1((0, mycol));
-            locKpr = locABk; // TODO: bulkify, unless it is already
-            for j in mycol do locABpr[j] <=> locKpr[j];
-            locABk = locKpr; // TODO: bulkify, unless it is already
+            var pp = tt;
+            local {
+              const mycol = myStart..myEnd;
+              var locABpr => Ab._value.dsiLocalSlice1((pr, mycol));
+              for j in mycol do pp[j-myStart+1] <=> locABpr[j];
+            }
+            tt = pp;
           } // on lidpr1
+
+          for j in mycol do locABk[j] = tt[j-js+1];
 
         } // if lidk1 == lidpr1
       } // forall js
