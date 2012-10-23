@@ -43,8 +43,7 @@ use luleshInit;   // to get I/O version of setting up data structures
    CHPL_COMM and can be overridden on the compiler command-line using
    -suseBlockDist=[true|false] */
 
-config param useBlockDist = (CHPL_COMM != "none"),  // block-distribute arrays?
-             printWarnings = true;                  // print warnings?
+config param useBlockDist = (CHPL_COMM != "none");  // block-distribute arrays?
 
 
 /* Configuration constants: Override defaults on executable's command-line */
