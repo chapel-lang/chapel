@@ -236,6 +236,8 @@ proc main() {
   var st: real;
   if doTiming then st = getCurrentTime();
   while (time < stoptime && cycle < maxcycles) {
+    const iterTime = if showProgress then getCurrentTime() else 0.0;
+
     TimeIncrement();
 
     LagrangeLeapFrog();
@@ -245,8 +247,10 @@ proc main() {
       deprint("[[ Positions ]]", x, y, z);
       deprint("[[ p, e, q ]]", p, e, q);
     }
-    if showProgress then writeln("time = ", format("%e", time), 
-                                 ", dt=", format("%e", deltatime));
+    if showProgress then
+      writeln("time = ", format("%e", time), ", dt=", format("%e", deltatime),
+              if doTiming then ", elapsed = " + (getCurrentTime()-iterTime) 
+                          else "");
   }
   if (cycle == maxcycles) {
     writeln("Stopped early due to reaching maxnumsteps");
@@ -254,6 +258,7 @@ proc main() {
   if doTiming {
     const et = getCurrentTime();
     writeln("Total Time: ", et-st);
+    writeln("Time/Cycle: ", (et-st)/cycle);
   }
   writeln("Number of cycles: ", cycle);
 
