@@ -443,7 +443,7 @@ inline proc localizeNeighborNodes(eli: index(Elems),
                                   z: [] real, ref z_local: 8*real) {
 
   for param i in 1..nodesPerElem {
-    const noi = elemToNode.localAccess[eli][i];
+    const noi = elemToNode[eli][i];
     
     x_local[i] = x[noi];
     y_local[i] = y[noi];
@@ -456,7 +456,7 @@ inline proc localizeNeighborNodes(eli: index(Elems),
                                   xyz: [] 3*real, ref xyz_local: 3*(8*real)) {
 
   for param i in 1..nodesPerElem {
-    const noi = elemToNode.localAccess[eli][i];
+    const noi = elemToNode[eli][i];
     const locxyz = xyz[noi];
 
     for param j in 1..3 do
@@ -469,7 +469,7 @@ inline proc localizeNeighborNodes(eli: index(Elems),
                                   xyz: [] 3*real, ref xyz_local: 8*(3*real)) {
 
   for param i in 1..nodesPerElem {
-    const noi = elemToNode.localAccess[eli][i];
+    const noi = elemToNode[eli][i];
 
     xyz_local[i] = xyz[noi];
   }
@@ -975,7 +975,7 @@ proc CalcFBHourglassForceForElems(determ, xyz8n, dvdxyz) {
   /* compute the hourglass modes */
   forall eli in Elems {
     var hourgam: 8*(4*real);
-    var volinv = 1.0 / determ.localAccess[eli];
+    var volinv = 1.0 / determ[eli];
     var ss1, mass1, volume13: real;
     var hgfxyz: 8*(3*real);
     var coefficient: real;
@@ -984,7 +984,7 @@ proc CalcFBHourglassForceForElems(determ, xyz8n, dvdxyz) {
 
     /*
     for param i in 1..nodesPerElem {
-      const noi = elemToNode.localAccess[eli][i];
+      const noi = elemToNode[eli][i];
     
       xd1[i] = xd[noi];
       yd1[i] = yd[noi];
@@ -1002,22 +1002,22 @@ proc CalcFBHourglassForceForElems(determ, xyz8n, dvdxyz) {
         var hourmodxyz: 3*real;
         // reduction
         for param j in 1..8 {
-          hourmodxyz += xyz8n.localAccess[eli][j] * gammaCoef[i][j];
+          hourmodxyz += xyz8n[eli][j] * gammaCoef[i][j];
         }
 
         for param j in 1..8 {
           hourgam[j][i] = gammaCoef[i][j] - volinv * 
-            (dvdxyz.localAccess[eli][j][1] * hourmodxyz[1] +
-             dvdxyz.localAccess[eli][j][2] * hourmodxyz[2] +
-             dvdxyz.localAccess[eli][j][3] * hourmodxyz[3]);
+            (dvdxyz[eli][j][1] * hourmodxyz[1] +
+             dvdxyz[eli][j][2] * hourmodxyz[2] +
+             dvdxyz[eli][j][3] * hourmodxyz[3]);
         }
       }
 
       /* compute forces */
       /* store forces into h arrays (force arrays) */
-      ss1 = ss.localAccess[eli];
-      mass1 = elemMass.localAccess[eli];
-      volume13 = cbrt(determ.localAccess[eli]);
+      ss1 = ss[eli];
+      mass1 = elemMass[eli];
+      volume13 = cbrt(determ[eli]);
 
       coefficient = - hgcoef * 0.01 * ss1 * mass1 / volume13;
 
@@ -1026,7 +1026,7 @@ proc CalcFBHourglassForceForElems(determ, xyz8n, dvdxyz) {
     //    stopCommDiagnostics();
     //    writeln(getCommDiagnostics());
 
-    const myElemToNode = elemToNode.localAccess[eli];
+    const myElemToNode = elemToNode[eli];
     for param i in 1..nodesPerElem {
       const noi = myElemToNode[i];
 
