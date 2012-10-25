@@ -440,9 +440,9 @@ proc initBoundaryConditions() {
 /* Helper functions */
 
 inline proc localizeNeighborNodes(eli: index(Elems),
-                                  x: [] real, inout x_local: 8*real,
-                                  y: [] real, inout y_local: 8*real,
-                                  z: [] real, inout z_local: 8*real) {
+                                  x: [] real, ref x_local: 8*real,
+                                  y: [] real, ref y_local: 8*real,
+                                  z: [] real, ref z_local: 8*real) {
 
   for (noi, t) in elemToNodesTuple(eli) {
     x_local[t] = x[noi];
@@ -528,10 +528,10 @@ proc InitStressTermsForElems(p, q, sigxx, sigyy, sigzz: [?D] real) {
 
 
 proc CalcElemShapeFunctionDerivatives(x: 8*real, y: 8*real, z: 8*real, 
-                                      out b_x: 8*real,
-                                      out b_y: 8*real,
-                                      out b_z: 8*real, 
-                                      out volume: real) {
+                                      ref b_x: 8*real,
+                                      ref b_y: 8*real,
+                                      ref b_z: 8*real, 
+                                      ref volume: real) {
 
   var fjxxi = .125 * ( (x[7]-x[1]) + (x[6]-x[4]) - (x[8]-x[2]) - (x[5]-x[3]) ),
       fjxet = .125 * ( (x[7]-x[1]) - (x[6]-x[4]) + (x[8]-x[2]) - (x[5]-x[3]) ),
@@ -594,7 +594,7 @@ proc CalcElemShapeFunctionDerivatives(x: 8*real, y: 8*real, z: 8*real,
 }
 
 
-proc CalcElemNodeNormals(out pfx: 8*real, out pfy: 8*real, out pfz: 8*real, 
+proc CalcElemNodeNormals(ref pfx: 8*real, ref pfy: 8*real, ref pfz: 8*real, 
                          x: 8*real, y: 8*real, z: 8*real) {
 
   proc ElemFaceNormal(param n1, param n2, param n3, param n4) {
@@ -628,9 +628,9 @@ proc SumElemStressesToNodeForces(b_x: 8*real, b_y: 8*real, b_z: 8*real,
                                  stress_xx:real,
                                  stress_yy:real,
                                  stress_zz: real, 
-                                 out fx: 8*real,
-                                 out fy: 8*real,
-                                 out fz: 8*real) {
+                                 ref fx: 8*real,
+                                 ref fy: 8*real,
+                                 ref fz: 8*real) {
   for param i in 1..8 {
     fx[i] = -(stress_xx * b_x[i]);
     fy[i] = -(stress_yy * b_y[i]);
@@ -672,9 +672,9 @@ proc CalcElemVolumeDerivative(x: 8*real, y: 8*real, z: 8*real) {
 inline proc CalcElemFBHourglassForce(xd: 8*real, yd: 8*real, zd: 8*real,
                                      hourgam: 8*(4*real),
                                      coefficient: real,
-                                     out hgfx: 8*real,
-                                     out hgfy: 8*real,
-                                     out hgfz: 8*real) {
+                                     ref hgfx: 8*real,
+                                     ref hgfy: 8*real,
+                                     ref hgfz: 8*real) {
   var hx, hy, hz: 4*real;
 
   // reduction
@@ -728,7 +728,7 @@ proc CalcElemCharacteristicLength(x, y, z, volume) {
 
 
 proc CalcElemVelocityGradient(xvel, yvel, zvel, pfx,  pfy, pfz,
-                              detJ, out d: 6*real) {
+                              detJ, ref d: 6*real) {
   const inv_detJ = 1.0 / detJ;
 
   d[1] = inv_detJ * ( pfx[1] * (xvel[1]-xvel[7])
