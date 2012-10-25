@@ -36,7 +36,7 @@
 use Time,       // to get timing routines for benchmarking
     BlockDist;  // for block-distributed arrays
 
-use luleshInit3;   // to get I/O version of setting up data structures
+use luleshInit3, luleshTupleHelp;   // to get I/O version of setting up data structures
 
 /* The 'useBlockDist' configuration parameter says whether or not to
    block-distribute the arrays.  The default depends on the setting of
@@ -476,9 +476,9 @@ inline proc localizeNeighborNodes(eli: index(Elems),
 }
 
 inline proc TripleProduct(xyz1, xyz2, xyz3) {
-  return xyz1[1]*(xyz2[2]*xyz3[3] - xyz2[3]*xyz3[2]) + 
-         xyz2[1]*(xyz1[3]*xyz3[2] - xyz1[2]*xyz3[3]) + 
-         xyz3[1]*(xyz1[2]*xyz2[3] - xyz1[3]*xyz2[2]);
+  return xyz1[X]*(xyz2[Y]*xyz3[Z] - xyz2[Z]*xyz3[Y]) + 
+         xyz2[X]*(xyz1[Z]*xyz3[Y] - xyz1[Y]*xyz3[Z]) + 
+         xyz3[X]*(xyz1[Y]*xyz2[Z] - xyz1[Z]*xyz2[Y]);
 }
 
 
@@ -510,13 +510,6 @@ proc InitStressTermsForElems(p, q, sigxxyyzz) {
   }
 }
 
-inline proc *(v:real, t:3*real) {
-  return (v*t[1], v*t[2], v*t[3]);
-}
-
-inline proc *(t:3*real, v:real) {
-  return (v*t[1], v*t[2], v*t[3]);
-}
 
 proc CalcElemShapeFunctionDerivatives(xyz: 8*(3*real),
                                       ref b_xyz: 8*(3*real),
@@ -529,17 +522,17 @@ proc CalcElemShapeFunctionDerivatives(xyz: 8*(3*real),
   /* compute cofactors */
   var cjxyzxi, cjxyzet, cjxyzze: 3*real;
 
-  cjxyzxi[1] =    (fjxyzet[2] * fjxyzze[3]) - (fjxyzet[3] * fjxyzze[2]);
-  cjxyzet[1] =  - (fjxyzxi[2] * fjxyzze[3]) + (fjxyzxi[3] * fjxyzze[2]);
-  cjxyzze[1] =    (fjxyzxi[2] * fjxyzet[3]) - (fjxyzxi[3] * fjxyzet[2]);
+  cjxyzxi[X] =    (fjxyzet[Y] * fjxyzze[Z]) - (fjxyzet[Z] * fjxyzze[Y]);
+  cjxyzet[X] =  - (fjxyzxi[Y] * fjxyzze[Z]) + (fjxyzxi[Z] * fjxyzze[Y]);
+  cjxyzze[X] =    (fjxyzxi[Y] * fjxyzet[Z]) - (fjxyzxi[Z] * fjxyzet[Y]);
 
-  cjxyzxi[2] =  - (fjxyzet[1] * fjxyzze[3]) + (fjxyzet[3] * fjxyzze[1]);
-  cjxyzet[2] =    (fjxyzxi[1] * fjxyzze[3]) - (fjxyzxi[3] * fjxyzze[1]);
-  cjxyzze[2] =  - (fjxyzxi[1] * fjxyzet[3]) + (fjxyzxi[3] * fjxyzet[1]);
+  cjxyzxi[Y] =  - (fjxyzet[X] * fjxyzze[Z]) + (fjxyzet[Z] * fjxyzze[X]);
+  cjxyzet[Y] =    (fjxyzxi[X] * fjxyzze[Z]) - (fjxyzxi[Z] * fjxyzze[X]);
+  cjxyzze[Y] =  - (fjxyzxi[X] * fjxyzet[Z]) + (fjxyzxi[Z] * fjxyzet[X]);
 
-  cjxyzxi[3] =    (fjxyzet[1] * fjxyzze[2]) - (fjxyzet[2] * fjxyzze[1]);
-  cjxyzet[3] =  - (fjxyzxi[1] * fjxyzze[2]) + (fjxyzxi[2] * fjxyzze[1]);
-  cjxyzze[3] =    (fjxyzxi[1] * fjxyzet[2]) - (fjxyzxi[2] * fjxyzet[1]);
+  cjxyzxi[Z] =    (fjxyzet[X] * fjxyzze[Y]) - (fjxyzet[Y] * fjxyzze[X]);
+  cjxyzet[Z] =  - (fjxyzxi[X] * fjxyzze[Y]) + (fjxyzxi[Y] * fjxyzze[X]);
+  cjxyzze[Z] =    (fjxyzxi[X] * fjxyzet[Y]) - (fjxyzxi[Y] * fjxyzet[X]);
 
   /* calculate partials :
      this need only be done for l = 0,1,2,3   since , by symmetry ,
@@ -555,7 +548,7 @@ proc CalcElemShapeFunctionDerivatives(xyz: 8*(3*real),
   b_xyz[8] = -b_xyz[2];
 
   /* calculate jacobian determinant (volume) */
-  volume = 8.0 * ( fjxyzet[1] * cjxyzet[1] + fjxyzet[2] * cjxyzet[2] + fjxyzet[3] * cjxyzet[3]);
+  volume = 8.0 * sumOfProduct(fjxyzet, cjxyzet);
 }
 
 
@@ -564,9 +557,9 @@ proc CalcElemNodeNormals(ref pfxyz: 8*(3*real), xyz: 8*(3*real)) {
   proc ElemFaceNormal(param n1, param n2, param n3, param n4) {
     var bisectXYZ0 = 0.5 * (xyz[n4] + xyz[n3] - xyz[n2] - xyz[n1]),
         bisectXYZ1 = 0.5 * (xyz[n3] + xyz[n2] - xyz[n4] - xyz[n1]),
-        areaXYZ = (0.25 * (bisectXYZ0[2] * bisectXYZ1[3] - bisectXYZ0[3] * bisectXYZ1[2]),
-                   0.25 * (bisectXYZ0[3] * bisectXYZ1[1] - bisectXYZ0[1] * bisectXYZ1[3]),
-                   0.25 * (bisectXYZ0[1] * bisectXYZ1[2] - bisectXYZ0[2] * bisectXYZ1[1]));
+        areaXYZ = (0.25 * (bisectXYZ0[Y] * bisectXYZ1[Z] - bisectXYZ0[Z] * bisectXYZ1[Y]),
+                   0.25 * (bisectXYZ0[Z] * bisectXYZ1[X] - bisectXYZ0[X] * bisectXYZ1[Z]),
+                   0.25 * (bisectXYZ0[X] * bisectXYZ1[Y] - bisectXYZ0[Y] * bisectXYZ1[X]));
 
     var rxyz: 8*(3*real); //results
 
@@ -589,24 +582,19 @@ proc SumElemStressesToNodeForces(b_xyz: 8*(3*real),
     fxyz[i] = -(stress_xxyz * b_xyz[i]);
 }
 
-inline proc /(xyz:3*real, x) {
-  return (xyz[1]/x, xyz[2]/x, xyz[3]/x);
-}
-
-
 proc CalcElemVolumeDerivative(xyz: 8*(3*real)) {
 
   proc VoluDer(param n0, param n1, param n2, param n3, param n4, param n5) {
     var oxyz: 3*real;
-    oxyz = ((xyz[n1][2] + xyz[n2][2]) * (xyz[n0][3] + xyz[n1][3]) - (xyz[n0][2] + xyz[n1][2]) * (xyz[n1][3] + xyz[n2][3]) +
-           (xyz[n0][2] + xyz[n4][2]) * (xyz[n3][3] + xyz[n4][3]) - (xyz[n3][2] + xyz[n4][2]) * (xyz[n0][3] + xyz[n4][3]) -
-            (xyz[n2][2] + xyz[n5][2]) * (xyz[n3][3] + xyz[n5][3]) + (xyz[n3][2] + xyz[n5][2]) * (xyz[n2][3] + xyz[n5][3]),
-    - (xyz[n1][1] + xyz[n2][1]) * (xyz[n0][3] + xyz[n1][3]) + (xyz[n0][1] + xyz[n1][1]) * (xyz[n1][3] + xyz[n2][3]) -
-           (xyz[n0][1] + xyz[n4][1]) * (xyz[n3][3] + xyz[n4][3]) + (xyz[n3][1] + xyz[n4][1]) * (xyz[n0][3] + xyz[n4][3]) +
-            (xyz[n2][1] + xyz[n5][1]) * (xyz[n3][3] + xyz[n5][3]) - (xyz[n3][1] + xyz[n5][1]) * (xyz[n2][3] + xyz[n5][3]),
-    - (xyz[n1][2] + xyz[n2][2]) * (xyz[n0][1] + xyz[n1][1]) + (xyz[n0][2] + xyz[n1][2]) * (xyz[n1][1] + xyz[n2][1]) -
-           (xyz[n0][2] + xyz[n4][2]) * (xyz[n3][1] + xyz[n4][1]) + (xyz[n3][2] + xyz[n4][2]) * (xyz[n0][1] + xyz[n4][1]) +
-            (xyz[n2][2] + xyz[n5][2]) * (xyz[n3][1] + xyz[n5][1]) - (xyz[n3][2] + xyz[n5][2]) * (xyz[n2][1] + xyz[n5][1]));
+    oxyz = ((xyz[n1][Y] + xyz[n2][Y]) * (xyz[n0][Z] + xyz[n1][Z]) - (xyz[n0][Y] + xyz[n1][Y]) * (xyz[n1][Z] + xyz[n2][Z]) +
+           (xyz[n0][Y] + xyz[n4][Y]) * (xyz[n3][Z] + xyz[n4][Z]) - (xyz[n3][Y] + xyz[n4][Y]) * (xyz[n0][Z] + xyz[n4][Z]) -
+            (xyz[n2][Y] + xyz[n5][Y]) * (xyz[n3][Z] + xyz[n5][Z]) + (xyz[n3][Y] + xyz[n5][Y]) * (xyz[n2][Z] + xyz[n5][Z]),
+    - (xyz[n1][X] + xyz[n2][X]) * (xyz[n0][Z] + xyz[n1][Z]) + (xyz[n0][X] + xyz[n1][X]) * (xyz[n1][Z] + xyz[n2][Z]) -
+           (xyz[n0][X] + xyz[n4][X]) * (xyz[n3][Z] + xyz[n4][Z]) + (xyz[n3][X] + xyz[n4][X]) * (xyz[n0][Z] + xyz[n4][Z]) +
+            (xyz[n2][X] + xyz[n5][X]) * (xyz[n3][Z] + xyz[n5][Z]) - (xyz[n3][X] + xyz[n5][X]) * (xyz[n2][Z] + xyz[n5][Z]),
+    - (xyz[n1][Y] + xyz[n2][Y]) * (xyz[n0][X] + xyz[n1][X]) + (xyz[n0][Y] + xyz[n1][Y]) * (xyz[n1][X] + xyz[n2][X]) -
+           (xyz[n0][Y] + xyz[n4][Y]) * (xyz[n3][X] + xyz[n4][X]) + (xyz[n3][Y] + xyz[n4][Y]) * (xyz[n0][X] + xyz[n4][X]) +
+            (xyz[n2][Y] + xyz[n5][Y]) * (xyz[n3][X] + xyz[n5][X]) - (xyz[n3][Y] + xyz[n5][Y]) * (xyz[n2][X] + xyz[n5][X]));
 
     return oxyz/12.0;
   }
@@ -649,12 +637,10 @@ inline proc CalcElemFBHourglassForce(xyzd: 8*(3*real),
 
 proc CalcElemCharacteristicLength(xyz, volume) {
   proc AreaFace(param p0, param p1, param p2, param p3) {
-    var fxyz = (xyz[p2] - xyz[p0]) - (xyz[p3] - xyz[p1]),
-        gxyz = (xyz[p2] - xyz[p0]) + (xyz[p3] - xyz[p1]),
-        area = (fxyz[1] * fxyz[1] + fxyz[2] * fxyz[2] + fxyz[3] * fxyz[3]) *
-               (gxyz[1] * gxyz[1] + gxyz[2] * gxyz[2] + gxyz[3] * gxyz[3]) -
-               (fxyz[1] * gxyz[1] + fxyz[2] * gxyz[2] + fxyz[3] * gxyz[3]) *
-               (fxyz[1] * gxyz[1] + fxyz[2] * gxyz[2] + fxyz[3] * gxyz[3]);
+    const fxyz = (xyz[p2] - xyz[p0]) - (xyz[p3] - xyz[p1]),
+          gxyz = (xyz[p2] - xyz[p0]) + (xyz[p3] - xyz[p1]),
+      area = (sumOfSquare(fxyz) * sumOfSquare(gxyz)) 
+             - sumOfProduct(fxyz, gxyz)**2;
 
     return area ;
   }
@@ -923,9 +909,9 @@ proc IntegrateStressForElems(sigxxyyzz, determ) {
     }
 
     for (noi, t) in elemToNodesTuple(k) {
-      fx[noi].add(fxyz_local[t][1]);
-      fy[noi].add(fxyz_local[t][2]);
-      fz[noi].add(fxyz_local[t][3]);
+      fx[noi].add(fxyz_local[t][X]);
+      fy[noi].add(fxyz_local[t][Y]);
+      fz[noi].add(fxyz_local[t][Z]);
     }
   }
 }
@@ -992,8 +978,6 @@ proc CalcFBHourglassForceForElems(determ, xyz8n, dvdxyz) {
     }
     */
 
-    // TODO:  I THINK MAKING THESE INTO 3-tuples WOULD HELP!!!
-
     localizeNeighborNodes(eli, xyzd, xyzd1);
 
     //    startCommDiagnostics();
@@ -1007,9 +991,9 @@ proc CalcFBHourglassForceForElems(determ, xyz8n, dvdxyz) {
 
         for param j in 1..8 {
           hourgam[j][i] = gammaCoef[i][j] - volinv * 
-            (dvdxyz[eli][j][1] * hourmodxyz[1] +
-             dvdxyz[eli][j][2] * hourmodxyz[2] +
-             dvdxyz[eli][j][3] * hourmodxyz[3]);
+            (dvdxyz[eli][j][X] * hourmodxyz[X] +
+             dvdxyz[eli][j][Y] * hourmodxyz[Y] +
+             dvdxyz[eli][j][Z] * hourmodxyz[Z]);
         }
       }
 
@@ -1030,9 +1014,9 @@ proc CalcFBHourglassForceForElems(determ, xyz8n, dvdxyz) {
     for param i in 1..nodesPerElem {
       const noi = myElemToNode[i];
 
-      fx[noi].add(hgfxyz[i][1]);
-      fy[noi].add(hgfxyz[i][2]);
-      fz[noi].add(hgfxyz[i][3]);
+      fx[noi].add(hgfxyz[i][X]);
+      fy[noi].add(hgfxyz[i][Y]);
+      fz[noi].add(hgfxyz[i][Z]);
     }
   }
 }
@@ -1053,18 +1037,18 @@ proc ApplyAccelerationBoundaryConditionsForNodes() {
   // ydd[YSym] = 0.0;
   // zdd[ZSym] = 0.0;
   
-  forall x in XSym do xyzdd[x][1] = 0.0;
-  forall y in YSym do xyzdd[y][2] = 0.0;
-  forall z in ZSym do xyzdd[z][3] = 0.0;
+  forall x in XSym do xyzdd[x][X] = 0.0;
+  forall y in YSym do xyzdd[y][Y] = 0.0;
+  forall z in ZSym do xyzdd[z][Z] = 0.0;
 }
 
 
 proc CalcVelocityForNodes(dt: real, u_cut: real) {
   forall i in Nodes do local {
     var xyzdtmp = xyzd[i] + xyzdd[i] * dt;
-    if abs(xyzdtmp[1]) < u_cut then xyzdtmp[1] = 0.0;
-    if abs(xyzdtmp[2]) < u_cut then xyzdtmp[2] = 0.0;
-    if abs(xyzdtmp[3]) < u_cut then xyzdtmp[3] = 0.0;
+    if abs(xyzdtmp[X]) < u_cut then xyzdtmp[X] = 0.0;
+    if abs(xyzdtmp[Y]) < u_cut then xyzdtmp[Y] = 0.0;
+    if abs(xyzdtmp[Z]) < u_cut then xyzdtmp[Z] = 0.0;
     xyzd[i] = xyzdtmp;
   }
 }
@@ -1077,19 +1061,13 @@ proc CalcPositionForNodes(dt: real) {
 
   var dxxyyzz: [Elems] 3*real;
 
-inline proc -=(ref xyz: 3*real, v:real) {
-  xyz[1] -= v;
-  xyz[2] -= v;
-  xyz[3] -= v;
-}
-
 proc CalcLagrangeElements() {
 
   CalcKinematicsForElems(dxxyyzz, deltatime);
 
   // element loop to do some stuff not included in the elemlib function.
   forall k in Elems do local {
-    vdov[k] = dxxyyzz[k][1] + dxxyyzz[k][2] + dxxyyzz[k][3];
+    vdov[k] = sum(dxxyyzz[k]);
     var vdovthird = vdov[k] / 3.0;
     dxxyyzz[k] -= vdovthird;
   }
@@ -1143,8 +1121,6 @@ proc CalcKinematicsForElems(dxxyyzz, const dt: real) {
   }
 }
 
-
-// TODO: Can these be made into 3-tuples?
 
 // sungeun: Temporary array reused throughout
 /* velocity gradient */
@@ -1215,10 +1191,6 @@ proc UpdateVolumesForElems() {
 }
 
 
-inline proc sumOfProduct(t1:3*real, t2:3*real) {
-  return t1[1]*t2[1] + t1[2]*t2[2] + t1[3]*t2[3];
-}
-
 proc CalcMonotonicQGradientsForElems(delv_xi, delv_eta, delv_zeta, 
                                      delx_xi, delx_eta, delx_zeta) {
   forall eli in Elems {
@@ -1241,11 +1213,11 @@ proc CalcMonotonicQGradientsForElems(delv_xi, delv_eta, delv_zeta,
 
       /* find delvk and delxk ( i cross j ) */
 
-      axyz = (dxyzi[2]*dxyzj[3] - dxyzi[3]*dxyzj[2],
-              dxyzi[3]*dxyzj[1] - dxyzi[1]*dxyzj[3],
-              dxyzi[1]*dxyzj[2] - dxyzi[2]*dxyzj[1]);
+      axyz = (dxyzi[Y]*dxyzj[Z] - dxyzi[Z]*dxyzj[Y],
+              dxyzi[Z]*dxyzj[X] - dxyzi[X]*dxyzj[Z],
+              dxyzi[X]*dxyzj[Y] - dxyzi[Y]*dxyzj[X]);
 
-      delx_zeta[eli] = vol / sqrt(axyz[1]*axyz[1] + axyz[2]*axyz[2] + axyz[3]*axyz[3] + ptiny);
+      delx_zeta[eli] = vol / sqrt(sumOfSquare(axyz) + ptiny);
 
       axyz *= norm;
 
@@ -1255,11 +1227,11 @@ proc CalcMonotonicQGradientsForElems(delv_xi, delv_eta, delv_zeta,
 
       /* find delxi and delvi ( j cross k ) */
 
-      axyz = (dxyzj[2]*dxyzk[3] - dxyzj[3]*dxyzk[2],
-              dxyzj[3]*dxyzk[1] - dxyzj[1]*dxyzk[3],
-              dxyzj[1]*dxyzk[2] - dxyzj[2]*dxyzk[1]);
+      axyz = (dxyzj[Y]*dxyzk[Z] - dxyzj[Z]*dxyzk[Y],
+              dxyzj[Z]*dxyzk[X] - dxyzj[X]*dxyzk[Z],
+              dxyzj[X]*dxyzk[Y] - dxyzj[Y]*dxyzk[X]);
 
-      delx_xi[eli] = vol / sqrt(axyz[1]*axyz[1] + axyz[2]*axyz[2] + axyz[3]*axyz[3] + ptiny) ;
+      delx_xi[eli] = vol / sqrt(sumOfSquare(axyz) + ptiny);
 
       axyz *= norm;
 
@@ -1269,11 +1241,11 @@ proc CalcMonotonicQGradientsForElems(delv_xi, delv_eta, delv_zeta,
 
       /* find delxj and delvj ( k cross i ) */
 
-      axyz = (dxyzk[2]*dxyzi[3] - dxyzk[3]*dxyzi[2],
-              dxyzk[3]*dxyzi[1] - dxyzk[1]*dxyzi[3],
-              dxyzk[1]*dxyzi[2] - dxyzk[2]*dxyzi[1]);
+      axyz = (dxyzk[Y]*dxyzi[Z] - dxyzk[Z]*dxyzi[Y],
+              dxyzk[Z]*dxyzi[X] - dxyzk[X]*dxyzi[Z],
+              dxyzk[X]*dxyzi[Y] - dxyzk[Y]*dxyzi[X]);
 
-      delx_eta[eli] = vol / sqrt(axyz[1]*axyz[1] + axyz[2]*axyz[2] + axyz[3]*axyz[3] + ptiny) ;
+      delx_eta[eli] = vol / sqrt(sumOfSquare(axyz) + ptiny);
 
       axyz *= norm;
 
@@ -1576,9 +1548,9 @@ proc deprint(title:string, xyz:[?D] 3*real) {
   writeln(title);
   for i in D {
     writeln(format("%3d", i), ": ", 
-            format("%3.4e", xyz[i][1]), " ", 
-            format("%3.4e", xyz[i][2]), " ", 
-            format("%3.4e", xyz[i][3]));
+            format("%3.4e", xyz[i][X]), " ", 
+            format("%3.4e", xyz[i][Y]), " ", 
+            format("%3.4e", xyz[i][Z]));
   }
 }
 
