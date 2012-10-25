@@ -191,6 +191,9 @@ proc MatElemsType type {
 }
 
 iter enumerateMatElems() {
+  if (printWarnings && useBlockDist && numLocales > 1) then
+    writeln("WARNING: generation of matrix elements is serial and\n",
+            "         unlikely to scale");
   for i in Elems do
     yield i;
 }
@@ -321,7 +324,7 @@ proc initMasses() {
   // This is a temporary array used to accumulate masses in parallel
   // without losing updates by using 'atomic' variables
   var massAccum: [Nodes] atomic real;
-  for i in Nodes {
+  forall i in Nodes {
     massAccum[i].write(0.0);
   }
 
@@ -342,7 +345,7 @@ proc initMasses() {
   // which point the massAccum array can go away (and will at the
   // procedure's return
 
-  for i in Nodes {
+  forall i in Nodes {
     nodalMass[i] = massAccum[i].read() / 8.0;
   }
 

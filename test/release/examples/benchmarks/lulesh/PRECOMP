@@ -1,2 +1,2 @@
 #!/bin/bash
-rm coords.out
+rm -f coords.out
