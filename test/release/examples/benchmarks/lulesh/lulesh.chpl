@@ -175,25 +175,24 @@ config const stoptime = 1.0e-2,        /* end time for simulation */
 
 config param sparseMaterials = true;
 
-const MatElems = defineMatElems();
+const MatElems: MatElemsType = if sparseMaterials then enumerateMatElems()
+                                                  else Elems;
 
-if (sparseMaterials && printWarnings && useBlockDist && numLocales > 1) then
-  writeln("WARNING: The LULESH Material Elements (MatElems) are not yet\n",
-          "         distributed, so result in excessive memory use on,\n",
-          "         and communication with, locale 0\n");
+
+proc MatElemsType type {
+  if sparseMaterials {
+    if (printWarnings && useBlockDist && numLocales > 1) then
+      writeln("WARNING: The LULESH Material Elements (MatElems) are not yet\n",
+              "         distributed, so result in excessive memory use on,\n",
+              "         and communication with, locale 0\n");
+    return sparse subdomain(Elems);
+  } else
+    return Elems.type;
+}
 
 iter enumerateMatElems() {
   for i in Elems do
     yield i;
-}
-
-proc defineMatElems() {
-  if sparseMaterials {
-    const SpsMatElems: sparse subdomain(Elems) = enumerateMatElems();
-    return SpsMatElems;
-  } else {
-    return Elems;
-  }
 }
 
 
