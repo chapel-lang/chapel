@@ -36,7 +36,7 @@
 use Time,       // to get timing routines for benchmarking
     BlockDist;  // for block-distributed arrays
 
-use luleshInit;   // to get I/O version of setting up data structures
+use luleshInit;   // initialization code for data set
 
 /* The 'useBlockDist' configuration parameter says whether or not to
    block-distribute the arrays.  The default depends on the setting of
@@ -690,18 +690,18 @@ inline proc CalcElemFBHourglassForce(xd: 8*real, yd: 8*real, zd: 8*real,
   // reduction
   for param i in 1..4 {
     for param j in 1..8 {
-      hx[i] += hourgam(j)(i) * xd[j];
-      hy[i] += hourgam(j)(i) * yd[j];
-      hz[i] += hourgam(j)(i) * zd[j];
+      hx[i] += hourgam[j][i] * xd[j];
+      hy[i] += hourgam[j][i] * yd[j];
+      hz[i] += hourgam[j][i] * zd[j];
     }
   }
 
   for param i in 1..8 {
     var shx, shy, shz: real;
     for param j in 1..4 {
-      shx += hourgam(i)(j) * hx[j];
-      shy += hourgam(i)(j) * hy[j];
-      shz += hourgam(i)(j) * hz[j];
+      shx += hourgam[i][j] * hx[j];
+      shy += hourgam[i][j] * hy[j];
+      shz += hourgam[i][j] * hz[j];
     }
     hgfx[i] = coefficient * shx;
     hgfy[i] = coefficient * shy;
@@ -1070,7 +1070,7 @@ proc CalcFBHourglassForceForElems(determ, x8n, y8n, z8n, dvdx, dvdy, dvdz) {
         }
 
         for param j in 1..8 {
-          hourgam(j)(i) = gammaCoef[i][j] - volinv * 
+          hourgam[j][i] = gammaCoef[i][j] - volinv * 
             (dvdx[eli][j] * hourmodx +
              dvdy[eli][j] * hourmody +
              dvdz[eli][j] * hourmodz);
