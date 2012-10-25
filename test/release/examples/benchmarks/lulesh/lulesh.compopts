@@ -1,1 +1,2 @@
---fast -sprintWarnings=false
+--fast -sprintWarnings=false --no-warnings
+--fast -sprintWarnings=false -ssparseMaterials=false
