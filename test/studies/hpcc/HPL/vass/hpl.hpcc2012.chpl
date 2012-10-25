@@ -56,6 +56,8 @@ config const printParams = false,
 // To be removed once COMPOPTS becomes a non-issue.
 config var reproducible = false, verbose = false;
 
+config const handOptimizedSC = true;
+
 // skip some things
 config var verify = true;
 config var realInitAB = verify;
@@ -372,28 +374,56 @@ proc schurComplement(blk, AD, BD, Rest) {
   replicateB(blk);
   vmsgmore("  replB");
 
-  // do local matrix-multiply on a block-by-block basis
-  forall (row,col) in Rest by (blkSize, blkSize) {
-    // localize Rest explicitly as a workaround;
-    // also hoist the innerRange computation
-    const outterRange = Rest.dim(1)(row..#blkSize),
-          innerRange  = Rest.dim(2)(col..#blkSize),
-          blkRange = 1..blkSize;
+  if handOptimizedSC {
+    const low1 = Rest.dim(1).low,
+          low2 = Rest.dim(2).low;
+    coforall lid1 in 0..#tl1 do
+      coforall lid2 in 0..#tl2 do
+        on targetLocalesRepl[lid1, lid2] do
+          local {
+            const myStarts1 = low1..n by blkSize*tl1 align 1+blkSize*lid1;
+            const myStarts2 = low2..n+1 by blkSize*tl2 align 1+blkSize*lid2;
+            const blkRange = 1..blkSize;
+            forall j1 in myStarts1 {
+              const outerRange = j1..min(j1+blkSize-1, n);
+              var h2 => replA._value.dsiLocalSlice1((outerRange, blkRange));
+              forall j2 in myStarts2 {
+                const innerRange = j2..min(j2+blkSize-1, n+1);
+                var h1 => Ab._value.dsiLocalSlice1((outerRange, innerRange)),
+                    h3 => replB._value.dsiLocalSlice1((blkRange, innerRange));
+                for a in outerRange do
+                  for w in blkRange  {
+                    const h2aw = h2[a,w];
+                    for b in innerRange do
+                      // Ab[a,b] -= replA[a,w] * replB[w,b];
+                      h1[a,b] -= h2aw * h3[w,b];
+                  } // for w
+              } // for j2
+            } // forall j1
+          } // local
+  } else {
+    // do local matrix-multiply on a block-by-block basis
+    forall (row,col) in Rest by (blkSize, blkSize) {
+      // localize Rest explicitly as a workaround;
+      // also hoist the innerRange computation
+      const outterRange = Rest.dim(1)(row..#blkSize),
+            innerRange  = Rest.dim(2)(col..#blkSize),
+            blkRange = 1..blkSize;
 
-   local {
+      local {
 
-    var h1 => Ab._value.dsiLocalSlice1((outterRange, innerRange)),
-        h2 => replA._value.dsiLocalSlice1((outterRange, blkRange)),
-        h3 => replB._value.dsiLocalSlice1((blkRange, innerRange));
+        var h1 => Ab._value.dsiLocalSlice1((outterRange, innerRange)),
+            h2 => replA._value.dsiLocalSlice1((outterRange, blkRange)),
+            h3 => replB._value.dsiLocalSlice1((blkRange, innerRange));
 
-      for a in outterRange do
-        for w in blkRange do
-          for b in innerRange do
-            //Ab[a,b] -= replA[a,w] * replB[w,b];
-            h1[a,b] -= h2[a,w] * h3[w,b];
-
-   } // local
-  } // forall
+        for a in outterRange do
+          for w in blkRange do
+            for b in innerRange do
+              //Ab[a,b] -= replA[a,w] * replB[w,b];
+              h1[a,b] -= h2[a,w] * h3[w,b];
+      } // local
+    } // forall
+  }
   vmsg("schurComplement()");
   tSC1call.stop();
 }
