@@ -245,7 +245,8 @@ compilerAssert(CHPL_NETWORK_ATOMICS == "none",
 
   var x => backwardSub(n);  // perform the back substitution
 
-  const execTime = getCurrentTime() - startTime;  // store the elapsed time
+  var execTime = getCurrentTime() - startTime;  // store the elapsed time
+  if execTime < 0 then execTime += 24*3600;          // adjust for date change
   printTime(execTime);
   quit(doExit = false);
 
