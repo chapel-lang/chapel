@@ -52,6 +52,8 @@ if ($network_atomics == 1) {
       } else {
         $atomics = "locks";
       }
+    } elsif ($compiler eq "cray-prgenv-intel") {
+      $atomics = "intrinsics";
     } elsif ($compiler eq "clang") {
       $atomics = "intrinsics";
     } else {

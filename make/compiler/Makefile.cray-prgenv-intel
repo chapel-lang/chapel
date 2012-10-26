@@ -6,5 +6,5 @@ CRAYPE_GEN_CFLAGS = -wr592
 
 include $(CHPL_MAKE_HOME)/make/compiler/Makefile.$(CHPL_MAKE_TARGET_PLATFORM)
 
-RUNTIME_CFLAGS += -std=c99 -wr188
-GEN_CFLAGS += -std=c99
+RUNTIME_CFLAGS += -std=gnu99 -wr188
+GEN_CFLAGS += -std=gnu99
