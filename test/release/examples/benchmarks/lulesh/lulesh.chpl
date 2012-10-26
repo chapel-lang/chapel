@@ -1007,7 +1007,7 @@ proc IntegrateStressForElems(sigxx, sigyy, sigzz, determ) {
 }
 
 
-proc CalcHourglassControlForElems(determ: [Elems] real) {
+proc CalcHourglassControlForElems(determ) {
   var dvdx, dvdy, dvdz, x8n, y8n, z8n: [Elems] 8*real;
 
   forall eli in Elems {
