@@ -396,9 +396,12 @@ proc schurComplement(blk, AD, BD, Rest) {
                 const innerRange = j2..min(j2+blkSize-1, n+1);
                 var h1 => Ab._value.dsiLocalSlice1((outerRange, innerRange)),
                     h3 => replB._value.dsiLocalSlice1((blkRange, innerRange));
-                for a in outerRange do
+                for a in outerRange {
+                  const
+                    h2dd = h2._value.data,
+                    h2off = hoistOffset(h2, a, blkRange);
                   for w in blkRange  {
-                    const h2aw = h2[a,w];
+                    const h2aw = h2dd(h2off+w); // h2[a,w];
                     // The code below hoists loop-invariant computations in
                     // dsiAccess() out of the 'for innerRange' loop by hand.
                     // We are using tuples instead of objects because
@@ -413,7 +416,8 @@ proc schurComplement(blk, AD, BD, Rest) {
                       // Ab[a,b] -= replA[a,w] * replB[w,b];
                       h1dd(h1off+b) -= h2aw * h3dd(h3off+b);
                   } // for w
-              } // for j2
+                } // for a
+              } // forall j2
             } // forall j1
           } // local
 
