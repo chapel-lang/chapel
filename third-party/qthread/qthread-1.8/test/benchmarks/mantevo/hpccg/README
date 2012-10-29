@@ -1,0 +1,97 @@
+// ************************************************************************
+// 
+//               HPCCG: Simple Conjugate Gradient Benchmark Code
+//                 Copyright (2006) Sandia Corporation
+// 
+// Under terms of Contract DE-AC04-94AL85000, there is a non-exclusive
+// license for use of this work by or on behalf of the U.S. Government.
+// 
+// This library is free software; you can redistribute it and/or modify
+// it under the terms of the GNU Lesser General Public License as
+// published by the Free Software Foundation; either version 2.1 of the
+// License, or (at your option) any later version.
+//  
+// This library is distributed in the hope that it will be useful, but
+// WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+// Lesser General Public License for more details.
+//  
+// You should have received a copy of the GNU Lesser General Public
+// License along with this library; if not, write to the Free Software
+// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
+// USA
+// Questions? Contact Michael A. Heroux (maherou@sandia.gov) 
+// 
+// ************************************************************************
+
+
+------------------------------------------------
+Description:
+------------------------------------------------
+HPCCG: A simple conjugate gradient benchmark code for a 3D chimney 
+domain on an arbitrary number of processors.
+
+Author: Michael A. Heroux, Sandia National Laboratories (maherou@sandia.gov)
+
+This simple benchmark code is a self-contained piece of C++ software 
+that generates a 27-point finite difference matrix with a user-prescribed 
+sub-block size on each processor.
+
+It is implemented to be very scalable (in a weak sense).  Any 
+reasonable parallel computer should be able to achieve excellent 
+scaled speedup (weak scaling).  
+
+Kernel performance should be reasonable, but no attempts have been made
+to provide special kernel optimizations.
+
+------------------------------------------------
+Compiling the code:
+------------------------------------------------
+
+There is a simple Makefile that should be easily modified for most 
+Unix-like environments.  There are also a few Makefiles with extensions 
+that indicate the target machine and compilers. Read the Makefile for 
+further instructions.  If you generate a Makefile for your platform 
+and care to share it, please send it to the author.
+
+By default the code compiles with MPI support and can be run on one 
+or more processors.  If you don't have MPI, or want to compile without 
+MPI support, you may change the definition of USE_MPI in the 
+makefile, or use make as follows:
+
+make USE_MPI=
+
+To remove all output files, type:
+
+make clean
+
+------------------------------------------------
+Running the code:
+------------------------------------------------
+
+Usage:
+
+test_HPCCG nx ny nz (serial mode)
+
+mpirun -np numproc test_HPCCG nx ny nz (MPI mode)
+
+where nx, ny, nz are the number of nodes in the x, y and z 
+dimension respectively on a each processor.
+The global grid dimensions will be nx, ny and numproc*nz.  
+In other words, the domains are stacked in the z direction.
+
+Example:
+
+mpirun -np 16 ./test_HPCCG 20 30 10
+
+This will construct a local problem of dimension 20-by-30-by-10 
+whose global problem has dimension 20-by-30-by-160.
+
+A reasonably large problem for starting out is 100-by-100-by-100.
+
+
+Alternate usage:
+
+There is an alternate mode that allows specification of a data 
+file containing a general sparse matrix.  This usage is deprecated.  
+Please contact the author if you have need for this more general case.

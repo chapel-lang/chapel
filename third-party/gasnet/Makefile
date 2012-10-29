@@ -20,7 +20,7 @@ ifeq ($(CHPL_MAKE_TARGET_PLATFORM),pwr6)
 CHPL_GASNET_CFG_OPTIONS += -with-mpi-cc=mpcc
 endif
 
-ifeq ($(CHPL_MAKE_TARGET_PLATFORM),xe-cle)
+ifneq (, $(filter $(CHPL_MAKE_TARGET_PLATFORM),cray-xe cray-cascade cray-xk))
 CHPL_GASNET_CFG_OPTIONS += --enable-pthreads
 ifeq ($(CHPL_MAKE_COMM_SUBSTRATE),gemini)
 else
@@ -33,13 +33,19 @@ XTRA_CONFIG_COMMAND=cp --update $(GASNET_SUBDIR)/other/contrib/$(CHPL_GASNET_CFG
 XTRA_POST_INSTALL_COMMAND=rm -f $(GASNET_SUBDIR)/$(CHPL_GASNET_CFG_SCRIPT)
 else
 
-ifeq ($(CHPL_MAKE_TARGET_PLATFORM),xt-cle)
+ifeq ($(CHPL_MAKE_TARGET_PLATFORM),cray-xt)
 CHPL_GASNET_CFG_SCRIPT=cross-configure-crayxt-linux
 XTRA_CONFIG_COMMAND=cp --update $(GASNET_SUBDIR)/other/contrib/$(CHPL_GASNET_CFG_SCRIPT) $(GASNET_SUBDIR)
 XTRA_POST_INSTALL_COMMAND=rm -f $(GASNET_SUBDIR)/$(CHPL_GASNET_CFG_SCRIPT)
 else
 CHPL_GASNET_CFG_SCRIPT=configure
 endif
+endif
+
+ifeq ($(CHPL_MAKE_TARGET_COMPILER),tile-cc)
+CHPL_GASNET_CFG_SCRIPT=cross-configure-tilera
+XTRA_CONFIG_COMMAND=cp --update $(GASNET_SUBDIR)/other/contrib/$(CHPL_GASNET_CFG_SCRIPT) $(GASNET_SUBDIR)
+XTRA_POST_INSTALL_COMMAND=rm -f $(GASNET_SUBDIR)/$(CHPL_GASNET_CFG_SCRIPT)
 endif
 
 MKFILES=$(shell find $(GASNET_INSTALL_DIR) -name \*.mak)

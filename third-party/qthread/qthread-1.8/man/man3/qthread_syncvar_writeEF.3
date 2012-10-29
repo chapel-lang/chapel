@@ -1,0 +1,81 @@
+.TH qthread_syncvar_writeEF 3 "APRIL 2011" libqthread "libqthread"
+.SH NAME
+.BR qthread_syncvar_writeEF ,
+.B qthread_syncvar_writeEF_const
+\- waits for the dest syncvar to be empty, then fills it
+.SH SYNOPSIS
+.B #include <qthread.h>
+
+.I int
+.br
+.B qthread_syncvar_writeEF
+.RI "(syncvar_t * restrict " dest ", const uint64_t * restrict " src );
+.PP
+.I int
+.br
+.B qthread_writeEF_const
+.RI "(syncvar_t *" dest ", uint64_t " src );
+.SH DESCRIPTION
+These functions wait for the
+.I dest
+syncvar to become empty, and then fill it. When
+.I dest
+becomes empty, only one thread blocked like this will be awoken. Data is read
+from
+.I src
+and written to
+.IR dest .
+The data in
+.I src
+MUST be small enough to fit in the syncvar_t.
+.PP
+The semantics of writeEF are:
+.RS
+.PP
+1 -
+.IR dest 's
+FEB state must be "empty"
+.br
+2 - data is copied from
+.I src
+to
+.I dest
+.br
+3 -
+.IR dest 's
+FEB state gets changed from "empty" to "full"
+.RE
+.SH RETURN VALUE
+On success, the memory address
+.I dest
+is marked full, the address
+.I dest
+is filled with the contents of
+.I src
+and 0
+.RI ( QTHREAD_SUCCESS )
+is returned. On error, a non-zero error code is returned.
+.SH ERRORS
+.TP 12
+.B ENOMEM
+Not enough memory could be allocated for bookkeeping structures (when blocking).
+.TP
+.B EOVERFLOW
+The value specified in
+.I src
+could not be stored in the syncvar_t. On most platforms, syncvar_t can only
+store 60 bits of data, despite occupying 64 bits of memory, because four bits
+are reserved for status information.
+.TP
+.B QTHREAD_TIMEOUT
+Could not obtain the lock on the syncvar_t's status bits. This may be caused by
+many things, including memory corruption, invalid syncvar, or even absurdly
+excessive contention (because its protected by a naive spinlock rather than a
+fair spinlock).
+.SH SEE ALSO
+.BR qthread_syncvar_empty (3),
+.BR qthread_syncvar_fill (3),
+.BR qthread_syncvar_writeF (3),
+.BR qthread_syncvar_readFF (3),
+.BR qthread_syncvar_readFE (3),
+.BR qthread_syncvar_status (3)

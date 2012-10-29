@@ -1,0 +1,465 @@
+GASNet gemini-conduit documentation
+Larry Stewart <stewart@serissa.com> 
+$Revision: 1.7 $
+
+User Information:
+-----------------
+
+Recognized environment variables:
+---------------------------------
+
+* All the standard GASNet environment variables (see top-level README)
+
+GASNET_NETWORKDEPTH - depth of per-peer AM queues - default 12, min 1
+
+Long Active messages whose destination is not in the segment are first
+copied to a bounce buffer that is in the auxiliary segment.  There is
+a pool of bounce buffers, each of a fixed size determined by the
+following environment variables.  If a Long Active Message has a
+larger data block, a special memory segment is mapped and zero copy
+RDMA is used instead.  The BOUNCE_REGISTER_CUTOVER determines the size
+of a bounce buffer, and should be chosen to minimize the performance
+discontinuity for switching to a registration protocol.  The
+BOUNCE_SIZE value determines the entire pool of memory for bounce
+buffers.  The number available is typically 262144/8192 or 32.  If you
+want to allocate a bounce buffer and the pool is empty, poll the rdma
+completion queue until one is returned.
+
+GASNETC_GNI_MIN_BOUNCE_SIZE  - default 65536
+GASNETC_GNI_BOUNCE_SIZE      - default 262144
+GASNETC_GNI_BOUNCE_REGISTER_CUTOVER  - default 8192, max 32768
+
+
+RDMA operations, whether short Fast Memory Access or longer RDMA, use
+a control block called a Post Descriptor. These variables control how
+many of these are preallocated into a pool.  Each one can also hold a
+set of AM arguments or a small bounce buffer.
+
+
+GASNETC_GNI_MIN_NUM_PD    - default 4096, minimum number of post descriptors
+GASNETC_GNI_NUM_PD  	  - optimum 16384, standard number of post descriptors
+
+
+This one sets the cutover from Fast Memory Access (RDMA commanded in
+user mode) to RDMA commanded via device driver.  The size is set quite
+small because it is a very common case that the source of a PUT or
+target of a GET is not in the segment.  Every Post Decriptor has a
+small bounce buffer for this and making the value larger will bloat
+descriptor storage.  (Idea for improvement - use regular bounce
+buffers for FMA larger than this).  128 also happens to be the max
+size for a single packet FMA.
+
+
+GASNETC_GNI_FMA_RDMA_CUTOVER - default 128 max 128
+
+The logic for setting the maximum size of the segment is copied from
+portals-conduit, which uses the following setting to control the
+maximum size of the segment.  If you set PINNABLE_RATIO 1 (or higher)
+and PHYSMEM_MAX, and PHYSMEM_NOPROBE you will bypass all the checking.
+Of course mmap might fail, or you might be swapping the segment...
+
+
+GASNETC_DEFAULT_PHYSMEM_PINNBLE_RATIO - default 0.75
+GASNETC_PHYSMEM_MAX - default <size of physmem> * <pinnable ratio>
+GASNET_PHYSMEM_NOPROBE - default 0
+
+
+Provided by Cray runtime system.  Don't mess with these.
+
+PMI_GNI_LOC_ADDR   - NIC address on local node
+PMI_GNI_COOKIE     - Access code shared by all nodes in job
+PMI_GNI_PTAG       - Protection tag shared by all nodes in job
+PMI-GNI_DEV_ID     - Device ID (Selects which NIC is in use)
+
+
+
+Optional compile-time settings:
+------------------------------
+
+* All the compile-time settings from extended-ref (see the extended-ref README)
+
+in gemini-conduit/gasnet_gemini.h
+
+GASNETC_USE_SPINLOCK	- 0 user gasneti_mutex_t (default)
+			  1 use gasneti_spinlock_t
+
+The minimum number of Post Descriptors we can live with
+
+#define GASNETC_GNI_MIN_NUM_PD_DEFAULT 4096
+
+The desired number of Post Descriptors
+
+#define GASNETC_GNI_NUM_PD_DEFAULT (4096 * 4)
+/* we want at least this much space for bounce buffers */
+#define GASNETC_GNI_MIN_BOUNCE_SIZE_DEFAULT 65536
+/* and preferably this much space */
+#define GASNETC_GNI_BOUNCE_SIZE_DEFAULT (65536 * 4)
+/* a particular message up to this size goes via bounce */
+#define GASNETC_GNI_BOUNCE_REGISTER_CUTOVER_DEFAULT 8192
+#define GASNETC_GNI_BOUNCE_REGISTER_CUTOVER_MAX 32768
+/* a particular message up to this size goes via fma */
+#define GASNETC_GNI_FMA_RDMA_CUTOVER_DEFAULT 128
+#define GASNETC_GNI_FMA_RDMA_CUTOVER_MAX 128 /* bloats descriptor storage */
+
+
+in gemini-conduit/gasnet_gemini.c
+
+
+int gc_poll_burst = 10;   /* number of rdma completions to get at once */
+
+Sets the number of events for arriving short messages taken at once
+#define SMSG_BURST 20
+
+Sets the number of peers processed per call
+#define SMSG_PEER_BURST 4
+
+Known problems:
+---------------
+
+* See the Berkeley UPC Bugzilla server for details on known bugs.
+
+Future work:
+------------
+
+ * Conversion to Shared Message Queues
+
+Use of the Cray gni short message system (SMSG) requires O(N**2) memory overall and O(N) per node.  Gemini-conduit initializes all short message system resources at job startup, but they could be allocated incrementally, and you would have buffers allocated only for nodes that you talk to.
+
+Alternatively one could use the gni Shared Message Queue system (MSGQ). 
+The gni shared message queue system (MSGQ) uses resources that scale as the number of supernodes, rather than as the number of ranks, but it is not possible to use it incrementally.  MSGQ also has a maximum message size of 128 bytes, which means that Medium AMs would have to be fragmented and reassembled.
+
+ * Caching of memory registrations (Firehose?)
+
+gemini-conduit uses a single fixed memory registration for the GASNet segment. It uses another for the short message system buffers, and transiently uses additional registrations for large RDMA transfers outside the segment.  There are only a modest number of mapping registers available per rank, so large numbers of registrations are inappropriate, but small numbers could be cached rather than per-rdma transient.
+
+ * Credit management
+
+The gemini-conduit active message implementation uses a short message reply to every active message (independent of possible AM replies) to return credit. Credit return could be opportunistic, piggybacking on other messages headed the right way.  Also, right now each rank maintains credit independently for each other rank. This is a consequence of the gni short message system, which uses independent buffers for each rank, rather than a pool.
+
+ * Inline
+
+It should be possible to inline the special cases of short blocking GET and short blocking PUT
+
+ * Alternative designs
+
+The gni short message or shared message queues could be used only for wakeup, leaving AM transport to RDMA, more along the lines of the shmem-conduit.  This would reduce buffer requirements for large jobs.
+
+==============================================================================
+
+Design Overview:
+----------------
+
+The gemini conduit provides the gasnet core and extended APIs on Cray systems
+based on the gemini interconnect.  Initial work done on the XE6.
+
+References:
+
+Cray documentation "Using the GNI and DMAPP APIs" document S-2446-3102
+
+http://docs.cray.com/cgi-bin/craydoc.cgi?mode=SideMap;f=xe_sitemap
+
+APIs:
+
+PMI-2
+
+/opt/cray/pmi/default/include
+
+GNI
+
+/opt/cray/gni-headers/default/include/gni_pub.h
+
+==Background==
+
+The Gemini interconnect was introduced with the Cray XE6 system.  It
+may be thought of as an evolutionary development of the Seastar
+interconnect used on the Red Storm system and the Cray XT series.
+Physically Gemini is a 3D torus system using network interfaces that
+connect directly to the Hyperchannel IO bus of AMD processors.
+
+Logically Gemini provides short messages, remote memory access, remote
+atomic operations, and remote block transfers. Memory must be
+registered with GNI before it can be used for communications.  Job
+launch services are provided by the Cray Application Level Placement
+Scheduler (ALPS), with API provided through implementations of the PMI
+(process management interface) API.
+
+During initialization, a parallel application creates a Communications
+Domain, which is basically a binding to a particular network interface.
+Data necessary to get permit ranks of a parallel application to
+communicate are provided via environment variables and PMI interfaces.
+
+In gemini, the address information for a remote rank is stored in a
+softare structure called an Endpoint.  Generally a separate endpoint
+is needed for each rank of the job.  Each endpoint is associated with
+a Completion Queue (CQ) which signals when locally originated
+operations to a partiular endpoint have finished.  Cqs may be used by
+multiple endpoints.
+
+To use the short message system (SMSG), the application allocates
+buffer space, and assigns a completion queue to be used to announce
+the arrival of messages from remote ranks.  Short message system
+messages can be of variable length, but each message uses a fixed
+length message buffer from a pool.  The shared message queue (MSGQ)
+system is similar, except that resources are shared at the node level,
+rather than each rank having separate resources. The shared message
+queue system has better scalability, scaling as O( (N/24)**2 ) rather
+than O( N**2 ). However, MSGQ has a maximum message length of 128,
+while the limit for SMSG is large enough to handle a complete GASNet
+Medium Active Message.  In ether SMSG or MSGQ, the buffer memory must
+be registered using the GNI API.
+
+The Gemini interconnect provides two flavors of RDMA.  FMA, or Fast
+Memory Access, provides remote atomic operations, and remote get and
+put. These operations are commanded by user-mode appliations directly
+to the hardware, (so called OS Bypass).  For larger messages, Cray
+provides an RDMA facility based on a hardware Byte Transfer Engine,
+but its use is mediated by the kernel mode device driver.  It isn't
+clear when one should use RDMA rather than FMA, but a few hundred
+bytes to a few thousand bytes is likely.
+
+==Overview==
+
+The gemini conduit creates an endpoint for every rank, and then binds
+each endpoint to a particular rank using the address information
+exchanged through PMI.  Each endpoint in gemini is also associated
+with a common completion queue, which is a structure used for
+announcing the completion of locally originated messages.
+
+Next the gemini conduit allocates and registers storage for buffers
+for the gemini short message system.  The setup allocates buffers
+large enough to hold a complete AMMedium message.  Arriving short
+messages are signalled on a second completion queue.  Using defaults,
+about 32K per rank are reserved on each rank.
+
+==Active Message design==
+
+The gemini conduit supports PSHM for same-node communications. This
+isn't strictly necessary when using the Cray Short Message System, but
+it would be necessary when using the Cray Shared Message Queue system
+because MSGQ cannot send to the same node.
+
+Flow control and deadlock avoidance is done by a fixed credit
+system. The environment variable GASNET_NETWORKDEPTH is the number
+of AM buffers for each peer.  The default value is 12.  Each peer
+has an am_credit variable. When a rank wishes to send an active
+message, it atomic decrements the peer's credit counter and calls the
+gemini conduit's Poll routine until it succeeds.  At the receiver,
+every AM Request generates a "hidden" credit return message if and
+only if the handler did not send a Reply.
+
+NOTE: The Gemini short message system has some sort of internal credit
+accounting, but we don't rely on it because of lack of features
+(allocating space for replies) and lack of visibility (the only way to
+find out if there is credit is to try to send a message).  The
+gemini-conduit credit design is such that the underlying GNI_SmsgSend
+should never fail.
+
+Short and Medium active messages take one message each, so there is no
+need for a reassembly queue for arriving fragments.
+
+Long active messages are more complex.  If the data of a long AM will
+fit in a maximum sized message, then it is sent as immediate data
+and copied at the destination.  If the data is too large for the AM
+packet, then it is sent by RDMA, and when the RDMA completion event
+occurs, the Active message is sent.  For blocking AMs, the originator
+polls for completion of the RDMA by calling gc_poll_local_queue, which
+checks for RDMA completions but does NOT check for arriving active
+messages.  In the case of a non-blocking long active message, the
+active message packet is constructed in memory attached to the RDMA
+post descriptor, and when the RDMA completion event occurs, the AM is
+sent by the completion routine.
+
+==RDMA==
+
+Within the Gemini API (GNI), RDMA is commanded by creating a Post
+Descriptor and passing it to GNI. Both the source and destination
+memory of an RDMA transfer must be registered.  The knowlege of RDMA
+is encapsulated in the functions gc_rdma_put and gc_rdma_get.
+
+GASNet requires that the remote address of a put or get will be within
+the GASNet memory segment, which is pre-registered by gemini-conduit.
+GASNet does not require that the local address of a put or get be
+registered.  There are a number of cases.
+
+As mentioned above, Gemini provides two kinds of RDMA: FMA and BTE
+(called "RDMA").  FMA is Fast Memory Access and is used for short
+transfers and is commanded entirely in user mode.  The Byte Transfer
+Engine is intended for larger transfers and is kernel mediated.
+
+Gemini-conduit allocates a pool of RDMA Post Descriptors, called
+gc_post_descriptor.  These are kept on a LIFO queue in registered
+memory, because each one contains a small bounce buffer to be used in
+the event the local address of a short RDMA is not registered.
+
+Gemini-conduit also allocates a pool of medium sized bounce buffers,
+which are used in the event the local address of an RDMA transfer is
+not registered.  For large transfers to or from memory outside the
+GASNet segment, the local buffer is registered for the duration of the
+transfer, then unregistered.
+
+So for a local address outside the segment, if the size of the
+transfer is less than the cutover point between FMA and RDMA, then the
+small bounce buffer in the post descriptor is used.  If the size of
+the transfer is less than the cutover point between bouncing and
+registration, then the an allocated bounce buffer is used. If the size
+is larger, then a one-time memory registration is done just for the
+duration of the transfer.
+
+The post descriptor also contains a completion field, that defines
+what to do when the RDMA is finished, and a set of flags that control
+completion behavior.
+
+RDMA Completion event processing is done by gc_poll_local_queue.  A
+number of types of follow-on activities are implmeneted:
+
+ * For a GET, potentially copy data from a bounce buffer to the actual
+   target
+
+ * Potentially De-register specially registered memory
+
+ * Potentially free a dediated bounce buffer
+
+ * Potentially send an Active Message that was waiting for the RDMA
+   completion
+
+ * Perform completion processing (signal other software waiting for
+   RDMA completion
+
+
+The GASNet Core API only uses RDMA PUT. THe extended API uses both GET
+and PUT.  The logic for GET is similar to that for PUT.
+
+==Extended API==
+
+Gemini conduit uses the reference implementation of gasnet_op_t for
+completions.
+
+Due to occasional failures of memory registration of large blocks, if
+an RDMA transfer is larger than one megabyte, it is broken into
+smaller sements and all but the last are sent by blocking protocol.
+
+NOTE: The breakup of large blocks should probably be done for Long AMs
+as well.
+
+==Locking==
+
+In order to support GASNET_PAR mode, a variety of locks are used.
+
+GASNETC_LOCK_GNI, GASNETC_UNLOCK_GNI
+
+The Cray gni API is not thread-safe, so the gemini conduit uses a
+single big lock around calls to gni.  Certain cases might be thread
+safe, but without knowlege of the internals of gni it is hard to tell.
+
+Queue Locks
+
+Singly linked lists are used for the smsg_work_queue, and for pools
+for bounce buffers, and post descriptors.  Each list (queue) has its
+own lock, and there are push, pop, and enqueue functions that work on
+queues.
+
+The bounce buffer pool and post descriptor pool use the
+gasneti_lifo_push and gasneti_lifo_pop functions.
+
+The smsg_work_queue uses newly written enqueue and pop functions
+
+
+
+==Event Processing==
+
+The gemini conduit uses two gni completion queues: bound_cq_handle for
+completions of locally originated RDMA, and smsg_cq_handle, for
+arriving short messages.
+
+===bound_cq_handle  (RDMA completion)===
+
+On a call to gc_poll_local_queue, up to gc_poll_burst (default 10)
+completions are processed.  If the completion queue is empty, the
+function exits early.  For each completed post descriptor, the flags
+are checked and post-completion activities performed:
+
+ GC_POST_COPY - copy from bounce buffer to target
+ GC_POST_UNREGISTER - deregister one-time memory registration
+ GC_POST_UNBOUNCE - free an allocated bounce buffer
+ GC_POST_SEND - send an AM that was waiting for PUT completion (AMLong)
+ GC_POST_COMPLETION_FLAG - atomic set a variable to signal a waiting thread
+ GC_POST_COMPLETION_EOP - gasnete_op_markdone 
+
+===smsg_cq_handle===
+
+When a short message arrives, an event is sent to the completion queue
+associated with the endpoint of the message source.  The receiver
+looks at the event to figure out which endpoint signalled, then calls
+GNI_SmsgGetNext(endpoint) to get the message.  However, events are
+generated whenever a message arrives, but they may be out of order,
+and SmsgGetNext only delivers messages in-order. Consequently, when
+you get an event, there may appear to be no message waiting, or there
+may be several messages waiting.  It is neccessary to keep calling
+SmsgGetNext until you get all the waiting messages. At the same time,
+it is necessary to read the completion queue at least once for every
+message received or the completion queue will fill up.  If the
+completion queue overflows, some events may be lost and it will be
+neccessary to drain all endpoints to make sure no messages are left
+waiting.
+
+The work starts in gc_poll_smsg_queue.
+
+First a call is make to gc_poll_smsg_completion_queue, which reads up
+to SMSG_BURST events from the completion queue and quickly adds the
+relevant endpoints to a temporary array.  Then, after releasing the
+GNI big lock, the array is scanned, and any peers which are not
+already on the smsg_work_queue are added to it.  The smsg_work_queue
+is a list of endpoints which may have arriving traffic.  Finally,
+gc_poll_smsg_completion_queue checks to see if the smsg completion
+queue overflowed, in which case the completion queue is drained and
+ALL endpoints are added to the smsg_work_queue
+
+Then for up to SMSG_PEER_BURST ranks, gc_process_smsg_q(source rank)
+is called to deal with any arriving messages.
+
+In gc_process_smsg_q, arriving short messages are read and a dispatch
+is made on the message type.  In the case of active messages, the
+message is copied into a local variable, the SMSG buffer is released,
+and then the AM handler is called.  This is done in order to prevent
+stack growth caused by recursive calls to process arriving
+messages. Each time around the message processing loop,
+gc_poll_smsg_completion_queue is called, which may result in
+additional ranks being queued on the smsg_work_queue, but does not
+cause recursive calls to gc_process_smsg_q.  This is done so that the
+average rate of retiring completion events is equal to the rate of
+processing messages, and prevents completion queue overflow.
+
+==Exit protocol==
+
+The exit algorithm is borrowed from the portals-conduit.  The Cray
+runtime system ALPS (Application Layout and Placement System) is
+strict about exiting without calling PMI_Finalize. It will interpret
+that as an error exit and kill all the other ranks.
+
+
+==Initialization==
+
+The logic to determine the maximum size pinnable segment is borrowed
+from the portals-conduit.
+
+The module gc_utils.c contains the interface to PMI.  It also includes
+the impleemntation of AllGather for GASNet bootstrapExchange and GNI
+initialization.  It uses PMI_AllGather.  For some reason,
+PMI_AllGather does not return data in rank order, so it is sorted into
+the usual AllGather order internally.
+
+gasnet_core.c routine gasnetc_init also contains code to determine
+which ranks ahave shared memory. This is done using the
+PMI_Get_pes_on_smp() call, translated into the right format for
+gasnet_nodemap[].
+
+The gasnet auxseg machinery is used to allocate registered memory for
+bounce buffers and for the rdma post descriptor pool. This is done to
+reduce the number of separately registered segments, because
+registrations are a scarce resource.
+
+
+== Build notes ==
+
+
+

@@ -1,0 +1,11 @@
+#
+# Copyright (c) 2004-2011, Cray Inc.  (See LICENSE file for more details)
+#
+
+TASKS_SUBDIR = src/tasks/$(CHPL_MAKE_TASKS)
+
+TASKS_OBJDIR = $(RUNTIME_ROOT)/$(TASKS_SUBDIR)/$(RUNTIME_OBJDIR)
+
+ALL_SRCS += $(CURDIR)/$(TASKS_SUBDIR)/*.c
+
+include $(RUNTIME_ROOT)/$(TASKS_SUBDIR)/Makefile.share
