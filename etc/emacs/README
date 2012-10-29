@@ -35,8 +35,6 @@ following lines to your standard .emacs file:
   (add-to-list 'load-path (concat chpl-home
                                   "/etc/emacs/"
                                   (number-to-string emacs-major-version) 
-                                  "."
-                                  (number-to-string emacs-minor-version)
                                   )
                )
   )

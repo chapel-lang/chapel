@@ -206,7 +206,7 @@ Otherwise, this variable is nil. I.e. this variable is non-nil for
 (defconst c-C-expr-kwds "sizeof")
 (defconst c-C++-expr-kwds
   (concat c-C-expr-kwds "\\|delete\\|new\\|operator\\|this\\|throw"))
-(defconst c-Chpl-expr-kwds nil)
+(defconst c-Chpl-expr-kwds "\\|nil\\|zip")
 (defconst c-ObjC-expr-kwds c-C-expr-kwds)
 (defconst c-Java-expr-kwds "instanceof\\|new\\|super\\|this")
 ;;(defconst c-IDL-expr-kwds nil)
