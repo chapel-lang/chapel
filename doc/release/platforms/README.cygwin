@@ -32,9 +32,12 @@ Using Chapel with Cygwin
        + make
      Perl
        + perl
+     Python
+       + python
      Shells
        + tcsh
      Utils
+       + bc
        + diffutils
 
 

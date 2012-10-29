@@ -27,15 +27,13 @@ To run Chapel on multiple locales, the following steps are required:
    and Chapel will make a choice for them.  Current defaults are:
 
      When compiling for...       Chapel will choose...
-       cx-linux                    ibv
+       cray-cascade                mpi
+       cray-xe                     mpi
+       cray-xk                     mpi
+       cray-xt                     mpi
        pwr5                        lapi
        pwr6                        ibv
-       xe-cle                      mpi
-       xt-cle                      mpi*
        (other)                     udp
-
-   * Please see platforms/README.xt-cle for more info on why we use
-     the mpi conduit.
 
 
 3) Advanced GASNet users can set CHPL_GASNET_SEGMENT to choose a

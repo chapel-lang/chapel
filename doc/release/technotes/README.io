@@ -142,7 +142,7 @@ The 'iostyle' Type
     var significant_digits:int(32) = -1;
 
   Formatting of real numbers:
-      0  print out 'sigdigits' number of significant digits (%g in printf)
+      0  print out 'significant_digits' number of significant digits (%g in printf)
       1  print out 'precision' number of digits after the decimal point (%f)
       2  always use exponential and 'precision' number of digits (%e)
     var realfmt:uint(8) = 0;
