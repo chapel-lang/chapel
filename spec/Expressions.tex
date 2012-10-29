@@ -7,6 +7,7 @@ Chapel provides the following expressions:
 \begin{syntax}
 expression:
   literal-expression
+  nil-expression
   variable-expression
   enum-constant-expression
   call-expression
@@ -43,9 +44,8 @@ and additionally as follows:
 \item locale access \rsec{Querying_the_Locale_of_a_Variable}
 \item mapped domain \rsec{Domain_Maps}
 \item constructor calls \rsec{Class_New}
+\item \chpl{nil} \rsec{Class_nil_value}
 \end{itemize}
-
-
 
 \section{Literal Expressions}
 \label{Literal_Expressions}
@@ -64,6 +64,7 @@ literal-expression:
   string-literal
   range-literal
   domain-literal
+  array-literal
 \end{syntax}
 
 \section{Variable Expressions}
@@ -252,7 +253,7 @@ explicit conversion:
 An {\em lvalue} is an expression that can be used on the left-hand
 side of an assignment statement or on either side of a swap statement,
 that can be passed to a formal argument of a function that
-has \chpl{out} or \chpl{inout} intent, or that can be returned by a
+has \chpl{out}, \chpl{inout} or \chpl{ref} intent, or that can be returned by a
 variable function.  Valid lvalue expressions include the following:
 \begin{itemize}
 \item
@@ -271,6 +272,7 @@ lvalue-expression:
   variable-expression
   member-access-expression
   call-expression
+  parenthesized-expression
 \end{syntax}
 The syntax is less restrictive than the definition above.  For
 example, not all \sntx{call-expression}s are lvalues.
@@ -495,7 +497,7 @@ For each operator, implicit conversions are applied to the operands of
 an operator such that they are compatible with one of the function
 forms listed, those listed earlier in the list being given
 preference.  If no compatible implicit conversions exist, then a
-compile-time error occurs.  In these cases, an explict cast is required.
+compile-time error occurs.  In these cases, an explicit cast is required.
 
 All integral arithmetic operators are implemented over integral types
 of size 32 and 64 bits only.  For example, adding two 8-bit integers
@@ -917,7 +919,7 @@ The same as for bitwise and (\rsec{Bitwise_And_Operators}).
 
 \subsection{Bitwise Xor Operators}
 \label{Bitwise_Xor_Operators}
-\index{operators!bitwise!exclusiv or}
+\index{operators!bitwise!exclusive or}
 \index{^@\chpl{^}}
 \index{operators!^@\chpl{^}}
 

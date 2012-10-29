@@ -96,7 +96,11 @@ The expression statement evaluates an expression solely for side
 effects. The syntax for an expression statement is given by
 \begin{syntax}
 expression-statement:
-  expression ;
+  variable-expression ;
+  member-access-expression ;
+  call-expression ;
+  constructor-call-expression ;
+  let-expression ; 
 \end{syntax}
 
 \section{Assignment Statements}
@@ -177,6 +181,9 @@ left-hand side is, for example, \chpl{int(8)} because the \chpl{+}
 operator is defined on \chpl{int(32)}, not \chpl{int(8)}.
 \end{rationale}
 
+The compound assignment operators can be overloaded for different
+types using operator overloading~(\rsec{Function_Overloading}).
+
 \section{The Swap Statement}
 \label{The_Swap_Statement}
 \index{swap!statement}
@@ -188,6 +195,9 @@ operator is defined on \chpl{int(32)}, not \chpl{int(8)}.
 The swap statement indicates to swap the values in the expressions
 on either side of the swap operator.  Since both expressions are assigned
 to, each must be a valid lvalue expression~(\rsec{LValue_Expressions}).
+
+The swap operator can be overloaded for different types using operator
+overloading~(\rsec{Function_Overloading}).
 \begin{syntax}
 swap-statement:
   lvalue-expression swap-operator lvalue-expression
@@ -200,7 +210,7 @@ To implement the swap operation, the compiler uses temporary variables
 as necessary.
 
 \begin{example}
-The following swap statement
+When resolved to the default swap operator, the following swap statement
 \begin{chapel}
 var a, b: real;
 
@@ -216,7 +226,7 @@ a = t;
 
 \section{The Conditional Statement}
 \label{The_Conditional_Statement}
-\index{statments!conditional}
+\index{statements!conditional}
 \index{if@\chpl{if}}
 \index{then@\chpl{then}}
 \index{else@\chpl{else}}
@@ -393,6 +403,7 @@ index-var-declaration:
 
 iteratable-expression:
   expression
+  `zip' ( expression-list )
 \end{syntax}
 
 The \sntx{index-var-declaration} declares new variables for the scope
@@ -404,11 +415,9 @@ in~\rsec{Indices_in_a_Tuple}.
 The \sntx{index-var-declaration} is optional and may be omitted if the
 indices do not need to be referenced in the loop.
 
-%
-% sungeun: Will we allow square brackets also?
-%
-If the iteratable-expression is a tuple delimited by parentheses, the
-components of the tuple must support zipper iteration.
+If the iteratable-expression begins with the keyword \chpl{zip} followed
+by a parenthesized expression-list, the listed expressions must support 
+zipper iteration.
 
 \subsection{Zipper Iteration}
 \label{Zipper_Iteration}
@@ -426,7 +435,7 @@ dimension, must be identical.
 \begin{chapelexample}{zipper.chpl}
 The output of
 \begin{chapel}
-for (i, j) in (1..3, 4..6) do
+for (i, j) in zip(1..3, 4..6) do
   write(i, " ", j, " ");
 \end{chapel}
 \begin{chapelpost}

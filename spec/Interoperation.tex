@@ -23,7 +23,7 @@ under \chpl{CHPL_HOME/doc/technotes}.
 
 At present, the backend language for Chapel is C, which makes it relatively
 easy to call C libraries from Chapel and vice versa.  To support a variety of
-platforms without requiring recompilation, it may be desiriable to move
+platforms without requiring recompilation, it may be desirable to move
 to an intermediate-language model.
 
 In that case, each supported platform must minimally support that virtual
@@ -220,7 +220,7 @@ extern type vec = 3*real(64);
 
 \subsubsection{Referring to External C Structs}
 \label{Referring_to_External_C_Structs}
-\index{ineteroperability!C structs!external}
+\index{interoperability!C structs!external}
 
 External C struct types can be referred to within Chapel by prefixing
 a Chapel \chpl{record} definition with the \chpl{extern} keyword.
@@ -405,7 +405,7 @@ arguments can also be used call external C macros.
 
 External function arguments can be declared using the \sntx{default-expression}
 syntax.  In this case, the default argument will be supplied by the Chapel
-compiler if the corrspondinging actual argument is omitted at the callsite.  For example:
+compiler if the corresponding actual argument is omitted at the callsite.  For example:
 \begin{chapel}
        extern proc foo(x: int, y = 1.2): real;
        foo(0);
@@ -478,6 +478,7 @@ Chapel & C \\
 \tt in T & \tt T \\
 \tt inout T & \tt T* \\
 \tt out T & \tt T* \\
+\tt ref T & \tt T* \\
 \tt param & \tt \\
 \tt type & \tt char*\\
 \end{tabular}
@@ -485,12 +486,6 @@ Chapel & C \\
 Currently, \chpl{param} arguments are not allowed in an extern function
 declaration, and \chpl{type} args are passed as a string containing the name of
 the actual type being passed.  Note that the level of indirection is changed
-when passing arguments to a C function using \chpl{inout} or \chpl{out} intent.
-The C code implementing that functions must dereference the argument to extract
-its value.
-
-\begin{future}
-The \chpl{ref} intent has not yet been implemented, but will correspond with the
-C type \chpl{T*} when it is.
-\end{future}
-
+when passing arguments to a C function using \chpl{inout}, \chpl{out},
+or \chpl{ref} intent.  The C code implementing that function must dereference
+the argument to extract its value.

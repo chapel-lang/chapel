@@ -184,7 +184,7 @@ when
 where
 while
 yield
-$$
+zip
 \end{chapel} \\
 \begin{invisible}
 by
@@ -276,7 +276,7 @@ sign: one of
   + -
 \end{syntax}
 \begin{rationale}
-Why can't a real literal end with '.'?  There is a lexical ambiquity
+Why can't a real literal end with '.'?  There is a lexical ambiguity
 between real literals ending in '.' and the range operator '..' that
 makes it difficult to parse.  For example, we want to
 parse \chpl{1..10} as a range from 1 to 10 without concern
@@ -376,8 +376,8 @@ The following braces are part of the Chapel language:
 {\bf braces} & {\bf use} \\
 \hline
 \verb@( )@ & parenthesization, function calls, and tuples \\
-\verb@[ ]@ & domains, forall expressions, function calls, and tuples \\
-\verb@{ }@ & block statements \\
+\verb@[ ]@ & array literals, array types, forall expressions, and function calls \\
+\verb@{ }@ & domain literals, block statements \\
 \hline
 \end{tabular}
 \end{center}

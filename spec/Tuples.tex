@@ -350,7 +350,7 @@ writeln(x);
 \end{chapeloutput}
 \end{chapelexample}
 
-\subsection{Splitting a Tuple into Mutiple Indices of a Loop}
+\subsection{Splitting a Tuple into Multiple Indices of a Loop}
 \label{Indices_in_a_Tuple}
 \index{tuples!indices grouped as}
 
@@ -719,15 +719,6 @@ true
 \index{predefined functions!tuples}
 \index{functions!tuples!predefined}
 
-\index{tuples!size@\chpl{size}}
-\index{predefined functions!size@\chpl{size}}
-\begin{protohead}
-proc $Tuple$.size param
-\end{protohead}
-\begin{protobody}
-Returns the size of the tuple.
-\end{protobody}
-
 \begin{protohead}
 proc isHomogeneousTuple(t: $Tuple$) param
 \end{protohead}
@@ -773,3 +764,11 @@ Returns a tuple of type \chpl{t} with each component set to the minimum
 value that can be stored in its position.
 \end{protobody}
 
+\index{tuples!size@\chpl{size}}
+\index{predefined functions!size@\chpl{size}}
+\begin{protohead}
+proc $Tuple$.size param
+\end{protohead}
+\begin{protobody}
+Returns the size of the tuple.
+\end{protobody}

@@ -275,7 +275,7 @@ cases and the specialized code more aggressively.
 %REVIEW: vass: we need to come up with a common way to define
 % generic types prior to the generics chapter.
 
-% gotta specify syntax for 'range-type' because it's refererenced in Types.tex
+% gotta specify syntax for 'range-type' because it's referenced in Types.tex
 A range type has the following syntax:
 \begin{syntax}
 range-type:
@@ -500,7 +500,7 @@ to match the other iterator(s).
 \begin{chapelexample}{zipWithUnbounded.chpl}
 The code
 \begin{chapel}
-for i in (1..5, 3..) do
+for i in zip(1..5, 3..) do
   write(i, "; ");
 \end{chapel}
 \begin{chapelpost}
@@ -1105,6 +1105,15 @@ proc $range$.low : idxType
 Returns the range's low bound.
 If the low bound is -$\infty$, the behavior is undefined.
 See also \chpl{hasLowBound}.
+\end{protobody}
+
+\index{ranges!size@\chpl{size}}
+\index{predefined functions!size@\chpl{size}}
+\begin{protohead}
+proc $range$.size : idxType
+\end{protohead}
+\begin{protobody}
+Same as $range$.length.
 \end{protobody}
 
 \index{ranges!stride@\chpl{stride}}

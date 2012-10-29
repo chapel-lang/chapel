@@ -544,6 +544,13 @@ the arguments as allowed by implicit conversions.
 \end{protobody}
 
 \begin{protohead}
+proc string.size: int
+\end{protohead}
+\begin{protobody}
+Same as string.length.
+\end{protobody}
+
+\begin{protohead}
 proc string.substring(x): string
 \end{protohead}
 \begin{protobody}
@@ -1013,7 +1020,9 @@ Returns the elapsed time since midnight in the units specified.
 proc Timer.clear()
 \end{protohead}
 \begin{protobody}
-Clears the elapsed time stored in the Timer.
+Clears the elapsed time stored in the Timer.  This routine can be called
+whether or not the timer is running and doesn't change its status in that
+regard.
 \end{protobody}
 
 \begin{protohead}

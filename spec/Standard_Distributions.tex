@@ -110,7 +110,7 @@ to which it is mapped.
 \begin{chapel}
 use BlockDist;
 
-const Space = [1..8, 1..8];
+const Space = {1..8, 1..8};
 const D: domain(2) dmapped Block(boundingBox=Space) = Space;
 var A: [D] int;
 
@@ -203,7 +203,7 @@ mapped.
 \begin{chapel}
 use CyclicDist;
 
-const Space = [1..8, 1..8];
+const Space = {1..8, 1..8};
 const D: domain(2) dmapped Cyclic(startIdx=Space.low) = Space;
 var A: [D] int;
 
@@ -303,7 +303,7 @@ mapped.
 \begin{chapel}
 use BlockCycDist;
 
-const Space = [1..8, 1..8];
+const Space = {1..8, 1..8};
 const D: domain(2) dmapped BlockCyclic(startIdx=Space.low, 
                                        blocksize=(2,3)) 
        = Space;
@@ -419,7 +419,7 @@ The following code declares a replicated domain, \chpl{Drepl}, and a
 replicated array, \chpl{Arepl}, and accesses it in different ways:
 
 \begin{chapel}
-const Dbase = [1..5];
+const Dbase = {1..5};
 const Drepl: domain(1) dmapped ReplicatedDist() = Dbase;
 var Abase: [Dbase] int;
 var Arepl: [Drepl] int;
@@ -429,18 +429,18 @@ Arepl[3] = 4;
 
 // these iterate over Dbase, so
 // only the current locale's replicand is accessed
-forall (b,r) in (Abase,Arepl) b = r;
+forall (b,r) in zip(Abase,Arepl) b = r;
 Abase = Arepl;
 
 // these iterate over Drepl;
 // each replicand of Arepl will be zippered against
 // (and copied from) the entire Abase
-forall (r,b) in (Arepl,Abase) r = b;
+forall (r,b) in zip(Arepl,Abase) r = b;
 Arepl = Abase;
 
 // sequential zippering will detect difference in sizes
 // (if multiple locales)
-for (b,r) in (Abase,Arepl) ... // error
-for (r,b) in (Arepl,Abase) ... // error
+for (b,r) in zip(Abase,Arepl) ... // error
+for (r,b) in zip(Arepl,Abase) ... // error
 \end{chapel}
 \end{example}

@@ -332,14 +332,12 @@ disambiguates between main functions in multiple modules.
 \begin{craychapel}
 In the Cray Chapel compiler implementation, the \emph{--
 --main-module} flag can be used to specify the module from which the
-main function definition will be used.  Only modules passed to the
-compiler on the command line will be searched for main functions
-unless the \emph{-- --main-module} flag is used.
+main function definition will be used.
 \end{craychapel}
 
 \begin{chapelexample}{main-module.chpl}
-If the following code is compiled without specifying a main module, it
-will yield an error.
+Because it defines two \chpl{main} functions, the following code will yield an
+error unless a main module is specified on the command line.
 \begin{chapel}
 module M1 {
   const x = 1;
@@ -382,10 +380,13 @@ the main module and can be called as such.
 %subsubsection{Programs with a Single Module}
 %% \label{Programs_with_a_Single_Module}
 
-To aid in exploratory programming, if the file(s) listed on the
-compiler's command line only define a single module, the module need
-not define a main function.  In this case, a default main function is
-created to execute the module initialization code.
+To aid in exploratory programming, a default main function is
+created if the program does not contain a user-defined main function.  The
+default main function is equivalent to
+\begin{chapel}
+proc main() {}
+\end{chapel}
+
 \begin{chapelexample}{no-main.chpl}
 The code
 \begin{chapel}
@@ -394,9 +395,10 @@ writeln("hello, world");
 \begin{chapeloutput}
 hello, world
 \end{chapeloutput}
-is a legal and complete Chapel program.  Its initialization function,
-which also serves as the program's main function, is the top-level
-writeln() statement.  The module declaration is taken to be the file
+is a legal and complete Chapel program.  The startup code for a Chapel program
+first calls the module initialization code for the main module and then
+calls \chpl{main()}.  This program's initialization function is the top-level
+writeln() statement.  The module declaration is taken to be the entire file,
 as described in~\rsec{Implicit_Modules}.
 \end{chapelexample}
 
@@ -409,7 +411,7 @@ Module initialization is performed using the following algorithm.
 
 Starting from the module that defines the main function, the modules named in
 its use statements are visited depth-first and initialized in post-order.  If a
-use statment names a module that has already been visited, it is not visited a
+use statement names a module that has already been visited, it is not visited a
 second time.  Thus, infinite recursion is avoided.
 
 Modules used by a given module are visited in the order in which

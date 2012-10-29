@@ -24,14 +24,13 @@ array-type:
   [ domain-expression ] type-specifier
 \end{syntax}
 The \sntx{domain-expression} must specify a domain that the array can
-be declared over.  If it is a domain
-literal, the duplicate square brackets around the domain literal may
-be omitted.
+be declared over.  If the \sntx{domain-expression} is a domain
+literal, the curly braces around the literal may be omitted.
 
 \begin{chapelexample}{decls.chpl}
 In the code
 \begin{chapel}
-const D: domain(2) = [1..10, 1..10];
+const D: domain(2) = {1..10, 1..10};
 var A: [D] real;
 \end{chapel}
 \begin{chapelpost}
@@ -39,7 +38,7 @@ writeln(D);
 writeln(A);
 \end{chapelpost}
 \begin{chapeloutput}
-[1..10, 1..10]
+{1..10, 1..10}
 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
@@ -71,7 +70,7 @@ An array's element type can be referred to using the member symbol
 In the following example, \chpl{x} is declared to be of type
 \chpl{real} since that is the element type of array \chpl{A}.
 \begin{chapelpre}
-const D: domain(2) = [1..10, 1..10];
+const D: domain(2) = {1..10, 1..10};
 \end{chapelpre}
 \begin{chapel}
 var A: [D] real;
@@ -99,30 +98,68 @@ described in~\rsec{Array_Assignment}.  Chapel semantics are defined so
 that the compiler will never need to insert temporary arrays of the
 same size as a user array variable.
 
-\index{arrays!literals!lack thereof}
-Arrays do not have a literal format in Chapel, but arithmetic array
-variables can be initialized using tuple values.  These tuples must
-match the size and shape of the array itself.
+\index{arrays!literals}
+
+Array literals are specified by enclosing a comma separated list of expressions
+representing values in square brackets. A 1-based domain will automatically be 
+generated for the given array literal.  The type of the array's values will be 
+the type of the first element listed.
+
+\begin{syntax}
+array-literal:
+  [ expression-list ]
+\end{syntax}
+
+\begin{chapelexample}{adecl-literal.chpl}
+The following example declares a 5 element array literal containing strings,
+then subsequently prints each string element to the console.
+\begin{chapel}
+var A = ["1", "2", "3", "4", "5"];
+
+for i in 1..5 do
+  writeln(A[i]);
+\end{chapel}
+\begin{chapeloutput}
+1
+2
+3
+4
+5
+\end{chapeloutput}
+\end{chapelexample}
+
+\begin{future}
+Provide syntax which allows users to specify the domain for an array
+literal.
+\end{future}
+
+\begin{future}
+Determine the type of an array literal based on the most promoted type, 
+rather than the first element's type.
+\end{future}
 
 \begin{chapelexample}{decl-with-anon-domain.chpl}
-The following example declares a $2 \times 3$ array \chpl{A} using an
-anonymous domain value and initializes the elements of the array using
-a 2-tuple of 3-tuples which matches the array's size and shape.
+The following example declares a 2-element array \chpl{A} containing 3-element
+arrays of real numbers.  \chpl{A} is initialized using array literals.
 \begin{chapel}
-var A: [1..2, 1..3] real = ((1.1, 1.2, 1.3), (2.1, 2.2, 2.3));
+var A: [1..2] [1..3] real = [[1.1, 1.2, 1.3], [2.1, 2.2, 2.3]];
 \end{chapel}
 \begin{chapelpost}
 writeln(A.domain);
 \end{chapelpost}
 \begin{chapeloutput}
-[1..2, 1..3]
+{1..2}
 \end{chapeloutput}
 \end{chapelexample}
 
-\index{arrays!default values}
+\begin{openissue}
+We would like to differentiate syntactically between array literals for an array
+of arrays and a multi-dimensional array. 
+\end{openissue}
 
-An array's default value is to have its elements all initialized to
-the default values for their types.
+\index{arrays!default values}
+An array's default value is for each array element to be initialized to
+the default value of the element type.
 
 \subsection{Runtime Representation of Array Values}
 \label{Array_Runtime_Representation}
@@ -163,7 +200,7 @@ writeln(A.domain);
 writeln(A);
 \end{chapelpost}
 \begin{chapeloutput}
-[1..10]
+{1..10}
 1.2 3.4 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
 \end{chapeloutput}
 \end{chapelexample}
@@ -228,7 +265,7 @@ proc f(A: [], is...)
 var B: [1..5] int;
 [i in 1..5] B(i) = i;
 var C: [1..5,1..5] int;
-[(i,j) in [1..5,1..5]] C(i,j) = i+i*j;
+[(i,j) in {1..5,1..5}] C(i,j) = i+i*j;
 writeln(f(B, 3));
 writeln(f(C, 3, 3));
 \end{chapelpost}
@@ -306,7 +343,7 @@ writeln(B);
 \end{chapelnoprint}
 is equivalent to
 \begin{chapel}
-forall (a,b) in (A,B) do
+forall (a,b) in zip(A,B) do
   a = b;
 \end{chapel}
 \begin{chapelpost}
@@ -386,8 +423,8 @@ Given the definitions
 config const n = 2;
 \end{chapelpre}
 \begin{chapel}
-var OuterD: domain(2) = [0..n+1, 0..n+1];
-var InnerD: domain(2) = [1..n, 1..n];
+var OuterD: domain(2) = {0..n+1, 0..n+1};
+var InnerD: domain(2) = {1..n, 1..n};
 var A, B: [OuterD] real;
 \end{chapel}
 \begin{chapelnoprint}
@@ -404,8 +441,8 @@ writeln(A);
 writeln(B);
 \end{chapelpost}
 \begin{chapeloutput}
-[0..3, 0..3]
-[1..2, 1..2]
+{0..3, 0..3}
+{1..2, 1..2}
 0.0 0.0 0.0 0.0
 0.0 1.0 1.0 0.0
 0.0 1.0 1.0 0.0
@@ -478,7 +515,7 @@ are the first column of \chpl{A}.
 The \chpl{#} operator can be applied to dense rectangular arrays with
 a tuple argument whose size matches the rank of the array (or
 optionally an integer in the case of a 1D array).  The operator is
-equivalent to applying the \chpl{#} oeprator to the array's domain and
+equivalent to applying the \chpl{#} operator to the array's domain and
 using the result to slice the array as described in
 Section~\ref{Rectangular_Array_Slicing}.
 
@@ -704,7 +741,7 @@ assign to \chpl{SpsA} at an index not described by its domain,
 
 \begin{chapelpre}
 config const n = 5;
-const D = [1..n, 1..n];
+const D = {1..n, 1..n};
 \end{chapelpre}
 \begin{chapel}
 var SpsD: sparse subdomain(D);
@@ -837,4 +874,13 @@ shape of the new domain.  The number of indices in the domain must
 equal the number of elements in the array.  The elements of the array
 are copied into the new array using the default iteration orders over
 both arrays.
+\end{protobody}
+
+\index{arrays!size@\chpl{size}}
+\index{predefined functions!size (array)@\chpl{size} (array)}
+\begin{protohead}
+proc $Array$.size: this.domain.dim_type
+\end{protohead}
+\begin{protobody}
+Same as $Array$.numElements.
 \end{protobody}
