@@ -36,5 +36,11 @@ ifdef NVCC
 endif
 
 printlinkline:
-	@echo $(LD) $(GEN_CFLAGS) $(COMP_GEN_CFLAGS) -L$(CHPL_RT_LIB_DIR) $(CHPL_RT_INC_DIR) -lchpl -lm
+	@echo $(LD) $(GEN_LFLAGS) $(COMP_GEN_LFLAGS) -L$(CHPL_RT_LIB_DIR) -lchpl -lm $(LIBS)
+
+printmaino:
+	@echo $(CHPL_RT_LIB_DIR)/main.o
+
+printllvminstall:
+	@echo $(LLVM_INSTALL_DIR)
 

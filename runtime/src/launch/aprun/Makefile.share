@@ -1,5 +1,6 @@
 LAUNCHER_SRCS = \
         launch-aprun.c \
+        aprun-utils.c \
 
 SVN_SRCS = $(LAUNCHER_SRCS)
 SRCS = $(SVN_SRCS)

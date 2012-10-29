@@ -56,10 +56,27 @@ chpl_string _real32_to_chpl_string(_real32 x);
 chpl_string _real64_to_chpl_string(_real64 x);
 chpl_string _imag32_to_chpl_string(_imag32 x);
 chpl_string _imag64_to_chpl_string(_imag64 x);
-#define chpl_bool_to_chpl_string(x) ((x) ? "true" : "false")
-#define chpl_bool8_to_chpl_string(x) chpl_bool_to_chpl_string(x)
-#define chpl_bool16_to_chpl_string(x) chpl_bool_to_chpl_string(x)
-#define chpl_bool32_to_chpl_string(x) chpl_bool_to_chpl_string(x)
-#define chpl_bool64_to_chpl_string(x) chpl_bool_to_chpl_string(x)
+
+static ___always_inline
+chpl_string chpl_bool_to_chpl_string(chpl_bool x) {
+  return x ? "true" : "false";
+}
+static ___always_inline
+chpl_string chpl_bool8_to_chpl_string(chpl_bool8 x) {
+  return x ? "true" : "false";
+}
+static ___always_inline
+chpl_string chpl_bool16_to_chpl_string(chpl_bool16 x) {
+  return x ? "true" : "false";
+}
+static ___always_inline
+chpl_string chpl_bool32_to_chpl_string(chpl_bool32 x) {
+  return x ? "true" : "false";
+}
+static ___always_inline
+chpl_string chpl_bool64_to_chpl_string(chpl_bool64 x) {
+  return x ? "true" : "false";
+}
+
 
 #endif

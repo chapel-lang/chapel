@@ -1,3 +1,5 @@
+#include "sys_basic.h"
+
 #include <inttypes.h>
 #include <math.h>
 #include <stdarg.h>
@@ -71,12 +73,42 @@ chpl_wide_string_copy(struct __chpl____wide_chpl_string* x, int32_t lineno, chpl
     return string_copy(x->addr, lineno, filename);
   else {
     chpl_string s;
-    CHPL_COMM_WIDE_GET_STRING(s, *x,
+    chpl_comm_wide_get_string(&s, x,
                               -CHPL_TYPE_chpl_string /* this is unfortunate */,
                               lineno, filename);
     return s;
   }
 }
+
+// un-macro'd CHPL_WIDEN_STRING
+void
+chpl_string_widen(struct __chpl____wide_chpl_string* x, chpl_string from)
+{
+  size_t len = strlen(from) + 1;
+  x->locale = chpl_localeID;
+  x->addr = chpl_mem_allocMany(len, sizeof(char),
+                               CHPL_RT_MD_SET_WIDE_STRING, 0, 0);
+  strncpy((char*)x->addr, from, len);
+  x->size = len;
+}
+
+// un-macro'd CHPL_COMM_WIDE_GET_STRING
+void
+chpl_comm_wide_get_string(chpl_string* local, struct __chpl____wide_chpl_string* x, int32_t tid, int32_t lineno, chpl_string filename)
+{
+  char* chpl_macro_tmp =                                              
+      chpl_mem_allocMany(x->size, sizeof(char),                     
+                         CHPL_RT_MD_GET_WIDE_STRING, -1, "<internal>"); 
+    if (chpl_localeID == x->locale)                                 
+      memcpy(chpl_macro_tmp, x->addr, x->size);                 
+    else                                                                
+      chpl_comm_get((void*) &(*chpl_macro_tmp), x->locale,                     
+                    (void*)(x->addr),                               
+                    sizeof(char), tid, x->size, lineno, filename);                    
+    *local = chpl_macro_tmp;
+} 
+
+
 #endif
 
 
@@ -190,41 +222,35 @@ object2int( _chpl_object o) {
   return (intptr_t) o;
 }
 
-
-_timervalue* chpl_now_timer_help(_timervalue* time) {
-  gettimeofday(time, NULL);
-  return time;
-}
-_timervalue chpl_default_timer;
-
-int32_t chpl_now_year(void) {
-  struct tm * now;
-  _timervalue t;
-  gettimeofday(&t, NULL);
-  now = localtime(&t.tv_sec);
-  return now->tm_year;
+_timevalue chpl_null_timevalue(void) {
+  _timevalue ret;
+  ret.tv_sec = 0;
+  ret.tv_usec = 0;
+  return ret;
 }
 
-int32_t chpl_now_month(void) {
-  struct tm * now;
-  _timervalue t;
-  gettimeofday(&t, NULL);
-  now = localtime(&t.tv_sec);
-  return now->tm_mon;
+_timevalue chpl_now_timevalue(void) {
+  _timevalue ret;
+  gettimeofday(&ret, NULL);
+  return ret;
 }
 
-int32_t chpl_now_day(void) {
-  struct tm * now;
-  _timervalue t;
-  gettimeofday(&t, NULL);
-  now = localtime(&t.tv_sec);
-  return now->tm_mday;
+int64_t chpl_timevalue_seconds(_timevalue t) { return t.tv_sec; }
+int64_t chpl_timevalue_microseconds(_timevalue t) { return t.tv_usec; }
+
+void chpl_timevalue_parts(_timevalue t, int32_t* seconds, int32_t* minutes, int32_t* hours, int32_t* mday, int32_t* month, int32_t* year, int32_t* wday, int32_t* yday, int32_t* isdst)
+{
+  struct tm localt;
+  localtime_r(&t.tv_sec, &localt);
+  if( seconds ) *seconds = localt.tm_sec;
+  if( minutes ) *minutes = localt.tm_min;
+  if( hours ) *hours = localt.tm_hour;
+  if( mday ) *mday = localt.tm_mday;
+  if( month ) *month = localt.tm_mon;
+  if( year ) *year = localt.tm_year;
+  if( wday ) *wday = localt.tm_wday;
+  if( yday ) *yday = localt.tm_yday;
+  if( isdst ) *isdst = localt.tm_isdst;
 }
 
-int32_t chpl_now_dow(void) {
-  struct tm * now;
-  _timervalue t;
-  gettimeofday(&t, NULL);
-  now = localtime(&t.tv_sec);
-  return now->tm_wday;
-}
+

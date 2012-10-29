@@ -254,7 +254,7 @@ void initSetValue(const char* varName, const char* value,
 
 
 
-char* lookupSetValue(const char* varName, const char* moduleName) {
+const char* lookupSetValue(const char* varName, const char* moduleName) {
   configVarType* configVar;
   if (strcmp(moduleName, "") == 0) {
     const char* message = "Attempted to lookup value with the module name an "

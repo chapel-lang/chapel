@@ -20,7 +20,9 @@ extern int32_t chpl_numLocales; // number of locales
 extern int32_t chpl_numPrivateObjects;
 extern void** chpl_privateObjects; // privatized array and domain objects
 
-#define chpl_numPrivatizedClasses() chpl_numPrivateObjects
+static ___always_inline
+int32_t chpl_numPrivatizedClasses(void) { return chpl_numPrivateObjects; }
+
 extern void chpl_newPrivatizedClass(void*);
 extern void* chpl_getPrivatizedClass(int32_t);
 
@@ -173,36 +175,29 @@ void  chpl_comm_get(void *addr, int32_t locale, void* raddr,
                     int ln, chpl_string fn);
 
 //
-// get the number of elements pointed out by count array, with strides pointed
-// out by dststrides and srcstrides arrays. These three arrays have to be
-// int32 or otherwise we have to pass the type as well.
-// notes:
-//   elemSize is the size of each element and it is used appropriately inside 
-//            the function to scale the values in count[0] and strides
-// This function ends up calling gasnet_puts_bulk
-// More info in: http://www.escholarship.org/uc/item/5hg5r5fs?display=all
-// Proposal for Extending the UPC Memory Copy Library Functions and Supporting 
-// Extensions to GASNet, Version 2.0. Author: Dan Bonachea 
-
-void  chpl_comm_puts(void* dstaddr, void* dststrides, int32_t dstlocale, 
-		     void* srcaddr, void* srcstrides, void* count,
-		     int32_t stridelevels, int32_t elemSize, int32_t typeIndex, 
-		     int ln, chpl_string fn);
+// put the number of elements pointed out by count array, with strides pointed
+// out by dststrides and srcstrides arrays. These three arrays have to be int32
+// to correspond to DefaultRectangularArr.doiBulkTransferStride(). via
+// DefaultRectangularArr.doiBulkTransferStrideComm().
+// 'elemSize' is the size of each element, used to scale the values in count[0]
+//            and strides.
+// When comm=gasnet, this function ends up calling gasnet_puts_bulk().
+//   More info in: http://www.escholarship.org/uc/item/5hg5r5fs?display=all
+//   Proposal for Extending the UPC Memory Copy Library Functions and Supporting 
+//   Extensions to GASNet, Version 2.0. Author: Dan Bonachea 
+//
+void  chpl_comm_put_strd(void* dstaddr, void* dststrides, int32_t dstlocale, 
+                     void* srcaddr, void* srcstrides, void* count,
+                     int32_t stridelevels, int32_t elemSize, int32_t typeIndex, 
+                     int ln, chpl_string fn);
 
 //
-// get the number of elements pointed out by count array, with strides pointed
-// out by dststrides and srcstrides arrays. These three arrays have to be
-// int32 or otherwise we have to pass the type as well.
-// notes:
-//   elemSize is the size of each element and it is used appropriately inside 
-//            the function to scale the values in count[0] and strides
-// This function ends up cally gasnet_gets_bulk
-// More info in: http://www.escholarship.org/uc/item/5hg5r5fs?display=all 
-
-void  chpl_comm_gets(void* dstaddr, void* dststrides, int32_t srclocale, 
-		     void* srcaddr, void* srcstrides, void* count,
-		     int32_t stridelevels, int32_t elemSize, int32_t typeIndex, 
-		     int ln, chpl_string fn);
+// same as chpl_comm_puts(), but do get instead
+//
+void  chpl_comm_get_strd(void* dstaddr, void* dststrides, int32_t srclocale, 
+                     void* srcaddr, void* srcstrides, void* count,
+                     int32_t stridelevels, int32_t elemSize, int32_t typeIndex, 
+                     int ln, chpl_string fn);
 
 //
 // remote fork should launch a thread on locale that runs function f

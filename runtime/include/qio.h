@@ -36,7 +36,7 @@ typedef uint32_t qio_hint_t;
 
 #ifdef _chplrt_H_
 // also export iohint_t and fdflag_t
-typedef qio_hint_t iohint_t;
+typedef qio_hint_t iohints;
 typedef qio_fdflag_t fdflag_t;
 
 
@@ -1192,6 +1192,7 @@ err_t qio_channel_write_bits(const int threadsafe, qio_channel_t* restrict ch, u
   qio_bitbuffer_t part_one_bits;
   qio_bitbuffer_t part_one_bits_be;
   qio_bitbuffer_t tmp_bits;
+  uint64_t tmpv;
   int tmp_live;
   int part_one;
   int part_two;
@@ -1231,7 +1232,8 @@ err_t qio_channel_write_bits(const int threadsafe, qio_channel_t* restrict ch, u
       // The value is split between tmp_bits and next_bits
       part_one = 8*sizeof(qio_bitbuffer_t) - tmp_live;
       part_two = nbits - part_one;
-      part_one_bits = (tmp_bits << part_one) | ( v >> part_two );
+      tmpv = (part_two < 64) ? v : 0;
+      part_one_bits = (tmp_bits << part_one) | ( tmpv >> part_two );
       part_one_bits_be = qio_bitbuffer_tobe(part_one_bits); // big endian now.
       tmp_bits = v;
       tmp_live = part_two;

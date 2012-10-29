@@ -3,7 +3,9 @@
 
 #include "sys_basic.h"
 #include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
+#include <sys/time.h> // for struct timeval
 
 typedef enum {
   CHPL_TYPE_chpl_bool,
@@ -30,7 +32,7 @@ typedef enum {
   CHPL_TYPE_wide_string,
   CHPL_TYPE__cfile,
   CHPL_TYPE_chpl_task_list_p,
-  CHPL_TYPE__timervalue,
+  CHPL_TYPE__timevalue,
   CHPL_TYPE_chpl_sync_aux_t,
   CHPL_TYPE_chpl_single_aux_t,
   CHPL_TYPE_chpl_taskID_t,
@@ -44,15 +46,14 @@ typedef struct _chpl_fieldType {
   size_t offset;
 } chpl_fieldType;
 
-#define nil 0
-#define _nilType void*
+#define nil 0 
+typedef void* _nilType;
+typedef void* _nilRefType;
+typedef void* _chpl_object;
+typedef void* _chpl_value;
+typedef void* chpl_opaque;
 
 #define nilRef 0
-#define _nilRefType void*
-
-#define _chpl_object void*
-#define _chpl_value void*
-#define chpl_opaque void*
 
 // macros for specifying the correct C constant type
 #define INT8( i)   (i)
@@ -118,12 +119,15 @@ typedef int64_t              _symbol;
 #define MAX_UINT32          UINT32_MAX
 #define MAX_UINT64          UINT64_MAX
 
-#define MIN_FLOAT32         (-FLT_MAX)
-#define MIN_FLOAT64         (-DBL_MAX)
+// code gen just uses - MAX_FLOATxx #define MIN_FLOAT32         (-FLT_MAX)
+//                                  #define MIN_FLOAT64         (-DBL_MAX)
 #define MAX_FLOAT32         FLT_MAX
 #define MAX_FLOAT64         DBL_MAX
 
-#define ascii(s) ((int8_t)(*s))
+static ___always_inline
+int8_t ascii(chpl_string s) {
+  return (int8_t) *s;
+}
 
 struct __chpl____wide_chpl_string;
 
@@ -140,6 +144,8 @@ char* chpl_glom_strings(int numstrings, ...);
 chpl_bool string_contains(chpl_string x, chpl_string y);
 chpl_string string_copy(chpl_string x, int32_t lineno, chpl_string filename);
 chpl_string chpl_wide_string_copy(struct __chpl____wide_chpl_string* x, int32_t lineno, chpl_string filename);
+void chpl_string_widen(struct __chpl____wide_chpl_string* x, chpl_string from);
+void chpl_comm_wide_get_string(chpl_string* local, struct __chpl____wide_chpl_string* x, int32_t tid, int32_t lineno, chpl_string filename);
 chpl_string string_concat(chpl_string x, chpl_string y, int32_t lineno, chpl_string filename);
 chpl_string string_index(chpl_string x, int i, int32_t lineno, chpl_string filename);
 chpl_string string_select(chpl_string x, int low, int high, int32_t lineno, chpl_string filename);
@@ -150,18 +156,13 @@ int64_t string_length(chpl_string x);
 int64_t real2int( _real64 f);       // return the raw bytes of the float
 int64_t object2int( _chpl_object o);  // return the ptr
 
-typedef struct timeval _timervalue;
-#define chpl_init_timer(time)
-extern _timervalue* chpl_now_timer_help(_timervalue* time);
-#define chpl_now_timer(time) (*chpl_now_timer_help(&(time)))
-extern _timervalue chpl_default_timer; // hack as a default value
-#define chpl_new_timer() (chpl_default_timer)
-#define chpl_seconds_timer(time) ((_real64)((time).tv_sec))
-#define chpl_microseconds_timer(time) ((_real64)((time).tv_usec))
-int32_t chpl_now_year(void);
-int32_t chpl_now_month(void);
-int32_t chpl_now_day(void);
-int32_t chpl_now_dow(void);
+typedef struct timeval _timevalue;
+
+_timevalue chpl_null_timevalue(void);
+_timevalue chpl_now_timevalue(void);
+int64_t chpl_timevalue_seconds(_timevalue t);
+int64_t chpl_timevalue_microseconds(_timevalue t);
+void chpl_timevalue_parts(_timevalue t, int32_t* seconds, int32_t* minutes, int32_t* hours, int32_t* mday, int32_t* month, int32_t* year, int32_t* wday, int32_t* yday, int32_t* isdst);
 
 typedef int32_t chpl__class_id;
 

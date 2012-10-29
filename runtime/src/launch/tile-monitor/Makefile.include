@@ -1,4 +1,4 @@
-LAUNCH_SUBDIR = src/launch/pvm
+LAUNCH_SUBDIR = src/launch/tile-monitor
 
 LAUNCH_OBJDIR = $(RUNTIME_ROOT)/$(LAUNCH_SUBDIR)/$(LAUNCHER_OBJDIR)
 

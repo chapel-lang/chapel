@@ -23,9 +23,9 @@ typedef atomic_uint_least64_t qbytes_refcnt_t;
   if( ptr ) { \
     qb_refcnt_base_t old_cnt = atomic_fetch_add_uint_least64_t (&ptr->ref_cnt, 1); \
     /* if it was 0, we couldn't have had a ref to it */ \
-    if( old_cnt == 0 ) *(int *)(0) = 0; /* deliberately segfault. */ \
+    if( old_cnt == 0 ) *(volatile int *)(0) = 0; /* deliberately segfault. */ \
     /* if it is now 0, we overflowed the number */ \
-    if( old_cnt + 1 == 0 ) *(int *)(0) = 0; /* deliberately segfault. */ \
+    if( old_cnt + 1 == 0 ) *(volatile int *)(0) = 0; /* deliberately segfault. */ \
   } \
 }
 
@@ -39,7 +39,7 @@ typedef atomic_uint_least64_t qbytes_refcnt_t;
       free_function(ptr); \
     } else { \
       /* old_cnt == 0 is a fatal error (underflow) */ \
-      if( old_cnt == 0 ) *(int *)(0) = 0; /* deliberately segfault. */ \
+      if( old_cnt == 0 ) *(volatile int *)(0) = 0; /* deliberately segfault. */ \
     } \
   } \
 }

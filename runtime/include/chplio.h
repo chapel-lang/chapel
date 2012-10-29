@@ -10,9 +10,9 @@
 
 typedef FILE* _cfile;
 
-#define chpl_cnullfile() (0)
+static inline _cfile chpl_cnullfile(void) { return (_cfile) 0; }
 
 char* chpl_refToString(void* ref);
-char* chpl_wideRefToString(void* wideref);
+char* chpl_wideRefToString(int32_t locale, void* addr);
 
 #endif

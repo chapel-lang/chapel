@@ -1,22 +1,20 @@
 RUNTIME_ROOT = ../../..
-RUNTIME_SUBDIR = src/launch/pvm
+RUNTIME_SUBDIR = src/tasks/$(CHPL_MAKE_TASKS)
 
 ifndef CHPL_MAKE_HOME
 export CHPL_MAKE_HOME=$(shell pwd)/$(RUNTIME_ROOT)/..
 endif
 
-#
-# standard header
-#
 include $(RUNTIME_ROOT)/make/Makefile.runtime.head
 
-LAUNCH_OBJDIR = $(LAUNCHER_OBJDIR)
+TASKS_OBJDIR = $(RUNTIME_OBJDIR)
 include Makefile.share
 
-TARGETS = \
-	$(LAUNCHER_OBJS) \
+TARGETS = $(TASKS_OBJS)
 
 include $(RUNTIME_ROOT)/make/Makefile.runtime.subdirrules
+
+FORCE:
 
 #
 # standard footer

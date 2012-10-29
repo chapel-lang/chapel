@@ -14,16 +14,8 @@ char* chpl_refToString(void* ref) {
 }
 
 
-typedef struct _chpl_wide_voidStar {
-  int32_t locale;
-  void* addr;
-} chpl_wide_voidStar;
-
-
-char* chpl_wideRefToString(void* wideref) {
+char* chpl_wideRefToString(int32_t locale, void* addr) {
   char buff[32];
-  int32_t locale = ((chpl_wide_voidStar*)wideref)->locale;
-  void* ref = ((chpl_wide_voidStar*)wideref)->addr;
-  sprintf(buff, "%" PRId32 ":%p", locale, ref);
+  sprintf(buff, "%" PRId32 ":%p", locale, addr);
   return chpl_glom_strings(1, buff);
 }

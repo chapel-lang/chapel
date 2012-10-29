@@ -9,7 +9,7 @@
 /* defined in chpl__header.h: */
 
 extern int64_t numThreadsPerLocale;
-extern int64_t chpl__maxThreadsPerLocale;
+extern int32_t chpl__maxThreadsPerLocale;
 extern int64_t callStackSize;
 
 /* generated */
@@ -25,8 +25,8 @@ extern void CreateConfigVarTable(void);
 
 /* used by copy collection: */
 
-extern size_t cid2size(chpl__class_id cid);
-extern size_t* cid2offsets(chpl__class_id cid);
+//extern size_t cid2size(chpl__class_id cid);
+//extern size_t* cid2offsets(chpl__class_id cid);
 
 /* These are defined in _type_structure.c if
    --gen-communicated-structures is true and are used by a

@@ -1,3 +1,7 @@
+// squelch warning on Mac OS X
+#ifdef _POSIX_C_SOURCE
+#undef _POSIX_C_SOURCE
+#endif
 #define _POSIX_C_SOURCE 20112L
 
 #ifndef SIMPLE_TEST
@@ -618,6 +622,9 @@ err_t sys_pread(int fd, void* buf, size_t count, off_t offset, ssize_t* num_read
 
   STARTING_SLOW_SYSCALL;
   got = pread(fd, buf, count, offset);
+  #ifdef __CYGWIN__
+  if( got == -1 && errno == ENODATA ) got = 0;
+  #endif
   if( got != -1 ) {
     *num_read_out = got;
     if( got == 0 && count != 0 ) err_out = EEOF;
@@ -750,6 +757,9 @@ err_t sys_preadv(fd_t fd, struct iovec* iov, int iovcnt, off_t seek_to_offset, s
     if( niovs > IOV_MAX ) niovs = IOV_MAX;
 
     got = preadv(fd, &iov[i], niovs, seek_to_offset + got_total);
+    #ifdef __CYGWIN__
+    if( got == -1 && errno == ENODATA ) got = 0;
+    #endif
     if( got != -1 ) {
       got_total += got;
     } else {
@@ -785,6 +795,9 @@ err_t sys_preadv(fd_t fd, struct iovec* iov, int iovcnt, off_t seek_to_offset, s
   got_total = 0;
   for( i = 0; i < iovcnt; i++ ) {
     got = pread(fd, iov[i].iov_base, iov[i].iov_len, seek_to_offset + got_total);
+    #ifdef __CYGWIN__
+    if( got == -1 && errno == ENODATA ) got = 0;
+    #endif
     if( got != -1 ) {
       got_total += got;
     } else {
