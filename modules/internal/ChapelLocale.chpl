@@ -7,7 +7,7 @@ use DefaultRectangular;
 
 // would like this to be the following, but it breaks about 20 tests:
 //const LocaleSpace: domain(1) distributed(OnePer) = [0..numLocales-1];
-const LocaleSpace: domain(1) = [0..numLocales-1];
+const LocaleSpace: domain(1) = {0..numLocales-1};
 
 var doneCreatingLocales: bool;
 
@@ -44,7 +44,7 @@ class locale {
   }
 
   proc readWriteThis(f) {
-    f & new ioLiteral("LOCALE") & chpl_id;
+    f <~> new ioLiteral("LOCALE") <~> chpl_id;
   }
 }
 
@@ -170,7 +170,7 @@ proc chpl_getPrivatizedCopy(type objectType, objectPid:int): objectType
 // Once that gets sorted out, we can turn this into an extern record,
 // and remove the 8 or so individual functions below that return the
 // various counters.
-record chpl_commDiagnostics {
+extern record chpl_commDiagnostics {
   var get: uint(64);
   var get_nb: uint(64);
   var get_nb_test: uint(64);

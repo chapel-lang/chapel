@@ -63,7 +63,7 @@ Features/limitations:
 
 Examples:
 
-const Dbase = [1..5];
+const Dbase = {1..5};
 const Drepl: domain(1) dmapped ReplicatedDist() = Dbase;
 var Abase: [Dbase] int;
 var Arepl: [Drepl] int;
@@ -73,18 +73,18 @@ Arepl[3] = 4;
 
 // these iterate over Dbase, so
 // only the current locale's replicand is accessed
-forall (b,r) in (Abase,Arepl) b = r;
+forall (b,r) in zip(Abase,Arepl) b = r;
 Abase = Arepl;
 
 // these iterate over Drepl;
 // each replicand will be zippered against (and copied from) the entire Abase
-forall (r,b) in (Arepl,Abase) r = b;
+forall (r,b) in zip(Arepl,Abase) r = b;
 Arepl = Abase;
 
 // sequential zippering will detect difference in sizes
 // (if multiple locales)
-for (b,r) in (Abase,Arepl) ... // error
-for (r,b) in (Arepl,Abase) ... // error
+for (b,r) in zip(Abase,Arepl) ... // error
+for (r,b) in zip(Arepl,Abase) ... // error
 
 Potential extensions:
 - support other kinds of domains
@@ -194,7 +194,7 @@ proc ReplicatedDist.ReplicatedDist(targetLocales: [] locale = Locales,
 // TODO: going over all the locales - is there a scalability issue?
 proc ReplicatedDist._localesCheckHelper(purposeMessage: string): void {
   // ideally would like to make this a "eureka"
-  forall (ix, loc) in (targetIds, targetLocales) do
+  forall (ix, loc) in zip(targetIds, targetLocales) do
     if loc.id != ix {
       halt("The array of locales ", purposeMessage, " must be \"consistent\".",
            " See ReplicatedDist documentation for details.");
@@ -348,7 +348,7 @@ proc ReplicatedDist.dsiNewRectangularDom(param rank: int,
                                  stridable=stridable, dist=this);
 
   // create local domain objects
-  coforall (loc, locDom) in (targetLocales, result.localDoms) do
+  coforall (loc, locDom) in zip(targetLocales, result.localDoms) do
     on loc do
       locDom = new LocReplicatedDom(rank, idxType, stridable);
 
@@ -388,7 +388,7 @@ proc ReplicatedDom.dsiSetIndices(rangesArg: rank * range(idxType,
                                                          stridable)): void {
   if traceReplicatedDist then
     writeln("ReplicatedDom.dsiSetIndices on ranges");
-  dsiSetIndices([(...rangesArg)]);
+  dsiSetIndices({(...rangesArg)});
 }
 
 proc ReplicatedDom.dsiSetIndices(domArg: domain(rank, idxType, stridable)): void {
@@ -559,7 +559,7 @@ proc ReplicatedDom.dsiBuildArray(type eltType)
   if traceReplicatedDist then writeln("ReplicatedDom.dsiBuildArray");
   var result = new ReplicatedArr(eltType, this);
   coforall (loc, locDom, locArr)
-   in (dist.targetLocales, localDoms, result.localArrs) do
+   in zip(dist.targetLocales, localDoms, result.localArrs) do
     on loc do
       locArr = new LocReplicatedArr(eltType, rank, idxType, stridable,
                                     locDom);
@@ -632,7 +632,7 @@ proc ReplicatedArr.dsiSlice(sliceDef: ReplicatedDom) {
   assert(sliceDef.localDoms.domain == slicee.localArrs.domain);
 
   coforall (loc, sliceDefLocDom, sliceeLocArr, resultLocArr)
-   in (sliceDef.dist.targetLocales, sliceDef.localDoms,
+   in zip(sliceDef.dist.targetLocales, sliceDef.localDoms,
        slicee.localArrs, result.localArrs) do
     on loc do
       resultLocArr = new LocReplicatedArr(eltType,
@@ -654,7 +654,7 @@ proc ReplicatedArr.dsiReindex(sliceDef: ReplicatedDom) {
   assert(sliceDef.localDoms.domain == slicee.localArrs.domain);
 
   coforall (loc, sliceDefLocDom, sliceeLocArr, resultLocArr)
-   in (sliceDef.dist.targetLocales, sliceDef.localDoms,
+   in zip(sliceDef.dist.targetLocales, sliceDef.localDoms,
        slicee.localArrs, result.localArrs) do
     on loc do
      {
@@ -682,7 +682,7 @@ proc ReplicatedArr.dsiRankChange(sliceDef: ReplicatedDom,
   assert(sliceDef.localDoms.domain == slicee.localArrs.domain);
 
   coforall (loc, sliceDefLocDom, sliceeLocArr, resultLocArr)
-   in (sliceDef.dist.targetLocales, sliceDef.localDoms,
+   in zip(sliceDef.dist.targetLocales, sliceDef.localDoms,
        slicee.localArrs, result.localArrs) do
     on loc do
       resultLocArr = new LocReplicatedArr(eltType,
@@ -702,7 +702,7 @@ proc ReplicatedDist.dsiCreateRankChangeDist(param newRank, args) return this;
 // SUPPORT FOR USER-LEVEL REPLICATED VARIABLES
 
 const rcDomainIx   = 1;
-const rcDomainBase = [rcDomainIx..rcDomainIx];
+const rcDomainBase = {rcDomainIx..rcDomainIx};
 const rcLocales    = Locales;
 const rcDomainMap  = new ReplicatedDist(rcLocales);
 const rcDomain     = rcDomainBase dmapped new dmap(rcDomainMap);
@@ -737,7 +737,7 @@ proc rcCollect(replicatedVar: [?D] ?MYTYPE, collected: [?CD] MYTYPE): void
   var targetLocales = _rcTargetLocalesHelper(replicatedVar);
   assert(replicatedVar.domain == rcDomainBase);
   assert(collected.domain == targetLocales.domain);
-  coforall (loc, col) in (targetLocales, collected) do
+  coforall (loc, col) in zip(targetLocales, collected) do
     on loc do
       col = replicatedVar[rcDomainIx];
 }

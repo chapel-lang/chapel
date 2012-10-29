@@ -119,7 +119,7 @@ class RandomStream {
   proc fillRandom(X: [], param parSafe = this.parSafe) {
     if X.eltType != complex && X.eltType != real && X.eltType != imag then
       compilerError("RandomStream.fillRandom is only defined for real(64), imag(64), and complex(128) arrays");
-    forall (x, r) in (X, iterate(X.domain, X.eltType, parSafe)) do
+    forall (x, r) in zip(X, iterate(X.domain, X.eltType, parSafe)) do
       x = r;
   }
 

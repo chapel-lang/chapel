@@ -25,6 +25,9 @@ extern type fd_t = c_int;
 
 // NULL
 extern const c_nil:c_ptr;
+// To generate legal C prototypes, we have to manually instantiate this prototype
+// for each pointer type that might be associated with 'x'.
+pragma "no prototype"
 extern proc is_c_nil(x):c_int;
 
 // error numbers
@@ -41,13 +44,20 @@ inline proc !(a: syserr) return chpl_err_to_int(a) == 0;
 inline proc _cond_test(a: syserr) return chpl_err_to_int(a) != 0;
 inline proc _cast(type t, x: syserr) where t == int(32)
   return chpl_err_to_int(x);
+inline proc _cast(type t, x: syserr) where t == int(64)
+  return chpl_err_to_int(x);
 inline proc _cast(type t, x: int(32)) where t == syserr
+  return chpl_int_to_err(x);
+inline proc _cast(type t, x: int(64)) where t == syserr
   return chpl_int_to_err(x);
 
 // end of file
-extern const EEOF:syserr;
-extern const ESHORT:syserr;
-extern const EFORMAT:syserr;
+extern proc chpl_macro_int_EEOF():c_int;
+inline proc EEOF return chpl_macro_int_EEOF():syserr;
+extern proc chpl_macro_int_ESHORT():c_int;
+inline proc ESHORT return chpl_macro_int_ESHORT():syserr;
+extern proc chpl_macro_int_EFORMAT():c_int;
+inline proc EFORMAT return chpl_macro_int_EFORMAT():syserr;
 
 // system error numbers
 extern const E2BIG:syserr;

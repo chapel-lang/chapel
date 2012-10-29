@@ -16,6 +16,7 @@ type chpl_table_index_type = int;
 /* These declarations could/should both be nested within
    DefaultAssociativeDom? */
 enum chpl__hash_status { empty, full, deleted };
+_ensure_reference_type(chpl__hash_status);
 
 record chpl_TableEntry {
   type idxType;
@@ -35,11 +36,14 @@ class DefaultAssociativeDom: BaseAssociativeDom {
   var dist: DefaultDist;
 
   // The guts of the associative domain
-  var numEntries: atomic chpl_table_index_type;
-  var tableLock: atomic bool; // do not access directly, use function below
+
+  // We explicitly use processor atomics here since this is not
+  // by design a distributed data structure
+  var numEntries: atomic_int64;
+  var tableLock: atomicflag; // do not access directly, use function below
   var tableSizeNum = 1;
   var tableSize = chpl__primes(tableSizeNum);
-  var tableDom = [0..tableSize-1];
+  var tableDom = {0..tableSize-1};
   var table: [tableDom] chpl_TableEntry(idxType);
 
   inline proc lockTable() {
@@ -73,15 +77,15 @@ class DefaultAssociativeDom: BaseAssociativeDom {
 
   proc dsiSerialReadWrite(f /*: Reader or Writer*/) {
     var first = true;
-    f & new ioLiteral("[");
+    f <~> new ioLiteral("{");
     for idx in this {
       if first then 
         first = false; 
       else 
-        f & new ioLiteral(", ");
-      f & idx;
+        f <~> new ioLiteral(", ");
+      f <~> idx;
     }
-    f & new ioLiteral("]");
+    f <~> new ioLiteral("}");
   }
   proc dsiSerialWrite(f: Writer) { this.dsiSerialReadWrite(f); }
   proc dsiSerialRead(f: Reader) { this.dsiSerialReadWrite(f); }
@@ -264,7 +268,7 @@ class DefaultAssociativeDom: BaseAssociativeDom {
   iter dsiSorted() {
     var tableCopy: [0..#numEntries.read()] idxType;
 
-    for (tmp, slot) in (tableCopy.domain, _fullSlots()) do
+    for (tmp, slot) in zip(tableCopy.domain, _fullSlots()) do
       tableCopy(tmp) = table(slot).idx;
 
     QuickSort(tableCopy);
@@ -288,12 +292,12 @@ class DefaultAssociativeDom: BaseAssociativeDom {
     var copyTable: [copyDom] chpl_TableEntry(idxType) = table;
 
     // grow original table
-    tableDom = [0..-1:chpl_table_index_type]; // non-preserving resize
+    tableDom = {0..(-1:chpl_table_index_type)}; // non-preserving resize
     numEntries.write(0); // reset, because the adds below will re-set this
     tableSizeNum += if grow then 1 else -1;
     if tableSizeNum > chpl__primes.size then halt("associative array exceeds maximum size");
     tableSize = chpl__primes(tableSizeNum);
-    tableDom = [0..tableSize-1];
+    tableDom = {0..tableSize-1};
 
     // insert old data into newly resized table
     for slot in _fullSlots(copyTable) {
@@ -355,7 +359,7 @@ class DefaultAssociativeArr: BaseArr {
 
   var data : [dom.tableDom] eltType;
 
-  var tmpDom = [0..-1:chpl_table_index_type];
+  var tmpDom = {0..(-1:chpl_table_index_type)};
   var tmpTable: [tmpDom] eltType;
 
   //
@@ -420,8 +424,8 @@ class DefaultAssociativeArr: BaseArr {
       if (first) then
         first = false;
       else
-        f & new ioLiteral(" ");
-      f & val;
+        f <~> new ioLiteral(" ");
+      f <~> val;
     }
   }
   proc dsiSerialWrite(f: Writer) { this.dsiSerialReadWrite(f); }
@@ -434,7 +438,7 @@ class DefaultAssociativeArr: BaseArr {
 
   iter dsiSorted() {
     var tableCopy: [0..dom.dsiNumIndices-1] eltType;
-    for (copy, slot) in (tableCopy.domain, dom._fullSlots()) do
+    for (copy, slot) in zip(tableCopy.domain, dom._fullSlots()) do
       tableCopy(copy) = data(slot);
 
     QuickSort(tableCopy);
@@ -454,7 +458,7 @@ class DefaultAssociativeArr: BaseArr {
   }
 
   proc _removeArrayBackup() {
-    tmpDom = [0..-1:chpl_table_index_type];
+    tmpDom = {0..(-1:chpl_table_index_type)};
   }
 
   proc _preserveArrayElement(oldslot, newslot) {
@@ -504,6 +508,10 @@ inline proc chpl__defaultHash(f: real): int(64) {
 
 inline proc chpl__defaultHash(c: complex): int(64) {
   return _gen_key(__primitive("real2int", c.re) ^ __primitive("real2int", c.im)); 
+}
+
+inline proc chpl__defaultHash(a: imag): int(64) {
+  return _gen_key(__primitive( "real2int", _i2r(a)));
 }
 
 inline proc chpl__defaultHash(u: chpl_taskID_t): int(64) {

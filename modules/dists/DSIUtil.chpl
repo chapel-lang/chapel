@@ -187,7 +187,7 @@ proc _factor(param rank: int, value) {
 // dimension start at zero and have unit stride.
 //
 proc computeZeroBasedDomain(dom: domain)
-  return [(...computeZeroBasedRanges(dom.dims()))];
+  return {(...computeZeroBasedRanges(dom.dims()))};
 
 proc computeZeroBasedRanges(ranges: _tuple) {
   proc helper(first, rest...) {
@@ -228,7 +228,7 @@ proc densify(sub: domain, whole: domain, userErrors = true) : domain(whole.rank,
   type argtypes = (sub, whole).type;
   _densiCheck(sub.rank == whole.rank, argtypes);
   _densiIdxCheck(sub.idxType, whole.idxType,  argtypes);
-  return [(...densify(sub.dims(), whole.dims(), userErrors))];
+  return {(...densify(sub.dims(), whole.dims(), userErrors))};
 }
 
 // the desired type of 'wholes': ?rank * range(?IT,?,?)
@@ -349,7 +349,7 @@ proc unDensify(dense: domain, whole: domain, userErrors = true) : domain(whole.r
 {
   type argtypes = (dense, whole).type;
   _undensCheck(dense.rank == whole.rank, argtypes);
-  return [(...unDensify(dense.dims(), whole.dims(), userErrors))];
+  return {(...unDensify(dense.dims(), whole.dims(), userErrors))};
 }
 
 // the desired type of 'wholes': ?rank * range(?IT,?,?)
@@ -429,7 +429,7 @@ proc setupTargetLocalesArray(targetLocDom, targetLocArr, specifiedLocArr) {
     var ranges: rank*range;
     for param i in 1..rank do
       ranges(i) = 0..#factors(i);
-    targetLocDom = [(...ranges)];
+    targetLocDom = {(...ranges)};
     targetLocArr = reshape(specifiedLocArr, targetLocDom);
   } else {
     if specifiedLocArr.rank != rank then
@@ -437,7 +437,7 @@ proc setupTargetLocalesArray(targetLocDom, targetLocArr, specifiedLocArr) {
     var ranges: rank*range;
     for param i in 1..rank do
       ranges(i) = 0..#specifiedLocArr.domain.dim(i).length;
-    targetLocDom = [(...ranges)];
+    targetLocDom = {(...ranges)};
     targetLocArr = specifiedLocArr;
   }
 }

@@ -12,6 +12,7 @@ var privatizeLock$: sync int;
 
 config param debugBulkTransfer = false;
 config param useBulkTransfer = true;
+config param useBulkTransferStride = false;
 
 pragma "privatized class"
 proc _isPrivatized(value) param
@@ -195,6 +196,74 @@ proc chpl__convertValueToRuntimeType(dom: domain) type {
 pragma "has runtime type"
 proc chpl__buildArrayRuntimeType(dom: domain, type eltType) type
   return dom.buildArray(eltType);
+
+/*
+ * Support for array literals. 
+ *
+ * Array literals are detected during parsing and converted 
+ * to a call expr.  Array values pass through the various  
+ * compilation phases as regular parameters. 
+ *
+ * NOTE:  It would be nice to define a second, less specific, function
+ *        to handle the case of multiple types, however this is not 
+ *        possible atm due to using var args with a query type. */
+proc chpl__buildArrayLiteral( elems:?t ...?k ){
+  type elemType = elems(1).type;
+  var A : [1..k] elemType;  //This is unfortunate, can't use t here...
+
+  for param i in 1..k {
+    type currType = elems(i).type;
+
+    if currType != elemType {
+      compilerError( "Array literal element " + i:string + 
+                     " expected to be of type " + typeToString(elemType) +
+                     " but is of type " + typeToString(currType) );
+    } 
+    
+    A(i) = elems(i);
+  } 
+      
+  return A; 
+}
+
+
+/* Transitional warning from old domain literal syntax in Chapel 1.5 to 
+ * new domain literal syntax in 1.6.  This is intended to be removed along
+ * with the warnArrayLitRanges in the release following 1.6. 
+ *
+ * NOTE:  After 1.6 this function should be removed entirely and the array 
+ *        literal production modified to only call chpl__buildArrayLiteral.
+ *
+ * NOTE: Oddly one cannot return chpl__buildArrayLiteral here, not sure why.
+ *       Had to copy and paste the body of the function to obtain proper 
+ *       behavior.  */
+proc chpl__buildArrayLiteralWarn( elems:?t ...?k ){
+
+  if chpl__isRange(elems(1)) {
+    compilerWarning("Encountered an array literal with range element(s).",
+                    " Did you mean a domain literal here?",
+                    " If so, use {...} instead of [...].",
+                    " This warning can be disabled by using the",
+                    " --no-warn-domain-literal compiler option." ); 
+  }
+
+  type elemType = elems(1).type;
+  var A : [1..k] elemType;  //This is unfortunate, can't use t here...
+
+  for param i in 1..k {
+    type currType = elems(i).type;
+
+    if currType != elemType {
+      compilerError( "Array literal element " + i:string + 
+                     " expected to be of type " + typeToString(elemType) +
+                     " but is of type " + typeToString(currType) );
+    } 
+    
+    A(i) = elems(i);
+  } 
+      
+  return A; 
+}
 
 proc chpl__convertValueToRuntimeType(arr: []) type
   return chpl__buildArrayRuntimeType(arr.domain, arr.eltType);
@@ -464,7 +533,7 @@ record _distribution {
   proc idxToLocale(ind) return _value.dsiIndexToLocale(ind);
 
   proc readWriteThis(f) {
-    f & _value;
+    f <~> _value;
   }
 
   proc displayRepresentation() { _value.dsiDisplayRepresentation(); }
@@ -587,7 +656,7 @@ record _domain {
         newRanges(i) = 1..0;
       }
     }
-    var d = [(...newRanges)] dmapped newDist;
+    var d = {(...newRanges)} dmapped newDist;
     return d;
   }
 
@@ -942,6 +1011,7 @@ proc -(d1: domain, d2: domain) {
 inline proc ==(d1: domain, d2: domain) where isRectangularDom(d1) &&
                                                       isRectangularDom(d2) {
   if d1._value.rank != d2._value.rank then return false;
+  if d1._value == d2._value then return true;
   for param i in 1..d1._value.rank do
     if (d1.dim(i) != d2.dim(i)) then return false;
   return true;
@@ -950,6 +1020,7 @@ inline proc ==(d1: domain, d2: domain) where isRectangularDom(d1) &&
 inline proc !=(d1: domain, d2: domain) where isRectangularDom(d1) &&
                                                       isRectangularDom(d2) {
   if d1._value.rank != d2._value.rank then return true;
+  if d1._value == d2._value then return false;
   for param i in 1..d1._value.rank do
     if (d1.dim(i) != d2.dim(i)) then return true;
   return false;
@@ -957,6 +1028,7 @@ inline proc !=(d1: domain, d2: domain) where isRectangularDom(d1) &&
 
 inline proc ==(d1: domain, d2: domain) where (isAssociativeDom(d1) &&
                                                        isAssociativeDom(d2)) {
+  if d1._value == d2._value then return true;
   if d1.numIndices != d2.numIndices then return false;
   for idx in d1 do
     if !d2.member(idx) then return false;
@@ -965,6 +1037,7 @@ inline proc ==(d1: domain, d2: domain) where (isAssociativeDom(d1) &&
 
 inline proc !=(d1: domain, d2: domain) where (isAssociativeDom(d1) &&
                                                        isAssociativeDom(d2)) {
+  if d1._value == d2._value then return false;
   if d1.numIndices != d2.numIndices then return true;
   for idx in d1 do
     if !d2.member(idx) then return true;
@@ -973,6 +1046,7 @@ inline proc !=(d1: domain, d2: domain) where (isAssociativeDom(d1) &&
 
 inline proc ==(d1: domain, d2: domain) where (isSparseDom(d1) &&
                                                        isSparseDom(d2)) {
+  if d1._value == d2._value then return true;
   if d1.numIndices != d2.numIndices then return false;
   if d1._value.parentDom != d2._value.parentDom then return false;
   for idx in d1 do
@@ -982,6 +1056,7 @@ inline proc ==(d1: domain, d2: domain) where (isSparseDom(d1) &&
 
 inline proc !=(d1: domain, d2: domain) where (isSparseDom(d1) &&
                                                        isSparseDom(d2)) {
+  if d1._value == d2._value then return false;
   if d1.numIndices != d2.numIndices then return true;
   if d1._value.parentDom != d2._value.parentDom then return true;
   for idx in d1 do
@@ -1149,16 +1224,24 @@ record _array {
     return _newArray(x);
   }
 
-  proc reindex(d: domain) {
+  proc reindex(d: domain)
+    where isRectangularDom(this.domain) && isRectangularDom(d)
+  {
     if rank != d.rank then
       compilerError("illegal implicit rank change");
+
+    // Optimization: Just return an alias of this array if the doms match exactly.
+    if _value.dom.type == d.type then
+      if _value.dom == d then 
+        return newAlias();
+
     for param i in 1..rank do
       if d.dim(i).length != _value.dom.dsiDim(i).length then
         halt("extent in dimension ", i, " does not match actual");
 
     var newDist = new dmap(_value.dom.dist.dsiCreateReindexDist(d.dims(),
                                                                 _value.dom.dsiDims()));
-    var newDom = [(...d.dims())] dmapped newDist;
+    var newDom = {(...d.dims())} dmapped newDist;
     var x = _value.dsiReindex(newDom._value);
     x._arrAlias = _value;
     pragma "dont disable remote value forwarding"
@@ -1169,6 +1252,15 @@ record _array {
     if !noRefCount then
       help();
     return _newArray(x);
+  }
+
+  // reindex for all non-rectangular domain types.
+  // See above for the rectangular version.
+  proc reindex(d:domain) {
+    if this.domain != d then
+      halt("Reindexing of non-rectangular arrays is undefined.");
+    // Does this need to call newAlias()?
+    return newAlias();
   }
 
   proc writeThis(f: Writer) {
@@ -1335,6 +1427,7 @@ proc =(a: domain, b: domain) {
 }
 
 proc =(a: domain, b: _tuple) {
+  a._value.clearForIteratableAssign();
   for ind in 1..b.size {
     a.add(b(ind));
   }
@@ -1342,7 +1435,7 @@ proc =(a: domain, b: _tuple) {
 }
 
 proc =(d: domain, r: range(?)) {
-  d = [r];
+  d = {r};
   return d;
 }
 
@@ -1375,7 +1468,7 @@ proc chpl__isLegalRectTupDomAssign(d, t) param {
 }
 
 proc =(d: domain, rt: _tuple) where chpl__isLegalRectTupDomAssign(d, rt) {
-  d = [(...rt)];
+  d = {(...rt)};
   return d;
 }
 
@@ -1435,6 +1528,16 @@ proc chpl__compatibleForBulkTransfer(a:[], b:[]) param {
   return true;
 }
 
+proc chpl__compatibleForBulkTransferStride(a:[], b:[]) param {
+  if a.eltType != b.eltType then return false;
+  if !chpl__supportedDataTypeForBulkTransfer(a.eltType) then return false;
+  if a._value.type != b._value.type {
+    if (!a._value.isDefaultRectangular() || !b._value.isBlockDist()) then return false;
+  }
+  if !a._value.dsiSupportsBulkTransfer() then return false;
+  return true;
+}
+
 // This must be a param function
 proc chpl__supportedDataTypeForBulkTransfer(type t) param {
   var x:t;
@@ -1454,7 +1557,7 @@ proc chpl__supportedDataTypeForBulkTransfer(x) param return true;
 
 
 proc chpl__useBulkTransfer(a:[], b:[]) {
-  if debugDefaultDistBulkTransfer then writeln("chpl__useBulkTransfer");
+  //if debugDefaultDistBulkTransfer then writeln("chpl__useBulkTransfer");
 
   // constraints specific to a particular domain map array type
   if !a._value.doiCanBulkTransfer() then return false;
@@ -1468,22 +1571,21 @@ proc chpl__useBulkTransfer(a:[], b:[]) {
   return true;
 }
 
+//NOTE: This function also checks for equal lengths in all dimensions, 
+//as the previous one (chpl__useBulkTransfer) so depending on the order they
+//are called, this can be factored out.
 proc chpl__useBulkTransferStride(a:[], b:[]) {
-  if debugDefaultDistBulkTransfer then writeln("chpl__useBulkTransferStride");
-  writeln("***************************************chpl__useBulkTransferStride");
-
+  //if debugDefaultDistBulkTransfer then writeln("chpl__useBulkTransferStride");
+  
   // constraints specific to a particular domain map array type
   if !a._value.doiCanBulkTransferStride() then return false;
   if !b._value.doiCanBulkTransferStride() then return false;
-
-  for h in [1..a._value.rank] do
-      if a._value.dom.dsiDim(h).stride != b._value.dom.dsiDim(h).stride then return false;
-
-  // total length must be the same in each array ??? 
-  // Acording to the reference A=B is translated into for (a,b) in (A,B) do a=b;
-  // and the zippered iteration is not valid when a.dom.numIndices != b.dom.numIndices
-  if  a._value.dom.dsiNumIndices != b._value.dom.dsiNumIndices then return false;
-
+  
+  for param i in 1..a._value.rank {
+    // size must be the same in each dimension
+    if a._value.dom.dsiDim(i).length !=
+       b._value.dom.dsiDim(i).length then return false;
+  }
   return true;
 }
 
@@ -1506,25 +1608,27 @@ inline proc =(a: [], b) {
 		}
   if (chpl__isArray(b) || chpl__isDomain(b)) && a.rank != b.rank then
     compilerError("rank mismatch in array assignment");
+  
   if chpl__isArray(b) && b._value == nil then
     return a;
-  // This outer conditional must result in a param
- if debugDefaultDistBulkTransfer then  writeln(" serialize(b):",chpl__serializeAssignment(a, b)," b:",b,"---");
-  if useBulkTransfer && chpl__isArray(b) &&
-     chpl__compatibleForBulkTransfer(a, b) &&
-    !chpl__serializeAssignment(a, b) {
-
-
-    if chpl__useBulkTransferStride(a, b) { //First tries the bulkStride
-  writeln("Rafa: a._value.doiBulkTransferStride");
-      a._value.doiBulkTransferStride(b);
-      return a;
-    }else if chpl__useBulkTransfer(a, b) { //If not possible, the plain bulk
+  // try bulk transfer
+  if chpl__isArray(b) && !chpl__serializeAssignment(a, b) {
+    if (useBulkTransfer &&
+        chpl__compatibleForBulkTransfer(a, b) &&
+        chpl__useBulkTransfer(a, b))
+    {
       a._value.doiBulkTransfer(b);
       return a;
     }
-    if debugDefaultDistBulkTransfer then writeln("Leaving proc =(a:[],b)");
-    writeln("Leaving proc =(a:[],b)");
+    if (useBulkTransferStride &&
+        chpl__compatibleForBulkTransferStride(a, b) &&
+        chpl__useBulkTransferStride(a, b))
+    {
+      a._value.doiBulkTransferStride(b);
+      return a;
+    }
+    //if debugDefaultDistBulkTransfer then
+    //  writeln("proc =(a:[],b): bulk transfer did not happen");
   }
   //writeln("Rafa: checking for bulk 2:", chpl__compatibleForBulkTransfer(a, b));
     writeln("1Checked useBulkTransfer");
@@ -1569,19 +1673,16 @@ inline proc =(a: [], b) {
 //    if  (a._value.doiCanIO() || b._value.doiCanIO()) {
   if chpl__serializeAssignment(a, b) {
     compilerWarning("whole array assignment has been serialized (see note in $CHPL_HOME/STATUS)");
-  writeln("chpl__serializeAssignment--------------------------------");
-    for (aa,bb) in (a,b) do
+    for (aa,bb) in zip(a,b) do
       aa = bb;
   } else if chpl__tryToken { // try to parallelize using leader and follower iterators
-  writeln("chpl__tryToken--------------------------------");
-    forall (aa,bb) in (a,b) do
+    forall (aa,bb) in zip(a,b) do
     {
       aa = bb;
     }
   } else {
     compilerWarning("whole array assignment has been serialized (see note in $CHPL_HOME/STATUS)");
-  writeln("serialized 2--------------------------------");
-    for (aa,bb) in (a,b) do
+    for (aa,bb) in zip(a,b) do
       aa = bb;
   }
 
@@ -1600,7 +1701,7 @@ proc =(a: IODist, b) {  // b is iteratable
 proc =(a: [], b: _tuple) where isEnumArr(a) {
     if b.size != a.numElements then
       halt("tuple array initializer size mismatch");
-    for (i,j) in (chpl_enumerate(index(a.domain)), 1..) {
+    for (i,j) in zip(chpl_enumerate(index(a.domain)), 1..) {
       a(i) = b(j);
     }
     return a;
@@ -1675,15 +1776,9 @@ class _OpaqueIndex { }
 //
 // Swap operators for arrays and domains
 //
-inline proc _chpl_swap(x: [], y: []) {
-  for (i,j) in (x.domain, y.domain) do
-    x(i) <=> y(j);
-}
-
-inline proc _chpl_swap(x: domain, y: domain) {
-  const t = y;
-  y = x;
-  x = t;
+inline proc <=>(x: [], y: []) {
+  forall (a,b) in zip(x, y) do
+    a <=> b;
 }
 
 //
@@ -1691,7 +1786,7 @@ inline proc _chpl_swap(x: domain, y: domain) {
 //
 proc reshape(A: [], D: domain) {
   var B: [D] A.eltType;
-  for (i,a) in (D,A) do
+  for (i,a) in zip(D,A) do
     B(i) = a;
   return B;
 }
@@ -1742,7 +1837,7 @@ proc _iteratorRecord.writeThis(f: Writer) {
 }
 
 proc =(ic: _iteratorRecord, xs) {
-  for (e, x) in (ic, xs) do
+  for (e, x) in zip(ic, xs) do
     e = x;
   return ic;
 }
@@ -1760,21 +1855,25 @@ inline proc _getIterator(x) {
 inline proc _getIterator(ic: _iteratorClass)
   return ic;
 
-inline proc _getIterator(x: _tuple) {
-  inline proc _getIteratorHelp(x: _tuple, param dim: int) {
-    if dim == x.size then
-      return tuple(_getIterator(x(dim)));
-    else
-      return (_getIterator(x(dim)), (..._getIteratorHelp(x, dim+1)));
-  }
-  if x.size == 1 then
-    return _getIterator(x(1));
-  else
-    return _getIteratorHelp(x, 1);
-}
-
 proc _getIterator(type t) {
   compilerError("cannot iterate over a type");
+}
+
+inline proc _getIteratorZip(x) {
+  return _getIterator(x);
+}
+
+inline proc _getIteratorZip(x: _tuple) {
+  inline proc _getIteratorZipInternal(x: _tuple, param dim: int) {
+    if dim == x.size then
+      return tuple(_getIteratorZip(x(dim)));
+    else
+      return (_getIteratorZip(x(dim)), (..._getIteratorZipInternal(x, dim+1)));
+  }
+  if x.size == 1 then
+    return _getIteratorZip(x(1));
+  else
+    return _getIteratorZipInternal(x, 1);
 }
 
 proc _checkIterator(type t) {
@@ -1805,35 +1904,25 @@ inline proc _toLeader(ir: _iteratorRecord) {
   return leader;
 }
 
-inline proc _toLeader(x: _tuple)
-  return _toLeader(x(1));
-
 inline proc _toLeader(x)
   return _toLeader(x.these());
 
-//
-// returns lead entity
-//
-proc chpl__lead(x: _tuple) return chpl__lead(x(1));
-proc chpl__lead(x) return x;
+inline proc _toLeaderZip(x)
+  return _toLeader(x);
+
+inline proc _toLeaderZip(x: _tuple)
+  return _toLeaderZip(x(1));
 
 //
 // return true if any iterator supports fast followers
 //
 proc chpl__staticFastFollowCheck(x) param {
-  pragma "no copy" const lead = chpl__lead(x);
+  pragma "no copy" const lead = x;
   if chpl__isDomain(lead) || chpl__isArray(lead) then
     return chpl__staticFastFollowCheck(x, lead);
   else
     return false;
 }  
-
-proc chpl__staticFastFollowCheck(x: _tuple, lead, param dim = 1) param {
-  if x.size == dim then
-    return chpl__staticFastFollowCheck(x(dim), lead);
-  else
-    return chpl__staticFastFollowCheck(x(dim), lead) || chpl__staticFastFollowCheck(x, lead, dim+1);
-}
 
 proc chpl__staticFastFollowCheck(x, lead) param {
   return false;
@@ -1843,19 +1932,31 @@ proc chpl__staticFastFollowCheck(x: [], lead) param {
   return x._value.dsiStaticFastFollowCheck(lead._value.type);
 }
 
+proc chpl__staticFastFollowCheckZip(x: _tuple) param {
+  pragma "no copy" const lead = x(1);
+  if chpl__isDomain(lead) || chpl__isArray(lead) then
+    return chpl__staticFastFollowCheckZip(x, lead);
+  else
+    return false;
+} 
+
+proc chpl__staticFastFollowCheckZip(x, lead) param {
+  return chpl__staticFastFollowCheck(x, lead);
+}
+
+proc chpl__staticFastFollowCheckZip(x: _tuple, lead, param dim = 1) param {
+  if x.size == dim then
+    return chpl__staticFastFollowCheckZip(x(dim), lead);
+  else
+    return chpl__staticFastFollowCheckZip(x(dim), lead) || chpl__staticFastFollowCheckZip(x, lead, dim+1);
+}
+
 //
 // return true if all iterators that support fast followers can use
 // their fast followers
 //
 proc chpl__dynamicFastFollowCheck(x) {
-  return chpl__dynamicFastFollowCheck(x, chpl__lead(x));
-}
-
-proc chpl__dynamicFastFollowCheck(x: _tuple, lead, param dim = 1) {
-  if x.size == dim then
-    return chpl__dynamicFastFollowCheck(x(dim), lead);
-  else
-    return chpl__dynamicFastFollowCheck(x(dim), lead) && chpl__dynamicFastFollowCheck(x, lead, dim+1);
+  return chpl__dynamicFastFollowCheck(x, x);
 }
 
 proc chpl__dynamicFastFollowCheck(x, lead) {
@@ -1867,6 +1968,21 @@ proc chpl__dynamicFastFollowCheck(x: [], lead) {
     return x._value.dsiDynamicFastFollowCheck(lead);
   else
     return false;
+}
+
+proc chpl__dynamicFastFollowCheckZip(x: _tuple) {
+  return chpl__dynamicFastFollowCheckZip(x, x(1));
+}
+
+proc chpl__dynamicFastFollowCheckZip(x, lead) {
+  return chpl__dynamicFastFollowCheck(x, lead);
+}
+
+proc chpl__dynamicFastFollowCheckZip(x: _tuple, lead, param dim = 1) {
+  if x.size == dim then
+    return chpl__dynamicFastFollowCheckZip(x(dim), lead);
+  else
+    return chpl__dynamicFastFollowCheckZip(x(dim), lead) && chpl__dynamicFastFollowCheckZip(x, lead, dim+1);
 }
 
 pragma "no implicit copy"
@@ -1884,17 +2000,21 @@ inline proc _toFollower(x, leaderIndex) {
   return _toFollower(x.these(), leaderIndex);
 }
 
-inline proc _toFollowerHelp(x: _tuple, leaderIndex, param dim: int) {
-  if dim == x.size-1 then
-    return (_toFollower(x(dim), leaderIndex),
-            _toFollower(x(dim+1), leaderIndex));
-  else
-    return (_toFollower(x(dim), leaderIndex),
-            (..._toFollowerHelp(x, leaderIndex, dim+1)));
+inline proc _toFollowerZip(x, leaderIndex) {
+  return _toFollower(x, leaderIndex);
 }
 
-inline proc _toFollower(x: _tuple, leaderIndex) {
-  return _toFollowerHelp(x, leaderIndex, 1);
+inline proc _toFollowerZip(x: _tuple, leaderIndex) {
+  return _toFollowerZip(x, leaderIndex, 1);
+}
+
+inline proc _toFollowerZip(x: _tuple, leaderIndex, param dim: int) {
+  if dim == x.size-1 then
+    return (_toFollowerZip(x(dim), leaderIndex),
+            _toFollowerZip(x(dim+1), leaderIndex));
+  else
+    return (_toFollowerZip(x(dim), leaderIndex),
+            (..._toFollowerZip(x, leaderIndex, dim+1)));
 }
 
 pragma "no implicit copy"
@@ -1925,17 +2045,21 @@ inline proc _toFastFollower(x, leaderIndex) {
     return _toFollower(x.these(), leaderIndex);
 }
 
-inline proc _toFastFollowerHelp(x: _tuple, leaderIndex, param dim: int) {
-  if dim == x.size-1 then
-    return (_toFastFollower(x(dim), leaderIndex),
-            _toFastFollower(x(dim+1), leaderIndex));
-  else
-    return (_toFastFollower(x(dim), leaderIndex),
-            (..._toFastFollowerHelp(x, leaderIndex, dim+1)));
+inline proc _toFastFollowerZip(x, leaderIndex) {
+  return _toFastFollower(x, leaderIndex);
 }
 
-inline proc _toFastFollower(x: _tuple, leaderIndex) {
-  return _toFastFollowerHelp(x, leaderIndex, 1);
+inline proc _toFastFollowerZip(x: _tuple, leaderIndex) {
+  return _toFastFollowerZip(x, leaderIndex, 1);
+}
+
+inline proc _toFastFollowerZip(x: _tuple, leaderIndex, param dim: int) {
+  if dim == x.size-1 then
+    return (_toFastFollowerZip(x(dim), leaderIndex),
+            _toFastFollowerZip(x(dim+1), leaderIndex));
+  else
+    return (_toFastFollowerZip(x(dim), leaderIndex),
+            (..._toFastFollowerZip(x, leaderIndex, dim+1)));
 }
 
 proc chpl__initCopy(a: _distribution) {
@@ -1975,7 +2099,7 @@ proc chpl__initCopy(ir: _iteratorRecord) {
   pragma "no copy" var irc = _ir_copy_recursive(ir);
 
   var i = 1, size = 4;
-  pragma "insert auto destroy" var D = [1..size];
+  pragma "insert auto destroy" var D = {1..size};
 
   // note that _getIterator is called in order to copy the iterator
   // class since for arrays we need to iterate once to get the
@@ -1990,13 +2114,13 @@ proc chpl__initCopy(ir: _iteratorRecord) {
     //pragma "no copy" /*pragma "insert auto destroy"*/ var ee = e;
     if i > size {
       size = size * 2;
-      D = [1..size];
+      D = {1..size};
     }
     //A(i) = ee;
     A(i) = e;
     i = i + 1;
   }
-  D = [1..i-1];
+  D = {1..i-1};
   return A;
 }
 

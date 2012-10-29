@@ -10,7 +10,7 @@ class Vector {
     proc Vector(type eltType, cap=4, offset=0) {
         capacity = cap;
         lastIdx  = offset-1;
-        dom = [offset..offset+capacity-1];
+        dom = {offset..offset+capacity-1};
     }
 
     proc push(val : eltType) {
@@ -19,7 +19,7 @@ class Vector {
         lastIdx += 1;
         if lastIdx >= firstIdx + capacity {
             capacity = max(1, capacity*2);
-            dom = [firstIdx..#capacity];
+            dom = {firstIdx..#capacity};
         }
         elements[lastIdx] = val;
     }
@@ -45,7 +45,7 @@ class Vector {
         // if size is less than quarter of capacity cut the capacity down
         if(size < capacity/4) {
             capacity = max(4, capacity/2);
-            dom = [firstIdx..#capacity];
+            dom = {firstIdx..#capacity};
         }
         return val;
     }

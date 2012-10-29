@@ -40,6 +40,26 @@ if (CHPL_COMM == "unset") {
   compilerWarning("CHPL_COMM not set");
 }
 
+config param CHPL_ATOMICS: string = "unset";
+if (CHPL_ATOMICS == "unset") {
+  compilerWarning("CHPL_ATOMICS not set");
+}
+
+config param CHPL_NETWORK_ATOMICS: string = "unset";
+if (CHPL_NETWORK_ATOMICS == "unset") {
+  compilerWarning("CHPL_NETWORK_ATOMICS not set");
+}
+
+config param CHPL_GMP: string = "unset";
+if (CHPL_GMP == "unset") {
+  compilerWarning("CHPL_GMP not set");
+}
+
+config param CHPL_MAKE: string = "unset";
+if (CHPL_MAKE == "unset") {
+  compilerWarning("CHPL_MAKE not set");
+}
+
 config param warnMaximalRange = false;	// Warns if integer rollover will cause
 					// the iterator to yield zero times.
 
@@ -658,17 +678,6 @@ inline proc param string.length param return __primitive("string_length", this);
 inline proc _string_contains(param a: string, param b: string) param return __primitive("string_contains", a, b);
 
 //
-// identity functions (for reductions)
-//
-inline proc _prod_id(type t) return __primitive("_prod_id", t);
-inline proc _land_id(type t) return __primitive("_land_id", t);
-inline proc _lor_id(type t) return __primitive("_lor_id", t);
-inline proc _lxor_id(type t) return __primitive("_lxor_id", t);
-inline proc _band_id(type t) return __primitive("_band_id", t);
-inline proc _bor_id(type t) return __primitive("_bor_id", t);
-inline proc _bxor_id(type t) return __primitive("_bxor_id", t);
-
-//
 // min and max
 //
 inline proc min(x, y) return if x < y then x else y;
@@ -1246,16 +1255,6 @@ inline proc _cast(type t, x: imag(?w)) where _isRealType(t) || _isIntegralType(t
 inline proc _cast(type t, x: imag(?w)) where _isBooleanType(t)
   return if x != 0i then true else false;
 
-
-//
-// Default swap operator for most types
-//
-inline proc _chpl_swap(inout x, inout y) {
-  const t = y;
-  y = x;
-  x = t;
-}
-
 inline proc chpl__typeAliasInit(type t) type return t;
 inline proc chpl__typeAliasInit(v) {
   compilerError("illegal assignment of value to type");
@@ -1419,6 +1418,154 @@ proc chpldev_refToString(inout arg) {
   proc chpldev_classToString(x) return "";
 
   return __primitive("ref to string", arg) + chpldev_classToString(arg);
+}
+
+proc isIterator(ic: _iteratorClass) param return true;
+proc isIterator(ir: _iteratorRecord) param return true;
+proc isIterator(not_an_iterator) param return false;
+
+proc typesRequireCastForOpEqual(type ltype, type rtype) param {
+  return ltype == rtype || (_isIntegralType(ltype) && _isBooleanType(rtype));
+}
+
+
+/* op= operators
+ * The cast is required when the types match in order to allow
+ * e.g.  int(8) op= int(8);
+ * but disallow e.g. int(8) op= int(16);
+ * Also, need to add a cast for integral op= bool
+ */
+inline proc +=(ref lhs, rhs) where !chpl__isDomain(lhs) && !isIterator(lhs) {
+  lhs = if typesRequireCastForOpEqual(lhs.type, rhs.type)
+        then (lhs+rhs):lhs.type else (lhs+rhs);
+}
+inline proc -=(ref lhs, rhs) where !chpl__isDomain(lhs) && !isIterator(lhs) {
+  lhs = if typesRequireCastForOpEqual(lhs.type, rhs.type) then (lhs-rhs):lhs.type else (lhs-rhs);
+}
+inline proc *=(ref lhs, rhs) where !isIterator(lhs) {
+  lhs = if typesRequireCastForOpEqual(lhs.type, rhs.type) then (lhs*rhs):lhs.type else (lhs*rhs);
+}
+inline proc /=(ref lhs, rhs) where !isIterator(lhs) {
+  lhs = if typesRequireCastForOpEqual(lhs.type, rhs.type) then (lhs/rhs):lhs.type else (lhs/rhs);
+}
+inline proc %=(ref lhs, rhs) where !isIterator(lhs) {
+  lhs = if typesRequireCastForOpEqual(lhs.type, rhs.type) then (lhs%rhs):lhs.type else (lhs%rhs);
+}
+inline proc **=(ref lhs, rhs) where !isIterator(lhs) {
+  lhs = if typesRequireCastForOpEqual(lhs.type, rhs.type) then (lhs**rhs):lhs.type else (lhs**rhs);
+}
+inline proc &=(ref lhs, rhs) where !isIterator(lhs) {
+  lhs = if typesRequireCastForOpEqual(lhs.type, rhs.type) then (lhs&rhs):lhs.type else (lhs&rhs);
+}
+inline proc |=(ref lhs, rhs) where !isIterator(lhs) {
+  lhs = if typesRequireCastForOpEqual(lhs.type, rhs.type)
+        then (lhs|rhs):lhs.type else (lhs|rhs);
+}
+inline proc ^=(ref lhs, rhs) where !isIterator(lhs) {
+  lhs = if typesRequireCastForOpEqual(lhs.type, rhs.type) then (lhs^rhs):lhs.type else (lhs^rhs);
+}
+inline proc >>=(ref lhs, rhs) where !isIterator(lhs) {
+  lhs = if typesRequireCastForOpEqual(lhs.type, rhs.type) then (lhs>>rhs):lhs.type else (lhs>>rhs);
+}
+inline proc <<=(ref lhs, rhs) where !isIterator(lhs) {
+  lhs = if typesRequireCastForOpEqual(lhs.type, rhs.type) then (lhs<<rhs):lhs.type else (lhs<<rhs);
+}
+
+/* This set of overloads should not be required, but the fully generic versions
+ * are leaking memory when passed two arrays.
+ */
+inline proc +=(lhs:[], rhs:[]) { lhs = lhs + rhs; }
+inline proc -=(lhs:[], rhs:[]) { lhs = lhs - rhs; }
+inline proc *=(lhs:[], rhs:[]) { lhs = lhs * rhs; }
+inline proc /=(lhs:[], rhs:[]) { lhs = lhs / rhs; }
+inline proc %=(lhs:[], rhs:[]) { lhs = lhs % rhs; }
+inline proc **=(lhs:[], rhs:[]) { lhs = lhs ** rhs; }
+inline proc &=(lhs:[], rhs:[]) { lhs = lhs & rhs; }
+inline proc |=(lhs:[], rhs:[]) { lhs = lhs | rhs; }
+inline proc ^=(lhs:[], rhs:[]) { lhs = lhs ^ rhs; }
+inline proc >>=(lhs:[], rhs:[]) { lhs = lhs >> rhs; }
+inline proc <<=(lhs:[], rhs:[]) { lhs = lhs << rhs; }
+
+inline proc +=(ref lhs, rhs) where isIterator(lhs) { lhs = lhs + rhs; }
+inline proc -=(ref lhs, rhs) where isIterator(lhs) { lhs = lhs - rhs; }
+inline proc *=(ref lhs, rhs) where isIterator(lhs) { lhs = lhs * rhs; }
+inline proc /=(ref lhs, rhs) where isIterator(lhs) { lhs = lhs / rhs; }
+inline proc %=(ref lhs, rhs) where isIterator(lhs) { lhs = lhs % rhs; }
+inline proc **=(ref lhs, rhs) where isIterator(lhs) { lhs = lhs ** rhs; }
+inline proc &=(ref lhs, rhs) where isIterator(lhs) { lhs = lhs & rhs; }
+inline proc |=(ref lhs, rhs) where isIterator(lhs) { lhs = lhs | rhs; }
+inline proc ^=(ref lhs, rhs) where isIterator(lhs) { lhs = lhs ^ rhs; }
+inline proc >>=(ref lhs, rhs) where isIterator(lhs) { lhs = lhs >> rhs; }
+inline proc <<=(ref lhs, rhs) where isIterator(lhs) { lhs = lhs << rhs; }
+
+/* second argument is param to handle e.g. uint(64) += 1; where 1 is int(64) */
+inline proc +=(ref lhs, param rhs)  where !chpl__isDomain(lhs) && !isIterator(lhs) { lhs = (lhs + rhs):lhs.type; }
+inline proc -=(ref lhs, param rhs)  where !chpl__isDomain(lhs) && !isIterator(lhs) { lhs = (lhs - rhs):lhs.type; }
+inline proc *=(ref lhs, param rhs)  { lhs = (lhs * rhs):lhs.type; }
+inline proc /=(ref lhs, param rhs)  { lhs = (lhs / rhs):lhs.type; }
+inline proc %=(ref lhs, param rhs)  { lhs = (lhs % rhs):lhs.type; }
+inline proc **=(ref lhs, param rhs) { lhs = (lhs ** rhs):lhs.type; }
+inline proc &=(ref lhs, param rhs)  { lhs = (lhs & rhs):lhs.type; }
+inline proc |=(ref lhs, param rhs)  { lhs = (lhs | rhs):lhs.type; }
+inline proc ^=(ref lhs, param rhs)  { lhs = (lhs ^ rhs):lhs.type; }
+inline proc >>=(ref lhs, param rhs) { lhs = (lhs >> rhs):lhs.type; }
+inline proc <<=(ref lhs, param rhs) { lhs = (lhs << rhs):lhs.type; }
+
+/* op= for sync variables */
+inline proc +=(lhs: sync, rhs)  { lhs = lhs + rhs; }
+inline proc -=(lhs: sync, rhs)  { lhs = lhs - rhs; }
+inline proc *=(lhs: sync, rhs)  { lhs = lhs * rhs; }
+inline proc /=(lhs: sync, rhs)  { lhs = lhs / rhs; }
+inline proc %=(lhs: sync, rhs)  { lhs = lhs % rhs; }
+inline proc **=(lhs: sync, rhs) { lhs = lhs ** rhs; }
+inline proc &=(lhs: sync, rhs)  { lhs = lhs & rhs; }
+inline proc |=(lhs: sync, rhs)  { lhs = lhs | rhs; }
+inline proc ^=(lhs: sync, rhs)  { lhs = lhs ^ rhs; }
+inline proc >>=(lhs: sync, rhs) { lhs = lhs >> rhs; }
+inline proc <<=(lhs: sync, rhs) { lhs = lhs << rhs; }
+
+/* op= for sync variables with param rhs */
+inline proc +=(lhs: sync, param rhs)  { lhs = lhs + rhs; }
+inline proc -=(lhs: sync, param rhs)  { lhs = lhs - rhs; }
+inline proc *=(lhs: sync, param rhs)  { lhs = lhs * rhs; }
+inline proc /=(lhs: sync, param rhs)  { lhs = lhs / rhs; }
+inline proc %=(lhs: sync, param rhs)  { lhs = lhs % rhs; }
+inline proc **=(lhs: sync, param rhs) { lhs = lhs ** rhs; }
+inline proc &=(lhs: sync, param rhs)  { lhs = lhs & rhs; }
+inline proc |=(lhs: sync, param rhs)  { lhs = lhs | rhs; }
+inline proc ^=(lhs: sync, param rhs)  { lhs = lhs ^ rhs; }
+inline proc >>=(lhs: sync, param rhs) { lhs = lhs >> rhs; }
+inline proc <<=(lhs: sync, param rhs) { lhs = lhs << rhs; }
+
+/* domain += and -= add and remove indices */
+inline proc +=(D: domain, idx) { D.add(idx); }
+inline proc -=(D: domain, idx) { D.remove(idx); }
+inline proc +=(D: domain, param idx) { D.add(idx); }
+inline proc -=(D: domain, param idx) { D.remove(idx); }
+
+/* swap operator */
+inline proc <=>(ref lhs, ref rhs) {
+  const tmp = lhs;
+  lhs = rhs;
+  rhs = tmp;
+}
+
+inline proc <=>(lhs: sync, ref rhs) {
+  const tmp = lhs;
+  lhs = rhs;
+  rhs = tmp;
+}
+
+inline proc <=>(ref lhs, rhs: sync) {
+  const tmp = lhs;
+  lhs = rhs;
+  rhs = tmp;
+}
+
+inline proc <=>(lhs: sync, rhs: sync) {
+  const tmp = lhs;
+  lhs = rhs;
+  rhs = tmp;
 }
 
 
@@ -1719,5 +1866,5 @@ _ensure_reference_type(complex(128));
 _ensure_reference_type(bool);
 _ensure_reference_type(_task_list);
 _ensure_reference_type(string);
-
+_ensure_reference_type(chpl_taskID_t);
 }

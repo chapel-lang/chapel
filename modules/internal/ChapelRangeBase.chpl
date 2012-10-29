@@ -74,8 +74,8 @@ proc rangeBase.rangeBase(type idxType = int,
     if boundedType == BoundedRangeType.bounded
     {
       if _low <= _high && this.last + stride : idxType == this.first then
-        writeln("Maximal range declared.  ",
-        "A for loop on this range will execute zero times.  ",
+        __primitive("chpl_warning", "Maximal range declared.  " +
+        "A for loop on this range will execute zero times.  " +
         "Try using a wider index type.");
     }
   }
@@ -252,6 +252,15 @@ proc rangeBase.member(i: idxType)
 // Returns true if the other range is contained within this one.
 inline proc rangeBase.member(other: rangeBase(?))
 {
+  // Since slicing preserves the direction of the first arg, may need
+  // to negate one of the strides (shouldn't matter which).
+  if stridable {
+    if (stride > 0 && other.stride < 0) || (stride < 0 && other.stride > 0)
+      then  _stride = -_stride;
+  } else {
+    if other.stride < 0
+      then other._stride = -other._stride;
+  }
   return other == this(other);
 }
 
@@ -935,29 +944,29 @@ iter rangeBase.these(param tag: iterKind, followThis) where tag == iterKind.foll
 proc rangeBase.readWriteThis(f)
 {
   if hasLowBound() then
-    f & _low;
-  f & new ioLiteral("..");
+    f <~> _low;
+  f <~> new ioLiteral("..");
   if hasHighBound() then
-    f & _high;
+    f <~> _high;
   if stride != 1 then
-    f & new ioLiteral(" by ") & stride;
+    f <~> new ioLiteral(" by ") <~> stride;
 
   // Write out the alignment only if it differs from natural alignment.
   // We take alignment modulo the stride for consistency.
   if f.writing {
     if ! isNaturallyAligned() then
-      f & new ioLiteral(" align ") & chpl__mod(_alignment, stride);
+      f <~> new ioLiteral(" align ") <~> chpl__mod(_alignment, stride);
   } else {
     // try reading an 'align'
     if !f.error() {
-      f & new ioLiteral(" align ");
+      f <~> new ioLiteral(" align ");
       if f.error() == EFORMAT then {
         // naturally aligned.
         f.clearError();
       } else {
         // un-naturally aligned - read the un-natural alignment
         var a: idxType;
-        f & a;
+        f <~> a;
         _alignment = a;
       }
     }

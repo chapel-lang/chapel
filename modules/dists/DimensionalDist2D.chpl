@@ -255,7 +255,7 @@ proc DimensionalDist2D.checkInvariants(): void {
   ensure(targetLocales.eltType == locale, "DimensionalDist2D requires 'targetLocales' to be an array of locales, got an array of " + typeToString(targetLocales.eltType));
   ensure(targetIds.idxType == locIdT, "DimensionalDist2D currently requires 'idxType' of 'targetLocales.domain' to be " + typeToString(locIdT) + ", got " + typeToString(targetIds.idxType));
 
-  assert(targetIds == [0..#numLocs1, 0..#numLocs2], "DimensionalDist2D-targetIds");
+  assert(targetIds == {0..#numLocs1, 0..#numLocs2}, "DimensionalDist2D-targetIds");
   assert(di1.numLocales == numLocs1, "DimensionalDist2D-numLocales-1");
   assert(di2.numLocales == numLocs2, "DimensionalDist2D-numLocales-2");
   assert(dataParTasksPerLocale > 0, "DimensionalDist2D-dataParTasksPerLocale");
@@ -389,7 +389,7 @@ proc _CurrentLocaleToLocIDs(targetLocales): (targetLocales.rank*locIdT, bool)
   var result: targetLocales.rank * locIdT;
   // guard updates to 'result' to ensure atomicity of updates
   var gotresult$: sync bool = false;
-  forall (lls, loc) in (targetLocales.domain, targetLocales) do
+  forall (lls, loc) in zip(targetLocales.domain, targetLocales) do
     if loc == here {
       // if we get multiple matches, we do not specify which is returned
       // could add a pre-test if it were cheap: if !gotresult$.readXX()
@@ -489,7 +489,7 @@ proc DimensionalDom.dsiPrivatize(privatizeData) {
                                     dist = privdist,
                                     dom1 = dom1new,
                                     dom2 = dom2new,
-                                    whole       = [(...privatizeData(6))],
+                                    whole       = {(...privatizeData(6))},
                                     localDdescs = privatizeData(7));
 
   // update local-to-global pointers as needed
@@ -611,7 +611,7 @@ proc DimensionalDist2D.dsiNewRectangularDom(param rank: int,
     compilerError("bug in DimensionalDist2D: inconsistent stoIndexT");
 
   coforall (loc, locIds, locDdesc)
-   in (targetLocales, targetIds, result.localDdescs) do
+   in zip(targetLocales, targetIds, result.localDdescs) do
     on loc do
       locDdesc = new LocDimensionalDom(result.stoDomainT,
                        doml1 = dom1.dsiNewLocalDom1d(stoIndexT, locIds(1)),
@@ -625,7 +625,7 @@ proc DimensionalDom.dsiSetIndices(newIndices: domainT): void {
 }
 
 proc DimensionalDom.dsiSetIndices(newRanges: rank * rangeT): void {
-  whole = [(...newRanges)];
+  whole = {(...newRanges)};
   _dsiSetIndicesHelper(newRanges);
 }
 
@@ -645,7 +645,7 @@ proc DimensionalDom._dsiSetIndicesHelper(newRanges: rank * rangeT): void {
     then if _arrs.length > 0 then
       stderr.writeln("warning: array resizing will not preserve array contents upon change in dimension stride with 1-d BlockCyclic distribution");
 
-  coforall (locId, locDD) in (targetIds, localDdescs) do
+  coforall (locId, locDD) in zip(targetIds, localDdescs) do
     on locDD do
      locDD._dsiLocalSetIndicesHelper(stoRangeT, (dom1,dom2), locId);
 }
@@ -658,7 +658,7 @@ proc LocDimensionalDom._dsiLocalSetIndicesHelper(type stoRangeT, globDD, locId)
   var myRange1: stoRangeT = doml1.dsiSetLocalIndices1d(globDD(1),locId(1));
   var myRange2: stoRangeT = doml2.dsiSetLocalIndices1d(globDD(2),locId(2));
 
-  myStorageDom = [myRange1, myRange2];
+  myStorageDom = {myRange1, myRange2};
 
   _traceddd("DimensionalDom.dsiSetIndices on ", here.id, " ", locId,
             "  storage ", myStorageDom);
@@ -714,19 +714,19 @@ proc DimensionalDom.dsiBuildRectangularDom(param rank: int,
   const result = new DimensionalDom(rank=rank, idxType=idxType,
                                     stridable=stridable, dist=dist,
                                     dom1 = dom1, dom2 = dom2,
-                                    whole = [(...ranges)]);
+                                    whole = {(...ranges)});
 
   // Not including 'targetLocales' in zippering for now -
   // obtain the locale/locId from 'this' and its components instead.
   // (Is that more efficient?)
   coforall (oldLocDdesc, newLocDdesc, locIds)
-   in (this.localDdescs, result.localDdescs, this.targetIds) do
+   in zip(this.localDdescs, result.localDdescs, this.targetIds) do
     on oldLocDdesc {
       var (doml1, myRange1) = oldLocDdesc.doml1.dsiBuildLocalDom1d(dom1, locIds(1));
       var (doml2, myRange2) = oldLocDdesc.doml2.dsiBuildLocalDom1d(dom2, locIds(2));
 
       newLocDdesc = new LocDimensionalDom(result.stoDomainT,
-                                          myStorageDom = [myRange1, myRange2],
+                                          myStorageDom = {myRange1, myRange2},
                                           doml1 = doml1, doml2 = doml2);
     }
 
@@ -805,7 +805,7 @@ proc DimensionalDom.dsiBuildArray(type eltType)
                                     dom      = this,
                                     allocDom = this);
   coforall (loc, locDdesc, locAdesc)
-   in (dist.targetLocales, localDdescs, result.localAdescs) do
+   in zip(dist.targetLocales, localDdescs, result.localAdescs) do
     on loc do
       locAdesc = new LocDimensionalArr(eltType, locDdesc);
 
@@ -1003,7 +1003,7 @@ iter DimensionalDom.these(param tag: iterKind) where tag == iterKind.leader {
       return targetIds.dim(dd);
   }
   const overTargetIds = if dom1.dsiIsReplicated1d() || dom2.dsiIsReplicated1d()
-    then [helpTargetIds(dom1,1), helpTargetIds(dom2,2)]
+    then {helpTargetIds(dom1,1), helpTargetIds(dom2,2)}
     else targetIds; // in this case, avoid re-building the domain
 
   // todo: lls is needed only for debugging printing?
@@ -1013,7 +1013,7 @@ iter DimensionalDom.these(param tag: iterKind) where tag == iterKind.leader {
   //     coforall ((l1,l2), locDdesc) in (targetIds, localDdescs) do
   //   presently it will crash the compiler on an assertion.
   //
-  coforall (lls, locDdesc) in (overTargetIds, localDdescs[overTargetIds]) do
+  coforall (lls, locDdesc) in zip(overTargetIds, localDdescs[overTargetIds]) do
     on locDdesc {
       // mimic BlockDom leader, except computing parDim is more involved here
 
@@ -1145,7 +1145,7 @@ iter DimensionalDom.these(param tag: iterKind, followThis) where tag == iterKind
   // This is pre-defined by DSI, so no need to consult
   // the dimension specifiers.
 
-  for i in [(...unDensify(followThis, whole.dims()))] do
+  for i in {(...unDensify(followThis, whole.dims()))} do
     yield i;
 }
 
