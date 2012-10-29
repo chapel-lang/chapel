@@ -56,15 +56,16 @@ config const printParams = false,
 // To be removed once COMPOPTS becomes a non-issue.
 config var reproducible = false, verbose = false;
 
-config const handOptimizedSC = true;
-
 // skip some things
 config var verify = true;
 config var realInitAB = verify;
 config var blast = max(n.type);
 config var maxKinPS = max(int);
-config var onlyBsub = false;
-config var skipBsub = false;
+config const onlyBsub = false;
+config const skipPS   = false;
+config const skipUBR  = false;
+config const skipSC   = false;
+config const skipBsub = false;
 config const serps = false;
 config const serub = false;
 
@@ -81,10 +82,12 @@ if blkn == 0 then blkn = n;
 
 // do additional checking in panelSolve, backwardSub()?
 config param checkPS   = boundsChecking;
+config param checkSC   = boundsChecking;
 config param checkBsub = boundsChecking;
 // for debugging; need to disable 'local' in bsComputeMyXs()
 config param bsFinalizeXiVerbose = false;
-if checkPS || checkBsub then compilerWarning("additional checking is ON");
+if checkPS || checkSC || checkBsub then
+  compilerWarning("additional checking is on"); //reminder that --fast is off
 
 config param maxBlkSize = 200;
 if blkSize > maxBlkSize then
@@ -306,12 +309,15 @@ proc LUFactorize(n: indexType,
     // Now that we've sliced and diced Ab properly, do the blocked-LU
     // computation:
     //
+   if !skipPS then
     panelSolve(l, piv);
+   if !skipUBR then
     updateBlockRow(tl, tr);
     
     //
     // update trailing submatrix (if any)
     //
+   if !skipSC then
     schurComplement(blk, bl, tr, br);
     tLF1iter.stop();
   }
@@ -362,7 +368,6 @@ proc schurComplement(blk, AD, BD, Rest) {
         AbSlice2 => Ab[BD.dim(1), 1..n+1];
   vmsgmore("  AbSlices");
 
-
   forall (ab, ra) in zip(AbSlice1, replA) do
     local
       ra = ab;
@@ -375,7 +380,6 @@ proc schurComplement(blk, AD, BD, Rest) {
   replicateB(blk);
   vmsgmore("  replB");
 
-  if handOptimizedSC {
     const low1 = Rest.dim(1).low,
           low2 = Rest.dim(2).low;
     coforall lid1 in 0..#tl1 do
@@ -402,29 +406,7 @@ proc schurComplement(blk, AD, BD, Rest) {
               } // for j2
             } // forall j1
           } // local
-  } else {
-    // do local matrix-multiply on a block-by-block basis
-    forall (row,col) in Rest by (blkSize, blkSize) {
-      // localize Rest explicitly as a workaround;
-      // also hoist the innerRange computation
-      const outterRange = Rest.dim(1)(row..#blkSize),
-            innerRange  = Rest.dim(2)(col..#blkSize),
-            blkRange = 1..blkSize;
 
-      local {
-
-        var h1 => Ab._value.dsiLocalSlice1((outterRange, innerRange)),
-            h2 => replA._value.dsiLocalSlice1((outterRange, blkRange)),
-            h3 => replB._value.dsiLocalSlice1((blkRange, innerRange));
-
-        for a in outterRange do
-          for w in blkRange do
-            for b in innerRange do
-              //Ab[a,b] -= replA[a,w] * replB[w,b];
-              h1[a,b] -= h2[a,w] * h3[w,b];
-      } // local
-    } // forall
-  }
   vmsg("schurComplement()");
   tSC1call.stop();
 }
@@ -872,7 +854,7 @@ proc backwardSub(nArg: indexType) {
     // return a bogus var but it matches the other return
     var xTemp: [(...replX.domain.dims())] elemType;
     return xTemp[0, 1..n];
-  }
+  } else {
 
   if tl1 != tl2 then
     halt("backwardSub() is implemented only for a square locale grid");
@@ -951,6 +933,7 @@ proc backwardSub(nArg: indexType) {
   vmsg("backwardSub() new");
 
   return xTemp[0, 1..n];
+  } // if skipBsub
 }
 
 proc bsComputeRow(diaFrom, diaTo, locId1, locId2, diaLocId2) {
