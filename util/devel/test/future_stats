@@ -16,6 +16,7 @@ fh = open(status_file, 'r')
 mylines = fh.readlines()
 fh.close()
 status_futures = set()
+dups = set()
 for line in mylines:
     l = line.strip()
     if l and l[0] == '#':
@@ -27,7 +28,10 @@ for line in mylines:
                 fid = 1
             if ll[fid].rfind('.future') == len(ll[fid])-7:
                 # print ll[fid]
-                status_futures.add(ll[fid])
+                if ll[fid] not in status_futures:
+                    status_futures.add(ll[fid])
+                else:
+                    dups.add(ll[fid])
 
 #
 # get futures in the futures list
@@ -52,10 +56,10 @@ for line in mylines:
             # print last
             futures.add(last)
 
+sys.stdout.write('%d total futures (bug/unimplemented feature)\n'%len(futures))
+
 futures_only = sorted(list(futures - status_futures))
 status_only = sorted(list(status_futures - futures))
-
-sys.stdout.write('%d total futures (bug/unimplemented feature)\n'%len(futures))
 
 sys.stdout.write('\nFutures missing from the STATUS file (%d total):\n'%(len(futures_only)))
 for f in futures_only:
@@ -63,6 +67,10 @@ for f in futures_only:
     
 sys.stdout.write('\nAdditional futures in the STATUS file (%d total):\n'%(len(status_only)))
 for f in status_only:
+    sys.stdout.write('\t%s\n'%(f))
+
+sys.stdout.write('\nDuplicates futures in the STATUS file (%d total):\n'%(len(dups)))
+for f in dups:
     sys.stdout.write('\t%s\n'%(f))
 
 sys.exit(0)

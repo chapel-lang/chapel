@@ -12,9 +12,11 @@ if ($preset_launcher eq "") {
     $comm = `$utildirname/comm --target`; chomp($comm);
     $substrate = `$utildirname/commSubstrate`; chomp($substrate);
     $platform = `$utildirname/platform --target`; chomp($platform);
+    $compiler = `$utildirname/compiler --target`; chomp($compiler);
 
     $launcher = "none";
-    if ($platform eq "xt-cle" || $platform eq "xe-cle") {
+    if ($platform eq "cray-xt" || $platform eq "cray-xe" ||
+        $platform eq "cray-xk" || $platform eq "cray-cascade") {
         if (system("which aprun > /dev/null 2>&1")) {
             $launcher = "none";
         } else {
@@ -26,6 +28,8 @@ if ($preset_launcher eq "") {
         }
     } elsif ($platform eq "marenostrum") {
         $launcher = "marenostrum";
+    } elsif ($compiler eq "tile-cc") {
+        $launcher = "tile-monitor";
     } elsif ($comm eq "gasnet") {
         if ($substrate eq "udp") {
             $launcher = "amudprun";

@@ -62,6 +62,7 @@
 # COMPOPTS: Compiler flags
 # LASTCOMPOPTS: Compiler flags to be put at the end of the command line
 # EXECOPTS: Test program flags to be applied to the entire directory
+# LASTEXECOPTS: Test program flags to be put at the end of the command line
 # NUMLOCALES: Number of locales to use
 # CATFILES: List of files whose contents are added to end of test output
 # PREDIFF: Script to execute before diff'ing output (arguments: <test>,
@@ -388,6 +389,11 @@ if os.access('./LASTCOMPOPTS',os.R_OK):
     globalLastcompopts+=subprocess.Popen(['cat', './LASTCOMPOPTS'], stdout=subprocess.PIPE).communicate()[0].strip().split()
 # sys.stdout.write('globalLastcompopts=%s\n'%(globalLastcompopts))
 
+globalLastexecopts=list();
+if os.access('./LASTEXECOPTS',os.R_OK):
+    globalLastexecopts+=subprocess.Popen(['cat', './LASTEXECOPTS'], stdout=subprocess.PIPE).communicate()[0].strip().split()
+# sys.stdout.write('globalLastexecopts=%s\n'%(globalLastexecopts))
+
 if os.access('./NUMLOCALES',os.R_OK):
     globalNumlocales=ReadIntegerValue('./NUMLOCALES', localdir)
     # globalNumlocales.strip(globalNumlocales)
@@ -490,8 +496,6 @@ if os.access('./EXECOPTS',os.R_OK):
 else:
     globalExecopts=list()
 envExecopts = os.getenv('EXECOPTS')
-if envExecopts != None:
-    globalExecopts += shlex.split(envExecopts)
 # sys.stdout.write('globalExecopts=%s\n'%(globalExecopts))
 
 #
@@ -551,6 +555,10 @@ for testname in testsrc:
     if globalLastcompopts:
         lastcompopts += globalLastcompopts
     # sys.stdout.write("lastcompopts=%s\n"%(lastcompopts))
+    lastexecopts = list()
+    if globalLastexecopts:
+        lastexecopts += globalLastexecopts
+    # sys.stdout.write("lastexecopts=%s\n"%(lastexecopts))
 
     # Get the list of files starting with 'execname.'
     execname_files = fnmatch.filter(dirlist, execname+'.*')
@@ -625,6 +633,10 @@ for testname in testsrc:
         elif (suffix=='.lastcompopts' and os.access(f, os.R_OK)):
             lastcompopts+=subprocess.Popen(['cat', f], stdout=subprocess.PIPE).communicate()[0].strip().split()
             # sys.stdout.write("lastcompopts=%s\n"%(lastcompopts))
+
+        elif (suffix=='.lastexecopts' and os.access(f, os.R_OK)):
+            lastexecopts+=subprocess.Popen(['cat', f], stdout=subprocess.PIPE).communicate()[0].strip().split()
+            # sys.stdout.write("lastexecopts=%s\n"%(lastexecopts))
 
         elif (suffix=='.numlocales' and os.access(f, os.R_OK)):
             numlocales=ReadIntegerValue(f, localdir)
@@ -803,8 +815,9 @@ for testname in testsrc:
                 sys.stdout.write('[Concatenating extra files: %s]\n'%
                                  (execname+'.catfiles'))
                 sys.stdout.flush()
-                output+=subprocess.Popen(['cat', catfiles],
-                                         stdout=subprocess.PIPE).communicate()[0]
+                output+=subprocess.Popen(['cat']+catfiles.split(),
+                                         stdout=subprocess.PIPE,
+                                         stderr=subprocess.STDOUT).communicate()[0]
 
             # Sadly these scripts require an actual file
             complogfile=file(complog, 'w')
@@ -940,6 +953,11 @@ for testname in testsrc:
 
             args+=globalExecopts
             args+=shlex.split(execopts)
+            if envExecopts != None:
+                args+=shlex.split(envExecopts)
+            if lastexecopts:
+                args += lastexecopts
+            # sys.stdout.write("args=%s\n"%(args))
 
             #
             # Run program (with timeout)
@@ -968,6 +986,8 @@ for testname in testsrc:
                                      (futuretest, localdir, execname))
                     printTestVariation(compoptsnum, execoptsnum);
                     sys.stdout.write(']\n')
+                    sys.stdout.write('[Execution output was as follows:]\n')
+                    sys.stdout.write(output)
 
             elif useTimedExec:
                 wholecmd = cmd+' '+' '.join(map(ShellEscape, args))
@@ -989,6 +1009,8 @@ for testname in testsrc:
                                      (futuretest, localdir, execname))
                     printTestVariation(compoptsnum, execoptsnum);
                     sys.stdout.write(']\n')
+                    sys.stdout.write('[Execution output was as follows:]\n')
+                    sys.stdout.write(output)
 
             else:
                 if redirectin == None:
@@ -1015,7 +1037,8 @@ for testname in testsrc:
                                  (execname+'.catfiles'))
                 sys.stdout.flush()
                 output+=subprocess.Popen(['cat']+catfiles.split(),
-                                         stdout=subprocess.PIPE).communicate()[0]
+                                         stdout=subprocess.PIPE,
+                                         stderr=subprocess.STDOUT).communicate()[0]
 
             # Sadly the scripts used below require an actual file
             execlogfile=file(execlog, 'w')

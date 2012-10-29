@@ -1,4 +1,4 @@
-#!/usr/bin/tcsh
+#!/usr/bin/env tcsh
 
 #
 # Test Qthreads with CHPL_COMM=none
@@ -13,4 +13,4 @@ $CHPL_HOME/util/cron/nightly -cron -examples >&! ~/tmp/nightly.qthreads.out
 source ~/.chapelcshrc-cron-gasnet
 setenv CHPL_GASNET_CFG_OPTIONS --disable-ibv
 setenv GASNET_QUIET Y
-$CHPL_HOME/util/cron/nightly -cron -multilocale >&! ~/tmp/nightly.qthreads-gasnet.out
+$CHPL_HOME/util/cron/nightly -cron -multilocale -execopts --numThreadsPerLocale=2 >&! ~/tmp/nightly.qthreads-gasnet.out

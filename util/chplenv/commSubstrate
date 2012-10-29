@@ -11,11 +11,15 @@ if ($preset_substrate eq "") {
     $platform = `$utildirname/platform --target`; chomp($platform);
 
     if ($comm eq "gasnet") {
-        if ($platform eq "xt-cle") {
+        if ($platform eq "cray-xt") {
             $substrate = "mpi";
-	} elsif ($platform eq "xe-cle") {
+	} elsif ($platform eq "cray-xe") {
 	    $substrate = "mpi";
-	} elsif ($platform eq "cx-linux") {
+	} elsif ($platform eq "cray-cascade") {
+        $substrate = "mpi";
+    } elsif ($platform eq "cray-xk") {
+        $substrate = "mpi";
+    } elsif ($platform eq "cx-linux") {
 	    $substrate = "ibv";
 	} elsif ($platform eq "marenostrum") {
 	    $substrate = "udp";

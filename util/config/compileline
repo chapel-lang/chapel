@@ -27,19 +27,25 @@ if( defined $ENV{"CHPL_HOME"} ) {
   $ENV{"CHPL_HOME"} = $chpl_home_dir;
 }
 
-$ENV{"CHPL_MAKE_HOME"} = $ENV{"CHPL_HOME"};
+$ENV{"CHPL_MAKE_HOME"} = $chpl_home_dir;
 
-$chpl_home_dir = $ENV{"CHPL_MAKE_HOME"};
-
-if( $ARGV[0] eq "--home" ) {
-  print $chpl_home_dir . "\n";
-} elsif( $ARGV[0] eq "--compile" ) {
-  0 == system("make -f $chpl_home_dir/runtime/etc/Makefile.include printcompileline") or die "Could not make: $!";
-} elsif ( $ARGV[0] eq "--includes-and-defines" ) {
-  0 == system("make -f $chpl_home_dir/runtime/etc/Makefile.include printincludesanddefines") or die "Could not make: $!";
-} elsif( $ARGV[0] eq "--link" ) {
-  0 == system("make -f $chpl_home_dir/runtime/etc/Makefile.include printlinkline") or die "Could not make: $!";
-} else {
-  print "Unknown argument; try --compile or --link or --includes-and-defines\n";
+for my $arg (@ARGV) {
+  if( $arg eq "--home" ) {
+    print $chpl_home_dir . "\n";
+  } elsif( $arg eq "--compile" ) {
+    0 == system("make -f $chpl_home_dir/runtime/etc/Makefile.include printcompileline") or die "Could not make: $!";
+  } elsif ( $arg eq "--includes-and-defines" ) {
+    0 == system("make -f $chpl_home_dir/runtime/etc/Makefile.include printincludesanddefines") or die "Could not make: $!";
+  } elsif( $arg eq "--link" ) {
+    0 == system("make -f $chpl_home_dir/runtime/etc/Makefile.include printlinkline") or die "Could not make: $!";
+  } elsif( $arg eq "--main.o" ) {
+    0 == system("make -f $chpl_home_dir/runtime/etc/Makefile.include printmaino") or die "Could not make: $!";
+  } elsif( $arg eq "--llvm-install-dir" ) {
+    0 == system("make -f $chpl_home_dir/runtime/etc/Makefile.include printllvminstall") or die "Could not make: $!";
+  } elsif( $arg =~ /[^-=][^=]*=[^=]+/ ) {
+    ($key, $val) = split('=', $arg, 2);
+    $ENV{$key} = $val;
+  } else {
+    print "Unknown argument; try --compile or --link or --includes-and-defines\n";
+  }
 }
-

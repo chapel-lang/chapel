@@ -15,6 +15,8 @@ if ($preset_threads eq "") {
 
     if ($preset_tasks eq "fifo") {
 	$threads = "pthreads";
+    } elsif ($preset_tasks eq "massivethreads") {
+        $threads = "none";
     } elsif ($preset_tasks eq "mta") {
 	$threads = "none";
     } elsif ($preset_tasks eq "muxed") {

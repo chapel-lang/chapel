@@ -5,8 +5,8 @@ COMM=none
 CLEAN=../svn_trunk_clean
 # note that DST and CLEANDST MUST BE DIFFERENT from .
 # they WILL BE DELETED.
-DST=/tmp/`whoami`_svn_trunk
-CLEANDST=/tmp/`whoami`_svn_trunk_clean
+DST=/scratch/`whoami`_svn_trunk
+CLEANDST=/scratch/`whoami`_svn_trunk_clean
 SEED=seed-run-test.dat
 NODESFILE=nodefile
 TESTSPER=8
@@ -42,7 +42,7 @@ then
   MAXJOBS=1
 fi
 
-echo Testing with comm=$COMM clean=$CLEAN seed=$SEED nodesfile=$NODESFILE cores=$MAXJOBS
+echo Testing with comm=$COMM clean=$CLEAN seed=$SEED nodesfile=$NODESFILE cores=$MAXJOBS clean=$CLEAN dst=$DST cleandst=$CLEANDST
 
 if [ -z $ABSSEED ]
 then
@@ -62,6 +62,16 @@ unset CHPL_TASKS
 unset CHPL_COMM
 unset CHPL_ATOMICS
 export CHPL_COMM=$COMM
+# set things used by skipif files.
+export CHPL_HOST_PLATFORM=`$CHPL_HOME/util/chplenv/platform --host`
+export CHPL_TARGET_PLATFORM=`$CHPL_HOME/util/chplenv/platform --target`
+export CHPL_HOST_COMPILER=`$CHPL_HOME/util/chplenv/compiler --host`
+export CHPL_TARGET_COMPILER=`$CHPL_HOME/util/chplenv/compiler --target`
+export CHPL_TASKS=`$CHPL_HOME/util/chplenv/tasks`
+export CHPL_THREADS=`$CHPL_HOME/util/chplenv/threads`
+export CHPL_COMM=`$CHPL_HOME/util/chplenv/comm`
+export CHPL_GMP=`$CHPL_HOME/util/chplenv/gmp`
+
 
 findtestsretry () {
   echo FINDING TESTS to RETRY
@@ -81,9 +91,13 @@ findtests () {
   do 
     PRUNES="$PRUNES -path $dir -prune -print -o"
   done
-  find . $IGNORES $PRUNES -name '*.chpl' -exec sh -c 'C="{}"; G="${C%.chpl}.good"; [ -f $G -a ! -f NOTEST ]' \; -print | shuf --random-source $ABSSEED -o .tests.txt
-  return $?;
-#../util/start_test -clean-only | grep "\[pwd:" |  cut -d ' ' -f 2- | cut -d ']' -f 1 | perl -e 'use File::Spec; while(<>) { chomp; $p = File::Spec->abs2rel($_); print "$p\n"; }' > .tests.txt
+  find . $IGNORES $PRUNES -name '*.chpl' -execdir sh -c 'C="{}"; G="${C%.chpl}.good"; P="${C%.chpl}.prediff"; S="${C%.chpl}.skipif"; [ -f $G -o -f $P ] && [ ! -f TIMEOUT ] && [ ! -f NOTEST ] && $CHPL_HOME/util/devel/test/checkIgnore.sh $S' \; -print | sort -o .tests-no-timeout-sorted.txt
+  find . $IGNORES $PRUNES -name '*.chpl' -execdir sh -c 'C="{}"; G="${C%.chpl}.good"; P="${C%.chpl}.prediff"; S="${C%.chpl}.skipif"; [ -f $G -o -f $P ] && [ -f TIMEOUT ] && [ ! -f NOTEST ] && $CHPL_HOME/util/devel/test/checkIgnore.sh $S' \; -print | sort -o .tests-timeout-plus-sorted.txt
+
+  comm -1 -3 .tests-no-timeout-sorted.txt .tests-timeout-plus-sorted.txt > .tests-timeout-sorted.txt
+  shuf --random-source $ABSSEED -o .tests-timeout.txt .tests-timeout-sorted.txt
+  shuf --random-source $ABSSEED -o .tests-no-timeout.txt .tests-no-timeout-sorted.txt
+  cat .tests-timeout.txt .tests-no-timeout.txt > .tests.txt
 }
 
 # Clean up and prepare.
@@ -121,9 +135,10 @@ popd
 # Now, on each target node, rsync
 echo RSYNCING the data to the remote nodes
 cat $NODESFILE | parallel rsync -az --exclude ".svn/" --delete ./ {}:$DST
-cat $NODESFILE | parallel rsync -az --exclude ".svn/" --delete ../svn_trunk_clean/ {}:$CLEANDST
+cat $NODESFILE | parallel rsync -az --exclude ".svn/" --delete $CLEAN/ {}:$CLEANDST
 
 # Now, run the clean tests.
+echo cat $CLEAN/test/.tests.txt x parallel --jobs $MAXJOBS --load $MAXLOAD --eta --sshloginfile $NODESFILE -L $TESTSPER "cd $CLEANDST; source util/setchplenv.bash > /dev/null; cd test; ../util/start_test -comm $COMM -logfile Logs/run-test-{#} -norecurse {} > /dev/null; grep '\[Error' Logs/run-test-{#}.summary" x $CLEAN/test/Logs/run-test.log
 cat $CLEAN/test/.tests.txt | parallel --jobs $MAXJOBS --load $MAXLOAD --eta --sshloginfile $NODESFILE -L $TESTSPER "cd $CLEANDST; source util/setchplenv.bash > /dev/null; cd test; ../util/start_test -comm $COMM -logfile Logs/run-test-{#} -norecurse {} > /dev/null; grep '\[Error' Logs/run-test-{#}.summary" > $CLEAN/test/Logs/run-test.log
 cat ./test/.tests.txt | parallel --jobs $MAXJOBS --load $MAXLOAD --eta --sshloginfile $NODESFILE -L $TESTSPER "cd $DST; source util/setchplenv.bash > /dev/null; cd test; ../util/start_test -comm $COMM -logfile Logs/run-test-{#} -norecurse {} > /dev/null; grep '\[Error' Logs/run-test-{#}.summary" >  test/Logs/run-test.log
 
