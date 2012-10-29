@@ -29,7 +29,7 @@ proc test(d) {
   }
 
   hd("storage");
-  for (ix, locDdesc) in (d._value.dist.targetIds, d._value.localDdescs) do
+  for (ix, locDdesc) in zip(d._value.dist.targetIds, d._value.localDdescs) do
     msg(" ", ix, "   ", locDdesc.myStorageDom);
   tl();
 
@@ -66,11 +66,11 @@ proc test(d) {
   tl();
 
   hd("zippered iterator over (domain, array)");
-  forall (ix,a) in (d,a) do msg(ix, "  ", a);
+  forall (ix,a) in zip(d,a) do msg(ix, "  ", a);
   tl();
 
   hd("zippered iterator over (array, domain)");
-  forall (a,ix) in (a,d) do msg(ix, "  ", a);
+  forall (a,ix) in zip(a,d) do msg(ix, "  ", a);
   tl();
 
 } // test()
@@ -85,10 +85,10 @@ proc testsuite(type T, initphase) {
   const df9 = new BlockCyclicDim(lowIdx=-10, blockSize=5, numLocales=s2, name="D2");
   const dm = new dmap(new DimensionalDist2D(mylocs, df8, df9, "dm", idxType=T));
 
-  proc tw(a, b, c, d) { test([a:T..b:T, c:T..d:T] dmapped dm); }
+  proc tw(a, b, c, d) { test({a:T..b:T, c:T..d:T} dmapped dm); }
   inline
   proc t2(a,b) { tw(5,5,a,b); }
-  proc t22(a,b,st,al) { test([5:T..5:T, a:T..b:T by st:T align al:T] dmapped dm); }
+  proc t22(a,b,st,al) { test({5:T..5:T, a:T..b:T by st:T align al:T} dmapped dm); }
 
   t2(7,7);   // 1,0
   t2(12,12); // 1,1
@@ -135,11 +135,11 @@ proc testsuite(type T, initphase) {
   tw(5,11, 10,14);
   tw(5,11, 16,19);
 
-  test([ 5:T..11:T, 12:T..12:T] dmapped dm);
+  test({ 5:T..11:T, 12:T..12:T} dmapped dm);
 
   proc cmb1(param sgnOnly, r1, r2, m1, m2) {
     if !sgnOnly || _isSignedType(T) then
-      test([r1, r2] dmapped dm);
+      test({r1, r2} dmapped dm);
     else {
       leapphase();
       hd("skipping for unsigned (", m1, ", ", m2, ")");

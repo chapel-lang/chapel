@@ -1,6 +1,6 @@
 config var n: int = 8;
 
-var D = [1..n, 1..n] by 2;
+var D = {1..n, 1..n} by 2;
 
 writeln(D);
 

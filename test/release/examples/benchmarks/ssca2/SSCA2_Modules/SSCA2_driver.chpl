@@ -48,7 +48,7 @@ module SSCA2_driver
       type vertex = index (G.vertices),
            edge   = 2*vertex;
 
-      if RUN_KERNEL_2 || RUN_KERNEL_3 {
+      if RUN_KERNEL2 || RUN_KERNEL3 {
         var Heavy_Edge_List : domain (edge);
 
         // --------
@@ -57,7 +57,7 @@ module SSCA2_driver
 
         largest_edges ( G, Heavy_Edge_List );
 
-        if RUN_KERNEL_3 {
+        if RUN_KERNEL3 {
           var Heavy_Edge_Subgraphs : [Heavy_Edge_List] Generated_Subgraph (vertex);
 
           for (x,y) in Heavy_Edge_List do
@@ -73,15 +73,14 @@ module SSCA2_driver
         }
       }
 
-      if RUN_KERNEL_4 {
+      if RUN_KERNEL4 {
         var Between_Cent : [G.vertices] real;
         var BC_starting_vertices : domain (1);
         var Sum_Min_Dist : real;
         const Vertex_Count_Constraint = N_VERTICES : real * (N_VERTICES -1);
 
-        for approx_scale in [ max (1, LOW_APPROX_SCALE) .. 
-                              min (TOP_APPROX_SCALE, SCALE) ] {
-	  Sum_Min_Dist = 1.0;
+        for approx_scale in { max (1, LOW_APPROX_SCALE) .. 
+                              min (TOP_APPROX_SCALE, SCALE) } {
   
 	  if approx_scale == SCALE {
             //  --------------------------------------
@@ -106,8 +105,8 @@ module SSCA2_driver
             //  -----------------------------------------------
 
             var BC_starting_vertices : sparse subdomain 
-              ( [(...G.vertices.dims())] );
-            var vertex_indices       : domain (1) = [1..N_VERTICES];
+              ( {(...G.vertices.dims())} );
+            var vertex_indices       : domain (1) = {1..N_VERTICES};
             var random_indices       : sparse subdomain (vertex_indices);
             var linear_index         : index (vertex_indices);
 
@@ -127,7 +126,7 @@ module SSCA2_driver
                 }
               };
 
-            for (s, linear_index) in ( G.vertices, 1.. ) do
+            for (s, linear_index) in zip( G.vertices, 1.. ) do
               if random_indices.member (linear_index) then
                 BC_starting_vertices.add (s);
 

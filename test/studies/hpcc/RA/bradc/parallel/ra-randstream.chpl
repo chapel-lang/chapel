@@ -2,7 +2,7 @@ module RARandomStream {
   param randWidth = 64;
   type randType = uint(randWidth);
 
-  const bitDom = [0..#randWidth],
+  const bitDom = {0..#randWidth},
         m2: [bitDom] randType = computeM2Vals(randWidth);
 
   // TODO: Why is this still needed?
@@ -16,7 +16,7 @@ module RARandomStream {
 
   iter RAStream(param tag: iterKind, followThis) where tag == iterKind.follower {
     var val = getNthRandom(followThis(1).low);
-    for followThis {
+    for zip((...followThis)) {
       getNextRandom(val);
       yield val;
     }

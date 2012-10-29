@@ -1,5 +1,9 @@
 bug: memory corruption
 
+UPDATE: This now gets a run time error (distribution reference count
+is negative) for CHPL_COMM=none, but not gasnet or with --no-local
+(valgrind run is also clean with --no-local)
+
 Each of the two variable declarations taken on its own exhibits the same issue.
 
 Currently I get this under valgrind:

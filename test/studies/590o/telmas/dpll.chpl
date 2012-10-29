@@ -579,7 +579,7 @@ proc atomic_add_clause(clause : Clause) {
 	var nc = numClss; // acquire
 	
 	nc = nc + 1;
-	domClss = [1..nc];
+	domClss = {1..nc};
 	clauses(nc) = clause;
 	
 	if STAT then
@@ -867,8 +867,8 @@ proc parse() {
 	
 	// init the global variables
 	
-	domVars = [1..nv]; // domain for variables
-	domClss = [1..nc]; // domain for clauses
+	domVars = {1..nv}; // domain for variables
+	domClss = {1..nc}; // domain for clauses
 	
 	clauses = [domClss] Clause;
 	

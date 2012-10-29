@@ -12,11 +12,11 @@ config const n4 = 3;
 config const n5 = max(int(64));
 config const o5 = 8;
 
-const Space1 = [1..n1];
-const Space2 = [1..n2, 1..n2];
-const Space3 = [1..n3, 1..n3, 1..n3];
-const Space4 = [1..n4, 1..n4, 1..n4, 1..n4];
-const Space2D64 = [n5-o5..n5, n5-o5..n5];
+const Space1 = {1..n1};
+const Space2 = {1..n2, 1..n2};
+const Space3 = {1..n3, 1..n3, 1..n3};
+const Space4 = {1..n4, 1..n4, 1..n4, 1..n4};
+const Space2D64 = {n5-o5..n5, n5-o5..n5};
 
 proc setupDistributions() {
   if distType == DistType.default {
@@ -88,7 +88,7 @@ proc fill(param rank, x) {
 // creates a domain of rank 'rank' with each dimension equal to 'extent'
 //
 proc rankDomain(param rank, extent) {
-  return [(...fill(rank, extent))];
+  return {(...fill(rank, extent))};
 }
 
 //

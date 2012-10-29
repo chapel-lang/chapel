@@ -12,12 +12,12 @@ module analyze_torus_graphs {
 
   proc main {
 
-    const vertex_domain = [1..10];
-    const dense_stencil = [-1..1];
+    const vertex_domain = {1..10};
+    const dense_stencil = {-1..1};
 
-    writeln ():
+    var A = writeln ():
 
-    generate_and_analyze_nD_torus ( vertex_domain, dense_stencil );
+        generate_and_analyze_nD_torus ( vertex_domain, dense_stencil );
 
   }
 

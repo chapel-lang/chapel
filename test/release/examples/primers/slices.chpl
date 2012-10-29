@@ -36,11 +36,11 @@ proc main() {
   // of D and it is later used in the iterator for the for loop statements
   // which call the init procedure for each diagonal block of A.
   const vec = 1..n;
-  var D = [vec,vec];
+  var D = {vec,vec};
   var A:[D] int;
 
   // D0 is a domain which is used to reindex the diagonal blocks of A.
-  var D0 = [1..blk, 1..blk];
+  var D0 = {1..blk, 1..blk};
 
   // Each of the following three for loop statements uses the
   // iterator blockIter to yield a range subvec that is then

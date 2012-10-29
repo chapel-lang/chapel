@@ -1,2 +1,2 @@
-test_construct1.chpl:12: error: unresolved call 'C(2, 3)'
-test_construct1.chpl:4: note: candidates are: C(b: bool)
+{x = 2, y = 3}
+{x = 24, y = 0}

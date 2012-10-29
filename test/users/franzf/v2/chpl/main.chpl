@@ -48,9 +48,9 @@ proc main() {
 
     writeln("Spiral 5.0 Chapel FFT example\n");
 
-    for n in [MIN_SIZE..MAX_SIZE] {
+    for n in {MIN_SIZE..MAX_SIZE} {
         var N : int = 2**n;
-        const Ndom: domain(1) = [0..N-1];
+        const Ndom: domain(1) = {0..N-1};
         type Ntype = [Ndom] complex;
         var X : Ntype, Y : Ntype;
         const ops = 5.0 * N * log2(N);

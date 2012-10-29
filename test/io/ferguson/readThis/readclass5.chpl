@@ -2,9 +2,9 @@ class mything {
   var x:int;
   var y:int;
   proc readWriteThis(w) {
-    w & x;
+    w <~> x;
     w.readWriteLiteral(" ");
-    w & y;
+    w <~> y;
     w.readWriteNewline();
   }
 }

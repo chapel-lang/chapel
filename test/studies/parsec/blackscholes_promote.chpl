@@ -28,9 +28,9 @@ config var numOptions : int(64) = 1000;
 config const ERR_CHK = false;
 config const filename = "optionData.txt";
 
-const Dist = new dmap(new Block(rank=1, idxType=int(64), boundingBox=[0..#numOptions],
+const Dist = new dmap(new Block(rank=1, idxType=int(64), boundingBox={0..#numOptions},
                                 dataParTasksPerLocale=here.numCores));
-const Dom : domain(1, int(64)) dmapped Dist = [0..#numOptions];
+const Dom : domain(1, int(64)) dmapped Dist = {0..#numOptions};
 
 var data : [Dom] OptionData;
 var prices : [Dom] fptype;
@@ -128,7 +128,7 @@ proc bs() {
 				data.r, data.v, data.t, otype);
 	}
 	if ERR_CHK then
-		numError = + reduce [i in [Dom]] errChk(i, data(i).DGrefval, prices(i));
+		numError = + reduce [i in {Dom}] errChk(i, data(i).DGrefval, prices(i));
 }
 
 proc main() {

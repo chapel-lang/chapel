@@ -27,7 +27,7 @@ config const printParams = true,
 proc main() {
   printConfiguration();
 
-  const ProblemSpace: domain(1, indexType) = [1..m];
+  const ProblemSpace: domain(1, indexType) = {1..m};
 
   var localGBs: [LocaleSpace] real,
       allValidAnswer: [LocaleSpace] bool;
@@ -49,7 +49,7 @@ proc main() {
           const taskInds = BlockPartition(myProblemSpace, taskid, 
                                           tasksPerLocale);
           local {
-            forall (a,b,c) in (myA[taskInds], myB[taskInds], myC[taskInds]) do
+            forall (a,b,c) in zip(myA[taskInds], myB[taskInds], myC[taskInds]) do
               a = b + alpha * c;
           }
         }
@@ -102,12 +102,12 @@ proc initVectors(B, C, ProblemSpace) {
 proc verifyResults(A, B, C) {
   if (printArrays) then writelnFragArray("A is:     ", A, "\n");
 
-  forall (b, c) in (B, C) do
+  forall (b, c) in zip(B, C) do
     b += alpha *c;  
 
   if (printArrays) then writelnFragArray("A-hat is: ", B, "\n");
 
-  const infNorm = max reduce [(a,b) in (A,B)] abs(a - b);
+  const infNorm = max reduce [(a,b) in zip(A,B)] abs(a - b);
 
   return (infNorm <= epsilon);
 }

@@ -8,8 +8,8 @@ config const m = computeProblemSize(numVectors, elemType), alpha = 3.0;
 config const numTrials = 10, epsilon = 0.0, seed = 314159265;
 
 proc main() {
-  const BlockDist = new dmap(new Block(boundingBox=[1..m]));
-  const ProblemSpace: domain(1, int(64)) dmapped BlockDist = [1..m];
+  const BlockDist = new dmap(new Block(boundingBox={1..m}));
+  const ProblemSpace: domain(1, int(64)) dmapped BlockDist = {1..m};
   var A, B, C: [ProblemSpace] elemType;
 
   writeln("BEGIN INITIALIZATION");
@@ -21,7 +21,7 @@ proc main() {
   chpl__testParStart();
   for trial in 1..numTrials {
     writeln("BEGIN TRIAL ", trial);
-    forall (a, b, c) in (A, B, C) do
+    forall (a, b, c) in zip(A, B, C) do
       a = b + alpha * c;
     writeln("END TRIAL ", trial);
   }

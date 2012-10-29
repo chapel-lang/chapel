@@ -4,7 +4,7 @@ proc f(d) {
 }
 
 class C {
-  var d = [1..10];
+  var d = {1..10};
   var x: [d] real;
   
   proc initialize() {

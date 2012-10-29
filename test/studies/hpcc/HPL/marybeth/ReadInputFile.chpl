@@ -64,19 +64,19 @@ record HPLparams {
      infile.readln(outFileName);
      infile.readln(deviceOut);
      infile.readln(numProbSizes);
-     NDom = [1..numProbSizes];
+     NDom = {1..numProbSizes};
      for n in N do infile.read(n);
      infile.readln();
 
      infile.readln(numBlockSizes);
-     NBDom = [1..numBlockSizes];
+     NBDom = {1..numBlockSizes};
      for nb in NB do infile.read(nb);
      infile.readln();
 
      pMap = infile.readln(int):processmaptype;
 
      infile.readln(numProcessGrids);
-     GridDom = [1..numProcessGrids];
+     GridDom = {1..numProcessGrids};
      for p in P do infile.read(p);
      infile.readln();
      for q in Q do infile.read(q);
@@ -85,32 +85,32 @@ record HPLparams {
      infile.readln(Thresh);
 
      infile.readln(numPanelFacts);
-     PFactDom = [1..numPanelFacts];
+     PFactDom = {1..numPanelFacts};
      for pf in PFact do pf = infile.read(int):factortype;
      infile.readln();
 
      infile.readln(numRecurStops);
-     NBMinDom = [1..numRecurStops];
+     NBMinDom = {1..numRecurStops};
      for nbmin in NBMin do infile.read(nbmin);
      infile.readln();
 
      infile.readln(numPanels);
-     NDivDom = [1..numPanels];
+     NDivDom = {1..numPanels};
      for nd in NDiv do infile.read(nd);
      infile.readln();
 
      infile.readln(numRecurPanelFacts);
-     RFactDom = [1..numRecurPanelFacts];
+     RFactDom = {1..numRecurPanelFacts};
      for rf in RFact do rf = infile.read(int):factortype; 
      infile.readln();
 
      infile.readln(numBCasts);
-     BCastDom = [1..numBCasts];
+     BCastDom = {1..numBCasts};
      for bc in BCast do bc = infile.read(int):bcasttype;
      infile.readln();
          
      infile.readln(numDepths);
-     DepthDom = [1..numDepths];
+     DepthDom = {1..numDepths};
      for d in Depth do d = infile.read(int);
      infile.readln();
 

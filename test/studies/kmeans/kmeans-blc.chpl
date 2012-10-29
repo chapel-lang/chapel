@@ -29,14 +29,14 @@ assert(k > 0, "k must be positive");
 //
 // the index space and array for the data elements
 //
-const dataSpace = [1..n];
+const dataSpace = {1..n};
 var data: [dataSpace] coord = [i in dataSpace] initData(i);
 
 
 //
 // the index space and array for the cluster centers
 //
-const centerSpace = [1..k];
+const centerSpace = {1..k};
 var centers: [centerSpace] coord = initCenters(data);
 
 
@@ -85,7 +85,7 @@ writeln("final centers are: ", centers);
 // helper function to find the best center for a given coordinate
 //
 proc findBestCenter(loc: coord, centers: [] coord) {
-  return minloc reduce (dist(loc, centers), centerSpace);
+  return minloc reduce zip(dist(loc, centers), centerSpace);
 }
 
 

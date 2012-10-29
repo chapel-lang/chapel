@@ -119,7 +119,7 @@ proc GridSolution.step_DiffusionBE(
   
   
   //===> CG iteration ===>
-  for iter_no in [1..maxiter] {
+  for iter_no in {1..maxiter} {
  
     //==== Update the solution and residual ====
     inner_product = +reduce( residual_update(grid.cells) * search_dir(grid.cells) );

@@ -8,16 +8,16 @@ config const tasksPerLocale = 1;
 config const verbose: bool = false;
 
 proc main() {
-  const Dist = new dmap(new Block(rank=1,idxType=int(64),boundingBox=[1..m],
+  const Dist = new dmap(new Block(rank=1,idxType=int(64),boundingBox={1..m},
                                   dataParTasksPerLocale=tasksPerLocale));
-  const ProblemSpace: domain(1, int(64)) dmapped Dist = [1..m];
+  const ProblemSpace: domain(1, int(64)) dmapped Dist = {1..m};
   var A, B, C: [ProblemSpace] elemType;
 
   var randlist = new RandomStream(seed);
   randlist.fillRandom(B);
   randlist.fillRandom(C);
   startCommDiagnostics();
-  forall (a, b, c) in (A, B, C) do
+  forall (a, b, c) in zip(A, B, C) do
     a = b + alpha * c;
   stopCommDiagnostics();
 

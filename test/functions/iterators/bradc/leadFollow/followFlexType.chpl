@@ -4,7 +4,7 @@ class C {
   }
 
   iter these(param tag: iterKind) where tag == iterKind.leader {
-    var D: domain(1, int(32)) = [1..10:int(32)];
+    var D: domain(1, int(32)) = {1..10:int(32)};
     yield D;
   }
 
@@ -20,7 +20,7 @@ class D {
   }
 
   iter these(param tag: iterKind) where tag == iterKind.leader {
-    var D: domain(1, int(64)) = [1..10:int(64)];
+    var D: domain(1, int(64)) = {1..10:int(64)};
     yield D;
   }
 
@@ -33,19 +33,19 @@ class D {
 var myC = new C();
 var myD = new D();
 
-forall (i,j) in (myC, myC) do
+forall (i,j) in zip(myC, myC) do
   writeln("(i,j) = ", (i,j));
 writeln();
 
-forall (i,j) in (myD, myD) do
+forall (i,j) in zip(myD, myD) do
   writeln("(i,j) = ", (i,j));
 writeln();
 
-forall (i,j) in (myC,myD) do
+forall (i,j) in zip(myC,myD) do
   writeln("(i,j) = ", (i,j));
 writeln();
 
-forall (i,j) in (myD,myC) do
+forall (i,j) in zip(myD,myC) do
   writeln("(i,j) = ", (i,j));
 writeln();
 

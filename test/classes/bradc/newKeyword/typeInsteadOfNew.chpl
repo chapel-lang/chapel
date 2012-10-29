@@ -7,5 +7,5 @@ class C {
   var locDom: [LocaleSpace] domain(1, indexType);
 }
 
-const myC = C([1..m]);
+const myC = C({1..m});
 

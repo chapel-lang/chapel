@@ -34,7 +34,7 @@ var rs = new RandomStream(seed, parSafe=false);
 // Since there is no array, the memory required is O(1) in terms of
 // the number of points.
 //
-var D = [1..n];
+var D = {1..n};
 
 //
 // Run the Monte Carlo simulation using a data parallel reduction to
@@ -42,7 +42,7 @@ var D = [1..n];
 // zippers two iterators over the RandomStream object (the second call
 // to iterate starts at the point after the first iterator finishes).
 //
-var count = + reduce [(x,y) in (rs.iterate(D),rs.iterate(D))] x**2+y**2 <= 1.0;
+var count = + reduce [(x,y) in zip(rs.iterate(D),rs.iterate(D))] x**2+y**2 <= 1.0;
 
 //
 // Delete the Random Stream object.

@@ -37,10 +37,10 @@ for i in singleLocaleIterator(IteratorType.solo, myLow..myHigh) {
 }
 
 writeln("parallel zipper iteration try 1");
-// forall i in (singleLocaleIterator(myLow..myHigh),
+// forall i in zip(singleLocaleIterator(myLow..myHigh),
 //              singleLocaleIterator(myLow+2..myHigh+2)) do writeln(i);
 coforall block in singleLocaleIterator(IteratorType.leader, myLow..myHigh) {
-  for i in (singleLocaleIterator(IteratorType.follower, block),
+  for i in zip(singleLocaleIterator(IteratorType.follower, block),
             singleLocaleIterator(IteratorType.follower, 2+block)) {
     writeln(i);
   }
@@ -59,12 +59,12 @@ coforall block in singleLocaleIterator(IteratorType.leader, myLow..myHigh) {
 //
 
 writeln("parallel zipper iteration try 2");
-// forall i in (singleLocaleIterator(myLow..myHigh),
+// forall i in zip(singleLocaleIterator(myLow..myHigh),
 //              singleLocaleIterator(myLow+2..myHigh+2)) do writeln(i);
 coforall (block1, block2) in
-  (singleLocaleIterator(IteratorType.leader, myLow..myHigh),
+  zip(singleLocaleIterator(IteratorType.leader, myLow..myHigh),
    singleLocaleIterator(IteratorType.leader, myLow+2..myHigh+2)) {
-  for i in (singleLocaleIterator(IteratorType.follower, block1),
+  for i in zip(singleLocaleIterator(IteratorType.follower, block1),
             singleLocaleIterator(IteratorType.follower, block2)) {
     writeln(i);
   }

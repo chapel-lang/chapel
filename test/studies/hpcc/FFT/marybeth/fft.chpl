@@ -22,14 +22,14 @@ proc main() {
   const N = 1 << logN;
 
   // twiddle domain and arrays
-  const TwiddleDom = [0..#N/4];
+  const TwiddleDom = {0..#N/4};
   var Twiddles: [TwiddleDom] complex;
 
   computeTwiddles(Twiddles);
   Twiddles = bitReverseShuffle(Twiddles);
 
   // problem domain and arrays
-  const ProblemDom: domain(1) = [0..#N];
+  const ProblemDom: domain(1) = {0..#N};
   var Z, z: [ProblemDom] complex;
   var realtemp, imagtemp: [ProblemDom] real;
 
@@ -113,7 +113,7 @@ proc dfft(A, W) {
     m = 4*span;
     m2 = 2*m;
     if (m2 > numElements) then break;
-    forall (k,k1) in (0..#numElements by m2,0..) {
+    forall (k,k1) in zip(0..#numElements by m2,0..) {
       var wk2 = W[k1];
       var wk1 = W[2*k1];
       var wk3 = (wk1.re - 2 * wk2.im * wk1.im,

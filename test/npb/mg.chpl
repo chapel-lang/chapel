@@ -47,10 +47,10 @@ config const warmup = true;
 
 type coeff = [0..3] real;
 
-const Levels: domain(1) = [1..numLevels];
-const Base: domain(3) dmapped(Block(3)) = [1..nx, 1..ny, 1..nz];
+const Levels: domain(1) = {1..numLevels};
+const Base: domain(3) dmapped(Block(3)) = {1..nx, 1..ny, 1..nz};
 const Hier: [lvl in Levels] domain(Base) = Base by -2**(lvl-1);
-const Stencil: domain(3) = [-1..1, -1..1, -1..1];
+const Stencil: domain(3) = {-1..1, -1..1, -1..1};
 
 
 proc main() {
@@ -201,8 +201,8 @@ proc rprj3(S, R) {
 
 
 proc interp(R, S) {
-  const IDom: domain(3) = [-1..0, -1..0, -1..0];
-  const IStn: [(i,j,k) in IDom] domain(3) = [i..0, j..0, k..0];
+  const IDom: domain(3) = {-1..0, -1..0, -1..0};
+  const IStn: [(i,j,k) in IDom] domain(3) = {i..0, j..0, k..0};
   const w: [ijk in IDom] real = 1.0 / IStn.numIndices();
 
   const SD = S.Domain(),

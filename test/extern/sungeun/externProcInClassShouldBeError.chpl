@@ -18,13 +18,15 @@ record taskPrivateData {
   var y: [0..#numLocales] real;
 };
 
+inline proc =(a: chpl_taskID_t, b: chpl_taskID_t) return b;
+inline proc !=(a: chpl_taskID_t, b: chpl_taskID_t) return __primitive("!=", a, b);
 class localePrivateData {
   type myStuff;
   // assumes numCores is the same across all locales
   const numTasks = if dataParTasksPerLocale==0 then here.numCores
     else dataParTasksPerLocale;
   var slot: sync bool;
-  var r = [0..#numTasks];
+  var r = {0..#numTasks};
   var temps: [r] myStuff;
   extern proc chpl_task_getId(): chpl_taskID_t;
   proc gettid() {
@@ -48,7 +50,7 @@ forall l in localePrivate do l = new localePrivateData(taskPrivateData);
 // an example use
 config param nPerLocale = 113;
 config const printTemps = false;
-const D = [0..#nPerLocale*numLocales] dmapped Block(boundingBox=[0..#nPerLocale*numLocales]);
+const D = {0..#nPerLocale*numLocales} dmapped Block(boundingBox={0..#nPerLocale*numLocales});
 forall d in D {
   // my copy of the task private vars
   var lp = localePrivate[here.id];
@@ -112,7 +114,7 @@ extern class C {
   }
 }
 
-const D = [5..9];
+const D = {5..9};
  var c: C;
 // var c: C(D.type);
 // c = new C(D);

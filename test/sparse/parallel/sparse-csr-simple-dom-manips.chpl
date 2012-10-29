@@ -6,7 +6,7 @@ use LayoutCSR;
 
 const rr = 4, cc = 5;
 
-var dd = [1..rr, 1..cc];
+var dd = {1..rr, 1..cc};
 var sd: sparse subdomain(dd) dmapped new dmap(new CSR());
 
 var cnt = 0;

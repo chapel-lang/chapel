@@ -67,7 +67,7 @@ proc main() {
   //
   const MatVectSpace: domain(2, indexType) 
                       dmapped BlockCyclic(startIdx=(1,1), (blkSize,blkSize)) 
-                    = [1..n, 1..n+1],
+                    = {1..n, 1..n+1},
         MatrixSpace = MatVectSpace[.., ..n];
 
   var Ab : [MatVectSpace] elemType,  // the matrix A and vector b
@@ -226,9 +226,9 @@ proc schurComplement(Ab: [?AbD] elemType, AD: domain, BD: domain, Rest: domain) 
 proc dgemmNativeInds(A: [] elemType,
                     B: [] elemType,
                     C: [] elemType) {
-  for (iA, iC) in (A.domain.dim(1), C.domain.dim(1)) do
-    for (jA, iB) in (A.domain.dim(2), B.domain.dim(1)) do
-      for (jB, jC) in (B.domain.dim(2), C.domain.dim(2)) do
+  for (iA, iC) in zip(A.domain.dim(1), C.domain.dim(1)) do
+    for (jA, iB) in zip(A.domain.dim(2), B.domain.dim(1)) do
+      for (jB, jC) in zip(B.domain.dim(2), C.domain.dim(2)) do
         C[iC,jC] -= A[iA, jA] * B[iB, jB];
 }
 
@@ -273,7 +273,7 @@ proc panelSolve(Ab: [] elemType,
     if col.numIndices == 0 then return;
     
     // Find the pivot, the element with the largest absolute value.
-    const (_, (pivotRow, _)) = maxloc reduce(abs(Ab(col)), col);
+    const (_, (pivotRow, _)) = maxloc reduce zip(abs(Ab(col)), col);
 
     // Capture the pivot value explicitly (note that result of maxloc
     // is absolute value, so it can't be used directly).

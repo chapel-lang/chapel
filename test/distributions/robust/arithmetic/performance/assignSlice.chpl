@@ -1,7 +1,7 @@
 use driver_domains;
 
 const bigDom4D = Dom4D.expand((1,1,1,1));
-var A: [bigDom4D] 4*int = [(...bigDom4D.dims())];
+var A: [bigDom4D] 4*int = {(...bigDom4D.dims())};
 var B: [Dom4D] 4*int;
 
 resetCommDiagnostics();

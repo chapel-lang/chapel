@@ -361,14 +361,14 @@ Edges with largest weight and other neighbors:
 
 
 starting vertices for Betweenness Centrality
-[
+{
 (1, 2) (1, 5)
 (2, 1) (2, 6) (2, 8)
 (3, 1) (3, 4) (3, 6) (3, 8)
 (4, 8)
 (5, 1) (5, 4) (5, 8)
 (6, 3) (6, 4) (6, 8)
-]
+}
 
 
 Between Centrality:
@@ -445,7 +445,7 @@ All betweenness centrality scores should be in range [0, 4032.0]
 
 
 starting vertices for Betweenness Centrality
-[
+{
 (1, 2) (1, 5) (1, 6)
 (2, 1) (2, 3) (2, 5) (2, 6) (2, 8)
 (3, 1) (3, 2) (3, 3) (3, 4) (3, 6) (3, 7) (3, 8)
@@ -454,7 +454,7 @@ starting vertices for Betweenness Centrality
 (6, 2) (6, 3) (6, 4) (6, 7) (6, 8)
 (7, 1) (7, 7)
 (8, 4) (8, 6)
-]
+}
 
 
 Between Centrality:

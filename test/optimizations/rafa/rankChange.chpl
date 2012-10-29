@@ -1,10 +1,10 @@
 use BlockDist;
 
 config  const n: int=10;
-var Dist1 = new dmap(new Block([1..n,1..n,1..n]));
-var Dist2 = new dmap(new Block([1..(2*n),1..(2*n),1..(2*n)]));
-var Dom1: domain(3,int) dmapped Dist1 = [1..n,1..n,1..n];
-var Dom2: domain(3,int) dmapped Dist2 = [1..n,1..n,1..n];
+var Dist1 = new dmap(new Block({1..n,1..n,1..n}));
+var Dist2 = new dmap(new Block({1..(2*n),1..(2*n),1..(2*n)}));
+var Dom1: domain(3,int) dmapped Dist1 = {1..n,1..n,1..n};
+var Dom2: domain(3,int) dmapped Dist2 = {1..n,1..n,1..n};
 
 var A:[Dom1] int(64);
 var B:[Dom2] int(64) = [(i,j,k) in Dom2] i*n*n+j*n+k;

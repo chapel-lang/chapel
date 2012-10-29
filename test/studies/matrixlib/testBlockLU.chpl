@@ -23,7 +23,7 @@ proc main() {
 
   // declare a range A1D, 2D domain AD, and array (matrix) A
   const A1D = 1..n,
-        AD = [A1D, A1D]; 
+        AD = {A1D, A1D}; 
   var A: [AD] real;
 
   // Initialize A by reading values in from infile.

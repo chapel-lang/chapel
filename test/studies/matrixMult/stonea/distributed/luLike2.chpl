@@ -54,30 +54,30 @@ proc luLikeMultiply(A : [1..n, 1..n] int)
     var BCopies : [A.domain[blkSize+1..n, blkSize+1..n]] int;
 
     // stamp A across into ACopies,
-    forall blkCol in [2..numBlocks] {
+    forall blkCol in {2..numBlocks} {
         var aBlkD : subdomain(ACopies.domain) =
-            [blkSize+1..n, 1..blkSize];
+            {blkSize+1..n, 1..blkSize};
         var cBlkD : subdomain(A.domain) =
-            [blkSize+1..n, (blkCol-1)*blkSize+1..blkCol*blkSize];
+            {blkSize+1..n, (blkCol-1)*blkSize+1..blkCol*blkSize};
 
         ACopies[cBlkD] = A[aBlkD];
     }
 
     // stamp B down into BCopies, 
-    forall blkRow in [2..numBlocks] {
+    forall blkRow in {2..numBlocks} {
         var bBlkD : subdomain(BCopies.domain) = 
-            [1..blkSize, blkSize+1..n];
+            {1..blkSize, blkSize+1..n};
         var cBlkD : subdomain(A.domain) =
-            [(blkRow-1)*blkSize+1..blkRow*blkSize, blkSize+1..n];
+            {(blkRow-1)*blkSize+1..blkRow*blkSize, blkSize+1..n};
         
         BCopies[cBlkD] = A[bBlkD];
     }
 
     // do local matrix-multiply on a block-by-block basis
-    forall (blkRow,blkCol) in [2..numBlocks, 2..numBlocks] {
+    forall (blkRow,blkCol) in {2..numBlocks, 2..numBlocks} {
         var region : subdomain(A.domain) =
-            [(blkRow-1)*blkSize+1..blkRow*blkSize,
-             (blkCol-1)*blkSize+1..blkCol*blkSize];
+            {(blkRow-1)*blkSize+1..blkRow*blkSize,
+             (blkCol-1)*blkSize+1..blkCol*blkSize};
         local {
             matrixMult_ijk(
                 blkSize, blkSize, blkSize,
@@ -98,7 +98,7 @@ proc main() {
         "Matrix size must be divisible by sqrt(numLocales)");
 
     // Initialize array
-    var A : [[1..n, 1..n]] int = [(i,j) in [1..n, 1..n]] i+j;
+    var A : [{1..n, 1..n}] int = [(i,j) in {1..n, 1..n}] i+j;
     var ACopy = A;
     
     // Perform the multiplication in parallel

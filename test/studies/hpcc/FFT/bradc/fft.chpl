@@ -34,14 +34,14 @@ proc main() {
   const N = 1 << logN;
 
   // twiddle domain and arrays
-  const TwiddleDom = [0..#N/4];
+  const TwiddleDom = {0..#N/4};
   var Twiddles: [TwiddleDom] complex;
 
   computeTwiddles(Twiddles);
   bitReverseShuffle(Twiddles);
 
   // problem domain and arrays
-  const ProblemDom = [0..#N];
+  const ProblemDom = {0..#N};
   var Z, z: [ProblemDom] complex;
 
   // generate pseudo-random input
@@ -187,7 +187,7 @@ proc cft1st(A, W) {
   // BLC: would like to use an indefinite arithmetic array here
   // BLC: would also like to use () on both indices and zipping
   //      together of ranges
-  forall (j,k1) in (8..n-1 by 8, 1..) {
+  forall (j,k1) in zip(8..n-1 by 8, 1..) {
     var wk2 = W(k1);
     var wk1 = W(2*k1);
     var wk3 = (wk1.re - 2* wk2.im * wk1.im, 
@@ -225,7 +225,7 @@ proc cftmd1(span, A, W) {
   const n = A.domain.dim(1).length;
 
   cftmd0(span, A, W);
-  forall (k,k1) in (m2..n-1 by m2, 1..) {
+  forall (k,k1) in zip(m2..n-1 by m2, 1..) {
     var wk2 = W[k1];
     var wk1 = W[2*k1];
     var wk3 = (wk1.re - 2 * wk2.im * wk1.im,
@@ -258,7 +258,7 @@ proc cftmd2(span, A, W) {
   }
 
   forall j in 0..#span {
-    forall (k,k1) in (m2..n-1 by m2, 1..) {
+    forall (k,k1) in zip(m2..n-1 by m2, 1..) {
       var wk2 = W[k1];
       var wk1 = W[k1 + k1];
       var wk3 = (wk1.re - 2*wk2.im * wk1.im,
@@ -266,7 +266,7 @@ proc cftmd2(span, A, W) {
       butterfly(wk1, wk2, wk3, A[j+k..j+k+3*span by span]);
     }
 
-    forall (k,k1) in (m2..n-1 by m2, 1..) {
+    forall (k,k1) in zip(m2..n-1 by m2, 1..) {
       var wk2 = W[k1];
       var wk1 = W[2*k1 + 1];
       var wk3 = (wk1.re - 2*wk2.re * wk1.im,
@@ -284,7 +284,7 @@ proc cftmd21(span, A, W) {
   var m = radix*span;
   var m2 = 2*m;
 
-  for (k,k1) in (m2..n-1 by m2, 1..) {
+  for (k,k1) in zip(m2..n-1 by m2, 1..) {
     var wk2 = W[k1];
     var wk1 = W[2*k1];
     var wk3 = (wk1.re - 2*wk2.im * wk1.im,

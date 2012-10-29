@@ -58,8 +58,8 @@ proc populateBoard(inout board: [] int) {
               }
 
               // Search this block for the current num
-              for ij in [((row-1)/3:int)*3+1..((row-1)/3:int+1)*3,
-                ((spot-1)/3:int)*3+1..((spot-1)/3:int+1)*3] {
+              for ij in {((row-1)/3:int)*3+1..((row-1)/3:int+1)*3,
+                ((spot-1)/3:int)*3+1..((spot-1)/3:int+1)*3} {
                 if board(ij) == currentNum {
                   spots[spot] = false;
                   break;
@@ -117,8 +117,8 @@ proc populateBoard(inout board: [] int) {
               }
 
               // Search this block for the current num
-              for ij in [((spot-1)/3:int)*3+1..((spot-1)/3:int+1)*3,
-                ((col-1)/3:int)*3+1..((col-1)/3:int+1)*3] {
+              for ij in {((spot-1)/3:int)*3+1..((spot-1)/3:int+1)*3,
+                ((col-1)/3:int)*3+1..((col-1)/3:int+1)*3} {
                 if board(ij) == currentNum {
                   spots[spot] = false;
                   break;
@@ -147,12 +147,12 @@ proc populateBoard(inout board: [] int) {
     writeln("Col-Wise Elimination: ", numFilledIn);
     
     // BLK-WISE ELIMINATION -- Attempt to fill in spots blk-wise
-    for (i, j) in [0..2, 0..2] {
+    for (i, j) in {0..2, 0..2} {
       g_spotsAvail = false;
       numsAvail  = true;
 
       // Find spots and nums available in this block
-      for (k, l) in [1..3, 1..3] {
+      for (k, l) in {1..3, 1..3} {
         if board[i*3+k, j*3+l] == 0 then g_spotsAvail[k, l] = true;
         else numsAvail[board[i*3+k, j*3+l]] = false;
       }
@@ -164,7 +164,7 @@ proc populateBoard(inout board: [] int) {
 
           var nSpots: int;
           g_spots = g_spotsAvail;
-          for (k, l) in [1..3, 1..3] {
+          for (k, l) in {1..3, 1..3} {
             if g_spots[k, l] == true {
 
               // Search the current row for this num
@@ -189,7 +189,7 @@ proc populateBoard(inout board: [] int) {
           }
 
           if nSpots == 1 {
-            for (k, l) in [1..3, 1..3] {
+            for (k, l) in {1..3, 1..3} {
               if g_spots[k, l] == true {
                 board[i*3+k, j*3+l] = currentNum;
                 g_spotsAvail[k, l] = false;
@@ -215,10 +215,10 @@ var seenIt:  [1..9] bool = false;
 proc costFcn(board: [] int): int {
   var cost: int;
   
-  for i in [1..9] {
+  for i in {1..9} {
     seenItX = false;
     seenItY = false;
-    for j in [1..9] {
+    for j in {1..9} {
       // Check rows
       if seenItX[board[i, j]] == true then
         cost += 1;
@@ -232,9 +232,9 @@ proc costFcn(board: [] int): int {
   }
 
   // Check sub-blocks
-  for (i, j) in [0..2, 0..2] {
+  for (i, j) in {0..2, 0..2} {
     seenIt = false;
-    for (k, l) in [i*3+1..(i+1)*3, j*3+1..(j+1)*3] {
+    for (k, l) in {i*3+1..(i+1)*3, j*3+1..(j+1)*3} {
       if seenIt[board[k, l]] == true then
         cost += 1;
       else seenIt[board[k, l]] = true;
@@ -272,9 +272,9 @@ proc main() {
   //   It is invariant that the board contains 9 of each digit.
   //   Just perhaps not all in the right spots.
   var nSpots = 0;
-  for i in [1..9] {
+  for i in {1..9} {
     var seenIt: [0..9] bool = false;
-    for j in [1..9] do
+    for j in {1..9} do
       seenIt[initBoard[i, j]] = true;
 
     var j = 1, k = 1;

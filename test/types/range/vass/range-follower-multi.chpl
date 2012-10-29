@@ -51,40 +51,40 @@ iter it(param tag: iterKind, followThis, N:int) where tag == iterKind.follower {
 /////////////////////////////////
 proc tn(ph:int, N:int, M:int) {
   const rn = 1..N,
-        d1n = [1..N],
-        d2n = [1..2, 1..N];
+        d1n = {1..N},
+        d2n = {1..2, 1..N};
 
   const rm = 1..M,
-        d1m = [1..M],
-        d2m = [1..2, 1..M];
+        d1m = {1..M},
+        d2m = {1..2, 1..M};
 
   fphase(ph); hd("N = ", N, "  M = ", M); tl();
 
-  hd("it * it"); forall i in (it(N), it(M)) do msg(i); tl();
-  hd("it * r");  forall i in (it(N), rm)    do msg(i); tl();
-  hd("it * d1"); forall i in (it(N), d1m)   do msg(i); tl();
-//hd("it * d2"); forall i in (it(N), d2m)   do msg(i); tl();
+  hd("it * it"); forall i in zip(it(N), it(M)) do msg(i); tl();
+  hd("it * r");  forall i in zip(it(N), rm)    do msg(i); tl();
+  hd("it * d1"); forall i in zip(it(N), d1m)   do msg(i); tl();
+//hd("it * d2"); forall i in zip(it(N), d2m)   do msg(i); tl();
 
-  hd("r * it");  forall i in (rn, it(M)) do msg(i); tl();
-  hd("r * r");   forall i in (rn, rm)    do msg(i); tl();
-  hd("r * d1");  forall i in (rn, d1m)   do msg(i); tl();
-//hd("r * d2");  forall i in (rn, d2m)   do msg(i); tl();
+  hd("r * it");  forall i in zip(rn, it(M)) do msg(i); tl();
+  hd("r * r");   forall i in zip(rn, rm)    do msg(i); tl();
+  hd("r * d1");  forall i in zip(rn, d1m)   do msg(i); tl();
+//hd("r * d2");  forall i in zip(rn, d2m)   do msg(i); tl();
 
-  hd("d1 * it"); forall i in (d1n, it(M)) do msg(i); tl();
-  hd("d1 * r");  forall i in (d1n, rm)    do msg(i); tl();
-  hd("d1 * d1"); forall i in (d1n, d1m)   do msg(i); tl();
-//hd("d1 * d2"); forall i in (d1n, d2m)   do msg(i); tl();
+  hd("d1 * it"); forall i in zip(d1n, it(M)) do msg(i); tl();
+  hd("d1 * r");  forall i in zip(d1n, rm)    do msg(i); tl();
+  hd("d1 * d1"); forall i in zip(d1n, d1m)   do msg(i); tl();
+//hd("d1 * d2"); forall i in zip(d1n, d2m)   do msg(i); tl();
 
-//hd("d2 * it"); forall i in (d2n, it(M)) do msg(i); tl();
-//hd("d2 * r");  forall i in (d2n, rm)    do msg(i); tl();
-//hd("d2 * d1"); forall i in (d2n, d1m)   do msg(i); tl();
-  hd("d2 * d2"); forall i in (d2n, d2m)   do msg(i); tl();
+//hd("d2 * it"); forall i in zip(d2n, it(M)) do msg(i); tl();
+//hd("d2 * r");  forall i in zip(d2n, rm)    do msg(i); tl();
+//hd("d2 * d1"); forall i in zip(d2n, d1m)   do msg(i); tl();
+  hd("d2 * d2"); forall i in zip(d2n, d2m)   do msg(i); tl();
 }
 
 config const sz = 4, empty = 0;
 //const er = 1..empty,
-//      e1d = [1..empty],
-//      e2d = [1..2, 1..empty];
+//      e1d = {1..empty},
+//      e2d = {1..2, 1..empty};
 
 proc main() {
   // hd("dataParTasksPerLocale = ", dataParTasksPerLocale); tl();

@@ -1,6 +1,6 @@
 use driver;
 
-var D = [1..5, 1..5, 1..5] dmapped Dist3D;
+var D = {1..5, 1..5, 1..5} dmapped Dist3D;
 
 writeln(D[1..5, 1..5, 0]);
 writeln(D[1..5, 0, 1..5]);

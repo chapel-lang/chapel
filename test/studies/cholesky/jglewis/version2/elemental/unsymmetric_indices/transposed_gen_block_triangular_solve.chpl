@@ -41,7 +41,7 @@ module transposed_gen_block_triangular_solve {
     // (each row is the result of a triangular solve.)
 
     forall i in offdiag_block_rows do
-      for (j_row, j_col) in (diag_block_rows, diag_block_cols) do {
+      for (j_row, j_col) in zip(diag_block_rows, diag_block_cols) do {
 	L_offdiag (i,j_col) -= 
 	  +reduce [k in diag_block_cols (.. j_col-1)] 
 	           L_offdiag (i,k) * L_diag (j_row,k);

@@ -26,7 +26,7 @@ proc testit(printit:bool) {
   var bb => b;
   var bbb => bb;
   var ccc => cc;
-  Dom1D = [1..max(n1/2,10)];
+  Dom1D = {1..max(n1/2,10)};
   var e => a;
   var ee => e;
   var eee => ee;
@@ -35,7 +35,7 @@ proc testit(printit:bool) {
   a[8] = 888;
 
   if printit then
-    for (i, v) in (Dom1D, ccc) do
+    for (i, v) in zip(Dom1D, ccc) do
       if bbb[i] != 0 then
         writeln((i, v, a[i], b[i], cc[i], eee[i]));
 }

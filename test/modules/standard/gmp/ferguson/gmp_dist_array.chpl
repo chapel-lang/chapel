@@ -2,7 +2,7 @@ use BlockDist;
 use GMP;
 
 config const n = 20;
-const Space = [1..n];
+const Space = {1..n};
 const D = Space dmapped Block(boundingBox=Space);
 
 var A: [D] BigInt;

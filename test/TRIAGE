@@ -5,66 +5,108 @@
 #
 
 
+Suggested TODO for Sung's week:
+
+2) Look into nondeterministic SIGABRT issue with gasnet-fast on
+   test/release/examples/ra*.chpl which seem new to me.
+
+3) I think you're already on the SSCA2_commDiags question
+
+
+=========================================================
+Problems analyzed and assigned that should be fixed soon:
+=========================================================
+
+studies/ssca2/performance/SSCA2_commDiags (sungeun)
+---------------------------------------------------
+
+  linux64.gnu.gasnet-everything.fifo.pthreads-std (2012-10-02) Sung
+  has this one.  It looks to me (gbt) like the comm diags ranges just
+  need to be wider.  (sungeun: 10/22/12) It's actually bounded for
+  certain operations, so I'm still working on it in the background.
+
+
 ==============================================
 These things regularly cause noise in testing:
 ==============================================
 
-distributions/robust/arithmetic/performance/alloc_all (sungeun)
----------------------------------------------------------------
-This started failing on 6/26. It's Sung's and she's going to fix it, but
-hasn't gotten to it yet.
+SIGABRT on gasnet-fast runs (UNASSIGNED)
+----------------------------------------
+release/examples/benchmarks/hpcc/ra (compopts: 1) (10/13/12)
+mutilocale/deitz/needMultiLocales/diagnostics/test_private_broadcast_large (10/11/12, 10/21/12)
+ra-atomics (UNASSIGNED) (10/11/12)
 
-
-spectralnorm (vass)
--------------------
-proposed approach is to see whether reference version is similarly
-noisy, and if not to see whether ours has inadvertant nondeterminisms.
-
-
-madness (sungeun)
------------------
-Sung's been working on dialing down parallelism to avoid timeouts
-in oversubscribed setting, but it's not yet perfect: test_likepy
-timed out 06/05/12
+SSCA2_main (UNASSIGNED)
+-----------------------y
+Periodically times out for PGI (alternates between time out and stack
+overflow error documented in REGRESSIONS)
 
 
 ra* (gbt)
 ---------
-Greg plans to remove races from the verification loop on the theory
-that if we're barely/occasionally failing, removing errors introduced
-due to races here should take us below the threshold.
+Greg improved the verification loops using syncs to avoid losing data,
+but occasional failures continued.
 
+New information (10/3/12): the "random" indices are strongly skewed toward
+the bottom of the index range (1/4th of the table updates are to the 0'th
+element), which makes conflicting updates far more common than they should
+be.  Sung reports that the official HPCC RA changed its random number
+generator for this reason -- we should look into converting Chapel to use
+the same algorithm (or to permit a selection between both).
+  release/examples/benchmarks/hpcc/variants/ra-cleanloop: fixed by r20326
+  studies/hpcc/2008/ra: not fixed yet, failed 8/14/12
+  studies/hpcc/nodistrib/ra.nodist: should have been fixed by 20333 (8/14/12),
+    not fixed yet, failed 8/18/12, 9/{16,17,21,30}/12.
+  studies/hpcc/RA/bradc/parallel/ra-dist: not fixed yet, last failure unknown
 
 lulesh (bradc)
 --------------
-1) Brad made changes this week that should stabilize Sung's version of
-   lulesh
-2) there are likely still timeouts on the release version that should
-   be investigated.
-3) causes an internal error in xmt (though perhaps not a noisy one?)
+Times out sometimes in XMT testing, but seems to have stabilized in
+other cases.
+
+TooManyThreads (unassigned)
+---------------------------
+Fails periodically.  Lately observed pthreads.tcmalloc (2012/08/15).
+
+mutilocale/deitz/needMultiLocales/diagnostics/test_private_broadcast_large
+--------------------------------------------------------------------------
+  Succeeded: 9/23 (64ggffpd)
+  Failed: 10/4 (linux64.gnu.gasnet-fast.fifo.pthreads.dlmalloc)
+  Failed (SIGABRT): 10/11/12 (")
 
 
-cray-xt-cray (UNASSIGNED)
--------------------------
-When the Chapel compiler is built with cray-xt-cray, we get
-nondeterministic failures that have not been investigated.  One
-question would be whether turning optimizations off/down when building
-'chpl' would make these go away.
-
+linux64.gnu.none.qthreads.none (UNASSIGNED)
+---------------------------------------------
+[Error: Timed out executing program release/examples/spec/Task_Parallelism_and_Synchronization/syncCounter] (10/18/12)
 
 linux64.gnu.gasnet.qthreads.none (UNASSIGNED)
 ---------------------------------------------
-1) Continue to have a lot of noise in testing.
-   Often the execution times out nondeterministically
-   - is that due to gasnet (see below) ?
-2) Some comm counts off, got a seg fault (06/06/12, 6/16)
+sungeun: 10/18/12.  Things seem quieter, but not perfect
+- Got a seg fault (06/06/12, 6/16, stream-ep 8/23/12)
+- Intermitent seg fault on exit (7/7 7/9, 7/12, 7/13)
+-  seg fault during program execution (same as as previous):
+   distributions/robust/arithmetic/optimizations/optimizeOnClauses_basic_tuple (7/10)
+   release/examples/spec/Classes/delete (7/12)
+- Intermitent time outs:
+  [Error: Timed out executing program release/examples/spec/Task_Parallelism_and_Synchronization/syncCounter] (10/18/12)
+  [Error: Timed out executing program distributions/robust/arithmetic/slicing/test_array_slicing3] (10/17/12)
+  [Error: Timed out executing program distributions/robust/arithmetic/stress/test_many_array] (10/18/12)
 
 
-valgrind (UNASSIGNED)
+baseline (UNASSIGNED)
 ---------------------
-1) Nondeterministic "the impossible has happened" failures
-2) Nondeterministic timeouts (could raise timeout value even further)
+[Error: Timed out executing program optimizations/bulkcomm/asenjo/stencilDR/v2/stencil] (10/17/12, normally fails)
 
+
+
+studies/shootout/mandelbrot/mandelbrot-fancy (10/12/12)
+-------------------------------------------------------
+gets incorrect answer using --baseline; sometimes times out
+
+valgrind (sungeun)
+------------------
+sungeun (10/16/2012): I believe the non-determinism from valgrind
+errors is now resolved (still have timeouts).
 
 xmt build (UNASSIGNED)
 ----------------------
@@ -72,19 +114,31 @@ Every night, first XMT compile fails; second one succeeds.  Is there
 any chance that this is due to a leftover program library of some
 sort?  If not, file bug against XMT compiler.
 
+compflags/ferguson/sub_test
+---------------------------
+chpbld02 has /tmp mounted on /ptmp.  The path search in findProgramPath appears
+to be finding chpl in /ptmp instead of /tmp even though the /ptmp directory
+it is finding is not in path. The /ptmp path it is finding is actually the
+same directory as the /tmp directory it is looking for.
 
-variance in comm counts - linux64.gnu.gasnet-everything.fifo.pthreads (sungeun)
--------------------------------------------------------------------------------
-examples:
- performance/sungeun/multilocale/syncsingle  (06/17/12, 6/21)
- distributions/robust/arithmetic/performance/reduce*
 
+=========================================
+Not so noisy as to be familiar annoyances
+=========================================
+
+studies/dijkstra/driverEdgeBtw
+------------------------------
+PGI only.  Floating point overflow warning in generated code
+(03/12/11, 9/14/12) Also documented in REGRESSIONS file.
+
+errors running sub_test (UNASSIGNED)
+------------------------------------
+seen on chpbld01 for linux64.intel.none.fifo.pthreads on 10/10/12
 
 parallel/cobegin/diten/cobeginRace (UNASSIGNED)
 ----------------------------------------------------
 "timedexec died with signal 11" - pgi compiler (06/18/12)
 unknown cause - baseline (06/17/12)
-
 
 non-deterministic timeouts with gasnet (UNASSIGNED)
 ---------------------------------------------------
@@ -94,14 +148,12 @@ The following configurations are affected:
  linux64.gnu.gasnet-fast.fifo.pthreads.dlmalloc
  linux64.gnu.gasnet-everything.fifo.pthreads
 examples of what times out:
- release/examples/benchmarks/ssca2/SSCA2_main
- distributions/robust/arithmetic/kernels/hpl
- distributions/robust/arithmetic/stress/test_many_array
- distributions/robust/arithmetic/kernels/jacobi
- distributions/nelson/MultiBlockDist2DLocales
- distributions/robust/arithmetic/modules/test_module_Sort
+ distributions/robust/arithmetic/kernels/jacobi (still timing out 10/4/12)
+ distributions/nelson/MultiBlockDist2DLocales (maybe resolved?)
+ distributions/robust/arithmetic/modules/test_module_Sort (maybe resolved?)
+ distributions/robust/arithmetci/stress/test_many_domains (08/13)
+ distributions/dm/t2 (2012/08/15)
  etc.
-
 
 "in routine alloca() there is a stack overflow" under PGI (UNASSIGNED)
 ----------------------------------------------------------------------
@@ -111,10 +163,13 @@ These configurations:
  xt-cle.cray-xt-pgi.none.fifo.pthreads
  xt-cle.cray-xt-pgi.none.fifo.pthreads--linux64.gnu
 
+minus_equals nondeterminism (UNASSIGNED)
+----------------------------------------
+noted in regressions (week of 07/02, still present 10/2, 10/9)
 
-==================================================
-Not so noisy as to be instantly recognizable (yet)
-==================================================
+atomics nondeterminisms (UNASSIGNED)
+------------------------------------
+release/examples/primers/atomics (06/30/12:xt-intel, 07/04/12:linux32, 08/14/12:xt-cle)
 
 gasnet-everything nondeterminisms (UNASSIGNED)
 ----------------------------------------------
@@ -122,41 +177,51 @@ MultiBlockDist2DLocales (06/05/12, 6/16)
 test_module_Sort (06/06/12, 6/16)
 test_array_slicing3 (06/08/12, 6/16)
 
-
 no-local nondeterminisms (UNASSIGNED)
 -------------------------------------
 cg-sparse-timecomp (06/05/12)
+studies/ssca2/atomic/SSCA2_main_atomic (07/04/12)
 
+tcmalloc failures (08/08/12)
+----------------------------
+[Error: Timed out executing program distributions/robust/arithmetic/kernels/hpl (compopts: 1)]
+[Error: Timed out executing program distributions/robust/arithmetic/kernels/jacobi]
+[Error: Timed out executing program distributions/robust/arithmetic/modules/test_module_Sort]
 
-memory/vass/crash-memory-module-1 (vass)
-----------------------------------------
-fails intermittently
+nondet. tmalloc failures
+------------------------
+[Error: Timed out executing program distributions/robust/arithmetic/stress/test_many_domains] (08/08/12)
 
+parallel/begin/deitz/test_big_recursive_begin future succeeded
+--------------------------------------------------------------
+*-linux64.gnu.none.fifo.pthreads (10/10/12, 10/16/12)
+*-linux64.gnu.none.fifo.pthreads-std.log (8/18,9/2,9/9,9/13/12, 10/17/12)
+*-linux64.gnu.none.fifo.pthreads-npt.log (baseline)
+  (9/{4,5,14,22,30}/12)
+  (10/2/12)
+120821/Nightly-day2-Tue-linux64.gnu.none.fifo.pthreads-nlc.log
 
-======================================================
-Older stuff that I didn't see creating noise this week
-======================================================
+===========================================
+Not noisy, but need some attention sometime
+===========================================
 
-============================================================
-linux64.pgi.none.fifo.pthreads
-============================================================
-This seems noisy, or not yet ready for primetime.  Add to REGRESSIONS?
-[Error matching program output for studies/lulesh/sungeun/lulesh (compopts: 1)]
-Newly added this week, but fails also for the standard implementation. Add to REGRESSIONS.
-[Error matching program output for studies/ssca2/vass/SSCA2_main (compopts: 1, execopts: 1)]
-[Error matching program output for studies/ssca2/vass/SSCA2_main (compopts: 2, execopts: 1)]
-[Error matching program output for studies/ssca2/vass/SSCA2_main (compopts: 3, execopts: 1)]
-[Error matching program output for studies/ssca2/vass/SSCA2_main (compopts: 4, execopts: 1)]
-[Error matching program output for studies/ssca2/vass/SSCA2_main (compopts: 5, execopts: 1)]
+types/range/hilde/align64
+-------------------------
+This test gets a false positive pass on intel and pgi it seems, for
+reasons that are not clear to me (i.e., why are they behaving differently
+than gcc?).  If the future should remain, a .skipif should be added to
+skip it in these cases.
+ 
+I wouldn't call the future a bug so much as a 'feature request' or
+'semantic' future -- it suggests a change in the language definition
+that should be considered and agreed upon rather than reflecting a way
+in which the compiler is incorrect w.r.t. the language definition (as
+I understand it.
 
-============================================================
-Perf linux64.gnu.none.fifo.pthreads
-============================================================
-Warnings from createGraphs should be eliminated because they are counted as errors.
-Bug -> Vass.
-Brad 6/22/2012: ''At some point I'd like someone to address it, but
-since it isn't creating noise in the testing system (in the sense of
-new emails that aren't worth paying attention to), I'd file it more in
-the "once we've got the noise out, we should improve the system
-itself" category.''
-
+xt-cle.cray-xt-cray.none.fifo.pthreads
+--------------------------------------
+The following compiler segfaults(?) appeared only once on 9/28/12
+[Error matching compiler output for release/examples/primers/opaque]
+[Error matching compiler output for release/examples/spec/Generics/fillTuple2]
+[Error matching compiler output for release/examples/spec/Iterators/as-arrays]
+[Error matching compiler output for release/examples/spec/Ranges/alignedNegStride]

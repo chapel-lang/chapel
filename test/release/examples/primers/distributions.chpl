@@ -32,7 +32,7 @@ config const n = 8;
 // Declare a 2-dimensional domain Space that we will later use to
 // initialize the distributed domains.
 //
-const Space = [1..n, 1..n];
+const Space = {1..n, 1..n};
 
 //
 // The Block distribution distributes a bounding box from
@@ -81,7 +81,7 @@ writeln();
 // other.
 //
 
-var MyLocaleView = [0..#numLocales, 1..1];
+var MyLocaleView = {0..#numLocales, 1..1};
 var MyLocales: [MyLocaleView] locale = reshape(Locales, MyLocaleView);
 
 //
@@ -185,7 +185,7 @@ writeln();
 // (a) when the replicated array is assigned a scalar:
 //       RA = 5;
 // (b) when it appears first in a zippered forall loop:
-//       forall (ra, a) in (RA, A) do ...;
+//       forall (ra, a) in zip(RA, A) do ...;
 // (c) when it appears in a for loop:
 //       for ra in RA do ...;
 //
@@ -266,7 +266,7 @@ writeln();
 //
 
 var (nl1, nl2) = if numLocales == 1 then (1, 1) else (2, numLocales/2);
-MyLocaleView = [0..#nl1, 0..#nl2];
+MyLocaleView = {0..#nl1, 0..#nl2};
 MyLocales = reshape(Locales[0..#nl1*nl2], MyLocaleView);
 
 const DimReplicatedBlockcyclicSpace = Space

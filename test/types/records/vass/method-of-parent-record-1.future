@@ -1,0 +1,5 @@
+bug: cannot invoke a method that is inherited from the parent record
+
+a.test() works fine, but b.test() causes compiler error (which it shouldn't):
+
+method-of-parent-record-1.chpl:10: error: actual formal type mismatch

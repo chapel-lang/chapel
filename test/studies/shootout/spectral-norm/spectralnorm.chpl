@@ -11,6 +11,9 @@ config const timer : bool = false;
 var t : Timer;
 config const NUM = 500;
 
+use barrierWF;
+var b: BarrierWF;
+
 /* Return: 1.0 / (i + j) * (i + j +1) / 2 + i + 1; */
 proc eval_A(i,j : int) : real
 {
@@ -24,23 +27,23 @@ proc eval_A(i,j : int) : real
 
 proc eval_A_times_u(u : [] real, inRange : int, Au : [] real, outRange1, outRange2 : int)
 {
-	for i in [outRange1..outRange2-1] do {
+	for i in {outRange1..outRange2-1} do {
 		Au(i) = + reduce [j in 0..inRange-1] (u(j) * eval_A(i,j));
 	}
 }
 
 proc eval_At_times_u(u : [] real, inRange : int, Au : [] real, outRange1, outRange2 : int)
 {
-	for i in [outRange1..outRange2-1] do
+	for i in {outRange1..outRange2-1} do
 		Au(i) = + reduce [j in 0..inRange-1] (u(j) * eval_A(j,i));
 }
 
 proc eval_AtA_times_u(u,AtAu,v : [] real, inRange, range1, range2 : int)
 {
-	   sync eval_A_times_u(u, inRange, v, range1, range2);
-//#pragma omp barrier
-	   sync eval_At_times_u(v, inRange, AtAu, range1, range2);
-//#pragma omp barrier
+           eval_A_times_u(u, inRange, v, range1, range2);
+           b.barrier();
+           eval_At_times_u(v, inRange, AtAu, range1, range2);
+           b.barrier();
 }
 
 proc spectral_game(N : int) : real
@@ -50,6 +53,7 @@ proc spectral_game(N : int) : real
 	var chunk = N / numThreads;
 
 	u = 1.0;
+        b = new BarrierWF(numThreads);
 
 	coforall i in 0..#numThreads do {
 		var r_begin = i * chunk;
@@ -73,7 +77,7 @@ proc spectral_game(N : int) : real
 proc main() {
 	if timer then
 		t.start();
-	writeln(spectral_game(NUM));
+	writeln(spectral_game(NUM), new iostyle(significant_digits=10));
 	if timer then {
 		t.stop();
 		writeln("Time elapsed : ", t.elapsed(), " seconds");

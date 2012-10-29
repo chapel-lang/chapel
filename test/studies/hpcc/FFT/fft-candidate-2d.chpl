@@ -28,10 +28,10 @@ config const printParams = true,
 proc main() {
   printConfiguration();
 
-  const TwiddleDom = [0:int(64)..#m/4];
+  const TwiddleDom = {0:int(64)..#m/4};
   var Twiddles: [TwiddleDom] elemType;
 
-  const ProblemDom = [0:int(64)..#m];
+  const ProblemDom = {0:int(64)..#m};
   var Z, z: [ProblemDom] elemType;
 
   initVectors(Twiddles, z);
@@ -98,7 +98,7 @@ proc fft2d(A, W, steps, phase) {
     span *= 4;
   }
   if (phase == 1) {
-    for (row, k1) in (0..#p by 2, 0..) {
+    for (row, k1) in zip(0..#p by 2, 0..) {
       k = p*row;
       wk2 = W[k1];
       wk1 = W[2*k1];

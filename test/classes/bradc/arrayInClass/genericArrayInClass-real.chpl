@@ -23,7 +23,7 @@ class OpaqueC {
 class SparseC {
   type t;
   
-  var sparseDom: sparse subdomain([1..3]);
+  var sparseDom: sparse subdomain({1..3});
   var x: [sparseDom] t;
 }
 

@@ -1,6 +1,6 @@
 use driver_domains;
 
-const D: domain(1,int,true) dmapped Dist1D = [Space1];
+const D: domain(1,int,true) dmapped Dist1D = {Space1};
 
 var A: [D] int;
 

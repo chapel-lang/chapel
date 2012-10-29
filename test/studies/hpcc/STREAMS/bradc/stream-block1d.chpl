@@ -26,9 +26,9 @@ proc main() {
   var t1, t2, t3: Timer;
 
   t1.start();
-  const BlockDist = new dmap(new Block(rank=1, idxType=int(64), boundingBox=[1..m], targetLocales=Locales));
+  const BlockDist = new dmap(new Block(rank=1, idxType=int(64), boundingBox={1..m}, targetLocales=Locales));
 
-  const ProblemSpace: domain(1, int(64)) dmapped BlockDist = [1..m];
+  const ProblemSpace: domain(1, int(64)) dmapped BlockDist = {1..m};
 
   var A, B, C: [ProblemSpace] elemType;
   t1.stop();
@@ -45,7 +45,7 @@ proc main() {
     // A = B + alpha * C;
     // But this doesn't yet result in parallelism
 
-    forall (a, b, c) in (A, B, C) {
+    forall (a, b, c) in zip(A, B, C) {
       a = b + alpha * c;
     }
 
@@ -88,7 +88,7 @@ proc initVectors(B, C) {
 proc verifyResults(A, B, C) {
   if (printArrays) then writeln("A is: ", A, "\n");
 
-  const infNorm = max reduce [(a,b,c) in (A,B,C)] abs(a - (b + alpha * c));
+  const infNorm = max reduce [(a,b,c) in zip(A,B,C)] abs(a - (b + alpha * c));
 
   return (infNorm <= epsilon);
 }

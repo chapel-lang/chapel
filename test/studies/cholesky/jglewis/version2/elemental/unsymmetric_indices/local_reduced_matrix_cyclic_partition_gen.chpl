@@ -22,7 +22,7 @@ module local_reduced_matrix_cyclic_partition_gen {
     // -------------------------------------------------------------------
     
     for ( block_low_row, block_low_col ) in 
-      ( A_domain.dim (1) by block_size,  A_domain.dim (2) by block_size ) do {
+      zip( A_domain.dim (1) by block_size,  A_domain.dim (2) by block_size ) do {
 
       var next_block_low_row = block_low_row + block_size,
 	  next_block_low_col = block_low_col + block_size;

@@ -28,10 +28,10 @@ config const printParams = true,
 proc main() {
   printConfiguration();
 
-  const TwiddleDom: domain(1) = [0..#m/4];
+  const TwiddleDom: domain(1) = {0..#m/4};
   var Twiddles: [TwiddleDom] elemType;
 
-  const ProblemDom: domain(1) = [0..#m];
+  const ProblemDom: domain(1) = {0..#m};
   var Z, z: [ProblemDom] elemType;
 
   initVectors(Twiddles, z);
@@ -107,7 +107,7 @@ proc dfft(A: [?ADom], W) {
     const m = radix*span,
           m2 = 2*m;
 
-    forall (k,k1) in (ADom by m2, 0..) {
+    forall (k,k1) in zip(ADom by m2, 0..) {
       var wk2 = W(k1),
           wk1 = W(2*k1),
           wk3 = (wk1.re - 2 * wk2.im * wk1.im,

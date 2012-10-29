@@ -1,4 +1,4 @@
-var D = [1..4, 1..4];
+var D = {1..4, 1..4};
 
 var A: [D] real;
 
@@ -8,7 +8,7 @@ for i in D do
 writeln(D);
 writeln(A);
 
-D = [0..5, 0..5];
+D = {0..5, 0..5};
 
 writeln(D);
 writeln(A);

@@ -49,7 +49,7 @@ proc main() {
         delete dF;
     }
 
-    for (f,d) in (fcn,dfcn) {
+    for (f,d) in zip(fcn,dfcn) {
       delete f;
       delete d;
     }

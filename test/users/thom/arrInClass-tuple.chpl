@@ -3,7 +3,7 @@ class StoreSomeInts {
   var m_someints: [intsDom] int;
 
   proc StoreSomeInts(intTuple:int...?k) {
-    intsDom = [1..k];
+    intsDom = {1..k};
     this.m_someints = intTuple;
   }
 }

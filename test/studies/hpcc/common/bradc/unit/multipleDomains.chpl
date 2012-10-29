@@ -1,29 +1,29 @@
 use BradsBlock1DPar;
 
-var myLocalesDom = [0..2];
+var myLocalesDom = {0..2};
 var myLocales: [myLocalesDom] locale = [i in myLocalesDom] Locales(i%numLocales);
 
 //
 // The following is the manual rewrite of something like:
 //
-//   const ProblemDist = new Block1DDist(bbox=[1..10], targetLocales=myLocales);
+//   const ProblemDist = new Block1DDist(bbox={1..10}, targetLocales=myLocales);
 //
-//   const Dom1: domain(1) dmapped(ProblemDist) = [0..11],
-//         Dom2: domain(1) dmapped(ProblemDist) = [1..12],
-//         Dom3: domain(1) dmapped(ProblemDist) = [-1..10];
+//   const Dom1: domain(1) dmapped(ProblemDist) = {0..11},
+//         Dom2: domain(1) dmapped(ProblemDist) = {1..12},
+//         Dom3: domain(1) dmapped(ProblemDist) = {-1..10};
 //
 // TODO: The following cast to int(64) is really unfortunate.  We
 // really need param domains and ranges and the obvious conversions
 // between them.
 // 
-const ProblemDist = new Block1DDist(bbox=[1..10:int(64)], targetLocales=myLocales);
+const ProblemDist = new Block1DDist(bbox={1..10:int(64)}, targetLocales=myLocales);
 
 writeln("ProblemDist =\n", ProblemDist);
 writeln();
 
-const Dom1 = ProblemDist.newDomain([0..11:int(64)]);
-const Dom2 = ProblemDist.newDomain([1..12:int(64)]);
-const Dom3 = ProblemDist.newDomain([-1..10:int(64)]);
+const Dom1 = ProblemDist.newDomain({0..11:int(64)});
+const Dom2 = ProblemDist.newDomain({1..12:int(64)});
+const Dom3 = ProblemDist.newDomain({-1..10:int(64)});
 
 //
 // The following loop is the manual rewrite of:
@@ -39,7 +39,7 @@ for block in Dom1.newThese(IteratorType.leader) {
   // 
   on block {
     writeln("locale ", here, " is being asked to follow ", block);
-    for ijk in (Dom1.newThese(IteratorType.follower, block),
+    for ijk in zip(Dom1.newThese(IteratorType.follower, block),
                 Dom2.newThese(IteratorType.follower, block),
                 Dom3.newThese(IteratorType.follower, block)) {
       writeln("ijk = ", ijk);
@@ -57,7 +57,7 @@ writeln();
 for block in Dom2.newThese(IteratorType.leader) {
   on block {
     writeln("locale ", here, " is being asked to follow ", block);
-    for ijk in (Dom1.newThese(IteratorType.follower, block),
+    for ijk in zip(Dom1.newThese(IteratorType.follower, block),
                 Dom2.newThese(IteratorType.follower, block),
                 Dom3.newThese(IteratorType.follower, block)) {
       writeln("ijk = ", ijk);
@@ -70,7 +70,7 @@ writeln();
 for block in Dom3.newThese(IteratorType.leader) {
   on block {
     writeln("locale ", here, " is being asked to follow ", block);
-    for ijk in (Dom1.newThese(IteratorType.follower, block),
+    for ijk in zip(Dom1.newThese(IteratorType.follower, block),
                 Dom2.newThese(IteratorType.follower, block),
                 Dom3.newThese(IteratorType.follower, block)) {
       writeln("ijk = ", ijk);

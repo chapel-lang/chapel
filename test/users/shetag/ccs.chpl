@@ -30,19 +30,19 @@ const apx = anx / atx, apy = any / aty, apz = anz / atz,
 config const typeSim = cpl; 
 
 /* Code for 3D distribution of atmosphere grid 
-const atmP : domain(3) = [1..apx, 1..apy, 1..apz];
+const atmP : domain(3) = {1..apx, 1..apy, 1..apz};
 const atmL : [atmP] locale = reshape(Locales);
-const atmD : domain(3) dmapped(Block, Block, Block) on atmL = [1..anx, 1..any, 1..anz];
+const atmD : domain(3) dmapped(Block, Block, Block) on atmL = {1..anx, 1..any, 1..anz};
 const atmA : [atmD] real; 
 */
 
-const atmD : domain(3) = [0..anz+1, 0..any+1, 0..anx+1];
+const atmD : domain(3) = {0..anz+1, 0..any+1, 0..anx+1};
 const atmA : [atmD] real = -1; 
 
-const ocnD : domain(3) = [0..onz+1, 0..ony+1, 0..onx+1];
+const ocnD : domain(3) = {0..onz+1, 0..ony+1, 0..onx+1};
 const ocnA : [ocnD] real = -1;
 
-const lndD : domain(3) = [0..lnz+1, 0..lny+1, 0..lnx+1];
+const lndD : domain(3) = {0..lnz+1, 0..lny+1, 0..lnx+1};
 const lndA : [lndD] real = -1;
 
 atmA[1..anz, 1..any, 1..anx] = 1; 

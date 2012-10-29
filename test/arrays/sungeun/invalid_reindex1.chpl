@@ -1,7 +1,7 @@
 config param n = 10;
 
-const D3D: domain(3) = [1..n, 2..n+1, 3..n+2];
-const D4D: domain(4) = [2..n+1, 3..n+2, 4..n+3, 5..n+4];
+const D3D: domain(3) = {1..n, 2..n+1, 3..n+2};
+const D4D: domain(4) = {2..n+1, 3..n+2, 4..n+3, 5..n+4};
 
 proc foo(D: domain, A:[D], i) {
   A += n*i;

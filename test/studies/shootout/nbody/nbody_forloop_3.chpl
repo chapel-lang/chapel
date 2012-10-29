@@ -25,7 +25,7 @@ record Planet {
 }
 
 proc advance(B: [] Planet, dt: real) {
-	for (b1, i) in (B, 0..) do {
+	for (b1, i) in zip(B, 0..) do {
 		for b2 in B[i+1..] do {
 			var dx = b1.x - b2.x;
 			var dy = b1.y - b2.y;
@@ -50,7 +50,7 @@ proc advance(B: [] Planet, dt: real) {
 
 proc energy(B : [] Planet) : real {
 	var e : real;
-	for (b1, i) in (B, 0..) do {
+	for (b1, i) in zip(B, 0..) do {
 		e += 0.5 * b1.mass * (b1.vx * b1.vx + b1.vy * b1.vy + b1.vz * b1.vz);
 		for b2 in B[i+1..] do {
 			var dx = b1.x - b2.x;

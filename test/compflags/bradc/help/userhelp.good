@@ -73,6 +73,19 @@ C Code Compilation Options:
   -o, --output <filename>             Name output executable
       --static                        Generate a statically linked binary
 
+LLVM Code Generation Options:
+      --llvm                          Use the LLVM code generator
+
+Documentation Options:
+      --[no-]docs                     Runs documentation on the source file
+      --[no-]docs-alphabetical        Alphabetizes the documentation
+      --docs-comment-style <indicator>
+                                      Only includes comments that start with
+                                      <indicator>
+      --docs-dir <dirname>            Sets the documentation directory to
+                                      <dirname>
+      --docs-text-only                Generate text only documentation
+
 Compilation Trace Options:
       --print-commands                Print system commands
       --print-passes                  Print compiler passes
@@ -87,6 +100,8 @@ Miscellaneous Options:
       --[no-]print-callstack-on-error print the Chapel call stack leading to
                                       each error or warning
   -s, --set <name>[=<value>]          Set config param value
+      --[no-]warn-domain-literal      [Disable] Enable old domain literal
+                                      syntax warnings
       --no-warnings                   Disable output of warnings
 
 Compiler Information Options:

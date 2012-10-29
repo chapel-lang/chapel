@@ -108,7 +108,7 @@ proc test_readlines()
     style.string_format = QIO_STRING_FORMAT_TOEND;
     style.string_end = 0x0a;
     var ch = f.reader(style=style);
-    for (line,i) in (ch.itemReader(string),1..) {
+    for (line,i) in zip(ch.itemReader(string),1..) {
       if i == 1 {
         assert(line == "a b\n");
       } else if i == 2 {
@@ -122,7 +122,7 @@ proc test_readlines()
 
   if noisy then writeln("Testing readlines: file.lines()");
   {
-    for (line,i) in (f.lines(),1..) {
+    for (line,i) in zip(f.lines(),1..) {
       if i == 1 {
         assert(line == "a b\n");
       } else if i == 2 {

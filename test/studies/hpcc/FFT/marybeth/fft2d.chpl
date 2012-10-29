@@ -23,14 +23,14 @@ proc main() {
   const N = 1 << logN;
 
   // twiddle domain and arrays
-  const TwiddleDom = [0..#N/4];
+  const TwiddleDom = {0..#N/4};
   var Twiddles: [TwiddleDom] complex;
 
   computeTwiddles(Twiddles);
   Twiddles = bitReverseShuffle(Twiddles);
 
   // problem domain and arrays
-  const ProblemDom: domain(1) = [0..#N];
+  const ProblemDom: domain(1) = {0..#N};
   var Z, z: [ProblemDom] complex;
   var realtemp, imagtemp: [ProblemDom] real;
 
@@ -152,7 +152,7 @@ proc fft2d(A, W, steps, phase) {
     span *= 4;
   }
   if (phase == 1) {
-    for (row, k1) in (0..#p by 2, 0..) {
+    for (row, k1) in zip(0..#p by 2, 0..) {
       k = p*row;
       wk2 = W[k1];
       wk1 = W[2*k1];

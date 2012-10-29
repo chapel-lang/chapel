@@ -81,7 +81,7 @@ record sieve_t {
 };
 
 const sieve_size = max(3*5*23*29+1, terms*6): c_long;
-var sievedom = [0: c_long..#(sieve_size/2)];
+var sievedom = {0: c_long..#(sieve_size/2)};
 var sieve: [sievedom] sieve_t;
 
 var ftmp, fmul: fac_t;
@@ -97,7 +97,7 @@ while ((1<<depth) < terms) do
   depth += 1;
 depth += 1;
 
-var stackdom1 = [0..#depth],
+var stackdom1 = {0..#depth},
     stackdom2 = stackdom1;
 
 var gstack: [stackdom1] mpz_t,
@@ -407,7 +407,7 @@ proc fac_init_size(inout f: fac_t, in s: c_long) {
   if (s<INIT_FACS) then
     s=INIT_FACS;
 
-  f.sdom = [0..#s];
+  f.sdom = {0..#s};
 
   fac_reset(f);
 }

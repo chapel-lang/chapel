@@ -3,7 +3,7 @@ proc saxpy(alpha, x:[] real, y:[] real) {
 }
 
 var n = 10;
-var D: domain(1) = [1..n];
+var D: domain(1) = {1..n};
 var x: [D] real = 10.0;
 var y: [D] real = 1..n;
 var alpha = 2.0;

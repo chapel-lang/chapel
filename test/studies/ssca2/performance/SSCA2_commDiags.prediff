@@ -18,10 +18,10 @@ if len(sys.argv) < 3:
 # Latest approximate communication counts
 #
 commTypes = ['get', 'get_nb', 'get_nb_test', 'get_nb_wait', 'put', 'fork', 'fork_fast', 'fork_nb']
-l0 = [47772, 0, 0, 0, 4085, 0, 0, 0]
-l1 = [59160, 0, 0, 0, 4109, 0, 0, 0]
-l2 = [53539, 0, 0, 0, 3966, 0, 0, 0]
-l3 = [56816, 0, 0, 0, 4116, 0, 0, 0]
+l0 = [24812, 0, 0, 0, 0, 6566, 0, 0]
+l1 = [33816, 0, 0, 0, 0, 7318, 0, 0]
+l2 = [30635, 0, 0, 0, 0, 6742, 0, 0]
+l3 = [32313, 0, 0, 0, 0, 6837, 0, 0]
 counts = [l0, l1, l2, l3]
 
 logfile = sys.argv[2]
@@ -42,8 +42,15 @@ for l in lines:
             for d in range(8):
                 target = counts[i][d]
                 curr=int(commDiags[d].split('=')[1].strip())
-                # only gets and puts should vary
-                if d==0 or d==4:
+                # gets
+                if d==0:
+                    max=int(1.1*float(target)) # truncates
+                    if (curr>=target) and (curr<=max):
+                        f.write('%d: %s: %d-%d\n'%(i, commTypes[d], target, max))
+                    else:
+                        f.write('%d: %s: %d (expected %d-%d)\n'%(i, commTypes[d], curr, target, max))
+                # forks
+                elif d==5:
                     err=int(0.01*float(target)) # truncates
                     if (curr>=target-err) and (curr<=target+err):
                         f.write('%d: %s: %d (~1%%)\n'%(i, commTypes[d], target))

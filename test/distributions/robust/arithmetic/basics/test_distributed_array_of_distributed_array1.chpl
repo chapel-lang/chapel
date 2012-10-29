@@ -1,6 +1,6 @@
 use driver;
 
-const Dom: domain(2) dmapped Dist2D = [1..5, 1..5];
+const Dom: domain(2) dmapped Dist2D = {1..5, 1..5};
 
 var A: [Dom] [Dom] int;
 

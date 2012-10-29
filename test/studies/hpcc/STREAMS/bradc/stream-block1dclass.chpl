@@ -24,9 +24,9 @@ config const printParams = true,
 proc main() {
   printConfiguration();
 
-  const ProblemDist = new Block1DDist(bbox=[1..m], targetLocs=Locales);
+  const ProblemDist = new Block1DDist(bbox={1..m}, targetLocs=Locales);
 
-  const ProblemSpace = ProblemDist.newDomain([1..m], int(64));
+  const ProblemSpace = ProblemDist.newDomain({1..m}, int(64));
 
   var A = ProblemSpace.newArray(elemType), 
       B = ProblemSpace.newArray(elemType),
@@ -42,7 +42,7 @@ proc main() {
     // A = B + alpha * C;
     // But this doesn't work because we don't support promotion over classes
 
-    forall (a, b, c) in (A, B, C) {
+    forall (a, b, c) in zip(A, B, C) {
       a = b + alpha * c;
     }
 

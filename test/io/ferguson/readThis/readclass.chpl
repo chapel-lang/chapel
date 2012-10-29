@@ -1,15 +1,15 @@
 class mything {
   var x:int;
   proc readWriteThis(rw) {
-    rw & x;
+    rw <~> x;
   }
 }
 class subthing : mything {
   var y:int;
   proc readWriteThis(rw) {
-    rw & x;
-    rw & new ioLiteral(",");
-    rw & y;
+    rw <~> x;
+    rw <~> new ioLiteral(",");
+    rw <~> y;
   }
 }
 

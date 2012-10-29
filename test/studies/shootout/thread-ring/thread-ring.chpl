@@ -21,7 +21,7 @@
 
 config const N = 1000, nthreads = 503;
 config param use_coforall = true;
-var D: domain(1) = [1..nthreads];
+var D: domain(1) = {1..nthreads};
 var token: [D] sync int;
 
 proc main() {

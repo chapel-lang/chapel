@@ -22,7 +22,7 @@ const TD2D64: domain(2,int(64)) = Space2D64.translate(-o5:int(64),-o5:int(64));
 proc foo(TD: domain, A: [TD] int, TA) {
   var errs = 0;
   var offset = if (TD.rank==1) then o5-shift else fill(TD.rank, o5-shift);
-  for i in [TD] do
+  for i in {TD} do
     if A[i].locale != TA[i+offset].locale {
       writeln("A[",i,"] Incorrect reindex");
       errs += 1;

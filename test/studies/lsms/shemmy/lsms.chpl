@@ -31,7 +31,7 @@ param nExtent = 13;
 type AtomMatrix = nExtent*real;
 //type AtomMatrix = [0..#nExtent] real;
 
-const GridDom  = [0..#span_x, 0..#span_y, 0..#span_z];
+const GridDom  = {0..#span_x, 0..#span_y, 0..#span_z};
 
 proc main() {
 	var t: Timer;
@@ -41,7 +41,7 @@ proc main() {
 
 	//calculate Local Interaction Zones
 	var lizDoms: [GridDom] sparse subdomain(GridDom);
-	for (a, liz) in (GridDom, lizDoms) {
+	for (a, liz) in zip(GridDom, lizDoms) {
 		for ac in GridDom do if a != ac {
 			//compute dist between 2 points
 			var diff: 3*int;
@@ -56,7 +56,7 @@ proc main() {
 
 	//initialize atoms
 	var atoms: [GridDom] AtomMatrix;
-	for (i, atom) in (GridDom, atoms) {
+	for (i, atom) in zip(GridDom, atoms) {
 		for param e in 1..nExtent do atom[e] = GridDom.indexOrder(i);
 	}
 
@@ -69,7 +69,7 @@ proc main() {
 		
 		//each atom adds up extent values from neighbors (members of its liz sphere)
 		var totals: [GridDom] AtomMatrix;
-		for (liz, total, i) in (lizDoms, totals, GridDom) {
+		for (liz, total, i) in zip(lizDoms, totals, GridDom) {
 			for ac in liz {
 				total += atoms[ac];
 			}

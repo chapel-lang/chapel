@@ -1,7 +1,7 @@
 
 config var n = 10;
 
-var D = [1..n];
+var D = {1..n};
 
 var A: [D] uint;
 var B: [D] uint = 0;

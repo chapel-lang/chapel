@@ -19,16 +19,16 @@ config const numStreams:int = 1 << 9;
 const bigStep:int = (numUpdates:int)/numStreams;
 config const littleStep = 64;
 
-const TableDomain = [0:uint(64)..#tableSize];
+const TableDomain = {0:uint(64)..#tableSize};
 var Table: [TableDomain] uint(64);
 
-const RandStepsDomain = [0..#64];
+const RandStepsDomain = {0..#64};
 var RandomSteps: [RandStepsDomain] uint(64);
 
-const StreamDomain = [0..#numStreams];
-const BigStepDomain = [0..#bigStep];
-const LittleStepDomain = [0..#littleStep];
-const UpdateDomain: domain(2) = [0..#numStreams,0..#bigStep];
+const StreamDomain = {0..#numStreams};
+const BigStepDomain = {0..#bigStep};
+const LittleStepDomain = {0..#littleStep};
+const UpdateDomain: domain(2) = {0..#numStreams,0..#bigStep};
 
 var realTime:real;
 var GUPs:real;

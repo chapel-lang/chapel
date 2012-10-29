@@ -20,6 +20,7 @@ module io_RMAT_graph
   config type  IONumType       = int(64);
   config param IOendianness    = iokind.big;
   config const IOserial        = false;
+  config const IOsingleTaskPerLocale = true;
 
   // Debugging-related settings.
   config const IOprogress      = true;
@@ -64,7 +65,7 @@ module io_RMAT_graph
     resetProgress();
 
     // iterate sequentially
-    for (u, ux) in (G.vertices, G.Row) {
+    for (u, ux) in zip(G.vertices, G.Row) {
       if dRow then write("row ", u, ": [", ux.numNeighbors(), "] ");
       if dEdge then writeln(dstyle, " vertex ", u);
       writeNum(sta, startIx);
@@ -117,7 +118,7 @@ module io_RMAT_graph
   param repfileLow = 1, repfileHi = 5,
         repfileSV = 1, repfileEV = 2, repfileWW = 3,
         repfileSTA = 4, repfileST2 = 5;
-  const repfileBase = [repfileLow .. repfileHi];
+  const repfileBase = {repfileLow .. repfileHi};
 
   //
   // Readin_RMAT_graph()
@@ -127,7 +128,9 @@ module io_RMAT_graph
   //
   proc Readin_RMAT_graph(G, snapshot_prefix:string, dstyle = "-"): void {
     writeln("reading RMAT graph with ", graphNumVertices(G), " vertices",
-            if IOserial then " serially" else " in parallel",
+            if IOserial then " serially" else
+              if DISTRIBUTION_TYPE == "BLOCK" && IOsingleTaskPerLocale
+                then " in parallel, 1 task per locale" else " in parallel",
             " from '", snapshot_prefix, "'*");
 
     var stopwatch : Timer;
@@ -147,6 +150,7 @@ module io_RMAT_graph
     ensureEOFofDataFile(veCount, snapshot_prefix, VE_FILENAME);
     veCount.close();
 
+    G.num_edges = eCount;
     debug("files contain  ", vCount, " vertices  ", eCount, " edges");
     const sb = numBytes(IONumType);
     debug("expected file sizes  ", 2*sb, "  ", (vCount+2)*sb, "  ", eCount*sb);
@@ -159,10 +163,7 @@ module io_RMAT_graph
     type VType = uxIDs.idxType;
     compilerAssert(!uxIDs.stridable); // for efficiency
 
-    // All work is done in graphReaderIterator().
-    // G.Row is used to distribute/parallelize the execution.
     if IOserial {
-
       const sv = createGraphChannel(snapshot_prefix, SV2_FILENAME, rea);
       const ev = createGraphChannel(snapshot_prefix, EV2_FILENAME, rea);
       const ww = createGraphChannel(snapshot_prefix, WEIGHT_FILENAME, rea);
@@ -182,7 +183,7 @@ module io_RMAT_graph
       // one more entry in 'sta'
       startIxData = readNum(sta);
       if startIxData != startIxCnt then
-        myerror("wrong last entry in ", START_FILENAME,
+        myerror("wrong last entry in ", snapshot_prefix, START_FILENAME,
                 "  expected ", startIxCnt, "  got ", startIxData);
       if startIxData != eCount then
         myerror(snapshot_prefix, VE_FILENAME, " claimed ", eCount,
@@ -199,6 +200,7 @@ module io_RMAT_graph
       sta.close();
 
     } else {
+      // !IOserial
       const repfileMap = new ReplicatedDist(Locales);
       const repfileDom = repfileBase dmapped new dmap(repfileMap);
       var repfiles: [repfileDom] file;
@@ -211,12 +213,26 @@ module io_RMAT_graph
  repfiles[repfileST2] = createGraphFile(snapshot_prefix, START_FILENAME, rea);
       }
 
+     if DISTRIBUTION_TYPE == "BLOCK" && IOsingleTaskPerLocale {
+        coforall locDom in GRow._value.dom.locDoms do on locDom {
+          const myIDs = locDom.myBlock.dim(1);
+
+          // All work is done in graphReaderReal() iterator.
+          for graphReaderReal(GRow, uxIDs, VType, vCount, eCount, repfiles,
+                              dON, dRow, dEdge, dstyle, myIDs) do;
+        }
+
+     } else {
+      // !IOsingleTaskPerLocale && !IOserial
+
       // All work is done in graphReaderIterator() follower iterator.
       // GRow is used only to distribute/parallelize the computation.
-      forall (_,_) in (GRow,
+      forall (_,_) in zip(GRow,
         graphReaderIterator(GRow, uxIDs, VType, vCount, eCount, repfiles,
                             dON, dRow, dEdge, dstyle))
           do;
+
+     } // if IOsingleTaskPerLocale
 
       coforall l in Locales do on l {
           repfiles[repfileSV].close();
@@ -251,6 +267,7 @@ module io_RMAT_graph
 
   // Seems we need this serial iterator declaration to keep the compiler happy.
   // But it is not implemented. Use --IOserial instead.
+  //
   iter graphReaderIterator(GRow, uxIDs, type VType, vCount, eCount, repfiles,
                            dON, dRow, dEdge, dstyle) {
     halt("serial graphReaderIterator should not be invoked");
@@ -258,26 +275,41 @@ module io_RMAT_graph
 
   }
 
+  // This is the follower iterator.
   // We do not need the leader iterator.
-  // The follower iterator reads the part of the graph it is given
-  // to follow, on the locale where it is run.
   //
   iter graphReaderIterator(GRow, uxIDs, type VType, vCount, eCount, repfiles,
                            dON, dRow, dEdge, dstyle,
                            param tag: iterKind, followThis)
     where tag == iterKind.follower
   {
-    if IOgate then IOgate$ = true;
-
     // ensure we got unstridable range with VType-typed indices
     compilerAssert(followThis.type ==
                    1*range(VType, BoundedRangeType.bounded, false));
 
     const myIDs = unDensify(followThis(1), uxIDs);
+
+    // Redirect to graphReaderReal() iterator.
+    for dummy in graphReaderReal(GRow, uxIDs, VType, vCount, eCount, repfiles,
+                                 dON, dRow, dEdge, dstyle, myIDs)
+      do yield dummy;
+  }
+
+  // This iterator reads the part of the graph corresponding to myIDs,
+  // on the locale where it is run.
+  //
+  iter graphReaderReal(GRow, uxIDs, type VType, vCount, eCount, repfiles,
+                       dON, dRow, dEdge, dstyle, myIDs)
+  {
+    if IOgate then IOgate$ = true;
+
     compilerAssert(!myIDs.stridable); // for efficiency, also for v1,v2
     // start/end IDs
     const v1 = myIDs.low, v2 = myIDs.high;
     //writeln("loc ", here.id, "  myIDs ", v1, "..", v2, "  of ", uxIDs);
+
+    // These indices better be all local, so take advantage of that.
+    var GRowLocal => GRow.localSlice(myIDs);
 
     // Returns the offset of edgeStart[v] in staf, 1 <= v <= numVertices+2.
     proc staOffsetForVID(v: int) return (v-1) * numBytes(IONumType);
@@ -293,7 +325,7 @@ module io_RMAT_graph
     //
     // But we need to avoid the undefined behavior when
     // channels refer to overlapping parts of a file.
-    // So we read edgeStart(v1) from 'staf1' and the rest from 'staf'.
+    // So we read edgeStart(v1) from 'ST2' and the rest from 'STA'.
     //
     const sta_v1 = repfiles[repfileST2].reader(kind = IOendianness,
                                                locking = false,
@@ -310,7 +342,7 @@ module io_RMAT_graph
 
     //writeln("edgeStart ", sta1, "..", sta2);
     if !(sta1 < sta2) then
-      halt("graph I/O for a small number of vertices is not supported\n",
+      halt("parallel graph I/O for a small number of vertices is not supported\n",
            "  loc ", here.id, "  myIDs ", v1, "..", v2, "  of ", uxIDs,
            "  edgeStart ", sta1, "..", sta2);
 
@@ -323,14 +355,14 @@ module io_RMAT_graph
                           svOffsetForEID(sta1), svOffsetForEID(sta2+1));
 
     // 'sta' covers edgeStart(v1+1..v2).
-    // Do not include v1, as another process will be reading that from 'staf'.
+    // Do not include v1, as another process will be reading it from its 'STA'.
     const sta = repfiles[repfileSTA].reader(IOendianness, false,
                            staOffsetForVID(v1+1), staOffsetForVID(v2+1+1));
 
     var startIxCnt = sta1 - 1;
 
     for u in v1:VType..v2:VType {
-      readOneVertex(GRow, VType, vCount, u, dON, dRow, dEdge, dstyle,
+      readOneVertex(GRowLocal, VType, vCount, u, dON, dRow, dEdge, dstyle,
                     sv, ev, ww, startIxData = readNum(sta), startIxCnt);
 
       // this needs to look like an iterator
@@ -347,7 +379,7 @@ module io_RMAT_graph
     sta.close();
 
     if IOgate then IOgate$;
-  } // follower graphReaderIterator
+  } // graphReaderReal
 
   proc readOneVertex(GRow, type VType, vCount, u, dON, dRow, dEdge, dstyle,
                      sv, ev, ww, startIxData, inout startIxCnt)

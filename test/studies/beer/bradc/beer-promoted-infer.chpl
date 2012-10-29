@@ -23,7 +23,7 @@ config const numBottles = 99;
 const numVerses = numBottles+1;
 
 // a domain to describe the space of lyrics
-var LyricsSpace: domain(1) = [1..numVerses];
+var LyricsSpace: domain(1) = {1..numVerses};
 
 // array of lyrics
 var Lyrics: [LyricsSpace] string;

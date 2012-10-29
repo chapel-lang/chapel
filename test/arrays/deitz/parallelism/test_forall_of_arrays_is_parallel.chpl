@@ -12,14 +12,14 @@ for b in B {
 writeln(B);
 
 chpl__testParStart();
-forall (a,b) in (A,B) do
+forall (a,b) in zip(A,B) do
   a = b;
 chpl__testParStop();
 
 writeln(A);
 
 chpl__testParStart();
-forall (a,b,c) in (A,B,C) do
+forall (a,b,c) in zip(A,B,C) do
   c = a + b;
 chpl__testParStop();
 

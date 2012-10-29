@@ -24,9 +24,9 @@ config const printParams = true,
 proc main() {
   printConfiguration();
 
-  const ProblemDist = new Block1DDist(bbox=[1..m], targetLocales=Locales);
+  const ProblemDist = new Block1DDist(bbox={1..m}, targetLocales=Locales);
 
-  const ProblemSpace = ProblemDist.newDomain([1..m], int(64));
+  const ProblemSpace = ProblemDist.newDomain({1..m}, int(64));
 
   var A = ProblemSpace.newArray(elemType), 
       B = ProblemSpace.newArray(elemType),
@@ -49,7 +49,7 @@ proc main() {
       on block {
         if debugBradsBlock1D then
           writeln("locale ", here, " is being asked to follow ", block);
-        for (a, b, c) in (A.newThese(IteratorType.follower, block),
+        for (a, b, c) in zip(A.newThese(IteratorType.follower, block),
                           B.newThese(IteratorType.follower, block),
                           C.newThese(IteratorType.follower, block)) {
           a = b + alpha * c;

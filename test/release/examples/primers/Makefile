@@ -5,6 +5,8 @@ CHPL = chpl
 
 TARGETS = \
 	arrays \
+	atomics \
+	chpldoc \
 	classes \
 	distributions \
 	domains \

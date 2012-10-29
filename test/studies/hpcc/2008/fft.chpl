@@ -54,7 +54,7 @@ proc main() {
   // twiddle values and is a 1D domain indexed by 64-bit ints from 0
   // to m/4-1.  Twiddles is the vector of twiddle values.
   //
-  const TwiddleDom: domain(1, int(64)) = [0..m/4-1];
+  const TwiddleDom: domain(1, int(64)) = {0..m/4-1};
   var Twiddles: [TwiddleDom] elemType;
 
   //
@@ -62,7 +62,7 @@ proc main() {
   // output vectors and is also a 1D domain indexed by 64-bit ints
   // from 0 to m-1.  Z and z are the vectors themselves
   //
-  const ProblemDom: domain(1, int(64)) = [0..m-1];
+  const ProblemDom: domain(1, int(64)) = {0..m-1};
   var Z, z: [ProblemDom] elemType;
 
   initVectors(Twiddles, z);            // initialize twiddles and input vector z
@@ -97,7 +97,7 @@ proc dfft(A: [?ADom], W) {
     // shared twiddle factors, zippering with the unbounded range
     // 0.. to get the base twiddle indices
     //
-    forall (bankStart, twidIndex) in (ADom by 2*span, 0..) {
+    forall (bankStart, twidIndex) in zip(ADom by 2*span, 0..) {
       //
       // compute the first set of multipliers for the low bank
       //

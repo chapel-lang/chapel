@@ -2,7 +2,7 @@
 // destroy inherited fields more than once; i.e., the default destructor for
 // a record must not destroy inherited fields.
 
-const D = [1..4];
+const D = {1..4};
 
 record R1 { var A: [D] int; }
 

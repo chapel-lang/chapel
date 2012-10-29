@@ -23,7 +23,7 @@ var canUse  : [ssIdx_r] bool;
 var covered : [elIdx_r[1 ..]] bool;
 
 //how many elements left uncovered
-var elLeft : index ([elIdx_r]);
+var elLeft : index ({elIdx_r});
 
 //print information regarding number of locales and number of cores
 //writeln ("numLocales ", numLocales);

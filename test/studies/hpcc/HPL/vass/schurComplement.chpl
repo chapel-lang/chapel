@@ -1,7 +1,7 @@
 use DimensionalDist2D;
 use ReplicatedDim;
 use BlockCycDim;
-use Memory, Time, Random;
+use Memory, Time, Random, UtilMath;
 
 
 /////////// configuration ///////////
@@ -45,7 +45,7 @@ writeln("n ", n, "  blkSize ", blkSize, "  blk ", blk,
 /////////// domains and arrays ///////////
 
 // non-distributed index space for Ab
-const MatVectSpace = [1..n, 1..n+1];
+const MatVectSpace = {1..n, 1..n+1};
 
 // block-cyclic starting indices
 const st1=1, st2=1;
@@ -75,9 +75,9 @@ var Ab: [if do_dgemms then AbD else 1..1] elemType; // small if !do_dgemms
 
 // the domains for replication
 const
-  replAD = [1..n, 1..blkSize] dmapped
+  replAD = {1..n, 1..blkSize} dmapped
     DimensionalDist2D(tla, bdim1, rdim2, "distBR"),
-  replBD = [1..blkSize, 1..n+1] dmapped
+  replBD = {1..blkSize, 1..n+1} dmapped
     DimensionalDist2D(tla, rdim1, bdim2, "distRB");
 
 // the arrays for replication
@@ -123,13 +123,13 @@ proc schurComplement(blk) {
         AbSlice2 = Ab[BD_dim1, 1..n+1];
   //showCurrTime("AbSlices");
 
-  forall (ab, ra) in (AbSlice1, replA) do
+  forall (ab, ra) in zip(AbSlice1, replA) do
     local
       ra = ab;
 
   replicateA(blk);
 
-  forall (ab, rb) in (AbSlice2, replB) do
+  forall (ab, rb) in zip(AbSlice2, replB) do
     local
       rb = ab;
 
@@ -250,7 +250,7 @@ proc replicateB(abIx) {
 }
 
 proc targetLocalesIndexForAbIndex(param dim, abIx)
-  return (abIx / blkSize) % (if dim == 1 then tl1 else tl2);
+  return (divceilpos(abIx, blkSize) - 1) % (if dim == 1 then tl1 else tl2);
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -261,7 +261,7 @@ proc setupTargetLocales() {
   if tld {
     if numLocales > tla.numElements then
       writeln("UNUSED LOCALES ", numLocales - tla.numElements);
-    for (l,i) in (tla,0..) do l = Locales[i];
+    for (l,i) in zip(tla,0..) do l = Locales[i];
   } else {
 writeln("insufficient locales");
 halt();

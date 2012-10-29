@@ -1,4 +1,4 @@
-const D = [1..9];
+const D = {1..9};
 
 class C {
   var SparseD: sparse subdomain(D);

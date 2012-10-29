@@ -1,5 +1,5 @@
 record R {
-  var D = [1..3];
+  var D = {1..3};
   var A: [D] real;
 }
 

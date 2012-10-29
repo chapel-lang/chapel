@@ -1,7 +1,7 @@
 use MyNorm;
 
 proc main() {
-  const D1 = [1..5];
+  const D1 = {1..5};
   var a:[D1] real;
   a = 2.0;
   writeln("Test of vector norms.  x = ");
@@ -10,7 +10,7 @@ proc main() {
   writeln("2-norm = " , norm(a,'2'));
   writeln("infinity norm = ",norm(a,'inf'));
   writeln("default norm = ",norm(a));
-  const D2 = [1..2,1..2];
+  const D2 = {1..2,1..2};
   var b:[D2] real;
   b = 2.0;
   writeln("Test of matrix norms.  A = ");
@@ -19,7 +19,7 @@ proc main() {
   writeln("infinity norm = ", norm(b,'inf'));
   writeln("frobenius norm = ",norm(b,'frob'));
   writeln("default norm = ",norm(b));
-  const D3 = [1..3,1..2];
+  const D3 = {1..3,1..2};
   var c:[D3] real;
   c = 2.0;
   writeln("Test of matrix norms.  A = ");

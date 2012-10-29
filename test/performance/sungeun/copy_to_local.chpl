@@ -8,7 +8,7 @@ use CyclicDist;
 use Time;
 
 const Dcyclic: domain(1) dmapped Cyclic(0) = 0..#numLocales;
-const D = [1..n];
+const D = {1..n};
 
 var A: [Dcyclic] [D] int(64);
 

@@ -1,6 +1,6 @@
 config var n : int = 4;
 
-var d : domain(1) = [1..n];
+var d : domain(1) = {1..n};
 
 var a : [d] [d] int;
 

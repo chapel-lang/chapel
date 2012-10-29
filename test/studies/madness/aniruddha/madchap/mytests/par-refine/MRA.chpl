@@ -42,22 +42,22 @@ class Function {
     //        can't be presently since they must be assigned in initialize()
 
     // Two-Scale relationship matrices
-    const hgDom = [0..2*k-1, 0..2*k-1];
+    const hgDom = {0..2*k-1, 0..2*k-1};
     var   hg    : [hgDom] real; // FIXME: hg  =  hg_getCoeffs(k);
     var   hgT   : [hgDom] real; //        hgT => transpose(hg);
 
     // Quadrature coefficients
-    const quadDom   = [0..k-1];
+    const quadDom   = {0..k-1};
     var   quad_x    : [quadDom] real; // points
     var   quad_w    : [quadDom] real; // weights
 
-    const quad_phiDom = [0..k-1, 0..k-1];
+    const quad_phiDom = {0..k-1, 0..k-1};
     var   quad_phi    : [quad_phiDom] real; // phi[point,i]
     var   quad_phiT   : [quad_phiDom] real; // phi[point,i] transpose
     var   quad_phiw   : [quad_phiDom] real; // phi[point,i]*weight[point]
 
     // blocks of the block tridiagonal derivative operator
-    const dcDom = [0..k-1, 0..k-1];
+    const dcDom = {0..k-1, 0..k-1};
     var   rm    : [dcDom] real;
     var   r0    : [dcDom] real;
     var   rp    : [dcDom] real;

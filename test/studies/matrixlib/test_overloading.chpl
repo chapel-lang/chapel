@@ -2,8 +2,8 @@ use MatrixMult;
 
 proc main() {
 
-  const D = [1..3,1..3];
-  const DB = [2..4,2..4];
+  const D = {1..3,1..3};
+  const DB = {2..4,2..4};
   var A,G: [D] real;
   var B: [DB] real;
 
@@ -51,8 +51,8 @@ proc main() {
   writeln("-----------------------------------------------------------------");
   writeln();
 
-  const D1 = [1..4,1..2];
-  const D2 = [1..2,1..2];
+  const D1 = {1..4,1..2};
+  const D2 = {1..2,1..2};
 
   var L:[D1] real;
   var M: [D1] int;

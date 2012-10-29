@@ -12,5 +12,5 @@ writeln(A3D.numElements);
 writeln(A4D.numElements);
 writeln(A2D64.numElements);
 
-var D: domain(3) dmapped Dist3D = [1..7, 1..11, 1..13];
+var D: domain(3) dmapped Dist3D = {1..7, 1..11, 1..13};
 writeln(D.numIndices);

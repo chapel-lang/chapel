@@ -12,18 +12,18 @@ config param fakeDimensionalDistParDim = 0;
 var traceDimensionalDistPrefix = "";
 
 // private helpers ("trace DimensionalDist" Conditionally)
-pragma "inline" proc _traceddc(param condition: bool, args...)
+inline proc _traceddc(param condition: bool, args...)
 {
   if condition then writeln(traceDimensionalDistPrefix,(...args));
 }
-pragma "inline" proc _traceddc(param cond, d:DimensionalDist, args...)
+inline proc _traceddc(param cond, d:DimensionalDist, args...)
 { _traceddc(cond, "DimensionalDist(", d.name, ")", (...args)); }
-pragma "inline" proc _traceddc(param cond, d:DimensionalDom, args...)
+inline proc _traceddc(param cond, d:DimensionalDom, args...)
 { _traceddc(cond, "DimensionalDom(", d.dist.name, ")", (...args)); }
-pragma "inline" proc _traceddc(param cond, d:DimensionalArr, args...)
+inline proc _traceddc(param cond, d:DimensionalArr, args...)
 { _traceddc(cond, "DimensionalArr(", d.dom.dist.name, ")", (...args)); }
 // the Default condition
-pragma "inline" proc _traceddd(args...)
+inline proc _traceddd(args...)
 { _traceddc(traceDimensionalDist, (...args)); }
 
 
@@ -34,14 +34,14 @@ type locCntT = uint(32);
 
 // ... locale ID, i.e., its index in targetLocales in the given dimension
 // convention: a locale ID is between 0 and (num. locales 1d - 1)
-type locIdT =  int(32);
+type locIdT =  int(64);
 
 // ... local storage size and indices (0-based)
 type stoSzT  = uint(32);
 
 param invalidLocID =
   // encode 'max(locIdT)' as a compile-time expression
-  2 ** (numBits(locIdT) - 1 - _isSignedType(locIdT):int);
+  (2 ** (numBits(locIdT) - 1 - _isSignedType(locIdT):int)):int(64);
 
 
 /// class declarations //////////////////////////////////////////////////////
@@ -187,7 +187,7 @@ proc DimensionalDist.DimensionalDist(
 proc DimensionalDist.checkInvariants(): void {
   assert(targetLocales.eltType == locale, "DimensionalDist-targetLocales.eltType");
   assert(targetIds.idxType == locIdT, "DimensionalDist-targetIdx.idxType");
-  assert(targetIds == [0..#numLocs1, 0..#numLocs2],
+  assert(targetIds == {0..#numLocs1, 0..#numLocs2},
          "DimensionalDist-targetIds");
   assert(rank == targetLocales.rank, "DimensionalDist-rank");
   assert(rank == 2, "DimensionalDist-rank==2");
@@ -322,7 +322,7 @@ proc _CurrentLocaleToLocIDs(targetLocales): (targetLocales.rank*locIdT, bool)
   var result: targetLocales.rank * locIdT;
   // guard updates to 'result' to ensure atomicity of updates
   var gotresult$: sync bool = false;
-  forall (lls, loc) in (targetLocales.domain, targetLocales) do
+  forall (lls, loc) in zip(targetLocales.domain, targetLocales) do
     if loc == here {
       // if we get multiple matches, we do not specify which is returned
       // could add a pre-test if it were cheap: if !gotresult$.readXX()
@@ -534,7 +534,7 @@ proc DimensionalDist.dsiNewRectangularDom(param rank: int,
                                   dom1 = dom1, dom2 = dom2);
   // result.whole is initialized to the default value (empty domain)
   coforall (loc, locIds, locDdesc)
-   in (targetLocales, targetIds, result.localDdescs) do
+   in zip(targetLocales, targetIds, result.localDdescs) do
     on loc {
       const defaultVal1: result.lddTypeArg1;
       const locD1 = dom1.dsiNewLocalDom1d(locIds(1));
@@ -551,7 +551,7 @@ proc DimensionalDom.dsiSetIndices(newIndices: domainT): void {
 }
 
 proc DimensionalDom.dsiSetIndices(newRanges: rank * rangeT): void {
-  whole = [(...newRanges)];
+  whole = {(...newRanges)};
   _dsiSetIndicesHelper(newRanges);
 }
 
@@ -565,7 +565,7 @@ proc DimensionalDom._dsiSetIndicesHelper(newRanges: rank * rangeT): void {
   dom1.dsiSetIndices1d(newRanges(1));
   dom2.dsiSetIndices1d(newRanges(2));
 
-  coforall (locId, locDD) in (dist.targetIds, localDdescs) do
+  coforall (locId, locDD) in zip(dist.targetIds, localDdescs) do
     on locDD do
       locDD._dsiLocalSetIndicesHelper((dom1, dom2), locId);
 }
@@ -578,9 +578,9 @@ proc LocDimensionalDom._dsiLocalSetIndicesHelper(globDD, locId) {
   var myRange1 = local1dDdescs(1).dsiSetLocalIndices1d(globDD(1),locId(1));
   var myRange2 = local1dDdescs(2).dsiSetLocalIndices1d(globDD(2),locId(2));
 
-  myBlock = [myRange1, myRange2];
-  myStorageDom = [0:stoSzT..#myRange1.length:stoSzT,
-                  0:stoSzT..#myRange2.length:stoSzT];
+  myBlock = {myRange1, myRange2};
+  myStorageDom = {0:stoSzT..#myRange1.length:stoSzT,
+                  0:stoSzT..#myRange2.length:stoSzT};
 
   _traceddd("DimensionalDom.dsiSetIndices on ", here.id, " ", locId, " <- ",
            myBlock, "  storage ", myRange1.length, "*", myRange2.length);
@@ -641,7 +641,7 @@ proc DimensionalDom.dsiBuildArray(type eltType)
 
   const result = new DimensionalArr(eltType = eltType, dom = this);
   coforall (loc, locDdesc, locAdesc)
-   in (dist.targetLocales, localDdescs, result.localAdescs) do
+   in zip(dist.targetLocales, localDdescs, result.localAdescs) do
     on loc do
       locAdesc = new LocDimensionalArr(eltType, locDdesc);
   return result;
@@ -734,7 +734,7 @@ iter DimensionalDom.these(param tag: iterKind) where tag == iterKind.leader {
       return dist.targetIds.dim(dd);
   }
   const overTargetIds = if dom1.dsiIsReplicated() || dom2.dsiIsReplicated()
-    then [helpTargetIds(dom1,1), helpTargetIds(dom2,2)]
+    then {helpTargetIds(dom1,1), helpTargetIds(dom2,2)}
     else dist.targetIds; // in this case, avoid re-building the domain
 
   // todo: lls is needed only for debugging printing?
@@ -744,7 +744,7 @@ iter DimensionalDom.these(param tag: iterKind) where tag == iterKind.leader {
   //     coforall ((l1,l2), locDdesc) in (dist.targetIds, localDdescs) do
   //   presently it will crash the compiler on an assertion.
   //
-  coforall (lls, locDdesc) in (overTargetIds, localDdescs[overTargetIds]) do
+  coforall (lls, locDdesc) in zip(overTargetIds, localDdescs[overTargetIds]) do
     on locDdesc {
       // mimic BlockDom leader
 
@@ -846,7 +846,7 @@ iter DimensionalDom.these(param tag: iterKind, followThis) where tag == iterKind
   // This is pre-defined by DSI, so no need to consult
   // the subordinate 1-d distributions.
 
-  for i in [(...unDensify(followThis, whole.dims()))] do
+  for i in {(...unDensify(followThis, whole.dims()))} do
     yield i;
 }
 
@@ -1242,7 +1242,7 @@ proc sdom._dsiComputeMyRange(locId): rangeT {
   // see LocBlock.LocBlock()
   const (blo, bhi) = _computeBlock(dist.bbLength, dist.numLocales,
            locId, max(dom.idxType), min(dom.idxType), dist.bbStart);
-  const myChunk = [blo..bhi];
+  const myChunk = {blo..bhi};
   // see Block.getChunk()
   const chunk = myChunk(dom.wholeR);
   return chunk.dim(1);
@@ -1336,11 +1336,11 @@ proc test(d) {
   writeln();
 }
 
-var d1 = [1..1, 0..9] dmapped dm;
+var d1 = {1..1, 0..9} dmapped dm;
 test(d1);
-var d2 = [1..1, 0..9 by -1] dmapped dm;
+var d2 = {1..1, 0..9 by -1} dmapped dm;
 test(d2);
-var d3 = [1..1, 0..9 by -2] dmapped dm;
+var d3 = {1..1, 0..9 by -2} dmapped dm;
 test(d3);
-var d4 = [1..1, 0..9 by 3] dmapped dm;
+var d4 = {1..1, 0..9 by 3} dmapped dm;
 test(d4);

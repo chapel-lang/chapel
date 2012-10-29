@@ -1,6 +1,6 @@
 use BlockDist, CyclicDist;
 config const n = 3;
-const Space = [1..n,1..n,1..n,1..n,1..n,1..n];
+const Space = {1..n,1..n,1..n,1..n,1..n,1..n};
 
 proc dit(D, A, B, C) {
   forall i in D {
@@ -22,7 +22,7 @@ for i in Space {
 proc checkdit(distName, A, B, C) {
   var allerr, err = 0;
 
-  for (ra, a) in (RA, A) do
+  for (ra, a) in zip(RA, A) do
     if ra!=a then err += 1;
   if err>0 {
     writeln(distName, " array A does not match (", err, " errors)");
@@ -30,7 +30,7 @@ proc checkdit(distName, A, B, C) {
     err = 0;
   }
 
-  for (rb, b) in (RB, B) do
+  for (rb, b) in zip(RB, B) do
     if rb!=b then err += 1;
   if err>0 {
     writeln(distName, " array B does not match (", err, " errors)");
@@ -38,7 +38,7 @@ proc checkdit(distName, A, B, C) {
     err = 0;
   }
 
-  for (rc, c) in (RC, C) do
+  for (rc, c) in zip(RC, C) do
     if rc!=c then err += 1;
   if err>0 then {
     writeln(distName, " array C does not match (", err, " errors)");

@@ -1,6 +1,6 @@
 config const n = 5;
 
-const D = [1..n];
+const D = {1..n};
 
 var A: [D] real = [i in D] i;
 

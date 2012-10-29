@@ -5,11 +5,11 @@ config const m = 25, n = 35;
 var MyBlkCyc = new dmap(new BlockCyclic(startIdx=(1,0), blocksize=(4, 8)));
 
 writeln("Declaring D:");
-var D: domain(2) dmapped MyBlkCyc = [1..m, 0..n];
+var D: domain(2) dmapped MyBlkCyc = {1..m, 0..n};
 writeln();
 
 writeln("Declaring D2:");
-var D2: domain(2) dmapped MyBlkCyc = [1..7, 0..0];
+var D2: domain(2) dmapped MyBlkCyc = {1..7, 0..0};
 writeln();
 
 
@@ -28,19 +28,19 @@ forall (i,j) in D2 do
 writeln("A is: ", A);
 writeln("A2 is: ", A2);
 
-forall ((i,j), a) in (D, A) do
+forall ((i,j), a) in zip(D, A) do
   a = j + i/100.0;
 
-forall ((i,j), a) in (D2, A2) do
+forall ((i,j), a) in zip(D2, A2) do
   a = j + i/100.0;
 
 writeln("A is: ", A);
 writeln("A2 is: ", A2);
 
-forall (a, (i,j)) in (A, D) do
+forall (a, (i,j)) in zip(A, D) do
   a = i + j/100.0;
 
-forall (a, (i,j)) in (A2, D2) do
+forall (a, (i,j)) in zip(A2, D2) do
   a = i + j/100.0;
 
 writeln("A is: ", A);

@@ -1,4 +1,4 @@
-var D = [1..6:uint, 1..7:uint];
+var D = {1..6:uint, 1..7:uint};
 
 var A: [D] uint;
 

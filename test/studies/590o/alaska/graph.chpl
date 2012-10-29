@@ -553,8 +553,8 @@ proc readGraph(filename) {
   }
 
   // Declare a domain
-  var N: domain(1) = [1..ND.numIndices];
-  var E: domain(1) = [1..ED.numIndices];
+  var N: domain(1) = {1..ND.numIndices};
+  var E: domain(1) = {1..ED.numIndices};
 
   var X: [N] Node = NameMap.sorted();
   var Y: [E] Edge = EdgeMap.sorted();

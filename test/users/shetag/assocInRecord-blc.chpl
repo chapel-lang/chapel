@@ -4,7 +4,7 @@ record C {
 }
 
 var myC = new C();
-var D = [1..4];
+var D = {1..4};
 var A: [D] string = ("one", "two", "three", "four");
 
 for i in D {

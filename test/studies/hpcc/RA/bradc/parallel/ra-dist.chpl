@@ -26,19 +26,19 @@ config const printParams = true,
 proc main() {
   printConfiguration();
 
-  const TableDist = new dmap(new Block(rank=1, idxType=indexType, boundingBox=[0..m-1], targetLocales=Locales)),
-       UpdateDist = new dmap(new Block(rank=1, idxType=indexType, boundingBox=[0..N_U-1], targetLocales=Locales));
+  const TableDist = new dmap(new Block(rank=1, idxType=indexType, boundingBox={0..m-1}, targetLocales=Locales)),
+       UpdateDist = new dmap(new Block(rank=1, idxType=indexType, boundingBox={0..N_U-1}, targetLocales=Locales));
 
-  const TableSpace: domain(1, indexType) dmapped TableDist = [0..m-1];
+  const TableSpace: domain(1, indexType) dmapped TableDist = {0..m-1};
   var T: [TableSpace] elemType;
 
-  const UpdateSpace: domain(1, indexType) dmapped UpdateDist = [0..N_U-1];
+  const UpdateSpace: domain(1, indexType) dmapped UpdateDist = {0..N_U-1};
 
   const startTime = getCurrentTime();
 
   [i in TableSpace] T(i) = i;
 
-  forall (i,r) in (UpdateSpace, RAStream()) do
+  forall (i,r) in zip(UpdateSpace, RAStream()) do
     T(r & indexMask) ^= r;
 
   const execTime = getCurrentTime() - startTime;
@@ -60,7 +60,7 @@ proc verifyResults(T: [?TDom], UpdateSpace) {
   if (printArrays) then writeln("After updates, T is: ", T, "\n");
 
   var lock: sync bool = true;
-  forall (i,r) in (UpdateSpace, RAStream()) {
+  forall (i,r) in zip(UpdateSpace, RAStream()) {
     lock;
     atomic T(r & indexMask) ^= r;
     lock = true;

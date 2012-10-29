@@ -32,7 +32,7 @@ class D {
 var myC = new C();
 var myD = new D();
 
-forall (i,j) in (myC, myD) {
+forall (i,j) in zip(myC, myD) {
   writeln("(i,j) = ", (i,j));
 }
 

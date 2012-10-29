@@ -15,15 +15,15 @@ const NumUpdates:uint(64) = 4*TableSize;
 const NumStreams:int = 1 << 9;
 const BigStep:int = (NumUpdates:int)/NumStreams;
 
-const TableDomain = [0..TableSize-1];
+const TableDomain = {0..TableSize-1};
 var Table: [TableDomain] uint(64);
 
-const RandStepsDomain = [0..63];
+const RandStepsDomain = {0..63};
 var RandomSteps: [RandStepsDomain] uint(64);
 
-const StreamDomain = [0..NumStreams-1];
-const BigStepDomain = [0..BigStep-1];
-const UpdateDomain: domain(2) = [0..NumStreams-1,0..BigStep-1];
+const StreamDomain = {0..NumStreams-1};
+const BigStepDomain = {0..BigStep-1};
+const UpdateDomain: domain(2) = {0..NumStreams-1,0..BigStep-1};
 
 var RealTime:real;
 var GUPs:real;

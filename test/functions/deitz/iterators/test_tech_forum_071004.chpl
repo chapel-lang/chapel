@@ -6,7 +6,7 @@ iter iter_string_chars(s: string) {
   }
 }
 
-for i in (1..3, iter_string_chars("ABC")) do
+for i in zip(1..3, iter_string_chars("ABC")) do
   writeln(i);
 
 for i in iter_string_chars("ABC") do

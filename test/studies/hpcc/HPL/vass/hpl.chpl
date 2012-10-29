@@ -98,7 +98,7 @@ config var reproducible = false, verbose = false;
   //
   const AbD: domain(2, indexType)
           dmapped DimensionalDist2D(targetLocales, bdim1, bdim2, "dim")
-          = [1..n, 1..n+1],
+          = {1..n, 1..n+1},
         MatrixSpace = AbD[.., ..n];
 
   var Ab : [AbD] elemType,           // the matrix A and vector b
@@ -108,9 +108,9 @@ config var reproducible = false, verbose = false;
   // Create the 1-d replicated arrays for schurComplement().
   //
   const
-    replAD = [1..n, 1..blkSize]
+    replAD = {1..n, 1..blkSize}
       dmapped DimensionalDist2D(targetLocales, bdim1, rdim2, "distBR"),
-    replBD = [1..blkSize, 1..n+1]
+    replBD = {1..blkSize, 1..n+1}
       dmapped DimensionalDist2D(targetLocales, rdim1, bdim2, "distRB");
 
   var replA: [replAD] elemType,
@@ -267,7 +267,7 @@ proc panelSolve(
     if col.numIndices == 0 then return;
     
     // Find the pivot, the element with the largest absolute value.
-    const (_, (pivotRow, _)) = maxloc reduce(abs(Ab(col)), col);
+    const (_, (pivotRow, _)) = maxloc reduce zip(abs(Ab(col)), col);
 
     // Capture the pivot value explicitly (note that result of maxloc
     // is absolute value, so it can't be used directly).

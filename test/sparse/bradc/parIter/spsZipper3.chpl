@@ -1,6 +1,6 @@
 config const n = 9;
 
-const D = [1..n, 1..n];
+const D = {1..n, 1..n};
 
 var S: sparse subdomain(D),
     S2: sparse subdomain(D),
@@ -9,7 +9,7 @@ var S: sparse subdomain(D),
 for i in 1..n do
   S += (i,i);
 
-forall (ij, ij2) in (D, S) {
+forall (ij, ij2) in zip(D, S) {
   STot += ij;
   STot += ij2;
 }

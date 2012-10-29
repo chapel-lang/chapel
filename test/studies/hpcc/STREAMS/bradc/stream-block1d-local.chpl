@@ -24,9 +24,9 @@ config const printParams = true,
 proc main() {
   printConfiguration();
 
-  const BlockDist = new dmap(new Block(rank=1, idxType=int(64), boundingBox=[1..m], targetLocales=Locales));
+  const BlockDist = new dmap(new Block(rank=1, idxType=int(64), boundingBox={1..m}, targetLocales=Locales));
 
-  const ProblemSpace: domain(1, int(64)) dmapped BlockDist = [1..m];
+  const ProblemSpace: domain(1, int(64)) dmapped BlockDist = {1..m};
 
   var A, B, C: [ProblemSpace] elemType;
 
@@ -40,7 +40,7 @@ proc main() {
     // A = B + alpha * C;
     // But this doesn't yet result in parallelism
 
-    forall (a, b, c) in (A, B, C) {
+    forall (a, b, c) in zip(A, B, C) {
       a = b + alpha * c;
     }
 

@@ -35,21 +35,21 @@ config var n: int = 8;
 
 var A, B: [1..n] int;
 
-for (i,j) in (foo(n), bar(n)) {
+for (i,j) in zip(foo(n), bar(n)) {
   A(i) = 1;
   B(j) = 1;
 }
 
 writeln(A);
 
-forall (i,j) in (foo(n), bar(n)) {
+forall (i,j) in zip(foo(n), bar(n)) {
   A(i) = 2;
   B(j) = 2;
 }
 
 writeln(A);
 
-forall (i,j) in (bar(n), foo(n)) {
+forall (i,j) in zip(bar(n), foo(n)) {
   A(i) = 3;
   B(j) = 3;
 }

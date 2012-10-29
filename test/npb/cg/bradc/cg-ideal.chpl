@@ -30,7 +30,7 @@ config const numTrials = 1,
 
 
 proc main() {
-  const DenseSpace = [1..n, 1..n];
+  const DenseSpace = {1..n, 1..n};
 
   var MatrixSpace: sparse subdomain(DenseSpace);
 
@@ -41,7 +41,7 @@ proc main() {
     A(ind) += v;
   }
 
-  const VectorSpace = [1..n];
+  const VectorSpace = {1..n};
 
   var X: [VectorSpace] elemType,
       zeta = 0.0;

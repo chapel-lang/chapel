@@ -119,7 +119,7 @@ proc main() {
         // *** in this version we are iterating over arrays that are
         // *** not distributed.
         //
-        forall (a, b, c) in (A, B, C) do
+        forall (a, b, c) in zip(A, B, C) do
           a = b + alpha * c;
 
         execTime(trial) = getCurrentTime() - startTime;  // store the elapsed time
@@ -188,7 +188,7 @@ proc verifyResults(A, B, C) {
   //
   // recompute the computation, destructively storing into B to save space
   //
-  forall (b, c) in (B, C) do
+  forall (b, c) in zip(B, C) do
     b += alpha *c;  
 
   //
@@ -196,7 +196,7 @@ proc verifyResults(A, B, C) {
   // absolute value of A's elements minus the new result computed in B.
   // "[i in I]" represents an expression-level loop: "forall i in I"
   //
-  const infNorm = max reduce [(a,b) in (A,B)] abs(a - b);
+  const infNorm = max reduce [(a,b) in zip(A,B)] abs(a - b);
 
   return (infNorm <= epsilon);    // return whether the error is acceptable
 }

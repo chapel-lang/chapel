@@ -19,7 +19,7 @@ param blk = 5;
 
 var A1D = 1..n;
 var slice0, slice1, slice2: range;
-const A2D = [A1D,A1D]; 
+const A2D = {A1D,A1D}; 
 var A: [A2D] real;
 var piv: [A1D] int;
 var ind, temp:int;
@@ -47,7 +47,7 @@ for (UnfactoredInds,CurrentBlockInds,TrailingBlockInds)
     slice2 = k+1..CurrentBlockInds.high;
 
 //  ind = maxIndex reduce (A1(UnfactoredInds(k..),k));
-    (_, (ind,_)) = maxloc reduce (abs(A(slice0,k..k)), [slice0,k..k]);
+    (_, (ind,_)) = maxloc reduce zip(abs(A(slice0,k..k)), {slice0,k..k});
 
     if (ind != k) {
 //      piv(k) <==> piv(ind);
@@ -67,7 +67,7 @@ for (UnfactoredInds,CurrentBlockInds,TrailingBlockInds)
       }
 //  This conditional test is needed.  Otherwise the array
 //  access goes out of bounds.
-      forall (i,j) in [slice1,slice2] {
+      forall (i,j) in {slice1,slice2} {
         A1(i,j) -= A1(i,k)*A1(k,j);
       }
     } 
@@ -89,13 +89,13 @@ for (UnfactoredInds,CurrentBlockInds,TrailingBlockInds)
 
   /*
   for k in CurrentBlockInds {
-    [(i,j) in [k+1..CurrentBlockInds.high,TrailingBlockInds]]
+    [(i,j) in {k+1..CurrentBlockInds.high,TrailingBlockInds}]
       A12(i,j) = + reduce -A1(i,k)*A12(k,j);
   }*/
 
 
 // Update of A22 -= A12*A21.
-  forall (i,j) in [TrailingBlockInds, TrailingBlockInds] {
+  forall (i,j) in {TrailingBlockInds, TrailingBlockInds} {
     for k in CurrentBlockInds {
       A22(i,j) -= A1(i,k)*A12(k,j);
     }

@@ -38,7 +38,7 @@
 config param debug: int = 0;
 config const N: int = 7;
 config const num2print = 30;
-var P: domain(1) = [1..N];
+var P: domain(1) = {1..N};
 
 proc main() {
   var maxflips: sync int;
@@ -77,7 +77,7 @@ proc do_fannkuch(pos: int):int {
 	}
 	// "physically" flip only elements 2..k-1
 	// j = k-1;
-	for (i,j) in (2..k-1, ..k-1 by -1) do { // use range instead of domain
+	for (i,j) in zip(2..k-1, ..k-1 by -1) do { // use range instead of domain
 	  if i > j then break;
 	  if (debug > 1) {
 	    write((i,j));
@@ -90,7 +90,7 @@ proc do_fannkuch(pos: int):int {
 
 	if (debug > 0) {
 	  write(k);
-	  for i in [2..N] do
+	  for i in {2..N} do
 	    write(p(i));
 	  writeln(": ", flips);
 	}
@@ -128,7 +128,7 @@ iter gen_perms(limit: int, swap:int=-1): [P] int {
       if r >= limit then break outer;
 
       var p0: int = p(1);
-      for i in [1..r] do
+      for i in {1..r} do
 	p(i) = p(i + 1);
       p(r+1) = p0;
 

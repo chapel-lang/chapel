@@ -1,4 +1,4 @@
-var d : domain(1) = [1..5];
+var d : domain(1) = {1..5};
 var a : [d] real;
 
 writeln(a);

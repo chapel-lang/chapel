@@ -26,7 +26,7 @@ proc HPCC_starts(n:int(64)):uint(64) {
   var n2 = n;
   var temp:uint(64);
   var ran:uint(64);
-  var D: domain(1) = [0..63];
+  var D: domain(1) = {0..63};
   var m2: [D] uint(64);
   var result: uint(64);
 
@@ -77,7 +77,7 @@ proc HPCC_starts(n:int(64)):uint(64) {
 
 proc RandomAccessUpdate(TableSize:uint(64), Table: [] uint(64)) {
   var i:int;
-  var D: domain(1) =  [0..127];
+  var D: domain(1) =  {0..127};
   var ran: [D] uint(64);              
   var j:int;
 
@@ -127,7 +127,7 @@ proc main() {
   }
 
   const TableDomain = TableSize:int;
-  var D:domain(1) = [0..TableDomain-1];
+  var D:domain(1) = {0..TableDomain-1};
   var Table: [D] uint(64);
 
   NUPDATE = 4*(TableSize:int);

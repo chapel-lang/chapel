@@ -3,10 +3,10 @@ proc foo(X: [1..5] int) {
     X(i) = i;
 }
 
-var D = [1..10];
-var D1 = [6..10];
-var D2 = [3..7];
-var D3 = [1..5];
+var D = {1..10};
+var D1 = {6..10};
+var D2 = {3..7};
+var D3 = {1..5};
 var A: [D] int;
 
 A = 1..10;

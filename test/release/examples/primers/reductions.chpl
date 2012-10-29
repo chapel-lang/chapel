@@ -70,8 +70,8 @@ writeln();
 // which is also a tuple.  The first element of the result tuple is the running
 // maximum (or minimum); the second element is its index (i.e. location).
 //
-var (maxVal, maxLoc) = maxloc reduce (A, A.domain);
-var (minVal, minLoc) = minloc reduce (A, A.domain);
+var (maxVal, maxLoc) = maxloc reduce zip(A, A.domain);
+var (minVal, minLoc) = minloc reduce zip(A, A.domain);
 writeln("The maximum value in A is: A", maxLoc, " = ", maxVal);
 writeln("The minimum value in A is: A", minLoc, " = ", minVal);
 writeln("The difference is: ", maxVal - minVal);

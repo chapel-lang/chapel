@@ -1,6 +1,6 @@
 config var n = 10;
 
-const D = [1..n, 1..n];
+const D = {1..n, 1..n};
 
 var A: [D] int = [(i,j) in D] i*10 + j;
 

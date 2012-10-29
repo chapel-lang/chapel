@@ -24,14 +24,14 @@ const dd1 =new BlockCyclicDim(lowIdx=st1, blockSize=blkSize, numLocales=tl1,
 const dd2 =new BlockCyclicDim(lowIdx=st2, blockSize=blkSize, numLocales=tl2,
                                name="D2");
 
-const space = [1..n, 1..n+1];
+const space = {1..n, 1..n+1};
 const AbD
   : domain(2, int) dmapped DimensionalDist2D(mylocs, dd1, dd2, "dim")
   = space;
 
 var Ab: [AbD] int;
 
-for ((i1,i2),a) in (AbD, Ab) do a = i1*10 + i2;
+for ((i1,i2),a) in zip(AbD, Ab) do a = i1*10 + i2;
 
 hd("writeln(Ab)");
 writeln(Ab);
@@ -62,11 +62,11 @@ proc test(A, ix1, ix2) {
   const D: domain(A.rank, A.domain.idxType, A.domain.stridable) = A.domain;
 
   hd("zippered iterator (A,D)");
-  forall (a,i) in (A,D) do msg(i, "  ", a);
+  forall (a,i) in zip(A,D) do msg(i, "  ", a);
   tl();
 
   hd("zippered iterator (D,A)");
-  forall (i,a) in (D,A) do msg(i, "  ", a);
+  forall (i,a) in zip(D,A) do msg(i, "  ", a);
   tl();
 }
 

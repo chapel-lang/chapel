@@ -7,7 +7,7 @@ proc main {
       
   const mD = new MultiDomain( 2, false );
   
-  mD.add( [1..10,1..10] );
+  mD.add( {1..10,1..10} );
   
   // mD.subtract( [59..161 by 2, -1..17 by 2] );
   // mD.subtract( [-1..45 by 2, 71..161 by 2] );
@@ -28,8 +28,8 @@ proc main {
   // 
   // for D in mD do writeln(D);
   
-  mD.subtract( [7..8, 2..9] );  
-  mD.add( [11..12, 13..14] );  
+  mD.subtract( {7..8, 2..9} );  
+  mD.add( {11..12, 13..14} );  
   
 
   const mD2 = mD.copy();

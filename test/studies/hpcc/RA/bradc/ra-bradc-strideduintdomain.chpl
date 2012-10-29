@@ -1,6 +1,6 @@
 config const n = 10:uint(64);
 
-var D = [1..n];
+var D = {1..n};
 
 var step = 2:uint;
 

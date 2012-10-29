@@ -1,5 +1,5 @@
-const D1 = [1..5,1..3];
-const D2 = [1..7,1..7];
+const D1 = {1..5,1..3};
+const D2 = {1..7,1..7};
 var A:[D1] real;
 var B:[D2] real;
 

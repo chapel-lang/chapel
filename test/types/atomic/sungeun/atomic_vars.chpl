@@ -48,7 +48,7 @@ proc doit(type myType) {
     }
   b.waitFor(true);
 
-  const D = [7..39];
+  const D = {7..39};
   var aA: [D] atomic myType;
 
   for i in D do aA[i].write(i:myType);
@@ -81,3 +81,6 @@ doit(int(16));
 doit(int(32));
 doit(int(64));
 doit(int);
+doit(real(32));
+doit(real(64));
+doit(real);

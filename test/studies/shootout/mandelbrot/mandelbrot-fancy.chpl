@@ -20,10 +20,10 @@ proc main()
   }
 
   var ByteDist = new dmap(new Block(rank=2,idxType=int(64),
-                                    targetLocales=reshape(myLocales, [1..#(bytesRequired:int), 1..1]),
-                                    boundingBox=[sizeRange, byteRange]));
+                                    targetLocales=reshape(myLocales, {1..#(bytesRequired:int), 1..1}),
+                                    boundingBox={sizeRange, byteRange}));
 
-  var ByteDom: domain(2, int(64)) dmapped ByteDist = [sizeRange, byteRange];
+  var ByteDom: domain(2, int(64)) dmapped ByteDist = {sizeRange, byteRange};
   var bytes : [ByteDom] uint(8);
 
 
@@ -31,7 +31,7 @@ proc main()
   const maxIter : int = 50;
 
 
-  forall (byte,(y,bytex)) in (bytes,bytes.domain) do
+  forall (byte,(y,bytex)) in zip(bytes,bytes.domain) do
     {
       var byte_acc : uint(8) = 0;
 

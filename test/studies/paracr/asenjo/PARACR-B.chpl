@@ -18,10 +18,10 @@ var stages:int= GetNumStages(n);
 
 var error:int=0;
 
-const Space = [1..n];
+const Space = {1..n};
 const Dom = Space dmapped Block(boundingBox=Space);
 
-var Dstages: domain(1,int)=[1..stages];
+var Dstages: domain(1,int)={1..stages};
 var AA,BB,CC,DD:[Dom] real;
 var A,B,C,D,X:[Dom] real;
 
@@ -65,10 +65,10 @@ proc main(){
 /**********************/
 	
   if(stages&1){ //If odd number of stages, diagonal is in BB and RHS in DD
-    forall (x,d,b) in (X,DD,BB) do x=d/b;
+    forall (x,d,b) in zip(X,DD,BB) do x=d/b;
   }
   else{ //else, diagonal is in B and RHS in D
-    forall (x,d,b) in (X,D,B) do x=d/b;
+    forall (x,d,b) in zip(X,D,B) do x=d/b;
   }
 
   if timer then t2=getCurrentTime();
@@ -171,7 +171,7 @@ proc SetExampleMatrix()
   }
   
   A(1)=0;C(n)=0;
-  forall i in [1..(n+1)/2] do {
+  forall i in {1..(n+1)/2} do {
     D(i)=i;
     D(n-i+1)=i;
   }

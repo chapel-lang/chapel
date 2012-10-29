@@ -1,6 +1,6 @@
 config var n = 9;
 
-const D = [1..n, 1..n];
+const D = {1..n, 1..n};
 var DSps: sparse subdomain(D) = [(i,j) in D] if (((i+j)%4) == 0) then (i,j);
 
 var ASps: [DSps] real;

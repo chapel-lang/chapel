@@ -292,7 +292,7 @@ class GridCFGhostSolution {
       //---- This is a zipper iteration over two objects ----
 
       for ( old_array,            current_array            ) 
-      in  ( old_data(c_neighbor), current_data(c_neighbor) )
+      in  zip( old_data(c_neighbor), current_data(c_neighbor) )
       do
         yield ( old_array, current_array );
     }
@@ -349,7 +349,7 @@ class GridCFGhostSolution {
       //---- Refine data from the coarse grid solution into this structure ----
 
       for ( old_array,            current_array            )
-      in  ( old_data(c_neighbor), current_data(c_neighbor) )
+      in  zip( old_data(c_neighbor), current_data(c_neighbor) )
       {
         var boundary_domain = old_array.domain;
         old_array     = old_coarse.refineValues( boundary_domain, ref_ratio );

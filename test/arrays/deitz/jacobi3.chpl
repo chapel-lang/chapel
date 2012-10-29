@@ -2,13 +2,13 @@ config var n : int = 5;
 config var epsilon : real = 0.00001;
 config var verbose : bool = false;
 
-var R : domain(2) = [1..n, 1..n];
-var BigR : domain(2) = [0..n+1, 0..n+1];
+var R : domain(2) = {1..n, 1..n};
+var BigR : domain(2) = {0..n+1, 0..n+1};
 
 var A : [BigR] real = 0.0;
 var Temp : [R] real;
 
-[(i,j) in [n+1..n+1, 1..n]] A(i,j) = 1.0;
+[(i,j) in {n+1..n+1, 1..n}] A(i,j) = 1.0;
 
 if (verbose) {
   writeln("Initial configuration:");

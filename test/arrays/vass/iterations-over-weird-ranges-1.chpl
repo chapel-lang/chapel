@@ -11,14 +11,14 @@ proc test(d) {
     if e != 0 then
       OK = false;
   if !OK then writeln("  error in first loop");
-  for (ix,e) in (d,a) do
+  for (ix,e) in zip(d,a) do
     if e != 0 then
       writeln("  error in second loop: a", ix, " = ", e);
 }
 
 for param al1 in 0..3 do
   for param al2 in 0..5 do
-    test([0..3 by 2 align al1, 0..5 by 3 align al2]);
+    test({0..3 by 2 align al1, 0..5 by 3 align al2});
 
 for param al1 in -5..5 do
-  test([-5..5 by 3 align al1]);
+  test({-5..5 by 3 align al1});

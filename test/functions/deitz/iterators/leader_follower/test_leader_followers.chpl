@@ -34,8 +34,8 @@ iter bar(param tag: iterKind, followThis: int, n: int) where tag == iterKind.fol
     yield i;
 }
 
-forall i in (foo(5), bar(5)) do
+forall i in zip(foo(5), bar(5)) do
   writeln(i);
 
-forall i in (bar(5), bar(5)) do
+forall i in zip(bar(5), bar(5)) do
   writeln(i);

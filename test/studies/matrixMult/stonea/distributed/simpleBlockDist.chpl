@@ -13,7 +13,7 @@ record WrappedArray {
     proc WrappedArray() { }
 
     proc WrappedArray(row, col, numRows, numCols) {
-        dom = [row..row+numRows-1, col..col+numCols-1];
+        dom = {row..row+numRows-1, col..col+numCols-1};
     }
 
     proc this(i,j : int) var { return data[i,j]; }

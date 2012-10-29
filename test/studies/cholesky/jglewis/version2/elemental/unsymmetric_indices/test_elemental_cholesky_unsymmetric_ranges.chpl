@@ -24,7 +24,7 @@ module cholesky_test_unsymmetric_ranges {
 
     var Rand = new RandomStream ( seed = 314159) ;
 
-    const MatIdx = [ index_base .. #n, index_base .. #n ];
+    const MatIdx = { index_base .. #n, index_base .. #n };
 
     const mat_dom : domain (2) dmapped Cyclic ( startIdx = MatIdx.low )
       = MatIdx;
@@ -247,7 +247,7 @@ module cholesky_test_unsymmetric_ranges {
   proc print_lower_triangle ( L : [] ) {
    
     if print_matrix_details then
-      for (i_row, i_col) in ( L.domain.dim(1), L.domain.dim(2) ) do
+      for (i_row, i_col) in zip( L.domain.dim(1), L.domain.dim(2) ) do
 	writeln (i_row, ":  ", L(i_row, ..i_col) );
   }
 

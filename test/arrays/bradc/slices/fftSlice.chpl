@@ -4,7 +4,7 @@ config const n: int(64) = 6;
 const m = 2**n;
 
 proc main() {
-  const ProblemDom: domain(1, int(64)) = [0:m.type..#m];
+  const ProblemDom: domain(1, int(64)) = {0:m.type..#m};
   var Z: [ProblemDom] complex(128);
 
   dfft(Z);

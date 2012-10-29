@@ -11,11 +11,11 @@ config const printTiming = false;
 
 const shift = (123, 456, 789);
 
-var Dist = new dmap(new Block([1..m,1..n,1..o]));
+var Dist = new dmap(new Block({1..m,1..n,1..o}));
 
 use Random, Time;
 
-var Dom: domain(3) dmapped Dist = [1..m, 1..n, 1..o];
+var Dom: domain(3) dmapped Dist = {1..m, 1..n, 1..o};
 
 var Ref: [Dom] real;
 var A: [Dom] real;
@@ -78,7 +78,7 @@ var D: [Dom.translate(-shift)] real;
 }
 
 // aliased arrays
-var DomSlice = [1..m/2, 1..n, 1..o];
+var DomSlice = {1..m/2, 1..n, 1..o};
 var Refa => Ref[DomSlice];
 var Aa => A[DomSlice];
 var Ba => B[DomSlice];

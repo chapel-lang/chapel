@@ -5,8 +5,8 @@ config var n = 1200000;
 use Time;
 var tm: Timer;
 
-var d1: domain(1) = [1..n];
-var d2: domain(2) = [1..n,1..n];
+var d1: domain(1) = {1..n};
+var d2: domain(2) = {1..n,1..n};
 
 test(1, d1);
 test(2, d2);
@@ -53,16 +53,16 @@ proc test(param dim:int, d: domain(dim)) {
   st; for    i in sd { A(i) = B(i) + alpha * C(i); }
   fi("ix = ix, ix | seq");
 
-  st; forall (i,j,k) in (sd,sd,sd) { C(i) = A(j) + alpha * B(k); }
+  st; forall (i,j,k) in zip(sd,sd,sd) { C(i) = A(j) + alpha * B(k); }
   fi("ix1 = ix2, ix3 | par");
 
-  st; for    (i,j,k) in (sd,sd,sd) { A(i) = B(j) + alpha * C(k); }
+  st; for    (i,j,k) in zip(sd,sd,sd) { A(i) = B(j) + alpha * C(k); }
   fi("ix1 = ix2, ix3 | seq");
 
-  st; forall (a,b,c) in (A,B,C) { c = a + alpha * b; }
+  st; forall (a,b,c) in zip(A,B,C) { c = a + alpha * b; }
   fi("ivar1 = ivar2, ivar3 | par");
 
-  st; for    (a,b,c) in (A,B,C) { a = b + alpha * c; }
+  st; for    (a,b,c) in zip(A,B,C) { a = b + alpha * c; }
   fi("ivar1 = ivar2, ivar3 | seq");
 
   tm.stop();

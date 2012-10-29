@@ -8,7 +8,7 @@ config var n = 9,                 // the problem size
 
 proc main {
 
-  const ADom = [1..n, 1..n];  // Create a domain of the specified problem size
+  const ADom = {1..n, 1..n};  // Create a domain of the specified problem size
 
   // Create and initialize an array of the specified size
   var A: [ADom] real = [(i,j) in ADom] i + j/10.0;

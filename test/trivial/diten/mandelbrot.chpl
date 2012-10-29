@@ -4,7 +4,7 @@ config const iterations = 50;
 
 proc main() {
   var grid_space: domain(2) =
-    [-half_height..half_height, -half_width..half_width];
+    {-half_height..half_height, -half_width..half_width};
 
   var grid: [grid_space] bool;
 
@@ -31,7 +31,7 @@ proc in_mandelbrot_set(real_part, imag_part) {
   start.im = imag_part;
   z = start;
 
-  for i in [1..iterations] {
+  for i in {1..iterations} {
     z = z * z + start;
     if (z.re**2 + z.im**2 > 4) then
       break;

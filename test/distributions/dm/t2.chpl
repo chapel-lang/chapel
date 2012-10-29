@@ -52,12 +52,12 @@ proc testsuite(type T, initphase) {
   const sdf = new BlockDim(3, 1:T, 8:T);
   const dm = new dmap(new DimensionalDist2D(mylocs, vdf, sdf, "dm", idxType=T));
 
-  test([1:T..1:T, 0:T..9:T       ] dmapped dm);
-  test([1:T..1:T, 0:T..9:T by -1 ] dmapped dm);
-  test([1:T..1:T, 0:T..9:T by -2 ] dmapped dm);
-  test([1:T..1:T, 0:T..9:T by  3 ] dmapped dm);
-  test([1:T..1:T, 0:T..9:T by  2 ] dmapped dm);
-  test([1:T..1:T, 0:T..9:T by -3 ] dmapped dm);
+  test({1:T..1:T, 0:T..9:T       } dmapped dm);
+  test({1:T..1:T, 0:T..9:T by -1 } dmapped dm);
+  test({1:T..1:T, 0:T..9:T by -2 } dmapped dm);
+  test({1:T..1:T, 0:T..9:T by  3 } dmapped dm);
+  test({1:T..1:T, 0:T..9:T by  2 } dmapped dm);
+  test({1:T..1:T, 0:T..9:T by -3 } dmapped dm);
 }
 
 testsuite(int,        0);

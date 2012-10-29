@@ -58,10 +58,10 @@ config const printParams = true,
 // distribution that is computed by blocking the indices 0..N_U-1
 // across the locales.
 //
-const TableDist = new dmap(new Block(boundingBox=[0..m-1], 
+const TableDist = new dmap(new Block(boundingBox={0..m-1}, 
                                      dataParTasksPerLocale=tasksPerLocale,
                                      dataParIgnoreRunningTasks=true)),
-      UpdateDist = new dmap(new Block(boundingBox=[0..N_U-1],
+      UpdateDist = new dmap(new Block(boundingBox={0..N_U-1},
                                       dataParTasksPerLocale=tasksPerLocale,
                                       dataParIgnoreRunningTasks=true));
 
@@ -73,8 +73,8 @@ const TableDist = new dmap(new Block(boundingBox=[0..m-1],
 // It is distributed according to UpdateDist and contains the
 // indices 0..N_U-1.
 //
-const TableSpace: domain(1, indexType) dmapped TableDist = [0..m-1],
-      Updates: domain(1, indexType) dmapped UpdateDist = [0..N_U-1];
+const TableSpace: domain(1, indexType) dmapped TableDist = {0..m-1},
+      Updates: domain(1, indexType) dmapped UpdateDist = {0..N_U-1};
 
 //
 // T is the distributed table itself, storing a variable of type
@@ -106,7 +106,7 @@ proc main() {
   // communications.  Compute the update using r both to compute the
   // index and as the update value.
   //
-  forall (_, r) in (Updates, RAStream()) do
+  forall (_, r) in zip(Updates, RAStream()) do
     on T.domain.dist.idxToLocale(r & indexMask) do
       T(r & indexMask) ^= r;
 
@@ -140,7 +140,7 @@ proc verifyResults() {
   // Reverse the updates by recomputing them, this time using an
   // atomic statement to ensure no conflicting updates
   //
-  forall (_, r) in (Updates, RAStream()) do
+  forall (_, r) in zip(Updates, RAStream()) do
     on T.domain.dist.idxToLocale(r & indexMask) do
       atomic T(r & indexMask) ^= r;
 

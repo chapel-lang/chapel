@@ -70,7 +70,7 @@ class UserMapAssoc : BaseDist {
     // TODO: Create a helper function to create a domain like this for
     // arbitrary dimensions (since the k-D case is a bit harder?)
     //
-    targetLocDom = [0..#targetLocales.numElements];
+    targetLocDom = {0..#targetLocales.numElements};
     targetLocs = targetLocales;
 
     for locid in targetLocDom do
@@ -368,7 +368,7 @@ class UserMapAssocDom: BaseAssociativeDom {
   // queries for the number of indices, low, and high bounds
   //
   proc dsiNumIndices {
-    halt("numIndices not yet implemented");
+    return + reduce [loc in dist.targetLocDom] locDoms[loc].myInds.numIndices;
   }
 
   //
@@ -477,7 +477,7 @@ class LocUserMapAssocDom {
   //
   iter these(param tag: iterKind) where tag == iterKind.leader {
     halt("This is bogus");
-    yield [1..100];
+    yield {1..100};
   }
 
   iter these(param tag: iterKind, followThis) where tag == iterKind.follower {
@@ -771,7 +771,7 @@ class LocUserMapAssocArr {
   //
   iter these(param tag: iterKind) where tag == iterKind.leader {
     halt("This is bogus");
-    yield [1..100];
+    yield {1..100};
   }
 
   iter these(param tag: iterKind, followThis) var where tag == iterKind.follower {

@@ -12,18 +12,18 @@ config param fakeDimensionalDistParDim = 0;
 var traceDimensionalDistPrefix = "";
 
 // private helpers ("trace DimensionalDist" Conditionally)
-pragma "inline" proc _traceddc(param condition: bool, args...)
+inline proc _traceddc(param condition: bool, args...)
 {
   if condition then writeln(traceDimensionalDistPrefix,(...args));
 }
-pragma "inline" proc _traceddc(param cond, d:DimensionalDist, args...)
+inline proc _traceddc(param cond, d:DimensionalDist, args...)
 { _traceddc(cond, "DimensionalDist(", d.name, ")", (...args)); }
-pragma "inline" proc _traceddc(param cond, d:DimensionalDom, args...)
+inline proc _traceddc(param cond, d:DimensionalDom, args...)
 { _traceddc(cond, "DimensionalDom(", d.dist.name, ")", (...args)); }
-pragma "inline" proc _traceddc(param cond, d:DimensionalArr, args...)
+inline proc _traceddc(param cond, d:DimensionalArr, args...)
 { _traceddc(cond, "DimensionalArr(", d.dom.dist.name, ")", (...args)); }
 // the Default condition
-pragma "inline" proc _traceddd(args...)
+inline proc _traceddd(args...)
 { _traceddc(traceDimensionalDist, (...args)); }
 
 
@@ -182,7 +182,7 @@ proc DimensionalDist.checkInvariants(): void {
   assert(targetLocales.eltType == locale, "DimensionalDist-targetLocales.eltType");
   assert(targetIds.idxType == locIdT, "DimensionalDist-targetIdx.idxType");
   // todo: where do we rely on this?
-  assert(targetIds == [0..#numLocs1, 0..#numLocs2],
+  assert(targetIds == {0..#numLocs1, 0..#numLocs2},
          "DimensionalDist-targetIds");
   assert(rank == targetLocales.rank, "DimensionalDist-rank");
   assert(rank == 2, "DimensionalDist-rank==2");
@@ -528,7 +528,7 @@ proc DimensionalDom.dsiSetIndices(newIndices: domainT): void {
 }
 
 proc DimensionalDom.dsiSetIndices(newRanges: rank * rangeT): void {
-  whole = [(...newRanges)];
+  whole = {(...newRanges)};
   _dsiSetIndicesHelper(newRanges);
 }
 
@@ -555,9 +555,9 @@ proc LocDimensionalDom._dsiLocalSetIndicesHelper(globDD, locId) {
   var myRange1 = local1dDdescs(1).dsiSetLocalIndices1d(globDD(1),locId(1));
   var myRange2 = local1dDdescs(2).dsiSetLocalIndices1d(globDD(2),locId(2));
 
-  myBlock = [myRange1, myRange2];
-  myStorageDom = [0:stoSzT..#myRange1.length:stoSzT,
-                  0:stoSzT..#myRange2.length:stoSzT];
+  myBlock = {myRange1, myRange2};
+  myStorageDom = {0:stoSzT..#myRange1.length:stoSzT,
+                  0:stoSzT..#myRange2.length:stoSzT};
 
   _traceddd("DimensionalDom.dsiSetIndices on ", here.id, " ", locId, " <- ",
            myBlock, "  storage ", myRange1.length, "*", myRange2.length);
@@ -708,7 +708,7 @@ iter DimensionalDom.these(param tag: iterKind) where tag == iterKind.leader {
       return dist.targetIds.dim(dd);
   }
   const overTargetIds = if dom1.dsiIsReplicated() || dom2.dsiIsReplicated()
-    then [helpTargetIds(dom1,1), helpTargetIds(dom2,2)]
+    then {helpTargetIds(dom1,1), helpTargetIds(dom2,2)}
     else dist.targetIds; // this case is here for efficiency
 
   // todo: lls is needed only for debugging printing?
@@ -815,7 +815,7 @@ iter DimensionalDom.these(param tag: iterKind, followThis) where tag == iterKind
   // This is pre-defined by DSI, so no need to consult
   // the subordinate 1-d distributions.
 
-  for i in [(...unDensify(followThis, whole.dims()))] do
+  for i in {(...unDensify(followThis, whole.dims()))} do
     yield i;
 }
 

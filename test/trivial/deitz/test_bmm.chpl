@@ -77,9 +77,7 @@ proc newBitMatMultOr(x: uint(64), y: uint(64)): uint(64) {
 }
 
 proc main() {
-  0x8040201008040201;
-
-  var D = [0..1000:uint(64), 0..1000:uint(64)];
+  var D = {0..1000:uint(64), 0..1000:uint(64)};
   var time = new Timer();
   var x: uint(64);
 

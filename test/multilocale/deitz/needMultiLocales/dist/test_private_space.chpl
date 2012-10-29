@@ -9,7 +9,7 @@ use BlockDist, PrivateDist;
 config var n: int = 8;
 
 var P: [PrivateSpace] atomic int;
-var D: domain(1) dmapped new dmap(new Block(boundingBox=[1..n])) = [1..n];
+var D: domain(1) dmapped new dmap(new Block(boundingBox={1..n})) = {1..n};
 var A: [D] int;
 
 startCommDiagnostics();

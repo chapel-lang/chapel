@@ -70,8 +70,8 @@ proc luLikeMultiply(
     // up to be divisible with blkSize.  VD is similiar except it expands along
     // the vertical axis.
     const AD = A.domain;
-    const HD = [A.domain.dim(1), 1..blksHoriz*blkSize];
-    const VD = [1..blksVert*blkSize, A.domain.dim(2)];
+    const HD = {A.domain.dim(1), 1..blksHoriz*blkSize};
+    const VD = {1..blksVert*blkSize, A.domain.dim(2)};
 
     // Define the operand and solution points (see diagram above)
     const ptOp  = (blk-1)*blkSize+1;
@@ -140,7 +140,7 @@ proc panelSolve(
 
         // The pivot is the element with the largest absolute value.
         var (_, loc) =
-            maxloc reduce(abs(A(col)), col);
+            maxloc reduce zip(abs(A(col)), col);
         var pivotRow = loc(1);
         var pivot = A[pivotRow, k];
 
@@ -274,10 +274,10 @@ proc backwardSub(
 {
     var x : [b.domain] real;
 
-    for i in [b.domain by -1] do {
+    for i in {b.domain by -1} do {
         x[i] = b[i];
 
-        for j in [i+1..b.domain.high] do {
+        for j in {i+1..b.domain.high} do {
             x[i] -= A[i,j] * x[j];
         }
 
@@ -304,10 +304,10 @@ proc test_LUFactorizeNorms(
     //     http://www.netlib.org/benchmark/hpl/algorithm.html):
 
     var axmbNorm =
-        norm(gaxpyMinus(n, n, A([1..n, 1..n]), x, b), normType.normInf);
+        norm(gaxpyMinus(n, n, A({1..n, 1..n}), x, b), normType.normInf);
 
-    var a1norm   = norm(A([1..n, 1..n]), normType.norm1);
-    var aInfNorm = norm(A([1..n, 1..n]), normType.normInf);
+    var a1norm   = norm(A({1..n, 1..n}), normType.norm1);
+    var aInfNorm = norm(A({1..n, 1..n}), normType.normInf);
     var x1Norm   = norm(x, normType.norm1);
     var xInfNorm = norm(x, normType.normInf);
 

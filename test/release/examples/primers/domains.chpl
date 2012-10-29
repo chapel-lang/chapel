@@ -22,9 +22,12 @@ config var n = 10;
 // thus can take on the shape of any range.  See the Ranges primer
 // (ranges.chpl) for more information.
 //
+// Rectangular domains support a literal syntax that is a
+// comma-separated list of range expressions enclosed in curly braces.
+//
 // RD is an n by n by n domain.
 //
-var RD: domain(3) = [1..n, 1..n, 1..n];
+var RD: domain(3) = {1..n, 1..n, 1..n};
 writeln(RD);
 
 // 

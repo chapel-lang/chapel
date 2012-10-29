@@ -30,8 +30,8 @@ config const n = 8;
 // a distributed domain Dom, and a distributed array A.  By default,
 // the Block distribution distributes the domain across all locales.
 //
-var Dist = new dmap(new Block([1..n, 1..n]));
-var Dom: domain(2) dmapped Dist = [1..n, 1..n];
+var Dist = new dmap(new Block({1..n, 1..n}));
+var Dom: domain(2) dmapped Dist = {1..n, 1..n};
 var A: [Dom] int;
 
 //

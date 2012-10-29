@@ -11,8 +11,8 @@ class C {
 
 
 
-var myR = new R([1..10]);
-var myC = new C([1..10]);
+var myR = new R({1..10});
+var myC = new C({1..10});
 
 baz(myR, 19);
 writeln("myR is: ", myR);

@@ -19,7 +19,7 @@ proc test(message, sel, dd1, dd2) {
   if selector == 0 || selector == sel {
       const dm = new dmap(new DimensionalDist2D(mylocs, dd1, dd2, "dm"));
 
-      const Dbase = [1..3, 1..5];
+      const Dbase = {1..3, 1..5};
       const Ddm = Dbase dmapped dm;
 
       var A: [Ddm] int = [(i,j) in Dbase] i*10+j;

@@ -1,4 +1,4 @@
-var S = [0..8,0..8], A: [S] int = for S do read(int);
+var S = {0..8,0..8}, A: [S] int = for S do read(int);
 
 proc R {
   var T: [0..9] int;

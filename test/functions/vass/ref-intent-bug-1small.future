@@ -1,0 +1,10 @@
+bug: compiler hits an internal failure in a certain case when 'ref' intent is used with comm=gasnet
+
+This is the same as ref-intent-bug-2big.future, but with a minimal program.
+Right now I get:
+
+ref-intent-bug-1small.chpl:11: error: unexpected case [parallel.cpp:567]
+
+Works fine with comm=none.
+
+When this bug is fixed, .skipif should be removed.

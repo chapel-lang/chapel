@@ -11,8 +11,8 @@ proc radix_sort(Values, Permute, radix:int(64), nbits:int(64)): void {
     var nelem:int(64) = Values.numElements;
     var nbuckets:int(64) = 1 << radix;   // Number of keys in counting sort
 
-    var D1 = [0..(nelem-1)];
-    var D2 = [0..(nbuckets-1)];
+    var D1 = {0..(nelem-1)};
+    var D2 = {0..(nbuckets-1)};
 
     var Permute_old: [D1] int(64) = Permute; // Old permutation array
 
@@ -101,7 +101,7 @@ proc radix_sort(Values, Permute, radix:int(64), nbits:int(64)): void {
 config const npoints:int(64) = 8;
 writeln("Using ", npoints, " points");
 
-var D = [0..(npoints-1)];
+var D = {0..(npoints-1)};
 var F: [D] real(64);
 var F_prime: [D] int(64);
 var G: [D] int(64);

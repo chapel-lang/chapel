@@ -22,8 +22,8 @@ iter fibonacci(n: int) {
   for 1..n {
     yield current;
       // The first time this iterator is run, it proceeds this far
-      // and then returns the first value of current (== 0).
-      // But its state is preserved.
+      // and then yields (returns) the first value of current (== 0),
+      // and its state is preserved.
       // The next time it is called, execution resumes here.
       // It continues until another yield is reached.
       // If the iterator completes or encounters a return statement,
@@ -33,13 +33,13 @@ iter fibonacci(n: int) {
 }
 
 //
-// This example uses zipper iteration to iterate over the counting numbers (1..) 
+// This example uses zipper iteration to iterate over the unbounded range 1..
 // and the fibonacci iterator with n set to ten.
 // Zipper iteration means that each iterator is advanced to the next yield
-// and the two values they return are used together.
+// and the two values they return are returned as a tuple.
 //
 writeln("Fibonacci Numbers");
-for (i, j) in (1.., fibonacci(10)) {
+for (i, j) in zip(1.., fibonacci(10)) {
   write("The ", i);
   select i {
     when 1 do write("st");

@@ -37,7 +37,7 @@ writeln();
 // we use the range r to build up a 2-D domain and an array.
 //
 writeln("Domains and arrays");
-const D: domain(2) = [r, r];
+const D: domain(2) = {r, r};
 var A: [D] real;
 writeln("D = ", D);
 writeln("Array A");
@@ -64,7 +64,7 @@ writeRange(..);
 // an iteration. This includes all the above ranges except .. and ..5 .
 //
 writeln("Iterating over (312..315, 1..) generates");
-for (i, j) in (312..315, 1..) {
+for (i, j) in zip(312..315, 1..) {
   write(" ", (i, j));
 }
 writeln();

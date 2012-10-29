@@ -24,9 +24,11 @@ module analyze_RMAT_graph_associative_array {
   // used during graph allocation
   config const initialRMATNeighborListLength =
     if graphInputFile == "" then 16 else 0;
+  param initialFirstAvail = 1;
 
     //
     // We will represent the neighbor list as an array of nleType.
+    // nle = Neighbor List Element.
     //
     type nleType = (int(64), int(64));
     // Extract each component from a neighbor.
@@ -41,52 +43,47 @@ module analyze_RMAT_graph_associative_array {
     // VertexData: stores the neighbor list of a vertex.
     //
     record VertexData {
-      var ndom = [1..initialRMATNeighborListLength];
+      var ndom = {initialFirstAvail..initialRMATNeighborListLength};
       var neighborList: [ndom] nleType;
-//      var neighborIDs: [ndom] int(64);
-//      var edgeWeights: [ndom] int(64);
-
-      // This is used for graph construction only.
-      // TODO: move to a separate array, to be deallocated after construction.
-      // Note: beware of --noRefCount vs. deallocation.
-      var firstAvailableNeighborPosition$: sync ndom.idxType = ndom.low;
-
-      // keep some statistics; guarded by firstAvailableNeighborPosition$
-      var growCount = 0, shrinkCount = 0;
 
       proc numNeighbors()  return ndom.numIndices;
 
-      proc addEdgeOnVertex(uArg, vArg, wArg) {
+      // firstAvail$ must be passed by reference
+      proc addEdgeOnVertex(uArg, vArg, wArg, firstAvail$: sync int) {
         on this do {
           // todo: the compiler should make these values local automatically!
           const /*u = uArg,*/ v = vArg, w = wArg;
+            // Lock and unlock should be within 'local', but currently
+            // need to pull them out due to implementation.
+            // lock the vertex
+            const edgePos = firstAvail$;
+
           local {
-            // grab the vertex lock
-            const edgePos = firstAvailableNeighborPosition$;
             const prevNdomLen = ndom.high;
             if edgePos > prevNdomLen {
               // grow our arrays, by 2x
-              growCount += 1;
-              ndom = [1..prevNdomLen * 2];
+              // statistics: growCount += 1;
+              ndom = {1..prevNdomLen * 2};
               // bounds checking below will ensure (edgePos <= ndom.high)
             }
-            // release the lock - don't need it any more
-            firstAvailableNeighborPosition$ = edgePos + 1;
-
             // store the edge
             neighborList[edgePos] = nleMake(v, w);
           }
+
+            // release the lock
+            firstAvail$ = edgePos + 1;
         } // on
       }
 
       // not parallel-safe
-      proc tidyNeighbors() {
+      proc tidyNeighbors(firstAvail$: sync int) {
         local {
-          var edgeCount = firstAvailableNeighborPosition$.readFF() - 1;
+          // no synchronization here
+          var edgeCount = firstAvail$.readXX() - 1;
           RemoveDuplicates(1, edgeCount);
           // TODO: ideally if we don't save much memory, do not resize
           if edgeCount != ndom.numIndices {
-            shrinkCount += 1;
+            // statistics: shrinkCount += 1;
             ndom = 1..edgeCount;
           }
           // writeln("stats ", growCount, " ", shrinkCount, ".");
@@ -230,13 +227,14 @@ module analyze_RMAT_graph_associative_array {
 
     const vertex_domain = 
       if DISTRIBUTION_TYPE == "BLOCK" then
-        [1..N_VERTICES] dmapped Block ( [1..N_VERTICES] )
+        {1..N_VERTICES} dmapped Block ( {1..N_VERTICES} )
       else
-	[1..N_VERTICES] ;
+    {1..N_VERTICES} ;
 	
     class Associative_Graph {
       const vertices;
       var   Row      : [vertices] VertexData;
+      var num_edges = -1;
 
       // iterate over neighbor IDs, with filtering
 
@@ -331,7 +329,7 @@ module analyze_RMAT_graph_associative_array {
     // ------------------------------------------------------------------
 
    if graphInputFile == "" {
-    Gen_RMAT_graph ( RMAT_a, RMAT_b, RMAT_c, RMAT_d, 
+    Gen_RMAT_graph ( RMAT_a, RMAT_b, RMAT_c, RMAT_d, vertex_domain,
 		     SCALE, N_VERTICES, n_raw_edges, MAX_EDGE_WEIGHT, G ); 
 
     if graphOutputFile != "" then

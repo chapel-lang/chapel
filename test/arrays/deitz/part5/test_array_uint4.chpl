@@ -1,4 +1,4 @@
-var D: domain(1, uint) = [2147483646..2147483650:uint];
+var D: domain(1, uint) = {2147483646..2147483650:uint};
 writeln(D);
 var A: [D] uint;
 

@@ -6,7 +6,7 @@
    2  
    2  writeln(Ab)
   20  
-  20  testing a slice with [1..7, 1..3]
+  20  testing a slice with {1..7, 1..3}
   21  
   21  11
   21  indexing with (1, 1)
@@ -86,7 +86,7 @@
   26  (7, 3)  73
   26  zippered iterator (D,A)
   40  
-  40  testing a slice with [1..7 by 3, 5..7 by 2]
+  40  testing a slice with {1..7 by 3, 5..7 by 2}
   41  
   41  45
   41  indexing with (4, 5)

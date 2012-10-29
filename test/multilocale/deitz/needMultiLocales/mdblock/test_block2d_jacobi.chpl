@@ -4,12 +4,12 @@ config var n : int = 5;
 config var epsilon : real = 0.00001;
 config var verbose : bool = false;
 
-const Dist = new dmap(new Block([1..n,1..n],dataParTasksPerLocale=1));
+const Dist = new dmap(new Block({1..n,1..n},dataParTasksPerLocale=1));
 
-var R : domain(2) dmapped Dist = [1..n, 1..n];
+var R : domain(2) dmapped Dist = {1..n, 1..n};
 writeln(R);
-var BigR : domain(2) dmapped Dist = [0..n+1, 0..n+1];
-var South : domain(2) dmapped Dist = [n+1..n+1, 1..n];
+var BigR : domain(2) dmapped Dist = {0..n+1, 0..n+1};
+var South : domain(2) dmapped Dist = {n+1..n+1, 1..n};
 
 var A : [BigR] real;
 writeln(A);

@@ -126,7 +126,7 @@ class DimensionalArray {
   var locArrs: [dom.dist.localeDomain] LocDimensionalArray(nDims, idxType, eltType);
 
   proc initialize() {
-    for loc in [dom.dist.localeDomain] {
+    for loc in {dom.dist.localeDomain} {
       on loc {
         locArrs(loc) = new LocDimensionalArray(nDims, idxType, eltType, this, dom.locDoms(loc));
       }
@@ -165,15 +165,15 @@ proc main {
   param nDims = 2;
   param nLocRows = 2;
   param nLocCols = 3;
-  var localeDom: domain(nDims) = [0..#nLocRows, 0..#nLocCols];
+  var localeDom: domain(nDims) = {0..#nLocRows, 0..#nLocCols};
   var locales: [localeDom] locale;
 
-  for (i,j) in [localeDom] do
+  for (i,j) in {localeDom} do
     locales(i,j) = Locales((i*nLocCols + j)%numLocales);
 
   var dims: nDims*DimensionDistributor = (new Cyclic(1), new Cyclic(2));
   var dist = new Dimensional(2, int, dims, localeDom, locales);
-  var dom = dist.newDomain([0..3,0..5]);
+  var dom = dist.newDomain({0..3,0..5});
 
   var arr = dom.newArray(real);
   var arr2= dom.newArray(real);
@@ -181,7 +181,7 @@ proc main {
   for blk in arr.newThese(IteratorType.leader) {
     on blk {
       writeln(here.id, ": blk is: ", blk);
-      for (elt,elt2) in ( arr.newThese(IteratorType.follower, blk),
+      for (elt,elt2) in zip( arr.newThese(IteratorType.follower, blk),
                          arr2.newThese(IteratorType.follower, blk)) {
          elt = r;
          elt2 = r*2;

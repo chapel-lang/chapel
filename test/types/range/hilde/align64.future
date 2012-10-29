@@ -1,4 +1,4 @@
-bug: Integer constant arithmetic should use 64-bits.
+semantic: Integer constant arithmetic should use 64-bits.
 
 Integer literal expressions with no specified type should use 64-bit arithmetic
 by default.  This can be done even if the default type for the expression as a
@@ -8,3 +8,15 @@ warning.
 In this particular test case, the version of align should expect a 64-bit
 alignment value, so the correct alignment is 32768 mod 10 == 8, as shown in the
 .good file.
+
+The original future comment expresses poorly the concept that what in Chapel is
+equivalent to a C "precompiler expression" should effectively use infinite
+precision.  As a practical matter, the C spec allows the implementation to use
+finite precision in precompiler expressions (which may account for some
+variation between compilers).  
+
+This may be considered an optimization: In the great majority of cases, stuffing
+the infinite-precision preprocessor value into a finite-precision runtime
+variable eliminates any visible discrepancy between finite-precision and
+infinite-precision computations in the front-end.  Unfortunately, sometimes the
+discrepancy does make a difference.

@@ -4,7 +4,7 @@
 config var infilename = "sudoku.txt";
 
 // set up a table for the puzzle
-var TableSpace: domain(2) = [1..9, 1..9];
+var TableSpace: domain(2) = {1..9, 1..9};
 var Table: [TableSpace] int;
 
 //...then read the values from the puzzle into it
@@ -64,7 +64,7 @@ var rowRemainders: [1..9] domain(int) = All;
 var colRemainders: [1..9] domain(int) = All;
 var boxRemainders: [1..9] domain(int) = All;
 // ----- Initialize the values we still need for each row ----
-for i in [1..9]{ 
+for i in {1..9}{ 
     for v in Table[i, ..] {
     	if (v != 0) {
      	  rowRemainders[i] -= v;
@@ -73,7 +73,7 @@ for i in [1..9]{
 }
 
 // ----- Initialize the values we still need for each column ----
-for i in [1..9]{ 
+for i in {1..9}{ 
     for v in Table[.., i] {
     	if (v != 0) {
      	  colRemainders[i] -= v;
@@ -83,15 +83,15 @@ for i in [1..9]{
 
 // ----- Initialize the values we still need for each box ----
 var BoxDomains: [1..9] domain(2);
-var Box1: domain(2) = [1..3, 1..3];
-var Box2: domain(2) = [1..3, 4..6];
-var Box3: domain(2) = [1..3, 7..9];
-var Box4: domain(2) = [4..6, 1..3];
-var Box5: domain(2) = [4..6, 4..6];
-var Box6: domain(2) = [4..6, 7..9];
-var Box7: domain(2) = [7..9, 1..3];
-var Box8: domain(2) = [7..9, 4..6];
-var Box9: domain(2) = [7..9, 7..9];
+var Box1: domain(2) = {1..3, 1..3};
+var Box2: domain(2) = {1..3, 4..6};
+var Box3: domain(2) = {1..3, 7..9};
+var Box4: domain(2) = {4..6, 1..3};
+var Box5: domain(2) = {4..6, 4..6};
+var Box6: domain(2) = {4..6, 7..9};
+var Box7: domain(2) = {7..9, 1..3};
+var Box8: domain(2) = {7..9, 4..6};
+var Box9: domain(2) = {7..9, 7..9};
 BoxDomains[1] = Box1;
 BoxDomains[2] = Box2;
 BoxDomains[3] = Box3;
@@ -101,7 +101,7 @@ BoxDomains[6] = Box6;
 BoxDomains[7] = Box7;
 BoxDomains[8] = Box8;
 BoxDomains[9] = Box9;
-for i in [1..9] {
+for i in {1..9} {
     var currDom = Table[BoxDomains[i]];
     for j in currDom {
         if (j != 0) {

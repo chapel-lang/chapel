@@ -19,6 +19,18 @@ to improve performance and elegance.  See the list below and TODO
 comments in the source code for some known areas for improvement.
 
 
+-------
+Running
+-------
+
+In running the Chapel version of LULESH, the user must either specify
+an input file via the --filename flag or a number of elements to use
+per edge in a cubic data set using the --elemsPerEdge argument.  For
+example, to run using a cubic 2x2x2 input set, you could either use
+'--filename lmeshes/sedov2cube.lmesh' or '--elemsPerEdge 2'.  The
+filename option has the advantage of supporting non-cubic input sets.
+
+
 -----
 Files
 -----
@@ -26,19 +38,84 @@ Files
 This directory's contents are as follows:
 
 ./
+  lulesh.chpl     : the main Chapel source code
+  luleshInit.chpl : initialization for LULESH by reading or computing the input
+
   lmeshes/     : input meshes
 
-  lulesh.chpl  : the Chapel source code
+  coords.out      : the coordinates computed by the program are written
+                    to this file, suitable for plotting
 
-  coords.out   : the coordinates computed by the program are written
-                 to this file, suitable for plotting
+  CLEANFILES       : \
+  lulesh.catfiles  :  \
+  lulesh.compopts  :   used by the Chapel testing system
+  lulesh.execopts  :  /
+  lulesh*.good     : /
+  lulesh*.perf*    :/
 
-  CLEANFILES      :\  
-  lulesh.catfiles : \
-  lulesh.compopts :  used by the Chapel testing system
-  lulesh.execopts : / 
-  lulesh.good     :/ 
 
+---------
+Callgraph
+---------
+
+module-level initialization
+main
+ -> initLulesh
+    -> initCoordinates
+    -> initElemToNodeMapping
+    -> initGreekVars
+    -> initXSyms
+    -> initYSyms
+    -> initZSyms
+    -> initMasses
+       -> localizeNeighborNodes
+    -> initBoundaryConditions
+       -> initFreeSurface
+ main loop {
+   -> TimeIncrement
+   -> LagrangeLeapFrog
+      -> LagrangeNodal
+         -> CalcForceForNodes
+            -> CalcVolumeForceForElems
+               -> InitStressTermsForElems
+               -> IntegrateStressForElems
+                  -> localizeNeighborNodes
+                  -> CalcElemShapeFunctionDerivatives
+                  -> CalcElemNodeNormals
+                     -> ElemFaceNormal (nested)
+                  -> SumElemStressesToNodeForces
+               -> CalcHourglassControlForElems
+                  -> localizeNeighborNodes
+                  -> CalcElemVolumeDerivative
+                  -> CalcFBHourglassForceForElems
+                     -> localizeNeighborNodes
+                     -> CalcElemFBHourglassForce
+         -> CalcAccelerationForNodes
+         -> ApplyAccelerationBoundaryConditionsForNodes
+         -> CalcVelocityForNodes
+         -> CalcPositionForNodes
+      -> LagrangeElements
+         -> CalcLagrangeElements
+            -> CalcKinematicsForElems
+               -> localizeNeighborNodes
+               -> CalcElemVolume
+                  -> TripleProduct
+               -> CalcElemCharacteristicLength
+               -> CalcElemShapeFunctionDerivatives
+               -> CalcElemVelocityGradient
+         -> CalcQForElems
+            -> CalcMonotonicQGradientsForElems
+               -> localizeNeighborNodes
+            -> CalcMonotonicQForElems
+         -> ApplyMaterialPropertiesForElems
+            -> EvalEOSForElems
+         -> UpdateVolumesForElems
+      -> CalcTimeConstraintsForElems
+         -> CalcCourantConstraintForElems
+            -> computeDTF
+         -> CalcHydryoConstraintForElems
+   -> deprint (if debug)
+ }
 
 -----
 TODOs
@@ -54,15 +131,6 @@ PERFORMANCE TODOs:
 
 * localizeNeighborNodes seems a little weird/inefficient.  Review its
   role and look for ways to improve.
-
-* In IntegrateStressForElems, there is a local block that was disabled
-  when switching the force arrays to sync arrays, perhaps due to
-  disabling remote value forwarding.  Ultimately, we should be able to
-  enable this, either through smarter compiler analysis or help from
-  the user.  Try to do so.
-
-* Add support for atomic floats to Chapel and replace sync vars with
-  them
 
 
 INPUT FILE TODOs:

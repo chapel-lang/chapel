@@ -2,10 +2,10 @@ use taskpool;
 
 config const natom = 5;
 const n = (natom/2)*10 + ((natom+1)/2)*5;
-const bas_info : [[1..natom, 1..2]] int = [(i,j) in [1..natom, 1..2]] 5*(i/2) + 10*((i-1)/2) + if (j==1) then 1 else 10/(i%2+1);
+const bas_info : [{1..natom, 1..2}] int = [(i,j) in {1..natom, 1..2}] 5*(i/2) + 10*((i-1)/2) + if (j==1) then 1 else 10/(i%2+1);
 
 type elemType = real(64);
-const matD : domain(2) = [1..n, 1..n]; 
+const matD : domain(2) = {1..n, 1..n}; 
 const dmat : [matD] elemType = [(i,j) in matD] 1.0/(i+j); 
 var jmat2, kmat2, jmat2T, kmat2T : [matD] elemType; 
 var oneAtATime: sync bool = true;
@@ -73,7 +73,7 @@ iter genBlocks() {
 proc buildjk_atom4(bI) {
   const (ilo,ihi,jlo,jhi,klo,khi,llo,lhi) = (bI.ilo,bI.ihi,bI.jlo,bI.jhi,bI.klo,bI.khi,bI.llo,bI.lhi);
 
-  const (ijD,ikD,ilD,jkD,jlD,klD) = ([ilo..ihi,jlo..jhi],[ilo..ihi,klo..khi],[ilo..ihi,llo..lhi],[jlo..jhi,klo..khi],[jlo..jhi,llo..lhi],[klo..khi,llo..lhi]);
+  const (ijD,ikD,ilD,jkD,jlD,klD) = ({ilo..ihi,jlo..jhi},{ilo..ihi,klo..khi},{ilo..ihi,llo..lhi},{jlo..jhi,klo..khi},{jlo..jhi,llo..lhi},{klo..khi,llo..lhi});
 
   const dij = dmat(ijD);
   const dik = dmat(ikD);
