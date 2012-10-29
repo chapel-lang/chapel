@@ -399,9 +399,19 @@ proc schurComplement(blk, AD, BD, Rest) {
                 for a in outerRange do
                   for w in blkRange  {
                     const h2aw = h2[a,w];
+                    // The code below hoists loop-invariant computations in
+                    // dsiAccess() out of the 'for innerRange' loop by hand.
+                    // We are using tuples instead of objects because
+                    // the generated code is more efficient, which is
+                    // also a needed compiler optimization.
+                    const
+                      h1dd  = h1._value.data,
+                      h1off = hoistOffset(h1, a, innerRange),
+                      h3dd  = h3._value.data,
+                      h3off = hoistOffset(h3, w, innerRange);
                     for b in innerRange do
                       // Ab[a,b] -= replA[a,w] * replB[w,b];
-                      h1[a,b] -= h2aw * h3[w,b];
+                      h1dd(h1off+b) -= h2aw * h3dd(h3off+b);
                   } // for w
               } // for j2
             } // forall j1
@@ -450,6 +460,25 @@ proc DimensionalArr.dsiLocalSlice1((sliceDim1, sliceDim2)) {
       if origScalar(2) then tuple(sliceDim1)
       else tuple(sliceDim1, sliceDim2);
   var result: [(...reindexExpr)] => locAdesc.myStorageArr[r1, r2];
+  return result;
+}
+
+inline proc hoistOffset(A: [], i1, slice2) {
+  const d = A._value;
+  compilerAssert(d.rank == 2);
+  const result = d.origin + i1 * d.blk(1) - d.factoredOffs;
+  if checkSC {
+    assert(d.blk(2) == 1);
+    const i2a = slice2.alignedLow, i2b = slice2.alignedHigh;
+    if d.getDataIndex((i1, i2a)) != result + i2a then
+      writeln("ERROR indexing ", A.domain, " with ", (i1, i2a),
+              "  expected ", d.getDataIndex((i1, i2a)),
+              "  got ", result + i2a, "  result=", result);
+    if d.getDataIndex((i1, i2b)) != result + i2b then
+      writeln("ERROR indexing ", A.domain, " with ", (i1, i2b),
+              "  expected ", d.getDataIndex((i1, i2b)),
+              "  got ", result + i2b, "  result=", result);
+  }
   return result;
 }
 
