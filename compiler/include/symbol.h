@@ -9,6 +9,7 @@
 #include "flags.h"
 #include "type.h"
 
+#include "genret.h"
 #include <vector>
 
 //
@@ -73,9 +74,10 @@ class Symbol : public BaseAST {
   virtual bool isConstant(void);
   virtual bool isParameter(void);
 
-  virtual void codegen(FILE* outfile);
-  virtual void codegenDef(FILE* outfile);
-  virtual void codegenPrototype(FILE* outfile);
+  virtual GenRet codegen();
+  virtual void codegenDef();
+  virtual void codegenPrototype(); // ie type decl
+
   virtual FnSymbol* getFnSymbol(void);
   virtual bool isImmediate();
 
@@ -91,6 +93,8 @@ class Symbol : public BaseAST {
 
 class VarSymbol : public Symbol {
  public:
+  // Note that string immediate values are stored
+  // with C escapes - that is newline is 2 chars \ n
   Immediate   *immediate;
 
   //changed isconstant flag to reflect var, const, param: 0, 1, 2
@@ -102,9 +106,14 @@ class VarSymbol : public Symbol {
 
   bool isConstant(void);
   bool isParameter(void);
+  const char* doc;
 
-  void codegen(FILE* outfile);
-  void codegenDef(FILE* outfile);
+  GenRet codegen();
+  void codegenDefC();
+  void codegenDef();
+  // global vars are different ...
+  void codegenGlobalDef();
+  
   bool isImmediate();
 };
 
@@ -131,20 +140,33 @@ class ArgSymbol : public Symbol {
   bool isConstant(void);
   bool isParameter(void);
 
-  void printDef(FILE* outfile);
-  void codegen(FILE* outfile);
-  void codegenDef(FILE* outfile);
+  GenRet codegen();
+  GenRet codegenType();
 };
 
 
 class TypeSymbol : public Symbol {
  public:
+  // We need to know whether or not the definition
+  // for this type has already been codegen'd
+  // and cache it if it has.
+#ifdef HAVE_LLVM
+  llvm::Type* llvmType;
+#else
+  // Keep same layout so toggling HAVE_LLVM
+  // will not lead to build errors without make clean
+  // For C, we will store a pointer to the cname here
+  void* llvmType;
+#endif
+  bool codegenned;
+
   TypeSymbol(const char* init_name, Type* init_type);
   void verify(); 
   DECLARE_SYMBOL_COPY(TypeSymbol);
   void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
-  void codegenDef(FILE* outfile);
-  void codegenPrototype(FILE* outfile);
+  GenRet codegen();
+  void codegenDef();
+  void codegenPrototype();
 };
 
 
@@ -169,6 +191,8 @@ class FnSymbol : public Symbol {
   const char* userString;
   FnSymbol* valueFunction; // pointer to value function (created in
                            // resolve and used in cullOverReferences)
+  int codegenUniqueNum;
+  const char *doc;
 
   FnSymbol(const char* initName);
   ~FnSymbol();
@@ -178,9 +202,14 @@ class FnSymbol : public Symbol {
   FnSymbol* getFnSymbol(void);
   void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
 
-  void codegenHeader(FILE* outfile);
-  void codegenPrototype(FILE* outfile);
-  void codegenDef(FILE* outfile);
+  // Returns an LLVM type or a C-cast expression
+  GenRet codegenFunctionType(bool forHeader);
+  GenRet codegenCast(GenRet fnPtr);
+
+  void codegenHeaderC();
+  void codegenPrototype();
+  void codegenDef();
+  GenRet codegen();
 
   void printDef(FILE* outfile);
 
@@ -210,8 +239,10 @@ class EnumSymbol : public Symbol {
   void verify(); 
   DECLARE_SYMBOL_COPY(EnumSymbol);
   void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
-  void codegenDef(FILE* outfile);
+  void codegenDef();
+  
   bool isParameter(void);
+  Immediate* getImmediate(void);
 };
 
 
@@ -223,13 +254,18 @@ class ModuleSymbol : public Symbol {
   const char* filename;
   Vec<ModuleSymbol*> modUseList;
   Vec<ModuleSymbol*> modUseSet;
-
+  const char *doc;
+  
   ModuleSymbol(const char* iName, ModTag iModTag, BlockStmt* iBlock);
   ~ModuleSymbol();
   void verify(); 
   DECLARE_SYMBOL_COPY(ModuleSymbol);
+  Vec<VarSymbol*> getConfigVars();
+  Vec<FnSymbol*> getFunctions();
+  Vec<ModuleSymbol*> getModules();
+  Vec<ClassType*> getClasses();
   void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
-  void codegenDef(FILE* outfile);
+  void codegenDef();
 };
 
 
@@ -240,7 +276,7 @@ class LabelSymbol : public Symbol {
   void verify(); 
   DECLARE_SYMBOL_COPY(LabelSymbol);
   void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
-  void codegenDef(FILE* outfile);
+  void codegenDef();
 };
 
 
@@ -257,6 +293,10 @@ FlagSet getRecordWrappedFlags(Symbol* s);
 FlagSet getSyncFlags(Symbol* s);
 VarSymbol* newTemp(const char* name = NULL, Type* type = dtUnknown);
 VarSymbol* newTemp(Type* type);
+
+// Return true if the arg must use a C pointer whether or not
+// pass-by-reference intents are used.
+bool argMustUseCPtr(Type* t);
 
 extern bool localTempNames;
 

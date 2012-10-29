@@ -2,8 +2,27 @@
 #define _driver_H_
 
 #include <cstdio>
+#include "timer.h"
 #include "map.h"
 #include "chpl.h"
+
+// For versions of bison beyond 2.3, this struct and the following
+// two defines should be moved back into chapel.ypp into a %code requires
+// block so that YYLTYPE is near the YYLLOC_DEFAULT definition.
+typedef struct YYLTYPE {    
+       int first_line;      
+       int first_column;    
+       int last_line;       
+       int last_column;     
+       char *comment;       
+} YYLTYPE;
+#define YYLTYPE_IS_DECLARED 1
+#define YYLTYPE_IS_TRIVIAL 1
+
+
+
+
+extern const char *chplBinaryName;
 
 extern FILE* html_index_file;
 extern FILE* deletedIdHandle;
@@ -26,6 +45,7 @@ extern int currentPassNo;
 extern const char* currentPassName;
 
 // optimization control flags
+extern bool fFastFlag;
 extern int fConditionalDynamicDispatchLimit;
 extern bool fNoBoundsChecks;
 extern bool fNoCopyPropagation;
@@ -37,6 +57,11 @@ extern bool fNoInline;
 extern bool fNoLiveAnalysis;
 extern bool fNoLocalChecks;
 extern bool fNoNilChecks;
+
+//Disable flag for transitional warning of 1.5 domain literal syntax.
+//This option should be removed after 1.6 is released!
+extern bool fNoWarnDomainLiteral; 
+
 extern bool fNoRemoteValueForwarding;
 extern bool fNoRemoveCopyCalls;
 extern bool fNoRepositionDefExpr;
@@ -60,8 +85,8 @@ extern const char* CHPL_TARGET_COMPILER;
 extern const char* CHPL_TASKS;
 extern const char* CHPL_THREADS;
 extern const char* CHPL_COMM;
+extern const char* CHPL_MAKE;
 
-extern char chplmake[256];
 extern char fExplainCall[256];
 extern char fExplainInstantiation[256];
 extern bool fPrintCallStackOnError;
@@ -78,16 +103,25 @@ extern bool fHeterogeneous;
 extern bool fieeefloat;
 extern int  fMaxCIdentLen;
 
+extern bool llvmCodegen;
+extern char breakOnCodegenCname[256];
+
 enum { LS_DEFAULT=0, LS_STATIC, LS_DYNAMIC };
 extern int fLinkStyle;
 
 extern int debugParserLevel;
 extern bool fLibraryCompile;
 extern bool no_codegen;
+extern bool genExternPrototypes;
 extern bool developer;
 extern int num_constants_per_variable;
 extern bool printCppLineno;
 
+extern bool fDocs;
+extern bool fDocsAlphabetize;
+extern char fDocsCommentLabel[256];
+extern char fDocsFolder[256];
+extern bool fDocsTextOnly;
 extern char defaultDist[256];
 extern char mainModuleName[256];
 extern bool printSearchDirs;
@@ -120,5 +154,9 @@ extern int breakOnDeleteID;
 // code generation strings
 extern const char* compileCommand;
 extern char compileVersion[64];
+
+// This flag is useful for testing
+// the compiler but breaks the language!
+extern bool fNoInternalModules;
 
 #endif

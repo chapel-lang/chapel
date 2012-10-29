@@ -89,7 +89,7 @@ insertLineNumber(CallExpr* call) {
              !strcmp(fn->name, "chpl_gen_main") ||
              ((mod->modTag == MOD_USER || mod->modTag == MOD_MAIN) && 
               !fn->hasFlag(FLAG_TEMP) && !fn->hasFlag(FLAG_INLINE)) ||
-             (developer == true && strcmp(fn->name, "halt"))) {
+             (developer && strcmp(fn->name, "halt"))) {
     // hilde sez: This special casing is suspect.  Can't we key off a flag?
 
     // call is in user code; insert AST line number and filename

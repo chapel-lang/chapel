@@ -16,10 +16,17 @@ PassInfo passlist[] = {
   RUN(parse),               // parse files and create AST
   RUN(checkParsed),         // checks semantics of parsed AST
 
+  // Read in runtime and included C header file types/prototypes
+  RUN(readCTypes),
+
   // Scope resolution and normalization
   RUN(cleanup),             // post parsing transformations
   RUN(scopeResolve),        // resolve symbols by scope
   RUN(flattenClasses),      // denest nested classes
+  RUN(docs),                // generates documentation instead of executable
+                            // if chpldoc is used instead of chpl, otherwise
+                            // generates both documentation and an executable
+
   RUN(normalize),           // normalization transformations
   RUN(checkNormalized),     // check semantics of normalized AST
 
@@ -57,7 +64,7 @@ PassInfo passlist[] = {
   RUN(insertWideReferences),// inserts wide references for on clauses
   RUN(optimizeOnClauses),   // Optimize on clauses
   RUN(addInitCalls),        // Add module initialization calls and guards.  
-  // AST to C
+  // AST to C or LLVM
   RUN(insertLineNumbers),   // insert line numbers for error messages
   RUN(repositionDefExpressions), // put defPoints just before first usage
   RUN(codegen),             // generate C code

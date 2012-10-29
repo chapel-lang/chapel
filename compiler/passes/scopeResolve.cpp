@@ -9,7 +9,7 @@
 #include "scopeResolve.h"
 #include "stringutil.h"
 #include "symbol.h"
-
+#include <map>
 
 //
 // static functions (forward declaration)
@@ -35,8 +35,8 @@ static void build_constructor(ClassType* ct);
 // Each entry contains a map from canonicalized string pointers to the
 // symbols defined in the scope.
 //
-typedef Map<const char*,Symbol*> SymbolTableEntry;
-typedef Map<BaseAST*,SymbolTableEntry*> SymbolTable;
+typedef std::map<const char*,Symbol*> SymbolTableEntry;
+typedef std::map<BaseAST*,SymbolTableEntry*> SymbolTable;
 static SymbolTable symbolTable;
 
 //
@@ -48,7 +48,7 @@ static SymbolTable symbolTable;
 // Note that this caching is not enabled until after use expression
 // have been resolved.
 //
-static Map<BlockStmt*,Vec<ModuleSymbol*>*> moduleUsesCache;
+static std::map<BlockStmt*,Vec<ModuleSymbol*>*> moduleUsesCache;
 static bool enableModuleUsesCache = false;
 
 //
@@ -106,12 +106,13 @@ addToSymbolTable(Vec<DefExpr*>& defs) {
   forv_Vec(DefExpr, def, defs) {
     if (!def->sym->hasFlag(FLAG_TEMP)) {
       BaseAST* scope = getScope(def);
-      SymbolTableEntry* entry = symbolTable.get(scope);
-      if (!entry) {
-        entry = new SymbolTableEntry();
-        symbolTable.put(scope, entry);
+      if (symbolTable.count(scope) == 0) {
+        symbolTable[scope] = new SymbolTableEntry();
       }
-      if (Symbol* sym = entry->get(def->sym->name)) {
+      SymbolTableEntry* entry = symbolTable[scope];
+
+      if (entry->count(def->sym->name) != 0) {
+        Symbol* sym = (*entry)[def->sym->name];
         FnSymbol* oldFn = toFnSymbol(sym);
         FnSymbol* newFn = toFnSymbol(def->sym);
         TypeSymbol* typeScope = toTypeSymbol(scope);
@@ -122,9 +123,9 @@ addToSymbolTable(Vec<DefExpr*>& defs) {
           }
         }
         if (!newFn || (newFn && !newFn->_this && newFn->hasFlag(FLAG_NO_PARENS)))
-          entry->put(def->sym->name, def->sym);
+          (*entry)[def->sym->name] = def->sym;
       } else {
-        entry->put(def->sym->name, def->sym);
+        (*entry)[def->sym->name] = def->sym;
       }
     }
   }
@@ -135,10 +136,9 @@ addToSymbolTable(Vec<DefExpr*>& defs) {
 //
 static void
 destroyTable() {
-  Vec<SymbolTableEntry*> entries;
-  symbolTable.get_values(entries);
-  forv_Vec(SymbolTableEntry, entry, entries) {
-    delete entry;
+  SymbolTable::iterator entry;
+  for (entry = symbolTable.begin(); entry != symbolTable.end(); entry++) {
+    delete entry->second;
   }
   symbolTable.clear();
 }
@@ -149,10 +149,9 @@ destroyTable() {
 //
 static void
 destroyModuleUsesCaches() {
-  Vec<Vec<ModuleSymbol*>*> values;
-  moduleUsesCache.get_values(values);
-  forv_Vec(Vec<ModuleSymbol*>, value, values) {
-    delete value;
+  std::map<BlockStmt*,Vec<ModuleSymbol*>*>::iterator use;
+  for (use = moduleUsesCache.begin(); use != moduleUsesCache.end(); use++) {
+    delete use->second;
   }
   moduleUsesCache.clear();
 }
@@ -213,9 +212,13 @@ lookup(BaseAST* scope,
 
   Vec<Symbol*> symbols;
 
-  if (SymbolTableEntry* entry = symbolTable.get(scope))
-    if (Symbol* sym = entry->get(name))
+  if (symbolTable.count(scope) != 0) {
+    SymbolTableEntry* entry = symbolTable[scope];
+    if (entry->count(name) != 0) {
+      Symbol* sym = (*entry)[name];
       symbols.set_add(sym);
+    }
+  }
 
   if (TypeSymbol* ts = toTypeSymbol(scope))
     if (ClassType* ct = toClassType(ts->type))
@@ -225,8 +228,8 @@ lookup(BaseAST* scope,
   if (scanModuleUses && symbols.n == 0) {
     if (BlockStmt* block = toBlockStmt(scope)) {
       if (block->modUses) {
-        Vec<ModuleSymbol*>* modules = moduleUsesCache.get(block); 
-        if (!modules) {
+        Vec<ModuleSymbol*>* modules = NULL;
+        if (moduleUsesCache.count(block) == 0) {
           modules = new Vec<ModuleSymbol*>();
           for_actuals(expr, block->modUses) {
             SymExpr* se = toSymExpr(expr);
@@ -238,7 +241,9 @@ lookup(BaseAST* scope,
           INT_ASSERT(modules->n);
           buildBreadthFirstModuleList(modules);
           if (enableModuleUsesCache)
-            moduleUsesCache.put(block, modules);
+            moduleUsesCache[block] = modules;
+        } else {
+          modules = moduleUsesCache[block];
         }
         INT_ASSERT(modules);
         forv_Vec(ModuleSymbol, mod, *modules) {
@@ -621,7 +626,7 @@ static void build_constructor(ClassType* ct) {
   fn->insertAtTail(new DefExpr(fn->_this));
 
   // Walk the fields in the class type.
-  Map<VarSymbol*,ArgSymbol*> fieldArgMap;
+  std::map<VarSymbol*,ArgSymbol*> fieldArgMap;
   Vec<const char*> fieldNamesSet;
   for_fields(tmp, ct) {
     SET_LINENO(tmp);
@@ -635,7 +640,7 @@ static void build_constructor(ClassType* ct) {
         // Create an argument to the default constructor
         // corresponding to the field.
         ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, field->name, field->type);
-        fieldArgMap.put(field, arg);
+        fieldArgMap[field] = arg;
         fieldNamesSet.set_add(field->name);
       }
     }
@@ -720,10 +725,10 @@ static void build_constructor(ClassType* ct) {
     if (!field)
       continue;
 
-    ArgSymbol* arg = fieldArgMap.get(field);
-
-    if (!arg)
+    if (fieldArgMap.count(field) == 0)
       continue;
+
+    ArgSymbol* arg = fieldArgMap[field];
 
     SET_LINENO(field);
 
@@ -1277,11 +1282,25 @@ void scopeResolve(void) {
             enclosingModule->modUseList.add(mod);
           }
           SET_LINENO(call);
-          SymbolTableEntry* entry = symbolTable.get(mod->initFn->body);
-          Symbol* sym = (entry) ? entry->get(get_string(call->get(2))) : 0;
+          SymbolTableEntry* entry = NULL;
+          Symbol* sym = NULL;
+          if (symbolTable.count(mod->initFn->body) != 0) {
+            entry = symbolTable[mod->initFn->body];
+            if (entry->count(get_string(call->get(2))) != 0) {
+              sym = (*entry)[get_string(call->get(2))];
+            } else {
+              sym = (*entry)[get_string(call->get(2))];
+            }
+          }
           if (!sym) {
-            entry = symbolTable.get(mod->block);
-            sym = (entry) ? entry->get(get_string(call->get(2))) : 0;
+            if (symbolTable.count(mod->block) != 0) {
+              entry = symbolTable[mod->block];
+              if (entry->count(get_string(call->get(2))) != 0) {
+                sym = (*entry)[get_string(call->get(2))];
+              } else {
+                sym = (*entry)[get_string(call->get(2))];
+              }
+            }
           }
           if (FnSymbol* fn = toFnSymbol(sym)) {
             if (!fn->_this && fn->hasFlag(FLAG_NO_PARENS)) {

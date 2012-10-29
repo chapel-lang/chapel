@@ -6,7 +6,7 @@
 #include "stmt.h"
 #include "symbol.h"
 
-BlockStmt* buildPragmaStmt(BlockStmt*, Vec<const char*>*, BlockStmt*);
+BlockStmt* buildPragmaStmt(Vec<const char*>*, BlockStmt*);
 
 /* The start of an incomplete zero-tuple implementation
 CallExpr* buildZeroTuple(void);
@@ -37,7 +37,7 @@ BlockStmt* buildUseStmt(CallExpr* modules);
 BlockStmt* buildTupleVarDeclStmt(BlockStmt* tupleBlock, Expr* type, Expr* init);
 BlockStmt* buildLabelStmt(const char* name, Expr* stmt);
 BlockStmt* buildIfStmt(Expr* condExpr, Expr* thenExpr, Expr* elseExpr = NULL);
-ModuleSymbol* buildModule(const char* name, BlockStmt* block, const char* filename);
+ModuleSymbol* buildModule(const char* name, BlockStmt* block, const char* filename, char *docs);
 CallExpr* buildPrimitiveExpr(CallExpr* exprs);
 BlockStmt* buildPrimitiveLoopStmt(CallExpr* exprs, BlockStmt* body);
 
@@ -48,46 +48,50 @@ BlockStmt* buildDoWhileLoopStmt(Expr* cond, BlockStmt* body);
 BlockStmt* buildSerialStmt(Expr* cond, BlockStmt* body);
 BlockStmt* buildCoforallLoopStmt(Expr* indices,
                                  Expr* iterator,
-                                 BlockStmt* body);
+                                 BlockStmt* body,
+                                 bool zippered = false);
 BlockStmt* buildGotoStmt(GotoTag tag, const char* name);
 BlockStmt* buildPrimitiveStmt(PrimitiveTag tag, Expr* e1 = NULL, Expr* e2 = NULL);
 BlockStmt* buildForLoopStmt(Expr* indices,
                             Expr* iterator,
                             BlockStmt* body,
-                            bool coforall = false);
+                            bool coforall = false,
+                            bool zippered = false);
 BlockStmt* buildForallLoopStmt(Expr* indices,
                                Expr* iterator,
-                               BlockStmt* body);
+                               BlockStmt* body,
+                               bool zippered = false);
 CallExpr* buildForLoopExpr(Expr* indices,
                            Expr* iterator,
                            Expr* expr,
                            Expr* cond = NULL,
-                           bool maybeArrayType = false);
+                           bool maybeArrayType = false,
+                           bool zippered = false);
 CallExpr* buildForallLoopExpr(Expr* indices,
                               Expr* iterator,
                               Expr* expr,
                               Expr* cond = NULL,
-                              bool maybeArrayType = false);
+                              bool maybeArrayType = false,
+                              bool zippered = false);
 BlockStmt* buildParamForLoopStmt(const char* index, Expr* range, BlockStmt* block);
 BlockStmt* buildAssignment(Expr* lhs, Expr* rhs, const char* op = NULL);
 BlockStmt* buildLAndAssignment(Expr* lhs, Expr* rhs);
 BlockStmt* buildLOrAssignment(Expr* lhs, Expr* rhs);
-BlockStmt* buildSwapStmt(Expr* lhs, Expr* rhs);
 BlockStmt* buildSelectStmt(Expr* s, BlockStmt* whenstmts);
 BlockStmt* buildTypeSelectStmt(CallExpr* s, BlockStmt* whenstmts);
 
-CallExpr* buildReduceExpr(Expr* op, Expr* data);
-CallExpr* buildScanExpr(Expr* op, Expr* data);
+CallExpr* buildReduceExpr(Expr* op, Expr* data, bool zippered = false);
+CallExpr* buildScanExpr(Expr* op, Expr* data, bool zippered = false);
 
-BlockStmt* buildVarDecls(BlockStmt* stmts, Flag externconfig, Flag varconst);
+BlockStmt* buildVarDecls(BlockStmt* stmts, Flag externconfig, Flag varconst, char* docs);
 
-DefExpr* buildClassDefExpr(const char* name, Type* type, Expr* inherit, BlockStmt* decls, Flag isExtern);
+DefExpr* buildClassDefExpr(const char* name, Type* type, Expr* inherit, BlockStmt* decls, Flag isExtern, char *docs);
 DefExpr* buildArgDefExpr(IntentTag tag, const char* ident, Expr* type, Expr* init, Expr* variable);
 DefExpr* buildTupleArgDefExpr(IntentTag tag, BlockStmt* tuple, Expr* type, Expr* init);
 FnSymbol* buildFunctionFormal(FnSymbol* fn, DefExpr* def);
 FnSymbol* buildLambda(FnSymbol *fn);
 BlockStmt* buildFunctionDecl(FnSymbol* fn, RetTag optRetTag, Expr* optRetType,
-                             Expr* optWhere, BlockStmt* optFnBody);
+                             Expr* optWhere, BlockStmt* optFnBody, char *docs);
 BlockStmt* buildLocalStmt(Expr* stmt);
 BlockStmt* buildOnStmt(Expr* expr, Expr* stmt);
 BlockStmt* buildBeginStmt(Expr* stmt);

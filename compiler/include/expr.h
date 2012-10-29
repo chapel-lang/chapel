@@ -3,10 +3,13 @@
 
 #include <cstdlib>
 #include <cstdio>
+#include <fstream>
 #include "alist.h"
 #include "baseAST.h"
 #include "symbol.h"
 #include "primitive.h"
+
+#include "genret.h"
 
 class FnSymbol;
 
@@ -36,6 +39,8 @@ class Expr : public BaseAST {
   virtual bool inTree();
   virtual Type* typeInfo(void);
 
+  virtual void prettyPrint(std::ofstream *o);
+
   Expr* getStmtExpr();
 
   Expr* remove(void);
@@ -59,8 +64,9 @@ class DefExpr : public Expr {
   void replaceChild(Expr* old_ast, Expr* new_ast);
 
   Type* typeInfo(void);
-
-  void codegen(FILE* outfile);
+  void prettyPrint(std::ofstream *o);
+  
+  GenRet codegen();
 };
 
 
@@ -72,7 +78,8 @@ class SymExpr : public Expr {
   void replaceChild(Expr* old_ast, Expr* new_ast);
   void verify(); 
   Type* typeInfo(void);
-  void codegen(FILE* outfile);
+  GenRet codegen();
+  void prettyPrint(std::ofstream *o);
 };
 
 
@@ -84,8 +91,10 @@ class UnresolvedSymExpr : public Expr {
   void replaceChild(Expr* old_ast, Expr* new_ast);
   void verify(); 
   Type* typeInfo(void);
-  void codegen(FILE* outfile);
+  GenRet codegen();
+  void prettyPrint(std::ofstream *o);
 };
+
 
 
 class CallExpr : public Expr {
@@ -111,7 +120,8 @@ class CallExpr : public Expr {
 
   void replaceChild(Expr* old_ast, Expr* new_ast);
 
-  void codegen(FILE* outfile);
+  GenRet codegen();
+  void prettyPrint(std::ofstream *o);
 
   void insertAtHead(BaseAST* ast);
   void insertAtTail(BaseAST* ast);
@@ -137,7 +147,8 @@ class NamedExpr : public Expr {
   DECLARE_COPY(NamedExpr);
   void replaceChild(Expr* old_ast, Expr* new_ast);
   Type* typeInfo(void);
-  void codegen(FILE* outfile);
+  GenRet codegen();
+  void prettyPrint(std::ofstream *o);
 };
 
 
@@ -182,5 +193,17 @@ Expr* getNextExpr(Expr* expr);
 
 Expr* new_Expr(const char* format, ...);
 Expr* new_Expr(const char* format, va_list vl);
+
+GenRet codegenValue(GenRet r);
+GenRet codegenValuePtr(GenRet r);
+#ifdef HAVE_LLVM
+llvm::Value* createTempVarLLVM(llvm::Type* type, const char* name);
+llvm::Value* createTempVarLLVM(llvm::Type* type);
+#endif
+GenRet createTempVarWith(GenRet v);
+GenRet createTempVar(Type *t);
+
+GenRet codegenDeref(GenRet toDeref);
+GenRet codegenLocalDeref(GenRet toDeref);
 
 #endif

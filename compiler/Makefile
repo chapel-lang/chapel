@@ -65,9 +65,9 @@ CHPL_OBJS = \
 	$(SYMTAB_OBJS) \
 	$(UTIL_OBJS) \
 
-EXECS = $(CHPL)
+EXECS = $(CHPL) $(CHPLDOC)
 
-PRETARGETS = $(BUILD_VERSION_FILE)
+PRETARGETS = $(BUILD_VERSION_FILE) third-party-pkgs
 TARGETS = $(CHPL)
 
 
@@ -104,13 +104,21 @@ $(BUILD_VERSION_FILE): CheckForStandardCHeaders
 
 
 $(CHPL): $(CHPL_BIN_DIR) $(CHPL_OBJS)
-	$(CXX) $(LDFLAGS) -o $@ $(CHPL_OBJS) $(LIBS)
+	$(CXX) $(LDFLAGS) -o $@ $(CHPL_OBJS) $(LIBS) $(LLVM_LIBS)
+	rm -f $(CHPLDOC)
+	ln -s $(notdir $(CHPL)) $(CHPLDOC)
 	-@(which $(CHPL_TAGS_UTIL) > /dev/null 2>&1 && echo "Updating TAGS..." && $(CHPL_TAGS_UTIL) $(CHPL_TAGS_FLAGS) $(ALL_SRCS) */*.h) || echo "$(CHPL_TAGS_UTIL) not available"
 	-@(which ebrowse > /dev/null 2>&1 && echo "Updating BROWSE..." && ebrowse $(ALL_SRCS) */*.h) || echo "ebrowse not available"
 
 $(CHPL_BIN_DIR):
 	mkdir -p $@
 
+THIRD_PARTY_PKGS = $(shell $(CHPL_MAKE_HOME)/util/chplenv/third-party-pkgs --compiler)
+# NOTE: If any of these builds fail, we won't stop building
+third-party-pkgs:
+	@for p in $(THIRD_PARTY_PKGS); do \
+		$(MAKE) -C $(THIRD_PARTY_DIR) $$p; \
+	done
 
 
 #

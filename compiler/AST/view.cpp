@@ -1,4 +1,7 @@
+#ifndef __STDC_FORMAT_MACROS
 #define __STDC_FORMAT_MACROS
+#endif
+
 #include <cstdlib>
 #include <inttypes.h>
 #include "view.h"

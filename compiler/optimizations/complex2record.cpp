@@ -38,14 +38,15 @@ complex2record() {
   ClassType* complex64 = buildComplexRecord("_complex64", dtReal[FLOAT_SIZE_32]);
   ClassType* complex128 = buildComplexRecord("_complex128", dtReal[FLOAT_SIZE_64]);
 
+  complex64->GEPMap.insert(std::pair<std::string, int>("re", 0));
+  complex64->GEPMap.insert(std::pair<std::string, int>("im", 1));
+  complex128->GEPMap.insert(std::pair<std::string, int>("re", 0));
+  complex128->GEPMap.insert(std::pair<std::string, int>("im", 1));
+
   complex64->refType = dtComplex[COMPLEX_SIZE_64]->refType;
-  complex128->refType = dtComplex[COMPLEX_SIZE_128]->refType;
-
   dtComplex[COMPLEX_SIZE_64]->refType = NULL;
+  complex128->refType = dtComplex[COMPLEX_SIZE_128]->refType;
   dtComplex[COMPLEX_SIZE_128]->refType = NULL;
-
-  dtComplex[COMPLEX_SIZE_64]->symbol->defPoint->remove();
-  dtComplex[COMPLEX_SIZE_128]->symbol->defPoint->remove();
 
   forv_Vec(SymExpr, se, gSymExprs) {
     if (VarSymbol* var = toVarSymbol(se->var)) {
@@ -75,6 +76,8 @@ complex2record() {
         fn->retType = complex2rec(fn->retType);
   }
 
+  // Change definition of PRIM_GET_REAL and PRIM_GET_IMAG
+  // to field selection inline.
   forv_Vec(CallExpr, call, gCallExprs) {
     if (call->isPrimitive(PRIM_GET_REAL)) {
       call->primitive = primitives[PRIM_GET_MEMBER];
@@ -102,4 +105,12 @@ complex2record() {
     }
   }
 
+  // These are updated so is_complex_type() and is_arithmetic_type() still work.
+  dtComplex[COMPLEX_SIZE_64] = complex64;
+  dtComplex[COMPLEX_SIZE_128] = complex128;
+
+// The compiler should really treat the representation of the complex type opaquely,
+// using macros or primitives to set and access the fields within complex numbers.
+// That means this whole "optimization" step is moot; it should be left to runtime
+// support how to represent and access complex numbers.
 }

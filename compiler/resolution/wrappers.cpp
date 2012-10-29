@@ -83,6 +83,7 @@ buildEmptyWrapper(FnSymbol* fn, CallInfo* info) {
 //
 // copy a formal and make the copy have blank intent. If the formal to copy has
 // out intent or inout intent, flag the copy to make sure it is a reference
+// If the formal is ref intent, leave it as ref on the wrapper formal.
 //
 static ArgSymbol* copyFormalForWrapper(ArgSymbol* formal) {
   ArgSymbol* wrapperFormal = formal->copy();
@@ -90,7 +91,9 @@ static ArgSymbol* copyFormalForWrapper(ArgSymbol* formal) {
       formal->hasFlag(FLAG_WRAP_OUT_INTENT)) {
     wrapperFormal->addFlag(FLAG_WRAP_OUT_INTENT);
   }
-  wrapperFormal->intent = INTENT_BLANK;
+  if (formal->intent != INTENT_REF) {
+    wrapperFormal->intent = INTENT_BLANK;
+  }
   return wrapperFormal;
 }
 
@@ -561,6 +564,7 @@ buildPromotionWrapper(FnSymbol* fn,
   CallExpr* indicesCall = new CallExpr("_build_tuple"); // destructured in build
   CallExpr* iteratorCall = new CallExpr("_build_tuple");
   CallExpr* actualCall = new CallExpr(fn);
+  bool zippered = true;
   int i = 1;
   for_formals(formal, fn) {
     SET_LINENO(formal);
@@ -591,17 +595,20 @@ buildPromotionWrapper(FnSymbol* fn,
   Expr* indices = indicesCall;
   if (indicesCall->numActuals() == 1)
     indices = indicesCall->get(1)->remove();
-  Expr* iterator = iteratorCall;
-  if (iteratorCall->numActuals() == 1)
-    iterator = iteratorCall->get(1)->remove();
 
+  Expr* iterator = iteratorCall;
+  if (iteratorCall->numActuals() == 1) {
+    iterator = iteratorCall->get(1)->remove();
+    zippered = false;
+  }
 
   if ((!fn->hasFlag(FLAG_EXTERN) && fn->getReturnSymbol() == gVoid) ||
       (fn->hasFlag(FLAG_EXTERN) && fn->retType == dtVoid)) {
     if (fSerial || fSerialForall)
-      wrapper->insertAtTail(new BlockStmt(buildForLoopStmt(indices, iterator, new BlockStmt(actualCall))));
-    else
-      wrapper->insertAtTail(new BlockStmt(buildForallLoopStmt(indices, iterator, new BlockStmt(actualCall))));
+      wrapper->insertAtTail(new BlockStmt(buildForLoopStmt(indices, iterator, new BlockStmt(actualCall), false, zippered)));
+    else{
+        wrapper->insertAtTail(new BlockStmt(buildForallLoopStmt(indices, iterator, new BlockStmt(actualCall), zippered)));
+    }
   } else {
     wrapper->addFlag(FLAG_ITERATOR_FN);
     wrapper->removeFlag(FLAG_INLINE);
@@ -622,9 +629,15 @@ buildPromotionWrapper(FnSymbol* fn,
       VarSymbol* leaderIterator = newTemp("_leaderIterator");
       leaderIterator->addFlag(FLAG_EXPR_TEMP);
       lifn->insertAtTail(new DefExpr(leaderIterator));
-      lifn->insertAtTail(new CallExpr(PRIM_MOVE, leaderIterator, new CallExpr("_toLeader", iterator->copy(&leaderMap))));
+
+      if( !zippered ) {
+        lifn->insertAtTail(new CallExpr(PRIM_MOVE, leaderIterator, new CallExpr("_toLeader", iterator->copy(&leaderMap))));
+      } else {
+        lifn->insertAtTail(new CallExpr(PRIM_MOVE, leaderIterator, new CallExpr("_toLeaderZip", iterator->copy(&leaderMap))));
+      }
+
       BlockStmt* body = new BlockStmt(new CallExpr(PRIM_YIELD, leaderIndex));
-      BlockStmt* loop = buildForLoopStmt(new SymExpr(leaderIndex), new SymExpr(leaderIterator), body);
+      BlockStmt* loop = buildForLoopStmt(new SymExpr(leaderIndex), new SymExpr(leaderIterator), body, false, zippered);
       body->insertAtHead(new DefExpr(leaderIndex));
       lifn->insertAtTail(loop);
       theProgram->block->insertAtTail(new DefExpr(lifn));
@@ -646,14 +659,22 @@ buildPromotionWrapper(FnSymbol* fn,
       VarSymbol* followerIterator = newTemp("_followerIterator");
       followerIterator->addFlag(FLAG_EXPR_TEMP);
       fifn->insertAtTail(new DefExpr(followerIterator));
-      fifn->insertAtTail(new CallExpr(PRIM_MOVE, followerIterator, new CallExpr("_toFollower", iterator->copy(&followerMap), fifnFollower)));
+
+      if( !zippered ) {
+        fifn->insertAtTail(new CallExpr(PRIM_MOVE, followerIterator, new CallExpr("_toFollower", iterator->copy(&followerMap), fifnFollower)));
+      } else {
+        Expr* tMe = iterator->copy(&followerMap);
+        fifn->insertAtTail(new CallExpr(PRIM_MOVE, followerIterator, new
+                    CallExpr("_toFollowerZip", tMe, fifnFollower)));
+      }
+
       BlockStmt* followerBlock = new BlockStmt();
       Symbol* yieldTmp = newTemp();
       yieldTmp->addFlag(FLAG_EXPR_TEMP);
       followerBlock->insertAtTail(new DefExpr(yieldTmp));
       followerBlock->insertAtTail(new CallExpr(PRIM_MOVE, yieldTmp, actualCall->copy(&followerMap)));
       followerBlock->insertAtTail(new CallExpr(PRIM_YIELD, yieldTmp));
-      fifn->insertAtTail(buildForLoopStmt(indices->copy(&followerMap), new SymExpr(followerIterator), followerBlock));
+      fifn->insertAtTail(buildForLoopStmt(indices->copy(&followerMap), new SymExpr(followerIterator), followerBlock, false, zippered));
       theProgram->block->insertAtTail(new DefExpr(fifn));
       normalize(fifn);
       fifn->addFlag(FLAG_GENERIC);
@@ -665,7 +686,7 @@ buildPromotionWrapper(FnSymbol* fn,
     yieldBlock->insertAtTail(new DefExpr(yieldTmp));
     yieldBlock->insertAtTail(new CallExpr(PRIM_MOVE, yieldTmp, actualCall));
     yieldBlock->insertAtTail(new CallExpr(PRIM_YIELD, yieldTmp));
-    wrapper->insertAtTail(new BlockStmt(buildForLoopStmt(indices, iterator, yieldBlock)));
+    wrapper->insertAtTail(new BlockStmt(buildForLoopStmt(indices, iterator, yieldBlock, false, zippered)));
   }
   fn->defPoint->insertBefore(new DefExpr(wrapper));
   normalize(wrapper);

@@ -154,7 +154,7 @@ static void build_getter(ClassType* ct, Symbol *field) {
   FnSymbol* fn = new FnSymbol(field->name);
   fn->addFlag(FLAG_NO_IMPLICIT_COPY);
   fn->addFlag(FLAG_INLINE);
-  fn->addFlag(FLAG_TEMP);
+//  fn->addFlag(FLAG_TEMP); // Getter functions act as if user-defined.
   if (ct->symbol->hasFlag(FLAG_SYNC)) 
     fn->addFlag(FLAG_SYNC);
   if (ct->symbol->hasFlag(FLAG_SINGLE)) 
@@ -236,7 +236,7 @@ static FnSymbol* chpl_gen_main_exists(void) {
       }
     }
   }
-  if (firstProblem == false) {
+  if (!firstProblem) {
     USR_STOP();
   }
   return match;
@@ -284,7 +284,7 @@ static void build_chpl_entry_points(void) {
     SET_LINENO(mainModule);
     chpl_user_main = new FnSymbol("main");
     chpl_user_main->retType = dtVoid;
-    chpl_user_main->addFlag(FLAG_TEMP);
+//    chpl_user_main->addFlag(FLAG_TEMP);
     mainModule->block->insertAtTail(new DefExpr(chpl_user_main));
     normalize(chpl_user_main);
   } else {
@@ -315,17 +315,19 @@ static void build_chpl_entry_points(void) {
     chpl_gen_main->insertAtHead(new CallExpr("main"));
   }
 
-  // We have to initialize the main module explicitly.
-  // It will initialize all the modules it uses, recursively.
-  chpl_gen_main->insertAtHead(new CallExpr(mainModule->initFn));
+  if( ! fNoInternalModules ) {
+    // We have to initialize the main module explicitly.
+    // It will initialize all the modules it uses, recursively.
+    chpl_gen_main->insertAtHead(new CallExpr(mainModule->initFn));
 
-  VarSymbol* endCount = newTemp("_endCount");
-  chpl_gen_main->insertAtHead(new CallExpr("chpl_startTrackingMemory"));
-  chpl_gen_main->insertAtHead(new CallExpr(PRIM_SET_END_COUNT, endCount));
-  chpl_gen_main->insertAtHead(new CallExpr(PRIM_MOVE, endCount, new CallExpr("_endCountAlloc")));
-  chpl_gen_main->insertAtHead(new DefExpr(endCount));
-  chpl_gen_main->insertBeforeReturn(new CallExpr("_waitEndCount"));
-  //chpl_gen_main->insertBeforeReturn(new CallExpr("_endCountFree", endCount));
+    VarSymbol* endCount = newTemp("_endCount");
+    chpl_gen_main->insertAtHead(new CallExpr("chpl_startTrackingMemory"));
+    chpl_gen_main->insertAtHead(new CallExpr(PRIM_SET_END_COUNT, endCount));
+    chpl_gen_main->insertAtHead(new CallExpr(PRIM_MOVE, endCount, new CallExpr("_endCountAlloc")));
+    chpl_gen_main->insertAtHead(new DefExpr(endCount));
+    chpl_gen_main->insertBeforeReturn(new CallExpr("_waitEndCount"));
+    //chpl_gen_main->insertBeforeReturn(new CallExpr("_endCountFree", endCount));
+  }
 }
 
 static void build_record_equality_function(ClassType* ct) {

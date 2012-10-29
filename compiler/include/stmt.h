@@ -7,6 +7,7 @@
 #include "symbol.h"
 #include "expr.h"
 
+#include "genret.h"
 
 enum BlockTag {
   BLOCK_NORMAL,
@@ -30,7 +31,7 @@ class BlockStmt : public Expr {
   void verify();
   DECLARE_COPY(BlockStmt);
   void replaceChild(Expr* old_ast, Expr* new_ast);
-  void codegen(FILE* outfile);
+  GenRet codegen();
 
   void insertAtHead(Expr* ast);
   void insertAtTail(Expr* ast);
@@ -57,7 +58,7 @@ class CondStmt : public Expr {
   DECLARE_COPY(CondStmt);
   void replaceChild(Expr* old_ast, Expr* new_ast);
 
-  void codegen(FILE* outfile);
+  GenRet codegen();
 };
 
 
@@ -83,12 +84,12 @@ class GotoStmt : public Expr {
   void verify();
   DECLARE_COPY(GotoStmt);
   void replaceChild(Expr* old_ast, Expr* new_ast);
-  void codegen(FILE* outfile);
+  GenRet codegen();
+
   const char* getName();
 };
 
-
-void codegenStmt(FILE* outfile, Expr* stmt);
+void codegenStmt(Expr* stmt);
 
 // Extract (e.toGotoStmt)->(label.toSymExpr)->var and var->->iterResumeGoto,
 // if possible; NULL otherwise.

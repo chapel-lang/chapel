@@ -113,11 +113,11 @@ void trace_remove(BaseAST* ast, char flag) {
     if (deletedIdON) fflush(deletedIdHandle);
     gdbShouldBreakHere();
   }
-  // There should never be an attempt to delete an internal type.
-  if (isPrimitiveType(ast) &&
-      toPrimitiveType(ast)->isInternalType &&
-      flag != 'z') // at least, not until compiler shutdown.
-    INT_FATAL(ast, "Unexpected attempt to remove internal type.");
+  // There should never be an attempt to delete a global type.
+  if (flag != 'z' && // At least, not before compiler shutdown.
+      isPrimitiveType(ast) &&
+      toPrimitiveType(ast)->symbol->hasFlag(FLAG_GLOBAL_TYPE_SYMBOL))
+    INT_FATAL(ast, "Unexpected attempt to eviscerate a global type symbol.");
 }
 
 #define clean_gvec(type)                        \
@@ -127,7 +127,7 @@ void trace_remove(BaseAST* ast, char flag) {
       g##type##s.v[i##type++] = ast;            \
     } else {                                    \
       trace_remove(ast, 'x');                   \
-      delete ast;                               \
+      delete ast; ast = 0;                      \
     }                                           \
   }                                             \
   g##type##s.n = i##type
@@ -241,13 +241,13 @@ const char* BaseAST::stringLoc(void) {
 }
 
 // stringLoc for debugging only
-char* stringLoc(BaseAST* ast);
-char* stringLoc(int id);
+const char* stringLoc(BaseAST* ast);
+const char* stringLoc(int id);
 BaseAST* aid(int id);
 
-char* stringLoc(BaseAST* ast) {
+const char* stringLoc(BaseAST* ast) {
   if (!ast)
-    return (char*)"<no node provided>";
+    return "<no node provided>";
 
   const int tmpBuffSize = 256;
   static char tmpBuff[tmpBuffSize];
@@ -256,12 +256,12 @@ char* stringLoc(BaseAST* ast) {
   return tmpBuff;
 }
 
-char* stringLoc(int id) {
+const char* stringLoc(int id) {
   BaseAST* ast = aid(id);
   if (ast)
     return stringLoc(aid(id));
   else
-    return (char*)"<the given ID does not correspond to any AST node>";
+    return "<the given ID does not correspond to any AST node>";
 }
 
 ModuleSymbol* BaseAST::getModule() {
@@ -425,3 +425,21 @@ void update_symbols(BaseAST* ast, SymbolMap* map) {
   }
   AST_CHILDREN_CALL(ast, update_symbols, map);
 }
+
+GenRet baseASTCodegen(BaseAST* ast)
+{
+  GenRet ret = ast->codegen();
+  ret.chplType = ast->typeInfo();
+  ret.isUnsigned = ! is_signed(ret.chplType);
+  return ret;
+}
+GenRet baseASTCodegenInt(int x)
+{
+  return baseASTCodegen(new_IntSymbol(x, INT_SIZE_64));
+}
+GenRet baseASTCodegenString(const char* str)
+{
+  return baseASTCodegen(new_StringSymbol(str));
+}
+
+

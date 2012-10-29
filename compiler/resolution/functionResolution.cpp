@@ -1,7 +1,9 @@
+#ifndef __STDC_FORMAT_MACROS
 #define __STDC_FORMAT_MACROS
+#endif
 #include <sstream>
-#include <map>
 #include <inttypes.h>
+#include <map>
 
 #include "astutil.h"
 #include "build.h"
@@ -41,7 +43,7 @@ static int explainCallLine;
 static ModuleSymbol* explainCallModule;
 
 static Vec<CallExpr*> inits;
-static Map<FnSymbol*,bool> resolvedFns;
+static std::map<FnSymbol*,bool> resolvedFns;
 static Vec<FnSymbol*> resolvedFormals;
 Vec<CallExpr*> callStack;
 
@@ -177,6 +179,7 @@ static void
 replaceSetterArgWithFalse(BaseAST* ast, FnSymbol* fn, Symbol* ret);
 static void
 insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts);
+static void buildValueFunction(FnSymbol* fn);
 static void resolveFns(FnSymbol* fn);
 static bool
 possible_signature_match(FnSymbol* fn, FnSymbol* gn);
@@ -558,13 +561,13 @@ protoIteratorClass(FnSymbol* fn) {
 
   makeRefType(fn->retType);
 
-  resolvedFns.put(fn->iteratorInfo->zip1, true);
-  resolvedFns.put(fn->iteratorInfo->zip2, true);
-  resolvedFns.put(fn->iteratorInfo->zip3, true);
-  resolvedFns.put(fn->iteratorInfo->zip4, true);
-  resolvedFns.put(fn->iteratorInfo->advance, true);
-  resolvedFns.put(fn->iteratorInfo->hasMore, true);
-  resolvedFns.put(fn->iteratorInfo->getValue, true);
+  resolvedFns[fn->iteratorInfo->zip1] = true;
+  resolvedFns[fn->iteratorInfo->zip2] = true;
+  resolvedFns[fn->iteratorInfo->zip3] = true;
+  resolvedFns[fn->iteratorInfo->zip4] = true;
+  resolvedFns[fn->iteratorInfo->advance] = true;
+  resolvedFns[fn->iteratorInfo->hasMore] = true;
+  resolvedFns[fn->iteratorInfo->getValue] = true;
 
   ii->getIterator = new FnSymbol("_getIterator");
   ii->getIterator->addFlag(FLAG_AUTO_II);
@@ -578,7 +581,7 @@ protoIteratorClass(FnSymbol* fn) {
   ii->getIterator->insertAtTail(new CallExpr(PRIM_RETURN, ret));
   fn->defPoint->insertBefore(new DefExpr(ii->getIterator));
   ii->iclass->initializer = ii->getIterator;
-  resolvedFns.put(ii->getIterator, true);
+  resolvedFns[ii->getIterator] = true;
 }
 
 
@@ -688,6 +691,7 @@ resolveFormals(FnSymbol* fn) {
 
       if (formal->intent == INTENT_INOUT ||
           formal->intent == INTENT_OUT ||
+          formal->intent == INTENT_REF ||
           formal->hasFlag(FLAG_WRAP_OUT_INTENT) ||
           (formal == fn->_this &&
            (isUnion(formal->type) ||
@@ -786,6 +790,28 @@ static bool fits_in_uint(int width, Immediate* imm) {
 }
 
 
+static void ensureEnumTypeResolved(EnumType* etype) {
+  INT_ASSERT( etype != NULL );
+
+  if( ! etype->integerType ) {
+    // Make sure to resolve all enum types.
+    for_enums(def, etype) {
+      if (def->init) {
+        // Type* enumtype =
+        resolve_type_expr(def->init);
+
+        // printf("Type of %s.%s is %s\n", etype->symbol->name, def->sym->name,
+        // enumtype->symbol->name);
+      }
+    }
+    // Now try computing the enum size...
+    etype->sizeAndNormalize();
+  }
+
+  INT_ASSERT(etype->integerType != NULL);
+}
+
+
 // Returns true iff dispatching the actualType to the formalType
 // results in an instantiation.
 static bool
@@ -831,13 +857,39 @@ static bool canParamCoerce(Type* actualType, Symbol* actualSym, Type* formalType
     if (is_uint_type(actualType) &&
         get_width(actualType) < get_width(formalType))
       return true;
-    if (get_width(formalType) < 64)
+
+    //
+    // If the actual is an enum, check to see if *all* its values
+    // are small enough that they fit into this integer width
+    //
+    if (EnumType* etype = toEnumType(actualType)) {
+      ensureEnumTypeResolved(etype);
+      if (get_width(etype->getIntegerType()) <= get_width(formalType))
+        return true;
+    }
+
+    //
+    // For smaller integer types, if the argument is a param, does it
+    // store a value that's small enough that it could dispatch to
+    // this argument?
+    //
+    if (get_width(formalType) < 64) {
       if (VarSymbol* var = toVarSymbol(actualSym))
         if (var->immediate)
           if (fits_in_int(get_width(formalType), var->immediate))
             return true;
-    if (toEnumType(actualType))
-      return true;
+
+      if (EnumType* etype = toEnumType(actualType)) {
+        ensureEnumTypeResolved(etype);
+        if (EnumSymbol* enumsym = toEnumSymbol(actualSym)) {
+          if (Immediate* enumval = enumsym->getImmediate()) {
+            if (fits_in_int(get_width(formalType), enumval)) {
+              return true;
+            }
+          }
+        }
+      }
+    }
   }
   if (is_uint_type(formalType)) {
     if (is_bool_type(actualType))
@@ -1405,8 +1457,13 @@ isMoreVisible(Expr* expr, FnSymbol* fn1, FnSymbol* fn2) {
   //
   // common-case check to see if functions have equal visibility
   //
-  if (fn1->defPoint->parentExpr == fn2->defPoint->parentExpr)
+  if (fn1->defPoint->parentExpr == fn2->defPoint->parentExpr) {
+    // Special check which makes cg-initializers inferior to user-defined constructors
+    // with the same args.
+    if (fn2->hasFlag(FLAG_DEFAULT_CONSTRUCTOR))
+      return true;
     return false;
+  }
 
   //
   // call helper function with visited set to avoid infinite recursion
@@ -1420,16 +1477,24 @@ isMoreVisible(Expr* expr, FnSymbol* fn1, FnSymbol* fn2) {
 
 
 static bool paramWorks(Symbol* actual, Type* formalType) {
+  Immediate* imm = NULL;
+
   if (VarSymbol* var = toVarSymbol(actual)) {
-    if (var->immediate) {
-      if (is_int_type(formalType)) {
-        return fits_in_int(get_width(formalType), var->immediate);
-      }
-      if (is_uint_type(formalType)) {
-        return fits_in_uint(get_width(formalType), var->immediate);
-      }
+    imm = var->immediate;
+  }
+  if (EnumSymbol* enumsym = toEnumSymbol(actual)) {
+    ensureEnumTypeResolved(toEnumType(enumsym->type));
+    imm = enumsym->getImmediate();
+  }
+  if (imm) {
+    if (is_int_type(formalType)) {
+      return fits_in_int(get_width(formalType), imm);
+    }
+    if (is_uint_type(formalType)) {
+      return fits_in_uint(get_width(formalType), imm);
     }
   }
+
   return false;
 }
 
@@ -1443,13 +1508,35 @@ static bool paramWorks(Symbol* actual, Type* formalType) {
     /* if the param currently has no preference or it matches the new   \
        preference, preserve the current preference */                   \
     paramPrefers = preference;                                          \
-    TRACE_DISAMBIGUATE_BY_MATCH("param prefers " argstr);               \
+    TRACE_DISAMBIGUATE_BY_MATCH("param prefers " argstr "\n");          \
   } else {                                                              \
     /* otherwise its preference contradicts the previous arguments, so  \
        mark it as not preferring either */                              \
     paramPrefers = -1;                                                  \
-    TRACE_DISAMBIGUATE_BY_MATCH("param prefers differing things");      \
+    TRACE_DISAMBIGUATE_BY_MATCH("param prefers differing things\n");    \
   }  
+
+
+static bool considerParamMatches(Type* actualtype,
+                                 Type* arg1type, Type* arg2type) {
+  /* BLC: Seems weird to have to add this; could just add it in the enum
+     case if enums have to be special-cased here.  Otherwise, how are the
+     int cases handled later...? */
+  if (actualtype->symbol->hasFlag(FLAG_REF)) {
+    actualtype = actualtype->getValType();
+  }
+  if (actualtype == arg1type && actualtype != arg2type) {
+    return true;
+  }
+  if (is_enum_type(actualtype) && actualtype != arg1type && actualtype != arg2type) {
+    return considerParamMatches(dtInt[INT_SIZE_DEFAULT], arg1type, arg2type);
+  }
+  if (isSyncType(actualtype) && actualtype != arg1type && actualtype != arg2type) {
+    return considerParamMatches(actualtype->getField("base_type")->type,
+                                arg1type, arg2type);
+  }
+  return false;
+}
 
 static FnSymbol*
 disambiguate_by_match(Vec<FnSymbol*>* candidateFns,
@@ -1510,7 +1597,8 @@ disambiguate_by_match(Vec<FnSymbol*>* candidateFns,
           } else if (arg->instantiatedFrom==dtAny && arg2->instantiatedFrom!=dtAny) {
             worse = true;
             TRACE_DISAMBIGUATE_BY_MATCH("H: worse\n");
-          } else if (actual->type == arg->type && actual->type != arg2->type) {
+          } else if (considerParamMatches(actual->type, arg->type, arg2->type)) {
+            TRACE_DISAMBIGUATE_BY_MATCH("In param case\n");
             // The actual matches arg's type, but not arg2's
             if (paramWorks(actual, arg2->type)) {
               // but the actual is a param and works for arg2
@@ -1532,7 +1620,8 @@ disambiguate_by_match(Vec<FnSymbol*>* candidateFns,
               equal = false;
               TRACE_DISAMBIGUATE_BY_MATCH("I8: not equal\n");
             }
-          } else if (actual->type == arg2->type && actual->type != arg->type) {
+          } else if (considerParamMatches(actual->type, arg2->type, arg->type)) {
+            TRACE_DISAMBIGUATE_BY_MATCH("In param case #2\n");
             // The actual matches arg2's type, but not arg's
             if (paramWorks(actual, arg->type)) {
               // but the actual is a param and works for arg
@@ -1587,10 +1676,10 @@ disambiguate_by_match(Vec<FnSymbol*>* candidateFns,
             TRACE_DISAMBIGUATE_BY_MATCH("Q: worse\n");
           } else if (paramPrefers == 1) {
             equal = false;
-            TRACE_DISAMBIGUATE_BY_MATCH("R1: param breaks tie for 1");
+            TRACE_DISAMBIGUATE_BY_MATCH("R1: param breaks tie for 1\n");
           } else if (paramPrefers == 2) {
             worse = true;
-            TRACE_DISAMBIGUATE_BY_MATCH("R2: param breaks tie for 2");
+            TRACE_DISAMBIGUATE_BY_MATCH("R2: param breaks tie for 2\n");
           } else if (fn1->where && !fn2->where) {
             equal = false;
             TRACE_DISAMBIGUATE_BY_MATCH("S: not equal\n");
@@ -2070,30 +2159,41 @@ gatherCandidates(Vec<FnSymbol*>& candidateFns,
                  Vec<Vec<ArgSymbol*>*>& candidateActualFormals,
                  Vec<FnSymbol*>& visibleFns, CallInfo& info)
 {
-    forv_Vec(FnSymbol, visibleFn, visibleFns) {
-      if (info.call->methodTag &&
-          ! (visibleFn->hasFlag(FLAG_NO_PARENS) ||
-             visibleFn->hasFlag(FLAG_TYPE_CONSTRUCTOR)))
-        continue;
+  // Search user-defined functions first.
+  forv_Vec(FnSymbol, visibleFn, visibleFns) {
+    if (visibleFn->hasFlag(FLAG_TEMP))
+      continue;
+    if (info.call->methodTag &&
+        ! (visibleFn->hasFlag(FLAG_NO_PARENS) ||
+           visibleFn->hasFlag(FLAG_TYPE_CONSTRUCTOR)))
+      continue;
 #ifdef ENABLE_TRACING_OF_DISAMBIGUATION
-      if (explainCallLine && explainCallMatch(info.call)) {
-        printf("Considering function %s\n", visibleFn->stringLoc());
-      }
-#endif
-      addCandidate(&candidateFns, &candidateActualFormals, visibleFn, info);
-    }
-
     if (explainCallLine && explainCallMatch(info.call)) {
-      if (candidateFns.n == 0)
-        USR_PRINT(info.call, "no candidates found");
-      bool first = true;
-      forv_Vec(FnSymbol, candidateFn, candidateFns) {
-        USR_PRINT(candidateFn, "%s %s",
-                  first ? "candidates are:" : "               ",
-                  toString(candidateFn));
-        first = false;
-      }
+      printf("Considering function %s\n", visibleFn->stringLoc());
     }
+#endif
+    addCandidate(&candidateFns, &candidateActualFormals, visibleFn, info);
+  }
+
+  // Return if we got a successful match with user-defined functions.
+  if (candidateFns.n)
+    return;
+
+  // No.  So search compiler-defined functions.
+  forv_Vec(FnSymbol, visibleFn, visibleFns) {
+    if (!visibleFn->hasFlag(FLAG_TEMP))
+      continue;
+    if (info.call->methodTag &&
+        ! (visibleFn->hasFlag(FLAG_NO_PARENS) ||
+           visibleFn->hasFlag(FLAG_TYPE_CONSTRUCTOR)))
+      continue;
+#ifdef ENABLE_TRACING_OF_DISAMBIGUATION
+    if (explainCallLine && explainCallMatch(info.call)) {
+      printf("Considering function %s\n", visibleFn->stringLoc());
+    }
+#endif
+    addCandidate(&candidateFns, &candidateActualFormals, visibleFn, info);
+  }
 }
 
 void
@@ -2155,6 +2255,18 @@ static void resolveNormalCall(CallExpr* call, bool errorCheck) {
     }
 
     gatherCandidates(candidateFns, candidateActualFormals, visibleFns, info);
+
+    if (explainCallLine && explainCallMatch(info.call)) {
+      if (candidateFns.n == 0)
+        USR_PRINT(info.call, "no candidates found");
+      bool first = true;
+      forv_Vec(FnSymbol, candidateFn, candidateFns) {
+        USR_PRINT(candidateFn, "%s %s",
+                  first ? "candidates are:" : "               ",
+                  toString(candidateFn));
+        first = false;
+      }
+    }
 
     FnSymbol* best = NULL;
     Vec<ArgSymbol*>* actualFormals = 0;
@@ -2222,13 +2334,18 @@ static void resolveNormalCall(CallExpr* call, bool errorCheck) {
       call->baseExpr->replace(new SymExpr(resolvedFn));
     }
 
-    // Check to ensure the actual supplied to an OUT or INOUT argument is an lvalue.
+    // Check to ensure the actual supplied to an OUT, INOUT or REF argument
+    // is an lvalue.
     for_formals_actuals(formal, actual, call) {
-      if (formal->intent == INTENT_OUT || formal->intent == INTENT_INOUT) {
+      if (formal->intent == INTENT_OUT ||
+          formal->intent == INTENT_INOUT ||
+          formal->intent == INTENT_REF) {
         if (SymExpr* se = toSymExpr(actual)) {
           if (se->var->hasFlag(FLAG_EXPR_TEMP) || se->var->isConstant() || se->var->isParameter()) {
             if (formal->intent == INTENT_OUT) {
               USR_FATAL(se, "non-lvalue actual passed to out argument");
+            } else if (formal->intent == INTENT_REF) {
+              USR_FATAL(se, "non-lvalue actual passed to ref argument");
             } else {
               USR_FATAL(se, "non-lvalue actual passed to inout argument");
             }
@@ -3705,20 +3822,8 @@ preFold(Expr* expr) {
     } else if (call->isPrimitive(PRIM_ENUM_MIN_BITS) || call->isPrimitive(PRIM_ENUM_IS_SIGNED)) {
       EnumType* et = toEnumType(toSymExpr(call->get(1))->var->type);
 
-      INT_ASSERT( et != NULL );
 
-      if( ! et->integerType ) {
-        // Make sure to resolve all enum types.
-        for_enums(def, et) {
-          if (def->init) {
-            resolve_type_expr(def->init);
-          }
-        }
-        // Now try computing the enum size...
-        et->sizeAndNormalize();
-      }
-
-      INT_ASSERT(et->integerType != NULL);
+      ensureEnumTypeResolved(et);
 
       result = NULL;
       if( call->isPrimitive(PRIM_ENUM_MIN_BITS) ) {
@@ -4438,11 +4543,37 @@ static void instantiate_default_constructor(FnSymbol* fn) {
 }
 
 
+static void buildValueFunction(FnSymbol* fn) {
+  if (!fn->hasFlag(FLAG_ITERATOR_FN)) {
+    FnSymbol* copy;
+    bool valueFunctionExists = fn->valueFunction;
+    if (!valueFunctionExists) {
+      // Build the value function when it does not already exist.
+      copy = fn->copy();
+      copy->addFlag(FLAG_INVISIBLE_FN);
+      if (fn->hasFlag(FLAG_NO_IMPLICIT_COPY))
+        copy->addFlag(FLAG_NO_IMPLICIT_COPY);
+      copy->retTag = RET_VALUE;   // Change ret flag to value (not ref).
+      fn->defPoint->insertBefore(new DefExpr(copy));
+      fn->valueFunction = copy;
+      Symbol* ret = copy->getReturnSymbol();
+      replaceSetterArgWithFalse(copy, copy, ret);
+      replaceSetterArgWithTrue(fn, fn);
+    } else {
+      copy = fn->valueFunction;
+    }
+    resolveFns(copy);
+  } else {
+    replaceSetterArgWithTrue(fn, fn);
+  }
+}
+ 
+
 static void
 resolveFns(FnSymbol* fn) {
-  if (resolvedFns.get(fn))
+  if (resolvedFns.count(fn) != 0)
     return;
-  resolvedFns.put(fn, true);
+  resolvedFns[fn] = true;
 
   if ((fn->hasFlag(FLAG_EXTERN))||(fn->hasFlag(FLAG_FUNCTION_PROTOTYPE)))
     return;
@@ -4450,44 +4581,15 @@ resolveFns(FnSymbol* fn) {
   if (fn->hasFlag(FLAG_AUTO_II))
     return;
 
-  //
-  // build value function for var functions
-  //
-  if (fn->retTag == RET_VAR) {
-    if (!fn->hasFlag(FLAG_ITERATOR_FN)) {
-      FnSymbol* copy;
-      bool valueFunctionExists = fn->valueFunction;
-      if (!valueFunctionExists) {
-        // Build the value function when it does not already exist.
-        copy = fn->copy();
-        copy->addFlag(FLAG_INVISIBLE_FN);
-        if (fn->hasFlag(FLAG_NO_IMPLICIT_COPY))
-          copy->addFlag(FLAG_NO_IMPLICIT_COPY);
-        copy->retTag = RET_VALUE;   // Change ret flag to value (not ref).
-        fn->defPoint->insertBefore(new DefExpr(copy));
-        fn->valueFunction = copy;
-        Symbol* ret = copy->getReturnSymbol();
-        replaceSetterArgWithFalse(copy, copy, ret);
-      } else {
-        copy = fn->valueFunction;
-      }
-      resolveFns(copy);
-      // If the value function existed, then this function was
-      //  already flattened in a previous call to resolveFns()
-      if (!valueFunctionExists) {
-        replaceSetterArgWithTrue(fn, fn);
-      }
-    } else {
-      replaceSetterArgWithTrue(fn, fn);
-    }
-  }
+  if (fn->retTag == RET_VAR)
+    buildValueFunction(fn);
 
   insertFormalTemps(fn);
 
   resolveBlock(fn->body);
 
   if (tryFailure) {
-    resolvedFns.put(fn, false);
+    resolvedFns.erase(fn);
     return;
   }
 
@@ -4803,7 +4905,7 @@ addAllToVirtualMaps(FnSymbol* fn, ClassType* ct) {
     ClassType* ct = toClassType(t);
     if (ct->defaultTypeConstructor &&
         (ct->defaultTypeConstructor->hasFlag(FLAG_GENERIC) ||
-         resolvedFns.get(ct->defaultTypeConstructor))) {
+         resolvedFns.count(ct->defaultTypeConstructor) != 0)) {
       addToVirtualMaps(fn, ct);
     }
     if (!ct->instantiatedFrom)
@@ -4815,7 +4917,7 @@ addAllToVirtualMaps(FnSymbol* fn, ClassType* ct) {
 static void
 buildVirtualMaps() {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (!fn->hasFlag(FLAG_WRAPPER) && resolvedFns.get(fn) && !fn->hasFlag(FLAG_NO_PARENS) && fn->retTag != RET_PARAM && fn->retTag != RET_TYPE) {
+    if (!fn->hasFlag(FLAG_WRAPPER) && resolvedFns.count(fn) != 0 && !fn->hasFlag(FLAG_NO_PARENS) && fn->retTag != RET_PARAM && fn->retTag != RET_TYPE) {
       if (fn->numFormals() > 1) {
         if (fn->getFormal(1)->type == dtMethodToken) {
           if (ClassType* pt = toClassType(fn->getFormal(2)->type)) {
@@ -5041,11 +5143,7 @@ static void resolveEnumTypes() {
   // need to handle enumerated types better
   forv_Vec(TypeSymbol, type, gTypeSymbols) {
     if (EnumType* et = toEnumType(type->type)) {
-      for_enums(def, et) {
-        if (def->init) {
-          resolve_type_expr(def->init);
-        }
-      }
+      ensureEnumTypeResolved(et);
     }
   }
 }
@@ -5202,7 +5300,8 @@ static void resolveRecordInitializers() {
           FnSymbol* fn = toFnSymbol(init->parentSymbol);
           if (fn)
             fn->removeFlag(FLAG_SPECIFIED_RETURN_TYPE);
-          init->replace(init->get(1)->remove());
+//          init->replace(init->get(1)->remove());
+          init->parentExpr->remove();
         } else {
           INT_ASSERT(type->initializer);
           CallExpr* call = new CallExpr(type->initializer);
@@ -5362,6 +5461,7 @@ buildRuntimeTypeInfo(FnSymbol* fn) {
   }
   theProgram->block->insertAtTail(new DefExpr(ts));
   ct->symbol->addFlag(FLAG_RUNTIME_TYPE_VALUE);
+  makeRefType(ts->type); // make sure the new type has a ref type.
   return ct;
 }
 
@@ -5449,7 +5549,7 @@ static void removeUnusedFunctions() {
   // Remove unused functions
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->defPoint && fn->defPoint->parentSymbol) {
-      if (!resolvedFns.get(fn) || fn->retTag == RET_PARAM)
+      if (resolvedFns.count(fn) == 0 || fn->retTag == RET_PARAM)
         fn->defPoint->remove();
     }
   }
@@ -5458,24 +5558,21 @@ static void removeUnusedFunctions() {
 static bool
 isUnusedClass(ClassType *ct) {
   // FALSE if initializers are used
-  if (resolvedFns.get(ct->initializer) ||
-      resolvedFns.get(ct->defaultTypeConstructor)) {
+  if (resolvedFns.count(ct->initializer) != 0 ||
+      resolvedFns.count(ct->defaultTypeConstructor) != 0) {
     return false;
   }
 
-  // TRUE if fields are not all type vars, params, or super class
-  for_fields(field, ct) {
-    if (!field->hasFlag(FLAG_PARAM) &&
-        !field->hasFlag(FLAG_TYPE_VARIABLE) &&
-        !field->hasFlag(FLAG_SUPER_CLASS)) {
-      return true;
+  bool allChildrenUnused = true;
+  forv_Vec(Type, child, ct->dispatchChildren) {
+    ClassType* childClass = toClassType(child);
+    INT_ASSERT(childClass);
+    if (!isUnusedClass(childClass)) {
+      allChildrenUnused = false;
+      break;
     }
   }
-
-  // Otherwise be conservative and keep it around because it maybe
-  //  be used by a child class that is used (need multiple passes
-  //  over the global type symbols determine this accurately)
-  return false;
+  return allChildrenUnused;
 }
 
 static void removeUnusedTypes() {

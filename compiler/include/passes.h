@@ -22,6 +22,7 @@ void complex2record();
 void copyPropagation();
 void cullOverReferences();
 void deadCodeElimination();
+void docs();
 void flattenClasses();
 void flattenFunctions();
 void gpuFlattenArgs();
@@ -37,6 +38,7 @@ void parallel();
 void parse();
 void prune();
 void prune2();
+void readCTypes();
 void refPropagation();
 void removeEmptyRecords();
 void removeUnnecessaryAutoCopyCalls();
@@ -54,5 +56,7 @@ void verify();
 
 // parallel.cpp
 bool passingWideStringToExtern(Type* t);
+Type* getOrMakeRefTypeDuringCodegen(Type* type);
+Type* getOrMakeWideTypeDuringCodegen(Type* refType);
 
 #endif

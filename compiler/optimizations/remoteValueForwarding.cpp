@@ -134,6 +134,23 @@ isSafeToDeref(Symbol* ref,
 }
 
 
+
+static bool isSufficientlyConst(ArgSymbol* arg) {
+  Type* argvaltype = arg->getValType();
+
+  if (argvaltype->symbol->hasFlag(FLAG_ARRAY)) {
+    // Arg is an array, so it's sufficiently constant (because this
+    // refers to the descriptor, not the array's values\n");
+    return true;
+  }
+
+  // We may want to add additional cases here as we discover them
+
+  // otherwise, conservatively assume it varies
+  return false;
+}
+
+
 //
 // Convert reference args into values if they are only read and
 // reading them early does not violate program semantics.
@@ -206,50 +223,56 @@ remoteValueForwarding(Vec<FnSymbol*>& fns) {
   }
 
   forv_Vec(FnSymbol, fn, fns) {
-    if (!syncAccessFunctionSet.set_in(fn)) {
-      INT_ASSERT(fn->calledBy->n == 1);
-      CallExpr* call = fn->calledBy->v[0];
+    INT_ASSERT(fn->calledBy->n == 1);
+    CallExpr* call = fn->calledBy->v[0];
 
-      //
-      // For each reference arg that is safe to dereference
-      //
-      for_formals(arg, fn) {
-        if (arg->type->symbol->hasFlag(FLAG_REF) &&
-            isSafeToDeref(arg, defMap, useMap, NULL, NULL)) {
+    //
+    // For each reference arg that is safe to dereference
+    //
+    for_formals(arg, fn) {
 
-          //
-          // Find actual for arg and dereference arg type.
-          //
-          SymExpr* actual = toSymExpr(formal_to_actual(call, arg));
-          INT_ASSERT(actual && actual->var->type == arg->type);
-          arg->type = arg->getValType();
+      /* if this function accesses sync vars and the argument is not
+         const, then we cannot remote value forward the argument due
+         to the fence implied by the sync var accesses */
+      if (syncAccessFunctionSet.set_in(fn) && !isSufficientlyConst(arg)) {
+        continue;
+      }
 
-          //
-          // Insert de-reference temp of value.
-          //
-          VarSymbol* deref = newTemp("rvfDerefTmp", arg->type);
-          call->insertBefore(new DefExpr(deref));
-          call->insertBefore(new CallExpr(PRIM_MOVE, deref,
-                               new CallExpr(PRIM_DEREF, actual->var)));
-          actual->replace(new SymExpr(deref));
+      if (arg->type->symbol->hasFlag(FLAG_REF) &&
+          isSafeToDeref(arg, defMap, useMap, NULL, NULL)) {
 
-          //
-          // Insert re-reference temps at use points.
-          //
-          for_uses(use, useMap, arg) {
-            CallExpr* call = toCallExpr(use->parentExpr);
-            if (call && call->isPrimitive(PRIM_DEREF)) {
-              call->replace(new SymExpr(arg));
-            } else if (call && call->isPrimitive(PRIM_MOVE)) {
-              use->replace(new CallExpr(PRIM_ADDR_OF, arg));
-            } else {
-              Expr* stmt = use->getStmtExpr();
-              VarSymbol* reref = newTemp("rvfRerefTmp", actual->var->type);
-              stmt->insertBefore(new DefExpr(reref));
-              stmt->insertBefore(new CallExpr(PRIM_MOVE, reref,
-                                   new CallExpr(PRIM_ADDR_OF, arg)));
-              use->replace(new SymExpr(reref));
-            }
+        //
+        // Find actual for arg and dereference arg type.
+        //
+        SymExpr* actual = toSymExpr(formal_to_actual(call, arg));
+        INT_ASSERT(actual && actual->var->type == arg->type);
+        arg->type = arg->getValType();
+        
+        //
+        // Insert de-reference temp of value.
+        //
+        VarSymbol* deref = newTemp("rvfDerefTmp", arg->type);
+        call->insertBefore(new DefExpr(deref));
+        call->insertBefore(new CallExpr(PRIM_MOVE, deref,
+                                        new CallExpr(PRIM_DEREF, actual->var)));
+        actual->replace(new SymExpr(deref));
+        
+        //
+        // Insert re-reference temps at use points.
+        //
+        for_uses(use, useMap, arg) {
+          CallExpr* call = toCallExpr(use->parentExpr);
+          if (call && call->isPrimitive(PRIM_DEREF)) {
+            call->replace(new SymExpr(arg));
+          } else if (call && call->isPrimitive(PRIM_MOVE)) {
+            use->replace(new CallExpr(PRIM_ADDR_OF, arg));
+          } else {
+            Expr* stmt = use->getStmtExpr();
+            VarSymbol* reref = newTemp("rvfRerefTmp", actual->var->type);
+            stmt->insertBefore(new DefExpr(reref));
+            stmt->insertBefore(new CallExpr(PRIM_MOVE, reref,
+                                            new CallExpr(PRIM_ADDR_OF, arg)));
+            use->replace(new SymExpr(reref));
           }
         }
       }

@@ -143,10 +143,16 @@ static void advanceCurrentPass(const char* passName) {
 void runPasses(void) {
   setupLogfiles();
   PassInfo* pass = passlist+1;  // skip over FIRST
+  bool chpldoc = strcmp(chplBinaryName, "chpldoc") == 0;
+  if (chpldoc) 
+    fDocs = true;
   while (pass->name != NULL) {
     advanceCurrentPass(pass->name);
     runPass(pass->name, pass->fn, pass->log_tag);
     USR_STOP(); // quit if fatal errors were encountered in pass
+    if (chpldoc && (strcmp(pass->name, "docs") == 0)) {
+      break;
+    }
     pass++;
   }
   advanceCurrentPass("finishing up");

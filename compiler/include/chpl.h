@@ -1,4 +1,4 @@
-#ifndef _chpl_H
+#ifndef _chpl_H_
 #define _chpl_H_
 
 #include <cstdarg>

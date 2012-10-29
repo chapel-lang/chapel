@@ -1,4 +1,6 @@
+#ifndef __STDC_FORMAT_MACROS
 #define __STDC_FORMAT_MACROS
+#endif
 #include <cstdlib>
 #include <inttypes.h>
 #include "astutil.h"
@@ -277,7 +279,8 @@ checkInstantiationLimit(FnSymbol* fn) {
 
   // Don't count instantiations on internal modules 
   // nor ones explicitly marked NO_INSTANTIATION_LIMIT.
-  if (fn->getModule()->modTag != MOD_INTERNAL &&
+  if (fn->getModule() &&
+      fn->getModule()->modTag != MOD_INTERNAL &&
       !fn->hasFlag(FLAG_NO_INSTANTIATION_LIMIT)) {
     if (instantiationLimitMap.get(fn) >= instantiation_limit) {
       if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR)) {
@@ -493,7 +496,7 @@ instantiate(FnSymbol* fn, SymbolMap* subs, CallExpr* call) {
           break;
         }
       }
-      if (markStar == true)
+      if (markStar)
         newType->symbol->addFlag(FLAG_STAR_TUPLE);
     }
 
@@ -535,7 +538,12 @@ instantiate(FnSymbol* fn, SymbolMap* subs, CallExpr* call) {
   if (call)
     newFn->instantiationPoint = getVisibilityBlock(call);
 
-  fn->defPoint->insertBefore(new DefExpr(newFn));
+
+  Expr* putBefore = fn->defPoint;
+  if( !putBefore->list ) {
+    putBefore = call->parentSymbol->defPoint;
+  }
+  putBefore->insertBefore(new DefExpr(newFn));
 
   //
   // add parameter instantiations to parameter map
@@ -623,7 +631,7 @@ instantiate(FnSymbol* fn, SymbolMap* subs, CallExpr* call) {
 
   newFn->tag_generic();
 
-  if (!newFn->hasFlag(FLAG_GENERIC) && evaluateWhereClause(newFn) == false) {
+  if (!newFn->hasFlag(FLAG_GENERIC) && !evaluateWhereClause(newFn)) {
     //
     // where clause evaluates to false so cache gVoid as a function
     //
