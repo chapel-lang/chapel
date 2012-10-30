@@ -355,6 +355,13 @@ sub find_subdirs {
     foreach $filen (@cdir) {
 	next if ($filen =~ /$dirs_to_ignore/);
 	if (-d "$targetdir/$filen") {                 # if dir
+        # .skipif does double duty here.  
+        # When attached to a directory name, skips it and all descendents if the condition is true.
+        my $skipfilen = "$targetdir/$filen.skipif";
+        if (-e "$skipfilen") {
+            print "$ENV{CHPL_HOME}/util/test/testEnv $skipfilen = " . `$ENV{CHPL_HOME}/util/test/testEnv $skipfilen` if $debug;
+            next unless `$ENV{CHPL_HOME}/util/test/testEnv $skipfilen` == 0;
+        }
 	    if ($debug) {for ($i=0; $i<$level; $i++)  {print "    ";}}
 	    push @founddirs, find_subdirs ("$targetdir/$filen", $level+1);
         }

@@ -427,16 +427,22 @@
 #      <blank>        : a blank line is skipped
 #      <var> == <val> : checks to see if envvar "var" is "val"
 #      <var> != <val> : checks to see if envvar "var" is not "val"
+#       <var> <= <val> : true if <var> contains the substring "val".
 #      CHPL_MEM_LEAK_TESTING == true : check if we are testing for memory leaks
-#    All of the lines of the "==" and "!=" form are logically
+#    All of the lines of containing conditional expressions are logically
 #    or'd together, and if any of them are true, the test is
 #    skipped.  As with other options, a SKIPIF condition can
 #    be placed on a file-by-file basis using a <testname>.skipif
 #    file.  Tests that are explicitly named on the start_test
 #    command line will be tested regardless of any .skipif files.
+#    If -- for a given subdirectory <dir> -- there is a <dir>.skipif
+#    file and the condition in the file evaluates to true, then
+#    that directory and all of its descendents are skipped.
+#    The condition is ignored if the <dir>.skipif file corresponds
+#    to the current working directory, or if <dir> is explicitly named
+#    on the start_test command line.
 #
 #    Planned extensions to this capability:
-#    - ability to test for things like "compopts contains <val>"
 #    - ability to logically-and filters together
 #
 #  - if the subdirectory contains a NOEXEC file, any executables
@@ -1251,8 +1257,6 @@ foreach testType ($testTypes)
                 pushd $dir >& /dev/null
                 set dir = $cwd
                 popd >& /dev/null
-
-                cd $dir
             else
                 echo \["Warning: Cannot cd into" $dir "skipping directory"\]|&\
                     $tee -a $logfile
@@ -1262,6 +1266,9 @@ foreach testType ($testTypes)
             echo " " |& $tee -a $logfile
             echo "[Working on directory $dir]" |& $tee -a $logfile
 
+            # Skip this directory if there is a SKIPIF file
+            # and the condition it contains evaluates to true.
+            cd $dir
             if (-e ./SKIPIF) then
                 set skiptest = `$utildir/testEnv ./SKIPIF`
                 if ($skiptest == 1) then
@@ -1270,6 +1277,23 @@ foreach testType ($testTypes)
                 endif
             endif
 
+            # Skip this directory if there is any matching <dir>.skipif file
+            # returning true, where <dir> is the current directory up to $basedir.
+            cd $dir
+            set pruneif = 0
+            while (! $pruneif && `pwd` != $basedir)
+                set skipfilen = `pwd`.skipif
+                if (-e $skipfilen) then
+                    set pruneif = `$utildir/testEnv $skipfilen`
+                endif
+                cd ..
+            end
+            if ($pruneif) then
+                echo "[Skipping directory based on ancestor .skipif environment settings]"
+                continue
+            endif
+
+            cd $dir
             if ($testType != "graph") then
                 # run tests
                 if ($performance) then
