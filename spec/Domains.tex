@@ -125,7 +125,7 @@ If unspecified, \chpl{idxType} defaults
 to \chpl{int} and \chpl{stridable} defaults to \chpl{false}.
 
 \begin{openissue}
-We may represent a rectangular domain as rank*idxType even if rank is 1.  This
+We may represent a rectangular domain's index type as rank*idxType even if rank is 1.  This
 would eliminate a lot of code currently used to support the special (rank == 1) case.
 \end{openissue}
 
@@ -171,7 +171,7 @@ known as row-major ordering.}
 % and (b) motivate why we are considering them (or add some contents)?
 
 \begin{future}
-Unbounded ranges may be supported.
+Domains defined using unbounded ranges may be supported.
 \end{future}
 
 \index{domains!rectangular!literals}
