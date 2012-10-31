@@ -1,0 +1,15 @@
+Add comm diagnostics call to HPCC benchmarks.
+
+- stream-ep: Sum comms in each iteration (which should equal 0).
+  Currently, there is a local block surrounding the loop, so if there
+  was any comm, we'd run into problems with the release version.
+
+- stream: Count comms around the timed loop
+
+- ra: Count comms around the timed loop
+
+- ra-atomics: DISABLED due to non-determinism which leads to variable
+  number of forks for the atomics (could enable for testing on a
+  platform with network atomics)
+
+- hpl: DISABLED due to non-determinism (haven't investigated)
