@@ -15,9 +15,8 @@
 # define NDEBUG
 #endif
 
-#include "chplrt.h"
-#include "chplsys.h"
 #include "tasks-qthreads.h"
+
 #include "chpl-tasks.h"
 #include "config.h"   // for chpl_config_get_value()
 #include "error.h"    // for chpl_warning()
@@ -42,6 +41,14 @@ typedef struct {
     chpl_bool serial_state;
 } chapel_wrapper_args_t;
 
+// This defines the fields that chpl expects to find in task local data (at offset 0).
+// Dynamically allocated task local data should follow this (at offset sizeof(chpl_task_local_data_t)).
+typedef struct {
+  chpl_bool serial_state;
+  c_subloc_t sublocale_id;
+  // Add fields here as needed....
+} chpl_task_local_data_t;
+
 // Default serial state is used outside of the tasking layer.
 static chpl_bool default_serial_state = true;
 
@@ -65,6 +72,19 @@ void chpl_sync_lock(chpl_sync_aux_t *s)
 void chpl_sync_unlock(chpl_sync_aux_t *s)
 {
     qthread_incr(&s->lockers_out, 1);
+}
+
+int32_t chpl_task_getNumSheps(void) {
+  return qthread_num_shepherds();
+}
+
+void print_shep_boundary(void) {
+  fprintf(stdout, qt_internal_get_env_str("SHEPHERD_BOUNDARY"));
+  return;
+}
+
+int32_t chpl_task_getCurrShep(void) {
+  return qthread_shep();
 }
 
 void chpl_sync_waitFullAndLock(chpl_sync_aux_t *s,
@@ -267,20 +287,23 @@ void chpl_task_begin(chpl_fn_p        fp,
                      chpl_bool        serial_state,
                      chpl_task_list_p task_list_entry)
 {
+    // Note: the subloc ID is one-based, but shepherd numbers used by qthreads are zero-based.
+    // That is why we subtract one from chpl_task_getSubLoc().
     if (!ignore_serial && serial_state) {
         syncvar_t   ret             = SYNCVAR_STATIC_EMPTY_INITIALIZER;
         const chapel_wrapper_args_t wrapper_args = { fp, arg, serial_state};
         qthread_fork_syncvar_copyargs_to(chapel_wrapper, &wrapper_args,
                                          sizeof(chapel_wrapper_args_t), &ret,
-                                         qthread_shep());
+                                         chpl_task_getSubLoc()-1);
         qthread_syncvar_readFF(NULL, &ret);
     } else {
         // Will call the real begin statement function. Only purpose of this
         // thread is to wait on that function and coordinate the exiting
         // of the main Chapel thread.
         const chapel_wrapper_args_t wrapper_args = { fp, arg, serial_state};
-        qthread_fork_syncvar_copyargs(chapel_wrapper, &wrapper_args, 
-                                      sizeof(chapel_wrapper_args_t), NULL);
+        qthread_fork_syncvar_copyargs_to(chapel_wrapper, &wrapper_args, 
+                                         sizeof(chapel_wrapper_args_t), NULL,
+                                         chpl_task_getSubLoc()-1);
     }
 }
 
@@ -305,24 +328,38 @@ void chpl_task_sleep(int secs)
     qtimer_destroy(t);
 }
 
-/* The get- and setSerial() methods assume the beginning of the task-local
- * data segment holds a chpl_bool denoting the serial state. */
+static inline chpl_task_local_data_t* chpl_task_getLocalData(void)
+{
+    return (chpl_task_local_data_t*)qthread_get_tasklocal(sizeof(chpl_task_local_data_t));
+}
+
 chpl_bool chpl_task_getSerial(void)
 {
-    chpl_bool *state = (chpl_bool *)qthread_get_tasklocal(sizeof(chpl_bool));
-
-    return state == NULL ? default_serial_state : *state;
+    chpl_task_local_data_t* data = chpl_task_getLocalData();
+    return data == NULL ? default_serial_state : data->serial_state;
 }
 
 void chpl_task_setSerial(chpl_bool state)
 {
-    chpl_bool *data = (chpl_bool *)qthread_get_tasklocal(sizeof(chpl_bool));
-
+    chpl_task_local_data_t* data = chpl_task_getLocalData();
     if (NULL != data) {
-        *data = state;
+        data->serial_state = state;
     } else {
         default_serial_state = state;
     }
+}
+
+c_subloc_t chpl_task_getSubLoc(void)
+{
+    chpl_task_local_data_t* data = chpl_task_getLocalData();
+    return data == NULL ? 0 : data->sublocale_id;
+}
+
+void chpl_task_setSubLoc(c_subloc_t new_subloc)
+{
+    chpl_task_local_data_t* data = chpl_task_getLocalData();
+    if (NULL != data)
+      data->sublocale_id = new_subloc;
 }
 
 uint64_t chpl_task_getCallStackSize(void)

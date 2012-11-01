@@ -9,6 +9,9 @@
 #ifndef _tasks_qthreads_h_
 #define _tasks_qthreads_h_
 
+#include "chplrt.h"
+#include "chplsys.h"
+
 #include <stdint.h>
 
 #include <qthread.h>
@@ -156,9 +159,10 @@ typedef struct {
 // Is the task pool empty?
 //
 chpl_bool chpl_pool_is_empty(void);
-
-
-//
+int32_t chpl_task_getNumSheps(void);
+void print_shep_boundary(void);
+c_subloc_t print_curr_shep(void);
+c_subloc_t chpl_task_getCurrShep(void);
 // The remaining declarations are all for callback functions to be
 // provided by the threading layer.
 //
