@@ -570,42 +570,6 @@ else
     exit 1
 endif
 
-#
-# Set standard CHPL_* environment variables for use by skipif files,
-# if they are not
-#
-if ($?CHPL_HOST_PLATFORM == 0) then
-    setenv CHPL_HOST_PLATFORM `$CHPL_HOME/util/chplenv/platform --host`
-endif
-
-if ($?CHPL_TARGET_PLATFORM == 0) then
-    setenv CHPL_TARGET_PLATFORM `$CHPL_HOME/util/chplenv/platform --target`
-endif
-
-if ($?CHPL_HOST_COMPILER == 0) then
-    setenv CHPL_HOST_COMPILER `$CHPL_HOME/util/chplenv/compiler --host`
-endif
-
-if ($?CHPL_TARGET_COMPILER == 0) then
-    setenv CHPL_TARGET_COMPILER `$CHPL_HOME/util/chplenv/compiler --target`
-endif
-
-if ($?CHPL_TASKS == 0) then
-    setenv CHPL_TASKS `$CHPL_HOME/util/chplenv/tasks`
-endif
-
-if ($?CHPL_THREADS == 0) then
-    setenv CHPL_THREADS `$CHPL_HOME/util/chplenv/threads`
-endif
-
-if ($?CHPL_COMM == 0) then
-    setenv CHPL_COMM `$CHPL_HOME/util/chplenv/comm`
-endif
-
-if ($?CHPL_GMP == 0) then
-    setenv CHPL_GMP `$CHPL_HOME/util/chplenv/gmp`
-endif
-
 set utildir = "$CHPL_HOME/util/test"
 if (! -d $utildir || ! -x $utildir) then
     echo "Error: Cannot find $CHPL_HOME/test/util"

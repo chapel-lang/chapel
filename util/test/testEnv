@@ -1,5 +1,48 @@
 #!/usr/bin/env perl
 
+#
+# Set standard CHPL_* environment variables, if they are not already set.
+#
+if (not exists $ENV{CHPL_HOST_PLATFORM}) {
+    $ENV{CHPL_HOST_PLATFORM} = `$ENV{CHPL_HOME}/util/chplenv/platform --host`;
+    chomp $ENV{CHPL_HOST_PLATFORM};
+}
+
+if (not exists $ENV{CHPL_TARGET_PLATFORM}) {
+    $ENV{CHPL_TARGET_PLATFORM} = `$ENV{CHPL_HOME}/util/chplenv/platform --target`;
+    chomp $ENV{CHPL_TARGET_PLATFORM};
+}
+
+if (not exists $ENV{CHPL_HOST_COMPILER}) {
+    $ENV{CHPL_HOST_COMPILER} = `$ENV{CHPL_HOME}/util/chplenv/compiler --host`;
+    chomp $ENV{CHPL_HOST_COMPILER};
+}
+
+if (not exists $ENV{CHPL_TARGET_COMPILER}) {
+    $ENV{CHPL_TARGET_COMPILER} = `$ENV{CHPL_HOME}/util/chplenv/compiler --target`;
+    chomp $ENV{CHPL_TARGET_COMPILER};
+}
+
+if (not exists $ENV{CHPL_TASKS}) {
+    $ENV{CHPL_TASKS} = `$ENV{CHPL_HOME}/util/chplenv/tasks`;
+    chomp $ENV{CHPL_TASKS};
+}
+
+if (not exists $ENV{CHPL_THREADS}) {
+    $ENV{CHPL_THREADS} = `$ENV{CHPL_HOME}/util/chplenv/threads`;
+    chomp $ENV{CHPL_THREADS};
+}
+
+if (not exists $ENV{CHPL_COMM}) {
+    $ENV{CHPL_COMM} = `$ENV{CHPL_HOME}/util/chplenv/comm`;
+    chomp $ENV{CHPL_COMM};
+}
+
+if (not exists $ENV{CHPL_GMP}) {
+    $ENV{CHPL_GMP} = `$ENV{CHPL_HOME}/util/chplenv/gmp`;
+    chomp $ENV{CHPL_GMP};
+}
+
 $envfile = $ARGV[0];
 
 open ENVFILE, "$envfile" or die "can't open $envfile $!";
