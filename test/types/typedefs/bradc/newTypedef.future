@@ -1,0 +1,5 @@
+bug: inability to call 'new' on a typedef'd symbol
+
+This code shows that when typedef-ing a record (or presumably a class),
+the compiler does not permit a constructor to be called on the typedef'd
+symbol.
