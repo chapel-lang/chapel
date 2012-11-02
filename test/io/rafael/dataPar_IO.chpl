@@ -4,7 +4,7 @@ config const n = 30;
 config const block = 3;
 config const pdebug = false;
 //const Space = [1..n,1..n,1..n,1..n,1..n,1..n];
-const Space = [1..n];
+const Space = {1..n};
 
 proc dit(D, A, B, C) {
   forall i in D {
