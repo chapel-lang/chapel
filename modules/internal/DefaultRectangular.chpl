@@ -692,6 +692,8 @@ proc DefaultRectangularArr.dsiSerialReadWrite(f /*: Reader or Writer*/) {
 proc DefaultRectangularArr.dsiSerialWrite(f: Writer) { this.dsiSerialReadWrite(f); }
 proc DefaultRectangularArr.dsiSerialRead(f: Reader) { this.dsiSerialReadWrite(f); }
 
+// This is very conservative.  For example, it will return false for
+// 1-d array aliases that are shifted from the aliased array.
 proc DefaultRectangularArr.isDataContiguous() {
   if debugDefaultDistBulkTransfer then
     writeln("isDataContiguous(): origin=", origin, " off=", off, " blk=", blk);
@@ -729,24 +731,10 @@ proc DefaultRectangularArr.doiCanBulkTransfer() {
 proc DefaultRectangularArr.doiCanBulkTransferStride() param {
   if debugDefaultDistBulkTransfer then writeln("In DefaultRectangularArr.doiCanBulkTransferStride()");
   // A DefaultRectangular array is always regular, so bulk should be possible.
-  for param dim in 1..rank-1 by -1 do 
-    if blk(dim) != blk(dim+1)*dom.dsiDim(dim+1).length
-    {
-      writeln("CASE3: blk(",dim,"):",blk(dim)," != blk(",dim+1,"):", blk(dim+1)," * dom.dsiDim(",dim+1,").length: ", dom.dsiDim(dim+1).length);
-      return false;
-    }*/
-  //var dstCompRank:[1..rank] bool;
-  //dstCompRank = assertWholeDim(this);
- // writeln("Stridelevel: ",  trideLevels(assertWholeDim(this)));
- //writeln("LenTotal: ",dom.length);
-  if getStrideLevels(assertWholeDim(this)) == 0 then return false;
-    
   return true;
 }
 
 proc DefaultRectangularArr.doiBulkTransfer(B) {
-    if debugDefaultDistBulkTransfer then writeln("In DefaultRectangularArr.doiBulkTransfer");
-
   const Adims = dom.dsiDims();
   var Alo: rank*dom.idxType;
   for param i in 1..rank do
@@ -778,7 +766,7 @@ proc DefaultRectangularArr.doiBulkTransfer(B) {
                 B._value.data.locale.id,
                 __primitive("array_get", src, B._value.getDataIndex(Blo)),
                 len);
-  }else if B._value.data.locale.id==here.id {
+  } else if B._value.data.locale.id==here.id {
     if debugDefaultDistBulkTransfer then
       writeln("\tlocal put() to ", this.locale.id);
     var dest = this.data;
