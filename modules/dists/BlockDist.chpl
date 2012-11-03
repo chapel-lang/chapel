@@ -818,6 +818,11 @@ inline proc _remoteAccessData.getDataIndex(param stridable, ind: rank*idxType) {
   return sum;
 }
 
+
+inline proc BlockArr.dsiLocalAccess(i: rank*idxType) var {
+  return myLocArr.this(i);
+}
+
 //
 // the global accessor for the array
 //

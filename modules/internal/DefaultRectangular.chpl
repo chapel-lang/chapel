@@ -550,6 +550,10 @@ class DefaultRectangularArr: BaseArr {
     return data(dataInd);
   }
 
+  inline proc dsiLocalAccess(i) var {
+    return dsiAccess(i);
+  }
+
   proc dsiReindex(d: DefaultRectangularDom) {
     var alias = new DefaultRectangularArr(eltType=eltType, rank=d.rank,
                                          idxType=d.idxType,

@@ -1118,6 +1118,15 @@ record _array {
   inline proc this(i: _value.dom.idxType ...rank) var
     return this(i);
 
+  inline proc localAccess(i: rank*_value.dom.idxType) var {
+    if isRectangularArr(this) || isSparseArr(this) then
+      return _value.dsiLocalAccess(i);
+    else
+      return _value.dsiLocalAccess(i(1));
+  }
+
+  inline proc localAccess(i: _value.dom.idxType ...rank) var
+    return localAccess(i);
   //
   // requires dense domain implementation that returns a tuple of
   // ranges via the getIndices() method; domain indexing is difficult
