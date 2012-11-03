@@ -869,50 +869,45 @@ inline proc CalcTimeConstraintsForElems() {
 
 
 inline proc computeDTF(indx) {
-  var dtf = ss[indx]**2;
-  if vdov[indx] < 0.0 then
-    dtf += qqc2 * arealg[indx]**2 * vdov[indx]**2;
-  dtf = sqrt(dtf);
-  dtf = arealg[indx] / dtf;
+  const myvdov = vdov[indx];
 
-  if vdov[indx] != 0.0 then
-    return dtf;
-  else
+  if myvdov == 0.0 then
     return max(real);
+
+  const myarealg = arealg[indx];
+  var dtf = ss[indx]**2;
+  if myvdov < 0.0 then
+    dtf += qqc2 * myarealg**2 * myvdov**2;
+  dtf = sqrt(dtf);
+  dtf = myarealg / dtf;
+
+  return dtf;
 }
 
 
-const NIL_NODE_ID = -1;
-
 proc CalcCourantConstraintForElems() {
-  var courant_elem: index(Elems);
 
   const val = min reduce [indx in MatElems] computeDTF(indx);
 
-  if (val == max(real)) {
-    courant_elem = NIL_NODE_ID;
-  } else {
+  if (val != max(real)) then
     dtcourant = val;
-    courant_elem = NIL_NODE_ID;
-  }
+}
+
+
+inline proc calcDtHydroTmp(indx) {
+  const myvdov = vdov[indx];
+  if (myvdov == 0.0) then
+    return max(real);
+  else
+    return dvovmax / (abs(myvdov)+1.0e-20);
 }
 
 
 proc CalcHydroConstraintForElems() {
-  var dthydro_elem: index(Elems);
+  const val = min reduce [indx in MatElems] calcDtHydroTmp(indx);
 
-  const (val, loc) = minloc reduce 
-                       zip([indx in MatElems] 
-                          (if vdov[indx] == 0.0 
-                             then max(real)
-                             else dvovmax / (abs(vdov[indx])+1.0e-20)),
-                        MatElems);
-  if (val == max(real)) {
-    dthydro_elem = NIL_NODE_ID;
-  } else {
+  if (val != max(real)) then
     dthydro = val;
-    dthydro_elem = loc;
-  }
 }
 
 
