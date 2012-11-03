@@ -880,9 +880,9 @@ proc CalcVolumeForceForElems() {
   IntegrateStressForElems(sigxx, sigyy, sigzz, determ);
 
   /* check for negative element volume */
-  if ( || reduce (determ <= 0.0) ) == true {
-    writeln("determ:\n", determ);
-    writeln("Error: can't have negative volume."); exit(1);
+  forall e in Elems {
+    if determ[e] <= 0.0 then
+      halt("can't have negative volume (determ[", e, "]=", determ[e], ")");
   }
 
   CalcHourglassControlForElems(determ);
@@ -939,10 +939,9 @@ proc CalcHourglassControlForElems(determ) {
   }
 
   /* Do a check for negative volumes */
-  if ( || reduce (v <= 0.0) ) == true {
-    writeln("v:\n", v);
-    writeln("Error: can't have negative (or zero) volume. (in Hourglass)");
-    exit(1);
+  forall e in Elems {
+    if v[e] <= 0.0 then
+      halt("can't have negative (or zero) volume. (in Hourglass, v[", e, "]=", v[e], ")");
   }
 
   if hgcoef > 0.0 {
@@ -1071,8 +1070,9 @@ proc CalcLagrangeElements() {
   }
 
   // See if any volumes are negative, and take appropriate action.
-  if ( || reduce (vnew <= 0.0) ) == true {
-    writeln("Error: can't have negative volume."); exit(1);
+  forall e in Elems {
+    if vnew[e] <= 0.0 then
+      halt("can't have negative volume (vnew[", e, "]=", vnew[e], ")");
   }
 }
 
@@ -1145,11 +1145,9 @@ proc CalcQForElems() {
                          delx_xi, delx_eta, delx_zeta);
 
   /* Don't allow excessive artificial viscosity */
-  if ( || reduce (q > qstop) ) == true {
-    writeln("qstop = ", qstop);
-    writeln("q:\n", q);
-    writeln("Excessive artificial viscosity!");
-    exit(1);
+  forall e in Elems {
+    if q[e] > qstop then
+      halt("Excessive artificial viscosity!  (q[", e, "]=", q[e], ")");
   }
 }
 
