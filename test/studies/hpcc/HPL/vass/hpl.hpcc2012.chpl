@@ -617,25 +617,30 @@ proc psReduce(blkArg, kArg) {
       const k = kArg, blk = blkArg, tl1c = tl1, lid1c = lid1;
 
       local {
-        // guard updates to locResult within the forall
+        // guard updates to locResult and maxRes within the forall
         var upd$: sync bool;
-
+        var maxRes: atomic real;
+        maxRes.write(min(real));
         // Starts of all the blocks in the panel that are local to this node.
         const panelStarts = blk..n by blkSize*tl1c align 1+blkSize*lid1c;
-
-       serial(serps) {
-        forall iStart in panelStarts {
-          const iRange = max(iStart, k)..min(iStart + blkSize - 1, n);
-          if checkPS then assert(!iRange.isEmpty()); // so myResult is meaningful
-          var myResult: psRedResultT;
-          myResult.init();
-          var locAB => Ab._value.dsiLocalSlice1((iRange, k));
-          for i in iRange do myResult.updateE(i, locAB[i]);
-          upd$ = true;  // lock
-          locResult.updateE(myResult);
-          upd$;  // unlock
-        } // forall
-       } // serial
+        serial(serps) {
+          forall iStart in panelStarts {
+            const iRange = max(iStart, k)..min(iStart + blkSize - 1, n);
+            if checkPS then assert(!iRange.isEmpty()); // so myResult is meaningful
+            var myResult: psRedResultT;
+            myResult.init();
+            var locAB => Ab._value.dsiLocalSlice1((iRange, k));
+            for i in iRange do myResult.updateE(i, locAB[i]);
+            if myResult.absmx > maxRes.read() { // only lock if we might update
+              upd$ = true;  // lock
+              if myResult.absmx > maxRes.read() { // check again while locked
+                locResult.updateE(myResult);
+                maxRes.write(myResult.absmx);
+              }
+              upd$;  // unlock
+            }
+          } // forall
+        } // serial
       } // local
 
       const locConst = locResult;  // for value forwarding
