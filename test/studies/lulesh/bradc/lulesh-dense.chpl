@@ -312,8 +312,8 @@ proc initMasses() {
     localizeNeighborNodes(eli, x, x_local, y, y_local, z, z_local);
 
     const volume = CalcElemVolume(x_local, y_local, z_local);
-    volo[eli] = volume;
-    elemMass[eli] = volume;
+    volo.localAccess[eli] = volume;
+    elemMass.localAccess[eli] = volume;
 
     for neighbor in elemToNodes[eli] do
       massAccum[neighbor].add(volume);
@@ -324,7 +324,7 @@ proc initMasses() {
   // procedure's return
 
   forall i in Nodes do
-    nodalMass[i] = massAccum[i].read() / 8.0;
+    nodalMass.localAccess[i] = massAccum.localAccess[i].read() / 8.0;
 
   if debug {
     writeln("ElemMass:");
@@ -351,16 +351,16 @@ proc initBoundaryConditions() {
   forall e in Elems do {
     var mask: int;
     for i in 1..nodesPerElem do
-      mask += surfaceNode[elemToNode[e][i]] << (i-1);
+      mask += surfaceNode[elemToNode.localAccess[e][i]] << (i-1);
 
     // TODO: make an inlined function for this little idiom? (and below)
 
-    if ((mask & 0x0f) == 0x0f) then elemBC[e] |= ZETA_M_SYMM;
-    if ((mask & 0xf0) == 0xf0) then elemBC[e] |= ZETA_P_SYMM;
-    if ((mask & 0x33) == 0x33) then elemBC[e] |= ETA_M_SYMM;
-    if ((mask & 0xcc) == 0xcc) then elemBC[e] |= ETA_P_SYMM;
-    if ((mask & 0x99) == 0x99) then elemBC[e] |= XI_M_SYMM;
-    if ((mask & 0x66) == 0x66) then elemBC[e] |= XI_P_SYMM;
+    if ((mask & 0x0f) == 0x0f) then elemBC.localAccess[e] |= ZETA_M_SYMM;
+    if ((mask & 0xf0) == 0xf0) then elemBC.localAccess[e] |= ZETA_P_SYMM;
+    if ((mask & 0x33) == 0x33) then elemBC.localAccess[e] |= ETA_M_SYMM;
+    if ((mask & 0xcc) == 0xcc) then elemBC.localAccess[e] |= ETA_P_SYMM;
+    if ((mask & 0x99) == 0x99) then elemBC.localAccess[e] |= XI_M_SYMM;
+    if ((mask & 0x66) == 0x66) then elemBC.localAccess[e] |= XI_P_SYMM;
   }
 
 
@@ -403,12 +403,12 @@ proc initBoundaryConditions() {
     for i in 1..nodesPerElem do
       mask += surfaceNode[elemToNode[e][i]] << (i-1);
 
-    if ((mask & 0x0f) == 0x0f) then elemBC[e] |= ZETA_M_FREE;
-    if ((mask & 0xf0) == 0xf0) then elemBC[e] |= ZETA_P_FREE;
-    if ((mask & 0x33) == 0x33) then elemBC[e] |= ETA_M_FREE;
-    if ((mask & 0xcc) == 0xcc) then elemBC[e] |= ETA_P_FREE;
-    if ((mask & 0x99) == 0x99) then elemBC[e] |= XI_M_FREE;
-    if ((mask & 0x66) == 0x66) then elemBC[e] |= XI_P_FREE;
+    if ((mask & 0x0f) == 0x0f) then elemBC.localAccess[e] |= ZETA_M_FREE;
+    if ((mask & 0xf0) == 0xf0) then elemBC.localAccess[e] |= ZETA_P_FREE;
+    if ((mask & 0x33) == 0x33) then elemBC.localAccess[e] |= ETA_M_FREE;
+    if ((mask & 0xcc) == 0xcc) then elemBC.localAccess[e] |= ETA_P_FREE;
+    if ((mask & 0x99) == 0x99) then elemBC.localAccess[e] |= XI_M_FREE;
+    if ((mask & 0x66) == 0x66) then elemBC.localAccess[e] |= XI_P_FREE;
   }
 
   if debug {
@@ -428,7 +428,7 @@ inline proc localizeNeighborNodes(eli: index(Elems),
                                   z: [] real, ref z_local: 8*real) {
 
   for param i in 1..nodesPerElem {
-    const noi = elemToNode[eli][i];  // can this always be localAccess
+    const noi = elemToNode.localAccess[eli][i];  // can this always be localAccess
     
     x_local[i] = x[noi];
     y_local[i] = y[noi];
@@ -505,9 +505,9 @@ proc CalcElemVolume(x, y, z) {
 
 proc InitStressTermsForElems(p, q, sigxx, sigyy, sigzz: [?D] real) {
   forall i in D {
-    sigxx[i] = -p[i] - q[i];
-    sigyy[i] = -p[i] - q[i];
-    sigzz[i] = -p[i] - q[i];
+    sigxx.localAccess[i] = -p.localAccess[i] - q.localAccess[i];
+    sigyy.localAccess[i] = -p.localAccess[i] - q.localAccess[i];
+    sigzz.localAccess[i] = -p.localAccess[i] - q.localAccess[i];
   }
 }
 
@@ -781,16 +781,16 @@ proc CalcPressureForElems(p_new: [?D] real, bvc, pbvc,
 
   forall i in D do local {
     const c1s = 2.0 / 3.0;
-    bvc[i] = c1s * (compression[i] + 1.0);
-    pbvc[i] = c1s;
+    bvc.localAccess[i] = c1s * (compression.localAccess[i] + 1.0);
+    pbvc.localAccess[i] = c1s;
   }
 
   forall i in D {
-    p_new[i] = bvc[i] * e_old[i];
+    p_new.localAccess[i] = bvc.localAccess[i] * e_old.localAccess[i];
 
-    if abs(p_new[i]) < p_cut then p_new[i] = 0.0;
-    if vnewc[i] >= eosvmax then p_new[i] = 0.0; //impossible?
-    if p_new[i] < pmin then p_new[i] = pmin;
+    if abs(p_new.localAccess[i]) < p_cut then p_new.localAccess[i] = 0.0;
+    if vnewc.localAccess[i] >= eosvmax then p_new.localAccess[i] = 0.0; //impossible?
+    if p_new.localAccess[i] < pmin then p_new.localAccess[i] = pmin;
   }
 }
 
@@ -873,13 +873,13 @@ inline proc CalcTimeConstraintsForElems() {
 
 
 inline proc computeDTF(indx) {
-  const myvdov = vdov[indx];
+  const myvdov = vdov.localAccess[indx];
 
   if myvdov == 0.0 then
     return max(real);
 
-  const myarealg = arealg[indx];
-  var dtf = ss[indx]**2;
+  const myarealg = arealg.localAccess[indx];
+  var dtf = ss.localAccess[indx]**2;
   if myvdov < 0.0 then
     dtf += qqc2 * myarealg**2 * myvdov**2;
   dtf = sqrt(dtf);
@@ -898,7 +898,7 @@ proc CalcCourantConstraintForElems() {
 
 
 inline proc calcDtHydroTmp(indx) {
-  const myvdov = vdov[indx];
+  const myvdov = vdov.localAccess[indx];
   if (myvdov == 0.0) then
     return max(real);
   else
@@ -962,11 +962,11 @@ proc IntegrateStressForElems(sigxx, sigyy, sigzz, determ) {
     local {
       /* Volume calculation involves extra work for numerical consistency. */
       CalcElemShapeFunctionDerivatives(x_local, y_local, z_local, 
-                                       b_x, b_y, b_z, determ[k]);
+                                       b_x, b_y, b_z, determ.localAccess[k]);
     
       CalcElemNodeNormals(b_x, b_y, b_z, x_local, y_local, z_local);
 
-      SumElemStressesToNodeForces(b_x, b_y, b_z, sigxx[k], sigyy[k], sigzz[k], 
+      SumElemStressesToNodeForces(b_x, b_y, b_z, sigxx.localAccess[k], sigyy.localAccess[k], sigzz.localAccess[k], 
                                   fx_local, fy_local, fz_local);
     }
 
@@ -990,14 +990,14 @@ proc CalcHourglassControlForElems(determ) {
 
     local {
       /* load into temporary storage for FB Hour Glass control */
-      (dvdx[eli], dvdy[eli], dvdz[eli]) = CalcElemVolumeDerivative(x1, y1, z1);
+      (dvdx.localAccess[eli], dvdy.localAccess[eli], dvdz.localAccess[eli]) = CalcElemVolumeDerivative(x1, y1, z1);
     }
 
-    x8n[eli]  = x1;
-    y8n[eli]  = y1;
-    z8n[eli]  = z1;
+    x8n.localAccess[eli]  = x1;
+    y8n.localAccess[eli]  = y1;
+    z8n.localAccess[eli]  = z1;
 
-    determ[eli] = volo[eli] * v[eli];
+    determ.localAccess[eli] = volo.localAccess[eli] * v.localAccess[eli];
   }
 
   /* Do a check for negative volumes */
@@ -1024,7 +1024,7 @@ proc CalcFBHourglassForceForElems(determ, x8n, y8n, z8n, dvdx, dvdy, dvdz) {
   /* compute the hourglass modes */
   forall eli in Elems {
     var hourgam: 8*(4*real);
-    const volinv = 1.0 / determ[eli];
+    const volinv = 1.0 / determ.localAccess[eli];
     var ss1, mass1, volume13: real;
     var hgfx, hgfy, hgfz: 8*real;
     var coefficient: real;
@@ -1048,31 +1048,31 @@ proc CalcFBHourglassForceForElems(determ, x8n, y8n, z8n, dvdx, dvdy, dvdz) {
         var hourmodx, hourmody, hourmodz: real;
         // reduction
         for param j in 1..8 {
-          hourmodx += x8n[eli][j] * gammaCoef[i][j];
-          hourmody += y8n[eli][j] * gammaCoef[i][j];
-          hourmodz += z8n[eli][j] * gammaCoef[i][j];
+          hourmodx += x8n.localAccess[eli][j] * gammaCoef[i][j];
+          hourmody += y8n.localAccess[eli][j] * gammaCoef[i][j];
+          hourmodz += z8n.localAccess[eli][j] * gammaCoef[i][j];
         }
 
         for param j in 1..8 {
           hourgam[j][i] = gammaCoef[i][j] - volinv * 
-            (dvdx[eli][j] * hourmodx +
-             dvdy[eli][j] * hourmody +
-             dvdz[eli][j] * hourmodz);
+            (dvdx.localAccess[eli][j] * hourmodx +
+             dvdy.localAccess[eli][j] * hourmody +
+             dvdz.localAccess[eli][j] * hourmodz);
         }
       }
 
       /* compute forces */
       /* store forces into h arrays (force arrays) */
-      ss1 = ss[eli];
-      mass1 = elemMass[eli];
-      volume13 = cbrt(determ[eli]);
+      ss1 = ss.localAccess[eli];
+      mass1 = elemMass.localAccess[eli];
+      volume13 = cbrt(determ.localAccess[eli]);
 
       coefficient = - hgcoef * 0.01 * ss1 * mass1 / volume13;
 
       CalcElemFBHourglassForce(xd1, yd1, zd1, hourgam, coefficient, hgfx, hgfy, hgfz);
     } // end local
 
-    const myElemToNode = elemToNode[eli];
+    const myElemToNode = elemToNode.localAccess[eli];
     for param i in 1..nodesPerElem {
       const noi = myElemToNode[i];
 
@@ -1086,9 +1086,9 @@ proc CalcFBHourglassForceForElems(determ, x8n, y8n, z8n, dvdx, dvdy, dvdz) {
 
 proc CalcAccelerationForNodes() {
   forall noi in Nodes do local {
-      xdd[noi] = fx[noi].read() / nodalMass[noi];
-      ydd[noi] = fy[noi].read() / nodalMass[noi];
-      zdd[noi] = fz[noi].read() / nodalMass[noi];
+      xdd.localAccess[noi] = fx.localAccess[noi].read() / nodalMass.localAccess[noi];
+      ydd.localAccess[noi] = fy.localAccess[noi].read() / nodalMass.localAccess[noi];
+      zdd.localAccess[noi] = fz.localAccess[noi].read() / nodalMass.localAccess[noi];
     }
 }
 
@@ -1108,24 +1108,24 @@ proc ApplyAccelerationBoundaryConditionsForNodes() {
 
 proc CalcVelocityForNodes(dt: real, u_cut: real) {
   forall i in Nodes do local {
-    var xdtmp = xd[i] + xdd[i] * dt,
-        ydtmp = yd[i] + ydd[i] * dt,
-        zdtmp = zd[i] + zdd[i] * dt;
+    var xdtmp = xd.localAccess[i] + xdd.localAccess[i] * dt,
+        ydtmp = yd.localAccess[i] + ydd.localAccess[i] * dt,
+        zdtmp = zd.localAccess[i] + zdd.localAccess[i] * dt;
     if abs(xdtmp) < u_cut then xdtmp = 0.0;
     if abs(ydtmp) < u_cut then ydtmp = 0.0;
     if abs(zdtmp) < u_cut then zdtmp = 0.0;
-    xd[i] = xdtmp;
-    yd[i] = ydtmp;
-    zd[i] = zdtmp;
+    xd.localAccess[i] = xdtmp;
+    yd.localAccess[i] = ydtmp;
+    zd.localAccess[i] = zdtmp;
   }
 }
 
 
 proc CalcPositionForNodes(dt: real) {
   forall ijk in Nodes {
-    x[ijk] += xd[ijk] * dt;
-    y[ijk] += yd[ijk] * dt;
-    z[ijk] += zd[ijk] * dt;
+    x.localAccess[ijk] += xd.localAccess[ijk] * dt;
+    y.localAccess[ijk] += yd.localAccess[ijk] * dt;
+    z.localAccess[ijk] += zd.localAccess[ijk] * dt;
   }
 }
 
@@ -1137,11 +1137,11 @@ proc CalcLagrangeElements() {
 
   // element loop to do some stuff not included in the elemlib function.
   forall k in Elems do local {
-    vdov[k] = dxx[k] + dyy[k] + dzz[k];
-    var vdovthird = vdov[k] / 3.0;
-    dxx[k] -= vdovthird;
-    dyy[k] -= vdovthird;
-    dzz[k] -= vdovthird;
+    vdov.localAccess[k] = dxx.localAccess[k] + dyy.localAccess[k] + dzz.localAccess[k];
+    var vdovthird = vdov.localAccess[k] / 3.0;
+    dxx.localAccess[k] -= vdovthird;
+    dyy.localAccess[k] -= vdovthird;
+    dzz.localAccess[k] -= vdovthird;
   }
 
   // See if any volumes are negative, and take appropriate action.
@@ -1171,12 +1171,12 @@ proc CalcKinematicsForElems(dxx, dyy, dzz, const dt: real) {
     local {
       //volume calculations
       const volume = CalcElemVolume(x_local, y_local, z_local);
-      const relativeVolume = volume / volo[k];
-      vnew[k] = relativeVolume;
-      delv[k] = relativeVolume - v[k];
+      const relativeVolume = volume / volo.localAccess[k];
+      vnew.localAccess[k] = relativeVolume;
+      delv.localAccess[k] = relativeVolume - v.localAccess[k];
 
       //set characteristic length
-      arealg[k] = CalcElemCharacteristicLength(x_local, y_local, z_local,
+      arealg.localAccess[k] = CalcElemCharacteristicLength(x_local, y_local, z_local,
                                                volume);
 
       for param i in 1..8 {
@@ -1194,9 +1194,9 @@ proc CalcKinematicsForElems(dxx, dyy, dzz, const dt: real) {
     }
 
     // put velocity gradient quantities into their global arrays.
-    dxx[k] = d[1];
-    dyy[k] = d[2];
-    dzz[k] = d[3];
+    dxx.localAccess[k] = d[1];
+    dyy.localAccess[k] = d[2];
+    dzz.localAccess[k] = d[3];
   }
 }
 
@@ -1233,7 +1233,7 @@ var vnewc: [MatElems] real;
 /* Expose all of the variables needed for material evaluation */
 proc ApplyMaterialPropertiesForElems() {
 
-  forall i in MatElems do vnewc[i] = vnew[i];
+  forall i in MatElems do vnewc.localAccess[i] = vnew.localAccess[i];
 
   if eosvmin != 0.0 then
     [c in vnewc] if c < eosvmin then c = eosvmin;
@@ -1246,7 +1246,7 @@ proc ApplyMaterialPropertiesForElems() {
   // currently, race-y
 
   forall matelm in MatElems {
-    var vc = v[matelm];
+    var vc = v.localAccess[matelm];
     if eosvmin != 0.0 && vc < eosvmin then vc = eosvmin;
     if eosvmax != 0.0 && vc > eosvmax then vc = eosvmax;
     if vc <= 0.0 {
@@ -1261,9 +1261,9 @@ proc ApplyMaterialPropertiesForElems() {
 
 proc UpdateVolumesForElems() {
   forall i in Elems do local {
-    var tmpV = vnew[i];
+    var tmpV = vnew.localAccess[i];
     if abs(tmpV-1.0) < v_cut then tmpV = 1.0;
-    v[i] = tmpV;
+    v.localAccess[i] = tmpV;
   }
 }
 
@@ -1278,7 +1278,7 @@ proc CalcMonotonicQGradientsForElems(delv_xi, delv_eta, delv_zeta,
     localizeNeighborNodes(eli, xd, xvl, yd, yvl, zd, zvl);
 
     local {
-      const vol = volo[eli] * vnew[eli],
+      const vol = volo.localAccess[eli] * vnew.localAccess[eli],
             norm = 1.0 / (vol + ptiny);
       var ax, ay, az, dxv, dyv, dzv: real;
 
@@ -1300,7 +1300,7 @@ proc CalcMonotonicQGradientsForElems(delv_xi, delv_eta, delv_zeta,
       ay = dzi*dxj - dxi*dzj;
       az = dxi*dyj - dyi*dxj;
 
-      delx_zeta[eli] = vol / sqrt(ax*ax + ay*ay + az*az + ptiny);
+      delx_zeta.localAccess[eli] = vol / sqrt(ax*ax + ay*ay + az*az + ptiny);
 
       ax *= norm;
       ay *= norm;
@@ -1310,7 +1310,7 @@ proc CalcMonotonicQGradientsForElems(delv_xi, delv_eta, delv_zeta,
       dyv = 0.25*((yvl[5]+yvl[6]+yvl[7]+yvl[8])-(yvl[1]+yvl[2]+yvl[3]+yvl[4]));
       dzv = 0.25*((zvl[5]+zvl[6]+zvl[7]+zvl[8])-(zvl[1]+zvl[2]+zvl[3]+zvl[4]));
 
-      delv_zeta[eli] = ax*dxv + ay*dyv + az*dzv;
+      delv_zeta.localAccess[eli] = ax*dxv + ay*dyv + az*dzv;
 
       /* find delxi and delvi ( j cross k ) */
 
@@ -1318,7 +1318,7 @@ proc CalcMonotonicQGradientsForElems(delv_xi, delv_eta, delv_zeta,
       ay = dzj*dxk - dxj*dzk;
       az = dxj*dyk - dyj*dxk;
 
-      delx_xi[eli] = vol / sqrt(ax*ax + ay*ay + az*az + ptiny) ;
+      delx_xi.localAccess[eli] = vol / sqrt(ax*ax + ay*ay + az*az + ptiny) ;
 
       ax *= norm;
       ay *= norm;
@@ -1328,7 +1328,7 @@ proc CalcMonotonicQGradientsForElems(delv_xi, delv_eta, delv_zeta,
       dyv = 0.25*((yvl[2]+yvl[3]+yvl[7]+yvl[6])-(yvl[1]+yvl[4]+yvl[8]+yvl[5]));
       dzv = 0.25*((zvl[2]+zvl[3]+zvl[7]+zvl[6])-(zvl[1]+zvl[4]+zvl[8]+zvl[5]));
 
-      delv_xi[eli] = ax*dxv + ay*dyv + az*dzv ;
+      delv_xi.localAccess[eli] = ax*dxv + ay*dyv + az*dzv ;
 
       /* find delxj and delvj ( k cross i ) */
 
@@ -1336,7 +1336,7 @@ proc CalcMonotonicQGradientsForElems(delv_xi, delv_eta, delv_zeta,
       ay = dzk*dxi - dxk*dzi;
       az = dxk*dyi - dyk*dxi;
 
-      delx_eta[eli] = vol / sqrt(ax*ax + ay*ay + az*az + ptiny) ;
+      delx_eta.localAccess[eli] = vol / sqrt(ax*ax + ay*ay + az*az + ptiny) ;
 
       ax *= norm;
       ay *= norm;
@@ -1346,7 +1346,7 @@ proc CalcMonotonicQGradientsForElems(delv_xi, delv_eta, delv_zeta,
       dyv= -0.25*((yvl[1]+yvl[2]+yvl[6]+yvl[5])-(yvl[4]+yvl[3]+yvl[7]+yvl[8]));
       dzv= -0.25*((zvl[1]+zvl[2]+zvl[6]+zvl[5])-(zvl[4]+zvl[3]+zvl[7]+zvl[8]));
 
-      delv_eta[eli] = ax*dxv + ay*dyv + az*dzv ;
+      delv_eta.localAccess[eli] = ax*dxv + ay*dyv + az*dzv ;
     } /* local */
   } /* forall eli */
 }
@@ -1358,20 +1358,20 @@ proc CalcMonotonicQForElems(delv_xi, delv_eta, delv_zeta,
 
   forall i in MatElems {
     const ptiny = 1.0e-36;
-    const bcMask = elemBC[i];
+    const bcMask = elemBC.localAccess[i];
     var norm, delvm, delvp: real;
 
     /* phixi */
-    norm = 1.0 / (delv_xi[i] + ptiny);
+    norm = 1.0 / (delv_xi.localAccess[i] + ptiny);
 
     select bcMask & XI_M {
-      when 0         do delvm = delv_xi[lxim(i)];
-      when XI_M_SYMM do delvm = delv_xi[i];
+      when 0         do delvm = delv_xi[lxim.localAccess[i]];
+      when XI_M_SYMM do delvm = delv_xi.localAccess[i];
       when XI_M_FREE do delvm = 0.0;
     }
     select bcMask & XI_P {
-      when 0         do delvp = delv_xi[lxip(i)];
-      when XI_P_SYMM do delvp = delv_xi[i];
+      when 0         do delvp = delv_xi[lxip.localAccess[i]];
+      when XI_P_SYMM do delvp = delv_xi.localAccess[i];
       when XI_P_FREE do delvp = 0.0;
     }
 
@@ -1389,16 +1389,16 @@ proc CalcMonotonicQForElems(delv_xi, delv_eta, delv_zeta,
     if phixi > monoq_max_slope then phixi = monoq_max_slope;
 
     /* phieta */
-    norm = 1.0 / (delv_eta[i] + ptiny);
+    norm = 1.0 / (delv_eta.localAccess[i] + ptiny);
 
     select bcMask & ETA_M {
-      when 0          do delvm = delv_eta[letam[i]];
-      when ETA_M_SYMM do delvm = delv_eta[i];      
+      when 0          do delvm = delv_eta[letam.localAccess[i]];
+      when ETA_M_SYMM do delvm = delv_eta.localAccess[i];      
       when ETA_M_FREE do delvm = 0.0;      
     }
     select bcMask & ETA_P {
-      when 0          do delvp = delv_eta[letap[i]];
-      when ETA_P_SYMM do delvp = delv_eta[i];      
+      when 0          do delvp = delv_eta[letap.localAccess[i]];
+      when ETA_P_SYMM do delvp = delv_eta.localAccess[i];      
       when ETA_P_FREE do delvp = 0.0;      
     }
 
@@ -1416,16 +1416,16 @@ proc CalcMonotonicQForElems(delv_xi, delv_eta, delv_zeta,
     if phieta > monoq_max_slope then phieta = monoq_max_slope;
 
     /*  phizeta     */
-    norm = 1.0 / (delv_zeta[i] + ptiny);
+    norm = 1.0 / (delv_zeta.localAccess[i] + ptiny);
 
     select bcMask & ZETA_M {
-      when 0           do delvm = delv_zeta[lzetam[i]];
-      when ZETA_M_SYMM do delvm = delv_zeta[i];       
+      when 0           do delvm = delv_zeta[lzetam.localAccess[i]];
+      when ZETA_M_SYMM do delvm = delv_zeta.localAccess[i];       
       when ZETA_M_FREE do delvm = 0.0;        
     }
     select bcMask & ZETA_P {
-      when 0           do delvp = delv_zeta[lzetap[i]];
-      when ZETA_P_SYMM do delvp = delv_zeta[i];       
+      when 0           do delvp = delv_zeta[lzetap.localAccess[i]];
+      when ZETA_P_SYMM do delvp = delv_zeta.localAccess[i];       
       when ZETA_P_FREE do delvp = 0.0;        
     }
 
@@ -1444,19 +1444,19 @@ proc CalcMonotonicQForElems(delv_xi, delv_eta, delv_zeta,
 
     /* Remove length scale */
     var qlin, qquad: real;
-    if vdov[i] > 0.0 {
+    if vdov.localAccess[i] > 0.0 {
       qlin  = 0.0;
       qquad = 0.0;
     } else {
-      var delvxxi   = delv_xi[i]   * delx_xi[i],
-          delvxeta  = delv_eta[i]  * delx_eta[i],
-          delvxzeta = delv_zeta[i] * delx_zeta[i];
+      var delvxxi   = delv_xi.localAccess[i]   * delx_xi.localAccess[i],
+          delvxeta  = delv_eta.localAccess[i]  * delx_eta.localAccess[i],
+          delvxzeta = delv_zeta.localAccess[i] * delx_zeta.localAccess[i];
 
       if delvxxi   > 0.0 then delvxxi   = 0.0;
       if delvxeta  > 0.0 then delvxeta  = 0.0;
       if delvxzeta > 0.0 then delvxzeta = 0.0;
 
-      const rho = elemMass[i] / (volo[i] * vnew[i]);
+      const rho = elemMass.localAccess[i] / (volo.localAccess[i] * vnew.localAccess[i]);
 
       qlin = -qlc_monoq * rho *
         ( delvxxi   * (1.0 - phixi) +
@@ -1468,8 +1468,8 @@ proc CalcMonotonicQForElems(delv_xi, delv_eta, delv_zeta,
           delvxeta**2  * (1.0 - phieta**2) +
           delvxzeta**2 * (1.0 - phizeta**2));
     }
-    qq[i] = qquad;
-    ql[i] = qlin;
+    qq.localAccess[i] = qquad;
+    ql.localAccess[i] = qlin;
 
   }
 }
@@ -1483,33 +1483,33 @@ proc EvalEOSForElems(vnewc) {
 
   /* compress data, minimal set */
   forall i in MatElems {
-    e_old[i]  = e[i];
-    delvc[i]  = delv[i];
-    p_old[i]  = p[i];
-    q_old[i]  = q[i];
-    qq_old[i] = qq[i];
-    ql_old[i] = ql[i];
+    e_old.localAccess[i]  = e.localAccess[i];
+    delvc.localAccess[i]  = delv.localAccess[i];
+    p_old.localAccess[i]  = p.localAccess[i];
+    q_old.localAccess[i]  = q.localAccess[i];
+    qq_old.localAccess[i] = qq.localAccess[i];
+    ql_old.localAccess[i] = ql.localAccess[i];
   }
 
   forall i in Elems do local {
-    compression[i] = 1.0 / vnewc[i] - 1.0;
-    const vchalf = vnewc[i] - delvc[i] * 0.5;
-    compHalfStep[i] = 1.0 / vchalf - 1.0;
+    compression.localAccess[i] = 1.0 / vnewc.localAccess[i] - 1.0;
+    const vchalf = vnewc.localAccess[i] - delvc.localAccess[i] * 0.5;
+    compHalfStep.localAccess[i] = 1.0 / vchalf - 1.0;
   }
 
   /* Check for v > eosvmax or v < eosvmin */
   // (note: I think this was already checked for in calling function!)
   if eosvmin != 0.0 {
     forall i in Elems {
-      if vnewc[i] <= eosvmin then compHalfStep[i] = compression[i];
+      if vnewc.localAccess[i] <= eosvmin then compHalfStep.localAccess[i] = compression.localAccess[i];
     }
   }
   if eosvmax != 0.0 {
     forall i in Elems {
-      if vnewc[i] >= eosvmax {
-        p_old[i] = 0.0;
-        compression[i] = 0.0;
-        compHalfStep[i] = 0.0;
+      if vnewc.localAccess[i] >= eosvmax {
+        p_old.localAccess[i] = 0.0;
+        compression.localAccess[i] = 0.0;
+        compHalfStep.localAccess[i] = 0.0;
       }
     }
   }
@@ -1519,9 +1519,9 @@ proc EvalEOSForElems(vnewc) {
                      vnewc, work, delvc, qq_old, ql_old);
 
   forall i in MatElems {
-    p[i] = p_new[i];
-    e[i] = e_new[i];
-    q[i] = q_new[i];
+    p.localAccess[i] = p_new.localAccess[i];
+    e.localAccess[i] = e_new.localAccess[i];
+    q.localAccess[i] = q_new.localAccess[i];
   }
 
   CalcSoundSpeedForElems(vnewc, rho0, e_new, p_new, pbvc, bvc);
@@ -1540,33 +1540,33 @@ proc CalcEnergyForElems(p_new, e_new, q_new, bvc, pbvc,
   const sixth = 1.0 / 6.0;
 
   forall i in Elems {
-    e_new[i] = e_old[i] - 0.5 * delvc[i] * (p_old[i] + q_old[i]) 
-                        + 0.5 * work[i];
-    if e_new[i] < emin then e_new[i] = emin;
+    e_new.localAccess[i] = e_old.localAccess[i] - 0.5 * delvc.localAccess[i] * (p_old.localAccess[i] + q_old.localAccess[i]) 
+                        + 0.5 * work.localAccess[i];
+    if e_new.localAccess[i] < emin then e_new.localAccess[i] = emin;
   }
 
   CalcPressureForElems(pHalfStep, bvc, pbvc, e_new, compHalfStep,
                        vnewc, pmin, p_cut, eosvmax);
 
   forall i in Elems {
-    const vhalf = 1.0 / (1.0 + compHalfStep[i]);
+    const vhalf = 1.0 / (1.0 + compHalfStep.localAccess[i]);
 
-    if delvc[i] > 0.0 {
-      q_new[i] = 0.0;
+    if delvc.localAccess[i] > 0.0 {
+      q_new.localAccess[i] = 0.0;
     } else {
-      var ssc = (pbvc[i] * e_new[i] + vhalf**2 * bvc[i] * pHalfStep[i]) / rho0;
+      var ssc = (pbvc.localAccess[i] * e_new.localAccess[i] + vhalf**2 * bvc.localAccess[i] * pHalfStep.localAccess[i]) / rho0;
       if ssc <= 0.0 then ssc = 0.333333e-36;
       else ssc = sqrt(ssc);
-      q_new[i] = ssc * ql_old[i] + qq_old[i];
+      q_new.localAccess[i] = ssc * ql_old.localAccess[i] + qq_old.localAccess[i];
     }
 
-    e_new[i] += 0.5 * delvc[i]
-      * (3.0*(p_old[i] + q_old[i]) - 4.0*(pHalfStep[i] + q_new[i]));
+    e_new.localAccess[i] += 0.5 * delvc.localAccess[i]
+      * (3.0*(p_old.localAccess[i] + q_old.localAccess[i]) - 4.0*(pHalfStep.localAccess[i] + q_new.localAccess[i]));
   }
   forall i in Elems {
-    e_new[i] += 0.5 * work[i];
-    if abs(e_new[i] < e_cut) then e_new[i] = 0.0;
-    if e_new[i] < emin then e_new[i] = emin;
+    e_new.localAccess[i] += 0.5 * work.localAccess[i];
+    if abs(e_new.localAccess[i] < e_cut) then e_new.localAccess[i] = 0.0;
+    if e_new.localAccess[i] < emin then e_new.localAccess[i] = emin;
   }
 
   CalcPressureForElems(p_new, bvc, pbvc, e_new, compression, vnewc, pmin,
@@ -1575,20 +1575,20 @@ proc CalcEnergyForElems(p_new, e_new, q_new, bvc, pbvc,
   forall i in Elems {
     var q_tilde:real;
 
-    if delvc[i] > 0.0 {
+    if delvc.localAccess[i] > 0.0 {
       q_tilde = 0.0;
     } else {
-      var ssc = (pbvc[i] * e_new[i] + vnewc[i]**2 * bvc[i] * p_new[i] ) / rho0;
+      var ssc = (pbvc.localAccess[i] * e_new.localAccess[i] + vnewc.localAccess[i]**2 * bvc.localAccess[i] * p_new.localAccess[i] ) / rho0;
       if ssc <= 0.0 then ssc = 0.333333e-36;
       else ssc = sqrt(ssc);
-      q_tilde = ssc * ql_old[i] + qq_old[i];
+      q_tilde = ssc * ql_old.localAccess[i] + qq_old.localAccess[i];
     }
 
-    e_new[i] -= (7.0*(p_old[i] + q_old[i]) 
-                 - 8.0*(pHalfStep[i] + q_new[i]) 
-                 + (p_new[i] + q_tilde)) * delvc[i] * sixth;
-    if abs(e_new[i]) < e_cut then e_new[i] = 0.0;
-    if e_new[i] < emin then e_new[i] = emin;
+    e_new.localAccess[i] -= (7.0*(p_old.localAccess[i] + q_old.localAccess[i]) 
+                 - 8.0*(pHalfStep.localAccess[i] + q_new.localAccess[i]) 
+                 + (p_new.localAccess[i] + q_tilde)) * delvc.localAccess[i] * sixth;
+    if abs(e_new.localAccess[i]) < e_cut then e_new.localAccess[i] = 0.0;
+    if e_new.localAccess[i] < emin then e_new.localAccess[i] = emin;
   }
 
   CalcPressureForElems(p_new, bvc, pbvc, e_new, compression, vnewc, pmin,
@@ -1596,12 +1596,12 @@ proc CalcEnergyForElems(p_new, e_new, q_new, bvc, pbvc,
 
 
   forall i in Elems do local {
-    if delvc[i] <= 0.0 {
-      var ssc = (pbvc[i] * e_new[i] + vnewc[i]**2 * bvc[i] * p_new[i] ) / rho0;
+    if delvc.localAccess[i] <= 0.0 {
+      var ssc = (pbvc.localAccess[i] * e_new.localAccess[i] + vnewc.localAccess[i]**2 * bvc.localAccess[i] * p_new.localAccess[i] ) / rho0;
       if ssc <= 0.0 then ssc = 0.333333e-36;
                     else ssc = sqrt(ssc);
-      q_new[i] = ssc * ql_old[i] + qq_old[i];
-      if abs(q_new[i]) < q_cut then q_new[i] = 0.0;
+      q_new.localAccess[i] = ssc * ql_old.localAccess[i] + qq_old.localAccess[i];
+      if abs(q_new.localAccess[i]) < q_cut then q_new.localAccess[i] = 0.0;
     }
   }
 }
@@ -1613,9 +1613,9 @@ proc CalcSoundSpeedForElems(vnewc, rho0:real, enewc, pnewc, pbvc, bvc) {
   // avoid losing updates?  (Jeff will go back and think on this)
   //
   forall i in MatElems {
-    var ssTmp = (pbvc[i] * enewc[i] + vnewc[i]**2 * bvc[i] * pnewc[i]) / rho0;
+    var ssTmp = (pbvc.localAccess[i] * enewc.localAccess[i] + vnewc.localAccess[i]**2 * bvc.localAccess[i] * pnewc.localAccess[i]) / rho0;
     if ssTmp <= 1.111111e-36 then ssTmp = 1.111111e-36;
-    ss[i] = sqrt(ssTmp);
+    ss.localAccess[i] = sqrt(ssTmp);
   }
 }
 
