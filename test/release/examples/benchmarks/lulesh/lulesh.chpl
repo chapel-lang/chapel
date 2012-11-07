@@ -5,8 +5,8 @@
 
   Original port to Chapel by Brandon Holt (8/2011).  Further
   improvements for the sake of performance and/or generality made by
-  Sung-Eun Choi (12/2011), Jeff Keasler (3/2012), and Brad Chamberlain
-  (3-4/2012).
+  Sung-Eun Choi (12/2011, 11/2012), Jeff Keasler (3/2012), and Brad
+  Chamberlain (3-4,9-11/2012).
 
 
   Notes on the Initial Implementation
@@ -161,14 +161,14 @@ const u_cut = 1.0e-7,           /* velocity tolerance */
       dvovmax = 0.1,            /* maximum allowable volume change */
       refdens = 1.0,            /* reference density */
 
-      dtfixed = -1.0e-7,        /* fixed time increment */
       deltatimemultlb = 1.1,
       deltatimemultub = 1.2,
       dtmax = 1.0e-2;           /* maximum allowable time increment */
 
                               
-config const stoptime = 1.0e-2,        /* end time for simulation */
-             maxcycles = max(int);     /* max number of cycles to simulate */
+config const stoptime = 1.0e-2,      /* end time for simulation */
+             maxcycles = max(int),   /* max number of cycles to simulate */
+             dtfixed = -1.0e-7;      /* fixed time increment */
 
 
 /* The list of material elements */
@@ -253,6 +253,8 @@ proc main() {
   var st: real;
   if doTiming then st = getCurrentTime();
   while (time < stoptime && cycle < maxcycles) {
+    const iterTime = if showProgress then getCurrentTime() else 0.0;
+
     TimeIncrement();
 
     LagrangeLeapFrog();
@@ -262,8 +264,10 @@ proc main() {
       deprint("[[ Positions ]]", x, y, z);
       deprint("[[ p, e, q ]]", p, e, q);
     }
-    if showProgress then writeln("time = ", format("%e", time), 
-                                 ", dt=", format("%e", deltatime));
+    if showProgress then
+      writeln("time = ", format("%e", time), ", dt=", format("%e", deltatime),
+              if doTiming then ", elapsed = " + (getCurrentTime()-iterTime) 
+                          else "");
   }
   if (cycle == maxcycles) {
     writeln("Stopped early due to reaching maxnumsteps");
@@ -271,6 +275,7 @@ proc main() {
   if doTiming {
     const et = getCurrentTime();
     writeln("Total Time: ", et-st);
+    writeln("Time/Cycle: ", (et-st)/cycle);
   }
   writeln("Number of cycles: ", cycle);
 
@@ -324,9 +329,6 @@ proc initMasses() {
   // This is a temporary array used to accumulate masses in parallel
   // without losing updates by using 'atomic' variables
   var massAccum: [Nodes] atomic real;
-  forall i in Nodes {
-    massAccum[i].write(0.0);
-  }
 
   forall eli in Elems {
     var x_local, y_local, z_local: 8*real;
@@ -336,18 +338,16 @@ proc initMasses() {
     volo[eli] = volume;
     elemMass[eli] = volume;
 
-    for neighbor in elemToNodes[eli] {
+    for neighbor in elemToNodes[eli] do
       massAccum[neighbor].add(volume);
-    }
   }
 
   // When we're done, copy the accumulated masses into nodalMass, at
   // which point the massAccum array can go away (and will at the
   // procedure's return
 
-  forall i in Nodes {
+  forall i in Nodes do
     nodalMass[i] = massAccum[i].read() / 8.0;
-  }
 
   if debug {
     writeln("ElemMass:");
@@ -447,10 +447,12 @@ inline proc localizeNeighborNodes(eli: index(Elems),
                                   y: [] real, ref y_local: 8*real,
                                   z: [] real, ref z_local: 8*real) {
 
-  for (noi, t) in elemToNodesTuple(eli) {
-    x_local[t] = x[noi];
-    y_local[t] = y[noi];
-    z_local[t] = z[noi];
+  for param i in 1..nodesPerElem {
+    const noi = elemToNode[eli][i];
+
+    x_local[i] = x[noi];
+    y_local[i] = y[noi];
+    z_local[i] = z[noi];
   }
 }
 
@@ -911,7 +913,6 @@ inline proc computeDTF(indx) {
 
 
 proc CalcCourantConstraintForElems() {
-
   const val = min reduce [indx in MatElems] computeDTF(indx);
 
   if (val != max(real)) then
@@ -1557,7 +1558,7 @@ proc CalcEnergyForElems(p_new, e_new, q_new, bvc, pbvc,
     if e_new[i] < emin then e_new[i] = emin;
   }
 
-  CalcPressureForElems(pHalfStep, bvc, pbvc, e_new, compHalfStep, 
+  CalcPressureForElems(pHalfStep, bvc, pbvc, e_new, compHalfStep,
                        vnewc, pmin, p_cut, eosvmax);
 
   forall i in Elems {
@@ -1581,7 +1582,7 @@ proc CalcEnergyForElems(p_new, e_new, q_new, bvc, pbvc,
     if e_new[i] < emin then e_new[i] = emin;
   }
 
-  CalcPressureForElems(p_new, bvc, pbvc, e_new, compression, vnewc, pmin, 
+  CalcPressureForElems(p_new, bvc, pbvc, e_new, compression, vnewc, pmin,
                        p_cut, eosvmax);
 
   forall i in Elems {
@@ -1603,7 +1604,7 @@ proc CalcEnergyForElems(p_new, e_new, q_new, bvc, pbvc,
     if e_new[i] < emin then e_new[i] = emin;
   }
 
-  CalcPressureForElems(p_new, bvc, pbvc, e_new, compression, vnewc, pmin, 
+  CalcPressureForElems(p_new, bvc, pbvc, e_new, compression, vnewc, pmin,
                        p_cut, eosvmax);
 
 
