@@ -118,9 +118,7 @@ compilerAssert(CHPL_NETWORK_ATOMICS == "none",
   if !skipBsub && tl1 != tl2 then
     halt("backwardSub() is implemented only for a square locale grid");
 
-  writeln("HPL  n ", n, "  blkSize ", blkSize, "  blk/node ",
-          divceilpos(n, blkSize*tl1), "*", divceilpos(n+1, blkSize*tl2),
-          "  locs ", tl1, "*", tl2, "  dPTPL ", dataParTasksPerLocale);
+  printBriefConfiguration();
 
   const distReplicated = new ReplicatedDist();
 
@@ -1447,8 +1445,15 @@ proc printResults(successful, execTime) {
 proc printTime(execTime) {
   if (printStats) {
     const GflopPerSec = ((2.0/3.0) * n**3 + (3.0/2.0) * n**2) / execTime * 1e-9;
-    writeln(execTime, " sec   ", GflopPerSec, " GFLOPS");
+    writeln(execTime, " sec   ", GflopPerSec, " GFLOPS",
+            if verify then " to be verified" else "");
   }
+  printBriefConfiguration(); // for convenience
+}
+proc printBriefConfiguration() {
+  writeln("HPL  n ", n, "  blkSize ", blkSize, "  blk/node ",
+          divceilpos(n, blkSize*tl1), "*", divceilpos(n+1, blkSize*tl2),
+          "  locs ", tl1, "*", tl2, "  dPTPL ", dataParTasksPerLocale);
 }
 
 //
