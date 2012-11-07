@@ -1,4 +1,4 @@
-// streamQ.chpl (qthreads)
+// streamQC.chpl (qthreads, cheating)
 //
 // Embarrassingly Parallel Implementation of STREAM Triad
 //
@@ -81,7 +81,6 @@ config const printParams = true,
 // The program entry point
 //
 proc main() {
-  if (debugArchitecture) then return;
 
   printConfiguration();   // print the problem size, number of trials, etc.
 
@@ -89,7 +88,7 @@ proc main() {
   // *** Aggregates for collecting per-locale results for the minimum
   // *** execution time per trial, and whether verification passed
   //
-  var minTimes: [rootLocale.getLocaleSpace()] real;
+  var nodeTimes: [rootLocale.getLocaleSpace()] real;
   var validAnswers: [rootLocale.getLocaleSpace()] bool;
 
   //
@@ -98,13 +97,15 @@ proc main() {
   //
   coforall loc in rootLocale.getLocales() do on loc {
 
+    const childN = here.getChildCount();
+
     //
     // *** We declare these variables outside of the local block since
     // *** we'll need to access them when we write back to the global
     // *** aggregates declared above.
     //
-    var validAnswer: bool;
-    var execTime: [1..numTrials] real;
+    var taskTime: [1..childN] real;
+    var taskValid: [1..childN] bool;
 
     //
     // *** Indicates that all of the code in this block is local to
@@ -113,33 +114,27 @@ proc main() {
     // *** --fast or --no-checks.
     //
     local {
-      //
-      // *** A, B, and C are the three local vectors
-      //
-      var A, B, C: [1..m] elemType;
+      coforall i in 1..childN do
+        on here.getChild(i) do {
+          var trialTime: [1..numTrials] real;
+          var trialValid: [1..numTrials] bool;
+          //
+          // *** A, B, and C are the three local vectors
+          //
+          var A, B, C: [1..m/childN] elemType;
 
-      initVectors(B, C);    // Initialize the input vectors, B and C
+          initVectors(B, C);    // Initialize the input vectors, B and C
 
-      // Enumerate the child locales.
-      const childN = here.getChildCount();
-      var sublocs : [1..childN] locale;
-      for (loc,i) in ((here:XENode).getChildren(), 1..) do {
-        sublocs[i] = loc;
-      }
-
-      for trial in 1..numTrials {                        // loop over the trials
-        const startTime = getCurrentTime();              // capture the start time
-        coforall i in 1..childN do
-          on sublocs[i] do {
-            var chunk = getChunk(i, childN, m);
-
-            for j in chunk do
+          for trial in 1..numTrials {                        // loop over the trials
+            const startTime = getCurrentTime();              // capture the start time
+            for j in 1..m/childN do
               A[j] = B[j] + alpha * C[j];
+            trialTime[trial] = getCurrentTime() - startTime;  // store the elapsed time
           }
-        execTime[trial] = getCurrentTime() - startTime;  // store the elapsed time
-      }
+          taskTime[i] = min reduce trialTime;
+          taskValid[i] =  verifyResults(A, B, C);              // verify...
+        }
         
-      validAnswer = verifyResults(A, B, C);              // verify...
     }
 
     //
@@ -147,14 +142,15 @@ proc main() {
     // *** declared above.  These are declared over LocaleSpace so we
     // *** can write to them in parallel.
     //
-    minTimes[here.id] = min reduce execTime;
-    validAnswers[here.id] = validAnswer;
+    writeln(taskTime);
+    nodeTimes[here.id] = max reduce taskTime;
+    validAnswers[here.id] = && reduce taskValid;
   }
 
   //
   // *** Pass minimum, average, and maximum times to printResults
   //
-  printResults(&& reduce validAnswers, minTimes);
+  printResults(&& reduce validAnswers, nodeTimes);
 }
 
 // Compute the chunk associated with the given chunk number.
@@ -231,12 +227,12 @@ proc verifyResults(A, B, C) {
 // *** Here we report maximum, average, and minimum times instead of
 // *** total, average, and minimum.
 //
-proc printResults(successful, minTimes) {
+proc printResults(successful, nodeTimes) {
   writeln("Validation: ", if successful then "SUCCESS" else "FAILURE");
   if (printStats) {
-    const maxTime = max reduce minTimes,
-          avgTime = + reduce minTimes / numLocales,
-          minTime = min reduce minTimes;
+    const maxTime = max reduce nodeTimes,
+          avgTime = + reduce nodeTimes / numLocales,
+          minTime = min reduce nodeTimes;
     writeln("Execution time:");
     writeln("  max (seconds) = ", maxTime);
     writeln("  avg (seconds) = ", avgTime);

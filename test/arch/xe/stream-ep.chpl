@@ -1,18 +1,11 @@
-// streamQ.chpl (qthreads)
 //
-// Embarrassingly Parallel Implementation of STREAM Triad
+// Embarassingly Parallel Implementation of STREAM Triad
 //
 // This version of the stream benchmark is not as elegant as
 // stream.chpl.  It is a per-locale code with no communication in the
 // actual computation.  It highlights the ability of a Chapel
 // programmer to escape the global-view programming model and write
 // codes with a fragmented, per-locale model.
-//
-// This version uses qthreads to inspect the target architecture and
-// control task dispatching.  It assumes shared memory on each locale, but 
-// allocates and processes each segment within respective workers.
-// This is cheating a bit, since the HPCC rules imply that the initialization and
-// computation occur in separate passes.
 //
 // Comments marked with '***' point out differences with the global
 // version of this benchmark in stream.chpl.
@@ -32,7 +25,6 @@ use Time, Types, Random;
 // Use shared user module for computing HPCC problem sizes
 //
 use HPCCProblemSize;
-use XEQ;
 
 //
 // The number of vectors and element type of those vectors
@@ -41,8 +33,8 @@ const numVectors = 3;
 type elemType = real(64);
 
 //
-// *** To ensure a large enough local problem size, we spoof the number of
-// *** vectors passed to the computeProblemSize function to be the number of
+// *** To ensure a local problem size, we spoof the number of vectors
+// *** passed to the computeProblemSize function to be the number of
 // *** vectors times the number of locales.
 //
 // Configuration constants to set the problem size (m) and the scalar
@@ -81,8 +73,6 @@ config const printParams = true,
 // The program entry point
 //
 proc main() {
-  if (debugArchitecture) then return;
-
   printConfiguration();   // print the problem size, number of trials, etc.
 
   //
@@ -113,6 +103,7 @@ proc main() {
     // *** --fast or --no-checks.
     //
     local {
+
       //
       // *** A, B, and C are the three local vectors
       //
@@ -120,25 +111,20 @@ proc main() {
 
       initVectors(B, C);    // Initialize the input vectors, B and C
 
-      // Enumerate the child locales.
-      const childN = here.getChildCount();
-      var sublocs : [1..childN] locale;
-      for (loc,i) in ((here:XENode).getChildren(), 1..) do {
-        sublocs[i] = loc;
-      }
-
       for trial in 1..numTrials {                        // loop over the trials
         const startTime = getCurrentTime();              // capture the start time
-        coforall i in 1..childN do
-          on sublocs[i] do {
-            var chunk = getChunk(i, childN, m);
 
-            for j in chunk do
-              A[j] = B[j] + alpha * C[j];
-          }
-        execTime[trial] = getCurrentTime() - startTime;  // store the elapsed time
+        //
+        // *** The main loop looks identical to stream.chpl.  However,
+        // *** in this version we are iterating over arrays that are
+        // *** not distributed.
+        //
+        forall (a, b, c) in (A, B, C) do
+          a = b + alpha * c;
+
+        execTime(trial) = getCurrentTime() - startTime;  // store the elapsed time
       }
-        
+
       validAnswer = verifyResults(A, B, C);              // verify...
     }
 
@@ -157,15 +143,6 @@ proc main() {
   printResults(&& reduce validAnswers, minTimes);
 }
 
-// Compute the chunk associated with the given chunk number.
-// Each chunk is executed on a different sublocale.
-proc getChunk(nChunk:int, chunkCount, problemSize)
-{
-  var start = ((nChunk-1) * problemSize) / chunkCount + 1;
-  var end = ((nChunk) * problemSize) / chunkCount;
-  return start..end;
-}
-
 //
 // Print the problem size and number of trials
 //
@@ -176,8 +153,7 @@ proc printConfiguration() {
     // *** print out the global problem size.
     //
     printProblemSize(elemType, numVectors, m * numLocales);
-    writeln("Number of trials = ", numTrials);
-    writeln();
+    writeln("Number of trials = ", numTrials, "\n");
   }
 }
 

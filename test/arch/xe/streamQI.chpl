@@ -1,4 +1,4 @@
-// streamQ.chpl (qthreads)
+// streamQI.chpl (qthreads, Integrated)
 //
 // Embarrassingly Parallel Implementation of STREAM Triad
 //
@@ -10,9 +10,10 @@
 //
 // This version uses qthreads to inspect the target architecture and
 // control task dispatching.  It assumes shared memory on each locale, but 
-// allocates and processes each segment within respective workers.
-// This is cheating a bit, since the HPCC rules imply that the initialization and
-// computation occur in separate passes.
+// initializes and processes each segment within respective workers.
+//
+// A specialized version of the iterators in DefaultRectangular are used to 
+// dispatch the inner forall loop.
 //
 // Comments marked with '***' point out differences with the global
 // version of this benchmark in stream.chpl.
@@ -81,8 +82,6 @@ config const printParams = true,
 // The program entry point
 //
 proc main() {
-  if (debugArchitecture) then return;
-
   printConfiguration();   // print the problem size, number of trials, etc.
 
   //
@@ -120,22 +119,10 @@ proc main() {
 
       initVectors(B, C);    // Initialize the input vectors, B and C
 
-      // Enumerate the child locales.
-      const childN = here.getChildCount();
-      var sublocs : [1..childN] locale;
-      for (loc,i) in ((here:XENode).getChildren(), 1..) do {
-        sublocs[i] = loc;
-      }
-
       for trial in 1..numTrials {                        // loop over the trials
         const startTime = getCurrentTime();              // capture the start time
-        coforall i in 1..childN do
-          on sublocs[i] do {
-            var chunk = getChunk(i, childN, m);
-
-            for j in chunk do
-              A[j] = B[j] + alpha * C[j];
-          }
+        forall j in 1..m do
+          A[j] = B[j] + alpha * C[j];
         execTime[trial] = getCurrentTime() - startTime;  // store the elapsed time
       }
         

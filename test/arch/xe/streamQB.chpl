@@ -1,4 +1,4 @@
-// streamQ.chpl (qthreads)
+// streamQB.chpl (qthreads, Block distribution)
 //
 // Embarrassingly Parallel Implementation of STREAM Triad
 //
@@ -33,6 +33,7 @@ use Time, Types, Random;
 //
 use HPCCProblemSize;
 use XEQ;
+use BlockDist;
 
 //
 // The number of vectors and element type of those vectors
@@ -113,13 +114,6 @@ proc main() {
     // *** --fast or --no-checks.
     //
     local {
-      //
-      // *** A, B, and C are the three local vectors
-      //
-      var A, B, C: [1..m] elemType;
-
-      initVectors(B, C);    // Initialize the input vectors, B and C
-
       // Enumerate the child locales.
       const childN = here.getChildCount();
       var sublocs : [1..childN] locale;
@@ -127,19 +121,21 @@ proc main() {
         sublocs[i] = loc;
       }
 
+      var problemSpace = {1..m};
+      var blockSpace = problemSpace dmapped
+        Block(boundingBox=problemSpace, targetLocales = sublocs);
+      var A, B, C: [blockSpace] elemType;
+
+      initVectors(B,C);
+
       for trial in 1..numTrials {                        // loop over the trials
         const startTime = getCurrentTime();              // capture the start time
-        coforall i in 1..childN do
-          on sublocs[i] do {
-            var chunk = getChunk(i, childN, m);
-
-            for j in chunk do
-              A[j] = B[j] + alpha * C[j];
-          }
-        execTime[trial] = getCurrentTime() - startTime;  // store the elapsed time
+        forall j in problemSpace do
+          A[j] = B[j] + alpha * C[j];
+        execTime[trial] = getCurrentTime() - startTime;
       }
-        
-      validAnswer = verifyResults(A, B, C);              // verify...
+
+      validAnswer = verifyResults(A, B, C);
     }
 
     //
