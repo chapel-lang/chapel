@@ -361,21 +361,10 @@ proc schurComplement(blk, AD, BD, Rest) {
   // Copy data into replicated arrays so every processor has a local copy
   // of the data it will need to perform a local matrix-multiply.
   //
-
-  const AbSlice1 => Ab[1..n, AD.dim(2)],
-        AbSlice2 => Ab[BD.dim(1), 1..n+1];
-  vmsgmore("  AbSlices");
-
-  forall (ab, ra) in zip(AbSlice1, replA) do
-    local
-      ra = ab;
-  replicateA(blk);
+  replicateA(blk, AD.dim(2));
   vmsgmore("  replA");
-
-  forall (ab, rb) in zip(AbSlice2, replB) do
-    local
-      rb = ab;
-  replicateB(blk);
+  //
+  replicateB(blk, BD.dim(1));
   vmsgmore("  replB");
 
     const low1 = Rest.dim(1).low,
@@ -1343,24 +1332,104 @@ proc verifyResults(x) {
 
 /////////////////////////////////////////////////////////////////////////////
 
-proc replicateA(abIx) {
+proc replicateA(abIx, dim2arg) {
     const fromLocId2 = targetLocalesIndexForAbIndex(2, abIx);
     coforall lid1 in 0..#tl1 do
-      on targetLocales(lid1, fromLocId2) do
+      on targetLocales(lid1, fromLocId2) {
+
+        var locReplA =>
+          replA._value.localAdescs[lid1,fromLocId2].myStorageArr;
+        const locReplAdd = locReplA._value.data;
+
+        const dim2 = dim2arg; // should be value forwarding
+
+        // (A) copy from the local portion of A[1..n, dim2] into replA[..,..]
+        local {
+          const myStarts = 1..n by blkSize*tl1 align 1+blkSize*lid1;
+
+          forall iStart in myStarts {
+            const iEnd = min(iStart + blkSize - 1, n),
+                  iRange = iStart..iEnd;
+            var locAB => Ab._value.dsiLocalSlice1((iRange, dim2));
+            const locABdd = locAB._value.data;
+
+            // locReplA[iRange,..] = locAB[iRange, dim2];
+            const jStart = dim2.alignedLow,
+                  rStart = replA._value.dom.dom1._dsiStorageIdx(iStart);
+            for i in iRange {
+              const locReplAoff = hoistOffset(locReplA,
+                                              i - iStart + rStart, 1..blkSize),
+                    locABoff    = hoistOffset(locAB, i, dim2);
+              for j in dim2 do
+                //locReplA[i - iStart + rStart, j - jStart + 1] = locAB[i,j];
+                locReplAdd(locReplAoff + j - jStart + 1) = locABdd(locABoff+j);
+            } // for i
+
+            if checkSC {
+              for i in iRange do
+                for j in 1..blkSize do
+                  if Ab[i,j+jStart-1] != replA[i,j] then
+                    writeln("replicateA ERROR  Ab", (i,j+jStart-1), "=", Ab[i,j+jStart-1], " vs replA", (i,j), "=", replA[i,j], " on ", (lid1, fromLocId2));  // bummer - will cause "non-local access" failure
+            }
+
+          } // forall iStart
+        } // local
+
+        // (B) replicate that
         coforall lid2 in 0..#tl2 do
           if lid2 != fromLocId2 then
-            replA._value.localAdescs[lid1,lid2].myStorageArr =
-              replA._value.localAdescs[lid1,fromLocId2].myStorageArr;
+            replA._value.localAdescs[lid1,lid2].myStorageArr = locReplA;
+      } // on
 }
 
-proc replicateB(abIx) {
+proc replicateB(abIx, dim1arg) {
     const fromLocId1 = targetLocalesIndexForAbIndex(1, abIx);
     coforall lid2 in 0..#tl2 do
-      on targetLocales(fromLocId1, lid2) do
+      on targetLocales(fromLocId1, lid2) {
+
+        var locReplB =>
+          replB._value.localAdescs[fromLocId1,lid2].myStorageArr;
+        const locReplBdd = locReplB._value.data;
+
+        const dim1 = dim1arg; // should be value forwarding
+
+        // (A) copy from the local portion of A[dim1, 1..n+1] into replB[..,..]
+        local {
+          const myStarts = 1..n+1 by blkSize*tl2 align 1+blkSize*lid2;
+
+          forall jStart in myStarts {
+            const jEnd = min(jStart + blkSize - 1, n+1),
+                  jRange = jStart..jEnd;
+            var locAB => Ab._value.dsiLocalSlice1((dim1, jRange));
+            const locABdd = locAB._value.data;
+
+            // locReplB[..,jRange] = locAB[dim1, jRange];
+            const iStart = dim1.alignedLow,
+                  rStart = replB._value.dom.dom2._dsiStorageIdx(jStart);
+            for i in dim1 {
+              const locReplBoff = hoistOffset(locReplB, i - iStart + 1,
+                                           rStart..rStart /*do not bother*/),
+                    locABoff    = hoistOffset(locAB, i, jRange);
+              for j in jRange do
+                //locReplB[i - iStart + 1, j - jStart + rStart] = locAB[i,j];
+                locReplBdd(locReplBoff+j-jStart+rStart) = locABdd(locABoff+j);
+            } // for i
+
+            if checkSC {
+              for i in 1..blkSize do
+                for j in jRange do
+                  if Ab[i+iStart-1,j] != replB[i,j] then
+                    writeln("replicateA ERROR  Ab", (i+iStart-1,j), "=", Ab[i+iStart-1,j], " vs replB", (i,j), "=", replB[i,j], " on ", (fromLocId1, lid2));  // bummer - will cause "non-local access" failure
+            }
+
+          } // forall jStart
+        } // local
+
+        // (B) replicate that
         coforall lid1 in 0..#tl1 do
           if lid1 != fromLocId1 then
-            replB._value.localAdescs[lid1,lid2].myStorageArr =
-              replB._value.localAdescs[fromLocId1,lid2].myStorageArr;
+            replB._value.localAdescs[lid1,lid2].myStorageArr = locReplB;
+      } // on
 }
 
 // replicate only along one column of processors,
@@ -1447,8 +1516,8 @@ proc printTime(execTime) {
     const GflopPerSec = ((2.0/3.0) * n**3 + (3.0/2.0) * n**2) / execTime * 1e-9;
     writeln(execTime, " sec   ", GflopPerSec, " GFLOPS",
             if verify then " to be verified" else "");
+    printBriefConfiguration(); // for convenience
   }
-  printBriefConfiguration(); // for convenience
 }
 proc printBriefConfiguration() {
   writeln("HPL  n ", n, "  blkSize ", blkSize, "  blk/node ",
