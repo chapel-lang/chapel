@@ -62,6 +62,7 @@ config var realInitAB = verify;
 config var blast = max(n.type);
 config var maxKinPS = max(int);
 config const onlyBsub = false;
+config const skipInit = false;
 config const skipPS   = false;
 config const skipUBR  = false;
 config const skipSC   = false;
@@ -1227,6 +1228,10 @@ proc quit(doExit = true) {
 // it to be in the range -1.0..1.0
 //
 proc initAB() {
+  if skipInit {
+    vmsg("initAB skipped");
+    return;
+  }
   tInit.start();
  if realInitAB {
   fillRandom(Ab, seed);
