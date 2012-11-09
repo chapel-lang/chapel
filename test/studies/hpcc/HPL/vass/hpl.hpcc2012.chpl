@@ -87,7 +87,7 @@ config param checkSC   = boundsChecking;
 config param checkBsub = boundsChecking;
 // for debugging; need to disable 'local' in bsComputeMyXs()
 config param bsFinalizeXiVerbose = false;
-if checkPS || checkSC || checkBsub then
+if checkPS || checkSC || checkBsub || boundsChecking then
   compilerWarning("additional checking is on"); //reminder that --fast is off
 
 config param maxBlkSize = 200;
@@ -781,7 +781,7 @@ proc updateBlockRow(
                    tl: domain,
                    tr: domain) {
   // Note: the last call to updateBlockRow may have shorter dim1.
-  assert(tl.dim(1) == tr.dim(1));
+  if boundsChecking then assert(tl.dim(1) == tr.dim(1));
   const dim1 = tl.dim(1);
   const blk = dim1.low;
   const cornerLocale = targetLocaleCorner(blk);
@@ -884,7 +884,8 @@ proc backwardSub(nArg: indexType) {
 
   if tl1 != tl2 then
     halt("backwardSub() is implemented only for a square locale grid");
-  assert(n == nArg, "bs-n"); // do not rely on value forwarding for 'nArg',
+  if checkBsub then
+    assert(n == nArg, "bs-n"); // do not rely on value forwarding for 'nArg',
                              // instead rely on constant replication for 'n'
 
   tBScall.start();
@@ -1059,7 +1060,7 @@ proc bsComputeMyXsWithB(diaFrom, diaTo, locAB, locX, locB) {
   for i in diaFrom..diaTo by -1 {
     var sum: elemType = 0;
     for j in i+1..diaTo do
-      sum +=locAB[i,j] * locX[j];
+      sum += locAB[i,j] * locX[j];
     bsFinalizeXi(i, locX[i], sum, locAB[i,i], locB[i]);
   }
 }
@@ -1133,7 +1134,7 @@ proc bsComputePartSums(diaFrom, diaTo, locId1, locId2, diaLocId2,
   //writeln("bsComputePartSums  diaSlice=", diaFrom..diaTo,
   //        "  loc[", locId1, ",", locId2, "]  diaLoc [", locId1, ",",
   //        diaLocId2, "]  myPartSums.domain ", myPartSums.domain);
-  assert(diaFrom % blkSize == 1, "bsCPS-1");
+  if checkBsub then assert(diaFrom % blkSize == 1, "bsCPS-1");
 
   // Workaround for asserts not working within 'local'.
   var errs = "";
