@@ -178,7 +178,6 @@ module ChapelSyncvar {
   pragma "sync"
     pragma "single"
     pragma "no default functions"
-    pragma "no object"
     class _singlevar {
       type base_type;
       var  value: base_type;     // actual data - may need to be declared specially on some targets!
@@ -263,6 +262,15 @@ module ChapelSyncvar {
     }
     return b;
   }
+
+  // These are added to avoid a bug in the compiler, where the coercion wrapper
+  // assumes that the coercion being applied to a sync or single is from the
+  // wrapped {sync,single} type to its underlying fundamental type.
+  // But another form of this function would allow syncs and singles to be coerced
+  // to object.  The assumption fails, and the body of the coercion wrapper
+  // cannot be resolved.
+  inline proc chpl__maybeAutoDestroyed(x: _syncvar) param return false;
+  inline proc chpl__maybeAutoDestroyed(x: _singlevar) param return false;
 
   inline proc chpl__autoDestroy(x: _syncvar) {
     delete x;

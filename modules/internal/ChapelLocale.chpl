@@ -46,6 +46,8 @@ class locale {
   proc initTask() {} // Do nothing.
 
   proc alloc(nbytes:int) {
+    // Should use chpl_mem_alloc here, but we have to pipe through
+    // memory descriptors.
     extern proc chpl_malloc(nbytes:int) : object;
     return chpl_malloc(nbytes);
   }
@@ -140,7 +142,7 @@ proc chpl_here_alloc(x, md) {
 }
 
 // This one is called from protoIteratorClass().  Can we fix that call and get rid
-// of this specialized version
+// of this specialized version?
 proc chpl_here_alloc(type x, md) {
   var nbytes = __primitive("sizeof", x);
   var mem = here.getChild(__primitive("_get_subloc_id")).alloc(nbytes);

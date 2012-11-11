@@ -54,15 +54,12 @@ void buildDefaultFunctions(void) {
       if (ClassType* ct = toClassType(type->type))
         if (!ct->symbol->hasFlag(FLAG_REF))
           buildDefaultDestructor(ct);
+
       if (type->hasFlag(FLAG_NO_DEFAULT_FUNCTIONS))
         continue;
-      if (EnumType* et = toEnumType(type->type)) {
-        //buildDefaultReadFunction(et);
-        buildStringCastFunction(et);
-      } else if (ClassType* ct = toClassType(type->type)) {
-        buildDefaultReadWriteFunctions(ct);
-      }
+
       if (ClassType* ct = toClassType(type->type)) {
+        buildDefaultReadWriteFunctions(ct);
         if (isRecord(ct)) {
           if (!isRecordWrappedType(ct)) {
             build_record_equality_function(ct);
@@ -77,6 +74,8 @@ void buildDefaultFunctions(void) {
           build_union_assignment_function(ct);
       }
       if (EnumType* et = toEnumType(type->type)) {
+        //buildDefaultReadFunction(et);
+        buildStringCastFunction(et);
         build_enum_cast_function(et);
         build_enum_assignment_function(et);
         build_enum_enumerate_function(et);

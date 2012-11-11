@@ -841,7 +841,7 @@ parallel(void) {
 
         INT_ASSERT(call->get(1));
         // nodeID is the node ID for the datum used in the "on" expression.
-        CallExpr* nodeID = new CallExpr(PRIM_WIDE_GET_NODE, call->get(1)->copy());
+        CallExpr* nodeID = new CallExpr(PRIM_LOC_GET_NODE, call->get(1)->copy());
         CallExpr* localeID = new CallExpr(PRIM_LOCALE_ID);	// Runtime (GASNet) node.
         VarSymbol* tmpNode = newTemp(nodeID->typeInfo());
         VarSymbol* tmpLoc = newTemp(localeID->typeInfo());

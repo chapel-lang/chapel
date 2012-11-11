@@ -164,8 +164,8 @@ buildDefaultWrapper(FnSymbol* fn,
           // It is intentional that I use a strcmp here, and match _consruct_locale specifically.
           // This very special case should continue to nag until the basic problem is resolved.
           // <hilde>
-          allocExpr = new CallExpr(PRIM_CHPL_MALLOC, wrapper->_this,
-                                   new CallExpr(PRIM_SIZEOF, wrapper->_this));
+          allocExpr = new CallExpr(PRIM_CHPL_MEM_ALLOC, wrapper->_this,
+                                   newMemDesc(fn->_this->type->symbol->name));
         else
           allocExpr = new CallExpr("chpl_here_alloc", wrapper->_this,
                                    newMemDesc(fn->_this->type->symbol->name));

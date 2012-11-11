@@ -1083,12 +1083,10 @@ inline proc chpl__autoCopy(r: _ref) var return r;
 
 inline proc chpl__autoCopy(type t) type return t;
 
-inline proc chpl__maybeAutoDestroyed(x) param
-  return !(_isPrimitiveType(x.type) ||
-           _isImagType(x.type) ||
-           _isComplexType(x.type));
+inline proc chpl__maybeAutoDestroyed(x: numeric) param return false;
 inline proc chpl__maybeAutoDestroyed(x: enumerated) param return false;
 inline proc chpl__maybeAutoDestroyed(x: object) param return false;
+inline proc chpl__maybeAutoDestroyed(x) param return true;
 
 inline proc chpl__autoDestroy(x: object) { }
 inline proc chpl__autoDestroy(type t)  { }

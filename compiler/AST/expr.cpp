@@ -2279,12 +2279,6 @@ void CallExpr::codegen(FILE* outfile) {
       fprintf(outfile, ")");
       break;
     }
-    case PRIM_CHPL_MALLOC:
-      fprintf(outfile, "chpl_malloc(");
-      // get(1) is the result symbol, used only to extract the return type information.
-      get(2)->codegen(outfile);	// nbytes
-      fprintf(outfile, ")");
-      break;
     case PRIM_CHPL_MEM_ALLOC:
     {
       bool is_struct = false;

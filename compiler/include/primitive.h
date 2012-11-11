@@ -106,7 +106,6 @@ enum PrimitiveTag {
   PRIM_CHPL_COMM_PUT,   //  may eventually add others (e.g., non-blocking)
 
   PRIM_SIZEOF,
-  PRIM_CHPL_MALLOC,
   PRIM_CHPL_MEM_ALLOC,
   PRIM_CHPL_FREE,
   PRIM_CHPL_MEM_FREE,               // only for variables on heap?

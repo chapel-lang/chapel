@@ -455,7 +455,6 @@ initPrimitive() {
   prim_def(PRIM_SET_SERIAL, "task_set_serial", returnInfoVoid, true);
 
   prim_def(PRIM_SIZEOF, "sizeof", returnInfoDefaultInt);
-  prim_def(PRIM_CHPL_MALLOC, "chpl_malloc", returnInfoChplAlloc, true, true);
   prim_def(PRIM_CHPL_MEM_ALLOC, "chpl_mem_alloc", returnInfoChplAlloc, true, true);
   prim_def(PRIM_CHPL_FREE, "chpl_free", returnInfoVoid, true, true);
   prim_def(PRIM_CHPL_MEM_FREE, "chpl_mem_free", returnInfoVoid, true, true);
