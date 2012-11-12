@@ -52,6 +52,10 @@ config const printParams = false,
              printArrays = false,
              printStats = true;
 
+// For use in panelSolve if Ab is not initialized
+const psRng = new RandomStream();
+
+
 // These are solely to make the testing system happy given the COMPOPTS file.
 // To be removed once COMPOPTS becomes a non-issue.
 config var reproducible = false, verbose = false;
@@ -74,7 +78,7 @@ config const serub = false;
 config var blk1 = 0,
            blkn = 0;
 
-if (blk1 != 0 || blkn != 0 || onlyBsub || skipBsub) && verify {
+if (blk1 != 0 || blkn != 0 || onlyBsub || skipBsub || skipInit) && verify {
   verify = false;
   writeln("will SKIP verification because of options");
 }
@@ -160,7 +164,8 @@ compilerAssert(CHPL_NETWORK_ATOMICS == "none",
   //
   // We use 'AbD' instead of 'MatVectSpace' throughout.
   //
-  const AbD = {1..n, 1..n+1} dmapped new dmap(dist1b2b);
+  const MVS = {1..n, 1..n+1};
+  const AbD = MVS dmapped new dmap(dist1b2b);
 
   var Ab : [AbD] elemType,           // the matrix A and vector b
       piv: [1..n] indexType;         // a vector of pivot values
@@ -297,11 +302,12 @@ proc LUFactorize(n: indexType,
     if printStats then writeln("processing block ", blk);
     else vmsg("BLOCK  blk ", blk);
 
-    const tl = AbD[blk..#blkSize, blk..#blkSize],
-          tr = AbD[blk..#blkSize, blk+blkSize..],
-          bl = AbD[blk+blkSize.., blk..#blkSize],
-          br = AbD[blk+blkSize.., blk+blkSize..],
-          l  = AbD[blk.., blk..#blkSize];
+    // MVS was AbD
+    const tl = MVS[blk..#blkSize, blk..#blkSize],
+          tr = MVS[blk..#blkSize, blk+blkSize..],
+          bl = MVS[blk+blkSize.., blk..#blkSize],
+          br = MVS[blk+blkSize.., blk+blkSize..],
+          l  = MVS[blk.., blk..#blkSize];
     vmsg("slices");
 
     //
@@ -516,11 +522,11 @@ proc panelSolve(
     // k <= pivotRow <= n
     //
     const pivotVal = Ab[pivotRow, k];
-
-    if (pivotVal == 0) then
-      halt("Matrix cannot be factorized");
 */
     const (pivotRow, pivotVal) = psReduce(blk, k);
+    if (pivotVal == 0) then
+      halt("Matrix cannot be factorized");
+
     if checkPS {
       const newPivotRow = pivotRow, newPivotVal = pivotVal;
       {
@@ -643,8 +649,12 @@ proc psReduce(blkArg, kArg) {
   pivotAll.init();
   for rlr in psRedLocalResults do pivotAll.updateE(rlr);
 
-  if pivotAll.elmx == 0 then
-      halt("Matrix cannot be factorized");
+  if skipInit {
+    // We probably got (0,0). Replace with
+    // a random int (k <= i <= n) and a random real [.5,.9).
+    pivotAll.row = kArg+((n+1-kArg)*psRng.getNext()):int;
+    pivotAll.elmx = psRng.getNext()*.4+.5;
+  }
 
   return (pivotAll.row, pivotAll.elmx);
 }
@@ -801,11 +811,16 @@ proc updateBlockRow(
   }
 
   tUBR1iter.start();
-  const blkStarts = tr[blk..blk, .. by blkSize align 1];
+  const blkStarts = tr.dim(2)[.. by blkSize align 1];
+  const lid1 = targetLocalesIndexForAbIndex(1, blk);
+  const blkStartsStart = blkStarts.alignedLow;
 
 serial(serub) {
-  forall (blk1,js) in blkStarts {  // gotta be the same 'blk' as above
-    if boundsChecking then assert(blk == blk1, "updateBlockRow-blk1");
+  coforall lid2 in 0..#tl2 {
+   on targetLocalesRepl[lid1, lid2] {
+    const myStarts = blkStartsStart..n+1 by blkSize*tl2 align 1+blkSize*lid2;
+    forall js in myStarts {
+
     const dim1local = dim1; // needed for 'local'?
 
     local {
@@ -823,7 +838,9 @@ serial(serub) {
       } // for row
     }  // local
 
-  }  // forall
+    } // forall
+   } // on
+  } // coforall
 }  // serub
 
   vmsg("updateBlockRow() ", dim1);
@@ -1211,6 +1228,7 @@ proc printConfiguration() {
 
 proc quit(doExit = true) {
   if printStats {
+    VTimerQuiet = false;
     writeln();
     writeln("The totals are:");
     tPS1iter.printTotal();
