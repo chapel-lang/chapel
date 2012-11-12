@@ -3,12 +3,12 @@
 // and Timing routines
 //
 use Norm, Random, Time;
-use utils, UtilMath;
+use UtilMath;
 
 //
 // Use the user module for computing HPCC problem sizes
 //
-use HPCCProblemSize;
+//use HPCCProblemSize;
 
 //
 // Use the distributions we need for this computation
@@ -52,48 +52,6 @@ config const printParams = false,
              printArrays = false,
              printStats = true;
 
-// For use in panelSolve if Ab is not initialized
-const psRng = new RandomStream();
-
-
-// These are solely to make the testing system happy given the COMPOPTS file.
-// To be removed once COMPOPTS becomes a non-issue.
-config var reproducible = false, verbose = false;
-
-// skip some things
-config var verify = true;
-config var realInitAB = verify;
-config var blast = max(n.type);
-config var maxKinPS = max(int);
-config const onlyBsub = false;
-config const skipInit = false;
-config const skipPS   = false;
-config const skipUBR  = false;
-config const skipSC   = false;
-config const skipBsub = false;
-config const serps = false;
-config const serub = false;
-
-// restrict LUFactorize iterations, if non-0
-config var blk1 = 0,
-           blkn = 0;
-
-if (blk1 != 0 || blkn != 0 || onlyBsub || skipBsub || skipInit) && verify {
-  verify = false;
-  writeln("will SKIP verification because of options");
-}
-if blk1 == 0 then blk1 = 1;
-if blkn == 0 then blkn = n;
-
-// do additional checking in panelSolve, backwardSub()?
-config param checkPS   = boundsChecking;
-config param checkSC   = boundsChecking;
-config param checkBsub = boundsChecking;
-// for debugging; need to disable 'local' in bsComputeMyXs()
-config param bsFinalizeXiVerbose = false;
-if checkPS || checkSC || checkBsub || boundsChecking then
-  compilerWarning("additional checking is on"); //reminder that --fast is off
-
 config param maxBlkSize = 200;
 if blkSize > maxBlkSize then
   halt("maxBlkSize ", maxBlkSize,
@@ -106,7 +64,6 @@ compilerAssert(CHPL_NETWORK_ATOMICS == "none",
 //
 // The program entry point, currently module initialization
 //
-  printConfiguration();
 
   //
   // Compute targetLocales - required for Dimensional.
@@ -120,7 +77,7 @@ compilerAssert(CHPL_NETWORK_ATOMICS == "none",
   const tl1 = targetIds.dim(1).length,
         tl2 = targetIds.dim(2).length;
 
-  if !skipBsub && tl1 != tl2 then
+  if tl1 != tl2 then
     halt("backwardSub() is implemented only for a square locale grid");
 
   printBriefConfiguration();
@@ -135,7 +92,6 @@ compilerAssert(CHPL_NETWORK_ATOMICS == "none",
   coforall (l, id) in zip(Locales, LocaleSpace) do on l {
     targetLocalesRepl._value.localArrs[id].arrLocalRep = targetLocales;
   }
-  vmsg("replicated targetLocales");
 
   // Create individual dimension descriptors
   const
@@ -170,7 +126,6 @@ compilerAssert(CHPL_NETWORK_ATOMICS == "none",
   var Ab : [AbD] elemType,           // the matrix A and vector b
       piv: [1..n] indexType;         // a vector of pivot values
 
-  vmsg("allocated Ab");
 
   //
   // Create the 1-d replicated arrays for schurComplement().
@@ -181,7 +136,6 @@ compilerAssert(CHPL_NETWORK_ATOMICS == "none",
   var replA: [replAD] elemType,
       replB: [replBD] elemType;
 
-  vmsg("allocated replA,B");
 
   const replKD = {0..0, 1..n+1} dmapped new dmap(dist1r2b);
   var   replK: [replKD] elemType;
@@ -190,13 +144,12 @@ compilerAssert(CHPL_NETWORK_ATOMICS == "none",
         // can't use targetLocales because of "consistency" req. - that's OK
   var   replU: [replUD] elemType;
 
-  vmsg("allocated replK,U");
 
   // For panelSolve().
   record psRedResultT {
     var row: indexType;
     var elmx, absmx: elemType;
-    proc init() { absmx = min(absmx.type); if checkPS then row = -1; }
+    proc init() { absmx = min(absmx.type); }
     // updateE: // caller to ensure exclusive access
     proc updateE(r: indexType, e: elemType) { updateE(r, e, abs(e)); }
     proc updateE(alt: psRedResultT) { updateE(alt.row, alt.elmx, alt.absmx); }
@@ -242,12 +195,10 @@ compilerAssert(CHPL_NETWORK_ATOMICS == "none",
   const bsOthersPartSumsD = {0..#tl2} dmapped new dmap(distReplicated);
   var bsOthersPartSums: [bsOthersPartSumsD] bsSetofPartSums;
 
- if !onlyBsub then
   initAB();
 
   const startTime = getCurrentTime();     // capture the start time
 
- if !onlyBsub then
   LUFactorize(n, piv);                 // compute the LU factorization
 
   var x => backwardSub(n);  // perform the back substitution
@@ -255,7 +206,6 @@ compilerAssert(CHPL_NETWORK_ATOMICS == "none",
   var execTime = getCurrentTime() - startTime;  // store the elapsed time
   if execTime < 0 then execTime += 24*3600;          // adjust for date change
   printTime(execTime);
-  quit(doExit = false);
 
   //
   // Validate the answer and print the results
@@ -296,11 +246,8 @@ proc LUFactorize(n: indexType,
        |....|     |                |
        +----+-----+----------------+
   */
-  for blk in blk1 .. blkn by blkSize align 1 {
-
-    tLF1iter.start();
+  for blk in 1..n by blkSize {
     if printStats then writeln("processing block ", blk);
-    else vmsg("BLOCK  blk ", blk);
 
     // MVS was AbD
     const tl = MVS[blk..#blkSize, blk..#blkSize],
@@ -308,23 +255,18 @@ proc LUFactorize(n: indexType,
           bl = MVS[blk+blkSize.., blk..#blkSize],
           br = MVS[blk+blkSize.., blk+blkSize..],
           l  = MVS[blk.., blk..#blkSize];
-    vmsg("slices");
 
     //
     // Now that we've sliced and diced Ab properly, do the blocked-LU
     // computation:
     //
-   if !skipPS then
     panelSolve(l, piv);
-   if !skipUBR then
     updateBlockRow(tl, tr);
     
     //
     // update trailing submatrix (if any)
     //
-   if !skipSC then
     schurComplement(blk, bl, tr, br);
-    tLF1iter.stop();
   }
 }
 
@@ -362,17 +304,13 @@ proc schurComplement(blk, AD, BD, Rest) {
   // Prevent replication of unequal-sized slices
   if Rest.numIndices == 0 then return;
 
-  tSC1call.start();
-
   //
   // Copy data into replicated arrays so every processor has a local copy
   // of the data it will need to perform a local matrix-multiply.
   //
   replicateA(blk, AD.dim(2));
-  vmsgmore("  replA");
   //
   replicateB(blk, BD.dim(1));
-  vmsgmore("  replB");
 
     const low1 = Rest.dim(1).low,
           low2 = Rest.dim(2).low;
@@ -414,9 +352,6 @@ proc schurComplement(blk, AD, BD, Rest) {
               } // forall j2
             } // forall j1
           } // local
-
-  vmsg("schurComplement()");
-  tSC1call.stop();
 }
 
 /////////////////////////////////
@@ -465,18 +400,6 @@ inline proc hoistOffset(A: [], i1, slice2) {
   const d = A._value;
   compilerAssert(d.rank == 2);
   const result = d.origin + i1 * d.blk(1) - d.factoredOffs;
-  if checkSC {
-    assert(d.blk(2) == 1);
-    const i2a = slice2.alignedLow, i2b = slice2.alignedHigh;
-    if d.getDataIndex((i1, i2a)) != result + i2a then
-      writeln("ERROR indexing ", A.domain, " with ", (i1, i2a),
-              "  expected ", d.getDataIndex((i1, i2a)),
-              "  got ", result + i2a, "  result=", result);
-    if d.getDataIndex((i1, i2b)) != result + i2b then
-      writeln("ERROR indexing ", A.domain, " with ", (i1, i2b),
-              "  expected ", d.getDataIndex((i1, i2b)),
-              "  got ", result + i2b, "  result=", result);
-  }
   return result;
 }
 
@@ -490,25 +413,13 @@ proc panelSolve(
                panel: domain,
                piv: [] indexType) {
 
-  tPS1iter.start();
   const blk = panel.dim(1).low;
   const dim2 = panel.dim(2);
-  if checkPS then assert(blk == dim2.low);
   const cornerLocale = targetLocaleCorner(blk);
-  var kCount = maxKinPS;
-  var tStart, tReduce, tSwap, tRepl, tComp: vLapTime.type;
+  var tStart, tReduce, tSwap, tRepl, tComp: real;
   var tSwapMsg: string;
 
   for k in dim2[..n] {             // iterate through the columns
-
-    /*if vmore then*/ tStart = vLapTime;
-    kCount -= 1;
-    if kCount < 0 {
-      vmsg("panelSolve() skipping from k ", k);
-      return;
-    }
-
-    if checkPS then assert(panel.dim(1)[k..].length != 0, k);
 
 /* psReduce() does the following:
 
@@ -527,36 +438,15 @@ proc panelSolve(
     if (pivotVal == 0) then
       halt("Matrix cannot be factorized");
 
-    if checkPS {
-      const newPivotRow = pivotRow, newPivotVal = pivotVal;
-      {
-        const col = panel[k.., k..k];
-        const (_, (pivotRow, _)) = maxloc reduce zip(abs(Ab(col)), col);
-        const pivotVal = Ab[pivotRow, k];
-        if pivotRow != newPivotRow || pivotVal != newPivotVal then
-         {
-          writeln("panelSolve reduction ERROR k=", k,
-                  "  got ", (newPivotRow, newPivotVal),
-                  "  expected ", (pivotRow, pivotVal));
-          writeln("the panel is: ", Ab(col));
-         }
-      }
-    }  // checkPS
-    if vmore then tReduce = getCurrentTimeLoc(); //vmsgmore("  reduce");
-
     // Swap the current row with the pivot row and update the pivot vector
     // to reflect that
    if k == pivotRow {
-    if vmore { tSwap = getCurrentTimeLoc(); tSwapMsg = "skipped"; }
-    //vmsgmore("  swaps skipped  pivotRow ", pivotRow);
+    // nothing
    } else {
     var wasLocal: bool; // fyi only
     //Ab[k..k, ..] <=> Ab[pivotRow..pivotRow, ..];
     psSwap(k, pivotRow, wasLocal);
     piv[k] <=> piv[pivotRow];
-    if vmore { tSwap = getCurrentTimeLoc();
-               tSwapMsg = if wasLocal then "locally" else "w/comm"; }
-    //vmsgmore("  swaps ", if wasLocal then "locally" else "w/comm");
    }
 
 /* replicate + psCompute() do the following:
@@ -576,33 +466,18 @@ proc panelSolve(
       local
         for j in dim2local[k+1..] do
           replK[0,j] = Ab[k,j];
-      //vmsgmore("  seeding replication");
       replicateK(blk);
-      //vmsgmore("  replicating K");
-      if vmore then tRepl = getCurrentTimeLoc();
     }
+
     // compute
     psCompute(panel, blk, k, pivotVal);
-
-    if vmore {
-      tComp = getCurrentTimeLoc();
-      vmsg("panelSolve ", k,
-           "  red ", format("#.###", tReduce - tStart),
-           "  sw ", tSwapMsg, " ", format("#.###", tSwap - tReduce),
-           "  repl ", format("#.###", tRepl - tSwap),
-           "  comp ", format("#.###", tComp - tRepl));
-    }
-    //vmsgmore("panelSolve ", k);
   }
-  vmsg("panelSolve()");
-  tPS1iter.stop();
 }
 
 proc psReduce(blkArg, kArg) {
   const lid2 = targetLocalesIndexForAbIndex(2, kArg);
   const rlrLoc = psRedLocalResults.locale;
 
- serial(serps) {
   coforall lid1 in 0..#tl1 {
     on targetLocalesRepl[lid1, lid2] {
       var locResult: psRedResultT;
@@ -617,10 +492,8 @@ proc psReduce(blkArg, kArg) {
         maxRes.write(min(real));
         // Starts of all the blocks in the panel that are local to this node.
         const panelStarts = blk..n by blkSize*tl1c align 1+blkSize*lid1c;
-        serial(serps) {
           forall iStart in panelStarts {
             const iRange = max(iStart, k)..min(iStart + blkSize - 1, n);
-            if checkPS then assert(!iRange.isEmpty()); // so myResult is meaningful
             var myResult: psRedResultT;
             myResult.init();
             var locAB => Ab._value.dsiLocalSlice1((iRange, k));
@@ -634,7 +507,6 @@ proc psReduce(blkArg, kArg) {
               upd$;  // unlock
             }
           } // forall
-        } // serial
       } // local
 
       const locConst = locResult;  // for value forwarding
@@ -642,19 +514,11 @@ proc psReduce(blkArg, kArg) {
 
     } // on
   } // coforall
- } // serial
 
   // Merge the results from psRedLocalResults.
   var pivotAll: psRedResultT;
   pivotAll.init();
   for rlr in psRedLocalResults do pivotAll.updateE(rlr);
-
-  if skipInit {
-    // We probably got (0,0). Replace with
-    // a random int (k <= i <= n) and a random real [.5,.9).
-    pivotAll.row = kArg+((n+1-kArg)*psRng.getNext()):int;
-    pivotAll.elmx = psRng.getNext()*.4+.5;
-  }
 
   return (pivotAll.row, pivotAll.elmx);
 }
@@ -664,7 +528,6 @@ proc psCompute(panel, blk, k, pivotVal) {
   const dim2end = panel.dim(2).alignedHigh;
   const lid2 = targetLocalesIndexForAbIndex(2, k);
 
- serial(serps) {
   coforall lid1 in 0..#tl1 {
     on targetLocalesRepl[lid1, lid2] {
 
@@ -676,13 +539,10 @@ proc psCompute(panel, blk, k, pivotVal) {
       const firstNonemptyBlock = blk + (if emptyFirstBlock then blkSize else 0);
       const panelStarts = allStarts[firstNonemptyBlock..];
 
-     serial(serps) {
       forall iStartRaw in panelStarts {
           // If this is the top block of the panel, start at Row k+1
           const iStart = max(iStartRaw, k+1),
                 iEnd   = min(iStartRaw + blkSize - 1, n);
-          // Verify that we have ruled out empty blocks
-          if checkPS then assert(iStart <= iEnd, (iStart, iEnd));
 
         // TODO: move this 'local' right after 'on'
         local {
@@ -700,38 +560,25 @@ proc psCompute(panel, blk, k, pivotVal) {
           } // for i
         } // local
       } // forall iStartRaw
-     } // serial
     } // on
   } // coforall lid1
- } // serial
 } // psCompute()
 
 proc psSwap(k, pr, out wasLocal) {
-  if checkPS {
-    assert(k != pr); // ensure we have checked it elsewhere
-    assert(k <= pr && pr <= n); // sanity
-  }
-
   const lidk1 = targetLocalesIndexForAbIndex(1, k),
         lidpr1 = targetLocalesIndexForAbIndex(1, pr);
   wasLocal = lidk1 == lidpr1;
 
- serial(serps) {
   coforall lid2 in 0..#tl2 {
     on targetLocalesRepl[lidk1, lid2] {
       // Starts of all the blocks local to this node.
       const myStarts = 1..n+1 by blkSize*tl2 align 1+blkSize*lid2;
 
-     serial(serps) {
       forall js in myStarts {
         const mycol = js..min(js+blkSize-1,n+1);
         // Ab[k,mycol] <=> Ab[pr,mycol]
 
         if lidk1 == lidpr1 {
-          if checkPS {
-            assert(targetLocaleReplForAbIndex(k, js) == here); // sanity
-            assert(targetLocaleReplForAbIndex(pr,js) == here); // lidk1==lidpr1
-          }
           // sweet, can swap locally
           local {
             var locABk => Ab._value.dsiLocalSlice1((k, mycol));
@@ -773,10 +620,8 @@ proc psSwap(k, pr, out wasLocal) {
 
         } // if lidk1 == lidpr1
       } // forall js
-     } // serial
     } // on
   } // coforall lid2
- } // serial
 } // psSwap()
 
 /////////////////////////////////////////////////////////////////////////////
@@ -805,17 +650,13 @@ proc updateBlockRow(
       // we do not need the last row of tl, but pruning it off seems expensive
       forall (i,j) in {(...tlDimsLocal)} do
         replU[i-blk, j-blk] = Ab[i,j];
-    vmsgmore("  seeding replication");
     replicateU(blk);
-    vmsgmore("  replicating U");
   }
 
-  tUBR1iter.start();
   const blkStarts = tr.dim(2)[.. by blkSize align 1];
   const lid1 = targetLocalesIndexForAbIndex(1, blk);
   const blkStartsStart = blkStarts.alignedLow;
 
-serial(serub) {
   coforall lid2 in 0..#tl2 {
    on targetLocalesRepl[lid1, lid2] {
     const myStarts = blkStartsStart..n+1 by blkSize*tl2 align 1+blkSize*lid2;
@@ -841,10 +682,6 @@ serial(serub) {
     } // forall
    } // on
   } // coforall
-}  // serub
-
-  vmsg("updateBlockRow() ", dim1);
-  tUBR1iter.stop();
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -852,40 +689,7 @@ serial(serub) {
 //
 // compute the backwards substitution
 //
-proc backwardSubRef(n: indexType) {
-  // make the rest of the code operate locally without changing it
-  var Ab => makeLocalCopyOfAb();
-
-  const bd = Ab.domain.dim(1);  // or simply 1..n
-  var x: [bd] elemType;
-
-  for i in bd by -1 do
-    x[i] = (Ab[i,n+1] - (+ reduce [j in i+1..bd.high] (Ab[i,j] * x[j]))) 
-            / Ab[i,i];
-
-  return x;
-}
-
-// Illustrates bsFinalizeXi().
-proc backwardSubAlt(n: indexType) {
-  var Ab => makeLocalCopyOfAb();
-
-  const bd = Ab.domain.dim(1);  // or simply 1..n
-  var x: [bd] elemType;
-
-  for i in bd by -1 do
-  {
-    const redu = (+ reduce [j in i+1..bd.high] (Ab[i,j] * x[j]));
-    bsFinalizeXi(i, x[i], redu, Ab[i,i], Ab[i,n+1]);
-  }
-
-  return x;
-}
-
 inline proc bsFinalizeXi(i, ref x_i, partSum, Ab_i_i, Ab_i_n1) {
-  if bsFinalizeXiVerbose then // beware of 'local' in bsComputeMyXs()
-    writeln("bsFinalizeXi  ", i, "  ", x_i, "  ", partSum, "  ",
-            "  Ab[i,i] ", Ab_i_i, "  Ab[i,n+1] ", Ab_i_n1);
   x_i = (Ab_i_n1 - (x_i + partSum)) / Ab_i_i;
 }
 
@@ -893,28 +697,13 @@ inline proc bsFinalizeXi(i, ref x_i, partSum, Ab_i_i, Ab_i_n1) {
 // compute the backwards substitution, the new way
 //
 proc backwardSub(nArg: indexType) {
-  if skipBsub {
-    // return a bogus var but it matches the other return
-    var xTemp: [(...replX.domain.dims())] elemType;
-    return xTemp[0, 1..n];
-  } else {
-
   if tl1 != tl2 then
     halt("backwardSub() is implemented only for a square locale grid");
-  if checkBsub then
-    assert(n == nArg, "bs-n"); // do not rely on value forwarding for 'nArg',
-                             // instead rely on constant replication for 'n'
 
-  tBScall.start();
   const diaFrom_N = (divceilpos(n, blkSize)-1) * blkSize + 1,
         diaTo_N   = n,
         locId1_N  = targetLocalesIndexForAbIndex(1, diaFrom_N),
         locId2_N  = targetLocalesIndexForAbIndex(2, diaFrom_N);
-
-  if checkBsub {
-    assert(diaTo_N < diaFrom_N + blkSize, "bs-7-1");
-    assert(diaFrom_N % blkSize == 1, "bs-7-2");
-  }
 
   on targetLocales[locId1_N, locId2_N] {
 
@@ -926,8 +715,6 @@ proc backwardSub(nArg: indexType) {
     // TODO: all except the block right above can be done in background
     replicateK(diaFrom_N);  // replicates replX
   }
-  vmsgmore("BS diagonal ", diaFrom_N, "..", diaTo_N,
-           "  on [", locId1_N, ",", locId2_N, "]");
 
   var prevLocId1 = locId1_N,
       prevLocId2 = locId2_N,
@@ -942,11 +729,6 @@ proc backwardSub(nArg: indexType) {
           diaFrom = prevDiaFrom - blkSize,
           diaTo   = prevDiaFrom - 1;
 
-    if checkBsub {
-      assert(diaTo == diaFrom + blkSize - 1, "bs-8-1");
-      assert(diaFrom_N % blkSize == 1, "bs-8-2");
-    }
-
     // update "previous" vars
     prevLocId1 = locId1;
     prevLocId2 = locId2;
@@ -958,8 +740,6 @@ proc backwardSub(nArg: indexType) {
       on targetLocales[locId1, locCol] do
         bsComputeRow(diaFrom, diaTo, locId1, locCol, locId2);
 
-    vmsgmore("BS diagonal ", diaFrom, "..", diaTo,
-             "  on [", locId1, ",", locId2, "]");
   }  // while prevDiaFrom
 
   // gather into a DR array
@@ -972,21 +752,10 @@ proc backwardSub(nArg: indexType) {
   // the error 'zippered iterations have non-equal lengths'.
   //forall (repl,locl) in zip(replX,x) do locl = repl;
 
-  // end the new algorithm
-  tBScall.stop();
-  vmsg("backwardSub() new");
-
   return xTemp[0, 1..n];
-  } // if skipBsub
 }
 
 proc bsComputeRow(diaFrom, diaTo, locId1, locId2, diaLocId2) {
-  if checkBsub {
-    assert(here == targetLocalesRepl[locId1, locId2], "bsR-1-1");
-    // we are doing a full block - this is an FYI
-    assert(diaTo == diaFrom + blkSize - 1, "bsR-1-3");
-  }
-
   const onDiag = locId2 == diaLocId2;
   if onDiag {
     // NB the following picks locId2-th element from the current
@@ -1016,12 +785,6 @@ proc bsComputeRow(diaFrom, diaTo, locId1, locId2, diaLocId2) {
     var myPartSums => bsLocalPartSums._value.localArrs[here.id].arrLocalRep;
     ensureDR(myPartSums._value, "bsR myPartSums");
 
-    if checkBsub {
-      assert(myPartSums.domain.dims() == (0..#blkSize,), "bsR-2");
-      // Verify initialization.
-      for ps in myPartSums do assert(ps == 0, "bsR-3");
-    }
-
     var gotBlocks: bool;
     bsComputePartSums(diaFrom, diaTo, locId1, locId2, diaLocId2,
                       myPartSums, gotBlocks);
@@ -1039,12 +802,6 @@ proc bsComputeMyXs(diaFrom, diaTo, locId1, locId2, zeroOutX) {
   var locAB => Ab._value.dsiLocalSlice1((diaSlice, diaSlice));
   var locX => replX._value.dsiLocalSlice1((0, diaSlice));
 
-  if checkBsub {
-    assert(here == targetLocalesRepl[locId1, locId2], "bsX-1");
-    assert(locAB.domain.dims() == (diaSlice, diaSlice), "bsX-2");
-    assert(locX.domain.dims() == tuple(diaSlice), "bsX-3");
-  }
-
   // because we are reusing replK for replX
   if zeroOutX then
     for x in locX do x = 0;
@@ -1060,10 +817,6 @@ proc bsComputeMyXs(diaFrom, diaTo, locId1, locId2, zeroOutX) {
     var locB => replB._value.dsiLocalSlice1((1, diaSlice));
     // get the remote Ab[diaSlice, n+1] into locB
     on targetLocaleReplForAbIndex(diaFrom, n+1) {
-      if checkBsub {
-        // verify that that is really a local slice
-        local var testDummy => Ab._value.dsiLocalSlice1((diaSlice, n+1));
-      }
       // TODO: bulkify, unless it is already
       locB = Ab._value.dsiLocalSlice1((diaSlice, n+1));
     }
@@ -1089,12 +842,6 @@ proc bsIncorporateOthersPartSums(diaFrom, diaTo, locId1, locId2) {
   ensureDR(partSums._value, "bsI partSums");
   ensureDR(locX._value, "bsI locX");
 
-  if checkBsub {
-    // Our own partial sums are already available.
-    assert(partSums[locId2].avail.read() != spsNA, "bsI-1");
-    assert(locX.numElements == blkSize, "bsI-3");
-  }
-
   // because we are reusing replK for replX
   for x in locX do x = 0;
 
@@ -1104,7 +851,6 @@ proc bsIncorporateOthersPartSums(diaFrom, diaTo, locId1, locId2) {
   inline proc ihelper(ref ps: bsSetofPartSums, locId2: int) {
     const avail = ps.avail.read();
     if avail == spsNA then return;
-    if checkBsub then assert(avail == spsAV || avail == spsNBL, "bsI-4");
     // Indicate that we got it.
     ps.avail.write(spsNA);
     toIncorporate -= 1;
@@ -1125,8 +871,6 @@ proc bsIncorporateOthersPartSums(diaFrom, diaTo, locId1, locId2) {
       for l2 in 0..#tl2 do ihelper(partSums[l2], l2);
       if !seenOther then chpl_task_yield();
     }
-  // We must have seen *something* the last time around.
-  if checkBsub then assert(seenOther, "bsI-2");
 
 }  // bsIncorporateOthersPartSums
 
@@ -1136,7 +880,6 @@ proc bsSendPartSums(diaFrom, diaTo, locId1, locId2, diaLocId2,
     sendhelper(bsOthersPartSums[locId2]);
 
     proc sendhelper(ref ps: bsSetofPartSums) {
-      if checkBsub then assert(ps.avail.read() == spsNA, "bsSPS-1");
       const avail = if gotBlocks then spsAV else spsNBL;
       if gotBlocks then
         // TODO: bulkify, unless it is already
@@ -1151,10 +894,6 @@ proc bsComputePartSums(diaFrom, diaTo, locId1, locId2, diaLocId2,
   //writeln("bsComputePartSums  diaSlice=", diaFrom..diaTo,
   //        "  loc[", locId1, ",", locId2, "]  diaLoc [", locId1, ",",
   //        diaLocId2, "]  myPartSums.domain ", myPartSums.domain);
-  if checkBsub then assert(diaFrom % blkSize == 1, "bsCPS-1");
-
-  // Workaround for asserts not working within 'local'.
-  var errs = "";
 
   // TODO: move 'local' to the caller, once error checks are out
   local {
@@ -1166,13 +905,6 @@ proc bsComputePartSums(diaFrom, diaTo, locId1, locId2, diaLocId2,
     const diaSlice = diaFrom..diaTo;  // iterate in dim 1
     var gotBlocks = false;
 
-    if checkBsub {
-      for (mps, ix) in zip(myPartSums, myPartSums.domain) {
-        if mps != 0 then
-          errs += (" bsCPS-7 myPartSums[" + ix + "] = " + mps);
-      }
-    }
-
     // TODO: some parallelism would be nice here
     // for that, would need myPartSums to have atomic elements
     for pstart in startsToProcess {
@@ -1182,15 +914,6 @@ proc bsComputePartSums(diaFrom, diaTo, locId1, locId2, diaLocId2,
       var pAB => Ab._value.dsiLocalSlice1((diaSlice, psSlice));
       ensureDR(pX._value, "bsCPS pX");
       ensureDR(pAB._value, "bsCPS pAB");
-
-      if checkBsub {
-        if (pstart-1) % (blkSize*tl2) != blkSize * locId2 then
-          errs += (" bsCPS-2  pstart " + pstart + "  locId2 " + locId2);
-        if pX.domain.dims() != (psSlice,) then
-          errs += (" bsCPS-3 "+pstart+": " + (pX.domain.dims():string));
-        if pAB.domain.dims() != (diaSlice, psSlice) then
-          errs += (" bsCPS-4 "+pstart+": " + (pAB.domain.dims():string));
-      }
 
       // TODO: some parallelism would be nice here
       for i in diaSlice {
@@ -1205,9 +928,6 @@ proc bsComputePartSums(diaFrom, diaTo, locId1, locId2, diaLocId2,
 
     gotBlocksArg = gotBlocks;
   }  // local
-
-  if errs.length != 0 then
-    writeln("bsComputePartSums on [", locId1, ",", locId2, "] ERRORS:", errs);
 
   //writeln("bsComputePartSums  result ", myPartSums,
   //        "  gotBlocks ", gotBlocksArg);
@@ -1226,122 +946,35 @@ proc printConfiguration() {
   }
 }
 
-proc quit(doExit = true) {
-  if printStats {
-    VTimerQuiet = false;
-    writeln();
-    writeln("The totals are:");
-    tPS1iter.printTotal();
-    tUBR1iter.printTotal();
-    tSC1call.printTotal();
-    tLF1iter.printTotal();
-    tBScall.printTotal();
-    writeln();
-  }
-  if doExit { writeln("quit(): exiting");  exit(0); }
-}
-  
-
 //   
 // construct an n by n+1 matrix filled with random values and scale
 // it to be in the range -1.0..1.0
 //
 proc initAB() {
-  if skipInit {
-    vmsg("initAB skipped");
-    return;
-  }
-  tInit.start();
- if realInitAB {
   fillRandom(Ab, seed);
-  vmsg("fillRandom");
   forall ab in Ab do local { ab = ab * 2.0 - 1.0; }  //Ab = Ab * 2.0 - 1.0;
-  vmsg("Ab computation in initAB");
- } else {
-  forall (ab, init) in zip(Ab, initABalt()) do ab = init;
-  vmsg("initABalt()");
- }
-  tInit.stop();
-}
-
-iter initABalt(param tag: iterKind, followThis): real
-  where tag == iterKind.follower
-{
-  const iaStart = -0.912534, iaStep = 0.983, iaBound = 0.99,
-        iaReset = -1.98234;
-
-  //writeln("follower ", followThis, "  on ", here.id);
-  // we know that followThis.low will be >= 0
-  const f1 = followThis(1).low + 1,
-        f2 = followThis(2).low + 1;
-  var cur = iaStart + 0.77 / f1 + 0.83 / f2;
-  const step = iaStep / f1 / f2;
-
-  inline proc advance() {
-    if boundsChecking then
-      if cur <= -1 || cur >= 1 then halt("initABalt: invalid cur = ", cur);
-    cur += step;
-    if cur > iaBound then cur += iaReset;
-    return cur;
-  }
-
-  if boundsChecking {
-    for f1 in followThis(1) do
-      for f2 in followThis(2) do
-        yield advance();
-  } else {
-    // we don't care how many times to do this
-    while true do
-      yield advance();
-  }
-}
-
-iter initABalt(): real
-{
-  writeln("dummy initABalt");
-  yield 0;
 }
 
 //
 // calculate norms and residuals to verify the results
 //
 proc verifyResults(x) {
-  if !verify then return true;
-  if printStats then writeln("verifying results locally",
-                       if onlyBsub then ", backwardSub only" else "", "...");
-  tVer.start();
+  if printStats then writeln("verifying results locally");
   initAB();
-
-  if onlyBsub {
-    var xRef => backwardSubRef(n);
-    const (err, eloc) = maxloc reduce zip(abs(x - xRef), 1..n);
-    const mAct = x[eloc], mRef = xRef[eloc];
-    const checkOK = (err == 0) ||
-                    // the 1e-10 bound is chosen empirically
-                    ((err / max(abs(mAct), abs(mRef))) < 1e-10);
-    if !checkOK then
-      writeln("verifyResults on backwardSub(): error ", err, "  at ", eloc,
-            "  got ", mAct, "  expected ", mRef);
-    tVer.stop();
-    return checkOK;
-  }
 
   // make the rest of the code operate locally without changing it
   var Ab => makeLocalCopyOfAb();
   
   const axmbNorm = norm(gaxpyMinus(Ab[.., 1..n], x, Ab[.., n+1..n+1]), normType.normInf);
-  vmsgmore("axmbNorm");
 
   const a1norm   = norm(Ab[.., 1..n], normType.norm1),
         aInfNorm = norm(Ab[.., 1..n], normType.normInf),
         x1Norm   = norm(Ab[.., n+1..n+1], normType.norm1),
         xInfNorm = norm(Ab[.., n+1..n+1], normType.normInf);
-  vmsgmore("four norms");
 
   const resid1 = axmbNorm / (epsilon * a1norm * n),
         resid2 = axmbNorm / (epsilon * a1norm * x1Norm),
         resid3 = axmbNorm / (epsilon * aInfNorm * xInfNorm);
-  vmsgmore("three resids");
 
   const checkOK = max(resid1, resid2, resid3) < 16.0;
   if (printStats && !checkOK) {
@@ -1350,7 +983,6 @@ proc verifyResults(x) {
     writeln("resid3: ", resid3);
   }
 
-  tVer.stop();
   return checkOK;
 }
 
@@ -1388,13 +1020,6 @@ proc replicateA(abIx, dim2arg) {
                 //locReplA[i - iStart + rStart, j - jStart + 1] = locAB[i,j];
                 locReplAdd(locReplAoff + j - jStart + 1) = locABdd(locABoff+j);
             } // for i
-
-            if checkSC {
-              for i in iRange do
-                for j in 1..blkSize do
-                  if Ab[i,j+jStart-1] != replA[i,j] then
-                    writeln("replicateA ERROR  Ab", (i,j+jStart-1), "=", Ab[i,j+jStart-1], " vs replA", (i,j), "=", replA[i,j], " on ", (lid1, fromLocId2));  // bummer - will cause "non-local access" failure
-            }
 
           } // forall iStart
         } // local
@@ -1439,13 +1064,6 @@ proc replicateB(abIx, dim1arg) {
                 locReplBdd(locReplBoff+j-jStart+rStart) = locABdd(locABoff+j);
             } // for i
 
-            if checkSC {
-              for i in 1..blkSize do
-                for j in jRange do
-                  if Ab[i+iStart-1,j] != replB[i,j] then
-                    writeln("replicateA ERROR  Ab", (i+iStart-1,j), "=", Ab[i+iStart-1,j], " vs replB", (i,j), "=", replB[i,j], " on ", (fromLocId1, lid2));  // bummer - will cause "non-local access" failure
-            }
-
           } // forall jStart
         } // local
 
@@ -1462,14 +1080,6 @@ proc replicateK(abIx) {
     const fromLocId1 = targetLocalesIndexForAbIndex(1, abIx);
     const fromLocId2 = targetLocalesIndexForAbIndex(2, abIx);
     // verify that we are on a good locale, optionally
-    if boundsChecking {
-      const fromLocale = targetLocales(fromLocId1, fromLocId2);
-      if here != fromLocale then
-        // todo: halt or writeln?
-        halt("replicateK(abIx=", abIx, ")  executing on ",
-                here.id, "  expecting ", fromLocale.id, " ",
-                (fromLocId1, fromLocId2));
-    }
     const lid2 = fromLocId2;
         coforall lid1 in 0..#tl1 do
           if lid1 != fromLocId1 then
@@ -1481,14 +1091,6 @@ proc replicateU(abIx) {
     const fromLocId1 = targetLocalesIndexForAbIndex(1, abIx);
     const fromLocId2 = targetLocalesIndexForAbIndex(2, abIx);
     // verify that we are on a good locale, optionally
-    if boundsChecking {
-      const fromLocale = targetLocales(fromLocId1, fromLocId2);
-      if here != fromLocale then
-        // todo: halt or writeln?
-        halt("replicateU(abIx=", abIx, ")  executing on ",
-                here.id, "  expecting ", fromLocale.id, " ",
-                (fromLocId1, fromLocId2));
-    }
     var myLocalArr => replU._value.localArrs[here.id].arrLocalRep;
     coforall targloc in targetLocales[fromLocId1, ..] do
       if targloc != here then
@@ -1508,15 +1110,6 @@ proc targetLocaleReplForAbIndex(i,j)
 
 proc targetLocaleCorner(blk) {
   const cornerLocale = targetLocaleForAbIndex(blk, blk);
-  if boundsChecking {
-    const altLocale = Ab[blk,blk].locale;
-    if cornerLocale != altLocale then
-      halt("cornerLocale(blk=", blk, ")  mismatch:",
-           "  comp1 -> ", cornerLocale.id, " locale idx ",
-           (targetLocalesIndexForAbIndex(1, blk),
-            targetLocalesIndexForAbIndex(2, blk)),
-           "  comp2 -> ", altLocale.id);
-  }
   return cornerLocale;
 }
 
@@ -1526,9 +1119,8 @@ proc targetLocaleCorner(blk) {
 // print success/failure, the execution time and the Gflop/s value
 //
 proc printResults(successful, execTime) {
-  if !verify         then writeln("Validation skipped");
-  else if successful then writeln("Validation: success");
-  else                    writeln("Validation: -FAILURE ERROR");
+  if successful then writeln("Validation: success");
+  else               writeln("Validation: FAILURE");
   if (printStats) {
     writeln("Execution time = ", execTime);
     const GflopPerSec = ((2.0/3.0) * n**3 + (3.0/2.0) * n**2) / execTime * 1e-9;
@@ -1538,8 +1130,7 @@ proc printResults(successful, execTime) {
 proc printTime(execTime) {
   if (printStats) {
     const GflopPerSec = ((2.0/3.0) * n**3 + (3.0/2.0) * n**2) / execTime * 1e-9;
-    writeln(execTime, " sec   ", GflopPerSec, " GFLOPS",
-            if verify then " to be verified" else "");
+    writeln(execTime, " sec   ", GflopPerSec, " GFLOPS");
     printBriefConfiguration(); // for convenience
   }
 }
@@ -1576,10 +1167,8 @@ proc makeLocalCopyOfAb() {
   ensureDR(localAb._value, "makeLocalCopyOfAb");
   if numLocales <= 4 {  // heuristic
     localAb = Ab;
-    vmsgmore("localized Ab - 1");
   } else {
     forall (g,l) in zip(Ab,localAb) do l = g;
-    vmsgmore("localized Ab - 2");
   }
   return localAb;
 }
