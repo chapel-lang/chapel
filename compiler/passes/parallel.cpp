@@ -148,9 +148,9 @@ bundleArgs(CallExpr* fcall) {
   wrap_fn->retType = dtVoid;
   wrap_fn->insertAtTail(call_orig);     // add new call
   if (fn->hasFlag(FLAG_ON) || fn->hasFlag(FLAG_GPU_ON))
-    fcall->insertAfter(new CallExpr("chpl_here_free", tempc));
+    fcall->insertAfter(new CallExpr(PRIM_CHPL_MEM_FREE, tempc));
   else
-    wrap_fn->insertAtTail(new CallExpr("chpl_here_free", wrap_c));
+    wrap_fn->insertAtTail(new CallExpr(PRIM_CHPL_MEM_FREE, wrap_c));
 
   DefExpr  *fcall_def= (toSymExpr( fcall->baseExpr))->var->defPoint;
   fcall->remove();                     // rm orig. call
@@ -373,11 +373,11 @@ freeHeapAllocatedVars(Vec<Symbol*> heapAllocatedVars) {
         }
         FnSymbol* fn = toFnSymbol(move->parentSymbol);
         if (fn && innermostBlock == fn->body)
-          fn->insertBeforeReturnAfterLabel(new CallExpr("chpl_here_free", move->get(1)->copy()));
+          fn->insertBeforeReturnAfterLabel(new CallExpr(PRIM_CHPL_MEM_FREE, move->get(1)->copy()));
         else {
           BlockStmt* block = toBlockStmt(innermostBlock);
           INT_ASSERT(block);
-          block->insertAtTailBeforeGoto(new CallExpr("chpl_here_free", move->get(1)->copy()));
+          block->insertAtTailBeforeGoto(new CallExpr(PRIM_CHPL_MEM_FREE, move->get(1)->copy()));
         }
       }
     }

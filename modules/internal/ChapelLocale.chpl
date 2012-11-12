@@ -45,21 +45,16 @@ class locale {
   // Also required by the sublocale interface.
   proc initTask() {} // Do nothing.
 
-  proc alloc(nbytes:int) {
-    // Should use chpl_mem_alloc here, but we have to pipe through
-    // memory descriptors.
-    extern proc chpl_malloc(nbytes:int) : object;
-    return chpl_malloc(nbytes);
-  }
-
-  proc realloc(x:object, nbytes:int) {
-    extern proc chpl_realloc(x:object, nbytes:int) : object;
-    return chpl_realloc(x, nbytes);
+  proc alloc(type x, md) {
+    // The default implementation.
+//  var nbytes = __primitive("sizeof", x);
+//  var mem = __primitive("chpl_mem_alloc", x, md);
+//  return __primitive("cast", x.type, mem);
+    return __primitive("chpl_mem_alloc", x, md);
   }
 
   proc free(x:object) {
-    extern proc chpl_free(x:object) : void;
-    chpl_free(x);
+    __primitive("chpl_mem_free", x);
   }
 }
 
@@ -136,23 +131,13 @@ proc chpl_getPrivatizedCopy(type objectType, objectPid:int): objectType
 // an initializer for the return value, which calls its constructor, which calls
 // chpl_here_alloc ad infinitum.  But if the return type is left off, it works!!!
 proc chpl_here_alloc(x, md) {
-  var nbytes = __primitive("sizeof", x);
-  var mem = here.getChild(__primitive("_get_subloc_id")).alloc(nbytes);
-  return __primitive("cast", x.type, mem);
+  return here.getChild(__primitive("_get_subloc_id")).alloc(x.type, md);
 }
 
 // This one is called from protoIteratorClass().  Can we fix that call and get rid
 // of this specialized version?
 proc chpl_here_alloc(type x, md) {
-  var nbytes = __primitive("sizeof", x);
-  var mem = here.getChild(__primitive("_get_subloc_id")).alloc(nbytes);
-  return __primitive("cast", x, mem);
-}
-
-proc chpl_here_realloc(x, md) {
-  var nbytes = __primitive("sizeof", x);
-  var mem = here.getChild(__primitive("_get_subloc_id")).realloc(x, nbytes);
-  return __primitive("cast", x.type, mem);
+  return here.getChild(__primitive("_get_subloc_id")).alloc(x, md);
 }
 
 proc chpl_here_free(x) {

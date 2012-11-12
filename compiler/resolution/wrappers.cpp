@@ -165,10 +165,10 @@ buildDefaultWrapper(FnSymbol* fn,
           // This very special case should continue to nag until the basic problem is resolved.
           // <hilde>
           allocExpr = new CallExpr(PRIM_CHPL_MEM_ALLOC, wrapper->_this,
-                                   newMemDesc(fn->_this->type->symbol->name));
+                                   newMemDesc(wrapper->_this->type->symbol->name));
         else
           allocExpr = new CallExpr("chpl_here_alloc", wrapper->_this,
-                                   newMemDesc(fn->_this->type->symbol->name));
+                                   newMemDesc(wrapper->_this->type->symbol->name));
         wrapper->insertAtTail(new CallExpr(PRIM_MOVE, wrapper->_this, allocExpr));
                                 
         wrapper->insertAtTail(new CallExpr(PRIM_SETCID, wrapper->_this));

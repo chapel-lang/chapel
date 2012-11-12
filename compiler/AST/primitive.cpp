@@ -456,7 +456,6 @@ initPrimitive() {
 
   prim_def(PRIM_SIZEOF, "sizeof", returnInfoDefaultInt);
   prim_def(PRIM_CHPL_MEM_ALLOC, "chpl_mem_alloc", returnInfoChplAlloc, true, true);
-  prim_def(PRIM_CHPL_FREE, "chpl_free", returnInfoVoid, true, true);
   prim_def(PRIM_CHPL_MEM_FREE, "chpl_mem_free", returnInfoVoid, true, true);
   prim_def(PRIM_INIT_FIELDS, "chpl_init_record", returnInfoVoid, true);
   prim_def(PRIM_PTR_EQUAL, "ptr_eq", returnInfoBool);

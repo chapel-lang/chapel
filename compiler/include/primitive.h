@@ -107,9 +107,8 @@ enum PrimitiveTag {
 
   PRIM_SIZEOF,
   PRIM_CHPL_MEM_ALLOC,
-  PRIM_CHPL_FREE,
   PRIM_CHPL_MEM_FREE,               // only for variables on heap?
-  PRIM_INIT_FIELDS, // initialize fields of a temporary record
+  PRIM_INIT_FIELDS,		// initialize fields of a temporary record
   PRIM_PTR_EQUAL,
   PRIM_PTR_NOTEQUAL,
   PRIM_CAST,
@@ -123,7 +122,7 @@ enum PrimitiveTag {
   PRIM_TUPLE_AND_EXPAND,
   PRIM_ARRAY_FREE,
   PRIM_ARRAY_FREE_ELTS,
-  PRIM_ARRAY_ALLOC,	// [_WIDE]_ARRAY_ALLOC(_ddata(eltType), eltType, size, ln, filename)
+  PRIM_ARRAY_ALLOC,		// [_WIDE]_ARRAY_ALLOC(_ddata(eltType), eltType, size, ln, filename)
 
   PRIM_GPU_GET_ARRAY,
   PRIM_GPU_GET_VALUE,
