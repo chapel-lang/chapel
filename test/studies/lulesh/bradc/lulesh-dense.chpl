@@ -44,7 +44,7 @@ use luleshInit;   // initialization code for data set
    -suseBlockDist=[true|false] */
 
 config param useBlockDist = (CHPL_COMM != "none");  // block-distribute arrays?
-
+config param useNetworkAtomics = false;  // only use network atomics if FP atomics supported by HW
 
 /* Configuration constants: Override defaults on executable's command-line */
 
@@ -207,7 +207,7 @@ var xd, yd, zd: [Nodes] real, // velocities
 
     xdd, ydd, zdd: [Nodes] real, // acceleration
 
-    fx, fy, fz: [Nodes] atomic real, // forces
+    fx, fy, fz: [Nodes] if useNetworkAtomics then atomic real else atomic_real64, // forces
 
     nodalMass: [Nodes] real; // mass
 
@@ -512,6 +512,7 @@ proc InitStressTermsForElems(p, q, sigxx, sigyy, sigzz: [?D] real) {
 }
 
 
+inline
 proc CalcElemShapeFunctionDerivatives(x: 8*real, y: 8*real, z: 8*real, 
                                       ref b_x: 8*real,
                                       ref b_y: 8*real,
@@ -579,6 +580,7 @@ proc CalcElemShapeFunctionDerivatives(x: 8*real, y: 8*real, z: 8*real,
 }
 
 
+inline
 proc CalcElemNodeNormals(ref pfx: 8*real, ref pfy: 8*real, ref pfz: 8*real, 
                          x: 8*real, y: 8*real, z: 8*real) {
 
@@ -611,6 +613,7 @@ proc CalcElemNodeNormals(ref pfx: 8*real, ref pfy: 8*real, ref pfz: 8*real,
 }
 
 
+inline
 proc SumElemStressesToNodeForces(b_x: 8*real, b_y: 8*real, b_z: 8*real, 
                                  stress_xx:real,
                                  stress_yy:real,
@@ -625,7 +628,7 @@ proc SumElemStressesToNodeForces(b_x: 8*real, b_y: 8*real, b_z: 8*real,
   }
 }
 
-proc CalcElemVolumeDerivative(x: 8*real, y: 8*real, z: 8*real) {
+inline proc CalcElemVolumeDerivative(x: 8*real, y: 8*real, z: 8*real) {
 
   proc VoluDer(param n0, param n1, param n2, param n3, param n4, param n5) {
     const ox =   (y[n1] + y[n2]) * (z[n0] + z[n1]) 
@@ -919,9 +922,11 @@ proc CalcHydroConstraintForElems() {
 
 proc CalcForceForNodes() {
   //zero out all forces
-  forall x in fx do x.write(0);
-  forall y in fy do y.write(0);
-  forall z in fz do z.write(0);
+  forall n in Nodes do local {
+    fx[n].poke(0);
+    fy[n].poke(0);
+    fz[n].poke(0);
+  }
 
   /* Calcforce calls partial, force, hourq */
   CalcVolumeForceForElems();
@@ -971,9 +976,20 @@ proc IntegrateStressForElems(sigxx, sigyy, sigzz, determ) {
     }
 
     for (noi, t) in elemToNodesTuple(k) {
-      fx[noi].add(fx_local[t]);
-      fy[noi].add(fy_local[t]);
-      fz[noi].add(fz_local[t]);
+      if useNetworkAtomics {
+        fx[noi].add(fx_local[t]);
+        fy[noi].add(fy_local[t]);
+        fz[noi].add(fz_local[t]);
+      } else {
+        const fxl = fx_local[t];
+        const fyl = fy_local[t];
+        const fzl = fz_local[t];
+        on fx[noi] {
+          fx[noi].add(fxl);
+          fy[noi].add(fyl);
+          fz[noi].add(fzl);
+        }
+      }
     }
   }
 }
@@ -1074,11 +1090,21 @@ proc CalcFBHourglassForceForElems(determ, x8n, y8n, z8n, dvdx, dvdy, dvdz) {
 
     const myElemToNode = elemToNode.localAccess[eli];
     for param i in 1..nodesPerElem {
-      const noi = myElemToNode[i];
-
-      fx[noi].add(hgfx[i]);
-      fy[noi].add(hgfy[i]);
-      fz[noi].add(hgfz[i]);
+        const noi = myElemToNode[i];
+      if useNetworkAtomics {
+          fx[noi].add(hgfx[i]);
+          fy[noi].add(hgfy[i]);
+          fz[noi].add(hgfz[i]);
+        } else {
+          const thgfx = hgfx[i];
+          const thgfy = hgfy[i];
+          const thgfz = hgfz[i];
+          on fx[noi] {
+            fx[noi].add(thgfx);
+            fy[noi].add(thgfy);
+            fz[noi].add(thgfz);
+          }
+      }
     }
   }
 }
@@ -1086,9 +1112,9 @@ proc CalcFBHourglassForceForElems(determ, x8n, y8n, z8n, dvdx, dvdy, dvdz) {
 
 proc CalcAccelerationForNodes() {
   forall noi in Nodes do local {
-      xdd.localAccess[noi] = fx.localAccess[noi].read() / nodalMass.localAccess[noi];
-      ydd.localAccess[noi] = fy.localAccess[noi].read() / nodalMass.localAccess[noi];
-      zdd.localAccess[noi] = fz.localAccess[noi].read() / nodalMass.localAccess[noi];
+      xdd.localAccess[noi] = fx.localAccess[noi].peek() / nodalMass.localAccess[noi];
+      ydd.localAccess[noi] = fy.localAccess[noi].peek() / nodalMass.localAccess[noi];
+      zdd.localAccess[noi] = fz.localAccess[noi].peek() / nodalMass.localAccess[noi];
     }
 }
 
