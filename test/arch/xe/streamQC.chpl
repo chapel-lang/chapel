@@ -1,4 +1,7 @@
 // streamQC.chpl (qthreads, cheating)
+// 
+// Count just the time in the kernel.
+// Min across trials and then max across chunks to estimate node time.
 //
 // Embarrassingly Parallel Implementation of STREAM Triad
 //
@@ -97,15 +100,22 @@ proc main() {
   //
   coforall loc in rootLocale.getLocales() do on loc {
 
+    extern proc chpl_numCoresOnThisLocale(): int;
+    const nchunks = chpl_numCoresOnThisLocale();
     const childN = here.getChildCount();
+    const chunks_per_child = nchunks / childN;
+
+    writeln("nchunks = ", nchunks);
+    writeln("childN = ", childN);
+    writeln("chunk size = ", m/nchunks);
 
     //
     // *** We declare these variables outside of the local block since
     // *** we'll need to access them when we write back to the global
     // *** aggregates declared above.
     //
-    var taskTime: [1..childN] real;
-    var taskValid: [1..childN] bool;
+    var taskTime: [0..#nchunks] real;
+    var taskValid: [0..#nchunks] bool;
 
     //
     // *** Indicates that all of the code in this block is local to
@@ -114,25 +124,24 @@ proc main() {
     // *** --fast or --no-checks.
     //
     local {
-      coforall i in 1..childN do
-        on here.getChild(i) do {
-          var trialTime: [1..numTrials] real;
-          var trialValid: [1..numTrials] bool;
+      coforall i in 0..#nchunks do
+        on here.getChild(1 + i / chunks_per_child) {
           //
           // *** A, B, and C are the three local vectors
           //
-          var A, B, C: [1..m/childN] elemType;
+          var A, B, C: [1..(m/nchunks)] elemType;
 
           initVectors(B, C);    // Initialize the input vectors, B and C
 
+          var trialTime: [1..numTrials] real;
           for trial in 1..numTrials {                        // loop over the trials
             const startTime = getCurrentTime();              // capture the start time
-            for j in 1..m/childN do
-              A[j] = B[j] + alpha * C[j];
+            for k in 1..m/nchunks do
+              A[k] = B[k] + alpha * C[k];
             trialTime[trial] = getCurrentTime() - startTime;  // store the elapsed time
           }
           taskTime[i] = min reduce trialTime;
-          taskValid[i] =  verifyResults(A, B, C);              // verify...
+          taskValid[i] = verifyResults(A, B, C);     // verify, but only the last trial
         }
         
     }
@@ -142,7 +151,6 @@ proc main() {
     // *** declared above.  These are declared over LocaleSpace so we
     // *** can write to them in parallel.
     //
-    writeln(taskTime);
     nodeTimes[here.id] = max reduce taskTime;
     validAnswers[here.id] = && reduce taskValid;
   }

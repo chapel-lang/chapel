@@ -144,15 +144,6 @@ proc main() {
   printResults(&& reduce validAnswers, minTimes);
 }
 
-// Compute the chunk associated with the given chunk number.
-// Each chunk is executed on a different sublocale.
-proc getChunk(nChunk:int, chunkCount, problemSize)
-{
-  var start = ((nChunk-1) * problemSize) / chunkCount + 1;
-  var end = ((nChunk) * problemSize) / chunkCount;
-  return start..end;
-}
-
 //
 // Print the problem size and number of trials
 //

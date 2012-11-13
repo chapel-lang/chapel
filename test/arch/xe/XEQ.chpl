@@ -5,8 +5,9 @@
 
 config const debugArchitecture = false;
 
-extern proc qthread_num_workers() : int(32);
-config const numWorkers = 8; //qthread_num_workers();
+extern proc chpl_task_getNumSheps() : int(32);
+config const numShepherds = chpl_task_getNumSheps();
+writeln("numShepherds = ", numShepherds);
 
 // libhwloc may be more helpful here.
 // These numbers are taken from marketing documentation.
@@ -19,6 +20,11 @@ const il_dice_per_socket = 2;
 // Each die contains four cores, a memory controller and an 8MB L3 cache.
 // Each core has private L1 and L2 caches.
 const il_cores_per_die = 4;
+// Interlagos cores are hyperthreaded, so they actually look like two processing elements.
+const il_pes_per_core = 2;
+
+// Or, to save on postage....
+extern proc chpl_numCoresOnThisLocale(): int;
 
 // An XEPart is a part of the whole XE node.
 // Current definition is to have one part per shepherd
@@ -31,7 +37,7 @@ class XEPart : locale
   {
     // Base-class initializer call.
     chpl_id = __primitive("chpl_localeID");
-    numCores = numWorkers;
+    numCores = chpl_numCoresOnThisLocale() / numShepherds;
   }
 
   proc initTask() : void
@@ -53,7 +59,7 @@ class XENode : locale
   proc XENode()
   {
     chpl_id = __primitive("chpl_localeID");
-    numCores = 32;
+    numCores = chpl_numCoresOnThisLocale();
   }
 
   // Override the generic behavior.
@@ -103,10 +109,6 @@ coforall loc in rootLocale.getLocales() do
     rootLocale.setLocale(loc.id, new XENode());
   }
 
-extern proc chpl_task_getNumSheps() : int(32);
-config const numShepherds = chpl_task_getNumSheps();
-writeln("numShepherds = ", numShepherds);
-
 // Initialize the sublocales on each locale.
 coforall loc in rootLocale.getLocales() do
   on loc {
@@ -127,3 +129,4 @@ if (debugArchitecture) then
     for subloc in (here:XENode).getChildren() do
       writeln("  XEPart: ", subloc);
   }
+
