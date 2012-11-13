@@ -5,6 +5,9 @@
 
 config const debugArchitecture = false;
 
+extern proc qthread_num_workers() : int(32);
+config const numWorkers = 8; //qthread_num_workers();
+
 // libhwloc may be more helpful here.
 // These numbers are taken from marketing documentation.
 // Remember to run with aprun -d 16, so you get the IL16 compute nodes.
@@ -28,7 +31,7 @@ class XEPart : locale
   {
     // Base-class initializer call.
     chpl_id = __primitive("chpl_localeID");
-    numCores = 1;  // Actually, 1/2.
+    numCores = numWorkers;
   }
 
   proc initTask() : void
@@ -38,7 +41,6 @@ class XEPart : locale
   }
 
   proc readWriteThis(f) {
-    extern proc tmc_cpus_get_my_current_cpu() : int;
     f <~> new ioLiteral("XEPart ") <~> my_shepherd_id;
   }
 }
@@ -51,7 +53,7 @@ class XENode : locale
   proc XENode()
   {
     chpl_id = __primitive("chpl_localeID");
-    numCores = 16;
+    numCores = 32;
   }
 
   // Override the generic behavior.
@@ -103,6 +105,7 @@ coforall loc in rootLocale.getLocales() do
 
 extern proc chpl_task_getNumSheps() : int(32);
 config const numShepherds = chpl_task_getNumSheps();
+writeln("numShepherds = ", numShepherds);
 
 // Initialize the sublocales on each locale.
 coforall loc in rootLocale.getLocales() do
