@@ -494,11 +494,6 @@ static void
 rebuildIterator(IteratorInfo* ii,
                 SymbolMap& local2field,
                 Vec<Symbol*>& locals) {
-  if (ii->iclass->dispatchParents.n == 0) {
-    INT_ASSERT(false); // Is this dead code?
-    ii->iclass->dispatchParents.add(dtObject);
-    dtObject->dispatchChildren.add(ii->iclass);
-  }
   FnSymbol* fn = ii->iterator;
   for_alist(expr, fn->body->body)
     expr->remove();

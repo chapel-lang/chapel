@@ -3,7 +3,7 @@ class node {
   var element : element_type;
 }
 
-var n : node = new node();
+var n = new node();
 
 n.element = 12;
 

@@ -171,6 +171,16 @@ static void addInitTaskCallInOnBlocks() {
     if (CallExpr* info = block->blockInfo)
       if (info->isPrimitive(PRIM_BLOCK_ON) ||
           info->isPrimitive(PRIM_BLOCK_ON_NB)) {
+        // Very special case:
+        // The private variable "here" is first initialized in the RootLocale constructor.
+        // We can't try to look up a sublocale in a "here" locale that doesn't exist, so
+        // we just leave that code out in the RootLocale constructor.
+        // A better approach would be to perform initialization of all node-private variables
+        // (including "here") before the program starts.  That has some advantage w.r.t. 
+        // program design, but also would make the RootLocale constructor trivial (or unneeded).
+        if (!strcmp(block->parentSymbol->name, "RootLocale"))
+          continue;
+
         // This is an on or on ... begin block.
         CallExpr* here = new CallExpr(".", new UnresolvedSymExpr("ChapelLocale"),
                                       new_StringSymbol("here"));

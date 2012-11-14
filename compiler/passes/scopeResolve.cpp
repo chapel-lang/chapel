@@ -944,10 +944,12 @@ void add_root_type(ClassType* ct)
   if (ct->inherits.length == 0 && !ct->symbol->hasFlag(FLAG_NO_OBJECT)) {
     if (isRecord(ct)) {
       ct->dispatchParents.add(dtValue);
-      dtValue->dispatchChildren.add(ct);
+      // Assume that this addition is unique; report if not.
+      INT_ASSERT(dtValue->dispatchChildren.add_exclusive(ct));
     } else if (isClass(ct)) {
       ct->dispatchParents.add(dtObject);
-      dtObject->dispatchChildren.add(ct);
+      // Assume that this addition is unique; report if not.
+      INT_ASSERT(dtObject->dispatchChildren.add_exclusive(ct));
       VarSymbol* super = new VarSymbol("super", dtObject);
       super->addFlag(FLAG_SUPER_CLASS);
       ct->fields.insertAtHead(new DefExpr(super));
@@ -1002,7 +1004,7 @@ add_class_to_hierarchy(ClassType* ct, Vec<ClassType*>* localSeenPtr = NULL) {
     localSeenPtr->set_add(ct);
     add_class_to_hierarchy(pt, localSeenPtr);
     ct->dispatchParents.add(pt);
-    pt->dispatchChildren.add(ct);
+    INT_ASSERT(pt->dispatchChildren.add_exclusive(ct));
     expr->remove();
     if (isClass(ct)) {
       // For a class, just add a super class pointer.

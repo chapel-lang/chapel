@@ -1749,9 +1749,13 @@ printResolutionError(const char* error,
                 toString(info->actuals.v[1]->type),
                 toString(info->actuals.v[0]->type));
     }
-  } else if (info->actuals.n == 2 &&
-             info->actuals.v[0]->type == dtMethodToken &&
-             !strcmp("these", info->name)) {
+  } else if (!strcmp("free", info->name)) {
+    if (info->actuals.n > 0 &&
+        isRecord(info->actuals.v[2]->type))
+      USR_FATAL(call, "delete not allowed on records");
+  } else if (!strcmp("these", info->name)) {
+    if (info->actuals.n == 2 &&
+        info->actuals.v[0]->type == dtMethodToken)
     USR_FATAL(call, "cannot iterate over values of type %s",
               toString(info->actuals.v[1]->type));
   } else if (!strcmp("_type_construct__tuple", info->name)) {
@@ -3109,7 +3113,7 @@ createFunctionAsValue(CallExpr *call) {
   call->parentExpr->insertBefore(new DefExpr(ts));
   
   ct->dispatchParents.add(parent);
-  parent->dispatchChildren.add(ct);
+  INT_ASSERT(parent->dispatchChildren.add_exclusive(ct));
   VarSymbol* super = new VarSymbol("super", parent);
   super->addFlag(FLAG_SUPER_CLASS);
   ct->fields.insertAtHead(new DefExpr(super));
@@ -4838,6 +4842,19 @@ addToVirtualMaps(FnSymbol* pfn, ClassType* ct) {
                 fn->retType->dispatchParents.add_exclusive(pfn->retType);
                 Type* pic = pfn->retType->initializer->iteratorInfo->iclass;
                 Type* ic = fn->retType->initializer->iteratorInfo->iclass;
+                // Assumes single inheritance:
+                if (ic->dispatchParents.n) {
+                  // We need to remove <object> if it has already been added.
+                  // This is pretty kludgy.  See call to add_root_type in 
+                  // protoIterator() above.
+
+                  // Can be consolidated if "only" is added to vec.h.
+                  INT_ASSERT(ic->dispatchParents.n == 1);
+                  Type* parent = ic->dispatchParents.first();
+                  int item = parent->dispatchChildren.index(ic);
+                  parent->dispatchChildren.remove(item);
+                  ic->dispatchParents.remove(0);
+                }
                 pic->dispatchChildren.add_exclusive(ic);
                 ic->dispatchParents.add_exclusive(pic);
                 continue; // do not add to virtualChildrenMap; handle in _getIterator

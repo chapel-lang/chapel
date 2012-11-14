@@ -36,8 +36,8 @@ class RootLocale
     for locIdx in LocaleSpace do
       on __primitive("chpl_on_locale_num", locIdx)
       {
-        var loc = new locale();
-        setLocale(locIdx, loc);
+        _here = new locale();
+        Locales[locIdx] = _here;
       }
   }
 
