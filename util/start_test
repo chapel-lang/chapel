@@ -1245,15 +1245,15 @@ foreach testType ($testTypes)
             # returning true, where <dir> is the current directory up to $basedir.
             cd $dir
             set pruneif = 0
-            while (! $pruneif && `pwd` != $basedir)
-                set skipfilen = `pwd`.skipif
+            while (! $pruneif && $cwd != $basedir)
+                set skipfilen = $cwd.skipif
                 if (-e $skipfilen) then
                     set pruneif = `$utildir/testEnv $skipfilen`
                 endif
                 cd ..
             end
             if ($pruneif) then
-                echo "[Skipping directory based on ancestor .skipif environment settings]"
+                echo "[Skipping directory based on ancestor .skipif environment settings in $skipfilen]"
                 continue
             endif
 
