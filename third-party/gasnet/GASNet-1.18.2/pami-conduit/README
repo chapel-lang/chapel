@@ -1,0 +1,128 @@
+GASNet pami-conduit documentation
+Paul H. Hargrove <PHHargrove@lbl.gov>
+$Revision: 1.6 $
+
+User Information:
+-----------------
+
+This is a prelinary BETA release of support for IBM PAMI.
+The implementation is "complete" (in terms of functionality) and is
+beleieved to be stable.  However, it has not yet been tuned to take
+advantage of many PAMI features which could provide faster
+implemenations of the Extended (RDMA) interfaces, Barriers, and the
+GASNet collectives.
+
+Recognized environment variables:
+---------------------------------
+
+* All the standard GASNet environment variables (see top-level README)
+
+* GASNET_NETWORKDEPTH - depth of AM Request queues (default 1024)
+  This integer parameter sets the limit on the number of outstanding
+  Active Message Requests, where outstanding is defined in terms of
+  local completion of the network send.
+  Too-small values may reduce performance of AM-intensive applications.
+  Too-large values may result in excessive buffering requirements in
+  AM-intensive applications which can both reduce performance and can
+  result in excessive memory use.
+  Applications not sending "floods" of AMs will be be insensitve to
+  the value of this parameter.
+  [BUT, keep in mind that current reference implementation of the
+   extended API implements all Put and Get operations over AMs.]
+
+* GASNET_AMPOLL_MAX - limit on work done in AMPoll (default 16)
+  This integer parameter sets the maxumum number of PAMI operations
+  to be retired by a call to gasnet_AMPoll().
+
+Optional compile-time settings:
+------------------------------
+
+* The following compile-time settings from extended-ref
+  (see the extended-ref README)
+
+ + GASNETI_THREADINFO_OPT - optimize thread discovery using hidden local variable
+
+ + GASNETI_LAZY_BEGINFUNCTION - postpone thread discovery to first use
+
+ + GASNETE_SCATTER_EOPS_ACROSS_CACHELINES(1/0) - scatter newly allocated eops
+    across cache lines to reduce false sharing
+
+Known problems:
+---------------
+
+* See the Berkeley UPC Bugzilla server for details on known bugs.
+
+Future work:
+------------
+
+The following are planned work items for pami-conduit:
+
+* Use dynamic registration (firehose) when local addres is out-of-segment?
+  Initial benchmarks seem to show PAMI getting RDMA speeds for xfers of
+  sufficient size even when using PAMI_Put/Get, suggesting that some
+  dynamic registration is already used internally.
+
+* Register bounce buffers used for AM headers and payloads and apply
+  the appropriate "use_rdma" hints.
+
+* Use multiple PAMI contexts/endpoints.  At a minimum it would be desirable
+  to separate the AM and RDMA for independent progress.  Use of multiple
+  endpoints when using pthreads is also worth some implementation effort.
+  A separate context used for the exit coordination would prevent deadlock
+  when exiting from an AM handler.
+
+* Explore use of PAMI's "remote_async_progress" hint.
+
+* Explore use of bounce buffers to avoid blocking for local completion
+  of non-blocking/non-bulk Puts.
+
+* Explore use of conduit-level flow control for AMs, though it is not yet
+  certain that this is needed as it was with dcmf-conduit.
+
+* Implement GASNet's named split-phase barrier in terms of PAMI's
+  ALLREDUCE collective. [initial naive attempt yielded LOWERED performance]
+
+* Implement GASNet's collectives in terms of PAMI's collectives.
+
+* Improve exit handling to raise SIGQUIT for non-collective exits.
+
+* For sufficiently small payloads, AMRequestLong could use a bounce buffer
+  to avoid stalling for local completion.
+
+==============================================================================
+
+Design Overview:
+----------------
+
+* Core API:
+  + GASNet's AMs are implemented in terms of PAMI's AMs, and execute
+    handlers directly from the PAMI callbacks.
+    - Short AMs use PAMI_Send_immediate() due to their length.
+    - Medium and Long AMs use PAMI_Send().
+    - Medium AMs copy their payloads to bounce buffers to avoid
+      stalling for local completion.
+    - Long Request AMs block for local completion.
+    - LongAsync Request AMs do NOT block for local completion.
+    - Long Replies AMs copy their payloads to bounce buffers, like
+      a Medium AM, since our running of AM handlers from PAMI's
+      callbacks precludes blocking for local completion.
+  + GASNet's default AM-based barrier implementations are used.
+  + GASNet's exit handling is done using an PAMI "all reduce" operation
+    (w/ a timeout) to determine the MAX() of the exit codes, and whether
+    the exit is collective.  For non-collective exits, the conduit is
+    currently calling exit(1) and using the fact that IBM's software
+    will take care of aborting the job.  However this does NOT get the
+    desired behavior of raising SIGQUIT on the non-exiting nodes.
+  + PSHM is supported through the default mechanisms.
+
+* Extended API:
+  + GASNET_SEGMENT_FAST and GASNET_SEGMENT_LARGE are identical:
+    - The segment is allocated using mmap() via the default mechanisms.
+    - The segment is pinned/registered as a single PAMI memory region.
+  + All Extended API operations are performed using PAMI_Rput and _Rget
+    when both addresses fall in the GASNet segment, and PAMI_Put and
+    _Get otherwise.  As a result, GASNET_SEGMENT_EVERYTHING "just works".
+  + The blocking operations block for remote completion, of course.
+  + The non-blocking NON-BULK Put operations will stall for the required
+    local completion, but don't need to stall for remote completion.
+    There is not currently any use of bounce buffers for these Puts.

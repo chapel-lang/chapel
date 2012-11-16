@@ -10,8 +10,3 @@ and uses a snapshot of obtained from the Qthreads team at:
 Any Chapel issues that seem to be related to Qthreads should be
 directed to the Chapel team at chapel-bugs@lists.sourceforge.net.
 
-The local modifications that we have made to the official Qthreads
-1.7.1 release are as follows:
-
-* applied r3046 from the qthreads SVN tree which improves support for
-  native sync variables and should improve performance.

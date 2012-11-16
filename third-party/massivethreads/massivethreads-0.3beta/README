@@ -1,0 +1,131 @@
+MassiveThreads - a Lightweight Thread Library for High Productivity Languages
+
+Sorry, this document probably lacks fundamental information. If you have any question, please ask an e-mail address on the last of this text.
+
+[0] System Requirements
+
+Massivethreads is mainly developed and tested on the following environment:
+
+CPU              : x86_64
+Operating system : Linux (>=2.6)
+C compiler       : GCC (>=4.4.1)
+
+It can also work on x86 and SPARC(experimental), but not tested well.
+
+[1] How to compile
+
+MassiveThreads can be compiled and installed like many other UNIX programs using the following 3-steps:
+
+$ export PREFIX=[directory to install]
+$ ./configure --prefix=$PREFIX
+$ make
+$ make install
+
+[2] Compile-time configuration
+
+By editing myth_config.h, some MassiveThreads features can be controlled.
+
+TODO
+
+[3] How to use
+
+MassiveThreads provides 3 APIs to use, native intefrace, pthread-compatible interface, and TBB-like interface.
+
+(1) Native interface
+
+ Native interface provide full access to MassiveThreads functionalities.
+To use native interface, please include myth.h and specify include path, library path, and shared library like this:
+
+$ gcc -o foo foo.c -I${PREFIX}/include -L${PREFIX}/lib -lmyth (or -lmyth-native)
+
+ libmyth.so provides both native and pthread-compatible interface. so If you want to use OS-level pthreads together with MassiveThreads, please use libmyth-native.so, that does not export pthread-compatible functions.
+
+ When using libmyth.so, initialization and termination by myth_init() and myth_fini() are not required, because it is automatically done for pthread-compatibility.
+ In using libmyth-native.so, they are required. You can control the number of worker threads and default stack size from application using myth_init_withparam() instead of myth_init().
+
+(2) Pthread-compatible interface
+
+ Pthread-compatible interface provide the same API with pthreads at binary level.
+To use this interface, please write your program as using pthreads, and compile with libmyth-compat.so or libmyth.so(if you want to use native interface at the same time).
+
+ Using environmental variables such as LD_PRELOAD, existing binaries using pthreads can be executed on MassiveThreads like this:
+
+$ LD_PRELOAD=${PREFIX}/lib/libmyth.so ./a.out
+
+Caution: Executing programs that depend on unsupported pthreads feature (preemption, signal, thread-local storage[__thread], etc...) is not guaranteed. Calling unimplemented functions may also lead to unexpected behavior. To confirm implemented functions, see myth_if_pthread.c .
+
+(3) TBB-like interface
+
+TODO
+
+[4] Runtime configuration
+
+(1) Setting the number of worker threads
+MassiveThreads creates worker thraeds based on the process affinity. Thus you can control the number of worker threads and CPU cores used by 'taskset' command.
+Environmental variable MYTH_WORKER_NUM can also be used to change the number of worker threads (= # of CPU cores used).
+By default, MassiveThreads uses all the CPU cores in the machine.
+
+(2) Setting the default stack size
+Setting environmental variable MYTH_DEF_STKSIZE (in bytes), you can change the default stack size. By default, MassiveThreads uses 16KB as a default stack size.
+
+[5] Known issues
+
+ * TODO
+
+[6] How to compile MassiveThreads tasking layer for Chapel
+
+Note: Now MassiveThreads tasking layer is unofficial. DO NOT ask a question about MassiveThreads tasking layer to official Chapel community. If you have any question, please send an e-mail to the address on the last of this text.
+
+1.Compile and install MassiveThreads
+
+$ export PREFIX=[directory to install]
+# Disable context switch triggered by network socket I/O, recommended
+$ mv myth_config.h myth_config.h.org
+$ sed -e "s/^#define MYTH_WRAP_SOCKIO/\/\/#define MYTH_WRAP_SOCKIO/" myth_config.h.org > myth_config.h
+$ ./configure --prefix=$PREFIX
+$ make
+$ make install
+
+2.Merge the contents in chapel-if/(version)/ to the Chapel installation directory
+
+$ cp -pr chapel-if/1.5/* $(CHPL_HOME)/
+
+3.Compile Chapel compiler and runtime
+
+$ cd $(CHPL_HOME) # move to the directory Chapel installed
+# Set environmental variables
+$ export CHPL_TASKS=myth
+$ export CHPL_THREADS=none
+$ export MYTH_INCLUDE_DIR=$(PREFIX)/include
+$ export MYTH_LIB_DIR=$(PREFIX)/lib
+# Please set additional environmental variables here (ex: CHPL_COMM)
+$ make # compile Chapel compiler and runtime
+
+4.Compile and run application
+
+$ cd $(CHPL_HOME)
+$ export CHPL_TASKS=myth
+$ export CHPL_THREADS=none
+$ export MYTH_INCLUDE_DIR=$(PREFIX)/include
+$ export MYTH_LIB_DIR=$(PREFIX)/lib
+# Please set additional environmental variables here
+$ source util/setchplenv.bash # for bash users
+
+# compile your program
+$ chpl -o hello hello.chpl
+
+# Number of worker threads and stack size can be controlled from arguments
+$ ./hello --numThreadsPerLocale=4 --callStackSize=32768
+
+[4] Contact
+
+If you have any question, please ask the following address.
+
+Jun Nakashima : nakashima@eidos.ic.i.u-tokyo.ac.jp
+
+[5] License
+
+MassiveThreads is distributed under 2-clause BSD license. See COPYRIGHT for details.
+
+# "myth" is the initial codename of MassiveThreads and no more special meaning than it.
+
