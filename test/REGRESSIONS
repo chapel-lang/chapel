@@ -843,14 +843,11 @@ incorrect output -- expected? (04/03/10)
 ------------------
 [Error matching program output for classes/figueroa/RecordConstructor2]
 
-??? (wrong output)
-------------------
-[Error matching program output for studies/shootout/mandelbrot/mandelbrot-fancy]
-
 attempt to dereference nil OR timedexec: target program died with signal 11
 ---------------------------------------------------------------------------
 (happens before any output is generated)
 [Error matching program output for studies/hpcc/HPL/vass/bl.md] (already fails in 8/16/12)
+[Error matching program output for studies/shootout/mandelbrot/mandelbrot-fancy] (already fails in 8/16/12)
 [Error matching program output for optimizations/bulkcomm/asenjo/ptransDR/v2/ptrans] (since added, 9/29/12)
 [Error matching program output for optimizations/bulkcomm/asenjo/ptransDR/v1/ptrans] (ditto)
 [Error matching program output for optimizations/bulkcomm/asenjo/stencilDR/v2/stencil] (ditto)
