@@ -5,14 +5,6 @@
 #
 
 
-Suggested TODO for Sung's week:
-
-2) Look into nondeterministic SIGABRT issue with gasnet-fast on
-   test/release/examples/ra*.chpl which seem new to me.
-
-3) I think you're already on the SSCA2_commDiags question
-
-
 =========================================================
 Problems analyzed and assigned that should be fixed soon:
 =========================================================
@@ -37,7 +29,7 @@ mutilocale/deitz/needMultiLocales/diagnostics/test_private_broadcast_large (10/1
 ra-atomics (UNASSIGNED) (10/11/12)
 
 SSCA2_main (UNASSIGNED)
------------------------y
+-----------------------
 Periodically times out for PGI (alternates between time out and stack
 overflow error documented in REGRESSIONS)
 
