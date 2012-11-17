@@ -1,0 +1,14 @@
+
+In Main().
+First we print the results of 'here:'
+LOCALE0
+
+Now we allocate a simple array, var A: [D] real:
+
+Now we use the on statement:
+LOCALE0
+
+Now we explicitly set _here:
+BASELOCALE0b
+
+bbbbbbbb

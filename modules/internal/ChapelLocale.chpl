@@ -45,12 +45,12 @@ class locale {
   // Also required by the sublocale interface.
   proc initTask() {} // Do nothing.
 
-  proc alloc(type x, md) {
+  proc alloc(nbytes, md) {
     // The default implementation.
 //  var nbytes = __primitive("sizeof", x);
 //  var mem = __primitive("chpl_mem_alloc", x, md);
 //  return __primitive("cast", x.type, mem);
-    return __primitive("chpl_mem_alloc", x, md);
+    return __primitive("chpl_mem_alloc", nbytes, md);
   }
 
   proc free(x:object) {
@@ -130,14 +130,16 @@ proc chpl_getPrivatizedCopy(type objectType, objectPid:int): objectType
 // Here be dragons: If the return type is specified, then normalize.cpp inserts
 // an initializer for the return value, which calls its constructor, which calls
 // chpl_here_alloc ad infinitum.  But if the return type is left off, it works!!!
-proc chpl_here_alloc(x, md) {
-  return here.getChild(__primitive("_get_subloc_id")).alloc(x.type, md);
+proc chpl_here_alloc(x, md : int(16)) {
+  return chpl_here_alloc(x.type, md);
 }
 
 // This one is called from protoIteratorClass().  Can we fix that call and get rid
 // of this specialized version?
-proc chpl_here_alloc(type x, md) {
-  return here.getChild(__primitive("_get_subloc_id")).alloc(x, md);
+proc chpl_here_alloc(type t, md : int(16)) {
+  var nbytes = __primitive("sizeof", t);
+  var bytes = here.getChild(__primitive("_get_subloc_id")).alloc(nbytes, md);
+  return __primitive("cast", t, bytes);	// Avoid dynamic cast, since bytes has type object.
 }
 
 proc chpl_here_free(x) {

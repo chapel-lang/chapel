@@ -2275,7 +2275,12 @@ void CallExpr::codegen(FILE* outfile) {
 
       fprintf(outfile, "sizeof(");
       if (is_struct) fprintf(outfile, "_");
-      get(1)->typeInfo()->symbol->codegen(outfile);
+      if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) ||
+          get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE))
+        // If wide, get the value type.
+        toClassType(get(1)->typeInfo())->getField("addr", true)->typeInfo()->symbol->codegen(outfile);
+      else
+        get(1)->typeInfo()->symbol->codegen(outfile);
       fprintf(outfile, ")");
       break;
     }
@@ -2299,10 +2304,10 @@ void CallExpr::codegen(FILE* outfile) {
       fprintf( outfile, ")");
 
       // target: void* chpl_mem_alloc(size_t size, char* description);
-      fprintf(outfile, "chpl_mem_alloc(sizeof(");
-      if (is_struct) fprintf( outfile, "_");          // need struct of class
-      typeInfo()->symbol->codegen( outfile);
-      fprintf( outfile, "), ");
+      // input: PRIM_CHPL_MEM_ALLOC(bytes : int, memory_descriptor : int(16))
+      fprintf(outfile, "chpl_mem_alloc(");
+      get(1)->codegen( outfile);
+      fprintf( outfile, ", ");
       get(2)->codegen( outfile);
       fprintf( outfile, " + CHPL_RT_MD_NUM");
       fprintf( outfile, ", ");

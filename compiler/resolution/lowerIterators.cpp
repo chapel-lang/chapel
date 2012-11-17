@@ -273,10 +273,12 @@ createArgBundleCopyFn(ClassType* ct, FnSymbol* loopBodyFnWrapper) {
   BlockStmt* block = new BlockStmt();
   Symbol* argBundle = newTemp(ct);
   block->insertAtTail(new DefExpr(argBundle));
-  block->insertAtTail(new CallExpr(PRIM_MOVE, argBundle,
-                        new CallExpr(PRIM_CHPL_MEM_ALLOC,
-                                     ct->symbol,
-                                     newMemDesc("compiler-inserted argument bundle"))));
+  block->insertAtTail(
+    new CallExpr(PRIM_MOVE, argBundle,
+                 new CallExpr(PRIM_CAST, ct->symbol, 
+                              new CallExpr(PRIM_CHPL_MEM_ALLOC,
+                                           new CallExpr(PRIM_SIZEOF, ct->symbol),
+                                           newMemDesc("compiler-inserted argument bundle")))));
   Symbol* loopBodyFnArgsArgTmp = newTemp(ct);
   block->insertAtTail(new DefExpr(loopBodyFnArgsArgTmp));
   block->insertAtTail(new CallExpr(PRIM_MOVE, loopBodyFnArgsArgTmp, new CallExpr(PRIM_CAST, ct->symbol, loopBodyFnArgsArg)));
@@ -341,10 +343,12 @@ bundleLoopBodyFnArgsForIteratorFnCall(CallExpr* iteratorFnCall,
 
   VarSymbol* argBundle = newTemp(ct);
   iteratorFnCall->insertBefore(new DefExpr(argBundle));
-  iteratorFnCall->insertBefore(new CallExpr(PRIM_MOVE, argBundle,
-                                 new CallExpr(PRIM_CHPL_MEM_ALLOC,
-                                              ts,
-                                              newMemDesc("compiler-inserted argument bundle"))));
+  iteratorFnCall->insertBefore(
+    new CallExpr(PRIM_MOVE, argBundle,
+                 new CallExpr(PRIM_CAST, ts,
+                              new CallExpr(PRIM_CHPL_MEM_ALLOC,
+                                           new CallExpr(PRIM_SIZEOF, ts),
+                                           newMemDesc("compiler-inserted argument bundle")))));
   iteratorFnCall->insertAtTail(argBundle);
   iteratorFnCall->insertAfter(new CallExpr(PRIM_CHPL_MEM_FREE, argBundle));
 

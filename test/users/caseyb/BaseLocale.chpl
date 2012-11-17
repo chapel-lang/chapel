@@ -7,12 +7,10 @@ class BaseLocale : locale {
     return chpl_id;
   }
 
-  proc writeThis(f: Writer) {
-      f.write("BASELOCALE", id);
-    //} else {
-    //  f.write("LOCALE", id);
-    //}
+  proc readWriteThis(f: Writer) {
+      f <~> new ioLiteral("BASELOCALE") <~> id;
   }
+
 }
 
 // Wrapper functions for locale-aware allocation/deallocation.
@@ -24,20 +22,18 @@ class BaseLocale : locale {
 //  return here.alloc(nbytes, mem_type, lineno, filename);
 //}
 
+extern proc printf(x...);
+
 // This is our alloc routine, to show that we can allocate stuff through the 
 // memory management interface implemented by a locale.
-export BaseLocale_alloc proc BaseLocale.alloc(nbytes:int(32), mem_type:int(32), lineno:int(32), filename:string) : opaque { 
-  extern proc printf(str: string);
+proc BaseLocale.alloc(type x, md) {
   printf("B");
-  return chpl_mem_allocMany(1, nbytes, mem_type, lineno, filename);
+  return __primitive("chpl_mem_alloc", x, md);
 }
 
-proc BaseLocale.realloc(ptr: opaque, nbytes:int(32), size:int(32), mem_type:int(32), lineno:int(32), filename:string) : opaque { 
-  chpl_mem_realloc(ptr, nbytes, size, mem_type, lineno, filename);
-}
-
-proc BaseLocale.free(ptr: opaque, lineno:int(32), filename:string) { 
-  chpl_mem_free(ptr, lineno, filename);
+proc BaseLocale.free(x: object) {
+  __primitive("chpl_mem_free", x);
+  printf("b");
 }
 
 

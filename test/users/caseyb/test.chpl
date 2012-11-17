@@ -9,19 +9,19 @@ proc main() {
   writeln(here);
   writeln();
   writeln("Now we allocate a simple array, var A: [D] real:");
-  var D: domain(1) = [1..100];	// This is allocated on Locale0.
+  var D: domain(1) = {1..100};	// This is allocated on Locale0.
   var A: [D] real;
   writeln();
   var base = new BaseLocale();
   var sub = new SubLocale();
   writeln("Now we use the on statement:");
-  on (sub) {
+  on sub {
     writeln(here);
     var A2: [D] real;
   }
   writeln();
   writeln("Now we explicitly set _here:");
-  set_here(base);
+  rootLocale.setLocale(0, base);
   writeln(here);
   var A3: [D] real;
   writeln();
