@@ -41,9 +41,8 @@ proc getIdx(loc) {
     return loc;
   } else {
     var dims = D.dims(); // assume zero-based in all dimensions
-    type myIdxType = D._value.idxType;
-    var idx: rank*myIdxType;
-    var cur = loc : myIdxType;
+    var idx: rank*D._value.idxType;
+    var cur = loc;
     for param i in 1..rank by -1 {
       if dims(i).high!= 0 {
         idx(i) = cur%(dims(i).high+1);

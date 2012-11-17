@@ -8,7 +8,9 @@ config const dataParIgnoreRunningTasks = true;
 config const dataParMinGranularity: int = 1;
 
 class locale {
-  const chpl_id: int(32);
+  // chpl_id should be int(32), but this is inconvenient due to lack of C-like 
+  // integer promotion rules.
+  const chpl_id: int;
   const numCores: int;
 
   proc locale() {
