@@ -1,0 +1,4 @@
+ifeq ($(CHPL_COMM), gasnet)
+  GEN_CFLAGS += -I$(GASNET_INSTALL_DIR)/patched_headers
+  GEN_LFLAGS += -L/usr/lib64/nptl
+endif

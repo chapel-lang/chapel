@@ -634,7 +634,7 @@ Multi-locale/GASNet executions
 
 Portability
 -----------
-Cray XE/XK/Cascade:
+Cray XE/XK/XC:
 - Native GASNet conduit support is in beta and has not been tuned.
   See doc/platforms/README.cray for details on how to use the
   native conduit.

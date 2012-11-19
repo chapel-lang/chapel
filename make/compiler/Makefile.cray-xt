@@ -1,40 +1,6 @@
 #
-# Settings for the Cray XT3 and XT4
+# Settings for Cray XT3 and XT4 systems
 #
+include $(CHPL_MAKE_HOME)/make/compiler/Makefile.cray-x-series
 
 export XTPE_INFO_MESSAGE_OFF=true
-
-#
-# tools
-#
-
-CC = cc
-CXX = CC
-
-MAKEDEPEND = $(CXX) -M
-CMAKEDEPEND = $(CC) -M
-
-RANLIB = ranlib
-
-
-#
-# flags
-#
-
-DEBUG_CFLAGS = -g
-OPT_CFLAGS = -O3
-
-CFLAGS  += -target=linux
-LFLAGS  += -target=linux
-LDFLAGS += -target=linux
-
-COMP_CFLAGS = $(CFLAGS) $(CRAYPE_COMP_CFLAGS)
-RUNTIME_CFLAGS = $(CFLAGS)
-RUNTIME_GEN_CFLAGS = $(RUNTIME_CFLAGS)
-GEN_CFLAGS += $(CFLAGS) $(CRAYPE_GEN_CFLAGS)
-GEN_LFLAGS += $(LFLAGS)
-GEN_STATIC_FLAG = -static
-GEN_DYNAMIC_FLAG = -dynamic
-LIB_STATIC_FLAG =
-LIB_DYNAMIC_FLAG = -shared
-

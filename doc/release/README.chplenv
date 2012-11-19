@@ -49,7 +49,7 @@ Recommended Settings
         pwr5         : IBM Power5 SMP cluster
         pwr6         : IBM Power6 SMP cluster
         sunos        : SunOS platforms
-        cray-cascade : Cray Cascade (TM)
+        cray-xc      : Cray XC (TM)
         cray-xe      : Cray XE (TM)
         cray-xk      : Cray XK (TM)
         cray-xt      : Cray XT (TM)
@@ -96,10 +96,10 @@ Optional Settings
    variable to describe that platform.  Currently supported
    cross-compilation target platforms include:
 
-        cray-cascade : Cray Cascade
-        cray-xe      : Cray XE
-        cray-xk      : Cray XK
-        cray-xt      : Cray XT
+        cray-xc : Cray XC
+        cray-xe : Cray XE
+        cray-xk : Cray XK
+        cray-xt : Cray XT
 
    If CHPL_TARGET_PLATFORM is not set, the target platform defaults to
    the same value as $CHPL_HOST_PLATFORM.

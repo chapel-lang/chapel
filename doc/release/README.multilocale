@@ -27,7 +27,7 @@ To run Chapel on multiple locales, the following steps are required:
    and Chapel will make a choice for them.  Current defaults are:
 
      When compiling for...       Chapel will choose...
-       cray-cascade                mpi
+       cray-xc                     mpi
        cray-xe                     mpi
        cray-xk                     mpi
        cray-xt                     mpi

@@ -1,0 +1,38 @@
+#
+# Settings for the Cray XE series
+#
+
+#
+# tools
+#
+
+CC = cc
+CXX = CC
+
+MAKEDEPEND = $(CXX) -M
+CMAKEDEPEND = $(CC) -M
+
+RANLIB = ranlib
+
+
+#
+# flags
+#
+
+DEBUG_CFLAGS = -g
+OPT_CFLAGS = -O3
+
+CFLAGS  += -target=linux
+LFLAGS  += -target=linux
+LDFLAGS += -target=linux
+
+COMP_CFLAGS = $(CFLAGS) $(CRAYPE_COMP_CFLAGS)
+RUNTIME_CFLAGS = $(CFLAGS)
+RUNTIME_GEN_CFLAGS = $(RUNTIME_CFLAGS)
+GEN_CFLAGS += $(CFLAGS) $(CRAYPE_GEN_CFLAGS)
+GEN_LFLAGS += $(LFLAGS)
+GEN_STATIC_FLAG = -static
+GEN_DYNAMIC_FLAG = -dynamic
+LIB_STATIC_FLAG =
+LIB_DYNAMIC_FLAG = -shared
+

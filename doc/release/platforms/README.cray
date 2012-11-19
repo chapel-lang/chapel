@@ -1,12 +1,12 @@
 ====================================================
-Using Chapel on Cray XT, XE, XK, and Cascade Systems
+Using Chapel on Cray XT, XE, XK, and XC Systems
 ====================================================
 
 The following information is assembled to help Chapel users get up and
 running on Cray systems running the Cray Linux Environment (TM) (CLE),
-including Cray XT (TM), Cray XE (TM), Cray XK (TM), and Cray Cascade
-(TM) systems.  For information about using Chapel on Cray XMT (TM)
-systems, see README.xmt.
+including Cray XT (TM), Cray XE (TM), Cray XK (TM), and Cray XC (TM)
+systems.  For information about using Chapel on Cray XMT (TM) systems,
+see README.xmt.
 
 If you are not familiar with Chapel, it is recommended that you try the
 instructions in the top-level README first to get started with the
@@ -38,7 +38,7 @@ us know at chapel_info@cray.com.)
        Cray XT         cray-xt
        Cray XE         cray-xe
        Cray XK         cray-xk
-       Cray Cascade    cray-cascade
+       Cray XC         cray-xc
 
    For example:
 
@@ -167,22 +167,22 @@ Cray File Systems and Chapel execution
   between the login and compute nodes.
 
 
---------------------------------------------------
-Special Notes for Cray XE, XK, and Cascade Systems
---------------------------------------------------
+---------------------------------------------
+Special Notes for Cray XE, XK, and XC Systems
+---------------------------------------------
 
-Native Runtime Layers for Cray XE, XK, and Cascade Systems
-----------------------------------------------------------
+Native Runtime Layers for Cray XE, XK, and XC Systems
+-----------------------------------------------------
 
 The README.multilocale and README.tasking files describe a variety of
 communication layers and tasking layers that can be used by Chapel
-programs.  By default, Chapel programs Cray XE, XK, and Cascade systems
-use the GASNet communication layer and the FIFO tasking layer, and there
-are several other tasking layers available that can also be used with
-the GASNet communication layer.
+programs.  By default, Chapel programs Cray XE, XK, and XC systems use
+the GASNet communication layer and the FIFO tasking layer, and there are
+several other tasking layers available that can also be used with the
+GASNet communication layer.
 
 In addition to the standard runtime layers available in any Chapel
-release, the pre-built Chapel module on Cray XE, XK, and Cascade systems
+release, the pre-built Chapel module on Cray XE, XK, and XC systems
 supports a fixed combination of Cray-specific communication, tasking,
 and threading layers.  These make use of Cray's hardware and/or software
 to produce enhanced performance for Chapel programs.
@@ -257,13 +257,13 @@ To use this combination of runtime layers, do the following.
 
    The architecture of the Cray Gemini and Aries network interface chips
    (NICs) limits them to addressing at most 16k (2**14) pages of memory.
-   This is sufficient to cover a 32 GiB Cascade locale with 2 MiB pages.
-   But if you will be running on 64 GiB locales, you will need to use at
+   This is sufficient to cover a 32 GiB XC locale with 2 MiB pages.  But
+   if you will be running on 64 GiB locales, you will need to use at
    least 4 MiB pages to cover all of the memory.  Generally, using
    larger hugepage sizes results in modest performance benefits, mostly
    in program startup time.  The craype-hugepages16M module will result
    in slightly faster program startup, and its 16 MiB hugepages will
-   easily cover the memory of any conceivable Cascade locale.
+   easily cover the memory of any conceivable XC locale.
 
    The only downside to larger page sizes is that they can waste more
    memory than smaller page sizes do, when the data segments that reside
@@ -385,11 +385,10 @@ To use this combination of runtime layers, do the following.
 Network Atomics
 ---------------
 
-The Gemini and Aries networks on Cray XE, XK, and Cascade systems
-support remote atomic memory operations (AMOs).  When you use the
-built-in Chapel module and set the CHPL_COMM environment variable to
-"ugni", the following operations on remote atomics are done using the
-network:
+The Gemini and Aries networks on Cray XE, XK, and XC systems support
+remote atomic memory operations (AMOs).  When you use the built-in
+Chapel module and set the CHPL_COMM environment variable to "ugni", the
+following operations on remote atomics are done using the network:
 
    read()
    write()
@@ -411,8 +410,8 @@ network hardware.  32-bit integer and all floating point operations are
 done with remote forks inside the ugni communication layer, accelerated
 by Gemini hardware capabilities.
 
-On Cascade systems, which have Aries networks, all of the operations
-shown above are done natively by the network hardware.
+On XC systems, which have Aries networks, all of the operations shown
+above are done natively by the network hardware.
 
 See README.atomics for the full description of the above operations.
 
@@ -519,7 +518,7 @@ WARNING: if communication performance is at all important in this program run.
   contact us for help.
 
 * Limited experience with the GASNet gemini conduit indicates that it
-  does not work with the Aries network on Cascade systems.
+  does not work with the Aries network on XC systems.
 
 * Redirecting stdin when executing a Chapel program under PBS/qsub
   may not work due to limitations of qsub.

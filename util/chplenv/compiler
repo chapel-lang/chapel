@@ -21,8 +21,7 @@ if ($preset_compiler eq "") {
     } elsif ($platform eq "x1"     || $platform eq "x2" ||
              $platform eq "x1-sim" || $platform eq "x2-sim") {
 	$compiler = "cray-vec";
-    } elsif ($platform eq "cray-xt"      || $platform eq "cray-xe" ||
-             $platform eq "cray-cascade" || $platform eq "cray-xk") {
+    } elsif ($platform =~ /cray-(xc|xe|xk|xt)$/) {
         if ($flag eq "--host") {
             $compiler = "gnu";
         } else {

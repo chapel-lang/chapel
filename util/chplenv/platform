@@ -38,19 +38,25 @@ if ($preset_platform eq "") {
     $platform = $preset_platform;
 }
 
-if ($platform eq "xt-cle"){  
+if ($platform eq "xt-cle") {
     $platform = "cray-xt";
 
     if( $ARGV[1] eq 1 ) {
-        warn "Warning: 'xt-cle' is deprecated.  Using 'cray-xt' instead.";
+        warn "Warning: the 'xt-cle' platform is deprecated.  Using 'cray-xt' instead.";
     }
 } 
-
-if ($platform eq "xe-cle"){
+elsif ($platform eq "xe-cle") {
     $platform = "cray-xe";
 
     if ($ARGV[1] eq 1) {
-        warn "Warning: 'xe-cle' is deprecated.  Using 'cray-xe' instead."
+        warn "Warning: the 'xe-cle' platform is deprecated.  Using 'cray-xe' instead."
+    }
+} 
+elsif ($platform eq "cray-cascade") {
+    $platform = "cray-xc";
+
+    if ($ARGV[1] eq 1) {
+        warn "Warning: the 'cray-cascade' platform is deprecated.  Using 'cray-xc' instead."
     }
 } 
 

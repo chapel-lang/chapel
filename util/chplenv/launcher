@@ -15,8 +15,7 @@ if ($preset_launcher eq "") {
     $compiler = `$utildirname/compiler --target`; chomp($compiler);
 
     $launcher = "none";
-    if ($platform eq "cray-xt" || $platform eq "cray-xe" ||
-        $platform eq "cray-xk" || $platform eq "cray-cascade") {
+    if ($platform =~ /^cray-(xc|xe|xk|xt)$/) {
         if (system("which aprun > /dev/null 2>&1")) {
             $launcher = "none";
         } else {
