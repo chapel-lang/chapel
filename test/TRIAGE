@@ -11,7 +11,6 @@ Problems analyzed and assigned that should be fixed soon:
 
 studies/ssca2/performance/SSCA2_commDiags (sungeun)
 ---------------------------------------------------
-
   linux64.gnu.gasnet-everything.fifo.pthreads-std (2012-10-02) Sung
   has this one.  It looks to me (gbt) like the comm diags ranges just
   need to be wider.  (sungeun: 10/22/12) It's actually bounded for
@@ -48,7 +47,7 @@ the same algorithm (or to permit a selection between both).
   release/examples/benchmarks/hpcc/variants/ra-cleanloop: fixed by r20326
   studies/hpcc/2008/ra: not fixed yet, failed 8/14/12
   studies/hpcc/nodistrib/ra.nodist: should have been fixed by 20333 (8/14/12),
-    not fixed yet, failed 8/18/12, 9/{16,17,21,30}/12.
+    not fixed yet, failed 11/26/12.
   studies/hpcc/RA/bradc/parallel/ra-dist: not fixed yet, last failure unknown
 
 lulesh (bradc)
@@ -69,7 +68,7 @@ mutilocale/deitz/needMultiLocales/diagnostics/test_private_broadcast_large
 
 linux64.gnu.none.qthreads.none (UNASSIGNED)
 ---------------------------------------------
-[Error: Timed out executing program release/examples/spec/Task_Parallelism_and_Synchronization/syncCounter] (11/14: on most days since 9/14/2012)
+[Error: Timed out executing program release/examples/spec/Task_Parallelism_and_Synchronization/syncCounter] (11/14/12: on most days since 9/14/2012)
 
 linux64.gnu.gasnet.qthreads.none (UNASSIGNED)
 ---------------------------------------------
@@ -80,22 +79,31 @@ sungeun: 10/18/12.  Things seem quieter, but not perfect
    distributions/robust/arithmetic/optimizations/optimizeOnClauses_basic_tuple (7/10)
    release/examples/spec/Classes/delete (7/12)
 - Intermitent time outs:
-  [Error: Timed out executing program release/examples/spec/Task_Parallelism_and_Synchronization/syncCounter] (10/18/12)
-  [Error: Timed out executing program distributions/robust/arithmetic/slicing/test_array_slicing3] (10/17/12)
-  [Error: Timed out executing program distributions/robust/arithmetic/kernels/jacobi] (11/14: intermittent since 9/17/12)
-  [Error: Timed out executing program distributions/robust/arithmetic/stress/test_many_array] (11/14: intermittent since 9/29/12)
-  [Error: Timed out executing program distributions/robust/arithmetic/stress/test_many_domains] (11/14: almost every day since 9/26/22)
+  [Error: Timed out executing program release/examples/spec/Task_Parallelism_and_Synchronization/syncCounter] (11/26/12)
+  [Error: Timed out executing program distributions/robust/arithmetic/slicing/test_array_slicing3] (11/25/12)
+  [Error: Timed out executing program distributions/robust/arithmetic/kernels/jacobi] (11/26/12: intermittent since 9/17/12)
+  [Error: Timed out executing program distributions/robust/arithmetic/stress/test_many_array] (11/26/12: intermittent since 9/29/12)
+  [Error: Timed out executing program distributions/robust/arithmetic/stress/test_many_domains] (11/22/12: almost every day since 9/26/22)
 
 baseline (UNASSIGNED)
 ---------------------
 [Error: Timed out executing program optimizations/bulkcomm/asenjo/stencilDR/v2/stencil] (10/17/12, normally fails; succeeded 11/10/12)
 [Error: Timed out executing program studies/shootout/mandelbrot/mandelbrot-fancy] (11/14: normally fails; timed out 9/28,10/2,10/21,20/11,22/3; succeeded 9/29,10/11,11/04)
 [Error: Timed out executing program distributions/nelson/MultiBlockDist2DLocales] (11/10; normally fails)
+[Error matching program output for optimizations/bulkcomm/asenjo/ptransDR/v1/ptrans] (11/25/12)
+[Error matching program output for studies/hpcc/HPL/vass/bl.md] (11/26/12)
 
-valgrind (sungeun)
-------------------
+valgrind
+--------
 sungeun (10/16/2012): I believe the non-determinism from valgrind
 errors is now resolved (still have timeouts).
+
+[Error matching program output for studies/hpcc/HPL/stonea/serial/hplExample5] (11/20/12)
+  gbt (11/26/12): The reported gflops were low enough that they were printed
+  in scientific notation, which wasn't matched by the regex in the .prediff
+  file, resulting in a mismatch with the .good file.  Fixed this.  Leaving
+  this note here in case the same problem occurs with other tests; you can
+  see what I did with the .prediff file.
 
 xmt build (UNASSIGNED)
 ----------------------
