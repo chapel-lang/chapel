@@ -1873,9 +1873,16 @@ std::string uint64_to_string(uint64_t i)
   return ret;
 }
 
-void genComment(const char* comment) {
+void genComment(const char* comment, bool push) {
   GenInfo* info = gGenInfo;
-  if( info->cfile ) fprintf(info->cfile, "/*** %s ***/\n\n", comment);
+  if( info->cfile ) {
+    if (push) {
+      std::string str = comment;
+      info->cStatements.push_back("/*** "+str+" ***/ ");
+    } else {
+      fprintf(info->cfile, "/*** %s ***/\n\n", comment);
+    }
+  }
 }
 void genIdComment(int id) {
   GenInfo* info = gGenInfo;

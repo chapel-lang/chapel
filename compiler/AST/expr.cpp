@@ -4247,6 +4247,7 @@ GenRet CallExpr::codegen() {
     args[6] = fn->fname();
 
 
+    genComment(fn->cname, true);
     codegenCall("chpl_task_addToTaskList", args);
     return ret;
   } else if (fn->hasFlag(FLAG_COBEGIN_OR_COFORALL_BLOCK)) {
@@ -4317,6 +4318,7 @@ GenRet CallExpr::codegen() {
     args[6] = fn->fname();
 
 
+    genComment(fn->cname, true);
     codegenCall("chpl_task_addToTaskList", args);
     return ret;
   } else if (fn->hasFlag(FLAG_ON_BLOCK)) {
@@ -4336,6 +4338,7 @@ GenRet CallExpr::codegen() {
     std::string ctype = "_";
     ctype += argType->typeInfo()->symbol->cname;
 
+    genComment(fn->cname, true);
     codegenCall(fname,
                get(1),
                new_IntSymbol(ftableMap.get(fn), INT_SIZE_32),
