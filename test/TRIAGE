@@ -98,12 +98,12 @@ valgrind
 sungeun (10/16/2012): I believe the non-determinism from valgrind
 errors is now resolved (still have timeouts).
 
-[Error matching program output for studies/hpcc/HPL/stonea/serial/hplExample5] (11/20/12)
-  gbt (11/26/12): The reported gflops were low enough that they were printed
+[Error matching program output for studies/hpcc/HPL/stonea/serial/hplExample5] (11/21/12)
+  gbt (11/28/12): The reported gflops were low enough that they were printed
   in scientific notation, which wasn't matched by the regex in the .prediff
-  file, resulting in a mismatch with the .good file.  Fixed this.  Leaving
-  this note here in case the same problem occurs with other tests; you can
-  see what I did with the .prediff file.
+  file, resulting in a mismatch with the .good file.  Fixed this with r20803.
+  I'm leaving this note here in case the same problem occurs with other tests;
+  you can see what I did with the .prediff file.
 
 xmt build (UNASSIGNED)
 ----------------------
