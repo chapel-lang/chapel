@@ -351,8 +351,13 @@ freeHeapAllocatedVars(Vec<Symbol*> heapAllocatedVars) {
               if (call->isPrimitive(PRIM_MOVE))
                 varsToTrack.add(toSymExpr(call->get(1))->var);
               else if (fnsContainingTaskll.in(call->isResolved())) {
-                freeVar = false;
-                break;
+                if (var->hasFlag(FLAG_COFORALL_INDEX_VAR) ||
+                    (call->isResolved()->hasFlag(FLAG_BEGIN) ||
+                     (call->isResolved()->hasFlag(FLAG_ON) &&
+                      call->isResolved()->hasFlag(FLAG_NON_BLOCKING)))) {
+                  freeVar = false;
+                  break;
+                }
               }
             }
           }
@@ -418,11 +423,24 @@ freeHeapAllocatedVars(Vec<Symbol*> heapAllocatedVars) {
   }
 }
 
+static bool
+needHeapVars() {
+  if (fLocal) return false;
+
+  if (!strcmp(CHPL_COMM, "ugni") ||
+      (!strcmp(CHPL_COMM, "gasnet") &&
+       !strcmp(CHPL_GASNET_SEGMENT, "everything")))
+    return false;
+
+  return true;
+}
 
 static void findBlockRefActuals(Vec<Symbol*>& refSet, Vec<Symbol*>& refVec)
 {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->hasFlag(FLAG_BEGIN) || fn->hasFlag(FLAG_ON)) {
+    if (fn->hasFlag(FLAG_BEGIN) ||
+        (fn->hasFlag(FLAG_ON) &&
+         (needHeapVars() || fn->hasFlag(FLAG_NON_BLOCKING)))) {
       for_formals(formal, fn) {
         if (formal->type->symbol->hasFlag(FLAG_REF)) {
           refSet.set_add(formal);
@@ -439,11 +457,12 @@ static void findHeapVarsAndRefs(Map<Symbol*,Vec<SymExpr*>*>& defMap,
                                 Vec<Symbol*>& varSet, Vec<Symbol*>& varVec)
 {
   forv_Vec(DefExpr, def, gDefExprs) {
-    if (def->sym->hasFlag(FLAG_HEAP_ALLOCATE)) {
+    if (def->sym->hasFlag(FLAG_COFORALL_INDEX_VAR)) {
       if (def->sym->type->symbol->hasFlag(FLAG_REF)) {
         refSet.set_add(def->sym);
         refVec.add(def->sym);
-      } else {
+      } else if (!isPrimitiveType(def->sym->type) ||
+                 toFnSymbol(def->parentSymbol)->retTag==RET_VAR) {
         varSet.set_add(def->sym);
         varVec.add(def->sym);
       }
@@ -608,6 +627,7 @@ makeHeapAllocations() {
     if (!isModuleSymbol(var->defPoint->parentSymbol) &&
         ((useMap.get(var) && useMap.get(var)->n > 0) ||
          (defMap.get(var) && defMap.get(var)->n > 0))) {
+      SET_LINENO(var->defPoint);
       var->defPoint->getStmtExpr()->insertAfter(new CallExpr(PRIM_MOVE, var, new CallExpr(PRIM_CHPL_ALLOC, heapType->symbol, newMemDesc("local heap-converted data"))));
       heapAllocatedVars.add(var);
     }

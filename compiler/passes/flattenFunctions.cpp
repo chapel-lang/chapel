@@ -45,7 +45,16 @@ addVarsToFormals(FnSymbol* fn, SymbolMap* vars) {
   form_Map(SymbolMapElem, e, *vars) {
     if (Symbol* sym = e->key) {
       Type* type = sym->type;
-      if (type->refType)
+      if (type->refType &&
+          (!sym->hasFlag(FLAG_COFORALL_INDEX_VAR) ||
+           (toFnSymbol(sym->defPoint->parentSymbol)->retTag==RET_VAR)))
+        /* NOTE: This is still conservative.  This avoids passing
+           coforall index vars by reference for non-var iterators.
+           David came up with an example with nested functions and no
+           iterators that would unnecessarily pass coforall index vars
+           by reference.  With further analysis, we could figure out
+           whether this variable is actually going to be returned as
+           an LHS expr. */
         type = type->refType;
       ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, sym->name, type);
       if (!strcmp(sym->name, "this"))
@@ -103,7 +112,10 @@ static void
 addVarsToActuals(CallExpr* call, SymbolMap* vars, bool outerCall) {
   form_Map(SymbolMapElem, e, *vars) {
     if (Symbol* sym = e->key) {
-      if (!outerCall && sym->type->refType) {
+      if (!outerCall && (sym->type->refType &&
+                         (!sym->hasFlag(FLAG_COFORALL_INDEX_VAR) ||
+                          (toFnSymbol(sym->defPoint->parentSymbol)->retTag==RET_VAR)))) {
+        /* NOTE: See note above in addVarsToFormals() */
         VarSymbol* tmp = newTemp(sym->type->refType);
         call->getStmtExpr()->insertBefore(new DefExpr(tmp));
         call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_ADDR_OF, sym)));

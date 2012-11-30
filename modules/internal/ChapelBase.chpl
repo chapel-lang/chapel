@@ -35,6 +35,8 @@ if (CHPL_THREADS == "unset") {
   compilerWarning("CHPL_THREADS not set");
 }
 
+config param CHPL_COMM_SUBSTRATE: string = "unset";
+config param CHPL_GASNET_SEGMENT: string = "unset";
 config param CHPL_COMM: string = "unset";
 if (CHPL_COMM == "unset") {
   compilerWarning("CHPL_COMM not set");

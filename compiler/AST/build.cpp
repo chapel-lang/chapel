@@ -646,13 +646,13 @@ destructureIndices(BlockStmt* block,
     block->insertAtHead(new DefExpr(var));
     var->addFlag(FLAG_INDEX_VAR);
     if (coforall)
-      var->addFlag(FLAG_HEAP_ALLOCATE);
+      var->addFlag(FLAG_COFORALL_INDEX_VAR);
     var->addFlag(FLAG_INSERT_AUTO_DESTROY);
   } else if (SymExpr* sym = toSymExpr(indices)) {
     block->insertAtHead(new CallExpr(PRIM_MOVE, sym->var, init));
     sym->var->addFlag(FLAG_INDEX_VAR);
     if (coforall)
-      sym->var->addFlag(FLAG_HEAP_ALLOCATE);
+      sym->var->addFlag(FLAG_COFORALL_INDEX_VAR);
     sym->var->addFlag(FLAG_INSERT_AUTO_DESTROY);
   }
 }
@@ -919,6 +919,8 @@ BlockStmt* buildForLoopStmt(Expr* indices,
       new CallExpr("iteratorIndex", iterator)),
     BLOCK_TYPE));
   destructureIndices(body, indices, new SymExpr(index), coforall);
+  if (coforall)
+    index->addFlag(FLAG_COFORALL_INDEX_VAR);
   
   body->blockInfo = new CallExpr(PRIM_BLOCK_FOR_LOOP, index, iterator);
 

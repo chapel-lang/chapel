@@ -44,6 +44,8 @@ const char* CHPL_TARGET_COMPILER = NULL;
 const char* CHPL_TASKS = NULL;
 const char* CHPL_THREADS = NULL;
 const char* CHPL_COMM = NULL;
+const char* CHPL_COMM_SUBSTRATE = NULL;
+const char* CHPL_GASNET_SEGMENT = NULL;
 const char* CHPL_ATOMICS = NULL;
 const char* CHPL_NETWORK_ATOMICS = NULL;
 const char* CHPL_GMP = NULL;
@@ -308,6 +310,8 @@ static void setupOrderedGlobals(const char* argv0) {
   SETUP_ENV_VAR(CHPL_TASKS, "chplenv/tasks");
   SETUP_ENV_VAR(CHPL_THREADS, "chplenv/threads");
   SETUP_ENV_VAR(CHPL_COMM, "chplenv/comm");
+  SETUP_ENV_VAR(CHPL_COMM_SUBSTRATE, "chplenv/commSubstrate");
+  SETUP_ENV_VAR(CHPL_GASNET_SEGMENT, "chplenv/commSegment");
   SETUP_ENV_VAR(CHPL_ATOMICS, "chplenv/atomics");
   SETUP_ENV_VAR(CHPL_NETWORK_ATOMICS, "chplenv/atomics --network");
   SETUP_ENV_VAR(CHPL_GMP, "chplenv/gmp");
