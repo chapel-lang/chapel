@@ -174,28 +174,30 @@ indicating that the task may block.
 
 \begin{chapelexample}{syncCounter.chpl}
 Sync variables are useful for tallying data from multiple tasks as
-well.  A sync variable of type \chpl{int} is read and then written
-during an update so the full-empty semantics make these updates
-atomic.  The code
+well.  If all updates to an initialized sync variable are via compound
+assignment operators (or equivalently, traditional assignments that
+read and write the variable once), the full/empty state of the sync
+variable guarantees that the reads and writes will be interleaved
+in a manner that makes the updates atomic.  For example, the code:
 \begin{chapel}
 var count(*\texttt{\$}*): sync int = 0;
-begin count(*\texttt{\$}*) = count(*\texttt{\$}*) + 1;
-begin count(*\texttt{\$}*) = count(*\texttt{\$}*) + 1;
-begin count(*\texttt{\$}*) = count(*\texttt{\$}*) + 1;
+cobegin {
+  count(*\texttt{\$}*) += 1;
+  count(*\texttt{\$}*) += 1;
+  count(*\texttt{\$}*) += 1;
+}
 \end{chapel}
 \begin{chapelpost}
-while count(*\texttt{\$}*).readFF() != 3 do ;
 writeln("count is: ", count(*\texttt{\$}*));
 \end{chapelpost}
 \begin{chapeloutput}
 count is: 3
 \end{chapeloutput}
-creates three tasks to increment \chpl{count$\mbox{\texttt{\$}}$}.
-If \chpl{count$\mbox{\texttt{\$}}$} was not a sync variable, this code
-would be unsafe because between the points at which one task
-reads \chpl{count$\mbox{\texttt{\$}}$} and
-writes \chpl{count$\mbox{\texttt{\$}}$}, another task may increment
-it.
+creates three tasks that increment \chpl{count$\mbox{\texttt{\$}}$}.
+If \chpl{count$\mbox{\texttt{\$}}$} were not a sync variable, this code
+would be unsafe because two tasks could then read the same value
+before either had written its updated value, causing one of the
+increments to be lost.
 \end{chapelexample}
 
 \begin{chapelexample}{singleVar.chpl}
