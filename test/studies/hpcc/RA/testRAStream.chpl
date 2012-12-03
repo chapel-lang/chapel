@@ -1,6 +1,6 @@
 use BlockDist, RARandomStream;
 
-config const numItems = 1000000:randType;
+config const numItems = 1000:randType;
 
 const ProbSpace = {0:randType..#numItems};
 

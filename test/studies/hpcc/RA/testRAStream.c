@@ -4,7 +4,7 @@
 
 #define POLY 0x7
 
-#define NUPDATE 1000000
+#define NUPDATE 1000
 
 int main(int argc, char* argv[]) {
   printf("RAStream is: \n");

@@ -5,7 +5,7 @@
 #define LCG_MUL64 6364136223846793005ULL
 #define LCG_ADD64 1
 
-#define NUPDATE 1000000
+#define NUPDATE 1000
 
 int main(int argc, char* argv[]) {
   printf("RAStream is: \n");
