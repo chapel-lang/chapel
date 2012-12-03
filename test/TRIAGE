@@ -1,13 +1,32 @@
 # USAGE:
 #
-# Current notes on triage results, sorted by type of failure
-# (benchmark, compiler, or platform).
+# Current notes on triage results, sorted into the following categories:
 #
+# * cases that are assigned and should be fixed (ideally during the coming
+#   week
+#
+# * cases that are causing noise regularly in testing, sorted by
+#   approximate priority
+#
+# * cases that were once flagged as causing regular noise, but don't seem
+#   so bad currently
+#
+# * cases that are not familiar, but have caused noise -- these are
+#   noted so that if they happen again, we can move them up to an
+#   earlier session and recognize a slower pattern over a longer
+#   period of time
+#
+# * regular failures that someone might look at as part of their triage week
 
 
 =========================================================
 Problems analyzed and assigned that should be fixed soon:
 =========================================================
+
+studies/hpcc/RA/testRAStream (bradc)
+------------------------------------
+This was running too long due to a too-large problem size.  This
+should stop regressing on Dec 4th, 2012.
 
 studies/ssca2/performance/SSCA2_commDiags (sungeun)
 ---------------------------------------------------
@@ -21,54 +40,28 @@ studies/ssca2/performance/SSCA2_commDiags (sungeun)
 These things regularly cause noise in testing:
 ==============================================
 
-SIGABRT on gasnet-fast runs (UNASSIGNED)
-----------------------------------------
-release/examples/benchmarks/hpcc/ra (compopts: 1) (10/13/12)
-mutilocale/deitz/needMultiLocales/diagnostics/test_private_broadcast_large (10/11/12, 10/21/12)
-ra-atomics (UNASSIGNED) (10/11/12)
+baseline nondeterminisms (UNASSIGNED)
+-------------------------------------
 
-SSCA2_main (UNASSIGNED)
------------------------
-Periodically times out for PGI (alternates between time out and stack
-overflow error documented in REGRESSIONS)
+we get reasonably frequent execution timeouts from a variety of tests
+(listed just below); when not timing out, they fail.  We also get a
+number of other baseline failures that I don't recall as being
+long-standing.  It might make sense to start with one of the simplest
+of the failures and see whether that sheds some light on what's going
+on with the timing-out cases below.
 
+  [Error: Timed out executing program optimizations/bulkcomm/asenjo/stencilDR/v2/stencil] (10/17/12, normally fails; succeeded 11/10/12)
+  [Error: Timed out executing program studies/shootout/mandelbrot/mandelbrot-fancy] (11/14: normally fails; timed out 9/28,10/2,10/21,20/11,22/3; succeeded 9/29,10/11,11/04)
+  [Error: Timed out executing program distributions/nelson/MultiBlockDist2DLocales] (11/10; normally fails)
+  [Error matching program output for optimizations/bulkcomm/asenjo/ptransDR/v1/ptrans] (11/25/12)
+  [Error: Timed out executing program studies/hpcc/HPL/vass/bl.md] (11/25/2012)
+  [Error: Timed out executing program optimizations/bulkcomm/asenjo/stencilDR/v1/stencil]
+  [Error: Timed out executing program studies/lammps/shemmy/s-lammps] (12/03/12)
 
-ra* (gbt)
----------
-Greg improved the verification loops using syncs to avoid losing data,
-but occasional failures continued.
+sometimes the nondeterminisms are correctness vs. not-timing out as well:
 
-New information (10/3/12): the "random" indices are strongly skewed toward
-the bottom of the index range (1/4th of the table updates are to the 0'th
-element), which makes conflicting updates far more common than they should
-be.  Sung reports that the official HPCC RA changed its random number
-generator for this reason -- we should look into converting Chapel to use
-the same algorithm (or to permit a selection between both).
-  release/examples/benchmarks/hpcc/variants/ra-cleanloop: fixed by r20326
-  studies/hpcc/2008/ra: not fixed yet, failed 8/14/12
-  studies/hpcc/nodistrib/ra.nodist: should have been fixed by 20333 (8/14/12),
-    not fixed yet, failed 11/26/12.
-  studies/hpcc/RA/bradc/parallel/ra-dist: not fixed yet, last failure unknown
+  [Error matching program output for optimizations/bulkcomm/asenjo/ptransDR/v2/ptrans] (12/03/12)
 
-lulesh (bradc)
---------------
-Times out sometimes in XMT testing, but seems to have stabilized in
-other cases.
-
-TooManyThreads (unassigned)
----------------------------
-Fails periodically.  Lately observed pthreads.tcmalloc (2012/08/15).
-
-mutilocale/deitz/needMultiLocales/diagnostics/test_private_broadcast_large
---------------------------------------------------------------------------
-  Succeeded: 9/23 (64ggffpd)
-  Failed: 10/4 (linux64.gnu.gasnet-fast.fifo.pthreads.dlmalloc)
-  Failed (SIGABRT): 10/11/12 (")
-
-
-linux64.gnu.none.qthreads.none (UNASSIGNED)
----------------------------------------------
-[Error: Timed out executing program release/examples/spec/Task_Parallelism_and_Synchronization/syncCounter] (11/14/12: on most days since 9/14/2012)
 
 linux64.gnu.gasnet.qthreads.none (UNASSIGNED)
 ---------------------------------------------
@@ -79,37 +72,48 @@ sungeun: 10/18/12.  Things seem quieter, but not perfect
    distributions/robust/arithmetic/optimizations/optimizeOnClauses_basic_tuple (7/10)
    release/examples/spec/Classes/delete (7/12)
 - Intermitent time outs:
-  [Error: Timed out executing program release/examples/spec/Task_Parallelism_and_Synchronization/syncCounter] (11/26/12)
-  [Error: Timed out executing program distributions/robust/arithmetic/slicing/test_array_slicing3] (11/25/12)
+  [Error: Timed out executing program distributions/robust/arithmetic/slicing/test_array_slicing3] (intermittent since prior to 11/25/12)
   [Error: Timed out executing program distributions/robust/arithmetic/kernels/jacobi] (11/26/12: intermittent since 9/17/12)
   [Error: Timed out executing program distributions/robust/arithmetic/stress/test_many_array] (11/26/12: intermittent since 9/29/12)
   [Error: Timed out executing program distributions/robust/arithmetic/stress/test_many_domains] (11/22/12: almost every day since 9/26/22)
+  [Error: Timed out executing program distributions/robust/arithmetic/kernels/hpl (compopts: 1)] (11/28/12: likely earlier as well)
 
-baseline (UNASSIGNED)
----------------------
-[Error: Timed out executing program optimizations/bulkcomm/asenjo/stencilDR/v2/stencil] (10/17/12, normally fails; succeeded 11/10/12)
-[Error: Timed out executing program studies/shootout/mandelbrot/mandelbrot-fancy] (11/14: normally fails; timed out 9/28,10/2,10/21,20/11,22/3; succeeded 9/29,10/11,11/04)
-[Error: Timed out executing program distributions/nelson/MultiBlockDist2DLocales] (11/10; normally fails)
-[Error matching program output for optimizations/bulkcomm/asenjo/ptransDR/v1/ptrans] (11/25/12)
-[Error matching program output for studies/hpcc/HPL/vass/bl.md] (11/26/12)
-
-valgrind
---------
-sungeun (10/16/2012): I believe the non-determinism from valgrind
-errors is now resolved (still have timeouts).
-
-[Error matching program output for studies/hpcc/HPL/stonea/serial/hplExample5] (11/21/12)
-  gbt (11/28/12): The reported gflops were low enough that they were printed
-  in scientific notation, which wasn't matched by the regex in the .prediff
-  file, resulting in a mismatch with the .good file.  Fixed this with r20803.
-  I'm leaving this note here in case the same problem occurs with other tests;
-  you can see what I did with the .prediff file.
 
 xmt build (UNASSIGNED)
 ----------------------
 Every night, first XMT compile fails; second one succeeds.  Is there
 any chance that this is due to a leftover program library of some
 sort?  If not, file bug against XMT compiler.
+
+
+SIGABRT on gasnet-fast runs (UNASSIGNED)
+----------------------------------------
+release/examples/benchmarks/hpcc/ra (compopts: 1) (10/13/12)
+mutilocale/deitz/needMultiLocales/diagnostics/test_private_broadcast_large (10/11/12, 10/21/12, 12/02/12)
+ra-atomics (UNASSIGNED) (10/11/12)
+
+
+==============================================================================
+Were once flagged as causing noise regularly, but not as familiar as the above
+==============================================================================
+
+SSCA2_main (UNASSIGNED)
+-----------------------
+Periodically times out for PGI (alternates between time out and stack
+overflow error documented in REGRESSIONS)
+
+
+TooManyThreads (UNASSIGNED)
+---------------------------
+Fails periodically.  Lately observed pthreads.tcmalloc (2012/08/15).
+
+
+mutilocale/deitz/needMultiLocales/diagnostics/test_private_broadcast_large
+--------------------------------------------------------------------------
+  Succeeded: 9/23 (64ggffpd)
+  Failed: 10/4 (linux64.gnu.gasnet-fast.fifo.pthreads.dlmalloc)
+  Failed (SIGABRT): 10/11/12 (")
+
 
 compflags/ferguson/sub_test
 ---------------------------
@@ -119,9 +123,21 @@ it is finding is not in path. The /ptmp path it is finding is actually the
 same directory as the /tmp directory it is looking for.
 
 
-=========================================
-Not so noisy as to be familiar annoyances
-=========================================
+==========================================================================
+Not so noisy as to be familiar annoyances, but worth noting to see if they
+come up again
+==========================================================================
+
+prgenv-* compilation timeouts (maybe due to system updates or ...?)
+-------------------------------------------------------------------
+[Error: Timed out compilation for users/ferguson/ddata/f] (prgenv-pgi: 12/01/12)
+[Error: Timed out compilation for users/jglewis/locClassSegFault-nongeneric] (prgenv-pgi: 12/01/12)
+[Error: Timed out compilation for release/examples/spec/Tuples/expansion] (prgenv-cray: 12/02/12)
+[Error: Timed out compilation for distributions/dm/t5a] (prgenv-intel: 12/03/12)
+
+prgenv-pgi failures that I don't recall seeing before (12/01/12)
+----------------------------------------------------------------
+[Error matching program output for parallel/cobegin/stonea/reports (execopts: 4)]
 
 studies/dijkstra/driverEdgeBtw
 ------------------------------
@@ -151,6 +167,7 @@ examples of what times out:
  distributions/robust/arithmetic/stress/test_many_domains (08/13)
  distributions/robust/arithmetic/stress/test_many_array (11/10/12)
  distributions/dm/t2 (2012/08/15)
+ test_array_slicing3 (06/08/12, 6/16)
  etc.
 
 "in routine alloca() there is a stack overflow" under PGI (UNASSIGNED)
@@ -168,12 +185,6 @@ noted in regressions (week of 07/02, still present 10/2, 10/9/12)
 atomics nondeterminisms (UNASSIGNED)
 ------------------------------------
 release/examples/primers/atomics (06/30/12:xt-intel, 07/04/12:linux32, 08/14/12:xt-cle)
-
-gasnet-everything nondeterminisms (UNASSIGNED)
-----------------------------------------------
-MultiBlockDist2DLocales (06/05/12, 6/16)
-test_module_Sort (06/06/12, 6/16)
-test_array_slicing3 (06/08/12, 6/16)
 
 no-local nondeterminisms (UNASSIGNED)
 -------------------------------------
@@ -202,8 +213,7 @@ parallel/begin/deitz/test_big_recursive_begin future succeeded
 
 studies/sudoku/dinan/sudoku
 ---------------------------
-[Error: Timed out executing program studies/sudoku/dinan/sudoku] (cray-xt.cray-prgenv-gnu.none.fifo.pthreads--linux64.gnu 11/16/12)
-There is more nondeterminism with other variants of studies/sudoku/dinan/sudoku* as recorded in REGRESSIONS.
+[Error: Timed out executing program studies/sudoku/dinan/sudoku] (cray-xt.cray-prgenv-gnu.none.fifo.pthreads--linux64.gnu 11/16/12, 11/26/12)
 
 ===========================================
 Not noisy, but need some attention sometime
