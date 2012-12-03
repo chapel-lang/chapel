@@ -1089,17 +1089,7 @@ literal_expr:
 | IMAGLITERAL           { $$ = buildImagLiteral(yytext); }
 | STRINGLITERAL         { $$ = buildStringLiteral($1); }
 | TLCBR expr_ls TRCBR   { $$ = new CallExpr("chpl__buildDomainExpr", $2); }
-| TLSBR expr_ls TRSBR   
-    {
-      /* Transitional semantics for domain literals. After
-       * release of 1.6 this production should simply be: 
-       * $$ = new CallExpr("chpl__buildArrayLiteral", $2); */
-      if( fNoWarnDomainLiteral ){    
-        $$ = new CallExpr("chpl__buildArrayLiteral", $2);
-      } else {
-        $$ = new CallExpr("chpl__buildArrayLiteralWarn", $2);       
-      }
-    }
+| TLSBR expr_ls TRSBR   { $$ = new CallExpr("chpl__buildArrayLiteral", $2); }
 ;
 
 binary_op_expr:

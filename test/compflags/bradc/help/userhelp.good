@@ -100,8 +100,6 @@ Miscellaneous Options:
       --[no-]print-callstack-on-error print the Chapel call stack leading to
                                       each error or warning
   -s, --set <name>[=<value>]          Set config param value
-      --[no-]warn-domain-literal      [Disable] Enable old domain literal
-                                      syntax warnings
       --no-warnings                   Disable output of warnings
 
 Compiler Information Options:
