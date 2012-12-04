@@ -351,13 +351,8 @@ freeHeapAllocatedVars(Vec<Symbol*> heapAllocatedVars) {
               if (call->isPrimitive(PRIM_MOVE))
                 varsToTrack.add(toSymExpr(call->get(1))->var);
               else if (fnsContainingTaskll.in(call->isResolved())) {
-                if (var->hasFlag(FLAG_COFORALL_INDEX_VAR) ||
-                    (call->isResolved()->hasFlag(FLAG_BEGIN) ||
-                     (call->isResolved()->hasFlag(FLAG_ON) &&
-                      call->isResolved()->hasFlag(FLAG_NON_BLOCKING)))) {
-                  freeVar = false;
-                  break;
-                }
+                freeVar = false;
+                break;
               }
             }
           }
