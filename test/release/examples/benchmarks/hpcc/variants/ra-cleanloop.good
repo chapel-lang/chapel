@@ -1,6 +1,6 @@
-Problem size = 1024 (2**10)
-Bytes per array = 8192
-Total memory required (GB) = 7.62939e-06
+Problem size = 65536 (2**16)
+Bytes per array = 524288
+Total memory required (GB) = 0.000488281
 Number of updates = 4096
 
 Validation: SUCCESS
