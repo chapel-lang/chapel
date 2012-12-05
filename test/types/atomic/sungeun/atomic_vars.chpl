@@ -33,6 +33,26 @@ proc doit(type myType) {
     writeln(typeToString(myType), ": ERROR: x=", x, " (should be 120)");
   if printResults then writeln(x);
 
+  ax.write(0:myType);
+  coforall i in 1..15 do on Locales[i%numLocales] { // 15 is max for int(8)
+      var a = (ax.fetchAdd(i:myType)+i:myType):myType;
+      ax.compareExchangeStrong(a, a);
+    }
+  x = ax.read();
+  if x != 120:myType then
+    writeln(typeToString(myType), ": ERROR: x=", x, " (should be 120)");
+  if printResults then writeln(x);
+
+  ax.write(0:myType);
+  coforall i in 1..15 do on Locales[i%numLocales] { // 15 is max for int(8)
+      var a = (ax.fetchAdd(i:myType)+i:myType):myType;
+      ax.compareExchangeWeak(a, a);
+    }
+  x = ax.read();
+  if x != 120:myType then
+    writeln(typeToString(myType), ": ERROR: x=", x, " (should be 120)");
+  if printResults then writeln(x);
+
   var b: atomic bool;
   ax.write(0:myType);
   begin {
@@ -47,6 +67,70 @@ proc doit(type myType) {
       ax.add(i:myType);
     }
   b.waitFor(true);
+
+  b.clear();
+  begin {
+    ax.waitFor(0:myType);
+    const x = ax.read();
+    if x != 0:myType then
+      writeln(typeToString(myType), ": ERROR: x=", x, " (should be 0)");
+    if printResults then writeln(x);
+    b.testAndSet();
+  }
+  coforall i in 1..15 do on Locales[i%numLocales] { // 15 is max for int(8)
+      ax.sub(i:myType);
+    }
+  b.waitFor(true);
+
+  if _isIntegralType(myType) {
+    ax.write(max(int(8)):myType);
+    b.clear();
+    begin {
+      ax.waitFor(0:myType);
+      const x = ax.read();
+      if x != 0:myType then
+        writeln(typeToString(myType), ": ERROR: x=", x, " (should be 1)");
+      if printResults then writeln(x);
+      b.testAndSet();
+    }
+    coforall i in 0..6 do on Locales[i%numLocales] { // 7 is max for int(8)
+        const v = (max(int(8))^(1<<i)):myType;
+        ax.and(v);
+      }
+    b.waitFor(true);
+
+    ax.write(0:myType);
+    b.clear();
+    begin {
+      ax.waitFor(max(int(8)):myType);
+      const x = ax.read();
+      if x != max(int(8)):myType then
+        writeln(typeToString(myType), ": ERROR: x=", x, " (should be ", max(int(8)), ")");
+      if printResults then writeln(x);
+      b.testAndSet();
+    }
+    coforall i in 0..6 do on Locales[i%numLocales] { // 7 is max for int(8)
+        const v = (1<<i):myType;
+        ax.or(v);
+      }
+    b.waitFor(true);
+
+    ax.write(0:myType);
+    b.clear();
+    begin {
+      ax.waitFor(max(int(8)):myType);
+      const x = ax.read();
+      if x != max(int(8)):myType then
+        writeln(typeToString(myType), ": ERROR: x=", x, " (should be ", max(int(8)), ")");
+      if printResults then writeln(x);
+      b.testAndSet();
+    }
+    coforall i in 0..6 do on Locales[i%numLocales] { // 7 is max for int(8)
+        const v = (1<<i):myType;
+        ax.xor(v);
+      }
+    b.waitFor(true);
+  }
 
   const D = {7..39};
   var aA: [D] atomic myType;
