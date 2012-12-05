@@ -1,0 +1,2 @@
+--doPrint=true
+--doPrint=false # arrayTypedef-noprint.good

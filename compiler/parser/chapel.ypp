@@ -704,9 +704,17 @@ type_alias_decl_stmt_inner:
 ;
 
 opt_init_type:
-                           { $$ = NULL; }
-| TASSIGN type_level_expr  { $$ = $2; }
-| TASSIGN array_type       { $$ = $2; }  //Cannot be a type_level_expr as expr inherits from type_level_expr.
+    { $$ = NULL; }
+| TASSIGN type_level_expr
+    { $$ = $2; }
+| TASSIGN array_type
+    {
+      /* pluck the domain expr and element type from the
+         buildArrayRuntimeType call created by array_type. */
+
+      $$ = buildForallLoopExpr(NULL, toCallExpr($2)->get(1)->remove(), 
+                               toCallExpr($2)->get(2)->remove(), NULL, true); 
+    }  // Cannot be a type_level_expr as expr inherits from type_level_expr.
 ;
 
 var_decl_stmt:
@@ -790,6 +798,22 @@ opt_type:
 | error {printf("bad type specification"); }
 ;
 
+/* NOTE: Some things about the following rule concern me (blc), but I
+   don't have the time to fix them now, so am noting them for the
+   future when someone runs into them:
+
+   (1) there are 3 cases rather than the 4 I would expect based on symmetry
+       ('in' vs. not x 'type_level_expr' vs. 'array_type')
+
+   (2) it seems strange to me that the thing being iterated over is an
+       'expr_ls' in the first two cases, but an 'expr' in the third
+
+   (3) it also seems strange that the stuff preceding TIN would be an
+       'expr_ls' rather than something simpler, like a nested
+       parenthesization of identifiers; perhaps this is to support the
+       establishment of an explicit type declaration, though I thought we
+       didn't support that yet
+*/
 array_type:
   TLSBR expr_ls TRSBR type_level_expr
     { $$ = new CallExpr("chpl__buildArrayRuntimeType",
