@@ -3,6 +3,10 @@ module ChapelDistribution {
 
 use List;
 
+config const dataParTasksPerLocale = 0;
+config const dataParIgnoreRunningTasks = true;
+config const dataParMinGranularity: int = 1;
+
 extern proc chpl_task_yield();
 
 // NOTE: If module initialization order changes, this may be affected
