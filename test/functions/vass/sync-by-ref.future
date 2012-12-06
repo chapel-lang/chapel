@@ -1,0 +1,10 @@
+bug: sync variables need to be passable by reference to generic formals
+
+Right now I get (notice also an inadequate line number):
+
+  sync-by-ref.chpl:5: error: non-lvalue actual passed to ref argument [functionResolution.cpp:2348]
+
+Seems like it comes from function resolution: it passes an int,
+rather than a sync int.
+
+Cf. passing the sync var to proc test2(ref ccc: sync int) works fine.
