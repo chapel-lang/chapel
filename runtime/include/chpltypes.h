@@ -53,6 +53,12 @@ typedef void* _chpl_object;
 typedef void* _chpl_value;
 typedef void* chpl_opaque;
 
+// Sentinal value for when the subloc ID is unspecified.
+// This is an internal value and can thus be changed arbitrarily (caveat).
+// It should never be exposed in user code!!!
+// It can probably be kept out of the module code also.
+#define subloc_id_default -1
+
 #define nilRef 0
 
 // macros for specifying the correct C constant type

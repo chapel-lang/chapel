@@ -3,28 +3,27 @@
 pragma "no use ChapelStandard"
 module ChapelLocale {
 
-use DefaultRectangular;
+config const dataParTasksPerLocale = 0;
+config const dataParIgnoreRunningTasks = true;
+config const dataParMinGranularity: int = 1;
 
-// would like this to be the following, but it breaks about 20 tests:
-//const LocaleSpace: domain(1) distributed(OnePer) = [0..numLocales-1];
-const LocaleSpace: domain(1) = {0..numLocales-1};
-
-var doneCreatingLocales: bool;
+extern var subloc_id_default : int;
 
 class locale {
+  // chpl_id should be int(32), but this is inconvenient due to lack of C-like 
+  // integer promotion rules.
   const chpl_id: int;
   const numCores: int;
 
-  proc locale(id = -1) {
-    if doneCreatingLocales {
-      halt("locales cannot be created");
-    }
-    chpl_id = id;
+  proc locale() {
+    chpl_id = __primitive("chpl_localeID");  // Misnamed.
+    // chpl_localeID really returns the current (GASNet) node ID.
 
     extern proc chpl_numCoresOnThisLocale(): int;
     numCores = chpl_numCoresOnThisLocale();
   }
 
+  // In traditional use, the "locale ID" is used to mean the node ID.
   proc id {
     return chpl_id;
   }
@@ -46,74 +45,47 @@ class locale {
   proc readWriteThis(f) {
     f <~> new ioLiteral("LOCALE") <~> chpl_id;
   }
-}
 
-pragma "private" var _here: locale;
+// Required by the sublocale interface
+  proc addChild(child : locale) : void
+  { /* Do nothing. */ }
 
-proc here return _here;
+  proc getChildCount() : int { return 0; }
 
-// Perform locale-specific initialization.
-// This is where global variables declared 'pragma "private"' are initialized.
-// That initialization is not currently arranged automatically by the compiler.
-proc chpl_setupLocale(id) {
-  var tmp: locale;
-  on __primitive("chpl_on_locale_num", id) {
-    tmp = new locale(id);
-    _here = tmp;
-    if (defaultDist._value == nil) {
-      defaultDist = new dmap(new DefaultDist());
-    }
+  // In this default case, there are no sublocales, so this locale is returned.
+  // All other indices are invalid.
+  proc getChild(subloc_id : int) : locale {
+    if subloc_id == subloc_id_default then return this;
+    else return nil;
   }
-  return tmp;
-}
 
-const Locales: [LocaleSpace] locale;
-// We cannot use a forall here because the default leader iterator will
-// access data structures that are not yet initialized (i.e., Locales
-// array/here).  An alternative would be to use a coforall+on and refactor
-// chpl_setupLocale().
-for loc in LocaleSpace do
-  Locales(loc) = chpl_setupLocale(loc);
+  iter getChildren() : locale { yield this; }
 
-doneCreatingLocales = true;
+  // Also required by the sublocale interface.
+  proc initTask() {} // Do nothing.
 
-//
-// tree for recursive task invocation during privatization
-//
-record chpl_localeTreeRecord {
-  var left, right: locale;
-}
-pragma "private" var chpl_localeTree: chpl_localeTreeRecord;
+  proc alloc(nbytes, md) {
+    // The default implementation.
+//  var nbytes = __primitive("sizeof", x);
+//  var mem = __primitive("chpl_mem_alloc", x, md);
+//  return __primitive("cast", x.type, mem);
+    return __primitive("chpl_mem_alloc", nbytes, md);
+  }
 
-proc chpl_initLocaleTree() {
-  for i in LocaleSpace {
-    var left: locale = nil;
-    var right: locale = nil;
-    var child = (i+1)*2-1;
-    if child < numLocales {
-      left = Locales[child];
-      child += 1;
-      if child < numLocales then
-        right = Locales[child];
-    }
-    on Locales(i) {
-      chpl_localeTree.left = left;
-      chpl_localeTree.right = right;
-    }
+  proc free(x:object) {
+    __primitive("chpl_mem_free", x);
   }
 }
 
-chpl_initLocaleTree();
+// Because it is declared in module scope and labelled "private", it exists
+// at the node level.
+// Every node has a corresponding _here locale, but may contain 
+// other locales as well.
+pragma "private" var _here: locale = new locale();
+// The concept of here is necessary for privatization, 
+// but should not generally be used in distributions.
 
-//proc locale.numCores {
-//  var numCores: int;
-//  on this do numCores = __primitive("chpl_coresPerLocale");
-//  return numCores;
-//}
-
-proc chpl_int_to_locale(id) {
-  return Locales(id);
-}
+proc here : locale return _here;
 
 
 proc locale.totalThreads() {
@@ -156,125 +128,27 @@ proc locale.blockedTasks() {
   return blockedTasks;
 }
 
+// Does this really belong here? <hilde>
 proc chpl_getPrivatizedCopy(type objectType, objectPid:int): objectType
   return __primitive("chpl_getPrivatizedClass", nil:objectType, objectPid);
 
-
-//
-// multi-locale diagnostics/debugging support
-//
-
-// There should be a type like this declared in chpl-comm.h with a single
-// function that returns the C struct.  We're not doing it that way yet
-// due to some shortcomings in our extern records implementation.
-// Once that gets sorted out, we can turn this into an extern record,
-// and remove the 8 or so individual functions below that return the
-// various counters.
-extern record chpl_commDiagnostics {
-  var get: uint(64);
-  var get_nb: uint(64);
-  var get_nb_test: uint(64);
-  var get_nb_wait: uint(64);
-  var put: uint(64);
-  var fork: uint(64);
-  var fork_fast: uint(64);
-  var fork_nb: uint(64);
-};
-
-type commDiagnostics = chpl_commDiagnostics;
-
-extern proc chpl_startVerboseComm();
-extern proc chpl_stopVerboseComm();
-extern proc chpl_startVerboseCommHere();
-extern proc chpl_stopVerboseCommHere();
-extern proc chpl_startCommDiagnostics();
-extern proc chpl_stopCommDiagnostics();
-extern proc chpl_startCommDiagnosticsHere();
-extern proc chpl_stopCommDiagnosticsHere();
-extern proc chpl_resetCommDiagnosticsHere();
-extern proc chpl_getCommDiagnosticsHere(out cd: commDiagnostics);
-
-proc startVerboseComm() { chpl_startVerboseComm(); }
-proc stopVerboseComm() { chpl_stopVerboseComm(); }
-proc startVerboseCommHere() { chpl_startVerboseCommHere(); }
-proc stopVerboseCommHere() { chpl_stopVerboseCommHere(); }
-
-proc startCommDiagnostics() { chpl_startCommDiagnostics(); }
-proc stopCommDiagnostics() { chpl_stopCommDiagnostics(); }
-proc startCommDiagnosticsHere() { chpl_startCommDiagnosticsHere(); }
-proc stopCommDiagnosticsHere() { chpl_stopCommDiagnosticsHere(); }
-
-proc resetCommDiagnostics() {
-  for loc in Locales do on loc do
-    resetCommDiagnosticsHere();
+// Here be dragons: If the return type is specified, then normalize.cpp inserts
+// an initializer for the return value, which calls its constructor, which calls
+// chpl_here_alloc ad infinitum.  But if the return type is left off, it works!!!
+proc chpl_here_alloc(x, md : int(16)) {
+  return chpl_here_alloc(x.type, md);
 }
 
-inline proc resetCommDiagnosticsHere() {
-  chpl_resetCommDiagnosticsHere();
+// This one is called from protoIteratorClass().  Can we fix that call and get rid
+// of this specialized version?
+proc chpl_here_alloc(type t, md : int(16)) {
+//  var nbytes = __primitive("sizeof", t);
+//  var bytes = here.getChild(__primitive("_get_subloc_id")).alloc(nbytes, md);
+//  return __primitive("cast", t, bytes);	// Avoid dynamic cast, since bytes has type object.
 }
 
-// See note above regarding extern records
-extern proc chpl_numCommGets(): uint(64);
-extern proc chpl_numCommNBGets(): uint(64);
-extern proc chpl_numCommTestNBGets(): uint(64);
-extern proc chpl_numCommWaitNBGets(): uint(64);
-extern proc chpl_numCommPuts(): uint(64);
-extern proc chpl_numCommForks(): uint(64);
-extern proc chpl_numCommFastForks(): uint(64);
-extern proc chpl_numCommNBForks(): uint(64);
-
-proc getCommDiagnostics() {
-  var D: [LocaleSpace] commDiagnostics;
-  for loc in Locales do on loc {
-    // See note above regarding extern records
-    D(loc.id).get = chpl_numCommGets();
-    D(loc.id).put = chpl_numCommPuts();
-    D(loc.id).fork = chpl_numCommForks();
-    D(loc.id).fork_fast = chpl_numCommFastForks();
-    D(loc.id).fork_nb = chpl_numCommNBForks();
-    D(loc.id).get_nb = chpl_numCommNBGets();
-    D(loc.id).get_nb_test = chpl_numCommTestNBGets();
-    D(loc.id).get_nb_wait = chpl_numCommWaitNBGets();
-  }
-  return D;
-}
-
-proc getCommDiagnosticsHere() {
-  var cd: commDiagnostics;
-  cd.get = chpl_numCommGets();
-  cd.put = chpl_numCommPuts();
-  cd.fork = chpl_numCommForks();
-  cd.fork_fast = chpl_numCommFastForks();
-  cd.fork_nb = chpl_numCommNBForks();
-  cd.get_nb = chpl_numCommNBGets();
-  cd.get_nb_test = chpl_numCommTestNBGets();
-  cd.get_nb_wait = chpl_numCommWaitNBGets();
-  return cd;
-}
-
-config const
-  memTrack: bool = false,
-  memStats: bool = false, 
-  memLeaks: bool = false,
-  memLeaksTable: bool = false,
-  memMax: int = 0,
-  memThreshold: int = 0,
-  memLog: string = "";
-
-pragma "no auto destroy"
-config const
-  memLeaksLog: string = "";
-
-proc chpl_startTrackingMemory() {
-  if Locales(0) == here {
-    coforall loc in Locales {
-      if loc == here {
-        __primitive("chpl_setMemFlags", memTrack, memStats, memLeaks, memLeaksTable, memMax, memThreshold, memLog, memLeaksLog);
-      } else on loc {
-          __primitive("chpl_setMemFlags", memTrack, memStats, memLeaks, memLeaksTable, memMax, memThreshold, memLog, memLeaksLog);
-      }
-    }
-  }
+proc chpl_here_free(x) {
+//  here.getChild(__primitive("_get_subloc_id")).free(x);
 }
 
 }

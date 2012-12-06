@@ -3,7 +3,9 @@
 pragma "no use ChapelStandard"
 module DefaultRectangular {
 
+use ChapelLocale; // For "here".
 use DSIUtil;
+config param noRefCount = false;
 config param debugDefaultDist = false;
 config param debugDefaultDistBulkTransfer = false;
 config param debugDataPar = false;
