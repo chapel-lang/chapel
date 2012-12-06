@@ -875,6 +875,46 @@ buildForallLoopExpr(Expr* indices, Expr* iteratorExpr, Expr* expr, Expr* cond, b
   return new CallExpr(new DefExpr(fn));
 }
 
+
+//
+// This is a helper function that takes a chpl_buildArrayRuntimeType(...) 
+// CallExpr and converts it into a forall loop expression.  See the
+// commit messages of r20820 and the commit that added this comment
+// for (a few) more details.
+//
+CallExpr* buildForallLoopExprFromArrayType(CallExpr* buildArrRTTypeCall,
+                                           bool recursiveCall) {
+  // Is this a call to chpl__buildArrayRuntimeType?
+  UnresolvedSymExpr* ursym = toUnresolvedSymExpr(buildArrRTTypeCall->baseExpr);
+  if (!ursym) {
+    INT_FATAL("Unexpected CallExpr format in buildForallLoopExprFromArrayType");
+  }
+  if (strcmp(ursym->unresolved, "chpl__buildArrayRuntimeType") == 0) {
+    // If so, let's process it...
+
+    Expr* EltExpr = buildArrRTTypeCall->get(2)->remove();
+    Expr* DomExpr = buildArrRTTypeCall->get(1)->remove();
+
+    // if the element type is itself an array, we need to do this same
+    // conversion to forall loops recursively
+    if (CallExpr* EltExprAsCall = toCallExpr(EltExpr)) {
+      EltExpr = buildForallLoopExprFromArrayType(EltExprAsCall, true);
+    }
+    return buildForallLoopExpr(NULL, DomExpr, EltExpr, NULL, true);
+  } else {
+    // if we get something other than a "build array runtime type" call...
+    if (recursiveCall) {
+      // ...we're in the base case if this was a recursive call
+      return buildArrRTTypeCall;
+    } else {
+      // ...or something is wrong if we're not
+      INT_FATAL("buildForallLoopExprFromArrayType() wasn't called with a call to chpl__buildArrayRuntimeType as expected");
+      return NULL;
+    }
+  }
+}
+
+
 BlockStmt* buildForLoopStmt(Expr* indices,
                             Expr* iteratorExpr,
                             BlockStmt* body,

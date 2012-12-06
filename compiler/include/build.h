@@ -73,6 +73,8 @@ CallExpr* buildForallLoopExpr(Expr* indices,
                               Expr* cond = NULL,
                               bool maybeArrayType = false,
                               bool zippered = false);
+CallExpr* buildForallLoopExprFromArrayType(CallExpr* buildArrRTTypeCall,
+                                           bool recursiveCall = false);
 BlockStmt* buildParamForLoopStmt(const char* index, Expr* range, BlockStmt* block);
 BlockStmt* buildAssignment(Expr* lhs, Expr* rhs, const char* op = NULL);
 BlockStmt* buildLAndAssignment(Expr* lhs, Expr* rhs);
