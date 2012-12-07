@@ -1,0 +1,10 @@
+type-tests.todo.chpl:5: warning: atomic is a class:  false
+type-tests.todo.chpl:5: warning: atomic is a record: false
+type-tests.todo.chpl:5: warning: atomic is a union:  false
+type-tests.todo.chpl:6: warning: sync is a class:  false
+type-tests.todo.chpl:6: warning: sync is a record: false
+type-tests.todo.chpl:6: warning: sync is a union:  false
+type-tests.todo.chpl:7: warning: single is a class:  false
+type-tests.todo.chpl:7: warning: single is a record: false
+type-tests.todo.chpl:7: warning: single is a union:  false
+type-tests.todo.chpl:8: error: done

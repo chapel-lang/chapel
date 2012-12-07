@@ -1376,6 +1376,9 @@ proc chpl__isDomain(x) param return false;
 proc chpl__isArray(x: []) param return true;
 proc chpl__isArray(x) param return false;
 
+proc chpl__isDmap(x: _distribution) param return true;
+proc chpl__isDmap(x) param return false;
+
 //
 // Assignment of domains and arrays
 //

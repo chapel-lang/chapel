@@ -1838,6 +1838,22 @@ proc fieldValueByName(x, param name) {
 proc isClassType(type t) param where t:object return true;
 proc isClassType(type t) param return false;
 
+proc isRecordType(type t) param where t: value {
+  // some non-record types are implemented via records - exclude those
+  var v: t;
+  if
+    chpl__isDmap(v)   ||
+    chpl__isDomain(v) ||
+    chpl__isArray(v)  ||
+    chpl__isRange(v)  ||
+    isTuple(v)
+  then
+    return false;
+  else
+    return true;
+}
+proc isRecordType(type t) param return false;
+
 proc isUnionType(type t) param {
   return __primitive("is union type", t);
 }
