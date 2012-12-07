@@ -612,6 +612,10 @@ void addDashMsToUserPath(void) {
 
 
 void setupModulePaths(void) {
+  intModPath.add(astr(CHPL_HOME, "/modules/internal/threads/", CHPL_THREADS));
+  intModPath.add(astr(CHPL_HOME, "/modules/internal/tasks/", CHPL_TASKS));
+  intModPath.add(astr(CHPL_HOME, "/modules/internal/comm/", CHPL_COMM));
+  // These three are deprecated, superseded by the above three.
   intModPath.add(astr(CHPL_HOME, "/modules/internal/", CHPL_THREADS));
   intModPath.add(astr(CHPL_HOME, "/modules/internal/", CHPL_TASKS));
   intModPath.add(astr(CHPL_HOME, "/modules/internal/", CHPL_COMM));
