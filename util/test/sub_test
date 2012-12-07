@@ -591,6 +591,11 @@ for testname in testsrc:
         (root, suffix) = os.path.splitext(f)
         # sys.stdout.write("**** %s ****\n"%(f))
 
+        # 'f' is of the form execname.SOMETHING.suffix,
+        # not pertinent at the moment
+        if root != execname:
+            continue
+
         # Deal with these later
         if (suffix == '.good' or
             suffix=='.compopts' or suffix=='.perfcompopts' or
