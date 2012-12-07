@@ -64,6 +64,9 @@ class DefaultAssociativeDom: BaseAssociativeDom {
   proc DefaultAssociativeDom(type idxType,
                              param parSafe: bool,
                              dist: DefaultDist) {
+    if !chpl__validDefaultAssocDomIdxType(idxType) then
+      compilerError("Default Associative domains with idxType=",
+                    typeToString(idxType), " are not allowed", 2);
     this.dist = dist;
   }
 
@@ -518,7 +521,7 @@ inline proc chpl__defaultHash(u: chpl_taskID_t): int(64) {
   return _gen_key(u:int(64));
 }
 
-// Use djb2 (Dan Bernstein in comp.lang.c.
+// Use djb2 (Dan Bernstein in comp.lang.c)
 inline proc chpl__defaultHash(x : string): int(64) {
   var hash: int(64) = 0;
   for c in 1..(x.length) {
@@ -529,6 +532,31 @@ inline proc chpl__defaultHash(x : string): int(64) {
 
 inline proc chpl__defaultHash(o: object): int(64) {
   return _gen_key(__primitive( "object2int", o));
+}
+
+// Is 'idxType' legal to create a default associative domain with?
+// Currently based on the availability of chpl__defaultHash().
+// Enumerated, opaque, and sparse domains are handled separately.
+// Tuples and records also work, somehow.
+proc chpl__validDefaultAssocDomIdxType(type idxType) param return false;
+
+proc chpl__validDefaultAssocDomIdxType(type idxType) param where
+    // one check per an implementation of chpl__defaultHash() above
+    _isBooleanType(idxType)     ||
+    _isSignedType(idxType)      ||
+    _isUnsignedType(idxType)    ||
+    _isRealType(idxType)        ||
+    _isComplexType(idxType)     ||
+    _isImagType(idxType)        ||
+    idxType == chpl_taskID_t    ||
+    idxType == string           ||
+    isClassType(idxType)        ||
+    // these are handled differently
+    _isEnumeratedType(idxType)  ||
+    isTupleType(idxType)        ||
+    isRecordType(idxType)
+{
+  return true;
 }
 
 }
