@@ -154,20 +154,68 @@ void check_bits(int offset, int padding)
   qio_file_release(f);
 }
 
-void check_write_read_pat(int width, int num, int pat)
+void check_write_read_pat(int width, int num, int pat, qio_chtype_t type, qio_hint_t file_hints, qio_hint_t ch_hints, char reopen)
 {
   qio_file_t* f;
   qio_channel_t* writing;
   qio_channel_t* reading;
   err_t err;
+  int memory;
+  char* chhints;
+  char* fhints;
+  char filename[128];
+  int fd = -1;
   uint64_t one = 1;
   uint64_t mask = (one << width) - 1;
   if( width == 64 ) mask = -1;
- 
-  err = qio_file_open_tmp(&f, 0, NULL);
-  assert(!err);
 
-  err = qio_channel_create(&writing, f, 0, 0, 1, 0, INT64_MAX, NULL);
+  strcpy(filename,"/tmp/qio_bits_testXXXXXX");
+
+  ch_hints = (ch_hints & ~ QIO_CHTYPEMASK) | type;
+  memory = 0;
+
+  if( (file_hints & QIO_METHODMASK) == QIO_METHOD_MEMORY ||
+      (ch_hints & QIO_METHODMASK) == QIO_METHOD_MEMORY ) {
+    memory = 1;
+  }
+  if( memory ) {
+    file_hints = (file_hints & ~ QIO_METHODMASK ) | QIO_METHOD_MEMORY;
+    ch_hints = (ch_hints & ~ QIO_METHODMASK ) | QIO_METHOD_MEMORY;
+  }
+  if( memory && type == QIO_CH_ALWAYS_UNBUFFERED ) return;
+  if( memory && reopen ) return;
+  if( (ch_hints & QIO_METHODMASK) == QIO_METHOD_FREADFWRITE ) {
+    if( (file_hints & QIO_METHODMASK) != QIO_METHOD_FREADFWRITE ) return;
+  }
+  if( (ch_hints & QIO_METHODMASK) == QIO_METHOD_MMAP ) {
+    if( (file_hints & QIO_METHODMASK) != QIO_METHOD_MMAP ) return;
+  }
+
+  fhints = qio_hints_to_string(file_hints);
+  chhints = qio_hints_to_string(ch_hints);
+  printf("check_write_read_pat(width=%i, num=%i, pat=%i, type=%i, file_hints=%s %i, ch_hints=%s %i, reopen=%i)\n",
+         width, num, pat, type,
+         fhints, (int) file_hints, chhints, (int) ch_hints,  (int) reopen);
+  free(fhints);
+  free(chhints);
+
+  if( memory ) {
+    err = qio_file_open_mem_ext(&f, NULL, QIO_FDFLAG_READABLE|QIO_FDFLAG_WRITEABLE|QIO_FDFLAG_SEEKABLE, file_hints, NULL);
+    assert(!err);
+  } else {
+    if( reopen ) {
+      fd = mkstemp(filename);
+      close(fd);
+      err = qio_file_open_access(&f, filename, "w", file_hints, NULL);
+      assert(!err);
+
+    } else {
+      err = qio_file_open_tmp(&f, 0, NULL);
+      assert(!err);
+    }
+  }
+
+  err = qio_channel_create(&writing, f, ch_hints, 0, 1, 0, INT64_MAX, NULL);
   assert(!err);
 
   for( int i = 0; i < num; i++ ) {
@@ -178,12 +226,33 @@ void check_write_read_pat(int width, int num, int pat)
     } else {
       x = ((uint64_t) i) & mask;
     }
+    { // check offset
+      int64_t off = qio_channel_offset_unlocked(writing);
+      assert( off == (width * i + 7) / 8 );
+    }
     err = qio_channel_write_bits(false, writing, x, width);
     assert(!err);
   }
   qio_channel_release(writing);
 
-  err = qio_channel_create(&reading, f, 0, 1, 0, 0, INT64_MAX, NULL);
+  // Reopen the file if we're doing reopen
+  if( reopen ) {
+    // Close the file.
+    qio_file_release(f);
+    err = qio_file_open_access(&f, filename, "r", file_hints, NULL);
+    assert(!err);
+  }
+  // Rewind the file 
+  if( !memory ) {
+    off_t off;
+
+    sys_lseek(f->fd, 0, SEEK_SET, &off);
+    assert(!err);
+  }
+
+
+
+  err = qio_channel_create(&reading, f, ch_hints, 1, 0, 0, INT64_MAX, NULL);
   assert(!err);
 
   for( int i = 0; i < num; i++ ) {
@@ -195,8 +264,14 @@ void check_write_read_pat(int width, int num, int pat)
     } else {
       x = ((uint64_t) i) & mask;
     }
-    err = qio_channel_read_bits(true, reading, &got, width);
+    { // check offset
+      int64_t off = qio_channel_offset_unlocked(reading);
+      assert( off == (width * i + 7) / 8 );
+    }
+    //printf("Reading at %lli\n", (long long int) qio_channel_offset_unlocked(reading));
+    err = qio_channel_read_bits(false, reading, &got, width);
     assert(!err);
+    //printf("Got  %lli\n", (long long int) got);
     if( got != x ) {
       printf("Fails (%i %i %i) at %i got=%llx expect=%llx\n", width, num, pat, i, (unsigned long long int) got, (unsigned long long int) x);
       assert(got == x);
@@ -208,30 +283,46 @@ void check_write_read_pat(int width, int num, int pat)
 
   // Close the file.
   qio_file_release(f);
-}
 
-void check_write_read(int width, int num)
-{
-  check_write_read_pat(width, num, 0);
-  check_write_read_pat(width, num, 1);
+  if( reopen ) {
+    unlink(filename);
+  }
 }
 
 int main(int argc, char** argv)
 {
   int offset, padding;
   int width, logn;
-
+  qio_chtype_t type;
+  qio_hint_t hints[] = {QIO_METHOD_DEFAULT, QIO_METHOD_READWRITE, QIO_METHOD_PREADPWRITE, QIO_METHOD_FREADFWRITE, QIO_METHOD_MEMORY, QIO_METHOD_MMAP, QIO_METHOD_MMAP|QIO_HINT_PARALLEL, QIO_METHOD_PREADPWRITE | QIO_HINT_NOFAST};
+  int nhints = sizeof(hints)/sizeof(qio_hint_t);
+  int file_hint, ch_hint;
 
   if( argc == 1 ) {
+    //for( file_hint = 0; file_hint < nhints; file_hint++ ) {
+    //  check_write_read_pat(1, 262144, 0, 0, file_hint, file_hint, 0);
+    //}
+
+    //check_write_read_pat(32,4096,0,3,QIO_METHOD_PREADPWRITE,0,1);
+    //check_write_read_pat(32,4096,0,3,0,0,1);
+    //exit(0);
+//check_write_read_pat(width=32, num=4096, pat=0, type=3, file_hints=default_type default, ch_hints=buffered default, reopen=1)
+
     // Run unit tests.
     for( offset = 0; offset < 63; offset++ ) {
       for( padding = 0; padding < 63; padding++ ) {
         check_bits(offset, padding);
       }
     }
-    for( width = 1; width <= 64; width++ ) {
-      for( logn = 0; logn < 18; logn++ ) {
-        check_write_read(width, 1 << logn);
+
+    for( logn = 0; logn < 19; logn+=9 ) {
+      for( width = 1; width <= 64; width++ ) {
+        for( file_hint = 0; file_hint < nhints; file_hint++ ) {
+          ch_hint = file_hint;
+          type = 0;
+          check_write_read_pat(width,1 << logn,0,type,file_hint,ch_hint,0);
+          check_write_read_pat(width,1 << logn,1,type,file_hint,ch_hint,1);
+        }
       }
     }
   }

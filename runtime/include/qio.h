@@ -263,8 +263,10 @@ char* qio_hints_to_string(qio_hint_t hint)
 
   if( hint & QIO_HINT_RANDOM ) strcat(buf, " random");
   if( hint & QIO_HINT_SEQUENTIAL ) strcat(buf, " sequential");
+  if( hint & QIO_HINT_LATENCY ) strcat(buf, " latency");
   if( hint & QIO_HINT_BANDWIDTH ) strcat(buf, " bandwidth");
   if( hint & QIO_HINT_CACHED ) strcat(buf, " cached");
+  if( hint & QIO_HINT_PARALLEL ) strcat(buf, " parallel");
   if( hint & QIO_HINT_DIRECT ) strcat(buf, " direct");
   if( hint & QIO_HINT_NOREUSE ) strcat(buf, " noreuse");
   if( hint & QIO_HINT_NOFAST ) strcat(buf, " nofast");
@@ -1050,13 +1052,23 @@ static inline
 int64_t qio_channel_offset_unlocked(qio_channel_t* ch)
 {
   int64_t cached_amt = VOID_PTR_DIFF(ch->cached_cur, ch->cached_start);
-  
-  if( ch->cached_start != NULL ) {
-    return cached_amt + ch->cached_start_pos;
+  int writing = ch->flags & QIO_FDFLAG_WRITEABLE;
+  int bytes_in_bits = 0;
+
+  if( writing ) {
+    bytes_in_bits = (ch->bit_buffer_bits + 7)/8;
+  } else {
+    bytes_in_bits = (7 + 8*ch->bits_read_bytes - ch->bit_buffer_bits) / 8;
   }
 
+  if( ch->cached_start != NULL ) {
+    //printf("offset %i %i %i\n", (int) bytes_in_bits, (int) cached_amt, (int) ch->cached_start_pos);
+    return bytes_in_bits + cached_amt + ch->cached_start_pos;
+  }
+
+  //printf("offset %i - %i\n", (int) bytes_in_bits, (int) ch->mark_stack[ch->mark_cur]);
   // and if there's no cached data, cached_start_pos is not available:
-  return ch->mark_stack[ch->mark_cur]; // _right_mark_start(ch);
+  return bytes_in_bits + ch->mark_stack[ch->mark_cur]; // _right_mark_start(ch);
 }
 
 

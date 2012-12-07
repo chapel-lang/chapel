@@ -590,9 +590,12 @@ err_t qio_mmap_initial(qio_file_t* file)
   // now, if we're using mmap, go ahead and map the file.
   // note that here file->hints might be the result of choose_io_method.
   if( (file->hints & QIO_METHODMASK) == QIO_METHOD_MMAP ) {
-    if( (file->hints & QIO_HINT_PARALLEL) ||
-        (len > 0 && len <= qio_initial_mmap_max) ) {
-      do_mmap_initial = 1;
+    if( len > 0 ) {
+      // Can't mmap a zero-length file initially
+      if ( (file->hints & QIO_HINT_PARALLEL) ||
+           (len <= qio_initial_mmap_max) ) {
+        do_mmap_initial = 1;
+      }
     }
   }
 
@@ -3517,6 +3520,12 @@ err_t _qio_channel_read_bits_slow(qio_channel_t* restrict ch, uint64_t* restrict
     // Do not cause flushing of bit-I/O on these reads.
     ch->bits_read_bytes = 0; // avoid flushing.
     ch->bit_buffer_bits = 0;
+
+    // setup buffer pointers for normal read.
+    if( ch->cached_end_bits ) {
+      ch->cached_end = ch->cached_end_bits;
+      ch->cached_end_bits = NULL;
+    }
 
     // skip any bytes we've already processed.
     buf = 0;
