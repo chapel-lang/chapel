@@ -608,7 +608,6 @@ if ($platform != "sunos") then
     setenv LC_ALL C
     setenv LANG en_US
 endif
-limit stacksize 8192k
 
 
 set clean_only = 0
