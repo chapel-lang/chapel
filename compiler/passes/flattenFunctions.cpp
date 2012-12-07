@@ -57,7 +57,7 @@ addVarsToFormals(FnSymbol* fn, SymbolMap* vars) {
            an LHS expr. */
         type = type->refType;
       ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, sym->name, type);
-      if (!strcmp(sym->name, "this"))
+      if (sym->hasFlag(FLAG_ARG_THIS))
         arg->addFlag(FLAG_ARG_THIS);
       fn->insertFormalAtTail(new DefExpr(arg));
       vars->put(sym, arg);
