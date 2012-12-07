@@ -144,6 +144,9 @@ process_args(ArgumentState *arg_state, int argc, char **aargv) {
   int i, len;
   char *end = 0;
   char **argv = (char**)malloc((argc+1)*sizeof(char*));
+#ifdef _BASEAST_H_
+  astlocMarker markAstLoc(0, "<command line>");
+#endif
   for (i = 0; i < argc; i++)
     argv[i] = _dupstr(aargv[i]);
   argv[i] = NULL;

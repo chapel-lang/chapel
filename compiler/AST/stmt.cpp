@@ -387,6 +387,7 @@ CondStmt::fold_cond_stmt()
       if (var->immediate &&
           var->immediate->const_kind == NUM_KIND_UINT &&
           var->immediate->num_index == INT_SIZE_1) {
+        SET_LINENO(this);
         result = new CallExpr(PRIM_NOOP);
         this->insertBefore(result);
         if (var->immediate->v_bool == gTrue->immediate->v_bool) {

@@ -276,6 +276,7 @@ void EnumType::sizeAndNormalize() {
 
   first = true;
   for_enums(constant, this) {
+    SET_LINENO(constant);
     if( constant->init ) {
       // set v and uv to the initializer value
       if( get_int( constant->init, &v ) ) {

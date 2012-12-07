@@ -68,6 +68,7 @@ insertLineNumber(CallExpr* call) {
   ModuleSymbol* mod = fn->getModule();
   ArgSymbol* file = filenameMap.get(fn);
   ArgSymbol* line = linenoMap.get(fn);
+  SET_LINENO(call);
 
   if (call->isPrimitive(PRIM_GET_USER_FILE) || 
       call->isPrimitive(PRIM_GET_USER_LINE)) {
@@ -193,6 +194,7 @@ void insertLineNumbers() {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->hasFlag(FLAG_INSERT_LINE_FILE_INFO)) {
       if (!filenameMap.get(fn)) {  // avoid duplicates
+        SET_LINENO(fn);
         newLine(fn);
         newFile(fn);
       }
@@ -219,6 +221,7 @@ void insertLineNumbers() {
         (fn->numFormals() > 1 && fn->hasFlag(FLAG_COBEGIN_OR_COFORALL_BLOCK)) ||
         (fn->numFormals() > 1 && fn->hasFlag(FLAG_BEGIN_BLOCK))) {
 
+      SET_LINENO(fn);
       DefExpr* fileArg = toDefExpr(fn->formals.tail);
       fileArg->remove();
       DefExpr* lineArg = toDefExpr(fn->formals.tail);
@@ -244,6 +247,7 @@ void insertLineNumbers() {
       update_symbols(fn->body, &update);
 
       forv_Vec(CallExpr, call, *fn->calledBy) {
+        SET_LINENO(call);
         Expr* fileActual = call->argList.tail->remove();
         Expr* lineActual = call->argList.tail->remove();
         Expr* bundleActual = call->argList.tail;

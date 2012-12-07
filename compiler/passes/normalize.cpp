@@ -49,8 +49,8 @@ void normalize(void) {
       INT_ASSERT(fn && fn->hasFlag(FLAG_ITERATOR_FN));
     }
     if (call->isPrimitive(PRIM_DELETE)) {
-      VarSymbol* tmp = newTemp();
       SET_LINENO(call);
+      VarSymbol* tmp = newTemp();
       call->insertBefore(new DefExpr(tmp));
       call->insertBefore(new CallExpr(PRIM_MOVE, tmp, call->get(1)->remove()));
       call->insertBefore(new CallExpr("~chpl_destroy", gMethodToken, tmp));
@@ -266,6 +266,7 @@ static void
 insertUseForExplicitModuleCalls(void) {
   forv_Vec(SymExpr, se, gSymExprs) {
     if (se->parentSymbol && se->var == gModuleToken) {
+      SET_LINENO(se);
       CallExpr* call = toCallExpr(se->parentExpr);
       INT_ASSERT(call);
       SymExpr* mse = toSymExpr(call->get(2));
@@ -283,6 +284,7 @@ insertUseForExplicitModuleCalls(void) {
 
 static void
 processSyntacticDistributions(CallExpr* call) {
+  SET_LINENO(call);
   if (call->isPrimitive(PRIM_NEW))
     if (CallExpr* type = toCallExpr(call->get(1)))
       if (SymExpr* base = toSymExpr(type->baseExpr))
@@ -762,6 +764,7 @@ static void hack_resolve_types(ArgSymbol* arg) {
         if (arg->defaultExpr->body.length == 1)
           se = toSymExpr(arg->defaultExpr->body.tail);
         if (!se || se->var != gTypeDefaultToken) {
+          SET_LINENO(arg->defaultExpr);
           arg->typeExpr = arg->defaultExpr->copy();
           insert_help(arg->typeExpr, NULL, arg);
         }

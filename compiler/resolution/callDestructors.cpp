@@ -144,6 +144,7 @@ changeRetToArgAndClone(CallExpr* move, Symbol* lhs,
           }
 
           if (!newFn) {
+            SET_LINENO(fn);
             newFn = fn->copy();
             ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "_retArg", useFn->retType->refType);
             newFn->insertFormalAtTail(arg);
@@ -157,6 +158,7 @@ changeRetToArgAndClone(CallExpr* move, Symbol* lhs,
               if (se->var == ret) {
                 CallExpr* move = toCallExpr(se->parentExpr);
                 if (move && move->isPrimitive(PRIM_MOVE) && move->get(1) == se) {
+                  SET_LINENO(move);
                   if (!strcmp(useFn->name, "=")) {
                     Symbol* tmp = newTemp("_ret_to_arg_tmp_", useFn->retType);
                     move->insertBefore(new DefExpr(tmp));
@@ -185,6 +187,7 @@ changeRetToArgAndClone(CallExpr* move, Symbol* lhs,
             retToArgCache.put(fn, vfn);
           }
 
+          SET_LINENO(call);
           call->baseExpr->replace(new SymExpr(newFn));
 
           CallExpr* useMove = toCallExpr(useCall->parentExpr);
@@ -259,6 +262,7 @@ fixupDestructors() {
       // insert calls to destructors for all 'value' fields
       //
       for_fields_backward(field, ct) {
+        SET_LINENO(field);
         if (field->type->destructor) {
           ClassType* fct = toClassType(field->type);
           INT_ASSERT(fct);
@@ -320,6 +324,7 @@ fixupDestructors() {
       if (ct->dispatchParents.n >= 1 && isClass(ct)) {
         // avoid destroying record fields more than once
         if (FnSymbol* parentDestructor = ct->dispatchParents.v[0]->destructor) {
+          SET_LINENO(fn);
           Type* tmpType = isClass(ct) ?
             ct->dispatchParents.v[0] : ct->dispatchParents.v[0]->refType;
           VarSymbol* tmp = newTemp("_parent_destructor_tmp_", tmpType);
@@ -336,6 +341,7 @@ fixupDestructors() {
 
 static void insertGlobalAutoDestroyCalls() {
   const char* name = "chpl__autoDestroyGlobals";
+  SET_LINENO(baseModule);
   FnSymbol* fn = new FnSymbol(name);
   fn->retType = dtVoid;
   if( ! fNoInternalModules ) {
@@ -348,8 +354,10 @@ static void insertGlobalAutoDestroyCalls() {
         if (VarSymbol* var = toVarSymbol(def->sym))
           if (!var->isParameter() && !var->hasFlag(FLAG_TYPE_VARIABLE))
             if (!var->hasFlag(FLAG_NO_AUTO_DESTROY))
-              if (FnSymbol* autoDestroy = autoDestroyMap.get(var->type))
+              if (FnSymbol* autoDestroy = autoDestroyMap.get(var->type)) {
+                SET_LINENO(var);
                 fn->insertAtTail(new CallExpr(autoDestroy, var));
+              }
   }
   fn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
 }
@@ -395,6 +403,7 @@ callDestructors() {
         }
       }
       INT_ASSERT(move);
+      SET_LINENO(move);
       Symbol* tmp = newTemp("_autoCopy_tmp_", sym->type);
       move->insertBefore(new DefExpr(tmp));
       move->insertAfter(new CallExpr(PRIM_MOVE, sym, new CallExpr(autoCopyMap.get(sym->type), tmp)));
@@ -420,6 +429,7 @@ callDestructors() {
         if (isRecord(type) &&
             !type->symbol->hasFlag(FLAG_ITERATOR_RECORD) &&
             !type->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE)) {
+          SET_LINENO(call);
           Symbol* tmp = newTemp("_yield_expr_tmp_", type);
           move->insertBefore(new DefExpr(tmp));
           move->insertAfter(new CallExpr(PRIM_MOVE, yieldExpr->var, new CallExpr(autoCopyMap.get(tmp->type), tmp)));

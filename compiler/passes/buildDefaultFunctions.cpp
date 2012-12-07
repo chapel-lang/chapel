@@ -33,6 +33,7 @@ static void buildDefaultDestructor(ClassType* ct);
 
 void buildDefaultFunctions(void) {
   build_chpl_entry_points();
+  SET_LINENO(rootModule); // todo - remove reset_ast_loc() calls below?
 
   Vec<BaseAST*> asts;
   collect_asts(rootModule, asts);

@@ -224,9 +224,14 @@ BaseAST::BaseAST(AstTag type) :
   astloc(yystartlineno, yyfilename)
 {
   checkid(id);
-  if (astloc.lineno == -1) {
-    if (currentAstLoc.lineno) {
+  if (astloc.filename) {
+    // OK, set from yyfilename
+  } else {
+    if (currentAstLoc.filename) {
       astloc = currentAstLoc;
+    } else {
+      // neither yy* nor currentAstLoc are set
+      INT_FATAL("no line number available");
     }
   }
 }

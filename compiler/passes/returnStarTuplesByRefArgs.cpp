@@ -14,6 +14,7 @@ void returnStarTuplesByRefArgs() {
 
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if ((fn->retType->symbol->hasFlag(FLAG_STAR_TUPLE)) || (fn->retType->symbol->hasFlag(FLAG_FIXED_STRING))) {
+      SET_LINENO(fn);
 
       //
       // change function interface to take a reference
@@ -31,6 +32,7 @@ void returnStarTuplesByRefArgs() {
       // update call sites to new interface
       //
       forv_Vec(CallExpr, call, *fn->calledBy) {
+        SET_LINENO(call);
         CallExpr* move = toCallExpr(call->parentExpr);
         if (!move) {
           //
@@ -66,6 +68,7 @@ void returnStarTuplesByRefArgs() {
         call->isPrimitive(PRIM_GET_MEMBER_VALUE)) {
       Type* type = call->get(1)->getValType();
       if (type->symbol->hasFlag(FLAG_STAR_TUPLE)) {
+        SET_LINENO(call);
         ClassType* ct = toClassType(type);
         SymExpr* se = toSymExpr(call->get(2));
         int i = atoi(se->var->name+1);

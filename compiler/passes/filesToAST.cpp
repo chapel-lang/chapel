@@ -190,6 +190,7 @@ void parse(void) {
 
     // ChapelStandard is added implicity to the "use" list of all other modules.
     {
+      SET_LINENO(mod);
       mod->block->addUse(standardModule);
       mod->modUseSet.clear();
       mod->modUseList.clear();
@@ -200,6 +201,9 @@ void parse(void) {
 
   checkConfigs();
 
+ {
+  SET_LINENO(baseModule);
   baseModule->block->addUse(rootModule);
+ }
   finishCountingTokens();
 }

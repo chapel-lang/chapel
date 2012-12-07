@@ -753,6 +753,8 @@ compile_all(void) {
 
 int main(int argc, char *argv[]) {
   startCatchingSignals();
+ {
+  astlocMarker markAstLoc(0, "<internal>");
   initFlags();
   initChplProgram();
   initPrimitive();
@@ -766,6 +768,7 @@ int main(int argc, char *argv[]) {
   setupDependentVars();
   setupModulePaths();
   recordCodeGenStrings(argc, argv);
+ } // astlocMarker scope
   printStuff(argv[0]);
   if (rungdb)
     runCompilerInGDB(argc, argv);

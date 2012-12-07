@@ -65,6 +65,7 @@ void cullOverReferences() {
           INT_ASSERT(move->isPrimitive(PRIM_MOVE));
           SymExpr* se = toSymExpr(move->get(1));
           INT_ASSERT(se);
+          SET_LINENO(move);
           if (!refNecessary(se, defMap, useMap)) {
             SymExpr* base = toSymExpr(call->baseExpr);
             base->var = copy;

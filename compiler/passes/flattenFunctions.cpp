@@ -56,6 +56,7 @@ addVarsToFormals(FnSymbol* fn, SymbolMap* vars) {
            whether this variable is actually going to be returned as
            an LHS expr. */
         type = type->refType;
+      SET_LINENO(sym);
       ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, sym->name, type);
       if (sym->hasFlag(FLAG_ARG_THIS))
         arg->addFlag(FLAG_ARG_THIS);
@@ -112,6 +113,7 @@ static void
 addVarsToActuals(CallExpr* call, SymbolMap* vars, bool outerCall) {
   form_Map(SymbolMapElem, e, *vars) {
     if (Symbol* sym = e->key) {
+      SET_LINENO(sym);
       if (!outerCall && (sym->type->refType &&
                          (!sym->hasFlag(FLAG_COFORALL_INDEX_VAR) ||
                           (toFnSymbol(sym->defPoint->parentSymbol)->retTag==RET_VAR)))) {

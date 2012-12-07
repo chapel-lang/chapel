@@ -809,6 +809,7 @@ static void codegen_header() {
       if (call->isPrimitive(PRIM_PRIVATE_BROADCAST)) {
         SymExpr* se = toSymExpr(call->get(1));
         INT_ASSERT(se);
+        SET_LINENO(call);
         fprintf(hdrfile, ",\n&%s", se->var->cname);
         call->insertAtHead(new_IntSymbol(i));
         i++;

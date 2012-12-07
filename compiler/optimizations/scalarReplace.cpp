@@ -204,9 +204,9 @@ scalarReplaceClass(ClassType* ct, Symbol* sym) {
   //
   SymbolMap fieldMap;
   for_fields(field, ct) {
+    SET_LINENO(sym);
     Symbol* var = new VarSymbol(astr(sym->name, "_", field->name), field->type);
     fieldMap.put(field, var);
-    SET_LINENO(sym);
     sym->defPoint->insertBefore(new DefExpr(var));
     if (sym->hasFlag(FLAG_TEMP))
       var->addFlag(FLAG_TEMP);
@@ -226,18 +226,20 @@ scalarReplaceClass(ClassType* ct, Symbol* sym) {
   //
   for_uses(se, useMap, sym) {
     if (CallExpr* call = toCallExpr(se->parentExpr)) {
-      if (call && call->isPrimitive(PRIM_GET_MEMBER)) {
+     if (call) {
+      SET_LINENO(call);
+      if (call->isPrimitive(PRIM_GET_MEMBER)) {
         SymExpr* member = toSymExpr(call->get(2));
         SymExpr* use = new SymExpr(fieldMap.get(member->var));
         call->replace(new CallExpr(PRIM_ADDR_OF, use));
         addUse(useMap, use);
-      } else if (call && call->isPrimitive(PRIM_GET_MEMBER_VALUE)) {
+      } else if (call->isPrimitive(PRIM_GET_MEMBER_VALUE)) {
         SymExpr* member = toSymExpr(call->get(2));
         SymExpr* use = new SymExpr(fieldMap.get(member->var));
         call->replace(use);
         addUse(useMap, use);
-      } else if (call && (call->isPrimitive(PRIM_SETCID) ||
-                 call->isPrimitive(PRIM_CHPL_FREE))) {
+      } else if (call->isPrimitive(PRIM_SETCID) ||
+                 call->isPrimitive(PRIM_CHPL_FREE)) {
         //
         // we can remove the setting of the cid because it is never
         // used and we are otherwise able to remove the class
@@ -245,7 +247,7 @@ scalarReplaceClass(ClassType* ct, Symbol* sym) {
         // class reference, we can remove the call to free it
         //
         call->remove();
-      } else if (call && call->isPrimitive(PRIM_SET_MEMBER)) {
+      } else if (call->isPrimitive(PRIM_SET_MEMBER)) {
         SymExpr* member = toSymExpr(call->get(2));
         call->primitive = primitives[PRIM_MOVE];
         call->get(2)->remove();
@@ -256,6 +258,7 @@ scalarReplaceClass(ClassType* ct, Symbol* sym) {
         if (call->get(1)->typeInfo() == call->get(2)->typeInfo()->refType)
           call->insertAtTail(new CallExpr(PRIM_ADDR_OF, call->get(2)->remove()));
       }
+     }
     }
   }
 
@@ -304,9 +307,9 @@ scalarReplaceRecord(ClassType* ct, Symbol* sym) {
   //
   SymbolMap fieldMap;
   for_fields(field, ct) {
+    SET_LINENO(sym);
     Symbol* var = new VarSymbol(astr(sym->name, "_", field->name), field->type);
     fieldMap.put(field, var);
-    SET_LINENO(sym);
     sym->defPoint->insertBefore(new DefExpr(var));
     if (sym->hasFlag(FLAG_TEMP))
       var->addFlag(FLAG_TEMP);

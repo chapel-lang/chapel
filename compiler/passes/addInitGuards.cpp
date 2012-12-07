@@ -40,6 +40,7 @@ void addModuleInitBlocks() {
       // is not actually used, so its initializer is pruned during resolution.
       continue;
 
+    SET_LINENO(mod);
     BlockStmt* initBlock = new BlockStmt();
 
     // If I have a parent, I need it initialized first,
@@ -77,6 +78,7 @@ void addModuleInitBlocks() {
 //
 static void addInitGuards(void) {
   // We need a function to drop the initializers into.
+  SET_LINENO(baseModule);
   FnSymbol* preInitFn = new FnSymbol(astr("chpl__init_preInit"));
   preInitFn->retType = dtVoid;
   preInitFn->addFlag(FLAG_EXPORT);
@@ -107,6 +109,7 @@ static void addInitGuards(void) {
 
 static void addInitGuard(FnSymbol* fn, FnSymbol* preInitFn)
 {
+    SET_LINENO(fn);
     // The declaration:
     //      var <init_fn_name>_p : bool;
     // is added to the end of the program block.

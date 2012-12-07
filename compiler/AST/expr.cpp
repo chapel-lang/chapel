@@ -2629,6 +2629,7 @@ GenRet CallExpr::codegen() {
   GenRet ret;
   GenInfo* info = gGenInfo;
   FILE* c = info->cfile;
+  SET_LINENO(this);
 
   // Note (for debugging), function name is in parentSymbol->cname.
 

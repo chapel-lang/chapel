@@ -288,6 +288,7 @@ static void makeRefType(Type* type) {
 
 static void
 resolveAutoCopy(Type* type) {
+  SET_LINENO(type->symbol);
   Symbol* tmp = newTemp(type);
   chpl_gen_main->insertAtHead(new DefExpr(tmp));
   CallExpr* call = new CallExpr("chpl__autoCopy", tmp);
@@ -300,6 +301,7 @@ resolveAutoCopy(Type* type) {
 
 static void
 resolveAutoDestroy(Type* type) {
+  SET_LINENO(type->symbol);
   Symbol* tmp = newTemp(type);
   chpl_gen_main->insertAtHead(new DefExpr(tmp));
   CallExpr* call = new CallExpr("chpl__autoDestroy", tmp);
@@ -2331,6 +2333,7 @@ static void resolveNormalCall(CallExpr* call, bool errorCheck) {
       INT_FATAL(call, "unable to resolve call");
     }
     if (call->parentSymbol) {
+      SET_LINENO(call);
       call->baseExpr->replace(new SymExpr(resolvedFn));
     }
 
@@ -2659,6 +2662,7 @@ insertFormalTemps(FnSymbol* fn) {
   SymbolMap formals2vars;
   for_formals(formal, fn) {
     if (formalRequiresTemp(formal)) {
+      SET_LINENO(formal);
       VarSymbol* tmp = newTemp(astr("_formal_tmp_", formal->name));
       Type* formalType = formal->type->getValType();
       if ((formal->intent == INTENT_BLANK ||
@@ -2673,6 +2677,7 @@ insertFormalTemps(FnSymbol* fn) {
     update_symbols(fn->body, &formals2vars);
     form_Map(SymbolMapElem, e, formals2vars) {
       ArgSymbol* formal = toArgSymbol(e->key);
+      SET_LINENO(formal);
       Symbol* tmp = e->value;
       // This adds the extra code inside the current function required
       // to implement the ref-to-value and copy-back semantics, where needed.
@@ -4016,6 +4021,7 @@ postFold(Expr* expr) {
   Expr* result = expr;
   if (!expr->parentSymbol)
     return result;
+  SET_LINENO(expr);
   if (CallExpr* call = toCallExpr(expr)) {
     if (FnSymbol* fn = call->isResolved()) {
       if (fn->retTag == RET_PARAM || fn->hasFlag(FLAG_MAYBE_PARAM)) {
@@ -4488,6 +4494,7 @@ insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
           if (rhsType != lhs->var->type &&
               rhsType->refType != lhs->var->type &&
               rhsType != lhs->var->type->refType) {
+            SET_LINENO(rhs);
             rhs->remove();
             Symbol* tmp = NULL;
             if (SymExpr* se = toSymExpr(rhs)) {
@@ -5085,6 +5092,7 @@ static void unmarkDefaultedGenerics() {
         if (!formal->markedGeneric &&
             formal != fn->_this &&
             !formal->hasFlag(FLAG_IS_MEME)) {
+          SET_LINENO(formal);
           formal->typeExpr = new BlockStmt(new CallExpr(formal->type->defaultTypeConstructor));
           insert_help(formal->typeExpr, NULL, formal);
           formal->type = dtUnknown;
@@ -5133,6 +5141,7 @@ static void resolveExports() {
   // We need to resolve any additional functions that will be exported.
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->hasFlag(FLAG_EXPORT)) {
+      SET_LINENO(fn);
       resolveFormals(fn);
       resolveFns(fn);
     }
@@ -5241,6 +5250,7 @@ static void insertRuntimeTypeTemps() {
         ts->defPoint->parentSymbol &&
         ts->hasFlag(FLAG_HAS_RUNTIME_TYPE) &&
         !ts->hasFlag(FLAG_GENERIC)) {
+      SET_LINENO(ts);
       VarSymbol* tmp = newTemp("_runtime_type_tmp_", ts->type);
       ts->type->initializer->insertBeforeReturn(new DefExpr(tmp));
       CallExpr* call = new CallExpr("chpl__convertValueToRuntimeType", tmp);
@@ -5272,6 +5282,7 @@ static void resolveRecordInitializers() {
   //
   forv_Vec(CallExpr, init, inits) {
     if (init->parentSymbol) {
+      SET_LINENO(init);
       Type* type = init->get(1)->typeInfo();
       if (!type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
         if (type->symbol->hasFlag(FLAG_REF))
@@ -5449,6 +5460,7 @@ static void insertDynamicDispatchCalls() {
 
 static Type*
 buildRuntimeTypeInfo(FnSymbol* fn) {
+  SET_LINENO(fn);
   ClassType* ct = new ClassType(CLASS_RECORD);
   TypeSymbol* ts = new TypeSymbol(astr("_RuntimeTypeInfo"), ct);
   for_formals(formal, fn) {
@@ -5481,6 +5493,7 @@ static void insertReturnTemps() {
         if (fn->retType != dtVoid) {
           CallExpr* parent = toCallExpr(call->parentExpr);
           if (!parent && !isDefExpr(call->parentExpr)) { // no use
+            SET_LINENO(call); // TODO: reset_ast_loc() below?
             VarSymbol* tmp = newTemp("_return_tmp_", fn->retType);
             DefExpr* def = new DefExpr(tmp);
             call->insertBefore(def);
@@ -5513,6 +5526,7 @@ initializeClass(Expr* stmt, Symbol* sym) {
   INT_ASSERT(ct);
   for_fields(field, ct) {
     if (!field->hasFlag(FLAG_SUPER_CLASS)) {
+      SET_LINENO(field);
       if (field->type->defaultValue) {
         stmt->insertBefore(new CallExpr(PRIM_SET_MEMBER, sym, field, field->type->defaultValue));
       } else if (isRecord(field->type)) {
@@ -5651,8 +5665,10 @@ static void removeRandomJunk() {
             !strcmp(sym->name, "_promotionType") ||
             sym->isParameter())
           call->getStmtExpr()->remove();
-        else
+        else {
+          SET_LINENO(call->get(2));
           call->get(2)->replace(new SymExpr(sym));
+        }
       } else if (call->isPrimitive(PRIM_MOVE)) {
         // Remove types to enable --baseline
         SymExpr* sym = toSymExpr(call->get(2));
@@ -5673,6 +5689,7 @@ static void removeRandomJunk() {
               INT_ASSERT(toSymExpr(call->get(1)));
               TypeSymbol *ts = toSymExpr(call->get(1))->var->type->symbol;
               // Remove the tmp and just pass the type through directly
+              SET_LINENO(call->get(i));
               call->get(i)->replace(new SymExpr(ts));
             }
           }
@@ -5696,6 +5713,7 @@ static void buildRuntimeTypeExpressions() {
     if (fn->defPoint && fn->defPoint->parentSymbol) {
       if (fn->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
         INT_ASSERT(fn->retType->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE));
+        SET_LINENO(fn);
         Type* runtimeType = buildRuntimeTypeInfo(fn);
         runtimeTypeMap.put(fn->retType, runtimeType);
 
@@ -5744,6 +5762,7 @@ static void removeUnusedFormals() {
         if (formal->hasFlag(FLAG_TYPE_VARIABLE) &&
             (!formal->type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE) &&
              !fn->hasFlag(FLAG_EXTERN))) {
+          SET_LINENO(formal);
           formal->defPoint->remove();
           VarSymbol* tmp = newTemp("_formal_type_tmp_", formal->type);
           fn->insertAtHead(new DefExpr(tmp));

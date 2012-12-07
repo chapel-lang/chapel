@@ -280,6 +280,7 @@ buildHeapType(Type* type) {
   if (heapTypeMap.get(type))
     return heapTypeMap.get(type);
 
+  SET_LINENO(type->symbol);
   ClassType* heap = new ClassType(CLASS_CLASS);
   TypeSymbol* ts = new TypeSymbol(astr("heap_", type->symbol->cname), heap);
   ts->addFlag(FLAG_NO_OBJECT);
@@ -406,6 +407,7 @@ freeHeapAllocatedVars(Vec<Symbol*> heapAllocatedVars) {
           }
         }
         FnSymbol* fn = toFnSymbol(move->parentSymbol);
+        SET_LINENO(var);
         if (fn && innermostBlock == fn->body)
           fn->insertBeforeReturnAfterLabel(new CallExpr(PRIM_CHPL_FREE, move->get(1)->copy()));
         else {
@@ -452,6 +454,7 @@ static void findHeapVarsAndRefs(Map<Symbol*,Vec<SymExpr*>*>& defMap,
                                 Vec<Symbol*>& varSet, Vec<Symbol*>& varVec)
 {
   forv_Vec(DefExpr, def, gDefExprs) {
+    SET_LINENO(def);
     if (def->sym->hasFlag(FLAG_COFORALL_INDEX_VAR)) {
       if (def->sym->type->symbol->hasFlag(FLAG_REF)) {
         refSet.set_add(def->sym);
@@ -594,6 +597,7 @@ makeHeapAllocations() {
       // don't widen external variables
       continue;
     }
+    SET_LINENO(var);
 
     if (ArgSymbol* arg = toArgSymbol(var)) {
       VarSymbol* tmp = newTemp(var->type);
@@ -629,6 +633,7 @@ makeHeapAllocations() {
 
     for_defs(def, defMap, var) {
       if (CallExpr* call = toCallExpr(def->parentExpr)) {
+        SET_LINENO(call);
         if (call->isPrimitive(PRIM_MOVE)) {
           VarSymbol* tmp = newTemp(var->type);
           call->insertBefore(new DefExpr(tmp));
@@ -715,6 +720,7 @@ reprivatizeIterators() {
 
   forv_Vec(SymExpr, se, gSymExprs) {
     if (privatizedFields.set_in(se->var)) {
+      SET_LINENO(se);
       if (CallExpr* call = toCallExpr(se->parentExpr)) {
         if (call->isPrimitive(PRIM_GET_MEMBER_VALUE)) {
           CallExpr* move = toCallExpr(call->parentExpr);
@@ -834,6 +840,7 @@ parallel(void) {
   Map<FnSymbol*,Symbol*> endCountMap;
 
   forv_Vec(CallExpr, call, gCallExprs) {
+    SET_LINENO(call);
     if (call->isPrimitive(PRIM_GET_END_COUNT)) {
       FnSymbol* pfn = call->getFunction();
       if (!endCountMap.get(pfn))
@@ -849,6 +856,7 @@ parallel(void) {
 
   forv_Vec(FnSymbol, fn, queue) {
     forv_Vec(CallExpr, call, *fn->calledBy) {
+      SET_LINENO(call);
       Type* endCountType = endCountMap.get(fn)->type;
       FnSymbol* pfn = call->getFunction();
       if (!endCountMap.get(pfn))
@@ -859,6 +867,7 @@ parallel(void) {
 
   forv_Vec(FnSymbol, fn, nestedFunctions) {
     forv_Vec(CallExpr, call, *fn->calledBy) {
+      SET_LINENO(call);
       // Overhead is high for on statements if locale==here, so
       //  perform a simple optimization here to call fn() directly if
       //  this is the case.  In the non-blocking case if the serial
@@ -898,6 +907,7 @@ ClassType* wideStringType = NULL;
 
 static void
 buildWideClass(Type* type) {
+  SET_LINENO(type->symbol);
   ClassType* wide = new ClassType(CLASS_RECORD);
   TypeSymbol* wts = new TypeSymbol(astr("__wide_", type->symbol->cname), wide);
   wts->addFlag(FLAG_WIDE_CLASS);
@@ -930,6 +940,7 @@ Type* getOrMakeRefTypeDuringCodegen(Type* type) {
   Type* refType;
   refType = type->refType;
   if( ! refType ) {
+    SET_LINENO(type->symbol);
     ClassType* ref = new ClassType(CLASS_RECORD);
     TypeSymbol* refTs = new TypeSymbol(astr("_ref_", type->symbol->cname), ref);
     refTs->addFlag(FLAG_REF);
@@ -1205,6 +1216,7 @@ static void handleLocalBlocks() {
 //
 void
 insertWideReferences(void) {
+  SET_LINENO(baseModule);
   FnSymbol* heapAllocateGlobals = new FnSymbol("chpl__heapAllocateGlobals");
   heapAllocateGlobals->retType = dtVoid;
   theProgram->block->insertAtTail(new DefExpr(heapAllocateGlobals));

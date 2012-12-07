@@ -200,6 +200,7 @@ remoteValueForwarding(Vec<FnSymbol*>& fns) {
             for_uses(use, useMap, field) {
               CallExpr* call = toCallExpr(use->parentExpr);
               INT_ASSERT(call);
+              SET_LINENO(call);
               if (call->isPrimitive(PRIM_SET_MEMBER)) {
                 Symbol* tmp = newTemp(vt);
                 call->insertBefore(new DefExpr(tmp));
@@ -246,6 +247,7 @@ remoteValueForwarding(Vec<FnSymbol*>& fns) {
         //
         SymExpr* actual = toSymExpr(formal_to_actual(call, arg));
         INT_ASSERT(actual && actual->var->type == arg->type);
+        SET_LINENO(actual);
         arg->type = arg->getValType();
         
         //
@@ -261,6 +263,7 @@ remoteValueForwarding(Vec<FnSymbol*>& fns) {
         // Insert re-reference temps at use points.
         //
         for_uses(use, useMap, arg) {
+          SET_LINENO(use);
           CallExpr* call = toCallExpr(use->parentExpr);
           if (call && call->isPrimitive(PRIM_DEREF)) {
             call->replace(new SymExpr(arg));

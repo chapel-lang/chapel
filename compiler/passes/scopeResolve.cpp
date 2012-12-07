@@ -377,6 +377,7 @@ find_outer_loop(Expr* stmt) {
 static void
 resolveGotoLabels() {
   forv_Vec(GotoStmt, gs, gGotoStmts) {
+    SET_LINENO(gs);
     if (SymExpr* label = toSymExpr(gs->label)) {
       if (label->var == gNil) {
         BlockStmt* loop = find_outer_loop(gs);
@@ -420,6 +421,7 @@ resolveGotoLabels() {
 static void resolveEnumeratedTypes() {
   forv_Vec(CallExpr, call, gCallExprs) {
     if (call->isNamed(".")) {
+      SET_LINENO(call);
       if (SymExpr* first = toSymExpr(call->get(1))) {
         if (EnumType* type = toEnumType(first->var->type)) {
           if (SymExpr* second = toSymExpr(call->get(2))) {
@@ -804,8 +806,6 @@ static void build_constructor(ClassType* ct) {
         se->replace(buildDotExpr(fn->_this, se->unresolved));
   }
 
-  SET_LINENO(ct);
-
   ClassType *outerType = toClassType(ct->symbol->defPoint->parentSymbol->type);
   if (outerType) {
     // Remove the DefPoint for this constructor, add it to the outer
@@ -959,6 +959,7 @@ add_class_to_hierarchy(ClassType* ct, Vec<ClassType*>* localSeenPtr = NULL) {
       ct->dispatchParents.add(dtValue);
       dtValue->dispatchChildren.add(ct);
     } else if (isClass(ct)) {
+      SET_LINENO(ct);
       ct->dispatchParents.add(dtObject);
       dtObject->dispatchChildren.add(ct);
       VarSymbol* super = new VarSymbol("super", dtObject);
@@ -995,11 +996,13 @@ add_class_to_hierarchy(ClassType* ct, Vec<ClassType*>* localSeenPtr = NULL) {
     pt->dispatchChildren.add(ct);
     expr->remove();
     if (isClass(ct)) {
+      SET_LINENO(ct);
       // For a class, just add a super class pointer.
       VarSymbol* super = new VarSymbol("super", pt);
       super->addFlag(FLAG_SUPER_CLASS);
       ct->fields.insertAtHead(new DefExpr(super));
     } else {
+      SET_LINENO(ct);
       // For records and unions, scan the fields in the parent type.
       for_fields_backward(field, pt) {
         if (toVarSymbol(field) && !field->hasFlag(FLAG_SUPER_CLASS)) {
@@ -1081,6 +1084,7 @@ void scopeResolve(void) {
   forv_Vec(ClassType, ct, gClassTypes) {
     for_fields(field, ct) {
       if (aliasFieldSet.set_in(field->name)) {
+        SET_LINENO(field);
         Symbol* aliasField = new VarSymbol(astr("chpl__aliasField_", field->name));
         aliasField->addFlag(FLAG_CONST);
         aliasField->addFlag(FLAG_IMPLICIT_ALIAS_FIELD);
@@ -1106,6 +1110,7 @@ void scopeResolve(void) {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->_this && fn->_this->type == dtUnknown) {
       if (UnresolvedSymExpr* sym = toUnresolvedSymExpr(toArgSymbol(fn->_this)->typeExpr->body.only())) {
+        SET_LINENO(fn->_this);
         TypeSymbol* ts = toTypeSymbol(lookup(sym, sym->unresolved));
         
         if (!ts) {
