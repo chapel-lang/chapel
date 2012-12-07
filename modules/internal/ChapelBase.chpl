@@ -1135,16 +1135,7 @@ proc _command_line_cast(param s: string, type t, x) return _cast(t, x);
 inline proc _cast(type t, x: bool) where _isPrimitiveType(t)
   return __primitive("cast", t, x);
 
-inline proc _cast(type t, x: bool(8)) where _isPrimitiveType(t)
-  return __primitive("cast", t, x);
-
-inline proc _cast(type t, x: bool(16)) where _isPrimitiveType(t)
-  return __primitive("cast", t, x);
-
-inline proc _cast(type t, x: bool(32)) where _isPrimitiveType(t)
-  return __primitive("cast", t, x);
-
-inline proc _cast(type t, x: bool(64)) where _isPrimitiveType(t)
+inline proc _cast(type t, x: bool(?w)) where _isPrimitiveType(t)
   return __primitive("cast", t, x);
 
 inline proc _cast(type t, x: int(?w)) where _isPrimitiveType(t)
