@@ -40,8 +40,14 @@ studies/ssca2/performance/SSCA2_commDiags (sungeun)
 These things regularly cause noise in testing:
 ==============================================
 
-baseline nondeterminisms (UNASSIGNED)
+baseline nondeterminisms (sungeun)
 -------------------------------------
+
+12/7/12: Found that the cause of most of the timeouts is a bug in
+promotion or coerce wrappers that returns a reference to a stack var.
+Added --inline flag to baseline testing to make these tests pass.
+These don't show up again, this entry should be removed after a few
+more days of testing.
 
 we get reasonably frequent execution timeouts from a variety of tests
 (listed just below); when not timing out, they fail.  We also get a
@@ -65,6 +71,12 @@ sometimes the nondeterminisms are correctness vs. not-timing out as well:
 
 linux64.gnu.gasnet.qthreads.none (UNASSIGNED)
 ---------------------------------------------
+
+sungeun: 12/7/12.  Enabled oversubscription (and disable affinity).
+Dylan says that in this configuration the timeouts all passed.  It's
+possible that some of these other failures might be due to callstack
+size.
+
 sungeun: 10/18/12.  Things seem quieter, but not perfect
 - Got a seg fault (06/06/12, 6/16, stream-ep 8/23/12)
 - Intermitent seg fault on exit (7/7 7/9, 7/12, 7/13)
@@ -127,6 +139,13 @@ same directory as the /tmp directory it is looking for.
 Not so noisy as to be familiar annoyances, but worth noting to see if they
 come up again
 ==========================================================================
+
+intermittent valgrind error
+---------------------------
+- studies/hpcc/HPL/stonea/serial/hplExample5
+This happened around 11/27/2012, but I caught it the week after when
+it resolved, so I don't how it failed, since the log file is gone.
+
 
 prgenv-* compilation timeouts (maybe due to system updates or ...?)
 -------------------------------------------------------------------

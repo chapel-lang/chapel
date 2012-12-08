@@ -15,6 +15,13 @@
 general regressions (seem to happen in most configurations)
 ===========================================================
 
+Error running sub_test (12/7/12)
+--------------------------------
+Vass committed a fix to sub_test, so these should go away
+
+[Error running sub_test in /tmp/chapel-cron-linux64.gnu.none.fifo.pthreads-chapelu/chapel/test/users/vass (1)]
+
+
 ==============================================
 linux64 regressions (in addition to the above)
 ==============================================
@@ -416,9 +423,95 @@ sig_send: wait for sig_complete event failed
 qthreads-specific tests
 =======================
 
-=========================================================
-qthreads+gasnet-specific tests (in addition to the above)
-=========================================================
+NOTE: Began testing the entire test suite for CHPL_COMM=none on 12/7/12
+
+-static flag results in undefined references to pthread calls (12/7/12)
+-----------------------------------------------------------------------
+sungeun: Dylan is looking into this
+
+[Error matching compiler output for link/sungeun/static_dynamic (compopts: 1)]
+[Error matching compiler output for link/sungeun/static_dynamic (compopts: 2)]
+[Error matching compiler output for link/sungeun/static_dynamic (compopts: 3)]
+
+
+More tasks created that expected (12/7/12)
+------------------------------------------
+[Error matching program output for trivial/sungeun/runningTasks1]
+
+We get the "wrong" answer.  Dylan says that this is not implemented
+correctly for qthreads on purpose.  Disable?
+
+Call stack size is different than for fifo (12/7/12)
+----------------------------------------------------
+[Error matching program output for execflags/bradc/callStackSize]
+
+We call this program with --callStackSize=13000000, but fifo rounds up
+to next page size, so the .good file say 13000704.  Qthreads does not
+do this by default, so it's output reports the exact callStackSize.
+We could fix this with some math.
+
+segv in qthread library (12/7/12)
+---------------------------------
+[Error matching program output for studies/madness/common/test_likepy]
+
+This dies with segv with the following message:
+
+     *** glibc detected *** ./test_likepy: free(): invalid pointer: 0x00007f979\
+1ffa010 ***
+
+The printed backtrace goes through the qthread library.  FYI, the
+other madness tests all fail with segv, but this seems to be the only
+one that prints a backtrace.  Dylan is looking into this.
+
+
+verbose output include qthread specific stuff (12/7/12)
+-------------------------------------------------------
+[Error matching program output for multilocale/numLocales/bradc/testVFlag]
+[Error matching program output for multilocale/numLocales/bradc/testVerboseFlag]
+
+segv (no backtrace) (12/7/12)
+-----------------------------
+sungeun: I suggested to Dylan to try increasing default stack size for
+some of these.
+
+[Error matching program output for memory/shannon/outofmemory/mallocOutOfMemory]
+[Error matching program output for studies/sudoku/dinan/search/sudoku-reduce4]
+[Error matching program output for studies/sudoku/dinan/search/sudoku-reduce]
+[Error matching program output for studies/sudoku/deitz/sudoku_compress3]
+[Error matching program output for studies/madness/dinan/mad_chapel/test_mul]
+[Error matching program output for studies/madness/dinan/mad_chapel/test_likepy]
+[Error matching program output for studies/madness/dinan/mad_chapel/test_diff]
+[Error matching program output for studies/madness/dinan/mad_chapel/test_gaxpy]
+[Error matching program output for studies/madness/aniruddha/madchap/test_mul]
+[Error matching program output for studies/madness/aniruddha/madchap/test_likepy]
+[Error matching program output for studies/madness/aniruddha/madchap/test_diff]
+[Error matching program output for studies/madness/aniruddha/madchap/test_gaxpy]
+[Error matching program output for studies/madness/aniruddha/madchap/recordBug/test_likepy]
+[Error matching program output for studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct (compopts: 1)]
+[Error matching program output for studies/madness/aniruddha/madchap/mytests/par-compress/test_compress (compopts: 1)]
+[Error matching program output for studies/madness/aniruddha/madchap/mytests/par-refine/test_refine (compopts: 1)]
+[Error matching program output for studies/madness/common/test_mul]
+[Error matching program output for studies/madness/common/test_diff]
+[Error matching program output for studies/madness/common/test_gaxpy]
+
+
+timeouts (12/7/12)
+------------------
+[Error: Timed out executing program parallel/cobegin/bradc/exitone]
+[Error: Timed out executing program parallel/begin/deitz/test_begin_error_lineno]
+[Error: Timed out executing program parallel/begin/marybeth/test_forbegin3]
+[Error: Timed out executing program parallel/begin/marybeth/test_forbegin]
+[Error running sub_test in /tmp/chapel-cron-linux64.gnu.none.qthreads.none-chapelu/chapel/test/users/vass (1)]
+[Error: Timed out executing program users/shetag/fock/fock-2]
+[Error: Timed out executing program users/shetag/fock/fock-1]
+[Error: Timed out executing program domains/sungeun/assoc/stress (compopts: 1, execopts: 2)]
+[Error: Timed out executing program studies/shootout/thread-ring/thread-ring (compopts: 1, execopts: 1)]
+
+
+
+==========================================================
+qthreads+gasnet-specific tests (only run for -multilocale)
+==========================================================
 
 fails because we add an extra arg which breaks the intent of this test
 -- proposed fix is to support ability to set/override configs using
@@ -436,9 +529,32 @@ failed since adding more multilocale directories (01/31/12)
 baseline-specific tests
 =======================
 
-new failure the night after Sung's heap allocation change (11/30/12)
---------------------------------------------------------------------
-[Error matching program output for parallel/begin/deitz/test_nested_fn_begin1]
+segv due to turning on inlining (12/7/12)
+-----------------------------------------
+
+sungeun: I have confirmed that almost all of these are due to running
+out of stack space (lulesh timed out).  Assuming they are *not*
+intermittent or at least less so than the others with inilining, I
+think we would prefer these errors.
+
+[Error matching program output for distributions/robust/associative/basic/whole_domain_assign]
+[Error matching program output for distributions/robust/associative/basic/array_write]
+[Error matching program output for distributions/robust/associative/basic/domain_write]
+[Error matching program output for parallel/cobegin/gbt/cobegin-stacksize]
+[Error matching program output for parallel/cobegin/deitz/test_big_recursive_cobegin]
+[Error matching program output for studies/madness/common/test_likepy]
+[Error matching program output for studies/madness/common/test_mul]
+[Error matching program output for studies/madness/aniruddha/madchap/test_likepy]
+[Error matching program output for studies/madness/aniruddha/madchap/test_mul]
+[Error matching program output for studies/madness/dinan/mad_chapel/test_likepy]
+[Error matching program output for studies/madness/dinan/mad_chapel/test_mul]
+[Error matching program output for studies/lulesh/bradc/xyztuple/lulesh-dense-3tuple]
+
+
+Tests suppressions that now succeed due to turning on inlining (12/7/12)
+------------------------------------------------------------------------
+[Error: did not find expected suppression trivial/mjoyner/inlinefunc/inlfunc1_report]
+[Error: did not find expected suppression trivial/mjoyner/inlinefunc/inlfunc2_report]
 
 
 seg fault (don't know when it started, noticed 10/16/12)
@@ -483,17 +599,6 @@ incorrect output -- expected? (04/03/10)
 ??? (wrong output)
 ------------------
 [Error matching program output for classes/figueroa/RecordConstructor2]
-
-attempt to dereference nil OR timedexec: target program died with signal 11
----------------------------------------------------------------------------
-(happens before any output is generated)
-[Error matching program output for studies/hpcc/HPL/vass/bl.md] (already fails in 8/16/12)
-[Error matching program output for studies/shootout/mandelbrot/mandelbrot-fancy] (already fails in 8/16/12)
-[Error matching program output for optimizations/bulkcomm/asenjo/ptransDR/v2/ptrans] (since added, 9/29/12)
-[Error matching program output for optimizations/bulkcomm/asenjo/ptransDR/v1/ptrans] (ditto)
-[Error matching program output for optimizations/bulkcomm/asenjo/stencilDR/v2/stencil] (ditto)
-[Error matching program output for optimizations/bulkcomm/asenjo/stencilDR/v1/stencil] (ditto)
-[Error matching program output for studies/590o/blerner/nilClassCheck]
 
 
 C90 error
