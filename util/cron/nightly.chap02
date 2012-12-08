@@ -13,4 +13,7 @@ $CHPL_HOME/util/cron/nightly -cron -no-futures >&! ~/tmp/nightly.qthreads.out
 source ~/.chapelcshrc-cron-gasnet
 setenv CHPL_GASNET_CFG_OPTIONS --disable-ibv
 setenv GASNET_QUIET Y
+# Set these to use oversubscription to help with timeouts
+setenv QT_AFFINITY no
+setenv CHPL_QTHREAD_TESTING 1
 $CHPL_HOME/util/cron/nightly -cron -multilocale -no-futures -execopts --numThreadsPerLocale=2 >&! ~/tmp/nightly.qthreads-gasnet.out

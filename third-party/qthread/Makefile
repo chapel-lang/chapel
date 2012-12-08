@@ -21,6 +21,11 @@ ifneq (, $(filter $(CHPL_MAKE_TARGET_PLATFORM),cray-xe cray-xk cray-xc))
 CHPL_QTHREAD_CFG_OPTIONS += --host=x86_64-pc-linux-gnu --build=x86_64-suse-linux-gnu
 endif
 
+# enable oversubscription for testing
+ifneq (, $(CHPL_QTHREAD_TESTING))
+CHPL_QTHREAD_CFG_OPTIONS += --enable-oversubscription
+endif
+
 default: all
 
 all: qthread
