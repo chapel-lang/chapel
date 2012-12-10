@@ -5,7 +5,7 @@
 #
 source ~/.chapelcshrc-cron
 setenv CHPL_TASKS qthreads
-$CHPL_HOME/util/cron/nightly -cron -no-futures >&! ~/tmp/nightly.qthreads.out
+$CHPL_HOME/util/cron/nightly -cron -examples -no-futures >&! ~/tmp/nightly.qthreads.out
 
 #
 # Test Qthreads with CHPL_COMM=gasnet
