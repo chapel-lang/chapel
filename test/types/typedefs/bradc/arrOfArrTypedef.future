@@ -1,0 +1,5 @@
+unimplemented feature: typedefs of arrays of arrays
+
+This future seems to go into an infinite loop when typedefs of
+arrays of arrays are used.  I need to go back and see whether
+this worked better in r20222 or whether it's never worked.
