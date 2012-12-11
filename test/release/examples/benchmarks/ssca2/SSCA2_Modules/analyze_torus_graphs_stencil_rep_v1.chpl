@@ -193,7 +193,7 @@ module analyze_torus_graphs {
 
     type  vertex = index (vertex_domain);
 
-    const dense_stencil = {1..1,-1..1};
+    const dense_stencil = {-1..1,-1..1};
     const torus_stencil : sparse subdomain (dense_stencil) = 
                                         ( (-1,0), (1,0), (0,-1), (0,1) );
 
