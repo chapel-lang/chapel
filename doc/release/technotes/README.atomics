@@ -93,7 +93,7 @@ The following summarizes the methods and supported types.
      integral atomic types (all) and real atomic types (+ and -
      varieties only).  The fetch varieties return the original value.
 
-   testAndSet(x):
+   testAndSet():
      Stores true as the new value.  Returns the original value.  Only
      defined for atomic bool.  Equivalent to exchange(true).
 
