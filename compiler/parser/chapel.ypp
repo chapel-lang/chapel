@@ -153,7 +153,8 @@
 %type <pexpr> when_stmt
 %type <pblockstmt> when_stmt_ls
 
-%type <pexpr> opt_type array_type opt_formal_type formal_array_type opt_formal_array_elt_type lambda_decl_expr
+%type <pcallexpr> array_type
+%type <pexpr> opt_type opt_formal_type formal_array_type opt_formal_array_elt_type lambda_decl_expr
 %type <pexpr> opt_reindex_expr
 %type <ptype> class_tag
 %type <penumtype> enum_ls
@@ -708,13 +709,7 @@ opt_init_type:
 | TASSIGN type_level_expr
     { $$ = $2; }
 | TASSIGN array_type
-    {
-      /* pluck the domain expr and element type from the
-         buildArrayRuntimeType call created by array_type. */
-
-      $$ = buildForallLoopExpr(NULL, toCallExpr($2)->get(1)->remove(), 
-                               toCallExpr($2)->get(2)->remove(), NULL, true); 
-    }  // Cannot be a type_level_expr as expr inherits from type_level_expr.
+    { $$ = buildForallLoopExprFromArrayType($2); } // Cannot be a type_level_expr as expr inherits from type_level_expr.
 ;
 
 var_decl_stmt:
