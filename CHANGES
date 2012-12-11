@@ -2,6 +2,21 @@
 Release Changes List
 ====================
 
+===============
+version 1.6.1.0
+===============
+
+Request-only pre-release of Chapel, December 2012
+
+Changes
+-------
+- fixed a bug/regression related to type aliases of array types
+  (e.g., 'type t = [1..n] real;' now works again
+- fixed a typo that broke a few of the operations on atomic types
+- fixed a typo in an interface within doc/technotes/README.atomics 
+- fixed a simple typo/bug in the torus representation of SSCA2
+
+
 =============
 version 1.6.0
 =============
