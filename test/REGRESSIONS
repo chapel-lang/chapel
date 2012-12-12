@@ -392,6 +392,21 @@ xt-gnu specific failures
 cygwin-specific failures
 ========================
 
+naming conflicts due to using C identifiers starting with '_' (reserved by C)
+Specifically '_C', but it would be nice to avoid these categorically
+-----------------------------------------------------------------------------
+[Error matching compiler output for release/examples/primers/classes]
+[Error matching compiler output for release/examples/spec/Input_and_Output/UserWriter]
+[Error matching compiler output for release/examples/spec/Classes/declaration]
+[Error matching compiler output for release/examples/spec/Classes/defaultConstructor]
+[Error matching compiler output for release/examples/spec/Classes/delete]
+[Error matching compiler output for release/examples/spec/Classes/getterSetter]
+[Error matching compiler output for release/examples/spec/Classes/implicitThis]
+
+???
+---
+[Error: Timed out executing program release/examples/spec/Task_Parallelism_and_Synchronization/singleVar]
+
 undiagnosed problems that started showing up 10/14/10 after lack of testing
 ---------------------------------------------------------------------------
 [Error matching compiler output for parallel/taskPool/figueroa/TooManyThreads]
