@@ -268,6 +268,29 @@ class DefaultAssociativeDom: BaseAssociativeDom {
     }
   }
 
+  //Helper function to appropriately size interal domain
+  //for a certain number of keys.  This function is destructive
+  //and was intended to only be used during construction of an 
+  //associative domain.  As we have noted, we would like this
+  //to eventually be made public once it is made safer. 
+  proc _requestCapacity(numKeys:int) {
+
+    //Find the first prime large enough for given numKeys
+    if numKeys {
+        var threshhold = (numKeys + 1) * 2;
+        for i in 1..chpl__primes.size {
+            var prime = chpl__primes(i);
+
+            if prime > threshhold {
+                tableSizeNum=i;
+                tableSize=prime;
+                tableDom = {0..tableSize-1};
+                break;
+            }
+        }
+    }
+  }
+
   iter dsiSorted() {
     var tableCopy: [0..#numEntries.read()] idxType;
 
@@ -528,6 +551,15 @@ inline proc chpl__defaultHash(x : string): int(64) {
     hash = ((hash << 5) + hash) ^ ascii(x.substring(c));
   }
   return _gen_key(hash);
+}
+
+inline proc chpl__defaultHash(l : []) {
+    var hash : int(64) = 0;
+    for obj in l {
+        hash = (31 * hash) + chpl__defaultHash(obj);
+    }
+
+    return _gen_key(hash);
 }
 
 inline proc chpl__defaultHash(o: object): int(64) {

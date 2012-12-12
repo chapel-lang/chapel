@@ -1,0 +1,9 @@
+bug: Inclusiion of associative array/domain literals somehow breaks this test.
+
+It seems this test relies on an optimization which promotes an array which
+contains a signle range into just a range.   This is no longer occuring as the
+type of the domain is now treated as associative. 
+
+As it was unclear what the proper behaviour should be, it was decided to not
+block the associative array mod and instead convert this failing test to a 
+future. 

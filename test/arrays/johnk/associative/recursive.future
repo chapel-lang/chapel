@@ -1,0 +1,12 @@
+bug: Unable to nest associative domains. 
+
+While it is possible to nest other recursive types within each other, this is
+not the case for associative arrays.  When one attempt to do so the following
+runtime error is encountered: 
+
+error: halt reached - zippered associative array does not match the iterated
+domain
+
+This is the same error encountered when specifying an associative array literal
+with a type expression that includes a populated associative domain.  Perhaps
+these are related?

@@ -265,6 +265,41 @@ proc chpl__buildArrayLiteralWarn( elems:?t ...?k ){
   return A; 
 }
 
+proc chpl__buildAssociativeArrayLiteral( elems ...?k ){
+  type keyType = elems(1).type;
+  type valType = elems(2).type;
+  var D : domain(keyType);
+
+  //Size the domain appropriately for the number of keys
+  //This prevents expensive resizing as keys are added.
+  D._value._requestCapacity(k/2);
+  var A : [D] valType;
+ 
+  for param i in 1..k by 2 {
+    var elemKey = elems(i);
+    var elemVal = elems(i+1);
+    type elemKeyType = elemKey.type;
+    type elemValType = elemVal.type;
+
+    if elemKeyType != keyType {
+       compilerError("Associative array key element " + (i+2)/2 + 
+                     " expected to be of type " + typeToString(keyType) + 
+                     " but is of type " + typeToString(elemKeyType));
+    }
+
+    if elemValType != valType {
+      compilerError("Associative array value element " + (i+1)/2
+                    + " expected to be of type " + typeToString(valType)
+                    + " but is of type " + typeToString(elemValType));
+    }
+
+    D += elemKey;
+    A[elemKey] = elemVal;
+  }
+
+  return A;
+}
+
 proc chpl__convertValueToRuntimeType(arr: []) type
   return chpl__buildArrayRuntimeType(arr.domain, arr.eltType);
 
@@ -304,6 +339,26 @@ proc chpl__buildDomainExpr(ranges: range(?) ...?rank) {
   var d: domain(rank, ranges(1).idxType, chpl__anyStridable(ranges));
   d.setIndices(ranges);
   return d;
+}
+
+proc chpl__buildDomainExpr(keys: ?t ...?count) {
+
+    for param i in 2..count do
+     if keys(1).type != keys(i).type {
+       compilerError("Associative domain element " + i + 
+                     " expected to be of type " + typeToString(keys(1).type) + 
+                     " but is of type " + typeToString(keys(i).type));
+     }
+    
+    //Initialize the domain with a size appropriate for the number of keys.
+    //This prevents resizing as keys are added.  
+    var D : domain(keys(1).type);
+    D._value._requestCapacity(count);    
+    
+    for param i in 1..count do
+      D += keys(i);
+
+    return D; 
 }
 
 //
