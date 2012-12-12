@@ -14,6 +14,7 @@ module ChapelStandard {
   use ChapelTuple;
   use ChapelRange;
   use ChapelReduce;
+  use ChapelSyncvar;
   use ChapelArray;
   use ChapelDistribution;
   use ChapelLocale;
