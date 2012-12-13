@@ -219,9 +219,9 @@ gets "that wasn't very random looking" failure
 [Error matching program output for modules/standard/Random/diten/testRandomSeed] (first mentioned 09/26/11; still observed intermittently on chpbld02 in 8'2012 and 9'2012)
 
 
-===================================================
-xt-cle-specific failures (in addition to the above)
-===================================================
+====================================================
+cray-xt-specific failures (in addition to the above)
+====================================================
 
 diff seems to think output file is binary? (09/26/11 -- first run in ages)
 --------------------------------------------------------------------------
@@ -296,9 +296,9 @@ compiler timeouts
 [Error: Timed out compilation for studies/madness/dinan/mad_chapel/test_likepy]
 
 
-=============================================================
-pgi-specific regressions (in addition to xt-cle errors above)
-=============================================================
+==============================================================
+pgi-specific regressions (in addition to cray-xt errors above)
+==============================================================
 
 Weird stack overflow error from the C runtime:
 
@@ -339,9 +339,9 @@ negative floating point 0.0 not supported
 [Error matching program output for types/complex/bradc/negateimaginary3] 
 [Error matching program output for types/complex/bradc/negativeimaginaryliteral] 
 
-==================================================================
-xt-intel-specific regressions (in addition to xt-cle errors above)
-==================================================================
+===================================================================
+xt-intel-specific regressions (in addition to cray-xt errors above)
+===================================================================
 
 runtime assertion (started 10/15/12)
 ------------------------------------

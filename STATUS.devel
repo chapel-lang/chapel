@@ -641,7 +641,7 @@ Cray XE/XK/XC:
 
 Cray XT:
 - The memory limit for Chapel programs may need to be set manually.
-  See doc/platforms/README.xt-cle for details.
+  See doc/platforms/README.cray for details.
 
 PGI compilers (and possibly others):
 - Floating point literals of -0.0 may not work as intended.

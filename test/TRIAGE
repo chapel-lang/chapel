@@ -194,8 +194,8 @@ examples of what times out:
 Somewhat? nondeterministic.
 These configurations:
  linux64.pgi.none.fifo.pthreads
- xt-cle.cray-xt-pgi.none.fifo.pthreads
- xt-cle.cray-xt-pgi.none.fifo.pthreads--linux64.gnu
+ cray-xt.cray-xt-pgi.none.fifo.pthreads
+ cray-xt.cray-xt-pgi.none.fifo.pthreads--linux64.gnu
 
 minus_equals nondeterminism (UNASSIGNED)
 ----------------------------------------
@@ -203,7 +203,7 @@ noted in regressions (week of 07/02, still present 10/2, 10/9/12)
 
 atomics nondeterminisms (UNASSIGNED)
 ------------------------------------
-release/examples/primers/atomics (06/30/12:xt-intel, 07/04/12:linux32, 08/14/12:xt-cle)
+release/examples/primers/atomics (06/30/12:xt-intel, 07/04/12:linux32, 08/14/12:cray-xt)
 
 no-local nondeterminisms (UNASSIGNED)
 -------------------------------------
@@ -251,7 +251,7 @@ that should be considered and agreed upon rather than reflecting a way
 in which the compiler is incorrect w.r.t. the language definition (as
 I understand it.
 
-xt-cle.cray-xt-cray.none.fifo.pthreads
+cray-xt.cray-xt-cray.none.fifo.pthreads
 --------------------------------------
 The following compiler segfaults(?) appeared only once on 9/28/12
 [Error matching compiler output for release/examples/primers/opaque]
