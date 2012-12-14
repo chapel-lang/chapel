@@ -104,6 +104,7 @@ symbolFlag( FLAG_REF_ITERATOR_CLASS , npr, "ref iterator class" , ncm )
 symbolFlag( FLAG_REF_THIS , ypr, "ref this" , ncm )
 symbolFlag( FLAG_REMOVABLE_AUTO_COPY , ypr, "removable auto copy" , ncm )
 symbolFlag( FLAG_REMOVABLE_AUTO_DESTROY , ypr, "removable auto destroy" , ncm )
+symbolFlag( FLAG_RESOLUTION_ERROR_FUNCTION , ypr, "resolution error function", "a function's purpose is to provide details when errors arrise during function resolution" )
 symbolFlag( FLAG_RUNTIME_TYPE_VALUE , npr, "runtime type value" , "associated runtime type (value)" )
 symbolFlag( FLAG_SINGLE , ypr, "single" , ncm )
 // Based on how this is used, I suggest renaming it to return_value_has_initializer
@@ -115,6 +116,7 @@ symbolFlag( FLAG_SYNTACTIC_DISTRIBUTION , ypr, "syntactic distribution" , ncm )
 symbolFlag( FLAG_TEMP , npr, "temp" , "compiler-inserted temporary" )
 symbolFlag( FLAG_TUPLE , ypr, "tuple" , ncm )
 symbolFlag( FLAG_TYPE_CONSTRUCTOR , npr, "type constructor" , ncm )
+symbolFlag( FLAG_TYPE_PARAMETERIZED_FUNCTION , npr, "type parameterized function" , "function contains type variables" )
 symbolFlag( FLAG_TYPE_VARIABLE , npr, "type variable" , "contains a type instead of a value" )
 symbolFlag( FLAG_USER_NAMED , npr, "user named" , "named by the user" /* so leave it alone */ )
 symbolFlag( FLAG_VIRTUAL , npr, "virtual" , ncm )
@@ -127,3 +129,4 @@ symbolFlag( FLAG_GLOBAL_TYPE_SYMBOL, npr, "global type symbol", "is accessible t
 #undef ypr
 #undef npr
 #undef ncm
+

@@ -1,0 +1,2 @@
+min_concept_oper_no_impl_stmt.chpl:14: error: unresolved call 'minFn(3, 4)'
+min_concept_oper_no_impl_stmt.chpl:5: note: candidates are: minFn(x: ?T, y: T)

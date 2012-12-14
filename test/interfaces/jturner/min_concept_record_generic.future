@@ -1,0 +1,4 @@
+bug: generic instantiation of records should be possible when satisfying interface requirements
+
+When the user satisfies interface requirements using an implements statement, it should be possible to "stamp out" a 
+generic record with the necessary types.  Currently, these records must be fully-typed when satisfying interfaces.

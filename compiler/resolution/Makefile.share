@@ -6,7 +6,8 @@ RESOLUTION_SRCS = \
 	generics.cpp \
 	functionResolution.cpp \
 	lowerIterators.cpp \
-	wrappers.cpp
+	wrappers.cpp \
+	trace.cpp
 
 SVN_SRCS = $(RESOLUTION_SRCS)
 SRCS = $(SVN_SRCS)
