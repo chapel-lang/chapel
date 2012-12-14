@@ -275,7 +275,7 @@ proc build_sieve(s: [] sieve_t) {
       s[i/2].fac = i;
       s[i/2].pow = 1;
       if (i<=m) {
-        for (j,k) in (i*i..n by i+i, i/2..) {
+        for (j,k) in zip(i*i..n by i+i, i/2..) {
 	  if (s[j/2].fac==0) {
 	    s[j/2].fac = i;
 	    if (s[k].fac == i) {

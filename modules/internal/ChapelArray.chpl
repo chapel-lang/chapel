@@ -272,7 +272,7 @@ module ChapelArray {
   
     //Size the domain appropriately for the number of keys
     //This prevents expensive resizing as keys are added.
-    D._value._requestCapacity(k/2);
+    D.requestCapacity(k/2);
     var A : [D] valType;
    
     for param i in 1..k by 2 {
@@ -353,7 +353,7 @@ module ChapelArray {
       //Initialize the domain with a size appropriate for the number of keys.
       //This prevents resizing as keys are added.  
       var D : domain(keys(1).type);
-      D._value._requestCapacity(count);    
+      D.requestCapacity(count);    
       
       for param i in 1..count do
         D += keys(i);
@@ -763,6 +763,18 @@ module ChapelArray {
       _value.dsiRemove(i);
     }
   
+    proc requestCapacity(i) {
+
+      if i < 0 {
+        halt("domain.requestCapacity can only be invoked on sizes >= 0");
+      }
+
+      if !isAssociativeDom(this) then
+        compilerError("domain.requestCapacity only applies to associative domains");
+
+      _value.dsiRequestCapacity(i);
+    }
+
     proc size return numIndices;
     proc numIndices return _value.dsiNumIndices;
     proc low return _value.dsiLow;

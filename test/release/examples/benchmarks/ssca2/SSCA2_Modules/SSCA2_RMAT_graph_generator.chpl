@@ -178,6 +178,7 @@ module SSCA2_RMAT_graph_generator
 
       for depth in 1..numDep {
         bit >>= 1;
+        const bitCst = bit;
 
         forall (e, r1, r2, r3, r4, r5) in zip(Edges,
  // RandomPrivate_iterate() generates a random number per elem of edge_domain
@@ -187,6 +188,7 @@ module SSCA2_RMAT_graph_generator
  RandomPrivate_iterate(real, edge_domain, seed, start=rndPos+2*delta),
  RandomPrivate_iterate(real, edge_domain, seed, start=rndPos+3*delta),
  RandomPrivate_iterate(real, edge_domain, seed, start=rndPos+4*delta)) {
+         local {
 
           var Noisy_a = a * (0.95 + 0.1 * r1);
           var Noisy_b = b * (0.95 + 0.1 * r2);
@@ -199,10 +201,9 @@ module SSCA2_RMAT_graph_generator
 	  Noisy_c *= norm;
 	  Noisy_d *= norm;
 
-          const _bit= bit;
-          local
-            e.assign_quadrant(r5, Noisy_a, Noisy_b, Noisy_c, Noisy_d, _bit);
+          e.assign_quadrant(r5, Noisy_a, Noisy_b, Noisy_c, Noisy_d, bitCst);
 
+         }  // local
         }  // forall
 
         rndPos += delta * 5;
@@ -212,6 +213,7 @@ module SSCA2_RMAT_graph_generator
       forall (w, rnd) in zip(Edge_Weight,
         RandomPrivate_iterate(real, edge_domain, seed, start=rndPos-1))
       do
+       local
         w = floor (1 + rnd * MAX_EDGE_WEIGHT) : int;
       rndPos += n_raw_edges;
 

@@ -9,7 +9,10 @@ $preset_gmp = $ENV{'CHPL_GMP'};
 if ($preset_gmp eq "") {
   $targplatform = `$utildirname/platform --target`; chomp($targplatform);
   if ($targplatform eq "xmt" || $targplatform eq "xmt-sim") {
-    $gmp = 'none';
+      $gmp = 'none';
+  } elsif ($targplatform eq "cray-xt" || $targplatform eq "cray-xe" ||
+	   $targplatform eq "cray-xk" || $targplatform eq "cray-xc") {
+      $gmp = 'system';
   } else {
 #    $gmp = 'gmp'; check Lion, PGI, PrgEnv-gnu before enabling
     $gmp = 'none';

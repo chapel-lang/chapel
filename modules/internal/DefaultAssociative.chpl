@@ -268,26 +268,65 @@ module DefaultAssociative {
       }
     }
   
-    //Helper function to appropriately size interal domain
-    //for a certain number of keys.  This function is destructive
-    //and was intended to only be used during construction of an 
-    //associative domain.  As we have noted, we would like this
-    //to eventually be made public once it is made safer. 
-    proc _requestCapacity(numKeys:int) {
-  
-      //Find the first prime large enough for given numKeys
-      if numKeys {
-          var threshhold = (numKeys + 1) * 2;
-          for i in 1..chpl__primes.size {
-              var prime = chpl__primes(i);
-  
-              if prime > threshhold {
-                  tableSizeNum=i;
-                  tableSize=prime;
-                  tableDom = {0..tableSize-1};
-                  break;
-              }
+    proc dsiRequestCapacity(numKeys:int) {
+      var entries = numEntries.read();
+
+      if entries < numKeys {
+
+        //Find the first suitable prime
+        var threshhold = (numKeys + 1) * 2;
+        var prime = 0;
+        var primeLoc = 0;
+        for i in 1..chpl__primes.size {
+            if chpl__primes(i) > threshhold {
+              prime = chpl__primes(i);
+              primeLoc = i;
+              break;
+            }
+        }
+
+        //No suitable prime found
+        if prime == 0 {
+          halt("Requested capacity (", numKeys, ") exceeds maximum size");
+        }
+
+        //Changing underlying strucure, time for locking
+        if parSafe then lockTable();
+        if entries > 0 {
+          // Slow path: back up required
+          _backupArrays();
+
+          // copy the table (TODO: could use swap between two versions)
+          var copyDom = tableDom;
+          var copyTable: [copyDom] chpl_TableEntry(idxType) = table;
+
+          tableSizeNum=primeLoc;
+          tableSize=prime;
+          tableDom = {0..tableSize-1};
+
+          //numEntries will be reconstructed as keys are readded
+          numEntries.write(0);
+
+          // insert old data into newly resized table
+          for slot in _fullSlots(copyTable) {
+            const newslot = _add(copyTable(slot).idx);
+            _preserveArrayElements(oldslot=slot, newslot=newslot);
           }
+            
+          _removeArrayBackups();
+        } else {
+          //Fast path, nothing to backup
+          tableSizeNum=primeLoc;
+          tableSize=prime;
+          tableDom = {0..tableSize-1};
+        }
+
+        //Unlock the table
+        if parSafe then unlockTable();
+      } else if entries > numKeys {
+        __primitive("chpl_warning", 
+                "Requested capacity (" + numKeys + ") " +
+                "is less than current size (" + entries + ")");
       }
     }
   
