@@ -3,6 +3,16 @@ Release Changes List
 ====================
 
 ===============
+version 1.6.1.1
+===============
+
+Request-only pre-release of Chapel, December 2012
+
+Changes
+-------
+- enabled GMP on cray-x? systems by default using system installation
+
+===============
 version 1.6.1.0
 ===============
 
