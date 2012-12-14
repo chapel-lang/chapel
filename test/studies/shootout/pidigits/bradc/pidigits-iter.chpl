@@ -25,7 +25,7 @@ proc main() {
 
 
 proc pidigits() {
-  for (d,i) in (gen_digits(n), 1..) {
+  for (d,i) in zip(gen_digits(n), 1..) {
     write(d);
     if i % 10 == 0 then
       writeln("\t:",i);
