@@ -462,9 +462,8 @@ proc panelSolve(
 
     // replicate
     on cornerLocale {
-      const dim2local = dim2; // for value forwarding
       local
-        for j in dim2local[k+1..] do
+        for j in dim2[k+1..] do
           replK[0,j] = Ab[k,j];
       replicateK(blk);
     }
@@ -474,16 +473,14 @@ proc panelSolve(
   }
 }
 
-proc psReduce(blkArg, kArg) {
-  const lid2 = targetLocalesIndexForAbIndex(2, kArg);
+proc psReduce(blk, k) {
+  const lid2 = targetLocalesIndexForAbIndex(2, k);
   const rlrLoc = psRedLocalResults.locale;
 
   coforall lid1 in 0..#tl1 {
     on targetLocalesRepl[lid1, lid2] {
       var locResult: psRedResultT;
       locResult.init();
-      // need value forwarding
-      const k = kArg, blk = blkArg, tl1c = tl1, lid1c = lid1;
 
       local {
         // guard updates to locResult and maxRes within the forall
@@ -491,7 +488,7 @@ proc psReduce(blkArg, kArg) {
         var maxRes: atomic real;
         maxRes.write(min(real));
         // Starts of all the blocks in the panel that are local to this node.
-        const panelStarts = blk..n by blkSize*tl1c align 1+blkSize*lid1c;
+        const panelStarts = blk..n by blkSize*tl1 align 1+blkSize*lid1;
           forall iStart in panelStarts {
             const iRange = max(iStart, k)..min(iStart + blkSize - 1, n);
             var myResult: psRedResultT;
@@ -597,12 +594,10 @@ proc psSwap(k, pr, out wasLocal) {
           //var locKk  => K._value.dsiLocalSlice1((0, mycol));
           //for j in mycol do locKk[j] = locABk;
 
-          // needed? for value forwarding
-          const myStart = mycol.low, myEnd = mycol.high;
           on targetLocalesRepl[lidpr1, lid2] {
             var pp = tt;
             local {
-              const mycol = myStart..myEnd;
+              const myStart = mycol.low;
               var locABpr => Ab._value.dsiLocalSlice1((pr, mycol));
               for j in mycol do pp[j-myStart+1] <=> locABpr[j];
             }
@@ -638,17 +633,16 @@ proc updateBlockRow(
   // Note: the last call to updateBlockRow may have shorter dim1.
   if boundsChecking then assert(tl.dim(1) == tr.dim(1));
   const dim1 = tl.dim(1);
+  const dim2 = tl.dim(2);
   const blk = dim1.low;
   const cornerLocale = targetLocaleCorner(blk);
 
   // 'tl' is a Dimensional-mapped domain, so has stuff
   // on all locales, even where the index set is empty
-  const tlDims = tl.dims();
   on cornerLocale {
-    const tlDimsLocal = tlDims; // where is value forwarding???
     local
       // we do not need the last row of tl, but pruning it off seems expensive
-      forall (i,j) in {(...tlDimsLocal)} do
+      forall (i,j) in {dim1, dim2} do
         replU[i-blk, j-blk] = Ab[i,j];
     replicateU(blk);
   }
@@ -696,7 +690,7 @@ inline proc bsFinalizeXi(i, ref x_i, partSum, Ab_i_i, Ab_i_n1) {
 //
 // compute the backwards substitution, the new way
 //
-proc backwardSub(nArg: indexType) {
+proc backwardSub(n: indexType) {
   if tl1 != tl2 then
     halt("backwardSub() is implemented only for a square locale grid");
 
@@ -988,7 +982,7 @@ proc verifyResults(x) {
 
 /////////////////////////////////////////////////////////////////////////////
 
-proc replicateA(abIx, dim2arg) {
+proc replicateA(abIx, dim2) {
     const fromLocId2 = targetLocalesIndexForAbIndex(2, abIx);
     coforall lid1 in 0..#tl1 do
       on targetLocales(lid1, fromLocId2) {
@@ -996,8 +990,6 @@ proc replicateA(abIx, dim2arg) {
         var locReplA =>
           replA._value.localAdescs[lid1,fromLocId2].myStorageArr;
         const locReplAdd = locReplA._value.data;
-
-        const dim2 = dim2arg; // should be value forwarding
 
         // (A) copy from the local portion of A[1..n, dim2] into replA[..,..]
         local {
@@ -1031,7 +1023,7 @@ proc replicateA(abIx, dim2arg) {
       } // on
 }
 
-proc replicateB(abIx, dim1arg) {
+proc replicateB(abIx, dim1) {
     const fromLocId1 = targetLocalesIndexForAbIndex(1, abIx);
     coforall lid2 in 0..#tl2 do
       on targetLocales(fromLocId1, lid2) {
@@ -1039,8 +1031,6 @@ proc replicateB(abIx, dim1arg) {
         var locReplB =>
           replB._value.localAdescs[fromLocId1,lid2].myStorageArr;
         const locReplBdd = locReplB._value.data;
-
-        const dim1 = dim1arg; // should be value forwarding
 
         // (A) copy from the local portion of A[dim1, 1..n+1] into replB[..,..]
         local {
