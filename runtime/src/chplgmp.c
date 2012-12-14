@@ -1,5 +1,6 @@
 #ifdef CHPL_HAS_GMP
 
+#include "chpl-comm.h"
 #include "chplrt.h"
 #include "chpl-mem.h"
 
