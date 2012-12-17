@@ -5,6 +5,7 @@ config const printOutput = true;
 config const printTiming = false;
 config const doCommDiag = false;
 
+use CommDiagnostics;
 use Time;
 
 var l: [1..numLocales] sync bool;

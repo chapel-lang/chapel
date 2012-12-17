@@ -1,5 +1,6 @@
 use Barrier;
 use BlockDist;
+use CommDiagnostics;
 
 const numRemoteTasks = numLocales;
 

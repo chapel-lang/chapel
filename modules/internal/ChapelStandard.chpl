@@ -25,6 +25,7 @@ module ChapelStandard {
   use DefaultOpaque;
   use ChapelTaskTable;
   use ChapelUtil;
+  use MemTracking;
 
   // Standard modules.
   use Types;

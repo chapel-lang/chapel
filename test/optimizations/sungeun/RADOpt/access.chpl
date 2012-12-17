@@ -12,6 +12,7 @@ config const doLocal = false;
 use BlockDist;
 use CyclicDist;
 use BlockCycDist;
+use CommDiagnostics;
 
 // Stole this from the setupTargetLocalesArray()
 const factors = _factor(rank, numLocales);

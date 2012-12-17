@@ -21,6 +21,7 @@
 
 use DSIUtil;
 use ChapelUtil;
+use CommDiagnostics;
 
 //
 // These flags are used to output debug information and run extra
