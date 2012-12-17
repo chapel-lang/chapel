@@ -8,7 +8,7 @@ $preset_gmp = $ENV{'CHPL_GMP'};
 
 if ($preset_gmp eq "") {
   $targplatform = `$utildirname/platform --target`; chomp($targplatform);
-  if ($targplatform eq "xmt" || $targplatform eq "xmt-sim") {
+  if ($targplatform =~ /^cray-xmt(-sim)?$/) {
       $gmp = 'none';
   } elsif ($targplatform eq "cray-xt" || $targplatform eq "cray-xe" ||
 	   $targplatform eq "cray-xk" || $targplatform eq "cray-xc") {

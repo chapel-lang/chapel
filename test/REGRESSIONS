@@ -644,9 +644,9 @@ mpi abort messages show up (ever since spec tests added to examples testing)
 [Error matching program output for release/examples/spec/Functions/variable-functions]
 
 
-========================
-xmt-specific regressions
-========================
+=============================
+cray-xmt specific regressions
+=============================
 
 problem after int->64-bit commit was checked in (03/27/12)
 ----------------------------------------------------------
@@ -695,9 +695,9 @@ internal translate errors (08/??/12)
 A few tests report "translate(tile tree creation): internal error"
 
 
-=======================================================
-xmt-sim specific regressions (in addition to the above)
-=======================================================
+============================================================
+cray-xmt-sim specific regressions (in addition to the above)
+============================================================
 
 internal translate errors (04/??/12)
 ------------------------------------

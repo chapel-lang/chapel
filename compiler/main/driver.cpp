@@ -320,7 +320,7 @@ static void setupOrderedGlobals(const char* argv0) {
   // These depend on the environment variables being set
   fLocal = !strcmp(CHPL_COMM, "none");
   fSerial = !strcmp(CHPL_TASKS, "none"); 
-  fNoRepositionDefExpr = strcmp(CHPL_TARGET_PLATFORM, "xmt");
+  fNoRepositionDefExpr = strcmp(CHPL_TARGET_PLATFORM, "cray-xmt");
   bool gotPGI = !strcmp(CHPL_TARGET_COMPILER, "pgi")
              || !strcmp(CHPL_TARGET_COMPILER, "cray-prgenv-pgi");
   // conservatively how much is needed for the current PGI compiler

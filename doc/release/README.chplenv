@@ -129,10 +129,10 @@ Optional Settings
         platform        compiler
         --------        --------
         cray-*      ->  cray-prgenv-$PE_ENV (PE_ENV is set by PrgEnv-* modules)
+        cray-xmt    ->  cray-mta
         marenostrum ->  ibm
         pwr5, pwr6  ->  ibm
         x1, x2      ->  cray-vec
-        xmt         ->  cray-mta
         other       ->  gnu
 
    The default for CHPL_TARGET_COMPILER is CHPL_HOST_COMPILER if it is
@@ -188,7 +188,7 @@ Optional Settings
 
         platform     tasks    threads
         --------     -----    -------
-        xmt      ->  mta      none
+        cray-xmt ->  mta      none
         other    ->  fifo     pthreads
 
    See README.tasks for more information about executing using the
@@ -232,8 +232,8 @@ Optional Settings
         mta     : use an mta_get_clock()-based implementation (Cray XMT only)
 
    If unset, CHPL_TIMERS defaults to "generic" unless
-   CHPL_TARGET_PLATFORM is set to "xmt" in which case it defaults to
-   "mta".
+   CHPL_TARGET_PLATFORM is set to "cray-xmt" in which case it defaults
+   to "mta".
 
 9) Optionally, the CHPL_GMP environment variable can select between
    no GMP support, using the GMP distributed with Chapel in third-party,

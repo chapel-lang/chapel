@@ -17,7 +17,7 @@ however work is not complete in its optimization.
 
 1) Set CHPL_HOME and MANPATH as indicated in README.chplenv.
 
-2) Set CHPL_TARGET_PLATFORM to xmt.  Notice that we are
+2) Set CHPL_TARGET_PLATFORM to cray-xmt.  Notice that we are
    cross-compiling, because the login node for a Cray XMT system is a
    linux64 system (this is inferred and does not need to be explicitly
    set).

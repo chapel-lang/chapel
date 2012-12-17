@@ -6,7 +6,7 @@ The following information is assembled to help Chapel users get up and
 running on Cray systems running the Cray Linux Environment (TM) (CLE),
 including Cray XT (TM), Cray XE (TM), Cray XK (TM), and Cray XC (TM)
 systems.  For information about using Chapel on Cray XMT (TM) systems,
-see README.xmt.
+see README.cray-xmt.
 
 If you are not familiar with Chapel, it is recommended that you try the
 instructions in the top-level README first to get started with the

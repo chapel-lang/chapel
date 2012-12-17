@@ -30,7 +30,7 @@ if ($preset_threads eq "") {
     } elsif ($preset_tasks eq "") {
 	$platform = `$utildirname/platform --target`;
 	chomp $platform;
-	if ($platform =~ /^(mta|xmt(-sim)?)$/) {
+	if ($platform =~ /^cray-xmt(-sim)?$/) {
 	    $threads = "none";
 	} elsif ($platform =~ /^x[12]-sim$/) {
 	    $threads = "none";

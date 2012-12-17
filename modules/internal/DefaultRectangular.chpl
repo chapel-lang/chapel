@@ -134,7 +134,7 @@ module DefaultRectangular {
   
       if debugDataPar then writeln("### numChunks=", numChunks, " (parDim=", parDim, ")");
   
-      if (CHPL_TARGET_PLATFORM != "xmt") {
+      if (CHPL_TARGET_PLATFORM != "cray-xmt") {
         if numChunks == 1 {
           if rank == 1 {
             yield tuple(0..ranges(1).length-1);

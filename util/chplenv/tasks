@@ -15,7 +15,7 @@ if ($preset_tasks eq "") {
     } elsif ($preset_threads eq "") {
 	$platform = `$utildirname/platform --target`;
 	chomp($platform);
-	if ($platform =~ /^(mta|xmt(-sim)?)$/) {
+	if ($platform =~ /^cray-xmt(-sim)?$/) {
 	    $tasks = "mta";
 	} elsif ($platform =~ /^x[12]-sim$/) {
 	    $tasks = "none";

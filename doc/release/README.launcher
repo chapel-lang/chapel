@@ -59,7 +59,7 @@ environment variable.  If left unset, a default is picked as follows:
   + only aprun in user's path   -> aprun
   (otherwise)                   -> none
 
-  CHPL_PLATFORM=xmt             -> mtarun
+  CHPL_PLATFORM=cray-xmt        -> mtarun
 
   CHPL_PLATFORM=marenostrum     -> marenostrum
 

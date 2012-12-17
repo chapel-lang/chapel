@@ -4164,7 +4164,7 @@ GenRet CallExpr::codegen() {
       // which means several variables will spawn warnings (ignored in
       // Makefile.cray-mta). Eventually, we'll only generate invariant 
       // pointer variables.
-      if (!(strcmp(CHPL_TARGET_PLATFORM, "xmt"))) {
+      if (!(strcmp(CHPL_TARGET_PLATFORM, "cray-xmt"))) {
         INT_ASSERT(c);
         Vec<SymExpr*> se;
         Vec<DefExpr*> de_parent;

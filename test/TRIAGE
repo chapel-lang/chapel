@@ -91,8 +91,8 @@ sungeun: 10/18/12.  Things seem quieter, but not perfect
   [Error: Timed out executing program distributions/robust/arithmetic/kernels/hpl (compopts: 1)] (11/28/12: likely earlier as well)
 
 
-xmt build (UNASSIGNED)
-----------------------
+cray-xmt build (UNASSIGNED)
+---------------------------
 Every night, first XMT compile fails; second one succeeds.  Is there
 any chance that this is due to a leftover program library of some
 sort?  If not, file bug against XMT compiler.

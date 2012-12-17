@@ -791,7 +791,7 @@ module ChapelRangeBase {
       writeln("*** RI: Using ", numChunks, " chunk(s)");
     }
   
-    if (CHPL_TARGET_PLATFORM == "xmt")
+    if (CHPL_TARGET_PLATFORM == "cray-xmt")
     {
       var per_stream_i: uint(64) = 0;
       var total_streams_n: uint(64) = 0;

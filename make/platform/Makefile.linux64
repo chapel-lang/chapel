@@ -1,9 +1,9 @@
-ifeq ($(CHPL_TARGET_PLATFORM),xmt-sim)
+ifeq ($(CHPL_TARGET_PLATFORM),cray-xmt-sim)
 AR = /usr/bin/ar
 RANLIB = /usr/bin/ranlib
 endif
 
-ifeq ($(CHPL_TARGET_PLATFORM),xmt)
+ifeq ($(CHPL_TARGET_PLATFORM),cray-xmt)
 AR = /usr/bin/ar
 RANLIB = /usr/bin/ranlib
 endif
