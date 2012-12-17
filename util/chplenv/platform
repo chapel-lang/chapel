@@ -38,21 +38,7 @@ if ($preset_platform eq "") {
     $platform = $preset_platform;
 }
 
-if ($platform eq "xt-cle") {
-    $platform = "cray-xt";
-
-    if( $ARGV[1] eq 1 ) {
-        warn "Warning: the 'xt-cle' platform is deprecated.  Using 'cray-xt' instead.";
-    }
-} 
-elsif ($platform eq "xe-cle") {
-    $platform = "cray-xe";
-
-    if ($ARGV[1] eq 1) {
-        warn "Warning: the 'xe-cle' platform is deprecated.  Using 'cray-xe' instead."
-    }
-} 
-elsif ($platform eq "cray-cascade") {
+if ($platform eq "cray-cascade") {
     $platform = "cray-xc";
 
     if ($ARGV[1] eq 1) {
@@ -76,5 +62,3 @@ elsif ($platform eq "xmt-sim") {
 
 print "$platform\n";
 exit(0);
-
-
