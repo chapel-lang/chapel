@@ -1389,7 +1389,7 @@ err_t qio_channel_scan_int(const int threadsafe, qio_channel_t* restrict ch, voi
   int64_t start;
   char* end;
   char* buf = NULL;
-  int buf_onstack = 0;
+  MAYBE_STACK_SPACE(buf_onstack);
   err_t err;
   qio_style_t* style;
 
@@ -1518,7 +1518,7 @@ err_t qio_channel_scan_float(const int threadsafe, qio_channel_t* restrict ch, v
   int64_t start;
   char* end_conv;
   char* buf = NULL;
-  int buf_onstack = 0;
+  MAYBE_STACK_SPACE(buf_onstack);
   ssize_t i;
   ssize_t digits_start;
   ssize_t point;
@@ -1769,7 +1769,7 @@ int _ftoa(char* restrict dst, size_t size, double num, int base, const qio_style
 {
   int buf_sz = 32;
   char* buf = NULL;
-  int buf_onstack = 0;
+  MAYBE_STACK_SPACE(buf_onstack);
   int buf_len;
   int got=0;
   int width;
@@ -1966,7 +1966,6 @@ int _ftoa(char* restrict dst, size_t size, double num, int base, const qio_style
       // Get a bigger buffer.
       MAYBE_STACK_FREE(buf, buf_onstack);
       buf = NULL;
-      buf_onstack = 0;
       // We might not have room...
       ret_width = got + adjust_width;
       if( ret_width < style->min_width ) ret_width = style->min_width;
@@ -2045,7 +2044,7 @@ err_t qio_channel_print_int(const int threadsafe, qio_channel_t* restrict ch, co
   int signed_len;
   int base;
   char* tmp = NULL;
-  int tmp_onstack = 0;
+  MAYBE_STACK_SPACE(tmp_onstack);
   int got;
   err_t err;
   qio_style_t* style;
@@ -2152,7 +2151,6 @@ err_t qio_channel_print_int(const int threadsafe, qio_channel_t* restrict ch, co
       // Not enough room... try again. 
       MAYBE_STACK_FREE(tmp, tmp_onstack);
       tmp = NULL;
-      tmp_onstack = 0;
       max = got + 1;
     }
   }
@@ -2173,7 +2171,7 @@ err_t qio_channel_print_float(const int threadsafe, qio_channel_t* restrict ch, 
 {
   int max = 3 + DBL_MANT_DIG - DBL_MIN_EXP + 1 + 10; // +10=a little extra room
   char* buf = NULL;
-  int buf_onstack = 0;
+  MAYBE_STACK_SPACE(buf_onstack);
   int got;
   int base;
   err_t err;
@@ -2247,7 +2245,6 @@ err_t qio_channel_print_float(const int threadsafe, qio_channel_t* restrict ch, 
       // Not enough room... try again. 
       MAYBE_STACK_FREE(buf, buf_onstack);
       buf = NULL;
-      buf_onstack = 0;
       max = got + 1;
     }
   }

@@ -36,7 +36,7 @@ err_t bulk_put_buffer(int64_t dst_locale, void* dst_addr, int64_t dst_len,
   struct iovec* iov = NULL;
   size_t iovcnt;
   size_t i,j;
-  int iov_onstack;
+  MAYBE_STACK_SPACE(iov_onstack);
   err_t err;
  
   if( num_bytes < 0 || num_parts < 0 || start.offset < buf->offset_start || end.offset > buf->offset_end ) return EINVAL;

@@ -94,7 +94,7 @@ err_t qio_readv(fd_t fd, qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t en
   ssize_t num_parts = qbuffer_iter_num_parts(start, end);
   struct iovec* iov = NULL;
   size_t iovcnt;
-  int iov_onstack;
+  MAYBE_STACK_SPACE(iov_onstack);
   err_t err;
  
   if( num_bytes < 0 || num_parts < 0 || num_parts > INT_MAX ) {
@@ -132,7 +132,7 @@ err_t qio_writev(fd_t fd, qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t e
   ssize_t num_parts = qbuffer_iter_num_parts(start, end);
   struct iovec* iov = NULL;
   size_t iovcnt;
-  int iov_onstack;
+  MAYBE_STACK_SPACE(iov_onstack);
   err_t err;
  
   if( num_bytes < 0 || num_parts < 0 || num_parts > INT_MAX ) {
@@ -170,7 +170,7 @@ err_t qio_preadv(fd_t fd, qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t e
   ssize_t num_parts = qbuffer_iter_num_parts(start, end);
   struct iovec* iov = NULL;
   size_t iovcnt;
-  int iov_onstack;
+  MAYBE_STACK_SPACE(iov_onstack);
   err_t err;
  
   if( num_bytes < 0 || num_parts < 0 || num_parts > INT_MAX ) {
@@ -210,7 +210,7 @@ err_t qio_freadv(FILE* fp, qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t 
   struct iovec* iov = NULL;
   size_t iovcnt;
   size_t i;
-  int iov_onstack;
+  MAYBE_STACK_SPACE(iov_onstack);
   err_t err;
  
   if( num_bytes < 0 || num_parts < 0 || num_parts > INT_MAX ) {
@@ -258,7 +258,7 @@ err_t qio_fwritev(FILE* fp, qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t
   struct iovec* iov = NULL;
   size_t iovcnt;
   size_t i;
-  int iov_onstack;
+  MAYBE_STACK_SPACE(iov_onstack);
   err_t err;
  
   if( num_bytes < 0 || num_parts < 0 || num_parts > INT_MAX ) {
@@ -305,7 +305,7 @@ err_t qio_pwritev(fd_t fd, qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t 
   ssize_t num_parts = qbuffer_iter_num_parts(start, end);
   struct iovec* iov = NULL;
   size_t iovcnt;
-  int iov_onstack;
+  MAYBE_STACK_SPACE(iov_onstack);
   err_t err;
  
   if( num_bytes < 0 || num_parts < 0 || num_parts > INT_MAX ) {
@@ -347,7 +347,7 @@ err_t qio_recv(fd_t sockfd, qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t
   ssize_t num_parts = qbuffer_iter_num_parts(start, end);
   struct iovec* iov = NULL;
   size_t iovcnt;
-  int iov_onstack;
+  MAYBE_STACK_SPACE(iov_onstack);
   err_t err;
 
   if( num_bytes < 0 || num_parts < 0 || num_parts > INT_MAX ) {
@@ -405,7 +405,7 @@ err_t qio_send(fd_t sockfd, qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t
   ssize_t num_parts = qbuffer_iter_num_parts(start, end);
   struct iovec* iov = NULL;
   size_t iovcnt;
-  int iov_onstack=0;
+  MAYBE_STACK_SPACE(iov_onstack);
   err_t err;
 
   if( num_bytes < 0 || num_parts < 0 || num_parts > INT_MAX ) {

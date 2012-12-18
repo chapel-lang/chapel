@@ -6,7 +6,6 @@
 
 #include <inttypes.h>
 #include <sys/uio.h>
-#include <alloca.h>
 #include "deque.h"
 
 // We should have gasnett_atomic_t from sys_basic
@@ -398,6 +397,8 @@ err_t qbuffer_copyin_buffer(qbuffer_t* dst, qbuffer_iter_t dst_start, qbuffer_it
  * */
 err_t qbuffer_memset(qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, unsigned char byte);
 
+// How many bytes to try to store on stack in some functions that don't
+// really want to call malloc
 #define MAX_ON_STACK 128
 
 #ifdef _chplrt_H_
@@ -426,21 +427,24 @@ static inline char* qio_strdup(const char* ptr)
 
 #endif
 
+// Declare MAX_ON_STACK bytes. We declare it as uint64_t to
+// make sure it's aligned as well as malloc would be.
+#define MAYBE_STACK_SPACE(onstack) \
+  uint64_t onstack[MAX_ON_STACK/sizeof(uint64_t)]
+
 #define MAYBE_STACK_ALLOC(size, ptr, onstack) \
 { \
-  if( size <= MAX_ON_STACK ) { \
-    ptr = alloca(size); \
-    onstack = 1; \
+  if( size <= sizeof(onstack) ) { \
+    ptr = (void*) onstack; \
   } else { \
     ptr = qio_malloc(size); \
-    onstack = 0; \
   } \
 }
 
 
 #define MAYBE_STACK_FREE(ptr, onstack) \
 { \
-  if( ! onstack ) { \
+  if( (void*) ptr != (void*) onstack ) { \
     qio_free(ptr); \
   } \
 }
