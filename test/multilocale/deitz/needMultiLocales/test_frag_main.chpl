@@ -1,3 +1,5 @@
+use CommDiagnostics;
+
 config const useVerboseComm = false;
 config var token = 0;
 
