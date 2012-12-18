@@ -12,6 +12,7 @@
 #include "chpl-mem.h"
 #include "chplsys.h"
 #include "chpl-tasks.h"
+#include "chpl-atomics.h"
 #include "error.h"
 
 #ifdef GASNET_NEEDS_MAX_SEGSIZE
@@ -201,7 +202,8 @@ static void AM_fork_nb_large(gasnet_token_t token, void* buf, size_t nbytes) {
 
 static void AM_signal(gasnet_token_t token, gasnet_handlerarg_t a0, gasnet_handlerarg_t a1) {
   uint64_t done = ((uint64_t) (uint32_t) a0) | (((uint64_t) (uint32_t) a1)<<32UL);
-  *((int *) (intptr_t) done) = 1;
+  atomic_fetch_add_explicit_int_least32_t(((int32_t *) (intptr_t) done),
+                                          1, memory_order_seq_cst);
 }
 
 static void AM_priv_bcast(gasnet_token_t token, void* buf, size_t nbytes) {
@@ -472,9 +474,10 @@ void chpl_comm_broadcast_global_vars(int numGlobals) {
 void chpl_comm_broadcast_private(int id, int32_t size, int32_t tid) {
   int  locale, offset;
   int  payloadSize = size + sizeof(priv_bcast_t);
-  int* done; /* These are not declared volatile because we capture &done[i]
-                (and pass it to a GASNet function), so the compiler should
-                not optimize out any accesses to it. */
+  int32_t* done; /* These are not declared volatile because we capture &done[i]
+                    (and pass it to a GASNet function), so the compiler should
+                    not optimize out any accesses to it. */
+  int numOffsets=1;
 
   done = (int*) chpl_mem_allocManyZero(chpl_numLocales, sizeof(*done),
                                        CHPL_RT_MD_COMM_FORK_DONE_FLAG, 0, 0);
@@ -510,11 +513,12 @@ void chpl_comm_broadcast_private(int id, int32_t size, int32_t tid) {
       }
     }
     chpl_mem_free(pblp, 0, 0);
+    numOffsets = (size+maxsize)/maxsize;
   }
   // wait for the handlers to complete
   for (locale = 0; locale < chpl_numLocales; locale++) {
     if (locale != chpl_localeID)
-      GASNET_BLOCKUNTIL(done[locale]==1);
+      GASNET_BLOCKUNTIL(done[locale]==numOffsets);
   }
   chpl_mem_free(done, 0, 0);
 }
@@ -542,7 +546,7 @@ void chpl_comm_pre_task_exit(int all) {
 }
 
 static void exit_common(int status) {
-  int* ack = (int*)&alldone;
+  int32_t* ack = (int32_t*)&alldone;
   static int loopback = 0;
 
   if (chpl_localeID == 0) {
@@ -566,7 +570,7 @@ static void exit_any_dirty(int status) {
   // kill the polling task on locale 0, but other than that...
   // clean up nothing; just ask GASNet to exit
   // GASNet will then kill all other locales.
-  int* ack = (int*)&alldone;
+  int32_t* ack = (int32_t*)&alldone;
   static int loopback = 0;
 
   if (chpl_localeID == 0) {
@@ -764,9 +768,9 @@ void  chpl_comm_fork(int locale, chpl_fn_int_t fid, void *arg,
                      int32_t arg_size, int32_t arg_tid) {
   fork_t* info;
   int     info_size;
-  int     done; /* This is not declared volatile because we capture &done
-                   (and pass it to a GASNet function), so the compiler
-                   should not optimize out any accesses to it. */
+  int32_t   done; /* This is not declared volatile because we capture &done
+                     (and pass it to a GASNet function), so the compiler
+                     should not optimize out any accesses to it. */
   int     passArg = sizeof(fork_t) + arg_size <= gasnet_AMMaxMedium();
 
   if (chpl_localeID == locale) {
@@ -868,7 +872,7 @@ void  chpl_comm_fork_fast(int locale, chpl_fn_int_t fid, void *arg,
   char infod[gasnet_AMMaxMedium()];
   fork_t* info;
   int     info_size = sizeof(fork_t) + arg_size;
-  int     done; // See chpl_comm_fork() for why this is not volatile
+  int32_t done; // See chpl_comm_fork() for why this is not volatile
   int     passArg = info_size <= gasnet_AMMaxMedium();
 
   if (chpl_localeID == locale) {
