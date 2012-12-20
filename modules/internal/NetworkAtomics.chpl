@@ -916,17 +916,21 @@ module NetworkAtomics {
       var v = value;
       chpl_comm_atomic_sub_real64(v, this.locale.id:int(32), this._v, LINENO, "NetworkAtomics.chpl");
     }
-
+    
+    pragma "resolution error function"
     inline proc fetchOr(value:real(64)):real(64) {
       compilerError("or not definted for network atomic real");
     }
+    pragma "resolution error function"
     inline proc or(value:real(64)):real(64) {
       compilerError("or not definted for network atomic real");
     }
-
+    
+    pragma "resolution error function"
     inline proc fetchAnd(value:real(64)):real(64) {
       compilerError("and not definted for network atomic real");
     }
+    pragma "resolution error function"
     inline proc and(value:real(64)):real(64) {
       compilerError("and not definted for network atomic real");
     }
@@ -951,26 +955,32 @@ module NetworkAtomics {
     a.write(b.read());
     return a;
   }
+  pragma "resolution error function"
   inline proc =(a:ratomic_real64, b) {
     compilerError("Cannot directly assign network atomic variables");
     return a;
   }
+  pragma "resolution error function"
   inline proc +(a:ratomic_real64, b) {
     compilerError("Cannot directly add network atomic variables");
     return a;
   }
+  pragma "resolution error function"
   inline proc -(a:ratomic_real64, b) {
     compilerError("Cannot directly subtract network atomic variables");
     return a;
   }
+  pragma "resolution error function"
   inline proc *(a:ratomic_real64, b) {
     compilerError("Cannot directly multiply network atomic variables");
     return a;
   }
+  pragma "resolution error function"
   inline proc /(a:ratomic_real64, b) {
     compilerError("Cannot directly divide network atomic variables");
     return a;
   }
+  pragma "resolution error function"
   inline proc %(a:ratomic_real64, b) {
     compilerError("Cannot directly divide network atomic variables");
     return a;

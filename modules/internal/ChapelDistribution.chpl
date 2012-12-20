@@ -63,7 +63,7 @@ module ChapelDistribution {
     inline proc _unlock_doms() {
       _domsLock.clear();
     }
-  
+    
     proc dsiNewRectangularDom(param rank: int, type idxType, param stridable: bool) {
       compilerError("rectangular domains not supported by this distribution");
     }
@@ -193,15 +193,18 @@ module ChapelDistribution {
     proc dsiClear() {
       halt("clear not implemented for this distribution");
     }
-  
+    
+    pragma "resolution error function"
     proc clearForIteratableAssign() {
       compilerError("Illegal assignment to a rectangular domain");
     }
-  
+    
+    pragma "resolution error function"
     proc dsiAdd(x) {
       compilerError("Cannot add indices to a rectangular domain");
     }
   
+    pragma "resolution error function"
     proc dsiRemove(x) {
       compilerError("Cannot remove indices from a rectangular domain");
     }
