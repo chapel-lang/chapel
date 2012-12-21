@@ -88,8 +88,8 @@ buildEmptyWrapper(FnSymbol* fn, CallInfo* info) {
 static ArgSymbol* copyFormalForWrapper(ArgSymbol* formal) {
   ArgSymbol* wrapperFormal = formal->copy();
   if (formal->intent == INTENT_OUT || formal->intent == INTENT_INOUT ||
-      formal->hasFlag(FLAG_WRAP_OUT_INTENT)) {
-    wrapperFormal->addFlag(FLAG_WRAP_OUT_INTENT);
+      formal->hasFlag(FLAG_WRAP_WRITTEN_FORMAL)) {
+    wrapperFormal->addFlag(FLAG_WRAP_WRITTEN_FORMAL);
   }
   if (formal->intent != INTENT_REF) {
     wrapperFormal->intent = INTENT_BLANK;

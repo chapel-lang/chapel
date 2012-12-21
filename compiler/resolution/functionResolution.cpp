@@ -422,11 +422,11 @@ const char* toString(FnSymbol* fn) {
     str = astr(fn->name+11);
   } else if (fn->hasFlag(FLAG_METHOD)) {
     if (!strcmp(fn->name, "this")) {
-      INT_ASSERT(fn->hasFlag(FLAG_FUNCTION_THIS));
+      INT_ASSERT(fn->hasFlag(FLAG_FIRST_CLASS_FUNCTION_INVOCATION));
       str = astr(toString(fn->getFormal(2)->type));
       start = 1;
     } else {
-      INT_ASSERT(! fn->hasFlag(FLAG_FUNCTION_THIS));
+      INT_ASSERT(! fn->hasFlag(FLAG_FIRST_CLASS_FUNCTION_INVOCATION));
       str = astr(toString(fn->getFormal(2)->type), ".", fn->name);
       start = 2;
     }
@@ -694,7 +694,7 @@ resolveFormals(FnSymbol* fn) {
       if (formal->intent == INTENT_INOUT ||
           formal->intent == INTENT_OUT ||
           formal->intent == INTENT_REF ||
-          formal->hasFlag(FLAG_WRAP_OUT_INTENT) ||
+          formal->hasFlag(FLAG_WRAP_WRITTEN_FORMAL) ||
           (formal == fn->_this &&
            (isUnion(formal->type) ||
             isRecord(formal->type) ||
@@ -2912,7 +2912,7 @@ static ClassType* createAndInsertFunParentClass(CallExpr *call, const char *name
 */
 static FnSymbol* createAndInsertFunParentMethod(CallExpr *call, ClassType *parent, AList &arg_list, bool isFormal, Type *retType) {
   FnSymbol* parent_method = new FnSymbol("this");
-  parent_method->addFlag(FLAG_FUNCTION_THIS);
+  parent_method->addFlag(FLAG_FIRST_CLASS_FUNCTION_INVOCATION);
   parent_method->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
   ArgSymbol* thisParentSymbol = new ArgSymbol(INTENT_BLANK, "this", parent);
   thisParentSymbol->addFlag(FLAG_ARG_THIS);
@@ -3121,7 +3121,7 @@ createFunctionAsValue(CallExpr *call) {
   build_constructors(ct);
 
   FnSymbol *thisMethod = new FnSymbol("this");
-  thisMethod->addFlag(FLAG_FUNCTION_THIS);
+  thisMethod->addFlag(FLAG_FIRST_CLASS_FUNCTION_INVOCATION);
   thisMethod->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
   ArgSymbol *thisSymbol = new ArgSymbol(INTENT_BLANK, "this", ct);
   thisSymbol->addFlag(FLAG_ARG_THIS);

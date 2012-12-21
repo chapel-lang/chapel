@@ -185,7 +185,7 @@ void parse(void) {
 
   forv_Vec(ModuleSymbol, mod, allModules) {
     // Filter out modules that don't want to include ChapelStandard by default.
-    if (mod->hasFlag(FLAG_NO_DEFAULT_USE))
+    if (mod->hasFlag(FLAG_NO_USE_CHAPELSTANDARD))
       continue;
 
     // ChapelStandard is added implicity to the "use" list of all other modules.

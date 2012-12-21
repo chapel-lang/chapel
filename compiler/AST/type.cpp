@@ -1047,11 +1047,11 @@ void initChplProgram(void) {
   // Inititalize the outermost module
   rootModule = new ModuleSymbol("_root", MOD_INTERNAL, new BlockStmt());
   rootModule->filename = astr("<internal>");
-  rootModule->addFlag(FLAG_NO_DEFAULT_USE);
+  rootModule->addFlag(FLAG_NO_USE_CHAPELSTANDARD);
 
   theProgram = new ModuleSymbol("chpl__Program", MOD_INTERNAL, new BlockStmt());
   theProgram->filename = astr("<internal>");
-  theProgram->addFlag(FLAG_NO_DEFAULT_USE);
+  theProgram->addFlag(FLAG_NO_USE_CHAPELSTANDARD);
 
   rootModule->block->insertAtTail(new DefExpr(theProgram));
 }

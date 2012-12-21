@@ -22,7 +22,7 @@ refNecessary(SymExpr* se,
           return true;
         if (formal->type->symbol->hasFlag(FLAG_REF) &&
             (fn->hasFlag(FLAG_ALLOW_REF) ||
-             formal->hasFlag(FLAG_WRAP_OUT_INTENT)))
+             formal->hasFlag(FLAG_WRAP_WRITTEN_FORMAL)))
           return true;
       } else if (call->isPrimitive(PRIM_MOVE)) {
         if (refNecessary(toSymExpr(call->get(1)), defMap, useMap))
