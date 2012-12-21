@@ -1010,8 +1010,8 @@ void CallExpr::codegen(FILE* outfile) {
           } else if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
             gen(outfile, "%A = (%A).locale.as_struct.node", get(1), call->get(1));
           } else {
-            // Narrow pointer.  The argument is ignored and zero is returned.
-            gen(outfile, "%A = 0", get(1));
+            // Narrow pointer.  Return our local node ID.
+            gen(outfile, "%A = chpl_localeID", get(1));
           }
           break;
         }
@@ -2182,10 +2182,10 @@ void CallExpr::codegen(FILE* outfile) {
     case PRIM_SET_SUBLOC_ID:
       gen(outfile, "chpl_task_setSubLoc(%A)", get(1));
       break;
-     case PRIM_LOC_GET_NODE:
+    case PRIM_LOC_GET_NODE:
       gen(outfile, "(%A).as_struct.node", get(1));
       break;
-     case PRIM_LOC_GET_SUBLOC:
+    case PRIM_LOC_GET_SUBLOC:
       gen(outfile, "(%A).as_struct.subloc", get(1));
       break;
     case PRIM_CHPL_COMM_GET:
@@ -2427,7 +2427,7 @@ void CallExpr::codegen(FILE* outfile) {
     case PRIM_LOCALE_ID:
       fprintf(outfile, "chpl_localeID");
       break;
-     case PRIM_ON_LOCALE_NUM:
+    case PRIM_ON_LOCALE_NUM:
       if (numActuals() < 2)
         gen(outfile, "chpl_on_locale_num(%A, 0)", get(1));
       else

@@ -8,9 +8,9 @@ module ChapelRootLocale {
 class RootLocale
 {
   // would like this to be the following, but it breaks about 20 tests:
-  //const LocaleSpace: domain(1) distributed(OnePer) = [0..numLocales-1];
-  const LocaleSpace: domain(1) = {0..numLocales-1};
-  const Locales: [LocaleSpace] locale;
+  //const myLocaleSpace: domain(1) distributed(OnePer) = [0..numLocales-1];
+  const myLocaleSpace: domain(1) = {0..numLocales-1};
+  const myLocales: [myLocaleSpace] locale;
 
   proc setLocale(idx:int, loc:locale)
   {
@@ -24,7 +24,7 @@ class RootLocale
         halt(".locale field of locale object must match node ID");
       _here = loc;
     }
-    Locales[idx] = loc;
+    myLocales[idx] = loc;
   }
 
   // We cannot use a forall here because the default leader iterator will
@@ -33,32 +33,37 @@ class RootLocale
   // chpl_setupLocale().
   proc RootLocale()
   {
-    for locIdx in LocaleSpace do
+    for locIdx in myLocaleSpace do
       on __primitive("chpl_on_locale_num", locIdx)
       {
         _here = new locale();
-        Locales[locIdx] = _here;
+        myLocales[locIdx] = _here;
       }
   }
 
-  proc getLocaleSpace() return this.LocaleSpace;
-  proc getLocales() return this.Locales;
-  proc getLocale(idx:int) return this.Locales[idx];
+  proc getLocaleSpace() return this.myLocaleSpace;
+  proc getLocales() return this.myLocales;
+  proc getLocale(idx:int) return this.myLocales[idx];
 }
 
-var rootLocale = new RootLocale();
 
-//proc locale.numCores {
-//  var numCores: int;
-//  on this do numCores = __primitive("chpl_coresPerLocale");
-//  return numCores;
-//}
+// Expose the global singleton.
+var rootLocale = new RootLocale();
+proc RootLocale.instance()
+  return rootLocale;
+
 
 proc chpl_int_to_locale(id) {
   return rootLocale.getLocale(id);
 }
 
 
+// Some global variables for user convenience.
+var LocaleSpace = rootLocale.myLocaleSpace;
+var Locales => rootLocale.myLocales;
+
+
+////////////////////////////////////////////////////////////////////////////////{
 //
 // tree for recursive task invocation during privatization
 //

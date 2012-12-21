@@ -225,8 +225,7 @@ Expr* buildDotExpr(BaseAST* base, const char* member) {
             return getLocale->remove();
 #endif
 
-  // MAGIC: "x.locale" member access expressions are rendered as chpl_int_to_locale(_wide_get_locale(x)).
-  // This extracts the node ID from the wide reference.
+  // MAGIC: "x.locale" member access expressions are rendered as chpl_int_to_locale(_wide_get_node(x)).
   if (!strcmp("locale", member))
     return new CallExpr("chpl_int_to_locale", 
                         new CallExpr(PRIM_WIDE_GET_NODE, base));

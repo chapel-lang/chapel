@@ -50,8 +50,8 @@ static void computeRecursiveIteratorSet() {
 
 
 //
-// If a local block has no yields, returns, gotos or labels it can safely
-// be left unfragmented.
+// If a local block has no yields, returns, gotos or labels
+// then it can safely be left unfragmented.
 //
 static bool leaveLocalBlockUnfragmented(BlockStmt* block) {
   Vec<BaseAST*> asts;

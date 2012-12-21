@@ -1,0 +1,14 @@
+Bug: RVF is too aggressive when .locale.id is used.
+
+Introduced on the caseyb branch.
+
+Rework of the representation of locale IDs means that only wide have a locale ID associated with them.
+Narrow pointers have the locale ID returned by here.
+
+When RVF is applied, it extracts the value pointed to by a wide pointer and passes that along.
+So the new localeID macro sees that the forwarded value is just a value, and returns here() rather than 
+the localeID of the locale in which the original object is allocated.
+
+To reproduce, use gasnet and NUMLOCALES >= 2.
+
+To show that RVF is at fault, repeat the test with --no-remote-value-forwarding.

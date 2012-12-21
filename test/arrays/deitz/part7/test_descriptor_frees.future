@@ -1,0 +1,39 @@
+Memory: break statement in iterator body skips iterator record deallocator.
+
+To duplicate:
+Compile with "-d= --log-module=DSIUtil", and open DSIUTIL_15lowerIterators.ast.
+Search for "label _breakLabel".
+
+Observe that this label is immediately preceded by (call _freeIterator _iterator).
+
+Whenever the break is executed, we skip the deallocation and leak memory.
+
+This is just an example: many other instances exist in the AST, and (if not
+pruned) will end up in the generated code. 
+
+The cause:
+With the exception of the early allocation of instances of the locale class, all
+allocations were rewritten using PRIM_CHPL_MEM_ALLOC.  This replaced some calls
+to chpl_malloc (which is untracked) to chpl_mem_alloc (which is tracked).  
+
+We were leaking memory all along; it's just that this particular leak was not
+being reported.
+
+The cure: 
+Each path out of a block must run the deallocation code.  Right now, the
+implementation of deallocation appears to rely on the block exiting
+normally. This is just one case where that assumption is violated.  If we
+implement exceptions, we'll have whole bunch more.
+
+To support nonlinear exits generally, we need to have a hook in the description
+of a block to which we can attach code that must be run prior to exit.  To
+implement breaks, gotos and returns, the code attached to that hook must be
+emitted before each instance of a branch instruction.
+
+A less general solution is to ensure that a block is always exited normally.
+Cleanup code can then be placed after a well-known block exit label.  This means
+that the target of a jump must always lie within that block.  If a jump (e.g. a
+return) crosses a block boundary, then a status variable must be set prior to
+the jump, and extra code added following the closing brace of the block.  The
+extra code can check to status and jump to the corresponding label.
+

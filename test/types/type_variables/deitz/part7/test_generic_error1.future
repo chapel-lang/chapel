@@ -1,0 +1,5 @@
+error message: Need to detect and flag error earlier
+
+Because the new locale-aware allocation resolves types earlier, we don't make it
+to the code that recognizes this special case.  Instead, we get an internal
+error on line 35 of callInfo.cpp.
