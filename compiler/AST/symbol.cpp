@@ -1525,9 +1525,8 @@ void ModuleSymbol::codegenDef() {
     if (DefExpr* def = toDefExpr(expr))
       if (FnSymbol* fn = toFnSymbol(def->sym)) {
         // Ignore external and prototype functions.
-        if (!genExternPrototypes &&
-            (fn->hasFlag(FLAG_EXTERN) ||
-             fn->hasFlag(FLAG_FUNCTION_PROTOTYPE)))
+        if (fn->hasFlag(FLAG_EXTERN) ||
+            fn->hasFlag(FLAG_FUNCTION_PROTOTYPE))
           continue;
         fns.add(fn);
       }

@@ -696,10 +696,7 @@ static void codegen_header() {
       fprintf(hdrfile, "#endif\n");
       continue;
     }
-    // MPF - this is redundant with what is in fnSymbol->codegenPrototype()
-    if (!fnSymbol->hasFlag(FLAG_EXTERN) || genExternPrototypes) {
-      fnSymbol->codegenPrototype();
-    }
+    fnSymbol->codegenPrototype();
   }
     
   if (fGPU) {
