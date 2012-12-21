@@ -185,7 +185,7 @@ curly braces:
 %% \end{future}
 
 \begin{syntax}
-domain-literal:
+rectangular-domain-literal:
   { range-expression-list }
 
 range-expression-list:
@@ -320,17 +320,62 @@ an associative domain is undefined, except for enumerated domains.
 The iteration order over the indices of an enumerated domain
 is the declaration order of the corresponding enumeration constants.
 
-\index{domains!associative!literals!lack thereof}
+\index{domains!associative!literals}
 \index{domains!associative!initialization}
 
-There is no literal syntax for an associative domain, though a tuple
-of values of type \chpl{idxType} can be used to initialize or assign to a variable
-of associative domain type.
+Specification of an assocative domain literal value follows a similar syntax as 
+rectangular domain literal values.  What differentiates the two are the types 
+of expressions specified in the comma separated list.  Use of values of a 
+type other than ranges will result in the construction of an associative domain.  
+
+\begin{syntax}
+associative-domain-literal:
+   { associative-expression-list }
+
+associative-expression-list:
+   non-range-expression
+   non-range-expression, associative-expression-list
+
+non-range-expression:
+   expression
+\end{syntax}
+
+It is required that the types of the values used in constructing an associative
+domain literal value be of the same type.  If the types of the indices does not
+match a compiler error will be issued.
+
+\begin{future}
+Due to implementation of == over arrays it is currently not possible to use
+arrays as indices within an associative domain. 
+\end{future}
+
+\begin{openissue}
+Assignment of an associative domain literal results in the a warning message
+being printed altering the user that whole-domain assignment has been
+serialized. This results from the resize operation over assocative arrays not 
+being parsafe. 
+\end{openissue}
+
+\begin{chapelexample}{associativeDomain.chpl}
+The following example illusrates construction of an associative domain
+containing string indices "bar" and "foo".  Note that due to internal hashing 
+of indices the order in which the values of the associative domain are iterated
+is not the same as their specification order.
+\begin{chapel}
+var D : domain(string) = {"bar", "foo"};
+writeln(D);
+\end{chapel}
+\begin{chapelprintoutput}
+associativeDomain.chpl:1: warning: whole-domain assignment has been serialized (see note in \$CHPL\_HOME/STATUS)
+
+\{foo, bar\}
+\end{chapelprintoutput}
+\end{chapelexample}
 
 \index{domains!associative!default values}
 
-The default value of an associative domain type is the empty index set,
-except for enumerated domains.
+If unspecified the default value of an associative domain type is the empty 
+index set, except for enumerated domains.
 The default value of an enumerated domain type is the set of all constants
 of the corresponding enumerated type.
 
@@ -633,6 +678,9 @@ domain-expression:
   domain-striding-expression
   domain-slice-expression
 
+domain-literal:
+  rectangular-domain-literal
+  associative-domain-literal
 
 domain-assignment-expression:
   domain-name = domain-expression
