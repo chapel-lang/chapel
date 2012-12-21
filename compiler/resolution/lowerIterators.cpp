@@ -16,7 +16,6 @@
 // places where we would otherwise attempt to inline a recursive
 // iterator.
 //
-static Vec<FnSymbol*> recursiveIteratorSet;
 static void computeRecursiveIteratorSet() {
   compute_call_sites();
 
@@ -43,7 +42,7 @@ static void computeRecursiveIteratorSet() {
           break;
       }
       if (recursive)
-        recursiveIteratorSet.set_add(ifn);
+        ifn->addFlag(FLAG_RECURSIVE_ITERATOR);
     }
   }
 }
@@ -431,13 +430,13 @@ expandIteratorInline(CallExpr* call) {
   Symbol* ic = toSymExpr(call->get(2))->var;
   FnSymbol* iterator = ic->type->initializer->getFormal(1)->type->initializer;
 
-  if (recursiveIteratorSet.set_in(iterator)) {
+  if (iterator->hasFlag(FLAG_RECURSIVE_ITERATOR)) {
 
     //
     // loops over recursive iterators in recursive iterators only need
     // to be handled in the recursive iterator function
     //
-    if (recursiveIteratorSet.set_in(toFnSymbol(call->parentSymbol)))
+    if (call->parentSymbol->hasFlag(FLAG_RECURSIVE_ITERATOR))
       return;
 
     SET_LINENO(call);
@@ -953,7 +952,8 @@ inlineIterators() {
     if (block->parentSymbol) {
       if (block->blockInfo && block->blockInfo->isPrimitive(PRIM_BLOCK_FOR_LOOP)) {
         Symbol* iterator = toSymExpr(block->blockInfo->get(2))->var;
-        if (iterator->type->initializer->getFormal(1)->type->initializer->hasFlag(FLAG_INLINE_ITERATOR)) {
+        FnSymbol* ifn = iterator->type->initializer->getFormal(1)->type->initializer;
+        if (ifn->hasFlag(FLAG_INLINE_ITERATOR)) {
           expandIteratorInline(block->blockInfo);
         }
       }
