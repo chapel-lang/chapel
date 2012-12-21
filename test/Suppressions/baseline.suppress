@@ -7,3 +7,5 @@ users/ferguson/recordbug3
 memory/figueroa/LeakedMemory5
 # --baseline turns off deadcode removal
 optimizations/hilde/removeUnreachable
+# lack of optimizations lead to extra leaked memory
+memory/sungeun/refCount/domainMaps
