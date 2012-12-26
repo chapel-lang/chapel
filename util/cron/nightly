@@ -431,7 +431,7 @@ delete($ENV{'CHPL_HOME'});
 #
 $svnroot = $ENV{'CHPL_HOME_REPOSITORY'};
 if ($svnroot eq "") {
-    $svnroot = "https://chapel.svn.sourceforge.net/svnroot/chapel/trunk";
+    $svnroot = "svn://svn.code.sf.net/p/chapel/code/trunk";
 }
 
 $readonlydirname = "chapel-cron-$user-readonly";
