@@ -27,7 +27,7 @@ $reldir = "chapel$version";
 $rootdir = "$tmpdir/$reldir";
 $svnroot = $ENV{'CHPL_HOME_REPOSITORY'};
 if ($svnroot eq "") {
-    $svnroot = "https://chapel.svn.sourceforge.net/svnroot/chapel/trunk";
+    $svnroot = "svn://svn.code.sf.net/p/chapel/code/trunk";
 }
 system("mkdir $tmpdir > /dev/null");
 print "Checking out the sources...\n";

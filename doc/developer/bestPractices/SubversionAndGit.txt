@@ -16,7 +16,7 @@ Here's how you set it up.
 # you'll want to be sure to check out last revision the branch
 # maintainer mentioned in the git commit log.
 
- svn checkout https://chapel.svn.sourceforge.net/svnroot/chapel/trunk mybranch
+ svn checkout svn://svn.code.sf.net/p/chapel/code/trunk mybranch
 
 # Next, create an empty git repository in that directory
  cd mybranch
