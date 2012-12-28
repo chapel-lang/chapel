@@ -366,9 +366,8 @@ var D : domain(string) = {"bar", "foo"};
 writeln(D);
 \end{chapel}
 \begin{chapelprintoutput}
-associativeDomain.chpl:1: warning: whole-domain assignment has been serialized (see note in \$CHPL\_HOME/STATUS)
-
-\{foo, bar\}
+associativeDomain.chpl:1: warning: whole-domain assignment has been serialized (see note in (*\texttt{\$}*)CHPL\_HOME/STATUS)
+{foo, bar}
 \end{chapelprintoutput}
 \end{chapelexample}
 
