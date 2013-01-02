@@ -9,42 +9,65 @@
 #include "iterator.h"
 
 
+static bool find_recursive_caller(FnSymbol* fn, FnSymbol* iter, Vec<FnSymbol*>& fnSet);
+
+
 //
-// Declare a set of recursive iterators and create a function to
-// compute this set.  This set is used to make sure we only inline the
-// body of a loop into an iterator, rather than the whole iterator, in
-// places where we would otherwise attempt to inline a recursive
-// iterator.
+// Mark iterators which call themselves as recursive.
+// When dealing with recursive iterators, we only inline the body of the loop,
+// not the iterator as a whole.
 //
 static void computeRecursiveIteratorSet() {
   compute_call_sites();
 
-  forv_Vec(FnSymbol, ifn, gFnSymbols) {
-    if (ifn->hasFlag(FLAG_ITERATOR_FN)) {
-      bool recursive = false;
-      Vec<FnSymbol*> fnSet;
-      Vec<FnSymbol*> fnVec;
-      fnSet.set_add(ifn);
-      fnVec.add(ifn);
-      forv_Vec(FnSymbol, fn, fnVec) {
-        forv_Vec(CallExpr, call, *fn->calledBy) {
-          FnSymbol* parent = toFnSymbol(call->parentSymbol);
-          INT_ASSERT(parent);
-          if (parent == ifn) {
-            recursive = true;
-            break;
-          } else if (!fnSet.set_in(parent)) {
-            fnSet.set_add(parent);
-            fnVec.add(parent);
-          }
-        }
-        if (recursive)
-          break;
-      }
-      if (recursive)
-        ifn->addFlag(FLAG_RECURSIVE_ITERATOR);
-    }
+  // Walk all functions
+  forv_Vec(FnSymbol, iter, gFnSymbols)
+  {
+    // And select just the iterators.
+    if (!iter->hasFlag(FLAG_ITERATOR_FN))
+      continue;
+
+    // Determine if the iterator calls itself, either directly or indirectly.
+    Vec<FnSymbol*> fnSet;	// Used to avoid recursion
+    if (find_recursive_caller(iter, iter, fnSet))
+      // If so, add the recursive iterator flag.
+      iter->addFlag(FLAG_RECURSIVE_ITERATOR);
   }
+}
+
+// Traverse all callers of this function, to see if it calls the base iterator recursively.
+// Return true if so; false otherwise.
+static bool find_recursive_caller(FnSymbol* fn, FnSymbol* iter, Vec<FnSymbol*>& fnSet)
+{
+  // We've already seen this fn, and if we're still searching it means
+  // we didn't return true last time, so return false this time too.
+  if (fnSet.set_in(fn))
+    return false;
+
+  // OK, first time.  Mark this function as visited.
+  fnSet.set_add(fn);
+
+  // Traverse all its call sites.
+  forv_Vec(CallExpr, call, *fn->calledBy)
+  {
+    // Extract the symbol representing the calling function.
+    FnSymbol* caller = toFnSymbol(call->parentSymbol);
+
+    // This indicates recursion.
+    // Further searching is unnecessary.
+    if (caller == iter)
+      return true;
+
+    // Otherwise, search recursively.
+    // If recursion was detected, no further searching is required.
+    if (find_recursive_caller(caller, iter, fnSet))
+      return true;
+
+    // Otherwise, loop back for the next call site.
+  }
+
+  // OK, no recursive callers at all.
+  return false;
 }
 
 
