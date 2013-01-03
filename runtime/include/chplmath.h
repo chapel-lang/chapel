@@ -3,13 +3,13 @@
 
 static inline double chpl_macro_INFINITY(void) {
   double x;
-  *(unsigned long int*) &x = 0x7ff0000000000000UL;    // positive infinity
+  *(unsigned long long int*) &x = 0x7ff0000000000000ULL;   // positive infinity
   return x;
 }
 
 static inline double chpl_macro_NAN(void) {
   double x;
-  *(unsigned long int*) &x = 0x7ff8000000000001UL;    // quiet NaN
+  *(unsigned long long int*) &x = 0x7ff8000000000001ULL;   // quiet NaN
   return x;
 }
 
