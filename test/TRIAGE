@@ -1,3 +1,4 @@
+
 # USAGE:
 #
 # Current notes on triage results, sorted into the following categories:
@@ -23,10 +24,10 @@
 Problems analyzed and assigned that should be fixed soon:
 =========================================================
 
-studies/hpcc/RA/testRAStream (bradc)
-------------------------------------
-This was running too long due to a too-large problem size.  This
-should stop regressing on Dec 4th, 2012.
+studies/hpcc/RA/testRAStream (sungeun)
+--------------------------------------
+This was due to a race condition in the gasnet
+chpl_comm_private_broadcast().  This should have been fixed in r20877.
 
 studies/ssca2/performance/SSCA2_commDiags (sungeun)
 ---------------------------------------------------
@@ -39,35 +40,6 @@ studies/ssca2/performance/SSCA2_commDiags (sungeun)
 ==============================================
 These things regularly cause noise in testing:
 ==============================================
-
-baseline nondeterminisms (sungeun)
--------------------------------------
-
-12/7/12: Found that the cause of most of the timeouts is a bug in
-promotion or coerce wrappers that returns a reference to a stack var.
-Added --inline flag to baseline testing to make these tests pass.
-These don't show up again, this entry should be removed after a few
-more days of testing.
-
-we get reasonably frequent execution timeouts from a variety of tests
-(listed just below); when not timing out, they fail.  We also get a
-number of other baseline failures that I don't recall as being
-long-standing.  It might make sense to start with one of the simplest
-of the failures and see whether that sheds some light on what's going
-on with the timing-out cases below.
-
-  [Error: Timed out executing program optimizations/bulkcomm/asenjo/stencilDR/v2/stencil] (10/17/12, normally fails; succeeded 11/10/12)
-  [Error: Timed out executing program studies/shootout/mandelbrot/mandelbrot-fancy] (11/14: normally fails; timed out 9/28,10/2,10/21,20/11,22/3; succeeded 9/29,10/11,11/04)
-  [Error: Timed out executing program distributions/nelson/MultiBlockDist2DLocales] (11/10; normally fails)
-  [Error matching program output for optimizations/bulkcomm/asenjo/ptransDR/v1/ptrans] (11/25/12)
-  [Error: Timed out executing program studies/hpcc/HPL/vass/bl.md] (11/25/2012)
-  [Error: Timed out executing program optimizations/bulkcomm/asenjo/stencilDR/v1/stencil]
-  [Error: Timed out executing program studies/lammps/shemmy/s-lammps] (12/03/12)
-
-sometimes the nondeterminisms are correctness vs. not-timing out as well:
-
-  [Error matching program output for optimizations/bulkcomm/asenjo/ptransDR/v2/ptrans] (12/03/12)
-
 
 linux64.gnu.gasnet.qthreads.none (UNASSIGNED)
 ---------------------------------------------

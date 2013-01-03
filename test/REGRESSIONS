@@ -127,10 +127,6 @@ strings for path names are garbled in error messages (11/10/11)
 gasnet-everything regressions (other than the above)
 ====================================================
 
-comm diagnostics off -- improved (11/30/12)
--------------------------------------------
-[Error matching program output for parallel/taskPar/sungeun/barrier/commDiags]
-
 comm diagnostics off (04/07/12)
 -------------------------------
 [Error matching program output for studies/ssca2/performance/SSCA2_commDiags (compopts: 1)] (started in testing on 8/23/2012)
