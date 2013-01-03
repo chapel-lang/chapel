@@ -1,3 +1,5 @@
+use CommDiagnostics;
+
 var au: atomic uint;
 resetCommDiagnostics();
 startCommDiagnostics();

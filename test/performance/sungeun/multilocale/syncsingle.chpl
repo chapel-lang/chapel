@@ -1,3 +1,5 @@
+use CommDiagnostics;
+
 var si: single bool;
 resetCommDiagnostics();
 startCommDiagnostics();

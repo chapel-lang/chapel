@@ -44,6 +44,7 @@ f=open(module_testname+'.chpl', 'w')
 f.write('//\n')
 f.write('// Auto-generated: '+testname+' with communication diagnostics\n')
 f.write('//\n')
+f.write('\nuse CommDiagnostics;\n')
 
 found = False
 for l in lines:
