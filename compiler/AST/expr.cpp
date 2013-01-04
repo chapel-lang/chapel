@@ -981,17 +981,17 @@ void CallExpr::codegen(FILE* outfile) {
           } else if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
             gen(outfile, "%A = (%A).locale", get(1), call->get(1));
           } else {
-            gen(outfile, "(%A).as_struct.node = chpl_localeID;\n", get(1));
-            gen(outfile, "(%A).as_struct.subloc = chpl_task_getSubLoc()", get(1));
+            gen(outfile, "(%A).node = chpl_localeID;\n", get(1));
+            gen(outfile, "(%A).subloc = chpl_task_getSubLoc()", get(1));
           }
           break;
         }
         if (call->isPrimitive(PRIM_LOC_SET_NODE)) {
-          gen(outfile, "(%A).as_struct.node = %A", get(1), call->get(1));
+          gen(outfile, "(%A).node = %A", get(1), call->get(1));
           break;
         }
         if (call->isPrimitive(PRIM_LOC_SET_SUBLOC)) {
-          gen(outfile, "(%A).as_struct.subloc = %A", get(1), call->get(1));
+          gen(outfile, "(%A).subloc = %A", get(1), call->get(1));
           break;
         }
         if (call->isPrimitive(PRIM_WIDE_GET_NODE)) {
@@ -1005,10 +1005,10 @@ void CallExpr::codegen(FILE* outfile) {
                                     dtInt[INT_SIZE_32]->typeInfo()->symbol); // needed?
               gen(outfile, ", %A, %A)", call->get(2), call->get(3));
             } else {
-              gen(outfile, "%A = (%A).locale.as_struct.node", get(1), call->get(1));
+              gen(outfile, "%A = (%A).locale.node", get(1), call->get(1));
             }
           } else if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-            gen(outfile, "%A = (%A).locale.as_struct.node", get(1), call->get(1));
+            gen(outfile, "%A = (%A).locale.node", get(1), call->get(1));
           } else {
             // Narrow pointer.  Return our local node ID.
             gen(outfile, "%A = chpl_localeID", get(1));
@@ -1026,13 +1026,13 @@ void CallExpr::codegen(FILE* outfile) {
                                     dtInt[INT_SIZE_32]->typeInfo()->symbol); // needed?
               gen(outfile, ", %A, %A)", call->get(2), call->get(3));
             } else {
-              gen(outfile, "%A = (%A).locale.as_struct.subloc", get(1), call->get(1));
+              gen(outfile, "%A = (%A).locale.subloc", get(1), call->get(1));
             }
           } else if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-            gen(outfile, "%A = (%A).locale.as_struct.subloc", get(1), call->get(1));
+            gen(outfile, "%A = (%A).locale.subloc", get(1), call->get(1));
           } else {
             // Assume that this is a literal c_locale_t
-            gen(outfile, "%A = (%A).as_struct.subloc;\n", get(1), call->get(1));
+            gen(outfile, "%A = (%A).subloc;\n", get(1), call->get(1));
           }
           break;
         }
@@ -2183,10 +2183,10 @@ void CallExpr::codegen(FILE* outfile) {
       gen(outfile, "chpl_task_setSubLoc(%A)", get(1));
       break;
     case PRIM_LOC_GET_NODE:
-      gen(outfile, "(%A).as_struct.node", get(1));
+      gen(outfile, "(%A).node", get(1));
       break;
     case PRIM_LOC_GET_SUBLOC:
-      gen(outfile, "(%A).as_struct.subloc", get(1));
+      gen(outfile, "(%A).subloc", get(1));
       break;
     case PRIM_CHPL_COMM_GET:
     case PRIM_CHPL_COMM_PUT: {
@@ -2621,7 +2621,7 @@ void CallExpr::codegen(FILE* outfile) {
       get(1)->codegen(outfile);
       fputs(")->", outfile);
       bundledArgsType->getField(lastField)->codegen(outfile);
-      fputs(".locale.as_struct.node != chpl_localeID ? NULL : &((", outfile);
+      fputs(".locale.node != chpl_localeID ? NULL : &((", outfile);
       get(1)->codegen(outfile);
       fputs(")->", outfile);
       bundledArgsType->getField(lastField)->codegen(outfile);
@@ -2637,7 +2637,7 @@ void CallExpr::codegen(FILE* outfile) {
       get(1)->codegen(outfile);
       fputs(")->", outfile);
       bundledArgsType->getField(lastField)->codegen(outfile);
-      fputs(".locale.as_struct.node", outfile);
+      fputs(".locale.node", outfile);
     } else
       fputs("chpl_localeID)", outfile);
     fprintf(outfile, ", true, %d, \"%s\");\n",
@@ -2674,7 +2674,7 @@ void CallExpr::codegen(FILE* outfile) {
       get(1)->codegen(outfile);
       fputs(")->", outfile);
       bundledArgsType->getField(endCountField)->codegen(outfile);
-      fputs(".locale.as_struct.node != chpl_localeID ? NULL : &((", outfile);
+      fputs(".locale.node != chpl_localeID ? NULL : &((", outfile);
       get(1)->codegen(outfile);
       fputs(")->", outfile);
       bundledArgsType->getField(endCountField)->codegen(outfile);
@@ -2684,7 +2684,7 @@ void CallExpr::codegen(FILE* outfile) {
       get(1)->codegen(outfile);
       fputs(")->", outfile);
       bundledArgsType->getField(endCountField)->codegen(outfile);
-      fputs(".locale.as_struct.node != chpl_localeID ? NULL : &((", outfile);
+      fputs(".locale.node != chpl_localeID ? NULL : &((", outfile);
       get(1)->codegen(outfile);
       fputs(")->", outfile);
       bundledArgsType->getField(endCountField)->codegen(outfile);
@@ -2717,7 +2717,7 @@ void CallExpr::codegen(FILE* outfile) {
     // Note that we select just the node portion of the localeID.
     // The comm routines only care about nodes, not sublocales.
     // The sublocale ID is passed to the called routine via the bundled args.
-    gen(outfile, "((%A).as_struct.node, /* %s */ %d, %A", /*comm-node*/ get(1), fn->cname,
+    gen(outfile, "((%A).node, /* %s */ %d, %A", /*comm-node*/ get(1), fn->cname,
         /*fid*/ ftableMap.get(fn), /*arg*/ get(2));
     TypeSymbol* argType = toTypeSymbol(get(2)->typeInfo()->symbol);
     if (argType == NULL) {

@@ -69,7 +69,7 @@ struct __chpl____wide_chpl_string {
 
 chpl_string
 chpl_wide_string_copy(struct __chpl____wide_chpl_string* x, int32_t lineno, chpl_string filename) {
-  if (x->locale.as_struct.node == chpl_localeID)
+  if (x->locale.node == chpl_localeID)
     return string_copy(x->addr, lineno, filename);
   else {
     chpl_string s;

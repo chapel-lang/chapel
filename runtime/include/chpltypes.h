@@ -50,16 +50,10 @@ typedef struct _chpl_fieldType {
 typedef int32_t c_nodeid_t;
 typedef int32_t c_subloc_t;
 
-typedef union
+typedef struct
 {
-  // This field is listed first, so we can initialize the union with the literal {0}.
-  int64_t as_int;   // This representation allows a localeID (== nodeID + sublocaleID)
-                    // to be handled opaquely in Chapel.
-  struct
-  {
-    c_nodeid_t node;    // This is the comm node index.
-    c_subloc_t subloc;  // This carries the sublocale index if there is one, otherwise zero.
-  } as_struct;
+  c_nodeid_t node;    // This is the comm node index.
+  c_subloc_t subloc;  // This carries the sublocale index if there is one, otherwise zero.
 } c_locale_t;
 
 extern const c_locale_t _rootLocaleID;
@@ -192,8 +186,8 @@ int32_t chpl_now_dow(void);
 static inline c_locale_t chpl_on_locale_num(c_nodeid_t node_id, c_subloc_t subloc_id)
 {
   c_locale_t tmp;
-  tmp.as_struct.node = node_id;
-  tmp.as_struct.subloc = subloc_id;
+  tmp.node = node_id;
+  tmp.subloc = subloc_id;
   return tmp;
 }
 
