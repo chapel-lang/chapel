@@ -15,13 +15,6 @@
 general regressions (seem to happen in most configurations)
 ===========================================================
 
-Error running sub_test (12/7/12)
---------------------------------
-Vass committed a fix to sub_test, so these should go away
-
-[Error running sub_test in /tmp/chapel-cron-linux64.gnu.none.fifo.pthreads-chapelu/chapel/test/users/vass (1)]
-
-
 ==============================================
 linux64 regressions (in addition to the above)
 ==============================================
@@ -29,6 +22,10 @@ linux64 regressions (in addition to the above)
 ==============================================
 linux32 regressions (in addition to the above)
 ==============================================
+
+gasnet build failure: 12/?/12 due to type mismatch for atomic for
+CHPL_ATOMICS=locks (introduced in r20877).  Greg's r20904 should fix
+this.
 
 For gasnet only:
 
@@ -127,9 +124,10 @@ strings for path names are garbled in error messages (11/10/11)
 gasnet-everything regressions (other than the above)
 ====================================================
 
-comm diagnostics off (04/07/12)
--------------------------------
+comm diagnostics off
+--------------------
 [Error matching program output for studies/ssca2/performance/SSCA2_commDiags (compopts: 1)] (started in testing on 8/23/2012)
+[Error matching program output for performance/sungeun/multilocale/syncsingle] (1/4/13: before that it was failing due to missing 'use CommDiagnostics', so I don't know how long it's been failing.  Maybe due to Vass's r20857?)
 
 
 ==============================================

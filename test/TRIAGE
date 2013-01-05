@@ -24,19 +24,6 @@
 Problems analyzed and assigned that should be fixed soon:
 =========================================================
 
-studies/hpcc/RA/testRAStream (sungeun)
---------------------------------------
-This was due to a race condition in the gasnet
-chpl_comm_private_broadcast().  This should have been fixed in r20877.
-
-studies/ssca2/performance/SSCA2_commDiags (sungeun)
----------------------------------------------------
-  linux64.gnu.gasnet-everything.fifo.pthreads-std (2012-10-02) Sung
-  has this one.  It looks to me (gbt) like the comm diags ranges just
-  need to be wider.  (sungeun: 10/22/12) It's actually bounded for
-  certain operations, so I'm still working on it in the background.
-
-
 ==============================================
 These things regularly cause noise in testing:
 ==============================================
@@ -70,8 +57,13 @@ any chance that this is due to a leftover program library of some
 sort?  If not, file bug against XMT compiler.
 
 
-SIGABRT on gasnet-fast runs (UNASSIGNED)
+SIGABRT on gasnet-fast runs (sungeun)
 ----------------------------------------
+sungeun: 1/2/13.  These tests also suffered from the private broadcast
+bug mentioned above with testRAStream and fixed in r20877.  If they do
+not show up again for another couple of weeks, remove this entire
+entry.
+
 release/examples/benchmarks/hpcc/ra (compopts: 1) (10/13/12)
 mutilocale/deitz/needMultiLocales/diagnostics/test_private_broadcast_large (10/11/12, 10/21/12, 12/02/12)
 ra-atomics (UNASSIGNED) (10/11/12)
@@ -90,13 +82,6 @@ overflow error documented in REGRESSIONS)
 TooManyThreads (UNASSIGNED)
 ---------------------------
 Fails periodically.  Lately observed pthreads.tcmalloc (2012/08/15).
-
-
-mutilocale/deitz/needMultiLocales/diagnostics/test_private_broadcast_large
---------------------------------------------------------------------------
-  Succeeded: 9/23 (64ggffpd)
-  Failed: 10/4 (linux64.gnu.gasnet-fast.fifo.pthreads.dlmalloc)
-  Failed (SIGABRT): 10/11/12 (")
 
 
 compflags/ferguson/sub_test
