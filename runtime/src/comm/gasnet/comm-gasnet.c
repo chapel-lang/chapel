@@ -28,6 +28,14 @@ static gasnet_seginfo_t* seginfo_table = NULL;
 
 
 //
+// Build acknowledgement address arguments for gasnetAMRequest*() calls.
+//
+#define AckArg0(addr) ((gasnet_handlerarg_t) \
+                       ((((uint64_t) (intptr_t) (addr)) << 32UL) >> 32UL))
+#define AckArg1(addr) ((gasnet_handlerarg_t) \
+                       (((uint64_t) (intptr_t) (addr)) >> 32UL))
+
+//
 // The following macro is from the GASNet test.h distribution
 //
 #define GASNET_Safe(fncall) do {                                        \
@@ -43,9 +51,35 @@ static gasnet_seginfo_t* seginfo_table = NULL;
     }                                                                   \
   } while(0)
 
+//
+// This is the type of object we use to manage GASNet acknowledgements.
+//
+// Initialize the count to 0, the target to the number of return signal
+// events you expect, and the flag to 0.  Fire the request, then do a
+// BLOCKUNTIL(flag).  When all the return signals have occurred, the AM
+// handler will set the flag to 1 and your BLOCKUNTIL will complete.
+// (Note that the GASNet documentation says that GASNet code assumes
+// the condition for a BLOCKUNTIL can only be changed by the execution
+// of an AM handler.)
+//
+typedef struct {
+  atomic_uint_least32_t count;
+  uint_least32_t        target;
+  volatile int          flag;
+} done_t;
+
+//
+// Initialize one of the above.
+//
+#define INIT_DONE_OBJ(done, _target) do {                               \
+    atomic_init_uint_least32_t(&done.count, 0);                         \
+    done.target = _target;                                              \
+    done.flag = 0;                                                      \
+  } while (0)
+
 typedef struct {
   int           caller;
-  int*          ack;
+  void*         ack;
   chpl_bool     serial_state; // true if not allowed to spawn new threads
   chpl_fn_int_t fid;
   int           arg_size;
@@ -53,18 +87,18 @@ typedef struct {
 } fork_t;
 
 typedef struct {
-  int* ack;
-  int  id;       // private broadcast table entry to update
-  int  size;     // size of data
-  char data[0];  // data
+  void*   ack;
+  int     id;       // private broadcast table entry to update
+  int     size;     // size of data
+  char    data[0];  // data
 } priv_bcast_t;
 
 typedef struct {
-  int* ack;
-  int  id;       // private broadcast table entry to update
-  int  size;     // size of data
-  int  offset;   // offset of piece of data
-  char data[0];  // data
+  void* ack;
+  int   id;       // private broadcast table entry to update
+  int   size;     // size of data
+  int   offset;   // offset of piece of data
+  char  data[0];  // data
 } priv_bcast_large_t;
 
 //
@@ -84,7 +118,6 @@ typedef struct {
 
 static void AM_fork_fast(gasnet_token_t token, void* buf, size_t nbytes) {
   fork_t *f = buf;
-  gasnet_handlerarg_t a0, a1;
 
   if (chpl_verbose_comm) {
     char mybuf[128];
@@ -99,20 +132,17 @@ static void AM_fork_fast(gasnet_token_t token, void* buf, size_t nbytes) {
     (*chpl_ftable[f->fid])(0);
 
   // Signal that the handler has completed
-  a0 = (gasnet_handlerarg_t) ((((uint64_t) (intptr_t) f->ack)<<32UL)>>32UL);
-  a1 = (gasnet_handlerarg_t) (((uint64_t) (intptr_t) f->ack)>>32UL);
-  GASNET_Safe(gasnet_AMReplyShort2(token, SIGNAL, a0, a1));
+  GASNET_Safe(gasnet_AMReplyShort2(token, SIGNAL,
+                                   AckArg0(f->ack), AckArg1(f->ack)));
 }
 
 static void fork_wrapper(fork_t *f) {
-  gasnet_handlerarg_t a0, a1;
   if (f->arg_size)
     (*chpl_ftable[f->fid])(&f->arg);
   else
     (*chpl_ftable[f->fid])(0);
-  a0 = (gasnet_handlerarg_t) ((((uint64_t) (intptr_t) f->ack)<<32UL)>>32UL);
-  a1 = (gasnet_handlerarg_t) (((uint64_t) (intptr_t) f->ack)>>32UL);
-  GASNET_Safe(gasnet_AMRequestShort2(f->caller, SIGNAL, a0, a1));
+  GASNET_Safe(gasnet_AMRequestShort2(f->caller, SIGNAL,
+                                     AckArg0(f->ack), AckArg1(f->ack)));
 
   chpl_mem_free(f, 0, 0);
 }
@@ -124,7 +154,6 @@ static void AM_fork(gasnet_token_t token, void* buf, size_t nbytes) {
 }
 
 static void fork_large_wrapper(fork_t* f) {
-  gasnet_handlerarg_t a0, a1;
   void* arg = chpl_mem_allocMany(1, f->arg_size, CHPL_RT_MD_COMM_FORK_RECV_LARGE_ARG, 0, 0);
 
   // A note on strict aliasing:
@@ -139,9 +168,8 @@ static void fork_large_wrapper(fork_t* f) {
   chpl_comm_get(arg, f->caller, f_arg,
                 f->arg_size, -1 /*typeIndex: unused*/, 1, 0, "fork large");
   (*chpl_ftable[f->fid])(arg);
-  a0 = (gasnet_handlerarg_t) ((((uint64_t) (intptr_t) f->ack)<<32UL)>>32UL);
-  a1 = (gasnet_handlerarg_t) (((uint64_t) (intptr_t) f->ack)>>32UL);
-  GASNET_Safe(gasnet_AMRequestShort2(f->caller, SIGNAL, a0, a1));
+  GASNET_Safe(gasnet_AMRequestShort2(f->caller, SIGNAL,
+                                     AckArg0(f->ack), AckArg1(f->ack)));
 
   chpl_mem_free(f, 0, 0);
   chpl_mem_free(arg, 0, 0);
@@ -201,31 +229,32 @@ static void AM_fork_nb_large(gasnet_token_t token, void* buf, size_t nbytes) {
 }
 
 static void AM_signal(gasnet_token_t token, gasnet_handlerarg_t a0, gasnet_handlerarg_t a1) {
-  uint64_t done = ((uint64_t) (uint32_t) a0) | (((uint64_t) (uint32_t) a1)<<32UL);
-  atomic_fetch_add_explicit_int_least32_t(((int32_t *) (intptr_t) done),
-                                          1, memory_order_seq_cst);
+  done_t* done = (done_t*) (intptr_t)
+                 (((uint64_t) (uint32_t) a0)
+                  | (((uint64_t) (uint32_t) a1) << 32UL));
+  uint_least32_t prev;
+  prev = atomic_fetch_add_explicit_uint_least32_t(&done->count, 1,
+                                                  memory_order_seq_cst);
+  if (prev + 1 == done->target)
+    done->flag = 1;
 }
 
 static void AM_priv_bcast(gasnet_token_t token, void* buf, size_t nbytes) {
   priv_bcast_t* pbp = buf;
-  gasnet_handlerarg_t a0, a1;
   memcpy(chpl_private_broadcast_table[pbp->id], pbp->data, pbp->size);
 
   // Signal that the handler has completed
-  a0 = (gasnet_handlerarg_t) ((((uint64_t) (intptr_t) pbp->ack)<<32UL)>>32UL);
-  a1 = (gasnet_handlerarg_t) (((uint64_t) (intptr_t) pbp->ack)>>32UL);
-  GASNET_Safe(gasnet_AMReplyShort2(token, SIGNAL, a0, a1));
+  GASNET_Safe(gasnet_AMReplyShort2(token, SIGNAL,
+                                   AckArg0(pbp->ack), AckArg1(pbp->ack)));
 }
 
 static void AM_priv_bcast_large(gasnet_token_t token, void* buf, size_t nbytes) {
   priv_bcast_large_t* pblp = buf;
-  gasnet_handlerarg_t a0, a1;
   memcpy((char*)chpl_private_broadcast_table[pblp->id]+pblp->offset, pblp->data, pblp->size);
 
   // Signal that the handler has completed
-  a0 = (gasnet_handlerarg_t) ((((uint64_t) (intptr_t) pblp->ack)<<32UL)>>32UL);
-  a1 = (gasnet_handlerarg_t) (((uint64_t) (intptr_t) pblp->ack)>>32UL);
-  GASNET_Safe(gasnet_AMReplyShort2(token, SIGNAL, a0, a1));
+  GASNET_Safe(gasnet_AMReplyShort2(token, SIGNAL,
+                                   AckArg0(pblp->ack), AckArg1(pblp->ack)));
 }
 
 static void AM_free(gasnet_token_t token, void* buf, size_t nbytes) {
@@ -285,12 +314,12 @@ int32_t chpl_comm_getMaxThreads(void) {
   return GASNETI_MAX_THREADS-1;
 }
 
-static volatile int alldone = 0;
+static done_t alldone;
 static volatile int pollingRunning = 0;
 
 static void polling(void* x) {
   pollingRunning = 1;
-  GASNET_BLOCKUNTIL(alldone);
+  GASNET_BLOCKUNTIL(alldone.flag);
   pollingRunning = 0;
 }
 
@@ -427,11 +456,9 @@ void chpl_comm_post_task_init(void) {
   // into a barrier wait, so the polling task is unnecessary.)
   //
   if (chpl_localeID == 0) {
-    int status = chpl_task_createCommTask(polling, NULL);
-    if (status) {
-      alldone = 1;
+    INIT_DONE_OBJ(alldone, 1);
+    if (chpl_task_createCommTask(polling, NULL))
       chpl_internal_error("unable to start polling task for gasnet");
-    }
   }
 
   // clear diags
@@ -474,13 +501,12 @@ void chpl_comm_broadcast_global_vars(int numGlobals) {
 void chpl_comm_broadcast_private(int id, int32_t size, int32_t tid) {
   int  locale, offset;
   int  payloadSize = size + sizeof(priv_bcast_t);
-  int32_t* done; /* These are not declared volatile because we capture &done[i]
-                    (and pass it to a GASNet function), so the compiler should
-                    not optimize out any accesses to it. */
+  done_t* done;
   int numOffsets=1;
 
-  done = (int*) chpl_mem_allocManyZero(chpl_numLocales, sizeof(*done),
-                                       CHPL_RT_MD_COMM_FORK_DONE_FLAG, 0, 0);
+  done = (done_t*) chpl_mem_allocManyZero(chpl_numLocales, sizeof(*done),
+                                          CHPL_RT_MD_COMM_FORK_DONE_FLAG,
+                                          0, 0);
   if (payloadSize <= gasnet_AMMaxMedium()) {
     priv_bcast_t* pbp = chpl_mem_allocMany(1, payloadSize, CHPL_RT_MD_COMM_PRIVATE_BROADCAST_DATA, 0, 0);
     memcpy(pbp->data, chpl_private_broadcast_table[id], size);
@@ -489,6 +515,7 @@ void chpl_comm_broadcast_private(int id, int32_t size, int32_t tid) {
     for (locale = 0; locale < chpl_numLocales; locale++) {
       if (locale != chpl_localeID) {
         pbp->ack = &done[locale];
+        INIT_DONE_OBJ(done[locale], 1);
         GASNET_Safe(gasnet_AMRequestMedium0(locale, PRIV_BCAST, pbp, payloadSize));
       }
     }
@@ -498,6 +525,11 @@ void chpl_comm_broadcast_private(int id, int32_t size, int32_t tid) {
     int maxsize = maxpayloadsize - sizeof(priv_bcast_large_t);
     priv_bcast_large_t* pblp = chpl_mem_allocMany(1, maxpayloadsize, CHPL_RT_MD_COMM_PRIVATE_BROADCAST_DATA, 0, 0);
     pblp->id = id;
+    numOffsets = (size+maxsize)/maxsize;
+    for (locale = 0; locale < chpl_numLocales; locale++) {
+      if (locale != chpl_localeID)
+        INIT_DONE_OBJ(done[locale], numOffsets);
+    }
     for (offset = 0; offset < size; offset += maxsize) {
       int thissize = size - offset;
       if (thissize > maxsize)
@@ -513,12 +545,11 @@ void chpl_comm_broadcast_private(int id, int32_t size, int32_t tid) {
       }
     }
     chpl_mem_free(pblp, 0, 0);
-    numOffsets = (size+maxsize)/maxsize;
   }
   // wait for the handlers to complete
   for (locale = 0; locale < chpl_numLocales; locale++) {
     if (locale != chpl_localeID)
-      GASNET_BLOCKUNTIL(done[locale]==numOffsets);
+      GASNET_BLOCKUNTIL(done[locale].flag);
   }
   chpl_mem_free(done, 0, 0);
 }
@@ -539,23 +570,21 @@ void chpl_comm_pre_task_exit(int all) {
       // Only locale 0 actually runs a polling task.  Tell that task to
       // halt, and then wait for it to do so.
       //
-      alldone = 1;
+      GASNET_Safe(gasnet_AMRequestShort2(chpl_localeID, SIGNAL,
+                                         AckArg0(&alldone),
+                                         AckArg1(&alldone)));
       while (pollingRunning) {}
     }
   }
 }
 
 static void exit_common(int status) {
-  int32_t* ack = (int32_t*)&alldone;
   static int loopback = 0;
 
   if (chpl_localeID == 0) {
-    gasnet_handlerarg_t a0;
-    gasnet_handlerarg_t a1;
-    a0 = (gasnet_handlerarg_t) ((((uint64_t) (intptr_t) ack)<<32UL)>>32UL);
-    a1 = (gasnet_handlerarg_t) (((uint64_t) (intptr_t) ack)>>32UL);
-    GASNET_Safe(gasnet_AMRequestShort2(chpl_localeID, SIGNAL, a0, a1));
-
+    GASNET_Safe(gasnet_AMRequestShort2(chpl_localeID, SIGNAL,
+                                       AckArg0(&alldone),
+                                       AckArg1(&alldone)));
     if (loopback) {
       gasnet_exit(2);
     }
@@ -570,15 +599,12 @@ static void exit_any_dirty(int status) {
   // kill the polling task on locale 0, but other than that...
   // clean up nothing; just ask GASNet to exit
   // GASNet will then kill all other locales.
-  int32_t* ack = (int32_t*)&alldone;
   static int loopback = 0;
 
   if (chpl_localeID == 0) {
-    gasnet_handlerarg_t a0;
-    gasnet_handlerarg_t a1;
-    a0 = (gasnet_handlerarg_t) ((((uint64_t) (intptr_t) ack)<<32UL)>>32UL);
-    a1 = (gasnet_handlerarg_t) (((uint64_t) (intptr_t) ack)>>32UL);
-    GASNET_Safe(gasnet_AMRequestShort2(chpl_localeID, SIGNAL, a0, a1));
+    GASNET_Safe(gasnet_AMRequestShort2(chpl_localeID, SIGNAL,
+                                       AckArg0(&alldone),
+                                       AckArg1(&alldone)));
     if (loopback) {
       gasnet_exit(2);
     }
@@ -768,9 +794,7 @@ void  chpl_comm_fork(int locale, chpl_fn_int_t fid, void *arg,
                      int32_t arg_size, int32_t arg_tid) {
   fork_t* info;
   int     info_size;
-  int32_t   done; /* This is not declared volatile because we capture &done
-                     (and pass it to a GASNet function), so the compiler
-                     should not optimize out any accesses to it. */
+  done_t  done;
   int     passArg = sizeof(fork_t) + arg_size <= gasnet_AMMaxMedium();
 
   if (chpl_localeID == locale) {
@@ -796,7 +820,7 @@ void  chpl_comm_fork(int locale, chpl_fn_int_t fid, void *arg,
     info->fid = fid;
     info->arg_size = arg_size;
 
-    done = 0;
+    INIT_DONE_OBJ(done, 1);
 
     if (passArg) {
       if (arg_size)
@@ -807,9 +831,9 @@ void  chpl_comm_fork(int locale, chpl_fn_int_t fid, void *arg,
       GASNET_Safe(gasnet_AMRequestMedium0(locale, FORK_LARGE, info, info_size));
     }
 #ifndef CHPL_COMM_YIELD_TASK_WHILE_POLLING
-    GASNET_BLOCKUNTIL(done==1);
+    GASNET_BLOCKUNTIL(done.flag);
 #else
-    while (done != 1) {
+    while (!done.flag) {
       (void) gasnet_AMPoll();
       chpl_task_yield();
     }
@@ -833,7 +857,7 @@ void  chpl_comm_fork_nb(int locale, chpl_fn_int_t fid, void *arg,
   }
   info = (fork_t*)chpl_mem_allocMany(info_size, sizeof(char), CHPL_RT_MD_COMM_FORK_SEND_NB_INFO, 0, 0);
   info->caller = chpl_localeID;
-  info->ack = (int*)info; // pass address to free after get in large case
+  info->ack = info; // pass address to free after get in large case
   info->serial_state = chpl_task_getSerial();
   info->fid = fid;
   info->arg_size = arg_size;
@@ -872,7 +896,7 @@ void  chpl_comm_fork_fast(int locale, chpl_fn_int_t fid, void *arg,
   char infod[gasnet_AMMaxMedium()];
   fork_t* info;
   int     info_size = sizeof(fork_t) + arg_size;
-  int32_t done; // See chpl_comm_fork() for why this is not volatile
+  done_t  done;
   int     passArg = info_size <= gasnet_AMMaxMedium();
 
   if (chpl_localeID == locale) {
@@ -895,16 +919,16 @@ void  chpl_comm_fork_fast(int locale, chpl_fn_int_t fid, void *arg,
       info->fid = fid;
       info->arg_size = arg_size;
 
-      done = 0;
+      INIT_DONE_OBJ(done, 1);
 
       if (arg_size)
         memcpy(&(info->arg), arg, arg_size);
       GASNET_Safe(gasnet_AMRequestMedium0(locale, FORK_FAST, info, info_size));
       // NOTE: We still have to wait for the handler to complete
 #ifndef CHPL_COMM_YIELD_TASK_WHILE_POLLING
-      GASNET_BLOCKUNTIL(done==1);
+      GASNET_BLOCKUNTIL(done.flag);
 #else
-      while (done != 1) {
+      while (!done.flag) {
         (void) gasnet_AMPoll();
         chpl_task_yield();
       }
