@@ -154,9 +154,28 @@ These configurations:
  cray-xt.cray-xt-pgi.none.fifo.pthreads
  cray-xt.cray-xt-pgi.none.fifo.pthreads--linux64.gnu
 
-minus_equals nondeterminism (UNASSIGNED)
+minus_equals nondeterminism (sungeun)
 ----------------------------------------
-noted in regressions (week of 07/02, still present 10/2, 10/9/12)
+(week of 07/02, still present 10/2, 10/9/12, 1/6/13)
+
+NOTES: This is a race condition that is present in the case of *all*
+iteration of val iterators (e.g. domains) where the index is passed to
+a function for promotion.  The reason we don't run into this more
+often is because the window for races is typically very small (usually
+between 2 lines of the generated code), and it's slightly larger for
+--no-local for associative arrays promoted remove().  The index
+variable needs to be declared outside the scope of the promoted
+function so that it can be referred to.  After the iterators are
+lowered, during the parallel pass, coforall blocks are converted to
+nested functions that are then flattened.  The index var is an "outer
+var" (declared in the outer scope), and thus is is passed by reference
+to the newly unnested functions.  But because it is the index
+variable, the iterator overwrites it anyways.  In the case of the var
+iterator, it simply overwrites the reference with another reference.
+In the case of the val iterator, it write the actual value.  Since all
+tasks performing the coforall share the same memory location passed in
+from the promotion wrapper,
+
 
 atomics nondeterminisms (UNASSIGNED)
 ------------------------------------
