@@ -33,6 +33,11 @@ const m = 2**n,
       indexMask = m-1;
 
 //
+// Do verification?
+//
+config const verify = true;
+
+//
 // Unless we protect against it, the verification pass can get wrong
 // answers due to races in the same way that the main computation can.
 // This can lead to a total error count that exceeds the threshold,
@@ -150,6 +155,8 @@ proc printConfiguration() {
 // Verify that the computation is correct
 //
 proc verifyResults(T) {
+  if (!verify) then return true;
+
   //
   // We protect against errors in verification by using sync variables
   // to protect accesses to blocks of table elements.  The configuration
