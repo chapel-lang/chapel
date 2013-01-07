@@ -1,1 +1,1 @@
---savec obj --gen-extern-prototypes
+--savec obj --gen-extern-prototypes --no-gen-ids

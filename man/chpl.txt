@@ -45,7 +45,7 @@ OPTIONS
 
   Module Processing Options
 
-  --count-tokens    Prints the total number of static lexical tokens in 
+  --[no-]count-tokens    Prints the total number of static lexical tokens in 
                     the Chapel code files named on the command line.
 
   --main-module <module>   For programs that supply multiple possible entry
@@ -58,7 +58,7 @@ OPTIONS
                     path. See the description of $CHPL_MODULE_PATH in the 
                     ENVIRONMENT section of this man page for more details.
 
-  --print-code-size    Prints out the size of the Chapel code files named
+  --[no-]print-code-size    Prints out the size of the Chapel code files named
                     on the command line in great detail: For each code file, 
                     first the code is echoed back to the screen, prefixing 
                     each line with the number of lexical tokens it contains, 
@@ -76,7 +76,7 @@ OPTIONS
   --print-module-files   Prints the Chapel module source files parsed by
                     the Chapel compiler.
 
-  --print-search-dirs   Print the module search path used to resolve module 'use'
+  --[no-]print-search-dirs   Print the module search path used to resolve module 'use'
                     statements. See the description of $CHPL_MODULE_PATH
                     in the ENVIRONMENT section of this man page for more 
                     details.
@@ -104,7 +104,7 @@ OPTIONS
 
   Optimization Control Options
 
-  --baseline        Turns off all optimizations in the Chapel compiler and
+  --[no-]baseline        Turns off all optimizations in the Chapel compiler and
                     generates naive C code with many temporaries.
 
   --conditional-dynamic-dispatch-limit   When greater than zero, this
@@ -270,7 +270,7 @@ OPTIONS
 
   LLVM Code Generation Options
 
-  --llvm            Use LLVM as the code generation target rather than C. See
+  --[no-]llvm            Use LLVM as the code generation target rather than C. See
                     $CHPL_HOME/doc/technotes/README.llvm for details.
 
   Documentation Options
@@ -296,10 +296,10 @@ OPTIONS
 
   Compilation Trace Options
 
-  --print-commands  Prints the system commands that the compiler 
+  --[no-]print-commands  Prints the system commands that the compiler 
                     executes in order to compile the Chapel program.
 
-  --print-passes    Prints the compiler passes during compilation and the
+  --[no-]print-passes    Prints the compiler passes during compilation and the
                     amount of wall clock time required for the pass.
 
   Miscellaneous Options

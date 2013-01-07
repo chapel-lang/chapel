@@ -1,12 +1,12 @@
 Usage: chpl [flags] [source files]
 
 Module Processing Options:
-      --count-tokens                  Count tokens in main modules
+      --[no-]count-tokens             [Don't] count tokens in main modules
       --main-module <module>          Specify entry point module
   -M, --module-dir <directory>        Add directory to module search path
-      --print-code-size               Print code size of main modules
+      --[no-]print-code-size          [Don't] print code size of main modules
       --print-module-files            Print module file locations
-      --print-search-dirs             Print module search path
+      --[no-]print-search-dirs        [Don't] print module search path
 
 Parallelism Control Options:
       --[no-]local                    Target one [many] locale[s]
@@ -14,7 +14,7 @@ Parallelism Control Options:
       --[no-]serial-forall            [Don't] Serialize forall constructs
 
 Optimization Control Options:
-      --baseline                      Disable all Chapel optimizations
+      --[no-]baseline                 [Don't] disable all Chapel optimizations
       --conditional-dynamic-dispatch-limit <limit>
                                       Set limit on # of inline conditionals
                                       used for dynamic dispatch
@@ -74,7 +74,7 @@ C Code Compilation Options:
       --static                        Generate a statically linked binary
 
 LLVM Code Generation Options:
-      --llvm                          Use the LLVM code generator
+      --[no-]llvm                     [Don't] use the LLVM code generator
 
 Documentation Options:
       --[no-]docs                     Runs documentation on the source file
@@ -87,8 +87,8 @@ Documentation Options:
       --docs-text-only                Generate text only documentation
 
 Compilation Trace Options:
-      --print-commands                Print system commands
-      --print-passes                  Print compiler passes
+      --[no-]print-commands           [Don't] print system commands
+      --[no-]print-passes             [Don't] print compiler passes
 
 Miscellaneous Options:
       --[no-]devel                    Compile as a developer [user]
