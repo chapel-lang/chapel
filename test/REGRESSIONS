@@ -23,10 +23,6 @@ linux64 regressions (in addition to the above)
 linux32 regressions (in addition to the above)
 ==============================================
 
-gasnet build failure: 12/?/12 due to type mismatch for atomic for
-CHPL_ATOMICS=locks (introduced in r20877).  Greg's r20904 should fix
-this.
-
 For gasnet only:
 
    error: inlining failed in call to 'atomic_fetch_add_explicit_int_least64_t': call is unlikely and code size would grow
