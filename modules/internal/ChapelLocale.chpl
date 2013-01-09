@@ -118,41 +118,36 @@ module ChapelLocale {
   
   proc locale.totalThreads() {
     var totalThreads: int;
-  
-    on this do totalThreads = __primitive("chpl_numThreads");
-  
+    extern proc chpl_task_getNumThreads() : int;
+    on this do totalThreads = chpl_task_getNumThreads();
     return totalThreads;
   }
   
   proc locale.idleThreads() {
     var idleThreads: int;
-  
-    on this do idleThreads = __primitive("chpl_numIdleThreads");
-  
+    extern proc chpl_task_getNumIdleThreads() : int;
+    on this do idleThreads = chpl_task_getNumIdleThreads();
     return idleThreads;
   }
   
   proc locale.queuedTasks() {
     var queuedTasks: int;
-  
-    on this do queuedTasks = __primitive("chpl_numQueuedTasks");
-  
+    extern proc chpl_task_getNumQueuedTasks() : int;
+    on this do queuedTasks = chpl_task_getNumQueuedTasks();
     return queuedTasks;
   }
   
   proc locale.runningTasks() {
     var numTasks: int;
-  
-    on this do numTasks = __primitive("chpl_numRunningTasks");
-  
+    extern proc chpl_task_getNumRunningTasks() : int;
+    on this do numTasks = chpl_task_getNumRunningTasks();
     return numTasks;
   }
   
   proc locale.blockedTasks() {
     var blockedTasks: int;
-  
-    on this do blockedTasks = __primitive("chpl_numBlockedTasks");
-  
+    extern proc chpl_task_getNumBlockedTasks() : int;
+    on this do blockedTasks = chpl_task_getNumBlockedTasks();
     return blockedTasks;
   }
   

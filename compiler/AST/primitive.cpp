@@ -68,11 +68,6 @@ returnInfoReal64(CallExpr* call) {
 */
 
 static Type*
-returnInfoTaskID(CallExpr* call) {
-  return dtTaskID;
-}
-
-static Type*
 returnInfoComplexField(CallExpr* call) {  // for get real/imag primitives
   Type *t = call->get(1)->getValType();
   if (t == dtComplex[COMPLEX_SIZE_64]) {
@@ -320,8 +315,7 @@ prim_def(const char* name, Type *(*returnInfo)(CallExpr*),
   prim->isEssential = isEssential;
   prim->passLineno = passLineno;
 }
-
-
+ 
 
 /*
  * The routine below, using the routines just above, define primitives
@@ -350,7 +344,7 @@ initPrimitive() {
   prim_def(PRIM_NOOP, "noop", returnInfoVoid);
   prim_def(PRIM_MOVE, "move", returnInfoVoid, false, true);
   prim_def(PRIM_INIT, "init", returnInfoFirstDeref);
-  prim_def(PRIM_REF2STR, "ref to string", returnInfoString);
+  prim_def(PRIM_REF_TO_STRING, "ref to string", returnInfoString);
   prim_def(PRIM_RETURN, "return", returnInfoFirst, true);
   prim_def(PRIM_YIELD, "yield", returnInfoFirst, true);
   prim_def(PRIM_UNARY_MINUS, "u-", returnInfoFirst);
@@ -377,19 +371,12 @@ initPrimitive() {
 
   prim_def(PRIM_MIN, "_min", returnInfoFirst);
   prim_def(PRIM_MAX, "_max", returnInfoFirst);
-  prim_def(PRIM_PROD_ID, "_prod_id", returnInfoFirst);
-  prim_def(PRIM_LAND_ID, "_land_id", returnInfoBool);
-  prim_def(PRIM_LOR_ID, "_lor_id", returnInfoBool);
-  prim_def(PRIM_LXOR_ID, "_lxor_id", returnInfoBool);
-  prim_def(PRIM_BAND_ID, "_band_id", returnInfoFirst);
-  prim_def(PRIM_BOR_ID, "_bor_id", returnInfoFirst);
-  prim_def(PRIM_BXOR_ID, "_bxor_id", returnInfoFirst);
 
   prim_def(PRIM_SETCID, "setcid", returnInfoVoid, true, true);
   prim_def(PRIM_TESTCID, "testcid", returnInfoBool, false, true);
   prim_def(PRIM_GETCID, "getcid", returnInfoBool, false, true);
-  prim_def(PRIM_UNION_SETID, "set_union_id", returnInfoVoid, true, true);
-  prim_def(PRIM_UNION_GETID, "get_union_id", returnInfoDefaultInt, false, true);
+  prim_def(PRIM_SET_UNION_ID, "set_union_id", returnInfoVoid, true, true);
+  prim_def(PRIM_GET_UNION_ID, "get_union_id", returnInfoDefaultInt, false, true);
   prim_def(PRIM_GET_MEMBER, ".", returnInfoGetMemberRef);
   prim_def(PRIM_GET_MEMBER_VALUE, ".v", returnInfoGetMember, false, true);
   prim_def(PRIM_SET_MEMBER, ".=", returnInfoVoid, true, true);
@@ -406,16 +393,16 @@ initPrimitive() {
   prim_def(PRIM_LOCAL_CHECK, "local_check", returnInfoVoid, true, true);
 
   // operations on sync/single vars
-  prim_def(PRIM_SYNC_INIT, "init_sync_aux", returnInfoVoid, true);
-  prim_def(PRIM_SYNC_DESTROY, "destroy_sync_aux", returnInfoVoid, true);
+  prim_def(PRIM_SYNC_INIT, "sync_init", returnInfoVoid, true);
+  prim_def(PRIM_SYNC_DESTROY, "sync_destroy", returnInfoVoid, true);
   prim_def(PRIM_SYNC_LOCK, "sync_lock", returnInfoVoid, true);
   prim_def(PRIM_SYNC_UNLOCK, "sync_unlock", returnInfoVoid, true);
   prim_def(PRIM_SYNC_WAIT_FULL, "sync_wait_full_and_lock", returnInfoVoid, true, true);
   prim_def(PRIM_SYNC_WAIT_EMPTY, "sync_wait_empty_and_lock", returnInfoVoid, true, true);
   prim_def(PRIM_SYNC_SIGNAL_FULL, "sync_mark_and_signal_full", returnInfoVoid, true);
   prim_def(PRIM_SYNC_SIGNAL_EMPTY, "sync_mark_and_signal_empty", returnInfoVoid, true);
-  prim_def(PRIM_SINGLE_INIT, "init_single_aux", returnInfoVoid, true);
-  prim_def(PRIM_SINGLE_DESTROY, "destroy_single_aux", returnInfoVoid, true);
+  prim_def(PRIM_SINGLE_INIT, "single_init", returnInfoVoid, true);
+  prim_def(PRIM_SINGLE_DESTROY, "single_destroy", returnInfoVoid, true);
   prim_def(PRIM_SINGLE_LOCK, "single_lock", returnInfoVoid, true);
   prim_def(PRIM_SINGLE_UNLOCK, "single_unlock", returnInfoVoid, true);
   prim_def(PRIM_SINGLE_WAIT_FULL, "single_wait_full", returnInfoVoid, true, true);
@@ -429,12 +416,12 @@ initPrimitive() {
   prim_def(PRIM_READFE, "read_FE", returnInfoFirst, true);
   prim_def(PRIM_READFF, "read_FF", returnInfoFirst, true);
   prim_def(PRIM_READXX, "read_XX", returnInfoFirst, true);
-  prim_def(PRIM_SYNC_ISFULL, "sync_is_full", returnInfoBool, true);
+  prim_def(PRIM_SYNC_IS_FULL, "sync_is_full", returnInfoBool, true);
   prim_def(PRIM_SINGLE_WRITEEF, "single_write_EF", returnInfoVoid, true);
   prim_def(PRIM_SINGLE_RESET, "single_reset", returnInfoVoid, true);
   prim_def(PRIM_SINGLE_READFF, "single_read_FF", returnInfoFirst, true);
   prim_def(PRIM_SINGLE_READXX, "single_read_XX", returnInfoFirst, true);
-  prim_def(PRIM_SINGLE_ISFULL, "single_is_full", returnInfoBool, true);
+  prim_def(PRIM_SINGLE_IS_FULL, "single_is_full", returnInfoBool, true);
 
   prim_def(PRIM_GET_END_COUNT, "get end count", returnInfoEndCount);
   prim_def(PRIM_SET_END_COUNT, "set end count", returnInfoVoid, true);
@@ -444,19 +431,16 @@ initPrimitive() {
   prim_def(PRIM_FREE_TASK_LIST, "free task list", returnInfoVoid, true);
 
   // task primitives
-  prim_def(PRIM_TASK_ID, "task_id", returnInfoTaskID);
-  prim_def(PRIM_TASK_SLEEP, "task sleep", returnInfoVoid, true);
   prim_def(PRIM_GET_SERIAL, "task_get_serial", returnInfoBool);
   prim_def(PRIM_SET_SERIAL, "task_set_serial", returnInfoVoid, true);
 
   prim_def(PRIM_CHPL_ALLOC, "chpl_mem_alloc", returnInfoChplAlloc, true, true);
-  prim_def(PRIM_CHPL_ALLOC_PERMIT_ZERO, "chpl_mem_allocPermitZero",
-           returnInfoChplAlloc, true, true);
+  prim_def(PRIM_CHPL_ALLOC_PERMIT_ZERO, "chpl_mem_allocPermitZero", returnInfoChplAlloc, true, true);
   prim_def(PRIM_CHPL_FREE, "chpl_mem_free", returnInfoVoid, true, true);
   prim_def(PRIM_INIT_FIELDS, "chpl_init_record", returnInfoVoid, true);
   prim_def(PRIM_PTR_EQUAL, "ptr_eq", returnInfoBool);
   prim_def(PRIM_PTR_NOTEQUAL, "ptr_neq", returnInfoBool);
-  prim_def(PRIM_ISSUBTYPE, "is_subtype", returnInfoBool);
+  prim_def(PRIM_IS_SUBTYPE, "is_subtype", returnInfoBool);
   prim_def(PRIM_CAST, "cast", returnInfoCast, false, true);
   prim_def(PRIM_DYNAMIC_CAST, "dynamic_cast", returnInfoCast, false, true);
   prim_def(PRIM_TYPEOF, "typeof", returnInfoFirstDeref);
@@ -466,19 +450,19 @@ initPrimitive() {
   prim_def(PRIM_TUPLE_EXPAND, "expand_tuple", returnInfoVoid);
   prim_def(PRIM_TUPLE_AND_EXPAND, "and_expand_tuple", returnInfoVoid);
 
-  prim_def(PRIM_CAPTURE_FN, "capture fn", returnInfoVoid);
-  prim_def(PRIM_CREATE_FN_TYPE, "create fn type", returnInfoVoid);
+  prim_def(PRIM_CHPL_COMM_GET, "chpl_comm_get", returnInfoVoid, true, true);
+  prim_def(PRIM_CHPL_COMM_PUT, "chpl_comm_put", returnInfoVoid, true, true);
+  prim_def(PRIM_CHPL_COMM_GET_STRD, "chpl_comm_get_strd", returnInfoVoid, true, true);
+  prim_def(PRIM_CHPL_COMM_PUT_STRD, "chpl_comm_put_strd", returnInfoVoid, true, true);
 
   prim_def(PRIM_ARRAY_ALLOC, "array_alloc", returnInfoVoid, true, true);
   prim_def(PRIM_ARRAY_FREE, "array_free", returnInfoVoid, true, true);
   prim_def(PRIM_ARRAY_FREE_ELTS, "array_free_elts", returnInfoVoid, true);
   prim_def(PRIM_ARRAY_GET, "array_get", returnInfoArrayIndex, false, true);
   prim_def(PRIM_ARRAY_GET_VALUE, "array_get_value", returnInfoArrayIndexValue, false, true);
-
-  prim_def(PRIM_CHPL_COMM_GET, "chpl_comm_get", returnInfoVoid, true, true);
-  prim_def(PRIM_CHPL_COMM_PUT, "chpl_comm_put", returnInfoVoid, true, true);
-  prim_def(PRIM_CHPL_COMM_GET_STRD, "chpl_comm_get_strd", returnInfoVoid, true, true);
-  prim_def(PRIM_CHPL_COMM_PUT_STRD, "chpl_comm_put_strd", returnInfoVoid, true, true);
+  // PRIM_ARRAY_SET is unused by compiler, runtime, modules
+  prim_def(PRIM_ARRAY_SET, "array_set", returnInfoVoid, true, true);
+  prim_def(PRIM_ARRAY_SET_FIRST, "array_set_first", returnInfoVoid, true, true);
 
   prim_def(PRIM_GPU_GET_ARRAY, "get_gpu_array", returnInfoArrayIndex, false, true);
   prim_def(PRIM_GPU_GET_VALUE, "get_gpu_value", returnInfoArrayIndex, false, true);
@@ -488,10 +472,6 @@ initPrimitive() {
   prim_def(PRIM_COPY_GPU_HOST, "copy_gpu_to_host", returnInfoVoid, true, false);
   prim_def(PRIM_GPU_FREE, "gpu_free", returnInfoVoid, true, true);
   prim_def(PRIM_ON_GPU, "chpl_on_gpu", returnInfoInt32);
-
-  // PRIM_ARRAY_SET is unused by compiler, runtime, modules
-  prim_def(PRIM_ARRAY_SET, "array_set", returnInfoVoid, true, true);
-  prim_def(PRIM_ARRAY_SET_FIRST, "array_set_first", returnInfoVoid, true, true);
 
   prim_def(PRIM_ERROR, "error", returnInfoVoid, true);
   prim_def(PRIM_WARNING, "warning", returnInfoVoid, true);
@@ -538,6 +518,9 @@ initPrimitive() {
 
   prim_def(PRIM_INT_ERROR, "_internal_error", returnInfoVoid, true);
 
+  prim_def(PRIM_CAPTURE_FN, "capture fn", returnInfoVoid);
+  prim_def(PRIM_CREATE_FN_TYPE, "create fn type", returnInfoVoid);
+
   prim_def("chpl_string_compare", returnInfoDefaultInt, true);
   prim_def("string_contains", returnInfoBool, true);
   prim_def("string_concat", returnInfoString, true, true);
@@ -552,11 +535,6 @@ initPrimitive() {
   prim_def("object2int", returnInfoDefaultInt);
   prim_def("chpl_exit_any", returnInfoVoid, true);
   prim_def("chpl_localeName", returnInfoString);
-  prim_def(PRIM_chpl_numThreads, "chpl_numThreads", returnInfoInt64);
-  prim_def(PRIM_chpl_numIdleThreads, "chpl_numIdleThreads", returnInfoInt64);
-  prim_def(PRIM_chpl_numQueuedTasks, "chpl_numQueuedTasks", returnInfoInt64);
-  prim_def(PRIM_chpl_numRunningTasks, "chpl_numRunningTasks", returnInfoInt64);
-  prim_def(PRIM_chpl_numBlockedTasks, "chpl_numBlockedTasks", returnInfoInt64);
 
   prim_def("chpl_setMemFlags", returnInfoVoid, true);
 

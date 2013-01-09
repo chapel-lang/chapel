@@ -2641,9 +2641,6 @@ GenRet CallExpr::codegen() {
     case PRIM_UNKNOWN:
       ret = codegenBasicPrimitiveExpr(this);
       break;
-    case PRIM_CALL_GPU:
-      if(c) info->cStatements.push_back("/* Calling GPU kernel */");
-      break;
     case PRIM_ARRAY_SET:
     case PRIM_ARRAY_SET_FIRST:
       {
@@ -2900,7 +2897,7 @@ GenRet CallExpr::codegen() {
           codegenCall("_GPU_GET_ARRAY", get(1), call->get(1));
           break;
         }
-        if (call->isPrimitive(PRIM_UNION_GETID)) {
+        if (call->isPrimitive(PRIM_GET_UNION_ID)) {
           if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
             codegenAssign(get(1), codegenFieldUidPtr(call->get(1)));
             break;
@@ -3026,7 +3023,7 @@ GenRet CallExpr::codegen() {
       ret = codegenAddrOf(get(1));
       break;
     }
-    case PRIM_REF2STR:
+    case PRIM_REF_TO_STRING:
     {
       if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE) ||
           get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
@@ -3378,15 +3375,6 @@ GenRet CallExpr::codegen() {
         }
         break;
       }
-    case PRIM_PROD_ID: 
-    case PRIM_LAND_ID: 
-    case PRIM_LOR_ID: 
-    case PRIM_LXOR_ID: 
-    case PRIM_BAND_ID: 
-    case PRIM_BOR_ID: 
-    case PRIM_BXOR_ID: 
-      INT_ASSERT(0); // moved these to Types.chpl
-      break;
     case PRIM_SETCID:
     {
       // get(1) is the object 
@@ -3432,14 +3420,14 @@ GenRet CallExpr::codegen() {
       ret = codegenEquals(ref, codegenUseCid(get(2)->typeInfo()));
       break;
     }
-    case PRIM_UNION_SETID:
+    case PRIM_SET_UNION_ID:
     {
       // get(1)->_uid = get(2)
       GenRet ref = codegenFieldUidPtr(get(1));
       codegenAssign(ref, get(2));
       break;
     }
-    case PRIM_UNION_GETID:
+    case PRIM_GET_UNION_ID:
     {
       // returns uid from get(1)
       GenRet ref = codegenFieldUidPtr(get(1));
@@ -3602,7 +3590,7 @@ GenRet CallExpr::codegen() {
         ret = codegenCallExpr(fn, s);
         break;
       }
-    case PRIM_SYNC_ISFULL: {
+    case PRIM_SYNC_IS_FULL: {
       // get(1) is sync var get(2) is isSimpleSyncBaseType( arg )
       GenRet s = get(1);
       GenRet val_ptr = codegenLocalAddrOf(codegenFieldPtr(s, "value"));
@@ -3646,7 +3634,7 @@ GenRet CallExpr::codegen() {
         ret = codegenCallExpr(fn, s);
         break;
       }
-    case PRIM_SINGLE_ISFULL:
+    case PRIM_SINGLE_IS_FULL:
     {
       // get(1) is sync var get(2) is isSimpleSyncBaseType( arg )
       GenRet s = get(1);
@@ -3670,12 +3658,6 @@ GenRet CallExpr::codegen() {
       codegenCall("chpl_task_freeTaskList", get(1));
       break;
     }
-    case PRIM_TASK_ID:
-      codegenCallExpr("chpl_task_getId");
-      break;
-    case PRIM_TASK_SLEEP:
-      codegenCall("chpl_task_sleep", codegenValue(get(1)));
-      break;
     case PRIM_GET_SERIAL:
       ret = codegenCallExpr("chpl_task_getSerial");
       break;
@@ -4026,23 +4008,7 @@ GenRet CallExpr::codegen() {
         ret = codegenBasicPrimitiveExpr(this);
       break;
     }
-    case PRIM_chpl_numThreads:
-      ret = codegenCallExpr("chpl_task_getNumThreads");
-      break;
-    case PRIM_chpl_numIdleThreads:
-      ret = codegenCallExpr("chpl_task_getNumIdleThreads");
-      break;
-    case PRIM_chpl_numQueuedTasks:
-      ret = codegenCallExpr("chpl_task_getNumQueuedTasks");
-      break;
-    case PRIM_chpl_numRunningTasks:
-      ret = codegenCallExpr("chpl_task_getNumRunningTasks");
-      break;
-    case PRIM_chpl_numBlockedTasks:
-      ret = codegenCallExpr("chpl_task_getNumBlockedTasks");
-      break;
     case PRIM_RT_ERROR:
-    case PRIM_RT_ERROR_NOEXIT:
     case PRIM_RT_WARNING:
       ret = codegenBasicPrimitiveExpr(this);
       break;

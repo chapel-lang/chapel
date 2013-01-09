@@ -23,7 +23,7 @@ isFastPrimitive(CallExpr *call) {
   switch (call->primitive->tag) {
     // TODO: Add PRIM_UNKNOWN that are side-effect free
   case PRIM_NOOP:
-  case PRIM_REF2STR:
+  case PRIM_REF_TO_STRING:
   case PRIM_RETURN:
   case PRIM_UNARY_MINUS:
   case PRIM_UNARY_PLUS:
@@ -48,13 +48,6 @@ isFastPrimitive(CallExpr *call) {
   case PRIM_POW:
   case PRIM_MIN:
   case PRIM_MAX:
-  case PRIM_PROD_ID:
-  case PRIM_BAND_ID:
-  case PRIM_BOR_ID:
-  case PRIM_BXOR_ID:
-  case PRIM_LAND_ID:
-  case PRIM_LOR_ID:
-  case PRIM_LXOR_ID:
 
   case PRIM_GET_MEMBER:
   case PRIM_GET_SVEC_MEMBER:
@@ -71,7 +64,7 @@ isFastPrimitive(CallExpr *call) {
   case PRIM_PTR_EQUAL:
   case PRIM_PTR_NOTEQUAL:
   case PRIM_CAST:
-  case PRIM_ISSUBTYPE:
+  case PRIM_IS_SUBTYPE:
   case PRIM_TYPEOF:
   case PRIM_GET_ITERATOR_RETURN:
   case PRIM_USE:
@@ -138,14 +131,14 @@ isFastPrimitive(CallExpr *call) {
     }
     break;
 
-  case PRIM_UNION_SETID:
-  case PRIM_UNION_GETID:
+  case PRIM_SET_UNION_ID:
+  case PRIM_GET_UNION_ID:
   case PRIM_GET_MEMBER_VALUE:
   case PRIM_GET_SVEC_MEMBER_VALUE:
     if (!call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
       return true;
 #ifdef DEBUG
-      printf(" *** OK (PRIM_GET_UNION, etc.): %s\n", call->primitive->name);
+      printf(" *** OK (PRIM_SET_UNION_ID, etc.): %s\n", call->primitive->name);
 #endif
     }
     break;

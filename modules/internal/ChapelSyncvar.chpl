@@ -35,10 +35,10 @@ module ChapelSyncvar {
       // Ideally, the definition of this class should be target and base_type dependent,
       // since not all targets need to have a sync_aux field if base_type is sufficiently simple.
 
-      proc ~_syncvar() { __primitive("destroy_sync_aux", this); }
+      proc ~_syncvar() { __primitive("sync_destroy", this); }
 
       proc initialize() {
-        __primitive("init_sync_aux", this);
+        __primitive("sync_init", this);
         if (isSimpleSyncBaseType(this.base_type)) {
           // The sync_aux field might not be used on some targets!
           __primitive("sync_reset", this);
@@ -187,10 +187,10 @@ module ChapelSyncvar {
       // Ideally, the definition of this class should be target and base_type dependent,
       // since not all targets need to have a single_aux field if base_type is sufficiently simple.
 
-      proc ~_singlevar() { __primitive("destroy_single_aux", this); }
+      proc ~_singlevar() { __primitive("single_destroy", this); }
 
       proc initialize() {
-        __primitive("init_single_aux", this);
+        __primitive("single_init", this);
         if (isSimpleSyncBaseType(this.base_type)) {
           // The single_aux field might not be used on some targets!
           __primitive("single_reset", this);  // No locking or unlocking done here!

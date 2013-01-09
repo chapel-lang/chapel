@@ -717,7 +717,7 @@ static void build_constructor(ClassType* ct) {
   }
 
   if (isUnion(ct))
-    fn->insertAtTail(new CallExpr(PRIM_UNION_SETID, fn->_this, new_IntSymbol(0)));
+    fn->insertAtTail(new CallExpr(PRIM_SET_UNION_ID, fn->_this, new_IntSymbol(0)));
 
   ct->symbol->defPoint->insertBefore(new DefExpr(fn));
 

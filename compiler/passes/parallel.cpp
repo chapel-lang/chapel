@@ -1097,7 +1097,7 @@ static void localizeCall(CallExpr* call) {
                                            new SymExpr(localVar)));
           }
           break;
-        } else if (rhs->isPrimitive(PRIM_UNION_GETID)) {
+        } else if (rhs->isPrimitive(PRIM_GET_UNION_ID)) {
           if (rhs->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
             insertLocalTemp(rhs->get(1));
           }
@@ -1135,7 +1135,7 @@ static void localizeCall(CallExpr* call) {
         insertLocalTemp(call->get(1));
       }
       break;
-    case PRIM_UNION_SETID:
+    case PRIM_SET_UNION_ID:
       if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
         insertLocalTemp(call->get(1));
       }

@@ -38,12 +38,12 @@ buildSyncAccessFunctionSet(Vec<FnSymbol*>& syncAccessFunctionSet) {
           call->isPrimitive(PRIM_READFE) ||
           call->isPrimitive(PRIM_READFF) ||
           call->isPrimitive(PRIM_READXX) ||
-          call->isPrimitive(PRIM_SYNC_ISFULL) ||
+          call->isPrimitive(PRIM_SYNC_IS_FULL) ||
           call->isPrimitive(PRIM_SINGLE_WRITEEF) ||
           call->isPrimitive(PRIM_SINGLE_RESET) ||
           call->isPrimitive(PRIM_SINGLE_READFF) ||
           call->isPrimitive(PRIM_SINGLE_READXX) ||
-          call->isPrimitive(PRIM_SINGLE_ISFULL)) {
+          call->isPrimitive(PRIM_SINGLE_IS_FULL)) {
         FnSymbol* parent = toFnSymbol(call->parentSymbol);
         INT_ASSERT(parent);
         if (!parent->hasFlag(FLAG_DONT_DISABLE_REMOTE_VALUE_FORWARDING) &&

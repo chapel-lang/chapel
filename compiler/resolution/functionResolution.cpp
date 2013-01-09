@@ -492,7 +492,7 @@ checkResolveRemovedPrims(void) {
         case PRIM_TYPEOF:
         case PRIM_TYPE_TO_STRING:
         case PRIM_IS_STAR_TUPLE_TYPE:
-        case PRIM_ISSUBTYPE:
+        case PRIM_IS_SUBTYPE:
         case PRIM_TUPLE_EXPAND:
         case PRIM_QUERY:
         case PRIM_ERROR:
@@ -4146,7 +4146,7 @@ postFold(Expr* expr) {
           }
         }
       }
-    } else if (call->isPrimitive(PRIM_ISSUBTYPE)) {
+    } else if (call->isPrimitive(PRIM_IS_SUBTYPE)) {
       if (isTypeExpr(call->get(1)) || isTypeExpr(call->get(2))) {
         Type* lt = call->get(2)->getValType(); // a:t cast is cast(t,a)
         Type* rt = call->get(1)->getValType();
@@ -4276,12 +4276,12 @@ postFold(Expr* expr) {
                call->isPrimitive(PRIM_READFF) ||
                call->isPrimitive(PRIM_READFE) ||
                call->isPrimitive(PRIM_READXX) ||
-               call->isPrimitive(PRIM_SYNC_ISFULL) ||
+               call->isPrimitive(PRIM_SYNC_IS_FULL) ||
                call->isPrimitive(PRIM_SINGLE_WRITEEF) ||
                call->isPrimitive(PRIM_SINGLE_RESET) ||
                call->isPrimitive(PRIM_SINGLE_READFF) ||
                call->isPrimitive(PRIM_SINGLE_READXX) ||
-               call->isPrimitive(PRIM_SINGLE_ISFULL) ||
+               call->isPrimitive(PRIM_SINGLE_IS_FULL) ||
                call->isPrimitive(PRIM_EXECUTE_TASKS_IN_LIST) ||
                call->isPrimitive(PRIM_FREE_TASK_LIST) ||
                call->isPrimitive(PRIM_CHPL_FREE) ||
@@ -4412,7 +4412,7 @@ resolveBlock(Expr* body) {
       //  should be fixed by out-of-order resolution
       CallExpr* parent = toCallExpr(sym->parentExpr);
       if (!parent ||
-          !parent->isPrimitive(PRIM_ISSUBTYPE) ||
+          !parent->isPrimitive(PRIM_IS_SUBTYPE) ||
           !sym->var->hasFlag(FLAG_TYPE_VARIABLE)) {
 
         if (ClassType* ct = toClassType(sym->typeInfo())) {

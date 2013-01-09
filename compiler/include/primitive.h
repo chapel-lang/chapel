@@ -5,11 +5,12 @@
 
 enum PrimitiveTag {
   PRIM_UNKNOWN = 0,    // use for any primitives not in this list
+
   PRIM_ACTUALS_LIST,
   PRIM_NOOP,
   PRIM_MOVE,
   PRIM_INIT,
-  PRIM_REF2STR,
+  PRIM_REF_TO_STRING,
   PRIM_RETURN,
   PRIM_YIELD,
   PRIM_UNARY_MINUS,
@@ -33,20 +34,15 @@ enum PrimitiveTag {
   PRIM_OR,
   PRIM_XOR,
   PRIM_POW,
+
   PRIM_MIN,
   PRIM_MAX,
-  PRIM_PROD_ID,                   // product identity operand
-  PRIM_BAND_ID,                   // bit-wise AND identity operand
-  PRIM_BOR_ID,                    // bit-wise OR identity operand
-  PRIM_BXOR_ID,                   // bit-wise XOR identity operand
-  PRIM_LAND_ID,                   // logical AND identity operand
-  PRIM_LOR_ID,                    // logical OR identity operand
-  PRIM_LXOR_ID,                   // logical XOR identity operand
-  PRIM_TESTCID,
+
   PRIM_SETCID,
+  PRIM_TESTCID,
   PRIM_GETCID,
-  PRIM_UNION_GETID,
-  PRIM_UNION_SETID,
+  PRIM_SET_UNION_ID,
+  PRIM_GET_UNION_ID,
   PRIM_GET_MEMBER,
   PRIM_GET_MEMBER_VALUE,
   PRIM_SET_MEMBER,
@@ -83,12 +79,12 @@ enum PrimitiveTag {
   PRIM_READFE,
   PRIM_READFF,
   PRIM_READXX,
-  PRIM_SYNC_ISFULL,
+  PRIM_SYNC_IS_FULL,
   PRIM_SINGLE_WRITEEF,
   PRIM_SINGLE_RESET,
   PRIM_SINGLE_READFF,
   PRIM_SINGLE_READXX,
-  PRIM_SINGLE_ISFULL,
+  PRIM_SINGLE_IS_FULL,
 
   PRIM_GET_END_COUNT,
   PRIM_SET_END_COUNT,
@@ -97,15 +93,8 @@ enum PrimitiveTag {
   PRIM_EXECUTE_TASKS_IN_LIST,
   PRIM_FREE_TASK_LIST,
 
-  PRIM_TASK_ID,
-  PRIM_TASK_SLEEP,
   PRIM_GET_SERIAL,                // get serial state
   PRIM_SET_SERIAL,                // set serial state to true or false
-
-  PRIM_CHPL_COMM_GET,   // Direct calls to the Chapel comm layer
-  PRIM_CHPL_COMM_PUT,   //  may eventually add others (e.g., non-blocking)
-  PRIM_CHPL_COMM_GET_STRD,   // Direct calls to the Chapel comm layer for strided comm
-  PRIM_CHPL_COMM_PUT_STRD,   //  may eventually add others (e.g., non-blocking)
 
   PRIM_CHPL_ALLOC,
   PRIM_CHPL_ALLOC_PERMIT_ZERO,  // chpl_mem_alloc wrapper that permits size 0
@@ -113,18 +102,29 @@ enum PrimitiveTag {
   PRIM_INIT_FIELDS, // initialize fields of a temporary record
   PRIM_PTR_EQUAL,
   PRIM_PTR_NOTEQUAL,
+  PRIM_IS_SUBTYPE,
   PRIM_CAST,
   PRIM_DYNAMIC_CAST,
-  PRIM_ISSUBTYPE,
   PRIM_TYPEOF,
   PRIM_GET_ITERATOR_RETURN,
   PRIM_USE,
   PRIM_USED_MODULES_LIST, // used modules in BlockStmt::modUses
   PRIM_TUPLE_EXPAND,
   PRIM_TUPLE_AND_EXPAND,
+
+  PRIM_CHPL_COMM_GET,   // Direct calls to the Chapel comm layer
+  PRIM_CHPL_COMM_PUT,   //  may eventually add others (e.g., non-blocking)
+  PRIM_CHPL_COMM_GET_STRD,   // Direct calls to the Chapel comm layer for strided comm
+  PRIM_CHPL_COMM_PUT_STRD,   //  may eventually add others (e.g., non-blocking)
+
+  PRIM_ARRAY_ALLOC,
   PRIM_ARRAY_FREE,
   PRIM_ARRAY_FREE_ELTS,
-  PRIM_ARRAY_ALLOC,
+  PRIM_ARRAY_GET,
+  PRIM_ARRAY_GET_VALUE,
+
+  PRIM_ARRAY_SET,
+  PRIM_ARRAY_SET_FIRST,
 
   PRIM_GPU_GET_ARRAY,
   PRIM_GPU_GET_VALUE,
@@ -134,16 +134,11 @@ enum PrimitiveTag {
   PRIM_COPY_GPU_HOST,
   PRIM_GPU_FREE,
   PRIM_ON_GPU,
-  PRIM_CALL_GPU,
 
-  PRIM_ARRAY_GET,
-  PRIM_ARRAY_GET_VALUE,
-  PRIM_ARRAY_SET,
-  PRIM_ARRAY_SET_FIRST,
   PRIM_ERROR,
   PRIM_WARNING,
-  PRIM_TYPE_TO_STRING,
   PRIM_WHEN,
+  PRIM_TYPE_TO_STRING,
 
   PRIM_BLOCK_PARAM_LOOP,      // BlockStmt::blockInfo - param for loop
   PRIM_BLOCK_WHILEDO_LOOP,    // BlockStmt::blockInfo - while do loop
@@ -185,19 +180,12 @@ enum PrimitiveTag {
 
   PRIM_INT_ERROR,
 
-  PRIM_STRING_COPY,
-
   PRIM_CAPTURE_FN,
   PRIM_CREATE_FN_TYPE,
 
-  PRIM_chpl_numThreads,
-  PRIM_chpl_numIdleThreads,
-  PRIM_chpl_numQueuedTasks,
-  PRIM_chpl_numRunningTasks,
-  PRIM_chpl_numBlockedTasks,
+  PRIM_STRING_COPY,
 
   PRIM_RT_ERROR,
-  PRIM_RT_ERROR_NOEXIT,
   PRIM_RT_WARNING,
 
   PRIM_NEW_PRIV_CLASS,
@@ -222,7 +210,6 @@ enum PrimitiveTag {
   PRIM_FIELD_VALUE_BY_NUM,
   PRIM_FIELD_ID_BY_NUM,
   PRIM_FIELD_VALUE_BY_NAME,
-  PRIM_HAS_METHOD_BY_NAME,
   PRIM_IS_UNION_TYPE,
 
   PRIM_ENUM_MIN_BITS,

@@ -98,5 +98,6 @@ proc _convert_microseconds(unit: TimeUnits, us: real) {
 }
 
 inline proc sleep(t: uint) {
-  __primitive("task sleep", t);
+  extern proc chpl_task_sleep(t:uint) : void;
+  chpl_task_sleep(t);
 }
