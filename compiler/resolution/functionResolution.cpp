@@ -4198,10 +4198,14 @@ postFold(Expr* expr) {
       }
       if (!strcmp("=", fn->name) && !call->getFunction()->hasFlag(FLAG_WRAPPER)) {
         SymExpr* lhs = toSymExpr(call->get(1));
-        if (!lhs)
+        
+        if (!lhs) {
           INT_FATAL(call, "unexpected case");
-        if (lhs->var->hasFlag(FLAG_EXPR_TEMP) || lhs->var->isConstant() || lhs->var->isParameter())
+        }
+        
+        if (lhs->var->hasFlag(FLAG_EXPR_TEMP) || lhs->var->isConstant() || lhs->var->isParameter()) {
           USR_FATAL(call, "illegal lvalue in assignment");
+        }
       }
     } else if (call->isPrimitive(PRIM_MOVE)) {
       bool set = false;

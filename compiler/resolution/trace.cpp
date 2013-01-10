@@ -5,7 +5,7 @@
 
 #include "trace.h"
 
-#define FULL_TRACE false
+#define FULL_TRACE true
 
 #define PRINT_INDENT for (int i = traceIndentLevel; i-- > 0;) printf("\t");
 

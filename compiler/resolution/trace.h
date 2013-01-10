@@ -7,8 +7,9 @@
 
 #define STDLIB_STR_OFFSET 62
 
+#define TRACE_TRUE      true
 #define TRACE_RESOLVE   true
-#define TRACE_CANDIDATE true
+#define TRACE_CANDIDATE false
 
 extern FnSymbol* currentTraceFn;
 

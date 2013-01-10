@@ -166,22 +166,27 @@ module NetworkAtomics {
     compilerError("Cannot directly assign network atomic variables");
     return a;
   }
+  pragma "resolution error function"
   inline proc +(a:ratomic_int64, b) {
     compilerError("Cannot directly add network atomic variables");
     return a;
   }
+  pragma "resolution error function"
   inline proc -(a:ratomic_int64, b) {
     compilerError("Cannot directly subtract network atomic variables");
     return a;
   }
+  pragma "resolution error function"
   inline proc *(a:ratomic_int64, b) {
     compilerError("Cannot directly multiply network atomic variables");
     return a;
   }
+  pragma "resolution error function"
   inline proc /(a:ratomic_int64, b) {
     compilerError("Cannot directly divide network atomic variables");
     return a;
   }
+  pragma "resolution error function"
   inline proc %(a:ratomic_int64, b) {
     compilerError("Cannot directly divide network atomic variables");
     return a;
@@ -348,26 +353,32 @@ module NetworkAtomics {
     a.write(b.read());
     return a;
   }
+  pragma "resolution error function"
   inline proc =(a:ratomic_int32, b) {
     compilerError("Cannot directly assign network atomic variables");
     return a;
   }
+  pragma "resolution error function"
   inline proc +(a:ratomic_int32, b) {
     compilerError("Cannot directly add network atomic variables");
     return a;
   }
+  pragma "resolution error function"
   inline proc -(a:ratomic_int32, b) {
     compilerError("Cannot directly subtract network atomic variables");
     return a;
   }
+  pragma "resolution error function"
   inline proc *(a:ratomic_int32, b) {
     compilerError("Cannot directly multiply network atomic variables");
     return a;
   }
+  pragma "resolution error function"
   inline proc /(a:ratomic_int32, b) {
     compilerError("Cannot directly divide network atomic variables");
     return a;
   }
+  pragma "resolution error function"
   inline proc %(a:ratomic_int32, b) {
     compilerError("Cannot directly divide network atomic variables");
     return a;
@@ -534,26 +545,32 @@ module NetworkAtomics {
     a.write(b.read());
     return a;
   }
+  pragma "resolution error function"
   inline proc =(a:ratomic_uint64, b) {
     compilerError("Cannot directly assign network atomic variables");
     return a;
   }
+  pragma "resolution error function"
   inline proc +(a:ratomic_uint64, b) {
     compilerError("Cannot directly add network atomic variables");
     return a;
   }
+  pragma "resolution error function"
   inline proc -(a:ratomic_uint64, b) {
     compilerError("Cannot directly subtract network atomic variables");
     return a;
   }
+  pragma "resolution error function"
   inline proc *(a:ratomic_uint64, b) {
     compilerError("Cannot directly multiply network atomic variables");
     return a;
   }
+  pragma "resolution error function"
   inline proc /(a:ratomic_uint64, b) {
     compilerError("Cannot directly divide network atomic variables");
     return a;
   }
+  pragma "resolution error function"
   inline proc %(a:ratomic_uint64, b) {
     compilerError("Cannot directly divide network atomic variables");
     return a;
@@ -720,26 +737,32 @@ module NetworkAtomics {
     a.write(b.read());
     return a;
   }
+  pragma "resolution error function"
   inline proc =(a:ratomic_uint32, b) {
     compilerError("Cannot directly assign network atomic variables");
     return a;
   }
+  pragma "resolution error function"
   inline proc +(a:ratomic_uint32, b) {
     compilerError("Cannot directly add network atomic variables");
     return a;
   }
+  pragma "resolution error function"
   inline proc -(a:ratomic_uint32, b) {
     compilerError("Cannot directly subtract network atomic variables");
     return a;
   }
+  pragma "resolution error function"
   inline proc *(a:ratomic_uint32, b) {
     compilerError("Cannot directly multiply network atomic variables");
     return a;
   }
+  pragma "resolution error function"
   inline proc /(a:ratomic_uint32, b) {
     compilerError("Cannot directly divide network atomic variables");
     return a;
   }
+  pragma "resolution error function"
   inline proc %(a:ratomic_uint32, b) {
     compilerError("Cannot directly divide network atomic variables");
     return a;
@@ -806,26 +829,32 @@ module NetworkAtomics {
     a.write(b.read());
     return a;
   }
+  pragma "resolution error function"
   inline proc =(a:ratomicflag, b) {
     compilerError("Cannot directly assign network atomic variables");
     return a;
   }
+  pragma "resolution error function"
   inline proc +(a:ratomicflag, b) {
     compilerError("Cannot directly add network atomic variables");
     return a;
   }
+  pragma "resolution error function"
   inline proc -(a:ratomicflag, b) {
     compilerError("Cannot directly subtract network atomic variables");
     return a;
   }
+  pragma "resolution error function"
   inline proc *(a:ratomicflag, b) {
     compilerError("Cannot directly multiply network atomic variables");
     return a;
   }
+  pragma "resolution error function"
   inline proc /(a:ratomicflag, b) {
     compilerError("Cannot directly divide network atomic variables");
     return a;
   }
+  pragma "resolution error function"
   inline proc %(a:ratomicflag, b) {
     compilerError("Cannot directly divide network atomic variables");
     return a;

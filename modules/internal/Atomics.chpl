@@ -226,6 +226,86 @@ module Atomics {
     atomic_init_flag(ret, false);
     return ret;
   }
+  
+  inline proc chpl__defaultHash(ref aflag:atomic_flag):int(64) {
+    var tmp:int(64);
+    on aflag do tmp = atomic_load_explicit_flag(aflag, memory_order_consume);
+    
+    if (tmp) then
+      return 0;
+    else
+      return 1;
+  }
+  
+  inline proc chpl__defaultHash(ref auint:atomic_uint_least8_t):int(64) {
+    var tmp:int(64);
+    on auint do tmp = atomic_load_explicit_uint_least8_t(auint, memory_order_consume):int(64);
+    
+    return _gen_key(tmp);
+  }
+  
+  inline proc chpl__defaultHash(ref auint:atomic_uint_least16_t):int(64) {
+    var tmp:int(64);
+    on auint do tmp = atomic_load_explicit_uint_least16_t(auint, memory_order_consume):int(64);
+    
+    return _gen_key(tmp);
+  }
+  
+  inline proc chpl__defaultHash(ref auint:atomic_uint_least32_t):int(64) {
+    var tmp:int(64);
+    on auint do tmp = atomic_load_explicit_uint_least32_t(auint, memory_order_consume):int(64);
+    
+    return _gen_key(tmp);
+  }
+  
+  inline proc chpl__defaultHash(ref auint:atomic_uint_least64_t):int(64) {
+    var tmp:int(64);
+    on auint do tmp = atomic_load_explicit_uint_least64_t(auint, memory_order_consume):int(64);
+    
+    return _gen_key(tmp);
+  }
+  
+  inline proc chpl__defaultHash(ref aint:atomic_int_least8_t):int(64) {
+    var tmp:int(64);
+    on aint do tmp = atomic_load_explicit_int_least8_t(aint, memory_order_consume):int(64);
+    
+    return _gen_key(tmp);
+  }
+  
+  inline proc chpl__defaultHash(ref aint:atomic_int_least16_t):int(64) {
+    var tmp:int(64);
+    on aint do tmp = atomic_load_explicit_int_least16_t(aint, memory_order_consume):int(64);
+    
+    return _gen_key(tmp);
+  }
+  
+  inline proc chpl__defaultHash(ref aint:atomic_int_least32_t):int(64) {
+    var tmp:int(64);
+    on aint do tmp = atomic_load_explicit_int_least32_t(aint, memory_order_consume):int(64);
+    
+    return _gen_key(tmp);
+  }
+  
+  inline proc chpl__defaultHash(ref aint:atomic_int_least64_t):int(64) {
+    var tmp:int(64);
+    on aint do tmp = atomic_load_explicit_int_least64_t(aint, memory_order_consume):int(64);
+    
+    return _gen_key(tmp);
+  }
+  
+  inline proc chpl__defaultHash(ref afloat:atomic__real32):int(64) {
+    var r:real(32);
+    on afloat do r = atomic_load_explicit__real32(afloat, memory_order_consume);
+    
+    return _gen_key(__primitive( "real2int", r));
+  }
+  
+  inline proc chpl__defaultHash(ref afloat:atomic__real64):int(64) {
+    var r:real(64);
+    on afloat do r = atomic_load_explicit__real64(afloat, memory_order_consume);
+    
+    return _gen_key(__primitive( "real2int", r));
+  }
 
   record atomicflag {
     var _v:atomic_flag = create_atomic_flag();
@@ -953,69 +1033,91 @@ module Atomics {
     inline proc ~atomic_int64() {
       atomic_destroy_int_least64_t(_v);
     }
+    
     inline proc read(order = memory_order_seq_cst):int(64) {
       var ret:int(64);
       on this do ret = atomic_load_explicit_int_least64_t(_v, order);
       return ret;
     }
+    
     inline proc write(value:int(64), order = memory_order_seq_cst) {
       on this do atomic_store_explicit_int_least64_t(_v, value, order);
     }
+    
+    proc readThis(f: Reader) {
+      var tmp : int(64);
+      f.read(tmp);
+      on this do atomic_store_explicit_int_least64_t(_v, tmp, memory_order_seq_cst);
+    }
+    
     inline proc exchange(value:int(64), order = memory_order_seq_cst):int(64) {
       var ret:int(64);
       on this do ret = atomic_exchange_explicit_int_least64_t(_v, value, order);
       return ret;
     }
+    
     inline proc compareExchange(expected:int(64), desired:int(64), order = memory_order_seq_cst):bool {
       return compareExchangeStrong(expected, desired, order);
     }
+    
     inline proc compareExchangeWeak(expected:int(64), desired:int(64), order = memory_order_seq_cst):bool {
       var ret:bool;
       on this do ret = atomic_compare_exchange_weak_explicit_int_least64_t(_v, expected, desired, order);
       return ret;
     }
+    
     inline proc compareExchangeStrong(expected:int(64), desired:int(64), order = memory_order_seq_cst):bool {
       var ret:bool;
       on this do ret = atomic_compare_exchange_strong_explicit_int_least64_t(_v, expected, desired, order);
       return ret;
     }
+    
     inline proc fetchAdd(value:int(64), order = memory_order_seq_cst):int(64) {
       var ret:int(64);
       on this do ret = atomic_fetch_add_explicit_int_least64_t(_v, value, order);
       return ret;
     }
+    
     inline proc add(value:int(64), order = memory_order_seq_cst):int(64) {
       on this do atomic_fetch_add_explicit_int_least64_t(_v, value, order);
     }
+    
     inline proc fetchSub(value:int(64), order = memory_order_seq_cst):int(64) {
       var ret:int(64);
       on this do ret = atomic_fetch_sub_explicit_int_least64_t(_v, value, order);
       return ret;
     }
+    
     inline proc sub(value:int(64), order = memory_order_seq_cst):int(64) {
       on this do atomic_fetch_sub_explicit_int_least64_t(_v, value, order);
     }
+    
     inline proc fetchOr(value:int(64), order = memory_order_seq_cst):int(64) {
       var ret:int(64);
       on this do ret = atomic_fetch_or_explicit_int_least64_t(_v, value, order);
       return ret;
     }
+    
     inline proc or(value:int(64), order = memory_order_seq_cst):int(64) {
       on this do atomic_fetch_or_explicit_int_least64_t(_v, value, order);
     }
+    
     inline proc fetchAnd(value:int(64), order = memory_order_seq_cst):int(64) {
       var ret:int(64);
       on this do ret = atomic_fetch_and_explicit_int_least64_t(_v, value, order);
       return ret;
     }
+    
     inline proc and(value:int(64), order = memory_order_seq_cst):int(64) {
       on this do atomic_fetch_and_explicit_int_least64_t(_v, value, order);
     }
+    
     inline proc fetchXor(value:int(64), order = memory_order_seq_cst):int(64) {
       var ret:int(64);
       on this do ret = atomic_fetch_xor_explicit_int_least64_t(_v, value, order);
       return ret;
     }
+    
     inline proc xor(value:int(64), order = memory_order_seq_cst):int(64) {
       on this do atomic_fetch_xor_explicit_int_least64_t(_v, value, order);
     }

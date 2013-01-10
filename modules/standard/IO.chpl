@@ -446,20 +446,29 @@ param _oldioerr="This program is using old-style I/O which is no longer supporte
                 "var f = open(filename, iomode.r).reader()\n";
 
 // This file constructor exists to throw an error for old I/O code.
+pragma "resolution error function"
 proc file.file(filename:string="",
                mode:FileAccessMode=FileAccessMode.read,
                path:string=".") {
   compilerError(_oldioerr);
 }
+
+pragma "resolution error function"
 proc file.open() {
   compilerError(_oldioerr);
 }
+
+pragma "resolution error function"
 proc file.filename : string {
   compilerError(_oldioerr + "file.filename is no longer supported");
 }
+
+pragma "resolution error function"
 proc file.mode {
   compilerError(_oldioerr + "file.mode is no longer supported");
 }
+
+pragma "resolution error function"
 proc file.isOpen: bool {
   compilerError(_oldioerr + "file.isOpen is no longer supported");
 }
@@ -1715,7 +1724,7 @@ class ChannelWriter : Writer {
     err = e;
   }
   proc clearError() {
-    err = 0;
+    err = ENOERR;
   }
   proc writePrimitive(x) {
     if !err {
@@ -1724,6 +1733,8 @@ class ChannelWriter : Writer {
       }
     }
   }
+  
+  pragma "resolution error function"
   proc writeThis(w:Writer) {
     // MPF - I don't understand why I had to add this,
     // but without it test/modules/diten/returnClassDiffModule5.chpl fails.
@@ -1754,6 +1765,8 @@ class ChannelReader : Reader {
       }
     }
   }
+  
+  pragma "resolution error function"
   proc writeThis(w:Writer) {
     compilerError("writeThis on ChannelReader called");
   }

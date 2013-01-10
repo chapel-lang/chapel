@@ -241,8 +241,9 @@ module ChapelIO {
             var eq = new ioLiteral("=", true);
             readIt(eq);
           }
-  
-          readIt(__primitive("field value by num", x, i));
+          
+          var fval = __primitive("field value by num", x, i);
+          readIt(fval);
   
           first = false;
         }
@@ -254,7 +255,8 @@ module ChapelIO {
           readIt(id);
           for param i in 1..num_fields {
             if __primitive("field id by num", t, i) == id {
-              readIt(__primitive("field value by num", x, i));
+              var fval = __primitive("field value by num", x, i);
+              readIt(fval);
             }
           }
         } else {
@@ -266,12 +268,14 @@ module ChapelIO {
               clearError();
             } else {
               // We read the 'name = ', so now read the value!
-              readIt(__primitive("field value by num", x, i));
+              var fval = __primitive("field value by num", x, i);
+              readIt(fval);
             }
           }
         }
       }
     }
+    
     // Note; this is not a multi-method and so must be called
     // with the appropriate *concrete* type of x; that's what
     // happens now with buildDefaultWriteFunction
@@ -399,7 +403,7 @@ module ChapelIO {
   proc chpl_taskID_t.readThis(f: Reader) {
     var tmp : uint(64);
     f.read(tmp);
-    this = tmp : chpl_taskID_t;
+    //this = tmp : chpl_taskID_t;
   }
   
   class StringWriter: Writer {

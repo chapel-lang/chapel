@@ -1137,7 +1137,8 @@ module ChapelBase {
   proc isIterator(not_an_iterator) param return false;
   
   proc typesRequireCastForOpEqual(type ltype, type rtype) param {
-    return ltype == rtype || (_isIntegralType(ltype) && _isBooleanType(rtype));
+    //return ltype == rtype || (_isIntegralType(ltype) && _isBooleanType(rtype));
+    return ltype != rtype;
   }
   
   

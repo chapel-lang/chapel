@@ -26,6 +26,8 @@ module ChapelTaskTable {
     return __primitive("==", a, b);
   inline proc _cast(type t, x: chpl_taskID_t) where _isPrimitiveType(t)
     return __primitive("cast", t, x);
+  inline proc _cast(type t, x: uint(64)) where t == chpl_taskID_t
+    return __primitive("cast", t, x);
   
   
   enum taskState { pending, active, suspended };
