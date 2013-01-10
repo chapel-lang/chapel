@@ -1,0 +1,6 @@
+Trouble with smaller sized integer array literals.
+
+I get the error
+test/users/ferguson/array_literal_int8.chpl:1: error: Array literal element 2 expected to be of type int(8) but is of type int(32) [functionResolution.cpp:1890]
+
+
