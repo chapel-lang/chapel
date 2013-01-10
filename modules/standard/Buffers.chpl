@@ -97,7 +97,7 @@ module Buffers {
 
   // bytes methods.
   proc bytes.bytes() {
-    this._internal = c_nil;
+    this._bytes_internal = QBYTES_PTR_NULL;
     this.home = here;
   }
   proc bytes.bytes(len:int(64), out error:syserr) {
@@ -144,18 +144,18 @@ module Buffers {
     // retain -- release
     if( x.home == here ) {
       on x.home {
-        qio_bytes_retain(x._bytes_internal);
+        qbytes_retain(x._bytes_internal);
       }
 
       on ret.home {
-        qio_bytes_release(ret._bytes_internal);
+        qbytes_release(ret._bytes_internal);
       }
 
       ret.home = x.home;
       ret._bytes_internal = x._bytes_internal;
     } else {
       on ret.home {
-        qio_bytes_release(ret._bytes_internal);
+        qbytes_release(ret._bytes_internal);
       }
       ret.home = here;
       writeln("Bulk moving bytes");
