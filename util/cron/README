@@ -10,8 +10,8 @@ chap07 : tcmalloc (comm none, gasnet multilocale-examples)
 chap08 : XMT
 chpbld01 : XT/XE PrgEnvs examples, nightly
 chpbld02 : XT/XE PrgEnvs all, weekly
-chpbld03 :
-chpbld04 :
+chpbld03 : RHEL5.7 with Tilera PCI card (non-standard, Not used for testing)
+chpbld04 : RHEL5.7 with Tilera PCI card (non-standard, Not used for testing)
 cflbs32: 32-bit linux (comm none, default everything)
 
 Seattle machines
@@ -23,9 +23,10 @@ lnx-vass : block, memory leaks
 lnx-hilde :
 lnx-sung: cyclic
 macchapel-mac : mac (still a bit fishy)
-(windows laptop) : cygwin (typical windows network weirdness)
+4LR97C1 (windows laptop) : cygwin (typical windows network weirdness)
 
 Discontinued
 ============
 chap02 : opts testing
 lnx-hilde : nanox (comm none examples, gasnet multilocale-examples)
+gold : linux32 (no longer available)
