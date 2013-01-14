@@ -30,6 +30,27 @@ These things regularly cause noise in testing:
 
 linux64.gnu.gasnet.qthreads.none (UNASSIGNED)
 ---------------------------------------------
+gbt: 1/14/13.  Here the list of failure counts for the last 7 days.
+(Thank you, grep|cut|sed|sort|uniq!)  I've sent this to Kyle and
+Dylan.  76 of these are with comm=none, and 28 with comm=gasnet.
+      2 distributions/robust/arithmetic/slicing/test_array_slicing3
+     12 distributions/robust/arithmetic/stress/test_many_domains
+      8 domains/sungeun/assoc/stress
+      2 execflags/bradc/gdbddash/gdbSetConfig
+      6 exercises/RandomNumber6
+      2 memory/figueroa/LeakedMemory5
+     14 multilocale/diten/needMultiLocales/beginInOn
+      4 parallel/begin/deitz/test_begin_error_lineno
+      8 parallel/begin/marybeth/test_forbegin
+      2 parallel/begin/marybeth/test_forbegin2
+      6 parallel/begin/marybeth/test_forbegin3
+      6 parallel/cobegin/bradc/exitone
+      4 stress/deitz/test_10k_coforall
+     10 studies/shootout/thread-ring/thread-ring
+      2 studies/sudoku/dinan/search/sudoku-reduce
+      6 users/shetag/fock/fock-1
+      6 users/shetag/fock/fock-1-begin-blc
+      4 users/shetag/fock/fock-2
 
 sungeun: 12/7/12.  Enabled oversubscription (and disable affinity).
 Dylan says that in this configuration the timeouts all passed.  It's
@@ -59,6 +80,10 @@ sort?  If not, file bug against XMT compiler.
 
 SIGABRT on gasnet-fast runs (sungeun)
 ----------------------------------------
+gbt: 1/14/13.  The only SIGABRT in the last week resulted from an error
+halt in domains/sungeun/sparse/forall.chpl due to an out-of-bounds array
+index.
+
 sungeun: 1/2/13.  These tests also suffered from the private broadcast
 bug mentioned above with testRAStream and fixed in r20877.  If they do
 not show up again for another couple of weeks, remove this entire
