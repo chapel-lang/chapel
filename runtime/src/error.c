@@ -1,11 +1,14 @@
+#include "chplrt.h"
+
 #include "error.h"
 #include "chplexit.h"
-#include "chplrt.h"
+
 #include <stdarg.h>
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <inttypes.h>
+
 #ifndef LAUNCHER
 #include "chpl-atomics.h"
 #endif

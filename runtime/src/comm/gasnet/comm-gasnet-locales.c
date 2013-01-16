@@ -1,5 +1,5 @@
-#include "arg.h"
 #include "chplrt.h"
+#include "arg.h"
 #include "chpl-comm-locales.h"
 #include "error.h"
 

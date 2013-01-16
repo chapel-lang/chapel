@@ -20,6 +20,10 @@ extern int32_t chpl_numLocales; // number of locales
 extern int32_t chpl_numPrivateObjects;
 extern void** chpl_privateObjects; // privatized array and domain objects
 
+extern int chpl_verbose_comm;     // set via startVerboseComm
+extern int chpl_comm_diagnostics; // set via startCommDiagnostics
+extern int chpl_verbose_mem;      // set via startVerboseMem
+
 static ___always_inline
 int32_t chpl_numPrivatizedClasses(void) { return chpl_numPrivateObjects; }
 

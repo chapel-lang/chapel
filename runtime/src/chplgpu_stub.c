@@ -1,8 +1,11 @@
-#include <stdio.h>
-#include <string.h>
 #include "chplrt.h"
+
 #include "chpl-mem.h"
 #include "chplgpu.h"
+
+#include <stdio.h>
+#include <string.h>
+
 void gpuAllocate(void **data, size_t size) {
   *data = chpl_mem_alloc ( size, CHPL_RT_MD_CHAPEL_CODE, 0, 0 );
   printf("gpuAllocate: Allocated %u bytes at %p\n", (unsigned int)size, *data);

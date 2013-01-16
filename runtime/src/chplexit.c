@@ -1,14 +1,14 @@
-#include "sys_basic.h"
+#include "chplrt.h"
 
-#include <stdio.h>
-#include <stdlib.h>
 #include "chpl_rt_utils_static.h"
 #include "chpl-comm.h"
 #include "chplexit.h"
 #include "chpl-mem.h"
 #include "chplmemtrack.h"
-#include "chplrt.h"
 #include "gdb.h"
+
+#include <stdio.h>
+#include <stdlib.h>
 
 #undef exit
 

@@ -1,18 +1,20 @@
 //
 // Shared code for different mem implementations in mem-*/chpl_*_mem.c
 //
+#include "chplrt.h"
+
+#include "chpl-comm.h"
+#define CHPL_MEM_C
+#include "chpl-mem.h"
+#include "chplmemtrack.h"
+#include "chpltypes.h"
+#include "error.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
 #include <limits.h>
-#include "chpl-comm.h"
-#define CHPL_MEM_C
-#include "chpl-mem.h"
-#include "chplmemtrack.h"
-#include "chplrt.h"
-#include "chpltypes.h"
-#include "error.h"
 
 
 //

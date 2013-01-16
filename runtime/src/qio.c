@@ -10,11 +10,12 @@
 #define _GNU_SOURCE
 #endif
 
-#include "sys_basic.h"
-
 #ifndef SIMPLE_TEST
 #include "chplrt.h"
 #endif
+
+#include "qio.h"
+#include "qbuffer.h"
 
 #include <stdio.h>
 #include <stdarg.h>
@@ -34,9 +35,6 @@
 #include <sys/mman.h>
 
 #include <assert.h>
-
-#include "qio.h"
-#include "qbuffer.h"
 
 ssize_t qio_too_small_for_default_mmap = 16*1024;
 ssize_t qio_too_large_for_default_mmap = 64*1024*((size_t)1024*1024);

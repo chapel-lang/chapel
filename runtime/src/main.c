@@ -1,3 +1,5 @@
+#include "chplrt.h"
+
 #include "arg.h"
 #include "chpl_rt_utils_static.h"
 #include "chplcast.h"
@@ -7,15 +9,15 @@
 #include "chplio.h"
 #include "chpl-mem.h"
 #include "chplmemtrack.h"
-#include "chplrt.h"
 #include "chpl-tasks.h"
 #include "config.h"
 #include "error.h"
+
 #include <stdint.h>
 #include <string.h>
 #include <locale.h>
 #include <time.h>
-#include "sys.h"
+#include <sys.h>
 
 extern int chpl_no_stdmodules;
 

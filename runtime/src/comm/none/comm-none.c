@@ -1,15 +1,18 @@
-#include <errno.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <assert.h>
-#include <stdint.h>
 #include "chplrt.h"
+
 #include "chpl-comm.h"
 #include "chplexit.h"
 #include "error.h"
 #include "chpl-mem.h"
 #include "chpl-tasks.h"
+
+#include "chplcgfns.h"  // for chpl_ftable
+
+#include <errno.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdint.h>
 
 // Helper functions
 

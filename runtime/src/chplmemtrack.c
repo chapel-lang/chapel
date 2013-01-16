@@ -1,14 +1,16 @@
-#include <string.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <inttypes.h>
-
 #include "chplrt.h"
+
 #include "chplmemtrack.h"
 #include "chpl-mem.h"
 #include "chpl-tasks.h"
 #include "chpl-comm.h"
+#include "chplcgfns.h"
 #include "error.h"
+
+#include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <inttypes.h>
 
 //
 // This is global because it's referenced in chpl-mem.h and thus needs

@@ -72,8 +72,6 @@ typedef _Bool chpl_bool;
 #else
 typedef bool chpl_bool;
 #endif
-
-//typedef bool chpl_bool;
 typedef int8_t chpl_bool8;
 typedef int16_t chpl_bool16;
 typedef int32_t chpl_bool32;
@@ -134,10 +132,8 @@ struct __chpl____wide_chpl_string;
 //
 // stopgap formatting
 //
-#undef printf
 chpl_string chpl_format(chpl_string format, ...)
   __attribute__((format(printf, 1, 2)));
-#define printf PRINTF_DEF
 
 char* chpl_glom_strings(int numstrings, ...);
 
@@ -156,13 +152,6 @@ int64_t string_length(chpl_string x);
 int64_t real2int( _real64 f);       // return the raw bytes of the float
 int64_t object2int( _chpl_object o);  // return the ptr
 
-typedef struct timeval _timevalue;
-
-_timevalue chpl_null_timevalue(void);
-_timevalue chpl_now_timevalue(void);
-int64_t chpl_timevalue_seconds(_timevalue t);
-int64_t chpl_timevalue_microseconds(_timevalue t);
-void chpl_timevalue_parts(_timevalue t, int32_t* seconds, int32_t* minutes, int32_t* hours, int32_t* mday, int32_t* month, int32_t* year, int32_t* wday, int32_t* yday, int32_t* isdst);
 
 typedef int32_t chpl__class_id;
 

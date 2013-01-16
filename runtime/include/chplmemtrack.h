@@ -3,9 +3,12 @@
 
 #ifndef LAUNCHER
 
+#include "chpltypes.h"  // for chpl_string
+#include "chpl-mem-desc.h"
+
 #include <stdio.h>
 #include <stdlib.h>
-#include "chpl-mem-desc.h"
+
 
 // Memory tracking activated?
 extern _Bool chpl_memTrack;

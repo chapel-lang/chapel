@@ -5,14 +5,12 @@
    Chapel code -- in particular, things like chplcgfns.h are not
    needed for the generated runtime code, and cause problems. */
 
-#include "sys_basic.h"
+#include "chplrt.h"
 
 #include <errno.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
-
-#include <chpl-comm-printf-macros.h>
 
 #include "chplcast.h"
 #include "chplio.h"

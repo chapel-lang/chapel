@@ -7,12 +7,12 @@
 #define NDEBUG
 #endif
 
+#include "chplrt.h"
 #include "chpl_rt_utils_static.h"
 #include "chplcgfns.h"
 #include "chpl-comm.h"
 #include "chplexit.h"
 #include "chpl-mem.h"
-#include "chplrt.h"
 #include "chpl-tasks.h"
 #include "error.h"
 #include <stdio.h>

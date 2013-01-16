@@ -1,14 +1,16 @@
+#include "chplrt.h"
+
+#include "chplcast.h"
+#include "chpltypes.h"
+#include "chplfp.h"
+#include "error.h"
+
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <inttypes.h>
 #include <math.h>
-#include "chplcast.h"
-#include "chplrt.h"
-#include "chpltypes.h"
-#include <chplfp.h>
-#include "error.h"
 
 static int scanningNCounts(void) {
   static int answer = -1;

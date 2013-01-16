@@ -401,7 +401,7 @@ err_t qbuffer_memset(qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, u
 // really want to call malloc
 #define MAX_ON_STACK 128
 
-#ifdef _chplrt_H_
+#ifndef SIMPLE_TEST
 
 #include "chpl-mem.h"
 #define qio_malloc(size) chpl_mem_allocMany( 1, size, CHPL_RT_MD_IO_BUFFER, __LINE__, __FILE__ )

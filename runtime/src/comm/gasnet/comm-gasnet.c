@@ -1,19 +1,21 @@
-#include <signal.h>
-#include <stdint.h>
-#include <stdlib.h>
-#include <string.h>
-#include <assert.h>
+#include "chplrt.h"
+
 #include "gasnet.h"
 #include "gasnet_vis.h"
 #include "gasnet_coll.h"
 #include "gasnet_tools.h"
-#include "chplrt.h"
 #include "chpl-comm.h"
 #include "chpl-mem.h"
 #include "chplsys.h"
 #include "chpl-tasks.h"
 #include "chpl-atomics.h"
 #include "error.h"
+
+#include <signal.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
+#include <assert.h>
 
 #ifdef GASNET_NEEDS_MAX_SEGSIZE
 #define CHPL_COMM_GASNET_SETENV chpl_comm_gasnet_set_max_segsize();

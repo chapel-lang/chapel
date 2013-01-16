@@ -1,14 +1,16 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include "chplrt.h"
+
 #include "arg.h"
 #include "chplcgfns.h"
 #include "chplexit.h"
 #include "chplio.h"
 #include "chpl-mem.h"
-#include "chplrt.h"
 #include "config.h"
 #include "error.h"
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 
 #define HASHSIZE 101

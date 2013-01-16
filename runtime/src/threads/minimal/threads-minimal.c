@@ -7,9 +7,9 @@
 #define NDEBUG
 #endif
 
+#include "chplrt.h"
 #include "chpl-mem.h"
 #include "chplcast.h"
-#include "chplrt.h"
 #include "chpl-threads.h"
 #include "config.h"
 #include "error.h"

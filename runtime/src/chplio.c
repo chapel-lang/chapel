@@ -1,10 +1,11 @@
+#include "chplrt.h"
+
+#include "chplio.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <inttypes.h>
-#include "chplio.h"
-#include "chplrt.h"
-
 
 
 char* chpl_refToString(void* ref) {

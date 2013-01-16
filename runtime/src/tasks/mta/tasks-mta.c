@@ -2,8 +2,8 @@
 // MTA implementation of Chapel tasking interface
 //
 
-#include "chpl-mem.h"
 #include "chplrt.h"
+#include "chpl-mem.h"
 #include "chpl-tasks.h"
 #include "config.h"
 #include "error.h"

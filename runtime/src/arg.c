@@ -1,7 +1,5 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <stdint.h>
+#include "chplrt.h"
+
 #include "arg.h"
 #include "chplcast.h"
 #include "chplcgfns.h"
@@ -9,10 +7,14 @@
 #include "chplio.h"
 #include "chpl-mem.h"
 #include "chplmemtrack.h"
-#include "chplrt.h"
 #include "chpl-tasks.h"
 #include "config.h"
 #include "error.h"
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdint.h>
 
 
 static int gdbFlag = 0;
