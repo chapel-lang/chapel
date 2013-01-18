@@ -1,0 +1,7 @@
+bug: compiler hits an internal failure in a certain case when 'ref' intent is used with comm=gasnet
+
+This is the same as ref-intent-bug-1small.future, but
+* use integers instead of pointers, for clarity;
+* test more variations (local vs. global variables).
+
+When this bug is fixed, .skipif should be removed.
