@@ -4,7 +4,7 @@
 
 #include "chpltimers.h"
 
-#include <time.h>	// For struct tm.
+#include <time.h> 	// For struct tm.
 
 _timevalue chpl_null_timevalue(void) {
   _timevalue ret;

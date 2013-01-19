@@ -6,7 +6,6 @@
 #include <sys/select.h>
 #include <errno.h>
 #include <string.h>
-#include <chpl-comm-printf-macros.h>
 #include "chplcgfns.h"
 #include "chpl-comm-launch.h"
 #include "chpl-comm-locales.h"

@@ -8,6 +8,7 @@
 #include "chpl-mem.h"
 #include "chplsys.h"
 #include "chpl-tasks.h"
+#include "chplcgfns.h" // for chpl_ftable
 #include "chpl-atomics.h"
 #include "error.h"
 

@@ -5,6 +5,7 @@
 #include "chplrt.h"
 #include "chpl-mem.h"
 #include "chpl-tasks.h"
+#include "chplcgfns.h" // for chpl_ftable
 #include "config.h"
 #include "error.h"
 #include <machine/runtime.h>

@@ -32,7 +32,6 @@
 //#include <sys/fcntl.h> no sys/fcntl.h on AIX, fcntl.h should cover it.
 #include <sys/param.h> // MAXPATHLEN
 #include <sys/stat.h>
-#include <sys/mman.h>
 
 #include <assert.h>
 

@@ -9,6 +9,8 @@
 #ifndef _tasks_qthreads_h_
 #define _tasks_qthreads_h_
 
+#include "chpltypes.h" // for chpl_bool
+
 #include <stdint.h>
 
 #include <qthread.h>

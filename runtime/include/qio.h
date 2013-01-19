@@ -12,6 +12,11 @@
 #include <stdbool.h>
 #include <assert.h>
 
+// On some systems contains #define mmap mmap64
+// rather than an inline function -- which means that it must be included before
+// any mention of the token "mmap".  Most unfortunate. <hilde>
+#include <sys/mman.h>
+
 #define DEBUG_QIO 0
 
 typedef enum {
