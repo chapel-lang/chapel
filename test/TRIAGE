@@ -124,6 +124,8 @@ come up again
 
 intermittent valgrind error
 ---------------------------
+- studies/madness/aniruddha/madchap/mytests/par-refine/test_refine (compopts:1)
+This got the wrong answer on 01/14/13 -- I don't recall seeing that before
 - studies/hpcc/HPL/stonea/serial/hplExample5
 This happened around 11/27/2012, but I caught it the week after when
 it resolved, so I don't how it failed, since the log file is gone.
