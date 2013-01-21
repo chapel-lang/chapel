@@ -5,116 +5,82 @@ module ChapelLocale {
   
   use DefaultRectangular;
   
-  // would like this to be the following, but it breaks about 20 tests:
-  //const LocaleSpace: domain(1) distributed(OnePer) = [0..numLocales-1];
-  const LocaleSpace: domain(1) = {0..numLocales-1};
-  
-  var doneCreatingLocales: bool;
-  
+  const emptyLocaleSpace: domain(1) = {1..0};
+  const emptyLocales: [emptyLocaleSpace] locale;
+
+  //
+  // An abstract class. Specifies the required locale interface.
+  // Each locale implementation must inherit from this class.
+  //
   class locale {
-    const chpl_id: int;
+    // We may want to let subclasses choose how to implement 'id' and 'name'.
+    var chpl_id: int;
+    const name: string;
+    // To be removed from the required interface once legacy code is adjusted.
     const numCores: int;
-  
-    proc locale(id = -1) {
-      if doneCreatingLocales {
-        halt("locales cannot be created");
-      }
-      chpl_id = id;
-  
-      extern proc chpl_numCoresOnThisLocale(): int;
-      numCores = chpl_numCoresOnThisLocale();
+
+    proc locale() {
+      halt("locales cannot be created");
     }
   
-    proc id {
-      return chpl_id;
-    }
-  
-    proc name {
-      var locName: string;
-      on this do locName = __primitive("chpl_localeName");
-      return locName;
-    }
-  
-    proc callStackSize: int {
-      // Locales may have differing call stack sizes.
-      extern proc chpl_task_getCallStackSize(): int;
-      var retval: int;
-      on this do retval = chpl_task_getCallStackSize();
-      return retval;
-    }
+    // In legacy code, the id accessor is used to obtain the node id, so it
+    // should probably be renamed as node_id.
+    // As an accessor, it is statically bound, which is also a problem....
+    proc id return chpl_id;
   
     proc readWriteThis(f) {
-      f <~> new ioLiteral("LOCALE") <~> chpl_id;
+      halt("Pure virtual function called.");
     }
+
+    proc getChildSpace() {
+      halt("Pure virtual function called.");
+      return emptyLocaleSpace;
+    }      
+  
+    proc getChildCount() : int {
+      halt("Pure virtual function called.");
+      return 0;
+    }      
+  
+// Part of the required locale interface.
+// Commented out because presently iterators are statically bound.
+//    iter getChildIndices() : int {
+//      for idx in this.getChildSpace do
+//        yield idx;
+//    }
+  
+    proc addChild(loc:locale)
+    {
+      halt("Pure virtual function called.");
+    }
+  
+    proc getChild(idx:int) : locale {
+      halt("Pure virtual function called.");
+      return this;
+    }
+
+// Part of the required locale interface.
+// Commented out because presently iterators are statically bound.
+//    iter getChildren() : locale  {
+//      halt("Pure virtual function called.");
+//      yield 0;
+//    }
+
+    // This is a special interface used to set up the global Locales array
+    // for backward compatibility.  When that array is removed, this routine
+    // may be removed as well.
+    proc getChildArray() {
+      halt("Pure virtual function called.");
+      return emptyLocales;
+    }
+
   }
+
+  var rootLocale : locale = nil;
   
   pragma "private" var _here: locale;
   
   proc here return _here;
-  
-  // Perform locale-specific initialization.
-  // This is where global variables declared 'pragma "private"' are initialized.
-  // That initialization is not currently arranged automatically by the compiler.
-  proc chpl_setupLocale(id) {
-    var tmp: locale;
-    on __primitive("chpl_on_locale_num", id) {
-      tmp = new locale(id);
-      _here = tmp;
-      if (defaultDist._value == nil) {
-        defaultDist = new dmap(new DefaultDist());
-      }
-    }
-    return tmp;
-  }
-  
-  const Locales: [LocaleSpace] locale;
-  // We cannot use a forall here because the default leader iterator will
-  // access data structures that are not yet initialized (i.e., Locales
-  // array/here).  An alternative would be to use a coforall+on and refactor
-  // chpl_setupLocale().
-  for loc in LocaleSpace do
-    Locales(loc) = chpl_setupLocale(loc);
-  
-  doneCreatingLocales = true;
-  
-  //
-  // tree for recursive task invocation during privatization
-  //
-  record chpl_localeTreeRecord {
-    var left, right: locale;
-  }
-  pragma "private" var chpl_localeTree: chpl_localeTreeRecord;
-  
-  proc chpl_initLocaleTree() {
-    for i in LocaleSpace {
-      var left: locale = nil;
-      var right: locale = nil;
-      var child = (i+1)*2-1;
-      if child < numLocales {
-        left = Locales[child];
-        child += 1;
-        if child < numLocales then
-          right = Locales[child];
-      }
-      on Locales(i) {
-        chpl_localeTree.left = left;
-        chpl_localeTree.right = right;
-      }
-    }
-  }
-  
-  chpl_initLocaleTree();
-  
-  //proc locale.numCores {
-  //  var numCores: int;
-  //  on this do numCores = __primitive("chpl_coresPerLocale");
-  //  return numCores;
-  //}
-  
-  proc chpl_int_to_locale(id) {
-    return Locales(id);
-  }
-  
   
   proc locale.totalThreads() {
     var totalThreads: int;

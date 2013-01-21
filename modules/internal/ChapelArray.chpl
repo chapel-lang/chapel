@@ -6,8 +6,6 @@ module ChapelArray {
   use ChapelBase; // For opaque type.
   use ChapelTuple;
   
-  config param noRefCount = false;
-  
   var privatizeLock$: sync int;
   
   config param debugBulkTransfer = false;

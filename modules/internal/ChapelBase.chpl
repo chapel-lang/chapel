@@ -62,6 +62,8 @@ module ChapelBase {
     compilerWarning("CHPL_MAKE not set");
   }
   
+  config param noRefCount = false;
+  
   config param warnMaximalRange = false;	// Warns if integer rollover will cause
   					// the iterator to yield zero times.
   
