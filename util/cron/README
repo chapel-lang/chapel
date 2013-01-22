@@ -10,18 +10,18 @@ chap07 : tcmalloc (comm none, gasnet multilocale-examples)
 chap08 : XMT
 chpbld01 : XT/XE PrgEnvs examples, nightly
 chpbld02 : XT/XE PrgEnvs all, weekly
-chpbld03 : RHEL5.7 with Tilera PCI card (non-standard, Not used for testing)
-chpbld04 : RHEL5.7 with Tilera PCI card (non-standard, Not used for testing)
-cflbs32: 32-bit linux (comm none, default everything)
+chpbld03 : (no testing - non-standard: RHEL5.7 with Tilera PCI card)
+chpbld04 : (no testing - non-standard: RHEL5.7 with Tilera PCI card)
+cflbs32  : linux32 (comm none, default everything)
 
 Seattle machines
 ================
 chap09 : valgrind (comm none)
 chap10 : gasnet: segment fast (M,W,F,Su), segment everything (Tu,Thu,Sa)
 bradc-lnx : 11pm update of ~chapelu/chapel, release testing, linxu64 performance, token count, tab check
-lnx-vass : block, memory leaks
-lnx-hilde :
-lnx-sung: cyclic
+lnx-vass  : block, memory leaks; historify-logs
+lnx-hilde : (no testing)
+lnx-sung  : cyclic
 macchapel-mac : mac (still a bit fishy)
 4LR97C1 (windows laptop) : cygwin (typical windows network weirdness)
 
@@ -30,3 +30,11 @@ Discontinued
 chap02 : opts testing
 lnx-hilde : nanox (comm none examples, gasnet multilocale-examples)
 gold : linux32 (no longer available)
+
+start_opt_test
+--------------
+
+Currently unused - in part because there were always holes and there
+wasn't a good diffing system as with the normal nightly runs. So
+sifting through logs to see what was changing required a lot of
+human effort. We keep it around in hopes of resurrecting it.
