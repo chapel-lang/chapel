@@ -164,9 +164,21 @@ process_args(ArgumentState *arg_state, int argc, char **aargv) {
         case '+': (*(int *)desc[i].location)++; break;
         case 'f': 
         case 'F': 
+          *(bool *)desc[i].location = type!='f'?1:0; break;
         case 'N':
         case 'n':
-          *(bool *)desc[i].location = type!='f'?1:0; break;
+          switch (env[0]) {
+            case 'Y': case 'y': case 'T': case 't': case '1':
+              *(bool *)desc[i].location = type=='N'?1:0; break;
+            case 'N': case 'n': case 'F': case 'f': case '0':
+              *(bool *)desc[i].location = type=='N'?0:1; break;
+            default:
+              USR_FATAL_CONT("When the environment variable %s"
+                " is set and not empty, it must start with one of Y y T t 1"
+                " (indicates 'yes') or N n F f 0 (indicates '--no')."
+                " Currently it is set to \"%s\".", desc[i].env, env); break;
+          }
+          break;
         case 'T': *(int *)desc[i].location = !*(int *)desc[i].location; break;
         case 'I': *(int *)desc[i].location = strtol(env, NULL, 0); break;
         case 'D': *(double *)desc[i].location = strtod(env, NULL); break;
