@@ -7,11 +7,11 @@ config param verbose:bool=false;
 iter dynamic(c:range(?), chunkSize:int, numTasks:int) {
 
   if verbose then 
-    compilerWarning("Working with serial dynamic Iterator");	
+    compilerWarning("Working with serial dynamic Iterator");    
     writeln("Serial dynamic Iterator. Working with range ", c);
   
   for i in c do yield i;    
-}    	      
+}             
 
 
 
@@ -41,17 +41,17 @@ where tag == iterKind.leader
 
     coforall tid in 0..#nTasks do { 
       while moreWork do {
-	  // There is local work in remain
-	  splitLock$; // Perform the splitting in a critical section
-	  const current:rType=splitChunk(remain, chunkSize, moreWork); 
-	  splitLock$=true;
-	  if current.length !=0 then {
-	    const zeroBasedIters:rType= densify(current,c);
-	    if verbose then 
-	      writeln("Parallel dynamic Iterator. Working at tid ", tid, " with range ", current, " yielded as ", zeroBasedIters);
-	
-	    yield tuple(zeroBasedIters);}
-	}    	      
+      // There is local work in remain
+      splitLock$; // Perform the splitting in a critical section
+      const current:rType=splitChunk(remain, chunkSize, moreWork); 
+      splitLock$=true;
+      if current.length !=0 then {
+        const zeroBasedIters:rType= densify(current,c);
+        if verbose then 
+          writeln("Parallel dynamic Iterator. Working at tid ", tid, " with range ", current, " yielded as ", zeroBasedIters);
+    
+        yield tuple(zeroBasedIters);}
+    }             
     }
   }
 }
@@ -78,7 +78,7 @@ iter guided(c:range(?), numTasks:int) {
     compilerWarning("Working with serial guided Iterator");
     writeln("Serial guided Iterator. Working with range ", c);
   
-  for i in c do yield i;        	      
+  for i in c do yield i;                  
 }
 
 
@@ -107,17 +107,17 @@ where tag == iterKind.leader
 
     coforall tid in 0..#nTasks do { 
       while undone do {
-	  // There is local work in remain(tid)
-	  splitLock$; // Perform the splitting in a critical section
-	  const current:rType=adaptSplit(remain, factor, undone); 
-	  splitLock$=true;
-	  if current.length !=0 then {
-	    const zeroBasedIters:rType = densify(current,c);
-	    if verbose then 
-	      writeln("Parallel guided Iterator. Working at tid ", tid, " with range ", current, " yielded as ", zeroBasedIters);
-	
-	    yield tuple(zeroBasedIters);}
-	}    	      
+      // There is local work in remain(tid)
+      splitLock$; // Perform the splitting in a critical section
+      const current:rType=adaptSplit(remain, factor, undone); 
+      splitLock$=true;
+      if current.length !=0 then {
+        const zeroBasedIters:rType = densify(current,c);
+        if verbose then 
+          writeln("Parallel guided Iterator. Working at tid ", tid, " with range ", current, " yielded as ", zeroBasedIters);
+    
+        yield tuple(zeroBasedIters);}
+    }             
     }
   }
 }
@@ -145,7 +145,7 @@ iter adaptive(c:range(?), numTasks:int) {
     writeln("Serial adaptive work-stealing Iterator. Working with range ", c);
   
   for i in c do yield i;
-    	      
+              
 }
 
 
@@ -197,7 +197,7 @@ where tag == iterKind.leader
 
       localWork[tid]=splitRange(r,tid);  // Initial Local range in localWork[tid]
       if verbose then 
-	writeln("Parallel adaptive work-stealing Iterator. Working at tid ", tid, " with initial range ", localWork[tid]);
+    writeln("Parallel adaptive work-stealing Iterator. Working at tid ", tid, " with initial range ", localWork[tid]);
 
       // A barrier waiting for each thread to finish the initial assignment
       barrier;
@@ -205,13 +205,13 @@ where tag == iterKind.leader
       // Step 2: While there is work at tid, do splitting
       
       while moreLocalWork[tid] do { 
-	  // There is local work 
-	  const zeroBasedIters:rType=splitWork(tid); // The current range we get after splitting locally
-	  if zeroBasedIters.length !=0 then {
-	    if verbose then 
-	      writeln("Parallel adaptive Iterator. Working locally at tid ", tid, " with range yielded as ", zeroBasedIters);
-	    yield tuple(zeroBasedIters);}
-	}
+      // There is local work 
+      const zeroBasedIters:rType=splitWork(tid); // The current range we get after splitting locally
+      if zeroBasedIters.length !=0 then {
+        if verbose then 
+          writeln("Parallel adaptive Iterator. Working locally at tid ", tid, " with range yielded as ", zeroBasedIters);
+        yield tuple(zeroBasedIters);}
+    }
 
       // Step3: Task tid finished its work, so it will try to steal from a neighbor
 
@@ -220,74 +220,74 @@ where tag == iterKind.leader
       var stealFailed:bool=false;
 
       while moreWork do {
-	  if verbose then 
-	    writeln("Entering at Stealing phase in tid ", tid," with victim ", victim, " using method of Stealing ", methodStealing);
+      if verbose then 
+        writeln("Entering at Stealing phase in tid ", tid," with victim ", victim, " using method of Stealing ", methodStealing);
 
-	  // Perform the spliting at the victim remaining range
+      // Perform the spliting at the victim remaining range
 
-	  select methodStealing {
-	    when 0 do { // Steals from the victim until it exhausts its range
+      select methodStealing {
+        when 0 do { // Steals from the victim until it exhausts its range
 
-	      while moreLocalWork[victim] do {
-		  // There is work in victim
-		  const zeroBasedIters2:rType=splitWork(victim); // The current range we get 
-		                                        //after splitting from a victim range
-		  if zeroBasedIters2.length !=0 then {
-		    if verbose then 
-		      writeln("Range stealed at victim ", victim," yielded as ", zeroBasedIters2," by tid ", tid);
-		    yield tuple(zeroBasedIters2);}
-		}	
-	    }       
-	 
-	    when 1 do { // Steals once from victim. If it has sucess on the stealing, 
-	                // it chooses another victim and tries to steal again.
-	    
-	      if moreLocalWork[victim] then {
-		// There is work in victim
-		const zeroBasedIters2:rType=splitWork(victim); // The current range we get 
-		                                   //after splitting from a victim range
-		if zeroBasedIters2.length !=0 then {
-		  if verbose then 
-		    writeln("Range stealed at victim ", victim," yielded as ", zeroBasedIters2," by tid ", tid);
-		  yield tuple(zeroBasedIters2);}
-	      }
-	      else {
-		stealFailed=true;
-	      }	    
-	    }
-	    otherwise { // Tt steals from the victim, but now splitting 
-	                //from the tail of the victim's range 
-	      
-	      while moreLocalWork[victim] do { 
-		  // There is work in victim
-		  const zeroBasedIters2:rType=splitWork(victim, true); // The current range we get 
-		                        // after splitting from a victim range: 
-		                       // now we set splitTatil to true (second parameter in the call)
-		  if zeroBasedIters2.length !=0 then {
-		    if verbose then 
-		      writeln("Range stealed at victim ", victim," yielded as ", zeroBasedIters2," by tid ", tid);
-		    yield tuple(zeroBasedIters2);}
-		}
-	    } 
-	    }
-	  // If here, then it can have failed the stealing intent at the victim (method 1), 
-	  // or we have exhausted the victim range (methods 0, 2)
+          while moreLocalWork[victim] do {
+          // There is work in victim
+          const zeroBasedIters2:rType=splitWork(victim); // The current range we get 
+                                                //after splitting from a victim range
+          if zeroBasedIters2.length !=0 then {
+            if verbose then 
+              writeln("Range stealed at victim ", victim," yielded as ", zeroBasedIters2," by tid ", tid);
+            yield tuple(zeroBasedIters2);}
+        }   
+        }       
+     
+        when 1 do { // Steals once from victim. If it has sucess on the stealing, 
+                    // it chooses another victim and tries to steal again.
+        
+          if moreLocalWork[victim] then {
+        // There is work in victim
+        const zeroBasedIters2:rType=splitWork(victim); // The current range we get 
+                                           //after splitting from a victim range
+        if zeroBasedIters2.length !=0 then {
+          if verbose then 
+            writeln("Range stealed at victim ", victim," yielded as ", zeroBasedIters2," by tid ", tid);
+          yield tuple(zeroBasedIters2);}
+          }
+          else {
+        stealFailed=true;
+          }     
+        }
+        otherwise { // Tt steals from the victim, but now splitting 
+                    //from the tail of the victim's range 
+          
+          while moreLocalWork[victim] do { 
+          // There is work in victim
+          const zeroBasedIters2:rType=splitWork(victim, true); // The current range we get 
+                                // after splitting from a victim range: 
+                               // now we set splitTatil to true (second parameter in the call)
+          if zeroBasedIters2.length !=0 then {
+            if verbose then 
+              writeln("Range stealed at victim ", victim," yielded as ", zeroBasedIters2," by tid ", tid);
+            yield tuple(zeroBasedIters2);}
+        }
+        } 
+        }
+      // If here, then it can have failed the stealing intent at the victim (method 1), 
+      // or we have exhausted the victim range (methods 0, 2)
 
-	  if (methodStealing==0 || methodStealing==2 || (methodStealing==1 && stealFailed)) then { 
-	    nVisitedVictims += 1; // Signal that there is no more work in victim
-	    if verbose then 
-	      writeln("Failed Stealing intent at tid ", tid," with victim ", victim, " and total no. of visited victims ", nVisitedVictims);
-	    stealFailed=false; 
-	  }
-	  // Check if there is no more work
-	  if nVisitedVictims >= nTasks-1 then
-	    moreWork=false; // Signal that there is no more work in any victim
-	  else {  // There can be still work in other victim
-	    victim=(victim+1) % nTasks; // New victim to steal
-	    if methodStealing==1 then
-	      if victim==tid then victim=(victim+1) % nTasks;
-	  } 
-	}
+      if (methodStealing==0 || methodStealing==2 || (methodStealing==1 && stealFailed)) then { 
+        nVisitedVictims += 1; // Signal that there is no more work in victim
+        if verbose then 
+          writeln("Failed Stealing intent at tid ", tid," with victim ", victim, " and total no. of visited victims ", nVisitedVictims);
+        stealFailed=false; 
+      }
+      // Check if there is no more work
+      if nVisitedVictims >= nTasks-1 then
+        moreWork=false; // Signal that there is no more work in any victim
+      else {  // There can be still work in other victim
+        victim=(victim+1) % nTasks; // New victim to steal
+        if methodStealing==1 then
+          if victim==tid then victim=(victim+1) % nTasks;
+      } 
+    }
     }  
 
     proc splitRange(c:range(?),tid:int)
@@ -323,7 +323,7 @@ where tag == iterKind.leader
       const zeroBasedCurrent:rType=current;
       return zeroBasedCurrent;  
       }
-    	  
+          
   }
   }
 }
@@ -366,7 +366,7 @@ proc splitChunk(inout rangeToSplit:range(?), chunkSize:int, inout itLeft:bool)
     itLeft=false;
     }
   const firstRange:rType=rangeToSplit#size;
-  rangeToSplit=rangeToSplit#(size-totLen);	  
+  rangeToSplit=rangeToSplit#(size-totLen);    
   return firstRange;
 }
 
@@ -388,7 +388,7 @@ proc adaptSplit(inout rangeToSplit:range(?), splitFactor:int, inout itLeft:bool,
     direction=-1;
   else direction=1; 
   const firstRange:rType=rangeToSplit#(direction*size);
-  rangeToSplit=rangeToSplit#(direction*(size-totLen));	  
+  rangeToSplit=rangeToSplit#(direction*(size-totLen));    
   return firstRange;
 }
 

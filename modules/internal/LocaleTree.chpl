@@ -5,7 +5,7 @@
 pragma "no use ChapelStandard"
 module LocaleTree {
 
-  use ChapelLocale;	// For declaration of rootLocale.
+  use ChapelLocale; // For declaration of rootLocale.
 
   record chpl_localeTreeRecord {
     var left, right: locale;
@@ -17,7 +17,7 @@ module LocaleTree {
     for i in LocaleSpace {
       var left: locale = nil;
       var right: locale = nil;
-      var child = (i+1)*2-1;	// Assumes that indices are dense.
+      var child = (i+1)*2-1;    // Assumes that indices are dense.
       if child < numLocales {
         left = rootLocale.getChild(child);
         child += 1;

@@ -539,7 +539,7 @@ module ChapelRangeBase {
   
     return new rangeBase(resultType, b, s,
                      r._low + i, r._high + i,
-  		   r.stride : strType, r._alignment + i : resultType);
+           r.stride : strType, r._alignment + i : resultType);
   }
   
   inline proc +(i:integral, r: rangeBase(?e,?b,?s))
@@ -552,7 +552,7 @@ module ChapelRangeBase {
   
     return new rangeBase(resultType, b, s,
                      r._low - i, r._high - i,
-  		   r._stride : strType, r._alignment - i : resultType);
+           r._stride : strType, r._alignment - i : resultType);
   }
   
   proc chpl__align(r : rangeBase(?e, ?b, ?s), algn) {

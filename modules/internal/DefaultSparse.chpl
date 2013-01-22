@@ -77,7 +77,7 @@ module DefaultSparse {
   
     iter these(param tag: iterKind, followThis) where tag == iterKind.follower {
       compilerError("Sparse iterators can't yet be zippered with others");
-      yield 0;	// dummy.
+      yield 0;  // dummy.
     }
   
     proc dsiDim(d : int) {
@@ -271,7 +271,7 @@ module DefaultSparse {
   
     iter these(param tag: iterKind, followThis) where tag == iterKind.follower {
       compilerError("Sparse iterators can't yet be zippered with others");
-      yield 0;	// dummy
+      yield 0;  // dummy
     }
   
     proc IRV var {

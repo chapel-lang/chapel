@@ -33,8 +33,8 @@ class GPUDist: BaseDist {
   const threadPerBlock : int;
 
   proc GPUDist(param rank : int, 
-	      type idxType = int(64), 
-	      threadsPerBlock=128) {
+          type idxType = int(64), 
+          threadsPerBlock=128) {
     if (CHPL_TARGET_COMPILER != "nvidia") then 
       compilerError("Support for non-nvidia compilers not yet defined for GPUDist");
     threadPerBlock = threadsPerBlock;
@@ -219,8 +219,8 @@ class GPURectangularDom: BaseRectangularDom {
 
   proc dsiBuildArray(type eltType) {
     return new GPURectangularArr(eltType=eltType, rank=rank, idxType=idxType, 
-		    		stridable=stridable, dom=this, 
-				low_val=ranges(1).low);
+                    stridable=stridable, dom=this, 
+                low_val=ranges(1).low);
   }
 
   proc dsiRankChange(param rank: int, param stridable: bool, args) {
@@ -341,9 +341,9 @@ class GPURectangularArr: BaseArr {
       var threadsPerBlock = dom.threadPerBlock;
       var highval = size;
       on __primitive("chpl_on_gpu",nBlocks,threadsPerBlock) do {
-	var tid = getBlockID_x() * getBlockSize_x() + getThreadID_x();
-	if tid < highval then
-	  yield tid;
+    var tid = getBlockID_x() * getBlockSize_x() + getThreadID_x();
+    if tid < highval then
+      yield tid;
       }
   }
 

@@ -119,7 +119,7 @@ class CSRDom: BaseSparseDom {
 
   iter these(param tag: iterKind, followThis) where tag == iterKind.follower {
     compilerError("Sparse iterators can't yet be zippered with others (CSR layout)");
-    yield 0;	// Dummy.
+    yield 0;    // Dummy.
   }
 
   // Helper: find 'ix' s.t. rowStart(ix) <= startIx < rowStart(ix+1)
@@ -345,7 +345,7 @@ class CSRArr: BaseArr {
 
   iter these(param tag: iterKind, followThis) where tag == iterKind.follower {
     compilerError("Sparse iterators can't yet be zippered with others (CSR layout)");
-    yield 0;	// Dummy.
+    yield 0;    // Dummy.
   }
 
   proc IRV var {

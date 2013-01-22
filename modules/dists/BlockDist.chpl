@@ -1459,7 +1459,7 @@ proc BlockArr.doiBulkTransferStride(Barg)
                     r2[t] = (ini_src[t]..end_src[t] by sa[t]);
                   }
 
-		  locArr[i].myElems[(...r2)]._value.doiBulkTransferStride(B.locArr[j].myElems[(...r3)],true,true);
+          locArr[i].myElems[(...r2)]._value.doiBulkTransferStride(B.locArr[j].myElems[(...r3)],true,true);
                 }
             }
           }

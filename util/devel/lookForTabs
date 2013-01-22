@@ -11,6 +11,8 @@ find compiler -wholename "*/.svn" -prune -o -name lex.yy.cpp -prune -o -name cha
 
 find runtime -wholename "*/.svn" -prune -o \( -name \*.h -o -name \*.c -o -name \*.cpp \) -exec grep -n --with-filename -P '\t' {} \;
 
+find modules -wholename "*/.svn" -prune -o -name \*.chpl  -exec grep -n --with-filename -P '\t' {} \;
+
 popd >& /dev/null
 
 exit

@@ -859,11 +859,11 @@ module DefaultRectangular {
     // A[1..10,1..5] = B[1..10, 1..10 by 2]
     
     // Computed variables for chpl_comm_get_strd/puts are:
-    //	stridelevels =1
-    //	srcCount = (1,50) //In B you read 1 element 50 times
-    //	(srcStride=(2) = distance between 1 element and the next one)
-    //	dstCount = (5,10) //In A you write a chunk of 5 elments 10
-    //	times (dstStride=(10) distance between 1 chunk and the next one)
+    //  stridelevels =1
+    //  srcCount = (1,50) //In B you read 1 element 50 times
+    //  (srcStride=(2) = distance between 1 element and the next one)
+    //  dstCount = (5,10) //In A you write a chunk of 5 elments 10
+    //  times (dstStride=(10) distance between 1 chunk and the next one)
     
     
     // Since GASNet strided put/get only have a count array, it is
@@ -900,9 +900,9 @@ module DefaultRectangular {
     {
         for h in 1..stridelevels+1
         {
-  	if dstCount[h]>srcCount[h]
+    if dstCount[h]>srcCount[h]
           {
-  	  bulkCommAssign(dstCount,srcCount, stridelevels+1);
+      bulkCommAssign(dstCount,srcCount, stridelevels+1);
             break;
           }
           else if dstCount[h]<srcCount[h] then break; 
@@ -944,7 +944,7 @@ module DefaultRectangular {
          __primitive("chpl_comm_get_strd",
                       __primitive("array_get",dest, getDataIndex(Alo)),
                       __primitive("array_get",dststr,dstStride._value.getDataIndex(1)), 
-  		    srclocale,
+            srclocale,
                       __primitive("array_get",src, B._value.getDataIndex(Blo)),
                       __primitive("array_get",srcstr,srcStride._value.getDataIndex(1)),
                       __primitive("array_get",cnt, dstCount._value.getDataIndex(1)),
@@ -974,13 +974,13 @@ module DefaultRectangular {
       var destlocale =this.data.locale.id : int(32);
   
       __primitive("chpl_comm_put_strd",
-        		  __primitive("array_get",dest,getDataIndex(Alo)),
-        		  __primitive("array_get",dststr,dstStride._value.getDataIndex(1)),
+                  __primitive("array_get",dest,getDataIndex(Alo)),
+                  __primitive("array_get",dststr,dstStride._value.getDataIndex(1)),
                     destlocale,
                     __primitive("array_get",src,B._value.getDataIndex(Blo)),
-        		  __primitive("array_get",srcstr,srcStride._value.getDataIndex(1)),
-        		  __primitive("array_get",cnt, srcCount._value.getDataIndex(1)),
-        		  stridelevels);
+                  __primitive("array_get",srcstr,srcStride._value.getDataIndex(1)),
+                  __primitive("array_get",cnt, srcCount._value.getDataIndex(1)),
+                  stridelevels);
     }
     //CASE 3: other case, it will use "chpl_comm_get_strd". 
     else on this.data.locale
@@ -1137,20 +1137,20 @@ module DefaultRectangular {
         {
           c[i]=this.dom.dsiDim(dim).length:int(32);
   //find the next dimension for which the next different stride arises
-  	for h in 2..dim by -1:int(32) 
+    for h in 2..dim by -1:int(32) 
           {
   //The aux variable is to cover the case in which stridelevels has to be
   // incremented after unifying srcCount and dstCount into a single count array,
   // and the condition h!=rank is because the new count value it's always in the 
   // rightmost dimension.
   // See lines 850-871
-  	  if( (checkStrideDistance(h) && (!aux || h!=rank))//CASE 3
+      if( (checkStrideDistance(h) && (!aux || h!=rank))//CASE 3
                || (dom.dsiDim(h).length==1&& h!=rank)) //CASE 4
-  	    {
-  	      c[i]*=dom.dsiDim(h-1).length:int(32);
+        {
+          c[i]*=dom.dsiDim(h-1).length:int(32);
                 dim -= 1;
-  	    }
-  	  else break;  
+        }
+      else break;  
           }
           dim -= 1;
         }
