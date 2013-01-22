@@ -1693,7 +1693,11 @@ module ChapelArray {
       //  writeln("proc =(a:[],b): bulk transfer did not happen");
     }
   
-    if chpl__serializeAssignment(a, b) {
+    if (a.eltType == b.type ||
+        _isPrimitiveType(a.eltType) && _isPrimitiveType(b.type)) {
+      forall aa in a do
+        aa = b;
+    } else if chpl__serializeAssignment(a, b) {
       compilerWarning("whole array assignment has been serialized (see note in $CHPL_HOME/STATUS)");
       for (aa,bb) in zip(a,b) do
         aa = bb;
