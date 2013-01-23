@@ -21,15 +21,19 @@ chap10 : gasnet: segment fast (M,W,F,Su), segment everything (Tu,Thu,Sa)
 bradc-lnx : 11pm update of ~chapelu/chapel, release testing, linxu64 performance, token count, tab check
 lnx-vass  : block, memory leaks; historify-logs
 lnx-hilde : (no testing)
-lnx-sung  : cyclic
+lnx-diten: (no testing)
 macchapel-mac : mac (still a bit fishy)
 4LR97C1 (windows laptop) : cygwin (typical windows network weirdness)
 
 Discontinued
 ============
-chap02 : opts testing
-lnx-hilde : nanox (comm none examples, gasnet multilocale-examples)
-gold : linux32 (no longer available)
+- opts testing
+- nanox
+- mpi
+
+
+Other notes
+===========
 
 start_opt_test
 --------------
@@ -38,3 +42,4 @@ Currently unused - in part because there were always holes and there
 wasn't a good diffing system as with the normal nightly runs. So
 sifting through logs to see what was changing required a lot of
 human effort. We keep it around in hopes of resurrecting it.
+
