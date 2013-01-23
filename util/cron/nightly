@@ -664,8 +664,8 @@ if ($runtests == 0) {
     if ($status == 0) {
         $newfailures = `comm -13 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep -v "$futuremarker" | wc -l`; chomp($newfailures);
         $newresolved = `comm -23 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep -v "$futuremarker" | wc -l`; chomp($newresolved);
-        $newpassingfutures = `comm -13 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep "$futuremarker" | wc -l`; chomp($newpassingfutures);
-        $passingfutures = `grep "$futuremarker" $sortedsummary | grep "Success" | wc -l`; chomp($passingfutures);
+        $newpassingfutures = `comm -13 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep "$futuremarker" | grep "\\[Success" | wc -l`; chomp($newpassingfutures);
+        $passingfutures = `grep "$futuremarker" $sortedsummary | grep "\\[Success" | wc -l`; chomp($passingfutures);
         $newfailures += 0;
         $shortstatus = "$newfailures/$newpassingfutures/$curfail";
     } else {
