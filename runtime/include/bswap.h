@@ -14,6 +14,8 @@
 #include <byteswap.h>
 #endif
 
+#ifndef htobe64
+
 // Should be defined in byteswap.h.
 #ifndef __bswap_64
 // slow compatability method.
@@ -41,7 +43,6 @@
   ((uint16_t) ((((x) >> 8) & 0xff) | (((x) & 0xff) << 8)))
 #endif
 
-#ifndef htobe64
 // stolen from glibc endian.h
 # if __BYTE_ORDER == __LITTLE_ENDIAN
 #  define htobe16(x) __bswap_16 (x)
