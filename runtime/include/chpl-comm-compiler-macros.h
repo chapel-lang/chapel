@@ -73,18 +73,19 @@ void chpl_gen_comm_put_strd(void *addr, void *dststr, int32_t locale, void *radd
 #include "error.h"
 
 static ___always_inline
-void chpl_test_local(int32_t locale, int32_t ln, const char* file, const char* error)
+void chpl_test_local(int32_t node, int32_t ln, const char* file, const char* error)
 {
-  if( locale != chpl_localeID ) {
+  if( node != chpl_localeID ) {
     chpl_error(error, ln, file);
   }
 }
 
-#define CHPL_HEAP_REGISTER_GLOBAL_VAR(i, wide)            \
-  do {                                                    \
-    (wide).locale = 0;                                    \
-    chpl_globals_registry[i] = (&((wide).addr));          \
-    CHPL_HEAP_REGISTER_GLOBAL_VAR_EXTRA(i, wide)          \
+#define CHPL_HEAP_REGISTER_GLOBAL_VAR(i, wide)             \
+  do {                                                     \
+    (wide).locale.node = 0;                                \
+    (wide).locale.subloc = 0;                              \
+    chpl_globals_registry[i] = (&((wide).addr));           \
+    CHPL_HEAP_REGISTER_GLOBAL_VAR_EXTRA(i, wide)           \
   } while (0)
 
 //
@@ -144,12 +145,26 @@ void chpl_array_free(void* x, int32_t lineno, const char* filename)
 {
   chpl_mem_free(x, lineno, filename);
 }
+
 static ___always_inline
 void chpl_wide_array_free(int32_t dstLocale, void* x, int32_t lineno, const char* filename)
 {
   if (dstLocale != chpl_localeID)
     chpl_error("array vector data is not local", lineno, filename);
   chpl_array_free(x, lineno, filename);
+}
+
+// Bootstrap routine which allows creation of a locale ID
+// for which we do not yet have a locale structure defined.
+// TODO: This routine can probably be eliminated, by creating chpl_localeID_t
+// structs and populating them as needed (in both the module and compiler code).
+static ___always_inline
+c_locale_t chpl_on_locale_num(c_nodeid_t node_id, c_subloc_t subloc_id)
+{
+  c_locale_t tmp;
+  tmp.node = node_id;
+  tmp.subloc = subloc_id;
+  return tmp;
 }
 
 #endif // LAUNCHER

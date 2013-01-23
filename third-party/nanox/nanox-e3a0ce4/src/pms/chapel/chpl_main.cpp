@@ -94,7 +94,7 @@ void chpl_task_begin(chpl_fn_p fp,
   NANOX_SANITY_CHECK(begin);
    assert(!ltask);
 
-   if ( !ignore_serial && chpl_task_getSerial() ) {	   
+   if ( !ignore_serial && chpl_task_getSerial() ) {    
       (*fp)(a);
       return;
    }
@@ -201,6 +201,22 @@ void chpl_task_setSerial(chpl_bool state)
   WD* wd = myThread->getCurrentWD();
   ChapelWDData* data = (ChapelWDData*)wd->getInternalData();
   data->serial = state;
+}
+
+c_subloc_t chpl_task_getSubLoc(void)
+{
+  NANOX_SANITY_CHECK(getSubLoc);
+  WD* wd = myThread->getCurrentWD();
+  ChapelWDData* data = (ChapelWDData*)wd->getInternalData();
+  return data->sublocale;
+}
+
+void chpl_task_setSubLoc(c_subloc_t subloc)
+{
+  NANOX_SANITY_CHECK(setSubLoc);
+  WD* wd = myThread->getCurrentWD();
+  ChapelWDData* data = (ChapelWDData*)wd->getInternalData();
+  data->sublocale = subloc;
 }
 
 uint64_t chpl_task_getCallStackSize(void) {

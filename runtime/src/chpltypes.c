@@ -58,15 +58,24 @@ chpl_string chpl_format(chpl_string format, ...) {
 
 
 #ifndef LAUNCHER
+// TODO: This declaration should actually come from chplcgfns.h
+// but some factoring of the runtime includes is required to make this work.
+// See the comment ca. chplcgfns.h:21 for more info.
+typedef struct __chpl_localeID_t {
+  c_nodeid_t node;
+  c_subloc_t subloc;
+} chpl_localeID_t;
+
 struct __chpl____wide_chpl_string {
-  int64_t locale;
+  chpl_localeID_t locale;
   chpl_string addr;
   int64_t size;
 };
+typedef struct __chpl____wide_chpl_string chpl____wide_chpl_string;
 
 chpl_string
-chpl_wide_string_copy(struct __chpl____wide_chpl_string* x, int32_t lineno, chpl_string filename) {
-  if (x->locale == chpl_localeID)
+chpl_wide_string_copy(chpl____wide_chpl_string* x, int32_t lineno, chpl_string filename) {
+  if (x->locale.node == chpl_localeID)
     return string_copy(x->addr, lineno, filename);
   else {
     chpl_string s;
@@ -79,10 +88,11 @@ chpl_wide_string_copy(struct __chpl____wide_chpl_string* x, int32_t lineno, chpl
 
 // un-macro'd CHPL_WIDEN_STRING
 void
-chpl_string_widen(struct __chpl____wide_chpl_string* x, chpl_string from)
+chpl_string_widen(chpl____wide_chpl_string* x, chpl_string from)
 {
   size_t len = strlen(from) + 1;
-  x->locale = chpl_localeID;
+  x->locale.node = chpl_localeID;
+  x->locale.subloc = chpl_task_getSubLoc();
   x->addr = chpl_mem_allocMany(len, sizeof(char),
                                CHPL_RT_MD_SET_WIDE_STRING, 0, 0);
   strncpy((char*)x->addr, from, len);
@@ -93,17 +103,17 @@ chpl_string_widen(struct __chpl____wide_chpl_string* x, chpl_string from)
 void
 chpl_comm_wide_get_string(chpl_string* local, struct __chpl____wide_chpl_string* x, int32_t tid, int32_t lineno, chpl_string filename)
 {
-  char* chpl_macro_tmp =                                              
-      chpl_mem_allocMany(x->size, sizeof(char),                     
-                         CHPL_RT_MD_GET_WIDE_STRING, -1, "<internal>"); 
-    if (chpl_localeID == x->locale)                                 
-      memcpy(chpl_macro_tmp, x->addr, x->size);                 
-    else                                                                
-      chpl_comm_get((void*) &(*chpl_macro_tmp), x->locale,                     
-                    (void*)(x->addr),                               
-                    sizeof(char), tid, x->size, lineno, filename);                    
+  char* chpl_macro_tmp =
+      chpl_mem_allocMany(x->size, sizeof(char),
+                         CHPL_RT_MD_GET_WIDE_STRING, -1, "<internal>");
+    if (chpl_localeID == x->locale.node)
+      memcpy(chpl_macro_tmp, x->addr, x->size);
+    else
+      chpl_comm_get((void*) &(*chpl_macro_tmp), x->locale.node,
+                    (void*)(x->addr),
+                    sizeof(char), tid, x->size, lineno, filename);
     *local = chpl_macro_tmp;
-} 
+}
 
 
 #endif

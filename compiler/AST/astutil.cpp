@@ -447,6 +447,10 @@ pruneUnusedTypes(Vec<TypeSymbol*>& types)
   // types when the value types are deleted
   //
   forv_Vec(TypeSymbol, ts, gTypeSymbols) {
+    // Ignore types flagged as primitive.
+    if (ts->hasFlag(FLAG_PRIMITIVE_TYPE))
+      continue;
+
     // Visit only those types not marked as visible.
     if (types.set_in(ts))
       continue;

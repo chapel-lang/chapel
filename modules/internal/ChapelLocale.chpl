@@ -2,9 +2,26 @@
 //
 pragma "no use ChapelStandard"
 module ChapelLocale {
-  
+
   use DefaultRectangular;
   
+  extern type c_nodeid_t;
+  extern type c_subloc_t;
+
+  pragma "no object"
+  record chpl_localeID_t {
+    var node : c_nodeid_t;
+    var subloc : c_subloc_t;
+  };
+
+  proc ==(a:chpl_localeID_t, b:chpl_localeID_t)
+    return __primitive("==", a.node, b.node) &&
+           __primitive("==", a.subloc, b.subloc);
+
+  proc !=(a:chpl_localeID_t, b:chpl_localeID_t)
+    return ! (a == b);
+
+
   const emptyLocaleSpace: domain(1) = {1..0};
   const emptyLocales: [emptyLocaleSpace] locale;
 
@@ -76,12 +93,14 @@ module ChapelLocale {
 
   }
 
+  // TODO: This wants to live in RootLocale.chpl
   var rootLocale : locale = nil;
-  
+
   pragma "private" var _here: locale;
-  
+
   proc here return _here;
   
+
   proc locale.totalThreads() {
     var totalThreads: int;
     extern proc chpl_task_getNumThreads() : int;

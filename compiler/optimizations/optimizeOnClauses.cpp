@@ -84,7 +84,7 @@ isFastPrimitive(CallExpr *call) {
 
   case PRIM_DELETE:
 
-  case PRIM_LOCALE_ID:
+  case PRIM_NODE_ID:
 
   case PRIM_STRING_COPY:
 
@@ -120,12 +120,12 @@ isFastPrimitive(CallExpr *call) {
     }
     break;
 
-  case PRIM_GET_LOCALEID:
+  case PRIM_WIDE_GET_LOCALE:
     // It is invalid for both flags to be present.
     if (!(call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE) &&
           call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))) {
 #ifdef DEBUG
-      printf(" *** OK (PRIM_GET_LOCALEID %s\n", call->primitive->name);
+      printf(" *** OK (PRIM_WIDE_GET_LOCALE %s\n", call->primitive->name);
 #endif
       return true;
     }
@@ -265,29 +265,30 @@ optimizeOnClauses(void) {
   compute_call_sites();
 
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->hasFlag(FLAG_ON_BLOCK)) {
+    if (!fn->hasFlag(FLAG_ON_BLOCK))
+      continue;
 #ifdef DEBUG
-      printf("%p (%s in %s:%d): FLAG_ON_BLOCK (block=%p, id=%d)\n",
-             fn, fn->cname, toModuleSymbol(fn->defPoint->parentSymbol)->filename,
-             fn->linenum(), fn->body, fn->id);
-      printf("\tlength=%d\n", fn->body->length());
+    printf("%p (%s in %s:%d): FLAG_ON_BLOCK (block=%p, id=%d)\n",
+           fn, fn->cname, toModuleSymbol(fn->defPoint->parentSymbol)->filename,
+           fn->linenum(), fn->body, fn->id);
+    printf("\tlength=%d\n", fn->body->length());
 #endif
-      Vec<FnSymbol*> visited;
+    Vec<FnSymbol*> visited;
 
-      if (markFastSafeFn(fn, optimize_on_clause_limit, &visited)) {
+    if (markFastSafeFn(fn, optimize_on_clause_limit, &visited)) {
 #ifdef DEBUG
-        printf("\t[CANDIDATE FOR FAST FORK]\n");
+      printf("\t[CANDIDATE FOR FAST FORK]\n");
 #endif
-        if (fReportOptimizedOn) {
-          ModuleSymbol *mod = toModuleSymbol(fn->defPoint->parentSymbol);
-          INT_ASSERT(mod);
-          if (developer ||
-              ((mod->modTag != MOD_INTERNAL) && (mod->modTag != MOD_STANDARD))) {
-            printf("Optimized on clause (%s) in module %s (%s:%d)\n",
-                   fn->cname, mod->name, fn->fname(), fn->linenum());
-          }
+      fn->addFlag(FLAG_FAST_ON);
+
+      if (fReportOptimizedOn) {
+        ModuleSymbol *mod = toModuleSymbol(fn->defPoint->parentSymbol);
+        INT_ASSERT(mod);
+        if (developer ||
+            ((mod->modTag != MOD_INTERNAL) && (mod->modTag != MOD_STANDARD))) {
+          printf("Optimized on clause (%s) in module %s (%s:%d)\n",
+                 fn->cname, mod->name, fn->fname(), fn->linenum());
         }
-        fn->addFlag(FLAG_FAST_ON);
       }
     }
   }

@@ -9,6 +9,7 @@ namespace chapel {
 struct ChapelWDData
 {
    bool serial;
+   int32_t sublocale;
 };
 
 class ChapelPMInterface : public PMInterface {

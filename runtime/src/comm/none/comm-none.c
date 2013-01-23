@@ -408,7 +408,7 @@ static void fork_nb_wrapper(fork_t* f) {
   chpl_mem_free(f, 0, 0);
 }
 
-void chpl_comm_fork_nb(int locale, chpl_fn_int_t fid, void *arg,
+void chpl_comm_fork_nb(c_nodeid_t node, chpl_fn_int_t fid, void *arg,
                        int32_t arg_size, int32_t arg_tid) {
   fork_t *info;
   int     info_size;
@@ -422,13 +422,13 @@ void chpl_comm_fork_nb(int locale, chpl_fn_int_t fid, void *arg,
   chpl_task_begin((chpl_fn_p)fork_nb_wrapper, (void*)info, false, false, NULL);
 }
 
-void chpl_comm_fork(int locale, chpl_fn_int_t fid, void *arg,
+void chpl_comm_fork(c_nodeid_t node, chpl_fn_int_t fid, void *arg,
                     int32_t arg_size, int32_t arg_tid) {
   (*chpl_ftable[fid])(arg);
 }
 
 // Same as chpl_comm_fork()
-void chpl_comm_fork_fast(int locale, chpl_fn_int_t fid, void *arg,
+void chpl_comm_fork_fast(c_nodeid_t node, chpl_fn_int_t fid, void *arg,
                          int32_t arg_size, int32_t arg_tid) {
   (*chpl_ftable[fid])(arg);
 }

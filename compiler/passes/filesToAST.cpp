@@ -99,11 +99,12 @@ void parse(void) {
         USR_WARN("'_tuple' defined more than once in Chapel Internal modules.");
       }
       dtTuple = toClassType(ts->type);
-    } else if (!strcmp(ts->name, "locale")) {
-      if (dtLocale) {
-        USR_WARN("'locale' defined more than once in Chapel Internal modules.");
+    } else if (!strcmp(ts->name, "chpl_localeID_t")) {
+      if (dtLocaleID) {
+        USR_WARN("'chpl_localeID_t' defined more than once in Chapel Internal modules.");
       }
-      dtLocale = toClassType(ts->type);
+      dtLocaleID = toClassType(ts->type);
+      ts->addFlag(FLAG_PRIMITIVE_TYPE);
     } else if (!strcmp(ts->name, "BaseArr")) {
       if (dtBaseArr) {
         USR_WARN("'BaseArr' defined more than once in Chapel Internal modules.");
@@ -139,7 +140,7 @@ void parse(void) {
   if (!dtTuple) {
     USR_FATAL_CONT("'_tuple' not defined in Chapel Internal modules.");
   }
-  if (!dtLocale) {
+  if (!dtLocaleID) {
     USR_FATAL_CONT("'locale' not defined in Chapel Internal modules.");
   }
   if (!dtBaseArr) {

@@ -169,11 +169,23 @@ enum PrimitiveTag {
 
   PRIM_LOGICAL_FOLDER, // Help fold logical && and ||
 
-  PRIM_GET_LOCALEID,   // return locale on which an expression exists
-  PRIM_LOCALE_ID,    // return locale id
-  PRIM_ON_LOCALE_NUM,  // specify a particular locale # for an on clause
+  PRIM_WIDE_GET_LOCALE, // Returns the "locale" portion of a wide pointer.
 
-  PRIM_ALLOC_GVR,    // allocate space for global vars registry
+  PRIM_WIDE_GET_NODE,   // Get just the node portion of a wide pointer.
+  PRIM_WIDE_GET_SUBLOC, // Get just the sublocale portion of a wide pointer.
+  PRIM_WIDE_GET_ADDR,   // Get just the address portion of a wide pointer.
+
+  PRIM_LOC_GET_NODE,    // Get the node part of a c_locale_t.
+  PRIM_LOC_SET_NODE,    // Set <ditto>.
+  PRIM_LOC_GET_SUBLOC,  // Get the sublocale part of a c_locale_t.
+  PRIM_LOC_SET_SUBLOC,  // Set <ditto>.
+
+  PRIM_NODE_ID,         // Returns the current (GASNet) node ID.
+  PRIM_ON_LOCALE_NUM,   // specify a particular (node,subloc) for an on clause.
+  PRIM_SET_SUBLOC_ID,   // Set the sublocale ID in task-private data.
+  PRIM_GET_SUBLOC_ID,   // Get the sublocale ID from task-private data.
+
+  PRIM_ALLOC_GVR,       // allocate space for global vars registry
   PRIM_HEAP_REGISTER_GLOBAL_VAR,
   PRIM_HEAP_BROADCAST_GLOBAL_VARS,
   PRIM_PRIVATE_BROADCAST,

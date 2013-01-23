@@ -208,22 +208,29 @@ Expr* buildStringLiteral(const char* pch) {
 Expr* buildDotExpr(BaseAST* base, const char* member) {
   // The following optimization was added to avoid calling chpl_int_to_locale
   // when all we end up doing is extracting the locale id, thus:
-  // chpl_int_to_locale(_get_locale(x)).id ==> _get_locale(x)
+  // OPTIMIZATION: chpl_int_to_locale(_get_locale_id(x)).id ==> _get_locale_id(x)
 
   // This broke when realms were removed and uid was renamed as id.
   // It might be better coding practice to label very special module code
   // (i.e. types, fields, values known to the compiler) using pragmas. <hilde>
+  // TODO: We shouldn't have optimizations in the parser.
+#if 0
+  // hilde sez: This optimization no longer works, because "id" returns just the
+  // node ID portion of a locale ID.
+  // However, it can be reinstated after the meaning of "id" is changed from 
+  // "the node ID of the locale" to "the locale ID of the locale".
   if (!strcmp("id", member))
     if (CallExpr* intToLocale = toCallExpr(base))
       if (intToLocale->isNamed("chpl_int_to_locale"))
         if (CallExpr* getLocale = toCallExpr(intToLocale->get(1)))
-          if (getLocale->isPrimitive(PRIM_GET_LOCALEID))
+          if (getLocale->isPrimitive(PRIM_WIDE_GET_LOCALE))
             return getLocale->remove();
+#endif
 
-  // "x.locale" member access expressions are rendered as chpl_int_to_locale(_get_locale(x)).
+  // MAGIC: "x.locale" member access expressions are rendered as chpl_int_to_locale(_wide_get_node(x)).
   if (!strcmp("locale", member))
     return new CallExpr("chpl_int_to_locale", 
-                        new CallExpr(PRIM_GET_LOCALEID, base));
+                        new CallExpr(PRIM_WIDE_GET_LOCALE, base));
   else
     return new CallExpr(".", base, new_StringSymbol(member));
 }
@@ -1007,6 +1014,7 @@ buildFollowLoop(Symbol* iter, Symbol* leadIdxCopy, Symbol* followIter,
   return followBlock;
 }
 
+
 BlockStmt*
 buildForallLoopStmt(Expr* indices, 
                     Expr* iterExpr, 
@@ -1766,18 +1774,26 @@ BlockStmt* buildLocalStmt(Expr* stmt) {
 
 
 static Expr* extractLocaleID(Expr* expr) {
-  // If the on <x> expression is a primitive_on_locale_num, we just want
-  // to strip off the primitive and have the naked integer value be the
-  // locale ID.
+  // If the on <x> expression is a primitive_on_locale_num, we just 
+  // return the primitive.
+
+  // PRIM_ON_LOCAL_NUM is now passed through to codegen,
+  // but we don't want to wrap it in PRIM_WIDE_GET_LOCALE.
   if (CallExpr* call = toCallExpr(expr)) {
     if (call->isPrimitive(PRIM_ON_LOCALE_NUM)) {
-      return call->get(1);
+      // Can probably use some semantic checks, like the number of args being 1 or 2, etc.
+      return expr;
     }
   }
 
   // Otherwise, we need to wrap the expression in a primitive to query
   // the locale ID of the expression
-  return new CallExpr(PRIM_GET_LOCALEID, expr);
+  // TODO: Review all clients of this routine and see whether they expect the whole
+  // locale ID or just the node ID.  Split this routine into extractLocaleID()
+  // and extractNodeID().
+  // The current implementation expects localeID == nodeID, so we return
+  // just the node portion of the localeID (so this is really extractNodeID()).
+  return new CallExpr(PRIM_WIDE_GET_LOCALE, expr);
 }
 
 
@@ -1830,6 +1846,13 @@ buildOnStmt(Expr* expr, Expr* stmt) {
   }
 
   if (beginBlock) {
+    // OPTIMIZATION: If "on x" is immediately followed by a "begin", then collapse
+    // remote_fork (node) {
+    //   branch /*local*/ { foo(); }
+    // } wait;
+    // to 
+    // remote_fork (node) { foo(); } // no wait();
+
     // Execute the construct "on x begin ..." asynchronously.
     Symbol* tmp = newTemp();
     body->insertAtHead(new CallExpr(PRIM_MOVE, tmp, onExpr));

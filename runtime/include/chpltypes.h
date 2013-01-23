@@ -1,7 +1,6 @@
 #ifndef _chpltypes_H_
 #define _chpltypes_H_
 
-#include "sys_basic.h"
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -45,6 +44,25 @@ typedef struct _chpl_fieldType {
   chplType type;
   size_t offset;
 } chpl_fieldType;
+
+// This allocation of bits is arbitrary.
+// Seemingly, 64 bits is enough to represent both the node_id and sublocale_id portions 
+// of a locale ID, and an even split is a good first guess.
+typedef int32_t c_nodeid_t;
+#define FORMAT_c_nodeid_t PRId32
+typedef int32_t c_subloc_t;
+#define FORMAT_c_subloc_t PRId32
+
+// It is unfortunate that we need this definition in parallel with the module definition.
+// If runtime routines that depend on c_locale_t can be eliminated, then this
+// definition can be moved entirely within the module code.
+typedef struct
+{
+  c_nodeid_t node;    // This is the comm node index.
+  c_subloc_t subloc;  // This carries the sublocale index if there is one, otherwise zero.
+} c_locale_t;
+
+//extern const c_locale_t _rootLocaleID;
 
 #define nil 0 
 typedef void* _nilType;
@@ -151,7 +169,6 @@ int64_t string_length(chpl_string x);
 
 int64_t real2int( _real64 f);       // return the raw bytes of the float
 int64_t object2int( _chpl_object o);  // return the ptr
-
 
 typedef int32_t chpl__class_id;
 

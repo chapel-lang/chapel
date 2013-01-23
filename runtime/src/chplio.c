@@ -15,8 +15,8 @@ char* chpl_refToString(void* ref) {
 }
 
 
-char* chpl_wideRefToString(int32_t locale, void* addr) {
+char* chpl_wideRefToString(c_nodeid_t node, void* addr) {
   char buff[32];
-  sprintf(buff, "%" PRId32 ":%p", locale, addr);
+  sprintf(buff, "%" FORMAT_c_nodeid_t ":%p", node, addr);
   return chpl_glom_strings(1, buff);
 }
