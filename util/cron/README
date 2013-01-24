@@ -16,20 +16,21 @@ cflbs32  : linux32 (comm none, default everything)
 
 Seattle machines
 ================
-chap09 : valgrind (comm none)
-chap10 : gasnet: segment fast (M,W,F,Su), segment everything (Tu,Thu,Sa)
+chap09    : valgrind (comm none)
+chap10    : gasnet: segment fast (M,W,F,Su), segment everything (Tu,Thu,Sa)
 bradc-lnx : 11pm update of ~chapelu/chapel, release testing, linxu64 performance, token count, tab check
 lnx-vass  : block, memory leaks; historify-logs
 lnx-hilde : (no testing)
-lnx-diten: (no testing)
-macchapel-mac : mac (still a bit fishy)
+lnx-diten : (no testing)
+macchapel-mac            : mac (still a bit fishy)
 4LR97C1 (windows laptop) : cygwin (typical windows network weirdness)
 
-Discontinued
-============
-- opts testing
-- nanox
-- mpi
+Discontinued testing
+====================
+- opts   (start_opt_test, nightly-opts-all.cron, nightly-opts-examples.cron)
+- nanox  (was: nightly.lnx-hilde  up to r19634)
+- mpi    (was: nightly.chap04     up to r19116)
+- cyclic (was: nightly.lnx-sung   up to r19632)
 
 
 Other notes
@@ -42,4 +43,17 @@ Currently unused - in part because there were always holes and there
 wasn't a good diffing system as with the normal nightly runs. So
 sifting through logs to see what was changing required a lot of
 human effort. We keep it around in hopes of resurrecting it.
+
+crontab entry format
+--------------------
+
+* * * * * command to be executed
+- - - - -
+| | | | |
+| | | | ----- day of week (0 - 6) (Sunday=0) (3-letter names are allowed?)
+| | | ------- month (1 - 12)
+| | --------- day of month (1 - 31)
+| ----------- hour (0 - 23)
+------------- min (0 - 59)
+'*' in a given position means "any".
 
