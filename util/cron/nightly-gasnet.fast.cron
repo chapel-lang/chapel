@@ -6,5 +6,5 @@
 source ~/.chapelcshrc-cron-gasnet
 setenv CHPL_GASNET_CFG_OPTIONS --disable-ibv
 setenv CHPL_GASNET_SEGMENT fast
-$CHPL_HOME/util/cron/nightly -cron &! ~/tmp/nightly-gasnet-fast.out
+$CHPL_HOME/util/cron/nightly -cron >&! ~/tmp/nightly-gasnet-fast.out
 

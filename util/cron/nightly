@@ -88,6 +88,7 @@ while (@ARGV) {
 }
 
 
+print localtime() . "  host: " . hostname . "\n";
 $ctmp = `crontab -l`;
 @blah = split(/\n/, $ctmp);
 # Ignore the first 3 (commented) lines added by crontab
@@ -262,12 +263,8 @@ if ($debug == 1) {
 }
 $chapeldir = "$tmpdir/chapel";
 $testdir = "$chapeldir/test";
+print "\$chapeldir = $chapeldir\n";
 
-
-
-
-#print "fullplatform is: $fullplatform\n";
-#exit 0;
 
 $launchcmd = "$ENV{'CHPL_APP_LAUNCH_CMD'}";
 
@@ -436,7 +433,7 @@ if ($svnroot eq "") {
 
 $readonlydirname = "chapel-cron-$user-readonly";
 $readonlydir = "$basetmpdir/$readonlydirname";
-# print "testing $readonlydir\n";
+print "\$readonlydir = $readonlydir\n";
 if (! (-r $readonlydir && -d $readonlydir)) {
     print "The SVN directory has not been checked out yet\n";
     print "***** $svnrevopt $svnroot $readonlydirname *****\n";
