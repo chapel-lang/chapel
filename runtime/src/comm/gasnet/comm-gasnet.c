@@ -529,9 +529,9 @@ void chpl_comm_broadcast_private(int id, int32_t size, int32_t tid) {
     priv_bcast_large_t* pblp = chpl_mem_allocMany(1, maxpayloadsize, CHPL_RT_MD_COMM_PRIVATE_BROADCAST_DATA, 0, 0);
     pblp->id = id;
     numOffsets = (size+maxsize)/maxsize;
-    for (locale = 0; locale < chpl_numLocales; locale++) {
-      if (locale != chpl_localeID)
-        INIT_DONE_OBJ(done[locale], numOffsets);
+    for (node = 0; node < chpl_numLocales; node++) {
+      if (node != chpl_localeID)
+        INIT_DONE_OBJ(done[node], numOffsets);
     }
     for (offset = 0; offset < size; offset += maxsize) {
       int thissize = size - offset;
@@ -552,7 +552,7 @@ void chpl_comm_broadcast_private(int id, int32_t size, int32_t tid) {
   // wait for the handlers to complete
   for (node = 0; node < chpl_numLocales; node++) {
     if (node != chpl_localeID)
-      GASNET_BLOCKUNTIL(done[node]==numOffsets);
+      GASNET_BLOCKUNTIL(done[node].flag);
   }
   chpl_mem_free(done, 0, 0);
 }

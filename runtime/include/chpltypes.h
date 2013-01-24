@@ -1,6 +1,8 @@
 #ifndef _chpltypes_H_
 #define _chpltypes_H_
 
+#include "sys_basic.h"
+
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>

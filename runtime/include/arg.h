@@ -1,9 +1,9 @@
 #ifndef _arg_H_
 #define _arg_H_
 
-#include "sys_basic.h"
-#include <stdint.h>
-#include "chpltypes.h"
+#include "chpltypes.h" // for chpl_string
+
+#include <stdint.h> // for int32_t
 
 //
 // defined in arg.c
