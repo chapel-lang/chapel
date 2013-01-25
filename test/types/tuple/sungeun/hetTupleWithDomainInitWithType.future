@@ -1,0 +1,1 @@
+bug: Heterogeneous tuples with domain elements declared with a type result in null pointer dereference at runtime.

@@ -1,0 +1,1 @@
+bug: Heterogeneous tuples with array elements declared with a type result in null pointer dereference at runtime.
