@@ -21,25 +21,23 @@ static void build_union_assignment_function(ClassType* ct);
 static void build_enum_cast_function(EnumType* et);
 static void build_enum_enumerate_function(EnumType* et);
 
-//static void buildDefaultReadFunction(ClassType* type);
-//static void buildDefaultReadFunction(EnumType* type);
-
 static void buildDefaultReadWriteFunctions(ClassType* type);
 
 static void buildStringCastFunction(EnumType* type);
 
 static void buildDefaultDestructor(ClassType* ct);
 
-
 void buildDefaultFunctions(void) {
   build_chpl_entry_points();
-  SET_LINENO(rootModule); // todo - remove reset_ast_loc() calls below?
-
+  // TODO - remove reset_ast_loc() calls below?
+  SET_LINENO(rootModule);
+  
   Vec<BaseAST*> asts;
   collect_asts(rootModule, asts);
   forv_Vec(BaseAST, ast, asts) {
     if (TypeSymbol* type = toTypeSymbol(ast)) {
       if (ClassType* ct = toClassType(type->type)) {
+        
         for_fields(field, ct) {
           if (!field->hasFlag(FLAG_IMPLICIT_ALIAS_FIELD)) {
             if (isVarSymbol(field)) {
@@ -51,41 +49,45 @@ void buildDefaultFunctions(void) {
             }
           }
         }
-      }
-      if (ClassType* ct = toClassType(type->type))
-        if (!ct->symbol->hasFlag(FLAG_REF))
+        
+        if (!ct->symbol->hasFlag(FLAG_REF)) {
           buildDefaultDestructor(ct);
-      if (type->hasFlag(FLAG_NO_DEFAULT_FUNCTIONS))
-        continue;
-      if (EnumType* et = toEnumType(type->type)) {
-        //buildDefaultReadFunction(et);
-        buildStringCastFunction(et);
-      } else if (ClassType* ct = toClassType(type->type)) {
+        }
+        
+        if (type->hasFlag(FLAG_NO_DEFAULT_FUNCTIONS)) {
+          continue;
+        }
+        
         buildDefaultReadWriteFunctions(ct);
-      }
-      if (ClassType* ct = toClassType(type->type)) {
+        
         if (isRecord(ct)) {
           if (!isRecordWrappedType(ct)) {
             build_record_equality_function(ct);
             build_record_inequality_function(ct);
           }
+          
           build_record_assignment_function(ct);
           build_record_cast_function(ct);
           build_record_copy_function(ct);
           build_record_hash_function(ct);
         }
-        if (isUnion(ct))
+        
+        if (isUnion(ct)) {
           build_union_assignment_function(ct);
-      }
-      if (EnumType* et = toEnumType(type->type)) {
-        build_enum_cast_function(et);
-        build_enum_assignment_function(et);
-        build_enum_enumerate_function(et);
+        }
+        
+      } else if (EnumType* et = toEnumType(type->type)) {
+        if (not type->hasFlag(FLAG_NO_DEFAULT_FUNCTIONS)) {
+          buildStringCastFunction(et);
+          
+          build_enum_cast_function(et);
+          build_enum_assignment_function(et);
+          build_enum_enumerate_function(et);
+        }
       }
     }
   }
 }
-
 
 // function_exists returns true iff
 //  function's name matches name
