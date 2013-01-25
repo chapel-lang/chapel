@@ -1,0 +1,2 @@
+COMPOPTS <= --baseline
+COMPOPTS <= --no-local
