@@ -8,10 +8,20 @@
 
 #include <sys/param.h>
 #ifdef __GLIBC__
-#include <endian.h>
-// Present for PGI, Intel and Cray compilers?
-// Add guards if not.
-#include <byteswap.h>
+ #include <endian.h>
+ // Present for PGI, Intel and Cray compilers?
+ // Add guards if not.
+ #include <byteswap.h>
+
+ // Note - PGI comiler does not define
+ // __bswap_64 but does define htobe64!
+ // And GCC 4.2 has some of the __bswaps as functions!
+ #ifndef __bswap_64
+  #ifdef htobe64
+   #undef htobe64
+  #endif
+ #endif
+
 #endif
 
 #ifndef htobe64
