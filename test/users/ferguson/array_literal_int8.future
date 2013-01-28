@@ -1,6 +1,17 @@
-Trouble with smaller sized integer array literals.
+feature request: arithmetic ops for small int sizes
 
-I get the error
-test/users/ferguson/array_literal_int8.chpl:1: error: Array literal element 2 expected to be of type int(8) but is of type int(32) [functionResolution.cpp:1890]
+As originally filed, this test was working as advertised due to 
+
+(a) the relative precedence of unary - and casting (casting wins, so
+-1:int(8) means -(1:int(8)))
+
+combined with
+
+(b) math operators such as unary minus being supported only for 32-
+and 64-bit ints (on the basis of "that's what most languages do" and
+"that's what processors tend to support").
 
 
+More recently, we've been talking about supporting math on all int
+sizes, retaining their native size, so I've converted this into a
+feature request for that capability on Michael's request.
