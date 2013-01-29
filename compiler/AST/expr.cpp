@@ -2849,8 +2849,7 @@ GenRet CallExpr::codegen() {
           } else if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
             codegenAssign(get(1), codegenRnode(call->get(1)) );
           } else {
-            // Needs to assign both fields.
-            codegenAssign(get(1), codegenGetLocaleID());
+            codegenAssign(get(1), codegenGetNodeID());
           }
           break;
         }
