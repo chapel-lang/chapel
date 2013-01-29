@@ -10,6 +10,8 @@
 # that reason.  If someone owns a particular regression, their name
 # can be added to the description as well.
 # The path to each test should appear here, so it can be be grepped for.
+# Except if a lot of test fail for the identical reason or in the same
+# directory, a wildcard is more appropriate.
 # The date the entry is added is also useful.
 
 

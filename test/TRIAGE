@@ -19,8 +19,10 @@
 # * regular failures that someone might look at as part of their triage week
 #
 # The path to each test with intermittent behavior should appear here, so
-# it can be grepped for. The date of the most recent note is also useful,
-# with "ongoing" if appropriate.
+# it can be grepped for. Except if a lot of test fail for the identical
+# reason or in the same directory, a wildcard is more appropriate.
+# The date of the most recent note is also useful, with "ongoing"
+# if appropriate.
 
 
 =========================================================
