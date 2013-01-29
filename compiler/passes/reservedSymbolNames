@@ -206,6 +206,9 @@
   INTMAX_C
   UINTMAX_C
 
+  // symbols from stdio.h
+  EOF
+
   // symbols from QIO
   EEOF
   ESHORT
