@@ -9,6 +9,8 @@
 # test is failing followed by a list of tests that are failing for
 # that reason.  If someone owns a particular regression, their name
 # can be added to the description as well.
+# The path to each test should appear here, so it can be be grepped for.
+# The date the entry is added is also useful.
 
 
 ===========================================================

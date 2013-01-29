@@ -1,10 +1,9 @@
-
 # USAGE:
 #
 # Current notes on triage results, sorted into the following categories:
 #
 # * cases that are assigned and should be fixed (ideally during the coming
-#   week
+#   week)
 #
 # * cases that are causing noise regularly in testing, sorted by
 #   approximate priority
@@ -18,6 +17,10 @@
 #   period of time
 #
 # * regular failures that someone might look at as part of their triage week
+#
+# The path to each test with intermittent behavior should appear here, so
+# it can be grepped for. The date of the most recent note is also useful,
+# with "ongoing" if appropriate.
 
 
 =========================================================
