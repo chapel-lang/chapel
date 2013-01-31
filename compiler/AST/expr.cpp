@@ -3099,6 +3099,8 @@ GenRet CallExpr::codegen() {
     case PRIM_GET_SVEC_MEMBER_VALUE:
     case PRIM_GET_MEMBER_VALUE:
     case PRIM_WIDE_GET_LOCALE:
+    case PRIM_WIDE_GET_NODE:
+    case PRIM_WIDE_GET_SUBLOC:
     case PRIM_GET_PRIV_CLASS:
     case PRIM_ARRAY_GET:
     case PRIM_ARRAY_GET_VALUE:

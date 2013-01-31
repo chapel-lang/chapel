@@ -121,11 +121,13 @@ isFastPrimitive(CallExpr *call) {
     break;
 
   case PRIM_WIDE_GET_LOCALE:
+  case PRIM_WIDE_GET_NODE:
+  case PRIM_WIDE_GET_SUBLOC:
     // It is invalid for both flags to be present.
     if (!(call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE) &&
           call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))) {
 #ifdef DEBUG
-      printf(" *** OK (PRIM_WIDE_GET_LOCALE %s\n", call->primitive->name);
+      printf(" *** OK (PRIM_WIDE_GET_LOCALE, etc.): %s\n", call->primitive->name);
 #endif
       return true;
     }

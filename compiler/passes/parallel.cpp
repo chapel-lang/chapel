@@ -338,7 +338,10 @@ freeHeapAllocatedVars(Vec<Symbol*> heapAllocatedVars) {
               if (call->isPrimitive(PRIM_ADDR_OF) ||
                   call->isPrimitive(PRIM_GET_MEMBER) ||
                   call->isPrimitive(PRIM_GET_SVEC_MEMBER) ||
-                  call->isPrimitive(PRIM_WIDE_GET_LOCALE))
+                  call->isPrimitive(PRIM_WIDE_GET_LOCALE) ||
+                  call->isPrimitive(PRIM_WIDE_GET_NODE) ||
+                  call->isPrimitive(PRIM_WIDE_GET_SUBLOC))
+                // Treat the use of these primitives as a use of their arguments.
                 call = toCallExpr(call->parentExpr);
               if (call->isPrimitive(PRIM_MOVE))
                 varsToTrack.add(toSymExpr(call->get(1))->var);
@@ -668,7 +671,9 @@ makeHeapAllocations() {
                     call->isPrimitive(PRIM_GET_SVEC_MEMBER) ||
                     call->isPrimitive(PRIM_GET_MEMBER_VALUE) ||
                     call->isPrimitive(PRIM_GET_SVEC_MEMBER_VALUE) ||
-                    call->isPrimitive(PRIM_WIDE_GET_LOCALE) ||
+                    call->isPrimitive(PRIM_WIDE_GET_LOCALE) || //I'm not sure this is cricket.
+                    call->isPrimitive(PRIM_WIDE_GET_NODE) ||// what member are we extracting?
+                    call->isPrimitive(PRIM_WIDE_GET_SUBLOC) ||
                     call->isPrimitive(PRIM_SET_SVEC_MEMBER) ||
                     call->isPrimitive(PRIM_SET_MEMBER)) &&
                    call->get(1) == use) {
@@ -1063,7 +1068,9 @@ static void localizeCall(CallExpr* call) {
       break;
     case PRIM_MOVE:
       if (CallExpr* rhs = toCallExpr(call->get(2))) {
-        if (rhs->isPrimitive(PRIM_WIDE_GET_LOCALE)) {
+        if (rhs->isPrimitive(PRIM_WIDE_GET_LOCALE) ||
+            rhs->isPrimitive(PRIM_WIDE_GET_NODE) ||
+            rhs->isPrimitive(PRIM_WIDE_GET_SUBLOC)) {
           if (rhs->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
             if (rhs->get(1)->getValType()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
               insertLocalTemp(rhs->get(1));
