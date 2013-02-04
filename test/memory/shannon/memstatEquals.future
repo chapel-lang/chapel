@@ -1,8 +1,12 @@
-semantic: bool config const without =true or =false on command line
+bug: a bool config var or const, given on the command-line with '=' but without a 'true' or 'false' following it, needs to result in an error
 
-Was:
+Given a bool configuration var/const, say 'bcv', we would like
 
-= sign without initialization for config const execopt
+  this command-line option...    to set this value for 'bcv':
+    --bcv                           true
+    --bcv=true                      true
+    --bcv=false                     false
+    --bcv=                          report an error
+    --bcv[some other punctuation]   report an error
 
-How should we deal with bool configuration constants, omissions of
-initialization, and/or omissions of = signs.
+Currently such an error is not reported; --bcv= is treated as --bcv=true.
