@@ -21,6 +21,7 @@
 # The path to each test with intermittent behavior should appear here, so
 # it can be grepped for. Except if a lot of test fail for the identical
 # reason or in the same directory, a wildcard is more appropriate.
+# The convention here is to include just the path, without test/ or .chpl.
 # The date of the most recent note is also useful, with "ongoing"
 # if appropriate.
 
@@ -129,8 +130,16 @@ come up again
 
 intermittent valgrind error
 ---------------------------
-- studies/madness/aniruddha/madchap/mytests/par-refine/test_refine (compopts:1)
+- studies/madness/aniruddha/madchap/mytests/par-refine/test_refine (compopts: 1)
 Got wrong answer for F3.norm2() on 10/29/12, 01/14/13.
+As of 2/4/2013, those are the only times the test ran with compopts: 1.
+The other times it ran without compopts:1 and succeeded.
+- studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct
+Various numeric discrepancies, first occurred on 9/15/2012 or before.
+- release/examples/primers/chpldoc (compopts: 1)  (8/28/2012, 9/07/2012, 9/11/2012)
+This is not a problem with chpldocs (should file a separate future).
+There is an intermittent compile-time segfault during cullOverReferences.
+The type of Bar.super is at least partially corrupt at that point.
 
 
 prgenv-* compilation timeouts (maybe due to system updates or ...?)

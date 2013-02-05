@@ -10,6 +10,7 @@
 # that reason.  If someone owns a particular regression, their name
 # can be added to the description as well.
 # The path to each test should appear here, so it can be be grepped for.
+# The convention here is to include the entire error message, with [].
 # Except if a lot of test fail for the identical reason or in the same
 # directory, a wildcard is more appropriate.
 # The date the entry is added is also useful.
@@ -23,6 +24,11 @@ general regressions (seem to happen in most configurations)
 linux64 regressions (in addition to the above)
 ==============================================
 
+An optimization bypasses a semantic check (Tom - on hold)
+---------------------------------------------------------
+[Error matching program output for multilocale/deitz/oneOrMoreLocales/test_dot_locale_error]
+
+
 ==============================================
 linux32 regressions (in addition to the above)
 ==============================================
@@ -31,16 +37,11 @@ For gasnet only:
 
    error: inlining failed in call to 'atomic_fetch_add_explicit_int_least64_t': call is unlikely and code size would grow
 
-[Error matching compiler output for release/examples/benchmarks/ssca2/SSCA2_main
- (compopts: 1)]
-[Error matching compiler output for release/examples/benchmarks/ssca2/SSCA2_main
- (compopts: 2)]
-[Error matching compiler output for release/examples/benchmarks/ssca2/SSCA2_main
- (compopts: 3)]
-[Error matching compiler output for release/examples/benchmarks/ssca2/SSCA2_main
- (compopts: 4)]
-[Error matching compiler output for release/examples/benchmarks/ssca2/SSCA2_main
- (compopts: 5)]
+[Error matching compiler output for release/examples/benchmarks/ssca2/SSCA2_main (compopts: 1)]
+[Error matching compiler output for release/examples/benchmarks/ssca2/SSCA2_main (compopts: 2)]
+[Error matching compiler output for release/examples/benchmarks/ssca2/SSCA2_main (compopts: 3)]
+[Error matching compiler output for release/examples/benchmarks/ssca2/SSCA2_main (compopts: 4)]
+[Error matching compiler output for release/examples/benchmarks/ssca2/SSCA2_main (compopts: 5)]
 
 
 ================================
@@ -79,13 +80,48 @@ stack overflow
 --------------
 [Error matching program output for parallel/cobegin/gbt/cobegin-stacksize]
 
-chpldoc invalid reads during compilation
-----------------------------------------
-NOTE: This is not a problem with chpldocs (should file a separate future)
-There is an intermittent compile-time segfault during cullOverReferences. The
-type of Bar.super is at least partially corrupt at that point.
+error: Configuration variable 'memMax' is missing its initialization value
+--------------------------------------------------------------------------
+[Error matching program output for memory/shannon/memmaxNoArgValError]
+[Error matching program output for memory/shannon/memmaxEqualNoArgValError]
+formerly through 2/4/2013:
+[Error matching program output for memory/shannon/memmaxInput]
+[Error matching program output for memory/shannon/memmaxBytes]
+   This is not a real error: Under valgrind, the erroneous argument is 2nd,
+whereas .good expects it to be the 1st (which it is in other configurations).
+One way to fix it is to enhance PREDIFF - see also r20968.
 
-[Error matching program output for release/examples/primers/chpldoc (compopts: 1)] (8/28/2012) (9/07/2012) (9/11/2012)
+time outs
+---------
+[Error: Timed out executing program studies/lulesh/bradc/xyztuple/lulesh-dense-3tuple] (started when tested for the first time on 10/27/2012)
+
+The following tests started timing out on 9/1/2012:
+[Error: Timed out executing program parallel/begin/sungeun/captureAppearsToWork]
+[Error: Timed out executing program studies/shootout/thread-ring/thread-ring (compopts: 1, execopts: 1)]
+[Error: Timed out executing program studies/shootout/thread-ring/thread-ring (compopts: 1, execopts: 2)]
+[Error: Timed out executing program studies/shootout/thread-ring/thread-ring (compopts: 2, execopts: 1)]
+[Error: Timed out executing program studies/shootout/thread-ring/thread-ring (compopts: 2, execopts: 2)]
+[Error matching program output for trivial/sungeun/invalid_config_vals (execopts: 1)] 
+
+The following tests have been timing out since 8/18/2012 or earlier:
+[Error: Timed out executing program studies/cholesky/jglewis/version2/performance/test_cholesky_performance (compopts: 1)]
+[Error: Timed out executing program studies/hpcc/PTRANS/PTRANS]
+[Error: Timed out executing program studies/lammps/shemmy/p-lammps-n4]
+[Error: Timed out executing program studies/lammps/shemmy/p-lammps-n2]
+[Error: Timed out executing program studies/lammps/shemmy/p-lammps-n1]
+[Error: Timed out executing program studies/shootout/fannkuch-redux/fannkuch-redux (execopts: 2)]
+[Error: Timed out executing program types/range/bradc/overflowInComputeBlock]
+[Error: Timed out executing program types/single/sungeun/stress]
+
+
+missing "unable to create more than 0000 threads" warning
+---------------------------------------------------------
+[Error matching program output for parallel/taskPool/figueroa/TooManyThreads (compopts: 1)]
+  Perhaps not a real error: The program is expected to raise the warning
+"maxThreadsPerLocale is unbounded, but unable to create more than 0000 threads"
+But under valgrind, the program is executed with --numThreadsPerLocale=100,
+so the warning does not apply and is not raised, and .good is not matched.
+
 
 ====================
 no-local regressions
