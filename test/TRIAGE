@@ -141,6 +141,11 @@ This is not a problem with chpldocs (should file a separate future).
 There is an intermittent compile-time segfault during cullOverReferences.
 The type of Bar.super is at least partially corrupt at that point.
 
+"that wasn't very random looking"
+---------------------------------
+[Error matching program output for modules/standard/Random/diten/testRandomSeed]
+linux64.gnu.none.fifo.pthreads (2/4/2013)
+other configurations are quite consistent - see REGRESSIONS
 
 prgenv-* compilation timeouts (maybe due to system updates or ...?)
 -------------------------------------------------------------------
@@ -194,7 +199,7 @@ These configurations:
 
 minus_equals nondeterminism (sungeun)
 ----------------------------------------
-(week of 07/02, still present 10/2, 10/9/12, 1/6/13)
+(week of 07/02, still present 10/2, 10/9/12, 1/6/13, 2/1/13)
 
 NOTES: This is a race condition that is present in the case of *all*
 iteration of val iterators (e.g. domains) where the index is passed to

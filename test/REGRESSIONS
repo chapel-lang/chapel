@@ -33,16 +33,6 @@ An optimization bypasses a semantic check (Tom - on hold)
 linux32 regressions (in addition to the above)
 ==============================================
 
-For gasnet only:
-
-   error: inlining failed in call to 'atomic_fetch_add_explicit_int_least64_t': call is unlikely and code size would grow
-
-[Error matching compiler output for release/examples/benchmarks/ssca2/SSCA2_main (compopts: 1)]
-[Error matching compiler output for release/examples/benchmarks/ssca2/SSCA2_main (compopts: 2)]
-[Error matching compiler output for release/examples/benchmarks/ssca2/SSCA2_main (compopts: 3)]
-[Error matching compiler output for release/examples/benchmarks/ssca2/SSCA2_main (compopts: 4)]
-[Error matching compiler output for release/examples/benchmarks/ssca2/SSCA2_main (compopts: 5)]
-
 
 ================================
 performance-specific regressions
@@ -135,12 +125,6 @@ not freeing heap-allocated globals (08/29/09)
 ---------------------------------------------
 [Error matching program output for classes/figueroa/RecordDestructor1]
 
-never worked with --no-local (10/04/11)
----------------------------------------
-[Error matching program output for distributions/robust/arithmetic/optimizations/optimizeOnClauses_basic]
-[Error matching program output for distributions/robust/arithmetic/optimizations/optimizeOnClauses_basic_record]
-[Error matching program output for distributions/robust/arithmetic/optimizations/optimizeOnClauses_basic_tuple]
-
 memory stuff in flux (05/28/09)
 -------------------------------
 [Error matching program output for memory/shannon/memstatPrint]
@@ -165,6 +149,14 @@ comm diagnostics off
 [Error matching program output for studies/ssca2/performance/SSCA2_commDiags (compopts: 1)] (started in testing on 8/23/2012)
 [Error matching program output for performance/sungeun/multilocale/syncsingle] (1/4/13: before that it was failing due to missing 'use CommDiagnostics', so I don't know how long it's been failing.  Maybe due to Vass's r20857?)
 
+missed on-clause optimization
+-----------------------------
+Was: never worked with --no-local (10/04/11)
+Moved to GASNet (both fast and everything) on 1/24/2013.
+[Error matching program output for distributions/robust/arithmetic/optimizations/optimizeOnClauses_basic]
+[Error matching program output for distributions/robust/arithmetic/optimizations/optimizeOnClauses_basic_record]
+[Error matching program output for distributions/robust/arithmetic/optimizations/optimizeOnClauses_basic_tuple]
+
 
 ==============================================
 gasnet-fast regressions (other than the above)
@@ -174,10 +166,19 @@ too many threads error (~01/13/12)
 ----------------------------------
 [Error matching program output for distributions/bradc/extremeBlock]
 
+missed on-clause optimization
+-----------------------------
+(see gasnet-everything)
+
 
 =======================
 tcmalloc-specific tests
 =======================
+
+Out of memory allocating "string copy data"
+-------------------------------------------
+Sometimes also "malloc.c:3091: sYSMALLOc: Assertion ..... failed."
+[Error matching program output for domains/johnk/capacityParSafe (compopts: 1)] (started 12/15/2012)
 
 
 ==============================
@@ -246,7 +247,7 @@ countMemory prediff script doesn't get ".0" correct for round numbers
 
 gets "that wasn't very random looking" failure
 ------------------------------------------------------------------------------
-[Error matching program output for modules/standard/Random/diten/testRandomSeed] (first mentioned 09/26/11; still observed intermittently on chpbld02 in 8'2012 and 9'2012)
+[Error matching program output for modules/standard/Random/diten/testRandomSeed] (first mentioned 09/26/11; still observed intermittently on chpbld02 in 8'2012 and 9'2012; consistently for prgenv-gnu since 8'2012)
 
 
 ====================================================
@@ -391,6 +392,10 @@ NaN printing out as -nan (11/17/11 -- new icc version?)
 [Error matching program output for modules/standard/math/acosh_out_of_range]
 [Error matching program output for modules/standard/math/atanh_out_of_range]
 [Error matching program output for types/complex/marybeth/complex_expressions]
+[Error matching program output for modules/standard/math/acosh_out_of_range]
+[Error matching program output for modules/standard/math/atanh_out_of_range]
+... and other sign printing differences:
+[Error matching program output for types/file/bradc/scalar/floatcomplexexceptions] (since 8'2012 or earlier)
 
 execution timeout (11/17/11 -- new icc version?)
 ------------------------------------------------
@@ -408,14 +413,42 @@ new file I/O problem due to unicode literal (11/10/11)
 
 problem with static/dynamic linking? (10/1/11 -- first run)
 -----------------------------------------------------------
-[Error matching compiler output for link/sungeun/static_dynamic (--cc-warnings --dynamic --static)]
-[Error matching compiler output for link/sungeun/static_dynamic (--cc-warnings --static)]
-[Error matching compiler output for link/sungeun/static_dynamic (--cc-warnings --static --dynamic --static)]
+[Error matching compiler output for link/sungeun/static_dynamic (compopts: 6)] (since 10/13/2012)
+  Currently getting: "ELF 64-bit LSB executable, x86-64, version 1 (SYSV), for GNU/Linux 2.6.4, statically linked, not stripped"; the Chapel compiler options are: --cc-warnings --fast
+
+test_printscan_float: Assertion `0 == strcmp(got, expect)' failed
+-----------------------------------------------------------------
+[Error matching C I/O test ./qio_formatted_test Formatted I/O Test] (since testing started on 10/28/2012)
+
+numeric discrepancies
+---------------------
+The following tests have failed since 8'2012 or earlier,
+due to numeric discrepancies and (some of them) printing of '-',
+for PrgEnv-intel, but not for just intel:
+[Error matching program output for studies/madness/dinan/mad_chapel/test_gaxpy]
+[Error matching program output for studies/madness/dinan/mad_chapel/test_mul]
+[Error matching program output for studies/madness/dinan/mad_chapel/test_likepy]
+[Error matching program output for studies/madness/dinan/mad_chapel/test_diff]
+[Error matching program output for studies/madness/common/test_gaxpy]
+[Error matching program output for studies/madness/common/test_mul]
+[Error matching program output for studies/madness/common/test_likepy]
+[Error matching program output for studies/madness/common/test_diff]
+[Error matching program output for studies/madness/aniruddha/madchap/test_gaxpy]
+[Error matching program output for studies/madness/aniruddha/madchap/test_mul]
+[Error matching program output for studies/madness/aniruddha/madchap/test_likepy]
+[Error matching program output for studies/madness/aniruddha/madchap/test_diff]
+[Error matching program output for studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct (compopts: 1)]
+[Error matching program output for studies/madness/aniruddha/madchap/mytests/par-compress/test_compress (compopts: 1)]
 
 
 ========================
 xt-gnu specific failures
 ========================
+
+problem with static/dynamic linking?
+------------------------------------
+[Error matching compiler output for link/sungeun/static_dynamic (compopts: 6)] (started 10/26/2012)
+get "ELF 64-bit LSB executable, x86-64, version 1 (SYSV), for GNU/Linux 2.6.4, statically linked, not stripped"
 
 
 ========================
