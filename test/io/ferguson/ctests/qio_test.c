@@ -219,7 +219,7 @@ void check_channel(char threadsafe, qio_chtype_t type, int64_t start, int64_t le
     assert( feof(readfp) );
   } else {
     err = qio_channel_read(threadsafe, reading, got_chunk, 1, &amt_read);
-    assert( err = EEOF );
+    assert( err == EEOF );
   }
 
   qio_channel_release(reading);

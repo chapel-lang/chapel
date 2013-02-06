@@ -154,19 +154,6 @@ void chpl_wide_array_free(int32_t dstLocale, void* x, int32_t lineno, const char
   chpl_array_free(x, lineno, filename);
 }
 
-// Bootstrap routine which allows creation of a locale ID
-// for which we do not yet have a locale structure defined.
-// TODO: This routine can probably be eliminated, by creating chpl_localeID_t
-// structs and populating them as needed (in both the module and compiler code).
-static ___always_inline
-c_locale_t chpl_on_locale_num(c_nodeid_t node_id, c_subloc_t subloc_id)
-{
-  c_locale_t tmp;
-  tmp.node = node_id;
-  tmp.subloc = subloc_id;
-  return tmp;
-}
-
 #endif // LAUNCHER
 
 #endif

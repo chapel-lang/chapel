@@ -4,9 +4,23 @@ pragma "no use ChapelStandard"
 module ChapelLocale {
 
   use DefaultRectangular;
-  
+
+  // The chpl_localeID_t type is used internally.  It should not be exposed to the user.
+  // It allows the compiler to parse out the fields of the localeID portion
+  // of a wide pointer.
+  // It simplified the implementation of the various PRIM_WIDE_GET_??? primitives,
+  // by allowing the code generation routines for field extraction to be reused.
   extern type c_nodeid_t;
   extern type c_subloc_t;
+  // Eventually, it would be desirable to have the architecture specify the allocation
+  // of bits in a localeID.  Right now, we borrow the types used for those quantities in
+  // the backend, and in that way guarantee that the types agree.
+
+  // Right now, much of the unification of the various runtime facilities is done through the 
+  // chpl_ interfaces described in the generic runtime/include files.  If the unification
+  // is instead provided in Chapel architectural descriptions, then a greater variety of 
+  // runtime facilities can be accommodated.  For example, the single type c_nodeid_t 
+
 
   pragma "no object"
   record chpl_localeID_t {
