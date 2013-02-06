@@ -21,7 +21,7 @@ chap10    : gasnet: segment fast (M,W,F,Su), segment everything (Tu,Thu,Sa)
 bradc-lnx : 11pm update of ~chapelu/chapel, release testing, linxu64 performance, token count, tab check
 lnx-vass  : block, memory leaks; historify-logs
 lnx-hilde : (no testing)
-lnx-diten : (no testing)
+lnx-diten : cyclic
 macchapel-mac            : mac (still a bit fishy)
 4LR97C1 (windows laptop) : cygwin (typical windows network weirdness)
 
@@ -30,7 +30,6 @@ Discontinued testing
 - opts   (start_opt_test, nightly-opts-all.cron, nightly-opts-examples.cron)
 - nanox  (was: nightly.lnx-hilde  up to r19634)
 - mpi    (was: nightly.chap04     up to r19116)
-- cyclic (was: nightly.lnx-sung   up to r19632)
 
 
 Other notes
