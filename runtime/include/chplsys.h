@@ -25,6 +25,6 @@ int32_t chpl_maxThreadsLimit(void);
 //
 // returns the name of a locale via uname -n or the like
 //
-chpl_string chpl_localeName(void);
+chpl_string chpl_nodeName(void);
 
 #endif

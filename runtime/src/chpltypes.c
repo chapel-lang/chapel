@@ -75,7 +75,7 @@ typedef struct __chpl____wide_chpl_string chpl____wide_chpl_string;
 
 chpl_string
 chpl_wide_string_copy(chpl____wide_chpl_string* x, int32_t lineno, chpl_string filename) {
-  if (x->locale.node == chpl_localeID)
+  if (x->locale.node == chpl_nodeID)
     return string_copy(x->addr, lineno, filename);
   else {
     chpl_string s;
@@ -91,7 +91,7 @@ void
 chpl_string_widen(chpl____wide_chpl_string* x, chpl_string from)
 {
   size_t len = strlen(from) + 1;
-  x->locale.node = chpl_localeID;
+  x->locale.node = chpl_nodeID;
   x->locale.subloc = chpl_task_getSubLoc();
   x->addr = chpl_mem_allocMany(len, sizeof(char),
                                CHPL_RT_MD_SET_WIDE_STRING, 0, 0);
@@ -106,7 +106,7 @@ chpl_comm_wide_get_string(chpl_string* local, struct __chpl____wide_chpl_string*
   char* chpl_macro_tmp =
       chpl_mem_allocMany(x->size, sizeof(char),
                          CHPL_RT_MD_GET_WIDE_STRING, -1, "<internal>");
-    if (chpl_localeID == x->locale.node)
+    if (chpl_nodeID == x->locale.node)
       memcpy(chpl_macro_tmp, x->addr, x->size);
     else
       chpl_comm_get((void*) &(*chpl_macro_tmp), x->locale.node,

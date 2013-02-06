@@ -29,10 +29,15 @@ module DefaultArchitecture {
         halt("locales cannot be created");
       }
 
-      // Can this be an extern?
-      // chpl_localeID returns the node ID, as determined by the network.
-      chpl_id = __primitive("chpl_localeID");
-      name = __primitive("chpl_localeName");
+      // chpl_nodeID is the node ID associated with the running image.
+      chpl_id = __primitive("chpl_nodeID");
+
+      // chpl_nodeName is defined in chplsys.c.
+      // It supplies a node name obtained by running uname(3) on the current node.
+      // For this reason as well, this constructor must be run on the node 
+      // it is intende to describe.
+      extern proc chpl_nodeName() : string;
+      name = chpl_nodeName();
 
       extern proc chpl_task_getCallStackSize(): int;
       callStackSize = chpl_task_getCallStackSize();

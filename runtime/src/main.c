@@ -165,7 +165,7 @@ int main(int argc, char* argv[]) {
   // The call to chpl_comm_barrier makes sure that all locales are listening
   // before an attempt is made to run tasks "on" them.
 
-  if (chpl_localeID == 0) {      // have locale #0 run the user's main function
+  if (chpl_nodeID == 0) {      // have locale #0 run the user's main function
 
     chpl_task_callMain(chpl_main);
   }

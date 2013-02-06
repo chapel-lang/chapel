@@ -142,7 +142,7 @@ void chpl_thread_init(int32_t numThreadsPerLocale,
   // Count the main thread on locale 0 as already existing, since it
   // is (or soon will be) running the main program.
   //
-  if (chpl_localeID == 0)
+  if (chpl_nodeID == 0)
     threadNumThreads = 1;
 
   //

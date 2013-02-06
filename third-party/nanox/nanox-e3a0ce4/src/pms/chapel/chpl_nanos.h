@@ -50,7 +50,7 @@ void nanos_chapel_pre_init ( void * );
   void nanos_chpl_task_init(int32_t numThreadsPerLocale, 
                             int32_t maxThreadsPerLocale, int numCommTasks,
                             uint64_t callStackSize,
-                            int32_t chpl_localeID);
+                            int32_t chpl_nodeID);
 
 #ifdef __cplusplus
 }

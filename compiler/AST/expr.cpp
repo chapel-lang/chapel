@@ -560,7 +560,7 @@ GenRet codegenUseCid(Type* classType)
 static
 GenRet codegenGetNodeID(void)
 {
-  GenRet ret =  codegenUseGlobal("chpl_localeID");
+  GenRet ret =  codegenUseGlobal("chpl_nodeID");
   ret.chplType = NODE_ID_TYPE;
   return ret;
 }
@@ -2109,7 +2109,7 @@ GenRet codegenCast(Type* t, GenRet value, bool Cparens)
   
   // if we are casting a C99 wide pointer, parens around the value
   // will result in an error, hence the Cparens parameter
-  // e.g. ((chpl____wide_DefaultRectangularArr_locale_1_int64_t_F)({ .locale = chpl_localeID, .addr = nil }))
+  // e.g. ((chpl____wide_DefaultRectangularArr_locale_1_int64_t_F)({ .locale = chpl_nodeID, .addr = nil }))
   // won't compile
  
   if (info->cfile){
@@ -3251,7 +3251,7 @@ GenRet CallExpr::codegen() {
       break;
     case PRIM_PTR_EQUAL:
     case PRIM_EQUAL:
-     // Need subloc field as well.
+     // TODO: Need subloc field as well.
       if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) &&
           get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
         GenRet a = get(1);
@@ -3273,7 +3273,7 @@ GenRet CallExpr::codegen() {
       break;
     case PRIM_PTR_NOTEQUAL:
     case PRIM_NOTEQUAL:
-     // Need subloc field as well.
+     // TODO: Need subloc field as well.
       if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) &&
           get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
         GenRet a = get(1);

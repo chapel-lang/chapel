@@ -125,7 +125,7 @@ static void AM_fork_fast(gasnet_token_t token, void* buf, size_t nbytes) {
   if (chpl_verbose_comm) {
     char mybuf[128];
     sprintf(mybuf, "%d: running (fast) remote task created by %d\n",
-            chpl_localeID, f->caller);
+            chpl_nodeID, f->caller);
     write(2, mybuf, strlen(mybuf));
   }
 
@@ -365,14 +365,14 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
   assert(sizeof(gasnet_handlerarg_t)==sizeof(uint32_t));
 
   gasnet_init(argc_p, argv_p);
-  chpl_localeID = gasnet_mynode();
-  chpl_numLocales = gasnet_nodes();
+  chpl_nodeID = gasnet_mynode();
+  chpl_numNodes = gasnet_nodes();
   GASNET_Safe(gasnet_attach(ftable, 
                             sizeof(ftable)/sizeof(gasnet_handlerentry_t),
                             gasnet_getMaxLocalSegmentSize(),
                             0));
 #undef malloc
-  seginfo_table = (gasnet_seginfo_t*)malloc(chpl_numLocales*sizeof(gasnet_seginfo_t));
+  seginfo_table = (gasnet_seginfo_t*)malloc(chpl_numNodes*sizeof(gasnet_seginfo_t));
   //
   // The following call has no real effect on the .addr and .size
   // fields for GASNET_SEGMENT_EVERYTHING, but is recommended to be
@@ -380,7 +380,7 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
   // in order to ensure that the seginfo_table array is initialized
   // appropriately on all locales.
   //
-  GASNET_Safe(gasnet_getSegmentInfo(seginfo_table, chpl_numLocales));
+  GASNET_Safe(gasnet_getSegmentInfo(seginfo_table, chpl_numNodes));
 #ifdef GASNET_SEGMENT_EVERYTHING
   //
   // For SEGMENT_EVERYTHING, there is no GASNet-provided memory
@@ -393,7 +393,7 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
   // _test_attach() routine from third-party/gasnet/GASNET-version/tests/test.h
   // but is significantly simplified for our purposes.
   //
-  if (chpl_localeID == 0) {
+  if (chpl_nodeID == 0) {
     int i;
     //
     // Only locale #0 really needs the seginfo_table to store anything since it owns all
@@ -409,7 +409,7 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
     //
     // ...and then zeroes out everyone else's
     //
-    for (i=1; i<chpl_numLocales; i++) {
+    for (i=1; i<chpl_numNodes; i++) {
       seginfo_table[i].addr = NULL;
       seginfo_table[i].size = 0;
     }
@@ -424,11 +424,11 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
   // This is a naive O(numLocales) broadcast; we could do something
   // more scalable with more effort
   //
-  if (chpl_localeID == 0) {
+  if (chpl_nodeID == 0) {
     int i;
-    for (i=0; i < chpl_numLocales; i++) {
+    for (i=0; i < chpl_numNodes; i++) {
       GASNET_Safe(gasnet_AMRequestMedium0(i, BCAST_SEGINFO, seginfo_table, 
-                                          chpl_numLocales*sizeof(gasnet_seginfo_t)));
+                                          chpl_numNodes*sizeof(gasnet_seginfo_t)));
     }
   }
   GASNET_BLOCKUNTIL(bcast_seginfo_done);
@@ -443,7 +443,7 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
 void chpl_comm_post_mem_init(void) { }
 
 int chpl_comm_numPollingTasks(void) {
-  return (chpl_localeID == 0);
+  return (chpl_nodeID == 0);
 }
 
 //
@@ -458,7 +458,7 @@ void chpl_comm_post_task_init(void) {
   // Start polling task on locale 0.  (On other locales, main enters
   // into a barrier wait, so the polling task is unnecessary.)
   //
-  if (chpl_localeID == 0) {
+  if (chpl_nodeID == 0) {
     INIT_DONE_OBJ(alldone, 1);
     if (chpl_task_createCommTask(polling, NULL))
       chpl_internal_error("unable to start polling task for gasnet");
@@ -470,15 +470,15 @@ void chpl_comm_post_task_init(void) {
 
 void chpl_comm_rollcall(void) {
   chpl_sync_initAux(&chpl_comm_diagnostics_sync);
-  chpl_msg(2, "executing on locale %d of %d locale(s): %s\n", chpl_localeID, 
-           chpl_numLocales, chpl_localeName());
+  chpl_msg(2, "executing on node %d of %d node(s): %s\n", chpl_nodeID, 
+           chpl_numNodes, chpl_nodeName());
 }
 
 void chpl_comm_desired_shared_heap(void** start_p, size_t* size_p) {
 #if defined(GASNET_SEGMENT_FAST) || defined(GASNET_SEGMENT_LARGE)
   *start_p = chpl_numGlobalsOnHeap * sizeof(void*) 
-             + (char*)seginfo_table[chpl_localeID].addr;
-  *size_p  = seginfo_table[chpl_localeID].size
+             + (char*)seginfo_table[chpl_nodeID].addr;
+  *size_p  = seginfo_table[chpl_nodeID].size
              - chpl_numGlobalsOnHeap * sizeof(void*);
 #else /* GASNET_SEGMENT_EVERYTHING */
   *start_p = NULL;
@@ -492,7 +492,7 @@ void chpl_comm_alloc_registry(int numGlobals) {
 
 void chpl_comm_broadcast_global_vars(int numGlobals) {
   int i;
-  if (chpl_localeID != 0) {
+  if (chpl_nodeID != 0) {
     for (i = 0; i < numGlobals; i++) {
       chpl_comm_get(chpl_globals_registry[i], 0,
                     &((void**)seginfo_table[0].addr)[i],
@@ -507,7 +507,7 @@ void chpl_comm_broadcast_private(int id, int32_t size, int32_t tid) {
   done_t* done;
   int numOffsets=1;
 
-  done = (done_t*) chpl_mem_allocManyZero(chpl_numLocales, sizeof(*done),
+  done = (done_t*) chpl_mem_allocManyZero(chpl_numNodes, sizeof(*done),
                                           CHPL_RT_MD_COMM_FORK_DONE_FLAG,
                                           0, 0);
   if (payloadSize <= gasnet_AMMaxMedium()) {
@@ -515,8 +515,8 @@ void chpl_comm_broadcast_private(int id, int32_t size, int32_t tid) {
     memcpy(pbp->data, chpl_private_broadcast_table[id], size);
     pbp->id = id;
     pbp->size = size;
-    for (node = 0; node < chpl_numLocales; node++) {
-      if (node != chpl_localeID) {
+    for (node = 0; node < chpl_numNodes; node++) {
+      if (node != chpl_nodeID) {
         pbp->ack = &done[node];
         INIT_DONE_OBJ(done[node], 1);
         GASNET_Safe(gasnet_AMRequestMedium0(node, PRIV_BCAST, pbp, payloadSize));
@@ -529,8 +529,8 @@ void chpl_comm_broadcast_private(int id, int32_t size, int32_t tid) {
     priv_bcast_large_t* pblp = chpl_mem_allocMany(1, maxpayloadsize, CHPL_RT_MD_COMM_PRIVATE_BROADCAST_DATA, 0, 0);
     pblp->id = id;
     numOffsets = (size+maxsize)/maxsize;
-    for (node = 0; node < chpl_numLocales; node++) {
-      if (node != chpl_localeID)
+    for (node = 0; node < chpl_numNodes; node++) {
+      if (node != chpl_nodeID)
         INIT_DONE_OBJ(done[node], numOffsets);
     }
     for (offset = 0; offset < size; offset += maxsize) {
@@ -540,8 +540,8 @@ void chpl_comm_broadcast_private(int id, int32_t size, int32_t tid) {
       pblp->offset = offset;
       pblp->size = thissize;
       memcpy(pblp->data, (char*)chpl_private_broadcast_table[id]+offset, thissize);
-      for (node = 0; node < chpl_numLocales; node++) {
-        if (node != chpl_localeID) {
+      for (node = 0; node < chpl_numNodes; node++) {
+        if (node != chpl_nodeID) {
           pblp->ack = &done[node];
           GASNET_Safe(gasnet_AMRequestMedium0(node, PRIV_BCAST_LARGE, pblp, sizeof(priv_bcast_large_t)+thissize));
         }
@@ -550,8 +550,8 @@ void chpl_comm_broadcast_private(int id, int32_t size, int32_t tid) {
     chpl_mem_free(pblp, 0, 0);
   }
   // wait for the handlers to complete
-  for (node = 0; node < chpl_numLocales; node++) {
-    if (node != chpl_localeID)
+  for (node = 0; node < chpl_numNodes; node++) {
+    if (node != chpl_nodeID)
       GASNET_BLOCKUNTIL(done[node].flag);
   }
   chpl_mem_free(done, 0, 0);
@@ -559,7 +559,7 @@ void chpl_comm_broadcast_private(int id, int32_t size, int32_t tid) {
 
 void chpl_comm_barrier(const char *msg) {
   if (chpl_verbose_comm && !chpl_comm_no_debug_private)
-    printf("%d: barrier for '%s'\n", chpl_localeID, msg);
+    printf("%d: barrier for '%s'\n", chpl_nodeID, msg);
   gasnet_barrier_notify(0, GASNET_BARRIERFLAG_ANONYMOUS);
   GASNET_Safe(gasnet_barrier_wait(0, GASNET_BARRIERFLAG_ANONYMOUS));
 }
@@ -568,12 +568,12 @@ void chpl_comm_pre_task_exit(int all) {
   if (all) {
     chpl_comm_barrier("chpl_comm_pre_task_exit");
 
-    if (chpl_localeID == 0) {
+    if (chpl_nodeID == 0) {
       //
       // Only locale 0 actually runs a polling task.  Tell that task to
       // halt, and then wait for it to do so.
       //
-      GASNET_Safe(gasnet_AMRequestShort2(chpl_localeID, SIGNAL,
+      GASNET_Safe(gasnet_AMRequestShort2(chpl_nodeID, SIGNAL,
                                          AckArg0(&alldone),
                                          AckArg1(&alldone)));
       while (pollingRunning) {}
@@ -584,8 +584,8 @@ void chpl_comm_pre_task_exit(int all) {
 static void exit_common(int status) {
   static int loopback = 0;
 
-  if (chpl_localeID == 0) {
-    GASNET_Safe(gasnet_AMRequestShort2(chpl_localeID, SIGNAL,
+  if (chpl_nodeID == 0) {
+    GASNET_Safe(gasnet_AMRequestShort2(chpl_nodeID, SIGNAL,
                                        AckArg0(&alldone),
                                        AckArg1(&alldone)));
     if (loopback) {
@@ -604,8 +604,8 @@ static void exit_any_dirty(int status) {
   // GASNet will then kill all other locales.
   static int loopback = 0;
 
-  if (chpl_localeID == 0) {
-    GASNET_Safe(gasnet_AMRequestShort2(chpl_localeID, SIGNAL,
+  if (chpl_nodeID == 0) {
+    GASNET_Safe(gasnet_AMRequestShort2(chpl_nodeID, SIGNAL,
                                        AckArg0(&alldone),
                                        AckArg1(&alldone)));
     if (loopback) {
@@ -624,14 +624,14 @@ static void exit_any_clean(int status) {
   int node;
 
   // notify all other nodes that this node is entering a clean exit_any
-  for (node = 0; node < chpl_numLocales; node++) {
-    if (node != chpl_localeID) {
+  for (node = 0; node < chpl_numNodes; node++) {
+    if (node != chpl_nodeID) {
       GASNET_Safe(gasnet_AMRequestMedium0(node, EXIT_ANY, &status_p, sizeof(status_p)));
     }
   }
     
   // (for code reuse) ask this node to perform a clean exit_any
-  GASNET_Safe(gasnet_AMRequestMedium0(chpl_localeID, EXIT_ANY, &status_p, sizeof(status_p)));
+  GASNET_Safe(gasnet_AMRequestMedium0(chpl_nodeID, EXIT_ANY, &status_p, sizeof(status_p)));
 }
 #endif
 
@@ -649,11 +649,11 @@ void  chpl_comm_put(void* addr, int32_t node, void* raddr,
                     int32_t elemSize, int32_t typeIndex, int32_t len,
                     int ln, chpl_string fn) {
   const int size = elemSize*len;
-  if (chpl_localeID == node) {
+  if (chpl_nodeID == node) {
     memmove(raddr, addr, size);
   } else {
     if (chpl_verbose_comm && !chpl_comm_no_debug_private)
-      printf("%d: %s:%d: remote put to %d\n", chpl_localeID, fn, ln, node);
+      printf("%d: %s:%d: remote put to %d\n", chpl_nodeID, fn, ln, node);
     if (chpl_comm_diagnostics && !chpl_comm_no_debug_private) {
       chpl_sync_lock(&chpl_comm_diagnostics_sync);
       chpl_comm_commDiagnostics.put++;
@@ -670,11 +670,11 @@ void  chpl_comm_get(void* addr, int32_t node, void* raddr,
                     int32_t elemSize, int32_t typeIndex, int32_t len,
                     int ln, chpl_string fn) {
   const int size = elemSize*len;
-  if (chpl_localeID == node) {
+  if (chpl_nodeID == node) {
     memmove(addr, raddr, size);
   } else {
     if (chpl_verbose_comm && !chpl_comm_no_debug_private)
-      printf("%d: %s:%d: remote get from %d\n", chpl_localeID, fn, ln, node);
+      printf("%d: %s:%d: remote get from %d\n", chpl_nodeID, fn, ln, node);
     if (chpl_comm_diagnostics && !chpl_comm_no_debug_private) {
       chpl_sync_lock(&chpl_comm_diagnostics_sync);
       chpl_comm_commDiagnostics.get++;
@@ -718,7 +718,7 @@ void  chpl_comm_get_strd(void* dstaddr, void* dststrides, c_nodeid_t srcnode_id,
   }
 
   if (chpl_verbose_comm && !chpl_comm_no_debug_private) {
-    printf("%d: %s:%d: remote get from %d. strlvls:%d. elemSize:%d  sizeof(size_t):%d  sizeof(gasnet_node_t):%d\n", chpl_localeID, fn, ln, srcnode,(int)strlvls,elemSize,(int)sizeof(size_t),(int)sizeof(gasnet_node_t));
+    printf("%d: %s:%d: remote get from %d. strlvls:%d. elemSize:%d  sizeof(size_t):%d  sizeof(gasnet_node_t):%d\n", chpl_nodeID, fn, ln, srcnode,(int)strlvls,elemSize,(int)sizeof(size_t),(int)sizeof(gasnet_node_t));
 
     printf("dststrides in bytes:\n");                 
     for (i=0;i<strlvls;i++) printf(" %d ",(int)dststr[i]);
@@ -730,9 +730,9 @@ void  chpl_comm_get_strd(void* dstaddr, void* dststrides, c_nodeid_t srcnode_id,
     for (i=0;i<=strlvls;i++) printf(" %d ",(int)cnt[i]);
     printf("\n");                     
   }
-  // the case (chpl_localeID == srcnode) is internally managed inside gasnet
+  // the case (chpl_nodeID == srcnode) is internally managed inside gasnet
   if (chpl_verbose_comm && !chpl_comm_no_debug_private)
-    printf("%d: %s:%d: remote get from %d\n", chpl_localeID, fn, ln, srcnode);
+    printf("%d: %s:%d: remote get from %d\n", chpl_nodeID, fn, ln, srcnode);
   if (chpl_comm_diagnostics && !chpl_comm_no_debug_private) {
     chpl_sync_lock(&chpl_comm_diagnostics_sync);
     chpl_comm_commDiagnostics.get++;
@@ -767,7 +767,7 @@ void  chpl_comm_put_strd(void* dstaddr, void* dststrides, c_nodeid_t dstnode_id,
     cnt[strlvls] = ((int32_t*)count)[strlvls];
   }
   if (chpl_verbose_comm && !chpl_comm_no_debug_private) {
-    printf("%d: %s:%d: remote get from %d. strlvls:%d. elemSize:%d  sizeof(size_t):%d  sizeof(gasnet_node_t):%d\n", chpl_localeID, fn, ln, dstnode,(int)strlvls,elemSize,(int)sizeof(size_t),(int)sizeof(gasnet_node_t));
+    printf("%d: %s:%d: remote get from %d. strlvls:%d. elemSize:%d  sizeof(size_t):%d  sizeof(gasnet_node_t):%d\n", chpl_nodeID, fn, ln, dstnode,(int)strlvls,elemSize,(int)sizeof(size_t),(int)sizeof(gasnet_node_t));
 
     printf("dststrides in bytes:\n");                 
     for (i=0;i<strlvls;i++) printf(" %d ",(int)dststr[i]);
@@ -780,9 +780,9 @@ void  chpl_comm_put_strd(void* dstaddr, void* dststrides, c_nodeid_t dstnode_id,
     printf("\n");                     
   }
 
-  // the case (chpl_localeID == dstnode) is internally managed inside gasnet
+  // the case (chpl_nodeID == dstnode) is internally managed inside gasnet
   if (chpl_verbose_comm && !chpl_comm_no_debug_private)
-    printf("%d: %s:%d: remote get from %d\n", chpl_localeID, fn, ln, dstnode);
+    printf("%d: %s:%d: remote get from %d\n", chpl_nodeID, fn, ln, dstnode);
   if (chpl_comm_diagnostics && !chpl_comm_no_debug_private) {
     chpl_sync_lock(&chpl_comm_diagnostics_sync);
     chpl_comm_commDiagnostics.put++;
@@ -801,11 +801,11 @@ void  chpl_comm_fork(c_nodeid_t node, chpl_fn_int_t fid, void *arg,
   done_t  done;
   int     passArg = sizeof(fork_t) + arg_size <= gasnet_AMMaxMedium();
 
-  if (chpl_localeID == node) {
+  if (chpl_nodeID == node) {
     (*chpl_ftable[fid])(arg);
   } else {
     if (chpl_verbose_comm && !chpl_comm_no_debug_private)
-      printf("%d: remote task created on %d\n", chpl_localeID, node);
+      printf("%d: remote task created on %d\n", chpl_nodeID, node);
     if (chpl_comm_diagnostics && !chpl_comm_no_debug_private) {
       chpl_sync_lock(&chpl_comm_diagnostics_sync);
       chpl_comm_commDiagnostics.fork++;
@@ -818,7 +818,7 @@ void  chpl_comm_fork(c_nodeid_t node, chpl_fn_int_t fid, void *arg,
       info_size = sizeof(fork_t) + sizeof(void*);
     }
     info = (fork_t*)chpl_mem_allocMany(1, info_size, CHPL_RT_MD_COMM_FORK_SEND_INFO, 0, 0);
-    info->caller = chpl_localeID;
+    info->caller = chpl_nodeID;
     info->ack = &done;
     info->serial_state = chpl_task_getSerial();
     info->fid = fid;
@@ -850,7 +850,7 @@ void  chpl_comm_fork_nb(c_nodeid_t node, chpl_fn_int_t fid, void *arg,
                         int32_t arg_size, int32_t arg_tid) {
   fork_t *info;
   int     info_size;
-  int     passArg = chpl_localeID == node || sizeof(fork_t) + arg_size <= gasnet_AMMaxMedium();
+  int     passArg = chpl_nodeID == node || sizeof(fork_t) + arg_size <= gasnet_AMMaxMedium();
 
   void* argCopy = NULL;
 
@@ -860,7 +860,7 @@ void  chpl_comm_fork_nb(c_nodeid_t node, chpl_fn_int_t fid, void *arg,
     info_size = sizeof(fork_t) + sizeof(void*);
   }
   info = (fork_t*)chpl_mem_allocMany(info_size, sizeof(char), CHPL_RT_MD_COMM_FORK_SEND_NB_INFO, 0, 0);
-  info->caller = chpl_localeID;
+  info->caller = chpl_nodeID;
   info->ack = info; // pass address to free after get in large case
   info->serial_state = chpl_task_getSerial();
   info->fid = fid;
@@ -874,12 +874,12 @@ void  chpl_comm_fork_nb(c_nodeid_t node, chpl_fn_int_t fid, void *arg,
     memcpy(&(info->arg), &argCopy, sizeof(void*));
   }
 
-  if (chpl_localeID == node) {
+  if (chpl_nodeID == node) {
     chpl_task_begin((chpl_fn_p)fork_nb_wrapper, (void*)info,
                false, info->serial_state, NULL);
   } else {
     if (chpl_verbose_comm && !chpl_comm_no_debug_private)
-      printf("%d: remote non-blocking task created on %d\n", chpl_localeID, node);
+      printf("%d: remote non-blocking task created on %d\n", chpl_nodeID, node);
     if (chpl_comm_diagnostics && !chpl_comm_no_debug_private) {
       chpl_sync_lock(&chpl_comm_diagnostics_sync);
       chpl_comm_commDiagnostics.fork_nb++;
@@ -903,13 +903,13 @@ void  chpl_comm_fork_fast(c_nodeid_t node, chpl_fn_int_t fid, void *arg,
   done_t  done;
   int     passArg = info_size <= gasnet_AMMaxMedium();
 
-  if (chpl_localeID == node) {
+  if (chpl_nodeID == node) {
     (*chpl_ftable[fid])(arg);
   } else {
     if (passArg) {
       if (chpl_verbose_comm && !chpl_comm_no_debug_private)
         printf("%d: remote (no-fork) task created on %d\n",
-               chpl_localeID, node);
+               chpl_nodeID, node);
       if (chpl_comm_diagnostics && !chpl_comm_no_debug_private) {
         chpl_sync_lock(&chpl_comm_diagnostics_sync);
         chpl_comm_commDiagnostics.fork_fast++;
@@ -917,7 +917,7 @@ void  chpl_comm_fork_fast(c_nodeid_t node, chpl_fn_int_t fid, void *arg,
       }
       info = (fork_t *) &infod;
 
-      info->caller = chpl_localeID;
+      info->caller = chpl_nodeID;
       info->ack = &done;
       info->serial_state = chpl_task_getSerial();
       info->fid = fid;
@@ -1038,7 +1038,7 @@ uint64_t chpl_numCommNBForks(void) {
 
 
 void chpl_comm_gasnet_help_register_global_var(int i, void* addr) {
-  if (chpl_localeID == 0) {
+  if (chpl_nodeID == 0) {
     ((void**)seginfo_table[0].addr)[i] = addr;
   }
 }

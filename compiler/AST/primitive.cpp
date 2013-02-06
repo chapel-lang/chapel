@@ -539,7 +539,7 @@ initPrimitive() {
   prim_def(PRIM_LOC_GET_SUBLOC, "_loc_get_subloc", returnInfoSublocID);
   prim_def(PRIM_LOC_SET_SUBLOC, "_loc_set_subloc", returnInfoVoid);
 
-  prim_def(PRIM_NODE_ID, "chpl_localeID", returnInfoNodeID);    // Our GASNet node ID.
+  prim_def(PRIM_NODE_ID, "chpl_nodeID", returnInfoNodeID);    // Our GASNet node ID.
   prim_def(PRIM_ON_LOCALE_NUM, "chpl_on_locale_num", returnInfoLocaleID);
   prim_def(PRIM_SET_SUBLOC_ID, "_set_subloc_id", returnInfoVoid, true);
   prim_def(PRIM_GET_SUBLOC_ID, "_get_subloc_id", returnInfoSublocID);
@@ -567,7 +567,6 @@ initPrimitive() {
   prim_def("real2int", returnInfoDefaultInt);
   prim_def("object2int", returnInfoDefaultInt);
   prim_def("chpl_exit_any", returnInfoVoid, true);
-  prim_def("chpl_localeName", returnInfoString);
 
   prim_def("chpl_setMemFlags", returnInfoVoid, true);
 

@@ -14,13 +14,13 @@
 //
 // Shared interface (implemented in chpl-comm.c)
 //
-extern c_nodeid_t chpl_localeID; // unique ID for each locale: 0, 1, 2, ...
-// Note that this is actually the comm node ID: it carries only the .node
-// portion of the c_locale_t structure representing the locale on which
+extern c_nodeid_t chpl_nodeID; // unique ID for each node: 0, 1, 2, ...
+// Note that this is the comm node ID: it carries only the .node
+// portion of the c_locale_t structure that represents the locale on which
 // the current task is running.
 // Note also that this value is set only in chpl_comm_init to a value which is
 // (hopefully) unique to the running image, and never changed again.
-extern int32_t chpl_numLocales; // number of locales
+extern int32_t chpl_numNodes; // number of nodes
 
 extern int32_t chpl_numPrivateObjects;
 extern void** chpl_privateObjects; // privatized array and domain objects
@@ -64,7 +64,7 @@ int32_t chpl_comm_getMaxThreads(void);
 
 //
 // initializes the communications package
-//   set chpl_localeID and chpl_numLocales
+//   set chpl_nodeID and chpl_numNodes
 // notes:
 //   * Called with the argc/argv pair passed to main()
 //
