@@ -20,7 +20,7 @@
 general regressions (seem to happen in most configurations)
 ===========================================================
 
-Missing: "warning: accessing the locale of a local expression" (started around 01/26/13)
+An optimization bypasses a semantic check (Tom - on hold)
 ---------------------------------------------------------
 [Error matching program output for multilocale/deitz/oneOrMoreLocales/test_dot_locale_error]
 
@@ -31,10 +31,6 @@ qio_test.c:222: check_channel: Assertion `err == (EXTEND_ERROR_OFFSET+0)' failed
 ==============================================
 linux64 regressions (in addition to the above)
 ==============================================
-
-An optimization bypasses a semantic check (Tom - on hold)
----------------------------------------------------------
-[Error matching program output for multilocale/deitz/oneOrMoreLocales/test_dot_locale_error]
 
 
 ==============================================
