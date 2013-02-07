@@ -1763,3 +1763,385 @@ proc unicodeSupported():bool {
   return qio_unicode_supported() > 0;
 }
 
+use Regexp;
+extern proc qio_regexp_channel_match(ref re:qio_regexp_t, threadsafe:c_int, ch:qio_channel_ptr_t, maxlen:int(64), anchor:c_int, can_discard:bool, keep_unmatched:bool, keep_whole_pattern:bool, submatch:_ddata(qio_regexp_string_piece_t), nsubmatch:int(64)):syserr;
+
+proc channel._extractMatch(m:reMatch, ref arg:reMatch, ref error:syserr) {
+  // If the argument is a match record, just return it.
+  arg = m;
+}
+ 
+proc channel._extractMatch(m:reMatch, ref arg:string, ref error:syserr) {
+  var cur:int(64);
+  var target = m.offset;
+  var len = m.length;
+
+  // If there was no match, return the default value of the type
+  if !m.matched {
+    arg = "";
+  }
+
+  // Read into a string the appropriate region of the file.
+  if !error {
+    qio_channel_revert_unlocked(_channel_internal);
+    error = qio_channel_mark(false, _channel_internal);
+    cur = qio_channel_offset_unlocked(_channel_internal);
+  }
+
+  if ! error {
+    // There was a match, so we have to read the
+    // strings for the capture groups.
+    error = qio_channel_advance(false, _channel_internal, target - cur);
+  }
+
+  var s:string;
+  if ! error {
+    var gotlen:ssize_t;
+    error = qio_channel_read_string(false, iokind.native, stringStyleExactLen(len), _channel_internal, s, gotlen, len);
+  }
+ 
+  if ! error {
+    arg = s;
+  } else {
+    arg = "";
+  }
+}
+ 
+proc channel._extractMatch(m:reMatch, ref arg:?t, ref error:syserr) where t != reMatch && t != string {
+  // If there was no match, return the default value of the type
+  if !m.matched {
+    var empty:arg.type;
+    arg = empty;
+  }
+
+  // Read into a string the appropriate region of the file.
+  var s:string;
+  _extractMatch(m, s, error);
+ 
+  if ! error {
+    arg = s:arg.type;
+  } else {
+    var empty:arg.type;
+    arg = empty;
+  }
+}
+
+
+/** Sets arg to the string of a match.
+    If arg is not a string, the match will be coerced to a arg.type.
+
+    Assumes that the channel has been marked before where
+    the captures are being returned. Will change the channel
+    position to just after the match. Will not do anything
+    if error is set.
+ */
+proc channel.extractMatch(m:reMatch, ref arg, ref error:syserr) {
+  on this.home {
+    this.lock();
+    _extractMatch(m, arg, error);
+    this.unlock();
+  }
+}
+proc channel.extractMatch(m:reMatch, ref arg) {
+  on this.home {
+    this.lock();
+    var err:syserr;
+    _extractMatch(m, arg, err);
+    if err {
+      this._ch_ioerror(err, "in channel.extractMatch(m:reMatch, ref " +
+                             typeToString(arg.type) + ")");
+    }
+    this.unlock();
+  }
+}
+
+// Assumes that the channel has been marked where the search began
+// (or at least before the capture groups if discarding)
+proc channel._ch_handle_captures(matches:_ddata(qio_regexp_string_piece_t),
+                                 nmatches:int,
+                                 ref captures, ref error:syserr) {
+  assert(nmatches >= captures.size);
+  for param i in 1..captures.size {
+    var m = _to_reMatch(matches[i]);
+    _extractMatch(m, captures[i], error);
+  }
+}
+
+
+/** Search for an offset in the channel matching the
+    passed regular expression, possibly pulling out capture groups.
+    If there is a match, leaves the channel position at the
+    match. If there is no match, the channel position will be
+    advanced to the end of the channel (or end of the file).
+ */
+proc channel.search(re:regexp, ref error:syserr):reMatch
+{
+  var m:reMatch;
+  on this.home {
+    this.lock();
+    var nm = 1;
+    var matches = _ddata_allocate(qio_regexp_string_piece_t, nm);
+    error = qio_channel_mark(false, _channel_internal);
+    if !error {
+      error = qio_regexp_channel_match(re._regexp,
+                                       false, _channel_internal, max(int(64)),
+                                       QIO_REGEXP_ANCHOR_UNANCHORED,
+                                       /* can_discard */ true,
+                                       /* keep_unmatched */ false,
+                                       /* keep_whole_pattern */ true,
+                                       matches, nm);
+    }
+    // Don't report "didn't match" errors
+    if error == EFORMAT || error == EEOF then error = ENOERR;
+    if !error {
+      m = _to_reMatch(matches[0]);
+      if m.matched {
+        // Advance to the match.
+        qio_channel_revert_unlocked(_channel_internal);
+        var cur = qio_channel_offset_unlocked(_channel_internal);
+        var target = m.offset;
+        error = qio_channel_advance(false, _channel_internal, target - cur);
+      } else {
+        // If we didn't match... leave the channel position at EOF
+        qio_channel_commit_unlocked(_channel_internal);
+      }
+    }
+    _ddata_free(matches);
+    this.unlock();
+  }
+  return m;
+}
+
+proc channel.search(re:regexp):reMatch
+{
+  var e:syserr = ENOERR;
+  var ret = this.search(re, error=e);
+  if e then this._ch_ioerror(e, "in channel.search");
+  return ret;
+}
+
+/** Like channel.search but assigning capture groups to arguments.
+ */
+proc channel.search(re:regexp, ref captures ...?k, ref error:syserr):reMatch
+{
+  var m:reMatch;
+  on this.home {
+    this.lock();
+    var nm = captures.size + 1;
+    var matches = _ddata_allocate(qio_regexp_string_piece_t, nm);
+    error = qio_channel_mark(false, _channel_internal);
+    if ! error {
+      error = qio_regexp_channel_match(re._regexp,
+                                       false, _channel_internal, max(int(64)),
+                                       QIO_REGEXP_ANCHOR_UNANCHORED,
+                                       /* can_discard */ true,
+                                       /* keep_unmatched */ false,
+                                       /* keep_whole_pattern */ true,
+                                       matches, nm);
+    }
+    // Don't report "didn't match" errors
+    if error == EFORMAT || error == EEOF then error = ENOERR;
+    if !error {
+      m = _to_reMatch(matches[0]);
+      if m.matched {
+        // Extract the capture groups.
+        _ch_handle_captures(matches, nm, captures, error);
+
+        // Advance to the match.
+        qio_channel_revert_unlocked(_channel_internal);
+        var cur = qio_channel_offset_unlocked(_channel_internal);
+        var target = m.offset;
+        error = qio_channel_advance(false, _channel_internal, target - cur);
+      } else {
+        // If we didn't match... leave the channel position at EOF
+        qio_channel_commit_unlocked(_channel_internal);
+      }
+    }
+    _ddata_free(matches);
+    this.unlock();
+  }
+  return m;
+}
+proc channel.search(re:regexp, ref captures ...?k):reMatch
+{
+  var e:syserr = ENOERR;
+  var ret = this.search(re, (...captures), error=e);
+  if e then this._ch_ioerror(e, "in channel.search");
+  return ret;
+}
+
+
+/* Match, starting at the current position in the channel,
+   against a regexp, possibly pulling out capture groups.
+   If there was a match, leaves the channel position at
+   the match. If there was no match, leaves the channel
+   position where it was at the start of this call.
+ */
+proc channel.match(re:regexp, ref error:syserr):reMatch
+{
+  var m:reMatch;
+  on this.home {
+    this.lock();
+    var nm = 1;
+    var matches = _ddata_allocate(qio_regexp_string_piece_t, nm);
+    error = qio_channel_mark(false, _channel_internal);
+    if ! error {
+      error = qio_regexp_channel_match(re._regexp,
+                                       false, _channel_internal, max(int(64)),
+                                       QIO_REGEXP_ANCHOR_START,
+                                       /* can_discard */ true,
+                                       /* keep_unmatched */ true,
+                                       /* keep_whole_pattern */ true,
+                                       matches, nm);
+    }
+    // Don't report "didn't match" errors
+    if error == EFORMAT || error == EEOF then error = ENOERR;
+    if !error {
+      m = _to_reMatch(matches[0]);
+      if m.matched {
+        // Advance to the match.
+        qio_channel_revert_unlocked(_channel_internal);
+        var cur = qio_channel_offset_unlocked(_channel_internal);
+        var target = m.offset;
+        error = qio_channel_advance(false, _channel_internal, target - cur);
+      } else {
+        // If we didn't match... leave the channel position at start
+        qio_channel_revert_unlocked(_channel_internal);
+      }
+    }
+    _ddata_free(matches);
+    this.unlock();
+  }
+  return m;
+}
+proc channel.match(re:regexp):reMatch
+{
+  var e:syserr = ENOERR;
+  var ret = this.match(re, error=e);
+  if e then this._ch_ioerror(e, "in channel.match");
+  return ret;
+}
+
+
+proc channel.match(re:regexp, ref captures ...?k, ref error:syserr):reMatch
+{
+  var m:reMatch;
+  on this.home {
+    this.lock();
+    var nm = 1 + captures.size;
+    var matches = _ddata_allocate(qio_regexp_string_piece_t, nm);
+    error = qio_channel_mark(false, _channel_internal);
+    if !error {
+      error = qio_regexp_channel_match(re._regexp,
+                               false, _channel_internal, max(int(64)),
+                               QIO_REGEXP_ANCHOR_START,
+                               /* can_discard */ true,
+                               /* keep_unmatched */ true,
+                               /* keep_whole_pattern */ true,
+                               matches, nm);
+    }
+    // Don't report "didn't match" errors
+    if error == EFORMAT || error == EEOF then error = ENOERR;
+    if !error {
+      m = _to_reMatch(matches[0]);
+      if m.matched {
+        // Extract the capture groups.
+        _ch_handle_captures(matches, nm, captures, error);
+
+        // Advance to the match.
+        qio_channel_revert_unlocked(_channel_internal);
+        var cur = qio_channel_offset_unlocked(_channel_internal);
+        var target = m.offset;
+        error = qio_channel_advance(false, _channel_internal, target - cur);
+      } else {
+        // If we didn't match... leave the channel position at start
+        qio_channel_revert_unlocked(_channel_internal);
+      }
+    }
+    _ddata_free(matches);
+    this.unlock();
+  }
+  return m;
+}
+proc channel.match(re:regexp, ref captures ...?k):reMatch
+{
+  var e:syserr = ENOERR;
+  var ret = this.match(re, (...captures), error=e);
+  if e then this._ch_ioerror(e, "in channel.match");
+  return ret;
+}
+
+
+
+/* Enumerates matches in the string as well as capture groups.
+   Returns tuples of reMatch objects, the 1st is always
+    the match for the whole pattern.
+   At the time each match is returned, the channel position is
+    at the start of that match. Note though that you would have
+    to advance to get to the position of a capture group.
+   After returning each match, advances to just after that
+    match and looks for another match. Thus, it will not return
+    overlapping matches.
+   In the end, leaves the channel position at the end of the
+    last reported match (if we ran out of maxmatches)
+    or at the end of the channel (if we no longer matched)
+   Holds the channel lock for the duration of the search.
+ */
+iter channel.matches(re:regexp, param captures=0, maxmatches:int = max(int))
+{
+  var m:reMatch;
+  var go = true;
+  var i = 0;
+  var error:syserr;
+  param nret = captures+1;
+  var ret:nret*reMatch;
+
+  lock();
+  on this.home do error = _mark();
+  if error then this._ch_ioerror(error, "in channel.matches mark");
+
+  while go && i < maxmatches {
+    on this.home {
+      var nm = 1 + captures;
+      var matches = _ddata_allocate(qio_regexp_string_piece_t, nm);
+      if ! error {
+        error = qio_regexp_channel_match(re._regexp,
+                                 false, _channel_internal, max(int(64)),
+                                 QIO_REGEXP_ANCHOR_UNANCHORED,
+                                 /* can_discard */ true,
+                                 /* keep_unmatched */ false,
+                                 /* keep_whole_pattern */ true,
+                                 matches, nm);
+      }
+      if !error {
+        m = _to_reMatch(matches[0]);
+        if m.matched {
+          for param i in 1..nret {
+            m = _to_reMatch(matches[i-1]);
+            _extractMatch(m, ret[i], error);
+          }
+          // Advance to the start of the match.
+          qio_channel_revert_unlocked(_channel_internal);
+          error = qio_channel_mark(false, _channel_internal);
+          if !error {
+            var cur = qio_channel_offset_unlocked(_channel_internal);
+            var target = m.offset;
+            error = qio_channel_advance(false, _channel_internal, target - cur);
+          }
+        } else {
+          // Stay at the end of the searched region.
+        }
+      }
+      _ddata_free(matches);
+      if error then go = false;
+    }
+    if ! error then yield ret;
+    i += 1;
+  }
+  _commit();
+  unlock();
+  // Don't report didn't find or end-of-file errors.
+  if error == EFORMAT || error == EEOF then error = ENOERR;
+  if error then this._ch_ioerror(error, "in channel.matches");
+}
+

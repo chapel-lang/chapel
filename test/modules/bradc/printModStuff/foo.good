@@ -30,6 +30,7 @@ Parsing module files:
   $CHPL_HOME/modules/standard/Search.chpl
   $CHPL_HOME/modules/standard/gen/.../SysCTypes.chpl
   $CHPL_HOME/modules/standard/Error.chpl
+  $CHPL_HOME/modules/standard/Regexp.chpl
 In bar
 In baz
 In bak
