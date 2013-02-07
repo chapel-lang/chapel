@@ -166,6 +166,8 @@ PGI only.  Floating point overflow warning in generated code
 errors running sub_test (UNASSIGNED)
 ------------------------------------
 seen on chpbld01 for linux64.intel.none.fifo.pthreads on 10/10/12
+On 02/06/13 something happened around 3:10 AM causing sub_test failures
+across most platforms.
 
 parallel/cobegin/diten/cobeginRace (UNASSIGNED)
 ----------------------------------------------------

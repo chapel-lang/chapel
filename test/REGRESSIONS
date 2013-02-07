@@ -20,6 +20,14 @@
 general regressions (seem to happen in most configurations)
 ===========================================================
 
+Missing: "warning: accessing the locale of a local expression" (started around 01/26/13)
+---------------------------------------------------------
+[Error matching program output for multilocale/deitz/oneOrMoreLocales/test_dot_locale_error]
+
+qio_test.c:222: check_channel: Assertion `err == (EXTEND_ERROR_OFFSET+0)' failed.
+---------------------------------------------------------------------------------
+[Error matching C I/O test ./qio_test I/O Test]
+
 ==============================================
 linux64 regressions (in addition to the above)
 ==============================================
@@ -189,6 +197,15 @@ block distribution regressions
 ===============================
 cyclic distribution regressions
 ===============================
+
+communication counts changed
+----------------------------
+[Error matching program output for distributions/robust/arithmetic/performance/alloc]
+[Error matching program output for distributions/robust/arithmetic/performance/alloc_all]
+[Error matching program output for distributions/robust/arithmetic/performance/assignAlias]
+[Error matching program output for distributions/robust/arithmetic/performance/assignSlice]
+[Error matching program output for distributions/robust/arithmetic/performance/reduceAlias]
+[Error matching program output for distributions/robust/arithmetic/performance/reduceSlice]
 
 
 ================================
