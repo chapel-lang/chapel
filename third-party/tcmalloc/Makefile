@@ -23,7 +23,7 @@ default: all
 all: tcmalloc
 
 clean: FORCE
-	rm -rf $(TCMALLOC_BUILD_DIR)
+	rm -rf $(TCMALLOC_BUILD_SUBDIR)
 
 clobber: FORCE
 	rm -rf build install

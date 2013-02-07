@@ -64,7 +64,7 @@ default: all
 all: gasnet
 
 clean: FORCE
-	rm -rf $(GASNET_BUILD_DIR)
+	rm -rf $(GASNET_BUILD_SUBDIR)
 
 clobber: FORCE
 	rm -rf build install

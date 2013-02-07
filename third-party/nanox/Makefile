@@ -19,7 +19,7 @@ default: all
 all: nanox
 
 clean: FORCE
-	rm -rf $(NANOX_BUILD_DIR)
+	rm -rf $(NANOX_BUILD_SUBDIR)
 
 clobber: FORCE
 	rm -rf build install

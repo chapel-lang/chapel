@@ -31,7 +31,7 @@ default: all
 all: qthread
 
 clean: FORCE
-	rm -rf $(QTHREAD_BUILD_DIR)
+	rm -rf $(QTHREAD_BUILD_SUBDIR)
 
 clobber: FORCE
 	rm -rf build install

@@ -25,7 +25,7 @@ clean: FORCE
 	cd $(LLVM_BUILD_DIR) && make clean
 
 clobber: FORCE
-	rm -r $(LLVM_INSTALL_DIR)
+	rm -rf build install
 
 # -enable-debug-runtime --enable-debug-symbols creates huge binaries
 #  so we by default do not include LLVM debugging information.
