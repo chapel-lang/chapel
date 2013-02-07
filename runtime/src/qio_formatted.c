@@ -1781,7 +1781,8 @@ int _ftoa(char* restrict dst, size_t size, double num, int base, const qio_style
   int adjust_width;
 
   if( signbit(num) ) {
-    num = - num;
+    //num = - num;
+    num = copysign(num, 1.0);
     isnegative = 1;
   } else {
     isnegative = 0;

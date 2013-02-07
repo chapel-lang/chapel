@@ -2461,7 +2461,9 @@ err_t _qio_unbuffered_read(qio_channel_t* ch, void* ptr, ssize_t len_in, ssize_t
   }
   len = len_in;
 
-  if( ch->file->mmap && _right_mark_start(ch) + len <= ch->file->mmap->len) {
+  if( ch->file->mmap &&
+      (method == QIO_METHOD_PREADPWRITE || method == QIO_METHOD_MMAP) &&
+      _right_mark_start(ch) + len <= ch->file->mmap->len) {
     // Copy the data out of the mmap.
     memcpy( ptr, VOID_PTR_ADD(ch->file->mmap->data,_right_mark_start(ch)), len);
     _add_right_mark_start(ch, len);
@@ -2585,6 +2587,7 @@ int _use_buffered(qio_channel_t* ch, ssize_t len)
   if( type == QIO_CH_ALWAYS_UNBUFFERED ) return 0;
   else if( type == QIO_CH_ALWAYS_BUFFERED ) return 1;
   else if (qbuffer_is_initialized(&ch->buf)) return 1;
+  else if (ch->cached_cur) return 1;
   else if (ch->mark_cur > 0) return 1;
   else if (method == QIO_METHOD_MEMORY) return 1;
   else if (offset == ch->end_pos) return 0; 
