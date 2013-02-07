@@ -16,6 +16,9 @@ module ChapelIO {
     proc writing param return true;
     // if it's binary, we don't decorate class/record fields and values
     proc binary:bool { return false; }
+    // get other style elements
+    proc styleElement(element:int):int { return 0; }
+
     proc error():syserr { return ENOERR; }
     proc setError(e:syserr) { }
     proc clearError() { }
@@ -31,7 +34,13 @@ module ChapelIO {
           // FUTURE -- write the class name/ID?
   
           if x == nil {
-            var iolit = new ioLiteral("nil", !binary);
+            var st = styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
+            var iolit:ioLiteral;
+            if st == QIO_AGGREGATE_FORMAT_JSON {
+              iolit = new ioLiteral("null", !binary);
+            } else {
+              iolit = new ioLiteral("nil", !binary);
+            }
             writePrimitive(iolit);
             return;
           }
@@ -77,7 +86,13 @@ module ChapelIO {
             var comma = new ioLiteral(", ");
             if !first then write(comma);
   
-            var eq = new ioLiteral(__primitive("field num to name", t, i) + " = ");
+            var st = styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
+            var eq:ioLiteral;
+            if st == QIO_AGGREGATE_FORMAT_JSON {
+              eq = new ioLiteral(__primitive("field num to name", t, i) + " : ");
+            } else {
+              eq = new ioLiteral(__primitive("field num to name", t, i) + " = ");
+            }
             write(eq);
           }
   
@@ -95,7 +110,13 @@ module ChapelIO {
               // store the union ID
               write(id);
             } else {
-              var eq = new ioLiteral(__primitive("field num to name", t, i) + " = ");
+              var st = styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
+              var eq:ioLiteral;
+              if st == QIO_AGGREGATE_FORMAT_JSON {
+                eq = new ioLiteral(__primitive("field num to name", t, i) + " : ");
+              } else {
+                eq = new ioLiteral(__primitive("field num to name", t, i) + " = ");
+              }
               write(eq);
             }
             write(__primitive("field value by num", x, i));
@@ -116,13 +137,21 @@ module ChapelIO {
     // calls writeThisDefaultImpl.
     proc writeThisDefaultImpl(x:?t) {
       if !binary {
-        if isClassType(t) {
-          var start = new ioLiteral("{");
-          write(start);
+        var st = styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
+        var start:ioLiteral;
+        if st == QIO_AGGREGATE_FORMAT_JSON {
+          start = new ioLiteral("{");
+        } else if st == QIO_AGGREGATE_FORMAT_CHPL {
+          start = new ioLiteral("new " + typeToString(t) + "(");
         } else {
-          var start = new ioLiteral("(");
-          write(start);
+          // the default 'braces' type
+          if isClassType(t) {
+            start = new ioLiteral("{");
+          } else {
+            start = new ioLiteral("(");
+          }
         }
+        write(start);
       }
   
       var first = true;
@@ -130,13 +159,20 @@ module ChapelIO {
       writeThisFieldsDefaultImpl(x, first);
   
       if !binary {
-        if isClassType(t) {
-          var end = new ioLiteral("}");
-          write(end);
+        var st = styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
+        var end:ioLiteral;
+        if st == QIO_AGGREGATE_FORMAT_JSON {
+          end = new ioLiteral("}");
+        } else if st == QIO_AGGREGATE_FORMAT_CHPL {
+          end = new ioLiteral(")");
         } else {
-          var end = new ioLiteral(")");
-          write(end);
+          if isClassType(t) {
+            end = new ioLiteral("}");
+          } else {
+            end = new ioLiteral(")");
+          }
         }
+        write(end);
       }
     }
   }
@@ -145,6 +181,9 @@ module ChapelIO {
     proc writing param return false;
     // if it's binary, we don't decorate class/record fields and values
     proc binary:bool { return false; }
+    // get other style elements
+    proc styleElement(element:int):int { return 0; }
+
     proc error():syserr { return ENOERR; }
     proc setError(e:syserr) { }
     proc clearError() { }
@@ -238,7 +277,13 @@ module ChapelIO {
             var fname = new ioLiteral(__primitive("field num to name", t, i), true);
             readIt(fname);
   
-            var eq = new ioLiteral("=", true);
+            var st = styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
+            var eq:ioLiteral;
+            if st == QIO_AGGREGATE_FORMAT_JSON {
+              eq = new ioLiteral(":", true);
+            } else {
+              eq = new ioLiteral("=", true);
+            }
             readIt(eq);
           }
   
@@ -260,7 +305,14 @@ module ChapelIO {
         } else {
           // Read the field name = part until we get one that worked.
           for param i in 1..num_fields {
-            var eq = new ioLiteral(__primitive("field num to name", t, i) + " = ");
+            var st = styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
+            var eq:ioLiteral;
+            if st == QIO_AGGREGATE_FORMAT_JSON {
+              eq = new ioLiteral(__primitive("field num to name", t, i) + " : ");
+            } else {
+              eq = new ioLiteral(__primitive("field num to name", t, i) + " = ");
+            }
+
             readIt(eq);
             if error() == EFORMAT {
               clearError();
@@ -278,7 +330,14 @@ module ChapelIO {
     // since it has the concrete type and then calls this method.
     proc readThisDefaultImpl(x:?t) where isClassType(t) {
       if !binary {
-        var start = new ioLiteral("{");
+        var st = styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
+        var start:ioLiteral;
+        if st == QIO_AGGREGATE_FORMAT_CHPL {
+          start = new ioLiteral("new " + typeToString(t) + "(");
+        } else {
+          // json and braces type
+          start = new ioLiteral("{");
+        }
         readIt(start);
       }
   
@@ -288,13 +347,28 @@ module ChapelIO {
       readThisFieldsDefaultImpl(t, obj, first);
   
       if !binary {
-        var end = new ioLiteral("}");
+        var st = styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
+        var end:ioLiteral;
+        if st == QIO_AGGREGATE_FORMAT_CHPL {
+          end = new ioLiteral(")");
+        } else {
+          // json and braces type
+          end = new ioLiteral("}");
+        }
         readIt(end);
       }
     }
     proc readThisDefaultImpl(inout x:?t) where !isClassType(t){
       if !binary {
-        var start = new ioLiteral("(");
+        var st = styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
+        var start:ioLiteral;
+        if st == QIO_AGGREGATE_FORMAT_CHPL {
+          start = new ioLiteral("new " + typeToString(t) + "(");
+        } else if st == QIO_AGGREGATE_FORMAT_JSON {
+          start = new ioLiteral("{");
+        } else {
+          start = new ioLiteral("(");
+        }
         readIt(start);
       }
   
@@ -303,7 +377,13 @@ module ChapelIO {
       readThisFieldsDefaultImpl(t, x, first);
   
       if !binary {
-        var end = new ioLiteral(")");
+        var st = styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
+        var end:ioLiteral;
+        if st == QIO_AGGREGATE_FORMAT_JSON {
+          end = new ioLiteral("}");
+        } else {
+          end = new ioLiteral(")");
+        }
         readIt(end);
       }
     }
@@ -494,5 +574,5 @@ module ChapelIO {
       writeln("CHPL TEST PAR (", file, ":", line, "): ", (...args));
     }
   }
-  
+
 }

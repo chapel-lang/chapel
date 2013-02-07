@@ -666,6 +666,8 @@ void qbuffer_iter_advance(qbuffer_t* buf, qbuffer_iter_t* iter, int64_t amt)
       }
       deque_it_forward_one(sizeof(qbuffer_part_t), & iter->iter);
     }
+    // If we get here, we didn't find it. Return the buffer end.
+    *iter = qbuffer_end(buf);
   } else {
     // backward search.
     iter->offset += amt; // amt is negative
@@ -691,6 +693,8 @@ void qbuffer_iter_advance(qbuffer_t* buf, qbuffer_iter_t* iter, int64_t amt)
         return;
       }
     } while( ! deque_it_equals(iter->iter, d_begin) );
+    // If we get here, we didn't find it. Return the buffer start.
+    *iter = qbuffer_begin(buf);
   }
 }
 
@@ -730,8 +734,12 @@ qbuffer_iter_t qbuffer_iter_at(qbuffer_t* buf, int64_t offset)
     ret = qbuffer_end(buf);
   } else {
     qbp = (qbuffer_part_t*) deque_it_get_cur_ptr(sizeof(qbuffer_part_t), first);
-    ret.offset = offset;
-    ret.iter = first;
+    if( offset < qbp->end_offset - qbp->len_bytes ) {
+      ret = qbuffer_begin(buf);
+    } else {
+      ret.offset = offset;
+      ret.iter = first;
+    }
   }
   return ret;
 }
@@ -807,7 +815,7 @@ err_t qbuffer_to_iov(qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end,
     if( deque_it_equals(iter, d_end) ) {
       // we're currently pointing to the end; no need to add more.
     } else {
-      qbp = deque_it_get_cur_ptr(sizeof(qbuffer_part_t), iter);
+      qbp = (qbuffer_part_t*) deque_it_get_cur_ptr(sizeof(qbuffer_part_t), iter);
       // add a partial end block. We know it's different from
       // start since we handled that above.
       if( i >= max_iov ) goto error_nospace;
@@ -834,7 +842,7 @@ err_t qbuffer_flatten(qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, 
   size_t iovcnt;
   size_t i,j;
   qbytes_t* ret;
-  MAYBE_STACK_SPACE(iov_onstack);
+  MAYBE_STACK_SPACE(struct iovec, iov_onstack);
   err_t err;
  
   if( num_bytes < 0 || num_parts < 0 || start.offset < buf->offset_start || end.offset > buf->offset_end ) return EINVAL;
@@ -842,7 +850,7 @@ err_t qbuffer_flatten(qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, 
   err = qbytes_create_calloc(&ret, num_bytes);
   if( err ) return err;
 
-  MAYBE_STACK_ALLOC(num_parts*sizeof(struct iovec), iov, iov_onstack);
+  MAYBE_STACK_ALLOC(struct iovec, num_parts, iov, iov_onstack);
   if( ! iov ) {
     qbytes_release(ret);
     return ENOMEM;
@@ -876,8 +884,8 @@ err_t qbuffer_clone(qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, qb
   struct iovec* iov = NULL;
   size_t iovcnt;
   size_t i;
-  MAYBE_STACK_SPACE(iov_onstack);
-  MAYBE_STACK_SPACE(bytes_onstack);
+  MAYBE_STACK_SPACE(struct iovec, iov_onstack);
+  MAYBE_STACK_SPACE(qbytes_t*, bytes_onstack);
   err_t err;
   qbuffer_ptr_t ret = NULL;
  
@@ -886,8 +894,8 @@ err_t qbuffer_clone(qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, qb
   err = qbuffer_create(&ret);
   if( err ) return err;
 
-  MAYBE_STACK_ALLOC(num_parts*sizeof(struct iovec), iov, iov_onstack);
-  MAYBE_STACK_ALLOC(num_parts*sizeof(qbytes_t*), bytes, bytes_onstack);
+  MAYBE_STACK_ALLOC(struct iovec, num_parts, iov, iov_onstack);
+  MAYBE_STACK_ALLOC(qbytes_t*, num_parts, bytes, bytes_onstack);
   if( ! iov || ! bytes ) {
     err = ENOMEM;
     goto error;
@@ -930,12 +938,12 @@ err_t qbuffer_copyout(qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, 
   struct iovec* iov = NULL;
   size_t iovcnt;
   size_t i,j;
-  MAYBE_STACK_SPACE(iov_onstack);
+  MAYBE_STACK_SPACE(struct iovec, iov_onstack);
   err_t err;
  
   if( num_bytes < 0 || num_parts < 0 || start.offset < buf->offset_start || end.offset > buf->offset_end ) return EINVAL;
 
-  MAYBE_STACK_ALLOC(num_parts*sizeof(struct iovec), iov, iov_onstack);
+  MAYBE_STACK_ALLOC(struct iovec, num_parts, iov, iov_onstack);
   if( ! iov ) return ENOMEM;
 
   err = qbuffer_to_iov(buf, start, end, num_parts, iov, NULL, &iovcnt);
@@ -965,12 +973,12 @@ err_t qbuffer_copyin(qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, c
   struct iovec* iov = NULL;
   size_t iovcnt;
   size_t i,j;
-  MAYBE_STACK_SPACE(iov_onstack);
+  MAYBE_STACK_SPACE(struct iovec, iov_onstack);
   err_t err;
  
   if( num_bytes < 0 || num_parts < 0 || start.offset < buf->offset_start || end.offset > buf->offset_end ) return EINVAL;
 
-  MAYBE_STACK_ALLOC(num_parts*sizeof(struct iovec), iov, iov_onstack);
+  MAYBE_STACK_ALLOC(struct iovec, num_parts, iov, iov_onstack);
   if( ! iov ) return ENOMEM;
 
   err = qbuffer_to_iov(buf, start, end, num_parts, iov, NULL, &iovcnt);
@@ -1003,7 +1011,7 @@ err_t qbuffer_copyin_buffer(qbuffer_t* dst, qbuffer_iter_t dst_start, qbuffer_it
   struct iovec* iov = NULL;
   size_t iovcnt;
   size_t i;
-  MAYBE_STACK_SPACE(iov_onstack);
+  MAYBE_STACK_SPACE(struct iovec, iov_onstack);
   err_t err;
   qbuffer_iter_t dst_cur, dst_cur_end;
  
@@ -1011,7 +1019,7 @@ err_t qbuffer_copyin_buffer(qbuffer_t* dst, qbuffer_iter_t dst_start, qbuffer_it
   if( dst_num_bytes < 0 || dst_num_parts < 0 || dst_start.offset < dst->offset_start || dst_end.offset > dst->offset_end ) return EINVAL;
   if( src_num_bytes < 0 || src_num_parts < 0 || src_start.offset < src->offset_start || src_end.offset > src->offset_end ) return EINVAL;
 
-  MAYBE_STACK_ALLOC(src_num_parts*sizeof(struct iovec), iov, iov_onstack);
+  MAYBE_STACK_ALLOC(struct iovec, src_num_parts, iov, iov_onstack);
   if( ! iov ) return ENOMEM;
 
   err = qbuffer_to_iov(src, src_start, src_end, src_num_parts, iov, NULL, &iovcnt);
@@ -1041,12 +1049,12 @@ err_t qbuffer_memset(qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, u
   struct iovec* iov = NULL;
   size_t iovcnt;
   size_t i;
-  MAYBE_STACK_SPACE(iov_onstack);
+  MAYBE_STACK_SPACE(struct iovec, iov_onstack);
   err_t err;
  
   if( num_bytes < 0 || num_parts < 0 || start.offset < buf->offset_start || end.offset > buf->offset_end ) return EINVAL;
 
-  MAYBE_STACK_ALLOC(num_parts*sizeof(struct iovec), iov, iov_onstack);
+  MAYBE_STACK_ALLOC(struct iovec, num_parts, iov, iov_onstack);
   if( ! iov ) return ENOMEM;
 
   err = qbuffer_to_iov(buf, start, end, num_parts, iov, NULL, &iovcnt);

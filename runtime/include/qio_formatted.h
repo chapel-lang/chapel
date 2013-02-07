@@ -582,7 +582,7 @@ err_t qio_decode_char_buf(int32_t* restrict chr, int* restrict nbytes, const cha
     } else if( qio_glocale_utf8 == QIO_GLOCALE_ASCII ) {
       // character == byte.
       if( buf != end ) {
-        *chr = *buf;
+        *chr = (unsigned char) *buf;
         *nbytes = 1;
         return 0;
       } else {
@@ -702,7 +702,7 @@ int qio_unicode_supported(void) {
   return qio_glocale_utf8 == QIO_GLOCALE_UTF8;
 }
 
-err_t qio_channel_skip_past_newline(const int threadsafe, qio_channel_t* restrict ch);
+err_t qio_channel_skip_past_newline(const int threadsafe, qio_channel_t* restrict ch, int skipOnlyWs);
 
 err_t qio_channel_write_newline(const int threadsafe, qio_channel_t* restrict ch);
 
@@ -710,11 +710,27 @@ err_t qio_channel_scan_string(const int threadsafe, qio_channel_t* restrict ch, 
 
 // returns 0 if it matched, or EFORMAT if it did not.
 err_t qio_channel_scan_literal(const int threadsafe, qio_channel_t* restrict ch, const char* restrict match, ssize_t len, int skipws);
+// Chapel needs another name for the same routine.
+err_t qio_channel_scan_literal_2(const int threadsafe, qio_channel_t* ch, /* const char* */ void* match, ssize_t len, int skipws);
+
+typedef struct qio_truncate_info_ {
+  ssize_t max_columns;
+  ssize_t max_chars;
+  ssize_t max_bytes;
+  ssize_t ret_columns; 
+  ssize_t ret_chars; 
+  ssize_t ret_bytes; 
+  ssize_t ret_truncated_at_byte;
+  ssize_t ret_truncated;
+} qio_truncate_info_t;
 
 // Quote a string according to a style (we have this one for some error
 // situations in which it's undesireable to use the stdout channel
 // because of e.g. Chapel module initialization order)
-err_t qio_quote_string(uint8_t string_start, uint8_t string_end, uint8_t string_format, const char* restrict ptr, ssize_t len, const char** restrict out);
+err_t qio_quote_string(uint8_t string_start, uint8_t string_end, uint8_t string_format, const char* restrict ptr, ssize_t len, const char** out, qio_truncate_info_t* ti);
+// like qio_quote_string, but only get length information.
+err_t qio_quote_string_length(uint8_t string_start, uint8_t string_end, uint8_t string_format, const char* restrict ptr, ssize_t len, qio_truncate_info_t* ti);
+
 const char* qio_quote_string_chpl(const char* ptr, ssize_t len);
 
 // Prints a string according to the style.
@@ -722,6 +738,7 @@ err_t qio_channel_print_string(const int threadsafe, qio_channel_t* restrict ch,
 
 // Prints a string as-is (this really just calls qio_channel_write_amt).
 err_t qio_channel_print_literal(const int threadsafe, qio_channel_t* restrict ch, const char* restrict ptr, ssize_t len);
+err_t qio_channel_print_literal_2(const int threadsafe, qio_channel_t* ch, /*const char* */ void* ptr, ssize_t len);
 
 #endif
 

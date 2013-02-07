@@ -60,7 +60,7 @@ then
   runtest ./qio_formatted_test "Formatted I/O Test"
   runtest ./qio_memfile_test "Memory File Test"
   runtest ./qio_bits_test "Bit I/O Test"
-  runtest ./qio_mark_test "Bit I/O Test"
+  runtest ./qio_mark_test "Mark I/O Test"
 else
   echo "[Error compiling C I/O tests]"
 fi

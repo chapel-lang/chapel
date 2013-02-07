@@ -30,7 +30,7 @@ proc setupGridLocales(ensureManyLocs = false) {
 
 // show what we have
 config const vcalc = false, vsend = false;
-const fpstyle = new iostyle(realfmt = 1, precision = 2, min_width = 6);
+const fpstyle = new iostyle(realfmt = 1, precision = 2, min_width_columns = 6);
 
 proc showme(oddphase: bool, delta: elType, msg = "") {
   if !vcalc then return;
@@ -74,7 +74,7 @@ proc showref(oddphase: bool, msg = "") {
 //const showdummy: [0..n+1, 0..m+1] eltype;
 const colsep = "  ";
 proc showdummyrow() {
-  const width = (m+2) * fpstyle.min_width;
+  const width = (m+2) * fpstyle.min_width_columns;
   for 1..width do write(" ");
 }
 proc showrealrow(oddphase: bool, gi:int, gj:int, i:int) {

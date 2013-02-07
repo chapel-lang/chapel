@@ -473,6 +473,83 @@ void test_qbuffer_two(void)
   }
 }
 
+void test_qbuffer_edges(void)
+{
+  qbuffer_t buf;
+  qbytes_t *b1;
+  qbytes_t *b2;
+  qbytes_t *b3;
+  err_t err;
+  int len = 1;
+  qbuffer_iter_t start, end, cur;
+  int totallen = 3*len;
+
+  // create a bytes object
+  err = qbytes_create_calloc(&b1, len);
+  assert(!err);
+  fill_test_data(b1, 1);
+  err = qbytes_create_calloc(&b2, len);
+  assert(!err);
+  fill_test_data(b2, 2);
+  err = qbytes_create_calloc(&b3, len);
+  assert(!err);
+  fill_test_data(b3, 3);
+
+  err = qbuffer_init(&buf);
+  assert(!err);
+
+  err = qbuffer_append(&buf, b1, 0, len);
+  assert(!err);
+  err = qbuffer_append(&buf, b2, 0, len);
+  assert(!err);
+  err = qbuffer_append(&buf, b3, 0, len);
+  assert(!err);
+
+
+  // Now check that we can advance from the end to the beginning
+  // and from the beginning to the end.
+  start = qbuffer_begin(&buf);
+  end = qbuffer_end(&buf);
+
+  cur = start;
+  qbuffer_iter_advance(&buf, &cur, totallen);
+  assert( qbuffer_iter_same_part(cur, end) );
+  assert( qbuffer_iter_equals(cur, end) );
+  cur = qbuffer_iter_at(&buf, totallen);
+  assert( qbuffer_iter_same_part(cur, end) );
+  assert( qbuffer_iter_equals(cur, end) );
+
+  cur = end;
+  qbuffer_iter_advance(&buf, &cur, -totallen);
+  assert( qbuffer_iter_same_part(cur, start) );
+  assert( qbuffer_iter_equals(cur, start) );
+  cur = qbuffer_iter_at(&buf, -totallen);
+  assert( qbuffer_iter_same_part(cur, start) );
+  assert( qbuffer_iter_equals(cur, start) );
+
+  cur = start;
+  qbuffer_iter_advance(&buf, &cur, totallen+1);
+  assert( qbuffer_iter_same_part(cur, end) );
+  assert( qbuffer_iter_equals(cur, end) );
+  cur = qbuffer_iter_at(&buf, totallen+1);
+  assert( qbuffer_iter_same_part(cur, end) );
+  assert( qbuffer_iter_equals(cur, end) );
+
+  cur = end;
+  qbuffer_iter_advance(&buf, &cur, -totallen-1);
+  assert( qbuffer_iter_same_part(cur, start) );
+  assert( qbuffer_iter_equals(cur, start) );
+  cur = qbuffer_iter_at(&buf, -totallen-1);
+  assert( qbuffer_iter_same_part(cur, start) );
+  assert( qbuffer_iter_equals(cur, start) );
+
+  qbuffer_destroy(&buf);
+  qbytes_release(b1);
+  qbytes_release(b2);
+  qbytes_release(b3);
+}
+
+
 int main(int argc, char** argv)
 {
   test_qbytes();
@@ -480,6 +557,8 @@ int main(int argc, char** argv)
   test_qbuffer();
 
   test_qbuffer_two();
+
+  test_qbuffer_edges();
 
   return 0;
 }

@@ -21,7 +21,7 @@
 // linux man says it needs _XOPEN_SOURCE >= 600 || _POSIX_C_SOURCE >= 200112L
 // get pread, pwrite
 // linux man says it needs _XOPEN_SOURCE >= 500 || /* Since glibc 2.12: */ _POSIX_C_SOURCE >= 200809
-// get readv, writev, preadv, pwritev
+// get readv, writev, preadv, pwritev, and wcwidth/wcswidth
 #ifndef _XOPEN_SOURCE
 #define _XOPEN_SOURCE 600
 #endif

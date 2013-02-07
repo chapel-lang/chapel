@@ -164,14 +164,40 @@ module ChapelTuple {
   // tuple methods
   //
   proc _tuple.readWriteThis(f) {
-    f <~> new ioLiteral("(");
+    var st = f.styleElement(QIO_STYLE_ELEMENT_TUPLE);
+    var start:ioLiteral;
+    var comma:ioLiteral;
+    var end:ioLiteral;
+
+    if st == QIO_TUPLE_FORMAT_SPACE {
+      start = new ioLiteral("");
+      comma = new ioLiteral(" ");
+      end = new ioLiteral("");
+    } else if st == QIO_TUPLE_FORMAT_JSON {
+      start = new ioLiteral("[");
+      comma = new ioLiteral(", ");
+      end = new ioLiteral("]");
+    } else {
+      start = new ioLiteral("(");
+      comma = new ioLiteral(", ");
+      end = new ioLiteral(")");
+    }
+
+    if !f.binary {
+      f <~> start;
+    }
     if size != 0 {
       f <~> this(1);
       for param i in 2..size {
-        f <~> new ioLiteral(", ") <~> this(i);
+        if !f.binary {
+          f <~> comma;
+        }
+        f <~> this(i);
       }
     }
-    f <~> new ioLiteral(")");
+    if !f.binary {
+      f <~> end;
+    }
   }
   
   //

@@ -1545,4 +1545,24 @@ module ChapelBase {
   _ensure_reference_type(string);
   _ensure_reference_type(chpl_taskID_t);
 
+  // These style element #s are used in the default Writer and Reader.
+  // and in e.g. implementations of those in Tuple.
+  extern const QIO_STYLE_ELEMENT_STRING:int;
+  extern const QIO_STYLE_ELEMENT_COMPLEX:int;
+  extern const QIO_STYLE_ELEMENT_ARRAY:int;
+  extern const QIO_STYLE_ELEMENT_AGGREGATE:int;
+  extern const QIO_STYLE_ELEMENT_TUPLE:int;
+
+  extern const QIO_ARRAY_FORMAT_SPACE:int;
+  extern const QIO_ARRAY_FORMAT_CHPL:int;
+  extern const QIO_ARRAY_FORMAT_JSON:int;
+
+  extern const QIO_AGGREGATE_FORMAT_BRACES:int;
+  extern const QIO_AGGREGATE_FORMAT_CHPL:int;
+  extern const QIO_AGGREGATE_FORMAT_JSON:int;
+
+  extern const QIO_TUPLE_FORMAT_CHPL:int;
+  extern const QIO_TUPLE_FORMAT_SPACE:int;
+  extern const QIO_TUPLE_FORMAT_JSON:int;
+
 }

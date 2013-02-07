@@ -36,12 +36,12 @@ err_t bulk_put_buffer(int64_t dst_locale, void* dst_addr, int64_t dst_len,
   struct iovec* iov = NULL;
   size_t iovcnt;
   size_t i,j;
-  MAYBE_STACK_SPACE(iov_onstack);
+  MAYBE_STACK_SPACE(struct iovec, iov_onstack);
   err_t err;
  
   if( num_bytes < 0 || num_parts < 0 || start.offset < buf->offset_start || end.offset > buf->offset_end ) return EINVAL;
 
-  MAYBE_STACK_ALLOC(num_parts*sizeof(struct iovec), iov, iov_onstack);
+  MAYBE_STACK_ALLOC(struct iovec, num_parts, iov, iov_onstack);
   if( ! iov ) return ENOMEM;
 
   err = qbuffer_to_iov(buf, start, end, num_parts, iov, NULL, &iovcnt);

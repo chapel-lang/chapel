@@ -277,11 +277,16 @@ void qbuffer_iter_floor_part(qbuffer_t* buf, qbuffer_iter_t* iter);
 void qbuffer_iter_ceil_part(qbuffer_t* buf, qbuffer_iter_t* iter);
 
 /* Advances an iterator using linear search. 
+ * Returns qbuffer_start() if the resulting offset was < start
+ *         qbuffer_end() if the resulting offset was >= end
  */
 void qbuffer_iter_advance(qbuffer_t* buf, qbuffer_iter_t* iter, int64_t amt);
 
 /* Find offset in window in logarithmic time.
  * Note these offsets start at buf->offset_start, not 0.
+ *
+ * Returns qbuffer_start() if the offset was < start
+ *         qbuffer_end() if the offset was >= end
  */
 qbuffer_iter_t qbuffer_iter_at(qbuffer_t* buf, int64_t offset);
 
@@ -401,7 +406,7 @@ err_t qbuffer_memset(qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, u
 // really want to call malloc
 #define MAX_ON_STACK 128
 
-#ifndef SIMPLE_TEST
+#ifdef _chplrt_H_
 
 #include "chpl-mem.h"
 #define qio_malloc(size) chpl_mem_allocMany( 1, size, CHPL_RT_MD_IO_BUFFER, __LINE__, __FILE__ )
@@ -429,22 +434,23 @@ static inline char* qio_strdup(const char* ptr)
 
 // Declare MAX_ON_STACK bytes. We declare it as uint64_t to
 // make sure it's aligned as well as malloc would be.
-#define MAYBE_STACK_SPACE(onstack) \
-  uint64_t onstack[MAX_ON_STACK/sizeof(uint64_t)]
+#define MAYBE_STACK_SPACE(type,onstack) \
+  type onstack[MAX_ON_STACK/sizeof(type)]
 
-#define MAYBE_STACK_ALLOC(size, ptr, onstack) \
+#define MAYBE_STACK_ALLOC(type, count, ptr, onstack) \
 { \
+  size_t size = count * sizeof(type); \
   if( size <= sizeof(onstack) ) { \
-    ptr = (void*) onstack; \
+    ptr = onstack; \
   } else { \
-    ptr = qio_malloc(size); \
+    ptr = (type*) qio_malloc(size); \
   } \
 }
 
 
 #define MAYBE_STACK_FREE(ptr, onstack) \
 { \
-  if( (void*) ptr != (void*) onstack ) { \
+  if( ptr != onstack ) { \
     qio_free(ptr); \
   } \
 }

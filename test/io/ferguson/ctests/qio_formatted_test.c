@@ -243,15 +243,15 @@ void test_printscan_int(void)
   // 0 is default.
 
   // 1 has minwidth 3, pad ' '
-  styles[1].min_width = 3;
+  styles[1].min_width_columns = 3;
   styles[1].pad_char = ' ';
 
   // 2 has minwidth 3, pad 0
-  styles[2].min_width = 3;
+  styles[2].min_width_columns = 3;
   styles[2].pad_char = '0';
 
   // 3 has minwidth 3, pad ' ', leftjustify
-  styles[3].min_width = 3;
+  styles[3].min_width_columns = 3;
   styles[3].pad_char = ' ';
   styles[3].leftjustify = 1;
 
@@ -265,7 +265,7 @@ void test_printscan_int(void)
 
   // 6 has defaults, binary, min_width=4
   styles[6].base = 2;
-  styles[6].min_width = 4;
+  styles[6].min_width_columns = 4;
   styles[6].prefix_base = 0;
 
   // 7 has defaults, binary, showbase
@@ -521,7 +521,7 @@ void test_printscan_float(void)
   styles[5].precision = 3;
 
   // 6 %g, 4 significant digits
-  styles[6].significant_digits = 4;
+  styles[6].precision = 4;
   styles[6].realfmt = 0;
 
   // 7 has %f showpoint, precision 4
@@ -792,7 +792,7 @@ void max_width_test()
 
         style.binary = 0;
         style.string_format = 1;
-        style.max_width = 5;
+        style.max_width_columns = 5;
 
 
         err = qio_channel_create(&writing, f, QIO_CH_BUFFERED, 0, 1, 0, INT64_MAX, &style);
@@ -842,7 +842,7 @@ void min_width_test()
 
 	style.binary = 0;
 	style.string_format = 1;
-	style.min_width = 11;
+	style.min_width_columns = 11;
 
         err = qio_channel_create(&writing, f, QIO_CH_BUFFERED, 0, 1, 0, INT64_MAX, &style);
         assert(!err);
@@ -1177,6 +1177,216 @@ void test_utf8(void)
   do_test_utf8(0x10FFFF, "\xF4\x8F\xBF\xBF");
 }
 
+void test_quoted_string_maxlength(void)
+{
+  qio_style_t style = qio_style_default();
+  qio_channel_t *reading;
+  qio_channel_t *writing;
+  qio_file_t *f = NULL;
+  err_t err;
+  const char* inputs[8][16] = {
+    { "",     // original string
+      "\"\"", // maxlen = 1
+      "\"\"", // maxlen = 2
+      "\"\"", // maxlen = 3
+      "\"\"", // maxlen = 4
+      "\"\"", // maxlen = 5
+      "\"\"", // maxlen = 6
+      "\"\"", // maxlen = 7
+      "\"\"", // maxlen = 8
+      "\"\"", // maxlen = 9
+      "\"\"", // maxlen = 10
+      "\"\"", // maxlen = 11
+      "\"\"", // maxlen = 12
+      "\"\"", // maxlen = 13
+      "\"\"", // maxlen = 14
+      NULL
+    },
+    { "a",     // original string
+      "\"a\"", // maxlen = 1
+      "\"a\"", // maxlen = 2
+      "\"a\"", // maxlen = 3
+      "\"a\"", // maxlen = 4
+      "\"a\"", // maxlen = 5
+      "\"a\"", // maxlen = 6
+      "\"a\"", // maxlen = 7
+      "\"a\"", // maxlen = 8
+      "\"a\"", // maxlen = 9
+      "\"a\"", // maxlen = 10
+      "\"a\"", // maxlen = 11
+      "\"a\"", // maxlen = 12
+      "\"a\"", // maxlen = 13
+      "\"a\"", // maxlen = 14
+      NULL
+    },
+    { "ab",     // original string
+      "\"ab\"", // maxlen = 1
+      "\"ab\"", // maxlen = 2
+      "\"ab\"", // maxlen = 3
+      "\"ab\"", // maxlen = 4
+      "\"ab\"", // maxlen = 5
+      "\"ab\"", // maxlen = 6
+      "\"ab\"", // maxlen = 7
+      "\"ab\"", // maxlen = 8
+      "\"ab\"", // maxlen = 9
+      "\"ab\"", // maxlen = 10
+      "\"ab\"", // maxlen = 11
+      "\"ab\"", // maxlen = 12
+      "\"ab\"", // maxlen = 13
+      "\"ab\"", // maxlen = 14
+      NULL
+    },
+    { "abc",     // original string
+      "\"abc\"", // maxlen = 1
+      "\"abc\"", // maxlen = 2
+      "\"abc\"", // maxlen = 3
+      "\"abc\"", // maxlen = 4
+      "\"abc\"", // maxlen = 5
+      "\"abc\"", // maxlen = 6
+      "\"abc\"", // maxlen = 7
+      "\"abc\"", // maxlen = 8
+      "\"abc\"", // maxlen = 9
+      "\"abc\"", // maxlen = 10
+      "\"abc\"", // maxlen = 11
+      "\"abc\"", // maxlen = 12
+      "\"abc\"", // maxlen = 13
+      "\"abc\"", // maxlen = 14
+      NULL
+    },
+    { "abcd",     // original string
+      "\"\"...", // maxlen = 1
+      "\"\"...", // maxlen = 2
+      "\"\"...", // maxlen = 3
+      "\"\"...", // maxlen = 4
+      "\"\"...", // maxlen = 5
+      "\"abcd\"", // maxlen = 6
+      "\"abcd\"", // maxlen = 7
+      "\"abcd\"", // maxlen = 8
+      "\"abcd\"", // maxlen = 9
+      "\"abcd\"", // maxlen = 10
+      "\"abcd\"", // maxlen = 11
+      "\"abcd\"", // maxlen = 12
+      "\"abcd\"", // maxlen = 13
+      "\"abcd\"", // maxlen = 14
+      NULL
+    },
+
+    { "123456789",     // original string
+      "\"\"...",       // maxlen = 1
+      "\"\"...",       // maxlen = 2
+      "\"\"...",       // maxlen = 3
+      "\"\"...",       // maxlen = 4
+      "\"\"...",       // maxlen = 5
+      "\"1\"...",      // maxlen = 6
+      "\"12\"...",     // maxlen = 7
+      "\"123\"...",    // maxlen = 8
+      "\"1234\"...",   // maxlen = 9
+      "\"12345\"...",  // maxlen = 10
+      "\"123456789\"", // maxlen = 11
+      "\"123456789\"", // maxlen = 12
+      "\"123456789\"", // maxlen = 13
+      "\"123456789\"", // maxlen = 14
+      NULL
+    },
+
+    { "\x01X\x01Y", // original string
+      "\"\"...",       // maxlen = 1
+      "\"\"...",       // maxlen = 2
+      "\"\"...",       // maxlen = 3
+      "\"\"...",       // maxlen = 4
+      "\"\"...",       // maxlen = 5
+      "\"\"...",       // maxlen = 6
+      "\"\"...",       // maxlen = 7
+      "\"\"...",       // maxlen = 8
+      "\"\\x01\"...",  // maxlen = 9
+      "\"\\x01X\"...", // maxlen = 10
+      "\"\\x01X\"...", // maxlen = 11
+      "\"\\x01X\\x01Y\"", // maxlen = 12
+      "\"\\x01X\\x01Y\"", // maxlen = 13
+      "\"\\x01X\\x01Y\"", // maxlen = 14
+      NULL
+    },
+    { NULL, NULL, NULL, NULL,
+      NULL, NULL, NULL, NULL,
+      NULL, NULL, NULL, NULL,
+      NULL, NULL, NULL, NULL,
+    }
+  };
+
+  char buf[50] = {0};
+  int i,j;
+
+  style.binary=0;
+  style.string_start = '"';
+  style.string_end = '"';
+  
+  err = qio_file_open_tmp(&f, 0, NULL);
+  assert(!err);
+
+  for( i = 0; inputs[i][0]; i++ ) {
+    const char* input = inputs[i][0];
+    ssize_t input_len = strlen(input);
+    for( j = 1; inputs[i][j]; j++ ) {
+      const char* expect = inputs[i][j];
+      ssize_t expect_len = strlen(expect);
+      qio_truncate_info_t ti;
+      const char* got = NULL;
+      ssize_t truncate_len = (j<input_len)?(j):(input_len);
+      style.string_format = QIO_STRING_FORMAT_CHPL;
+      style.max_width_columns = j;
+
+      ti.max_columns = style.max_width_columns;
+      ti.max_chars = SSIZE_MAX;
+      ti.max_bytes = SSIZE_MAX;
+      
+      // check that qio_quote_string gives correct string when
+      // used in a no-quote mode
+      if( i != 6 ) {
+        // but not for test 6 since the control characters are weird.
+        err = qio_quote_string(0, 0, QIO_STRING_FORMAT_WORD, input, input_len, &got, &ti);
+        assert(!err);
+        assert(ti.ret_columns == truncate_len);
+        assert(ti.ret_chars == truncate_len);
+        assert(truncate_len == strlen(got));
+        assert( 0 == memcmp(got, input, truncate_len) );
+        free((void*) got);
+      }
+
+      // Now, check that qio_quote_string returns the correct string.
+      err = qio_quote_string(style.string_start, style.string_end, style.string_format, input, input_len, &got, &ti);
+      assert(!err);
+
+      assert(ti.ret_columns == strlen(inputs[i][1]) || ti.ret_columns <= j);
+      assert(ti.ret_bytes == expect_len);
+      assert(ti.ret_bytes == strlen(got));
+      assert( 0 == strcmp(got, expect) );
+      free((void*) got);
+
+      // Now, check that the quoting works correctly when writing.
+
+      err = qio_channel_create(&writing, f, QIO_CH_BUFFERED, 0, 1, 0, INT64_MAX, &style);
+      assert(!err);
+      err = qio_channel_print_string(true, writing, input, input_len);	
+      assert(!err);
+      qio_channel_release(writing);
+
+      err = qio_channel_create(&reading, f, QIO_CH_BUFFERED, 1, 0, 0, INT64_MAX, &style);
+      assert(!err);
+      err = qio_channel_read_amt(true, reading, buf, expect_len);
+      assert(!err);
+
+      qio_channel_release(reading);
+
+      //printf("Got %s expect %s\n", buf, expect);
+      assert( memcmp(buf, expect, expect_len) == 0 );
+    }
+  }
+
+  qio_file_release(f);
+
+  printf("PASS: quoted max length\n");
+}
+
 int main(int argc, char** argv)
 {
   int sizes[] = {qbytes_iobuf_size, 1, 2, 0};
@@ -1214,6 +1424,8 @@ int main(int argc, char** argv)
     test_readwritestring();
 
     test_scanmatch();
+
+    test_quoted_string_maxlength();
   }
 
   return 0;

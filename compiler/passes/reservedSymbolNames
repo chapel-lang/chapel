@@ -56,6 +56,7 @@
   open
   pow
   printf
+  scanf
   quad
   read
   sleep

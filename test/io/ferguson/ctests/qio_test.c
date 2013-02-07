@@ -15,6 +15,8 @@ void fill_testdata(int64_t start, int64_t len, unsigned char* data)
   }
 }
 
+// unbounded_channels <= 0 means no, > 0 means yes
+// -1 means advance.
 void check_channel(char threadsafe, qio_chtype_t type, int64_t start, int64_t len, int64_t chunksz, qio_hint_t file_hints, qio_hint_t ch_hints, char unbounded_channels, char reopen)
 {
   qio_file_t* f;
@@ -40,7 +42,7 @@ void check_channel(char threadsafe, qio_chtype_t type, int64_t start, int64_t le
 
   strcpy(filename,"/tmp/qio_testXXXXXX");
 
-  if( unbounded_channels ) ch_end = INT64_MAX;
+  if( unbounded_channels > 0 ) ch_end = INT64_MAX;
 
   ch_hints = (ch_hints & ~ QIO_CHTYPEMASK) | type;
 
@@ -136,7 +138,7 @@ void check_channel(char threadsafe, qio_chtype_t type, int64_t start, int64_t le
   // Attempt to write 1 more byte; we should get EEOF
   // if we've restricted the range of the channel.
   // Write chunk.
-  if( unbounded_channels ) {
+  if( unbounded_channels > 0) {
     // do nothing
   } else {
     if( writefp ) {
@@ -151,6 +153,14 @@ void check_channel(char threadsafe, qio_chtype_t type, int64_t start, int64_t le
       }
       assert(errno == EEOF);
     } else {
+      if( unbounded_channels < 0 ) {
+        int times = -unbounded_channels;
+        for( int z = 0; z < times; z++ ) {
+          err = qio_channel_advance(threadsafe, writing, 1);
+          assert( !err );
+        }
+      }
+
       err = qio_channel_write(threadsafe, writing, chunk, 1, &amt_written);
       assert(amt_written == 0);
       assert( err == EEOF );
@@ -218,6 +228,17 @@ void check_channel(char threadsafe, qio_chtype_t type, int64_t start, int64_t le
     assert( amt_read == 0 );
     assert( feof(readfp) );
   } else {
+    if( unbounded_channels < 0 ) {
+      int times = -unbounded_channels;
+      for( int z = 0; z < times; z++ ) {
+        err = qio_channel_advance(threadsafe, reading, 1);
+        assert( !err );
+      }
+
+      err = qio_channel_advance(threadsafe, reading, -unbounded_channels);
+      assert( !err );
+    }
+
     err = qio_channel_read(threadsafe, reading, got_chunk, 1, &amt_read);
     assert( err == EEOF );
   }
@@ -247,33 +268,16 @@ void check_channels(void)
   int nchunkszs = sizeof(chunkszs)/sizeof(int64_t);
   qio_chtype_t type;
   char threadsafe;
-  char unbounded;
+  char unboundedness[] = {0,1,-1,-2};
+  int nunbounded = sizeof(unboundedness)/sizeof(char);
+  int unbounded;
   char reopen;
   qio_hint_t hints[] = {QIO_METHOD_DEFAULT, QIO_METHOD_READWRITE, QIO_METHOD_PREADPWRITE, QIO_METHOD_FREADFWRITE, QIO_METHOD_MEMORY, QIO_METHOD_MMAP, QIO_METHOD_MMAP|QIO_HINT_PARALLEL, QIO_METHOD_PREADPWRITE | QIO_HINT_NOFAST};
   int nhints = sizeof(hints)/sizeof(qio_hint_t);
   int file_hint, ch_hint;
 
-  check_channel(0,1,0,1,1,QIO_METHOD_MMAP|QIO_HINT_PARALLEL,QIO_CH_ALWAYS_UNBUFFERED,0,0);
-
-  check_channel(0, QIO_CH_ALWAYS_BUFFERED, 0, 1, 1, QIO_METHOD_DEFAULT, QIO_CH_ALWAYS_BUFFERED | QIO_METHOD_MMAP, 0, 1 );
-  
-  check_channel(0, QIO_CH_ALWAYS_UNBUFFERED, 0, 1, 1, QIO_METHOD_FREADFWRITE, QIO_METHOD_FREADFWRITE, 0, 1 );
-  //check_channel(0, QIO_CH_BUFFERED, 0, 4109, 7, 0, 0, 1, 1 );
-  //check_channel(0, QIO_CH_BUFFERED, 0, 1, 1, 0, QIO_METHOD_MEMORY, 0, 0);
-  //check_channel(0, QIO_CH_UNBUFFERED, 0, 1, 1, 1, QIO_METHOD_READWRITE | QIO_HINT_NOFAST );
-  //check_channel(0, QIO_CH_BUFFERED, 0, 1, 1, 0, QIO_METHOD_MMAP, 1);
-  //check_channel(0, QIO_CH_BUFFERED, 0, 1, 1, 0, 0, 1, 0);
-  //check_channel(0, QIO_CH_BUFFERED, 0, 2, 1, 0, 0, 1, 1 );
-  //check_channel(0, 2, 0, 2, 1, 1, QIO_METHOD_READWRITE );
-  //check_channel(0, 2, 0, 128*1024, 128*1024, 1);
-  //check_channel(0, QIO_CH_UNBUFFERED, 0, 2, 7, QIO_METHOD_READWRITE, QIO_METHOD_READWRITE );
-  //check_channel(0, QIO_CH_BUFFERED, 0, 3, 1, QIO_METHOD_DEFAULT, QIO_METHOD_DEFAULT );
-  //check_channel(0, QIO_CH_BUFFERED, 7, 1, 1, QIO_METHOD_DEFAULT, QIO_METHOD_MMAP );
-  //check_channel(0, QIO_CH_UNBUFFERED, 0, 1, 1, QIO_METHOD_MMAP, QIO_METHOD_DEFAULT );
-//check_channel(threadsafe=0, type=buffered, start=7, len=1, chunksz=1, file_hints=default, ch_hints=mmap)
-//check_channel(threadsafe=0, type=buffered, start=0, len=1, chunksz=1, file_hints=default, ch_hints=mmap)
-
-
+  check_channel(false, 1, 0, 16384, 1, 0, 17, 1, 1);
+  check_channel(false, 3, 0, 16384, 1, QIO_METHOD_DEFAULT, QIO_METHOD_DEFAULT, 0, 1);
   for( file_hint = 0; file_hint < nhints; file_hint++ ) {
     for( ch_hint = 0; ch_hint < nhints; ch_hint++ ) {
       for( i = 0; i < nlens; i++ ) {
@@ -281,9 +285,9 @@ void check_channels(void)
           for( k = 0; k < nchunkszs; k++ ) {
             for( type = 1; type <= QIO_CH_MAX_TYPE; type++ ) {
               for( threadsafe = 0; threadsafe < 2; threadsafe++ ) {
-                for( unbounded = 0; unbounded < 2; unbounded++ ) {
+                for( unbounded = 0; unbounded < nunbounded; unbounded++ ) {
                   for( reopen = 0; reopen < 2; reopen++ ) {
-                    check_channel(threadsafe, type, starts[s], lens[i], chunkszs[k], hints[file_hint], hints[ch_hint], unbounded, reopen);
+                    check_channel(threadsafe, type, starts[s], lens[i], chunkszs[k], hints[file_hint], hints[ch_hint], unboundedness[unbounded], reopen);
                   }
                 }
               }
@@ -344,7 +348,6 @@ void check_paths(void)
 
 
 }
-
 
 int main(int argc, char** argv)
 {

@@ -70,6 +70,10 @@ static inline void qio_lock_destroy(qio_lock_t* x) {
 
 #else
 
+#ifndef SIMPLE_TEST
+#error Chapel runtime should be included before QIO or SIMPLE_TEST should be set
+#endif
+
 #include <pthread.h>
 
 typedef pthread_mutex_t qio_lock_t;
@@ -612,7 +616,7 @@ typedef struct qio_channel_s {
                           // to cached_cur when we move on to the next read?
 
   ssize_t mark_cur;
-  size_t mark_stack_size;
+  ssize_t mark_stack_size;
   int64_t* mark_stack;
   // initial few entries so we don't have to malloc
   // for the common case of very few marks.
@@ -853,9 +857,7 @@ int64_t qio_channel_str_style(qio_channel_t* ch)
   return ch->style.str_style;
 }
 
-
-
-
+int64_t qio_channel_style_element(qio_channel_t* ch, int64_t element);
 
  
 static ___always_inline
@@ -1076,6 +1078,22 @@ int64_t qio_channel_offset_unlocked(qio_channel_t* ch)
   return bytes_in_bits + ch->mark_stack[ch->mark_cur]; // _right_mark_start(ch);
 }
 
+/* 
+ * Returns the end position of the channel.
+ *  - If the channel is unbounded and we have not
+ *    yet encountered an EOF when reading, returns MAX_INT64
+ *  - If the channel is bounded, returns the end offset
+ *  - If an unbounded channel has encountered EOF, returns
+ *    the position at which the EOF was encountered.
+ */
+static inline
+int64_t qio_channel_end_offset_unlocked(qio_channel_t* ch)
+{
+  return ch->end_pos;
+}
+
+err_t qio_channel_end_offset(const int threadsafe, qio_channel_t* ch, int64_t* offset_out);
+
 
 err_t qio_channel_advance(const int threadsafe, qio_channel_t* ch, int64_t nbytes);
 
@@ -1145,9 +1163,15 @@ err_t qio_channel_mark(const int threadsafe, qio_channel_t* ch);
 err_t qio_channel_mark_maybe_flush_bits(const int threadsafe, qio_channel_t* ch, int flushbits);
 
 // Returns an error, but that error can safely be ignored.
+// also, if nbytes<0, it works as though nbytes = 0.
 err_t qio_channel_advance_unlocked(qio_channel_t* ch, int64_t nbytes);
 
 void qio_channel_revert_unlocked(qio_channel_t* ch);
+
+static inline
+bool qio_channel_has_mark_unlocked(qio_channel_t* ch) {
+  return (ch->mark_cur >= 1);
+}
 
 // Only returns threading errors; guaranteed not to return
 // an error if threadsafe == false (it asserts instead on bad cases)
@@ -1387,51 +1411,5 @@ unlock:
 
   return err;
 }
-
-
-/*
-err_t qio_channel_fopen(const int threadsafe, qio_channel_t* ch, int reading, int writing, FILE** out);
-err_t qio_vprintf(const int threadsafe, qio_channel_t* ch,
-                  const char* fmt, va_list ap);
-err_t qio_printf(const int threadsafe, qio_channel_t* ch,
-                 const char* fmt, ...);
-err_t qio_vscanf(const int threadsafe, qio_channel_t* ch,
-                 int* nmatched, const char* fmt, va_list ap);
-err_t qio_scanf(const int threadsafe, qio_channel_t* ch,
-                 int* nmatched, const char* fmt, ...);
-
-// returns EFORMAT if it didn't match.
-err_t qio_scanf1(const int threadsafe, qio_channel_t* ch,
-                 const char* fmt, void* x);
-
-qio_chtype_t qio_choose_io_type(qio_hint_t hints);
-*/
-
-/*
-// recognizer returns 0 for not recognized yet,
-// -1 if recognized, or a positive number for an error.
-// offset is returned in the buffer's coordinate system (not a distance
-// but an absolute position).
-typedef err_t (*recognizer_t)(qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, void* state, int64_t* offset);
-
-
-// Peek until a recognizer function is satisfied.
-// In *amount, returns the number of bytes we passed.
-err_t qio_channel_require_until(const int threadsafe, qio_channel_t* ch, recognizer_t recognize, void* state, int64_t* amount);
-
-// state should be pointer-to-char
-err_t until_char(qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, void* state, int64_t* offset);
-
-// state should be pointer to char[256]
-err_t until_table(qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, void* state, int64_t* offset);
-
-typedef struct until_noescape_s {
-  char start_char;
-  char end_char;
-  char escape_char;
-  char state; // 0 is at start, 1 is in string, 2 is in string after escape
-} until_noescape_t;
-err_t until_char_noescape(qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, void* state, int64_t* offset);
-*/
 
 #endif

@@ -1,9 +1,6 @@
 /* "channel" I/O contributed by Michael Ferguson
 
    Future Work:
-    - Chapel-friendly ways to e.g. request JSON string format or hexadecimal numbers
-    - formatted input/output, like printf, probably called writef/writefln/etc,
-      and supporting ###.#### formats in addition to the usual % stuff.
     - Regular expression support (currently favoring RE2 integration)
     - We would like to have a 'serialization' system, including allowing
       the writing of data structures with circular references, and
@@ -27,18 +24,20 @@
     - Fancy features, like adding a bytes or buffer object to a channel
       (so that the channel just refers to it and does not copy it) are
       implemented but not well tested.
-    - It would be nice if ioBits:string printed itself in binary instead of decimal.
+    - It would be nice if ioBits:string printed itself in binary instead of
+      decimal.
     - Cleaning up to reduce the number of exported symbols, and using enums for
       all constants once 'use enum' is available and we have a way to get
       C constants into Chapel enums.
-    - Support for libevent/qthreads system call thread so that we have something
-      suitable for writing (in a straightforward manner) a multithreaded webserver
-    - Doing something reasonable with a file that moves from one node to another -
-      namely, when a channel is created with a file that resides remotely, if that
-      same file is accessible locally (e.g. with Lustre or NFS), we should open
-      a local copy of that file and use that in the channel. (not sure how to avoid
-      opening # channels copies of these files -- seems that we'd want some way
-      to cache that...).
+    - Support for libevent/qthreads system call thread so that we have
+      something suitable for writing (in a straightforward manner) a
+      multithreaded webserver
+    - Doing something reasonable with a file that moves from one node to
+      another - namely, when a channel is created with a file that resides
+      remotely, if that same file is accessible locally (e.g. with Lustre or
+      NFS), we should open a local copy of that file and use that in the
+      channel. (not sure how to avoid opening # channels copies of these files
+      -- seems that we'd want some way to cache that...).
     - Create leader/follower iterators for ItemReader/ItemWriter so that these
       are as efficient as possible when working with fixed-size data types
       (ie, they can open up channels that are not shared).
@@ -129,27 +128,31 @@ extern const QIO_HINT_PARALLEL:c_int;
 extern const QIO_HINT_DIRECT:c_int;
 extern const QIO_HINT_NOREUSE:c_int;
 
-// NONE means normal operation, nothing special
-// to hint. Expect to use NONE most of the time.
-// The other hints can be bitwise-ORed in.
+/** NONE means normal operation, nothing special
+    to hint. Expect to use NONE most of the time.
+    The other hints can be bitwise-ORed in.
+ */
 const IOHINT_NONE = 0:c_int;
 
-// RANDOM means we expect random access to a file
+/** RANDOM means we expect random access to a file */
 const IOHINT_RANDOM = QIO_HINT_RANDOM;
 
-// SEQUENTAL means expect sequential access. On
-// Linux, this should double the readahead.
+/** SEQUENTAL means expect sequential access. On
+    Linux, this should double the readahead.
+ */
 const IOHINT_SEQUENTIAL = QIO_HINT_SEQUENTIAL;
 
-// CACHED means we expect the entire file
-// to be cached and/or we pull it in all at
-// once. May request readahead on the entire file.
+/** CACHED means we expect the entire file
+    to be cached and/or we pull it in all at
+    once. May request readahead on the entire file.
+ */
 const IOHINT_CACHED = QIO_HINT_CACHED;
 
-// PARALLEL means that we expect to have many
-// channels working with this file in parallel.
-// It might change the reading/writing implementation
-// to something more efficient in that scenario.
+/** PARALLEL means that we expect to have many
+    channels working with this file in parallel.
+    It might change the reading/writing implementation
+    to something more efficient in that scenario.
+ */
 const IOHINT_PARALLEL = QIO_HINT_PARALLEL;
 
 extern type qio_file_ptr_t;
@@ -184,8 +187,11 @@ extern record iostyle { // aka qio_style_t
   //  + -- nonzero positive -- read exactly this length.
   var str_style:int(64) = -10;
   // text style choices
-  var min_width:uint(32) = 1;
-  var max_width:uint(32) = max(uint(32));
+  var min_width_columns:uint(32) = 0;
+  var max_width_columns:uint(32) = max(uint(32));
+  var max_width_characters:uint(32) = max(uint(32));
+  var max_width_bytes:uint(32) = max(uint(32));
+
   var string_start:style_char_t = 0x22; // "
   var string_end:style_char_t = 0x22; // "
 
@@ -214,10 +220,12 @@ extern record iostyle { // aka qio_style_t
   var showpoint:uint(8) = 0;
   var showpointzero:uint(8) = 1;
   var precision:int(32) = -1;
-  var significant_digits:int(32) = -1;
   var realfmt:uint(8) = 0;
 
   var complex_style:uint(8) = 0;
+  var array_style:uint(8) = 0;
+  var aggregate_style:uint(8) = 0;
+  var tuple_style:uint(8) = 0;
 }
 
 extern proc qio_style_init_default(inout s: iostyle);
@@ -232,10 +240,6 @@ extern proc qio_file_open_access(inout file_out:qio_file_ptr_t, path:string, acc
 extern proc qio_file_open_tmp(inout file_out:qio_file_ptr_t, iohints:c_int, inout style:iostyle):syserr;
 extern proc qio_file_open_mem(inout file_out:qio_file_ptr_t, buf:qbuffer_ptr_t, inout style:iostyle):syserr;
 
-/* Close a file (asserts ref count==1)
-   This is not usually necessary to call, but a program will
-   halt if it isn't called.
- */
 extern proc qio_file_close(f:qio_file_ptr_t):syserr;
 
 extern proc qio_file_lock(f:qio_file_ptr_t):syserr;
@@ -247,32 +251,6 @@ extern proc qio_file_sync(f:qio_file_ptr_t):syserr;
 //extern proc qio_file_style_ptr(f:qio_file_ptr_t):qio_style_ptr_t;
 extern proc qio_file_get_style(f:qio_file_ptr_t, inout style:iostyle);
 extern proc qio_file_set_style(f:qio_file_ptr_t, inout style:iostyle);
-
-/* our wrapper for the read function;
-   calls readv to read into our buffer.
-   Will read data into buf (overwriting,
-    not allocating) and advance the file descriptor's offset.
- */
-//extern proc qio_readv(fd:fd_t, inout buf:qbuffer_t, start:qbuffer_iter_t, end:qbuffer_iter_t, inout num_read:int(64)):syserr;
-/* our wrapper for the write function;
-   calls writev to write our buffer.
-   Will write data from buf and not change it.
-   Will advance the file descriptor's offset.
- */
-//extern proc qio_writev(fd:fd_t, inout buf:qbuffer_t, start:qbuffer_iter_t, end:qbuffer_iter_t, inout num_read:int(64)):syserr;
-
-/* calls preadv where it exists;
-   otherwise, will do a series of pread calls
-   Will read data into buf (overwriting, not allocating).
-   Will not advance the file descriptor's position.
- */
-//extern proc qio_preadv(fd:fd_t, inout buf:qbuffer_t, start:qbuffer_iter_t, end:qbuffer_iter_t, offset:int(64), inout num_read:int(64)):syserr;
-/* calls pwritev where it exists;
-   otherwise, will do a series of pwrite calls
-   Will write data from buf and not change it.
-   Will not advance the file descriptor's position.
- */
-//extern proc qio_pwritev(fd:fd_t, inout buf:qbuffer_t, start:qbuffer_iter_t, end:qbuffer_iter_t, offset:int(64), inout num_read:int(64)):syserr;
 
 pragma "no prototype" // FIXME
 extern proc qio_channel_create(inout ch:qio_channel_ptr_t, file:qio_file_ptr_t, hints:c_int, readable:c_int, writeable:c_int, start:int(64), end:int(64), inout style:iostyle):syserr;
@@ -292,6 +270,7 @@ extern proc qio_channel_set_style(ch:qio_channel_ptr_t, inout style:iostyle);
 extern proc qio_channel_binary(ch:qio_channel_ptr_t):uint(8);
 extern proc qio_channel_byteorder(ch:qio_channel_ptr_t):uint(8);
 extern proc qio_channel_str_style(ch:qio_channel_ptr_t):int(64);
+extern proc qio_channel_style_element(ch:qio_channel_ptr_t, element:int(64)):int(64);
 
 extern proc qio_channel_flush(threadsafe:c_int, ch:qio_channel_ptr_t):syserr;
 extern proc qio_channel_close(threadsafe:c_int, ch:qio_channel_ptr_t):syserr;
@@ -305,6 +284,7 @@ extern proc qio_channel_write_amt(threadsafe:c_int, ch:qio_channel_ptr_t, inout 
 extern proc qio_channel_write_byte(threadsafe:c_int, ch:qio_channel_ptr_t, byte:uint(8)):syserr;
 
 extern proc qio_channel_offset_unlocked(ch:qio_channel_ptr_t):int(64);
+extern proc qio_channel_advance(threadsafe:c_int, ch:qio_channel_ptr_t, nbytes:int(64)):syserr;
 extern proc qio_channel_mark(threadsafe:c_int, ch:qio_channel_ptr_t):syserr;
 extern proc qio_channel_revert_unlocked(ch:qio_channel_ptr_t);
 extern proc qio_channel_commit_unlocked(ch:qio_channel_ptr_t);
@@ -355,17 +335,18 @@ extern proc qio_encode_to_string(chr:int(32)):string;
 extern proc qio_decode_char_buf(inout chr:int(32), inout nbytes:c_int, buf:string, buflen:ssize_t):syserr;
 
 extern proc qio_channel_write_char(threadsafe:c_int, ch:qio_channel_ptr_t, char:int(32)):syserr;
-extern proc qio_channel_skip_past_newline(threadsafe:c_int, ch:qio_channel_ptr_t):syserr;
+extern proc qio_channel_skip_past_newline(threadsafe:c_int, ch:qio_channel_ptr_t, skipOnlyWs:c_int):syserr;
 extern proc qio_channel_write_newline(threadsafe:c_int, ch:qio_channel_ptr_t):syserr;
 
 extern proc qio_channel_scan_string(threadsafe:c_int, ch:qio_channel_ptr_t, inout ptr:string, inout len:ssize_t, maxlen:ssize_t):syserr;
 extern proc qio_channel_print_string(threadsafe:c_int, ch:qio_channel_ptr_t, ptr:string, len:ssize_t):syserr;
 
 extern proc qio_channel_scan_literal(threadsafe:c_int, ch:qio_channel_ptr_t, match:string, len:ssize_t, skipws:c_int):syserr;
+extern proc qio_channel_scan_literal_2(threadsafe:c_int, ch:qio_channel_ptr_t, match:c_ptr, len:ssize_t, skipws:c_int):syserr;
 extern proc qio_channel_print_literal(threadsafe:c_int, ch:qio_channel_ptr_t, match:string, len:ssize_t):syserr;
-//type iostyle = qio_style_t;
+extern proc qio_channel_print_literal_2(threadsafe:c_int, ch:qio_channel_ptr_t, match:c_ptr, len:ssize_t):syserr;
 
-
+ 
 proc defaultIOStyle():iostyle {
   var ret:iostyle;
   qio_style_init_default(ret);
@@ -401,19 +382,16 @@ proc iostyle.text(/* args coming later */):iostyle  {
 
 
 
-/*
+/* fdflag_t specifies how a file can be used. It can be:
   QIO_FDFLAG_UNK,
   QIO_FDFLAG_READABLE,
   QIO_FDFLAG_WRITEABLE,
   QIO_FDFLAG_SEEKABLE
 */
-
 extern type fdflag_t = c_int;
 
 /* Access hints describe how a file will be used.
-   These can help optimize.
- */
-/*
+   These can help optimize. These might be:
   QIO_METHOD_DEFAULT,
   QIO_METHOD_READWRITE,
   QIO_METHOD_P_READWRITE,
@@ -426,14 +404,12 @@ extern type fdflag_t = c_int;
   QIO_HINT_NOREUSE
 }
 */
-
 extern type iohints = c_int;
 
 record file {
   var home: locale = here;
   var _file_internal:qio_file_ptr_t = QIO_FILE_PTR_NULL;
 }
-
 
 // used for giving old warnings anyways...
 enum FileAccessMode { read, write };
@@ -769,6 +745,10 @@ inline proc _cast(type t, x: ioChar) where t == string {
 
 // Used to represent "\n", but never escaped...
 record ioNewline {
+  // Normally, we will skip anything at all to get to a \n,
+  // but if skipWhitespaceOnly is set, it will be an error
+  // if we run into non-space charcters other than \n.
+  var skipWhitespaceOnly: bool = false;
   proc writeThis(f: Writer) {
     // Normally this is handled explicitly in read/write.
     f.write("\n");
@@ -871,6 +851,24 @@ proc channel.offset():int(64) {
   return ret;
 }
 
+proc channel.advance(amount:int(64), ref error:syserr) {
+  on this.home {
+    this.lock();
+    error = qio_channel_advance(false, _channel_internal);
+    this.unlock();
+  }
+}
+proc channel.advance(amount:int(64)) {
+  on this.home {
+    this.lock();
+    var err = qio_channel_advance(false, _channel_internal);
+    if err then this._ch_ioerror(err, "in advance");
+    this.unlock();
+  }
+}
+
+
+
 // you should have a lock before you use these...
 
 inline proc channel._offset():int(64) {
@@ -969,8 +967,6 @@ proc _isIoPrimitiveType(type t) param return
  proc _isIoPrimitiveTypeOrNewline(type t) param return
   _isIoPrimitiveType(t) || t == ioNewline || t == ioLiteral || t == ioChar || t == ioBits;
 
-    //var trues = ("true", "1", "yes");
-    //var falses = ("false", "0", "no");
 const _trues = tuple("true");
 const _falses = tuple("false");
 const _i = "i";
@@ -1056,9 +1052,9 @@ proc _read_text_internal(_channel_internal:qio_channel_ptr_t, out x:?t):syserr w
 proc _write_text_internal(_channel_internal:qio_channel_ptr_t, x:?t):syserr where _isIoPrimitiveType(t) {
   if _isBooleanType(t) {
     if x {
-      return qio_channel_print_string(false, _channel_internal, _trues(1), _trues(1).length:ssize_t);
+      return qio_channel_print_literal(false, _channel_internal, _trues(1), _trues(1).length:ssize_t);
     } else {
-      return qio_channel_print_string(false, _channel_internal, _falses(1), _falses(1).length:ssize_t);
+      return qio_channel_print_literal(false, _channel_internal, _falses(1), _falses(1).length:ssize_t);
     }
   } else if _isIntegralType(t) {
     // handles int types
@@ -1091,7 +1087,7 @@ proc _write_text_internal(_channel_internal:qio_channel_ptr_t, x:?t):syserr wher
     return qio_channel_print_string(false, _channel_internal, x, x.length:ssize_t);
   } else if _isEnumeratedType(t) {
     var s = x:string;
-    return qio_channel_print_string(false, _channel_internal, s, s.length:ssize_t);
+    return qio_channel_print_literal(false, _channel_internal, s, s.length:ssize_t);
   } else {
     compilerError("Unknown primitive type in _write_text_internal ", typeToString(t));
   }
@@ -1182,7 +1178,7 @@ inline proc _write_binary_internal(_channel_internal:qio_channel_ptr_t, param by
 inline proc _read_one_internal(_channel_internal:qio_channel_ptr_t, param kind:iokind, inout x:?t):syserr where _isIoPrimitiveTypeOrNewline(t) {
   var e:syserr = EINVAL;
   if t == ioNewline {
-    return qio_channel_skip_past_newline(false, _channel_internal);
+    return qio_channel_skip_past_newline(false, _channel_internal, x.skipWhitespaceOnly);
   } else if t == ioChar {
     return qio_channel_read_char(false, _channel_internal, x.ch);
   } else if t == ioLiteral {
@@ -1594,26 +1590,6 @@ proc channel.modifyStyle(f:func(iostyle, iostyle))
 }
 */
 
-/* Move between min_len and max_len bytes
-   of data from a read channel to a write channel.
-   Blocks on reading up to min_len; blocks on writing
-   to the write channel. Returns the number of bytes
-   moved and/or an error number. */ 
-/*proc splice(input:read_channel, output:write_channel,
-           min_length:int(64), max_length:int(64), onErr:ErrorHandler = nil) {
-  halt("unimplemented");
-}*/
-
-/* Move between min_len and max_len bytes
-   of data from a read channel to several write channels;
-   the data is written to all of the write channels.
-   Blocks on reading up to min_len; blocks on writing to
-   all the write channels. Returns the number of bytes
-   moved and/or an error number. */
-/*proc tee(input:read_channel, output:[] write_channel, onErr:ErrorHandler = nil) {
-  halt("unimplemented");
-}*/
-
 record ItemReader {
   type ItemType;
   param kind:iokind;
@@ -1634,7 +1610,10 @@ record ItemReader {
       yield x;
     }
   }
-  /*
+  /* It would be nice to be able to handle errors
+     when reading with these()
+     but it's not clear how to get the error argument
+     out. Exceptions would sort us out...
   iter these(out error:syserr) {
     while true {
       var x:ItemType;
@@ -1708,6 +1687,10 @@ class ChannelWriter : Writer {
     var ret:uint(8) = qio_channel_binary(_channel_internal);
     return ret != 0;
   }
+  proc styleElement(element:int):int {
+    return qio_channel_style_element(_channel_internal, element);
+  }
+
   proc error():syserr {
     return err;
   }
@@ -1738,6 +1721,10 @@ class ChannelReader : Reader {
     var ret:uint(8) = qio_channel_binary(_channel_internal);
     return ret != 0;
   }
+  proc styleElement(element:int):int {
+    return qio_channel_style_element(_channel_internal, element);
+  }
+
   proc error():syserr {
     return err;
   }

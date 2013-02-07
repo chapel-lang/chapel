@@ -96,7 +96,7 @@ module analyze_RMAT_graph_associative_array {
       //
       proc RemoveDuplicates(lo, inout hi) {
         param showArrays = false;  // beware of 'local' in the caller
-        const style = new iostyle(min_width = 3);
+        const style = new iostyle(min_width_columns = 3);
         if showArrays {
           writeln("starting ", lo, "..", hi);
           stdout.writeln(neighborList(lo..hi), style);
