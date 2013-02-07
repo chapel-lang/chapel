@@ -301,7 +301,7 @@ err_t sys_strerror(err_t error, const char** string_out)
   }
 
   while( 1 ) {
-    newbuf = qio_realloc(buf, buf_sz);
+    newbuf = (char*) qio_realloc(buf, buf_sz);
     if( ! newbuf ) {
       qio_free(buf);
       return ENOMEM;
@@ -328,7 +328,7 @@ err_t sys_strerror(err_t error, const char** string_out)
     } else {
       len = strlen(gai_str);
       if( len + 1 > buf_sz ) {
-        newbuf = qio_realloc(buf, len + 1);
+        newbuf = (char*) qio_realloc(buf, len + 1);
         if( ! newbuf ) {
           qio_free(buf);
           return ENOMEM;
@@ -361,7 +361,7 @@ err_t sys_readlink(const char* path, const char** string_out)
   err_t ret = EINVAL;
 
   while( 1 ) {
-    newbuf = qio_realloc(buf, buf_sz);
+    newbuf = (char*) qio_realloc(buf, buf_sz);
     if( ! newbuf ) {
       qio_free(buf);
       return ENOMEM;
@@ -483,12 +483,12 @@ err_t sys_lstat(const char* path, struct stat* buf)
   return err_out;
 }
 
-err_t sys_mkstemp(char* template, fd_t* fd_out)
+err_t sys_mkstemp(char* template_, fd_t* fd_out)
 {
   int got;
   err_t err_out;
 
-  got = mkstemp(template);
+  got = mkstemp(template_);
   if( got != -1 ) {
     *fd_out = got;
     err_out = 0;
@@ -1150,8 +1150,8 @@ err_t sys_getnameinfo(const sys_sockaddr_t* addr, char** host_out, char** serv_o
   STARTING_SLOW_SYSCALL;
 
   while( 1 ) {
-    new_host_buf = qio_realloc(host_buf, host_buf_sz);
-    new_serv_buf = qio_realloc(serv_buf, serv_buf_sz);
+    new_host_buf = (char*) qio_realloc(host_buf, host_buf_sz);
+    new_serv_buf = (char*) qio_realloc(serv_buf, serv_buf_sz);
     if( ! new_host_buf || ! new_serv_buf ) {
       qio_free(host_buf);
       qio_free(serv_buf);
@@ -1472,7 +1472,7 @@ err_t sys_getcwd(const char** path_out)
   char* got;
   err_t err = 0;
 
-  buf = qio_malloc(sz);
+  buf = (char*) qio_malloc(sz);
   if( !buf ) return ENOMEM;
   while( 1 ) {
     got = getcwd(buf, sz);
@@ -1480,7 +1480,7 @@ err_t sys_getcwd(const char** path_out)
     else if( errno == ERANGE ) {
       // keep looping but with bigger buffer.
       sz = 2*sz;
-      got = qio_realloc(buf, sz);
+      got = (char*) qio_realloc(buf, sz);
       if( ! got ) {
         qio_free(buf);
         return ENOMEM;

@@ -25,6 +25,9 @@
 #include "qio_formatted.h"
 #include "qio_regexp.h"
 #include "bulkget.h"
+
+#ifndef __cplusplus
 #include "chplgmp.h"
+#endif
 
 #endif

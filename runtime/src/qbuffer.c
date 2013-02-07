@@ -91,7 +91,7 @@ err_t qbytes_create_generic(qbytes_t** out, void* give_data, int64_t len, qbytes
 {
   qbytes_t* ret = NULL;
 
-  ret = qio_calloc(1, sizeof(qbytes_t));
+  ret = (qbytes_t*) qio_calloc(1, sizeof(qbytes_t));
   if( ! ret ) return ENOMEM;
 
   _qbytes_init_generic(ret, give_data, len, free_function);
@@ -126,7 +126,7 @@ err_t qbytes_create_iobuf(qbytes_t** out)
   qbytes_t* ret = NULL;
   err_t err;
 
-  ret = qio_calloc(1, sizeof(qbytes_t));
+  ret = (qbytes_t*) qio_calloc(1, sizeof(qbytes_t));
   if( ! ret ) return ENOMEM;
 
   err = _qbytes_init_iobuf(ret);
@@ -160,7 +160,7 @@ err_t qbytes_create_calloc(qbytes_t** out, int64_t len)
   qbytes_t* ret = NULL;
   void* data;
 
-  ret = qio_calloc(1, sizeof(qbytes_t) + len);
+  ret = (qbytes_t*) qio_calloc(1, sizeof(qbytes_t) + len);
   if( ! ret ) return ENOMEM;
 
   data = ret + 1; // ie ret + sizeof(qbytes_t)
@@ -258,7 +258,7 @@ err_t qbuffer_destroy(qbuffer_t* buf)
   deque_iterator_t end = deque_end(& buf->deque);
 
   while( ! deque_it_equals(cur, end) ) {
-    qbuffer_part_t* qbp = deque_it_get_cur_ptr(sizeof(qbuffer_part_t), cur);
+    qbuffer_part_t* qbp = (qbuffer_part_t*) deque_it_get_cur_ptr(sizeof(qbuffer_part_t), cur);
 
     // release the qbuffer.
     qbytes_release(qbp->bytes);
@@ -282,7 +282,7 @@ err_t qbuffer_create(qbuffer_t** out)
   qbuffer_t* ret = NULL;
   err_t err;
 
-  ret = qio_malloc(sizeof(qbuffer_t));
+  ret = (qbuffer_t*) qio_malloc(sizeof(qbuffer_t));
   if( ! ret ) return ENOMEM;
 
   err = qbuffer_init(ret);
@@ -565,7 +565,7 @@ void qbuffer_reposition(qbuffer_t* buf, int64_t new_offset_start)
   iter = start;
 
   while( ! deque_it_equals(iter, end) ) {
-    qbp = deque_it_get_cur_ptr(sizeof(qbuffer_part_t), iter);
+    qbp = (qbuffer_part_t*) deque_it_get_cur_ptr(sizeof(qbuffer_part_t), iter);
     qbp->end_offset += diff;
   }
 }

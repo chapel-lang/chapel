@@ -1,7 +1,14 @@
 #ifndef _QBUFFER_H_
 #define _QBUFFER_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "sys_basic.h"
+#ifndef __cplusplus
+#include <stdbool.h>
+#endif
 #include "chpl-atomics.h"
 
 #include <inttypes.h>
@@ -416,7 +423,7 @@ err_t qbuffer_memset(qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, u
 
 static inline char* qio_strdup(const char* ptr)
 {
-  char* ret = qio_malloc(strlen(ptr)+1);
+  char* ret = (char*) qio_malloc(strlen(ptr)+1);
   if( ret ) strcpy(ret, ptr);
   return ret;
 }
@@ -462,6 +469,11 @@ typedef bool qio_bool;
 #define VOID_PTR_DIFF(a,b) (((intptr_t) (a)) - ((intptr_t) (b)))
 #define VOID_PTR_ADD(ptr,amt) ((void*)(((char*) (ptr)) + (amt)))
 #define VOID_PTR_ALIGN(ptr,align) (((uintptr_t)ptr) & (align - 1))
+
+#ifdef __cplusplus
+} // end extern "C"
+#endif
+
 
 #endif
 

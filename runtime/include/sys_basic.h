@@ -45,6 +45,9 @@
 #include <wchar.h>
 #endif
 
+// Ask a C++ compiler if it would please include e.g. INT64_MAX
+#define __STDC_CONSTANT_MACROS
+
 #include <sys/types.h>
 #include <unistd.h>
 #include <errno.h>
@@ -129,6 +132,26 @@ static inline c_int is_c_nil(void* x) { return x==NULL; }
 #endif
 #ifndef ULLONG_MAX
 #define ULLONG_MAX (2ULL*LLONG_MAX+1ULL)
+#endif
+#endif
+
+// Define UINT32_MAX if it doesn't exist (needed for some C++ environments)
+// (normally defined in stdint.h)
+#ifndef UINT32_MAX
+#define UINT32_MAX 0xffffffffu
+#endif
+#ifndef INT64_MAX
+#define INT64_MAX 0x7fffffffffffffffll
+#endif
+
+
+#ifdef __cplusplus
+// g++ supports restrict in C++ with the name __restrict. For other compliers,
+// we just #define-out restrict.
+#if defined(__GNUC__) && ((__GNUC__ > 3) || (__GNUC__ == 3 && __GNUC_MINOR__ >= 1))
+#define restrict __restrict
+#else
+#define restrict 
 #endif
 #endif
 

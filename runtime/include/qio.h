@@ -1,6 +1,10 @@
 #ifndef _QIO_H_
 #define _QIO_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "bswap.h"
 #include "qbuffer.h"
 #include "sys.h"
@@ -223,8 +227,8 @@ char* qio_hints_to_string(qio_hint_t hint)
   // Not particularly intelligent, but this stack-allocated
   // buffer should have enough room.
   char buf[QIO_NUM_HINT_BITS*20+16*20+100];
-  qio_chtype_t type = hint & QIO_CHTYPEMASK;
-  qio_method_t method = hint & QIO_METHODMASK;
+  qio_chtype_t type = (qio_chtype_t) (hint & QIO_CHTYPEMASK);
+  qio_method_t method = (qio_method_t) (hint & QIO_METHODMASK);
   int ok = 0;
 
   buf[0] = '\0';
@@ -858,7 +862,6 @@ int64_t qio_channel_str_style(qio_channel_t* ch)
 }
 
 int64_t qio_channel_style_element(qio_channel_t* ch, int64_t element);
-
  
 static ___always_inline
 err_t qio_channel_write(const int threadsafe, qio_channel_t* restrict ch, const void* restrict ptr, ssize_t len, ssize_t* restrict amt_written )
@@ -1262,7 +1265,7 @@ err_t qio_channel_write_bits(const int threadsafe, qio_channel_t* restrict ch, u
 
     // We have buffer for it...
     // Can we just put it into bitbuffer?
-    if( tmp_live + nbits <= 8*sizeof(qio_bitbuffer_t) ) {
+    if( tmp_live + nbits <= (int) (8*sizeof(qio_bitbuffer_t)) ) {
       //printf("WRITE BITS LOCAL WRITING %llx %i %llx %i\n", (long long int) tmp_bits, tmp_live, (long long int) v, nbits);
       tmp_bits = (tmp_bits << nbits) | v;
       tmp_live += nbits;
@@ -1411,5 +1414,9 @@ unlock:
 
   return err;
 }
+
+#ifdef __cplusplus
+} // end extern "C"
+#endif
 
 #endif

@@ -45,7 +45,7 @@ err_t _deque_reallocate_map(const ssize_t item_size, const ssize_t buf_size, deq
     }
   } else {
     ssize_t new_map_size = d->map_size + _DEQUE_MAX(d->map_size, nodes_to_add) + 2;
-    deque_node_t* new_map = deque_calloc(new_map_size, sizeof(deque_node_t));
+    deque_node_t* new_map = (deque_node_t*) deque_calloc(new_map_size, sizeof(deque_node_t));
     if( ! new_map ) return ENOMEM;
 
     new_nstart = new_map + (new_map_size - new_num_nodes ) / 2 + (add_at_front ? nodes_to_add : 0 );

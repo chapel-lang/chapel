@@ -16,7 +16,7 @@
 // This is global because it's referenced in chpl-mem.h and thus needs
 // to be available anywhere that is #included.
 //
-_Bool chpl_memTrack = false;
+chpl_bool chpl_memTrack = false;
 
 #undef malloc
 #undef calloc

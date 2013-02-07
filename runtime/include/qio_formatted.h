@@ -184,21 +184,21 @@ err_t qio_channel_read_int(const int threadsafe, const int byteorder, qio_channe
 
   switch ( signed_len ) {
     case 1:
-      return qio_channel_read_uint8(threadsafe, ch, ptr);
+      return qio_channel_read_uint8(threadsafe, ch, (uint8_t*) ptr);
     case -1:
-      return qio_channel_read_int8(threadsafe, ch, ptr);
+      return qio_channel_read_int8(threadsafe, ch, (int8_t*) ptr);
     case 2:
-      return qio_channel_read_uint16(threadsafe, byteorder, ch, ptr);
+      return qio_channel_read_uint16(threadsafe, byteorder, ch,(uint16_t*)ptr);
     case -2:
-      return qio_channel_read_int16(threadsafe, byteorder, ch, ptr);
+      return qio_channel_read_int16(threadsafe, byteorder, ch, (int16_t*) ptr);
     case 4:
-      return qio_channel_read_uint32(threadsafe, byteorder, ch, ptr);
+      return qio_channel_read_uint32(threadsafe, byteorder, ch,(uint32_t*)ptr);
     case -4:
-      return qio_channel_read_int32(threadsafe, byteorder, ch, ptr);
+      return qio_channel_read_int32(threadsafe, byteorder, ch, (int32_t*) ptr);
     case 8:
-      return qio_channel_read_int64(threadsafe, byteorder, ch, ptr);
+      return qio_channel_read_int64(threadsafe, byteorder, ch, (int64_t*) ptr);
     case -8:
-      return qio_channel_read_uint64(threadsafe, byteorder, ch, ptr);
+      return qio_channel_read_uint64(threadsafe, byteorder, ch,(uint64_t*)ptr);
     default:
       return EINVAL;
   }
@@ -298,9 +298,9 @@ static ___always_inline
 err_t qio_channel_read_float(const int threadsafe, const int byteorder, qio_channel_t* restrict ch, void* restrict ptr, size_t len) {
   switch ( len ) {
     case 4:
-      return qio_channel_read_float32(threadsafe, byteorder, ch, ptr);
+      return qio_channel_read_float32(threadsafe, byteorder, ch, (float*) ptr);
     case 8:
-      return qio_channel_read_float64(threadsafe, byteorder, ch, ptr);
+      return qio_channel_read_float64(threadsafe, byteorder, ch, (double*) ptr);
     default:
       return EINVAL;
   }
@@ -323,15 +323,15 @@ err_t qio_channel_read_complex(const int threadsafe, const int byteorder, qio_ch
   err_t err;
   switch ( len ) {
     case 4:
-      err = qio_channel_read_float32(threadsafe, byteorder, ch, re_ptr);
+      err = qio_channel_read_float32(threadsafe, byteorder, ch, (float*) re_ptr);
       if( ! err ) {
-        err = qio_channel_read_float32(threadsafe, byteorder, ch, im_ptr);
+        err = qio_channel_read_float32(threadsafe,byteorder,ch,(float*)im_ptr);
       }
       break;
     case 8:
-      err = qio_channel_read_float64(threadsafe, byteorder, ch, re_ptr);
+      err = qio_channel_read_float64(threadsafe, byteorder, ch,(double*)re_ptr);
       if( ! err ) {
-        err = qio_channel_read_float64(threadsafe, byteorder, ch, im_ptr);
+        err = qio_channel_read_float64(threadsafe,byteorder,ch,(double*)im_ptr);
       }
       break;
     default:
