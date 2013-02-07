@@ -1,0 +1,36 @@
+#!/usr/bin/env perl
+
+use File::Basename;
+
+$utildirname = dirname($0);
+
+$home = $ENV{'CHPL_HOME'};
+if ( ! -d $home ) {
+  $home = $utildirname . "/../../";
+}
+
+$preset_regexp = $ENV{'CHPL_REGEXP'};
+
+if ($preset_regexp eq "") {
+  $targplatform = `$utildirname/platform --target`; chomp($targplatform);
+  $targcompiler = `$utildirname/compiler --target`; chomp($targcompiler);
+
+  if ($targplatform =~ /^cray-xmt(-sim)?$/) {
+    $regexp = 'none';
+  } else {
+    $subdir = $home . "/third-party/re2/install/" .
+              $targplatform . "-" . $targcompiler;
+    if ( -d $subdir && -f "$subdir/include/re2/re2.h" ) {
+      $regexp = 're2';
+    } else {
+#      $regexp = 're2'; check Lion, PGI, PrgEnv-gnu before enabling
+      $regexp = 'none';
+    }
+
+  }
+} else {
+  $regexp = $preset_regexp;
+}
+
+print "$regexp\n";
+exit(0);

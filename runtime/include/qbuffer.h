@@ -421,6 +421,8 @@ static inline char* qio_strdup(const char* ptr)
   return ret;
 }
 
+typedef chpl_bool qio_bool;
+
 #else
 
 #define qio_malloc(size) malloc(size)
@@ -429,6 +431,8 @@ static inline char* qio_strdup(const char* ptr)
 #define qio_free(ptr) free(ptr)
 #define sys_free(ptr) free(ptr)
 #define qio_strdup(ptr) strdup(ptr)
+
+typedef bool qio_bool;
 
 #endif
 

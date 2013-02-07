@@ -62,5 +62,7 @@ print "  CHPL_NETWORK_ATOMICS: $network_atomics\n";
 }
 $gmp = `$utildirname/gmp`; chomp($gmp);
 print "CHPL_GMP: $gmp\n";
+$regexp = `$utildirname/regexp`; chomp($regexp);
+print "CHPL_REGEXP: $regexp\n";
 $llvm = `$utildirname/llvm`; chomp($llvm);
 print "CHPL_LLVM: $llvm\n";

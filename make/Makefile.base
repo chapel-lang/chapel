@@ -50,10 +50,13 @@ ifndef CHPL_MAKE_GMP
 include $(CHPL_MAKE_HOME)/make/Makefile.gmp
 endif
 
+ifndef CHPL_MAKE_REGEXP
+include $(CHPL_MAKE_HOME)/make/Makefile.regexp
+endif
+
 ifndef CHPL_MAKE_LLVM
 include $(CHPL_MAKE_HOME)/make/Makefile.llvm
 endif
-
 
 #
 # default CFLAGS, based on other settings

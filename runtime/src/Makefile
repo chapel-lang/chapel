@@ -29,6 +29,7 @@ SUBDIRS = \
 	tasks \
 	threads \
         timers \
+        regexp \
 
 else
 TARGETS = \
