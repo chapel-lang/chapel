@@ -56,7 +56,7 @@ void nanos_chapel_pre_init ( void * dummy )
 //
 // Used for debugging purposes only
 //
-static int32_t chpl_nodeID = -1;
+static int32_t taskLocaleID = -1;
 
 #define PRINTF_DEF printf
 
@@ -64,8 +64,8 @@ static int32_t chpl_nodeID = -1;
 #define NANOX_SANITY_CHECK(routine)
 #else
 #define NANOX_SANITY_CHECK(routine) \
-  if (nanos::myThread == NULL) { fprintf(stderr, "[%d:%ld] non-Nanox thread detected in chpl_task_%s()\n", chpl_nodeID, pthread_self(), #routine); } \
-  else { fprintf(stderr, "[%d:%d:%ld] thread in chpl_task_%s()\n", chpl_nodeID, (nanos::myThread)->getId(), pthread_self(), #routine); }
+  if (nanos::myThread == NULL) { fprintf(stderr, "[%d:%ld] non-Nanox thread detected in chpl_task_%s()\n", taskLocaleID, pthread_self(), #routine); } \
+  else { fprintf(stderr, "[%d:%d:%ld] thread in chpl_task_%s()\n", taskLocaleID, (nanos::myThread)->getId(), pthread_self(), #routine); }
 #endif
 
 
@@ -112,9 +112,9 @@ void chpl_task_begin(chpl_fn_p fp,
 // Tasks
 
 void nanos_chpl_task_init(int32_t numThreadsPerLocale, 
-                          int32_t maxThreadsPerLocale, int numCommTasks, 
-                          uint64_t callStackSize, 
-                          int32_t init_chpl_nodeID) {
+                          int32_t maxThreadsPerLocale, int numCommTasks,
+                          uint64_t callStackSize,
+                          int32_t init_chpl_localeID) {
    NANOX_SANITY_CHECK(init);
 
    fatal_cond0(!chapel_hooked, "Chapel layer has not been correctly initialized");
@@ -136,7 +136,7 @@ void nanos_chpl_task_init(int32_t numThreadsPerLocale,
    //
    taskCallStackSize = callStackSize;
 
-   chpl_nodeID = init_chpl_nodeID;
+   taskLocaleID = init_chpl_localeID;
 
 /*  tp = chpl_mem_alloc(sizeof(thread_private_data_t), CHPL_RT_MD_THREAD_PRIVATE_DATA, 0, 0);
   threadlayer_set_thread_private_data(tp);

@@ -360,11 +360,11 @@ static void comm_task_wrapper(void* arg) {
 
 void chpl_task_addToTaskList(chpl_fn_int_t fid, void* arg,
                            chpl_task_list_p *task_list,
-                           int32_t task_list_node,
+                           int32_t task_list_locale,
                            chpl_bool call_chpl_begin,
                            int lineno,
                            chpl_string filename) {
-  if (task_list_node == chpl_nodeID) {
+  if (task_list_locale == chpl_nodeID) {
     chpl_task_list_p ltask;
 
     ltask = (chpl_task_list_p) chpl_mem_alloc(sizeof(struct chpl_task_list),
@@ -397,7 +397,7 @@ void chpl_task_addToTaskList(chpl_fn_int_t fid, void* arg,
       chpl_thread_mutexUnlock(&task_list_lock);
   }
   else {
-    // call_chpl_begin should be true here because if task_list_node !=
+    // call_chpl_begin should be true here because if task_list_locale !=
     // chpl_nodeID, then this function could not have been called from
     // the context of a cobegin or coforall statement, which are the only
     // contexts in which chpl_task_begin() should not be called.

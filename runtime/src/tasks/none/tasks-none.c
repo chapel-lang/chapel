@@ -145,7 +145,7 @@ void chpl_task_callMain(void (*chpl_main)(void)) {
 void chpl_task_addToTaskList(chpl_fn_int_t fid,
                            void* arg,
                            chpl_task_list_p *task_list,
-                           int32_t task_list_node,
+                           int32_t task_list_locale,
                            chpl_bool call_chpl_begin,
                            int lineno,
                            chpl_string filename) {
