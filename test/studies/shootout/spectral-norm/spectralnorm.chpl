@@ -77,7 +77,7 @@ proc spectral_game(N : int) : real
 proc main() {
 	if timer then
 		t.start();
-	writeln(spectral_game(NUM), new iostyle(significant_digits=10));
+	writeln(spectral_game(NUM), new iostyle(precision=10));
 	if timer then {
 		t.stop();
 		writeln("Time elapsed : ", t.elapsed(), " seconds");
