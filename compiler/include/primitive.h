@@ -47,26 +47,26 @@ enum PrimitiveTag {
   PRIM_GET_MEMBER_VALUE,
   PRIM_SET_MEMBER,
   PRIM_CHECK_NIL,
-  PRIM_NEW,                       // new keyword
-  PRIM_GET_REAL,                  // get complex real component
-  PRIM_GET_IMAG,                  // get complex imag component
-  PRIM_QUERY,                     // query expression primitive
+  PRIM_NEW,                 // new keyword
+  PRIM_GET_REAL,            // get complex real component
+  PRIM_GET_IMAG,            // get complex imag component
+  PRIM_QUERY,               // query expression primitive
 
-  PRIM_ADDR_OF,  // set a reference to a value
-  PRIM_DEREF,    // dereference a reference
+  PRIM_ADDR_OF,             // set a reference to a value
+  PRIM_DEREF,               // dereference a reference
 
-  PRIM_LOCAL_CHECK,          // assert that a wide ref is on this locale
+  PRIM_LOCAL_CHECK,         // assert that a wide ref is on this locale
 
-  PRIM_SYNC_INIT,                
-  PRIM_SYNC_DESTROY,                
-  PRIM_SYNC_LOCK,                
+  PRIM_SYNC_INIT,
+  PRIM_SYNC_DESTROY,
+  PRIM_SYNC_LOCK,
   PRIM_SYNC_UNLOCK,
   PRIM_SYNC_WAIT_FULL,
   PRIM_SYNC_WAIT_EMPTY,
   PRIM_SYNC_SIGNAL_FULL,
   PRIM_SYNC_SIGNAL_EMPTY,
   PRIM_SINGLE_INIT,
-  PRIM_SINGLE_DESTROY,                
+  PRIM_SINGLE_DESTROY,
   PRIM_SINGLE_LOCK,
   PRIM_SINGLE_UNLOCK,
   PRIM_SINGLE_WAIT_FULL,
@@ -93,13 +93,13 @@ enum PrimitiveTag {
   PRIM_EXECUTE_TASKS_IN_LIST,
   PRIM_FREE_TASK_LIST,
 
-  PRIM_GET_SERIAL,                // get serial state
-  PRIM_SET_SERIAL,                // set serial state to true or false
+  PRIM_GET_SERIAL,              // get serial state
+  PRIM_SET_SERIAL,              // set serial state to true or false
 
   PRIM_CHPL_ALLOC,
   PRIM_CHPL_ALLOC_PERMIT_ZERO,  // chpl_mem_alloc wrapper that permits size 0
   PRIM_CHPL_FREE,               // only for variables on heap?
-  PRIM_INIT_FIELDS, // initialize fields of a temporary record
+  PRIM_INIT_FIELDS,             // initialize fields of a temporary record
   PRIM_PTR_EQUAL,
   PRIM_PTR_NOTEQUAL,
   PRIM_IS_SUBTYPE,
@@ -108,14 +108,14 @@ enum PrimitiveTag {
   PRIM_TYPEOF,
   PRIM_GET_ITERATOR_RETURN,
   PRIM_USE,
-  PRIM_USED_MODULES_LIST, // used modules in BlockStmt::modUses
+  PRIM_USED_MODULES_LIST,       // used modules in BlockStmt::modUses
   PRIM_TUPLE_EXPAND,
   PRIM_TUPLE_AND_EXPAND,
 
-  PRIM_CHPL_COMM_GET,   // Direct calls to the Chapel comm layer
-  PRIM_CHPL_COMM_PUT,   //  may eventually add others (e.g., non-blocking)
-  PRIM_CHPL_COMM_GET_STRD,   // Direct calls to the Chapel comm layer for strided comm
-  PRIM_CHPL_COMM_PUT_STRD,   //  may eventually add others (e.g., non-blocking)
+  PRIM_CHPL_COMM_GET,           // Direct calls to the Chapel comm layer
+  PRIM_CHPL_COMM_PUT,           // may eventually add others (e.g., non-blocking)
+  PRIM_CHPL_COMM_GET_STRD,      // Direct calls to the Chapel comm layer for strided comm
+  PRIM_CHPL_COMM_PUT_STRD,      //  may eventually add others (e.g., non-blocking)
 
   PRIM_ARRAY_ALLOC,
   PRIM_ARRAY_FREE,
@@ -140,52 +140,52 @@ enum PrimitiveTag {
   PRIM_WHEN,
   PRIM_TYPE_TO_STRING,
 
-  PRIM_BLOCK_PARAM_LOOP,      // BlockStmt::blockInfo - param for loop
-  PRIM_BLOCK_WHILEDO_LOOP,    // BlockStmt::blockInfo - while do loop
-  PRIM_BLOCK_DOWHILE_LOOP,    // BlockStmt::blockInfo - do while loop
-  PRIM_BLOCK_FOR_LOOP,        // BlockStmt::blockInfo - for loop
-  PRIM_BLOCK_BEGIN,           // BlockStmt::blockInfo - begin block
-  PRIM_BLOCK_COBEGIN,         // BlockStmt::blockInfo - cobegin block
-  PRIM_BLOCK_COFORALL,        // BlockStmt::blockInfo - coforall block
+  PRIM_BLOCK_PARAM_LOOP,        // BlockStmt::blockInfo - param for loop
+  PRIM_BLOCK_WHILEDO_LOOP,      // BlockStmt::blockInfo - while do loop
+  PRIM_BLOCK_DOWHILE_LOOP,      // BlockStmt::blockInfo - do while loop
+  PRIM_BLOCK_FOR_LOOP,          // BlockStmt::blockInfo - for loop
+  PRIM_BLOCK_BEGIN,             // BlockStmt::blockInfo - begin block
+  PRIM_BLOCK_COBEGIN,           // BlockStmt::blockInfo - cobegin block
+  PRIM_BLOCK_COFORALL,          // BlockStmt::blockInfo - coforall block
   PRIM_BLOCK_XMT_PRAGMA_FORALL_I_IN_N, // BlockStmt::blockInfo - xmt prag loop
   PRIM_BLOCK_XMT_PRAGMA_NOALIAS,       // BlockStmt::blockInfo - xmt prag for
-  PRIM_BLOCK_ON,              // BlockStmt::blockInfo - on block
-  PRIM_BLOCK_ON_NB,           // BlockStmt::blockInfo - non-blocking on block
-  PRIM_BLOCK_LOCAL,           // BlockStmt::blockInfo - local block
-  PRIM_BLOCK_UNLOCAL,         // BlockStmt::blockInfo - unlocal local block
+  PRIM_BLOCK_ON,                // BlockStmt::blockInfo - on block
+  PRIM_BLOCK_ON_NB,             // BlockStmt::blockInfo - non-blocking on block
+  PRIM_BLOCK_LOCAL,             // BlockStmt::blockInfo - local block
+  PRIM_BLOCK_UNLOCAL,           // BlockStmt::blockInfo - unlocal local block
 
   PRIM_TO_LEADER,
   PRIM_TO_FOLLOWER,
 
   PRIM_DELETE,
 
-  PRIM_GC_CC_INIT,       // Initialize heap for copy-collecting
-  PRIM_GC_ADD_ROOT,      // Add a root variable for garbage collection
-  PRIM_GC_ADD_NULL_ROOT, // Add a root and point it to NULL
-  PRIM_GC_DELETE_ROOT,   // Remove a root variable for garbage collection
-  PRIM_GC_CLEANUP,       // Free GC heaps
+  PRIM_GC_CC_INIT,              // Initialize heap for copy-collecting
+  PRIM_GC_ADD_ROOT,             // Add a root variable for garbage collection
+  PRIM_GC_ADD_NULL_ROOT,        // Add a root and point it to NULL
+  PRIM_GC_DELETE_ROOT,          // Remove a root variable for garbage collection
+  PRIM_GC_CLEANUP,              // Free GC heaps
 
-  PRIM_CALL_DESTRUCTOR, // call destructor on type (do not free)
+  PRIM_CALL_DESTRUCTOR,         // call destructor on type (do not free)
 
-  PRIM_LOGICAL_FOLDER, // Help fold logical && and ||
+  PRIM_LOGICAL_FOLDER,          // Help fold logical && and ||
 
-  PRIM_WIDE_GET_LOCALE, // Returns the "locale" portion of a wide pointer.
+  PRIM_WIDE_GET_LOCALE,         // Returns the "locale" portion of a wide pointer.
 
-  PRIM_WIDE_GET_NODE,   // Get just the node portion of a wide pointer.
-  PRIM_WIDE_GET_SUBLOC, // Get just the sublocale portion of a wide pointer.
-  PRIM_WIDE_GET_ADDR,   // Get just the address portion of a wide pointer.
+  PRIM_WIDE_GET_NODE,           // Get just the node portion of a wide pointer.
+  PRIM_WIDE_GET_SUBLOC,         // Get just the sublocale portion of a wide pointer.
+  PRIM_WIDE_GET_ADDR,           // Get just the address portion of a wide pointer.
 
-  PRIM_LOC_GET_NODE,    // Get the node part of a c_locale_t.
-  PRIM_LOC_SET_NODE,    // Set <ditto>.
-  PRIM_LOC_GET_SUBLOC,  // Get the sublocale part of a c_locale_t.
-  PRIM_LOC_SET_SUBLOC,  // Set <ditto>.
+  PRIM_LOC_GET_NODE,            // Get the node part of a c_locale_t.
+  PRIM_LOC_SET_NODE,            // Set <ditto>.
+  PRIM_LOC_GET_SUBLOC,          // Get the sublocale part of a c_locale_t.
+  PRIM_LOC_SET_SUBLOC,          // Set <ditto>.
 
-  PRIM_NODE_ID,         // Returns the current (GASNet) node ID.
-  PRIM_ON_LOCALE_NUM,   // specify a particular (node,subloc) for an on clause.
-  PRIM_SET_SUBLOC_ID,   // Set the sublocale ID in task-private data.
-  PRIM_GET_SUBLOC_ID,   // Get the sublocale ID from task-private data.
+  PRIM_NODE_ID,                 // Returns the current (GASNet) node ID.
+  PRIM_ON_LOCALE_NUM,           // specify a particular (node,subloc) for an on clause.
+  PRIM_SET_SUBLOC_ID,           // Set the sublocale ID in task-private data.
+  PRIM_GET_SUBLOC_ID,           // Get the sublocale ID from task-private data.
 
-  PRIM_ALLOC_GVR,       // allocate space for global vars registry
+  PRIM_ALLOC_GVR,               // allocate space for global vars registry
   PRIM_HEAP_REGISTER_GLOBAL_VAR,
   PRIM_HEAP_BROADCAST_GLOBAL_VARS,
   PRIM_PRIVATE_BROADCAST,
@@ -207,7 +207,7 @@ enum PrimitiveTag {
   PRIM_NEXT_UINT32,
   PRIM_GET_USER_LINE,
   PRIM_GET_USER_FILE,
-  
+
   PRIM_FTABLE_CALL,
 
   PRIM_IS_STAR_TUPLE_TYPE,
@@ -215,7 +215,7 @@ enum PrimitiveTag {
   PRIM_GET_SVEC_MEMBER,
   PRIM_GET_SVEC_MEMBER_VALUE,
 
-  PRIM_VMT_CALL, // virtual method call
+  PRIM_VMT_CALL,        // virtual method call
 
   PRIM_NUM_FIELDS,
   PRIM_FIELD_NUM_TO_NAME,
@@ -235,7 +235,7 @@ class PrimitiveOp { public:
   const char *name;
   Type *(*returnInfo)(CallExpr*);
   bool isEssential; // has effects visible outside of the function
-  bool passLineno; // pass line number and filename to this primitive
+  bool passLineno;  // pass line number and filename to this primitive
 
   PrimitiveOp(PrimitiveTag atag, const char *aname, Type *(*areturnInfo)(CallExpr*));
 };
