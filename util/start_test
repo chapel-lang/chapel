@@ -599,7 +599,7 @@ endif
 
 set datestr = `date +"%y%m%d.%H%M%S"`
 
-set platform = `$CHPL_HOME/util/chplenv/platform`
+set platform = `$CHPL_HOME/util/chplenv/platform --target`
 
 #
 # some sets to get locale, environment reasonable
