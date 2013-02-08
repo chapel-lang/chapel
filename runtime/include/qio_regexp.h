@@ -39,7 +39,7 @@ void qio_regexp_create_compile_flags(const char* str, int64_t str_len, const cha
 
 static inline 
 void qio_regexp_create_compile_flags_2(void* str, int64_t str_len, void* flags, int64_t flags_len, qio_bool isUtf8, qio_regexp_t* compiled) {
-  return qio_regexp_create_compile_flags((const char*) str, str_len, (const char*) flags, flags_len, isUtf8, compiled);
+  qio_regexp_create_compile_flags((const char*) str, str_len, (const char*) flags, flags_len, isUtf8, compiled);
 }
 
 void qio_regexp_retain(qio_regexp_t* regexp);
