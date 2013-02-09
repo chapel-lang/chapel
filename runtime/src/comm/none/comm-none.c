@@ -59,7 +59,7 @@ int chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status) {
 void chpl_comm_post_task_init(void) { }
 
 void chpl_comm_rollcall(void) {
-  chpl_msg(2, "executing on a single locale\n");
+  chpl_msg(2, "executing on a single node\n");
 }
 
 void chpl_comm_desired_shared_heap(void** start_p, size_t* size_p) {
