@@ -4,7 +4,7 @@ config param verbose:bool=false;
 
 // Serial iterator 
 
-iter dynamic(c:range(?), chunkSize:int, numTasks:int) {
+iter dynamic(c:range(?), chunkSize:int, numTasks:int=0) {
 
   if verbose then 
     compilerWarning("Working with serial dynamic Iterator");    
@@ -72,7 +72,7 @@ where tag == iterKind.follower
 
 //************************* Guided iterator
 //Serial iterator 
-iter guided(c:range(?), numTasks:int) {
+iter guided(c:range(?), numTasks:int=0) {
 
   if verbose then 
     compilerWarning("Working with serial guided Iterator");
@@ -138,7 +138,7 @@ where tag == iterKind.follower
 
 //************************* Adaptive work-stealing iterator
 //Serial iterator 
-iter adaptive(c:range(?), numTasks:int) {  
+iter adaptive(c:range(?), numTasks:int=0) {  
 
   if verbose then 
     compilerWarning("Working with serial adaptive Iterator"); 
