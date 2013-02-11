@@ -162,7 +162,6 @@ Optional Settings
         fifo           : run tasks to completion, in FIFO order
         massivethreads : run tasks using U Tokyo's MassiveThreads package
         mta            : each task runs on a Cray XMT thread
-        nanox          : run tasks using BSC's Nanos++ package
         qthreads       : run tasks using Sandia's Qthreads package
         none           : do not support multiple tasks
 
@@ -178,7 +177,6 @@ Optional Settings
         fifo            pthreads, minimal (with limitations)
         mta             none
         massivethreads  none
-        nanox           none
         qthreads        none
         none            none
 

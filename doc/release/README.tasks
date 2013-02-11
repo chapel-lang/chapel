@@ -42,7 +42,6 @@ environment variable to one of the following options:
 fifo           : the default and most portable/stable option; heavyweight
 qthreads       : a prototype option based on Sandia's Qthreads user-level tasks
 massivethreads : a prototype option based on U Tokyo's MassiveThreads library
-nanox          : a prototype option based on BSC's Nanos++ user-level tasks
 mta            : an option specific to the Cray XMT (TM)
 none           : execute the program serially using a single task
 
@@ -187,36 +186,6 @@ For best results, make sure that you have installed the libhwloc library
 which qthreads will auto-detect during configuration and use for processor
 affinity.
 
-CHPL_TASKS == nanox, CHPL_THREADS == none
------------------------------------------
-
-We have also been working with the Nanos++ team at Barcelona
-Supercompting Center (BSC) to implement Chapel tasking over their
-user-level tasking layer ('nanox') in order to create a lighter-weight
-implementation of Chapel tasks.  To try Nanos++ tasking, please take
-the following steps (sample commands are shown for bash):
-
-1) Ensure that the environment variable CHPL_HOME points to the
-   directory containing the top-level README file of the Chapel
-   distribution, as always.
-
-2) Set up your environment to use Nanos++:
-
-2a) Set this variable:
-
-      export CHPL_TASKS=nanox
-
-2b) Ensure these variables are unset (or set to "none"):
-
-      unset CHPL_THREADS
-
-3) Follow the "Quick Start" instructions in $CHPL_HOME/README
-   to set up, compile and run your Chapel programs.
-
-Please report any apparent bugs in Nanos++ tasking to the Chapel team.
-For more information on Nanos++, please see $CHPL_HOME/third-party/README
-
-
 CHPL_TASKS == mta, CHPL_THREADS == none
 ---------------------------------------
 
@@ -311,12 +280,6 @@ CHPL_TASKS == qthreads, CHPL_THREADS == none
   create a number of threads equal to the number of processor cores on
   the locale.
 
-CHPL_TASKS == nanox, CHPL_THREADS == none:
-  In the Nanos++ tasking layer, the value of numThreadsPerLocale
-  indicates the number of system threads used to execute tasks.
-  If the value is 0, the nanox tasking layer will create a number
-  of threads equal to the number of processor cores on the locale.
-
 CHPL_TASKS == mta, CHPL_THREADS == none
 CHPL_TASKS == fifo, CHPL_THREADS == minimal
 CHPL_TASKS == none, CHPL_THREADS == none
@@ -344,12 +307,6 @@ CHPL_TASKS == massivethreads, CHPL_THREADS == none
   MassiveThreads tasks have a default call stack size of 32k*sizeof(size_t)
   bytes.  If a value is specified for callStackSize, that value is used
   for the call stack size instead.
-
-CHPL_TASKS == nanox, CHPL_THREADS == none
-  Nanox tasks have a typical call stack size of 32k*sizeof(size_t) bytes
-  (though in practice some tasks may have the system pthread call stack
-  size limit).  In the current Nanos++ tasking implementation, the
-  callStackSize constant is ignored.
 
 CHPL_TASKS == qthreads, CHPL_THREADS == none
   Qthreads tasks have a default call stack size of 32k*sizeof(size_t)

@@ -28,7 +28,6 @@ macchapel-mac            : mac (still a bit fishy)
 Discontinued testing
 ====================
 - opts   (start_opt_test, nightly-opts-all.cron, nightly-opts-examples.cron)
-- nanox  (was: nightly.lnx-hilde  up to r19634)
 - mpi    (was: nightly.chap04     up to r19116)
 
 

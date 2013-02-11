@@ -76,21 +76,6 @@ massivethreads/
   See also: massivethreads/massivethreads-<version>/README
 
 
-nanox/
-  Summary: the Nanos++ user-level tasking library being developed by
-           Barcelona Supercompting Center (BSC).  We are working on
-           using this as a lighter-weight tasking alternative to
-           pthreads.
-
-  License: Nanos++ is made available under an L-GPL license (see
-           nanox-<version>/COPYING and COPYING.LESSER)
-
-  Contact: For more information, please refer to:
-           http://pm.bsc.es/projects/nanox
-
-  See also: nanox/README and nanox/nanox-*/*
-
-
 qthread/ 
   Summary: the Qthreads user-level tasking package being developed by
            Sandia National Laboratory.  We are working on using this
