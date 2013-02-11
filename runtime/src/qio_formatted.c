@@ -1623,7 +1623,7 @@ error:
 
 err_t qio_channel_scan_int(const int threadsafe, qio_channel_t* restrict ch, void* restrict out, size_t len, int issigned)
 {
-  unsigned long long int num;
+  unsigned long long int num = 0;
   long long int signed_num;
   int sign = 1;
   ssize_t signed_len;
@@ -1757,7 +1757,7 @@ error:
 
 err_t qio_channel_scan_float(const int threadsafe, qio_channel_t* restrict ch, void* restrict out, size_t len)
 {
-  double num;
+  double num = 0.0;
   number_reading_state_t st;
   int64_t amount;
   int64_t start;
