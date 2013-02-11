@@ -83,7 +83,6 @@ include $(THIRD_PARTY_DIR)/creoleparser/Makefile.include
 include $(THIRD_PARTY_DIR)/gasnet/Makefile.include
 include $(THIRD_PARTY_DIR)/dlmalloc/Makefile.include
 include $(THIRD_PARTY_DIR)/massivethreads/Makefile.include
-include $(THIRD_PARTY_DIR)/nanox/Makefile.include
 include $(THIRD_PARTY_DIR)/qthread/Makefile.include
 include $(THIRD_PARTY_DIR)/tcmalloc/Makefile.include
 include $(THIRD_PARTY_DIR)/gmp/Makefile.include
