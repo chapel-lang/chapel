@@ -1879,12 +1879,12 @@ module ChapelArray {
   inline proc _getIteratorZip(x: _tuple) {
     inline proc _getIteratorZipInternal(x: _tuple, param dim: int) {
       if dim == x.size then
-        return tuple(_getIteratorZip(x(dim)));
+        return tuple(_getIterator(x(dim)));
       else
-        return (_getIteratorZip(x(dim)), (..._getIteratorZipInternal(x, dim+1)));
+        return (_getIterator(x(dim)), (..._getIteratorZipInternal(x, dim+1)));
     }
     if x.size == 1 then
-      return _getIteratorZip(x(1));
+      return _getIterator(x(1));
     else
       return _getIteratorZipInternal(x, 1);
   }

@@ -96,18 +96,15 @@ module ChapelTuple {
         halt("tuple access out of bounds: ", i);
     return __primitive("get svec member", this, i);
   }
-  
+
   //
   // iterator support for tuples
   //
   iter _tuple.these() {
-  
-    compilerError("Iteration over tuples is not yet supported. If you intended to use zippered iteration, you need to add the new keyword 'zip' before the tuple of iteratable expressions.");
-  
-    // johnk: This is just a draft.
-    // At the time of writting only homogeneous tuple iteration was supported
-    // and it was decided to not permit tuple iteration at all.  Rather than 
-    // remove this code, it was left in to save reimplementation.
+
+    if !isHomogeneousTuple(this) then
+      compilerError("Cannot iterate over non-homogeneous tuples. If you intended to use zippered iteration, add the new keyword 'zip' before the tuple ofiteratable expressions.");
+
     for i in 1..this.size {
       yield(this(i));
     }
@@ -116,34 +113,26 @@ module ChapelTuple {
   iter _tuple.these(param tag:iterKind) 
       where tag == iterKind.leader 
   {
-    
-    compilerError("Iteration over tuples is not yet supported. If you intended to use zippered iteration, you need to add the new keyword 'zip' before the tuple of iteratable expressions.");
-  
-    // johnk: This is just a draft.
-    // At the time of writting only homogeneous tuple iteration was supported
-    // and it was decided to not permit tuple iteration at all.  Rather than 
-    // remove this code, it was left in to save reimplementation.
-    const maxTasks = dataParTasksPerLocale;
+
+    const numTasks = if dataParTasksPerLocale==0 then here.numCores
+                     else dataParTasksPerLocale;
     const ignoreRunning = dataParIgnoreRunningTasks;
-    const minSize = dataParMinGranularity;
-    const chunks = _computeNumChunks(maxTasks, ignoreRunning, minSize, this.size);
-    const chunkSize = this.size;
-  
-    if chunks == 0 {
-      yield 1..this.size;
+    const minIndicesPerTask = dataParMinGranularity;
+    const length = this.size;
+    const myRange = 1..#length;
+    var (numChunks, _) = _computeChunkStuff(numTasks, ignoreRunning,
+                                            minIndicesPerTask,
+                                            tuple(myRange));
+
+    if numChunks == 1 {
+      yield myRange;
     } else {
   
-      const chunkSize = this.size / chunks;
-      const spill = if this.size % chunks then 1 else 0;
-  
-      coforall i in 1..(chunks+spill) {
-        var low = ((i - 1) * chunkSize) + 1;
-        var high = low + chunkSize - 1;
-     
-        //Upper bound
-        if high > this.size then high = this.size;
-  
-        yield(low..high);
+      coforall chunk in 0..#numChunks {
+        // _computeBlock assumes 0-based ranges
+        const (lo,hi) = _computeBlock(length, numChunks, chunk, length-1);
+        // adjust for 1-based indexing
+        yield lo+1..hi+1;
       }
     }
   }
@@ -151,13 +140,7 @@ module ChapelTuple {
   iter _tuple.these(param tag:iterKind, followThis)
       where tag == iterKind.follower
   {
-    compilerError("Iteration over tuples is not yet supported. If you intended to use zippered iteration, you need to add the new keyword 'zip' before the tuple of iteratable expressions.");
-    
-    // johnk: This is just a draft.
-    // At the time of writting only homogeneous tuple iteration was supported
-    // and it was decided to no permit tuple iteration.  Rather than remove
-    // this code, it was left in to save reimplementation.
-    for i in followThis do yield(this(i));;
+    for i in followThis do yield this(i);
   }
   
   //

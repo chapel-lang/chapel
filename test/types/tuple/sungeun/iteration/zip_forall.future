@@ -1,0 +1,4 @@
+bug: Cannot zipper tuples in a forall statement
+
+Something in the compiler is still trying to iterate over the tuple
+components in a zippered manner for forall statements.
