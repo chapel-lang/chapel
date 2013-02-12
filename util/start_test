@@ -359,9 +359,11 @@
 # be used to specify the output for such tests, where "machname" is
 # the output of "uname -n" with any "." qualifiers after the machine
 # name stripped off, commlayer is the communication layer being tested
-# (e.g., "none", "gasnet", or "pvm") and "platform" is the value of
-# $CHPL_TARGET_PLATFORM.  The most specific good file will be used, in
-# the order: machname, commlayer, platform, generic.
+# (e.g., "none", "gasnet", etc.) and "platform" is the value of
+# $CHPL_TARGET_PLATFORM.  In addition, if "--no-local" is selected as
+# a compiler option, the file <testname>.no-local.good may be used.
+# The most specific good file will be used, in this order:
+# machname, "no-local", commlayer, platform, generic.
 #
 # Tests that are not yet expected to work can be marked as such
 # by creating a <testname>.future file.  The presence of the

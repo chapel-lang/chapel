@@ -846,18 +846,27 @@ for testname in testsrc:
                                   ' '.join(args)]).wait()
 
             # Find the default 'golden' output file
+            checkfile = ''
+            # Use specified golden file if there is one.
             if len(clist) != 0:
                 checkfile = clist[0].split('#')[1].strip()
-                if not os.path.isfile(checkfile):
-                    checkfile = execname+'.'+machine+'.good'
-            else:
+            # Else use machine-specific file
+            if not os.path.isfile(checkfile):
                 checkfile = execname+'.'+machine+'.good'
+            # Else if no-local use no-local file.
+            if not os.path.isfile(checkfile):
+                nlString = '--no-local'
+                if globalCompopts.count(nlString) > 0:
+                    checkfile=execname+'.no-local.good'
+            # Else use comm-specific file.
             if not os.path.isfile(checkfile):
                 checkfile=execname+chplcommstr+'.good'
-                if not os.path.isfile(checkfile):
-                    checkfile=execname+'.'+platform+'.good'
-                    if not os.path.isfile(checkfile):
-                        checkfile=execname+'.good'
+            # Else use platform-specific file.
+            if not os.path.isfile(checkfile):
+                checkfile=execname+'.'+platform+'.good'
+            # Else use general file.
+            if not os.path.isfile(checkfile):
+                checkfile=execname+'.good'
             # sys.stdout.write('default checkfile=%s\n'%(checkfile))
                 
             if not os.access(checkfile, os.R_OK):
@@ -1094,15 +1103,23 @@ for testname in testsrc:
                             ceident = '.'+str(compoptsnum)+'-'+str(execoptsnum)
 
                         execcheckfile = execname+'.'+machine+ceident+'.good'
-
+                        # Else if no-local use the no-local .good file.
+                        if not os.path.isfile(execcheckfile):
+                            nlString = '--no-local'
+                            if globalCompopts.count(nlString) > 0:
+                                execcheckfile=execname+'.no-local'+ceident+'.good'
+                        # Else use the comm-specific .good file.
                         if not os.path.isfile(execcheckfile):
                             execcheckfile=execname+chplcommstr+ceident+'.good'
-                            if not os.path.isfile(execcheckfile):
-                                execcheckfile=execname+'.'+platform+ceident+'.good'
-                                if not os.path.isfile(execcheckfile):
-                                    execcheckfile=execname+ceident+'.good'
-                                    if not os.path.isfile(execcheckfile):
-                                        execcheckfile=execname+'.good'
+                        # Else use the platform-specific .good file.
+                        if not os.path.isfile(execcheckfile):
+                            execcheckfile=execname+'.'+platform+ceident+'.good'
+                        # Else use the execopts-specific .good file.
+                        if not os.path.isfile(execcheckfile):
+                            execcheckfile=execname+ceident+'.good'
+                        # Else use the general .good file.
+                        if not os.path.isfile(execcheckfile):
+                            execcheckfile=execname+'.good'
 
                     if not os.access(execcheckfile, os.R_OK):
                         sys.stdout.write('[Error cannot locate program output comparison file %s/%s]\n'%(localdir, execcheckfile))
