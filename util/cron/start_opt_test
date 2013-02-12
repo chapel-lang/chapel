@@ -1,10 +1,14 @@
 #!/usr/bin/env perl
 #
+# This script runs a set of tests under various combinations of compiler
+# options, to see if there are issues with common/important combinations.
+#
 # by default: run tests on release/examples directory with
-#             combinations of optimization flags listed in
-#             OPT_TESTING_FLAGS
+#             combinations of compiler options listed in the file
+#             ./OPT_TESTING_FLAGS
 #
 # -cron: check out a new copy of chapel, make it, run tests as above,
+#        reading options from test/OPT_TESTING_FLAGS in the checkout,
 #        and mail results to chapel_cronmail@cray.com ; on Saturdays
 #        run tests on every directory and on Sundays, do nothing
 #

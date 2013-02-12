@@ -13,6 +13,7 @@
 #include <langinfo.h>
 #endif
 
+
 // 0 means not set
 // 1 means use faster, hard-coded UTF-8 decode/encoder
 // -1 means use C multibyte functions (e.g. mbtowc)
@@ -40,8 +41,11 @@ void qio_set_glocale(void) {
 static int towlower(int wc) { return tolower(wc); }
 static int iswprint(int wc) { return isprint(wc); }
 static int iswspace(int wc) { return isspace(wc); }
+static int wcwidth(int wc) {
+  if( isprint(wc) ) return 1;
+  else return -1;
+}
 #endif
-
 
 err_t qio_channel_read_uvarint(const int threadsafe, qio_channel_t* restrict ch, uint64_t* restrict ptr) {
   err_t err = 0;
@@ -392,7 +396,7 @@ unlock:
   return err;
 }
 
-// allocates and returns a string.
+// allocates and returns a string. maxlen is in CHARACTERS.
 err_t qio_channel_scan_string(const int threadsafe, qio_channel_t* restrict ch, const char* restrict * restrict out, ssize_t* restrict len_out, ssize_t maxlen)
 {
   err_t err;
@@ -408,7 +412,7 @@ err_t qio_channel_scan_string(const int threadsafe, qio_channel_t* restrict ch, 
   int handle_0x;
   int handle_u;
   int stop_space;
-  unsigned long conv;
+  unsigned long conv, conv2;
   qio_style_t* style;
   ssize_t nread = 0;
   int64_t mark_offset;
@@ -426,6 +430,11 @@ err_t qio_channel_scan_string(const int threadsafe, qio_channel_t* restrict ch, 
   }
 
   style = &ch->style;
+
+  if( style->max_width_characters < UINT32_MAX &&
+      style->max_width_characters < maxlen ) {
+    maxlen = style->max_width_characters;
+  }
 
   // Allocate room for our buffer...
   err = _append_char(&ret, &ret_len, &ret_max, 0);
@@ -483,6 +492,8 @@ err_t qio_channel_scan_string(const int threadsafe, qio_channel_t* restrict ch, 
         err = qio_channel_read_char(false, ch, &chr);
         if( err ) break;
       }
+      if( err ) break;
+
       if( style->string_format == QIO_STRING_FORMAT_WORD ||
           style->string_format == QIO_STRING_FORMAT_TOEND ) {
         // OK, use the character we have
@@ -529,31 +540,18 @@ err_t qio_channel_scan_string(const int threadsafe, qio_channel_t* restrict ch, 
 
         err = _append_char(&ret, &ret_len, &ret_max, conv);
       } else if( handle_u && chr == 'u' ) {
+        int z;
         // handle \uABCD
         tmpi = 0;
-        err = qio_channel_read_char(false, ch, &tmpchr);
-        if( err ) break;
-        err = qio_encode_char_buf(&tmp[tmpi], tmpchr);
-        if( err ) break;
-        tmpi += qio_nbytes_char(tmpchr);
 
-        err = qio_channel_read_char(false, ch, &tmpchr);
+        for( z = 0; z < 4; z++ ) { 
+          err = qio_channel_read_char(false, ch, &tmpchr);
+          if( err ) break;
+          err = qio_encode_char_buf(&tmp[tmpi], tmpchr);
+          if( err ) break;
+          tmpi += qio_nbytes_char(tmpchr);
+        }
         if( err ) break;
-        err = qio_encode_char_buf(&tmp[tmpi], tmpchr);
-        if( err ) break;
-        tmpi += qio_nbytes_char(tmpchr);
-
-        err = qio_channel_read_char(false, ch, &tmpchr);
-        if( err ) break;
-        err = qio_encode_char_buf(&tmp[tmpi], tmpchr);
-        if( err ) break;
-        tmpi += qio_nbytes_char(tmpchr);
-
-        err = qio_channel_read_char(false, ch, &tmpchr);
-        if( err ) break;
-        err = qio_encode_char_buf(&tmp[tmpi], tmpchr);
-        if( err ) break;
-        tmpi += qio_nbytes_char(tmpchr);
 
         tmp[tmpi] = '\0';
 
@@ -564,9 +562,64 @@ err_t qio_channel_scan_string(const int threadsafe, qio_channel_t* restrict ch, 
           break;
         }
 
+        // It might be a surrogate pair....
+        if( 0xD800 <= conv && conv <= 0xDBFF ) {
+          // We *must* read another \uXXXX, 
+          //  and it *must* be a trail surrogate (ie in 0xDC00..0xDFFF)
+          // Read \ character
+          err = qio_channel_read_char(false, ch, &chr);
+          if( err ) break;
+          if( chr != '\\' ) {
+            err = EFORMAT;
+            break;
+          }
+          // Read u character
+          err = qio_channel_read_char(false, ch, &chr);
+          if( err ) break;
+          if( chr != 'u' ) {
+            err = EFORMAT;
+            break;
+          }
+          tmpi = 0;
+          // Now read XXXX
+          for( z = 0; z < 4; z++ ) { 
+            err = qio_channel_read_char(false, ch, &tmpchr);
+            if( err ) break;
+            err = qio_encode_char_buf(&tmp[tmpi], tmpchr);
+            if( err ) break;
+            tmpi += qio_nbytes_char(tmpchr);
+          }
+          if( err ) break;
+
+          tmp[tmpi] = '\0';
+          errno = 0;
+          conv2 = strtol(tmp, NULL, 16);
+          if( (conv2 == ULONG_MAX || conv2 == 0) && errno ) {
+            err = errno;
+            break;
+          }
+
+          // conv2 *must* be in the range 0xDC00..0xDFFF
+          if( 0xDC00 <= conv2 && conv2 <= 0xDFFF ) {
+            // a surrogate pair, in conv and conv2.
+            // Update conv to be the right decoded character.
+            conv = ((conv - 0xD800) << 10) | (conv2 - 0xDC00);
+          } else {
+            // Format error.
+            err = EFORMAT;
+            break;
+          }
+        }
         err = _append_char(&ret, &ret_len, &ret_max, conv);
       } else {
         // a backslash'd character.
+        if( chr == 'a' ) chr = '\a';
+        else if( chr == 'b' ) chr = '\b';
+        else if( chr == 't' ) chr = '\t';
+        else if( chr == 'n' ) chr = '\n';
+        else if( chr == 'v' ) chr = '\v';
+        else if( chr == 'f' ) chr = '\f';
+        else if( chr == 'r' ) chr = '\r';
         err = _append_char(&ret, &ret_len, &ret_max, chr);
       }
     } else if((stop_space && iswspace(chr)) || ((!stop_space) && (chr == term_chr )) ) {
@@ -629,10 +682,7 @@ err_t qio_channel_scan_literal(const int threadsafe, qio_channel_t* restrict ch,
   ssize_t nread = 0;
   int64_t lastwspos = 0;
 
-
-  if( len == 0 ) return EINVAL;
-
-  if( skipws ) {
+  if( skipws && len > 0 ) {
     int nbytes;
     int32_t wchr;
     size_t min_nonspace = len;
@@ -654,7 +704,7 @@ err_t qio_channel_scan_literal(const int threadsafe, qio_channel_t* restrict ch,
       len = 0;
     } else {
       nread = min_nonspace;
-      len = max_nonspace + 1; 
+      len = max_nonspace + 1;
     }
   }
 
@@ -749,7 +799,18 @@ unlock:
   return err;
 }
 
+err_t qio_channel_scan_literal_2(const int threadsafe, qio_channel_t* ch, void* match, ssize_t len, int skipws)
+{
+  return qio_channel_scan_literal(threadsafe, ch, (const char*) match, len, skipws);
+}
+
+
 err_t qio_channel_print_literal(const int threadsafe, qio_channel_t* restrict ch, const char* restrict ptr, ssize_t len)
+{
+  return qio_channel_write_amt(threadsafe, ch, ptr, len);
+}
+
+err_t qio_channel_print_literal_2(const int threadsafe, qio_channel_t* ch, void* ptr, ssize_t len)
 {
   return qio_channel_write_amt(threadsafe, ch, ptr, len);
 }
@@ -809,11 +870,15 @@ err_t qio_channel_write_string(const int threadsafe, const int byteorder, const 
       break;
     default:
       if( str_style >= 0 ) {
+        // MPF - perhaps we should allow writing a string
+        // of a different length; we could zero-pad after,
+        // and truncate it if it's too long?
+
         // Verify that the length matches.
         if( len != str_style ) err = EOVERFLOW;
         else err = 0;
       } else {
-        // We're going to write a padding character.
+        // We're going to write a terminating character.
         use_term = 1;
         term = (-str_style) - 0x0100;
         err = 0;
@@ -854,17 +919,164 @@ unlock:
 #define MB_LEN_MAX_OR_6 MB_LEN_MAX
 #endif
 
+#define JSON_ESC_MAX (2*MB_LEN_MAX_OR_6+1)
+
+static inline
+char _qio_tohex(unsigned char i)
+{
+  if( i < 10 ) return '0' + i;
+  else return 'A' + i - 10;
+}
+
+// Returns \" or \x00 or \uXXXX etc depending on string style
+// returns negative or 0 on error.
+// Or returns number of bytes of UTF-8 characters printed in tmp
+//  and can return number of characters/columns printed
+// tmp must have room for JSON_ESC_MAX
+static
+int _qio_chr_escape(int32_t chr, int32_t string_end, int string_format, char* tmp, int *width_chars_out, int *width_cols_out)
+{
+  int32_t tmpchr;
+  int i = 0;
+  int clen = 0;
+  err_t err;
+  int width_chars = 0;
+  int width_cols = 0;
+  int cwidth;
+ 
+#define WRITEC(c) { \
+    width_chars++; \
+    if( width_cols_out ) { \
+      cwidth = wcwidth(c); \
+      if( cwidth < 0 ) { \
+        cwidth = 0; \
+      } \
+      width_cols += cwidth; \
+    } \
+    clen = qio_nbytes_char(c); \
+    if( tmp ) { \
+      err = qio_encode_char_buf(&tmp[i], c); \
+      if( err ) goto error; \
+    } \
+    i += clen; \
+  }
+
+  switch(string_format) {
+    case QIO_STRING_FORMAT_BASIC:
+      if( chr == string_end || chr == '\\' ) {
+        WRITEC('\\');
+        WRITEC(chr);
+      } else {
+        WRITEC(chr);
+      }
+      break;
+    case QIO_STRING_FORMAT_CHPL:
+      if( chr == string_end || chr == '\\' ||
+          chr == '\'' || chr == '"' || chr == '\n' ) {
+        WRITEC('\\');
+        if( chr == '\n' ) {
+          tmpchr = 'n';
+        } else {
+          tmpchr = chr;
+        }
+        WRITEC(tmpchr);
+      } else if( !iswprint(chr) ) {
+        char buf[JSON_ESC_MAX];
+        int buflen;
+        int j;
+        int x;
+        // convert each of the bytes into \x00 escaped things.
+        buflen = qio_nbytes_char(chr);
+        err = qio_encode_char_buf(buf, chr);
+        if( err ) goto error;
+
+        // Now, print out each byte escaped.
+        for( j = 0; j < buflen; j++ ) {
+          x = buf[j];
+          WRITEC('\\');
+          WRITEC('x');
+          WRITEC(_qio_tohex((x >> 4) & 0xf));
+          WRITEC(_qio_tohex((x >> 0) & 0xf));
+        }
+      } else {
+        WRITEC(chr);
+      }
+      break;
+    case QIO_STRING_FORMAT_JSON:
+      if( chr == string_end || chr == '\\' ||
+          chr == '"' || chr == '\n' ) {
+        WRITEC('\\');
+        if( chr == '\n' ) {
+          tmpchr = 'n';
+        } else {
+          tmpchr = chr;
+        }
+        WRITEC(tmpchr);
+      } else if( !iswprint(chr) ) {
+        // write it as \uXXXX 4 hex digits.
+        // If it is a code point >= 0x10000, it needs to be
+        // encoded as a surrogate pair in \u....
+        if( chr < 0x10000 ) {
+          WRITEC('\\');
+          WRITEC('u');
+          WRITEC(_qio_tohex((chr >> 12) & 0xf));
+          WRITEC(_qio_tohex((chr >>  8) & 0xf));
+          WRITEC(_qio_tohex((chr >>  4) & 0xf));
+          WRITEC(_qio_tohex((chr >>  0) & 0xf));
+        } else {
+          unsigned int code = (chr - 0x10000) & 0xFFFFF;
+          unsigned int lead = (0xD800 + (code >> 10)) & 0xFFFF; 
+          unsigned int trail = (0xDC00 + (code & 0x3FF)) & 0xFFFF;
+          WRITEC('\\');
+          WRITEC('u');
+          WRITEC(_qio_tohex((lead >> 12) & 0xf));
+          WRITEC(_qio_tohex((lead >>  8) & 0xf));
+          WRITEC(_qio_tohex((lead >>  4) & 0xf));
+          WRITEC(_qio_tohex((lead >>  0) & 0xf));
+          WRITEC('\\');
+          WRITEC('u');
+          WRITEC(_qio_tohex((trail >> 12) & 0xf));
+          WRITEC(_qio_tohex((trail >>  8) & 0xf));
+          WRITEC(_qio_tohex((trail >>  4) & 0xf));
+          WRITEC(_qio_tohex((trail >>  0) & 0xf));
+        }
+      } else {
+        WRITEC(chr);
+      }
+      break;
+    default:
+      WRITEC(chr);
+  }
+
+  if( width_chars_out ) *width_chars_out = width_chars;
+  if( width_cols_out ) *width_cols_out = width_cols;
+  return i;
+
+error:
+  if( width_chars_out ) *width_chars_out = -1;
+  if( width_cols_out ) *width_cols_out = -1;
+  return -1;
+
+#undef WRITEC
+}
+
 err_t qio_channel_print_string(const int threadsafe, qio_channel_t* restrict ch, const char* restrict ptr, ssize_t len)
 {
   err_t err;
-  ssize_t i, j;
+  ssize_t i;
   int clen = 1;
   int32_t chr;
   qio_style_t* style;
-  char tmp[MB_LEN_MAX_OR_6+1];
+  char tmp[JSON_ESC_MAX];
   int tmplen;
-  char tmpch_hi, tmpch_lo;
-  int32_t tmpchr;
+  ssize_t width = 0;
+  qio_truncate_info_t ti;
+  ssize_t use_len;
+  int overfull = 0;
+  ti.max_columns = SSIZE_MAX;
+  ti.max_chars = SSIZE_MAX;
+  ti.max_bytes = SSIZE_MAX;
+  ti.ret_bytes = -1;
 
   if( qio_glocale_utf8 == 0 ) {
     qio_set_glocale();
@@ -880,10 +1092,43 @@ err_t qio_channel_print_string(const int threadsafe, qio_channel_t* restrict ch,
   err = qio_channel_mark(false, ch);
   if( err ) goto unlock;
 
+  if( style->max_width_columns != UINT32_MAX )
+    ti.max_columns = style->max_width_columns;
+  if( style->max_width_characters != UINT32_MAX )
+    ti.max_chars = style->max_width_characters;
+
+  // Compute the size of the string, in case we have to
+  // do padding.
+  if( style->min_width_columns > 0 ||
+      style->max_width_columns != UINT32_MAX ||
+      style->max_width_characters != UINT32_MAX ) {
+
+    err = qio_quote_string_length(style->string_start, style->string_end, style->string_format, ptr, len, &ti);
+    use_len = ti.ret_truncated_at_byte;
+    overfull = ti.ret_truncated;
+    len = use_len;
+    if( ti.ret_columns >= 0 ) width = ti.ret_columns;
+    else if( ti.ret_chars >= 0 ) width = ti.ret_chars;
+    else width = ti.ret_bytes;
+    if( width < 0 ) width = 0;
+
+    if( style->min_width_columns > 0 ) {
+      if( !style->leftjustify && width < style->min_width_columns ) {
+        // Put what we need to for getting to the min_width.
+        for( i = 0; i < style->min_width_columns - width; i++ ) {
+          err = qio_channel_write_char(false, ch, style->pad_char);
+          if( err ) goto rewind;
+        }
+      }
+    }
+  }
+
+
   // write the string itself, possible with some escape-handling.
   if( style->string_format == QIO_STRING_FORMAT_WORD ||
       style->string_format == QIO_STRING_FORMAT_TOEND ) {
     // Do not interpret the string in any way... just write it.
+    if( ti.ret_bytes != -1 ) len = ti.ret_bytes;
     err = qio_channel_write_amt(false, ch, ptr, len);
     if( err ) goto rewind;
   } else {
@@ -896,104 +1141,38 @@ err_t qio_channel_print_string(const int threadsafe, qio_channel_t* restrict ch,
       err = qio_decode_char_buf(&chr, &clen, ptr + i, len - i);
       if( err ) goto rewind;
 
-      // handle escaping for the different formats.
-      switch (style->string_format) {
-        case QIO_STRING_FORMAT_BASIC:
-          if( chr == style->string_end || chr == '\\' ) {
-            err = qio_channel_write_char(false, ch, '\\');
-            if( err ) goto rewind;
-            err = qio_channel_write_char(false, ch, chr);
-            if( err ) goto rewind;
-          } else {
-            err = qio_channel_write_char(false, ch, chr);
-            if( err ) goto rewind;
-          }
-          break;
-        case QIO_STRING_FORMAT_CHPL:
-          if( chr == style->string_end || chr == '\\' || chr == '\'' || chr == '"' || chr == '\n' ) {
-            err = qio_channel_write_char(false, ch, '\\');
-            if( err ) goto rewind;
-            if( chr == '\n' ) {
-              tmpchr = 'n';
-            } else {
-              tmpchr = chr;
-            }
-
-            err = qio_channel_write_char(false, ch, tmpchr);
-            if( err ) goto rewind;
-
-          } else if( !iswprint(chr) ) {
-            // convert each of the bytes into \x00 escaped things.
-            tmplen = qio_nbytes_char(chr);
-            err = qio_encode_char_buf(tmp, chr);
-            if( err ) goto rewind;
-
-            // Now, print out each byte escaped.
-            for( j = 0; j < tmplen; j++ ) {
-              tmpch_hi = (tmp[j] >> 4) & 0xf;
-              tmpch_lo = tmp[j] & 0xf;
-              if( tmpch_hi < 10 ) tmpch_hi = '0' + tmpch_hi;
-              else tmpch_hi = 'a' + tmpch_hi - 10;
-              if( tmpch_lo < 10 ) tmpch_lo = '0' + tmpch_lo;
-              else tmpch_lo = 'a' + tmpch_lo - 10;
-
-              err = qio_channel_write_char(false, ch, '\\');
-              if( err ) goto rewind;
-              err = qio_channel_write_char(false, ch, 'x');
-              if( err ) goto rewind;
-              err = qio_channel_write_char(false, ch, tmpch_hi);
-              if( err ) goto rewind;
-              err = qio_channel_write_char(false, ch, tmpch_lo);
-              if( err ) goto rewind;
-            }
-          } else {
-            err = qio_channel_write_char(false, ch, chr);
-            if( err ) goto rewind;
-          }
-          break;
-        case QIO_STRING_FORMAT_JSON:
-          if( chr == style->string_end || chr == '\\' || chr == '"' ||
-              chr == '\b' || chr == '\f' || chr == '\n' || chr == '\r' || chr == '\t' ) {
-
-            err = qio_channel_write_char(false, ch, '\\');
-            if( err ) goto rewind;
-
-            if( chr == '\b' ) {
-              tmpchr = 'b';
-            } else if( chr == '\f' ) {
-              tmpchr = 'f';
-            } else if( chr == '\n' ) {
-              tmpchr = 'n';
-            } else if( chr == '\r' ) {
-              tmpchr = 'r';
-            } else if( chr == '\t' ) {
-              tmpchr = 't';
-            } else {
-              tmpchr = chr;
-            }
-
-            err = qio_channel_write_char(false, ch, tmpchr);
-            if( err ) goto rewind;
-          } else if( !iswprint(chr) ) {
-            // write it as \uXXXX 4 hex digits.
-            tmplen = sprintf(tmp, "\\u%04x", (unsigned int) chr);
-            if( tmplen < 0 ) {
-              err = errno;
-              goto rewind;
-            }
-            err = qio_channel_write_amt(false, ch, tmp, tmplen);
-            if( err ) goto rewind;
-          } else {
-            err = qio_channel_write_char(false, ch, chr);
-            if( err ) goto rewind;
-          }
-          break;
+      tmplen = _qio_chr_escape(chr, style->string_end, style->string_format, tmp, NULL, NULL);
+      if( tmplen < 0 ) {
+        err = EFORMAT;
+        goto rewind;
       }
+
+      err = qio_channel_write_amt(false, ch, tmp, tmplen);
+      if( err ) goto rewind;
     }
 
     // Write string_end.
     err = qio_channel_write_char(false, ch, style->string_end);
     if( err ) goto rewind;
+
+    if( overfull ) {
+      err = qio_channel_write_char(false, ch, '.');
+      if( err ) goto rewind;
+      err = qio_channel_write_char(false, ch, '.');
+      if( err ) goto rewind;
+      err = qio_channel_write_char(false, ch, '.');
+      if( err ) goto rewind;
+    }
+  }
+
+  if( style->min_width_columns > 0 ) {
+    if( style->leftjustify && width < style->min_width_columns ) {
+      // Put what we need to for getting to the min_width.
+      for( i = 0; i < style->min_width_columns - width; i++ ) {
+        err = qio_channel_write_char(false, ch, style->pad_char);
+        if( err ) goto rewind;
+      }
+    }
   }
 
   err = 0;
@@ -1013,145 +1192,208 @@ unlock:
   return err;
 }
 
-err_t qio_quote_string(uint8_t string_start, uint8_t string_end, uint8_t string_format, const char* restrict ptr, ssize_t len, const char** restrict out)
+// Returns length information for how we would quote ptr
+// without actually saving it anywhere. 
+err_t qio_quote_string_length(uint8_t string_start, uint8_t string_end, uint8_t string_format, const char* restrict ptr, ssize_t len, qio_truncate_info_t* ti)
+{
+  err_t err;
+  ssize_t i; // how far along the input are we (ie ptr[i])
+  ssize_t quoted_bytes = 0; // how many bytes of output?
+  ssize_t quoted_chars = 0; // how many chars of output?
+  ssize_t quoted_cols = 0; // how many columns of output?
+  ssize_t safe_i = 0;
+  ssize_t safe_quoted_bytes = 0;
+  ssize_t safe_quoted_chars = 0;
+  ssize_t safe_quoted_cols = 0;
+  int elipses_size;
+  int end_quote_size;
+  int start_quote_size;
+  int clen = 1;
+  int32_t chr;
+  int get_width = 1;
+  ssize_t max_cols = (ti)?(ti->max_columns):(SSIZE_MAX);
+  ssize_t max_chars = (ti)?(ti->max_chars):(SSIZE_MAX);
+  ssize_t max_bytes = (ti)?(ti->max_bytes):(SSIZE_MAX);
+  int overfull = 0;
+  int tmplen, tmpchars, tmpcols;
+
+  // write the string itself, possible with some escape-handling.
+  if( string_format == QIO_STRING_FORMAT_WORD ||
+      string_format == QIO_STRING_FORMAT_TOEND ) {
+    elipses_size = 0;
+    end_quote_size = 0;
+    start_quote_size = 0;
+  } else {
+    elipses_size = 3; // ie ...
+    end_quote_size = 1; // ie a double quote
+    start_quote_size = 1;
+    // Smallest pattern is ""...
+    if( max_cols < 5 ) max_cols = 5;
+    if( max_chars < 5 ) max_chars = 5;
+    if( max_bytes < 5 ) max_bytes = 5;
+  }
+
+  // Account for the starting quote.
+  quoted_bytes += start_quote_size;
+  quoted_chars += start_quote_size;
+  quoted_cols += start_quote_size;
+
+  // we need to compute the number of characters
+  // and the total number of columns.
+  for( i = 0; i < len; i+=clen ) {
+    err = qio_decode_char_buf(&chr, &clen, ptr + i, len - i);
+    if( err ) {
+      err = 0;
+      get_width = 0;
+    }
+    tmplen = _qio_chr_escape(chr, string_end, string_format, NULL,
+                             &tmpchars, &tmpcols);
+    if( tmplen < 0 ) {
+      err = EFORMAT;
+      goto error;
+    }
+    if( quoted_bytes + elipses_size + end_quote_size <= max_bytes &&
+        quoted_chars + elipses_size + end_quote_size <= max_chars &&
+        quoted_cols + elipses_size + end_quote_size <= max_cols) {
+      safe_i = i;
+      safe_quoted_bytes = quoted_bytes;
+      safe_quoted_chars = quoted_chars;
+      safe_quoted_cols = quoted_cols;
+    }
+    quoted_bytes += tmplen;
+    quoted_chars += tmpchars;
+    quoted_cols += tmpcols;
+    if( quoted_bytes + end_quote_size > max_bytes ||
+        quoted_chars + end_quote_size > max_chars ||
+        quoted_cols + end_quote_size > max_cols ) {
+      // We have over-filled.
+      overfull = 1;
+      break;
+    }
+  }
+
+  if( overfull ) {
+    i = safe_i;
+    // and add end quote and elipses.
+    quoted_bytes = safe_quoted_bytes;
+    quoted_chars = safe_quoted_chars;
+    quoted_cols = safe_quoted_cols;
+  }
+
+  // Account for the end quote
+  quoted_bytes += end_quote_size;
+  quoted_chars += end_quote_size;
+  quoted_cols += end_quote_size;
+
+  if( overfull ) {
+    // Account for the elipses
+    quoted_bytes += elipses_size;
+    quoted_chars += elipses_size;
+    quoted_cols += elipses_size;
+  }
+
+  ti->ret_columns = quoted_cols;
+  ti->ret_chars = quoted_chars;
+  ti->ret_bytes = quoted_bytes;
+  ti->ret_truncated_at_byte = i;
+  ti->ret_truncated = overfull;
+  return 0;
+error:
+  ti->ret_columns = -1;
+  ti->ret_chars = -1;
+  ti->ret_bytes = -1;
+  ti->ret_truncated_at_byte = -1;
+  ti->ret_truncated = -1;
+  return err;
+}
+
+
+err_t qio_quote_string(uint8_t string_start, uint8_t string_end, uint8_t string_format, const char* restrict ptr, ssize_t len, const char** out, qio_truncate_info_t* ti_arg)
 {
   err_t err;
   ssize_t i;
-  int j;
-  int clen = 1;
+  ssize_t ilen;
+  ssize_t q;
   int32_t chr;
-  char tmp[MB_LEN_MAX_OR_6+1];
+  int clen;
+  char* ret;
   int tmplen;
-  char tmpch_hi, tmpch_lo;
-  int32_t tmpchr;
-  ssize_t quoted_len = 0;
-  ssize_t q = 0;
-  int clenout = 0;
-  int pass = 0;
-  char* ret = NULL;
+  qio_truncate_info_t ti;
 
-#define WRITEC(ch) { \
-    clenout = qio_nbytes_char(ch); \
-    if( pass ) qio_encode_char_buf(&ret[q], ch); \
-    q += clenout; \
+  ti.max_columns = (ti_arg)?(ti_arg->max_columns):(SSIZE_MAX);
+  ti.max_chars = (ti_arg)?(ti_arg->max_chars):(SSIZE_MAX);
+  ti.max_bytes = (ti_arg)?(ti_arg->max_bytes):(SSIZE_MAX);
+ 
+  // Figure out the how big the string will be
+  err = qio_quote_string_length(string_start, string_end, string_format, ptr, len, &ti);
+  if( err ) return err;
+
+  // If we are returning ti info, copy it out.
+  if( ti_arg ) {
+    *ti_arg = ti;
   }
 
-  for( pass = 0; pass < 2; pass++ ) {
-    if( pass ) {
-      quoted_len = q;
-      q = 0;
-      // allocate quoted_len memory at the start of pass 1.
-      ret = qio_malloc(quoted_len + 1); // room for \0.
-      if( !ret ) {
-        err = ENOMEM;
-        goto error;
-      }
-      ret[quoted_len] = '\0';
+  // If we don't have to return the string... stop now.
+  if( ! out ) return 0;
+
+  // Now, allocate a string of the right size
+  ret = qio_malloc(ti.ret_bytes + 1); // room for \0.
+  if( !ret ) {
+    return ENOMEM;
+  }
+
+  // Now, copy while escaping.
+  ret[ti.ret_bytes] = '\0';
+
+  q = 0;
+  ilen = ti.ret_truncated_at_byte;
+
+#define WRITEC(c) { \
+    clen = qio_nbytes_char(c); \
+    qio_encode_char_buf(&ret[q], c); \
+    q += clen; \
+  }
+
+  if( string_format == QIO_STRING_FORMAT_WORD ||
+      string_format == QIO_STRING_FORMAT_TOEND ) {
+    // No string start
+  } else {
+    // Write string_start.
+    WRITEC(string_start);
+  }
+
+  for( i = 0; i < ilen; i+=clen ) {
+    // Write the string while translating it.
+    err = qio_decode_char_buf(&chr, &clen, ptr + i, len - i);
+    if( err ) goto error;
+
+    // handle escaping for the different formats.
+    tmplen = _qio_chr_escape(chr,string_end,string_format,&ret[q], NULL, NULL);
+    if( tmplen < 0 ) {
+      err = EFORMAT;
+      goto error;
     }
-    // write the string itself, possible with some escape-handling.
-    if( string_format == QIO_STRING_FORMAT_WORD ||
-        string_format == QIO_STRING_FORMAT_TOEND ) {
-      if( pass ) memcpy(ret,ptr,len);
-      else quoted_len = len;
-    } else {
-      // Write string_start.
-      WRITEC(string_start);
+    q += tmplen;
+  }
 
-      // Write the string while translating it.
-      for( i = 0; i < len; i+=clen ) {
-        err = qio_decode_char_buf(&chr, &clen, ptr + i, len - i);
-        if( err ) goto error;
-
-        // handle escaping for the different formats.
-        switch (string_format) {
-          case QIO_STRING_FORMAT_BASIC:
-            if( chr == string_end || chr == '\\' ) {
-              WRITEC('\\');
-              WRITEC(chr);
-            } else {
-              WRITEC(chr);
-            }
-            break;
-          case QIO_STRING_FORMAT_CHPL:
-            if( chr == string_end || chr == '\\' || chr == '\'' || chr == '"' || chr == '\n' ) {
-              WRITEC('\\');
-              if( chr == '\n' ) {
-                tmpchr = 'n';
-              } else {
-                tmpchr = chr;
-              }
-
-              WRITEC(tmpchr);
-            } else if( !iswprint(chr) ) {
-              // convert each of the bytes into \x00 escaped things.
-              tmplen = qio_nbytes_char(chr);
-              err = qio_encode_char_buf(tmp, chr);
-              if( err ) goto error;
-
-              // Now, print out each byte escaped.
-              for( j = 0; j < tmplen; j++ ) {
-                tmpch_hi = (tmp[j] >> 4) & 0xf;
-                tmpch_lo = tmp[j] & 0xf;
-                if( tmpch_hi < 10 ) tmpch_hi = '0' + tmpch_hi;
-                else tmpch_hi = 'a' + tmpch_hi - 10;
-                if( tmpch_lo < 10 ) tmpch_lo = '0' + tmpch_lo;
-                else tmpch_lo = 'a' + tmpch_lo - 10;
-
-                WRITEC('\\');
-                WRITEC('x');
-                WRITEC(tmpch_hi);
-                WRITEC(tmpch_lo);
-              }
-            } else {
-              WRITEC(chr);
-            }
-            break;
-          case QIO_STRING_FORMAT_JSON:
-            if( chr == string_end || chr == '\\' || chr == '"' ||
-                chr == '\b' || chr == '\f' || chr == '\n' || chr == '\r' || chr == '\t' ) {
-
-              WRITEC('\\');
-
-              if( chr == '\b' ) {
-                tmpchr = 'b';
-              } else if( chr == '\f' ) {
-                tmpchr = 'f';
-              } else if( chr == '\n' ) {
-                tmpchr = 'n';
-              } else if( chr == '\r' ) {
-                tmpchr = 'r';
-              } else if( chr == '\t' ) {
-                tmpchr = 't';
-              } else {
-                tmpchr = chr;
-              }
-
-              WRITEC(tmpchr);
-            } else if( !iswprint(chr) ) {
-              // write it as \uXXXX 4 hex digits.
-              tmplen = sprintf(tmp, "\\u%04x", (unsigned int) chr);
-              if( tmplen < 0 ) {
-                err = errno;
-                goto error;
-              }
-              for( int k = 0; k < tmplen; k++ ) {
-                WRITEC(tmp[k]);
-              }
-            } else {
-              WRITEC(chr);
-            }
-            break;
-        }
-      }
-
-      WRITEC(string_end);
+  if( string_format == QIO_STRING_FORMAT_WORD ||
+      string_format == QIO_STRING_FORMAT_TOEND ) {
+    // No string end
+  } else {
+    // Write string_end.
+    WRITEC(string_end);
+    if( ti.ret_truncated ) {
+      WRITEC('.');
+      WRITEC('.');
+      WRITEC('.');
     }
   }
-  *out = ret;
+
+  if( out ) *out = ret;
   return 0;
 error:
   qio_free(ret);
-  *out = NULL;
+  if( out ) *out = NULL;
   return err;
 #undef WRITEC
 }
@@ -1160,7 +1402,7 @@ const char* qio_quote_string_chpl(const char* ptr, ssize_t len)
 {
   const char* ret = NULL;
   err_t err;
-  err = qio_quote_string('"', '"', QIO_STRING_FORMAT_CHPL, ptr, len, &ret);
+  err = qio_quote_string('"', '"', QIO_STRING_FORMAT_CHPL, ptr, len, &ret, NULL);
   if( err || !ret ) return qio_strdup("<error>");
   return ret;
 }
@@ -1177,7 +1419,8 @@ typedef struct number_reading_state_s {
 
   char allow_base; // allow 0b or 0x when base == 2 or == 16 respectively
                    // (these are always allowed when base == 0)
-  char allow_sign;
+  char allow_pos_sign;
+  char allow_neg_sign;
   char positive_char; // normally '+'
   char negative_char; // normally '-'
 
@@ -1260,9 +1503,9 @@ err_t _peek_number_unlocked(qio_channel_t* restrict ch, number_reading_state_t* 
   // At end of loop, chr is non-whitespace.
 
   // Next, read + or -.
-  if( s->allow_sign && chr == s->positive_char ) {
+  if( s->allow_pos_sign && chr == s->positive_char ) {
     s->sign = 1;
-  } else if( s->allow_sign && chr == s->negative_char ) {
+  } else if( s->allow_neg_sign && chr == s->negative_char ) {
     s->sign = -1;
   } else {
     s->sign = 0;
@@ -1380,16 +1623,16 @@ error:
 
 err_t qio_channel_scan_int(const int threadsafe, qio_channel_t* restrict ch, void* restrict out, size_t len, int issigned)
 {
-  unsigned long long int num;
+  unsigned long long int num = 0;
   long long int signed_num;
-  int sign;
+  int sign = 1;
   ssize_t signed_len;
   number_reading_state_t st;
   int64_t amount;
   int64_t start;
   char* end;
   char* buf = NULL;
-  int buf_onstack = 0;
+  MAYBE_STACK_SPACE(char, buf_onstack);
   err_t err;
   qio_style_t* style;
 
@@ -1407,7 +1650,8 @@ err_t qio_channel_scan_int(const int threadsafe, qio_channel_t* restrict ch, voi
 
   st.base = style->base;
   st.allow_base = style->prefix_base;
-  st.allow_sign = issigned;
+  st.allow_pos_sign = style->showplus == 1;
+  st.allow_neg_sign = issigned;
   st.positive_char = tolower(style->positive_char);
   st.negative_char = tolower(style->negative_char);
 
@@ -1415,7 +1659,7 @@ err_t qio_channel_scan_int(const int threadsafe, qio_channel_t* restrict ch, voi
   if( err == EEOF && st.end > 0 ) err = 0; // we tolerate EOF if there's data.
   if( err ) goto error;
 
-  MAYBE_STACK_ALLOC(amount + 1, buf, buf_onstack);
+  MAYBE_STACK_ALLOC(char, amount + 1, buf, buf_onstack);
   if( ! buf ) {
     err = ENOMEM;
     goto error;
@@ -1454,6 +1698,9 @@ err_t qio_channel_scan_int(const int threadsafe, qio_channel_t* restrict ch, voi
   // success!
   err = 0;
 
+error:
+  if( err != 0 ) num = 0;
+
   // now return the number.
   signed_len = len;
   if( issigned ) signed_len = - signed_len;
@@ -1461,7 +1708,6 @@ err_t qio_channel_scan_int(const int threadsafe, qio_channel_t* restrict ch, voi
   signed_num = num;
   if( sign < 0 ) signed_num = - num;
 
-  err = 0;
   switch( signed_len ) {
     case -1:
       *(int8_t*) out = signed_num;
@@ -1499,7 +1745,6 @@ err_t qio_channel_scan_int(const int threadsafe, qio_channel_t* restrict ch, voi
       err = EINVAL;
   }
 
-error:
   MAYBE_STACK_FREE(buf, buf_onstack);
 
   _qio_channel_set_error_unlocked(ch, err);
@@ -1512,13 +1757,13 @@ error:
 
 err_t qio_channel_scan_float(const int threadsafe, qio_channel_t* restrict ch, void* restrict out, size_t len)
 {
-  double num;
+  double num = 0.0;
   number_reading_state_t st;
   int64_t amount;
   int64_t start;
   char* end_conv;
   char* buf = NULL;
-  int buf_onstack = 0;
+  MAYBE_STACK_SPACE(char, buf_onstack);
   ssize_t i;
   ssize_t digits_start;
   ssize_t point;
@@ -1540,7 +1785,8 @@ err_t qio_channel_scan_float(const int threadsafe, qio_channel_t* restrict ch, v
 
   st.base = style->base;
   st.allow_base = style->prefix_base;
-  st.allow_sign = 1;
+  st.allow_pos_sign = 1; // could check style->showplus == 1 also
+  st.allow_neg_sign = 1;
   st.positive_char = tolower(style->positive_char);
   st.negative_char = tolower(style->negative_char);
   st.allow_real = 1;
@@ -1554,7 +1800,7 @@ err_t qio_channel_scan_float(const int threadsafe, qio_channel_t* restrict ch, v
 
   //printf("got amount %lli\n", (long long int) amount);
 
-  MAYBE_STACK_ALLOC(amount + 4, buf, buf_onstack);
+  MAYBE_STACK_ALLOC(char, amount + 4, buf, buf_onstack);
   if( ! buf ) {
     err = ENOMEM;
     goto error;
@@ -1646,6 +1892,10 @@ err_t qio_channel_scan_float(const int threadsafe, qio_channel_t* restrict ch, v
   }
 
   err = 0;
+
+error:
+  if( err ) num = 0;
+
   switch ( len ) {
     case 8:
       *(double*) out = num;
@@ -1657,7 +1907,6 @@ err_t qio_channel_scan_float(const int threadsafe, qio_channel_t* restrict ch, v
       err = EINVAL;
   }
 
-error:
   MAYBE_STACK_FREE(buf, buf_onstack);
 
   _qio_channel_set_error_unlocked(ch, err);
@@ -1709,14 +1958,14 @@ int _ltoa(char* restrict dst, size_t size, uint64_t num, int isnegative,
 
   // We might not have room...
   ret_width = width;
-  if( ret_width < style->min_width ) ret_width = style->min_width;
+  if( ret_width < style->min_width_columns ) ret_width = style->min_width_columns;
   if( ret_width >= size ) return ret_width;
 
   i = 0;
 
-  if( !style->leftjustify && width < style->min_width && style->pad_char != '0' ) {
+  if( !style->leftjustify && width < style->min_width_columns && style->pad_char != '0' ) {
     // Put what we need to for getting to the min_width.
-    for( ; i < style->min_width - width; i++ ) {
+    for( ; i < style->min_width_columns - width; i++ ) {
       dst[i] = style->pad_char;
     }
   }
@@ -1725,17 +1974,20 @@ int _ltoa(char* restrict dst, size_t size, uint64_t num, int isnegative,
     char pluschar = (style->showplus==2)?style->pad_char:style->positive_char;
     // put the '+' or '-' sign.
     dst[i++] = isnegative?style->negative_char:pluschar;
+    width--;
   }
   if( style->prefix_base && base != 10 ) {
     dst[i++] = '0';
+    width--;
     if( base == 2 ) b = style->uppercase?'B':'b';
     else if( base == 16 ) b = style->uppercase?'X':'x';
     dst[i++] = b;
+    width--;
   }
 
-  if( !style->leftjustify && width < style->min_width && style->pad_char == '0' ) {
+  if( !style->leftjustify && width < style->min_width_columns && style->pad_char == '0' ) {
     // Put what we need to for getting to the min_width.
-    for( ; i < style->min_width - width; i++ ) {
+    for( ; i < style->min_width_columns - width; i++ ) {
       dst[i] = '0';
     }
   }
@@ -1751,9 +2003,9 @@ int _ltoa(char* restrict dst, size_t size, uint64_t num, int isnegative,
   }
 
   // Now if we're left justified we might need padding.
-  if( style->leftjustify && width < style->min_width) {
+  if( style->leftjustify && width < style->min_width_columns) {
     // Put what we need to for getting to the min_width.
-    for( ; i < style->min_width; i++ ) {
+    for( ; i < style->min_width_columns; i++ ) {
       dst[i] = style->pad_char;
     }
   }
@@ -1769,19 +2021,20 @@ int _ftoa(char* restrict dst, size_t size, double num, int base, const qio_style
 {
   int buf_sz = 32;
   char* buf = NULL;
-  int buf_onstack = 0;
+  MAYBE_STACK_SPACE(char, buf_onstack);
   int buf_len;
   int got=0;
   int width;
   int isnegative;
   int shownegative;
   int ret_width;
-  int i;
-  int precision, sigdigits;
+  int i,j;
+  int precision;
   int adjust_width;
 
   if( signbit(num) ) {
-    num = - num;
+    //num = - num;
+    num = copysign(num, 1.0);
     isnegative = 1;
   } else {
     isnegative = 0;
@@ -1794,7 +2047,6 @@ int _ftoa(char* restrict dst, size_t size, double num, int base, const qio_style
   }
 
   precision = style->precision;
-  sigdigits = style->significant_digits;
 
   adjust_width = 0;
   if( style->showplus || shownegative ) adjust_width++;
@@ -1803,13 +2055,13 @@ int _ftoa(char* restrict dst, size_t size, double num, int base, const qio_style
   }
 
   while( 1 ) {
-    MAYBE_STACK_ALLOC(buf_sz, buf, buf_onstack);
+    MAYBE_STACK_ALLOC(char, buf_sz, buf, buf_onstack);
     if( ! buf ) {
       return -1;
     }
 
-    //printf("Printing with base %i type %i precision %i sig %i upper %i showp %i\n",
-    //       style->base, style->realfmt, precision, sigdigits, style->uppercase, style->showpoint);
+    //printf("Printing with base %i type %i precision %i upper %i showp %i\n",
+    //       style->base, style->realfmt, precision, style->uppercase, style->showpoint);
 
     // Figure out how big our output is...
     if( style->base == 16 ) {
@@ -1839,7 +2091,7 @@ int _ftoa(char* restrict dst, size_t size, double num, int base, const qio_style
         }
       }
     } else if( style->realfmt == 0 ) {
-      if( sigdigits < 0 ) {
+      if( precision < 0 ) {
         if( style->uppercase ) {
           if( style->showpoint )
             got = snprintf(buf, buf_sz, "%#G", num);
@@ -1854,14 +2106,14 @@ int _ftoa(char* restrict dst, size_t size, double num, int base, const qio_style
       } else {
         if( style->uppercase ) {
           if( style->showpoint )
-            got = snprintf(buf, buf_sz, "%#.*G", sigdigits, num);
+            got = snprintf(buf, buf_sz, "%#.*G", precision, num);
           else
-            got = snprintf(buf, buf_sz, "%.*G", sigdigits, num);
+            got = snprintf(buf, buf_sz, "%.*G", precision, num);
         } else {
           if( style->showpoint )
-            got = snprintf(buf, buf_sz, "%#.*g", sigdigits, num);
+            got = snprintf(buf, buf_sz, "%#.*g", precision, num);
           else
-            got = snprintf(buf, buf_sz, "%.*g", sigdigits, num);
+            got = snprintf(buf, buf_sz, "%.*g", precision, num);
         }
       }
     } else if( style->realfmt == 1 ) {
@@ -1966,10 +2218,9 @@ int _ftoa(char* restrict dst, size_t size, double num, int base, const qio_style
       // Get a bigger buffer.
       MAYBE_STACK_FREE(buf, buf_onstack);
       buf = NULL;
-      buf_onstack = 0;
       // We might not have room...
       ret_width = got + adjust_width;
-      if( ret_width < style->min_width ) ret_width = style->min_width;
+      if( ret_width < style->min_width_columns ) ret_width = style->min_width_columns;
       if( ret_width >= size ) return ret_width;
       buf_sz = got + 1;
     }
@@ -1980,7 +2231,7 @@ int _ftoa(char* restrict dst, size_t size, double num, int base, const qio_style
 
   // We might not have room...
   ret_width = got + adjust_width;
-  if( ret_width < style->min_width ) ret_width = style->min_width;
+  if( ret_width < style->min_width_columns ) ret_width = style->min_width_columns;
   if( ret_width >= size ) {
     MAYBE_STACK_FREE(buf, buf_onstack);
     return ret_width;
@@ -1989,14 +2240,19 @@ int _ftoa(char* restrict dst, size_t size, double num, int base, const qio_style
   //printf("Got '%s' from sprintf\n", buf);
 
   i = 0;
+  j = 0;
 
   width = got + adjust_width;
 
-  if( !style->prefix_base && base != 10 ) i += 2;
+  if( !style->prefix_base && base != 10 ) {
+    // Skip the first 2 characters of buf
+    j += 2;
+    buf_len -= 2;
+  }
 
-  if( !style->leftjustify && width < style->min_width && style->pad_char != '0' ) {
+  if( !style->leftjustify && width < style->min_width_columns && style->pad_char != '0' ) {
     // Put what we need to for getting to the min_width.
-    for( ; i < style->min_width - width; i++ ) {
+    for( ; i < style->min_width_columns - width; i++ ) {
       dst[i] = style->pad_char;
     }
   }
@@ -2005,24 +2261,25 @@ int _ftoa(char* restrict dst, size_t size, double num, int base, const qio_style
     char pluschar = (style->showplus==2)?style->pad_char:style->positive_char;
     // put the '+' or '-' sign.
     dst[i++] = isnegative?style->negative_char:pluschar;
+    width--;
   }
   // 0x is already there if we're putting it.
 
-  if( !style->leftjustify && width < style->min_width && style->pad_char == '0' ) {
+  if( !style->leftjustify && width < style->min_width_columns && style->pad_char == '0' ) {
     // Put what we need to for getting to the min_width.
-    for( ; i < style->min_width - width; i++ ) {
+    for( ; i < style->min_width_columns - width; i++ ) {
       dst[i] = '0';
     }
   }
 
   // now output the digits
-  memcpy(dst + i, buf, buf_len);
+  memcpy(dst + i, buf + j, buf_len);
   i += buf_len;
 
   // Now if we're left justified we might need padding.
-  if( style->leftjustify && width < style->min_width) {
+  if( style->leftjustify && width < style->min_width_columns) {
     // Put what we need to for getting to the min_width.
-    for( ; i < style->min_width; i++ ) {
+    for( ; i < style->min_width_columns; i++ ) {
       dst[i] = style->pad_char;
     }
   }
@@ -2045,7 +2302,7 @@ err_t qio_channel_print_int(const int threadsafe, qio_channel_t* restrict ch, co
   int signed_len;
   int base;
   char* tmp = NULL;
-  int tmp_onstack = 0;
+  MAYBE_STACK_SPACE(char, tmp_onstack);
   int got;
   err_t err;
   qio_style_t* style;
@@ -2059,7 +2316,7 @@ err_t qio_channel_print_int(const int threadsafe, qio_channel_t* restrict ch, co
 
   style = &ch->style;
 
-  if( style->min_width + 1 > max ) max = style->min_width + 1;
+  if( style->min_width_columns + 1 > max ) max = style->min_width_columns + 1;
 
   base = style->base;
   if( base == 0 ) base = 10;
@@ -2133,7 +2390,7 @@ err_t qio_channel_print_int(const int threadsafe, qio_channel_t* restrict ch, co
   while( 1 ) {
     // Store it in a tempory variable and then
     // copy that in to the buffer.
-    MAYBE_STACK_ALLOC(max, tmp, tmp_onstack);
+    MAYBE_STACK_ALLOC(char, max, tmp, tmp_onstack);
     if( ! tmp ) {
       err = ENOMEM;
       goto error;
@@ -2152,7 +2409,6 @@ err_t qio_channel_print_int(const int threadsafe, qio_channel_t* restrict ch, co
       // Not enough room... try again. 
       MAYBE_STACK_FREE(tmp, tmp_onstack);
       tmp = NULL;
-      tmp_onstack = 0;
       max = got + 1;
     }
   }
@@ -2173,7 +2429,7 @@ err_t qio_channel_print_float(const int threadsafe, qio_channel_t* restrict ch, 
 {
   int max = 3 + DBL_MANT_DIG - DBL_MIN_EXP + 1 + 10; // +10=a little extra room
   char* buf = NULL;
-  int buf_onstack = 0;
+  MAYBE_STACK_SPACE(char, buf_onstack);
   int got;
   int base;
   err_t err;
@@ -2229,7 +2485,7 @@ err_t qio_channel_print_float(const int threadsafe, qio_channel_t* restrict ch, 
   while( 1 ) {
     // Store it in a tempory variable and then
     // copy that in to the buffer.
-    MAYBE_STACK_ALLOC(max, buf, buf_onstack);
+    MAYBE_STACK_ALLOC(char, max, buf, buf_onstack);
     if( ! buf ) {
       err = ENOMEM;
       goto error;
@@ -2247,7 +2503,6 @@ err_t qio_channel_print_float(const int threadsafe, qio_channel_t* restrict ch, 
       // Not enough room... try again. 
       MAYBE_STACK_FREE(buf, buf_onstack);
       buf = NULL;
-      buf_onstack = 0;
       max = got + 1;
     }
   }
@@ -2365,6 +2620,7 @@ err_t qio_channel_scan_complex(const int threadsafe, qio_channel_t* restrict ch,
       if( err ) goto rewind;
 
       // Read the 'i'
+      //err = _getc_after_whitespace(ch, &chr); -- this would allow space before the i
       err = qio_channel_read_char(false, ch, &chr);
       if( err ) goto rewind;
       if( chr != 'i' ) {
@@ -2401,6 +2657,17 @@ err_t qio_channel_scan_complex(const int threadsafe, qio_channel_t* restrict ch,
 rewind:
   if( err ) {
     qio_channel_revert_unlocked(ch);
+    // Clear the number.
+    switch ( len ) {
+      case 8:
+        *(double*) re_out = 0;
+        *(double*) im_out = 0;
+        break;
+      case 4:
+        *(float*) re_out = 0;
+        *(float*) im_out = 0;
+        break;
+    }
   } else {
     qio_channel_commit_unlocked(ch);
   }
@@ -2413,22 +2680,47 @@ unlock:
   return err;
 }
 
-err_t qio_channel_skip_past_newline(const int threadsafe, qio_channel_t* restrict ch)
+err_t qio_channel_skip_past_newline(const int threadsafe, qio_channel_t* restrict ch, int skipOnlyWs)
 {
-  int32_t c;
+  int32_t c = 0;
   err_t err;
+  int needs_backup = 0;
+  int64_t lastpos;
 
   if( threadsafe ) {
     err = qio_lock(&ch->lock);
     if( err ) return err;
   }
 
+  if( skipOnlyWs ) {
+    err = qio_channel_mark(false, ch);
+    if( err ) goto unlock;
+  }
+
   while( 1 ) {
+    lastpos = qio_channel_offset_unlocked(ch);
     err = qio_channel_read_char(threadsafe, ch, &c);
     if( err  || c == '\n' ) break;
+    if( skipOnlyWs && ! iswspace(c) ) {
+      err = EFORMAT;
+      needs_backup = 1; // we have to unread this character.
+      break;
+    }
+  }
+
+  if( skipOnlyWs ) {
+    if( needs_backup ) {
+      // unread the not-newline not-whitespace.
+      qio_channel_revert_unlocked(ch);
+      qio_channel_advance_unlocked(ch, lastpos-qio_channel_offset_unlocked(ch));
+    } else {
+      // No need to unread anything.
+      qio_channel_commit_unlocked(ch);
+    }
   }
 
   _qio_channel_set_error_unlocked(ch, err);
+unlock:
   if( threadsafe ) {
     qio_unlock(&ch->lock);
   }
@@ -2830,375 +3122,6 @@ err_t _qio_channel_write_char_slow_unlocked(qio_channel_t* restrict ch, int32_t 
   return err;
 }
 
-/*
-void free_conv_spec(conv_spec_t* spec)
-{
-  qio_free(spec->allow_chars);
-  qio_free(spec->literal);
-  spec->allow_chars = NULL;
-  spec->literal = NULL;
-}
 
 
-// This could be changed to use tables, but the current version
-// favors simplicity&flexibility of implementation over speed.
-static const char* space = " \f\n\r\t\v";
-static const char* bin_num = "01";
-static const char* oct_num = "01234567";
-static const char* dec_num = "0123456789";
-static const char* lower_hex_num = "0123456789abcdef";
-static const char* upper_hex_num = "0123456789ABCDEF";
-static const char* hex_num = "0123456789ABCDEFabcdef";
-static const char* pound_conv = "#.";
-
-static inline int istype(char x, const char* allow)
-{
-  while( *allow ) {
-    if( *allow == x ) return 1;
-    allow++;
-  }
-  return 0;
-}
-
-static inline void init_conv(conv_spec_t* spec_out)
-{
-  memset(spec_out, 0, sizeof(conv_spec_t));
-
-  spec->min_width = 0;
-  spec->max_width = 0x7fffffffffffffffLL;
-  spec->pad_character = ' ';
-  spec->pad_on_right = 0;
-  spec->base = 10;
-  spec->radix_character = '.';
-  spec->uppercase_base = 0;
-  spec->uppercase_real = 0;
-  spec->print_int_precision = -1;
-  spec->print_radix_precision = -1;
-  spec->print_radix_precision = -1;
-  spec->print_exponent_precision = -1;
-  spec->store_base = 0;
-  spec->specifier = SP_SKIP;
-  spec->sign_type = 0;
-  spec->uppercase = 0;
-  spec->no_argument = 0;
-  spec->allow_chars = NULL;
-  spec->literal = NULL;
-}
-
-err_t build_conv(const char* fmt, ptrdiff_t* parsed_out, conv_spec_t* spec_out)
-{
-  ptrdiff_t i;
-  ptrdiff_t num_before, num_after;
-  char* endptr;
-  long int val;
-
-  memset(spec_out, 0, sizeof(conv_spec_t));
-
-  i = 0;
-
-  // do we have a ####.#### conversion to match?
-  if( fmt[i] == '#' ) {
-    // how many ### do we have before a . ?
-    for( ; fmt[i] == '#'; i++ ) ;
-    num_before = i;
-    num_after = 0;
-
-    if( fmt[i] == '.' ) {
-      i++; // pass '.'
-      for( ; fmt[i] == '#'; i++ ) ;
-      num_after = i - num_before - 1;
-    }
-
-    spec_out->specifier = SP_REAL;
-    spec_out->allow_chars = pound_conv;
-    spec_out->base = 10;
-    spec_out->print_int_precision = num_before;
-    spec_out->print_radix_precision = num_after;
-    *parsed_out = i;
-    return 0;
-  }
-
-  // do we have a % conversion to match?
-  if( fmt[i] == '%' ) {
-    i++; // pass %
-
-    if( fmt[i] == '%' ) {
-      spec_out->specifier = SP_LITERAL;
-      spec_out->literal_char = '%';
-      *parsed_out = i;
-      return 0;
-    }
-
-    if( fmt[i] == '#' && fmt[i+1] == '#' ) {
-      spec_out->specifier = SP_LITERAL;
-      spec_out->literal_char = '#';
-      *parsed_out = i;
-      return 0;
-    }
-
-    // Read some flags.
-    for( ; fmt[i]; i++ ) {
-      if( fmt[i] == '#' ) spec_out->store_base = 1;
-      else if( fmt[i] == '0' ) {
-        spec_out->pad_character = '0';
-      } else if( fmt[i] == '-' ) {
-        spec_out->pad_on_right = 1;
-      } else if( fmt[i] == ' ' ) {
-        spec_out->sign_type = 2;
-      } else if( fmt[i] == '+' ) {
-        spec_out->sign_type = 1;
-      } else {
-        break;
-      }
-    }
-    // 'a - overrides a 0 if both are given'
-    if( spec_out->pad_on_right ) spec_out->pad_character = ' ';
-
-    // OK, now fmt[i] is the start of the integer-width area.
-    val = strtol(&fmt[i], &endptr, 10);
-    if( endptr != &fmt[i] ) {
-      // advance past whatever number we got
-      i += endptr - &fmt[i];
-      if( val < 0 || val == LONG_MIN || val == LONG_MAX ) {
-        *parsed_out = i;
-        return EINVAL; // bad precision!
-      }
-      spec_out->print_int_precision = val;
-    }
-
-    if( fmt[i] == '.' ) {
-      i++; // pass '.'
-      // OK, now fmt[i] is the start of the radix-width area.
-      val = strtol(&fmt[i], &endptr, 10);
-      if( endptr != &fmt[i] ) {
-        // advance past whatever number we got
-        i += endptr - &fmt[i];
-        if( val < 0 || val == LONG_MIN || val == LONG_MAX ) {
-          *parsed_out = i;
-          return EINVAL; // bad precision!
-        }
-        spec_out->print_radix_precision = val;
-      }
-    }
-
-    // Now read a base modifier
-    spec_out->base = 10;
-    if( fmt[i] == 'b' ) {
-      i++;
-      spec_out->base = 2;
-    } else if( fmt[i] == 'o' ) {
-      i++;
-      spec_out->base = 8;
-    } else if( fmt[i] == 'd' ) {
-      i++;
-      spec_out->base = 10;
-    } else if( fmt[i] == 'x' ) {
-      i++;
-      spec_out->base = 16;
-    } else if( fmt[i] == 'X' ) {
-      i++;
-      spec_out->base = 16;
-      spec_out->uppercase_base = 1;
-    }
-
-    // now read a conversion specifier
-    if( fmt[i] == 'i' ) {
-      i++;
-      spec_out->store_base = 1;
-      spec_out->specifier = SP_INTEGER;
-    } else if( fmt[i] == 'g' ) {
-      i++;
-      spec_out->specifier = SP_REAL_G;
-    } else if( fmt[i] == 'G' ) {
-      i++;
-      spec_out->specifier = SP_REAL_G;
-      spec_out->uppercase_real = 1;
-    } else if( fmt[i] == 'e' ) {
-      i++;
-      spec_out->specifier = SP_REAL_E;
-    } else if( fmt[i] == 'E' ) {
-      i++;
-      spec_out->specifier = SP_REAL_E;
-      spec_out->uppercase_real = 1;
-    } else if( fmt[i] == 'f' ) {
-      i++;
-      spec_out->specifier = SP_REAL_F;
-    } else if( fmt[i] == 'F' ) {
-      i++;
-      spec_out->specifier = SP_REAL_F;
-      spec_out->uppercase_real = 1;
-    } else if( fmt[i] == 'c' ) {
-      spec_out->specifier = SP_CHAR;
-    } else if( fmt[i] == 's' ) {
-      if( spec_out->print_int_precision >= 0 ) {
-        spec_out->max_width = spec_out->print_int_precision;
-      }
-      spec_out->specifier = SP_STRING;
-    } else if( fmt[i] == '[' ) {
-      
-      // read the character set. TODO
-      return ENOSYS;
-
-      if( spec_out->print_int_precision >= 0 ) {
-        spec_out->max_width = spec_out->print_int_precision;
-      }
-      spec_out->specifier = SP_STRING;
-    }
-
-  }
-
-  // do we have any whitespace to match?
-  if( istype(fmt[i], space) ) {
-    // pass any whitespace characters.
-    for( ; fmt[i] && istype(space, fmt[i]); i++ ) ;
-
-    spec_out->specifier = SP_SKIP;
-    spec_out->allow_chars = space;
-    spec_out->no_argument = 1;
-    *parsed_out = i;
-    return 0;
-  }
-}
-
-
-err_t qio_vparse_int32(qio_channel_t* ch,
-                       conv_spec_t spec*,
-                       ptrdiff_t* amt_read, int32_t* ptr)
-{
-  // Figure out the length of the matching string.
-  ptrdiff_t m = match_length(spec, 
-}
-
-err_t qio_vparse_uint32(qio_channel_t* ch,
-                        conv_spec_t spec*,
-                        ptrdiff_t* amt_read, int32_t* ptr)
-{
-}
-
-
-err_t qio_vparse(const char threadsafe, qio_channel_t* ch,
-                 conv_spec_t spec*, ptrdiff_t nspec,
-                 ptrdiff_t* amt_read, va_list ap)
-{
-  err_t err;
-  err_t newerr;
-  void* start;
-  void* end;
-  int got;
-  char success = 0;
-
-
-  if( threadsafe ) {
-    err = qio_lock(&ch->lock);
-    if( err ) {
-      return err;
-    }
-  }
-
-  if( ch->type == QIO_CH_BUFFERED ) {
-    err = qio_channel_begin_peek_cached(0, ch, &start, &end);
-    if( err ) goto error;
-
-    if( start != end ) {
-      // Try to use this..
-      //
-      err = sys_vsnprintf(start, end - start, fmt, ap, &got);
-      if( err ) success = 0;
-      if( got > end - start ) success = 0;
-      else {
-        success = 1;
-        start += got;
-      }
-    }
-
-    newerr = qio_channel_end_peek_cached(0, ch, start);
-    if( ! err ) err = newerr;
-
-    if( success ) goto error;
-  }
-
-  // If the fast buffered way failed, or we're not using a buffered
-  // channel, fall back on a slow, but reliable method.
-  {
-    char* tmp;
-    err_t err;
-
-    tmp = NULL;
-    err = sys_vasprintf(&tmp, fmt, ap);
-    if( err ) return err;
-
-    err = qio_channel_write(0, ch, tmp, strlen(tmp), amt_written);
-    qio_free(tmp);
-  }
-
-error:
-  if( threadsafe ) {
-    qio_unlock(&ch->lock);
-  }
-
-  return err;
-}
-
-err_t qio_channel_vprintf(const char threadsafe, qio_channel_t* ch,
-                          const char* fmt, ptrdiff_t* amt_written, va_list ap);
-{
-  err_t err;
-  err_t newerr;
-  void* start;
-  void* end;
-  int got;
-  char success = 0;
-
-
-  if( threadsafe ) {
-    err = qio_lock(&ch->lock);
-    if( err ) {
-      return err;
-    }
-  }
-
-  if( ch->type == QIO_CH_BUFFERED ) {
-    err = qio_channel_begin_peek_cached(0, ch, &start, &end);
-    if( err ) goto error;
-
-    if( start != end ) {
-      // Try to use this..
-      err = sys_vsnprintf(start, end - start, fmt, ap, &got);
-      if( err ) success = 0;
-      if( got > end - start ) success = 0;
-      else {
-        success = 1;
-        start += got;
-      }
-    }
-
-    newerr = qio_channel_end_peek_cached(0, ch, start);
-    if( ! err ) err = newerr;
-
-    if( success ) goto error;
-  }
-
-  // If the fast buffered way failed, or we're not using a buffered
-  // channel, fall back on a slow, but reliable method.
-  {
-    char* tmp;
-    err_t err;
-
-    tmp = NULL;
-    err = sys_vasprintf(&tmp, fmt, ap);
-    if( err ) return err;
-
-    err = qio_channel_write(0, ch, tmp, strlen(tmp), amt_written);
-    qio_free(tmp);
-  }
-
-error:
-  if( threadsafe ) {
-    qio_unlock(&ch->lock);
-  }
-
-  return err;
-}
-
-*/
 

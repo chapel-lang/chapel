@@ -61,7 +61,7 @@
 #              [list of directories]  "test" if in $CHPL_HOME, "." otherwise
 #              [list of tests]        ""
 #   -clean-only
-#   -compiler  <compiler executable>  $CHPL_HOME/bin/<platform>/chpl
+#   -compiler  <compiler executable>  $CHPL_HOME/bin/<host-platform>/chpl
 #   -compopts  <option list>          "--cc-warnings"
 #   -execopts  <option list>          ""
 #   -launchcmd <launcher command>     ""
@@ -77,7 +77,7 @@
 #   -comm [none|gasnet|pvm]           $CHPL_HOME/util/chplenv/comm
 #   -suppress <suppression file>
 #   -interpret (DEPRECATED)
-#   -logfile   <log filename>         $testdir/Logs/<username>.<platform>.log
+#   -logfile   <log filename>         $testdir/Logs/<username>.<tgt-platform>.log
 #                                     (where $testdir is $CHPL_HOME/test if
 #                                     it exists, $CHPL_HOME/examples, if it
 #                                     exists, . otherwise)
@@ -122,10 +122,10 @@
 # want to test any of its subdirectories.
 #
 # The -logfile option indicates where the log of the test run should
-# be kept.  By default it's based on the user's name and the platform
-# you're testing.  At the end of the run, a second log file named
-# <logfile>.summary will be generated containing only the Errors and
-# future tests that were logged.
+# be kept.  By default it's based on the user's name and the target
+# platform you're testing.  At the end of the run, a second log file
+# named <logfile>.summary will be generated containing only the Errors
+# and future tests that were logged.
 #
 # A -suppress option can be used to specify a file listing tests that
 # should be ignored for a particular run if they fail (and an error
@@ -354,14 +354,16 @@
 # more info.
 #
 # If the output for a test varies by machine, communication layer, or
-# platform name, files named <testname>.<machname>.good,
+# target platform name, files named <testname>.<machname>.good,
 # <testname>.comm-<commlayer>.good, or <testname>.<platform>.good can
 # be used to specify the output for such tests, where "machname" is
 # the output of "uname -n" with any "." qualifiers after the machine
 # name stripped off, commlayer is the communication layer being tested
-# (e.g., "none", "gasnet", or "pvm") and "platform" is the value of
-# $CHPL_TARGET_PLATFORM.  The most specific good file will be used, in
-# the order: machname, commlayer, platform, generic.
+# (e.g., "none", "gasnet", etc.) and "platform" is the value of
+# $CHPL_TARGET_PLATFORM.  In addition, if "--no-local" is selected as
+# a compiler option, the file <testname>.no-local.good may be used.
+# The most specific good file will be used, in this order:
+# machname, "no-local", commlayer, platform, generic.
 #
 # Tests that are not yet expected to work can be marked as such
 # by creating a <testname>.future file.  The presence of the
@@ -427,16 +429,22 @@
 #      <blank>        : a blank line is skipped
 #      <var> == <val> : checks to see if envvar "var" is "val"
 #      <var> != <val> : checks to see if envvar "var" is not "val"
+#       <var> <= <val> : true if <var> contains the substring "val".
 #      CHPL_MEM_LEAK_TESTING == true : check if we are testing for memory leaks
-#    All of the lines of the "==" and "!=" form are logically
+#    All of the lines of containing conditional expressions are logically
 #    or'd together, and if any of them are true, the test is
 #    skipped.  As with other options, a SKIPIF condition can
 #    be placed on a file-by-file basis using a <testname>.skipif
 #    file.  Tests that are explicitly named on the start_test
 #    command line will be tested regardless of any .skipif files.
+#    If -- for a given subdirectory <dir> -- there is a <dir>.skipif
+#    file and the condition in the file evaluates to true, then
+#    that directory and all of its descendents are skipped.
+#    The condition is ignored if the <dir>.skipif file corresponds
+#    to the current working directory, or if <dir> is explicitly named
+#    on the start_test command line.
 #
 #    Planned extensions to this capability:
-#    - ability to test for things like "compopts contains <val>"
 #    - ability to logically-and filters together
 #
 #  - if the subdirectory contains a NOEXEC file, any executables
@@ -564,42 +572,6 @@ else
     exit 1
 endif
 
-#
-# Set standard CHPL_* environment variables for use by skipif files,
-# if they are not
-#
-if ($?CHPL_HOST_PLATFORM == 0) then
-    setenv CHPL_HOST_PLATFORM `$CHPL_HOME/util/chplenv/platform --host`
-endif
-
-if ($?CHPL_TARGET_PLATFORM == 0) then
-    setenv CHPL_TARGET_PLATFORM `$CHPL_HOME/util/chplenv/platform --target`
-endif
-
-if ($?CHPL_HOST_COMPILER == 0) then
-    setenv CHPL_HOST_COMPILER `$CHPL_HOME/util/chplenv/compiler --host`
-endif
-
-if ($?CHPL_TARGET_COMPILER == 0) then
-    setenv CHPL_TARGET_COMPILER `$CHPL_HOME/util/chplenv/compiler --target`
-endif
-
-if ($?CHPL_TASKS == 0) then
-    setenv CHPL_TASKS `$CHPL_HOME/util/chplenv/tasks`
-endif
-
-if ($?CHPL_THREADS == 0) then
-    setenv CHPL_THREADS `$CHPL_HOME/util/chplenv/threads`
-endif
-
-if ($?CHPL_COMM == 0) then
-    setenv CHPL_COMM `$CHPL_HOME/util/chplenv/comm`
-endif
-
-if ($?CHPL_GMP == 0) then
-    setenv CHPL_GMP `$CHPL_HOME/util/chplenv/gmp`
-endif
-
 set utildir = "$CHPL_HOME/util/test"
 if (! -d $utildir || ! -x $utildir) then
     echo "Error: Cannot find $CHPL_HOME/test/util"
@@ -629,16 +601,16 @@ endif
 
 set datestr = `date +"%y%m%d.%H%M%S"`
 
-set platform = `$CHPL_HOME/util/chplenv/platform`
+set host_platform = `$CHPL_HOME/util/chplenv/platform --host`
+set tgt_platform = `$CHPL_HOME/util/chplenv/platform --target`
 
 #
 # some sets to get locale, environment reasonable
 #
-if ($platform != "sunos") then
+if ($tgt_platform != "sunos") then
     setenv LC_ALL C
     setenv LANG en_US
 endif
-limit stacksize 8192k
 
 
 set clean_only = 0
@@ -648,7 +620,7 @@ set compopts = "--cc-warnings"
 set launchcmd = ""
 set dirlist = ""
 set testlist = ""
-set logfile = "$logsdir/$user.$platform.log"
+set logfile = "$logsdir/$user.$tgt_platform.log"
 set valgrind = 0
 set valgrindexe = 0
 set interpret = 0
@@ -810,7 +782,7 @@ while ( $#argv > 0 )
         echo Usage and defaults\:
         echo "     start_test <options> <files> <directories>"
                 echo "          -clean-only"
-        echo "          -compiler <path>      (currently: $CHPL_HOME/bin/$platform/chpl)"
+        echo "          -compiler <path>      (currently: $CHPL_HOME/bin/$host_platform/chpl)"
         echo "          -compopts <options>   (currently: '--cc-warnings')"
         echo "          -execopts <options>   (currently: '')"
                 echo "          -launchcmd <command>  (currently: '')"
@@ -885,7 +857,8 @@ echo \[Logs directory: \"$logsdir\"\] |& $tee -a $logfile
 echo \[logfile: \"$logfile\"\] |& $tee -a $logfile
 
 echo \[CHPL_HOME: $CHPL_HOME\] |& $tee -a $logfile
-echo \[platform: $platform\] |& $tee -a $logfile
+echo \[host platform: $host_platform\] |& $tee -a $logfile
+echo \[target platform: $tgt_platform\] |& $tee -a $logfile
 # see if valgrind is on.  If it is, reset the compiler
 if ($valgrind) then
     echo \[valgrind: ON\] |& $tee -a $logfile
@@ -910,7 +883,7 @@ else
 endif
 
 if ($compiler == "") then
-  set compiler = "$CHPL_HOME/bin/$platform/chpl"
+  set compiler = "$CHPL_HOME/bin/$host_platform/chpl"
 endif
 
 if ($interpret) then
@@ -1251,8 +1224,6 @@ foreach testType ($testTypes)
                 pushd $dir >& /dev/null
                 set dir = $cwd
                 popd >& /dev/null
-
-                cd $dir
             else
                 echo \["Warning: Cannot cd into" $dir "skipping directory"\]|&\
                     $tee -a $logfile
@@ -1262,6 +1233,9 @@ foreach testType ($testTypes)
             echo " " |& $tee -a $logfile
             echo "[Working on directory $dir]" |& $tee -a $logfile
 
+            # Skip this directory if there is a SKIPIF file
+            # and the condition it contains evaluates to true.
+            cd $dir
             if (-e ./SKIPIF) then
                 set skiptest = `$utildir/testEnv ./SKIPIF`
                 if ($skiptest == 1) then
@@ -1270,6 +1244,23 @@ foreach testType ($testTypes)
                 endif
             endif
 
+            # Skip this directory if there is any matching <dir>.skipif file
+            # returning true, where <dir> is the current directory up to $basedir.
+            cd $dir
+            set pruneif = 0
+            while (! $pruneif && $cwd != $basedir)
+                set skipfilen = $cwd.skipif
+                if (-e $skipfilen) then
+                    set pruneif = `$utildir/testEnv $skipfilen`
+                endif
+                cd ..
+            end
+            if ($pruneif) then
+                echo "[Skipping directory based on ancestor .skipif environment settings in $skipfilen]"
+                continue
+            endif
+
+            cd $dir
             if ($testType != "graph") then
                 # run tests
                 if ($performance) then

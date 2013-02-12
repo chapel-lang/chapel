@@ -2,6 +2,10 @@
 #ifndef _SYS_H_
 #define _SYS_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "sys_basic.h"
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -102,7 +106,7 @@ err_t sys_stat(const char* path, struct stat* buf);
 err_t sys_fstat(fd_t fd, struct stat* buf);
 err_t sys_lstat(const char* path, struct stat* buf);
 
-err_t sys_mkstemp(char* template, fd_t* fd_out);
+err_t sys_mkstemp(char* template_, fd_t* fd_out);
 
 err_t sys_ftruncate(fd_t fd, off_t length);
 
@@ -218,5 +222,9 @@ err_t sys_unlink(const char* path);
 
 // Allocates a string to store the current directory which must be freed.
 err_t sys_getcwd(const char** path_out);
+
+#ifdef __cplusplus
+} // end extern "C"
+#endif
 
 #endif

@@ -696,10 +696,7 @@ static void codegen_header() {
       fprintf(hdrfile, "#endif\n");
       continue;
     }
-    // MPF - this is redundant with what is in fnSymbol->codegenPrototype()
-    if (!fnSymbol->hasFlag(FLAG_EXTERN) || genExternPrototypes) {
-      fnSymbol->codegenPrototype();
-    }
+    fnSymbol->codegenPrototype();
   }
     
   if (fGPU) {
@@ -809,6 +806,7 @@ static void codegen_header() {
       if (call->isPrimitive(PRIM_PRIVATE_BROADCAST)) {
         SymExpr* se = toSymExpr(call->get(1));
         INT_ASSERT(se);
+        SET_LINENO(call);
         fprintf(hdrfile, ",\n&%s", se->var->cname);
         call->insertAtHead(new_IntSymbol(i));
         i++;
@@ -1198,11 +1196,8 @@ void makeBinary(void) {
     mysystem(command.c_str(), "Make Binary - Linking");
 #endif
   } else {
-    if (chplmake[0] == '\0') {
-      strncpy(chplmake, runUtilScript("chplenv/chplmake"), 256);
-    }
     const char* makeflags = printSystemCommands ? "-f " : "-s -f ";
-    const char* command = astr(astr(chplmake, " "), makeflags, getIntermediateDirName(),
+    const char* command = astr(astr(CHPL_MAKE, " "), makeflags, getIntermediateDirName(),
                               "/Makefile");
     mysystem(command, "compiling generated source");
   }
@@ -1876,9 +1871,16 @@ std::string uint64_to_string(uint64_t i)
   return ret;
 }
 
-void genComment(const char* comment) {
+void genComment(const char* comment, bool push) {
   GenInfo* info = gGenInfo;
-  if( info->cfile ) fprintf(info->cfile, "/*** %s ***/\n\n", comment);
+  if( info->cfile ) {
+    if (push) {
+      std::string str = comment;
+      info->cStatements.push_back("/*** "+str+" ***/ ");
+    } else {
+      fprintf(info->cfile, "/*** %s ***/\n\n", comment);
+    }
+  }
 }
 void genIdComment(int id) {
   GenInfo* info = gGenInfo;

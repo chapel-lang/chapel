@@ -1,7 +1,0 @@
-bug: compiler crashes with internal failure VarSymbol::type is NULL [symbol.cpp:168]
-
-I did not investigate.
-The crashes seem to have started after I added 'seena' and related code.
-It is quite likely that these tests can be trimmed down to very small sizes.
-
-This crash is not observed with comm=none without --no-local.

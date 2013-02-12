@@ -1,3 +1,5 @@
+use CommDiagnostics;
+
 proc main() {
   var x: int = 3;
   var r, s, t: int;

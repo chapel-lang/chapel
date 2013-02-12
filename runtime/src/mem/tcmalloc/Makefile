@@ -16,6 +16,3 @@ TARGETS = $(MEM_COMMON_OBJS)
 include $(RUNTIME_ROOT)/make/Makefile.runtime.subdirrules
 
 include $(RUNTIME_ROOT)/make/Makefile.runtime.foot
-
-OTHER_DEPEND_RULES = \
-	cd $(THIRD_PARTY_DIR) && $(MAKE) tcmalloc

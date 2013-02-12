@@ -112,31 +112,65 @@ int getCoresPerLocale() {
       chpl_warning("CHPL_LAUNCHER_CORES_PER_LOCALE set to invalid value.", 0, 0);
   }
 
-  if (numCores <= 0) {
+  if (numCores > 0)
+    return numCores;
+
+  if (strstr(CNA, "numcores") != NULL) {
     const int buflen = 1024;
     char buf[buflen];
     char* argv[3];
-
-    if (strstr(CNA, "numcores") == NULL) {
-      // numcores not available in this version
-      chpl_error("Error trying to determine number of cores per node", 0, 0);
-    }
 
     argv[0] = (char *) "cnselect";
     argv[1] = (char *) "-Lnumcores";
     argv[2] = NULL;
   
     memset(buf, 0, buflen);
-    if (chpl_run_utility1K("cnselect", argv, buf, buflen) <= 0) {
+    if (chpl_run_utility1K("cnselect", argv, buf, buflen) <= 0)
       chpl_error("Error trying to determine number of cores per node", 0, 0);
-    }
 
-    if (sscanf(buf, "%d", &numCores) != 1) {
-      chpl_error("unable to determine number of cores per locale; please set CHPL_LAUNCHER_CORES_PER_LOCALE", 0, 0);
-    }
+    if (sscanf(buf, "%d", &numCores) != 1)
+      chpl_error("unable to determine number of cores per locale; "
+                 "please set CHPL_LAUNCHER_CORES_PER_LOCALE", 0, 0);
+
+    return numCores;
   }
 
-  return numCores;
+  if (strstr(CNA, "coremask") != NULL) {
+    const int buflen = 1024;
+    char buf[buflen];
+    char* argv[3];
+ 
+    argv[0] = (char *) "cnselect";
+    argv[1] = (char *) "-Lcoremask";
+    argv[2] = NULL;
+  
+    memset(buf, 0, buflen);
+    if (chpl_run_utility1K("cnselect", argv, buf, buflen) <= 0)
+      chpl_error("Error trying to determine number coremask on node", 0, 0);
+
+    {
+      int coreMask;
+      int bitMask = 0x1;
+
+      if (sscanf(buf, "%d", &coreMask) != 1)
+        chpl_error("unable to determine coremask for locale; "
+                   "please set CHPL_LAUNCHER_CORES_PER_LOCALE", 0, 0);
+
+      coreMask >>= 1;
+      numCores = 1;
+      while (coreMask & bitMask) {
+        coreMask >>= 1;
+        numCores += 1;
+      }
+    }
+
+    return numCores;
+  }
+
+  // neither numcores nor coremask is available in this version
+  chpl_error("Error trying to determine number of cores per node", 0, 0);
+
+  return 0;
 }
 
 const char* getLocalesPerNodeStr() {
@@ -161,6 +195,7 @@ int getCPUsPerNode() {
 
   if ((numCPUsPerNode <= 0) && strstr(CNA, "cpus_per_cu") != NULL) {
     // cpus_per_cu is available in this version of cnselect
+    int tncpn = numCPUsPerNode;
     const int buflen = 1024;
     char buf[buflen];
     char* argv[3];
@@ -174,7 +209,14 @@ int getCPUsPerNode() {
       chpl_error("Error trying to determine number of CPUs per CU", 0, 0);
     }
 
-    if (sscanf(buf, "%d", &numCPUsPerNode) != 1) {
+    if (sscanf(buf, "%d", &tncpn) == 1) {
+      char *tbuf = strstr(buf, "\n")+1;
+      numCPUsPerNode = tncpn;
+      while (sscanf(tbuf, "%d", &tncpn) == 1) {
+        if (numCPUsPerNode < tncpn) numCPUsPerNode = tncpn;
+        tbuf = strstr(tbuf, "\n")+1;
+      }
+    } else {
       chpl_error("unable to determine number of CPUs per CU; please set CHPL_LAUNCHER_CPUS_PER_CU", 0, 0);
     }
   }

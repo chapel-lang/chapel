@@ -582,6 +582,7 @@ void singleAssignmentRefPropagation(FnSymbol* fn) {
           if (isReferenceType(rhs->var->type)) {
             for_uses(se, useMap, var) {
               if (se->parentExpr) {
+                SET_LINENO(se);
                 SymExpr* rhsCopy = rhs->copy();
                 se->replace(rhsCopy);
                 addUse(useMap, rhsCopy);
@@ -590,6 +591,7 @@ void singleAssignmentRefPropagation(FnSymbol* fn) {
             for_defs(se, defMap, var) {
               CallExpr* parent = toCallExpr(se->parentExpr);
               if (parent && parent != move) {
+                SET_LINENO(se);
                 SymExpr* rhsCopy = rhs->copy();
                 se->replace(rhsCopy);
                 addDef(defMap, rhsCopy);

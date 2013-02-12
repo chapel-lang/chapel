@@ -33,6 +33,11 @@ const m = 2**n,
       indexMask = m-1;
 
 //
+// Do verification?
+//
+config const verify = true;
+
+//
 // Unless we protect against it, the verification pass can get wrong
 // answers due to races in the same way that the main computation can.
 // This can lead to a total error count that exceeds the threshold,
@@ -98,8 +103,6 @@ const TableSpace: domain(1, indexType) dmapped TableDist = {0..m-1},
       Updates: domain(1, indexType) dmapped UpdateDist = {0..N_U-1};
 
 
-extern proc ra_init(ref data: atomic elemType, numElems: int(64));
-
 //
 // The program entry point
 //
@@ -152,6 +155,8 @@ proc printConfiguration() {
 // Verify that the computation is correct
 //
 proc verifyResults(T) {
+  if (!verify) then return true;
+
   //
   // We protect against errors in verification by using sync variables
   // to protect accesses to blocks of table elements.  The configuration

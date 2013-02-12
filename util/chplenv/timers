@@ -8,7 +8,7 @@ $preset_timers = $ENV{'CHPL_TIMERS'};
 
 if ($preset_timers eq "") {
   $targplatform = `$utildirname/platform --target`; chomp($targplatform);
-  if ($targplatform eq "xmt") {
+  if ($targplatform =~ /^cray-xmt(-sim)?$/) {
     $timers = 'mta';
   } else {
     $timers = 'generic';

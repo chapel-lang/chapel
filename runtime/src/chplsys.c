@@ -1,8 +1,3 @@
-#include <stdio.h>
-#include <stdint.h>
-#include <string.h>
-#include <errno.h>
-#include <unistd.h>
 #if defined __APPLE__ || defined __MTA__
 #include <sys/sysctl.h>
 #endif
@@ -14,11 +9,19 @@
 #include <machine/runtime.h>
 #endif
 #include "chplrt.h"
+
 #include "chpl-mem.h"
 #include "chplsys.h"
 #include "chpl-tasks.h"
 #include "chpl-comm.h"
 #include "error.h"
+
+#include <stdio.h>
+#include <stdint.h>
+#include <string.h>
+#include <errno.h>
+#include <unistd.h>
+
 
 #ifndef chplGetPageSize
 #define chplGetPageSize() sysconf(_SC_PAGE_SIZE)
@@ -92,7 +95,7 @@ int32_t chpl_maxThreads(void) {
 }
 
 
-chpl_string chpl_localeName(void) {
+chpl_string chpl_nodeName(void) {
   static char* namespace = NULL;
   static int namelen = 0;
   struct utsname utsinfo;

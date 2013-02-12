@@ -14,24 +14,38 @@ def isCommentDate(l, comment_date):
             return True
     return False
 
+def isDotDatFile(filename):
+    dat_ext = filename.rfind('.dat')
+    if dat_ext != -1 and dat_ext == len(filename)-4:
+        return True
+    return False
+
 from datetime import date
 from optparse import OptionParser
 
-parser = OptionParser("usage: %prog [options] [.dat files] [directory]")
+parser = OptionParser("usage: %prog [options] [.dat files] [directories]\n\n" +
+  "Adds comments from COMMENT_FILE, according to COMMENT_DATE, to\n" +
+  ".dat files passed as arguments and located in the directory arguments,\n" +
+  "or to all .dat files in the current directory if none are given.\n" +
+  "The resulting files are placed in OUTPUT_DIR (not modified in place).")
 parser.add_option('-d', '--date',
                   action='store', dest='comment_date',
                   default=date.today().strftime('%m/%d/%y'),
                   help="Date associated with the comment.  Comment will be place before that date's entry (default: today's date)")
 parser.add_option('-f', '--filename',
                   action='store', dest='comment_file', default=None,
-                  help="File from which to read comments")
+                  help="File from which to read comments (default: stdin). Leading '#' in comments are optional")
 parser.add_option('-o', '--outdir',
                   action='store', type='string', dest='outdir',
                   default='./COMMENTED', help="output directory (default: './COMMENTED')",
-                  metavar='DIR')
+                  metavar='OUTPUT_DIR')
 parser.add_option('-v', '--verbose',
                   action='store_true', dest='verbose', default=False,
-                  help="Print status messages to stdout")
+                  help="Print status messages to stdout (default)")
+# -q must follow -v to make verbose=True by default
+parser.add_option('-q', '--quiet',
+                  action='store_false', dest='verbose', default=True,
+                  help="Suppress status messages on stdout")
 
 (options, args) = parser.parse_args()
 
@@ -40,13 +54,14 @@ comment_date = options.comment_date
 
 if options.comment_file == None:
     # read comment from stdin
+    sys.stdout.write("Reading comments from stdin...\n")
     comment_list = list()
     comment_list.append(sys.stdin.readline())
 else:
     try:
         fh = open(options.comment_file, 'r')
     except IOError:
-        sys.stderr.write('Error: Could not open file %s.  Skipping..\n'%(infile))
+        sys.stderr.write('Error: Could not open COMMENT_FILE %s.\n'%(options.comment_file))
         sys.exit(1)
     comment_list = fh.readlines()
     fh.close()
@@ -66,27 +81,26 @@ if verbose:
 myfiles = list()
 
 if len(args) < 1:
-    sys.stdout.write('No files or directories specified.  Using default (all .dat files in this directory)..\n');
+    sys.stdout.write('No files or directories specified.  Using default (all .dat files in the current directory)..\n');
     thisdir = os.listdir('.')
     for fn in thisdir:
-        dat_ext = fn.rfind('.dat')
-        if dat_ext != -1 and dat_ext == len(fn)-4:
+        if isDotDatFile(fn):
             myfiles.append(fn)
     del thisdir
 else:
     for a in args:
-        dat_ext = a.rfind('.dat')
-        if dat_ext != -1 and dat_ext == len(a)-4:
+        if isDotDatFile(a):
             myfiles.append(a)
         else:
             try:
                 thisdir = os.listdir(a)
             except OSError:
+                sys.stderr.write('Warning: the argument %s is neither a .dat file nor a directory.\n'%(a))
                 thisdir = ''
                 pass
             for fn in thisdir:
-                if fn.rfind('.dat') == len(fn)-4:
-                    myfiles.append(fn)
+                if isDotDatFile(fn):
+                    myfiles.append(a + '/' + fn)
             del thisdir
 
 num_commented = 0

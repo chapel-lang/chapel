@@ -411,7 +411,7 @@ Module initialization is performed using the following algorithm.
 
 Starting from the module that defines the main function, the modules named in
 its use statements are visited depth-first and initialized in post-order.  If a
-use statment names a module that has already been visited, it is not visited a
+use statement names a module that has already been visited, it is not visited a
 second time.  Thus, infinite recursion is avoided.
 
 Modules used by a given module are visited in the order in which

@@ -2,6 +2,7 @@
 #define _chpltypes_H_
 
 #include "sys_basic.h"
+
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -46,6 +47,25 @@ typedef struct _chpl_fieldType {
   size_t offset;
 } chpl_fieldType;
 
+// This allocation of bits is arbitrary.
+// Seemingly, 64 bits is enough to represent both the node_id and sublocale_id portions 
+// of a locale ID, and an even split is a good first guess.
+typedef int32_t c_nodeid_t;
+#define FORMAT_c_nodeid_t PRId32
+typedef int32_t c_subloc_t;
+#define FORMAT_c_subloc_t PRId32
+
+// It is unfortunate that we need this definition in parallel with the module definition.
+// If runtime routines that depend on c_locale_t can be eliminated, then this
+// definition can be moved entirely within the module code.
+typedef struct
+{
+  c_nodeid_t node;    // This is the comm node index.
+  c_subloc_t subloc;  // This carries the sublocale index if there is one, otherwise zero.
+} c_locale_t;
+
+//extern const c_locale_t _rootLocaleID;
+
 #define nil 0 
 typedef void* _nilType;
 typedef void* _nilRefType;
@@ -66,14 +86,20 @@ typedef void* chpl_opaque;
 #define UINT64( i) (i ## ULL)
 
 
-// Cuda does not suuport c99 bools
+// Cuda does not support c99 bools
 #ifndef ENABLE_GPU
+
+// ... and neither does C++
+#ifndef __cplusplus
 typedef _Bool chpl_bool;
 #else
 typedef bool chpl_bool;
 #endif
 
-//typedef bool chpl_bool;
+#else
+typedef bool chpl_bool;
+#endif
+
 typedef int8_t chpl_bool8;
 typedef int16_t chpl_bool16;
 typedef int32_t chpl_bool32;
@@ -134,10 +160,8 @@ struct __chpl____wide_chpl_string;
 //
 // stopgap formatting
 //
-#undef printf
 chpl_string chpl_format(chpl_string format, ...)
   __attribute__((format(printf, 1, 2)));
-#define printf PRINTF_DEF
 
 char* chpl_glom_strings(int numstrings, ...);
 
@@ -155,14 +179,6 @@ int64_t string_length(chpl_string x);
 
 int64_t real2int( _real64 f);       // return the raw bytes of the float
 int64_t object2int( _chpl_object o);  // return the ptr
-
-typedef struct timeval _timevalue;
-
-_timevalue chpl_null_timevalue(void);
-_timevalue chpl_now_timevalue(void);
-int64_t chpl_timevalue_seconds(_timevalue t);
-int64_t chpl_timevalue_microseconds(_timevalue t);
-void chpl_timevalue_parts(_timevalue t, int32_t* seconds, int32_t* minutes, int32_t* hours, int32_t* mday, int32_t* month, int32_t* year, int32_t* wday, int32_t* yday, int32_t* isdst);
 
 typedef int32_t chpl__class_id;
 

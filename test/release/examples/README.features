@@ -13,25 +13,33 @@ example program demonstrates:
   hello5-taskpar      : task parallelism via coforall loop
   hello6-taskpar-dist : coforall, on clauses, locales
 
-hpcc/
-  stream    : zippered iteration; standard modules; time/random routines
-  stream-ep : explicit SPMD-style programming and data structures
-  ra        : iterators; on-clauses; atomic statements (not yet implemented)
-  fft       : array slicing; iterators; complex and imaginary values
-  ptrans    : 2D arrays; Block-Cyclic distribution; forall loops
-  hpl       : 2D array slicing and aliases; linear algebra; Block-Cyclic dist.
-  variants/
-    stream-promoted : promoted/whole-array operations
-    ra-cleanloop    : cleaner use of on-clauses -- correct but slower (today)
+benchmarks/
+  hpcc/
+    stream     : zippered iteration; standard modules; time/random routines
+    stream-ep  : explicit SPMD-style programming and data structures
+    ra         : iterators; on-clauses; sync vars
+    ra-atomics : iterators; atomic variables and operations on them
+    fft        : array slicing; iterators; complex and imaginary values
+    ptrans     : 2D arrays; Block-Cyclic distribution; forall loops
+    hpl        : 2D array slicing & aliases; linear algebra; Block-Cyclic dist
+    variants/
+      stream-promoted : promoted/whole-array operations
+      ra-cleanloop    : cleaner use of on-clauses -- correct but slower (today)
+  lulesh/      : dense and sparse domains; domain-independent computation
+  ssca2/       : graph algorithms, generic programming, distributed
+                 data structures, replicated distribution
 
 primers/
   arrays         : rectangular domains/arrays; slicing; iteration; reallocation
+  atomics        : atomic variables and operations on them
+  chpldoc        : the comment-based documentation generation feature
   classes        : classes and objects; dynamic dispatch; 'this' and 'these'
   distributions  : distributions; Block; Cyclic; Block-Cyclic; Replicated
   domains        : domains and operations on domains
   fileIO         : file I/O of scalars and arrays
   genericClasses : generic classes and objects; generic types
   iterators      : iterators of various styles
+  leaderfollower : leader-follower iterators for defining 'forall' behavior
   locales        : multiple locales, on clauses, multi-locale task parallelism
   opaque         : opaque domains and arrays; graph-based data structures
   procedures     : defining and calling procedures in Chapel
@@ -54,9 +62,3 @@ programs/
   prodCons       : synchronization variables; task parallelism using cobegin
   quicksort      : bounded task parallelism using cobegin and serial
   tree           : unbounded task parallelism using cobegin
-
-ssca2/
-ssca2/SSCA2_Modules/
-                : graph algorithms, generic programming, distributed
-                  data structures, replicated distribution
-

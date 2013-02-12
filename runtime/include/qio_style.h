@@ -12,6 +12,14 @@
 
 typedef uint8_t style_char_t;
 
+
+#define QIO_STYLE_ELEMENT_STRING 1
+#define QIO_STYLE_ELEMENT_COMPLEX 2
+#define QIO_STYLE_ELEMENT_ARRAY 3
+#define QIO_STYLE_ELEMENT_AGGREGATE 4
+#define QIO_STYLE_ELEMENT_TUPLE 5
+
+
 #define QIO_STRING_FORMAT_WORD 0
 #define QIO_STRING_FORMAT_BASIC 1
 #define QIO_STRING_FORMAT_CHPL 2
@@ -25,6 +33,21 @@ typedef uint8_t style_char_t;
 #define QIO_COMPLEX_FORMAT_PARENS 0x1
 #define QIO_COMPLEX_FORMAT_PART 0xf
 
+#define QIO_ARRAY_FORMAT_SPACE 0
+#define QIO_ARRAY_FORMAT_CHPL 1
+#define QIO_ARRAY_FORMAT_JSON 2
+
+#define QIO_AGGREGATE_FORMAT_BRACES 0
+#define QIO_AGGREGATE_FORMAT_CHPL 1
+#define QIO_AGGREGATE_FORMAT_JSON 2
+
+#define QIO_TUPLE_FORMAT_CHPL 0
+#define QIO_TUPLE_FORMAT_SPACE 1
+#define QIO_TUPLE_FORMAT_JSON 2
+
+
+
+
 typedef struct qio_style_s {
   uint8_t binary;
   // binary style choices:
@@ -37,12 +60,25 @@ typedef struct qio_style_s {
   // -10 -- variable byte length before (hi-bit 1 means more, little endian)
   // -0x01XX -- read until terminator XX is read
   //  + -- nonzero positive -- read exactly this length.
+  //  0 means write as is, read path cannot work
   int64_t str_style;
 
   // text style choices
-  uint32_t min_width; // minimum field width; default is 1.
-  uint32_t max_width; // maxiumum field width; default is UINT_MAX.
-                    
+  uint32_t min_width_columns; // minimum field width; default is 0.
+                      // For floating point and integer printing,
+                      //   min_width_columns == min # of characters == min # of bytes
+                      //    (since those only print printable ASCII)
+                      // For string printing, min_width is in
+                      //   *screen positions*. If you want to print
+                      //   a specific number of bytes, use binary I/O.
+  uint32_t max_width_columns; // maxiumum field width in screen positions; default is UINT32_MAX.
+                              // (used when printing)
+  uint32_t max_width_characters; // maxiumum field width in characters; default is UINT32_MAX.
+                                 // (used when scanning)
+  uint32_t max_width_bytes; // maxiumum field width in bytes; default is UINT32_MAX.
+                            // (used when scanning)
+
+
   // string_start, string_end, string_format ignored for binary
   // string_start/string_end only used with format>=1 when printing
   // string_end is used when scanning format==0.
@@ -90,7 +126,7 @@ typedef struct qio_style_s {
                           // if they would otherwise have be printed without a .0
 
   int32_t precision; // for floating point, number after decimal point.
-  int32_t significant_digits; // maximum display precision for floating point.
+                     // or number of significant digits in realfmt 2.
   uint8_t realfmt; //0 -> print with %g; 1 -> print with %f; 2 -> print with %e
 
   // Other data type choices
@@ -102,39 +138,24 @@ typedef struct qio_style_s {
   // QIO_COMPLEX_FORMAT_READ_STRICT -- do not accept the other format when reading
   uint8_t complex_style;
 
-  /*
-  uint8_t spaces_after_sep; // automatically add/consume spaces after a
-                            // delimiter other than '\n' and around
-                            // record_after_field_name
-                            // normally 1.
+  // arrays (not directly supported by QIO but used in Chapel)
+  // QIO_ARRAY_FORMAT_SPACE space in 1st dimensions, \n in later dims
+  // QIO_ARRAY_FORMAT_CHPL make it look like an anonymous array [1,3,4]
+  // QIO_ARRAY_FORMAT_JSON make it look like a JSON array [1,2]
+  uint8_t array_style;
 
-  style_char_t array_start_char; // normally '[' or '\0' for blank
-  style_char_t array_end_char; // normally ']' or '\0' for blank
-  style_char_t array_delim_char1; // sep 1-d array or elements in a row (normally ' ')
-  style_char_t array_delim_char2; // sep 2-d array or row from row (normally '\n')
-  style_char_t array_delim_char3; // sep 3-d array block from block (normally '\n)
+  // aggregates (not directly supported by QIO but used in Chapel)
+  // (includes records, classes, unions)
+  // QIO_AGGREGATE_FORMAT_BRACES record/union:(a=1) class:{a=1}
+  // QIO_AGGREGATE_FORMAT_CHPL call chpl constructor: new Something(a=1)
+  // QIO_AGGREGATE_FORMAT_JSON show JSON object: {a:1, b:2}
+  uint8_t aggregate_style;
 
-  uint8_t array_include_index; // should we print array index?
-  uint8_t array_include_domain; // should we print array domain?
-
-  style_char_t tuple_start_char; // normally '('
-  style_char_t tuple_end_char; // normally ')'
-  style_char_t tuple_delim_char; // normally ', '
-
-  style_char_t record_start_char; // normally '('
-  style_char_t record_end_char; // normally ')'
-  style_char_t record_delim_char; // normally ', '
-  style_char_t record_after_field_name_char; // normally ' = '
-  uint8_t record_print_field_names; // print record field names? normally 1
-  uint8_t record_print_name; // print record name? normally 0
-
-  style_char_t class_start_char; // normally '{'
-  style_char_t class_end_char; // normally '}'
-  style_char_t class_delim_char; // normally ', '
-  style_char_t class_after_field_name_char; // normally ' = '
-  uint8_t class_print_field_names; // print class fields names? normally 1
-  uint8_t class_print_name; // print class name? normally 0
-  */
+  // tuples (not directly supported by QIO but used in Chapel)
+  // QIO_TUPLE_FORMAT_SPACE space separates all values
+  // QIO_TUPLE_FORMAT_CHPL make it look like (a,b,c)
+  // QIO_TUPLE_FORMAT_JSON make it look like a JSON array [1,2]
+  uint8_t tuple_style;
 } qio_style_t;
 
 typedef qio_style_t _qio_style_ptr_t;
@@ -157,8 +178,10 @@ void qio_style_init_default(qio_style_t* s)
   s->byteorder = QIO_NATIVE;
   s->str_style = -10;
 
-  s->min_width = 1;
-  s->max_width = UINT32_MAX;
+  s->min_width_columns = 0;
+  s->max_width_columns = UINT32_MAX;
+  s->max_width_characters = UINT32_MAX;
+  s->max_width_bytes = UINT32_MAX;
 
   s->string_start = '\"';
   s->string_end = '\"';
@@ -181,42 +204,14 @@ void qio_style_init_default(qio_style_t* s)
   s->showpoint = 0;
   s->showpointzero = 1;
   s->precision = -1; // use default printf values; usually 6 but more for base 16
-  s->significant_digits = -1;
 
   s->realfmt = 0;
 
   s->complex_style = 0;
 
-  /*
-  s->spaces_after_sep = 1;
-
-  s->array_start_char = '\0';
-  s->array_end_char = '\0';
-  s->array_delim_char1 = ' ';
-  s->array_delim_char2 = '\n';
-  s->array_delim_char3 = '\n';
-
-  s->array_include_index = 0;
-  s->array_include_domain = 0;
-
-  s->tuple_start_char = '(';
-  s->tuple_end_char = ')';
-  s->tuple_delim_char = ',';
-
-  s->record_delim_char = ',';
-  s->record_start_char = '(';
-  s->record_end_char = ')';
-  s->record_after_field_name_char = '=';
-  s->record_print_field_names = 1;
-  s->record_print_name = 0;
-
-  s->class_delim_char = ',';
-  s->class_start_char = '(';
-  s->class_end_char = ')';
-  s->class_after_field_name_char = '=';
-  s->class_print_field_names = 1;
-  s->class_print_name = 0;
-  */
+  s->array_style = 0;
+  s->aggregate_style = 0;
+  s->tuple_style = 0;
 }
 
 static inline
@@ -236,7 +231,7 @@ void qio_style_copy(qio_style_t* dst, qio_style_t* src)
 static inline
 qio_style_t* qio_style_dup(qio_style_t* src)
 {
-  qio_style_t* ret = qio_malloc(sizeof(qio_style_t));
+  qio_style_t* ret = (qio_style_t*) qio_malloc(sizeof(qio_style_t));
   if( src ) qio_style_copy(ret, src);
   else qio_style_init_default(ret);
   return ret;

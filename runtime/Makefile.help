@@ -36,6 +36,7 @@ include src/timers/$(CHPL_MAKE_TIMERS)/Makefile.include
 include src/comm/$(CHPL_MAKE_COMM)/Makefile.include
 include src/launch/$(CHPL_MAKE_LAUNCHER)/Makefile.include
 include src/mem/$(CHPL_MAKE_MEM)/Makefile.include
+include src/regexp/$(CHPL_MAKE_REGEXP)/Makefile.include
 
 
 #
@@ -53,7 +54,8 @@ RUNTIME_OBJS = \
 	$(THREADS_OBJS) \
         $(TIMERS_OBJS) \
 	$(COMM_OBJS) \
-	$(MEM_COMMON_OBJS)
+	$(MEM_COMMON_OBJS) \
+	$(REGEXP_COMMON_OBJS)
 
 LAUNCH_LIB_OBJS = \
 	$(COMMON_LAUNCHER_OBJS) \

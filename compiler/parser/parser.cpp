@@ -141,7 +141,7 @@ ModuleSymbol* ParseFile(const char* filename, ModTag modType) {
       }
     }
   }
-  yyfilename = "<internal>";
+  yyfilename = NULL;
 
   yylloc.first_column = yylloc.last_column = 0;
   yylloc.first_line = yylloc.last_line = yystartlineno = chplLineno = -1;
@@ -219,6 +219,7 @@ void parseDependentModules(ModTag modtype) {
         // if we also found a user module by the same name, we need to
         // rename the standard module and the use of it
         if (foundUsr) {
+          SET_LINENO(oldModNameExpr);
           mod->name = astr("chpl_", modName);
           UnresolvedSymExpr* newModNameExpr = new UnresolvedSymExpr(mod->name);
           oldModNameExpr->replace(newModNameExpr);

@@ -208,22 +208,25 @@ Expr* buildStringLiteral(const char* pch) {
 Expr* buildDotExpr(BaseAST* base, const char* member) {
   // The following optimization was added to avoid calling chpl_int_to_locale
   // when all we end up doing is extracting the locale id, thus:
-  // chpl_int_to_locale(_get_locale(x)).id ==> _get_locale(x)
+  // OPTIMIZATION: chpl_int_to_locale(_get_locale_id(x)).id ==> _get_locale_id(x)
 
   // This broke when realms were removed and uid was renamed as id.
   // It might be better coding practice to label very special module code
   // (i.e. types, fields, values known to the compiler) using pragmas. <hilde>
+  // TODO: We shouldn't have optimizations in the parser.
+
+  // Now "id" returns just the node ID portion of a locale ID.
   if (!strcmp("id", member))
     if (CallExpr* intToLocale = toCallExpr(base))
       if (intToLocale->isNamed("chpl_int_to_locale"))
         if (CallExpr* getLocale = toCallExpr(intToLocale->get(1)))
-          if (getLocale->isPrimitive(PRIM_GET_LOCALEID))
-            return getLocale->remove();
+          if (getLocale->isPrimitive(PRIM_WIDE_GET_LOCALE))
+            return new CallExpr(PRIM_WIDE_GET_NODE, getLocale->get(1)->remove());
 
-  // "x.locale" member access expressions are rendered as chpl_int_to_locale(_get_locale(x)).
+  // MAGIC: "x.locale" member access expressions are rendered as chpl_int_to_locale(_wide_get_node(x)).
   if (!strcmp("locale", member))
     return new CallExpr("chpl_int_to_locale", 
-                        new CallExpr(PRIM_GET_LOCALEID, base));
+                        new CallExpr(PRIM_WIDE_GET_LOCALE, base));
   else
     return new CallExpr(".", base, new_StringSymbol(member));
 }
@@ -646,13 +649,13 @@ destructureIndices(BlockStmt* block,
     block->insertAtHead(new DefExpr(var));
     var->addFlag(FLAG_INDEX_VAR);
     if (coforall)
-      var->addFlag(FLAG_HEAP_ALLOCATE);
+      var->addFlag(FLAG_COFORALL_INDEX_VAR);
     var->addFlag(FLAG_INSERT_AUTO_DESTROY);
   } else if (SymExpr* sym = toSymExpr(indices)) {
     block->insertAtHead(new CallExpr(PRIM_MOVE, sym->var, init));
     sym->var->addFlag(FLAG_INDEX_VAR);
     if (coforall)
-      sym->var->addFlag(FLAG_HEAP_ALLOCATE);
+      sym->var->addFlag(FLAG_COFORALL_INDEX_VAR);
     sym->var->addFlag(FLAG_INSERT_AUTO_DESTROY);
   }
 }
@@ -875,6 +878,46 @@ buildForallLoopExpr(Expr* indices, Expr* iteratorExpr, Expr* expr, Expr* cond, b
   return new CallExpr(new DefExpr(fn));
 }
 
+
+//
+// This is a helper function that takes a chpl_buildArrayRuntimeType(...) 
+// CallExpr and converts it into a forall loop expression.  See the
+// commit messages of r20820 and the commit that added this comment
+// for (a few) more details.
+//
+CallExpr* buildForallLoopExprFromArrayType(CallExpr* buildArrRTTypeCall,
+                                           bool recursiveCall) {
+  // Is this a call to chpl__buildArrayRuntimeType?
+  UnresolvedSymExpr* ursym = toUnresolvedSymExpr(buildArrRTTypeCall->baseExpr);
+  if (!ursym) {
+    INT_FATAL("Unexpected CallExpr format in buildForallLoopExprFromArrayType");
+  }
+  if (strcmp(ursym->unresolved, "chpl__buildArrayRuntimeType") == 0) {
+    // If so, let's process it...
+
+    Expr* EltExpr = buildArrRTTypeCall->get(2)->remove();
+    Expr* DomExpr = buildArrRTTypeCall->get(1)->remove();
+
+    // if the element type is itself an array, we need to do this same
+    // conversion to forall loops recursively
+    if (CallExpr* EltExprAsCall = toCallExpr(EltExpr)) {
+      EltExpr = buildForallLoopExprFromArrayType(EltExprAsCall, true);
+    }
+    return buildForallLoopExpr(NULL, DomExpr, EltExpr, NULL, true);
+  } else {
+    // if we get something other than a "build array runtime type" call...
+    if (recursiveCall) {
+      // ...we're in the base case if this was a recursive call
+      return buildArrRTTypeCall;
+    } else {
+      // ...or something is wrong if we're not
+      INT_FATAL("buildForallLoopExprFromArrayType() wasn't called with a call to chpl__buildArrayRuntimeType as expected");
+      return NULL;
+    }
+  }
+}
+
+
 BlockStmt* buildForLoopStmt(Expr* indices,
                             Expr* iteratorExpr,
                             BlockStmt* body,
@@ -919,6 +962,8 @@ BlockStmt* buildForLoopStmt(Expr* indices,
       new CallExpr("iteratorIndex", iterator)),
     BLOCK_TYPE));
   destructureIndices(body, indices, new SymExpr(index), coforall);
+  if (coforall)
+    index->addFlag(FLAG_COFORALL_INDEX_VAR);
   
   body->blockInfo = new CallExpr(PRIM_BLOCK_FOR_LOOP, index, iterator);
 
@@ -964,6 +1009,7 @@ buildFollowLoop(Symbol* iter, Symbol* leadIdxCopy, Symbol* followIter,
   followBlock->insertAtTail(new CallExpr("_freeIterator", followIter));
   return followBlock;
 }
+
 
 BlockStmt*
 buildForallLoopStmt(Expr* indices, 
@@ -1724,18 +1770,26 @@ BlockStmt* buildLocalStmt(Expr* stmt) {
 
 
 static Expr* extractLocaleID(Expr* expr) {
-  // If the on <x> expression is a primitive_on_locale_num, we just want
-  // to strip off the primitive and have the naked integer value be the
-  // locale ID.
+  // If the on <x> expression is a primitive_on_locale_num, we just 
+  // return the primitive.
+
+  // PRIM_ON_LOCAL_NUM is now passed through to codegen,
+  // but we don't want to wrap it in PRIM_WIDE_GET_LOCALE.
   if (CallExpr* call = toCallExpr(expr)) {
     if (call->isPrimitive(PRIM_ON_LOCALE_NUM)) {
-      return call->get(1);
+      // Can probably use some semantic checks, like the number of args being 1 or 2, etc.
+      return expr;
     }
   }
 
   // Otherwise, we need to wrap the expression in a primitive to query
   // the locale ID of the expression
-  return new CallExpr(PRIM_GET_LOCALEID, expr);
+  // TODO: Review all clients of this routine and see whether they expect the whole
+  // locale ID or just the node ID.  Split this routine into extractLocaleID()
+  // and extractNodeID().
+  // The current implementation expects localeID == nodeID, so we return
+  // just the node portion of the localeID (so this is really extractNodeID()).
+  return new CallExpr(PRIM_WIDE_GET_LOCALE, expr);
 }
 
 
@@ -1788,6 +1842,13 @@ buildOnStmt(Expr* expr, Expr* stmt) {
   }
 
   if (beginBlock) {
+    // OPTIMIZATION: If "on x" is immediately followed by a "begin", then collapse
+    // remote_fork (node) {
+    //   branch /*local*/ { foo(); }
+    // } wait;
+    // to 
+    // remote_fork (node) { foo(); } // no wait();
+
     // Execute the construct "on x begin ..." asynchronously.
     Symbol* tmp = newTemp();
     body->insertAtHead(new CallExpr(PRIM_MOVE, tmp, onExpr));

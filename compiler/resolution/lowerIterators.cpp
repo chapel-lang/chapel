@@ -104,6 +104,7 @@ fragmentLocalBlocks() {
   }
 
   forv_Vec(Expr, expr, queue) {
+    SET_LINENO(expr);
     for (Expr* current = expr; current; current = current->next) {
       bool insertNewLocal = false;
       CallExpr* call = toCallExpr(current);
@@ -478,8 +479,10 @@ expandIteratorInline(CallExpr* call) {
 
     FnSymbol* iteratorFn = iteratorFnMap.get(iterator);
     if (!iteratorFn) {
+     {
       SET_LINENO(iterator);
       iteratorFn = new FnSymbol(astr("_rec_iter_fn_", iterator->name));
+     }
 
       //
       // identify iterators with on-statements
@@ -493,12 +496,14 @@ expandIteratorInline(CallExpr* call) {
         }
       }
 
+      ClassType* argsBundleType;
+     {
       SET_LINENO(call);
 
       iteratorFnCall->baseExpr->replace(new SymExpr(iteratorFn));
-      ClassType* argsBundleType =
+      argsBundleType =
         bundleLoopBodyFnArgsForIteratorFnCall(iteratorFnCall, loopBodyFnCall, loopBodyFnWrapper);
-
+     }
 
       SET_LINENO(iterator);
       iteratorFn->body = iterator->body->copy();
@@ -1037,6 +1042,7 @@ void lowerIterators() {
       int64_t num;
       if (get_int(call->get(2), &num)) {
         Symbol* field = ct->getField(num+1); // add 1 for super
+        SET_LINENO(call);
         call->get(2)->replace(new SymExpr(field));
         CallExpr* parent = toCallExpr(call->parentExpr);
         INT_ASSERT(parent->isPrimitive(PRIM_MOVE));
@@ -1071,6 +1077,7 @@ void lowerIterators() {
               if (isArgSymbol(se->var) && call->parentSymbol != se->var->defPoint->parentSymbol) {
                 Symbol* field = toClassType(iteratorType)->getField(i);
                 VarSymbol* tmp = NULL;
+                SET_LINENO(call);
                 if (field->type == se->var->type) {
                   tmp = newTemp(field->type);
                   call->getStmtExpr()->insertBefore(new DefExpr(tmp));
@@ -1096,6 +1103,7 @@ void lowerIterators() {
       INT_ASSERT(getIterator->defPoint->parentSymbol);
       ClassType* irecord = fn->iteratorInfo->irecord;
       if (irecord->dispatchChildren.n > 0) {
+        SET_LINENO(getIterator);
         LabelSymbol* label = new LabelSymbol("end");
         getIterator->insertBeforeReturn(new DefExpr(label));
         Symbol* ret = getIterator->getReturnSymbol();
@@ -1139,6 +1147,7 @@ void lowerIterators() {
   //
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->numFormals() == 1 && fn->getFormal(1)->type->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
+      SET_LINENO(fn);
       if (!strcmp(fn->name, "chpl__autoCopy")) {
         Symbol* arg = fn->getFormal(1);
         Symbol* ret = fn->getReturnSymbol();
@@ -1146,6 +1155,7 @@ void lowerIterators() {
         block->insertAtTail(ret->defPoint->remove());
         ClassType* irt = toClassType(arg->type);
         for_fields(field, irt) {
+          SET_LINENO(field);
           if (FnSymbol* autoCopy = autoCopyMap.get(field->type)) {
             Symbol* tmp1 = newTemp(field->type);
             Symbol* tmp2 = newTemp(autoCopy->retType);
@@ -1165,10 +1175,12 @@ void lowerIterators() {
         fn->body->replace(block);
       }
       if (!strcmp(fn->name, "chpl__autoDestroy")) {
+        SET_LINENO(fn);
         Symbol* arg = fn->getFormal(1);
         BlockStmt* block = new BlockStmt();
         ClassType* irt = toClassType(arg->type);
         for_fields(field, irt) {
+          SET_LINENO(field);
           if (FnSymbol* autoDestroy = autoDestroyMap.get(field->type)) {
             Symbol* tmp = newTemp(field->type);
             block->insertAtTail(new DefExpr(tmp));

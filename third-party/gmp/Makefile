@@ -18,7 +18,7 @@ default: all
 all: gmp
 
 clean: FORCE
-	rm -rf $(GMP_BUILD_DIR)
+	rm -rf $(GMP_BUILD_SUBDIR)
 
 clobber: FORCE
 	rm -rf build install

@@ -11,7 +11,7 @@ all: FORCE
 	cd src && $(MAKE)
 
 clean: FORCE
-	rm -rf $(DLMALLOC_BUILD_DIR)
+	rm -rf $(DLMALLOC_BUILD_SUBDIR)
 
 clobber: FORCE
 	rm -rf build install

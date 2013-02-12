@@ -1,10 +1,14 @@
+
 //
 // A helper module for the RA benchmark that defines the random stream
 // of values
 //
 module RARandomStream {
+  config param useLCG = true;
+
   param randWidth = 64;              // the bit-width of the random numbers
   type randType = uint(randWidth);   // the type of the random numbers
+
 
   //
   // m2 is a table (tuple) of helper values used to fast-forward
@@ -17,7 +21,7 @@ module RARandomStream {
   // to its 0th element and yields values endlessly.
   //
   iter RAStream() {
-    var val = getNthRandom(0);
+    var val = getNthRandom(0:randType);
     while (1) {
       getNextRandom(val);
       yield val;
@@ -41,23 +45,42 @@ module RARandomStream {
   }
 
   //
+  // magic number for the LCG random stream
+  //
+
+  //
   // A helper function for "fast-forwarding" the random stream to
   // position n in O(log2(n)) time
   //
   proc getNthRandom(in n: uint(64)) {
-    param period = 0x7fffffffffffffff/7;
+    if (useLCG) {
+      var mul_k = 6364136223846793005:randType,
+          add_k = 1:randType;
 
-    n %= period;
-    if (n == 0) then return 0x1;
-    var ran: randType = 0x2;
-    for i in 0..log2(n)-1 by -1 {
-      var val: randType = 0;
-      for j in 0..#randWidth do
-        if ((ran >> j) & 1) then val ^= m2(j+1);
-      ran = val;
-      if ((n >> i) & 1) then getNextRandom(ran);
+      var ran = 1:randType;
+      while (n) {
+	if (n & 1) then
+	  ran = mul_k * ran + add_k;
+	add_k *= (mul_k + 1);
+	mul_k *= mul_k;
+	n >>= 1;
+      }
+      return ran;
+    } else {
+      param period = 0x7fffffffffffffff/7;
+
+      n %= period;
+      if (n == 0) then return 0x1;
+      var ran: randType = 0x2;
+      for i in 0..log2(n)-1 by -1 {
+	var val: randType = 0;
+	for j in 0..#randWidth do
+	  if ((ran >> j) & 1) then val ^= m2(j+1);
+	ran = val;
+	if ((n >> i) & 1) then getNextRandom(ran);
+      }
+      return ran;
     }
-    return ran;
   }
 
   //
@@ -65,10 +88,14 @@ module RARandomStream {
   // x, to the next value
   //
   proc getNextRandom(inout x) {
-    param POLY = 0x7;
-    param hiRandBit = 0x1:randType << (randWidth-1);
+    if (useLCG) {
+      x = 6364136223846793005*x + 1;
+    } else {
+      param POLY = 0x7;
+      param hiRandBit = 0x1:randType << (randWidth-1);
 
-    x = (x << 1) ^ (if (x & hiRandBit) then POLY else 0);
+      x = (x << 1) ^ (if (x & hiRandBit) then POLY else 0);
+    }
   }
 
   //

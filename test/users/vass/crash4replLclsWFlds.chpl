@@ -14,18 +14,18 @@ config param fakeDimensionalDistParDim = 0;
 var traceDimensionalDistPrefix = "";
 
 // private helpers ("trace DimensionalDist" Conditionally)
-pragma "inline" proc _traceddc(param condition: bool, args...)
+inline proc _traceddc(param condition: bool, args...)
 {
   if condition then writeln(traceDimensionalDistPrefix,(...args));
 }
-pragma "inline" proc _traceddc(param cond, d:DimensionalDist, args...)
+inline proc _traceddc(param cond, d:DimensionalDist, args...)
 { _traceddc(cond, "DimensionalDist(", d.name, ")", (...args)); }
-pragma "inline" proc _traceddc(param cond, d:DimensionalDom, args...)
+inline proc _traceddc(param cond, d:DimensionalDom, args...)
 { _traceddc(cond, "DimensionalDom(", d.dist.name, ")", (...args)); }
-pragma "inline" proc _traceddc(param cond, d:DimensionalArr, args...)
+inline proc _traceddc(param cond, d:DimensionalArr, args...)
 { _traceddc(cond, "DimensionalArr(", d.dom.dist.name, ")", (...args)); }
 // the Default condition
-pragma "inline" proc _traceddd(args...)
+inline proc _traceddd(args...)
 { _traceddc(traceDimensionalDist, (...args)); }
 
 
@@ -36,14 +36,14 @@ type locCntT = uint(32);
 
 // ... locale ID, i.e., its index in targetLocales in the given dimension
 // convention: a locale ID is between 0 and (num. locales 1d - 1)
-type locIdT =  int(32);
+type locIdT =  int(64);
 
 // ... local storage size and indices (0-based)
 type stoSzT  = uint(32);
 
 param invalidLocID =
   // encode 'max(locIdT)' as a compile-time expression
-  2 ** (numBits(locIdT) - 1 - _isSignedType(locIdT):int);
+  (2 ** (numBits(locIdT) - 1 - _isSignedType(locIdT):int)):int(64);
 
 
 /// class declarations //////////////////////////////////////////////////////
@@ -325,7 +325,7 @@ proc _CurrentLocaleToLocIDs(targetLocales): (targetLocales.rank*locIdT, bool)
   var result: targetLocales.rank * locIdT;
   // guard updates to 'result' to ensure atomicity of updates
   var gotresult$: sync bool = false;
-  forall (lls, loc) in (targetLocales.domain, targetLocales) do
+  forall (lls, loc) in zip(targetLocales.domain, targetLocales) do
     if loc == here {
       // if we get multiple matches, we do not specify which is returned
       // could add a pre-test if it were cheap: if !gotresult$.readXX()
@@ -537,7 +537,7 @@ proc DimensionalDist.dsiNewRectangularDom(param rank: int,
                                   dom1 = dom1, dom2 = dom2);
   // result.whole is initialized to the default value (empty domain)
   coforall (loc, locIds, locDdesc)
-   in (targetLocales, targetIds, result.localDdescs) do
+   in zip(targetLocales, targetIds, result.localDdescs) do
     on loc {
       const defaultVal1: result.domainT;
       const locD1 = dom1.dsiNewLocalDom1d(locIds(1));
@@ -568,7 +568,7 @@ proc DimensionalDom._dsiSetIndicesHelper(newRanges: rank * rangeT): void {
   dom1.dsiSetIndices1d(newRanges(1));
   dom2.dsiSetIndices1d(newRanges(2));
 
-  coforall (locId, locDD) in (dist.targetIds, localDdescs) do
+  coforall (locId, locDD) in zip(dist.targetIds, localDdescs) do
     on locDD do
       locDD._dsiLocalSetIndicesHelper((dom1, dom2), locId);
 }
@@ -644,7 +644,7 @@ proc DimensionalDom.dsiBuildArray(type eltType)
 
   const result = new DimensionalArr(eltType = eltType, dom = this);
   coforall (loc, locDdesc, locAdesc)
-   in (dist.targetLocales, localDdescs, result.localAdescs) do
+   in zip(dist.targetLocales, localDdescs, result.localAdescs) do
     on loc do
       locAdesc = new LocDimensionalArr(eltType, locDdesc);
   return result;
@@ -747,7 +747,7 @@ iter DimensionalDom.these(param tag: iterKind) where tag == iterKind.leader {
   //     coforall ((l1,l2), locDdesc) in (dist.targetIds, localDdescs) do
   //   presently it will crash the compiler on an assertion.
   //
-  coforall (lls, locDdesc) in (overTargetIds, localDdescs[overTargetIds]) do
+  coforall (lls, locDdesc) in zip(overTargetIds, localDdescs[overTargetIds]) do
     on locDdesc {
       // mimic BlockDom leader
 
@@ -1533,18 +1533,18 @@ proc doShowArr(dmdom, dmarr, dmhelp) {
   //dmarr.writeThis(stdout); writeln(); -- works by chance
 
   hhd("dmdom, dmarr - zippered iteration");
-  forall (ix,elm) in (dmdom,dmarr) do
+  forall (ix,elm) in zip(dmdom,dmarr) do
     msg(" ", ix, " ", elm, "  eon ", elm.locale.id, "  on ", here.id);
   tl();
 
   hhd("dmarr, dmdom - zippered iteration");
-  forall (elm,ix) in (dmarr,dmdom) do
+  forall (elm,ix) in zip(dmarr,dmdom) do
     msg(" ", ix, " ", elm, "  eon ", elm.locale.id, "  on ", here.id);
   tl();
 
   hhd("dmarr, dmhelp - zippered iteration");
   resetDmhelp(dmhelp);
-  forall (elm,hlp) in (dmarr,dmhelp) do
+  forall (elm,hlp) in zip(dmarr,dmhelp) do
     msg(" ", elm, " ", hlp, "  on ", here.id);
   tl();
 }
@@ -1553,7 +1553,7 @@ proc resetDmhelp(dmhelp: []) {
   if dmhelp.rank != 2 then
     compilerError("resetDmhelp is implemented only for 2-d arrays");
 
-  for (ix, elm) in (dmhelp.domain, dmhelp) do
+  for (ix, elm) in zip(dmhelp.domain, dmhelp) do
     elm = ix(1)*100 + ix(2);
 }
 

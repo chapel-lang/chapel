@@ -1,3 +1,5 @@
+use CommDiagnostics;
+
 proc f(param p: int) {
   var x: p*int;
   for param i in 1..p do

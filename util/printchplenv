@@ -11,7 +11,7 @@ print "uname -a: $uname";
 print "\$CHPL_HOME: $ENV{'CHPL_HOME'}\n";
 print "script location: $utildirname\n";
 
-$hostplatform = `$utildirname/platform --host`; chomp($hostplatform);
+$hostplatform = `$utildirname/platform --host 1`; chomp($hostplatform);
 $hostcompiler = `$utildirname/compiler --host`; chomp($hostcompiler);
 
 print "CHPL_HOST_PLATFORM: $hostplatform\n";
@@ -26,7 +26,7 @@ print "CHPL_TARGET_COMPILER: $targcompiler\n";
 
 $comm = `$utildirname/comm`; chomp($comm);
 print "CHPL_COMM: $comm\n";
-if ($comm eq "none") {
+if ($comm eq "none" || $comm eq "ugni") {
 } else {
     $commsubstrate = `$utildirname/commSubstrate`; chomp($commsubstrate);
     print "  CHPL_COMM_SUBSTRATE: $commsubstrate\n";
@@ -62,5 +62,7 @@ print "  CHPL_NETWORK_ATOMICS: $network_atomics\n";
 }
 $gmp = `$utildirname/gmp`; chomp($gmp);
 print "CHPL_GMP: $gmp\n";
+$regexp = `$utildirname/regexp`; chomp($regexp);
+print "CHPL_REGEXP: $regexp\n";
 $llvm = `$utildirname/llvm`; chomp($llvm);
 print "CHPL_LLVM: $llvm\n";

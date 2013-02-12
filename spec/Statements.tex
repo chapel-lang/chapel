@@ -96,7 +96,11 @@ The expression statement evaluates an expression solely for side
 effects. The syntax for an expression statement is given by
 \begin{syntax}
 expression-statement:
-  expression ;
+  variable-expression ;
+  member-access-expression ;
+  call-expression ;
+  constructor-call-expression ;
+  let-expression ; 
 \end{syntax}
 
 \section{Assignment Statements}
@@ -177,6 +181,9 @@ left-hand side is, for example, \chpl{int(8)} because the \chpl{+}
 operator is defined on \chpl{int(32)}, not \chpl{int(8)}.
 \end{rationale}
 
+The compound assignment operators can be overloaded for different
+types using operator overloading~(\rsec{Function_Overloading}).
+
 \section{The Swap Statement}
 \label{The_Swap_Statement}
 \index{swap!statement}
@@ -188,6 +195,9 @@ operator is defined on \chpl{int(32)}, not \chpl{int(8)}.
 The swap statement indicates to swap the values in the expressions
 on either side of the swap operator.  Since both expressions are assigned
 to, each must be a valid lvalue expression~(\rsec{LValue_Expressions}).
+
+The swap operator can be overloaded for different types using operator
+overloading~(\rsec{Function_Overloading}).
 \begin{syntax}
 swap-statement:
   lvalue-expression swap-operator lvalue-expression
@@ -200,7 +210,7 @@ To implement the swap operation, the compiler uses temporary variables
 as necessary.
 
 \begin{example}
-The following swap statement
+When resolved to the default swap operator, the following swap statement
 \begin{chapel}
 var a, b: real;
 
@@ -216,7 +226,7 @@ a = t;
 
 \section{The Conditional Statement}
 \label{The_Conditional_Statement}
-\index{statments!conditional}
+\index{statements!conditional}
 \index{if@\chpl{if}}
 \index{then@\chpl{then}}
 \index{else@\chpl{else}}

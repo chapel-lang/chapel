@@ -14,6 +14,7 @@ $hello = 0;
 $allhellos = 0;
 $examples = 0;
 $componly = 0;
+$nofutures = 0;
 $suppressions = "";
 $parnodefile = "";
 $nolocal = 0;
@@ -70,6 +71,8 @@ while (@ARGV) {
         $suppressions = shift @ARGV;
     } elsif ($flag eq "-componly") {
 	$componly = 1;
+    } elsif ($flag eq "-no-futures") {
+	$nofutures = 1;
     } elsif ($flag eq "-parnodefile") {
         $parnodefile = shift @ARGV;
     } elsif ($flag eq "-no-local") {
@@ -85,6 +88,7 @@ while (@ARGV) {
 }
 
 
+print localtime() . "  host: " . hostname . "\n";
 $ctmp = `crontab -l`;
 @blah = split(/\n/, $ctmp);
 # Ignore the first 3 (commented) lines added by crontab
@@ -114,7 +118,7 @@ if (@ARGV) {
 }
 
 if ($printusage == 1) {
-    print "nightly [-debug|-cron] {[-notest] [-valgrind] [-componly] [-performance]}\n";
+    print "nightly [-debug|-cron] {[-notest] [-valgrind] [-componly] [-no-futures] [-performance]}\n";
     print "\t-debug       : check out sources and run for individual user (default)\n";
     print "\t-cron        : use for nightly cron runs only\n";
     print "\t-notest      : don't run the tests (check the build only)\n";
@@ -132,6 +136,7 @@ if ($printusage == 1) {
     print "\t-memleaks <log> : run memleaks tests\n";
     print "\t-no-local    : run tests using --no-local\n";
     print "\t-componly    : only run the compiler, not the generated binary\n";
+    print "\t-no-futures  : do not run future tests\n";
     print "\t-parnodefile : specify a node file to use for parallel testing\n";
     exit 1;
 }
@@ -258,12 +263,8 @@ if ($debug == 1) {
 }
 $chapeldir = "$tmpdir/chapel";
 $testdir = "$chapeldir/test";
+print "\$chapeldir = $chapeldir\n";
 
-
-
-
-#print "fullplatform is: $fullplatform\n";
-#exit 0;
 
 $launchcmd = "$ENV{'CHPL_APP_LAUNCH_CMD'}";
 
@@ -427,12 +428,12 @@ delete($ENV{'CHPL_HOME'});
 #
 $svnroot = $ENV{'CHPL_HOME_REPOSITORY'};
 if ($svnroot eq "") {
-    $svnroot = "https://chapel.svn.sourceforge.net/svnroot/chapel/trunk";
+    $svnroot = "svn://svn.code.sf.net/p/chapel/code/trunk";
 }
 
 $readonlydirname = "chapel-cron-$user-readonly";
 $readonlydir = "$basetmpdir/$readonlydirname";
-# print "testing $readonlydir\n";
+print "\$readonlydir = $readonlydir\n";
 if (! (-r $readonlydir && -d $readonlydir)) {
     print "The SVN directory has not been checked out yet\n";
     print "***** $svnrevopt $svnroot $readonlydirname *****\n";
@@ -489,19 +490,13 @@ $makestat = mysystem("cd $chapeldir && $make modules", "making chapel modules", 
 #
 
 $testflags = "-logfile $rawlog";
-if ($compopts ne "") {
-$testflags = "$testflags -compopts '$compopts'";
-}
-if ($execopts ne "") {
-$testflags = "$testflags -execopts '$execopts'";
-}
 if ($interpret == 1) {
     $testflags = "$testflags -interpret";
 }
 if ($valgrind == 1) {
     $testflags = "$testflags -valgrind";
 }
-if ($valgrind == 0) {
+if ($nofutures == 0) {
     $testflags = "$testflags -futures";
 }
 
@@ -577,6 +572,14 @@ if ($launchcmd) {
 if ($componly == 1) {
     $testflags = "$testflags -comp-only";
 }
+# Put specified compopts and execopts last
+if ($compopts ne "") {
+$testflags = "$testflags -compopts '$compopts'";
+}
+if ($execopts ne "") {
+$testflags = "$testflags -execopts '$execopts'";
+}
+
 
 if ($runtests == 0) {
     $endtime = localtime;
@@ -658,8 +661,8 @@ if ($runtests == 0) {
     if ($status == 0) {
         $newfailures = `comm -13 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep -v "$futuremarker" | wc -l`; chomp($newfailures);
         $newresolved = `comm -23 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep -v "$futuremarker" | wc -l`; chomp($newresolved);
-        $newpassingfutures = `comm -13 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep "$futuremarker" | wc -l`; chomp($newpassingfutures);
-        $passingfutures = `grep "$futuremarker" $sortedsummary | grep "Success" | wc -l`; chomp($passingfutures);
+        $newpassingfutures = `comm -13 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep "$futuremarker" | grep "\\[Success" | wc -l`; chomp($newpassingfutures);
+        $passingfutures = `grep "$futuremarker" $sortedsummary | grep "\\[Success" | wc -l`; chomp($passingfutures);
         $newfailures += 0;
         $shortstatus = "$newfailures/$newpassingfutures/$curfail";
     } else {

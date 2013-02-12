@@ -1,0 +1,16 @@
+String => Int Map
+(six, 6)
+(four, 4)
+(five, 5)
+
+Sparse Int => String Map
+(1, one)
+(5, five)
+(13, thirteen)
+(7, seven)
+(19, nineteen)
+(3, three)
+(23, twenty-three)
+(17, seventeen)
+(2, two)
+(11, eleven)

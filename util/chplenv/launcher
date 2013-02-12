@@ -15,7 +15,7 @@ if ($preset_launcher eq "") {
     $compiler = `$utildirname/compiler --target`; chomp($compiler);
 
     $launcher = "none";
-    if ($platform eq "xt-cle" || $platform eq "xe-cle") {
+    if ($platform =~ /^cray-(xc|xe|xk|xt)$/) {
         if (system("which aprun > /dev/null 2>&1")) {
             $launcher = "none";
         } else {
@@ -55,9 +55,9 @@ if ($preset_launcher eq "") {
         if ($substrate eq "mpi") {
             $launcher = "mpirun";
         }
-    } elsif ($platform eq "xmt-sim") {
+    } elsif ($platform eq "cray-xmt-sim") {
 	$launcher = "zebra";
-    } elsif ($platform eq "xmt") {
+    } elsif ($platform eq "cray-xmt") {
         $launcher = "mtarun";
     } elsif ($platform eq "x1-sim" || $platform eq "x2-sim") {
       $launcher = "apsim";

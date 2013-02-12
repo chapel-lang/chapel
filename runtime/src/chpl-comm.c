@@ -10,8 +10,8 @@
 #include <string.h>
 #include <unistd.h>
 
-int32_t chpl_localeID = -1;
-int32_t chpl_numLocales = -1;
+int32_t chpl_nodeID = -1;
+int32_t chpl_numNodes = -1;
 int32_t chpl_numPrivateObjects = 0;
 static int32_t chpl_capPrivateObjects = 0;
 void** chpl_privateObjects;

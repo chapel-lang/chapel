@@ -1,3 +1,5 @@
+#include "chplrt.h"
+
 #include "arg.h"
 #include "chpl_rt_utils_static.h"
 #include "chplcast.h"
@@ -7,15 +9,15 @@
 #include "chplio.h"
 #include "chpl-mem.h"
 #include "chplmemtrack.h"
-#include "chplrt.h"
 #include "chpl-tasks.h"
 #include "config.h"
 #include "error.h"
+
 #include <stdint.h>
 #include <string.h>
 #include <locale.h>
 #include <time.h>
-#include "sys.h"
+#include <sys.h>
 
 extern int chpl_no_stdmodules;
 
@@ -163,7 +165,7 @@ int main(int argc, char* argv[]) {
   // The call to chpl_comm_barrier makes sure that all locales are listening
   // before an attempt is made to run tasks "on" them.
 
-  if (chpl_localeID == 0) {      // have locale #0 run the user's main function
+  if (chpl_nodeID == 0) {      // have locale #0 run the user's main function
 
     chpl_task_callMain(chpl_main);
   }

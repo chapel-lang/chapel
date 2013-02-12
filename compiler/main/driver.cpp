@@ -20,7 +20,7 @@
 #include "symbol.h"
 #include "config.h"
 
-char *chplBinaryName = NULL;
+const char *chplBinaryName = NULL;
 FILE* html_index_file = NULL;
 
 char deletedIdFilename[FILENAME_MAX+1] = "";
@@ -44,9 +44,12 @@ const char* CHPL_TARGET_COMPILER = NULL;
 const char* CHPL_TASKS = NULL;
 const char* CHPL_THREADS = NULL;
 const char* CHPL_COMM = NULL;
+const char* CHPL_COMM_SUBSTRATE = NULL;
+const char* CHPL_GASNET_SEGMENT = NULL;
 const char* CHPL_ATOMICS = NULL;
 const char* CHPL_NETWORK_ATOMICS = NULL;
 const char* CHPL_GMP = NULL;
+const char* CHPL_MAKE = NULL;
 
 int fdump_html = 0;
 bool fdump_html_incude_system_modules = true;
@@ -105,7 +108,6 @@ bool fHeterogeneous = false; // re-initialized in setupOrderedGlobals() below
 bool fGPU;
 bool fieeefloat = true;
 bool report_inlining = false;
-char chplmake[256] = "";
 char fExplainCall[256] = "";
 char fExplainInstantiation[256] = "";
 bool fPrintCallStackOnError = false;
@@ -122,11 +124,11 @@ bool userSetCppLineno = false;
 int num_constants_per_variable = 1;
 char defaultDist[256] = "DefaultDist";
 int instantiation_limit = 256;
-bool fdocs = false;
-bool alphabetize = false;
-char commentLabel[256] = "";
-char docsFolder[256] = "";
-bool nocreole = false;
+bool fDocs = false;
+bool fDocsAlphabetize = false;
+char fDocsCommentLabel[256] = "";
+char fDocsFolder[256] = "";
+bool fDocsTextOnly = false;
 char mainModuleName[256] = "";
 bool printSearchDirs = false;
 bool printModuleFiles = false;
@@ -271,12 +273,12 @@ static void setCommentLabel(ArgumentState *arg_state, char* label) {
   assert(label != NULL);
   size_t len = strlen(label);
   if (len != 0) {
-    if (len > sizeof(commentLabel)) {
+    if (len > sizeof(fDocsCommentLabel)) {
       USR_FATAL("the label is too large!");
     }else if (label[0] != '/' || label[1] != '*') {
       USR_FATAL("comment label should start with /*");
     } else {
-      strcpy(commentLabel, label);
+      strcpy(fDocsCommentLabel, label);
     }
   }
 }
@@ -308,17 +310,19 @@ static void setupOrderedGlobals(const char* argv0) {
   SETUP_ENV_VAR(CHPL_TASKS, "chplenv/tasks");
   SETUP_ENV_VAR(CHPL_THREADS, "chplenv/threads");
   SETUP_ENV_VAR(CHPL_COMM, "chplenv/comm");
+  SETUP_ENV_VAR(CHPL_COMM_SUBSTRATE, "chplenv/commSubstrate");
+  SETUP_ENV_VAR(CHPL_GASNET_SEGMENT, "chplenv/commSegment");
   SETUP_ENV_VAR(CHPL_ATOMICS, "chplenv/atomics");
   SETUP_ENV_VAR(CHPL_NETWORK_ATOMICS, "chplenv/atomics --network");
   SETUP_ENV_VAR(CHPL_GMP, "chplenv/gmp");
+  SETUP_ENV_VAR(CHPL_MAKE, "chplenv/chplmake");
 
   // These depend on the environment variables being set
   fLocal = !strcmp(CHPL_COMM, "none");
   fSerial = !strcmp(CHPL_TASKS, "none"); 
-  fNoRepositionDefExpr = strcmp(CHPL_TARGET_PLATFORM, "xmt");
+  fNoRepositionDefExpr = strcmp(CHPL_TARGET_PLATFORM, "cray-xmt");
   bool gotPGI = !strcmp(CHPL_TARGET_COMPILER, "pgi")
-             || !strcmp(CHPL_TARGET_COMPILER, "cray-xe-pgi")
-             || !strcmp(CHPL_TARGET_COMPILER, "cray-xt-pgi");
+             || !strcmp(CHPL_TARGET_COMPILER, "cray-prgenv-pgi");
   // conservatively how much is needed for the current PGI compiler
   if (gotPGI) fMaxCIdentLen = 1020;
   // Enable if we are going to use Nvidia's NVCC compiler
@@ -392,19 +396,18 @@ static void handleIncDir(ArgumentState* arg_state, char* arg_unused) {
 }
 
 static void
-compute_program_name_loc(char* orig_argv0, const char** name, const char** loc) {
+compute_program_name_loc(const char* orig_argv0, const char** name, const char** loc) {
   char* argv0 = strdup(orig_argv0);
   char* lastslash = strrchr(argv0, '/');
   if (lastslash == NULL) {
     *name = argv0;
-    *loc = ".";   // BLC: this is inaccurate; we should search the path.  
-                  // It's no less accurate than what we did previously, though.
+    *loc = findProgramPath(orig_argv0);
   } else {
     *lastslash = '\0';
     *name = lastslash+1;
-    *loc = argv0;
+    *loc = findProgramPath(orig_argv0);
   }
-  chplBinaryName = (char*)*name;
+  chplBinaryName = *name;
 }
 
 
@@ -423,7 +426,7 @@ static void readConfig(ArgumentState* arg_state, char* arg_unused) {
   // 2. name       -- set the boolean config param "name" to NOT("name")
   //                  if name is not type bool, set it to 0.
 
-  char *name = (char*)astr(arg_unused);
+  char *name = strdup(arg_unused);
   char *value;
   value = strstr(name, "=");
   if (value) {
@@ -544,17 +547,12 @@ Record components:
 
 static ArgumentDescription arg_desc[] = {
  {"", ' ', NULL, "Module Processing Options", NULL, NULL, NULL, NULL},
- {"count-tokens", ' ', NULL, "Count tokens in main modules", "F", &countTokens, "CHPL_COUNT_TOKENS", NULL},
- {"docs", ' ', NULL, "Runs documentation on the source file", "N", &fdocs, "CHPL_DOC", NULL },
- {"docs-alphabetical", ' ', NULL, "Alphabetizes the documentation", "N", &alphabetize, NULL, NULL},
- {"docs-comment-style", ' ', "<indicator>", "Only includes comments that start with <indicator>", "S256", commentLabel, NULL, setCommentLabel},
- {"docs-folder", ' ', "<foldername>", "Sets the documentation folder to <foldername>", "S256", docsFolder, NULL, NULL},
- {"docs-no-creole", ' ', NULL, "Does not add creole tags to documentation", "F", &nocreole, NULL, NULL},
+ {"count-tokens", ' ', NULL, "[Don't] count tokens in main modules", "N", &countTokens, "CHPL_COUNT_TOKENS", NULL},
  {"main-module", ' ', "<module>", "Specify entry point module", "S256", mainModuleName, NULL, NULL},
  {"module-dir", 'M', "<directory>", "Add directory to module search path", "P", moduleSearchPath, NULL, addModulePath},
- {"print-code-size", ' ', NULL, "Print code size of main modules", "F", &printTokens, "CHPL_PRINT_TOKENS", NULL},
+ {"print-code-size", ' ', NULL, "[Don't] print code size of main modules", "N", &printTokens, "CHPL_PRINT_TOKENS", NULL},
  {"print-module-files", ' ', NULL, "Print module file locations", "F", &printModuleFiles, NULL, NULL},
- {"print-search-dirs", ' ', NULL, "Print module search path", "F", &printSearchDirs, "CHPL_PRINT_SEARCH_DIRS", NULL},
+ {"print-search-dirs", ' ', NULL, "[Don't] print module search path", "N", &printSearchDirs, "CHPL_PRINT_SEARCH_DIRS", NULL},
 
  {"", ' ', NULL, "Parallelism Control Options", NULL, NULL, NULL, NULL},
  {"local", ' ', NULL, "Target one [many] locale[s]", "N", &fLocal, "CHPL_LOCAL", NULL},
@@ -562,7 +560,7 @@ static ArgumentDescription arg_desc[] = {
  {"serial-forall", ' ', NULL, "[Don't] Serialize forall constructs", "N", &fSerialForall, "CHPL_SERIAL_FORALL", NULL},
 
  {"", ' ', NULL, "Optimization Control Options", NULL, NULL, NULL, NULL},
- {"baseline", ' ', NULL, "Disable all Chapel optimizations", "F", &fBaseline, "CHPL_BASELINE", setBaselineFlag},
+ {"baseline", ' ', NULL, "[Don't] disable all Chapel optimizations", "N", &fBaseline, "CHPL_BASELINE", setBaselineFlag},
  {"conditional-dynamic-dispatch-limit", ' ', "<limit>", "Set limit on # of inline conditionals used for dynamic dispatch", "I", &fConditionalDynamicDispatchLimit, "CHPL_CONDITIONAL_DYNAMIC_DISPATCH_LIMIT", NULL},
  {"copy-propagation", ' ', NULL, "Enable [disable] copy propagation", "n", &fNoCopyPropagation, "CHPL_DISABLE_COPY_PROPAGATION", NULL},
  {"dead-code-elimination", ' ', NULL, "Enable [disable] dead code elimination", "n", &fNoDeadCodeElimination, "CHPL_DISABLE_DEAD_CODE_ELIMINATION", NULL},
@@ -588,13 +586,10 @@ static ArgumentDescription arg_desc[] = {
  {"bounds-checks", ' ', NULL, "Enable [disable] bounds checking", "n", &fNoBoundsChecks, "CHPL_NO_BOUNDS_CHECKING", NULL},
  {"local-checks", ' ', NULL, "Enable [disable] local block checking", "n", &fNoLocalChecks, NULL, NULL},
  {"nil-checks", ' ', NULL, "Enable [disable] nil checking", "n", &fNoNilChecks, "CHPL_NO_NIL_CHECKS", NULL},
- //Disable flag for transitional warning of 1.5 domain literal syntax.  This option should be removed after 1.6 is released!
- {"warn-domain-literal", ' ', NULL, "[Disable] Enable old domain literal syntax warnings", "n", &fNoWarnDomainLiteral, "CHPL_NO_WARN_DOMAIN_LITERAL", NULL},
 
  {"", ' ', NULL, "C Code Generation Options", NULL, NULL, NULL, NULL},
  {"codegen", ' ', NULL, "[Don't] Do code generation", "n", &no_codegen, "CHPL_NO_CODEGEN", NULL},
  {"cpp-lines", ' ', NULL, "[Don't] Generate #line annotations", "N", &printCppLineno, "CHPL_CG_CPP_LINES", noteCppLinesSet},
- {"gen-extern-prototypes", ' ', NULL, "[Don't] generate C prototypes for extern declarations", "F", &genExternPrototypes, "CHPL_GEN_EXTERN_PROTOTYPES", NULL},
  {"max-c-ident-len", ' ', NULL, "Maximum length of identifiers in generated code, 0 for unlimited", "I", &fMaxCIdentLen, "CHPL_MAX_C_IDENT_LEN", NULL},
  {"savec", ' ', "<directory>", "Save generated C code in directory", "P", saveCDir, "CHPL_SAVEC_DIR", verifySaveCDir},
 
@@ -606,17 +601,24 @@ static ArgumentDescription arg_desc[] = {
  {"ldflags", ' ', "<flags>", "Back-end C linker flags", "S256", ldflags, "CHPL_LD_FLAGS", NULL},
  {"lib-linkage", 'l', "<library>", "C library linkage", "P", libraryFilename, "CHPL_LIB_NAME", handleLibrary},
  {"lib-search-path", 'L', "<directory>", "C library search path", "P", libraryFilename, "CHPL_LIB_PATH", handleLibPath},
- {"make", ' ', "<make utility>", "Make utility for generated code", "S256", &chplmake, "CHPL_MAKE", NULL},
+ {"make", ' ', "<make utility>", "Make utility for generated code", "S256", &CHPL_MAKE, "CHPL_MAKE", NULL},
  {"optimize", 'O', NULL, "[Don't] Optimize generated C code", "N", &optimizeCCode, "CHPL_OPTIMIZE", NULL},
  {"output", 'o', "<filename>", "Name output executable", "P", executableFilename, "CHPL_EXE_NAME", NULL},
  {"static", ' ', NULL, "Generate a statically linked binary", "F", &fLinkStyle, NULL, setStaticLink},
 
  {"", ' ', NULL, "LLVM Code Generation Options", NULL, NULL, NULL, NULL},
- {"llvm", ' ', NULL, "Use the LLVM code generator", "F", &llvmCodegen, "CHPL_LLVM_CODEGEN", NULL},
+ {"llvm", ' ', NULL, "[Don't] use the LLVM code generator", "N", &llvmCodegen, "CHPL_LLVM_CODEGEN", NULL},
+
+ {"", ' ', NULL, "Documentation Options", NULL, NULL, NULL, NULL},
+ {"docs", ' ', NULL, "Runs documentation on the source file", "N", &fDocs, "CHPL_DOC", NULL },
+ {"docs-alphabetical", ' ', NULL, "Alphabetizes the documentation", "N", &fDocsAlphabetize, NULL, NULL},
+ {"docs-comment-style", ' ', "<indicator>", "Only includes comments that start with <indicator>", "S256", fDocsCommentLabel, NULL, setCommentLabel},
+ {"docs-dir", ' ', "<dirname>", "Sets the documentation directory to <dirname>", "S256", fDocsFolder, NULL, NULL},
+ {"docs-text-only", ' ', NULL, "Generate text only documentation", "F", &fDocsTextOnly, NULL, NULL},
 
  {"", ' ', NULL, "Compilation Trace Options", NULL, NULL, NULL, NULL},
- {"print-commands", ' ', NULL, "Print system commands", "F", &printSystemCommands, "CHPL_PRINT_COMMANDS", NULL},
- {"print-passes", ' ', NULL, "Print compiler passes", "F", &printPasses, "CHPL_PRINT_PASSES", NULL},
+ {"print-commands", ' ', NULL, "[Don't] print system commands", "N", &printSystemCommands, "CHPL_PRINT_COMMANDS", NULL},
+ {"print-passes", ' ', NULL, "[Don't] print compiler passes", "N", &printPasses, "CHPL_PRINT_PASSES", NULL},
 
  {"", ' ', NULL, "Miscellaneous Options", NULL, NULL, NULL, NULL},
  {"devel", ' ', NULL, "Compile as a developer [user]", "N", &developer, "CHPL_DEVELOPER", setDevelSettings},
@@ -625,6 +627,8 @@ static ArgumentDescription arg_desc[] = {
  {"instantiate-max", ' ', "<max>", "Limit number of instantiations", "I", &instantiation_limit, "CHPL_INSTANTIATION_LIMIT", NULL},
  {"print-callstack-on-error", ' ', NULL, "print the Chapel call stack leading to each error or warning", "N", &fPrintCallStackOnError, "CHPL_PRINT_CALLSTACK_ON_ERROR", NULL},
  {"set", 's', "<name>[=<value>]", "Set config param value", "S", NULL, NULL, readConfig},
+ //Disable flag for transitional warning of 1.5 domain literal syntax.  This option should be removed after 1.6 is released!
+ {"warn-domain-literal", ' ', NULL, "[Disable] Enable old domain literal syntax warnings", "n", &fNoWarnDomainLiteral, "CHPL_NO_WARN_DOMAIN_LITERAL", NULL},
  {"no-warnings", ' ', NULL, "Disable output of warnings", "F", &ignore_warnings, "CHPL_DISABLE_WARNINGS", NULL},
 
  {"", ' ', NULL, "Compiler Information Options", NULL, NULL, NULL, NULL},
@@ -638,12 +642,13 @@ static ArgumentDescription arg_desc[] = {
  {"", ' ', NULL, "Developer Flags -- Debug Output", NULL, NULL, NULL, NULL},
  {"cc-warnings", ' ', NULL, "[Don't] Give warnings for generated code", "N", &ccwarnings, "CHPL_CC_WARNINGS", NULL},
  {"c-line-numbers", ' ', NULL, "Use C code line numbers and filenames", "F", &fCLineNumbers, NULL, NULL},
- {"gen-ids", ' ', NULL, "Pepper generated code with BaseAST::ids", "F", &fGenIDS, "CHPL_GEN_IDS", NULL},
- {"html", 't', NULL, "Dump IR in HTML format", "T", &fdump_html, "CHPL_HTML", NULL},
- {"html-user", ' ', NULL, "Dump IR in HTML for user module(s) only", "T", &fdump_html, NULL, setHtmlUser},
+ {"gen-extern-prototypes", ' ', NULL, "[Don't] generate C prototypes for extern declarations", "N", &genExternPrototypes, "CHPL_GEN_EXTERN_PROTOTYPES", NULL},
+ {"gen-ids", ' ', NULL, "[Don't] pepper generated code with BaseAST::ids", "N", &fGenIDS, "CHPL_GEN_IDS", NULL},
+ {"html", 't', NULL, "Dump IR in HTML format (toggle)", "T", &fdump_html, "CHPL_HTML", NULL},
+ {"html-user", ' ', NULL, "Dump IR in HTML for user module(s) only (toggle)", "T", &fdump_html, NULL, setHtmlUser},
  {"log", 'd', "<letters>", "Dump IR in text format. See log.h for definition of <letters>. Empty argument (\"-d=\" or \"--log=\") means \"log all passes\"", "S512", log_flags, "CHPL_LOG_FLAGS", log_flags_arg},
  {"log-dir", ' ', "<path>", "Specify log directory", "P", log_dir, "CHPL_LOG_DIR", NULL},
- {"log-ids", ' ', NULL, "Include BaseAST::ids in log files", "F", &fLogIds, "CHPL_LOG_IDS", NULL},
+ {"log-ids", ' ', NULL, "[Don't] include BaseAST::ids in log files", "N", &fLogIds, "CHPL_LOG_IDS", NULL},
  {"log-module", ' ', "<module-name>", "Restrict IR dump to the named module", "S256", log_module, "CHPL_LOG_MODULE", NULL},
 // {"log-symbol", ' ', "<symbol-name>", "Restrict IR dump to the named symbol(s)", "S256", log_symbol, "CHPL_LOG_SYMBOL", NULL}, // This doesn't work yet.
  {"parser-debug", 'D', NULL, "Set parser debug level", "+", &debugParserLevel, "CHPL_PARSER_DEBUG", NULL},
@@ -661,18 +666,18 @@ static ArgumentDescription arg_desc[] = {
  {"default-dist", ' ', "<distribution>", "Change the default distribution", "S256", defaultDist, "CHPL_DEFAULT_DIST", NULL},
  {"gdb", ' ', NULL, "Run compiler in gdb", "F", &rungdb, NULL, NULL},
  {"heterogeneous", ' ', NULL, "Compile for heterogeneous nodes", "F", &fHeterogeneous, "", NULL},
- {"ignore-errors", ' ', NULL, "Attempt to ignore errors", "F", &ignore_errors, "CHPL_IGNORE_ERRORS", NULL},
+ {"ignore-errors", ' ', NULL, "[Don't] attempt to ignore errors", "N", &ignore_errors, "CHPL_IGNORE_ERRORS", NULL},
  {"library", ' ', NULL, "Generate a Chapel library file", "F", &fLibraryCompile, NULL, NULL},
  {"localize-global-consts", ' ', NULL, "Enable [disable] optimization of global constants", "n", &fNoGlobalConstOpt, "CHPL_DISABLE_GLOBAL_CONST_OPT", NULL},
  {"local-temp-names", ' ', NULL, "[Don't] Generate locally-unique temp names", "N", &localTempNames, "CHPL_LOCAL_TEMP_NAMES", NULL},
  {"log-deleted-ids-to", ' ', "<filename>", "Log AST id and memory address of each deleted node to the specified file", "P", deletedIdFilename, "CHPL_DELETED_ID_FILENAME", NULL},
  {"memory-frees", ' ', NULL, "Enable [disable] memory frees in the generated code", "n", &fNoMemoryFrees, "CHPL_DISABLE_MEMORY_FREES", NULL},
  {"preserve-inlined-line-numbers", ' ', NULL, "[Don't] Preserve file names/line numbers in inlined code", "N", &preserveInlinedLineNumbers, "CHPL_PRESERVE_INLINED_LINE_NUMBERS", NULL},
- {"print-id-on-error", ' ', NULL, "Print AST id in error messages", "F", &fPrintIDonError, "CHPL_PRINT_ID_ON_ERROR", NULL},
+ {"print-id-on-error", ' ', NULL, "[Don't] print AST id in error messages", "N", &fPrintIDonError, "CHPL_PRINT_ID_ON_ERROR", NULL},
  {"remove-empty-records", ' ', NULL, "Enable [disable] empty record removal", "n", &fNoRemoveEmptyRecords, "CHPL_DISABLE_REMOVE_EMPTY_RECORDS", NULL},
  {"reposition-def-expressions", ' ', NULL, "Enable [disable] repositioning of def expressions to usage points", "n", &fNoRepositionDefExpr, "CHPL_DISABLE_REPOSITION_DEF_EXPR", NULL},
  {"ignore-internal-modules", ' ', NULL, "Enable [disable] skipping internal module initialization in generated code (for testing)", "N", &fNoInternalModules, "CHPL_DISABLE_INTERNAL_MODULES", NULL},
- {"timers", ' ', NULL, "Enable general timers one to five", "F", &fEnableTimers, "CHPL_ENABLE_TIMERS", NULL},
+ {"timers", ' ', NULL, "[Don't] Enable general timers one to five", "N", &fEnableTimers, "CHPL_ENABLE_TIMERS", NULL},
  {"warn-promotion", ' ', NULL, "Warn about scalar promotion", "F", &fWarnPromotion, NULL, NULL},
  {"print-chpl-home", ' ', NULL, "Print CHPL_HOME and path to this executable and exit", "F", &printChplHome, NULL, NULL},
  {0}
@@ -748,6 +753,8 @@ compile_all(void) {
 
 int main(int argc, char *argv[]) {
   startCatchingSignals();
+ {
+  astlocMarker markAstLoc(0, "<internal>");
   initFlags();
   initChplProgram();
   initPrimitive();
@@ -761,6 +768,7 @@ int main(int argc, char *argv[]) {
   setupDependentVars();
   setupModulePaths();
   recordCodeGenStrings(argc, argv);
+ } // astlocMarker scope
   printStuff(argv[0]);
   if (rungdb)
     runCompilerInGDB(argc, argv);

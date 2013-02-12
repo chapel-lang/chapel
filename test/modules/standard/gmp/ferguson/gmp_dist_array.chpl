@@ -10,21 +10,21 @@ var B: [D] BigInt;
 var C: [D] BigInt;
 
 // Fill the arrays with something easy.
-forall (x,i) in (A,D) {
+forall (x,i) in zip(A,D) {
   x = new BigInt(i);
   //x = i;
 }
-forall (x,i) in (B,D) {
+forall (x,i) in zip(B,D) {
   x = new BigInt(i);
   //x = i;
 }
-forall (x,i) in (C,D) {
+forall (x,i) in zip(C,D) {
   x = new BigInt(i);
   x.fac_ui((10000*i):uint(32));
   //x = i;
 }
 
-forall (a,b,c) in (A,B,C) {
+forall (a,b,c) in zip(A,B,C) {
   c.add(c,a);
   c.add(c,b);
   //c = a + b;

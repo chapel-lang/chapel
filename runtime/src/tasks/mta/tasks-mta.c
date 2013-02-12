@@ -2,15 +2,18 @@
 // MTA implementation of Chapel tasking interface
 //
 
-#include "chpl-mem.h"
 #include "chplrt.h"
+#include "chpl-mem.h"
 #include "chpl-tasks.h"
+#include "chplcgfns.h" // for chpl_ftable
 #include "config.h"
 #include "error.h"
 #include <machine/runtime.h>
 #include <stdint.h>
 #include <stdlib.h>
 
+
+static void init_task_private_data(void);
 
 // Sync variables
 
@@ -87,6 +90,7 @@ void chpl_task_init(int32_t numThreadsPerLocale, int32_t maxThreadsPerLocale,
                  "on XMT systems",
                  0, NULL);
 
+  init_task_private_data();
   chpl_task_setSerial(true);
 }
 
@@ -139,28 +143,74 @@ void chpl_task_sleep(int secs) {
   sleep(secs);
 }
 
+typedef struct {
+  chpl_bool serial_state;
+  c_subloc_t sublocale_id;
+  // Add fields here as needed....
+} chpl_task_private_data_t;
+
+//////////////////////////////////////////////////////////////////////////////////
+//
+// Routines for handling task-private data.
+//
+
+static void init_task_private_data(void)
+{
+  chpl_task_private_data_t* p =
+    (chpl_task_private_data_t*) malloc(sizeof(chpl_task_private_data_t));
+  if (!p)
+    chpl_internal_error("out of memory trying to allocate task-private data.");
+  mta_register_task_data(p);
+}
+
 chpl_bool chpl_task_getSerial(void) {
-  chpl_bool *p = NULL;
-  p = (chpl_bool*) mta_register_task_data(p);
+  chpl_task_private_data_t *p = NULL;
+  p = (chpl_task_private_data_t*) mta_register_task_data(p);
   if (p == NULL)
     return false;
   else {
     mta_register_task_data(p); // Put back the value retrieved above.
-    return *p;
+    return p->serial_state;
+  }
+}
+
+c_subloc_t chpl_task_getSubLoc(void) {
+  chpl_task_private_data_t *p = NULL;
+  p = (chpl_task_private_data_t*) mta_register_task_data(p);
+  if (p == NULL)
+    return 0;
+  else {
+    mta_register_task_data(p); // Put back the value retrieved above.
+    return p->sublocale_id;
   }
 }
 
 void chpl_task_setSerial(chpl_bool state) {
-  chpl_bool *p = NULL;
-  p = (chpl_bool*) mta_register_task_data(p);
+  chpl_task_private_data_t *p = NULL;
+  p = (chpl_task_private_data_t*) mta_register_task_data(p);
   if (p == NULL)
-    p = (chpl_bool*) chpl_mem_alloc(sizeof(chpl_bool), CHPL_RT_MD_SERIAL_FLAG, 0, 0);
-  if (p) {
-    *p = state;
+    chpl_internal_error("no task-private data in chpl_task_setSerial.");
+  else
+  {
+    p->serial_state = state;
     mta_register_task_data(p);
-  } else
-    chpl_internal_error("out of memory while creating serial state");
+  }
 }
+
+void chpl_task_setSubLoc(c_subloc_t subloc) {
+  chpl_task_private_data_t *p = NULL;
+  p = (chpl_task_private_data_t*) mta_register_task_data(p);
+  if (p == NULL)
+    chpl_internal_error("no task-private data in chpl_task_setSubLoc.");
+  else
+  {
+    p->sublocale_id = subloc;
+    mta_register_task_data(p);
+  }
+}
+
+//
+//////////////////////////////////////////////////////////////////////////////////
 
 uint64_t chpl_task_getCallStackSize(void) { return 0; }
 

@@ -1,4 +1,5 @@
 Initially, A is: 0.0 0.0 0.0 0.0 0.0
+Initially, A2 is: -1.1 -2.2 -3.3 -4.4 -5.5
 After assigning two elements, A is: 1.1 2.2 0.0 0.0 0.0
 After assigning its interior values, A is: 1.1 3.3 3.3 3.3 0.0
 

@@ -196,7 +196,7 @@ TYPE_EXTERN ClassType* dtBaseArr;
 TYPE_EXTERN ClassType* dtBaseDom;
 TYPE_EXTERN ClassType* dtDist;
 TYPE_EXTERN ClassType* dtTuple;
-TYPE_EXTERN ClassType* dtLocale;
+TYPE_EXTERN ClassType* dtLocaleID;
 
 // base object type (for all classes)
 TYPE_EXTERN Type* dtObject;
@@ -249,6 +249,8 @@ GenRet codegenImmediate(Immediate* i);
 #define CLASS_ID_TYPE dtInt[INT_SIZE_32]
 #define UNION_ID_TYPE dtInt[INT_SIZE_64]
 #define SIZE_TYPE dtInt[INT_SIZE_64]
-#define LOCALE_ID_TYPE dtLocale->getField("chpl_id")->typeInfo();
+#define NODE_ID_TYPE dtLocaleID->getField("node")->typeInfo();
+#define SUBLOC_ID_TYPE dtLocaleID->getField("subloc")->typeInfo();
+#define LOCALE_ID_TYPE dtLocaleID->typeInfo();
 
 #endif

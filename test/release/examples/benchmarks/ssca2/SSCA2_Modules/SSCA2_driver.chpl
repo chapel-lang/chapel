@@ -81,7 +81,6 @@ module SSCA2_driver
 
         for approx_scale in { max (1, LOW_APPROX_SCALE) .. 
                               min (TOP_APPROX_SCALE, SCALE) } {
-	  Sum_Min_Dist = 1.0;
   
 	  if approx_scale == SCALE {
             //  --------------------------------------

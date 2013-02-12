@@ -1,4 +1,11 @@
-#define _POSIX_C_SOURCE 1
+#include "chplrt.h"
+
+#include "chplfp.h"
+#include "chpl-mem.h"
+#include "chplcgfns.h"
+#include "chpl-comm.h"
+#include "chpl-comm-compiler-macros.h"
+#include "error.h"
 
 #include <inttypes.h>
 #include <math.h>
@@ -7,16 +14,6 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
-#include <sys/time.h>
-#include <time.h>
-#include <chplfp.h>
-#include "chpl-mem.h"
-#include "chplrt.h"
-#include "chpltimers.h"
-#include "chpltypes.h"
-#include "chpl-comm.h"
-#include "chpl-comm-compiler-macros.h"
-#include "error.h"
 
 #define NANSTRING "nan"
 #define NEGINFSTRING "-inf"
@@ -61,15 +58,24 @@ chpl_string chpl_format(chpl_string format, ...) {
 
 
 #ifndef LAUNCHER
+// TODO: This declaration should actually come from chplcgfns.h
+// but some factoring of the runtime includes is required to make this work.
+// See the comment ca. chplcgfns.h:21 for more info.
+typedef struct __chpl_localeID_t {
+  c_nodeid_t node;
+  c_subloc_t subloc;
+} chpl_localeID_t;
+
 struct __chpl____wide_chpl_string {
-  int64_t locale;
+  chpl_localeID_t locale;
   chpl_string addr;
   int64_t size;
 };
+typedef struct __chpl____wide_chpl_string chpl____wide_chpl_string;
 
 chpl_string
-chpl_wide_string_copy(struct __chpl____wide_chpl_string* x, int32_t lineno, chpl_string filename) {
-  if (x->locale == chpl_localeID)
+chpl_wide_string_copy(chpl____wide_chpl_string* x, int32_t lineno, chpl_string filename) {
+  if (x->locale.node == chpl_nodeID)
     return string_copy(x->addr, lineno, filename);
   else {
     chpl_string s;
@@ -82,10 +88,11 @@ chpl_wide_string_copy(struct __chpl____wide_chpl_string* x, int32_t lineno, chpl
 
 // un-macro'd CHPL_WIDEN_STRING
 void
-chpl_string_widen(struct __chpl____wide_chpl_string* x, chpl_string from)
+chpl_string_widen(chpl____wide_chpl_string* x, chpl_string from)
 {
   size_t len = strlen(from) + 1;
-  x->locale = chpl_localeID;
+  x->locale.node = chpl_nodeID;
+  x->locale.subloc = chpl_task_getSubLoc();
   x->addr = chpl_mem_allocMany(len, sizeof(char),
                                CHPL_RT_MD_SET_WIDE_STRING, 0, 0);
   strncpy((char*)x->addr, from, len);
@@ -96,17 +103,17 @@ chpl_string_widen(struct __chpl____wide_chpl_string* x, chpl_string from)
 void
 chpl_comm_wide_get_string(chpl_string* local, struct __chpl____wide_chpl_string* x, int32_t tid, int32_t lineno, chpl_string filename)
 {
-  char* chpl_macro_tmp =                                              
-      chpl_mem_allocMany(x->size, sizeof(char),                     
-                         CHPL_RT_MD_GET_WIDE_STRING, -1, "<internal>"); 
-    if (chpl_localeID == x->locale)                                 
-      memcpy(chpl_macro_tmp, x->addr, x->size);                 
-    else                                                                
-      chpl_comm_get((void*) &(*chpl_macro_tmp), x->locale,                     
-                    (void*)(x->addr),                               
-                    sizeof(char), tid, x->size, lineno, filename);                    
+  char* chpl_macro_tmp =
+      chpl_mem_allocMany(x->size, sizeof(char),
+                         CHPL_RT_MD_GET_WIDE_STRING, -1, "<internal>");
+    if (chpl_nodeID == x->locale.node)
+      memcpy(chpl_macro_tmp, x->addr, x->size);
+    else
+      chpl_comm_get((void*) &(*chpl_macro_tmp), x->locale.node,
+                    (void*)(x->addr),
+                    sizeof(char), tid, x->size, lineno, filename);
     *local = chpl_macro_tmp;
-} 
+}
 
 
 #endif
@@ -207,7 +214,7 @@ string_length(chpl_string x) {
 int64_t real2int( _real64 f) {
   // need to use a union here rather than a pointer cast to avoid gcc
   // warnings when compiling -O3
-  union {     
+  union {
     _real64 r;
     uint64_t u;
   } converter;
@@ -217,40 +224,8 @@ int64_t real2int( _real64 f) {
 }
 
 
-int64_t 
+int64_t
 object2int( _chpl_object o) {
   return (intptr_t) o;
 }
-
-_timevalue chpl_null_timevalue(void) {
-  _timevalue ret;
-  ret.tv_sec = 0;
-  ret.tv_usec = 0;
-  return ret;
-}
-
-_timevalue chpl_now_timevalue(void) {
-  _timevalue ret;
-  gettimeofday(&ret, NULL);
-  return ret;
-}
-
-int64_t chpl_timevalue_seconds(_timevalue t) { return t.tv_sec; }
-int64_t chpl_timevalue_microseconds(_timevalue t) { return t.tv_usec; }
-
-void chpl_timevalue_parts(_timevalue t, int32_t* seconds, int32_t* minutes, int32_t* hours, int32_t* mday, int32_t* month, int32_t* year, int32_t* wday, int32_t* yday, int32_t* isdst)
-{
-  struct tm localt;
-  localtime_r(&t.tv_sec, &localt);
-  if( seconds ) *seconds = localt.tm_sec;
-  if( minutes ) *minutes = localt.tm_min;
-  if( hours ) *hours = localt.tm_hour;
-  if( mday ) *mday = localt.tm_mday;
-  if( month ) *month = localt.tm_mon;
-  if( year ) *year = localt.tm_year;
-  if( wday ) *wday = localt.tm_wday;
-  if( yday ) *yday = localt.tm_yday;
-  if( isdst ) *isdst = localt.tm_isdst;
-}
-
 

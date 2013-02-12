@@ -16,7 +16,7 @@
 // leader-follower iterators.  Generally speaking, a forall loop
 // of the following form:
 //
-//   forall (a, b, c) in (A, B, C) do
+//   forall (a, b, c) in zip(A, B, C) do
 //     ...loop body...
 //
 // is semantically defined such that the first thing being iterated
@@ -28,7 +28,7 @@
 // the following loop structure:
 //
 //   for work in A.lead() do   // implemented by inlining the leader
-//     for (a, b, c) in (A.follow(work), B.follow(work), C.follow(work)) do
+//     for (a, b, c) in zip(A.follow(work), B.follow(work), C.follow(work)) do
 //       ...loop body...
 //
 // where .lead() and .follow() represent the leader-follower iterators
@@ -60,11 +60,11 @@
 //   (c) assign work (e.g., iterations) to each parallel task
 //
 
-// It typically creates the parallelism using normal task parallel
+// The leader typically creates the parallelism using task parallel
 // features like coforall loops; and it associates tasks with locales
-// using normal locality features like on-clauses.  The leader
-// specifies work for tasks by having each task it creates yield some
-// representation of the work it owns.
+// using locality features like on-clauses.  The leader specifies work
+// for tasks by having each task it creates yield some representation
+// of the work it owns.
 //
 // The role of the follower iterator is to take as an input argument
 // a chunk of work (as yielded by a leader) and to serially iterate

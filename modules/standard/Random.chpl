@@ -137,6 +137,14 @@ class RandomStream {
     return RandomPrivate_iterate(resultType, D, seed, start);
   }
 
+  proc writeThis(f: Writer) {
+    f <~> "RandomStream(parSafe=";
+    f <~> parSafe;
+    f <~> ", seed = ";
+    f <~> seed;
+    f <~> ")";
+  }
+
   ///////////////////////////////////////////////////////////// CLASS PRIVATE //
   //
   // It is the intent that once Chapel supports the notion of

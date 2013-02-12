@@ -1,3 +1,5 @@
+use CommDiagnostics;
+
 proc foo(i: int): int
   return if i > 1 then 1 + foo(i-1) else 1;
 

@@ -477,6 +477,7 @@ GenRet VarSymbol::codegen() {
   return ret;
 }
 
+
 static void zeroInitializeRecord(FILE* outfile, ClassType* ct) {
   bool first = true;
   fprintf(outfile, "{");
@@ -520,7 +521,7 @@ void VarSymbol::codegenDefC() {
     } else if (ct->symbol->hasFlag(FLAG_WIDE) ||
                ct->symbol->hasFlag(FLAG_WIDE_CLASS)) {
       if (isFnSymbol(defPoint->parentSymbol))
-        str += " = {0,NULL}";
+        str += " = {{0,0},NULL}";
     }
   }
   info->cLocalDecls.push_back(str);
@@ -604,9 +605,6 @@ void VarSymbol::codegenDef() {
 #endif
   }
 }
-
-
-
 
 
 bool VarSymbol::isImmediate() {
@@ -1525,9 +1523,8 @@ void ModuleSymbol::codegenDef() {
     if (DefExpr* def = toDefExpr(expr))
       if (FnSymbol* fn = toFnSymbol(def->sym)) {
         // Ignore external and prototype functions.
-        if (!genExternPrototypes &&
-            (fn->hasFlag(FLAG_EXTERN) ||
-             fn->hasFlag(FLAG_FUNCTION_PROTOTYPE)))
+        if (fn->hasFlag(FLAG_EXTERN) ||
+            fn->hasFlag(FLAG_FUNCTION_PROTOTYPE))
           continue;
         fns.add(fn);
       }

@@ -2,6 +2,7 @@
 #define _driver_H_
 
 #include <cstdio>
+#include "timer.h"
 #include "map.h"
 #include "chpl.h"
 
@@ -21,7 +22,7 @@ typedef struct YYLTYPE {
 
 
 
-extern char *chplBinaryName;
+extern const char *chplBinaryName;
 
 extern FILE* html_index_file;
 extern FILE* deletedIdHandle;
@@ -84,8 +85,10 @@ extern const char* CHPL_TARGET_COMPILER;
 extern const char* CHPL_TASKS;
 extern const char* CHPL_THREADS;
 extern const char* CHPL_COMM;
+extern const char* CHPL_COMM_SUBSTRATE;
+extern const char* CHPL_GASNET_SEGMENT;
+extern const char* CHPL_MAKE;
 
-extern char chplmake[256];
 extern char fExplainCall[256];
 extern char fExplainInstantiation[256];
 extern bool fPrintCallStackOnError;
@@ -116,11 +119,11 @@ extern bool developer;
 extern int num_constants_per_variable;
 extern bool printCppLineno;
 
-extern bool fdocs;
-extern bool alphabetize;
-extern char commentLabel[256];
-extern char docsFolder[256];
-extern bool nocreole;
+extern bool fDocs;
+extern bool fDocsAlphabetize;
+extern char fDocsCommentLabel[256];
+extern char fDocsFolder[256];
+extern bool fDocsTextOnly;
 extern char defaultDist[256];
 extern char mainModuleName[256];
 extern bool printSearchDirs;

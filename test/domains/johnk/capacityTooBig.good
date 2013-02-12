@@ -1,0 +1,1 @@
+capacityTooBig.chpl:3: error: halt reached - Requested capacity (1610612741100) exceeds maximum size

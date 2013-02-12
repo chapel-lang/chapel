@@ -30,6 +30,7 @@ removeWrapRecords() {
   //
   forv_Vec(CallExpr, call, gCallExprs) {
     if (call->isPrimitive(PRIM_GET_PRIV_CLASS)) {
+      SET_LINENO(call);
       call->get(1)->replace(new SymExpr(call->get(1)->typeInfo()->symbol));
     }
   }
@@ -100,6 +101,7 @@ removeWrapRecords() {
         if (se->var->type->symbol->hasFlag(FLAG_REF)) {
           Type* vt = se->getValType();
           if (isRecordWrappedType(vt)) {
+            SET_LINENO(call);
             call->replace(new CallExpr(PRIM_DEREF, se->remove()));
           }
         }

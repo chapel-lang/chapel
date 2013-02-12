@@ -288,6 +288,7 @@ static void makeRefType(Type* type) {
 
 static void
 resolveAutoCopy(Type* type) {
+  SET_LINENO(type->symbol);
   Symbol* tmp = newTemp(type);
   chpl_gen_main->insertAtHead(new DefExpr(tmp));
   CallExpr* call = new CallExpr("chpl__autoCopy", tmp);
@@ -300,6 +301,7 @@ resolveAutoCopy(Type* type) {
 
 static void
 resolveAutoDestroy(Type* type) {
+  SET_LINENO(type->symbol);
   Symbol* tmp = newTemp(type);
   chpl_gen_main->insertAtHead(new DefExpr(tmp));
   CallExpr* call = new CallExpr("chpl__autoDestroy", tmp);
@@ -420,11 +422,11 @@ const char* toString(FnSymbol* fn) {
     str = astr(fn->name+11);
   } else if (fn->hasFlag(FLAG_METHOD)) {
     if (!strcmp(fn->name, "this")) {
-      INT_ASSERT(fn->hasFlag(FLAG_FUNCTION_THIS));
+      INT_ASSERT(fn->hasFlag(FLAG_FIRST_CLASS_FUNCTION_INVOCATION));
       str = astr(toString(fn->getFormal(2)->type));
       start = 1;
     } else {
-      INT_ASSERT(! fn->hasFlag(FLAG_FUNCTION_THIS));
+      INT_ASSERT(! fn->hasFlag(FLAG_FIRST_CLASS_FUNCTION_INVOCATION));
       str = astr(toString(fn->getFormal(2)->type), ".", fn->name);
       start = 2;
     }
@@ -490,7 +492,7 @@ checkResolveRemovedPrims(void) {
         case PRIM_TYPEOF:
         case PRIM_TYPE_TO_STRING:
         case PRIM_IS_STAR_TUPLE_TYPE:
-        case PRIM_ISSUBTYPE:
+        case PRIM_IS_SUBTYPE:
         case PRIM_TUPLE_EXPAND:
         case PRIM_QUERY:
         case PRIM_ERROR:
@@ -534,6 +536,7 @@ protoIteratorClass(FnSymbol* fn) {
   const char* className = astr(fn->name);
   if (fn->_this)
     className = astr(className, "_", fn->_this->type->symbol->cname);
+
   ii->iclass = new ClassType(CLASS_CLASS);
   TypeSymbol* cts = new TypeSymbol(astr("_ic_", className), ii->iclass);
   cts->addFlag(FLAG_ITERATOR_CLASS);
@@ -581,7 +584,7 @@ protoIteratorClass(FnSymbol* fn) {
   ii->getIterator->insertAtTail(new CallExpr(PRIM_RETURN, ret));
   fn->defPoint->insertBefore(new DefExpr(ii->getIterator));
   ii->iclass->initializer = ii->getIterator;
-  resolvedFns[ii->getIterator] = true;
+  resolveFns(ii->getIterator);  // No shortcuts.
 }
 
 
@@ -692,7 +695,7 @@ resolveFormals(FnSymbol* fn) {
       if (formal->intent == INTENT_INOUT ||
           formal->intent == INTENT_OUT ||
           formal->intent == INTENT_REF ||
-          formal->hasFlag(FLAG_WRAP_OUT_INTENT) ||
+          formal->hasFlag(FLAG_WRAP_WRITTEN_FORMAL) ||
           (formal == fn->_this &&
            (isUnion(formal->type) ||
             isRecord(formal->type) ||
@@ -2331,6 +2334,7 @@ static void resolveNormalCall(CallExpr* call, bool errorCheck) {
       INT_FATAL(call, "unable to resolve call");
     }
     if (call->parentSymbol) {
+      SET_LINENO(call);
       call->baseExpr->replace(new SymExpr(resolvedFn));
     }
 
@@ -2659,6 +2663,7 @@ insertFormalTemps(FnSymbol* fn) {
   SymbolMap formals2vars;
   for_formals(formal, fn) {
     if (formalRequiresTemp(formal)) {
+      SET_LINENO(formal);
       VarSymbol* tmp = newTemp(astr("_formal_tmp_", formal->name));
       Type* formalType = formal->type->getValType();
       if ((formal->intent == INTENT_BLANK ||
@@ -2673,6 +2678,7 @@ insertFormalTemps(FnSymbol* fn) {
     update_symbols(fn->body, &formals2vars);
     form_Map(SymbolMapElem, e, formals2vars) {
       ArgSymbol* formal = toArgSymbol(e->key);
+      SET_LINENO(formal);
       Symbol* tmp = e->value;
       // This adds the extra code inside the current function required
       // to implement the ref-to-value and copy-back semantics, where needed.
@@ -2907,7 +2913,7 @@ static ClassType* createAndInsertFunParentClass(CallExpr *call, const char *name
 */
 static FnSymbol* createAndInsertFunParentMethod(CallExpr *call, ClassType *parent, AList &arg_list, bool isFormal, Type *retType) {
   FnSymbol* parent_method = new FnSymbol("this");
-  parent_method->addFlag(FLAG_FUNCTION_THIS);
+  parent_method->addFlag(FLAG_FIRST_CLASS_FUNCTION_INVOCATION);
   parent_method->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
   ArgSymbol* thisParentSymbol = new ArgSymbol(INTENT_BLANK, "this", parent);
   thisParentSymbol->addFlag(FLAG_ARG_THIS);
@@ -3108,7 +3114,7 @@ createFunctionAsValue(CallExpr *call) {
   call->parentExpr->insertBefore(new DefExpr(ts));
   
   ct->dispatchParents.add(parent);
-  parent->dispatchChildren.add(ct);
+  INT_ASSERT(parent->dispatchChildren.add_exclusive(ct));
   VarSymbol* super = new VarSymbol("super", parent);
   super->addFlag(FLAG_SUPER_CLASS);
   ct->fields.insertAtHead(new DefExpr(super));
@@ -3116,7 +3122,7 @@ createFunctionAsValue(CallExpr *call) {
   build_constructors(ct);
 
   FnSymbol *thisMethod = new FnSymbol("this");
-  thisMethod->addFlag(FLAG_FUNCTION_THIS);
+  thisMethod->addFlag(FLAG_FIRST_CLASS_FUNCTION_INVOCATION);
   thisMethod->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
   ArgSymbol *thisSymbol = new ArgSymbol(INTENT_BLANK, "this", ct);
   thisSymbol->addFlag(FLAG_ARG_THIS);
@@ -3657,7 +3663,7 @@ preFold(Expr* expr) {
       INT_ASSERT(se && se->var->hasFlag(FLAG_TYPE_VARIABLE));
       result = new SymExpr(new_StringSymbol(se->var->type->symbol->name));
       call->replace(result);
-    } else if (call->isPrimitive(PRIM_GET_LOCALEID)) {
+    } else if (call->isPrimitive(PRIM_WIDE_GET_LOCALE)) {
       Type* type = call->get(1)->getValType();
 
       //
@@ -4016,6 +4022,7 @@ postFold(Expr* expr) {
   Expr* result = expr;
   if (!expr->parentSymbol)
     return result;
+  SET_LINENO(expr);
   if (CallExpr* call = toCallExpr(expr)) {
     if (FnSymbol* fn = call->isResolved()) {
       if (fn->retTag == RET_PARAM || fn->hasFlag(FLAG_MAYBE_PARAM)) {
@@ -4140,7 +4147,7 @@ postFold(Expr* expr) {
           }
         }
       }
-    } else if (call->isPrimitive(PRIM_ISSUBTYPE)) {
+    } else if (call->isPrimitive(PRIM_IS_SUBTYPE)) {
       if (isTypeExpr(call->get(1)) || isTypeExpr(call->get(2))) {
         Type* lt = call->get(2)->getValType(); // a:t cast is cast(t,a)
         Type* rt = call->get(1)->getValType();
@@ -4270,12 +4277,12 @@ postFold(Expr* expr) {
                call->isPrimitive(PRIM_READFF) ||
                call->isPrimitive(PRIM_READFE) ||
                call->isPrimitive(PRIM_READXX) ||
-               call->isPrimitive(PRIM_SYNC_ISFULL) ||
+               call->isPrimitive(PRIM_SYNC_IS_FULL) ||
                call->isPrimitive(PRIM_SINGLE_WRITEEF) ||
                call->isPrimitive(PRIM_SINGLE_RESET) ||
                call->isPrimitive(PRIM_SINGLE_READFF) ||
                call->isPrimitive(PRIM_SINGLE_READXX) ||
-               call->isPrimitive(PRIM_SINGLE_ISFULL) ||
+               call->isPrimitive(PRIM_SINGLE_IS_FULL) ||
                call->isPrimitive(PRIM_EXECUTE_TASKS_IN_LIST) ||
                call->isPrimitive(PRIM_FREE_TASK_LIST) ||
                call->isPrimitive(PRIM_CHPL_FREE) ||
@@ -4406,7 +4413,7 @@ resolveBlock(Expr* body) {
       //  should be fixed by out-of-order resolution
       CallExpr* parent = toCallExpr(sym->parentExpr);
       if (!parent ||
-          !parent->isPrimitive(PRIM_ISSUBTYPE) ||
+          !parent->isPrimitive(PRIM_IS_SUBTYPE) ||
           !sym->var->hasFlag(FLAG_TYPE_VARIABLE)) {
 
         if (ClassType* ct = toClassType(sym->typeInfo())) {
@@ -4488,6 +4495,7 @@ insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
           if (rhsType != lhs->var->type &&
               rhsType->refType != lhs->var->type &&
               rhsType != lhs->var->type->refType) {
+            SET_LINENO(rhs);
             rhs->remove();
             Symbol* tmp = NULL;
             if (SymExpr* se = toSymExpr(rhs)) {
@@ -5085,6 +5093,7 @@ static void unmarkDefaultedGenerics() {
         if (!formal->markedGeneric &&
             formal != fn->_this &&
             !formal->hasFlag(FLAG_IS_MEME)) {
+          SET_LINENO(formal);
           formal->typeExpr = new BlockStmt(new CallExpr(formal->type->defaultTypeConstructor));
           insert_help(formal->typeExpr, NULL, formal);
           formal->type = dtUnknown;
@@ -5133,6 +5142,7 @@ static void resolveExports() {
   // We need to resolve any additional functions that will be exported.
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->hasFlag(FLAG_EXPORT)) {
+      SET_LINENO(fn);
       resolveFormals(fn);
       resolveFns(fn);
     }
@@ -5241,6 +5251,7 @@ static void insertRuntimeTypeTemps() {
         ts->defPoint->parentSymbol &&
         ts->hasFlag(FLAG_HAS_RUNTIME_TYPE) &&
         !ts->hasFlag(FLAG_GENERIC)) {
+      SET_LINENO(ts);
       VarSymbol* tmp = newTemp("_runtime_type_tmp_", ts->type);
       ts->type->initializer->insertBeforeReturn(new DefExpr(tmp));
       CallExpr* call = new CallExpr("chpl__convertValueToRuntimeType", tmp);
@@ -5272,6 +5283,7 @@ static void resolveRecordInitializers() {
   //
   forv_Vec(CallExpr, init, inits) {
     if (init->parentSymbol) {
+      SET_LINENO(init);
       Type* type = init->get(1)->typeInfo();
       if (!type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
         if (type->symbol->hasFlag(FLAG_REF))
@@ -5449,6 +5461,7 @@ static void insertDynamicDispatchCalls() {
 
 static Type*
 buildRuntimeTypeInfo(FnSymbol* fn) {
+  SET_LINENO(fn);
   ClassType* ct = new ClassType(CLASS_RECORD);
   TypeSymbol* ts = new TypeSymbol(astr("_RuntimeTypeInfo"), ct);
   for_formals(formal, fn) {
@@ -5481,6 +5494,7 @@ static void insertReturnTemps() {
         if (fn->retType != dtVoid) {
           CallExpr* parent = toCallExpr(call->parentExpr);
           if (!parent && !isDefExpr(call->parentExpr)) { // no use
+            SET_LINENO(call); // TODO: reset_ast_loc() below?
             VarSymbol* tmp = newTemp("_return_tmp_", fn->retType);
             DefExpr* def = new DefExpr(tmp);
             call->insertBefore(def);
@@ -5513,6 +5527,7 @@ initializeClass(Expr* stmt, Symbol* sym) {
   INT_ASSERT(ct);
   for_fields(field, ct) {
     if (!field->hasFlag(FLAG_SUPER_CLASS)) {
+      SET_LINENO(field);
       if (field->type->defaultValue) {
         stmt->insertBefore(new CallExpr(PRIM_SET_MEMBER, sym, field, field->type->defaultValue));
       } else if (isRecord(field->type)) {
@@ -5651,8 +5666,10 @@ static void removeRandomJunk() {
             !strcmp(sym->name, "_promotionType") ||
             sym->isParameter())
           call->getStmtExpr()->remove();
-        else
+        else {
+          SET_LINENO(call->get(2));
           call->get(2)->replace(new SymExpr(sym));
+        }
       } else if (call->isPrimitive(PRIM_MOVE)) {
         // Remove types to enable --baseline
         SymExpr* sym = toSymExpr(call->get(2));
@@ -5673,6 +5690,7 @@ static void removeRandomJunk() {
               INT_ASSERT(toSymExpr(call->get(1)));
               TypeSymbol *ts = toSymExpr(call->get(1))->var->type->symbol;
               // Remove the tmp and just pass the type through directly
+              SET_LINENO(call->get(i));
               call->get(i)->replace(new SymExpr(ts));
             }
           }
@@ -5696,6 +5714,7 @@ static void buildRuntimeTypeExpressions() {
     if (fn->defPoint && fn->defPoint->parentSymbol) {
       if (fn->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
         INT_ASSERT(fn->retType->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE));
+        SET_LINENO(fn);
         Type* runtimeType = buildRuntimeTypeInfo(fn);
         runtimeTypeMap.put(fn->retType, runtimeType);
 
@@ -5744,6 +5763,7 @@ static void removeUnusedFormals() {
         if (formal->hasFlag(FLAG_TYPE_VARIABLE) &&
             (!formal->type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE) &&
              !fn->hasFlag(FLAG_EXTERN))) {
+          SET_LINENO(formal);
           formal->defPoint->remove();
           VarSymbol* tmp = newTemp("_formal_type_tmp_", formal->type);
           fn->insertAtHead(new DefExpr(tmp));

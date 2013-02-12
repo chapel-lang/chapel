@@ -1,1 +1,1 @@
-writeln("No, you may not follow memtrace or memtrack with an equals sign.");
+writeln("You should not see this message when you execute this program with '--memStats='");

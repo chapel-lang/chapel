@@ -118,17 +118,19 @@ void processSingleLineComment(void) {
 void processMultiLineComment(void) {
   int c;
   int lastc;
+  int lastlastc;
   int depth;
 
   c = 0;
   lastc = 0;
+  lastlastc = 0;
   depth = 1;
 
   newString();
   countCommentLine();
 
   int labelIndex = 0;
-  int len = strlen(commentLabel);
+  int len = strlen(fDocsCommentLabel);
   if (len >= 2) {
     labelIndex = 2;
   }
@@ -136,12 +138,13 @@ void processMultiLineComment(void) {
   std::string wholeComment = "";
   
   while (depth > 0) {
+    lastlastc = lastc;
     lastc = c;
     c = getNextYYChar();
     if( c == '\n' ) {
       countMultiLineComment(stringBuffer);
       processNewline();
-      if (fdocs && labelIndex == len) {
+      if (fDocs && labelIndex == len) {
         wholeComment += stringBuffer;
         wholeComment += '\n';
       }
@@ -149,7 +152,7 @@ void processMultiLineComment(void) {
       countCommentLine();
     } else {
       if ((labelIndex < len) && (labelIndex != -1)) {
-        if (c == commentLabel[labelIndex]) {
+        if (c == fDocsCommentLabel[labelIndex]) {
           labelIndex++;
         } else {
           labelIndex = -1;
@@ -157,7 +160,7 @@ void processMultiLineComment(void) {
       }
       addChar(c);
     }
-    if( lastc == '*' && c == '/' ) { // close comment
+    if( lastc == '*' && c == '/' && lastlastc != '/' ) { // close comment
       depth--;
     } else if( lastc == '/' && c == '*' ) { // start nested
       depth++;
@@ -174,7 +177,7 @@ void processMultiLineComment(void) {
   
   // Saves the comment grabbed to the comment field of the location struct,
   // for use when the --docs flag is implemented
-  if (fdocs && labelIndex == len) {
+  if (fDocs && labelIndex == len) {
     wholeComment += stringBuffer;
     if (len > 2) {
       len -= 2;

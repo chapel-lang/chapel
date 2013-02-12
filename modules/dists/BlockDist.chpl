@@ -21,6 +21,7 @@
 
 use DSIUtil;
 use ChapelUtil;
+use CommDiagnostics;
 
 //
 // These flags are used to output debug information and run extra
@@ -818,6 +819,11 @@ inline proc _remoteAccessData.getDataIndex(param stridable, ind: rank*idxType) {
   return sum;
 }
 
+
+inline proc BlockArr.dsiLocalAccess(i: rank*idxType) var {
+  return myLocArr.this(i);
+}
+
 //
 // the global accessor for the array
 //
@@ -964,7 +970,7 @@ proc BlockArr.dsiSerialWrite(f: Writer) {
   label next while true {
     f.write(dsiAccess(i));
     if i(rank) <= (dom.dsiDim(rank).high - dom.dsiDim(rank).stride:idxType) {
-      f.write(" ");
+      if ! f.binary then f.write(" ");
       i(rank) += dom.dsiDim(rank).stride:idxType;
     } else {
       for dim in 1..rank-1 by -1 {
@@ -1453,7 +1459,7 @@ proc BlockArr.doiBulkTransferStride(Barg)
                     r2[t] = (ini_src[t]..end_src[t] by sa[t]);
                   }
 
-		  locArr[i].myElems[(...r2)]._value.doiBulkTransferStride(B.locArr[j].myElems[(...r3)],true,true);
+          locArr[i].myElems[(...r2)]._value.doiBulkTransferStride(B.locArr[j].myElems[(...r3)],true,true);
                 }
             }
           }

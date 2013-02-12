@@ -12,13 +12,18 @@
 #ifndef _DEQUE_H_
 #define _DEQUE_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "sys_basic.h"
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
 
-#ifdef _chplrt_H_
+#ifndef SIMPLE_TEST
 #include "chpl-mem.h"
 #define deque_calloc(nmemb, size) chpl_mem_allocManyZero( nmemb, size, CHPL_RT_MD_IO_BUFFER, __LINE__, __FILE__ )
 #define deque_free(ptr) chpl_mem_free(ptr, __LINE__, __FILE__)
@@ -187,7 +192,7 @@ err_t _deque_initialize_map(const ssize_t item_size, deque_t* d, ssize_t num_ele
   if( num_elements < 0 ) return EINVAL;
 
   d->map_size = _DEQUE_MAX(_DEQUE_INITIAL_MAP_SIZE, num_nodes + 2);
-  d->map = deque_calloc(d->map_size, sizeof(deque_node_t));
+  d->map = (deque_node_t*) deque_calloc(d->map_size, sizeof(deque_node_t));
   if( ! d->map ) {
     return ENOMEM;
   }
@@ -435,5 +440,10 @@ void deque_pop_back(const ssize_t item_size, deque_t* d)
     _deque_pop_back_aux(item_size, d);
   }
 }
+
+
+#ifdef __cplusplus
+} // end extern "C"
+#endif
 
 #endif

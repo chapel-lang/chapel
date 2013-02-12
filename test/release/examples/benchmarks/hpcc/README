@@ -26,7 +26,8 @@ The main files for these benchmarks are as follows:
 
      stream.chpl            : the global STREAM Triad benchmark
      stream-ep.chpl         : the EP STREAM Triad benchmark
-     ra.chpl                : the global Random Access benchmark
+     ra.chpl                : the global Random Access (RA) benchmark
+     ra-atomics.chpl        : a lossless version of RA using atomic vars
      fft.chpl               : the global 1D FFT benchmark
      ptrans.chpl            : the global PTRANS benchmark
      hpl.chpl               : the High Performance Linpack benchmark
@@ -45,6 +46,7 @@ These benchmarks can be compiled using the following commands:
      chpl --fast -o stream stream.chpl
      chpl --fast -o stream-ep stream-ep.chpl
      chpl --fast -o ra ra.chpl
+     chpl --fast -o ra-atomics ra-atomics.chpl
      chpl --fast -o fft fft.chpl
      chpl --fast -o ptrans ptrans.chpl
      chpl --fast -o hpl hpl.chpl
@@ -59,6 +61,7 @@ using:
     gmake stream
     gmake stream-ep
     gmake ra
+    gmake ra-atomics
     gmake fft
     gmake ptrans
     gmake hpl

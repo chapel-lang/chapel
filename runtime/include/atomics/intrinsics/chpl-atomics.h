@@ -1,18 +1,9 @@
 #ifndef _chpl_atomics_h_
 #define _chpl_atomics_h_
 
+#include "chpltypes.h"
+
 #include <assert.h>
-#ifdef SIMPLE_TEST
-#include "sys_basic.h"
-#include <stdint.h>
-#include <stdbool.h>
-typedef bool chpl_bool; // these are required to enable chpl_bools and floating
-typedef float _real32;  // point atomics in the C tests (and also to keep them 
-typedef double _real64; // from breaking!)
-#else
-#include "chpltypes.h" // this undefines printf, which
-                       // causes problems with the C test cases.
-#endif
 
 typedef int_least8_t atomic_int_least8_t;
 typedef int_least16_t atomic_int_least16_t;

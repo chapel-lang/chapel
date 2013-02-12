@@ -33,8 +33,8 @@ void localizeGlobals() {
             var->hasFlag(FLAG_CONST) &&
             var->defPoint->parentSymbol != rootModule) {
           VarSymbol* local_global = globals.get(var);
+          SET_LINENO(se); // Set the se line number for output
           if (!local_global) {
-            SET_LINENO(se); // Set the se line number for output
             const char * newname = astr("local_", var->cname);
             local_global = newTemp(newname, var->type);
             fn->insertAtHead(new CallExpr(PRIM_MOVE, local_global, var));

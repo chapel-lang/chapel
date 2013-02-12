@@ -15,13 +15,13 @@ else
   exit
 fi
 
-T1="$COMP -o deque_test -g deque_test.c -DSIMPLE_TEST $RSRC/deque.c -Wall"
-T2="$COMP -o qbuffer_test -g qbuffer_test.c -DSIMPLE_TEST $RSRC/qbuffer.c $RSRC/sys.c $RSRC/sys_xsi_strerror_r.c $RSRC/deque.c -Wall"
-T3="$COMP -o qio_test -g qio_test.c -DSIMPLE_TEST $RSRC/qio.c $RSRC/sys.c $RSRC/sys_xsi_strerror_r.c $RSRC/qbuffer.c $RSRC/deque.c -Wall -pthread"
-T4="$COMP -o qio_formatted_test -g qio_formatted_test.c -DSIMPLE_TEST $RSRC/qio.c $RSRC/qio_formatted.c $RSRC/sys.c $RSRC/sys_xsi_strerror_r.c $RSRC/qbuffer.c $RSRC/deque.c -Wall -pthread"
-T5="$COMP -o qio_memfile_test -g qio_memfile_test.c -DSIMPLE_TEST $RSRC/qio.c $RSRC/qio_formatted.c $RSRC/sys.c $RSRC/sys_xsi_strerror_r.c $RSRC/qbuffer.c $RSRC/deque.c -Wall -pthread"
-T6="$COMP -o qio_bits_test -g qio_bits_test.c -DSIMPLE_TEST $RSRC/qio.c $RSRC/sys.c $RSRC/sys_xsi_strerror_r.c $RSRC/qbuffer.c $RSRC/deque.c -Wall -pthread"
-T7="$COMP -o qio_mark_test -g qio_mark_test.c -DSIMPLE_TEST $RSRC/qio.c $RSRC/sys.c $RSRC/sys_xsi_strerror_r.c $RSRC/qbuffer.c $RSRC/deque.c -Wall -pthread"
+T1="$COMP -g deque_test.c -DSIMPLE_TEST $RSRC/deque.c -Wall -o deque_test"
+T2="$COMP -g qbuffer_test.c -DSIMPLE_TEST $RSRC/qbuffer.c $RSRC/sys.c $RSRC/sys_xsi_strerror_r.c $RSRC/deque.c -Wall -o qbuffer_test"
+T3="$COMP -g qio_test.c -DSIMPLE_TEST $RSRC/qio.c $RSRC/sys.c $RSRC/sys_xsi_strerror_r.c $RSRC/qbuffer.c $RSRC/deque.c -Wall -pthread -o qio_test"
+T4="$COMP -g qio_formatted_test.c -DSIMPLE_TEST $RSRC/qio.c $RSRC/qio_formatted.c $RSRC/sys.c $RSRC/sys_xsi_strerror_r.c $RSRC/qbuffer.c $RSRC/deque.c -Wall -pthread -o qio_formatted_test"
+T5="$COMP -g qio_memfile_test.c -DSIMPLE_TEST $RSRC/qio.c $RSRC/qio_formatted.c $RSRC/sys.c $RSRC/sys_xsi_strerror_r.c $RSRC/qbuffer.c $RSRC/deque.c -Wall -pthread -o qio_memfile_test"
+T6="$COMP -g qio_bits_test.c -DSIMPLE_TEST $RSRC/qio.c $RSRC/sys.c $RSRC/sys_xsi_strerror_r.c $RSRC/qbuffer.c $RSRC/deque.c -Wall -pthread -o qio_bits_test"
+T7="$COMP -g qio_mark_test.c -DSIMPLE_TEST $RSRC/qio.c $RSRC/sys.c $RSRC/sys_xsi_strerror_r.c $RSRC/qbuffer.c $RSRC/deque.c -Wall -pthread -o qio_mark_test"
 
 echo $T1
 echo $T2
@@ -60,7 +60,7 @@ then
   runtest ./qio_formatted_test "Formatted I/O Test"
   runtest ./qio_memfile_test "Memory File Test"
   runtest ./qio_bits_test "Bit I/O Test"
-  runtest ./qio_mark_test "Bit I/O Test"
+  runtest ./qio_mark_test "Mark I/O Test"
 else
   echo "[Error compiling C I/O tests]"
 fi

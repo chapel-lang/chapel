@@ -1,7 +1,9 @@
+#include "chplrt.h"
+
+#include "chpltimers.h"
+
 #include <sys/time.h>
 #include <time.h>
-#include "chplrt.h"
-#include "chpltimers.h"
 
 _real64 chpl_now_time(void) {
   struct tm * now;

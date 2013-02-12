@@ -15,7 +15,7 @@ if ($preset_llvm eq "") {
   $hostplatform = `$utildirname/platform --host`; chomp($hostplatform);
   $hostcompiler = `$utildirname/compiler --host`; chomp($hostcompiler);
   $targplatform = `$utildirname/platform --target`; chomp($targplatform);
-  if ($targplatform eq "xmt" || $targplatform eq "xmt-sim") {
+  if ($targplatform =~ /^cray-xmt(-sim)?$/) {
     $llvm = 'none';
   } else {
     $subdir = $home . "/third-party/llvm/install/" .

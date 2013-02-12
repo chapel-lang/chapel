@@ -1,3 +1,2 @@
-# The key issue with this test is memory corruption.
-# Once that's solved, we can start running on all configurations.
-CHPL_TEST_VGRND_EXE != on
+CHPL_COMM!=none
+COMPOPTS <= --no-local

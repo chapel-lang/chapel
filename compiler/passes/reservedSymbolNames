@@ -54,7 +54,9 @@
   fread
   main
   open
+  pow
   printf
+  scanf
   quad
   read
   sleep
@@ -204,6 +206,9 @@
   UINT64_C
   INTMAX_C
   UINTMAX_C
+
+  // symbols from stdio.h
+  EOF
 
   // symbols from QIO
   EEOF

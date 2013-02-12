@@ -103,6 +103,8 @@ def createHTML(file1, file2, style, embed):
     reader.close()
     writer.close()
 
+    # clean up the original .txt file
+    os.unlink(file1)
 
 
 def help():
@@ -162,7 +164,7 @@ except getopt.GetoptError:
    help()
    sys.exit()
 
-style = os.environ['CHPL_HOME'] + "/util/docs/official.css"
+style = os.environ['CHPL_HOME'] + "/util/docs/plain.css"
 logo = ""
 color = ""
 embed = False

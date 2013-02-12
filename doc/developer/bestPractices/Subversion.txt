@@ -6,7 +6,7 @@ Repository
 ------------
 The subversion repository for the project is set up as follows:
 
-* URL: https://chapel.svn.sourceforge.net/svnroot/chapel
+* URL: svn://svn.code.sf.net/p/chapel/code
          branches/
            collaborations/     -- used for external collaborators
            release/            -- used to capture release branches

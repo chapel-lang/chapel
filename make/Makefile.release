@@ -48,6 +48,7 @@ all: $(PREPEND) FORCE
 	@find $(RELCOMPDIR) -name "Make*" -exec $(ADDCOPYRIGHT) {} \;
 	@find $(RELRTDIR) -name "Make*" -exec $(ADDCOPYRIGHT) {} \;
 	@find $(RELMAKEDIR) -name "Make*" -exec $(ADDCOPYRIGHT) {} \;
+	@find $(RELMODDIR) -name "Make*" -exec $(ADDCOPYRIGHT) {} \;
 	@$(ECHO) -n "// " > $(RELCOPYRIGHT)
 	@cat COPYRIGHT >> $(RELCOPYRIGHT)
 	@$(ECHO) >> $(RELCOPYRIGHT)

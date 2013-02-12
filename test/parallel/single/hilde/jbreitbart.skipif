@@ -1,2 +1,0 @@
-# skip this .future if compiling in --baseline mode (because it works)
-COMPOPTS <= --baseline

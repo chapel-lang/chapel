@@ -1,5 +1,5 @@
-extern proc chpl_macro_INFINITY():real(32);
-extern proc chpl_macro_NAN():real(32);
+extern proc chpl_macro_INFINITY():real(64);
+extern proc chpl_macro_NAN():real(64);
 
 inline proc INFINITY return chpl_macro_INFINITY();
 inline proc NAN return chpl_macro_NAN();

@@ -4,5 +4,6 @@ var i: int = 0;
 
 while (i <= numTestCases) {
   read(complexNumber);	
-  writeln(complexNumber);	
+  writeln(complexNumber);
+  i += 1;
 }

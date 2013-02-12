@@ -3,6 +3,6 @@ GEN_LFLAGS += -L$(QTHREAD_LIB_DIR) -Wl,-rpath=$(QTHREAD_LIB_DIR)
 
 LIBS += -lqthread_chpl -lqthread
 
-ifeq ($(CHPL_MAKE_TARGET_PLATFORM),xe-cle)
+ifneq (, $(filter $(CHPL_MAKE_TARGET_PLATFORM),cray-xe cray-xc cray-xk))
 LIBS += -lrt
 endif

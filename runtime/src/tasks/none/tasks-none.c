@@ -3,10 +3,11 @@
 #define NDEBUG
 #endif
 
+#include "chplrt.h"
 #include "chpl-mem.h"
 #include "chplcast.h"
-#include "chplrt.h"
 #include "chpl-tasks.h"
+#include "chplcgfns.h" // for chpl_ftable
 #include "config.h"
 #include "error.h"
 #include <assert.h>
@@ -26,6 +27,7 @@ typedef struct chpl_pool_struct {
   chpl_fn_p fun;          // function to call for task
   void*     arg;          // argument to the function
   chpl_bool serial_state; // whether new tasks can be created while executing fun
+  c_subloc_t sublocale;  // subloc id associated with the current task.
   chpl_task_pool_p next;
 } task_pool_t;
 
@@ -86,6 +88,7 @@ void chpl_sync_destroyAux(chpl_sync_aux_t *s) { }
 static chpl_taskID_t next_taskID = chpl_nullTaskID + 1;
 static chpl_taskID_t curr_taskID;
 static chpl_bool serial_state;
+static c_subloc_t sublocale;
 static uint64_t taskCallStackSize = 0;
 
 void chpl_task_init(int32_t numThreadsPerLocale, int32_t maxThreadsPerLocale, 
@@ -207,6 +210,10 @@ void chpl_task_setSerial(chpl_bool new_state) {
   serial_state = new_state;
 }
 
+c_subloc_t chpl_task_getSubLoc(void) { return sublocale; }
+
+void chpl_task_setSubLoc(c_subloc_t new_subloc)
+{ sublocale = new_subloc; }
 
 uint64_t chpl_task_getCallStackSize(void) {
   return taskCallStackSize;

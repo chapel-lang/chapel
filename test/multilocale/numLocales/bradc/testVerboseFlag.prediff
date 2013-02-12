@@ -3,4 +3,4 @@ cp testVerboseFlag.comm-$CHPL_COMM.goodstart $1.good
 uname -n >> $1.good
 cat testVerboseFlag.goodstop >> $1.good
 sed -e "s/^.*amudprun/amudprun/" $2 > $1.sed
-mv $1.sed $2
+sed -e "/QTHREADS/d" $1.sed > $2

@@ -1,6 +1,10 @@
 #ifndef _QIO_H_
 #define _QIO_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "bswap.h"
 #include "qbuffer.h"
 #include "sys.h"
@@ -11,6 +15,11 @@
 #include <stdarg.h>
 #include <stdbool.h>
 #include <assert.h>
+
+// On some systems contains #define mmap mmap64
+// rather than an inline function -- which means that it must be included before
+// any mention of the token "mmap".  Most unfortunate. <hilde>
+#include <sys/mman.h>
 
 #define DEBUG_QIO 0
 
@@ -64,6 +73,10 @@ static inline void qio_lock_destroy(qio_lock_t* x) {
 }
 
 #else
+
+#ifndef SIMPLE_TEST
+#error Chapel runtime should be included before QIO or SIMPLE_TEST should be set
+#endif
 
 #include <pthread.h>
 
@@ -214,8 +227,8 @@ char* qio_hints_to_string(qio_hint_t hint)
   // Not particularly intelligent, but this stack-allocated
   // buffer should have enough room.
   char buf[QIO_NUM_HINT_BITS*20+16*20+100];
-  qio_chtype_t type = hint & QIO_CHTYPEMASK;
-  qio_method_t method = hint & QIO_METHODMASK;
+  qio_chtype_t type = (qio_chtype_t) (hint & QIO_CHTYPEMASK);
+  qio_method_t method = (qio_method_t) (hint & QIO_METHODMASK);
   int ok = 0;
 
   buf[0] = '\0';
@@ -263,8 +276,10 @@ char* qio_hints_to_string(qio_hint_t hint)
 
   if( hint & QIO_HINT_RANDOM ) strcat(buf, " random");
   if( hint & QIO_HINT_SEQUENTIAL ) strcat(buf, " sequential");
+  if( hint & QIO_HINT_LATENCY ) strcat(buf, " latency");
   if( hint & QIO_HINT_BANDWIDTH ) strcat(buf, " bandwidth");
   if( hint & QIO_HINT_CACHED ) strcat(buf, " cached");
+  if( hint & QIO_HINT_PARALLEL ) strcat(buf, " parallel");
   if( hint & QIO_HINT_DIRECT ) strcat(buf, " direct");
   if( hint & QIO_HINT_NOREUSE ) strcat(buf, " noreuse");
   if( hint & QIO_HINT_NOFAST ) strcat(buf, " nofast");
@@ -605,7 +620,7 @@ typedef struct qio_channel_s {
                           // to cached_cur when we move on to the next read?
 
   ssize_t mark_cur;
-  size_t mark_stack_size;
+  ssize_t mark_stack_size;
   int64_t* mark_stack;
   // initial few entries so we don't have to malloc
   // for the common case of very few marks.
@@ -846,10 +861,7 @@ int64_t qio_channel_str_style(qio_channel_t* ch)
   return ch->style.str_style;
 }
 
-
-
-
-
+int64_t qio_channel_style_element(qio_channel_t* ch, int64_t element);
  
 static ___always_inline
 err_t qio_channel_write(const int threadsafe, qio_channel_t* restrict ch, const void* restrict ptr, ssize_t len, ssize_t* restrict amt_written )
@@ -1050,14 +1062,40 @@ static inline
 int64_t qio_channel_offset_unlocked(qio_channel_t* ch)
 {
   int64_t cached_amt = VOID_PTR_DIFF(ch->cached_cur, ch->cached_start);
-  
-  if( ch->cached_start != NULL ) {
-    return cached_amt + ch->cached_start_pos;
+  int writing = ch->flags & QIO_FDFLAG_WRITEABLE;
+  int bytes_in_bits = 0;
+
+  if( writing ) {
+    bytes_in_bits = (ch->bit_buffer_bits + 7)/8;
+  } else {
+    bytes_in_bits = (7 + 8*ch->bits_read_bytes - ch->bit_buffer_bits) / 8;
   }
 
+  if( ch->cached_start != NULL ) {
+    //printf("offset %i %i %i\n", (int) bytes_in_bits, (int) cached_amt, (int) ch->cached_start_pos);
+    return bytes_in_bits + cached_amt + ch->cached_start_pos;
+  }
+
+  //printf("offset %i - %i\n", (int) bytes_in_bits, (int) ch->mark_stack[ch->mark_cur]);
   // and if there's no cached data, cached_start_pos is not available:
-  return ch->mark_stack[ch->mark_cur]; // _right_mark_start(ch);
+  return bytes_in_bits + ch->mark_stack[ch->mark_cur]; // _right_mark_start(ch);
 }
+
+/* 
+ * Returns the end position of the channel.
+ *  - If the channel is unbounded and we have not
+ *    yet encountered an EOF when reading, returns MAX_INT64
+ *  - If the channel is bounded, returns the end offset
+ *  - If an unbounded channel has encountered EOF, returns
+ *    the position at which the EOF was encountered.
+ */
+static inline
+int64_t qio_channel_end_offset_unlocked(qio_channel_t* ch)
+{
+  return ch->end_pos;
+}
+
+err_t qio_channel_end_offset(const int threadsafe, qio_channel_t* ch, int64_t* offset_out);
 
 
 err_t qio_channel_advance(const int threadsafe, qio_channel_t* ch, int64_t nbytes);
@@ -1128,9 +1166,15 @@ err_t qio_channel_mark(const int threadsafe, qio_channel_t* ch);
 err_t qio_channel_mark_maybe_flush_bits(const int threadsafe, qio_channel_t* ch, int flushbits);
 
 // Returns an error, but that error can safely be ignored.
+// also, if nbytes<0, it works as though nbytes = 0.
 err_t qio_channel_advance_unlocked(qio_channel_t* ch, int64_t nbytes);
 
 void qio_channel_revert_unlocked(qio_channel_t* ch);
+
+static inline
+bool qio_channel_has_mark_unlocked(qio_channel_t* ch) {
+  return (ch->mark_cur >= 1);
+}
 
 // Only returns threading errors; guaranteed not to return
 // an error if threadsafe == false (it asserts instead on bad cases)
@@ -1221,7 +1265,7 @@ err_t qio_channel_write_bits(const int threadsafe, qio_channel_t* restrict ch, u
 
     // We have buffer for it...
     // Can we just put it into bitbuffer?
-    if( tmp_live + nbits <= 8*sizeof(qio_bitbuffer_t) ) {
+    if( tmp_live + nbits <= (int) (8*sizeof(qio_bitbuffer_t)) ) {
       //printf("WRITE BITS LOCAL WRITING %llx %i %llx %i\n", (long long int) tmp_bits, tmp_live, (long long int) v, nbits);
       tmp_bits = (tmp_bits << nbits) | v;
       tmp_live += nbits;
@@ -1371,50 +1415,8 @@ unlock:
   return err;
 }
 
-
-/*
-err_t qio_channel_fopen(const int threadsafe, qio_channel_t* ch, int reading, int writing, FILE** out);
-err_t qio_vprintf(const int threadsafe, qio_channel_t* ch,
-                  const char* fmt, va_list ap);
-err_t qio_printf(const int threadsafe, qio_channel_t* ch,
-                 const char* fmt, ...);
-err_t qio_vscanf(const int threadsafe, qio_channel_t* ch,
-                 int* nmatched, const char* fmt, va_list ap);
-err_t qio_scanf(const int threadsafe, qio_channel_t* ch,
-                 int* nmatched, const char* fmt, ...);
-
-// returns EFORMAT if it didn't match.
-err_t qio_scanf1(const int threadsafe, qio_channel_t* ch,
-                 const char* fmt, void* x);
-
-qio_chtype_t qio_choose_io_type(qio_hint_t hints);
-*/
-
-/*
-// recognizer returns 0 for not recognized yet,
-// -1 if recognized, or a positive number for an error.
-// offset is returned in the buffer's coordinate system (not a distance
-// but an absolute position).
-typedef err_t (*recognizer_t)(qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, void* state, int64_t* offset);
-
-
-// Peek until a recognizer function is satisfied.
-// In *amount, returns the number of bytes we passed.
-err_t qio_channel_require_until(const int threadsafe, qio_channel_t* ch, recognizer_t recognize, void* state, int64_t* amount);
-
-// state should be pointer-to-char
-err_t until_char(qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, void* state, int64_t* offset);
-
-// state should be pointer to char[256]
-err_t until_table(qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, void* state, int64_t* offset);
-
-typedef struct until_noescape_s {
-  char start_char;
-  char end_char;
-  char escape_char;
-  char state; // 0 is at start, 1 is in string, 2 is in string after escape
-} until_noescape_t;
-err_t until_char_noescape(qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, void* state, int64_t* offset);
-*/
+#ifdef __cplusplus
+} // end extern "C"
+#endif
 
 #endif

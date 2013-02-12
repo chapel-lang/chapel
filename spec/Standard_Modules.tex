@@ -1030,8 +1030,9 @@ proc Timer.elapsed(unit: TimeUnits = TimeUnits.seconds): real
 \end{protohead}
 \begin{protobody}
 Returns the cumulative elapsed time, in the units specified, between
-calls to \chpl{start} and \chpl{stop}.  If the timer is running, the
-elapsed time since the last call to \chpl{start} is added to the
+all pairs of calls to \chpl{start} and \chpl{stop} since the timer was
+created or the last call to \chpl{clear}.  If the timer is running,
+the elapsed time since the last call to \chpl{start} is added to the
 return value.
 \end{protobody}
 

@@ -15,33 +15,38 @@ This directory contains the following documentation:
   README.prereqs     : prerequisites for using Chapel
   README.tasks       : explains how Chapel tasks are implemented using threads
 
-  platforms/           : platform-specific notes:
-    README.cygwin      :  Cygwin
-    README.ibm         :  IBM
-    README.macosx      :  Mac
-    README.marenostrum :  MareNostrum (at BSC)
-    README.sgi         :  SGI Altix
-    README.xmt         :  Cray XMT (TM)
-    README.xe-cle      :  Cray XE (TM) running CLE
-                          (the Cray Linux Environment (TM))
-    README.xt-cle      :  Cray XT (TM) running CLE
-
   chapelLanguageSpec.pdf : the current draft of the Chapel language
                            specification
 
   quickReference.pdf : a one-sheet, tri-fold overview of Chapel syntax
                        for quick reference
 
+  platforms/           : platform-specific notes:
+    README.cray        :  Cray XT (TM), Cray XE (TM), Cray XK (TM),
+                          Cray XC (TM)
+    README.cray-xmt    :  Cray XMT (TM)
+    README.cygwin      :  Cygwin
+    README.ibm         :  IBM
+    README.macosx      :  Mac
+    README.marenostrum :  MareNostrum (at BSC)
+    README.sgi         :  SGI Altix
+    README.tilera      :  Tilera
+
   technotes/                : technical notes about our implementation:
+    README.atomics          :  information about using 'atomic' variables
+    README.chpldoc          :  notes on using the 'chpldoc' capability
     README.comm-diagnostics :  tracking communication events
     README.dsi              :  requirements/guidelines on writing a domain map
     README.extern           :  calling external C routines
     README.firstClassFns    :  first-class functions
     README.format           :  value-to-string formatting
     README.gmp              :  a prototype GMP module
+    README.io               :  the new I/O system in Chapel
+    README.libraries        :  initial information about creating libraries in
+                               Chapel
+    README.llvm             :  information about using the LLVM back-end
     README.local            :  the 'local' statement
     README.module_search    :  how modules are searched for to fulfill 'use's
-    README.io               :  the new I/O system in Chapel
 
 
 --------------------

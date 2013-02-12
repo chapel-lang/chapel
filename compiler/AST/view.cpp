@@ -886,3 +886,34 @@ log_ast_fnsymbol(FILE* file, FnSymbol* fn) {
   }
 }
 
+void map_view(SymbolMap* map, const char* msg) {
+  if (msg) printf("SymbolMap %s\n", msg);
+  int cnt = 0;
+  bool temp_log_need_space = log_need_space;
+  log_need_space = true;
+  
+  form_Map(SymbolMapElem, elm, *map) {
+    Symbol* key = elm->key;
+    Symbol* val = elm->value;
+    if (key || val) {
+      cnt++;
+      printf(" ");
+      if (key) {
+        log_ast_symbol(stdout, key, true);
+        printf(" %c", key->hasFlag(FLAG_CONST) ? 'c' : 'v');
+      } else {
+        printf("NULL");
+      }
+      if (val != NULL && val != gNil) {
+        printf(" => ");
+        log_ast_symbol(stdout, val, true);
+        printf(" %c", val->hasFlag(FLAG_CONST) ? 'c' : 'v');
+      } else {
+        // nothing
+      }
+      printf("\n");
+    }
+  }
+  printf("  %d elms\n", cnt);
+  log_need_space = temp_log_need_space;
+}

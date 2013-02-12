@@ -42,7 +42,7 @@ if ($network_atomics == 1) {
 
     if ($platform eq "linux32") {
 	$atomics = "locks";
-    } elsif ($compiler eq "gnu" || $compiler eq "cray-xt-gnu" || $compiler eq "cray-xe-gnu" ) {
+    } elsif ($compiler eq "gnu" || $compiler eq "cray-prgenv-gnu") {
       # Check the compiler version
       my $version = `gcc -dumpversion`;
       my @vers = split(/\./, $version);
@@ -52,6 +52,8 @@ if ($network_atomics == 1) {
       } else {
         $atomics = "locks";
       }
+    } elsif ($compiler eq "cray-prgenv-intel") {
+      $atomics = "intrinsics";
     } elsif ($compiler eq "clang") {
       $atomics = "intrinsics";
     } else {

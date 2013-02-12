@@ -120,6 +120,7 @@ if ($teststatus == 0) {
     }
 } else {
     $shortstatus = "Failed: Something";
+    $successmail = "chapel_cronmail\@cray.com";
 }
 if ($debug == 1) {
     $mailsubject = "Dbug Release $shortstatus ($platform)";
@@ -134,6 +135,13 @@ if ($debug == 1) {
 }
     
 open(MAIL, $mailcommand);
+
+print MAIL "=== Results - testRelease ===================================================\n";
+print MAIL "Hostname:   ", `hostname`;
+print MAIL "\$tmpdir:    $tmpdir\n";
+print MAIL "\$chplhome:  $chplhome\n";
+print MAIL "Ended:      ", scalar(localtime()), "\n";
+print MAIL "\n";
 
 print MAIL `cat $tmpdir/chapel-test/examples/Logs/testReleaseHelp.log.summary`;
     
@@ -178,7 +186,7 @@ sub mysystem {
 
             print "Trying to mail message... using $mailcommand\n";
 	    open(MAIL, $mailcommand);
-	    print MAIL "=== Summary ===================================================\n";
+	    print MAIL "=== Summary - testRelease ===================================================\n";
 	    print MAIL "ERROR $_[1]: $status\n";
             $host = `hostname`; chomp($host);
 	    print MAIL "(workspace left at $host:$tmpdir)\n";

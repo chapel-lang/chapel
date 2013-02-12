@@ -2,7 +2,7 @@
 
 . /etc/profile
 
-export CHPL_HOME_REPOSITORY="https://chapel.svn.sourceforge.net/svnroot/chapel/trunk"
+export CHPL_HOME_REPOSITORY="svn://svn.code.sf.net/p/chapel/code/trunk"
 export CHPL_LAUNCHER=none
 
 if [ $# == 0 ] ; then
@@ -48,7 +48,7 @@ for compiler in $compilers ; do
       module load mpich2
   fi
   module list
-  export CHPL_TARGET_PLATFORM=xt-cle
+  export CHPL_TARGET_PLATFORM=cray-xt
   setPgiPrediff
   $NIGHTLY -combinedir -cron $EXAMPLES
 )
@@ -64,8 +64,8 @@ for compiler in $compilers ; do
       module load mpich2
   fi
   module list
-  export CHPL_HOST_PLATFORM=xt-cle
-  export CHPL_TARGET_PLATFORM=xt-cle
+  export CHPL_HOST_PLATFORM=cray-xt
+  export CHPL_TARGET_PLATFORM=cray-xt
   export CHPL_HOST_COMPILER=cray-xt-$compiler
   setPgiPrediff
   $NIGHTLY -combinedir -cron $EXAMPLES

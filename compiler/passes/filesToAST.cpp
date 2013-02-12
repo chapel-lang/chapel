@@ -99,11 +99,12 @@ void parse(void) {
         USR_WARN("'_tuple' defined more than once in Chapel Internal modules.");
       }
       dtTuple = toClassType(ts->type);
-    } else if (!strcmp(ts->name, "locale")) {
-      if (dtLocale) {
-        USR_WARN("'locale' defined more than once in Chapel Internal modules.");
+    } else if (!strcmp(ts->name, "chpl_localeID_t")) {
+      if (dtLocaleID) {
+        USR_WARN("'chpl_localeID_t' defined more than once in Chapel Internal modules.");
       }
-      dtLocale = toClassType(ts->type);
+      dtLocaleID = toClassType(ts->type);
+      ts->addFlag(FLAG_PRIMITIVE_TYPE);
     } else if (!strcmp(ts->name, "BaseArr")) {
       if (dtBaseArr) {
         USR_WARN("'BaseArr' defined more than once in Chapel Internal modules.");
@@ -139,7 +140,7 @@ void parse(void) {
   if (!dtTuple) {
     USR_FATAL_CONT("'_tuple' not defined in Chapel Internal modules.");
   }
-  if (!dtLocale) {
+  if (!dtLocaleID) {
     USR_FATAL_CONT("'locale' not defined in Chapel Internal modules.");
   }
   if (!dtBaseArr) {
@@ -185,11 +186,12 @@ void parse(void) {
 
   forv_Vec(ModuleSymbol, mod, allModules) {
     // Filter out modules that don't want to include ChapelStandard by default.
-    if (mod->hasFlag(FLAG_NO_DEFAULT_USE))
+    if (mod->hasFlag(FLAG_NO_USE_CHAPELSTANDARD))
       continue;
 
     // ChapelStandard is added implicity to the "use" list of all other modules.
     {
+      SET_LINENO(mod);
       mod->block->addUse(standardModule);
       mod->modUseSet.clear();
       mod->modUseList.clear();
@@ -200,6 +202,9 @@ void parse(void) {
 
   checkConfigs();
 
+ {
+  SET_LINENO(baseModule);
   baseModule->block->addUse(rootModule);
+ }
   finishCountingTokens();
 }

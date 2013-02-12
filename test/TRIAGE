@@ -1,156 +1,119 @@
 # USAGE:
 #
-# Current notes on triage results, sorted by type of failure
-# (benchmark, compiler, or platform).
+# Current notes on triage results, sorted into the following categories:
 #
-========================================================
-Problems analyzed and dispatched to responsible parties:
-========================================================
+# * cases that are assigned and should be fixed (ideally during the coming
+#   week)
+#
+# * cases that are causing noise regularly in testing, sorted by
+#   approximate priority
+#
+# * cases that were once flagged as causing regular noise, but don't seem
+#   so bad currently
+#
+# * cases that are not familiar, but have caused noise -- these are
+#   noted so that if they happen again, we can move them up to an
+#   earlier session and recognize a slower pattern over a longer
+#   period of time
+#
+# * regular failures that someone might look at as part of their triage week
+#
+# The path to each test with intermittent behavior should appear here, so
+# it can be grepped for. Except if a lot of test fail for the identical
+# reason or in the same directory, a wildcard is more appropriate.
+# The convention here is to include just the path, without test/ or .chpl.
+# The date of the most recent note is also useful, with "ongoing"
+# if appropriate.
 
-2012-09-19 stack overflow on SSCA2
-  No clue.
 
-2012-09-18 gasnet testing failures.  raCommCheck and kin.
-  Due to zippered iteration syntax change not propagating to parallel-only tests.
-  John's sieve was to actually run the tests and fix failures rather than to 
-    identify a standard syntax pattern to use in a global search.
-  John submitted a patch and this issue is resolved.
-
-2012-09-17 qthreads build failure.
-  Due to LLVM backend checkin.
-  Michael was alerted and submitted a patch for review.
-  Brad is responding to Michael -- perhaps suggesting a less invasive solution.
-
-===========================================
-Unresolved failures by test/configuration:
-===========================================
-
-classes/figueroa/RecordDestructor1
-  Failed: 9/23 (64ggffpd) -- destructor not called?
-
-distributions/deitz/test_block_representation
-  Failed: 9/23 (64ggffpd) -- line number sensitivity
-
-distributions/robust/associative/basic/array_write
-distributions/robust/associative/basic/domain_write
-distributions/robust/associative/basic/whole_domain_assign
-  Failed: 9/23 (64ggffpd) -- no output
-
-functions/deiz/iterators/leader_follower/test_strided_leader1
-  Failed: 9/23 (64ggffpd)
-
-multilocale/diten/needMultiLocales/coforallon_maxThreads
-  Failed: 9/23 (64ggfpt)
-
-types/file/freadIntFailed
-types/file/fwriteIntFailed
-  Failed: 9/23 (64ggffpd) -- path sensitivity
-
-studies/590o/blerner/nilClassCheck
-  Failed: 9/23 (baseline) -- line number sensitivlty
-
-studies/lammps/shemmy/p-lammps-n1
-studies/lammps/shemmy/p-lammps-n2
-studies/lammps/shemmy/p-lammps-n4
-  Failed: 9/19 (baseline), 9/23 (baseline)
-
+=========================================================
+Problems analyzed and assigned that should be fixed soon:
+=========================================================
 
 ==============================================
 These things regularly cause noise in testing:
 ==============================================
 
-spectralnorm
-------------
-Removed from further consideration <hilde 2012-09-20>
-
-proposed approach is to see whether reference version is similarly
-noisy, and if not to see whether ours has inadvertant nondeterminisms.
-(still noisy as of 2012/08/14-8/24: gnfp, gnfp-nolocal)
-
-8/31/12: This is still causing regular failures.  Tom came up with
-some way tot rewrite the algorithm to maybe help (?) but neither he
-nor Vass know whether this violates the definition of the benchmark.
-
-madness (sungeun)
------------------
-Sung's been working on dialing down parallelism to avoid timeouts
-in oversubscribed setting, but it's not yet perfect: test_likepy
-timed out 06/05/12.
-- Added a .timeout file for test_likepy (sungeun: 8/29/2012)
-
-ra* (gbt)
----------
-Greg committed a fix to resolve the race in the main version (r20301),
-and now just needs to propagate it to the other versions, as well as
-to the else-clause of the 'useOn' conditional.
-  release/examples/benchmarks/hpcc/variants/ra-cleanloop: fixed by r20326
-  studies/hpcc/2008/ra: not fixed yet, failed 8/14/12
-  studies/hpcc/nodistrib/ra.nodist: not fixed yet, failed 8/14/12, still failing 2012/09/21.
-  studies/hpcc/RA/bradc/parallel/ra-dist: not fixed yet, last failure unknown
-
-
-lulesh (bradc)
---------------
-Times out sometimes in XMT testing, but seems to have stabilized in
-other cases.
-
-
-TooManyThreads (unassigned)
----------------------------
-Fails periodically.  Lately observed pthreads.tcmalloc (2012/08/15).
-
-
-mutilocale/deitz/needMultiLocales/diagnostics/test_private_broadcast_large
---------------------------------------------------------------------------
-  Succeeded: 9/23 (64ggffpd)
-
-parallel/sync/diten/syncArrOfSync (future)
----------------------------------
-  Succeeded: 9/23 (64ggffpd)
-
 linux64.gnu.gasnet.qthreads.none (UNASSIGNED)
 ---------------------------------------------
-0) We moved to a non-oversubscribed setting on a beefier machine
-1) Continue to have a lot of noise in testing.
-   - Often the execution times out nondeterministically
-2) Got a seg fault (06/06/12, 6/16, stream-ep 8/23/12)
-3) Intermitent seg fault on exit (7/7 7/9, 7/12, 7/13, same as #2?)
-4) seg fault during program execution (same as #2?):
+gbt: 1/14/13.  Here the list of failure counts for the last 7 days.
+(Thank you, grep|cut|sed|sort|uniq!)  I've sent this to Kyle and
+Dylan.  76 of these are with comm=none, and 28 with comm=gasnet.
+      2 distributions/robust/arithmetic/slicing/test_array_slicing3
+     12 distributions/robust/arithmetic/stress/test_many_domains
+      8 domains/sungeun/assoc/stress
+      2 execflags/bradc/gdbddash/gdbSetConfig
+      6 exercises/RandomNumber6
+      2 memory/figueroa/LeakedMemory5
+     14 multilocale/diten/needMultiLocales/beginInOn
+      4 parallel/begin/deitz/test_begin_error_lineno
+      8 parallel/begin/marybeth/test_forbegin
+      2 parallel/begin/marybeth/test_forbegin2
+      6 parallel/begin/marybeth/test_forbegin3
+      6 parallel/cobegin/bradc/exitone
+      4 stress/deitz/test_10k_coforall
+     10 studies/shootout/thread-ring/thread-ring
+      2 studies/sudoku/dinan/search/sudoku-reduce
+      6 users/shetag/fock/fock-1
+      6 users/shetag/fock/fock-1-begin-blc
+      4 users/shetag/fock/fock-2
+
+sungeun: 12/7/12.  Enabled oversubscription (and disable affinity).
+Dylan says that in this configuration the timeouts all passed.  It's
+possible that some of these other failures might be due to callstack
+size.
+
+sungeun: 10/18/12.  Things seem quieter, but not perfect
+- Got a seg fault (06/06/12, 6/16, stream-ep 8/23/12)
+- Intermitent seg fault on exit (7/7 7/9, 7/12, 7/13)
+-  seg fault during program execution (same as as previous):
    distributions/robust/arithmetic/optimizations/optimizeOnClauses_basic_tuple (7/10)
    release/examples/spec/Classes/delete (7/12)
+- Intermitent time outs:
+  [Error: Timed out executing program distributions/robust/arithmetic/slicing/test_array_slicing3] (intermittent since prior to 11/25/12)
+  [Error: Timed out executing program distributions/robust/arithmetic/kernels/jacobi] (11/26/12: intermittent since 9/17/12)
+  [Error: Timed out executing program distributions/robust/arithmetic/stress/test_many_array] (11/26/12: intermittent since 9/29/12)
+  [Error: Timed out executing program distributions/robust/arithmetic/stress/test_many_domains] (11/22/12: almost every day since 9/26/22)
+  [Error: Timed out executing program distributions/robust/arithmetic/kernels/hpl (compopts: 1)] (11/28/12: likely earlier as well)
 
 
-baseline (UNASSIGNED)
----------------------
-distributions/nelson/MultiBlockDist2DLocales
-studies/hpcc/HPL/vass/bl.md
-studies/shootout/mandelbrot/mandelbrot-fancy
-
-
-valgrind (sungeun)
-------------------
-*** It's a little difficult to follow the trend since we only run this
-*** once a week, so only the last log file is preserved.  We should
-*** considering saving the logs week-over-week (which we should
-*** probably do for all the tests too since we have the space to).
-1) Nondeterministic "the impossible has happened" failures
-   2012/08/13 -- Only one test case failed: MultiBlockDist2DLocales
-
-   8/30/12: Passed --numThreadsPerLocale=100 to all tests to try and
-   avoid VG_N_THREADS error that is causing all the impossible errors.
-
-2) Nondeterministic timeouts (could raise timeout value even further)
-   8/30/12: Timed out when running start_test by hand (versus in
-   parallel as the nightly does), so I don't think it's worth
-   disabling parallel testing for the sake of the time outs.
-
-
-
-xmt build (UNASSIGNED)
-----------------------
+cray-xmt build (UNASSIGNED)
+---------------------------
 Every night, first XMT compile fails; second one succeeds.  Is there
 any chance that this is due to a leftover program library of some
 sort?  If not, file bug against XMT compiler.
+
+
+SIGABRT on gasnet-fast runs (sungeun)
+----------------------------------------
+gbt: 1/14/13.  The only SIGABRT in the last week resulted from an error
+halt in domains/sungeun/sparse/forall.chpl due to an out-of-bounds array
+index.
+
+sungeun: 1/2/13.  These tests also suffered from the private broadcast
+bug mentioned above with testRAStream and fixed in r20877.  If they do
+not show up again for another couple of weeks, remove this entire
+entry.
+
+release/examples/benchmarks/hpcc/ra (compopts: 1) (10/13/12)
+mutilocale/deitz/needMultiLocales/diagnostics/test_private_broadcast_large (10/11/12, 10/21/12, 12/02/12)
+ra-atomics (UNASSIGNED) (10/11/12)
+
+
+==============================================================================
+Were once flagged as causing noise regularly, but not as familiar as the above
+==============================================================================
+
+SSCA2_main (UNASSIGNED)
+-----------------------
+Periodically times out for PGI (alternates between time out and stack
+overflow error documented in REGRESSIONS)
+
+
+TooManyThreads (UNASSIGNED)
+---------------------------
+Fails periodically.  Lately observed pthreads.tcmalloc (2012/08/15).
+
 
 compflags/ferguson/sub_test
 ---------------------------
@@ -159,15 +122,57 @@ to be finding chpl in /ptmp instead of /tmp even though the /ptmp directory
 it is finding is not in path. The /ptmp path it is finding is actually the
 same directory as the /tmp directory it is looking for.
 
-=========================================
-Not so noisy as to be familiar annoyances
-=========================================
+
+==========================================================================
+Not so noisy as to be familiar annoyances, but worth noting to see if they
+come up again
+==========================================================================
+
+intermittent valgrind error
+---------------------------
+- studies/madness/aniruddha/madchap/mytests/par-refine/test_refine (compopts: 1)
+Got wrong answer for F3.norm2() on 10/29/12, 01/14/13.
+As of 2/4/2013, those are the only times the test ran with compopts: 1.
+The other times it ran without compopts:1 and succeeded.
+- studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct
+Various numeric discrepancies, first occurred on 9/15/2012 or before.
+- release/examples/primers/chpldoc (compopts: 1)  (8/28/2012, 9/07/2012, 9/11/2012)
+This is not a problem with chpldocs (should file a separate future).
+There is an intermittent compile-time segfault during cullOverReferences.
+The type of Bar.super is at least partially corrupt at that point.
+
+"that wasn't very random looking"
+---------------------------------
+[Error matching program output for modules/standard/Random/diten/testRandomSeed]
+linux64.gnu.none.fifo.pthreads (2/4/2013)
+other configurations are quite consistent - see REGRESSIONS
+
+prgenv-* compilation timeouts (maybe due to system updates or ...?)
+-------------------------------------------------------------------
+[Error: Timed out compilation for users/ferguson/ddata/f] (prgenv-pgi: 12/01/12)
+[Error: Timed out compilation for users/jglewis/locClassSegFault-nongeneric] (prgenv-pgi: 12/01/12)
+[Error: Timed out compilation for release/examples/spec/Tuples/expansion] (prgenv-cray: 12/02/12)
+[Error: Timed out compilation for distributions/dm/t5a] (prgenv-intel: 12/03/12)
+
+prgenv-pgi failures that I don't recall seeing before (12/01/12)
+----------------------------------------------------------------
+[Error matching program output for parallel/cobegin/stonea/reports (execopts: 4)]
+
+studies/dijkstra/driverEdgeBtw
+------------------------------
+PGI only.  Floating point overflow warning in generated code
+(03/12/11, 9/14/12) Also documented in REGRESSIONS file.
+
+errors running sub_test (UNASSIGNED)
+------------------------------------
+seen on chpbld01 for linux64.intel.none.fifo.pthreads on 10/10/12
+On 02/06/13 something happened around 3:10 AM causing sub_test failures
+across most platforms.
 
 parallel/cobegin/diten/cobeginRace (UNASSIGNED)
 ----------------------------------------------------
 "timedexec died with signal 11" - pgi compiler (06/18/12)
 unknown cause - baseline (06/17/12)
-
 
 non-deterministic timeouts with gasnet (UNASSIGNED)
 ---------------------------------------------------
@@ -177,45 +182,54 @@ The following configurations are affected:
  linux64.gnu.gasnet-fast.fifo.pthreads.dlmalloc
  linux64.gnu.gasnet-everything.fifo.pthreads
 examples of what times out:
- distributions/robust/arithmetic/kernels/jacobi (still timing out 7/7-8/13)
+ distributions/robust/arithmetic/kernels/jacobi (still timing out 10/4/12)
  distributions/nelson/MultiBlockDist2DLocales (maybe resolved?)
  distributions/robust/arithmetic/modules/test_module_Sort (maybe resolved?)
- distributions/robust/arithmetci/stress/test_many_domains (08/13)
+ distributions/robust/arithmetic/stress/test_many_domains (08/13)
+ distributions/robust/arithmetic/stress/test_many_array (11/10/12)
  distributions/dm/t2 (2012/08/15)
+ test_array_slicing3 (06/08/12, 6/16)
  etc.
-
 
 "in routine alloca() there is a stack overflow" under PGI (UNASSIGNED)
 ----------------------------------------------------------------------
 Somewhat? nondeterministic.
 These configurations:
  linux64.pgi.none.fifo.pthreads
- xt-cle.cray-xt-pgi.none.fifo.pthreads
- xt-cle.cray-xt-pgi.none.fifo.pthreads--linux64.gnu
+ cray-xt.cray-xt-pgi.none.fifo.pthreads
+ cray-xt.cray-xt-pgi.none.fifo.pthreads--linux64.gnu
 
-
-minus_equals nondeterminism (UNASSIGNED)
+minus_equals nondeterminism (sungeun)
 ----------------------------------------
-noted in regressions (week of 07/02, still present 9/23)
+(week of 07/02, still present 10/2, 10/9/12, 1/6/13, 2/1/13)
+
+NOTES: This is a race condition that is present in the case of *all*
+iteration of val iterators (e.g. domains) where the index is passed to
+a function for promotion.  The reason we don't run into this more
+often is because the window for races is typically very small (usually
+between 2 lines of the generated code), and it's slightly larger for
+--no-local for associative arrays promoted remove().  The index
+variable needs to be declared outside the scope of the promoted
+function so that it can be referred to.  After the iterators are
+lowered, during the parallel pass, coforall blocks are converted to
+nested functions that are then flattened.  The index var is an "outer
+var" (declared in the outer scope), and thus is is passed by reference
+to the newly unnested functions.  But because it is the index
+variable, the iterator overwrites it anyways.  In the case of the var
+iterator, it simply overwrites the reference with another reference.
+In the case of the val iterator, it write the actual value.  Since all
+tasks performing the coforall share the same memory location passed in
+from the promotion wrapper,
+
 
 atomics nondeterminisms (UNASSIGNED)
 ------------------------------------
-release/examples/primers/atomics (06/30/12:xt-intel, 07/04/12:linux32, 08/14/12:xt-cle)
-
-gasnet-everything nondeterminisms (UNASSIGNED)
-----------------------------------------------
-MultiBlockDist2DLocales (06/05/12, 6/16)
-test_module_Sort (06/06/12, 6/16)
-test_array_slicing3 (06/08/12, 6/16)
+release/examples/primers/atomics (06/30/12:xt-intel, 07/04/12:linux32, 08/14/12:cray-xt)
 
 no-local nondeterminisms (UNASSIGNED)
 -------------------------------------
 cg-sparse-timecomp (06/05/12)
 studies/ssca2/atomic/SSCA2_main_atomic (07/04/12)
-
-memory/vass/crash-memory-module-1 (vass)
-----------------------------------------
-fails intermittently
 
 tcmalloc failures (08/08/12)
 ----------------------------
@@ -226,12 +240,20 @@ tcmalloc failures (08/08/12)
 nondet. tmalloc failures
 ------------------------
 [Error: Timed out executing program distributions/robust/arithmetic/stress/test_many_domains] (08/08/12)
+[Error matching program output for studies/nqueens/nqueens-2-par] (sYSMALLOc assertion failure in malloc.c:3091 - linux64.gnu.none.fifo.pthreads.tcmalloc - 11/15/12)
 
 parallel/begin/deitz/test_big_recursive_begin future succeeded
 --------------------------------------------------------------
-only in these two runs:
- 120818/Nightly-day6-Sat-linux64.gnu.none.fifo.pthreads-std.log
- 120821/Nightly-day2-Tue-linux64.gnu.none.fifo.pthreads-nlc.log
+*-linux64.gnu.none.fifo.pthreads (10/10/12, 10/16/12)
+*-linux64.gnu.none.fifo.pthreads-std.log (8/18,9/2,9/9,9/13/12, 10/17/12)
+*-linux64.gnu.none.fifo.pthreads-npt.log (baseline)
+  (9/{4,5,14,22,30}/12)
+  (10/2/12)
+120821/Nightly-day2-Tue-linux64.gnu.none.fifo.pthreads-nlc.log
+
+studies/sudoku/dinan/sudoku
+---------------------------
+[Error: Timed out executing program studies/sudoku/dinan/sudoku] (cray-xt.cray-prgenv-gnu.none.fifo.pthreads--linux64.gnu 11/16/12, 11/26/12)
 
 ===========================================
 Not noisy, but need some attention sometime
@@ -249,3 +271,11 @@ I wouldn't call the future a bug so much as a 'feature request' or
 that should be considered and agreed upon rather than reflecting a way
 in which the compiler is incorrect w.r.t. the language definition (as
 I understand it.
+
+cray-xt.cray-xt-cray.none.fifo.pthreads
+--------------------------------------
+The following compiler segfaults(?) appeared only once on 9/28/12
+[Error matching compiler output for release/examples/primers/opaque]
+[Error matching compiler output for release/examples/spec/Generics/fillTuple2]
+[Error matching compiler output for release/examples/spec/Iterators/as-arrays]
+[Error matching compiler output for release/examples/spec/Ranges/alignedNegStride]

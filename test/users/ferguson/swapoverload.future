@@ -1,5 +1,0 @@
-Want to use <=> for 'read or write' in some
-I/O situations, but it seems to have a different
-precendence than & which breaks e.g.
- f <=> new ioLiteral(" ");
-

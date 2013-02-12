@@ -1,3 +1,5 @@
+#include "chplrt.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -6,7 +8,6 @@
 #include "chpl-comm.h"
 #include "chpl-mem.h"
 #include "chplmemtrack.h"
-#include "chplrt.h"
 #include "chpltypes.h"
 #include "error.h"
 

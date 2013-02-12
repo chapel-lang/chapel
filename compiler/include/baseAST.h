@@ -207,10 +207,37 @@ GenRet baseASTCodegenString(const char* str);
 // of an AST node when it is constructed
 //
 // This should be used before constructing new nodes to make sure the
-// line number is correctly set.
+// line number is correctly set. The global line number reverts to
+// its previous value upon leaving the scope where the macro is used.
+// The fixed variable name ensures a single macro per scope.
+// Users of the macro are to create additional scopes when needed.
+// todo - should we add it to DECLARE_COPY/DECLARE_SYMBOL_COPY ?
 //
-#define SET_LINENO(ast) currentAstLoc = ast->astloc;
+#define SET_LINENO(ast) astlocMarker markAstLoc(ast->astloc)
 extern astlocT currentAstLoc;
+
+struct astlocMarker {
+  astlocT previousAstLoc;
+
+  // constructor, invoked upon SET_LINENO
+  astlocMarker(astlocT newAstLoc)
+    : previousAstLoc(currentAstLoc)
+  {
+    //previousAstLoc = currentAstLoc;
+    currentAstLoc = newAstLoc;
+  }
+  // constructor, for special occasions
+  astlocMarker(int lineno, const char* filename)
+    : previousAstLoc(currentAstLoc)
+  {
+    currentAstLoc.lineno = lineno;
+    currentAstLoc.filename = astr(filename);
+  }
+  // destructor, invoked upon leaving SET_LINENO's scope
+  ~astlocMarker() {
+    currentAstLoc = previousAstLoc;
+  }
+};
 
 //
 // vectors of modules

@@ -11,11 +11,11 @@ proc chpl__isType(e) param return false;
 
 pragma "no instantiation limit"
 proc _isPrimitiveType(type t) param return
-  (t == bool) | (t == bool(8)) | (t == bool(16)) | (t == bool(32)) | (t == bool(64)) |
-  (t == int(8)) | (t == int(16)) | (t == int(32)) | (t == int(64)) |
-  (t == uint(8)) | (t == uint(16)) | (t == uint(32)) | (t == uint(64)) |
-  (t == real(32)) | (t == real(64)) |
-// BLC: Why aren't imaginaries here?  Someone should try this
+  _isBooleanType(t)  ||
+  _isIntegralType(t) ||
+  _isRealType(t)     ||
+//To allow imag, need to define casts from primitive types into imag.
+//_isImagType(t)     ||
   (t == string);
 
 pragma "no instantiation limit"

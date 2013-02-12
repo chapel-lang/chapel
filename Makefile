@@ -36,6 +36,7 @@ clobber: FORCE
 	cd compiler && $(MAKE) clobber
 	cd runtime && $(MAKE) clobber
 	cd modules && $(MAKE) clobber
+	cd third-party && $(MAKE) clobber
 	rm -rf bin
 	rm -rf lib
 

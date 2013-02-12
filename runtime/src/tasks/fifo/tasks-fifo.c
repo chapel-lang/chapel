@@ -7,12 +7,12 @@
 #define NDEBUG
 #endif
 
+#include "chplrt.h"
 #include "chpl_rt_utils_static.h"
 #include "chplcgfns.h"
 #include "chpl-comm.h"
 #include "chplexit.h"
 #include "chpl-mem.h"
-#include "chplrt.h"
 #include "chpl-tasks.h"
 #include "error.h"
 #include <stdio.h>
@@ -33,6 +33,7 @@ typedef struct task_pool_struct* task_pool_p;
 typedef struct task_pool_struct {
   chpl_taskID_t    id;           // task identifier
   chpl_fn_p        fun;          // function to call for task
+  c_subloc_t       sublocale;    // The sublocale associated with this task.
   void*            arg;          // argument to the function
   chpl_bool        serial_state; // whether new tasks can be created while executing fun
   chpl_bool        begun;        // whether execution of this task has begun
@@ -266,6 +267,7 @@ void chpl_task_init(int32_t numThreadsPerLocale, int32_t maxThreadsPerLocale,
                                              0, 0);
     tp->ptask->id           = get_next_task_id();
     tp->ptask->fun          = NULL;
+    tp->ptask->sublocale    = 0;
     tp->ptask->arg          = NULL;
     tp->ptask->serial_state = true;     // Set to false in chpl_task_callMain().
     tp->ptask->ltask        = NULL;
@@ -339,6 +341,7 @@ static void comm_task_wrapper(void* arg) {
                                            0, 0);
   tp->ptask->id           = get_next_task_id();
   tp->ptask->fun          = comm_task_fn;
+  tp->ptask->sublocale    = 0;  // Set below.
   tp->ptask->arg          = arg;
   tp->ptask->serial_state = true;
   tp->ptask->ltask        = NULL;
@@ -361,7 +364,7 @@ void chpl_task_addToTaskList(chpl_fn_int_t fid, void* arg,
                            chpl_bool call_chpl_begin,
                            int lineno,
                            chpl_string filename) {
-  if (task_list_locale == chpl_localeID) {
+  if (task_list_locale == chpl_nodeID) {
     chpl_task_list_p ltask;
 
     ltask = (chpl_task_list_p) chpl_mem_alloc(sizeof(struct chpl_task_list),
@@ -395,7 +398,7 @@ void chpl_task_addToTaskList(chpl_fn_int_t fid, void* arg,
   }
   else {
     // call_chpl_begin should be true here because if task_list_locale !=
-    // chpl_localeID, then this function could not have been called from
+    // chpl_nodeID, then this function could not have been called from
     // the context of a cobegin or coforall statement, which are the only
     // contexts in which chpl_task_begin() should not be called.
     chpl_fn_p fp = chpl_ftable[fid];
@@ -697,6 +700,28 @@ void chpl_task_setSerial(chpl_bool state) {
   get_thread_private_data()->ptask->serial_state = state;
 }
 
+c_subloc_t chpl_task_getSubLoc(void) {
+  thread_private_data_t* tp;
+
+  // Quick exit if we have no threads yet.
+  if (!initialized)
+    return 0;
+
+  tp = (thread_private_data_t*) chpl_thread_getPrivateData();   // May be null.
+  // If the thread has no private data, that must mean that it is the root thread
+  // [for the process running our image] on the current node.
+  // Moving to a sublocale will *always* entail launching a new thread, so there will be
+  // thread-private storage available if the sublocale wants to be anything but zero.
+  if (tp == 0) 
+    return 0;
+
+  return tp->ptask->sublocale;
+}
+
+void chpl_task_setSubLoc(c_subloc_t new_subloc) {
+  get_thread_private_data()->ptask->sublocale = new_subloc;
+}
+
 uint64_t chpl_task_getCallStackSize(void) {
   return chpl_thread_getCallStackSize();
 }
@@ -766,6 +791,7 @@ static thread_private_data_t* get_thread_private_data(void) {
   thread_private_data_t* tp;
 
   tp = (thread_private_data_t*) chpl_thread_getPrivateData();
+
   if (tp == NULL)
     chpl_internal_error("no thread private data");
 

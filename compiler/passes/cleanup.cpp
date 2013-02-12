@@ -151,7 +151,7 @@ static void change_cast_in_where(FnSymbol* fn) {
     forv_Vec(BaseAST, ast, asts) {
       if (CallExpr* call = toCallExpr(ast)) {
         if (call->isNamed("_cast")) {
-          call->primitive = primitives[PRIM_ISSUBTYPE];
+          call->primitive = primitives[PRIM_IS_SUBTYPE];
           call->baseExpr->remove();
         }
       }

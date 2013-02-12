@@ -1,1 +1,2 @@
--M../../../release/examples/benchmarks/hpcc --no-warnings
+-M../../../release/examples/benchmarks/hpcc --no-warnings -suseLCG=false
+-M../../../release/examples/benchmarks/hpcc --no-warnings  # raCommCheck-LCG.good

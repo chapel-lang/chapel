@@ -22,7 +22,7 @@ refNecessary(SymExpr* se,
           return true;
         if (formal->type->symbol->hasFlag(FLAG_REF) &&
             (fn->hasFlag(FLAG_ALLOW_REF) ||
-             formal->hasFlag(FLAG_WRAP_OUT_INTENT)))
+             formal->hasFlag(FLAG_WRAP_WRITTEN_FORMAL)))
           return true;
       } else if (call->isPrimitive(PRIM_MOVE)) {
         if (refNecessary(toSymExpr(call->get(1)), defMap, useMap))
@@ -39,7 +39,11 @@ refNecessary(SymExpr* se,
           return true;
       } else if (call->isPrimitive(PRIM_RETURN)) {
         return true;
-      } else if (call->isPrimitive(PRIM_GET_LOCALEID)) {
+      } else if (call->isPrimitive(PRIM_WIDE_GET_LOCALE) ||
+                 call->isPrimitive(PRIM_WIDE_GET_NODE) ||
+                 call->isPrimitive(PRIM_WIDE_GET_SUBLOC)) {
+        // If we are extracting a field from the wide pointer, we need to keep it as a pointer.
+        // Dereferencing would be premature.
         return true;
       }
     }
@@ -65,6 +69,7 @@ void cullOverReferences() {
           INT_ASSERT(move->isPrimitive(PRIM_MOVE));
           SymExpr* se = toSymExpr(move->get(1));
           INT_ASSERT(se);
+          SET_LINENO(move);
           if (!refNecessary(se, defMap, useMap)) {
             SymExpr* base = toSymExpr(call->baseExpr);
             base->var = copy;

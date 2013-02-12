@@ -1,3 +1,5 @@
+use CommDiagnostics;
+
 proc myPrintComms(mesg:string) {
   const A=getCommDiagnostics();
   var i= +reduce A.get + +reduce A.put;

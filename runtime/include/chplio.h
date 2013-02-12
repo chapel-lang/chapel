@@ -2,6 +2,7 @@
 #define _chplio_H_
 
 #include "chpltypes.h"
+
 #include <stdio.h>
 #include <inttypes.h>
 
@@ -10,9 +11,10 @@
 
 typedef FILE* _cfile;
 
+
 static inline _cfile chpl_cnullfile(void) { return (_cfile) 0; }
 
 char* chpl_refToString(void* ref);
-char* chpl_wideRefToString(int32_t locale, void* addr);
+char* chpl_wideRefToString(c_nodeid_t node, void* addr);
 
 #endif

@@ -1,5 +1,5 @@
 ===========================================
-Chapel Public Release Goals (version 1.5.0)
+Chapel Public Release Goals (version 1.6.0)
 ===========================================
 
 The goals of this release are as follows:
@@ -22,4 +22,3 @@ The goals of this release are as follows:
 
   (ii) a multi-threaded, multi-locale implementation of regular arrays
        using some standard distributions.
-

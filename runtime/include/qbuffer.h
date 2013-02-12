@@ -1,12 +1,18 @@
 #ifndef _QBUFFER_H_
 #define _QBUFFER_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "sys_basic.h"
+#ifndef __cplusplus
+#include <stdbool.h>
+#endif
 #include "chpl-atomics.h"
 
 #include <inttypes.h>
 #include <sys/uio.h>
-#include <alloca.h>
 #include "deque.h"
 
 // We should have gasnett_atomic_t from sys_basic
@@ -278,11 +284,16 @@ void qbuffer_iter_floor_part(qbuffer_t* buf, qbuffer_iter_t* iter);
 void qbuffer_iter_ceil_part(qbuffer_t* buf, qbuffer_iter_t* iter);
 
 /* Advances an iterator using linear search. 
+ * Returns qbuffer_start() if the resulting offset was < start
+ *         qbuffer_end() if the resulting offset was >= end
  */
 void qbuffer_iter_advance(qbuffer_t* buf, qbuffer_iter_t* iter, int64_t amt);
 
 /* Find offset in window in logarithmic time.
  * Note these offsets start at buf->offset_start, not 0.
+ *
+ * Returns qbuffer_start() if the offset was < start
+ *         qbuffer_end() if the offset was >= end
  */
 qbuffer_iter_t qbuffer_iter_at(qbuffer_t* buf, int64_t offset);
 
@@ -398,6 +409,8 @@ err_t qbuffer_copyin_buffer(qbuffer_t* dst, qbuffer_iter_t dst_start, qbuffer_it
  * */
 err_t qbuffer_memset(qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, unsigned char byte);
 
+// How many bytes to try to store on stack in some functions that don't
+// really want to call malloc
 #define MAX_ON_STACK 128
 
 #ifdef _chplrt_H_
@@ -410,10 +423,12 @@ err_t qbuffer_memset(qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, u
 
 static inline char* qio_strdup(const char* ptr)
 {
-  char* ret = qio_malloc(strlen(ptr)+1);
+  char* ret = (char*) qio_malloc(strlen(ptr)+1);
   if( ret ) strcpy(ret, ptr);
   return ret;
 }
+
+typedef chpl_bool qio_bool;
 
 #else
 
@@ -424,23 +439,29 @@ static inline char* qio_strdup(const char* ptr)
 #define sys_free(ptr) free(ptr)
 #define qio_strdup(ptr) strdup(ptr)
 
+typedef bool qio_bool;
+
 #endif
 
-#define MAYBE_STACK_ALLOC(size, ptr, onstack) \
+// Declare MAX_ON_STACK bytes. We declare it as uint64_t to
+// make sure it's aligned as well as malloc would be.
+#define MAYBE_STACK_SPACE(type,onstack) \
+  type onstack[MAX_ON_STACK/sizeof(type)]
+
+#define MAYBE_STACK_ALLOC(type, count, ptr, onstack) \
 { \
-  if( size <= MAX_ON_STACK ) { \
-    ptr = alloca(size); \
-    onstack = 1; \
+  size_t size = count * sizeof(type); \
+  if( size <= sizeof(onstack) ) { \
+    ptr = onstack; \
   } else { \
-    ptr = qio_malloc(size); \
-    onstack = 0; \
+    ptr = (type*) qio_malloc(size); \
   } \
 }
 
 
 #define MAYBE_STACK_FREE(ptr, onstack) \
 { \
-  if( ! onstack ) { \
+  if( ptr != onstack ) { \
     qio_free(ptr); \
   } \
 }
@@ -448,6 +469,11 @@ static inline char* qio_strdup(const char* ptr)
 #define VOID_PTR_DIFF(a,b) (((intptr_t) (a)) - ((intptr_t) (b)))
 #define VOID_PTR_ADD(ptr,amt) ((void*)(((char*) (ptr)) + (amt)))
 #define VOID_PTR_ALIGN(ptr,align) (((uintptr_t)ptr) & (align - 1))
+
+#ifdef __cplusplus
+} // end extern "C"
+#endif
+
 
 #endif
 

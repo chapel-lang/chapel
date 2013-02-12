@@ -52,13 +52,8 @@ bundleArgs(CallExpr* fcall) {
   new_c->addFlag(FLAG_NO_WIDE_CLASS);
 
   // add the function args as fields in the class
-  int i = 1;
-  bool first = true;
+  int i = 0;
   for_actuals(arg, fcall) {
-    if (fn->hasFlag(FLAG_ON) && first) {
-      first = false;
-      continue;
-    }
     SymExpr *s = toSymExpr(arg);
     Symbol  *var = s->var; // arg or var
     var->addFlag(FLAG_CONCURRENTLY_ACCESSED);
@@ -80,12 +75,7 @@ bundleArgs(CallExpr* fcall) {
   
   // set the references in the class instance
   i = 1;
-  first = true;
   for_actuals(arg, fcall) {
-    if (fn->hasFlag(FLAG_ON) && first) {
-      first = false;
-      continue;
-    }
     SymExpr *s = toSymExpr(arg);
     Symbol  *var = s->var; // var or arg
     CallExpr *setc=new CallExpr(PRIM_SET_MEMBER,
@@ -151,8 +141,7 @@ static void create_block_fn_wrapper(CallExpr* fcall, ClassType* ctype, VarSymbol
   if (fn->hasFlag(FLAG_ON)) {
     // The wrapper function for 'on' block has an additional argument,
     // which is how we pass the destination node ID to the forking function.
-    // This argument is not emitted in the generated C code.
-    ArgSymbol* locale = new ArgSymbol(INTENT_BLANK, "_dummy_locale_arg", dtInt[INT_SIZE_DEFAULT]);
+    ArgSymbol* locale = new ArgSymbol(INTENT_BLANK, "_locale_arg", dtLocaleID);
     wrap_fn->insertFormalAtTail(locale);
   }
 
@@ -161,26 +150,28 @@ static void create_block_fn_wrapper(CallExpr* fcall, ClassType* ctype, VarSymbol
 
   mod->block->insertAtTail(new DefExpr(wrap_fn));
   if (fn->hasFlag(FLAG_ON)) {
-    fcall->insertBefore(new CallExpr(wrap_fn, fcall->get(1)->remove(), tempc));
+    // The wrapper function is called with a copy of the locale argument.
+    fcall->insertBefore(new CallExpr(wrap_fn, fcall->get(1)->copy(), tempc));
   } else
     fcall->insertBefore(new CallExpr(wrap_fn, tempc));
 
-  // translate the original cobegin function
-  CallExpr *new_cofn = new CallExpr( (toSymExpr(fcall->baseExpr))->var);
-  if (fn->hasFlag(FLAG_ON))
-    new_cofn->insertAtTail(new_IntSymbol(0)); // bogus actual
-  for_fields(field, ctype) {  // insert args
-
+  // Create a call to the original function
+  CallExpr *call_orig = new CallExpr( (toSymExpr(fcall->baseExpr))->var);
+  int count = -1;
+  for_fields(field, ctype)
+  {
+    // insert args
+    ++count;
     VarSymbol* tmp = newTemp(field->type);
     wrap_fn->insertAtTail(new DefExpr(tmp));
     wrap_fn->insertAtTail(
         new CallExpr(PRIM_MOVE, tmp,
         new CallExpr(PRIM_GET_MEMBER_VALUE, wrap_c, field)));
-    new_cofn->insertAtTail(tmp);
+    call_orig->insertAtTail(tmp);
   }
 
   wrap_fn->retType = dtVoid;
-  wrap_fn->insertAtTail(new_cofn);     // add new call
+  wrap_fn->insertAtTail(call_orig);     // add new call
   if (fn->hasFlag(FLAG_ON) || fn->hasFlag(FLAG_GPU_ON))
     fcall->insertAfter(new CallExpr(PRIM_CHPL_FREE, tempc));
   else
@@ -280,6 +271,7 @@ buildHeapType(Type* type) {
   if (heapTypeMap.get(type))
     return heapTypeMap.get(type);
 
+  SET_LINENO(type->symbol);
   ClassType* heap = new ClassType(CLASS_CLASS);
   TypeSymbol* ts = new TypeSymbol(astr("heap_", type->symbol->cname), heap);
   ts->addFlag(FLAG_NO_OBJECT);
@@ -346,7 +338,10 @@ freeHeapAllocatedVars(Vec<Symbol*> heapAllocatedVars) {
               if (call->isPrimitive(PRIM_ADDR_OF) ||
                   call->isPrimitive(PRIM_GET_MEMBER) ||
                   call->isPrimitive(PRIM_GET_SVEC_MEMBER) ||
-                  call->isPrimitive(PRIM_GET_LOCALEID))
+                  call->isPrimitive(PRIM_WIDE_GET_LOCALE) ||
+                  call->isPrimitive(PRIM_WIDE_GET_NODE) ||
+                  call->isPrimitive(PRIM_WIDE_GET_SUBLOC))
+                // Treat the use of these primitives as a use of their arguments.
                 call = toCallExpr(call->parentExpr);
               if (call->isPrimitive(PRIM_MOVE))
                 varsToTrack.add(toSymExpr(call->get(1))->var);
@@ -406,6 +401,7 @@ freeHeapAllocatedVars(Vec<Symbol*> heapAllocatedVars) {
           }
         }
         FnSymbol* fn = toFnSymbol(move->parentSymbol);
+        SET_LINENO(var);
         if (fn && innermostBlock == fn->body)
           fn->insertBeforeReturnAfterLabel(new CallExpr(PRIM_CHPL_FREE, move->get(1)->copy()));
         else {
@@ -418,11 +414,24 @@ freeHeapAllocatedVars(Vec<Symbol*> heapAllocatedVars) {
   }
 }
 
+static bool
+needHeapVars() {
+  if (fLocal) return false;
+
+  if (!strcmp(CHPL_COMM, "ugni") ||
+      (!strcmp(CHPL_COMM, "gasnet") &&
+       !strcmp(CHPL_GASNET_SEGMENT, "everything")))
+    return false;
+
+  return true;
+}
 
 static void findBlockRefActuals(Vec<Symbol*>& refSet, Vec<Symbol*>& refVec)
 {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->hasFlag(FLAG_BEGIN) || fn->hasFlag(FLAG_ON)) {
+    if (fn->hasFlag(FLAG_BEGIN) ||
+        (fn->hasFlag(FLAG_ON) &&
+         (needHeapVars() || fn->hasFlag(FLAG_NON_BLOCKING)))) {
       for_formals(formal, fn) {
         if (formal->type->symbol->hasFlag(FLAG_REF)) {
           refSet.set_add(formal);
@@ -439,11 +448,13 @@ static void findHeapVarsAndRefs(Map<Symbol*,Vec<SymExpr*>*>& defMap,
                                 Vec<Symbol*>& varSet, Vec<Symbol*>& varVec)
 {
   forv_Vec(DefExpr, def, gDefExprs) {
-    if (def->sym->hasFlag(FLAG_HEAP_ALLOCATE)) {
+    SET_LINENO(def);
+    if (def->sym->hasFlag(FLAG_COFORALL_INDEX_VAR)) {
       if (def->sym->type->symbol->hasFlag(FLAG_REF)) {
         refSet.set_add(def->sym);
         refVec.add(def->sym);
-      } else {
+      } else if (!isPrimitiveType(def->sym->type) ||
+                 toFnSymbol(def->parentSymbol)->retTag==RET_VAR) {
         varSet.set_add(def->sym);
         varVec.add(def->sym);
       }
@@ -580,6 +591,7 @@ makeHeapAllocations() {
       // don't widen external variables
       continue;
     }
+    SET_LINENO(var);
 
     if (ArgSymbol* arg = toArgSymbol(var)) {
       VarSymbol* tmp = newTemp(var->type);
@@ -608,12 +620,14 @@ makeHeapAllocations() {
     if (!isModuleSymbol(var->defPoint->parentSymbol) &&
         ((useMap.get(var) && useMap.get(var)->n > 0) ||
          (defMap.get(var) && defMap.get(var)->n > 0))) {
+      SET_LINENO(var->defPoint);
       var->defPoint->getStmtExpr()->insertAfter(new CallExpr(PRIM_MOVE, var, new CallExpr(PRIM_CHPL_ALLOC, heapType->symbol, newMemDesc("local heap-converted data"))));
       heapAllocatedVars.add(var);
     }
 
     for_defs(def, defMap, var) {
       if (CallExpr* call = toCallExpr(def->parentExpr)) {
+        SET_LINENO(call);
         if (call->isPrimitive(PRIM_MOVE)) {
           VarSymbol* tmp = newTemp(var->type);
           call->insertBefore(new DefExpr(tmp));
@@ -657,7 +671,9 @@ makeHeapAllocations() {
                     call->isPrimitive(PRIM_GET_SVEC_MEMBER) ||
                     call->isPrimitive(PRIM_GET_MEMBER_VALUE) ||
                     call->isPrimitive(PRIM_GET_SVEC_MEMBER_VALUE) ||
-                    call->isPrimitive(PRIM_GET_LOCALEID) ||
+                    call->isPrimitive(PRIM_WIDE_GET_LOCALE) || //I'm not sure this is cricket.
+                    call->isPrimitive(PRIM_WIDE_GET_NODE) ||// what member are we extracting?
+                    call->isPrimitive(PRIM_WIDE_GET_SUBLOC) ||
                     call->isPrimitive(PRIM_SET_SVEC_MEMBER) ||
                     call->isPrimitive(PRIM_SET_MEMBER)) &&
                    call->get(1) == use) {
@@ -700,6 +716,7 @@ reprivatizeIterators() {
 
   forv_Vec(SymExpr, se, gSymExprs) {
     if (privatizedFields.set_in(se->var)) {
+      SET_LINENO(se);
       if (CallExpr* call = toCallExpr(se->parentExpr)) {
         if (call->isPrimitive(PRIM_GET_MEMBER_VALUE)) {
           CallExpr* move = toCallExpr(call->parentExpr);
@@ -749,28 +766,37 @@ parallel(void) {
   //
   Vec<FnSymbol*> nestedFunctions;
   forv_Vec(BlockStmt, block, gBlockStmts) {
-    if (block->blockInfo) {
+    if (CallExpr* info = block->blockInfo) {
       SET_LINENO(block);
       FnSymbol* fn = NULL;
-      if (block->blockInfo->isPrimitive(PRIM_BLOCK_BEGIN)) {
+      VarSymbol* oldSubLoc = NULL;
+      if (info->isPrimitive(PRIM_BLOCK_BEGIN)) {
         fn = new FnSymbol("begin_fn");
         fn->addFlag(FLAG_BEGIN);
-      } else if (block->blockInfo->isPrimitive(PRIM_BLOCK_COBEGIN)) {
+      } else if (info->isPrimitive(PRIM_BLOCK_COBEGIN)) {
         fn = new FnSymbol("cobegin_fn");
         fn->addFlag(FLAG_COBEGIN_OR_COFORALL);
-      } else if (block->blockInfo->isPrimitive(PRIM_BLOCK_COFORALL)) {
+      } else if (info->isPrimitive(PRIM_BLOCK_COFORALL)) {
         fn = new FnSymbol("coforall_fn");
         fn->addFlag(FLAG_COBEGIN_OR_COFORALL);
-      } else if (block->blockInfo->isPrimitive(PRIM_BLOCK_ON) ||
-                 block->blockInfo->isPrimitive(PRIM_BLOCK_ON_NB)) {
+      } else if (info->isPrimitive(PRIM_BLOCK_ON) ||
+                 info->isPrimitive(PRIM_BLOCK_ON_NB)) {
         fn = new FnSymbol("on_fn");
         fn->addFlag(FLAG_ON);
         if (block->blockInfo->isPrimitive(PRIM_BLOCK_ON_NB))
           fn->addFlag(FLAG_NON_BLOCKING);
-        ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "_dummy_locale_arg", dtInt[INT_SIZE_DEFAULT]);
+        // This is now a real locale arg.
+        ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "_locale_arg", dtLocaleID);
         fn->insertFormalAtTail(arg);
+        // Special case for the first argument of an on_fn, which carries the destination locale ID.
+        // We set the sublocale field in task-private data before executing the body of the task,
+        // saving off a copy for restoration at the end of the on block.
+        oldSubLoc = newTemp(dtInt[INT_SIZE_32]);
+        fn->insertAtTail(new DefExpr(oldSubLoc));
+        fn->insertAtTail(new CallExpr(PRIM_MOVE, oldSubLoc, new CallExpr(PRIM_GET_SUBLOC_ID)));
+        fn->insertAtTail(new CallExpr(PRIM_SET_SUBLOC_ID, new CallExpr(PRIM_LOC_GET_SUBLOC, arg)));
       }
-      else if (block->blockInfo->isPrimitive(PRIM_ON_GPU)) {
+      else if (info->isPrimitive(PRIM_ON_GPU)) {
         fn = new FnSymbol("on_gpu_kernel");
         fn->addFlag(FLAG_GPU_ON);
         //Add two formal arguments:
@@ -781,6 +807,17 @@ parallel(void) {
         fn->insertFormalAtTail(arg1);
         fn->insertFormalAtTail(arg2);
       }
+      else if (// info->isPrimitive(PRIM_BLOCK_PARAM_LOOP) || // resolution should remove this case.
+               info->isPrimitive(PRIM_BLOCK_WHILEDO_LOOP) ||
+               info->isPrimitive(PRIM_BLOCK_DOWHILE_LOOP) ||
+               info->isPrimitive(PRIM_BLOCK_FOR_LOOP) ||
+               info->isPrimitive(PRIM_BLOCK_XMT_PRAGMA_FORALL_I_IN_N) ||
+               info->isPrimitive(PRIM_BLOCK_XMT_PRAGMA_NOALIAS) ||
+               info->isPrimitive(PRIM_BLOCK_LOCAL) ||
+               info->isPrimitive(PRIM_BLOCK_UNLOCAL))
+        ; // Not a parallel block construct, so do nothing special.
+      else
+        INT_FATAL(block, "Unhandled blockInfo case.");
 
       if (fn) {
         nestedFunctions.add(fn);
@@ -799,6 +836,8 @@ parallel(void) {
         block->blockInfo->remove();
         // This block becomes the body of the new function.
         fn->insertAtTail(block->remove());
+        if (oldSubLoc) // only true for ON blocks
+          fn->insertAtTail(new CallExpr(PRIM_SET_SUBLOC_ID, oldSubLoc));
         fn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
         fn->retType = dtVoid;
       }
@@ -819,6 +858,7 @@ parallel(void) {
   Map<FnSymbol*,Symbol*> endCountMap;
 
   forv_Vec(CallExpr, call, gCallExprs) {
+    SET_LINENO(call);
     if (call->isPrimitive(PRIM_GET_END_COUNT)) {
       FnSymbol* pfn = call->getFunction();
       if (!endCountMap.get(pfn))
@@ -834,6 +874,7 @@ parallel(void) {
 
   forv_Vec(FnSymbol, fn, queue) {
     forv_Vec(CallExpr, call, *fn->calledBy) {
+      SET_LINENO(call);
       Type* endCountType = endCountMap.get(fn)->type;
       FnSymbol* pfn = call->getFunction();
       if (!endCountMap.get(pfn))
@@ -844,6 +885,7 @@ parallel(void) {
 
   forv_Vec(FnSymbol, fn, nestedFunctions) {
     forv_Vec(CallExpr, call, *fn->calledBy) {
+      SET_LINENO(call);
       // Overhead is high for on statements if locale==here, so
       //  perform a simple optimization here to call fn() directly if
       //  this is the case.  In the non-blocking case if the serial
@@ -861,15 +903,19 @@ parallel(void) {
         BlockStmt* rblock = new BlockStmt();
 
         INT_ASSERT(call->get(1));
-        CallExpr* localeID = new CallExpr(PRIM_LOCALE_ID);
-        VarSymbol* tmp = newTemp(localeID->typeInfo());
+        // nodeID is the node ID for the datum used in the "on" expression.
+        CallExpr* nodeID = new CallExpr(PRIM_LOC_GET_NODE, call->get(1)->copy());
+        CallExpr* localeID = new CallExpr(PRIM_NODE_ID);    // Runtime (GASNet) node.
+        VarSymbol* tmpNode = newTemp(nodeID->typeInfo());
+        VarSymbol* tmpLoc = newTemp(localeID->typeInfo());
         VarSymbol* tmpBool = newTemp(dtBool);
-        call->insertBefore(new DefExpr(tmp));
+        call->insertBefore(new DefExpr(tmpNode));
+        call->insertBefore(new DefExpr(tmpLoc));
         call->insertBefore(new DefExpr(tmpBool));
-        call->insertBefore(new CallExpr(PRIM_MOVE, tmp, localeID));
+        call->insertBefore(new CallExpr(PRIM_MOVE, tmpNode, nodeID));
+        call->insertBefore(new CallExpr(PRIM_MOVE, tmpLoc, localeID));
         call->insertBefore(new CallExpr(PRIM_MOVE, tmpBool,
-                                        new CallExpr(PRIM_EQUAL, tmp,
-                                                     call->get(1)->copy())));
+                                        new CallExpr(PRIM_EQUAL, tmpNode, tmpLoc)));
         call->insertBefore(new CondStmt(new SymExpr(tmpBool), lblock, rblock));
         rblock->insertAtHead(call->remove());
       }
@@ -883,11 +929,12 @@ ClassType* wideStringType = NULL;
 
 static void
 buildWideClass(Type* type) {
+  SET_LINENO(type->symbol);
   ClassType* wide = new ClassType(CLASS_RECORD);
   TypeSymbol* wts = new TypeSymbol(astr("__wide_", type->symbol->cname), wide);
   wts->addFlag(FLAG_WIDE_CLASS);
   theProgram->block->insertAtTail(new DefExpr(wts));
-  wide->fields.insertAtTail(new DefExpr(new VarSymbol("locale", dtInt[INT_SIZE_DEFAULT])));
+  wide->fields.insertAtTail(new DefExpr(new VarSymbol("locale", dtLocaleID)));
   wide->fields.insertAtTail(new DefExpr(new VarSymbol("addr", type)));
 
   //
@@ -915,6 +962,7 @@ Type* getOrMakeRefTypeDuringCodegen(Type* type) {
   Type* refType;
   refType = type->refType;
   if( ! refType ) {
+    SET_LINENO(type->symbol);
     ClassType* ref = new ClassType(CLASS_RECORD);
     TypeSymbol* refTs = new TypeSymbol(astr("_ref_", type->symbol->cname), ref);
     refTs->addFlag(FLAG_REF);
@@ -953,7 +1001,7 @@ Type* getOrMakeWideTypeDuringCodegen(Type* refType) {
   else
     wts->addFlag(FLAG_WIDE_CLASS);
   theProgram->block->insertAtTail(new DefExpr(wts));
-  wide->fields.insertAtTail(new DefExpr(new VarSymbol("locale", dtInt[INT_SIZE_DEFAULT])));
+  wide->fields.insertAtTail(new DefExpr(new VarSymbol("locale", dtLocaleID)));
   wide->fields.insertAtTail(new DefExpr(new VarSymbol("addr", refType)));
   if( isClass(refType) ) {
     wideClassMap.put(refType, wide);
@@ -1020,7 +1068,9 @@ static void localizeCall(CallExpr* call) {
       break;
     case PRIM_MOVE:
       if (CallExpr* rhs = toCallExpr(call->get(2))) {
-        if (rhs->isPrimitive(PRIM_GET_LOCALEID)) {
+        if (rhs->isPrimitive(PRIM_WIDE_GET_LOCALE) ||
+            rhs->isPrimitive(PRIM_WIDE_GET_NODE) ||
+            rhs->isPrimitive(PRIM_WIDE_GET_SUBLOC)) {
           if (rhs->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
             if (rhs->get(1)->getValType()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
               insertLocalTemp(rhs->get(1));
@@ -1071,7 +1121,7 @@ static void localizeCall(CallExpr* call) {
                                            new SymExpr(localVar)));
           }
           break;
-        } else if (rhs->isPrimitive(PRIM_UNION_GETID)) {
+        } else if (rhs->isPrimitive(PRIM_GET_UNION_ID)) {
           if (rhs->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
             insertLocalTemp(rhs->get(1));
           }
@@ -1109,7 +1159,7 @@ static void localizeCall(CallExpr* call) {
         insertLocalTemp(call->get(1));
       }
       break;
-    case PRIM_UNION_SETID:
+    case PRIM_SET_UNION_ID:
       if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
         insertLocalTemp(call->get(1));
       }
@@ -1190,6 +1240,7 @@ static void handleLocalBlocks() {
 //
 void
 insertWideReferences(void) {
+  SET_LINENO(baseModule);
   FnSymbol* heapAllocateGlobals = new FnSymbol("chpl__heapAllocateGlobals");
   heapAllocateGlobals->retType = dtVoid;
   theProgram->block->insertAtTail(new DefExpr(heapAllocateGlobals));
@@ -1227,13 +1278,13 @@ insertWideReferences(void) {
   derefWideRefsToWideClasses();
   widenGetPrivClass();
 
-  CallExpr* localeID = new CallExpr(PRIM_LOCALE_ID);
-  VarSymbol* tmp = newTemp(localeID->typeInfo());
+  CallExpr* nodeID = new CallExpr(PRIM_NODE_ID);
+  VarSymbol* tmp = newTemp(nodeID->typeInfo());
   VarSymbol* tmpBool = newTemp(dtBool);
 
   heapAllocateGlobals->insertAtTail(new DefExpr(tmp));
   heapAllocateGlobals->insertAtTail(new DefExpr(tmpBool));
-  heapAllocateGlobals->insertAtTail(new CallExpr(PRIM_MOVE, tmp, localeID));
+  heapAllocateGlobals->insertAtTail(new CallExpr(PRIM_MOVE, tmp, nodeID));
   heapAllocateGlobals->insertAtTail(new CallExpr(PRIM_MOVE, tmpBool, new CallExpr(PRIM_EQUAL, tmp, new_IntSymbol(0))));
   BlockStmt* block = new BlockStmt();
   forv_Vec(Symbol, sym, heapVars) {
@@ -1362,7 +1413,7 @@ static void buildWideRefMap()
       TypeSymbol* wts = new TypeSymbol(astr("__wide_", ts->cname), wide);
       wts->addFlag(FLAG_WIDE);
       theProgram->block->insertAtTail(new DefExpr(wts));
-      wide->fields.insertAtTail(new DefExpr(new VarSymbol("locale", dtInt[INT_SIZE_DEFAULT])));
+      wide->fields.insertAtTail(new DefExpr(new VarSymbol("locale", dtLocaleID)));
       wide->fields.insertAtTail(new DefExpr(new VarSymbol("addr", ts->type)));
       wideRefMap.put(ts->type, wide);
     }

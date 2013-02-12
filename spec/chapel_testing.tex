@@ -3,7 +3,7 @@
 % code snippets which can be later extracted and used to generate test
 % codes for automated testing.
 %
-% During LaTeX compilation, the enviroments defined in this file throw
+% During LaTeX compilation, the environments defined in this file throw
 % away all text within the scope of the environment, with the
 % exception of 'chapelprintoutput' which prints the output (and is
 % also extracted for testing purposes).
@@ -39,20 +39,20 @@
 %   These environment provide the test output (.good files).  There can be
 %   multiple such environments, and the filename is specified by a LaTeX
 %   style comment preceeding the contents of the output.  The
-%   'chapelprintoutput' scope is also outptted in the spec itself and
+%   'chapelprintoutput' scope is also outputted in the spec itself and
 %   thus may contain LaTeX formatting (see GENERAL CAVEATS below)
 %   
 
 %
 % GENERAL CAVEATS:
 %
-% - Because the chapelprintoutput enviroment must used LaTeX
+% - Because the chapelprintoutput environment must used LaTeX
 %   formatting, the script that extracts the tests must removed any
 %   LaTeX specific formatting.
 %
 % - Using a backslash or other special LaTeX characters may also be
 %   needed (e.g., \_ or \#) in the other environments for LaTex
-%   parsing purposes.  Such characters ar considered fragile and may
+%   parsing purposes.  Such characters are considered fragile and may
 %   lead to unexpected results.
 %
 

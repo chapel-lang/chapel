@@ -14,32 +14,32 @@
 //
 pragma "no use ChapelStandard"
 module ChapelThreads {
-
-use ChapelBase; // for uint().
-
-
-config const numThreadsPerLocale = 0;
-
-extern proc chpl_maxThreads(): int(32);
-const chpl__maxThreadsPerLocale = chpl_maxThreads();
-
-//
-// Legality check for numThreadsPerLocale
-//
-if numThreadsPerLocale < 0 {
-  halt("numThreadsPerLocale must be >= 0");
-}
-if chpl__maxThreadsPerLocale != 0 then
-  if (numThreadsPerLocale > chpl__maxThreadsPerLocale) then
-    __primitive("chpl_warning",
-                "specified value of " + numThreadsPerLocale
-                + " for numThreadsPerLocale is too high; limit is " 
-                + chpl__maxThreadsPerLocale);
-
-
-//
-// the size of a call stack
-//
-config const callStackSize: int = 0;
-
+  
+  use ChapelBase; // for uint().
+  
+  
+  config const numThreadsPerLocale = 0;
+  
+  extern proc chpl_maxThreads(): int(32);
+  const chpl__maxThreadsPerLocale = chpl_maxThreads();
+  
+  //
+  // Legality check for numThreadsPerLocale
+  //
+  if numThreadsPerLocale < 0 {
+    halt("numThreadsPerLocale must be >= 0");
+  }
+  if chpl__maxThreadsPerLocale != 0 then
+    if (numThreadsPerLocale > chpl__maxThreadsPerLocale) then
+      __primitive("chpl_warning",
+                  "specified value of " + numThreadsPerLocale
+                  + " for numThreadsPerLocale is too high; limit is " 
+                  + chpl__maxThreadsPerLocale);
+  
+  
+  //
+  // the size of a call stack
+  //
+  config const callStackSize: int = 0;
+  
 }

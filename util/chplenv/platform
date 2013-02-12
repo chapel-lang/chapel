@@ -38,8 +38,27 @@ if ($preset_platform eq "") {
     $platform = $preset_platform;
 }
 
+if ($platform eq "cray-cascade") {
+    $platform = "cray-xc";
+
+    if ($ARGV[1] eq 1) {
+        warn "Warning: the 'cray-cascade' platform is deprecated.  Using 'cray-xc' instead."
+    }
+} 
+elsif ($platform eq "xmt") {
+    $platform = "cray-xmt";
+
+    if ($ARGV[1] eq 1) {
+        warn "Warning: the 'xmt' platform is deprecated.  Please use 'cray-xmt' instead."
+    }
+} 
+elsif ($platform eq "xmt-sim") {
+    $platform = "cray-xmt-sim";
+
+    if ($ARGV[1] eq 1) {
+        warn "Warning: the 'xmt-sim' platform is deprecated.  Please use 'cray-xmt-sim' instead."
+    }
+} 
 
 print "$platform\n";
 exit(0);
-
-

@@ -18,6 +18,8 @@ record taskPrivateData {
   var y: [0..#numLocales] real;
 };
 
+inline proc =(a: chpl_taskID_t, b: chpl_taskID_t) return b;
+inline proc !=(a: chpl_taskID_t, b: chpl_taskID_t) return __primitive("!=", a, b);
 class localePrivateData {
   type myStuff;
   // assumes numCores is the same across all locales

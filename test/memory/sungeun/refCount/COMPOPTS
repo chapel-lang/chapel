@@ -1,0 +1,2 @@
+# These should be serial to get consistent results
+--serial

@@ -43,7 +43,7 @@ if ($@) {
         alarm @ARGV[0];
         # allow proper cleanup if possible
         print "timedexec sending SIGTERM\n";
-        kill SIGTERM, $child_pid;
+        kill SIGTERM, -$child_pid;
         waitpid($child_pid, 0);
         alarm 0;
     };
@@ -51,7 +51,7 @@ if ($@) {
         die unless $@ eq "alarm\n";
         # hit it with the big hammer
         print "timedexec sending SIGKILL\n";
-        kill SIGKILL, $child_pid;
+        kill SIGKILL, -$child_pid;
     }
     exit(222);
 } else {

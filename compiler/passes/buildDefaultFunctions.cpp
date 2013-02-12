@@ -33,6 +33,7 @@ static void buildDefaultDestructor(ClassType* ct);
 
 void buildDefaultFunctions(void) {
   build_chpl_entry_points();
+  SET_LINENO(rootModule); // todo - remove reset_ast_loc() calls below?
 
   Vec<BaseAST*> asts;
   collect_asts(rootModule, asts);
@@ -177,10 +178,10 @@ static void build_getter(ClassType* ct, Symbol *field) {
     fn->insertAtTail(
       new CondStmt(
         new SymExpr(fn->setter->sym),
-        new CallExpr(PRIM_UNION_SETID, _this, new_IntSymbol(field->id)),
+        new CallExpr(PRIM_SET_UNION_ID, _this, new_IntSymbol(field->id)),
         new CondStmt(
           new CallExpr("!=", 
-            new CallExpr(PRIM_UNION_GETID, _this),
+            new CallExpr(PRIM_GET_UNION_ID, _this),
               new_IntSymbol(field->id)),
           new CallExpr("halt", new_StringSymbol("illegal union access")))));
   if (isTypeSymbol(field) && isEnumType(field->type)) {
@@ -546,7 +547,7 @@ static void build_record_cast_function(ClassType* ct) {
   ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "arg", dtAny);
   fn->insertFormalAtTail(t);
   fn->insertFormalAtTail(arg);
-  fn->where = new BlockStmt(new CallExpr(PRIM_ISSUBTYPE, ct->symbol, t));
+  fn->where = new BlockStmt(new CallExpr(PRIM_IS_SUBTYPE, ct->symbol, t));
   VarSymbol* ret = newTemp();
   VarSymbol* tmp = newTemp();
   fn->insertAtTail(new DefExpr(ret));
@@ -571,14 +572,14 @@ static void build_union_assignment_function(ClassType* ct) {
   fn->insertFormalAtTail(arg1);
   fn->insertFormalAtTail(arg2);
   fn->retType = dtUnknown;
-  fn->insertAtTail(new CallExpr(PRIM_UNION_SETID, arg1, new_IntSymbol(0)));
+  fn->insertAtTail(new CallExpr(PRIM_SET_UNION_ID, arg1, new_IntSymbol(0)));
   for_fields(tmp, ct)
     if (!tmp->hasFlag(FLAG_IMPLICIT_ALIAS_FIELD))
       if (!tmp->hasFlag(FLAG_TYPE_VARIABLE))
         fn->insertAtTail(
           new CondStmt(
             new CallExpr("==",
-              new CallExpr(PRIM_UNION_GETID, arg2),
+              new CallExpr(PRIM_GET_UNION_ID, arg2),
               new_IntSymbol(tmp->id)),
             new CallExpr("=",
               new CallExpr(".", arg1, new_StringSymbol(tmp->name)),

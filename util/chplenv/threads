@@ -15,12 +15,12 @@ if ($preset_threads eq "") {
 
     if ($preset_tasks eq "fifo") {
 	$threads = "pthreads";
+    } elsif ($preset_tasks eq "massivethreads") {
+        $threads = "none";
     } elsif ($preset_tasks eq "mta") {
 	$threads = "none";
     } elsif ($preset_tasks eq "muxed") {
 	$threads = "soft-threads";
-    } elsif ($preset_tasks eq "nanox") {
-	$threads = "none";
     } elsif ($preset_tasks eq "qthreads") {
 	$threads = "none";
     } elsif ($preset_tasks eq "none") {
@@ -28,7 +28,7 @@ if ($preset_threads eq "") {
     } elsif ($preset_tasks eq "") {
 	$platform = `$utildirname/platform --target`;
 	chomp $platform;
-	if ($platform =~ /^(mta|xmt(-sim)?)$/) {
+	if ($platform =~ /^cray-xmt(-sim)?$/) {
 	    $threads = "none";
 	} elsif ($platform =~ /^x[12]-sim$/) {
 	    $threads = "none";

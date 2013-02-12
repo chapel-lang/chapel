@@ -14,11 +14,20 @@
 //
 // Shared interface (implemented in chpl-comm.c)
 //
-extern int32_t chpl_localeID; // unique ID for each locale: 0, 1, 2, ...
-extern int32_t chpl_numLocales; // number of locales
+extern c_nodeid_t chpl_nodeID; // unique ID for each node: 0, 1, 2, ...
+// Note that this is the comm node ID: it carries only the .node
+// portion of the c_locale_t structure that represents the locale on which
+// the current task is running.
+// Note also that this value is set only in chpl_comm_init to a value which is
+// (hopefully) unique to the running image, and never changed again.
+extern int32_t chpl_numNodes; // number of nodes
 
 extern int32_t chpl_numPrivateObjects;
 extern void** chpl_privateObjects; // privatized array and domain objects
+
+extern int chpl_verbose_comm;     // set via startVerboseComm
+extern int chpl_comm_diagnostics; // set via startCommDiagnostics
+extern int chpl_verbose_mem;      // set via startVerboseMem
 
 static ___always_inline
 int32_t chpl_numPrivatizedClasses(void) { return chpl_numPrivateObjects; }
@@ -55,7 +64,7 @@ int32_t chpl_comm_getMaxThreads(void);
 
 //
 // initializes the communications package
-//   set chpl_localeID and chpl_numLocales
+//   set chpl_nodeID and chpl_numNodes
 // notes:
 //   * Called with the argc/argv pair passed to main()
 //
@@ -159,7 +168,7 @@ void chpl_comm_exit(int all, int status);
 //   address is arbitrary
 //   size and locale are part of p
 //
-void  chpl_comm_put(void* addr, int32_t locale, void* raddr,
+void  chpl_comm_put(void* addr, c_nodeid_t node, void* raddr,
                     int32_t elemSize, int32_t typeIndex, int32_t len,
                     int ln, chpl_string fn);
 
@@ -170,7 +179,7 @@ void  chpl_comm_put(void* addr, int32_t locale, void* raddr,
 //   address is arbitrary
 //   size and locale are part of p
 //
-void  chpl_comm_get(void *addr, int32_t locale, void* raddr,
+void  chpl_comm_get(void *addr, c_nodeid_t node, void* raddr,
                     int32_t elemSize, int32_t typeIndex, int32_t len,
                     int ln, chpl_string fn);
 
@@ -187,17 +196,17 @@ void  chpl_comm_get(void *addr, int32_t locale, void* raddr,
 //   Extensions to GASNet, Version 2.0. Author: Dan Bonachea 
 //
 void  chpl_comm_put_strd(void* dstaddr, void* dststrides, int32_t dstlocale, 
-		     void* srcaddr, void* srcstrides, void* count,
-		     int32_t stridelevels, int32_t elemSize, int32_t typeIndex, 
-		     int ln, chpl_string fn);
+                     void* srcaddr, void* srcstrides, void* count,
+                     int32_t stridelevels, int32_t elemSize, int32_t typeIndex, 
+                     int ln, chpl_string fn);
 
 //
 // same as chpl_comm_puts(), but do get instead
 //
 void  chpl_comm_get_strd(void* dstaddr, void* dststrides, int32_t srclocale, 
-		     void* srcaddr, void* srcstrides, void* count,
-		     int32_t stridelevels, int32_t elemSize, int32_t typeIndex, 
-		     int ln, chpl_string fn);
+                     void* srcaddr, void* srcstrides, void* count,
+                     int32_t stridelevels, int32_t elemSize, int32_t typeIndex, 
+                     int ln, chpl_string fn);
 
 //
 // remote fork should launch a thread on locale that runs function f
@@ -205,19 +214,19 @@ void  chpl_comm_get_strd(void* dstaddr, void* dststrides, int32_t srclocale,
 // notes:
 //   multiple forks to the same locale should be handled concurrently
 //
-void chpl_comm_fork(int locale, chpl_fn_int_t fid,
+void chpl_comm_fork(c_nodeid_t node, chpl_fn_int_t fid,
                     void *arg, int32_t arg_size, int32_t arg_tid);
 
 //
 // non-blocking fork
 //
-void chpl_comm_fork_nb(int locale, chpl_fn_int_t fid,
+void chpl_comm_fork_nb(c_nodeid_t node, chpl_fn_int_t fid,
                        void *arg, int32_t arg_size, int32_t arg_tid);
 
 //
 // fast (non-forking) fork (i.e., run in handler)
 //
-void chpl_comm_fork_fast(int locale, chpl_fn_int_t fid, void *arg,
+void chpl_comm_fork_fast(c_nodeid_t node, chpl_fn_int_t fid, void *arg,
                          int32_t arg_size, int32_t arg_tid);
 
 

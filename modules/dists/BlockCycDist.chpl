@@ -88,12 +88,12 @@ class BlockCyclic : BaseDist {
       }
     } else {
       if targetLocales.rank != rank then
-	compilerError("locales array rank must be one or match distribution rank");
+    compilerError("locales array rank must be one or match distribution rank");
 
       var ranges: rank*range;
       for param i in 1..rank do {
-	var thisRange = targetLocales.domain.dim(i);
-	ranges(i) = 0..#thisRange.length; 
+    var thisRange = targetLocales.domain.dim(i);
+    ranges(i) = 0..#thisRange.length; 
       }
       
       targetLocDom = {(...ranges)};
@@ -195,18 +195,18 @@ proc BlockCyclic.getStarts(inds, locid) {
     if (domlo != lowIdx(i)) {
       if (domlo <= domhi) {
         if (domlo > lowIdx(i)) {
-	  const off = (domlo - mylo)%mystr;
-	  if (off == 0) {
-	    lo = domlo;
-	    hi = domhi;
-	  } else {
-	    lo = domlo-off;
-	    hi = domhi;
-//	    halt("BLC: need to handle unaligned low");
-	  }
-	} else {
-	  halt("BLC: need to handle domain low less than lowIdx");
-        }	  
+      const off = (domlo - mylo)%mystr;
+      if (off == 0) {
+        lo = domlo;
+        hi = domhi;
+      } else {
+        lo = domlo-off;
+        hi = domhi;
+//      halt("BLC: need to handle unaligned low");
+      }
+    } else {
+      halt("BLC: need to handle domain low less than lowIdx");
+        }     
       } else {
         lo = domlo;
         hi = domhi;
@@ -349,7 +349,7 @@ iter BlockCyclicDom.these(param tag: iterKind) where tag == iterKind.leader {
         else
           lo = i(j);
         tmpblock(j) = max(lo, whole.dim(j).low)..
-	              min(lo + dist.blocksize(j)-1, whole.dim(j).high);
+                  min(lo + dist.blocksize(j)-1, whole.dim(j).high);
         //        writeln("[", here.id, "] tmpblock(j) = ", tmpblock(j));
         tmpblock(j) = whole.dim(j)[tmpblock(j)];
         //        writeln("[", here.id, "] tmpblock(j) = ", tmpblock(j));
@@ -717,7 +717,7 @@ iter BlockCyclicArr.these(param tag: iterKind, followThis) var where tag == iter
   //
   proc accessHelper(i) var {
 //      if myLocArr.locale == here {
-//	local {
+//  local {
 //          if myLocArr.locDom.myStarts.member(i) then
 //            return myLocArr.this(i);
 //        }

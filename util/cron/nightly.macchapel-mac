@@ -1,2 +1,6 @@
 rm -rf /tmp/chapel-cron-chapelu-readonly
-source ~chapelu/.cron.bashrc && ~chapelu/chapel/util/cron/nightly -cron -suppress Suppressions/darwin.suppress >& ~chapelu/nightly.out
+source ~chapelu/.cron.bashrc && ~chapelu/chapel/util/cron/nightly -cron -examples >& ~chapelu/tmp/nightly.out
+
+# Note: Supressions are only required when we're not restricting
+# ourselves to the examples.  In which case, add: -suppress
+# Suppressions/darwin.suppress

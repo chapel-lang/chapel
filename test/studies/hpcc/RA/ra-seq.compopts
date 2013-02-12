@@ -1,1 +1,2 @@
--M../../../release/examples/benchmarks/hpcc
+-M../../../release/examples/benchmarks/hpcc -suseLCG=false
+-M../../../release/examples/benchmarks/hpcc                  # ra-seq-lcg.good

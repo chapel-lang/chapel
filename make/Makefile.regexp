@@ -1,0 +1,6 @@
+#
+# CHPL_MAKE_REGEXP
+#
+#
+#
+CHPL_MAKE_REGEXP = $(shell $(CHPL_MAKE_HOME)/util/chplenv/regexp $(CHPL_MAKE_HOST_TARGET))

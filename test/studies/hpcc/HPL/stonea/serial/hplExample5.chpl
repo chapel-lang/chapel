@@ -325,7 +325,7 @@ proc main() {
 
     // calculate and report performance
     var performance = 
-        ((2.0/3.0) * n**3 + (3.0/2.0) * n**2) / timer.elapsed() * 10e-9;
+        ((2.0/3.0) * n**3 + (3.0/2.0) * n**2) / timer.elapsed() * 1e-9;
     writeln("computation time: ", timer.elapsed(), " seconds.");
     writeln("performance: ", performance, " Gflops/s.");
 }

@@ -24,9 +24,8 @@ array-type:
   [ domain-expression ] type-specifier
 \end{syntax}
 The \sntx{domain-expression} must specify a domain that the array can
-be declared over.  If it is a domain
-literal, the duplicate square brackets around the domain literal may
-be omitted.
+be declared over.  If the \sntx{domain-expression} is a domain
+literal, the curly braces around the literal may be omitted.
 
 \begin{chapelexample}{decls.chpl}
 In the code
@@ -101,19 +100,32 @@ same size as a user array variable.
 
 \index{arrays!literals}
 
-Array literals are specified by enclosing a comma separated list of expressions
-representing values in square brackets. A 1-based domain will automatically be 
-generated for the given array literal.  The type of the array's values will be 
-the type of the first element listed.
+Array literal values can be either rectangular or associative, corresponding to
+the underlying domain which defines its indices. 
 
 \begin{syntax}
 array-literal:
+  rectangular-array-literal
+  associative-array-literal
+\end{syntax}
+
+\subsection{Rectangular Array Literals}
+\index{rectangular array literals}
+\index{arrays!rectangular!literals}
+
+Rectangular array literals are specified by enclosing a comma separated list of 
+expressions representing values in square brackets. A 1-based domain will 
+automatically be generated for the given array literal.  The type of the array's 
+values will be the type of the first element listed.
+
+\begin{syntax}
+rectangular-array-literal:
   [ expression-list ]
 \end{syntax}
 
 \begin{chapelexample}{adecl-literal.chpl}
-The following example declares a 5 element array literal containing strings,
-then subsequently prints each string element to the console.
+The following example declares a 5 element rectangular array literal 
+containing strings, then subsequently prints each string element to the console.
 \begin{chapel}
 var A = ["1", "2", "3", "4", "5"];
 
@@ -130,13 +142,13 @@ for i in 1..5 do
 \end{chapelexample}
 
 \begin{future}
-Provide syntax which allows users to specify the domain for an array
-literal.
+Provide syntax which allows users to specify the domain for a rectangular 
+array literal.
 \end{future}
 
 \begin{future}
-Determine the type of an array literal based on the most promoted type, 
-rather than the first element's type.
+Determine the type of a rectangular array literal based on the most promoted 
+type, rather than the first element's type.
 \end{future}
 
 \begin{chapelexample}{decl-with-anon-domain.chpl}
@@ -158,9 +170,56 @@ We would like to differentiate syntactically between array literals for an array
 of arrays and a multi-dimensional array. 
 \end{openissue}
 
-\index{arrays!default values}
-An array's default value is for each array element to be initialized to
+\index{arrays!rectangular!default values}
+An rectangular array's default value is for each array element to be initialized to
 the default value of the element type.
+
+\subsection{Associative Array Literals}
+\index{associative array literals}
+\index{arrays!associative!literals}
+
+Associative array values are specified by enclosing a comma separated list of
+index-to-value bindings within square brackets. It is expected that the indices 
+in the listing match in type and, likewise, the types of values in the listing 
+also match. 
+
+\begin{syntax}
+associative-array-literal:
+  [ associative-expr-list ]
+
+associative-expr-list:
+  index-expr => value-expr
+  index-expr => value-expr, associative-expr-list
+
+index-expr:
+  expression
+
+value-expr:
+  expression
+\end{syntax}
+
+\begin{openissue}
+Currently it is not possible to use other associative domains as values within
+an associative array literal.
+\end{openissue}
+
+\begin{chapelexample}{adecl-assocLiteral.chpl}
+The following example declares a 5 element associative array literal which maps
+integers to their corresponding string representation. The indices and their
+corresponding values are then printed. 
+\begin{chapel}
+var A = [1 => "one", 10 => "ten", 3 => "three", 16 => "sixteen"];
+
+for da in zip (A.domain, A) do
+  writeln(da);
+\end{chapel}
+\begin{chapeloutput}
+(1, one)
+(16, sixteen)
+(10, ten)
+(3, three)
+\end{chapeloutput}
+\end{chapelexample}
 
 \subsection{Runtime Representation of Array Values}
 \label{Array_Runtime_Representation}
@@ -516,7 +575,7 @@ are the first column of \chpl{A}.
 The \chpl{#} operator can be applied to dense rectangular arrays with
 a tuple argument whose size matches the rank of the array (or
 optionally an integer in the case of a 1D array).  The operator is
-equivalent to applying the \chpl{#} oeprator to the array's domain and
+equivalent to applying the \chpl{#} operator to the array's domain and
 using the result to slice the array as described in
 Section~\ref{Rectangular_Array_Slicing}.
 

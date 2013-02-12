@@ -115,7 +115,7 @@ void chpl_task_addToTaskList(
          chpl_fn_int_t,      // function to call for task
          void*,              // argument to the function
          chpl_task_list_p*,  // task list
-         int32_t,            // locale where task list resides
+         c_nodeid_t,         // locale (node) where task list resides
          chpl_bool,          // whether to call chpl_task_begin
          int,                // line at which function begins
          chpl_string);       // name of file containing functions
@@ -156,6 +156,13 @@ void chpl_task_sleep(int);
 //
 chpl_bool chpl_task_getSerial(void);
 void      chpl_task_setSerial(chpl_bool);
+
+//
+// Get and set task-specific locale information.
+//
+c_subloc_t  chpl_task_getSubLoc(void);
+void        chpl_task_setSubLoc(c_subloc_t);
+// This uint32_t is an index into the array of sublocales stored on each node.
 
 //
 // returns the value of the call stack size limit being used in

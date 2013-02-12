@@ -6,6 +6,22 @@ This directory is designed to hold sources that were not developed by
 the Chapel team and which are released under distinct licenses from
 Chapel itself.  Current subdirectories include:
 
+
+creoleparser/
+  Summary: This is a directory in which the python Creoleparser
+           package will be downloaded when running 'make creoleparser'
+           in the third-party directory.  It also relies on an
+           additional Python package 'Genshi' which will be downloaded
+           if it is not found within your path
+
+  License: MIT (Genshi is Revised BSD)
+
+  Contact: For more information, please refer to:
+             http://pypi.python.org/pypi/Creoleparser
+           and
+             http://genshi.edgewall.org/
+
+
 dlmalloc/
   Summary: Doug Lea's memory allocator (dlmalloc) which we use to
            support malloc/free calls when running GASNet programs
@@ -44,19 +60,20 @@ gmp/
   See also: gmp/README and gmp/gmp-*/README
 
 
-nanox/
-  Summary: the Nanos++ user-level tasking library being developed by
-           Barcelona Supercompting Center (BSC).  We are working on
-           using this as a lighter-weight tasking alternative to
-           pthreads.
+massivethreads/
+  Summary: MassiveThreads is a lightweight thread library being
+           developed by the University of Tokyo.  This package
+           represents another lighter-weight tasking alternative
+           to the default fifo/pthreads choice.
 
-  License: Nanos++ is made available under an L-GPL license (see
-           nanox-<version>/COPYING and COPYING.LESSER)
+  License: MassiveThreads is released under the Simplified BSD License,
+           which can be found in:
+             massivethreads/massivethreads-<version>/COPYRIGHT
 
   Contact: For more information, please refer to:
-           http://pm.bsc.es/projects/nanox
+             http://code.google.com/p/massivethreads/
 
-  See also: nanox/README and nanox/nanox-*/*
+  See also: massivethreads/massivethreads-<version>/README
 
 
 qthread/ 

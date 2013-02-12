@@ -1,6 +1,8 @@
 #ifdef CHPL_HAS_GMP
 
 #include "chplrt.h"
+
+#include "chpl-comm.h"
 #include "chpl-mem.h"
 
 #include "chplgmp.h"
@@ -19,7 +21,7 @@ static void* chpl_gmp_realloc(void* ptr, size_t old_size, size_t new_size) {
   return chpl_mem_realloc( ptr, 1, new_size, CHPL_RT_MD_GMP, __LINE__, __FILE__);
 }
 static void chpl_gmp_free(void* ptr, size_t old_size) {
-  return chpl_mem_free( ptr, __LINE__, __FILE__);
+  chpl_mem_free( ptr, __LINE__, __FILE__);
 }
 
 void chpl_gmp_init(void) {

@@ -1,7 +1,0 @@
-# put XE cross-compilation pgi-specific settings here
-
-XE_GEN_CFLAGS = 
-XE_COMP_CFLAGS = --diag_suppress550
-IEEE_FLOAT_GEN_CFLAGS = -Kieee
-
-include $(CHPL_MAKE_HOME)/make/compiler/Makefile.cray-xe
