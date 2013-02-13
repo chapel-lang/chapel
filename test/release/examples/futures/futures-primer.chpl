@@ -6,7 +6,8 @@ proc helper(x: int): int {
 }
 
 proc main(): void {
-  var actualFutureVariable = begin : int {
+  // either the begin block or the future variable must be annotated by type
+  var actualFutureVariable : int = begin {
     helper(1);
     helper(2);
     helper(3);

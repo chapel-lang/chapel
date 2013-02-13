@@ -1886,8 +1886,19 @@ buildFutureBeginStmt(const char* ident, Expr* futureType, BlockStmt* stmt) {
 
   CallExpr* beginDataWrapper = (CallExpr*) stmt->body.get(1);
 
-  CallExpr* futureElemType = (CallExpr*) beginDataWrapper->get(1);
-  BlockStmt* userBeginBody = (BlockStmt*) beginDataWrapper->get(2);
+  CallExpr* futureElemType;
+  BlockStmt* userBeginBody;
+  if (beginDataWrapper->numActuals() == 2) {
+    futureElemType = (CallExpr*) beginDataWrapper->get(1);
+    userBeginBody = (BlockStmt*) beginDataWrapper->get(2);
+  } else {
+    if (futureType) {
+      futureElemType = (CallExpr*) futureType;
+    } else {
+      USR_FATAL(stmt, "future variable or begin block must be annotated by type");
+    }
+    userBeginBody = (BlockStmt*) beginDataWrapper->get(1);
+  }
 
   std::string tempFutureName(ident);
   tempFutureName.append("$temp");
