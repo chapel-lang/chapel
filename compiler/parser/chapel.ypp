@@ -176,8 +176,9 @@
 %type <pfnsymbol> fn_decl_stmt_inner formal_ls opt_formal_ls req_formal_ls
 %type <procIter> proc_or_iter
 %type <pfnsymbol> linkage_spec
+%type <pblockstmt> future_expr
 
-%% 
+%%
 
 program:
   toplevel_stmt_ls  { (void)@1.first_line; yyblock = $$; }
@@ -745,6 +746,8 @@ var_decl_stmt_inner_ls:
 var_decl_stmt_inner:
   ident opt_type opt_init_expr
     { $$ = buildChapelStmt(new DefExpr(new VarSymbol($1), $3, $2)); }
+| ident opt_type TASSIGN future_expr TSEMI
+    { $$ = buildFutureBeginStmt($1, $2, $4); }
 | ident opt_reindex_expr TALIAS expr
     {
       VarSymbol* var = new VarSymbol($1);
@@ -753,6 +756,14 @@ var_decl_stmt_inner:
     }
 | TLP tuple_var_decl_stmt_inner_ls TRP opt_type opt_init_expr
     { $$ = buildTupleVarDeclStmt($2, $4, $5); }
+;
+
+future_expr:
+  TBEGIN opt_type block_stmt
+    {
+      // return the type and begin block wrapped in a call expr
+      $$ = new BlockStmt(new CallExpr(PRIM_NEW, $2, $3));
+    }
 ;
 
 tuple_var_decl_component:

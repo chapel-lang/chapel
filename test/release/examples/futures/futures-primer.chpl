@@ -1,4 +1,4 @@
-use Futures
+use Futures;
 
 proc helper(x: int): int {
   writeln("helper(", x, ")");

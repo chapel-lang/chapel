@@ -1900,27 +1900,22 @@ buildFutureBeginStmt(const char* ident, Expr* futureType, BlockStmt* stmt) {
   {
     // copy the begin body (except the last statement)
     BlockStmt* newBeginBody = buildChapelStmt();
-    BlockStmt* actualBeginBody = (BlockStmt*) userBeginBody->body.get(1);
-    int numStatements = actualBeginBody->length();
+    int numStatements = userBeginBody->length();
     for (int i = 1; i < numStatements; i++) {
-      Expr* loopStmt = actualBeginBody->body.get(i);
-      newBeginBody->insertAtTail(loopStmt->copy());
+      Expr* loopStmt = userBeginBody->body.get(i);
+      Expr* loopStmtCopy = loopStmt->copy();
+      newBeginBody->insertAtTail(loopStmtCopy);
     }
-    BlockStmt* lastStmt = (BlockStmt*) actualBeginBody->body.get(numStatements)->copy();
-    BlockStmt* newLastStmtBody = buildChapelStmt();
-    for (int i = 1; i < lastStmt->length(); i++) {
-      Expr* loopStmt = lastStmt->body.get(i);
-      newLastStmtBody->insertAtTail(loopStmt->copy());
-    }
-    newBeginBody->insertAtTail(newLastStmtBody);
-    // use put stmt on the last expression
-    Expr* lastBeginStmt = lastStmt->body.get(lastStmt->length());
-    if (!IS_EXPR(lastBeginStmt)) {
-      USR_FATAL(lastBeginStmt, "last statement in begin body is not an expression");
+
+    BlockStmt* actualBeginBodyLastStmt = (BlockStmt*) userBeginBody->body.get(numStatements);
+    BlockStmt* lastExprStmt = (BlockStmt*) actualBeginBodyLastStmt->body.get(1)->copy();
+
+    if (!IS_EXPR(lastExprStmt)) {
+      USR_FATAL(lastExprStmt, "last statement in begin body is not an expression");
     }
     UnresolvedSymExpr* tempFutureSym = new UnresolvedSymExpr(tempFutureName.c_str());
     Expr* tempPutRef = buildDotExpr(tempFutureSym, "put");
-    CallExpr* tempPutCall = new CallExpr(tempPutRef, lastBeginStmt, NULL, NULL, NULL);
+    CallExpr* tempPutCall = new CallExpr(tempPutRef, lastExprStmt, NULL, NULL, NULL);
     Expr* tempPutStmt = buildChapelStmt(tempPutCall);
     newBeginBody->insertAtTail(tempPutStmt);
 
