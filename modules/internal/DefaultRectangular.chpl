@@ -751,6 +751,8 @@ module DefaultRectangular {
   
     const len = dom.dsiNumIndices:int(32);
     if debugBulkTransfer {
+      pragma "no prototype"
+      extern proc sizeof(type x): int;
       const elemSize =sizeof(B._value.eltType);
       writeln("In DefaultRectangularArr.doiBulkTransfer():",
               " Alo=", Alo, ", Blo=", Blo,
@@ -819,7 +821,6 @@ module DefaultRectangular {
     if debugDefaultDistBulkTransfer then 
       writeln("In DefaultRectangularArr.doiBulkTransferStride ");
   
-    extern proc sizeof(type x): int;
     if debugBulkTransfer then
       writeln("In doiBulkTransferStride: ");
    
