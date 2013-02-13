@@ -8,6 +8,7 @@
 #include "symbol.h"
 #include "type.h"
 #include "config.h"
+#include <string>
 
 static void
 checkControlFlow(Expr* expr, const char* context) {
@@ -1867,6 +1868,76 @@ buildOnStmt(Expr* expr, Expr* stmt) {
     block->insertAtTail(onBlock);
     return block;
   }
+}
+
+
+BlockStmt*
+buildFutureBeginStmt(const char* ident, Expr* futureType, BlockStmt* stmt) {
+
+  CallExpr* beginDataWrapper = (CallExpr*) stmt->body.get(1);
+
+  CallExpr* futureElemType = (CallExpr*) beginDataWrapper->get(1);
+  BlockStmt* userBeginBody = (BlockStmt*) beginDataWrapper->get(2);
+
+  std::string tempFutureName(ident);
+  tempFutureName.append("$temp");
+
+  BlockStmt* resultBlock = buildChapelStmt();
+
+  {
+    // create the temporary future variable and initialize it with the proper type from the begin type
+    // TODO handle non-null futureType which needs to match futureTypeExpr
+    Expr* futureElemSymExpr = futureElemType->copyInner(NULL);
+    CallExpr* futureElemExpr = new CallExpr(PRIM_ACTUALS_LIST, futureElemSymExpr, NULL, NULL, NULL);
+    UnresolvedSymExpr* futureExpr = new UnresolvedSymExpr("future");
+    CallExpr* futureTypeExpr = new CallExpr(futureExpr, futureElemExpr, NULL, NULL, NULL);
+    CallExpr* newFutureExpr = new CallExpr(PRIM_NEW, futureTypeExpr, NULL, NULL, NULL);
+    VarSymbol* ltmp = new VarSymbol(tempFutureName.c_str());
+    DefExpr* futureDecl = new DefExpr(ltmp, newFutureExpr, NULL);
+    ltmp->addFlag(FLAG_MAYBE_PARAM);
+    resultBlock->insertAtTail(futureDecl);
+  }
+  {
+    // copy the begin body (except the last statement)
+    BlockStmt* newBeginBody = buildChapelStmt();
+    BlockStmt* actualBeginBody = (BlockStmt*) userBeginBody->body.get(1);
+    int numStatements = actualBeginBody->length();
+    for (int i = 1; i < numStatements; i++) {
+      Expr* loopStmt = actualBeginBody->body.get(i);
+      newBeginBody->insertAtTail(loopStmt->copy());
+    }
+    BlockStmt* lastStmt = (BlockStmt*) actualBeginBody->body.get(numStatements)->copy();
+    BlockStmt* newLastStmtBody = buildChapelStmt();
+    for (int i = 1; i < lastStmt->length(); i++) {
+      Expr* loopStmt = lastStmt->body.get(i);
+      newLastStmtBody->insertAtTail(loopStmt->copy());
+    }
+    newBeginBody->insertAtTail(newLastStmtBody);
+    // use put stmt on the last expression
+    Expr* lastBeginStmt = lastStmt->body.get(lastStmt->length());
+    if (!IS_EXPR(lastBeginStmt)) {
+      USR_FATAL(lastBeginStmt, "last statement in begin body is not an expression");
+    }
+    UnresolvedSymExpr* tempFutureSym = new UnresolvedSymExpr(tempFutureName.c_str());
+    Expr* tempPutRef = buildDotExpr(tempFutureSym, "put");
+    CallExpr* tempPutCall = new CallExpr(tempPutRef, lastBeginStmt, NULL, NULL, NULL);
+    Expr* tempPutStmt = buildChapelStmt(tempPutCall);
+    newBeginBody->insertAtTail(tempPutStmt);
+
+    // create the begin statement
+    BlockStmt* beginStmt = buildBeginStmt(newBeginBody);
+    resultBlock->insertAtTail(beginStmt);
+  }
+  {
+    // create the actual user-named future variable and initialize it to the temporary variable
+    VarSymbol *varSym = new VarSymbol(ident);
+    UnresolvedSymExpr* tempFutureSymExpr = new UnresolvedSymExpr(tempFutureName.c_str());
+    Expr* varDefnExpr = new DefExpr(varSym, tempFutureSymExpr, NULL);
+    Expr* varDefnStmt = buildChapelStmt(varDefnExpr);
+    resultBlock->insertAtTail(varDefnStmt);
+  }
+
+  return resultBlock;
 }
 
 

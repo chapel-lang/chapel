@@ -97,6 +97,7 @@ BlockStmt* buildFunctionDecl(FnSymbol* fn, RetTag optRetTag, Expr* optRetType,
 BlockStmt* buildLocalStmt(Expr* stmt);
 BlockStmt* buildOnStmt(Expr* expr, Expr* stmt);
 BlockStmt* buildBeginStmt(Expr* stmt);
+BlockStmt* buildFutureBeginStmt(const char* ident, Expr* type, BlockStmt* stmt);
 BlockStmt* buildSyncStmt(Expr* stmt);
 BlockStmt* buildCobeginStmt(BlockStmt* block);
 BlockStmt* buildAtomicStmt(Expr* stmt);
