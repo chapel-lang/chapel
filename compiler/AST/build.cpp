@@ -10,6 +10,8 @@
 #include "config.h"
 #include <string>
 
+static const char* FUTURE_LABEL = ".future.";
+
 static void
 checkControlFlow(Expr* expr, const char* context) {
   Vec<const char*> labelSet; // all labels in expr argument
@@ -1514,8 +1516,13 @@ backPropagateInitsTypes(BlockStmt* stmts) {
         def->exprType = type;
       }
       last = def;
-    } else
+    } else if (FUTURE_LABEL == stmts->userLabel) {
+      // stmt belongs to a begin-future block, skip checking for DefExpr
+      continue;
+    }
+    else {
       INT_FATAL(stmt, "expected DefExpr in backPropagateInitsTypes");
+    }
   }
 }
 
@@ -1554,6 +1561,9 @@ buildVarDecls(BlockStmt* stmts, Flag externconfig, Flag varconst, char* docs) {
         var->doc = docs;
         continue;
       }
+    } else if (FUTURE_LABEL == stmts->userLabel) {
+      // stmt belongs to a begin-future block, skip checking for DefExpr
+      continue;
     }
     INT_FATAL(stmt, "Major error in setVarSymbolAttributes");
   }
@@ -1883,6 +1893,8 @@ buildFutureBeginStmt(const char* ident, Expr* futureType, BlockStmt* stmt) {
   tempFutureName.append("$temp");
 
   BlockStmt* resultBlock = buildChapelStmt();
+  // tag this block statement as one created while processing futures
+  resultBlock->userLabel = FUTURE_LABEL;
 
   {
     // create the temporary future variable and initialize it with the proper type from the begin type
