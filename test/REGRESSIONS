@@ -121,10 +121,6 @@ so the warning does not apply and is not raised, and .good is not matched.
 no-local regressions
 ====================
 
-illegal use of on in serial iterator error (02/06/10)
------------------------------------------------------
-[Error matching compiler output for users/shetag/iteratorWithOn]
-
 not freeing heap-allocated globals (08/29/09)
 ---------------------------------------------
 [Error matching program output for classes/figueroa/RecordDestructor1]
