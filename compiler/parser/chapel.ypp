@@ -746,7 +746,7 @@ var_decl_stmt_inner_ls:
 var_decl_stmt_inner:
   ident opt_type opt_init_expr
     { $$ = buildChapelStmt(new DefExpr(new VarSymbol($1), $3, $2)); }
-| ident opt_type TASSIGN future_expr TSEMI
+| ident opt_type TASSIGN future_expr
     { $$ = buildFutureBeginStmt($1, $2, $4); }
 | ident opt_reindex_expr TALIAS expr
     {

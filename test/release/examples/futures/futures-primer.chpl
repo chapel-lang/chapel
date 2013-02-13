@@ -10,7 +10,7 @@ proc main(): void {
     helper(1);
     helper(2);
     helper(3);
-  };;
+  };
   var res = actualFutureVariable.get();
   assert(res == 3);
   writeln("actualFutureVariable.get() = ", res);
