@@ -85,9 +85,10 @@ bool fNoBoundsChecks = false;
 bool fNoLocalChecks = false;
 bool fNoNilChecks = false;
 
-//Disable flag for transitional warning of 1.5 domain literal syntax.
-//This option should be removed after 1.6 is released!
-bool fNoWarnDomainLiteral = false;
+// Enable all extra special warnings
+static bool fNoWarnSpecial = true;
+static bool fNoWarnDomainLiteral = true;
+static bool fNoWarnTupleIteration = true;
 
 bool fNoChecks = false;
 bool fNoInline = false;
@@ -115,8 +116,8 @@ bool fPrintIDonError = false;
 bool fCLineNumbers = false;
 char fPrintStatistics[256] = "";
 bool fPrintDispatch = false;
-bool fWarnPromotion = false;
 bool fReportOptimizedOn = false;
+bool fReportPromotion = false;
 bool fReportScalarReplace = false;
 bool fReportDeadBlocks = false;
 bool printCppLineno = false;
@@ -525,6 +526,26 @@ static void setHtmlUser(ArgumentState* arg, char* unused) {
   fdump_html_incude_system_modules = false;
 }
 
+static void setWarnTupleIteration(ArgumentState* arg_state, char* unused) {
+  const char *val = fNoWarnTupleIteration ? "false" : "true";
+  parseCmdLineConfig("CHPL_WARN_TUPLE_ITERATION", astr("\"", val, "\""));
+}
+
+static void setWarnDomainLiteral(ArgumentState* arg_state, char* unused) {
+  const char *val = fNoWarnDomainLiteral ? "false" : "true";
+  parseCmdLineConfig("CHPL_WARN_DOMAIN_LITERAL", astr("\"", val, "\""));
+}
+
+static void setWarnSpecial(ArgumentState* arg_state, char* unused) {
+  fNoWarnSpecial = false;
+
+  fNoWarnDomainLiteral = false;
+  setWarnDomainLiteral(arg_state, unused);
+
+  fNoWarnTupleIteration = false;
+  setWarnTupleIteration(arg_state, unused);
+}
+
 
 /*
 Flag types:
@@ -627,8 +648,9 @@ static ArgumentDescription arg_desc[] = {
  {"instantiate-max", ' ', "<max>", "Limit number of instantiations", "I", &instantiation_limit, "CHPL_INSTANTIATION_LIMIT", NULL},
  {"print-callstack-on-error", ' ', NULL, "print the Chapel call stack leading to each error or warning", "N", &fPrintCallStackOnError, "CHPL_PRINT_CALLSTACK_ON_ERROR", NULL},
  {"set", 's', "<name>[=<value>]", "Set config param value", "S", NULL, NULL, readConfig},
- //Disable flag for transitional warning of 1.5 domain literal syntax.  This option should be removed after 1.6 is released!
- {"warn-domain-literal", ' ', NULL, "[Disable] Enable old domain literal syntax warnings", "n", &fNoWarnDomainLiteral, "CHPL_NO_WARN_DOMAIN_LITERAL", NULL},
+ {"warn-special", ' ', NULL, "Enable [disable] special warnings", "n", &fNoWarnSpecial, "CHPL_WARN_SPECIAL", setWarnSpecial},
+ {"warn-domain-literal", ' ', NULL, "Enable [disable] old domain literal syntax warnings", "n", &fNoWarnDomainLiteral, "CHPL_WARN_DOMAIN_LITERAL", setWarnDomainLiteral},
+ {"warn-tuple-iteration", ' ', NULL, "Enable [disable] warnings for tuple iteration", "n", &fNoWarnTupleIteration, "CHPL_WARN_TUPLE_ITERATION", setWarnTupleIteration},
  {"no-warnings", ' ', NULL, "Disable output of warnings", "F", &ignore_warnings, "CHPL_DISABLE_WARNINGS", NULL},
 
  {"", ' ', NULL, "Compiler Information Options", NULL, NULL, NULL, NULL},
@@ -657,6 +679,7 @@ static ArgumentDescription arg_desc[] = {
  {"report-inlining", ' ', NULL, "Print inlined functions", "F", &report_inlining, NULL, NULL},
  {"report-dead-blocks", ' ', NULL, "Print dead block removal stats", "F", &fReportDeadBlocks, NULL, NULL},
  {"report-optimized-on", ' ', NULL, "Print information about on clauses that have been optimized for potential fast remote fork operation", "F", &fReportOptimizedOn, NULL, NULL},
+ {"report-promotion", ' ', NULL, "Print information about scalar promotion", "F", &fReportPromotion, NULL, NULL},
  {"report-scalar-replace", ' ', NULL, "Print scalar replacement stats", "F", &fReportScalarReplace, NULL, NULL},
 
  {"", ' ', NULL, "Developer Flags -- Miscellaneous", NULL, NULL, NULL, NULL},
@@ -678,7 +701,6 @@ static ArgumentDescription arg_desc[] = {
  {"reposition-def-expressions", ' ', NULL, "Enable [disable] repositioning of def expressions to usage points", "n", &fNoRepositionDefExpr, "CHPL_DISABLE_REPOSITION_DEF_EXPR", NULL},
  {"ignore-internal-modules", ' ', NULL, "Enable [disable] skipping internal module initialization in generated code (for testing)", "N", &fNoInternalModules, "CHPL_DISABLE_INTERNAL_MODULES", NULL},
  {"timers", ' ', NULL, "[Don't] Enable general timers one to five", "N", &fEnableTimers, "CHPL_ENABLE_TIMERS", NULL},
- {"warn-promotion", ' ', NULL, "Warn about scalar promotion", "F", &fWarnPromotion, NULL, NULL},
  {"print-chpl-home", ' ', NULL, "Print CHPL_HOME and path to this executable and exit", "F", &printChplHome, NULL, NULL},
  {0}
 };

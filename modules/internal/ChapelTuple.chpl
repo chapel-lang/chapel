@@ -97,6 +97,7 @@ module ChapelTuple {
     return __primitive("get svec member", this, i);
   }
 
+  config param CHPL_WARN_TUPLE_ITERATION = "unset";
   //
   // iterator support for tuples
   //
@@ -104,6 +105,9 @@ module ChapelTuple {
 
     if !isHomogeneousTuple(this) then
       compilerError("Cannot iterate over non-homogeneous tuples. If you intended to use zippered iteration, add the new keyword 'zip' before the tuple ofiteratable expressions.");
+
+    if CHPL_WARN_TUPLE_ITERATION == "true" then
+      compilerWarning("Iterating over tuples. If you intended to use zippered iteration, add the new keyword 'zip' before the tuple of iteratable expressions.");
 
     for i in 1..this.size {
       yield(this(i));

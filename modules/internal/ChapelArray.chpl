@@ -205,7 +205,15 @@ module ChapelArray {
    * NOTE:  It would be nice to define a second, less specific, function
    *        to handle the case of multiple types, however this is not 
    *        possible atm due to using var args with a query type. */
+  config param CHPL_WARN_DOMAIN_LITERAL = "unset";
   proc chpl__buildArrayLiteral( elems:?t ...?k ){
+
+    if CHPL_WARN_DOMAIN_LITERAL == "true" && chpl__isRange(elems(1)) {
+      compilerWarning("Encountered an array literal with range element(s).",
+                      " Did you mean a domain literal here?",
+                      " If so, use {...} instead of [...]."); 
+    }
+
     type elemType = elems(1).type;
     var A : [1..k] elemType;  //This is unfortunate, can't use t here...
   
@@ -236,15 +244,6 @@ module ChapelArray {
    *       Had to copy and paste the body of the function to obtain proper 
    *       behavior.  */
   proc chpl__buildArrayLiteralWarn( elems:?t ...?k ){
-  
-    if chpl__isRange(elems(1)) {
-      compilerWarning("Encountered an array literal with range element(s).",
-                      " Did you mean a domain literal here?",
-                      " If so, use {...} instead of [...].",
-                      " This warning can be disabled by using the",
-                      " --no-warn-domain-literal compiler option." ); 
-    }
-  
     type elemType = elems(1).type;
     var A : [1..k] elemType;  //This is unfortunate, can't use t here...
   

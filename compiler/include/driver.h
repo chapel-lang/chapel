@@ -58,10 +58,6 @@ extern bool fNoLiveAnalysis;
 extern bool fNoLocalChecks;
 extern bool fNoNilChecks;
 
-//Disable flag for transitional warning of 1.5 domain literal syntax.
-//This option should be removed after 1.6 is released!
-extern bool fNoWarnDomainLiteral; 
-
 extern bool fNoRemoteValueForwarding;
 extern bool fNoRemoveCopyCalls;
 extern bool fNoRepositionDefExpr;
@@ -132,8 +128,8 @@ extern bool ignore_warnings;
 extern bool ignore_errors;
 extern int squelch_header_errors;
 
-extern bool fWarnPromotion;
 extern bool fReportOptimizedOn;
+extern bool fReportPromotion;
 extern bool fReportScalarReplace;
 extern bool fReportDeadBlocks;
 
