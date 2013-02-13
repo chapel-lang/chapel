@@ -24,14 +24,14 @@ An optimization bypasses a semantic check (Tom - on hold)
 ---------------------------------------------------------
 [Error matching program output for multilocale/deitz/oneOrMoreLocales/test_dot_locale_error]
 
-qio_test.c:222: check_channel: Assertion `err == (EXTEND_ERROR_OFFSET+0)' failed.
----------------------------------------------------------------------------------
-[Error matching C I/O test ./qio_test I/O Test]
 
 ==============================================
 linux64 regressions (in addition to the above)
 ==============================================
-
+error: Cannot iterate over non-homogeneous tuples. (r21004, sungeun)
+--------------------------------------------------
+[Error matching compiler output for functions/deitz/iterators/temps/test_iterator_temp8]
+[Error matching compiler output for functions/deitz/iterators/test_var_iterator6]
 
 ==============================================
 linux32 regressions (in addition to the above)
@@ -161,10 +161,17 @@ Moved to GASNet (both fast and everything) on 1/24/2013.
 [Error matching program output for distributions/robust/arithmetic/optimizations/optimizeOnClauses_basic_record]
 [Error matching program output for distributions/robust/arithmetic/optimizations/optimizeOnClauses_basic_tuple]
 
+missing -nl option
+------------------
+[Error matching widecols.chpl] (io/ferguson/utf8cols/)
 
 ==============================================
 gasnet-fast regressions (other than the above)
 ==============================================
+
+runtime segfault (02/09/13) (Tom)
+---------------------------
+[Error matching program output for io/bradc/multilocale/testdistwrite]
 
 too many threads error (~01/13/12)
 ----------------------------------
@@ -174,6 +181,9 @@ missed on-clause optimization
 -----------------------------
 (see gasnet-everything)
 
+missing -nl option
+------------------
+(see gasnet-everything)
 
 =======================
 tcmalloc-specific tests
