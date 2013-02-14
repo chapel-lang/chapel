@@ -1881,19 +1881,39 @@ buildOnStmt(Expr* expr, Expr* stmt) {
 }
 
 
+static Expr* getFutureElementType(Expr* futureType) {
+  Expr* resultExpr = NULL;
+  if (futureType->astTag != E_CallExpr) {
+    USR_FATAL(futureType, "future type does not wrap an element type");
+  }
+  CallExpr* futureTypeCallExpr = (CallExpr*) futureType;
+  Expr* futureSymExpr = (Expr*) futureTypeCallExpr->baseExpr;
+  if (futureSymExpr->astTag == E_UnresolvedSymExpr) {
+    const char* futureSymName = ((UnresolvedSymExpr*) futureSymExpr)->unresolved;
+    if (strcmp(futureSymName, "future")) {
+      USR_FATAL(futureType, "future type does not begin with 'future'");
+    } else {
+      resultExpr = futureTypeCallExpr->get(1);
+    }
+  } else {
+    USR_FATAL(futureType, "future type expr does not have symbol");
+  }
+  return resultExpr;
+}
+
 BlockStmt*
 buildFutureBeginStmt(const char* ident, Expr* futureType, BlockStmt* stmt) {
 
   CallExpr* beginDataWrapper = (CallExpr*) stmt->body.get(1);
 
-  CallExpr* futureElemType;
+  Expr* futureElemType;
   BlockStmt* userBeginBody;
   if (beginDataWrapper->numActuals() == 2) {
-    futureElemType = (CallExpr*) beginDataWrapper->get(1);
+    futureElemType = (Expr*) beginDataWrapper->get(1);
     userBeginBody = (BlockStmt*) beginDataWrapper->get(2);
   } else {
     if (futureType) {
-      futureElemType = (CallExpr*) futureType;
+      futureElemType = getFutureElementType(futureType);
     } else {
       USR_FATAL(stmt, "future variable or begin block must be annotated by type");
     }

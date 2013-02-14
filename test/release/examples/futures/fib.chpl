@@ -14,7 +14,7 @@ config const n: int = 8;
 
 proc main(): void {
   // either the begin block or the future variable must be annotated by type
-  var actualFutureVariable: int = begin { fib(n); };
+  var actualFutureVariable: future(int) = begin { fib(n); };
   var res = actualFutureVariable.get();
   writeln("fib(", n, ") = ", res);
 }
