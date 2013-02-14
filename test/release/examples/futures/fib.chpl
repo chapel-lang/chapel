@@ -6,7 +6,7 @@ proc fib(n: int): int {
   }
   // either the begin block or the future variable must be annotated by type
   var n1 = begin : int { fib(n - 1); };
-  var n2 = begin : int { fib(n - 2); };
+  var n2: future(int) = begin { fib(n - 2); };
   return n1.get() + n2.get();
 }
 
