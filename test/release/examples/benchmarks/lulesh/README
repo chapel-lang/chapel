@@ -46,12 +46,13 @@ This directory's contents are as follows:
   coords.out      : the coordinates computed by the program are written
                     to this file, suitable for plotting
 
-  CLEANFILES       : \
-  lulesh.catfiles  :  \
-  lulesh.compopts  :   used by the Chapel testing system
-  lulesh.execopts  :  /
-  lulesh*.good     : /
-  lulesh*.perf*    :/
+  lulesh.cleanfiles :\
+  lulesh.catfiles   : \
+  lulesh.compopts   :  \
+  lulesh.execopts   :   used by the Chapel testing system
+  lulesh*.good      :  /
+  lulesh*.perf*     : /
+  test3DLulesh.*    :/
 
 
 ---------

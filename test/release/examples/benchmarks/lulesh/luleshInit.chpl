@@ -68,7 +68,7 @@ proc initCoordinates(X, Y, Z) {
       reader.read(x, y, z);
   } else {
     forall (num, x, y, z) in zip(X.domain, X, Y, Z) {
-      const (i,j,k) = nodeIdx1DTo3D(num);
+      const (i,j,k) = nodeIdxTo3D(num);
       x = initialWidth * k / elemsPerEdge;
       y = initialWidth * j / elemsPerEdge;
       z = initialWidth * i / elemsPerEdge;
@@ -97,15 +97,15 @@ proc initElemToNodeMapping(elemToNode: [?D]) {
     }
   } else {
     forall (num, nodelist) in zip(elemToNode.domain, elemToNode) {
-      const (i,j,k) = elemIdx1DTo3D(num);
-      nodelist[1] = nodeIdx3DTo1D(i,   j,   k  );
-      nodelist[2] = nodeIdx3DTo1D(i,   j,   k+1);
-      nodelist[3] = nodeIdx3DTo1D(i,   j+1, k+1);
-      nodelist[4] = nodeIdx3DTo1D(i,   j+1, k  );
-      nodelist[5] = nodeIdx3DTo1D(i+1, j,   k  );
-      nodelist[6] = nodeIdx3DTo1D(i+1, j,   k+1);
-      nodelist[7] = nodeIdx3DTo1D(i+1, j+1, k+1);
-      nodelist[8] = nodeIdx3DTo1D(i+1, j+1, k  );
+      const (i,j,k) = elemIdxTo3D(num);
+      nodelist[1] = node3DToIdx(D.rank, i,   j,   k  );
+      nodelist[2] = node3DToIdx(D.rank, i,   j,   k+1);
+      nodelist[3] = node3DToIdx(D.rank, i,   j+1, k+1);
+      nodelist[4] = node3DToIdx(D.rank, i,   j+1, k  );
+      nodelist[5] = node3DToIdx(D.rank, i+1, j,   k  );
+      nodelist[6] = node3DToIdx(D.rank, i+1, j,   k+1);
+      nodelist[7] = node3DToIdx(D.rank, i+1, j+1, k+1);
+      nodelist[8] = node3DToIdx(D.rank, i+1, j+1, k  );
     }
   }
 
@@ -121,36 +121,37 @@ proc initElemToNodeMapping(elemToNode: [?D]) {
 // read/compute the greek variables
 
 proc initGreekVars(lxim, lxip, letam, letap, lzetam, lzetap) {
+  param indices3D = isTupleType(lxim.eltType);
   if (initFromFile) {
     for (xm,xp,em,ep,zm,zp) in zip(lxim, lxip, letam, letap, lzetam, lzetap) do
       reader.read(xm,xp,em,ep,zm,zp);
   } else {
     forall num in lxim.domain {
-      const (i,j,k) = elemIdx1DTo3D(num);
+      const (i,j,k) = elemIdxTo3D(num);
       
-      lxim[num] = if (k == 0) 
+      lxim[num] = if (indices3D || k == 0) 
                     then num
-                    else elemIdx3DTo1D(i,j,k-1);
+                    else elemIdxTo3D(i,j,k-1);
 
-      lxip[num] = if (k == elemsPerEdge-1)
+      lxip[num] = if (indices3D || k == elemsPerEdge-1)
                     then num
-                    else elemIdx3DTo1D(i,j,k+1);
+                    else elemIdxTo3D(i,j,k+1);
     
-      letam[num] = if (j == 0) 
+      letam[num] = if (indices3D || j == 0) 
                     then num
-                    else elemIdx3DTo1D(i,j-1,k);
+                    else elemIdxTo3D(i,j-1,k);
 
-      letap[num] = if (j == elemsPerEdge-1)
+      letap[num] = if (indices3D || j == elemsPerEdge-1)
                     then num
-                    else elemIdx3DTo1D(i,j+1,k);
+                    else elemIdxTo3D(i,j+1,k);
     
-      lzetam[num] = if (i == 0) 
+      lzetam[num] = if (indices3D || i == 0) 
                     then num
-                    else elemIdx3DTo1D(i-1,j,k);
+                    else elemIdxTo3D(i-1,j,k);
 
-      lzetap[num] = if (i == elemsPerEdge-1)
+      lzetap[num] = if (indices3D || i == elemsPerEdge-1)
                     then num
-                    else elemIdx3DTo1D(i+1,j,k);
+                    else elemIdxTo3D(i+1,j,k);
     }
   }
   if (debugInit) then
@@ -168,7 +169,7 @@ inline proc initSyms(Sym, dir) {
     readNodeset(Sym);
   } else {
     for ij in DimNodeFace do
-      Sym += nodeIdx2DTo1D(ij, dir, 0);
+      Sym += node2DToIdx(Sym.rank, ij, dir, 0);
   }
 
   if debugInit {
@@ -201,20 +202,22 @@ inline proc initFreeSurface(freeSurface) {
     reader.assertEOF("Input file format error (extra data at EOF)");
   } else {
     for ij in DimNodeFace do
-      freeSurface += nodeIdx2DTo1D(ij, dim.X, nodesPerEdge-1);
+      freeSurface += node2DToIdx(freeSurface.rank, ij, dim.X, nodesPerEdge-1);
                   
     for ij in DimNodeFace do
-      freeSurface += nodeIdx2DTo1D(ij, dim.Y, nodesPerEdge-1);
+      freeSurface += node2DToIdx(freeSurface.rank, ij, dim.Y, nodesPerEdge-1);
 
     for ij in DimNodeFace do
-      freeSurface += nodeIdx2DTo1D(ij, dim.Z, nodesPerEdge-1);
+      freeSurface += node2DToIdx(freeSurface.rank, ij, dim.Z, nodesPerEdge-1);
   }
 
   if debugInit {
     use Sort;
 
     const size = freeSurface.size;
-    var sortedSurface: [0..#size] int;
+    var sortedSurface: [0..#size] if (freeSurface.rank == 1) 
+                                    then freeSurface.idxType 
+                                    else freeSurface.rank*freeSurface.idxType;
 
     for (a,b) in zip(sortedSurface, freeSurface) do a = b;
     QuickSort(sortedSurface);
@@ -233,10 +236,14 @@ inline proc initFreeSurface(freeSurface) {
    return it */
 
 proc readNodeset(nodeset) {
-  const arrSize = reader.read(int);
+  if (nodeset.rank == 1) {
+    const arrSize = reader.read(int);
 
-  for a in 0..#arrSize do
-    nodeset += reader.read(int);
+    for a in 0..#arrSize do
+      nodeset += reader.read(int);
+  } else {
+    halt("We shouldn't get here -- no file I/O with the 3D representation");
+  }
 }
 
 
@@ -246,11 +253,14 @@ inline proc idx3DTo1D((i,j,k), len) {
   return i*len*len + j*len + k;
 }
 
-inline proc nodeIdx3DTo1D(i,j,k) {
-  return idx3DTo1D((i, j, k), nodesPerEdge);
+inline proc node3DToIdx(param idxRank, i, j, k) {
+  if (idxRank == 3) then
+    return (i, j, k);
+  else
+    return idx3DTo1D((i, j, k), nodesPerEdge);
 }
 
-inline proc elemIdx3DTo1D(i,j,k) {
+inline proc elemIdxTo3D(i,j,k) {
   return idx3DTo1D((i,j,k), elemsPerEdge);
 }
 
@@ -258,20 +268,26 @@ inline proc idx1DTo3D(ind, len) {
   return (ind/(len*len), (ind/len)%len, ind%len);
 }
 
-inline proc nodeIdx1DTo3D(ind) {
-  return idx1DTo3D(ind, nodesPerEdge);
+inline proc nodeIdxTo3D(ind) {
+  if isTuple(ind) then
+    return ind;
+  else
+    return idx1DTo3D(ind, nodesPerEdge);
 }
 
-inline proc elemIdx1DTo3D(ind) {
-  return idx1DTo3D(ind, elemsPerEdge);
+inline proc elemIdxTo3D(ind) {
+  if isTuple(ind) then
+    return ind;
+  else
+    return idx1DTo3D(ind, elemsPerEdge);
 }
 
 /* Turn a 2D node index into a 3D index by inserting the value
    'newval' in diemnsion 'newdim' */
 
-inline proc nodeIdx2DTo1D(ij, newdim, newval) {
+inline proc node2DToIdx(param rank, ij, newdim, newval) {
   var ijk: 3*int;
   for i in 1..numDims do
     ijk[i] = if (i==newdim) then newval else ij[i - (i>newdim):int];
-  return nodeIdx3DTo1D((...ijk));
+  return node3DToIdx(rank, (...ijk));
 }
