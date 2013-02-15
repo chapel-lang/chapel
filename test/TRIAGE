@@ -191,6 +191,10 @@ examples of what times out:
  test_array_slicing3 (06/08/12, 6/16)
  etc.
 
+wrong answer for atomic operations with gasnet-everything on 2/1/13 (Sungeun)
+-----------------------------------------------------------------------------
+types/atomic/sungeun/atomic_vars
+
 "in routine alloca() there is a stack overflow" under PGI (UNASSIGNED)
 ----------------------------------------------------------------------
 Somewhat? nondeterministic.
