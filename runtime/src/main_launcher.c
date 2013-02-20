@@ -15,6 +15,14 @@
 #include "error.h"
 
 
+// This global variable stores the arguments to main
+// that should be handled by the program.
+chpl_main_argument chpl_gen_main_arg;
+// This variable is normally declared in config.h
+// and comes from the generated code.
+extern const int mainHasArgs;
+
+
 static void chpl_launch_sanity_checks(const char* argv0) {
   // Do sanity checks just before launching.
   struct stat statBuf;
@@ -256,9 +264,14 @@ int handleNonstandardArg(int* argc, char* argv[], int argNum,
   int numHandled = chpl_launch_handle_arg(*argc, argv, argNum, 
                                           lineno, filename);
   if (numHandled == 0) {
-    char* message = chpl_glom_strings(3, "Unexpected flag:  \"", argv[argNum], 
-                                      "\"");
-    chpl_error(message, lineno, filename);
+    if (mainHasArgs) {
+      chpl_gen_main_arg.argv[chpl_gen_main_arg.argc] = argv[argNum];
+      chpl_gen_main_arg.argc++;
+    } else {
+      char* message;
+      message = chpl_glom_strings(3,"Unexpected flag:  \"",argv[argNum],"\"");
+      chpl_error(message, lineno, filename);
+    }
     return 0;
   } else {
     int i;
@@ -320,6 +333,14 @@ int main(int argc, char* argv[]) {
   // the number of locales.
   //
   int32_t execNumLocales;
+
+  // Set up main argument parsing.
+  chpl_gen_main_arg.argv = chpl_mem_allocMany(argc, sizeof(char*),
+                                      CHPL_RT_MD_COMMAND_BUFFER, -1, "");
+  chpl_gen_main_arg.argv[0] = argv[0];
+  chpl_gen_main_arg.argc = 1;
+  chpl_gen_main_arg.return_value = 0;
+
   CreateConfigVarTable();
   parseArgs(&argc, argv);
 

@@ -387,6 +387,24 @@ err_t sys_readlink(const char* path, const char** string_out)
   return ret;
 }
 
+// Returns true if an environment variable called name was found,
+// in which case *string_out will point to the string found in
+// the process's environment block. Don't try to free it.
+// Returns false if the name was not found in the environment
+//  (ie getenv returned NULL).
+int sys_getenv(const char* name, const char** string_out)
+{
+  char *buf;
+
+  buf = getenv(name);
+  if (buf==NULL) {
+    return 0;
+  } else {
+    *string_out = buf;
+    return 1;
+  }
+}
+
 err_t sys_open(const char* pathname, int flags, mode_t mode, fd_t* fd_out)
 {
   int got;

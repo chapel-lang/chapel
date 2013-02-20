@@ -94,7 +94,7 @@ const char* sys_strerror_str(err_t error, err_t* err_in_strerror);
 
 // returns an allocated string in string_out, which must be freed.
 err_t sys_readlink(const char* path, const char** string_out);
-
+int sys_getenv(const char* name, const char** string_out);
 
 err_t sys_open(const char* path, int flags, mode_t mode, fd_t* fd_out);
 

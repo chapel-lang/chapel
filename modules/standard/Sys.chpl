@@ -199,6 +199,7 @@ module Sys {
 
   extern proc sys_readlink(path:string, inout string_out):syserr;
   extern proc sys_readlink(path:string, inout string_out):syserr;
+  extern proc sys_getenv(name:string, inout string_out):c_int;
   extern proc sys_open(pathname:string, flags:c_int, mode:mode_t, inout fd_out:fd_t):syserr;
   extern proc sys_close(fd:fd_t):syserr;
 

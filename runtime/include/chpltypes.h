@@ -182,4 +182,12 @@ int64_t object2int( _chpl_object o);  // return the ptr
 
 typedef int32_t chpl__class_id;
 
+typedef struct chpl_main_argument_s {
+  int64_t argc;
+  const char **argv;
+  int32_t return_value;
+} chpl_main_argument;
+
+const char* chpl_get_argument_i(chpl_main_argument* args, int32_t i);
+
 #endif
