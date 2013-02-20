@@ -39,11 +39,11 @@
 #define ___always_inline inline
 #endif
 
-#ifdef __MTA__
+//#ifdef __MTA__
 // MTA defines WCHAR_MAX in stdint and wchar,
 // but avoids it if wchar is included before stdint.
-#include <wchar.h>
-#endif
+//#include <wchar.h>
+//#endif
 
 // Ask a C++ compiler if it would please include e.g. INT64_MAX
 #define __STDC_CONSTANT_MACROS
