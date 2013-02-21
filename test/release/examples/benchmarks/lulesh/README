@@ -155,6 +155,16 @@ INPUT FILE TODOs:
 STYLE TODOs:
 ------------
 
+* There are a number of magic number 8's in the code, many (all?) of
+  which should probably be replaced by nodesPerElem.  There were
+  also some magic number 4's that should be similarly replaced.
+
+* Along those lines, we may want to insert a typedef for 8*real or
+  nodesPerElem*real which is a commonly-appearing type.  This would
+  also help transition it from tuple back to array in the future.
+  And such changes can also help when we support array-of-struct
+  vs. struct-of-array decisions.
+
 * It'd be nice to replace some of the groups of three arrays
   representing x, y, and z values with an array of tuples or records
   or small arrays.  The array of tuples approach seems most
