@@ -1210,7 +1210,6 @@ err_t qio_quote_string_length(uint8_t string_start, uint8_t string_end, uint8_t 
   int start_quote_size;
   int clen = 1;
   int32_t chr;
-  int get_width = 1;
   ssize_t max_cols = (ti)?(ti->max_columns):(SSIZE_MAX);
   ssize_t max_chars = (ti)?(ti->max_chars):(SSIZE_MAX);
   ssize_t max_bytes = (ti)?(ti->max_bytes):(SSIZE_MAX);
@@ -1244,7 +1243,6 @@ err_t qio_quote_string_length(uint8_t string_start, uint8_t string_end, uint8_t 
     err = qio_decode_char_buf(&chr, &clen, ptr + i, len - i);
     if( err ) {
       err = 0;
-      get_width = 0;
     }
     tmplen = _qio_chr_escape(chr, string_end, string_format, NULL,
                              &tmpchars, &tmpcols);
