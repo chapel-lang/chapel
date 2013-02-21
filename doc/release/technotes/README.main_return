@@ -1,0 +1,18 @@
+======================
+main can return an int
+======================
+
+This README describes initial support for allowing main to return an
+int, rather than always being of type void.
+
+
+Overview
+--------
+
+Previous to this feature, the only way to return a nonzero exit value from
+a program is by calling exit(). However, this code path is different from
+normal program termination; it is mainly used for exiting on a fatal error.
+By returning from main with a value, the programmer can still have normal
+program termination, possibly including calling record destructors or
+freeing other memory; for example to flush the buffers to a logging subsystem.
+

@@ -17,7 +17,7 @@
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
-
+#include "config.h"
 #include "codegen.h"
 
 
@@ -883,13 +883,17 @@ static void
 codegen_config() {
   GenInfo* info = gGenInfo;
   if( info->cfile ) {
+    FILE* mainfile = info->cfile;
     FILE* outfile = info->cfile;
     fprintf(outfile, "#include \"_config.c\"\n");
     fileinfo configFile;
     openCFile(&configFile, "_config.c");
     outfile = configFile.fptr;
+    info->cfile = outfile;
 
     fprintf(outfile, "#include \"error.h\"\n\n");
+
+    genGlobalInt("mainHasArgs", mainHasArgs);
 
     fprintf(outfile, "void CreateConfigVarTable(void) {\n");
     fprintf(outfile, "initConfigVarTable();\n");
@@ -916,10 +920,12 @@ codegen_config() {
     fprintf(outfile, "}\n\n\n");
 
     closeCFile(&configFile);
+    info->cfile = mainfile;
   } else {
 #ifdef HAVE_LLVM
     llvm::FunctionType *createConfigType;
     llvm::Function *createConfigFunc;
+    genGlobalInt("mainHasArgs", mainHasArgs);
     if((createConfigFunc = getFunctionLLVM("CreateConfigVarTable"))) {
       createConfigType = createConfigFunc->getFunctionType();
     }

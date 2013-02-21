@@ -131,6 +131,11 @@ void parse(void) {
         USR_WARN("'Reader' defined more than once in Chapel Internal modules.");
       }
       dtReader = toClassType(ts->type);
+    } else if (!strcmp(ts->name, "chpl_main_argument")) {
+      if (dtMainArgument) {
+        USR_WARN("'chpl_main_argument' defined more than once in Chapel Internal modules.");
+      }
+      dtMainArgument = toClassType(ts->type);
     }
   }
 
@@ -157,6 +162,9 @@ void parse(void) {
   }
   if (!dtReader) {
     USR_FATAL_CONT("'Reader' not defined in Chapel Internal modules.");
+  }
+  if (!dtMainArgument) {
+    USR_FATAL_CONT("'chpl_main_argument' not defined in Chapel Internal modules.");
   }
   USR_STOP();
 

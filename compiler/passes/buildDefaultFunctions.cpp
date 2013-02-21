@@ -5,7 +5,9 @@
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
+#include "config.h"
 
+static bool mainReturnsInt;
 
 static void build_chpl_entry_points(void);
 static void build_getter(ClassType* ct, Symbol* field);
@@ -218,22 +220,43 @@ static FnSymbol* chpl_gen_main_exists(void) {
   }
   bool firstProblem = true;
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (!strcmp("main", fn->name) && !fn->numFormals()) {
-      ModuleSymbol* fnMod = fn->getModule();
-      if ((module == NULL && fnMod->modTag == MOD_MAIN) ||
-          fnMod == module) {
-        if (!match) {
-          match = fn;
-          matchMod = fnMod;
+    if (!strcmp("main", fn->name)) {
+      if (fn->numFormals() == 0 ||
+          (fn->numFormals() == 1 &&
+           fn->getFormal(1)->typeInfo() == dtArray) ) {
+        mainHasArgs = (fn->numFormals() > 0); 
+
+        CallExpr* ret = toCallExpr(fn->body->body.last());
+        if (!ret || !ret->isPrimitive(PRIM_RETURN))
+          INT_FATAL(fn, "function is not normalized");
+        SymExpr* sym = toSymExpr(ret->get(1));
+        if (!sym)
+          INT_FATAL(fn, "function is not normalized");
+        if( sym->var != gVoid ) {
+          mainReturnsInt = true;
         } else {
-          if (firstProblem) {
-            firstProblem = false;
-            USR_FATAL_CONT("Ambiguous main() function%s:",
-                           fnMod == matchMod ? "" : " (use --main-module to disambiguate)");
-            USR_PRINT(match, "in module %s", matchMod->name);
-          }
-          USR_PRINT(fn, "in module %s", fnMod->name);
-        } // else, this is not a candidate for the main module
+          mainReturnsInt = false;
+        }
+
+        ModuleSymbol* fnMod = fn->getModule();
+        if ((module == NULL && fnMod->modTag == MOD_MAIN) ||
+            fnMod == module) {
+          if (!match) {
+            match = fn;
+            matchMod = fnMod;
+          } else {
+            if (firstProblem) {
+              firstProblem = false;
+              USR_FATAL_CONT("Ambiguous main() function%s:",
+                             fnMod == matchMod ? "" : " (use --main-module to disambiguate)");
+              USR_PRINT(match, "in module %s", matchMod->name);
+            }
+            USR_PRINT(fn, "in module %s", fnMod->name);
+          } // else, this is not a candidate for the main module
+        }
+      } else {
+        USR_FATAL_CONT("main() function with invalid signature");
+        USR_PRINT(fn, "in module %s", fn->getModule()->name);
       }
     }
   }
@@ -304,31 +327,68 @@ static void build_chpl_entry_points(void) {
   // code
   //
   chpl_gen_main = new FnSymbol("chpl_gen_main");
+
+  ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "_arg", dtMainArgument);
+  chpl_gen_main->insertFormalAtTail(arg);
+  chpl_gen_main->retType = dtInt[INT_SIZE_64];
+
   chpl_gen_main->cname = "chpl_gen_main";
-  chpl_gen_main->retType = dtVoid;
   chpl_gen_main->addFlag(FLAG_EXPORT);  // chpl_gen_main is always exported.
   chpl_gen_main->addFlag(FLAG_TEMP);
   mainModule->block->insertAtTail(new DefExpr(chpl_gen_main));
-  normalize(chpl_gen_main);
+  VarSymbol* main_ret = newTemp("_main_ret", dtInt[INT_SIZE_64]);
+  VarSymbol* endCount = newTemp("_endCount");
+  chpl_gen_main->insertAtTail(new DefExpr(main_ret));
+  chpl_gen_main->insertAtTail(new DefExpr(endCount));
 
-  if (!fLibraryCompile) {
-    SET_LINENO(chpl_gen_main);
-    chpl_gen_main->insertAtHead(new CallExpr("main"));
-  }
+  chpl_gen_main->insertAtTail(new CallExpr(PRIM_MOVE, endCount, new CallExpr("_endCountAlloc")));
+  chpl_gen_main->insertAtTail(new CallExpr(PRIM_SET_END_COUNT, endCount));
+  chpl_gen_main->insertAtTail(new CallExpr("chpl_startTrackingMemory"));
 
   if( ! fNoInternalModules ) {
     // We have to initialize the main module explicitly.
     // It will initialize all the modules it uses, recursively.
-    chpl_gen_main->insertAtHead(new CallExpr(mainModule->initFn));
-
-    VarSymbol* endCount = newTemp("_endCount");
-    chpl_gen_main->insertAtHead(new CallExpr("chpl_startTrackingMemory"));
-    chpl_gen_main->insertAtHead(new CallExpr(PRIM_SET_END_COUNT, endCount));
-    chpl_gen_main->insertAtHead(new CallExpr(PRIM_MOVE, endCount, new CallExpr("_endCountAlloc")));
-    chpl_gen_main->insertAtHead(new DefExpr(endCount));
-    chpl_gen_main->insertBeforeReturn(new CallExpr("_waitEndCount"));
-    //chpl_gen_main->insertBeforeReturn(new CallExpr("_endCountFree", endCount));
+    chpl_gen_main->insertAtTail(new CallExpr(mainModule->initFn));
   }
+
+  bool main_ret_set = false;
+
+  if (!fLibraryCompile) {
+    SET_LINENO(chpl_gen_main);
+    if (mainHasArgs) {
+      VarSymbol* converted_args = newTemp("_main_args");
+      chpl_gen_main->insertAtTail(new DefExpr(converted_args));
+      chpl_gen_main->insertAtTail(new CallExpr(PRIM_MOVE, converted_args, 
+            new CallExpr("chpl_convert_args", arg)));
+      if (mainReturnsInt) {
+        chpl_gen_main->insertAtTail(new CallExpr(PRIM_MOVE, main_ret, 
+              new CallExpr("main", converted_args)));
+        main_ret_set = true;
+      } else {
+        chpl_gen_main->insertAtTail(new CallExpr("main", converted_args));
+      }
+    } else {
+      if (mainReturnsInt) {
+        chpl_gen_main->insertAtTail(new CallExpr(PRIM_MOVE, main_ret, 
+              new CallExpr("main")));
+        main_ret_set = true;
+      } else {
+        chpl_gen_main->insertAtTail(new CallExpr("main"));
+      }
+    }
+  }
+
+  if (!main_ret_set) {
+    chpl_gen_main->insertAtTail(new CallExpr(PRIM_MOVE, main_ret, 
+          new_IntSymbol(0, INT_SIZE_64)));
+  }
+
+  chpl_gen_main->insertAtTail(new CallExpr("_waitEndCount"));
+  //chpl_gen_main->insertAtTail(new CallExpr("_endCountFree", endCount));
+
+  chpl_gen_main->insertAtTail(new CallExpr(PRIM_RETURN, main_ret));
+
+  normalize(chpl_gen_main);
 }
 
 static void build_record_equality_function(ClassType* ct) {

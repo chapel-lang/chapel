@@ -25,4 +25,6 @@ int handleNonstandardArg(int* argc, char* argv[], int argNum,
                          int32_t lineno, chpl_string filename);
 void printAdditionalHelp(void);
 
+void printHelpTable(void);
+
 #endif

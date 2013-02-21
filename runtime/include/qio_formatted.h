@@ -12,12 +12,12 @@
 #include <inttypes.h>
 #include <math.h> // HUGE_VAL
 #include <float.h> // DBL_MANT_DIG
-#include <wchar.h>
 #include <assert.h>
 
 #ifdef __MTA__
 // no wide character support
 #else
+#include <wchar.h>
 #define HAS_WCTYPE_H
 #endif
 

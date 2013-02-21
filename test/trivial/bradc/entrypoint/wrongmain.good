@@ -1,1 +1,2 @@
-If we see this, I think it worked
+error: main() function with invalid signature
+wrongmain.chpl:4: note: in module wrongmain

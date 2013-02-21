@@ -22,5 +22,10 @@ static inline chpl_bool chpl_config_has_value(chpl_string v, chpl_string m)
 static inline chpl_string chpl_config_get_value(chpl_string v, chpl_string m)
 { return lookupSetValue(v, m); }
 
+extern const int mainHasArgs;
+extern chpl_main_argument chpl_gen_main_arg;
+
+
+
 #endif
 

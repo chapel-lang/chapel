@@ -7,6 +7,8 @@
 static Map<const char *, Expr*> configMap;
 static Vec<const char*> usedConfigParams;
 
+bool mainHasArgs;
+
 void
 checkConfigs(void) {
   bool anyBadConfigParams = false;
