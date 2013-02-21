@@ -1,5 +1,7 @@
 #!/bin/csh -f
 cp testVerboseFlag.comm-$CHPL_COMM.goodstart $1.good
+#Need blank only if $EXECOPTS is non-empty
+if ($EXECOPTS != "") echo -n " " >> $1.good
 echo $EXECOPTS >> $1.good
 echo -n "executing on node 0 of 1 node(s): " >> $1.good
 uname -n >> $1.good
