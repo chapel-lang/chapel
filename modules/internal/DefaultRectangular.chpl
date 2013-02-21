@@ -11,6 +11,7 @@ module DefaultRectangular {
   config param defaultDoRADOpt = true;
   config param defaultDisableLazyRADOpt = false;
   
+  pragma "no readwrite"
   class DefaultDist: BaseDist {
     proc dsiNewRectangularDom(param rank: int, type idxType, param stridable: bool)
       return new DefaultRectangularDom(rank, idxType, stridable, this);
@@ -39,7 +40,7 @@ module DefaultRectangular {
   // other locales.  This just sets it up on this locale.
   //
   pragma "private" var defaultDist = new dmap(new DefaultDist());
-  
+  pragma "no readwrite"
   class DefaultRectangularDom: BaseRectangularDom {
     param rank : int;
     type idxType;

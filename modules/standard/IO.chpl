@@ -429,6 +429,8 @@ extern type fdflag_t = c_int;
 
 extern type iohints = c_int;
 
+pragma "no readwrite"
+pragma "no hash"
 record file {
   var home: locale = here;
   var _file_internal:qio_file_ptr_t = QIO_FILE_PTR_NULL;

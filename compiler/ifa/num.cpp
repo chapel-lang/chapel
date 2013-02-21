@@ -745,10 +745,10 @@ fold_constant(int op, Immediate *aim1, Immediate *aim2, Immediate *imm) {
     case P_prim_minus: DO_FOLD1(-); break;
     case P_prim_not: DO_FOLD1I(~); break;
     case P_prim_lnot: DO_FOLD1(!); break;
-  case P_prim_pow: {
-    DO_FOLDPOW();
-    break;
-  }
+    case P_prim_pow: {
+      DO_FOLDPOW();
+      break;
+    }
   }
 }
 

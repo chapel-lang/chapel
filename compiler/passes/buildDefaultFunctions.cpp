@@ -27,6 +27,20 @@ static void buildStringCastFunction(EnumType* type);
 
 static void buildDefaultDestructor(ClassType* ct);
 
+static bool hierarchyHasFlag(TypeSymbol* type_sym, Flag flag) {
+  if (type_sym->hasFlag(flag)) {
+    return true;
+  }
+  
+  forv_Vec(Type*, super_type, type_sym->type->dispatchParents) {
+    if (hierarchyHasFlag(super_type->symbol, flag)) {
+      return true;
+    }
+  }
+  
+  return false;
+}
+
 void buildDefaultFunctions(void) {
   build_chpl_entry_points();
   // TODO - remove reset_ast_loc() calls below?
@@ -58,7 +72,9 @@ void buildDefaultFunctions(void) {
           continue;
         }
         
-        buildDefaultReadWriteFunctions(ct);
+        if (not hierarchyHasFlag(type, FLAG_NO_RW)) {
+          buildDefaultReadWriteFunctions(ct);
+        }
         
         if (isRecord(ct)) {
           if (!isRecordWrappedType(ct)) {
@@ -69,7 +85,10 @@ void buildDefaultFunctions(void) {
           build_record_assignment_function(ct);
           build_record_cast_function(ct);
           build_record_copy_function(ct);
-          build_record_hash_function(ct);
+          
+          if (not hierarchyHasFlag(type, FLAG_NO_HASH)) {
+            build_record_hash_function(ct);
+          }
         }
         
         if (isUnion(ct)) {

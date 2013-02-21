@@ -86,6 +86,10 @@ symbolFlag( FLAG_NO_INSTANTIATION_LIMIT , ypr, "no instantiation limit", "The in
 symbolFlag( FLAG_NO_OBJECT , ypr, "no object" , ncm )
 symbolFlag( FLAG_NO_PARENS , npr, "no parens" , "function without parentheses" )
 symbolFlag( FLAG_NO_PROTOTYPE , ypr, "no prototype" , "do not generate a prototype this symbol" )
+
+symbolFlag( FLAG_NO_HASH, ypr, "no hash" , "do not generate a hash function for this type" )
+symbolFlag( FLAG_NO_RW , ypr, "no readwrite" , "do not generate serialization functions for this type" )
+
 symbolFlag( FLAG_NO_WIDE_CLASS , npr, "no wide class" , ncm )
 symbolFlag( FLAG_NON_BLOCKING , npr, "non blocking" , "with FLAG_ON/FLAG_ON_BLOCK, non-blocking on functions" )
 symbolFlag( FLAG_OBJECT_CLASS , npr, "object class" , ncm )

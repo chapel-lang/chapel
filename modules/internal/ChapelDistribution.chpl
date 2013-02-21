@@ -17,6 +17,7 @@ module ChapelDistribution {
   // Abstract distribution class
   //
   pragma "base dist"
+  pragma "no readwrite"
   class BaseDist {
     var _distCnt: atomic int;   // distribution reference count
     var _doms: list(BaseDom);   // domains declared over this domain
@@ -97,6 +98,7 @@ module ChapelDistribution {
   // Abstract domain classes
   //
   pragma "base domain"
+  pragma "no readwrite"
   class BaseDom {
     var _domCnt: atomic int;    // domain reference count
     var _arrs: list(BaseArr);   // arrays declared over this domain
@@ -189,6 +191,7 @@ module ChapelDistribution {
     proc dsiDisplayRepresentation() { }
   }
   
+  pragma "no readwrite"
   class BaseRectangularDom : BaseDom {
     proc dsiClear() {
       halt("clear not implemented for this distribution");

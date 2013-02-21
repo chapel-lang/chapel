@@ -11,6 +11,7 @@
 #include "stmt.h"
 #include "symbol.h"
 
+#include "trace.h"
 
 static int explainInstantiationLine = -2;
 static ModuleSymbol* explainInstantiationModule = NULL;
@@ -428,6 +429,9 @@ renameInstantiatedType(TypeSymbol* sym, SymbolMap* subs, FnSymbol* fn) {
 
 FnSymbol*
 instantiate(FnSymbol* fn, SymbolMap* subs, CallExpr* call) {
+  
+  trace_enter(TRACE_INSTANTIATION, fn, "Instantiating function");
+  
   form_Map(SymbolMapElem, e, *subs) {
     if (TypeSymbol* ts = toTypeSymbol(e->value)) {
       if (ts->type->symbol->hasFlag(FLAG_GENERIC))
@@ -437,7 +441,11 @@ instantiate(FnSymbol* fn, SymbolMap* subs, CallExpr* call) {
         e->value = nts;
     }
   }
-
+  
+  const char* fileName = call->astloc.filename == NULL ? NULL : call->astloc.filename + STDLIB_STR_OFFSET;
+  
+  trace(TRACE_INSTANTIATION, "Instantiation caused by %s : %d\n", fileName, call->astloc.lineno);
+  
   //
   // determine root function in the case of partial instantiation
   //
@@ -465,9 +473,16 @@ instantiate(FnSymbol* fn, SymbolMap* subs, CallExpr* call) {
   if (FnSymbol* cached = checkCache(genericsCache, root, &all_subs)) {
     if (cached != (FnSymbol*)gVoid) {
       checkInfiniteWhereInstantiation(cached);
+      
+      trace_leave(TRACE_INSTANTIATION, "Returning cached instantiation.");
+      
       return cached;
-    } else
+    } else {
+      
+      trace_leave(TRACE_INSTANTIATION, "Cached version was gVoid.  Returning NULL.");
+      
       return NULL;
+    }
   }
 
   SET_LINENO(fn);
@@ -636,6 +651,9 @@ instantiate(FnSymbol* fn, SymbolMap* subs, CallExpr* call) {
     // where clause evaluates to false so cache gVoid as a function
     //
     replaceCache(genericsCache, root, (FnSymbol*)gVoid, &all_subs);
+    
+    trace_leave(TRACE_INSTANTIATION, "Where clause failed evaluation.  Chaching gVoid.");
+    
     return NULL;
   }
 
@@ -647,6 +665,8 @@ instantiate(FnSymbol* fn, SymbolMap* subs, CallExpr* call) {
   }
 
   checkInstantiationLimit(fn);
-
+  
+  trace_leave(TRACE_INSTANTIATION, "Successfully instantiated function.");
+  
   return newFn;
 }

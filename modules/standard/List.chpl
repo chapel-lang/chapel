@@ -85,6 +85,10 @@ record list {
       f.write(e);
     }
   }
+  
+//  proc readThis(f: Reader) {
+//  	
+//  }
 }
 
 proc makeList(x ...?k) {

@@ -22,6 +22,8 @@
 
 #include "codegen.h"
 
+#include "../resolution/trace.h"
+
 //
 // The function that represents the compiler-generated entry point
 //
@@ -1368,33 +1370,51 @@ FnSymbol::getFormal(int i) {
   return toArgSymbol(toDefExpr(formals.get(i))->sym);
 }
 
-
 //
 // returns 1 if generic
 // returns 2 if they all have defaults
 //
 static int
 hasGenericArgs(FnSymbol* fn) {
-  bool isGeneric = false;
+  bool isGeneric          = false;
   bool hasGenericDefaults = true;
+  
+  trace_enter(TRACE_GENERICS, fn, "Checking if function is generic");
+  
   for_formals(formal, fn) {
-    if ((formal->type->symbol->hasFlag(FLAG_GENERIC) &&
-         (!formal->type->hasGenericDefaults ||
-          formal->markedGeneric ||
-          formal == fn->_this ||
-          formal->hasFlag(FLAG_IS_MEME))) ||
-        formal->intent == INTENT_PARAM) {
+    bool genericFormal = false;
+    
+    genericFormal =
+      formal->intent == INTENT_PARAM or
+      (formal->type->symbol->hasFlag(FLAG_GENERIC) and
+        (not formal->type->hasGenericDefaults or
+        formal->markedGeneric or
+        formal == fn->_this or
+        formal->hasFlag(FLAG_IS_MEME)));
+    
+    if (formal->intent == INTENT_PARAM) trace(TRACE_GENERICS, "Formal argument has PARAM intent.");
+    
+    if (genericFormal) {
       isGeneric = true;
-      if (!formal->defaultExpr)
+      
+      if (not formal->defaultExpr) {
         hasGenericDefaults = false;
+      }
     }
   }
-  if (isGeneric && !hasGenericDefaults)
+  
+  if (isGeneric and not hasGenericDefaults) {
+    trace_leave(TRACE_GENERICS, "Function was generic but doesn't have generic defaults.");
     return 1;
-  else if (isGeneric && hasGenericDefaults)
+    
+  } else if (isGeneric and hasGenericDefaults) {
+    trace_leave(TRACE_GENERICS, "Function was generic and has generic defaults.");
     return 2;
-  else
+    
+  } else {
+    trace_leave(TRACE_GENERICS, "Function wasn't generic.");
     return 0;
+  }
 }
 
 
@@ -1413,8 +1433,9 @@ bool FnSymbol::tag_generic() {
     // then mark its return type as generic.
     if (retType != dtUnknown && hasFlag(FLAG_TYPE_CONSTRUCTOR)) {
       retType->symbol->addFlag(FLAG_GENERIC);
-      if (result == 2)
+      if (result == 2) {
         retType->hasGenericDefaults = true;
+      }
     }
     return true;
   }
@@ -1903,23 +1924,34 @@ immediate_type(Immediate *imm) {
 }
 
 VarSymbol *new_ImmediateSymbol(Immediate *imm) {
-  VarSymbol *s = uniqueConstantsHash.get(imm);
-  if (s)
-    return s;
-  Type *t = immediate_type(imm);
-  s = new VarSymbol(astr("_literal_", istr(literal_id++)), t);
-  rootModule->block->insertAtTail(new DefExpr(s));
-  s->immediate = new Immediate;
   const size_t bufSize = 512;
   char str[bufSize];
   const char* ss = str;
-  if (imm->const_kind == CONST_KIND_STRING)
+  
+  VarSymbol *s = uniqueConstantsHash.get(imm);
+  
+  if (s) {
+    return s;
+  }
+  
+  Type *t = immediate_type(imm);
+  s       = new VarSymbol(astr("_literal_", istr(literal_id++)), t);
+  rootModule->block->insertAtTail(new DefExpr(s));
+  
+  if (imm->const_kind == CONST_KIND_STRING) {
     ss = imm->v_string;
-  else
+    
+  } else {
     snprint_imm(str, bufSize, *imm);
+  }
+  
   s->cname = astr(ss);
-  *s->immediate = *imm;
+  
+  s->immediate = new Immediate;
+  *(s->immediate) = *imm;
+  
   uniqueConstantsHash.put(s->immediate, s);
+  
   return s;
 }
 

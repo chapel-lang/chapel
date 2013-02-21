@@ -2,16 +2,17 @@
 #include "expr.h"
 #include "symbol.h"
 #include "vec.h"
+#include "view.h"
 
 #include "trace.h"
 
-#define FULL_TRACE true
+#define FULL_TRACE false
 
 #define PRINT_INDENT for (int i = traceIndentLevel; i-- > 0;) printf("\t");
 
 static unsigned int traceIndentLevel  = 0;
 static bool         tracingTargetFn   = false;
-static const char*  targetFnName      = "readThis";
+static const char*  targetFnName      = "==";
 
 static Vec<FnSymbol*> traceStack;
 
@@ -54,6 +55,12 @@ void trace_enter(bool tag, FnSymbol* fn, const char* msg) {
   }
 }
 
+void trace_flags(bool tag) {
+  if (tag and (FULL_TRACE or tracingTargetFn)) {
+    viewFlags(currentTraceFn);
+  }
+}
+
 void trace_leave(bool tag, const char* str, ...) {
   va_list fmt_args;
   
@@ -73,5 +80,11 @@ void trace_leave(bool tag, const char* str, ...) {
     
     tracingTargetFn = not (tracingTargetFn and traceIndentLevel == 0 and strcmp(currentTraceFn->name, targetFnName) == 0);
     currentTraceFn  = traceStack.pop();
+  }
+}
+
+void trace_vcf(bool tag) {
+  if (tag and (FULL_TRACE or tracingTargetFn)) {
+    print_view(currentTraceFn);
   }
 }

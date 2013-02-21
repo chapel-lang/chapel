@@ -1174,18 +1174,19 @@ expandVarArgs(FnSymbol* fn, int numActuals) {
 
   bool genericArg = false;
   for_formals(arg, fn) {
-    if (!genericArg && arg->variableExpr && !isDefExpr(arg->variableExpr->body.tail))
+    if (!genericArg && arg->variableExpr && !isDefExpr(arg->variableExpr->body.tail)) {
       resolveBlock(arg->variableExpr);
+    }
 
     //
     // set genericArg to true if a generic argument appears before the
     // argument with the variable expression
     //
-    if (arg->type->symbol->hasFlag(FLAG_GENERIC))
-      genericArg = true;
+    genericArg = arg->type->symbol->hasFlag(FLAG_GENERIC);
 
-    if (!arg->variableExpr)
+    if (!arg->variableExpr) {
       continue;
+    }
 
     // handle unspecified variable number of arguments
     if (DefExpr* def = toDefExpr(arg->variableExpr->body.tail)) {
@@ -1199,8 +1200,9 @@ expandVarArgs(FnSymbol* fn, int numActuals) {
       }
 
       int numCopies = numActuals - fn->numFormals() + 1;
-      if (numCopies <= 0)
+      if (numCopies <= 0) {
         return NULL;
+      }
 
       SymbolMap map;
       FnSymbol* newFn = fn->copy(&map);
@@ -1213,8 +1215,10 @@ expandVarArgs(FnSymbol* fn, int numActuals) {
 
       // add new function to cache
       Vec<FnSymbol*>* cfns = cache.get(fn);
-      if (!cfns)
+      if (!cfns) {
         cfns = new Vec<FnSymbol*>();
+      }
+      
       cfns->add(newFn);
       cache.put(fn, cfns);
 
@@ -1236,9 +1240,11 @@ expandVarArgs(FnSymbol* fn, int numActuals) {
             new_arg->cname = astr("_e", istr(i), "_", arg->cname);
             arg->defPoint->insertBefore(new_arg_def);
           }
+          
           VarSymbol* var = new VarSymbol(arg->name);
-          if (arg->hasFlag(FLAG_TYPE_VARIABLE))
+          if (arg->hasFlag(FLAG_TYPE_VARIABLE)) {
             var->addFlag(FLAG_TYPE_VARIABLE);
+          }
 
           if (arg->intent == INTENT_OUT || arg->intent == INTENT_INOUT) {
             int i = 1;
@@ -1268,9 +1274,11 @@ expandVarArgs(FnSymbol* fn, int numActuals) {
         }
       }
       
-    } else if (!fn->hasFlag(FLAG_GENERIC))
+    } else if (!fn->hasFlag(FLAG_GENERIC)) {
       INT_FATAL("bad variableExpr");
+    }
   }
+  
   return fn;
 }
 
@@ -1315,7 +1323,7 @@ addCandidate(Vec<FnSymbol*>* candidateFns,
              CallInfo& info) {
   fn = expandVarArgs(fn, info.actuals.n);
 
-  if (!fn) {
+  if (not fn) {
     return;
   }
 
@@ -1326,7 +1334,7 @@ addCandidate(Vec<FnSymbol*>* candidateFns,
   
   bool valid = computeActualFormalMap(fn, formalActuals, actualFormals, info);
 
-  if (!valid) {
+  if (not valid) {
     trace_leave(TRACE_CANDIDATE, "Rejecting due to bad argument/parameter mapping.");
     
     return;
@@ -1595,17 +1603,20 @@ static bool considerParamMatches(Type* actualtype,
   return false;
 }
 
+/*
 static FnSymbol*
 disambiguate_by_match(Vec<FnSymbol*>* candidateFns,
                       Vec<Vec<ArgSymbol*>*>* candidateActualFormals,
                       Vec<Symbol*>* actuals,
                       Vec<ArgSymbol*>** ret_afs,
                       Expr* scope, bool explain) {
+                        
   for (int i = 0; i < candidateFns->n; i++) {
     TRACE_DISAMBIGUATE_BY_MATCH1("Considering fn %d ", i);
     FnSymbol* fn1 = candidateFns->v[i];
     Vec<ArgSymbol*>* actualFormals1 = candidateActualFormals->v[i];
     bool best = true; // is fn1 the best candidate?
+    
     for (int j = 0; j < candidateFns->n; j++) {
       if (i != j) {
         TRACE_DISAMBIGUATE_BY_MATCH1("vs. fn %d:\n", j);
@@ -1616,6 +1627,7 @@ disambiguate_by_match(Vec<FnSymbol*>* candidateFns,
         bool fnPromotes1 = false; // does fn1 require promotion?
         bool fnPromotes2 = false; // does fn2 require promotion?
         Vec<ArgSymbol*>* actualFormals2 = candidateActualFormals->v[j];
+        
         for (int k = 0; k < actualFormals1->n; k++) {
           TRACE_DISAMBIGUATE_BY_MATCH1("...arg %d: ", k);
           Symbol* actual = actuals->v[k];
@@ -1720,10 +1732,12 @@ disambiguate_by_match(Vec<FnSymbol*>* candidateFns,
             TRACE_DISAMBIGUATE_BY_MATCH("N2: fell through\n");
           }
         }
+        
         if (!fnPromotes1 && fnPromotes2) {
           TRACE_DISAMBIGUATE_BY_MATCH("O: one promotes and not the other\n");
           continue;
         }
+        
         if (!worse && equal) {
           if (isMoreVisible(scope, fn1, fn2)) {
             equal = false;
@@ -1745,6 +1759,7 @@ disambiguate_by_match(Vec<FnSymbol*>* candidateFns,
             TRACE_DISAMBIGUATE_BY_MATCH("T: worse\n");
           }
         }
+        
         if (worse || equal) {
           best = false;
           TRACE_DISAMBIGUATE_BY_MATCH("U: not best\n");
@@ -1752,15 +1767,233 @@ disambiguate_by_match(Vec<FnSymbol*>* candidateFns,
         }
       }
     }
+    
     if (best) {
       *ret_afs = actualFormals1;
       return fn1;
     }
   }
+  
   *ret_afs = NULL;
   return NULL;
 }
+*/
 
+static FnSymbol*
+disambiguate_by_match(Vec<FnSymbol*>* candidateFns,
+                      Vec<Vec<ArgSymbol*>*>* candidateActualFormals,
+                      Vec<Symbol*>* actuals,
+                      Vec<ArgSymbol*>** ret_afs,
+                      Expr* scope, bool explain) {
+  
+  for (int i = candidateFns->n; --i >= 0;) {
+    
+    TRACE_DISAMBIGUATE_BY_MATCH1("Considering fn %d ", i);
+    
+    FnSymbol* fn0                   = candidateFns->v[i];
+    Vec<ArgSymbol*>* actualFormals0 = candidateActualFormals->v[i];
+    
+    // Is fn0 the best candidate?
+    bool best = true;
+    
+    for (int j = i; --j >= 0;) {
+      
+      TRACE_DISAMBIGUATE_BY_MATCH1("vs. fn %d:\n", j);
+      
+      FnSymbol* fn1 = candidateFns->v[j];
+      
+      // Is fn0 worse than fn1?
+      bool worse = false;
+      // Is fn1 as good as fn2?
+      bool equal = true;
+      
+      // 1 == fn1, 2 == fn2, -1 == conflicting signals
+      int paramPrefers = 0;
+      
+      // Does fn0 require promotion?
+      bool fnPromotes0 = false;
+      // Does fn1 require promotion?
+      bool fnPromotes1 = false;
+      
+      Vec<ArgSymbol*>* actualFormals1 = candidateActualFormals->v[j];
+      
+      for (int k = actualFormals0->n; --k >= 0;) {
+        
+        TRACE_DISAMBIGUATE_BY_MATCH1("...arg %d: ", k);
+        
+        Symbol* actual = actuals->v[k];
+
+        ArgSymbol* arg0   = actualFormals0->v[k];
+        bool argPromotes0 = false;
+        
+        canDispatch(actual->type, actual, arg0->type, fn0, &argPromotes0);
+        fnPromotes0 |= argPromotes0;
+
+        ArgSymbol* arg1   = actualFormals1->v[k];
+        bool argPromotes1 = false;
+        
+        canDispatch(actual->type, actual, arg1->type, fn1, &argPromotes1);
+        fnPromotes1 |= argPromotes1;
+
+        if (arg0->type == arg1->type and arg0->instantiatedParam and not arg1->instantiatedParam) {
+          equal = false;
+          TRACE_DISAMBIGUATE_BY_MATCH("A: not equal\n");
+          
+        } else if (arg->type == arg2->type and not arg0->instantiatedParam and arg1->instantiatedParam) {
+          worse = true;
+          TRACE_DISAMBIGUATE_BY_MATCH("B: worse\n");
+          
+        } else if (not argPromotes0 and argPromotes1) {
+          equal = false;
+          TRACE_DISAMBIGUATE_BY_MATCH("C: equal\n");
+          
+        } else if (argPromotes0 and not argPromotes1) {
+          worse = true;
+          TRACE_DISAMBIGUATE_BY_MATCH("D: worse\n");
+          
+        } else if (arg0->type == arg1->type and not arg0->instantiatedFrom and arg1->instantiatedFrom) {
+          equal = false;
+          TRACE_DISAMBIGUATE_BY_MATCH("E: not equal\n");
+          
+        } else if (arg0->type == arg1->type and arg0->instantiatedFrom and not arg1->instantiatedFrom) {
+          worse = true;
+          TRACE_DISAMBIGUATE_BY_MATCH("F: worse\n");
+          
+        } else if (arg0->instantiatedFrom != dtAny and arg1->instantiatedFrom == dtAny) {
+          equal = false;
+          TRACE_DISAMBIGUATE_BY_MATCH("G: not equal\n");
+          
+        } else if (arg0->instantiatedFrom == dtAny and arg1->instantiatedFrom != dtAny) {
+          worse = true;
+          TRACE_DISAMBIGUATE_BY_MATCH("H: worse\n");
+          
+        } else if (considerParamMatches(actual->type, arg0->type, arg1->type)) {
+          // The actual matches arg0's type, but not arg1's.
+          
+          TRACE_DISAMBIGUATE_BY_MATCH("In param case\n");
+          
+          if (paramWorks(actual, arg1->type)) {
+            // The actual is a param and works for arg1.
+            
+            if (arg0->instantiatedParam) {
+              // The param works equally well for both, but matches the first
+              // slightly better if we had to decide.
+              registerParamPreference(paramPrefers, 0, "arg0");
+              
+            } else {
+              if (arg1->instantiatedParam) {
+                registerParamPreference(paramPrefers, 1, "arg1");
+                
+              } else {
+                // Neither is a param, but arg0 is an exact type match, so
+                // prefer that one.
+                registerParamPreference(paramPrefers, 0, "arg0");
+              }
+            }
+            
+          } else {
+            equal = false;
+            TRACE_DISAMBIGUATE_BY_MATCH("I8: not equal\n");
+          }
+          
+        } else if (considerParamMatches(actual->type, arg1->type, arg0->type)) {
+          // The actual matches arg1's type, but not arg0's.
+          
+          TRACE_DISAMBIGUATE_BY_MATCH("In param case #2\n");
+          
+          if (paramWorks(actual, arg0->type)) {
+            // The actual is a param and works for arg0.
+            
+            if (arg2->instantiatedParam) {
+              // The param works equally well for both, but matches the second
+              // slightly better if we had to decide.
+              registerParamPreference(paramPrefers, 1, "arg1");
+              
+            } else {
+              if (arg->instantiatedParam) {
+                registerParamPreference(paramPrefers, 0, "arg0");
+                
+              } else {
+                // Neither is a param, but arg1 is an exact type match, so
+                // prefer that one.
+                registerParamPreference(paramPrefers, 1, "arg1");
+              } 
+            }
+            
+          } else {
+            worse = true;
+            TRACE_DISAMBIGUATE_BY_MATCH("J8: worse\n");
+          }
+          
+        } else if (moreSpecific(fn0, arg0->type, arg1->type) and arg0->type != arg1->type) {
+          equal = false;
+          TRACE_DISAMBIGUATE_BY_MATCH("K: not equal\n");
+          
+        } else if (moreSpecific(fn0, arg1->type, arg0->type) and arg0->type != arg1->type) {
+          worse = true;
+          TRACE_DISAMBIGUATE_BY_MATCH("L: worse\n");
+          
+        } else if (is_int_type(arg0->type) and is_uint_type(arg1->type)) {
+          equal = false;
+          TRACE_DISAMBIGUATE_BY_MATCH("M: not equal\n");
+          
+        } else if (is_int_type(arg1->type) and is_uint_type(arg0->type)) {
+          worse = true;
+          TRACE_DISAMBIGUATE_BY_MATCH("N: worse\n");
+          
+        } else {
+          TRACE_DISAMBIGUATE_BY_MATCH("N2: fell through\n");
+        }
+      }
+      
+      if (not fnPromotes0 and fnPromotes1) {
+        TRACE_DISAMBIGUATE_BY_MATCH("O: one promotes and not the other\n");
+        continue;
+      }
+      
+      if (not worse and equal) {
+        if (isMoreVisible(scope, fn0, fn1)) {
+          equal = false;
+          TRACE_DISAMBIGUATE_BY_MATCH("P: not equal\n");
+          
+        } else if (isMoreVisible(scope, fn1, fn0)) {
+          worse = true;
+          TRACE_DISAMBIGUATE_BY_MATCH("Q: worse\n");
+          
+        } else if (paramPrefers == 0) {
+          equal = false;
+          TRACE_DISAMBIGUATE_BY_MATCH("R1: param breaks tie for 1\n");
+          
+        } else if (paramPrefers == 1) {
+          worse = true;
+          TRACE_DISAMBIGUATE_BY_MATCH("R2: param breaks tie for 2\n");
+          
+        } else if (fn0->where and not fn1->where) {
+          equal = false;
+          TRACE_DISAMBIGUATE_BY_MATCH("S: not equal\n");
+          
+        } else if (not fn0->where and fn1->where) {
+          worse = true;
+          TRACE_DISAMBIGUATE_BY_MATCH("T: worse\n");
+        }
+      }
+      
+      if (worse or equal) {
+        best = false;
+        TRACE_DISAMBIGUATE_BY_MATCH("U: not best\n");
+        break;
+      }
+    }
+    
+    if (best) {
+      *ret_afs = actualFormals1;
+      return fn0;
+    }
+  }
+  
+  *ret_afs = NULL;
+  return NULL;
+}
 
 static bool
 explainCallMatch(CallExpr* call) {
@@ -2238,15 +2471,17 @@ gatherCandidates(Vec<FnSymbol*>& candidateFns,
                  Vec<Vec<ArgSymbol*>*>& candidateActualFormals,
                  Vec<FnSymbol*>& visibleFns, CallInfo& info)
 {
+  bool skip;
+  
   // Search user-defined functions first.
   forv_Vec(FnSymbol, visibleFn, visibleFns) {
     if (visibleFn->hasFlag(FLAG_TEMP)) {
       continue;
     }
     
-    if (info.call->methodTag &&
-        ! (visibleFn->hasFlag(FLAG_NO_PARENS) ||
-           visibleFn->hasFlag(FLAG_TYPE_CONSTRUCTOR))) {
+    if (info.call->methodTag and
+        not (visibleFn->hasFlag(FLAG_NO_PARENS) or
+             visibleFn->hasFlag(FLAG_TYPE_CONSTRUCTOR))) {
       continue;
     }
     
@@ -2255,26 +2490,33 @@ gatherCandidates(Vec<FnSymbol*>& candidateFns,
       printf("Considering function %s\n", visibleFn->stringLoc());
     }
 #endif
+
     addCandidate(&candidateFns, &candidateActualFormals, visibleFn, info);
   }
 
   // Return if we got a successful match with user-defined functions.
-  if (candidateFns.n)
+  if (candidateFns.n) {
     return;
+  }
 
   // No.  So search compiler-defined functions.
   forv_Vec(FnSymbol, visibleFn, visibleFns) {
-    if (!visibleFn->hasFlag(FLAG_TEMP))
+    if (!visibleFn->hasFlag(FLAG_TEMP)) {
       continue;
-    if (info.call->methodTag &&
-        ! (visibleFn->hasFlag(FLAG_NO_PARENS) ||
-           visibleFn->hasFlag(FLAG_TYPE_CONSTRUCTOR)))
+    }
+    
+    if (info.call->methodTag and
+        not (visibleFn->hasFlag(FLAG_NO_PARENS) or
+             visibleFn->hasFlag(FLAG_TYPE_CONSTRUCTOR))) {
       continue;
+    }
+    
 #ifdef ENABLE_TRACING_OF_DISAMBIGUATION
     if (explainCallLine && explainCallMatch(info.call)) {
       printf("Considering function %s\n", visibleFn->stringLoc());
     }
 #endif
+
     addCandidate(&candidateFns, &candidateActualFormals, visibleFn, info);
   }
 }
@@ -2283,14 +2525,19 @@ void
 resolveCall(CallExpr* call, bool errorCheck) {
   if (!call->primitive) {
     resolveNormalCall(call, errorCheck);
+    
   } else if (call->isPrimitive(PRIM_TUPLE_AND_EXPAND)) {
     resolveTupleAndExpand(call);
+    
   } else if (call->isPrimitive(PRIM_TUPLE_EXPAND)) {
     resolveTupleExpand(call);
+    
   } else if (call->isPrimitive(PRIM_SET_MEMBER)) {
     resolveSetMember(call);
+    
   } else if (call->isPrimitive(PRIM_MOVE)) {
     resolveMove(call);
+    
   } else if (call->isPrimitive(PRIM_INIT)) {
     resolveDefaultGenericType(call);
   }
@@ -4076,8 +4323,8 @@ static void foldEnumOp(int op, EnumSymbol *e1, EnumSymbol *e2, Immediate *imm) {
 }
 
 #define FOLD_CALL1(prim)                                                \
-  if (SymExpr* sym = toSymExpr(call->get(1))) {            \
-    if (VarSymbol* lhs = toVarSymbol(sym->var)) {          \
+  if (SymExpr* sym = toSymExpr(call->get(1))) {                         \
+    if (VarSymbol* lhs = toVarSymbol(sym->var)) {                       \
       if (lhs->immediate) {                                             \
         Immediate i3;                                                   \
         fold_constant(prim, lhs->immediate, NULL, &i3);                 \
@@ -4088,11 +4335,11 @@ static void foldEnumOp(int op, EnumSymbol *e1, EnumSymbol *e2, Immediate *imm) {
   }
 
 #define FOLD_CALL2(prim)                                                \
-  if (SymExpr* sym = toSymExpr(call->get(1))) {            \
-    if (VarSymbol* lhs = toVarSymbol(sym->var)) {          \
+  if (SymExpr* sym = toSymExpr(call->get(1))) {                         \
+    if (VarSymbol* lhs = toVarSymbol(sym->var)) {                       \
       if (lhs->immediate) {                                             \
-        if (SymExpr* sym = toSymExpr(call->get(2))) {      \
-          if (VarSymbol* rhs = toVarSymbol(sym->var)) {    \
+        if (SymExpr* sym = toSymExpr(call->get(2))) {                   \
+          if (VarSymbol* rhs = toVarSymbol(sym->var)) {                 \
             if (rhs->immediate) {                                       \
               Immediate i3;                                             \
               fold_constant(prim, lhs->immediate, rhs->immediate, &i3); \
@@ -4102,9 +4349,9 @@ static void foldEnumOp(int op, EnumSymbol *e1, EnumSymbol *e2, Immediate *imm) {
           }                                                             \
         }                                                               \
       }                                                                 \
-    } else if (EnumSymbol* lhs = toEnumSymbol(sym->var)) { \
-      if (SymExpr* sym = toSymExpr(call->get(2))) {        \
-        if (EnumSymbol* rhs = toEnumSymbol(sym->var)) {    \
+    } else if (EnumSymbol* lhs = toEnumSymbol(sym->var)) {              \
+      if (SymExpr* sym = toSymExpr(call->get(2))) {                     \
+        if (EnumSymbol* rhs = toEnumSymbol(sym->var)) {                 \
           Immediate imm;                                                \
           foldEnumOp(prim, lhs, rhs, &imm);                             \
           result = new SymExpr(new_ImmediateSymbol(&imm));              \
@@ -4211,18 +4458,34 @@ postFold(Expr* expr) {
       bool set = false;
       if (SymExpr* lhs = toSymExpr(call->get(1))) {
         if (lhs->var->hasFlag(FLAG_MAYBE_PARAM) || lhs->var->isParameter()) {
-          if (paramMap.get(lhs->var))
+          if (paramMap.get(lhs->var)) {
             INT_FATAL(call, "parameter set multiple times");
-          if (VarSymbol* lhsVar = toVarSymbol(lhs->var))
+          }
+          
+          if (VarSymbol* lhsVar = toVarSymbol(lhs->var)) {
             INT_ASSERT(!lhsVar->immediate);
+          }
+          
           if (SymExpr* rhs = toSymExpr(call->get(2))) {
+            
+            trace(TRACE_RESOLVE, "Right-hand side is a SymExpr.");
+            
             if (VarSymbol* rhsVar = toVarSymbol(rhs->var)) {
+              
+              trace(TRACE_RESOLVE, "Right-hand side is a VarSymbol.");
+              
               if (rhsVar->immediate) {
+                trace(TRACE_RESOLVE, "Right-hand side is an immediate.");
+                
                 paramMap.put(lhs->var, rhsVar);
                 lhs->var->defPoint->remove();
                 makeNoop(call);
                 set = true;
+                
+              } else {
+                trace(TRACE_RESOLVE, "Right-hand side is NOT an immediate.");
               }
+              
             } else if (EnumSymbol* rhsv = toEnumSymbol(rhs->var)) {
               paramMap.put(lhs->var, rhsv);
               lhs->var->defPoint->remove();
@@ -4230,8 +4493,12 @@ postFold(Expr* expr) {
               set = true;
             } 
           }
-          if (!set && lhs->var->isParameter())
+          
+          if (!set && lhs->var->isParameter()) {
+            trace_vcf(TRACE_VERBOSE);
+            
             USR_FATAL(call, "Initializing parameter '%s' to value not known at compile time", lhs->var->name);
+          }
         }
         if (!set) {
           if (lhs->var->hasFlag(FLAG_MAYBE_TYPE)) {
@@ -4750,6 +5017,13 @@ resolveFns(FnSymbol* fn) {
   
   trace_enter(TRACE_RESOLVE, fn, "Resolving function");
   
+  trace_flags(TRACE_VERBOSE);
+  trace_vcf(TRACE_VERBOSE);
+  
+  if (fn->instantiatedFrom) {
+    trace(TRACE_RESOLVE, "Function was instantiated from a generic.");
+  }
+  
   if (resolvedFns.count(fn) != 0) {
     trace_leave(TRACE_RESOLVE, "Function has been visited.");
     return;
@@ -5235,6 +5509,7 @@ resolve() {
   printf("#######################\n");
   printf("# Function Resolution #\n");
   printf("#######################\n");
+  printf("\n");
   
   parseExplainFlag(fExplainCall, &explainCallLine, &explainCallModule);
 
@@ -5242,6 +5517,7 @@ resolve() {
   printf("########################\n");
   printf("# Computing Module Set #\n");
   printf("########################\n");
+  printf("\n");
 
   computeStandardModuleSet();
   
@@ -5259,6 +5535,7 @@ resolve() {
   printf("##############################\n");
   printf("# Unmarking Default Generics #\n");
   printf("##############################\n");
+  printf("\n");
   
   unmarkDefaultedGenerics();
   
@@ -5395,26 +5672,44 @@ static void unmarkDefaultedGenerics() {
   // '?' (queries) to mark such a type as generic.
   //
   forv_Vec(FnSymbol, fn, gFnSymbols) {
+    
+    trace_enter(TRACE_GENERICS, fn, "Checking if we should remove FLAG_GENERIC");
+    
     bool unmark = fn->hasFlag(FLAG_GENERIC);
-    for_formals(formal, fn) {
-      if (formal->type->hasGenericDefaults) {
-        if (!formal->markedGeneric &&
-            formal != fn->_this &&
-            !formal->hasFlag(FLAG_IS_MEME)) {
-          SET_LINENO(formal);
-          formal->typeExpr = new BlockStmt(new CallExpr(formal->type->defaultTypeConstructor));
-          insert_help(formal->typeExpr, NULL, formal);
-          formal->type = dtUnknown;
-        } else {
+    
+    if (unmark) {
+      for_formals(formal, fn) {
+        if (formal->type->hasGenericDefaults) {
+          if (!formal->markedGeneric &&
+              formal != fn->_this &&
+              !formal->hasFlag(FLAG_IS_MEME)) {
+            SET_LINENO(formal);
+            formal->typeExpr = new BlockStmt(new CallExpr(formal->type->defaultTypeConstructor));
+            insert_help(formal->typeExpr, NULL, formal);
+            formal->type = dtUnknown;
+            
+          } else {
+            unmark = false;
+          }
+          
+        } else if (formal->type->symbol->hasFlag(FLAG_GENERIC) || formal->intent == INTENT_PARAM) {
           unmark = false;
         }
-      } else if (formal->type->symbol->hasFlag(FLAG_GENERIC) || formal->intent == INTENT_PARAM) {
-        unmark = false;
       }
-    }
-    if (unmark) {
-      fn->removeFlag(FLAG_GENERIC);
-      INT_ASSERT(false);
+      
+      if (unmark) {
+        trace_leave(TRACE_GENERICS, "Removing FLAG_GENERIC.");
+        fn->removeFlag(FLAG_GENERIC);
+        INT_ASSERT(false);
+        
+      } else {
+        trace_leave(TRACE_GENERICS, "Keeping FLAG_GENERIC.");
+      }
+      
+    } else {
+      if (fn->instantiatedFrom) trace(TRACE_GENERICS, "Function was instantiated from a generic.");
+      
+      trace_leave(TRACE_GENERICS, "Function doesn't have FLAG_GENERIC set.");
     }
   }
 }
@@ -5426,8 +5721,10 @@ static void resolveUses(ModuleSymbol* mod) {
   // so that the types of globals are ready when we need them.
   
   // Test and set to break loops and prevent infinite recursion.
-  if (initMods.set_in(mod))
+  if (initMods.set_in(mod)) {
     return;
+  }
+  
   initMods.set_add(mod);
 
   // I use my parent implicitly.
