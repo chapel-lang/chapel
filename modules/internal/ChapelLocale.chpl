@@ -51,7 +51,7 @@ module ChapelLocale {
     const numCores: int;
 
     proc locale() {
-      halt("locales cannot be created");
+      compilerError("cannot create instances of the 'locale' class");
     }
   
     // In legacy code, the id accessor is used to obtain the node id, so it

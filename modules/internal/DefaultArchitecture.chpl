@@ -26,7 +26,7 @@ module DefaultArchitecture {
     // and the node ID portion of any wide pointer referring to it.
     proc DefaultNode() {
       if doneCreatingLocales {
-        halt("locales cannot be created");
+        halt("Cannot create additional DefaultNode instances");
       }
 
       // chpl_nodeID is the node ID associated with the running image.
