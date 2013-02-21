@@ -1008,11 +1008,14 @@ isDispatchParent(Type* t, Type* pt) {
 
 static bool
 moreSpecific(FnSymbol* fn, Type* actualType, Type* formalType) {
-  if (canDispatch(actualType, NULL, formalType, fn))
+  if (canDispatch(actualType, NULL, formalType, fn)) {
     return true;
+  }
+  
   if (canInstantiate(actualType, formalType)) {
     return true;
   }
+  
   return false;
 }
 
@@ -1839,7 +1842,7 @@ disambiguate_by_match(Vec<FnSymbol*>* candidateFns,
           equal = false;
           TRACE_DISAMBIGUATE_BY_MATCH("A: not equal\n");
           
-        } else if (arg->type == arg2->type and not arg0->instantiatedParam and arg1->instantiatedParam) {
+        } else if (arg0->type == arg1->type and not arg0->instantiatedParam and arg1->instantiatedParam) {
           worse = true;
           TRACE_DISAMBIGUATE_BY_MATCH("B: worse\n");
           
@@ -1904,13 +1907,13 @@ disambiguate_by_match(Vec<FnSymbol*>* candidateFns,
           if (paramWorks(actual, arg0->type)) {
             // The actual is a param and works for arg0.
             
-            if (arg2->instantiatedParam) {
+            if (arg1->instantiatedParam) {
               // The param works equally well for both, but matches the second
               // slightly better if we had to decide.
               registerParamPreference(paramPrefers, 1, "arg1");
               
             } else {
-              if (arg->instantiatedParam) {
+              if (arg0->instantiatedParam) {
                 registerParamPreference(paramPrefers, 0, "arg0");
                 
               } else {
@@ -1986,7 +1989,7 @@ disambiguate_by_match(Vec<FnSymbol*>* candidateFns,
     }
     
     if (best) {
-      *ret_afs = actualFormals1;
+      *ret_afs = actualFormals0;
       return fn0;
     }
   }
@@ -2471,8 +2474,6 @@ gatherCandidates(Vec<FnSymbol*>& candidateFns,
                  Vec<Vec<ArgSymbol*>*>& candidateActualFormals,
                  Vec<FnSymbol*>& visibleFns, CallInfo& info)
 {
-  bool skip;
-  
   // Search user-defined functions first.
   forv_Vec(FnSymbol, visibleFn, visibleFns) {
     if (visibleFn->hasFlag(FLAG_TEMP)) {
