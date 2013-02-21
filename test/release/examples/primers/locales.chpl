@@ -150,7 +150,7 @@ writeln();
 // which the variable is stored and the task is executing.  This is
 // what is known as a global namespace (or global address space)
 // quality in a language.  The fact that locality within a Chapel
-// program can be sematnically reasoned about by the programmer (i.e.,
+// program can be semantically reasoned about by the programmer (i.e.,
 // "x is on Locale[0], y is on Locale[1]") makes it a PGAS or
 // Partitioned Global Address Space language (though we prefer the
 // less broadly-used term "Partitioned Global Namespace").

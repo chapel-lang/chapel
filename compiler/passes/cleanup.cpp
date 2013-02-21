@@ -14,6 +14,9 @@
 #include "symbol.h"
 
 
+static void addTaskMgtInOnBlocks();
+
+
 //
 // Move the statements in a block out of the block
 //
@@ -160,6 +163,50 @@ static void change_cast_in_where(FnSymbol* fn) {
 }
 
 
+// MAGIC: 'on' blocks automatically call taskInit() and taskExit() w.r.t. the current 
+// sublocale, as in:
+// proc on_fn(<args>) : void {
+//  ChapelLocale.here.getChild(__primitive("_get_subloc_id").taskInit();
+//  <statements>
+//  ChapelLocale.here.getChild(__primitive("_get_subloc_id").taskExit();
+//  return;
+// }
+//
+// This transformation needs to take place before scopeResolve() 
+// so "here" gets resolved.
+//
+static void addTaskMgtInOnBlocks() {
+  forv_Vec(BlockStmt, block, gBlockStmts) {
+    if (CallExpr* info = block->blockInfo)
+      if (info->isPrimitive(PRIM_BLOCK_ON) ||
+          info->isPrimitive(PRIM_BLOCK_ON_NB)) {
+
+        SET_LINENO(block);
+
+        // Very special case:
+        // The private variable "here" is first initialized in the DefaultRootLocale constructor.
+        // We can't try to look up a sublocale in a "here" locale that doesn't exist, so
+        // we just leave that code out in the DefaultRootLocale constructor.
+        // A better approach would be to perform initialization of all node-private variables
+        // (including "here") before the program starts.  That has some advantage w.r.t. 
+        // program design, but also would make the DefaultRootLocale constructor trivial.
+        if (!strcmp(block->parentSymbol->name, "DefaultRootLocale"))
+          continue;
+
+        // This is an on or on ... begin block.
+        CallExpr* here = new CallExpr("chpl_localeID_to_locale",
+                                      new CallExpr(PRIM_LOCALE_ID));
+        CallExpr* taskInitPartial = new CallExpr(".", here,
+                                                 new_StringSymbol("taskInit"));
+        block->insertAtHead(new CallExpr(taskInitPartial));
+
+        CallExpr* taskExitPartial = new CallExpr(".", here->copy(),
+                                                 new_StringSymbol("taskExit"));
+        block->insertAtTail(new CallExpr(taskExitPartial));
+      }
+  }
+}
+
 void cleanup(void) {
   Vec<BaseAST*> asts;
   collect_asts(rootModule, asts);
@@ -186,4 +233,6 @@ void cleanup(void) {
       }
     }
   }
+
+  addTaskMgtInOnBlocks();
 }

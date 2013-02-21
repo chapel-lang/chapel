@@ -3,8 +3,6 @@
 pragma "no use ChapelStandard"
 module ChapelLocale {
 
-  use DefaultRectangular;
-
   // The chpl_localeID_t type is used internally.  It should not be exposed to the user.
   // It allows the compiler to parse out the fields of the localeID portion
   // of a wide pointer.
@@ -36,40 +34,57 @@ module ChapelLocale {
     return ! (a == b);
 
 
-  const emptyLocaleSpace: domain(1) = {1..0};
-  const emptyLocales: [emptyLocaleSpace] locale;
-
   //
   // An abstract class. Specifies the required locale interface.
   // Each locale implementation must inherit from this class.
   //
   class locale {
-    // We may want to let subclasses choose how to implement 'id' and 'name'.
-    var chpl_id: int;
-    const name: string;
+    //- Constructor
+    proc locale() {
+// Now we find we have to create locales early, so _here can be non-nil.
+//      halt("locales cannot be created");
+    }
+  
+    //------------------------------------------------------------------------{
+    //- Fields and accessors defined for all locale types (not overridable)
+    //-
+
+    // Every locale has a parent, except for the root locale.
+    // The parent of the root locale is nil (by definition).
+    const parent : locale;
+
     // To be removed from the required interface once legacy code is adjusted.
     const numCores: int;
 
-    proc locale() {
-      halt("locales cannot be created");
-    }
-  
     // In legacy code, the id accessor is used to obtain the node id, so it
     // should probably be renamed as node_id.
     // As an accessor, it is statically bound, which is also a problem....
-    proc id return chpl_id;
-  
-    proc readWriteThis(f) {
-      halt("Pure virtual function called.");
+    proc id : int return chpl_id();
+    proc name return chpl_name();
+
+    //------------------------------------------------------------------------{
+    //- User Interface Methods (overridable)
+    //-
+
+    // Returns a globally unique locale identifier.
+    // This routine is dynamically dispatched, so it can be overridden in concrete classes.
+    proc chpl_id() : int {
+      _throwPVFCError();
+      return -1;
     }
 
-    proc getChildSpace() {
-      halt("Pure virtual function called.");
-      return emptyLocaleSpace;
-    }      
-  
+    proc chpl_name() : string {
+      _throwPVFCError();
+      return "";
+    }
+
+    // A useful default definition is provided (not pure virtual).
+    proc readWriteThis(f) {
+      f <~> name;
+    }
+
     proc getChildCount() : int {
-      halt("Pure virtual function called.");
+      _throwPVFCError();
       return 0;
     }      
   
@@ -82,38 +97,60 @@ module ChapelLocale {
   
     proc addChild(loc:locale)
     {
-      halt("Pure virtual function called.");
+      _throwPVFCError();
     }
   
     proc getChild(idx:int) : locale {
-      halt("Pure virtual function called.");
+// Needs to be enabled for now, because tasking code calls getChild directly.
+// Probably can be reinstated after we call through rootLocale.localeIDtoLocale().
+//      _throwPVFCError();
       return this;
     }
 
 // Part of the required locale interface.
 // Commented out because presently iterators are statically bound.
 //    iter getChildren() : locale  {
-//      halt("Pure virtual function called.");
+//    _throwPVFCError();
 //      yield 0;
 //    }
 
-    // This is a special interface used to set up the global Locales array
-    // for backward compatibility.  When that array is removed, this routine
-    // may be removed as well.
-    proc getChildArray() {
-      halt("Pure virtual function called.");
-      return emptyLocales;
-    }
+    //------------------------------------------------------------------------}
 
+
+    //------------------------------------------------------------------------{
+    //- Compiler Interface Methods (overridable)
+    //-
+
+    // Part of the required locale interface.
+    // These routines are called by the compiler to implement locale-aware task control.
+    // They should be overridden in concrete locale classes as necessary.
+    proc taskInit() : void {}
+    proc taskExit() : void {}
+    //------------------------------------------------------------------------}
   }
 
   // TODO: This wants to live in RootLocale.chpl
+  // It is here because it needs to be defined before the array return type
+  // is used in the definition of class RootLocale.
   var rootLocale : locale = nil;
 
-  pragma "private" var _here: locale;
+  // Unfortunately, we need a value for _here before the architecture is defined.
+  // This is due to the fact that _here is used for memory and task control already
+  // in setting up the default architecture itself.
+  // This should probably be renamed _dummyLocale or something representative.
+  pragma "private" var _here: locale = new locale();
 
+  // This is obsolete.  Here now means the locale on which you are executing,
+  // sublocale and all.
   proc here return _here;
   
+  proc chpl_getPrivatizedCopy(type objectType, objectPid:int): objectType
+    return __primitive("chpl_getPrivatizedClass", nil:objectType, objectPid);
+  
+
+//################################################################################{
+//# Locale diagnostics
+//#
 
   proc locale.totalThreads() {
     var totalThreads: int;
@@ -149,8 +186,7 @@ module ChapelLocale {
     on this do blockedTasks = chpl_task_getNumBlockedTasks();
     return blockedTasks;
   }
-  
-  proc chpl_getPrivatizedCopy(type objectType, objectPid:int): objectType
-    return __primitive("chpl_getPrivatizedClass", nil:objectType, objectPid);
-  
+
+//################################################################################}
+
 }

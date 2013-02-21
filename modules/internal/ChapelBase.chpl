@@ -106,7 +106,11 @@ module ChapelBase {
   proc _throwOpError(param op: string) {
       compilerError("illegal use of '", op, "' on operands of type uint(64) and signed integer");
   }
-  
+
+  proc _throwPVFCError() {
+    halt("Pure virtual function called.");
+  }
+
   proc compilerError(param x:string ...?n, param errorDepth:int) {
     __primitive("error", (...x));
   }
@@ -155,7 +159,7 @@ module ChapelBase {
   
   proc compilerAssert(param test: bool, param arg1, param arg2, param arg3, param arg4, param arg5, argrest...)
   { if !test then compilerError("assert failed - ", arg1, arg2, arg3, arg4, arg5, " [...]"); }
-  
+
   proc typeToString(type t) param {
     return __primitive("typeToString", t);
   }

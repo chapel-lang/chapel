@@ -180,6 +180,7 @@ enum PrimitiveTag {
   PRIM_LOC_GET_SUBLOC,          // Get the sublocale part of a c_locale_t.
   PRIM_LOC_SET_SUBLOC,          // Set <ditto>.
 
+  PRIM_LOCALE_ID,				// Returns the current locale ID (nodeID + sublocID).
   PRIM_NODE_ID,                 // Returns the current (GASNet) node ID.
   PRIM_ON_LOCALE_NUM,           // specify a particular (node,subloc) for an on clause.
   PRIM_SET_SUBLOC_ID,           // Set the sublocale ID in task-private data.

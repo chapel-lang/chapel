@@ -129,8 +129,7 @@ static void create_block_fn_wrapper(CallExpr* fcall, ClassType* ctype, VarSymbol
   ModuleSymbol* mod = fcall->getModule();
   FnSymbol* fn = fcall->isResolved();
   FnSymbol *wrap_fn = new FnSymbol( astr("wrap", fn->name));
-
-  // Add special flags to the wrapper-function as appropriate.
+  // Add a special flag to the wrapper-function as appropriate.
   // These control aspects of code generation.
   if (fn->hasFlag(FLAG_GPU_ON))                 wrap_fn->addFlag(FLAG_GPU_CALL);
   if (fn->hasFlag(FLAG_ON))                     wrap_fn->addFlag(FLAG_ON_BLOCK);

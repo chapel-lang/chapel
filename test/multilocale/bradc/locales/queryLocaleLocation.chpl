@@ -12,9 +12,3 @@ for i in 0..numLocales-1 do
   writeln("Locale # ", i, " is on locale: ", Locales(i).id.locale.id);
 writeln();
 
-// This is a little suspect since it relies on internal knowledge;
-// however, it's a nice sanity check that we aren't pulling any
-// tricks within the compiler:
-for i in 0..numLocales-1 do
-  writeln("Locale # ", i, " is on locale: ", Locales(i).chpl_id.locale.id);
-writeln();

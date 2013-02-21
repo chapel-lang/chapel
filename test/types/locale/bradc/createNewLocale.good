@@ -1,1 +1,1 @@
-createNewLocale.chpl:1: error: halt reached - locales cannot be created
+myNewLoc = createNewLocale.chpl:2: error: halt reached - Pure virtual function called.

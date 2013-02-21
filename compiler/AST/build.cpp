@@ -206,26 +206,33 @@ Expr* buildStringLiteral(const char* pch) {
 
 
 Expr* buildDotExpr(BaseAST* base, const char* member) {
-  // The following optimization was added to avoid calling chpl_int_to_locale
+  // The following optimization was added to avoid calling chpl_localeID_to_locale
   // when all we end up doing is extracting the locale id, thus:
-  // OPTIMIZATION: chpl_int_to_locale(_get_locale_id(x)).id ==> _get_locale_id(x)
+  // OPTIMIZATION: chpl_localeID_to_locale(_get_locale_id(x)).id ==> _get_locale_id(x)
 
   // This broke when realms were removed and uid was renamed as id.
   // It might be better coding practice to label very special module code
   // (i.e. types, fields, values known to the compiler) using pragmas. <hilde>
   // TODO: We shouldn't have optimizations in the parser.
 
+#if 0
+  // The optimization is disabled because we no longer have a predefined notion of
+  // what a locale returns as an ID.  We *must* call the member function to get
+  // the right answer.
+
   // Now "id" returns just the node ID portion of a locale ID.
   if (!strcmp("id", member))
     if (CallExpr* intToLocale = toCallExpr(base))
-      if (intToLocale->isNamed("chpl_int_to_locale"))
+      if (intToLocale->isNamed("chpl_localeID_to_locale"))
         if (CallExpr* getLocale = toCallExpr(intToLocale->get(1)))
           if (getLocale->isPrimitive(PRIM_WIDE_GET_LOCALE))
             return new CallExpr(PRIM_WIDE_GET_NODE, getLocale->get(1)->remove());
+#endif
 
-  // MAGIC: "x.locale" member access expressions are rendered as chpl_int_to_locale(_wide_get_node(x)).
+  // MAGIC: "x.locale" member access expressions are rendered as
+  // chpl_localeID_to_locale(_wide_get_node(x)).
   if (!strcmp("locale", member))
-    return new CallExpr("chpl_int_to_locale", 
+    return new CallExpr("chpl_localeID_to_locale", 
                         new CallExpr(PRIM_WIDE_GET_LOCALE, base));
   else
     return new CallExpr(".", base, new_StringSymbol(member));

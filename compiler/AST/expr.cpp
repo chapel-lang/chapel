@@ -4126,6 +4126,9 @@ GenRet CallExpr::codegen() {
     case PRIM_GC_CLEANUP:
       INT_FATAL("GC primitives not supported");
       break;
+    case PRIM_LOCALE_ID:
+      ret = codegenLocaleID(codegenGetNodeID(), codegenGetSublocID());
+      break;
     case PRIM_NODE_ID:
       ret = codegenGetNodeID();
       break;
