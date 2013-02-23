@@ -864,6 +864,10 @@ static void codegen_header() {
     fprintf(hdrfile, "\nextern const int chpl_mem_numDescs;\n");
     fprintf(hdrfile, "#endif\n");
   }
+
+  if (hdrfile) {
+    fprintf(hdrfile, "#include \"chpl-gen-includes.h\"\n");
+  }
 }
 
 // Sometimes we have to define a type while code generating.

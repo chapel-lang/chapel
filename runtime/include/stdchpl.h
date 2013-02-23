@@ -43,6 +43,4 @@
 #include "bulkget.h"
 #include "chplgmp.h"
 
-#include "chpl-comm-compiler-macros.h"
-
 #endif

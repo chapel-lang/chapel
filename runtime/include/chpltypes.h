@@ -58,11 +58,8 @@ typedef int32_t c_subloc_t;
 // It is unfortunate that we need this definition in parallel with the module definition.
 // If runtime routines that depend on c_locale_t can be eliminated, then this
 // definition can be moved entirely within the module code.
-typedef struct
-{
-  c_nodeid_t node;    // This is the comm node index.
-  c_subloc_t subloc;  // This carries the sublocale index if there is one, otherwise zero.
-} c_locale_t;
+typedef int64_t c_locale_t;
+
 
 //extern const c_locale_t _rootLocaleID;
 

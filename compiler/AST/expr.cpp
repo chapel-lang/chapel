@@ -27,7 +27,7 @@ static GenRet codegenRaddr(GenRet wide);
 static GenRet codegenRlocaleMaybePtr(GenRet wide);
 static GenRet codegenRlocale(GenRet wide);
 static GenRet codegenRnode(GenRet wide);
-static GenRet codegenRsubloc(GenRet wide);
+//static GenRet codegenRsubloc(GenRet wide);
 
 static GenRet codegenZero();
 static GenRet codegenOne();
@@ -567,11 +567,22 @@ GenRet codegenGetNodeID(void)
   return ret;
 }
 
+#if 0
 // A construct which gives the current sublocale ID.
 static
 GenRet codegenGetSublocID(void)
 {
   GenRet ret =  codegenCallExpr("chpl_task_getSubLoc");
+  ret.chplType = LOCALE_ID_TYPE;
+  return ret;
+}
+#endif
+
+// A construct which gives the current locale ID.
+static
+GenRet codegenGetLocaleID(void)
+{
+  GenRet ret =  codegenCallExpr("chpl_gen_getLocaleID");
   ret.chplType = SUBLOC_ID_TYPE;
   return ret;
 }
@@ -604,15 +615,6 @@ GenRet codegenLocaleID(GenRet node, GenRet subloc)
   }
   ret.chplType = LOCALE_ID_TYPE;
   return ret;
-}
-
-// A construct which gives the current localeID (c_localeID_t)
-// This is a partial implementation; it always uses 0 for the sublocale
-// portion of the locale ID.
-static
-GenRet codegenGetLocaleID(void)
-{
-  return codegenLocaleID(codegenGetNodeID(), codegenZero());
 }
 
 static
@@ -764,6 +766,7 @@ static GenRet codegenRnode(GenRet wide){
   return ret;
 }
 
+#if 0
 static GenRet codegenRsubloc(GenRet wide){
   GenInfo* info = gGenInfo;
   GenRet ret = codegenRlocale(wide);
@@ -780,6 +783,7 @@ static GenRet codegenRsubloc(GenRet wide){
   }
   return ret;
 }
+#endif
 
 static const int field_normal = 0;
 static const int field_cid = 1;
@@ -2893,6 +2897,7 @@ GenRet CallExpr::codegen() {
           }
           break;
         }
+#if 0
         if (call->isPrimitive(PRIM_WIDE_GET_SUBLOC)) {
           Type* type = dtLocaleID->getField("subloc")->typeInfo();
           if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
@@ -2917,6 +2922,7 @@ GenRet CallExpr::codegen() {
           }
           break;
         }
+#endif
         if (call->isPrimitive(PRIM_DEREF)) {
           if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE) ||
               call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
@@ -3821,11 +3827,11 @@ GenRet CallExpr::codegen() {
     case PRIM_SET_SERIAL:
       codegenCall("chpl_task_setSerial", codegenValue(get(1)));
       break;
-    case PRIM_GET_SUBLOC_ID:
-      ret = codegenCallExpr("chpl_task_getSubLoc");
+    case PRIM_TASK_SET_LOCALE:
+      codegenCall("chpl_gen_setLocaleID", codegenValue(get(1)));
       break;
-    case PRIM_SET_SUBLOC_ID:
-      codegenCall("chpl_task_setSubLoc", codegenValue(get(1)));
+    case PRIM_TASK_GET_LOCALE:
+      ret = codegenCallExpr("chpl_gen_getLocaleID");
       break;
     case PRIM_LOC_GET_NODE:
       ret = codegenValue(codegenFieldPtr(get(1), "node"));
@@ -4127,7 +4133,7 @@ GenRet CallExpr::codegen() {
       INT_FATAL("GC primitives not supported");
       break;
     case PRIM_LOCALE_ID:
-      ret = codegenLocaleID(codegenGetNodeID(), codegenGetSublocID());
+      ret = codegenGetLocaleID();
       break;
     case PRIM_NODE_ID:
       ret = codegenGetNodeID();

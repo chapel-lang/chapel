@@ -166,9 +166,9 @@ static void change_cast_in_where(FnSymbol* fn) {
 // MAGIC: 'on' blocks automatically call taskInit() and taskExit() w.r.t. the current 
 // sublocale, as in:
 // proc on_fn(<args>) : void {
-//  ChapelLocale.here.getChild(__primitive("_get_subloc_id").taskInit();
+//  ChapelLocale.here.taskInit();
 //  <statements>
-//  ChapelLocale.here.getChild(__primitive("_get_subloc_id").taskExit();
+//  ChapelLocale.here.taskExit();
 //  return;
 // }
 //

@@ -16,7 +16,7 @@
 //
 extern c_nodeid_t chpl_nodeID; // unique ID for each node: 0, 1, 2, ...
 // Note that this is the comm node ID: it carries only the .node
-// portion of the c_locale_t structure that represents the locale on which
+// portion of the chpl_localeID_t structure that represents the locale on which
 // the current task is running.
 // Note also that this value is set only in chpl_comm_init to a value which is
 // (hopefully) unique to the running image, and never changed again.

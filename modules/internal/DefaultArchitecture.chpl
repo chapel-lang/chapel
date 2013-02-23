@@ -99,9 +99,12 @@ module DefaultArchitecture {
       // It supplies a node name obtained by running uname(3) on the current node.
       // For this reason (as well), the constructor (or at least this init method)
       // must be run on the node it is intended to describe.
-      extern proc getenv(s:string) : string;
+//      extern proc getenv(s:string) : string;
+      var comm, spawnfn : string;
       extern proc chpl_nodeName() : string;
-      if getenv("CHPL_COMM") == "gasnet" && getenv("GASNET_SPAWNFN") == "L"
+      // sys_getenv returns zero on success.
+      if sys_getenv("CHPL_COMM", comm) == 0 && comm == "gasnet" &&
+        sys_getenv("GASNET_SPAWNFN", spawnfn) == 0 && spawnfn == "L"
       then local_name = chpl_nodeName() + "-" + _node_id : string;
       else local_name = chpl_nodeName();
 

@@ -32,16 +32,16 @@ typedef union{
         struct{
                 int flag;
                 chpl_bool serial_state;
-                c_subloc_t sublocale;
+                c_locale_t locale;
         }data;
-        char size[sizeof(int) + sizeof(chpl_bool) + sizeof(c_subloc_t)];
+        char size[sizeof(int) + sizeof(chpl_bool) + sizeof(c_locale_t)];
 }thread_local_data;
 
 static int tasking_layer_active=0;
 static int worker_in_cs_beforeinit=0;
 static thread_local_data* s_tld;
 static const chpl_bool s_def_serial_state=false;
-static const c_subloc_t s_def_sublocale = 0;
+static const c_locale_t s_def_locale = 0;
 static const uint64_t c_def_stack_size = 32 * 1024 * sizeof(size_t);
 
 static inline chpl_bool GET_SERIAL_STATE(void)
@@ -59,46 +59,46 @@ static inline void SET_SERIAL_STATE(chpl_bool newstate)
         s_tld[rank].data.serial_state=newstate;
         }
 }
-static inline c_subloc_t GET_SUBLOCALE(void)
+static inline c_locale_t GET_LOCALE(void)
 {
         if (tasking_layer_active){
         int rank=myth_get_worker_num();
-        return s_tld[rank].data.sublocale;
+        return s_tld[rank].data.locale;
         }
-        return s_def_sublocale;
+        return s_def_locale;
 }
-static inline void SET_SUBLOCALE(c_subloc_t new_sublocale)
+static inline void SET_LOCALE(c_subloc_t new_locale)
 {
         if (tasking_layer_active){
         int rank=myth_get_worker_num();
-        s_tld[rank].data.sublocale=new_sublocale;
+        s_tld[rank].data.locale=new_locale;
         }
 }
-static inline void GET_STATE(chpl_bool* serial_state_, c_subloc_t* sublocale_)
+static inline void GET_STATE(chpl_bool* serial_state_, c_locale_t* locale_)
 {
         if (tasking_layer_active){
         int rank=myth_get_worker_num();
         thread_local_data* tld = &s_tld[rank];
         *serial_state_ = tld->data.serial_state;
-        *sublocale_ = tld->data.sublocale;
+        *locale_ = tld->data.locale;
         } else {
         *serial_state_ = s_def_serial_state;
-        *sublocale_ = s_def_sublocale;
+        *locale_ = s_def_locale;
         }
 }
-static inline void SET_STATE(chpl_bool newstate, c_subloc_t new_sublocale)
+static inline void SET_STATE(chpl_bool newstate, c_locale_t new_locale)
 {
         if (tasking_layer_active){
         int rank=myth_get_worker_num();
         thread_local_data* tld = &s_tld[rank];
         tld->data.serial_state=newstate;
-        tld->data.sublocale=new_sublocale;
+        tld->data.locale=new_locale;
         }
 }
-#define SAVE_STATE() chpl_bool saved_serial_state; \
-  c_subloc_t saved_sublocale; \
-  GET_STATE(&saved_serial_state, &saved_sublocale);
-#define RESTORE_STATE() SET_STATE(saved_serial_state, saved_sublocale);
+#define SAVE_STATE() chpl_bool saved_serial_state;  \
+  c_locale_t saved_locale;                          \
+  GET_STATE(&saved_serial_state, &saved_locale);
+#define RESTORE_STATE() SET_STATE(saved_serial_state, saved_locale);
 
 static int is_worker_in_cs(void)
 {
@@ -411,16 +411,16 @@ void chpl_task_setSerial(chpl_bool new_state)
         SET_SERIAL_STATE(new_state);
 }
 
-c_subloc_t chpl_task_getSubLoc(void)
+c_locale_t chpl_task_getLocaleID(void)
 {
         //get dynamic serial state
-        return GET_SUBLOCALE();
+        return GET_LOCALE();
 }
 
-void chpl_task_setSubLoc(c_subloc_t new_sublocale)
+void chpl_task_setLocaleID(c_locale_t new_locale)
 {
         //set dynamic serial state
-        SET_SUBLOCALE(new_sublocale);
+        SET_LOCALE(new_locale);
 }
 
 uint64_t chpl_task_getCallStackSize(void)

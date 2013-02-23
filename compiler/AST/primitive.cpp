@@ -528,12 +528,12 @@ initPrimitive() {
   prim_def(PRIM_LOGICAL_FOLDER, "_paramFoldLogical", returnInfoBool);
 
   prim_def(PRIM_WIDE_GET_LOCALE, "_wide_get_locale", returnInfoLocaleID, false, true);
-  // These two are unnecessary after Chapel understands the c_locale_t structure.
+  // These two are unnecessary after Chapel understands the chpl_localeID_t structure.
   prim_def(PRIM_WIDE_GET_NODE, "_wide_get_node", returnInfoNodeID, false, true);
   prim_def(PRIM_WIDE_GET_SUBLOC, "_wide_get_subloc", returnInfoSublocID, false, true);
   prim_def(PRIM_WIDE_GET_ADDR, "_wide_get_addr", returnInfoInt64, false, true);
 
-  // These will go away after code up c_locale_t as a record in Chapel.
+  // These will go away after code up chpl_localeID_t as a record in Chapel.
   prim_def(PRIM_LOC_GET_NODE, "_loc_get_node", returnInfoNodeID);
   prim_def(PRIM_LOC_SET_NODE, "_loc_set_node", returnInfoVoid);
   prim_def(PRIM_LOC_GET_SUBLOC, "_loc_get_subloc", returnInfoSublocID);
@@ -542,8 +542,8 @@ initPrimitive() {
   prim_def(PRIM_LOCALE_ID, "_hereID", returnInfoLocaleID);
   prim_def(PRIM_NODE_ID, "chpl_nodeID", returnInfoNodeID);    // Our GASNet node ID.
   prim_def(PRIM_ON_LOCALE_NUM, "chpl_on_locale_num", returnInfoLocaleID);
-  prim_def(PRIM_SET_SUBLOC_ID, "_set_subloc_id", returnInfoVoid, true);
-  prim_def(PRIM_GET_SUBLOC_ID, "_get_subloc_id", returnInfoSublocID);
+  prim_def(PRIM_TASK_SET_LOCALE, "_task_set_locale", returnInfoVoid, true);
+  prim_def(PRIM_TASK_GET_LOCALE, "_task_get_locale", returnInfoLocaleID);
 
   prim_def(PRIM_ALLOC_GVR, "allocchpl_globals_registry", returnInfoVoid);
   prim_def(PRIM_HEAP_REGISTER_GLOBAL_VAR, "_heap_register_global_var", returnInfoVoid, true, true);

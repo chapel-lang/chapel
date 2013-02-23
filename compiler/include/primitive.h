@@ -175,16 +175,16 @@ enum PrimitiveTag {
   PRIM_WIDE_GET_SUBLOC,         // Get just the sublocale portion of a wide pointer.
   PRIM_WIDE_GET_ADDR,           // Get just the address portion of a wide pointer.
 
-  PRIM_LOC_GET_NODE,            // Get the node part of a c_locale_t.
+  PRIM_LOC_GET_NODE,            // Get the node part of a chpl_localeID_t
   PRIM_LOC_SET_NODE,            // Set <ditto>.
-  PRIM_LOC_GET_SUBLOC,          // Get the sublocale part of a c_locale_t.
+  PRIM_LOC_GET_SUBLOC,          // Get the sublocale part of a chpl_localeID_t.
   PRIM_LOC_SET_SUBLOC,          // Set <ditto>.
 
   PRIM_LOCALE_ID,				// Returns the current locale ID (nodeID + sublocID).
   PRIM_NODE_ID,                 // Returns the current (GASNet) node ID.
   PRIM_ON_LOCALE_NUM,           // specify a particular (node,subloc) for an on clause.
-  PRIM_SET_SUBLOC_ID,           // Set the sublocale ID in task-private data.
-  PRIM_GET_SUBLOC_ID,           // Get the sublocale ID from task-private data.
+  PRIM_TASK_SET_LOCALE,           // Set the sublocale ID in task-private data.
+  PRIM_TASK_GET_LOCALE,           // Get the sublocale ID from task-private data.
 
   PRIM_ALLOC_GVR,               // allocate space for global vars registry
   PRIM_HEAP_REGISTER_GLOBAL_VAR,

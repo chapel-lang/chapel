@@ -33,7 +33,7 @@ typedef struct task_pool_struct* task_pool_p;
 typedef struct task_pool_struct {
   chpl_taskID_t    id;           // task identifier
   chpl_fn_p        fun;          // function to call for task
-  c_subloc_t       sublocale;    // The sublocale associated with this task.
+  c_locale_t       locale;       // The localeID associated with this task.
   void*            arg;          // argument to the function
   chpl_bool        serial_state; // whether new tasks can be created while executing fun
   chpl_bool        begun;        // whether execution of this task has begun
@@ -267,7 +267,7 @@ void chpl_task_init(int32_t numThreadsPerLocale, int32_t maxThreadsPerLocale,
                                              0, 0);
     tp->ptask->id           = get_next_task_id();
     tp->ptask->fun          = NULL;
-    tp->ptask->sublocale    = 0;
+    tp->ptask->locale       = 0;
     tp->ptask->arg          = NULL;
     tp->ptask->serial_state = true;     // Set to false in chpl_task_callMain().
     tp->ptask->ltask        = NULL;
@@ -341,7 +341,7 @@ static void comm_task_wrapper(void* arg) {
                                            0, 0);
   tp->ptask->id           = get_next_task_id();
   tp->ptask->fun          = comm_task_fn;
-  tp->ptask->sublocale    = 0;  // Set below.
+  tp->ptask->locale       = 0;  // Set below.
   tp->ptask->arg          = arg;
   tp->ptask->serial_state = true;
   tp->ptask->ltask        = NULL;
@@ -462,6 +462,7 @@ void chpl_task_processTaskList(chpl_task_list_p task_list) {
     // before continuing beyond the cobegin or coforall it's in.
     nested_task.id           = get_next_task_id();
     nested_task.fun          = first_task->fun;
+    nested_task.locale		 = chpl_task_getLocaleID();
     nested_task.arg          = first_task->arg;
     nested_task.serial_state = false;
     nested_task.ltask        = first_task;
@@ -700,7 +701,7 @@ void chpl_task_setSerial(chpl_bool state) {
   get_thread_private_data()->ptask->serial_state = state;
 }
 
-c_subloc_t chpl_task_getSubLoc(void) {
+c_locale_t chpl_task_getLocaleID(void) {
   thread_private_data_t* tp;
 
   // Quick exit if we have no threads yet.
@@ -715,11 +716,11 @@ c_subloc_t chpl_task_getSubLoc(void) {
   if (tp == 0) 
     return 0;
 
-  return tp->ptask->sublocale;
+  return tp->ptask->locale;
 }
 
-void chpl_task_setSubLoc(c_subloc_t new_subloc) {
-  get_thread_private_data()->ptask->sublocale = new_subloc;
+void chpl_task_setLocaleID(c_locale_t new_locale) {
+  get_thread_private_data()->ptask->locale = new_locale;
 }
 
 uint64_t chpl_task_getCallStackSize(void) {
@@ -1244,6 +1245,7 @@ static task_pool_p add_to_task_pool(chpl_fn_p fp,
                                         0, 0);
   ptask->id           = get_next_task_id();
   ptask->fun          = fp;
+  ptask->locale		  = chpl_task_getLocaleID(); // Inherit the current locale.
   ptask->arg          = a;
   ptask->serial_state = serial;
   ptask->ltask        = ltask;

@@ -4,7 +4,6 @@
 #include "chpl-mem.h"
 #include "chplcgfns.h"
 #include "chpl-comm.h"
-#include "chpl-comm-compiler-macros.h"
 #include "error.h"
 
 #include <inttypes.h>
@@ -66,6 +65,7 @@ typedef struct __chpl_localeID_t {
   c_subloc_t subloc;
 } chpl_localeID_t;
 
+// chpl_string should be a class, so it can be made wide, just like everyone else.
 struct __chpl____wide_chpl_string {
   chpl_localeID_t locale;
   chpl_string addr;
@@ -86,13 +86,14 @@ chpl_wide_string_copy(chpl____wide_chpl_string* x, int32_t lineno, chpl_string f
   }
 }
 
+#include "chpl-comm-compiler-macros.h" // for chpl_gen_getLocaleID
+
 // un-macro'd CHPL_WIDEN_STRING
 void
 chpl_string_widen(chpl____wide_chpl_string* x, chpl_string from)
 {
   size_t len = strlen(from) + 1;
-  x->locale.node = chpl_nodeID;
-  x->locale.subloc = chpl_task_getSubLoc();
+  x->locale = chpl_gen_getLocaleID();
   x->addr = chpl_mem_allocMany(len, sizeof(char),
                                CHPL_RT_MD_SET_WIDE_STRING, 0, 0);
   strncpy((char*)x->addr, from, len);

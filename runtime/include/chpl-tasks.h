@@ -158,11 +158,10 @@ chpl_bool chpl_task_getSerial(void);
 void      chpl_task_setSerial(chpl_bool);
 
 //
-// Get and set task-specific locale information.
+// Get and set task-specific localeID information.
 //
-c_subloc_t  chpl_task_getSubLoc(void);
-void        chpl_task_setSubLoc(c_subloc_t);
-// This uint32_t is an index into the array of sublocales stored on each node.
+c_locale_t  chpl_task_getLocaleID(void);
+void        chpl_task_setLocaleID(c_locale_t);
 
 //
 // returns the value of the call stack size limit being used in

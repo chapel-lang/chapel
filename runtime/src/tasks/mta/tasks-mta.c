@@ -145,7 +145,7 @@ void chpl_task_sleep(int secs) {
 
 typedef struct {
   chpl_bool serial_state;
-  c_subloc_t sublocale_id;
+  c_locale_t locale_id;
   // Add fields here as needed....
 } chpl_task_private_data_t;
 
@@ -174,14 +174,14 @@ chpl_bool chpl_task_getSerial(void) {
   }
 }
 
-c_subloc_t chpl_task_getSubLoc(void) {
+c_locale_t chpl_task_getLocaleID(void) {
   chpl_task_private_data_t *p = NULL;
   p = (chpl_task_private_data_t*) mta_register_task_data(p);
   if (p == NULL)
     return 0;
   else {
     mta_register_task_data(p); // Put back the value retrieved above.
-    return p->sublocale_id;
+    return p->locale_id;
   }
 }
 
@@ -197,14 +197,14 @@ void chpl_task_setSerial(chpl_bool state) {
   }
 }
 
-void chpl_task_setSubLoc(c_subloc_t subloc) {
+void chpl_task_setLocaleID(c_locale_t locale) {
   chpl_task_private_data_t *p = NULL;
   p = (chpl_task_private_data_t*) mta_register_task_data(p);
   if (p == NULL)
-    chpl_internal_error("no task-private data in chpl_task_setSubLoc.");
+    chpl_internal_error("no task-private data in chpl_task_setLocaleID.");
   else
   {
-    p->sublocale_id = subloc;
+    p->locale_id = locale;
     mta_register_task_data(p);
   }
 }
