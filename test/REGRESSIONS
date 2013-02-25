@@ -28,6 +28,7 @@ An optimization bypasses a semantic check (Tom - on hold)
 ==============================================
 linux64 regressions (in addition to the above)
 ==============================================
+
 error: Cannot iterate over non-homogeneous tuples. (r21004, sungeun)
 --------------------------------------------------
 [Error matching compiler output for functions/deitz/iterators/temps/test_iterator_temp8]
@@ -58,6 +59,11 @@ memory leaks regressions
 =============================
 valgrind-specific regressions
 =============================
+
+--numThreadsPerLocale unexpected in output (interaction of valgrind argument list
+with new-style chpl argument list?) started 2013/2/25.
+------------------------------------------------------
+execflags/ferguson/args [execopts 3 and 4]
 
 overlapping memcpy (root cause should be eliminated)
 ----------------------------------------------------
@@ -120,6 +126,12 @@ so the warning does not apply and is not raised, and .good is not matched.
 ====================
 no-local regressions
 ====================
+
+
+Failure to prune unused functions causes "incompatible types in assignment" (2013/2/21)
+Started after r21030. (Unassigned) see below under "baseline-specific tests"
+--------------------------------
+[Error matching program output for arrays/deitz/jacobi-unoptimized (compopts: 1)]
 
 not freeing heap-allocated globals (08/29/09)
 ---------------------------------------------
@@ -561,11 +573,6 @@ other madness tests all fail with segv, but this seems to be the only
 one that prints a backtrace.  Dylan is looking into this.
 
 
-verbose output include qthread specific stuff (12/7/12)
--------------------------------------------------------
-[Error matching program output for multilocale/numLocales/bradc/testVFlag]
-[Error matching program output for multilocale/numLocales/bradc/testVerboseFlag]
-
 segv (no backtrace) (12/7/12)
 -----------------------------
 sungeun: I suggested to Dylan to try increasing default stack size for
@@ -625,6 +632,30 @@ failed since adding more multilocale directories (01/31/12)
 =======================
 baseline-specific tests
 =======================
+
+Failure to prune unused functions causes "incompatible types in assignment" (2013/2/21)
+Started after r21030. (Unassigned)
+---------------------------------------------------------------------------
+[Error matching compiler output for arrays/deitz/jacobi5-no-local (compopts: 1)]
+[Error matching compiler output for arrays/deitz/jacobi-no-local (compopts: 1)]
+[Error matching compiler output for classes/diten/dynamic_cast_instantiated_generic (compopts: 1)]
+[Error matching compiler output for extern/bradc/defaultArgsNoLocal (compopts: 1)]
+[Error matching compiler output for functions/iterators/bradc/iterWithOnInGenericConstr (compopts: 1)]
+[Error matching compiler output for functions/iterators/bradc/leadFollow/localfollow2 (compopts: 1)]
+[Error matching compiler output for functions/iterators/bradc/leadFollow/localfollow (compopts: 1)]
+[Error matching compiler output for multilocale/diten/nolocalArgDefaultGlobal/defaultValueGlobalTuple]
+[Error matching compiler output for multilocale/diten/nolocalArgDefaultGlobal/fieldDefaultGlobalArray]
+[Error matching compiler output for multilocale/diten/nolocalArgDefaultGlobal/fieldDefaultGlobalRecordMember]
+[Error matching compiler output for multilocale/diten/nolocalArgDefaultGlobal/fieldDefaultGlobalTuple]
+[Error matching compiler output for multilocale/diten/nolocalArgDefaultGlobal/simpleDefaultValueGlobal]
+[Error matching compiler output for multilocale/diten/nolocalArgDefaultGlobal/recordFieldDefaultGlobalTuple]
+[Error matching compiler output for multilocale/diten/nolocalArgDefaultGlobal/fieldDefaultGlobalClassMember]
+[Error matching compiler output for studies/hpcc/RA/bradc/parallel/ra-dist (compopts: 1)]
+[Error matching compiler output for studies/hpcc/STREAMS/bradc/stream-fragmented (compopts: 1)]
+[Error matching compiler output for trivial/bradc/wideref2string (compopts: 1)]
+[Error matching compiler output for trivial/diten/classRef2string-nolocal (compopts: 1)]
+[Error matching compiler output for extern/bradc/defaultArgsNoLocal (compopts: 1)]
+
 
 segv due to turning on inlining (12/7/12)
 -----------------------------------------
