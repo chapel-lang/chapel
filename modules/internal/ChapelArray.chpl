@@ -9,8 +9,8 @@ module ChapelArray {
   var privatizeLock$: sync int;
   
   config param debugBulkTransfer = false;
-  config param useBulkTransfer = true;
-  config param useBulkTransferStride = false;
+  config param useBulkTransfer = false;
+  config param useBulkTransferStride = true;
   
   pragma "privatized class"
   proc _isPrivatized(value) param
@@ -1606,10 +1606,7 @@ module ChapelArray {
   proc chpl__compatibleForBulkTransferStride(a:[], b:[]) param {
     if a.eltType != b.eltType then return false;
     if !chpl__supportedDataTypeForBulkTransfer(a.eltType) then return false;
-    if a._value.type != b._value.type {
-      if (!a._value.isDefaultRectangular() || !b._value.isBlockDist()) then return false;
-    }
-    if !a._value.dsiSupportsBulkTransfer() then return false;
+    if !a._value.dsiSupportsBulkTransferStride() then return false;
     return true;
   }
   
@@ -1686,7 +1683,10 @@ module ChapelArray {
           chpl__compatibleForBulkTransferStride(a, b) &&
           chpl__useBulkTransferStride(a, b))
       {
-        a._value.doiBulkTransferStride(b);
+        //a._value.doiBulkTransferStride(b);
+        if a._value.isDefaultRectangular() && b._value.isDefaultRectangular() then b._value.doiBulkTransferStride(a._value);
+        else if a._value.isDefaultRectangular() && !b._value.isDefaultRectangular() then b._value.doiBulkTransferToDR(a._value,false);
+        else a._value.doiBulkTransferStride(b);
         return a;
       }
       //if debugDefaultDistBulkTransfer then

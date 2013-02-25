@@ -561,7 +561,7 @@ module DefaultRectangular {
                                            dom=d, noinit=true);
       alias.data = data;
       //alias.numelm = numelm;
-      //writeln("DR.dsiReindex blk: ", blk, " stride: ",dom.dsiDim(1).stride," str:",str(1));
+   
       for param i in 1..rank {
         alias.off(i) = d.dsiDim(i).low;
         alias.blk(i) = (blk(i) * dom.dsiDim(i).stride / str(i)) : d.idxType;
@@ -718,6 +718,7 @@ module DefaultRectangular {
   }
   
   proc DefaultRectangularArr.dsiSupportsBulkTransfer() param return true;
+  proc DefaultRectangularArr.dsiSupportsBulkTransferStride() param return true;
   
   proc DefaultRectangularArr.doiCanBulkTransfer() {
     if debugDefaultDistBulkTransfer then writeln("In DefaultRectangularArr.doiCanBulkTransfer()");
@@ -813,8 +814,9 @@ module DefaultRectangular {
   A.doiBulkTransferStride(B) copies B-->A.
   */
   
-  proc DefaultRectangularArr.doiBulkTransferStride(Barg,aFromBD=false, bFromBD=false) {
-    const A = this, B = Barg._value;
+  proc DefaultRectangularArr.doiBulkTransferStride(Barg,aFromBD=false, bFromBD=false)
+  {
+    const A = this, B = Barg;//._value;
   
     if debugDefaultDistBulkTransfer then 
       writeln("In DefaultRectangularArr.doiBulkTransferStride ");
@@ -840,7 +842,7 @@ module DefaultRectangular {
         srcWholeDim = isWholeDim(B);
     var stridelevels:int(32);
     
-    /* If the stridelevels in source and destination arrays are different, we take the larger*/
+    // If the stridelevels in source and destination arrays are different, we take the larger
     stridelevels=max(A.computeBulkStrideLevels(dstWholeDim),B.computeBulkStrideLevels(srcWholeDim));
     if debugDefaultDistBulkTransfer then 
       writeln("In DefaultRectangularArr.doiBulkTransferStride, stridelevels: ",stridelevels);
@@ -859,11 +861,11 @@ module DefaultRectangular {
     // A[1..10,1..5] = B[1..10, 1..10 by 2]
     
     // Computed variables for chpl_comm_get_strd/puts are:
-    //  stridelevels =1
-    //  srcCount = (1,50) //In B you read 1 element 50 times
-    //  (srcStride=(2) = distance between 1 element and the next one)
-    //  dstCount = (5,10) //In A you write a chunk of 5 elments 10
-    //  times (dstStride=(10) distance between 1 chunk and the next one)
+    //	stridelevels =1
+    //	srcCount = (1,50) //In B you read 1 element 50 times
+    //	(srcStride=(2) = distance between 1 element and the next one)
+    //	dstCount = (5,10) //In A you write a chunk of 5 elments 10
+    //	times (dstStride=(10) distance between 1 chunk and the next one)
     
     
     // Since GASNet strided put/get only have a count array, it is
@@ -884,15 +886,15 @@ module DefaultRectangular {
         if stridelevels < rank then stridelevels+=1;
         srcAux = true;
       }
-    /* We now obtain the count arrays for source and destination arrays */
+    // We now obtain the count arrays for source and destination arrays 
     dstCount= A.computeBulkCount(stridelevels,dstWholeDim,dstAux);
     srcCount= B.computeBulkCount(stridelevels,srcWholeDim,srcAux);
     
-  /*Then the Stride arrays for source and destination arrays*/
+  //Then the Stride arrays for source and destination arrays
     var dstStride, srcStride: [1..rank] int(32);
-    /*When the source and destination arrays have different sizes 
-      (example: A[1..10,1..10] and B[1..20,1..20]), the count arrays obtained are different,
-      so we have to calculate the minimun count array */
+    //When the source and destination arrays have different sizes 
+    //  (example: A[1..10,1..10] and B[1..20,1..20]), the count arrays obtained are different,
+    //  so we have to calculate the minimun count array
     //Note that we use equal function equal instead of dstCount==srcCount due to the latter fails
     //The same for the array assigment (using assing function instead of srcCount=dstCount)
     
@@ -900,19 +902,17 @@ module DefaultRectangular {
     {
         for h in 1..stridelevels+1
         {
-    if dstCount[h]>srcCount[h]
+  	if dstCount[h]>srcCount[h]
           {
-      bulkCommAssign(dstCount,srcCount, stridelevels+1);
+  	  bulkCommAssign(dstCount,srcCount, stridelevels+1);
             break;
           }
           else if dstCount[h]<srcCount[h] then break; 
         }
     }
-      
     dstStride = computeBulkStride(dstWholeDim,dstCount,stridelevels,aFromBD);
     srcStride = B.computeBulkStride(srcWholeDim,dstCount,stridelevels,bFromBD);
-    
-    doiBulkTransferStrideComm(Barg, stridelevels, dstStride, srcStride, dstCount, srcCount, Alo, Blo);
+    doiBulkTransferStrideComm(Barg, stridelevels, dstStride, srcStride, dstCount, dstCount, Alo, Blo);
   }
   
   //
@@ -920,14 +920,15 @@ module DefaultRectangular {
   // we are on vs. where the source and destination are.
   // The logic mimics that in doiBulkTransfer().
   //
-  proc DefaultRectangularArr.doiBulkTransferStrideComm(B, stridelevels, dstStride, srcStride, dstCount, srcCount, Alo, Blo)
-   { 
-   //writeln("Locale: ", here.id, " stridelvl: ", stridelevels, " DstStride: ", dstStride," SrcStride: ",srcStride, " Count: ", dstCount, " dst.Blk: ",blk, " src.Blk: ",B._value.blk/*, " dom: ",dom.dsiDims()," B.blk: ",B._value.blk," B.dom: ",B._value.dom.dsiDims()*/);
+  proc DefaultRectangularArr.doiBulkTransferStrideComm(B, stridelevels:int(32), dstStride, srcStride, dstCount, srcCount, Alo, Blo)
+   {
+    if debugDefaultDistBulkTransfer then
+      writeln("Locale: ", here.id, " stridelvl: ", stridelevels, " DstStride: ", dstStride," SrcStride: ",srcStride, " Count: ", dstCount, " dst.Blk: ",blk, " src.Blk: ",B._value.blk);
     //CASE 1: when the data in destination array is stored "here", it will use "chpl_comm_get_strd". 
     if this.data.locale==here
     {
       var dest = this.data;
-      var src = B._value.data;
+      var src = B.data;
       
       var dststr=dstStride._value.data;
       var srcstr=srcStride._value.data;
@@ -940,18 +941,18 @@ module DefaultRectangular {
         writeln("Locale:",here.id," dststrides: ",dstStride);
         writeln("Locale:",here.id,",srcstrides: ",srcStride);
       }
-      var srclocale =B._value.data.locale.id : int(32);
+      var srclocale = B.data.locale.id : int(32);
          __primitive("chpl_comm_get_strd",
                       __primitive("array_get",dest, getDataIndex(Alo)),
                       __primitive("array_get",dststr,dstStride._value.getDataIndex(1)), 
-            srclocale,
-                      __primitive("array_get",src, B._value.getDataIndex(Blo)),
+  		    srclocale,
+                      __primitive("array_get",src, B.getDataIndex(Blo)),
                       __primitive("array_get",srcstr,srcStride._value.getDataIndex(1)),
                       __primitive("array_get",cnt, dstCount._value.getDataIndex(1)),
                       stridelevels);
     }
     //CASE 2: when the data in source array is stored "here", it will use "chpl_comm_put_strd". 
-    else if B._value.data.locale==here
+    else if B.data.locale==here
     {
       if debugDefaultDistBulkTransfer then
         writeln("\tlocal put() to ", this.locale.id);
@@ -959,7 +960,7 @@ module DefaultRectangular {
       var dststr=dstStride._value.data;
       var srcstr=srcStride._value.data;
       var cnt=srcCount._value.data;
-      
+  
       if debugBulkTransfer {
         writeln("Case 2");
         writeln("stridelevel: ",stridelevels);
@@ -970,37 +971,37 @@ module DefaultRectangular {
       }
       
       var dest = this.data;
-      var src = B._value.data;
+      var src = B.data;
       var destlocale =this.data.locale.id : int(32);
   
       __primitive("chpl_comm_put_strd",
-                  __primitive("array_get",dest,getDataIndex(Alo)),
-                  __primitive("array_get",dststr,dstStride._value.getDataIndex(1)),
+        		  __primitive("array_get",dest,getDataIndex(Alo)),
+        		  __primitive("array_get",dststr,dstStride._value.getDataIndex(1)),
                     destlocale,
-                    __primitive("array_get",src,B._value.getDataIndex(Blo)),
-                  __primitive("array_get",srcstr,srcStride._value.getDataIndex(1)),
-                  __primitive("array_get",cnt, srcCount._value.getDataIndex(1)),
-                  stridelevels);
+                    __primitive("array_get",src,B.getDataIndex(Blo)),
+        		  __primitive("array_get",srcstr,srcStride._value.getDataIndex(1)),
+        		  __primitive("array_get",cnt, srcCount._value.getDataIndex(1)),
+        		  stridelevels);
     }
     //CASE 3: other case, it will use "chpl_comm_get_strd". 
     else on this.data.locale
     {   
       var dest = this.data;
-      var src = B._value.data;
+      var src = B.data;
   
       //We are in a locale that doesn't store neither A nor B so we need to copy the auxiliarry
       //arrays to the locale that hosts A. This should translate into some more gets...
       var count:[1..(stridelevels+1)] int(32);
-      count=dstCount;
-    
+      count=dstCount:int(32);
+  
       var dststrides,srcstrides:[1..stridelevels] int(32);
-      srcstrides=srcStride;
-      dststrides=dstStride;
+      srcstrides=srcStride:int(32);
+      dststrides=dstStride:int(32);
       
       var dststr=dststrides._value.data;
       var srcstr=srcstrides._value.data;
       var cnt=count._value.data;
-      
+  
       if debugBulkTransfer {
         writeln("Case 3");
         writeln("stridelevel: ", stridelevels);
@@ -1009,12 +1010,12 @@ module DefaultRectangular {
         writeln("srcstrides: ",srcstrides);
       }
       
-      var srclocale =B._value.data.locale.id : int(32);
+        var srclocale =B.data.locale.id : int(32);
          __primitive("chpl_comm_get_strd",
                       __primitive("array_get",dest, getDataIndex(Alo)),
                       __primitive("array_get",dststr,dststrides._value.getDataIndex(1)), 
                       srclocale,
-                      __primitive("array_get",src, B._value.getDataIndex(Blo)),
+                      __primitive("array_get",src, B.getDataIndex(Blo)),
                       __primitive("array_get",srcstr,dststrides._value.getDataIndex(1)),
                       __primitive("array_get",cnt, count._value.getDataIndex(1)),
                       stridelevels);   
@@ -1033,7 +1034,7 @@ module DefaultRectangular {
   {//To understand the blk(1)==1 condition,
     //see test/optimizations/bulkcomm/alberto/test_rank_change2.chpl(example 4)
     if dom.dsiStride==1 && blk(1)==1 then return 0;
-    else return 1;
+  else return 1;
   }
   
   //Cases for computeBulkStrideLevels where rank>1:
@@ -1070,7 +1071,7 @@ module DefaultRectangular {
       if (dom.dsiDim(i-1).length>1 && !checkStrideDistance(i)) //CASE 3
         then stridelevels+=1; 
     
-    return stridelevels;
+    return stridelevels:int(32);
   }
   
   /* This function returns the count array for the default rectangular array. */
@@ -1137,20 +1138,20 @@ module DefaultRectangular {
         {
           c[i]=this.dom.dsiDim(dim).length:int(32);
   //find the next dimension for which the next different stride arises
-    for h in 2..dim by -1:int(32) 
+  	for h in 2..dim by -1:int(32) 
           {
   //The aux variable is to cover the case in which stridelevels has to be
   // incremented after unifying srcCount and dstCount into a single count array,
   // and the condition h!=rank is because the new count value it's always in the 
   // rightmost dimension.
   // See lines 850-871
-      if( (checkStrideDistance(h) && (!aux || h!=rank))//CASE 3
+  	  if( (checkStrideDistance(h) && (!aux || h!=rank))//CASE 3
                || (dom.dsiDim(h).length==1&& h!=rank)) //CASE 4
-        {
-          c[i]*=dom.dsiDim(h-1).length:int(32);
+  	    {
+  	      c[i]*=dom.dsiDim(h-1).length:int(32);
                 dim -= 1;
-        }
-      else break;  
+  	    }
+  	  else break;  
           }
           dim -= 1;
         }
@@ -1203,11 +1204,11 @@ module DefaultRectangular {
     var c: rank*int(32); 
     var h=1; //Stride array index
     var cum=1; //cumulative variable
-    
+   
     if (cnt[h]==1 && dom.dsiDim(rank).length>1)
     {//To understand the blk[rank]==1 condition,
     //see test/optimizations/bulkcomm/alberto/test_rank_change2.chpl(example 12)
-      if !aFromBD && blk[rank]==1 then c[h]=dom.dsiDim(rank).stride:int(32); //CASE 1
+      if (!aFromBD && blk[rank]==1) then c[h]=dom.dsiDim(rank).stride:int(32); //CASE 1
       else c[h]=blk[rank]:int(32); //CASE 2
       h+=1;
     }
@@ -1219,12 +1220,13 @@ module DefaultRectangular {
         {//now, we are in the right dimension (i dimension) to obtain the stride value
           c[h]=blk(i-1):int(32);
           if !aFromBD then //CASE 4
-            c[h]*= dom.dsiDim(i-1).stride:int(32); 
+            c[h]*= dom.dsiDim(i-1).stride:int(32);
           h+=1; //Increment the index
           cum=1; //reset the cumulative variable
         }
         else cum=cum*dom.dsiDim(i).length;
       }
+      
     }
     return c;
   }
@@ -1326,11 +1328,9 @@ module DefaultRectangular {
     var result: rank * int;
     for param i in 1..rank {
       const ar = AD(i), br = BD(i);
-      //writeln("ar: ",ar," br: ",br," b: ",b," b(i): ",b(i)," br.indexOrder(b(i)): ",br.indexOrder(b(i)));
       if boundsChecking then assert(br.member(b(i)));
       result(i) = ar.orderToIndex(br.indexOrder(b(i)));
     }
     return result;
-  }
-  
+  } 
 }
