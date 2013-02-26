@@ -74,7 +74,7 @@ module ChapelRangeBase {
       if boundedType == BoundedRangeType.bounded
       {
         if _low <= _high && this.last + stride : idxType == this.first then
-          __primitive("chpl_warning", "Maximal range declared.  " +
+          warning("Maximal range declared.  " +
           "A for loop on this range will execute zero times.  " +
           "Try using a wider index type.");
       }

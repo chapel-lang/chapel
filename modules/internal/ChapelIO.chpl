@@ -467,6 +467,16 @@ module ChapelIO {
     __primitive("chpl_error", "halt reached - " + tmpstring);
   }
   
+  proc warning(s:string) {
+    __primitive("chpl_warning", s);
+  }
+  
+  proc warning(args ...?numArgs) {
+    var tmpstring: string;
+    tmpstring.write((...args));
+    warning(tmpstring);
+  }
+  
   proc _ddata.writeThis(f: Writer) {
     compilerWarning("printing _ddata class");
     write("<_ddata class cannot be printed>");
