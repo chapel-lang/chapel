@@ -1,0 +1,22 @@
+.TH qthread_syncvar_status 3 "JUNE 2010" libqthread "libqthread"
+.SH NAME
+.B qthread_syncvar_status
+\- return the full/empty status of a syncvar_t
+.SH SYNOPSIS
+.B #include <qthread.h>
+
+.I int
+.br
+.B qthread_syncvar_status
+.RI "(syncvar_t *" addr );
+.SH DESCRIPTION
+This function returns 1 if the address is full, and 0 if the address is empty.
+It is thread-safe, and should be very quick. On 64-bit platforms, it usually
+reduces to a read and a bitshift.
+.SH SEE ALSO
+.BR qthread_syncvar_empty (3),
+.BR qthread_syncvar_fill (3),
+.BR qthread_syncvar_writeFE (3),
+.BR qthread_syncvar_writeF (3),
+.BR qthread_syncvar_readFE (3),
+.BR qthread_syncvar_readFF (3)

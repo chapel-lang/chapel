@@ -1,0 +1,36 @@
+.TH qt_begin_blocking_action 3 "AUGUST 2012" libqthread "libqthread"
+.SH NAME
+.BR qt_begin_blocking_action ", " qt_end_blocking_action
+\- indicate blocking operations to the runtime
+.SH SYNOPSIS
+.B #include <qthread/io.h>
+
+.I void
+.br
+.BR qt_begin_blocking_action (void);
+.PP
+.I void
+.br
+.BR qt_end_blocking_action (void);
+
+.SH DESCRIPTION
+These two functions are used to isolate sections of code that may block (and that are not intercepted in some other way). It is useful for inter-operating with third-party libraries.
+.PP
+What happens is that the task that calls
+.BR qt_begin_blocking_action ()
+is descheduled and enqueued in the system call queue. It is treated the same as anything else in that queue with regard to the number of concurrent operations permitted and the relationship to the servicing threads. The task, after calling
+.BR qt_begin_blocking_action (),
+will wake up in an external, dedicated thread and can perform the blocking operation without fear that doing so would hijack the original worker thread. Once the blocking operation is complete, the task must call
+.BR qt_end_blocking_action (),
+which will reschedule the task in the standard scheduling queues.
+.SH SEE ALSO
+.BR qt_accept (3),
+.BR qt_connect (3),
+.BR qt_poll (3),
+.BR qt_pread (3),
+.BR qt_pwrite (3),
+.BR qt_read (3),
+.BR qt_select (3),
+.BR qt_system (3),
+.BR qt_wait4 (3),
+.BR qt_write (3)
