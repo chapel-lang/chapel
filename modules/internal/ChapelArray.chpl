@@ -1923,7 +1923,7 @@ module ChapelArray {
     return _toLeader(x);
   
   inline proc _toLeaderZip(x: _tuple)
-    return _toLeaderZip(x(1));
+    return _toLeader(x(1));
   
   //
   // return true if any iterator supports fast followers
@@ -2017,18 +2017,17 @@ module ChapelArray {
   }
   
   inline proc _toFollowerZip(x: _tuple, leaderIndex) {
-    return _toFollowerZip(x, leaderIndex, 1);
+    return _toFollowerZipInternal(x, leaderIndex, 1);
   }
-  
-  inline proc _toFollowerZip(x: _tuple, leaderIndex, param dim: int) {
-    if dim == x.size-1 then
-      return (_toFollowerZip(x(dim), leaderIndex),
-              _toFollowerZip(x(dim+1), leaderIndex));
+
+  inline proc _toFollowerZipInternal(x: _tuple, leaderIndex, param dim: int) {
+    if dim == x.size then
+      return tuple(_toFollower(x(dim), leaderIndex));
     else
-      return (_toFollowerZip(x(dim), leaderIndex),
-              (..._toFollowerZip(x, leaderIndex, dim+1)));
+      return (_toFollower(x(dim), leaderIndex),
+              (..._toFollowerZipInternal(x, leaderIndex, dim+1)));
   }
-  
+
   pragma "no implicit copy"
   inline proc _toFastFollower(iterator: _iteratorClass, leaderIndex, fast: bool) {
     return chpl__autoCopy(__primitive("to follower", iterator, leaderIndex, true));
