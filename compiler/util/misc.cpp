@@ -49,12 +49,13 @@ const char* cleanFilename(const char* name) {
 
 
 static const char* cleanFilename(BaseAST* ast) {
-  ModuleSymbol* mod = ast->getModule();
-  if (mod) {
-    return cleanFilename(ast->fname());
-  } else {
+  const char* astFname = ast->fname();
+  if (astFname)
+    return cleanFilename(astFname);
+  else if (yyfilename)
     return cleanFilename(yyfilename);
-  }
+  else
+    return astr("<unknown>");
 }
 
 

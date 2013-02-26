@@ -960,6 +960,7 @@ GenRet FnSymbol::codegenFunctionType(bool forHeader) {
   GenRet ret;
 
   ret.chplType = typeInfo();
+  INT_ASSERT(ret.chplType == dtUnknown); //just documenting the current state
 
   if( info->cfile ) {
     // Cast to right function type.
