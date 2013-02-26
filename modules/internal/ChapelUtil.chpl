@@ -129,6 +129,7 @@ module ChapelUtil {
     }
   }
   
+  pragma "no default functions"
   extern record chpl_main_argument {
     var argc: int(64);
     var argv: _ddata(string);
