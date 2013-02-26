@@ -367,6 +367,10 @@ module DefaultRectangular {
         dom.ranges(i) = ranges(i);
       return dom;
     }
+  
+    proc dsiLocalSlice(ranges) {
+      halt("all dsiLocalSlice calls on DefaultRectangulars should be handled in ChapelArray.chpl");
+    }
   }
   
   record _remoteAccessData {

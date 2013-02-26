@@ -955,8 +955,19 @@ module ChapelArray {
       _value.dsiSerialRead(f);
     }
   
+    proc localSlice(r: range(?)... rank) where _value.type: DefaultRectangularDom {
+      if (_value.locale != here) then
+        halt("Attempting to take a local slice of a domain on locale ",
+             _value.locale.id, " from locale ", here.id);
+      return this((...r));
+    }
+  
     proc localSlice(r: range(?)... rank) {
       return _value.dsiLocalSlice(chpl__anyStridable(r), r);
+    }
+  
+    proc localSlice(d: domain) {
+      return localSlice((...d.getIndices()));
     }
   
     // associative array interface
@@ -1281,7 +1292,7 @@ module ChapelArray {
     }
   
     proc localSlice(d: domain) {
-      return localSlice(d.getIndices());
+      return localSlice((...d.getIndices()));
     }
   
     inline proc these() var {
