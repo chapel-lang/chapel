@@ -981,14 +981,14 @@ proc _read_text_internal(_channel_internal:qio_channel_ptr_t, out x:?t):syserr w
     err = EFORMAT;
 
     for i in 1..num {
-      err = qio_channel_scan_literal(false, _channel_internal, _trues(i), _trues(i).length, 1);
+      err = qio_channel_scan_literal(false, _channel_internal, _trues(i), (_trues(i).length):ssize_t, 1);
       if !err {
         got = true;
         break;
       } else if err == EEOF {
         break;
       }
-      err = qio_channel_scan_literal(false, _channel_internal, _falses(i), _falses(i).length, 1);
+      err = qio_channel_scan_literal(false, _channel_internal, _falses(i), (_falses(i).length):ssize_t, 1);
       if !err {
         got = false;
         break;
@@ -1035,7 +1035,7 @@ proc _read_text_internal(_channel_internal:qio_channel_ptr_t, out x:?t):syserr w
     var err:syserr = ENOERR;
     for i in chpl_enumerate(t) {
       var str:string = i:string;
-      var slen:ssize_t = str.length;
+      var slen:ssize_t = str.length:ssize_t;
       err = qio_channel_scan_literal(false, _channel_internal, str, slen, 1);
       if !err {
         x = i;
