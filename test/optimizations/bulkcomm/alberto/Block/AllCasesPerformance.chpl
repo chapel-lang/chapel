@@ -2,9 +2,9 @@ use BlockDist;
 use Time;
 use PrintComms;
 
-config const n:int = 500;
-config const p:int =40;
-config const q:int =40;
+config const n:int = 50;//500;
+config const p:int =4;//40;
+config const q:int =4;//40;
 
 config const printTime=false;
 config const printOutput=false;

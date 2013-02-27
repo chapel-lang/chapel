@@ -949,7 +949,7 @@ proc CyclicArr.doiBulkTransferStride(Barg)
 {
  //In ChapelArray -->   a._value.doiBulkTransferStride(b);  
   if debugDefaultDistBulkTransfer then
-    writeln("doiBulkTransferStride");
+    writeln("In CyclicArr.doiBulkTransferStride");
     
   if (Barg._value.isDefaultRectangular()) then
         this.doiBulkTransferFromDR(Barg,false);

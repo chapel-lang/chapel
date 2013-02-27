@@ -1414,7 +1414,7 @@ proc dropDims(D: domain, dims...) {
 proc BlockArr.doiBulkTransferStride(Barg)
 {
     if debugDefaultDistBulkTransfer then
-        writeln("In doiBulkTransferStride");
+        writeln("In BlockArr.doiBulkTransferStride");
         
     if (Barg._value.isDefaultRectangular()) then
         this.doiBulkTransferFromDR(Barg,false);

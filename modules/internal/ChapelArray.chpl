@@ -1684,7 +1684,7 @@ module ChapelArray {
           chpl__useBulkTransferStride(a, b))
       {
         //a._value.doiBulkTransferStride(b);
-        if a._value.isDefaultRectangular() && b._value.isDefaultRectangular() then b._value.doiBulkTransferStride(a._value);
+        if a._value.isDefaultRectangular() && b._value.isDefaultRectangular() then a._value.doiBulkTransferStride(b._value);
         else if a._value.isDefaultRectangular() && !b._value.isDefaultRectangular() then b._value.doiBulkTransferToDR(a._value,false);
         else a._value.doiBulkTransferStride(b);
         return a;
