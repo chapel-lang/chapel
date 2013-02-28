@@ -388,8 +388,10 @@ err_t qio_channel_print_bool(const int threadsafe, qio_channel_t* restrict ch, u
 
 err_t qio_channel_scan_int(const int threadsafe, qio_channel_t* restrict ch, void* restrict out, size_t len, int issigned);
 err_t qio_channel_scan_float(const int threadsafe, qio_channel_t* restrict ch, void* restrict out, size_t len);
+err_t qio_channel_scan_imag(const int threadsafe, qio_channel_t* restrict ch, void* restrict out, size_t len);
 err_t qio_channel_print_int(const int threadsafe, qio_channel_t* restrict ch, const void* restrict ptr, size_t len, int issigned);
 err_t qio_channel_print_float(const int threadsafe, qio_channel_t* restrict ch, const void* restrict ptr, size_t len);
+err_t qio_channel_print_imag(const int threadsafe, qio_channel_t* restrict ch, const void* restrict ptr, size_t len);
 
 err_t qio_channel_scan_complex(const int threadsafe, qio_channel_t* restrict ch, void* restrict re_out, void* restrict im_out, size_t len);
 err_t qio_channel_print_complex(const int threadsafe, qio_channel_t* restrict ch, const void* restrict re_ptr, const void* im_ptr, size_t len);
@@ -739,6 +741,72 @@ err_t qio_channel_print_string(const int threadsafe, qio_channel_t* restrict ch,
 // Prints a string as-is (this really just calls qio_channel_write_amt).
 err_t qio_channel_print_literal(const int threadsafe, qio_channel_t* restrict ch, const char* restrict ptr, ssize_t len);
 err_t qio_channel_print_literal_2(const int threadsafe, qio_channel_t* ch, /*const char* */ void* ptr, ssize_t len);
+
+
+
+
+
+enum {
+  QIO_CONV_UNK = 0,
+  QIO_CONV_ARG_TYPE_NUMERIC,
+  QIO_CONV_ARG_TYPE_SIGNED,
+  QIO_CONV_ARG_TYPE_BINARY_SIGNED,
+  QIO_CONV_ARG_TYPE_UNSIGNED,
+  QIO_CONV_ARG_TYPE_BINARY_UNSIGNED,
+  QIO_CONV_ARG_TYPE_REAL,
+  QIO_CONV_ARG_TYPE_BINARY_REAL,
+  QIO_CONV_ARG_TYPE_IMAG,
+  QIO_CONV_ARG_TYPE_BINARY_IMAG,
+  QIO_CONV_ARG_TYPE_COMPLEX,
+  QIO_CONV_ARG_TYPE_BINARY_COMPLEX,
+  QIO_CONV_ARG_TYPE_CHAR,
+  QIO_CONV_ARG_TYPE_STRING,
+  QIO_CONV_ARG_TYPE_REPR,
+  QIO_CONV_ARG_TYPE_REGEXP, // argument contains a regexp
+  QIO_CONV_ARG_TYPE_NONE_REGEXP_LITERAL, // literal regexp in string
+  QIO_CONV_ARG_TYPE_NONE_LITERAL,
+  QIO_CONV_SET_MIN_WIDTH_COLS,
+  QIO_CONV_SET_MAX_WIDTH_COLS,
+  QIO_CONV_SET_MAX_WIDTH_CHARS,
+  QIO_CONV_SET_MAX_WIDTH_BYTES,
+  QIO_CONV_SET_STRINGLEN,
+  QIO_CONV_SET_PRECISION,
+  QIO_CONV_SET_TERMINATOR,
+  QIO_CONV_SET_STRINGSTART,
+  QIO_CONV_SET_STRINGSTARTEND,
+  QIO_CONV_SET_STRINGEND,
+  QIO_CONV_SET_IGNORE,
+  QIO_CONV_SET_CAPTURE, // These are used internally by the code calling qio_conv_parse
+  QIO_CONV_SET_DONE,
+};
+
+// Conversion specifier for printf/scanf
+typedef struct qio_conv_s {
+  uint8_t preArg1; // could be min width
+  uint8_t preArg2; // could be precision or max str length
+  uint8_t preArg3; // could be string start/end character or terminator byte.
+  uint8_t argType;
+
+  uint8_t literal_is_whitespace; // = 1 for ' ', = 2 for \n
+  uint32_t literal_length;
+  /*const char*/ void* literal; // pointer into format string...
+  uint32_t regexp_length;
+  /*const char*/ void* regexp;
+  uint32_t regexp_flags_length;
+  /*const char*/ void* regexp_flags;
+} qio_conv_t;
+
+
+void qio_conv_destroy(qio_conv_t* spec);
+void qio_conv_init(qio_conv_t* spec_out);
+qioerr qio_conv_parse(const char* fmt, size_t start, size_t* end_out, int scanning, qio_conv_t* spec_out, qio_style_t* style_out);
+
+// These error codes can be used by callers to qio_conv_parse
+qioerr qio_format_error_too_many_args(void);
+qioerr qio_format_error_too_few_args(void);
+qioerr qio_format_error_arg_mismatch(int64_t arg);
+qioerr qio_format_error_bad_regexp(void);
+qioerr qio_format_error_write_regexp(void);
 
 #endif
 

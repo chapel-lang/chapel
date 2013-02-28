@@ -46,7 +46,8 @@ typedef uint8_t style_char_t;
 #define QIO_TUPLE_FORMAT_JSON 2
 
 
-
+#define QIO_STRSTYLE_VLEN (-10)
+#define QIO_STRSTYLE_NULL_TERMINATED (-0x0100)
 
 typedef struct qio_style_s {
   uint8_t binary;
@@ -102,6 +103,7 @@ typedef struct qio_style_s {
   style_char_t other_exponent_char; // normally 'p' or '@'; used for base > 10
   style_char_t positive_char; // normally '+'
   style_char_t negative_char; // normally '-'
+  style_char_t i_char; // normally 'i', suffix for imaginary numbers
   uint8_t prefix_base; // read/write integral values preceeded by base prefix 0x 0b
                     // (if not base 10). When scanning, the base prefix is
                     // always allowed if base==0 (ie determine base from #).
@@ -194,9 +196,10 @@ void qio_style_init_default(qio_style_t* s)
 
   s->positive_char = '+';
   s->negative_char = '-';
-  s->pad_char = ' ';
+  s->i_char = 'i';
 
   s->prefix_base = 1;
+  s->pad_char = ' ';
   s->showplus = 0;
   s->uppercase = 0;
   s->leftjustify = 0;

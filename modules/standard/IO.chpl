@@ -211,6 +211,7 @@ extern record iostyle { // aka qio_style_t
   var other_exponent_char:style_char_t = 0x70; // p
   var positive_char:style_char_t = 0x2b; // +;
   var negative_char:style_char_t = 0x2d; // -;
+  var i_char:style_char_t = 0x69; // i
   var prefix_base:uint(8) = 1;
   // numeric printing choices
   var pad_char:style_char_t = 0x20; // ' '
@@ -235,33 +236,33 @@ extern proc qio_file_retain(f:qio_file_ptr_t);
 extern proc qio_file_release(f:qio_file_ptr_t);
 
 pragma "no prototype" // FIXME
-extern proc qio_file_init(inout file_out:qio_file_ptr_t, fp:_file, fd:fd_t, iohints:c_int, inout style:iostyle, usefilestar:c_int):syserr;
-extern proc qio_file_open_access(inout file_out:qio_file_ptr_t, path:string, access:string, iohints:c_int, inout style:iostyle):syserr;
-extern proc qio_file_open_tmp(inout file_out:qio_file_ptr_t, iohints:c_int, inout style:iostyle):syserr;
-extern proc qio_file_open_mem(inout file_out:qio_file_ptr_t, buf:qbuffer_ptr_t, inout style:iostyle):syserr;
+extern proc qio_file_init(inout file_out:qio_file_ptr_t, fp:_file, fd:fd_t, iohints:c_int, inout style:iostyle, usefilestar:c_int):err_t;
+extern proc qio_file_open_access(inout file_out:qio_file_ptr_t, path:string, access:string, iohints:c_int, inout style:iostyle):err_t;
+extern proc qio_file_open_tmp(inout file_out:qio_file_ptr_t, iohints:c_int, inout style:iostyle):err_t;
+extern proc qio_file_open_mem(inout file_out:qio_file_ptr_t, buf:qbuffer_ptr_t, inout style:iostyle):err_t;
 
-extern proc qio_file_close(f:qio_file_ptr_t):syserr;
+extern proc qio_file_close(f:qio_file_ptr_t):err_t;
 
-extern proc qio_file_lock(f:qio_file_ptr_t):syserr;
+extern proc qio_file_lock(f:qio_file_ptr_t):err_t;
 extern proc qio_file_unlock(f:qio_file_ptr_t);
 
 /* The general way to make sure data is written without error */
-extern proc qio_file_sync(f:qio_file_ptr_t):syserr;
+extern proc qio_file_sync(f:qio_file_ptr_t):err_t;
 
 //extern proc qio_file_style_ptr(f:qio_file_ptr_t):qio_style_ptr_t;
 extern proc qio_file_get_style(f:qio_file_ptr_t, inout style:iostyle);
 extern proc qio_file_set_style(f:qio_file_ptr_t, inout style:iostyle);
 
 pragma "no prototype" // FIXME
-extern proc qio_channel_create(inout ch:qio_channel_ptr_t, file:qio_file_ptr_t, hints:c_int, readable:c_int, writeable:c_int, start:int(64), end:int(64), inout style:iostyle):syserr;
+extern proc qio_channel_create(inout ch:qio_channel_ptr_t, file:qio_file_ptr_t, hints:c_int, readable:c_int, writeable:c_int, start:int(64), end:int(64), inout style:iostyle):err_t;
 
 pragma "no prototype" // FIXME
-extern proc qio_channel_path_offset(threadsafe:c_int, ch:qio_channel_ptr_t, inout path:string, inout offset:int(64)):syserr;
+extern proc qio_channel_path_offset(threadsafe:c_int, ch:qio_channel_ptr_t, inout path:string, inout offset:int(64)):err_t;
 
 extern proc qio_channel_retain(ch:qio_channel_ptr_t);
 extern proc qio_channel_release(ch:qio_channel_ptr_t);
 
-extern proc qio_channel_lock(ch:qio_channel_ptr_t):syserr;
+extern proc qio_channel_lock(ch:qio_channel_ptr_t):err_t;
 extern proc qio_channel_unlock(ch:qio_channel_ptr_t);
 
 extern proc qio_channel_get_style(ch:qio_channel_ptr_t, inout style:iostyle);
@@ -272,81 +273,142 @@ extern proc qio_channel_byteorder(ch:qio_channel_ptr_t):uint(8);
 extern proc qio_channel_str_style(ch:qio_channel_ptr_t):int(64);
 extern proc qio_channel_style_element(ch:qio_channel_ptr_t, element:int(64)):int(64);
 
-extern proc qio_channel_flush(threadsafe:c_int, ch:qio_channel_ptr_t):syserr;
-extern proc qio_channel_close(threadsafe:c_int, ch:qio_channel_ptr_t):syserr;
+extern proc qio_channel_flush(threadsafe:c_int, ch:qio_channel_ptr_t):err_t;
+extern proc qio_channel_close(threadsafe:c_int, ch:qio_channel_ptr_t):err_t;
 
-extern proc qio_channel_read(threadsafe:c_int, ch:qio_channel_ptr_t, inout ptr, len:ssize_t, inout amt_read:ssize_t):syserr;
-extern proc qio_channel_read_amt(threadsafe:c_int, ch:qio_channel_ptr_t, inout ptr, len:ssize_t):syserr;
+extern proc qio_channel_read(threadsafe:c_int, ch:qio_channel_ptr_t, inout ptr, len:ssize_t, inout amt_read:ssize_t):err_t;
+extern proc qio_channel_read_amt(threadsafe:c_int, ch:qio_channel_ptr_t, inout ptr, len:ssize_t):err_t;
 extern proc qio_channel_read_byte(threadsafe:c_int, ch:qio_channel_ptr_t):int(32);
 
-extern proc qio_channel_write(threadsafe:c_int, ch:qio_channel_ptr_t, inout ptr, len:ssize_t, inout amt_written:ssize_t):syserr;
-extern proc qio_channel_write_amt(threadsafe:c_int, ch:qio_channel_ptr_t, inout ptr, len:ssize_t):syserr;
-extern proc qio_channel_write_byte(threadsafe:c_int, ch:qio_channel_ptr_t, byte:uint(8)):syserr;
+extern proc qio_channel_write(threadsafe:c_int, ch:qio_channel_ptr_t, inout ptr, len:ssize_t, inout amt_written:ssize_t):err_t;
+extern proc qio_channel_write_amt(threadsafe:c_int, ch:qio_channel_ptr_t, inout ptr, len:ssize_t):err_t;
+extern proc qio_channel_write_byte(threadsafe:c_int, ch:qio_channel_ptr_t, byte:uint(8)):err_t;
 
 extern proc qio_channel_offset_unlocked(ch:qio_channel_ptr_t):int(64);
-extern proc qio_channel_advance(threadsafe:c_int, ch:qio_channel_ptr_t, nbytes:int(64)):syserr;
-extern proc qio_channel_mark(threadsafe:c_int, ch:qio_channel_ptr_t):syserr;
+extern proc qio_channel_advance(threadsafe:c_int, ch:qio_channel_ptr_t, nbytes:int(64)):err_t;
+extern proc qio_channel_mark(threadsafe:c_int, ch:qio_channel_ptr_t):err_t;
 extern proc qio_channel_revert_unlocked(ch:qio_channel_ptr_t);
 extern proc qio_channel_commit_unlocked(ch:qio_channel_ptr_t);
 
-extern proc qio_channel_write_bits(threadsafe:c_int, ch:qio_channel_ptr_t, v:uint(64), nbits:int(8)):syserr;
-extern proc qio_channel_flush_bits(threadsafe:c_int, ch:qio_channel_ptr_t):syserr;
-extern proc qio_channel_read_bits(threadsafe:c_int, ch:qio_channel_ptr_t, inout v:uint(64), nbits:int(8)):syserr;
+extern proc qio_channel_write_bits(threadsafe:c_int, ch:qio_channel_ptr_t, v:uint(64), nbits:int(8)):err_t;
+extern proc qio_channel_flush_bits(threadsafe:c_int, ch:qio_channel_ptr_t):err_t;
+extern proc qio_channel_read_bits(threadsafe:c_int, ch:qio_channel_ptr_t, inout v:uint(64), nbits:int(8)):err_t;
 
 pragma "no prototype" // FIXME
-extern proc qio_file_path_for_fd(fd:fd_t, inout path:string):syserr;
+extern proc qio_file_path_for_fd(fd:fd_t, inout path:string):err_t;
 pragma "no prototype" // FIXME
-extern proc qio_file_path_for_fp(fp:_file, inout path:string):syserr;
+extern proc qio_file_path_for_fp(fp:_file, inout path:string):err_t;
 pragma "no prototype" // FIXME
-extern proc qio_file_path(f:qio_file_ptr_t, inout path:string):syserr;
+extern proc qio_file_path(f:qio_file_ptr_t, inout path:string):err_t;
 pragma "no prototype" // FIXME
-extern proc qio_shortest_path(inout path_out:string, path_in:string):syserr;
+extern proc qio_shortest_path(inout path_out:string, path_in:string):err_t;
 
-extern proc qio_channel_read_int(threadsafe:c_int, byteorder:c_int, ch:qio_channel_ptr_t, inout ptr, len:size_t, issigned:c_int):syserr;
+extern proc qio_channel_read_int(threadsafe:c_int, byteorder:c_int, ch:qio_channel_ptr_t, inout ptr, len:size_t, issigned:c_int):err_t;
 pragma "no prototype" // FIXME
-extern proc qio_channel_write_int(threadsafe:c_int, byteorder:c_int, ch:qio_channel_ptr_t, inout ptr, len:size_t, issigned:c_int):syserr;
+extern proc qio_channel_write_int(threadsafe:c_int, byteorder:c_int, ch:qio_channel_ptr_t, inout ptr, len:size_t, issigned:c_int):err_t;
 
-extern proc qio_channel_read_float(threadsafe:c_int, byteorder:c_int, ch:qio_channel_ptr_t, inout ptr, len:size_t):syserr;
+extern proc qio_channel_read_float(threadsafe:c_int, byteorder:c_int, ch:qio_channel_ptr_t, inout ptr, len:size_t):err_t;
 pragma "no prototype" // FIXME
-extern proc qio_channel_write_float(threadsafe:c_int, byteorder:c_int, ch:qio_channel_ptr_t, inout ptr, len:size_t):syserr;
+extern proc qio_channel_write_float(threadsafe:c_int, byteorder:c_int, ch:qio_channel_ptr_t, inout ptr, len:size_t):err_t;
 
-extern proc qio_channel_read_complex(threadsafe:c_int, byteorder:c_int, ch:qio_channel_ptr_t, inout re_ptr, inout im_ptr, len:size_t):syserr;
-extern proc qio_channel_write_complex(threadsafe:c_int, byteorder:c_int, ch:qio_channel_ptr_t, inout re_ptr, inout im_ptr, len:size_t):syserr;
+extern proc qio_channel_read_complex(threadsafe:c_int, byteorder:c_int, ch:qio_channel_ptr_t, inout re_ptr, inout im_ptr, len:size_t):err_t;
+extern proc qio_channel_write_complex(threadsafe:c_int, byteorder:c_int, ch:qio_channel_ptr_t, inout re_ptr, inout im_ptr, len:size_t):err_t;
 
-extern proc qio_channel_read_string(threadsafe:c_int, byteorder:c_int, str_style:int(64), ch:qio_channel_ptr_t, inout s:string, inout len:ssize_t, maxlen:ssize_t):syserr;
-extern proc qio_channel_write_string(threadsafe:c_int, byteorder:c_int, str_style:int(64), ch:qio_channel_ptr_t, s:string, len:ssize_t):syserr;
+extern proc qio_channel_read_string(threadsafe:c_int, byteorder:c_int, str_style:int(64), ch:qio_channel_ptr_t, inout s:string, inout len:ssize_t, maxlen:ssize_t):err_t;
+extern proc qio_channel_write_string(threadsafe:c_int, byteorder:c_int, str_style:int(64), ch:qio_channel_ptr_t, s:string, len:ssize_t):err_t;
 
-extern proc qio_channel_scan_int(threadsafe:c_int, ch:qio_channel_ptr_t, inout ptr, len:size_t, issigned:c_int):syserr;
+extern proc qio_channel_scan_int(threadsafe:c_int, ch:qio_channel_ptr_t, inout ptr, len:size_t, issigned:c_int):err_t;
 pragma "no prototype" // FIXME
-extern proc qio_channel_print_int(threadsafe:c_int, ch:qio_channel_ptr_t, inout ptr, len:size_t, issigned:c_int):syserr;
+extern proc qio_channel_print_int(threadsafe:c_int, ch:qio_channel_ptr_t, inout ptr, len:size_t, issigned:c_int):err_t;
 
-extern proc qio_channel_scan_float(threadsafe:c_int, ch:qio_channel_ptr_t, inout ptr, len:size_t):syserr;
+extern proc qio_channel_scan_float(threadsafe:c_int, ch:qio_channel_ptr_t, inout ptr, len:size_t):err_t;
 pragma "no prototype" // FIXME
-extern proc qio_channel_print_float(threadsafe:c_int, ch:qio_channel_ptr_t, inout ptr, len:size_t):syserr;
+extern proc qio_channel_print_float(threadsafe:c_int, ch:qio_channel_ptr_t, inout ptr, len:size_t):err_t;
 
-extern proc qio_channel_scan_complex(threadsafe:c_int, ch:qio_channel_ptr_t, inout re_ptr, inout im_ptr, len:size_t):syserr;
-extern proc qio_channel_print_complex(threadsafe:c_int, ch:qio_channel_ptr_t, inout re_ptr, inout im_ptr, len:size_t):syserr;
+// These are the same as scan/print float but they assume an 'i' afterwards.
+extern proc qio_channel_scan_imag(threadsafe:c_int, ch:qio_channel_ptr_t, inout ptr, len:size_t):err_t;
+pragma "no prototype" // FIXME
+extern proc qio_channel_print_imag(threadsafe:c_int, ch:qio_channel_ptr_t, inout ptr, len:size_t):err_t;
 
 
-extern proc qio_channel_read_char(threadsafe:c_int, ch:qio_channel_ptr_t, inout char:int(32)):syserr;
+extern proc qio_channel_scan_complex(threadsafe:c_int, ch:qio_channel_ptr_t, inout re_ptr, inout im_ptr, len:size_t):err_t;
+extern proc qio_channel_print_complex(threadsafe:c_int, ch:qio_channel_ptr_t, inout re_ptr, inout im_ptr, len:size_t):err_t;
+
+
+extern proc qio_channel_read_char(threadsafe:c_int, ch:qio_channel_ptr_t, inout char:int(32)):err_t;
 
 extern proc qio_nbytes_char(chr:int(32)):c_int;
 extern proc qio_encode_to_string(chr:int(32)):string;
-extern proc qio_decode_char_buf(inout chr:int(32), inout nbytes:c_int, buf:string, buflen:ssize_t):syserr;
+extern proc qio_decode_char_buf(inout chr:int(32), inout nbytes:c_int, buf:string, buflen:ssize_t):err_t;
 
-extern proc qio_channel_write_char(threadsafe:c_int, ch:qio_channel_ptr_t, char:int(32)):syserr;
-extern proc qio_channel_skip_past_newline(threadsafe:c_int, ch:qio_channel_ptr_t, skipOnlyWs:c_int):syserr;
-extern proc qio_channel_write_newline(threadsafe:c_int, ch:qio_channel_ptr_t):syserr;
+extern proc qio_channel_write_char(threadsafe:c_int, ch:qio_channel_ptr_t, char:int(32)):err_t;
+extern proc qio_channel_skip_past_newline(threadsafe:c_int, ch:qio_channel_ptr_t, skipOnlyWs:c_int):err_t;
+extern proc qio_channel_write_newline(threadsafe:c_int, ch:qio_channel_ptr_t):err_t;
 
-extern proc qio_channel_scan_string(threadsafe:c_int, ch:qio_channel_ptr_t, inout ptr:string, inout len:ssize_t, maxlen:ssize_t):syserr;
-extern proc qio_channel_print_string(threadsafe:c_int, ch:qio_channel_ptr_t, ptr:string, len:ssize_t):syserr;
+extern proc qio_channel_scan_string(threadsafe:c_int, ch:qio_channel_ptr_t, inout ptr:string, inout len:ssize_t, maxlen:ssize_t):err_t;
+extern proc qio_channel_print_string(threadsafe:c_int, ch:qio_channel_ptr_t, ptr:string, len:ssize_t):err_t;
 
-extern proc qio_channel_scan_literal(threadsafe:c_int, ch:qio_channel_ptr_t, match:string, len:ssize_t, skipws:c_int):syserr;
-extern proc qio_channel_scan_literal_2(threadsafe:c_int, ch:qio_channel_ptr_t, match:c_ptr, len:ssize_t, skipws:c_int):syserr;
-extern proc qio_channel_print_literal(threadsafe:c_int, ch:qio_channel_ptr_t, match:string, len:ssize_t):syserr;
-extern proc qio_channel_print_literal_2(threadsafe:c_int, ch:qio_channel_ptr_t, match:c_ptr, len:ssize_t):syserr;
+extern proc qio_channel_scan_literal(threadsafe:c_int, ch:qio_channel_ptr_t, match:string, len:ssize_t, skipws:c_int):err_t;
+extern proc qio_channel_scan_literal_2(threadsafe:c_int, ch:qio_channel_ptr_t, match:c_ptr, len:ssize_t, skipws:c_int):err_t;
+extern proc qio_channel_print_literal(threadsafe:c_int, ch:qio_channel_ptr_t, match:string, len:ssize_t):err_t;
+extern proc qio_channel_print_literal_2(threadsafe:c_int, ch:qio_channel_ptr_t, match:c_ptr, len:ssize_t):err_t;
 
- 
+extern record qio_conv_t {
+  var preArg1:uint(8);
+  var preArg2:uint(8);
+  var preArg3:uint(8);
+  var argType:uint(8);
+  var literal_is_whitespace:uint(8);
+  var literal_length:uint(32);
+  var literal:c_ptr;
+  var regexp_length:uint(32);
+  var regexp:c_ptr;
+  var regexp_flags_length:uint(32);
+  var regexp_flags:c_ptr;
+}
+
+extern const QIO_CONV_UNK:c_int;
+
+extern const QIO_CONV_ARG_TYPE_NUMERIC:c_int;
+extern const QIO_CONV_ARG_TYPE_SIGNED:c_int;
+extern const QIO_CONV_ARG_TYPE_BINARY_SIGNED:c_int;
+extern const QIO_CONV_ARG_TYPE_UNSIGNED:c_int;
+extern const QIO_CONV_ARG_TYPE_BINARY_UNSIGNED:c_int;
+extern const QIO_CONV_ARG_TYPE_REAL:c_int;
+extern const QIO_CONV_ARG_TYPE_BINARY_REAL:c_int;
+extern const QIO_CONV_ARG_TYPE_IMAG:c_int;
+extern const QIO_CONV_ARG_TYPE_BINARY_IMAG:c_int;
+extern const QIO_CONV_ARG_TYPE_COMPLEX:c_int;
+extern const QIO_CONV_ARG_TYPE_BINARY_COMPLEX:c_int;
+
+extern const QIO_CONV_ARG_TYPE_CHAR:c_int;
+extern const QIO_CONV_ARG_TYPE_STRING:c_int;
+extern const QIO_CONV_ARG_TYPE_REPR:c_int;
+extern const QIO_CONV_ARG_TYPE_REGEXP:c_int;
+extern const QIO_CONV_ARG_TYPE_NONE_REGEXP_LITERAL:c_int;
+extern const QIO_CONV_ARG_TYPE_NONE_LITERAL:c_int;
+
+extern const QIO_CONV_SET_MIN_WIDTH_COLS:c_int;
+extern const QIO_CONV_SET_MAX_WIDTH_COLS:c_int;
+extern const QIO_CONV_SET_MAX_WIDTH_CHARS:c_int;
+extern const QIO_CONV_SET_MAX_WIDTH_BYTES:c_int;
+extern const QIO_CONV_SET_PRECISION:c_int;
+extern const QIO_CONV_SET_STRINGLEN:c_int;
+extern const QIO_CONV_SET_TERMINATOR:c_int;
+extern const QIO_CONV_SET_STRINGSTART:c_int;
+extern const QIO_CONV_SET_STRINGSTARTEND:c_int;
+extern const QIO_CONV_SET_STRINGEND:c_int;
+extern const QIO_CONV_SET_CAPTURE:c_int;
+extern const QIO_CONV_SET_DONE:c_int;
+
+extern proc qio_conv_parse(fmt:string, start:size_t, inout end:size_t, scanning:c_int, inout spec:qio_conv_t, inout style:iostyle):syserr;
+
+extern proc qio_format_error_too_many_args():syserr;
+extern proc qio_format_error_too_few_args():syserr;
+extern proc qio_format_error_arg_mismatch(arg:int):syserr;
+extern proc qio_format_error_bad_regexp():syserr;
+extern proc qio_format_error_write_regexp():syserr;
+
 proc defaultIOStyle():iostyle {
   var ret:iostyle;
   qio_style_init_default(ret);
@@ -1006,6 +1068,8 @@ proc _read_text_internal(_channel_internal:qio_channel_ptr_t, out x:?t):syserr w
     // handles real
     return qio_channel_scan_float(false, _channel_internal, x, numBytes(t));
   } else if _isImagType(t) {
+    return qio_channel_scan_imag(false, _channel_internal, x, numBytes(t));
+    /*
     var err = qio_channel_mark(false, _channel_internal);
     if err then return err;
 
@@ -1019,6 +1083,7 @@ proc _read_text_internal(_channel_internal:qio_channel_ptr_t, out x:?t):syserr w
       qio_channel_revert_unlocked(_channel_internal);
     }
     return err;
+    */
   } else if _isComplexType(t)  {
     // handle complex types
     var re:x.re.type;
@@ -1064,19 +1129,20 @@ proc _write_text_internal(_channel_internal:qio_channel_ptr_t, x:?t):syserr wher
     // handles real
     return qio_channel_print_float(false, _channel_internal, x, numBytes(t));
   } else if _isImagType(t) {
-    var err = qio_channel_mark(false, _channel_internal);
+    return qio_channel_print_imag(false, _channel_internal, x, numBytes(t));
+    /*var err = qio_channel_mark(false, _channel_internal);
     if err then return err;
 
     err = qio_channel_print_float(false, _channel_internal, x, numBytes(t));
-    if !err {
+    if err == 0 {
       err = qio_channel_print_literal(false, _channel_internal, _i, 1);
     }
-    if !err {
+    if err == 0 {
       qio_channel_commit_unlocked(_channel_internal);
     } else {
       qio_channel_revert_unlocked(_channel_internal);
     }
-    return err;
+    return err;*/
   } else if _isComplexType(t)  {
     // handle complex types
     var re = x.re;
@@ -1142,6 +1208,7 @@ inline proc _read_binary_internal(_channel_internal:qio_channel_ptr_t, param byt
   } else {
     compilerError("Unknown primitive type in _read_binary_internal ", typeToString(t));
   }
+  return EINVAL;
 }
 
 inline proc _write_binary_internal(_channel_internal:qio_channel_ptr_t, param byteorder:iokind, x:?t):syserr where _isIoPrimitiveType(t) {
@@ -1169,14 +1236,15 @@ inline proc _write_binary_internal(_channel_internal:qio_channel_ptr_t, param by
     var i:enum_mintype(t) = x:enum_mintype(t);
     return qio_channel_write_int(false, byteorder, _channel_internal, i, numBytes(i.type), _isSignedType(i.type));
   } else {
-    halt("Unknown primitive type in write_binary_internal " + typeToString(t));
+    compilerError("Unknown primitive type in write_binary_internal ", typeToString(t));
   }
+  return EINVAL;
 }
 
 // Channel must be locked, must be running on this.home
 // x is inout because it might contain a literal string.
 inline proc _read_one_internal(_channel_internal:qio_channel_ptr_t, param kind:iokind, inout x:?t):syserr where _isIoPrimitiveTypeOrNewline(t) {
-  var e:syserr = EINVAL;
+  var e:syserr = ENOERR;
   if t == ioNewline {
     return qio_channel_skip_past_newline(false, _channel_internal, x.skipWhitespaceOnly);
   } else if t == ioChar {
@@ -1209,7 +1277,7 @@ inline proc _read_one_internal(_channel_internal:qio_channel_ptr_t, param kind:i
 
 // Channel must be locked, must be running on this.home
 inline proc _write_one_internal(_channel_internal:qio_channel_ptr_t, param kind:iokind, x:?t):syserr where _isIoPrimitiveTypeOrNewline(t) {
-  var e:syserr = EINVAL;
+  var e:syserr = ENOERR;
   if t == ioNewline {
     return qio_channel_write_newline(false, _channel_internal);
   } else if t == ioChar {
@@ -1749,7 +1817,7 @@ class ChannelReader : Reader {
 
 // Delete a file.
 proc unlink(path:string, out error:syserr) {
-  extern proc sys_unlink(path:string):syserr;
+  extern proc sys_unlink(path:string):err_t;
   error = sys_unlink(path);
 }
 proc unlink(path:string) {
@@ -1763,8 +1831,1336 @@ proc unicodeSupported():bool {
   return qio_unicode_supported() > 0;
 }
 
+inline
+proc _toIntegral(x:?t) where _isIntegralType(t)
+{
+  return (x, true);
+}
+inline
+proc _toIntegral(x:?t) where _isIoPrimitiveType(t) && !_isIntegralType(t)
+{
+  return (x:int, true);
+}
+inline
+proc _toIntegral(x:?t) where !_isIoPrimitiveType(t)
+{
+  return (0, false);
+}
+
+inline
+proc _toSigned(x:?t) where _isSignedType(t)
+{
+  return (x, true);
+}
+inline
+proc _toSigned(x:uint(8))
+{
+  return (x:int(8), true);
+}
+inline
+proc _toSigned(x:uint(16))
+{
+  return (x:int(16), true);
+}
+inline
+proc _toSigned(x:uint(32))
+{
+  return (x:int(32), true);
+}
+inline
+proc _toSigned(x:uint(64))
+{
+  return (x:int(64), true);
+}
+
+inline
+proc _toSigned(x:?t) where _isIoPrimitiveType(t) && !_isIntegralType(t)
+{
+  return (x:int, true);
+}
+inline
+proc _toSigned(x:?t) where !_isIoPrimitiveType(t)
+{
+  return (0:int, false);
+}
+
+inline
+proc _toUnsigned(x:?t) where _isUnsignedType(t)
+{
+  return (x, true);
+}
+inline
+proc _toUnsigned(x:int(8))
+{
+  return (x:uint(8), true);
+}
+inline
+proc _toUnsigned(x:int(16))
+{
+  return (x:uint(16), true);
+}
+inline
+proc _toUnsigned(x:int(32))
+{
+  return (x:uint(32), true);
+}
+inline
+proc _toUnsigned(x:int(64))
+{
+  return (x:uint(64), true);
+}
+
+
+inline
+proc _toUnsigned(x:?t) where _isIoPrimitiveType(t) && !_isIntegralType(t)
+{
+  return (x:uint, true);
+}
+inline
+proc _toUnsigned(x:?t) where !_isIoPrimitiveType(t)
+{
+  return (0:uint, false);
+}
+
+
+inline
+proc _toReal(x:?t) where _isRealType(t)
+{
+  return (x, true);
+}
+inline
+proc _toReal(x:?t) where _isIoPrimitiveType(t) && !_isRealType(t)
+{
+  return (x:real, true);
+}
+inline
+proc _toReal(x:?t) where !_isIoPrimitiveType(t)
+{
+  return (0.0, false);
+}
+
+inline
+proc _toImag(x:?t) where _isImagType(t)
+{
+  return (x, true);
+}
+inline
+proc _toImag(x:?t) where _isIoPrimitiveType(t) && !_isImagType(t)
+{
+  return (x:imag, true);
+}
+inline
+proc _toImag(x:?t) where !_isIoPrimitiveType(t)
+{
+  return (0.0i, false);
+}
+
+
+inline
+proc _toComplex(x:?t) where _isComplexType(t)
+{
+  return (x, true);
+}
+inline
+proc _toComplex(x:?t) where _isIoPrimitiveType(t) && !_isComplexType(t)
+{
+  return (x:complex, true);
+}
+inline
+proc _toComplex(x:?t) where !_isIoPrimitiveType(t)
+{
+  return (0.0+0.0i, false);
+}
+
+inline
+proc _toRealOrComplex(x:?t) where _isComplexType(t)
+{
+  return (x, true);
+}
+inline
+proc _toRealOrComplex(x:?t) where _isFloatType(t)
+{
+  return (x, true);
+}
+inline
+proc _toRealOrComplex(x:?t) where _isIoPrimitiveType(t) && !_isComplexType(t) && !_isFloatType(t)
+{
+  return (x:real, true);
+}
+inline
+proc _toRealOrComplex(x:?t) where !_isIoPrimitiveType(t)
+{
+  return (0.0, false);
+}
+
+proc _isNumericType(type t) param return
+_isIntegralType(t) || _isRealType(t) || _isImagType(t) || _isComplexType(t);
+
+inline
+proc _toNumeric(x:?t) where _isNumericType(t)
+{
+  return (x, true);
+}
+inline
+proc _toNumeric(x:?t) where _isIoPrimitiveType(t) && !_isNumericType(t)
+{
+  // enums, bools get cast to int.
+  return (x:int, true);
+}
+inline
+proc _toNumeric(x:?t) where !_isIoPrimitiveType(t)
+{
+  return (0, false);
+}
+
+
+
+inline
+proc _toString(x:?t) where _isIoPrimitiveType(t)
+{
+  return (x:string, true);
+}
+inline
+proc _toString(x:?t) where !_isIoPrimitiveType(t)
+{
+  return ("", false);
+}
+
+inline
+proc _toChar(x:?t) where _isIntegralType(t)
+{
+  return (x:int(32), true);
+}
+inline
+proc _toChar(x:?t) where t == string
+{
+  var chr:int(32);
+  var nbytes:c_int;
+  qio_decode_char_buf(chr, nbytes, x, x.length);
+  return (chr, true);
+}
+inline
+proc _toChar(x:?t) where !(t==string || _isIntegralType(t))
+{
+  return (0:int(32), false);
+}
+
+
+// If we wanted to give ERANGE if (for example
+// var x:int(8); readf("%i", x);
+// was given the input 1000, this would be the place to do it.
+inline
+proc _setIfPrimitive(ref lhs:?t, rhs:?t2, argi:int):syserr where t==bool&&_isIoPrimitiveType(t2)
+{
+  var empty:t2;
+  if rhs == empty {
+    lhs = false;
+  } else {
+    lhs = true;
+  }
+  return ENOERR;
+}
+inline
+proc _setIfPrimitive(ref lhs:?t, rhs:?t2, argi:int):syserr where t!=bool&&_isIoPrimitiveType(t)
+{
+  //stdout.writeln("setIfPrimitive ", lhs, " ", rhs);
+  lhs = rhs:t;
+  return ENOERR;
+}
+inline
+proc _setIfPrimitive(ref lhs:?t, rhs, argi:int):syserr where !_isIoPrimitiveType(t)
+{
+  return qio_format_error_arg_mismatch(argi);
+}
+
+inline
+proc _setIfChar(ref lhs:?t, rhs:int(32)) where t == string
+{
+  lhs = new ioChar(rhs):string;
+}
+inline
+proc _setIfChar(ref lhs:?t, rhs:int(32)) where _isIntegralType(t)
+{
+  lhs = rhs:t;
+}
+inline
+proc _setIfChar(ref lhs:?t, rhs:int(32)) where !(t==string||_isIntegralType(t))
+{
+  // do nothing
+}
+
+
+
+inline
+proc _toRegexp(x:?t) where t == regexp
+{
+  return (x, true);
+}
+inline
+proc _toRegexp(x:?t) where t != regexp
+{
+  var r:regexp;
+  return (r, false);
+}
+
+param _format_debug = false;
+
+class _channel_regexp_info {
+  var hasRegexp = false;
+  var matchedRegexp = false;
+  var releaseRegexp = false;
+  var theRegexp = qio_regexp_null();
+  var matches: _ddata(qio_regexp_string_piece_t) = nil; // size = ncaptures+1
+  var capArr: _ddata(string) = nil; // size = ncaptures
+  var capturei: int;
+  var ncaptures: int;
+  proc clear() {
+    if releaseRegexp {
+      qio_regexp_release(theRegexp);
+    }
+    theRegexp = qio_regexp_null();
+    hasRegexp = false;
+    matchedRegexp = false;
+    releaseRegexp = false;
+    if matches then _ddata_free(matches);
+    for i in 0..#ncaptures do capArr[i] = "";
+    if capArr then _ddata_free(capArr);
+  }
+  proc allocate_captures() {
+    ncaptures = qio_regexp_get_ncaptures(theRegexp);
+    matches = _ddata_allocate(qio_regexp_string_piece_t, ncaptures+1);
+    capArr = _ddata_allocate(string, ncaptures);
+    capturei = 0;
+  }
+  proc ~_channel_regexp_info() {
+    clear();
+  }
+}
+
+proc channel._match_regexp_if_needed(cur:size_t, len:size_t, ref error:syserr, ref style:iostyle, r:_channel_regexp_info)
+{
+  if _format_debug then stdout.writeln("REGEXP MATCH ENTRY");
+  if qio_regexp_ok(r.theRegexp) {
+    if r.matchedRegexp then return;
+    if _format_debug then stdout.writeln("REGEXP MATCH");
+    r.matchedRegexp = true;
+    r.allocate_captures(); // also allocates matches and capArr
+    var ncaps = r.ncaptures;
+    var nm = ncaps + 1;
+    var maxlen:int(64) = style.max_width_characters;
+    // If we are working on the last part of the format string,
+    // and there is a match, we can immediately discard
+    // data before any captures in the match (or if there
+    // are no captures - the entire match).
+    var can_discard = (cur == len);
+    if maxlen == max(uint(32)) then maxlen = max(int(64));
+    var before_match = qio_channel_offset_unlocked(_channel_internal);
+    // Do the actual regexp search.
+    // Now read, matching the regexp.
+    error = qio_regexp_channel_match(r.theRegexp, false, _channel_internal,
+                                     maxlen, QIO_REGEXP_ANCHOR_START,
+                                     can_discard,
+                                     /* keep_unmatched */ true,
+                                     /* keep_whole_pattern */ false,
+                                     r.matches, nm);
+    var after_match = qio_channel_offset_unlocked(_channel_internal);
+
+    // Now, if there was no match, error=EFORMAT
+    // if there was a match, error = no error
+    // Either way, we have to handle the next several
+    // arguments as capture groups.
+    if ! error {
+      for j in 0..#ncaps {
+        // matches[0] is the whole pattern, and
+        // we only want to extract capture groups.
+        var m = _to_reMatch(r.matches[1+j]);
+        _extractMatch(m, r.capArr[j], error);
+        if error then break;
+      }
+      // And, advance the channel to the end of the match.
+      var cur = qio_channel_offset_unlocked(_channel_internal);
+      var target = r.matches[0].offset + r.matches[0].len;
+      error = qio_channel_advance(false, _channel_internal, target - cur);
+      if error {
+        if _format_debug then stdout.writeln("TODO AQB");
+      }
+    } else {
+      // otherwise, clear out caps...
+      for j in 0..#ncaps {
+        r.capArr[j] = "";
+      }
+      // ... and put the channel before the match.
+      var cur = qio_channel_offset_unlocked(_channel_internal);
+      qio_channel_advance(false, _channel_internal, before_match - cur);
+      // EFORMAT means the pattern did not match.
+      if _format_debug then stdout.writeln("TODO AQZ");
+    }
+  } else {
+    error = qio_format_error_bad_regexp();;
+    if _format_debug then stdout.writeln("TODO AZB");
+  }
+}
+
+// Reads the next format string that will require argument handling.
+// Handles literals and regexps itself; everything else will
+// be returned in conv and with gotConv = true.
+// Assumes, for a reading channel, that we are withn a mark/revert/commit
+//  in readf. (used in the regexp handling here).
+proc channel._format_reader(
+    fmt:string, ref cur:size_t, len:size_t, ref error:syserr,
+    ref conv:qio_conv_t, ref gotConv:bool, ref style:iostyle,
+    ref r:_channel_regexp_info,
+    isReadf:bool)
+{
+  if _format_debug then stdout.writeln("FORMAT READER ENTRY");
+  if r != nil then r.hasRegexp = false;
+  if !error {
+    while cur < len {
+      gotConv = false;
+      if error then break;
+      if _format_debug then stdout.writeln("TOP OF LOOP cur=", cur, " len=", len);
+      var end:size_t;
+      error = qio_conv_parse(fmt, cur, end, isReadf, conv, style);
+      if error {
+        if _format_debug then stdout.writeln("TODO ACC");
+      }
+      cur = end;
+      if error then break;
+      if _format_debug then stdout.writeln("MIDDLE OF LOOP");
+      if conv.argType == QIO_CONV_ARG_TYPE_NONE_LITERAL {
+        // Print whitespace or I/O literal.
+        // literal string in conv
+        if isReadf {
+          // Scan whitespace or I/O literal.
+          // literal string in conv
+          if conv.literal_is_whitespace == 2 {
+            if _format_debug then stdout.writeln("NEWLINE");
+            // Handle a \n newline in the format string.
+            // Other space.
+            var offsetA = qio_channel_offset_unlocked(_channel_internal);
+            error = qio_channel_skip_past_newline(false, _channel_internal, true);
+            var offsetB = qio_channel_offset_unlocked(_channel_internal);
+            if (!error) && offsetA == offsetB {
+              // didn't really read newline.
+              error = EFORMAT;
+            }
+            if _format_debug then stdout.writeln("AFTER NEWLINE err is ", error:int);
+          } else if conv.literal_is_whitespace == 1 {
+            if _format_debug then stdout.writeln("WHITESPACE");
+            // Other space.
+            var offsetA = qio_channel_offset_unlocked(_channel_internal);
+            error = qio_channel_scan_literal_2(false, _channel_internal, conv.literal, 0, true);
+            if _format_debug {
+             if error then stdout.writeln("TODO XZOB");
+            }
+            var offsetB = qio_channel_offset_unlocked(_channel_internal);
+            if (!error) && offsetA == offsetB {
+              // didn't really read whitespace.
+              error = EFORMAT;
+            }
+          } else {
+            error = qio_channel_scan_literal_2(false, _channel_internal, conv.literal, conv.literal_length, false);
+          }
+        } else {
+          // when printing we don't care if it's just whitespace.
+          error = qio_channel_print_literal_2(false, _channel_internal, conv.literal, conv.literal_length);
+        }
+      } else if conv.argType == QIO_CONV_ARG_TYPE_NONE_REGEXP_LITERAL {
+        if ! isReadf {
+          // It's not so clear what to do when printing
+          // a regexp. So we just don't handle it.
+          error = qio_format_error_write_regexp();
+          if _format_debug then stdout.writeln("TODO AZA");
+        } else {
+          // allocate regexp info if needed
+          if r == nil then r = new _channel_regexp_info();
+          // clear out old data, if there is any.
+          r.clear();
+          // Compile a regexp from the format string
+          var errstr:string;
+          if _format_debug then stdout.writeln("COMPILING REGEXP");
+          // build a regexp out of regexp and regexp_flags
+          qio_regexp_create_compile_flags_2(conv.regexp, conv.regexp_length, conv.regexp_flags, conv.regexp_flags_length, /* utf8? */ true, r.theRegexp);
+          r.releaseRegexp = true;
+          if qio_regexp_ok(r.theRegexp) {
+            r.hasRegexp = true;
+            r.ncaptures = qio_regexp_get_ncaptures(r.theRegexp);
+            // If there are no captures, and we don't have arguments
+            // to consume, go ahead and match the regexp.
+            if r.ncaptures > 0 ||
+               conv.preArg1 != QIO_CONV_UNK ||
+               conv.preArg2 != QIO_CONV_UNK ||
+               conv.preArg3 != QIO_CONV_UNK
+            {
+              // We need to consume args as part of matching this regexp. 
+              gotConv = true;
+              break;
+            } else {
+              // No args will be consumed.
+              _match_regexp_if_needed(cur, len, error, style, r);
+            }
+          } else {
+            error = qio_format_error_bad_regexp();
+            if _format_debug then stdout.writeln("TODO AZB");
+            //if dieOnError then assert(!error, errstr);
+          }
+        }
+      } else {
+        // Some other kind of format specifier... we
+        // will return to handle.
+        gotConv = true;
+        break;
+      }
+    }
+  }
+}
+
+proc channel._conv_helper(
+    ref error:syserr,
+    ref conv:qio_conv_t, ref gotConv:bool,
+    ref j:int,
+    ref argType)
+{
+  if error then return;
+  if gotConv {
+    // Perhaps we need to handle pre/post args
+    // that adjust the style
+    if conv.preArg1 != QIO_CONV_UNK {
+      argType(j) = conv.preArg1;
+      j += 1;
+    }
+    if conv.preArg2 != QIO_CONV_UNK {
+      argType(j) = conv.preArg2;
+      j += 1;
+    }
+    if conv.preArg3 != QIO_CONV_UNK {
+      argType(j) = conv.preArg3;
+      j += 1;
+    }
+    if conv.argType != QIO_CONV_UNK {
+      if argType(j) == QIO_CONV_UNK {
+        // Some regexp paths set it earlier..
+        argType(j) = conv.argType;
+      }
+      j += 1;
+    }
+  }
+}
+
+proc channel._conv_sethandler(
+    ref error:syserr,
+    argtypei:c_int,
+    ref style:iostyle,
+    i:int, argi,
+    isReadf:bool):bool
+{
+  if error then return false;
+  // Now, set style elements based on action
+  // at i
+  select argtypei {
+    when QIO_CONV_SET_MIN_WIDTH_COLS {
+      var (t,ok) = _toIntegral(argi);
+      if ! ok {
+        error = qio_format_error_arg_mismatch(i);
+        if _format_debug then stdout.writeln("TODO AZE");
+      } else style.min_width_columns = t:uint(32);
+    }
+    when QIO_CONV_SET_MAX_WIDTH_COLS {
+      var (t,ok) = _toIntegral(argi);
+      if ! ok {
+        error = qio_format_error_arg_mismatch(i);
+        if _format_debug then stdout.writeln("TODO AZF");
+      } else style.max_width_columns = t:uint(32);
+    }
+    when QIO_CONV_SET_MAX_WIDTH_CHARS {
+      var (t,ok) = _toIntegral(argi);
+      if ! ok {
+        error = qio_format_error_arg_mismatch(i);
+        if _format_debug then stdout.writeln("TODO AZG");
+      } else style.max_width_characters = t:uint(32);
+    }
+    when QIO_CONV_SET_MAX_WIDTH_BYTES {
+      var (t,ok) = _toIntegral(argi);
+      if ! ok {
+        error = qio_format_error_arg_mismatch(i);
+        if _format_debug then stdout.writeln("TODO AZGX");
+      } else style.max_width_bytes = t:uint(32);
+    }
+    when QIO_CONV_SET_PRECISION {
+      var (t,ok) = _toIntegral(argi);
+      if ! ok {
+        error = qio_format_error_arg_mismatch(i);
+        if _format_debug then stdout.writeln("TODO AZH");
+      } else style.precision = t:int(32);
+    }
+    when QIO_CONV_SET_STRINGSTART {
+      var (t,ok) = _toChar(argi);
+      if ! ok {
+        error = qio_format_error_arg_mismatch(i);
+        if _format_debug then stdout.writeln("TODO AZH");
+      } else style.string_start = t:style_char_t;
+    }
+    when QIO_CONV_SET_STRINGEND {
+      var (t,ok) = _toChar(argi);
+      if ! ok {
+        error = qio_format_error_arg_mismatch(i);
+        if _format_debug then stdout.writeln("TODO AZH");
+      } else style.string_end = t:style_char_t;
+    }
+    when QIO_CONV_SET_STRINGSTARTEND {
+      var (t,ok) = _toChar(argi);
+      if ! ok {
+        error = qio_format_error_arg_mismatch(i);
+        if _format_debug then stdout.writeln("TODO AZH");
+      } else {
+        style.string_start = t:style_char_t;
+        style.string_end = t:style_char_t;
+      }
+    }
+    when QIO_CONV_SET_STRINGLEN {
+      var (t,ok) = _toIntegral(argi);
+      if ! ok {
+        error = qio_format_error_arg_mismatch(i);
+        if _format_debug then stdout.writeln("TODO AZH");
+      } else {
+        style.str_style = t:int(64);
+      }
+    }
+    when QIO_CONV_SET_TERMINATOR {
+      var (t,ok) = _toChar(argi);
+      if ! ok {
+        error = qio_format_error_arg_mismatch(i);
+        if _format_debug then stdout.writeln("TODO AZH");
+      } else {
+        style.str_style = stringStyleTerminated(t:uint(8));
+      }
+    }
+    when QIO_CONV_SET_DONE {
+      // Do nothing. Already handled.
+    }
+    when QIO_CONV_UNK {
+      // Too many arguments.
+      error = qio_format_error_too_many_args();
+      if _format_debug then stdout.writeln("TODO AZK");
+    } otherwise {
+      return true;
+    }
+  }
+  return false;
+}
+
+proc channel._write_signed(width:uint(32), t:int, i:int)
+{
+  var error:syserr;
+  var byteorder = qio_channel_byteorder(_channel_internal);
+  select width {
+    when 1 {
+      var x = t:int(8);
+      error = qio_channel_write_int(false, byteorder, _channel_internal, x, numBytes(x.type), _isSignedType(x.type));
+    } when 2 {
+      var x = t:int(16);
+      error = qio_channel_write_int(false, byteorder, _channel_internal, x, numBytes(x.type), _isSignedType(x.type));
+    } when 4 {
+      var x = t:int(32);
+      error = qio_channel_write_int(false, byteorder, _channel_internal, x, numBytes(x.type), _isSignedType(x.type));
+    } when 8 {
+      var x = t:int(64);
+      error = qio_channel_write_int(false, byteorder, _channel_internal, x, numBytes(x.type), _isSignedType(x.type));
+    } otherwise error = qio_format_error_arg_mismatch(i);
+  }
+  return error;
+}
+
+proc channel._read_signed(width:uint(32), out t:int, i:int)
+{
+  var error:syserr;
+  var byteorder = qio_channel_byteorder(_channel_internal);
+  select width {
+    when 1 {
+      var x:int(8);
+      error = qio_channel_read_int(false, byteorder, _channel_internal, x, numBytes(x.type), _isSignedType(x.type));
+      t = x;
+    } when 2 {
+      var x:int(16);
+      error = qio_channel_read_int(false, byteorder, _channel_internal, x, numBytes(x.type), _isSignedType(x.type));
+      t = x;
+    } when 4 {
+      var x:int(32);
+      error = qio_channel_read_int(false, byteorder, _channel_internal, x, numBytes(x.type), _isSignedType(x.type));
+      t = x;
+    } when 8 {
+      var x:int(64);
+      error = qio_channel_read_int(false, byteorder, _channel_internal, x, numBytes(x.type), _isSignedType(x.type));
+      t = x;
+    } otherwise error = qio_format_error_arg_mismatch(i);
+  }
+  return error;
+}
+
+proc channel._write_unsigned(width:uint(32), t:uint, i:int)
+{
+  var error:syserr;
+  var byteorder = qio_channel_byteorder(_channel_internal);
+  select width {
+    when 1 {
+      var x = t:uint(8);
+      error = qio_channel_write_int(false, byteorder, _channel_internal, x, numBytes(x.type), _isSignedType(x.type));
+    } when 2 {
+      var x = t:uint(16);
+      error = qio_channel_write_int(false, byteorder, _channel_internal, x, numBytes(x.type), _isSignedType(x.type));
+    } when 4 {
+      var x = t:uint(32);
+      error = qio_channel_write_int(false, byteorder, _channel_internal, x, numBytes(x.type), _isSignedType(x.type));
+    } when 8 {
+      var x = t:uint(64);
+      error = qio_channel_write_int(false, byteorder, _channel_internal, x, numBytes(x.type), _isSignedType(x.type));
+    } otherwise error = qio_format_error_arg_mismatch(i);
+  }
+  return error;
+}
+proc channel._read_unsigned(width:uint(32), out t:uint, i:int)
+{
+  var error:syserr;
+  var byteorder = qio_channel_byteorder(_channel_internal);
+  select width {
+    when 1 {
+      var x:uint(8);
+      error = qio_channel_read_int(false, byteorder, _channel_internal, x, numBytes(x.type), _isSignedType(x.type));
+      t = x;
+    } when 2 {
+      var x:uint(16);
+      error = qio_channel_read_int(false, byteorder, _channel_internal, x, numBytes(x.type), _isSignedType(x.type));
+      t = x;
+    } when 4 {
+      var x:uint(32);
+      error = qio_channel_read_int(false, byteorder, _channel_internal, x, numBytes(x.type), _isSignedType(x.type));
+      t = x;
+    } when 8 {
+      var x:uint(64);
+      error = qio_channel_read_int(false, byteorder, _channel_internal, x, numBytes(x.type), _isSignedType(x.type));
+      t = x;
+    } otherwise error = qio_format_error_arg_mismatch(i);
+  }
+  return error;
+}
+
+
+proc channel._write_real(width:uint(32), t:real, i:int)
+{
+  var error:syserr;
+  var byteorder = qio_channel_byteorder(_channel_internal);
+  select width {
+    when 4 {
+      var x = t:real(32);
+      error = qio_channel_write_float(false, byteorder, _channel_internal, x, numBytes(x.type));
+    } when 8 {
+      var x = t:real(64);
+      error = qio_channel_write_float(false, byteorder, _channel_internal, x, numBytes(x.type));
+    } otherwise error = qio_format_error_arg_mismatch(i);
+  }
+  return error;
+}
+proc channel._read_real(width:uint(32), out t:real, i:int)
+{
+  var error:syserr;
+  var byteorder = qio_channel_byteorder(_channel_internal);
+  select width {
+    when 4 {
+      var x:real(32);
+      error = qio_channel_read_float(false, byteorder, _channel_internal, x, numBytes(x.type));
+      t = x;
+    } when 8 {
+      var x:real(64);
+      error = qio_channel_read_float(false, byteorder, _channel_internal, x, numBytes(x.type));
+      t = x;
+    } otherwise error = qio_format_error_arg_mismatch(i);
+  }
+  return error;
+}
+
+
+proc channel._write_complex(width:uint(32), t:complex, i:int)
+{
+  var error:syserr;
+  var byteorder = qio_channel_byteorder(_channel_internal);
+  select width {
+    when 8 {
+      var x = t:complex(64);
+      var re = x.re;
+      var im = x.im;
+      error = qio_channel_write_complex(false,byteorder,_channel_internal,re,im, numBytes(re.type));
+    } when 16 {
+      var x = t:complex(128);
+      var re = x.re;
+      var im = x.im;
+      error = qio_channel_write_complex(false,byteorder,_channel_internal,re,im, numBytes(re.type));
+    } otherwise error = qio_format_error_arg_mismatch(i);
+  }
+  return error;
+}
+
+proc channel._read_complex(width:uint(32), out t:complex, i:int)
+{
+  var error:syserr;
+  var byteorder = qio_channel_byteorder(_channel_internal);
+  select width {
+    when 8 {
+      var x:complex(64);
+      var re:x.re.type;
+      var im:x.im.type;
+      error = qio_channel_read_complex(false,byteorder,_channel_internal,re,im, numBytes(re.type));
+      x = (re, im):complex(64); // tuple to complex
+      t = x;
+    } when 16 {
+      var x:complex(128);
+      var re:x.re.type;
+      var im:x.im.type;
+      error = qio_channel_read_complex(false,byteorder,_channel_internal,re,im, numBytes(re.type));
+      x = (re, im):complex(128); // tuple to complex
+      t = x;
+    } otherwise error = qio_format_error_arg_mismatch(i);
+  }
+  return error;
+}
+
+
+
+// 1st arg is format string
+proc channel.writef(fmt:string, args ...?k, out error:syserr):bool {
+  if !writing then compilerError("writef on read-only channel");
+  error = ENOERR;
+  on this.home {
+    this.lock();
+    var save_style = this._style();
+    var cur:size_t = 0;
+    var len:size_t = fmt.length:size_t;
+    var conv:qio_conv_t;
+    var gotConv:bool;
+    var style:iostyle;
+    var end:size_t;
+    var argType:(k+5)*c_int;
+
+    var r:_channel_regexp_info = nil;
+
+    for i in 1..argType.size {
+      argType(i) = QIO_CONV_UNK;
+    }
+
+    var j = 1;
+
+    for param i in 1..k {
+      // The inside of this loop is a bit crazy because
+      // we're writing it all in a param for in order to
+      // get generic argument handling.
+
+      gotConv = false;
+
+      if j <= i {
+        _format_reader(fmt, cur, len, error,
+                       conv, gotConv, style, r,
+                       false);
+      }
+
+      _conv_helper(error, conv, gotConv, j, argType);
+
+      var domore = _conv_sethandler(error, argType(i), style, i,args(i),false);
+
+      if _format_debug then writeln("domore ", domore, " arg ", argType(i), " arg ", args(i));
+
+      if domore {
+        this._set_style(style);
+        // otherwise we will consume at least one argument.
+        select argType(i) {
+          when QIO_CONV_ARG_TYPE_SIGNED, QIO_CONV_ARG_TYPE_BINARY_SIGNED {
+            var (t,ok) = _toSigned(args(i));
+            if ! ok {
+              error = qio_format_error_arg_mismatch(i);
+              if _format_debug then stdout.writeln("TODO AZK");
+            } else {
+              if argType(i) == QIO_CONV_ARG_TYPE_BINARY_SIGNED then
+                error = _write_signed(style.max_width_bytes, t, i);
+              else
+                error = _write_one_internal(_channel_internal, iokind.dynamic, t);
+            }
+          } when QIO_CONV_ARG_TYPE_UNSIGNED, QIO_CONV_ARG_TYPE_BINARY_UNSIGNED {
+            var (t,ok) = _toUnsigned(args(i));
+            if ! ok {
+              error = qio_format_error_arg_mismatch(i);
+              if _format_debug then stdout.writeln("TODO AZK");
+            } else {
+              if argType(i) == QIO_CONV_ARG_TYPE_BINARY_UNSIGNED then
+                error = _write_unsigned(style.max_width_bytes, t, i);
+              else
+                error = _write_one_internal(_channel_internal, iokind.dynamic, t);
+            }
+          } when QIO_CONV_ARG_TYPE_REAL, QIO_CONV_ARG_TYPE_BINARY_REAL {
+            var (t,ok) = _toReal(args(i));
+            if ! ok {
+              error = qio_format_error_arg_mismatch(i);
+              if _format_debug then stdout.writeln("TODO AZK");
+            } else {
+              if argType(i) == QIO_CONV_ARG_TYPE_BINARY_REAL then
+                error = _write_real(style.max_width_bytes, t, i);
+              else
+                error = _write_one_internal(_channel_internal, iokind.dynamic, t);
+            }
+          } when QIO_CONV_ARG_TYPE_IMAG, QIO_CONV_ARG_TYPE_BINARY_IMAG {
+            var (t,ok) = _toImag(args(i));
+            if ! ok {
+              error = qio_format_error_arg_mismatch(i);
+              if _format_debug then stdout.writeln("TODO AZK");
+            } else {
+              if argType(i) == QIO_CONV_ARG_TYPE_BINARY_IMAG then
+                error = _write_real(style.max_width_bytes, t:real, i);
+              else
+                error = _write_one_internal(_channel_internal, iokind.dynamic, t);
+            }
+          } when QIO_CONV_ARG_TYPE_COMPLEX, QIO_CONV_ARG_TYPE_BINARY_COMPLEX {
+            var (t,ok) = _toComplex(args(i));
+            if ! ok {
+              error = qio_format_error_arg_mismatch(i);
+              if _format_debug then stdout.writeln("TODO AZK");
+            } else {
+              if argType(i) == QIO_CONV_ARG_TYPE_BINARY_COMPLEX then
+                error = _write_complex(style.max_width_bytes, t, i);
+              else error = _write_one_internal(_channel_internal, iokind.dynamic, t);
+            }
+          } when QIO_CONV_ARG_TYPE_NUMERIC {
+            var (t,ok) = _toNumeric(args(i));
+            if ! ok {
+              error = qio_format_error_arg_mismatch(i);
+              if _format_debug then stdout.writeln("TODO AZO11");
+            } else error = _write_one_internal(_channel_internal, iokind.dynamic, t);
+          } when QIO_CONV_ARG_TYPE_CHAR {
+            var (t,ok) = _toChar(args(i));
+            if ! ok {
+              error = qio_format_error_arg_mismatch(i);
+              if _format_debug then stdout.writeln("TODO AZN");
+            } else error = _write_one_internal(_channel_internal, iokind.dynamic, new ioChar(t));
+          } when QIO_CONV_ARG_TYPE_STRING {
+            var (t,ok) = _toString(args(i));
+            if ! ok {
+              error = qio_format_error_arg_mismatch(i);
+              if _format_debug then stdout.writeln("TODO AZO");
+            } else error = _write_one_internal(_channel_internal, iokind.dynamic, t);
+          } when QIO_CONV_ARG_TYPE_REGEXP {
+            // It's not so clear what to do when printing
+            // a regexp. So we just don't handle it.
+            error = qio_format_error_write_regexp();
+            if _format_debug then stdout.writeln("TODO AZP");
+          } when QIO_CONV_ARG_TYPE_REPR {
+            error = _write_one_internal(_channel_internal, iokind.dynamic, args(i));
+          } otherwise {
+            // Unhandled argument type!
+            halt("readf/writef internal error ", argType(i));
+          }
+        }
+      }
+    }
+
+    if ! error {
+      if cur < len {
+        var dummy:c_int;
+        _format_reader(fmt, cur, len, error,
+                       conv, gotConv, style, r,
+                       false);
+      }
+
+      if cur < len {
+        // Mismatched number of arguments!
+        error = qio_format_error_too_few_args();
+        if _format_debug then stdout.writeln("TODO AZR");
+      }
+    }
+
+    this._set_style(save_style);
+    this.unlock();
+  }
+  return !error;
+}
+proc channel.writef(fmt:string, out error:syserr):bool {
+  if !writing then compilerError("writef on read-only channel");
+  error = ENOERR;
+  on this.home {
+    this.lock();
+    var save_style = this._style();
+    var cur:size_t = 0;
+    var len:size_t = fmt.length:size_t;
+    var conv:qio_conv_t;
+    var gotConv:bool;
+    var style:iostyle;
+    var end:size_t;
+    var dummy:c_int;
+
+    var r:_channel_regexp_info = nil;
+
+    _format_reader(fmt, cur, len, error,
+                   conv, gotConv, style, r,
+                   false);
+
+    if ! error {
+      if gotConv {
+        error = qio_format_error_too_few_args();
+        if _format_debug then stdout.writeln("TODO AZZs");
+      }
+    }
+
+    if ! error {
+      if cur < len {
+        // Mismatched number of arguments!
+        error = qio_format_error_too_few_args();
+        if _format_debug then stdout.writeln("TODO AZS");
+      }
+    }
+
+    this._set_style(save_style);
+    this.unlock();
+  }
+  return !error;
+}
+
+proc channel.readf(fmt:string, ref args ...?k, out error:syserr):bool {
+  if writing then compilerError("readf on write-only channel");
+  error = ENOERR;
+  on this.home {
+    this.lock();
+    var save_style = this._style();
+    var cur:size_t = 0;
+    var len:size_t = fmt.length:size_t;
+    var conv:qio_conv_t;
+    var gotConv:bool;
+    var style:iostyle;
+    var end:size_t;
+    var argType:(k+5)*c_int;
+
+    var r:_channel_regexp_info = nil;
+
+    for i in 1..argType.size {
+      argType(i) = QIO_CONV_UNK;
+    }
+
+    error = qio_channel_mark(false, _channel_internal);
+    if !error {
+      var j = 1;
+
+      for param i in 1..k {
+        // The inside of this loop is a bit crazy because
+        // we're writing it all in a param for in order to
+        // get generic argument handling.
+        if j <= i {
+          _format_reader(fmt, cur, len, error,
+                         conv, gotConv, style, r,
+                         true);
+
+          if r != nil && r.hasRegexp {
+            // We need to handle the next ncaptures arguments.
+            if i + r.ncaptures - 1 > k {
+              error = qio_format_error_too_few_args();
+              if _format_debug then stdout.writeln("TODO AXA");
+            }
+            for z in 0..#r.ncaptures {
+              if i+z <= argType.size {
+                argType(i+z) = QIO_CONV_SET_CAPTURE;
+              }
+            }
+          }
+        }
+
+        _conv_helper(error, conv, gotConv, j, argType);
+
+        var domore = _conv_sethandler(error, argType(i),style,i,args(i),false);
+
+        if domore {
+          this._set_style(style);
+          // otherwise we will consume at least one argument.
+          select argType(i) {
+            when QIO_CONV_ARG_TYPE_SIGNED, QIO_CONV_ARG_TYPE_BINARY_SIGNED {
+              var (t,ok) = _toSigned(args(i));
+              if ! ok {
+                error = qio_format_error_arg_mismatch(i);
+                if _format_debug then stdout.writeln("TODO AXB");
+              } else {
+                var ti:int;
+                if argType(i) == QIO_CONV_ARG_TYPE_BINARY_SIGNED then
+                  error = _read_signed(style.max_width_bytes, ti, i);
+                else
+                  error = _read_one_internal(_channel_internal, iokind.dynamic, ti);
+                if ! error then error = _setIfPrimitive(args(i),ti,i);
+              }
+            }
+            when QIO_CONV_ARG_TYPE_UNSIGNED, QIO_CONV_ARG_TYPE_BINARY_UNSIGNED {
+              var (t,ok) = _toUnsigned(args(i));
+              if ! ok {
+                error = qio_format_error_arg_mismatch(i);
+                if _format_debug then stdout.writeln("TODO AXB");
+              } else {
+                var ti:uint;
+                if argType(i) == QIO_CONV_ARG_TYPE_BINARY_UNSIGNED then
+                  error = _read_unsigned(style.max_width_bytes, ti, i);
+                else
+                  error = _read_one_internal(_channel_internal, iokind.dynamic, ti);
+                if ! error then error = _setIfPrimitive(args(i),ti,i);
+              }
+            } when QIO_CONV_ARG_TYPE_REAL, QIO_CONV_ARG_TYPE_BINARY_REAL {
+              var (t,ok) = _toReal(args(i));
+              if ! ok {
+                error = qio_format_error_arg_mismatch(i);
+                if _format_debug then stdout.writeln("TODO AXB");
+              } else {
+                var ti:real;
+                if argType(i) == QIO_CONV_ARG_TYPE_BINARY_REAL then
+                  error = _read_real(style.max_width_bytes, ti, i);
+                else
+                  error = _read_one_internal(_channel_internal, iokind.dynamic, ti);
+                if ! error then error = _setIfPrimitive(args(i),ti,i);
+              }
+            } when QIO_CONV_ARG_TYPE_IMAG, QIO_CONV_ARG_TYPE_BINARY_IMAG {
+              var (t,ok) = _toImag(args(i));
+              if ! ok {
+                error = qio_format_error_arg_mismatch(i);
+                if _format_debug then stdout.writeln("TODO AXB1");
+              } else {
+                var ti:imag;
+                if argType(i) == QIO_CONV_ARG_TYPE_BINARY_IMAG {
+                  var tr:real;
+                  error = _read_real(style.max_width_bytes, tr, i);
+                  ti = tr:imag;
+                } else
+                  error = _read_one_internal(_channel_internal, iokind.dynamic, ti);
+                if ! error then error = _setIfPrimitive(args(i),ti,i);
+              }
+            } when QIO_CONV_ARG_TYPE_COMPLEX, QIO_CONV_ARG_TYPE_BINARY_COMPLEX {
+              var (t,ok) = _toComplex(args(i));
+              if ! ok {
+                error = qio_format_error_arg_mismatch(i);
+                if _format_debug then stdout.writeln("TODO AXB");
+              } else {
+                var ti:complex;
+                if argType(i) == QIO_CONV_ARG_TYPE_BINARY_COMPLEX then
+                 error = _read_complex(style.max_width_bytes, ti, i);
+                else
+                  error = _read_one_internal(_channel_internal, iokind.dynamic, ti);
+                if ! error then error = _setIfPrimitive(args(i),ti,i);
+              }
+            } when QIO_CONV_ARG_TYPE_NUMERIC {
+              var (t,ok) = _toNumeric(args(i));
+              if ! ok {
+                error = qio_format_error_arg_mismatch(i);
+                if _format_debug then stdout.writeln("TODO AXB1");
+              } else {
+                var ti = t;
+                error = _read_one_internal(_channel_internal, iokind.dynamic, ti);
+                if ! error then error = _setIfPrimitive(args(i),ti,i);
+              }
+            } when QIO_CONV_ARG_TYPE_CHAR {
+              var (t,ok) = _toChar(args(i));
+              var chr = new ioChar(t);
+              if ! ok {
+                error = qio_format_error_arg_mismatch(i);
+                if _format_debug then stdout.writeln("TODO AXE");
+              } else error = _read_one_internal(_channel_internal, iokind.dynamic, chr);
+              if ! error then _setIfChar(args(i),chr.ch);
+            } when QIO_CONV_ARG_TYPE_STRING {
+              var (t,ok) = _toString(args(i));
+              if ! ok {
+                error = qio_format_error_arg_mismatch(i);
+                if _format_debug then stdout.writeln("TODO AXF");
+              }
+              else error = _read_one_internal(_channel_internal, iokind.dynamic, t);
+              if ! error then error = _setIfPrimitive(args(i),t,i);
+            } when QIO_CONV_ARG_TYPE_REGEXP {
+              var (t,ok) = _toRegexp(args(i));
+              if ! ok {
+                error = qio_format_error_arg_mismatch(i);
+                if _format_debug then stdout.writeln("TODO AXG");
+              }
+              // match it here.
+              if r == nil then r = new _channel_regexp_info();
+              r.clear();
+              r.theRegexp = t._regexp;
+              r.hasRegexp = true;
+              r.releaseRegexp = false;
+              _match_regexp_if_needed(cur, len, error, style, r);
+
+              // Set the capture groups.
+              // We need to handle the next ncaptures arguments.
+              if i + r.ncaptures - 1 > k {
+                error = qio_format_error_too_few_args();
+                if _format_debug then stdout.writeln("TODO AXH");
+              }
+              for z in 0..#r.ncaptures {
+                if i+z <= argType.size {
+                  argType(i+z+1) = QIO_CONV_SET_CAPTURE;
+                }
+              }
+            } when QIO_CONV_ARG_TYPE_REPR {
+              error = _read_one_internal(_channel_internal, iokind.dynamic, args(i));
+            } when QIO_CONV_SET_CAPTURE {
+              if r == nil {
+                error = qio_format_error_bad_regexp();
+                if _format_debug then stdout.writeln("TODO AXI");
+              } else {
+                _match_regexp_if_needed(cur, len, error, style, r);
+                // Set args(i) to the catpure at capturei.
+                if r.capturei >= r.ncaptures {
+                  error = qio_format_error_bad_regexp();
+                  if _format_debug then stdout.writeln("TODO AXJ");
+                } else {
+                  // We have a string in captures[capturei] and
+                  // we need to set args(i) to that.
+                  args(i) = r.capArr[r.capturei]:args(i).type;
+                  r.capturei += 1;
+                }
+              }
+            } otherwise {
+              halt("Internal error in readf/writef");
+            }
+          }
+        }
+      }
+
+      if ! error {
+        if cur < len {
+          var dummy:c_int;
+          _format_reader(fmt, cur, len, error,
+                         conv, gotConv, style, r,
+                         true);
+        }
+
+        if cur < len {
+          // Mismatched number of arguments!
+          error = qio_format_error_too_few_args();
+          if _format_debug then stdout.writeln("TODO AXL");
+        }
+      }
+
+      if r != nil {
+        delete r;
+      }
+
+      if ! error {
+        // commit.
+        qio_channel_commit_unlocked(_channel_internal);
+      } else {
+        // revert
+        qio_channel_revert_unlocked(_channel_internal);
+      }
+    }
+    this._set_style(save_style);
+    this.unlock();
+  }
+  return !error;
+}
+
+proc channel.readf(fmt:string, out error:syserr):bool {
+  if writing then compilerError("readf on write-only channel");
+  error = ENOERR;
+  on this.home {
+    this.lock();
+    var save_style = this._style();
+    var cur:size_t = 0;
+    var len:size_t = fmt.length:size_t;
+    var conv:qio_conv_t;
+    var gotConv:bool;
+    var style:iostyle;
+    var end:size_t;
+    var dummy:c_int;
+
+    var r:_channel_regexp_info = nil;
+
+    error = qio_channel_mark(false, _channel_internal);
+    if !error {
+      if _format_debug then stdout.writeln("TODO BBBB");
+      _format_reader(fmt, cur, len, error,
+                     conv, gotConv, style, r,
+                     true);
+      if gotConv {
+        error = qio_format_error_too_few_args();
+        if _format_debug then stdout.writeln("TODO ABZOO");
+      }
+    }
+    if !error {
+      if cur < len {
+        error = qio_format_error_too_few_args();
+        if _format_debug then stdout.writeln("TODO AXM");
+      }
+    }
+    if ! error {
+      // commit.
+      qio_channel_commit_unlocked(_channel_internal);
+    } else {
+      // revert
+      qio_channel_revert_unlocked(_channel_internal);
+    }
+
+    this._set_style(save_style);
+    this.unlock();
+  }
+  return !error;
+}
+
+
+
+proc channel.writef(fmt:string, args ...?k) {
+  var e:syserr = ENOERR;
+  this.writef(fmt, (...args), error=e);
+  if !e then return true;
+  else {
+    this._ch_ioerror(e, "in channel.writef(fmt:string, ...)");
+    return false;
+  }
+}
+proc channel.writef(fmt:string) {
+  var e:syserr = ENOERR;
+  this.writef(fmt, error=e);
+  if !e then return true;
+  else {
+    this._ch_ioerror(e, "in channel.writef(fmt:string, ...)");
+    return false;
+  }
+}
+
+
+proc channel.readf(fmt:string, ref args ...?k) {
+  var e:syserr = ENOERR;
+  this.readf(fmt, (...args), error=e);
+  if !e then return true;
+  else if e == EEOF then return false;
+  else if e == EFORMAT then return false;
+  else {
+    this._ch_ioerror(e, "in channel.readf(fmt:string, ...)");
+    return false;
+  }
+}
+
+proc channel.readf(fmt:string) {
+  var e:syserr = ENOERR;
+  this.readf(fmt, error=e);
+  if !e then return true;
+  else if e == EEOF then return false;
+  else if e == EFORMAT then return false;
+  else {
+    this._ch_ioerror(e, "in channel.readf(fmt:string, ...)");
+    return false;
+  }
+}
+
+proc writef(fmt:string, args ...?k):bool {
+  return stdout.writef(fmt, (...args));
+}
+proc writef(fmt:string):bool {
+  return stdout.writef(fmt);
+}
+proc readf(fmt:string, ref args ...?k):bool {
+  return stdin.readf(fmt, (...args));
+}
+proc readf(fmt:string):bool {
+  return stdin.readf(fmt);
+}
+
+
 use Regexp;
-extern proc qio_regexp_channel_match(ref re:qio_regexp_t, threadsafe:c_int, ch:qio_channel_ptr_t, maxlen:int(64), anchor:c_int, can_discard:bool, keep_unmatched:bool, keep_whole_pattern:bool, submatch:_ddata(qio_regexp_string_piece_t), nsubmatch:int(64)):syserr;
+extern proc qio_regexp_channel_match(ref re:qio_regexp_t, threadsafe:c_int, ch:qio_channel_ptr_t, maxlen:int(64), anchor:c_int, can_discard:bool, keep_unmatched:bool, keep_whole_pattern:bool, submatch:_ddata(qio_regexp_string_piece_t), nsubmatch:int(64)):err_t;
 
 proc channel._extractMatch(m:reMatch, ref arg:reMatch, ref error:syserr) {
   // If the argument is a match record, just return it.

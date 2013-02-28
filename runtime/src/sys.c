@@ -281,13 +281,15 @@ const char* extended_errors[] = {
 
 // allocates and returns an error string in *string_out
 // which must be freed.
-err_t sys_strerror(err_t error, const char** string_out)
+static
+err_t sys_strerror_internal(err_t error, char** string_out, size_t extra_space)
 {
   // normal errors are in normal places.
   // EAI_AGAIN... etc are at 10000 + num.
-  int buf_sz = 248;
+  int buf_sz = 248 + extra_space;
   char* buf = NULL;
   char* newbuf;
+  const char* errmsg;
   int got;
   err_t err_out;
 
@@ -295,13 +297,17 @@ err_t sys_strerror(err_t error, const char** string_out)
 
   if( EXTEND_ERROR_OFFSET <= error
                           && error < EXTEND_ERROR_OFFSET+EXTEND_ERROR_NUM) {
-    *string_out = qio_strdup(extended_errors[error - EXTEND_ERROR_OFFSET]);
-    if( ! *string_out ) return ENOMEM;
-    else return 0;
+    errmsg = extended_errors[error - EXTEND_ERROR_OFFSET];
+    buf_sz = strlen(errmsg) + 1;
+    buf = qio_malloc(buf_sz + extra_space);
+    if( ! buf ) return ENOMEM;
+    strcpy(buf, errmsg);
+    *string_out = buf;
+    return 0;
   }
 
   while( 1 ) {
-    newbuf = (char*) qio_realloc(buf, buf_sz);
+    newbuf = (char*) qio_realloc(buf, buf_sz + extra_space);
     if( ! newbuf ) {
       qio_free(buf);
       return ENOMEM;
@@ -328,7 +334,7 @@ err_t sys_strerror(err_t error, const char** string_out)
     } else {
       len = strlen(gai_str);
       if( len + 1 > buf_sz ) {
-        newbuf = (char*) qio_realloc(buf, len + 1);
+        newbuf = (char*) qio_realloc(buf, len + 1 + extra_space);
         if( ! newbuf ) {
           qio_free(buf);
           return ENOMEM;
@@ -344,10 +350,33 @@ err_t sys_strerror(err_t error, const char** string_out)
   return err_out;
 }
 
-const char* sys_strerror_str(err_t error, err_t* strerr_err)
+err_t sys_strerror(err_t error, const char** string_out)
 {
-  const char* ret = NULL;
-  *strerr_err = sys_strerror(error, &ret);
+  return sys_strerror_internal(error, (char**) string_out, 0);
+}
+
+const char* sys_strerror_syserr_str(qioerr error, err_t* err_in_strerror)
+{
+  char* ret = NULL;
+  err_t code = qio_err_to_int(error);
+  const char* msg = qio_err_msg(error);
+  size_t extra_space = 0;
+  size_t start = 0;
+  size_t msg_len = 0;
+
+  if( msg ) {
+    msg_len = strlen(msg);
+    extra_space = msg_len + 3;
+  }
+
+  *err_in_strerror = sys_strerror_internal(code, &ret, extra_space);
+  if( msg && ret ) {
+    start = strlen(ret);
+    ret[start] = ':';
+    ret[start+1] = ' ';
+    memcpy(&ret[start+2], msg, msg_len);
+    ret[start+2+msg_len] = '\0';
+  }
   return ret;
 }
 

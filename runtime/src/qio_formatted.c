@@ -13,7 +13,6 @@
 #include <langinfo.h>
 #endif
 
-
 // 0 means not set
 // 1 means use faster, hard-coded UTF-8 decode/encoder
 // -1 means use C multibyte functions (e.g. mbtowc)
@@ -330,7 +329,7 @@ err_t qio_channel_read_string(const int threadsafe, const int byteorder, const i
         num = str_style;
       } else {
         // read a terminated amount.
-        term = (-str_style) - 0x0100;
+        term = (-str_style) + QIO_STRSTYLE_NULL_TERMINATED;
         // What is the position we're marking?
         err = _peek_until_byte(ch, term, &peek_amt, &found_term);
         num = peek_amt;
@@ -880,7 +879,7 @@ err_t qio_channel_write_string(const int threadsafe, const int byteorder, const 
       } else {
         // We're going to write a terminating character.
         use_term = 1;
-        term = (-str_style) - 0x0100;
+        term = (-str_style) + QIO_STRSTYLE_NULL_TERMINATED;
         err = 0;
       }
   }
@@ -1427,6 +1426,9 @@ typedef struct number_reading_state_s {
   char exponent_char; // use if base <= 10; normally 'e'
   char other_exponent_char; // use if base > 10; normally 'p' or '@'
 
+  char allow_i_after; // allow an 'i' after the number.
+  char i_char;
+
   int usebase;
 
   signed char sign; // resulting sign; positive or negative
@@ -1436,6 +1438,7 @@ typedef struct number_reading_state_s {
   int64_t digits_start; // where do the digits start?
   int64_t point; // where is the decimal point?
   int64_t exponent; // where is the exponent character (e.g. e)?
+  int64_t i_after; // where is the i after the number, or -1 if not present
   int64_t end; // where is the end?
                // set to -1 if we shouldn't yet be at the end.
 } number_reading_state_t;
@@ -1482,6 +1485,7 @@ err_t _peek_number_unlocked(qio_channel_t* restrict ch, number_reading_state_t* 
   s->digits_start = -1;
   s->point = -1;
   s->exponent = -1;
+  s->i_after = -1;
   s->end = -1;
   if( s->base == 0 ) {
     s->gotbase = s->usebase = 10;
@@ -1600,6 +1604,9 @@ err_t _peek_number_unlocked(qio_channel_t* restrict ch, number_reading_state_t* 
                ( ('0' <= chr && chr <= '9') ||
                  ('a' <= chr && chr < 'a' + s->usebase-10) ||
                  ('A' <= chr && chr < 'A' + s->usebase-10) ) ) {
+      NEXT_CHR_OR_EOF;
+    } else if( s->allow_i_after && chr == s->i_char ) {
+      s->end = s->i_after = qio_channel_offset_unlocked(ch);
       NEXT_CHR_OR_EOF;
     } else {
       // Not a digit.
@@ -1753,7 +1760,8 @@ error:
   return err;
 }
 
-err_t qio_channel_scan_float(const int threadsafe, qio_channel_t* restrict ch, void* restrict out, size_t len)
+static
+err_t qio_channel_scan_float_or_imag(const int threadsafe, qio_channel_t* restrict ch, void* restrict out, size_t len, bool imag)
 {
   double num = 0.0;
   number_reading_state_t st;
@@ -1768,6 +1776,7 @@ err_t qio_channel_scan_float(const int threadsafe, qio_channel_t* restrict ch, v
   ssize_t exponent;
   err_t err;
   qio_style_t* style;
+  bool needs_i = 0;
 
 
   if( threadsafe ) {
@@ -1778,6 +1787,8 @@ err_t qio_channel_scan_float(const int threadsafe, qio_channel_t* restrict ch, v
   }
 
   style = &ch->style;
+
+  needs_i = imag && style->complex_style == QIO_COMPLEX_FORMAT_ABI;
 
   memset(&st, 0, sizeof(number_reading_state_t));
 
@@ -1791,11 +1802,22 @@ err_t qio_channel_scan_float(const int threadsafe, qio_channel_t* restrict ch, v
   st.point_char = tolower(style->point_char);
   st.exponent_char = tolower(style->exponent_char);
   st.other_exponent_char = tolower(style->other_exponent_char);
+  st.allow_i_after = needs_i;
+  st.i_char = style->i_char;
 
   err = _peek_number_unlocked(ch, &st, &amount);
   if( err == EEOF && st.end > 0 ) err = 0; // we tolerate EOF if there's data.
   if( err ) goto error;
 
+
+  if( needs_i ) {
+    if( st.i_after != -1 ) {
+      // OK! we found an i after.
+    } else {
+      err = EFORMAT;
+      goto error;
+    }
+  }
   //printf("got amount %lli\n", (long long int) amount);
 
   MAYBE_STACK_ALLOC(char, amount + 4, buf, buf_onstack);
@@ -1812,7 +1834,6 @@ err_t qio_channel_scan_float(const int threadsafe, qio_channel_t* restrict ch, v
 
   err = qio_channel_read_amt(false, ch, buf + 3, amount);
   if( err ) goto error;
-
 
   digits_start = 3 + st.digits_start - start;
   point = 3 + st.point - start;
@@ -1915,6 +1936,16 @@ error:
   return err;
 }
 
+err_t qio_channel_scan_float(const int threadsafe, qio_channel_t* restrict ch, void* restrict out, size_t len)
+{
+  return qio_channel_scan_float_or_imag(false, ch, out, len, false);
+}
+err_t qio_channel_scan_imag(const int threadsafe, qio_channel_t* restrict ch, void* restrict out, size_t len)
+{
+  return qio_channel_scan_float_or_imag(false, ch, out, len, true);
+}
+
+
 // dst must have room (at most 65 bytes for binary + '\0')
 // Returns the number of characters written (not including '\0')
 // or >= size if there wasn't room in the buffer (returns amt needed)
@@ -2015,7 +2046,7 @@ int _ltoa(char* restrict dst, size_t size, uint64_t num, int isnegative,
 }
 
 static
-int _ftoa(char* restrict dst, size_t size, double num, int base, const qio_style_t* restrict style )
+int _ftoa(char* restrict dst, size_t size, double num, int base, bool needs_i, const qio_style_t* restrict style )
 {
   int buf_sz = 32;
   char* buf = NULL;
@@ -2048,6 +2079,7 @@ int _ftoa(char* restrict dst, size_t size, double num, int base, const qio_style
 
   adjust_width = 0;
   if( style->showplus || shownegative ) adjust_width++;
+  if( needs_i ) adjust_width++;
   if( !style->prefix_base && base != 10 ) {
     if( !isnan(num) && !isinf(num) ) adjust_width -= 2; // remove 0x
   }
@@ -2274,6 +2306,12 @@ int _ftoa(char* restrict dst, size_t size, double num, int base, const qio_style
   memcpy(dst + i, buf + j, buf_len);
   i += buf_len;
 
+  if( needs_i ) {
+    // put the 'i' after an imaginary number.
+    dst[i++] = style->i_char;
+    width--;
+  }
+ 
   // Now if we're left justified we might need padding.
   if( style->leftjustify && width < style->min_width_columns) {
     // Put what we need to for getting to the min_width.
@@ -2422,10 +2460,14 @@ error:
   return err;
 }
 
+// +10 = a little extra room.
+#define MAX_DOUBLE_DIGITS (3 + DBL_MANT_DIG - DBL_MIN_EXP + 1 + 10)
+
 // TODO -- support max_width.
-err_t qio_channel_print_float(const int threadsafe, qio_channel_t* restrict ch, const void* restrict ptr, size_t len)
+static
+err_t qio_channel_print_float_or_imag(const int threadsafe, qio_channel_t* restrict ch, const void* restrict ptr, size_t len, bool imag)
 {
-  int max = 3 + DBL_MANT_DIG - DBL_MIN_EXP + 1 + 10; // +10=a little extra room
+  int max = MAX_DOUBLE_DIGITS;
   char* buf = NULL;
   MAYBE_STACK_SPACE(char, buf_onstack);
   int got;
@@ -2433,6 +2475,7 @@ err_t qio_channel_print_float(const int threadsafe, qio_channel_t* restrict ch, 
   err_t err;
   double num;
   qio_style_t* style;
+  bool needs_i;
 
   if( threadsafe ) {
     err = qio_lock(&ch->lock);
@@ -2443,6 +2486,7 @@ err_t qio_channel_print_float(const int threadsafe, qio_channel_t* restrict ch, 
 
   style = &ch->style;
 
+  needs_i = imag && style->complex_style == QIO_COMPLEX_FORMAT_ABI;
   base = style->base;
   if( base == 0 ) base = 10;
 
@@ -2463,7 +2507,7 @@ err_t qio_channel_print_float(const int threadsafe, qio_channel_t* restrict ch, 
   if( VOID_PTR_DIFF(ch->cached_end, ch->cached_cur) > max ) {
     // Print it all directly into the buffer.
     got = _ftoa(ch->cached_cur, VOID_PTR_DIFF(ch->cached_end, ch->cached_cur), 
-                num, base, style);
+                num, base, needs_i, style);
     if( got < 0 ) {
       err = EFORMAT;
       goto error;
@@ -2490,7 +2534,7 @@ err_t qio_channel_print_float(const int threadsafe, qio_channel_t* restrict ch, 
     }
 
     // Print it all to buf
-    got = _ftoa(buf, max, num, base, style);
+    got = _ftoa(buf, max, num, base, needs_i, style);
     if( got < 0 ) {
       err = EFORMAT;
       goto error;
@@ -2517,6 +2561,16 @@ error:
   return err;
 
 }
+
+err_t qio_channel_print_float(const int threadsafe, qio_channel_t* restrict ch, const void* restrict ptr, size_t len)
+{
+  return qio_channel_print_float_or_imag(threadsafe, ch, ptr, len, false);
+}
+err_t qio_channel_print_imag(const int threadsafe, qio_channel_t* restrict ch, const void* restrict ptr, size_t len)
+{
+  return qio_channel_print_float_or_imag(threadsafe, ch, ptr, len, true);
+}
+
 
 err_t qio_channel_scan_complex(const int threadsafe, qio_channel_t* restrict ch, void* restrict re_out, void* restrict im_out, size_t len)
 {
@@ -2731,53 +2785,155 @@ err_t qio_channel_write_newline(const int threadsafe, qio_channel_t* restrict ch
   return qio_channel_write_amt(threadsafe, ch, &c, 1);
 }
 
+static err_t maybe_left_pad(qio_channel_t* restrict ch, int gotsize)
+{
+  err_t err = 0;
+  if( ch->style.leftjustify ) {
+    while( gotsize < ch->style.min_width_columns && !err ) {
+      err = qio_channel_write_char(false, ch, ch->style.pad_char);
+      gotsize++;
+    }
+  }
+  return err;
+}
+static err_t maybe_right_pad(qio_channel_t* restrict ch, int gotsize)
+{
+  err_t err = 0;
+  if( ! ch->style.leftjustify ) {
+    while( gotsize < ch->style.min_width_columns && !err ) {
+      err = qio_channel_write_char(false, ch, ch->style.pad_char);
+      gotsize++;
+    }
+  }
+  return err;
+}
+
+
 err_t qio_channel_print_complex(const int threadsafe, qio_channel_t* restrict ch, const void* restrict re_ptr, const void* restrict im_ptr, size_t len)
 {
-  double num8;
-  float num4;
+  int re_max = MAX_DOUBLE_DIGITS;
+  int im_max = MAX_DOUBLE_DIGITS;
+  char* re_buf = NULL;
+  char* im_buf = NULL;
+  MAYBE_STACK_SPACE(char, re_buf_onstack);
+  MAYBE_STACK_SPACE(char, im_buf_onstack);
+  double re_num, im_num;
+  int re_got, im_got;
   err_t err;
+  int im_neg = 0;
   int re_isnan = 0;
   int im_isnan = 0;
-  int isnegative = 0;
-  style_char_t pos_char = ch->style.positive_char;
-  style_char_t neg_char = ch->style.negative_char;
+  style_char_t pos_char;
+  style_char_t neg_char;
+  qio_style_t* style;
+  int save_show_plus;
+  int save_min_columns;
+  int width;
+  int base;
+  bool imag_needs_i = false;
 
+  // Read our numbers.
+  err = 0;
+  switch (len) {
+    case 4:
+      re_num = *(float*)re_ptr;
+      im_num = *(float*)im_ptr;
+      break;
+    case 8:
+      re_num = *(double*)re_ptr;
+      im_num = *(double*)im_ptr;
+      break;
+    default:
+      return EINVAL;
+  }
+
+  re_isnan = isnan(re_num);
+  im_isnan = isnan(im_num);
+  if( signbit(im_num) ) {
+    // num = - num;
+    im_num = copysign(im_num, 1.0);
+    im_neg = 1;
+  } else {
+    im_neg = 0;
+  }
+
+  // Lock before reading any style information from the
+  // channel.
   if( threadsafe ) {
     err = qio_lock(&ch->lock);
     if( err ) return err;
   }
 
+  style = &ch->style;
+  base = style->base;
+  if( base == 0 ) base = 10;
+  save_show_plus = style->showplus;
+  save_min_columns = style->min_width_columns;
+  // clear min_width_columns so ftoa doesn't include the padding.
+  style->min_width_columns = 0;
+  pos_char = ch->style.positive_char;
+  neg_char = ch->style.negative_char;
+
   err = qio_channel_mark(false, ch);
   if( err ) goto unlock;
 
-  if( (ch->style.complex_style & QIO_COMPLEX_FORMAT_PART) == QIO_COMPLEX_FORMAT_ABI ) {
-    { // is im_ptr positive or negative? are either nan?
-      err = 0;
-      switch (len) {
-        case 4:
-          num4 = *(float*)im_ptr;
-          num8 = num4;
-          re_isnan = isnan(*(float*)re_ptr);
-          im_isnan = isnan(num4);
-          break;
-        case 8:
-          num8 = *(double*)im_ptr;
-          num4 = num8;
-          re_isnan = isnan(*(double*)re_ptr);
-          im_isnan = isnan(num8);
-          break;
-        default:
-          err = EINVAL;
-      }
+  // convert the number - written as two local loops
+  // in case MAYBE_STACK_ALLOC does e.g. alloca.
 
-      if( signbit(num8) ) {
-        isnegative = 1;
-        num4 = -num4;
-        num8 = -num8;
-      }
-      else isnegative = 0;
+  // convert the real part
+  while( 1 ) {
+    MAYBE_STACK_ALLOC(char, re_max, re_buf, re_buf_onstack);
+    if( ! re_buf ) {
+      err = ENOMEM;
+      goto rewind;
     }
 
+    // Convert re_num8 into digits in re_buf
+    re_got = _ftoa(re_buf, re_max, re_num, base, false, style);
+    if( re_got < 0 ) {
+      err = EFORMAT;
+      goto rewind;
+    } else if( re_got < re_max ) {
+      break;
+    } else {
+      // Not enough room... try again. 
+      MAYBE_STACK_FREE(re_buf, re_buf_onstack);
+      re_buf = NULL;
+      re_max = re_got + 1;
+    }
+  }
+  // convert the imaginary part
+  if( (style->complex_style & QIO_COMPLEX_FORMAT_PART) == QIO_COMPLEX_FORMAT_ABI ) {
+    style->showplus = 0; // never put a + or - before the imag part.
+    imag_needs_i = true;
+  }
+  while( 1 ) {
+    MAYBE_STACK_ALLOC(char, im_max, im_buf, im_buf_onstack);
+    if( ! im_buf ) {
+      err = ENOMEM;
+      goto rewind;
+    }
+
+    // Convert im_num8 into digits in im_buf
+    im_got = _ftoa(im_buf, im_max, im_num, base, imag_needs_i, style);
+    if( im_got < 0 ) {
+      err = EFORMAT;
+      goto rewind;
+    } else if( im_got < im_max ) {
+      break;
+    } else {
+      // Not enough room... try again. 
+      MAYBE_STACK_FREE(im_buf, im_buf_onstack);
+      im_buf = NULL;
+      im_max = im_got + 1;
+    }
+  }
+
+  // Put the minimum width columns back so maybe_left_pad etc use it.
+  style->min_width_columns = save_min_columns;
+
+  if( (style->complex_style & QIO_COMPLEX_FORMAT_PART) == QIO_COMPLEX_FORMAT_ABI ) {
+    // If real or imag part is NAN, just write one NAN number.
     if( re_isnan ) {
       err = qio_channel_print_float(false, ch, re_ptr, len);
       if( err ) goto rewind;
@@ -2786,54 +2942,38 @@ err_t qio_channel_print_complex(const int threadsafe, qio_channel_t* restrict ch
       if( err ) goto rewind;
     } else {
       // write a + bi
-      err = qio_channel_print_float(false, ch, re_ptr, len);
+      width = re_got + im_got + 3;
+      err = maybe_left_pad(ch, width);
       if( err ) goto rewind;
-
+      err = qio_channel_write_amt(false, ch, re_buf, re_got);
+      if( err ) goto rewind;
       err = qio_channel_write_char(false, ch, ' ');
       if( err ) goto rewind;
-
-      err = qio_channel_write_char(false, ch, isnegative?neg_char:pos_char);
+      err = qio_channel_write_char(false, ch, im_neg?'-':'+');
       if( err ) goto rewind;
-
       err = qio_channel_write_char(false, ch, ' ');
       if( err ) goto rewind;
-       
-      switch (len) {
-        case 4:
-          err = qio_channel_print_float(false, ch, &num4, len);
-          break;
-        case 8:
-          err = qio_channel_print_float(false, ch, &num8, len);
-          break;
-        default:
-          err = EINVAL;
-      }
+      err = qio_channel_write_amt(false, ch, im_buf, im_got);
       if( err ) goto rewind;
-      
-
-      // write the i...
-      err = qio_channel_write_char(false, ch, 'i');
+      err = maybe_right_pad(ch, width);
       if( err ) goto rewind;
     }
-
-  } else if( (ch->style.complex_style & QIO_COMPLEX_FORMAT_PART) == QIO_COMPLEX_FORMAT_PARENS ) {
+  } else if( (style->complex_style & QIO_COMPLEX_FORMAT_PART) == QIO_COMPLEX_FORMAT_PARENS ) {
     // write (a,b)
+    width = re_got + im_got + 3;
+    err = maybe_left_pad(ch, width);
+    if( err ) goto rewind;
     err = qio_channel_write_char(false, ch, '(');
     if( err ) goto rewind;
-
-    err = qio_channel_print_float(false, ch, re_ptr, len);
+    err = qio_channel_write_amt(false, ch, re_buf, re_got);
     if( err ) goto rewind;
-
     err = qio_channel_write_char(false, ch, ',');
     if( err ) goto rewind;
-
-    //err = qio_channel_write_char(false, ch, ' ');
-    //if( err ) goto rewind;
-
-    err = qio_channel_print_float(false, ch, im_ptr, len);
+    err = qio_channel_write_amt(false, ch, im_buf, im_got);
     if( err ) goto rewind;
-
     err = qio_channel_write_char(false, ch, ')');
+    if( err ) goto rewind;
+    err = maybe_right_pad(ch, width);
     if( err ) goto rewind;
   } else {
     err = EINVAL;
@@ -2848,6 +2988,8 @@ rewind:
   }
 
 unlock:
+  style->showplus = save_show_plus;
+  style->min_width_columns = save_min_columns;
   _qio_channel_set_error_unlocked(ch, err);
   if( threadsafe ) {
     qio_unlock(&ch->lock);
@@ -3120,6 +3262,715 @@ err_t _qio_channel_write_char_slow_unlocked(qio_channel_t* restrict ch, int32_t 
   return err;
 }
 
+
+
+
+
+// This could be changed to use tables, but the current version
+// favors simplicity&flexibility of implementation over speed.
+static const char* space = " \f\n\r\t\v";
+/*static const char* bin_num = "01";
+static const char* oct_num = "01234567";*/
+static const char* dec_num = "0123456789";
+/*
+static const char* lower_hex_num = "0123456789abcdef";
+static const char* upper_hex_num = "0123456789ABCDEF";
+static const char* hex_num = "0123456789ABCDEFabcdef";
+static const char* pound_conv = "#.";*/
+static const char* lit_chars = "#% \f\n\r\t\v";
+static const char* regexp_flag_chars = "imsU";
+
+static inline int istype(char x, const char* allow)
+{
+  while( *allow ) {
+    if( *allow == x ) return 1;
+    allow++;
+  }
+  return 0;
+}
+
+void qio_conv_destroy(qio_conv_t* spec)
+{
+  // Don't need to free literal because
+  // it points into format string
+  spec->literal = NULL;
+}
+
+void qio_conv_init(qio_conv_t* spec_out)
+{
+  spec_out->preArg1 = QIO_CONV_UNK;
+  spec_out->preArg2 = QIO_CONV_UNK;
+  spec_out->preArg3 = QIO_CONV_UNK;
+  spec_out->argType = QIO_CONV_UNK;
+  spec_out->literal_is_whitespace = 0;
+  spec_out->literal_length = 0;
+  spec_out->literal = NULL;
+}
+
+int _qio_regexp_flags_then_rcurly(const char* ptr, int * len);
+
+int _qio_regexp_flags_then_rcurly(const char* ptr, int * len)
+{
+  int i = 0;
+  while( ptr[i] ) {
+    // '{' don't confuse vi
+    if( ptr[i] == '}' ) {
+      *len = i;
+      return 1;
+    }
+    if( ! istype(ptr[i], regexp_flag_chars) ) break;
+    i++;
+  }
+  *len = i;
+  return 0;
+}
+
+
+qioerr qio_conv_parse(const char* fmt,
+                     size_t start,
+                     size_t* end,
+                     int scanning,
+                     qio_conv_t* spec_out,
+                     qio_style_t* style_out)
+{
+  size_t i;
+  int in_group = 0;
+  char* endptr;
+  long int val;
+  // For these, we set them to -2 if they are in an argument
+  // and -1 if they have not been set.
+#define WIDTH_IN_ARG -2
+#define WIDTH_NOT_SET -1
+  long int width = WIDTH_NOT_SET;
+  long int precision = WIDTH_NOT_SET;
+  int at_flag = 0;
+  int zero_flag = 0;
+  int minus_flag = 0;
+  int space_flag = 0;
+  int plus_flag = 0;
+  char base_flag = 0;
+  char specifier = 0;
+  char binary = 0;
+  char exponential = 0;
+  char S_encoding = 0;
+  qioerr err = 0;
+  int after_percent = 0;
+
+  qio_conv_init(spec_out);
+  qio_style_init_default(style_out);
+  style_out->prefix_base = 0;
+  style_out->byteorder = QIO_NATIVE;
+  style_out->showpointzero = 0;
+
+  i = start;
+
+  // do we have a ####.#### conversion to match?
+  if( fmt[i] == '#' ) {
+    size_t num_before, num_after, period;
+    num_before = 0;
+    num_after = 0;
+    period = 0;
+    
+
+    // how many ### do we have before a . ?
+    for( ; fmt[i] == '#'; i++ ) num_before++;
+
+    if( fmt[i] == '.' ) {
+      i++; // pass '.'
+      period = 1;
+      for( ; fmt[i] == '#'; i++ ) num_after++;
+    }
+
+    spec_out->argType = QIO_CONV_ARG_TYPE_NUMERIC;
+
+    style_out->base = 10;
+    style_out->pad_char = ' ';
+    style_out->precision = num_after;
+    style_out->min_width_columns = num_before + period + num_after;
+    style_out->realfmt = 1; // %f
+    goto done;
+  }
+
+  // do we have a % conversion to match?
+  if( fmt[i] == '%' ) {
+    i++; // pass %
+
+    if( fmt[i] == '{' ) {
+      i++;
+      in_group = 1;
+    }
+
+    after_percent = i;
+
+    if( fmt[i] == '%' ) {
+      i++; // pass %
+      spec_out->argType = QIO_CONV_ARG_TYPE_NONE_LITERAL;
+      spec_out->literal_is_whitespace = 0;
+      spec_out->literal_length = 1;
+      spec_out->literal = (int8_t*) "%";
+      goto done;  
+    }
+    if( fmt[i] == '#' ) {
+      i++; // pass #
+      spec_out->argType = QIO_CONV_ARG_TYPE_NONE_LITERAL;
+      spec_out->literal_is_whitespace = 0;
+      spec_out->literal_length = 1;
+      spec_out->literal = (int8_t*) "#";
+      goto done;  
+    }
+
+
+    // Are we working with binary?
+    if( fmt[i] == '<' || fmt[i] == '|' || fmt[i] == '>' ) {
+      binary = fmt[i];
+      i++;
+    } 
+
+    // Read some flags.
+    for( ; fmt[i]; i++ ) {
+      /* Should we have something like these?
+         *  # For a, A, e, E, f, F, g, and  G
+              conversions,  the  result  will  always contain a decimal point,
+              even if no digits follow it (normally, a decimal  point  appears
+              in  the  results  of those conversions only if a digit follows).
+              For g and G conversions, trailing zeros are not removed from the
+              result  as  they would otherwise be.  For other conversions, the
+              result is undefined.
+         * ' means group with thousands grouping character
+         */
+      if( fmt[i] == '@' ) {
+        at_flag = 1;
+      } else if( fmt[i] == '0' ) {
+        zero_flag = 1;
+      } else if( fmt[i] == '-' ) {
+        minus_flag = 1;
+      } else if( fmt[i] == ' ' ) {
+        space_flag = 1;
+      } else if( fmt[i] == '+' ) {
+        plus_flag = 1;
+      } else {
+        break;
+      }
+    }
+    // a - overrides a 0 if both are given
+    if( minus_flag ) zero_flag = 0;
+
+    // Read the width. *S has different meaning.
+    if( fmt[i] == '*' && fmt[i+1] != 'S') {
+      i++;
+      // next argument contains field width
+      width = WIDTH_IN_ARG;
+      spec_out->preArg1 = QIO_CONV_SET_IGNORE;
+    } else if( istype(fmt[i], dec_num) ) {
+      // OK, now fmt[i] is the start of the integer-width area.
+      val = strtol(&fmt[i], &endptr, 10);
+      if( endptr != &fmt[i] ) {
+        // advance past whatever number we got
+        i += endptr - &fmt[i];
+        if( val < 0 || val == LONG_MIN || val == LONG_MAX ) {
+          val = 0;
+          // could do err = EINVAL; goto done;
+        }
+        width = val;
+      }
+    }
+    // read the precision. *S has different meaning.
+    if( fmt[i] == '.' && fmt[i+1] != 'S') {
+      i++; // pass '.'
+      if( fmt[i] == '*' ) {
+        i++;
+        // next argument contains precision
+        precision = WIDTH_IN_ARG;
+        spec_out->preArg2 = QIO_CONV_SET_IGNORE;
+      } else if( istype(fmt[i], dec_num) ) {
+        // OK, now fmt[i] is the start of the precision area.
+        val = strtol(&fmt[i], &endptr, 10);
+        if( endptr != &fmt[i] ) {
+          // advance past whatever number we got
+          i += endptr - &fmt[i];
+          if( val < 0 || val == LONG_MIN || val == LONG_MAX ) {
+            val = 0;
+          }
+          precision = val;
+        }
+      }
+    }
+
+
+    // Read a base flag
+    if( istype(fmt[i], "bdxXjh'\"") ) {
+      base_flag = fmt[i];
+      i++;
+    }
+
+    // Read an exponent flag
+    if( fmt[i] == 'e' || fmt[i] == 'E') {
+      exponential = fmt[i];
+      i++;
+    }
+
+    // Read a specifier character
+    if( istype(fmt[i], "ntiurmzs/cS") ) {
+      specifier = fmt[i];
+      if( fmt[i] == 'S' ) {
+        // handle numbers parsed as width for e.g. %|0S
+        if( i > after_percent ) S_encoding = fmt[i-1];
+        else S_encoding = '"'; // default to double-quotes.
+      }
+      i++;
+    } else if( fmt[i] && fmt[i+1] == 'S' ) {
+      specifier = 'S';
+      S_encoding = fmt[i];
+      i++; // pass e.g. v
+      i++; // pass S
+    }
+
+    if( specifier == 0 ) {
+      QIO_GET_CONSTANT_ERROR(err, EINVAL, "Could not find the end of a conversion specifier");
+      goto done;
+    }
+
+
+    // Consume the width, precision, flags and base arguments,
+    // updating the style appropriately.
+    if( binary ) {
+      // Binary conversions silently consume space characters after the
+      // conversion.
+      while( fmt[i] == ' ' ) i++;
+      
+      // Do Binary.
+      style_out->binary = 1;
+
+      // Handle endianness flags
+      if( binary == '|' ) style_out->byteorder = QIO_NATIVE;
+      else if( binary == '<' ) style_out->byteorder = QIO_LITTLE;
+      else if( binary == '>' ) style_out->byteorder = QIO_BIG;
+
+      if( specifier == 't' ) {
+        // Does nothing at all with width.
+        spec_out->argType = QIO_CONV_ARG_TYPE_REPR;
+      } else if( specifier == 'n' ) {
+        spec_out->argType = QIO_CONV_ARG_TYPE_NUMERIC;
+      } else if( specifier == 'i' || specifier == 'u' ||
+                 specifier == 'r' || specifier == 'm' || specifier == 'z') {
+        // Handle width. Precision doesn't do anything for these.
+        if( width != WIDTH_NOT_SET ) {
+          if( width == WIDTH_IN_ARG ) {
+            spec_out->preArg1 = QIO_CONV_SET_MAX_WIDTH_BYTES;
+          } else {
+            style_out->max_width_bytes = width;
+          }
+        } else {
+          // Width is required for binary conversions of these types.
+          QIO_GET_CONSTANT_ERROR(err, EINVAL, "Width is required for binary numeric conversions");
+          goto done;
+        }
+
+        // Set the conversion type.
+        if( specifier == 'i' ) {
+          spec_out->argType = QIO_CONV_ARG_TYPE_BINARY_SIGNED;
+        } else if( specifier == 'u' ) {
+          spec_out->argType = QIO_CONV_ARG_TYPE_BINARY_UNSIGNED;
+        } else if( specifier == 'r' ) {
+          spec_out->argType = QIO_CONV_ARG_TYPE_BINARY_REAL;
+        } else if( specifier == 'm' ) {
+          spec_out->argType = QIO_CONV_ARG_TYPE_BINARY_IMAG;
+        } else if( specifier == 'z' ) {
+          spec_out->argType = QIO_CONV_ARG_TYPE_BINARY_COMPLEX;
+        }
+      } else if( specifier == 's' || specifier == 'S') {
+        char type = 's';
+        if( S_encoding ) type = S_encoding;
+
+        // Handle width. Precision doesn't do anything for %s
+        // If there's no other encoding info, width is exact str len 
+        if( width != WIDTH_NOT_SET ) {
+          if( width == WIDTH_IN_ARG ) {
+            if( type == 's' ) spec_out->preArg1 = QIO_CONV_SET_STRINGLEN;
+            else spec_out->preArg1 = QIO_CONV_SET_MAX_WIDTH_BYTES;
+          } else {
+            if( type == 's' ) style_out->str_style = width;
+            else style_out->max_width_bytes = width;
+          }
+        }
+
+        // s conversions without follwing encoding type must have a width.
+        if( type == 's' && width == WIDTH_NOT_SET ) {
+          QIO_GET_CONSTANT_ERROR(err, EINVAL, "Binary s conversion must have a width");
+          goto done;
+        }
+
+        if( type == 's' ) ; // OK
+        else if( type == '0' ) style_out->str_style = QIO_STRSTYLE_NULL_TERMINATED;
+        else if( type == 'v' ) style_out->str_style = QIO_STRSTYLE_VLEN; // variable length
+        else if( type == '1' ) style_out->str_style = -1; // 1b length before
+        else if( type == '2' ) style_out->str_style = -2; // 2b length before
+        else if( type == '4' ) style_out->str_style = -4; // 4b length before
+        else if( type == '8' ) style_out->str_style = -8; // 8b length before
+        else if( type == '*' ) {
+          style_out->str_style = QIO_STRSTYLE_NULL_TERMINATED;
+          // need to overwrite str_style
+          spec_out->preArg3 = QIO_CONV_SET_TERMINATOR;
+        } else {
+          QIO_GET_CONSTANT_ERROR(err, EINVAL, "Unknown binary %S conversion");
+        }
+
+        spec_out->argType = QIO_CONV_ARG_TYPE_STRING;
+      } else {
+        QIO_GET_CONSTANT_ERROR(err, EINVAL, "Unknown binary conversion");
+      }
+    } else if( istype(specifier, "niurmz" ) ) {
+      // For numeric conversions
+      
+      // Handle width and precision
+      if( width != WIDTH_NOT_SET ) {
+        // These settings have no effect when scanning
+        if( width == WIDTH_IN_ARG ) {
+          spec_out->preArg1 = QIO_CONV_SET_MIN_WIDTH_COLS;
+        } else {
+          style_out->min_width_columns = width;
+        }
+      }
+      if( precision != WIDTH_NOT_SET ) {
+        // These settings have no effect when scanning
+        if( precision == WIDTH_IN_ARG ) {
+          spec_out->preArg2 = QIO_CONV_SET_PRECISION;
+        } else {
+          style_out->precision = precision;
+        }
+      }
+
+      // Handle flags
+      if( at_flag ) {
+        if( specifier != 'z' ) style_out->prefix_base = 1;
+        else style_out->complex_style = QIO_COMPLEX_FORMAT_PARENS;
+      }
+      if( zero_flag ) style_out->pad_char = '0';
+      if( minus_flag ) style_out->leftjustify = 1;
+      if( space_flag ) style_out->showplus = 2;
+      if( plus_flag ) style_out->showplus = 1;
+
+      if( base_flag == 'b' ) style_out->base = 2;
+      else if( base_flag == 'd' ) style_out->base = 10;
+      else if( base_flag == 'x' ) {
+        style_out->base = 16;
+        style_out->uppercase = 0;
+      } else if( base_flag == 'X' ) {
+        style_out->base = 16;
+        style_out->uppercase = 1;
+      } else if( base_flag == 'j' || base_flag == 'h') {
+        style_out->base = 10;
+        style_out->realfmt = 2;
+        style_out->pad_char = ' ';
+      }
+  
+      // Handle real formats.
+      if( specifier == 'r' || specifier == 'm' || specifier == 'z' ) {
+        if( exponential == 'e' ) {
+          //style_out->uppercase = 0; %Xe would be uppercase
+          style_out->realfmt = 2;
+        } else if( exponential == 'E' ) {
+          style_out->uppercase = 1;
+          style_out->realfmt = 2;
+        } else if( base_flag == 'd' ) {
+          style_out->realfmt = 1;
+        } else {
+          style_out->realfmt = 0;
+        }
+      }
+
+      // Set the conversion type.
+      if( specifier == 'n' ) {
+        style_out->prefix_base = 1;
+        spec_out->argType = QIO_CONV_ARG_TYPE_NUMERIC;
+      }
+      if( specifier == 'i' ) spec_out->argType = QIO_CONV_ARG_TYPE_SIGNED;
+      if( specifier == 'u' ) spec_out->argType = QIO_CONV_ARG_TYPE_UNSIGNED;
+      if( specifier == 'r' ) spec_out->argType = QIO_CONV_ARG_TYPE_REAL;
+      if( specifier == 'm' ) spec_out->argType = QIO_CONV_ARG_TYPE_IMAG;
+      if( specifier == 'z' ) spec_out->argType = QIO_CONV_ARG_TYPE_COMPLEX;
+    } else if( specifier == 'c' ) {
+      // width, precision, flags have no effect on %c,
+      spec_out->argType = QIO_CONV_ARG_TYPE_CHAR;
+    } else if( specifier == 's' || specifier == 'S' || specifier == '/' ) {
+      // Either one could limit the number of bytes read (width)
+      // or the number of characters read (precision)
+      // (although the / conversion will ignore # chars read/precision)
+     
+      // Handle width and precision
+      if( width != WIDTH_NOT_SET ) {
+        if( width == WIDTH_IN_ARG ) {
+          if( scanning ) spec_out->preArg1 = QIO_CONV_SET_MAX_WIDTH_BYTES;
+          else spec_out->preArg1 = QIO_CONV_SET_MIN_WIDTH_COLS;
+        } else {
+          if( scanning ) style_out->max_width_bytes = width;
+          else style_out->min_width_columns = width;
+        }
+      }
+      if( precision != WIDTH_NOT_SET ) {
+        if( precision == WIDTH_IN_ARG ) {
+          if( scanning ) spec_out->preArg2 = QIO_CONV_SET_MAX_WIDTH_CHARS;
+          else spec_out->preArg2 = QIO_CONV_SET_MAX_WIDTH_COLS;
+        } else {
+          if( scanning ) style_out->max_width_characters = precision;
+          else style_out->max_width_columns = precision;
+        }
+      }
+
+      if( specifier == 's' || specifier == 'S') {
+        // Handle base flags modifying string format
+        if( base_flag == 'j' ) {
+          style_out->string_format = QIO_STRING_FORMAT_JSON;
+        } else if( base_flag == 'h' ) {
+          style_out->string_format = QIO_STRING_FORMAT_CHPL;
+        }
+
+        if( specifier == 'S' ) {
+          style_out->string_format = QIO_STRING_FORMAT_BASIC;
+          style_out->string_start = '"';
+          style_out->string_end = '"';
+        }
+
+        if( minus_flag ) style_out->leftjustify = 1;
+
+        // Handle %cS or %{*S*} or %{(S)} which sets quote characters
+        if( specifier == 'S' ) {
+          char pre = S_encoding;
+          char post = 0;
+          if( in_group && fmt[i] != '}') {
+            post = fmt[i];
+            i++;
+          }
+
+          if( pre && post == 0 ) {
+            if( pre == '*' ) spec_out->preArg3 = QIO_CONV_SET_STRINGSTARTEND;
+            else {
+              style_out->string_start = pre;
+              style_out->string_end = pre;
+            }
+          } else if( pre ) {
+            if( pre == '*' ) spec_out->preArg3 = QIO_CONV_SET_STRINGSTARTEND;
+            else style_out->string_start = pre;
+          }
+
+          if( post ) {
+            if( post == '*' ) {
+              QIO_GET_CONSTANT_ERROR(err, EINVAL, "Cannot specify end quote in argument after string");
+              goto done;
+            } else style_out->string_end = post;
+          }
+        }
+        spec_out->argType = QIO_CONV_ARG_TYPE_STRING;
+      } else if( specifier == '/' ) {
+        // No base flags have any effect on RE search.
+        if( fmt[i] == '*' && fmt[i+1] == '/') {
+          // Next argument contains the RE to match
+          i++; // pass *
+          i++; // pass '/'
+          spec_out->argType = QIO_CONV_ARG_TYPE_REGEXP;
+        } else {
+          // RE right here
+          int start = i;
+          int end;
+          int flagslen = 0;
+          int flagsstart = 0;
+          spec_out->argType = QIO_CONV_ARG_TYPE_NONE_REGEXP_LITERAL;
+          // read until '/' or, if we are in a group,
+          // from the '%{/' to the '/}'
+          if( in_group ) {
+            int curlydepth = 0;
+            while( true ) {
+              if( fmt[i] == 0 ) {
+                QIO_GET_CONSTANT_ERROR(err, EINVAL, "Found { but missing } in conversion");
+                goto done;
+              }
+              if( fmt[i-1] != '\\' && fmt[i] == '{' ) curlydepth++;
+              if( fmt[i-1] != '\\' && fmt[i] == '}' ) curlydepth--;
+              if( curlydepth < 0 ) {
+                QIO_GET_CONSTANT_ERROR(err, EINVAL, "Missing { for this } in conversion");
+                goto done;
+              }
+              if( curlydepth == 0 &&
+                  fmt[i-1] != '\\' &&
+                  fmt[i] == '/' &&
+                  _qio_regexp_flags_then_rcurly(&fmt[i+1], &flagslen) ) {
+                // OK!
+                break;
+              }
+              i++;
+            }
+            end = i;
+            flagsstart = i + 1; // past / ending re
+            i = flagsstart + flagslen; // at closing { } 
+          } else {
+            while( fmt[i-1] == '\\' || fmt[i] != '/' ) {
+              if( fmt[i] == 0 ) {
+                QIO_GET_CONSTANT_ERROR(err, EINVAL, "Unterminated regular expression pattern - missing closing /");
+                goto done;
+              }
+              i++;
+            }
+            end = i;
+            i++; // pass the final '/'
+          }
+          // Now, from start...i is the literal regexp.
+          // and from i+1..flagslen is the flags
+          //  (if flagslen > 0)
+          spec_out->regexp_length = end - start;
+          spec_out->regexp = (int8_t*) &fmt[start];
+          spec_out->regexp_flags_length = flagslen;
+          spec_out->regexp_flags = (int8_t*) &fmt[flagsstart];
+        }
+      }
+    } else if( specifier == 't' ) {
+      style_out->base = 10;
+      style_out->pad_char = ' ';
+      style_out->realfmt = 2;
+      style_out->string_format = QIO_STRING_FORMAT_CHPL;
+
+      if( base_flag == 'j' ) {
+        style_out->realfmt = 2;
+        style_out->string_format = QIO_STRING_FORMAT_JSON;
+        style_out->array_style = QIO_ARRAY_FORMAT_JSON;
+        style_out->aggregate_style = QIO_AGGREGATE_FORMAT_JSON;
+        style_out->tuple_style = QIO_TUPLE_FORMAT_JSON;
+      } else if( base_flag == 'h' ) {
+        style_out->realfmt = 2;
+        style_out->string_format = QIO_STRING_FORMAT_CHPL;
+        style_out->array_style = QIO_ARRAY_FORMAT_CHPL;
+        style_out->aggregate_style = QIO_AGGREGATE_FORMAT_CHPL;
+        style_out->tuple_style = QIO_TUPLE_FORMAT_CHPL;
+        style_out->pad_char = ' ';
+      } else if( base_flag == 'x' ) {
+        style_out->prefix_base = 1;
+        style_out->base = 16;
+      } else if( base_flag == 'X' ) {
+        style_out->prefix_base = 1;
+        style_out->base = 16;
+        style_out->uppercase = 1;
+      } else if( base_flag == 'b' ) {
+        style_out->prefix_base = 1;
+        style_out->base = 2;
+      } else if( base_flag == 'd' ) {
+        style_out->prefix_base = 0;
+        style_out->base = 10;
+      } else if( base_flag == '\'' ) {
+        style_out->string_format = QIO_STRING_FORMAT_BASIC;
+        style_out->string_start = '\'';
+        style_out->string_end = '\'';
+      } else if( base_flag == '"' ) {
+        style_out->string_format = QIO_STRING_FORMAT_BASIC;
+        style_out->string_start = '"';
+        style_out->string_end = '"';
+      }
+      spec_out->argType = QIO_CONV_ARG_TYPE_REPR;
+    } else {
+      QIO_GET_CONSTANT_ERROR(err, EINVAL, "Unknown text conversion");
+    }
+
+    if( in_group ) {
+      // we must match '}' or there is an error.
+      if( fmt[i] == '}' ) {
+        i++;
+      } else {
+        QIO_GET_CONSTANT_ERROR(err, EINVAL, "Found { but missing } in conversion");
+      }
+    }
+    goto done;
+  }
+
+  // do we have any whitespace to match?
+  if( fmt[i] == '\n' ) {
+    size_t len = 0;
+    const char* lit = &fmt[i];
+    // pass any whitespace characters.
+    for( ; fmt[i] && istype(fmt[i], space); i++ ) len++;
+
+    spec_out->argType = QIO_CONV_ARG_TYPE_NONE_LITERAL;
+    spec_out->literal_is_whitespace = 2;
+    spec_out->literal_length = len;
+    spec_out->literal = (int8_t*) lit;
+    goto done;
+  } else if( istype(fmt[i], space) ) {
+    size_t len = 0;
+    const char* lit = &fmt[i];
+    // pass any whitespace characters.
+    for( ; fmt[i] && fmt[i] != '\n' && istype(fmt[i], space); i++ ) len++;
+
+    spec_out->argType = QIO_CONV_ARG_TYPE_NONE_LITERAL;
+    spec_out->literal_is_whitespace = 1;
+    spec_out->literal_length = len;
+    spec_out->literal = (int8_t*) lit;
+    goto done;
+  } else {
+    // No other ideas -- it is a literal
+    size_t len = 0;
+    const char* lit = &fmt[i];
+    // pass any whitespace characters.
+    for( ; fmt[i] && !istype(fmt[i], lit_chars); i++ ) len++;
+
+    spec_out->argType = QIO_CONV_ARG_TYPE_NONE_LITERAL;
+    spec_out->literal_is_whitespace = 0;
+    spec_out->literal_length = len;
+    spec_out->literal = (int8_t*) lit;
+    goto done;
+  }
+
+done:
+  *end = i;
+  return err;
+}
+
+qioerr qio_format_error_too_many_args(void)
+{
+  qioerr err;
+  QIO_GET_CONSTANT_ERROR(err, EINVAL, "Too many arguments for format string");
+  return err;
+}
+
+qioerr qio_format_error_too_few_args(void)
+{
+   qioerr err;
+   QIO_GET_CONSTANT_ERROR(err, EINVAL, "Too few arguments for format string");
+   return err;
+}
+
+qioerr qio_format_error_arg_mismatch(int64_t arg)
+{
+   qioerr err;
+   if( arg == 0 ) {
+     QIO_GET_CONSTANT_ERROR(err, EINVAL, "Argument type mismatch in argument 0");
+   } else if( arg == 1 ) {
+     QIO_GET_CONSTANT_ERROR(err, EINVAL, "Argument type mismatch in argument 1");
+   } else if( arg == 2 ) {
+     QIO_GET_CONSTANT_ERROR(err, EINVAL, "Argument type mismatch in argument 2");
+   } else if( arg == 3 ) {
+     QIO_GET_CONSTANT_ERROR(err, EINVAL, "Argument type mismatch in argument 3");
+   } else if( arg == 4 ) {
+     QIO_GET_CONSTANT_ERROR(err, EINVAL, "Argument type mismatch in argument 4");
+   } else if( arg == 5 ) {
+     QIO_GET_CONSTANT_ERROR(err, EINVAL, "Argument type mismatch in argument 5");
+   } else if( arg == 6 ) {
+     QIO_GET_CONSTANT_ERROR(err, EINVAL, "Argument type mismatch in argument 6");
+   } else {
+     QIO_GET_CONSTANT_ERROR(err, EINVAL, "Argument type mismatch in argument >6");
+   }
+   return err;
+}
+
+qioerr qio_format_error_bad_regexp(void)
+{
+   qioerr err;
+   QIO_GET_CONSTANT_ERROR(err, EINVAL, "Bad regular expression in format string");
+   return err;
+}
+
+qioerr qio_format_error_write_regexp(void)
+{
+   qioerr err;
+   QIO_GET_CONSTANT_ERROR(err, EINVAL, "Regular expressions are not supported in writef format strings");
+   return err;
+}
 
 
 
