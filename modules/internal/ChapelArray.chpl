@@ -384,8 +384,16 @@ module ChapelArray {
     var dom: domainType;
     return isSparseDom(dom);
   }
+
+  proc isDomainType(type t) param {
+    var x: t;
+    return chpl__isDomain(x);
+  }
   
   proc chpl__distributed(d: _distribution, type domainType) type {
+    if !isDomainType(domainType) then
+      compilerError("cannot apply 'dmapped' to the non-domain type ",
+                    typeToString(domainType));
     if chpl__isRectangularDomType(domainType) {
       var dom: domainType;
       return chpl__buildDomainRuntimeType(d, dom._value.rank, dom._value.idxType,
