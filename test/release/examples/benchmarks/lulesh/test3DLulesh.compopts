@@ -1,2 +1,2 @@
---fast -sprintWarnings=false -suse3DRepresentation=true
---fast -sprintWarnings=false -suseSparseMaterials=false -suse3DRepresentation=true
+-sprintWarnings=false -suse3DRepresentation=true
+-sprintWarnings=false -suseSparseMaterials=false -suse3DRepresentation=true
