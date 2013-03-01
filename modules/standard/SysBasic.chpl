@@ -48,13 +48,13 @@ extern proc qio_err_iserr(a:syserr):c_int;
 
 inline proc ENOERR return 0:err_t;
 
-inline proc ==(a: syserr, b: syserr) return (qio_err_eq(a,b) != 0);
-inline proc ==(a: syserr, b: err_t) return (qio_err_to_int(a) == b);
-inline proc ==(a: syserr, b: int(32)) return (qio_err_to_int(a) == b:c_int);
-inline proc ==(a: syserr, b: int(64)) return (qio_err_to_int(a) == b:c_int);
-inline proc ==(a: err_t, b: syserr) return (a == qio_err_to_int(b));
-inline proc ==(a: int(32), b: syserr) return (a:c_int == qio_err_to_int(b));
-inline proc ==(a: int(64), b: syserr) return (a:c_int == qio_err_to_int(b));
+inline proc ==(a: syserr, b: syserr) return (qio_err_eq(a,b) != 0:c_int);
+inline proc ==(a: syserr, b: err_t) return (qio_err_to_int(a) == b:int(32));
+inline proc ==(a: syserr, b: int(32)) return (qio_err_to_int(a) == b:int(32));
+inline proc ==(a: syserr, b: int(64)) return (qio_err_to_int(a) == b:int(32));
+inline proc ==(a: err_t, b: syserr) return (a:int(32) == qio_err_to_int(b));
+inline proc ==(a: int(32), b: syserr) return (a:int(32) == qio_err_to_int(b));
+inline proc ==(a: int(64), b: syserr) return (a:int(32) == qio_err_to_int(b));
 inline proc !=(a: syserr, b: syserr) return !(a == b);
 inline proc !=(a: syserr, b: err_t) return !(a == b);
 inline proc !=(a: syserr, b: int(32)) return !(a == b);
@@ -62,27 +62,27 @@ inline proc !=(a: syserr, b: int(64)) return !(a == b);
 inline proc !=(a: err_t, b: syserr) return !(a == b);
 inline proc !=(a: int(32), b: syserr) return !(a == b);
 inline proc !=(a: int(64), b: syserr) return !(a == b);
-inline proc !(a: syserr) return (qio_err_iserr(a) == 0);
-inline proc _cond_test(a: syserr) return (qio_err_iserr(a) != 0);
+inline proc !(a: syserr) return (qio_err_iserr(a) == 0:c_int);
+inline proc _cond_test(a: syserr) return (qio_err_iserr(a) != 0:c_int);
 inline proc _cast(type t, x: syserr) where t == int(32)
   return qio_err_to_int(x);
 inline proc _cast(type t, x: syserr) where t == int(64)
-  return qio_err_to_int(x);
+  return qio_err_to_int(x):int(64);
 inline proc _cast(type t, x: int(32)) where t == syserr
   return qio_int_to_err(x);
 inline proc _cast(type t, x: int(64)) where t == syserr
-  return qio_int_to_err(x);
+  return qio_int_to_err(x:int(32));
 inline proc =(ret:syserr, x:syserr) return x;
 inline proc =(ret:syserr, x:int(32)) return qio_int_to_err(x);
-inline proc =(ret:syserr, x:int(64)) return qio_int_to_err(x);
-inline proc =(ret:err_t, x:syserr) return qio_err_to_int(x);
+inline proc =(ret:syserr, x:int(64)) return qio_int_to_err(x:int(32));
+inline proc =(ret:err_t, x:syserr) return qio_err_to_int(x):err_t;
 
 // end of file
-extern proc chpl_macro_int_EEOF():c_int;
+extern proc chpl_macro_int_EEOF():err_t;
 inline proc EEOF return chpl_macro_int_EEOF():err_t;
-extern proc chpl_macro_int_ESHORT():c_int;
+extern proc chpl_macro_int_ESHORT():err_t;
 inline proc ESHORT return chpl_macro_int_ESHORT():err_t;
-extern proc chpl_macro_int_EFORMAT():c_int;
+extern proc chpl_macro_int_EFORMAT():err_t;
 inline proc EFORMAT return chpl_macro_int_EFORMAT():err_t;
 
 // system error numbers
