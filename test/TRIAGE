@@ -64,7 +64,7 @@ possible that some of these other failures might be due to callstack
 size.
 
 sungeun: 10/18/12.  Things seem quieter, but not perfect
-- Got a seg fault (06/06/12, 6/16, stream-ep 8/23/12)
+- Got a seg fault (06/06/12, 6/16, stream-ep 8/23/12, 02/28/13)
 - Intermitent seg fault on exit (7/7 7/9, 7/12, 7/13)
 -  seg fault during program execution (same as as previous):
    distributions/robust/arithmetic/optimizations/optimizeOnClauses_basic_tuple (7/10)
@@ -128,15 +128,27 @@ Not so noisy as to be familiar annoyances, but worth noting to see if they
 come up again
 ==========================================================================
 
+no-local ra-dist
+----------------
+fails verification (02/23/13)
+
+incorrect answer suggestive of a --no-local race : iteration terminated
+too early or too late (?)
+-----------------------------------------------------------------------
+studies/jacobi/waynew/example2 (02/26/13)
+
 intermittent valgrind error
 ---------------------------
+- studies/madness/aniruddha/madchap/mytests/par-compress/test_compress
+(compopts: 1) (02/26/13)
+
 - studies/madness/aniruddha/madchap/mytests/par-refine/test_refine (compopts: 1)
 Got wrong answer for F3.norm2() on 10/29/12, 01/14/13.
 As of 2/4/2013, those are the only times the test ran with compopts: 1.
 The other times it ran without compopts:1 and succeeded.
 - studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct
 Various numeric discrepancies, first occurred on 9/15/2012 or before.
-- release/examples/primers/chpldoc (compopts: 1)  (8/28/2012, 9/07/2012, 9/11/2012)
+- release/examples/primers/chpldoc (compopts: 1)  (8/28/2012, 9/07/2012, 9/11/2012, 02/25/13)
 This is not a problem with chpldocs (should file a separate future).
 There is an intermittent compile-time segfault during cullOverReferences.
 The type of Bar.super is at least partially corrupt at that point.
@@ -193,7 +205,7 @@ examples of what times out:
 
 wrong answer for atomic operations with gasnet-everything on 2/1/13 (Sungeun)
 -----------------------------------------------------------------------------
-types/atomic/sungeun/atomic_vars
+types/atomic/sungeun/atomic_vars (02/01/13, 02/19/13)
 
 "in routine alloca() there is a stack overflow" under PGI (UNASSIGNED)
 ----------------------------------------------------------------------
