@@ -47,7 +47,8 @@ typedef struct {
 // Dynamically allocated task local data should follow this (at offset sizeof(chpl_task_local_data_t)).
 typedef struct {
   chpl_bool serial_state;
-  c_subloc_t sublocale_id;
+  c_locale_t locale_id;
+  void* here;
   // Add fields here as needed....
 } chpl_task_local_data_t;
 
@@ -281,7 +282,7 @@ void chpl_task_begin(chpl_fn_p        fp,
         const chapel_wrapper_args_t wrapper_args = { fp, arg, serial_state};
         qthread_fork_syncvar_copyargs_to(chapel_wrapper, &wrapper_args,
                                          sizeof(chapel_wrapper_args_t), &ret,
-                                         chpl_task_getSubLoc()-1);
+                                         chpl_task_getLocaleID().subloc-1);
         qthread_syncvar_readFF(NULL, &ret);
     } else {
         // Will call the real begin statement function. Only purpose of this
@@ -290,7 +291,7 @@ void chpl_task_begin(chpl_fn_p        fp,
         const chapel_wrapper_args_t wrapper_args = { fp, arg, serial_state};
         qthread_fork_syncvar_copyargs_to(chapel_wrapper, &wrapper_args, 
                                          sizeof(chapel_wrapper_args_t), NULL,
-                                         chpl_task_getSubLoc()-1);
+                                         chpl_task_getLocaleID().subloc-1);
     }
 }
 
@@ -336,17 +337,30 @@ void chpl_task_setSerial(chpl_bool state)
     }
 }
 
-c_subloc_t chpl_task_getSubLoc(void)
-{
-    chpl_task_local_data_t* data = chpl_task_getLocalData();
-    return data == NULL ? 0 : data->sublocale_id;
-}
-
-void chpl_task_setSubLoc(c_subloc_t new_subloc)
+void chpl_task_setHere(void* new_here)
 {
     chpl_task_local_data_t* data = chpl_task_getLocalData();
     if (NULL != data)
-      data->sublocale_id = new_subloc;
+      data->here = new_here;
+}
+
+void* chpl_task_getHere(void)
+{
+    chpl_task_local_data_t* data = chpl_task_getLocalData();
+    return data == NULL ? 0 : data->here;
+}
+
+c_locale_t chpl_task_getLocaleID(void)
+{
+    chpl_task_local_data_t* data = chpl_task_getLocalData();
+    return data == NULL ? 0 : data->locale_id;
+}
+
+void chpl_task_setLocaleID(c_locale_t new_locale)
+{
+    chpl_task_local_data_t* data = chpl_task_getLocalData();
+    if (NULL != data)
+      data->locale_id = new_locale;
 }
 
 uint64_t chpl_task_getCallStackSize(void)

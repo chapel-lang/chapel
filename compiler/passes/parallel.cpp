@@ -139,19 +139,21 @@ static void create_block_fn_wrapper(CallExpr* fcall, ClassType* ctype, VarSymbol
 
   if (fn->hasFlag(FLAG_ON)) {
     // The wrapper function for 'on' block has an additional argument,
-    // which is how we pass the destination node ID to the forking function.
-    ArgSymbol* locale = new ArgSymbol(INTENT_BLANK, "_locale_arg", dtLocaleID);
+    // the new wide locale pointer
+    ArgSymbol* locale = new ArgSymbol(INTENT_BLANK, "_locale_arg", dtLocale);
     wrap_fn->insertFormalAtTail(locale);
   }
 
   ArgSymbol *wrap_c = new ArgSymbol( INTENT_BLANK, "c", ctype);
-  wrap_fn->insertFormalAtTail( wrap_c);
+  wrap_fn->insertFormalAtTail(wrap_c);
 
   mod->block->insertAtTail(new DefExpr(wrap_fn));
-  if (fn->hasFlag(FLAG_ON)) {
-    // The wrapper function is called with a copy of the locale argument.
+
+  // The wrapper function is called with the bundled argument list.
+  // But calls to an on block also contain the locale argument.
+  if (fn->hasFlag(FLAG_ON))
     fcall->insertBefore(new CallExpr(wrap_fn, fcall->get(1)->copy(), tempc));
-  } else
+  else
     fcall->insertBefore(new CallExpr(wrap_fn, tempc));
 
   // Create a call to the original function
@@ -768,7 +770,7 @@ parallel(void) {
     if (CallExpr* info = block->blockInfo) {
       SET_LINENO(block);
       FnSymbol* fn = NULL;
-      VarSymbol* oldLocaleID = NULL;
+      VarSymbol* oldHere = NULL;
       if (info->isPrimitive(PRIM_BLOCK_BEGIN)) {
         fn = new FnSymbol("begin_fn");
         fn->addFlag(FLAG_BEGIN);
@@ -784,16 +786,24 @@ parallel(void) {
         fn->addFlag(FLAG_ON);
         if (block->blockInfo->isPrimitive(PRIM_BLOCK_ON_NB))
           fn->addFlag(FLAG_NON_BLOCKING);
+
+        // Special case for the first two arguments of an on_fn, which carry
+        // the destination locale ID and the local pointer to "here".
+        // We save off the current values on the stack and then
+        // set the task-private values to those passed in.
+        // The saved values are restored when the on block is exited.
+        oldHere = newTemp(dtLocale);
+        fn->insertAtTail(new DefExpr(oldHere));
+        fn->insertAtTail(new CallExpr(PRIM_MOVE, oldHere,
+                                      new CallExpr(PRIM_TASK_GET_HERE)));
+
         // This is now a real locale arg.
-        ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "_locale_arg", dtLocaleID);
-        fn->insertFormalAtTail(arg);
-        // Special case for the first argument of an on_fn, which carries the destination locale ID.
-        // We set the sublocale field in task-private data before executing the body of the task,
-        // saving off a copy for restoration at the end of the on block.
-        oldLocaleID = newTemp(dtLocaleID);
-        fn->insertAtTail(new DefExpr(oldLocaleID));
-        fn->insertAtTail(new CallExpr(PRIM_MOVE, oldLocaleID, new CallExpr(PRIM_TASK_GET_LOCALE)));
-        fn->insertAtTail(new CallExpr(PRIM_TASK_SET_LOCALE, arg));
+        ArgSymbol* locarg = new ArgSymbol(INTENT_BLANK, "_locale_arg", dtLocale);
+        fn->insertFormalAtTail(locarg);
+        fn->insertAtTail(new CallExpr(PRIM_TASK_SET_LOCALE,
+                                      new CallExpr(PRIM_WIDE_GET_LOCALE, new SymExpr(locarg))));
+        fn->insertAtTail(new CallExpr(PRIM_TASK_SET_HERE,
+                                      new CallExpr(PRIM_WIDE_GET_ADDR, new SymExpr(locarg))));
       }
       else if (info->isPrimitive(PRIM_ON_GPU)) {
         fn = new FnSymbol("on_gpu_kernel");
@@ -822,9 +832,10 @@ parallel(void) {
         nestedFunctions.add(fn);
         CallExpr* call = new CallExpr(fn);
         if (block->blockInfo->isPrimitive(PRIM_BLOCK_ON) ||
-            block->blockInfo->isPrimitive(PRIM_BLOCK_ON_NB))
-          // This puts the target locale expression "onExpr" at the start of the call.
+            block->blockInfo->isPrimitive(PRIM_BLOCK_ON_NB)) {
+          // This puts the target locale ID and address at the start of the call.
           call->insertAtTail(block->blockInfo->get(1)->remove());
+        }
         else if (block->blockInfo->isPrimitive(PRIM_ON_GPU)) {
           call->insertAtTail(block->blockInfo->get(1)->remove());
           call->insertAtTail(block->blockInfo->get(1)->remove());
@@ -835,8 +846,13 @@ parallel(void) {
         block->blockInfo->remove();
         // This block becomes the body of the new function.
         fn->insertAtTail(block->remove());
-        if (oldLocaleID) // only true for ON blocks
-          fn->insertAtTail(new CallExpr(PRIM_TASK_SET_LOCALE, oldLocaleID));
+        if (fn->hasFlag(FLAG_ON)) {
+          // Restore old here value
+          fn->insertAtTail(new CallExpr(PRIM_TASK_SET_LOCALE,
+                                        new CallExpr(PRIM_WIDE_GET_LOCALE, oldHere)));
+          fn->insertAtTail(new CallExpr(PRIM_TASK_SET_HERE,
+                                        new CallExpr(PRIM_WIDE_GET_ADDR, oldHere)));
+        }
         fn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
         fn->retType = dtVoid;
       }
@@ -903,7 +919,7 @@ parallel(void) {
 
         INT_ASSERT(call->get(1));
         // nodeID is the node ID for the datum used in the "on" expression.
-        CallExpr* nodeID = new CallExpr(PRIM_LOC_GET_NODE, call->get(1)->copy());
+        CallExpr* nodeID = new CallExpr(PRIM_WIDE_GET_NODE, call->get(1)->copy());
         CallExpr* localeID = new CallExpr(PRIM_NODE_ID);    // Runtime (GASNet) node.
         VarSymbol* tmpNode = newTemp(nodeID->typeInfo());
         VarSymbol* tmpLoc = newTemp(localeID->typeInfo());
@@ -1067,16 +1083,7 @@ static void localizeCall(CallExpr* call) {
       break;
     case PRIM_MOVE:
       if (CallExpr* rhs = toCallExpr(call->get(2))) {
-        if (rhs->isPrimitive(PRIM_WIDE_GET_LOCALE) ||
-            rhs->isPrimitive(PRIM_WIDE_GET_NODE) ||
-            rhs->isPrimitive(PRIM_WIDE_GET_SUBLOC)) {
-          if (rhs->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
-            if (rhs->get(1)->getValType()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-              insertLocalTemp(rhs->get(1));
-            }
-          }
-          break;
-        } else if (rhs->isPrimitive(PRIM_DEREF)) {
+        if (rhs->isPrimitive(PRIM_DEREF)) {
           if (rhs->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE) ||
               rhs->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
             insertLocalTemp(rhs->get(1));
@@ -1087,7 +1094,20 @@ static void localizeCall(CallExpr* call) {
             }
           }
           break;
-        } else if (rhs->isPrimitive(PRIM_GET_MEMBER) ||
+        } 
+#if 0
+        else if (rhs->isPrimitive(PRIM_WIDE_GET_LOCALE) ||
+                 rhs->isPrimitive(PRIM_WIDE_GET_NODE) ||
+                 rhs->isPrimitive(PRIM_WIDE_GET_SUBLOC)) {
+          if (rhs->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
+            if (rhs->get(1)->getValType()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
+              insertLocalTemp(rhs->get(1));
+            }
+          }
+          break;
+        }
+#endif
+        else if (rhs->isPrimitive(PRIM_GET_MEMBER) ||
                    rhs->isPrimitive(PRIM_GET_SVEC_MEMBER) ||
                    rhs->isPrimitive(PRIM_GET_MEMBER_VALUE) ||
                    rhs->isPrimitive(PRIM_GET_SVEC_MEMBER_VALUE)) {
@@ -1677,6 +1697,10 @@ static void derefWideRefsToWideClasses()
   forv_Vec(CallExpr, call, gCallExprs) {
     if (call->isPrimitive(PRIM_GET_MEMBER) ||
         call->isPrimitive(PRIM_GET_MEMBER_VALUE) ||
+        call->isPrimitive(PRIM_WIDE_GET_LOCALE) ||
+        call->isPrimitive(PRIM_WIDE_GET_NODE) ||
+        call->isPrimitive(PRIM_WIDE_GET_SUBLOC) ||
+        call->isPrimitive(PRIM_WIDE_GET_ADDR) ||
         call->isPrimitive(PRIM_SET_MEMBER)) {
       if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE) &&
           call->get(1)->getValType()->symbol->hasFlag(FLAG_WIDE_CLASS)) {

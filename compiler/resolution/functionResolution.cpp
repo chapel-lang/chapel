@@ -3653,7 +3653,7 @@ preFold(Expr* expr) {
         }
       }
     } else if (call->isPrimitive(PRIM_DEREF)) {
-      // remove get ref if already a value
+      // remove deref if arg is already a value
       if (!call->get(1)->typeInfo()->symbol->hasFlag(FLAG_REF)) {
         result = call->get(1)->remove();
         call->replace(result);

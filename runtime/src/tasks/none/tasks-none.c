@@ -28,6 +28,7 @@ typedef struct chpl_pool_struct {
   void*     arg;          // argument to the function
   chpl_bool serial_state; // whether new tasks can be created while executing fun
   c_locale_t locale;  	  // locale id associated with the current task.
+  void*		here;
   chpl_task_pool_p next;
 } task_pool_t;
 
@@ -87,8 +88,9 @@ void chpl_sync_destroyAux(chpl_sync_aux_t *s) { }
 
 static chpl_taskID_t next_taskID = chpl_nullTaskID + 1;
 static chpl_taskID_t curr_taskID;
-static chpl_bool serial_state;
-static c_locale_t locale;
+static chpl_bool s_serial_state;
+static c_locale_t s_locale;
+static void* s_here;
 static uint64_t taskCallStackSize = 0;
 
 void chpl_task_init(int32_t numThreadsPerLocale, int32_t maxThreadsPerLocale, 
@@ -124,7 +126,7 @@ void chpl_task_init(int32_t numThreadsPerLocale, int32_t maxThreadsPerLocale,
   taskCallStackSize = callStackSize;
 
   curr_taskID = next_taskID++;
-  serial_state = true;  // Likely makes no difference, except for testing/debugging.
+  s_serial_state = true;  // Likely makes no difference, except for testing/debugging.
 
   task_pool_head = task_pool_tail = NULL;
   queued_cnt = 0;
@@ -138,7 +140,7 @@ int chpl_task_createCommTask(chpl_fn_p fn, void* arg) {
 }
 
 void chpl_task_callMain(void (*chpl_main)(void)) {
-  serial_state = false;
+  s_serial_state = false;
   chpl_main();
 }
 
@@ -162,12 +164,21 @@ void chpl_task_begin(chpl_fn_p fp, void* a, chpl_bool ignore_serial,
                 chpl_bool serial_state, chpl_task_list_p task_list_entry) {
   if (!ignore_serial && chpl_task_getSerial()) {
     //
-    // save and restore current task's serial state before and after
-    // invoking new task
+    // save the current task's state before invoking the new task.
     //
     chpl_taskID_t saved_taskID = curr_taskID;
     chpl_bool saved_serial_state = chpl_task_getSerial();
+    c_locale_t saved_locale = chpl_task_getLocaleID();
+    void* saved_here = chpl_task_getHere();
+
+    // huh?  Who sets the running environment for the new task function?
     (*fp)(a);
+
+    //
+    // restore the previous task state
+    //
+    chpl_task_setHere(saved_here);
+    chpl_task_setLocaleID(saved_locale);
     chpl_task_setSerial(saved_serial_state);
     curr_taskID = saved_taskID;
   } else {
@@ -182,6 +193,9 @@ void chpl_task_begin(chpl_fn_p fp, void* a, chpl_bool ignore_serial,
     task->fun = fp;
     task->arg = a;
     task->serial_state = serial_state;
+    // Inherit the current locale
+    task->locale = chpl_task_getLocaleID();
+    task->here = chpl_task_getHere();
     task->next = NULL;
 
     if (task_pool_tail) {
@@ -204,16 +218,21 @@ void chpl_task_sleep(int secs) {
   sleep(secs);
 }
 
-chpl_bool chpl_task_getSerial(void) { return serial_state; }
-
 void chpl_task_setSerial(chpl_bool new_state) {
-  serial_state = new_state;
+  s_serial_state = new_state;
 }
 
-c_locale_t chpl_task_getLocaleID(void) { return locale; }
+chpl_bool chpl_task_getSerial(void) { return s_serial_state; }
+
+void chpl_task_setHere(void new_here)
+{ s_here = new_here; }
+
+void* chpl_task_getHere(void) { return s_here; }
 
 void chpl_task_setLocaleID(c_locale_t new_localeID)
-{ locale = new_localeID; }
+{ s_locale = new_localeID; }
+
+c_locale_t chpl_task_getLocaleID(void) { return s_locale; }
 
 uint64_t chpl_task_getCallStackSize(void) {
   return taskCallStackSize;
@@ -233,6 +252,8 @@ static chpl_bool
 launch_next_task(void) {
   chpl_taskID_t saved_taskID;
   chpl_bool saved_serial_state;
+  c_locale_t saved_localeID;
+  void* saved_here;
 
   if (task_pool_head) {
     // retrieve the first task from the task pool
@@ -249,7 +270,16 @@ launch_next_task(void) {
     //
     saved_taskID = curr_taskID;
     saved_serial_state = chpl_task_getSerial();
+    saved_localeID = chpl_task_getLocaleID();
+    saved_here = chpl_task_getHere();
+
+    //
+    // set up state the task expects to run in.
+    //
+    // Who sets the task ID?
     chpl_task_setSerial(task->serial_state);
+    chpl_task_setLocaleID(task->locale);
+    chpl_task_setHere(task->here);
 
     (*task->fun)(task->arg);
     chpl_mem_free(task, 0, 0);
@@ -257,6 +287,8 @@ launch_next_task(void) {
     //
     // restore state
     //
+    chpl_task_setHere(saved_here);
+    chpl_task_setlocaleID(saved_localeID);
     chpl_task_setSerial(saved_serial_state);
     curr_taskID = saved_taskID;
 

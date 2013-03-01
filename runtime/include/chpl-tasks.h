@@ -158,6 +158,18 @@ chpl_bool chpl_task_getSerial(void);
 void      chpl_task_setSerial(chpl_bool);
 
 //
+// Get and set task-specific locale information.
+// The content of the void* is the local address of the locale object which 
+// represents the locale where the current task is running.
+// Use of this field is an *optimization*, since in general it may not be possible
+// to reach said object through a local address.  If chpl_task_getHere() returns
+// a null pointer, the object must be looked up using 
+//  chpl_localeID_to_locale(chpl_task_getLocaleID());
+//
+void*		chpl_task_getHere(void);
+void        chpl_task_setHere(void*);
+
+//
 // Get and set task-specific localeID information.
 //
 c_locale_t  chpl_task_getLocaleID(void);

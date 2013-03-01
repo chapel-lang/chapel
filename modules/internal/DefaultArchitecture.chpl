@@ -142,7 +142,11 @@ module DefaultArchitecture {
         on __primitive("chpl_on_locale_num", locIdx)
         {
           const node = new DefaultNode(this);
+
+          // The "private" implementation of _here is being replaced by
+          // a task-private one.  So this will eventually go away:
           _here = node;
+
           myLocales[locIdx] = node;
           numCores += node.numCores;
         }

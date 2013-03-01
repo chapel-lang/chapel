@@ -86,7 +86,7 @@ chpl_wide_string_copy(chpl____wide_chpl_string* x, int32_t lineno, chpl_string f
   }
 }
 
-#include "chpl-comm-compiler-macros.h" // for chpl_gen_getLocaleID
+#include "chpl-gen-includes.h" // for chpl_gen_getLocaleID
 
 // un-macro'd CHPL_WIDEN_STRING
 void

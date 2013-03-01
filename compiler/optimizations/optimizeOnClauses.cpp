@@ -80,6 +80,8 @@ isFastPrimitive(CallExpr *call) {
   case PRIM_SET_SERIAL:
   case PRIM_TASK_SET_LOCALE:
   case PRIM_TASK_GET_LOCALE:
+  case PRIM_TASK_SET_HERE:
+  case PRIM_TASK_GET_HERE:
 
   case PRIM_STRING_COPY:
 

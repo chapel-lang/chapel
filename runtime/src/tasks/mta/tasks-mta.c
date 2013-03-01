@@ -146,6 +146,7 @@ void chpl_task_sleep(int secs) {
 typedef struct {
   chpl_bool serial_state;
   c_locale_t locale_id;
+  void* here;	// Local address of the current locale object.
   // Add fields here as needed....
 } chpl_task_private_data_t;
 
@@ -174,6 +175,17 @@ chpl_bool chpl_task_getSerial(void) {
   }
 }
 
+void* chpl_task_getHere(void) {
+  chpl_task_private_data_t *p = NULL;
+  p = (chpl_task_private_data_t*) mta_register_task_data(p);
+  if (p == NULL)
+    return 0;
+  else {
+    mta_register_task_data(p); // Put back the value retrieved above.
+    return p->here;
+  }
+}
+
 c_locale_t chpl_task_getLocaleID(void) {
   chpl_task_private_data_t *p = NULL;
   p = (chpl_task_private_data_t*) mta_register_task_data(p);
@@ -193,6 +205,18 @@ void chpl_task_setSerial(chpl_bool state) {
   else
   {
     p->serial_state = state;
+    mta_register_task_data(p);
+  }
+}
+
+void chpl_task_setHere(void* here) {
+  chpl_task_private_data_t *p = NULL;
+  p = (chpl_task_private_data_t*) mta_register_task_data(p);
+  if (p == NULL)
+    chpl_internal_error("no task-private data in chpl_task_setHere.");
+  else
+  {
+    p->here = here;
     mta_register_task_data(p);
   }
 }

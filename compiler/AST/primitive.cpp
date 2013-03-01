@@ -24,6 +24,14 @@ returnInfoString(CallExpr* call) {
 }
 
 static Type*
+returnInfoLocale(CallExpr* call) {
+  // Return the wide version of dtLocale if there is one.
+  Type* t1 = wideClassMap.get(dtLocale);
+  if (t1) return t1;
+  return dtLocale;
+}
+
+static Type*
 returnInfoLocaleID(CallExpr* call) {
   return dtLocaleID;
 }
@@ -541,9 +549,11 @@ initPrimitive() {
 
   prim_def(PRIM_LOCALE_ID, "_hereID", returnInfoLocaleID);
   prim_def(PRIM_NODE_ID, "chpl_nodeID", returnInfoNodeID);    // Our GASNet node ID.
-  prim_def(PRIM_ON_LOCALE_NUM, "chpl_on_locale_num", returnInfoLocaleID);
+  prim_def(PRIM_ON_LOCALE_NUM, "chpl_on_locale_num", returnInfoLocale);
   prim_def(PRIM_TASK_SET_LOCALE, "_task_set_locale", returnInfoVoid, true);
   prim_def(PRIM_TASK_GET_LOCALE, "_task_get_locale", returnInfoLocaleID);
+  prim_def(PRIM_TASK_SET_HERE, "_task_set_here", returnInfoVoid, true);
+  prim_def(PRIM_TASK_GET_HERE, "_task_get_here", returnInfoLocale);
 
   prim_def(PRIM_ALLOC_GVR, "allocchpl_globals_registry", returnInfoVoid);
   prim_def(PRIM_HEAP_REGISTER_GLOBAL_VAR, "_heap_register_global_var", returnInfoVoid, true, true);
