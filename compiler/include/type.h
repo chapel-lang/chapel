@@ -124,6 +124,7 @@ class ClassType : public Type {
   GenRet codegenClassStructType();
   void codegenDef();
   void codegenPrototype();
+  const char* classStructName(bool standalone);
   int codegenStructure(FILE* outfile, const char* baseoffset);
   int codegenFieldStructure(FILE* outfile, bool nested, const char* baseoffset);
 
