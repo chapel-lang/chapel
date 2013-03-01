@@ -274,7 +274,7 @@ if example == 0 || example == 5 {
   writeln("Running Example 5");
 
   // Error handling.
-  var err = ENOERR;
+  var err:syserr;
   // Who knows, maybe 1st unlink succeeds.
   unlink(testfile, error=err);
 
