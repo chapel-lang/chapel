@@ -105,4 +105,17 @@ CallExpr* buildPreDecIncWarning(Expr* expr, char sign);
 BlockStmt* convertTypesToExtern(BlockStmt*);
 BlockStmt* handleConfigTypes(BlockStmt*);
 
+// Exception related functions
+// TODO catchblock
+BlockStmt* buildTCFStmt(BlockStmt* tryblock,
+		        BlockStmt* catchblocks,
+		        BlockStmt* finallyblock = NULL);
+
+BlockStmt* buildCatchBlock(Expr* exception, BlockStmt* catchblock);
+
+BlockStmt* buildThrowStmt(Expr* exception);
+BlockStmt* buildDieStmt(Expr* exception);
+BlockStmt* buildPostStmt(Expr* exception);
+
+
 #endif

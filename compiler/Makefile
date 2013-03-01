@@ -1,7 +1,7 @@
 #
 # Makefile: builds Chapel compiler
 #
-
+.PHONY: $(CHPL) tags
 ifndef CHPL_MAKE_HOME
 export CHPL_MAKE_HOME=$(shell pwd)/..
 endif
@@ -103,11 +103,10 @@ $(BUILD_VERSION_FILE): CheckForStandardCHeaders
 	$(UPDATE_BUILD_VERSION) $@) || (echo 0 > $@);
 
 
-$(CHPL): $(CHPL_OBJS) | $(CHPL_BIN_DIR)
+$(CHPL): $(CHPL_OBJS) | $(CHPL_BIN_DIR) tags
 	$(CXX) $(LDFLAGS) -o $@ $(CHPL_OBJS) $(LIBS) $(LLVM_LIBS)
 	rm -f $(CHPLDOC)
 	ln -s $(notdir $(CHPL)) $(CHPLDOC)
-	-@(which $(CHPL_TAGS_UTIL) > /dev/null 2>&1 && echo "Updating TAGS..." && $(CHPL_TAGS_UTIL) $(CHPL_TAGS_FLAGS) $(ALL_SRCS) */*.h) || echo "$(CHPL_TAGS_UTIL) not available"
 	-@(which ebrowse > /dev/null 2>&1 && echo "Updating BROWSE..." && ebrowse $(ALL_SRCS) */*.h) || echo "ebrowse not available"
 
 $(CHPL_BIN_DIR):
@@ -120,6 +119,8 @@ third-party-pkgs:
 		$(MAKE) -C $(THIRD_PARTY_DIR) $$p; \
 	done
 
+tags:
+	-@(which $(CHPL_TAGS_UTIL) > /dev/null 2>&1 && echo "Updating TAGS..." && $(CHPL_TAGS_UTIL) $(CHPL_TAGS_FLAGS) $(ALL_SRCS) */*.h) || echo "$(CHPL_TAGS_UTIL) not available"
 
 #
 # include standard footer for compiler

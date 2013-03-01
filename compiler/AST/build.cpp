@@ -2057,3 +2057,33 @@ BlockStmt* handleConfigTypes(BlockStmt* blk) {
   }
   return blk;
 }
+
+
+// Exceptions (TCF) build functions start
+
+// build the top statement, the whole TCF block
+BlockStmt* buildTCFStmt(BlockStmt* tryblock,
+		        BlockStmt* catchblocks,
+		        BlockStmt* finallyblock){
+return NULL;
+}
+
+// build a single ctach block
+BlockStmt* buildCatchBlock(Expr* exception, BlockStmt* catchblock){
+return NULL;
+}
+
+// build a throw "call"
+BlockStmt* buildThrowStmt(Expr* exception){
+return NULL;
+}
+
+// build a die "call"
+BlockStmt* buildDieStmt(Expr* exception){
+return NULL;
+}
+
+// build a post "call"
+BlockStmt* buildPostStmt(Expr* exception){
+    return NULL;
+}

@@ -45,6 +45,26 @@ class BlockStmt : public Expr {
   void addUse(ModuleSymbol* mod);
 };
 
+// Special class for the TCF block in the AST, we want to keep them seperate
+// from the basic BlockStmt
+class TCFBlock : public Expr {
+   public:
+       // Try catch and finally blocks
+       BlockStmt* tryblock;
+       BlockStmt* catchblock;
+       
+       // AList catchblocks // ... comes later
+       BlockStmt* finallyblock;
+       
+       // Destructor for TCFBlock
+       ~TCFBlock();
+
+       // This method returns a list of the exceptions which are
+       // handled by the catch blocks
+       int getHandledExceptions();
+
+       // TODO much more to follow, this is a stub
+};
 
 class CondStmt : public Expr {
  public:

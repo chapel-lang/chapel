@@ -4,7 +4,7 @@ endif
 
 include $(CHPL_MAKE_HOME)/make/Makefile.base
 
-all: third-party-pkgs all.helpme
+all: third-party-pkgs all.helpme tags
 
 depend: third-party-pkgs depend.helpme
 
@@ -13,6 +13,9 @@ clean: clean.helpme
 cleandeps: cleandeps.helpme
 
 clobber: clobber.helpme
+
+tags:
+	-@(which $(CHPL_TAGS_UTIL) > /dev/null 2>&1 && echo "Updating TAGS..." && $(CHPL_TAGS_UTIL) $(CHPL_TAGS_FLAGS) $(ALL_SRCS) */*.h) || echo "$(CHPL_TAGS_UTIL) not available"
 
 %.helpme:
 	@$(MAKE) -f Makefile.help MAKE_LAUNCHER=0 CHPL_MAKE_RULE=$* $*

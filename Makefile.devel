@@ -15,6 +15,9 @@ spectests: FORCE
 STATUS: STATUS.devel
 	grep -v "^\ *#" STATUS.devel > STATUS
 
+tags:
+	cd compiler && $(MAKE) tags
+	cd runtime && $(MAKE) tags
 
 FUTURES:
 	cd test && find . -wholename ".svn" -prune -o \( -name \*.future \) -exec head -n 1 {} + > FUTURES

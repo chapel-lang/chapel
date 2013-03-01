@@ -67,15 +67,15 @@
 // keywords (alphabetical)
 //
 %token TALIGN TATOMIC TBEGIN TBREAK TBY
-%token TCLASS TCOBEGIN TCOFORALL TCONFIG TCONST TCONTINUE
-%token TDELETE TDMAPPED TDO TDOMAIN TELSE TENUM TEXPORT TEXTERN
-%token TFOR TFORALL TIF TIN TINDEX TINLINE TINOUT TITER
+%token TCATCH TCLASS TCOBEGIN TCOFORALL TCONFIG TCONST TCONTINUE
+%token TDELETE TDIE TDMAPPED TDO TDOMAIN TELSE TENUM TEXPORT TEXTERN
+%token TFINALLY TFOR TFORALL TIF TIN TINDEX TINLINE TINOUT TITER
 %token TLABEL TLAMBDA TLET TLOCAL TMINUSMINUS TMODULE
 %token TNEW TNIL TON TOTHERWISE TOUT
-%token TPARAM TPLUSPLUS TPRAGMA TPRIMITIVE TPRIMITIVELOOP TPROC
+%token TPARAM TPLUSPLUS TPOST TPRAGMA TPRIMITIVE TPRIMITIVELOOP TPROC
 %token TRECORD TREDUCE TREF TRETURN
 %token TSCAN TSELECT TSERIAL TSINGLE TSPARSE TSUBDOMAIN
-%token TSYNC TTHEN TTYPE TUNDERSCORE TUNION TUSE TVAR
+%token TSYNC TTHEN TTHROW TTRY TTYPE TUNDERSCORE TUNION TUSE TVAR
 %token TWHEN TWHERE TWHILE TYIELD TZIP
 
 //
@@ -160,6 +160,15 @@
 %type <penumtype> enum_ls
 
 %type <pexpr> zippered_iterator
+
+%type <pblockstmt> trycatchfinally_stmt
+%type <pblockstmt> catchseq
+%type <pblockstmt> catchseq_opt
+%type <pblockstmt> catchhandler
+%type <pblockstmt> throw_stmt
+%type <pblockstmt> die_stmt
+%type <pblockstmt> post_stmt
+
 %type <pexpr> fun_expr call_expr dot_expr lhs_expr unary_op_expr binary_op_expr
 %type <pexpr> parenthesized_expr expr actual_expr
 %type <pexpr> literal_expr opt_where_part
@@ -215,6 +224,10 @@ stmt:
 | module_decl_stmt
 | loop_stmt
 | select_stmt
+| throw_stmt
+| die_stmt
+| post_stmt
+| trycatchfinally_stmt
 | type_select_stmt
 | return_stmt
 | stmt_level_expr TSEMI      { $$ = buildChapelStmt($1); }
@@ -339,6 +352,45 @@ if_stmt:
 | TIF expr TTHEN stmt TELSE stmt     { $$ = buildIfStmt($2, $4, $6); }
 | TIF expr block_stmt TELSE stmt     { $$ = buildIfStmt($2, $3, $5); }
 ;
+
+// Exception Handling Rules
+//
+
+trycatchfinally_stmt:
+  TTRY block_stmt catchseq { $$ = buildTCFStmt($2, $3); }
+| TTRY block_stmt catchseq_opt TFINALLY block_stmt  { $$ = buildTCFStmt($2, $3, $5); }
+;
+
+// This is just a helper to allow more than one catch blocks
+catchseq:
+  catchhandler
+| catchhandler catchseq
+;
+
+// one actuall catch block: "catch(Exception) {...}"
+catchhandler:
+  TCATCH expr block_stmt { $$ = buildCatchBlock($2, $3); }
+;
+
+catchseq_opt:
+  /* empty */ { $$ = NULL; }
+| catchseq
+;
+
+throw_stmt:
+  TTHROW expr TSEMI { $$ = buildThrowStmt($2); }
+;
+
+die_stmt:
+  TDIE expr TSEMI { $$ = buildDieStmt($2); }
+;
+
+post_stmt:
+  TPOST expr TSEMI { $$ = buildPostStmt($2); }
+;
+
+//
+// Exception END
 
 select_stmt:
   TSELECT expr TLCBR when_stmt_ls TRCBR

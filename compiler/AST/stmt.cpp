@@ -708,3 +708,7 @@ const char* GotoStmt::getName() {
   else
     return NULL;
 }
+
+int TCFBlock::getHandledExceptions() {
+    return 0;
+}
