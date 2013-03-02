@@ -1217,14 +1217,9 @@ static void handleLocalBlocks() {
             if (local->retType->symbol->hasFlag(FLAG_WIDE)) {
               CallExpr* ret = toCallExpr(local->body->body.tail);
               INT_ASSERT(ret && ret->isPrimitive(PRIM_RETURN));
-              Type* narrowType = local->retType->getField("addr")->type;
-              local->retType = narrowType;
-              VarSymbol* tmp = newTemp(narrowType);
-              ret->insertBefore(new DefExpr(tmp));
-              if (!fNoLocalChecks)
-                ret->insertBefore(new CallExpr(PRIM_LOCAL_CHECK, ret->get(1)->copy()));
-              ret->insertBefore(new CallExpr(PRIM_MOVE, tmp, ret->get(1)->copy()));
-              ret->get(1)->replace(new SymExpr(tmp));
+              // Capture the return expression in a local temp.
+              insertLocalTemp(ret->get(1));
+              local->retType = ret->get(1)->typeInfo();
             }
           }
         }
