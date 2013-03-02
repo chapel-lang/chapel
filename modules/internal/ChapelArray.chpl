@@ -321,7 +321,7 @@ module ChapelArray {
     return chpl__convertValueToRuntimeType(dom);
   
   //
-  // Support for domain expressions, e.g., [1..3, 1..3]
+  // Support for domain expressions, e.g., {1..3, 1..3}
   //
   proc chpl__buildDomainExpr(x: domain)
     return x;
@@ -359,7 +359,7 @@ module ChapelArray {
   }
   
   //
-  // Support for distributed domain expression, e.g., [1..3, 1..3] distributed Dist
+  // Support for distributed domain expression e.g. {1..3, 1..3} dmapped Dist()
   //
   proc chpl__distributed(d: _distribution, dom: domain) {
     if isRectangularDom(dom) {
