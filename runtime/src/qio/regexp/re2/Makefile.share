@@ -3,7 +3,7 @@ REGEXP_SRCS = re2-interface.cc
 SVN_SRCS = $(REGEXP_SRCS)
 SRCS = $(SVN_SRCS)
 
-REGEXP_COMMON_OBJS = \
+REGEXP_OBJS = \
       $(addprefix $(REGEXP_OBJDIR)/,$(addsuffix .o,$(basename $(REGEXP_SRCS))))
 
 RUNTIME_INCLS += -I$(RE2_INCLUDE_DIR) -I$(RE2_INCLUDE_DIR2)

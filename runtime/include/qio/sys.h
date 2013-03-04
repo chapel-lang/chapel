@@ -7,6 +7,8 @@ extern "C" {
 #endif
 
 #include "sys_basic.h"
+#include "qio_error.h"
+
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/socket.h>
@@ -14,6 +16,7 @@ extern "C" {
 #include <unistd.h>
 #include <stdio.h>
 
+typedef int fd_t;
 
 // Do we have getaddrinfo?
 #ifdef EAI_NONAME

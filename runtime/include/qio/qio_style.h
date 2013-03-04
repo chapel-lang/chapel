@@ -1,6 +1,7 @@
 #ifndef _QIO_STYLE_H_
 #define _QIO_STYLE_H_
 
+#include "sys_basic.h"
 #include "qbuffer.h"
 
 #include <limits.h>

@@ -87,7 +87,7 @@ proc compile(pattern: string, out error:syserr, utf8=true, posix=false, literal=
   if qio_regexp_ok(ret._regexp) {
     error = ENOERR;
   } else {
-    error = EINVAL;
+    error = qio_format_error_bad_regexp();
   }
   return ret;
 }

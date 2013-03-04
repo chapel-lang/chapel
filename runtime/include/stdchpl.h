@@ -36,13 +36,6 @@
 #include "chplgpu.h"
 #include "error.h"
 
-#include "qbuffer.h"
-#include "qio.h"
-#include "qio_formatted.h"
-#include "qio_regexp.h"
-#include "bulkget.h"
-#include "chplgmp.h"
-
 #include "chpl-comm-compiler-macros.h"
 
 #endif

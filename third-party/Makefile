@@ -60,6 +60,8 @@ $(TCMALLOC_INSTALL_DIR):
 llvm: FORCE
 	cd llvm && $(MAKE)
 
+re2: FORCE
+	cd re2 && $(MAKE)
 
 -include Makefile.devel
 

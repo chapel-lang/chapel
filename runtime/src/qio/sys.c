@@ -299,7 +299,7 @@ err_t sys_strerror_internal(err_t error, char** string_out, size_t extra_space)
                           && error < EXTEND_ERROR_OFFSET+EXTEND_ERROR_NUM) {
     errmsg = extended_errors[error - EXTEND_ERROR_OFFSET];
     buf_sz = strlen(errmsg) + 1;
-    buf = qio_malloc(buf_sz + extra_space);
+    buf = (char*) qio_malloc(buf_sz + extra_space);
     if( ! buf ) return ENOMEM;
     strcpy(buf, errmsg);
     *string_out = buf;

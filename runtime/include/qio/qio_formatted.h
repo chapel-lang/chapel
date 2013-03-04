@@ -1,6 +1,7 @@
 #ifndef _QIO_FORMATTED_H_
 #define _QIO_FORMATTED_H_
 
+#include "sys_basic.h"
 #include "qio.h"
 
 #include "bswap.h"

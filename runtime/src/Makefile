@@ -29,7 +29,7 @@ SUBDIRS = \
 	tasks \
 	threads \
         timers \
-        regexp \
+        qio \
 
 else
 TARGETS = \
