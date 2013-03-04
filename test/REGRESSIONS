@@ -62,6 +62,10 @@ valgrind-specific regressions
 (Checked for accuracy 2/26/2013)
 =============================
 
+conditional jump or move depends on uninitialized values (new test)
+-------------------------------------------------------------------
+[Error matching program output for io/ferguson/writef_readf]
+
 --numThreadsPerLocale unexpected in output (interaction of valgrind argument list
 with new-style chpl argument list?) started 2013/2/25.
 ------------------------------------------------------
@@ -292,6 +296,12 @@ cray-xt-cray/cce-specific regressions
 (Checked for accuracy 2/26/2013)
 =====================================
 
+compilation timeouts due to removing --fast and non-default timeouts (02/28/13)
+David's analysis suggests that Inter Procedural Analysis is the culprit
+-------------------------------------------------------------------------------
+[Error: Timed out compilation for release/examples/benchmarks/lulesh/test3DLulesh (compopts: 1)]
+[Error: Timed out compilation for release/examples/benchmarks/lulesh/test3DLulesh (compopts: 2)]
+
 value is outside of the int range in C compilation (03/??/12)
 -------------------------------------------------------------
 [Error matching compiler output for types/enum/ferguson/enum_mintype_test]
@@ -335,6 +345,10 @@ compilation timeouts (10/19/11)
 pgi-specific regressions (in addition to cray-xt errors above) 
 (Checked for accuracy 2/26/2013)
 ==============================================================
+
+binary output mismatch
+----------------------
+[Error matching program output for io/ferguson/writefbinary]
 
 illegal type conversion/too many initializers/error limit exceeded
 ------------------------------------------------------------------
@@ -461,6 +475,11 @@ xt-intel-specific regressions (in addition to cray-xt errors above)
 (Checked for accuracy 2/26/2013)
 ===================================================================
 
+binary output mismatches (03/04/13 -- new tests)
+------------------------------------------------
+[Error matching program output for io/ferguson/writefbinary]
+[Error matching program output for io/ferguson/writef_readf]
+
 runtime assertion (started 10/15/12)
 ------------------------------------
 [Error matching program output for io/ferguson/io_test]
@@ -501,17 +520,6 @@ xt-gnu specific failures
 ========================
 cygwin-specific failures
 ========================
-
-naming conflicts due to using C identifiers starting with '_' (reserved by C)
-Specifically '_C', but it would be nice to avoid these categorically
------------------------------------------------------------------------------
-[Error matching compiler output for release/examples/primers/classes]
-[Error matching compiler output for release/examples/spec/Input_and_Output/UserWriter]
-[Error matching compiler output for release/examples/spec/Classes/declaration]
-[Error matching compiler output for release/examples/spec/Classes/defaultConstructor]
-[Error matching compiler output for release/examples/spec/Classes/delete]
-[Error matching compiler output for release/examples/spec/Classes/getterSetter]
-[Error matching compiler output for release/examples/spec/Classes/implicitThis]
 
 ???
 ---
