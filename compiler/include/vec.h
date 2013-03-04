@@ -61,6 +61,7 @@ class Vec {
   int add_exclusive(C a);
   C& add();
   C head() { return n>0 ? *v : 0; }
+  C only() { return n == 1 ? *v : 0; }
   C tail() { return n>0 ? v[n-1] : 0; }
   C pop();
   void clear();

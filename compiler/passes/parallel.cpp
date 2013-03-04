@@ -13,6 +13,10 @@
 #include "driver.h"
 #include "files.h"
 
+static void collapseLocaleLookups();
+static Expr* peelLocaleLookup(Expr* onExpr, Map<Symbol*, Vec<SymExpr*>*>& defMap);
+static void insertEndCounts();
+static void optimizeLocalOns(Vec<FnSymbol*>& nestedFunctions);
 static void create_block_fn_wrapper(CallExpr* fcall, ClassType* ctype, VarSymbol* tempc);
 static void findBlockRefActuals(Vec<Symbol*>& refSet, Vec<Symbol*>& refVec);
 static void findHeapVarsAndRefs(Map<Symbol*,Vec<SymExpr*>*>& defMap,
@@ -760,12 +764,8 @@ reprivatizeIterators() {
 }
 
 
-void
-parallel(void) {
-  //
-  // convert begin/cobegin/coforall/on blocks into nested functions and flatten
-  //
-  Vec<FnSymbol*> nestedFunctions;
+static void createNestedFunctions(Vec<FnSymbol*>& nestedFunctions)
+{
   forv_Vec(BlockStmt, block, gBlockStmts) {
     if (CallExpr* info = block->blockInfo) {
       SET_LINENO(block);
@@ -858,6 +858,20 @@ parallel(void) {
       }
     }
   }
+}
+
+
+void
+parallel(void) {
+  // This pass must occur after resolution and before flattenNestedFunctions().
+  collapseLocaleLookups();
+
+  //
+  // convert begin/cobegin/coforall/on blocks into nested functions and flatten
+  //
+  Vec<FnSymbol*> nestedFunctions;
+
+  createNestedFunctions(nestedFunctions);
 
   flattenNestedFunctions(nestedFunctions);
 
@@ -869,6 +883,14 @@ parallel(void) {
 
   makeHeapAllocations();
 
+  insertEndCounts();
+
+  optimizeLocalOns(nestedFunctions);
+}
+
+
+static void insertEndCounts()
+{
   Vec<FnSymbol*> queue;
   Map<FnSymbol*,Symbol*> endCountMap;
 
@@ -897,7 +919,11 @@ parallel(void) {
       call->insertAtTail(endCountMap.get(pfn));
     }
   }
+}
 
+
+static void optimizeLocalOns(Vec<FnSymbol*>& nestedFunctions)
+{
   forv_Vec(FnSymbol, fn, nestedFunctions) {
     forv_Vec(CallExpr, call, *fn->calledBy) {
       SET_LINENO(call);
@@ -939,8 +965,99 @@ parallel(void) {
   }
 }
 
-ClassType* wideStringType = NULL;
 
+// When "on" statements are built, the "on" expression x is automatically wrapped
+// so it becomes:
+//  on_expr = chpl_localeID_to_locale(__primitive("_wide_get_locale", x))
+//
+// However, if x is already of type "locale" == dtLocale (or a concrete type 
+// derived from "locale", the on expression can be collapsed back to x.
+static void collapseLocaleLookups()
+{
+  forv_Vec(BlockStmt*, block, gBlockStmts){
+
+    if (Expr* info = block->blockInfo) {
+      CallExpr* call = toCallExpr(info);
+      if (call->isPrimitive(PRIM_BLOCK_ON) ||
+          call->isPrimitive(PRIM_BLOCK_ON_NB)) {
+
+        // An on expression may be defined in the parent block,
+        // so expand the scope of the def/use maps to its parent block.
+        BlockStmt* parentBlock = toBlockStmt(block->parentExpr);
+        Map<Symbol*, Vec<SymExpr*>*> defMap;
+        Map<Symbol*, Vec<SymExpr*>*> useMap;
+        buildDefUseMaps(parentBlock, defMap, useMap);
+
+        Expr* onExpr = peelLocaleLookup(call->get(1), defMap);
+        if (onExpr) {
+          SET_LINENO(onExpr);
+          call->get(1)->replace(onExpr->copy());
+        }
+      }
+    }
+  }
+}
+
+
+// Expects an on expression of the form:
+//  ("chpl_localeID_to_locale" (_wide_get_locale x))
+// and extracts the base expression x.  
+// Actually, because of normalization, the expression is 
+// to look like:
+//  on _tmp
+// where 
+//  (move _tmp ("chpl_localeID_to_locale" _tmp1))
+// and
+//  (move _tmp1 (_wide_get_locale x))
+// .
+// If the base expression x is derived from dtLocale, the base
+// expression x is returned; otherwise, NULL is returned.
+static Expr* peelLocaleLookup(Expr* onExpr,
+                              Map<Symbol*,Vec<SymExpr*>*>& defMap)
+{
+  // Assume that the on expression is a temp.
+  SymExpr* locTemp = toSymExpr(onExpr);
+  INT_ASSERT_AND_RETURN_NULL(locTemp);
+
+  // Extract its definition.
+  Expr* locDef = defMap.get(locTemp->var)->only()->parentExpr;
+  INT_ASSERT_AND_RETURN_NULL(locDef);
+
+  CallExpr* toLocMove = toCallExpr(locDef);
+  INT_ASSERT(toLocMove->isPrimitive(PRIM_MOVE));
+  // This is somewhat fragile, because other substitutions could have been made.
+  CallExpr* toLocCall = toCallExpr(toLocMove->get(2));
+  INT_ASSERT_AND_RETURN_NULL(toLocCall);
+
+  // Assume either prim_on_locale_num or chpl_localeID_to_locale.
+  if (toLocCall->isPrimitive(PRIM_ON_LOCALE_NUM))
+    return NULL;
+  FnSymbol* locFn = toLocCall->isResolved();
+  INT_ASSERT(!strcmp(locFn->name, "chpl_localeID_to_locale"));
+
+  SymExpr* locIDTemp = toSymExpr(toLocCall->get(1));
+  INT_ASSERT_AND_RETURN_NULL(locIDTemp);
+
+  Expr* locIDDef = defMap.get(locIDTemp->var)->only()->parentExpr;
+  INT_ASSERT_AND_RETURN_NULL(locIDDef);
+
+  CallExpr* locIDMove = toCallExpr(locIDDef);
+  INT_ASSERT(locIDMove->isPrimitive(PRIM_MOVE));
+  CallExpr* locIDCall = toCallExpr(locIDMove->get(2));
+  INT_ASSERT_AND_RETURN_NULL(locIDCall);
+  INT_ASSERT(locIDCall->isPrimitive(PRIM_WIDE_GET_LOCALE));
+  Expr* base = toSymExpr(locIDCall->get(1));
+  INT_ASSERT_AND_RETURN_NULL(base);
+
+  // Now test if its type is derived from dtLocale.
+  Type* type = base->typeInfo();
+  if (isSubClass(type, dtLocale))
+    return base;
+
+  return NULL;
+}
+
+ClassType* wideStringType = NULL;
 
 static void
 buildWideClass(Type* type) {

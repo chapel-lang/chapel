@@ -60,29 +60,38 @@ int isDefAndOrUse(SymExpr* se);
 // their defs and useMap is a map from symbols to their uses; these
 // vectors are built differently depending on the other arguments
 //
-void buildDefUseMaps(Map<Symbol*,Vec<SymExpr*>*>& defMap,
-                     Map<Symbol*,Vec<SymExpr*>*>& useMap);
-// builds the vectors for every variable/argument in the entire
-// program
 
-void buildDefUseMaps(FnSymbol* fn,
-                     Map<Symbol*,Vec<SymExpr*>*>& defMap,
-                     Map<Symbol*,Vec<SymExpr*>*>& useMap);
-// builds the vectors for every variable/argument in 'fn' and looks
-// for uses and defs only in 'fn'
-
-void buildDefUseMaps(Vec<Symbol*>& symSet,
-                     Map<Symbol*,Vec<SymExpr*>*>& defMap,
-                     Map<Symbol*,Vec<SymExpr*>*>& useMap);
 // builds the vectors for every variable/argument in 'symSet' and
-// looks for uses and defs in the entire program
-
+// looks for uses and defs only in 'symExprs'
 void buildDefUseMaps(Vec<Symbol*>& symSet,
                      Vec<SymExpr*>& symExprs,
                      Map<Symbol*,Vec<SymExpr*>*>& defMap,
                      Map<Symbol*,Vec<SymExpr*>*>& useMap);
+
+// builds the vectors for every variable/argument in the entire
+// program
+void buildDefUseMaps(Map<Symbol*,Vec<SymExpr*>*>& defMap,
+                     Map<Symbol*,Vec<SymExpr*>*>& useMap);
+
+// builds the vectors for every variable/argument in 'fn' and looks
+// for uses and defs only in 'fn'
+void buildDefUseMaps(FnSymbol* fn,
+                     Map<Symbol*,Vec<SymExpr*>*>& defMap,
+                     Map<Symbol*,Vec<SymExpr*>*>& useMap);
+
+// builds the vectors for every variable declaration in the given block
+// and looks for uses and defs within the same block (scope).
+void buildDefUseMaps(BlockStmt* block,
+                     Map<Symbol*,Vec<SymExpr*>*>& defMap,
+                     Map<Symbol*,Vec<SymExpr*>*>& useMap);
+
 // builds the vectors for every variable/argument in 'symSet' and
-// looks for uses and defs only in 'symExprs'
+// looks for uses and defs in the entire program
+inline void buildDefUseMaps(Vec<Symbol*>& symSet,
+                     Map<Symbol*,Vec<SymExpr*>*>& defMap,
+                     Map<Symbol*,Vec<SymExpr*>*>& useMap) {
+  buildDefUseMaps(symSet, gSymExprs, defMap, useMap);
+}
 
 //
 // add a def to a defMap or a use to a useMap

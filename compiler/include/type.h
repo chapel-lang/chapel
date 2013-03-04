@@ -233,6 +233,7 @@ bool isRefCountedType(Type* t);
 bool isRecordWrappedType(Type* t);
 bool isSyncType(Type* t);
 
+bool isSubClass(Type* type, Type* baseType);
 bool isDistClass(Type* type);
 bool isDomainClass(Type* type);
 bool isArrayClass(Type* type);

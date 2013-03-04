@@ -20,7 +20,7 @@
 
 // INT_ASSERT is intended to become no-op in production builds of compiler
 #define INT_ASSERT(x) do { if (!(x)) INT_FATAL("assertion error"); } while (0)
-
+#define INT_ASSERT_AND_RETURN_NULL(x) INT_ASSERT(x); if (!(x)) return NULL
 #define iterKindTypename "iterKind"
 #define iterKindLeaderTagname "leader"
 #define iterKindFollowerTagname "follower"
