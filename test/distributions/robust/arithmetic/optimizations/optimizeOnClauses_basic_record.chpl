@@ -8,7 +8,7 @@ var A1D: [Dom1D] R;
 var A2D: [Dom2D] R;
 var A3D: [Dom3D] R;
 var A4D: [Dom4D] R;
-var A2D64: [Dom2D64] R;
+var A2D32: [Dom2D32] R;
 
 on (Locales(numLocales-1)) do {
   local {
@@ -16,7 +16,7 @@ on (Locales(numLocales-1)) do {
     A2D(n2,n2).r = n2;
     A3D(n3,n3,n3).r = n3;
     A4D(n4,n4,n4,n4).r = n4;
-    A2D64(n5,n5).r = o5;
+    A2D32(n5,n5).r = o5;
   }
  }
 
@@ -24,4 +24,4 @@ writeln(A1D(n1));
 writeln(A2D(n2,n2));
 writeln(A3D(n3,n3,n3));
 writeln(A4D(n4,n4,n4,n4));
-writeln(A2D64(n5,n5));
+writeln(A2D32(n5,n5));

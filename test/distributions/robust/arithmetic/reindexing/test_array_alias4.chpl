@@ -4,7 +4,7 @@ const c1 = 987654321;
 const c2 = -123456789;
 const c3 = -987654321;
 const c4 = 123456789;
-const c2d64 = max(int);
+const c2d32 = max(int(32));
 
 var AA => A1D;
 AA = c1;
@@ -38,13 +38,13 @@ for i in Dom4D do
 if verbose then writeln(A4D);
 writeln("alias1 4D: ", errs, " errors");
 
-var AA2D64 => A2D64;
-AA2D64 = c2d64;
+var AA2D32 => A2D32;
+AA2D32 = c2d32;
 errs = 0;
-for i in Dom2D64 do
-  if A2D64[i] != c2d64 then errs += 1;
-if verbose then writeln(A2D64);
-writeln("alias1 2D64: ", errs, " errors");
+for i in Dom2D32 do
+  if A2D32[i] != c2d32 then errs += 1;
+if verbose then writeln(A2D32);
+writeln("alias1 2D32: ", errs, " errors");
 
 
 const TD1D: domain(1) dmapped Dist1D = Space1.translate(-o5);
@@ -87,12 +87,12 @@ for i in TD4D do
 if verbose then writeln(TA4D);
 writeln("alias2 4D: ", errs, " errors");
 
-const TD2D64: domain(2, int(64)) dmapped Dist2D64 = Space2D64.translate(-o5:int(64), -o5:int(64));
-var TA2D64: [TD2D64] int;
-var AA22D64 => TA2D64;
-AA22D64 = c2d64;
+const TD2D32: domain(2, int(32)) dmapped Dist2D32 = Space2D32.chpl__unTranslate(o5:int(32), o5:int(32));
+var TA2D32: [TD2D32] int;
+var AA22D32 => TA2D32;
+AA22D32 = c2d32;
 errs = 0;
-for i in TD2D64 do
-  if TA2D64[i] != c2d64 then errs += 1;
-if verbose then writeln(TA2D64);
-writeln("alias2 2D64: ", errs, " errors");
+for i in TD2D32 do
+  if TA2D32[i] != c2d32 then errs += 1;
+if verbose then writeln(TA2D32);
+writeln("alias2 2D32: ", errs, " errors");

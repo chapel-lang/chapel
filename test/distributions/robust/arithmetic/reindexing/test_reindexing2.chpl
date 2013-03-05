@@ -2,7 +2,7 @@ use driver_arrays;
 
 proc foo(TD: domain, A: [TD] int, TA) {
   var errs = 0;
-  var offset = if (TD.rank==1) then o5 else fill(TD.rank, o5);
+  var offset = if (TD.rank==1) then o5:TD.idxType else fill(TD.rank, o5:TD.idxType);
   for i in {TD} do
     if A[i].locale != TA[i+offset].locale {
       writeln("A[",i,"] Incorrect reindex");
@@ -27,6 +27,6 @@ const TD4D: domain(4) = Space4.translate(-o5, -o5, -o5, -o5);
 for e in A4D do e = next();
 writeln("A4D: ", foo(TD4D, A4D, A4D), " errors");
 
-const TD2D64: domain(2,int(64)) = Space2D64.translate(-o5:int(64), -o5:int(64));
-for e in A2D64 do e = next();
-writeln("A2D64: ", foo(TD2D64, A2D64, A2D64), " errors");
+const TD2D32: domain(2,int(32)) = Space2D32.chpl__unTranslate(o5:int(32), o5:int(32));
+for e in A2D32 do e = next();
+writeln("A2D32: ", foo(TD2D32, A2D32, A2D32), " errors");
