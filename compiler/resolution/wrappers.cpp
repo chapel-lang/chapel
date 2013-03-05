@@ -557,7 +557,7 @@ static FnSymbol*
 buildPromotionWrapper(FnSymbol* fn,
                       SymbolMap* promotion_subs,
                       CallInfo* info) {
-  SET_LINENO(fn);
+  SET_LINENO(info->call);
   FnSymbol* wrapper = buildEmptyWrapper(fn, info);
   wrapper->addFlag(FLAG_PROMOTION_WRAPPER);
   wrapper->cname = astr("_promotion_wrap_", fn->cname);

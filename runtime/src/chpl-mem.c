@@ -75,7 +75,7 @@ void chpl_mem_check_post(void* memAlloc,
 const char* chpl_mem_descString(chpl_mem_descInt_t mdi) {
   //
   // These description strings correspond to the memory allocation types
-  // named by the chpl_mem_rtMemDesc_t enumerated type in chpl-mem.h.
+  // named by the chpl_mem_rtMemDesc_t enumerated type in chpl-mem-desc.h.
   //
   static const char* rt_memDescs[] = {
     "unknown",

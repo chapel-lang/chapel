@@ -321,7 +321,7 @@ module ChapelArray {
     return chpl__convertValueToRuntimeType(dom);
   
   //
-  // Support for domain expressions, e.g., [1..3, 1..3]
+  // Support for domain expressions, e.g., {1..3, 1..3}
   //
   proc chpl__buildDomainExpr(x: domain)
     return x;
@@ -359,7 +359,7 @@ module ChapelArray {
   }
   
   //
-  // Support for distributed domain expression, e.g., [1..3, 1..3] distributed Dist
+  // Support for distributed domain expression e.g. {1..3, 1..3} dmapped Dist()
   //
   proc chpl__distributed(d: _distribution, dom: domain) {
     if isRectangularDom(dom) {
@@ -384,8 +384,16 @@ module ChapelArray {
     var dom: domainType;
     return isSparseDom(dom);
   }
+
+  proc isDomainType(type t) param {
+    var x: t;
+    return chpl__isDomain(x);
+  }
   
   proc chpl__distributed(d: _distribution, type domainType) type {
+    if !isDomainType(domainType) then
+      compilerError("cannot apply 'dmapped' to the non-domain type ",
+                    typeToString(domainType));
     if chpl__isRectangularDomType(domainType) {
       var dom: domainType;
       return chpl__buildDomainRuntimeType(d, dom._value.rank, dom._value.idxType,
@@ -955,8 +963,19 @@ module ChapelArray {
       _value.dsiSerialRead(f);
     }
   
+    proc localSlice(r: range(?)... rank) where _value.type: DefaultRectangularDom {
+      if (_value.locale != here) then
+        halt("Attempting to take a local slice of a domain on locale ",
+             _value.locale.id, " from locale ", here.id);
+      return this((...r));
+    }
+  
     proc localSlice(r: range(?)... rank) {
       return _value.dsiLocalSlice(chpl__anyStridable(r), r);
+    }
+  
+    proc localSlice(d: domain) {
+      return localSlice((...d.getIndices()));
     }
   
     // associative array interface
@@ -1281,7 +1300,7 @@ module ChapelArray {
     }
   
     proc localSlice(d: domain) {
-      return localSlice(d.getIndices());
+      return localSlice((...d.getIndices()));
     }
   
     inline proc these() var {
@@ -1923,7 +1942,7 @@ module ChapelArray {
     return _toLeader(x);
   
   inline proc _toLeaderZip(x: _tuple)
-    return _toLeaderZip(x(1));
+    return _toLeader(x(1));
   
   //
   // return true if any iterator supports fast followers
@@ -2017,18 +2036,17 @@ module ChapelArray {
   }
   
   inline proc _toFollowerZip(x: _tuple, leaderIndex) {
-    return _toFollowerZip(x, leaderIndex, 1);
+    return _toFollowerZipInternal(x, leaderIndex, 1);
   }
-  
-  inline proc _toFollowerZip(x: _tuple, leaderIndex, param dim: int) {
-    if dim == x.size-1 then
-      return (_toFollowerZip(x(dim), leaderIndex),
-              _toFollowerZip(x(dim+1), leaderIndex));
+
+  inline proc _toFollowerZipInternal(x: _tuple, leaderIndex, param dim: int) {
+    if dim == x.size then
+      return tuple(_toFollower(x(dim), leaderIndex));
     else
-      return (_toFollowerZip(x(dim), leaderIndex),
-              (..._toFollowerZip(x, leaderIndex, dim+1)));
+      return (_toFollower(x(dim), leaderIndex),
+              (..._toFollowerZipInternal(x, leaderIndex, dim+1)));
   }
-  
+
   pragma "no implicit copy"
   inline proc _toFastFollower(iterator: _iteratorClass, leaderIndex, fast: bool) {
     return chpl__autoCopy(__primitive("to follower", iterator, leaderIndex, true));

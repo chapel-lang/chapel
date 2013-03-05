@@ -42,7 +42,7 @@ module ChapelLocale {
     //- Constructor
     proc locale() {
 // Now we find we have to create locales early, so _here can be non-nil.
-//      halt("locales cannot be created");
+      // compilerError("cannot create instances of the 'locale' class");
     }
   
     //------------------------------------------------------------------------{

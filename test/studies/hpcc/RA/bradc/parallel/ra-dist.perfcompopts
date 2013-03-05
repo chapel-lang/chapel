@@ -1,1 +1,1 @@
-../../../common/probSize.chpl ra-randstream.chpl --no-warnings -O --no-checks --no-local
+../../../common/probSize.chpl -M ../../../../../release/examples/benchmarks/hpcc/  --no-warnings -O --no-checks --no-local

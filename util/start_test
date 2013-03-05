@@ -932,6 +932,7 @@ setenv LAUNCHCMD "$launchcmd"
 
 echo \[comm: \"$comm\"\] |& $tee -a $logfile
 setenv CHPL_COMM $comm
+setenv CHPL_GASNET_SEGMENT `$CHPL_HOME/util/chplenv/commSegment`
 
 if ($numlocales == "0") then
     echo \[numlocales: \"\(default\)\"\] |& $tee -a $logfile

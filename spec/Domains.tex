@@ -206,7 +206,7 @@ promoted to the same type, then that type is used as the \chpl{idxType}.
 Otherwise, the domain literal is invalid.
 
 \begin{example}
-The expression \chpl{{1..5, 1..5}} defines a rectangular domain with
+The expression \chpl{\{1..5, 1..5\}} defines a rectangular domain with
 type \chpl{domain(rank=2,} \chpl{ idxType=int,} \chpl{ stridable=false)}.
 It is a $5 \times 5$ domain with the indices:
 \begin{equation}

@@ -74,7 +74,6 @@ template <class K, class C> class Map : public Vec<MapElem<K,C> > {
   void get_values(Vec<C> &values);
   MapElem<K,C> *get_record(K akey);
   void map_union(Map<K,C> &m);
-  int some_disjunction(Map<K,C> &m);
 };
 
 template <class C> class HashFns {
@@ -248,17 +247,6 @@ Map<K,C>::map_union(Map<K,C> &m) {
   for (int i = 0; i < m.n; i++)
     if (m.v[i].key)
       put(m.v[i].key, m.v[i].value);
-}
-
-template <class K, class C> inline int
-Map<K,C>::some_disjunction(Map<K,C> &m) {
-  for (int i = 0; i < m.n; i++)
-    if (m.v[i].key && get(m.v[i].key) != m.v[i].value)
-      return 1;
-  for (int i = 0; i < n; i++)
-    if (v[i].key && m.get(v[i].key) != v[i].value)
-      return 1;
-  return 0;
 }
 
 template <class K, class C> inline void

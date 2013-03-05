@@ -3998,21 +3998,11 @@ GenRet CallExpr::codegen() {
     }
     case PRIM_CHPL_ALLOC:
     case PRIM_CHPL_ALLOC_PERMIT_ZERO: {
-      bool needs_underbar = false;
-
-      // if Chapel class or record
-      if (TypeSymbol *t = toTypeSymbol(typeInfo()->symbol)) {
-        if (toClassType(t->type)) {
-          needs_underbar = true;
-        }
-      }
-
       GenRet size;
-      if( needs_underbar ) {
-        std::string struct_name;
-        struct_name += "_";
-        struct_name += typeInfo()->symbol->cname;
-        size = codegenSizeof(struct_name.c_str());
+
+      // If Chapel class or record
+      if (ClassType* ct = toClassType(toTypeSymbol(typeInfo()->symbol)->type)) {
+        size = codegenSizeof(ct->classStructName(true));
       } else {
         size = codegenSizeof(typeInfo());
       }
@@ -4468,9 +4458,12 @@ GenRet CallExpr::codegen() {
     if (argType == NULL) {
       INT_FATAL("could not get a type symbol");
     }
- 
-    std::string ctype = "_";
-    ctype += argType->typeInfo()->symbol->cname;
+    
+    ClassType* ct = toClassType(argType->typeInfo());
+    if (!ct) {
+      INT_FATAL("Expected a class type in %s argument", fname);
+    }
+    std::string ctype = ct->classStructName(true);
 
     genComment(fn->cname, true);
     GenRet nodeVal = codegenRnode(get(1));

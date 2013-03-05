@@ -3668,4 +3668,3 @@ int64_t qio_channel_style_element(qio_channel_t* ch, int64_t element)
   return 0;
 }
 
-

@@ -90,7 +90,8 @@ err_t sys_posix_madvise(void* addr, size_t len, int advice);
 
 // returns an allocated string in string_out, which must be freed.
 err_t sys_strerror(err_t error, const char** string_out);
-const char* sys_strerror_str(err_t error, err_t* err_in_strerror);
+
+const char* sys_strerror_syserr_str(syserr error, err_t* err_in_strerror);
 
 // returns an allocated string in string_out, which must be freed.
 err_t sys_readlink(const char* path, const char** string_out);

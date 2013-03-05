@@ -34,7 +34,7 @@ typedef struct task_pool_struct {
   chpl_taskID_t    id;           // task identifier
   chpl_fn_p        fun;          // function to call for task
   c_locale_t       locale;       // The localeID associated with this task.
-  void*			   here;		 // Local pointer to the "here" object.
+  void*            here;         // Local pointer to the "here" object.
   void*            arg;          // argument to the function
   chpl_bool        serial_state; // whether new tasks can be created while executing fun
   chpl_bool        begun;        // whether execution of this task has begun
@@ -269,7 +269,7 @@ void chpl_task_init(int32_t numThreadsPerLocale, int32_t maxThreadsPerLocale,
     tp->ptask->id           = get_next_task_id();
     tp->ptask->fun          = NULL;
     tp->ptask->locale       = 0;
-    tp->ptask->here			= NULL;
+    tp->ptask->here         = NULL;
     tp->ptask->arg          = NULL;
     tp->ptask->serial_state = true;     // Set to false in chpl_task_callMain().
     tp->ptask->ltask        = NULL;
@@ -464,8 +464,8 @@ void chpl_task_processTaskList(chpl_task_list_p task_list) {
     // before continuing beyond the cobegin or coforall it's in.
     nested_task.id           = get_next_task_id();
     nested_task.fun          = first_task->fun;
-    nested_task.locale		 = chpl_task_getLocaleID();
-    nested_task.here		 = chpl_task_getHere();
+    nested_task.locale       = chpl_task_getLocaleID();
+    nested_task.here         = chpl_task_getHere();
     nested_task.arg          = first_task->arg;
     nested_task.serial_state = false;
     nested_task.ltask        = first_task;
@@ -1270,8 +1270,8 @@ static task_pool_p add_to_task_pool(chpl_fn_p fp,
                                         0, 0);
   ptask->id           = get_next_task_id();
   ptask->fun          = fp;
-  ptask->locale		  = chpl_task_getLocaleID();  // Inherit the current locale ID
-  ptask->here		  = chpl_task_getHere();	  // and local "here" pointer.
+  ptask->locale       = chpl_task_getLocaleID();  // Inherit the current locale ID
+  ptask->here         = chpl_task_getHere();      // and local "here" pointer.
   ptask->arg          = a;
   ptask->serial_state = serial;
   ptask->ltask        = ltask;

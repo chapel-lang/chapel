@@ -29,7 +29,6 @@ module ChapelStandard {
   use ChapelTaskTable;
   use MemTracking;
   use ChapelUtil;
-  use MemTracking;
 
   // Standard modules.
   use Types;

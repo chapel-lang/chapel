@@ -324,8 +324,7 @@ module DefaultAssociative {
         //Unlock the table
         if parSafe then unlockTable();
       } else if entries > numKeys {
-        __primitive("chpl_warning", 
-                "Requested capacity (" + numKeys + ") " +
+        warning("Requested capacity (" + numKeys + ") " +
                 "is less than current size (" + entries + ")");
       }
     }

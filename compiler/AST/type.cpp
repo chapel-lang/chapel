@@ -538,16 +538,57 @@ void ClassType::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   INT_FATAL(this, "Unexpected case in ClassType::replaceChild");
 }
 
+#define CLASS_STRUCT_PREFIX "chpl_"
+
+//
+// Construct the name of the struct used in the generated code to
+// represent the object definition for a ClassType.
+//
+// When 'standalone'== false, we generates an identifier designed to
+// be used in combination with "struct "; true generates a name that's
+// been typedef'd such that the 'struct ' is not required (i.e., it
+// stands alone).
+//
+// By example, for a Chapel class named C, we'd generate:
+//
+//   typedef struct <classStructName(false)> {
+//     ...class members here...
+//   } <classStructName(true)>;
+//  typedef <classStructName(true)>* C;
+//
+// which in the current implementation amounts to:
+//
+//   typedef struct chpl_C_s {
+//     ...class members here...
+//   } chpl_C_object;
+//  typedef struct chpl_C_s* C;
+//
+// For records and unions (classTag != CLASS_CLASS), the pointer
+// version above isn't used, so the original identifier is used to
+// name the typedef for the struct itself.
+//
+const char* ClassType::classStructName(bool standalone) {
+  if (standalone) {
+    const char* basename = symbol->cname;
+    if (classTag == CLASS_CLASS && !symbol->hasFlag(FLAG_EXTERN))
+      return astr(CLASS_STRUCT_PREFIX, basename, "_object");
+    else
+      return basename;
+  } else {
+    return astr(CLASS_STRUCT_PREFIX, symbol->cname, "_s");
+  }
+}
+
 GenRet ClassType::codegenClassStructType()
 {
   GenInfo* info = gGenInfo;
   GenRet ret;
   if(classTag == CLASS_CLASS) {
     if( info->cfile ) {
-      ret.c = std::string("_") + symbol->cname;
+      ret.c = std::string(classStructName(true));
     } else {
 #ifdef HAVE_LLVM
-      ret.type = info->lvt->getType(std::string("_") + symbol->cname);
+      ret.type = info->lvt->getType(classStructName(true));
 #endif
     }
   } else {
@@ -614,7 +655,7 @@ void ClassType::codegenDef() {
     }
   } else {
     if( outfile ) {
-      fprintf(outfile, "typedef struct __%s", symbol->cname);
+      fprintf(outfile, "typedef struct %s", this->classStructName(false));
       if (classTag == CLASS_CLASS && dispatchParents.n > 0) {
         /* Add a comment to class definitions listing super classes */
         bool first = true;
@@ -652,10 +693,7 @@ void ClassType::codegenDef() {
         if (this->fields.length != 0)
           fprintf(outfile, "} _u;\n");
       }
-      fprintf(outfile, "} ");
-      if (classTag == CLASS_CLASS)
-        fprintf(outfile, "_");
-      fprintf(outfile, "%s;\n\n", symbol->codegen().c.c_str());
+      fprintf(outfile, "} %s;\n\n", this->classStructName(true));
     } else {
 #ifdef HAVE_LLVM
       int paramID = 0;
@@ -707,7 +745,7 @@ void ClassType::codegenDef() {
         for_fields(field, this) {
           llvm::Type* fieldType = field->type->symbol->codegen().type;
           if(field->hasFlag(FLAG_SUPER_CLASS))
-            fieldType = info->lvt->getType(std::string("_") + field->type->symbol->cname);
+            fieldType = info->lvt->getType(classStructName(false));
           INT_ASSERT(fieldType);
           params.push_back(fieldType);
           GEPMap.insert(std::pair<std::string, int>(field->cname, paramID++));
@@ -754,8 +792,8 @@ void ClassType::codegenPrototype() {
   else if (symbol->hasFlag(FLAG_DATA_CLASS)) return; // done in codegenDef
   else if (classTag == CLASS_CLASS) {
     if( info->cfile ) {
-      fprintf(info->cfile, "typedef struct __%s *%s;\n",
-              symbol->cname, symbol->cname);
+      fprintf(info->cfile, "typedef struct %s* %s;\n", 
+              this->classStructName(false), symbol->cname);
     } else {
 #ifdef HAVE_LLVM
       std::string sname("_"); sname += symbol->cname; // ie _ClassType

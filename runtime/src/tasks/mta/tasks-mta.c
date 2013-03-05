@@ -146,7 +146,7 @@ void chpl_task_sleep(int secs) {
 typedef struct {
   chpl_bool serial_state;
   c_locale_t locale_id;
-  void* here;	// Local address of the current locale object.
+  void* here;   // Local address of the current locale object.
   // Add fields here as needed....
 } chpl_task_private_data_t;
 

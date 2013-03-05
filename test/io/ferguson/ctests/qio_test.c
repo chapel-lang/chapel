@@ -300,6 +300,7 @@ void check_channels(void)
 
   return;
 
+  /*
   for( file_hint = 0; file_hint < nhints; file_hint++ ) {
     printf("Checking very large channel with hints %x\n", hints[file_hint]);
     // Check a very large file.
@@ -307,7 +308,7 @@ void check_channels(void)
     check_channel(0, QIO_CH_BUFFERED, 0, 5L*1024L*1024L*1024L, 1024*1024, hints[file_hint], hints[file_hint], 1, 0);
     check_channel(0, QIO_CH_BUFFERED, 0, 5L*1024L*1024L*1024L, 1024*1024, hints[file_hint], hints[file_hint], 0, 1);
     check_channel(0, QIO_CH_BUFFERED, 0, 5L*1024L*1024L*1024L, 1024*1024, hints[file_hint], hints[file_hint], 1, 1);
-  }
+  }*/
 }
 
 // Check some path functions.

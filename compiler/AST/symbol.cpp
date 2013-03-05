@@ -509,11 +509,12 @@ void VarSymbol::codegenDefC() {
 
   if (type == dtVoid)
     return;
-  const char* _ifsuper = "";
-  if (this->hasFlag(FLAG_SUPER_CLASS))
-    _ifsuper = "_";
-  std::string str = _ifsuper + type->codegen().c + " " + cname;
-  if (ClassType* ct = toClassType(type)) {
+  ClassType* ct = toClassType(type);
+  std::string typestr =  (this->hasFlag(FLAG_SUPER_CLASS) ?
+                          std::string(ct->classStructName(true)) :
+                          type->codegen().c);
+  std::string str = typestr + " " + cname;
+  if (ct) {
     if (ct->classTag == CLASS_CLASS) {
       if (isFnSymbol(defPoint->parentSymbol)) {
         str += " = NULL";  
@@ -960,6 +961,7 @@ GenRet FnSymbol::codegenFunctionType(bool forHeader) {
   GenRet ret;
 
   ret.chplType = typeInfo();
+  INT_ASSERT(ret.chplType == dtUnknown); //just documenting the current state
 
   if( info->cfile ) {
     // Cast to right function type.

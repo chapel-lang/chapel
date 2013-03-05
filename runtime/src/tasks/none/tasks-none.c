@@ -27,8 +27,8 @@ typedef struct chpl_pool_struct {
   chpl_fn_p fun;          // function to call for task
   void*     arg;          // argument to the function
   chpl_bool serial_state; // whether new tasks can be created while executing fun
-  c_locale_t locale;  	  // locale id associated with the current task.
-  void*		here;
+  c_locale_t locale;      // locale id associated with the current task.
+  void*     here;
   chpl_task_pool_p next;
 } task_pool_t;
 

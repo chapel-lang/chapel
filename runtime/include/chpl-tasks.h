@@ -166,7 +166,7 @@ void      chpl_task_setSerial(chpl_bool);
 // a null pointer, the object must be looked up using 
 //  chpl_localeID_to_locale(chpl_task_getLocaleID());
 //
-void*		chpl_task_getHere(void);
+void*       chpl_task_getHere(void);
 void        chpl_task_setHere(void*);
 
 //
