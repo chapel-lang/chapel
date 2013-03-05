@@ -3,7 +3,13 @@
 
 #include "chpltypes.h"
 
+#ifndef LAUNCHER
+//
+// We don't need the full capabilities of qio in the launcher and
+// including it there would require build changes, so skip it.
+//
 #include "qio-all.h"
+#endif
 
 #include <stdio.h>
 #include <inttypes.h>
