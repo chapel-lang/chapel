@@ -149,6 +149,8 @@ extern const char* astTagName[];
   }                                                                     \
   virtual type* copyInner(SymbolMap* map)
 
+#include "../resolution/trace.h"
+
 #define DECLARE_SYMBOL_COPY(type)                                       \
   type* copy(SymbolMap* map = NULL, bool internal = false) {            \
     SymbolMap localMap;                                                 \

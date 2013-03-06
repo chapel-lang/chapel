@@ -23,6 +23,8 @@ const char* toString(FnSymbol* fn);
 
 void parseExplainFlag(char* flag, int* line, ModuleSymbol** module);
 
+void copyGenericSub(SymbolMap& subs, FnSymbol* root, FnSymbol* fn, Symbol* key, Symbol* value);
+TypeSymbol* getNewSubType(FnSymbol* fn, Symbol* key, TypeSymbol* value);
 FnSymbol* instantiate(FnSymbol* fn, SymbolMap* subs, CallExpr* call);
 void resolveFormals(FnSymbol* fn);
 void resolveCall(CallExpr* call, bool errorCheck = true);

@@ -681,8 +681,8 @@ resolveSpecifiedReturnType(FnSymbol* fn) {
 void
 resolveFormals(FnSymbol* fn) {
   static Vec<FnSymbol*> done;
-  
-  if (!fn->hasFlag(FLAG_GENERIC)) {
+
+  if (not fn->hasFlag(FLAG_GENERIC)) {
     if (done.set_in(fn)) {
       return;
     }
@@ -691,33 +691,36 @@ resolveFormals(FnSymbol* fn) {
 
     for_formals(formal, fn) {
       if (formal->type == dtUnknown) {
-        if (!formal->typeExpr) {
+        if (not formal->typeExpr) {
           formal->type = dtObject;
+          
         } else {
           resolveBlock(formal->typeExpr);
           formal->type = formal->typeExpr->body.tail->getValType();
         }
       }
 
-      //
-      // Fix up value types that need to be ref types.
-      //
+      /*
+       * Fix up value types that need to be ref types.
+       */
       if (formal->type->symbol->hasFlag(FLAG_REF)) {
         // Already a ref type, so done.
         continue;
       }
 
-      if (formal->intent == INTENT_INOUT ||
-          formal->intent == INTENT_OUT ||
-          formal->intent == INTENT_REF ||
-          formal->hasFlag(FLAG_WRAP_OUT_INTENT) ||
-          (formal == fn->_this &&
-           (isUnion(formal->type) ||
-            isRecord(formal->type) ||
+      if (formal->intent == INTENT_INOUT or
+          formal->intent == INTENT_OUT   or
+          formal->intent == INTENT_REF   or
+          formal->hasFlag(FLAG_WRAP_OUT_INTENT) or
+          (formal == fn->_this and
+           (isUnion(formal->type) or
+            isRecord(formal->type) or
             fn->hasFlag(FLAG_REF_THIS)))) {
+        
         makeRefType(formal->type);
-        formal->type = formal->type->refType;
+        
         // The type of the formal is its own ref type!
+        formal->type = formal->type->refType;
       }
     }
     
@@ -728,6 +731,43 @@ resolveFormals(FnSymbol* fn) {
     resolvedFormals.set_add(fn);
   }
 }
+
+//~ static void resolveFormals(FnSymbol* fn, Vec<ArgSymbol*>* formals) {
+  //~ forv_Vec(ArgSymbol*, formal, *formals) {
+    //~ if (formal->type == dtUnknown) {
+      //~ if (not formal->typeExpr) {
+        //~ formal->type = dtObject;
+        //~ 
+      //~ } else {
+        //~ resolveBlock(formal->typeExpr);
+        //~ formal->type = formal->typeExpr->body.tail->getValType();
+      //~ }
+    //~ }
+//~ 
+    //~ /*
+     //~ * Fix up value types that need to be ref types.
+     //~ */
+    //~ if (formal->type->symbol->hasFlag(FLAG_REF)) {
+      //~ // Already a ref type, so done.
+      //~ continue;
+    //~ }
+//~ 
+    //~ if (formal->intent == INTENT_INOUT or
+        //~ formal->intent == INTENT_OUT   or
+        //~ formal->intent == INTENT_REF   or
+        //~ formal->hasFlag(FLAG_WRAP_OUT_INTENT) or
+        //~ (formal == fn->_this and
+         //~ (isUnion(formal->type)  or
+          //~ isRecord(formal->type) or
+          //~ fn->hasFlag(FLAG_REF_THIS)))) {
+            //~ 
+      //~ makeRefType(formal->type);
+      //~ 
+      //~ // The type of the formal is its own ref type!
+      //~ formal->type = formal->type->refType;
+    //~ }
+  //~ }
+//~ }
 
 static bool fits_in_int_helper(int width, int64_t val) {
   switch (width) {
@@ -1318,7 +1358,7 @@ resolve_type_constructor(FnSymbol* fn, CallInfo& info) {
 }
 
 
-// Return actual-formal map if FnSymbol is viable candidate to call
+// Sets actual-formal map if FnSymbol is viable candidate to call
 static void
 addCandidate(Vec<FnSymbol*>* candidateFns,
              Vec<Vec<ArgSymbol*>*>* candidateActualFormals,
@@ -1446,6 +1486,299 @@ addCandidate(Vec<FnSymbol*>* candidateFns,
   }
 }
 
+
+// Sets actual-formal map if FnSymbol is viable candidate to call
+static void
+testCandidate(Vec<FnSymbol*>* candidateFns,
+             Vec<Vec<ArgSymbol*>*>* candidateActualFormals,
+             FnSymbol* fn,
+             CallInfo& info) {
+  
+  fn = expandVarArgs(fn, info.actuals.n);
+
+  if (not fn) {
+    return;
+  }
+
+  Vec<ArgSymbol*> actualFormals;
+  Vec<Symbol*>    formalActuals;
+  
+  trace_enter(TRACE_CANDIDATE, fn, "Possible candidate function");
+  
+  bool valid = computeActualFormalMap(fn, formalActuals, actualFormals, info);
+
+  if (not valid) {
+    trace_leave(TRACE_CANDIDATE, "Rejecting due to bad argument/parameter alignment.");
+    
+    return;
+  }
+
+  if (fn->hasFlag(FLAG_GENERIC)) {
+    trace(TRACE_CANDIDATE, "Candidate is generic.");
+    
+    /*
+     * Early rejection of generic functions.
+     */
+    int i = 0;
+    for_formals(formal, fn) {
+      if (formal->type != dtUnknown) {
+        if (Symbol* actual = formalActuals.v[i]) {
+          if (actual->hasFlag(FLAG_TYPE_VARIABLE) != formal->hasFlag(FLAG_TYPE_VARIABLE)) {
+            trace_leave(TRACE_CANDIDATE, "Rejecting due to type variable mismatch on argumet %d.", i);
+            return;
+          }
+          
+          if (formal->type->symbol->hasFlag(FLAG_GENERIC)) {
+            Type* vt = actual->getValType();
+            Type* st = actual->type->scalarPromotionType;
+            Type* svt = (vt) ? vt->scalarPromotionType : NULL;
+            
+            if (not canInstantiate(actual->type, formal->type) and
+                (not vt  or not canInstantiate(vt, formal->type)) and
+                (not st  or not canInstantiate(st, formal->type)) and
+                (not svt or not canInstantiate(svt, formal->type))) {
+              
+              trace_leave(TRACE_CANDIDATE, "Rejecting due to inability to instantiate types on argumet %d.", i);
+              return;
+              
+            } else {
+              trace(TRACE_CANDIDATE, "Generic parameter %d OK - Argument type: %s", i, actual->type->symbol->name);
+            }
+            
+          } else if (!canDispatch(actual->type, actual, formal->type, fn, NULL, formal->instantiatedParam)) {
+            trace(TRACE_CANDIDATE, "Argument type: %s, Parameter type: %s", actual->type->symbol->name, formal->type->symbol->name);
+            
+            trace_leave(TRACE_CANDIDATE, "Rejecting due to inability to dispatch on argumet %d.", i);
+            return;
+          }
+        }
+      }
+      i++;
+    }
+
+    // Compute the param/type substitutions for generic arguments.
+    SymbolMap subs;
+    computeGenericSubs(subs, fn, &formalActuals);
+    
+    /*
+     * If no substitutions were made we can't instantiate this generic, and must
+     * reject it.
+     */
+    if (not subs.n) {
+      return;
+    }
+    
+    SymbolMap       oldToNewFormalMap;
+    Vec<ArgSymbol*> newActualFormals;
+    
+    // Iterate through the actualFormals vector and copy the formal symbols.
+    forv_Vec(ArgSymbol*, formal, actualFormals) {
+      newActualFormals.add(formal->copy(&oldToNewFormalMap));
+    }
+    
+    // Adjust the types and tags on the formals as we would during instantiation.
+    form_Map(SymbolMapElem, e, subs) {
+      if (TypeSymbol* ts = toTypeSymbol(e->value)) {
+        if (ts->type->symbol->hasFlag(FLAG_GENERIC)) {
+          INT_FATAL(fn, "illegal instantiation with a generic type");
+        }
+        
+        TypeSymbol* nts = getNewSubType(fn, e->key, ts);
+        
+        if (ts != nts) {
+          e->value = nts;
+        }
+      }
+    }
+    
+    SymbolMap tmpParamMap;
+    
+    // Fill the temporary parameter map.
+    for (int i = subs->n; --i > 0;) {
+      if (ArgSymbol* arg = toArgSymbol(subs->v[i].key)) {
+        if (arg->intent == INTENT_PARAM) {
+          Symbol* key = oldToNewFormalMap.get(arg);
+          Symbol* val = subs->v[i].value;
+          
+          if (not key or not val or isTypeSymbol(val)) {
+            INT_FATAL("error building parameter map in instantiation");
+          }
+          
+          tmpParamMap.put(key, val);
+        }
+      }
+    }
+    
+    /*
+     * Extend temporary parameter map if parameter intent argument is
+     * instantiated agian; this may happen because the type is omitted and the
+     * argument is later instantiated based on the type of the parameter.
+     */
+    for_formals(arg, fn) {
+      if (paramMap.get(arg)) {
+        Symbol* key = oldToNewFormalMap.get(arg);
+        Symbol* val = paramMap.get(arg);
+        
+        if (not key or not val) {
+          INT_FATAL("error building parameter map in instantiation");
+        }
+        
+        tmpParamMap.put(key, val);
+      }
+    }
+    
+    // Iterate through the new formals and adjust their types.
+    for_formals(oldFormal, fn) {
+      ArgSymbol* newFormal = toArgSymbol(oldToNewFormalMap.get(oldFormal));
+      
+      if (Symbol* value = subs->get(oldFormal)) {
+        INT_ASSERT(oldFormal->intent == INTENT_PARAM or isTypeSymbol(value));
+        
+        if (oldFormal->intent == INTENT_PARAM {
+          newFormal->intent            = INTENT_BLANK;
+          newFormal->instantiatedParam = true;
+          
+          if (newFormal->type->symbol->hasFlag(FLAG_GENERIC)) {
+            newFOrmal->type = tmpParamMap.get(newFormal)->type;
+          }
+          
+        } else {
+          newFormal->instantiatedFrom = oldFormal->type;
+          newFormal->type             = value->type;
+        }
+      }
+    }
+    
+    bool fullyInstantiated = true;
+    
+    // Check to make sure the formal arguments have been fully instantiated.
+    forv_Vec(ArgSymbol*, formal, newActualFormals) {
+      if (formal->intent == INTENT_PARAM or
+          (formal->type->symbol->hasFlag(FLAG_GENERIC) and
+            (not formal->type->hasGenericDefaults or
+              formal->markedGeneric or
+              formal == fn->_this or
+              formal->hasFlag(FLAG_IS_MEME)))) {
+        
+        fullyInstantiated = false;
+        break;
+      }
+    }
+    
+    // The generic function can't be fully instantiated for this call.
+    if (not fullyInstantiated) {
+      return;
+    }
+    
+    // Add the function to the where stack.
+    whereStack.add(fn);
+    
+    // Resolve the types of the formal arguments.
+    forv_Vec(ArgSymbol*, formal, *newActualFormals) {
+      if (formal->type == dtUnknown) {
+        if (not formal->typeExpr) {
+          formal->type = dtObject;
+          
+        } else {
+          resolveBlock(formal->typeExpr);
+          formal->type = formal->typeExpr->body.tail->getValType();
+        }
+      }
+
+      /*
+       * Fix up value types that need to be ref types.
+       */
+      if (formal->type->symbol->hasFlag(FLAG_REF)) {
+        // Already a ref type, so done.
+        continue;
+      }
+      
+      if (formal->intent == INTENT_INOUT or
+          formal->intent == INTENT_OUT   or
+          formal->intent == INTENT_REF   or
+          formal->hasFlag(FLAG_WRAP_OUT_INTENT) or
+          
+          // FIXME: fn->_this needs to be compared to the old version of this formal.
+          (formal == fn->_this and
+           (isUnion(formal->type)  or
+            isRecord(formal->type) or
+            fn->hasFlag(FLAG_REF_THIS)))) {
+              
+        makeRefType(formal->type);
+        
+        // The type of the formal is its own ref type!
+        formal->type = formal->type->refType;
+      }
+    }
+    
+    /*
+     * Resolve the where clause after copying it with the appropriate
+     * substitution map.
+     */
+    resolveBlock(fn->where->copy(&oldToNewFormalMap));
+    
+    // Pop the current function off of the where stack.
+    whereStack.pop();
+    
+    // Check to see if the where clause evaluated to true.
+    if ((SymExpr* whereValue = toSymExpr(fn->where->body.last())) == NULL) {
+      USR_FATAL(fn->where, "invalid where clause");
+      
+    } else if (whereValue->var == gFalse) {
+      return;
+      
+    } else if (whereValue->var != gTrue) {
+      USR_FATAL(fn->where, "invalid where clause");
+    }
+    
+    // End of code from instantiate.  If we reach this point the function is OK to instantiate.
+    
+  } else {
+    trace(TRACE_CANDIDATE, "Candidate is concrete.");
+
+    /*
+     * Make sure that type constructor is resolved before other constructors.
+     */
+    if (fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR)) {
+      resolve_type_constructor(fn, info);
+    }
+
+    resolveFormals(fn);
+
+    if (!strcmp(fn->name, "=")) {
+      Symbol* actual = formalActuals.head();
+      Symbol* formal = fn->getFormal(1);
+      
+      if (actual->type != formal->type and actual->type != formal->type->refType) {
+        trace_leave(TRACE_CANDIDATE, "Rejecting due to type mismatch .");
+        
+        return;
+      }
+    }
+
+    int j = 0;
+    for_formals(formal, fn) {
+      if (Symbol* actual = formalActuals.v[j]) {
+        if (actual->hasFlag(FLAG_TYPE_VARIABLE) != formal->hasFlag(FLAG_TYPE_VARIABLE)) {
+          trace_leave(TRACE_CANDIDATE, "Rejecting due to type variable mismatch on argumet %d.", j);
+          return;
+        }
+        
+        if (!canDispatch(actual->type, actual, formal->type, fn, NULL, formal->instantiatedParam)) {
+          trace_leave(TRACE_CANDIDATE, "Rejecting due to inability to dispatch on argumet %d.", j);
+          return;
+        }
+      }
+      j++;
+    }
+    
+    candidateFns->add(fn);
+    Vec<ArgSymbol*>* actualFormalsCopy = new Vec<ArgSymbol*>(actualFormals);
+    candidateActualFormals->add(actualFormalsCopy);
+    
+    trace_leave(TRACE_CANDIDATE, "Candidate function successfully added.");
+  }
+}
 
 static BlockStmt*
 getParentBlock(Expr* expr) {
@@ -1606,182 +1939,6 @@ static bool considerParamMatches(Type* actualtype,
   return false;
 }
 
-/*
-static FnSymbol*
-disambiguate_by_match(Vec<FnSymbol*>* candidateFns,
-                      Vec<Vec<ArgSymbol*>*>* candidateActualFormals,
-                      Vec<Symbol*>* actuals,
-                      Vec<ArgSymbol*>** ret_afs,
-                      Expr* scope, bool explain) {
-                        
-  for (int i = 0; i < candidateFns->n; i++) {
-    TRACE_DISAMBIGUATE_BY_MATCH1("Considering fn %d ", i);
-    FnSymbol* fn1 = candidateFns->v[i];
-    Vec<ArgSymbol*>* actualFormals1 = candidateActualFormals->v[i];
-    bool best = true; // is fn1 the best candidate?
-    
-    for (int j = 0; j < candidateFns->n; j++) {
-      if (i != j) {
-        TRACE_DISAMBIGUATE_BY_MATCH1("vs. fn %d:\n", j);
-        FnSymbol* fn2 = candidateFns->v[j];
-        bool worse = false; // is fn1 worse than fn2?
-        bool equal = true;  // is fn1 as good as fn2?
-        int paramPrefers = 0; // 1 == fn1, 2 == fn2, -1 == conflicting signals
-        bool fnPromotes1 = false; // does fn1 require promotion?
-        bool fnPromotes2 = false; // does fn2 require promotion?
-        Vec<ArgSymbol*>* actualFormals2 = candidateActualFormals->v[j];
-        
-        for (int k = 0; k < actualFormals1->n; k++) {
-          TRACE_DISAMBIGUATE_BY_MATCH1("...arg %d: ", k);
-          Symbol* actual = actuals->v[k];
-
-          ArgSymbol* arg = actualFormals1->v[k];
-          bool argPromotes1 = false;
-          canDispatch(actual->type, actual, arg->type, fn1, &argPromotes1);
-          fnPromotes1 |= argPromotes1;
-
-          ArgSymbol* arg2 = actualFormals2->v[k];
-          bool argPromotes2 = false;
-          canDispatch(actual->type, actual, arg2->type, fn1, &argPromotes2);
-          fnPromotes2 |= argPromotes2;
-
-          if (arg->type == arg2->type && arg->instantiatedParam && !arg2->instantiatedParam) {
-            equal = false;
-            TRACE_DISAMBIGUATE_BY_MATCH("A: not equal\n");
-          } else if (arg->type == arg2->type && !arg->instantiatedParam && arg2->instantiatedParam) {
-            worse = true;
-            TRACE_DISAMBIGUATE_BY_MATCH("B: worse\n");
-          } else if (!argPromotes1 && argPromotes2) {
-            equal = false;
-            TRACE_DISAMBIGUATE_BY_MATCH("C: equal\n");
-          } else if (argPromotes1 && !argPromotes2) {
-            worse = true;
-            TRACE_DISAMBIGUATE_BY_MATCH("D: worse\n");
-          } else if (arg->type == arg2->type && !arg->instantiatedFrom && arg2->instantiatedFrom) {
-            equal = false;
-            TRACE_DISAMBIGUATE_BY_MATCH("E: not equal\n");
-          } else if (arg->type == arg2->type && arg->instantiatedFrom && !arg2->instantiatedFrom) {
-            worse = true;
-            TRACE_DISAMBIGUATE_BY_MATCH("F: worse\n");
-          } else if (arg->instantiatedFrom!=dtAny && arg2->instantiatedFrom==dtAny) {
-            equal = false;
-            TRACE_DISAMBIGUATE_BY_MATCH("G: not equal\n");
-          } else if (arg->instantiatedFrom==dtAny && arg2->instantiatedFrom!=dtAny) {
-            worse = true;
-            TRACE_DISAMBIGUATE_BY_MATCH("H: worse\n");
-          } else if (considerParamMatches(actual->type, arg->type, arg2->type)) {
-            TRACE_DISAMBIGUATE_BY_MATCH("In param case\n");
-            // The actual matches arg's type, but not arg2's
-            if (paramWorks(actual, arg2->type)) {
-              // but the actual is a param and works for arg2
-              if (arg->instantiatedParam) {
-                // the param works equally well for both, but
-                // matches the first slightly better if we had to
-                // decide
-                registerParamPreference(paramPrefers, 1, "arg1");
-              } else {
-                if (arg2->instantiatedParam) {
-                  registerParamPreference(paramPrefers, 2, "arg2");
-                } else {
-                  // neither is a param, but arg1 is an exact type
-                  // match, so prefer that one
-                  registerParamPreference(paramPrefers, 1, "arg1");
-                }
-              }
-            } else {
-              equal = false;
-              TRACE_DISAMBIGUATE_BY_MATCH("I8: not equal\n");
-            }
-          } else if (considerParamMatches(actual->type, arg2->type, arg->type)) {
-            TRACE_DISAMBIGUATE_BY_MATCH("In param case #2\n");
-            // The actual matches arg2's type, but not arg's
-            if (paramWorks(actual, arg->type)) {
-              // but the actual is a param and works for arg
-              if (arg2->instantiatedParam) {
-                // the param works equally well for both, but
-                // matches the second slightly better if we had to
-                // decide
-                registerParamPreference(paramPrefers, 2, "arg2");
-              } else {
-                if (arg->instantiatedParam) {
-                  registerParamPreference(paramPrefers, 1, "arg1");
-                } else {
-                  // neither is a param, but arg1 is an exact type
-                  // match, so prefer that one
-                  registerParamPreference(paramPrefers, 2, "arg2");
-                } 
-              }
-            } else {
-              worse = true;
-              TRACE_DISAMBIGUATE_BY_MATCH("J8: worse\n");
-            }
-          } else if (moreSpecific(fn1, arg->type, arg2->type) &&
-                     arg2->type != arg->type) {
-            equal = false;
-            TRACE_DISAMBIGUATE_BY_MATCH("K: not equal\n");
-          } else if (moreSpecific(fn1, arg2->type, arg->type) && 
-                     arg2->type != arg->type) {
-            worse = true;
-            TRACE_DISAMBIGUATE_BY_MATCH("L: worse\n");
-          } else if (is_int_type(arg->type) &&
-                     is_uint_type(arg2->type)) {
-            equal = false;
-            TRACE_DISAMBIGUATE_BY_MATCH("M: not equal\n");
-          } else if (is_int_type(arg2->type) &&
-                     is_uint_type(arg->type)) {
-            worse = true;
-            TRACE_DISAMBIGUATE_BY_MATCH("N: worse\n");
-          } else {
-            TRACE_DISAMBIGUATE_BY_MATCH("N2: fell through\n");
-          }
-        }
-        
-        if (!fnPromotes1 && fnPromotes2) {
-          TRACE_DISAMBIGUATE_BY_MATCH("O: one promotes and not the other\n");
-          continue;
-        }
-        
-        if (!worse && equal) {
-          if (isMoreVisible(scope, fn1, fn2)) {
-            equal = false;
-            TRACE_DISAMBIGUATE_BY_MATCH("P: not equal\n");
-          } else if (isMoreVisible(scope, fn2, fn1)) {
-            worse = true;
-            TRACE_DISAMBIGUATE_BY_MATCH("Q: worse\n");
-          } else if (paramPrefers == 1) {
-            equal = false;
-            TRACE_DISAMBIGUATE_BY_MATCH("R1: param breaks tie for 1\n");
-          } else if (paramPrefers == 2) {
-            worse = true;
-            TRACE_DISAMBIGUATE_BY_MATCH("R2: param breaks tie for 2\n");
-          } else if (fn1->where && !fn2->where) {
-            equal = false;
-            TRACE_DISAMBIGUATE_BY_MATCH("S: not equal\n");
-          } else if (!fn1->where && fn2->where) {
-            worse = true;
-            TRACE_DISAMBIGUATE_BY_MATCH("T: worse\n");
-          }
-        }
-        
-        if (worse || equal) {
-          best = false;
-          TRACE_DISAMBIGUATE_BY_MATCH("U: not best\n");
-          break;
-        }
-      }
-    }
-    
-    if (best) {
-      *ret_afs = actualFormals1;
-      return fn1;
-    }
-  }
-  
-  *ret_afs = NULL;
-  return NULL;
-}
-*/
-
 static FnSymbol*
 disambiguate_by_match(Vec<FnSymbol*>* candidateFns,
                       Vec<Vec<ArgSymbol*>*>* candidateActualFormals,
@@ -1790,22 +1947,20 @@ disambiguate_by_match(Vec<FnSymbol*>* candidateFns,
                       Expr* scope, bool explain) {
   
   for (int i = candidateFns->n; --i >= 0;) {
-    
     TRACE_DISAMBIGUATE_BY_MATCH1("Considering fn %d ", i);
     
-    FnSymbol* fn0                   = candidateFns->v[i];
-    Vec<ArgSymbol*>* actualFormals0 = candidateActualFormals->v[i];
+    FnSymbol* fn1                   = candidateFns->v[i];
+    Vec<ArgSymbol*>* actualFormals1 = candidateActualFormals->v[i];
     
-    // Is fn0 the best candidate?
+    // Is fn1 the best candidate?
     bool best = true;
     
     for (int j = i; --j >= 0;) {
-      
       TRACE_DISAMBIGUATE_BY_MATCH1("vs. fn %d:\n", j);
       
-      FnSymbol* fn1 = candidateFns->v[j];
+      FnSymbol* fn2 = candidateFns->v[j];
       
-      // Is fn0 worse than fn1?
+      // Is fn1 worse than fn2?
       bool worse = false;
       // Is fn1 as good as fn2?
       bool equal = true;
@@ -1813,24 +1968,16 @@ disambiguate_by_match(Vec<FnSymbol*>* candidateFns,
       // 1 == fn1, 2 == fn2, -1 == conflicting signals
       int paramPrefers = 0;
       
-      // Does fn0 require promotion?
-      bool fnPromotes0 = false;
       // Does fn1 require promotion?
       bool fnPromotes1 = false;
+      // Does fn2 require promotion?
+      bool fnPromotes2 = false;
       
-      Vec<ArgSymbol*>* actualFormals1 = candidateActualFormals->v[j];
+      Vec<ArgSymbol*>* actualFormals2 = candidateActualFormals->v[j];
       
-      for (int k = actualFormals0->n; --k >= 0;) {
-        
+      for (int k = actualFormals1->n; --k >= 0;) {
         TRACE_DISAMBIGUATE_BY_MATCH1("...arg %d: ", k);
-        
         Symbol* actual = actuals->v[k];
-
-        ArgSymbol* arg0   = actualFormals0->v[k];
-        bool argPromotes0 = false;
-        
-        canDispatch(actual->type, actual, arg0->type, fn0, &argPromotes0);
-        fnPromotes0 |= argPromotes0;
 
         ArgSymbol* arg1   = actualFormals1->v[k];
         bool argPromotes1 = false;
@@ -1838,59 +1985,65 @@ disambiguate_by_match(Vec<FnSymbol*>* candidateFns,
         canDispatch(actual->type, actual, arg1->type, fn1, &argPromotes1);
         fnPromotes1 |= argPromotes1;
 
-        if (arg0->type == arg1->type and arg0->instantiatedParam and not arg1->instantiatedParam) {
+        ArgSymbol* arg2   = actualFormals2->v[k];
+        bool argPromotes2 = false;
+        
+        canDispatch(actual->type, actual, arg2->type, fn1, &argPromotes2);
+        fnPromotes2 |= argPromotes2;
+
+        if (arg1->type == arg2->type and arg1->instantiatedParam and not arg2->instantiatedParam) {
           equal = false;
           TRACE_DISAMBIGUATE_BY_MATCH("A: not equal\n");
           
-        } else if (arg0->type == arg1->type and not arg0->instantiatedParam and arg1->instantiatedParam) {
+        } else if (arg1->type == arg2->type and not arg1->instantiatedParam and arg2->instantiatedParam) {
           worse = true;
           TRACE_DISAMBIGUATE_BY_MATCH("B: worse\n");
           
-        } else if (not argPromotes0 and argPromotes1) {
+        } else if (not argPromotes1 and argPromotes2) {
           equal = false;
           TRACE_DISAMBIGUATE_BY_MATCH("C: equal\n");
           
-        } else if (argPromotes0 and not argPromotes1) {
+        } else if (argPromotes1 and not argPromotes2) {
           worse = true;
           TRACE_DISAMBIGUATE_BY_MATCH("D: worse\n");
           
-        } else if (arg0->type == arg1->type and not arg0->instantiatedFrom and arg1->instantiatedFrom) {
+        } else if (arg1->type == arg2->type and not arg1->instantiatedFrom and arg2->instantiatedFrom) {
           equal = false;
           TRACE_DISAMBIGUATE_BY_MATCH("E: not equal\n");
           
-        } else if (arg0->type == arg1->type and arg0->instantiatedFrom and not arg1->instantiatedFrom) {
+        } else if (arg1->type == arg2->type and arg1->instantiatedFrom and not arg2->instantiatedFrom) {
           worse = true;
           TRACE_DISAMBIGUATE_BY_MATCH("F: worse\n");
           
-        } else if (arg0->instantiatedFrom != dtAny and arg1->instantiatedFrom == dtAny) {
+        } else if (arg1->instantiatedFrom != dtAny and arg2->instantiatedFrom == dtAny) {
           equal = false;
           TRACE_DISAMBIGUATE_BY_MATCH("G: not equal\n");
           
-        } else if (arg0->instantiatedFrom == dtAny and arg1->instantiatedFrom != dtAny) {
+        } else if (arg1->instantiatedFrom == dtAny and arg2->instantiatedFrom != dtAny) {
           worse = true;
           TRACE_DISAMBIGUATE_BY_MATCH("H: worse\n");
           
-        } else if (considerParamMatches(actual->type, arg0->type, arg1->type)) {
-          // The actual matches arg0's type, but not arg1's.
+        } else if (considerParamMatches(actual->type, arg1->type, arg2->type)) {
+          // The actual matches arg1's type, but not arg2's.
           
           TRACE_DISAMBIGUATE_BY_MATCH("In param case\n");
           
-          if (paramWorks(actual, arg1->type)) {
-            // The actual is a param and works for arg1.
+          if (paramWorks(actual, arg2->type)) {
+            // The actual is a param and works for arg2.
             
-            if (arg0->instantiatedParam) {
+            if (arg1->instantiatedParam) {
               // The param works equally well for both, but matches the first
               // slightly better if we had to decide.
-              registerParamPreference(paramPrefers, 0, "arg0");
+              registerParamPreference(paramPrefers, 1, "arg1");
               
             } else {
-              if (arg1->instantiatedParam) {
-                registerParamPreference(paramPrefers, 1, "arg1");
+              if (arg2->instantiatedParam) {
+                registerParamPreference(paramPrefers, 2, "arg2");
                 
               } else {
-                // Neither is a param, but arg0 is an exact type match, so
+                // Neither is a param, but arg1 is an exact type match, so
                 // prefer that one.
-                registerParamPreference(paramPrefers, 0, "arg0");
+                registerParamPreference(paramPrefers, 1, "arg1");
               }
             }
             
@@ -1898,28 +2051,27 @@ disambiguate_by_match(Vec<FnSymbol*>* candidateFns,
             equal = false;
             TRACE_DISAMBIGUATE_BY_MATCH("I8: not equal\n");
           }
-          
-        } else if (considerParamMatches(actual->type, arg1->type, arg0->type)) {
-          // The actual matches arg1's type, but not arg0's.
+        } else if (considerParamMatches(actual->type, arg2->type, arg1->type)) {
+          // The actual matches arg2's type, but not arg1's.
           
           TRACE_DISAMBIGUATE_BY_MATCH("In param case #2\n");
           
-          if (paramWorks(actual, arg0->type)) {
-            // The actual is a param and works for arg0.
+          if (paramWorks(actual, arg1->type)) {
+            // The actual is a param and works for arg1.
             
-            if (arg1->instantiatedParam) {
+            if (arg2->instantiatedParam) {
               // The param works equally well for both, but matches the second
               // slightly better if we had to decide.
-              registerParamPreference(paramPrefers, 1, "arg1");
+              registerParamPreference(paramPrefers, 2, "arg2");
               
             } else {
-              if (arg0->instantiatedParam) {
-                registerParamPreference(paramPrefers, 0, "arg0");
+              if (arg1->instantiatedParam) {
+                registerParamPreference(paramPrefers, 1, "arg1");
                 
               } else {
                 // Neither is a param, but arg1 is an exact type match, so
                 // prefer that one.
-                registerParamPreference(paramPrefers, 1, "arg1");
+                registerParamPreference(paramPrefers, 2, "arg2");
               } 
             }
             
@@ -1928,19 +2080,19 @@ disambiguate_by_match(Vec<FnSymbol*>* candidateFns,
             TRACE_DISAMBIGUATE_BY_MATCH("J8: worse\n");
           }
           
-        } else if (moreSpecific(fn0, arg0->type, arg1->type) and arg0->type != arg1->type) {
+        } else if (moreSpecific(fn1, arg1->type, arg2->type) and arg2->type != arg1->type) {
           equal = false;
           TRACE_DISAMBIGUATE_BY_MATCH("K: not equal\n");
           
-        } else if (moreSpecific(fn0, arg1->type, arg0->type) and arg0->type != arg1->type) {
+        } else if (moreSpecific(fn1, arg2->type, arg1->type) and  arg2->type != arg1->type) {
           worse = true;
           TRACE_DISAMBIGUATE_BY_MATCH("L: worse\n");
           
-        } else if (is_int_type(arg0->type) and is_uint_type(arg1->type)) {
+        } else if (is_int_type(arg1->type) and is_uint_type(arg2->type)) {
           equal = false;
           TRACE_DISAMBIGUATE_BY_MATCH("M: not equal\n");
           
-        } else if (is_int_type(arg1->type) and is_uint_type(arg0->type)) {
+        } else if (is_int_type(arg2->type) and is_uint_type(arg1->type)) {
           worse = true;
           TRACE_DISAMBIGUATE_BY_MATCH("N: worse\n");
           
@@ -1949,33 +2101,33 @@ disambiguate_by_match(Vec<FnSymbol*>* candidateFns,
         }
       }
       
-      if (not fnPromotes0 and fnPromotes1) {
+      if (not fnPromotes1 and fnPromotes2) {
         TRACE_DISAMBIGUATE_BY_MATCH("O: one promotes and not the other\n");
         continue;
       }
       
       if (not worse and equal) {
-        if (isMoreVisible(scope, fn0, fn1)) {
+        if (isMoreVisible(scope, fn1, fn2)) {
           equal = false;
           TRACE_DISAMBIGUATE_BY_MATCH("P: not equal\n");
           
-        } else if (isMoreVisible(scope, fn1, fn0)) {
+        } else if (isMoreVisible(scope, fn2, fn1)) {
           worse = true;
           TRACE_DISAMBIGUATE_BY_MATCH("Q: worse\n");
           
-        } else if (paramPrefers == 0) {
+        } else if (paramPrefers == 1) {
           equal = false;
           TRACE_DISAMBIGUATE_BY_MATCH("R1: param breaks tie for 1\n");
           
-        } else if (paramPrefers == 1) {
+        } else if (paramPrefers == 2) {
           worse = true;
           TRACE_DISAMBIGUATE_BY_MATCH("R2: param breaks tie for 2\n");
           
-        } else if (fn0->where and not fn1->where) {
+        } else if (fn1->where and not fn2->where) {
           equal = false;
           TRACE_DISAMBIGUATE_BY_MATCH("S: not equal\n");
           
-        } else if (not fn0->where and fn1->where) {
+        } else if (not fn1->where and fn2->where) {
           worse = true;
           TRACE_DISAMBIGUATE_BY_MATCH("T: worse\n");
         }
@@ -1989,8 +2141,8 @@ disambiguate_by_match(Vec<FnSymbol*>* candidateFns,
     }
     
     if (best) {
-      *ret_afs = actualFormals0;
-      return fn0;
+      *ret_afs = actualFormals1;
+      return fn1;
     }
   }
   

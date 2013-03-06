@@ -12,7 +12,7 @@
 #define TRACE_CANDIDATE     false
 #define TRACE_GENERICS      true
 #define TRACE_INSTANTIATION true
-#define TRACE_VERBOSE       true
+#define TRACE_VERBOSE       false
 
 extern FnSymbol* currentTraceFn;
 
