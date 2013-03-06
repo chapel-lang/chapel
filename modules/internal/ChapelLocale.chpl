@@ -139,6 +139,7 @@ module ChapelLocale {
   // in setting up the default architecture itself.
   // This should probably be renamed _dummyLocale or something representative.
   pragma "private" var _here: locale = new locale();
+  __primitive("_task_set_here", _here);
 
   // This is obsolete.  Here now means the locale on which you are executing,
   // sublocale and all.

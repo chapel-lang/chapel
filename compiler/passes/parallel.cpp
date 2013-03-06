@@ -143,8 +143,9 @@ static void create_block_fn_wrapper(CallExpr* fcall, ClassType* ctype, VarSymbol
 
   if (fn->hasFlag(FLAG_ON)) {
     // The wrapper function for 'on' block has an additional argument,
-    // the new wide locale pointer
-    ArgSymbol* locale = new ArgSymbol(INTENT_BLANK, "_locale_arg", dtLocale);
+    // the new wide locale pointer.
+    // It is stripped out during code generation.
+    ArgSymbol* locale = new ArgSymbol(INTENT_BLANK, "_dummy_locale_arg", dtLocale);
     wrap_fn->insertFormalAtTail(locale);
   }
 
@@ -163,6 +164,7 @@ static void create_block_fn_wrapper(CallExpr* fcall, ClassType* ctype, VarSymbol
   // Create a call to the original function
   CallExpr *call_orig = new CallExpr( (toSymExpr(fcall->baseExpr))->var);
   int count = -1;
+  VarSymbol* locTemp = NULL;
   for_fields(field, ctype)
   {
     // insert args
@@ -172,21 +174,57 @@ static void create_block_fn_wrapper(CallExpr* fcall, ClassType* ctype, VarSymbol
     wrap_fn->insertAtTail(
         new CallExpr(PRIM_MOVE, tmp,
         new CallExpr(PRIM_GET_MEMBER_VALUE, wrap_c, field)));
+
+    // Special case: 
+    // If this is an on block,  remember the first arg.
+    // It is the locale "on" which we should begin.
+    if (fn->hasFlag(FLAG_ON) && count == 0)
+      locTemp = tmp;
+
     call_orig->insertAtTail(tmp);
+  }
+
+  VarSymbol* oldHere = NULL;
+  if (fn->hasFlag(FLAG_ON))
+  {
+    // Special case for the first argument of an on_fn, which carries
+    // the destination locale ID.
+    // We save off the current values on the stack and then
+    // set the task-private values to those passed in.
+    // The saved values are restored when the on block is exited.
+    oldHere = newTemp(dtLocale);
+    wrap_fn->insertAtTail(new DefExpr(oldHere));
+    wrap_fn->insertAtTail(new CallExpr(PRIM_MOVE, oldHere,
+                                       new CallExpr(PRIM_TASK_GET_HERE)));
+    wrap_fn->insertAtTail(new CallExpr(PRIM_TASK_SET_LOCALE,
+                                       new CallExpr(PRIM_WIDE_GET_LOCALE, locTemp)));
+    wrap_fn->insertAtTail(new CallExpr(PRIM_TASK_SET_HERE,
+                                       new CallExpr(PRIM_WIDE_GET_ADDR, locTemp)));
   }
 
   wrap_fn->retType = dtVoid;
   wrap_fn->insertAtTail(call_orig);     // add new call
+
+  if (fn->hasFlag(FLAG_ON)) {
+    // Restore old here value
+    wrap_fn->insertAtTail(new CallExpr(PRIM_TASK_SET_LOCALE,
+                                  new CallExpr(PRIM_WIDE_GET_LOCALE, oldHere)));
+    wrap_fn->insertAtTail(new CallExpr(PRIM_TASK_SET_HERE,
+                                  new CallExpr(PRIM_WIDE_GET_ADDR, oldHere)));
+  }
+
   if (fn->hasFlag(FLAG_ON) || fn->hasFlag(FLAG_GPU_ON))
     fcall->insertAfter(new CallExpr(PRIM_CHPL_FREE, tempc));
   else
     wrap_fn->insertAtTail(new CallExpr(PRIM_CHPL_FREE, wrap_c));
 
+  wrap_fn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
+
   DefExpr  *fcall_def= (toSymExpr( fcall->baseExpr))->var->defPoint;
   fcall->remove();                     // rm orig. call
   fcall_def->remove();                 // move orig. def
   mod->block->insertAtTail(fcall_def); // to top-level
-  normalize(wrap_fn);
+//  normalize(wrap_fn);
 }
 
 
@@ -770,7 +808,6 @@ static void createNestedFunctions(Vec<FnSymbol*>& nestedFunctions)
     if (CallExpr* info = block->blockInfo) {
       SET_LINENO(block);
       FnSymbol* fn = NULL;
-      VarSymbol* oldHere = NULL;
       if (info->isPrimitive(PRIM_BLOCK_BEGIN)) {
         fn = new FnSymbol("begin_fn");
         fn->addFlag(FLAG_BEGIN);
@@ -787,23 +824,9 @@ static void createNestedFunctions(Vec<FnSymbol*>& nestedFunctions)
         if (block->blockInfo->isPrimitive(PRIM_BLOCK_ON_NB))
           fn->addFlag(FLAG_NON_BLOCKING);
 
-        // Special case for the first two arguments of an on_fn, which carry
-        // the destination locale ID and the local pointer to "here".
-        // We save off the current values on the stack and then
-        // set the task-private values to those passed in.
-        // The saved values are restored when the on block is exited.
-        oldHere = newTemp(dtLocale);
-        fn->insertAtTail(new DefExpr(oldHere));
-        fn->insertAtTail(new CallExpr(PRIM_MOVE, oldHere,
-                                      new CallExpr(PRIM_TASK_GET_HERE)));
-
         // This is now a real locale arg.
         ArgSymbol* locarg = new ArgSymbol(INTENT_BLANK, "_locale_arg", dtLocale);
         fn->insertFormalAtTail(locarg);
-        fn->insertAtTail(new CallExpr(PRIM_TASK_SET_LOCALE,
-                                      new CallExpr(PRIM_WIDE_GET_LOCALE, new SymExpr(locarg))));
-        fn->insertAtTail(new CallExpr(PRIM_TASK_SET_HERE,
-                                      new CallExpr(PRIM_WIDE_GET_ADDR, new SymExpr(locarg))));
       }
       else if (info->isPrimitive(PRIM_ON_GPU)) {
         fn = new FnSymbol("on_gpu_kernel");
@@ -846,13 +869,6 @@ static void createNestedFunctions(Vec<FnSymbol*>& nestedFunctions)
         block->blockInfo->remove();
         // This block becomes the body of the new function.
         fn->insertAtTail(block->remove());
-        if (fn->hasFlag(FLAG_ON)) {
-          // Restore old here value
-          fn->insertAtTail(new CallExpr(PRIM_TASK_SET_LOCALE,
-                                        new CallExpr(PRIM_WIDE_GET_LOCALE, oldHere)));
-          fn->insertAtTail(new CallExpr(PRIM_TASK_SET_HERE,
-                                        new CallExpr(PRIM_WIDE_GET_ADDR, oldHere)));
-        }
         fn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
         fn->retType = dtVoid;
       }

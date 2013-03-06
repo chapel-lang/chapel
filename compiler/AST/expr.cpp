@@ -3814,8 +3814,14 @@ GenRet CallExpr::codegen() {
       codegenCall("chpl_task_setSerial", codegenValue(get(1)));
       break;
     case PRIM_TASK_SET_HERE:
-      codegenCall("chpl_task_setHere", codegenValue(get(1)));
+    {
+      if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE) ||
+          get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))
+        codegenCall("chpl_task_setHere", codegenRaddr(get(1)));
+      else
+        codegenCall("chpl_task_setHere", get(1));
       break;
+    }
     case PRIM_TASK_SET_LOCALE:
       codegenCall("chpl_gen_setLocaleID", codegenValue(get(1)));
       break;
