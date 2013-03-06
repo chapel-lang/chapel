@@ -640,8 +640,9 @@ iter BlockDom.these(param tag: iterKind, followThis) where tag == iterKind.follo
   type strType = chpl__signedType(idxType);
   for param i in 1..rank {
     var stride = whole.dim(i).stride: strType;
-    var low = stride * followThis(i).low;
-    var high = stride * followThis(i).high;
+    // not checking here whether the new low and high fit into idxType
+    var low = (stride * followThis(i).low:strType):idxType;
+    var high = (stride * followThis(i).high:strType):idxType;
     t(i) = (low..high by stride:strType) + whole.dim(i).low by followThis(i).stride:strType;
   }
   for i in {(...t)} {
