@@ -1,6 +1,29 @@
+#ifndef _CLANGSUPPORT_H_
+#define _CLANGSUPPORT_H_
+
+#include "llvmUtil.h"
+
 #ifdef HAVE_LLVM
 
+#include "llvm/ADT/StringRef.h"
+#include "llvm/ADT/SmallString.h"
+
+#if HAVE_LLVM_VER >= 32
+// workaround for oddities with clang 3.2
+namespace clang {
+  using namespace llvm;
+//  typedef llvm::StringRef StringRef;
+//  typedef llvm::SmallVector StringRef;
+};
+#include "clang/Basic/DiagnosticOptions.h"
+#include "clang/Lex/HeaderSearchOptions.h"
+#include "clang/Lex/PreprocessorOptions.h"
+#else
 #include "clang/Frontend/DiagnosticOptions.h"
+#include "clang/Frontend/HeaderSearchOptions.h"
+#include "clang/Frontend/PreprocessorOptions.h"
+#endif
+
 #include "clang/Frontend/TextDiagnosticPrinter.h"
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/TypeLoc.h"
@@ -9,13 +32,11 @@
 #include "clang/Basic/SourceManager.h"
 #include "clang/Lex/HeaderSearch.h"
 #include "clang/Basic/FileManager.h"
-#include "clang/Frontend/HeaderSearchOptions.h"
 #include "clang/Frontend/Utils.h"
 #include "clang/Basic/Version.h"
 #include "clang/Basic/TargetOptions.h"
 #include "clang/Basic/TargetInfo.h"
 #include "clang/Lex/Preprocessor.h"
-#include "clang/Frontend/PreprocessorOptions.h"
 #include "clang/Frontend/FrontendOptions.h"
 #include "clang/Basic/IdentifierTable.h"
 #include "clang/Basic/Builtins.h"
@@ -39,7 +60,6 @@
 #include "clang/Driver/Action.h"
 #include "clang/Frontend/CompilerInvocation.h"
 #include "clang/Frontend/CompilerInstance.h"
-#include "clang/Frontend/DiagnosticOptions.h"
 #include "clang/Frontend/FrontendDiagnostic.h"
 #include "clang/Frontend/TextDiagnosticPrinter.h"
 #include "clang/Frontend/FrontendOptions.h"
@@ -49,9 +69,13 @@
 #include "llvm/Support/TargetSelect.h"
 #include "llvm/Support/Path.h"
 #include "llvm/Support/ToolOutputFile.h"
-#include "llvm/Target/TargetData.h"
 #include "llvm/Bitcode/ReaderWriter.h"
 #include "llvm/Analysis/Verifier.h"
 
+#include "llvm/ADT/DenseMap.h"
+#include "llvm/PassManager.h"
+#include "llvm/Transforms/IPO/PassManagerBuilder.h"
+
+#endif
 
 #endif

@@ -47,6 +47,7 @@ module BufferInternals {
                                 inout len_out:int(64));
   extern proc qbuffer_iter_num_bytes(start:qbuffer_iter_t, end:qbuffer_iter_t):int(64);
 
+  extern proc qbuffer_len(buf:qbuffer_ptr_t):int(64);
 
   extern proc debug_print_qbuffer_iter(inout it:qbuffer_iter_t);
 

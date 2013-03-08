@@ -631,24 +631,36 @@ void ClassType::codegenDef() {
 #endif
     }
   } else if (symbol->hasFlag(FLAG_REF)) {
-    const char* baseType = getField(1)->type->symbol->cname;
+    TypeSymbol* base = getField(1)->type->symbol;
+    const char* baseType = base->cname;
     if( outfile ) {
       fprintf(outfile, "typedef %s *%s;\n", baseType, symbol->cname);
       return;
     } else {
 #ifdef HAVE_LLVM
-      llvm::Type* llBaseType = info->lvt->getType(baseType);
+      llvm::Type* llBaseType;
+      if( base->typeInfo() == dtVoid ) {
+        llBaseType = llvm::IntegerType::getInt8Ty(info->module->getContext());
+      } else {
+        llBaseType = base->codegen().type;
+      }
       INT_ASSERT(llBaseType);
       type = llvm::PointerType::getUnqual(llBaseType);
 #endif
     }
   } else if (symbol->hasFlag(FLAG_DATA_CLASS)) {
-    const char* baseType = getDataClassType(symbol)->cname;
+    TypeSymbol* base = getDataClassType(symbol);
+    const char* baseType = base->cname;
     if( outfile ) {
       fprintf(outfile, "typedef %s *%s;\n", baseType, symbol->cname);
     } else {
 #ifdef HAVE_LLVM
-      llvm::Type* llBaseType = info->lvt->getType(baseType);
+      llvm::Type* llBaseType;
+      if( base->typeInfo() == dtVoid ) {
+        llBaseType = llvm::IntegerType::getInt8Ty(info->module->getContext());
+      } else {
+        llBaseType = base->codegen().type;
+      }
       INT_ASSERT(llBaseType);
       type = llvm::PointerType::getUnqual(llBaseType);
 #endif
@@ -744,8 +756,9 @@ void ClassType::codegenDef() {
         }
         for_fields(field, this) {
           llvm::Type* fieldType = field->type->symbol->codegen().type;
-          if(field->hasFlag(FLAG_SUPER_CLASS))
-            fieldType = info->lvt->getType(classStructName(false));
+          ClassType* ct = toClassType(field->type);
+          if(ct && field->hasFlag(FLAG_SUPER_CLASS))
+            fieldType = info->lvt->getType(ct->classStructName(true));
           INT_ASSERT(fieldType);
           params.push_back(fieldType);
           GEPMap.insert(std::pair<std::string, int>(field->cname, paramID++));
@@ -756,21 +769,28 @@ void ClassType::codegenDef() {
       // if it's a record, we make the new type now.
       // if it's a class, we update the existing type.
       
-      // need to define _cname (for CLASS_CLASS) or cname
-      if(classTag == CLASS_CLASS) {
-        type = info->lvt->getType(std::string("_") + symbol->cname);
-        INT_ASSERT(type);
-      } else {
-        type = llvm::StructType::create(info->module->getContext(), symbol->cname);
+      {
+        // Normal (wide or struct) code path.
+        //
+        // need to define _cname (for CLASS_CLASS) or cname
+        if(classTag == CLASS_CLASS) {
+          const char* struct_name = this->classStructName(true);
+          type = info->lvt->getType(struct_name);
+          INT_ASSERT(type);
+        } else {
+          type = llvm::StructType::create(info->module->getContext(),
+                                          symbol->cname);
+        }
+
+
+        llvm::StructType* stype = llvm::cast<llvm::StructType>(type);
+        stype->setBody(params);
+  
+        if (classTag == CLASS_CLASS) {
+          type = stype->getPointerTo();
+        }
       }
 
-
-      llvm::StructType* stype = llvm::cast<llvm::StructType>(type);
-      stype->setBody(params);
-
-      if (classTag == CLASS_CLASS) {
-        type = stype->getPointerTo();
-      }
 #endif
     }
   }
@@ -788,17 +808,21 @@ void ClassType::codegenDef() {
 
 void ClassType::codegenPrototype() {
   GenInfo* info = gGenInfo;
-  if (symbol->hasFlag(FLAG_REF)) return; // done in codegenDef
-  else if (symbol->hasFlag(FLAG_DATA_CLASS)) return; // done in codegenDef
-  else if (classTag == CLASS_CLASS) {
+  // Only generates prototypes for CLASS_CLASS (ie a Chapel class,
+  // not a record or wide pointer)
+  if (classTag == CLASS_CLASS) {
     if( info->cfile ) {
       fprintf(info->cfile, "typedef struct %s* %s;\n", 
               this->classStructName(false), symbol->cname);
     } else {
 #ifdef HAVE_LLVM
-      std::string sname("_"); sname += symbol->cname; // ie _ClassType
-      llvm::StructType* st = llvm::StructType::create(info->module->getContext(), sname);
-      info->lvt->addGlobalType(sname, st);
+      // ie _ClassType
+      const char* struct_name = this->classStructName(true);
+ 
+      llvm::StructType* st;
+      st = llvm::StructType::create(info->module->getContext(), struct_name);
+      info->lvt->addGlobalType(struct_name, st);
+
       llvm::PointerType* pt = llvm::PointerType::getUnqual(st);
       info->lvt->addGlobalType(symbol->cname, pt);
       symbol->llvmType = pt;
