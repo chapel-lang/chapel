@@ -1827,6 +1827,11 @@ module ChapelArray {
   // reshape function
   //
   proc reshape(A: [], D: domain) {
+    if !isRectangularDom(D) then
+      compilerError("reshape(A,D) is meaningful only when D is a rectangular domain; got D: ", typeToString(D.type));
+    if A.size != D.size then
+      halt("reshape(A,D) is invoked when A has ", A.size,
+           " elements, but D has ", D.size, " indices");
     var B: [D] A.eltType;
     for (i,a) in zip(D,A) do
       B(i) = a;
