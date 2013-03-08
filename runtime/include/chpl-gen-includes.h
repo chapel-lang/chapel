@@ -1,4 +1,4 @@
-// chpl-gen-inlines.h
+// chpl-gen-includes.h
 //
 // Inline functions used in code generation.
 //
@@ -23,4 +23,13 @@ void chpl_gen_setLocaleID(chpl_localeID_t locale)
 {
   chpl_task_setLocaleID(((localeID_u){.as_struct = locale}).as_int);
 }
+
+static ___always_inline
+bool chpl_is_here(chpl_localeID_t locale)
+{
+  return ((localeID_u){.as_struct = locale}).as_int ==
+    chpl_task_getLocaleID();
+}
+
+
 

@@ -4120,6 +4120,9 @@ GenRet CallExpr::codegen() {
     case PRIM_LOCALE_ID:
       ret = codegenGetLocaleID();
       break;
+    case PRIM_IS_HERE:
+      ret = codegenCallExpr("chpl_is_here", codegenValue(get(1)));
+      break;
     case PRIM_NODE_ID:
       ret = codegenGetNodeID();
       break;
@@ -4486,8 +4489,7 @@ GenRet CallExpr::codegen() {
   }
 
   // Do not code generate calls to functions marked FLAG_NO_CODEGEN.
-  if (FnSymbol* fsym = isResolved())
-    if (fsym->hasFlag(FLAG_NO_CODEGEN)) return ret;
+  if (fn->hasFlag(FLAG_NO_CODEGEN)) return ret;
 
   GenRet base = baseExpr->codegen();
 

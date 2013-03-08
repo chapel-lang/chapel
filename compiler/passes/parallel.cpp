@@ -49,14 +49,12 @@ bundleArgs(CallExpr* fcall) {
 
   // create a new class to capture refs to locals
   ClassType* ctype = new ClassType( CLASS_CLASS);
-  TypeSymbol* new_c = new TypeSymbol( astr("_class_locals", 
-                                           fn->name),
-                                      ctype);
+  TypeSymbol* new_c = new TypeSymbol(astr("_class_locals", fn->name), ctype);
   new_c->addFlag(FLAG_NO_OBJECT);
   new_c->addFlag(FLAG_NO_WIDE_CLASS);
 
   // add the function args as fields in the class
-  int i = 0;
+  int i = 1;	// Fields are numbered from one for uniqueness.
   for_actuals(arg, fcall) {
     SymExpr *s = toSymExpr(arg);
     Symbol  *var = s->var; // arg or var
@@ -142,11 +140,23 @@ static void create_block_fn_wrapper(CallExpr* fcall, ClassType* ctype, VarSymbol
   if (fn->hasFlag(FLAG_BEGIN))                  wrap_fn->addFlag(FLAG_BEGIN_BLOCK);
 
   if (fn->hasFlag(FLAG_ON)) {
-    // The wrapper function for 'on' block has an additional argument,
-    // the new wide locale pointer.
-    // It is stripped out during code generation.
-    ArgSymbol* locale = new ArgSymbol(INTENT_BLANK, "_dummy_locale_arg", dtLocale);
-    wrap_fn->insertFormalAtTail(locale);
+    // The wrapper function for 'on' block has an additional argument, which
+    // passes the new wide locale pointer to the fork function.
+    // This argument is stripped from the wrapper function during code generation.
+    // As far as the compiler knows, the call looks like:
+    //  wrapon_fn(new_locale, wrapped_args)
+    // and the wrapon_fn has a matching signature.  But at codegen time, this is
+    // translated to:
+    //  fork(new_locale.locale.node, wrapon_fn, wrapped_args)
+    // The fork function effective generates the call
+    //  wrapon_fn(wrapped_args)
+    // (without the locale arg).
+
+    // The locale arg is originally attached to the on_fn, but we steal it here.
+    // The on_fn does not need this extra argument, and can find out its locale
+    // by reading the task-private "here" pointer.
+    DefExpr* localeArg = toDefExpr(fn->formals.get(1)->remove());
+    wrap_fn->insertFormalAtTail(localeArg);
   }
 
   ArgSymbol *wrap_c = new ArgSymbol( INTENT_BLANK, "c", ctype);
@@ -155,20 +165,21 @@ static void create_block_fn_wrapper(CallExpr* fcall, ClassType* ctype, VarSymbol
   mod->block->insertAtTail(new DefExpr(wrap_fn));
 
   // The wrapper function is called with the bundled argument list.
-  // But calls to an on block also contain the locale argument.
   if (fn->hasFlag(FLAG_ON))
-    fcall->insertBefore(new CallExpr(wrap_fn, fcall->get(1)->copy(), tempc));
+    // For an on block, the first argument is also passed directly
+    // to the wrapper function.
+    // The forking function uses this to fork a task on the target locale.
+    fcall->insertBefore(new CallExpr(wrap_fn, fcall->get(1)->remove(), tempc));
   else
     fcall->insertBefore(new CallExpr(wrap_fn, tempc));
 
   // Create a call to the original function
   CallExpr *call_orig = new CallExpr( (toSymExpr(fcall->baseExpr))->var);
-  int count = -1;
   VarSymbol* locTemp = NULL;
+  bool first = true;
   for_fields(field, ctype)
   {
     // insert args
-    ++count;
     VarSymbol* tmp = newTemp(field->type);
     wrap_fn->insertAtTail(new DefExpr(tmp));
     wrap_fn->insertAtTail(
@@ -176,12 +187,15 @@ static void create_block_fn_wrapper(CallExpr* fcall, ClassType* ctype, VarSymbol
         new CallExpr(PRIM_GET_MEMBER_VALUE, wrap_c, field)));
 
     // Special case: 
-    // If this is an on block,  remember the first arg.
-    // It is the locale "on" which we should begin.
-    if (fn->hasFlag(FLAG_ON) && count == 0)
+    // If this is an on block,  remember the first field,
+    // but don't add to the list of actuals passed to the original on_fn.
+    // It contains the locale on which the new task is launched.
+    if (first && fn->hasFlag(FLAG_ON))
       locTemp = tmp;
+    else
+      call_orig->insertAtTail(tmp);
 
-    call_orig->insertAtTail(tmp);
+    first = false;
   }
 
   VarSymbol* oldHere = NULL;
@@ -221,7 +235,7 @@ static void create_block_fn_wrapper(CallExpr* fcall, ClassType* ctype, VarSymbol
   wrap_fn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
 
   DefExpr  *fcall_def= (toSymExpr( fcall->baseExpr))->var->defPoint;
-  fcall->remove();                     // rm orig. call
+  fcall->remove();                     // remove orig. call
   fcall_def->remove();                 // move orig. def
   mod->block->insertAtTail(fcall_def); // to top-level
 //  normalize(wrap_fn);
@@ -802,6 +816,16 @@ reprivatizeIterators() {
 }
 
 
+// Converts blocks implementing various parallel constructs into functions, 
+// so they can be invoked through a fork.
+// The body of the original block becomes the body of the function,
+// and the inline location of the parallel block is replaced by a call
+// to the implementing function.
+// A subsequent step (flattenNesteFunctions) adds arguments to these functions
+// to pass in values or references from the context which are used in the body
+// of the block.
+// As a special case, the target locale is prepended to the arguments passed 
+// to the "on" function.
 static void createNestedFunctions(Vec<FnSymbol*>& nestedFunctions)
 {
   forv_Vec(BlockStmt, block, gBlockStmts) {
@@ -824,8 +848,7 @@ static void createNestedFunctions(Vec<FnSymbol*>& nestedFunctions)
         if (block->blockInfo->isPrimitive(PRIM_BLOCK_ON_NB))
           fn->addFlag(FLAG_NON_BLOCKING);
 
-        // This is now a real locale arg.
-        ArgSymbol* locarg = new ArgSymbol(INTENT_BLANK, "_locale_arg", dtLocale);
+        ArgSymbol* locarg = new ArgSymbol(INTENT_BLANK, "_dummy_locale_arg", dtLocale);
         fn->insertFormalAtTail(locarg);
       }
       else if (info->isPrimitive(PRIM_ON_GPU)) {
@@ -882,9 +905,7 @@ parallel(void) {
   // This pass must occur after resolution and before flattenNestedFunctions().
   collapseLocaleLookups();
 
-  //
   // convert begin/cobegin/coforall/on blocks into nested functions and flatten
-  //
   Vec<FnSymbol*> nestedFunctions;
 
   createNestedFunctions(nestedFunctions);
@@ -942,6 +963,7 @@ static void optimizeLocalOns(Vec<FnSymbol*>& nestedFunctions)
 {
   forv_Vec(FnSymbol, fn, nestedFunctions) {
     forv_Vec(CallExpr, call, *fn->calledBy) {
+
       SET_LINENO(call);
       // Overhead is high for on statements if locale==here, so
       //  perform a simple optimization here to call fn() directly if
@@ -954,28 +976,40 @@ static void optimizeLocalOns(Vec<FnSymbol*>& nestedFunctions)
       //  Rather we use a macro, so the optimization would have to be
       //  performed within the macro.
       if (fn->hasFlag(FLAG_ON) && !fn->hasFlag(FLAG_NON_BLOCKING)) {
-        CallExpr *newCall = call->copy();
         BlockStmt* lblock = new BlockStmt();
-        lblock->insertAtHead(newCall);
         BlockStmt* rblock = new BlockStmt();
 
+        // We expect the on function to be called with at least one parameter 
+        // (the destination locale ID).
         INT_ASSERT(call->get(1));
-        // nodeID is the node ID for the datum used in the "on" expression.
-        CallExpr* nodeID = new CallExpr(PRIM_WIDE_GET_NODE, call->get(1)->copy());
-        CallExpr* localeID = new CallExpr(PRIM_NODE_ID);    // Runtime (GASNet) node.
-        VarSymbol* tmpNode = newTemp(nodeID->typeInfo());
-        VarSymbol* tmpLoc = newTemp(localeID->typeInfo());
+
+        // Extract the destination locale ID for on blocks
+        Expr* localeID = NULL;
+        if (call->get(1)->typeInfo() == dtLocaleID)
+          localeID = call->get(1)->copy();
+        else
+          localeID = new CallExpr(PRIM_WIDE_GET_LOCALE, call->get(1)->copy());
+
+        VarSymbol* tmpLocale = newTemp(localeID->typeInfo());
         VarSymbol* tmpBool = newTemp(dtBool);
-        call->insertBefore(new DefExpr(tmpNode));
-        call->insertBefore(new DefExpr(tmpLoc));
+        call->insertBefore(new DefExpr(tmpLocale));
         call->insertBefore(new DefExpr(tmpBool));
-        call->insertBefore(new CallExpr(PRIM_MOVE, tmpNode, nodeID));
-        call->insertBefore(new CallExpr(PRIM_MOVE, tmpLoc, localeID));
+        call->insertBefore(new CallExpr(PRIM_MOVE, tmpLocale, localeID));
         call->insertBefore(new CallExpr(PRIM_MOVE, tmpBool,
-                                        new CallExpr(PRIM_EQUAL, tmpNode, tmpLoc)));
+                                        new CallExpr(PRIM_IS_HERE, tmpLocale)));
         call->insertBefore(new CondStmt(new SymExpr(tmpBool), lblock, rblock));
+
+        // When the locale IDs agree, we call the on function directly.
+        CallExpr* directCall = call->copy();
+        // In which case, we first remove the unneeded locale arg.
+        directCall->get(1)->remove();
+        lblock->insertAtHead(directCall);
+
+        // Otherwise, the on function is called normally.
         rblock->insertAtHead(call->remove());
       }
+      // Bundling only affects the original call -- 
+      // the one in rblock if the above conditional fires.
       bundleArgs(call);
     }
   }
@@ -1072,6 +1106,7 @@ static Expr* peelLocaleLookup(Expr* onExpr,
 
   return NULL;
 }
+
 
 ClassType* wideStringType = NULL;
 

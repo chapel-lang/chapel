@@ -121,7 +121,7 @@ void normalize(void) {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->hasFlag(FLAG_DESTRUCTOR)) {
       if (fn->formals.length < 2
-          || toDefExpr(fn->formals.get(1))->sym->typeInfo() != gMethodToken->typeInfo()) {
+          || fn->getFormal(1)->typeInfo() != gMethodToken->typeInfo()) {
         USR_FATAL(fn, "destructors must be methods");
       } else if (fn->formals.length > 2) {
         USR_FATAL(fn, "destructors must not have arguments");
@@ -139,7 +139,7 @@ void normalize(void) {
     // make sure methods don't attempt to overload operators
     else if (!isalpha(*fn->name) && *fn->name != '_'
              && fn->formals.length > 1
-             && toDefExpr(fn->formals.get(1))->sym->typeInfo() == gMethodToken->typeInfo()) {
+             && fn->getFormal(1)->typeInfo() == gMethodToken->typeInfo()) {
       USR_FATAL(fn, "invalid method name");
     }
   }
