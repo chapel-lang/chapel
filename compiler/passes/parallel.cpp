@@ -13,8 +13,8 @@
 #include "driver.h"
 #include "files.h"
 
-static void collapseLocaleLookups();
-static Expr* peelLocaleLookup(Expr* onExpr, Map<Symbol*, Vec<SymExpr*>*>& defMap);
+//static void collapseLocaleLookups();
+//static Expr* peelLocaleLookup(Expr* onExpr, Map<Symbol*, Vec<SymExpr*>*>& defMap);
 static void insertEndCounts();
 static void optimizeLocalOns(Vec<FnSymbol*>& nestedFunctions);
 static void create_block_fn_wrapper(CallExpr* fcall, ClassType* ctype, VarSymbol* tempc);
@@ -54,7 +54,7 @@ bundleArgs(CallExpr* fcall) {
   new_c->addFlag(FLAG_NO_WIDE_CLASS);
 
   // add the function args as fields in the class
-  int i = 1;	// Fields are numbered from one for uniqueness.
+  int i = 0;	// Fields are numbered for uniqueness.
   for_actuals(arg, fcall) {
     SymExpr *s = toSymExpr(arg);
     Symbol  *var = s->var; // arg or var
@@ -903,7 +903,7 @@ static void createNestedFunctions(Vec<FnSymbol*>& nestedFunctions)
 void
 parallel(void) {
   // This pass must occur after resolution and before flattenNestedFunctions().
-  collapseLocaleLookups();
+//  collapseLocaleLookups();
 
   // convert begin/cobegin/coforall/on blocks into nested functions and flatten
   Vec<FnSymbol*> nestedFunctions;
@@ -959,9 +959,68 @@ static void insertEndCounts()
 }
 
 
+// The destination locale expression (onExpr) for an on clause has one of two forms:
+// (1) onExpr = (chpl_on_locale_num x)
+// (2) tmpLocID = (_wide_get_locale x)
+//     onExpr = ("chpl_localeID_to_locale" tmpLocID)
+// depending on whether the original x is of type localeID or is just a wide pointer.
+//
+// We want to inspect the destination locale ID without having to execute 
+// PRIM_WIDE_GET_LOCALE a second time.  So we just extract the argument to the expected
+// chpl_localeID_to_locale call and return it.
+static Expr* findDestinationLocaleID(CallExpr* onBlockCall)
+{
+  // The definition of the on expression should live within the parent of the call.
+  BlockStmt* parentBlock = toBlockStmt(onBlockCall->parentExpr);
+  Map<Symbol*, Vec<SymExpr*>*> defMap;
+  Map<Symbol*, Vec<SymExpr*>*> useMap;
+  buildDefUseMaps(parentBlock, defMap, useMap);
+
+  // The first argument of an on block call is the locale ID or object passed to the on statement.
+  Expr* onExpr = onBlockCall->get(1);
+  INT_ASSERT_AND_RETURN_NULL(onExpr);
+  // Assume that the on expression is a temp.
+  SymExpr* locTemp = toSymExpr(onExpr);
+  INT_ASSERT_AND_RETURN_NULL(locTemp);
+
+  // Extract its definition.
+  Expr* locDef = defMap.get(locTemp->var)->only()->parentExpr;
+  INT_ASSERT_AND_RETURN_NULL(locDef);
+  CallExpr* toLocMove = toCallExpr(locDef);
+  INT_ASSERT(toLocMove->isPrimitive(PRIM_MOVE));
+  // This is somewhat fragile, because other substitutions could have been made.
+  CallExpr* toLocCall = toCallExpr(toLocMove->get(2));
+  INT_ASSERT_AND_RETURN_NULL(toLocCall);
+
+// toLocCall should be a call to chpl_localeID_to_locale or the chpl_on_locale_num primitive.
+  Expr* locID = NULL;
+  // Try the later.
+  if (toLocCall->isPrimitive(PRIM_ON_LOCALE_NUM))
+    locID = toLocCall->get(1);
+  else
+  {
+    // Try the former.
+    FnSymbol* locFn = toLocCall->isResolved();
+    if (!strcmp(locFn->name, "chpl_localeID_to_locale"))
+      locID = toLocCall->get(1);
+  }
+
+  INT_ASSERT_AND_RETURN_NULL(locID);
+  INT_ASSERT_AND_RETURN_NULL(locID->typeInfo() == dtLocaleID);
+  return locID;
+}
+
+
+// TODO: This function needs to be renamed.
+// The optimization affects only on blocks, and other block types are handled.
+// The main point is to bundle args.
 static void optimizeLocalOns(Vec<FnSymbol*>& nestedFunctions)
 {
   forv_Vec(FnSymbol, fn, nestedFunctions) {
+    // We assume that there is a one-to-one relation between nested function callers and callees.
+    // We make use of this assumption in create_block_fn_wrapper, to removed the first argument
+    // of a called on_fn().
+    INT_ASSERT(fn->calledBy->n == 1);
     forv_Vec(CallExpr, call, *fn->calledBy) {
 
       SET_LINENO(call);
@@ -984,12 +1043,7 @@ static void optimizeLocalOns(Vec<FnSymbol*>& nestedFunctions)
         INT_ASSERT(call->get(1));
 
         // Extract the destination locale ID for on blocks
-        Expr* localeID = NULL;
-        if (call->get(1)->typeInfo() == dtLocaleID)
-          localeID = call->get(1)->copy();
-        else
-          localeID = new CallExpr(PRIM_WIDE_GET_LOCALE, call->get(1)->copy());
-
+        Expr* localeID = findDestinationLocaleID(call)->copy();
         VarSymbol* tmpLocale = newTemp(localeID->typeInfo());
         VarSymbol* tmpBool = newTemp(dtBool);
         call->insertBefore(new DefExpr(tmpLocale));
@@ -1016,6 +1070,7 @@ static void optimizeLocalOns(Vec<FnSymbol*>& nestedFunctions)
 }
 
 
+#if 0
 // When "on" statements are built, the "on" expression x is automatically wrapped
 // so it becomes:
 //  on_expr = chpl_localeID_to_locale(__primitive("_wide_get_locale", x))
@@ -1079,7 +1134,7 @@ static Expr* peelLocaleLookup(Expr* onExpr,
   CallExpr* toLocCall = toCallExpr(toLocMove->get(2));
   INT_ASSERT_AND_RETURN_NULL(toLocCall);
 
-  // Assume either prim_on_locale_num or chpl_localeID_to_locale.
+  // Assume either chpl_on_locale_num or chpl_localeID_to_locale.
   if (toLocCall->isPrimitive(PRIM_ON_LOCALE_NUM))
     return NULL;
   FnSymbol* locFn = toLocCall->isResolved();
@@ -1106,7 +1161,7 @@ static Expr* peelLocaleLookup(Expr* onExpr,
 
   return NULL;
 }
-
+#endif
 
 ClassType* wideStringType = NULL;
 

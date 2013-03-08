@@ -137,9 +137,12 @@ module DefaultArchitecture {
 
       // We cannot use a forall here because the default leader iterator will
       // access 'Locales' and 'here', which are not yet initialized.
-      for locIdx in myLocaleSpace do
+      for locIdx in myLocaleSpace 
+      {
         // Would like to call addChild here, but for some reason it does not work. <hilde>
-        on __primitive("chpl_on_locale_num", locIdx)
+        var locID : chpl_localeID_t;
+        locID.node = __primitive("cast", c_nodeid_t, locIdx);
+        on __primitive("chpl_on_locale_num", locID)
         {
           const node = new DefaultNode(this);
 
@@ -150,7 +153,7 @@ module DefaultArchitecture {
           myLocales[locIdx] = node;
           numCores += node.numCores;
         }
-
+      }
       doneCreatingLocales = true;
 
       // Sanity check.

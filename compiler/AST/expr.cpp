@@ -29,7 +29,7 @@ static GenRet codegenRlocale(GenRet wide);
 static GenRet codegenRnode(GenRet wide);
 //static GenRet codegenRsubloc(GenRet wide);
 
-static GenRet codegenZero();
+//static GenRet codegenZero();
 static GenRet codegenOne();
 
 
@@ -585,6 +585,7 @@ GenRet codegenGetLocaleID(void)
   return ret;
 }
 
+#if 0
 static
 GenRet codegenLocaleID(GenRet node, GenRet subloc)
 {
@@ -614,6 +615,7 @@ GenRet codegenLocaleID(GenRet node, GenRet subloc)
   ret.chplType = LOCALE_ID_TYPE;
   return ret;
 }
+#endif
 
 static
 GenRet codegenUseGlobal(std::string str)
@@ -2055,11 +2057,13 @@ GenRet codegenBasicPrimitiveExpr(CallExpr* call) {
   return codegenCallExpr(call->primitive->name, args);
 }
 
+#if 0
 static
 GenRet codegenZero()
 {
   return new_IntSymbol(0, INT_SIZE_64)->codegen();
 }
+#endif
 
 static
 GenRet codegenOne()
@@ -3037,24 +3041,19 @@ GenRet CallExpr::codegen() {
         }
         if (call->isPrimitive(PRIM_ON_LOCALE_NUM))
         {
-          // This primitive has two forms:
-          // The form taking just one argument sets the subloc ID to zero.
-          // The form taking two arguments sets the node ID and subloc ID.
-          GenRet subloc;
-          if (call->numActuals() < 2)
-            subloc = codegenZero();
-          else
-            subloc = codegenValue(call->get(2));
+          // This primitive expects an argument of type chpl_localeID_t.
+          INT_ASSERT(call->get(1)->typeInfo() == dtLocaleID);
 
-          // Create a wide pointer with the given locale ID.
-          // The addr portion of the wide pointer is NULL.
-          GenRet locID = codegenLocaleID(codegenValue(call->get(1)), subloc);
           GenRet addr = codegenNullPointer();
-
           GenRet tmp;
           Type* lhsType = get(1)->typeInfo();
           if (lhsType->symbol->hasFlag(FLAG_WIDE_CLASS))
+          {
+            // Create a wide pointer with the given locale ID.
+            // The addr portion of the wide pointer is NULL.
+            GenRet locID = codegenValue(call->get(1));
             tmp = codegenAddrOf(codegenWideAddr(locID, addr, lhsType));
+          }
           else
             tmp = addr;
 
