@@ -6,24 +6,24 @@
 
 #include "trace.h"
 
-#define FULL_TRACE false
+#define FULL_TRACE true
 
-#define PRINT_INDENT for (int i = traceIndentLevel; i-- > 0;) printf("\t");
+#define PRINT_INDENT for (int i = traceIndentLevel; --i >= 0;) printf("\t");
 
-static unsigned int traceIndentLevel  = 0;
-static bool         tracingTargetFn   = false;
-static const char*  targetFnName      = "==";
+static unsigned int traceIndentLevel    = 0;
+static bool         tracingTarget       = false;
+static const char*  targetContextName   = "==";
 
-static Vec<FnSymbol*> traceStack;
+static Vec<Symbol*> traceStack;
 
-FnSymbol* currentTraceFn = NULL;
+Symbol* currentTraceContext = NULL;
 
 void trace(bool tag, const char* str, ...) {
   va_list fmt_args;
   
   if (not tag) return;
   
-  if (FULL_TRACE or tracingTargetFn) {
+  if (FULL_TRACE or tracingTarget) {
     
     PRINT_INDENT;
     
@@ -31,60 +31,78 @@ void trace(bool tag, const char* str, ...) {
     vprintf(str, fmt_args);
     printf("\n");
     va_end(fmt_args);
+    
+    fflush(stdout);
   }
 }
 
-void trace_enter(bool tag, FnSymbol* fn, const char* msg) {
+void trace_enter(bool tag, Symbol* sym, const char* msg, ...) {
   const char* fileName;
+  
+  va_list fmt_args;
   
   if (not tag) return;
   
   if (FULL_TRACE or
-      tracingTargetFn or
-      (tracingTargetFn = (strcmp(fn->name, targetFnName) == 0))) {
+      tracingTarget or
+      (tracingTarget = (strcmp(sym->name, targetContextName) == 0))) {
     
-    if (currentTraceFn != NULL) traceStack.add(currentTraceFn);
-    currentTraceFn = fn;
+    if (currentTraceContext != NULL) traceStack.add(currentTraceContext);
+    currentTraceContext = sym;
     
-    fileName = fn->astloc.filename == NULL ? NULL : fn->astloc.filename + STDLIB_STR_OFFSET;
+    fileName = sym->astloc.filename == NULL ? NULL : sym->astloc.filename + STDLIB_STR_OFFSET;
     
-    PRINT_INDENT;
-    printf("%s: %s (%s : %d)\n", msg, fn->name, fileName, fn->astloc.lineno);
+    if (msg != NULL) {
+      PRINT_INDENT;
+      
+      va_start(fmt_args, msg);
+      vprintf(msg, fmt_args);
+      printf(": %s (%s : %d)\n", sym->name, fileName, sym->astloc.lineno);
+      va_end(fmt_args);
+      
+      fflush(stdout);
+    }
     
     ++traceIndentLevel;
   }
 }
 
 void trace_flags(bool tag) {
-  if (tag and (FULL_TRACE or tracingTargetFn)) {
-    viewFlags(currentTraceFn);
+  if (tag and (FULL_TRACE or tracingTarget)) {
+    viewFlags(currentTraceContext);
+    
+    fflush(stdout);
   }
 }
 
-void trace_leave(bool tag, const char* str, ...) {
+void trace_leave(bool tag, const char* msg, ...) {
   va_list fmt_args;
   
   if (not tag) return;
   
-  if (FULL_TRACE or tracingTargetFn) {
-    if (str != NULL) {
+  if (FULL_TRACE or tracingTarget) {
+    if (msg != NULL) {
       PRINT_INDENT;
       
-      va_start(fmt_args, str);
-      vprintf(str, fmt_args);
+      va_start(fmt_args, msg);
+      vprintf(msg, fmt_args);
       printf("\n\n");
       va_end(fmt_args);
+      
+      fflush(stdout);
     }
     
     --traceIndentLevel;
     
-    tracingTargetFn = not (tracingTargetFn and traceIndentLevel == 0 and strcmp(currentTraceFn->name, targetFnName) == 0);
-    currentTraceFn  = traceStack.pop();
+    tracingTarget        = not (tracingTarget and traceIndentLevel == 0 and strcmp(currentTraceContext->name, targetContextName) == 0);
+    currentTraceContext  = traceStack.pop();
   }
 }
 
 void trace_vcf(bool tag) {
-  if (tag and (FULL_TRACE or tracingTargetFn)) {
-    print_view(currentTraceFn);
+  if (tag and (FULL_TRACE or tracingTarget)) {
+    print_view(currentTraceContext);
+    
+    fflush(stdout);
   }
 }

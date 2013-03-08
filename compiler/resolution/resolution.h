@@ -10,6 +10,8 @@ extern Map<Type*,FnSymbol*> autoDestroyMap; // type to chpl__autoDestroy functio
 extern Map<FnSymbol*,FnSymbol*> iteratorLeaderMap;
 extern Map<FnSymbol*,FnSymbol*> iteratorFollowerMap;
 
+extern Vec<FnSymbol*> whereStack;
+
 FnSymbol* requiresImplicitDestroy(CallExpr* call);
 
 bool isDispatchParent(Type* t, Type* pt);

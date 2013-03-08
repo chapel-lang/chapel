@@ -16,7 +16,7 @@
 static int explainInstantiationLine = -2;
 static ModuleSymbol* explainInstantiationModule = NULL;
 
-static Vec<FnSymbol*> whereStack;
+Vec<FnSymbol*> whereStack;
 
 
 static void
