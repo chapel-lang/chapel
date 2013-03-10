@@ -3627,7 +3627,7 @@ GenRet CallExpr::codegen() {
       } else {
         error = "cannot access remote data in local block";
       }
-      codegenCall("chpl_test_local", codegenRnode(get(1)), get(2), get(3), error); 
+      codegenCall("chpl_check_local", codegenRnode(get(1)), get(2), get(3), error); 
       break; }
     case PRIM_SYNC_INIT:
     case PRIM_SYNC_DESTROY:{

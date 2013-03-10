@@ -81,9 +81,9 @@ bool chpl_is_node_local(int32_t node)
 // If not, format the given error message with the given filename and line number
 // and then halt the current task.  (The exact behavior is dictated by chpl_error()).
 static ___always_inline
-void chpl_test_local(int32_t node, int32_t ln, const char* file, const char* error)
+void chpl_check_local(int32_t node, int32_t ln, const char* file, const char* error)
 {
-  if (chpl_is_node_local(node))
+  if (! chpl_is_node_local(node))
     chpl_error(error, ln, file);
 }
 

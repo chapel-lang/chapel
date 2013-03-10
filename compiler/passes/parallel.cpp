@@ -35,6 +35,7 @@ static void derefWideStringActuals();
 static void derefWideRefsToWideClasses();
 static void widenGetPrivClass();
 static void moveAddressSourcesToTemp(void);
+static CallExpr* findLocaleLookup(CallExpr* fcall);
 
 // Package args into a class and call a wrapper function with that
 // object. The wrapper function will then call the function
@@ -74,7 +75,7 @@ bundleArgs(CallExpr* fcall) {
   fcall->insertBefore( new CallExpr( PRIM_MOVE,
                                      tempc,
                                      tempc_alloc));
-  
+
   // set the references in the class instance
   i = 1;
   for_actuals(arg, fcall) {
@@ -158,6 +159,7 @@ static void create_block_fn_wrapper(CallExpr* fcall, ClassType* ctype, VarSymbol
     DefExpr* localeArg = toDefExpr(fn->formals.get(1)->remove());
     wrap_fn->insertFormalAtTail(localeArg);
   }
+
 
   ArgSymbol *wrap_c = new ArgSymbol( INTENT_BLANK, "c", ctype);
   wrap_fn->insertFormalAtTail(wrap_c);
@@ -959,16 +961,10 @@ static void insertEndCounts()
 }
 
 
-// The destination locale expression (onExpr) for an on clause has one of two forms:
-// (1) onExpr = (chpl_on_locale_num x)
-// (2) tmpLocID = (_wide_get_locale x)
-//     onExpr = ("chpl_localeID_to_locale" tmpLocID)
-// depending on whether the original x is of type localeID or is just a wide pointer.
-//
-// We want to inspect the destination locale ID without having to execute 
-// PRIM_WIDE_GET_LOCALE a second time.  So we just extract the argument to the expected
-// chpl_localeID_to_locale call and return it.
-static Expr* findDestinationLocaleID(CallExpr* onBlockCall)
+// Given the call to a nested on block, find the definition of the first argument
+// (carrying the locale pointer) in the context and return the containing move primitive.
+// depth -- tells how many additional levels to go up to find the context.
+static CallExpr* findLocaleLookup(CallExpr* onBlockCall)
 {
   // The definition of the on expression should live within the parent of the call.
   BlockStmt* parentBlock = toBlockStmt(onBlockCall->parentExpr);
@@ -988,6 +984,22 @@ static Expr* findDestinationLocaleID(CallExpr* onBlockCall)
   INT_ASSERT_AND_RETURN_NULL(locDef);
   CallExpr* toLocMove = toCallExpr(locDef);
   INT_ASSERT(toLocMove->isPrimitive(PRIM_MOVE));
+
+  return toLocMove;
+}
+
+
+// The destination locale expression (onExpr) for an on clause has one of two forms:
+// (1) onExpr = (chpl_on_locale_num x)
+// (2) tmpLocID = (_wide_get_locale x)
+//     onExpr = ("chpl_localeID_to_locale" tmpLocID)
+// depending on whether the original x is of type localeID or is just a wide pointer.
+//
+// We want to inspect the destination locale ID without having to execute 
+// PRIM_WIDE_GET_LOCALE a second time.  So we just extract the argument to the expected
+// chpl_localeID_to_locale call and return it.
+static Expr* findDestinationLocaleID(CallExpr* toLocMove)
+{
   // This is somewhat fragile, because other substitutions could have been made.
   CallExpr* toLocCall = toCallExpr(toLocMove->get(2));
   INT_ASSERT_AND_RETURN_NULL(toLocCall);
@@ -1011,9 +1023,9 @@ static Expr* findDestinationLocaleID(CallExpr* onBlockCall)
 }
 
 
-// TODO: This function needs to be renamed.
+// TODO: This function needs to be factored and renamed.
 // The optimization affects only on blocks, and other block types are handled.
-// The main point is to bundle args.
+// Its main purpose is to bundle args.
 static void optimizeLocalOns(Vec<FnSymbol*>& nestedFunctions)
 {
   forv_Vec(FnSymbol, fn, nestedFunctions) {
@@ -1043,7 +1055,8 @@ static void optimizeLocalOns(Vec<FnSymbol*>& nestedFunctions)
         INT_ASSERT(call->get(1));
 
         // Extract the destination locale ID for on blocks
-        Expr* localeID = findDestinationLocaleID(call)->copy();
+        CallExpr* localeLookup = findLocaleLookup(call);
+        Expr* localeID = findDestinationLocaleID(localeLookup)->copy();
         VarSymbol* tmpLocale = newTemp(localeID->typeInfo());
         VarSymbol* tmpBool = newTemp(dtBool);
         call->insertBefore(new DefExpr(tmpLocale));
@@ -1061,6 +1074,10 @@ static void optimizeLocalOns(Vec<FnSymbol*>& nestedFunctions)
 
         // Otherwise, the on function is called normally.
         rblock->insertAtHead(call->remove());
+
+        // Optmization: Move locale lookup into the "else" branch.
+        // We are already on the right locale if we take the "if" branch.
+        call->insertBefore(localeLookup->remove());
       }
       // Bundling only affects the original call -- 
       // the one in rblock if the above conditional fires.
