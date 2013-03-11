@@ -44,11 +44,11 @@ if doVerboseComm then stopVerboseComm();
 stopCommDiagnostics();
 writeln(getCommDiagnostics());
 
-writeln("Dom2D64");
+writeln("Dom2D32");
 resetCommDiagnostics();
 startCommDiagnostics();
 if doVerboseComm then startVerboseComm();
-alloc_array(Dom2D64);
+alloc_array(Dom2D32);
 if doVerboseComm then stopVerboseComm();
 stopCommDiagnostics();
 writeln(getCommDiagnostics());

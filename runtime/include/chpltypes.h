@@ -8,6 +8,25 @@
 #include <stdlib.h>
 #include <sys/time.h> // for struct timeval
 
+// C types usable from Chapel.
+typedef char c_char;
+typedef signed char c_schar;
+typedef unsigned char c_uchar;
+typedef short c_short;
+typedef unsigned short c_ushort;
+typedef int c_int;
+typedef unsigned int c_uint;
+typedef long c_long;
+typedef unsigned long c_ulong;
+typedef long long c_longlong;
+typedef unsigned long long c_ulonglong;
+typedef float c_float;
+typedef double c_double;
+typedef void* c_ptr;
+#define c_nil NULL
+static inline c_int is_c_nil(void* x) { return x==NULL; }
+
+
 typedef enum {
   CHPL_TYPE_chpl_bool,
   CHPL_TYPE_chpl_bool8,
@@ -155,7 +174,7 @@ int8_t ascii(chpl_string s) {
   return (int8_t) *s;
 }
 
-struct __chpl____wide_chpl_string;
+struct chpl_chpl____wide_chpl_string_s;
 
 //
 // stopgap formatting
@@ -167,9 +186,9 @@ char* chpl_glom_strings(int numstrings, ...);
 
 chpl_bool string_contains(chpl_string x, chpl_string y);
 chpl_string string_copy(chpl_string x, int32_t lineno, chpl_string filename);
-chpl_string chpl_wide_string_copy(struct __chpl____wide_chpl_string* x, int32_t lineno, chpl_string filename);
-void chpl_string_widen(struct __chpl____wide_chpl_string* x, chpl_string from);
-void chpl_comm_wide_get_string(chpl_string* local, struct __chpl____wide_chpl_string* x, int32_t tid, int32_t lineno, chpl_string filename);
+chpl_string chpl_wide_string_copy(struct chpl_chpl____wide_chpl_string_s* x, int32_t lineno, chpl_string filename);
+void chpl_string_widen(struct chpl_chpl____wide_chpl_string_s* x, chpl_string from);
+void chpl_comm_wide_get_string(chpl_string* local, struct chpl_chpl____wide_chpl_string_s* x, int32_t tid, int32_t lineno, chpl_string filename);
 chpl_string string_concat(chpl_string x, chpl_string y, int32_t lineno, chpl_string filename);
 chpl_string string_index(chpl_string x, int i, int32_t lineno, chpl_string filename);
 chpl_string string_select(chpl_string x, int low, int high, int32_t lineno, chpl_string filename);
@@ -181,5 +200,13 @@ int64_t real2int( _real64 f);       // return the raw bytes of the float
 int64_t object2int( _chpl_object o);  // return the ptr
 
 typedef int32_t chpl__class_id;
+
+typedef struct chpl_main_argument_s {
+  int64_t argc;
+  const char **argv;
+  int32_t return_value;
+} chpl_main_argument;
+
+const char* chpl_get_argument_i(chpl_main_argument* args, int32_t i);
 
 #endif

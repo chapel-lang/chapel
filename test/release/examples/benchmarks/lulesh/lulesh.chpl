@@ -38,13 +38,45 @@ use Time,       // to get timing routines for benchmarking
 
 use luleshInit;   // initialization code for data set
 
-/* The 'useBlockDist' configuration parameter says whether or not to
-   block-distribute the arrays.  The default depends on the setting of
-   CHPL_COMM and can be overridden on the compiler command-line using
-   -suseBlockDist=[true|false] */
+/* The configuration parameters for lulesh.  These can be set on the
+   compiler command line using -s<paramName>=<value>.  For example,
 
-config param useBlockDist = (CHPL_COMM != "none"),  // block-distribute arrays?
-             printWarnings = true;                  // print warnings?
+     chpl -suseBlockDist=true
+
+   useBlockDist : says whether or not to block-distribute the arrays.
+                  The default is based on the value of CHPL_COMM, as
+                  an indication of whether this is a single- or multi-
+                  locale execution.
+
+   use3DRepresentation : indicates whether the element node arrays
+                         should be stored using a 3D representation
+                         (limiting the execution to cube inputs) or
+                         the more general 1D representation (supporting
+                         arbitrary data sets).
+
+   useSparseMaterials : indicates whether sparse domains/arrays should be
+                        used to represent the materials.  Sparse domains
+                        are more realistic in that they permit an arbitrary
+                        subset of the problem space to store a material.
+                        Dense domains are sufficient for LULESH since there's
+                        an assumption that the material spans all cells.
+
+   printWarnings : prints performance-oriented warnings to prevent
+                   surprises.
+*/
+   
+config param useBlockDist = (CHPL_COMM != "none"),
+             use3DRepresentation = false,
+             useSparseMaterials = true,
+             printWarnings = true;
+
+
+//
+// Sanity check to ensure that input files aren't used with the 3D
+// representation
+//
+if (use3DRepresentation && (luleshInit.filename != "")) then
+  halt("The 3D representation does not support reading input from files");
 
 
 /* Configuration constants: Override defaults on executable's command-line */
@@ -92,8 +124,12 @@ const (numElems, numNodes) = initProblemSize();
 
 /* Declare abstract problem domains */
 
-const ElemSpace = {0..#numElems},
-      NodeSpace = {0..#numNodes};
+const ElemSpace = if use3DRepresentation
+                    then {0..#elemsPerEdge, 0..#elemsPerEdge, 0..#elemsPerEdge}
+                    else {0..#numElems},
+      NodeSpace = if use3DRepresentation
+                    then {0..#nodesPerEdge, 0..#nodesPerEdge, 0..#nodesPerEdge}
+                    else {0..#numNodes};
 
 
 /* Declare the (potentially distributed) problem domains */
@@ -103,13 +139,11 @@ const Elems = if useBlockDist then ElemSpace dmapped Block(ElemSpace)
       Nodes = if useBlockDist then NodeSpace dmapped Block(NodeSpace)
                               else NodeSpace;
 
-                              
+
 /* The coordinates */
 
 var x, y, z: [Nodes] real;
                               
-
-
 
 /* The number of nodes per element.  In a rank-independent version,
    this could be written 2**rank */
@@ -173,14 +207,12 @@ config const stoptime = 1.0e-2,      /* end time for simulation */
 
 /* The list of material elements */
 
-config param sparseMaterials = true;
-
-const MatElems: MatElemsType = if sparseMaterials then enumerateMatElems()
-                                                  else Elems;
+const MatElems: MatElemsType = if useSparseMaterials then enumerateMatElems()
+                                                     else Elems;
 
 
 proc MatElemsType type {
-  if sparseMaterials {
+  if useSparseMaterials {
     if (printWarnings && useBlockDist && numLocales > 1) then
       writeln("WARNING: The LULESH Material Elements (MatElems) are not yet\n",
               "         distributed, so result in excessive memory use on,\n",

@@ -39,11 +39,11 @@
 #define ___always_inline inline
 #endif
 
-#ifdef __MTA__
+//#ifdef __MTA__
 // MTA defines WCHAR_MAX in stdint and wchar,
 // but avoids it if wchar is included before stdint.
-#include <wchar.h>
-#endif
+//#include <wchar.h>
+//#endif
 
 // Ask a C++ compiler if it would please include e.g. INT64_MAX
 #define __STDC_CONSTANT_MACROS
@@ -56,73 +56,9 @@
 #include <stdint.h>
 #include <limits.h>
 
-typedef char c_char;
-typedef signed char c_schar;
-typedef unsigned char c_uchar;
-typedef short c_short;
-typedef unsigned short c_ushort;
-typedef int c_int;
-typedef unsigned int c_uint;
-typedef long c_long;
-typedef unsigned long c_ulong;
-typedef long long c_longlong;
-typedef unsigned long long c_ulonglong;
-typedef float c_float;
-typedef double c_double;
-typedef void* c_ptr;
-typedef int err_t;
-typedef err_t syserr;
-typedef int fd_t;
-typedef FILE* c_file;
-
-
-static inline c_file chpl_cstdin(void) { return stdin; }
-static inline c_file chpl_cstdout(void) { return stdout; }
-static inline c_file chpl_cstderr(void) { return stderr; }
-
-#define c_nil NULL
-
-enum { EXTEND_ERROR_OFFSET = 1000 };
-enum { GAI_ERROR_OFFSET = (EXTEND_ERROR_OFFSET+10000) };
-
-static inline int chpl_err_eq(err_t a, err_t b) { return a == b; }
-static inline int32_t chpl_err_to_int(err_t a) { return a; }
-static inline err_t chpl_int_to_err(int32_t a) { return a; }
-
-
-// EEOF 
-#ifndef EEOF
-#define EEOF (EXTEND_ERROR_OFFSET+0)
-#endif
-static inline int chpl_macro_int_EEOF(void) { return EEOF; }
-
-#ifndef ESHORT
-#define ESHORT (EXTEND_ERROR_OFFSET+1)
-#endif
-static inline int chpl_macro_int_ESHORT(void) { return ESHORT; }
-
-#ifndef EFORMAT
-#define EFORMAT (EXTEND_ERROR_OFFSET+2)
-#endif
-static inline int chpl_macro_int_EFORMAT(void) { return EFORMAT; }
-
-// Make sure we have an EILSEQ (missing on XMT)
-#ifndef EILSEQ
-#define EILSEQ (EXTEND_ERROR_OFFSET+3)
-#endif
-
-// Make sure we have EOVERFLOW (missing on XMT)
-#ifndef EOVERFLOW
-#define EOVERFLOW (EXTEND_ERROR_OFFSET+4)
-#endif
-
-#define EXTEND_ERROR_NUM 5
-
 #define PTR_ADDBYTES(ptr,nbytes) ((void*) ( ((unsigned char*)ptr) + nbytes))
 
 #define PTR_DIFFBYTES(end_ptr,start_ptr) (((unsigned char*)end_ptr) - ((unsigned char*)start_ptr))
-
-static inline c_int is_c_nil(void* x) { return x==NULL; }
 
 // Define LLONG_MAX, ULLONG_MAX if it doesn't exist (should be in limits.h)
 // This is needed for XMT.

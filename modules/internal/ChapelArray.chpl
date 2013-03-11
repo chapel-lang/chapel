@@ -205,7 +205,15 @@ module ChapelArray {
    * NOTE:  It would be nice to define a second, less specific, function
    *        to handle the case of multiple types, however this is not 
    *        possible atm due to using var args with a query type. */
+  config param CHPL_WARN_DOMAIN_LITERAL = "unset";
   proc chpl__buildArrayLiteral( elems:?t ...?k ){
+
+    if CHPL_WARN_DOMAIN_LITERAL == "true" && chpl__isRange(elems(1)) {
+      compilerWarning("Encountered an array literal with range element(s).",
+                      " Did you mean a domain literal here?",
+                      " If so, use {...} instead of [...]."); 
+    }
+
     type elemType = elems(1).type;
     var A : [1..k] elemType;  //This is unfortunate, can't use t here...
   
@@ -236,15 +244,6 @@ module ChapelArray {
    *       Had to copy and paste the body of the function to obtain proper 
    *       behavior.  */
   proc chpl__buildArrayLiteralWarn( elems:?t ...?k ){
-  
-    if chpl__isRange(elems(1)) {
-      compilerWarning("Encountered an array literal with range element(s).",
-                      " Did you mean a domain literal here?",
-                      " If so, use {...} instead of [...].",
-                      " This warning can be disabled by using the",
-                      " --no-warn-domain-literal compiler option." ); 
-    }
-  
     type elemType = elems(1).type;
     var A : [1..k] elemType;  //This is unfortunate, can't use t here...
   
@@ -322,7 +321,7 @@ module ChapelArray {
     return chpl__convertValueToRuntimeType(dom);
   
   //
-  // Support for domain expressions, e.g., [1..3, 1..3]
+  // Support for domain expressions, e.g., {1..3, 1..3}
   //
   proc chpl__buildDomainExpr(x: domain)
     return x;
@@ -360,7 +359,7 @@ module ChapelArray {
   }
   
   //
-  // Support for distributed domain expression, e.g., [1..3, 1..3] distributed Dist
+  // Support for distributed domain expression e.g. {1..3, 1..3} dmapped Dist()
   //
   proc chpl__distributed(d: _distribution, dom: domain) {
     if isRectangularDom(dom) {
@@ -385,8 +384,16 @@ module ChapelArray {
     var dom: domainType;
     return isSparseDom(dom);
   }
+
+  proc isDomainType(type t) param {
+    var x: t;
+    return chpl__isDomain(x);
+  }
   
   proc chpl__distributed(d: _distribution, type domainType) type {
+    if !isDomainType(domainType) then
+      compilerError("cannot apply 'dmapped' to the non-domain type ",
+                    typeToString(domainType));
     if chpl__isRectangularDomType(domainType) {
       var dom: domainType;
       return chpl__buildDomainRuntimeType(d, dom._value.rank, dom._value.idxType,
@@ -956,8 +963,19 @@ module ChapelArray {
       _value.dsiSerialRead(f);
     }
   
+    proc localSlice(r: range(?)... rank) where _value.type: DefaultRectangularDom {
+      if (_value.locale != here) then
+        halt("Attempting to take a local slice of a domain on locale ",
+             _value.locale.id, " from locale ", here.id);
+      return this((...r));
+    }
+  
     proc localSlice(r: range(?)... rank) {
       return _value.dsiLocalSlice(chpl__anyStridable(r), r);
+    }
+  
+    proc localSlice(d: domain) {
+      return localSlice((...d.getIndices()));
     }
   
     // associative array interface
@@ -1282,7 +1300,7 @@ module ChapelArray {
     }
   
     proc localSlice(d: domain) {
-      return localSlice(d.getIndices());
+      return localSlice((...d.getIndices()));
     }
   
     inline proc these() var {
@@ -1635,11 +1653,6 @@ module ChapelArray {
     if !a._value.doiCanBulkTransfer() then return false;
     if !b._value.doiCanBulkTransfer() then return false;
   
-    for param i in 1..a._value.rank {
-      // size must be the same in each dimension
-      if a._value.dom.dsiDim(i).length !=
-         b._value.dom.dsiDim(i).length then return false;
-    }
     return true;
   }
   
@@ -1653,22 +1666,36 @@ module ChapelArray {
     if !a._value.doiCanBulkTransferStride() then return false;
     if !b._value.doiCanBulkTransferStride() then return false;
     
-    for param i in 1..a._value.rank {
-      // size must be the same in each dimension
-      if a._value.dom.dsiDim(i).length !=
-         b._value.dom.dsiDim(i).length then return false;
-    }
     return true;
   }
   
-  proc chpl__useBulkTransfer(a: [], b) param return false;
+  proc checkArrayShapesUponAssignment(a: [], b: []) {
+    if isRectangularArr(a) && isRectangularArr(b) {
+      const aDims = a._value.dom.dsiDims(),
+            bDims = b._value.dom.dsiDims();
+      compilerAssert(aDims.size == bDims.size);
+      for param i in 1..aDims.size {
+        if aDims(i).length != bDims(i).length then
+          halt("assigning between arrays of different shapes in dimension ",
+               i, ": ", aDims(i).length, " vs. ", bDims(i).length);
+      }
+    } else {
+      // may not have dsiDims(), so can't check them as above
+      // todo: compilerError if one is rectangular and the other isn't?
+    }
+  }
   
   inline proc =(a: [], b) {
     if (chpl__isArray(b) || chpl__isDomain(b)) && a.rank != b.rank then
       compilerError("rank mismatch in array assignment");
     
     if chpl__isArray(b) && b._value == nil then
+      // This happens e.g. for 'new' on a record with an array field whose
+      // default initalizer is a forall expr. E.g. arrayInClassRecord.chpl.
       return a;
+
+    if boundsChecking && chpl__isArray(b) then
+      checkArrayShapesUponAssignment(a, b);
   
     // try bulk transfer
     if chpl__isArray(b) && !chpl__serializeAssignment(a, b) {
@@ -1689,8 +1716,9 @@ module ChapelArray {
         else a._value.doiBulkTransferStride(b);
         return a;
       }
-      //if debugDefaultDistBulkTransfer then
-      //  writeln("proc =(a:[],b): bulk transfer did not happen");
+      if debugBulkTransfer then
+        // just writeln() clashes with writeln.chpl
+        stdout.writeln("proc =(a:[],b): bulk transfer did not happen");
     }
   
     if (a.eltType == b.type ||
@@ -1788,7 +1816,7 @@ module ChapelArray {
   class _OpaqueIndex { }
   
   //
-  // Swap operators for arrays and domains
+  // Swap operator for arrays
   //
   inline proc <=>(x: [], y: []) {
     forall (a,b) in zip(x, y) do
@@ -1799,6 +1827,11 @@ module ChapelArray {
   // reshape function
   //
   proc reshape(A: [], D: domain) {
+    if !isRectangularDom(D) then
+      compilerError("reshape(A,D) is meaningful only when D is a rectangular domain; got D: ", typeToString(D.type));
+    if A.size != D.size then
+      halt("reshape(A,D) is invoked when A has ", A.size,
+           " elements, but D has ", D.size, " indices");
     var B: [D] A.eltType;
     for (i,a) in zip(D,A) do
       B(i) = a;
@@ -1879,12 +1912,12 @@ module ChapelArray {
   inline proc _getIteratorZip(x: _tuple) {
     inline proc _getIteratorZipInternal(x: _tuple, param dim: int) {
       if dim == x.size then
-        return tuple(_getIteratorZip(x(dim)));
+        return tuple(_getIterator(x(dim)));
       else
-        return (_getIteratorZip(x(dim)), (..._getIteratorZipInternal(x, dim+1)));
+        return (_getIterator(x(dim)), (..._getIteratorZipInternal(x, dim+1)));
     }
     if x.size == 1 then
-      return _getIteratorZip(x(1));
+      return _getIterator(x(1));
     else
       return _getIteratorZipInternal(x, 1);
   }
@@ -1924,7 +1957,7 @@ module ChapelArray {
     return _toLeader(x);
   
   inline proc _toLeaderZip(x: _tuple)
-    return _toLeaderZip(x(1));
+    return _toLeader(x(1));
   
   //
   // return true if any iterator supports fast followers
@@ -2018,18 +2051,17 @@ module ChapelArray {
   }
   
   inline proc _toFollowerZip(x: _tuple, leaderIndex) {
-    return _toFollowerZip(x, leaderIndex, 1);
+    return _toFollowerZipInternal(x, leaderIndex, 1);
   }
-  
-  inline proc _toFollowerZip(x: _tuple, leaderIndex, param dim: int) {
-    if dim == x.size-1 then
-      return (_toFollowerZip(x(dim), leaderIndex),
-              _toFollowerZip(x(dim+1), leaderIndex));
+
+  inline proc _toFollowerZipInternal(x: _tuple, leaderIndex, param dim: int) {
+    if dim == x.size then
+      return tuple(_toFollower(x(dim), leaderIndex));
     else
-      return (_toFollowerZip(x(dim), leaderIndex),
-              (..._toFollowerZip(x, leaderIndex, dim+1)));
+      return (_toFollower(x(dim), leaderIndex),
+              (..._toFollowerZipInternal(x, leaderIndex, dim+1)));
   }
-  
+
   pragma "no implicit copy"
   inline proc _toFastFollower(iterator: _iteratorClass, leaderIndex, fast: bool) {
     return chpl__autoCopy(__primitive("to follower", iterator, leaderIndex, true));

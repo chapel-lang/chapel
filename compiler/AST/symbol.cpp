@@ -509,11 +509,12 @@ void VarSymbol::codegenDefC() {
 
   if (type == dtVoid)
     return;
-  const char* _ifsuper = "";
-  if (this->hasFlag(FLAG_SUPER_CLASS))
-    _ifsuper = "_";
-  std::string str = _ifsuper + type->codegen().c + " " + cname;
-  if (ClassType* ct = toClassType(type)) {
+  ClassType* ct = toClassType(type);
+  std::string typestr =  (this->hasFlag(FLAG_SUPER_CLASS) ?
+                          std::string(ct->classStructName(true)) :
+                          type->codegen().c);
+  std::string str = typestr + " " + cname;
+  if (ct) {
     if (ct->classTag == CLASS_CLASS) {
       if (isFnSymbol(defPoint->parentSymbol)) {
         str += " = NULL";  
@@ -812,6 +813,12 @@ void TypeSymbol::codegenPrototype() {
 
 void TypeSymbol::codegenDef() {
   GenInfo *info = gGenInfo;
+
+  if( breakOnCodegenCname[0] &&
+      0 == strcmp(cname, breakOnCodegenCname) ) {
+    gdbShouldBreakHere();
+  }
+
   if (!hasFlag(FLAG_EXTERN)) {
     type->codegenDef();
   }
@@ -960,6 +967,7 @@ GenRet FnSymbol::codegenFunctionType(bool forHeader) {
   GenRet ret;
 
   ret.chplType = typeInfo();
+  INT_ASSERT(ret.chplType == dtUnknown); //just documenting the current state
 
   if( info->cfile ) {
     // Cast to right function type.
@@ -1068,6 +1076,11 @@ void FnSymbol::codegenPrototype() {
   if (hasFlag(FLAG_NO_PROTOTYPE)) return;
   if (hasFlag(FLAG_NO_CODEGEN)) return;
 
+  if( breakOnCodegenCname[0] &&
+      0 == strcmp(cname, breakOnCodegenCname) ) {
+    gdbShouldBreakHere();
+  }
+
   if( info->cfile ) {
     // In C, we don't need to generate prototypes for external
     // functions, since these prototypes will presumably be
@@ -1095,7 +1108,7 @@ void FnSymbol::codegenPrototype() {
 
     // Look for the function in the LayeredValueTable
     // or in the module.
-    existing = llvm::cast<llvm::Function>(getFunctionLLVM(cname));
+    existing = getFunctionLLVM(cname);
 
     // Check to see if another function already exists.
     if( existing ) {
@@ -1235,9 +1248,16 @@ void FnSymbol::codegenDef() {
   } else {
 #ifdef HAVE_LLVM
     info->lvt->removeLayer();
-    if(llvm::verifyFunction(*func, llvm::PrintMessageAction)){
-      INT_FATAL("LLVM function verification failed");
+    if( developer ) {
+      if(llvm::verifyFunction(*func, llvm::PrintMessageAction)){
+        INT_FATAL("LLVM function verification failed");
+      }
     }
+    // Now run the optimizations on that function.
+    // (we handle checking fFastFlag, etc, when we set up FPM_postgen)
+    // This way we can potentially keep the fn in cache while it
+    // is simplified. The big optos happen later.
+    info->FPM_postgen->run(*func);
 #endif
   }
   

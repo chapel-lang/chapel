@@ -127,13 +127,14 @@ class Cyclic: BaseDist {
 
 proc Cyclic.getChunk(inds, locid) {
   var sliceBy: rank*range(idxType=idxType, stridable=true);
-  var locidtup: rank*int;
+  var locidtup: rank*idxType;
+  // NOTE: Not bothering to check to see if these can fit into idxType
   if rank == 1 then
-    locidtup(1) = locid;
+    locidtup(1) = locid:idxType;
   else
-    locidtup = locid;
+    for param i in 1..rank do locidtup(i) = locid(i):idxType;
   for param i in 1..rank {
-    var distStride = targetLocDom.dim(i).length;
+    var distStride = targetLocDom.dim(i).length:chpl__signedType(idxType);
     var offset = chpl__diffMod(startIdx(i) + locidtup(i), inds.dim(i).low, distStride);
     sliceBy(i) = inds.dim(i).low + offset..inds.dim(i).high by distStride;
     // remove alignment
@@ -272,7 +273,7 @@ proc Cyclic.targetLocsIdx(i: idxType) {
   // this is wrong if i is less than startIdx
   //return ((i - startIdx(1)) % numLocs):int;
   // this works even if i is less than startIdx
-  return chpl__diffMod(i, startIdx(1), numLocs):int;
+  return chpl__diffMod(i, startIdx(1), numLocs):idxType;
 }
 
 proc Cyclic.targetLocsIdx(ind: rank*idxType) {
@@ -280,7 +281,7 @@ proc Cyclic.targetLocsIdx(ind: rank*idxType) {
   for param i in 1..rank {
     var dimLen = targetLocDom.dim(i).length;
     //x(i) = ((ind(i) - startIdx(i)) % dimLen):int;
-    x(i) = chpl__diffMod(ind(i), startIdx(i), dimLen):int;
+    x(i) = chpl__diffMod(ind(i), startIdx(i), dimLen):idxType;
   }
   if rank == 1 then
     return x(1);
@@ -304,21 +305,24 @@ class LocCyclic {
   const myChunk: domain(rank, idxType, true);
 
   proc LocCyclic(param rank, type idxType, locid, dist: Cyclic(rank, idxType)) {
-    var locidx: rank*int;
+    var locidx: rank*idxType;
     var startIdx = dist.startIdx;
 
+    // NOTE: Not bothering to check to see if these can fit into idxType
     if rank == 1 then
-      locidx(1) = locid;
+      locidx(1) = locid:idxType;
     else
-      locidx = locid;
+      for param i in 1..rank do locidx(i) = locid(i):idxType;
 
     var tuple: rank*range(idxType, stridable=true);
 
+    type strType = chpl__signedType(idxType);
+    // NOTE: Not checking for overflow here when casting to strType
     for param i in 1..rank {
-      const lower = min(idxType)..(startIdx(i)+locidx(i)) by -dist.targetLocDom.dim(i).length;
-      const upper = (startIdx(i) + locidx(i))..max(idxType) by dist.targetLocDom.dim(i).length;
+      const lower = min(idxType)..(startIdx(i)+locidx(i)) by -dist.targetLocDom.dim(i).length:strType;
+      const upper = (startIdx(i) + locidx(i))..max(idxType) by dist.targetLocDom.dim(i).length:strType;
       const lo = lower.last, hi = upper.last;
-      tuple(i) = lo..hi by dist.targetLocDom.dim(i).length;
+      tuple(i) = lo..hi by dist.targetLocDom.dim(i).length:strType;
     }
     myChunk = {(...tuple)};
   }
@@ -438,9 +442,10 @@ iter CyclicDom.these(param tag: iterKind) where tag == iterKind.leader {
     var zeroedLocalPart = whole((...locDom.myBlock.getIndices())).chpl__unTranslate(wholeLow);
     for param i in 1..rank {
       var dim = zeroedLocalPart.dim(i);
-      var wholestride = whole.dim(i).stride;
+      // NOTE: unsigned idxType with negative stride will not work
+      const wholestride = whole.dim(i).stride:chpl__signedType(idxType);
       if dim.last >= dim.first then
-        result(i) = (dim.first / wholestride)..(dim.last / wholestride) by (dim.stride / wholestride);
+        result(i) = (dim.first / wholestride):idxType..(dim.last / wholestride):idxType by (dim.stride / wholestride);
       else
         // _computeChunkStuff should have produced no tasks for this
         // If this ain't going to happen, could force numTasks=0 here instead.
@@ -480,8 +485,9 @@ iter CyclicDom.these(param tag: iterKind, followThis) where tag == iterKind.foll
     writeln(here.id, ": follower whole is: ", whole,
                      " follower is: ", followThis);
   for param i in 1..rank {
-    const wholestride = whole.dim(i).stride;
-    t(i) = ((followThis(i).low*wholestride)..(followThis(i).high*wholestride) by (followThis(i).stride*wholestride)) + whole.dim(i).low;
+    // NOTE: unsigned idxType with negative stride will not work
+    const wholestride = whole.dim(i).stride:chpl__signedType(idxType);
+    t(i) = ((followThis(i).low*wholestride):idxType..(followThis(i).high*wholestride):idxType by (followThis(i).stride*wholestride)) + whole.dim(i).low;
   }
   if debugCyclicDist then
     writeln(here.id, ": follower maps to: ", t);
@@ -821,8 +827,9 @@ iter CyclicArr.these(param tag: iterKind, followThis, param fast: bool = false) 
 
   var t: rank*range(idxType=idxType, stridable=true);
   for param i in 1..rank {
-    const wholestride = dom.whole.dim(i).stride;
-    t(i) = ((followThis(i).low*wholestride)..(followThis(i).high*wholestride) by (followThis(i).stride*wholestride)) + dom.whole.dim(i).low;
+    // NOTE: unsigned idxType with negative stride will not work
+    const wholestride = dom.whole.dim(i).stride:chpl__signedType(idxType);
+    t(i) = ((followThis(i).low*wholestride):idxType..(followThis(i).high*wholestride):idxType by (followThis(i).stride*wholestride)) + dom.whole.dim(i).low;
   }
   const myFollowThis = {(...t)};
   if fast {
@@ -941,7 +948,8 @@ class LocCyclicRADCache /* : LocRADCache */ {
 
   proc LocCyclicRADCache(param rank: int, type idxType, startIdx, targetLocDom) {
     for param i in 1..rank do
-      targetLocDomDimLength(i) = targetLocDom.dim(i).length;
+      // NOTE: Not bothering to check to see if length can fit into idxType
+      targetLocDomDimLength(i) = targetLocDom.dim(i).length:idxType;
   }
 }
 
@@ -982,7 +990,6 @@ proc CyclicArr.doiBulkTransferTo(Barg)
     writeln("In CyclicArr.doiBulkTransferTo()");
   
   const B = this, A = Barg._value;
-  var typeSize=sizeof(eltType):int;
 
   coforall i in dom.dist.targetLocDom do // for all locales
     on dom.dist.targetLocs(i)
@@ -1064,7 +1071,6 @@ proc CyclicArr.doiBulkTransferFrom(Barg)
     writeln("In CyclicArr.doiBulkTransferFrom()");
   
   const A = this, B = Barg._value;
-  var typeSize=sizeof(eltType):int;
   
   coforall i in dom.dist.targetLocDom do // for all locales
     on dom.dist.targetLocs(i)

@@ -66,12 +66,12 @@ typedef struct __chpl_localeID_t {
   c_subloc_t subloc;
 } chpl_localeID_t;
 
-struct __chpl____wide_chpl_string {
+struct chpl_chpl____wide_chpl_string_s {
   chpl_localeID_t locale;
   chpl_string addr;
   int64_t size;
 };
-typedef struct __chpl____wide_chpl_string chpl____wide_chpl_string;
+typedef struct chpl_chpl____wide_chpl_string_s chpl____wide_chpl_string;
 
 chpl_string
 chpl_wide_string_copy(chpl____wide_chpl_string* x, int32_t lineno, chpl_string filename) {
@@ -101,7 +101,7 @@ chpl_string_widen(chpl____wide_chpl_string* x, chpl_string from)
 
 // un-macro'd CHPL_COMM_WIDE_GET_STRING
 void
-chpl_comm_wide_get_string(chpl_string* local, struct __chpl____wide_chpl_string* x, int32_t tid, int32_t lineno, chpl_string filename)
+chpl_comm_wide_get_string(chpl_string* local, struct chpl_chpl____wide_chpl_string_s* x, int32_t tid, int32_t lineno, chpl_string filename)
 {
   char* chpl_macro_tmp =
       chpl_mem_allocMany(x->size, sizeof(char),
@@ -229,3 +229,9 @@ object2int( _chpl_object o) {
   return (intptr_t) o;
 }
 
+const char* chpl_get_argument_i(chpl_main_argument* args, int32_t i)
+{
+  if( i < 0 ) return NULL;
+  if( i > args->argc ) return NULL;
+  return args->argv[i];
+}

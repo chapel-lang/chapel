@@ -28,14 +28,21 @@ static const char myFilename[] =
   "<internal>";
 #endif
 
+chpl_main_argument chpl_gen_main_arg;
 
 char* chpl_executionCommand;
 
 int handleNonstandardArg(int* argc, char* argv[], int argNum, 
                          int32_t lineno, chpl_string filename) {
-  char* message = chpl_glom_strings(3, "Unexpected flag:  \"", argv[argNum], 
-                                    "\"");
-  chpl_error(message, lineno, filename);
+
+  if (mainHasArgs) {
+    chpl_gen_main_arg.argv[chpl_gen_main_arg.argc] = argv[argNum];
+    chpl_gen_main_arg.argc++;
+  } else {
+    char* message = chpl_glom_strings(3, "Unexpected flag:  \"", argv[argNum], "\"");
+    chpl_error(message, lineno, filename);
+  }
+
   return 0;
 }
 
@@ -79,7 +86,7 @@ static void chpl_main(void) {
   //
   // Call the compiler-generated main() routine
   //
-  chpl_gen_main();
+  chpl_gen_main_arg.return_value = chpl_gen_main(&chpl_gen_main_arg);
 }
 
 
@@ -106,6 +113,10 @@ int main(int argc, char* argv[]) {
   chpl_comm_barrier("about to leave comm init code");
   chpl__heapAllocateGlobals(); // allocate global vars on heap for multilocale
   CreateConfigVarTable();      // get ready to start tracking config vars
+  chpl_gen_main_arg.argv = chpl_malloc(argc * sizeof(char*));
+  chpl_gen_main_arg.argv[0] = argv[0];
+  chpl_gen_main_arg.argc = 1;
+  chpl_gen_main_arg.return_value = 0;
   parseArgs(&argc, argv);
   runInGDB = _runInGDB();
   if (runInGDB) {
@@ -170,6 +181,8 @@ int main(int argc, char* argv[]) {
     chpl_task_callMain(chpl_main);
   }
 
-  chpl_exit_all(0);         // have everyone exit
+  // have everyone exit, returning the value returned by the user written main
+  // or 0 if it didn't return anything
+  chpl_exit_all(chpl_gen_main_arg.return_value);         
   return 0;                  // should never get here
 }

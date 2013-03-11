@@ -1,5 +1,5 @@
 proc main() {
-  var err = EFORMAT;
+  var err:syserr = EFORMAT;
   var x = 0;
   if !err {
     x = 1;

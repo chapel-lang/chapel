@@ -194,18 +194,19 @@ module DefaultRectangular {
       param stridable = this.stridable || anyStridable(followThis);
       var block: rank*range(idxType=idxType, stridable=stridable);
       if stridable {
+        type strType = chpl__signedType(idxType);
         for param i in 1..rank {
-          const rStride = ranges(i).stride:idxType,
-                fStride = followThis(i).stride:idxType;
+          const rStride = ranges(i).stride:strType,
+                fStride = followThis(i).stride:strType;
           if ranges(i).stride > 0 {
             const low = ranges(i).low + followThis(i).low*rStride,
                   high = ranges(i).low + followThis(i).high*rStride,
-                  stride = (rStride * fStride):int;
+                  stride = (rStride * fStride):idxType;
             block(i) = low..high by stride;
           } else {
             const low = ranges(i).high + followThis(i).high*rStride,
                   high = ranges(i).high + followThis(i).low*rStride,
-                  stride = (rStride * fStride): int;
+                  stride = (rStride * fStride):idxType;
             block(i) = low..high by stride;
           }
         }
@@ -239,7 +240,8 @@ module DefaultRectangular {
       var blk: idxType = 1;
       for param d in 1..rank by -1 {
         const orderD = ranges(d).indexOrder(ind(d));
-        if (orderD == -1) then return orderD;
+        // NOTE: This follows from the implementation of indexOrder()
+        if (orderD == (-1):idxType) then return orderD;
         totOrder += orderD * blk;
         blk *= ranges(d).length;
       }
@@ -367,6 +369,10 @@ module DefaultRectangular {
         dom.ranges(i) = ranges(i);
       return dom;
     }
+  
+    proc dsiLocalSlice(ranges) {
+      halt("all dsiLocalSlice calls on DefaultRectangulars should be handled in ChapelArray.chpl");
+    }
   }
   
   record _remoteAccessData {
@@ -451,14 +457,15 @@ module DefaultRectangular {
     }
   
     iter these() var {
+      type strType = chpl__signedType(idxType);
       if rank == 1 {
         // This is specialized to avoid overheads of calling dsiAccess()
         if !dom.stridable {
           // This is specialized because the strided version disables the
           // "single loop iterator" optimization
           var first = getDataIndex(dom.dsiLow);
-          var second = getDataIndex(dom.dsiLow+dom.ranges(1).stride:idxType);
-          var step = (second-first):chpl__signedType(idxType);
+          var second = getDataIndex(dom.dsiLow+dom.ranges(1).stride:strType);
+          var step = (second-first):strType;
           var last = first + (dom.dsiNumIndices-1) * step:idxType;
           for i in first..last by step do
             yield data(i);
@@ -467,7 +474,7 @@ module DefaultRectangular {
                 start  = dom.ranges(1).first,
                 first  = getDataIndex(start),
                 second = getDataIndex(start + stride),
-                step   = (second-first):chpl__signedType(idxType),
+                step   = (second-first):strType,
                 last   = first + (dom.ranges(1).length-1) * step:idxType;
           if step > 0 then
             for i in first..last by step do
@@ -563,8 +570,17 @@ module DefaultRectangular {
       //alias.numelm = numelm;
    
       for param i in 1..rank {
+        var s: idxType;
+        // NOTE: Not bothering to check to see if this can fit into idxType
+        if chpl__signedType(idxType)==idxType {
+          s = (dom.dsiDim(i).stride / str(i)) : d.idxType;
+        } else { // unsigned type, signed stride
+          assert((dom.dsiDim(i).stride<0 && str(i)<0) ||
+                 (dom.dsiDim(i).stride>0 && str(i)>0));
+          s = dom.dsiDim(i).stride / str(i) : d.idxType;
+        }
         alias.off(i) = d.dsiDim(i).low;
-        alias.blk(i) = (blk(i) * dom.dsiDim(i).stride / str(i)) : d.idxType;
+        alias.blk(i) = blk(i) * s;
         alias.str(i) = d.dsiDim(i).stride;
       }
       alias.origin = origin:d.idxType;
@@ -584,7 +600,13 @@ module DefaultRectangular {
       alias.origin = origin;
       for param i in 1..rank {
         alias.off(i) = d.dsiDim(i).low;
-        alias.origin += blk(i) * (d.dsiDim(i).low - off(i)) / str(i);
+        // NOTE: Not bothering to check to see if the abs(..) expression
+        //  can fit into idxType
+        if str(i) > 0 {
+          alias.origin += blk(i) * (d.dsiDim(i).low - off(i)) / str(i):idxType;
+        } else {
+          alias.origin -= blk(i) * (d.dsiDim(i).low - off(i)) / abs(str(i)):idxType;
+        }
       }
       alias.computeFactoredOffs();
       return alias;
@@ -752,6 +774,8 @@ module DefaultRectangular {
   
     const len = dom.dsiNumIndices:int(32);
     if debugBulkTransfer {
+      pragma "no prototype"
+      extern proc sizeof(type x): int;
       const elemSize =sizeof(B._value.eltType);
       writeln("In DefaultRectangularArr.doiBulkTransfer():",
               " Alo=", Alo, ", Blo=", Blo,
@@ -821,7 +845,6 @@ module DefaultRectangular {
     if debugDefaultDistBulkTransfer then 
       writeln("In DefaultRectangularArr.doiBulkTransferStride ");
   
-    extern proc sizeof(type x): int;
     if debugBulkTransfer then
       writeln("In doiBulkTransferStride: ");
    

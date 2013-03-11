@@ -247,64 +247,64 @@ extern Vec<ModuleSymbol*> userModules; // contains main + user modules
 extern Vec<ModuleSymbol*> mainModules; // contains main modules
 
 //
-// class test macros: determine the dynamic type of a BaseAST*
+// class test inlines: determine the dynamic type of a BaseAST*
 //
-#define isExpr(a)   ((a) && (a)->astTag < E_Expr)
-#define isSymbol(a) ((a) && (a)->astTag > E_Expr && (a)->astTag < E_Symbol)
-static inline bool isType(BaseAST* a) {
-  return (a && a->astTag > E_Symbol && a->astTag < E_Type);
-}
+static inline bool isExpr(BaseAST* a)
+{ return a && a->astTag < E_Expr; }
+static inline bool isSymbol(BaseAST* a)
+{ return a && a->astTag > E_Expr && a->astTag < E_Symbol; }
+static inline bool isType(BaseAST* a)
+{ return (a && a->astTag > E_Symbol && a->astTag < E_Type); }
 
-#define isSymExpr(a)           ((a) && (a)->astTag == E_SymExpr)
-#define isUnresolvedSymExpr(a) ((a) && (a)->astTag == E_UnresolvedSymExpr)
-#define isDefExpr(a)           ((a) && (a)->astTag == E_DefExpr)
-#define isCallExpr(a)          ((a) && (a)->astTag == E_CallExpr)
-#define isNamedExpr(a)         ((a) && (a)->astTag == E_NamedExpr)
-#define isBlockStmt(a)         ((a) && (a)->astTag == E_BlockStmt)
-#define isCondStmt(a)          ((a) && (a)->astTag == E_CondStmt)
-#define isGotoStmt(a)          ((a) && (a)->astTag == E_GotoStmt)
-#define isModuleSymbol(a)      ((a) && (a)->astTag == E_ModuleSymbol)
-#define isVarSymbol(a)         ((a) && (a)->astTag == E_VarSymbol)
-#define isArgSymbol(a)         ((a) && (a)->astTag == E_ArgSymbol)
-#define isTypeSymbol(a)        ((a) && (a)->astTag == E_TypeSymbol)
-#define isFnSymbol(a)          ((a) && (a)->astTag == E_FnSymbol)
-#define isEnumSymbol(a)        ((a) && (a)->astTag == E_EnumSymbol)
-#define isLabelSymbol(a)       ((a) && (a)->astTag == E_LabelSymbol)
-static inline bool isPrimitiveType(BaseAST* a) {
-  return (a && a->astTag == E_PrimitiveType);
-}
-#define isEnumType(a)          ((a) && (a)->astTag == E_EnumType)
-static inline bool isClassType(BaseAST* a) {
-  return (a && a->astTag == E_ClassType);
-}
-
+#define def_is_ast(Type) \
+  static inline bool is##Type(BaseAST* a) { return a && a->astTag == E_##Type; }
+def_is_ast(SymExpr)
+def_is_ast(UnresolvedSymExpr)
+def_is_ast(DefExpr)
+def_is_ast(CallExpr)
+def_is_ast(NamedExpr)
+def_is_ast(BlockStmt)
+def_is_ast(CondStmt)
+def_is_ast(GotoStmt)
+def_is_ast(ModuleSymbol)
+def_is_ast(VarSymbol)
+def_is_ast(ArgSymbol)
+def_is_ast(TypeSymbol)
+def_is_ast(FnSymbol)
+def_is_ast(EnumSymbol)
+def_is_ast(LabelSymbol)
+def_is_ast(PrimitiveType)
+def_is_ast(EnumType)
+def_is_ast(ClassType)
+#undef def_is_ast
 //
-// safe downcast macros: downcast BaseAST*, Expr*, Symbol*, or Type*
+// safe downcast inlines: downcast BaseAST*, Expr*, Symbol*, or Type*
 //   note: toDerivedClass is equivalent to dynamic_cast<DerivedClass*>
 //
-#define def_to_ast(Type, a)    (is##Type(a) ? ((Type*)(a)) : NULL)
-#define toSymExpr(a)           def_to_ast(SymExpr, a)
-#define toUnresolvedSymExpr(a) def_to_ast(UnresolvedSymExpr, a)
-#define toDefExpr(a)           def_to_ast(DefExpr, a)
-#define toCallExpr(a)          def_to_ast(CallExpr, a)
-#define toNamedExpr(a)         def_to_ast(NamedExpr, a)
-#define toBlockStmt(a)         def_to_ast(BlockStmt, a)
-#define toCondStmt(a)          def_to_ast(CondStmt, a)
-#define toGotoStmt(a)          def_to_ast(GotoStmt, a)
-#define toExpr(a)              def_to_ast(Expr, a)
-#define toModuleSymbol(a)      def_to_ast(ModuleSymbol, a)
-#define toVarSymbol(a)         def_to_ast(VarSymbol, a)
-#define toArgSymbol(a)         def_to_ast(ArgSymbol, a)
-#define toTypeSymbol(a)        def_to_ast(TypeSymbol, a)
-#define toFnSymbol(a)          def_to_ast(FnSymbol, a)
-#define toEnumSymbol(a)        def_to_ast(EnumSymbol, a)
-#define toLabelSymbol(a)       def_to_ast(LabelSymbol, a)
-#define toSymbol(a)            def_to_ast(Symbol, a)
-#define toPrimitiveType(a)     def_to_ast(PrimitiveType, a)
-#define toEnumType(a)          def_to_ast(EnumType, a)
-#define toClassType(a)         def_to_ast(ClassType, a)
-#define toType(a)              def_to_ast(Type, a)
-
+#define def_to_ast(Type) \
+  static inline Type * to##Type(BaseAST* a) { return is##Type(a) ? (Type*)a : NULL; }
+def_to_ast(SymExpr)
+def_to_ast(UnresolvedSymExpr)
+def_to_ast(DefExpr)
+def_to_ast(CallExpr)
+def_to_ast(NamedExpr)
+def_to_ast(BlockStmt)
+def_to_ast(CondStmt)
+def_to_ast(GotoStmt)
+def_to_ast(Expr)
+def_to_ast(ModuleSymbol)
+def_to_ast(VarSymbol)
+def_to_ast(ArgSymbol)
+def_to_ast(TypeSymbol)
+def_to_ast(FnSymbol)
+def_to_ast(EnumSymbol)
+def_to_ast(LabelSymbol)
+def_to_ast(Symbol)
+def_to_ast(PrimitiveType)
+def_to_ast(EnumType)
+def_to_ast(ClassType)
+def_to_ast(Type)
+#undef def_to_ast
 //
 // traversal macros
 //

@@ -31,8 +31,7 @@ module ChapelThreads {
   }
   if chpl__maxThreadsPerLocale != 0 then
     if (numThreadsPerLocale > chpl__maxThreadsPerLocale) then
-      __primitive("chpl_warning",
-                  "specified value of " + numThreadsPerLocale
+      warning("specified value of " + numThreadsPerLocale
                   + " for numThreadsPerLocale is too high; limit is " 
                   + chpl__maxThreadsPerLocale);
   

@@ -1,5 +1,5 @@
 proc main() {
-  var err = ENOERR;
+  var err:syserr = ENOERR;
   var x = 0;
   if !err {
     x = 1;

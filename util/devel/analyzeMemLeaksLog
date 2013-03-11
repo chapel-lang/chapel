@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 
 while (<>) {
-    if (m/Compiler Command : .*\s(.*\.chpl)$/) {
+    if (m/Compiler Command : .*\s(.*\.chpl )$/) {
         $program = $1;
     } elsif (m/Execution Command:.*tmp\.\.\-(.*?)\./) {
         $path = $1;

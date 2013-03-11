@@ -4,7 +4,7 @@ use driver_domains;
 
 proc foo(TD: domain, A: [TD] int, TA) {
   var errs = 0;
-  var offset = if (TD.rank==1) then o5 else fill(TD.rank, o5);
+  var offset = if (TD.rank==1) then o5:TD.idxType else fill(TD.rank, o5:TD.idxType);
   for i in {TD} do
     if A[i] != TA[i-offset] {
       writeln("A[",i,"] Incorrect reindex = ", A[i], ", TA[", i+offset, "] = ", TA[i+offset]);
@@ -33,7 +33,7 @@ var TA4D: [TD4D] int;
 for e in TA4D do e = next();
 writeln("TA4D: ", foo(Dom4D, TA4D, TA4D), " errors");
 
-const TD2D64: domain(2,int(64)) = Space2D64.translate(-o5:int(64), -o5:int(64));
-var TA2D64: [TD2D64] int;
-for e in TA2D64 do e = next();
-writeln("TA2D64: ", foo(Dom2D64, TA2D64, TA2D64), " errors");
+const TD2D32: domain(2,int(32)) = Space2D32.chpl__unTranslate(o5:int(32), o5:int(32));
+var TA2D32: [TD2D32] int;
+for e in TA2D32 do e = next();
+writeln("TA2D32: ", foo(Dom2D32, TA2D32, TA2D32), " errors");

@@ -38,7 +38,7 @@ void parallel();
 void parse();
 void prune();
 void prune2();
-void readCTypes();
+void readExternC();
 void refPropagation();
 void removeEmptyRecords();
 void removeUnnecessaryAutoCopyCalls();

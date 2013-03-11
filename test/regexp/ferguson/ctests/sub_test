@@ -6,7 +6,7 @@ unset CHPL_DEVELOPER
 CC=gcc
 CXX=g++
 DEFS=`$CHPL_HOME/util/config/compileline --includes-and-defines`
-RSRC="$CHPL_HOME/runtime/src"
+RSRC="$CHPL_HOME/runtime/src/qio"
 RE2DIR="$CHPL_HOME/third-party/re2/"
 TARGPLAT=`$CHPL_HOME/util/chplenv/platform --target`
 TARGCOMP=`$CHPL_HOME/util/chplenv/compiler --target`

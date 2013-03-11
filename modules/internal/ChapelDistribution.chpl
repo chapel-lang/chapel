@@ -18,9 +18,12 @@ module ChapelDistribution {
   //
   pragma "base dist"
   class BaseDist {
-    var _distCnt: atomic int;   // distribution reference count
+    // The common case seems to be local access to this class, so we
+    // will use explicit processor atomics, even when network
+    // atomics are available
+    var _distCnt: atomic_int64; // distribution reference count
     var _doms: list(BaseDom);   // domains declared over this domain
-    var _domsLock: atomic bool; //   and lock for concurrent access
+    var _domsLock: atomicflag;  //   and lock for concurrent access
   
     pragma "dont disable remote value forwarding"
     proc destroyDist(dom: BaseDom = nil) {
@@ -98,9 +101,12 @@ module ChapelDistribution {
   //
   pragma "base domain"
   class BaseDom {
-    var _domCnt: atomic int;    // domain reference count
-    var _arrs: list(BaseArr);   // arrays declared over this domain
-    var _arrsLock: atomic bool; //   and lock for concurrent access
+    // The common case seems to be local access to this class, so we
+    // will use explicit processor atomics, even when network
+    // atomics are available
+    var _domCnt: atomic_int64; // domain reference count
+    var _arrs: list(BaseArr);  // arrays declared over this domain
+    var _arrsLock: atomicflag; //   and lock for concurrent access
   
     proc dsiMyDist(): BaseDist {
       halt("internal error: dsiMyDist is not implemented");
@@ -242,8 +248,11 @@ module ChapelDistribution {
   //
   pragma "base array"
   class BaseArr {
-    var _arrCnt: atomic int; // array reference count
-    var _arrAlias: BaseArr;  // reference to base array if an alias
+    // The common case seems to be local access to this class, so we
+    // will use explicit processor atomics, even when network
+    // atomics are available
+    var _arrCnt: atomic_int64; // array reference count
+    var _arrAlias: BaseArr;    // reference to base array if an alias
   
     proc dsiStaticFastFollowCheck(type leadType) param return false;
   

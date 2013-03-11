@@ -124,6 +124,7 @@ class ClassType : public Type {
   GenRet codegenClassStructType();
   void codegenDef();
   void codegenPrototype();
+  const char* classStructName(bool standalone);
   int codegenStructure(FILE* outfile, const char* baseoffset);
   int codegenFieldStructure(FILE* outfile, bool nested, const char* baseoffset);
 
@@ -197,6 +198,7 @@ TYPE_EXTERN ClassType* dtBaseDom;
 TYPE_EXTERN ClassType* dtDist;
 TYPE_EXTERN ClassType* dtTuple;
 TYPE_EXTERN ClassType* dtLocaleID;
+TYPE_EXTERN ClassType* dtMainArgument;
 
 // base object type (for all classes)
 TYPE_EXTERN Type* dtObject;

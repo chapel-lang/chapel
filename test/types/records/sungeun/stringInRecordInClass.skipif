@@ -1,2 +1,1 @@
-CHPL_COMM == gasnet
-CHPL_TEST_NO_LOCAL == true
+CHPL_TEST_VGRND_EXE == off

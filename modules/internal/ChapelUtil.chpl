@@ -129,4 +129,26 @@ module ChapelUtil {
     }
   }
   
+  pragma "no default functions"
+  extern record chpl_main_argument {
+    var argc: int(64);
+    var argv: _ddata(string);
+    var return_value: int(32);
+  }
+
+  proc chpl_convert_args(arg: chpl_main_argument) {
+    var local_arg = arg;
+    extern proc chpl_get_argument_i(ref args:chpl_main_argument, i:int(32)):string;
+    // This is odd.  Why are the strings inside the array getting destroyed?
+    pragma "no auto destroy"
+    var array: [0..#local_arg.argc] string;
+
+    for i in 0..#arg.argc {
+      array[i] = chpl_get_argument_i(local_arg, i:int(32));
+    }
+
+    return array;
+  }
+
 }
+

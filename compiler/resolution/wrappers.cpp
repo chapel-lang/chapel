@@ -557,7 +557,7 @@ static FnSymbol*
 buildPromotionWrapper(FnSymbol* fn,
                       SymbolMap* promotion_subs,
                       CallInfo* info) {
-  SET_LINENO(fn);
+  SET_LINENO(info->call);
   FnSymbol* wrapper = buildEmptyWrapper(fn, info);
   wrapper->addFlag(FLAG_PROMOTION_WRAPPER);
   wrapper->cname = astr("_promotion_wrap_", fn->cname);
@@ -715,7 +715,7 @@ promotionWrap(FnSymbol* fn, CallInfo* info) {
     }
   }
   if (promotion_wrapper_required) {
-    if (fWarnPromotion)
+    if (fReportPromotion)
       USR_WARN(info->call, "promotion on %s", toString(info));
 
     promoted_subs.put(fn, (Symbol*)info->call->square); // add value of square to cache

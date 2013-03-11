@@ -30,12 +30,100 @@
 Problems analyzed and assigned that should be fixed soon:
 =========================================================
 
+These failures are due to gasnet-fast taking more than 24 hours and
+stepping on itself -- these should clear up on the next run, but the
+problem will persist if we don't figure out why it's taking so long.
+
+[Error cannot locate compiler output comparison file sparse/bradc/reAssignInds.good]
+[Error cannot locate compiler output comparison file sparse/bradc/sparse1Daccess.good]
+[Error cannot locate compiler output comparison file sparse/bradc/sparse3D.good]
+[Error cannot locate compiler output comparison file sparse/bradc/sparseArray5.good]
+[Error matching compiler output for sparse/bradc/sparse1D]
+[Warning: Cannot cd into ./sparse/bradc/CSR skipping directory]
+[Warning: Cannot cd into ./sparse/bradc/assignDom skipping directory]
+[Warning: Cannot cd into ./sparse/bradc/parIter skipping directory]
+
+Note that the runs need to finish by 02:00 to be clean.  Here is a
+history of recent test completion times for
+gasnet-fast.fifo.pthreads.dlmalloc.  
+
+Also note that execution times for --no-local lulesh runs took a step
+on 01/23/13 which correlates with the second step below.
+
+I think both these steps correlate to when hierarchical locale stuff
+was being merged into trunk.  E.g., wide pointer initializations
+changed from {0, NULL} to {{0,0},NULL} around this time.  I'm
+wondering whether there are tricks we play in the generated code to
+name this null struct initialization and reuse it throughout the code
+-- whether this might reduce compile time at all (assuming I'm
+guessing correctly that it increased it).
+
+Oct 18-Nov 29: ~22:30
+Dec  1-Dec Dec 9: ~22:50-23:30
+Dec 13: 23:13
+Dec 16: **many broken tests**
+Dec 17: **many broken tests**
+Dec 18: 23:29
+Dec 20: 23:19
+Dec 22: 23:46
+Dec 23: 22:50
+Dec 25: 23:55
+Dec 27: 23:40
+Dec 29: *failed*
+Dec 30: 22:57
+Jan 01: 23:02
+Jan 03: 23:21
+Jan 05: 23:48
+Jan 06: 22:49
+Jan 08: 23:52
+Jan 10: 23:39
+Jan 12: 23:49
+Jan 13: 23:50
+Jan 15: 23:52
+Jan 17: **failure**
+Jan 19: 23:45
+Jan 20: 23:41
+Jan 22: 23:44
+Jan 25: 00:48   << step
+Jan 27: 00:31
+Jan 28: 00:50
+Jan 30: 00:36
+Feb 01: 00:41
+Feb 03: 00:55
+Feb 04: 00:49
+Feb 06: 00:50
+Feb 08: 00:32
+Feb 09: 02:04   << step
+Feb 10: 01:36
+Feb 10: *** First time it steps on own tail? ***
+Feb 11: 01:05
+Feb 13: 01:27
+Feb 15: 01:29
+Feb 17: 01:40
+Feb 18: 01:37
+Feb 20: 01:36
+Feb 22: 01:24
+Feb 24: 01:45
+Feb 25: 01:36
+Feb 27: 01:44
+Mar 01: 02:21
+Mar 03: *** Steps on tail again ***
+----------------------------------------------------------------------
+
+
+
 ==============================================
 These things regularly cause noise in testing:
 ==============================================
 
 linux64.gnu.gasnet.qthreads.none (UNASSIGNED)
 ---------------------------------------------
+bradc: 3/2/13: distributions/bradc/blkCyc/loopBlkCyc got a seg fault
+
+bradc: week of 2/25: continue getting noise, particularly on
+test_many_domains, streap-ep, jacobi; sometimes timeouts, sometimes
+seg faults (stream-ep, e.g.)
+
 gbt: 1/14/13.  Here the list of failure counts for the last 7 days.
 (Thank you, grep|cut|sed|sort|uniq!)  I've sent this to Kyle and
 Dylan.  76 of these are with comm=none, and 28 with comm=gasnet.
@@ -64,7 +152,7 @@ possible that some of these other failures might be due to callstack
 size.
 
 sungeun: 10/18/12.  Things seem quieter, but not perfect
-- Got a seg fault (06/06/12, 6/16, stream-ep 8/23/12)
+- Got a seg fault (06/06/12, 6/16, stream-ep 8/23/12, 02/28/13)
 - Intermitent seg fault on exit (7/7 7/9, 7/12, 7/13)
 -  seg fault during program execution (same as as previous):
    distributions/robust/arithmetic/optimizations/optimizeOnClauses_basic_tuple (7/10)
@@ -77,12 +165,28 @@ sungeun: 10/18/12.  Things seem quieter, but not perfect
   [Error: Timed out executing program distributions/robust/arithmetic/kernels/hpl (compopts: 1)] (11/28/12: likely earlier as well)
 
 
-cray-xmt build (UNASSIGNED)
----------------------------
-Every night, first XMT compile fails; second one succeeds.  Is there
-any chance that this is due to a leftover program library of some
-sort?  If not, file bug against XMT compiler.
+errors running sub_test (UNASSIGNED)
+it's been proposed that perhaps writing test log files to a local directory
+rather than /data/sea/cascade/... and then copying them at the end of
+nightly would be better in general and *could* be the cause of this.  That'd
+require a change to the nightly script to implement -- specifying a different
+-logfile argument to start_test and then copying back to the place we want
+it after the run.  Seems worth a shot.
+-----------------------------------------------------------------------------
+seen on chpbld01 for linux64.intel.none.fifo.pthreads on 10/10/12
+On 02/06/13 something happened around 3:10 AM causing sub_test failures
+across most platforms.
+On 03/01/13, error running sub_test on gasnet.everything in test/domains/bradc
+On 03/02/13, got them on chpbld02 for test/execflags/dinan and .../diten
 
+test/studies/hpcc/RA/bradc/parallel/ra-dist
+-------------------------------------------
+fails verification (02/23/13, 03/01/13)
+
+cray-xmt build (bradc)
+----------------------
+Working on this with Mike Ringenburg who believes it's due to a fear in
+EDG that we're in an infinite instantiation loop.
 
 SIGABRT on gasnet-fast runs (sungeun)
 ----------------------------------------
@@ -128,15 +232,23 @@ Not so noisy as to be familiar annoyances, but worth noting to see if they
 come up again
 ==========================================================================
 
+incorrect answer suggestive of a --no-local race : iteration terminated
+too early or too late (?)
+-----------------------------------------------------------------------
+studies/jacobi/waynew/example2 (02/26/13)
+
 intermittent valgrind error
 ---------------------------
+- studies/madness/aniruddha/madchap/mytests/par-compress/test_compress
+(compopts: 1) (02/26/13)
+
 - studies/madness/aniruddha/madchap/mytests/par-refine/test_refine (compopts: 1)
 Got wrong answer for F3.norm2() on 10/29/12, 01/14/13.
 As of 2/4/2013, those are the only times the test ran with compopts: 1.
 The other times it ran without compopts:1 and succeeded.
 - studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct
 Various numeric discrepancies, first occurred on 9/15/2012 or before.
-- release/examples/primers/chpldoc (compopts: 1)  (8/28/2012, 9/07/2012, 9/11/2012)
+- release/examples/primers/chpldoc (compopts: 1)  (8/28/2012, 9/07/2012, 9/11/2012, 02/25/13)
 This is not a problem with chpldocs (should file a separate future).
 There is an intermittent compile-time segfault during cullOverReferences.
 The type of Bar.super is at least partially corrupt at that point.
@@ -163,12 +275,6 @@ studies/dijkstra/driverEdgeBtw
 PGI only.  Floating point overflow warning in generated code
 (03/12/11, 9/14/12) Also documented in REGRESSIONS file.
 
-errors running sub_test (UNASSIGNED)
-------------------------------------
-seen on chpbld01 for linux64.intel.none.fifo.pthreads on 10/10/12
-On 02/06/13 something happened around 3:10 AM causing sub_test failures
-across most platforms.
-
 parallel/cobegin/diten/cobeginRace (UNASSIGNED)
 ----------------------------------------------------
 "timedexec died with signal 11" - pgi compiler (06/18/12)
@@ -190,6 +296,10 @@ examples of what times out:
  distributions/dm/t2 (2012/08/15)
  test_array_slicing3 (06/08/12, 6/16)
  etc.
+
+wrong answer for atomic operations with gasnet-everything on 2/1/13 (Sungeun)
+-----------------------------------------------------------------------------
+types/atomic/sungeun/atomic_vars (02/01/13, 02/19/13)
 
 "in routine alloca() there is a stack overflow" under PGI (UNASSIGNED)
 ----------------------------------------------------------------------

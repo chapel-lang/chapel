@@ -71,25 +71,9 @@ void accumulateBasicTypes(llvm::Type *t, std::vector<llvm::Type*> & out)
 }
 */
 
-llvm::Value* codegenSizeofLLVM(llvm::Type* type)
+llvm::Constant* codegenSizeofLLVM(llvm::Type* type)
 {
-  GenInfo* info = gGenInfo;
-  // use getelementptr from the null pointer to compute sizeof
-  // e.g.  %Size = getelementptr %T* null, int 1
-  //       %SizeI = cast %T* %Size to uint
-  //          to get the sizeof(T)
-  // (see http://nondot.org/sabre/LLVMNotes/SizeOf-OffsetOf-VariableSizedStructs.txt)
-
-  llvm::Type* sizeTy = llvm::Type::getInt64Ty(info->llvmContext);
-  llvm::Constant* one = llvm::ConstantInt::get(sizeTy, 1);
-  llvm::PointerType* ptrType = llvm::PointerType::getUnqual(type);
-  llvm::Constant* nullPtr = llvm::Constant::getNullValue(ptrType);
-  /*llvm::Constant* gep = llvm::ConstantExpr::getGetElementPtr(nullPtr, one);
-  llvm::Constant* size = llvm::ConstantExpr::getPointerCast(gep, sizeTy);
-  */
-  llvm::Value* gep = info->builder->CreateGEP(nullPtr, one);
-  llvm::Value* size = info->builder->CreatePointerCast(gep, sizeTy);
-  return size;
+  return llvm::ConstantExpr::getSizeOf(type);
 }
 
 static
@@ -354,11 +338,15 @@ PromotedPair convertValuesToLarger(llvm::Value *value1, llvm::Value *value2, boo
   //Pointers
   if(type1->isPointerTy() && type2->isPointerTy()) {
     llvm::Type *castTy;
-    llvm::Type *voidPtr = llvm::Type::getInt8PtrTy(gGenInfo->llvmContext);
+    llvm::Type* int8_type = llvm::Type::getInt8Ty(gGenInfo->llvmContext);
+    bool t1isVoidStar = (type1->getPointerElementType() == int8_type);
+    bool t2isVoidStar = (type2->getPointerElementType() == int8_type);
+
+    assert(type1->getPointerAddressSpace() == type2->getPointerAddressSpace());
 
     // if type2 a non-void pointer type, then set castTy to type2
     // otherwise just use type1
-    if ((type1 == voidPtr) && (type2 != voidPtr) ){
+    if ((t1isVoidStar) && (!t2isVoidStar)) {
       castTy = type2;
     } else {
       castTy = type1;

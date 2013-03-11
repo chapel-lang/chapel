@@ -18,6 +18,6 @@ writeln(x6, " ", typeToString(x6.type));
 writeln(x7, " ", typeToString(x7.type));
 writeln(x8, " ", typeToString(x8.type));
 
-var x9: index(Dom2D64);
+var x9: index(Dom2D32);
 
 writeln(x9, " ", typeToString(x9.type));

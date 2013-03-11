@@ -7,4 +7,6 @@ Expr *getCmdLineConfig(const char *);
 void useCmdLineConfig(const char *);
 bool isUsedCmdLineConfig(const char *);
 
+extern bool mainHasArgs;
+
 #endif

@@ -199,7 +199,7 @@ void printConfigVarTable(void) {
         fprintf(stdout, "\n");
       }
   }
-  chpl_exit_any(0);
+
 }
 
 
