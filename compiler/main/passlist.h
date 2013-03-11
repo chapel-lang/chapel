@@ -17,7 +17,7 @@ PassInfo passlist[] = {
   RUN(checkParsed),         // checks semantics of parsed AST
 
   // Read in runtime and included C header file types/prototypes
-  RUN(readCTypes),
+  RUN(readExternC),
 
   // Scope resolution and normalization
   RUN(cleanup),             // post parsing transformations

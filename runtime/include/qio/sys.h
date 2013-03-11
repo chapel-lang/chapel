@@ -7,6 +7,8 @@ extern "C" {
 #endif
 
 #include "sys_basic.h"
+#include "qio_error.h"
+
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/socket.h>
@@ -14,6 +16,7 @@ extern "C" {
 #include <unistd.h>
 #include <stdio.h>
 
+typedef int fd_t;
 
 // Do we have getaddrinfo?
 #ifdef EAI_NONAME
@@ -125,10 +128,10 @@ err_t sys_write(fd_t fd, const void* buf, size_t count, ssize_t* num_written_out
 err_t sys_pread(fd_t fd, void* buf, size_t count, off_t offset, ssize_t* num_read_out);
 err_t sys_pwrite(fd_t fd, const void* buf, size_t count, off_t offset, ssize_t* num_written_out);
 
-err_t sys_readv(fd_t fd, struct iovec* iov, int iovcnt, ssize_t* num_read_out);
+err_t sys_readv(fd_t fd, const struct iovec* iov, int iovcnt, ssize_t* num_read_out);
 err_t sys_writev(fd_t fd, const struct iovec* iov, int iovcnt, ssize_t* num_written_out);
 
-err_t sys_preadv(fd_t fd, struct iovec* iov, int iovcnt, off_t seek_to_offset, ssize_t* num_read_out);
+err_t sys_preadv(fd_t fd, const struct iovec* iov, int iovcnt, off_t seek_to_offset, ssize_t* num_read_out);
 err_t sys_pwritev(fd_t fd, const struct iovec* iov, int iovcnt, off_t seek_to_offset, ssize_t* num_written_out);
 
 err_t sys_fsync(fd_t fd);

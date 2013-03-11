@@ -8,6 +8,25 @@
 #include <stdlib.h>
 #include <sys/time.h> // for struct timeval
 
+// C types usable from Chapel.
+typedef char c_char;
+typedef signed char c_schar;
+typedef unsigned char c_uchar;
+typedef short c_short;
+typedef unsigned short c_ushort;
+typedef int c_int;
+typedef unsigned int c_uint;
+typedef long c_long;
+typedef unsigned long c_ulong;
+typedef long long c_longlong;
+typedef unsigned long long c_ulonglong;
+typedef float c_float;
+typedef double c_double;
+typedef void* c_ptr;
+#define c_nil NULL
+static inline c_int is_c_nil(void* x) { return x==NULL; }
+
+
 typedef enum {
   CHPL_TYPE_chpl_bool,
   CHPL_TYPE_chpl_bool8,

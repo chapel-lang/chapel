@@ -130,7 +130,8 @@ class RandomStream {
     if parSafe then
       RandomStreamPrivate_lock$ = true;
     const start = RandomStreamPrivate_count;
-    RandomStreamPrivate_count += cplxMultiplier * D.numIndices;
+    // NOTE: Not bothering to check to see if D.numIndices can fit into int(64)
+    RandomStreamPrivate_count += cplxMultiplier * D.numIndices:int(64);
     skipToNth(RandomStreamPrivate_count, parSafe=false);
     if parSafe then
       RandomStreamPrivate_lock$;
@@ -272,18 +273,20 @@ iter RandomPrivate_iterate(type resultType, D: domain, seed: int(64),
   var cursor: real;
   for outer in RandomPrivate_outer(followThis) {
     var myStart = start;
+    // NOTE: Not bothering to check to see if this can fit into int(64)
     if ZD.rank > 1 then
-      myStart += multiplier * ZD.indexOrder(((...outer), innerRange.low));
+      myStart += multiplier * ZD.indexOrder(((...outer), innerRange.low)):int(64);
     else
-      myStart += multiplier * ZD.indexOrder(innerRange.low);
+      myStart += multiplier * ZD.indexOrder(innerRange.low):int(64);
     if !innerRange.stridable {
       cursor = RandomPrivate_randlc_skipto(seed, myStart);
       for i in innerRange do
         yield RandomPrivate_randlc(resultType, cursor);
     } else {
-      myStart -= innerRange.low;
+      // NOTE: Not bothering to check to see if this can fit into int(64)
+      myStart -= innerRange.low:int(64);
       for i in innerRange {
-        cursor = RandomPrivate_randlc_skipto(seed, myStart + i * multiplier);
+        cursor = RandomPrivate_randlc_skipto(seed, myStart + i:int(64) * multiplier);
         yield RandomPrivate_randlc(resultType, cursor);
       }
     }

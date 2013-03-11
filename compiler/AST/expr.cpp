@@ -32,6 +32,7 @@ static GenRet codegenRnode(GenRet wide);
 //static GenRet codegenZero();
 static GenRet codegenOne();
 
+static GenRet codegenFieldPtr(GenRet base, const char* field);
 
 static int codegen_tmp = 1;
 
@@ -251,10 +252,6 @@ GenRet SymExpr::codegen() {
       ret = toVarSymbol(var)->codegen();
     } else if(isArgSymbol(var)) {
       ret = info->lvt->getValue(var->cname);
-      /*if(toArgSymbol(var)->requiresCPtr()) { ????
-        ret.val = info->builder->CreateLoad(ret.val);
-        ret.isPtr = GEN_VALUE; // ? is this right?
-      }*/
     } else if(isTypeSymbol(var)) {
       ret.type = toTypeSymbol(var)->codegen().type;
     } else if(isFnSymbol(var) ){
@@ -491,36 +488,38 @@ GenRet codegenWideAddr(GenRet locale, GenRet raddr, Type* wideType = NULL)
                ", .addr = " + raddr.c + " }";
   } else {
 #ifdef HAVE_LLVM
-    llvm::Value* temp = createTempVarLLVM(wideRefType->codegen().type);
-    GenRet llvmPtr;
-    llvmPtr.val = temp;
-    llvmPtr.chplType = raddr.chplType;
-    llvmPtr.isLVPtr = GEN_PTR;
-    GenRet llvmVal = codegenValue(llvmPtr);
-    ClassType *classType = toClassType(wideRefType);
+    {
+      llvm::Value* temp = createTempVarLLVM(wideRefType->codegen().type);
+      GenRet llvmPtr;
+      llvmPtr.val = temp;
+      llvmPtr.chplType = raddr.chplType;
+      llvmPtr.isLVPtr = GEN_PTR;
+      GenRet llvmVal = codegenValue(llvmPtr);
+      ClassType *classType = toClassType(wideRefType);
 
-    // cast locale if needed (most likely i32 to i64)
-    llvm::Type* locType = llvm::ExtractValueInst::getIndexedType(llvmVal.val->getType(), classType->getMemberGEP("locale"));
-    llvm::Value* locVal;
-    if (locale.val->getType() != locType){
-      locVal = convertValueToType(locale.val, locType, !locale.isUnsigned);
-    } else {
-      locVal = locale.val;
+      // cast locale if needed (most likely i32 to i64)
+      llvm::Type* locType = llvm::ExtractValueInst::getIndexedType(llvmVal.val->getType(), classType->getMemberGEP("locale"));
+      llvm::Value* locVal;
+      if (locale.val->getType() != locType){
+        locVal = convertValueToType(locale.val, locType, !locale.isUnsigned);
+      } else {
+        locVal = locale.val;
+      }   
+      INT_ASSERT(locVal);
+
+      // cast address if needed
+      llvm::Type* addrType = llvm::ExtractValueInst::getIndexedType(llvmVal.val->getType(), classType->getMemberGEP("addr"));
+      llvm::Value* addrVal;
+      if (raddr.val->getType() != addrType){
+        addrVal = convertValueToType(raddr.val, addrType, !raddr.isUnsigned);
+      } else {
+        addrVal = raddr.val;
+      }
+      INT_ASSERT(addrVal);
+
+      llvm::Value* aggregTemp = info->builder->CreateInsertValue(llvmVal.val, locVal, classType->getMemberGEP("locale"));
+      ret.val = info->builder->CreateInsertValue(aggregTemp, addrVal, classType->getMemberGEP("addr"));
     }
-    INT_ASSERT(locVal);
-
-    // cast address if needed
-    llvm::Type* addrType = llvm::ExtractValueInst::getIndexedType(llvmVal.val->getType(), classType->getMemberGEP("addr"));
-    llvm::Value* addrVal;
-    if (raddr.val->getType() != addrType){
-      addrVal = convertValueToType(raddr.val, addrType, !raddr.isUnsigned);
-    } else {
-      addrVal = raddr.val;
-    }
-    INT_ASSERT(addrVal);
-
-    llvm::Value* aggregTemp = info->builder->CreateInsertValue(llvmVal.val, locVal, classType->getMemberGEP("locale"));
-    ret.val = info->builder->CreateInsertValue(aggregTemp, addrVal, classType->getMemberGEP("addr"));
 #endif
   }
   return ret;
@@ -597,19 +596,17 @@ GenRet codegenLocaleID(GenRet node, GenRet subloc)
     ret.c += "{ .node = " + node.c + ", .subloc = " + subloc.c + " }";
   } else {
 #ifdef HAVE_LLVM
-    // Create the temporary result.
-    llvm::Value* temp = createTempVarLLVM(dtLocaleID->codegen().type);
-    // Now get a pointer to this, so we can pick out fields.
-    GetRet llvmPtr;
-    llvmPtr.val = temp;
-    llvmPtr.chplType = LOCALE_ID_TYPE;
-    llvmPtr.isLVPtr = GEN_PTR;
-    GenRet llvmVal = codegenValue(llvmPtr);
 
-    ClassType* classType = toClassType(dtLocaleID);
+    GenRet temp = createTempVar(dtLocaleID);
+    GenRet ptrNode = codegenFieldPtr(temp, "node");
+    GenRet ptrSubloc = codegenFieldPtr(temp, "subloc");
 
-    llvm::Value* aggregTemp = info->builder->CreateInsertValue(llvmVal.val, node.val, classType->getMemberGEP("node"));
-    ret.val = info->builder->CreateInsertValue(aggregTemp, subloc.val, classType->getMemberGEP("subloc"));
+    llvm::Value* node32 = convertValueToType(codegenValue(node).val, ptrNode.val->getType()->getPointerElementType());
+    llvm::Value* subloc32 = convertValueToType(codegenValue(subloc).val, ptrNode.val->getType()->getPointerElementType());
+
+    info->builder->CreateStore(node32, ptrNode.val);
+    info->builder->CreateStore(subloc32, ptrSubloc.val);
+    ret.val = info->builder->CreateLoad(temp.val);
 #endif
   }
   ret.chplType = LOCALE_ID_TYPE;
@@ -750,36 +747,14 @@ static GenRet codegenRlocale(GenRet wide){
 }
 
 static GenRet codegenRnode(GenRet wide){
-  GenInfo* info = gGenInfo;
-  GenRet ret = codegenRlocale(wide);
-  ret.chplType = NODE_ID_TYPE;
-  if (info->cfile) {
-    ret.c += ".node";
-  } else {
-#ifdef HAVE_LLVM
-    GenRet temp = ret;
-    ClassType* classType = toClassType(dtLocaleID);
-    ret.isLVPtr = GEN_VAL;
-    ret.val = info->builder->CreateExtractValue(temp.val, classType->getMemberGEP("node"));
-#endif
-  }
+  GenRet locId = codegenValuePtr(codegenRlocaleMaybePtr(wide));
+  GenRet ret = codegenFieldPtr(locId, "node");
   return ret;
 }
 
 static GenRet codegenRsubloc(GenRet wide){
-  GenInfo* info = gGenInfo;
-  GenRet ret = codegenRlocale(wide);
-  ret.chplType = SUBLOC_ID_TYPE;
-  if (info->cfile) {
-    ret.c += ".subloc";
-  } else {
-#ifdef HAVE_LLVM
-    GenRet temp = ret;
-    ClassType* classType = toClassType(dtLocaleID);
-    ret.isLVPtr = GEN_VAL;
-    ret.val = info->builder->CreateExtractValue(temp.val, classType->getMemberGEP("subloc"));
-#endif
-  }
+  GenRet locId = codegenValuePtr(codegenRlocaleMaybePtr(wide));
+  GenRet ret = codegenFieldPtr(locId, "subloc");
   return ret;
 }
 
@@ -1181,7 +1156,7 @@ GenRet codegenValue(GenRet r)
   return ret;
 }
 
-// For C code generation, create a temporary
+// Create a temporary
 // value holding r and return a pointer to it.
 // If r is already a pointer, do nothing.
 // Does not handle homogeneous tuples.
@@ -1771,7 +1746,7 @@ GenRet codegenCallExpr(GenRet function, std::vector<GenRet> & args, FnSymbol* fS
       // argument
       if( llArgs.size() < fnType->getNumParams() &&
           func &&
-          func->paramHasAttr(llArgs.size()+1, llvm::Attribute::ByVal) ) {
+          llvm_fn_param_has_attr(func,llArgs.size()+1,LLVM_ATTRIBUTE::ByVal) ){
         args[i] = codegenAddrOf(codegenValuePtr(args[i]));
         // TODO -- this is not working!
       }
@@ -2356,10 +2331,10 @@ void codegenAssign(GenRet to_ptr, GenRet from)
         INT_FATAL("Cannot assign two wide pointers");
       }
     // One of the types is a wide pointer type, so we have to
-    // generate a basic block, among other things, checking if is local
+    // call get or put.
+    
     if( from.isLVPtr == GEN_WIDE_PTR ) {
       INT_ASSERT(type);
-
       // would also be nice to call createTempVarWith to
       // store a temporary wide pointer so we don't get 
       // code like:

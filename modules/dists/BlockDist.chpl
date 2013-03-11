@@ -581,6 +581,7 @@ iter BlockDom.these() {
 }
 
 iter BlockDom.these(param tag: iterKind) where tag == iterKind.leader {
+  type strType = chpl__signedType(idxType);
   const maxTasks = dist.dataParTasksPerLocale;
   const ignoreRunning = dist.dataParIgnoreRunningTasks;
   const minSize = dist.dataParMinGranularity;
@@ -594,7 +595,7 @@ iter BlockDom.these(param tag: iterKind) where tag == iterKind.leader {
                          locDom.myBlock.dims());
     var locBlock: rank*range(idxType);
     for param i in 1..tmpBlock.rank {
-      locBlock(i) = (tmpBlock.dim(i).first/tmpBlock.dim(i).stride:idxType)..#(tmpBlock.dim(i).length);
+      locBlock(i) = (tmpBlock.dim(i).first/tmpBlock.dim(i).stride:strType)..#(tmpBlock.dim(i).length);
     }
     if (numTasks == 1) {
       yield locBlock;
@@ -636,11 +637,13 @@ iter BlockDom.these(param tag: iterKind, followThis) where tag == iterKind.follo
 
   chpl__testPar("Block domain follower invoked on ", followThis);
   var t: rank*range(idxType, stridable=stridable||anyStridable(followThis));
+  type strType = chpl__signedType(idxType);
   for param i in 1..rank {
-    var stride = whole.dim(i).stride: idxType;
-    var low = stride * followThis(i).low;
-    var high = stride * followThis(i).high;
-    t(i) = (low..high by stride:int) + whole.dim(i).low by followThis(i).stride;
+    var stride = whole.dim(i).stride: strType;
+    // not checking here whether the new low and high fit into idxType
+    var low = (stride * followThis(i).low:strType):idxType;
+    var high = (stride * followThis(i).high:strType):idxType;
+    t(i) = (low..high by stride:strType) + whole.dim(i).low by followThis(i).stride:strType;
   }
   for i in {(...t)} {
     yield i;
@@ -916,8 +919,9 @@ iter BlockArr.these(param tag: iterKind, followThis, param fast: bool = false) v
 
   for param i in 1..rank {
     var stride = dom.whole.dim(i).stride;
-    var low = followThis(i).low * stride;
-    var high = followThis(i).high * stride;
+    // NOTE: Not bothering to check to see if these can fit into idxType
+    var low = followThis(i).low * abs(stride):idxType;
+    var high = followThis(i).high * abs(stride):idxType;
     myFollowThis(i) = (low..high by stride) + dom.whole.dim(i).low by followThis(i).stride;
     lowIdx(i) = myFollowThis(i).low;
   }
@@ -963,19 +967,20 @@ iter BlockArr.these(param tag: iterKind, followThis, param fast: bool = false) v
 // output array
 //
 proc BlockArr.dsiSerialWrite(f: Writer) {
+  type strType = chpl__signedType(idxType);
   if dom.dsiNumIndices == 0 then return;
   var i : rank*idxType;
   for dim in 1..rank do
     i(dim) = dom.dsiDim(dim).low;
   label next while true {
     f.write(dsiAccess(i));
-    if i(rank) <= (dom.dsiDim(rank).high - dom.dsiDim(rank).stride:idxType) {
+    if i(rank) <= (dom.dsiDim(rank).high - dom.dsiDim(rank).stride:strType) {
       if ! f.binary then f.write(" ");
-      i(rank) += dom.dsiDim(rank).stride:idxType;
+      i(rank) += dom.dsiDim(rank).stride:strType;
     } else {
       for dim in 1..rank-1 by -1 {
-        if i(dim) <= (dom.dsiDim(dim).high - dom.dsiDim(dim).stride:idxType) {
-          i(dim) += dom.dsiDim(dim).stride:idxType;
+        if i(dim) <= (dom.dsiDim(dim).high - dom.dsiDim(dim).stride:strType) {
+          i(dim) += dom.dsiDim(dim).stride:strType;
           for dim2 in dim+1..rank {
             f.writeln();
             i(dim2) = dom.dsiDim(dim2).low;
@@ -1382,15 +1387,17 @@ iter ConsecutiveChunksD(d1,d2,i,lo) {
 }
 
 proc BlockDom.numRemoteElems(rlo,rid){
+  // NOTE: Not bothering to check to see if rid+1, length, or rlo-1 used
+  //  below can fit into idxType
   var blo,bhi:dist.idxType;
   if rid==(dist.targetLocDom.dim(rank).length - 1) then
     bhi=whole.dim(rank).high;
   else
       bhi=dist.boundingBox.dim(rank).low +
-        intCeilXDivByY((dist.boundingBox.dim(rank).high - dist.boundingBox.dim(rank).low +1)*(rid+1),
-                   dist.targetLocDom.dim(rank).length) - 1;
+        intCeilXDivByY((dist.boundingBox.dim(rank).high - dist.boundingBox.dim(rank).low +1)*(rid+1):idxType,
+                       dist.targetLocDom.dim(rank).length:idxType) - 1:idxType;
 
-  return(bhi - rlo + 1);
+  return(bhi - (rlo - 1):idxType);
 }
 
 //Brad's utility function. It drops from Domain D the dimensions

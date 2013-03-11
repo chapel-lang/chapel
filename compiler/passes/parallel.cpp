@@ -55,7 +55,7 @@ bundleArgs(CallExpr* fcall) {
   new_c->addFlag(FLAG_NO_WIDE_CLASS);
 
   // add the function args as fields in the class
-  int i = 0;	// Fields are numbered for uniqueness.
+  int i = 0;    // Fields are numbered for uniqueness.
   for_actuals(arg, fcall) {
     SymExpr *s = toSymExpr(arg);
     Symbol  *var = s->var; // arg or var

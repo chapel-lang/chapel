@@ -1,6 +1,8 @@
 #ifndef _BULKGET_H_
 #define _BULKGET_H_
 
+#include "sys_basic.h"
+
 #include <inttypes.h>
 #include "qbuffer.h"
 #include "qio_style.h"

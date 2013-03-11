@@ -9,7 +9,7 @@ Vector norm (baseline)
 	2-Norm not yet implemented for rank=2
 	infinity norm: 11.8773
 	frobenius norm: 11.7106
-	R2D64:
+	R2D32:
 	1-norm: 5.25545
 	2-Norm not yet implemented for rank=2
 	infinity norm: 5.19717
@@ -25,7 +25,7 @@ Vector norm
 	2-Norm not yet implemented for rank=2
 	infinity norm OK
 	frobenius norm OK
-	R2D64:
+	R2D32:
 	1-norm OK
 	2-Norm not yet implemented for rank=2
 	infinity norm OK
@@ -41,7 +41,7 @@ Vector norm aliased arrays
 	2-Norm not yet implemented for rank=2
 	infinity norm OK
 	frobenius norm OK
-	R2D64:
+	R2D32:
 	1-norm OK
 	2-Norm not yet implemented for rank=2
 	infinity norm OK
@@ -57,7 +57,7 @@ Vector norm reindexed arrays
 	2-Norm not yet implemented for rank=2
 	infinity norm OK
 	frobenius norm OK
-	R2D64:
+	R2D32:
 	1-norm OK
 	2-Norm not yet implemented for rank=2
 	infinity norm OK

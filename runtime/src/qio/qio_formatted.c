@@ -354,7 +354,10 @@ err_t qio_channel_read_string(const int threadsafe, const int byteorder, const i
     err = ENOMEM;
     goto rewind;
   }
+
+  ret[0] = '\0'; // start with terminator in case we don't read anything.
   err = qio_channel_read(false, ch, ret, num, &amt);
+  ret[len] = '\0'; // always add terminator at the end
   if( err ) goto rewind;
   if( amt != len ) {
     err = ESHORT;
@@ -362,7 +365,6 @@ err_t qio_channel_read_string(const int threadsafe, const int byteorder, const i
     memset(ret + amt, 0, len - amt);
     goto rewind;
   }
-  ret[len] = '\0'; // add terminator..
 
   if( found_term ) {
     // Read the end-of-string character.
@@ -388,7 +390,7 @@ unlock:
     // don't modify out if we didn't read anything.
     if( ret ) {
       *out = ret;
-      *len_out = len;
+      *len_out = amt;
     }
   }
 

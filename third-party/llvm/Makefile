@@ -15,6 +15,13 @@ LLVM_BUILD_DIR = $(LLVM_ABS_DIR)/$(LLVM_BUILD_SUBDIR)
 LLVM_DIR = $(LLVM_ABS_DIR)
 BINUTILS_GOLD_DIR = $(LLVM_ABS_DIR)/binutils
 
+# decide whether to do a debug or no-debug build
+ifdef CHPL_DEVELOPER
+CHPL_LLVM_DEBUG = --enable-debug-runtime --enable-debug-symbols
+else
+CHPL_LLVM_DEBUG = 
+endif
+
 LLVM_FILE := $(LLVM_INSTALL_DIR)/include/llvm/Type.h
 
 default: $(LLVM_FILE)
@@ -32,7 +39,7 @@ clobber: FORCE
 $(LLVM_FILE):
 	if [ ! -d llvm ]; then ./update-llvm.sh; fi
 	mkdir -p $(LLVM_BUILD_DIR)
-	cd $(LLVM_BUILD_DIR) && $(LLVM_SRC_DIR)/configure CC='$(CC)' CXX='$(CXX)' --prefix=$(LLVM_INSTALL_DIR) --enable-optimized
+	cd $(LLVM_BUILD_DIR) && $(LLVM_SRC_DIR)/configure CC='$(CC)' CXX='$(CXX)' --prefix=$(LLVM_INSTALL_DIR) --enable-optimized $(CHPL_LLVM_DEBUG)
 	cd $(LLVM_BUILD_DIR) && $(MAKE)
 	cd $(LLVM_BUILD_DIR) && $(MAKE) install
 	

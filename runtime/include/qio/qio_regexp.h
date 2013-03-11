@@ -4,6 +4,7 @@
 // forward declare..
 struct qio_channel_s;
 
+#include "sys_basic.h"
 #include "qio.h"
 
 typedef struct qio_regexp_s {

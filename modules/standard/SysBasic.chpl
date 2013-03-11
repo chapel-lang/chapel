@@ -2,6 +2,7 @@
 /* BASIC TYPES */
 use SysCTypes;
 
+extern type c_float = real(32);
 extern type c_double = real(64);
 /*extern type c_wchar_t = uint(32); */
 extern type off_t = int(64);

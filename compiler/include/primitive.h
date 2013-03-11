@@ -181,7 +181,7 @@ enum PrimitiveTag {
   PRIM_LOC_SET_SUBLOC,          // Set <ditto>.
 
   PRIM_LOCALE_ID,               // Returns the current locale ID (nodeID + sublocID).
-  PRIM_IS_HERE,					// Returns true if the arg matches the current locale ID.
+  PRIM_IS_HERE,                 // Returns true if the arg matches the current locale ID.
   PRIM_NODE_ID,                 // Returns the current (GASNet) node ID.
   PRIM_ON_LOCALE_NUM,           // specify a particular localeID for an on clause.
   PRIM_TASK_SET_LOCALE,         // Set the locale ID (here ID) in task-private data.

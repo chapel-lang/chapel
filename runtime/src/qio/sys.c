@@ -56,7 +56,7 @@ void sys_init_sys_sockaddr(sys_sockaddr_t* addr)
 
 size_t sys_page_size(void)
 {
-  long pagesize;
+  long pagesize = -1;
   err_t err;
 #ifdef _SC_PAGESIZE
   err = sys_sysconf(_SC_PAGESIZE, &pagesize);
@@ -65,17 +65,20 @@ size_t sys_page_size(void)
 
   // Some systems offer PAGE_SIZE...
 #ifdef PAGE_SIZE
-  return PAGE_SIZE;
+  pagesize = PAGE_SIZE;
 #endif
 
 #ifdef __MTA__
 #ifdef NBPG
-  return NBPG;
+  pagesize = NBPG;
 #endif
 #endif
 
+  if( pagesize > 0 ) return pagesize;
+
   fprintf(stderr, "Fatal error: could not get page size\n");
   abort();
+  return 0;
 }
 
 
@@ -299,7 +302,7 @@ err_t sys_strerror_internal(err_t error, char** string_out, size_t extra_space)
                           && error < EXTEND_ERROR_OFFSET+EXTEND_ERROR_NUM) {
     errmsg = extended_errors[error - EXTEND_ERROR_OFFSET];
     buf_sz = strlen(errmsg) + 1;
-    buf = qio_malloc(buf_sz + extra_space);
+    buf = (char*) qio_malloc(buf_sz + extra_space);
     if( ! buf ) return ENOMEM;
     strcpy(buf, errmsg);
     *string_out = buf;
@@ -714,7 +717,7 @@ int64_t _iov_total_bytes(const struct iovec* iov, int iovcnt)
   return tot;
 }
 
-err_t sys_readv(fd_t fd, struct iovec* iov, int iovcnt, ssize_t* num_read_out)
+err_t sys_readv(fd_t fd, const struct iovec* iov, int iovcnt, ssize_t* num_read_out)
 {
   ssize_t got;
   ssize_t got_total;
@@ -730,7 +733,8 @@ err_t sys_readv(fd_t fd, struct iovec* iov, int iovcnt, ssize_t* num_read_out)
     niovs = iovcnt - i;
     if( niovs > IOV_MAX ) niovs = IOV_MAX;
 
-    got = readv(fd, &iov[i], niovs);
+    // Some systems readv doesn't take a const struct iovec*, hence the cast
+    got = readv(fd, (struct iovec*) &iov[i], niovs);
     if( got != -1 ) {
       got_total += got;
     } else {
@@ -767,7 +771,8 @@ err_t sys_writev(fd_t fd, const struct iovec* iov, int iovcnt, ssize_t* num_writ
     niovs = iovcnt - i;
     if( niovs > IOV_MAX ) niovs = IOV_MAX;
 
-    got = writev(fd, &iov[i], niovs);
+    // Some systems writev doesn't take a const struct iovec*, hence the cast
+    got = writev(fd, (struct iovec*) &iov[i], niovs);
     if( got != -1 ) {
       got_total += got;
     } else {
@@ -787,7 +792,7 @@ err_t sys_writev(fd_t fd, const struct iovec* iov, int iovcnt, ssize_t* num_writ
 }
 
 #ifdef HAS_PREADV
-err_t sys_preadv(fd_t fd, struct iovec* iov, int iovcnt, off_t seek_to_offset, ssize_t* num_read_out)
+err_t sys_preadv(fd_t fd, const struct iovec* iov, int iovcnt, off_t seek_to_offset, ssize_t* num_read_out)
 {
   ssize_t got;
   ssize_t got_total;
@@ -803,7 +808,8 @@ err_t sys_preadv(fd_t fd, struct iovec* iov, int iovcnt, off_t seek_to_offset, s
     niovs = iovcnt - i;
     if( niovs > IOV_MAX ) niovs = IOV_MAX;
 
-    got = preadv(fd, &iov[i], niovs, seek_to_offset + got_total);
+    // Some systems preadv doesn't take a const struct iovec*, hence the cast
+    got = preadv(fd, (struct iovec*) &iov[i], niovs, seek_to_offset + got_total);
     #ifdef __CYGWIN__
     if( got == -1 && errno == ENODATA ) got = 0;
     #endif
@@ -829,7 +835,7 @@ err_t sys_preadv(fd_t fd, struct iovec* iov, int iovcnt, off_t seek_to_offset, s
 
 #else
 
-err_t sys_preadv(fd_t fd, struct iovec* iov, int iovcnt, off_t seek_to_offset, ssize_t* num_read_out)
+err_t sys_preadv(fd_t fd, const struct iovec* iov, int iovcnt, off_t seek_to_offset, ssize_t* num_read_out)
 {
   ssize_t got;
   ssize_t got_total;
@@ -883,7 +889,8 @@ err_t sys_pwritev(fd_t fd, const struct iovec* iov, int iovcnt, off_t seek_to_of
     niovs = iovcnt - i;
     if( niovs > IOV_MAX ) niovs = IOV_MAX;
 
-    got = pwritev(fd, &iov[i], niovs, seek_to_offset + got_total);
+    // Some systems pwritev doesn't take a const struct iovec*, hence the cast
+    got = pwritev(fd, (struct iovec*) &iov[i], niovs, seek_to_offset + got_total);
     if( got != -1 ) {
       got_total += got;
     } else {

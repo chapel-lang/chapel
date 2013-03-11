@@ -247,7 +247,7 @@ extern Vec<ModuleSymbol*> userModules; // contains main + user modules
 extern Vec<ModuleSymbol*> mainModules; // contains main modules
 
 //
-// class test: determine the dynamic type of a BaseAST*
+// class test inlines: determine the dynamic type of a BaseAST*
 //
 static inline bool isExpr(BaseAST* a)
 { return a && a->astTag < E_Expr; }
@@ -255,10 +255,6 @@ static inline bool isSymbol(BaseAST* a)
 { return a && a->astTag > E_Expr && a->astTag < E_Symbol; }
 static inline bool isType(BaseAST* a)
 { return (a && a->astTag > E_Symbol && a->astTag < E_Type); }
-static inline bool isPrimitiveType(BaseAST* a)
-{ return (a && a->astTag == E_PrimitiveType); }
-static inline bool isClassType(BaseAST* a)
-{ return (a && a->astTag == E_ClassType); }
 
 #define def_is_ast(Type) \
   static inline bool is##Type(BaseAST* a) { return a && a->astTag == E_##Type; }
@@ -277,8 +273,11 @@ def_is_ast(TypeSymbol)
 def_is_ast(FnSymbol)
 def_is_ast(EnumSymbol)
 def_is_ast(LabelSymbol)
+def_is_ast(PrimitiveType)
 def_is_ast(EnumType)
+def_is_ast(ClassType)
 #undef def_is_ast
+
 //
 // safe downcast inlines: downcast BaseAST*, Expr*, Symbol*, or Type*
 //   note: toDerivedClass is equivalent to dynamic_cast<DerivedClass*>

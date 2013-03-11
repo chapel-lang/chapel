@@ -1656,11 +1656,6 @@ module ChapelArray {
     if !a._value.doiCanBulkTransfer() then return false;
     if !b._value.doiCanBulkTransfer() then return false;
   
-    for param i in 1..a._value.rank {
-      // size must be the same in each dimension
-      if a._value.dom.dsiDim(i).length !=
-         b._value.dom.dsiDim(i).length then return false;
-    }
     return true;
   }
   
@@ -1674,22 +1669,36 @@ module ChapelArray {
     if !a._value.doiCanBulkTransferStride() then return false;
     if !b._value.doiCanBulkTransferStride() then return false;
     
-    for param i in 1..a._value.rank {
-      // size must be the same in each dimension
-      if a._value.dom.dsiDim(i).length !=
-         b._value.dom.dsiDim(i).length then return false;
-    }
     return true;
   }
   
-  proc chpl__useBulkTransfer(a: [], b) param return false;
+  proc checkArrayShapesUponAssignment(a: [], b: []) {
+    if isRectangularArr(a) && isRectangularArr(b) {
+      const aDims = a._value.dom.dsiDims(),
+            bDims = b._value.dom.dsiDims();
+      compilerAssert(aDims.size == bDims.size);
+      for param i in 1..aDims.size {
+        if aDims(i).length != bDims(i).length then
+          halt("assigning between arrays of different shapes in dimension ",
+               i, ": ", aDims(i).length, " vs. ", bDims(i).length);
+      }
+    } else {
+      // may not have dsiDims(), so can't check them as above
+      // todo: compilerError if one is rectangular and the other isn't?
+    }
+  }
   
   inline proc =(a: [], b) {
     if (chpl__isArray(b) || chpl__isDomain(b)) && a.rank != b.rank then
       compilerError("rank mismatch in array assignment");
     
     if chpl__isArray(b) && b._value == nil then
+      // This happens e.g. for 'new' on a record with an array field whose
+      // default initalizer is a forall expr. E.g. arrayInClassRecord.chpl.
       return a;
+
+    if boundsChecking && chpl__isArray(b) then
+      checkArrayShapesUponAssignment(a, b);
   
     // try bulk transfer
     if chpl__isArray(b) && !chpl__serializeAssignment(a, b) {
@@ -1707,8 +1716,9 @@ module ChapelArray {
         a._value.doiBulkTransferStride(b);
         return a;
       }
-      //if debugDefaultDistBulkTransfer then
-      //  writeln("proc =(a:[],b): bulk transfer did not happen");
+      if debugBulkTransfer then
+        // just writeln() clashes with writeln.chpl
+        stdout.writeln("proc =(a:[],b): bulk transfer did not happen");
     }
   
     if (a.eltType == b.type ||
@@ -1806,7 +1816,7 @@ module ChapelArray {
   class _OpaqueIndex { }
   
   //
-  // Swap operators for arrays and domains
+  // Swap operator for arrays
   //
   inline proc <=>(x: [], y: []) {
     forall (a,b) in zip(x, y) do
@@ -1817,6 +1827,11 @@ module ChapelArray {
   // reshape function
   //
   proc reshape(A: [], D: domain) {
+    if !isRectangularDom(D) then
+      compilerError("reshape(A,D) is meaningful only when D is a rectangular domain; got D: ", typeToString(D.type));
+    if A.size != D.size then
+      halt("reshape(A,D) is invoked when A has ", A.size,
+           " elements, but D has ", D.size, " indices");
     var B: [D] A.eltType;
     for (i,a) in zip(D,A) do
       B(i) = a;

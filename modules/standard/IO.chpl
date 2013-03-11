@@ -3241,7 +3241,7 @@ proc channel.extractMatch(m:reMatch, ref arg, ref error:syserr) {
 proc channel.extractMatch(m:reMatch, ref arg) {
   on this.home {
     this.lock();
-    var err:syserr;
+    var err:syserr = ENOERR;
     _extractMatch(m, arg, err);
     if err {
       this._ch_ioerror(err, "in channel.extractMatch(m:reMatch, ref " +
@@ -3488,7 +3488,7 @@ iter channel.matches(re:regexp, param captures=0, maxmatches:int = max(int))
   var m:reMatch;
   var go = true;
   var i = 0;
-  var error:syserr;
+  var error:syserr = ENOERR;
   param nret = captures+1;
   var ret:nret*reMatch;
 

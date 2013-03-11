@@ -17,6 +17,7 @@ extern "C" {
 #endif
 
 #include "sys_basic.h"
+#include "qio_error.h"
 
 #include <stdlib.h>
 #include <stdio.h>

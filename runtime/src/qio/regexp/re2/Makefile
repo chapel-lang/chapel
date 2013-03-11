@@ -1,5 +1,5 @@
-RUNTIME_ROOT = ../../..
-RUNTIME_SUBDIR = src/regexp/none
+RUNTIME_ROOT = ../../../..
+RUNTIME_SUBDIR = src/qio/regexp/re2
 
 ifndef CHPL_MAKE_HOME
 export CHPL_MAKE_HOME=$(shell pwd)/$(RUNTIME_ROOT)/..
@@ -11,9 +11,11 @@ REGEXP_OBJDIR = $(RUNTIME_OBJDIR)
 
 include Makefile.share
 
-TARGETS = $(REGEXP_COMMON_OBJS)
+TARGETS = $(REGEXP_OBJS)
 
 include $(RUNTIME_ROOT)/make/Makefile.runtime.subdirrules
 
 include $(RUNTIME_ROOT)/make/Makefile.runtime.foot
 
+OTHER_DEPEND_RULES = \
+	cd $(THIRD_PARTY_DIR) && $(MAKE) re2

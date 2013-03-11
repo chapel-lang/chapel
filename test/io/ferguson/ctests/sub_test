@@ -4,7 +4,7 @@
 unset CHPL_DEVELOPER
 
 COMP=`$CHPL_HOME/util/config/compileline --compile`
-RSRC="$CHPL_HOME/runtime/src"
+RSRC="$CHPL_HOME/runtime/src/qio"
 
 echo $COMP | grep atomics/intrinsics
 if [ $? == 0 ]

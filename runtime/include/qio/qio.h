@@ -5,6 +5,7 @@
 extern "C" {
 #endif
 
+#include "sys_basic.h"
 #include "bswap.h"
 #include "qbuffer.h"
 #include "sys.h"

@@ -50,7 +50,7 @@ void normalize(void) {
     }
     if (call->isPrimitive(PRIM_DELETE)) {
       SET_LINENO(call);
-      VarSymbol* tmp = newTemp();
+      VarSymbol* tmp = newTemp("delete_tmp");
       call->insertBefore(new DefExpr(tmp));
       call->insertBefore(new CallExpr(PRIM_MOVE, tmp, call->get(1)->remove()));
       call->insertBefore(new CallExpr("~chpl_destroy", gMethodToken, tmp));
@@ -393,7 +393,7 @@ static void normalize_returns(FnSymbol* fn) {
     fn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
   } else {
     // Handle declared return type.
-    retval = newTemp("_ret", fn->retType);
+    retval = newTemp("ret", fn->retType);
     if (fn->retTag == RET_PARAM)
       retval->addFlag(FLAG_PARAM);
     if (fn->retTag == RET_TYPE)
@@ -559,7 +559,7 @@ static void insert_call_temps(CallExpr* call) {
 
   SET_LINENO(call);
   Expr* stmt = call->getStmtExpr();
-  VarSymbol* tmp = newTemp();
+  VarSymbol* tmp = newTemp("call_tmp");
   if (!parentCall || !parentCall->isNamed("chpl__initCopy"))
     tmp->addFlag(FLAG_EXPR_TEMP);
   if (call->isPrimitive(PRIM_NEW))
@@ -656,7 +656,7 @@ fix_def_expr(VarSymbol* var) {
   // insert temporary for constants to assist constant checking
   //
   if (var->hasFlag(FLAG_CONST) && !var->hasFlag(FLAG_EXTERN)) {
-    constTemp = newTemp();
+    constTemp = newTemp("const_tmp");
     stmt->insertBefore(new DefExpr(constTemp));
     stmt->insertAfter(new CallExpr(PRIM_MOVE, var, constTemp));
   }
@@ -706,7 +706,7 @@ fix_def_expr(VarSymbol* var) {
     // initialize variable based on specified type and then assign it
     // the initialization expression if it exists
     //
-    VarSymbol* typeTemp = newTemp();
+    VarSymbol* typeTemp = newTemp("type_tmp");
     stmt->insertBefore(new DefExpr(typeTemp));
     stmt->insertBefore(
       new CallExpr(PRIM_MOVE, typeTemp,
@@ -857,7 +857,7 @@ static void fixup_array_formals(FnSymbol* fn) {
           // The domain argument is supplied but NULL.
           INT_ASSERT(queryDomain == NULL);
 
-          VarSymbol* tmp = newTemp("_reindex");
+          VarSymbol* tmp = newTemp("reindex");
           tmp->addFlag(FLAG_EXPR_TEMP);
           forv_Vec(SymExpr, se, symExprs) {
             if (se->var == arg)
