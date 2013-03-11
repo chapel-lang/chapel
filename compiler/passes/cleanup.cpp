@@ -233,5 +233,6 @@ void cleanup(void) {
     }
   }
 
-  addTaskMgtInOnBlocks();
+  if (fTaskHooks)
+    addTaskMgtInOnBlocks();
 }

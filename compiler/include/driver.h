@@ -142,6 +142,7 @@ extern Timer timer3;
 extern Timer timer4;
 extern Timer timer5;
 
+extern bool fTaskHooks;
 extern bool fNoMemoryFrees;
 extern int numGlobalsOnHeap;
 extern bool preserveInlinedLineNumbers;
