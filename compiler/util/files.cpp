@@ -30,7 +30,8 @@ bool ccwarnings = false;
 
 extern bool fFastFlag;
 
-static const char* intDirName = NULL; // directory for intermediates; tmpdir or saveCDir
+// directory for intermediates; tmpdir or saveCDir
+static const char* intDirName = NULL;
 
 static const int MAX_CHARS_PER_PID = 32;
 
@@ -387,7 +388,8 @@ static void genCFileBuildRules(FILE* makefile) {
     if (isCSource(inputFilename)) {
       const char* objFilename = objectFileForCFile(inputFilename);
       fprintf(makefile, "%s: %s FORCE\n", objFilename, inputFilename);
-      fprintf(makefile, "\t$(CC) -c -o $@ $(GEN_CFLAGS) $(COMP_GEN_CFLAGS) $<\n");
+      fprintf(makefile,
+                   "\t$(CC) -c -o $@ $(GEN_CFLAGS) $(COMP_GEN_CFLAGS) $<\n");
       fprintf(makefile, "\n");
     }
   }
@@ -500,7 +502,8 @@ void codegen_makefile(fileinfo* mainfile, fileinfo *gpusrcfile) {
             "test -f $(CHPL_MAKE_HOME)/runtime/$(CHPL_TAGS_FILE) && "
             "cd %s && "
             "cp $(CHPL_MAKE_HOME)/runtime/$(CHPL_TAGS_FILE) . && "
-            "$(CHPL_TAGS_UTIL) $(CHPL_TAGS_FLAGS) $(CHPL_TAGS_APPEND_FLAG) *.c *.h",
+            "$(CHPL_TAGS_UTIL) $(CHPL_TAGS_FLAGS) "
+              "$(CHPL_TAGS_APPEND_FLAG) *.c *.h",
             saveCDir);
   }
   fprintf(makefile.fptr, "\n");
@@ -518,7 +521,8 @@ void codegen_makefile(fileinfo* mainfile, fileinfo *gpusrcfile) {
     fprintf(makefile.fptr, " %s", libFlag[i]);
   fprintf(makefile.fptr, "\n");
 
-  // MPF - we want to allow the runtime to make use of debug/optimize information
+  // MPF - we want to allow the runtime to make use of debug/optimize
+  // information
   if (debugCCode) {
     fprintf(makefile.fptr, "DEBUG = 1\n");
   }
@@ -529,12 +533,15 @@ void codegen_makefile(fileinfo* mainfile, fileinfo *gpusrcfile) {
   fprintf(makefile.fptr, "\n");
 
   if (!fLibraryCompile) {
-    fprintf(makefile.fptr, "include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.exe\n");
+    fprintf(makefile.fptr,
+            "include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.exe\n");
   } else {
     if (fLinkStyle == LS_DYNAMIC)
-      fprintf(makefile.fptr, "include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.shared\n");
+      fprintf(makefile.fptr,
+              "include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.shared\n");
     else
-      fprintf(makefile.fptr, "include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.static\n");
+      fprintf(makefile.fptr,
+              "include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.static\n");
   }
   fprintf(makefile.fptr, "\n");
   genCFileBuildRules(makefile.fptr);

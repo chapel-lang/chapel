@@ -225,16 +225,24 @@ llvm::Value* codegenImmediateLLVM(Immediate* i)
       switch(i->num_index) {
         case INT_SIZE_1:
         case INT_SIZE_8:
-          ret = llvm::ConstantInt::get(llvm::Type::getInt8Ty(info->module->getContext()), i->uint_value());
+          ret = llvm::ConstantInt::get(
+              llvm::Type::getInt8Ty(info->module->getContext()),
+              i->uint_value());
           break;
         case INT_SIZE_16:
-          ret = llvm::ConstantInt::get(llvm::Type::getInt16Ty(info->module->getContext()), i->uint_value());
+          ret = llvm::ConstantInt::get(
+              llvm::Type::getInt16Ty(info->module->getContext()),
+              i->uint_value());
           break;
         case INT_SIZE_32:
-          ret = llvm::ConstantInt::get(llvm::Type::getInt32Ty(info->module->getContext()), i->uint_value());
+          ret = llvm::ConstantInt::get(
+              llvm::Type::getInt32Ty(info->module->getContext()),
+              i->uint_value());
           break;
         case INT_SIZE_64:
-          ret = llvm::ConstantInt::get(llvm::Type::getInt64Ty(info->module->getContext()), i->uint_value());
+          ret = llvm::ConstantInt::get(
+              llvm::Type::getInt64Ty(info->module->getContext()),
+              i->uint_value());
           break;
       }
       break;
@@ -242,16 +250,28 @@ llvm::Value* codegenImmediateLLVM(Immediate* i)
       switch(i->num_index) {
         case INT_SIZE_1:
         case INT_SIZE_8:
-          ret = llvm::ConstantInt::get(llvm::Type::getInt8Ty(info->module->getContext()), i->int_value(), true);
+          ret = llvm::ConstantInt::get(
+              llvm::Type::getInt8Ty(info->module->getContext()),
+              i->int_value(),
+              true);
           break;
         case INT_SIZE_16:
-          ret = llvm::ConstantInt::get(llvm::Type::getInt16Ty(info->module->getContext()), i->int_value(), true);
+          ret = llvm::ConstantInt::get(
+              llvm::Type::getInt16Ty(info->module->getContext()),
+              i->int_value(),
+              true);
           break;
         case INT_SIZE_32:
-          ret = llvm::ConstantInt::get(llvm::Type::getInt32Ty(info->module->getContext()), i->int_value(), true);
+          ret = llvm::ConstantInt::get(
+              llvm::Type::getInt32Ty(info->module->getContext()),
+              i->int_value(),
+              true);
           break;
         case INT_SIZE_64:
-          ret = llvm::ConstantInt::get(llvm::Type::getInt64Ty(info->module->getContext()), i->int_value(), true);
+          ret = llvm::ConstantInt::get(
+              llvm::Type::getInt64Ty(info->module->getContext()),
+              i->int_value(),
+              true);
           break;
       }
       break;
@@ -259,10 +279,14 @@ llvm::Value* codegenImmediateLLVM(Immediate* i)
     case NUM_KIND_IMAG:
       switch(i->num_index) {
         case FLOAT_SIZE_32:
-          ret = llvm::ConstantFP::get(llvm::Type::getFloatTy(info->module->getContext()), i->v_float32);
+          ret = llvm::ConstantFP::get(
+              llvm::Type::getFloatTy(info->module->getContext()),
+              i->v_float32);
           break;
         case FLOAT_SIZE_64:
-          ret = llvm::ConstantFP::get(llvm::Type::getDoubleTy(info->module->getContext()), i->v_float64);
+          ret = llvm::ConstantFP::get(
+              llvm::Type::getDoubleTy(info->module->getContext()),
+              i->v_float64);
           break;
       }
       break;
@@ -270,16 +294,28 @@ llvm::Value* codegenImmediateLLVM(Immediate* i)
       switch(i->num_index) {
         case COMPLEX_SIZE_64: {
           std::vector<llvm::Constant *> elements(2);
-          elements[0] = llvm::ConstantFP::get(llvm::Type::getFloatTy(info->module->getContext()), i->v_complex64.r);
-          elements[1] = llvm::ConstantFP::get(llvm::Type::getFloatTy(info->module->getContext()), i->v_complex64.i);
-          ret = llvm::ConstantStruct::get(llvm::cast<llvm::StructType>(getTypeLLVM("complex(64)")), elements);
+          elements[0] = llvm::ConstantFP::get(
+              llvm::Type::getFloatTy(info->module->getContext()),
+              i->v_complex64.r);
+          elements[1] = llvm::ConstantFP::get(
+              llvm::Type::getFloatTy(info->module->getContext()),
+              i->v_complex64.i);
+          ret = llvm::ConstantStruct::get(
+              llvm::cast<llvm::StructType>(getTypeLLVM("complex(64)")),
+              elements);
           break;
         }
         case COMPLEX_SIZE_128: {
           std::vector<llvm::Constant *> elements(2);
-          elements[0] = llvm::ConstantFP::get(llvm::Type::getDoubleTy(info->module->getContext()), i->v_complex128.r);
-          elements[1] = llvm::ConstantFP::get(llvm::Type::getDoubleTy(info->module->getContext()), i->v_complex128.i);
-          ret = llvm::ConstantStruct::get(llvm::cast<llvm::StructType>(getTypeLLVM("complex(128)")), elements);
+          elements[0] = llvm::ConstantFP::get(
+              llvm::Type::getDoubleTy(info->module->getContext()),
+              i->v_complex128.r);
+          elements[1] = llvm::ConstantFP::get(
+              llvm::Type::getDoubleTy(info->module->getContext()),
+              i->v_complex128.i);
+          ret = llvm::ConstantStruct::get(
+              llvm::cast<llvm::StructType>(getTypeLLVM("complex(128)")),
+              elements);
           break;
         }
       }
@@ -447,9 +483,13 @@ GenRet VarSymbol::codegen() {
           return ret;
         }
         llvm::Value *constString = codegenImmediateLLVM(immediate);
-        llvm::GlobalVariable *globalValue = llvm::cast<llvm::GlobalVariable>(info->module->getOrInsertGlobal(name, info->builder->getInt8PtrTy()));
+        llvm::GlobalVariable *globalValue =
+          llvm::cast<llvm::GlobalVariable>(
+              info->module->getOrInsertGlobal
+                  (name, info->builder->getInt8PtrTy()));
         globalValue->setConstant(true);
-        globalValue->setInitializer(llvm::cast<llvm::Constant>(info->builder->CreateConstInBoundsGEP2_32(constString, 0, 0)));
+        globalValue->setInitializer(llvm::cast<llvm::Constant>(
+              info->builder->CreateConstInBoundsGEP2_32(constString, 0, 0)));
         ret.val = globalValue;
         ret.isLVPtr = GEN_PTR;
       } else {
@@ -459,10 +499,9 @@ GenRet VarSymbol::codegen() {
       return ret;
     }
 
-    //For ChapelIO module where [name="0", cname="0", immediate=0x0] is considered to be 0x0 pointer
     if(std::string(cname) == "0") {
+      // Chapel compiler should not make these.
       INT_FATAL(" zero value BOO ");
-      //ret.val = createTempVar(llvm::ConstantPointerNull::get(llvm::IntegerType::getInt8PtrTy(info->module->getContext())), info->builder);
       return ret;
     } else if (std::string(cname) == "NULL") {
       GenRet voidPtr;
@@ -557,7 +596,8 @@ void VarSymbol::codegenGlobalDef() {
     } else {
       // Anything that we don't have already
       //
-      llvm::GlobalVariable *gVar = llvm::cast<llvm::GlobalVariable>(info->module->getOrInsertGlobal(cname, type->codegen().type));
+      llvm::GlobalVariable *gVar = llvm::cast<llvm::GlobalVariable>(
+          info->module->getOrInsertGlobal(cname, type->codegen().type));
       gVar->setInitializer(llvm::Constant::getNullValue(type->codegen().type));
 
       info->lvt->addGlobalValue(cname, gVar, GEN_PTR, ! is_signed(type) );
@@ -574,20 +614,33 @@ void VarSymbol::codegenDef() {
   } else {
 #ifdef HAVE_LLVM
     if(isImmediate()) {
-      llvm::GlobalVariable *globalValue = llvm::cast<llvm::GlobalVariable>(info->module->getOrInsertGlobal(cname, type->codegen().type));
+      llvm::GlobalVariable *globalValue = llvm::cast<llvm::GlobalVariable>(
+          info->module->getOrInsertGlobal(cname, type->codegen().type));
       globalValue->setConstant(true);
 
       if(immediate->const_kind == CONST_KIND_STRING) {
         if(llvm::Value *constString = codegenImmediateLLVM(immediate)) {
-          llvm::GlobalVariable *globalString = llvm::cast<llvm::GlobalVariable>(constString);
-          globalValue->setInitializer(llvm::cast<llvm::Constant>(info->builder->CreateConstInBoundsGEP2_32(globalString, 0, 0)));
+          llvm::GlobalVariable *globalString =
+            llvm::cast<llvm::GlobalVariable>(constString);
+          globalValue->setInitializer(llvm::cast<llvm::Constant>(
+                info->builder->CreateConstInBoundsGEP2_32(globalString, 0, 0)));
         } else {
-          llvm::GlobalVariable *globalString = new llvm::GlobalVariable(*info->module, llvm::IntegerType::getInt8Ty(info->module->getContext()), true, llvm::GlobalVariable::PrivateLinkage, NULL, "string");
-          globalString->setInitializer(llvm::Constant::getNullValue(llvm::IntegerType::getInt8Ty(info->module->getContext())));
-          globalValue->setInitializer(llvm::cast<llvm::Constant>(info->builder->CreateConstInBoundsGEP1_32(globalString, 0)));
+          llvm::GlobalVariable *globalString =
+            new llvm::GlobalVariable(
+                *info->module,
+                llvm::IntegerType::getInt8Ty(info->module->getContext()),
+                true,
+                llvm::GlobalVariable::PrivateLinkage,
+                NULL,
+                "string");
+          globalString->setInitializer(llvm::Constant::getNullValue(
+                llvm::IntegerType::getInt8Ty(info->module->getContext())));
+          globalValue->setInitializer(llvm::cast<llvm::Constant>(
+                info->builder->CreateConstInBoundsGEP1_32(globalString, 0)));
         }
       } else {
-        globalValue->setInitializer(llvm::cast<llvm::Constant>(codegenImmediateLLVM(immediate)));
+        globalValue->setInitializer(llvm::cast<llvm::Constant>(
+              codegenImmediateLLVM(immediate)));
       }
 
       info->lvt->addGlobalValue(cname, globalValue, GEN_VAL, ! is_signed(type));
@@ -597,9 +650,12 @@ void VarSymbol::codegenDef() {
     info->lvt->addValue(cname, varAlloca, GEN_PTR, ! is_signed(type));
     
     if(ClassType *ctype = toClassType(type)) {
-      if(ctype->classTag == CLASS_CLASS || ctype->symbol->hasFlag(FLAG_WIDE) || ctype->symbol->hasFlag(FLAG_WIDE_CLASS)) {
+      if(ctype->classTag == CLASS_CLASS ||
+         ctype->symbol->hasFlag(FLAG_WIDE) ||
+         ctype->symbol->hasFlag(FLAG_WIDE_CLASS)) {
         if(isFnSymbol(defPoint->parentSymbol)) {
-          info->builder->CreateStore(llvm::Constant::getNullValue(varType), varAlloca);
+          info->builder->CreateStore(
+              llvm::Constant::getNullValue(varType), varAlloca);
         }
       }
     }
@@ -661,8 +717,9 @@ void ArgSymbol::verify() {
   // ArgSymbols appear only in formal parameter lists.
   // If this one has a successor but the successor is not an argsymbol
   // the formal parameter list is corrupted.
-  if (defPoint && defPoint->next && (!toDefExpr(defPoint->next)->sym ||
-                                     !toArgSymbol(toDefExpr(defPoint->next)->sym)))
+  if (defPoint && defPoint->next &&
+        (!toDefExpr(defPoint->next)->sym ||
+         !toArgSymbol(toDefExpr(defPoint->next)->sym)))
     INT_FATAL(this, "Bad ArgSymbol::defPoint->next");
 }
 
@@ -1026,7 +1083,10 @@ GenRet FnSymbol::codegenFunctionType(bool forHeader) {
       returnType = retType->codegen().type;
     }
     // now cast to correct function type
-    llvm::FunctionType* fnType = llvm::FunctionType::get(returnType, argumentTypes, /* is var arg */ false);
+    llvm::FunctionType* fnType =
+      llvm::FunctionType::get(returnType,
+                              argumentTypes,
+                              /* is var arg */ false);
     ret.type = fnType;
 #endif
   }
@@ -1102,7 +1162,8 @@ void FnSymbol::codegenPrototype() {
       numArgs++;
     }
   
-    llvm::FunctionType *type = llvm::cast<llvm::FunctionType>(this->codegenFunctionType(false).type);
+    llvm::FunctionType *type = llvm::cast<llvm::FunctionType>(
+        this->codegenFunctionType(false).type);
     
     llvm::Function *existing;
 
@@ -1118,7 +1179,8 @@ void FnSymbol::codegenPrototype() {
         INT_FATAL(this, "Redefinition of a function");
       }
       if((int)existing->arg_size() != numArgs) {
-        INT_FATAL(this, "Redefinition of a function with different number of args");
+        INT_FATAL(this,
+                  "Redefinition of a function with different number of args");
       }
       if(type != existing->getFunctionType()) {
         INT_FATAL(this, "Redefinition of a function with different arg types");
@@ -1128,10 +1190,18 @@ void FnSymbol::codegenPrototype() {
     }
 
     // No other function with the same name exists.
-    llvm::Function *func = llvm::Function::Create(type, hasFlag(FLAG_EXPORT) ? llvm::Function::ExternalLinkage : llvm::Function::InternalLinkage, cname, info->module);
+    llvm::Function *func =
+      llvm::Function::Create(
+          type,
+          hasFlag(FLAG_EXPORT) ? llvm::Function::ExternalLinkage
+                               : llvm::Function::InternalLinkage,
+          cname,
+          info->module);
 
     int argID = 0;
-    for(llvm::Function::arg_iterator ai = func->arg_begin(); ai != func->arg_end(); ai++) {
+    for(llvm::Function::arg_iterator ai = func->arg_begin();
+        ai != func->arg_end();
+        ai++) {
       ai->setName(argumentNames[argID++]);
     }
 #endif
@@ -1191,7 +1261,8 @@ void FnSymbol::codegenDef() {
 #ifdef HAVE_LLVM
     func = getFunctionLLVM(cname);
    
-    llvm::BasicBlock *block = llvm::BasicBlock::Create(info->module->getContext(), "entry", func);
+    llvm::BasicBlock *block =
+      llvm::BasicBlock::Create(info->module->getContext(), "entry", func);
     
     //info->builder = new llvm::IRBuilder<>(info->module->getContext());
     info->builder->SetInsertPoint(block);
@@ -1217,7 +1288,8 @@ void FnSymbol::codegenDef() {
         gArg.chplType = arg->typeInfo();
         GenRet tempVar = createTempVarWith(gArg);
 
-        info->lvt->addValue(arg->cname, tempVar.val, tempVar.isLVPtr, !is_signed(type));
+        info->lvt->addValue(arg->cname, tempVar.val,
+                            tempVar.isLVPtr, !is_signed(type));
       }
       ++ai;
     }
@@ -1276,7 +1348,8 @@ GenRet FnSymbol::codegen() {
         if( isBuiltinExternCFunction(cname) ) {
           // it's OK.
         } else {
-          USR_FATAL("Could not find C function for %s; perhaps it is missing or is a macro?", cname);
+          USR_FATAL("Could not find C function for %s; "
+                    " perhaps it is missing or is a macro?", cname);
         }
       } else {
         INT_FATAL("Missing LLVM function for %s", cname);
@@ -1479,13 +1552,13 @@ Immediate* EnumSymbol::getImmediate(void) {
 }
 
 
-ModuleSymbol::ModuleSymbol(const char* iName, ModTag iModTag, BlockStmt* iBlock) :
-  Symbol(E_ModuleSymbol, iName),
-  modTag(iModTag),
-  block(iBlock),
-  initFn(NULL),
-  filename(NULL),
-  doc(NULL)
+ModuleSymbol::ModuleSymbol(const char* iName, ModTag iModTag, BlockStmt* iBlock)
+  : Symbol(E_ModuleSymbol, iName),
+    modTag(iModTag),
+    block(iBlock),
+    initFn(NULL),
+    filename(NULL),
+    doc(NULL)
 {
   block->parentSymbol = this;
   registerModule(this);
@@ -1686,7 +1759,7 @@ void LabelSymbol::verify() {
     if (igs->gotoTag != GOTO_ITER_RESUME)
       INT_FATAL(this, "label's iterResumeGoto has unexpected gotoTag");
     if (getGotoLabelSymbol(igs) != this)
-      INT_FATAL(this, "label's iterResumeGoto does not point back to the label");
+      INT_FATAL(this,"label's iterResumeGoto does not point back to the label");
   }
 }
 
@@ -1867,7 +1940,8 @@ VarSymbol *new_ImagSymbol(const char *n, long double b, IF1_float_type size) {
   return s;
 }
 
-VarSymbol *new_ComplexSymbol(const char *n, long double r, long double i, IF1_complex_type size) {
+VarSymbol *new_ComplexSymbol(const char *n, long double r, long double i,
+                             IF1_complex_type size) {
   Immediate imm;
   switch (size) {
   case COMPLEX_SIZE_64: 

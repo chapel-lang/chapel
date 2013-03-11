@@ -140,7 +140,9 @@ GenRet BlockStmt::codegen() {
           if (def->parentExpr == this) {
             if (!toTypeSymbol(def->sym)) {
               if (fGenIDS && isVarSymbol(def->sym))
-                info->cStatements.push_back("/* " + numToString(def->sym->id) + " */ ");
+                info->cStatements.push_back("/* " +
+                                            numToString(def->sym->id) +
+                                            " */ ");
               def->sym->codegenDef();
             }
           }
@@ -151,7 +153,7 @@ GenRet BlockStmt::codegen() {
     body.codegen("");
 
     if (blockInfo && blockInfo->isPrimitive(PRIM_BLOCK_DOWHILE_LOOP)) {
-      std::string ftr = "} while (" + codegenValue(blockInfo->get(1)).c + ");\n";
+      std::string ftr= "} while (" + codegenValue(blockInfo->get(1)).c + ");\n";
       info->cStatements.push_back(ftr);
     } else if (this != getFunction()->body) {
       std::string end = "}";
@@ -162,7 +164,8 @@ GenRet BlockStmt::codegen() {
     }
   } else {
 #ifdef HAVE_LLVM
-    if (blockInfo && blockInfo->isPrimitive(PRIM_BLOCK_XMT_PRAGMA_FORALL_I_IN_N))
+    if (blockInfo &&
+        blockInfo->isPrimitive(PRIM_BLOCK_XMT_PRAGMA_FORALL_I_IN_N))
       INT_FATAL("xmt forall not supported with LLVM");
 
     llvm::Function *func = info->builder->GetInsertBlock()->getParent();
@@ -174,21 +177,29 @@ GenRet BlockStmt::codegen() {
     llvm::BasicBlock *blockStmtEndCond = NULL;
     llvm::BasicBlock *blockStmtEnd = NULL;
  
-    blockStmtBody = llvm::BasicBlock::Create(info->module->getContext(), FNAME("blk_body"));
+    blockStmtBody = llvm::BasicBlock::Create(
+        info->module->getContext(), FNAME("blk_body"));
    
     if(blockInfo) {
-      blockStmtEnd = llvm::BasicBlock::Create(info->module->getContext(), FNAME("blk_end"));
-      if(blockInfo->isPrimitive(PRIM_BLOCK_WHILEDO_LOOP) || blockInfo->isPrimitive(PRIM_BLOCK_FOR_LOOP)) {
+      blockStmtEnd = llvm::BasicBlock::Create(
+          info->module->getContext(), FNAME("blk_end"));
+      if (blockInfo->isPrimitive(PRIM_BLOCK_WHILEDO_LOOP) ||
+          blockInfo->isPrimitive(PRIM_BLOCK_FOR_LOOP)) {
         // Add the condition block.
-        blockStmtCond = llvm::BasicBlock::Create(info->module->getContext(), FNAME("blk_cond"));
+        blockStmtCond = llvm::BasicBlock::Create(
+            info->module->getContext(), FNAME("blk_cond"));
         func->getBasicBlockList().push_back(blockStmtCond);
         // Insert an explicit branch from the current block to the loop start.
         info->builder->CreateBr(blockStmtCond);
         // Now switch to the condition for code generation 
         info->builder->SetInsertPoint(blockStmtCond);
 
-        llvm::Value *condValue = info->builder->CreateLoad(blockInfo->get(1)->codegen().val);
-        condValue = info->builder->CreateICmpNE(condValue, llvm::ConstantInt::get(condValue->getType(), 0), FNAME("condition"));
+        llvm::Value *condValue =
+          info->builder->CreateLoad(blockInfo->get(1)->codegen().val);
+        condValue = info->builder->CreateICmpNE(
+            condValue,
+            llvm::ConstantInt::get(condValue->getType(), 0),
+            FNAME("condition"));
 
         // Now we might do either to the Body or to the End.
         info->builder->CreateCondBr(condValue, blockStmtBody, blockStmtEnd);
@@ -225,14 +236,19 @@ GenRet BlockStmt::codegen() {
     if(blockInfo) {
       if(blockInfo->isPrimitive(PRIM_BLOCK_DOWHILE_LOOP)) {
         // Add the condition block.
-        blockStmtEndCond = llvm::BasicBlock::Create(info->module->getContext(), FNAME("blk_end_cond"));
+        blockStmtEndCond = llvm::BasicBlock::Create(
+            info->module->getContext(), FNAME("blk_end_cond"));
         func->getBasicBlockList().push_back(blockStmtEndCond);
         // Insert an explicit branch from the body block to the loop condition.
         info->builder->CreateBr(blockStmtEndCond);
         // set insert point
         info->builder->SetInsertPoint(blockStmtEndCond);
-        llvm::Value *condValue = info->builder->CreateLoad(blockInfo->get(1)->codegen().val);
-        condValue = info->builder->CreateICmpNE(condValue, llvm::ConstantInt::get(condValue->getType(), 0), FNAME("condition"));
+        llvm::Value *condValue =
+          info->builder->CreateLoad(blockInfo->get(1)->codegen().val);
+        condValue = info->builder->CreateICmpNE(
+            condValue,
+            llvm::ConstantInt::get(condValue->getType(), 0),
+            FNAME("condition"));
         info->builder->CreateCondBr(condValue, blockStmtBody, blockStmtEnd);
       } else if( blockStmtCond ) {
         info->builder->CreateBr(blockStmtCond);
@@ -373,7 +389,8 @@ CondStmt::fold_cond_stmt()
       this->remove();
       return NULL;
     }
-    // Otherwise, invert the condition and move the else clause into the THEN slot.
+    // Otherwise, invert the condition and move the else clause into
+    // the THEN slot.
     Expr* cond = new CallExpr(PRIM_UNARY_LNOT, condExpr);
     this->replaceChild(condExpr, cond);
     this->replaceChild(thenStmt, elseStmt);
@@ -488,13 +505,17 @@ GenRet CondStmt::codegen() {
     llvm::Function *func = info->builder->GetInsertBlock()->getParent();
     getFunction()->codegenUniqueNum++;
 
-    llvm::BasicBlock *condStmtIf = llvm::BasicBlock::Create(info->module->getContext(), FNAME("cond_if"));
-    llvm::BasicBlock *condStmtThen = llvm::BasicBlock::Create(info->module->getContext(), FNAME("cond_then"));
+    llvm::BasicBlock *condStmtIf = llvm::BasicBlock::Create(
+        info->module->getContext(), FNAME("cond_if"));
+    llvm::BasicBlock *condStmtThen = llvm::BasicBlock::Create(
+        info->module->getContext(), FNAME("cond_then"));
     llvm::BasicBlock *condStmtElse = NULL;
-    llvm::BasicBlock *condStmtEnd = llvm::BasicBlock::Create(info->module->getContext(), FNAME("cond_end"));
+    llvm::BasicBlock *condStmtEnd = llvm::BasicBlock::Create(
+        info->module->getContext(), FNAME("cond_end"));
           
     if(elseStmt) {
-      condStmtElse = llvm::BasicBlock::Create(info->module->getContext(), FNAME("cond_else"));
+      condStmtElse = llvm::BasicBlock::Create(
+          info->module->getContext(), FNAME("cond_else"));
     }
           
     info->lvt->addLayer();
@@ -507,8 +528,14 @@ GenRet CondStmt::codegen() {
     llvm::Value *condValue = condExpr->codegen().val;
 
     condValue = info->builder->CreateLoad(condValue, FNAME("condValue"));
-    condValue = info->builder->CreateICmpNE(condValue, llvm::ConstantInt::get(condValue->getType(), 0), FNAME("condition"));
-    info->builder->CreateCondBr(condValue, condStmtThen, (elseStmt) ? condStmtElse : condStmtEnd);
+    condValue = info->builder->CreateICmpNE(
+        condValue,
+        llvm::ConstantInt::get(condValue->getType(), 0),
+        FNAME("condition"));
+    info->builder->CreateCondBr(
+        condValue,
+        condStmtThen,
+        (elseStmt) ? condStmtElse : condStmtEnd);
     
     func->getBasicBlockList().push_back(condStmtThen);
     info->builder->SetInsertPoint(condStmtThen);
@@ -542,7 +569,8 @@ GenRet CondStmt::codegen() {
 GotoStmt::GotoStmt(GotoTag init_gotoTag, const char* init_label) :
   Expr(E_GotoStmt),
   gotoTag(init_gotoTag),
-  label(init_label ? (Expr*)new UnresolvedSymExpr(init_label) : (Expr*)new SymExpr(gNil))
+  label(init_label ? (Expr*)new UnresolvedSymExpr(init_label)
+                   : (Expr*)new SymExpr(gNil))
 {
   gGotoStmts.add(this);
 }
@@ -605,9 +633,11 @@ void GotoStmt::verify() {
         INT_FATAL(this, "goto label is in a different function than the goto");
       GotoStmt* igs = getGotoLabelsIterResumeGoto(this);
       if ((gotoTag == GOTO_ITER_RESUME) == (igs == NULL))
-        INT_FATAL(this, "goto must be GOTO_ITER_RESUME iff its label has iterResumeGoto");
+        INT_FATAL(this,
+            "goto must be GOTO_ITER_RESUME iff its label has iterResumeGoto");
       if (gotoTag == GOTO_ITER_RESUME && igs != this)
-        INT_FATAL(this, "GOTO_ITER_RESUME goto's label's iterResumeGoto does not match the goto");
+        INT_FATAL(this,
+      "GOTO_ITER_RESUME goto's label's iterResumeGoto does not match the goto");
     }
   }
 }
@@ -691,7 +721,8 @@ GenRet GotoStmt::codegen() {
  
     getFunction()->codegenUniqueNum++;
 
-    llvm::BasicBlock *afterGoto = llvm::BasicBlock::Create(info->module->getContext(), FNAME("afterGoto"));
+    llvm::BasicBlock *afterGoto = llvm::BasicBlock::Create(
+        info->module->getContext(), FNAME("afterGoto"));
     func->getBasicBlockList().push_back(afterGoto);
     info->builder->SetInsertPoint(afterGoto);
 

@@ -61,13 +61,15 @@ void setupClangContext(GenInfo* info, ASTContext* Ctx)
 
   info->Ctx = Ctx;
   if( ! info->parseOnly ) {
-    info->module->setTargetTriple(info->Ctx->getTargetInfo().getTriple().getTriple());
+    info->module->setTargetTriple(
+        info->Ctx->getTargetInfo().getTriple().getTriple());
   }
 
   info->targetLayout = info->Ctx->getTargetInfo().getTargetDescription();
   layout = info->targetLayout;
 
-  info->targetData = new LLVM_TARGET_DATA(info->Ctx->getTargetInfo().getTargetDescription());
+  info->targetData =
+    new LLVM_TARGET_DATA(info->Ctx->getTargetInfo().getTargetDescription());
   if( ! info->parseOnly ) {
     info->cgBuilder = new CodeGen::CodeGenModule(*Ctx,
                               info->codegenOptions,
@@ -238,7 +240,9 @@ void readMacrosClang(void) {
   //         See ClangExpressionParser.cpp in lldb which parses
   //          a C expression from a command line... we need to
   //          do something similar.
-  for(Preprocessor::macro_iterator i = preproc.macro_begin(); i != preproc.macro_end(); i++) {
+  for(Preprocessor::macro_iterator i = preproc.macro_begin();
+      i != preproc.macro_end();
+      i++) {
 
     handleMacro(i->first, i->second);
   }
@@ -305,7 +309,9 @@ class CCodeGenConsumer : public ASTConsumer {
           // Add the enum type
           info->lvt->addGlobalCDecl(ed);
           // Add the enum values
-          for(EnumDecl::enumerator_iterator e = ed->enumerator_begin(); e != ed->enumerator_end(); e++) {
+          for(EnumDecl::enumerator_iterator e = ed->enumerator_begin();
+              e != ed->enumerator_end();
+              e++) {
             info->lvt->addGlobalCDecl(*e); // & goes away with newer clang
           }
        } else if(RecordDecl *rd = dyn_cast<RecordDecl>(D)) {
@@ -427,7 +433,8 @@ void setupClang(GenInfo* info, std::string mainFile)
   info->DiagClient= new TextDiagnosticPrinter(errs(),&*info->diagOptions);
   info->DiagID = new DiagnosticIDs();
 #if HAVE_LLVM_VER >= 32
-  info->Diags = new DiagnosticsEngine(info->DiagID, &*info->diagOptions, info->DiagClient);
+  info->Diags = new DiagnosticsEngine(
+      info->DiagID, &*info->diagOptions, info->DiagClient);
 #else
   info->Diags = new DiagnosticsEngine(info->DiagID, info->DiagClient);
 #endif
@@ -459,7 +466,8 @@ void setupClang(GenInfo* info, std::string mainFile)
     CI->getHeaderSearchOpts().ResourceDir = P.str();
     sys::Path P2(P);
     P.appendComponent("include");
-    CI->getHeaderSearchOpts().AddPath(P.str(), frontend::System, false, false, false, true, false);
+    CI->getHeaderSearchOpts().AddPath(
+        P.str(), frontend::System,false, false, false, true, false);
   }
 
   // Create a compiler instance to handle the actual work.
@@ -538,7 +546,8 @@ void runClang(const char* just_parse_filename) {
   std::string compileline = home + "/util/config/compileline";
   if( debugCCode ) compileline += " DEBUG=1";
   if( optimizeCCode ) compileline += " OPTIMIZE=1";
-  std::string readargsfrom = compileline + " --llvm-install-dir --includes-and-defines";
+  std::string readargsfrom = compileline +
+                              " --llvm-install-dir --includes-and-defines";
   std::vector<std::string> args;
   std::vector<std::string> clangCCArgs;
   std::vector<std::string> clangLDArgs;
@@ -625,7 +634,9 @@ void runClang(const char* just_parse_filename) {
   // Initialize gGenInfo
   // Toggle LLVM code generation in our clang run;
   // turn it off if we just wanted to parse some C.
-  gGenInfo = new GenInfo(clangInstallDir, compileline, clangCCArgs, clangLDArgs, clangOtherArgs, just_parse_filename != NULL);
+  gGenInfo = new GenInfo(clangInstallDir,
+                         compileline, clangCCArgs, clangLDArgs, clangOtherArgs,
+                         just_parse_filename != NULL);
 
   if( llvmCodegen )
   {
@@ -660,8 +671,11 @@ void runClang(const char* just_parse_filename) {
       llvm::Type * voidTy =  llvm::Type::getVoidTy(info->module->getContext());
       std::vector<llvm::Type*> args;
       llvm::FunctionType * FT = llvm::FunctionType::get(voidTy, args, false);
-      Function * F = Function::Create(FT, Function::InternalLinkage, "chplDummyFunction", info->module);
-      llvm::BasicBlock *block = llvm::BasicBlock::Create(info->module->getContext(), "entry", F);
+      Function * F =
+        Function::Create(FT, Function::InternalLinkage,
+                         "chplDummyFunction", info->module);
+      llvm::BasicBlock *block =
+        llvm::BasicBlock::Create(info->module->getContext(), "entry", F);
       info->builder->SetInsertPoint(block);
     }
     // read macros. May call IRBuilder methods to codegen a string,
@@ -716,15 +730,18 @@ llvm::Type* codegenCType(const TypeDecl* td)
     qType = tnd->getCanonicalDecl()->getUnderlyingType();
     // had const Type *ctype = td->getUnderlyingType().getTypePtrOrNull();
     //could also do:
-    //  qType = tnd->getCanonicalDecl()->getTypeForDecl()->getCanonicalTypeInternal();
+    //  qType =
+    //   tnd->getCanonicalDecl()->getTypeForDecl()->getCanonicalTypeInternal();
   } else if( const EnumDecl* ed = dyn_cast<EnumDecl>(td) ) {
-    qType = ed->getCanonicalDecl()->getIntegerType(); // could be getPromotionType()
+    qType = ed->getCanonicalDecl()->getIntegerType();
+    // could also use getPromotionType()
     //could also do:
-    //  qType = tnd->getCanonicalDecl()->getTypeForDecl()->getCanonicalTypeInternal();
+    //  qType =
+    //   tnd->getCanonicalDecl()->getTypeForDecl()->getCanonicalTypeInternal();
   } else if( const RecordDecl* rd = dyn_cast<RecordDecl>(td) ) {
     RecordDecl *def = rd->getDefinition();
     INT_ASSERT(def);
-    qType = def->getCanonicalDecl()->getTypeForDecl()->getCanonicalTypeInternal();
+    qType=def->getCanonicalDecl()->getTypeForDecl()->getCanonicalTypeInternal();
   } else {
     INT_FATAL("Unknown clang type declaration");
   }
@@ -780,7 +797,8 @@ void LayeredValueTable::removeLayer(){
 }
 
 
-void LayeredValueTable::addValue(StringRef name, Value *value, uint8_t isLVPtr, bool isUnsigned) {
+void LayeredValueTable::addValue(
+    StringRef name, Value *value, uint8_t isLVPtr, bool isUnsigned) {
   Storage store;
   store.u.value = value;
   store.isLVPtr = isLVPtr;
@@ -788,7 +806,8 @@ void LayeredValueTable::addValue(StringRef name, Value *value, uint8_t isLVPtr, 
   (layers.front())[name] = store;
 }
 
-void LayeredValueTable::addGlobalValue(StringRef name, Value *value, uint8_t isLVPtr, bool isUnsigned) {
+void LayeredValueTable::addGlobalValue(
+    StringRef name, Value *value, uint8_t isLVPtr, bool isUnsigned) {
   Storage store;
   store.u.value = value;
   store.isLVPtr = isLVPtr;
@@ -848,7 +867,8 @@ GenRet LayeredValueTable::getValue(StringRef name) {
     }
     if( store->u.cdecl && isa<NamedDecl>(store->u.cdecl) ) {
       // we have a clang named decl.
-      // maybe TypedefDecl,EnumDecl,RecordDecl,FunctionDecl,VarDecl,EnumConstantDecl
+      // maybe TypedefDecl,EnumDecl,RecordDecl,FunctionDecl,
+      // VarDecl,EnumConstantDecl
       if( isa<ValueDecl>(store->u.cdecl) ) {
         ValueDecl* vd = cast<ValueDecl>(store->u.cdecl);
 
@@ -881,7 +901,8 @@ llvm::Type *LayeredValueTable::getType(StringRef name) {
       return store->u.type;
     if( store->u.cdecl && isa<NamedDecl>(store->u.cdecl) ) {
       // we have a clang named decl.
-      // maybe TypedefDecl,EnumDecl,RecordDecl,FunctionDecl,VarDecl,EnumConstantDecl
+      // maybe TypedefDecl,EnumDecl,RecordDecl,FunctionDecl,
+      // VarDecl,EnumConstantDecl
       if( isa<TypeDecl>(store->u.cdecl) ) {
         TypeDecl* td = cast<TypeDecl>(store->u.cdecl);
         // Convert it to an LLVM type.
@@ -897,7 +918,8 @@ NamedDecl* LayeredValueTable::getCDecl(StringRef name) {
   if(Storage *store = get(name)) {
     if( store->u.cdecl && isa<NamedDecl>(store->u.cdecl) ) {
       // we have a clang named decl.
-      // maybe TypedefDecl,EnumDecl,RecordDecl,FunctionDecl,VarDecl,EnumConstantDecl
+      // maybe TypedefDecl,EnumDecl,RecordDecl,FunctionDecl,
+      // VarDecl,EnumConstantDecl
       return store->u.cdecl;
     }
   }
@@ -986,7 +1008,7 @@ int getCRecordMemberGEP(const char* typeName, const char* fieldName)
     }
   }
   INT_ASSERT(field);
-  ret = info->cgBuilder->getTypes().getCGRecordLayout(rec).getLLVMFieldNo(field);
+  ret=info->cgBuilder->getTypes().getCGRecordLayout(rec).getLLVMFieldNo(field);
   return ret;
 }
 
@@ -1006,14 +1028,20 @@ void makeBinaryLLVM(void) {
   if( saveCDir[0] == '\0' ) {
     // Save the generated LLVM before optimization.
     std::string errorInfo;
-    OwningPtr<tool_output_file> output (new tool_output_file(moduleFilename.c_str(), errorInfo, raw_fd_ostream::F_Binary));
+    OwningPtr<tool_output_file> output (
+        new tool_output_file(moduleFilename.c_str(),
+                             errorInfo,
+                             raw_fd_ostream::F_Binary));
     WriteBitcodeToFile(info->module, output->os());
     output->keep();
     output->os().flush();
   }
 
   std::string errorInfo;
-  OwningPtr<tool_output_file> output (new tool_output_file(moduleFilename.c_str(), errorInfo, raw_fd_ostream::F_Binary));
+  OwningPtr<tool_output_file> output (
+      new tool_output_file(moduleFilename.c_str(),
+                           errorInfo,
+                           raw_fd_ostream::F_Binary));
  
   EmitBackendOutput(*info->Diags, info->codegenOptions,
                     info->clangTargetOptions, info->clangLangOptions,
@@ -1062,7 +1090,8 @@ void makeBinaryLLVM(void) {
 
   // Run linker...
   std::string command = clangInstall + "/bin/clang " + options + " " +
-                        moduleFilename + " " + maino + " -o " + executableFilename;
+                        moduleFilename + " " + maino +
+                        " -o " + executableFilename;
   for( size_t i = 0; i < dotOFiles.size(); i++ ) {
     command += " ";
     command += dotOFiles[i];
