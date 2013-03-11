@@ -44,6 +44,10 @@ linux32 regressions (in addition to the above)
 performance-specific regressions
 ================================
 
+lulesh decreasing performance (~10/20/12 and 1/23/13)
+-----------------------------------------------------
+gbt, 3/11/13: I've taken ownership of this.
+
 execution timeouts (08/29/09)
 -----------------------------
 [Error: Timed out executing program studies/shootout/nbody/nbody_iterator_7 (compopts: 1)]

@@ -30,6 +30,53 @@
 Problems analyzed and assigned that should be fixed soon:
 =========================================================
 
+gbt, 3/11/13:
+
+1. Got a number of execution time errors in cray-xt.cray-prgenv-cray
+   testing over the weekend, due to r21086.  Sung is working on these.
+     distributions/robust/arithmetic/basics/test_array_accesses1
+     distributions/robust/arithmetic/basics/test_array_assignment
+     distributions/robust/arithmetic/basics/test_array_iteration1
+     distributions/robust/arithmetic/basics/test_array_swap
+     distributions/robust/arithmetic/basics/test_domain_iteration1
+     distributions/robust/arithmetic/basics/test_infer_array_type
+     distributions/robust/arithmetic/basics/test_zipper_default
+     distributions/robust/arithmetic/modules/test_module_Norm
+     distributions/robust/arithmetic/modules/test_module_Random
+     distributions/robust/arithmetic/optimizations/optimizeOnClauses_basic_tuple
+     distributions/robust/arithmetic/reindexing/test_array_alias4
+     distributions/robust/arithmetic/reindexing/test_reindexing1
+     distributions/robust/arithmetic/reindexing/test_reindexing2
+     distributions/robust/arithmetic/reindexing/test_reindexing3
+     distributions/robust/arithmetic/reindexing/test_reindexing4
+     distributions/robust/arithmetic/reindexing/test_reindexing5
+     distributions/robust/arithmetic/reindexing/test_reindexing7
+     distributions/robust/arithmetic/trivial/test_writeln
+
+2. I started looking at the lulesh performance changes but didn't get
+   far.  Had all kinds of build problems on kaibab and elsewhere,
+   notably Chapel compilers built with profiling enabled that hung, and
+   HPCToolkit builds from the past that had unaccountably disappeared.
+   I believe I'm nearly to the point of being able to really start
+   looking at this, though, so I'm going to hang on to it.  I made an
+   entry to this effect in REGRESSIONS.
+
+3. The only other new failure that occurred and won't have shown up as
+   fixed in all cases before the end of my shift was with these compile
+   time failures in GMP-related tests:
+     modules/standard/gmp/ferguson/gmp_dist_array
+     modules/standard/gmp/ferguson/gmp_test
+     modules/standard/gmp/ferguson/gmp_writeln
+     modules/standard/gmp/studies/gmp-simple-long-inout
+     studies/shootout/pidigits/bradc/pidigits-blc
+     studies/shootout/pidigits/bradc/pidigits-iter
+     studies/shootout/pidigits/hilde/pidigits
+   These were all due to a problem in r21083, which I fixed in r21107.
+   It was reported in chpbld02:cray-xt-gnu testing, though, so the last
+   of these may not show up as Resolved Errors until 3/15.
+
+----------------------------------------------------------------------
+
 These failures are due to gasnet-fast taking more than 24 hours and
 stepping on itself -- these should clear up on the next run, but the
 problem will persist if we don't figure out why it's taking so long.
@@ -118,6 +165,9 @@ These things regularly cause noise in testing:
 
 linux64.gnu.gasnet.qthreads.none (UNASSIGNED)
 ---------------------------------------------
+gbt: 3/11/13: release/examples/benchmarks/hpcc/ra-atomics (compopts: 1)
+              got a segfault
+
 bradc: 3/2/13: distributions/bradc/blkCyc/loopBlkCyc got a seg fault
 
 bradc: week of 2/25: continue getting noise, particularly on
