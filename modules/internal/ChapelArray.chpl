@@ -1698,7 +1698,7 @@ module ChapelArray {
       checkArrayShapesUponAssignment(a, b);
   
     // try bulk transfer
-    if chpl__isArray(b) && !chpl__serializeAssignment(a, b) {
+    if chpl__isArray(b) && !chpl__serializeAssignment(a, b) && (!a._value.isReplicatedDist() && !b._value.isReplicatedDist()){
       if (useBulkTransfer &&
           chpl__compatibleForBulkTransfer(a, b) &&
           chpl__useBulkTransfer(a, b))

@@ -898,7 +898,7 @@ module DefaultRectangular {
     // 2 and and now srcStride=(2,10) and dstStride=(1,10).
     var dstAux:bool = false;
     var srcAux:bool = false;
-    
+    if rank > 1 then
       if (A.dom.dsiDim(rank).stride>1 && B.dom.dsiDim(rank).stride==1)
       {
         if stridelevels < rank then stridelevels+=1;
@@ -912,7 +912,7 @@ module DefaultRectangular {
     // We now obtain the count arrays for source and destination arrays 
     dstCount= A.computeBulkCount(stridelevels,dstWholeDim,dstAux);
     srcCount= B.computeBulkCount(stridelevels,srcWholeDim,srcAux);
-    
+
   //Then the Stride arrays for source and destination arrays
     var dstStride, srcStride: [1..rank] int(32);
     //When the source and destination arrays have different sizes 
@@ -946,7 +946,7 @@ module DefaultRectangular {
   proc DefaultRectangularArr.doiBulkTransferStrideComm(B, stridelevels:int(32), dstStride, srcStride, dstCount, srcCount, Alo, Blo)
    {
     if debugDefaultDistBulkTransfer then
-      writeln("Locale: ", here.id, " stridelvl: ", stridelevels, " DstStride: ", dstStride," SrcStride: ",srcStride, " Count: ", dstCount, " dst.Blk: ",blk, " src.Blk: ",B._value.blk);
+      writeln("Locale: ", here.id, " stridelvl: ", stridelevels, " DstStride: ", dstStride," SrcStride: ",srcStride, " Count: ", dstCount, " dst.Blk: ",blk, " src.Blk: ",B.blk);
     //CASE 1: when the data in destination array is stored "here", it will use "chpl_comm_get_strd". 
     if this.data.locale==here
     {
@@ -1056,8 +1056,8 @@ module DefaultRectangular {
   proc DefaultRectangularArr.computeBulkStrideLevels(rankcomp):int(32) where rank == 1
   {//To understand the blk(1)==1 condition,
     //see test/optimizations/bulkcomm/alberto/test_rank_change2.chpl(example 4)
-    if dom.dsiStride==1 && blk(1)==1 then return 0;
-  else return 1;
+    if (dom.dsiStride==1 && blk(1)==1)|| dom.dsiDim(1).length==1 then return 0;
+    else return 1;
   }
   
   //Cases for computeBulkStrideLevels where rank>1:
