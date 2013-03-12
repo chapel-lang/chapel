@@ -10,6 +10,7 @@
 #include "chpl-mem.h"
 #include "chplmemtrack.h"
 #include "chpl-tasks.h"
+#include "chplsys.h"
 #include "config.h"
 #include "error.h"
 
@@ -149,18 +150,11 @@ int main(int argc, char* argv[]) {
   // initialize the task management layer
   //
   //
-  // This is an early call to initialize the ChapelThreads module so
-  // that its config consts (numThreadsPerLocale and callStackSize)
-  // can be used to initialize the tasking layer.  
-  //
-  chpl__init_ChapelThreads(0, myFilename);
-  // (Can we grab those constants directly, and stay out of the module code?)
-  //
   numPollingTasks = chpl_comm_numPollingTasks();
   if (numPollingTasks != 0 && numPollingTasks != 1) {
     chpl_internal_error("chpl_comm_numPollingTasks() returned illegal value");
   }
-  chpl_task_init(numThreadsPerLocale, chpl__maxThreadsPerLocale, 
+  chpl_task_init(numThreadsPerLocale, chpl_maxThreads(), 
                  numPollingTasks, callStackSize); 
 
   //
