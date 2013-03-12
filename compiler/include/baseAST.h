@@ -43,7 +43,8 @@
   macro(NamedExpr) sep                             \
   macro(BlockStmt) sep                             \
   macro(CondStmt) sep                              \
-  macro(GotoStmt)
+  macro(GotoStmt) sep                              \
+  macro(ExternBlockStmt)
 
 #define foreach_ast(macro)                      \
   foreach_ast_sep(macro, ;)
@@ -104,6 +105,7 @@ enum AstTag {
   E_BlockStmt,
   E_CondStmt,
   E_GotoStmt,
+  E_ExternBlockStmt,
   E_Expr,
 
   E_ModuleSymbol,
@@ -266,6 +268,7 @@ def_is_ast(NamedExpr)
 def_is_ast(BlockStmt)
 def_is_ast(CondStmt)
 def_is_ast(GotoStmt)
+def_is_ast(ExternBlockStmt)
 def_is_ast(ModuleSymbol)
 def_is_ast(VarSymbol)
 def_is_ast(ArgSymbol)
@@ -277,6 +280,7 @@ def_is_ast(PrimitiveType)
 def_is_ast(EnumType)
 def_is_ast(ClassType)
 #undef def_is_ast
+
 //
 // safe downcast inlines: downcast BaseAST*, Expr*, Symbol*, or Type*
 //   note: toDerivedClass is equivalent to dynamic_cast<DerivedClass*>
@@ -291,6 +295,7 @@ def_to_ast(NamedExpr)
 def_to_ast(BlockStmt)
 def_to_ast(CondStmt)
 def_to_ast(GotoStmt)
+def_to_ast(ExternBlockStmt)
 def_to_ast(Expr)
 def_to_ast(ModuleSymbol)
 def_to_ast(VarSymbol)

@@ -32,6 +32,10 @@ void readExternC(void) {
   // Do nothing if we don't have LLVM support.
 }
 
+void cleanupExternC(void) {
+  // Do nothing if we don't have LLVM support.
+}
+
 #else
 
 using namespace clang;
@@ -536,6 +540,38 @@ static void handleErrorLLVM(void* user_data, const std::string& reason)
   INT_FATAL("llvm fatal error: %s", reason.c_str());
 }
 
+struct ExternBlockInfo {
+  GenInfo* gen_info;
+  fileinfo file;
+  ExternBlockInfo() : gen_info(NULL), file() { }
+  ~ExternBlockInfo() { }
+};
+
+typedef std::set<ModuleSymbol*> module_set_t;
+typedef module_set_t::iterator module_set_iterator_t;
+
+module_set_t gModulesWithExternBlocks;
+
+bool lookupInExternBlock(ModuleSymbol* module, const char* name,
+                         clang::NamedDecl** cDecl,
+                         ChapelType** chplType)
+{
+  if( ! module->extern_info ) return false;
+  *cDecl = module->extern_info->gen_info->lvt->getCDecl(name);
+  VarSymbol* var = module->extern_info->gen_info->lvt->getVarSymbol(name);
+  if( var ) *chplType = var->typeInfo();
+  return ( (*chplType) || (*cDecl) );
+}
+bool alreadyConvertedExtern(ModuleSymbol* module, const char* name)
+{
+  return module->extern_info->gen_info->lvt->isAlreadyInChapelAST(name);
+}
+bool setAlreadyConvertedExtern(ModuleSymbol* module, const char* name)
+{
+  return module->extern_info->gen_info->lvt->markAddedToChapelAST(name);
+}
+
+
 void runClang(const char* just_parse_filename) {
   static bool is_installed_fatal_error_handler = false;
 
@@ -613,9 +649,13 @@ void runClang(const char* just_parse_filename) {
         }
       }
     }
+    // Include extern C blocks
+    if( externC && gAllExternCode.filename ) {
+      clangOtherArgs.push_back("-include");
+      clangOtherArgs.push_back(gAllExternCode.filename);
+    }
   } else {
-    // Just running clang to parse a file
-    // (in the future, to parse the extern blocks for this module).
+    // Just running clang to parse the extern blocks for this module.
     clangOtherArgs.push_back("-include");
     clangOtherArgs.push_back(just_parse_filename);
   }
@@ -638,7 +678,7 @@ void runClang(const char* just_parse_filename) {
                          compileline, clangCCArgs, clangLDArgs, clangOtherArgs,
                          just_parse_filename != NULL);
 
-  if( llvmCodegen )
+  if( llvmCodegen || externC )
   {
     GenInfo *info = gGenInfo;
 
@@ -655,7 +695,7 @@ void runClang(const char* just_parse_filename) {
     info->cgAction = new CCodeGenAction();
     if (!info->Clang->ExecuteAction(*info->cgAction)) {
       if (just_parse_filename) {
-        USR_FATAL("error running clang during parsing");
+        USR_FATAL("error running clang on extern block");
       } else {
         USR_FATAL("error running clang during code generation");
       }
@@ -688,8 +728,85 @@ void runClang(const char* just_parse_filename) {
   }
 }
 
+static
+void saveExternBlock(ModuleSymbol* module, const char* extern_code)
+{
+  if( ! gAllExternCode.filename ) {
+    openCFile(&gAllExternCode, "extern-code", "c");
+    INT_ASSERT(gAllExternCode.fptr);
+  }
+
+  if( ! module->extern_info ) {
+    // Figure out what file to place the C code into.
+    module->extern_info = new ExternBlockInfo();
+    const char* name = astr("extern_block_", module->cname);
+    openCFile(&module->extern_info->file, name, "c");
+    // Could put #ifndef/define/endif wrapper start here.
+  }
+  FILE* f = module->extern_info->file.fptr;
+  INT_ASSERT(f);
+  // Append the C code to that file.
+  fputs(extern_code, f);
+  // Always make sure it ends in a close semi (solves errors)
+  fputs("\n;\n", f);
+  // Add this module to the set of modules needing extern compilation.
+  std::pair<module_set_iterator_t,bool> already_there;
+  already_there = gModulesWithExternBlocks.insert(module);
+  if( already_there.second ) {
+    // A new element was added to the map ->
+    //   first time we have worked with this module.
+    // Add a #include of this module's extern block code to the
+    //   global extern code file.
+    fprintf(gAllExternCode.fptr,
+           "#include \"%s\"\n", module->extern_info->file.filename);
+  }
+}
+
+
 void readExternC(void) {
-  // Do nothing - not yet supported.
+  // Handle extern C blocks.
+  forv_Vec(ExternBlockStmt, eb, gExternBlockStmts) {
+    // Figure out the parent module symbol.
+    ModuleSymbol* module = eb->getModule();
+    saveExternBlock(module, eb->c_code);
+  }
+
+  // Close extern_c_file.
+  if( gAllExternCode.fptr ) closefile(&gAllExternCode);
+  // Close any extern files for any modules we had generated code for.
+  module_set_iterator_t it;
+  for( it = gModulesWithExternBlocks.begin();
+       it != gModulesWithExternBlocks.end();
+       ++it ) {
+    ModuleSymbol* module = *it;
+    INT_ASSERT(module->extern_info);
+    // Could put #ifndef/define/endif wrapper end here.
+    closefile(&module->extern_info->file);
+    // Now parse the extern C code for that module.
+    runClang(module->extern_info->file.filename);
+    // Now swap what went into the global layered value table
+    // into the module's own layered value table.
+    module->extern_info->gen_info = gGenInfo;
+    gGenInfo = NULL;
+  }
+}
+
+void cleanupExternC(void) {
+  module_set_iterator_t it;
+  for( it = gModulesWithExternBlocks.begin();
+       it != gModulesWithExternBlocks.end();
+       ++it ) {
+    ModuleSymbol* module = *it;
+    INT_ASSERT(module->extern_info);
+    cleanupClang(module->extern_info->gen_info);
+    delete module->extern_info->gen_info;
+    delete module->extern_info;
+    // Remove all ExternBlockStmts from this module.
+    forv_Vec(ExternBlockStmt, eb, gExternBlockStmts) {
+      eb->remove();
+    }
+    gExternBlockStmts.clear();
+  }
 }
 
 Function* getFunctionLLVM(const char* name)
@@ -1023,13 +1140,13 @@ void makeBinaryLLVM(void) {
   GenInfo* info = gGenInfo;
 
   std::string moduleFilename = genIntermediateFilename("chpl__module.bc");
-  std::string optFilename = genIntermediateFilename("chpl__module-opt.bc");
+  std::string preOptFilename = genIntermediateFilename("chpl__module-nopt.bc");
 
-  if( saveCDir[0] == '\0' ) {
+  if( saveCDir[0] != '\0' ) {
     // Save the generated LLVM before optimization.
     std::string errorInfo;
     OwningPtr<tool_output_file> output (
-        new tool_output_file(moduleFilename.c_str(),
+        new tool_output_file(preOptFilename.c_str(),
                              errorInfo,
                              raw_fd_ostream::F_Binary));
     WriteBitcodeToFile(info->module, output->os());

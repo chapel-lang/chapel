@@ -739,3 +739,43 @@ const char* GotoStmt::getName() {
   else
     return NULL;
 }
+
+
+
+ExternBlockStmt::ExternBlockStmt(const char* init_c_code) :
+  Expr(E_ExternBlockStmt),
+  c_code(init_c_code)
+{
+  gExternBlockStmts.add(this);
+}
+
+void ExternBlockStmt::verify() {
+  Expr::verify();
+  if (astTag != E_ExternBlockStmt) {
+    INT_FATAL(this, "Bad ExternBlockStmt::astTag");
+  }
+  if (!c_code) {
+    INT_FATAL(this, "ExternBlockStmt has no c_code");
+  }
+}
+
+void ExternBlockStmt::replaceChild(Expr* old_ast, Expr* new_ast) {
+  INT_FATAL(this, "ExternBlockStmt replaceChild called");
+}
+
+GenRet ExternBlockStmt::codegen() {
+  GenRet ret;
+  // Needs to be handled specially by creating a C
+  //  file per module..
+  INT_FATAL(this, "ExternBlockStmt codegen called");
+  return ret;
+}
+
+
+ExternBlockStmt*
+ExternBlockStmt::copyInner(SymbolMap* map) {
+  ExternBlockStmt* copy = new ExternBlockStmt(c_code);
+
+  return copy;
+}
+

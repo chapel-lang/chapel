@@ -134,6 +134,11 @@ char mainModuleName[256] = "";
 bool printSearchDirs = false;
 bool printModuleFiles = false;
 bool llvmCodegen = false;
+#ifdef HAVE_LLVM
+bool externC = true;
+#else
+bool externC = false;
+#endif
 char breakOnCodegenCname[256] = "";
 
 bool debugCCode = false;
@@ -642,6 +647,9 @@ static ArgumentDescription arg_desc[] = {
  {"print-passes", ' ', NULL, "[Don't] print compiler passes", "N", &printPasses, "CHPL_PRINT_PASSES", NULL},
 
  {"", ' ', NULL, "Miscellaneous Options", NULL, NULL, NULL, NULL},
+// Support for extern { c-code-here } blocks could be toggled with this
+// flag, but instead we just leave it on if the compiler can do it.
+// {"extern-c", ' ', NULL, "Enable [disable] extern C block support", "f", &externC, "CHPL_EXTERN_C", NULL},
  {"devel", ' ', NULL, "Compile as a developer [user]", "N", &developer, "CHPL_DEVELOPER", setDevelSettings},
  {"explain-call", ' ', "<call>[:<module>][:<line>]", "Explain resolution of call", "S256", fExplainCall, NULL, NULL},
  {"explain-instantiation", ' ', "<function|type>[:<module>][:<line>]", "Explain instantiation of type", "S256", fExplainInstantiation, NULL, NULL},

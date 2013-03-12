@@ -27,6 +27,7 @@ GenRet codegenCValue(const clang::ValueDecl *vd);
 // forward declare.
 class Type;
 class VarSymbol;
+class ModuleSymbol;
 
 /* The LayeredValueTable stores
  * symbols we got from clang or symbol we have generated
@@ -109,6 +110,13 @@ void makeBinaryLLVM();
 void prepareCodegenLLVM();
 void finishCodegenLLVM();
 void runClang(const char* just_parse_filename);
-#endif
+
+bool lookupInExternBlock(ModuleSymbol* module, const char* name,
+                             clang::NamedDecl** cDecl, Type** chplType);
+bool alreadyConvertedExtern(ModuleSymbol* module, const char* name);
+bool setAlreadyConvertedExtern(ModuleSymbol* module, const char* name);
+#endif // HAVE_LLVM
+
+extern fileinfo gAllExternCode;
 
 #endif //CLANGUTIL_H

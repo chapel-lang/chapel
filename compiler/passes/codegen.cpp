@@ -24,6 +24,7 @@
 // to all of the codegen() routines
 GenInfo* gGenInfo;
 int gMaxVMT = -1;
+fileinfo gAllExternCode;
 
 static const char*
 subChar(Symbol* sym, const char* ch, const char* x) {
@@ -624,6 +625,11 @@ static void codegen_header() {
     genIncludeCommandLineHeaders(hdrfile);
 
     fprintf(hdrfile, "#include \"stdchpl.h\"\n");
+
+    //include generated extern C header file
+    if (externC && gAllExternCode.filename != NULL) {
+      fprintf(hdrfile, astr("#include \"", gAllExternCode.filename, "\"\n"));
+    }
   }
 
   genClassIDs(types);
