@@ -8,22 +8,14 @@ module ChapelLocale {
   // of a wide pointer.
   // It simplified the implementation of the various PRIM_WIDE_GET_??? primitives,
   // by allowing the code generation routines for field extraction to be reused.
-  extern type c_nodeid_t;
-  extern type c_subloc_t;
-  // Eventually, it would be desirable to have the architecture specify the allocation
-  // of bits in a localeID.  Right now, we borrow the types used for those quantities in
-  // the backend, and in that way guarantee that the types agree.
-
-  // Right now, much of the unification of the various runtime facilities is done through the 
-  // chpl_ interfaces described in the generic runtime/include files.  If the unification
-  // is instead provided in Chapel architectural descriptions, then a greater variety of 
-  // runtime facilities can be accommodated.  For example, the single type c_nodeid_t 
+  type chpl_nodeID_t = int(32);
+  type chpl_sublocID_t = int(32);
+  // This module now controls the allocation of bits within a chpl_localeID_t.
 
 
-  pragma "no object"
   record chpl_localeID_t {
-    var node : c_nodeid_t;
-    var subloc : c_subloc_t;
+    var node : chpl_nodeID_t;
+    var subloc : chpl_sublocID_t;
   };
 
   proc ==(a:chpl_localeID_t, b:chpl_localeID_t)

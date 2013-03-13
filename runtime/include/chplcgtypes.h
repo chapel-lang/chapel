@@ -12,12 +12,10 @@
 #else
 #define chplcgtypes_h
 
-// As long as chplcgfns.h is not included by any compiler-generated code, we can
-// remove the #if 0 and it will work.  Then, the duplicate declaration in chpltypes.c
-// can be removed (q.v.).
-typedef struct __chpl_localeID_t {
-  c_nodeid_t node;
-  c_subloc_t subloc;
+// Copied verbatim from chpl__header.h.
+typedef struct chpl_chpl_localeID_t_s {
+  int32_t node;
+  int32_t subloc;
 } chpl_localeID_t;
 
 #endif

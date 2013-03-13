@@ -118,15 +118,6 @@ isFastPrimitive(CallExpr *call) {
     }
     break;
 
-  case PRIM_LOC_GET_NODE:
-  case PRIM_LOC_SET_NODE:
-  case PRIM_LOC_GET_SUBLOC:
-  case PRIM_LOC_SET_SUBLOC:
-#ifdef DEBUG
-    printf(" *** OK (PRIM_LOC_GET_NODE, etc.): %s\n", call->primitive->name);
-#endif
-    return true;
-
 // I think these can always return true. <hilde>
 // But that works only if the remote get is removed from code generation.
   case PRIM_WIDE_GET_LOCALE:

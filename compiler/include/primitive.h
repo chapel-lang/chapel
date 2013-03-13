@@ -175,11 +175,6 @@ enum PrimitiveTag {
   PRIM_WIDE_GET_SUBLOC,         // Get just the sublocale portion of a wide pointer.
   PRIM_WIDE_GET_ADDR,           // Get just the address portion of a wide pointer.
 
-  PRIM_LOC_GET_NODE,            // Get the node part of a chpl_localeID_t
-  PRIM_LOC_SET_NODE,            // Set <ditto>.
-  PRIM_LOC_GET_SUBLOC,          // Get the sublocale part of a chpl_localeID_t.
-  PRIM_LOC_SET_SUBLOC,          // Set <ditto>.
-
   PRIM_LOCALE_ID,               // Returns the current locale ID (nodeID + sublocID).
   PRIM_IS_HERE,                 // Returns true if the arg matches the current locale ID.
   PRIM_NODE_ID,                 // Returns the current (GASNet) node ID.

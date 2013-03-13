@@ -36,18 +36,14 @@ returnInfoLocaleID(CallExpr* call) {
   return dtLocaleID;
 }
 
-// This is a crutch.
-// It would be nice to be able to pick up and use backend types here
-// (and in returnInfoSublocID).
-// For now, we just use a hardcoded int32.
 static Type*
 returnInfoNodeID(CallExpr* call) {
-  return dtInt[INT_SIZE_32];
+  return dtLocaleID->getField("node")->type;
 }
 
 static Type*
 returnInfoSublocID(CallExpr* call) {
-  return dtInt[INT_SIZE_32];
+  return dtLocaleID->getField("subloc")->type;
 }
 
 static Type*
@@ -540,12 +536,6 @@ initPrimitive() {
   prim_def(PRIM_WIDE_GET_NODE, "_wide_get_node", returnInfoNodeID, false, true);
   prim_def(PRIM_WIDE_GET_SUBLOC, "_wide_get_subloc", returnInfoSublocID, false, true);
   prim_def(PRIM_WIDE_GET_ADDR, "_wide_get_addr", returnInfoInt64, false, true);
-
-  // These will go away after code up chpl_localeID_t as a record in Chapel.
-  prim_def(PRIM_LOC_GET_NODE, "_loc_get_node", returnInfoNodeID);
-  prim_def(PRIM_LOC_SET_NODE, "_loc_set_node", returnInfoVoid);
-  prim_def(PRIM_LOC_GET_SUBLOC, "_loc_get_subloc", returnInfoSublocID);
-  prim_def(PRIM_LOC_SET_SUBLOC, "_loc_set_subloc", returnInfoVoid);
 
   prim_def(PRIM_LOCALE_ID, "_hereID", returnInfoLocaleID);
   prim_def(PRIM_IS_HERE, "_is_here", returnInfoLocaleID);

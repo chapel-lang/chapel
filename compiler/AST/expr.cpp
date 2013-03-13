@@ -3802,12 +3802,6 @@ GenRet CallExpr::codegen() {
     case PRIM_TASK_GET_LOCALE:
       ret = codegenCallExpr("chpl_gen_getLocaleID");
       break;
-    case PRIM_LOC_GET_NODE:
-      ret = codegenValue(codegenFieldPtr(get(1), "node"));
-      break;
-    case PRIM_LOC_GET_SUBLOC:
-      ret = codegenValue(codegenFieldPtr(get(1), "subloc"));
-      break;
     case PRIM_CHPL_COMM_GET:
     case PRIM_CHPL_COMM_PUT: {
       // args are  localvar, locale, remote addr, eltSize, get(4)==length, line, file
