@@ -1458,10 +1458,10 @@ static void resolveModuleCall(CallExpr* call) {
               //Try to resolve again now that the symbol should
               //  be in the table
               resolveModuleCall(call);
+#endif
           } else {
             USR_FATAL_CONT(call, "Symbol '%s' undeclared in module '%s'",
                            mbr_name, mod->name);
-#endif
           }
         }
       }
