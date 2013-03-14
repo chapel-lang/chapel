@@ -1045,7 +1045,7 @@ module DefaultRectangular {
     }
   }
   
-  proc DefaultRectangularArr.isDefaultRectangular() param{return true;}
+  proc DefaultRectangularArr.isDefaultRectangular() param return true;
   
   /* This function returns stridelevels for the default rectangular array.
     + Stridelevels: the number of stride level (not really the number of dimensions because:

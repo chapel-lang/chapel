@@ -1417,19 +1417,6 @@ proc dropDims(D: domain, dims...) {
   return DResult;
 }
 
-
-proc BlockArr.doiBulkTransferStride(Barg)
-{
-    if debugDefaultDistBulkTransfer then
-        writeln("In BlockArr.doiBulkTransferStride");
-        
-    if (Barg._value.isDefaultRectangular()) then
-        this.doiBulkTransferFromDR(Barg,false);
-    else
-        this.doiBulkTransferFrom(Barg);
-}
-
-
 proc BlockArr.doiBulkTransferTo(Barg)
 {
   if debugDefaultDistBulkTransfer then
@@ -1472,8 +1459,8 @@ proc BlockArr.doiBulkTransferToDR(Barg,BFromBD=true)
 
   const A = this;
   const B = Barg; //Always it is a DR
-  //PROBAR FORALL
-  for j in A.dom.dist.targetLocDom
+  
+  forall j in A.dom.dist.targetLocDom
   {
     var inters:domain(rank,int,true);
     inters=dom.locDoms(j).myBlock;
@@ -1551,7 +1538,7 @@ proc BlockArr.doiBulkTransferFromDR(Barg,BFromBD=true)
   const A = this, B = Barg._value;
   DomB=B.dom.dsiDims(); //Necessary to make the intersection
   
-  for j in A.dom.dist.targetLocDom
+  forall j in A.dom.dist.targetLocDom
   {
     var inters:domain(rank,int,true);
     inters=dom.locDoms(j).myBlock;

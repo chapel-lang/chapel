@@ -363,18 +363,13 @@ module ChapelDistribution {
     }
   
     proc dsiDisplayRepresentation() { }
-    proc isBlockDist() param {return false;}
-    proc isCyclicDist() param {return false;}
-    proc isDefaultRectangular() param {return false;}
-    proc isReplicatedDist() param {return false;}
-    proc dsiSupportsBulkTransferStride() param {return false;}
-    proc dsiSupportsBulkTransfer() param {return false;}
-    proc doiCanBulkTransferStride() param {return false;}
-    //proc doiBulkTransferStride(b){}
-    //proc doiBulkTransferToDR(Barg, BFromBD){};
-    //proc chpl__useBulkTransfer(a,b) param{return false;}
-    //proc chpl__useBulkTransferStride(a,b) param{return false;}
-
+    
+    proc isBlockDist() param return false;
+    proc isCyclicDist() param return false;
+    proc isDefaultRectangular() param return false;
+    
+    proc dsiSupportsBulkTransferStride() param return false;
+    proc doiCanBulkTransferStride() param return false;
   }
   
 }

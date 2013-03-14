@@ -1624,14 +1624,16 @@ module ChapelArray {
   proc chpl__compatibleForBulkTransferStride(a:[], b:[]) param {
     if a.eltType != b.eltType then return false;
     if !chpl__supportedDataTypeForBulkTransfer(a.eltType) then return false;
+    if !chpl__supportedDataTypeForBulkTransfer(b.eltType) then return false;
     if !a._value.dsiSupportsBulkTransferStride() then return false;
+    if !b._value.dsiSupportsBulkTransferStride() then return false;
     return true;
   }
   
   // This must be a param function
   proc chpl__supportedDataTypeForBulkTransfer(type t) param {
     var x:t;
-    if !_isPrimitiveType(t) then return false;
+    if !_isPrimitiveType(t) && t!=complex then return false;
     if t==string then return false;
     return true;
     return chpl__supportedDataTypeForBulkTransfer(x);
@@ -1669,6 +1671,25 @@ module ChapelArray {
     return true;
   }
   
+  inline proc chpl__bulkTransferHelper(a, b) {
+   if a._value.isDefaultRectangular() {
+     if b._value.isDefaultRectangular() then
+       // implemented in DefaultRectangular
+       a._value.doiBulkTransferStride(b._value);
+     else
+       // b's domain map must implement this
+       b._value.doiBulkTransferToDR(a._value, false);
+   } else {
+     if b._value.isDefaultRectangular() then
+       // a's domain map must implement this
+       a._value.doiBulkTransferFromDR(b._value, false);
+     else
+       // a's domain map must implement this,
+       // possibly using b._value.doiBulkTransferToDR()
+       a._value.doiBulkTransferFrom(b);
+   }
+ }
+  
   proc checkArrayShapesUponAssignment(a: [], b: []) {
     if isRectangularArr(a) && isRectangularArr(b) {
       const aDims = a._value.dom.dsiDims(),
@@ -1698,7 +1719,7 @@ module ChapelArray {
       checkArrayShapesUponAssignment(a, b);
   
     // try bulk transfer
-    if chpl__isArray(b) && !chpl__serializeAssignment(a, b) && (!a._value.isReplicatedDist() && !b._value.isReplicatedDist()){
+    if chpl__isArray(b) && !chpl__serializeAssignment(a, b) {
       if (useBulkTransfer &&
           chpl__compatibleForBulkTransfer(a, b) &&
           chpl__useBulkTransfer(a, b))
@@ -1706,16 +1727,15 @@ module ChapelArray {
         a._value.doiBulkTransfer(b);
         return a;
       }
+      
       if (useBulkTransferStride &&
-          chpl__compatibleForBulkTransferStride(a, b) &&
-          chpl__useBulkTransferStride(a, b))
+         chpl__compatibleForBulkTransferStride(a, b) &&
+         chpl__useBulkTransferStride(a, b))
       {
-        //a._value.doiBulkTransferStride(b);
-        if a._value.isDefaultRectangular() && b._value.isDefaultRectangular() then a._value.doiBulkTransferStride(b._value);
-        else if a._value.isDefaultRectangular() && !b._value.isDefaultRectangular() then b._value.doiBulkTransferToDR(a._value,false);
-        else a._value.doiBulkTransferStride(b);
+        chpl__bulkTransferHelper(a, b);
         return a;
       }
+
       if debugBulkTransfer then
         // just writeln() clashes with writeln.chpl
         stdout.writeln("proc =(a:[],b): bulk transfer did not happen");

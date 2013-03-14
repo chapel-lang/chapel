@@ -953,18 +953,6 @@ class LocCyclicRADCache /* : LocRADCache */ {
   }
 }
 
-proc CyclicArr.doiBulkTransferStride(Barg)
-{
- //In ChapelArray -->   a._value.doiBulkTransferStride(b);  
-  if debugDefaultDistBulkTransfer then
-    writeln("In CyclicArr.doiBulkTransferStride");
-    
-  if (Barg._value.isDefaultRectangular()) then
-        this.doiBulkTransferFromDR(Barg,false);
-    else
-        this.doiBulkTransferFrom(Barg);
-}
-
 proc CyclicArr.dsiSupportsBulkTransfer() param return false;
 proc CyclicArr.dsiSupportsBulkTransferStride() param return true;
 
@@ -1026,7 +1014,7 @@ proc CyclicArr.doiBulkTransferToDR(Barg,BFromBD=true)
   var DomB: domain(rank,int,true);
   const A = this, B = Barg;
   
-  for j in A.dom.dist.targetLocDom
+  forall j in A.dom.dist.targetLocDom
   {
     var inters=dom.locDoms(j).myBlock;
     if(inters.numIndices>0)
@@ -1054,9 +1042,6 @@ proc CyclicArr.doiBulkTransferToDR(Barg,BFromBD=true)
       if debugDefaultDistBulkTransfer then 
         writeln(" DR[",(...r1),"] = DR[",(...r2), "]");
     
-      //if slice2.blk != slice.blk then
-     //   writeln("slice: ",slice.dom.dsiDims()," slice.blk:",slice.blk," slice2.blk:",slice2.blk);
-
       //The BFromBD variable is not necessary because we have calculated the Slice2 variable using dsiReindex, so, the blk variable has the same behaviour wherever the Barg variable came(BD,Cy,DR)
       slice2.doiBulkTransferStride(A.locArr[j].myElems[(...r2)]._value,true,true);
       delete slice;
@@ -1107,7 +1092,7 @@ proc CyclicArr.doiBulkTransferFromDR(Barg,BFromBD=true)
   
   const A = this, B = Barg._value;
   
-  for j in A.dom.dist.targetLocDom
+  forall j in A.dom.dist.targetLocDom
   {
     var inters=dom.locDoms(j).myBlock;
     if(inters.numIndices>0)
