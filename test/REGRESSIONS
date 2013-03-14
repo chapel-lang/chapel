@@ -165,7 +165,6 @@ gasnet-everything regressions (other than the above)
 
 comm diagnostics off
 --------------------
-[Error matching program output for performance/sungeun/multilocale/syncsingle] (1/4/13: before that it was failing due to missing 'use CommDiagnostics', so I don't know how long it's been failing.  Maybe due to Vass's r20857?)
 [Error matching program output for studies/ssca2/performance/SSCA2_commDiags (compopts: 1)] (started in testing on 8/23/2012)
 
 missed on-clause optimization
