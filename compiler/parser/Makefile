@@ -15,9 +15,6 @@ include Makefile.share
 
 TARGETS = $(PARSER_OBJS)
 
-OTHER_DEPEND_RULES = \
-	@$(MAKEDEPEND) $(COMP_CXXFLAGS) lexyacc.cpp | sed s/:\ lexyacc.cpp/\ =/ | sed s/lexyacc\\\.o/LEXYACC_INCLUDES/ >> $(SVN_DEPENDS).tmp
-
 include $(COMPILER_ROOT)/make/Makefile.compiler.subdirrules
 
 ifdef CHPL_DEVELOPER

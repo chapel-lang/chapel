@@ -6,7 +6,7 @@ include $(CHPL_MAKE_HOME)/make/Makefile.base
 
 all: third-party-pkgs all.helpme
 
-depend: third-party-pkgs depend.helpme
+depend:
 
 clean: clean.helpme
 

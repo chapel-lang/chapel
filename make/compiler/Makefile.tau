@@ -21,8 +21,6 @@ CXX = tau_cxx.sh
 #CC = tau_cc.sh -tau_options='-optCompInst -optVerbose' -tau_makefile=/usr/local/packages/tau/i386_linux/lib/Makefile.tau-papi-pthread-pdt
 #CXX = g++
 #CC = gcc
-MAKEDEPEND = $(CXX) -MM -MG
-CMAKEDEPEND = $(CC) -MM -MG
 
 RANLIB = ranlib
 

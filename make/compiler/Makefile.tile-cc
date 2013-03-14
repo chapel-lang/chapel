@@ -8,8 +8,6 @@
 #
 CXX = tile-c++
 CC = tile-cc
-MAKEDEPEND = $(CXX) -M -MG
-CMAKEDEPEND = $(CC) -M -MG
 
 RANLIB = ranlib
 

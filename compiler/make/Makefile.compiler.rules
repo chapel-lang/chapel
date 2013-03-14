@@ -1,9 +1,4 @@
 
 include $(COMPILER_ROOT)/make/Makefile.compiler.commonrules
 
-depend: $(DEPENDSUBDIRS) $(DEPEND_DEPS) echocompilerdir
-	@echo Updating dependences...
-
-SVN_DEPS= $(SVN_SRCS:%.cpp=%.depend)
-
-filedepend: $(SVN_DEPS)
+depend:

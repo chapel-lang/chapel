@@ -6,7 +6,7 @@ In recursive Makefile structure...
    ordering problem because it needs to be copied down before other
    subdirectories can refer to it.
 
-2) Should eplicitly iterate over subdirectories and execute commands
+2) Should explicitly iterate over subdirectories and execute commands
    in them rather than having missing targets cause building in a
    subdirectory.  While the latter approach is attractive, it is
    problemsome because we either have to give all the dependences of
@@ -15,27 +15,16 @@ In recursive Makefile structure...
    target is up-to-date (potentially each time that the subtarget
    is needed).
 
-3) Running make depend from a clean build is problemsome because not
-   all of the sources will exist yet.  This doesn't only apply to C
-   files that don't exist yet, but also to headers that don't exist
-   yet.  Either the make depend will complain that they don't exist
-   or, if the -MG flag is used, it will assume that they live in the
-   current directory, which may or may not be accurate.  This seems
-   to imply that we should check dependences into the SVN tree.  Ugh.
+3) We've recently switched to using -MMD to compute dependences,
+   removing the need to precompute them a priori.  Now they are
+   computed during compilation.
 
-   Alternatively, you can use the -MP flag, which sets up a fake
-   dependence for the header file and makes the problem go away,
-   (though the depdences for the file will not be completely
-   accurate).
-
-   Or, you could have make depend always call make all first...
-
-   Or, you could have all generated source files be generated in the
-   directory that they will be assumed to live in if they are missing.
+   There used to be a bunch of old notes on troubles with 'make
+   depend' here.  Refer to the svn archives if you're interested
+   in them.
 
 4) Don't give a rule that tells how to make files that are included,
-   as it will be called way way too often (this is assuming that you
-   want to update dependences manually, not automatically).
+   as it will be called way way too often.
 
 
 
