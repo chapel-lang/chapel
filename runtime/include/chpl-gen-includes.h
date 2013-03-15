@@ -25,10 +25,15 @@ void chpl_gen_setLocaleID(chpl_localeID_t locale)
 }
 
 static ___always_inline
+int64_t chpl_gen_localeID_to_int(chpl_localeID_t locale)
+{
+  return ((localeID_u){.as_struct = locale}).as_int;
+}
+
+static ___always_inline
 chpl_bool chpl_is_here(chpl_localeID_t locale)
 {
-  return ((localeID_u){.as_struct = locale}).as_int ==
-    chpl_task_getLocaleID();
+  return chpl_gen_localeID_to_int(locale) == chpl_task_getLocaleID();
 }
 
 

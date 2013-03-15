@@ -18,9 +18,10 @@ module ChapelLocale {
     var subloc : chpl_sublocID_t;
   };
 
-  proc ==(a:chpl_localeID_t, b:chpl_localeID_t)
-    return __primitive("==", a.node, b.node) &&
-           __primitive("==", a.subloc, b.subloc);
+  proc ==(a:chpl_localeID_t, b:chpl_localeID_t) {
+    extern proc chpl_gen_localeID_to_int(loc : chpl_localeID_t) : int(64);
+    return chpl_gen_localeID_to_int(a) == chpl_gen_localeID_to_int(b);
+  }
 
   proc !=(a:chpl_localeID_t, b:chpl_localeID_t)
     return ! (a == b);
