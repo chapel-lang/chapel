@@ -2592,6 +2592,34 @@ GASNETI_MIPS_LL(_ll "   %0,0(%4)         \n\t")/* _retval = *p (starts ll/sc res
       #error "unrecognized ARM compiler and/or OS - need to implement GASNet atomics (or #define GASNETI_USE_GENERIC_ATOMICOPS)"
     #endif
   /* ------------------------------------------------------------------------------------ */
+
+  #elif PLATFORM_ARCH_TILE && PLATFORM_COMPILER_GNU
+      #define GASNETI_HAVE_ATOMIC32_T 1
+      typedef uint32_t gasneti_atomic32_t;
+      #define _gasneti_atomic32_read(p)      (*(volatile uint32_t *)(p))
+      #define _gasneti_atomic32_set(p,v)     (*(volatile uint32_t *)(p) = (v))
+      #define _gasneti_atomic32_init(v)      (v)
+
+      /* Default impls of inc, dec, dec-and-test, add and sub */
+      #define _gasneti_atomic32_addfetch(p,op) (__sync_fetch_and_add(p, (uint32_t)(op)))
+
+      GASNETI_INLINE(_gasneti_atomic32_compare_and_swap)
+      int _gasneti_atomic32_compare_and_swap(gasneti_atomic32_t *p, int oldval, int newval) {
+          return __sync_bool_compare_and_swap(p, oldval, newval);
+      }
+
+      #define GASNETI_HAVE_ATOMIC64_T 1
+      typedef struct { volatile uint64_t ctr; } gasneti_atomic64_t;
+      #define _gasneti_atomic64_read(p)      ((p)->ctr)
+      #define _gasneti_atomic64_set(p,v)     do { (p)->ctr = (v); } while(0)
+      #define _gasneti_atomic64_init(v)      { (v) }
+
+      GASNETI_INLINE(_gasneti_atomic64_compare_and_swap)
+      int _gasneti_atomic64_compare_and_swap(gasneti_atomic64_t *v, uint64_t oldval, uint64_t newval) {
+        return __sync_bool_compare_and_swap(&v->ctr, oldval, newval);
+      }
+
+  /* ------------------------------------------------------------------------------------ */
   #else
     #error Unrecognized platform - need to implement GASNet atomics (or #define GASNETI_USE_GENERIC_ATOMICOPS)
   #endif

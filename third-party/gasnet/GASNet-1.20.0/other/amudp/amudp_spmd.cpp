@@ -490,23 +490,40 @@ extern int AMUDP_SPMDStartup(int *argc, char ***argv,
       }
     }
 
+    //
+    // For ease-of-debugging with Chapel, hacked this so that GASNet
+    // will launch each task in an xterm running gdb if
+    // CHPL_COMM_USE_GDB is set.
+    //
+    int gdbargs = 0;
+    if (getenv("CHPL_COMM_USE_GDB")) {
+      gdbargs = 4;
+    }
+
     // setup a slave argv
-    const char **slaveargv = (const char**)AMUDP_malloc(sizeof(const char*)*((*argc)+3));
-    int slaveargc = (*argc)+2;
-    slaveargv[0] = (*argv)[0];
-    slaveargv[1] = (AMUDP_SilentMode?AMUDP_SPMDSLAVE_FLAG:AMUDP_SPMDSLAVE_FLAG_VERBOSE);
-    if (*masterIPstr) slaveargv[2] = masterAddr.FTPStr();
+    const char **slaveargv = (const char**)AMUDP_malloc(sizeof(const char*)*((*argc)+3+gdbargs));
+    int slaveargc = (*argc)+2+gdbargs;
+    if (gdbargs) {
+      slaveargv[0] = "/usr/bin/xterm";
+      slaveargv[1] = "-e";
+      slaveargv[2] = "gdb";
+      slaveargv[3] = "--args";
+    }
+
+    slaveargv[0+gdbargs] = (*argv)[0];
+    slaveargv[1+gdbargs] = (AMUDP_SilentMode?AMUDP_SPMDSLAVE_FLAG:AMUDP_SPMDSLAVE_FLAG_VERBOSE);
+    if (*masterIPstr) slaveargv[2+gdbargs] = masterAddr.FTPStr();
     else {
       #if USE_NUMERIC_MASTER_ADDR
-        slaveargv[2] = masterAddr.FTPStr();
+        slaveargv[2+gdbargs] = masterAddr.FTPStr();
       #else
         char masteraddrstr[1024];
         sprintf(masteraddrstr, "%s:%i", masterHostname, masterAddr.port());
-        slaveargv[2] = masteraddrstr;
+        slaveargv[2+gdbargs] = masteraddrstr;
       #endif
     }
     for (int k = 1; k < (*argc); k++) {
-      slaveargv[k+2] = (*argv)[k];
+      slaveargv[k+2+gdbargs] = (*argv)[k];
     }
     slaveargv[slaveargc] = NULL;
 

@@ -1,6 +1,7 @@
 /*   $Source: /var/local/cvs/gasnet/other/portable_platform.h,v $
  *     $Date: 2012/10/16 22:00:59 $
  * $Revision: 1.33 $
+ *     $Note: Tilera support added. (Chapel--hildeth) $
  * Description: Portable platform detection header
  * Copyright 2006, Dan Bonachea <bonachea@cs.berkeley.edu>
  */
@@ -728,6 +729,16 @@
     #define PLATFORM_ARCH_BIG_ENDIAN 1
   #elif defined(__ARMEL__)
     #define PLATFORM_ARCH_LITTLE_ENDIAN 1
+  #endif
+
+#elif defined(__tile__)
+  #define PLATFORM_ARCH_TILE 1
+  #define PLATFORM_ARCH_FAMILYNAME TILE
+  #define PLATFORM_ARCH_LITTLE_ENDIAN 1
+  #if defined(__tilegx__)
+    #define _PLATFORM_ARCH_64 1
+  #else
+    #define _PLATFORM_ARCH_32 1
   #endif
 
 #else /* unknown CPU */
