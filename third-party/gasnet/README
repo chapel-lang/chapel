@@ -11,7 +11,7 @@ to the Chapel team at chapel-bugs@lists.sourceforge.net, as the cause
 is most likely due to Chapel's use of GASNet and not the GASNet
 library itself.
 
-The modifications that we have made to the official GASNet 1.18.2
+The modifications that we have made to the official GASNet 1.20.0
 release are as follows:
 
 * Added support for launching an xterm window running gdb in the udp
