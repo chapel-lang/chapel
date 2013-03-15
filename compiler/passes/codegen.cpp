@@ -628,7 +628,7 @@ static void codegen_header() {
 
     //include generated extern C header file
     if (externC && gAllExternCode.filename != NULL) {
-      fprintf(hdrfile, astr("#include \"", gAllExternCode.filename, "\"\n"));
+      fprintf(hdrfile, "%s", astr("#include \"", gAllExternCode.filename, "\"\n"));
     }
   }
 
