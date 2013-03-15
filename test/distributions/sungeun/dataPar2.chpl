@@ -1,7 +1,13 @@
-config const n = 3;
-const Space = {1..1,1..2*n,1..n,1..n,1..n,1..n};
-var RA, RB: [Space] int;
-var A, B: [Space] int;
+config type myIntType=uint(64);
+config const n:myIntType = 3;
+const Space = {1:myIntType..1:myIntType,
+               1:myIntType..(2:myIntType)*n,
+               1:myIntType..n,
+               1:myIntType..n,
+               1:myIntType..n,
+               1:myIntType..n};
+var RA, RB: [Space] myIntType;
+var A, B: [Space] myIntType;
 
 for i in Space {
   var (i0,i1,i2,i3,i4,i5) = (i);

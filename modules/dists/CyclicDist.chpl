@@ -281,7 +281,7 @@ proc Cyclic.targetLocsIdx(ind: rank*idxType) {
   for param i in 1..rank {
     var dimLen = targetLocDom.dim(i).length;
     //x(i) = ((ind(i) - startIdx(i)) % dimLen):int;
-    x(i) = chpl__diffMod(ind(i), startIdx(i), dimLen):idxType;
+    x(i) = chpl__diffMod(ind(i), startIdx(i), dimLen):int;
   }
   if rank == 1 then
     return x(1);
@@ -442,10 +442,11 @@ iter CyclicDom.these(param tag: iterKind) where tag == iterKind.leader {
     var zeroedLocalPart = whole((...locDom.myBlock.getIndices())).chpl__unTranslate(wholeLow);
     for param i in 1..rank {
       var dim = zeroedLocalPart.dim(i);
+      type strType = chpl__signedType(idxType);
       // NOTE: unsigned idxType with negative stride will not work
-      const wholestride = whole.dim(i).stride:chpl__signedType(idxType);
+      const wholestride = whole.dim(i).stride:strType;
       if dim.last >= dim.first then
-        result(i) = (dim.first / wholestride):idxType..(dim.last / wholestride):idxType by (dim.stride / wholestride);
+        result(i) = (dim.first / wholestride:idxType)..(dim.last / wholestride:idxType) by (dim.stride:strType / wholestride);
       else
         // _computeChunkStuff should have produced no tasks for this
         // If this ain't going to happen, could force numTasks=0 here instead.
@@ -487,7 +488,7 @@ iter CyclicDom.these(param tag: iterKind, followThis) where tag == iterKind.foll
   for param i in 1..rank {
     // NOTE: unsigned idxType with negative stride will not work
     const wholestride = whole.dim(i).stride:chpl__signedType(idxType);
-    t(i) = ((followThis(i).low*wholestride):idxType..(followThis(i).high*wholestride):idxType by (followThis(i).stride*wholestride)) + whole.dim(i).low;
+    t(i) = ((followThis(i).low*wholestride:idxType)..(followThis(i).high*wholestride:idxType) by (followThis(i).stride*wholestride)) + whole.dim(i).low;
   }
   if debugCyclicDist then
     writeln(here.id, ": follower maps to: ", t);
