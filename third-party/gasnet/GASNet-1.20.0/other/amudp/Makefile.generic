@@ -1,0 +1,14 @@
+#   $Source: /var/local/cvs/gasnet/other/amudp/Makefile.generic,v $
+#     $Date: 2006/05/31 08:17:42 $
+# $Revision: 1.1 $
+# Description: Linux Makefile fragment
+# Copyright 2000, Dan Bonachea <bonachea@cs.berkeley.edu>
+
+# additional defines required to build on this platform
+platform_defines = 
+
+# additional linker flags required to build on this platform
+platform_ldflags = 
+
+# additional libraries and/or library directories
+platform_libraries =
