@@ -14,7 +14,7 @@
 #include "files.h"
 
 static void insertEndCounts();
-static void optimizeLocalOns(Vec<FnSymbol*>& nestedFunctions);
+static void passArgsToNestedFns(Vec<FnSymbol*>& nestedFunctions);
 static void create_block_fn_wrapper(CallExpr* fcall, ClassType* ctype, VarSymbol* tempc);
 static void findBlockRefActuals(Vec<Symbol*>& refSet, Vec<Symbol*>& refVec);
 static void findHeapVarsAndRefs(Map<Symbol*,Vec<SymExpr*>*>& defMap,
@@ -34,6 +34,7 @@ static void derefWideRefsToWideClasses();
 static void widenGetPrivClass();
 static void moveAddressSourcesToTemp(void);
 static CallExpr* findLocaleLookup(CallExpr* onBlockCall, Map<Symbol*, Vec<SymExpr*>*>& defMap);
+static CallExpr* optimizeOnCall(CallExpr* call);
 
 // Package args into a class and call a wrapper function with that
 // object. The wrapper function will then call the function
@@ -919,7 +920,7 @@ parallel(void) {
 
   insertEndCounts();
 
-  optimizeLocalOns(nestedFunctions);
+  passArgsToNestedFns(nestedFunctions);
 }
 
 
@@ -1048,7 +1049,7 @@ static Expr* findDestLocale(CallExpr* toLocMove, Map<Symbol*, Vec<SymExpr*>*>& d
 
   // Get the operand of the primitive.
   Expr* obj = locIDget->get(1);
-  if (obj->typeInfo() == dtLocale)
+  if (isSubClass(obj->typeInfo()->getValType(), dtLocale))
     // Found it! The object is a locale, so we can use it directly.
     return obj;
 
@@ -1057,89 +1058,128 @@ static Expr* findDestLocale(CallExpr* toLocMove, Map<Symbol*, Vec<SymExpr*>*>& d
 }
 
 
-// TODO: This function needs to be factored and renamed.
-// The optimization affects only on blocks, and other block types are handled.
-// Its main purpose is to bundle args.
-static void optimizeLocalOns(Vec<FnSymbol*>& nestedFunctions)
+// Perform optimizations related to on_fn calls.
+// Overhead is high for on statements, since in general they call a forking function.
+// The main optimization is to insert a conditional, so the forking function is called
+// only if needed.
+// If locale==here and the call to on_fn is supposed to block, we can run the on_fn
+// in the same task and thus avoid the fork.  This is done by calling on_fn() directly
+// rather than creating a fork to wrapon_fn().
+// For on_fn() calls marked as non-blocking, we could also perform this optimization if
+// the serial state is true.  To do that, we would have to hoist the relevant code into
+// the compiler generated code from the codegen function in which it currently resides
+// (chpl_comm_nonblocking_on).
+//
+// One other optimizations are applied here: Calls to chpl_localeID_to_locale() 
+// are short-circuited if the expression x passed to the "on" clause 
+//
+//  blockInfo = new CallExpr(PRIM_BLOCK_ON, x);
+//
+// has type dtLocale.  The type of the "on" expression can be any lvalue type, but the
+// parser inserts a call to chpl_localeID_to_locale so every on expression has type 
+// dtLocale:
+//
+//  x->replace(new CallExpr("chpl_localeID_to_locale", new CallExpr(PRIM_WIDE_GET_LOCALE, x)));
+//
+// Obviously, this is not needed if x is of type dtLocale -- but the type of x is not 
+// known to the parser.  That's why we put the code in then, and selectively take it back
+// out now.
+static CallExpr* optimizeOnCall(CallExpr* call)
+{
+  FnSymbol* fn = call->isResolved();
+
+  // The definition of the on expression should live within the parent of the call.
+  BlockStmt* parentBlock = toBlockStmt(call->parentExpr);
+  Map<Symbol*, Vec<SymExpr*>*> defMap;
+  Map<Symbol*, Vec<SymExpr*>*> useMap;
+  buildDefUseMaps(parentBlock, defMap, useMap);
+
+  // Look for some important parts of the call.
+  CallExpr* localeLookup = findLocaleLookup(call, defMap);
+  Expr* localeID = findDestinationLocaleID(localeLookup);
+
+  // This is non-null only if the type of the original lvalue supplied as the argument
+  // to the "on" clause was dtLocale (or derived from dtLocale).
+  Expr* destLocale = findDestLocale(localeLookup, defMap);
+
+  // If the dest object is a locale object, bridge out the localeID_to_lcoale call.
+  CallExpr* forkedCall = call;
+  if (destLocale)
+  {
+    SymbolMap map;
+    Symbol* destLocaleTmp = toSymExpr(destLocale)->var;
+    if (isReferenceType(destLocale->typeInfo()))
+    {
+      VarSymbol* derefTmp = newTemp(destLocale->typeInfo()->getValType());
+      call->insertBefore(new DefExpr(derefTmp));
+      call->insertBefore(new CallExpr(PRIM_MOVE, derefTmp, new CallExpr(PRIM_DEREF, destLocaleTmp)));
+      destLocaleTmp = derefTmp;
+    }
+    map.put(toSymExpr(call->get(1))->var, destLocaleTmp);
+    forkedCall = call->copy(&map);
+    call->insertBefore(forkedCall);
+    call->remove();
+  }
+
+  if (!fn->hasFlag(FLAG_NON_BLOCKING))
+  {
+    VarSymbol* tmpLocale = newTemp(localeID->typeInfo());
+    VarSymbol* tmpBool = newTemp(dtBool);
+    forkedCall->insertBefore(new DefExpr(tmpLocale));
+    forkedCall->insertBefore(new DefExpr(tmpBool));
+    forkedCall->insertBefore(new CallExpr(PRIM_MOVE, tmpLocale, localeID->copy()));
+    forkedCall->insertBefore(new CallExpr(PRIM_MOVE, tmpBool,
+                                    new CallExpr(PRIM_IS_HERE, tmpLocale)));
+    BlockStmt* lblock = new BlockStmt();
+    BlockStmt* rblock = new BlockStmt();
+    forkedCall->insertBefore(new CondStmt(new SymExpr(tmpBool), lblock, rblock));
+
+    // When the locale IDs agree, we call the on function directly.
+    CallExpr* directCall = forkedCall->copy();
+    // In which case, we first remove the unneeded locale arg.
+    // After the wrapon_fn is created, the dummy locale arg is removed from
+    // the signature of the on_fn.
+    directCall->get(1)->remove();
+    lblock->insertAtHead(directCall);
+
+    // Otherwise, the on function is called through a fork.
+    // Optmization: Move locale lookup into the "else" branch.
+    // We are already on the correct locale if we take the "if" branch.
+    rblock->insertAtHead(forkedCall->remove());
+  }
+
+  // We only need the locale lookup if the original object was not a locale.
+  // And we only need it in the right branch in any case.
+  localeLookup->remove();
+  if (!destLocale)
+    forkedCall->insertBefore(localeLookup);
+
+  // Bundling only affects the original call -- 
+  // the one in rblock if the above conditional fires.
+  return forkedCall;
+}
+
+
+// For each "nested" function created to represent remote execution, 
+// bundle args so they can be passed through a fork function.
+// Fork functions in general have the signature
+//  fork(int32_t destNode, void (*)(void* args), void* args, ...);
+// In Chapel, we wrap the arguments passed to the nested function in an object
+// whose type is just a list of the arguments passed to the nested function.
+// Those arguments consist of variables in the scope of the nested function call
+// that are accessed within the body of the nested function (recursively, of course).
+static void passArgsToNestedFns(Vec<FnSymbol*>& nestedFunctions)
 {
   forv_Vec(FnSymbol, fn, nestedFunctions) {
     // We assume that there is a one-to-one relation between nested function callers and callees.
-    // We make use of this assumption in create_block_fn_wrapper, to removed the first argument
-    // of a called on_fn().
-    INT_ASSERT(fn->calledBy->n == 1);
-    forv_Vec(CallExpr, call, *fn->calledBy) {
+    CallExpr* call = (fn->calledBy)->only();
 
-      SET_LINENO(call);
-      // Overhead is high for on statements if locale==here, so
-      //  perform a simple optimization here to call fn() directly if
-      //  this is the case.  In the non-blocking case if the serial
-      //  state is false, we could effectively put a begin before the
-      //  non-blocking fork but the resulting code would have similar
-      //  overhead.  In the non-blocking case when the serial state is
-      //  true, we could perform this optimization, but in our current
-      //  implementation, we don't generate code for the two paths.
-      //  Rather we use a macro, so the optimization would have to be
-      //  performed within the macro.
-      if (fn->hasFlag(FLAG_ON) && !fn->hasFlag(FLAG_NON_BLOCKING)) {
-        BlockStmt* lblock = new BlockStmt();
-        BlockStmt* rblock = new BlockStmt();
+    SET_LINENO(call);
 
-        // We expect the on function to be called with at least one parameter 
-        // (the destination locale ID).
-        INT_ASSERT(call->get(1));
-
-        // The definition of the on expression should live within the parent of the call.
-        BlockStmt* parentBlock = toBlockStmt(call->parentExpr);
-        Map<Symbol*, Vec<SymExpr*>*> defMap;
-        Map<Symbol*, Vec<SymExpr*>*> useMap;
-        buildDefUseMaps(parentBlock, defMap, useMap);
-
-        CallExpr* localeLookup = findLocaleLookup(call, defMap);
-        Expr* localeID = findDestinationLocaleID(localeLookup);
-        Expr* destLocale = findDestLocale(localeLookup, defMap);
-
-        VarSymbol* tmpLocale = newTemp(localeID->typeInfo());
-        VarSymbol* tmpBool = newTemp(dtBool);
-        call->insertBefore(new DefExpr(tmpLocale));
-        call->insertBefore(new DefExpr(tmpBool));
-        call->insertBefore(new CallExpr(PRIM_MOVE, tmpLocale, localeID->copy()));
-        call->insertBefore(new CallExpr(PRIM_MOVE, tmpBool,
-                                        new CallExpr(PRIM_IS_HERE, tmpLocale)));
-        call->insertBefore(new CondStmt(new SymExpr(tmpBool), lblock, rblock));
-
-        // When the locale IDs agree, we call the on function directly.
-        CallExpr* directCall = call->copy();
-        // In which case, we first remove the unneeded locale arg.
-        directCall->get(1)->remove();
-        lblock->insertAtHead(directCall);
-
-        // Otherwise, the on function is called through a fork.
-        // Optmization: Move locale lookup into the "else" branch.
-        // We are already on the right locale if we take the "if" branch.
-        localeLookup->remove();
-        CallExpr* forkedCall = toCallExpr(call->remove());
-        if (destLocale)
-        {
-          SymbolMap map;
-          map.put(toSymExpr(call->get(1))->var, toSymExpr(destLocale)->var);
-          forkedCall = call->copy(&map);
-          rblock->insertAtHead(forkedCall);
-
-          // Further optimization:
-          // We don't need the locale lookup at all if the original object
-          // was a locale.
-        }
-        else
-        {
-          rblock->insertAtHead(forkedCall);
-          forkedCall->insertBefore(localeLookup);
-        }
-        call = forkedCall;
-      }
-      // Bundling only affects the original call -- 
-      // the one in rblock if the above conditional fires.
-      bundleArgs(call);
-    }
+    if (fn->hasFlag(FLAG_ON))
+      call = optimizeOnCall(call);
+    
+    bundleArgs(call);
   }
 }
 
