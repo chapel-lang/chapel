@@ -62,6 +62,7 @@
 //
 %token TIDENT IMAGLITERAL INTLITERAL REALLITERAL
 %token <pch> STRINGLITERAL
+%token <pch> EXTERNCODE
 
 //
 // keywords (alphabetical)
@@ -140,6 +141,7 @@
 %type <pblockstmt> toplevel_stmt stmt do_stmt
 %type <pblockstmt> if_stmt loop_stmt
 %type <pblockstmt> select_stmt assignment_stmt class_level_stmt
+%type <pblockstmt> extern_block_stmt
 %type <pblockstmt> type_select_stmt return_stmt
 
 %type <pblockstmt> type_alias_decl_stmt type_alias_decl_stmt_inner fn_decl_stmt class_decl_stmt module_decl_stmt
@@ -211,6 +213,7 @@ stmt:
   assignment_stmt
 | block_stmt
 | class_level_stmt
+| extern_block_stmt
 | if_stmt
 | module_decl_stmt
 | loop_stmt
@@ -291,6 +294,21 @@ class_level_stmt:
 | enum_decl_stmt
 | type_alias_decl_stmt
 | var_decl_stmt
+;
+
+extern_block_stmt:
+  TEXTERN EXTERNCODE
+    {
+#ifdef HAVE_LLVM
+      if (externC) {
+        $$ = buildExternBlockStmt(astr($2));
+      } else {
+        USR_FATAL(new BlockStmt(), "extern block syntax is turned off. Use --extern-c flag to turn on.");
+      }
+#else
+      USR_FATAL(new BlockStmt(), "Chapel must be built with llvm in order to use the extern block syntax");
+#endif
+    }
 ;
 
 loop_stmt:

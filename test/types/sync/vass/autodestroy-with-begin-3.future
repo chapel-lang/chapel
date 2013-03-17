@@ -1,0 +1,17 @@
+bug: sync variable is deleted prematurely when passed by ref and used in 'begin'
+
+See:
+  autodestroy-with-begin-1.future
+
+
+autodestroy-with-begin-3.chpl:
+
+It is a variation on autodestroy-with-begin-1.chpl that has a lot more
+intermediate functions/calls, declares additional sync variables along the
+way, and has an additional 'begin' that's invoked from the original 'begin'.
+This is to ensure that the fix to this bug works when the declaration
+of a sync variable and the begin where it's used are far apart.
+
+Each of the 3 sync variables suffers from the title bug.
+Valgrind gives me 3 errors.
+But if I pipe its output, somehow I only get 1 error.

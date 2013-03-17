@@ -7,8 +7,6 @@
 #
 CXX = clang++
 CC = clang
-MAKEDEPEND = g++ -MM -MG
-CMAKEDEPEND = gcc -MM -MG
 
 RANLIB = ranlib
 

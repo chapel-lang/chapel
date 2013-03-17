@@ -61,8 +61,6 @@
 #
 CXX = llvm-g++ -use-gold-plugin -flto
 CC = llvm-gcc -use-gold-plugin -flto
-MAKEDEPEND = $(CXX) -MM -MG
-CMAKEDEPEND = $(CC) -MM -MG
 
 RANLIB = ranlib
 

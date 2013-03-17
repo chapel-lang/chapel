@@ -1,0 +1,2 @@
+extern { static int x; /* ' */ }
+

@@ -7,8 +7,6 @@
 #
 CXX = pathCC
 CC = pathcc
-MAKEDEPEND = $(CXX) -MM -MG
-CMAKEDEPEND = $(CC) -MM -MG
 
 RANLIB = ranlib
 

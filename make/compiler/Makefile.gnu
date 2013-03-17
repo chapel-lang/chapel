@@ -7,8 +7,6 @@
 #
 CXX = g++
 CC = gcc
-MAKEDEPEND = $(CXX) -MM -MG
-CMAKEDEPEND = $(CC) -MM -MG
 
 RANLIB = ranlib
 
@@ -18,6 +16,7 @@ RANLIB = ranlib
 #
 
 DEBUG_CFLAGS = -g
+DEPEND_CFLAGS = -MMD -MP
 OPT_CFLAGS = -O3
 PROFILE_CFLAGS = -pg
 PROFILE_LFLAGS = -pg

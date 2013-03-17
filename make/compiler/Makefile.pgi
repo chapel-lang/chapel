@@ -7,8 +7,6 @@
 #
 CXX = pgCC
 CC = pgcc
-MAKEDEPEND = $(CXX) -MM
-CMAKEDEPEND = $(CC) -MM
 
 RANLIB = ranlib
 

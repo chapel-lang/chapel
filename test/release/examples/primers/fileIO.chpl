@@ -350,6 +350,8 @@ if example == 0 || example == 7 {
 
     r.readbits(tmp, 9);
     assert(tmp == 0b011110000);
+
+    r.close();
   }
 
   // Try reading it back all as one big chunk.
@@ -363,6 +365,10 @@ if example == 0 || example == 7 {
 
     r.read(tmp);
     assert(tmp == 0b11110000);
+
+    r.close();
   }
+
+  f.close();
 }
 

@@ -8,9 +8,6 @@ REGEXP_OBJS = \
 
 RUNTIME_INCLS += -I$(RE2_INCLUDE_DIR) -I$(RE2_INCLUDE_DIR2)
 
-re2-interface.depend: re2-interface.cc $(DEPEND_STAMP)
-	$(MAKEDEPEND) $(DEPEND_CXXFLAGS) -I$(RE2_SRC_DIR) $< | sed s/$*\\\.o/\\\$(DEPEND_DIR_SAFESLASH)\\\/$*\\\.o/ >> $(SVN_DEPENDS).tmp
-
 $(RUNTIME_OBJ_DIR)/re2-interface.o: re2-interface.cc \
                                          $(RUNTIME_OBJ_DIR_STAMP)
 	$(CXX) -c $(RUNTIME_CXXFLAGS) $(RUNTIME_INCLS) -o $@ $<

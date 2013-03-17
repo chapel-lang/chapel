@@ -11,11 +11,20 @@
 #include "symbol.h"
 #include <map>
 
+#ifdef HAVE_LLVM
+#include "llvm/ADT/SmallSet.h"
+#endif
+
 //
 // static functions (forward declaration)
 //
 static void build_type_constructor(ClassType* ct);
 static void build_constructor(ClassType* ct);
+static void resolveUnresolvedSymExpr(UnresolvedSymExpr* unresolvedSymExpr);
+static void resolveModuleCall(CallExpr* call);
+
+
+static Vec<UnresolvedSymExpr*> skipSet;
 
 
 //
@@ -1040,6 +1049,66 @@ static void renameDefaultTypesToReflectWidths(void) {
   renameDefaultType(dtComplex[COMPLEX_SIZE_DEFAULT], "complex(128)");
 }
 
+#ifdef HAVE_LLVM
+static bool tryCResolve_set(ModuleSymbol* module, const char* name,
+  llvm::SmallSet<ModuleSymbol*, 24> already_checked) {
+
+  if( ! module ) return false;
+
+  if( already_checked.insert(module) ) {
+    // we added it to the set, so continue.
+  } else {
+    // It was already in the set.
+    return false;
+  }
+
+  // Is it resolveable in this module?
+  if( module->extern_info ) {
+    // Try resolving it
+
+    Vec<Expr*> c_exprs;
+
+    // Try to create an extern declaration for name,
+    //  if it exists in the module's extern blocks.
+    // The resulting Chapel extern declarations are put into
+    //  c_exprs and will need to be resolved.
+    convertDeclToChpl(module, name, c_exprs);
+
+    if (c_exprs.count()) {
+      forv_Vec(Expr*, c_expr, c_exprs) {
+        Vec<DefExpr*> v;
+        collectDefExprs(c_expr, v);
+        addToSymbolTable(v);
+        if (DefExpr* de = toDefExpr(c_expr)) {
+          if (TypeSymbol* ts = toTypeSymbol(de->sym)) {
+            if (ClassType* ct = toClassType(ts->type)) {
+              SET_LINENO(ct->symbol);
+              //If this is a class DefExpr, make sure its initializer gets created.
+              build_constructors(ct);
+            }
+          }
+        }
+      }
+      //any new UnresolvedSymExprs will be called in another for loop
+      // in scopeResolve.
+      return true;
+    }
+  }
+
+  // Otherwise, try the modules used by this module.
+  forv_Vec(ModuleSymbol, usedMod, module->modUseList) {
+    bool got = tryCResolve_set(usedMod, name, already_checked);
+    if( got ) return true;
+  }
+
+  return false;
+}
+static bool tryCResolve(ModuleSymbol* module, const char* name) {
+  llvm::SmallSet<ModuleSymbol*, 24> already_checked;
+  return tryCResolve_set(module, name, already_checked);
+}
+#endif
+
 
 void scopeResolve(void) {
   //
@@ -1129,7 +1198,7 @@ void scopeResolve(void) {
   resolveGotoLabels();
 
 
-  Vec<UnresolvedSymExpr*> skipSet;
+  skipSet.clear();
 
   //
   // Translate M.x where M is a ModuleSymbol into just x where x is
@@ -1137,16 +1206,62 @@ void scopeResolve(void) {
   // that is used to determine visible functions.
   //
 
+  int max_resolved = 0;
+
   forv_Vec(UnresolvedSymExpr, unresolvedSymExpr, gUnresolvedSymExprs) {
+    resolveUnresolvedSymExpr(unresolvedSymExpr);
+    max_resolved++;
+  }
+
+  forv_Vec(CallExpr, call, gCallExprs) {
+    resolveModuleCall(call);
+  }
+
+  int i = 0;
+  // Note that the extern C resolution might add new UnresolvedSymExprs, and it
+  // might do that within resolveModuleCall, so we try resolving unresolved
+  // symbols a second time as the extern C block support might have added some.
+  // Alternatives include:
+  //  - have the extern C wrapper-builder directly call resolveUnresolved
+  //      (but that complicates the way scopeResolve works now)
+  //  - import all C symbols at an earlier point
+  //      (but that might add lots of unused garbage to the Chapel AST
+  //       for e.g. #include <stdio.h>; and it might cause the C-to-Chapel
+  //       translater to need to handle more platform/compiler-specific stuff,
+  //       and it might lead to extra naming conflicts).
+  forv_Vec(UnresolvedSymExpr, unresolvedSymExpr, gUnresolvedSymExprs) {
+    // Only try resolving symbols that are new after last attempt.
+    if( i >= max_resolved ) {
+      resolveUnresolvedSymExpr(unresolvedSymExpr);
+    }
+    i++;
+  }
+
+  resolveEnumeratedTypes();
+
+  skipSet.clear();
+
+  destroyTable();
+
+  destroyModuleUsesCaches();
+
+  renameDefaultTypesToReflectWidths();
+
+  cleanupExternC();
+}
+
+static
+void resolveUnresolvedSymExpr(UnresolvedSymExpr* unresolvedSymExpr) {
+  {
     if (skipSet.set_in(unresolvedSymExpr))
-      continue;
+      return;
 
     const char* name = unresolvedSymExpr->unresolved;
     if (!strcmp(name, "."))
-      continue;
+      return;
 
     if (!unresolvedSymExpr->parentSymbol)
-      continue;
+      return;
 
     SET_LINENO(unresolvedSymExpr);
 
@@ -1158,7 +1273,7 @@ void scopeResolve(void) {
     if (FnSymbol* fn = toFnSymbol(sym)) {
       if (!fn->_this && fn->hasFlag(FLAG_NO_PARENS)) {
         unresolvedSymExpr->replace(new CallExpr(fn));
-        continue;
+        return;
       }
     }
 
@@ -1179,15 +1294,20 @@ void scopeResolve(void) {
         if (parent) {
           CallExpr *call = toCallExpr(parent);
           if (((call) && (call->baseExpr != unresolvedSymExpr)) || (!call)) {
-            //If the function is being used as a first-class value, handle this with a primitive and unwrap the primitive later in functionResolution
+            //If the function is being used as a first-class value, handle
+            // this with a primitive and unwrap the primitive later in
+            // functionResolution
             CallExpr *prim_capture_fn = new CallExpr(PRIM_CAPTURE_FN);
             unresolvedSymExpr->replace(prim_capture_fn);
             prim_capture_fn->insertAtTail(unresolvedSymExpr);
-            continue;
+            // Don't do it again if for some reason we return
+            // to trying to resolve this symbol.
+            skipSet.set_add(unresolvedSymExpr);
+            return;
           }
         }
       }
-    }
+    } 
 
     // Apply 'this' and 'outer' in methods where necessary
     {
@@ -1275,9 +1395,17 @@ void scopeResolve(void) {
         parent = parent->defPoint->parentSymbol;
       }
     }
+#ifdef HAVE_LLVM
+    if (!sym && externC && tryCResolve(unresolvedSymExpr->getModule(), name)) {
+      //try resolution again since the symbol should exist now
+      resolveUnresolvedSymExpr(unresolvedSymExpr);
+    }
+#endif
   }
+}
 
-  forv_Vec(CallExpr, call, gCallExprs) {
+static void resolveModuleCall(CallExpr* call) {
+  {
     if (call->isNamed(".")) {
       if (SymExpr* se = toSymExpr(call->get(1))) {
         if (ModuleSymbol* mod = toModuleSymbol(se->var)) { 
@@ -1289,21 +1417,25 @@ void scopeResolve(void) {
           SET_LINENO(call);
           SymbolTableEntry* entry = NULL;
           Symbol* sym = NULL;
+          const char* mbr_name = get_string(call->get(2));
+          //Is it a variable?
+          //TODO: should we be using lookup here instead?
           if (symbolTable.count(mod->initFn->body) != 0) {
             entry = symbolTable[mod->initFn->body];
-            if (entry->count(get_string(call->get(2))) != 0) {
-              sym = (*entry)[get_string(call->get(2))];
-            } else {
-              sym = (*entry)[get_string(call->get(2))];
+            //Check first before accessing so that we don't
+            //  add a new, blank entry. (Blank entries break
+            //  attempts to add a new symbol if it
+            //  doesn't exist yet to support extern blocks.)
+            if (entry->count(mbr_name) != 0) {
+              sym = (*entry)[mbr_name];
             }
           }
           if (!sym) {
+            //Is it a method?
             if (symbolTable.count(mod->block) != 0) {
               entry = symbolTable[mod->block];
-              if (entry->count(get_string(call->get(2))) != 0) {
-                sym = (*entry)[get_string(call->get(2))];
-              } else {
-                sym = (*entry)[get_string(call->get(2))];
+              if (entry->count(mbr_name) != 0) {
+                sym = (*entry)[mbr_name];
               }
             }
           }
@@ -1311,7 +1443,7 @@ void scopeResolve(void) {
             if (!fn->_this && fn->hasFlag(FLAG_NO_PARENS)) {
               call->replace(new CallExpr(fn));
             } else {
-              UnresolvedSymExpr* se = new UnresolvedSymExpr(get_string(call->get(2)));
+              UnresolvedSymExpr* se = new UnresolvedSymExpr(mbr_name);
               skipSet.set_add(se);
               call->replace(se);
               CallExpr* parent = toCallExpr(se->parentExpr);
@@ -1321,20 +1453,19 @@ void scopeResolve(void) {
             }
           } else if (sym) {
             call->replace(new SymExpr(sym));
+#ifdef HAVE_LLVM
+          } else if (!sym && externC && tryCResolve(call->getModule(),mbr_name)) {
+              //Try to resolve again now that the symbol should
+              //  be in the table
+              resolveModuleCall(call);
+#endif
           } else {
             USR_FATAL_CONT(call, "Symbol '%s' undeclared in module '%s'",
-                           get_string(call->get(2)), mod->name);
+                           mbr_name, mod->name);
           }
         }
       }
     }
   }
-
-  resolveEnumeratedTypes();
-
-  destroyTable();
-
-  destroyModuleUsesCaches();
-
-  renameDefaultTypesToReflectWidths();
 }
+

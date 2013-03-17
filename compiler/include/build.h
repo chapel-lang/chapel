@@ -101,6 +101,7 @@ BlockStmt* buildSyncStmt(Expr* stmt);
 BlockStmt* buildCobeginStmt(BlockStmt* block);
 BlockStmt* buildAtomicStmt(Expr* stmt);
 void createInitFn(ModuleSymbol* mod);
+BlockStmt* buildExternBlockStmt(const char* c_code);
 CallExpr* buildPreDecIncWarning(Expr* expr, char sign);
 BlockStmt* convertTypesToExtern(BlockStmt*);
 BlockStmt* handleConfigTypes(BlockStmt*);

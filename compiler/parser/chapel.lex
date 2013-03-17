@@ -30,6 +30,8 @@
         t == TRSBR)                             \
       strcat(captureString, " ");               \
   }                                             \
+  /* processToken means we are parsing Chapel */\
+  BEGIN(INITIAL);                               \
   return(t)
 #endif
 
@@ -41,7 +43,28 @@
     strcat(captureString, yylval.pch);     \
     strcat(captureString, yytext);         \
   }                                        \
+  /* string literals only in Chapel */     \
+  BEGIN(INITIAL);                          \
   return(STRINGLITERAL)
+
+#define processExtern()                    \
+  countToken(yytext);                      \
+  if (captureTokens) {                     \
+    strcat(captureString, yytext);         \
+  }                                        \
+  BEGIN(externmode);                       \
+  return TEXTERN;
+
+#define processExternCode()                \
+  yylval.pch = eatExternCode();            \
+  countToken(astr(yylval.pch));            \
+  if (captureTokens) {                     \
+    strcat(captureString, yylval.pch);     \
+  }                                        \
+  /* only one { } block is special */      \
+  BEGIN(INITIAL);                          \
+  return(EXTERNCODE)
+
 
 
 %}
@@ -60,6 +83,7 @@ floatLiteral2    {digit}+"."{exponent}
 floatLiteral3    {digit}+{exponent}
 floatLiteral     {floatLiteral1}|{floatLiteral2}|{floatLiteral3}
 
+%s externmode
 
 %%
 
@@ -81,7 +105,7 @@ domain           processToken(TDOMAIN);
 else             processToken(TELSE);
 enum             processToken(TENUM);
 export           processToken(TEXPORT);
-extern           processToken(TEXTERN);
+extern           processExtern();
 for              processToken(TFOR);
 forall           processToken(TFORALL);
 if               processToken(TIF);
@@ -191,7 +215,8 @@ yield            processToken(TYIELD);
 ")"              processToken(TRP);
 "["              processToken(TLSBR);
 "]"              processToken(TRSBR);
-"{"              processToken(TLCBR);
+<externmode>"{"  processExternCode();
+<INITIAL>"{"     processToken(TLCBR);
 "}"              processToken(TRCBR);
 "<~>"            processToken(TIO);
 

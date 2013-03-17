@@ -1,0 +1,61 @@
+bug: sync variable is deleted prematurely when passed by ref and used in 'begin'
+
+Currently, the following idiom is implemented correctly (albeit memory-leaky)
+by not deleting/freeing x$ at the end of something():
+
+  proc something() {
+    var x$: sync int;
+    begin {
+      ... x$ ...
+    }
+  }
+
+However, if x$ is passed as an argument and declared in the caller,
+it will be deleted/freed in the caller:
+
+  proc something(x$: sync int) {
+    begin {
+      ... x$ ...
+    }
+  }
+
+  proc caller() {
+    var x$: sync int;
+    something(x$);
+    // compiler adds delete x$;
+  }
+
+This is incorrect because x$ in the 'begin' may reference
+already-deleted memory.
+
+This autodestroy-with-begin-* suite of tests illustrates this issue.
+While the program output is likely (but not guaranteed) to be as expected,
+the issue can be seen easily by observing the TILDA and deallocation of
+ss2 at the end of tt2() (the counterparts of the above x$ and caller()).
+
+The only reliable way to observe the bug at run time is by running
+these tests under valgrind. The tests contain a barrier to ensure the
+sync variables are referenced after they are deallocated.
+The tests access the sync variables with .isFull so it is non-blocking.
+Things like e.g. readFE() may block (if the deallocated memory happens
+to be overwritten before it is read, or because the mutex being accessed
+has already been destroyed), making the tests run longer.
+
+autodestroy-with-begin-1.chpl:
+
+It is is the above base case, renamed, with the barrier and an
+intermediate function/call between caller() and something() added.
+
+Right now valgrind reports:
+
+==10901== Thread 2:
+==10901== Invalid read of size 1
+==10901==    at 0x45D384: chpl_sync_isFull (tasks-fifo.c:209)
+==10901==    by 0x43F0D0: begin_fn (s.c:171)
+....
+==10901==  Address 0x5641228 is 8 bytes inside a block of size 56 free'd
+==10901==    at 0x4C2701C: free (in /usr/lib64/valgrind/vgpreload_memcheck-amd64-linux.so)
+==10901==    by 0x43EA44: t2 (chpl-mem-impl.h:25)
+....
+==10901== ERROR SUMMARY: 1 errors from 1 contexts (suppressed: 4 from 4)
+
