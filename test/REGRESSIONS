@@ -203,7 +203,11 @@ block distribution regressions
 cyclic distribution regressions
 ===============================
 
-communication counts changed
+Incorrect .good file for gasnet testing (sungeun)
+---------------------------------------
+[Error matching program output for distributions/robust/arithmetic/reindexing/test_strided_reindex2 (compopts: 1)] 
+
+communication counts changed (sungeun)
 ----------------------------
 [Error matching program output for distributions/robust/arithmetic/performance/alloc]
 [Error matching program output for distributions/robust/arithmetic/performance/alloc_all]

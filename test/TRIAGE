@@ -30,50 +30,35 @@
 Problems analyzed and assigned that should be fixed soon:
 =========================================================
 
-gbt, 3/11/13:
+qio error 3/13/13 (Fergie):
+  io/bradc/multilocale/testdistwrite failed for fifo
+  gasnet-everything.  Running under valgrind showed an invalid write
+  in qio_channel_style_element.  This does not happen for comm none.
+  Michael's r21139 supposedly fixed this issue.  FYI, the following is
+  in the REGRESSIONS file for gasnet-fast, so assuming it's the same
+  issue it should be removed if the regression goes away:
 
-1. Got a number of execution time errors in cray-xt.cray-prgenv-cray
-   testing over the weekend, due to r21086.  Sung is working on these.
-     distributions/robust/arithmetic/basics/test_array_accesses1
-     distributions/robust/arithmetic/basics/test_array_assignment
-     distributions/robust/arithmetic/basics/test_array_iteration1
-     distributions/robust/arithmetic/basics/test_array_swap
-     distributions/robust/arithmetic/basics/test_domain_iteration1
-     distributions/robust/arithmetic/basics/test_infer_array_type
-     distributions/robust/arithmetic/basics/test_zipper_default
-     distributions/robust/arithmetic/modules/test_module_Norm
-     distributions/robust/arithmetic/modules/test_module_Random
-     distributions/robust/arithmetic/optimizations/optimizeOnClauses_basic_tuple
-     distributions/robust/arithmetic/reindexing/test_array_alias4
-     distributions/robust/arithmetic/reindexing/test_reindexing1
-     distributions/robust/arithmetic/reindexing/test_reindexing2
-     distributions/robust/arithmetic/reindexing/test_reindexing3
-     distributions/robust/arithmetic/reindexing/test_reindexing4
-     distributions/robust/arithmetic/reindexing/test_reindexing5
-     distributions/robust/arithmetic/reindexing/test_reindexing7
-     distributions/robust/arithmetic/trivial/test_writeln
+  runtime segfault (02/09/13) (Tom)
+  ---------------------------
+  [Error matching program output for io/bradc/multilocale/testdistwrite]
 
-2. I started looking at the lulesh performance changes but didn't get
-   far.  Had all kinds of build problems on kaibab and elsewhere,
-   notably Chapel compilers built with profiling enabled that hung, and
-   HPCToolkit builds from the past that had unaccountably disappeared.
-   I believe I'm nearly to the point of being able to really start
-   looking at this, though, so I'm going to hang on to it.  I made an
-   entry to this effect in REGRESSIONS.
+qthreads build problem 3/15/13 (bradc and Dylan):
+  The make depend changes caused some time-stamp changes that confuse
+  autoconf, and may break the build.  Interestingly, the
+  gasnet+qthreads build did not break.
 
-3. The only other new failure that occurred and won't have shown up as
-   fixed in all cases before the end of my shift was with these compile
-   time failures in GMP-related tests:
-     modules/standard/gmp/ferguson/gmp_dist_array
-     modules/standard/gmp/ferguson/gmp_test
-     modules/standard/gmp/ferguson/gmp_writeln
-     modules/standard/gmp/studies/gmp-simple-long-inout
-     studies/shootout/pidigits/bradc/pidigits-blc
-     studies/shootout/pidigits/bradc/pidigits-iter
-     studies/shootout/pidigits/hilde/pidigits
-   These were all due to a problem in r21083, which I fixed in r21107.
-   It was reported in chpbld02:cray-xt-gnu testing, though, so the last
-   of these may not show up as Resolved Errors until 3/15.
+sub_test failure 3/15/13:
+  See below for documented cases
+
+Random timeouts 3/15/13:
+  These conicided with sub_test failures.  Maybe are caused by the
+  same thing?
+
+  linux64.gnu.none.fifo.pthreads:
+  [Error: Timed out compilation for classes/diten/test_nested_method] 
+
+  linux64.gnu.none.fifo.pthreads.tcmalloc:
+  [Error: Timed out compilation for functions/bradc/paramFnNonParamArgs/paramExample (compopts: 1)]
 
 ----------------------------------------------------------------------
 
@@ -165,8 +150,11 @@ These things regularly cause noise in testing:
 
 linux64.gnu.gasnet.qthreads.none (UNASSIGNED)
 ---------------------------------------------
-gbt: 3/11/13: release/examples/benchmarks/hpcc/ra-atomics (compopts: 1)
-              got a segfault
+NOTE: These seem to happen on program exit, as the rest of the output
+is correct.
+- release/examples/benchmarks/hpcc/ra-atomics (compopts: 1) (3/11/13)
+- release/examples/benchmarks/hpcc/ra (compopts: 1) (3/12/13)
+- release/examples/hello6-taskpar-dist (3/14/13)
 
 bradc: 3/2/13: distributions/bradc/blkCyc/loopBlkCyc got a seg fault
 
@@ -228,6 +216,15 @@ On 02/06/13 something happened around 3:10 AM causing sub_test failures
 across most platforms.
 On 03/01/13, error running sub_test on gasnet.everything in test/domains/bradc
 On 03/02/13, got them on chpbld02 for test/execflags/dinan and .../diten
+On 3/15/13 was a bad night:
+- chap06 baseline: release/examples/benchmarks/ssca2 (1)
+- chpbld01 cray-xt, prgenv-intel nightly: release/examples/benchmarks/hpcc
+- chpbld02 cray-xt, prgenv-gnu weekend: classes/deitz and functions/deitz/iterators
+- chap05 no-local:  classes/diten (1) and test/types/scalar/vass (1)
+- chap07 tcmalloc none: classes/deitz (1) and funtions/bradc/paramFnNonParamArgs (1)
+
+
+
 
 test/studies/hpcc/RA/bradc/parallel/ra-dist
 -------------------------------------------
@@ -243,15 +240,6 @@ SIGABRT on gasnet-fast runs (sungeun)
 gbt: 1/14/13.  The only SIGABRT in the last week resulted from an error
 halt in domains/sungeun/sparse/forall.chpl due to an out-of-bounds array
 index.
-
-sungeun: 1/2/13.  These tests also suffered from the private broadcast
-bug mentioned above with testRAStream and fixed in r20877.  If they do
-not show up again for another couple of weeks, remove this entire
-entry.
-
-release/examples/benchmarks/hpcc/ra (compopts: 1) (10/13/12)
-mutilocale/deitz/needMultiLocales/diagnostics/test_private_broadcast_large (10/11/12, 10/21/12, 12/02/12)
-ra-atomics (UNASSIGNED) (10/11/12)
 
 
 ==============================================================================
