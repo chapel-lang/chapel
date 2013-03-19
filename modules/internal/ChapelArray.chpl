@@ -1641,8 +1641,7 @@ module ChapelArray {
   proc chpl__supportedDataTypeForBulkTransfer(x: domain) param return false;
   proc chpl__supportedDataTypeForBulkTransfer(x: []) param return false;
   proc chpl__supportedDataTypeForBulkTransfer(x: _distribution) param return false;
-  //If we uncomment the following line, chapel codes won't compile
-  // proc chpl__supportedDataTypeForBulkTransfer(x: value) param return false; 
+  proc chpl__supportedDataTypeForBulkTransfer(x: ?t) param where t: value return false;
   proc chpl__supportedDataTypeForBulkTransfer(x) param return true;  
   
   proc chpl__useBulkTransfer(a:[], b:[]) {
