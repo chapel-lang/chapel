@@ -3119,6 +3119,7 @@ GenRet CallExpr::codegen() {
           GenRet tmp;
           Type* lhsType = get(1)->typeInfo();
           if (lhsType->symbol->hasFlag(FLAG_WIDE_CLASS))
+            // If the destination is wide, make the result wide by prepending the locale ID.
             tmp = codegenAddrOf(codegenWideAddr(codegenCallExpr("chpl_gen_getLocaleID"),
                                                 addr, lhsType));
           else
@@ -3765,7 +3766,7 @@ GenRet CallExpr::codegen() {
       } else {
         error = "cannot access remote data in local block";
       }
-      codegenCall("chpl_test_local",
+      codegenCall("chpl_check_local",
                   codegenRnode(get(1)), get(2), get(3), error); 
       break; }
     case PRIM_SYNC_INIT:

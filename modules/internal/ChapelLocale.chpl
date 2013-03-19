@@ -127,17 +127,21 @@ module ChapelLocale {
   // is used in the definition of class RootLocale.
   var rootLocale : locale = nil;
 
-  // Unfortunately, we need a value for _here before the architecture is defined.
-  // This is due to the fact that _here is used for memory and task control already
-  // in setting up the default architecture itself.
-  // This should probably be renamed _dummyLocale or something representative.
-  pragma "private" var _here: locale = new locale();
-  __primitive("_task_set_here", _here);
-
-  // This is obsolete.  Here now means the locale on which you are executing,
-  // sublocale and all.
-  proc here return _here;
+  // This returns the current "here" pointer.
+  // It uses a primitive to suck the here pointer out of task-private storage.
+  // On local builds, the primitive returns a narrow pointer;
+  // otherwise, a wide pointer.
+  //
+  // Perhaps we can move this into the compiler as a special keyword....
+  inline proc here return __primitive("_task_get_here");
   
+  // We need a temporary value for "here" before the architecture is defined.
+  // This is due to the fact that "here" is used for memory and task control
+  // in setting up the architecture itself.
+  // Its type should probably be renamed dummyLocale or something representative.
+  // The dummy locale provides system-default tasking and memory management.
+  __primitive("_task_set_here", new locale());
+
   proc chpl_getPrivatizedCopy(type objectType, objectPid:int): objectType
     return __primitive("chpl_getPrivatizedClass", nil:objectType, objectPid);
   

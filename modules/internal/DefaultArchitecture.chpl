@@ -139,16 +139,17 @@ module DefaultArchitecture {
       // access 'Locales' and 'here', which are not yet initialized.
       for locIdx in myLocaleSpace 
       {
-        // Would like to call addChild here, but for some reason it does not work. <hilde>
         var locID : chpl_localeID_t;
         locID.node = locIdx : chpl_nodeID_t;
         on __primitive("chpl_on_locale_num", locID)
         {
+          // chpl_on_locale_num sets the localeID portion of "here", but 
+          // leaves the addr portion as a NULL pointer.
           const node = new DefaultNode(this);
 
-          // The "private" implementation of _here is being replaced by
-          // a task-private one.  So this will eventually go away:
-          _here = node;
+          // So immediately after creating a new locale to represent here, we
+          // have to call this primitive to insert it into task-private storage.
+          __primitive("_task_set_here", node);
 
           myLocales[locIdx] = node;
           numCores += node.numCores;

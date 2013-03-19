@@ -38,7 +38,9 @@ module RootLocale {
   // When hierarchical locales are fully implemented, the lookup may be
   // done mostly in the runtime (through the sublocale registry).
   proc chpl_localeID_to_locale(id : chpl_localeID_t) : locale {
-    if __primitive("_is_here", id) then return _here;
+    // The _is_here test examines only localeIDs, so is local and very fast.
+    // Evaluating "here" is also local and very fast.
+    if __primitive("_is_here", id) then return here;
     return (rootLocale:RootLocale).localeIDtoLocale(id);
   }
 }
