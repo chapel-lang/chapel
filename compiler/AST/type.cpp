@@ -202,19 +202,9 @@ void EnumType::codegenDef() {
         INT_ASSERT(s->immediate);
 
         VarSymbol* sizedImmediate = resizeImmediate(s, ty);
-        //llvm::Value *initValue = sizedImmediate->codegen().val;
-        //initConstant = llvm::cast<llvm::Constant>(initValue);
-        
-        /*if(initConstant == NULL)
-          INT_FATAL(this, "Invalid enumeration constant init value");
-        */
-        
-        /*llvm::GlobalVariable *globalConstant = llvm::cast<llvm::GlobalVariable>(info->module->getOrInsertGlobal(constant->sym->cname, type));
-        globalConstant->setInitializer(initConstant);
-        globalConstant->setConstant(true);
-        */
 
-        info->lvt->addGlobalValue(constant->sym->cname, sizedImmediate->codegen());
+        info->lvt->addGlobalValue(constant->sym->cname,
+                                  sizedImmediate->codegen());
       }
     }
 #endif
@@ -503,12 +493,15 @@ addDeclaration(ClassType* ct, DefExpr* def, bool tail) {
       UnresolvedSymExpr* sym = toUnresolvedSymExpr(firstexpr); INT_ASSERT(sym);
       const char* name = sym->unresolved;
       // ... then report it to the user
-      USR_FATAL_CONT(fn->_this, "Type binding clauses ('%s.' in this case) are not supported in declarations within a class, record or union", name);
+      USR_FATAL_CONT(fn->_this,
+         "Type binding clauses ('%s.' in this case) are not supported in "
+         "declarations within a class, record or union", name);
     } else {
       fn->_this = new ArgSymbol(fn->thisTag, "this", ct);
       fn->_this->addFlag(FLAG_ARG_THIS);
       fn->insertFormalAtHead(new DefExpr(fn->_this));
-      fn->insertFormalAtHead(new DefExpr(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken)));
+      fn->insertFormalAtHead(
+          new DefExpr(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken)));
       fn->addFlag(FLAG_METHOD);
     }
   }
@@ -609,7 +602,7 @@ void ClassType::codegenDef() {
   if (symbol->hasFlag(FLAG_STAR_TUPLE)) {
     if( outfile ) {
       fprintf(outfile, "typedef ");
-      fprintf(outfile, "%s", getField("x1")->type->codegen().c.c_str());;
+      fprintf(outfile, "%s", getField("x1")->type->codegen().c.c_str());
       fprintf(outfile, " %s", symbol->codegen().c.c_str());
       fprintf(outfile, "[%d];\n\n", fields.length);
       return;
@@ -620,13 +613,15 @@ void ClassType::codegenDef() {
 #endif
     }
   } else if (symbol->hasFlag(FLAG_FIXED_STRING)) {
-    int size = toVarSymbol(symbol->type->substitutions.v[0].value)->immediate->int_value();
+    int size = toVarSymbol(
+        symbol->type->substitutions.v[0].value)->immediate->int_value();
     if( outfile ) {
       fprintf(outfile, "typedef char %s[%i];\n", symbol->cname, size);
       return;
     } else {
 #ifdef HAVE_LLVM
-      llvm::Type *elementType = llvm::IntegerType::getInt8Ty(info->module->getContext());
+      llvm::Type *elementType =
+        llvm::IntegerType::getInt8Ty(info->module->getContext());
       type = llvm::ArrayType::get(elementType, size);
 #endif
     }
@@ -737,7 +732,8 @@ void ClassType::codegenDef() {
           }
 
           GEPMap.insert(std::pair<std::string, int>(field->cname, paramID));
-          GEPMap.insert(std::pair<std::string, int>(std::string("_u.") + field->cname, paramID));
+          GEPMap.insert(std::pair<std::string, int>(
+                std::string("_u.") + field->cname, paramID));
         }
 
         llvm::StructType * st;
@@ -940,7 +936,7 @@ int ClassType::getMemberGEP(const char *name) {
 
     while (current_p->n != 0) {
       forv_Vec(Type, t, *current_p) {
-        std::map<std::string, int>::const_iterator GEPIdx = t->GEPMap.find(name);
+        std::map<std::string,int>::const_iterator GEPIdx = t->GEPMap.find(name);
         if(GEPIdx != t->GEPMap.end()) {
           return GEPIdx->second;
         }
@@ -1259,7 +1255,8 @@ void initTheProgram(void) {
   //  in possibly more special case code.
   //
   DefExpr* objectDef = buildClassDefExpr("object", dtObject,
-                                         NULL, new BlockStmt(), FLAG_UNKNOWN, NULL);
+                                         NULL, new BlockStmt(),
+                                         FLAG_UNKNOWN, NULL);
   objectDef->sym->addFlag(FLAG_OBJECT_CLASS);
   objectDef->sym->addFlag(FLAG_NO_OBJECT);
   theProgram->initFn->insertAtHead(objectDef);
@@ -1518,7 +1515,8 @@ GenRet genTypeStructureIndex(TypeSymbol* typesym) {
       ret.c = "-1";
     else {
 #ifdef HAVE_LLVM
-      ret.val = llvm::ConstantInt::get(llvm::Type::getInt32Ty(info->module->getContext()), -1, true);
+      ret.val = llvm::ConstantInt::get(
+          llvm::Type::getInt32Ty(info->module->getContext()), -1, true);
 #endif
     }
   }
@@ -1555,9 +1553,13 @@ void codegenTypeStructures(FILE* hdrfile) {
   fprintf(outfile, "chpl_num_rt_type_ids\n");
   fprintf(outfile, "} chpl_rt_types;\n\n");
 
-  fprintf(outfile, "chpl_fieldType chpl_structType[][CHPL_MAX_FIELDS_PER_TYPE] = {\n");
+  fprintf(outfile,
+      "chpl_fieldType chpl_structType[][CHPL_MAX_FIELDS_PER_TYPE] = {\n");
             
-  qsort(typesToStructurallyCodegenList.v, typesToStructurallyCodegenList.n, sizeof(typesToStructurallyCodegenList.v[0]), compareCnames);
+  qsort(typesToStructurallyCodegenList.v,
+        typesToStructurallyCodegenList.n,
+        sizeof(typesToStructurallyCodegenList.v[0]),
+        compareCnames);
   int num = 0;
   forv_Vec(TypeSymbol*, typesym, typesToStructurallyCodegenList) {
     if (num) {
@@ -1603,7 +1605,8 @@ void codegenTypeStructures(FILE* hdrfile) {
   fprintf(outfile, "}\n\n");
   closeCFile(&typeStructFile);
   fprintf(hdrfile, "#define CHPL_MAX_FIELDS_PER_TYPE %d\n", maxFieldsPerType);
-  fprintf(hdrfile, "const int chpl_max_fields_per_type = %d;\n", maxFieldsPerType);
+  fprintf(hdrfile, "const int chpl_max_fields_per_type = %d;\n",
+                   maxFieldsPerType);
 }
 
 

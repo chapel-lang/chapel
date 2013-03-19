@@ -1752,11 +1752,18 @@ class ChannelWriter : Writer {
   var _channel_internal:qio_channel_ptr_t = QIO_CHANNEL_PTR_NULL;
   var err:syserr = ENOERR;
   proc binary:bool {
-    var ret:uint(8) = qio_channel_binary(_channel_internal);
+    var ret:uint(8);
+    on this {
+      ret = qio_channel_binary(_channel_internal);
+    }
     return ret != 0;
   }
   proc styleElement(element:int):int {
-    return qio_channel_style_element(_channel_internal, element);
+    var ret:int = 0;
+    on this {
+      ret = qio_channel_style_element(_channel_internal, element);
+    }
+    return ret;
   }
 
   proc error():syserr {
@@ -1786,11 +1793,18 @@ class ChannelReader : Reader {
   var _channel_internal:qio_channel_ptr_t = QIO_CHANNEL_PTR_NULL;
   var err:syserr = ENOERR;
   proc binary:bool {
-    var ret:uint(8) = qio_channel_binary(_channel_internal);
+    var ret:uint(8);
+    on this {
+      ret = qio_channel_binary(_channel_internal);
+    }
     return ret != 0;
   }
   proc styleElement(element:int):int {
-    return qio_channel_style_element(_channel_internal, element);
+    var ret:int = 0;
+    on this {
+      ret = qio_channel_style_element(_channel_internal, element);
+    }
+    return ret;
   }
 
   proc error():syserr {

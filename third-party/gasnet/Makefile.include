@@ -1,4 +1,4 @@
-GASNET_VERSION = 1.18.2
+GASNET_VERSION = 1.20.0
 GASNET_DIR = $(THIRD_PARTY_DIR)/gasnet
 
 # decide whether to do a debug or no-debug build

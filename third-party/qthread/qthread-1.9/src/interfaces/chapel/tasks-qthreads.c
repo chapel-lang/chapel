@@ -56,7 +56,7 @@ static aligned_t profile_task_addToTaskList = 0;
 static aligned_t profile_task_processTaskList = 0;
 static aligned_t profile_task_executeTasksInList = 0;
 static aligned_t profile_task_freeTaskList = 0;
-static aligned_t profile_task_begin = 0;
+static aligned_t profile_task_startMovedTask = 0;
 static aligned_t profile_task_getId = 0;
 static aligned_t profile_task_sleep = 0;
 static aligned_t profile_task_getSerial = 0;
@@ -81,7 +81,7 @@ static void profile_print(void)
     fprintf(stderr, "task processTaskList: %lu\n", (unsigned long)profile_task_processTaskList);
     fprintf(stderr, "task executeTasksInList: %lu\n", (unsigned long)profile_task_executeTasksInList);
     fprintf(stderr, "task freeTaskList: %lu\n", (unsigned long)profile_task_freeTaskList);
-    fprintf(stderr, "task begin: %lu\n", (unsigned long)profile_task_begin);
+    fprintf(stderr, "task startMovedTask: %lu\n", (unsigned long)profile_task_startMovedTask);
     fprintf(stderr, "task getId: %lu\n", (unsigned long)profile_task_getId);
     fprintf(stderr, "task sleep: %lu\n", (unsigned long)profile_task_sleep);
     fprintf(stderr, "task getSerial: %lu\n", (unsigned long)profile_task_getSerial);
@@ -501,15 +501,28 @@ void chpl_task_addToTaskList(chpl_fn_int_t     fid,
                              void             *arg,
                              chpl_task_list_p *task_list,
                              int32_t           task_list_locale,
-                             chpl_bool         call_chpl_begin,
+                             chpl_bool         is_begin_stmt,
                              int               lineno,
                              chpl_string       filename)
 {
-    struct chpl_task_list tasklist = { chpl_ftable[fid], arg, filename, lineno, NULL };
+    qthread_shepherd_id_t const here_shep_id = qthread_shep();
+    c_subloc_t const here_locale_id = here_shep_id + 1;
+    chpl_bool serial_state = chpl_task_getSerial();
+    chapel_wrapper_args_t wrapper_args = 
+        {chpl_ftable[fid], arg, filename, lineno, serial_state, here_locale_id};
 
     PROFILE_INCR(profile_task_addToTaskList,1);
 
-    chpl_task_begin(chpl_ftable[fid], arg, false, chpl_task_getSerial(), &tasklist);
+    if (serial_state) {
+        syncvar_t ret = SYNCVAR_STATIC_EMPTY_INITIALIZER;
+        qthread_fork_syncvar_copyargs_to(chapel_wrapper, &wrapper_args,
+                                         sizeof(chapel_wrapper_args_t), &ret,
+                                         here_shep_id);
+        qthread_syncvar_readFF(NULL, &ret);
+    } else {
+        qthread_fork_syncvar_copyargs(chapel_wrapper, &wrapper_args,
+                                      sizeof(chapel_wrapper_args_t), NULL);
+    }
 }
 
 void chpl_task_processTaskList(chpl_task_list_p task_list)
@@ -527,33 +540,22 @@ void chpl_task_freeTaskList(chpl_task_list_p task_list)
     PROFILE_INCR(profile_task_freeTaskList,1);
 }
 
-void chpl_task_begin(chpl_fn_p        fp,
-                     void            *arg,
-                     chpl_bool        ignore_serial,
-                     chpl_bool        serial_state,
-                     chpl_task_list_p ltask)
+void chpl_task_startMovedTask(chpl_fn_p      fp,
+                              void          *arg,
+                              chpl_taskID_t  id,
+                              chpl_bool      serial_state)
 {
+    assert(id == chpl_nullTaskID);
+
     qthread_shepherd_id_t const here_shep_id = qthread_shep();
     c_subloc_t const here_locale_id = here_shep_id + 1;
     chapel_wrapper_args_t wrapper_args = 
         {fp, arg, NULL, 0, serial_state, here_locale_id};
 
-    PROFILE_INCR(profile_task_begin,1);
+    PROFILE_INCR(profile_task_startMovedTask,1);
 
-    if (ltask) {
-        wrapper_args.task_filename = ltask->filename;
-        wrapper_args.lineno        = ltask->lineno;
-    }
-    if (!ignore_serial && serial_state) {
-        syncvar_t ret = SYNCVAR_STATIC_EMPTY_INITIALIZER;
-        qthread_fork_syncvar_copyargs_to(chapel_wrapper, &wrapper_args,
-                                         sizeof(chapel_wrapper_args_t), &ret,
-                                         here_shep_id);
-        qthread_syncvar_readFF(NULL, &ret);
-    } else {
-        qthread_fork_syncvar_copyargs(chapel_wrapper, &wrapper_args,
-                                      sizeof(chapel_wrapper_args_t), NULL);
-    }
+    qthread_fork_syncvar_copyargs(chapel_wrapper, &wrapper_args,
+                                  sizeof(chapel_wrapper_args_t), NULL);
 }
 
 // Returns '(unsigned int)-1' if called outside of the tasking layer.

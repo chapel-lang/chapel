@@ -9,9 +9,6 @@
 CC = cc
 CXX = CC
 
-MAKEDEPEND = $(CXX) -M
-CMAKEDEPEND = $(CC) -M
-
 RANLIB = ranlib
 
 

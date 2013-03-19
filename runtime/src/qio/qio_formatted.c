@@ -2851,13 +2851,6 @@ err_t qio_channel_print_complex(const int threadsafe, qio_channel_t* restrict ch
 
   re_isnan = isnan(re_num);
   im_isnan = isnan(im_num);
-  if( signbit(im_num) ) {
-    // num = - num;
-    im_num = copysign(im_num, 1.0);
-    im_neg = 1;
-  } else {
-    im_neg = 0;
-  }
 
   // Lock before reading any style information from the
   // channel.
@@ -2875,6 +2868,19 @@ err_t qio_channel_print_complex(const int threadsafe, qio_channel_t* restrict ch
   style->min_width_columns = 0;
   pos_char = ch->style.positive_char;
   neg_char = ch->style.negative_char;
+
+  if( (style->complex_style & QIO_COMPLEX_FORMAT_PART) == QIO_COMPLEX_FORMAT_ABI ) {
+    // For the a+bi format, instead of emitting a+-bi, always
+    // compute the string for |b| and then fold replace the original
+    // + with a - if necessary (ie so we get a-bi).
+    if( signbit(im_num) ) {
+      // num = - num;
+      im_num = copysign(im_num, 1.0);
+      im_neg = 1;
+    } else {
+      im_neg = 0;
+    }
+  }
 
   err = qio_channel_mark(false, ch);
   if( err ) goto unlock;
@@ -2951,7 +2957,7 @@ err_t qio_channel_print_complex(const int threadsafe, qio_channel_t* restrict ch
       if( err ) goto rewind;
       err = qio_channel_write_char(false, ch, ' ');
       if( err ) goto rewind;
-      err = qio_channel_write_char(false, ch, im_neg?'-':'+');
+      err = qio_channel_write_char(false, ch, im_neg?neg_char:pos_char);
       if( err ) goto rewind;
       err = qio_channel_write_char(false, ch, ' ');
       if( err ) goto rewind;

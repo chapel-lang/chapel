@@ -19,8 +19,6 @@ echoruntimedir:
 %.clobberdir:
 	@cd $* && $(MAKE) clobber
 
-%.dependdir:
-	@cd $* && $(MAKE) depend
 
 
 #
@@ -32,14 +30,6 @@ echoruntimedir:
 #
 # pattern-based rules
 #
-
-%.depend: %.c $(DEPEND_STAMP)
-	@$(CMAKEDEPEND) $(DEPEND_CFLAGS) $(DEPEND_INCLS) $< | sed s/$*\\\.o/\\\$(DEPEND_DIR_SAFESLASH)\\\/$*\\\.o/ >> $(SVN_DEPENDS).tmp
-
-ifdef NVCC
-%.depend: %.cu $(DEPEND_STAMP)
-	@$(CMAKEDEPEND) $(DEPEND_CFLAGS) $(DEPEND_INCLS) $< | sed s/$*\\\.o/\\\$(DEPEND_DIR_SAFESLASH)\\\/$*\\\.o/ >> $(SVN_DEPENDS).tmp
-endif	
 
 #
 # The "$($(<:.c=)_CFLAGS)" construct lets your Makefile.share define,
@@ -65,4 +55,5 @@ FORCE:
 
 .PHONY: all clean cleandeps clobber depend test echoruntimedir FORCE
 .SUFFIXES:
-.SUFFIXES: .cpp .o .h .makedir .cleandir .cleandirdeps .clobberdir .dependdir
+.SUFFIXES: .cpp .o .h .makedir .cleandir .cleandirdeps .clobberdir
+.SECONDARY: $(RUNTIME_OBJ_DIR_STAMP) $(LAUNCHER_OBJ_DIR_STAMP)

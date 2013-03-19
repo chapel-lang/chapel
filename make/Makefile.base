@@ -61,6 +61,10 @@ endif
 #
 # default CFLAGS, based on other settings
 #
+ifeq ($(DEPEND), 1)
+CFLAGS += $(DEPEND_CFLAGS)
+endif
+
 ifeq ($(DEBUG), 1)
 CFLAGS += $(DEBUG_CFLAGS)
 endif
@@ -116,14 +120,11 @@ printplatform:
 #
 print-%: ; @echo $* is $($*)
 
-#
-# OBJ_SUBDIR_MADE creates either a directory or a symbolic link,
-# depending on how CHPLDEVTMP is set -- well, actually it creates a
-# timestamp file (OBJ_SUBDIR_TIMESTAMP) so that the varying time
-# stamps of directories don't cause things to rebuild indiscriminately.
-# OBJ_SUBDIR is the actual directory.  OBJ_SUBDIR_SAFESLASH
-# is the directory with slashes escaped appropriately for use in
-# Makefile command rules.
+# OBJ_SUBDIR_MADE creates a timestamp file (OBJ_SUBDIR_TIMESTAMP) so
+# that the varying time stamps of directories don't cause things to
+# rebuild indiscriminately.  OBJ_SUBDIR is the actual directory.
+# OBJ_SUBDIR_SAFESLASH is the directory with slashes escaped
+# appropriately for use in Makefile command rules.
 #
 GEN_SUBDIR = gen
 PLAT_COMPILER_SUBDIR = $(CHPL_MAKE_HOST_PLATFORM)/$(CHPL_MAKE_COMPILER)
@@ -192,3 +193,5 @@ EXE_SUFFIX =
 -include $(CHPL_MAKE_HOME)/make/platform/Makefile.$(CHPL_MAKE_PLATFORM)
 -include $(CHPL_MAKE_HOME)/make/comm/Makefile.$(CHPL_MAKE_COMM)
 -include $(CHPL_MAKE_HOME)/make/tasks/Makefile.$(CHPL_MAKE_TASKS)
+
+.SECONDARY: $(OBJ_SUBDIR_TIMESTAMP)

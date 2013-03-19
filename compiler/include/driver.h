@@ -102,6 +102,10 @@ extern bool fieeefloat;
 extern int  fMaxCIdentLen;
 
 extern bool llvmCodegen;
+
+// externC allows blocks like extern { } to be parsed
+// with clang and then added to the enclosing module's scope
+extern bool externC;
 extern char breakOnCodegenCname[256];
 
 enum { LS_DEFAULT=0, LS_STATIC, LS_DYNAMIC };

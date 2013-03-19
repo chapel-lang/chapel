@@ -14,8 +14,9 @@ possible.  In particular:
 
 1) When building the compiler and runtime, it causes:
    (a) debugging to be turned on
-   (b) optimizations to be turned off
-   (c) a number of warnings to be turned on with the goal of making
+   (b) computation of dependences to be turned on
+   (c) optimizations to be turned off
+   (d) a number of warnings to be turned on with the goal of making
        our code as portable and bulletproof as possible
 
 2) When doing 'make clean' on the compiler, it causes intermediate

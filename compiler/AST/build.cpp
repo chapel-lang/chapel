@@ -393,6 +393,10 @@ buildIfStmt(Expr* condExpr, Expr* thenExpr, Expr* elseExpr) {
   return buildChapelStmt(new CondStmt(new CallExpr("_cond_test", condExpr), thenExpr, elseExpr));
 }
 
+BlockStmt*
+buildExternBlockStmt(const char* c_code) {
+  return buildChapelStmt(new ExternBlockStmt(c_code));
+}
 
 void createInitFn(ModuleSymbol* mod) {
   SET_LINENO(mod);

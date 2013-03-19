@@ -1,0 +1,2 @@
+two-modules-error.chpl:14: error: Symbol 'y' undeclared in module 'A'
+two-modules-error.chpl:17: error: Symbol 'y' undeclared in module 'A'

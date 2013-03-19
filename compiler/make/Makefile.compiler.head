@@ -3,6 +3,7 @@
 #
 ifdef CHPL_DEVELOPER
 DEBUG=1
+DEPEND=1
 else
 OPTIMIZE=1
 endif
@@ -68,7 +69,7 @@ CLOBBER_TARGS = \
 # platform-specific subdirectory targets
 #
 
-SVN_DEPENDS = ./$(OBJ_SUBDIR)/Makefile.svn.depend
+SVN_DEPENDS = ./$(OBJ_SUBDIR)/*.d
 
 
 
@@ -76,4 +77,3 @@ MAKEALLSUBDIRS = $(SUBDIRS:%=%.makedir)
 CLEANSUBDIRS = $(SUBDIRS:%=%.cleandir)
 CLEANSUBDIRDEPS = $(SUBDIRS:%=%.cleandirdeps)
 CLOBBERSUBDIRS = $(SUBDIRS:%=%.clobberdir)
-DEPENDSUBDIRS = $(SUBDIRS:%=%.dependdir)

@@ -24,6 +24,7 @@
 // to all of the codegen() routines
 GenInfo* gGenInfo;
 int gMaxVMT = -1;
+fileinfo gAllExternCode;
 
 static const char*
 subChar(Symbol* sym, const char* ch, const char* x) {
@@ -94,7 +95,9 @@ static void legalizeName(Symbol* sym) {
   }
 
   // Add chpl_ to operator names.
-  if ((sym->cname[0] == '_' && (sym->cname[1] == '_' || (sym->cname[1] >= 'A' && sym->cname[1] <= 'Z')))) {
+  if ((sym->cname[0] == '_' &&
+      (sym->cname[1] == '_' || (sym->cname[1] >= 'A' && sym->cname[1] <= 'Z'))))
+  {
     sym->cname = astr("chpl__", sym->cname);
   }
 }
@@ -113,7 +116,8 @@ genGlobalDefClassId(const char* cname, int id) {
 #ifdef HAVE_LLVM
     GenRet id_type_g = CLASS_ID_TYPE->codegen();
     llvm::Type *id_type = id_type_g.type;
-    llvm::GlobalVariable * gv = llvm::cast<llvm::GlobalVariable>(info->module->getOrInsertGlobal(name, id_type));
+    llvm::GlobalVariable * gv = llvm::cast<llvm::GlobalVariable>(
+        info->module->getOrInsertGlobal(name, id_type));
     gv->setInitializer(info->builder->getInt32(id));
     gv->setConstant(true);
     info->lvt->addGlobalValue(name, gv, GEN_PTR, ! is_signed(CLASS_ID_TYPE));
@@ -127,8 +131,11 @@ genGlobalString(const char* cname, const char* value) {
     fprintf(info->cfile, "const char* %s = \"%s\";\n", cname, value);
   } else {
 #ifdef HAVE_LLVM
-    llvm::GlobalVariable *globalString = llvm::cast<llvm::GlobalVariable>(info->module->getOrInsertGlobal(cname, llvm::IntegerType::getInt8PtrTy(info->module->getContext())));
-    globalString->setInitializer(llvm::cast<llvm::GlobalVariable>(new_StringSymbol(value)->codegen().val)->getInitializer());
+    llvm::GlobalVariable *globalString = llvm::cast<llvm::GlobalVariable>(
+        info->module->getOrInsertGlobal(
+          cname, llvm::IntegerType::getInt8PtrTy(info->module->getContext())));
+    globalString->setInitializer(llvm::cast<llvm::GlobalVariable>(
+          new_StringSymbol(value)->codegen().val)->getInitializer());
     globalString->setConstant(true);
     info->lvt->addGlobalValue(cname, globalString, GEN_PTR, true);
 #endif
@@ -141,7 +148,9 @@ genGlobalInt(const char* cname, int value) {
     fprintf(info->cfile, "const int %s = %d;\n", cname, value);
   } else {
 #ifdef HAVE_LLVM
-    llvm::GlobalVariable *globalInt = llvm::cast<llvm::GlobalVariable>(info->module->getOrInsertGlobal(cname, llvm::IntegerType::getInt32Ty(info->module->getContext())));
+    llvm::GlobalVariable *globalInt = llvm::cast<llvm::GlobalVariable>(
+        info->module->getOrInsertGlobal(
+          cname, llvm::IntegerType::getInt32Ty(info->module->getContext())));
     globalInt->setInitializer(info->builder->getInt32(value));
     globalInt->setConstant(true);
     info->lvt->addGlobalValue(cname, globalInt, GEN_PTR, false);
@@ -189,19 +198,23 @@ genFtable(Vec<FnSymbol*> & fSymbols) {
     int fID = 0;
     forv_Vec(FnSymbol, fn, fSymbols) {
       llvm::Function *func = getFunctionLLVM(fn->cname);
-      table[fID++] = llvm::cast<llvm::Constant>(info->builder->CreatePointerCast(func, funcPtrType));
+      table[fID++] = llvm::cast<llvm::Constant>(
+          info->builder->CreatePointerCast(func, funcPtrType));
     }
     if (fSymbols.n == 0) {
       table[0] = llvm::Constant::getNullValue(funcPtrType);
     }
     
-    llvm::ArrayType *funcPtrTableType = llvm::ArrayType::get(funcPtrType, table.size());
+    llvm::ArrayType *funcPtrTableType =
+      llvm::ArrayType::get(funcPtrType, table.size());
     
-    if(llvm::GlobalVariable *ftable = info->module->getNamedGlobal(ftable_name)) {
+    if(llvm::GlobalVariable *ftable =
+        info->module->getNamedGlobal(ftable_name)) {
       ftable->eraseFromParent();
     }
     
-    llvm::GlobalVariable *ftable = llvm::cast<llvm::GlobalVariable>(info->module->getOrInsertGlobal(ftable_name, funcPtrTableType));
+    llvm::GlobalVariable *ftable = llvm::cast<llvm::GlobalVariable>(
+        info->module->getOrInsertGlobal(ftable_name, funcPtrTableType));
     ftable->setInitializer(llvm::ConstantArray::get(funcPtrTableType, table));
     ftable->setConstant(true);
     info->lvt->addGlobalValue(ftable_name, ftable, GEN_PTR, true);
@@ -214,7 +227,7 @@ genVirtualMethodTable(Vec<TypeSymbol*>& types) {
   GenInfo* info = gGenInfo;
   int maxVMT = 0;
   for (int i = 0; i < virtualMethodTable.n; i++)
-    if (virtualMethodTable.v[i].key && virtualMethodTable.v[i].value->n > maxVMT)
+    if(virtualMethodTable.v[i].key && virtualMethodTable.v[i].value->n > maxVMT)
       maxVMT = virtualMethodTable.v[i].value->n;
 
   gMaxVMT = maxVMT;
@@ -266,7 +279,8 @@ genVirtualMethodTable(Vec<TypeSymbol*>& types) {
           if (Vec<FnSymbol*>* vfns = virtualMethodTable.get(ct)) {
             forv_Vec(FnSymbol, vfn, *vfns) {
               llvm::Function *func = getFunctionLLVM(vfn->cname);
-              table.push_back(llvm::cast<llvm::Constant>(info->builder->CreatePointerCast(func, funcPtrType)));
+              table.push_back(llvm::cast<llvm::Constant>(
+                    info->builder->CreatePointerCast(func, funcPtrType)));
               n++;
             }
           }
@@ -278,22 +292,21 @@ genVirtualMethodTable(Vec<TypeSymbol*>& types) {
       }
     }
     
-    llvm::ArrayType *vmTableType = llvm::ArrayType::get(vmTableEntryType, table.size());
+    llvm::ArrayType *vmTableType =
+      llvm::ArrayType::get(vmTableEntryType, table.size());
     
     if(llvm::GlobalVariable *vmTable = info->module->getNamedGlobal(vmtData)) {
       vmTable->eraseFromParent();
     }
     
-    llvm::GlobalVariable *vmTable = llvm::cast<llvm::GlobalVariable>(info->module->getOrInsertGlobal(vmtData, vmTableType));
+    llvm::GlobalVariable *vmTable =llvm::cast<llvm::GlobalVariable>(
+        info->module->getOrInsertGlobal(vmtData, vmTableType));
     vmTable->setInitializer(llvm::ConstantArray::get(vmTableType, table));
     vmTable->setConstant(true);
     
-    llvm::Value* vmtElmPtr = info->builder->CreateConstInBoundsGEP2_64(vmTable, 0, 0);
+    llvm::Value* vmtElmPtr =
+      info->builder->CreateConstInBoundsGEP2_64(vmTable, 0, 0);
      
-    /*llvm::GlobalVariable *vmtElmGlobal = llvm::cast<llvm::GlobalVariable>(info->module->getOrInsertGlobal(vmt, vmtElmPtr->getType()));
-    vmTable->setInitializer(vmtElmPtr);
-    vmTable->setConstant(true);
-    */
     info->lvt->addGlobalValue(vmt, vmtElmPtr, GEN_VAL, true);
 #endif
   }
@@ -606,11 +619,17 @@ static void codegen_header() {
     // This is done in runClang for LLVM version.
     fprintf(hdrfile, "\n#define CHPL_GEN_CODE\n\n");
 
-    // Include sys_basic.h to get C types always defined, proper library .h inclusion
+    // Include sys_basic.h to get C types always defined,
+    // proper library .h inclusion
     fprintf(hdrfile, "#include \"sys_basic.h\"\n");
     genIncludeCommandLineHeaders(hdrfile);
 
     fprintf(hdrfile, "#include \"stdchpl.h\"\n");
+
+    //include generated extern C header file
+    if (externC && gAllExternCode.filename != NULL) {
+      fprintf(hdrfile, "%s", astr("#include \"", gAllExternCode.filename, "\"\n"));
+    }
   }
 
   genClassIDs(types);
@@ -727,22 +746,39 @@ static void codegen_header() {
   int globals_registry_static_size = (numGlobalsOnHeap ? numGlobalsOnHeap : 1);
   if( hdrfile ) {
     fprintf(hdrfile, "\nvoid** chpl_globals_registry;\n");
-    fprintf(hdrfile, "\nvoid* chpl_globals_registry_static[%d];\n", globals_registry_static_size);
+    fprintf(hdrfile, "\nvoid* chpl_globals_registry_static[%d];\n",
+                     globals_registry_static_size);
   } else {
 #ifdef HAVE_LLVM
     llvm::Type* voidstarstar =
-      llvm::PointerType::get(llvm::IntegerType::getInt8PtrTy(info->module->getContext()), 0);
+      llvm::PointerType::get(
+          llvm::IntegerType::getInt8PtrTy(info->module->getContext()), 0);
 
-    llvm::GlobalVariable *chpl_globals_registryGVar = llvm::cast<llvm::GlobalVariable>(info->module->getOrInsertGlobal("chpl_globals_registry", voidstarstar));
-    chpl_globals_registryGVar->setInitializer(llvm::Constant::getNullValue(chpl_globals_registryGVar->getType()->getContainedType(0)));
-    info->lvt->addGlobalValue("chpl_globals_registry", chpl_globals_registryGVar, GEN_PTR, true);
+    llvm::GlobalVariable *chpl_globals_registryGVar =
+      llvm::cast<llvm::GlobalVariable>(
+          info->module->getOrInsertGlobal("chpl_globals_registry",
+            voidstarstar));
+    chpl_globals_registryGVar->setInitializer(
+        llvm::Constant::getNullValue(
+          chpl_globals_registryGVar->getType()->getContainedType(0)));
+    info->lvt->addGlobalValue("chpl_globals_registry",
+        chpl_globals_registryGVar, GEN_PTR, true);
 
-    if(llvm::GlobalVariable *GVar = llvm::cast_or_null<llvm::GlobalVariable>(info->module->getNamedGlobal("chpl_globals_registry_static"))) {
+    if(llvm::GlobalVariable *GVar = llvm::cast_or_null<llvm::GlobalVariable>(
+          info->module->getNamedGlobal("chpl_globals_registry_static"))) {
       GVar->eraseFromParent();
     }
-    llvm::GlobalVariable *chpl_globals_registry_staticGVar = llvm::cast<llvm::GlobalVariable>(info->module->getOrInsertGlobal("chpl_globals_registry_static", llvm::ArrayType::get(llvm::IntegerType::getInt8PtrTy(info->module->getContext()), globals_registry_static_size)));
-    chpl_globals_registry_staticGVar->setInitializer(llvm::Constant::getNullValue(chpl_globals_registry_staticGVar->getType()->getContainedType(0)));
-    info->lvt->addGlobalValue("chpl_globals_registry_static", chpl_globals_registry_staticGVar, GEN_PTR, true);
+    llvm::GlobalVariable *chpl_globals_registry_staticGVar =
+      llvm::cast<llvm::GlobalVariable>(
+          info->module->getOrInsertGlobal("chpl_globals_registry_static",
+            llvm::ArrayType::get(
+              llvm::IntegerType::getInt8PtrTy(info->module->getContext()),
+              globals_registry_static_size)));
+    chpl_globals_registry_staticGVar->setInitializer(
+        llvm::Constant::getNullValue(
+          chpl_globals_registry_staticGVar->getType()->getContainedType(0)));
+    info->lvt->addGlobalValue("chpl_globals_registry_static",
+                              chpl_globals_registry_staticGVar, GEN_PTR, true);
 #endif
   }
   genGlobalInt("chpl_heterogeneous", fHeterogeneous?1:0);
@@ -760,18 +796,24 @@ static void codegen_header() {
 #ifdef HAVE_LLVM
     std::vector<llvm::Constant *> memDescTable;
     forv_Vec(const char*, memDesc, memDescsVec) {
-      memDescTable.push_back(llvm::cast<llvm::GlobalVariable>(new_StringSymbol(memDesc)->codegen().val)->getInitializer());
+      memDescTable.push_back(llvm::cast<llvm::GlobalVariable>(
+            new_StringSymbol(memDesc)->codegen().val)->getInitializer());
     }
-    llvm::ArrayType *memDescTableType = llvm::ArrayType::get(llvm::IntegerType::getInt8PtrTy(info->module->getContext()), memDescTable.size());
+    llvm::ArrayType *memDescTableType = llvm::ArrayType::get(
+        llvm::IntegerType::getInt8PtrTy(info->module->getContext()),
+        memDescTable.size());
 
-    if(llvm::GlobalVariable *GVar = llvm::cast_or_null<llvm::GlobalVariable>(info->module->getNamedGlobal("chpl_mem_descs"))) {
+    if(llvm::GlobalVariable *GVar =llvm::cast_or_null<llvm::GlobalVariable>(
+          info->module->getNamedGlobal("chpl_mem_descs"))) {
       GVar->eraseFromParent();
     }
 
-    llvm::GlobalVariable *chpl_memDescsGVar = llvm::cast<llvm::GlobalVariable>(info->module->getOrInsertGlobal("chpl_mem_descs", memDescTableType));
-    chpl_memDescsGVar->setInitializer(llvm::ConstantArray::get(memDescTableType, memDescTable));
+    llvm::GlobalVariable *chpl_memDescsGVar = llvm::cast<llvm::GlobalVariable>(
+        info->module->getOrInsertGlobal("chpl_mem_descs", memDescTableType));
+    chpl_memDescsGVar->setInitializer(
+        llvm::ConstantArray::get(memDescTableType, memDescTable));
     chpl_memDescsGVar->setConstant(true);
-    info->lvt->addGlobalValue("chpl_mem_descs", chpl_memDescsGVar, GEN_PTR, true);
+    info->lvt->addGlobalValue("chpl_mem_descs",chpl_memDescsGVar,GEN_PTR,true);
 #endif
   }
 
@@ -801,11 +843,22 @@ static void codegen_header() {
     fprintf(hdrfile, "\n};\n");
   } else {
 #ifdef HAVE_LLVM
-    llvm::Type *private_broadcastTableEntryType = llvm::IntegerType::getInt8PtrTy(info->module->getContext());
+    llvm::Type *private_broadcastTableEntryType =
+      llvm::IntegerType::getInt8PtrTy(info->module->getContext());
+
     std::vector<llvm::Constant *> private_broadcastTable;
-    private_broadcastTable.push_back(llvm::cast<llvm::Constant>(info->builder->CreatePointerCast(info->lvt->getValue("chpl_verbose_comm").val, private_broadcastTableEntryType)));
-    private_broadcastTable.push_back(llvm::cast<llvm::Constant>(info->builder->CreatePointerCast(info->lvt->getValue("chpl_comm_diagnostics").val, private_broadcastTableEntryType)));
-    private_broadcastTable.push_back(llvm::cast<llvm::Constant>(info->builder->CreatePointerCast(info->lvt->getValue("chpl_verbose_mem").val, private_broadcastTableEntryType)));
+    private_broadcastTable.push_back(llvm::cast<llvm::Constant>(
+          info->builder->CreatePointerCast(
+            info->lvt->getValue("chpl_verbose_comm").val,
+            private_broadcastTableEntryType)));
+    private_broadcastTable.push_back(llvm::cast<llvm::Constant>(
+          info->builder->CreatePointerCast(
+            info->lvt->getValue("chpl_comm_diagnostics").val,
+            private_broadcastTableEntryType)));
+    private_broadcastTable.push_back(llvm::cast<llvm::Constant>(
+          info->builder->CreatePointerCast(
+            info->lvt->getValue("chpl_verbose_mem").val,
+            private_broadcastTableEntryType)));
 
     int broadcastID = 3;
     forv_Vec(CallExpr, call, gCallExprs) {
@@ -813,20 +866,32 @@ static void codegen_header() {
         SymExpr* se = toSymExpr(call->get(1));
         INT_ASSERT(se);
 
-        private_broadcastTable.push_back(llvm::cast<llvm::Constant>(info->builder->CreatePointerCast(info->lvt->getValue(se->var->cname).val, private_broadcastTableEntryType)));
+        private_broadcastTable.push_back(llvm::cast<llvm::Constant>(
+              info->builder->CreatePointerCast(
+                info->lvt->getValue(se->var->cname).val,
+                private_broadcastTableEntryType)));
 
         call->insertAtHead(new_IntSymbol(broadcastID++));
       }
     }
 
-    if(llvm::GlobalVariable *GVar = llvm::cast_or_null<llvm::GlobalVariable>(info->module->getNamedGlobal("chpl_private_broadcast_table"))) {
+    if(llvm::GlobalVariable *GVar = llvm::cast_or_null<llvm::GlobalVariable>(
+          info->module->getNamedGlobal("chpl_private_broadcast_table"))) {
       GVar->eraseFromParent();
     }
 
-    llvm::ArrayType *private_broadcastTableType = llvm::ArrayType::get(private_broadcastTableEntryType, private_broadcastTable.size());
-    llvm::GlobalVariable *private_broadcastTableGVar = llvm::cast<llvm::GlobalVariable>(info->module->getOrInsertGlobal("chpl_private_broadcast_table", private_broadcastTableType));
-    private_broadcastTableGVar->setInitializer(llvm::ConstantArray::get(private_broadcastTableType, private_broadcastTable));
-    info->lvt->addGlobalValue("chpl_private_broadcast_table", private_broadcastTableGVar, GEN_PTR, true);
+    llvm::ArrayType *private_broadcastTableType = 
+      llvm::ArrayType::get(private_broadcastTableEntryType,
+                          private_broadcastTable.size());
+    llvm::GlobalVariable *private_broadcastTableGVar =
+      llvm::cast<llvm::GlobalVariable>(
+          info->module->getOrInsertGlobal("chpl_private_broadcast_table",
+                                          private_broadcastTableType));
+    private_broadcastTableGVar->setInitializer(
+        llvm::ConstantArray::get(
+          private_broadcastTableType, private_broadcastTable));
+    info->lvt->addGlobalValue("chpl_private_broadcast_table",
+                              private_broadcastTableGVar, GEN_PTR, true);
 #endif
   }
 
@@ -916,11 +981,17 @@ codegen_config() {
       createConfigType = createConfigFunc->getFunctionType();
     }
     else {
-      createConfigType = llvm::FunctionType::get(llvm::Type::getVoidTy(info->module->getContext()), false);
-      createConfigFunc = llvm::Function::Create(createConfigType, llvm::Function::ExternalLinkage, "CreateConfigVarTable", info->module);
+      createConfigType = llvm::FunctionType::get(
+          llvm::Type::getVoidTy(info->module->getContext()), false);
+      createConfigFunc =
+        llvm::Function::Create(createConfigType,
+                               llvm::Function::ExternalLinkage,
+                               "CreateConfigVarTable", info->module);
     }
 
-    llvm::BasicBlock *createConfigBlock = llvm::BasicBlock::Create(info->module->getContext(), "entry", createConfigFunc);
+    llvm::BasicBlock *createConfigBlock =
+      llvm::BasicBlock::Create(info->module->getContext(),
+                               "entry", createConfigFunc);
     info->builder->SetInsertPoint(createConfigBlock);
 
     llvm::Function *initConfigFunc = getFunctionLLVM("initConfigVarTable");
@@ -931,7 +1002,8 @@ codegen_config() {
     forv_Vec(VarSymbol, var, gVarSymbols) {
       if (var->hasFlag(FLAG_CONFIG) && !var->hasFlag(FLAG_TYPE_VARIABLE)) {
         std::vector<llvm::Value *> args (3);
-        args[0] = info->builder->CreateLoad(new_StringSymbol(var->name)->codegen().val);
+        args[0] = info->builder->CreateLoad(
+            new_StringSymbol(var->name)->codegen().val);
 
         Type* type = var->type;
         if (type->symbol->hasFlag(FLAG_WIDE_CLASS)) {
@@ -943,13 +1015,16 @@ codegen_config() {
         if (type->symbol->hasFlag(FLAG_WIDE_CLASS)) {
           type = type->getField("addr")->type;
         }
-        args[1] = info->builder->CreateLoad(new_StringSymbol(type->symbol->name)->codegen().val);
+        args[1] = info->builder->CreateLoad(
+            new_StringSymbol(type->symbol->name)->codegen().val);
 
         if (var->getModule()->modTag == MOD_INTERNAL) {
-          args[2] = info->builder->CreateLoad(new_StringSymbol("Built-in")->codegen().val);
+          args[2] = info->builder->CreateLoad(
+              new_StringSymbol("Built-in")->codegen().val);
         }
         else {
-          args[2] = info->builder->CreateLoad(new_StringSymbol(var->getModule()->name)->codegen().val);
+          args[2] =info->builder->CreateLoad(
+              new_StringSymbol(var->getModule()->name)->codegen().val);
         }
 
         info->builder->CreateCall(installConfigFunc, args);
@@ -988,7 +1063,8 @@ void codegen(void) {
 #ifdef HAVE_LLVM
     fileinfo nullfile = {NULL, NULL, NULL};
     hdrfile = mainfile = gpusrcfile = nullfile; 
-    if( fHeterogeneous ) INT_FATAL("fHeretogeneous not yet supported with LLVM");
+    if( fHeterogeneous )
+      INT_FATAL("fHeretogeneous not yet supported with LLVM");
     if (fGPU) INT_FATAL("fGPU not yet supported with LLVM"); 
     prepareCodegenLLVM();
 #endif
@@ -1113,14 +1189,21 @@ void makeBinary(void) {
 #endif
   } else {
     const char* makeflags = printSystemCommands ? "-f " : "-s -f ";
-    const char* command = astr(astr(CHPL_MAKE, " "), makeflags, getIntermediateDirName(),
-                              "/Makefile");
+    const char* command = astr(astr(CHPL_MAKE, " "),
+                               makeflags,
+                               getIntermediateDirName(), "/Makefile");
     mysystem(command, "compiling generated source");
   }
 }
 
 #ifdef HAVE_LLVM
-GenInfo::GenInfo(std::string clangInstallDirIn, std::string compilelineIn, std::vector<std::string> clangCCArgsIn, std::vector<std::string> clangLDArgsIn, std::vector<std::string> clangOtherArgsIn, bool parseOnlyIn )
+GenInfo::GenInfo(
+    std::string clangInstallDirIn,
+    std::string compilelineIn,
+    std::vector<std::string> clangCCArgsIn,
+    std::vector<std::string> clangLDArgsIn,
+    std::vector<std::string> clangOtherArgsIn,
+    bool parseOnlyIn )
        :   cfile(NULL), cLocalDecls(), cStatements(),
            lineno(-1), filename(NULL), parseOnly(parseOnlyIn),
            // the rest of these are only in GenInfo with HAVE_LLVM

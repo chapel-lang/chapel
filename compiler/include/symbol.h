@@ -246,6 +246,8 @@ class EnumSymbol : public Symbol {
 };
 
 
+struct ExternBlockInfo;
+
 class ModuleSymbol : public Symbol {
  public:
   ModTag modTag;
@@ -255,7 +257,9 @@ class ModuleSymbol : public Symbol {
   Vec<ModuleSymbol*> modUseList;
   Vec<ModuleSymbol*> modUseSet;
   const char *doc;
-  
+  // These are used for extern C blocks.
+  ExternBlockInfo* extern_info;
+
   ModuleSymbol(const char* iName, ModTag iModTag, BlockStmt* iBlock);
   ~ModuleSymbol();
   void verify(); 

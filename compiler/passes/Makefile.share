@@ -7,6 +7,7 @@ PASSES_SRCS = \
         cleanup.cpp \
         codegen.cpp \
 	docs.cpp \
+	externCResolve.cpp \
         filesToAST.cpp \
         flattenClasses.cpp \
         flattenFunctions.cpp \

@@ -7,8 +7,6 @@
 #
 CXX = icpc
 CC = icc
-MAKEDEPEND = $(CXX) -MM -MG
-CMAKEDEPEND = $(CC) -MM -MG
 
 RANLIB = ranlib
 

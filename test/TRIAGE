@@ -30,6 +30,33 @@
 Problems analyzed and assigned that should be fixed soon:
 =========================================================
 
+qio error 3/13/13 (Fergie):
+  io/bradc/multilocale/testdistwrite failed for fifo
+  gasnet-everything.  Running under valgrind showed an invalid write
+  in qio_channel_style_element.  This does not happen for comm none.
+  Michael's r21139 supposedly fixed this issue.  FYI, the following is
+  in the REGRESSIONS file for gasnet-fast, so assuming it's the same
+  issue it should be removed if the regression goes away:
+
+  runtime segfault (02/09/13) (Tom)
+  ---------------------------
+  [Error matching program output for io/bradc/multilocale/testdistwrite]
+
+sub_test failure 3/15/13:
+  See below for documented cases
+
+Random timeouts 3/15/13:
+  These conicided with sub_test failures.  Maybe are caused by the
+  same thing?
+
+  linux64.gnu.none.fifo.pthreads:
+  [Error: Timed out compilation for classes/diten/test_nested_method] 
+
+  linux64.gnu.none.fifo.pthreads.tcmalloc:
+  [Error: Timed out compilation for functions/bradc/paramFnNonParamArgs/paramExample (compopts: 1)]
+
+----------------------------------------------------------------------
+
 These failures are due to gasnet-fast taking more than 24 hours and
 stepping on itself -- these should clear up on the next run, but the
 problem will persist if we don't figure out why it's taking so long.
@@ -118,6 +145,12 @@ These things regularly cause noise in testing:
 
 linux64.gnu.gasnet.qthreads.none (UNASSIGNED)
 ---------------------------------------------
+NOTE: These seem to happen on program exit, as the rest of the output
+is correct.
+- release/examples/benchmarks/hpcc/ra-atomics (compopts: 1) (3/11/13)
+- release/examples/benchmarks/hpcc/ra (compopts: 1) (3/12/13)
+- release/examples/hello6-taskpar-dist (3/14/13)
+
 bradc: 3/2/13: distributions/bradc/blkCyc/loopBlkCyc got a seg fault
 
 bradc: week of 2/25: continue getting noise, particularly on
@@ -178,6 +211,15 @@ On 02/06/13 something happened around 3:10 AM causing sub_test failures
 across most platforms.
 On 03/01/13, error running sub_test on gasnet.everything in test/domains/bradc
 On 03/02/13, got them on chpbld02 for test/execflags/dinan and .../diten
+On 3/15/13 was a bad night:
+- chap06 baseline: release/examples/benchmarks/ssca2 (1)
+- chpbld01 cray-xt, prgenv-intel nightly: release/examples/benchmarks/hpcc
+- chpbld02 cray-xt, prgenv-gnu weekend: classes/deitz and functions/deitz/iterators
+- chap05 no-local:  classes/diten (1) and test/types/scalar/vass (1)
+- chap07 tcmalloc none: classes/deitz (1) and funtions/bradc/paramFnNonParamArgs (1)
+
+
+
 
 test/studies/hpcc/RA/bradc/parallel/ra-dist
 -------------------------------------------
@@ -193,15 +235,6 @@ SIGABRT on gasnet-fast runs (sungeun)
 gbt: 1/14/13.  The only SIGABRT in the last week resulted from an error
 halt in domains/sungeun/sparse/forall.chpl due to an out-of-bounds array
 index.
-
-sungeun: 1/2/13.  These tests also suffered from the private broadcast
-bug mentioned above with testRAStream and fixed in r20877.  If they do
-not show up again for another couple of weeks, remove this entire
-entry.
-
-release/examples/benchmarks/hpcc/ra (compopts: 1) (10/13/12)
-mutilocale/deitz/needMultiLocales/diagnostics/test_private_broadcast_large (10/11/12, 10/21/12, 12/02/12)
-ra-atomics (UNASSIGNED) (10/11/12)
 
 
 ==============================================================================
@@ -299,7 +332,7 @@ examples of what times out:
 
 wrong answer for atomic operations with gasnet-everything on 2/1/13 (Sungeun)
 -----------------------------------------------------------------------------
-types/atomic/sungeun/atomic_vars (02/01/13, 02/19/13)
+types/atomic/sungeun/atomic_vars (02/01/13, 02/19/13, no-local on 3/16)
 
 "in routine alloca() there is a stack overflow" under PGI (UNASSIGNED)
 ----------------------------------------------------------------------

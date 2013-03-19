@@ -89,6 +89,18 @@ class GotoStmt : public Expr {
   const char* getName();
 };
 
+class ExternBlockStmt : public Expr {
+ public:
+  const char* c_code;
+
+  ExternBlockStmt(const char* c_code);
+  void verify();
+  DECLARE_COPY(ExternBlockStmt);
+  void replaceChild(Expr* old_ast, Expr* new_ast);
+  GenRet codegen();
+};
+
+
 void codegenStmt(Expr* stmt);
 
 // Extract (e.toGotoStmt)->(label.toSymExpr)->var and var->->iterResumeGoto,

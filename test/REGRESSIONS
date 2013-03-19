@@ -20,11 +20,6 @@
 general regressions (seem to happen in most configurations)
 ===========================================================
 
-error: Cannot iterate over non-homogeneous tuples. (r21004, sungeun)
---------------------------------------------------
-[Error matching compiler output for functions/deitz/iterators/temps/test_iterator_temp8]
-[Error matching compiler output for functions/deitz/iterators/test_var_iterator6]
-
 An optimization bypasses a semantic check (Tom - on hold)
 ---------------------------------------------------------
 [Error matching program output for multilocale/deitz/oneOrMoreLocales/test_dot_locale_error]
@@ -43,6 +38,10 @@ linux32 regressions (in addition to the above)
 ================================
 performance-specific regressions
 ================================
+
+lulesh decreasing performance (~10/20/12 and 1/23/13)
+-----------------------------------------------------
+gbt, 3/11/13: I've taken ownership of this.
 
 execution timeouts (08/29/09)
 -----------------------------
@@ -159,19 +158,6 @@ gasnet-everything regressions (other than the above)
 (Checked for accuracy 2/26/2013)
 ====================================================
 
-comm diagnostics off
---------------------
-[Error matching program output for performance/sungeun/multilocale/syncsingle] (1/4/13: before that it was failing due to missing 'use CommDiagnostics', so I don't know how long it's been failing.  Maybe due to Vass's r20857?)
-[Error matching program output for studies/ssca2/performance/SSCA2_commDiags (compopts: 1)] (started in testing on 8/23/2012)
-
-missed on-clause optimization
------------------------------
-Was: never worked with --no-local (10/04/11)
-Moved to GASNet (both fast and everything) on 1/24/2013.
-[Error matching program output for distributions/robust/arithmetic/optimizations/optimizeOnClauses_basic]
-[Error matching program output for distributions/robust/arithmetic/optimizations/optimizeOnClauses_basic_record]
-[Error matching program output for distributions/robust/arithmetic/optimizations/optimizeOnClauses_basic_tuple]
-
 missing -nl option
 ------------------
 [Error matching widecols.chpl] (io/ferguson/utf8cols/)
@@ -217,7 +203,7 @@ block distribution regressions
 cyclic distribution regressions
 ===============================
 
-communication counts changed
+communication counts changed (sungeun)
 ----------------------------
 [Error matching program output for distributions/robust/arithmetic/performance/alloc]
 [Error matching program output for distributions/robust/arithmetic/performance/alloc_all]
@@ -295,6 +281,37 @@ diff seems to think output file is binary? (09/26/11 -- first run in ages)
 cray-xt-cray/cce-specific regressions
 (Checked for accuracy 2/26/2013)
 =====================================
+
+seg fault in distribution robustness suite (3/11/13)
+----------------------------------------------------
+
+These are due to r21086.  Unfortunately, these work just fine in
+developer mode, and for some reason I run into a CCE front-end bug
+when I try to compile in non-developer mode.  I think that I can avoid
+that by also building with OPTIMIZE=1, but then I get minimal symbol
+information, making debugging pretty difficult.  (3/12/13: sungeun)
+
+     distributions/robust/arithmetic/basics/test_array_accesses1
+     distributions/robust/arithmetic/basics/test_array_assignment
+     distributions/robust/arithmetic/basics/test_array_iteration1
+     distributions/robust/arithmetic/basics/test_array_swap
+     distributions/robust/arithmetic/basics/test_domain_iteration1
+     distributions/robust/arithmetic/basics/test_infer_array_type
+     distributions/robust/arithmetic/basics/test_zipper_default
+     distributions/robust/arithmetic/modules/test_module_Norm
+     distributions/robust/arithmetic/modules/test_module_Random
+     distributions/robust/arithmetic/optimizations/optimizeOnClauses_basic_tuple
+     distributions/robust/arithmetic/reindexing/test_array_alias4
+     distributions/robust/arithmetic/reindexing/test_reindexing1
+     distributions/robust/arithmetic/reindexing/test_reindexing2
+     distributions/robust/arithmetic/reindexing/test_reindexing3
+     distributions/robust/arithmetic/reindexing/test_reindexing4
+     distributions/robust/arithmetic/reindexing/test_reindexing5
+     distributions/robust/arithmetic/reindexing/test_reindexing7
+     distributions/robust/arithmetic/trivial/test_writeln
+
+
+
 
 compilation timeouts due to removing --fast and non-default timeouts (02/28/13)
 David's analysis suggests that Inter Procedural Analysis is the culprit
@@ -692,9 +709,6 @@ out of stack space (lulesh timed out).  Assuming they are *not*
 intermittent or at least less so than the others with inilining, I
 think we would prefer these errors.
 
-[Error matching program output for distributions/robust/associative/basic/array_write]
-[Error matching program output for distributions/robust/associative/basic/domain_write]
-[Error matching program output for distributions/robust/associative/basic/whole_domain_assign]
 [Error matching program output for parallel/cobegin/deitz/test_big_recursive_cobegin]
 [Error matching program output for parallel/cobegin/gbt/cobegin-stacksize]
 [Error matching program output for studies/lulesh/bradc/xyztuple/lulesh-dense-3tuple]
