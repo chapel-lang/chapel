@@ -153,7 +153,8 @@ static void fork_wrapper(fork_t *f) {
 static void AM_fork(gasnet_token_t token, void* buf, size_t nbytes) {
   fork_t *f = (fork_t*)chpl_mem_allocMany(nbytes, sizeof(char), CHPL_RT_MD_COMM_FORK_RECV_INFO, 0, 0);
   memcpy(f, buf, nbytes);
-  chpl_task_begin((chpl_fn_p)fork_wrapper, (void*)f, true, f->serial_state, NULL);
+  chpl_task_startMovedTask((chpl_fn_p)fork_wrapper, (void*)f,
+                           chpl_nullTaskID, f->serial_state);
 }
 
 static void fork_large_wrapper(fork_t* f) {
@@ -184,8 +185,8 @@ static void fork_large_wrapper(fork_t* f) {
 static void AM_fork_large(gasnet_token_t token, void* buf, size_t nbytes) {
   fork_t* f = (fork_t*)chpl_mem_allocMany(1, nbytes, CHPL_RT_MD_COMM_FORK_RECV_LARGE_INFO, 0, 0);
   memcpy(f, buf, nbytes);
-  chpl_task_begin((chpl_fn_p)fork_large_wrapper, (void*)f,
-             true, f->serial_state, NULL);
+  chpl_task_startMovedTask((chpl_fn_p)fork_large_wrapper, (void*)f,
+                           chpl_nullTaskID, f->serial_state);
 }
 
 static void fork_nb_wrapper(fork_t *f) {
@@ -202,8 +203,8 @@ static void AM_fork_nb(gasnet_token_t  token,
   fork_t *f = (fork_t*)chpl_mem_allocMany(nbytes, sizeof(char),
                                           CHPL_RT_MD_COMM_FORK_RECV_NB_INFO, 0, 0);
   memcpy(f, buf, nbytes);
-  chpl_task_begin((chpl_fn_p)fork_nb_wrapper, (void*)f,
-             true, f->serial_state, NULL);
+  chpl_task_startMovedTask((chpl_fn_p)fork_nb_wrapper, (void*)f,
+                           chpl_nullTaskID, f->serial_state);
 }
 
 static void fork_nb_large_wrapper(fork_t* f) {
@@ -227,8 +228,8 @@ static void fork_nb_large_wrapper(fork_t* f) {
 static void AM_fork_nb_large(gasnet_token_t token, void* buf, size_t nbytes) {
   fork_t* f = (fork_t*)chpl_mem_allocMany(1, nbytes, CHPL_RT_MD_COMM_FORK_RECV_NB_LARGE_INFO, 0, 0);
   memcpy(f, buf, nbytes);
-  chpl_task_begin((chpl_fn_p)fork_nb_large_wrapper, (void*)f,
-             true, f->serial_state, NULL);
+  chpl_task_startMovedTask((chpl_fn_p)fork_nb_large_wrapper, (void*)f,
+                           chpl_nullTaskID, f->serial_state);
 }
 
 static void AM_signal(gasnet_token_t token, gasnet_handlerarg_t a0, gasnet_handlerarg_t a1) {
@@ -875,8 +876,11 @@ void  chpl_comm_fork_nb(c_nodeid_t node, chpl_fn_int_t fid, void *arg,
   }
 
   if (chpl_nodeID == node) {
-    chpl_task_begin((chpl_fn_p)fork_nb_wrapper, (void*)info,
-               false, info->serial_state, NULL);
+    if (info->serial_state)
+      fork_nb_wrapper(info);
+    else
+      chpl_task_startMovedTask((chpl_fn_p)fork_nb_wrapper, (void*)info,
+                               chpl_nullTaskID, info->serial_state);
   } else {
     if (chpl_verbose_comm && !chpl_comm_no_debug_private)
       printf("%d: remote non-blocking task created on %d\n", chpl_nodeID, node);

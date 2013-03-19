@@ -304,32 +304,6 @@ void chpl_task_callMain(void (*chpl_main)(void))
         chpl_main();
 }
 
-void chpl_task_addToTaskList(chpl_fn_int_t fid,
-                           void* arg,
-                           chpl_task_list_p *task_list,
-                           int32_t task_list_locale,
-                           chpl_bool call_chpl_begin,
-                           int lineno,
-                           chpl_string filename) {
-        //Create a new task directly
-        chpl_task_begin(chpl_ftable[fid], arg, false, GET_SERIAL_STATE(), NULL);
-}
-
-void chpl_task_processTaskList(chpl_task_list_p task_list)
-{
-        //Nothing to do because chpl_task_list is not used.
-}
-
-void chpl_task_executeTasksInList(chpl_task_list_p task_list)
-{
-        //Nothing to do because chpl_task_list is not used.
-}
-
-void chpl_task_freeTaskList(chpl_task_list_p task_list)
-{
-        //Nothing to do because chpl_task_list is not used.
-}
-
 typedef struct{
         chpl_fn_p fn;
         chpl_bool serial_state;
@@ -347,16 +321,71 @@ static void *ns_task_wrapper(void *args)
         return NULL;
 }
 
-void chpl_task_begin(chpl_fn_p fp, void* a, chpl_bool ignore_serial,
-                chpl_bool serial_state, chpl_task_list_p task_list_entry)
-{
+void chpl_task_addToTaskList(chpl_fn_int_t fid,
+                           void* arg,
+                           chpl_task_list_p *task_list,
+                           int32_t task_list_locale,
+                           chpl_bool is_begin_stmt,
+                           int lineno,
+                           chpl_string filename) {
+        //Create a new task directly
+        chpl_bool serial_state = GET_SERIAL_STATE();
         myth_thread_t th;
-        if (!ignore_serial && serial_state){
+
+        if (serial_state){
                 SAVE_STATE();
-                fp(a);
+                (*chpl_ftable[fid])(arg);
                 RESTORE_STATE();
                 return;
         }
+        //Create one task
+        //chpl_fn_p is defined as "typedef void (*chpl_fn_p)(void*);" in chpltypes.h at line 85.
+        //So this cast is OK unless the definition is changed.
+        if (is_worker_in_cs()){
+                //Called from critical section by pthreads.
+                myth_thread_option opt;
+                ns_task_wrapper_args *ns_args;
+                opt.stack_size=0;
+                opt.switch_immediately=0;
+                ns_args=chpl_mem_alloc(sizeof(ns_task_wrapper_args), 0, 0, "");
+                ns_args->a=arg;
+                ns_args->fn=chpl_ftable[fid];
+                ns_args->serial_state=serial_state;
+                th=myth_create_ex(ns_task_wrapper,ns_args,&opt);
+        }
+        else{
+                SAVE_STATE();
+                th=myth_create((void*(*)(void*))chpl_ftable[fid],arg);
+                RESTORE_STATE();
+        }
+        assert(th);
+        myth_detach(th);
+}
+
+void chpl_task_processTaskList(chpl_task_list_p task_list)
+{
+        //Nothing to do because chpl_task_list is not used.
+}
+
+void chpl_task_executeTasksInList(chpl_task_list_p task_list)
+{
+        //Nothing to do because chpl_task_list is not used.
+}
+
+void chpl_task_freeTaskList(chpl_task_list_p task_list)
+{
+        //Nothing to do because chpl_task_list is not used.
+}
+
+void chpl_task_startMovedTask(chpl_fn_p fp,
+                              void* a,
+                              chpl_taskID_t id,
+                              chpl_bool serial_state)
+{
+        myth_thread_t th;
+
+        assert(id == chpl_nullTaskID);
+
         //Create one task
         //chpl_fn_p is defined as "typedef void (*chpl_fn_p)(void*);" in chpltypes.h at line 85.
         //So this cast is OK unless the definition is changed.
