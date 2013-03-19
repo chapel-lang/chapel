@@ -42,11 +42,6 @@ qio error 3/13/13 (Fergie):
   ---------------------------
   [Error matching program output for io/bradc/multilocale/testdistwrite]
 
-qthreads build problem 3/15/13 (bradc and Dylan):
-  The make depend changes caused some time-stamp changes that confuse
-  autoconf, and may break the build.  Interestingly, the
-  gasnet+qthreads build did not break.
-
 sub_test failure 3/15/13:
   See below for documented cases
 
@@ -337,7 +332,7 @@ examples of what times out:
 
 wrong answer for atomic operations with gasnet-everything on 2/1/13 (Sungeun)
 -----------------------------------------------------------------------------
-types/atomic/sungeun/atomic_vars (02/01/13, 02/19/13)
+types/atomic/sungeun/atomic_vars (02/01/13, 02/19/13, no-local on 3/16)
 
 "in routine alloca() there is a stack overflow" under PGI (UNASSIGNED)
 ----------------------------------------------------------------------
