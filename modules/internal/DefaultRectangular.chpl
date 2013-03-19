@@ -840,13 +840,10 @@ module DefaultRectangular {
   
   proc DefaultRectangularArr.doiBulkTransferStride(Barg,aFromBD=false, bFromBD=false)
   {
-    const A = this, B = Barg;//._value;
+    const A = this, B = Barg;
   
     if debugDefaultDistBulkTransfer then 
       writeln("In DefaultRectangularArr.doiBulkTransferStride ");
-  
-    if debugBulkTransfer then
-      writeln("In doiBulkTransferStride: ");
    
     const Adims = A.dom.dsiDims();
     var Alo: rank*dom.idxType;
@@ -857,7 +854,7 @@ module DefaultRectangular {
     var Blo: rank*dom.idxType;
     for param i in 1..rank do
       Blo(i) = Bdims(i).first;
-    
+   
     if debugDefaultDistBulkTransfer then
       writeln("\tlocal get() from ", B.locale.id);
     

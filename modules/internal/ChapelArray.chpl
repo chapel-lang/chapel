@@ -1633,9 +1633,6 @@ module ChapelArray {
   // This must be a param function
   proc chpl__supportedDataTypeForBulkTransfer(type t) param {
     var x:t;
-    if !_isPrimitiveType(t) && t!=complex then return false;
-    if t==string then return false;
-    return true;
     return chpl__supportedDataTypeForBulkTransfer(x);
   }
   proc chpl__supportedDataTypeForBulkTransfer(x: string) param return false;
@@ -1644,9 +1641,9 @@ module ChapelArray {
   proc chpl__supportedDataTypeForBulkTransfer(x: domain) param return false;
   proc chpl__supportedDataTypeForBulkTransfer(x: []) param return false;
   proc chpl__supportedDataTypeForBulkTransfer(x: _distribution) param return false;
-  proc chpl__supportedDataTypeForBulkTransfer(x: object) param return false;
-  proc chpl__supportedDataTypeForBulkTransfer(x) param return true;
-  
+  //If we uncomment the following line, chapel codes won't compile
+  // proc chpl__supportedDataTypeForBulkTransfer(x: value) param return false; 
+  proc chpl__supportedDataTypeForBulkTransfer(x) param return true;  
   
   proc chpl__useBulkTransfer(a:[], b:[]) {
     //if debugDefaultDistBulkTransfer then writeln("chpl__useBulkTransfer");
@@ -1672,22 +1669,22 @@ module ChapelArray {
   }
   
   inline proc chpl__bulkTransferHelper(a, b) {
-   if a._value.isDefaultRectangular() {
-     if b._value.isDefaultRectangular() then
-       // implemented in DefaultRectangular
-       a._value.doiBulkTransferStride(b._value);
-     else
-       // b's domain map must implement this
-       b._value.doiBulkTransferToDR(a._value, false);
-   } else {
-     if b._value.isDefaultRectangular() then
-       // a's domain map must implement this
-       a._value.doiBulkTransferFromDR(b._value, false);
-     else
-       // a's domain map must implement this,
-       // possibly using b._value.doiBulkTransferToDR()
-       a._value.doiBulkTransferFrom(b);
-   }
+    if a._value.isDefaultRectangular() {
+      if b._value.isDefaultRectangular() then
+        // implemented in DefaultRectangular
+        a._value.doiBulkTransferStride(b._value);
+      else
+        // b's domain map must implement this
+        b._value.doiBulkTransferToDR(a._value, false);
+    } else {
+      if b._value.isDefaultRectangular() then
+        // a's domain map must implement this
+        a._value.doiBulkTransferFromDR(b, false);
+      else
+        // a's domain map must implement this,
+        // possibly using b._value.doiBulkTransferToDR()
+        a._value.doiBulkTransferFrom(b);
+    }
  }
   
   proc checkArrayShapesUponAssignment(a: [], b: []) {
