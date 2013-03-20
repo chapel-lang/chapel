@@ -1641,6 +1641,7 @@ module ChapelArray {
   proc chpl__supportedDataTypeForBulkTransfer(x: domain) param return false;
   proc chpl__supportedDataTypeForBulkTransfer(x: []) param return false;
   proc chpl__supportedDataTypeForBulkTransfer(x: _distribution) param return false;
+  proc chpl__supportedDataTypeForBulkTransfer(x: complex) param return false;
   proc chpl__supportedDataTypeForBulkTransfer(x: ?t) param where t: value return false;
   proc chpl__supportedDataTypeForBulkTransfer(x) param return true;  
   
@@ -1674,7 +1675,7 @@ module ChapelArray {
         a._value.doiBulkTransferStride(b._value);
       else
         // b's domain map must implement this
-        b._value.doiBulkTransferToDR(a._value, false);
+        b._value.doiBulkTransferToDR(a, false);
     } else {
       if b._value.isDefaultRectangular() then
         // a's domain map must implement this

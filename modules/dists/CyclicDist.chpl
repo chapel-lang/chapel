@@ -984,7 +984,7 @@ proc CyclicArr.doiBulkTransferTo(Barg)
     writeln("In CyclicArr.doiBulkTransferTo()");
   
   const B = this, A = Barg._value;
-
+  type el = B.idxType;
   coforall i in dom.dist.targetLocDom do // for all locales
     on dom.dist.targetLocs(i)
       {
@@ -995,16 +995,16 @@ proc CyclicArr.doiBulkTransferTo(Barg)
           const end=bulkCommConvertCoordinate(regionA.last, B, A);
           const sb=chpl__tuplify(A.dom.locDoms(i).myBlock.stride);
           
-          var r1,r2: rank * range(stridable = true);
+          var r1,r2: rank * range(idxType = el,stridable = true);
          //In the case that the number of elements in dimension t for r1 and r2
          //were different, we need to calculate the correct stride in r1
           for param t in 1..rank{
             r2[t] = (chpl__tuplify(regionA.first)[t]
                      ..chpl__tuplify(regionA.last)[t]
                      by chpl__tuplify(regionA.stride)[t]);
-            r1[t] = (ini[t]..end[t] by sb[t]);
+            r1[t] = (ini[t]:el..end[t]:el by sb[t]:el);
             if r1[t].length != r2[t].length then
-              r1[t] = (ini[t]..end[t] by (end[t] - ini[t])/(r2[t].length-1));
+              r1[t] = (ini[t]:el..end[t]:el by (end[t] - ini[t]):el/(r2[t].length-1));
           }
         
           if debugCyclicDistBulkTransfer then
@@ -1024,7 +1024,7 @@ proc CyclicArr.doiBulkTransferFrom(Barg)
     writeln("In CyclicArr.doiBulkTransferFrom()");
   
   const A = this, B = Barg._value;
-  
+  type el = A.idxType;
   coforall i in dom.dist.targetLocDom do // for all locales
     on dom.dist.targetLocs(i)
     { 
@@ -1035,22 +1035,22 @@ proc CyclicArr.doiBulkTransferFrom(Barg)
         const end=bulkCommConvertCoordinate(regionA.last, A, B);
         const sb=chpl__tuplify(B.dom.locDoms(i).myBlock.stride);
       
-        var r1,r2: rank * range(stridable = true);
+        var r1,r2: rank * range(idxType = el,stridable = true);
         //In the case that the number of elements in dimension t for r1 and r2
         //were different, we need to calculate the correct stride in r1
         for param t in 1..rank{
-            r1[t] = (ini[t]..end[t] by sb[t]);
+            r1[t] = (ini[t]:el..end[t]:el by sb[t]:el);
             r2[t] = (chpl__tuplify(regionA.first)[t]
                      ..chpl__tuplify(regionA.last)[t]
                      by chpl__tuplify(regionA.stride)[t]);
             if r1[t].length != r2[t].length then
-              r1[t] = (ini[t]..end[t] by (end[t] - ini[t])/(r2[t].length-1));
+              r1[t] = (ini[t]:el..end[t]:el by (end[t] - ini[t]):el/(r2[t].length-1));
         }
        
         if debugCyclicDistBulkTransfer then
           writeln("B[",(...r1),"] ToDR A[",regionA, "] ");
         
-         Barg[(...r1)]._value.doiBulkTransferToDR(locArr[i].myElems[regionA]._value,true);
+         Barg[(...r1)]._value.doiBulkTransferToDR(locArr[i].myElems[regionA],true);
       }
     }
 }
@@ -1062,11 +1062,11 @@ proc CyclicArr.doiBulkTransferToDR(Barg,BFromBD=true)
   if debugCyclicDistBulkTransfer then
     writeln("In CyclicArr.doiBulkTransferToDR()");
   
-  const A = this, B = Barg;
-  
+  const A = this, B = Barg._value;
+  type el = A.idxType;
   coforall j in A.dom.dist.targetLocDom
   {
-    var inters:domain(rank,int,true);
+    var inters:domain(rank,idxType=el,true);
     inters=dom.locDoms(j).myBlock;
     if(inters.numIndices>0)
     {
@@ -1076,7 +1076,7 @@ proc CyclicArr.doiBulkTransferToDR(Barg,BFromBD=true)
       
       //r1 is the domain to refer the elements of A in locale j
       //r2 is the domain to refer the correspondig elements of B
-      var r1,r2: rank * range(stridable = true);
+      var r1,r2: rank * range(idxType = el,stridable = true);
       //In the case that the number of elements in dimension t for r1 and r2
       //were different, we need to calculate the correct stride in r1
       for param t in 1..rank
@@ -1084,9 +1084,9 @@ proc CyclicArr.doiBulkTransferToDR(Barg,BFromBD=true)
         r2[t] = (chpl__tuplify(inters.first)[t]
                  ..chpl__tuplify(inters.last)[t]
                  by chpl__tuplify(inters.stride)[t]);
-        r1[t] = (ini[t]..end[t] by sa[t]);
+        r1[t] = (ini[t]:el..end[t]:el by sa[t]:el);
         if r1[t].length != r2[t].length then
-          r1[t] = (ini[t]..end[t] by (end[t] - ini[t])/(r2[t].length-1));
+          r1[t] = (ini[t]:el..end[t]:el by (end[t] - ini[t]):el/(r2[t].length-1));
       }
       
       const d ={(...r1)};
@@ -1116,25 +1116,26 @@ proc CyclicArr.doiBulkTransferFromDR(Barg,BFromBD=true)
     writeln("In CyclicArr.doiBulkTransferFromDR()");
   
   const A = this, B = Barg._value;
-  
+  type el = A.idxType;
   coforall j in A.dom.dist.targetLocDom
   {
-    var inters=dom.locDoms(j).myBlock;
+    var inters:domain(rank,idxType=el,true);
+    inters=dom.locDoms(j).myBlock;
     if(inters.numIndices>0)
     {
       const ini=bulkCommConvertCoordinate(inters.first, A, B);
       const end=bulkCommConvertCoordinate(inters.last, A, B);
       const sb = chpl__tuplify(B.dom.dsiStride); //return a tuple
 
-      var r1,r2: rank * range(stridable = true);
+      var r1,r2: rank * range(idxType = el,stridable = true);
       for param t in 1..rank
       {
         r2[t] = (chpl__tuplify(inters.first)[t]
                  ..chpl__tuplify(inters.last)[t]
                  by chpl__tuplify(inters.stride)[t]);
-        r1[t] = (ini[t]..end[t] by sb[t]);
+        r1[t] = (ini[t]:el..end[t]:el by sb[t]:el);
         if r1[t].length != r2[t].length then
-          r1[t] = (ini[t]..end[t] by (end[t] - ini[t])/(r2[t].length-1));
+          r1[t] = (ini[t]:el..end[t]:el by (end[t] - ini[t]):el/(r2[t].length-1));
       }
          
       if debugCyclicDistBulkTransfer then
