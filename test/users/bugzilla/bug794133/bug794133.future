@@ -1,0 +1,13 @@
+bug: reference counting (domains in) arrays of arrays
+
+This bug exhibits an issue in which for an array:
+
+  var A: [D] [1..2] real;
+
+we reference count the anonymous {1..2} domain once for each
+index in D.  If D is empty, it is never reference counted
+and may be deallocated prematurely if it leaves scope before
+the end of A's lifetime.  As a result the proposed fix
+(underway) is to reference count the domain based on the
+lifetime of A/A's type rather than (or in addition to)
+the number of elements in A.

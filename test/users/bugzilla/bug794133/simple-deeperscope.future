@@ -1,0 +1,4 @@
+bug: reference counting (domains in) arrays of arrays
+
+This is a variation on simple.chpl that exhibits the problem in
+a scope other than the module's.
