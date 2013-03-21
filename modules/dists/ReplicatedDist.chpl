@@ -697,6 +697,7 @@ proc ReplicatedArr.dsiRankChange(sliceDef: ReplicatedDom,
 proc ReplicatedDist.dsiCreateReindexDist(newSpace, oldSpace) return this;
 proc ReplicatedDist.dsiCreateRankChangeDist(param newRank, args) return this;
 
+
 /*****************************************************************************/
 // SUPPORT FOR USER-LEVEL REPLICATED VARIABLES
 

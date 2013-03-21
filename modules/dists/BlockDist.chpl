@@ -1420,8 +1420,8 @@ proc dropDims(D: domain, dims...) {
   return DResult;
 }
 
-//A=B
-//Currently not used (we rely on doiBulkTransferFrom(Barg)
+//For assignments of the form: "any = Block"
+//Currently not used, instead we use: doiBulkTransferFrom()
 proc BlockArr.doiBulkTransferTo(Barg)
 {
   if debugBlockDistBulkTransfer then
@@ -1460,7 +1460,7 @@ proc BlockArr.doiBulkTransferTo(Barg)
 }
 
 //For assignments of the form: "Block = any" 
-//where "any" means any distributed array (currently Cyclic or Block)
+//where "any" means any array that implements the bulk transfer interface
 proc BlockArr.doiBulkTransferFrom(Barg)
 {
   if debugBlockDistBulkTransfer then
@@ -1537,7 +1537,7 @@ proc BlockArr.doiBulkTransferToDR(Barg,BFromBD=true)
       
       //The BFromBD variable is not necessary because we have calculated the
       //Slice2 variable using dsiReindex, so, the blk variable has the same
-      //behaviour wherever the Barg variable came(BD,Cy,DR)
+      //behaviour wherever the Barg variable came from(Block, Cyclic, DR)
       slice2.doiBulkTransferStride(A.locArr[j].myElems[(...r2)]._value,true,true);
       
       delete slice;

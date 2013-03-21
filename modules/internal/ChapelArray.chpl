@@ -9,8 +9,8 @@ module ChapelArray {
   var privatizeLock$: sync int;
   
   config param debugBulkTransfer = false;
-  config param useBulkTransfer = false;
-  config param useBulkTransferStride = true;
+  config param useBulkTransfer = true;
+  config param useBulkTransferStride = false;
   
   pragma "privatized class"
   proc _isPrivatized(value) param
@@ -194,7 +194,7 @@ module ChapelArray {
   pragma "has runtime type"
   proc chpl__buildArrayRuntimeType(dom: domain, type eltType) type
     return dom.buildArray(eltType);
-  
+
   /*
    * Support for array literals. 
    *
@@ -219,9 +219,9 @@ module ChapelArray {
   
     for param i in 1..k {
       type currType = elems(i).type;
-  
+
       if currType != elemType {
-        compilerError( "Array literal element " + i:string + 
+        compilerError( "Array literal element " + i:string +
                        " expected to be of type " + typeToString(elemType) +
                        " but is of type " + typeToString(currType) );
       } 
@@ -257,46 +257,48 @@ module ChapelArray {
       } 
       
       A(i) = elems(i);
-    } 
-        
-    return A; 
+    }
+
+    return A;
   }
-  
+
+
   proc chpl__buildAssociativeArrayLiteral( elems ...?k ){
     type keyType = elems(1).type;
     type valType = elems(2).type;
     var D : domain(keyType);
-  
+
     //Size the domain appropriately for the number of keys
     //This prevents expensive resizing as keys are added.
     D.requestCapacity(k/2);
     var A : [D] valType;
-   
+
     for param i in 1..k by 2 {
       var elemKey = elems(i);
       var elemVal = elems(i+1);
       type elemKeyType = elemKey.type;
       type elemValType = elemVal.type;
-  
+
       if elemKeyType != keyType {
          compilerError("Associative array key element " + (i+2)/2 + 
                        " expected to be of type " + typeToString(keyType) + 
                        " but is of type " + typeToString(elemKeyType));
       }
-  
+
       if elemValType != valType {
         compilerError("Associative array value element " + (i+1)/2
                       + " expected to be of type " + typeToString(valType)
                       + " but is of type " + typeToString(elemValType));
       }
-  
+
       D += elemKey;
       A[elemKey] = elemVal;
     }
-  
+
     return A;
   }
-  
+
+
   proc chpl__convertValueToRuntimeType(arr: []) type
     return chpl__buildArrayRuntimeType(arr.domain, arr.eltType);
   
@@ -1643,6 +1645,7 @@ module ChapelArray {
   proc chpl__supportedDataTypeForBulkTransfer(x: _distribution) param return false;
   proc chpl__supportedDataTypeForBulkTransfer(x: complex) param return false;
   proc chpl__supportedDataTypeForBulkTransfer(x: ?t) param where t: value return false;
+  proc chpl__supportedDataTypeForBulkTransfer(x: object) param return false;
   proc chpl__supportedDataTypeForBulkTransfer(x) param return true;  
   
   proc chpl__useBulkTransfer(a:[], b:[]) {
@@ -1724,15 +1727,13 @@ module ChapelArray {
         a._value.doiBulkTransfer(b);
         return a;
       }
-      
       if (useBulkTransferStride &&
-         chpl__compatibleForBulkTransferStride(a, b) &&
-         chpl__useBulkTransferStride(a, b))
+          chpl__compatibleForBulkTransferStride(a, b) &&
+          chpl__useBulkTransferStride(a, b))
       {
         chpl__bulkTransferHelper(a, b);
         return a;
       }
-
       if debugBulkTransfer then
         // just writeln() clashes with writeln.chpl
         stdout.writeln("proc =(a:[],b): bulk transfer did not happen");

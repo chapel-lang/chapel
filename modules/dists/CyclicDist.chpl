@@ -976,8 +976,8 @@ proc CyclicArr.doiCanBulkTransfer() param {
   return true;
 }
 
-//A=B
-//Currently not used (we rely on doiBulkTransferFrom(Barg)
+//For assignments of the form: "any = Cyclic"
+//Currently not used, instead we use: doiBulkTransferFrom()
 proc CyclicArr.doiBulkTransferTo(Barg)
 {
   if debugCyclicDistBulkTransfer then
@@ -1016,8 +1016,8 @@ proc CyclicArr.doiBulkTransferTo(Barg)
 }
 
 
-//For assignments of the form: "CYC = any" 
-//where "any" means any distributed array (currently Cyclic or Block)
+//For assignments of the form: "Cyclic = any" 
+//where "any" means any array that implements the bulk transfer interface
 proc CyclicArr.doiBulkTransferFrom(Barg)
 {
   if debugCyclicDistBulkTransfer then
@@ -1055,7 +1055,7 @@ proc CyclicArr.doiBulkTransferFrom(Barg)
     }
 }
 
-//For assignments of the form: DR = CYC 
+//For assignments of the form: DR = Cyclic 
 //(default rectangular array = cyclic distributed array)
 proc CyclicArr.doiBulkTransferToDR(Barg,BFromBD=true)
 {
@@ -1100,7 +1100,7 @@ proc CyclicArr.doiBulkTransferToDR(Barg,BFromBD=true)
     
       //The BFromBD variable is not necessary because we have calculated the
       //Slice2 variable using dsiReindex, so the blk variable has the same
-      //behaviour independently of Barg (Block, CYC or DR)
+      //behaviour independently of Barg (Block, Cyclic or DR)
       slice2.doiBulkTransferStride(A.locArr[j].myElems[(...r2)]._value,true,true);
       delete slice;
       delete slice2;
@@ -1108,7 +1108,7 @@ proc CyclicArr.doiBulkTransferToDR(Barg,BFromBD=true)
   }
 }
 
-//For assignments of the form: CYC = DR 
+//For assignments of the form: Cyclic = DR 
 //(cyclic distributed array = default rectangular)
 proc CyclicArr.doiBulkTransferFromDR(Barg,BFromBD=true)
 {
@@ -1149,7 +1149,7 @@ proc CyclicArr.doiBulkTransferFromDR(Barg,BFromBD=true)
     
       //The BFromBD variable is not necessary because we have calculated the
       //Slice2 variable using dsiReindex, so the blk variable has the same
-      //behaviour independently of Barg (Block, CYC or DR)
+      //behaviour independently of Barg (Block, Cyclic or DR)
       A.locArr[j].myElems[(...r2)]._value.doiBulkTransferStride(slice2,true,true);
     }
   }
