@@ -196,7 +196,7 @@ module ChapelArray {
     return dom.buildArray(eltType);
 
   /*
-   * Support for array literals. 
+   * Support for array literal expressions.
    *
    * Array literals are detected during parsing and converted 
    * to a call expr.  Array values pass through the various  
@@ -206,7 +206,7 @@ module ChapelArray {
    *        to handle the case of multiple types, however this is not 
    *        possible atm due to using var args with a query type. */
   config param CHPL_WARN_DOMAIN_LITERAL = "unset";
-  proc chpl__buildArrayLiteral( elems:?t ...?k ){
+  proc chpl__buildArrayExpr( elems:?t ...?k ) {
 
     if CHPL_WARN_DOMAIN_LITERAL == "true" && chpl__isRange(elems(1)) {
       compilerWarning("Encountered an array literal with range element(s).",
@@ -224,46 +224,15 @@ module ChapelArray {
         compilerError( "Array literal element " + i:string +
                        " expected to be of type " + typeToString(elemType) +
                        " but is of type " + typeToString(currType) );
-      } 
-      
-      A(i) = elems(i);
-    } 
-        
-    return A; 
-  }
-  
-  
-  /* Transitional warning from old domain literal syntax in Chapel 1.5 to 
-   * new domain literal syntax in 1.6.  This is intended to be removed along
-   * with the warnArrayLitRanges in the release following 1.6. 
-   *
-   * NOTE:  After 1.6 this function should be removed entirely and the array 
-   *        literal production modified to only call chpl__buildArrayLiteral.
-   *
-   * NOTE: Oddly one cannot return chpl__buildArrayLiteral here, not sure why.
-   *       Had to copy and paste the body of the function to obtain proper 
-   *       behavior.  */
-  proc chpl__buildArrayLiteralWarn( elems:?t ...?k ){
-    type elemType = elems(1).type;
-    var A : [1..k] elemType;  //This is unfortunate, can't use t here...
-  
-    for param i in 1..k {
-      type currType = elems(i).type;
-  
-      if currType != elemType {
-        compilerError( "Array literal element " + i:string + 
-                       " expected to be of type " + typeToString(elemType) +
-                       " but is of type " + typeToString(currType) );
-      } 
-      
+      }
+
       A(i) = elems(i);
     }
 
     return A;
   }
 
-
-  proc chpl__buildAssociativeArrayLiteral( elems ...?k ){
+  proc chpl__buildAssociativeArrayExpr( elems ...?k ) {
     type keyType = elems(1).type;
     type valType = elems(2).type;
     var D : domain(keyType);

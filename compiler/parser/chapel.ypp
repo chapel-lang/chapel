@@ -1126,10 +1126,10 @@ literal_expr:
 | IMAGLITERAL           { $$ = buildImagLiteral(yytext); }
 | STRINGLITERAL         { $$ = buildStringLiteral($1); }
 | TLCBR expr_ls TRCBR   { $$ = new CallExpr("chpl__buildDomainExpr", $2); }
-| TLSBR expr_ls TRSBR   { $$ = new CallExpr("chpl__buildArrayLiteral", $2); }
+| TLSBR expr_ls TRSBR   { $$ = new CallExpr("chpl__buildArrayExpr", $2); }
 | TLSBR assoc_expr_ls TRSBR
     {
-      $$ = new CallExpr("chpl__buildAssociativeArrayLiteral", $2); 
+      $$ = new CallExpr("chpl__buildAssociativeArrayExpr", $2);
     }
 ;
   
