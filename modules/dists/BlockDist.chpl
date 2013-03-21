@@ -1578,8 +1578,14 @@ proc BlockArr.doiBulkTransferFromDR(Barg,BFromBD=true)
       
       if debugBlockDistBulkTransfer then
         writeln("A[",r2,"] = B[",r1,"]");
-
-      A.locArr[j].myElems[(...r2)]._value.doiBulkTransferStride(Barg[(...r1)]._value,true,BFromBD);
+        
+      const d ={(...r1)};
+      const slice = B.dsiSlice(d._value);
+      //this step it's necessary to calculate the value of blk variable in DR
+      //with the new domain r1
+      const slice2 = slice.dsiReindex(d._value);
+      
+      A.locArr[j].myElems[(...r2)]._value.doiBulkTransferStride(slice2,true,true);
     }
   }
 }
