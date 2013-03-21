@@ -1595,19 +1595,15 @@ module ChapelArray {
   proc chpl__compatibleForBulkTransferStride(a:[], b:[]) param {
     if a.eltType != b.eltType then return false;
     if !chpl__supportedDataTypeForBulkTransfer(a.eltType) then return false;
-    if a._value.type != b._value.type {
-      if (!a._value.isDefaultRectangular() || !b._value.isBlockDist()) then return false;
-    }
-    if !a._value.dsiSupportsBulkTransfer() then return false;
+    if !chpl__supportedDataTypeForBulkTransfer(b.eltType) then return false;
+    if !a._value.dsiSupportsBulkTransferStride() then return false;
+    if !b._value.dsiSupportsBulkTransferStride() then return false;
     return true;
   }
   
   // This must be a param function
   proc chpl__supportedDataTypeForBulkTransfer(type t) param {
     var x:t;
-    if !_isPrimitiveType(t) then return false;
-    if t==string then return false;
-    return true;
     return chpl__supportedDataTypeForBulkTransfer(x);
   }
   proc chpl__supportedDataTypeForBulkTransfer(x: string) param return false;
@@ -1616,9 +1612,10 @@ module ChapelArray {
   proc chpl__supportedDataTypeForBulkTransfer(x: domain) param return false;
   proc chpl__supportedDataTypeForBulkTransfer(x: []) param return false;
   proc chpl__supportedDataTypeForBulkTransfer(x: _distribution) param return false;
+  proc chpl__supportedDataTypeForBulkTransfer(x: complex) param return false;
+  proc chpl__supportedDataTypeForBulkTransfer(x: ?t) param where t: value return false;
   proc chpl__supportedDataTypeForBulkTransfer(x: object) param return false;
-  proc chpl__supportedDataTypeForBulkTransfer(x) param return true;
-  
+  proc chpl__supportedDataTypeForBulkTransfer(x) param return true;  
   
   proc chpl__useBulkTransfer(a:[], b:[]) {
     //if debugDefaultDistBulkTransfer then writeln("chpl__useBulkTransfer");
@@ -1642,6 +1639,25 @@ module ChapelArray {
     
     return true;
   }
+  
+  inline proc chpl__bulkTransferHelper(a, b) {
+    if a._value.isDefaultRectangular() {
+      if b._value.isDefaultRectangular() then
+        // implemented in DefaultRectangular
+        a._value.doiBulkTransferStride(b._value);
+      else
+        // b's domain map must implement this
+        b._value.doiBulkTransferToDR(a, false);
+    } else {
+      if b._value.isDefaultRectangular() then
+        // a's domain map must implement this
+        a._value.doiBulkTransferFromDR(b, false);
+      else
+        // a's domain map must implement this,
+        // possibly using b._value.doiBulkTransferToDR()
+        a._value.doiBulkTransferFrom(b);
+    }
+ }
   
   proc checkArrayShapesUponAssignment(a: [], b: []) {
     if isRectangularArr(a) && isRectangularArr(b) {
@@ -1684,7 +1700,7 @@ module ChapelArray {
           chpl__compatibleForBulkTransferStride(a, b) &&
           chpl__useBulkTransferStride(a, b))
       {
-        a._value.doiBulkTransferStride(b);
+        chpl__bulkTransferHelper(a, b);
         return a;
       }
       if debugBulkTransfer then
