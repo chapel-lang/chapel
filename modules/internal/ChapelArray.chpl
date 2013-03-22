@@ -1612,7 +1612,7 @@ module ChapelArray {
   proc chpl__supportedDataTypeForBulkTransfer(x: domain) param return false;
   proc chpl__supportedDataTypeForBulkTransfer(x: []) param return false;
   proc chpl__supportedDataTypeForBulkTransfer(x: _distribution) param return false;
-  proc chpl__supportedDataTypeForBulkTransfer(x: complex) param return false;
+  proc chpl__supportedDataTypeForBulkTransfer(x: ?t) param where _isComplexType(t) return false;
   proc chpl__supportedDataTypeForBulkTransfer(x: ?t) param where t: value return false;
   proc chpl__supportedDataTypeForBulkTransfer(x: object) param return false;
   proc chpl__supportedDataTypeForBulkTransfer(x) param return true;  
