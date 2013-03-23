@@ -1596,8 +1596,8 @@ module ChapelArray {
     if a.eltType != b.eltType then return false;
     if !chpl__supportedDataTypeForBulkTransfer(a.eltType) then return false;
     if !chpl__supportedDataTypeForBulkTransfer(b.eltType) then return false;
-    if !a._value.dsiSupportsBulkTransferStride() then return false;
-    if !b._value.dsiSupportsBulkTransferStride() then return false;
+    if !a._value.dsiSupportsBulkTransferInterface() then return false;
+    if !b._value.dsiSupportsBulkTransferInterface() then return false;
     return true;
   }
   
@@ -1615,7 +1615,7 @@ module ChapelArray {
   proc chpl__supportedDataTypeForBulkTransfer(x: ?t) param where _isComplexType(t) return false;
   proc chpl__supportedDataTypeForBulkTransfer(x: ?t) param where t: value return false;
   proc chpl__supportedDataTypeForBulkTransfer(x: object) param return false;
-  proc chpl__supportedDataTypeForBulkTransfer(x) param return true;  
+  proc chpl__supportedDataTypeForBulkTransfer(x) param return true;
   
   proc chpl__useBulkTransfer(a:[], b:[]) {
     //if debugDefaultDistBulkTransfer then writeln("chpl__useBulkTransfer");
@@ -1642,16 +1642,21 @@ module ChapelArray {
   
   inline proc chpl__bulkTransferHelper(a, b) {
     if a._value.isDefaultRectangular() {
-      if b._value.isDefaultRectangular() then
+      if b._value.isDefaultRectangular() {
         // implemented in DefaultRectangular
-        a._value.doiBulkTransferStride(b._value);
+        const sliceA = a._value.dsiReindex({(...a._value.dom.dsiDims())}._value);
+        const sliceB = b._value.dsiReindex({(...b._value.dom.dsiDims())}._value);
+        sliceA.doiBulkTransferStride(sliceB);
+        delete sliceA;
+        delete sliceB;
+      }
       else
         // b's domain map must implement this
-        b._value.doiBulkTransferToDR(a, false);
+        b._value.doiBulkTransferToDR(a);
     } else {
       if b._value.isDefaultRectangular() then
         // a's domain map must implement this
-        a._value.doiBulkTransferFromDR(b, false);
+        a._value.doiBulkTransferFromDR(b);
       else
         // a's domain map must implement this,
         // possibly using b._value.doiBulkTransferToDR()

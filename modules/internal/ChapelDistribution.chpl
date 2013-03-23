@@ -363,10 +363,8 @@ module ChapelDistribution {
     }
   
     proc dsiDisplayRepresentation() { }
-    proc isBlockDist() param return false;
-    proc isCyclicDist() param return false;
     proc isDefaultRectangular() param return false;
-    proc dsiSupportsBulkTransferStride() param return false;
+    proc dsiSupportsBulkTransferInterface() param return false;
     proc doiCanBulkTransferStride() param return false;
   }
   
