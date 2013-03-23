@@ -42,6 +42,9 @@ qio error 3/13/13 (Fergie):
   ---------------------------
   [Error matching program output for io/bradc/multilocale/testdistwrite]
 
+  Update: this test succeeded for gasnet-fast on 3/19/13.
+  I am not updating TRIAGE/REGRESSIONS for now, waiting to see if the fix is permanent.
+
 sub_test failure 3/15/13:
   See below for documented cases
 
@@ -313,6 +316,10 @@ parallel/cobegin/diten/cobeginRace (UNASSIGNED)
 "timedexec died with signal 11" - pgi compiler (06/18/12)
 unknown cause - baseline (06/17/12)
 
+timeout studies/shootout/fannkuch-redux/fannkuch-redux (UNASSIGNED)
+-------------------------------------------------------------------
+under cray-xt.cray-prgenv-gnu.none.fifo.pthreads--linux64.gnu (3/22/13)
+
 non-deterministic timeouts with gasnet (UNASSIGNED)
 ---------------------------------------------------
 The following configurations are affected:
@@ -367,7 +374,7 @@ from the promotion wrapper,
 
 atomics nondeterminisms (UNASSIGNED)
 ------------------------------------
-release/examples/primers/atomics (06/30/12:xt-intel, 07/04/12:linux32, 08/14/12:cray-xt)
+release/examples/primers/atomics (06/30/12:xt-intel, 07/04/12:linux32, 08/14/12:cray-xt, 3/19/13:intel, 3/22/13:prgenv-gnu)
 
 no-local nondeterminisms (UNASSIGNED)
 -------------------------------------
