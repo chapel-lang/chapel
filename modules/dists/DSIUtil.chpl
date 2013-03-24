@@ -200,7 +200,7 @@ proc computeZeroBasedRanges(ranges: _tuple) {
   if ranges.size > 1 then
     return helper(idxType, (...ranges));
   else
-    return tuple(0:idxType..#ranges(1).length:idxType);
+    return (0:idxType..#ranges(1).length:idxType,);
 }
 
 //

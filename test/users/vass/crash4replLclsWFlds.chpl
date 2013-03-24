@@ -965,7 +965,7 @@ proc vdist.dsiSupportsPrivatization1d() param return true;
 
 // REQ if privatization is supported - same purpose as dsiGetPrivatizeData()
 proc vdist.dsiGetPrivatizeData1d() {
-  return tuple(numLocales);
+  return (numLocales,);
 }
 
 // REQ if privatization is supported - same purpose as dsiPrivatize()
@@ -1012,7 +1012,7 @@ proc vdom.dsiPrivatize1d(privDist, privatizeData) {
 
 // REQ if privatization is supported - same purpose as dsiGetReprivatizeData()
 proc vdom.dsiGetReprivatizeData1d() {
-  return tuple(wholeR);
+  return (wholeR,);
 }
 
 // REQ if privatization is supported - same purpose as dsiReprivatize()
@@ -1224,7 +1224,7 @@ proc sdom.dsiPrivatize1d(privDist, privatizeData) {
 }
 
 proc sdom.dsiGetReprivatizeData1d() {
-  return tuple(wholeR);
+  return (wholeR,);
 }
 
 proc sdom.dsiReprivatize1d(other, reprivatizeData) {

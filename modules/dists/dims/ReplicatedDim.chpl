@@ -55,7 +55,7 @@ proc ReplicatedDim.dsiSupportsPrivatization1d() param return true;
 
 // REQ if privatization is supported - same purpose as dsiGetPrivatizeData()
 proc ReplicatedDim.dsiGetPrivatizeData1d() {
-  return tuple(numLocales);
+  return (numLocales,);
 }
 
 // REQ if privatization is supported - same purpose as dsiPrivatize()
@@ -100,7 +100,7 @@ proc Replicated1dom.dsiSupportsPrivatization1d() param return true;
 
 // REQ if privatization is supported - same purpose as dsiGetPrivatizeData()
 proc Replicated1dom.dsiGetPrivatizeData1d() {
-  return tuple(wholeR);
+  return (wholeR,);
 }
 
 // REQ if privatization is supported - same purpose as dsiPrivatize()
@@ -115,7 +115,7 @@ proc Replicated1dom.dsiPrivatize1d(privDist, privatizeData) {
 
 // REQ if privatization is supported - same purpose as dsiGetReprivatizeData()
 proc Replicated1dom.dsiGetReprivatizeData1d() {
-  return tuple(wholeR);
+  return (wholeR,);
 }
 
 // REQ if privatization is supported - same purpose as dsiReprivatize()

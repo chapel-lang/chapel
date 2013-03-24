@@ -968,7 +968,7 @@ module ChapelArray {
   }  
   
   proc #(dom: domain, counts: integral) where isRectangularDom(dom) && dom.rank == 1 {
-    return chpl_countDomHelp(dom, tuple(counts));
+    return chpl_countDomHelp(dom, (counts,));
   }
   
   proc #(dom: domain, counts) where isRectangularDom(dom) && isTuple(counts) {
@@ -1904,7 +1904,7 @@ module ChapelArray {
   inline proc _getIteratorZip(x: _tuple) {
     inline proc _getIteratorZipInternal(x: _tuple, param dim: int) {
       if dim == x.size then
-        return tuple(_getIterator(x(dim)));
+        return (_getIterator(x(dim)),);
       else
         return (_getIterator(x(dim)), (..._getIteratorZipInternal(x, dim+1)));
     }
@@ -2048,7 +2048,7 @@ module ChapelArray {
 
   inline proc _toFollowerZipInternal(x: _tuple, leaderIndex, param dim: int) {
     if dim == x.size then
-      return tuple(_toFollower(x(dim), leaderIndex));
+      return (_toFollower(x(dim), leaderIndex),);
     else
       return (_toFollower(x(dim), leaderIndex),
               (..._toFollowerZipInternal(x, leaderIndex, dim+1)));

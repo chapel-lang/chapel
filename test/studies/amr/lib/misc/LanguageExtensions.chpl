@@ -193,7 +193,7 @@ proc *(D1: domain, D2: domain)
 //-------------------------------------------------------------
 proc tuplify(obj) {
   if isTuple(obj) then return obj;
-  else return tuple(obj);
+  else return (obj,);
 }
 // /|""""""""""""""""""""""""/|
 //< |    tuplify routine    < |

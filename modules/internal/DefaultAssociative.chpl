@@ -169,7 +169,7 @@ module DefaultAssociative {
           const (lo, hi) = _computeBlock(numIndices, numChunks,
                                          chunk, numIndices-1);
           if debugDefaultAssoc then
-            writeln("*** DI[", chunk, "]: tuple = ", tuple(lo..hi));
+            writeln("*** DI[", chunk, "]: tuple = ", (lo..hi,));
           yield (lo..hi, this);
         }
       }

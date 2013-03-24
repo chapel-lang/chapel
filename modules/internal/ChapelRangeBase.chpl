@@ -799,21 +799,21 @@ module ChapelRangeBase {
       __primitive_loop("xmt pragma forall i in n", per_stream_i,
                        total_streams_n) {
         const (lo,hi) = _computeBlock(v, total_streams_n, per_stream_i, v-1);
-        yield tuple(lo..hi);
+        yield (lo..hi,);
       }
     }
     else
     {
       if numChunks == 1 then
-        yield tuple(0..v-1);
+        yield (0..v-1,);
       else
       {
         coforall chunk in 0..#numChunks
         {
           const (lo,hi) = _computeBlock(v, numChunks, chunk, v-1);
           if debugChapelRange then
-            writeln("*** RI: tuple = ", tuple(lo..hi));
-          yield tuple(lo..hi);
+            writeln("*** RI: tuple = ", (lo..hi,));
+          yield (lo..hi,);
         }
       }
     }

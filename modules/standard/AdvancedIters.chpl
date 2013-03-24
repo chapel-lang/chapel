@@ -30,8 +30,8 @@ where tag == iterKind.leader
   if c.length/chunkSize < nTasks then {
     writeln("Dynamic Iterator: serial execution because there is not enough work");
     const totalRange:rType= densify(c,c);
-    //yield tuple(c.translate(-c.low)) ;
-    yield tuple(totalRange);
+    //yield (c.translate(-c.low),) ;
+    yield (totalRange,);
 
   }
   else {
@@ -50,7 +50,7 @@ where tag == iterKind.leader
         if verbose then 
           writeln("Parallel dynamic Iterator. Working at tid ", tid, " with range ", current, " yielded as ", zeroBasedIters);
     
-        yield tuple(zeroBasedIters);}
+        yield (zeroBasedIters,);}
     }             
     }
   }
@@ -96,7 +96,7 @@ where tag == iterKind.leader
   if c.length < nTasks then {
     writeln("Guided Iterator: serial execution because there is not enoguh work");
     const totalRange:rType= densify(c,c);
-    yield tuple(totalRange); 
+    yield (totalRange,); 
   }
 
   else {
@@ -116,7 +116,7 @@ where tag == iterKind.leader
         if verbose then 
           writeln("Parallel guided Iterator. Working at tid ", tid, " with range ", current, " yielded as ", zeroBasedIters);
     
-        yield tuple(zeroBasedIters);}
+        yield (zeroBasedIters,);}
     }             
     }
   }
@@ -170,7 +170,7 @@ where tag == iterKind.leader
   if c.length < nTasks then {
     writeln("Adaptive work-stealing Iterator: serial execution because there is not enough work");
     const totalRange:rType = densify(c,c);
-    yield tuple(totalRange);
+    yield (totalRange,);
     
   }
   else {
@@ -210,7 +210,7 @@ where tag == iterKind.leader
       if zeroBasedIters.length !=0 then {
         if verbose then 
           writeln("Parallel adaptive Iterator. Working locally at tid ", tid, " with range yielded as ", zeroBasedIters);
-        yield tuple(zeroBasedIters);}
+        yield (zeroBasedIters,);}
     }
 
       // Step3: Task tid finished its work, so it will try to steal from a neighbor
@@ -235,7 +235,7 @@ where tag == iterKind.leader
           if zeroBasedIters2.length !=0 then {
             if verbose then 
               writeln("Range stealed at victim ", victim," yielded as ", zeroBasedIters2," by tid ", tid);
-            yield tuple(zeroBasedIters2);}
+            yield (zeroBasedIters2,);}
         }   
         }       
      
@@ -249,7 +249,7 @@ where tag == iterKind.leader
         if zeroBasedIters2.length !=0 then {
           if verbose then 
             writeln("Range stealed at victim ", victim," yielded as ", zeroBasedIters2," by tid ", tid);
-          yield tuple(zeroBasedIters2);}
+          yield (zeroBasedIters2,);}
           }
           else {
         stealFailed=true;
@@ -266,7 +266,7 @@ where tag == iterKind.leader
           if zeroBasedIters2.length !=0 then {
             if verbose then 
               writeln("Range stealed at victim ", victim," yielded as ", zeroBasedIters2," by tid ", tid);
-            yield tuple(zeroBasedIters2);}
+            yield (zeroBasedIters2,);}
         }
         } 
         }

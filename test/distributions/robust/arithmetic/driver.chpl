@@ -48,7 +48,7 @@ proc setupDistributions() {
   }
   if distType == DistType.blockcyclic {
     return (
-            new dmap(new BlockCyclic(startIdx=tuple(0), blocksize=tuple(3))),
+            new dmap(new BlockCyclic(startIdx=(0,), blocksize=(3,))),
             new dmap(new BlockCyclic(startIdx=(0,0), blocksize=(3,3))),
             new dmap(new BlockCyclic(startIdx=(0,0,0), blocksize=(3,3,3))),
             new dmap(new BlockCyclic(startIdx=(0,0,0,0), blocksize=(3,3,3,3))),

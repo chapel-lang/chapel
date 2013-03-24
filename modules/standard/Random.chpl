@@ -237,7 +237,7 @@ proc RandomPrivate_randlc_skipto(seed: int(64), in n: integral): real {
 iter RandomPrivate_outer(ranges, param dim: int = 1) {
   if dim + 1 == ranges.size {
     for i in ranges(dim) do
-      yield tuple(i);
+      yield (i,);
   } else if dim + 1 < ranges.size {
     for i in ranges(dim) do
       for j in RandomPrivate_outer(ranges, dim+1) do
