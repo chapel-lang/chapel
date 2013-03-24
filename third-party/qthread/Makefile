@@ -38,6 +38,21 @@ clobber: FORCE
 
 
 qthread-config: FORCE
+#
+# These first few lines touch a bunch of autoconf-oriented files in a
+# certain order to prevent autoconf from running again; otherwise, we
+# ran into issues if a user's autoconf environment was not as far
+# ahead in version numbers as that which was used when packaging the
+# Qthreads release
+#
+	cd $(QTHREAD_SUBDIR) && find . -name "*.m4" | xargs touch configure.ac
+	sleep 2
+	cd $(QTHREAD_SUBDIR) && touch configure
+	sleep 2
+	cd $(QTHREAD_SUBDIR) && find . -name "*.in" | xargs touch
+#
+# Then configure
+#
 	mkdir -p $(QTHREAD_BUILD_DIR)
 	cd $(QTHREAD_BUILD_DIR) && $(QTHREAD_SUBDIR)/configure CC='$(CC)' CXX='$(CXX)' --prefix=$(QTHREAD_INSTALL_DIR) --enable-interfaces=chapel CHPL_HOME=$(CHPL_MAKE_HOME) $(CHPL_QTHREAD_CFG_OPTIONS) --disable-spawn-cache
 

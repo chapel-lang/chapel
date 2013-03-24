@@ -148,21 +148,10 @@ void chpl_task_addToTaskList(chpl_fn_int_t fid,
                            void* arg,
                            chpl_task_list_p *task_list,
                            int32_t task_list_locale,
-                           chpl_bool call_chpl_begin,
+                           chpl_bool is_begin_stmt,
                            int lineno,
                            chpl_string filename) {
-  chpl_task_begin(chpl_ftable[fid], arg, false, false, NULL);
-}
-
-void chpl_task_processTaskList(chpl_task_list_p task_list) { }
-
-void chpl_task_executeTasksInList(chpl_task_list_p task_list) { }
-
-void chpl_task_freeTaskList(chpl_task_list_p task_list) { }
-
-void chpl_task_begin(chpl_fn_p fp, void* a, chpl_bool ignore_serial,
-                chpl_bool serial_state, chpl_task_list_p task_list_entry) {
-  if (!ignore_serial && chpl_task_getSerial()) {
+  if (chpl_task_getSerial()) {
     //
     // save the current task's state before invoking the new task.
     //
@@ -172,7 +161,7 @@ void chpl_task_begin(chpl_fn_p fp, void* a, chpl_bool ignore_serial,
     void* saved_here = chpl_task_getHere();
 
     // huh?  Who sets the running environment for the new task function?
-    (*fp)(a);
+    (*chpl_ftable[fid])(arg);
 
     //
     // restore the previous task state
@@ -190,9 +179,9 @@ void chpl_task_begin(chpl_fn_p fp, void* a, chpl_bool ignore_serial,
                                             CHPL_RT_MD_TASK_DESCRIPTOR,
                                             0, 0);
     task->id = next_taskID++;
-    task->fun = fp;
-    task->arg = a;
-    task->serial_state = serial_state;
+    task->fun = chpl_ftable[fid];
+    task->arg = arg;
+    task->serial_state = false;
     // Inherit the current locale
     task->locale = chpl_task_getLocaleID();
     task->here = chpl_task_getHere();
@@ -207,6 +196,41 @@ void chpl_task_begin(chpl_fn_p fp, void* a, chpl_bool ignore_serial,
 
     queued_cnt++;
   }
+}
+
+void chpl_task_processTaskList(chpl_task_list_p task_list) { }
+
+void chpl_task_executeTasksInList(chpl_task_list_p task_list) { }
+
+void chpl_task_freeTaskList(chpl_task_list_p task_list) { }
+
+void chpl_task_startMovedTask(chpl_fn_p fp,
+                              void* a,
+                              chpl_taskID_t id,
+                              chpl_bool serial_state) {
+  // create a task from the given function pointer and arguments
+  // and append it to the end of the task pool for later execution
+  chpl_task_pool_p task;
+
+  assert(id == chpl_nullTaskID);
+
+  task = (chpl_task_pool_p)chpl_mem_alloc(sizeof(task_pool_t),
+                                          CHPL_RT_MD_TASK_DESCRIPTOR,
+                                          0, 0);
+  task->id = next_taskID++;
+  task->fun = fp;
+  task->arg = a;
+  task->serial_state = serial_state;
+  task->next = NULL;
+
+  if (task_pool_tail) {
+    task_pool_tail->next = task;
+  } else {
+    task_pool_head = task;
+  }
+  task_pool_tail = task;
+
+  queued_cnt++;
 }
 
 chpl_taskID_t chpl_task_getId(void) { return curr_taskID; }

@@ -125,6 +125,7 @@ static void                    unset_block_loc(void);
 static void                    check_for_deadlock(void);
 static void                    thread_begin(void*);
 static void                    thread_end(void);
+static void                    begin_task(chpl_fn_p, void*, chpl_task_list_p);
 static void                    launch_next_task_in_new_thread(void);
 static void                    schedule_next_task(int);
 static task_pool_p             add_to_task_pool(chpl_fn_p,
@@ -363,7 +364,7 @@ static void comm_task_wrapper(void* arg) {
 void chpl_task_addToTaskList(chpl_fn_int_t fid, void* arg,
                            chpl_task_list_p *task_list,
                            int32_t task_list_locale,
-                           chpl_bool call_chpl_begin,
+                           chpl_bool is_begin_stmt,
                            int lineno,
                            chpl_string filename) {
   if (task_list_locale == chpl_nodeID) {
@@ -377,13 +378,11 @@ void chpl_task_addToTaskList(chpl_fn_int_t fid, void* arg,
     ltask->fun      = chpl_ftable[fid];
     ltask->arg      = arg;
     ltask->ptask    = NULL;
-    if (call_chpl_begin) {
-      chpl_fn_p fp = chpl_ftable[fid];
-      chpl_task_begin(fp, arg, false, false, ltask);
-    }
+    if (is_begin_stmt)
+      begin_task(chpl_ftable[fid], arg, ltask);
 
     // begin critical section - not needed for cobegin or coforall statements
-    if (call_chpl_begin)
+    if (is_begin_stmt)
       chpl_thread_mutexLock(&task_list_lock);
 
     if (*task_list) {
@@ -395,17 +394,15 @@ void chpl_task_addToTaskList(chpl_fn_int_t fid, void* arg,
     *task_list = ltask;
 
     // end critical section - not needed for cobegin or coforall statements
-    if (call_chpl_begin)
+    if (is_begin_stmt)
       chpl_thread_mutexUnlock(&task_list_lock);
   }
   else {
-    // call_chpl_begin should be true here because if task_list_locale !=
+    // is_begin_stmt should be true here because if task_list_locale !=
     // chpl_nodeID, then this function could not have been called from
-    // the context of a cobegin or coforall statement, which are the only
-    // contexts in which chpl_task_begin() should not be called.
-    chpl_fn_p fp = chpl_ftable[fid];
-    assert(call_chpl_begin);
-    chpl_task_begin(fp, arg, false, false, NULL);
+    // the context of a cobegin or coforall statement.
+    assert(is_begin_stmt);
+    begin_task(chpl_ftable[fid], arg, NULL);
   }
 }
 
@@ -647,37 +644,20 @@ void chpl_task_freeTaskList(chpl_task_list_p task_list) {
 }
 
 
-//
-// interface function with begin-statement
-//
-void chpl_task_begin(chpl_fn_p fp, void* a,
-                chpl_bool ignore_serial,  // always add task to pool
-                chpl_bool serial_state,
-                chpl_task_list_p ltask) {
-  if (!ignore_serial && chpl_task_getSerial()) {
-    (*fp)(a);
-  } else {
-    task_pool_p ptask = NULL;
+void chpl_task_startMovedTask(chpl_fn_p fp,
+                              void* a,
+                              chpl_taskID_t id,
+                              chpl_bool serial_state) {
+  assert(id == chpl_nullTaskID);
 
-    // begin critical section
-    chpl_thread_mutexLock(&threading_lock);
+  // begin critical section
+  chpl_thread_mutexLock(&threading_lock);
 
-    ptask = add_to_task_pool(fp, a, serial_state, ltask);
-    // this task may begin executing before returning from this function,
-    // so the task list node needs to be updated before there is any
-    // possibility of launching this task
-    if (ltask)
-      ltask->ptask = ptask;
+  (void) add_to_task_pool(fp, a, serial_state, NULL);
+  schedule_next_task(1);
 
-    schedule_next_task(1);
-
-    assert(ptask->ltask == NULL
-           || (ptask->ltask == ltask
-               && ltask->ptask == ptask));
-
-    // end critical section
-    chpl_thread_mutexUnlock(&threading_lock);
-  }
+  // end critical section
+  chpl_thread_mutexUnlock(&threading_lock);
 }
 
 
@@ -1178,6 +1158,43 @@ static void thread_end(void)
     }
     chpl_mem_free(tp, 0, 0);
     chpl_thread_setPrivateData(NULL);
+  }
+}
+
+
+
+
+//
+// interface function with begin-statement
+//
+static
+void begin_task(chpl_fn_p fp, void* a, chpl_task_list_p ltask) {
+  if (chpl_task_getSerial())
+    (*fp)(a);
+  else {
+    task_pool_p ptask = NULL;
+
+    // begin critical section
+    chpl_thread_mutexLock(&threading_lock);
+
+    ptask = add_to_task_pool(fp, a, false, ltask);
+
+    //
+    // This task may begin executing before returning from this function,
+    // so the task list node needs to be updated before there is any
+    // possibility of launching this task (inside the critical section).
+    //
+    if (ltask)
+      ltask->ptask = ptask;
+
+    schedule_next_task(1);
+
+    assert(ptask->ltask == NULL
+           || (ptask->ltask == ltask
+               && ltask->ptask == ptask));
+
+    // end critical section
+    chpl_thread_mutexUnlock(&threading_lock);
   }
 }
 

@@ -216,7 +216,7 @@ char* eatExternCode() {
   // Note - when the lexer calls this function, it has already
   // consumed the first {
   int depth = 1;
-  int c, lastc = 0;
+  int c = 0, lastc = 0;
   const int in_code = 0;
   const int in_single_quote = 1;
   const int in_single_quote_backslash = 2;

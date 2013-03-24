@@ -10,6 +10,7 @@ proc _determineIdxTypeFromStartIdx(startIdx) type {
 
 config param debugCyclicDist = false;
 config param verboseCyclicDistWriters = false;
+config param debugCyclicDistBulkTransfer = false;
 
 //
 // If the testFastFollowerOptimization flag is set to true, the
@@ -954,3 +955,184 @@ class LocCyclicRADCache /* : LocRADCache */ {
   }
 }
 
+proc CyclicArr.dsiSupportsBulkTransferInterface() param return true;
+
+proc CyclicArr.doiCanBulkTransferStride() param {
+  if debugCyclicDistBulkTransfer then
+    writeln("In CyclicArr.doiCanBulkTransferStride");
+
+  // A CyclicArr is a bunch of DefaultRectangular arrays,
+  // so strided bulk transfer gotta be always possible.
+  return true;
+}
+
+//For assignments of the form: "any = Cyclic"
+//Currently not used, instead we use: doiBulkTransferFrom()
+proc CyclicArr.doiBulkTransferTo(Barg)
+{
+  if debugCyclicDistBulkTransfer then
+    writeln("In CyclicArr.doiBulkTransferTo()");
+  
+  const B = this, A = Barg._value;
+  type el = B.idxType;
+  coforall i in B.dom.dist.targetLocDom do // for all locales
+    on B.dom.dist.targetLocs(i)
+      {
+        var regionA = B.dom.locDoms(i).myBlock;
+        if regionA.numIndices>0
+        {
+          const ini=bulkCommConvertCoordinate(regionA.first, B, A);
+          const end=bulkCommConvertCoordinate(regionA.last, B, A);
+          const sb=chpl__tuplify(A.dom.locDoms(i).myBlock.stride);
+          
+          var r1,r2: rank * range(idxType = el,stridable = true);
+          r2=regionA.dims();
+           //In the case that the number of elements in dimension t for r1 and r2
+           //were different, we need to calculate the correct stride in r1
+          for param t in 1..rank
+          {
+            r1[t] = (ini[t]:el..end[t]:el by sb[t]:el);
+            if r1[t].length != r2[t].length then
+              r1[t] = (ini[t]:el..end[t]:el by (end[t] - ini[t]):el/(r2[t].length-1));
+          }
+        
+          if debugCyclicDistBulkTransfer then
+            writeln("A",(...r1),".FromDR",regionA);
+    
+          Barg[(...r1)]._value.doiBulkTransferFromDR(B.locArr[i].myElems);
+        }
+      }
+}
+
+
+//For assignments of the form: "Cyclic = any" 
+//where "any" means any array that implements the bulk transfer interface
+proc CyclicArr.doiBulkTransferFrom(Barg)
+{
+  if debugCyclicDistBulkTransfer then
+    writeln("In CyclicArr.doiBulkTransferFrom()");
+  
+  const A = this, B = Barg._value;
+  type el = A.idxType;
+  coforall i in A.dom.dist.targetLocDom do // for all locales
+    on A.dom.dist.targetLocs(i)
+    { 
+      var regionA = A.dom.locDoms(i).myBlock;    
+      if regionA.numIndices>0
+      {
+        const ini=bulkCommConvertCoordinate(regionA.first, A, B);
+        const end=bulkCommConvertCoordinate(regionA.last, A, B);
+        const sb=chpl__tuplify(B.dom.locDoms(i).myBlock.stride);
+      
+        var r1,r2: rank * range(idxType = el,stridable = true);
+        r2=regionA.dims();
+        //In the case that the number of elements in dimension t for r1 and r2
+        //were different, we need to calculate the correct stride in r1
+        for param t in 1..rank
+        {
+          r1[t] = (ini[t]:el..end[t]:el by sb[t]:el);
+          if r1[t].length != r2[t].length then
+            r1[t] = (ini[t]:el..end[t]:el by (end[t] - ini[t]):el/(r2[t].length-1));
+        }
+       
+        if debugCyclicDistBulkTransfer then
+          writeln("B[",(...r1),"] ToDR A[",regionA, "] ");
+        
+        Barg[(...r1)]._value.doiBulkTransferToDR(A.locArr[i].myElems[regionA]);
+      }
+    }
+}
+
+//For assignments of the form: DR = Cyclic 
+//(default rectangular array = cyclic distributed array)
+proc CyclicArr.doiBulkTransferToDR(Barg)
+{
+  if debugCyclicDistBulkTransfer then
+    writeln("In CyclicArr.doiBulkTransferToDR()");
+  
+  const A = this, B = Barg._value;
+  type el = A.idxType;
+  coforall j in A.dom.dist.targetLocDom do // for all locales
+    on A.dom.dist.targetLocs(j)
+    {
+      const inters=A.dom.locDoms(j).myBlock;
+      if(inters.numIndices>0)
+      {
+        const ini=bulkCommConvertCoordinate(inters.first, A, B);
+        const end=bulkCommConvertCoordinate(inters.last, A, B);
+        const sa = chpl__tuplify(B.dom.dsiStride); //return a tuple
+        
+        //r2 is the domain to refer the elements of A in locale j
+        //r1 is the domain to refer the correspondig elements of B
+        var r1,r2: rank * range(idxType = el,stridable = true);
+        r2=inters.dims();
+        //In the case that the number of elements in dimension t for r1 and r2
+        //were different, we need to calculate the correct stride in r1
+        for param t in 1..rank
+        {
+          r1[t] = (ini[t]:el..end[t]:el by sa[t]:el);
+          if r1[t].length != r2[t].length then
+            r1[t] = (ini[t]:el..end[t]:el by (end[t] - ini[t]):el/(r2[t].length-1));
+        }
+            
+        const d ={(...r1)};
+        const slice = B.dsiSlice(d._value);
+        //Necessary to calculate the value of blk variable in DR
+        //with the new domain r1
+        const slice2 = slice.dsiReindex(d._value);
+     
+        if debugCyclicDistBulkTransfer then 
+          writeln(" A[",(...r1),"] = B[",(...r2), "]");
+      
+        slice2.doiBulkTransferStride(A.locArr[j].myElems[(...r2)]._value);
+        delete slice;
+        delete slice2;
+      }
+    }
+}
+
+//For assignments of the form: Cyclic = DR 
+//(cyclic distributed array = default rectangular)
+proc CyclicArr.doiBulkTransferFromDR(Barg)
+{
+  if debugCyclicDistBulkTransfer then
+    writeln("In CyclicArr.doiBulkTransferFromDR()");
+  
+  const A = this, B = Barg._value;
+  type el = A.idxType;
+  coforall j in A.dom.dist.targetLocDom do // for all locales
+    on A.dom.dist.targetLocs(j)
+    {
+      const inters=A.dom.locDoms(j).myBlock;
+      if(inters.numIndices>0)
+      {
+        const ini=bulkCommConvertCoordinate(inters.first, A, B);
+        const end=bulkCommConvertCoordinate(inters.last, A, B);
+        const sb = chpl__tuplify(B.dom.dsiStride); //return a tuple
+        
+        var r1,r2: rank * range(idxType = el,stridable = true);
+        r2=inters.dims();
+        //In the case that the number of elements in dimension t for r1 and r2
+        //were different, we need to calculate the correct stride in r1
+        for param t in 1..rank
+        {
+          r1[t] = (ini[t]:el..end[t]:el by sb[t]:el);
+          if r1[t].length != r2[t].length then
+            r1[t] = (ini[t]:el..end[t]:el by (end[t] - ini[t]):el/(r2[t].length-1));
+        }
+        
+        if debugCyclicDistBulkTransfer then
+            writeln("A[",(...r2),"] = B[",(...r1), "] ");
+        
+        const d ={(...r1)};
+        const slice = B.dsiSlice(d._value);
+        //this step it's necessary to calculate the value of blk variable in DR
+        //with the new domain r1
+        const slice2 = slice.dsiReindex(d._value);
+      
+        A.locArr[j].myElems[(...r2)]._value.doiBulkTransferStride(slice2);
+        delete slice;
+        delete slice2;
+      }
+    }
+}

@@ -32,6 +32,10 @@ clean: FORCE
 	cd runtime && $(MAKE) clean
 	cd modules && $(MAKE) clean
 
+cleandeps: FORCE
+	cd compiler && $(MAKE) cleandeps
+	cd runtime && $(MAKE) cleandeps
+
 clobber: FORCE
 	cd compiler && $(MAKE) clobber
 	cd runtime && $(MAKE) clobber
@@ -40,9 +44,8 @@ clobber: FORCE
 	rm -rf bin
 	rm -rf lib
 
-depend: FORCE
-	cd compiler && $(MAKE) depend
-	cd runtime && $(MAKE) depend
+depend:
+	@echo "make depend has been deprecated for the time being"
 
 -include Makefile.devel
 

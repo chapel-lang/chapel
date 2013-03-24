@@ -96,6 +96,7 @@ int chpl_task_createCommTask(chpl_fn_p fn, void* arg);
 // a task that evaluates the function.
 //
 void chpl_task_callMain(void (*chpl_main)(void));
+
 //
 // The following is an optional callback into the tasking layer from
 // the main task indicating that the standard internal modules have
@@ -111,30 +112,35 @@ void chpl_task_callMain(void (*chpl_main)(void));
 
 typedef struct chpl_task_list* chpl_task_list_p;
 
+//
+// Task list processing.  These are called by the compiler-emitted
+// code for all parallel constructs.  addToTaskList() is called for
+// each task and builds a list of all of them.  processTaskList()
+// actually adds the tasks to the task pool.  executeTasksInList()
+// makes sure all the tasks have at least started.  freeTaskList()
+// just reclaims space associated with the list.
+//
 void chpl_task_addToTaskList(
          chpl_fn_int_t,      // function to call for task
          void*,              // argument to the function
          chpl_task_list_p*,  // task list
          c_nodeid_t,         // locale (node) where task list resides
-         chpl_bool,          // whether to call chpl_task_begin
+         chpl_bool,          // is begin{} stmt?  (vs. cobegin or coforall)
          int,                // line at which function begins
          chpl_string);       // name of file containing functions
 void chpl_task_processTaskList(chpl_task_list_p);
 void chpl_task_executeTasksInList(chpl_task_list_p);
 void chpl_task_freeTaskList(chpl_task_list_p);
 
-// Fork one task.  Do not wait.  Used to implement Chapel's begin statement.
-void chpl_task_begin(
-         chpl_fn_p,         // function to fork
-         void*,             // function arg
-         chpl_bool,         // ignore_serial = force spawning task regardless
-                            // of serial state; as in the case of calling
-                            // for on-statement implementation
-         chpl_bool,         // serial state (must be "false" except when
-                            // called from a comm lib such as gasnet;
-                            // otherwise, serial state is that of the
-                            // task executing chpl_task_begin)
-         chpl_task_list_p);
+//
+// Launch a task that is the logical continuation of some other task,
+// but on a different locale.  This is used to invoke the body of an
+// "on" statement.
+//
+void chpl_task_startMovedTask(chpl_fn_p,      // function to call
+                              void*,          // function arg
+                              chpl_taskID_t,  // task identifier
+                              chpl_bool);     // serial state
 
 //
 // Get ID.

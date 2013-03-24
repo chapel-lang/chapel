@@ -106,25 +106,13 @@ void chpl_task_addToTaskList(chpl_fn_int_t fid,
                            void* arg,
                            chpl_task_list_p *task_list,
                            int32_t task_list_locale,
-                           chpl_bool call_chpl_begin,
+                           chpl_bool is_begin_stmt,
                            int lineno,
                            chpl_string filename) {
-  chpl_task_begin(chpl_ftable[fid], arg, false, false, NULL);
-}
+  chpl_fn_p fp = chpl_ftable[fid];
 
-void chpl_task_processTaskList(chpl_task_list_p task_list) { }
-
-void chpl_task_executeTasksInList(chpl_task_list_p task_list) { }
-
-void chpl_task_freeTaskList(chpl_task_list_p task_list) { }
-
-void
-chpl_task_begin(chpl_fn_p fp, void* arg, chpl_bool ignore_serial, 
-           chpl_bool serial_state, chpl_task_list_p task_list_entry) {
-
-  if (!ignore_serial && chpl_task_getSerial())
+  if (chpl_task_getSerial())
     (*fp)(arg);
-
   else {
     // Will call the real begin statement function. Only purpose of this
     // thread is to wait on that function and coordinate the exiting
@@ -133,6 +121,23 @@ chpl_task_begin(chpl_fn_p fp, void* arg, chpl_bool ignore_serial,
       (*fp)(arg);
     }
   }
+}
+
+void chpl_task_processTaskList(chpl_task_list_p task_list) { }
+
+void chpl_task_executeTasksInList(chpl_task_list_p task_list) { }
+
+void chpl_task_freeTaskList(chpl_task_list_p task_list) { }
+
+void chpl_task_startMovedTask(chpl_fn_p fp,
+                              void* arg,
+                              chpl_taskID_t id,
+                              chpl_bool serial_state) {
+  //
+  // We don't expect this to be called, because on the MTA architecture
+  // we don't ever do a remote fork.
+  //
+  chpl_internal_error("chpl_task_startMovedTask() called");
 }
 
 chpl_taskID_t chpl_task_getId(void) {

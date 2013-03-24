@@ -1,1 +1,0 @@
-../comm/ugni/NetworkAtomicTypes.chpl
