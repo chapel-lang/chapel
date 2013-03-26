@@ -221,8 +221,7 @@ void chpl_sync_destroyAux(chpl_sync_aux_t *s) { }
 
 // Tasks
 
-void chpl_task_init(int32_t numThreadsPerLocale, int32_t maxThreadsPerLocale, 
-                    int numCommTasks, uint64_t callStackSize) {
+void chpl_task_init(void) {
   chpl_thread_mutexInit(&threading_lock);
   chpl_thread_mutexInit(&extra_task_lock);
   chpl_thread_mutexInit(&task_id_lock);
@@ -235,8 +234,7 @@ void chpl_task_init(int32_t numThreadsPerLocale, int32_t maxThreadsPerLocale,
   extra_task_cnt = 0;
   task_pool_head = task_pool_tail = NULL;
 
-  chpl_thread_init(numThreadsPerLocale, maxThreadsPerLocale, callStackSize,
-                   thread_begin, thread_end);
+  chpl_thread_init(thread_begin, thread_end);
 
   if (taskreport) {
     chpl_thread_mutexInit(&taskTable_lock);
@@ -1219,11 +1217,13 @@ launch_next_task_in_new_thread(void) {
       char msg[256];
       if (max_threads)
         sprintf(msg,
-                "maxThreadsPerLocale is %"PRId32", but unable to create more than %d threads",
+                "max threads per locale is %" PRId32
+                ", but unable to create more than %d threads",
                 max_threads, num_threads);
       else
         sprintf(msg,
-                "maxThreadsPerLocale is unbounded, but unable to create more than %d threads",
+                "max threads per locale is unbounded"
+                ", but unable to create more than %d threads",
                 num_threads);
       chpl_warning(msg, 0, 0);
       warning_issued = true;

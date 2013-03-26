@@ -75,8 +75,8 @@ run Chapel tasks.  Because pthreads are relatively expensive to
 create, the implementation does not destroy them when there are no
 tasks for them to execute.  Instead they stay around and continue to
 check the task pool for tasks to execute.  The number of pthreads used
-to execute tasks can be controlled by the configuration constant
-'numThreadsPerLocale' described below.
+to execute tasks can be controlled by the environment variable
+CHPL_RT_NUM_THREADS_PER_LOCALE, described below.
 
 Several methods on the locale type are available to query the state of
 the task pool and threads:
@@ -125,7 +125,7 @@ does have severe limitations, however.  In minimal threading there is
 only a single thread, the process itself.  Deadlock can occur if a
 program requires more than one task to be active at the same time.
 The effect is essentially equivalent to using pthreads threading with
-numThreadsPerLocale=1.
+CHPL_RT_NUM_THREADS_PER_LOCALE=1.
 
 
 CHPL_TASKS == massivethreads, CHPL_THREADS == none
@@ -224,97 +224,95 @@ Controlling the Number of Threads
 ---------------------------------
 
 The number of threads used to implement a Chapel program can be
-controlled by a configuration constant named numThreadsPerLocale.  The
-default value of numThreadsPerLocale is zero, indicating that the
-choice of number of threads is left to the tasking layer.  See the
-case-by-case discussions below for more details.
+controlled by the environment variable CHPL_RT_NUM_THREADS_PER_LOCALE.
+The default value of CHPL_RT_NUM_THREADS_PER_LOCALE is zero, indicating
+that the choice of number of threads is left to the tasking layer.  See
+the case-by-case discussions below for more details.
 
-The user can set numThreadsPerLocale just like any other configuration
-variable (e.g., by using --numThreadsPerLocale=<num> on the generated
-executable's command-line).  The Chapel program will generate an error
-if the requested number of threads per locale is too large.  For
-example, when running multi-locale programs, the GASNet communication
-layer typically places an upper bound of 127 or 255 on the number of
-threads per locale (There are ways to work around this assumption on
-certain platforms -- please contact us at chapel_info@cray.com or
-peruse the GASNet documentation if you need to do so.)
+The Chapel program will generate an error if the requested number of
+threads per locale is too large.  For example, when running multi-locale
+programs, the GASNet communication layer typically places an upper bound
+of 127 or 255 on the number of threads per locale (There are ways to
+work around this assumption on certain platforms -- please contact us at
+chapel_info@cray.com or peruse the GASNet documentation if you need to
+do so.)
 
 CHPL_TASKS == fifo, CHPL_THREADS == pthreads:
-  The value of numThreadsPerLocale indicates the maximum number of
-  threads that the ptherads layer can create on each locale to execute
-  tasks.  These threads are created on a demand-driven basis, so a
-  program with a small number of concurrent tasks may never create the
+  The value of CHPL_RT_NUM_THREADS_PER_LOCALE indicates the maximum
+  number of threads that the ptherads layer can create on each locale to
+  execute tasks.  These threads are created on a demand-driven basis, so
+  a program with a small number of concurrent tasks may never create the
   specified number.  If the value is zero, then the number of threads
   will be limited by system resources and other constraints (such as
   GASNet's configuration-time limit).
 
-  The value of numThreadsPerLocale can have a major impact on
+  The value of CHPL_RT_NUM_THREADS_PER_LOCALE can have a major impact on
   performance for fifo tasking.  For programs with few inter-task
-  dependences and high computational intensity, setting
-  numThreadsPerLocale roughly equal to the number of cores on each
-  locale can lead to near-optimal performance.  However, for programs
-  with lots of fine-grained synchronization in which tasks frequently
-  block on sync or single variables, numThreadsPerLocale can often
-  exceed the number of cores without an adverse effect on performance
-  since blocked threads will not consume the CPU's cycles.
+  dependences and high computational intensity, setting it roughly equal
+  to the number of cores on each locale can lead to near-optimal
+  performance.  However, for programs with lots of fine-grained
+  synchronization in which tasks frequently block on sync or single
+  variables, CHPL_RT_NUM_THREADS_PER_LOCALE can often exceed the number
+  of cores without an adverse effect on performance since blocked
+  threads will not consume the CPU's cycles.
 
-  Note that setting numThreadsPerLocale too low can result in program
-  deadlock for fifo tasking.  For example, for programs written with
-  an assumption that some minimum number of tasks are executing
-  concurrently, setting numThreadsPerLocale lower than this can result
-  in deadlock if there are not enough threads to implement all of the
-  required tasks.  The -b/--blockreport flag can help debug programs
-  like this that appear to be deadlocked.
+  Note that setting CHPL_RT_NUM_THREADS_PER_LOCALE too low can result in
+  program deadlock for fifo tasking.  For example, for programs written
+  with an assumption that some minimum number of tasks are executing
+  concurrently, setting CHPL_RT_NUM_THREADS_PER_LOCALE lower than this
+  can result in deadlock if there are not enough threads to implement
+  all of the required tasks.  The -b/--blockreport flag can help debug
+  programs like this that appear to be deadlocked.
 
 CHPL_TASKS == massivethreads, CHPL_THREADS == none:
-  In the MassiveThreads tasking layer, the value of numThreadsPerLocale
-  indicates the number of system threads used to execute tasks.
-  If the value is 0, the massivethreads tasking layer will create a
-  number of threads equal to the number of processor cores on the
-  locale.
+  In the MassiveThreads tasking layer, CHPL_RT_NUM_THREADS_PER_LOCALE
+  specifies the number of system threads used to execute tasks.  If the
+  value is 0, the massivethreads tasking layer will create a number of
+  threads equal to the number of processor cores on the locale.
 
 CHPL_TASKS == qthreads, CHPL_THREADS == none
-  In the Qthreads tasking layer, the value of numThreadsPerLocale
-  indicates the number of system threads, or shepherds, used to
-  execute tasks.  If the value is 0, the qthreads tasking layer will
-  create a number of threads equal to the number of processor cores on
-  the locale.
+  In the Qthreads tasking layer, CHPL_RT_NUM_THREADS_PER_LOCALE
+  specifies the number of system threads, or shepherds, used to execute
+  tasks.  If the value is 0, the qthreads tasking layer will create a
+  number of threads equal to the number of processor cores on the
+  locale.
 
 CHPL_TASKS == mta, CHPL_THREADS == none
 CHPL_TASKS == fifo, CHPL_THREADS == minimal
 CHPL_TASKS == none, CHPL_THREADS == none
-  The numThreadsPerLocale variable has no impact on any of these
-  tasking layers.
+  The CHPL_RT_NUM_THREADS_PER_LOCALE variable has no impact on any of
+  these tasking layers.
 
 
 -------------------------------
 Controlling the Call Stack Size
 -------------------------------
 
-As documented in README.executing, the callStackSize configuration
-constant can be used to adjust the call stack size for active tasks.
-This interacts with the tasking and threading models as follows:
+As documented in README.executing, the CHPL_RT_CALL_STACK_SIZE
+environment variable can be used to adjust the call stack size for
+active tasks.  This interacts with the tasking and threading models as
+follows:
 
 CHPL_TASKS == fifo, CHPL_THREADS == pthreads:
   The default task call stack size is the system stack limit (typically
   8 MiB for Linux systems) or 8 MiB if that is not set.  If a value is
-  specified for callStackSize, that value is used to set the stack size
-  for the process and each pthread.  Tasks inherit this call stack size,
-  because the execution model is that a task occupies a pthread and uses
-  its stack for the duration of the task's existence.
+  specified for CHPL_RT_CALL_STACK_SIZE, that value is used to set the
+  stack size for the process and each pthread.  Tasks inherit this call
+  stack size, because the execution model is that a task occupies a
+  pthread and uses its stack for the duration of the task's existence.
 
 CHPL_TASKS == massivethreads, CHPL_THREADS == none
   MassiveThreads tasks have a default call stack size of 32k*sizeof(size_t)
-  bytes.  If a value is specified for callStackSize, that value is used
-  for the call stack size instead.
+  bytes.  If a value is specified for CHPL_RT_CALL_STACK_SIZE, that value
+  is used for the call stack size instead.
 
 CHPL_TASKS == qthreads, CHPL_THREADS == none
   Qthreads tasks have a default call stack size of 32k*sizeof(size_t)
-  bytes.  If a value is specified for callStackSize, that value is used
-  for the call stack size instead.
+  bytes.  If a value is specified for CHPL_RT_CALL_STACK_SIZE, that
+  value is used for the call stack size instead.
 
 CHPL_TASKS == mta, CHPL_THREADS == none
-  The callStackSize configuration constant is ignored.  As in FIFO
+  Any value set for CHPL_RT_CALL_STACK_SIZE is ignored.  As in FIFO
   tasking, the execution model is that a task occupies a thread and uses
   its stack for the duration of the task's existence.  But on Cray
   MTA/XMT systems thread stacks are initially small, and are extended
@@ -324,12 +322,12 @@ CHPL_TASKS == mta, CHPL_THREADS == none
   overflow stacks that are too small.
 
 CHPL_TASKS == none, CHPL_THREADS == none
+
   The default task call stack size is the system stack limit (typically
-  8 MiB for Linux systems).  If a value is specified for callStackSize,
-  that value is used to set the stack size for the process.  Tasks
-  inherit this call stack size, because the execution model, as
-  described above, is either serial or like FIFO tasking with a single
-  thread.
+  8 MiB for Linux systems).  If CHPL_RT_CALL_STACK_SIZE is present, its
+  value is used to set the stack size for the process.  Tasks inherit
+  this call stack size, because the execution model, as described above,
+  is either serial or like FIFO tasking with a single thread.
 
 
 -------------------------

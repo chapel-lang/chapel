@@ -1,3 +1,4 @@
 #!/usr/bin/tcsh
 
-source ~/.chapelcshrc-cron && ~/chapel/util/cron/nightly -execopts --numThreadsPerLocale=100 -cron -valgrind -no-futures -suppress Suppressions/valgrind.suppress -parnodefile ~/chapel/test/Nodes/CHAP9 >&! ~/tmp/nightly.valgrind.linux64.out
+setenv CHPL_RT_NUM_THREADS_PER_LOCALE 100
+source ~/.chapelcshrc-cron && ~/chapel/util/cron/nightly -cron -valgrind -no-futures -suppress Suppressions/valgrind.suppress -parnodefile ~/chapel/test/Nodes/CHAP9 >&! ~/tmp/nightly.valgrind.linux64.out

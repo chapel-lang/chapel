@@ -90,11 +90,6 @@ int64_t chpl_numCoresOnThisLocale(void) {
 }
 
 
-int32_t chpl_maxThreads(void) {
-  return chpl_comm_getMaxThreads();
-}
-
-
 chpl_string chpl_nodeName(void) {
   static char* namespace = NULL;
   static int namelen = 0;

@@ -6,7 +6,6 @@
 #include "chpl-mem.h"
 #include "chpl-tasks.h"
 #include "chplcgfns.h" // for chpl_ftable
-#include "config.h"
 #include "error.h"
 #include <machine/runtime.h>
 #include <stdint.h>
@@ -75,20 +74,18 @@ void chpl_sync_destroyAux(chpl_sync_aux_t *s) { }
 
 // Tasks
 
-void chpl_task_init(int32_t numThreadsPerLocale, int32_t maxThreadsPerLocale, 
-                    int numCommTasks, uint64_t callStackSize) {
+void chpl_task_init(void) {
   //
-  // If a value was specified for the call stack size or max threads
-  // config consts, warn the user that it's ignored on this system.
+  // If a value was specified for the call stack size or max threads,
+  // warn the user that it's ignored on this system.
   //
-  if (numThreadsPerLocale != 0)
-    chpl_warning("the numThreadsPerLocale config constant has no effect "
+  if (chpl_task_getenvNumThreadsPerLocale != 0)
+    chpl_warning("setting CHPL_RT_NUM_THREADS_PER_LOCALE has no effect "
                  "on XMT systems", 0, NULL);
 
-  if (callStackSize != 0)
-    chpl_warning("the callStackSize config constant has no effect "
-                 "on XMT systems",
-                 0, NULL);
+  if (chpl_task_getenvCallStackSize() != 0)
+    chpl_warning("setting CHPL_RT_CALL_STACK_SIZE has no effect "
+                 "on XMT systems", 0, NULL);
 
   init_task_private_data();
   chpl_task_setSerial(true);

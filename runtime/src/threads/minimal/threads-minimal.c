@@ -85,7 +85,7 @@ void chpl_thread_init(int32_t numThreadsPerLocale,
 
     if (rlim.rlim_max != RLIM_INFINITY && callStackSize > rlim.rlim_max) {
       char warning[128];
-      sprintf(warning, "callStackSize capped at %lu\n", 
+      sprintf(warning, "call stack size capped at %lu\n", 
               (unsigned long)rlim.rlim_max);
       chpl_warning(warning, 0, NULL);
 

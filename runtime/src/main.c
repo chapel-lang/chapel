@@ -147,15 +147,9 @@ int main(int argc, char* argv[]) {
   chpl__init_preInit(0, myFilename);
  
   //
-  // initialize the task management layer
+  // Initialize the task management layer.
   //
-  //
-  numPollingTasks = chpl_comm_numPollingTasks();
-  if (numPollingTasks != 0 && numPollingTasks != 1) {
-    chpl_internal_error("chpl_comm_numPollingTasks() returned illegal value");
-  }
-  chpl_task_init(numThreadsPerLocale, chpl_maxThreads(), 
-                 numPollingTasks, callStackSize); 
+  chpl_task_init();
 
   //
   // Some comm layer initialization may have to be done after the

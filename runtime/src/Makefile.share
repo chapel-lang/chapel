@@ -15,6 +15,7 @@ COMMON_NOGEN_SRCS = \
 	chpl-mem.c \
 	chplmemtrack.c \
 	chplsys.c \
+	chpl-tasks.c \
 	chpl-timers.c \
 	gdb.c \
 

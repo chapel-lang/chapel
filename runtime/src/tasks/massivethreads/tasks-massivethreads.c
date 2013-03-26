@@ -11,7 +11,6 @@
 #include "chplcast.h"
 #include "chpl-tasks.h"
 #include "chplcgfns.h" // for chpl_ftable
-#include "config.h"
 #include "error.h"
 #include <assert.h>
 #include <stdint.h>
@@ -245,19 +244,34 @@ static int32_t s_num_workers;
 static uint64_t s_stack_size;
 
 // Tasks
-void chpl_task_init(int32_t numThreadsPerLocale, int32_t maxThreadsPerLocale,
-                    int numCommTasks, uint64_t callStackSize)
+void chpl_task_init(void)
 {
         //Initialize tasking layer
-        //numThreadsPerLocale and callStackSize is specified or 0(default)
         //initializing change the number of workers
+        int32_t numThreadsPerLocale = 0;
+        int numCommTasks = chpl_comm_numPollingTasks();
+        uint64_t callStackSize;
         char *env;
         int n_workers;
         int i;
+        //
+        // This threading layer does not have any inherent limit on the number
+        // of threads.  Its limit is the lesser of any limits imposed by the
+        // comm layer and the user.
+        //
+        {
+                uint32_t lim;
+
+                if ((lim = chpl_task_getenvNumThreadsPerLocale()) > 0)
+                  numThreadsPerLocale = lim;
+                else if ((lim = chpl_comm_getMaxThreads()) > 0)
+                  numThreadsPerLocale = lim;
+
+        }
         s_num_workers=numThreadsPerLocale;
         //If callstack size is not specified by argument,
         // try to read from environmental variable
-        if (callStackSize==0){
+        if ((callStackSize = chpl_task_getenvCallStackSize())==0){
                 env=getenv("MYTH_DEF_STKSIZE");
                 if (env){
                         int i_stk=atoi(env);

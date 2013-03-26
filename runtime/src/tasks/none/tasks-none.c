@@ -8,7 +8,6 @@
 #include "chplcast.h"
 #include "chpl-tasks.h"
 #include "chplcgfns.h" // for chpl_ftable
-#include "config.h"
 #include "error.h"
 #include <assert.h>
 #include <stdint.h>
@@ -93,37 +92,49 @@ static c_locale_t s_locale;
 static void* s_here;
 static uint64_t taskCallStackSize = 0;
 
-void chpl_task_init(int32_t numThreadsPerLocale, int32_t maxThreadsPerLocale, 
-                    int numCommTasks, uint64_t callStackSize) {
-  //
-  // If a value was specified for the call stack size config const, use
-  // that (rounded up to a whole number of pages) to set the system
-  // stack limit.
-  //
-  if (callStackSize != 0) {
-    uint64_t      pagesize = (uint64_t) sysconf(_SC_PAGESIZE);
-    struct rlimit rlim;
-      
-    callStackSize = (callStackSize + pagesize - 1) & ~(pagesize - 1);
+void chpl_task_init(void) {
+  {
+    uint32_t lim;
 
-    if (getrlimit(RLIMIT_STACK, &rlim) != 0)
-      chpl_internal_error("getrlimit() failed");
-
-    if (rlim.rlim_max != RLIM_INFINITY && callStackSize > rlim.rlim_max) {
-      char warning[128];
-      sprintf(warning, "callStackSize capped at %lu\n", 
-              (unsigned long)rlim.rlim_max);
-      chpl_warning(warning, 0, NULL);
-
-      callStackSize = rlim.rlim_max;
-    }
-
-    rlim.rlim_cur = callStackSize;
-
-    if (setrlimit(RLIMIT_STACK, &rlim) != 0)
-      chpl_internal_error("setrlimit() failed");
+    if ((lim = chpl_task_getenvNumThreadsPerLocale()) > 0
+        && lim != 1)
+      chpl_warning("setting CHPL_RT_NUM_THREADS_PER_LOCALE > 1 is ignored for "
+                   "CHPL_TASKS=none", 0, NULL);
   }
-  taskCallStackSize = callStackSize;
+
+  //
+  // If a value was specified for the call stack size, use that (rounded
+  // up to a whole number of pages) to set the system stack limit.  This
+  // will in turn limit the stack for any task.
+  //
+  {
+    size_t css;
+
+    if ((css = chpl_task_getenvCallStackSize()) != 0) {
+      uint64_t      pagesize = (uint64_t) sysconf(_SC_PAGESIZE);
+      struct rlimit rlim;
+
+      css = (css + pagesize - 1) & ~(pagesize - 1);
+
+      if (getrlimit(RLIMIT_STACK, &rlim) != 0)
+        chpl_internal_error("getrlimit() failed");
+
+      if (rlim.rlim_max != RLIM_INFINITY && css > rlim.rlim_max) {
+        char warning[128];
+        sprintf(warning, "call stack size capped at %lu\n", 
+                (unsigned long)rlim.rlim_max);
+        chpl_warning(warning, 0, NULL);
+
+        css = rlim.rlim_max;
+      }
+
+      rlim.rlim_cur = css;
+
+      if (setrlimit(RLIMIT_STACK, &rlim) != 0)
+        chpl_internal_error("setrlimit() failed");
+    }
+    taskCallStackSize = css;
+  }
 
   curr_taskID = next_taskID++;
   s_serial_state = true;  // Likely makes no difference, except for testing/debugging.
@@ -248,7 +259,7 @@ void chpl_task_setSerial(chpl_bool new_state) {
 
 chpl_bool chpl_task_getSerial(void) { return s_serial_state; }
 
-void chpl_task_setHere(void new_here)
+void chpl_task_setHere(void* new_here)
 { s_here = new_here; }
 
 void* chpl_task_getHere(void) { return s_here; }
@@ -312,7 +323,7 @@ launch_next_task(void) {
     // restore state
     //
     chpl_task_setHere(saved_here);
-    chpl_task_setlocaleID(saved_localeID);
+    chpl_task_setLocaleID(saved_localeID);
     chpl_task_setSerial(saved_serial_state);
     curr_taskID = saved_taskID;
 

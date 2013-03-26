@@ -323,15 +323,15 @@ To use this combination of runtime layers, do the following.
     Communication Layer Concurrency
     -------------------------------
 
-    The CHPL_COMM_CONCURRENCY environment variable tells the ugni
+    The CHPL_RT_COMM_CONCURRENCY environment variable tells the ugni
     communication layer how much program concurrency it should try to
     support.  It basically controls how much of the communication
     resources on the Gemini or Aries chip will be used by the program.
     The default value is the number of hardware processor cores the
-    program will use for Chapel tasks (numHardwareThreads in the next
-    section).  Usually this is enough, but for highly parallel codes
-    that do a lot of remote references, increasing it may help the
-    performance.  Useful values for CHPL_COMM_CONCURRENCY are in the
+    program will use for Chapel tasks (CHPL_RT_NUM_HARDWARE_THREADS in
+    the next section).  Usually this is enough, but for highly parallel
+    codes that do a lot of remote references, increasing it may help the
+    performance.  Useful values for CHPL_RT_COMM_CONCURRENCY are in the
     range 1 to 30.  Values specified outside this range are silently
     increased or reduced so as to fall within it.
 
@@ -342,8 +342,8 @@ To use this combination of runtime layers, do the following.
     ---------------
 
     The default task stack size in the muxed tasking layer is 128 KiB.
-    You can change this using the callSTackSize configuration constant,
-    just as in the other tasking layer implementations.
+    You can change this using the CHPL_RT_CALL_STACK_SIZE environment
+    variable, just as in the other tasking layer implementations.
 
 
     Number of Threads per Locale
@@ -356,30 +356,32 @@ To use this combination of runtime layers, do the following.
     processor cores the soft-threads threading layer uses and the total
     number of lightweight threads it provides to the tasking layer.
 
-    The numHardwareThreads configuration constant specifies the number
-    of cores that should be used to run Chapel tasks.  The default is to
-    use all of the cores, but if something other than the ability to run
-    tasks limits performance, such as limited parallelism or doing many
-    remote loads, reducing this may improve performance.  You can set
-    numHardwareThreads to any value from 1 to the actual number of
-    hardware processor cores.  For applications where the performance is
-    dominated by the latency of small remote loads, such as the SSCA#2
-    benchmark and other graph processing codes, using 8 processor cores
-    often gives better performance than using all of them.
+    The CHPL_RT_NUM_HARDWARE_THREADS environment variable specifies the
+    number of cores that should be used to run Chapel tasks.  The
+    default is to use all of the cores, but if something other than the
+    ability to run tasks limits performance, such as limited parallelism
+    or doing many remote loads, reducing this may improve performance.
+    You can set CHPL_RT_NUM_HARDWARE_THREADS to any value from 1 to the
+    actual number of hardware processor cores.  For applications where
+    the performance is dominated by the latency of small remote loads,
+    such as the SSCA#2 benchmark and other graph processing codes, using
+    8 processor cores often gives better performance than using all of
+    them.
 
-    The numThreadsPerLocale configuration constant specifies the number
-    of lightweight threads the soft-threads threading layer should
-    provide to the muxed tasking layer for hosting tasks.  The default
-    is 16 times the number of processor cores being used, which gives
-    good performance in most cases.  You can set numThreadsPerLocale to
-    any value >= 0, but the soft-threads threading layer will silently
-    limit this to no less than 1 and no more than 32 times the value of
-    numHardwareThreads (whether default or user specified).
+    The CHPL_RT_NUM_THREADS_PER_LOCALE environment variable specifies
+    the number of lightweight threads the soft-threads threading layer
+    should provide to the muxed tasking layer for hosting tasks.  The
+    default is 16 times the number of processor cores being used, which
+    gives good performance in most cases.  You can set this to any value
+    >= 0, but the soft-threads threading layer will silently limit it to
+    >= 1 and <= 32*the number of hardware threads (whether default or
+    user specified).
 
     Note that both of these numbers are per-locale values, that is,
-    numHardwareThreads is the number of hardware cores to use on each
-    locale, and numThreadsPerLocale is the number of lightweight threads
-    to use on each locale (not on each hardware thread).
+    CHPL_RT_NUM_HARDWARE_THREADS is the number of hardware cores to use
+    on each locale, and CHPL_RT_NUM_THREADS_PER_LOCALE is the number of
+    lightweight threads to use on each locale (not on each hardware
+    thread).
 
 
 Network Atomics
