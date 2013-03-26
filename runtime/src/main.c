@@ -94,7 +94,6 @@ static void chpl_main(void) {
 int main(int argc, char* argv[]) {
   int32_t execNumLocales;
   int runInGDB;
-  int numPollingTasks;
 
   // Check that we can get the page size.
   assert( sys_page_size() > 0 );
