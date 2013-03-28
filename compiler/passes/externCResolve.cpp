@@ -86,6 +86,20 @@ static Expr* convertToChplType(ModuleSymbol* module, const clang::Type *type, Ve
 
       return new UnresolvedSymExpr(tmp_name);
   } else {
+    
+    // Check for enum types, which are really some sort of integer type
+    if (type->isEnumeralType()) {
+      clang::QualType qType = type->getCanonicalTypeInternal();
+      const clang::Type* cType = qType.getTypePtrOrNull();
+      const clang::EnumType* e = llvm::dyn_cast<clang::EnumType>(cType);
+      clang::EnumDecl* ed = e->getDecl()->getCanonicalDecl();
+      clang::QualType iType = ed->getCanonicalDecl()->getIntegerType();
+      type = iType.getTypePtrOrNull();
+      INT_ASSERT(type && "Could not get enum integer type pointer");
+    }
+
+    // handle numeric types
+    
     //Unsigned types
     if (type->isSpecificBuiltinType(clang::BuiltinType::Bool))
       return new UnresolvedSymExpr("bool");
@@ -118,7 +132,9 @@ static Expr* convertToChplType(ModuleSymbol* module, const clang::Type *type, Ve
       return new UnresolvedSymExpr("c_float");
     if (type->isSpecificBuiltinType(clang::BuiltinType::Double))
       return new UnresolvedSymExpr("c_double");
+
     if (type->isVoidType()) return NULL;
+
   } 
   //give up...
   INT_FATAL("Unsupported type in extern \"C\" block.");
@@ -167,6 +183,16 @@ void convertDeclToChpl(ModuleSymbol* module, const char* name, Vec<Expr*> & resu
   if (clang::RecordDecl *rd = llvm::dyn_cast<clang::RecordDecl>(cdecl)) {
     results.add(convertToChplType(module, rd->getTypeForDecl(), results));
   }
+
+  //enum constant
+  if (clang::EnumConstantDecl *ed = 
+      llvm::dyn_cast<clang::EnumConstantDecl>(cdecl)) {
+    //results.add(convertToChplType(module, rd->getTypeForDecl(), results));
+    VarSymbol* v = new VarSymbol(name);
+    v->addFlag(FLAG_EXTERN);
+    results.add(new DefExpr(v, NULL, convertToChplType(module, ed->getType().getTypePtr(), results)));
+  }
+
 
   //vars
   else if (clang::VarDecl *vd = llvm::dyn_cast<clang::VarDecl>(cdecl)) {
