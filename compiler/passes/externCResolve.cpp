@@ -190,6 +190,7 @@ void convertDeclToChpl(ModuleSymbol* module, const char* name, Vec<Expr*> & resu
     //results.add(convertToChplType(module, rd->getTypeForDecl(), results));
     VarSymbol* v = new VarSymbol(name);
     v->addFlag(FLAG_EXTERN);
+    v->addFlag(FLAG_CONST);
     results.add(new DefExpr(v, NULL, convertToChplType(module, ed->getType().getTypePtr(), results)));
   }
 
