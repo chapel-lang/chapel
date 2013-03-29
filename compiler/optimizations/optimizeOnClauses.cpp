@@ -100,6 +100,9 @@ isFastPrimitive(CallExpr *call) {
 #ifdef DEBUG
       printf(" *** OK (PRIM_MOVE 0): %s\n", call->primitive->name);
 #endif
+      // TODO: The rhs is evaluated for its side effects, so 
+      // we should not return true here.  We should recurse on the rhs instead,
+      // in case that expression contains a "slow" call.
       return true;
     }
     if (!isCallExpr(call->get(2))) {
