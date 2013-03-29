@@ -153,8 +153,9 @@ is correct.
 - release/examples/benchmarks/hpcc/ra-atomics (compopts: 1) (3/11/13)
 - release/examples/benchmarks/hpcc/ra (compopts: 1) (3/12/13)
 - release/examples/hello6-taskpar-dist (3/14/13)
+- multilocale/deitz/linked/test_linked1 (3/26/13)
 
-bradc: 3/2/13: distributions/bradc/blkCyc/loopBlkCyc got a seg fault
+bradc: (3/2/13, 3/27/13): distributions/bradc/blkCyc/loopBlkCyc got a seg fault
 
 bradc: week of 2/25: continue getting noise, particularly on
 test_many_domains, streap-ep, jacobi; sometimes timeouts, sometimes
@@ -227,6 +228,14 @@ On 3/15/13 was a bad night:
 test/studies/hpcc/RA/bradc/parallel/ra-dist
 -------------------------------------------
 fails verification (02/23/13, 03/01/13)
+
+linux64.pgi build failure (diten)
+---------------------------------
+(3/28/13) The PGI compiler version was upated to 13.3.0 and now gets an
+internal error while compiling functionResolution.cpp.  Backing up to
+version 12.9.0 fixes it. Backing the Chapel source down to revision
+20834 also fixes it.  Turning optimization down to -O1 also fixes it.
+Bugzilla bug 796017.
 
 cray-xmt build (bradc)
 ----------------------
@@ -328,13 +337,13 @@ The following configurations are affected:
  linux64.gnu.gasnet-fast.fifo.pthreads.dlmalloc
  linux64.gnu.gasnet-everything.fifo.pthreads
 examples of what times out:
- distributions/robust/arithmetic/kernels/jacobi (still timing out 10/4/12)
+ distributions/robust/arithmetic/kernels/jacobi (still timing out 3/29/13)
  distributions/nelson/MultiBlockDist2DLocales (maybe resolved?)
  distributions/robust/arithmetic/modules/test_module_Sort (maybe resolved?)
  distributions/robust/arithmetic/stress/test_many_domains (08/13)
  distributions/robust/arithmetic/stress/test_many_array (11/10/12)
  distributions/dm/t2 (2012/08/15)
- test_array_slicing3 (06/08/12, 6/16)
+ test_array_slicing3 (06/08/12, 6/16, 3/29/13)
  etc.
 
 wrong answer for atomic operations with gasnet-everything on 2/1/13 (Sungeun)
