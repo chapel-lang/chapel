@@ -156,31 +156,23 @@ void chpl_task_callMain(void (*chpl_main)(void)) {
 }
 
 void chpl_task_addToTaskList(chpl_fn_int_t fid,
-                           void* arg,
-                           chpl_task_list_p *task_list,
-                           int32_t task_list_locale,
-                           chpl_bool is_begin_stmt,
-                           int lineno,
-                           chpl_string filename) {
+                             void* arg,
+                             chpl_task_subLoc_t subLoc,
+                             chpl_task_list_p *task_list,
+                             int32_t task_list_locale,
+                             chpl_bool is_begin_stmt,
+                             int lineno,
+                             chpl_string filename) {
+  assert(subLoc == 0
+         || subLoc == chpl_task_anySubLoc
+         || subLoc == chpl_task_currSubLoc);
+
   if (chpl_task_getSerial()) {
     //
-    // save the current task's state before invoking the new task.
+    // We're serial, so this doesn't create a new task in the Chapel
+    // sense.  Just invoke the body of the construct.
     //
-    chpl_taskID_t saved_taskID = curr_taskID;
-    chpl_bool saved_serial_state = chpl_task_getSerial();
-    c_locale_t saved_locale = chpl_task_getLocaleID();
-    void* saved_here = chpl_task_getHere();
-
-    // huh?  Who sets the running environment for the new task function?
     (*chpl_ftable[fid])(arg);
-
-    //
-    // restore the previous task state
-    //
-    chpl_task_setHere(saved_here);
-    chpl_task_setLocaleID(saved_locale);
-    chpl_task_setSerial(saved_serial_state);
-    curr_taskID = saved_taskID;
   } else {
     // create a task from the given function pointer and arguments
     // and append it to the end of the task pool for later execution
@@ -217,12 +209,14 @@ void chpl_task_freeTaskList(chpl_task_list_p task_list) { }
 
 void chpl_task_startMovedTask(chpl_fn_p fp,
                               void* a,
+                              chpl_task_subLoc_t subLoc,
                               chpl_taskID_t id,
                               chpl_bool serial_state) {
   // create a task from the given function pointer and arguments
   // and append it to the end of the task pool for later execution
   chpl_task_pool_p task;
 
+  assert(subLoc == 0 || subLoc == chpl_task_anySubLoc);
   assert(id == chpl_nullTaskID);
 
   task = (chpl_task_pool_p)chpl_mem_alloc(sizeof(task_pool_t),
@@ -242,6 +236,14 @@ void chpl_task_startMovedTask(chpl_fn_p fp,
   task_pool_tail = task;
 
   queued_cnt++;
+}
+
+chpl_task_subLoc_t chpl_task_getSubLoc(void) { return 0; }
+
+void chpl_task_setSubLoc(chpl_task_subLoc_t subLoc) {
+  assert(subLoc == 0
+         || subLoc == chpl_task_anySubLoc
+         || subLoc == chpl_task_currSubLoc);
 }
 
 chpl_taskID_t chpl_task_getId(void) { return curr_taskID; }
@@ -268,6 +270,8 @@ void chpl_task_setLocaleID(c_locale_t new_localeID)
 { s_locale = new_localeID; }
 
 c_locale_t chpl_task_getLocaleID(void) { return s_locale; }
+
+chpl_task_subLoc_t chpl_task_getNumSubLocales(void) { return 1; }
 
 uint64_t chpl_task_getCallStackSize(void) {
   return taskCallStackSize;

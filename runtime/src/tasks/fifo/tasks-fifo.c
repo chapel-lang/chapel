@@ -360,11 +360,16 @@ static void comm_task_wrapper(void* arg) {
 
 
 void chpl_task_addToTaskList(chpl_fn_int_t fid, void* arg,
-                           chpl_task_list_p *task_list,
-                           int32_t task_list_locale,
-                           chpl_bool is_begin_stmt,
-                           int lineno,
-                           chpl_string filename) {
+                             chpl_task_subLoc_t subLoc,
+                             chpl_task_list_p *task_list,
+                             int32_t task_list_locale,
+                             chpl_bool is_begin_stmt,
+                             int lineno,
+                             chpl_string filename) {
+  assert(subLoc == 0
+         || subLoc == chpl_task_anySubLoc
+         || subLoc == chpl_task_currSubLoc);
+
   if (task_list_locale == chpl_nodeID) {
     chpl_task_list_p ltask;
 
@@ -644,8 +649,10 @@ void chpl_task_freeTaskList(chpl_task_list_p task_list) {
 
 void chpl_task_startMovedTask(chpl_fn_p fp,
                               void* a,
+                              chpl_task_subLoc_t subLoc,
                               chpl_taskID_t id,
                               chpl_bool serial_state) {
+  assert(subLoc == 0 || subLoc == chpl_task_anySubLoc);
   assert(id == chpl_nullTaskID);
 
   // begin critical section
@@ -656,6 +663,18 @@ void chpl_task_startMovedTask(chpl_fn_p fp,
 
   // end critical section
   chpl_thread_mutexUnlock(&threading_lock);
+}
+
+
+chpl_task_subLoc_t chpl_task_getSubLoc(void) {
+  return 0;
+}
+
+
+void chpl_task_setSubLoc(chpl_task_subLoc_t subLoc) {
+  assert(subLoc == 0
+         || subLoc == chpl_task_anySubLoc
+         || subLoc == chpl_task_currSubLoc);
 }
 
 
@@ -724,6 +743,10 @@ c_locale_t chpl_task_getLocaleID(void) {
 
 void chpl_task_setLocaleID(c_locale_t new_locale) {
   get_thread_private_data()->ptask->locale = new_locale;
+}
+
+chpl_task_subLoc_t chpl_task_getNumSubLocales(void) {
+  return 1;
 }
 
 uint64_t chpl_task_getCallStackSize(void) {

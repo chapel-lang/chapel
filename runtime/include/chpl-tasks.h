@@ -60,6 +60,14 @@ void chpl_single_destroyAux(chpl_sync_aux_t * s) { chpl_sync_destroyAux(s); }
 // Tasks
 
 //
+// This is the type of a tasking layer sublocale, and constants that
+// mean "any sublocale" and "the current sublocale".
+//
+typedef int32_t chpl_task_subLoc_t;
+#define chpl_task_anySubLoc  ((chpl_task_subLoc_t) -1)
+#define chpl_task_currSubLoc ((chpl_task_subLoc_t) -2)
+
+//
 // chpl_task_init() is called by the main task on each locale to initialize
 //   the tasking layer
 //
@@ -109,6 +117,7 @@ typedef struct chpl_task_list* chpl_task_list_p;
 void chpl_task_addToTaskList(
          chpl_fn_int_t,      // function to call for task
          void*,              // argument to the function
+         chpl_task_subLoc_t, // desired sublocale
          chpl_task_list_p*,  // task list
          c_nodeid_t,         // locale (node) where task list resides
          chpl_bool,          // is begin{} stmt?  (vs. cobegin or coforall)
@@ -123,10 +132,19 @@ void chpl_task_freeTaskList(chpl_task_list_p);
 // but on a different locale.  This is used to invoke the body of an
 // "on" statement.
 //
-void chpl_task_startMovedTask(chpl_fn_p,      // function to call
-                              void*,          // function arg
-                              chpl_taskID_t,  // task identifier
-                              chpl_bool);     // serial state
+void chpl_task_startMovedTask(chpl_fn_p,          // function to call
+                              void*,              // function arg
+                              chpl_task_subLoc_t, // desired sublocale
+                              chpl_taskID_t,      // task identifier
+                              chpl_bool);         // serial state
+
+//
+// Get and set the current task's sublocale.  Setting the sublocale
+// will actually move the task, if the specified sublocale differs
+// from the current one.
+//
+chpl_task_subLoc_t chpl_task_getSubLoc(void);
+void chpl_task_setSubLoc(chpl_task_subLoc_t);
 
 //
 // Get ID.
@@ -166,6 +184,12 @@ void        chpl_task_setHere(void*);
 //
 c_locale_t  chpl_task_getLocaleID(void);
 void        chpl_task_setLocaleID(c_locale_t);
+
+//
+// Returns the the number of sublocales the tasking layer knows about,
+// within the span of hardware it is managing tasks on.
+//
+chpl_task_subLoc_t chpl_task_getNumSubLocales(void);
 
 //
 // returns the value of the call stack size limit being used in

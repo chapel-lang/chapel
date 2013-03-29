@@ -492,6 +492,7 @@ int chpl_task_createCommTask(chpl_fn_p fn,
 
 void chpl_task_addToTaskList(chpl_fn_int_t     fid,
                              void             *arg,
+                             chpl_task_subLoc_t subLoc,
                              chpl_task_list_p *task_list,
                              int32_t           task_list_locale,
                              chpl_bool         is_begin_stmt,
@@ -505,6 +506,10 @@ void chpl_task_addToTaskList(chpl_fn_int_t     fid,
         {chpl_ftable[fid], arg, filename, lineno, serial_state, here_locale_id};
 
     PROFILE_INCR(profile_task_addToTaskList,1);
+
+    assert(subLoc == 0
+           || subLoc == chpl_task_anySubLoc
+           || subLoc == chpl_task_currSubLoc);
 
     if (serial_state) {
         syncvar_t ret = SYNCVAR_STATIC_EMPTY_INITIALIZER;
@@ -535,9 +540,11 @@ void chpl_task_freeTaskList(chpl_task_list_p task_list)
 
 void chpl_task_startMovedTask(chpl_fn_p      fp,
                               void          *arg,
+                              chpl_task_subLoc_t subLoc,
                               chpl_taskID_t  id,
                               chpl_bool      serial_state)
 {
+    assert(subLoc == 0 || subLoc == chpl_task_anySubLoc);
     assert(id == chpl_nullTaskID);
 
     qthread_shepherd_id_t const here_shep_id = qthread_shep();
@@ -549,6 +556,18 @@ void chpl_task_startMovedTask(chpl_fn_p      fp,
 
     qthread_fork_syncvar_copyargs(chapel_wrapper, &wrapper_args,
                                   sizeof(chapel_wrapper_args_t), NULL);
+}
+
+chpl_task_subLoc_t chpl_task_getSubLoc(void)
+{
+  return 0;
+}
+
+void chpl_task_setSubLoc(chpl_task_subLoc_t subLoc)
+{
+  assert(subLoc == 0
+         || subLoc == chpl_task_anySubLoc
+         || subLoc == chpl_task_currSubLoc);
 }
 
 // Returns '(unsigned int)-1' if called outside of the tasking layer.
@@ -599,6 +618,11 @@ void chpl_task_setSubLoc(c_subloc_t target_id)
     if (NULL != data) {
         data->sublocale_id = target_id;
     }
+}
+
+chpl_task_subLoc_t chpl_task_getNumSubLocales(void)
+{
+    return 1;
 }
 
 uint64_t chpl_task_getCallStackSize(void)

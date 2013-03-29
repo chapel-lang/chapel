@@ -4492,7 +4492,7 @@ GenRet CallExpr::codegen() {
 
   if (fn->hasFlag(FLAG_BEGIN_BLOCK)) {
     // get(1) is a class containing bundled arguments
-    std::vector<GenRet> args(7);
+    std::vector<GenRet> args(8);
     args[0] = new_IntSymbol(ftableMap.get(fn), INT_SIZE_64);
 
     if (Expr *actuals = get(1)) {
@@ -4521,25 +4521,25 @@ GenRet CallExpr::codegen() {
     } else {
       taskList = codegenLocalAddrOf(codegenFieldPtr(endCountValue, "taskList"));
     }
-    args[2] = taskList;
+    args[2] = new_IntSymbol(-1 /* chpl_task_anySubLoc */, INT_SIZE_32);
+    args[3] = taskList;
     if (bundledArgsType->getField(lastField)->typeInfo()->symbol->
         hasFlag(FLAG_WIDE_CLASS)) {
-      args[3] = codegenRnode(endCountPtr);
+      args[4] = codegenRnode(endCountPtr);
     } else {
-      args[3] = codegenGetNodeID();
+      args[4] = codegenGetNodeID();
     }
 
-    args[4] = new_BoolSymbol(true, BOOL_SIZE_8);
-    args[5] = fn->linenum();
-    args[6] = fn->fname();
-
+    args[5] = new_BoolSymbol(true, BOOL_SIZE_8);
+    args[6] = fn->linenum();
+    args[7] = fn->fname();
 
     genComment(fn->cname, true);
     codegenCall("chpl_task_addToTaskList", args);
     return ret;
   } else if (fn->hasFlag(FLAG_COBEGIN_OR_COFORALL_BLOCK)) {
     // get(1) is a class containing bundled arguments
-    std::vector<GenRet> args(7);
+    std::vector<GenRet> args(8);
     args[0] = new_IntSymbol(ftableMap.get(fn), INT_SIZE_64);
 
     if (Expr *actuals = get(1)) {
@@ -4600,12 +4600,12 @@ GenRet CallExpr::codegen() {
     } else {
       taskList = codegenLocalAddrOf(codegenFieldPtr(endCountValue, "taskList"));
     }
-    args[2] = taskList;
-    args[3] = codegenGetNodeID(),
-    args[4] = new_BoolSymbol(false, BOOL_SIZE_8);
-    args[5] = fn->linenum();
-    args[6] = fn->fname();
-
+    args[2] = new_IntSymbol(-1 /* chpl_task_anySubLoc */, INT_SIZE_32);
+    args[3] = taskList;
+    args[4] = codegenGetNodeID(),
+    args[5] = new_BoolSymbol(false, BOOL_SIZE_8);
+    args[6] = fn->linenum();
+    args[7] = fn->fname();
 
     genComment(fn->cname, true);
     codegenCall("chpl_task_addToTaskList", args);
