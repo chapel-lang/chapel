@@ -282,6 +282,46 @@ module ChapelArray {
       help();
     return D;
   }
+
+
+  //
+  // These routines increment and decrement the reference count
+  // for a domain that is part of an array's element type.
+  // Prior to introducing these routines and calls, we would
+  // increment/decrement the reference count based on the
+  // number of indices in the outer domain instead; this could
+  // cause the domain to be deallocated prematurely in the
+  // case the the outer domain was empty.  For example:
+  //
+  //   var D = {1..0};   // start empty; we'll resize later
+  //   var A: [D] [1..2] real;
+  //
+  // The anonymous domain {1..2} must be kept alive as a result
+  // of being part of A's type even though D is initially empty.
+  // Thus, {1..2} should remain alive as long as A is.  By
+  // incrementing and decrementing its reference counts based
+  // on A's lifetime rather than the number of elements in domain
+  // D, we ensure that is kept alive.  See
+  // test/users/bugzilla/bug794133/ for more details and examples.
+  //
+  proc chpl_incRefCountsForDomainsInArrayEltTypes(type eltType) {
+    if (isArrayType(eltType)) {
+      var ev: eltType;
+      ev.domain._value._domCnt.add(1);
+      chpl_incRefCountsForDomainsInArrayEltTypes(ev.eltType);
+    }
+  }
+
+  proc chpl_decRefCountsForDomainsInArrayEltTypes(type eltType) {
+    if (isArrayType(eltType)) {
+      var ev: eltType;
+      const refcount = ev.domain._value.destroyDom();
+      if !noRefCount then
+        if refcount == 0 then
+          delete ev.domain._value;
+      chpl_decRefCountsForDomainsInArrayEltTypes(ev.eltType);
+    }
+  }
   
   //
   // Support for subdomain types
@@ -1138,7 +1178,11 @@ module ChapelArray {
     var _value;     // stores array class, may be privatized
     var _valueType; // stores type of privatized arrays
     var _promotionType: _value.eltType;
-  
+    
+    proc initialize() {
+      chpl_incRefCountsForDomainsInArrayEltTypes(_value.eltType);
+    }
+
     inline proc _value {
       if _isPrivatized(_valueType) {
         return chpl_getPrivatizedCopy(_valueType.type, _value);
@@ -1146,14 +1190,23 @@ module ChapelArray {
         return _value;
       }
     }
-  
+
+    //
+    // Note that the destructor may be called multiple times for
+    // a given array, corresponding to cases in which it's
+    // autodestroyed multiple times; only the case that brings
+    // the reference count to zero is the one that should
+    // actually free the array.
+    //
     proc ~_array() {
       if !_isPrivatized(_valueType) {
         on _value {
           var cnt = _value.destroyArr();
           if !noRefCount then
-            if cnt == 0 then
+            if cnt == 0 then {
+              chpl_decRefCountsForDomainsInArrayEltTypes(_value.eltType);
               delete _value;
+            }
         }
       }
     }

@@ -1,3 +1,0 @@
-bug: reference counting (domains in) arrays of arrays
-
-This is a simplified test that exhibits the original bug.
