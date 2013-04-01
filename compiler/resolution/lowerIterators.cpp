@@ -427,7 +427,7 @@ createArgBundleCopyFn(ClassType* ct, FnSymbol* loopBodyFnWrapper) {
   Symbol* argBundle = newTemp("argBundle", ct);
   block->insertAtTail(new DefExpr(argBundle));
   block->insertAtTail(new CallExpr(PRIM_MOVE, argBundle,
-                        new CallExpr(PRIM_CHPL_ALLOC_PERMIT_ZERO,
+                                   new CallExpr(PRIM_CHPL_ALLOC,
                                      ct->symbol,
                                      newMemDesc("compiler-inserted argument bundle"))));
   Symbol* loopBodyFnArgsTmp = newTemp("loopBodyFnArgsTmp", ct);
@@ -507,7 +507,7 @@ bundleLoopBodyFnArgsForIteratorFnCall(CallExpr* iteratorFnCall,
   VarSymbol* argBundle = newTemp("argBundle", ct);
   iteratorFnCall->insertBefore(new DefExpr(argBundle));
   iteratorFnCall->insertBefore(new CallExpr(PRIM_MOVE, argBundle,
-                                 new CallExpr(PRIM_CHPL_ALLOC_PERMIT_ZERO,
+                                            new CallExpr(PRIM_CHPL_ALLOC,
                                               ts,
                                               newMemDesc("compiler-inserted argument bundle"))));
   iteratorFnCall->insertAtTail(argBundle);
