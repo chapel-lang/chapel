@@ -78,7 +78,7 @@ proc BlockDim.dsiUsesLocalLocID1d() param return false;
 proc Block1dom.dsiSupportsPrivatization1d() param return true;
 
 proc Block1dom.dsiGetPrivatizeData1d() {
-  return tuple(wholeR);
+  return (wholeR,);
 }
 
 proc Block1dom.dsiPrivatize1d(privDist, privatizeData) {
@@ -90,7 +90,7 @@ proc Block1dom.dsiPrivatize1d(privDist, privatizeData) {
 }
 
 proc Block1dom.dsiGetReprivatizeData1d() {
-  return tuple(wholeR);
+  return (wholeR,);
 }
 
 proc Block1dom.dsiReprivatize1d(other, reprivatizeData) {

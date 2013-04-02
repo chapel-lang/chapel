@@ -368,7 +368,7 @@ proc Block.getChunk(inds, locid) {
 // get the index into the targetLocales array for a given distributed index
 //
 proc Block.targetLocsIdx(ind: idxType) where rank == 1 {
-  return targetLocsIdx(tuple(ind));
+  return targetLocsIdx((ind,));
 }
 
 proc Block.targetLocsIdx(ind: rank*idxType) {
@@ -488,7 +488,7 @@ proc LocBlock.LocBlock(param rank: int,
                                      max(idxType), min(idxType), lo);
     myChunk = {blo..bhi};
   } else {
-    var tuple: rank*range(idxType);
+    var inds: rank*range(idxType);
     for param i in 1..rank {
       const lo = boundingBox(i).low;
       const hi = boundingBox(i).high;
@@ -496,9 +496,9 @@ proc LocBlock.LocBlock(param rank: int,
       const numlocs = targetLocBox(i).length;
       const (blo, bhi) = _computeBlock(numelems, numlocs, locid(i),
                                        max(idxType), min(idxType), lo);
-      tuple(i) = blo..bhi;
+      inds(i) = blo..bhi;
     }
-    myChunk = {(...tuple)};
+    myChunk = {(...inds)};
   }
 }
 
@@ -525,13 +525,12 @@ proc BlockDom.getLocDom(localeIdx) return locDoms(localeIdx);
 // returns the type: (int(32), range(int(32)), range(int(32)))
 //
 proc _matchArgsShape(type rangeType, type scalarType, args) type {
-  proc tuple(type t ...) type return t;
   proc helper(param i: int) type {
     if i == args.size {
       if isCollapsedDimension(args(i)) then
-        return tuple(scalarType);
+        return (scalarType,);
       else
-        return tuple(rangeType);
+        return (rangeType,);
     } else {
       if isCollapsedDimension(args(i)) then
         return (scalarType, (... helper(i+1)));
@@ -601,7 +600,7 @@ iter BlockDom.these(param tag: iterKind) where tag == iterKind.leader {
       yield locBlock;
     } else {
       coforall taskid in 0..#numTasks {
-        var tuple: rank*range(idxType) = locBlock;
+        var followMe: rank*range(idxType) = locBlock;
         const (lo,hi) = _computeBlock(locBlock(parDim).length, numTasks, taskid,
                                       locBlock(parDim).high,
                                       locBlock(parDim).low,
@@ -611,8 +610,8 @@ iter BlockDom.these(param tag: iterKind) where tag == iterKind.leader {
         // of indices over tasks. Also, do not yield a tuple of ranges
         // if the cart. product of those ranges is the empty set (of indices).
         assert(lo <= hi);
-        tuple(parDim) = lo..hi;
-        yield tuple;
+        followMe(parDim) = lo..hi;
+        yield followMe;
       }
     }
   }
@@ -1033,7 +1032,7 @@ proc _extendTuple(type t, idx: _tuple, args) {
 
 proc _extendTuple(type t, idx, args) {
   var tup: args.size*t;
-  var idxTup = tuple(idx);
+  var idxTup = (idx,);
   var j: int = 1;
 
   for param i in 1..args.size {

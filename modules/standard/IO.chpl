@@ -1029,8 +1029,8 @@ proc _isIoPrimitiveType(type t) param return
  proc _isIoPrimitiveTypeOrNewline(type t) param return
   _isIoPrimitiveType(t) || t == ioNewline || t == ioLiteral || t == ioChar || t == ioBits;
 
-const _trues = tuple("true");
-const _falses = tuple("false");
+const _trues = ("true",);
+const _falses = ("false",);
 const _i = "i";
 
 // Read routines for all primitive types.

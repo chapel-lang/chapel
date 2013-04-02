@@ -60,7 +60,7 @@ proc main() {
 
   writeln("Calling do_tuple() with global:");
   m1 = memoryUsed();
-  do_tuple(tuple(A, D));
+  do_tuple((A, D));
   m2 = memoryUsed();
   writeln("\t", m2-m1, " bytes leaked");
   if printMemStats then printMemTable();
@@ -70,7 +70,7 @@ proc main() {
   {
     const D = {1..n};
     var A: [D] int;
-    do_tuple(tuple(A, D));
+    do_tuple((A, D));
   }
   m2 = memoryUsed();
   writeln("\t", m2-m1, " bytes leaked");

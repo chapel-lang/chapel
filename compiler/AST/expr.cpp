@@ -4139,7 +4139,7 @@ GenRet CallExpr::codegen() {
       break;
     }
     case PRIM_CHPL_ALLOC:
-    case PRIM_CHPL_ALLOC_PERMIT_ZERO: {
+    {
       GenRet size;
 
       // If Chapel class or record
@@ -4149,12 +4149,7 @@ GenRet CallExpr::codegen() {
         size = codegenSizeof(typeInfo());
       }
 
-      const char* fn = NULL;
-      if(primitive->tag == PRIM_CHPL_ALLOC)
-        fn = "chpl_mem_alloc";
-      if(primitive->tag == PRIM_CHPL_ALLOC_PERMIT_ZERO )
-        fn = "chpl_mem_allocPermitZero";
-
+      const char* fn = "chpl_mem_alloc";
       GenRet description = codegenAdd(get(2), codegenUseGlobal("CHPL_RT_MD_NUM"));
       GenRet allocated;
       allocated = codegenCallExpr(fn, size, description, get(3), get(4));
@@ -4402,13 +4397,13 @@ GenRet CallExpr::codegen() {
       GenRet ptrToFnPtr;
       GenRet index;
       FnSymbol* fn = NULL;
-      int startArgs = 3;	// Where actual arguments begin
-      SymExpr* se = toSymExpr(get(1));	// The function symbol
+      int startArgs = 3;    // Where actual arguments begin
+      SymExpr* se = toSymExpr(get(1));  // The function symbol
       INT_ASSERT(se);
       fn = toFnSymbol(se->var);
       INT_ASSERT(fn);
       {
-        GenRet i = codegenValue(get(2));	// The cid.
+        GenRet i = codegenValue(get(2));    // The cid.
         GenRet j = new_IntSymbol(virtualMethodMap.get(fn), INT_SIZE_64);
         INT_ASSERT(gMaxVMT >= 0);
         GenRet maxVMTConst = new_IntSymbol(gMaxVMT, INT_SIZE_64);

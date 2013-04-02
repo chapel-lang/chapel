@@ -702,7 +702,16 @@ module ChapelBase {
   
   proc init_elts(x, s, type t) {
     for i in 1..s {
-      pragma "no auto destroy" var y: t;  // TODO: why is this in the loop?
+      //
+      // Q: why is the following declaration of 'y' in the loop?
+      //
+      // A: so that if the element type is something like an array,
+      // the element can 'steal' the array rather than copying it.
+      // One effect of having it in the loop is that the reference
+      // count for an array element's domain gets bumped once per
+      // element.  Is this good, bad, necessary?  Unclear.
+      //
+      pragma "no auto destroy" var y: t;  
       __primitive("array_set_first", x, i-1, y);
     }
   }
@@ -730,7 +739,7 @@ module ChapelBase {
     /*
        If we had a way to do 'static' routines, this
        could stay here, but since we don't at the moment,
-       we've wired the compiler to call _ddata_free.
+       we've wired the modules to call _ddata_free().
   
     proc ~_ddata() {
       __primitive("array_free", this);
@@ -738,7 +747,7 @@ module ChapelBase {
   
      If we had a way to do 'static' routines, this
        could stay here, but since we don't at the moment,
-       we've wired the compiler to call _ddata_allocate.
+       we've wired the modules to call _ddata_allocate().
     inline proc init(size: integral) {
       __primitive("array_alloc", this, eltType, size);
       init_elts(this, size, eltType);

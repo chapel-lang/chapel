@@ -268,7 +268,7 @@ void exitIfFatalErrorsEncountered() {
 
 
 static void handleInterrupt(int sig) {
-  INT_FATAL("received interrupt");
+  USR_FATAL("received interrupt");
 }
 
 

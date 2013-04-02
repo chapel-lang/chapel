@@ -388,10 +388,10 @@ proc DimensionalArr.dsiLocalSlice1((sliceDim1, sliceDim2)) {
   const reindexExpr =
     if origScalar(1) then
       if origScalar(2) then compilerError("dsiLocalSlice1 is not supported for two scalars")
-      else tuple(sliceDim2)
+      else (sliceDim2,)
     else
-      if origScalar(2) then tuple(sliceDim1)
-      else tuple(sliceDim1, sliceDim2);
+      if origScalar(2) then (sliceDim1,)
+      else (sliceDim1, sliceDim2);
   var result: [(...reindexExpr)] => locAdesc.myStorageArr[r1, r2];
   return result;
 }

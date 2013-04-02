@@ -34,7 +34,7 @@ Generic Numeric Conversions
 
  ## - integer padded out to 2 digits, or floating point rounded to integer
 
- %n - a "number" - as with %i, %u, %f, %m, or %z below depending on the type
+ %n - a "number" - as with %i, %u, %r, %m, or %z below depending on the type
  %17n - a number padded out to 17 columns
  %.4n - a number with 4 significant digits or a precision of 4
 
@@ -69,48 +69,48 @@ Integer Conversions
 
 Real Conversions
 ----------------
- %f - a real floating-point number with decimal or exponential notation, where
+ %r - a real floating-point number with decimal or exponential notation, where
       exponential is chosen if the decimal version would be too long
 
- %6f - as with %f but padded on the left to 6 columns (ie right-justified)
- %-6f - as with %f but padded on the right to 6 columns (ie left-justfied)
- %.4f - as with %f but with 4 significant digits
- %.*f - as with %.4f but with read significant digits from preceeding argument
- %6.4f - as with %f but padded on the left to 6 columns
+ %6r - as with %r but padded on the left to 6 columns (ie right-justified)
+ %-6r - as with %r but padded on the right to 6 columns (ie left-justfied)
+ %.4r - as with %r but with 4 significant digits
+ %.*r - as with %.4r but with read significant digits from preceeding argument
+ %6.4r - as with %r but padded on the left to 6 columns
          and with 4 significant digits
- %*.*f - as with %6.4f but read minimum width and significant digits from
+ %*.*r - as with %6.4r but read minimum width and significant digits from
          preceeding arguments
       
- %df - a decimal floating-point number with e.g. 12.34
- %6df - a decimal number padded on the left to 6 columns (right-justified)
- %.4df - a decimal number with 4 digits after the radix point
- %6.4df - a decimal number padded on the left to 6 columns and with 4 digits
+ %dr - a decimal floating-point number with e.g. 12.34
+ %6dr - a decimal number padded on the left to 6 columns (right-justified)
+ %.4dr - a decimal number with 4 digits after the radix point
+ %6.4dr - a decimal number padded on the left to 6 columns and with 4 digits
           after the radix point
           (width and precision are ignored when reading numbers in readf)
 
- %ef - a floating-point number in exponential notation, e.g. 10.2e-23
- %Ef - like %ef but uppercase
+ %er - a floating-point number in exponential notation, e.g. 10.2e-23
+ %Er - like %er but uppercase
 
- %xef - hexadecimal number using p to mark exponent e.g. ab.fp-2a
+ %xer - hexadecimal number using p to mark exponent e.g. ab.fp-2a
 
- %|4f - emit 4 raw,binary bytes of the passed number in native endianness
- %<8f - emit 8 raw,binary bytes of the passed number in little endian
- %<4f - emit 4 raw,binary bytes of the passed number in little endian
+ %|4r - emit 4 raw,binary bytes of the passed number in native endianness
+ %<8r - emit 8 raw,binary bytes of the passed number in little endian
+ %<4r - emit 4 raw,binary bytes of the passed number in little endian
       (< | and > are supported for widths 4 or 8)
 
 Complex and Imaginary Conversions
 ---------------------------------
- %m - an imaginary floating-point number, as with %f but ends with an i
+ %m - an imaginary floating-point number, as with %r but ends with an i
 
- %z - print complex number with %f for each part in the format a + bi
- %@z - print complex number with %f for each part in the format (a,b)
+ %z - print complex number with %r for each part in the format a + bi
+ %@z - print complex number with %r for each part in the format (a,b)
  %6z - as with %z but pad the entire complex number out to 6 columns
  %6.4z - print a and b 4 significant digits and pad the entire complex
          number out to 6 columns
- %dz - print a and b with %df
- %ez - print a and b with %ef
+ %dz - print a and b with %dr
+ %ez - print a and b with %er
 
- %|4m - same as %|4f
+ %|4m - same as %|4r
  %|8z - emit 8 raw,binary bytes of native-endian complex (a,b are each 4 bytes)
  %<16z - emit 16 raw,binary bytes of little-endian complex (a,b each 8 bytes)
 
@@ -324,7 +324,7 @@ Going through each section for text conversions:
    n means type-based number, allowing width and precision
    i means integral conversion
    u means unsigned integral conversion
-   f means floating-point conversion (e.g. 12.23)
+   r means floating-point conversion (e.g. 12.23)
    m means floating-point conversion with an i after it (e.g. 12.23i)
    z means complex conversion
    s means string conversion
@@ -366,9 +366,9 @@ For binary conversions:
             - note that the size is mandatory for binary integral conversions
    u means unsigned integral
             - note that the size is mandatory for binary integral conversions
-   f means floating-point
+   r means floating-point
             - note that the size is mandatory for binary real conversions
-   m works the same as f for binary conversions
+   m works the same as r for binary conversions
    z means complex
             - note that the size is mandatory for binary complex conversions
    s means string binary I/O

@@ -39,7 +39,7 @@ iter it(N:int) {
 iter it(param tag: iterKind, N:int) where tag == iterKind.leader {
   const result = 0..#N;
 //  writeln("it leader: ", result);
-  yield tuple(result);
+  yield (result,);
 }
 iter it(param tag: iterKind, followThis, N:int) where tag == iterKind.follower {
 //  writeln("it follower: ", followThis);

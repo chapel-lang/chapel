@@ -103,6 +103,7 @@ component types of the tuple.
 The syntax of a tuple expression is given by:
 \begin{syntax}
 tuple-expression:
+  ( expression , )
   ( expression , expression-list )
 
 expression-list:
@@ -117,7 +118,7 @@ var x1: (string, real) = ("hello", 3.14),
     x2: (int, int, int) = (1, 2, 3),
     x3: 3*int = (4, 5, 6);
 \end{chapel}
-defines three variables.  Variable \chpl{x1} is a 2-tuple with
+defines three tuple variables.  Variable \chpl{x1} is a 2-tuple with
 component types \chpl{string} and \chpl{real}.  It is initialized such
 that the first component is \chpl{"hello"} and the second
 component is \chpl{3.14}.  Variables \chpl{x2} and \chpl{x3} are
@@ -131,36 +132,24 @@ writeln((x1,x2,x3));
 \end{chapeloutput}
 \end{chapelexample}
 
-\index{tuple@\chpl{tuple}}
-\index{predefined functions!tuple@\chpl{tuple}}
-The function
-\begin{chapel}
-proc tuple(x...) return x;
-\end{chapel}
-is defined in the standard context to create arbitrary tuples.
-
-\begin{chapelexample}{tuple-function.chpl}
-The statement
-\begin{chapel}
-var x1 =      ("hello", 3.14),
-    x2 = tuple("hello", 3.14),
-    x3 = tuple(1);
-\end{chapel}
-creates two identical tuples: \chpl{x1} and \chpl{x2}; and \chpl{x3}: an integer 1-tuple
- initialized to \chpl{(1)}.
-\begin{chapelpost}
-writeln((x1,x2,x3));
-\end{chapelpost}
-\begin{chapeloutput}
-((hello, 3.14), (hello, 3.14), (1))
-\end{chapeloutput}
-\end{chapelexample}
-
 Note that if a single expression is delimited by parentheses, the
 parentheses only impact precedence.  Thus \chpl{(1)} is equivalent
-to \chpl{1}.  Tuple expressions with a single component are legal and
-useful.  As seen in the example above, one way to specify a 1-tuple is
-to use the standard \chpl{tuple} function.
+to \chpl{1}.  To specify a 1-tuple, use the form with the trailing
+comma \chpl{(1, )}.
+
+\begin{chapelexample}{onetuple.chpl}
+The statement
+\begin{chapel}
+var x: 1*int = (7, );
+\end{chapel}
+creates a 1-tuple of integers storing the value 7.
+\begin{chapelpost}
+writeln(x);
+\end{chapelpost}
+\begin{chapeloutput}
+(7)
+\end{chapeloutput}
+\end{chapelexample}
 
 Tuple expressions are evaluated similarly to function calls where the
 arguments are all generic with no explicit intent.  So a tuple
@@ -310,10 +299,10 @@ writeln((a, b, c));
 Grouping variable declarations using tuple notation allows a 1-tuple
 to be destructured by enclosing a single variable declaration in
 parentheses.
-\begin{chapelexample}{one-tuple.chpl}
+\begin{chapelexample}{onetuple-destruct.chpl}
 The code
 \begin{chapel}
-var (a) = tuple(1);
+var (a) = (1, );
 \end{chapel}
 initialize the new variable \chpl{a} to 1.
 \begin{chapelpost}
@@ -470,7 +459,7 @@ proc f((x)) { }
 \end{chapel}
 accepts a 1-tuple actual with any component type.
 \begin{chapelpost}
-f(tuple(1));
+f((1, ));
 var y: 1*real;
 f(y);
 \end{chapelpost}

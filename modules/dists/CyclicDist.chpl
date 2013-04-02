@@ -217,13 +217,12 @@ proc Cyclic.dsiCreateReindexDist(newSpace, oldSpace) {
 // returns the type: (int(32), range(int(32)), range(int(32)))
 //
 proc _cyclic_matchArgsShape(type rangeType, type scalarType, args) type {
-  proc tuple(type t ...) type return t;
   proc helper(param i: int) type {
     if i == args.size {
       if isCollapsedDimension(args(i)) then
-        return tuple(scalarType);
+        return (scalarType,);
       else
-        return tuple(rangeType);
+        return (rangeType,);
     } else {
       if isCollapsedDimension(args(i)) then
         return (scalarType, (... helper(i+1)));
@@ -315,7 +314,7 @@ class LocCyclic {
     else
       for param i in 1..rank do locidx(i) = locid(i):idxType;
 
-    var tuple: rank*range(idxType, stridable=true);
+    var inds: rank*range(idxType, stridable=true);
 
     type strType = chpl__signedType(idxType);
     // NOTE: Not checking for overflow here when casting to strType
@@ -323,9 +322,9 @@ class LocCyclic {
       const lower = min(idxType)..(startIdx(i)+locidx(i)) by -dist.targetLocDom.dim(i).length:strType;
       const upper = (startIdx(i) + locidx(i))..max(idxType) by dist.targetLocDom.dim(i).length:strType;
       const lo = lower.last, hi = upper.last;
-      tuple(i) = lo..hi by dist.targetLocDom.dim(i).length:strType;
+      inds(i) = lo..hi by dist.targetLocDom.dim(i).length:strType;
     }
-    myChunk = {(...tuple)};
+    myChunk = {(...inds)};
   }
 }
 

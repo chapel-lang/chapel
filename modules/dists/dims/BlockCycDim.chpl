@@ -80,7 +80,7 @@ proc BlockCyclicDim.dsiUsesLocalLocID1d() param return false;
 proc BlockCyclic1dom.dsiSupportsPrivatization1d() param return true;
 
 proc BlockCyclic1dom.dsiGetPrivatizeData1d() {
-  return tuple(wholeR, wholeRstrideAbs, storagePerCycle, adjLowIdx, name);
+  return (wholeR, wholeRstrideAbs, storagePerCycle, adjLowIdx, name);
 }
 
 proc BlockCyclic1dom.dsiPrivatize1d(privDist, privatizeData) {
@@ -100,7 +100,7 @@ proc BlockCyclic1dom.dsiPrivatize1d(privDist, privatizeData) {
 }
 
 proc BlockCyclic1dom.dsiGetReprivatizeData1d() {
-  return tuple(wholeR, wholeRstrideAbs, storagePerCycle);
+  return (wholeR, wholeRstrideAbs, storagePerCycle);
 }
 
 proc BlockCyclic1dom.dsiReprivatize1d(other, reprivatizeData) {

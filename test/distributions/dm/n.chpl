@@ -366,7 +366,7 @@ proc WrapperRectDom.dsiBuildArray(type eltType) {
 }
 
 proc WrapperArr.dsiAccess(indexx) var: eltType {
-  const ixt = if _isIntegralType(indexx.type) then tuple(indexx) else indexx;
+  const ixt = if _isIntegralType(indexx.type) then (indexx,) else indexx;
   return origArr.dsiAccess(origIx(ixt));
 }
 
@@ -446,7 +446,7 @@ proc genericDsiCreateReindexDist(reindexeeDist, param origRank,
   // helper functions
 
   proc n2oAll(param numDims)
-    return if numDims == 1 then tuple(n2oOne(1))
+    return if numDims == 1 then (n2oOne(1),)
            else ((...n2oAll(numDims-1)), n2oOne(numDims));
 
   proc n2oOne(param dim) {
@@ -729,7 +729,7 @@ proc WrapperDist._origIxFrom(userIx, param origDim, param userDim)
 
   if origDim == this.origRank {
     compilerAssert(userDim == if collapsed then this.rank + 1 else this.rank);
-    return tuple(curIx());
+    return (curIx(),);
   } else {
     param nextUserDim = if collapsed then userDim else userDim + 1;
     return (curIx(), (..._origIxFrom(userIx, origDim+1, nextUserDim)));
@@ -742,7 +742,7 @@ proc WrapperDist._fromOrigIxFrom(origInd, param origDim, param userDim)
 {
   if userDim == _highestUncollapsedOrigDimension() {
     compilerAssert(!isCollapsedOrigDim(origDim));
-    return tuple(origInd(origDim));
+    return (origInd(origDim),);
 
   } else if isCollapsedOrigDim(origDim) {
     return _fromOrigIxFrom(origInd, origDim+1, userDim);
@@ -873,7 +873,7 @@ proc WrapperRectDom._origToUserDenseFT(denseOrigFT) where isRankChange()
     } else if origDim == dist._highestUncollapsedOrigDimension() {
         for param oDim in origDim+1..dist.origRank do
           handleCDim(origRanges, oDim);
-      return tuple(handleUDim(origRanges, origDim));
+        return (handleUDim(origRanges, origDim),);
     } else {
       return (handleUDim(origRanges, origDim),
               (...origToUserRangesFrom(origRanges, origDim + 1)));

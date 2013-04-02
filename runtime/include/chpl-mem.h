@@ -59,7 +59,7 @@ void chpl_mem_exit(void);
 void chpl_mem_actualSharedHeap(void** start_p, size_t* size_p);
 
 
-void chpl_mem_check_pre(size_t number, size_t size, chpl_bool zeroOK,
+void chpl_mem_check_pre(size_t number, size_t size,
                          chpl_mem_descInt_t description,
                          int32_t lineno, chpl_string filename);
 void chpl_mem_check_post(void* memAlloc,
@@ -72,7 +72,7 @@ void* chpl_mem_allocMany(size_t number, size_t size,
                          int32_t lineno, chpl_string filename) {
   void* memAlloc;
   if( CHPL_MEM_DEBUG ) {
-    chpl_mem_check_pre(number, size, false, description, lineno, filename);
+    chpl_mem_check_pre(number, size, description, lineno, filename);
   }
   memAlloc = chpl_malloc(number*size);
   if( CHPL_MEM_DEBUG || ! memAlloc ) {
@@ -89,12 +89,6 @@ static ___always_inline
 void* chpl_mem_alloc(size_t size, chpl_mem_descInt_t description, int32_t lineno, chpl_string filename) {
   return chpl_mem_allocMany(1, size, description, lineno, filename);
 }
-static ___always_inline
-void* chpl_mem_allocPermitZero(size_t size, chpl_mem_descInt_t description, int32_t lineno, chpl_string filename) {
-  return (size==0) ? NULL : chpl_mem_alloc(size, description, lineno, filename);
-}
-
-
 
 static ___always_inline
 void* chpl_mem_allocManyZero(size_t number, size_t size,
@@ -102,7 +96,7 @@ void* chpl_mem_allocManyZero(size_t number, size_t size,
                              int32_t lineno, chpl_string filename) {
   void* memAlloc;
   if( CHPL_MEM_DEBUG ) {
-    chpl_mem_check_pre(number, size, false, description, lineno, filename);
+    chpl_mem_check_pre(number, size, description, lineno, filename);
   }
   memAlloc = chpl_calloc(number, size);
   if( CHPL_MEM_DEBUG || ! memAlloc ) {
@@ -119,7 +113,7 @@ static ___always_inline
 void chpl_mem_free(void* memAlloc, int32_t lineno, chpl_string filename) {
   if( CHPL_MEM_DEBUG ) {
     // call this one just to check heap is initialized.
-    chpl_mem_check_pre(0, 0, true, 0, lineno, filename);
+    chpl_mem_check_pre(0, 0, 0, lineno, filename);
     chpl_track_free(memAlloc, lineno, filename);
   }
   chpl_free(memAlloc);
@@ -135,7 +129,7 @@ void* chpl_mem_realloc(void* memAlloc, size_t number, size_t size,
     return NULL;
   }
   if( CHPL_MEM_DEBUG ) {
-    chpl_mem_check_pre(number, size, true, description, lineno, filename);
+    chpl_mem_check_pre(number, size, description, lineno, filename);
     chpl_track_realloc1(memAlloc, number, size, description, lineno, filename);
   }
   moreMemAlloc = chpl_realloc(memAlloc, number*size);

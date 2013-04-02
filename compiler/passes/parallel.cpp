@@ -68,7 +68,7 @@ bundleArgs(CallExpr* fcall) {
   // create the class variable instance and allocate it
   VarSymbol *tempc = newTemp(astr("_args_for", fn->name), ctype);
   fcall->insertBefore( new DefExpr( tempc));
-  CallExpr *tempc_alloc = new CallExpr(PRIM_CHPL_ALLOC_PERMIT_ZERO,
+  CallExpr *tempc_alloc = new CallExpr(PRIM_CHPL_ALLOC,
                                        ctype->symbol,
                                        newMemDesc("compiler-inserted argument bundle"));
   fcall->insertBefore( new CallExpr( PRIM_MOVE,

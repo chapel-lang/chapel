@@ -137,7 +137,7 @@ module DefaultRectangular {
       if (CHPL_TARGET_PLATFORM != "cray-xmt") {
         if numChunks == 1 {
           if rank == 1 {
-            yield tuple(0..ranges(1).length-1);
+            yield (0..ranges(1).length-1,);
           } else {
             var block: rank*range(idxType);
             for param i in 1..rank do
@@ -151,14 +151,14 @@ module DefaultRectangular {
           if debugDefaultDist then
             writeln("*** DI: locBlock = ", locBlock);
           coforall chunk in 0..#numChunks {
-            var tuple: rank*range(idxType) = locBlock;
+            var followMe: rank*range(idxType) = locBlock;
             const (lo,hi) = _computeBlock(locBlock(parDim).length,
                                           numChunks, chunk,
                                           locBlock(parDim).high);
-            tuple(parDim) = lo..hi;
+            followMe(parDim) = lo..hi;
             if debugDefaultDist then
-              writeln("*** DI[", chunk, "]: tuple = ", tuple);
-            yield tuple;
+              writeln("*** DI[", chunk, "]: followMe = ", followMe);
+            yield followMe;
           }
         }
       } else {
@@ -173,12 +173,12 @@ module DefaultRectangular {
         __primitive_loop("xmt pragma forall i in n", per_stream_i,
                          total_streams_n) {
   
-          var tuple: rank*range(idxType) = locBlock;
+          var followMe: rank*range(idxType) = locBlock;
           const (lo,hi) = _computeBlock(ranges(parDim).length,
                                         total_streams_n, per_stream_i,
                                         (ranges(parDim).length-1));
-          tuple(parDim) = lo..hi;
-          yield tuple;
+          followMe(parDim) = lo..hi;
+          yield followMe;
         }
       }
     }
@@ -1306,11 +1306,6 @@ module DefaultRectangular {
   proc bulkCommAssign(d1:[], d2:[], tam: int)
   {
     for i in 1..tam do d1[i]=d2[i];
-  }
-  
-  // Work around the tuple(1) vs. scalar issue.
-  proc DefaultRectangularArr.tuplify(arg) {
-    if isTuple(arg) then return arg; else return tuple(arg);
   }
   
   //
