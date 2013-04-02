@@ -1258,8 +1258,10 @@ void initTheProgram(void) {
                                          NULL, new BlockStmt(),
                                          FLAG_UNKNOWN, NULL);
   objectDef->sym->addFlag(FLAG_OBJECT_CLASS);
+  objectDef->sym->addFlag(FLAG_GLOBAL_TYPE_SYMBOL); // Prevents removal in pruneResovedTree().
   objectDef->sym->addFlag(FLAG_NO_OBJECT);
   theProgram->initFn->insertAtHead(objectDef);
+
 }
 
 void initCompilerGlobals(void) {
