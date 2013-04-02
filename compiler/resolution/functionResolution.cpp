@@ -3672,7 +3672,7 @@ preFold(Expr* expr) {
       //
       SymExpr* se = toSymExpr(call->get(1));
       if (se->var->hasFlag(FLAG_EXPR_TEMP) && !isClass(type))
-        USR_WARN(se, "accessing the locale of a non-lvalue expression");
+        USR_WARN(se, "accessing the locale of a local expression");
 
       //
       // if .locale is applied to an expression of array, domain, or distribution
