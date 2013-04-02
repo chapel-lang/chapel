@@ -476,4 +476,4 @@ SEE ALSO
 AUTHORS
   See $CHPL_HOME/CONTRIBUTORS for a list of contributors to Chapel.
 COPYRIGHT
-  Copyright (c) 2004-2012 Cray Inc. (See $CHPL_HOME/LICENSE for more details.)
+  Copyright (c) 2004-2013 Cray Inc. (See $CHPL_HOME/LICENSE for more details.)

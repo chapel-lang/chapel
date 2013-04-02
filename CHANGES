@@ -3,6 +3,156 @@ Release Changes List
 ====================
 
 =============
+version 1.7.0
+=============
+
+*** UPDATED THRU END OF 2012 ***
+
+Tenth public release of Chapel, April 18, 2013
+
+Highlights (see entries in subsequent categories for details)
+-------------------------------------------------------------
+
+Environment Changes
+-------------------
+- renamed platform 'cray-cascade' to 'cray-xc' now that the name is public
+- renamed the platforms 'xmt'/'xmt-sim' to 'cray-xmt'/'cray-xmt-sim'
+
+Syntactic/Naming Changes
+------------------------
+
+Semantic Changes / Changes to Chapel Language
+---------------------------------------------
+- added support for associative domain/array literals
+  (e.g., {"red", "blue"} is an associative domain of strings)
+  (e.g., ["red" -> 0, "blue -> 1] is an assoc. array from strings to ints)
+- added a 'requestCapacity()' capability to associative domains
+
+Newly Implemented Features
+--------------------------
+- added initial support for a .localAccess accessor to Block/Default arrays
+
+Deprecated Features
+-------------------
+- deprecated warning for old-style domain literals by default
+  (i.e., [1..m, 1..n] is now considered an array of ranges)
+
+Standard Modules
+----------------
+- refactored communication diagnostics into a standard module (CommDiagnostics)
+
+Standard Modules
+----------------
+
+Documentation
+-------------
+- spec improvements:
+  - fixed typos (Domains, Types)
+  - improved a task parallel example considered non-portable
+- fixed a typo in README.atomics
+
+Example Codes
+-------------
+- improvements to the Chapel implementation of SSCA2:
+  - made it work with VALIDATE_BC=true
+  - fixed a bug in the torus representation
+- fixed a typo in calculating GFLOPs for HPL that over-reported by 10x
+- improvements to Chapel implementation of LULESH:
+  - added support to compute a cubic input set rather than reading from disk
+  - refactored setup code into a helper module: luleshInit.chpl
+  - changed the representation of nodesets to use a sparse subdomain
+  - added the LULESH callgraph to its README
+  - added a --maxcycles config that can be used to stop the computation early
+  - support sparse vs. dense material representations via --sparseMaterials
+  - switched to using 'ref' intents rather than 'in' or 'inout'
+  - converted vars to consts where appropriate
+  - general code cleanup
+  - made some unnecessarily serial loops parallel
+  - improved performance by avoiding an unnecessary reindexing operation
+  - replaced error-oriented reductions with forall loops + halt
+  - made 'dtfixed' into a config const
+  - added the ability to compute a per-iteration timing
+  - param-unrolled the loop in localizeNeighborNodes() for performance reasons
+  - removed a redundant zero-initialization of an array
+- added the option to use an LCG random number generator for RA via 'useLCG'
+
+Platform-specific Notes
+-----------------------
+- enabled GMP using the system installed version on cray-x? platforms by default
+
+Portability of code base
+------------------------
+- fixed an issue related to vsnprintf on OS X Lion
+
+Launcher-specific Notes
+-----------------------
+- improved use of cnselect in launchers using 'aprun' 
+
+Compiler Flags
+--------------
+
+Error Message Improvements
+--------------------------
+- report an error for associative domains with unsupported index types
+
+Bug Fixes / New Semantic Checks (for old semantics)
+---------------------------------------------------
+- fixed a bug in which uses of ** would dispatch to a user pow() overload
+- fixed a bug with '/*/' within a nested comment
+- fixed some bugs in the implementation of atomic variables
+- fixed a regression in which type aliases of arrays were broken
+- I/O bug fixes:
+  - QIO_HINT_PARALLEL now works for new/zero length files
+  - fixed bugs related to bit-oriented reads and writes
+- fixed INFINITY and NAN to be of type 'real' rather than 'real(32)'
+- fixed a bug in broadcasting large values at program startup
+
+Packaging Changes
+-----------------
+- 
+
+Performance Improvements
+------------------------
+- made associative domains of 'imag' indices more efficient
+- made atomic variables use compiler intrinsics for cray-prgenv-intl
+- put fewer variables on the heap in the presence of nested functions
+- enabled remote value forwarding for more constants/arguments than before
+
+Runtime Library Changes
+-----------------------
+
+Third-Party Software Changes
+----------------------------
+
+Testing System
+--------------
+- extended the 'skipif' capability to support the ability to skip a subdirectory
+- removed artificial limit of stacksize in start_test
+- fixed a bug in which the test system looked at incorrect .future files
+
+Internal/Developer-oriented
+---------------------------
+- fixed portability of bswap.h 
+- refactored test system environment setup into util/test/testEnv
+- made the test system use $cwd rather than 'pwd'
+- refactored Makefiles for Cray systems/compilers to avoid repetition
+- added some code that sets the groundwork for supporting hierarchical locales
+- added a --no-futures flag to the 'nightly' testing script
+- made 'nightly' compopts/execopts get added to end of the command line
+- added a map_view() function for printing out SymbolMaps
+- replaced a string check with a flag check
+- refactored _cast functions for booleans
+- made the _isPrimitiveType test more concise
+- added Chapel-level isRecordType() and chpl__isDMap functions
+- improved the mechanism by which line numbers are assigned to AST nodes
+- restructured internal modules corresponding to specific runtime layers
+- factored sync/single out of ChapelBase.chpl and into ChapelSyncvar.chpl
+- removed internal use of alloca()
+- fixed the --gen-extern-prototypes flag
+- improved the correspondance of FLAG_* and string forms of AST flags
+
+
+=============
 version 1.6.0
 =============
 

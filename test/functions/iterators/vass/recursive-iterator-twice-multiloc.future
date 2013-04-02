@@ -1,0 +1,13 @@
+bug: compiler crashes with an improper AST when the program defines two recursive leader iterators
+
+This test is the same as
+
+  recursive-iterator-twice-local.chpl
+  recursive-iterator-twice-local.future
+
+except it retains the 'on' clauses from
+
+  functions/deitz/iterators/leader_follower/test_recursive_leader3.chpl
+
+(This latter test is the inspiration and the source for both of these tests
+recursive-iterator-twice-*.chpl.)

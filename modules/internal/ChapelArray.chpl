@@ -308,6 +308,18 @@ module ChapelArray {
     if (isArrayType(eltType)) {
       var ev: eltType;
       ev.domain._value._domCnt.add(1);
+      //
+      // In addition to incrementing the domain's reference, count, we also
+      // have to increment the distribution's.  The primary motivation for
+      // this at present is:
+      //
+      //   test/arrays/deitz/part4/test_array_of_associative_arrays.chpl
+      //
+      // and we suspect that once the reference counting code is cleaned up,
+      // this can be too.  See this comment's commit message for more
+      // details.
+      //
+      ev.domain.dist._value._distCnt.add(1);
       chpl_incRefCountsForDomainsInArrayEltTypes(ev.eltType);
     }
   }

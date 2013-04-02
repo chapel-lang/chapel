@@ -5572,6 +5572,10 @@ static void removeUnusedFunctions() {
 
 static bool
 isUnusedClass(ClassType *ct) {
+  // Special case for global types.
+  if (ct->symbol->hasFlag(FLAG_GLOBAL_TYPE_SYMBOL))
+    return false;
+
   // FALSE if initializers are used
   if (resolvedFns.count(ct->initializer) != 0 ||
       resolvedFns.count(ct->defaultTypeConstructor) != 0) {
@@ -5598,8 +5602,6 @@ static void removeUnusedTypes() {
       if (!type->hasFlag(FLAG_REF))
         if (ClassType* ct = toClassType(type->type))
           if (isUnusedClass(ct)) {
-            if (ct->symbol->hasFlag(FLAG_OBJECT_CLASS))
-              dtObject = NULL;
             ct->symbol->defPoint->remove();
           }
   }
@@ -5609,8 +5611,6 @@ static void removeUnusedTypes() {
       if (type->hasFlag(FLAG_REF)) {
         if (ClassType* ct = toClassType(type->getValType())) {
           if (isUnusedClass(ct)) {
-            if (ct->symbol->hasFlag(FLAG_OBJECT_CLASS))
-              dtObject = NULL;
             type->defPoint->remove();
           }
         }
