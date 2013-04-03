@@ -2,11 +2,15 @@
 This test exposes an as-of-this-writing compiler bug by defining
 two recursive iterators in the program.
 
+A slight simplification (no 'on' clauses) is available,
+if desired for debugging, as:
+  functions/iterators/vass/recursive-iterator-twice-local.chpl
+
 This test is derived from:
 
   functions/deitz/iterators/leader_follower/test_recursive_leader3.chpl
 
-by duplicating all code except for 'n': bar --> bar1, bar2
+by duplicating+renaming all code except for 'n': bar --> bar1, bar2
 
 This test is the same as recursive-iterator-twice-local.chpl
 except it retains the 'on' clauses from test_recursive_leader3.chpl
