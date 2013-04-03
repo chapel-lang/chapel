@@ -104,7 +104,7 @@ OPTIONS
 
   Optimization Control Options
 
-  --[no-]baseline        Turns off all optimizations in the Chapel compiler and
+  --baseline        Turns off all optimizations in the Chapel compiler and
                     generates naive C code with many temporaries.
 
   --conditional-dynamic-dispatch-limit   When greater than zero, this

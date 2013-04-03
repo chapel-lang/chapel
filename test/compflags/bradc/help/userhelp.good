@@ -14,7 +14,7 @@ Parallelism Control Options:
       --[no-]serial-forall            [Don't] Serialize forall constructs
 
 Optimization Control Options:
-      --[no-]baseline                 [Don't] disable all Chapel optimizations
+      --baseline                      Disable all Chapel optimizations
       --conditional-dynamic-dispatch-limit <limit>
                                       Set limit on # of inline conditionals
                                       used for dynamic dispatch
