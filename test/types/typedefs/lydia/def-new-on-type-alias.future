@@ -1,4 +1,4 @@
-feature request: allow creation of new class instances on type aliases
+bug: allow creation of new class instances on type aliases
 
 BLC: Here's a piece of code that pushes things past normalize at which
      point it trips up in function resolution:
