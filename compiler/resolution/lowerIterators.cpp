@@ -284,6 +284,22 @@ static Map<FnSymbol*,FnSymbol*> iteratorFnMap;
 static Vec<FnSymbol*> iteratorWithOnStatementSet;
 static FnSymbol* argBundleCopyFn = NULL;
 static FnSymbol* argBundleFreeFn = NULL;
+static ClassType*  argBundleType = NULL;
+
+
+//
+// Build the definition for the abstract recursive iterator argument bundle
+// class, if one does not exist yet.
+//
+static void
+ensureArgBundleType(ClassType* ct) {
+  if (argBundleType == NULL) {
+    argBundleType = new ClassType(CLASS_CLASS);
+    TypeSymbol* aabSym = new TypeSymbol("chpl_argBundle", argBundleType);
+    aabSym->addFlag(FLAG_NO_OBJECT);
+    ct->symbol->defPoint->insertBefore(new DefExpr(aabSym));
+  }
+}
 
 
 // Creates a function to free the arg bundle associated with a recursive iterator.
@@ -294,9 +310,10 @@ static FnSymbol* argBundleFreeFn = NULL;
 //  and frees its memory.
 //
 // The function looks approximately like:
-// void chpl__freeRecursiveIteratorArgumentBundle(int functionID, 
-//          struct _fn_arg_bundle* bdl) {
-//   chpl_free(bdl);
+// void chpl__freeRecursiveIteratorArgumentBundle(int loopBodyFnID, chpl_argBundle loopBodyFnArgs)
+// {
+//   chpl_free(loopBodyFnArgs);
+//   // potentially more
 //   return void;
 // }
 //
@@ -305,11 +322,11 @@ createArgBundleFreeFn(ClassType* ct, FnSymbol* loopBodyFnWrapper) {
   if (argBundleFreeFn == NULL) {
     // Create the shared function that frees recursive argument bundles.
     argBundleFreeFn = new FnSymbol("chpl__freeRecursiveIteratorArgumentBundle");
-    argBundleFreeFn->retType = dtVoid;
-    argBundleFreeFn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_loopBodyFnID", dtInt[INT_SIZE_DEFAULT]));
-    argBundleFreeFn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_loopBodyFnArgs", ct));
+    argBundleFreeFn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "loopBodyFnID", dtInt[INT_SIZE_DEFAULT]));
+    argBundleFreeFn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "loopBodyFnArgs", argBundleType));
     argBundleFreeFn->insertAtTail(new CallExpr(PRIM_CHPL_FREE, argBundleFreeFn->getFormal(2)));
     argBundleFreeFn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
+    argBundleFreeFn->retType = dtVoid;
     ct->symbol->defPoint->insertBefore(new DefExpr(argBundleFreeFn));
   }
 
@@ -350,9 +367,11 @@ createArgBundleFreeFn(ClassType* ct, FnSymbol* loopBodyFnWrapper) {
       block->insertAtTail(new CallExpr(PRIM_MOVE, recursiveArgsRef, new CallExpr(PRIM_GET_MEMBER_VALUE, loopBodyFnArgsTmp, field)));
 
       // Load the recursive bundle.
-      VarSymbol* recursiveArgsTmp = newTemp("recursiveArgs", field->getValType());
+      VarSymbol* recursiveArgsTmp = newTemp("recursiveArgs", argBundleType);
       block->insertAtTail(new DefExpr(recursiveArgsTmp));
-      block->insertAtTail(new CallExpr(PRIM_MOVE, recursiveArgsTmp, new CallExpr(PRIM_DEREF, recursiveArgsRef)));
+      block->insertAtTail(new CallExpr(PRIM_MOVE, recursiveArgsTmp,
+                                       new CallExpr(PRIM_CAST, argBundleType->symbol,
+                                                    new CallExpr(PRIM_DEREF, recursiveArgsRef))));
 
       // Generate the recursive call.
       block->insertAtTail(new CallExpr(argBundleFreeFn, recursiveFnID, recursiveArgsTmp));
@@ -379,31 +398,29 @@ createArgBundleFreeFn(ClassType* ct, FnSymbol* loopBodyFnWrapper) {
 //
 // This is currently done using just one copy function for all arg bundles.
 // There is (effectively) a switch statement inside the function that selects
-// the appropriate bundle based on ... and copies that part.
+// the appropriate bundle based on loopBodyFnID and copies that part.
 //
 // The created function has the signature:
-//  chpl__copyRecursiveIteratorArgumentBundle(_loopBodyFnID:int, _loopBodyFnArgs:ct);
-// where ct is the passed in ClassType.
+//  chpl_argBundle chpl__copyRecursiveIteratorArgumentBundle(int loopBodyFnID, chpl_argBundle loopBodyFnArgs)
 //
 static void
 createArgBundleCopyFn(ClassType* ct, FnSymbol* loopBodyFnWrapper) {
   if (argBundleCopyFn == NULL) {
     // Create the shared function that copies recursive argument bundles.
     // The initial implementation is just a shell.  After creation, it looks like:
-    //  chpl__copyRecursiveIteratorArgumentBundle(int _loopBodyFnID,
-    //                                            ct* _loopBodyFnArgs)
+    //  chpl_argBundle chpl__copyRecursiveIteratorArgumentBundle(int loopBodyFnID, chpl_argBundle loopBodyFnArgs)
     //  {
-    //    ct* tmp = nil;
+    //    chpl_argBundle tmp = nil;
     //    return tmp;
     //  }
     argBundleCopyFn = new FnSymbol("chpl__copyRecursiveIteratorArgumentBundle");
-    argBundleCopyFn->retType = ct;
-    argBundleCopyFn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_loopBodyFnID", dtInt[INT_SIZE_DEFAULT]));
-    argBundleCopyFn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_loopBodyFnArgs", ct));
-    Symbol* tmp = newTemp("dummyBundle", ct);
+    argBundleCopyFn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "loopBodyFnID", dtInt[INT_SIZE_DEFAULT]));
+    argBundleCopyFn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "loopBodyFnArgs", argBundleType));
+    Symbol* tmp = newTemp("dummyBundle", argBundleType);
     argBundleCopyFn->insertAtTail(new DefExpr(tmp));
     argBundleCopyFn->insertAtTail(new CallExpr(PRIM_MOVE, tmp, gNil));
     argBundleCopyFn->insertAtTail(new CallExpr(PRIM_RETURN, tmp));
+    argBundleCopyFn->retType = argBundleType;
     ct->symbol->defPoint->insertBefore(new DefExpr(argBundleCopyFn));
   }
 
@@ -443,12 +460,14 @@ createArgBundleCopyFn(ClassType* ct, FnSymbol* loopBodyFnWrapper) {
         field->getValType()->symbol->hasFlag(FLAG_LOOP_BODY_ARGUMENT_CLASS)) {
       VarSymbol* copy = newTemp(field->name, field->type);
       VarSymbol* recursiveFnID = newTemp("recursiveFnID", dtInt[INT_SIZE_DEFAULT]);
-      VarSymbol* recursiveArgs = newTemp("recursiveArgs", field->getValType());
+      VarSymbol* recursiveArgs = newTemp("recursiveArgs", argBundleType);
       block->insertAtTail(new DefExpr(copy));
       block->insertAtTail(new DefExpr(recursiveFnID));
       block->insertAtTail(new DefExpr(recursiveArgs));
       block->insertAtTail(new CallExpr(PRIM_MOVE, recursiveFnID, new CallExpr(PRIM_DEREF, lastTmp)));
-      block->insertAtTail(new CallExpr(PRIM_MOVE, recursiveArgs, new CallExpr(PRIM_DEREF, tmp)));
+      block->insertAtTail(new CallExpr(PRIM_MOVE, recursiveArgs,
+                                       new CallExpr(PRIM_CAST, argBundleType->symbol,
+                                                    new CallExpr(PRIM_DEREF, tmp))));
       VarSymbol* retTmp = newTemp("retTmp", argBundleCopyFn->retType);
       block->insertAtTail(new DefExpr(retTmp));
       VarSymbol* castTmp = newTemp("castTmp", field->getValType());
@@ -548,12 +567,14 @@ bundleLoopBodyFnArgsForIteratorFnCall(CallExpr* iteratorFnCall,
         //
         VarSymbol* tmp = newTemp(field->name, field->type);
         VarSymbol* recursiveFnID = newTemp("recursiveFnID", dtInt[INT_SIZE_DEFAULT]);
-        VarSymbol* loopBodyFnArgsTmp = newTemp("loopBodyFnArgsTmp", field->getValType());
+        VarSymbol* loopBodyFnArgsTmp = newTemp("loopBodyFnArgsTmp", argBundleType);
         iteratorFnCall->insertBefore(new DefExpr(tmp));
         iteratorFnCall->insertBefore(new DefExpr(recursiveFnID));
         iteratorFnCall->insertBefore(new DefExpr(loopBodyFnArgsTmp));
         iteratorFnCall->insertBefore(new CallExpr(PRIM_MOVE, recursiveFnID, new CallExpr(PRIM_DEREF, lastActual->copy())));
-        iteratorFnCall->insertBefore(new CallExpr(PRIM_MOVE, loopBodyFnArgsTmp, new CallExpr(PRIM_DEREF, actual)));
+        iteratorFnCall->insertBefore(new CallExpr(PRIM_MOVE, loopBodyFnArgsTmp,
+                                                  new CallExpr(PRIM_CAST, argBundleType->symbol,
+                                                               new CallExpr(PRIM_DEREF, actual))));
         VarSymbol* retTmp = newTemp("retTmp", argBundleCopyFn->retType);
         iteratorFnCall->insertBefore(new DefExpr(retTmp));
         VarSymbol* castTmp = newTemp("castTmp", field->getValType());
@@ -580,6 +601,7 @@ bundleLoopBodyFnArgsForIteratorFnCall(CallExpr* iteratorFnCall,
   loopBodyFnWrapper->insertAtTail(loopBodyFnWrapperCall);
   loopBodyFnWrapper->retType = dtVoid;
   loopBodyFnWrapper->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
+  ensureArgBundleType(ct);
   createArgBundleCopyFn(ct, loopBodyFnWrapper);
   createArgBundleFreeFn(ct, loopBodyFnWrapper);
   return ct;
