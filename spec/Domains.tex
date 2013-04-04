@@ -76,9 +76,9 @@ The runtime representation of a domain is controlled by its domain map.
 Domain maps are presented in \rsec{Domain_Maps}.
 
 
-\section{Base Domains}
-\label{Base_Domains}
-\index{domains!base}
+\section{Domain Types and Values}
+\label{Domain_Types_and_Values}
+\index{domains!types and values}
 
 Base domain types can be classified as regular or irregular.  Dense and
 strided rectangular domains are regular domains.
@@ -1211,4 +1211,13 @@ proc -(d1: domain, d2: domain)
 \begin{protobody}
 Removes the indices in domain \chpl{d2} from those in \chpl{d1}.  It is an error
 if \chpl{d2} contains indices which are not also in \chpl{d1}.
+\end{protobody}
+
+\index{domains!requestCapacity@\chpl{requestCapacity}}
+\index{predefined functions!requestCapacity@\chpl{requestCapacity}}
+\begin{protohead}
+proc requestCapacity(s: int)
+\end{protohead}
+\begin{protobody}
+Resizes the domain internal storage to hold at least \chpl{s} indicies.
 \end{protobody}
