@@ -26,7 +26,7 @@ Semantic Changes / Changes to Chapel Language
 ---------------------------------------------
 - added support for associative domain/array literals
   (e.g., {"red", "blue"} is an associative domain of strings)
-  (e.g., ["red" -> 0, "blue -> 1] is an assoc. array from strings to ints)
+  (e.g., ["red" => 0, "blue => 1] is an assoc. array from strings to ints)
 - added a 'requestCapacity()' capability to associative domains
 - added support for regular expression operations on strings and channels
   (see doc/technotes/README.regexp for details)
