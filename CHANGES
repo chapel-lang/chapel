@@ -6,128 +6,154 @@ Release Changes List
 version 1.7.0
 =============
 
-*** UPDATED THRU END OF r21207 ***
-
 Tenth public release of Chapel, April 18, 2013
 
 Highlights (see entries in subsequent categories for details)
 -------------------------------------------------------------
+- added support for regular expression operations on strings and channels
+- added support for readf()/writef() routines for formatted I/O
+- added support for injecting C declarations into Chapel via "extern blocks"
+- added support for associative domain/array literals
+- added a capability for main() to take arguments and return a status value
+- added support for iteration over homogenous tuples
+- performance improvements related to stack-allocated and constant variables
+- improved bulk transfer optimization (use -s useBulkTransferStride to enable)
+- significant improvements to the Chapel version of LULESH
+- enabled GMP using the system-installed version on Cray platforms by default
+- switched to using processor atomics for reference counting on Cray systems
+- numerous bug fixes and improvements to semantic checks and error messages
 
 Environment Changes
 -------------------
-- renamed platform 'cray-cascade' to 'cray-xc' now that the name is public
+- renamed the platform 'cray-cascade' to 'cray-xc'
 - renamed the platforms 'xmt'/'xmt-sim' to 'cray-xmt'/'cray-xmt-sim'
-- made gmp enabled by default if it is already built in the third-party dir
+- enabled GMP support by default if it is already built in the third-party dir
 
 Syntactic/Naming Changes
 ------------------------
-
-Semantic Changes / Changes to Chapel Language
----------------------------------------------
 - added support for associative domain/array literals
   (e.g., {"red", "blue"} is an associative domain of strings)
   (e.g., ["red" => 0, "blue => 1] is an assoc. array from strings to ints)
-- added a 'requestCapacity()' capability to associative domains
-- added support for regular expression operations on strings and channels
-  (see doc/technotes/README.regexp for details)
-- added support for sequential/parallel iteration over homogenous tuples
-- added a capability for main() to take arguments and return a status int
-  (see doc/technotes/README.commandline-arguments and README.main_return)
-- added a warning() routine to generate warnings, similar to halt()
-- added support for readf()/writef() routines to the standard library
-  (see doc/technotes/README.formattedIO for details)
-- added isDomainType(type t) to query whether a type is a domain
-- added support for extern C blocks of code
-- removed the tuple() function; use (x,) or (x,y,z) instead
+
+Semantic Changes / Changes to Chapel Language
+---------------------------------------------
+- added support for injecting C declarations into Chapel via "extern blocks"
+  (see "Support for Extern Blocks" section of doc/technotes/README.extern)
+- added support for iteration over homogenous tuples
+  (see "Tuples" section of the Chapel spec)
+- added a capability for main() to take arguments and return a status value
+  (see doc/technotes/README.main)
+- added a 'requestCapacity()' capability to pre-size associative domains
+  (see "Domains:Predefined Functions" section of the Chapel spec)
+- added a warning() routine to generate warnings, similar to halt(), assert()
+  (see "Standard Modules" section of the Chapel spec)
 
 Newly Implemented Features
 --------------------------
-- added support for the .localSlice method to take a domain argument
+- added support for the .localSlice() method to take a domain argument
+  (e.g., A.localSlice({loRow..hiRow, loCol..hiCol}))
 
 Deprecated Features
 -------------------
+- removed the tuple() function
+  (i.e., instead of tuple(x) or tuple(x,y,z), use (x,) or (x,y,z) instead)
 - deprecated warning for old-style domain literals by default
-  (i.e., [1..m, 1..n] is now considered an array of ranges)
+  (i.e., [1..m, 1..n] is an array of ranges; re-enable w/ --warn-domain-literal)
 
 Standard Modules
 ----------------
-- refactored communication diagnostics into a standard module (CommDiagnostics)
+- added support for regular expression operations on strings and channels
+  (see doc/technotes/README.regexp for details)
+- added support for readf()/writef() routines for formatted I/O
+  (see doc/technotes/README.formattedIO for details)
+- refactored communication diagnostics into its own module (CommDiagnostics)
   (see doc/technotes/README.comm-diagnostics for documentation)
-
-Standard Modules
-----------------
+- added isDomainType(type t)/isArrayType(type t)/isRecordType(type t) queries
 
 Documentation
 -------------
-- spec improvements:
-  - fixed typos and formatting issues (Domains, Types, Domain_Maps)
-  - improved a task parallel example considered non-portable
-  - improved the description of the timer's elapsed() routine works
+- added README.formattedIO to describe support for writef()/readf() routines
+  (see doc/technotes/README.formattedIO)
+- added README.regexp to describe support for regular expression operations
+  (see doc/technotes/README.regexp)
+- added README.main to describe support for arguments/return values for main()
+  (see doc/technotes/README.main)
+- updated README.extern to describe C type aliases and extern blocks
 - fixed a typo in README.atomics
+- minor updates and fixes to various chapters in the language specification
+- minor updates to several READMEs
 
 Example Codes
 -------------
-- improvements to the Chapel implementation of SSCA2:
-  - made it work with VALIDATE_BC=true
-  - fixed a bug in the torus representation
-- fixed a typo in calculating GFLOPs for HPL that over-reported by 10x
-- improvements to Chapel implementation of LULESH:
-  - added support to compute a cubic input set rather than reading from disk
-  - refactored setup code into a helper module: luleshInit.chpl
-  - changed the representation of nodesets to use a sparse subdomain
-  - added the LULESH callgraph to its README
-  - added a --maxcycles config that can be used to stop the computation early
-  - support sparse vs. dense material representations via --sparseMaterials
-  - switched to using 'ref' intents rather than 'in' or 'inout'
-  - converted vars to consts where appropriate
-  - general code cleanup
-  - made some unnecessarily serial loops parallel
-  - improved performance by avoiding an unnecessary reindexing operation
-  - replaced error-oriented reductions with forall loops + halt
-  - made 'dtfixed' into a config const
-  - added the ability to compute a per-iteration timing
-  - param-unrolled the loop in localizeNeighborNodes() for performance reasons
-  - removed a redundant zero-initialization of an array
-  - permitted lulesh to use 3D vs. 1D representations via 'use3DRepresentation'
+- improvements to the Chapel implementation of LULESH
+  (see examples/benchmarks/lulesh/ for more details)
+  - configuration improvements (see README for details):
+    - added ability to compute the cube input set rather than reading from disk
+    - support for 3D vs. 1D representations via 'use3DRepresentation'
+    - support sparse vs. dense material representations via --sparseMaterials
+    - added a --maxcycles config that can be used to stop the computation early
+    - converted 'dtfixed' into a config const
+    - added a per-iteration timing when doTiming and showProgress are enabled
+  - code improvements:
+    - refactored setup code into a helper module: luleshInit.chpl
+    - changed the representation of nodesets to use a sparse subdomain
+    - switched to using 'ref' intents rather than 'in' or 'inout'
+    - converted vars to consts where appropriate
+    - general code cleanup
+  - performance improvements:
+    - improved performance by avoiding an unnecessary reindexing operation
+    - made some unnecessarily serial loops parallel
+    - replaced error-oriented reductions with forall loops + halt
+    - param-unrolled the loop in localizeNeighborNodes() for performance reasons
+    - removed a redundant zero-initialization of an array
+  - documentation improvements:
+    - updated README to document new configuration options
+    - added the LULESH callgraph to the README
 - improved the Chapel implementation of RA:
   - added the ability to use an LCG random number generator via 'useLCG'
   - added a config const 'verify' that permits verification to be skipped
+- fixed a typo in HPL that inflated the calculated GFLOPs by 10x
+- improvements to the Chapel implementation of SSCA2:
+  - fixed a bug in the torus representation
+  - fixed a bug with VALIDATE_BC=true
 
 Platform-specific Notes
 -----------------------
-- enabled GMP using the system installed version on cray-x? platforms by default
+- enabled GMP using the system-installed version on cray-x* platforms by default
 
 Portability of code base
 ------------------------
 - fixed an issue related to vsnprintf on OS X Lion
-- fixed an assumption that a platform that defines INT8_MIN will define INT*_MIN
+- fixed an assumption that platforms defining INT8_MIN will also define INT*_MIN
 
 Launcher-specific Notes
 -----------------------
-- improved use of cnselect in launchers using 'aprun' 
+- improved use of cnselect in launchers that use 'aprun' 
 
 Compiler Flags
 --------------
-- added --no- variants of the following compiler flags:
-  --count-tokens, --print-code-size, --print-search-dirs, --baseline, --llvm, 
-  --print-commands, --print-passes
+- added --no- variants of the following compiler flags: --count-tokens, --llvm, 
+    --print-code-size, --print-commands, --print-passes, --print-search-dirs,
+- added --[no-]warn-tuple-iteration to warn against old-style zipper iteration
+  (see man page for details)
+- added --[no-]warn-special as a meta-flag for all old-style syntax uses
+  (see man page for details)
 - improved support for environment variable setting of '--no-'style flags
   (see man page for details)
 
 Error Message Improvements
 --------------------------
-- report an error for associative domains with unsupported index types
-- improved the error message for type mismatch errors in 'Array = scalar'
-- improved error messages
-- made error generated by Ctrl-C and the like a user rather than internal error
+- improved type mismatch error messages when assigning scalars to arrays
 - added an error for extern functions with formal arguments of array type
+- made Ctrl-C and the like result in a user, rather than internal, error
+- added an error for associative domains with unsupported index types
 
 Bug Fixes / New Semantic Checks (for old semantics)
 ---------------------------------------------------
-- fixed a bug in which uses of ** would dispatch to a user pow() overload
-- fixed a bug with '/*/' within a nested comment
-- fixed some bugs in the implementation of atomic variables
-- fixed a regression in which type aliases of arrays were broken
+- fixed a bug in which sizeof() had leaked into the user namespace in v1.6
+- fixed a regression in v1.6 in which type aliases of arrays were broken
+- fixed a bug in which 0-element arrays of arrays would free domains prematurely
+- fixed a bug related to writing out instances of the RandomStream class
 - I/O bug fixes:
   - QIO_HINT_PARALLEL now works for new/zero length files
   - fixed bugs related to bit-oriented reads and writes
@@ -136,86 +162,86 @@ Bug Fixes / New Semantic Checks (for old semantics)
   - changed channels so that once EOF is hit, it will never read further
   - fixed issues related to ssize_t/int(64) mismatfches on 32-bit platforms
   - fixed an issue related to reading empty strings
-- fixed INFINITY and NAN to be of type 'real' rather than 'real(32)'
-- fixed a bug in broadcasting large values at program startup
-- fixed a few bugs in the Buffers.chpl module
-- fixed a bug in which memory leak tracking would mislabel some allocations
-- fixed a bug related to writing out instances of the RandomStream class
+- fixed some bugs in the implementation of atomic variables
 - fixed a bug in which AdvancedIters didn't default 'numTasks' as documented
-- fixed a bug in which sizeof() had leaked into the user namespace in v1.6
 - improved shape checking for array assignment
 - restricted reshape() to be applied for rectangular domains only
 - restricted reshape() to only work when the source and destination sizes match
 - improved support for Cyclic distributions of idxType uint(64)
-- fixed a bug in which 0-element arrays of arrays would free domains prematurely
+- fixed INFINITY and NAN to be of type 'real' rather than 'real(32)'
+- fixed a bug with '/*/' within a nested comment
+- fixed a bug in which uses of ** would dispatch to a user's pow() overload
+- fixed a few bugs in the Buffers.chpl module
+- fixed a bug in which memory leak tracking would mislabel some allocations
+- fixed a bug with recursive iterator inlining
+- fixed a bug in broadcasting large values at program startup
 
 Packaging Changes
 -----------------
 - added Chapel mode support for emacs version 23.x (see etc/emacs/README)
-- made the LLVM checkout script grab version 3.2 to ensure compatability
 
 Performance Improvements
 ------------------------
-- made associative domains of 'imag' indices more efficient
-- made atomic variables use compiler intrinsics for cray-prgenv-intl
+- switched to using processor atomics for reference counting on Cray systems
+- improved bulk transfer optimization (use -s useBulkTransferStride to enable)
 - put fewer variables on the heap in the presence of nested functions
 - enabled remote value forwarding for more constants/arguments than before
-- switched to using processor atomics for reference counting domains/arrays
-- improved bulk transfer optimization (use -s useBulkTransferStride to enable)
+- made atomic variables use compiler intrinsics for cray-prgenv-intl
+- made associative domains of 'imag' indices more efficient
 
 Runtime Library Changes
 -----------------------
+- split chpl_task_begin() to distinguish between new tasks and migrating ones
+- improved the ability to build the Chapel runtime with a C++ compiler
 
 Third-Party Software Changes
 ----------------------------
-- updated to versoin 1.20 of GASNet
+- updated to version 1.20 of GASNet
 - updated to version 1.9 of Qthreads
-- removed the nanox tasking layer due to lack of external support/interest
+- made the LLVM checkout script grab version 3.2 to ensure compatability
+- removed the nanox tasking layer due to lack of support/champion
 
 Testing System
 --------------
 - extended the 'skipif' capability to support the ability to skip a subdirectory
-- removed artificial limit of stacksize in start_test
-- fixed a bug in which the test system looked at incorrect .future files
 - improved the robustness of start_test in cross-compiled environments
-- added support for .no-local.good files
+- added support for .no-local.good files for --no-local-specific test output
+- fixed a bug in which the test system looked at incorrect .future files
+- removed artificial limiting of stacksize in start_test
+- refactored test system environment setup into util/test/testEnv
+- made the test system use $cwd rather than 'pwd'
+- made 'nightly' compopts/execopts get added to end of the command line
+- made 'nightly' support a --no-futures option
 
 Internal/Developer-oriented
 ---------------------------
-- fixed portability of bswap.h 
-- refactored test system environment setup into util/test/testEnv
-- made the test system use $cwd rather than 'pwd'
-- refactored Makefiles for Cray systems/compilers to avoid repetition
 - added some code that sets the groundwork for supporting hierarchical locales
-- added a --no-futures flag to the 'nightly' testing script
-- made 'nightly' compopts/execopts get added to end of the command line
+- fixed portability of bswap.h (for once and for all?)
+- restructured internal modules corresponding to specific runtime layers
+- removed uses of alloca()
+- removed PRIM_CHPL_ALLOC_PERMIT_ZERO
+- deprecated 'make depend' and made use of gcc -MMD/-MP instead
+- made 'rm -rf' commands a little safer in Makefile clean/clobber rules
+- refactored Makefiles for Cray systems/compilers to avoid repetition
 - added a map_view() function for printing out SymbolMaps
-- replaced a string check with a flag check
+- removed some dead and possibly incorrect methods from Map and Vec classes
 - refactored _cast functions for booleans
 - made the _isPrimitiveType test more concise
-- added Chapel-level isRecordType() and chpl__isDMap functions
 - improved the mechanism by which line numbers are assigned to AST nodes
-- restructured internal modules corresponding to specific runtime layers
 - factored sync/single out of ChapelBase.chpl and into ChapelSyncvar.chpl
-- removed internal use of alloca()
 - fixed the --gen-extern-prototypes flag
 - improved the correspondance of FLAG_* and string forms of AST flags
 - improved the correspondance of PRIM_* and string forms of primitives
 - refactored chplrt.h
-- added EOF to the list of reserved symbol names
-- improved the ability to build the Chapel runtime with a C++ compiler
-- made 'rm -rf' commands a little safer in Makefile clean/clobber rules
-- removed some dead and possibly incorrect methods from Map and Vec classes
 - added initial support for a .localAccess accessor to Block/Default arrays
 - renamed compiler-generated types for classes in generated code
 - refactored QIO code in the runtime
-- converted macros in the compiler to inline functions for a performance boost
-- deprecated 'make depend' and made use of gcc -MMD/-MP instead
-- split tasking interface
+- converted macros in the compiler to inline functions for sanity/performance
 - cleaned up the functions that build array/domain literals
-- refactored and commented lowerIterators
-- removed PRIM_CHPL_ALLOC_PERMIT_ZERO
+- refactored and commented lowerIterators.cpp
 - keep dtObject alive even if unused after function resolution
+- added EOF to the list of reserved symbol names
+- protected some C identifiers introduced by PGI when compiling with -Kieee
 
 
 =============
