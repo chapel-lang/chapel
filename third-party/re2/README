@@ -2,15 +2,18 @@
 RE2 for Chapel release
 ======================
 
-This copy of RE2 is being release with Chapel for convenience and uses
-a snapshot of RE2 obtained from the RE2 team at: http://code.google.com/p/re2/
-We have included revision dd841cbcdafa here. This version has been
-modified to allow regular expression search on QIO channels.
+Chapel can be built (by setting CHPL_REGEXP=re2) to include the RE2 library
+(see http://code.google.com/p/re2/). While building, the library
+will be downloaded from its Mercurial repository at re2.googlecode.com
+then patched (see below) - see update-re2.sh.
 
 For more information on the current support for RE2 within Chapel,
 please refer to $CHPL_HOME/doc/technotes/README.regexp.  For more
 information about RE2 itself, please refer to the website above or to
 the README in the re2/ subdirectory of this directory.
+
+We modify the RE2 library to allow regular expressions in the format
+string for Chapel's readf() for searching on QIO channels.
 
 Modified from revision:
 "re2: eliminate global c++ constructors" 94:401ab4168e8e
