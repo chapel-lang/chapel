@@ -39,10 +39,10 @@ Quick Start
      ...the fish shell (fish)                  . util/setchplenv.fish
      ...the Bourne shell (sh)                  . util/setchplenv.sh
 
-   You must be in the "chapel" directory for these command scripts to
-   work properly.  Note that there is no requirement to use these
-   scripts, they are merely designed to get users up and running
-   quickly.
+   You must be in the top-level "chapel-*" directory for these command
+   scripts to work properly.  Note that there is no requirement to use
+   these scripts long-term, they are merely designed to get new users
+   up and running quickly.
 
    If you use a different shell, refer to doc/README.chplenv for
    information about what environment settings you'll need to make in
@@ -77,6 +77,7 @@ For more detailed information about...      refer to...
   ...using the compiler                      ...doc/README.compiling
   ...executing Chapel programs               ...doc/README.executing
   ...reporting bugs                          ...doc/README.bugs
+
   ...Chapel modes for emacs and vim          ...etc/README
 
   ...example Chapel programs                 ...examples/README
@@ -93,9 +94,7 @@ For more detailed information about...      refer to...
      ...an SGI Altix system                  ...doc/platforms/README.sgi
      ...BSC's MareNostrum system             ...doc/platforms/README.marenostrum
 
-  ...calling C routines from Chapel          ...doc/technotes/README.extern
-  ...formatting value-to-string conversions  ...doc/technotes/README.format
-  ...other user and technical details        ...doc/README
+  ...calling C code from Chapel              ...doc/technotes/README.extern
+  ...other user and technical notes          ...doc/README
 
   ...third-party software that we use        ...third-party/README
-  ...the GASNet communication library        ...third-party/gasnet/README
