@@ -79,7 +79,8 @@ Documentation
 - added README.main to describe support for arguments/return values for main()
   (see doc/technotes/README.main)
 - updated README.extern to describe C type aliases and extern blocks
-- fixed a typo in README.atomics
+- changed READMEs that used csh-style syntax to use bash-style consistently
+- fixed a semantic typo in README.atomics
 - minor updates and fixes to various chapters in the language specification
 - minor updates to several READMEs
 
@@ -160,7 +161,7 @@ Bug Fixes / New Semantic Checks (for old semantics)
   - fixed a bug w.r.t. EOF and preemptive mmap
   - fixed portability bug related to Intel compilers
   - changed channels so that once EOF is hit, it will never read further
-  - fixed issues related to ssize_t/int(64) mismatfches on 32-bit platforms
+  - fixed issues related to ssize_t/int(64) mismatches on 32-bit platforms
   - fixed an issue related to reading empty strings
 - fixed some bugs in the implementation of atomic variables
 - fixed a bug in which AdvancedIters didn't default 'numTasks' as documented
@@ -186,7 +187,7 @@ Performance Improvements
 - improved bulk transfer optimization (use -s useBulkTransferStride to enable)
 - put fewer variables on the heap in the presence of nested functions
 - enabled remote value forwarding for more constants/arguments than before
-- made atomic variables use compiler intrinsics for cray-prgenv-intl
+- made atomic variables use compiler intrinsics for cray-prgenv-intel
 - made associative domains of 'imag' indices more efficient
 
 Runtime Library Changes
@@ -230,8 +231,8 @@ Internal/Developer-oriented
 - improved the mechanism by which line numbers are assigned to AST nodes
 - factored sync/single out of ChapelBase.chpl and into ChapelSyncvar.chpl
 - fixed the --gen-extern-prototypes flag
-- improved the correspondance of FLAG_* and string forms of AST flags
-- improved the correspondance of PRIM_* and string forms of primitives
+- improved the correspondence of FLAG_* and string forms of AST flags
+- improved the correspondence of PRIM_* and string forms of primitives
 - refactored chplrt.h
 - added initial support for a .localAccess accessor to Block/Default arrays
 - renamed compiler-generated types for classes in generated code
