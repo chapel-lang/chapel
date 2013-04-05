@@ -26,14 +26,14 @@ The following sections offer a tour through the conversions to illustrate the
 common cases. A more precise definition follows in the "Format String
 Syntax in Detail" section below.
 
-In this file, we use "integer" to refer to the Chapel types int or uint and
+In this file, we use "integral" to refer to the Chapel types int or uint and
 "floating-point" to refer to real, imaginary, or complex, of any bit width.
 
 Generic Numeric Conversions
 ---------------------------
  ##.### - decimal number padded on the left with spaces to 2 digits before
           the point, rounded to 3 after. Works with real, imaginary,
-          or complex arguments. Also works with integers, but the
+          or complex arguments. Also works with integral arguments, but the
           decimal point is not printed.
 
           In all cases, the output is padded (on the left, except a
@@ -41,7 +41,7 @@ Generic Numeric Conversions
           the conversion specifier (6 in this example).  The output
           can be longer, when needed to accomodate the number.
 
- ## - integer padded out to 2 digits. Also works with real, imaginary
+ ## - integral value padded out to 2 digits. Also works with real, imaginary
       or complex numbers by rounding them to integers.
 
  In both conversions above, an imaginary argument gets an 'i' afterwards;
@@ -54,33 +54,33 @@ Generic Numeric Conversions
  %17n - a number padded out to 17 columns
  %.4n - a number with 4 significant digits or a precision of 4
 
-Integer Conversions
--------------------
- %i or %di - an integer in decimal, possibly negative
-             (note - when reading a %i, - is allowed)
- %u or %du - an unsigned decimal number
-             (note - when reading a %u, - is not allowed)
- %bi  - a binary signed number
- %bu  - a binary unsigned number
- %@bu - a binary unsigned number with 0b
- %xu - a hexadecimal unsigned number
- %xi - a hexadecimal signed number
- %@xu - a hexadecimal unsigned number with 0x
- %Xu - a hexadecimal unsigned number in uppercase
- %@Xu - a hexadecimal unsigned number with 0X and uppercase
- %17i - a decimal number padded on the left with spaces to 17 columns
+Integral Conversions
+--------------------
+ %i or %di - a signed integer in decimal, possibly negative
+             (note - when reading a %i, '-' is allowed)
+ %u or %du - an unsigned decimal integer
+             (note - when reading a %u, '-' is not allowed)
+ %bi  - a binary signed integer
+ %bu  - a binary unsigned integer
+ %@bu - a binary unsigned integer with 0b
+ %xu - a hexadecimal unsigned integer
+ %xi - a hexadecimal signed integer
+ %@xu - a hexadecimal unsigned integer with 0x
+ %Xu - a hexadecimal unsigned integer in uppercase
+ %@Xu - a hexadecimal unsigned integer with 0X and uppercase
+ %17i - a decimal integer padded on the left with spaces to 17 columns
         (that is, it is right-justified in a 17-column field)
         (padding width is ignored when reading integers)
  %*i - as with %17i but read the minimum width from the preceeding argument
- %017i - a decimal number padded on the left with zeros to 17 columns
- %-17i - a decimal number left-justified (padded on the right) to 17 columns
- %+i - a decimal number showing + for positive numbers
- % i - a decimal number with a space for positive numbers
+ %017i - a decimal integer padded on the left with zeros to 17 columns
+ %-17i - a decimal integer left-justified (padded on the right) to 17 columns
+ %+i - a decimal integer showing + for positive numbers
+ % i - a decimal integer with a space for positive numbers
  %|4i - output 4 raw,binary bytes of the passed integer in native endianness
  %<4i - output 4 raw,binary bytes of the passed integer little endian
  %>4i - output 4 raw,binary bytes of the passed integer big endian
  %<8i - output 8 raw,binary bytes of the passed integer little endian
-        (integer byte widths of 1, 2, 4, and 8 are supported)
+        (byte widths of 1, 2, 4, and 8 are supported for integral conversions)
 
 Real Conversions
 ----------------
@@ -135,7 +135,7 @@ String and Bytes Conversions
       Note that if you want to be able to read you string back in,
       you should use one of the quoted or encoded binary versions (see below),
       since generally with %s it's not clear where the string ends.
- %c - a single Unicode character (argument should be a string or an integer
+ %c - a single Unicode character (argument should be a string or an integral
       storing the character code)
  %17s - when writing - a string left padded (right justified) to 17 columns
         when reading - read up to 17 bytes or a whitespace, whichever comes
@@ -164,11 +164,11 @@ String and Bytes Conversions
  %|*S - means read bytes until a terminator byte. The terminator byte is read
         from the argument before the string.
  %|1S %|2S %|4S and %|8S -  work with encoded strings storing a length
-                            and then the string data. The number is the
-                            number of bytes of length which is by default
+                            and then the string data. The digit before 'S' is
+                            the number of bytes of length which is by default
                             stored native endian. <, |, > can be used
                             to specify the endianness of the length field,
-                            for example %<8y is 8-bytes of little-endian length
+                            for example %<8S is 8 bytes of little-endian length
                             and then string data.
  %|vS - as with %|1S-%|8S but the string length is encoded using a
         variable-length byte scheme (which is always the same no matter what
@@ -223,7 +223,7 @@ Format String Syntax in Detail
 ------------------------------
 Chapel's format strings are simpler than those in C in one way: it is no longer
 necessary to specify the types of the arguments in the format string. For
-example, the l in %ld is specifying the type of the argument for integer
+example, in C the l in %ld is specifying the type of the argument for integer
 (decimal) conversion. That is not necessary in Chapel since the compiler is
 able to use type information from the call.
 
@@ -300,7 +300,7 @@ Going through each section for text conversions:
  [optional field width]
    The field width is typically the minimum number of *columns* that the
    conversion should use to display a value. It can be *, which means to read
-   the field width from an integer argument before the converted value. In
+   the field width from an integral argument before the converted value. In
    writef for a textual string conversion (%s %" %'), the field width is in
    columns.  Within readf, the field width is the maximum number of bytes to
    read for any string conversion (%s %" %' %//).
@@ -308,13 +308,13 @@ Going through each section for text conversions:
  [optional . then precision]
    The precision is normally the number of decimal digits to use when printing
    the fractional part of number. It can be *, which means to read the
-   precision from an integer argument before the converted value. For textual
+   precision from an integral argument before the converted value. For textual
    string conversions in writef (%s %" %'), the precision indicates the
    maxmimum number of columns to print - and the result will be truncated if
    it does not fit. In readf for these textual string conversions (%s %" %'),
    the precision indicates the maximum number of characters (e.g. Unicode code
-   points). The precision will be silently ignored for integer conversions
-   (%i, %x, etc) and for %// conversions.
+   points). The precision will be silently ignored for integral conversions
+   (%i, %u, etc) and for %// conversions.
 
  [optional base flag]
    d means decimal (and not exponential for floating-point)
@@ -347,7 +347,7 @@ Going through each section for text conversions:
    /.../ means a regular expression (for reading only)
    {/.../xyz} means regular expression with flags xyz 
    c means a Unicode character - either the first character in a string
-           or an integer character code 
+           or an integral character code 
  
 For binary conversions: 
  [optional endian flag]
@@ -357,11 +357,11 @@ For binary conversions:
 
  [optional size in bytes]
    This is the number of bytes the format should read or write in this
-   conversion. For integer conversions (e.g. %|i) it specifies the number of
+   conversion. For integral conversions (e.g. %|i) it specifies the number of
    bytes in the integer, and 1, 2, 4, and 8 are supported. For real and
    imaginary conversions, 4 and 8 are supported. For complex conversions,
    8 and 16 are supported. The size in bytes is *required* for binary
-   integer and floating-point conversions.
+   integral and floating-point conversions.
 
    The size can be *, which means that the number of bytes is read
    from the argument before the conversion.
@@ -394,7 +394,7 @@ For binary conversions:
     %|8S a eight-byte length and then the string
     %|vS a variable-byte-encoded length and then the string
    c means a Unicode character - either the first character in a string
-           or an integer character code
+           or an integral character code
 
 
 --------
