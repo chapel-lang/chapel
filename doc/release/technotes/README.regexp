@@ -18,8 +18,7 @@ Enabling Regular Expression Support
 Setting the environment variable CHPL_REGEXP to re2 will enable regular
 expression support with the RE2 library:
 
-bash$ export CHPL_REGEXP=re2
- csh) setenv CHPL_REGEXP re2
+      export CHPL_REGEXP=re2
 
 Then, rebuild Chapel. As part of the make, the RE2 library will be
 downloaded from its Mercurial repository at re2.googlecode.com.
