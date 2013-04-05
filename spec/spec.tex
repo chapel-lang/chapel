@@ -15,12 +15,13 @@
 
 %% High section numbers require different number widths
 \usepackage[titles]{tocloft}
-\setlength{\cftchapnumwidth}{1.3em}
-\setlength{\cftsecnumwidth}{2.6em}
-\setlength{\cftsubsecnumwidth}{3.9em}
-\setlength{\cftsubsubsecnumwidth}{5.2em}
-\setlength{\cftsubsecindent}{1.7em}
-\setlength{\cftsubsubsecindent}{4.3em}
+\setlength{\cftchapnumwidth}{1.3em} % Wide enough for a chapter number.
+\setlength{\cftsecnumwidth}{3.2em}  % Same as cftsubsecnumwidth:
+\setlength{\cftsubsecnumwidth}{3.2em} % Wide enough for three digits and two dots.
+%\setlength{\cftsubsubsecnumwidth}{5.4em}
+\setlength{\cftsecindent}{1.3em}    % cftchapnumwidth
+\setlength{\cftsubsecindent}{1.3em} % cftchapnumwidth
+\setlength{\cftsubsubsecindent}{4.5em} % cftchapnumwidth + cftsecnumwidth
 
 \usepackage{ifpdf}
 \ifpdf
