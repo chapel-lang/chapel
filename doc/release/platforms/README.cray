@@ -226,7 +226,7 @@ To use this combination of runtime layers, do the following.
    environment variable to "muxed".  For example:
 
      export CHPL_COMM=ugni
-     export CHPLTASKS=muxed
+     export CHPL_TASKS=muxed
 
    This specifies that you wish to use the Cray-specific communication
    and tasking layers.
