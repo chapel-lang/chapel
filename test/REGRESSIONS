@@ -368,6 +368,9 @@ binary output mismatch
 [Error matching program output for io/ferguson/writefbinary]
 
 illegal type conversion/too many initializers/error limit exceeded
+ This applies to all no-local tests.  Possibly related to 
+ the use of C99 anonymous struct initializer syntax in codegen
+ (since accepting the LLVM backend support).
 ------------------------------------------------------------------
 [Error matching compiler output for arrays/deitz/jacobi5-no-local (compopts: 1)]
 [Error matching compiler output for arrays/deitz/jacobi-no-local (compopts: 1)]

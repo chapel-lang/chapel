@@ -150,6 +150,7 @@ linux64.gnu.gasnet.qthreads.none (UNASSIGNED)
 ---------------------------------------------
 NOTE: These seem to happen on program exit, as the rest of the output
 is correct.
+- release/examples/benchmarks/hpcc/stream-ep (04/04/13)
 - release/examples/benchmarks/hpcc/ra-atomics (compopts: 1) (3/11/13)
 - release/examples/benchmarks/hpcc/ra (compopts: 1) (3/12/13)
 - release/examples/hello6-taskpar-dist (3/14/13)
@@ -349,14 +350,6 @@ examples of what times out:
 wrong answer for atomic operations with gasnet-everything on 2/1/13 (Sungeun)
 -----------------------------------------------------------------------------
 types/atomic/sungeun/atomic_vars (02/01/13, 02/19/13, no-local on 3/16)
-
-"in routine alloca() there is a stack overflow" under PGI (UNASSIGNED)
-----------------------------------------------------------------------
-Somewhat? nondeterministic.
-These configurations:
- linux64.pgi.none.fifo.pthreads
- cray-xt.cray-xt-pgi.none.fifo.pthreads
- cray-xt.cray-xt-pgi.none.fifo.pthreads--linux64.gnu
 
 minus_equals nondeterminism (sungeun)
 ----------------------------------------
