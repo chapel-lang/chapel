@@ -15,14 +15,16 @@ indices may potentially be distributed across multiple locales as
 described in~\rsec{Domain_Maps}, thus supporting global-view data
 structures.
 
-In the next subsection, we introduce the key characteristics of domains.
-In~\rsec{Base_Domains}, we discuss the types and values that
-can be associated with a base domain.  In~\rsec{Simple_Subdomains}, we discuss the
-types and values of simple subdomains that can be created from those base
-domains.  In~\rsec{Sparse_Subdomains}, we discuss the types and values of sparse
-subdomains.  The remaining sections describe the important manipulations
-that can be performed with domains, as well as the predefined operators and
-functions defined for domains.
+In the next subsection, we introduce the key characteristics of
+domains.  In~\rsec{Base_Domain_Types_and_Values}, we discuss the types
+and values that can be associated with a base domain.
+In~\rsec{Simple_Subdomain_Types_and_Values}, we discuss the types and
+values of simple subdomains that can be created from those base
+domains.  In~\rsec{Sparse_Subdomain_Types_and_Values}, we discuss the
+types and values of sparse subdomains.  The remaining sections
+describe the important manipulations that can be performed with
+domains, as well as the predefined operators and functions defined for
+domains.
 
 \section{Domain Overview}
 \index{domains!kinds}
@@ -76,8 +78,8 @@ The runtime representation of a domain is controlled by its domain map.
 Domain maps are presented in \rsec{Domain_Maps}.
 
 
-\section{Domain Types and Values}
-\label{Domain_Types_and_Values}
+\section{Base Domain Types and Values}
+\label{Base_Domain_Types_and_Values}
 \index{domains!types and values}
 
 Base domain types can be classified as regular or irregular.  Dense and
@@ -400,8 +402,8 @@ Indices can be added to or removed from an associative domain
 as described in \rsec{Adding_and_Removing_Domain_Indices}.
 
 
-\section{Simple Subdomains}
-\label{Simple_Subdomains}
+\section{Simple Subdomain Types and Values}
+\label{Simple_Subdomain_Types_and_Values}
 \index{subdomains}
 \index{subdomains!simple}
 
@@ -411,11 +413,12 @@ A subdomain has the same type as its parent domain, and by default
 it inherits the domain map of its parent domain.  All domain types
 support subdomains.
 
-Simple subdomains are subdomains which are not sparse.  Sparse subdomains are
-discussed in the following section (\rsec{Sparse_Subdomains}).  A simple
-subdomain inherits its representation (regular or irregular) from its base domain (or base
-subdomain).  A sparse subdomain is always irregular, even if its base domain is
-regular.  
+Simple subdomains are subdomains which are not sparse.  Sparse
+subdomains are discussed in the following section
+(\rsec{Sparse_Subdomain_Types_and_Values}).  A simple subdomain
+inherits its representation (regular or irregular) from its base
+domain (or base subdomain).  A sparse subdomain is always irregular,
+even if its base domain is regular.
 
 In all other respects, the two kinds of subdomain behave identically.  In this
 specification, ``subdomain'' refers to both simple and sparse subdomains, unless
@@ -476,8 +479,8 @@ It is an error to attempt to add an index to a subdomain that is not also
 a member of the parent domain.
 
 
-\section{Sparse Subdomains}
-\label{Sparse_Subdomains}
+\section{Sparse Subdomain Types and Values}
+\label{Sparse_Subdomain_Types_and_Values}
 \index{domains!sparse}
 \index{subdomains!sparse}
 
