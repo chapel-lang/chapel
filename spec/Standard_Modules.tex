@@ -448,22 +448,15 @@ argument \chpl{s}.
 \end{protobody}
 
 \begin{protohead}
-proc assert(test: bool) {
+proc assert(test: bool)
+proc assert(test: bool, args...)
 \end{protohead}
 \begin{protobody}
-Exits the program if \chpl{test} is false and prints to standard error
-the location in the Chapel code of the call to \chpl{assert}.
 If \chpl{test} is true, no action is taken.
-\end{protobody}
-
-\begin{protohead}
-proc assert(test: bool, args ...?numArgs) {
-\end{protohead}
-\begin{protobody}
-Exits the program if \chpl{test} is false and prints to standard error
-the location in the Chapel code of the call to \chpl{assert} as well
-as the rest of the arguments to the call.  If \chpl{test} is true, no
-action is taken.
+If \chpl{test} is false,
+prints an error message to stderr giving the location of the call to \chpl{assert}
+in the Chapel source, followed by the remaining arguments to the call, if any,
+then exits the program.
 \end{protobody}
 
 \begin{protohead}
@@ -503,19 +496,12 @@ Exits the program with code \chpl{status}.
 
 \begin{protohead}
 proc halt()
+proc halt(args...)
 \end{protohead}
 \begin{protobody}
-Exits the program and prints to standard error the location in the
-Chapel code of the call to \chpl{halt}.
-\end{protobody}
-
-\begin{protohead}
-proc halt(args ...?numArgs)
-\end{protohead}
-\begin{protobody}
-Exits the program and prints to standard error the location in the
-Chapel code of the call to \chpl{halt} as well as the rest of the
-arguments to the call.
+Prints an error message to stderr giving the location of the call to \chpl{halt}
+in the Chapel source, followed by the arguments to the call, if any,
+then exits the program.
 \end{protobody}
 
 \begin{protohead}
@@ -567,6 +553,15 @@ proc typeToString(type t) param : string
 \begin{protobody}
 Returns a string parameter that represents the name of the
 type \chpl{t}.
+\end{protobody}
+
+\begin{protohead}
+proc warning(s:string)
+proc warning(args...)
+\end{protohead}
+\begin{protobody}
+Prints a warning to stderr giving the location of the call to \chpl{warning}
+in the Chapel source, followed by the argument(s) to the call.
 \end{protobody}
 
 \subsection{Types}

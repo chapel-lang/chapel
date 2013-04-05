@@ -229,21 +229,9 @@ A cast is specified with the following syntax:
 cast-expression:
   expression : type-specifier
 \end{syntax}
-The expression is converted to the specified type.  Except for the
-cast listed below, casts are restricted to valid explicit
-conversions~(\rsec{Explicit_Conversions}).
-
-The following cast has a special meaning and does not correspond to an
-explicit conversion:
-\begin{itemize}
-\index{complex@\chpl{complex}!casts from tuples}
-\item
-  A cast from a 2-tuple to \chpl{complex} converts the 2-tuple into a
-  complex where the first component becomes the real part and the
-  second component becomes the imaginary part.  The size of the
-  complex is determined from the size of the components based on
-  implicit conversions.
-\end{itemize}
+The expression is converted to the specified type.  A cast expression invokes
+the corresponding explicit conversion~(\rsec{Explicit_Conversions}).  A
+resolution error occurs if no such conversion exists.
 
 \section{LValue Expressions}
 \label{LValue_Expressions}

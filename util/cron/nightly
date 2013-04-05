@@ -144,6 +144,12 @@ if ($printusage == 1) {
 
 $ENV{'CHPL_DEVELOPER'} = "true";
 
+print "\n";
+system("printenv");
+$modulecmd = "/sw/modules/bin/linux/modulecmd"; # heuristic
+if (-x $modulecmd) { system("$modulecmd bash list"); }
+print "\n";
+
 #
 # get uniquifiers
 #
@@ -395,6 +401,18 @@ $rawsummary = "$rawlog.summary";
 $sortedsummary = "$rawlog.sorted";
 $prevsummary = "$cronlogdir/last-$fullplatform-$threechars.log.sorted";
 
+if ($parnodefile eq "") {
+  # put the log in /tmp, avoid NFS
+  # $sortedsummary and $prevsummary do not move
+  $permlog = $rawlog;
+  $permsum = $rawsummary;
+  $rawlog     = $basetmpdir . "/" . basename($rawlog) . "." . $$;
+  $rawsummary = "$rawlog.summary";
+} else {
+  $permlog = "<invalid use of permlog>";
+  $permsum = "<invalid use of permsum>";
+}
+
 
 #
 # make "prev" logs if they don't already exist
@@ -539,7 +557,7 @@ if ($hello == 1) {
 	    $testflags = "$testflags release/examples/hello.chpl";
 	}
     } else {
-	print("Error: Can't yet run the parallel tests with --hello[s]");
+	print "Error: Can't yet run the parallel tests with --hello[s]\n";
 	exit(1);
     }
 }
@@ -602,6 +620,10 @@ if ($runtests == 0) {
         $testcommand = "cd $testdir && ../util/start_test $testflags";
         print "Executing $testcommand\n";
         $status = mysystem($testcommand, "running standard tests", 0, 0);
+        print "Moving the log and summary files\n";
+        mysystem("cd $testdir && mv -v $rawlog $permlog && mv -v $rawsummary $permsum", "moving the log files", 0, 0);
+        $rawlog = $permlog;
+        $rawsummary = $permsum;
     } else {
         mysystem("cp $parnodefile $testdir/", "copying parallel node file", 1, 1);
         print "about to execute: cd $testdir && ../util/test/paratest.server -nodefile $parnodefile $testflags\n";
@@ -736,7 +758,7 @@ if ($runtests == 0) {
 #
     if ($debug == 0) {
         if ($status == 0) {
-            `cp $sortedsummary $prevsummary`;
+            system("cp -pv $sortedsummary $prevsummary");
         }
     }
     
@@ -792,7 +814,7 @@ sub mysystem {
         $endtime = localtime;
 	$somethingfailed = 1;
         $status = $status / 256;
-	print "Error $_[1]: $status\n";
+	print "Error $errorname: $status\n";
 
 	if ($mailmsg != 0) {
             $mailsubject = "$subjectid ($fullplatform) Failure";
@@ -801,7 +823,7 @@ sub mysystem {
             print "Trying to mail message... using $mailcommand\n";
 	    open(MAIL, $mailcommand);
             print MAIL startMailHeader($revision, $rawlog, $starttime, $endtime, $crontab);
-	    print MAIL "ERROR $_[1]: $status\n";
+	    print MAIL "ERROR $errorname: $status\n";
 	    print MAIL "(workspace left at $tmpdir)\n";
             print MAIL endMailHeader();
 	    close(MAIL);
@@ -819,14 +841,16 @@ sub mysystem {
 sub commitstats {
   if ($performance == 0) {
     if ($debug == 0) {
-        `ci -l -m"automated nightly checkin" $statfile`;
+        print "Checking in $statfile\n";
+        system("ci -l -m'automated nightly checkin' $statfile");
     }
     $makeplot = $statdir."/makeplot";
     if (! -x $makeplot) {
         print "skipping makeplot step\n";
     } else {
         if ($hostplatform eq "linux64") {
-            `cd $statdir && ./makeplot`;
+            print "Running cd $statdir && ./makeplot\n";
+            system("cd $statdir && ./makeplot");
         }
     }
   }

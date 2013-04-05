@@ -4145,7 +4145,7 @@ GenRet CallExpr::codegen() {
       break;
     }
     case PRIM_CHPL_ALLOC:
-    case PRIM_CHPL_ALLOC_PERMIT_ZERO: {
+    {
       GenRet size;
 
       // If Chapel class or record
@@ -4155,12 +4155,7 @@ GenRet CallExpr::codegen() {
         size = codegenSizeof(typeInfo());
       }
 
-      const char* fn = NULL;
-      if(primitive->tag == PRIM_CHPL_ALLOC)
-        fn = "chpl_mem_alloc";
-      if(primitive->tag == PRIM_CHPL_ALLOC_PERMIT_ZERO )
-        fn = "chpl_mem_allocPermitZero";
-
+      const char* fn = "chpl_mem_alloc";
       GenRet description = codegenAdd(get(2), codegenUseGlobal("CHPL_RT_MD_NUM"));
       GenRet allocated;
       allocated = codegenCallExpr(fn, size, description, get(3), get(4));

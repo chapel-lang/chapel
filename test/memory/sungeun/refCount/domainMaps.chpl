@@ -10,7 +10,7 @@ proc myDM(param dmType: DMType) {
     when DMType.default do return new dmap(new DefaultDist());
     when DMType.block do return new dmap(new Block(rank=1, boundingBox={1..n}));
     when DMType.cyclic do return new dmap(new Cyclic(startIdx=1));
-    when DMType.blockcyclic do return new dmap(new BlockCyclic(startIdx=tuple(1), blocksize=tuple(3)));
+    when DMType.blockcyclic do return new dmap(new BlockCyclic(startIdx=(1,), blocksize=(3,)));
     when DMType.replicated do return new dmap(new ReplicatedDist());
     otherwise halt("unexpected 'dmType': ", dmType);
     }

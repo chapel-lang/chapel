@@ -563,9 +563,18 @@ void ClassType::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 const char* ClassType::classStructName(bool standalone) {
   if (standalone) {
     const char* basename = symbol->cname;
-    if (classTag == CLASS_CLASS && !symbol->hasFlag(FLAG_EXTERN))
-      return astr(CLASS_STRUCT_PREFIX, basename, "_object");
-    else
+    if (classTag == CLASS_CLASS) {
+      //
+      // For extern classes, we've traditionally required them to be
+      // named _C; we could use a different naming convention, but
+      // have never agreed upon one.
+      //
+      if (symbol->hasFlag(FLAG_EXTERN)) {
+        return astr("_", basename);
+      } else {
+        return astr(CLASS_STRUCT_PREFIX, basename, "_object");
+      }
+    } else
       return basename;
   } else {
     return astr(CLASS_STRUCT_PREFIX, symbol->cname, "_s");
@@ -1258,8 +1267,10 @@ void initTheProgram(void) {
                                          NULL, new BlockStmt(),
                                          FLAG_UNKNOWN, NULL);
   objectDef->sym->addFlag(FLAG_OBJECT_CLASS);
+  objectDef->sym->addFlag(FLAG_GLOBAL_TYPE_SYMBOL); // Prevents removal in pruneResovedTree().
   objectDef->sym->addFlag(FLAG_NO_OBJECT);
   theProgram->initFn->insertAtHead(objectDef);
+
 }
 
 void initCompilerGlobals(void) {

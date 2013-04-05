@@ -1,7 +1,7 @@
 
 CHPL = chpl
 
-CHPL_FLAGS = --fast
+CHPL_FLAGS = --fast -suseSparseMaterials=false
 
 TARGETS = \
 	lulesh

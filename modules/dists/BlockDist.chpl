@@ -368,7 +368,7 @@ proc Block.getChunk(inds, locid) {
 // get the index into the targetLocales array for a given distributed index
 //
 proc Block.targetLocsIdx(ind: idxType) where rank == 1 {
-  return targetLocsIdx(tuple(ind));
+  return targetLocsIdx((ind,));
 }
 
 proc Block.targetLocsIdx(ind: rank*idxType) {
@@ -488,7 +488,7 @@ proc LocBlock.LocBlock(param rank: int,
                                      max(idxType), min(idxType), lo);
     myChunk = {blo..bhi};
   } else {
-    var tuple: rank*range(idxType);
+    var inds: rank*range(idxType);
     for param i in 1..rank {
       const lo = boundingBox(i).low;
       const hi = boundingBox(i).high;
@@ -496,9 +496,9 @@ proc LocBlock.LocBlock(param rank: int,
       const numlocs = targetLocBox(i).length;
       const (blo, bhi) = _computeBlock(numelems, numlocs, locid(i),
                                        max(idxType), min(idxType), lo);
-      tuple(i) = blo..bhi;
+      inds(i) = blo..bhi;
     }
-    myChunk = {(...tuple)};
+    myChunk = {(...inds)};
   }
 }
 
@@ -525,13 +525,12 @@ proc BlockDom.getLocDom(localeIdx) return locDoms(localeIdx);
 // returns the type: (int(32), range(int(32)), range(int(32)))
 //
 proc _matchArgsShape(type rangeType, type scalarType, args) type {
-  proc tuple(type t ...) type return t;
   proc helper(param i: int) type {
     if i == args.size {
       if isCollapsedDimension(args(i)) then
-        return tuple(scalarType);
+        return (scalarType,);
       else
-        return tuple(rangeType);
+        return (rangeType,);
     } else {
       if isCollapsedDimension(args(i)) then
         return (scalarType, (... helper(i+1)));
@@ -601,7 +600,7 @@ iter BlockDom.these(param tag: iterKind) where tag == iterKind.leader {
       yield locBlock;
     } else {
       coforall taskid in 0..#numTasks {
-        var tuple: rank*range(idxType) = locBlock;
+        var followMe: rank*range(idxType) = locBlock;
         const (lo,hi) = _computeBlock(locBlock(parDim).length, numTasks, taskid,
                                       locBlock(parDim).high,
                                       locBlock(parDim).low,
@@ -611,8 +610,8 @@ iter BlockDom.these(param tag: iterKind) where tag == iterKind.leader {
         // of indices over tasks. Also, do not yield a tuple of ranges
         // if the cart. product of those ranges is the empty set (of indices).
         assert(lo <= hi);
-        tuple(parDim) = lo..hi;
-        yield tuple;
+        followMe(parDim) = lo..hi;
+        yield followMe;
       }
     }
   }
@@ -1033,7 +1032,7 @@ proc _extendTuple(type t, idx: _tuple, args) {
 
 proc _extendTuple(type t, idx, args) {
   var tup: args.size*t;
-  var idxTup = tuple(idx);
+  var idxTup = (idx,);
   var j: int = 1;
 
   for param i in 1..args.size {
@@ -1250,7 +1249,7 @@ proc BlockArr.dsiPrivatize(privatizeData) {
 }
 
 proc BlockArr.dsiSupportsBulkTransfer() param return true;
-proc BlockArr.dsiSupportsBulkTransferStride() param return true;
+proc BlockArr.dsiSupportsBulkTransferInterface() param return true;
 
 proc BlockArr.doiCanBulkTransfer() {
   if debugBlockDistBulkTransfer then
@@ -1429,10 +1428,10 @@ proc BlockArr.doiBulkTransferTo(Barg)
   
   const B = this, A = Barg._value;
   type el = B.idxType;
-  coforall i in dom.dist.targetLocDom do // for all locales
-    on dom.dist.targetLocales(i)
+  coforall i in B.dom.dist.targetLocDom do // for all locales
+    on B.dom.dist.targetLocales(i)
       {
-        var regionB = dom.locDoms(i).myBlock;
+        var regionB = B.dom.locDoms(i).myBlock;
         if regionB.numIndices>0
         {
           const ini=bulkCommConvertCoordinate(regionB.first, B, A);
@@ -1440,12 +1439,10 @@ proc BlockArr.doiBulkTransferTo(Barg)
           const sa=chpl__tuplify(A.dom.locDoms(i).myBlock.stride);
           
           var r1,r2: rank * range(idxType = el,stridable = true);
-         //In the case that the number of elements in dimension t for r1 and r2
-         //were different, we need to calculate the correct stride in r1
+          r2=regionB.dims();
+           //In the case that the number of elements in dimension t for r1 and r2
+           //were different, we need to calculate the correct stride in r1
           for param t in 1..rank{
-            r2[t] = (chpl__tuplify(regionB.first)[t]
-                     ..chpl__tuplify(regionB.last)[t]
-                     by chpl__tuplify(regionB.stride)[t]);
             r1[t] = (ini[t]:el..end[t]:el by sa[t]:el);
             if r1[t].length != r2[t].length then
               r1[t] = (ini[t]:el..end[t]:el by (end[t] - ini[t]):el/(r2[t].length-1));
@@ -1454,7 +1451,7 @@ proc BlockArr.doiBulkTransferTo(Barg)
           if debugBlockDistBulkTransfer then
             writeln("A",(...r1),".FromDR",regionB);
     
-          Barg[(...r1)]._value.doiBulkTransferFromDR(locArr[i].myElems[regionB], true);
+          Barg[(...r1)]._value.doiBulkTransferFromDR(B.locArr[i].myElems);
         }
       }
 }
@@ -1468,10 +1465,10 @@ proc BlockArr.doiBulkTransferFrom(Barg)
  
   const A = this, B = Barg._value;
   type el = A.idxType;
-  coforall i in dom.dist.targetLocDom do // for all locales
-    on dom.dist.targetLocales(i)
+  coforall i in A.dom.dist.targetLocDom do // for all locales
+    on A.dom.dist.targetLocales(i)
     {
-      var regionA = dom.locDoms(i).myBlock;
+      var regionA = A.dom.locDoms(i).myBlock;
       if regionA.numIndices>0
       {
         const ini=bulkCommConvertCoordinate(regionA.first, A, B);
@@ -1479,115 +1476,108 @@ proc BlockArr.doiBulkTransferFrom(Barg)
         const sb=chpl__tuplify(B.dom.locDoms(i).myBlock.stride);
         
         var r1,r2: rank * range(idxType = el,stridable = true);
+        r2=regionA.dims();
          //In the case that the number of elements in dimension t for r1 and r2
          //were different, we need to calculate the correct stride in r1
         for param t in 1..rank{
-          r2[t] = (chpl__tuplify(regionA.first)[t]
-                   ..chpl__tuplify(regionA.last)[t]
-                   by chpl__tuplify(regionA.stride)[t]);
-          r1[t] = (ini[t]:el..end[t]:el by sb[t]:el);
-          if r1[t].length != r2[t].length then
-            r1[t] = (ini[t]:el..end[t]:el by (end[t] - ini[t]):el/(r2[t].length-1));
+            r1[t] = (ini[t]:el..end[t]:el by sb[t]:el);
+            if r1[t].length != r2[t].length then
+              r1[t] = (ini[t]:el..end[t]:el by (end[t] - ini[t]):el/(r2[t].length-1));
         }
       
         if debugBlockDistBulkTransfer then
             writeln("B{",(...r1),"}.ToDR",regionA);
    
-        Barg[(...r1)]._value.doiBulkTransferToDR(locArr[i].myElems[regionA],true);
+        Barg[(...r1)]._value.doiBulkTransferToDR(A.locArr[i].myElems[regionA]);
       }
     }
 }
  
 //For assignments of the form: DR = Block 
 //(default rectangular array = block distributed array)
-proc BlockArr.doiBulkTransferToDR(Barg,BFromBD=true)
+proc BlockArr.doiBulkTransferToDR(Barg)
 {
   if debugBlockDistBulkTransfer then
     writeln("In BlockArr.doiBulkTransferToDR()");
 
   const A = this, B = Barg._value; //Always it is a DR
   type el = A.idxType;
-  coforall j in A.dom.dist.targetLocDom
-  {
-    var inters:domain(rank,idxType=el,true);
-    inters=dom.locDoms(j).myBlock;
-    if(inters.numIndices>0)
+  coforall j in A.dom.dist.targetLocDom do
+    on A.dom.dist.targetLocales(j)
     {
-      const ini=bulkCommConvertCoordinate(inters.first, A, B);
-      const end=bulkCommConvertCoordinate(inters.last, A, B);
-      const sa = chpl__tuplify(B.dom.dsiStride);
-
-      var r1,r2: rank * range(idxType = el,stridable = true);
-      for param t in 1..rank
+      const inters=A.dom.locDoms(j).myBlock;
+      if(inters.numIndices>0)
       {
-        r2[t] = (chpl__tuplify(inters.first)[t]
-                 ..chpl__tuplify(inters.last)[t]
-                 by chpl__tuplify(inters.stride)[t]);
-        r1[t] = (ini[t]:el..end[t]:el by sa[t]:el);
+        const ini=bulkCommConvertCoordinate(inters.first, A, B);
+        const end=bulkCommConvertCoordinate(inters.last, A, B);
+        const sa = chpl__tuplify(B.dom.dsiStride);
+  
+        var r1,r2: rank * range(idxType = el,stridable = true);
+        for param t in 1..rank
+        {
+          r2[t] = (chpl__tuplify(inters.first)[t]
+                   ..chpl__tuplify(inters.last)[t]
+                   by chpl__tuplify(inters.stride)[t]);
+          r1[t] = (ini[t]:el..end[t]:el by sa[t]:el);
+        }
+        
+        if debugBlockDistBulkTransfer then
+          writeln("A[",r1,"] = B[",r2,"]");
+      
+        const d ={(...r1)};
+        const slice = B.dsiSlice(d._value);
+        //Necessary to calculate the value of blk variable in DR
+        //with the new domain r1
+        const slice2 = slice.dsiReindex(d._value);
+        
+        slice2.doiBulkTransferStride(A.locArr[j].myElems[(...r2)]._value);
+        
+        delete slice;
+        delete slice2;
       }
-      
-      if debugBlockDistBulkTransfer then
-        writeln("A[",r1,"] = B[",r2,"]");
-    
-      const d ={(...r1)};
-      const slice = B.dsiSlice(d._value);
-      //Necessary to calculate the value of blk variable in DR
-      //with the new domain r1
-      const slice2 = slice.dsiReindex(d._value);
-      
-      //The BFromBD variable is not necessary because we have calculated the
-      //Slice2 variable using dsiReindex, so, the blk variable has the same
-      //behaviour wherever the Barg variable came from(Block, Cyclic, DR)
-      slice2.doiBulkTransferStride(A.locArr[j].myElems[(...r2)]._value,true,true);
-      
-      delete slice;
-      delete slice2;
     }
-  }
 }
 
 //For assignments of the form: Block = DR 
 //(block distributed array = default rectangular)
-proc BlockArr.doiBulkTransferFromDR(Barg,BFromBD=true) 
+proc BlockArr.doiBulkTransferFromDR(Barg) 
 {
   if debugBlockDistBulkTransfer then
     writeln("In BlockArr.doiBulkTransferFromDR");
 
-  var DomB: domain(rank,int,true);
   const A = this, B = Barg._value;
-  DomB=B.dom.dsiDims(); //Necessary to make the intersection
   type el = A.idxType;
-  coforall j in A.dom.dist.targetLocDom
-  {
-    var inters:domain(rank,idxType=el,true);
-    inters=dom.locDoms(j).myBlock;
-    if(inters.numIndices>0)
+  coforall j in A.dom.dist.targetLocDom do
+    on A.dom.dist.targetLocales(j)
     {
-      const ini=bulkCommConvertCoordinate(inters.first, A, B);
-      const end=bulkCommConvertCoordinate(inters.last, A, B);
-      const sb = chpl__tuplify(B.dom.dsiStride);
-      
-      var r1,r2: rank * range(idxType = el,stridable = true);
-      for param t in 1..rank
+      const inters=A.dom.locDoms(j).myBlock;
+      if(inters.numIndices>0)
       {
-        r2[t] = (chpl__tuplify(inters.first)[t]
-                 ..chpl__tuplify(inters.last)[t]
-                 by chpl__tuplify(inters.stride)[t]);
-        r1[t] = (ini[t]:el..end[t]:el by sb[t]:el);
-      }
-      
-      if debugBlockDistBulkTransfer then
-        writeln("A[",r2,"] = B[",r1,"]");
+        const ini=bulkCommConvertCoordinate(inters.first, A, B);
+        const end=bulkCommConvertCoordinate(inters.last, A, B);
+        const sb = chpl__tuplify(B.dom.dsiStride);
         
-      const d ={(...r1)};
-      const slice = B.dsiSlice(d._value);
-      //this step it's necessary to calculate the value of blk variable in DR
-      //with the new domain r1
-      const slice2 = slice.dsiReindex(d._value);
-      
-      A.locArr[j].myElems[(...r2)]._value.doiBulkTransferStride(slice2,true,true);
+        var r1,r2: rank * range(idxType = el,stridable = true);
+        for param t in 1..rank
+        {
+          r2[t] = (chpl__tuplify(inters.first)[t]
+                   ..chpl__tuplify(inters.last)[t]
+                   by chpl__tuplify(inters.stride)[t]);
+          r1[t] = (ini[t]:el..end[t]:el by sb[t]:el);
+        }
+        
+        if debugBlockDistBulkTransfer then
+          writeln("A[",r2,"] = B[",r1,"]");
+          
+        const d ={(...r1)};
+        const slice = B.dsiSlice(d._value);
+        //this step it's necessary to calculate the value of blk variable in DR
+        //with the new domain r1
+        const slice2 = slice.dsiReindex(d._value);
+        
+        A.locArr[j].myElems[(...r2)]._value.doiBulkTransferStride(slice2);
+        delete slice;
+        delete slice2;
+      }
     }
-  }
 }
-
-proc BlockArr.isBlockDist() param {return true;}

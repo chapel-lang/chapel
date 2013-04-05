@@ -316,7 +316,7 @@ proc ReplicatedDom.dsiPrivatize(privatizeData): this.type {
 }
 
 proc ReplicatedDom.dsiGetReprivatizeData() {
-  return tuple(domRep);
+  return (domRep,);
 }
 
 proc ReplicatedDom.dsiReprivatize(other, reprivatizeData): void {

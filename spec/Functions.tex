@@ -515,12 +515,9 @@ writeln(tuple(tuple(1, 2), tuple(3, 4)));
 (hi, there)
 ((1, 2), (3, 4))
 \end{chapeloutput}
-defines a generic procedure that returns tuples.  When passed two or
-more actuals in a call, it is equivalent to building a tuple so the
-expressions \chpl{tuple(1, 2)} and \chpl{(1, 2)} are equivalent.  When
-passed one actual, it builds a 1-tuple which is different than the
-evaluation of the parenthesized expression.  Thus the
-expressions \chpl{tuple(1)} and \chpl{(1)} are not equivalent.
+defines a generic procedure that is equivalent to building a tuple.
+Therefore the expressions \chpl{tuple(1, 2)} and \chpl{(1,2)} are equialent,
+as are the expressions \chpl{tuple(1)} and \chpl{(1,)}.
 \end{chapelexample}
 
 

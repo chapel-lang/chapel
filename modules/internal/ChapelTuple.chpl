@@ -48,15 +48,9 @@ module ChapelTuple {
     compilerError("tuple size must be static");
   }
   
-  //
-  // standard tuple creation function
-  //
-  inline proc tuple(x ...?size)
-    return x;
-  
   // make it a tuple if it is not already
   inline proc chpl__tuplify(x) {
-    if isTuple(x) then return x; else return tuple(x);
+    if isTuple(x) then return x; else return (x,);
   }
   
   //
@@ -126,7 +120,7 @@ module ChapelTuple {
     const myRange = 1..#length;
     var (numChunks, _) = _computeChunkStuff(numTasks, ignoreRunning,
                                             minIndicesPerTask,
-                                            tuple(myRange));
+                                            (myRange,));
 
     if numChunks == 1 {
       yield myRange;
@@ -219,30 +213,30 @@ module ChapelTuple {
   //
   inline proc +(a: _tuple) {
     if a.size == 1 then
-      return tuple(+a(1));
+      return (+a(1), );
     else
-      return tuple(+a(1), (...+chpl__tupleRest(a)));
+      return (+a(1), (...+chpl__tupleRest(a)));
   }
   
   inline proc -(a: _tuple) {
     if a.size == 1 then
-      return tuple(-a(1));
+      return (-a(1),);
     else
-      return tuple(-a(1), (...-chpl__tupleRest(a)));
+      return (-a(1), (...-chpl__tupleRest(a)));
   }
   
   inline proc ~(a: _tuple) {
     if a.size == 1 then
-      return tuple(~a(1));
+      return (~a(1),);
     else
-      return tuple(~a(1), (...~chpl__tupleRest(a)));
+      return (~a(1), (...~chpl__tupleRest(a)));
   }
   
   inline proc !(a: _tuple) {
     if a.size == 1 then
-      return tuple(!a(1));
+      return (!a(1),);
     else
-      return tuple(!a(1), (...!chpl__tupleRest(a)));
+      return (!a(1), (...!chpl__tupleRest(a)));
   }
   
   //
@@ -271,99 +265,99 @@ module ChapelTuple {
     if a.size != b.size then
       compilerError("tuple operands to + have different sizes");
     if a.size == 1 then
-      return tuple(a(1)+b(1));
+      return (a(1)+b(1),);
     else
-      return tuple(a(1)+b(1), (...chpl__tupleRest(a)+chpl__tupleRest(b)));
+      return (a(1)+b(1), (...chpl__tupleRest(a)+chpl__tupleRest(b)));
   }
   
   inline proc -(a: _tuple, b: _tuple) {
     if a.size != b.size then
       compilerError("tuple operands to - have different sizes");
     if a.size == 1 then
-      return tuple(a(1)-b(1));
+      return (a(1)-b(1),);
     else
-      return tuple(a(1)-b(1), (...chpl__tupleRest(a)-chpl__tupleRest(b)));
+      return (a(1)-b(1), (...chpl__tupleRest(a)-chpl__tupleRest(b)));
   }
   
   inline proc *(a: _tuple, b: _tuple) {
     if a.size != b.size then
       compilerError("tuple operands to * have different sizes");
     if a.size == 1 then
-      return tuple(a(1)*b(1));
+      return (a(1)*b(1),);
     else
-      return tuple(a(1)*b(1), (...chpl__tupleRest(a)*chpl__tupleRest(b)));
+      return (a(1)*b(1), (...chpl__tupleRest(a)*chpl__tupleRest(b)));
   }
   
   inline proc /(a: _tuple, b: _tuple) {
     if a.size != b.size then
       compilerError("tuple operands to / have different sizes");
     if a.size == 1 then
-      return tuple(a(1)/b(1));
+      return (a(1)/b(1),);
     else
-      return tuple(a(1)/b(1), (...chpl__tupleRest(a)/chpl__tupleRest(b)));
+      return (a(1)/b(1), (...chpl__tupleRest(a)/chpl__tupleRest(b)));
   }
   
   inline proc %(a: _tuple, b: _tuple) {
     if a.size != b.size then
       compilerError("tuple operands to % have different sizes");
     if a.size == 1 then
-      return tuple(a(1)%b(1));
+      return (a(1)%b(1),);
     else
-      return tuple(a(1)%b(1), (...chpl__tupleRest(a)%chpl__tupleRest(b)));
+      return (a(1)%b(1), (...chpl__tupleRest(a)%chpl__tupleRest(b)));
   }
   
   inline proc **(a: _tuple, b: _tuple) {
     if a.size != b.size then
       compilerError("tuple operands to ** have different sizes");
     if a.size == 1 then
-      return tuple(a(1)**b(1));
+      return (a(1)**b(1),);
     else
-      return tuple(a(1)**b(1), (...chpl__tupleRest(a)**chpl__tupleRest(b)));
+      return (a(1)**b(1), (...chpl__tupleRest(a)**chpl__tupleRest(b)));
   }
   
   inline proc &(a: _tuple, b: _tuple) {
     if a.size != b.size then
       compilerError("tuple operands to & have different sizes");
     if a.size == 1 then
-      return tuple(a(1)&b(1));
+      return (a(1)&b(1),);
     else
-      return tuple(a(1)&b(1), (...chpl__tupleRest(a)&chpl__tupleRest(b)));
+      return (a(1)&b(1), (...chpl__tupleRest(a)&chpl__tupleRest(b)));
   }
   
   inline proc |(a: _tuple, b: _tuple) {
     if a.size != b.size then
       compilerError("tuple operands to | have different sizes");
     if a.size == 1 then
-      return tuple(a(1)|b(1));
+      return (a(1)|b(1),);
     else
-      return tuple(a(1)|b(1), (...chpl__tupleRest(a)|chpl__tupleRest(b)));
+      return (a(1)|b(1), (...chpl__tupleRest(a)|chpl__tupleRest(b)));
   }
   
   inline proc ^(a: _tuple, b: _tuple) {
     if a.size != b.size then
       compilerError("tuple operands to ^ have different sizes");
     if a.size == 1 then
-      return tuple(a(1)^b(1));
+      return (a(1)^b(1),);
     else
-      return tuple(a(1)^b(1), (...chpl__tupleRest(a)^chpl__tupleRest(b)));
+      return (a(1)^b(1), (...chpl__tupleRest(a)^chpl__tupleRest(b)));
   }
   
   inline proc <<(a: _tuple, b: _tuple) {
     if a.size != b.size then
       compilerError("tuple operands to << have different sizes");
     if a.size == 1 then
-      return tuple(a(1)<<b(1));
+      return (a(1)<<b(1),);
     else
-      return tuple(a(1)<<b(1), (...chpl__tupleRest(a)<<chpl__tupleRest(b)));
+      return (a(1)<<b(1), (...chpl__tupleRest(a)<<chpl__tupleRest(b)));
   }
   
   inline proc >>(a: _tuple, b: _tuple) {
     if a.size != b.size then
       compilerError("tuple operands to >> have different sizes");
     if a.size == 1 then
-      return tuple(a(1)>>b(1));
+      return (a(1)>>b(1),);
     else
-      return tuple(a(1)>>b(1), (...chpl__tupleRest(a)>>chpl__tupleRest(b)));
+      return (a(1)>>b(1), (...chpl__tupleRest(a)>>chpl__tupleRest(b)));
   }
   
   //

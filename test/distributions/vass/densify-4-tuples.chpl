@@ -39,7 +39,7 @@ for /*param*/ i1 in 1..nt {
   // 1-tuples
   const w1 = w(i1), r1 = r(i1);
   const a1 = densifyBounded(w1, r1);
-  const b1 = densifyBounded(tuple(w1), tuple(r1));
+  const b1 = densifyBounded((w1,), (r1,));
   check(a1, (...b1), (w1, r1));
 
   for /*param*/ i2 in 1..nt {

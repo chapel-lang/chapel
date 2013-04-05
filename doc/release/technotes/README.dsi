@@ -6,17 +6,57 @@ This README documents DSI - the interface that a domain map must implement.
 This interface is currently in place and is implemented by the standard
 domain maps provided with this Chapel distribution.
 
-The high level motivation and overview of DSI is given in our HotPar '2011
-paper, available at:
-  http://chapel.cray.com/publications/hotpar10-final.pdf
+The specification is split into "phases". The intention is to suggest
+an implementation order. The requirements of first phase are relied
+upon by the more essential operations on domains and arrays. Later
+phases support additional functionality and/or improved performance.
+The phasing is approximate and is not required.
 
-Implementations of the standard domain maps could be consulted as examples.
-They are available in:
+Status of this document
+-----------------------
+
+This document, as well as the DSI interface itself, are work in progress.
+We solicit feedback on both.
+
+The following aspects are not documented yet:
+* a summary of the six descriptor classes
+* the requirements for a domain map to support
+  associative, opaque, or sparse domains;
+* the significance of dsiClone();
+* the "local descriptor" classes;
+* some required methods.
+
+Additional Resources
+--------------------
+
+Implementations of the standard domain maps may be consulted as
+examples.  They are available in:
+
   $CHPL_HOME/modules/dists
   $CHPL_HOME/modules/layouts
 
+In addition, the following publication provide more background
+information on domain maps in general.
+
+- "User-Defined Distributions and Layouts in Chapel: Philosophy and
+  Framework." Bradford L. Chamberlain, Steven J. Deitz, David
+  Iten, Sung-Eun Choi. 2nd USENIX Workshop on Hot Topics in
+  Parallelism, June 2010.
+
+  The high level motivation and overview of DSI:
+     http://chapel.cray.com/publications/hotpar10-final.pdf
+
+- "Authoring User-Defined Domain Maps in Chapel."  Bradford
+   L. Chamberlain, Sung-Eun Choi, Steven J. Deitz, David Iten, Vassily
+   Litvinov. CUG 2011, May 2011.
+
+   A follow-on paper that outlines how to write a domain map:
+     http://chapel.cray.com/publications/cug11-final.pdf
+
+
+========
 Overview
---------
+========
 
 A domain map must provide three (or more) "global descriptor" classes.
 Here they are called GlobalDistribution, GlobalDomain, and GlobalArray.
@@ -28,26 +68,6 @@ and functionality (internally to facilitate implementation and/or
 externally for users' benefit) beyond the DSI requirements.
 For example, a distribution (i.e. a domain map that distributes data across
 multiple locales) will typically define "local descriptor" classes as well.
-
-Status of this document
------------------------
-
-This document, as well as the DSI interface itself, are work in progress.
-We solicit feedback on both.
-
-The following aspects are not documented yet:
-* a reference to slides with the six descriptor classes
-* the requirements for a domain map to support
-  associative, opaque, or sparse domains;
-* the significance of dsiClone();
-* the "local descriptor" classes;
-* some required methods.
-
-The specification is split into "phases". The intention is to suggest
-an implementation order. The requirements of first phase are relied
-upon by the more essential operations on domains and arrays. Later
-phases support additional functionality and/or improved performance.
-The phasing is approximate and is not required.
 
 
 ======================================
@@ -64,7 +84,7 @@ class GlobalDistribution
 
 proc GlobalDistribution.GlobalDistribution() // or with arguments
   Constructor(s)  These are not regulated by DSI - their specifics are
-  at the domain map implementer's discretion.
+  at the domain map implementor's discretion.
 
   We suggest providing constructor(s) that accept, as an argument,
   an array of locales over which to distribute, with 'Locales'
@@ -130,7 +150,7 @@ class GlobalDomain ... {
 
 proc GlobalDomain.GlobalDomain() // or with arguments
   Constructor(s)  These are not regulated by DSI - their specifics are
-  at the domain map implementer's discretion.
+  at the domain map implementor's discretion.
 
 proc GlobalDomain.dsiMyDist() return dist;
   Returns this domain's domain map. This procedure should be provided as shown.
@@ -219,7 +239,7 @@ iter GlobalDomain.these(param tag: iterator, followThis) where tag == iterator.f
   and generate a compile-time or run-time error when the items
   are not "similar".
 
-  DSI requires interoperability betweem domain maps only
+  DSI requires interoperability between domain maps only
   for *rectangular* domains, by prescribing:
    (a) how the leader builds the description of a subdomain, and
    (b) in what order the follower yields the indices of that subdomain.
@@ -325,7 +345,7 @@ class GlobalArray ... {
 
 proc GlobalArray.GlobalArray() // or with arguments
   Constructor(s)  These are not regulated by DSI - their specifics are
-  at the domain map implementer's discretion.
+  at the domain map implementor's discretion.
 
 proc GlobalDomain.dsiBuildArray(type eltType) : GlobalArray(eltType, this.type)
   This method is invoked when the Chapel program is creating
@@ -364,7 +384,7 @@ iter GlobalArray.these(param tag: iterator, followThis)  var  where tag == itera
 
   Given a subdomain description passed to the 'followThis' argument,
   the GlobalArray follower iterator must yield array locations
-  corresponding to the indicies yielded by the GlobalDomain follower,
+  corresponding to the indices yielded by the GlobalDomain follower,
   in the same order.
 
 proc GlobalArray.dsiReallocate(d: domain): void
@@ -507,7 +527,7 @@ proc GlobalDomain.dsiBuildRectangularDom(param rank: int,
     return result;
 
   [TODO: the following seems correct. The returned object can be an instance
-  of a different class than the receiver, at the implementer's discretion.
+  of a different class than the receiver, at the implementor's discretion.
   That class must satisfy the requirements on "GlobalDomain" defined in this
   document.]
 
@@ -519,7 +539,7 @@ proc GlobalArray.dsiSlice(sliceDef: GlobalDomain)
   of 'this' are to be included in the result.
 
   [TODO: the following seems correct. The returned object can be an instance
-  of a different class than the receiver, at the implementer's discretion.
+  of a different class than the receiver, at the implementor's discretion.
   That class must satisfy the requirements on "GlobalArray" defined in this
   document.]
 
@@ -544,7 +564,7 @@ proc GlobalArray.dsiRankChange(reindexDef: GlobalDomain,
 proc GlobalDistribution.dsiCreateReindexDist(newSpace, oldSpace)
 proc GlobalDistribution.dsiCreateRankChangeDist(param newRank: int, args)
   [TODO: the following seems correct. The returned object can be an instance
-  of a different class than the receiver, at the implementer's discretion.
+  of a different class than the receiver, at the implementor's discretion.
   That class must satisfy the requirements on "GlobalDistribution"
   defined in this document.]
 
@@ -639,7 +659,7 @@ class Global ... {
 
 proc Global.dsiGetPrivatizeData()
   Returns the data to be used as the argument to dsiPrivatize().
-  It can be a tuple of values or any other type, at the implementer's
+  It can be a tuple of values or any other type, at the implementor's
   discretion. See dsiPrivatize() for explanation.
 
 proc Global.dsiPrivatize(privatizeData): Global
@@ -653,7 +673,7 @@ proc Global.dsiPrivatize(privatizeData): Global
 
   Typically dsiPrivatize() will need to copy and/or privatize
   some information from the original object into the privatized copy
-  being created. This information could be obtained by quering 'this'
+  being created. This information could be obtained by querying 'this'
   directly. Alternatively, it could be passed from the original object
   via 'privatizeData'. This approach could allow the needed information
   to be bundled into the original active message, rather than requiring

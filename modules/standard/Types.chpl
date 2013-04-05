@@ -92,6 +92,20 @@ proc chpl__maxIntTypeSameSign(type t) type {
 }
 
 
+//
+// These procedures indicate whether or not a type t is an array type
+//
+proc isArrayType(type t) param where t: _array {
+  return true;
+}
+
+proc isArrayType(type t) param where !(t: _array) {
+  return false;
+}
+  
+
+
+
 
 // Returns true if it is legal to coerce t1 to t2, false otherwise.
 proc chpl__legalIntCoerce(type t1, type t2) param

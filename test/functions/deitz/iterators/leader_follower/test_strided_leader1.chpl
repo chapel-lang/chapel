@@ -5,8 +5,8 @@ iter foo(n: int) {
 
 iter foo(param tag: iterKind, n: int) where tag == iterKind.leader {
   cobegin {
-    on Locales(0) do yield tuple(0..n-1 by 2);
-    on Locales(1) do yield tuple(1..n-1 by 2);
+    on Locales(0) do yield (0..n-1 by 2,);
+    on Locales(1) do yield (1..n-1 by 2,);
   }
 }
 

@@ -213,8 +213,7 @@ writeln();
 // subranges of 0..n-1 and rely on the follower to shift it back to
 // the original coordinate system.  For this reason, we translate the
 // range by -low to shift it from low-based coordinates to 0-based
-// coordinates; and then we wrap it in the tuple() helper function
-// to make a 1-tuple out of it.
+// coordinates; and then we make a 1-tuple out of it.
 // 
 // Note the debugging output inserted into this iterator.  While
 // learning about leader-follower iterators, it's useful to turn
@@ -233,7 +232,7 @@ iter count(param tag: iterKind, n: int, low: int=1)
     if (verbose) then
       writeln("task ", tid, " owns ", myIters, " yielded as: ", zeroBasedIters);
 
-    yield tuple(zeroBasedIters);
+    yield (zeroBasedIters,);
   }
 }
 //

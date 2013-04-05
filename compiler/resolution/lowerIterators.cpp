@@ -9,73 +9,148 @@
 #include "iterator.h"
 
 
+// This consistency check should probably be moved earlier in the compilation.
+// Does it need to be recursive? (Currently, it is not.)
+static void nonLeaderParCheck()
+{
+  //
+  // check for parallel constructs in non-leader iterators
+  //
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    if (fn->hasFlag(FLAG_ITERATOR_FN) && !fn->hasFlag(FLAG_INLINE_ITERATOR)) {
+      Vec<CallExpr*> calls;
+      collectCallExprs(fn, calls);
+      forv_Vec(CallExpr, call, calls) {
+        if ((call->isPrimitive(PRIM_BLOCK_BEGIN)) ||
+            (call->isPrimitive(PRIM_BLOCK_COBEGIN)) ||
+            (call->isPrimitive(PRIM_BLOCK_COFORALL)) ||
+            (call->isNamed("_toLeader"))) {
+          USR_FATAL_CONT(call, "invalid use of parallel construct in serial iterator");
+        }
+        if ((call->isPrimitive(PRIM_BLOCK_ON)) ||
+            (call->isPrimitive(PRIM_BLOCK_ON_NB))) {
+          BlockStmt* onBlock = toBlockStmt(call->parentExpr);
+          if (!onBlock || onBlock->blockInfo != call) {
+            INT_FATAL(call, "mis-assumption about structure of on blocks in "
+                      "lowerIterators pass");
+          }
+          Vec<CallExpr*> callsWithinOn;
+          collectCallExprs(onBlock, callsWithinOn);
+          forv_Vec(CallExpr, call, callsWithinOn) {
+            if (call->isPrimitive(PRIM_YIELD)) {
+              USR_FATAL_CONT(call, "invalid use of 'yield' within 'on' in serial iterator");
+            }
+          }
+        }
+      }
+    }
+  }
+  USR_STOP();
+}
+
+
+// Traverse all callers of this function, to see if it calls the base iterator recursively.
+// Return true if so; false otherwise.
+// This version uses a depth-first search.
+static bool find_recursive_caller(FnSymbol* fn, FnSymbol* iter, Vec<FnSymbol*>& fnSet)
+{
+  // We've already seen this fn, and if we're still searching it means
+  // we didn't return true last time, so return false this time too.
+  if (fnSet.set_in(fn))
+    return false;
+
+  // OK, first time.  Mark this function as visited.
+  fnSet.set_add(fn);
+
+  // Traverse all its call sites.
+  forv_Vec(CallExpr, call, *fn->calledBy)
+  {
+    // Extract the symbol representing the calling function.
+    FnSymbol* caller = toFnSymbol(call->parentSymbol);
+
+    // If the caller is the same as the iterator we started with,
+    // it calls itself recursively.  Further searching is unnecessary.
+    if (caller == iter)
+      return true;
+
+    // Otherwise, search recursively up the call chain.
+    // If recursion was detected, no further searching is required.
+    if (find_recursive_caller(caller, iter, fnSet))
+      return true;
+
+    // Otherwise, try the next call site.
+  }
+
+  // OK, no recursive callers at all.
+  return false;
+}
+
+
 //
-// Declare a set of recursive iterators and create a function to
-// compute this set.  This set is used to make sure we only inline the
-// body of a loop into an iterator, rather than the whole iterator, in
-// places where we would otherwise attempt to inline a recursive
-// iterator.
+// Mark as recursive those iterators which call themselves (directly or indirectly).
+// When dealing with recursive iterators, we only inline the body of the loop,
+// not the iterator as a whole.
 //
-static Vec<FnSymbol*> recursiveIteratorSet;
 static void computeRecursiveIteratorSet() {
   compute_call_sites();
 
-  forv_Vec(FnSymbol, ifn, gFnSymbols) {
-    if (ifn->hasFlag(FLAG_ITERATOR_FN)) {
-      bool recursive = false;
-      Vec<FnSymbol*> fnSet;
-      Vec<FnSymbol*> fnVec;
-      fnSet.set_add(ifn);
-      fnVec.add(ifn);
-      forv_Vec(FnSymbol, fn, fnVec) {
-        forv_Vec(CallExpr, call, *fn->calledBy) {
-          FnSymbol* parent = toFnSymbol(call->parentSymbol);
-          INT_ASSERT(parent);
-          if (parent == ifn) {
-            recursive = true;
-            break;
-          } else if (!fnSet.set_in(parent)) {
-            fnSet.set_add(parent);
-            fnVec.add(parent);
-          }
-        }
-        if (recursive)
-          break;
-      }
-      if (recursive)
-        recursiveIteratorSet.set_add(ifn);
-    }
+  // Walk all functions
+  forv_Vec(FnSymbol, iter, gFnSymbols)
+  {
+    // And select just the iterators.
+    if (!iter->hasFlag(FLAG_ITERATOR_FN))
+      continue;
+
+    // Determine if the iterator calls itself, either directly or indirectly.
+    Vec<FnSymbol*> fnSet;   // Used to avoid recursion
+    if (find_recursive_caller(iter, iter, fnSet))
+      // If so, add the recursive iterator flag.
+      iter->addFlag(FLAG_RECURSIVE_ITERATOR);
   }
 }
 
 
 //
-// If a local block has no yields, returns, gotos or labels it can safely
-// be left unfragmented.
+// If a local block has no yields, returns, gotos or labels
+// then it can safely be left unfragmented.
+// A block whose blockInfo is PRIM_BLOCK_UNLOCAL must also be fragmented.
 //
 static bool leaveLocalBlockUnfragmented(BlockStmt* block) {
   Vec<BaseAST*> asts;
   collect_asts(block, asts);
 
   forv_Vec(BaseAST, ast, asts) {
+
+    // Check if the AST element is a GOTO.
+    if (isGotoStmt(ast))
+      return false;     // Yes, FAIL.
+
+    // See if it is a yield or return statement.
     CallExpr* call = toCallExpr(ast);
-    DefExpr* def = toDefExpr(ast);
+    if (call &&
+        (call->isPrimitive(PRIM_YIELD) || call->isPrimitive(PRIM_RETURN)))
+      return false;     // Yes, FAIL.
+
+    // See if it is an unlocal block.
     BlockStmt* block = toBlockStmt(ast);
-    if ((call && call->isPrimitive(PRIM_YIELD))  ||
-        (call && call->isPrimitive(PRIM_RETURN)) ||
-        (block && block->blockInfo && block->blockInfo->isPrimitive(PRIM_BLOCK_UNLOCAL)) ||
-        isGotoStmt(ast) || (def && isLabelSymbol(def->sym))) {
-      return false;
-    }
+    if (block && block->blockInfo &&
+        block->blockInfo->isPrimitive(PRIM_BLOCK_UNLOCAL))
+      return false;     // Yes, FAIL.
+    
+    // See if it is a label.
+    DefExpr* def = toDefExpr(ast);
+    if (def && isLabelSymbol(def->sym))
+      return false;     // Yes, FAIL.
   }
 
+  // OK.  No undesirable statements found.
   return true;
 }
 
 
 //
 // replace a local block by smaller local blocks that do not contain
-// goto statements, yields, and returns.
+// goto statements, yields, returns labels or unlocal blocks.
 //
 static void
 fragmentLocalBlocks() {
@@ -83,7 +158,7 @@ fragmentLocalBlocks() {
   Vec<Expr*> inVec;  // stmts to be inserted in new local blocks
 
   //
-  // collect all local blocks into localBlocks vector
+  // collect all local blocks which need to be fragmented
   //
   Vec<BlockStmt*> localBlocks; // old local blocks
   forv_Vec(BlockStmt, block, gBlockStmts) {
@@ -119,8 +194,8 @@ fragmentLocalBlocks() {
       // this statement is a definition, add it to preVec; otherwise,
       // add this statement to inVec.
       //
-      if ((call && call->isPrimitive(PRIM_YIELD)) ||
-          (call && call->isPrimitive(PRIM_RETURN)) ||
+      if ((call && (call->isPrimitive(PRIM_YIELD) ||
+                    call->isPrimitive(PRIM_RETURN))) ||
           (def && isLabelSymbol(def->sym)) ||
           isGotoStmt(current) ||
           isCondStmt(current) ||
@@ -142,12 +217,14 @@ fragmentLocalBlocks() {
       } else {
         inVec.add(current);
       }
+      // Note that yield and return statements are removed, as are
+      // gotos and labels.  Blocks and conditionals are unwrapped.
 
       //
       // if ready to insert a new local block or we are on the last
       // statement in a block, insert a new local block containing all
       // the statements in inVec; move all the statements in preVec to
-      // before this local block.
+      // a point just before this new local block.
       //
       if (insertNewLocal || !current->next) {
         if (preVec.n || inVec.n) {
@@ -176,8 +253,13 @@ fragmentLocalBlocks() {
 }
 
 
+// In the body of the iterator, replace references to the iterator formals
+// with references to fields in the iterator class.
+//
+// Multiple temps may be created for each formal.
 static void
-replaceIteratorFormalsWithIteratorFields(FnSymbol* iterator, Symbol* ic, Vec<BaseAST*>& asts) {
+replaceIteratorFormalsWithIteratorFields(FnSymbol* iterator, Symbol* ic,
+                                         Vec<BaseAST*>& asts) {
   int count = 1;
   for_formals(formal, iterator) {
     forv_Vec(BaseAST, ast, asts) {
@@ -202,106 +284,195 @@ static Map<FnSymbol*,FnSymbol*> iteratorFnMap;
 static Vec<FnSymbol*> iteratorWithOnStatementSet;
 static FnSymbol* argBundleCopyFn = NULL;
 static FnSymbol* argBundleFreeFn = NULL;
+static ClassType*  argBundleType = NULL;
 
 
+//
+// Build the definition for the abstract recursive iterator argument bundle
+// class, if one does not exist yet.
+//
+static void
+ensureArgBundleType(ClassType* ct) {
+  if (argBundleType == NULL) {
+    argBundleType = new ClassType(CLASS_CLASS);
+    TypeSymbol* aabSym = new TypeSymbol("chpl_argBundle", argBundleType);
+    aabSym->addFlag(FLAG_NO_OBJECT);
+    ct->symbol->defPoint->insertBefore(new DefExpr(aabSym));
+  }
+}
+
+
+// Creates a function to free the arg bundle associated with a recursive iterator.
+//
+// This is currently done using just one free function for all arg bundles.
+// There is (effectively) a switch statement inside the function that selects
+// the appropriate bundle based on a function ID inserted into the last field
+//  and frees its memory.
+//
+// The function looks approximately like:
+// void chpl__freeRecursiveIteratorArgumentBundle(int loopBodyFnID, chpl_argBundle loopBodyFnArgs)
+// {
+//   chpl_free(loopBodyFnArgs);
+//   // potentially more
+//   return void;
+// }
+//
 static void
 createArgBundleFreeFn(ClassType* ct, FnSymbol* loopBodyFnWrapper) {
   if (argBundleFreeFn == NULL) {
+    // Create the shared function that frees recursive argument bundles.
     argBundleFreeFn = new FnSymbol("chpl__freeRecursiveIteratorArgumentBundle");
-    argBundleFreeFn->retType = dtVoid;
-    argBundleFreeFn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_loopBodyFn", dtInt[INT_SIZE_DEFAULT]));
-    argBundleFreeFn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_loopBodyFnArgs", ct));
+    argBundleFreeFn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "loopBodyFnID", dtInt[INT_SIZE_DEFAULT]));
+    argBundleFreeFn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "loopBodyFnArgs", argBundleType));
     argBundleFreeFn->insertAtTail(new CallExpr(PRIM_CHPL_FREE, argBundleFreeFn->getFormal(2)));
     argBundleFreeFn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
+    argBundleFreeFn->retType = dtVoid;
     ct->symbol->defPoint->insertBefore(new DefExpr(argBundleFreeFn));
   }
 
-  bool addRecursiveCall = false;
-  ArgSymbol* loopBodyFnArg = argBundleFreeFn->getFormal(1);
+  bool addedRecursiveCall = false;
+  ArgSymbol* loopBodyFnIDArg = argBundleFreeFn->getFormal(1);
   ArgSymbol* loopBodyFnArgsArg = argBundleFreeFn->getFormal(2);
 
+  // Add a block for each concrete arg bundle type.
   BlockStmt* block = new BlockStmt();
-  Symbol* loopBodyFnArgsArgTmp = newTemp(ct);
-  block->insertAtTail(new DefExpr(loopBodyFnArgsArgTmp));
-  block->insertAtTail(new CallExpr(PRIM_MOVE, loopBodyFnArgsArgTmp, new CallExpr(PRIM_CAST, ct->symbol, loopBodyFnArgsArg)));
+
+  // Get the bundle arg and cast it to the concrete type.
+  Symbol* loopBodyFnArgsTmp = newTemp("loopBodyFnArgsTmp", ct);
+  block->insertAtTail(new DefExpr(loopBodyFnArgsTmp));
+  block->insertAtTail(new CallExpr(PRIM_MOVE, loopBodyFnArgsTmp, new CallExpr(PRIM_CAST, ct->symbol, loopBodyFnArgsArg)));
+
+  // The last field contains the index used to select the recursive iterator argument bundle.
   Symbol* lastField = NULL; // assume function pointer for function argument bundle
   for_fields(field, ct) {
+    // If the bundle contains a pointer to another bundle, 
+    // its clause must call this free function recursively.
     if (field->type->symbol->hasFlag(FLAG_REF) &&
         field->getValType()->symbol->hasFlag(FLAG_LOOP_BODY_ARGUMENT_CLASS)) {
-      addRecursiveCall = true;
-      Symbol* tmp = newTemp(field->type);
-      block->insertAtTail(new DefExpr(tmp));
-      block->insertAtTail(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER_VALUE, loopBodyFnArgsArgTmp, field)));
-      Symbol* lastTmp = newTemp(lastField->type);
-      block->insertAtTail(new DefExpr(lastTmp));
-      block->insertAtTail(new CallExpr(PRIM_MOVE, lastTmp, new CallExpr(PRIM_GET_MEMBER_VALUE, loopBodyFnArgsArgTmp, lastField)));
-      VarSymbol* loopBodyFnArgTmp = newTemp(dtInt[INT_SIZE_DEFAULT]);
-      VarSymbol* loopBodyFnArgsArgTmp = newTemp(field->getValType());
-      block->insertAtTail(new DefExpr(loopBodyFnArgTmp));
-      block->insertAtTail(new DefExpr(loopBodyFnArgsArgTmp));
-      block->insertAtTail(new CallExpr(PRIM_MOVE, loopBodyFnArgTmp, new CallExpr(PRIM_DEREF, lastTmp)));
-      block->insertAtTail(new CallExpr(PRIM_MOVE, loopBodyFnArgsArgTmp, new CallExpr(PRIM_DEREF, tmp)));
-      block->insertAtTail(new CallExpr(argBundleFreeFn, loopBodyFnArgTmp, loopBodyFnArgsArgTmp));
+      addedRecursiveCall = true;
+
+      // Load the function ID ref into a temp.
+      Symbol* recursiveFnIDRef = newTemp("recursiveFnIDRef", lastField->type);
+      block->insertAtTail(new DefExpr(recursiveFnIDRef));
+      block->insertAtTail(new CallExpr(PRIM_MOVE, recursiveFnIDRef, new CallExpr(PRIM_GET_MEMBER_VALUE, loopBodyFnArgsTmp, lastField)));
+
+      // Load the function ID for the recursive call.
+      VarSymbol* recursiveFnID = newTemp("recursiveFnID", dtInt[INT_SIZE_DEFAULT]);
+      block->insertAtTail(new DefExpr(recursiveFnID));
+      block->insertAtTail(new CallExpr(PRIM_MOVE, recursiveFnID, new CallExpr(PRIM_DEREF, recursiveFnIDRef)));
+
+      // Load the recursive bundle pointer into a temp.
+      Symbol* recursiveArgsRef = newTemp("recursiveArgsRef", field->type);
+      block->insertAtTail(new DefExpr(recursiveArgsRef));
+      block->insertAtTail(new CallExpr(PRIM_MOVE, recursiveArgsRef, new CallExpr(PRIM_GET_MEMBER_VALUE, loopBodyFnArgsTmp, field)));
+
+      // Load the recursive bundle.
+      VarSymbol* recursiveArgsTmp = newTemp("recursiveArgs", argBundleType);
+      block->insertAtTail(new DefExpr(recursiveArgsTmp));
+      block->insertAtTail(new CallExpr(PRIM_MOVE, recursiveArgsTmp,
+                                       new CallExpr(PRIM_CAST, argBundleType->symbol,
+                                                    new CallExpr(PRIM_DEREF, recursiveArgsRef))));
+
+      // Generate the recursive call.
+      block->insertAtTail(new CallExpr(argBundleFreeFn, recursiveFnID, recursiveArgsTmp));
     }
     lastField = field;
   }
-  if (addRecursiveCall) {
-    Symbol* cond = newTemp(dtBool);
+
+  // If we added a recursive call, we have to add a new clause to the free function:
+  //   if (loopBodyFnIDArg == ftable_index(loopBodyFnWrapper))
+  //   {
+  //     ...
+  //     chpl__freeRecursiveIteratorArgumentBundle(recursive_ID, recursive_bundle);
+  //   }
+  if (addedRecursiveCall) {
+    Symbol* cond = newTemp("cond", dtBool);
     argBundleFreeFn->insertAtHead(new CondStmt(new SymExpr(cond), block));
-    argBundleFreeFn->insertAtHead(new CallExpr(PRIM_MOVE, cond, new CallExpr(PRIM_EQUAL, loopBodyFnArg, new_IntSymbol(ftableMap.get(loopBodyFnWrapper)))));
+    argBundleFreeFn->insertAtHead(new CallExpr(PRIM_MOVE, cond, new CallExpr(PRIM_EQUAL, loopBodyFnIDArg, new_IntSymbol(ftableMap.get(loopBodyFnWrapper)))));
     argBundleFreeFn->insertAtHead(new DefExpr(cond));
   }
 }
 
 
+// Creates a function to copy the arg bundle associated with a recursive iterator.
+//
+// This is currently done using just one copy function for all arg bundles.
+// There is (effectively) a switch statement inside the function that selects
+// the appropriate bundle based on loopBodyFnID and copies that part.
+//
+// The created function has the signature:
+//  chpl_argBundle chpl__copyRecursiveIteratorArgumentBundle(int loopBodyFnID, chpl_argBundle loopBodyFnArgs)
+//
 static void
 createArgBundleCopyFn(ClassType* ct, FnSymbol* loopBodyFnWrapper) {
   if (argBundleCopyFn == NULL) {
+    // Create the shared function that copies recursive argument bundles.
+    // The initial implementation is just a shell.  After creation, it looks like:
+    //  chpl_argBundle chpl__copyRecursiveIteratorArgumentBundle(int loopBodyFnID, chpl_argBundle loopBodyFnArgs)
+    //  {
+    //    chpl_argBundle tmp = nil;
+    //    return tmp;
+    //  }
     argBundleCopyFn = new FnSymbol("chpl__copyRecursiveIteratorArgumentBundle");
-    argBundleCopyFn->retType = ct;
-    argBundleCopyFn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_loopBodyFn", dtInt[INT_SIZE_DEFAULT]));
-    argBundleCopyFn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_loopBodyFnArgs", ct));
-    Symbol* tmp = newTemp(ct);
+    argBundleCopyFn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "loopBodyFnID", dtInt[INT_SIZE_DEFAULT]));
+    argBundleCopyFn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "loopBodyFnArgs", argBundleType));
+    Symbol* tmp = newTemp("dummyBundle", argBundleType);
     argBundleCopyFn->insertAtTail(new DefExpr(tmp));
     argBundleCopyFn->insertAtTail(new CallExpr(PRIM_MOVE, tmp, gNil));
     argBundleCopyFn->insertAtTail(new CallExpr(PRIM_RETURN, tmp));
+    argBundleCopyFn->retType = argBundleType;
     ct->symbol->defPoint->insertBefore(new DefExpr(argBundleCopyFn));
   }
 
-  ArgSymbol* loopBodyFnArg = argBundleCopyFn->getFormal(1);
+  // Get the arguments to the (shared) copy function.
+  ArgSymbol* loopBodyFnIDArg = argBundleCopyFn->getFormal(1);
   ArgSymbol* loopBodyFnArgsArg = argBundleCopyFn->getFormal(2);
 
+  // Create a new body for this call to the copy function.
+  //{
+  //  args = (ct*)malloc(sizeof(ct));
+  //  fnArgsTmp = (ct*)_loopBodyFnArgs;
+  //  <field_type> tmp = fnArgsTmp->field;  // for each field 
+  //  int fnTmp = *lastTmp;                 // for each loop body arg field only
+  //  <field_val_tmp> argsTmp = *tmp;       // for each loop body arg field only
+  //  tmp = (<field_val_type>)
+  //    chpl__copyRecursiveIteratorArgumentBundle(fnTmp, argsTmp);  // ditto
+  //  args->field = tmp;                    // for each field
+  //  ret = args;
+  //}
   BlockStmt* block = new BlockStmt();
-  Symbol* argBundle = newTemp(ct);
+  Symbol* argBundle = newTemp("argBundle", ct);
   block->insertAtTail(new DefExpr(argBundle));
   block->insertAtTail(new CallExpr(PRIM_MOVE, argBundle,
-                        new CallExpr(PRIM_CHPL_ALLOC_PERMIT_ZERO,
+                                   new CallExpr(PRIM_CHPL_ALLOC,
                                      ct->symbol,
                                      newMemDesc("compiler-inserted argument bundle"))));
-  Symbol* loopBodyFnArgsArgTmp = newTemp(ct);
-  block->insertAtTail(new DefExpr(loopBodyFnArgsArgTmp));
-  block->insertAtTail(new CallExpr(PRIM_MOVE, loopBodyFnArgsArgTmp, new CallExpr(PRIM_CAST, ct->symbol, loopBodyFnArgsArg)));
+  Symbol* loopBodyFnArgsTmp = newTemp("loopBodyFnArgsTmp", ct);
+  block->insertAtTail(new DefExpr(loopBodyFnArgsTmp));
+  block->insertAtTail(new CallExpr(PRIM_MOVE, loopBodyFnArgsTmp, new CallExpr(PRIM_CAST, ct->symbol, loopBodyFnArgsArg)));
   Symbol* lastTmp = NULL; // assume function pointer for function argument bundle
   for_fields(field, ct) {
-    Symbol* tmp = newTemp(field->type);
+    Symbol* tmp = newTemp(field->name, field->type);
     block->insertAtTail(new DefExpr(tmp));
-    block->insertAtTail(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER_VALUE, loopBodyFnArgsArgTmp, field)));
+    block->insertAtTail(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER_VALUE, loopBodyFnArgsTmp, field)));
 
     if (field->type->symbol->hasFlag(FLAG_REF) &&
         field->getValType()->symbol->hasFlag(FLAG_LOOP_BODY_ARGUMENT_CLASS)) {
-      VarSymbol* copy = newTemp(field->type);
-      VarSymbol* loopBodyFnArgTmp = newTemp(dtInt[INT_SIZE_DEFAULT]);
-      VarSymbol* loopBodyFnArgsArgTmp = newTemp(field->getValType());
+      VarSymbol* copy = newTemp(field->name, field->type);
+      VarSymbol* recursiveFnID = newTemp("recursiveFnID", dtInt[INT_SIZE_DEFAULT]);
+      VarSymbol* recursiveArgs = newTemp("recursiveArgs", argBundleType);
       block->insertAtTail(new DefExpr(copy));
-      block->insertAtTail(new DefExpr(loopBodyFnArgTmp));
-      block->insertAtTail(new DefExpr(loopBodyFnArgsArgTmp));
-      block->insertAtTail(new CallExpr(PRIM_MOVE, loopBodyFnArgTmp, new CallExpr(PRIM_DEREF, lastTmp)));
-      block->insertAtTail(new CallExpr(PRIM_MOVE, loopBodyFnArgsArgTmp, new CallExpr(PRIM_DEREF, tmp)));
-      VarSymbol* retTmp = newTemp(argBundleCopyFn->retType);
+      block->insertAtTail(new DefExpr(recursiveFnID));
+      block->insertAtTail(new DefExpr(recursiveArgs));
+      block->insertAtTail(new CallExpr(PRIM_MOVE, recursiveFnID, new CallExpr(PRIM_DEREF, lastTmp)));
+      block->insertAtTail(new CallExpr(PRIM_MOVE, recursiveArgs,
+                                       new CallExpr(PRIM_CAST, argBundleType->symbol,
+                                                    new CallExpr(PRIM_DEREF, tmp))));
+      VarSymbol* retTmp = newTemp("retTmp", argBundleCopyFn->retType);
       block->insertAtTail(new DefExpr(retTmp));
-      VarSymbol* castTmp = newTemp(field->getValType());
+      VarSymbol* castTmp = newTemp("castTmp", field->getValType());
       block->insertAtTail(new DefExpr(castTmp));
-      block->insertAtTail(new CallExpr(PRIM_MOVE, retTmp, new CallExpr(argBundleCopyFn, loopBodyFnArgTmp, loopBodyFnArgsArgTmp)));
+      block->insertAtTail(new CallExpr(PRIM_MOVE, retTmp, new CallExpr(argBundleCopyFn, recursiveFnID, recursiveArgs)));
       block->insertAtTail(new CallExpr(PRIM_MOVE, castTmp, new CallExpr(PRIM_CAST, castTmp->type->symbol, retTmp)));
       block->insertAtTail(new CallExpr(PRIM_MOVE, copy, new CallExpr(PRIM_ADDR_OF, castTmp)));
       tmp = copy;
@@ -312,13 +483,21 @@ createArgBundleCopyFn(ClassType* ct, FnSymbol* loopBodyFnWrapper) {
   }
   Symbol* ret = argBundleCopyFn->getReturnSymbol();
   block->insertAtTail(new CallExpr(PRIM_MOVE, ret, new CallExpr(PRIM_CAST, ret->type->symbol, argBundle)));
+
+  // The body is placed in a conditional, so only the body corresponding to the current 
+  // fnArg is actually executed when the copy function is called:
+  //  if (fnArg == ftable[loopBodyFnWrapper])
+  //  { <body_as_defined_above> }
   Symbol* cond = newTemp(dtBool);
   argBundleCopyFn->insertBeforeReturn(new DefExpr(cond));
-  argBundleCopyFn->insertBeforeReturn(new CallExpr(PRIM_MOVE, cond, new CallExpr(PRIM_EQUAL, loopBodyFnArg, new_IntSymbol(ftableMap.get(loopBodyFnWrapper)))));
+  argBundleCopyFn->insertBeforeReturn(new CallExpr(PRIM_MOVE, cond, new CallExpr(PRIM_EQUAL, loopBodyFnIDArg, new_IntSymbol(ftableMap.get(loopBodyFnWrapper)))));
   argBundleCopyFn->insertBeforeReturn(new CondStmt(new SymExpr(cond), block));
 }
 
 
+// This creates the class type carrying the arguments to a (possibly recursive)
+// iterator function call and fills a temp with the passed-in values.
+//
 static ClassType* 
 bundleLoopBodyFnArgsForIteratorFnCall(CallExpr* iteratorFnCall,
                                       CallExpr* loopBodyFnCall,
@@ -326,12 +505,14 @@ bundleLoopBodyFnArgsForIteratorFnCall(CallExpr* iteratorFnCall,
   FnSymbol* iteratorFn = iteratorFnCall->isResolved();
   FnSymbol* loopBodyFn = loopBodyFnCall->isResolved();
 
+  // Create the argument bundle type
   ClassType* ct = new ClassType(CLASS_CLASS);
   TypeSymbol* ts = new TypeSymbol("_fn_arg_bundle", ct);
   ts->addFlag(FLAG_NO_OBJECT);
   ts->addFlag(FLAG_LOOP_BODY_ARGUMENT_CLASS);
   iteratorFnCall->parentSymbol->defPoint->insertBefore(new DefExpr(ts));
 
+  // And its corresponding reference type.
   ClassType* rct = new ClassType(CLASS_CLASS);
   TypeSymbol* rts = new TypeSymbol("_ref_fn_arg_bundle", rct);
   rts->addFlag(FLAG_NO_OBJECT);
@@ -340,54 +521,77 @@ bundleLoopBodyFnArgsForIteratorFnCall(CallExpr* iteratorFnCall,
   rct->fields.insertAtTail(new DefExpr(new VarSymbol("_val", ct)));
   ct->refType = rct;
 
-  VarSymbol* argBundle = newTemp(ct);
+  // Create the argument bundle.
+  // args = (ct*)malloc(sizeof(ct));
+  VarSymbol* argBundle = newTemp("argBundle", ct);
   iteratorFnCall->insertBefore(new DefExpr(argBundle));
   iteratorFnCall->insertBefore(new CallExpr(PRIM_MOVE, argBundle,
-                                 new CallExpr(PRIM_CHPL_ALLOC_PERMIT_ZERO,
+                                            new CallExpr(PRIM_CHPL_ALLOC,
                                               ts,
                                               newMemDesc("compiler-inserted argument bundle"))));
   iteratorFnCall->insertAtTail(argBundle);
   iteratorFnCall->insertAfter(new CallExpr(PRIM_CHPL_FREE, argBundle));
 
+  // loopBodyWrapper(int index, ct* fn_args) {
+  //   loopBodyFn(index);
+  // }
   ArgSymbol* wrapperIndexArg = loopBodyFn->getFormal(1)->copy();
   loopBodyFnWrapper->insertFormalAtTail(wrapperIndexArg);
   ArgSymbol* wrapperArgsArg = new ArgSymbol(INTENT_BLANK, "fn_args", ct);
   loopBodyFnWrapper->insertFormalAtTail(wrapperArgsArg);
   CallExpr* loopBodyFnWrapperCall = new CallExpr(loopBodyFn, wrapperIndexArg);
 
+
   int i = 1;
   Expr* lastActual = NULL;
   while (loopBodyFnCall->numActuals() >= 2) {
+    // Skip the index arg.
     Expr* actual = loopBodyFnCall->get(2)->remove();
+    // Create a field for this arg.
     VarSymbol* field = new VarSymbol(astr("_arg", istr(i++)), actual->typeInfo());
     ct->fields.insertAtTail(new DefExpr(field));
+
     if (field->type->symbol->hasFlag(FLAG_REF) &&
         field->getValType()->symbol->hasFlag(FLAG_LOOP_BODY_ARGUMENT_CLASS)) {
-      if (iteratorWithOnStatementSet.set_in(iteratorFn)) {
+      if (iteratorFn->hasFlag(FLAG_ITERATOR_WITH_ON)) {
+
+        // For recursive args in forked bodies,
+        // build up a local copy of the argument bundle (recursive copy).
+
+        // This code assumes that the depth arg for the recursive loopBodyFnCall
+        // precedes the recursive arg bundle in the list of actual arguments.
         //
-        // build up a local copy of the argument bundle (recursive copy)
+        // int index = *lastActual;
+        // ct* rec_args = *actual;
+        // ct* rec_args_copy = (ct*)chpl__copyRecursiveIteratorArgumentBundle(index, rec_args);
         //
-        VarSymbol* tmp = newTemp(field->type);
-        VarSymbol* loopBodyFnArgTmp = newTemp(dtInt[INT_SIZE_DEFAULT]);
-        VarSymbol* loopBodyFnArgsArgTmp = newTemp(field->getValType());
+        VarSymbol* tmp = newTemp(field->name, field->type);
+        VarSymbol* recursiveFnID = newTemp("recursiveFnID", dtInt[INT_SIZE_DEFAULT]);
+        VarSymbol* loopBodyFnArgsTmp = newTemp("loopBodyFnArgsTmp", argBundleType);
         iteratorFnCall->insertBefore(new DefExpr(tmp));
-        iteratorFnCall->insertBefore(new DefExpr(loopBodyFnArgTmp));
-        iteratorFnCall->insertBefore(new DefExpr(loopBodyFnArgsArgTmp));
-        iteratorFnCall->insertBefore(new CallExpr(PRIM_MOVE, loopBodyFnArgTmp, new CallExpr(PRIM_DEREF, lastActual->copy())));
-        iteratorFnCall->insertBefore(new CallExpr(PRIM_MOVE, loopBodyFnArgsArgTmp, new CallExpr(PRIM_DEREF, actual)));
-        VarSymbol* retTmp = newTemp(argBundleCopyFn->retType);
+        iteratorFnCall->insertBefore(new DefExpr(recursiveFnID));
+        iteratorFnCall->insertBefore(new DefExpr(loopBodyFnArgsTmp));
+        iteratorFnCall->insertBefore(new CallExpr(PRIM_MOVE, recursiveFnID, new CallExpr(PRIM_DEREF, lastActual->copy())));
+        iteratorFnCall->insertBefore(new CallExpr(PRIM_MOVE, loopBodyFnArgsTmp,
+                                                  new CallExpr(PRIM_CAST, argBundleType->symbol,
+                                                               new CallExpr(PRIM_DEREF, actual))));
+        VarSymbol* retTmp = newTemp("retTmp", argBundleCopyFn->retType);
         iteratorFnCall->insertBefore(new DefExpr(retTmp));
-        VarSymbol* castTmp = newTemp(field->getValType());
+        VarSymbol* castTmp = newTemp("castTmp", field->getValType());
         iteratorFnCall->insertBefore(new DefExpr(castTmp));
-        iteratorFnCall->insertBefore(new CallExpr(PRIM_MOVE, retTmp, new CallExpr(argBundleCopyFn, loopBodyFnArgTmp, loopBodyFnArgsArgTmp)));
+        iteratorFnCall->insertBefore(new CallExpr(PRIM_MOVE, retTmp, new CallExpr(argBundleCopyFn, recursiveFnID, loopBodyFnArgsTmp)));
         iteratorFnCall->insertBefore(new CallExpr(PRIM_MOVE, castTmp, new CallExpr(PRIM_CAST, castTmp->type->symbol, retTmp)));
         iteratorFnCall->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_ADDR_OF, castTmp)));
-        iteratorFnCall->insertAfter(new CallExpr(argBundleFreeFn, loopBodyFnArgTmp, retTmp));
+        iteratorFnCall->insertAfter(new CallExpr(argBundleFreeFn, recursiveFnID, retTmp));
         actual = new SymExpr(tmp);
       }
     }
+    
     iteratorFnCall->insertBefore(new CallExpr(PRIM_SET_MEMBER, argBundle, field, actual));
-    VarSymbol* tmp = newTemp(field->type);
+    VarSymbol* tmp = newTemp(field->name, field->type);
+
+    // In the wrapper function, moves the current arg bundle field into a temp 
+    // (unbundles it) and adds it to the args used  to call the loop body function.
     loopBodyFnWrapper->insertAtTail(new DefExpr(tmp));
     loopBodyFnWrapper->insertAtTail(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER_VALUE, wrapperArgsArg, field)));
     loopBodyFnWrapperCall->insertAtTail(tmp);
@@ -397,6 +601,7 @@ bundleLoopBodyFnArgsForIteratorFnCall(CallExpr* iteratorFnCall,
   loopBodyFnWrapper->insertAtTail(loopBodyFnWrapperCall);
   loopBodyFnWrapper->retType = dtVoid;
   loopBodyFnWrapper->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
+  ensureArgBundleType(ct);
   createArgBundleCopyFn(ct, loopBodyFnWrapper);
   createArgBundleFreeFn(ct, loopBodyFnWrapper);
   return ct;
@@ -422,190 +627,250 @@ countEnclosingLocalBlocks(Expr* expr, BlockStmt* outer = NULL) {
 }
 
 
+static void localizeReturnSymbols(FnSymbol* iteratorFn, Vec<BaseAST*> asts)
+{
+  //
+  // localize return symbols
+  //
+  Symbol* ret = iteratorFn->getReturnSymbol();
+  Map<BlockStmt*,Symbol*> retReplacementMap;
+  forv_Vec(BaseAST, ast, asts) {
+    if (SymExpr* se = toSymExpr(ast)) {
+      if (se->var == ret) {
+        BlockStmt* block = NULL;
+        for (Expr* parent = se->parentExpr; parent; parent = parent->parentExpr) {
+          block = toBlockStmt(parent);
+          if (block)
+            break;
+        }
+        INT_ASSERT(block);
+        if (block != ret->defPoint->parentExpr) {
+          if (Symbol* repl = retReplacementMap.get(block)) {
+            se->var = repl;
+          } else {
+            Symbol* newRet = newTemp("newRet", ret->type);
+            block->insertAtHead(new CallExpr(PRIM_MOVE, newRet, ret));
+            block->insertAtHead(new DefExpr(newRet));
+            se->var = newRet;
+            retReplacementMap.put(block, newRet);
+          }
+        }
+      }
+    }
+  }
+}
+
+
+// Replace each yield with a call to the loop body function,
+// and remove return statements.
+static void convertYieldsAndReturns(Vec<BaseAST*>& asts, Symbol* index,
+                                    ArgSymbol* loopBodyFnIDArg, ArgSymbol* loopBodyFnArgArgs)
+{
+  forv_Vec(BaseAST, ast, asts) {
+    if (CallExpr* call = toCallExpr(ast)) {
+      if (call->isPrimitive(PRIM_YIELD)) {
+        SET_LINENO(call);
+        Symbol* yieldedIndex = newTemp("_yieldedIndex", index->type);
+        call->insertBefore(new DefExpr(yieldedIndex));
+        call->insertBefore(new CallExpr(PRIM_MOVE, yieldedIndex, call->get(1)->remove()));
+        Expr* loopBodyFnCall = new CallExpr(PRIM_FTABLE_CALL, loopBodyFnIDArg, yieldedIndex, loopBodyFnArgArgs);
+
+        // The inserted loop body function call is surrounded by a number of 
+        // unlocal blocks equal to the number of local blocks surrounding the original call.
+        int count = countEnclosingLocalBlocks(call);
+        Expr* callOrBlk = loopBodyFnCall;
+        while (count-- > 0)
+        {
+          BlockStmt* blk = new BlockStmt(callOrBlk);
+          blk->blockInfo = new CallExpr(PRIM_BLOCK_UNLOCAL);
+          callOrBlk = blk;
+        }
+        call->replace(callOrBlk);
+      } else if (call->isPrimitive(PRIM_RETURN)) {
+        // Just remove a return.
+        call->remove();
+      }
+    }
+  }
+}
+
+
+// Returns true if the given function contains an on statement; false otherwise.
+static bool fnContainsOn(FnSymbol* fn)
+{
+  Vec<CallExpr*> calls;
+  collectCallExprs(fn, calls);
+  forv_Vec(CallExpr, call, calls) {
+    if (call->isPrimitive(PRIM_BLOCK_ON) ||
+        call->isPrimitive(PRIM_BLOCK_ON_NB))
+      return true;
+  }
+  return false;
+}
+
+
+static FnSymbol*
+createIteratorFn(FnSymbol* iterator, CallExpr* iteratorFnCall, Symbol* index,
+                 CallExpr* loopBodyFnCall, FnSymbol* loopBodyFnWrapper,
+                 Symbol* ic)
+{
+  SET_LINENO(iterator);
+  FnSymbol* iteratorFn = new FnSymbol(astr("_rec_iter_fn_", iterator->name));
+
+  // identify and mark iterators with on-statements
+  if (fnContainsOn(iterator))
+    iteratorFn->addFlag(FLAG_ITERATOR_WITH_ON);
+
+  // Now calls the newly-created iterator function.
+  iteratorFnCall->baseExpr->replace(new SymExpr(iteratorFn));
+  ClassType* argsBundleType =
+    bundleLoopBodyFnArgsForIteratorFnCall(iteratorFnCall, loopBodyFnCall, loopBodyFnWrapper);
+
+  iteratorFn->body = iterator->body->copy();
+  iterator->defPoint->insertBefore(new DefExpr(iteratorFn));
+  Vec<BaseAST*> asts;
+  collect_asts(iteratorFn, asts);
+  ArgSymbol* icArg = new ArgSymbol(INTENT_BLANK, "_ic", ic->type);
+  iteratorFn->insertFormalAtTail(icArg);
+  replaceIteratorFormalsWithIteratorFields(iterator, icArg, asts);
+  ArgSymbol* loopBodyFnIDArg = new ArgSymbol(INTENT_BLANK, "_loopBodyFnID", dtInt[INT_SIZE_DEFAULT]);
+  iteratorFn->insertFormalAtTail(loopBodyFnIDArg);
+  ArgSymbol* loopBodyFnArgArgs = new ArgSymbol(INTENT_BLANK, "_loopBodyFnArgs", argsBundleType);
+  iteratorFn->insertFormalAtTail(loopBodyFnArgArgs);
+
+  localizeReturnSymbols(iteratorFn, asts);
+
+  convertYieldsAndReturns(asts, index, loopBodyFnIDArg, loopBodyFnArgArgs);
+
+  iteratorFn->retType = dtVoid;
+  iteratorFn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
+  iteratorFn->removeFlag(FLAG_INLINE_ITERATOR);
+  iteratorFn->removeFlag(FLAG_ITERATOR_FN);
+
+  return iteratorFn;
+}
+
+
+static void
+expandRecursiveIteratorInline(CallExpr* call)
+{
+  SET_LINENO(call);
+
+  //
+  // create a nested function for the loop body (call->parentExpr),
+  // and then transform the iterator into a function that takes this
+  // nested function as an argument
+  //
+  FnSymbol* loopBodyFn = new FnSymbol(astr("_rec_iter_loop_", call->parentSymbol->name));
+  call->parentExpr->insertBefore(new DefExpr(loopBodyFn));
+
+  // The index is passed to the loop body function as its first argument.
+  Symbol* index = toSymExpr(call->get(1))->var;
+  ArgSymbol* indexArg = new ArgSymbol(INTENT_BLANK, "_index", index->type);
+  loopBodyFn->insertFormalAtTail(indexArg);
+
+  // The recursive iterator loop wrapper is ... .
+  FnSymbol* loopBodyFnWrapper = new FnSymbol(astr("_rec_iter_loop_wrapper_", call->parentSymbol->name));
+  call->parentSymbol->defPoint->insertBefore(new DefExpr(loopBodyFnWrapper));
+  ftableVec.add(loopBodyFnWrapper);
+  ftableMap.put(loopBodyFnWrapper, ftableVec.n-1);
+
+  //
+  // insert a call to the iterator function (using iterator as a
+  // placeholder); build a call to loopBodyFnCall which will be
+  // removed later and its arguments passed to the iteratorFn (we
+  // build this to capture the actual arguments that should be
+  // passed to it when this function is flattened)
+  //
+  Symbol* ic = toSymExpr(call->get(2))->var;
+  FnSymbol* iterator = ic->type->initializer->getFormal(1)->type->initializer;
+  CallExpr* iteratorFnCall = new CallExpr(iterator, ic, new_IntSymbol(ftableMap.get(loopBodyFnWrapper)));
+  // replace function in iteratorFnCall with iterator function once that is created
+
+  CallExpr* loopBodyFnCall = new CallExpr(loopBodyFn, gVoid);
+  // use and remove loopBodyFnCall later
+  call->parentExpr->insertBefore(loopBodyFnCall);
+  call->parentExpr->insertBefore(iteratorFnCall);
+  // Move the expression containing the call to the end of the (new) loop body function.
+  loopBodyFn->insertAtTail(call->parentExpr->remove());
+  call->remove();    // The call was replaced by a call to the (new) loop body function.
+
+  // Now populate the loop body function.
+  // Load the index arg.
+  loopBodyFn->insertAtHead(new CallExpr(PRIM_MOVE, index, indexArg));
+  loopBodyFn->insertAtHead(index->defPoint->remove());
+  // Return nothing (void).
+  loopBodyFn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
+  loopBodyFn->retType = dtVoid;
+
+  Vec<FnSymbol*> nestedFunctions;
+  nestedFunctions.add(loopBodyFn);
+  flattenNestedFunctions(nestedFunctions);
+
+  FnSymbol* iteratorFn = iteratorFnMap.get(iterator);
+  if (!iteratorFn) {
+    iteratorFn = createIteratorFn(iterator, iteratorFnCall, index,
+                                  loopBodyFnCall, loopBodyFnWrapper, ic);
+    iteratorFnMap.put(iterator, iteratorFn);
+  } else {
+    iteratorFnCall->baseExpr->replace(new SymExpr(iteratorFn));
+    bundleLoopBodyFnArgsForIteratorFnCall(iteratorFnCall, loopBodyFnCall, loopBodyFnWrapper);
+    Symbol* argBundleTmp = newTemp("argBundleTmp", iteratorFn->getFormal(3)->type);
+    iteratorFnCall->insertBefore(new DefExpr(argBundleTmp));
+    iteratorFnCall->insertBefore(new CallExpr(PRIM_MOVE, argBundleTmp, new CallExpr(PRIM_CAST, argBundleTmp->type->symbol, iteratorFnCall->get(3)->remove())));
+    iteratorFnCall->insertAtTail(argBundleTmp);
+  }
+}
+
+
 static void
 expandIteratorInline(CallExpr* call) {
-  Symbol* index = toSymExpr(call->get(1))->var;
   Symbol* ic = toSymExpr(call->get(2))->var;
   FnSymbol* iterator = ic->type->initializer->getFormal(1)->type->initializer;
 
-  if (recursiveIteratorSet.set_in(iterator)) {
+  if (iterator->hasFlag(FLAG_RECURSIVE_ITERATOR)) {
 
     //
     // loops over recursive iterators in recursive iterators only need
     // to be handled in the recursive iterator function
     //
-    if (recursiveIteratorSet.set_in(toFnSymbol(call->parentSymbol)))
+    if (call->parentSymbol->hasFlag(FLAG_RECURSIVE_ITERATOR))
       return;
 
-    SET_LINENO(call);
-
-    //
-    // create a nested function for the loop body (call->parentExpr),
-    // and then transform the iterator into a function that takes this
-    // nested function as an argument
-    //
-    FnSymbol* loopBodyFn = new FnSymbol(astr("_rec_iter_loop_", call->parentSymbol->name));
-    call->parentExpr->insertBefore(new DefExpr(loopBodyFn));
-    ArgSymbol* indexArg = new ArgSymbol(INTENT_BLANK, "_index", index->type);
-    loopBodyFn->insertFormalAtTail(indexArg);
-
-    FnSymbol* loopBodyFnWrapper = new FnSymbol(astr("_rec_iter_loop_wrapper_", call->parentSymbol->name));
-    call->parentSymbol->defPoint->insertBefore(new DefExpr(loopBodyFnWrapper));
-    ftableVec.add(loopBodyFnWrapper);
-    ftableMap.put(loopBodyFnWrapper, ftableVec.n-1);
-
-    //
-    // insert a call to the iterator function (using iterator as a
-    // placeholder); build a call to loopBodyFnCall which will be
-    // removed later and its arguments passed to the iteratorFn (we
-    // build this to capture the actual arguments that should be
-    // passed to it when this function is flattened)
-    //
-    CallExpr* iteratorFnCall = new CallExpr(iterator, ic, new_IntSymbol(ftableMap.get(loopBodyFnWrapper)));
-    // replace function in iteratorFnCall with iterator function once that is created
-    CallExpr* loopBodyFnCall = new CallExpr(loopBodyFn, gVoid);
-    // use and remove loopBodyFnCall later
-    call->parentExpr->insertBefore(loopBodyFnCall);
-    call->parentExpr->insertBefore(iteratorFnCall);
-    loopBodyFn->insertAtTail(call->parentExpr->remove());
-    call->remove();
-    loopBodyFn->insertAtHead(new CallExpr(PRIM_MOVE, index, indexArg));
-    loopBodyFn->insertAtHead(index->defPoint->remove());
-    loopBodyFn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
-    loopBodyFn->retType = dtVoid;
-    Vec<FnSymbol*> nestedFunctions;
-    nestedFunctions.add(loopBodyFn);
-    flattenNestedFunctions(nestedFunctions);
-
-    FnSymbol* iteratorFn = iteratorFnMap.get(iterator);
-    if (!iteratorFn) {
-     {
-      SET_LINENO(iterator);
-      iteratorFn = new FnSymbol(astr("_rec_iter_fn_", iterator->name));
-     }
-
-      //
-      // identify iterators with on-statements
-      //
-      Vec<CallExpr*> calls;
-      collectCallExprs(iterator, calls);
-      forv_Vec(CallExpr, call, calls) {
-        if (call->isPrimitive(PRIM_BLOCK_ON) || call->isPrimitive(PRIM_BLOCK_ON_NB)) {
-          iteratorWithOnStatementSet.set_add(iteratorFn);
-          break;
-        }
-      }
-
-      ClassType* argsBundleType;
-     {
-      SET_LINENO(call);
-
-      iteratorFnCall->baseExpr->replace(new SymExpr(iteratorFn));
-      argsBundleType =
-        bundleLoopBodyFnArgsForIteratorFnCall(iteratorFnCall, loopBodyFnCall, loopBodyFnWrapper);
-     }
-
-      SET_LINENO(iterator);
-      iteratorFn->body = iterator->body->copy();
-      iterator->defPoint->insertBefore(new DefExpr(iteratorFn));
-      Vec<BaseAST*> asts;
-      collect_asts(iteratorFn, asts);
-      ArgSymbol* icArg = new ArgSymbol(INTENT_BLANK, "_ic", ic->type);
-      iteratorFn->insertFormalAtTail(icArg);
-      replaceIteratorFormalsWithIteratorFields(iterator, icArg, asts);
-      ArgSymbol* loopBodyFnArg = new ArgSymbol(INTENT_BLANK, "_loopBodyFn", dtInt[INT_SIZE_DEFAULT]);
-      iteratorFn->insertFormalAtTail(loopBodyFnArg);
-      ArgSymbol* loopBodyFnArgArgs = new ArgSymbol(INTENT_BLANK, "_loopBodyFnArgs", argsBundleType);
-      iteratorFn->insertFormalAtTail(loopBodyFnArgArgs);
-
-      //
-      // localize return symbols
-      //
-      Symbol* ret = iteratorFn->getReturnSymbol();
-      Map<BlockStmt*,Symbol*> retReplacementMap;
-      forv_Vec(BaseAST, ast, asts) {
-        if (SymExpr* se = toSymExpr(ast)) {
-          if (se->var == ret) {
-            BlockStmt* block = NULL;
-            for (Expr* parent = se->parentExpr; parent; parent = parent->parentExpr) {
-              block = toBlockStmt(parent);
-              if (block)
-                break;
-            }
-            INT_ASSERT(block);
-            if (block != ret->defPoint->parentExpr) {
-              if (Symbol* repl = retReplacementMap.get(block)) {
-                se->var = repl;
-              } else {
-                Symbol* newRet = newTemp(ret->type);
-                block->insertAtHead(new CallExpr(PRIM_MOVE, newRet, ret));
-                block->insertAtHead(new DefExpr(newRet));
-                se->var = newRet;
-                retReplacementMap.put(block, newRet);
-              }
-            }
-          }
-        }
-      }
-
-      forv_Vec(BaseAST, ast, asts) {
-        if (CallExpr* call = toCallExpr(ast)) {
-          if (call->isPrimitive(PRIM_YIELD)) {
-            SET_LINENO(call);
-            Symbol* yieldedIndex = newTemp("_yieldedIndex", index->type);
-            call->insertBefore(new DefExpr(yieldedIndex));
-            call->insertBefore(new CallExpr(PRIM_MOVE, yieldedIndex, call->get(1)->remove()));
-            Expr* loopBodyFnArgCall = new CallExpr(PRIM_FTABLE_CALL, loopBodyFnArg, yieldedIndex, loopBodyFnArgArgs);
-            if (int count = countEnclosingLocalBlocks(call)) {
-              BlockStmt* blk = new BlockStmt(loopBodyFnArgCall);
-              blk->blockInfo = new CallExpr(PRIM_BLOCK_UNLOCAL);
-              for (int i = 1; i < count; i++) {
-                blk = new BlockStmt(blk);
-                blk->blockInfo = new CallExpr(PRIM_BLOCK_UNLOCAL);
-              }
-              call->replace(blk);
-            } else
-              call->replace(loopBodyFnArgCall);
-
-          } else if (call->isPrimitive(PRIM_RETURN)) {
-            call->remove();
-          }
-        }
-      }
-      iteratorFn->retType = dtVoid;
-      iteratorFn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
-      iteratorFn->removeFlag(FLAG_INLINE_ITERATOR);
-      iteratorFn->removeFlag(FLAG_ITERATOR_FN);
-      iteratorFnMap.put(iterator, iteratorFn);
-    } else {
-      iteratorFnCall->baseExpr->replace(new SymExpr(iteratorFn));
-      bundleLoopBodyFnArgsForIteratorFnCall(iteratorFnCall, loopBodyFnCall, loopBodyFnWrapper);
-      Symbol* argBundleTmp = newTemp(iteratorFn->getFormal(3)->type);
-      iteratorFnCall->insertBefore(new DefExpr(argBundleTmp));
-      iteratorFnCall->insertBefore(new CallExpr(PRIM_MOVE, argBundleTmp, new CallExpr(PRIM_CAST, argBundleTmp->type->symbol, iteratorFnCall->get(3)->remove())));
-      iteratorFnCall->insertAtTail(argBundleTmp);
-    }
+    expandRecursiveIteratorInline(call);
     return;
   }
 
   SET_LINENO(call);
 
+  Symbol* index = toSymExpr(call->get(1))->var;
   BlockStmt* ibody = iterator->body->copy();
   if (!preserveInlinedLineNumbers)
     reset_ast_loc(ibody, call);
+
+  // Body is the expression containing the iterator call.
   BlockStmt* body = toBlockStmt(call->parentExpr);
+
+  // The iterator call is removed
   call->remove();
+  // and the expression enclosing the call is replaced by the iterator body.
   body->replace(ibody);
+
+  // Now replace yield statements in the inlined body with copies of the
+  // expression that called the iterator, substituting the yielded index for the
+  // iterator formal.
   Vec<BaseAST*> asts;
   collect_asts(ibody, asts);
   forv_Vec(BaseAST, ast, asts) {
     if (CallExpr* call = toCallExpr(ast)) {
       if (call->isPrimitive(PRIM_YIELD)) {
-        Symbol* yieldedIndex = newTemp("_yieldedIndex", index->type);
         SymbolMap map;
+
+        Symbol* yieldedIndex = newTemp("_yieldedIndex", index->type);
         map.put(index, yieldedIndex);
         BlockStmt* bodyCopy = body->copy(&map);
 
+        // ??? Is this really necessary?  Why?
         if (int count = countEnclosingLocalBlocks(call, ibody)) {
           for (int i = 0; i < count; i++) {
             bodyCopy = new BlockStmt(bodyCopy);
@@ -614,7 +879,6 @@ expandIteratorInline(CallExpr* call) {
         }
 
         Symbol* yieldedSymbol = toSymExpr(call->get(1))->var;
-        INT_ASSERT(yieldedSymbol);
 
         // remove move to return-temp that is defined at top of iterator
         bool inserted = false;
@@ -643,6 +907,9 @@ expandIteratorInline(CallExpr* call) {
 }
 
 
+// Returns true if the iterator can be inlined; false otherwise.
+//
+// It can be inlined if it contains exactly one yield statement.
 static bool
 canInlineIterator(FnSymbol* iterator) {
   Vec<BaseAST*> asts;
@@ -658,6 +925,7 @@ canInlineIterator(FnSymbol* iterator) {
   return false;
 }
 
+
 static void
 getRecursiveIterators(Vec<Symbol*>& iterators, Symbol* gIterator) {
   if (gIterator->type->symbol->hasFlag(FLAG_TUPLE)) {
@@ -672,6 +940,7 @@ getRecursiveIterators(Vec<Symbol*>& iterators, Symbol* gIterator) {
     iterators.add(gIterator);
   }
 }
+
 
 static bool
 canInlineSingleYieldIterator(Symbol* gIterator) {
@@ -697,7 +966,6 @@ canInlineSingleYieldIterator(Symbol* gIterator) {
   }
   return true;
 }
-
 
 
 static void
@@ -759,6 +1027,7 @@ getIteratorChildren(Vec<Type*>& children, Type* type) {
 #define HASMORE 5
 #define GETVALUE 6
 
+
 static void
 buildIteratorCallInner(BlockStmt* block, Symbol* ret, int fnid, Symbol* iterator) {
   IteratorInfo* ii = iterator->type->initializer->getFormal(1)->type->initializer->iteratorInfo;
@@ -776,7 +1045,7 @@ buildIteratorCallInner(BlockStmt* block, Symbol* ret, int fnid, Symbol* iterator
     if (fn->retType == ret->type) {
       block->insertAtTail(new CallExpr(PRIM_MOVE, ret, call));
     } else {
-      VarSymbol* tmp = newTemp(fn->retType);
+      VarSymbol* tmp = newTemp("retTmp", fn->retType);
       block->insertAtTail(new DefExpr(tmp));
       block->insertAtTail(new CallExpr(PRIM_MOVE, tmp, call));
       block->insertAtTail(new CallExpr(PRIM_MOVE, ret, new CallExpr(PRIM_CAST, ret->type->symbol, tmp)));
@@ -786,19 +1055,20 @@ buildIteratorCallInner(BlockStmt* block, Symbol* ret, int fnid, Symbol* iterator
   }
 }
 
+
 static BlockStmt*
 buildIteratorCall(Symbol* ret, int fnid, Symbol* iterator, Vec<Type*>& children) {
   BlockStmt* block = new BlockStmt();
   BlockStmt* outerBlock = block;
   forv_Vec(Type, type, children) {
-    VarSymbol* cid = newTemp(dtBool);
+    VarSymbol* cid = newTemp("cidSelector", dtBool);
     block->insertAtTail(new DefExpr(cid));
     block->insertAtTail(new CallExpr(PRIM_MOVE, cid,
                           new CallExpr(PRIM_TESTCID,
                                        iterator, type->symbol)));
     BlockStmt* thenStmt = new BlockStmt();
     BlockStmt* elseStmt = new BlockStmt();
-    VarSymbol* childIterator = newTemp(type);
+    VarSymbol* childIterator = newTemp("childIterator", type);
     thenStmt->insertAtTail(new DefExpr(childIterator));
     thenStmt->insertAtTail(new CallExpr(PRIM_MOVE, childIterator, new CallExpr(PRIM_CAST, type->symbol, iterator)));
     buildIteratorCallInner(thenStmt, ret, fnid, childIterator);
@@ -808,6 +1078,7 @@ buildIteratorCall(Symbol* ret, int fnid, Symbol* iterator, Vec<Type*>& children)
   buildIteratorCallInner(block, ret, fnid, iterator);
   return outerBlock;
 }
+
 
 static void
 inlineSingleYieldIterator(CallExpr* call) {
@@ -876,6 +1147,7 @@ inlineSingleYieldIterator(CallExpr* call) {
   call->remove();
 }
 
+
 static void
 expand_for_loop(CallExpr* call) {
   BlockStmt* block = toBlockStmt(call->parentExpr);
@@ -895,7 +1167,7 @@ expand_for_loop(CallExpr* call) {
       canInlineIterator(iterator->type->initializer->getFormal(1)->type->initializer) &&
       (iterator->type->dispatchChildren.n == 0 ||
        (iterator->type->dispatchChildren.n == 1 &&
-       iterator->type->dispatchChildren.v[0] == dtObject))) {
+        iterator->type->dispatchChildren.v[0] == dtObject))) {
     expandIteratorInline(call);
   } else if (!fNoInlineIterators && canInlineSingleYieldIterator(iterator)) {
     inlineSingleYieldIterator(call);
@@ -926,10 +1198,10 @@ expand_for_loop(CallExpr* call) {
         if (!firstCond) {
           firstCond = cond;
         } else if (!fNoBoundsChecks) {
-          VarSymbol* tmp = newTemp(dtBool);
-          block->insertAtHead(new CondStmt(new SymExpr(tmp), new CallExpr(PRIM_RT_ERROR, new_StringSymbol("zippered iterations have non-equal lengths"))));
-          block->insertAtHead(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_EQUAL, cond, new_IntSymbol(0))));
-          block->insertAtHead(new DefExpr(tmp));
+          VarSymbol* hasMore = newTemp("hasMore", dtBool);
+          block->insertAtHead(new CondStmt(new SymExpr(hasMore), new CallExpr(PRIM_RT_ERROR, new_StringSymbol("zippered iterations have non-equal lengths"))));
+          block->insertAtHead(new CallExpr(PRIM_MOVE, hasMore, new CallExpr(PRIM_EQUAL, cond, new_IntSymbol(0))));
+          block->insertAtHead(new DefExpr(hasMore));
           block->insertAfter(new CondStmt(new SymExpr(cond), new CallExpr(PRIM_RT_ERROR, new_StringSymbol("zippered iterations have non-equal lengths"))));
         }
       }
@@ -954,7 +1226,8 @@ inlineIterators() {
     if (block->parentSymbol) {
       if (block->blockInfo && block->blockInfo->isPrimitive(PRIM_BLOCK_FOR_LOOP)) {
         Symbol* iterator = toSymExpr(block->blockInfo->get(2))->var;
-        if (iterator->type->initializer->getFormal(1)->type->initializer->hasFlag(FLAG_INLINE_ITERATOR)) {
+        FnSymbol* ifn = iterator->type->initializer->getFormal(1)->type->initializer;
+        if (ifn->hasFlag(FLAG_INLINE_ITERATOR)) {
           expandIteratorInline(block->blockInfo);
         }
       }
@@ -963,40 +1236,192 @@ inlineIterators() {
 }
 
 
-void lowerIterators() {
+static void fixNumericalGetMemberPrims()
+{
+  // fix GET_MEMBER primitives that access fields of an iterator class
+  // via a number
+  forv_Vec(CallExpr, call, gCallExprs) {
+    if (call->parentSymbol && call->isPrimitive(PRIM_GET_MEMBER)) {
+      ClassType* ct = toClassType(call->get(1)->getValType());
+      int64_t num;
+      if (get_int(call->get(2), &num)) {
+        Symbol* field = ct->getField(num+1); // add 1 for super
+        SET_LINENO(call);
+        call->get(2)->replace(new SymExpr(field));
+        CallExpr* parent = toCallExpr(call->parentExpr);
+        INT_ASSERT(parent->isPrimitive(PRIM_MOVE));
+        Symbol* local = toSymExpr(parent->get(1))->var;
+        if (local->type == field->type)
+          call->primitive = primitives[PRIM_GET_MEMBER_VALUE];
+        else if (local->type != field->type->refType)
+          INT_FATAL(call, "unexpected case");
+      }
+    }
+  }
+}
+
+
+static void cleanupLeaderFollowerIteratorCalls()
+{
   //
-  // check for parallel constructs in non-leader iterators
+  // cleanup leader and follower iterator calls
   //
-  forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->hasFlag(FLAG_ITERATOR_FN) && !fn->hasFlag(FLAG_INLINE_ITERATOR)) {
-      Vec<CallExpr*> calls;
-      collectCallExprs(fn, calls);
-      forv_Vec(CallExpr, call, calls) {
-        if ((call->isPrimitive(PRIM_BLOCK_BEGIN)) ||
-            (call->isPrimitive(PRIM_BLOCK_COBEGIN)) ||
-            (call->isPrimitive(PRIM_BLOCK_COFORALL)) ||
-            (call->isNamed("_toLeader"))) {
-          USR_FATAL_CONT(call, "invalid use of parallel construct in serial iterator");
-        }
-        if ((call->isPrimitive(PRIM_BLOCK_ON)) ||
-            (call->isPrimitive(PRIM_BLOCK_ON_NB))) {
-          BlockStmt* onBlock = toBlockStmt(call->parentExpr);
-          if (!onBlock || onBlock->blockInfo != call) {
-            INT_FATAL(call, "mis-assumption about structure of on blocks in "
-                      "lowerIterators pass");
-          }
-          Vec<CallExpr*> callsWithinOn;
-          collectCallExprs(onBlock, callsWithinOn);
-          forv_Vec(CallExpr, call, callsWithinOn) {
-            if (call->isPrimitive(PRIM_YIELD)) {
-              USR_FATAL_CONT(call, "invalid use of 'yield' within 'on' in serial iterator");
+  forv_Vec(CallExpr, call, gCallExprs) {
+    if (call->parentSymbol) {
+      if (FnSymbol* fn = call->isResolved()) {
+        if (fn->retType->symbol->hasFlag(FLAG_ITERATOR_RECORD) ||
+            (isDefExpr(fn->formals.tail) &&
+             !strcmp(toDefExpr(fn->formals.tail)->sym->name, "_retArg") &&
+             toDefExpr(fn->formals.tail)->sym->getValType() &&
+             toDefExpr(fn->formals.tail)->sym->getValType()->symbol->hasFlag(FLAG_ITERATOR_RECORD))) {
+          if (!strcmp(call->parentSymbol->name, "_toLeader") ||
+              !strcmp(call->parentSymbol->name, "_toFollower") ||
+              !strcmp(call->parentSymbol->name, "_toFastFollower")) {
+            ArgSymbol* iterator = toFnSymbol(call->parentSymbol)->getFormal(1);
+            Type* iteratorType = iterator->getValType();
+            int i = 2; // first field is super
+            for_actuals(actual, call) {
+              SymExpr* se = toSymExpr(actual);
+              if (isArgSymbol(se->var) && call->parentSymbol != se->var->defPoint->parentSymbol) {
+                Symbol* field = toClassType(iteratorType)->getField(i);
+                VarSymbol* tmp = NULL;
+                SET_LINENO(call);
+                if (field->type == se->var->type) {
+                  tmp = newTemp(field->name, field->type);
+                  call->getStmtExpr()->insertBefore(new DefExpr(tmp));
+                  call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER_VALUE, iterator, field)));
+                } else if (field->type->refType == se->var->type) {
+                  tmp = newTemp(field->name, field->type->refType);
+                  call->getStmtExpr()->insertBefore(new DefExpr(tmp));
+                  call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER, iterator, field)));
+                }
+                actual->replace(new SymExpr(tmp));
+                i++;
+              }
             }
           }
         }
       }
     }
   }
-  USR_STOP();
+}
+
+
+static void handlePolymorphicIterators()
+{
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    // Find iterator functions that are not in the AST tree.
+    if (fn->defPoint->parentSymbol && fn->iteratorInfo) {
+      // Assert that the getIterator() function *is* in the tree.
+      FnSymbol* getIterator = fn->iteratorInfo->getIterator;
+      INT_ASSERT(getIterator->defPoint->parentSymbol);
+
+      // See if the iterator record is polymorphic.
+      ClassType* irecord = fn->iteratorInfo->irecord;
+      if (irecord->dispatchChildren.n > 0) {
+        // If so, then simulate dynamic dispatch by adding one conditional block
+        // for each possible subtype.
+        SET_LINENO(getIterator);
+        LabelSymbol* label = new LabelSymbol("end");
+        getIterator->insertBeforeReturn(new DefExpr(label));
+        Symbol* ret = getIterator->getReturnSymbol();
+        forv_Vec(Type, type, irecord->dispatchChildren) {
+          VarSymbol* tmp = newTemp(irecord->getField(1)->type);
+          VarSymbol* cid = newTemp(dtBool);
+          BlockStmt* thenStmt = new BlockStmt();
+          VarSymbol* recordTmp = newTemp("recordTmp", type);
+          VarSymbol* classTmp = newTemp("classTmp", type->initializer->iteratorInfo->getIterator->retType);
+          thenStmt->insertAtTail(new DefExpr(recordTmp));
+          thenStmt->insertAtTail(new DefExpr(classTmp));
+
+          ClassType* ct = toClassType(type);
+          for_fields(field, ct) {
+            VarSymbol* ftmp = newTemp("ftmp", getIterator->getFormal(1)->type->getField(field->name)->type);
+            thenStmt->insertAtTail(new DefExpr(ftmp));
+            thenStmt->insertAtTail(new CallExpr(PRIM_MOVE, ftmp, new CallExpr(PRIM_GET_MEMBER_VALUE, getIterator->getFormal(1), getIterator->getFormal(1)->type->getField(field->name))));
+            // Store temp in record field.
+            if (ftmp->type == field->type) {
+              thenStmt->insertAtTail(new CallExpr(PRIM_SET_MEMBER, recordTmp, field, ftmp));
+            } else {
+              VarSymbol* ftmp2 = newTemp(field->type);
+              thenStmt->insertAtTail(new DefExpr(ftmp2));
+              thenStmt->insertAtTail(new CallExpr(PRIM_MOVE, ftmp2, new CallExpr(PRIM_CAST, field->type->symbol, ftmp)));
+              thenStmt->insertAtTail(new CallExpr(PRIM_SET_MEMBER, recordTmp, field, ftmp2));
+            }
+          }
+          thenStmt->insertAtTail(new CallExpr(PRIM_MOVE, classTmp, new CallExpr(type->initializer->iteratorInfo->getIterator, recordTmp)));
+          thenStmt->insertAtTail(new CallExpr(PRIM_MOVE, ret, new CallExpr(PRIM_CAST, ret->type->symbol, classTmp)));
+          thenStmt->insertAtTail(new GotoStmt(GOTO_GETITER_END, label));
+          ret->defPoint->insertAfter(new CondStmt(new SymExpr(cid), thenStmt));
+          ret->defPoint->insertAfter(new CallExpr(PRIM_MOVE, cid, new CallExpr(PRIM_TESTCID, tmp, type->initializer->iteratorInfo->irecord->getField(1)->type->symbol)));
+          ret->defPoint->insertAfter(new DefExpr(cid));
+          ret->defPoint->insertAfter(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER_VALUE, getIterator->getFormal(1), irecord->getField(1))));
+          ret->defPoint->insertAfter(new DefExpr(tmp));
+        }
+      }
+    }
+  }
+}
+
+
+static void reconstructIRautoCopyAutoDestroy()
+{
+  //
+  // reconstruct autoCopy and autoDestroy for iterator records
+  //
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    if (fn->numFormals() == 1 && fn->getFormal(1)->type->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
+      SET_LINENO(fn);
+      if (!strcmp(fn->name, "chpl__autoCopy")) {
+        Symbol* arg = fn->getFormal(1);
+        Symbol* ret = fn->getReturnSymbol();
+        BlockStmt* block = new BlockStmt();
+        block->insertAtTail(ret->defPoint->remove());
+        ClassType* irt = toClassType(arg->type);
+        for_fields(field, irt) {
+          SET_LINENO(field);
+          if (FnSymbol* autoCopy = autoCopyMap.get(field->type)) {
+            Symbol* tmp1 = newTemp(field->name, field->type);
+            Symbol* tmp2 = newTemp(autoCopy->retType);
+            block->insertAtTail(new DefExpr(tmp1));
+            block->insertAtTail(new DefExpr(tmp2));
+            block->insertAtTail(new CallExpr(PRIM_MOVE, tmp1, new CallExpr(PRIM_GET_MEMBER_VALUE, arg, field)));
+            block->insertAtTail(new CallExpr(PRIM_MOVE, tmp2, new CallExpr(autoCopy, tmp1)));
+            block->insertAtTail(new CallExpr(PRIM_SET_MEMBER, ret, field, tmp2));
+          } else {
+            Symbol* tmp = newTemp(field->name, field->type);
+            block->insertAtTail(new DefExpr(tmp));
+            block->insertAtTail(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER_VALUE, arg, field)));
+            block->insertAtTail(new CallExpr(PRIM_SET_MEMBER, ret, field, tmp));
+          }
+        }
+        block->insertAtTail(new CallExpr(PRIM_RETURN, ret));
+        fn->body->replace(block);
+      }
+      if (!strcmp(fn->name, "chpl__autoDestroy")) {
+        SET_LINENO(fn);
+        Symbol* arg = fn->getFormal(1);
+        BlockStmt* block = new BlockStmt();
+        ClassType* irt = toClassType(arg->type);
+        for_fields(field, irt) {
+          SET_LINENO(field);
+          if (FnSymbol* autoDestroy = autoDestroyMap.get(field->type)) {
+            Symbol* tmp = newTemp(field->name, field->type);
+            block->insertAtTail(new DefExpr(tmp));
+            block->insertAtTail(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER_VALUE, arg, field)));
+            block->insertAtTail(new CallExpr(autoDestroy, tmp));
+          }
+        }
+        block->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
+        fn->body->replace(block);
+      }
+    }
+  }
+}
+
+
+void lowerIterators() {
+  nonLeaderParCheck();
 
   computeRecursiveIteratorSet();
 
@@ -1034,163 +1459,14 @@ void lowerIterators() {
       lowerIterator(fn);
     }
   }
-  // fix GET_MEMBER primitives that access fields of an iterator class
-  // via a number
-  forv_Vec(CallExpr, call, gCallExprs) {
-    if (call->parentSymbol && call->isPrimitive(PRIM_GET_MEMBER)) {
-      ClassType* ct = toClassType(call->get(1)->getValType());
-      int64_t num;
-      if (get_int(call->get(2), &num)) {
-        Symbol* field = ct->getField(num+1); // add 1 for super
-        SET_LINENO(call);
-        call->get(2)->replace(new SymExpr(field));
-        CallExpr* parent = toCallExpr(call->parentExpr);
-        INT_ASSERT(parent->isPrimitive(PRIM_MOVE));
-        Symbol* local = toSymExpr(parent->get(1))->var;
-        if (local->type == field->type)
-          call->primitive = primitives[PRIM_GET_MEMBER_VALUE];
-        else if (local->type != field->type->refType)
-          INT_FATAL(call, "unexpected case");
-      }
-    }
-  }
 
-  //
-  // cleanup leader and follower iterator calls
-  //
-  forv_Vec(CallExpr, call, gCallExprs) {
-    if (call->parentSymbol) {
-      if (FnSymbol* fn = call->isResolved()) {
-        if (fn->retType->symbol->hasFlag(FLAG_ITERATOR_RECORD) ||
-            (isDefExpr(fn->formals.tail) &&
-             !strcmp(toDefExpr(fn->formals.tail)->sym->name, "_retArg") &&
-             toDefExpr(fn->formals.tail)->sym->getValType() &&
-             toDefExpr(fn->formals.tail)->sym->getValType()->symbol->hasFlag(FLAG_ITERATOR_RECORD))) {
-          if (!strcmp(call->parentSymbol->name, "_toLeader") ||
-              !strcmp(call->parentSymbol->name, "_toFollower") ||
-              !strcmp(call->parentSymbol->name, "_toFastFollower")) {
-            ArgSymbol* iterator = toFnSymbol(call->parentSymbol)->getFormal(1);
-            Type* iteratorType = iterator->getValType();
-            int i = 2; // first field is super
-            for_actuals(actual, call) {
-              SymExpr* se = toSymExpr(actual);
-              if (isArgSymbol(se->var) && call->parentSymbol != se->var->defPoint->parentSymbol) {
-                Symbol* field = toClassType(iteratorType)->getField(i);
-                VarSymbol* tmp = NULL;
-                SET_LINENO(call);
-                if (field->type == se->var->type) {
-                  tmp = newTemp(field->type);
-                  call->getStmtExpr()->insertBefore(new DefExpr(tmp));
-                  call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER_VALUE, iterator, field)));
-                } else if (field->type->refType == se->var->type) {
-                  tmp = newTemp(field->type->refType);
-                  call->getStmtExpr()->insertBefore(new DefExpr(tmp));
-                  call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER, iterator, field)));
-                }
-                actual->replace(new SymExpr(tmp));
-                i++;
-              }
-            }
-          }
-        }
-      }
-    }
-  }
+  fixNumericalGetMemberPrims();
 
-  forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->defPoint->parentSymbol && fn->iteratorInfo) {
-      FnSymbol* getIterator = fn->iteratorInfo->getIterator;
-      INT_ASSERT(getIterator->defPoint->parentSymbol);
-      ClassType* irecord = fn->iteratorInfo->irecord;
-      if (irecord->dispatchChildren.n > 0) {
-        SET_LINENO(getIterator);
-        LabelSymbol* label = new LabelSymbol("end");
-        getIterator->insertBeforeReturn(new DefExpr(label));
-        Symbol* ret = getIterator->getReturnSymbol();
-        forv_Vec(Type, type, irecord->dispatchChildren) {
-          VarSymbol* tmp = newTemp(irecord->getField(1)->type);
-          VarSymbol* cid = newTemp(dtBool);
-          BlockStmt* thenStmt = new BlockStmt();
-          VarSymbol* recordTmp = newTemp(type);
-          VarSymbol* classTmp = newTemp(type->initializer->iteratorInfo->getIterator->retType);
-          thenStmt->insertAtTail(new DefExpr(recordTmp));
-          thenStmt->insertAtTail(new DefExpr(classTmp));
-          ClassType* ct = toClassType(type);
-          for_fields(field, ct) {
-            VarSymbol* ftmp = newTemp(getIterator->getFormal(1)->type->getField(field->name)->type);
-            thenStmt->insertAtTail(new DefExpr(ftmp));
-            thenStmt->insertAtTail(new CallExpr(PRIM_MOVE, ftmp, new CallExpr(PRIM_GET_MEMBER_VALUE, getIterator->getFormal(1), getIterator->getFormal(1)->type->getField(field->name))));
-            if (ftmp->type == field->type) {
-              thenStmt->insertAtTail(new CallExpr(PRIM_SET_MEMBER, recordTmp, field, ftmp));
-            } else {
-              VarSymbol* ftmp2 = newTemp(field->type);
-              thenStmt->insertAtTail(new DefExpr(ftmp2));
-              thenStmt->insertAtTail(new CallExpr(PRIM_MOVE, ftmp2, new CallExpr(PRIM_CAST, field->type->symbol, ftmp)));
-              thenStmt->insertAtTail(new CallExpr(PRIM_SET_MEMBER, recordTmp, field, ftmp2));
-            }
-          }
-          thenStmt->insertAtTail(new CallExpr(PRIM_MOVE, classTmp, new CallExpr(type->initializer->iteratorInfo->getIterator, recordTmp)));
-          thenStmt->insertAtTail(new CallExpr(PRIM_MOVE, ret, new CallExpr(PRIM_CAST, ret->type->symbol, classTmp)));
-          thenStmt->insertAtTail(new GotoStmt(GOTO_GETITER_END, label));
-          ret->defPoint->insertAfter(new CondStmt(new SymExpr(cid), thenStmt));
-          ret->defPoint->insertAfter(new CallExpr(PRIM_MOVE, cid, new CallExpr(PRIM_TESTCID, tmp, type->initializer->iteratorInfo->irecord->getField(1)->type->symbol)));
-          ret->defPoint->insertAfter(new DefExpr(cid));
-          ret->defPoint->insertAfter(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER_VALUE, getIterator->getFormal(1), irecord->getField(1))));
-          ret->defPoint->insertAfter(new DefExpr(tmp));
-        }
-      }
-    }
-  }
+  cleanupLeaderFollowerIteratorCalls();
 
-  //
-  // reconstruct autoCopy and autoDestroy for iterator records
-  //
-  forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->numFormals() == 1 && fn->getFormal(1)->type->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
-      SET_LINENO(fn);
-      if (!strcmp(fn->name, "chpl__autoCopy")) {
-        Symbol* arg = fn->getFormal(1);
-        Symbol* ret = fn->getReturnSymbol();
-        BlockStmt* block = new BlockStmt();
-        block->insertAtTail(ret->defPoint->remove());
-        ClassType* irt = toClassType(arg->type);
-        for_fields(field, irt) {
-          SET_LINENO(field);
-          if (FnSymbol* autoCopy = autoCopyMap.get(field->type)) {
-            Symbol* tmp1 = newTemp(field->type);
-            Symbol* tmp2 = newTemp(autoCopy->retType);
-            block->insertAtTail(new DefExpr(tmp1));
-            block->insertAtTail(new DefExpr(tmp2));
-            block->insertAtTail(new CallExpr(PRIM_MOVE, tmp1, new CallExpr(PRIM_GET_MEMBER_VALUE, arg, field)));
-            block->insertAtTail(new CallExpr(PRIM_MOVE, tmp2, new CallExpr(autoCopy, tmp1)));
-            block->insertAtTail(new CallExpr(PRIM_SET_MEMBER, ret, field, tmp2));
-          } else {
-            Symbol* tmp = newTemp(field->type);
-            block->insertAtTail(new DefExpr(tmp));
-            block->insertAtTail(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER_VALUE, arg, field)));
-            block->insertAtTail(new CallExpr(PRIM_SET_MEMBER, ret, field, tmp));
-          }
-        }
-        block->insertAtTail(new CallExpr(PRIM_RETURN, ret));
-        fn->body->replace(block);
-      }
-      if (!strcmp(fn->name, "chpl__autoDestroy")) {
-        SET_LINENO(fn);
-        Symbol* arg = fn->getFormal(1);
-        BlockStmt* block = new BlockStmt();
-        ClassType* irt = toClassType(arg->type);
-        for_fields(field, irt) {
-          SET_LINENO(field);
-          if (FnSymbol* autoDestroy = autoDestroyMap.get(field->type)) {
-            Symbol* tmp = newTemp(field->type);
-            block->insertAtTail(new DefExpr(tmp));
-            block->insertAtTail(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER_VALUE, arg, field)));
-            block->insertAtTail(new CallExpr(autoDestroy, tmp));
-          }
-        }
-        block->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
-        fn->body->replace(block);
-      }
-    }
-  }
+  handlePolymorphicIterators();
+
+  reconstructIRautoCopyAutoDestroy();
 }
+
+

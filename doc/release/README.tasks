@@ -135,7 +135,7 @@ The MassiveThreads team at the University of Tokyo has provided an
 implementation of Chapel tasking via their MassiveThreads library
 ('massivethreads') in order to create a lighter-weight implementation
 of Chapel tasks.  To try MassiveThreads tasking, please take the
-following steps (bash commands are shown):
+following steps:
 
 1) Ensure that the environment variable CHPL_HOME points to the
    top-level Chapel directory, as always.
@@ -160,8 +160,7 @@ We have been working with the Qthreads team at Sandia National Labs to
 implement Chapel tasking over their user-level tasking layer
 ('qthreads') in order to create a lighter-weight implementation of
 Chapel tasks and ultimately an optimized implementation of sync
-variables.  To try Qthreads tasking, please take the following steps
-(bash commands are shown):
+variables.  To try Qthreads tasking, please take the following steps:
 
 1) Ensure that the environment variable CHPL_HOME points to the
    top-level Chapel directory, as always.

@@ -1,4 +1,4 @@
-var t = tuple(3);
+var t = (3, );
 writeln(t);
 
 var (x) = t;

@@ -60,9 +60,9 @@ module analyze_torus_graphs {
     type  vertex_tuple = tuple_index (vertex_domain);
 
     iter Neighbors (v_ : index (vertices) ){
-      const v = if vertex_domain.rank == 1 then tuple (v_) else v_;
+      const v = if vertex_domain.rank == 1 then (v_,) else v_;
       for s_ in torus_stencil do {
-	const s = if vertex_domain.rank == 1 then tuple (s_) else s_;
+	const s = if vertex_domain.rank == 1 then (s_,) else s_;
 	var neighbor : vertex_tuple; 
 	for d in 1..dimensions {
 	    neighbor (d) =
