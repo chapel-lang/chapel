@@ -30,11 +30,6 @@ PrgEnv_Version=""
 
 export XTPE_INFO_MESSAGE_OFF=true
 
-function setPgiPrediff() {
-  [ $compiler == pgi ] && \
-   export CHPL_SYSTEM_PREDIFF=$CHPL_HOME/util/test/prediff-for-pgi-warnings
-}
-
 # done setting up PrgEnv modules
 
 compilers="gnu pgi cray intel" # pathscale
@@ -49,7 +44,6 @@ for compiler in $compilers ; do
   fi
   module list
   export CHPL_TARGET_PLATFORM=cray-xt
-  setPgiPrediff
   $NIGHTLY -combinedir -cron $EXAMPLES
 )
 done
@@ -67,7 +61,6 @@ for compiler in $compilers ; do
   export CHPL_HOST_PLATFORM=cray-xt
   export CHPL_TARGET_PLATFORM=cray-xt
   export CHPL_HOST_COMPILER=cray-xt-$compiler
-  setPgiPrediff
   $NIGHTLY -combinedir -cron $EXAMPLES
 )
 done
@@ -83,7 +76,6 @@ for compiler in $compilers ; do
   unset CHPL_HOST_PLATFORM
   unset CHPL_TARGET_PLATFORM
   export CHPL_HOST_COMPILER=$compiler
-  setPgiPrediff
   $NIGHTLY -combinedir -cron $EXAMPLES
 )
 done
