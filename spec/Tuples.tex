@@ -103,13 +103,20 @@ component types of the tuple.
 The syntax of a tuple expression is given by:
 \begin{syntax}
 tuple-expression:
-  ( expression , )
-  ( expression , expression-list )
+  ( tuple-component , )
+  ( tuple-component , tuple-component-list )
 
-expression-list:
+tuple-component:
   expression
-  expression , expression-list
+  `_'
+
+tuple-component-list:
+  tuple-component
+  tuple-component , tuple-component-list
 \end{syntax}
+
+An underscore can be used to omit components when splitting
+a tuple (see \ref{Assignments_in_a_Tuple}).
 
 \begin{chapelexample}{values.chpl}
 The statement
@@ -273,6 +280,8 @@ tuple expansion expression.
 \end{itemize}
 
 \subsection{Splitting a Tuple with Assignment}
+\label{Assignments_in_a_Tuple}
+\index{tuples!assignments grouped as}
 
 When multiple expression on the left-hand side of an assignment
 operator are grouped using tuple notation, the tuple on the right-hand
@@ -326,7 +335,7 @@ outputs \chpl{3 4 3 4}.
 When splitting a tuple with assignment, the underscore token can
 be used to omit storing some of the components.  In this case, the
 full expression on the right-hand side of the assignment operator is
-evaluated, but the omitted values will not assigned to anything.
+evaluated, but the omitted values will not be assigned to anything.
 
 \begin{chapelexample}{omit-component.chpl}
 The code
