@@ -346,13 +346,15 @@ indexed into by 1-tuples.
 \index{arrays!iteration}
 \index{iteration!array}
 
-All arrays support iteration via for, forall and coforall loops.
-These loops iterate over all of the array elements as described by its
-domain.  A loop of the form:
+% FYI: Similar to text regarding tuple iteration.  Slightly less
+% similar for domain iteration.
+All arrays support iteration via standard \chpl{for}, \chpl{forall}
+and \chpl{coforall} loops.  These loops iterate over all of the array
+elements as described by its domain.  A loop of the form:
 
 % This is difficult to capture in a test program
 \begin{chapel}
-[co]for[all] a in A
+[for|forall|coforall] a in A do
   ...a...
 \end{chapel}
 
@@ -360,12 +362,12 @@ is semantically equivalent to:
 
 % This is difficult to capture in a test program
 \begin{chapel}
-[co]for[all] i in A.domain
-  ...A(i)...
+[for|forall|coforall] i in A.domain do
+  ...A[i]...
 \end{chapel}
 
-Thus, the iterator variable for an array traversal is a reference to
-the array element type.
+The iterator variable for an array iteration is a reference to the
+array element type.
 
 
 \section{Array Assignment}

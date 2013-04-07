@@ -587,7 +587,7 @@ static ArgumentDescription arg_desc[] = {
  {"serial-forall", ' ', NULL, "[Don't] Serialize forall constructs", "N", &fSerialForall, "CHPL_SERIAL_FORALL", NULL},
 
  {"", ' ', NULL, "Optimization Control Options", NULL, NULL, NULL, NULL},
- {"baseline", ' ', NULL, "[Don't] disable all Chapel optimizations", "N", &fBaseline, "CHPL_BASELINE", setBaselineFlag},
+ {"baseline", ' ', NULL, "Disable all Chapel optimizations", "F", &fBaseline, "CHPL_BASELINE", setBaselineFlag},
  {"conditional-dynamic-dispatch-limit", ' ', "<limit>", "Set limit on # of inline conditionals used for dynamic dispatch", "I", &fConditionalDynamicDispatchLimit, "CHPL_CONDITIONAL_DYNAMIC_DISPATCH_LIMIT", NULL},
  {"copy-propagation", ' ', NULL, "Enable [disable] copy propagation", "n", &fNoCopyPropagation, "CHPL_DISABLE_COPY_PROPAGATION", NULL},
  {"dead-code-elimination", ' ', NULL, "Enable [disable] dead code elimination", "n", &fNoDeadCodeElimination, "CHPL_DISABLE_DEAD_CODE_ELIMINATION", NULL},

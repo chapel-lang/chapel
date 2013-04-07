@@ -290,6 +290,19 @@ The rules for converting from \chpl{imag} to \chpl{complex} are the same as for
 converting from real, except that the imaginary part of the result is set using
 the input value, and the real part of the result is set to zero.
 
+\subsection{Explicit Tuple to Complex Conversion}
+\label{Explicit_Tuple_to_Complex_Conversion}
+\index{conversions!tuple to complex}
+\index{conversions!explicit!tuple to complex}
+
+A two-tuple of numerical values may be converted to a \chpl{complex} value.  If
+the destination type is \chpl{complex(128)}, each member of the two-tuple must
+be convertible to \chpl{real(64)}.  If the destination type
+is \chpl{complex(64)}, each member of the two-tuple must be convertible
+to \chpl{real(32)}.  The first member of the tuple becomes the real part of the
+resulting complex value; the second member of the tuple becomes the imaginary
+part of the resulting complex value.
+
 \subsection{Explicit Enumeration Conversions}
 \label{Explicit_Enumeration_Conversions}
 \index{conversions!enumeration}

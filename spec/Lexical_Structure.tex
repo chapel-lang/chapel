@@ -76,17 +76,19 @@ underscores, and dollar-signs.  Identifiers are designated by the
 following syntax:
 \begin{syntax}
 identifier:
-  letter legal-identifier-chars[OPT]
-  `_' legal-identifier-chars
+  letter-or-underscore legal-identifier-chars[OPT]
 
 legal-identifier-chars:
   legal-identifier-char legal-identifier-chars[OPT]
 
 legal-identifier-char:
-  letter
+  letter-or-underscore
   digit
-  `_'
   `(*\texttt{\$}*)'
+
+letter-or-underscore:
+  letter
+  `_'
 
 letter: one of
   `A' `B' `C' `D' `E' `F' `G' `H' `I' `J' `K' `L' `M' `N' `O' `P' `Q' `R' `S' `T' `U' `V' `W' `X' `Y' `Z' `a' `b' `c' `d' `e' `f' `g' `h' `i' `j' `k' `l' `m'
@@ -121,6 +123,8 @@ The following identifiers are reserved as keywords:
 \begin{tabular}{llllll}
 &
 \begin{chapel}
+_
+align
 atomic
 begin
 break
@@ -131,37 +135,36 @@ coforall
 config
 const
 continue
+\end{chapel} & \begin{chapel}
 delete
 dmapped
-\end{chapel} & \begin{chapel}
 do
 domain
 else
 enum
-false
+export
+extern
 for
 forall
 if
 in
+\end{chapel} & \begin{chapel}
 index
+inline
 inout
 iter
-\end{chapel} & \begin{chapel}
 label
 let
 local
-locale
 module
 new
 nil
 on
-opaque
 otherwise
+\end{chapel} & \begin{chapel}
 out
 param
-\end{chapel} & \begin{chapel}
 proc
-range
 record
 reduce
 ref
@@ -171,11 +174,10 @@ select
 serial
 single
 sparse
-subdomain
 \end{chapel} & \begin{chapel}
+subdomain
 sync
 then
-true
 type
 union
 use
@@ -187,7 +189,7 @@ yield
 zip
 \end{chapel} \\
 \begin{invisible}
-by
+otherwise
 \end{invisible} & \begin{invisible}
 otherwise
 \end{invisible} & \begin{invisible}

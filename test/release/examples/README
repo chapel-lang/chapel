@@ -80,4 +80,5 @@ Other files
   *.numlocales    : "
   *.prediff       : "
   *.perfkeys      : "
+  *.skipif        : "
   *.timeout       : "

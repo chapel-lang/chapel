@@ -103,13 +103,20 @@ component types of the tuple.
 The syntax of a tuple expression is given by:
 \begin{syntax}
 tuple-expression:
-  ( expression , )
-  ( expression , expression-list )
+  ( tuple-component , )
+  ( tuple-component , tuple-component-list )
 
-expression-list:
+tuple-component:
   expression
-  expression , expression-list
+  `_'
+
+tuple-component-list:
+  tuple-component
+  tuple-component , tuple-component-list
 \end{syntax}
+
+An underscore can be used to omit components when splitting
+a tuple (see \ref{Assignments_in_a_Tuple}).
 
 \begin{chapelexample}{values.chpl}
 The statement
@@ -135,12 +142,12 @@ writeln((x1,x2,x3));
 Note that if a single expression is delimited by parentheses, the
 parentheses only impact precedence.  Thus \chpl{(1)} is equivalent
 to \chpl{1}.  To specify a 1-tuple, use the form with the trailing
-comma \chpl{(1, )}.
+comma \chpl{(1,)}.
 
 \begin{chapelexample}{onetuple.chpl}
 The statement
 \begin{chapel}
-var x: 1*int = (7, );
+var x: 1*int = (7,);
 \end{chapel}
 creates a 1-tuple of integers storing the value 7.
 \begin{chapelpost}
@@ -159,9 +166,92 @@ When a tuple is passed as an argument to a function, it is passed as
 if it is a record type containing fields of the same type and in
 the same order as in the tuple.
 
+\section{Tuple Indexing}
+\label{Tuple_Indexing}
+\index{tuples!indexing}
+
+A tuple component may be accessed by an integral parameter (a compile-time
+constant) as if the tuple were an array.  Indexing is 1-based, so the
+first component in the tuple is accessed by the index \chpl{1}, and so
+forth.
+
+\begin{chapelexample}{access.chpl}
+The loop
+\begin{chapel}
+var myTuple = (1, 2.0, "three");
+for param i in 1..3 do
+  writeln(myTuple(i));
+\end{chapel}
+uses a param loop to output the components of a tuple.
+\begin{chapelpost}
+\end{chapelpost}
+\begin{chapeloutput}
+1
+2.0
+three
+\end{chapeloutput}
+\end{chapelexample}
+
+Homogeneous tuples may be accessed by integral values that are not
+necessarily compile-time constants.
+
+\begin{chapelexample}{access-homogeneous.chpl}
+The loop
+\begin{chapel}
+var myHTuple = (1, 2, 3);
+for i in 1..3 do
+  writeln(myHTuple(i));
+\end{chapel}
+uses a serial loop to output the components of a homogeneous tuple.
+Since the index is not a compile-time constant, this would result in
+an error were tuple not homogeneous.
+\begin{chapelpost}
+\end{chapelpost}
+\begin{chapeloutput}
+1
+2
+3
+\end{chapeloutput}
+\end{chapelexample}
+
+\begin{rationale}
+Non-homogeneous tuples can only be accessed by compile-time constants
+since the type of an expression must be statically known.
+\end{rationale}
+
+\section{Iteration over Tuples}
+\label{Iteration_over_Tuples}
+\index{tuples!iteration}
+\index{iteration!tuple}
+
+% FYI: Similar to text regarding array iteration.  Slightly less
+% similar for domain iteration.
+Only homogenous tuples support iteration via
+standard \chpl{for}, \chpl{forall} and \chpl{coforall} loops.  These loops
+iterate over all of the tuple's elements.  A loop of the form:
+
+% This is difficult to capture in a test program
+\begin{chapel}
+[for|forall|coforall] e in t do
+  ...e...
+\end{chapel}
+
+where t is a homogenous tuple of size \chpl{n}, is semantically
+equivalent to:
+
+% This is difficult to capture in a test program
+\begin{chapel}
+[for|forall|coforall] i in 1..n do
+  ...t(i)...
+\end{chapel}
+
+The iterator variable for an tuple iteration is a either a const value
+or a reference to the tuple element type, following blank intent
+semantics.
+
 \section{Tuple Assignment}
 \label{Tuple_Assignment}
-\index{assignment!tuples}
+\index{assignment!tuple}
 \index{tuples!assignment}
 
 In tuple assignment, the components of the tuple on the left-hand side
@@ -190,6 +280,8 @@ tuple expansion expression.
 \end{itemize}
 
 \subsection{Splitting a Tuple with Assignment}
+\label{Assignments_in_a_Tuple}
+\index{tuples!assignments grouped as}
 
 When multiple expression on the left-hand side of an assignment
 operator are grouped using tuple notation, the tuple on the right-hand
@@ -243,7 +335,7 @@ outputs \chpl{3 4 3 4}.
 When splitting a tuple with assignment, the underscore token can
 be used to omit storing some of the components.  In this case, the
 full expression on the right-hand side of the assignment operator is
-evaluated, but the omitted values will not assigned to anything.
+evaluated, but the omitted values will not be assigned to anything.
 
 \begin{chapelexample}{omit-component.chpl}
 The code
@@ -532,59 +624,6 @@ writeln(rest((1, 2, 3)));
 (2, 3)
 \end{chapeloutput}
 \end{chapelexample}
-
-\section{Tuple Indexing}
-\label{Tuple_Indexing}
-\index{tuples!indexing}
-
-A tuple component may be accessed by an integral parameter (a compile-time
-constant) as if the tuple were an array.  Indexing is 1-based, so the
-first component in the tuple is accessed by the index \chpl{1}, and so
-forth.
-
-\begin{chapelexample}{access.chpl}
-The loop
-\begin{chapel}
-var myTuple = (1, 2.0, "three");
-for param i in 1..3 do
-  writeln(myTuple(i));
-\end{chapel}
-uses a param loop to output the components of a tuple.
-\begin{chapelpost}
-\end{chapelpost}
-\begin{chapeloutput}
-1
-2.0
-three
-\end{chapeloutput}
-\end{chapelexample}
-
-Homogeneous tuples may be accessed by integral values that are not
-necessarily compile-time constants.
-
-\begin{chapelexample}{access-homogeneous.chpl}
-The loop
-\begin{chapel}
-var myHTuple = (1, 2, 3);
-for i in 1..3 do
-  writeln(myHTuple(i));
-\end{chapel}
-uses a serial loop to output the components of a homogeneous tuple.
-Since the index is not a compile-time constant, this would result in
-an error were tuple not homogeneous.
-\begin{chapelpost}
-\end{chapelpost}
-\begin{chapeloutput}
-1
-2
-3
-\end{chapeloutput}
-\end{chapelexample}
-
-\begin{rationale}
-Non-homogeneous tuples can only be accessed by compile-time constants
-since the type of an expression must be statically known.
-\end{rationale}
 
 \section{Tuple Operators}
 \label{Tuple_Operators}

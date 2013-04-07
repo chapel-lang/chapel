@@ -1,6 +1,6 @@
-====================================================
+===============================================
 Using Chapel on Cray XT, XE, XK, and XC Systems
-====================================================
+===============================================
 
 The following information is assembled to help Chapel users get up and
 running on Cray systems running the Cray Linux Environment (TM) (CLE),
@@ -223,7 +223,10 @@ To use this combination of runtime layers, do the following.
 
 
 3) Set your CHPL_COMM environment variable to "ugni" and your CHPL_TASKS
-   environment variable to "muxed".  For example, for the bash shell:
+   environment variable to "muxed".  For example:
+
+     export CHPL_COMM=ugni
+     export CHPL_TASKS=muxed
 
    This specifies that you wish to use the Cray-specific communication
    and tasking layers.
@@ -428,7 +431,7 @@ NCCS user notes
   CHPL_LAUNCHER_ACCOUNT environment variable to be set to specify your
   NCCS account name.  For example:
 
-    setenv CHPL_LAUNCHER_ACCOUNT MYACCOUNTID
+    export CHPL_LAUNCHER_ACCOUNT=MYACCOUNTID
 
 * If our PBS launcher does not work for you, you can fall back on a
   more manual launch of your program as always, either by:

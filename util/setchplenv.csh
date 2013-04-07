@@ -11,7 +11,7 @@ endif
 set MYPATH = `./util/config/fixpath "$PATH" :`
 set MYMANPATH = `./util/config/fixpath "$MANPATH" :`
 
-if ( $MYPATH == "" ) then
+if ( "$MYPATH" == "" ) then
   echo "Error running ./util/config/fixpath"
   exit
 endif

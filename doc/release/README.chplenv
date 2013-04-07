@@ -19,13 +19,12 @@ Recommended Settings
    release.  This is the parent of the directory containing this file.
    For example:
 
-        (if your shell is tcsh - assumed in all examples:)
-        setenv CHPL_HOME ~/chapel-1.6.0
+        export CHPL_HOME=~/chapel-1.7.0
 
-        (if your shell is bash:)
-        export CHPL_HOME=~/chapel-1.6.0
-
-        (use appropriate commands for other shells)
+   [This, and all other examples in Chapel READMEs, assumes you're
+    using the 'bash' shell.  If using 'csh' or 'tcsh', mentally change
+    'export FOO=BAR' to 'setenv FOO BAR'.  If using some other shell,
+    make the appropriate adjustment.]
 
 
 2) Set the CHPL_HOST_PLATFORM environment variable to represent the
@@ -33,7 +32,7 @@ Recommended Settings
    this can be done by running the $CHPL_HOME/util/chplenv/platform
    script.  For example:
 
-        setenv CHPL_HOST_PLATFORM `$CHPL_HOME/util/chplenv/platform`
+        export CHPL_HOST_PLATFORM=`$CHPL_HOME/util/chplenv/platform`
 
    For other platforms that appear very similar to a UNIX workstation
    from the shell prompt (e.g., a Cray XK (TM)), the value may need to
@@ -71,13 +70,13 @@ Recommended Settings
 3) Set your PATH to include the directory $CHPL_HOME/bin/$CHPL_HOST_PLATFORM
    which is created when you build the compiler.  For example:
 
-        setenv PATH "$PATH":"$CHPL_HOME/bin/$CHPL_HOST_PLATFORM"
+        export PATH="$PATH":"$CHPL_HOME/bin/$CHPL_HOST_PLATFORM"
 
 
 4) Set your man path to include the directory $CHPL_HOME/man.
    For example:
 
-        setenv MANPATH "$MANPATH":"$CHPL_HOME"/man
+        export MANPATH="$MANPATH":"$CHPL_HOME"/man
 
 
 The setchplenv.* scripts in the $CHPL_HOME/util/ directory contain
@@ -93,13 +92,9 @@ Optional Settings
 
 1) If you are cross-compiling for a platform other than your
    $CHPL_HOST_PLATFORM, set the CHPL_TARGET_PLATFORM environment
-   variable to describe that platform.  Currently supported
-   cross-compilation target platforms include:
-
-        cray-xc : Cray XC
-        cray-xe : Cray XE
-        cray-xk : Cray XK
-        cray-xt : Cray XT
+   variable to describe that platform.  See CHPL_HOST_PLATFORM above
+   for legal values (though whether or not a given setting will
+   support cross-compilation depends on your specific environment).
 
    If CHPL_TARGET_PLATFORM is not set, the target platform defaults to
    the same value as $CHPL_HOST_PLATFORM.
@@ -235,13 +230,41 @@ Optional Settings
 
 9) Optionally, the CHPL_GMP environment variable can select between
    no GMP support, using the GMP distributed with Chapel in third-party,
-   or using a system GMP. The options are:
+   or using a system GMP. Current options are:
+
         system : assume GMP is already installed (#include gmp.h, -lgmp)
         none   : do not build GMP support into the Chapel runtime
         gmp    : use the gmp implementation bundled with Chapel in third-party
 
-   If unset, CHPL_GMP defaults to "none". Note that the included gmp
+   If unset, CHPL_GMP defaults to "system" if you are on a Cray system,
+   "gmp" if you've already built the third-party installation of GMP for
+   your installation, and "none" otherwise.  Note that the included gmp
    distribution may not build on all platforms supported by Chapel.
+
+10) Optionally, the CHPL_REGEXP environment variable can be used to
+    enable regular expression operations as documented in
+    doc/technotes/README.regexp and defined in modules/standard/Regexp.chpl.  
+    Current options are:
+
+        re2  : use the re2 implementation in third-party
+               (downloading, building, and installing it if it is not already)
+        none : do not support regular expression operations
+
+    If unset, CHPL_REGEXP defaults to "re2" if you've already installed 
+    regular expression support in third-party and "none" otherwise.
+
+11) Optionally, the CHPL_LLVM environment variable can be used to
+    enable support for the LLVM back-end to the Chapel compiler
+    (see doc/technotes/README.llvm) or to support extern blocks in
+    Chapel code via the CLANG compiler (see doc/technotes/README.extern).
+    Current options are:
+
+        llvm : use the llvm/clang implementation in third-party
+               (downloading, building, and installing it if it is not already)
+        none : do not support llvm-/clang-related features
+
+    If unset, CHPL_LLVM dfeaults to "llvm" if you've already installed
+    llvm in third-party and "none" otherwise.
 
 -------------------------------------
 Compiler Command Line Option Defaults

@@ -16,10 +16,9 @@ creoleparser/
 
   License: MIT (Genshi is Revised BSD)
 
-  Contact: For more information, please refer to:
-             http://pypi.python.org/pypi/Creoleparser
-           and
-             http://genshi.edgewall.org/
+  Website: http://pypi.python.org/pypi/Creoleparser
+             and
+           http://genshi.edgewall.org/
 
 
 dlmalloc/
@@ -30,8 +29,7 @@ dlmalloc/
   License: dlmalloc has been placed in the public domain as explained
            at http://creativecommons.org/publicdomain/zero/1.0/
 
-  Contact: For more information, please refer to:
-           http://g.oswego.edu/dl/html/malloc.html
+  Website: http://g.oswego.edu/dl/html/malloc.html
 
   See also: the comments in dlmalloc/src/dlmalloc.c
 
@@ -44,8 +42,7 @@ gasnet/
   License: GASNet is made available under a BSD-style license, which
            can be found in gasnet/GASNet-<version>/license.txt
 
-  Contact: For more information, please refer to: 
-           http://gasnet.cs.berkeley.edu
+  Website: http://gasnet.cs.berkeley.edu
 
   See also: gasnet/README
 
@@ -55,23 +52,43 @@ gmp/
 
   License: L-GPL (see gmp/gmp-*/COPYING and gmp/gmp-*/COPYING.LIB)
 
-  Contact: For more information, please refer to: http://gmplib.org
+  Website: http://gmplib.org
 
   See also: gmp/README and gmp/gmp-*/README
+
+
+llvm/
+  Summary: This is a directory where the LLVM Compiler infrastructure,
+           including Clang, will be downloaded when running 'make
+           llvm' in the third-party directory.  We use LLVM as an
+           optional back-end for Chapel in place of C (see
+           doc/technotes/README.llvm for details); and we use CLANG to
+           support "extern blocks" within Chapel -- a capability for
+           embedding C code into a Chapel source file.
+
+  License: LLVM's BSD-style license (see llvm/llvm/LICENSE.TXT and
+           llvm/llvm/tools/clang/LICENSE.TXT)
+
+  Website: http://llvm.org/
+             and
+           http://clang.llvm.org/
+
+  See also: llvm/llvm/README.txt
+              and
+            llvm/llvm/tools/clang/README.txt)
 
 
 massivethreads/
   Summary: MassiveThreads is a lightweight thread library being
            developed by the University of Tokyo.  This package
-           represents another lighter-weight tasking alternative
+           represents a lighter-weight tasking alternative
            to the default fifo/pthreads choice.
 
   License: MassiveThreads is released under the Simplified BSD License,
            which can be found in:
              massivethreads/massivethreads-<version>/COPYRIGHT
 
-  Contact: For more information, please refer to:
-             http://code.google.com/p/massivethreads/
+  Website: http://code.google.com/p/massivethreads/
 
   See also: massivethreads/massivethreads-<version>/README
 
@@ -84,11 +101,25 @@ qthread/
   License: Qthreads is released under the New BSD License, which can
            be found in qthread/qthread-<version>/COPYING
 
-  Contact: For more information, please refer to:
-           http://code.google.com/p/qthreads/
+  Website: http://code.google.com/p/qthreads/
+    and
            http://www.cs.sandia.gov/qthreads/
 
   See also: qthread/qthread-*/README
+
+
+re2/
+  Summary: This is a directory where the RE2 regular expression
+           library will be downloaded when running 'make re2' in the
+           third-party directory.  We use RE2 to support regular
+           expression operations as described in
+           doc/technotes/README.regexp).
+
+  License: New BSD license (see re2/re2/LICENSE)
+
+  Website: https://code.google.com/p/re2/
+
+  See also: re2/re2/README
 
 
 tcmalloc/
@@ -99,8 +130,7 @@ tcmalloc/
   License: Google-perftools is released under the New BSD License (see
            tcmalloc/google-perftools-*/COPYING)
 
-  Contact: For more information, please refer to:
-           http://code.google.com/p/google-perftools/
+  Website: http://code.google.com/p/google-perftools/
 
   See also: tcmalloc/README
 
@@ -111,8 +141,7 @@ utf8-decoder/
 
   License: MIT (see utf8-decoder/README)
 
-  Contact: For more information, please refer to:
-           http://bjoern.hoehrmann.de/utf-8/decoder/dfa/
+  Website: http://bjoern.hoehrmann.de/utf-8/decoder/dfa/
 
   See also: utf8-decoder/README
 

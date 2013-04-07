@@ -48,7 +48,7 @@ for line in mylines:
     ll = l[0].strip()
     if ll and ll == '==>':
         last = l[1].strip()
-    if ll.lower() == 'bug:' or ll.lower() == 'unimplemented':
+    if ll.lower() == 'bug:' or ll.lower() == 'unimplemented' or ll.lower() == 'performance:':
         if last[0:2] == './':
             # print last[2:]
             futures.add(last[2:])
@@ -56,21 +56,21 @@ for line in mylines:
             # print last
             futures.add(last)
 
-sys.stdout.write('%d total futures (bug/unimplemented feature)\n'%len(futures))
+sys.stdout.write('%d total futures (bug/unimplemented feature/performance)\n'%len(futures))
 
 futures_only = sorted(list(futures - status_futures))
 status_only = sorted(list(status_futures - futures))
 
 sys.stdout.write('\nFutures missing from the STATUS file (%d total):\n'%(len(futures_only)))
 for f in futures_only:
-    sys.stdout.write('\t%s\n'%(f))
+    sys.stdout.write(' # %s\n'%(f))
     
 sys.stdout.write('\nAdditional futures in the STATUS file (%d total):\n'%(len(status_only)))
 for f in status_only:
-    sys.stdout.write('\t%s\n'%(f))
+    sys.stdout.write(' # %s\n'%(f))
 
 sys.stdout.write('\nDuplicates futures in the STATUS file (%d total):\n'%(len(dups)))
 for f in dups:
-    sys.stdout.write('\t%s\n'%(f))
+    sys.stdout.write(' # %s\n'%(f))
 
 sys.exit(0)

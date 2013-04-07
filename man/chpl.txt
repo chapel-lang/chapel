@@ -104,7 +104,7 @@ OPTIONS
 
   Optimization Control Options
 
-  --[no-]baseline        Turns off all optimizations in the Chapel compiler and
+  --baseline        Turns off all optimizations in the Chapel compiler and
                     generates naive C code with many temporaries.
 
   --conditional-dynamic-dispatch-limit   When greater than zero, this
@@ -343,16 +343,22 @@ OPTIONS
                      boolean configuration variables, the value can
                      be omitted, causing the default value to be toggled.
 
+  --[no-]warn-special  Enable [disable] all special compiler warnings
+                     issued due to syntax and other language
+                     changes. Currently, these include
+                     --[no-]warn-domain-literal and
+                     --[no-]warn-tuple-iteration.
+
   --[no-]warn-domain-literal  Enable [disable] compiler warnings
-                     about potential old-syntax domain literals.
-                     Such a literal is a list of range expressions within
-                     square brackets, e.g. [1..2,3..4]. Currently they are
-                     array literals, but prior to v1.6 they were domain
-                     literals. The warning is intended for use with pre-1.6
-                     Chapel code, pointing to places where domain literals
-                     need to be converted to the new syntax. Do so by replacing
-                     the square brackets with curly braces, e.g. {1..2,3..4}.
-                     This warning will be removed in the next major release.
+                     regarding the potential use of the old-style
+                     domain literal syntax (e.g. [1..2, 3..4]). All
+                     array literals with range elements will result in
+                     warnings.
+
+  --[no-]warn-tuple-iteration  Enable [disable] compiler warnings
+                     regarding the potential use of old-style
+                     zippering syntax. All uses of tuple iteration
+                     will produce warnings.
 
   --no-warnings      Turns off compiler warnings.
 

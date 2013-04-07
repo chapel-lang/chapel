@@ -10,7 +10,8 @@ with read/write.
 
 This file starts with a sample-based overview of the format strings. Then, it
 describes the format string syntax in detail. Finally, it demonstrates the
-functionality with  example function calls.
+functionality with example function calls.
+
 
 --------------------------
 Overview of Format Strings
@@ -18,58 +19,72 @@ Overview of Format Strings
 In a manner similar to C's 'printf' and 'scanf', the IO package includes
 writef and readf functions. These functions take in a format string
 and some arguments. For example, one might do
-> writef("My favorite number is %i\n", 7);
+> writef("My favorite %s is %i\n", "number", 7);
 < My favorite number is 7
 
 The following sections offer a tour through the conversions to illustrate the
 common cases. A more precise definition follows in the "Format String
 Syntax in Detail" section below.
 
+In this file, we use "integral" to refer to the Chapel types int or uint and
+"floating-point" to refer to real, imaginary, or complex, of any bit width.
+
 Generic Numeric Conversions
 ---------------------------
  ##.### - decimal number padded on the left with spaces to 2 digits before
-          the point, rounded to 3 after. Works with floating point,
-          imaginary, or complex arguments. Imaginary arguments get an i
-          afterwards.
+          the point, rounded to 3 after. Works with real, imaginary,
+          or complex arguments. Also works with integral arguments, but the
+          decimal point is not printed.
 
- ## - integer padded out to 2 digits, or floating point rounded to integer
+          In all cases, the output is padded (on the left, except a
+          complex number is padded on the right) to the total length of
+          the conversion specifier (6 in this example).  The output
+          can be longer, when needed to accomodate the number.
 
- %n - a "number" - as with %i, %u, %r, %m, or %z below depending on the type
+ ## - integral value padded out to 2 digits. Also works with real, imaginary
+      or complex numbers by rounding them to integers.
+
+ In both conversions above, an imaginary argument gets an 'i' afterwards;
+ a complex argument is printed in the format a + bi, where each of a and b
+ is rounded (but not padded) individually as if printed under that conversion
+ on its own.
+
+ %n - a "number" - equivalent to one of %i, %u, %r, %m, or %z below,
+      depending on the type
  %17n - a number padded out to 17 columns
  %.4n - a number with 4 significant digits or a precision of 4
 
-Integer Conversions
--------------------
- %i or %di - an integer in decimal, possibly negative
-             (note - when reading a %i, - is allowed)
- %u or %du - an unsigned decimal number
-             (note - when reading a %u, - is not allowed)
- %bi  - a binary signed number
- %bu  - a binary unsigned number
- %@bu - a binary unsigned number with 0b
- %xu - a hexadecimal unsigned number
- %xi - a hexadecimal signed number
- %@xu - a hexadecimal unsigned number with 0x
- %Xu - a hexadecimal unsigned number in uppercase
- %@Xu - a hexadecimal unsigned number with 0X and uppercase
- %17i - a decimal number padded on the left with spaces to 17 columns
+Integral Conversions
+--------------------
+ %i or %di - a signed integer in decimal, possibly negative
+             (note - when reading a %i, '-' is allowed)
+ %u or %du - an unsigned decimal integer
+             (note - when reading a %u, '-' is not allowed)
+ %bi  - a binary signed integer
+ %bu  - a binary unsigned integer
+ %@bu - a binary unsigned integer with 0b
+ %xu - a hexadecimal unsigned integer
+ %xi - a hexadecimal signed integer
+ %@xu - a hexadecimal unsigned integer with 0x
+ %Xu - a hexadecimal unsigned integer in uppercase
+ %@Xu - a hexadecimal unsigned integer with 0X and uppercase
+ %17i - a decimal integer padded on the left with spaces to 17 columns
         (that is, it is right-justified in a 17-column field)
         (padding width is ignored when reading integers)
  %*i - as with %17i but read the minimum width from the preceeding argument
- %017i - a decimal number padded on the left with zeros to 17 columns
- %-17i - a decimal number left-justified (padded on the right) to 17 columns
- %+i - a decimal number showing + for positive numbers
- % i - a decimal number with a space for positive numbers
+ %017i - a decimal integer padded on the left with zeros to 17 columns
+ %-17i - a decimal integer left-justified (padded on the right) to 17 columns
+ %+i - a decimal integer showing + for positive numbers
+ % i - a decimal integer with a space for positive numbers
  %|4i - output 4 raw,binary bytes of the passed integer in native endianness
  %<4i - output 4 raw,binary bytes of the passed integer little endian
  %>4i - output 4 raw,binary bytes of the passed integer big endian
  %<8i - output 8 raw,binary bytes of the passed integer little endian
-        (integer byte widths of 1, 2, 4, and 8 are supported)
-
+        (byte widths of 1, 2, 4, and 8 are supported for integral conversions)
 
 Real Conversions
 ----------------
- %r - a real floating-point number with decimal or exponential notation, where
+ %r - a real number with decimal or exponential notation, where
       exponential is chosen if the decimal version would be too long
 
  %6r - as with %r but padded on the left to 6 columns (ie right-justified)
@@ -81,17 +96,17 @@ Real Conversions
  %*.*r - as with %6.4r but read minimum width and significant digits from
          preceeding arguments
       
- %dr - a decimal floating-point number with e.g. 12.34
+ %dr - a real number in decimal notation, e.g. 12.34
  %6dr - a decimal number padded on the left to 6 columns (right-justified)
  %.4dr - a decimal number with 4 digits after the radix point
  %6.4dr - a decimal number padded on the left to 6 columns and with 4 digits
           after the radix point
           (width and precision are ignored when reading numbers in readf)
 
- %er - a floating-point number in exponential notation, e.g. 10.2e-23
- %Er - like %er but uppercase
+ %er - a real number in exponential notation, e.g. 10.2e-23
+ %Er - like %er but with the 'e' in uppercase, e.g. 10.2E-23
 
- %xer - hexadecimal number using p to mark exponent e.g. ab.fp-2a
+ %xer - hexadecimal number using p to mark exponent e.g. 6c.3f7p-2a
 
  %|4r - emit 4 raw,binary bytes of the passed number in native endianness
  %<8r - emit 8 raw,binary bytes of the passed number in little endian
@@ -100,7 +115,7 @@ Real Conversions
 
 Complex and Imaginary Conversions
 ---------------------------------
- %m - an imaginary floating-point number, as with %r but ends with an i
+ %m - an imaginary number, like a real with %r but ends with an 'i'
 
  %z - print complex number with %r for each part in the format a + bi
  %@z - print complex number with %r for each part in the format (a,b)
@@ -114,14 +129,13 @@ Complex and Imaginary Conversions
  %|8z - emit 8 raw,binary bytes of native-endian complex (a,b are each 4 bytes)
  %<16z - emit 16 raw,binary bytes of little-endian complex (a,b each 8 bytes)
 
-
 String and Bytes Conversions
 ----------------------------
  %s - a string. When reading, read until whitespace.
       Note that if you want to be able to read you string back in,
       you should use one of the quoted or encoded binary versions (see below),
       since generally with %s it's not clear where the string ends.
- %c - a single Unicode character (argument should be a string or an integer
+ %c - a single Unicode character (argument should be a string or an integral
       storing the character code)
  %17s - when writing - a string left padded (right justified) to 17 columns
         when reading - read up to 17 bytes or a whitespace, whichever comes
@@ -150,11 +164,11 @@ String and Bytes Conversions
  %|*S - means read bytes until a terminator byte. The terminator byte is read
         from the argument before the string.
  %|1S %|2S %|4S and %|8S -  work with encoded strings storing a length
-                            and then the string data. The number is the
-                            number of bytes of length which is by default
+                            and then the string data. The digit before 'S' is
+                            the number of bytes of length which is by default
                             stored native endian. <, |, > can be used
                             to specify the endianness of the length field,
-                            for example %<8y is 8-bytes of little-endian length
+                            for example %<8S is 8 bytes of little-endian length
                             and then string data.
  %|vS - as with %|1S-%|8S but the string length is encoded using a
         variable-length byte scheme (which is always the same no matter what
@@ -181,7 +195,6 @@ String and Bytes Conversions
             is not supported).
 
  %/*/ - next argument contains the regular expression to match
-
 
 General Conversions
 -------------------
@@ -210,7 +223,7 @@ Format String Syntax in Detail
 ------------------------------
 Chapel's format strings are simpler than those in C in one way: it is no longer
 necessary to specify the types of the arguments in the format string. For
-example, the l in %ld is specifying the type of the argument for integer
+example, in C the l in %ld is specifying the type of the argument for integer
 (decimal) conversion. That is not necessary in Chapel since the compiler is
 able to use type information from the call.
 
@@ -228,7 +241,6 @@ Format strings in Chapel consist of:
  - other text e.g. "test"
     when writing - prints the specified text
     when reading - matches the specified text
-
 
 #### Numbers
 ------------
@@ -288,7 +300,7 @@ Going through each section for text conversions:
  [optional field width]
    The field width is typically the minimum number of *columns* that the
    conversion should use to display a value. It can be *, which means to read
-   the field width from an integer argument before the converted value. In
+   the field width from an integral argument before the converted value. In
    writef for a textual string conversion (%s %" %'), the field width is in
    columns.  Within readf, the field width is the maximum number of bytes to
    read for any string conversion (%s %" %' %//).
@@ -296,16 +308,16 @@ Going through each section for text conversions:
  [optional . then precision]
    The precision is normally the number of decimal digits to use when printing
    the fractional part of number. It can be *, which means to read the
-   precision from an integer argument before the converted value. For textual
+   precision from an integral argument before the converted value. For textual
    string conversions in writef (%s %" %'), the precision indicates the
    maxmimum number of columns to print - and the result will be truncated if
    it does not fit. In readf for these textual string conversions (%s %" %'),
    the precision indicates the maximum number of characters (e.g. Unicode code
-   points). The precision will be silently ignored for integer conversions
-   (%i, %x, etc) and for %// conversions.
+   points). The precision will be silently ignored for integral conversions
+   (%i, %u, etc) and for %// conversions.
 
  [optional base flag]
-   d means decimal (and not exponential for floating point)
+   d means decimal (and not exponential for floating-point)
    x means lower-case hexadecimal
    X means upper-case hexadecimal 
    b means binary 
@@ -324,8 +336,8 @@ Going through each section for text conversions:
    n means type-based number, allowing width and precision
    i means integral conversion
    u means unsigned integral conversion
-   r means floating-point conversion (e.g. 12.23)
-   m means floating-point conversion with an i after it (e.g. 12.23i)
+   r means real conversion (e.g. 12.23)
+   m means imaginary conversion with an 'i' after it (e.g. 12.23i)
    z means complex conversion
    s means string conversion
    S means a quoted string conversion
@@ -335,7 +347,7 @@ Going through each section for text conversions:
    /.../ means a regular expression (for reading only)
    {/.../xyz} means regular expression with flags xyz 
    c means a Unicode character - either the first character in a string
-           or an integer character code 
+           or an integral character code 
  
 For binary conversions: 
  [optional endian flag]
@@ -345,14 +357,14 @@ For binary conversions:
 
  [optional size in bytes]
    This is the number of bytes the format should read or write in this
-   conversion. For integer conversions (e.g. %|i) it specifies the number of
-   bytes in the integer, and 1, 2, 4, and 8 are supported. For floating-point
-   conversions, 4 and 8 are supported. For complex conversions, 8 and 16 are
-   supported. Note that for integer, floating point, and complex conversions,
-   the size in bytes is required.
+   conversion. For integral conversions (e.g. %|i) it specifies the number of
+   bytes in the integer, and 1, 2, 4, and 8 are supported. For real and
+   imaginary conversions, 4 and 8 are supported. For complex conversions,
+   8 and 16 are supported. The size in bytes is *required* for binary
+   integral and floating-point conversions.
 
-   It can be *, which means that the number is read from the argument
-   before the conversion.
+   The size can be *, which means that the number of bytes is read
+   from the argument before the conversion.
 
    For strings, if a terminator or length field is specified, exactly this
    number is the maximum size in bytes; if the terminator or length is not
@@ -366,7 +378,7 @@ For binary conversions:
             - note that the size is mandatory for binary integral conversions
    u means unsigned integral
             - note that the size is mandatory for binary integral conversions
-   r means floating-point
+   r means real
             - note that the size is mandatory for binary real conversions
    m works the same as r for binary conversions
    z means complex
@@ -382,10 +394,7 @@ For binary conversions:
     %|8S a eight-byte length and then the string
     %|vS a variable-byte-encoded length and then the string
    c means a Unicode character - either the first character in a string
-           or an integer character code 
-
-
-
+           or an integral character code
 
 
 --------
@@ -473,5 +482,3 @@ Examples
   if the input is "c" got will be false and s will be ""
   if the input is "ab", got will be true and s will be "b"
   if the input is "abb", got will be true and s will be "bb"
-
-

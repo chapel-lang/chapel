@@ -6,7 +6,7 @@
   Original port to Chapel by Brandon Holt (8/2011).  Further
   improvements for the sake of performance and/or generality made by
   Sung-Eun Choi (12/2011, 11/2012), Jeff Keasler (3/2012), and Brad
-  Chamberlain (3-4,9-11/2012).
+  Chamberlain (3-4,9-11/2012, 2/2013).
 
 
   Notes on the Initial Implementation

@@ -24,9 +24,9 @@ the following settings:
 2) Set CHPL_HOST_PLATFORM to pwr5 for a Power5 cluster or pwr6 for a
    Power6 cluster.  For example:
 
-     setenv CHPL_HOST_PLATFORM pwr5
+     export CHPL_HOST_PLATFORM=pwr5
 or:
-     setenv CHPL_HOST_PLATFORM pwr6
+     export CHPL_HOST_PLATFORM=pwr6
 
    This will cause Chapel to use the IBM xlc and xlC compilers by
    default.
@@ -34,7 +34,7 @@ or:
 
 3) Set CHPL_COMM to gasnet.  For example:
 
-     setenv CHPL_COMM gasnet
+     export CHPL_COMM=gasnet
 
    See README.multilocale for further information about running using
    multiple locales and GASNet.
@@ -44,7 +44,7 @@ or:
    default, you will need to set the OBJECT_MODE variable to 64 to use
    GASNet.  For example:
 
-     setenv OBJECT_MODE 64
+     export OBJECT_MODE=64
 
 
 4) Make sure you're in the top-level chapel/ directory:
@@ -59,7 +59,7 @@ or:
 5) Set your PATH to include the directory $CHPL_HOME/bin/$CHPL_HOST_PLATFORM
    which is created when you build the compiler.  For example:
 
-     setenv PATH "$PATH":"$CHPL_HOME/bin/$CHPL_HOST_PLATFORM"
+     export PATH="$PATH":"$CHPL_HOME/bin/$CHPL_HOST_PLATFORM"
 
 
 6) Compile your Chapel program as usual.  See README.compiling for
