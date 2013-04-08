@@ -1953,7 +1953,7 @@ buildFutureBeginStmt(const char* ident, Expr* futureType, BlockStmt* stmt) {
     BlockStmt* actualBeginBodyLastStmt = (BlockStmt*) userBeginBody->body.get(numStatements);
     BlockStmt* lastExprStmt = (BlockStmt*) actualBeginBodyLastStmt->body.get(1)->copy();
 
-    if (!IS_EXPR(lastExprStmt)) {
+    if (!(IS_EXPR(lastExprStmt) || (lastExprStmt->astTag == E_UnresolvedSymExpr))) {
       USR_FATAL(lastExprStmt, "last statement in begin body is not an expression");
     }
     UnresolvedSymExpr* tempFutureSym = new UnresolvedSymExpr(tempFutureName.c_str());
